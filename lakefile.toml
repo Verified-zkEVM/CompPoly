@@ -1,0 +1,19 @@
+name = "CompPoly"
+version = "0.1.0"
+defaultTargets = ["comppoly"]
+
+[[lean_lib]]
+name = "CompPoly"
+
+[[lean_exe]]
+name = "comppoly"
+root = "Main"
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.22.0-rc2"
+
+[[require]]
+name = "ExtTreeMapLemmas"
+git = "https://github.com/NethermindEth/ExtTreeMapLemmas"
