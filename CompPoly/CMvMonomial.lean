@@ -1,3 +1,4 @@
+import Mathlib.Algebra.BigOperators.Group.Finset.Defs
 import Mathlib.Algebra.Group.Finsupp
 import Mathlib.Algebra.Group.TypeTags.Basic
 import Mathlib.Algebra.GroupWithZero.Nat
@@ -38,6 +39,8 @@ def extend (n' : ℕ) (m : CMvMonomial n) : CMvMonomial (max n n') :=
        (m.append (Vector.replicate (n' - n) 0))
 
 def totalDegree (m : CMvMonomial n) : ℕ := m.sum
+
+def degreeOf (m : CMvMonomial n) (i : Fin n) : ℕ := m.get i
 
 def one : CMvMonomial n := Vector.replicate n 0
 
@@ -138,6 +141,9 @@ instance [HMod R R R] [BEq R] {t₁ t₂ : MonoR n R} : Decidable (t₁ ∣ t₂
   infer_instance
 
 end
+
+def evalMonomial {R : Type} {n : ℕ} [CommSemiring R] : (Fin n → R) → CMvMonomial n → R :=
+  fun vals m => ∏ (i : Fin n), (vals i) ^ m.get i
 
 end MonoR
 

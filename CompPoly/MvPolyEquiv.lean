@@ -242,9 +242,9 @@ instance {n : ℕ} : AddCommMonoid (CPoly.CMvPolynomial n R) where
   add_comm := by grind
 
 omit [BEq R] [LawfulBEq R] in
-lemma toList_pairs_monomial_coeff
+lemma toList_pairs_monomial_coeff {β : Type} [AddCommMonoid β]
   {t : Unlawful n R}
-  {f : CMvMonomial n → R → Lawful n R} :
+  {f : CMvMonomial n → R → β} :
   t.toList.map (fun term => f term.1 term.2) =
     t.monomials.map (fun m => f m (t.coeff m))
 := by
@@ -253,9 +253,9 @@ lemma toList_pairs_monomial_coeff
   rw [List.map_congr_left, List.map_map]
   grind
 
-lemma foldl_eq_sum
+lemma foldl_eq_sum {β : Type} [AddCommMonoid β]
   {t : CMvPolynomial n R}
-  {f : CMvMonomial n → R → Lawful n R} :
+  {f : CMvMonomial n → R → β} :
   ExtTreeMap.foldl (fun x m c => (f m c) + x) 0 t.1 =
     Finsupp.sum (fromCMvPolynomial t) (f ∘ CMvMonomial.ofFinsupp)
 := by
@@ -386,6 +386,35 @@ where
   toEquiv := CPoly.polyEquiv
   map_mul' := map_mul
   map_add' := map_add
+
+lemma eval₂_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] {f : (R →+* S)} {vals : Fin n → S} :
+    p.eval₂ f vals = (fromCMvPolynomial p).eval₂ f vals := by
+  unfold CMvPolynomial.eval₂ MvPolynomial.eval₂
+  rw [foldl_eq_sum]
+  congr 1
+  unfold Function.comp
+  simp only
+  ext m c
+  congr 1
+  unfold MonoR.evalMonomial Finsupp.prod
+  simp only
+  refine Eq.symm (Finset.prod_subset_one_on_sdiff ?_ ?_ ?_)
+  · exact Finset.subset_univ _
+  · intros x h
+    simp only [Finset.mem_sdiff, Finset.mem_univ, Finsupp.mem_support_iff, ne_eq, Decidable.not_not,
+      true_and] at h
+    unfold CMvMonomial.ofFinsupp
+    simp [h]
+  · intros x _
+    congr 1
+    unfold CMvMonomial.ofFinsupp
+    simp
+
+lemma eval_equiv {p : CMvPolynomial n R} {vals : Fin n → R} :
+    p.eval vals = (fromCMvPolynomial p).eval vals := by
+  unfold CMvPolynomial.eval MvPolynomial.eval MvPolynomial.eval₂Hom
+  simp only [RingHom.coe_mk, MonoidHom.coe_mk, OneHom.coe_mk]
+  rw [eval₂_equiv]
 
 end
 
