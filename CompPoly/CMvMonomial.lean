@@ -4,6 +4,7 @@ import Mathlib.Algebra.Group.TypeTags.Basic
 import Mathlib.Algebra.GroupWithZero.Nat
 import Mathlib.Algebra.Ring.Defs
 import Mathlib.Data.Nat.Lattice
+import Std.Classes.Ord.Vector
 
 /-!
 # Computable monomials
@@ -21,7 +22,7 @@ namespace CPoly
   Monomial in `n` variables.
   - `#v[e₀, e₁, e₂]` denotes X₀^e₀ * X₁^e₁ * X₂^e₂
 -/
-@[simp]
+@[grind =]
 def CMvMonomial (n : ℕ) : Type := Vector ℕ n
 
 syntax "#m[" withoutPosition(term,*,?) "]" : term
@@ -37,6 +38,23 @@ instance {n : ℕ} : Repr (CMvMonomial n) where
       ⟨λ (i, p) ↦ "X" ++ repr i ++ "^" ++ repr p⟩
     @Std.Format.joinSep _ toFormat indexed.toList " * "
 
+instance {n : ℕ} : GetElem (CMvMonomial n) ℕ ℕ fun _ idx ↦ idx < n :=
+  inferInstanceAs (GetElem (Vector ℕ n) ℕ ℕ _)
+
+instance {n : ℕ} : GetElem? (CMvMonomial n) ℕ ℕ fun _ idx ↦ idx < n :=
+  inferInstanceAs (GetElem? (Vector ℕ n) ℕ ℕ _)
+
+instance {n : ℕ} : DecidableEq (CMvMonomial n) :=
+  inferInstanceAs (DecidableEq (Vector ℕ n))
+
+instance {n : ℕ} : Ord (CMvMonomial n) :=
+  inferInstanceAs (Ord (Vector ℕ n))
+
+instance {n : ℕ} : Std.TransCmp (Ord.compare (α := CMvMonomial n)) :=
+  inferInstanceAs (Std.TransCmp (Ord.compare (α := Vector ℕ n)))
+
+instance {n : ℕ} : Std.LawfulEqCmp (Ord.compare (α := CMvMonomial n)) :=
+  inferInstanceAs (Std.LawfulEqCmp (Ord.compare (α := Vector ℕ n)))
 
 instance {n : ℕ} : GetElem (CMvMonomial n) ℕ ℕ fun _ idx ↦ idx < n :=
   inferInstanceAs (GetElem (Vector ℕ n) ℕ ℕ _)
@@ -46,6 +64,21 @@ instance {n : ℕ} : GetElem? (CMvMonomial n) ℕ ℕ fun _ idx ↦ idx < n :=
 
 instance {n : ℕ} : DecidableEq (CMvMonomial n) :=
   inferInstanceAs (DecidableEq (Vector ℕ n))
+
+instance {n : ℕ} : Ord (CMvMonomial n) :=
+  inferInstanceAs (Ord (Vector ℕ n))
+
+instance {n : ℕ} : Std.TransCmp (α := Vector ℕ n) (Ord.compare (α := CMvMonomial n)) :=
+  inferInstanceAs (Std.TransCmp (Ord.compare (α := Vector ℕ n)))
+
+instance {n : ℕ} : Std.LawfulEqCmp (α := Vector ℕ n) (Ord.compare (α := CMvMonomial n)) :=
+  inferInstanceAs (Std.LawfulEqCmp (Ord.compare (α := Vector ℕ n)))
+
+instance {n : ℕ} : Std.TransCmp (α := CMvMonomial n) (Ord.compare (α := Vector ℕ n)) :=
+  inferInstanceAs (Std.TransCmp (Ord.compare (α := Vector ℕ n)))
+
+instance {n : ℕ} : Std.LawfulEqCmp (α := CMvMonomial n) (Ord.compare (α := Vector ℕ n)) :=
+  inferInstanceAs (Std.LawfulEqCmp (Ord.compare (α := Vector ℕ n)))
 
 namespace CMvMonomial
 
@@ -106,7 +139,11 @@ def ofFinsupp (m : Fin n →₀ ℕ) : CPoly.CMvMonomial n := Vector.ofFn m
 
 @[grind=, simp]
 theorem ofFinsupp_toFinsupp : ofFinsupp m.toFinsupp = m := by
-  ext i hi; aesop (add simp CMvMonomial.ofFinsupp)
+  unfold toFinsupp ofFinsupp
+  rcases m with ⟨m, hm⟩ 
+  ext i hi
+  erw [Vector.getElem_ofFn]
+  rfl
 
 @[grind=, simp]
 theorem toFinsupp_ofFinsupp {m : Fin n →₀ ℕ} : (ofFinsupp m).toFinsupp = m := by
@@ -124,11 +161,13 @@ def equivFinsupp : CMvMonomial n ≃ (Fin n →₀ ℕ) where
   left_inv := fun _ ↦ ofFinsupp_toFinsupp
   right_inv := fun _ ↦ toFinsupp_ofFinsupp
 
+@[simp]
 lemma map_mul {m₁ m₂ : Multiplicative (Fin n →₀ ℕ)} :
-  CMvMonomial.ofFinsupp (n := n) (m₁ * m₂) =
+  CMvMonomial.ofFinsupp (m₁ * m₂) =
   CMvMonomial.add (CMvMonomial.ofFinsupp m₁) (CMvMonomial.ofFinsupp m₂) := by
   unfold_projs; ext
-  simp [Multiplicative.toAdd, Multiplicative.ofAdd, CMvMonomial.add, ofFinsupp]
+  erw [Vector.getElem_ofFn, Vector.getElem_zipWith]
+  simp [Multiplicative.toAdd, Multiplicative.ofAdd,  ofFinsupp]
 
 end CMvMonomial
 
