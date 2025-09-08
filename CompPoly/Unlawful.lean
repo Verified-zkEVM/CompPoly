@@ -2,6 +2,7 @@ import CompPoly.CMvMonomial
 import CompPoly.Wheels
 import Mathlib.Algebra.Lie.OfAssociative
 import Std.Classes.Ord.Vector
+import ExtTreeMapLemmas.ExtTreeMap
 
 attribute [local instance 5] instDecidableEqOfLawfulBEq
 
