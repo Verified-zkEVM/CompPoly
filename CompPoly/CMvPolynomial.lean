@@ -90,10 +90,12 @@ def eval₂ {R S : Type} {n : ℕ} [Semiring R] [CommSemiring S] : (R →+* S) �
 def eval {R : Type} {n : ℕ} [CommSemiring R] : (Fin n → R) → CMvPolynomial n R → R := eval₂ (RingHom.id _)
 
 def totalDegree {R : Type} {n : ℕ} [inst : CommSemiring R] : CMvPolynomial n R → ℕ :=
-  fun p => p.1.foldl (fun cm m _ => max cm (CMvMonomial.totalDegree m)) 0
+  fun p => Finset.sup (List.toFinset (List.map CMvMonomial.toFinsupp (Lawful.monomials p))) (fun s => Finsupp.sum s (fun _ e => e))
 
 def degreeOf {R : Type} {n : ℕ} [CommSemiring R] (i : Fin n) : CMvPolynomial n R → ℕ :=
-  fun p => p.1.foldl (fun cm m _ => max cm (CMvMonomial.degreeOf m i)) 0
+  fun p =>
+    Multiset.count i
+    (Finset.sup (List.toFinset (List.map CMvMonomial.toFinsupp (Lawful.monomials p))) fun s => Finsupp.toMultiset s)
 
 end CMvPolynomial
 

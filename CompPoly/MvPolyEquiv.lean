@@ -414,7 +414,36 @@ lemma eval_equiv {p : CMvPolynomial n R} {vals : Fin n → R} :
     p.eval vals = (fromCMvPolynomial p).eval vals := by
   unfold CMvPolynomial.eval MvPolynomial.eval MvPolynomial.eval₂Hom
   simp only [RingHom.coe_mk, MonoidHom.coe_mk, OneHom.coe_mk]
-  rw [eval₂_equiv]
+  exact eval₂_equiv
+
+lemma totalDegree_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] :
+    p.totalDegree = (fromCMvPolynomial p).totalDegree := by rfl
+
+lemma degreeOf_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] :
+    p.degreeOf = (fromCMvPolynomial p).degreeOf := by
+  ext i
+  unfold MvPolynomial.degreeOf MvPolynomial.degrees
+  unfold MvPolynomial.support fromCMvPolynomial
+  simp only
+  unfold degreeOf
+  congr
+  unfold instDecidableEqFin Classical.decEq inferInstance
+  unfold Classical.propDecidable
+  ext a b
+  next dec h heq =>
+    by_contra! h
+    generalize h' : Classical.choice _ = out at h
+    match h'' : out with
+    | isTrue g =>
+      aesop
+    | isFalse g =>
+      apply g
+      split at h
+      · next g' g'' g''' =>
+          aesop
+            (add safe cases Fin)
+            (add safe (by simp only at g''))
+      · simp at h
 
 end
 
