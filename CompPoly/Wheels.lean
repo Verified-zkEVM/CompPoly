@@ -1,6 +1,4 @@
-import Aesop
-import Mathlib.Logic.Function.Defs
-import Mathlib.Tactic.Cases
+import ExtTreeMapLemmas.ExtTreeMap
 
 lemma distinct_of_inj_nodup {α β : Type*} {l : List α} {f : α → β}
   (h₁ : Function.Injective f) (h₂ : l.Nodup) :
