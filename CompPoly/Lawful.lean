@@ -1,5 +1,14 @@
 import CompPoly.Unlawful
 import Mathlib.Analysis.Normed.Ring.Lemmas
+import CompPoly.Wheels
+
+/-!
+# 'Lawful' finite supports, i.e. `CPoly.Unlawful` quotiented by non-zero range.
+
+## Main definitions
+
+* `CPoly.Lawful
+-/
 
 attribute [local instance 5] instDecidableEqOfLawfulBEq
 
@@ -11,6 +20,8 @@ def Lawful (n : ℕ) (R : Type) [Zero R] :=
   {p : Unlawful n R // p.isNoZeroCoef}
 
 variable {n : ℕ} {R : Type} [Zero R]
+
+section Instances
 
 @[grind=]
 instance instEmptyCol : EmptyCollection (Lawful n R) := ⟨∅, by grind⟩
@@ -29,6 +40,8 @@ instance : LawfulGetElem (Lawful n R) (CMvMonomial n) R (fun lp m ↦ m ∈ lp) 
     fun ⟨c, hc⟩ i _ ↦ by have := getElem?_def c i; aesop,
     fun ⟨c, hc⟩ i ↦ by have := getElem!_def c i; aesop
   ⟩
+
+end Instances
 
 namespace Lawful
 

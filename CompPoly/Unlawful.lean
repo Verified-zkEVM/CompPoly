@@ -1,8 +1,16 @@
 import CompPoly.CMvMonomial
 import CompPoly.Wheels
 import Mathlib.Algebra.Lie.OfAssociative
-import Std.Classes.Ord.Vector
+import Std.Data.ExtTreeMap
 import ExtTreeMapLemmas.ExtTreeMap
+
+/-!
+# Maps of the form `CMvMonomial → R` with no additional restrictions.
+
+## Main definitions
+
+* CPoly.Unlawful
+-/
 
 attribute [local instance 5] instDecidableEqOfLawfulBEq
 
@@ -16,6 +24,8 @@ open Std
 @[grind =]
 def Unlawful (n : ℕ) (R : Type) : Type :=
   Std.ExtTreeMap (CMvMonomial n) R (Ord.compare (α := CMvMonomial n))
+
+section Instances
 
 variable {n : ℕ} {R : Type}
 
@@ -45,6 +55,8 @@ instance : GetElem? (Unlawful n R) (CMvMonomial n) R (fun lp m ↦ m ∈ lp) :=
 instance : LawfulGetElem (Unlawful n R) (CMvMonomial n) R (fun lp m ↦ m ∈ lp) :=
   inferInstanceAs
     (LawfulGetElem (Std.ExtTreeMap (CMvMonomial n) R compare) (CMvMonomial n) R (fun lp m ↦ m ∈ lp))
+
+end Instances
 
 namespace Unlawful
 
@@ -157,15 +169,21 @@ def mul [Mul R] [Add R] [Zero R] [BEq R] [LawfulBEq R] (p₁ p₂ : Unlawful n R
 
 instance [BEq R] [LawfulBEq R] [Mul R] [Add R] [Zero R] : Mul (Unlawful n R) := ⟨mul⟩
 
-def neg [Neg R] (p : Unlawful n R) : Unlawful n R :=
+section Neg
+
+variable [Neg R]
+
+def neg (p : Unlawful n R) : Unlawful n R :=
   p.map fun _ v ↦ -v
 
-instance [Neg R] : Neg (Unlawful n R) := ⟨neg⟩
+instance : Neg (Unlawful n R) := ⟨neg⟩
 
-def sub [Neg R] [Add R] (p₁ p₂ : Unlawful n R) : Unlawful n R :=
+def sub [Add R] (p₁ p₂ : Unlawful n R) : Unlawful n R :=
   Unlawful.add p₁ (-p₂)
 
-instance [Neg R] [Add R] : Sub (Unlawful n R) := ⟨sub⟩
+instance [Add R] : Sub (Unlawful n R) := ⟨sub⟩
+
+end Neg
 
 def leadingTerm? : Unlawful n R → Option (MonoR n R) :=
   ExtTreeMap.maxEntry?
@@ -181,7 +199,6 @@ instance instDecidableEq [DecidableEq R] : DecidableEq (Unlawful n R) := fun x y
 def coeff {R : Type} {n : ℕ} [Zero R] (m : CMvMonomial n) (p : Unlawful n R) : R :=
   p[m]?.getD 0
 
-
 @[simp, grind =]
 lemma filter_get {R : Type} [BEq R] [LawfulBEq R] {v : R} {m : CMvMonomial n} (a : Unlawful n R) :
     (ExtTreeMap.filter (fun _ c => c != v) a)[m]?.getD v = a[m]?.getD v := by
@@ -190,21 +207,8 @@ lemma filter_get {R : Type} [BEq R] [LawfulBEq R] {v : R} {m : CMvMonomial n} (a
 lemma add_getD? [CommSemiring R] {m : CMvMonomial n} {p q : Unlawful n R} :
   (p.add q)[m]?.getD 0 = p[m]?.getD 0 + q[m]?.getD 0
 := by
-  rw [Unlawful.add]
-  by_cases in_p : m ∈ p <;> by_cases in_q : m ∈ q
-  · erw [ExtTreeMap.mergeWith₀ in_p in_q, Option.getD_some]
-    change p[m] + q[m] = p[m]?.getD 0 + q[m]?.getD 0
-    grind
-  · erw [ExtTreeMap.mergeWith₁ in_p in_q, show q[m]?.getD 0 = 0 by grind, add_zero]
-    grind
-  · erw [ExtTreeMap.mergeWith₂ in_p in_q, show p[m]?.getD 0 = 0 by grind, zero_add]
-    grind
-  · erw [
-      ExtTreeMap.mergeWith₃ in_p in_q,
-      show p[m]?.getD 0 = 0 by grind,
-      show q[m]?.getD 0 = 0 by grind
-    ]
-    grind
+  unfold Unlawful.add
+  by_cases m ∈ p <;> by_cases m ∈ q <;> grind [add_zero, zero_add]
 
 end Unlawful
 

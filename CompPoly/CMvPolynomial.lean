@@ -2,11 +2,21 @@ import CompPoly.Lawful
 import CompPoly.Wheels
 import CompPoly.Unlawful
 
+/-!
+# Polynomials of the form `α₁ * m₁ + α₂ * m₂ + ... + αₖ * mₖ` where `αᵢ` is any semiring and `mᵢ` is a `CMvMonomial`.
+
+Just a shorthand for `CPoly.Lawful`.
+
+## Main definitions
+
+* `CPoly.CMvPolynomial
+-/
+
 namespace CPoly
 
 open Std
 
-abbrev CMvPolynomial (n : ℕ) R [Zero R] : Type := Lawful n R
+abbrev CMvPolynomial (n : ℕ) (R : Type) [Zero R] : Type := Lawful n R
 
 variable {R : Type}
 
@@ -15,7 +25,7 @@ namespace CMvPolynomial
 def coeff {R : Type} {n : ℕ} [Zero R] (m : CMvMonomial n) (p : CMvPolynomial n R) : R :=
   p.1[m]?.getD 0
 
-attribute [grind=] coeff.eq_def
+attribute [grind =] coeff.eq_def
 
 @[ext, grind ext]
 theorem ext {n : ℕ} [Zero R] (p q : CMvPolynomial n R)
@@ -25,10 +35,9 @@ theorem ext {n : ℕ} [Zero R] (p q : CMvPolynomial n R)
   congr
   apply ExtTreeMap.ext_getElem?
   intros k; specialize h k
-  simp at h
   by_cases k ∈ p <;> by_cases k ∈ q <;> grind  
 
-attribute [grind=] Option.some_inj
+attribute [local grind =] Option.some_inj
 
 section
 
@@ -37,7 +46,6 @@ variable [BEq R] [LawfulBEq R]
 @[simp, grind =]
 lemma fromUnlawful_zero {n : ℕ} [Zero R] : Lawful.fromUnlawful 0 = (0 : Lawful n R) := by
   unfold Lawful.fromUnlawful
-  simp only [CMvMonomial.eq_1]
   grind
 
 variable {n : ℕ} [CommSemiring R] {m : CMvMonomial n} {p q : CMvPolynomial n R}
