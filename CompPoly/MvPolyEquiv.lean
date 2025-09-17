@@ -11,9 +11,8 @@ import Std.Classes.Ord.Vector
 ## Main results
 
 * `CPoly.polyEquiv` - `Equiv` between `CMvPolynomial` and `MvPolynomial`
-* 
+* `CPoly.polyRingEquiv` - `RingEquiv` between `CMvPolynomial` and `MvPolynomial`
 -/
-
 open Std
 
 namespace CPoly
@@ -275,6 +274,7 @@ lemma toList_pairs_monomial_coeff {β : Type} [AddCommMonoid β]
   rw [List.map_congr_left, List.map_map]
   grind
 
+omit [BEq R] [LawfulBEq R] in
 lemma foldl_eq_sum {β : Type} [AddCommMonoid β]
   {t : CMvPolynomial n R}
   {f : CMvMonomial n → R → β} :
@@ -312,15 +312,9 @@ lemma fromCMvPolynomial_sum_eq_sum_fromCMvPolynomial
   {f : (Fin n →₀ ℕ) → R → Lawful n R }
   {a : CMvPolynomial n R} :
   fromCMvPolynomial (Finsupp.sum (fromCMvPolynomial a) f) =
-    Finsupp.sum (fromCMvPolynomial a) (fun m c ↦ fromCMvPolynomial (f m c))
-:= by
-  ext m
-  simp [coeff_eq]
-  unfold Finsupp.sum
-  dsimp
-  rw [MvPolynomial.coeff_sum, coeff_sum]
-  -- TODO (Andrei): I don't understand why `coeff_eq` is just `rfl`, neither why the current goal is closed with a `rfl`.
-  rfl
+    Finsupp.sum (fromCMvPolynomial a) (fun m c ↦ fromCMvPolynomial (f m c)) := by
+  unfold Finsupp.sum; ext
+  simp [MvPolynomial.coeff_sum, coeff_eq, coeff_sum]
 
 set_option pp.fieldNotation false
 @[simp]
@@ -410,6 +404,7 @@ where
   map_mul' := map_mul
   map_add' := map_add
 
+omit [BEq R] [LawfulBEq R] in
 lemma eval₂_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] {f : (R →+* S)} {vals : Fin n → S} :
     p.eval₂ f vals = (fromCMvPolynomial p).eval₂ f vals := by
   unfold CMvPolynomial.eval₂ MvPolynomial.eval₂
@@ -433,15 +428,18 @@ lemma eval₂_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] {f : (R 
     unfold CMvMonomial.ofFinsupp
     simp
 
+omit [BEq R] [LawfulBEq R] in
 lemma eval_equiv {p : CMvPolynomial n R} {vals : Fin n → R} :
     p.eval vals = (fromCMvPolynomial p).eval vals := by
   unfold CMvPolynomial.eval MvPolynomial.eval MvPolynomial.eval₂Hom
   simp only [RingHom.coe_mk, MonoidHom.coe_mk, OneHom.coe_mk]
   exact eval₂_equiv
 
+omit [BEq R] [LawfulBEq R] in
 lemma totalDegree_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] :
     p.totalDegree = (fromCMvPolynomial p).totalDegree := by rfl
 
+omit [BEq R] [LawfulBEq R] in
 lemma degreeOf_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] :
     p.degreeOf = (fromCMvPolynomial p).degreeOf := by
   ext i
@@ -453,7 +451,7 @@ lemma degreeOf_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] :
   unfold instDecidableEqFin Classical.decEq inferInstance
   unfold Classical.propDecidable
   ext a b
-  next dec h heq =>
+  next h heq =>
     by_contra! h
     generalize h' : Classical.choice _ = out at h
     match h'' : out with
