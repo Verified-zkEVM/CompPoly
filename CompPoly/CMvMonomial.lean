@@ -4,30 +4,95 @@ import Mathlib.Algebra.Group.TypeTags.Basic
 import Mathlib.Algebra.GroupWithZero.Nat
 import Mathlib.Algebra.Ring.Defs
 import Mathlib.Data.Nat.Lattice
+import Std.Classes.Ord.Vector
+
+/-!
+# Computable monomials
+
+Monomials of the form `X₀ᵃ * X₁ᵇ * ... * Xₖᶻ`.
+
+## Main definitions
+
+* `CPoly.CMvMonomial
+-/
+
 namespace CPoly
 
 /--
   Monomial in `n` variables.
   - `#v[e₀, e₁, e₂]` denotes X₀^e₀ * X₁^e₁ * X₂^e₂
 -/
-abbrev CMvMonomial (n : ℕ) : Type := Vector ℕ n
+@[grind =]
+def CMvMonomial (n : ℕ) : Type := Vector ℕ n
 
 syntax "#m[" withoutPosition(term,*,?) "]" : term
 
 open Lean in
 macro_rules
-  | `(#m[ $elems,* ]) => `(#v[ $elems,* ])
+  | `(#m[$elems,*]) => `(#v[$elems,*])
 
-instance {n : ℕ} : Repr (CMvMonomial n) where
+variable {n : ℕ}
+
+instance : Repr (CMvMonomial n) where
   reprPrec m _ :=
     let indexed := (Array.range m.size).zip m.1
     let toFormat : Std.ToFormat (ℕ × ℕ) :=
       ⟨λ (i, p) ↦ "X" ++ repr i ++ "^" ++ repr p⟩
     @Std.Format.joinSep _ toFormat indexed.toList " * "
 
+section Instances
+
+instance : GetElem (CMvMonomial n) ℕ ℕ fun _ idx ↦ idx < n :=
+  inferInstanceAs (GetElem (Vector ℕ n) ℕ ℕ _)
+
+instance : GetElem? (CMvMonomial n) ℕ ℕ fun _ idx ↦ idx < n :=
+  inferInstanceAs (GetElem? (Vector ℕ n) ℕ ℕ _)
+
+instance : DecidableEq (CMvMonomial n) :=
+  inferInstanceAs (DecidableEq (Vector ℕ n))
+
+instance : Ord (CMvMonomial n) :=
+  inferInstanceAs (Ord (Vector ℕ n))
+
+instance : Std.TransCmp (Ord.compare (α := CMvMonomial n)) :=
+  inferInstanceAs (Std.TransCmp (Ord.compare (α := Vector ℕ n)))
+
+instance : Std.LawfulEqCmp (Ord.compare (α := CMvMonomial n)) :=
+  inferInstanceAs (Std.LawfulEqCmp (Ord.compare (α := Vector ℕ n)))
+
+instance : GetElem (CMvMonomial n) ℕ ℕ fun _ idx ↦ idx < n :=
+  inferInstanceAs (GetElem (Vector ℕ n) ℕ ℕ _)
+
+instance : GetElem? (CMvMonomial n) ℕ ℕ fun _ idx ↦ idx < n :=
+  inferInstanceAs (GetElem? (Vector ℕ n) ℕ ℕ _)
+
+instance : DecidableEq (CMvMonomial n) :=
+  inferInstanceAs (DecidableEq (Vector ℕ n))
+
+instance : Ord (CMvMonomial n) :=
+  inferInstanceAs (Ord (Vector ℕ n))
+
+instance : Std.TransCmp (α := Vector ℕ n) (Ord.compare (α := CMvMonomial n)) :=
+  inferInstanceAs (Std.TransCmp (Ord.compare (α := Vector ℕ n)))
+
+instance : Std.LawfulEqCmp (α := Vector ℕ n) (Ord.compare (α := CMvMonomial n)) :=
+  inferInstanceAs (Std.LawfulEqCmp (Ord.compare (α := Vector ℕ n)))
+
+instance : Std.TransCmp (α := CMvMonomial n) (Ord.compare (α := Vector ℕ n)) :=
+  inferInstanceAs (Std.TransCmp (Ord.compare (α := Vector ℕ n)))
+
+instance : Std.LawfulEqCmp (α := CMvMonomial n) (Ord.compare (α := Vector ℕ n)) :=
+  inferInstanceAs (Std.LawfulEqCmp (Ord.compare (α := Vector ℕ n)))
+
+end Instances
+
 namespace CMvMonomial
 
-variable {n : ℕ}
+variable {m m₁ m₂ : CMvMonomial n}
+
+@[ext, grind ext]
+protected theorem ext (h : (i : Nat) → (_ : i < n) → m₁[i] = m₂[i]) : m₁ = m₂ :=
+  Vector.ext h
 
 def extend (n' : ℕ) (m : CMvMonomial n) : CMvMonomial (max n n') :=
   cast (have : n + (n' - n) = n ⊔ n' :=
@@ -42,27 +107,24 @@ def totalDegree (m : CMvMonomial n) : ℕ := m.sum
 
 def degreeOf (m : CMvMonomial n) (i : Fin n) : ℕ := m.get i
 
-def one : CMvMonomial n := Vector.replicate n 0
+def zero : CMvMonomial n := Vector.replicate n 0
 
-instance : One (CMvMonomial n) := ⟨one⟩
+instance : Zero (CMvMonomial n) := ⟨zero⟩
 
-def mul : CMvMonomial n → CMvMonomial n → CMvMonomial n :=
+def add : CMvMonomial n → CMvMonomial n → CMvMonomial n :=
   Vector.zipWith .add
 
-instance : Mul (CMvMonomial n) := ⟨mul⟩
+instance : Add (CMvMonomial n) := ⟨add⟩
 
-lemma mul_one {m : CMvMonomial n} : m * one = m := by
-  unfold one
-  unfold_projs
-  unfold CMvMonomial.mul
-  grind
+@[simp]
+lemma add_zero : m + 0 = m := by unfold_projs; dsimp [add, zero, CMvMonomial]; grind
 
-def divides (m₁ : CMvMonomial n) (m₂ : CMvMonomial n) : Bool :=
+def divides (m₁ m₂ : CMvMonomial n) : Bool :=
   Vector.all (Vector.zipWith (flip Nat.ble) m₁ m₂) (· == true)
 
-instance : Dvd (CMvMonomial n) := ⟨fun m₁ m₂ ↦ divides m₁ m₂⟩ -- Do not eta.
+instance : Dvd (CMvMonomial n) := ⟨fun m₁ m₂ ↦ divides m₁ m₂⟩
 
-instance {m₁ m₂ : CMvMonomial n} : Decidable (m₁ ∣ m₂) := by dsimp [(·∣·)]; infer_instance
+instance : Decidable (m₁ ∣ m₂) := by dsimp [(·∣·)]; infer_instance
 
 /--
   The polynomial `m₁ / m₂`.
@@ -74,18 +136,21 @@ def div (m₁ m₂ : CMvMonomial n) : CMvMonomial n :=
 
 instance : Div (CMvMonomial n) := ⟨div⟩
 
-instance {m₁ m₂ : CMvMonomial n} : Decidable (m₁ ∣ m₂) := by dsimp [(·∣·)]; infer_instance
+instance : Decidable (m₁ ∣ m₂) := by dsimp [(·∣·)]; infer_instance
 
-def toFinsupp (m : CPoly.CMvMonomial n) : Fin n →₀ ℕ :=
+def toFinsupp (m : CMvMonomial n) : Fin n →₀ ℕ :=
   ⟨{i : Fin n | m[i] ≠ 0}, m.get, by aesop⟩
 
 def ofFinsupp (m : Fin n →₀ ℕ) : CPoly.CMvMonomial n := Vector.ofFn m
 
-@[grind=, simp]
-theorem ofFinsupp_toFinsupp {m : CMvMonomial n} : ofFinsupp m.toFinsupp = m := by
-  ext i hi; aesop (add simp CMvMonomial.ofFinsupp)
+@[grind =, simp]
+theorem ofFinsupp_toFinsupp : ofFinsupp m.toFinsupp = m := by
+  unfold toFinsupp ofFinsupp
+  ext i hi
+  erw [Vector.getElem_ofFn]
+  rfl
 
-@[grind=, simp]
+@[grind =, simp]
 theorem toFinsupp_ofFinsupp {m : Fin n →₀ ℕ} : (ofFinsupp m).toFinsupp = m := by
   ext i; aesop (add simp [CMvMonomial.toFinsupp, CMvMonomial.ofFinsupp, Vector.get])
 
@@ -101,13 +166,12 @@ def equivFinsupp : CMvMonomial n ≃ (Fin n →₀ ℕ) where
   left_inv := fun _ ↦ ofFinsupp_toFinsupp
   right_inv := fun _ ↦ toFinsupp_ofFinsupp
 
-lemma map_mul {n : ℕ} {m₁ m₂ : Multiplicative (Fin n →₀ ℕ)} :
-  CMvMonomial.ofFinsupp (n := n) (m₁ * m₂) =
-    CMvMonomial.mul (CMvMonomial.ofFinsupp m₁) (CMvMonomial.ofFinsupp m₂)
-:= by
-  unfold_projs
-  ext
-  simp [Multiplicative.toAdd, Multiplicative.ofAdd, CMvMonomial.mul, ofFinsupp]
+@[simp, grind =]
+lemma map_mul {m₁ m₂ : Multiplicative (Fin n →₀ ℕ)} :
+  ofFinsupp (m₁ * m₂) = (ofFinsupp m₁) + (ofFinsupp m₂) := by
+  unfold_projs; ext
+  erw [Vector.getElem_ofFn, Vector.getElem_zipWith]
+  simp [Multiplicative.toAdd, Multiplicative.ofAdd, ofFinsupp]
 
 end CMvMonomial
 
@@ -126,17 +190,17 @@ instance [Repr R] : Repr (MonoR n R) where
   reprPrec
     | (m, c), _ => repr c ++ " * " ++ repr m
 
-@[grind=]
-def C (c : R) : MonoR n R := (CMvMonomial.one, c)
+@[simp, grind=]
+def C (c : R) : MonoR n R := (CMvMonomial.zero, c)
 
-variable [CommSemiring R]
+variable [CommSemiring R] [HMod R R R] [BEq R]
 
-def divides [HMod R R R] [BEq R] (t₁ t₂ : MonoR n R) : Bool :=
+def divides (t₁ t₂ : MonoR n R) : Bool :=
   t₁.1 ∣ t₂.1 ∧ t₁.2 % t₂.2 == 0
 
-instance [HMod R R R] [BEq R] : Dvd (MonoR n R) := ⟨fun t₁ t₂ ↦ divides t₁ t₂⟩ -- Do not eta.
+instance : Dvd (MonoR n R) := ⟨fun t₁ t₂ ↦ divides t₁ t₂⟩
 
-instance [HMod R R R] [BEq R] {t₁ t₂ : MonoR n R} : Decidable (t₁ ∣ t₂) := by
+instance {t₁ t₂ : MonoR n R} : Decidable (t₁ ∣ t₂) := by
   dsimp [(·∣·)]
   infer_instance
 
