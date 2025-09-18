@@ -49,4 +49,3 @@ So far we have defined counterparts for the following `MvPolynomial` definitions
 `C`, `coeff`, `commSemiring`, `decidableEqMvPolynomial`, `degreeOf`, `eval`, `eval₂`, `support` and `totalDegree`. Many have the same name and are located in the namespace `CPoly.CMvPolynomial`; some are defined on `Lawful`, which `CMvPolynomial` is an abbrev of.
 
 For the future, we plan to add counterparts to `MonomialOrder.degree`, `MonomialOrder.leadingCoeff` and the following `MvPolynomial` definitions (but we're first assessing the implementation complexity for some of them): `X`, `aeval`, `algebra`, `bind₁`, `degrees`, `eval₂Hom`, `finSuccEquiv`, `instCommRingMvPolynomial`, `isEmptyAlgEquiv`, `module`, `monomial`, `optionEquivLeft`, `rename`, `renameEquiv`, `restrictDegree`, `smulZeroClass`, `sumToIter`, `vars`.
-

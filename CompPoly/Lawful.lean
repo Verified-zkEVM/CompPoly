@@ -1,5 +1,14 @@
 import CompPoly.Unlawful
 import Mathlib.Analysis.Normed.Ring.Lemmas
+import CompPoly.Wheels
+
+/-!
+# 'Lawful' finite supports, i.e. `CPoly.Unlawful` quotiented by non-zero range.
+
+## Main definitions
+
+* `CPoly.Lawful
+-/
 
 attribute [local instance 5] instDecidableEqOfLawfulBEq
 
@@ -12,6 +21,8 @@ def Lawful (n : ℕ) (R : Type) [Zero R] :=
 
 variable {n : ℕ} {R : Type} [Zero R]
 
+section Instances
+
 @[grind=]
 instance instEmptyCol : EmptyCollection (Lawful n R) := ⟨∅, by grind⟩
 
@@ -23,6 +34,14 @@ instance : GetElem? (Lawful n R) (CMvMonomial n) R (fun lp m ↦ m ∈ lp.1) :=
 
 instance : Membership (CMvMonomial n) (Lawful n R) :=
   ⟨fun lp m ↦ m ∈ lp.1⟩
+
+instance : LawfulGetElem (Lawful n R) (CMvMonomial n) R (fun lp m ↦ m ∈ lp) :=
+  ⟨
+    fun ⟨c, hc⟩ i _ ↦ by have := getElem?_def c i; aesop,
+    fun ⟨c, hc⟩ i ↦ by have := getElem!_def c i; aesop
+  ⟩
+
+end Instances
 
 namespace Lawful
 
@@ -37,18 +56,27 @@ lemma mem_iff_cast : x ∈ p.1 ↔ x ∈ p := by rfl
 @[grind =]
 lemma mem_iff : x ∈ p ↔ ∃ v, v ≠ 0 ∧ p[x]? = .some v := by
   rw [←mem_iff_cast, ExtTreeMap.mem_iff_isSome_getElem?, Option.isSome_iff_exists]
-  rcases p; grind
+  rcases p with ⟨p, hp⟩
+  specialize hp x
+  grind
 
 @[simp]
 theorem getElem?_ne_some_zero : p[m]? ≠ some 0 := by
   rcases p; grind
+
+@[grind]
+theorem getD_getElem?_ne_zero_of_mem (h : m ∈ p) : p[m]?.getD 0 ≠ 0 := by
+  grind
+
+@[simp, grind =]
+lemma getElem_eq_getElem (h : m ∈ p) : p[m] = p.1[m] := by rfl
 
 variable [BEq R] [LawfulBEq R]
 
 def fromUnlawful (p : Unlawful n R) : Lawful n R :=
   {
     val := p.filter fun _ c ↦ c != 0
-    property _ := by aesop (add simp ExtTreeMap.getElem?_filter)
+    property _ := by aesop (add simp ExtTreeMap.getElem?_filter) (add safe (by grind))
   }
 
 @[grind←]
@@ -74,9 +102,6 @@ lemma zero_eq_zero : (0 : Lawful n R) = ⟨0, by grind⟩ := rfl
 
 lemma zero_eq_empty : (0 : Lawful n R) = ∅ := by unfold_projs; simp [C, Unlawful.zero_eq_empty]
 
--- Not sure why `zero_eq_empty` dislikes `grind` annotation of the form `(∅ : Unlawful n R)`.
-grind_pattern zero_eq_empty => (∅ : Unlawful n R), (0 : Lawful n R)
-
 @[simp, grind]
 lemma not_mem_C_zero : x ∉ C 0 := by simp [zero_eq_empty]; unfold_projs; grind
 
@@ -88,7 +113,8 @@ lemma cast_fromUnlawful : (fromUnlawful p.1).1 = p.1 := by
   unfold fromUnlawful
   rcases p with ⟨p, hp⟩
   simp; ext1 x
-  rw [ExtTreeMap.getElem?_filter, Option.filter_irrel (by aesop)]
+  erw [ExtTreeMap.getElem?_filter, Option.filter_irrel (by intros; specialize hp x; grind)]
+  rfl
 
 section
 
@@ -126,7 +152,12 @@ abbrev monomials (p : Lawful n R) : List (CMvMonomial n) :=
   p.1.monomials
 
 def NZConst {n : ℕ} {R : Type} [Zero R] (p : Lawful n R) : Prop :=
-  p.val.size = 1 ∧ p.val.contains CMvMonomial.one
+  p.val.size = 1 ∧ p.val.contains CMvMonomial.zero
+
+omit [BEq R] [LawfulBEq R] in
+@[simp, grind _=_]
+lemma mem_monomials_iff {w : CMvMonomial n} : w ∈ Lawful.monomials p ↔ w ∈ p := by
+  grind
 
 instance {p : Lawful n R} : Decidable (NZConst p) := by
   dsimp [NZConst]
@@ -137,8 +168,9 @@ end
 @[simp, grind=]
 lemma fromUnlawful_cast {p : Lawful n R} : fromUnlawful p.1 = p := by
   unfold fromUnlawful
-  rcases p with ⟨up, h⟩
   congr
+  rcases p with ⟨p, hp⟩
+  ext
   grind
 
 section
@@ -163,8 +195,8 @@ instance instDecidableEq [DecidableEq R] : DecidableEq (Lawful n R) := fun x y �
   else Decidable.isFalse (by grind)
 
 def X (i : ℕ) : Lawful (i + 1) ℤ :=
-  let monomial := Vector.replicate i 0 |>.push 1
-  Lawful.fromUnlawful <| ExtTreeMap.ofList [(monomial, (1 : ℤ))]
+  let monomial : CMvMonomial (i + 1) := Vector.replicate i 0 |>.push 1
+  Lawful.fromUnlawful <| .ofList [(monomial, (1 : ℤ))]
 
 section
 
