@@ -1,6 +1,6 @@
-import CompPoly.Lawful
-import CompPoly.Wheels
-import CompPoly.Unlawful
+import CompPoly.Multivariate.Lawful
+import CompPoly.Multivariate.Wheels
+import CompPoly.Multivariate.Unlawful
 
 /-!
 # Polynomials of the form `α₁ * m₁ + α₂ * m₂ + ... + αₖ * mₖ` where `αᵢ` is any semiring and `mᵢ` is a `CMvMonomial`.
