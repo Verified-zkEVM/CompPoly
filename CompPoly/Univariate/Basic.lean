@@ -11,13 +11,15 @@ import CompPoly.Data.Array.Lemmas
 /-!
   # Computable Univariate Polynomials
 
-  This file contains a computable datatype for univariate polynomial, `CPolynomial R`. This is
+  This file contains a computable datatype for univariate polynomial, `UniPoly R`. This is
   internally represented as an array of coefficients.
 
-  Note: this has been ported from ArkLib, where it was `UniPoly`
+  Note: this has been ported from ArkLib
 -/
 
 open Polynomial
+
+namespace CompPoly
 
 /-- A type analogous to `Polynomial` that supports computable operations. This defined to be a
   wrapper around `Array`.
@@ -26,58 +28,62 @@ For example the Array `#[1,2,3]` represents the polynomial `1 + 2x + 3x^2`. Two 
 the same polynomial via zero-padding, for example `#[1,2,3] = #[1,2,3,0,0,0,...]`.
 -/
 @[reducible, inline, specialize]
-def CPolynomial (R : Type*) := Array R
+def UniPoly (R : Type*) := Array R
 
-/-- Convert a `Polynomial` to a `CPolynomial`. -/
-def Polynomial.toImpl {R : Type*} [Semiring R] (p : R[X]) : CPolynomial R :=
+end CompPoly
+
+/-- Convert a `Polynomial` to a `UniPoly`. -/
+def Polynomial.toImpl {R : Type*} [Semiring R] (p : R[X]) : CompPoly.UniPoly R :=
   match p.degree with
   | ⊥ => #[]
   | some d  => .ofFn (fun i : Fin (d + 1) => p.coeff i)
 
-namespace CPolynomial
+namespace CompPoly
+
+namespace UniPoly
 
 @[reducible]
-def mk {R : Type*} (coeffs : Array R) : CPolynomial R := coeffs
+def mk {R : Type*} (coeffs : Array R) : UniPoly R := coeffs
 
 @[reducible]
-def coeffs {R : Type*} (p : CPolynomial R) : Array R := p
+def coeffs {R : Type*} (p : UniPoly R) : Array R := p
 
 variable {R : Type*} [Ring R] [BEq R]
 variable {Q : Type*} [Ring Q]
 
 @[reducible]
-def coeff (p : CPolynomial Q) (i : ℕ) : Q := p.getD i 0
+def coeff (p : UniPoly Q) (i : ℕ) : Q := p.getD i 0
 
 /-- The constant polynomial `C r`. -/
-def C (r : R) : CPolynomial R := #[r]
+def C (r : R) : UniPoly R := #[r]
 
 /-- The variable `X`. -/
-def X : CPolynomial R := #[0, 1]
+def X : UniPoly R := #[0, 1]
 
-/-- Return the index of the last non-zero coefficient of a `CPolynomial` -/
-def last_nonzero (p : CPolynomial R) : Option (Fin p.size) :=
+/-- Return the index of the last non-zero coefficient of a `UniPoly` -/
+def last_nonzero (p : UniPoly R) : Option (Fin p.size) :=
   p.findIdxRev? (· != 0)
 
-/-- Remove leading zeroes from a `CPolynomial`. Requires `BEq` to check if the coefficients are zero. -/
-def trim (p : CPolynomial R) : CPolynomial R :=
+/-- Remove leading zeroes from a `UniPoly`. Requires `BEq` to check if the coefficients are zero. -/
+def trim (p : UniPoly R) : UniPoly R :=
   match p.last_nonzero with
   | none => #[]
   | some i => p.extract 0 (i.val + 1)
 
-/-- Return the degree of a `CPolynomial`. -/
-def degree (p : CPolynomial R) : Nat :=
+/-- Return the degree of a `UniPoly`. -/
+def degree (p : UniPoly R) : Nat :=
   match p.last_nonzero with
   | none => 0
   | some i => i.val + 1
 
-/-- Return the leading coefficient of a `CPolynomial` as the last coefficient of the trimmed array,
+/-- Return the leading coefficient of a `UniPoly` as the last coefficient of the trimmed array,
 or `0` if the trimmed array is empty. -/
-def leadingCoeff (p : CPolynomial R) : R := p.trim.getLastD 0
+def leadingCoeff (p : UniPoly R) : R := p.trim.getLastD 0
 
 namespace Trim
 
 -- characterize .last_nonzero
-theorem last_nonzero_none [LawfulBEq R] {p : CPolynomial R} :
+theorem last_nonzero_none [LawfulBEq R] {p : UniPoly R} :
   (∀ i, (hi : i < p.size) → p[i] = 0) → p.last_nonzero = none
 := by
   intro h
@@ -86,11 +92,11 @@ theorem last_nonzero_none [LawfulBEq R] {p : CPolynomial R} :
   rw [bne_iff_ne, ne_eq, not_not]
   apply_assumption
 
-theorem last_nonzero_some [LawfulBEq R] {p : CPolynomial R} {i} (hi : i < p.size) (h : p[i] ≠ 0) :
+theorem last_nonzero_some [LawfulBEq R] {p : UniPoly R} {i} (hi : i < p.size) (h : p[i] ≠ 0) :
   ∃ k, p.last_nonzero = some k
 := Array.findIdxRev?_eq_some ⟨i, hi, bne_iff_ne.mpr h⟩
 
-theorem last_nonzero_spec [LawfulBEq R] {p : CPolynomial R} {k} :
+theorem last_nonzero_spec [LawfulBEq R] {p : UniPoly R} {k} :
   p.last_nonzero = some k
   → p[k] ≠ 0 ∧ (∀ j, (hj : j < p.size) → j > k → p[j] = 0)
 := by
@@ -105,10 +111,10 @@ theorem last_nonzero_spec [LawfulBEq R] {p : CPolynomial R} {k} :
 
 -- the property of `last_nonzero_spec` uniquely identifies an element,
 -- and that allows us to prove the reverse as well
-def last_nonzero_prop {p : CPolynomial R} (k : Fin p.size) : Prop :=
+def last_nonzero_prop {p : UniPoly R} (k : Fin p.size) : Prop :=
   p[k] ≠ 0 ∧ (∀ j, (hj : j < p.size) → j > k → p[j] = 0)
 
-lemma last_nonzero_unique {p : CPolynomial Q} {k k' : Fin p.size} :
+lemma last_nonzero_unique {p : UniPoly Q} {k k' : Fin p.size} :
   last_nonzero_prop k → last_nonzero_prop k' → k = k'
 := by
   suffices weaker : ∀ k k', last_nonzero_prop k → last_nonzero_prop k' → k ≤ k' by
@@ -119,7 +125,7 @@ lemma last_nonzero_unique {p : CPolynomial Q} {k k' : Fin p.size} :
   have : p[k] = 0 := h' k k.is_lt (Nat.lt_of_not_ge k_not_le)
   contradiction
 
-theorem last_nonzero_some_iff [LawfulBEq R] {p : CPolynomial R} {k} :
+theorem last_nonzero_some_iff [LawfulBEq R] {p : UniPoly R} {k} :
   p.last_nonzero = some k ↔ (p[k] ≠ 0 ∧ (∀ j, (hj : j < p.size) → j > k → p[j] = 0))
 := by
   constructor
@@ -136,11 +142,11 @@ theorem last_nonzero_some_iff [LawfulBEq R] {p : CPolynomial R} {k} :
   | case2 p k h_some h_nonzero h_max => ...
   ```
 -/
-theorem last_nonzero_induct [LawfulBEq R] {motive : CPolynomial R → Prop}
+theorem last_nonzero_induct [LawfulBEq R] {motive : UniPoly R → Prop}
   (case1 : ∀ p, p.last_nonzero = none → (∀ i, (hi : i < p.size) → p[i] = 0) → motive p)
-  (case2 : ∀ p : CPolynomial R, ∀ k : Fin p.size, p.last_nonzero = some k → p[k] ≠ 0 →
+  (case2 : ∀ p : UniPoly R, ∀ k : Fin p.size, p.last_nonzero = some k → p[k] ≠ 0 →
     (∀ j : ℕ, (hj : j < p.size) → j > k → p[j] = 0) → motive p)
-  (p : CPolynomial R) : motive p
+  (p : UniPoly R) : motive p
 := by
   by_cases h : ∀ i, (hi : i < p.size) → p[i] = 0
   · exact case1 p (last_nonzero_none h) h
@@ -156,11 +162,11 @@ theorem last_nonzero_induct [LawfulBEq R] {motive : CPolynomial R → Prop}
   | case2 p k h_extract h_nonzero h_max => ...
   ```
 -/
-theorem induct [LawfulBEq R] {motive : CPolynomial R → Prop}
+theorem induct [LawfulBEq R] {motive : UniPoly R → Prop}
   (case1 : ∀ p, p.trim = #[] → (∀ i, (hi : i < p.size) → p[i] = 0) → motive p)
-  (case2 : ∀ p : CPolynomial R, ∀ k : Fin p.size, p.trim = p.extract 0 (k + 1)
+  (case2 : ∀ p : UniPoly R, ∀ k : Fin p.size, p.trim = p.extract 0 (k + 1)
     → p[k] ≠ 0 → (∀ j : ℕ, (hj : j < p.size) → j > k → p[j] = 0) → motive p)
-  (p : CPolynomial R) : motive p
+  (p : UniPoly R) : motive p
 := by induction p using last_nonzero_induct with
   | case1 p h_none h_all_zero =>
     have h_empty : p.trim = #[] := by unfold trim; rw [h_none]
@@ -174,7 +180,7 @@ theorem induct [LawfulBEq R] {motive : CPolynomial R → Prop}
   rcases (Trim.elim p) with ⟨ h_empty, h_all_zero ⟩ | ⟨ k, h_extract, h_nonzero, h_max ⟩
   ```
 -/
-theorem elim [LawfulBEq R] (p : CPolynomial R) :
+theorem elim [LawfulBEq R] (p : UniPoly R) :
     (p.trim = #[] ∧  (∀ i, (hi : i < p.size) → p[i] = 0))
   ∨ (∃ k : Fin p.size,
         p.trim = p.extract 0 (k + 1)
@@ -184,13 +190,13 @@ theorem elim [LawfulBEq R] (p : CPolynomial R) :
   | case1 p h_empty h_all_zero => left; exact ⟨h_empty, h_all_zero⟩
   | case2 p k h_extract h_nonzero h_max => right; exact ⟨k, h_extract, h_nonzero, h_max⟩
 
-theorem size_eq_degree (p : CPolynomial R) : p.trim.size = p.degree := by
+theorem size_eq_degree (p : UniPoly R) : p.trim.size = p.degree := by
   unfold trim degree
   match h : p.last_nonzero with
   | none => simp
   | some i => simp [Fin.is_lt, Nat.succ_le_of_lt]
 
-theorem size_le_size (p : CPolynomial R) : p.trim.size ≤ p.size := by
+theorem size_le_size (p : UniPoly R) : p.trim.size ≤ p.size := by
   unfold trim
   match h : p.last_nonzero with
   | none => simp
@@ -198,7 +204,7 @@ theorem size_le_size (p : CPolynomial R) : p.trim.size ≤ p.size := by
 
 attribute [simp] Array.getElem?_eq_none
 
-theorem coeff_eq_getElem_of_lt [LawfulBEq R] {p : CPolynomial R} {i} (hi : i < p.size) :
+theorem coeff_eq_getElem_of_lt [LawfulBEq R] {p : UniPoly R} {i} (hi : i < p.size) :
   p.trim.coeff i = p[i] := by
   induction p using induct with
   | case1 p h_empty h_all_zero =>
@@ -218,7 +224,7 @@ theorem coeff_eq_getElem_of_lt [LawfulBEq R] {p : CPolynomial R} {i} (hi : i < p
       rw [Array.getElem?_eq_getElem hik', Option.getD_some, Array.getElem_extract]
       simp only [zero_add]
 
-theorem coeff_eq_coeff [LawfulBEq R] (p : CPolynomial R) (i : ℕ) :
+theorem coeff_eq_coeff [LawfulBEq R] (p : UniPoly R) (i : ℕ) :
   p.trim.coeff i = p.coeff i := by
   rcases (Nat.lt_or_ge i p.size) with hi | hi
   · rw [coeff_eq_getElem_of_lt hi]
@@ -226,22 +232,22 @@ theorem coeff_eq_coeff [LawfulBEq R] (p : CPolynomial R) (i : ℕ) :
   · have hi' : i ≥ p.trim.size := by linarith [size_le_size p]
     simp [hi, hi']
 
-lemma coeff_eq_getElem {p : CPolynomial Q} {i} (hp : i < p.size) :
+lemma coeff_eq_getElem {p : UniPoly Q} {i} (hp : i < p.size) :
   p.coeff i = p[i] := by
   simp [hp]
 
 /-- Two polynomials are equivalent if they have the same `Nat` coefficients. -/
-def equiv (p q : CPolynomial R) : Prop :=
+def equiv (p q : UniPoly R) : Prop :=
   ∀ i, p.coeff i = q.coeff i
 
-lemma coeff_eq_zero {p : CPolynomial Q} :
+lemma coeff_eq_zero {p : UniPoly Q} :
     (∀ i, (hi : i < p.size) → p[i] = 0) ↔ ∀ i, p.coeff i = 0
 := by
   constructor <;> intro h i
   · cases Nat.lt_or_ge i p.size <;> simp [*]
   · intro hi; specialize h i; simp [hi] at h; assumption
 
-lemma eq_degree_of_equiv [LawfulBEq R] {p q : CPolynomial R} : equiv p q → p.degree = q.degree := by
+lemma eq_degree_of_equiv [LawfulBEq R] {p q : UniPoly R} : equiv p q → p.degree = q.degree := by
   unfold equiv degree
   intro h_equiv
   induction p using last_nonzero_induct with
@@ -271,7 +277,7 @@ lemma eq_degree_of_equiv [LawfulBEq R] {p q : CPolynomial R} : equiv p q → p.d
       last_nonzero_some_iff.mpr ⟨ h_nonzero_q, h_max_q ⟩
     rw [h_some_p, h_some_q]
 
-theorem eq_of_equiv [LawfulBEq R] {p q : CPolynomial R} : equiv p q → p.trim = q.trim := by
+theorem eq_of_equiv [LawfulBEq R] {p q : UniPoly R} : equiv p q → p.trim = q.trim := by
   unfold equiv
   intro h
   ext
@@ -280,26 +286,26 @@ theorem eq_of_equiv [LawfulBEq R] {p q : CPolynomial R} : equiv p q → p.trim =
   rw [← coeff_eq_getElem, ← coeff_eq_getElem]
   rw [coeff_eq_coeff, coeff_eq_coeff, h _]
 
-theorem trim_equiv [LawfulBEq R] (p : CPolynomial R) : equiv p.trim p := by
+theorem trim_equiv [LawfulBEq R] (p : UniPoly R) : equiv p.trim p := by
   apply coeff_eq_coeff
 
-theorem trim_twice [LawfulBEq R] (p : CPolynomial R) : p.trim.trim = p.trim := by
+theorem trim_twice [LawfulBEq R] (p : UniPoly R) : p.trim.trim = p.trim := by
   apply eq_of_equiv
   apply trim_equiv
 
-theorem canonical_empty : (CPolynomial.mk (R:=R) #[]).trim = #[] := by
-  have : (CPolynomial.mk (R:=R) #[]).last_nonzero = none := by
+theorem canonical_empty : (UniPoly.mk (R:=R) #[]).trim = #[] := by
+  have : (UniPoly.mk (R:=R) #[]).last_nonzero = none := by
     simp [last_nonzero];
     apply Array.findIdxRev?_emtpy_none
     rfl
   rw [trim, this]
 
-theorem canonical_of_size_zero {p : CPolynomial R} : p.size = 0 → p.trim = p := by
+theorem canonical_of_size_zero {p : UniPoly R} : p.size = 0 → p.trim = p := by
   intro h
   suffices h_empty : p = #[] by rw [h_empty]; exact canonical_empty
   exact Array.eq_empty_of_size_eq_zero h
 
-theorem canonical_nonempty_iff [LawfulBEq R] {p : CPolynomial R} (hp : p.size > 0) :
+theorem canonical_nonempty_iff [LawfulBEq R] {p : UniPoly R} (hp : p.size > 0) :
   p.trim = p ↔ p.last_nonzero = some ⟨ p.size - 1, Nat.pred_lt_self hp ⟩
 := by
   unfold trim
@@ -325,7 +331,7 @@ theorem canonical_nonempty_iff [LawfulBEq R] {p : CPolynomial R} (hp : p.size > 
       right
       exact le_refl _
 
-theorem last_nonzero_last_iff [LawfulBEq R] {p : CPolynomial R} (hp : p.size > 0) :
+theorem last_nonzero_last_iff [LawfulBEq R] {p : UniPoly R} (hp : p.size > 0) :
   p.last_nonzero = some ⟨ p.size - 1, Nat.pred_lt_self hp ⟩ ↔ p.getLast hp ≠ 0
 := by
   induction p using last_nonzero_induct with
@@ -346,7 +352,7 @@ theorem last_nonzero_last_iff [LawfulBEq R] {p : CPolynomial R} (hp : p.size > 0
         have : k ≥ p.size := Nat.le_of_pred_lt h_gt
         linarith
 
-theorem canonical_iff [LawfulBEq R] {p : CPolynomial R} :
+theorem canonical_iff [LawfulBEq R] {p : UniPoly R} :
    p.trim = p ↔ ∀ hp : p.size > 0, p.getLast hp ≠ 0
 := by
   constructor
@@ -358,8 +364,8 @@ theorem canonical_iff [LawfulBEq R] {p : CPolynomial R} :
     · rw [canonical_nonempty_iff hp, last_nonzero_last_iff hp]
       exact h hp
 
-theorem non_zero_map [LawfulBEq R] (f : R → R) (hf : ∀ r, f r = 0 → r = 0) (p : CPolynomial R) :
-  let fp := CPolynomial.mk (p.map f);
+theorem non_zero_map [LawfulBEq R] (f : R → R) (hf : ∀ r, f r = 0 → r = 0) (p : UniPoly R) :
+  let fp := UniPoly.mk (p.map f);
   p.trim = p → fp.trim = fp
 := by
   intro fp p_canon
@@ -381,21 +387,21 @@ theorem non_zero_map [LawfulBEq R] (f : R → R) (hf : ∀ r, f r = 0 → r = 0)
 /-- Canonical polynomials enjoy a stronger extensionality theorem:
   they just need to agree at all coefficients (without assuming equal sizes)
 -/
-theorem canonical_ext [LawfulBEq R] {p q : CPolynomial R} (hp : p.trim = p) (hq : q.trim = q) :
+theorem canonical_ext [LawfulBEq R] {p q : UniPoly R} (hp : p.trim = p) (hq : q.trim = q) :
     equiv p q → p = q := by
   intro h_equiv
   rw [← hp, ← hq]
   exact eq_of_equiv h_equiv
 end Trim
 
-/-- canonical version of CPolynomial -/
-def CPolynomialC (R : Type*) [BEq R] [Ring R] := { p : CPolynomial R // p.trim = p }
+/-- canonical version of UniPoly -/
+def UniPolyC (R : Type*) [BEq R] [Ring R] := { p : UniPoly R // p.trim = p }
 
-@[ext] theorem CPolynomialC.ext {p q : CPolynomialC R} (h : p.val = q.val) : p = q := Subtype.eq h
+@[ext] theorem UniPolyC.ext {p q : UniPolyC R} (h : p.val = q.val) : p = q := Subtype.eq h
 
-instance : Coe (CPolynomialC R) (CPolynomial R) where coe := Subtype.val
+instance : Coe (UniPolyC R) (UniPoly R) where coe := Subtype.val
 
-instance : Inhabited (CPolynomialC R) := ⟨#[], Trim.canonical_empty⟩
+instance : Inhabited (UniPolyC R) := ⟨#[], Trim.canonical_empty⟩
 
 section Operations
 
@@ -405,103 +411,103 @@ variable {S : Type*}
 
 -- eval₂ f x p = f(a_0) + f(a_1) x + f(a_2) x^2 + ... + f(a_n) x^n
 
-/-- Evaluates a `CPolynomial` at a given value, using a ring homomorphism `f: R →+* S`.
+/-- Evaluates a `UniPoly` at a given value, using a ring homomorphism `f: R →+* S`.
 TODO: define an efficient version of this with caching -/
-def eval₂ [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial R) : S :=
+def eval₂ [Semiring S] (f : R →+* S) (x : S) (p : UniPoly R) : S :=
   p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + f a * x ^ i) 0
 
-/-- Evaluates a `CPolynomial` at a given value -/
+/-- Evaluates a `UniPoly` at a given value -/
 @[inline, specialize]
-def eval (x : R) (p : CPolynomial R) : R :=
+def eval (x : R) (p : UniPoly R) : R :=
   p.eval₂ (RingHom.id R) x
 
-/-- Addition of two `CPolynomial`s. Defined as the pointwise sum of the underlying coefficient arrays
+/-- Addition of two `UniPoly`s. Defined as the pointwise sum of the underlying coefficient arrays
   (properly padded with zeroes). -/
 @[inline, specialize]
-def add_raw (p q : CPolynomial R) : CPolynomial R :=
+def add_raw (p q : UniPoly R) : UniPoly R :=
   let ⟨p', q'⟩ := Array.matchSize p q 0
   .mk (Array.zipWith (· + ·) p' q' )
 
-/-- Addition of two `CPolynomial`s, with result trimmed. -/
+/-- Addition of two `UniPoly`s, with result trimmed. -/
 @[inline, specialize]
-def add (p q : CPolynomial R) : CPolynomial R :=
+def add (p q : UniPoly R) : UniPoly R :=
   add_raw p q |> trim
 
-/-- Scalar multiplication of `CPolynomial` by an element of `R`. -/
+/-- Scalar multiplication of `UniPoly` by an element of `R`. -/
 @[inline, specialize]
-def smul (r : R) (p : CPolynomial R) : CPolynomial R :=
+def smul (r : R) (p : UniPoly R) : UniPoly R :=
   .mk (Array.map (fun a => r * a) p)
 
-/-- Scalar multiplication of `CPolynomial` by a natural number. -/
+/-- Scalar multiplication of `UniPoly` by a natural number. -/
 @[inline, specialize]
-def nsmul_raw (n : ℕ) (p : CPolynomial R) : CPolynomial R :=
+def nsmul_raw (n : ℕ) (p : UniPoly R) : UniPoly R :=
   .mk (Array.map (fun a => n * a) p)
 
-/-- Scalar multiplication of `CPolynomial` by a natural number, with result trimmed. -/
+/-- Scalar multiplication of `UniPoly` by a natural number, with result trimmed. -/
 @[inline, specialize]
-def nsmul (n : ℕ) (p : CPolynomial R) : CPolynomial R :=
+def nsmul (n : ℕ) (p : UniPoly R) : UniPoly R :=
   nsmul_raw n p |> trim
 
-/-- Negation of a `CPolynomial`. -/
+/-- Negation of a `UniPoly`. -/
 @[inline, specialize]
-def neg (p : CPolynomial R) : CPolynomial R := p.map (fun a => -a)
+def neg (p : UniPoly R) : UniPoly R := p.map (fun a => -a)
 
-/-- Subtraction of two `CPolynomial`s. -/
+/-- Subtraction of two `UniPoly`s. -/
 @[inline, specialize]
-def sub (p q : CPolynomial R) : CPolynomial R := p.add q.neg
+def sub (p q : UniPoly R) : UniPoly R := p.add q.neg
 
-/-- Multiplication of a `CPolynomial` by `X ^ i`, i.e. pre-pending `i` zeroes to the
+/-- Multiplication of a `UniPoly` by `X ^ i`, i.e. pre-pending `i` zeroes to the
 underlying array of coefficients. -/
 @[inline, specialize]
-def mulPowX (i : Nat) (p : CPolynomial R) : CPolynomial R := .mk (Array.replicate i 0 ++ p)
+def mulPowX (i : Nat) (p : UniPoly R) : UniPoly R := .mk (Array.replicate i 0 ++ p)
 
-/-- Multiplication of a `CPolynomial` by `X`, reduces to `mulPowX 1`. -/
+/-- Multiplication of a `UniPoly` by `X`, reduces to `mulPowX 1`. -/
 @[inline, specialize]
-def mulX (p : CPolynomial R) : CPolynomial R := p.mulPowX 1
+def mulX (p : UniPoly R) : UniPoly R := p.mulPowX 1
 
-/-- Multiplication of two `CPolynomial`s, using the naive `O(n^2)` algorithm. -/
+/-- Multiplication of two `UniPoly`s, using the naive `O(n^2)` algorithm. -/
 @[inline, specialize]
-def mul (p q : CPolynomial R) : CPolynomial R :=
+def mul (p q : UniPoly R) : UniPoly R :=
   p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc.add <| (smul a q).mulPowX i) (C 0)
 
-/-- Exponentiation of a `CPolynomial` by a natural number `n` via repeated multiplication. -/
+/-- Exponentiation of a `UniPoly` by a natural number `n` via repeated multiplication. -/
 @[inline, specialize]
-def pow (p : CPolynomial R) (n : Nat) : CPolynomial R := (mul p)^[n] (C 1)
+def pow (p : UniPoly R) (n : Nat) : UniPoly R := (mul p)^[n] (C 1)
 
 -- TODO: define repeated squaring version of `pow`
 
-instance : Zero (CPolynomial R) := ⟨#[]⟩
-instance : One (CPolynomial R) := ⟨CPolynomial.C 1⟩
-instance : Add (CPolynomial R) := ⟨CPolynomial.add⟩
-instance : SMul R (CPolynomial R) := ⟨CPolynomial.smul⟩
-instance : SMul ℕ (CPolynomial R) := ⟨nsmul⟩
-instance : Neg (CPolynomial R) := ⟨CPolynomial.neg⟩
-instance : Sub (CPolynomial R) := ⟨CPolynomial.sub⟩
-instance : Mul (CPolynomial R) := ⟨CPolynomial.mul⟩
-instance : Pow (CPolynomial R) Nat := ⟨CPolynomial.pow⟩
-instance : NatCast (CPolynomial R) := ⟨fun n => CPolynomial.C (n : R)⟩
-instance : IntCast (CPolynomial R) := ⟨fun n => CPolynomial.C (n : R)⟩
+instance : Zero (UniPoly R) := ⟨#[]⟩
+instance : One (UniPoly R) := ⟨UniPoly.C 1⟩
+instance : Add (UniPoly R) := ⟨UniPoly.add⟩
+instance : SMul R (UniPoly R) := ⟨UniPoly.smul⟩
+instance : SMul ℕ (UniPoly R) := ⟨nsmul⟩
+instance : Neg (UniPoly R) := ⟨UniPoly.neg⟩
+instance : Sub (UniPoly R) := ⟨UniPoly.sub⟩
+instance : Mul (UniPoly R) := ⟨UniPoly.mul⟩
+instance : Pow (UniPoly R) Nat := ⟨UniPoly.pow⟩
+instance : NatCast (UniPoly R) := ⟨fun n => UniPoly.C (n : R)⟩
+instance : IntCast (UniPoly R) := ⟨fun n => UniPoly.C (n : R)⟩
 
-/-- Return a bound on the degree of a `CPolynomial` as the size of the underlying array
+/-- Return a bound on the degree of a `UniPoly` as the size of the underlying array
 (and `⊥` if the array is empty). -/
-def degreeBound (p : CPolynomial R) : WithBot Nat :=
+def degreeBound (p : UniPoly R) : WithBot Nat :=
   match p.size with
   | 0 => ⊥
   | .succ n => n
 
 /-- Convert `degreeBound` to a natural number by sending `⊥` to `0`. -/
-def natDegreeBound (p : CPolynomial R) : Nat :=
+def natDegreeBound (p : UniPoly R) : Nat :=
   (degreeBound p).getD 0
 
-/-- Check if a `CPolynomial` is monic, i.e. its leading coefficient is 1. -/
-def monic (p : CPolynomial R) : Bool := p.leadingCoeff == 1
+/-- Check if a `UniPoly` is monic, i.e. its leading coefficient is 1. -/
+def monic (p : UniPoly R) : Bool := p.leadingCoeff == 1
 
-/-- Division and modulus of `p : CPolynomial R` by a monic `q : CPolynomial R`. -/
-def divModByMonicAux [Field R] (p : CPolynomial R) (q : CPolynomial R) :
-    CPolynomial R × CPolynomial R :=
+/-- Division and modulus of `p : UniPoly R` by a monic `q : UniPoly R`. -/
+def divModByMonicAux [Field R] (p : UniPoly R) (q : UniPoly R) :
+    UniPoly R × UniPoly R :=
   go (p.size - q.size) p q
 where
-  go : Nat → CPolynomial R → CPolynomial R → CPolynomial R × CPolynomial R
+  go : Nat → UniPoly R → UniPoly R → UniPoly R × UniPoly R
   | 0, p, _ => ⟨0, p⟩
   | n+1, p, q =>
       let k := p.size - q.size -- k should equal n, this is technically unneeded
@@ -513,43 +519,43 @@ where
       -- = q * (e + p.leadingCoeff * X^n) + f
       ⟨e + C p.leadingCoeff * X^k, f⟩
 
-/-- Division of `p : CPolynomial R` by a monic `q : CPolynomial R`. -/
-def divByMonic [Field R] (p : CPolynomial R) (q : CPolynomial R) :
-    CPolynomial R :=
+/-- Division of `p : UniPoly R` by a monic `q : UniPoly R`. -/
+def divByMonic [Field R] (p : UniPoly R) (q : UniPoly R) :
+    UniPoly R :=
   (divModByMonicAux p q).1
 
-/-- Modulus of `p : CPolynomial R` by a monic `q : CPolynomial R`. -/
-def modByMonic [Field R] (p : CPolynomial R) (q : CPolynomial R) :
-    CPolynomial R :=
+/-- Modulus of `p : UniPoly R` by a monic `q : UniPoly R`. -/
+def modByMonic [Field R] (p : UniPoly R) (q : UniPoly R) :
+    UniPoly R :=
   (divModByMonicAux p q).2
 
-/-- Division of two `CPolynomial`s. -/
-def div [Field R] (p q : CPolynomial R) : CPolynomial R :=
+/-- Division of two `UniPoly`s. -/
+def div [Field R] (p q : UniPoly R) : UniPoly R :=
   (C (q.leadingCoeff)⁻¹ • p).divByMonic (C (q.leadingCoeff)⁻¹ * q)
 
-/-- Modulus of two `CPolynomial`s. -/
-def mod [Field R] (p q : CPolynomial R) : CPolynomial R :=
+/-- Modulus of two `UniPoly`s. -/
+def mod [Field R] (p q : UniPoly R) : UniPoly R :=
   (C (q.leadingCoeff)⁻¹ • p).modByMonic (C (q.leadingCoeff)⁻¹ * q)
 
-instance [Field R] : Div (CPolynomial R) := ⟨CPolynomial.div⟩
-instance [Field R] : Mod (CPolynomial R) := ⟨CPolynomial.mod⟩
+instance [Field R] : Div (UniPoly R) := ⟨UniPoly.div⟩
+instance [Field R] : Mod (UniPoly R) := ⟨UniPoly.mod⟩
 
-/-- Pseudo-division of a `CPolynomial` by `X`, which shifts all non-constant coefficients
+/-- Pseudo-division of a `UniPoly` by `X`, which shifts all non-constant coefficients
 to the left by one. -/
-def divX (p : CPolynomial R) : CPolynomial R := p.extract 1 p.size
+def divX (p : UniPoly R) : UniPoly R := p.extract 1 p.size
 
-variable (p q r : CPolynomial R)
+variable (p q r : UniPoly R)
 
 -- some helper lemmas to characterize p + q
 
-lemma matchSize_size_eq {p q : CPolynomial Q} :
+lemma matchSize_size_eq {p q : UniPoly Q} :
     let (p', q') := Array.matchSize p q 0
     p'.size = q'.size := by
   change (Array.rightpad _ _ _).size = (Array.rightpad _ _ _).size
   rw [Array.size_rightpad, Array.size_rightpad]
   omega
 
-lemma matchSize_size {p q : CPolynomial Q} :
+lemma matchSize_size {p q : UniPoly Q} :
     let (p', _) := Array.matchSize p q 0
     p'.size = max p.size q.size := by
   change (Array.rightpad _ _ _).size = max (Array.size _) (Array.size _)
@@ -562,11 +568,11 @@ lemma zipWith_size {R} {f : R → R → R} {a b : Array R} (h : a.size = b.size)
 
 -- TODO we could generalize the next few lemmas to matchSize + zipWith f for any f
 
-theorem add_size {p q : CPolynomial Q} : (add_raw p q).size = max p.size q.size := by
+theorem add_size {p q : UniPoly Q} : (add_raw p q).size = max p.size q.size := by
   change (Array.zipWith _ _ _ ).size = max p.size q.size
   rw [zipWith_size matchSize_size_eq, matchSize_size]
 
-theorem add_coeff {p q : CPolynomial Q} {i : ℕ} (hi : i < (add_raw p q).size) :
+theorem add_coeff {p q : UniPoly Q} {i : ℕ} (hi : i < (add_raw p q).size) :
   (add_raw p q)[i] = p.coeff i + q.coeff i
 := by
   simp [add_raw]
@@ -575,7 +581,7 @@ theorem add_coeff {p q : CPolynomial Q} {i : ℕ} (hi : i < (add_raw p q).size) 
   -- repeat rw [List.rightpad_getElem_eq_getD]
   -- simp only [List.getD_eq_getElem?_getD, Array.getElem?_eq_toList]
 
-theorem add_coeff? (p q : CPolynomial Q) (i : ℕ) :
+theorem add_coeff? (p q : UniPoly Q) (i : ℕ) :
   (add_raw p q).coeff i = p.coeff i + q.coeff i
 := by
   rcases (Nat.lt_or_ge i (add_raw p q).size) with h_lt | h_ge
@@ -585,17 +591,17 @@ theorem add_coeff? (p q : CPolynomial Q) (i : ℕ) :
   have h_q : i ≥ q.size := by omega
   simp [h_ge, h_p, h_q]
 
-lemma add_equiv_raw [LawfulBEq R] (p q : CPolynomial R) : Trim.equiv (p.add q) (p.add_raw q) := by
+lemma add_equiv_raw [LawfulBEq R] (p q : UniPoly R) : Trim.equiv (p.add q) (p.add_raw q) := by
   unfold Trim.equiv add
   exact Trim.coeff_eq_coeff (p.add_raw q)
 
 omit [BEq R] in
-lemma neg_coeff : ∀ (p : CPolynomial R) (i : ℕ), p.neg.coeff i = - p.coeff i := by
+lemma neg_coeff : ∀ (p : UniPoly R) (i : ℕ), p.neg.coeff i = - p.coeff i := by
   intro p i
   unfold neg coeff
   rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
 
-lemma trim_add_trim [LawfulBEq R] (p q : CPolynomial R) : p.trim + q = p + q := by
+lemma trim_add_trim [LawfulBEq R] (p q : UniPoly R) : p.trim + q = p + q := by
   apply Trim.eq_of_equiv
   intro i
   rw [add_coeff?, add_coeff?, Trim.coeff_eq_coeff]
@@ -603,7 +609,7 @@ lemma trim_add_trim [LawfulBEq R] (p q : CPolynomial R) : p.trim + q = p + q := 
 -- algebra theorems about addition
 
 omit [Ring Q] in
-@[simp] theorem zero_def : (0 : CPolynomial Q) = #[] := rfl
+@[simp] theorem zero_def : (0 : UniPoly Q) = #[] := rfl
 
 theorem add_comm : p + q = q + p := by
   apply congrArg trim
@@ -612,9 +618,9 @@ theorem add_comm : p + q = q + p := by
   · simp only [add_coeff]
     apply _root_.add_comm
 
-def canonical (p : CPolynomial R) := p.trim = p
+def canonical (p : UniPoly R) := p.trim = p
 
-theorem zero_canonical : (0 : CPolynomial R).trim = 0 := Trim.canonical_empty
+theorem zero_canonical : (0 : UniPoly R).trim = 0 := Trim.canonical_empty
 
 theorem zero_add (hp : p.canonical) : 0 + p = p := by
   rw (occs := .pos [2]) [← hp]
@@ -633,13 +639,13 @@ theorem add_assoc [LawfulBEq R] : p + q + r = p + (q + r) := by
   · simp only [add_coeff, add_coeff?]
     apply _root_.add_assoc
 
-theorem nsmul_zero [LawfulBEq R] (p : CPolynomial R) : nsmul 0 p = 0 := by
+theorem nsmul_zero [LawfulBEq R] (p : UniPoly R) : nsmul 0 p = 0 := by
   suffices (nsmul_raw 0 p).last_nonzero = none by simp [nsmul, trim, *]
   apply Trim.last_nonzero_none
   intros; unfold nsmul_raw
   simp only [Nat.cast_zero, zero_mul, Array.getElem_map]
 
-theorem nsmul_raw_succ (n : ℕ) (p : CPolynomial Q) :
+theorem nsmul_raw_succ (n : ℕ) (p : UniPoly Q) :
   nsmul_raw (n + 1) p = add_raw (nsmul_raw n p) p := by
   unfold nsmul_raw
   ext
@@ -649,17 +655,17 @@ theorem nsmul_raw_succ (n : ℕ) (p : CPolynomial Q) :
     simp [add_coeff, hi]
     rw [_root_.add_mul (R:=Q) n 1 p[i], one_mul]
 
-theorem nsmul_succ [LawfulBEq R] (n : ℕ) {p : CPolynomial R} : nsmul (n + 1) p = nsmul n p + p := by
+theorem nsmul_succ [LawfulBEq R] (n : ℕ) {p : UniPoly R} : nsmul (n + 1) p = nsmul n p + p := by
   unfold nsmul
   rw [trim_add_trim]
   apply congrArg trim
   apply nsmul_raw_succ
 
-theorem neg_trim [LawfulBEq R] (p : CPolynomial R) : p.trim = p → (-p).trim = -p := by
+theorem neg_trim [LawfulBEq R] (p : UniPoly R) : p.trim = p → (-p).trim = -p := by
   apply Trim.non_zero_map
   simp
 
-theorem neg_add_cancel [LawfulBEq R] (p : CPolynomial R) : -p + p = 0 := by
+theorem neg_add_cancel [LawfulBEq R] (p : UniPoly R) : -p + p = 0 := by
   rw [← zero_canonical]
   apply Trim.eq_of_equiv; unfold Trim.equiv; intro i
   rw [add_coeff?]
@@ -668,49 +674,49 @@ theorem neg_add_cancel [LawfulBEq R] (p : CPolynomial R) : -p + p = 0 := by
 end Operations
 
 namespace OperationsC
--- additive group on CPolynomialC
+-- additive group on UniPolyC
 variable {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
-variable (p q r : CPolynomialC R)
+variable (p q r : UniPolyC R)
 
-instance : Add (CPolynomialC R) where
+instance : Add (UniPolyC R) where
   add p q := ⟨p.val + q.val, by apply Trim.trim_twice⟩
 
 theorem add_comm : p + q = q + p := by
-  apply CPolynomialC.ext; apply CPolynomial.add_comm
+  apply UniPolyC.ext; apply UniPoly.add_comm
 
 theorem add_assoc : p + q + r = p + (q + r) := by
-  apply CPolynomialC.ext; apply CPolynomial.add_assoc
+  apply UniPolyC.ext; apply UniPoly.add_assoc
 
-instance : Zero (CPolynomialC R) := ⟨0, zero_canonical⟩
+instance : Zero (UniPolyC R) := ⟨0, zero_canonical⟩
 
 theorem zero_add : 0 + p = p := by
-  apply CPolynomialC.ext
-  apply CPolynomial.zero_add p.val p.prop
+  apply UniPolyC.ext
+  apply UniPoly.zero_add p.val p.prop
 
 theorem add_zero : p + 0 = p := by
-  apply CPolynomialC.ext
-  apply CPolynomial.add_zero p.val p.prop
+  apply UniPolyC.ext
+  apply UniPoly.add_zero p.val p.prop
 
-def nsmul (n : ℕ) (p : CPolynomialC R) : CPolynomialC R :=
-  ⟨CPolynomial.nsmul n p.val, by apply Trim.trim_twice⟩
+def nsmul (n : ℕ) (p : UniPolyC R) : UniPolyC R :=
+  ⟨UniPoly.nsmul n p.val, by apply Trim.trim_twice⟩
 
 theorem nsmul_zero : nsmul 0 p = 0 := by
-  apply CPolynomialC.ext; apply CPolynomial.nsmul_zero
+  apply UniPolyC.ext; apply UniPoly.nsmul_zero
 
-theorem nsmul_succ (n : ℕ) (p : CPolynomialC R) : nsmul (n + 1) p = nsmul n p + p := by
-  apply CPolynomialC.ext; apply CPolynomial.nsmul_succ
+theorem nsmul_succ (n : ℕ) (p : UniPolyC R) : nsmul (n + 1) p = nsmul n p + p := by
+  apply UniPolyC.ext; apply UniPoly.nsmul_succ
 
-instance : Neg (CPolynomialC R) where
+instance : Neg (UniPolyC R) where
   neg p := ⟨-p.val, neg_trim p.val p.prop⟩
 
-instance : Sub (CPolynomialC R) where
+instance : Sub (UniPolyC R) where
   sub p q := p + -q
 
 theorem neg_add_cancel : -p + p = 0 := by
-  apply CPolynomialC.ext
-  apply CPolynomial.neg_add_cancel
+  apply UniPolyC.ext
+  apply UniPoly.neg_add_cancel
 
-instance [LawfulBEq R] : AddCommGroup (CPolynomialC R) where
+instance [LawfulBEq R] : AddCommGroup (UniPolyC R) where
   add_assoc := add_assoc
   zero_add := zero_add
   add_zero := add_zero
@@ -721,18 +727,18 @@ instance [LawfulBEq R] : AddCommGroup (CPolynomialC R) where
   nsmul_succ := nsmul_succ
   zsmul := zsmulRec -- TODO do we want a custom efficient implementation?
 
--- TODO: define `SemiRing` structure on `CPolynomialC`
+-- TODO: define `SemiRing` structure on `UniPolyC`
 
 end OperationsC
 
 section ToPoly
 
-/-- Convert a `CPolynomial` to a (mathlib) `Polynomial`. -/
-noncomputable def toPoly (p : CPolynomial R) : Polynomial R :=
+/-- Convert a `UniPoly` to a (mathlib) `Polynomial`. -/
+noncomputable def toPoly (p : UniPoly R) : Polynomial R :=
   p.eval₂ Polynomial.C Polynomial.X
 
 /-- a more low-level and direct definition of `toPoly`; currently unused. -/
-noncomputable def toPoly' (p : CPolynomial R) : Polynomial R :=
+noncomputable def toPoly' (p : UniPoly R) : Polynomial R :=
   Polynomial.ofFinsupp (Finsupp.onFinset (Finset.range p.size) p.coeff (by
     intro n hn
     rw [Finset.mem_range]
@@ -741,12 +747,12 @@ noncomputable def toPoly' (p : CPolynomial R) : Polynomial R :=
     contradiction
   ))
 
-noncomputable def CPolynomialC.toPoly (p : CPolynomialC R) : Polynomial R := p.val.toPoly
+noncomputable def UniPolyC.toPoly (p : UniPolyC R) : Polynomial R := p.val.toPoly
 
 alias ofPoly := Polynomial.toImpl
 
 /-- evaluation stays the same after converting to mathlib -/
-theorem eval_toPoly_eq_eval (x : Q) (p : CPolynomial Q) : p.toPoly.eval x = p.eval x := by
+theorem eval_toPoly_eq_eval (x : Q) (p : UniPoly Q) : p.toPoly.eval x = p.eval x := by
   unfold toPoly eval eval₂
   rw [← Array.foldl_hom (Polynomial.eval x)
     (g₁ := fun acc (t : Q × ℕ) ↦ acc + Polynomial.C t.1 * Polynomial.X ^ t.2)
@@ -755,7 +761,7 @@ theorem eval_toPoly_eq_eval (x : Q) (p : CPolynomial Q) : p.toPoly.eval x = p.ev
   simp
 
 /-- characterize `p.toPoly` by showing that its coefficients are exactly the coefficients of `p` -/
-lemma coeff_toPoly {p : CPolynomial Q} {n : ℕ} : p.toPoly.coeff n = p.coeff n := by
+lemma coeff_toPoly {p : UniPoly Q} {n : ℕ} : p.toPoly.coeff n = p.coeff n := by
   unfold toPoly eval₂
 
   let f := fun (acc: Q[X]) ((a,i): Q × ℕ) ↦ acc + Polynomial.C a * Polynomial.X ^ i
@@ -823,13 +829,13 @@ theorem toPoly_toImpl {p : Q[X]} : p.toImpl.toPoly = p := by
   symm
   exact coeff_eq_zero_of_natDegree_lt h
 
-/-- `CPolynomial` addition is mapped to `Polynomial` addition -/
-theorem toPoly_add {p q : CPolynomial Q} : (add_raw p q).toPoly = p.toPoly + q.toPoly := by
+/-- `UniPoly` addition is mapped to `Polynomial` addition -/
+theorem toPoly_add {p q : UniPoly Q} : (add_raw p q).toPoly = p.toPoly + q.toPoly := by
   ext n
   rw [coeff_add, coeff_toPoly, coeff_toPoly, coeff_toPoly, add_coeff?]
 
 /-- trimming doesn't change the `toPoly` image -/
-lemma toPoly_trim [LawfulBEq R] {p : CPolynomial R} : p.trim.toPoly = p.toPoly := by
+lemma toPoly_trim [LawfulBEq R] {p : UniPoly R} : p.trim.toPoly = p.toPoly := by
   ext n
   rw [coeff_toPoly, coeff_toPoly, Trim.coeff_eq_coeff]
 
@@ -840,14 +846,14 @@ lemma toImpl_nonzero {p : Q[X]} (hp : p ≠ 0) : p.toImpl.size > 0 := by
   suffices h : p.toImpl ≠ #[] from Array.size_pos_iff.mpr h
   simp [h]
 
-/-- helper lemma: the last entry of the `CPolynomial` obtained by `toImpl` is just the `leadingCoeff` -/
+/-- helper lemma: the last entry of the `UniPoly` obtained by `toImpl` is just the `leadingCoeff` -/
 lemma getLast_toImpl {p : Q[X]} (hp : p ≠ 0) : let h : p.toImpl.size > 0 := toImpl_nonzero hp;
     p.toImpl[p.toImpl.size - 1] = p.leadingCoeff := by
   rcases toImpl_elim p with ⟨rfl, _⟩ | ⟨_, h⟩
   · contradiction
   simp [h]
 
-/-- `toImpl` maps to canonical `CPolynomial`s -/
+/-- `toImpl` maps to canonical `UniPoly`s -/
 theorem trim_toImpl [LawfulBEq R] (p : R[X]) : p.toImpl.trim = p.toImpl := by
   rcases toImpl_elim p with ⟨rfl, h⟩ | ⟨h_nz, _⟩
   · rw [h, Trim.canonical_empty]
@@ -857,31 +863,31 @@ theorem trim_toImpl [LawfulBEq R] (p : R[X]) : p.toImpl.trim = p.toImpl := by
   rw [getLast_toImpl h_nz]
   exact Polynomial.leadingCoeff_ne_zero.mpr h_nz
 
-/-- on canonical `CPolynomial`s, `toImpl` is also a left-inverse of `toPoly`.
-  in particular, `toPoly` is a bijection from `CPolynomialC` to `Polynomial`. -/
-lemma toImpl_toPoly_of_canonical [LawfulBEq R] (p : CPolynomialC R) : p.toPoly.toImpl = p := by
+/-- on canonical `UniPoly`s, `toImpl` is also a left-inverse of `toPoly`.
+  in particular, `toPoly` is a bijection from `UniPolyC` to `Polynomial`. -/
+lemma toImpl_toPoly_of_canonical [LawfulBEq R] (p : UniPolyC R) : p.toPoly.toImpl = p := by
   -- we will change something slightly more general: `toPoly` is injective on canonical polynomials
-  suffices h_inj : ∀ q : CPolynomialC R, p.toPoly = q.toPoly → p = q by
+  suffices h_inj : ∀ q : UniPolyC R, p.toPoly = q.toPoly → p = q by
     have : p.toPoly = p.toPoly.toImpl.toPoly := by rw [toPoly_toImpl]
     exact h_inj ⟨ p.toPoly.toImpl, trim_toImpl p.toPoly ⟩ this |> congrArg Subtype.val |>.symm
   intro q hpq
-  apply CPolynomialC.ext
+  apply UniPolyC.ext
   apply Trim.canonical_ext p.property q.property
   intro i
   rw [← coeff_toPoly, ← coeff_toPoly]
   exact hpq |> congrArg (fun p => p.coeff i)
 
-/-- the roundtrip to and from mathlib maps a `CPolynomial` to its trimmed/canonical representative -/
-theorem toImpl_toPoly [LawfulBEq R] (p : CPolynomial R) : p.toPoly.toImpl = p.trim := by
+/-- the roundtrip to and from mathlib maps a `UniPoly` to its trimmed/canonical representative -/
+theorem toImpl_toPoly [LawfulBEq R] (p : UniPoly R) : p.toPoly.toImpl = p.trim := by
   rw [← toPoly_trim]
   exact toImpl_toPoly_of_canonical ⟨ p.trim, Trim.trim_twice p⟩
 
-/-- evaluation stays the same after converting a mathlib `Polynomial` to a `CPolynomial` -/
+/-- evaluation stays the same after converting a mathlib `Polynomial` to a `UniPoly` -/
 theorem eval_toImpl_eq_eval [LawfulBEq R] (x : R) (p : R[X]) : p.toImpl.eval x = p.eval x := by
   rw [← toPoly_toImpl (p := p), toImpl_toPoly, ← toPoly_trim, eval_toPoly_eq_eval]
 
 /-- corollary: evaluation stays the same after trimming -/
-lemma eval_trim_eq_eval [LawfulBEq R] (x : R) (p : CPolynomial R) : p.trim.eval x = p.eval x := by
+lemma eval_trim_eq_eval [LawfulBEq R] (x : R) (p : UniPoly R) : p.trim.eval x = p.eval x := by
   rw [← toImpl_toPoly, eval_toImpl_eq_eval, eval_toPoly_eq_eval]
 
 end ToPoly
@@ -890,47 +896,47 @@ section Equiv
 open Trim
 
 /-- Reflexivity of the equivalence relation. -/
-@[simp] theorem equiv_refl (p : CPolynomial Q) : equiv p p :=
+@[simp] theorem equiv_refl (p : UniPoly Q) : equiv p p :=
   by simp [equiv]
 
 /-- Symmetry of the equivalence relation. -/
-@[simp] theorem equiv_symm {p q : CPolynomial Q} : equiv p q → equiv q p := by
+@[simp] theorem equiv_symm {p q : UniPoly Q} : equiv p q → equiv q p := by
   simp [equiv]
   intro h i
   exact Eq.symm (h i)
 
 /-- Transitivity of the equivalence relation. -/
-@[simp] theorem equiv_trans {p q r : CPolynomial Q} : Trim.equiv p q → equiv q r → equiv p r := by
+@[simp] theorem equiv_trans {p q r : UniPoly Q} : Trim.equiv p q → equiv q r → equiv p r := by
   simp_all [Trim.equiv]
 
-/-- The `CPolynomial.equiv` is indeed an equivalence relation. -/
+/-- The `UniPoly.equiv` is indeed an equivalence relation. -/
 instance instEquivalenceEquiv : Equivalence (equiv (R := R)) where
   refl := equiv_refl
   symm := equiv_symm
   trans := equiv_trans
 
-/-- The `Setoid` instance for `CPolynomial R` induced by `CPolynomial.equiv`. -/
-instance instSetoidCPolynomial : Setoid (CPolynomial R) where
+/-- The `Setoid` instance for `UniPoly R` induced by `UniPoly.equiv`. -/
+instance instSetoidUniPoly : Setoid (UniPoly R) where
   r := equiv
   iseqv := instEquivalenceEquiv
 
-/-- The quotient of `CPolynomial R` by `CPolynomial.equiv`. This will be changen to be equivalent to
+/-- The quotient of `UniPoly R` by `UniPoly.equiv`. This will be changen to be equivalent to
   `Polynomial R`. -/
-def QuotientCPolynomial (R : Type*) [Ring R] [BEq R] := Quotient (@instSetoidCPolynomial R _)
+def QuotientUniPoly (R : Type*) [Ring R] [BEq R] := Quotient (@instSetoidUniPoly R _)
 
--- operations on `CPolynomial` descend to `QuotientCPolynomial`
-namespace QuotientCPolynomial
+-- operations on `UniPoly` descend to `QuotientUniPoly`
+namespace QuotientUniPoly
 
--- Addition: add descends to `QuotientCPolynomial`
-def add_descending (p q : CPolynomial R) : QuotientCPolynomial R :=
+-- Addition: add descends to `QuotientUniPoly`
+def add_descending (p q : UniPoly R) : QuotientUniPoly R :=
   Quotient.mk _ (add p q)
 
-lemma add_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : CPolynomial R) :
+lemma add_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : UniPoly R) :
   equiv a₁ a₂ → equiv b₁ b₂ → add_descending a₁ b₁ = add_descending a₂ b₂ := by
   intros heq_a heq_b
   unfold add_descending
   rw [Quotient.eq]
-  simp [instSetoidCPolynomial]
+  simp [instSetoidUniPoly]
   calc
     add a₁ b₁ ≈ add_raw a₁ b₁ := add_equiv_raw a₁ b₁
     _ ≈ add_raw a₂ b₂ := by
@@ -939,36 +945,36 @@ lemma add_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : CPolynomial R) :
     _ ≈ add a₂ b₂ := equiv_symm (add_equiv_raw a₂ b₂)
 
 @[inline, specialize]
-def add {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientCPolynomial R) : QuotientCPolynomial R :=
+def add {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientUniPoly R) : QuotientUniPoly R :=
   Quotient.lift₂ add_descending add_descends p q
 
--- Negation: neg descends to `QuotientCPolynomial`
-def neg_descending (p : CPolynomial R) : QuotientCPolynomial R :=
+-- Negation: neg descends to `QuotientUniPoly`
+def neg_descending (p : UniPoly R) : QuotientUniPoly R :=
   Quotient.mk _ (neg p)
 
-lemma neg_descends (a b : CPolynomial R) : equiv a b → neg_descending a = neg_descending b := by
+lemma neg_descends (a b : UniPoly R) : equiv a b → neg_descending a = neg_descending b := by
   unfold equiv neg_descending
   intros heq
   rw [Quotient.eq]
-  simp [instSetoidCPolynomial]
+  simp [instSetoidUniPoly]
   unfold equiv
   intro i
   rw [neg_coeff a i, neg_coeff b i, heq i]
 
 @[inline, specialize]
-def neg {R : Type*} [Ring R] [BEq R] (p : QuotientCPolynomial R) : QuotientCPolynomial R :=
+def neg {R : Type*} [Ring R] [BEq R] (p : QuotientUniPoly R) : QuotientUniPoly R :=
   Quotient.lift neg_descending neg_descends p
 
--- Subtraction: sub descends to `QuotientCPolynomial`
-def sub_descending (p q : CPolynomial R) : QuotientCPolynomial R :=
+-- Subtraction: sub descends to `QuotientUniPoly`
+def sub_descending (p q : UniPoly R) : QuotientUniPoly R :=
   Quotient.mk _ (sub p q)
 
-lemma sub_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : CPolynomial R) :
+lemma sub_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : UniPoly R) :
   equiv a₁ a₂ → equiv b₁ b₂ → sub_descending a₁ b₁ = sub_descending a₂ b₂ := by
   unfold equiv sub_descending
   intros heq_a heq_b
   rw [Quotient.eq]
-  simp [instSetoidCPolynomial]
+  simp [instSetoidUniPoly]
   unfold sub equiv
   calc
     a₁.add b₁.neg ≈ a₁.add_raw b₁.neg := add_equiv_raw a₁ b₁.neg
@@ -979,28 +985,30 @@ lemma sub_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : CPolynomial R) :
     _ ≈ a₂.add b₂.neg := equiv_symm (add_equiv_raw a₂ b₂.neg)
 
 @[inline, specialize]
-def sub {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientCPolynomial R) : QuotientCPolynomial R :=
+def sub {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientUniPoly R) : QuotientUniPoly R :=
   Quotient.lift₂ sub_descending sub_descends p q
 
 -- TODO the other operations ...
 
-end QuotientCPolynomial
+end QuotientUniPoly
 
 end Equiv
 
 namespace Lagrange
 
 -- unique polynomial of degree n that has nodes at ω^i for i = 0, 1, ..., n-1
-def nodal {R : Type*} [Ring R] (n : ℕ) (ω : R) : CPolynomial R := sorry
+def nodal {R : Type*} [Ring R] (n : ℕ) (ω : R) : UniPoly R := sorry
   -- .mk (Array.Range n |>.map (fun i => ω^i))
 
 /--
 This function produces the polynomial which is of degree n and is equal to r i at ω^i for i = 0, 1,
 ..., n-1.
 -/
-def interpolate {R : Type*} [Ring R] (n : ℕ) (ω : R) (r : Vector R n) : CPolynomial R := sorry
+def interpolate {R : Type*} [Ring R] (n : ℕ) (ω : R) (r : Vector R n) : UniPoly R := sorry
   -- .mk (Array.finRange n |>.map (fun i => r[i])) * nodal n ω
 
 end Lagrange
 
-end CPolynomial
+end UniPoly
+
+end CompPoly

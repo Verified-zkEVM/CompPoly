@@ -22,6 +22,8 @@ variable {R : Type*} [CommRing R] {n : ℕ}
 
 noncomputable section
 
+namespace CompPoly
+
 namespace MlPoly
 
 /-! ### Equivalence with Mathlib MvPolynomial
@@ -79,15 +81,15 @@ Converts an `MlPoly` to a mathlib multivariate polynomial.
 Sums over all indices `i : Fin (2^n)` with monomial exponents from `monomialOfNat i`
 and coefficients `p[i]`.
 -/
-def toMvPolynomial (p : MlPoly R n) : R[X Fin n] :=
+def toMvPolynomial (p : MlPoly R n) : MvPolynomial (Fin n) R :=
   ∑ i : Fin (2 ^ n), MvPolynomial.monomial (monomialOfNat i) (a:=p[i])
 
 -- #check (toMvPolynomial (MlPoly.mk 2 #v[(1: ℤ), 2, 3, 4]))
 
 theorem toMvPolynomial_is_multilinear (p : MlPoly R n) :
-  (toMvPolynomial p) ∈ R⦃≤ 1⦄[X Fin n] := by
+  (toMvPolynomial p) ∈ MvPolynomial.restrictDegree (Fin n) R 1 := by
   rw [toMvPolynomial]
-    -- ⊢ (∑ i, C p[i] * ∏ j, if { toFin := i }.getLsb j = true then X j else 1) ∈ R⦃≤ 1⦄[X Fin n]
+    -- ⊢ (∑ i, C p[i] * ∏ j, if { toFin := i }.getLsb j = true then X j else 1) ∈ MvPolynomial.restrictDegree (Fin n) R 1
   simp only [MvPolynomial.mem_restrictDegree]
   intro s hs k -- s is a point X where the sum evaluates to non-zero
   rw [MvPolynomial.mem_support_iff] at hs
@@ -157,7 +159,7 @@ theorem coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p : MlPoly R n) (m : Fin n �
     simp only [h_binary, ↓reduceDIte]
     -- ⊢ coeff m p.toMvPolynomial = 0
     have hv := toMvPolynomial_is_multilinear p
-    let vMlPoly: R⦃≤ 1⦄[X Fin n] := ⟨p.toMvPolynomial, hv⟩
+    let vMlPoly: MvPolynomial.restrictDegree (Fin n) R 1 := ⟨p.toMvPolynomial, hv⟩
     have h_v_coeff_zero : vMlPoly.val.coeff m = 0 := by
       refine notMem_support_iff.mp ?_
       by_contra h_mem_support
@@ -175,14 +177,14 @@ theorem coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p : MlPoly R n) (m : Fin n �
 Converts an `MlPoly` to a mathlib restricted-degree multivariate polynomial.
 Wraps `toMvPolynomial` with a proof that the result is multilinear (i.e. individual degrees ≤ 1).
 -/
-def toMvPolynomialDeg1 (p : MlPoly R n) : R⦃≤ 1⦄[X Fin n] :=
+def toMvPolynomialDeg1 (p : MlPoly R n) : MvPolynomial.restrictDegree (Fin n) R 1 :=
   ⟨toMvPolynomial p, by exact toMvPolynomial_is_multilinear p⟩
 
 /--
 Converts a mathlib restricted-degree multivariate polynomial to an `MlPoly`.
 Extracts coefficients using `monomialOfNat` to map indices to monomials.
 -/
-def ofMvPolynomialDeg1 (p : R⦃≤ 1⦄[X Fin n]) : MlPoly R n :=
+def ofMvPolynomialDeg1 (p : MvPolynomial.restrictDegree (Fin n) R 1) : MlPoly R n :=
   Vector.ofFn (fun i : Fin (2 ^ n) => p.val.coeff (monomialOfNat i))
 
 -- #eval finFunctionFinEquiv.invFun (⟨3, by omega⟩: Fin (2^2)) 4
@@ -192,7 +194,7 @@ def ofMvPolynomialDeg1 (p : R⦃≤ 1⦄[X Fin n]) : MlPoly R n :=
 Equivalence between `MlPoly` and mathlib's restricted-degree multivariate polynomials.
 Establishes that both representations are isomorphic via coefficient extraction/insertion.
 -/
-def equivMvPolynomialDeg1 : MlPoly R n ≃ R⦃≤ 1⦄[X Fin n] where
+def equivMvPolynomialDeg1 : MlPoly R n ≃ MvPolynomial.restrictDegree (Fin n) R 1 where
   toFun := toMvPolynomialDeg1
   invFun := ofMvPolynomialDeg1
   left_inv v := by
@@ -291,7 +293,7 @@ def equivMvPolynomialDeg1 : MlPoly R n ≃ R⦃≤ 1⦄[X Fin n] where
       simp only [h_mono_ne, ↓reduceIte]
 
 /-- Linear equivalence between `MlPoly` and `MvPolynomial.restrictDegree` -/
-noncomputable def linearEquivMvPolynomialDeg1 : MlPoly R n ≃ₗ[R] R⦃≤ 1⦄[X Fin n] :=
+noncomputable def linearEquivMvPolynomialDeg1 : MlPoly R n ≃ₗ[R] MvPolynomial.restrictDegree (Fin n) R 1 :=
   { toEquiv := equivMvPolynomialDeg1
     map_add' := by
       intro p q
@@ -326,5 +328,7 @@ noncomputable def linearEquivMvPolynomialDeg1 : MlPoly R n ≃ₗ[R] R⦃≤ 1�
     }
 
 end MlPoly
+
+end CompPoly
 
 end

@@ -4,11 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen
 -/
 
+import Batteries.Data.Vector.Lemmas
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.Order.Star.Basic
 import Mathlib.Algebra.Order.Sub.Basic
 import Mathlib.Data.Matrix.Mul
-import Mathlib
+import Mathlib.Data.Nat.Lattice
+import Mathlib.Tactic
 
 /-!
 # Definitions and lemmas for `Vector`
@@ -277,5 +279,3 @@ theorem dotProduct_eq_root_dotProduct (a b : Vector R n) :
     -- rw [dotProduct_cons]
 
 end Vector
-
-#min_imports
