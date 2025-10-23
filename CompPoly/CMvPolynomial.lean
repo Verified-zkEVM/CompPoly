@@ -35,7 +35,7 @@ theorem ext {n : ℕ} [Zero R] (p q : CMvPolynomial n R)
   congr
   apply ExtTreeMap.ext_getElem?
   intros k; specialize h k
-  by_cases k ∈ p <;> by_cases k ∈ q <;> grind  
+  by_cases k ∈ p <;> by_cases k ∈ q <;> grind
 
 attribute [local grind =] Option.some_inj
 
