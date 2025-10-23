@@ -28,20 +28,20 @@ import CompPoly.Data.Nat.Bitwise
 
 namespace CompPoly
 
-/-- `MlPoly n R` is the type of multilinear polynomials in `n` variables over a ring `R`. It is
+/-- `CMlPolynomial n R` is the type of multilinear polynomials in `n` variables over a ring `R`. It is
   represented by its monomial coefficients as a `Vector` of length `2^n`.
   The indexing is **little-endian** (i.e. the least significant bit is the first bit). -/
 @[reducible]
-def MlPoly (R : Type*) (n : ℕ) := Vector R (2 ^ n) -- coefficient of monomial basis
-def MlPoly.mk {R : Type*} (n : ℕ) (v : Vector R (2 ^ n)) : MlPoly R n := v
+def CMlPolynomial (R : Type*) (n : ℕ) := Vector R (2 ^ n) -- coefficient of monomial basis
+def CMlPolynomial.mk {R : Type*} (n : ℕ) (v : Vector R (2 ^ n)) : CMlPolynomial R n := v
 
-/-- `MlPolyEval n R` is the type of multilinear polynomials in `n` variables over a ring `R`. It is
+/-- `CMlPolynomialEval n R` is the type of multilinear polynomials in `n` variables over a ring `R`. It is
   represented by its evaluations over the Boolean hypercube `{0,1}^n`,
   i.e. Lagrange basis coefficients.
   The indexing is **little-endian** (i.e. the least significant bit is the first bit). -/
 @[reducible]
-def MlPolyEval (R : Type*) (n : ℕ) := Vector R (2 ^ n) -- coefficient of Lagrange basis
-def MlPolyEval.mk {R : Type*} (n : ℕ) (v : Vector R (2 ^ n)) : MlPolyEval R n := v
+def CMlPolynomialEval (R : Type*) (n : ℕ) := Vector R (2 ^ n) -- coefficient of Lagrange basis
+def CMlPolynomialEval.mk {R : Type*} (n : ℕ) (v : Vector R (2 ^ n)) : CMlPolynomialEval R n := v
 
 variable {R : Type*} {n : ℕ}
 
@@ -51,47 +51,47 @@ variable {R : Type*} {n : ℕ}
 
 -- #check Pi.single
 
-namespace MlPoly
+namespace CMlPolynomial
 
-section MlPolyInstances
+section CMlPolynomialInstances
 
-instance inhabited [Inhabited R] : Inhabited (MlPoly R n) := by simp [MlPoly]; infer_instance
+instance inhabited [Inhabited R] : Inhabited (CMlPolynomial R n) := by simp [CMlPolynomial]; infer_instance
 
-/-- Conform a list of coefficients to a `MlPoly` with a given number of variables.
+/-- Conform a list of coefficients to a `CMlPolynomial` with a given number of variables.
     May either pad with zeros or truncate. -/
 @[inline]
-def ofArray [Zero R] (coeffs : Array R) (n : ℕ) : MlPoly R n :=
+def ofArray [Zero R] (coeffs : Array R) (n : ℕ) : CMlPolynomial R n :=
   .ofFn (fun i => if h : i.1 < coeffs.size then coeffs[i] else 0)
   -- ⟨((coeffs.take (2 ^ n)).rightpad (2 ^ n) 0 : Array R), by simp⟩
   -- Not sure which is better performance wise?
 
 -- Create a zero polynomial over n variables
 @[inline]
-def zero [Zero R] : MlPoly R n := Vector.replicate (2 ^ n) 0
+def zero [Zero R] : CMlPolynomial R n := Vector.replicate (2 ^ n) 0
 
 lemma zero_def [Zero R] : zero = Vector.replicate (2 ^ n) 0 := rfl
 
-/-- Add two `MlPoly`s -/
+/-- Add two `CMlPolynomial`s -/
 @[inline]
-def add [Add R] (p q : MlPoly R n) : MlPoly R n := Vector.zipWith (· + ·) p q
+def add [Add R] (p q : CMlPolynomial R n) : CMlPolynomial R n := Vector.zipWith (· + ·) p q
 
-/-- Negation of a `MlPoly` -/
+/-- Negation of a `CMlPolynomial` -/
 @[inline]
-def neg [Neg R] (p : MlPoly R n) : MlPoly R n := p.map (fun a => -a)
+def neg [Neg R] (p : CMlPolynomial R n) : CMlPolynomial R n := p.map (fun a => -a)
 
-/-- Scalar multiplication of a `MlPoly` -/
+/-- Scalar multiplication of a `CMlPolynomial` -/
 @[inline]
-def smul [Mul R] (r : R) (p : MlPoly R n) : MlPoly R n := p.map (fun a => r * a)
+def smul [Mul R] (r : R) (p : CMlPolynomial R n) : CMlPolynomial R n := p.map (fun a => r * a)
 
-/-- Scalar multiplication of a `MlPoly` by a natural number -/
+/-- Scalar multiplication of a `CMlPolynomial` by a natural number -/
 @[inline]
-def nsmul [SMul ℕ R] (m : ℕ) (p : MlPoly R n) : MlPoly R n := p.map (fun a => m • a)
+def nsmul [SMul ℕ R] (m : ℕ) (p : CMlPolynomial R n) : CMlPolynomial R n := p.map (fun a => m • a)
 
-/-- Scalar multiplication of a `MlPoly` by an integer -/
+/-- Scalar multiplication of a `CMlPolynomial` by an integer -/
 @[inline]
-def zsmul [SMul ℤ R] (m : ℤ) (p : MlPoly R n) : MlPoly R n := p.map (fun a => m • a)
+def zsmul [SMul ℤ R] (m : ℤ) (p : CMlPolynomial R n) : CMlPolynomial R n := p.map (fun a => m • a)
 
-instance [AddCommMonoid R] : AddCommMonoid (MlPoly R n) where
+instance [AddCommMonoid R] : AddCommMonoid (CMlPolynomial R n) where
   add := add
   add_assoc a b c := by
     change Vector.zipWith (· + ·) (Vector.zipWith (· + ·) a b) c =
@@ -115,7 +115,7 @@ instance [AddCommMonoid R] : AddCommMonoid (MlPoly R n) where
     change a.map (fun a ↦ (n + 1) • a) = Vector.zipWith (· + ·) (Vector.map (fun a ↦ n • a) a) a
     ext i; simp; exact AddMonoid.nsmul_succ n a[i]
 
-instance [Semiring R] : Module R (MlPoly R n) where
+instance [Semiring R] : Module R (CMlPolynomial R n) where
   smul := smul
   one_smul a := by
     change Vector.map (fun a ↦ 1 * a) a = a
@@ -136,9 +136,9 @@ instance [Semiring R] : Module R (MlPoly R n) where
   zero_smul a := by
     change Vector.map (fun a ↦ 0 * a) a = Vector.replicate (2 ^ n) 0
     ext; simp
-end MlPolyInstances
+end CMlPolynomialInstances
 
-section MlPolyMonomialBasisAndEvaluations
+section CMlPolynomialMonomialBasisAndEvaluations
 
 variable [CommRing R]
 variable {S : Type*} [CommRing S]
@@ -168,60 +168,60 @@ theorem monomialBasis_getElem {w : Vector R n} (i : Fin (2 ^ n)) :
 
 variable {S : Type*} [CommRing S]
 
-def map (f : R →+* S) (p : MlPoly R n) : MlPoly S n :=
+def map (f : R →+* S) (p : CMlPolynomial R n) : CMlPolynomial S n :=
   Vector.map (fun a => f a) p
 
-/-- Evaluate a `MlPoly` at a point -/
-def eval (p : MlPoly R n) (x : Vector R n) : R :=
+/-- Evaluate a `CMlPolynomial` at a point -/
+def eval (p : CMlPolynomial R n) (x : Vector R n) : R :=
   Vector.dotProduct p (monomialBasis x)
 
-def eval₂ (p : MlPoly R n) (f : R →+* S) (x : Vector S n) : S := eval (map f p) x
-end MlPolyMonomialBasisAndEvaluations
+def eval₂ (p : CMlPolynomial R n) (f : R →+* S) (x : Vector S n) : S := eval (map f p) x
+end CMlPolynomialMonomialBasisAndEvaluations
 
-end MlPoly
+end CMlPolynomial
 
-namespace MlPolyEval
+namespace CMlPolynomialEval
 
-section MlPolyEvalInstances
+section CMlPolynomialEvalInstances
 
-instance inhabited [Inhabited R] : Inhabited (MlPolyEval R n) := by
-  simp only [MlPolyEval]; infer_instance
+instance inhabited [Inhabited R] : Inhabited (CMlPolynomialEval R n) := by
+  simp only [CMlPolynomialEval]; infer_instance
 
-/-- Conform a list of coefficients to a `MlPolyEval` with a given number of variables.
+/-- Conform a list of coefficients to a `CMlPolynomialEval` with a given number of variables.
     May either pad with zeros or truncate. -/
 @[inline]
-def ofArray [Zero R] (coeffs : Array R) (n : ℕ) : MlPolyEval R n :=
+def ofArray [Zero R] (coeffs : Array R) (n : ℕ) : CMlPolynomialEval R n :=
   .ofFn (fun i => if h : i.1 < coeffs.size then coeffs[i] else 0)
   -- ⟨((coeffs.take (2 ^ n)).rightpad (2 ^ n) 0 : Array R), by simp⟩
   -- Not sure which is better performance wise?
 
 -- Create a zero polynomial over n variables
 @[inline]
-def zero [Zero R] : MlPolyEval R n := Vector.replicate (2 ^ n) 0
+def zero [Zero R] : CMlPolynomialEval R n := Vector.replicate (2 ^ n) 0
 
 lemma zero_def [Zero R] : zero = Vector.replicate (2 ^ n) 0 := rfl
 
-/-- Add two `MlPolyEval`s -/
+/-- Add two `CMlPolynomialEval`s -/
 @[inline]
-def add [Add R] (p q : MlPolyEval R n) : MlPolyEval R n := Vector.zipWith (· + ·) p q
+def add [Add R] (p q : CMlPolynomialEval R n) : CMlPolynomialEval R n := Vector.zipWith (· + ·) p q
 
-/-- Negation of a `MlPolyEval` -/
+/-- Negation of a `CMlPolynomialEval` -/
 @[inline]
-def neg [Neg R] (p : MlPolyEval R n) : MlPolyEval R n := p.map (fun a => -a)
+def neg [Neg R] (p : CMlPolynomialEval R n) : CMlPolynomialEval R n := p.map (fun a => -a)
 
-/-- Scalar multiplication of a `MlPolyEval` -/
+/-- Scalar multiplication of a `CMlPolynomialEval` -/
 @[inline]
-def smul [Mul R] (r : R) (p : MlPolyEval R n) : MlPolyEval R n := p.map (fun a => r * a)
+def smul [Mul R] (r : R) (p : CMlPolynomialEval R n) : CMlPolynomialEval R n := p.map (fun a => r * a)
 
-/-- Scalar multiplication of a `MlPolyEval` by a natural number -/
+/-- Scalar multiplication of a `CMlPolynomialEval` by a natural number -/
 @[inline]
-def nsmul [SMul ℕ R] (m : ℕ) (p : MlPolyEval R n) : MlPolyEval R n := p.map (fun a => m • a)
+def nsmul [SMul ℕ R] (m : ℕ) (p : CMlPolynomialEval R n) : CMlPolynomialEval R n := p.map (fun a => m • a)
 
-/-- Scalar multiplication of a `MlPolyEval` by an integer -/
+/-- Scalar multiplication of a `CMlPolynomialEval` by an integer -/
 @[inline]
-def zsmul [SMul ℤ R] (m : ℤ) (p : MlPolyEval R n) : MlPolyEval R n := p.map (fun a => m • a)
+def zsmul [SMul ℤ R] (m : ℤ) (p : CMlPolynomialEval R n) : CMlPolynomialEval R n := p.map (fun a => m • a)
 
-instance [AddCommMonoid R] : AddCommMonoid (MlPolyEval R n) where
+instance [AddCommMonoid R] : AddCommMonoid (CMlPolynomialEval R n) where
   add := add
   add_assoc a b c := by
     change Vector.zipWith (· + ·) (Vector.zipWith (· + ·) a b) c =
@@ -245,7 +245,7 @@ instance [AddCommMonoid R] : AddCommMonoid (MlPolyEval R n) where
     change a.map (fun a ↦ (n + 1) • a) = Vector.zipWith (· + ·) (Vector.map (fun a ↦ n • a) a) a
     ext i; simp; exact AddMonoid.nsmul_succ n a[i]
 
-instance [Semiring R] : Module R (MlPolyEval R n) where
+instance [Semiring R] : Module R (CMlPolynomialEval R n) where
   smul := smul
   one_smul a := by
     change Vector.map (fun a ↦ 1 * a) a = a
@@ -267,9 +267,9 @@ instance [Semiring R] : Module R (MlPolyEval R n) where
     change Vector.map (fun a ↦ 0 * a) a = Vector.replicate (2 ^ n) 0
     ext; simp
 
-end MlPolyEvalInstances
+end CMlPolynomialEvalInstances
 
-section MlPolyLagrangeBasisAndEvaluations
+section CMlPolynomialLagrangeBasisAndEvaluations
 
 variable [CommRing R]
 variable {S : Type*} [CommRing S]
@@ -300,24 +300,24 @@ theorem lagrangeBasis_getElem {w : Vector R n} (i : Fin (2 ^ n)) :
 
 variable {S : Type*} [CommRing S]
 
-/-- Map a ring homomorphism over a `MlPolyEval` -/
-def map (f : R →+* S) (p : MlPolyEval R n) : MlPolyEval S n :=
+/-- Map a ring homomorphism over a `CMlPolynomialEval` -/
+def map (f : R →+* S) (p : CMlPolynomialEval R n) : CMlPolynomialEval S n :=
   Vector.map (fun a => f a) p
 
-/-- Evaluate a `MlPolyEval` at a point -/
-def eval (p : MlPolyEval R n) (x : Vector R n) : R :=
+/-- Evaluate a `CMlPolynomialEval` at a point -/
+def eval (p : CMlPolynomialEval R n) (x : Vector R n) : R :=
   Vector.dotProduct p (lagrangeBasis x)
 
-/-- Evaluate a `MlPolyEval` at a point using a ring homomorphism -/
-def eval₂ (p : MlPolyEval R n) (f : R →+* S) (x : Vector S n) : S := eval (map f p) x
+/-- Evaluate a `CMlPolynomialEval` at a point using a ring homomorphism -/
+def eval₂ (p : CMlPolynomialEval R n) (f : R →+* S) (x : Vector S n) : S := eval (map f p) x
 
 -- Theorems about evaluations
 
-end MlPolyLagrangeBasisAndEvaluations
+end CMlPolynomialLagrangeBasisAndEvaluations
 
-end MlPolyEval
+end CMlPolynomialEval
 
-namespace MlPoly
+namespace CMlPolynomial
 
 -- Conversion between the coefficient (i.e. monomial) and evaluation (on the Boolean hypercube)
 -- representations.
@@ -338,7 +338,7 @@ If the `j`‑th least significant bit of the index `i` is `1`, we replace `v[i]`
         v[i])
 
 /-- **Full transform**: coefficients → evaluations. -/
-@[inline] def monoToLagrange (n : ℕ) : MlPoly R n → MlPolyEval R n :=
+@[inline] def monoToLagrange (n : ℕ) : CMlPolynomial R n → CMlPolynomialEval R n :=
   (List.finRange n).foldl (fun acc level => monoToLagrangeLevel level acc)
 
 /-- **One level** of the inverse zeta‑transform.
@@ -363,7 +363,7 @@ def lagrangeToMono (n : ℕ) :
 /-- The O(n^3) computable version of the Mobius Transform, serving as the spec.
 
 TODO: prove equivalence between `lagrangeToMono` and `lagrangeToMonoSpec` -/
-def lagrangeToMonoSpec (p : MlPolyEval R n) : MlPolyEval R n :=
+def lagrangeToMonoSpec (p : CMlPolynomialEval R n) : CMlPolynomialEval R n :=
   -- We define the output vector by specifying the value for each entry `i`.
   Vector.ofFn (fun i =>
     -- For each output entry `i`, we compute a sum over all possible input indices `j`.
@@ -627,7 +627,7 @@ def zeta_apply_mobius_apply_eq_id (n : ℕ) (r : Fin n) (l : Fin (r.val + 1)) (v
       convert h
     convert h_inductive
 
-def equivMonomialLagrangeRepr : MlPoly R n ≃ MlPolyEval R n where
+def equivMonomialLagrangeRepr : CMlPolynomial R n ≃ CMlPolynomialEval R n where
   toFun := monoToLagrange n
   invFun := lagrangeToMono n
   left_inv v := by
@@ -663,7 +663,7 @@ def equivMonomialLagrangeRepr : MlPoly R n ≃ MlPolyEval R n where
               monoToLagrange_eq_monoToLagrange_segment._proof_2 n (NeZero.ne n) a⟩
           v
 
-end MlPoly
+end CMlPolynomial
 
 end CompPoly
 
@@ -674,21 +674,21 @@ This section contains tests to verify the functionality of multilinear polynomia
 
 section Tests
 
--- #eval MlPoly.zero (n := 2) (R := ℤ)
--- #eval MlPoly.add #v[1, 2, 3, 4] #v[5, 6, 7, 8] (n := 2) (R := ℤ)
--- #eval MlPoly.smul 2 #v[1, 2, 3, 4] (n := 2) (R := ℤ)
--- #eval MlPolyEval.lagrangeBasis #v[(1 : ℤ), 2, 3] (n := 3)
--- #eval MlPolyEval.lagrangeBasis #v[(1 : ℤ), 2] (n := 2)
--- #eval MlPolyEval.eval #v[1, 2, 3, 4] #v[(1 : ℤ), 2] (n := 2)
--- #eval MlPoly.monoToLagrange 2 #v[(1 : ℤ), 2, 3, 4]
--- #eval MlPoly.lagrangeToMono 2 #v[(1 : ℤ), 3, 4, 10]
--- #eval MlPoly.lagrangeToMono 2 (MlPoly.monoToLagrange 2 #v[(1 : ℤ), 2, 3, 4])
--- #eval MlPoly.monoToLagrange 2 (MlPoly.lagrangeToMono 2 #v[(1 : ℤ), 3, 4, 10])
--- #eval MlPoly.monoToLagrange 1 #v[(1 : ℤ), 2]
--- #eval MlPoly.monoToLagrange 3 #v[(1 : ℤ), 2, 3, 4, 5, 6, 7, 8]
--- #eval MlPolyEval.lagrangeBasis #v[(1 : ℤ)] (n := 1)
--- #eval MlPolyEval.lagrangeBasis #v[(1 : ℤ), 2, 3, 4] (n := 4)
--- #eval (MlPoly.mk 2 #v[1, 2, 3, 4]) + (MlPoly.mk 2 #v[5, 6, 7, 8])
--- #eval ((4: ℤ) • (MlPoly.mk 2 #v[(1: ℤ), 2, 3, 4]))
+-- #eval CMlPolynomial.zero (n := 2) (R := ℤ)
+-- #eval CMlPolynomial.add #v[1, 2, 3, 4] #v[5, 6, 7, 8] (n := 2) (R := ℤ)
+-- #eval CMlPolynomial.smul 2 #v[1, 2, 3, 4] (n := 2) (R := ℤ)
+-- #eval CMlPolynomialEval.lagrangeBasis #v[(1 : ℤ), 2, 3] (n := 3)
+-- #eval CMlPolynomialEval.lagrangeBasis #v[(1 : ℤ), 2] (n := 2)
+-- #eval CMlPolynomialEval.eval #v[1, 2, 3, 4] #v[(1 : ℤ), 2] (n := 2)
+-- #eval CMlPolynomial.monoToLagrange 2 #v[(1 : ℤ), 2, 3, 4]
+-- #eval CMlPolynomial.lagrangeToMono 2 #v[(1 : ℤ), 3, 4, 10]
+-- #eval CMlPolynomial.lagrangeToMono 2 (CMlPolynomial.monoToLagrange 2 #v[(1 : ℤ), 2, 3, 4])
+-- #eval CMlPolynomial.monoToLagrange 2 (CMlPolynomial.lagrangeToMono 2 #v[(1 : ℤ), 3, 4, 10])
+-- #eval CMlPolynomial.monoToLagrange 1 #v[(1 : ℤ), 2]
+-- #eval CMlPolynomial.monoToLagrange 3 #v[(1 : ℤ), 2, 3, 4, 5, 6, 7, 8]
+-- #eval CMlPolynomialEval.lagrangeBasis #v[(1 : ℤ)] (n := 1)
+-- #eval CMlPolynomialEval.lagrangeBasis #v[(1 : ℤ), 2, 3, 4] (n := 4)
+-- #eval (CMlPolynomial.mk 2 #v[1, 2, 3, 4]) + (CMlPolynomial.mk 2 #v[5, 6, 7, 8])
+-- #eval ((4: ℤ) • (CMlPolynomial.mk 2 #v[(1: ℤ), 2, 3, 4]))
 
 end Tests

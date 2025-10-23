@@ -7,9 +7,9 @@ Authors: Quang Dao, Chung Thai Nguyen
 import CompPoly.Multilinear.Basic
 
 /-!
-  # Equivalence between `MlPoly` and multilinear polynomials in `MvPolynomial`
+  # Equivalence between `CMlPolynomial` and multilinear polynomials in `MvPolynomial`
 
-  This file establishes the mathematical foundations for `MlPoly` by proving:
+  This file establishes the mathematical foundations for `CMlPolynomial` by proving:
   1. Basis properties for the coefficient representation
   2. Change-of-basis matrices between different representations
   3. Equivalences with mathlib's `MvPolynomial.restrictDegree`: `equivMvPolynomialDeg1`
@@ -24,10 +24,10 @@ noncomputable section
 
 namespace CompPoly
 
-namespace MlPoly
+namespace CMlPolynomial
 
 /-! ### Equivalence with Mathlib MvPolynomial
-- Note: maybe we have to add more restrictions on `MlPoly R n` and `MlPolyEval R n`
+- Note: maybe we have to add more restrictions on `CMlPolynomial R n` and `CMlPolynomialEval R n`
   so we can differentiate them?
 -/
 
@@ -77,16 +77,16 @@ theorem eq_monomialOfNat_iff_eq_bitRepr (m : Fin n →₀ ℕ)
     simp only [Nat.getBit_of_binaryFinMapToNat (⇑m) h_binary a, Fin.is_lt, ↓reduceDIte, Fin.eta]
 
 /--
-Converts an `MlPoly` to a mathlib multivariate polynomial.
+Converts an `CMlPolynomial` to a mathlib multivariate polynomial.
 Sums over all indices `i : Fin (2^n)` with monomial exponents from `monomialOfNat i`
 and coefficients `p[i]`.
 -/
-def toMvPolynomial (p : MlPoly R n) : MvPolynomial (Fin n) R :=
+def toMvPolynomial (p : CMlPolynomial R n) : MvPolynomial (Fin n) R :=
   ∑ i : Fin (2 ^ n), MvPolynomial.monomial (monomialOfNat i) (a:=p[i])
 
--- #check (toMvPolynomial (MlPoly.mk 2 #v[(1: ℤ), 2, 3, 4]))
+-- #check (toMvPolynomial (CMlPolynomial.mk 2 #v[(1: ℤ), 2, 3, 4]))
 
-theorem toMvPolynomial_is_multilinear (p : MlPoly R n) :
+theorem toMvPolynomial_is_multilinear (p : CMlPolynomial R n) :
   (toMvPolynomial p) ∈ MvPolynomial.restrictDegree (Fin n) R 1 := by
   rw [toMvPolynomial]
     -- ⊢ (∑ i, C p[i] * ∏ j, if { toFin := i }.getLsb j = true then X j else 1) ∈ MvPolynomial.restrictDegree (Fin n) R 1
@@ -116,7 +116,7 @@ theorem toMvPolynomial_is_multilinear (p : MlPoly R n) :
     exact Fintype.sum_eq_zero (fun a ↦ 0) (congrFun rfl)
   exact hs h_sum_zero
 
-theorem coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p : MlPoly R n) (m : Fin n →₀ ℕ) :
+theorem coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p : CMlPolynomial R n) (m : Fin n →₀ ℕ) :
   coeff m (toMvPolynomial p) =
     if h_binary: (∀ j: Fin n, m j ≤ 1) then
       let i_of_m: ℕ := Nat.binaryFinMapToNat (m:=m) (h_binary:=h_binary)
@@ -159,14 +159,14 @@ theorem coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p : MlPoly R n) (m : Fin n �
     simp only [h_binary, ↓reduceDIte]
     -- ⊢ coeff m p.toMvPolynomial = 0
     have hv := toMvPolynomial_is_multilinear p
-    let vMlPoly: MvPolynomial.restrictDegree (Fin n) R 1 := ⟨p.toMvPolynomial, hv⟩
-    have h_v_coeff_zero : vMlPoly.val.coeff m = 0 := by
+    let vCMlPolynomial: MvPolynomial.restrictDegree (Fin n) R 1 := ⟨p.toMvPolynomial, hv⟩
+    have h_v_coeff_zero : vCMlPolynomial.val.coeff m = 0 := by
       refine notMem_support_iff.mp ?_
       by_contra h_mem_support
-      have hvMlPoly := vMlPoly.2
-      rw [MvPolynomial.mem_restrictDegree] at hvMlPoly
+      have hvCMlPolynomial := vCMlPolynomial.2
+      rw [MvPolynomial.mem_restrictDegree] at hvCMlPolynomial
       have h_deg_le_one: ∀ j: Fin n, (m j) ≤ 1 := by
-        exact fun j ↦ hvMlPoly m h_mem_support j
+        exact fun j ↦ hvCMlPolynomial m h_mem_support j
       simp only [not_forall, not_le] at h_binary -- h_binary : ∃ x, 1 < m x
       obtain ⟨j, hj⟩ := h_binary
       have h_not_1_lt_m_j: ¬(1 < m j) := by exact Nat.not_lt.mpr (hv h_mem_support j)
@@ -174,27 +174,27 @@ theorem coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p : MlPoly R n) (m : Fin n �
     exact h_v_coeff_zero
 
 /--
-Converts an `MlPoly` to a mathlib restricted-degree multivariate polynomial.
+Converts an `CMlPolynomial` to a mathlib restricted-degree multivariate polynomial.
 Wraps `toMvPolynomial` with a proof that the result is multilinear (i.e. individual degrees ≤ 1).
 -/
-def toMvPolynomialDeg1 (p : MlPoly R n) : MvPolynomial.restrictDegree (Fin n) R 1 :=
+def toMvPolynomialDeg1 (p : CMlPolynomial R n) : MvPolynomial.restrictDegree (Fin n) R 1 :=
   ⟨toMvPolynomial p, by exact toMvPolynomial_is_multilinear p⟩
 
 /--
-Converts a mathlib restricted-degree multivariate polynomial to an `MlPoly`.
+Converts a mathlib restricted-degree multivariate polynomial to an `CMlPolynomial`.
 Extracts coefficients using `monomialOfNat` to map indices to monomials.
 -/
-def ofMvPolynomialDeg1 (p : MvPolynomial.restrictDegree (Fin n) R 1) : MlPoly R n :=
+def ofMvPolynomialDeg1 (p : MvPolynomial.restrictDegree (Fin n) R 1) : CMlPolynomial R n :=
   Vector.ofFn (fun i : Fin (2 ^ n) => p.val.coeff (monomialOfNat i))
 
 -- #eval finFunctionFinEquiv.invFun (⟨3, by omega⟩: Fin (2^2)) 4
 -- #eval Nat.getBit (k:=4) (n:=3)
 
 /--
-Equivalence between `MlPoly` and mathlib's restricted-degree multivariate polynomials.
+Equivalence between `CMlPolynomial` and mathlib's restricted-degree multivariate polynomials.
 Establishes that both representations are isomorphic via coefficient extraction/insertion.
 -/
-def equivMvPolynomialDeg1 : MlPoly R n ≃ MvPolynomial.restrictDegree (Fin n) R 1 where
+def equivMvPolynomialDeg1 : CMlPolynomial R n ≃ MvPolynomial.restrictDegree (Fin n) R 1 where
   toFun := toMvPolynomialDeg1
   invFun := ofMvPolynomialDeg1
   left_inv v := by
@@ -292,8 +292,8 @@ def equivMvPolynomialDeg1 : MlPoly R n ≃ MvPolynomial.restrictDegree (Fin n) R
         linarith
       simp only [h_mono_ne, ↓reduceIte]
 
-/-- Linear equivalence between `MlPoly` and `MvPolynomial.restrictDegree` -/
-noncomputable def linearEquivMvPolynomialDeg1 : MlPoly R n ≃ₗ[R] MvPolynomial.restrictDegree (Fin n) R 1 :=
+/-- Linear equivalence between `CMlPolynomial` and `MvPolynomial.restrictDegree` -/
+noncomputable def linearEquivMvPolynomialDeg1 : CMlPolynomial R n ≃ₗ[R] MvPolynomial.restrictDegree (Fin n) R 1 :=
   { toEquiv := equivMvPolynomialDeg1
     map_add' := by
       intro p q
@@ -303,12 +303,12 @@ noncomputable def linearEquivMvPolynomialDeg1 : MlPoly R n ≃ₗ[R] MvPolynomia
       -- coeff i ↑(p.toMvPolynomialDeg1 + q.toMvPolynomialDeg1)
       unfold equivMvPolynomialDeg1 toMvPolynomialDeg1
       simp only [AddMemClass.mk_add_mk, coeff_add]
-      simp only [coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p := p)]
-      simp only [coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p := p + q)]
-      simp only [coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p := q)]
+      simp only [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p := p)]
+      simp only [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p := p + q)]
+      simp only [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p := q)]
       if h_binary: (∀ j: Fin n, i j ≤ 1) then
         simp only [h_binary, implies_true, ↓reduceDIte]
-        conv_lhs => enter [1]; change MlPoly.add p q
+        conv_lhs => enter [1]; change CMlPolynomial.add p q
         simp only [add, Vector.getElem_zipWith]
       else
         simp only [h_binary, ↓reduceDIte, add_zero]
@@ -317,17 +317,17 @@ noncomputable def linearEquivMvPolynomialDeg1 : MlPoly R n ≃ₗ[R] MvPolynomia
       ext i
       unfold equivMvPolynomialDeg1 toMvPolynomialDeg1
       simp only [RingHom.id_apply, SetLike.mk_smul_mk, coeff_smul, smul_eq_mul]
-      simp only [coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p := p)]
-      simp only [coeff_of_toMvPolynomial_eq_coeff_of_MlPoly (p := r • p)]
+      simp only [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p := p)]
+      simp only [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p := r • p)]
       if h_binary: (∀ j: Fin n, i j ≤ 1) then
         simp only [h_binary, implies_true, ↓reduceDIte]
-        conv_lhs => enter [1]; change MlPoly.smul r p
+        conv_lhs => enter [1]; change CMlPolynomial.smul r p
         simp only [smul, Vector.getElem_map]
       else
         simp only [h_binary, ↓reduceDIte, mul_zero]
     }
 
-end MlPoly
+end CMlPolynomial
 
 end CompPoly
 
