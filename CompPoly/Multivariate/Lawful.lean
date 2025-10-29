@@ -1,6 +1,5 @@
-import CompPoly.Unlawful
+import CompPoly.Multivariate.Unlawful
 import Mathlib.Analysis.Normed.Ring.Lemmas
-import CompPoly.Wheels
 
 /-!
 # 'Lawful' finite supports, i.e. `CPoly.Unlawful` quotiented by non-zero range.

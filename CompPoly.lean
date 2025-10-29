@@ -1,8 +1,14 @@
--- This module serves as the root of the `CompPoly` library.
--- Import modules here that should be built as part of the library.
-import CompPoly.CMvMonomial
-import CompPoly.CMvPolynomial
-import CompPoly.Lawful
-import CompPoly.MvPolyEquiv
-import CompPoly.Unlawful
-import CompPoly.Wheels
+import CompPoly.Data.Array.Lemmas
+import CompPoly.Data.Fin.BigOperators
+import CompPoly.Data.List.Lemmas
+import CompPoly.Data.Nat.Bitwise
+import CompPoly.Data.Vector.Basic
+import CompPoly.Multilinear.Basic
+import CompPoly.Multilinear.Equiv
+import CompPoly.Multivariate.CMvMonomial
+import CompPoly.Multivariate.CMvPolynomial
+import CompPoly.Multivariate.Lawful
+import CompPoly.Multivariate.MvPolyEquiv
+import CompPoly.Multivariate.Unlawful
+import CompPoly.Multivariate.Wheels
+import CompPoly.Univariate.Basic

@@ -1,8 +1,8 @@
 import Batteries.Data.Vector.Lemmas
-import CompPoly.CMvPolynomial
+import CompPoly.Multivariate.CMvPolynomial
 import Mathlib.Algebra.MvPolynomial.Basic
 import Mathlib.Algebra.Ring.Defs
-import CompPoly.Lawful
+import CompPoly.Multivariate.Lawful
 import Std.Classes.Ord.Vector
 
 /-!
@@ -39,7 +39,7 @@ noncomputable def toCMvPolynomial (p : MvPolynomial (Fin n) R) : CMvPolynomial n
         ExtTreeMap.getElem?_eq_some_iff.1 contra
       obtain ⟨a, ha₁, ⟨rfl⟩⟩ : ∃ a ∈ s, .ofFinsupp a = m := by
         simp [unlawful] at elem; rw [ExtTreeMap.mem_ofList] at elem; simp at elem
-        exact elem        
+        exact elem
       have : f a = 0 := by
         dsimp [unlawful] at h₁
         erw [ExtTreeMap.getElem_ofList_of_mem (v := f a)
@@ -237,7 +237,7 @@ lemma map_one : fromCMvPolynomial (1 : CMvPolynomial n R) = 1 := by
     unfold Unlawful.ofList
     simp
     tauto
-  
+
 noncomputable def polyEquiv :
   Equiv (CMvPolynomial n R) (MvPolynomial (Fin n) R)
 where

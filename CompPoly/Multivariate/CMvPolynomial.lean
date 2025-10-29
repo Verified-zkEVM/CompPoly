@@ -1,6 +1,4 @@
-import CompPoly.Lawful
-import CompPoly.Wheels
-import CompPoly.Unlawful
+import CompPoly.Multivariate.Lawful
 
 /-!
 # Polynomials of the form `α₁ * m₁ + α₂ * m₂ + ... + αₖ * mₖ` where `αᵢ` is any semiring and `mᵢ` is a `CMvMonomial`.
@@ -35,7 +33,7 @@ theorem ext {n : ℕ} [Zero R] (p q : CMvPolynomial n R)
   congr
   apply ExtTreeMap.ext_getElem?
   intros k; specialize h k
-  by_cases k ∈ p <;> by_cases k ∈ q <;> grind  
+  by_cases k ∈ p <;> by_cases k ∈ q <;> grind
 
 attribute [local grind =] Option.some_inj
 

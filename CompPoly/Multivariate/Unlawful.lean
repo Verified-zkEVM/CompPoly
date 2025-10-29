@@ -1,5 +1,5 @@
-import CompPoly.CMvMonomial
-import CompPoly.Wheels
+import CompPoly.Multivariate.CMvMonomial
+import CompPoly.Multivariate.Wheels
 import Mathlib.Algebra.Lie.OfAssociative
 import Std.Data.ExtTreeMap
 import ExtTreeMapLemmas.ExtTreeMap
