@@ -594,6 +594,23 @@ lemma add_equiv_raw [LawfulBEq R] (p q : CPolynomial R) : Trim.equiv (p.add q) (
   unfold Trim.equiv add
   exact Trim.coeff_eq_coeff (p.add_raw q)
 
+def smul_equiv : ∀ (i : ℕ) (r : R),
+    (smul r p).coeff i = r * (p.coeff i) := by
+    intro i r
+    unfold smul mk coeff
+    rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
+
+def nsmul_raw_equiv [LawfulBEq R] : ∀ (n i : ℕ),
+  (nsmul_raw n p).trim.coeff i = n * p.trim.coeff i := by
+  intro n i
+  unfold nsmul_raw
+  repeat rw [Trim.coeff_eq_coeff]
+  unfold mk
+  rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
+
+def mulPowX_equiv : ∀ (i j : ℕ),
+  (mulPowX i p).coeff j = p.coeff (j - i) := by sorry
+
 omit [BEq R] in
 lemma neg_coeff : ∀ (p : CPolynomial R) (i : ℕ), p.neg.coeff i = - p.coeff i := by
   intro p i
@@ -926,6 +943,15 @@ def QuotientCPolynomial (R : Type*) [Ring R] [BEq R] := Quotient (@instSetoidCPo
 -- operations on `CPolynomial` descend to `QuotientCPolynomial`
 namespace QuotientCPolynomial
 
+lemma mul_equiv (a₁ a₂ b : CPolynomial R) :
+  equiv a₁ a₂ → equiv (a₁.mul b) (a₂.mul b) := by sorry
+
+lemma mul_comm (a b : CPolynomial R) :
+  a.mul b ≈ b.mul a := by sorry
+
+lemma pow_equiv : ∀ (p : CPolynomial R) (n : ℕ),
+  (p.mul^[n + 1] (C 1)) ≈ (p.mul (p.mul^[n] (C 1))) := by sorry
+
 -- Addition: add descends to `QuotientCPolynomial`
 def add_descending (p q : CPolynomial R) : QuotientCPolynomial R :=
   Quotient.mk _ (add p q)
@@ -946,6 +972,46 @@ lemma add_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : CPolynomial R) :
 @[inline, specialize]
 def add {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientCPolynomial R) : QuotientCPolynomial R :=
   Quotient.lift₂ add_descending add_descends p q
+
+-- Scalar multiplication: smul descends to `QuotientCPolynomial`
+def smul_descending (r : R) (p : CPolynomial R) : QuotientCPolynomial R :=
+  Quotient.mk _ (smul r p)
+
+lemma smul_descends [LawfulBEq R] (r : R) (p₁ p₂ : CPolynomial R) :
+  equiv p₁ p₂ → smul_descending r p₁ = smul_descending r p₂ := by
+  unfold equiv smul_descending
+  intro heq
+  rw [Quotient.eq]
+  simp [instSetoidCPolynomial]
+  intro i
+  rw [smul_equiv p₁, smul_equiv p₂]
+  rw [heq i]
+
+@[inline, specialize]
+def smul {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (r : R) (p : QuotientCPolynomial R)
+  : QuotientCPolynomial R :=
+  Quotient.lift (smul_descending r) (smul_descends r) p
+
+-- Scalar multiplication: nsmul_raw descends to `QuotientCPolynomial`
+def nsmul_descending (n : ℕ) (p : CPolynomial R) : QuotientCPolynomial R :=
+  Quotient.mk _ (nsmul n p)
+
+lemma nsmul_descends [LawfulBEq R] (n : ℕ) (p₁ p₂ : CPolynomial R) :
+  equiv p₁ p₂ → nsmul_descending n p₁ = nsmul_descending n p₂ := by
+  unfold equiv
+  intro heq
+  unfold nsmul_descending
+  rw [Quotient.eq]
+  simp [instSetoidCPolynomial]
+  unfold nsmul equiv
+  intro i
+  repeat rw [nsmul_raw_equiv, coeff_eq_coeff]
+  rw [heq i]
+
+@[inline, specialize]
+def nsmul {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (n : ℕ) (p : QuotientCPolynomial R)
+  : QuotientCPolynomial R :=
+  Quotient.lift (nsmul_descending n) (nsmul_descends n) p
 
 -- Negation: neg descends to `QuotientCPolynomial`
 def neg_descending (p : CPolynomial R) : QuotientCPolynomial R :=
@@ -987,7 +1053,77 @@ lemma sub_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : CPolynomial R) :
 def sub {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientCPolynomial R) : QuotientCPolynomial R :=
   Quotient.lift₂ sub_descending sub_descends p q
 
--- TODO the other operations ...
+-- Multiplication by `X ^ i`: mulPowX descends to `QuotientCPolynomial`
+def mulPowX_descending (i : ℕ) (p : CPolynomial R) : QuotientCPolynomial R :=
+  Quotient.mk _ (mulPowX i p)
+
+lemma mulPowX_descends (i : ℕ) (p₁ p₂ : CPolynomial R) :
+  equiv p₁ p₂ → mulPowX_descending i p₁ = mulPowX_descending i p₂ := by
+  unfold equiv
+  intro heq
+  unfold mulPowX_descending
+  rw [Quotient.eq]
+  simp [instSetoidCPolynomial]
+  intro j
+  rw [mulPowX_equiv p₁, mulPowX_equiv p₂]
+  rw [heq]
+
+@[inline, specialize]
+def mulPowX {R : Type*} [Ring R] [BEq R] (i : ℕ) (p : QuotientCPolynomial R) : QuotientCPolynomial R :=
+  Quotient.lift (mulPowX_descending i) (mulPowX_descends i) p
+
+-- Multiplication of a `CPolynomial` by `X`, reduces to `mulPowX 1`.
+@[inline, specialize]
+def mulX (p : QuotientCPolynomial R) : QuotientCPolynomial R := p.mulPowX 1
+
+-- Multiplication: mul descends to `QuotientPoly`
+def mul_descending (p q : CPolynomial R) : QuotientCPolynomial R :=
+  Quotient.mk _ (mul p q)
+
+lemma mul_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : CPolynomial R) :
+  equiv a₁ a₂ → equiv b₁ b₂ → mul_descending a₁ b₁ = mul_descending a₂ b₂ := by
+  unfold mul_descending
+  intros heq_a heq_b
+  rw [Quotient.eq]
+  simp [instSetoidCPolynomial]
+  calc
+    a₁.mul b₁ ≈ a₂.mul b₁ := mul_equiv a₁ a₂ b₁ heq_a
+    _ ≈ b₁.mul a₂ := mul_comm a₂ b₁
+    _ ≈ b₂.mul a₂ := mul_equiv b₁ b₂ a₂ heq_b
+    _ ≈ a₂.mul b₂ := mul_comm b₂ a₂
+
+@[inline, specialize]
+def mul {R : Type} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientCPolynomial R) : QuotientCPolynomial R :=
+  Quotient.lift₂ mul_descending mul_descends p q
+
+-- Exponentiation: pow descends to `QuotientCPolynomial`
+def pow_descending (p : CPolynomial R) (n : ℕ) : QuotientCPolynomial R :=
+  Quotient.mk _ (pow p n)
+
+lemma pow_descends (n : ℕ) (p₁ p₂ : CPolynomial R) :
+  equiv p₁ p₂ → pow_descending p₁ n = pow_descending p₂ n := by
+  intro heq
+  unfold pow_descending
+  rw [Quotient.eq]
+  simp [instSetoidCPolynomial]
+  unfold pow
+  -- intro i
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    calc
+      p₁.mul^[n + 1] (C 1) ≈ p₁.mul (p₁.mul^[n] (C 1)) := pow_equiv p₁ n
+      _ ≈ (p₁.mul^[n] (C 1)).mul p₁ := mul_comm p₁ (p₁.mul^[n] (C 1))
+      _ ≈ (p₂.mul^[n] (C 1)).mul p₁ := mul_equiv _ _ p₁ ih
+      _ ≈ p₁.mul (p₂.mul^[n] (C 1)) := mul_comm (p₂.mul^[n] (C 1)) p₁
+      _ ≈ p₂.mul (p₂.mul^[n] (C 1)) := mul_equiv _ _ (p₂.mul^[n] (C 1)) heq
+      _ ≈ p₂.mul^[n + 1] (C 1) := equiv_symm (pow_equiv p₂ n)
+
+@[inline, specialize]
+def pow {R : Type*} [Ring R] [BEq R] (p : QuotientCPolynomial R) (n : ℕ) : QuotientCPolynomial R :=
+  Quotient.lift (fun p => pow_descending p n) (pow_descends n) p
+
+-- TODO div?
 
 end QuotientCPolynomial
 
