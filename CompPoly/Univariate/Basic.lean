@@ -574,6 +574,17 @@ theorem add_size {p q : CPolynomial Q} : (add_raw p q).size = max p.size q.size 
   change (Array.zipWith _ _ _ ).size = max p.size q.size
   rw [zipWith_size matchSize_size_eq, matchSize_size]
 
+-- coeff on list concatenations
+lemma concat_coeff₁ (i : ℕ) : i < p.size →
+  (p ++ q).coeff i = p.coeff i := by
+  simp
+  grind
+
+lemma concat_coeff₂ (i : ℕ) : i ≥ p.size →
+  (p ++ q).coeff i = q.coeff (i - p.size) := by
+  simp
+  grind
+
 theorem add_coeff {p q : CPolynomial Q} {i : ℕ} (hi : i < (add_raw p q).size) :
   (add_raw p q)[i] = p.coeff i + q.coeff i
 := by
@@ -608,8 +619,28 @@ def nsmul_raw_equiv [LawfulBEq R] : ∀ (n i : ℕ),
   unfold mk
   rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
 
-def mulPowX_equiv : ∀ (i j : ℕ),
-  (mulPowX i p).coeff j = p.coeff (j - i) := by sorry
+lemma mulPowX_equiv₁ : ∀ (i j : ℕ), j ≥ i →
+  (mulPowX i p).coeff j = p.coeff (j - i) := by
+  intro i j h
+  unfold mulPowX mk
+  rw [concat_coeff₂ (Array.replicate i 0) p j]
+  . simp
+  have h_size : ∀ i : ℕ, (Array.replicate i 0).size = i := by simp
+  rw [← h_size i]
+  simp
+  exact h
+
+lemma mulPowX_equiv₂ : ∀ (i j : ℕ), j < i →
+  (mulPowX i p).coeff j = 0 := by
+  intro i j h
+  unfold mulPowX mk
+  rw [concat_coeff₁ (Array.replicate i 0) p j]
+  . simp
+    grind
+  have h_size : ∀ i : ℕ, (Array.replicate i 0).size = i := by simp
+  rw [← h_size i]
+  simp
+  exact h
 
 omit [BEq R] in
 lemma neg_coeff : ∀ (p : CPolynomial R) (i : ℕ), p.neg.coeff i = - p.coeff i := by
@@ -1065,8 +1096,11 @@ lemma mulPowX_descends (i : ℕ) (p₁ p₂ : CPolynomial R) :
   rw [Quotient.eq]
   simp [instSetoidCPolynomial]
   intro j
-  rw [mulPowX_equiv p₁, mulPowX_equiv p₂]
-  rw [heq]
+  by_cases h : j ≥ i
+  . rw [mulPowX_equiv₁ p₁ i j h, mulPowX_equiv₁ p₂ i j h]
+    rw [heq]
+  . simp at h
+    rw [mulPowX_equiv₂ p₁ i j h, mulPowX_equiv₂ p₂ i j h]
 
 @[inline, specialize]
 def mulPowX {R : Type*} [Ring R] [BEq R] (i : ℕ) (p : QuotientCPolynomial R) : QuotientCPolynomial R :=
