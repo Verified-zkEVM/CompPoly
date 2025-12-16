@@ -137,7 +137,7 @@ theorem last_nonzero_some_iff [LawfulBEq R] {p : CPolynomial R} {k} :
 
 /-- eliminator for `p.last_nonzero`, e.g. use with the induction tactic as follows:
   ```
-  induction p using last_none_zero_elim with
+  induction p using last_nonzero_induct with
   | case1 p h_none h_all_zero => ...
   | case2 p k h_some h_nonzero h_max => ...
   ```
@@ -157,7 +157,7 @@ theorem last_nonzero_induct [LawfulBEq R] {motive : CPolynomial R → Prop}
 
 /-- eliminator for `p.trim`; use with the induction tactic as follows:
   ```
-  induction p using Trim.elim with
+  induction p using induct with
   | case1 p h_empty h_all_zero => ...
   | case2 p k h_extract h_nonzero h_max => ...
   ```
@@ -974,14 +974,62 @@ def QuotientCPolynomial (R : Type*) [Ring R] [BEq R] := Quotient (@instSetoidCPo
 -- operations on `CPolynomial` descend to `QuotientCPolynomial`
 namespace QuotientCPolynomial
 
-lemma mul_equiv (a₁ a₂ b : CPolynomial R) :
-  equiv a₁ a₂ → equiv (a₁.mul b) (a₂.mul b) := by sorry
-
 lemma mul_comm (a b : CPolynomial R) :
-  a.mul b ≈ b.mul a := by sorry
+  a.mul b = b.mul a := by
+  simp [mul]
+  -- Array.foldl_induction
+  -- or Trim induction:
 
-lemma pow_equiv : ∀ (p : CPolynomial R) (n : ℕ),
-  (p.mul^[n + 1] (C 1)) ≈ (p.mul (p.mul^[n] (C 1))) := by sorry
+  -- induction p using induct with
+  -- | case1 p h_empty h_all_zero => ...
+  -- | case2 p k h_extract h_nonzero h_max => ...
+
+  -- induction p using last_nonzero_induct with
+  -- | case1 p h_none h_all_zero => ...
+  -- | case2 p k h_some h_nonzero h_max => ...
+
+  sorry
+
+lemma mul_pow_assoc : ∀ (p : CPolynomial R) (n : ℕ),
+  ∀ (q : CPolynomial R) (m l : ℕ),
+  l + m = n →
+  p.mul^[n] q = p.mul^[m] (p.mul^[l] q) := by
+  intro p n
+  induction n with
+  | zero =>
+    intro q m l h_sizes
+    rw [Nat.add_eq_zero_iff] at h_sizes
+    obtain ⟨hl, hm⟩ := h_sizes
+    rw [hl, hm]
+    simp
+  | succ n₀ ih =>
+    intro q m l h_sizes
+    cases l with
+    | zero =>
+      simp at h_sizes
+      rw [h_sizes]
+      simp
+    | succ l₀ =>
+      have h_sizes_simp : l₀ + m = n₀ := by linarith
+      clear h_sizes
+      simp
+      rw [ih (p.mul q) m l₀ h_sizes_simp]
+
+lemma mul_trim_equiv [LawfulBEq R] (a b : CPolynomial R) :
+  a.mul b ≈ a.trim.mul b := by
+  have h_trim := trim_equiv a
+  unfold equiv at h_trim
+  intro i
+  simp [mul]
+  sorry
+
+lemma mul_equiv [LawfulBEq R] (a₁ a₂ b : CPolynomial R) :
+  equiv a₁ a₂ → a₁.mul b ≈ a₂.mul b := by
+  intro h
+  calc
+    a₁.mul b ≈ a₁.trim.mul b := mul_trim_equiv a₁ b
+    _ ≈ a₂.trim.mul b := by rw [eq_of_equiv h]
+    _ ≈ a₂.mul b := equiv_symm (mul_trim_equiv a₂ b)
 
 -- Addition: add descends to `QuotientCPolynomial`
 def add_descending (p q : CPolynomial R) : QuotientCPolynomial R :=
@@ -1122,9 +1170,9 @@ lemma mul_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : CPolynomial R) :
   simp [instSetoidCPolynomial]
   calc
     a₁.mul b₁ ≈ a₂.mul b₁ := mul_equiv a₁ a₂ b₁ heq_a
-    _ ≈ b₁.mul a₂ := mul_comm a₂ b₁
+    _ ≈ b₁.mul a₂ := by rw [mul_comm a₂ b₁]
     _ ≈ b₂.mul a₂ := mul_equiv b₁ b₂ a₂ heq_b
-    _ ≈ a₂.mul b₂ := mul_comm b₂ a₂
+    _ ≈ a₂.mul b₂ := by rw [mul_comm b₂ a₂]
 
 @[inline, specialize]
 def mul {R : Type} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientCPolynomial R) : QuotientCPolynomial R :=
@@ -1134,27 +1182,32 @@ def mul {R : Type} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientCPolynomial R) 
 def pow_descending (p : CPolynomial R) (n : ℕ) : QuotientCPolynomial R :=
   Quotient.mk _ (pow p n)
 
-lemma pow_descends (n : ℕ) (p₁ p₂ : CPolynomial R) :
+lemma pow_descends [LawfulBEq R] (n : ℕ) (p₁ p₂ : CPolynomial R) :
   equiv p₁ p₂ → pow_descending p₁ n = pow_descending p₂ n := by
   intro heq
   unfold pow_descending
   rw [Quotient.eq]
   simp [instSetoidCPolynomial]
   unfold pow
-  -- intro i
+  have mul_pow_equiv : ∀ (p : CPolynomial R) (n : ℕ),
+    p.mul^[n + 1] (C 1) ≈ p.mul (p.mul^[n] (C 1)) := by
+    intro p n
+    rw [mul_pow_assoc p (n + 1) (C 1) 1 n]
+    . simp
+    simp
   induction n with
   | zero => simp
   | succ n ih =>
     calc
-      p₁.mul^[n + 1] (C 1) ≈ p₁.mul (p₁.mul^[n] (C 1)) := pow_equiv p₁ n
-      _ ≈ (p₁.mul^[n] (C 1)).mul p₁ := mul_comm p₁ (p₁.mul^[n] (C 1))
+      p₁.mul^[n + 1] (C 1) ≈ p₁.mul (p₁.mul^[n] (C 1)) := mul_pow_equiv p₁ n
+      _ ≈ (p₁.mul^[n] (C 1)).mul p₁ := by rw [mul_comm p₁ (p₁.mul^[n] (C 1))]
       _ ≈ (p₂.mul^[n] (C 1)).mul p₁ := mul_equiv _ _ p₁ ih
-      _ ≈ p₁.mul (p₂.mul^[n] (C 1)) := mul_comm (p₂.mul^[n] (C 1)) p₁
+      _ ≈ p₁.mul (p₂.mul^[n] (C 1)) := by rw [mul_comm (p₂.mul^[n] (C 1)) p₁]
       _ ≈ p₂.mul (p₂.mul^[n] (C 1)) := mul_equiv _ _ (p₂.mul^[n] (C 1)) heq
-      _ ≈ p₂.mul^[n + 1] (C 1) := equiv_symm (pow_equiv p₂ n)
+      _ ≈ p₂.mul^[n + 1] (C 1) := equiv_symm (mul_pow_equiv p₂ n)
 
 @[inline, specialize]
-def pow {R : Type*} [Ring R] [BEq R] (p : QuotientCPolynomial R) (n : ℕ) : QuotientCPolynomial R :=
+def pow {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p : QuotientCPolynomial R) (n : ℕ) : QuotientCPolynomial R :=
   Quotient.lift (fun p => pow_descending p n) (pow_descends n) p
 
 -- TODO div?
