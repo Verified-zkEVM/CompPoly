@@ -16,10 +16,10 @@ If your project is using a `lakefile.lean`, you can add
 require CompPoly from git
   "https://github.com/Verified-zkEVM/CompPoly"
 ```
-or you can specify the exact commit, for example:
+or you can specify a version, for example:
 ```
 require CompPoly from git
-  "https://github.com/Verified-zkEVM/CompPoly"@"ede2290"
+  "https://github.com/Verified-zkEVM/CompPoly"@"init"
 ```
 If your project is using a `lakefile.toml`, you can add
 ```
@@ -27,12 +27,12 @@ If your project is using a `lakefile.toml`, you can add
 name = "CompPoly"
 git = "https://github.com/Verified-zkEVM/CompPoly"
 ```
-or you can specify the exact commit, for example:
+or you can specify a version, for example:
 ```
 [[require]]
 name = "CompPoly"
 git = "https://github.com/Verified-zkEVM/CompPoly"
-rev = "ede2290"
+rev = "init"
 ```
 
 Then you can import the desired modules, for example:
