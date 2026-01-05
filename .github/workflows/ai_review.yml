@@ -1,0 +1,28 @@
+name: AI Code Review for Lean PRs
+
+on:
+  pull_request:
+    types: [opened, synchronize] # Trigger on PR open and new commits
+
+jobs:
+  ai_review_lean:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read       # Required for actions/checkout
+      pull-requests: write # Required for actions/github-script to post comments
+
+    steps:
+      - name: Run AI Code Review Action
+        uses: alexanderlhicks/lean-review-workflow@main
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          pr_number: ${{ github.event.pull_request.number }}
+          # Optional: Provide URLs to external formal specifications or documentation (can be dynamic, e.g., parsed from a PR comment)
+          # external_refs: "https://example.com/spec.pdf, https://another.com/design.html"
+          # Optional: Provide paths to additional repository files or directories for context (can be dynamic, e.g., parsed from a PR comment)
+          # repo_context_refs: "src/MyProject/FormalSpec.lean, src/MyProject/Types.lean, docs/architecture.md"
+          # Optional: Add specific instructions or focus areas for the AI reviewer (can be dynamic, e.g., parsed from a PR comment)
+          # additional_comments: "Pay special attention to the proof completeness and adherence to the type class inference rules."
+          # Optional: Specify a different Gemini model (default is 'gemini-3-pro-preview')
+          gemini_model: "gemini-3-pro-preview"
