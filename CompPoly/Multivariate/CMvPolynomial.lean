@@ -89,6 +89,9 @@ def eval₂ {R S : Type} {n : ℕ} [Semiring R] [CommSemiring S] : (R →+* S) �
 
 def eval {R : Type} {n : ℕ} [CommSemiring R] : (Fin n → R) → CMvPolynomial n R → R := eval₂ (RingHom.id _)
 
+def support {R : Type} {n : ℕ} [Zero R] (p : CMvPolynomial n R) : Finset (CMvMonomial n) :=
+  (Lawful.monomials p).toFinset
+
 def totalDegree {R : Type} {n : ℕ} [inst : CommSemiring R] : CMvPolynomial n R → ℕ :=
   fun p => Finset.sup (List.toFinset (List.map CMvMonomial.toFinsupp (Lawful.monomials p))) (fun s => Finsupp.sum s (fun _ e => e))
 
