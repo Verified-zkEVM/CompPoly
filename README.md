@@ -14,24 +14,24 @@ This implementation is then shown to be equivalent with a Mathlib polynomial rin
 If your project is using a `lakefile.lean`, you can add
 ```
 require CompPoly from git
-  "https://github.com/NethermindEth/CompPoly"
+  "https://github.com/Verified-zkEVM/CompPoly"
 ```
 or you can specify the exact commit, for example:
 ```
 require CompPoly from git
-  "https://github.com/NethermindEth/CompPoly"@"ede2290"
+  "https://github.com/Verified-zkEVM/CompPoly"@"ede2290"
 ```
 If your project is using a `lakefile.toml`, you can add
 ```
 [[require]]
 name = "CompPoly"
-git = "https://github.com/NethermindEth/CompPoly"
+git = "https://github.com/Verified-zkEVM/CompPoly"
 ```
 or you can specify the exact commit, for example:
 ```
 [[require]]
 name = "CompPoly"
-git = "https://github.com/NethermindEth/CompPoly"
+git = "https://github.com/Verified-zkEVM/CompPoly"
 rev = "ede2290"
 ```
 
