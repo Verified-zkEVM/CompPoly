@@ -578,10 +578,7 @@ theorem add_coeff {p q : CPolynomial Q} {i : ℕ} (hi : i < (add_raw p q).size) 
   (add_raw p q)[i] = p.coeff i + q.coeff i
 := by
   simp [add_raw]
-  sorry
-  -- unfold List.matchSize
-  -- repeat rw [List.rightpad_getElem_eq_getD]
-  -- simp only [List.getD_eq_getElem?_getD, Array.getElem?_eq_toList]
+  by_cases hi' : i < p.size <;> by_cases hi'' : i < q.size <;> simp_all
 
 theorem add_coeff? (p q : CPolynomial Q) (i : ℕ) :
   (add_raw p q).coeff i = p.coeff i + q.coeff i
