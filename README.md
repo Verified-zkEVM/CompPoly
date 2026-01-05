@@ -14,25 +14,25 @@ This implementation is then shown to be equivalent with a Mathlib polynomial rin
 If your project is using a `lakefile.lean`, you can add
 ```
 require CompPoly from git
-  "https://github.com/NethermindEth/CompPoly"
+  "https://github.com/Verified-zkEVM/CompPoly"
 ```
-or you can specify the exact commit, for example:
+or you can specify a version, for example:
 ```
 require CompPoly from git
-  "https://github.com/NethermindEth/CompPoly"@"ede2290"
+  "https://github.com/Verified-zkEVM/CompPoly"@"init"
 ```
 If your project is using a `lakefile.toml`, you can add
 ```
 [[require]]
 name = "CompPoly"
-git = "https://github.com/NethermindEth/CompPoly"
+git = "https://github.com/Verified-zkEVM/CompPoly"
 ```
-or you can specify the exact commit, for example:
+or you can specify a version, for example:
 ```
 [[require]]
 name = "CompPoly"
-git = "https://github.com/NethermindEth/CompPoly"
-rev = "ede2290"
+git = "https://github.com/Verified-zkEVM/CompPoly"
+rev = "init"
 ```
 
 Then you can import the desired modules, for example:
@@ -46,6 +46,6 @@ import CompPoly.MvPolyEquiv
 ## Current status and plans
 
 So far we have defined counterparts for the following `MvPolynomial` definitions:
-`C`, `coeff`, `commSemiring`, `decidableEqMvPolynomial`, `degreeOf`, `eval`, `eval₂`, `support` and `totalDegree`. Many have the same name and are located in the namespace `CPoly.CMvPolynomial`; some are defined on `Lawful`, which `CMvPolynomial` is an abbrev of.
+`C`, `X`, `coeff`, `commSemiring`, `decidableEqMvPolynomial`, `degreeOf`, `eval`, `eval₂`, `support` and `totalDegree`. Many have the same name and are located in the namespace `CPoly.CMvPolynomial`; some are defined on `Lawful`, which `CMvPolynomial` is an abbrev of.
 
-For the future, we plan to add counterparts to `MonomialOrder.degree`, `MonomialOrder.leadingCoeff` and the following `MvPolynomial` definitions (but we're first assessing the implementation complexity for some of them): `X`, `aeval`, `algebra`, `bind₁`, `degrees`, `eval₂Hom`, `finSuccEquiv`, `instCommRingMvPolynomial`, `isEmptyAlgEquiv`, `module`, `monomial`, `optionEquivLeft`, `rename`, `renameEquiv`, `restrictDegree`, `smulZeroClass`, `sumToIter`, `vars`.
+For the future, we plan to add counterparts to `MonomialOrder.degree`, `MonomialOrder.leadingCoeff` and the following `MvPolynomial` definitions (but we're first assessing the implementation complexity for some of them): `aeval`, `algebra`, `bind₁`, `degrees`, `eval₂Hom`, `finSuccEquiv`, `instCommRingMvPolynomial`, `isEmptyAlgEquiv`, `module`, `monomial`, `optionEquivLeft`, `rename`, `renameEquiv`, `restrictDegree`, `smulZeroClass`, `sumToIter`, `vars`.
