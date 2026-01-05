@@ -1,7 +1,0 @@
-# scripts/requirements.txt
-
-google-generativeai
-requests
-beautifulsoup4
-PyMuPDF
-PyGithub
