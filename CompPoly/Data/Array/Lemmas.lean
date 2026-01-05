@@ -44,7 +44,10 @@ theorem rightpad_toList {a : Array α} {n : Nat} {unit : α} :
 theorem rightpad_getElem_eq_getD {a : Array α} {n : Nat} {unit : α} {i : Nat}
     (h : i < (a.rightpad n unit).size) : (a.rightpad n unit)[i] = a.getD i unit := by
   simp_rw [rightpad_toList] at h ⊢
-  sorry
+  -- By definition of `rightpad`, the element at position `i` in the right-padded array is the same as the element at position `i` in the original list `a` if `i` is within the bounds of `a`.
+  have h_rightpad_getElem_eq_getD : (a.toList.rightpad n unit)[i] = a.toList.getD i unit := by
+    grind;
+  cases a ; aesop
 
 /-- `Array` version of `List.matchSize`, which rightpads the arrays to the same length. -/
 @[reducible]
@@ -178,6 +181,14 @@ def getLast (a : Array α) (h : a.size > 0) : α := a[a.size - 1]
 def getLastD (a : Array α) (v₀ : α) : α := a.getD (a.size - 1) v₀
 
 @[simp] theorem popWhile_nil_or_last_false (p : α → Bool) (as : Array α)
-    (h : (as.popWhile p).size > 0) : ¬ (p <| (as.popWhile p).getLast h) := sorry
+    (h : (as.popWhile p).size > 0) : ¬ (p <| (as.popWhile p).getLast h) := by
+      -- By definition of `popWhile`, if the array is empty, then `popWhile` returns an empty array.
+      induction' as using Array.recOn with as ih;
+      induction' as using List.reverseRecOn with as ih;
+      · -- In the base case, when the array is empty, `popWhile` returns an empty array. Therefore, the size is zero, which contradicts `h`.
+        simp [Array.popWhile] at h;
+      · by_cases h' : p ih <;> simp_all +decide [ Array.popWhile ];
+        · aesop;
+        · simp_all +decide [ Array.getLast ]
 
 end Array

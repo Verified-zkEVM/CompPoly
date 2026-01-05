@@ -114,7 +114,11 @@ theorem rightpad_eq_if_rightpad_eq_of_ge (l l' : List α) (m n n' : Nat) (h : n 
     _ = (rightpad n' unit l').length := congrArg length hEq
     _ = max n' l'.length := rightpad_length n' unit l'
   simp [hLen]
-  sorry
+  -- Substitute the expressions for the rightpads into the goal.
+  have h_subst : l ++ replicate (n - l.length) unit = l' ++ replicate (n' - l'.length) unit := by
+    convert hEq using 1;
+  rw [ List.replicate_add, List.replicate_add ];
+  rw [ ← List.append_assoc, ← List.append_assoc, h_subst ]
 
 @[simp] theorem rightpad_twice_eq_rightpad_max (m n : Nat) (unit : α) (l : List α) :
     rightpad n unit (rightpad m unit l) = rightpad (max m n) unit l := by

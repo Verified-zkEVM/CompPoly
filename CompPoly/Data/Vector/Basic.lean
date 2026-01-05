@@ -271,11 +271,15 @@ theorem dotProduct_eq_root_dotProduct (a b : Vector R n) :
   refine induction₂ ?_ (fun hd tl hd' tl' ih => ?_) a b
   · simp [dotProduct, _root_.dotProduct]
   · simp [Vector.cast]
-    sorry
-    -- suffices h : ((#v[hd] ++ tl) *ᵥ (#v[hd'] ++ tl')) =
-    --   (_root_.dotProduct (#v[hd] ++ tl).get (#v[hd'] ++ tl').get) by
-    --   simp at h
-    --   sorry
-    -- rw [dotProduct_cons]
+    -- By definition of dot product, we can expand the right-hand side.
+    simp [dotProduct, ih];
+    -- By definition of dot product, we can expand the right-hand side. The left-hand side is the foldl of the zipWith operation on the two arrays, which is equivalent to the dot product of the corresponding vectors.
+    simp [dotProduct, _root_.dotProduct];
+    convert dotProduct_cons hd tl hd' tl' using 1;
+    · -- The array's foldl of the zipWith operation is the same as the dot product of the vectors because the vector's dot product is defined as the sum of the products of corresponding elements.
+      simp [dotProduct, Vector.cons];
+      simp +decide [ Vector.foldl, Vector.zipWith ];
+    · simp +decide [ Fin.sum_univ_succ, ih ];
+      rfl
 
 end Vector
