@@ -635,12 +635,10 @@ lemma mulPowX_equiv₂ : ∀ (i j : ℕ), j < i →
   intro i j h
   unfold mulPowX mk
   rw [concat_coeff₁ (Array.replicate i 0) p j]
-  . simp
-    grind
+  . simp; grind
   have h_size : ∀ i : ℕ, (Array.replicate i 0).size = i := by simp
   rw [← h_size i]
-  simp
-  exact h
+  simp; exact h
 
 omit [BEq R] in
 lemma neg_coeff : ∀ (p : CPolynomial R) (i : ℕ), p.neg.coeff i = - p.coeff i := by
@@ -1032,7 +1030,6 @@ lemma mulPowX_equiv {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
   (i : ℕ) (p q : CPolynomial R) (h : equiv p q) :
   equiv (mulPowX i p) (mulPowX i q) := by
     unfold equiv at *
-    simp +zetaDelta at *
     intro j
     by_cases hj : j < i <;> simp_all +decide [ mulPowX ]
     · unfold mk; rw [ Array.getElem?_append, Array.getElem?_append ]; aesop
@@ -1048,8 +1045,7 @@ lemma add_zero_equiv {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
   equiv (add p q) p := by
     intro x
     have := add_coeff? p q x
-    have hq_zero : q.coeff x = 0 := by
-      exact hq x
+    have hq_zero : q.coeff x = 0 := by exact hq x
     unfold add
     rw [ coeff_eq_coeff ]
     aesop
@@ -1087,8 +1083,7 @@ lemma mul_step_zero {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
   (q : CPolynomial R) (acc : CPolynomial R) (i : ℕ) :
   equiv (mul_step q acc (0, i)) acc := by
     have h_mul_step : mul_step q acc (0, i) = acc.add ((smul 0 q).mulPowX i) := by exact rfl
-    have h_mulPowX : mulPowX i (smul 0 q) = smul 0 (mulPowX i q) := by
-      unfold mulPowX smul; aesop
+    have h_mulPowX : mulPowX i (smul 0 q) = smul 0 (mulPowX i q) := by unfold mulPowX smul; aesop
     rw [ h_mul_step, h_mulPowX ]
     exact add_zero_equiv _ _ ( smul_zero_equiv _ )
 
@@ -1126,9 +1121,9 @@ lemma zipIdx_trim_append {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
       simp
       refine' List.ext_get _ _ <;> aesop
     · -- Since `n` is not zero, `p.last_nonzero` is `some k` and `n = k + 1`.
-      obtain ⟨k, hk⟩ : ∃ k : Fin p.size, p.trim = p.extract 0 (k.val + 1) ∧ p[k] ≠ 0 ∧ (∀ j, (hj : j < p.size) → j > k → p[j] = 0) := by
-        have := Trim.elim p
-        aesop
+      obtain ⟨k, hk⟩ : ∃ k : Fin p.size,
+        p.trim = p.extract 0 (k.val + 1) ∧ p[k] ≠ 0 ∧ (∀ j, (hj : j < p.size) → j > k → p[j] = 0) := by
+          have := Trim.elim p; aesop
       refine' ⟨ _, _, _ ⟩
       exact ( Array.zipIdx p ).toList.drop ( k + 1 )
       · rw [ hk.1 ]
