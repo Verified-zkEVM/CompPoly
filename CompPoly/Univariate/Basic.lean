@@ -1133,9 +1133,9 @@ lemma zipIdx_trim_append {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
         refine' List.ext_get _ _ <;> simp +decide [ List.get ];
         · rw [ min_eq_left ( by linarith [ Fin.is_lt k ] ), add_tsub_cancel_of_le ( by linarith [ Fin.is_lt k ] ) ];
         · intro n h₁ h₂; rw [ List.getElem_append ] ; simp +decide [ h₁, h₂ ] ;
-          grind;
+          grind
       · simp +decide [ List.mem_iff_get ];
-        intro a; specialize hk; have := hk.2.2 ( k + 1 + a ) ; simp_all +decide [ Nat.add_assoc ] ;
+        intro a; specialize hk; have := hk.2.2 ( k + 1 + a ) ; simp_all +decide [ Nat.add_assoc ]
 
 lemma mul_trim_equiv [LawfulBEq R] (a b : CPolynomial R) :
   a.mul b ≈ a.trim.mul b := by
@@ -1162,12 +1162,26 @@ lemma mul_equiv [LawfulBEq R] (a₁ a₂ b : CPolynomial R) :
     _ ≈ a₂.trim.mul b := by rw [eq_of_equiv h]
     _ ≈ a₂.mul b := equiv_symm (mul_trim_equiv a₂ b)
 
--- TODO?
--- lemma mul_equiv₂ [LawfulBEq R] (a b₁ b₂ : CPolynomial R) :
---   b₁ ≈ b₂ → a.mul b₁ ≈ a.mul b₂
-
-lemma mul_comm_equiv [LawfulBEq R] (a b : CPolynomial R) :
-  a.mul b ≈ b.mul a := by sorry
+lemma mul_equiv₂ [LawfulBEq R] (a b₁ b₂ : CPolynomial R) :
+  b₁ ≈ b₂ → a.mul b₁ ≈ a.mul b₂ := by
+    -- By definition of multiplication, we can express `a.mul b₁` and `a.mul b₂` in terms of their sums of products of coefficients.
+    have h_mul_def : ∀ (a b : CompPoly.CPolynomial R), a.mul b = (a.zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b).mulPowX i)) (C 0)) := by
+      exact?;
+    intro h;
+    have h_foldl_equiv : ∀ (l : List (R × ℕ)) (acc : CompPoly.CPolynomial R), (List.foldl (fun acc (a', i) => acc.add ((smul a' b₁).mulPowX i)) acc l) ≈ (List.foldl (fun acc (a', i) => acc.add ((smul a' b₂).mulPowX i)) acc l) := by
+      intro l acc;
+      induction' l using List.reverseRecOn with l ih generalizing acc;
+      · rfl;
+      · simp +zetaDelta at *;
+        -- Apply the add_equiv lemma to the foldl results and the mulPowX terms.
+        apply add_equiv;
+        · exact?;
+        · -- Apply the lemma that multiplying by X^i preserves equivalence.
+          apply mulPowX_equiv;
+          exact fun i => by rw [ smul_equiv, smul_equiv ] ; exact congr_arg _ ( h i ) ;
+    convert h_foldl_equiv ( Array.toList ( Array.zipIdx a ) ) ( CompPoly.CPolynomial.C 0 ) using 1;
+    · grind
+    · grind
 
 end EquivalenceLemmas
 
@@ -1310,9 +1324,7 @@ lemma mul_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : CPolynomial R) :
   simp [instSetoidCPolynomial]
   calc
     a₁.mul b₁ ≈ a₂.mul b₁ := mul_equiv a₁ a₂ b₁ heq_a
-    _ ≈ b₁.mul a₂ := mul_comm_equiv a₂ b₁
-    _ ≈ b₂.mul a₂ := mul_equiv b₁ b₂ a₂ heq_b
-    _ ≈ a₂.mul b₂ := mul_comm_equiv b₂ a₂
+    _ ≈ a₂.mul b₂ := mul_equiv₂ a₂ b₁ b₂ heq_b
 
 @[inline, specialize]
 def mul {R : Type} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientCPolynomial R) : QuotientCPolynomial R :=
@@ -1340,9 +1352,7 @@ lemma pow_descends [LawfulBEq R] (n : ℕ) (p₁ p₂ : CPolynomial R) :
   | succ n ih =>
     calc
       p₁.mul^[n + 1] (C 1) ≈ p₁.mul (p₁.mul^[n] (C 1)) := mul_pow_equiv p₁ n
-      _ ≈ (p₁.mul^[n] (C 1)).mul p₁ := mul_comm_equiv p₁ (p₁.mul^[n] (C 1))
-      _ ≈ (p₂.mul^[n] (C 1)).mul p₁ := mul_equiv _ _ p₁ ih
-      _ ≈ p₁.mul (p₂.mul^[n] (C 1)) := mul_comm_equiv (p₂.mul^[n] (C 1)) p₁
+      _ ≈ p₁.mul (p₂.mul^[n] (C 1)) := mul_equiv₂ p₁ _ _ ih
       _ ≈ p₂.mul (p₂.mul^[n] (C 1)) := mul_equiv _ _ (p₂.mul^[n] (C 1)) heq
       _ ≈ p₂.mul^[n + 1] (C 1) := equiv_symm (mul_pow_equiv p₂ n)
 
