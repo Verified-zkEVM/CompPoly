@@ -575,11 +575,13 @@ theorem add_size {p q : CPolynomial Q} : (add_raw p q).size = max p.size q.size 
   rw [zipWith_size matchSize_size_eq, matchSize_size]
 
 -- coeff on list concatenations
+omit [BEq R] in
 lemma concat_coeff₁ (i : ℕ) : i < p.size →
-  (p ++ q).coeff i = p.coeff i := by simp ; grind
+  (p ++ q).coeff i = p.coeff i := by simp; grind
 
+omit [BEq R] in
 lemma concat_coeff₂ (i : ℕ) : i ≥ p.size →
-  (p ++ q).coeff i = q.coeff (i - p.size) := by simp ; grind
+  (p ++ q).coeff i = q.coeff (i - p.size) := by simp; grind
 
 theorem add_coeff {p q : CPolynomial Q} {i : ℕ} (hi : i < (add_raw p q).size) :
   (add_raw p q)[i] = p.coeff i + q.coeff i
@@ -615,6 +617,7 @@ def nsmul_raw_equiv [LawfulBEq R] : ∀ (n i : ℕ),
   unfold mk
   rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
 
+omit [BEq R] in
 lemma mulPowX_equiv₁ : ∀ (i j : ℕ), j ≥ i →
   (mulPowX i p).coeff j = p.coeff (j - i) := by
   intro i j h
@@ -626,6 +629,7 @@ lemma mulPowX_equiv₁ : ∀ (i j : ℕ), j ≥ i →
   simp
   exact h
 
+omit [BEq R] in
 lemma mulPowX_equiv₂ : ∀ (i j : ℕ), j < i →
   (mulPowX i p).coeff j = 0 := by
   intro i j h
@@ -1002,11 +1006,10 @@ Scalar multiplication by 0 is equivalent to the zero polynomial.
 -/
 lemma smul_zero_equiv {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) :
   (smul 0 p) ≈ 0 := by
-    -- By definition of scalar multiplication, multiplying by 0 results in the zero polynomial.
     have h_smul_zero : ∀ (p : CPolynomial R), (smul 0 p).coeff = 0 := by
-      intro p; ext i; simp [CPolynomial.smul];
-      cases p[i]? <;> simp +decide;
-    exact fun i => by simpa using congr_fun ( h_smul_zero p ) i;
+      intro p; ext i; simp [smul]
+      cases p[i]? <;> simp
+    exact fun i => by simpa using congr_fun ( h_smul_zero p ) i
 
 /-
 Addition of polynomials respects equivalence.
@@ -1015,26 +1018,26 @@ lemma add_equiv {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
   (p1 p2 q1 q2 : CPolynomial R)
   (hp : equiv p1 p2) (hq : equiv q1 q2) :
   equiv (p1.add q1) (p2.add q2) := by
-    -- By `add_equiv_raw`, `add p1 q1` is equivalent to `add_raw p1 q1`, and similarly for `p2, q2`.
     have h_add_equiv_raw : ∀ p q : CPolynomial R, equiv (p.add q) (p.add_raw q) := by
-      exact?
-    -- By `add_coeff?`, we have `(add_raw p1 q1).coeff i = p1.coeff i + q1.coeff i` and `(add_raw p2 q2).coeff i = p2.coeff i + q2.coeff i`.
-    have h_add_coeff : ∀ i, (p1.add_raw q1).coeff i = p1.coeff i + q1.coeff i ∧ (p2.add_raw q2).coeff i = p2.coeff i + q2.coeff i := by
+      exact fun p q => add_equiv_raw p q
+    have h_add_coeff : ∀ i,
+      (p1.add_raw q1).coeff i = p1.coeff i + q1.coeff i ∧ (p2.add_raw q2).coeff i = p2.coeff i + q2.coeff i := by
       exact fun i => ⟨ add_coeff? p1 q1 i, add_coeff? p2 q2 i ⟩
-    simp_all +decide [ equiv ]
+    simp_all [ equiv ]
 
 /-
 Multiplication by X^i respects equivalence.
 -/
 lemma mulPowX_equiv {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
   (i : ℕ) (p q : CPolynomial R) (h : equiv p q) :
-  equiv (CPolynomial.mulPowX i p) (CPolynomial.mulPowX i q) := by
-    unfold equiv at *;
-    simp +zetaDelta at *;
-    intro j; by_cases hj : j < i <;> simp_all +decide [ CPolynomial.mulPowX ] ;
-    · unfold CPolynomial.mk; rw [ Array.getElem?_append, Array.getElem?_append ] ; aesop;
-    · convert h ( j - i ) using 1 <;> rw [ Array.getElem?_append ] <;> simp +decide [ hj ];
-      · rw [ if_neg ( not_lt_of_ge hj ) ];
+  equiv (mulPowX i p) (mulPowX i q) := by
+    unfold equiv at *
+    simp +zetaDelta at *
+    intro j
+    by_cases hj : j < i <;> simp_all +decide [ mulPowX ]
+    · unfold mk; rw [ Array.getElem?_append, Array.getElem?_append ]; aesop
+    · convert h ( j - i ) using 1 <;> rw [ Array.getElem?_append ] <;> simp +decide [ hj ]
+      · rw [ if_neg ( not_lt_of_ge hj ) ]
       · rw [ if_neg ( not_lt_of_ge hj ) ]
 
 /-
@@ -1042,22 +1045,23 @@ Adding a polynomial equivalent to zero acts as the identity.
 -/
 lemma add_zero_equiv {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
   (p q : CPolynomial R) (hq : equiv q 0) :
-  equiv (CPolynomial.add p q) p := by
-    intro x;
-    have := add_coeff? p q x;
+  equiv (add p q) p := by
+    intro x
+    have := add_coeff? p q x
     have hq_zero : q.coeff x = 0 := by
-      exact hq x;
-    unfold CPolynomial.add;
-    rw [ Trim.coeff_eq_coeff ] ; aesop
+      exact hq x
+    unfold add
+    rw [ coeff_eq_coeff ]
+    aesop
 
 /-
 Multiplying the zero polynomial by X^i results in a polynomial equivalent to zero.
 -/
 lemma mulPowX_zero_equiv {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
-  (i : ℕ) : equiv (CPolynomial.mulPowX i (0 : CPolynomial R)) 0 := by
-    unfold equiv;
-    simp [CPolynomial.coeff];
-    unfold CPolynomial.mulPowX;
+  (i : ℕ) : equiv (mulPowX i (0 : CPolynomial R)) 0 := by
+    unfold equiv
+    simp [coeff]
+    unfold mulPowX
     grind
 
 /-
@@ -1065,7 +1069,7 @@ Definition of a single step in the polynomial multiplication algorithm.
 -/
 def mul_step {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
   (q : CPolynomial R) (acc : CPolynomial R) (x : R × ℕ) : CPolynomial R :=
-  acc.add ((CPolynomial.smul x.1 q).mulPowX x.2)
+  acc.add ((smul x.1 q).mulPowX x.2)
 
 /-
 The multiplication step respects equivalence of the accumulator.
@@ -1074,7 +1078,7 @@ lemma mul_step_equiv {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
   (q : CPolynomial R) (acc1 acc2 : CPolynomial R) (x : R × ℕ)
   (h : equiv acc1 acc2) :
   equiv (mul_step q acc1 x) (mul_step q acc2 x) := by
-    apply_rules [ add_equiv, mulPowX_equiv, CPolynomial.smul_equiv ]
+    apply_rules [ add_equiv, mulPowX_equiv, smul_equiv ]
 
 /-
 The multiplication step with a zero coefficient acts as the identity modulo equivalence.
@@ -1082,13 +1086,10 @@ The multiplication step with a zero coefficient acts as the identity modulo equi
 lemma mul_step_zero {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
   (q : CPolynomial R) (acc : CPolynomial R) (i : ℕ) :
   equiv (mul_step q acc (0, i)) acc := by
-    -- By definition of `mul_step`, we have `mul_step q acc (0, i) = acc.add ((smul 0 q).mulPowX i)`.
-    have h_mul_step : mul_step q acc (0, i) = acc.add ((smul 0 q).mulPowX i) := by
-      exact?;
-    -- By definition of `mulPowX`, we have `mulPowX i (smul 0 q) = smul 0 (mulPowX i q)`.
-    have h_mulPowX : CPolynomial.mulPowX i (CPolynomial.smul 0 q) = CPolynomial.smul 0 (CPolynomial.mulPowX i q) := by
-      unfold CPolynomial.mulPowX CPolynomial.smul; aesop;
-    rw [ h_mul_step, h_mulPowX ];
+    have h_mul_step : mul_step q acc (0, i) = acc.add ((smul 0 q).mulPowX i) := by exact rfl
+    have h_mulPowX : mulPowX i (smul 0 q) = smul 0 (mulPowX i q) := by
+      unfold mulPowX smul; aesop
+    rw [ h_mul_step, h_mulPowX ]
     exact add_zero_equiv _ _ ( smul_zero_equiv _ )
 
 /-
@@ -1098,14 +1099,15 @@ lemma foldl_mul_step_zeros {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
   (q : CPolynomial R) (acc : CPolynomial R) (l : List (R × ℕ))
   (hl : ∀ x ∈ l, x.1 = 0) :
   equiv (l.foldl (mul_step q) acc) acc := by
-    induction' l using List.reverseRecOn with x xs ih generalizing acc;
-    · exact fun _ => rfl;
-    · simp_all +decide [ List.foldl_append ];
-      -- By the properties of the multiplication step and the induction hypothesis, we can conclude the proof.
+    induction' l using List.reverseRecOn with x xs ih generalizing acc
+    · exact fun _ => rfl
+    · simp_all +decide [ List.foldl_append ]
+      -- use the multiplication step and the induction hypothesis
       have h_mul_step : equiv (mul_step q (List.foldl (mul_step q) acc x) xs) (List.foldl (mul_step q) acc x) := by
-        convert mul_step_zero q ( List.foldl ( mul_step q ) acc x ) xs.2 using 1;
-        specialize hl _ _ ( Or.inr rfl ) ; aesop;
-      exact?
+        convert mul_step_zero q ( List.foldl ( mul_step q ) acc x ) xs.2 using 1
+        specialize hl _ _ ( Or.inr rfl )
+        aesop
+      exact equiv_trans h_mul_step (ih acc)
 
 /-
 The `zipIdx` of a polynomial is the `zipIdx` of its trim followed by a list of zero coefficients.
@@ -1114,44 +1116,44 @@ lemma zipIdx_trim_append {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
   (p : CPolynomial R) :
   ∃ l, p.zipIdx.toList = p.trim.zipIdx.toList ++ l ∧ ∀ x ∈ l, x.1 = 0 := by
     -- Let `n` be `p.trim.size`. `p.trim` is the prefix of `p` of length `n`.
-    set n := p.trim.size with hn_def;
-    by_cases hn : n = 0;
-    · unfold n at hn;
+    set n := p.trim.size with hn_def
+    by_cases hn : n = 0
+    · unfold n at hn
       -- Since `p.trim` is empty, `p` must be the zero polynomial.
       have hp_zero : ∀ i (hi : i < p.size), p[i] = 0 := by
-        have := Trim.elim p; aesop;
-      use List.map (fun i => (0, i)) (List.range p.size);
-      simp +decide [ hp_zero ];
-      refine' List.ext_get _ _ <;> aesop;
+        have := Trim.elim p; aesop
+      use List.map (fun i => (0, i)) (List.range p.size)
+      simp
+      refine' List.ext_get _ _ <;> aesop
     · -- Since `n` is not zero, `p.last_nonzero` is `some k` and `n = k + 1`.
       obtain ⟨k, hk⟩ : ∃ k : Fin p.size, p.trim = p.extract 0 (k.val + 1) ∧ p[k] ≠ 0 ∧ (∀ j, (hj : j < p.size) → j > k → p[j] = 0) := by
-        have := Trim.elim p;
-        aesop;
-      refine' ⟨ _, _, _ ⟩;
-      exact ( Array.zipIdx p ).toList.drop ( k + 1 );
-      · rw [ hk.1 ];
-        refine' List.ext_get _ _ <;> simp +decide [ List.get ];
-        · rw [ min_eq_left ( by linarith [ Fin.is_lt k ] ), add_tsub_cancel_of_le ( by linarith [ Fin.is_lt k ] ) ];
-        · intro n h₁ h₂; rw [ List.getElem_append ] ; simp +decide [ h₁, h₂ ] ;
+        have := Trim.elim p
+        aesop
+      refine' ⟨ _, _, _ ⟩
+      exact ( Array.zipIdx p ).toList.drop ( k + 1 )
+      · rw [ hk.1 ]
+        refine' List.ext_get _ _ <;> simp
+        · rw [ min_eq_left ( by linarith [ Fin.is_lt k ] ), add_tsub_cancel_of_le ( by linarith [ Fin.is_lt k ] ) ]
+        · intro n h₁ h₂; rw [ List.getElem_append ]; simp +decide [ h₁ ]
           grind
-      · simp +decide [ List.mem_iff_get ];
-        intro a; specialize hk; have := hk.2.2 ( k + 1 + a ) ; simp_all +decide [ Nat.add_assoc ]
+      · simp +decide [ List.mem_iff_get ]
+        intro a; specialize hk; have := hk.2.2 ( k + 1 + a ); simp_all +decide [ Nat.add_assoc ]
 
 lemma mul_trim_equiv [LawfulBEq R] (a b : CPolynomial R) :
   a.mul b ≈ a.trim.mul b := by
     have h_zipIdx_split : ∃ l, a.zipIdx.toList = a.trim.zipIdx.toList ++ l ∧ ∀ x ∈ l, x.1 = 0 := by
-      exact?;
-    obtain ⟨l, hl⟩ := h_zipIdx_split;
+      exact zipIdx_trim_append a
+    obtain ⟨l, hl⟩ := h_zipIdx_split
     have h_foldl_split : ∃ acc, (a.mul b) = (l.foldl (mul_step b) acc) ∧ (a.trim.mul b) = acc := by
       -- By definition of `mul`, we can rewrite `a.mul b` using `mul_step` and the foldl operation.
-      have h_mul_def : a.mul b = (a.zipIdx.toList.foldl (mul_step b) (CPolynomial.C 0)) := by
-        unfold CPolynomial.mul;
-        exact?;
-      have h_mul_def_trim : a.trim.mul b = (a.trim.zipIdx.toList.foldl (mul_step b) (CPolynomial.C 0)) := by
-        unfold CPolynomial.mul;
-        exact?;
-      aesop;
-    obtain ⟨ acc, h₁, h₂ ⟩ := h_foldl_split;
+      have h_mul_def : a.mul b = (a.zipIdx.toList.foldl (mul_step b) (C 0)) := by
+        unfold mul
+        exact Eq.symm (Array.foldl_toList (mul_step b))
+      have h_mul_def_trim : a.trim.mul b = (a.trim.zipIdx.toList.foldl (mul_step b) (C 0)) := by
+        unfold mul
+        exact Eq.symm (Array.foldl_toList (mul_step b))
+      aesop
+    obtain ⟨ acc, h₁, h₂ ⟩ := h_foldl_split
     exact h₁.symm ▸ h₂.symm ▸ foldl_mul_step_zeros b acc l hl.2
 
 lemma mul_equiv [LawfulBEq R] (a₁ a₂ b : CPolynomial R) :
@@ -1164,22 +1166,25 @@ lemma mul_equiv [LawfulBEq R] (a₁ a₂ b : CPolynomial R) :
 
 lemma mul_equiv₂ [LawfulBEq R] (a b₁ b₂ : CPolynomial R) :
   b₁ ≈ b₂ → a.mul b₁ ≈ a.mul b₂ := by
-    -- By definition of multiplication, we can express `a.mul b₁` and `a.mul b₂` in terms of their sums of products of coefficients.
-    have h_mul_def : ∀ (a b : CompPoly.CPolynomial R), a.mul b = (a.zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b).mulPowX i)) (C 0)) := by
-      exact?;
-    intro h;
-    have h_foldl_equiv : ∀ (l : List (R × ℕ)) (acc : CompPoly.CPolynomial R), (List.foldl (fun acc (a', i) => acc.add ((smul a' b₁).mulPowX i)) acc l) ≈ (List.foldl (fun acc (a', i) => acc.add ((smul a' b₂).mulPowX i)) acc l) := by
-      intro l acc;
-      induction' l using List.reverseRecOn with l ih generalizing acc;
-      · rfl;
-      · simp +zetaDelta at *;
+    -- By definition of multiplication, we can express `a.mul b₁` and `a.mul b₂` in terms of
+    -- their sums of products of coefficients.
+    have h_mul_def : ∀ (a b : CompPoly.CPolynomial R),
+      a.mul b = (a.zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b).mulPowX i)) (C 0)) := by exact fun a b => rfl
+    intro h
+    have h_foldl_equiv : ∀ (l : List (R × ℕ)) (acc : CompPoly.CPolynomial R),
+      List.foldl (fun acc (a', i) => acc.add ((smul a' b₁).mulPowX i)) acc l ≈
+      List.foldl (fun acc (a', i) => acc.add ((smul a' b₂).mulPowX i)) acc l := by
+      intro l acc
+      induction' l using List.reverseRecOn with l ih generalizing acc
+      · rfl
+      · simp +zetaDelta at *
         -- Apply the add_equiv lemma to the foldl results and the mulPowX terms.
-        apply add_equiv;
-        · exact?;
+        apply add_equiv
+        · expose_names; exact h_1 acc
         · -- Apply the lemma that multiplying by X^i preserves equivalence.
-          apply mulPowX_equiv;
-          exact fun i => by rw [ smul_equiv, smul_equiv ] ; exact congr_arg _ ( h i ) ;
-    convert h_foldl_equiv ( Array.toList ( Array.zipIdx a ) ) ( CompPoly.CPolynomial.C 0 ) using 1;
+          apply mulPowX_equiv
+          exact fun i => by rw [ smul_equiv, smul_equiv ]; exact congr_arg _ ( h i )
+    convert h_foldl_equiv ( Array.toList ( Array.zipIdx a ) ) ( C 0 ) using 1
     · grind
     · grind
 
