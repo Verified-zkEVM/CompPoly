@@ -139,13 +139,13 @@ CompPoly provides a solid foundation with:
 	- Identify rewrite bottlenecks when porting Mathlib poly proofs → CompPoly
 	- Build simp sets and grind sets for common operations
 	- Goal: “one-liner conversions” (or near) between spec polynomials and computable polynomials
-5.	**RT/Rust extraction mapping to CompPoly + automation**
-	- Define a canonical “extracted polynomial” representation that mirrors common Rust polynomial data structures (dense coeffs, sparse maps, evaluation form)
-	- Build conversion theorems and rewrite rules that map extracted representations into `CPolynomial` / `CMvPolynomial` / `CMlPolynomial`
-	- Provide helper tactics (or `simp`/`grind` sets) to discharge routine coercions, normalization, and extensionality goals arising from extraction
-	- Establish a workflow for verifying Rust polynomial implementations against CompPoly specs (e.g. equational refinement + property tests)
-	- Identify minimum requirements on Rust-side representations (normalization invariants, canonical ordering) to make proofs robust and automation-friendly
-	- Produce at least one end-to-end example: extract a Rust polynomial routine, translate it to Lean, and prove it refines the CompPoly implementation
+
+6.	**Integration with ArkLib / Hax + Rust libraries (e.g. plonky3)**
+	- Make CompPoly the canonical polynomial backend for ArkLib specs where applicable
+	- Add bridging lemmas and conversion utilities across representations (CompPoly ↔ Mathlib ↔ extracted Rust ↔ downstream libs)
+	- Document and implement invariants required for robust interop (canonical ordering, normalization, domain metadata)
+	- Ensure hax-extracted Rust polynomial structures can be mapped into CompPoly with minimal proof overhead
+	- Validate the integration with at least one downstream example (e.g. ArkLib protocol component or plonky3 polynomial routine)
 
 **Success criteria**: CompPoly is integration-ready—it supports canonical serialization, has strong simp/grind-based proof ergonomics, includes a validated interop pathway with LLCK/ZKIR-style representations, and demonstrates at least one end-to-end Rust extraction → Lean translation → refinement proof against CompPoly.
 
