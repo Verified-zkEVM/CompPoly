@@ -999,6 +999,10 @@ lemma mul_pow_assoc : ∀ (p : CPolynomial R) (n : ℕ),
       simp
       rw [ih (p.mul q) m l₀ h_sizes_simp]
 
+lemma mul_pow_succ (p q : CPolynomial R) (n : ℕ):
+  p.mul^[n + 1] q = p.mul (p.mul^[n] q) := by
+  rw [mul_pow_assoc p (n+1) q 1 n] <;> simp
+
 /-
 Scalar multiplication by 0 is equivalent to the zero polynomial.
 -/
@@ -1170,8 +1174,7 @@ lemma mul_equiv₂ [LawfulBEq R] (a b₁ b₂ : CPolynomial R) :
       List.foldl (fun acc (a', i) => acc.add ((smul a' b₁).mulPowX i)) acc l ≈
       List.foldl (fun acc (a', i) => acc.add ((smul a' b₂).mulPowX i)) acc l := by
       intro l acc
-      induction' l using List.reverseRecOn with l ih generalizing acc
-      · rfl
+      induction' l using List.reverseRecOn with l ih generalizing acc; rfl
       · simp +zetaDelta at *
         -- Apply the add_equiv lemma to the foldl results and the mulPowX terms.
         apply add_equiv
@@ -1179,9 +1182,7 @@ lemma mul_equiv₂ [LawfulBEq R] (a b₁ b₂ : CPolynomial R) :
         · -- Apply the lemma that multiplying by X^i preserves equivalence.
           apply mulPowX_equiv
           exact fun i => by rw [ smul_equiv, smul_equiv ]; exact congr_arg _ ( h i )
-    convert h_foldl_equiv ( Array.toList ( Array.zipIdx a ) ) ( C 0 ) using 1
-    · grind
-    · grind
+    convert h_foldl_equiv ( Array.toList ( Array.zipIdx a ) ) ( C 0 ) using 1 <;> grind
 
 end EquivalenceLemmas
 
@@ -1217,8 +1218,7 @@ lemma smul_descends [LawfulBEq R] (r : R) (p₁ p₂ : CPolynomial R) :
   rw [Quotient.eq]
   simp [instSetoidCPolynomial]
   intro i
-  rw [smul_equiv p₁, smul_equiv p₂]
-  rw [heq i]
+  rw [smul_equiv, smul_equiv, heq i]
 
 @[inline, specialize]
 def smul {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (r : R) (p : QuotientCPolynomial R)
@@ -1292,17 +1292,14 @@ def mulPowX_descending (i : ℕ) (p : CPolynomial R) : QuotientCPolynomial R :=
 
 lemma mulPowX_descends (i : ℕ) (p₁ p₂ : CPolynomial R) :
   equiv p₁ p₂ → mulPowX_descending i p₁ = mulPowX_descending i p₂ := by
-  unfold equiv
+  unfold equiv mulPowX_descending
   intro heq
-  unfold mulPowX_descending
   rw [Quotient.eq]
   simp [instSetoidCPolynomial]
   intro j
-  by_cases h : j ≥ i
-  . rw [mulPowX_equiv₁ p₁ i j h, mulPowX_equiv₁ p₂ i j h]
-    rw [heq]
-  . simp at h
-    rw [mulPowX_equiv₂ p₁ i j h, mulPowX_equiv₂ p₂ i j h]
+  by_cases h : j ≥ i <;> simp at h
+  . rw [mulPowX_equiv₁ p₁ i j h, mulPowX_equiv₁ p₂ i j h, heq]
+  . rw [mulPowX_equiv₂ p₁ i j h, mulPowX_equiv₂ p₂ i j h]
 
 @[inline, specialize]
 def mulPowX {R : Type*} [Ring R] [BEq R] (i : ℕ) (p : QuotientCPolynomial R) : QuotientCPolynomial R :=
@@ -1327,7 +1324,7 @@ lemma mul_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : CPolynomial R) :
     _ ≈ a₂.mul b₂ := mul_equiv₂ a₂ b₁ b₂ heq_b
 
 @[inline, specialize]
-def mul {R : Type} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientCPolynomial R) : QuotientCPolynomial R :=
+def mul {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientCPolynomial R) : QuotientCPolynomial R :=
   Quotient.lift₂ mul_descending mul_descends p q
 
 -- Exponentiation: pow descends to `QuotientCPolynomial`
@@ -1341,20 +1338,17 @@ lemma pow_descends [LawfulBEq R] (n : ℕ) (p₁ p₂ : CPolynomial R) :
   rw [Quotient.eq]
   simp [instSetoidCPolynomial]
   unfold pow
-  have mul_pow_equiv : ∀ (p : CPolynomial R) (n : ℕ),
+  have mul_pow_succ_equiv (p : CPolynomial R) (n : ℕ):
     p.mul^[n + 1] (C 1) ≈ p.mul (p.mul^[n] (C 1)) := by
-    intro p n
-    rw [mul_pow_assoc p (n + 1) (C 1) 1 n]
-    . simp
-    simp
+    rw [mul_pow_succ]
   induction n with
   | zero => simp
   | succ n ih =>
     calc
-      p₁.mul^[n + 1] (C 1) ≈ p₁.mul (p₁.mul^[n] (C 1)) := mul_pow_equiv p₁ n
+      p₁.mul^[n + 1] (C 1) ≈ p₁.mul (p₁.mul^[n] (C 1)) := mul_pow_succ_equiv p₁ n
       _ ≈ p₁.mul (p₂.mul^[n] (C 1)) := mul_equiv₂ p₁ _ _ ih
       _ ≈ p₂.mul (p₂.mul^[n] (C 1)) := mul_equiv _ _ (p₂.mul^[n] (C 1)) heq
-      _ ≈ p₂.mul^[n + 1] (C 1) := equiv_symm (mul_pow_equiv p₂ n)
+      _ ≈ p₂.mul^[n + 1] (C 1) := equiv_symm (mul_pow_succ_equiv p₂ n)
 
 @[inline, specialize]
 def pow {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p : QuotientCPolynomial R) (n : ℕ) : QuotientCPolynomial R :=
