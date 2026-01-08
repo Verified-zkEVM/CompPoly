@@ -16,39 +16,16 @@ CompPoly provides a solid foundation with:
 
 ## V1.0 Criteria
 
-1.	Zero sorrys in all shipped modules.
-2.	Stable API for `CPolynomial`, `CMvPolynomial`, `CMlPolynomial`, including evaluation + interpolation + conversions.
-3.	At least one “fast path” implemented + proven correct (FFT/NTT multiplication + fast multilinear transforms).
-4.	Canonical serialization (bytes; optionally JSON).
-5.	Benchmarks + regression tests exist for core ops and run in CI (or at least in a reproducible script).
-6.	Property tests exist for core ops (eval, mul, interpolation).
-7.	Proof ergonomics baseline: conversions and common lemmas mostly simp/grind-driven, documented.
-8.	At least one real integration example (ArkLib or RT extraction exemplar) demonstrating use as a dependency.
-9.	Minimal docs: README + module docs sufficient for contributors.
-<!-- 1. Correctness and completeness—no library integrity requirements undone.
-   - Zero `sorry`s in the core library
-   - Every algorithm exposed in v1.0 has a correctness theorem linking it to spec/Mathlib polynomials.
-2. Stable API
-   - Stable API for:
-      * `CPolynomial` (univariate)
-	   * `CMvPolynomial` (multivariate)
-	   * `CMlPolynomial` (multilinear)
-   - with expected operations (constructors, arithmetic, evaluation, interpolation)
-3. Integration-ready as a dependency
-   - Either tracks Arklib's Mathlib/Lean version or at least guarantees compatibility (e.g. with release tags)
-   - At least one example demonstrating e.g. CompPoly plugged into an ArkLib proof or spec (or a simple protocol component) or realistic usage patterns (not toy-level)
-4. Performance baseline is credible
-   - Core operations have asymptotically reasonable implementations
-      - Multiplication has FFT/NTT (even if not fully tuned)
-      - batch evaluation exists
-      - multilinear transforms have fast implementation with proofs
-   - Benchmarks exist and are tracked
-      - reproducible benchmarks
-      - regressions are detectable
-      - performance isn’t wildly off expectations
-1. Proof ergonomics aren't painful
-1. CI Stability
-1. Documentation -->
+1. Zero sorrys in all shipped modules.
+2. Complete core API for `CPolynomial`, `CMvPolynomial`, `CMlPolynomial`, including evaluation + interpolation + conversions.
+3. At least one "fast path" implemented + proven correct (FFT/NTT multiplication OR fast multilinear transforms).
+4. Canonical serialization (bytes; JSON optional).
+5. Benchmarks exist for core ops and are reproducible (CI integration optional for v1.0).
+6. Property tests exist for core ops (eval, mul, interpolation).
+7. Proof ergonomics baseline: common operations (add, mul, eval) mostly simp/grind-driven, documented.
+8. At least one real integration example (ArkLib or RT extraction exemplar) demonstrating use as a dependency.
+9. Minimal docs: README + module docs sufficient for contributors.
+10. CI stability: all tests pass consistently.
 
 ## Development Phases
 
