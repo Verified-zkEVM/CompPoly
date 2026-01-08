@@ -603,13 +603,14 @@ lemma add_equiv_raw [LawfulBEq R] (p q : CPolynomial R) : Trim.equiv (p.add q) (
   unfold Trim.equiv add
   exact Trim.coeff_eq_coeff (p.add_raw q)
 
-def smul_equiv : ∀ (i : ℕ) (r : R),
+omit [BEq R] in
+lemma smul_equiv : ∀ (i : ℕ) (r : R),
     (smul r p).coeff i = r * (p.coeff i) := by
     intro i r
     unfold smul mk coeff
     rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
 
-def nsmul_raw_equiv [LawfulBEq R] : ∀ (n i : ℕ),
+lemma nsmul_raw_equiv [LawfulBEq R] : ∀ (n i : ℕ),
   (nsmul_raw n p).trim.coeff i = n * p.trim.coeff i := by
   intro n i
   unfold nsmul_raw
@@ -617,28 +618,34 @@ def nsmul_raw_equiv [LawfulBEq R] : ∀ (n i : ℕ),
   unfold mk
   rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
 
-omit [BEq R] in
-lemma mulPowX_equiv₁ : ∀ (i j : ℕ), j ≥ i →
-  (mulPowX i p).coeff j = p.coeff (j - i) := by
-  intro i j h
-  unfold mulPowX mk
-  rw [concat_coeff₂ (Array.replicate i 0) p j]
-  . simp
-  have h_size : ∀ i : ℕ, (Array.replicate i 0).size = i := by simp
-  rw [← h_size i]
-  simp
-  exact h
+lemma mul_pow_assoc : ∀ (p : CPolynomial R) (n : ℕ),
+  ∀ (q : CPolynomial R) (m l : ℕ),
+  l + m = n →
+  p.mul^[n] q = p.mul^[m] (p.mul^[l] q) := by
+  intro p n
+  induction n with
+  | zero =>
+    intro q m l h_sizes
+    rw [Nat.add_eq_zero_iff] at h_sizes
+    obtain ⟨hl, hm⟩ := h_sizes
+    rw [hl, hm]
+    simp
+  | succ n₀ ih =>
+    intro q m l h_sizes
+    cases l with
+    | zero =>
+      simp at h_sizes
+      rw [h_sizes]
+      simp
+    | succ l₀ =>
+      have h_sizes_simp : l₀ + m = n₀ := by linarith
+      clear h_sizes
+      simp
+      rw [ih (p.mul q) m l₀ h_sizes_simp]
 
-omit [BEq R] in
-lemma mulPowX_equiv₂ : ∀ (i j : ℕ), j < i →
-  (mulPowX i p).coeff j = 0 := by
-  intro i j h
-  unfold mulPowX mk
-  rw [concat_coeff₁ (Array.replicate i 0) p j]
-  . simp; grind
-  have h_size : ∀ i : ℕ, (Array.replicate i 0).size = i := by simp
-  rw [← h_size i]
-  simp; exact h
+lemma mul_pow_succ (p q : CPolynomial R) (n : ℕ):
+  p.mul^[n + 1] q = p.mul (p.mul^[n] q) := by
+  rw [mul_pow_assoc p (n+1) q 1 n] <;> simp
 
 omit [BEq R] in
 lemma neg_coeff : ∀ (p : CPolynomial R) (i : ℕ), p.neg.coeff i = - p.coeff i := by
@@ -974,35 +981,6 @@ namespace QuotientCPolynomial
 
 section EquivalenceLemmas
 
-lemma mul_pow_assoc : ∀ (p : CPolynomial R) (n : ℕ),
-  ∀ (q : CPolynomial R) (m l : ℕ),
-  l + m = n →
-  p.mul^[n] q = p.mul^[m] (p.mul^[l] q) := by
-  intro p n
-  induction n with
-  | zero =>
-    intro q m l h_sizes
-    rw [Nat.add_eq_zero_iff] at h_sizes
-    obtain ⟨hl, hm⟩ := h_sizes
-    rw [hl, hm]
-    simp
-  | succ n₀ ih =>
-    intro q m l h_sizes
-    cases l with
-    | zero =>
-      simp at h_sizes
-      rw [h_sizes]
-      simp
-    | succ l₀ =>
-      have h_sizes_simp : l₀ + m = n₀ := by linarith
-      clear h_sizes
-      simp
-      rw [ih (p.mul q) m l₀ h_sizes_simp]
-
-lemma mul_pow_succ (p q : CPolynomial R) (n : ℕ):
-  p.mul^[n + 1] q = p.mul (p.mul^[n] q) := by
-  rw [mul_pow_assoc p (n+1) q 1 n] <;> simp
-
 /-
 Scalar multiplication by 0 is equivalent to the zero polynomial.
 -/
@@ -1290,24 +1268,22 @@ def sub {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientCPolynomial R)
 def mulPowX_descending (i : ℕ) (p : CPolynomial R) : QuotientCPolynomial R :=
   Quotient.mk _ (mulPowX i p)
 
-lemma mulPowX_descends (i : ℕ) (p₁ p₂ : CPolynomial R) :
+lemma mulPowX_descends [LawfulBEq R] (i : ℕ) (p₁ p₂ : CPolynomial R) :
   equiv p₁ p₂ → mulPowX_descending i p₁ = mulPowX_descending i p₂ := by
-  unfold equiv mulPowX_descending
+  unfold mulPowX_descending
   intro heq
   rw [Quotient.eq]
   simp [instSetoidCPolynomial]
-  intro j
-  by_cases h : j ≥ i <;> simp at h
-  . rw [mulPowX_equiv₁ p₁ i j h, mulPowX_equiv₁ p₂ i j h, heq]
-  . rw [mulPowX_equiv₂ p₁ i j h, mulPowX_equiv₂ p₂ i j h]
+  apply mulPowX_equiv; exact heq
 
 @[inline, specialize]
-def mulPowX {R : Type*} [Ring R] [BEq R] (i : ℕ) (p : QuotientCPolynomial R) : QuotientCPolynomial R :=
+def mulPowX {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (i : ℕ) (p : QuotientCPolynomial R)
+  : QuotientCPolynomial R :=
   Quotient.lift (mulPowX_descending i) (mulPowX_descends i) p
 
 -- Multiplication of a `CPolynomial` by `X`, reduces to `mulPowX 1`.
 @[inline, specialize]
-def mulX (p : QuotientCPolynomial R) : QuotientCPolynomial R := p.mulPowX 1
+def mulX [LawfulBEq R] (p : QuotientCPolynomial R) : QuotientCPolynomial R := p.mulPowX 1
 
 -- Multiplication: mul descends to `QuotientPoly`
 def mul_descending (p q : CPolynomial R) : QuotientCPolynomial R :=
