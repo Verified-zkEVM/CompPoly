@@ -137,7 +137,7 @@ theorem last_nonzero_some_iff [LawfulBEq R] {p : CPolynomial R} {k} :
 
 /-- eliminator for `p.last_nonzero`, e.g. use with the induction tactic as follows:
   ```
-  induction p using last_none_zero_elim with
+  induction p using last_nonzero_induct with
   | case1 p h_none h_all_zero => ...
   | case2 p k h_some h_nonzero h_max => ...
   ```
@@ -157,7 +157,7 @@ theorem last_nonzero_induct [LawfulBEq R] {motive : CPolynomial R → Prop}
 
 /-- eliminator for `p.trim`; use with the induction tactic as follows:
   ```
-  induction p using Trim.elim with
+  induction p using induct with
   | case1 p h_empty h_all_zero => ...
   | case2 p k h_extract h_nonzero h_max => ...
   ```
@@ -574,6 +574,15 @@ theorem add_size {p q : CPolynomial Q} : (add_raw p q).size = max p.size q.size 
   change (Array.zipWith _ _ _ ).size = max p.size q.size
   rw [zipWith_size matchSize_size_eq, matchSize_size]
 
+-- coeff on list concatenations
+omit [BEq R] in
+lemma concat_coeff₁ (i : ℕ) : i < p.size →
+  (p ++ q).coeff i = p.coeff i := by simp; grind
+
+omit [BEq R] in
+lemma concat_coeff₂ (i : ℕ) : i ≥ p.size →
+  (p ++ q).coeff i = q.coeff (i - p.size) := by simp; grind
+
 theorem add_coeff {p q : CPolynomial Q} {i : ℕ} (hi : i < (add_raw p q).size) :
   (add_raw p q)[i] = p.coeff i + q.coeff i
 := by
@@ -593,6 +602,50 @@ theorem add_coeff? (p q : CPolynomial Q) (i : ℕ) :
 lemma add_equiv_raw [LawfulBEq R] (p q : CPolynomial R) : Trim.equiv (p.add q) (p.add_raw q) := by
   unfold Trim.equiv add
   exact Trim.coeff_eq_coeff (p.add_raw q)
+
+omit [BEq R] in
+lemma smul_equiv : ∀ (i : ℕ) (r : R),
+    (smul r p).coeff i = r * (p.coeff i) := by
+    intro i r
+    unfold smul mk coeff
+    rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
+
+lemma nsmul_raw_equiv [LawfulBEq R] : ∀ (n i : ℕ),
+  (nsmul_raw n p).trim.coeff i = n * p.trim.coeff i := by
+  intro n i
+  unfold nsmul_raw
+  repeat rw [Trim.coeff_eq_coeff]
+  unfold mk
+  rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
+
+lemma mul_pow_assoc : ∀ (p : CPolynomial R) (n : ℕ),
+  ∀ (q : CPolynomial R) (m l : ℕ),
+  l + m = n →
+  p.mul^[n] q = p.mul^[m] (p.mul^[l] q) := by
+  intro p n
+  induction n with
+  | zero =>
+    intro q m l h_sizes
+    rw [Nat.add_eq_zero_iff] at h_sizes
+    obtain ⟨hl, hm⟩ := h_sizes
+    rw [hl, hm]
+    simp
+  | succ n₀ ih =>
+    intro q m l h_sizes
+    cases l with
+    | zero =>
+      simp at h_sizes
+      rw [h_sizes]
+      simp
+    | succ l₀ =>
+      have h_sizes_simp : l₀ + m = n₀ := by linarith
+      clear h_sizes
+      simp
+      rw [ih (p.mul q) m l₀ h_sizes_simp]
+
+lemma mul_pow_succ (p q : CPolynomial R) (n : ℕ):
+  p.mul^[n + 1] q = p.mul (p.mul^[n] q) := by
+  rw [mul_pow_assoc p (n+1) q 1 n] <;> simp
 
 omit [BEq R] in
 lemma neg_coeff : ∀ (p : CPolynomial R) (i : ℕ), p.neg.coeff i = - p.coeff i := by
@@ -926,6 +979,191 @@ def QuotientCPolynomial (R : Type*) [Ring R] [BEq R] := Quotient (@instSetoidCPo
 -- operations on `CPolynomial` descend to `QuotientCPolynomial`
 namespace QuotientCPolynomial
 
+section EquivalenceLemmas
+
+/-
+Scalar multiplication by 0 is equivalent to the zero polynomial.
+-/
+lemma smul_zero_equiv {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) :
+  (smul 0 p) ≈ 0 := by
+    have h_smul_zero : ∀ (p : CPolynomial R), (smul 0 p).coeff = 0 := by
+      intro p; ext i; simp [smul]
+      cases p[i]? <;> simp
+    exact fun i => by simpa using congr_fun ( h_smul_zero p ) i
+
+/-
+Addition of polynomials respects equivalence.
+-/
+lemma add_equiv {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
+  (p1 p2 q1 q2 : CPolynomial R)
+  (hp : equiv p1 p2) (hq : equiv q1 q2) :
+  equiv (p1.add q1) (p2.add q2) := by
+    have h_add_equiv_raw : ∀ p q : CPolynomial R, equiv (p.add q) (p.add_raw q) := by
+      exact fun p q => add_equiv_raw p q
+    have h_add_coeff : ∀ i,
+      (p1.add_raw q1).coeff i = p1.coeff i + q1.coeff i ∧ (p2.add_raw q2).coeff i = p2.coeff i + q2.coeff i := by
+      exact fun i => ⟨ add_coeff? p1 q1 i, add_coeff? p2 q2 i ⟩
+    simp_all [ equiv ]
+
+/-
+Multiplication by X^i respects equivalence.
+-/
+lemma mulPowX_equiv {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
+  (i : ℕ) (p q : CPolynomial R) (h : equiv p q) :
+  equiv (mulPowX i p) (mulPowX i q) := by
+    unfold equiv at *
+    intro j
+    by_cases hj : j < i <;> simp_all +decide [ mulPowX ]
+    · unfold mk; rw [ Array.getElem?_append, Array.getElem?_append ]; aesop
+    · convert h ( j - i ) using 1 <;> rw [ Array.getElem?_append ] <;> simp +decide [ hj ]
+      · rw [ if_neg ( not_lt_of_ge hj ) ]
+      · rw [ if_neg ( not_lt_of_ge hj ) ]
+
+/-
+Adding a polynomial equivalent to zero acts as the identity.
+-/
+lemma add_zero_equiv {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
+  (p q : CPolynomial R) (hq : equiv q 0) :
+  equiv (add p q) p := by
+    intro x
+    have := add_coeff? p q x
+    have hq_zero : q.coeff x = 0 := by exact hq x
+    unfold add
+    rw [ coeff_eq_coeff ]
+    aesop
+
+/-
+Multiplying the zero polynomial by X^i results in a polynomial equivalent to zero.
+-/
+lemma mulPowX_zero_equiv {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
+  (i : ℕ) : equiv (mulPowX i (0 : CPolynomial R)) 0 := by
+    unfold equiv
+    simp [coeff]
+    unfold mulPowX
+    grind
+
+/-
+Definition of a single step in the polynomial multiplication algorithm.
+-/
+def mul_step {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
+  (q : CPolynomial R) (acc : CPolynomial R) (x : R × ℕ) : CPolynomial R :=
+  acc.add ((smul x.1 q).mulPowX x.2)
+
+/-
+The multiplication step respects equivalence of the accumulator.
+-/
+lemma mul_step_equiv {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
+  (q : CPolynomial R) (acc1 acc2 : CPolynomial R) (x : R × ℕ)
+  (h : equiv acc1 acc2) :
+  equiv (mul_step q acc1 x) (mul_step q acc2 x) := by
+    apply_rules [ add_equiv, mulPowX_equiv, smul_equiv ]
+
+/-
+The multiplication step with a zero coefficient acts as the identity modulo equivalence.
+-/
+lemma mul_step_zero {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
+  (q : CPolynomial R) (acc : CPolynomial R) (i : ℕ) :
+  equiv (mul_step q acc (0, i)) acc := by
+    have h_mul_step : mul_step q acc (0, i) = acc.add ((smul 0 q).mulPowX i) := by exact rfl
+    have h_mulPowX : mulPowX i (smul 0 q) = smul 0 (mulPowX i q) := by unfold mulPowX smul; aesop
+    rw [ h_mul_step, h_mulPowX ]
+    exact add_zero_equiv _ _ ( smul_zero_equiv _ )
+
+/-
+Folding `mul_step` over a list of zero coefficients preserves equivalence.
+-/
+lemma foldl_mul_step_zeros {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
+  (q : CPolynomial R) (acc : CPolynomial R) (l : List (R × ℕ))
+  (hl : ∀ x ∈ l, x.1 = 0) :
+  equiv (l.foldl (mul_step q) acc) acc := by
+    induction' l using List.reverseRecOn with x xs ih generalizing acc
+    · exact fun _ => rfl
+    · simp_all +decide [ List.foldl_append ]
+      -- use the multiplication step and the induction hypothesis
+      have h_mul_step : equiv (mul_step q (List.foldl (mul_step q) acc x) xs) (List.foldl (mul_step q) acc x) := by
+        convert mul_step_zero q ( List.foldl ( mul_step q ) acc x ) xs.2 using 1
+        specialize hl _ _ ( Or.inr rfl )
+        aesop
+      exact equiv_trans h_mul_step (ih acc)
+
+/-
+The `zipIdx` of a polynomial is the `zipIdx` of its trim followed by a list of zero coefficients.
+-/
+lemma zipIdx_trim_append {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
+  (p : CPolynomial R) :
+  ∃ l, p.zipIdx.toList = p.trim.zipIdx.toList ++ l ∧ ∀ x ∈ l, x.1 = 0 := by
+    -- Let `n` be `p.trim.size`. `p.trim` is the prefix of `p` of length `n`.
+    set n := p.trim.size with hn_def
+    by_cases hn : n = 0
+    · unfold n at hn
+      -- Since `p.trim` is empty, `p` must be the zero polynomial.
+      have hp_zero : ∀ i (hi : i < p.size), p[i] = 0 := by
+        have := Trim.elim p; aesop
+      use List.map (fun i => (0, i)) (List.range p.size)
+      simp
+      refine' List.ext_get _ _ <;> aesop
+    · -- Since `n` is not zero, `p.last_nonzero` is `some k` and `n = k + 1`.
+      obtain ⟨k, hk⟩ : ∃ k : Fin p.size,
+        p.trim = p.extract 0 (k.val + 1) ∧ p[k] ≠ 0 ∧ (∀ j, (hj : j < p.size) → j > k → p[j] = 0) := by
+          have := Trim.elim p; aesop
+      refine' ⟨ _, _, _ ⟩
+      exact ( Array.zipIdx p ).toList.drop ( k + 1 )
+      · rw [ hk.1 ]
+        refine' List.ext_get _ _ <;> simp
+        · rw [ min_eq_left ( by linarith [ Fin.is_lt k ] ), add_tsub_cancel_of_le ( by linarith [ Fin.is_lt k ] ) ]
+        · intro n h₁ h₂; rw [ List.getElem_append ]; simp +decide [ h₁ ]
+          grind
+      · simp +decide [ List.mem_iff_get ]
+        intro a; specialize hk; have := hk.2.2 ( k + 1 + a ); simp_all +decide [ Nat.add_assoc ]
+
+lemma mul_trim_equiv [LawfulBEq R] (a b : CPolynomial R) :
+  a.mul b ≈ a.trim.mul b := by
+    have h_zipIdx_split : ∃ l, a.zipIdx.toList = a.trim.zipIdx.toList ++ l ∧ ∀ x ∈ l, x.1 = 0 := by
+      exact zipIdx_trim_append a
+    obtain ⟨l, hl⟩ := h_zipIdx_split
+    have h_foldl_split : ∃ acc, (a.mul b) = (l.foldl (mul_step b) acc) ∧ (a.trim.mul b) = acc := by
+      -- By definition of `mul`, we can rewrite `a.mul b` using `mul_step` and the foldl operation.
+      have h_mul_def : a.mul b = (a.zipIdx.toList.foldl (mul_step b) (C 0)) := by
+        unfold mul
+        exact Eq.symm (Array.foldl_toList (mul_step b))
+      have h_mul_def_trim : a.trim.mul b = (a.trim.zipIdx.toList.foldl (mul_step b) (C 0)) := by
+        unfold mul
+        exact Eq.symm (Array.foldl_toList (mul_step b))
+      aesop
+    obtain ⟨ acc, h₁, h₂ ⟩ := h_foldl_split
+    exact h₁.symm ▸ h₂.symm ▸ foldl_mul_step_zeros b acc l hl.2
+
+lemma mul_equiv [LawfulBEq R] (a₁ a₂ b : CPolynomial R) :
+  a₁ ≈ a₂ → a₁.mul b ≈ a₂.mul b := by
+  intro h
+  calc
+    a₁.mul b ≈ a₁.trim.mul b := mul_trim_equiv a₁ b
+    _ ≈ a₂.trim.mul b := by rw [eq_of_equiv h]
+    _ ≈ a₂.mul b := equiv_symm (mul_trim_equiv a₂ b)
+
+lemma mul_equiv₂ [LawfulBEq R] (a b₁ b₂ : CPolynomial R) :
+  b₁ ≈ b₂ → a.mul b₁ ≈ a.mul b₂ := by
+    -- By definition of multiplication, we can express `a.mul b₁` and `a.mul b₂` in terms of
+    -- their sums of products of coefficients.
+    have h_mul_def : ∀ (a b : CompPoly.CPolynomial R),
+      a.mul b = (a.zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b).mulPowX i)) (C 0)) := by exact fun a b => rfl
+    intro h
+    have h_foldl_equiv : ∀ (l : List (R × ℕ)) (acc : CompPoly.CPolynomial R),
+      List.foldl (fun acc (a', i) => acc.add ((smul a' b₁).mulPowX i)) acc l ≈
+      List.foldl (fun acc (a', i) => acc.add ((smul a' b₂).mulPowX i)) acc l := by
+      intro l acc
+      induction' l using List.reverseRecOn with l ih generalizing acc; rfl
+      · simp +zetaDelta at *
+        -- Apply the add_equiv lemma to the foldl results and the mulPowX terms.
+        apply add_equiv
+        · expose_names; exact h_1 acc
+        · -- Apply the lemma that multiplying by X^i preserves equivalence.
+          apply mulPowX_equiv
+          exact fun i => by rw [ smul_equiv, smul_equiv ]; exact congr_arg _ ( h i )
+    convert h_foldl_equiv ( Array.toList ( Array.zipIdx a ) ) ( C 0 ) using 1 <;> grind
+
+end EquivalenceLemmas
+
 -- Addition: add descends to `QuotientCPolynomial`
 def add_descending (p q : CPolynomial R) : QuotientCPolynomial R :=
   Quotient.mk _ (add p q)
@@ -946,6 +1184,45 @@ lemma add_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : CPolynomial R) :
 @[inline, specialize]
 def add {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientCPolynomial R) : QuotientCPolynomial R :=
   Quotient.lift₂ add_descending add_descends p q
+
+-- Scalar multiplication: smul descends to `QuotientCPolynomial`
+def smul_descending (r : R) (p : CPolynomial R) : QuotientCPolynomial R :=
+  Quotient.mk _ (smul r p)
+
+lemma smul_descends [LawfulBEq R] (r : R) (p₁ p₂ : CPolynomial R) :
+  equiv p₁ p₂ → smul_descending r p₁ = smul_descending r p₂ := by
+  unfold equiv smul_descending
+  intro heq
+  rw [Quotient.eq]
+  simp [instSetoidCPolynomial]
+  intro i
+  rw [smul_equiv, smul_equiv, heq i]
+
+@[inline, specialize]
+def smul {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (r : R) (p : QuotientCPolynomial R)
+  : QuotientCPolynomial R :=
+  Quotient.lift (smul_descending r) (smul_descends r) p
+
+-- Scalar multiplication: nsmul_raw descends to `QuotientCPolynomial`
+def nsmul_descending (n : ℕ) (p : CPolynomial R) : QuotientCPolynomial R :=
+  Quotient.mk _ (nsmul n p)
+
+lemma nsmul_descends [LawfulBEq R] (n : ℕ) (p₁ p₂ : CPolynomial R) :
+  equiv p₁ p₂ → nsmul_descending n p₁ = nsmul_descending n p₂ := by
+  unfold equiv
+  intro heq
+  unfold nsmul_descending
+  rw [Quotient.eq]
+  simp [instSetoidCPolynomial]
+  unfold nsmul equiv
+  intro i
+  repeat rw [nsmul_raw_equiv, coeff_eq_coeff]
+  rw [heq i]
+
+@[inline, specialize]
+def nsmul {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (n : ℕ) (p : QuotientCPolynomial R)
+  : QuotientCPolynomial R :=
+  Quotient.lift (nsmul_descending n) (nsmul_descends n) p
 
 -- Negation: neg descends to `QuotientCPolynomial`
 def neg_descending (p : CPolynomial R) : QuotientCPolynomial R :=
@@ -987,7 +1264,73 @@ lemma sub_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : CPolynomial R) :
 def sub {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientCPolynomial R) : QuotientCPolynomial R :=
   Quotient.lift₂ sub_descending sub_descends p q
 
--- TODO the other operations ...
+-- Multiplication by `X ^ i`: mulPowX descends to `QuotientCPolynomial`
+def mulPowX_descending (i : ℕ) (p : CPolynomial R) : QuotientCPolynomial R :=
+  Quotient.mk _ (mulPowX i p)
+
+lemma mulPowX_descends [LawfulBEq R] (i : ℕ) (p₁ p₂ : CPolynomial R) :
+  equiv p₁ p₂ → mulPowX_descending i p₁ = mulPowX_descending i p₂ := by
+  unfold mulPowX_descending
+  intro heq
+  rw [Quotient.eq]
+  simp [instSetoidCPolynomial]
+  apply mulPowX_equiv; exact heq
+
+@[inline, specialize]
+def mulPowX {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (i : ℕ) (p : QuotientCPolynomial R)
+  : QuotientCPolynomial R :=
+  Quotient.lift (mulPowX_descending i) (mulPowX_descends i) p
+
+-- Multiplication of a `CPolynomial` by `X`, reduces to `mulPowX 1`.
+@[inline, specialize]
+def mulX [LawfulBEq R] (p : QuotientCPolynomial R) : QuotientCPolynomial R := p.mulPowX 1
+
+-- Multiplication: mul descends to `QuotientPoly`
+def mul_descending (p q : CPolynomial R) : QuotientCPolynomial R :=
+  Quotient.mk _ (mul p q)
+
+lemma mul_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : CPolynomial R) :
+  equiv a₁ a₂ → equiv b₁ b₂ → mul_descending a₁ b₁ = mul_descending a₂ b₂ := by
+  unfold mul_descending
+  intros heq_a heq_b
+  rw [Quotient.eq]
+  simp [instSetoidCPolynomial]
+  calc
+    a₁.mul b₁ ≈ a₂.mul b₁ := mul_equiv a₁ a₂ b₁ heq_a
+    _ ≈ a₂.mul b₂ := mul_equiv₂ a₂ b₁ b₂ heq_b
+
+@[inline, specialize]
+def mul {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q : QuotientCPolynomial R) : QuotientCPolynomial R :=
+  Quotient.lift₂ mul_descending mul_descends p q
+
+-- Exponentiation: pow descends to `QuotientCPolynomial`
+def pow_descending (p : CPolynomial R) (n : ℕ) : QuotientCPolynomial R :=
+  Quotient.mk _ (pow p n)
+
+lemma pow_descends [LawfulBEq R] (n : ℕ) (p₁ p₂ : CPolynomial R) :
+  equiv p₁ p₂ → pow_descending p₁ n = pow_descending p₂ n := by
+  intro heq
+  unfold pow_descending
+  rw [Quotient.eq]
+  simp [instSetoidCPolynomial]
+  unfold pow
+  have mul_pow_succ_equiv (p : CPolynomial R) (n : ℕ):
+    p.mul^[n + 1] (C 1) ≈ p.mul (p.mul^[n] (C 1)) := by
+    rw [mul_pow_succ]
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    calc
+      p₁.mul^[n + 1] (C 1) ≈ p₁.mul (p₁.mul^[n] (C 1)) := mul_pow_succ_equiv p₁ n
+      _ ≈ p₁.mul (p₂.mul^[n] (C 1)) := mul_equiv₂ p₁ _ _ ih
+      _ ≈ p₂.mul (p₂.mul^[n] (C 1)) := mul_equiv _ _ (p₂.mul^[n] (C 1)) heq
+      _ ≈ p₂.mul^[n + 1] (C 1) := equiv_symm (mul_pow_succ_equiv p₂ n)
+
+@[inline, specialize]
+def pow {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p : QuotientCPolynomial R) (n : ℕ) : QuotientCPolynomial R :=
+  Quotient.lift (fun p => pow_descending p n) (pow_descends n) p
+
+-- TODO div?
 
 end QuotientCPolynomial
 
