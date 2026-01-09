@@ -10,13 +10,16 @@ import CompPoly.Data.Array.Lemmas
 import CompPoly.Univariate.Basic
 
 namespace CompPoly
+
 namespace CPolynomial
+
 variable {R : Type*} [Ring R] [BEq R]
 variable {Q : Type*} [Ring Q]
 
 /-- canonical version of CPolynomial
 
-TODO: make THIS the `CPolynomial, rename current `CPolynomial` to `CPolynomial.Raw` or something -/
+TODO: make THIS the `CPolynomial, rename current `CPolynomial` to `CPolynomial.Raw` or something,
+changing this file to Basic.lean -/
 def CPolynomialC (R : Type*) [BEq R] [Ring R] := { p : CPolynomial R // p.trim = p }
 
 @[ext] theorem CPolynomialC.ext {p q : CPolynomialC R} (h : p.val = q.val) : p = q := Subtype.eq h
@@ -85,4 +88,5 @@ instance [LawfulBEq R] : AddCommGroup (CPolynomialC R) where
 end OperationsC
 
 end CPolynomial
+
 end CompPoly

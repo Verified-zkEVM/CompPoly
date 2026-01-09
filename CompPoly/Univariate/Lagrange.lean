@@ -7,7 +7,9 @@ Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
 import CompPoly.Univariate.Basic
 
 namespace CompPoly
+
 namespace CPolynomial
+
 namespace Lagrange
 
 -- unique polynomial of degree n that has nodes at ω^i for i = 0, 1, ..., n-1
@@ -22,5 +24,7 @@ def interpolate {R : Type*} [Ring R] (n : ℕ) (ω : R) (r : Vector R n) : CPoly
   -- .mk (Array.finRange n |>.map (fun i => r[i])) * nodal n ω
 
 end Lagrange
+
 end CPolynomial
+
 end CompPoly
