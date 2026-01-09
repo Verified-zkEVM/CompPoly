@@ -30,16 +30,6 @@ the same polynomial via zero-padding, for example `#[1,2,3] = #[1,2,3,0,0,0,...]
 @[reducible, inline, specialize]
 def CPolynomial (R : Type*) := Array R
 
-end CompPoly
-
-/-- Convert a `Polynomial` to a `CPolynomial`. -/
-def Polynomial.toImpl {R : Type*} [Semiring R] (p : R[X]) : CompPoly.CPolynomial R :=
-  match p.degree with
-  | ⊥ => #[]
-  | some d  => .ofFn (fun i : Fin (d + 1) => p.coeff i)
-
-namespace CompPoly
-
 namespace CPolynomial
 
 @[reducible]
@@ -394,17 +384,6 @@ theorem canonical_ext [LawfulBEq R] {p q : CPolynomial R} (hp : p.trim = p) (hq 
   exact eq_of_equiv h_equiv
 end Trim
 
-/-- canonical version of CPolynomial
-
-TODO: make THIS the `CPolynomial, rename current `CPolynomial` to `CPolynomial.Raw` or something -/
-def CPolynomialC (R : Type*) [BEq R] [Ring R] := { p : CPolynomial R // p.trim = p }
-
-@[ext] theorem CPolynomialC.ext {p q : CPolynomialC R} (h : p.val = q.val) : p = q := Subtype.eq h
-
-instance : Coe (CPolynomialC R) (CPolynomial R) where coe := Subtype.val
-
-instance : Inhabited (CPolynomialC R) := ⟨#[], Trim.canonical_empty⟩
-
 section Operations
 
 variable {S : Type*}
@@ -725,226 +704,7 @@ theorem neg_add_cancel [LawfulBEq R] (p : CPolynomial R) : -p + p = 0 := by
 
 end Operations
 
-namespace OperationsC
--- additive group on CPolynomialC
-variable {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
-variable (p q r : CPolynomialC R)
-
-instance : Add (CPolynomialC R) where
-  add p q := ⟨p.val + q.val, by apply Trim.trim_twice⟩
-
-theorem add_comm : p + q = q + p := by
-  apply CPolynomialC.ext; apply CPolynomial.add_comm
-
-theorem add_assoc : p + q + r = p + (q + r) := by
-  apply CPolynomialC.ext; apply CPolynomial.add_assoc
-
-instance : Zero (CPolynomialC R) := ⟨0, zero_canonical⟩
-
-theorem zero_add : 0 + p = p := by
-  apply CPolynomialC.ext
-  apply CPolynomial.zero_add p.val p.prop
-
-theorem add_zero : p + 0 = p := by
-  apply CPolynomialC.ext
-  apply CPolynomial.add_zero p.val p.prop
-
-def nsmul (n : ℕ) (p : CPolynomialC R) : CPolynomialC R :=
-  ⟨CPolynomial.nsmul n p.val, by apply Trim.trim_twice⟩
-
-theorem nsmul_zero : nsmul 0 p = 0 := by
-  apply CPolynomialC.ext; apply CPolynomial.nsmul_zero
-
-theorem nsmul_succ (n : ℕ) (p : CPolynomialC R) : nsmul (n + 1) p = nsmul n p + p := by
-  apply CPolynomialC.ext; apply CPolynomial.nsmul_succ
-
-instance : Neg (CPolynomialC R) where
-  neg p := ⟨-p.val, neg_trim p.val p.prop⟩
-
-instance : Sub (CPolynomialC R) where
-  sub p q := p + -q
-
-theorem neg_add_cancel : -p + p = 0 := by
-  apply CPolynomialC.ext
-  apply CPolynomial.neg_add_cancel
-
-instance [LawfulBEq R] : AddCommGroup (CPolynomialC R) where
-  add_assoc := add_assoc
-  zero_add := zero_add
-  add_zero := add_zero
-  add_comm := add_comm
-  neg_add_cancel := neg_add_cancel
-  nsmul := nsmul -- TODO do we actually need this custom implementation?
-  nsmul_zero := nsmul_zero
-  nsmul_succ := nsmul_succ
-  zsmul := zsmulRec -- TODO do we want a custom efficient implementation?
-
--- TODO: define `SemiRing` structure on `CPolynomialC`
-
-end OperationsC
-
-section ToPoly
-
-/-- Convert a `CPolynomial` to a (mathlib) `Polynomial`. -/
-noncomputable def toPoly (p : CPolynomial R) : Polynomial R :=
-  p.eval₂ Polynomial.C Polynomial.X
-
-/-- a more low-level and direct definition of `toPoly`; currently unused. -/
-noncomputable def toPoly' (p : CPolynomial R) : Polynomial R :=
-  Polynomial.ofFinsupp (Finsupp.onFinset (Finset.range p.size) p.coeff (by
-    intro n hn
-    rw [Finset.mem_range]
-    by_contra! h
-    have h' : p.coeff n = 0 := by simp [h]
-    contradiction
-  ))
-
-noncomputable def CPolynomialC.toPoly (p : CPolynomialC R) : Polynomial R := p.val.toPoly
-
-alias ofPoly := Polynomial.toImpl
-
-/-- evaluation stays the same after converting to mathlib -/
-theorem eval_toPoly_eq_eval (x : Q) (p : CPolynomial Q) : p.toPoly.eval x = p.eval x := by
-  unfold toPoly eval eval₂
-  rw [← Array.foldl_hom (Polynomial.eval x)
-    (g₁ := fun acc (t : Q × ℕ) ↦ acc + Polynomial.C t.1 * Polynomial.X ^ t.2)
-    (g₂ := fun acc (a, i) ↦ acc + a * x ^ i) ]
-  · congr; exact Polynomial.eval_zero
-  simp
-
-/-- characterize `p.toPoly` by showing that its coefficients are exactly the coefficients of `p` -/
-lemma coeff_toPoly {p : CPolynomial Q} {n : ℕ} : p.toPoly.coeff n = p.coeff n := by
-  unfold toPoly eval₂
-
-  let f := fun (acc: Q[X]) ((a,i): Q × ℕ) ↦ acc + Polynomial.C a * Polynomial.X ^ i
-  change (Array.foldl f 0 p.zipIdx).coeff n = p.coeff n
-
-  -- we slightly weaken the goal, to use `Array.foldl_induction`
-  let motive (size: ℕ) (acc: Q[X]) := acc.coeff n = if (n < size) then p.coeff n else 0
-
-  have zipIdx_size : p.zipIdx.size = p.size := by simp [Array.zipIdx]
-
-  suffices h : motive p.zipIdx.size (Array.foldl f 0 p.zipIdx) by
-    rw [h, ite_eq_left_iff, zipIdx_size]
-    intro hn
-    replace hn : n ≥ p.size := by linarith
-    rw [coeff, Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hn, Option.getD_none]
-
-  apply Array.foldl_induction motive
-  · change motive 0 0
-    simp [motive]
-
-  change ∀ (i : Fin p.zipIdx.size) acc, motive i acc → motive (i + 1) (f acc p.zipIdx[i])
-  unfold motive f
-  intros i acc h
-  have i_lt_p : i < p.size := by linarith [i.is_lt]
-  have : p.zipIdx[i] = (p[i], ↑i) := by simp [Array.getElem_zipIdx]
-  rw [this, coeff_add, coeff_C_mul, coeff_X_pow, mul_ite, mul_one, mul_zero, h]
-  rcases (Nat.lt_trichotomy i n) with hlt | rfl | hgt
-  · have h1 : ¬ (n < i) := by linarith
-    have h2 : ¬ (n = i) := by linarith
-    have h3 : ¬ (n < i + 1) := by linarith
-    simp [h1, h2, h3]
-  · simp [i_lt_p]
-  · have h1 : ¬ (n = i) := by linarith
-    have h2 : n < i + 1 := by linarith
-    simp [hgt, h1, h2]
-
-/-- helper lemma, to argue about `toImpl` by cases -/
-lemma toImpl_elim (p : Q[X]) :
-    (p = 0 ∧ p.toImpl = #[])
-  ∨ (p ≠ 0 ∧ p.toImpl = .ofFn (fun i : Fin (p.natDegree + 1) => p.coeff i)) := by
-  unfold toImpl
-  by_cases hbot : p.degree = ⊥
-  · left
-    use degree_eq_bot.mp hbot
-    rw [hbot]
-  right
-  use degree_ne_bot.mp hbot
-  have hnat : p.degree = p.natDegree := degree_eq_natDegree (degree_ne_bot.mp hbot)
-  simp [hnat]
-
-/-- `toImpl` is a right-inverse of `toPoly`.
-  that is, the round-trip starting from a mathlib polynomial gets us back to where we were.
-  in particular, `toPoly` is surjective and `toImpl` is injective. -/
-theorem toPoly_toImpl {p : Q[X]} : p.toImpl.toPoly = p := by
-  ext n
-  rw [coeff_toPoly]
-  rcases toImpl_elim p with ⟨rfl, h⟩ | ⟨_, h⟩
-  · simp [h]
-  rw [h]
-  by_cases h : n < p.natDegree + 1
-  · simp [h]
-  simp only [Array.getD_eq_getD_getElem?, Array.getElem?_ofFn]
-  simp only [h, reduceDIte, Option.getD_none]
-  replace h := Nat.lt_of_succ_le (not_lt.mp h)
-  symm
-  exact coeff_eq_zero_of_natDegree_lt h
-
-/-- `CPolynomial` addition is mapped to `Polynomial` addition -/
-theorem toPoly_add {p q : CPolynomial Q} : (add_raw p q).toPoly = p.toPoly + q.toPoly := by
-  ext n
-  rw [coeff_add, coeff_toPoly, coeff_toPoly, coeff_toPoly, add_coeff?]
-
-/-- trimming doesn't change the `toPoly` image -/
-lemma toPoly_trim [LawfulBEq R] {p : CPolynomial R} : p.trim.toPoly = p.toPoly := by
-  ext n
-  rw [coeff_toPoly, coeff_toPoly, Trim.coeff_eq_coeff]
-
-/-- helper lemma to be able to state the next lemma -/
-lemma toImpl_nonzero {p : Q[X]} (hp : p ≠ 0) : p.toImpl.size > 0 := by
-  rcases toImpl_elim p with ⟨rfl, _⟩ | ⟨_, h⟩
-  · contradiction
-  suffices h : p.toImpl ≠ #[] from Array.size_pos_iff.mpr h
-  simp [h]
-
-/-- helper lemma: the last entry of the `CPolynomial` obtained by `toImpl` is just the `leadingCoeff` -/
-lemma getLast_toImpl {p : Q[X]} (hp : p ≠ 0) : let h : p.toImpl.size > 0 := toImpl_nonzero hp;
-    p.toImpl[p.toImpl.size - 1] = p.leadingCoeff := by
-  rcases toImpl_elim p with ⟨rfl, _⟩ | ⟨_, h⟩
-  · contradiction
-  simp [h]
-
-/-- `toImpl` maps to canonical `CPolynomial`s -/
-theorem trim_toImpl [LawfulBEq R] (p : R[X]) : p.toImpl.trim = p.toImpl := by
-  rcases toImpl_elim p with ⟨rfl, h⟩ | ⟨h_nz, _⟩
-  · rw [h, Trim.canonical_empty]
-  rw [Trim.canonical_iff]
-  unfold Array.getLast
-  intro
-  rw [getLast_toImpl h_nz]
-  exact Polynomial.leadingCoeff_ne_zero.mpr h_nz
-
-/-- on canonical `CPolynomial`s, `toImpl` is also a left-inverse of `toPoly`.
-  in particular, `toPoly` is a bijection from `CPolynomialC` to `Polynomial`. -/
-lemma toImpl_toPoly_of_canonical [LawfulBEq R] (p : CPolynomialC R) : p.toPoly.toImpl = p := by
-  -- we will change something slightly more general: `toPoly` is injective on canonical polynomials
-  suffices h_inj : ∀ q : CPolynomialC R, p.toPoly = q.toPoly → p = q by
-    have : p.toPoly = p.toPoly.toImpl.toPoly := by rw [toPoly_toImpl]
-    exact h_inj ⟨ p.toPoly.toImpl, trim_toImpl p.toPoly ⟩ this |> congrArg Subtype.val |>.symm
-  intro q hpq
-  apply CPolynomialC.ext
-  apply Trim.canonical_ext p.property q.property
-  intro i
-  rw [← coeff_toPoly, ← coeff_toPoly]
-  exact hpq |> congrArg (fun p => p.coeff i)
-
-/-- the roundtrip to and from mathlib maps a `CPolynomial` to its trimmed/canonical representative -/
-theorem toImpl_toPoly [LawfulBEq R] (p : CPolynomial R) : p.toPoly.toImpl = p.trim := by
-  rw [← toPoly_trim]
-  exact toImpl_toPoly_of_canonical ⟨ p.trim, Trim.trim_twice p⟩
-
-/-- evaluation stays the same after converting a mathlib `Polynomial` to a `CPolynomial` -/
-theorem eval_toImpl_eq_eval [LawfulBEq R] (x : R) (p : R[X]) : p.toImpl.eval x = p.eval x := by
-  rw [← toPoly_toImpl (p := p), toImpl_toPoly, ← toPoly_trim, eval_toPoly_eq_eval]
-
-/-- corollary: evaluation stays the same after trimming -/
-lemma eval_trim_eq_eval [LawfulBEq R] (x : R) (p : CPolynomial R) : p.trim.eval x = p.eval x := by
-  rw [← toImpl_toPoly, eval_toImpl_eq_eval, eval_toPoly_eq_eval]
-
-end ToPoly
-
-section Equiv
+section Quotient
 open Trim
 
 /-- Reflexivity of the equivalence relation. -/
@@ -1330,26 +1090,12 @@ lemma pow_descends [LawfulBEq R] (n : ℕ) (p₁ p₂ : CPolynomial R) :
 def pow {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p : QuotientCPolynomial R) (n : ℕ) : QuotientCPolynomial R :=
   Quotient.lift (fun p => pow_descending p n) (pow_descends n) p
 
+-- TODO ring structure on the quotient
 -- TODO div?
 
 end QuotientCPolynomial
 
-end Equiv
-
-namespace Lagrange
-
--- unique polynomial of degree n that has nodes at ω^i for i = 0, 1, ..., n-1
-def nodal {R : Type*} [Ring R] (n : ℕ) (ω : R) : CPolynomial R := sorry
-  -- .mk (Array.Range n |>.map (fun i => ω^i))
-
-/--
-This function produces the polynomial which is of degree n and is equal to r i at ω^i for i = 0, 1,
-..., n-1.
--/
-def interpolate {R : Type*} [Ring R] (n : ℕ) (ω : R) (r : Vector R n) : CPolynomial R := sorry
-  -- .mk (Array.finRange n |>.map (fun i => r[i])) * nodal n ω
-
-end Lagrange
+end Quotient
 
 end CPolynomial
 
