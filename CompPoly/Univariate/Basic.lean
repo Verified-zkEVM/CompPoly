@@ -394,17 +394,6 @@ theorem canonical_ext [LawfulBEq R] {p q : CPolynomial R} (hp : p.trim = p) (hq 
   exact eq_of_equiv h_equiv
 end Trim
 
-/-- canonical version of CPolynomial
-
-TODO: make THIS the `CPolynomial, rename current `CPolynomial` to `CPolynomial.Raw` or something -/
-def CPolynomialC (R : Type*) [BEq R] [Ring R] := { p : CPolynomial R // p.trim = p }
-
-@[ext] theorem CPolynomialC.ext {p q : CPolynomialC R} (h : p.val = q.val) : p = q := Subtype.eq h
-
-instance : Coe (CPolynomialC R) (CPolynomial R) where coe := Subtype.val
-
-instance : Inhabited (CPolynomialC R) := ⟨#[], Trim.canonical_empty⟩
-
 section Operations
 
 variable {S : Type*}
@@ -725,64 +714,6 @@ theorem neg_add_cancel [LawfulBEq R] (p : CPolynomial R) : -p + p = 0 := by
 
 end Operations
 
-namespace OperationsC
--- additive group on CPolynomialC
-variable {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
-variable (p q r : CPolynomialC R)
-
-instance : Add (CPolynomialC R) where
-  add p q := ⟨p.val + q.val, by apply Trim.trim_twice⟩
-
-theorem add_comm : p + q = q + p := by
-  apply CPolynomialC.ext; apply CPolynomial.add_comm
-
-theorem add_assoc : p + q + r = p + (q + r) := by
-  apply CPolynomialC.ext; apply CPolynomial.add_assoc
-
-instance : Zero (CPolynomialC R) := ⟨0, zero_canonical⟩
-
-theorem zero_add : 0 + p = p := by
-  apply CPolynomialC.ext
-  apply CPolynomial.zero_add p.val p.prop
-
-theorem add_zero : p + 0 = p := by
-  apply CPolynomialC.ext
-  apply CPolynomial.add_zero p.val p.prop
-
-def nsmul (n : ℕ) (p : CPolynomialC R) : CPolynomialC R :=
-  ⟨CPolynomial.nsmul n p.val, by apply Trim.trim_twice⟩
-
-theorem nsmul_zero : nsmul 0 p = 0 := by
-  apply CPolynomialC.ext; apply CPolynomial.nsmul_zero
-
-theorem nsmul_succ (n : ℕ) (p : CPolynomialC R) : nsmul (n + 1) p = nsmul n p + p := by
-  apply CPolynomialC.ext; apply CPolynomial.nsmul_succ
-
-instance : Neg (CPolynomialC R) where
-  neg p := ⟨-p.val, neg_trim p.val p.prop⟩
-
-instance : Sub (CPolynomialC R) where
-  sub p q := p + -q
-
-theorem neg_add_cancel : -p + p = 0 := by
-  apply CPolynomialC.ext
-  apply CPolynomial.neg_add_cancel
-
-instance [LawfulBEq R] : AddCommGroup (CPolynomialC R) where
-  add_assoc := add_assoc
-  zero_add := zero_add
-  add_zero := add_zero
-  add_comm := add_comm
-  neg_add_cancel := neg_add_cancel
-  nsmul := nsmul -- TODO do we actually need this custom implementation?
-  nsmul_zero := nsmul_zero
-  nsmul_succ := nsmul_succ
-  zsmul := zsmulRec -- TODO do we want a custom efficient implementation?
-
--- TODO: define `SemiRing` structure on `CPolynomialC`
-
-end OperationsC
-
 section ToPoly
 
 /-- Convert a `CPolynomial` to a (mathlib) `Polynomial`. -/
@@ -799,7 +730,8 @@ noncomputable def toPoly' (p : CPolynomial R) : Polynomial R :=
     contradiction
   ))
 
-noncomputable def CPolynomialC.toPoly (p : CPolynomialC R) : Polynomial R := p.val.toPoly
+-- TODO REFACTOR
+-- noncomputable def CPolynomialC.toPoly (p : CPolynomialC R) : Polynomial R := p.val.toPoly
 
 alias ofPoly := Polynomial.toImpl
 
@@ -915,32 +847,33 @@ theorem trim_toImpl [LawfulBEq R] (p : R[X]) : p.toImpl.trim = p.toImpl := by
   rw [getLast_toImpl h_nz]
   exact Polynomial.leadingCoeff_ne_zero.mpr h_nz
 
-/-- on canonical `CPolynomial`s, `toImpl` is also a left-inverse of `toPoly`.
-  in particular, `toPoly` is a bijection from `CPolynomialC` to `Polynomial`. -/
-lemma toImpl_toPoly_of_canonical [LawfulBEq R] (p : CPolynomialC R) : p.toPoly.toImpl = p := by
-  -- we will change something slightly more general: `toPoly` is injective on canonical polynomials
-  suffices h_inj : ∀ q : CPolynomialC R, p.toPoly = q.toPoly → p = q by
-    have : p.toPoly = p.toPoly.toImpl.toPoly := by rw [toPoly_toImpl]
-    exact h_inj ⟨ p.toPoly.toImpl, trim_toImpl p.toPoly ⟩ this |> congrArg Subtype.val |>.symm
-  intro q hpq
-  apply CPolynomialC.ext
-  apply Trim.canonical_ext p.property q.property
-  intro i
-  rw [← coeff_toPoly, ← coeff_toPoly]
-  exact hpq |> congrArg (fun p => p.coeff i)
+-- TODO REFACTOR
+-- /-- on canonical `CPolynomial`s, `toImpl` is also a left-inverse of `toPoly`.
+--   in particular, `toPoly` is a bijection from `CPolynomialC` to `Polynomial`. -/
+-- lemma toImpl_toPoly_of_canonical [LawfulBEq R] (p : CPolynomialC R) : p.toPoly.toImpl = p := by
+--   -- we will change something slightly more general: `toPoly` is injective on canonical polynomials
+--   suffices h_inj : ∀ q : CPolynomialC R, p.toPoly = q.toPoly → p = q by
+--     have : p.toPoly = p.toPoly.toImpl.toPoly := by rw [toPoly_toImpl]
+--     exact h_inj ⟨ p.toPoly.toImpl, trim_toImpl p.toPoly ⟩ this |> congrArg Subtype.val |>.symm
+--   intro q hpq
+--   apply CPolynomialC.ext
+--   apply Trim.canonical_ext p.property q.property
+--   intro i
+--   rw [← coeff_toPoly, ← coeff_toPoly]
+--   exact hpq |> congrArg (fun p => p.coeff i)
 
-/-- the roundtrip to and from mathlib maps a `CPolynomial` to its trimmed/canonical representative -/
-theorem toImpl_toPoly [LawfulBEq R] (p : CPolynomial R) : p.toPoly.toImpl = p.trim := by
-  rw [← toPoly_trim]
-  exact toImpl_toPoly_of_canonical ⟨ p.trim, Trim.trim_twice p⟩
+-- /-- the roundtrip to and from mathlib maps a `CPolynomial` to its trimmed/canonical representative -/
+-- theorem toImpl_toPoly [LawfulBEq R] (p : CPolynomial R) : p.toPoly.toImpl = p.trim := by
+--   rw [← toPoly_trim]
+--   exact toImpl_toPoly_of_canonical ⟨ p.trim, Trim.trim_twice p⟩
 
-/-- evaluation stays the same after converting a mathlib `Polynomial` to a `CPolynomial` -/
-theorem eval_toImpl_eq_eval [LawfulBEq R] (x : R) (p : R[X]) : p.toImpl.eval x = p.eval x := by
-  rw [← toPoly_toImpl (p := p), toImpl_toPoly, ← toPoly_trim, eval_toPoly_eq_eval]
+-- /-- evaluation stays the same after converting a mathlib `Polynomial` to a `CPolynomial` -/
+-- theorem eval_toImpl_eq_eval [LawfulBEq R] (x : R) (p : R[X]) : p.toImpl.eval x = p.eval x := by
+--   rw [← toPoly_toImpl (p := p), toImpl_toPoly, ← toPoly_trim, eval_toPoly_eq_eval]
 
-/-- corollary: evaluation stays the same after trimming -/
-lemma eval_trim_eq_eval [LawfulBEq R] (x : R) (p : CPolynomial R) : p.trim.eval x = p.eval x := by
-  rw [← toImpl_toPoly, eval_toImpl_eq_eval, eval_toPoly_eq_eval]
+-- /-- corollary: evaluation stays the same after trimming -/
+-- lemma eval_trim_eq_eval [LawfulBEq R] (x : R) (p : CPolynomial R) : p.trim.eval x = p.eval x := by
+--   rw [← toImpl_toPoly, eval_toImpl_eq_eval, eval_toPoly_eq_eval]
 
 end ToPoly
 
