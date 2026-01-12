@@ -10,16 +10,29 @@ import CompPoly.Data.Array.Lemmas
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.Canonical
 
--- HIGH LEVEL TODOs
--- * equivalence theorems for univariate polynomials to the mathlib definition
---   * OR since multivariate polynomials are already defined, should we just prove a special case ..?
--- * equivalence between canonical and raw polynomials
--- * Prove CPolynomial R isomorphic to CMvPolynomial Unit R?
--- * inspiration from MvPolyEquiv.lean
+/-!
+  # Equivalence with Mathlib Polynomials
+
+  This file establishes the equivalence between `CPolynomial R` and mathlib's `Polynomial R`.
+  The main results (thus far) are:
+  - `toPoly`: converts `CPolynomial R` to `Polynomial R`
+  - `ofPoly` (aliased from `Polynomial.toImpl`): converts `Polynomial R` to `CPolynomial R`
+  - `toPoly_toImpl`: the round-trip from `Polynomial` is the identity
+  - `toImpl_toPoly_of_canonical`: the round-trip from canonical `CPolynomial` is the identity
+
+  This shows that `CPolynomialC R` is isomorphic to `Polynomial R`.
+
+  HIGH LEVEL TODOs:
+  - equivalence theorems for univariate polynomials to the mathlib definition
+    - OR since multivariate polynomials are already defined, should we just prove a special case ..?
+  - equivalence between canonical and raw polynomials
+  - Prove CPolynomial R isomorphic to CMvPolynomial Unit R?
+  - inspiration from MvPolyEquiv.lean
+-/
 
 open Polynomial
 
-/-- Convert a `Polynomial` to a `CPolynomial`. -/
+/-- Convert a mathlib `Polynomial` to a `CPolynomial` by extracting coefficients up to the degree. -/
 def Polynomial.toImpl {R : Type*} [Semiring R] (p : R[X]) : CompPoly.CPolynomial R :=
   match p.degree with
   | ⊥ => #[]
@@ -37,7 +50,7 @@ section ToPoly
 noncomputable def toPoly (p : CPolynomial R) : Polynomial R :=
   p.eval₂ Polynomial.C Polynomial.X
 
-/-- a more low-level and direct definition of `toPoly`; currently unused. -/
+/-- Alternative definition of `toPoly` using `Finsupp`; currently unused. -/
 noncomputable def toPoly' (p : CPolynomial R) : Polynomial R :=
   Polynomial.ofFinsupp (Finsupp.onFinset (Finset.range p.size) p.coeff (by
     intro n hn
@@ -51,7 +64,7 @@ noncomputable def CPolynomialC.toPoly (p : CPolynomialC R) : Polynomial R := p.v
 
 alias ofPoly := Polynomial.toImpl
 
-/-- evaluation stays the same after converting to mathlib -/
+/-- Evaluation is preserved by `toPoly`. -/
 theorem eval_toPoly_eq_eval (x : Q) (p : CPolynomial Q) : p.toPoly.eval x = p.eval x := by
   unfold toPoly eval eval₂
   rw [← Array.foldl_hom (Polynomial.eval x)
@@ -60,7 +73,7 @@ theorem eval_toPoly_eq_eval (x : Q) (p : CPolynomial Q) : p.toPoly.eval x = p.ev
   · congr; exact Polynomial.eval_zero
   simp
 
-/-- characterize `p.toPoly` by showing that its coefficients are exactly the coefficients of `p` -/
+/-- The coefficients of `p.toPoly` match those of `p`. -/
 lemma coeff_toPoly {p : CPolynomial Q} {n : ℕ} : p.toPoly.coeff n = p.coeff n := by
   unfold toPoly eval₂
 
@@ -98,7 +111,7 @@ lemma coeff_toPoly {p : CPolynomial Q} {n : ℕ} : p.toPoly.coeff n = p.coeff n 
     have h2 : n < i + 1 := by linarith
     simp [hgt, h1, h2]
 
-/-- helper lemma, to argue about `toImpl` by cases -/
+/-- Case analysis for `toImpl`: either the polynomial is zero or has a specific form. -/
 lemma toImpl_elim (p : Q[X]) :
     (p = 0 ∧ p.toImpl = #[])
   ∨ (p ≠ 0 ∧ p.toImpl = .ofFn (fun i : Fin (p.natDegree + 1) => p.coeff i)) := by
@@ -112,9 +125,9 @@ lemma toImpl_elim (p : Q[X]) :
   have hnat : p.degree = p.natDegree := degree_eq_natDegree (degree_ne_bot.mp hbot)
   simp [hnat]
 
-/-- `toImpl` is a right-inverse of `toPoly`.
-  that is, the round-trip starting from a mathlib polynomial gets us back to where we were.
-  in particular, `toPoly` is surjective and `toImpl` is injective. -/
+/-- `toImpl` is a right-inverse of `toPoly`: the round-trip from `Polynomial` is the identity.
+
+  This shows `toPoly` is surjective and `toImpl` is injective. -/
 theorem toPoly_toImpl {p : Q[X]} : p.toImpl.toPoly = p := by
   ext n
   rw [coeff_toPoly]
@@ -129,31 +142,31 @@ theorem toPoly_toImpl {p : Q[X]} : p.toImpl.toPoly = p := by
   symm
   exact coeff_eq_zero_of_natDegree_lt h
 
-/-- `CPolynomial` addition is mapped to `Polynomial` addition -/
+/-- `toPoly` preserves addition. -/
 theorem toPoly_add {p q : CPolynomial Q} : (add_raw p q).toPoly = p.toPoly + q.toPoly := by
   ext n
   rw [coeff_add, coeff_toPoly, coeff_toPoly, coeff_toPoly, add_coeff?]
 
-/-- trimming doesn't change the `toPoly` image -/
+/-- Trimming doesn't change the `toPoly` image. -/
 lemma toPoly_trim [LawfulBEq R] {p : CPolynomial R} : p.trim.toPoly = p.toPoly := by
   ext n
   rw [coeff_toPoly, coeff_toPoly, Trim.coeff_eq_coeff]
 
-/-- helper lemma to be able to state the next lemma -/
+/-- Non-zero polynomials map to non-empty arrays. -/
 lemma toImpl_nonzero {p : Q[X]} (hp : p ≠ 0) : p.toImpl.size > 0 := by
   rcases toImpl_elim p with ⟨rfl, _⟩ | ⟨_, h⟩
   · contradiction
   suffices h : p.toImpl ≠ #[] from Array.size_pos_iff.mpr h
   simp [h]
 
-/-- helper lemma: the last entry of the `CPolynomial` obtained by `toImpl` is just the `leadingCoeff` -/
+/-- The last coefficient of `toImpl p` is the leading coefficient of `p`. -/
 lemma getLast_toImpl {p : Q[X]} (hp : p ≠ 0) : let h : p.toImpl.size > 0 := toImpl_nonzero hp;
     p.toImpl[p.toImpl.size - 1] = p.leadingCoeff := by
   rcases toImpl_elim p with ⟨rfl, _⟩ | ⟨_, h⟩
   · contradiction
   simp [h]
 
-/-- `toImpl` maps to canonical `CPolynomial`s -/
+/-- `toImpl` produces canonical polynomials (no trailing zeros). -/
 theorem trim_toImpl [LawfulBEq R] (p : R[X]) : p.toImpl.trim = p.toImpl := by
   rcases toImpl_elim p with ⟨rfl, h⟩ | ⟨h_nz, _⟩
   · rw [h, Trim.canonical_empty]
@@ -163,8 +176,9 @@ theorem trim_toImpl [LawfulBEq R] (p : R[X]) : p.toImpl.trim = p.toImpl := by
   rw [getLast_toImpl h_nz]
   exact Polynomial.leadingCoeff_ne_zero.mpr h_nz
 
-/-- on canonical `CPolynomial`s, `toImpl` is also a left-inverse of `toPoly`.
-  in particular, `toPoly` is a bijection from `CPolynomialC` to `Polynomial`. -/
+/-- On canonical polynomials, `toImpl` is a left-inverse of `toPoly`.
+
+  This shows `toPoly` is a bijection from `CPolynomialC R` to `Polynomial R`. -/
 lemma toImpl_toPoly_of_canonical [LawfulBEq R] (p : CPolynomialC R) : p.toPoly.toImpl = p := by
   -- we will change something slightly more general: `toPoly` is injective on canonical polynomials
   suffices h_inj : ∀ q : CPolynomialC R, p.toPoly = q.toPoly → p = q by
@@ -177,16 +191,16 @@ lemma toImpl_toPoly_of_canonical [LawfulBEq R] (p : CPolynomialC R) : p.toPoly.t
   rw [← coeff_toPoly, ← coeff_toPoly]
   exact hpq |> congrArg (fun p => p.coeff i)
 
-/-- the roundtrip to and from mathlib maps a `CPolynomial` to its trimmed/canonical representative -/
+/-- The round-trip from `CPolynomial` to `Polynomial` and back yields the canonical form. -/
 theorem toImpl_toPoly [LawfulBEq R] (p : CPolynomial R) : p.toPoly.toImpl = p.trim := by
   rw [← toPoly_trim]
   exact toImpl_toPoly_of_canonical ⟨ p.trim, Trim.trim_twice p⟩
 
-/-- evaluation stays the same after converting a mathlib `Polynomial` to a `CPolynomial` -/
+/-- Evaluation is preserved by `toImpl`. -/
 theorem eval_toImpl_eq_eval [LawfulBEq R] (x : R) (p : R[X]) : p.toImpl.eval x = p.eval x := by
   rw [← toPoly_toImpl (p := p), toImpl_toPoly, ← toPoly_trim, eval_toPoly_eq_eval]
 
-/-- corollary: evaluation stays the same after trimming -/
+/-- Evaluation is unchanged by trimming. -/
 lemma eval_trim_eq_eval [LawfulBEq R] (x : R) (p : CPolynomial R) : p.trim.eval x = p.eval x := by
   rw [← toImpl_toPoly, eval_toImpl_eq_eval, eval_toPoly_eq_eval]
 

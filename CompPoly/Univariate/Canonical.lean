@@ -8,6 +8,17 @@ import Mathlib.Algebra.Tropical.Basic
 import Mathlib.RingTheory.Polynomial.Basic
 import CompPoly.Data.Array.Lemmas
 import CompPoly.Univariate.Basic
+import CompPoly.Univariate.Quotient
+
+/-!
+  # Canonical Univariate Polynomials
+
+  This file defines `CPolynomialC R`, the type of canonical (trimmed) univariate polynomials.
+  A polynomial is canonical if it has no trailing zeros, i.e., `p.trim = p`.
+
+  This provides a unique representation for each polynomial, enabling stronger extensionality
+  properties compared to the raw `CPolynomial` type.
+-/
 
 namespace CompPoly
 
@@ -16,24 +27,32 @@ namespace CPolynomial
 variable {R : Type*} [Ring R] [BEq R]
 variable {Q : Type*} [Ring Q]
 
-/-- canonical version of CPolynomial
+/-- Canonical univariate polynomials: those with no trailing zeros.
 
-TODO: make THIS the `CPolynomial, rename current `CPolynomial` to `CPolynomial.Raw` or something,
-changing this file to Basic.lean -/
+  A polynomial `p : CPolynomial R` is canonical if `p.trim = p`, meaning the last coefficient
+  is non-zero (or the polynomial is empty). This provides a unique representative for each
+  polynomial equivalence class.
+
+  TODO: make THIS the `CPolynomial`, rename current `CPolynomial` to `CPolynomial.Raw` or something,
+  changing this file to Basic.lean? -/
 def CPolynomialC (R : Type*) [BEq R] [Ring R] := { p : CPolynomial R // p.trim = p }
 
+/-- Extensionality for canonical polynomials. -/
 @[ext] theorem CPolynomialC.ext {p q : CPolynomialC R} (h : p.val = q.val) : p = q := Subtype.eq h
 
+/-- Canonical polynomials coerce to raw polynomials. -/
 instance : Coe (CPolynomialC R) (CPolynomial R) where coe := Subtype.val
 
+/-- The zero polynomial is canonical. -/
 instance : Inhabited (CPolynomialC R) := ⟨#[], Trim.canonical_empty⟩
 
 
 namespace OperationsC
--- additive group on CPolynomialC
+
 variable {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
 variable (p q r : CPolynomialC R)
 
+/-- Addition of canonical polynomials (result is canonical). -/
 instance : Add (CPolynomialC R) where
   add p q := ⟨p.val + q.val, by apply Trim.trim_twice⟩
 
@@ -53,6 +72,7 @@ theorem add_zero : p + 0 = p := by
   apply CPolynomialC.ext
   apply CPolynomial.add_zero p.val p.prop
 
+/-- Scalar multiplication by a natural number (result is canonical). -/
 def nsmul (n : ℕ) (p : CPolynomialC R) : CPolynomialC R :=
   ⟨CPolynomial.nsmul n p.val, by apply Trim.trim_twice⟩
 
@@ -83,9 +103,11 @@ instance [LawfulBEq R] : AddCommGroup (CPolynomialC R) where
   nsmul_succ := nsmul_succ
   zsmul := zsmulRec -- TODO do we want a custom efficient implementation?
 
--- TODO: define `SemiRing` structure on `CPolynomialC`
+-- TODO: define `SemiRing`, `CommSemiRing` structure on `CPolynomialC`
 
 end OperationsC
+
+-- TODO: ring isomorphism with `QuotientCPolynomial`
 
 end CPolynomial
 

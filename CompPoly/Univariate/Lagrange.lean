@@ -6,13 +6,24 @@ Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
 
 import CompPoly.Univariate.Basic
 
+/-!
+  # Lagrange Interpolation
+
+  This file defines Lagrange interpolation for univariate polynomials. Given evaluation points
+  at powers of a root of unity `ω`, it constructs the unique polynomial of degree `n-1` that
+  interpolates the given values.
+-/
+
 namespace CompPoly
 
 namespace CPolynomial
 
 namespace Lagrange
 
--- unique polynomial of degree n that has nodes at ω^i for i = 0, 1, ..., n-1
+/-- The nodal polynomial of degree `n` with roots at `ω^i` for `i = 0, 1, ..., n-1`.
+
+  This is the unique monic polynomial of degree `n` that vanishes at all `n`-th roots of unity
+  (when `ω` is a primitive `n`-th root of unity). -/
 def nodal {R : Type*} [Ring R] (n : ℕ) (ω : R) : CPolynomial R := sorry
   -- .mk (Array.Range n |>.map (fun i => ω^i))
 
