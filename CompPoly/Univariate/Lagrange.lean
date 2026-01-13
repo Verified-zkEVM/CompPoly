@@ -24,15 +24,33 @@ namespace Lagrange
 
   This is the unique monic polynomial of degree `n` that vanishes at all `n`-th roots of unity
   (when `ω` is a primitive `n`-th root of unity). -/
-def nodal {R : Type*} [Ring R] (n : ℕ) (ω : R) : CPolynomial R := sorry
-  -- .mk (Array.Range n |>.map (fun i => ω^i))
+def nodal {R : Type*} [Ring R] [BEq R] (n : ℕ) (ω : R) : CPolynomial R :=
+  (List.range n).foldl (fun acc i => acc.mul (X - C (ω ^ i))) (C 1)
 
-/--
-This function produces the polynomial which is of degree n and is equal to r i at ω^i for i = 0, 1,
-..., n-1.
--/
-def interpolate {R : Type*} [Ring R] (n : ℕ) (ω : R) (r : Vector R n) : CPolynomial R := sorry
-  -- .mk (Array.finRange n |>.map (fun i => r[i])) * nodal n ω
+/-- Produces the unique polynomial of degree at most n-1 that equals r[i] at ω^i
+    for i = 0, 1, ..., n-1.
+
+    Uses Lagrange interpolation: p(X) = Σᵢ rᵢ · Lᵢ(X)
+    where Lᵢ(X) = ∏_{j≠i} (X - ωʲ) / (ωⁱ - ωʲ). -/
+def interpolate {R : Type*} [Field R] [BEq R] (n : ℕ) (ω : R) (r : Vector R n) : CPolynomial R :=
+  -- Lagrange interpolation: p(X) = Σᵢ rᵢ · Lᵢ(X)
+  -- where Lᵢ(X) = ∏_{j≠i} (X - ωʲ) / (ωⁱ - ωʲ)
+  (List.finRange n).foldl (fun acc i =>
+    let Li := lagrangeBasis n ω i
+    acc + smul (r.get i) Li
+  ) 0
+where
+  /-- The i-th Lagrange basis polynomial Lᵢ(X) = ∏_{j≠i} (X - ωʲ) / (ωⁱ - ωʲ) -/
+  lagrangeBasis (n : ℕ) (ω : R) (i : Fin n) : CPolynomial R :=
+    let numerator := (List.finRange n).foldl (fun acc j =>
+      if i = j then acc
+      else acc.mul (X - C (ω ^ j.val))
+    ) (C 1)
+    let denominator := (List.finRange n).foldl (fun acc j =>
+      if i = j then acc
+      else acc * (ω ^ i.val - ω ^ j.val)
+    ) 1
+    smul denominator⁻¹ numerator
 
 end Lagrange
 

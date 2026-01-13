@@ -172,8 +172,19 @@ theorem matchSize_comm (l₁ : List α) (l₂ : List α) (unit : α) :
   (extended by `unit` if necessary). -/
 theorem matchSize_eq_iff_forall_eq (l₁ l₂ : List α) (unit : α) :
     (fun (x, y) => x = y) (matchSize l₁ l₂ unit) ↔ ∀ i : Nat, l₁.getD i unit = l₂.getD i unit := by
-    sorry
-    -- TODO: finish this lemma based on `rightpad_getD_eq_getD`
+  simp only [matchSize]
+  constructor
+  · intro h i
+    rw [← rightpad_getD_eq_getD l₁ l₂.length unit i,
+        ← rightpad_getD_eq_getD l₂ l₁.length unit i, h]
+  · intro h
+    refine List.ext_getElem ?_ ?_
+    · simp only [rightpad_length]; omega
+    · intro i h1 h2
+      have := h i
+      rw [← rightpad_getD_eq_getD l₁ l₂.length unit i,
+          ← rightpad_getD_eq_getD l₂ l₁.length unit i] at this
+      rwa [getD_eq_getElem _ _ h1, getD_eq_getElem _ _ h2] at this
 
 /-- `List.dropWhile` but starting from the last element. Performed by `dropWhile` on the reversed
   list, followed by a reversal. -/
