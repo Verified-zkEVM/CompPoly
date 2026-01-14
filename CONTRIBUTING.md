@@ -15,7 +15,7 @@ If you are interested in contributing but unsure where to begin, please get in t
 
 ### Style Guide
 
-CompPoly aims to align closely with the established conventions of the Lean community, particularly those used in `mathlib` and `cslib`. Please follow the [mathlib Style Guide](https://github.com/leanprover-community/mathlib4/blob/master/CONTRIBUTING.md#style-guide-and-conventions). This covers naming conventions, proof style, formatting, and more. Adhering to this style guide ensures consistency across the library, making it easier for everyone to read, understand, and maintain the code. Our [linting script](scripts/lint-style.sh) helps enforce some aspects of the style guide. Please ensure your code passes the linter checks.
+CompPoly aims to align closely with the established conventions of the Lean community, particularly those used in `mathlib` and `cslib`. Please follow the [mathlib Style Guide](https://github.com/leanprover-community/mathlib4/blob/master/CONTRIBUTING.md#style-guide-and-conventions). This covers naming conventions, proof style, formatting, and more. Adhering to this style guide ensures consistency across the library, making it easier for everyone to read, understand, and maintain the code. Our [linting script](scripts/lint-style.sh) helps enforce some aspects of the style guide and runs in the CI. **Please ensure your code passes the linter checks.**
 
 #### Citation Standards
 
