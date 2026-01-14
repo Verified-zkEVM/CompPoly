@@ -36,6 +36,7 @@ from pathlib import Path
 import sys
 import re
 import shutil
+import os
 
 ERR_COP = 0 # copyright header
 ERR_MOD = 2 # module docstring
@@ -363,18 +364,25 @@ def adaptation_note_check(lines, path):
     return errors, lines
 
 def output_message(path, line_nr, code, msg):
-    if len(exceptions) == 0:
-        # we are generating a new exceptions file
+    # Determine message type for GitHub annotations (only used in CI)
+    if code.startswith("ERR"):
+        msg_type = "error"
+    elif code.startswith("WRN"):
+        msg_type = "warning"
+    else:
+        msg_type = "error"  # Default to error
+    
+    # Check if we're in CI by looking for GITHUB_ACTIONS environment variable
+    in_ci = os.environ.get("GITHUB_ACTIONS") == "true"
+    
+    if in_ci and len(exceptions) > 0:
+        # In CI with exceptions file: output GitHub annotations for visibility
+        # We duplicate path, line_nr and code, so that they are also visible in the plaintext output.
+        print(f"::{msg_type} file={path},line={line_nr},code={code}::{path}:{line_nr} {code}: {msg}")
+    else:
+        # Standard output format (for local use or generating exceptions file)
         # filename first, then line so that we can call "sort" on the output
         print(f"{path} : line {line_nr} : {code} : {msg}")
-    else:
-        if code.startswith("ERR"):
-            msg_type = "error"
-        if code.startswith("WRN"):
-            msg_type = "warning"
-        # We are outputting for github. We duplicate path, line_nr and code,
-        # so that they are also visible in the plaintext output.
-        print(f"::{msg_type} file={path},line={line_nr},code={code}::{path}:{line_nr} {code}: {msg}")
 
 def format_errors(errors):
     global new_exceptions

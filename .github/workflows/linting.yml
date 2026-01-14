@@ -47,7 +47,6 @@ jobs:
           fi
 
       - name: Run style linter
-        continue-on-error: true  # Don't fail the workflow, just warn
         run: |
           # Ensure style-exceptions.txt exists (even if empty)
           touch scripts/style-exceptions.txt
@@ -58,10 +57,6 @@ jobs:
           fi
           
           # Run linter on changed files only (one file per line)
-          # Note: When style-exceptions.txt is empty, the script outputs in a different format
-          # (for generating exceptions). Once exceptions are added, it will output GitHub annotations.
-          # The linter will output to console regardless, and won't block the PR.
-          cat changed_files.txt | xargs -r python3 scripts/lint-style.py || true
-          
-          # Note: We use || true and continue-on-error to ensure the step doesn't fail
-          # This allows the workflow to complete and show warnings without blocking PRs
+          # The script will exit with code 1 if there are any errors not in style-exceptions.txt
+          # This will cause the CI check to fail
+          cat changed_files.txt | xargs -r python3 scripts/lint-style.py
