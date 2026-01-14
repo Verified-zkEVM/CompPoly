@@ -37,10 +37,10 @@ rev = "init"
 
 Then you can import the desired modules, for example:
 ```lean
-import CompPoly.CMvPolynomial
+import CompPoly.Multivariate.CMvPolynomial
 ```
 ```lean
-import CompPoly.MvPolyEquiv
+import CompPoly.Multivariate.MvPolyEquiv
 ```
 
 ## Current status and plans
