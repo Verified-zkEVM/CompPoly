@@ -53,6 +53,26 @@ def C (r : R) : CPolynomial R := #[r]
 /-- The variable `X`. -/
 def X : CPolynomial R := #[0, 1]
 
+/-- Construct a monomial `c * X^n` as a `CPolynomial R`.
+
+  The result is an array with `n` zeros followed by `c`.
+  For example, `monomial 2 3` = `#[0, 0, 3]` represents `3 * X^2`.
+
+  Note: If `c = 0`, this returns `#[]` (the zero polynomial).
+-/
+def monomial [DecidableEq R] (n : ℕ) (c : R) : CPolynomial R :=
+  if c = 0 then #[] else .mk (Array.replicate n 0 ++ #[c])
+
+-- TODO: Prove basic properties of `monomial`:
+-- TODO: `coeff (monomial n c) i = if i = n then c else 0`
+-- TODO: `monomial n 0 = 0`
+-- TODO: `monomial 0 c = C c`
+-- TODO: `monomial n 1 = X^n` (where `X^n` is `X.pow n`)
+-- TODO: `monomial n c = C c * X^n` (multiplicative property)
+-- TODO: `monomial n c + monomial n d = monomial n (c + d)` (additive property)
+-- TODO: `monomial m c * monomial n d = monomial (m + n) (c * d)` (multiplicative property)
+-- TODO: `trim (monomial n c) = if c = 0 then #[] else monomial n c` (canonical property)
+
 /-- Return the index of the last non-zero coefficient of a `CPolynomial` -/
 def last_nonzero (p : CPolynomial R) : Option (Fin p.size) :=
   p.findIdxRev? (· != 0)
@@ -707,9 +727,151 @@ theorem neg_add_cancel [LawfulBEq R] (p : CPolynomial R) : -p + p = 0 := by
   rw [add_coeff?]
   rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi, Neg.neg, neg]
 
+section SemiringLemmas
+
+/-- Semiring axioms for `CPolynomial R`.
+
+  These lemmas are needed to construct the `Semiring` instance. Note that some lemmas
+  are suffixed with `'` to avoid name clashes with Mathlib.
+
+  TODO: Resolve name clashes and potentially rename these to match Mathlib conventions.
+-/
+
+-- TODO: Prove that addition with zero is the identity (modulo `equiv` relation)
+-- Note: May need to work with `equiv` rather than equality for non-canonical polynomials
+lemma zero_add' : ∀ (a : CPolynomial R), 0 + a = a := by sorry
+
+lemma add_zero' : ∀ (a : CPolynomial R), a + 0 = a := by sorry
+
+-- TODO: Prove associativity of multiplication
+lemma mul_assoc : ∀ (a b c : CPolynomial R), a * b * c = a * (b * c) := by sorry
+
+-- TODO: Prove that 1 is a left multiplicative identity
+lemma one_mul : ∀ (a : CPolynomial R), 1 * a = a := by sorry
+
+-- TODO: Prove that 1 is a right multiplicative identity
+lemma mul_one' : ∀ (a : CPolynomial R), a * 1 = a := by sorry
+
+-- TODO: Prove that zero annihilates on the left
+lemma zero_mul : ∀ (a : CPolynomial R), 0 * a = 0 := by sorry
+
+-- TODO: Prove that zero annihilates on the right
+lemma mul_zero' : ∀ (a : CPolynomial R), a * 0 = 0 := by sorry
+
+-- TODO: Prove left distributivity: `a * (b + c) = a * b + a * c`
+lemma left_distrib : ∀ (a b c : CPolynomial R), a * (b + c) = a * b + a * c := by sorry
+
+-- TODO: Prove right distributivity: `(a + b) * c = a * c + b * c`
+lemma right_distrib : ∀ (a b c : CPolynomial R), (a + b) * c = a * c + b * c := by sorry
+
+-- TODO: Prove that `pow 0` gives the multiplicative identity
+lemma npow_zero : ∀ (x : CPolynomial R), x.pow 0 = 1 := by sorry
+
+-- TODO: Prove the recurrence relation for exponentiation
+lemma npow_succ : ∀ (n : ℕ) (x : CPolynomial R), x.pow (n + 1) = x.pow n * x := by sorry
+
+end SemiringLemmas
+
+section CommSemiringLemmas
+
+-- TODO: Prove commutativity of multiplication
+-- Note: Requires `CommSemiring R` or `CommRing R`
+lemma mul_comm [CommSemiring R] : ∀ (a b : CPolynomial R), a * b = b * a := by sorry
+
+end CommSemiringLemmas
+
 end Operations
 
--- TODO instances of `AddCommGroup`, `SemiRing`, `CommSemiRing`
+section AddCommGroup
+instance [LawfulBEq R] : AddCommGroup (CPolynomial R) where
+  add_assoc := by intro _ _ _ ; rw [add_assoc]
+  zero_add := zero_add'
+  add_zero := add_zero'
+  add_comm := add_comm
+  neg_add_cancel := neg_add_cancel
+  nsmul := nsmul
+  nsmul_zero := nsmul_zero
+  nsmul_succ := nsmul_succ
+  zsmul := zsmulRec
+
+end AddCommGroup
+
+section Semiring
+
+/-- `CPolynomial R` forms a semiring when `R` is a semiring.
+
+  The semiring structure is inherited from the coefficient-wise operations on arrays,
+  with addition and multiplication defined via the standard polynomial operations.
+
+  TODO: Complete proofs for `natCast_zero` and `natCast_succ`.
+-/
+instance [Semiring R] [LawfulBEq R] : Semiring (CPolynomial R) where
+  mul_assoc := mul_assoc
+  one_mul := one_mul
+  mul_one := mul_one'
+  zero_mul := zero_mul
+  mul_zero := mul_zero'
+  left_distrib := left_distrib
+  right_distrib := right_distrib
+  npow n p := p.pow n
+  npow_zero := npow_zero
+  npow_succ := npow_succ
+  -- TODO: Prove that `Nat.cast 0 = 0` (zero polynomial)
+  natCast_zero := by sorry
+  -- TODO: Prove that `Nat.cast (n + 1) = Nat.cast n + 1`
+  natCast_succ := by sorry
+
+end Semiring
+
+section CommSemiring
+
+/-- `CPolynomial R` forms a commutative semiring when `R` is a commutative semiring.
+
+  Commutativity follows from the commutativity of multiplication in the base ring.
+-/
+instance [CommSemiring R] [LawfulBEq R] : CommSemiring (CPolynomial R) where
+  mul_comm := mul_comm
+
+end CommSemiring
+
+section Ring
+
+/-- `CPolynomial R` forms a ring when `R` is a ring.
+
+  The ring structure extends the semiring structure with negation and subtraction.
+  Most of the structure is already provided by the `Semiring` instance.
+-/
+instance [Ring R] [LawfulBEq R] : Ring (CPolynomial R) where
+  -- TODO: Verify that `sub_eq_add_neg` holds (should be by definition)
+  sub_eq_add_neg := by intro a b; rfl
+  -- TODO: Consider if we need a custom `zsmul` implementation for efficiency
+  zsmul := zsmulRec
+  -- TODO: Prove `zsmul_zero'`
+  zsmul_zero' := by sorry
+  -- TODO: Prove `zsmul_succ'`
+  zsmul_succ' := by sorry
+  -- TODO: Prove `zsmul_neg'`
+  zsmul_neg' := by sorry
+  -- TODO: Prove `intCast_ofNat`
+  intCast_ofNat := by sorry
+  -- TODO: Prove `intCast_negSucc`
+  intCast_negSucc := by sorry
+  -- TODO: Prove `neg_add_cancel`
+  neg_add_cancel := by sorry
+
+end Ring
+
+section CommRing
+
+/-- `CPolynomial R` forms a commutative ring when `R` is a commutative ring.
+
+  This combines the `CommSemiring` and `Ring` structures.
+-/
+instance [CommRing R] [LawfulBEq R] : CommRing (CPolynomial R) where
+  -- All structure inherited from `CommSemiring` and `Ring` instances
+
+end CommRing
+
 
 end CPolynomial
 
