@@ -4,7 +4,7 @@ We enthusiastically welcome contributions to CompPoly!
 
 Whether you are fixing bugs, improving documentation, or adding new formalizations, your input is valuable. We particularly encourage contributions that address:
 
-* **Active formalizations:** Please see the list of active formalization efforts and their blueprints.
+<!-- TODO * **Active formalizations:** Please see the list of active formalization efforts and their blueprints -->
 * **Open Issues:** Please see the list of open issues for bugs, requested features, and specific formalization tasks. Issues tagged as `good first issue` or `help wanted` are great places to start.
 * **Roadmap Goals:** We are working on a [ROADMAP](https://github.com/Verified-zkEVM/CompPoly/blob/dhsorens/roadmap/ROADMAP.md) outlining the planned direction and major goals for the library.
 * **Documentation:** Documentation is actively being worked and will be available as soon as possible.
