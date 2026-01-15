@@ -223,7 +223,6 @@ section RingEquiv
 -/
 
 -- TODO: Prove that `toPoly` preserves multiplication
--- This is the critical missing piece for the ring equivalence
 lemma toPoly_mul [CommSemiring R] [LawfulBEq R] (p q : CPolynomial R) :
   (p * q).toPoly = p.toPoly * q.toPoly := by sorry
 

@@ -120,19 +120,16 @@ instance : Mul (CPolynomialC R) where
   This is `#[1]`, which has no trailing zeros.
 -/
 instance : One (CPolynomialC R) where
-  one :=
-    -- TODO: Prove that `CPolynomial.C 1` is canonical
-    -- Strategy: Show that `#[1].trim = #[1]` (1 ≠ 0)
-    ⟨CPolynomial.C 1, by sorry⟩
+  one := ⟨CPolynomial.C 1, by sorry⟩
 
--- TODO: Prove multiplicative properties:
-lemma one_mul (p : CPolynomialC R) : 1 * p = p := by sorry
-lemma mul_one (p : CPolynomialC R) : p * 1 = p := by sorry
-lemma mul_assoc (p q r : CPolynomialC R) : (p * q) * r = p * (q * r) := by sorry
-lemma zero_mul (p : CPolynomialC R) : 0 * p = 0 := by sorry
-lemma mul_zero (p : CPolynomialC R) : p * 0 = 0 := by sorry
-lemma left_distrib (p q r : CPolynomialC R) : p * (q + r) = p * q + p * r := by sorry
-lemma right_distrib (p q r : CPolynomialC R) : (p + q) * r = p * r + q * r := by sorry
+-- TODO: Prove multiplicative properties, e.g.
+-- lemma one_mul (p : CPolynomialC R) : 1 * p = p := by sorry
+-- lemma mul_one (p : CPolynomialC R) : p * 1 = p := by sorry
+-- lemma mul_assoc (p q r : CPolynomialC R) : (p * q) * r = p * (q * r) := by sorry
+-- lemma zero_mul (p : CPolynomialC R) : 0 * p = 0 := by sorry
+-- lemma mul_zero (p : CPolynomialC R) : p * 0 = 0 := by sorry
+-- lemma left_distrib (p q r : CPolynomialC R) : p * (q + r) = p * q + p * r := by sorry
+-- lemma right_distrib (p q r : CPolynomialC R) : (p + q) * r = p * r + q * r := by sorry
 
 end MulOne
 
