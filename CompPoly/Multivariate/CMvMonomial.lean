@@ -168,7 +168,7 @@ def equivFinsupp : CMvMonomial n ≃ (Fin n →₀ ℕ) where
 
 @[simp, grind =]
 lemma map_mul {m₁ m₂ : Multiplicative (Fin n →₀ ℕ)} :
-  ofFinsupp (m₁ * m₂) = (ofFinsupp m₁) + (ofFinsupp m₂) := by
+    ofFinsupp (m₁ * m₂) = (ofFinsupp m₁) + (ofFinsupp m₂) := by
   unfold_projs; ext
   erw [Vector.getElem_ofFn, Vector.getElem_zipWith]
   simp [Multiplicative.toAdd, Multiplicative.ofAdd, ofFinsupp]
@@ -188,7 +188,7 @@ section
 
 instance [Repr R] : Repr (MonoR n R) where
   reprPrec
-    | (m, c), _ => repr c ++ " * " ++ repr m
+  | (m, c), _ => repr c ++ " * " ++ repr m
 
 @[simp, grind=]
 def C (c : R) : MonoR n R := (CMvMonomial.zero, c)

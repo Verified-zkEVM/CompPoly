@@ -53,7 +53,7 @@ theorem div_two_pow_lt_two_pow (x i j : ℕ) (h_x_lt_2_pow_i : x < 2 ^ (i + j)):
     )
 
 lemma lt_two_pow_of_lt_two_pow_exp_le (x i j: ℕ)
-    (h_x_lt_2_pow_i: x < 2^i) (h_i_le_j: i ≤ j): x < 2^j := by
+  (h_x_lt_2_pow_i: x < 2^i) (h_i_le_j: i ≤ j): x < 2^j := by
   calc
     _ < 2^i := by omega
     _ ≤ 2^j := by apply pow_le_pow_right' (by omega) (by omega)
@@ -68,7 +68,7 @@ lemma Fin.val_add_one' (a : Fin r) (h_a_add_1 : a + 1 < r) : (a + 1).val = a.val
 
 @[simp]
 theorem Fin.cast_val_eq_val {n m : ℕ} [NeZero n] (a : Fin n) (h_eq : n = m):
-  (Fin.cast (h_eq) a).val = a.val := by
+    (Fin.cast (h_eq) a).val = a.val := by
   subst h_eq
   rfl
 

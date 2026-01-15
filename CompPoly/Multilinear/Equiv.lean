@@ -87,9 +87,10 @@ def toMvPolynomial (p : CMlPolynomial R n) : MvPolynomial (Fin n) R :=
 -- #check (toMvPolynomial (CMlPolynomial.mk 2 #v[(1: ℤ), 2, 3, 4]))
 
 theorem toMvPolynomial_is_multilinear (p : CMlPolynomial R n) :
-  (toMvPolynomial p) ∈ MvPolynomial.restrictDegree (Fin n) R 1 := by
+    (toMvPolynomial p) ∈ MvPolynomial.restrictDegree (Fin n) R 1 := by
   rw [toMvPolynomial]
-    -- ⊢ (∑ i, C p[i] * ∏ j, if { toFin := i }.getLsb j = true then X j else 1) ∈ MvPolynomial.restrictDegree (Fin n) R 1
+    -- ⊢ (∑ i, C p[i] * ∏ j, if { toFin := i }.getLsb j = true then X j else 1)
+    -- ∈ MvPolynomial.restrictDegree (Fin n) R 1
   simp only [MvPolynomial.mem_restrictDegree]
   intro s hs k -- s is a point X where the sum evaluates to non-zero
   rw [MvPolynomial.mem_support_iff] at hs
@@ -118,12 +119,11 @@ theorem toMvPolynomial_is_multilinear (p : CMlPolynomial R n) :
 
 theorem coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p : CMlPolynomial R n) (m : Fin n →₀ ℕ) :
   coeff m (toMvPolynomial p) =
-    if h_binary: (∀ j: Fin n, m j ≤ 1) then
-      let i_of_m: ℕ := Nat.binaryFinMapToNat (m:=m) (h_binary:=h_binary)
-      p[i_of_m]
-    else
-      0
-  := by
+    if h_binary : (∀ j : Fin n, m j ≤ 1) then
+        let i_of_m : ℕ := Nat.binaryFinMapToNat (m := m) (h_binary := h_binary)
+        p[i_of_m]
+      else
+        0 := by
   if h_binary: (∀ j: Fin n, m j ≤ 1) then
     unfold toMvPolynomial
     simp only [h_binary, implies_true, ↓reduceDIte]
@@ -293,7 +293,8 @@ def equivMvPolynomialDeg1 : CMlPolynomial R n ≃ MvPolynomial.restrictDegree (F
       simp only [h_mono_ne, ↓reduceIte]
 
 /-- Linear equivalence between `CMlPolynomial` and `MvPolynomial.restrictDegree` -/
-noncomputable def linearEquivMvPolynomialDeg1 : CMlPolynomial R n ≃ₗ[R] MvPolynomial.restrictDegree (Fin n) R 1 :=
+noncomputable def linearEquivMvPolynomialDeg1 :
+  CMlPolynomial R n ≃ₗ[R] MvPolynomial.restrictDegree (Fin n) R 1 :=
   { toEquiv := equivMvPolynomialDeg1
     map_add' := by
       intro p q
@@ -330,5 +331,3 @@ noncomputable def linearEquivMvPolynomialDeg1 : CMlPolynomial R n ≃ₗ[R] MvPo
 end CMlPolynomial
 
 end CompPoly
-
-end

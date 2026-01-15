@@ -152,7 +152,7 @@ theorem last_nonzero_some_iff [LawfulBEq R] {p : CPolynomial R} {k} :
   ```
 -/
 theorem last_nonzero_induct [LawfulBEq R] {motive : CPolynomial R → Prop}
-    (case1 : ∀ p, p.last_nonzero = none → (∀ i, (hi : i < p.size) → p[i] = 0) → motive p)
+  (case1 : ∀ p, p.last_nonzero = none → (∀ i, (hi : i < p.size) → p[i] = 0) → motive p)
   (case2 : ∀ p : CPolynomial R, ∀ k : Fin p.size, p.last_nonzero = some k → p[k] ≠ 0 →
     (∀ j : ℕ, (hj : j < p.size) → j > k → p[j] = 0) → motive p)
   (p : CPolynomial R) : motive p := by
@@ -189,7 +189,7 @@ theorem induct [LawfulBEq R] {motive : CPolynomial R → Prop}
 -/
 theorem elim [LawfulBEq R] (p : CPolynomial R) :
     (p.trim = #[] ∧  (∀ i, (hi : i < p.size) → p[i] = 0))
-  ∨ (∃ k : Fin p.size,
+    ∨ (∃ k : Fin p.size,
         p.trim = p.extract 0 (k + 1)
       ∧ p[k] ≠ 0
       ∧ (∀ j : ℕ, (hj : j < p.size) → j > k → p[j] = 0)) := by induction p using induct with
@@ -252,7 +252,8 @@ lemma coeff_eq_zero {p : CPolynomial Q} :
   · cases Nat.lt_or_ge i p.size <;> simp [*]
   · intro hi; specialize h i; simp [hi] at h; assumption
 
-lemma eq_degree_of_equiv [LawfulBEq R] {p q : CPolynomial R} : equiv p q → p.degree = q.degree := by
+lemma eq_degree_of_equiv [LawfulBEq R] {p q : CPolynomial R} :
+    equiv p q → p.degree = q.degree := by
   unfold equiv degree
   intro h_equiv
   induction p using last_nonzero_induct with
@@ -301,7 +302,7 @@ theorem trim_twice [LawfulBEq R] (p : CPolynomial R) : p.trim.trim = p.trim := b
 theorem canonical_empty : (CPolynomial.mk (R:=R) #[]).trim = #[] := by
   have : (CPolynomial.mk (R:=R) #[]).last_nonzero = none := by
     simp [last_nonzero];
-    apply Array.findIdxRev?_emtpy_none
+    apply Array.findIdxRev?_empty_none
     rfl
   rw [trim, this]
 
@@ -367,7 +368,7 @@ theorem canonical_iff [LawfulBEq R] {p : CPolynomial R} :
       exact h hp
 
 theorem non_zero_map [LawfulBEq R] (f : R → R) (hf : ∀ r, f r = 0 → r = 0) (p : CPolynomial R) :
-    let fp := CPolynomial.mk (p.map f);
+  let fp := CPolynomial.mk (p.map f);
   p.trim = p → fp.trim = fp := by
   intro fp p_canon
   by_cases hp : p.size > 0
@@ -588,16 +589,17 @@ theorem add_coeff? (p q : CPolynomial Q) (i : ℕ) :
   have h_q : i ≥ q.size := by omega
   simp [h_ge, h_p, h_q]
 
-lemma add_equiv_raw [LawfulBEq R] (p q : CPolynomial R) : Trim.equiv (p.add q) (p.add_raw q) := by
+lemma add_equiv_raw [LawfulBEq R] (p q : CPolynomial R) :
+    Trim.equiv (p.add q) (p.add_raw q) := by
   unfold Trim.equiv add
   exact Trim.coeff_eq_coeff (p.add_raw q)
 
 omit [BEq R] in
 lemma smul_equiv : ∀ (i : ℕ) (r : R),
     (smul r p).coeff i = r * (p.coeff i) := by
-    intro i r
-    unfold smul mk coeff
-    rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
+  intro i r
+  unfold smul mk coeff
+  rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
 
 lemma nsmul_raw_equiv [LawfulBEq R] : ∀ (n i : ℕ),
     (nsmul_raw n p).trim.coeff i = n * p.trim.coeff i := by
@@ -608,7 +610,7 @@ lemma nsmul_raw_equiv [LawfulBEq R] : ∀ (n i : ℕ),
   rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
 
 lemma mul_pow_assoc : ∀ (p : CPolynomial R) (n : ℕ),
-    ∀ (q : CPolynomial R) (m l : ℕ),
+  ∀ (q : CPolynomial R) (m l : ℕ),
   l + m = n →
   p.mul^[n] q = p.mul^[m] (p.mul^[l] q) := by
   intro p n

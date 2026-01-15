@@ -100,12 +100,12 @@ theorem rightpad_eq_rightpad_max (l : List α) (n : Nat) :
 
 theorem rightpad_eq_rightpad_append_replicate_of_ge
   (l : List α) (m n : Nat) (h : n ≤ m) :
-    rightpad m unit l = rightpad n unit l ++ replicate (m - max n l.length) unit := by
+  rightpad m unit l = rightpad n unit l ++ replicate (m - max n l.length) unit := by
   simp [rightpad]; omega
 
 theorem rightpad_eq_if_rightpad_eq_of_ge (l l' : List α) (m n n' : Nat) (h : n ≤ m) (h' : n' ≤ m) :
-    rightpad n unit l = rightpad n' unit l' →
-        rightpad m unit l = rightpad m unit l' := by
+  rightpad n unit l = rightpad n' unit l' →
+  rightpad m unit l = rightpad m unit l' := by
   intro hEq
   rw [rightpad_eq_rightpad_append_replicate_of_ge l _ n h]
   rw [rightpad_eq_rightpad_append_replicate_of_ge l' _ n' h']
@@ -156,7 +156,7 @@ theorem rightpad_eq_if_rightpad_eq_of_ge (l l' : List α) (m n n' : Nat) (h : n 
 
 theorem rightpad_getElem_eq_getD {a b : List α} {unit : α} {i : Nat}
   (h : i < (a.rightpad b.length unit).length) :
-    (a.rightpad b.length unit)[i] = a.getD i unit := by
+  (a.rightpad b.length unit)[i] = a.getD i unit := by
   rw [← rightpad_getD_eq_getD a b.length, getD_eq_getElem _ _ h]
 
 /-- Given two lists of potentially different lengths, right-pads the shorter list with `unit`
