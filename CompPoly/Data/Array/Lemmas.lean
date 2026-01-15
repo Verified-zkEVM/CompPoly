@@ -138,7 +138,7 @@ where
       -- recursively invoke the theorem we are proving!
       apply aux
 
-theorem findIdxRev?_emtpy_none {cond} {as : Array α} (h : as = #[]) :
+theorem findIdxRev?_empty_none {cond} {as : Array α} (h : as = #[]) :
     findIdxRev? cond as = none := by
   rw [h]
   apply findIdxRev?_eq_none

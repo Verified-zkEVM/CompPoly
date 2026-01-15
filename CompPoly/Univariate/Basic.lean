@@ -302,7 +302,7 @@ theorem trim_twice [LawfulBEq R] (p : CPolynomial R) : p.trim.trim = p.trim := b
 theorem canonical_empty : (CPolynomial.mk (R:=R) #[]).trim = #[] := by
   have : (CPolynomial.mk (R:=R) #[]).last_nonzero = none := by
     simp [last_nonzero];
-    apply Array.findIdxRev?_emtpy_none
+    apply Array.findIdxRev?_empty_none
     rfl
   rw [trim, this]
 
