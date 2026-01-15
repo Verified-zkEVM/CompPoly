@@ -44,10 +44,12 @@ theorem rightpad_toList {a : Array α} {n : Nat} {unit : α} :
 theorem rightpad_getElem_eq_getD {a : Array α} {n : Nat} {unit : α} {i : Nat}
     (h : i < (a.rightpad n unit).size) : (a.rightpad n unit)[i] = a.getD i unit := by
   simp_rw [rightpad_toList] at h ⊢
-  -- By definition of `rightpad`, the element at position `i` in the right-padded array is the same as the element at position `i` in the original list `a` if `i` is within the bounds of `a`.
+  -- By definition of `rightpad`, the element at position `i` in the right-padded array is
+  -- the same as the element at position `i` in the original list `a` if `i` is within
+  -- the bounds of `a`.
   have h_rightpad_getElem_eq_getD : (a.toList.rightpad n unit)[i] = a.toList.getD i unit := by
     grind;
-  cases a ; aesop
+  cases a; aesop
 
 /-- `Array` version of `List.matchSize`, which rightpads the arrays to the same length. -/
 @[reducible]
@@ -84,7 +86,7 @@ where
 
 /-- if findIdxRev? finds an index, the condition is satisfied on that element -/
 def findIdxRev?_def {cond} {as : Array α} {k : Fin as.size} :
-  findIdxRev? cond as = some k → cond as[k] := by
+    findIdxRev? cond as = some k → cond as[k] := by
   suffices aux : ∀ i, findIdxRev?.find cond as i = some k → cond as[k] by apply aux
   intro i
   unfold findIdxRev?.find
@@ -95,7 +97,7 @@ def findIdxRev?_def {cond} {as : Array α} {k : Fin as.size} :
 
 /-- if findIdxRev? finds an index, then for every greater index the condition doesn't hold -/
 def findIdxRev?_maximal {cond} {as : Array α} {k : Fin as.size} :
-  findIdxRev? cond as = some k → ∀ j : Fin as.size, j > k → ¬ cond as[j] := by
+    findIdxRev? cond as = some k → ∀ j : Fin as.size, j > k → ¬ cond as[j] := by
   suffices aux : ∀ i, findIdxRev?.find cond as i = some k →
     ∀ j : Fin as.size, j > k → j.val < i → ¬ cond as[j] by
     intro h j j_gt_k
@@ -120,8 +122,7 @@ def findIdxRev?_maximal {cond} {as : Array α} {k : Fin as.size} :
 
 /-- if the condition is false on all elements, then findIdxRev? finds nothing -/
 theorem findIdxRev?_eq_none {cond} {as : Array α} (h : ∀ i, (hi : i < as.size) → ¬ cond as[i]) :
-  findIdxRev? cond as = none
-:= by
+    findIdxRev? cond as = none := by
   apply aux
 where
   aux i : findIdxRev?.find cond as i = none := by
@@ -138,16 +139,14 @@ where
       apply aux
 
 theorem findIdxRev?_emtpy_none {cond} {as : Array α} (h : as = #[]) :
-  findIdxRev? cond as = none
-:= by
+    findIdxRev? cond as = none := by
   rw [h]
   apply findIdxRev?_eq_none
   simp
 
 /-- if the condition is true on some element, then findIdxRev? finds something -/
 theorem findIdxRev?_eq_some {cond} {as : Array α} (h : ∃ i, ∃ hi : i < as.size, cond as[i]) :
-  ∃ k : Fin as.size, findIdxRev? cond as = some k
-:= by
+    ∃ k : Fin as.size, findIdxRev? cond as = some k := by
   obtain ⟨ i, hi, hcond ⟩ := h
   apply aux ⟨ as.size, Nat.lt_succ_self _ ⟩ ⟨ .mk i hi, hi, hcond ⟩
 where
@@ -182,13 +181,14 @@ def getLastD (a : Array α) (v₀ : α) : α := a.getD (a.size - 1) v₀
 
 @[simp] theorem popWhile_nil_or_last_false (p : α → Bool) (as : Array α)
     (h : (as.popWhile p).size > 0) : ¬ (p <| (as.popWhile p).getLast h) := by
-      -- By definition of `popWhile`, if the array is empty, then `popWhile` returns an empty array.
-      induction' as using Array.recOn with as ih;
-      induction' as using List.reverseRecOn with as ih;
-      · -- In the base case, when the array is empty, `popWhile` returns an empty array. Therefore, the size is zero, which contradicts `h`.
-        simp [Array.popWhile] at h;
-      · by_cases h' : p ih <;> simp_all +decide [ Array.popWhile ];
-        · aesop;
-        · simp_all +decide [ Array.getLast ]
+  -- By definition of `popWhile`, if the array is empty, then `popWhile` returns an empty array.
+  induction' as using Array.recOn with as ih;
+  induction' as using List.reverseRecOn with as ih;
+  · -- In the base case, when the array is empty, `popWhile` returns an empty array.
+    -- Therefore, the size is zero, which contradicts `h`.
+    simp at h;
+  · by_cases h' : p ih <;> simp_all +decide;
+    · aesop;
+    · simp_all +decide [ Array.getLast ]
 
 end Array

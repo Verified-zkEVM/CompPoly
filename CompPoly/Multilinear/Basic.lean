@@ -28,15 +28,15 @@ import CompPoly.Data.Nat.Bitwise
 
 namespace CompPoly
 
-/-- `CMlPolynomial n R` is the type of multilinear polynomials in `n` variables over a ring `R`. It is
-  represented by its monomial coefficients as a `Vector` of length `2^n`.
+/-- `CMlPolynomial n R` is the type of multilinear polynomials in `n` variables over a ring `R`.
+  It is represented by its monomial coefficients as a `Vector` of length `2^n`.
   The indexing is **little-endian** (i.e. the least significant bit is the first bit). -/
 @[reducible]
 def CMlPolynomial (R : Type*) (n : ℕ) := Vector R (2 ^ n) -- coefficient of monomial basis
 def CMlPolynomial.mk {R : Type*} (n : ℕ) (v : Vector R (2 ^ n)) : CMlPolynomial R n := v
 
-/-- `CMlPolynomialEval n R` is the type of multilinear polynomials in `n` variables over a ring `R`. It is
-  represented by its evaluations over the Boolean hypercube `{0,1}^n`,
+/-- `CMlPolynomialEval n R` is the type of multilinear polynomials in `n` variables over a ring `R`.
+  It is represented by its evaluations over the Boolean hypercube `{0,1}^n`,
   i.e. Lagrange basis coefficients.
   The indexing is **little-endian** (i.e. the least significant bit is the first bit). -/
 @[reducible]
@@ -55,7 +55,8 @@ namespace CMlPolynomial
 
 section CMlPolynomialInstances
 
-instance inhabited [Inhabited R] : Inhabited (CMlPolynomial R n) := by simp [CMlPolynomial]; infer_instance
+instance inhabited [Inhabited R] : Inhabited (CMlPolynomial R n) := by
+  simp [CMlPolynomial]; infer_instance
 
 /-- Conform a list of coefficients to a `CMlPolynomial` with a given number of variables.
     May either pad with zeros or truncate. -/
@@ -85,11 +86,13 @@ def smul [Mul R] (r : R) (p : CMlPolynomial R n) : CMlPolynomial R n := p.map (f
 
 /-- Scalar multiplication of a `CMlPolynomial` by a natural number -/
 @[inline]
-def nsmul [SMul ℕ R] (m : ℕ) (p : CMlPolynomial R n) : CMlPolynomial R n := p.map (fun a => m • a)
+def nsmul [SMul ℕ R] (m : ℕ) (p : CMlPolynomial R n) : CMlPolynomial R n :=
+  p.map (fun a => m • a)
 
 /-- Scalar multiplication of a `CMlPolynomial` by an integer -/
 @[inline]
-def zsmul [SMul ℤ R] (m : ℤ) (p : CMlPolynomial R n) : CMlPolynomial R n := p.map (fun a => m • a)
+def zsmul [SMul ℤ R] (m : ℤ) (p : CMlPolynomial R n) : CMlPolynomial R n :=
+  p.map (fun a => m • a)
 
 instance [AddCommMonoid R] : AddCommMonoid (CMlPolynomial R n) where
   add := add
@@ -203,23 +206,26 @@ lemma zero_def [Zero R] : zero = Vector.replicate (2 ^ n) 0 := rfl
 
 /-- Add two `CMlPolynomialEval`s -/
 @[inline]
-def add [Add R] (p q : CMlPolynomialEval R n) : CMlPolynomialEval R n := Vector.zipWith (· + ·) p q
+def add (p q : CMlPolynomialEval R n) : CMlPolynomialEval R n := Vector.zipWith (· + ·) p q
 
 /-- Negation of a `CMlPolynomialEval` -/
 @[inline]
-def neg [Neg R] (p : CMlPolynomialEval R n) : CMlPolynomialEval R n := p.map (fun a => -a)
+def neg (p : CMlPolynomialEval R n) : CMlPolynomialEval R n := p.map (fun a => -a)
 
 /-- Scalar multiplication of a `CMlPolynomialEval` -/
 @[inline]
-def smul [Mul R] (r : R) (p : CMlPolynomialEval R n) : CMlPolynomialEval R n := p.map (fun a => r * a)
+def smul [Mul R] (r : R) (p : CMlPolynomialEval R n) : CMlPolynomialEval R n :=
+  p.map (fun a => r * a)
 
 /-- Scalar multiplication of a `CMlPolynomialEval` by a natural number -/
 @[inline]
-def nsmul [SMul ℕ R] (m : ℕ) (p : CMlPolynomialEval R n) : CMlPolynomialEval R n := p.map (fun a => m • a)
+def nsmul [SMul ℕ R] (m : ℕ) (p : CMlPolynomialEval R n) : CMlPolynomialEval R n :=
+  p.map (fun a => m • a)
 
 /-- Scalar multiplication of a `CMlPolynomialEval` by an integer -/
 @[inline]
-def zsmul [SMul ℤ R] (m : ℤ) (p : CMlPolynomialEval R n) : CMlPolynomialEval R n := p.map (fun a => m • a)
+def zsmul [SMul ℤ R] (m : ℤ) (p : CMlPolynomialEval R n) : CMlPolynomialEval R n :=
+  p.map (fun a => m • a)
 
 instance [AddCommMonoid R] : AddCommMonoid (CMlPolynomialEval R n) where
   add := add
@@ -398,7 +404,7 @@ lemma forwardRange_length (n : ℕ) (r : Fin n) (l : Fin (r.val + 1)) :
   simp only [List.length_ofFn]
 
 lemma forwardRange_eq_of_r_eq (n : ℕ) (r1 r2 : Fin n) (h_r_eq : r1 = r2) (l : Fin (r1.val + 1)) :
-  forwardRange n r1 l = forwardRange n r2 ⟨l, by omega⟩ := by
+    forwardRange n r1 l = forwardRange n r2 ⟨l, by omega⟩ := by
   subst h_r_eq
   rfl
 
@@ -410,7 +416,7 @@ lemma forwardRange_getElem (n : ℕ) (r : Fin n) (l : Fin (r.val + 1)) (k : Fin 
   simp only [List.getElem_ofFn]
 
 lemma forwardRange_succ_right_ne_empty (n : ℕ) (r : Fin (n - 1)) (l : Fin (r.val + 1)) :
-  forwardRange n ⟨r + 1, by omega⟩ ⟨l, by simp only; omega⟩ ≠ [] := by
+    forwardRange n ⟨r + 1, by omega⟩ ⟨l, by simp only; omega⟩ ≠ [] := by
   rw [forwardRange]
   simp only [List.ofFn_succ, Fin.coe_ofNat_eq_mod, Nat.zero_mod, add_zero, Fin.val_succ, ne_eq,
     reduceCtorEq, not_false_eq_true]
@@ -439,7 +445,7 @@ lemma forwardRange_dropLast (n : ℕ) (r : Fin (n - 1)) (l : Fin (r.val + 1)) :
     rw [hleft, hright]
 
 lemma forwardRange_tail (n : ℕ) (r : Fin n) (l : Fin (r.val + 1)) (h_l_gt_0 : l.val > 0) :
-  (forwardRange n r ⟨l.val - 1, by omega⟩).tail = forwardRange n r l := by
+    (forwardRange n r ⟨l.val - 1, by omega⟩).tail = forwardRange n r l := by
   apply List.ext_getElem
   · rw [List.length_tail, forwardRange_length, forwardRange_length]
     simp only [add_tsub_cancel_right]
@@ -484,8 +490,8 @@ def lagrangeToMono_segment (n : ℕ) (r : Fin n) (l : Fin (r.val + 1)) :
   (range.foldr (fun h acc => lagrangeToMonoLevel h acc))
 
 lemma monoToLagrange_eq_monoToLagrange_segment (n : ℕ) [NeZero n] (v : Vector R (2 ^ n)) :
-  have h_n_ne_zero: n ≠ 0 := by exact NeZero.ne n
-  monoToLagrange n v = monoToLagrange_segment n (r:=⟨n - 1, by omega⟩) (l:=⟨0, by omega⟩) v := by
+    have h_n_ne_zero: n ≠ 0 := by exact NeZero.ne n
+    monoToLagrange n v = monoToLagrange_segment n (r:=⟨n - 1, by omega⟩) (l:=⟨0, by omega⟩) v := by
   have h_n_ne_zero: n ≠ 0 := by exact NeZero.ne n
   unfold monoToLagrange monoToLagrange_segment
   simp only [Fin.zero_eta]
@@ -493,8 +499,8 @@ lemma monoToLagrange_eq_monoToLagrange_segment (n : ℕ) [NeZero n] (v : Vector 
   exact Eq.symm (forwardRange_0_eq_finRange n)
 
 lemma lagrangeToMono_eq_lagrangeToMono_segment (n : ℕ) [NeZero n] (v : Vector R (2 ^ n)) :
-  have h_n_ne_zero: n ≠ 0 := by exact NeZero.ne n
-  lagrangeToMono n v = lagrangeToMono_segment n (r:=⟨n - 1, by omega⟩) (l:=⟨0, by omega⟩) v := by
+    have h_n_ne_zero: n ≠ 0 := by exact NeZero.ne n
+    lagrangeToMono n v = lagrangeToMono_segment n (r:=⟨n - 1, by omega⟩) (l:=⟨0, by omega⟩) v := by
   have h_n_ne_zero: n ≠ 0 := by exact NeZero.ne n
   unfold lagrangeToMono lagrangeToMono_segment
   simp only [Fin.zero_eta]
@@ -502,7 +508,7 @@ lemma lagrangeToMono_eq_lagrangeToMono_segment (n : ℕ) [NeZero n] (v : Vector 
   exact Eq.symm (forwardRange_0_eq_finRange n)
 
 lemma testBit_of_sub_two_pow_of_bit_1 {n i : ℕ} (h_testBit_eq_1 : (n).testBit i = true) :
-  (n - 2^i).testBit i = false := by
+    (n - 2^i).testBit i = false := by
   have h := Nat.testBit_false_eq_getBit_eq_0 (n:=n - 2^i) (k:=i)
   rw [h]
   have h_getBit_eq_0: Nat.getBit i (n - 2^i) = 0 := by
@@ -513,7 +519,7 @@ lemma testBit_of_sub_two_pow_of_bit_1 {n i : ℕ} (h_testBit_eq_1 : (n).testBit 
   exact h_getBit_eq_0
 
 theorem lagrangeToMonoLevel_monoToLagrangeLevel_id (v : Vector R (2 ^ n)) (i : Fin n) :
-  lagrangeToMonoLevel i (monoToLagrangeLevel i v) = v := by
+    lagrangeToMonoLevel i (monoToLagrangeLevel i v) = v := by
   unfold lagrangeToMonoLevel monoToLagrangeLevel
   simp only [Vector.getElem_ofFn]
   ext i1 i1_isLt
@@ -533,7 +539,7 @@ theorem lagrangeToMonoLevel_monoToLagrangeLevel_id (v : Vector R (2 ^ n)) (i : F
     simp only [h_i1_testBit, Bool.false_eq_true, ↓reduceIte]
 
 theorem monoToLagrangeLevel_lagrangeToMonoLevel_id (v : Vector R (2 ^ n)) (i : Fin n) :
-  monoToLagrangeLevel i (lagrangeToMonoLevel i v) = v := by
+    monoToLagrangeLevel i (lagrangeToMonoLevel i v) = v := by
   unfold lagrangeToMonoLevel monoToLagrangeLevel
   simp only [Vector.getElem_ofFn]
   ext i1 i1_isLt
@@ -595,7 +601,7 @@ theorem mobius_apply_zeta_apply_eq_id (n : ℕ) [NeZero n] (r : Fin n) (l : Fin 
       convert h_inductive
 
 def zeta_apply_mobius_apply_eq_id (n : ℕ) (r : Fin n) (l : Fin (r.val + 1)) (v : Vector R (2 ^ n)) :
-  monoToLagrange_segment n r l (lagrangeToMono_segment n r l v) = v := by
+    monoToLagrange_segment n r l (lagrangeToMono_segment n r l v) = v := by
   induction l using Fin.predRecOnSameFinType with
   | last =>
     rw [lagrangeToMono_segment, monoToLagrange_segment, forwardRange]

@@ -32,7 +32,8 @@ import CompPoly.Univariate.Canonical
 
 open Polynomial
 
-/-- Convert a mathlib `Polynomial` to a `CPolynomial` by extracting coefficients up to the degree. -/
+/-- Convert a mathlib `Polynomial` to a `CPolynomial` by extracting coefficients
+up to the degree. -/
 def Polynomial.toImpl {R : Type*} [Semiring R] (p : R[X]) : CompPoly.CPolynomial R :=
   match p.degree with
   | ⊥ => #[]

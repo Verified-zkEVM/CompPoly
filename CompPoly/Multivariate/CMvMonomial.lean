@@ -168,7 +168,7 @@ def equivFinsupp : CMvMonomial n ≃ (Fin n →₀ ℕ) where
 
 @[simp, grind =]
 lemma map_mul {m₁ m₂ : Multiplicative (Fin n →₀ ℕ)} :
-  ofFinsupp (m₁ * m₂) = (ofFinsupp m₁) + (ofFinsupp m₂) := by
+    ofFinsupp (m₁ * m₂) = (ofFinsupp m₁) + (ofFinsupp m₂) := by
   unfold_projs; ext
   erw [Vector.getElem_ofFn, Vector.getElem_zipWith]
   simp [Multiplicative.toAdd, Multiplicative.ofAdd, ofFinsupp]

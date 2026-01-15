@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2025 CompPoly. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao, Gregor Mitscha-Baude
+-/
+
 import CompPoly.Multivariate.CMvMonomial
 import CompPoly.Multivariate.Wheels
 import Mathlib.Algebra.Lie.OfAssociative
@@ -64,7 +70,7 @@ attribute [grind ext] Std.ExtTreeMap.ext_getElem?
 
 @[ext, grind ext]
 lemma ext_getElem? {n R} {t₁ t₂ : Unlawful n R}
-  (h : ∀ (k : CMvMonomial n), t₁[k]? = t₂[k]?) : t₁ = t₂ :=
+    (h : ∀ (k : CMvMonomial n), t₁[k]? = t₂[k]?) : t₁ = t₂ :=
   Std.ExtTreeMap.ext_getElem? h
 
 variable {n : ℕ} {R : Type}
@@ -85,7 +91,7 @@ abbrev monomials (p : Unlawful n R) : List (CMvMonomial n) :=
 
 @[simp]
 lemma mem_monomials {m : CMvMonomial n} {up : Unlawful n R} :
-  m ∈ up.monomials ↔ m ∈ up := ExtTreeMap.mem_keys
+    m ∈ up.monomials ↔ m ∈ up := ExtTreeMap.mem_keys
 
 instance [Repr R] : Repr (Unlawful n R) where
   reprPrec p _ :=
@@ -147,7 +153,7 @@ instance [Add R] : Add (Unlawful n R) := ⟨add⟩
 
 @[grind=]
 protected lemma grind_add_skip [Add R] {p₁ p₂ : Unlawful n R} :
-  p₁ + p₂ = p₁.mergeWith (fun _ c₁ c₂ ↦ c₁ + c₂) p₂ := rfl
+    p₁ + p₂ = p₁.mergeWith (fun _ c₁ c₂ ↦ c₁ + c₂) p₂ := rfl
 
 def addMonoR [Add R] (p : Unlawful n R) (term : MonoR n R) : Unlawful n R :=
   p + .ofList [term]
@@ -205,8 +211,7 @@ lemma filter_get {R : Type} [BEq R] [LawfulBEq R] {v : R} {m : CMvMonomial n} (a
   grind
 
 lemma add_getD? [CommSemiring R] {m : CMvMonomial n} {p q : Unlawful n R} :
-  (p.add q)[m]?.getD 0 = p[m]?.getD 0 + q[m]?.getD 0
-:= by
+    (p.add q)[m]?.getD 0 = p[m]?.getD 0 + q[m]?.getD 0 := by
   unfold Unlawful.add
   by_cases m ∈ p <;> by_cases m ∈ q <;> grind [add_zero, zero_add]
 

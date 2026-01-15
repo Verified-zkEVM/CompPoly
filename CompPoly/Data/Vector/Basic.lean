@@ -23,9 +23,9 @@ namespace Vector
 
 @[elab_as_elim]
 def induction₂ {α β} {motive : {n : ℕ} → Vector α n → Vector β n → Sort*}
-  (v_empty : motive #v[] #v[])
-  (v_insert : {n : ℕ} → (hd : α) → (tl : Vector α n) → (hd' : β) → (tl' : Vector β n) →
-    motive tl tl' → motive (tl.insertIdx 0 hd) (tl'.insertIdx 0 hd')) {m : ℕ} :
+    (v_empty : motive #v[] #v[])
+    (v_insert : {n : ℕ} → (hd : α) → (tl : Vector α n) → (hd' : β) → (tl' : Vector β n) →
+      motive tl tl' → motive (tl.insertIdx 0 hd) (tl'.insertIdx 0 hd')) {m : ℕ} :
     (v : Vector α m) → (v' : Vector β m) → motive v v' := by induction m with
   | zero => exact fun v v' => match v, v' with | ⟨⟨[]⟩, rfl⟩, ⟨⟨[]⟩, rfl⟩ => v_empty
   | succ n ih => exact fun v v' => match hv : v, hv' : v' with
@@ -37,7 +37,8 @@ def induction₂ {α β} {motive : {n : ℕ} → Vector α n → Vector β n →
 /-- The empty vector. -/
 def nil {α} : Vector α 0 := ⟨#[], rfl⟩ -- Vector.emptyWithCapacity 0
 
-/-- Construct a vector by prepending an element to the front of a vector, using `insertIdx` at `0`. -/
+/-- Construct a vector by prepending an element to the front of a vector,
+using `insertIdx` at `0`. -/
 def cons {α} {n : ℕ} (hd : α) (tl : Vector α n) : Vector α (n + 1) :=
   tl.insertIdx 0 hd
 
@@ -102,7 +103,7 @@ theorem cons_toList_eq_List_cons {α} {n : ℕ} (hd : α) (tl : Vector α n) :
   simp only [List.insertIdx_zero]
 
 theorem foldl_eq_toList_foldl {α β} {n : ℕ} (f : β → α → β) (init : β) (v : Vector α n) :
-  v.foldl (f:=f) (b:=init) = v.toList.foldl (f:=f) (init:=init) := by
+    v.foldl (f:=f) (b:=init) = v.toList.foldl (f:=f) (init:=init) := by
   rw [Vector.foldl]
   rw [←Array.foldl_toList]
   rfl
@@ -142,7 +143,7 @@ scoped notation:80 a " *ᵥ " b => dotProduct a b
 
 @[simp]
 lemma dotProduct_cons [AddCommMonoid R] [Mul R] (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
-  dotProduct (cons a b) (cons c d) = a * c + dotProduct b d := by
+    dotProduct (cons a b) (cons c d) = a * c + dotProduct b d := by
   unfold dotProduct
   rw [zipWith_cons]
   simp_rw [foldl_eq_toList_foldl]
@@ -237,11 +238,15 @@ theorem dotProduct_eq_root_dotProduct (a b : Vector R n) :
   · simp [dotProduct, _root_.dotProduct]
   · simp [Vector.cast]
     -- By definition of dot product, we can expand the right-hand side.
-    simp [dotProduct, ih];
-    -- By definition of dot product, we can expand the right-hand side. The left-hand side is the foldl of the zipWith operation on the two arrays, which is equivalent to the dot product of the corresponding vectors.
-    simp [dotProduct, _root_.dotProduct];
+    simp [dotProduct];
+    -- By definition of dot product, we can expand the right-hand side.
+    -- The left-hand side is the foldl of the zipWith operation on the two arrays,
+    -- which is equivalent to the dot product of the corresponding vectors.
+    simp [_root_.dotProduct];
     convert dotProduct_cons hd tl hd' tl' using 1;
-    · -- The array's foldl of the zipWith operation is the same as the dot product of the vectors because the vector's dot product is defined as the sum of the products of corresponding elements.
+    · -- The array's foldl of the zipWith operation is the same as the dot product
+      -- of the vectors because the vector's dot product is defined as the sum
+      -- of the products of corresponding elements.
       simp [dotProduct, Vector.cons];
       simp +decide [ Vector.foldl, Vector.zipWith ];
     · simp +decide [ Fin.sum_univ_succ, ih ];

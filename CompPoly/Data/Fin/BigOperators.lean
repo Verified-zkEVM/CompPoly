@@ -68,7 +68,7 @@ lemma Fin.val_add_one' (a : Fin r) (h_a_add_1 : a + 1 < r) : (a + 1).val = a.val
 
 @[simp]
 theorem Fin.cast_val_eq_val {n m : ℕ} [NeZero n] (a : Fin n) (h_eq : n = m):
-  (Fin.cast (h_eq) a).val = a.val := by
+    (Fin.cast (h_eq) a).val = a.val := by
   subst h_eq
   rfl
 
