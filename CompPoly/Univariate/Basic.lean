@@ -53,12 +53,32 @@ def C (r : R) : CPolynomial R := #[r]
 /-- The variable `X`. -/
 def X : CPolynomial R := #[0, 1]
 
+/-- Construct a monomial `c * X^n` as a `CPolynomial R`.
+
+  The result is an array with `n` zeros followed by `c`.
+  For example, `monomial 2 3` = `#[0, 0, 3]` represents `3 * X^2`.
+
+  Note: If `c = 0`, this returns `#[]` (the zero polynomial).
+-/
+def monomial [DecidableEq R] (n : ℕ) (c : R) : CPolynomial R :=
+  if c = 0 then #[] else .mk (Array.replicate n 0 ++ #[c])
+
+-- TODO: Prove basic properties of `monomial`, e.g.
+-- TODO: `coeff (monomial n c) i = if i = n then c else 0`
+-- TODO: `monomial n 0 = 0`
+-- TODO: `monomial 0 c = C c`
+-- TODO: `monomial n 1 = X^n` (where `X^n` is `X.pow n`)
+-- TODO: `monomial n c = C c * X^n` (multiplicative property)
+-- TODO: `monomial n c + monomial n d = monomial n (c + d)` (additive property)
+-- TODO: `monomial m c * monomial n d = monomial (m + n) (c * d)` (multiplicative property)
+-- TODO: `trim (monomial n c) = if c = 0 then #[] else monomial n c` (canonical property)
+
 /-- Return the index of the last non-zero coefficient of a `CPolynomial` -/
 def last_nonzero (p : CPolynomial R) : Option (Fin p.size) :=
   p.findIdxRev? (· != 0)
 
-/-- Remove leading zeroes from a `CPolynomial`. Requires `BEq` to check if the coefficients
-are zero. -/
+/-- Remove leading zeroes from a `CPolynomial`.
+Requires `BEq` to check if the coefficients are zero. -/
 def trim (p : CPolynomial R) : CPolynomial R :=
   match p.last_nonzero with
   | none => #[]
@@ -86,12 +106,11 @@ theorem last_nonzero_none [LawfulBEq R] {p : CPolynomial R} :
   apply_assumption
 
 theorem last_nonzero_some [LawfulBEq R] {p : CPolynomial R} {i} (hi : i < p.size) (h : p[i] ≠ 0) :
-    ∃ k, p.last_nonzero = some k :=
-  Array.findIdxRev?_eq_some ⟨i, hi, bne_iff_ne.mpr h⟩
+    ∃ k, p.last_nonzero = some k := Array.findIdxRev?_eq_some ⟨i, hi, bne_iff_ne.mpr h⟩
 
 theorem last_nonzero_spec [LawfulBEq R] {p : CPolynomial R} {k} :
     p.last_nonzero = some k
-    → p[k] ≠ 0 ∧ (∀ j, (hj : j < p.size) → j > k → p[j] = 0) := by
+  → p[k] ≠ 0 ∧ (∀ j, (hj : j < p.size) → j > k → p[j] = 0) := by
   intro (h : p.last_nonzero = some k)
   constructor
   · by_contra
@@ -134,9 +153,9 @@ theorem last_nonzero_some_iff [LawfulBEq R] {p : CPolynomial R} {k} :
 -/
 theorem last_nonzero_induct [LawfulBEq R] {motive : CPolynomial R → Prop}
     (case1 : ∀ p, p.last_nonzero = none → (∀ i, (hi : i < p.size) → p[i] = 0) → motive p)
-    (case2 : ∀ p : CPolynomial R, ∀ k : Fin p.size, p.last_nonzero = some k → p[k] ≠ 0 →
-      (∀ j : ℕ, (hj : j < p.size) → j > k → p[j] = 0) → motive p)
-    (p : CPolynomial R) : motive p := by
+  (case2 : ∀ p : CPolynomial R, ∀ k : Fin p.size, p.last_nonzero = some k → p[k] ≠ 0 →
+    (∀ j : ℕ, (hj : j < p.size) → j > k → p[j] = 0) → motive p)
+  (p : CPolynomial R) : motive p := by
   by_cases h : ∀ i, (hi : i < p.size) → p[i] = 0
   · exact case1 p (last_nonzero_none h) h
   · push_neg at h; rcases h with ⟨ i, hi, h ⟩
@@ -153,10 +172,9 @@ theorem last_nonzero_induct [LawfulBEq R] {motive : CPolynomial R → Prop}
 -/
 theorem induct [LawfulBEq R] {motive : CPolynomial R → Prop}
     (case1 : ∀ p, p.trim = #[] → (∀ i, (hi : i < p.size) → p[i] = 0) → motive p)
-    (case2 : ∀ p : CPolynomial R, ∀ k : Fin p.size, p.trim = p.extract 0 (k + 1)
-      → p[k] ≠ 0 → (∀ j : ℕ, (hj : j < p.size) → j > k → p[j] = 0) → motive p)
-    (p : CPolynomial R) : motive p := by
-  induction p using last_nonzero_induct with
+  (case2 : ∀ p : CPolynomial R, ∀ k : Fin p.size, p.trim = p.extract 0 (k + 1)
+    → p[k] ≠ 0 → (∀ j : ℕ, (hj : j < p.size) → j > k → p[j] = 0) → motive p)
+  (p : CPolynomial R) : motive p := by induction p using last_nonzero_induct with
   | case1 p h_none h_all_zero =>
     have h_empty : p.trim = #[] := by unfold trim; rw [h_none]
     exact case1 p h_empty h_all_zero
@@ -174,8 +192,7 @@ theorem elim [LawfulBEq R] (p : CPolynomial R) :
     ∨ (∃ k : Fin p.size,
         p.trim = p.extract 0 (k + 1)
       ∧ p[k] ≠ 0
-      ∧ (∀ j : ℕ, (hj : j < p.size) → j > k → p[j] = 0)) := by
-  induction p using induct with
+      ∧ (∀ j : ℕ, (hj : j < p.size) → j > k → p[j] = 0)) := by induction p using induct with
   | case1 p h_empty h_all_zero => left; exact ⟨h_empty, h_all_zero⟩
   | case2 p k h_extract h_nonzero h_max => right; exact ⟨k, h_extract, h_nonzero, h_max⟩
 
@@ -352,7 +369,7 @@ theorem canonical_iff [LawfulBEq R] {p : CPolynomial R} :
 
 theorem non_zero_map [LawfulBEq R] (f : R → R) (hf : ∀ r, f r = 0 → r = 0) (p : CPolynomial R) :
     let fp := CPolynomial.mk (p.map f);
-    p.trim = p → fp.trim = fp := by
+  p.trim = p → fp.trim = fp := by
   intro fp p_canon
   by_cases hp : p.size > 0
   -- positive case
@@ -594,8 +611,8 @@ lemma nsmul_raw_equiv [LawfulBEq R] : ∀ (n i : ℕ),
 
 lemma mul_pow_assoc : ∀ (p : CPolynomial R) (n : ℕ),
     ∀ (q : CPolynomial R) (m l : ℕ),
-    l + m = n →
-    p.mul^[n] q = p.mul^[m] (p.mul^[l] q) := by
+  l + m = n →
+  p.mul^[n] q = p.mul^[m] (p.mul^[l] q) := by
   intro p n
   induction n with
   | zero =>
@@ -604,6 +621,7 @@ lemma mul_pow_assoc : ∀ (p : CPolynomial R) (n : ℕ),
     obtain ⟨hl, hm⟩ := h_sizes
     rw [hl, hm]
     simp
+
   | succ n₀ ih =>
     intro q m l h_sizes
     cases l with
@@ -611,15 +629,17 @@ lemma mul_pow_assoc : ∀ (p : CPolynomial R) (n : ℕ),
       simp at h_sizes
       rw [h_sizes]
       simp
+
     | succ l₀ =>
       have h_sizes_simp : l₀ + m = n₀ := by linarith
       clear h_sizes
-      simp only [Function.iterate_succ, Function.comp_apply]
+      simp
+
       rw [ih (p.mul q) m l₀ h_sizes_simp]
 
 lemma mul_pow_succ (p q : CPolynomial R) (n : ℕ):
     p.mul^[n + 1] q = p.mul (p.mul^[n] q) := by
-  rw [mul_pow_assoc p (n+1) q 1 n] <;> simp only [Function.iterate_one]
+  rw [mul_pow_assoc p (n+1) q 1 n] <;> simp
 
 omit [BEq R] in
 lemma neg_coeff : ∀ (p : CPolynomial R) (i : ℕ), p.neg.coeff i = - p.coeff i := by
@@ -700,7 +720,86 @@ theorem neg_add_cancel [LawfulBEq R] (p : CPolynomial R) : -p + p = 0 := by
 
 end Operations
 
--- TODO instances of `AddCommGroup`, `SemiRing`, `CommSemiRing`
+section AddCommGroup
+instance [LawfulBEq R] : AddCommGroup (CPolynomial R) where
+  add_assoc := by intro _ _ _; rw [add_assoc]
+  zero_add := sorry
+  add_zero := sorry
+  add_comm := add_comm
+  neg_add_cancel := neg_add_cancel
+  nsmul := nsmul
+  nsmul_zero := nsmul_zero
+  nsmul_succ := nsmul_succ
+  zsmul := zsmulRec
+
+end AddCommGroup
+
+section Semiring
+
+/-- `CPolynomial R` forms a semiring when `R` is a semiring.
+
+  The semiring structure is inherited from the coefficient-wise operations on arrays,
+  with addition and multiplication defined via the standard polynomial operations.
+
+  TODO: Complete proofs for `natCast_zero` and `natCast_succ`.
+-/
+instance [Semiring R] [LawfulBEq R] : Semiring (CPolynomial R) where
+  mul_assoc := sorry
+  one_mul := sorry
+  mul_one := sorry
+  zero_mul := sorry
+  mul_zero := sorry
+  left_distrib := sorry
+  right_distrib := sorry
+  npow n p := p.pow n
+  npow_zero := sorry
+  npow_succ := sorry
+  natCast_zero := by sorry
+  natCast_succ := by sorry
+
+end Semiring
+
+section CommSemiring
+
+/-- `CPolynomial R` forms a commutative semiring when `R` is a commutative semiring.
+
+  Commutativity follows from the commutativity of multiplication in the base ring.
+-/
+instance [CommSemiring R] [LawfulBEq R] : CommSemiring (CPolynomial R) where
+  mul_comm := sorry
+
+end CommSemiring
+
+section Ring
+
+/-- `CPolynomial R` forms a ring when `R` is a ring.
+
+  The ring structure extends the semiring structure with negation and subtraction.
+  Most of the structure is already provided by the `Semiring` instance.
+-/
+instance [Ring R] [LawfulBEq R] : Ring (CPolynomial R) where
+  sub_eq_add_neg := by intro a b; rfl
+  zsmul := zsmulRec
+  zsmul_zero' := by sorry
+  zsmul_succ' := by sorry
+  zsmul_neg' := by sorry
+  intCast_ofNat := by sorry
+  intCast_negSucc := by sorry
+  neg_add_cancel := by sorry
+
+end Ring
+
+section CommRing
+
+/-- `CPolynomial R` forms a commutative ring when `R` is a commutative ring.
+
+  This combines the `CommSemiring` and `Ring` structures.
+-/
+instance [CommRing R] [LawfulBEq R] : CommRing (CPolynomial R) where
+  -- All structure inherited from `CommSemiring` and `Ring` instances
+
+end CommRing
+
 
 end CPolynomial
 

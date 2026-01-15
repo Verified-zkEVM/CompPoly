@@ -32,8 +32,8 @@ import CompPoly.Univariate.Canonical
 
 open Polynomial
 
-/-- Convert a mathlib `Polynomial` to a `CPolynomial` by extracting coefficients
-up to the degree. -/
+/-- Convert a mathlib `Polynomial` to a `CPolynomial` by extracting coefficients up to the degree.
+-/
 def Polynomial.toImpl {R : Type*} [Semiring R] (p : R[X]) : CompPoly.CPolynomial R :=
   match p.degree with
   | ⊥ => #[]
@@ -206,6 +206,56 @@ lemma eval_trim_eq_eval [LawfulBEq R] (x : R) (p : CPolynomial R) : p.trim.eval 
   rw [← toImpl_toPoly, eval_toImpl_eq_eval, eval_toPoly_eq_eval]
 
 end ToPoly
+
+section RingEquiv
+
+/-- Ring equivalence between canonical computable polynomials and Mathlib polynomials.
+
+  This establishes that `CPolynomialC R` and `Polynomial R` are isomorphic as rings.
+  The equivalence is given by `toPoly` (evaluation-based conversion) and `toImpl`
+  (coefficient extraction).
+
+  **Prerequisites**: This can only be constructed after:
+  1. `CPolynomialC` has a `Semiring`/`CommSemiring` instance (see `Canonical.lean`)
+  2. We prove that `toPoly` preserves multiplication (see `toPoly_mul` below)
+  3. We prove that `toPoly` preserves addition for trimmed polynomials
+
+  TODO: Construct this ring equivalence once prerequisites are met.
+-/
+
+-- TODO: Prove that `toPoly` preserves multiplication
+lemma toPoly_mul [CommSemiring R] [LawfulBEq R] (p q : CPolynomial R) :
+    (p * q).toPoly = p.toPoly * q.toPoly := by sorry
+
+-- TODO: Prove that `toPoly` preserves addition for trimmed polynomials
+lemma toPoly_add_trimmed [CommSemiring R] [LawfulBEq R] (p q : CPolynomial R) :
+    (p + q).toPoly = p.toPoly + q.toPoly := by sorry
+
+-- TODO: Prove that `toPoly` preserves the multiplicative identity
+lemma toPoly_one [CommSemiring R] [LawfulBEq R] :
+    (1 : CPolynomial R).toPoly = 1 := by sorry
+
+-- TODO: Prove that `toPoly` preserves the additive identity
+lemma toPoly_zero [CommSemiring R] [LawfulBEq R] :
+    (0 : CPolynomial R).toPoly = 0 := by sorry
+
+-- TODO: Construct the ring equivalence
+-- This should be something like:
+-- noncomputable def ringEquiv [CommSemiring R] [LawfulBEq R] :
+--   CPolynomialC R ≃+* Polynomial R where
+--   toFun := CPolynomialC.toPoly
+--   invFun := fun p => ⟨p.toImpl, trim_toImpl p⟩
+--   left_inv := toImpl_toPoly_of_canonical
+--   right_inv := toPoly_toImpl
+--   map_mul' := by sorry -- use `toPoly_mul`
+--   map_add' := by sorry -- use `toPoly_add_trimmed`
+
+-- TODO: Prove additional properties:
+-- TODO: `ringEquiv.symm = toImpl` (up to canonical wrapping)
+-- TODO: `ringEquiv (C r) = Polynomial.C r`
+-- TODO: `ringEquiv X = Polynomial.X`
+
+end RingEquiv
 
 end CPolynomial
 
