@@ -32,7 +32,8 @@ import CompPoly.Univariate.Canonical
 
 open Polynomial
 
-/-- Convert a mathlib `Polynomial` to a `CPolynomial` by extracting coefficients up to the degree. -/
+/-- Convert a mathlib `Polynomial` to a `CPolynomial` by extracting coefficients up to the degree.
+-/
 def Polynomial.toImpl {R : Type*} [Semiring R] (p : R[X]) : CompPoly.CPolynomial R :=
   match p.degree with
   | ⊥ => #[]
@@ -224,19 +225,19 @@ section RingEquiv
 
 -- TODO: Prove that `toPoly` preserves multiplication
 lemma toPoly_mul [CommSemiring R] [LawfulBEq R] (p q : CPolynomial R) :
-  (p * q).toPoly = p.toPoly * q.toPoly := by sorry
+    (p * q).toPoly = p.toPoly * q.toPoly := by sorry
 
 -- TODO: Prove that `toPoly` preserves addition for trimmed polynomials
 lemma toPoly_add_trimmed [CommSemiring R] [LawfulBEq R] (p q : CPolynomial R) :
-  (p + q).toPoly = p.toPoly + q.toPoly := by sorry
+    (p + q).toPoly = p.toPoly + q.toPoly := by sorry
 
 -- TODO: Prove that `toPoly` preserves the multiplicative identity
 lemma toPoly_one [CommSemiring R] [LawfulBEq R] :
-  (1 : CPolynomial R).toPoly = 1 := by sorry
+    (1 : CPolynomial R).toPoly = 1 := by sorry
 
 -- TODO: Prove that `toPoly` preserves the additive identity
 lemma toPoly_zero [CommSemiring R] [LawfulBEq R] :
-  (0 : CPolynomial R).toPoly = 0 := by sorry
+    (0 : CPolynomial R).toPoly = 0 := by sorry
 
 -- TODO: Construct the ring equivalence
 -- This should be something like:
