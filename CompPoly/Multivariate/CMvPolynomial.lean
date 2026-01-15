@@ -58,11 +58,11 @@ lemma add_getD? : (p + q).val[m]?.getD 0 = p.val[m]?.getD 0 + q.val[m]?.getD 0 :
 lemma coeff_add : coeff m (p + q) = coeff m p + coeff m q := by simp only [coeff, add_getD?]
 
 lemma fromUnlawful_fold_eq_fold_fromUnlawful₀
-    {t : List (CMvMonomial n × R)} {f : CMvMonomial n → R → Unlawful n R} :
-    ∀ init : Unlawful n R,
-      Lawful.fromUnlawful (List.foldl (fun u term => (f term.1 term.2) + u) init t) =
-      List.foldl (fun l term => (Lawful.fromUnlawful (f term.1 term.2)) + l)
-                 (Lawful.fromUnlawful init) t := by
+  {t : List (CMvMonomial n × R)} {f : CMvMonomial n → R → Unlawful n R} :
+  ∀ init : Unlawful n R,
+    Lawful.fromUnlawful (List.foldl (fun u term => (f term.1 term.2) + u) init t) =
+    List.foldl (fun l term => (Lawful.fromUnlawful (f term.1 term.2)) + l)
+               (Lawful.fromUnlawful init) t := by
   induction' t with head tail ih
   · simp
   · intro init
@@ -74,9 +74,9 @@ lemma fromUnlawful_fold_eq_fold_fromUnlawful₀
     exact Unlawful.add_getD?
 
 lemma fromUnlawful_fold_eq_fold_fromUnlawful {t : Unlawful n R}
-    {f : CMvMonomial n → R → Unlawful n R} :
-    Lawful.fromUnlawful (ExtTreeMap.foldl (fun u m c => (f m c) + u) 0 t) =
-    ExtTreeMap.foldl (fun l m c => (Lawful.fromUnlawful (f m c)) + l) 0 t := by
+  {f : CMvMonomial n → R → Unlawful n R} :
+  Lawful.fromUnlawful (ExtTreeMap.foldl (fun u m c => (f m c) + u) 0 t) =
+  ExtTreeMap.foldl (fun l m c => (Lawful.fromUnlawful (f m c)) + l) 0 t := by
   simp only [CMvMonomial.eq_1, ExtTreeMap.foldl_eq_foldl_toList]
   erw [fromUnlawful_fold_eq_fold_fromUnlawful₀ 0]
   simp

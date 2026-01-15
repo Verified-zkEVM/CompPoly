@@ -80,7 +80,7 @@ def fromUnlawful (p : Unlawful n R) : Lawful n R :=
 
 @[grind←]
 protected lemma grind_fromUnlawful_congr {p₁ p₂ : Unlawful n R}
-    (h : p₁ = p₂) : Lawful.fromUnlawful p₁ = Lawful.fromUnlawful p₂ := by grind
+  (h : p₁ = p₂) : Lawful.fromUnlawful p₁ = Lawful.fromUnlawful p₂ := by grind
 
 def C (c : R) : Lawful n R :=
   ⟨Unlawful.C c, by grind⟩
@@ -127,14 +127,14 @@ instance [Add R] : Add (Lawful n R) := ⟨add⟩
 
 @[grind=]
 protected lemma grind_add_skip [Add R] {p₁ p₂ : Lawful n R} :
-    p₁ + p₂ = Lawful.fromUnlawful (p₁.1.add p₂.1) := rfl
+  p₁ + p₂ = Lawful.fromUnlawful (p₁.1.add p₂.1) := rfl
 
 /--
   Note to self: This goes too far.
 -/
 @[grind=]
 protected lemma grind_add_skip_aggressive [Add R] {p₁ p₂ : Lawful n R} :
-    p₁ + p₂ = fromUnlawful (ExtTreeMap.mergeWith (fun _ c₁ c₂ => c₁ + c₂) p₁.1 p₂.1) := rfl
+  p₁ + p₂ = fromUnlawful (ExtTreeMap.mergeWith (fun _ c₁ c₂ => c₁ + c₂) p₁.1 p₂.1) := rfl
 
 def mul [Mul R] [Add R] (p₁ p₂ : Lawful n R) : Lawful n R :=
   fromUnlawful <| p₁.val * p₂.val
@@ -202,8 +202,8 @@ section
 variable {n₁ n₂ : ℕ}
 
 def align
-    (p₁ : Lawful n₁ R) (p₂ : Lawful n₂ R) :
-    Lawful (n₁ ⊔ n₂) R × Lawful (n₁ ⊔ n₂) R :=
+  (p₁ : Lawful n₁ R) (p₂ : Lawful n₂ R) :
+  Lawful (n₁ ⊔ n₂) R × Lawful (n₁ ⊔ n₂) R :=
   letI sup := n₁ ⊔ n₂
   (
     cast (by congr 1; grind) (p₁.extend sup),
@@ -211,10 +211,10 @@ def align
   )
 
 def liftPoly
-    (f : Lawful (n₁ ⊔ n₂) R →
-    Lawful (n₁ ⊔ n₂) R →
-    Lawful (n₁ ⊔ n₂) R)
-    (p₁ : Lawful n₁ R) (p₂ : Lawful n₂ R) : Lawful (n₁ ⊔ n₂) R :=
+  (f : Lawful (n₁ ⊔ n₂) R →
+  Lawful (n₁ ⊔ n₂) R →
+  Lawful (n₁ ⊔ n₂) R)
+  (p₁ : Lawful n₁ R) (p₂ : Lawful n₂ R) : Lawful (n₁ ⊔ n₂) R :=
   Function.uncurry f (align p₁ p₂)
 section
 

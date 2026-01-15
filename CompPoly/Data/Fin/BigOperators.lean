@@ -53,7 +53,7 @@ theorem div_two_pow_lt_two_pow (x i j : ℕ) (h_x_lt_2_pow_i : x < 2 ^ (i + j)):
     )
 
 lemma lt_two_pow_of_lt_two_pow_exp_le (x i j: ℕ)
-    (h_x_lt_2_pow_i: x < 2^i) (h_i_le_j: i ≤ j): x < 2^j := by
+  (h_x_lt_2_pow_i: x < 2^i) (h_i_le_j: i ≤ j): x < 2^j := by
   calc
     _ < 2^i := by omega
     _ ≤ 2^j := by apply pow_le_pow_right' (by omega) (by omega)

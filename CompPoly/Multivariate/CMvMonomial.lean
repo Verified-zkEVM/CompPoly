@@ -188,7 +188,7 @@ section
 
 instance [Repr R] : Repr (MonoR n R) where
   reprPrec
-    | (m, c), _ => repr c ++ " * " ++ repr m
+  | (m, c), _ => repr c ++ " * " ++ repr m
 
 @[simp, grind=]
 def C (c : R) : MonoR n R := (CMvMonomial.zero, c)

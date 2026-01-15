@@ -22,8 +22,8 @@ namespace Vector
 
 @[elab_as_elim]
 def induction₂ {α β} {motive : {n : ℕ} → Vector α n → Vector β n → Sort*}
-    (v_empty : motive #v[] #v[])
-    (v_insert : {n : ℕ} → (hd : α) → (tl : Vector α n) → (hd' : β) → (tl' : Vector β n) →
+  (v_empty : motive #v[] #v[])
+  (v_insert : {n : ℕ} → (hd : α) → (tl : Vector α n) → (hd' : β) → (tl' : Vector β n) →
       motive tl tl' → motive (tl.insertIdx 0 hd) (tl'.insertIdx 0 hd')) {m : ℕ} :
     (v : Vector α m) → (v' : Vector β m) → motive v v' := by induction m with
   | zero => exact fun v v' => match v, v' with | ⟨⟨[]⟩, rfl⟩, ⟨⟨[]⟩, rfl⟩ => v_empty
@@ -122,8 +122,8 @@ theorem foldl_succ
 -- #eval cons (hd:=6) (tl:=⟨#[2, 3], rfl⟩)
 
 theorem zipWith_cons {α β γ} {n : ℕ} (f : α → β → γ)
-    (a : α) (b : Vector α n) (c : β) (d : Vector β n) :
-    zipWith f (cons a b) (cons c d) = cons (f a c) (zipWith f b d) := by
+  (a : α) (b : Vector α n) (c : β) (d : Vector β n) :
+  zipWith f (cons a b) (cons c d) = cons (f a c) (zipWith f b d) := by
   apply Vector.toList_inj.mp
   conv_lhs => simp only [toList_zipWith]
   simp_rw [cons_toList_eq_List_cons]
@@ -163,8 +163,8 @@ variable {α : Type*}
 /-- Matrix-vector multiplication over `α`.
 `M` is given as a vector of row-vectors. -/
 def mulVec [Zero α] [Add α] [Mul α] {numRows numCols : Nat}
-    (M : Vector (Vector α numCols) numRows)
-    (x : Vector α numCols) : Vector α numRows :=
+  (M : Vector (Vector α numCols) numRows)
+  (x : Vector α numCols) : Vector α numRows :=
   M.map (fun row => row *ᵥ x)
 
 /-- Convert a flat row-major vector of length `m*n` into an `m × n` row-major matrix

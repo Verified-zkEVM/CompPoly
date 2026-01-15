@@ -64,7 +64,7 @@ attribute [grind ext] Std.ExtTreeMap.ext_getElem?
 
 @[ext, grind ext]
 lemma ext_getElem? {n R} {t₁ t₂ : Unlawful n R}
-    (h : ∀ (k : CMvMonomial n), t₁[k]? = t₂[k]?) : t₁ = t₂ :=
+  (h : ∀ (k : CMvMonomial n), t₁[k]? = t₂[k]?) : t₁ = t₂ :=
   Std.ExtTreeMap.ext_getElem? h
 
 variable {n : ℕ} {R : Type}
@@ -147,7 +147,7 @@ instance [Add R] : Add (Unlawful n R) := ⟨add⟩
 
 @[grind=]
 protected lemma grind_add_skip [Add R] {p₁ p₂ : Unlawful n R} :
-    p₁ + p₂ = p₁.mergeWith (fun _ c₁ c₂ ↦ c₁ + c₂) p₂ := rfl
+  p₁ + p₂ = p₁.mergeWith (fun _ c₁ c₂ ↦ c₁ + c₂) p₂ := rfl
 
 def addMonoR [Add R] (p : Unlawful n R) (term : MonoR n R) : Unlawful n R :=
   p + .ofList [term]
@@ -201,7 +201,7 @@ def coeff {R : Type} {n : ℕ} [Zero R] (m : CMvMonomial n) (p : Unlawful n R) :
 
 @[simp, grind =]
 lemma filter_get {R : Type} [BEq R] [LawfulBEq R] {v : R} {m : CMvMonomial n} (a : Unlawful n R) :
-    (ExtTreeMap.filter (fun _ c => c != v) a)[m]?.getD v = a[m]?.getD v := by
+  (ExtTreeMap.filter (fun _ c => c != v) a)[m]?.getD v = a[m]?.getD v := by
   grind
 
 lemma add_getD? [CommSemiring R] {m : CMvMonomial n} {p q : Unlawful n R} :
