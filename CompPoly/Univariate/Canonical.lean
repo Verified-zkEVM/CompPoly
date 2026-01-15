@@ -179,6 +179,36 @@ instance [CommSemiring R] [LawfulBEq R] : CommSemiring (CPolynomialC R) where
 
 end CommSemiring
 
+section Ring
+
+/-- `CPolynomialC R` forms a ring when `R` is a ring.
+
+  The ring structure extends the semiring structure with negation and subtraction.
+  Most of the structure is already provided by the `Semiring` instance.
+-/
+instance [Ring R] [LawfulBEq R] : Ring (CPolynomialC R) where
+  sub_eq_add_neg := by intro a b; rfl
+  zsmul := zsmulRec
+  zsmul_zero' := by sorry
+  zsmul_succ' := by sorry
+  zsmul_neg' := by sorry
+  intCast_ofNat := by sorry
+  intCast_negSucc := by sorry
+  neg_add_cancel := by sorry
+
+end Ring
+
+section CommRing
+
+/-- `CPolynomialC R` forms a commutative ring when `R` is a commutative ring.
+
+  This combines the `CommSemiring` and `Ring` structures.
+-/
+instance [CommRing R] [LawfulBEq R] : CommRing (CPolynomialC R) where
+  -- All structure inherited from `CommSemiring` and `Ring` instances
+
+end CommRing
+
 end OperationsC
 
 -- TODO: Ring equivalence between canonical polynomials and the quotient.
