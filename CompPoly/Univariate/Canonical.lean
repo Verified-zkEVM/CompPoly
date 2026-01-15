@@ -113,9 +113,6 @@ section MulOne
 -/
 instance : Mul (CPolynomialC R) where
   mul p q :=
-    -- TODO: Prove that `(p.val * q.val).trim = p.val * q.val` when `p` and `q` are canonical
-    -- Strategy: Show that multiplication doesn't introduce trailing zeros
-    -- This is non-trivial and may require careful analysis of the multiplication algorithm
     ⟨p.val * q.val, by sorry⟩
 
 /-- The constant polynomial 1 is canonical.
@@ -153,33 +150,20 @@ instance [Semiring R] [LawfulBEq R] : Semiring (CPolynomialC R) where
   zero_add := zero_add
   add_zero := add_zero
   add_comm := add_comm
-  -- TODO: Prove `zero_mul` for canonical polynomials
   zero_mul := by sorry
-  -- TODO: Prove `mul_zero` for canonical polynomials
   mul_zero := by sorry
-  -- TODO: Prove associativity of multiplication
   mul_assoc := by sorry
-  -- TODO: Prove that 1 is a left multiplicative identity
   one_mul := by sorry
-  -- TODO: Prove that 1 is a right multiplicative identity
   mul_one := by sorry
-  -- TODO: Prove left distributivity
   left_distrib := by sorry
-  -- TODO: Prove right distributivity
   right_distrib := by sorry
   nsmul := nsmul
   nsmul_zero := nsmul_zero
   nsmul_succ := nsmul_succ
-  -- TODO: Define and prove `npow` for canonical polynomials
-  -- Strategy: Use `CPolynomial.pow` and prove result is canonical
   npow n p := ⟨p.val ^ n, by sorry⟩
-  -- TODO: Prove `npow_zero`
   npow_zero := by sorry
-  -- TODO: Prove `npow_succ`
   npow_succ := by sorry
-  -- TODO: Prove `natCast_zero`
   natCast_zero := by sorry
-  -- TODO: Prove `natCast_succ`
   natCast_succ := by sorry
 
 end Semiring
@@ -191,8 +175,6 @@ section CommSemiring
   Commutativity follows from the commutativity of multiplication in the base ring.
 -/
 instance [CommSemiring R] [LawfulBEq R] : CommSemiring (CPolynomialC R) where
-  -- TODO: Prove commutativity of multiplication
-  -- Strategy: Use commutativity of `CPolynomial.mul` and canonical extensionality
   mul_comm := by sorry
 
 end CommSemiring

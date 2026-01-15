@@ -224,25 +224,18 @@ section RingEquiv
 
 -- TODO: Prove that `toPoly` preserves multiplication
 -- This is the critical missing piece for the ring equivalence
--- Strategy: Show that `(p * q).toPoly = p.toPoly * q.toPoly` for all `p, q`
--- This is non-trivial because `toPoly` is defined via `eval₂`, which evaluates
--- the polynomial. We need to show that evaluation distributes over multiplication.
 lemma toPoly_mul [CommSemiring R] [LawfulBEq R] (p q : CPolynomial R) :
   (p * q).toPoly = p.toPoly * q.toPoly := by sorry
 
 -- TODO: Prove that `toPoly` preserves addition for trimmed polynomials
--- Note: We already have `toPoly_add` for `add_raw`, but need it for `add` (which trims)
--- Strategy: Use `toPoly_trim` to relate `add` and `add_raw`
 lemma toPoly_add_trimmed [CommSemiring R] [LawfulBEq R] (p q : CPolynomial R) :
   (p + q).toPoly = p.toPoly + q.toPoly := by sorry
 
 -- TODO: Prove that `toPoly` preserves the multiplicative identity
--- Strategy: Show `(1 : CPolynomial R).toPoly = 1`
 lemma toPoly_one [CommSemiring R] [LawfulBEq R] :
   (1 : CPolynomial R).toPoly = 1 := by sorry
 
 -- TODO: Prove that `toPoly` preserves the additive identity
--- Strategy: Show `(0 : CPolynomial R).toPoly = 0`
 lemma toPoly_zero [CommSemiring R] [LawfulBEq R] :
   (0 : CPolynomial R).toPoly = 0 := by sorry
 

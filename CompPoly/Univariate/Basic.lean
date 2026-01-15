@@ -63,7 +63,7 @@ def X : CPolynomial R := #[0, 1]
 def monomial [DecidableEq R] (n : ℕ) (c : R) : CPolynomial R :=
   if c = 0 then #[] else .mk (Array.replicate n 0 ++ #[c])
 
--- TODO: Prove basic properties of `monomial`:
+-- TODO: Prove basic properties of `monomial`, e.g.
 -- TODO: `coeff (monomial n c) i = if i = n then c else 0`
 -- TODO: `monomial n 0 = 0`
 -- TODO: `monomial 0 c = C c`
@@ -727,66 +727,13 @@ theorem neg_add_cancel [LawfulBEq R] (p : CPolynomial R) : -p + p = 0 := by
   rw [add_coeff?]
   rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi, Neg.neg, neg]
 
-section SemiringLemmas
-
-/-- Semiring axioms for `CPolynomial R`.
-
-  These lemmas are needed to construct the `Semiring` instance. Note that some lemmas
-  are suffixed with `'` to avoid name clashes with Mathlib.
-
-  TODO: Resolve name clashes and potentially rename these to match Mathlib conventions.
--/
-
--- TODO: Prove that addition with zero is the identity (modulo `equiv` relation)
--- Note: May need to work with `equiv` rather than equality for non-canonical polynomials
-lemma zero_add' : ∀ (a : CPolynomial R), 0 + a = a := by sorry
-
-lemma add_zero' : ∀ (a : CPolynomial R), a + 0 = a := by sorry
-
--- TODO: Prove associativity of multiplication
-lemma mul_assoc : ∀ (a b c : CPolynomial R), a * b * c = a * (b * c) := by sorry
-
--- TODO: Prove that 1 is a left multiplicative identity
-lemma one_mul : ∀ (a : CPolynomial R), 1 * a = a := by sorry
-
--- TODO: Prove that 1 is a right multiplicative identity
-lemma mul_one' : ∀ (a : CPolynomial R), a * 1 = a := by sorry
-
--- TODO: Prove that zero annihilates on the left
-lemma zero_mul : ∀ (a : CPolynomial R), 0 * a = 0 := by sorry
-
--- TODO: Prove that zero annihilates on the right
-lemma mul_zero' : ∀ (a : CPolynomial R), a * 0 = 0 := by sorry
-
--- TODO: Prove left distributivity: `a * (b + c) = a * b + a * c`
-lemma left_distrib : ∀ (a b c : CPolynomial R), a * (b + c) = a * b + a * c := by sorry
-
--- TODO: Prove right distributivity: `(a + b) * c = a * c + b * c`
-lemma right_distrib : ∀ (a b c : CPolynomial R), (a + b) * c = a * c + b * c := by sorry
-
--- TODO: Prove that `pow 0` gives the multiplicative identity
-lemma npow_zero : ∀ (x : CPolynomial R), x.pow 0 = 1 := by sorry
-
--- TODO: Prove the recurrence relation for exponentiation
-lemma npow_succ : ∀ (n : ℕ) (x : CPolynomial R), x.pow (n + 1) = x.pow n * x := by sorry
-
-end SemiringLemmas
-
-section CommSemiringLemmas
-
--- TODO: Prove commutativity of multiplication
--- Note: Requires `CommSemiring R` or `CommRing R`
-lemma mul_comm [CommSemiring R] : ∀ (a b : CPolynomial R), a * b = b * a := by sorry
-
-end CommSemiringLemmas
-
 end Operations
 
 section AddCommGroup
 instance [LawfulBEq R] : AddCommGroup (CPolynomial R) where
   add_assoc := by intro _ _ _ ; rw [add_assoc]
-  zero_add := zero_add'
-  add_zero := add_zero'
+  zero_add := sorry
+  add_zero := sorry
   add_comm := add_comm
   neg_add_cancel := neg_add_cancel
   nsmul := nsmul
@@ -806,19 +753,17 @@ section Semiring
   TODO: Complete proofs for `natCast_zero` and `natCast_succ`.
 -/
 instance [Semiring R] [LawfulBEq R] : Semiring (CPolynomial R) where
-  mul_assoc := mul_assoc
-  one_mul := one_mul
-  mul_one := mul_one'
-  zero_mul := zero_mul
-  mul_zero := mul_zero'
-  left_distrib := left_distrib
-  right_distrib := right_distrib
+  mul_assoc := sorry
+  one_mul := sorry
+  mul_one := sorry
+  zero_mul := sorry
+  mul_zero := sorry
+  left_distrib := sorry
+  right_distrib := sorry
   npow n p := p.pow n
-  npow_zero := npow_zero
-  npow_succ := npow_succ
-  -- TODO: Prove that `Nat.cast 0 = 0` (zero polynomial)
+  npow_zero := sorry
+  npow_succ := sorry
   natCast_zero := by sorry
-  -- TODO: Prove that `Nat.cast (n + 1) = Nat.cast n + 1`
   natCast_succ := by sorry
 
 end Semiring
@@ -830,7 +775,7 @@ section CommSemiring
   Commutativity follows from the commutativity of multiplication in the base ring.
 -/
 instance [CommSemiring R] [LawfulBEq R] : CommSemiring (CPolynomial R) where
-  mul_comm := mul_comm
+  mul_comm := sorry
 
 end CommSemiring
 
@@ -842,21 +787,13 @@ section Ring
   Most of the structure is already provided by the `Semiring` instance.
 -/
 instance [Ring R] [LawfulBEq R] : Ring (CPolynomial R) where
-  -- TODO: Verify that `sub_eq_add_neg` holds (should be by definition)
   sub_eq_add_neg := by intro a b; rfl
-  -- TODO: Consider if we need a custom `zsmul` implementation for efficiency
   zsmul := zsmulRec
-  -- TODO: Prove `zsmul_zero'`
   zsmul_zero' := by sorry
-  -- TODO: Prove `zsmul_succ'`
   zsmul_succ' := by sorry
-  -- TODO: Prove `zsmul_neg'`
   zsmul_neg' := by sorry
-  -- TODO: Prove `intCast_ofNat`
   intCast_ofNat := by sorry
-  -- TODO: Prove `intCast_negSucc`
   intCast_negSucc := by sorry
-  -- TODO: Prove `neg_add_cancel`
   neg_add_cancel := by sorry
 
 end Ring
