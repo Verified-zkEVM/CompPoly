@@ -10,8 +10,7 @@ import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.Order.Star.Basic
 import Mathlib.Algebra.Order.Sub.Basic
 import Mathlib.Data.Matrix.Mul
-import Mathlib.Data.Nat.Lattice
-import Mathlib.Tactic
+import Mathlib.Tactic.Ring
 
 /-!
 # Definitions and lemmas for `Vector`

@@ -222,7 +222,8 @@ lemma map_one : fromCMvPolynomial (1 : CMvPolynomial n R) = 1 := by
     rw [finsupp_m_eq_one]
     have one_one_get₁ :
       ({(CMvMonomial.zero, 1)} : Unlawful n R)[(@CMvMonomial.zero n)]?.getD 0 = One.one := by
-      unfold_projs; simp only [Nat.zero_eq, Finsupp.coe_mk]
+      unfold_projs; simp only [ExtTreeMap.empty_eq_emptyc, ExtTreeMap.get?_eq_getElem?,
+        ExtTreeMap.getElem?_insert_self, Unlawful.zero_eq_zero, Option.getD_some]
     convert one_one_get₁
   · have : CMvMonomial.ofFinsupp m ≠ CMvMonomial.zero := by
       unfold CMvMonomial.ofFinsupp CMvMonomial.zero
@@ -319,7 +320,7 @@ lemma fromCMvPolynomial_sum_eq_sum_fromCMvPolynomial
 lemma map_mul (a b : CMvPolynomial n R) :
     fromCMvPolynomial (a * b) = fromCMvPolynomial a * fromCMvPolynomial b := by
   dsimp only [HMul.hMul, Mul.mul, Lawful.mul, Unlawful.mul]
-  simp only [CMvPolynomial.fromUnlawful_fold_eq_fold_fromUnlawful_equiv]
+  simp only [CMvPolynomial.fromUnlawful_fold_eq_fold_fromUnlawful]
   unfold MonoidAlgebra.mul'
   rw [foldl_eq_sum]; simp_rw [foldl_eq_sum]
   let F₀ (p q) : CMvMonomial n → R → Lawful n R :=
@@ -328,8 +329,8 @@ lemma map_mul (a b : CMvPolynomial n R) :
     (fun p q ↦ Finsupp.sum (fromCMvPolynomial b) (F₀ p q ∘ CMvMonomial.ofFinsupp))
       ∘ CMvMonomial.ofFinsupp with eqF₁
   let F₂ a₁ b₁ :
-    Multiplicative (Fin n →₀ ℕ) → R → MonoidAlgebra R (Multiplicative (Fin n →₀ ℕ))
-      := fun a₂ b₂ ↦ MonoidAlgebra.single (a₁ * a₂) (b₁ * b₂)
+    Multiplicative (Fin n →₀ ℕ) → R → MonoidAlgebra R (Multiplicative (Fin n →₀ ℕ)) :=
+    fun a₂ b₂ ↦ MonoidAlgebra.single (a₁ * a₂) (b₁ * b₂)
   set F₃ : Multiplicative (Fin n →₀ ℕ) → R → MvPolynomial (Fin n) R :=
     fun a₁ b₁ ↦ Finsupp.sum (fromCMvPolynomial b) (F₂ a₁ b₁) with eqF₃
   have fromCMvPolynomial_F₁_eq_F₃ {m₁ : Multiplicative (Fin n →₀ ℕ)} {c₁ : R} :

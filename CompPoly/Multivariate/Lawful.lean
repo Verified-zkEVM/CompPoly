@@ -142,8 +142,8 @@ def mul [Mul R] [Add R] (p₁ p₂ : Lawful n R) : Lawful n R :=
 instance [Mul R] [Add R] [Zero R] : Mul (Lawful n R) := ⟨mul⟩
 
 def npow [NatCast R] [Add R] [Mul R] : ℕ → Lawful n R → Lawful n R
-| .zero  , _ => 1
-| .succ n, p => (npow n p) * p
+  | .zero  , _ => 1
+  | .succ n, p => (npow n p) * p
 
 instance [NatCast R] [Add R] [Mul R] : NatPow (Lawful n R) := ⟨fun e b ↦ npow b e⟩
 

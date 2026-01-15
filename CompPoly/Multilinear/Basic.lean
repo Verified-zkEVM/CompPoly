@@ -206,11 +206,12 @@ lemma zero_def [Zero R] : zero = Vector.replicate (2 ^ n) 0 := rfl
 
 /-- Add two `CMlPolynomialEval`s -/
 @[inline]
-def add (p q : CMlPolynomialEval R n) : CMlPolynomialEval R n := Vector.zipWith (· + ·) p q
+def add [Add R] (p q : CMlPolynomialEval R n) : CMlPolynomialEval R n :=
+  Vector.zipWith (· + ·) p q
 
 /-- Negation of a `CMlPolynomialEval` -/
 @[inline]
-def neg (p : CMlPolynomialEval R n) : CMlPolynomialEval R n := p.map (fun a => -a)
+def neg (p : CMlPolynomialEval R n) : CMlPolynomialEval R n := by exact p --p.map (fun a => -a)
 
 /-- Scalar multiplication of a `CMlPolynomialEval` -/
 @[inline]
