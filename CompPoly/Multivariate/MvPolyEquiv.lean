@@ -461,3 +461,4 @@ lemma degreeOf_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] :
 end
 
 end CPoly
+

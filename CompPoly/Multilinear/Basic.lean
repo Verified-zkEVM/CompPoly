@@ -211,7 +211,8 @@ def add [Add R] (p q : CMlPolynomialEval R n) : CMlPolynomialEval R n :=
 
 /-- Negation of a `CMlPolynomialEval` -/
 @[inline]
-def neg (p : CMlPolynomialEval R n) : CMlPolynomialEval R n := by exact p --p.map (fun a => -a)
+def neg [Neg R] (p : CMlPolynomialEval R n) : CMlPolynomialEval R n :=
+  p.map (fun a => -a)
 
 /-- Scalar multiplication of a `CMlPolynomialEval` -/
 @[inline]

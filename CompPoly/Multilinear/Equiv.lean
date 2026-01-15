@@ -119,8 +119,8 @@ theorem toMvPolynomial_is_multilinear (p : CMlPolynomial R n) :
 
 theorem coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p : CMlPolynomial R n) (m : Fin n →₀ ℕ) :
     coeff m (toMvPolynomial p) =
-      if h_binary: (∀ j: Fin n, m j ≤ 1) then
-        let i_of_m: ℕ := Nat.binaryFinMapToNat (m:=m) (h_binary:=h_binary)
+      if h_binary : (∀ j : Fin n, m j ≤ 1) then
+        let i_of_m : ℕ := Nat.binaryFinMapToNat (m := m) (h_binary := h_binary)
         p[i_of_m]
       else
         0 := by

@@ -203,7 +203,8 @@ variable {n₁ n₂ : ℕ}
 
 def align
     (p₁ : Lawful n₁ R) (p₂ : Lawful n₂ R) :
-    Lawful (n₁ ⊔ n₂) R × Lawful (n₁ ⊔ n₂) R :=  letI sup := n₁ ⊔ n₂
+    Lawful (n₁ ⊔ n₂) R × Lawful (n₁ ⊔ n₂) R :=
+  letI sup := n₁ ⊔ n₂
   (
     cast (by congr 1; grind) (p₁.extend sup),
     cast (by congr 1; grind) (p₂.extend sup)
