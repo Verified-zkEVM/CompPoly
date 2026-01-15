@@ -28,6 +28,7 @@ variable {R : Type*} [Ring R] [BEq R]
 variable {Q : Type*} [Ring Q]
 
 section Quotient
+
 open Trim
 
 /-- Reflexivity of the equivalence relation. -/
