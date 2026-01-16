@@ -20,6 +20,9 @@ variable {R : Type}
 
 namespace CMvPolynomial
 
+def C {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R] (c : R) : CMvPolynomial n R :=
+  Lawful.C (n := n) (R := R) c
+
 def coeff {R : Type} {n : ℕ} [Zero R] (m : CMvMonomial n) (p : CMvPolynomial n R) : R :=
   p.1[m]?.getD 0
 
@@ -96,6 +99,13 @@ def degreeOf {R : Type} {n : ℕ} [CommSemiring R] (i : Fin n) : CMvPolynomial n
   fun p =>
     Multiset.count i
     (Finset.sup (List.toFinset (List.map CMvMonomial.toFinsupp (Lawful.monomials p))) fun s => Finsupp.toMultiset s)
+
+def X {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R] (i : Fin n) : CMvPolynomial n R :=
+  let monomial : CMvMonomial n := Vector.ofFn (fun j => if j = i then 1 else 0)
+  Lawful.fromUnlawful <| .ofList [(monomial, (1 : R))]
+
+def support {R : Type} {n : ℕ} [Zero R] (p : CMvPolynomial n R) : Finset (Fin n →₀ ℕ) :=
+  (Lawful.monomials p).map CMvMonomial.toFinsupp |>.toFinset
 
 end CMvPolynomial
 

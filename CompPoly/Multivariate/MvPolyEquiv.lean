@@ -296,7 +296,7 @@ lemma foldl_eq_sum {β : Type} [AddCommMonoid β]
   rw [monomials_dedup_self]
   aesop
 
-lemma coeff_sum [AddCommMonoid X]
+lemma coeff_sum {X : Type*} [AddCommMonoid X]
   (s : Finset X)
   (f : X → CMvPolynomial n R)
   (m : CMvMonomial n) :
