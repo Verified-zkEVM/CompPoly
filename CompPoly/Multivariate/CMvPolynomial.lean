@@ -1,7 +1,14 @@
+/-
+Copyright (c) 2025 CompPoly. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa
+-/
+
 import CompPoly.Multivariate.Lawful
 
 /-!
-# Polynomials of the form `α₁ * m₁ + α₂ * m₂ + ... + αₖ * mₖ` where `αᵢ` is any semiring and `mᵢ` is a `CMvMonomial`.
+# Polynomials of the form `α₁ * m₁ + α₂ * m₂ + ... + αₖ * mₖ` where `αᵢ` is any semiring
+  and `mᵢ` is a `CMvMonomial`.
 
 Just a shorthand for `CPoly.Lawful`.
 
@@ -20,6 +27,9 @@ variable {R : Type}
 
 namespace CMvPolynomial
 
+def C {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R] (c : R) : CMvPolynomial n R :=
+  Lawful.C (n := n) (R := R) c
+
 def coeff {R : Type} {n : ℕ} [Zero R] (m : CMvMonomial n) (p : CMvPolynomial n R) : R :=
   p.1[m]?.getD 0
 
@@ -27,7 +37,7 @@ attribute [grind =] coeff.eq_def
 
 @[ext, grind ext]
 theorem ext {n : ℕ} [Zero R] (p q : CMvPolynomial n R)
-  (h : ∀ m, coeff m p = coeff m q) : p = q := by
+    (h : ∀ m, coeff m p = coeff m q) : p = q := by
   unfold coeff at h
   rcases p with ⟨p, hp⟩; rcases q with ⟨q, hq⟩
   congr
@@ -57,12 +67,11 @@ lemma add_getD? : (p + q).val[m]?.getD 0 = p.val[m]?.getD 0 + q.val[m]?.getD 0 :
 lemma coeff_add : coeff m (p + q) = coeff m p + coeff m q := by simp only [coeff, add_getD?]
 
 lemma fromUnlawful_fold_eq_fold_fromUnlawful₀
-  {t : List (CMvMonomial n × R)} {f : CMvMonomial n → R → Unlawful n R} :
-  ∀ init : Unlawful n R,
+    {t : List (CMvMonomial n × R)} {f : CMvMonomial n → R → Unlawful n R} :
+    ∀ init : Unlawful n R,
     Lawful.fromUnlawful (List.foldl (fun u term => (f term.1 term.2) + u) init t) =
     List.foldl (fun l term => (Lawful.fromUnlawful (f term.1 term.2)) + l)
-               (Lawful.fromUnlawful init) t
-:= by
+               (Lawful.fromUnlawful init) t := by
   induction' t with head tail ih
   · simp
   · intro init
@@ -74,8 +83,8 @@ lemma fromUnlawful_fold_eq_fold_fromUnlawful₀
     exact Unlawful.add_getD?
 
 lemma fromUnlawful_fold_eq_fold_fromUnlawful {t : Unlawful n R}
-                                             {f : CMvMonomial n → R → Unlawful n R} :
-  Lawful.fromUnlawful (ExtTreeMap.foldl (fun u m c => (f m c) + u) 0 t) =
+    {f : CMvMonomial n → R → Unlawful n R} :
+    Lawful.fromUnlawful (ExtTreeMap.foldl (fun u m c => (f m c) + u) 0 t) =
   ExtTreeMap.foldl (fun l m c => (Lawful.fromUnlawful (f m c)) + l) 0 t := by
   simp only [CMvMonomial.eq_1, ExtTreeMap.foldl_eq_foldl_toList]
   erw [fromUnlawful_fold_eq_fold_fromUnlawful₀ 0]
@@ -84,18 +93,30 @@ lemma fromUnlawful_fold_eq_fold_fromUnlawful {t : Unlawful n R}
 
 end
 
-def eval₂ {R S : Type} {n : ℕ} [Semiring R] [CommSemiring S] : (R →+* S) → (Fin n → S) → CMvPolynomial n R → S :=
+def eval₂ {R S : Type} {n : ℕ} [Semiring R] [CommSemiring S] :
+    (R →+* S) → (Fin n → S) → CMvPolynomial n R → S :=
   fun f vs p => ExtTreeMap.foldl (fun s m c => (f c * MonoR.evalMonomial vs m) + s) 0 p.1
 
-def eval {R : Type} {n : ℕ} [CommSemiring R] : (Fin n → R) → CMvPolynomial n R → R := eval₂ (RingHom.id _)
+def eval {R : Type} {n : ℕ} [CommSemiring R] :
+    (Fin n → R) → CMvPolynomial n R → R := eval₂ (RingHom.id _)
 
 def totalDegree {R : Type} {n : ℕ} [inst : CommSemiring R] : CMvPolynomial n R → ℕ :=
-  fun p => Finset.sup (List.toFinset (List.map CMvMonomial.toFinsupp (Lawful.monomials p))) (fun s => Finsupp.sum s (fun _ e => e))
+  fun p =>
+    Finset.sup (List.toFinset (List.map CMvMonomial.toFinsupp (Lawful.monomials p)))
+      (fun s => Finsupp.sum s (fun _ e => e))
 
 def degreeOf {R : Type} {n : ℕ} [CommSemiring R] (i : Fin n) : CMvPolynomial n R → ℕ :=
   fun p =>
     Multiset.count i
-    (Finset.sup (List.toFinset (List.map CMvMonomial.toFinsupp (Lawful.monomials p))) fun s => Finsupp.toMultiset s)
+      (Finset.sup (List.toFinset (List.map CMvMonomial.toFinsupp (Lawful.monomials p)))
+        fun s => Finsupp.toMultiset s)
+
+def X {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R] (i : Fin n) : CMvPolynomial n R :=
+  let monomial : CMvMonomial n := Vector.ofFn (fun j => if j = i then 1 else 0)
+  Lawful.fromUnlawful <| .ofList [(monomial, (1 : R))]
+
+def support {R : Type} {n : ℕ} [Zero R] (p : CMvPolynomial n R) : Finset (Fin n →₀ ℕ) :=
+  (Lawful.monomials p).map CMvMonomial.toFinsupp |>.toFinset
 
 end CMvPolynomial
 
