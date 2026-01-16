@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2025 CompPoly. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa
+-/
+
 import Mathlib.Algebra.BigOperators.Group.Finset.Defs
 import Mathlib.Algebra.Group.Finsupp
 import Mathlib.Algebra.Group.TypeTags.Basic
@@ -144,7 +150,7 @@ def equivFinsupp : CMvMonomial n ≃ (Fin n →₀ ℕ) where
 
 @[simp, grind =]
 lemma map_mul {m₁ m₂ : Multiplicative (Fin n →₀ ℕ)} :
-  ofFinsupp (m₁ * m₂) = (ofFinsupp m₁) + (ofFinsupp m₂) := by
+    ofFinsupp (m₁ * m₂) = (ofFinsupp m₁) + (ofFinsupp m₂) := by
   unfold_projs; ext
   erw [Vector.getElem_ofFn, Vector.getElem_zipWith]
   simp [Multiplicative.toAdd, Multiplicative.ofAdd, ofFinsupp]
