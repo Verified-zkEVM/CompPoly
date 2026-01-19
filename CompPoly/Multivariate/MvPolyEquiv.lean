@@ -9,7 +9,7 @@ import CompPoly.Multivariate.CMvPolynomial
 import Mathlib.Algebra.MvPolynomial.Basic
 import Mathlib.Algebra.Ring.Defs
 import CompPoly.Multivariate.Lawful
-import Std.Classes.Ord.Vector
+import Batteries.Data.Vector.Basic
 
 /-!
 # `Equiv` and `RingEquiv` between `CMvPolynomial` and `MvPolynomial`.
@@ -364,7 +364,7 @@ lemma map_mul (a b : CMvPolynomial n R) :
           getElem?_neg
         ]
       unfold MvPolynomial.coeff MonoidAlgebra.single
-      rw [Finsupp.single_eq_of_ne (by symm; exact m_in)]
+      rw [Finsupp.single_eq_of_ne (by symm; grind)]
       split
       next h contra =>
         exfalso; apply m_in; symm
