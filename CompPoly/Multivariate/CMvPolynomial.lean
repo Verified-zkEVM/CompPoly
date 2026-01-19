@@ -35,6 +35,11 @@ namespace CMvPolynomial
 def C {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R] (c : R) : CMvPolynomial n R :=
   Lawful.C (n := n) (R := R) c
 
+/-- Construct the polynomial $X_i$. -/
+def X {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R] (i : Fin n) : CMvPolynomial n R :=
+  let monomial : CMvMonomial n := Vector.ofFn (fun j => if j = i then 1 else 0)
+  Lawful.fromUnlawful <| .ofList [(monomial, (1 : R))]
+
 /-- Extract the coefficient of a monomial. -/
 def coeff {R : Type} {n : ℕ} [Zero R] (m : CMvMonomial n) (p : CMvPolynomial n R) : R :=
   p.1[m]?.getD 0
@@ -110,6 +115,10 @@ def eval₂ {R S : Type} {n : ℕ} [Semiring R] [CommSemiring S] :
 /-- Evaluate a polynomial at a given point. -/
 def eval {R : Type} {n : ℕ} [CommSemiring R] : (Fin n → R) → CMvPolynomial n R → R :=
   eval₂ (RingHom.id _)
+
+/-- The support of a polynomial (set of monomials with non-zero coefficients), represented as Finsupps. -/
+def support {R : Type} {n : ℕ} [Zero R] (p : CMvPolynomial n R) : Finset (Fin n →₀ ℕ) :=
+  (Lawful.monomials p).map CMvMonomial.toFinsupp |>.toFinset
 
 /-- The total degree of a polynomial (maximum total degree of its monomials). -/
 def totalDegree {R : Type} {n : ℕ} [inst : CommSemiring R] : CMvPolynomial n R → ℕ :=
