@@ -364,13 +364,12 @@ lemma map_mul (a b : CMvPolynomial n R) :
           getElem?_neg
         ]
       unfold MvPolynomial.coeff MonoidAlgebra.single
-      -- rw [Finsupp.single_eq_of_ne (by symm; exact m_in)]
-      -- split
-      -- next h contra =>
-      --   exfalso; apply m_in; symm
-      --   apply CMvMonomial.injective_ofFinsupp contra
-      -- next h => simp_all only [Option.getD_none]
-      sorry -- TODO proof broke with update to 4.26.0
+      rw [Finsupp.single_eq_of_ne (by symm; grind)]
+      split
+      next h contra =>
+        exfalso; apply m_in; symm
+        apply CMvMonomial.injective_ofFinsupp contra
+      next h => simp_all only [Option.getD_none]
   have : F₃ = fun σ x ↦ fromCMvPolynomial (F₁ σ x) := by
     ext x
     rw [fromCMvPolynomial_F₁_eq_F₃]
