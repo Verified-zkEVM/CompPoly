@@ -1,9 +1,15 @@
+/-
+Copyright (c) 2025 CompPoly. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa
+-/
+
 import Batteries.Data.Vector.Lemmas
 import CompPoly.Multivariate.CMvPolynomial
 import Mathlib.Algebra.MvPolynomial.Basic
 import Mathlib.Algebra.Ring.Defs
 import CompPoly.Multivariate.Lawful
-import Std.Classes.Ord.Vector
+import Batteries.Data.Vector.Basic
 
 /-!
 # `Equiv` and `RingEquiv` between `CMvPolynomial` and `MvPolynomial`.
@@ -57,7 +63,7 @@ instance {n : ℕ} {R : Type} : Membership (Vector ℕ n) (Unlawful n R) := infe
 omit [BEq R] [LawfulBEq R] in
 @[grind =, simp]
 theorem toCMvPolynomial_fromCMvPolynomial {p : CMvPolynomial n R} :
-  toCMvPolynomial (fromCMvPolynomial p) = p := by
+    toCMvPolynomial (fromCMvPolynomial p) = p := by
   unfold fromCMvPolynomial toCMvPolynomial
   dsimp
   ext m; simp only [CMvPolynomial.coeff]; congr 1
@@ -77,7 +83,7 @@ theorem toCMvPolynomial_fromCMvPolynomial {p : CMvPolynomial n R} :
 omit [BEq R] [LawfulBEq R] in
 @[grind=, simp]
 theorem fromCMvPolynomial_toCMvPolynomial {p : MvPolynomial (Fin n) R} :
-  fromCMvPolynomial (toCMvPolynomial p) = p := by
+    fromCMvPolynomial (toCMvPolynomial p) = p := by
   dsimp [fromCMvPolynomial, toCMvPolynomial, toCMvPolynomial, fromCMvPolynomial]
   ext m; simp [MvPolynomial.coeff]
   rcases p with ⟨s, f, hf⟩
@@ -105,7 +111,7 @@ lemma fromCMvPolynomial_injective : Function.Injective (@fromCMvPolynomial n R _
 
 omit [BEq R] [LawfulBEq R] in
 lemma coeff_eq {m} (a : CMvPolynomial n R) :
-  MvPolynomial.coeff m (fromCMvPolynomial a) = a.coeff (CMvMonomial.ofFinsupp m) := rfl
+    MvPolynomial.coeff m (fromCMvPolynomial a) = a.coeff (CMvMonomial.ofFinsupp m) := rfl
 
 @[aesop simp]
 lemma eq_iff_fromCMvPolynomial {u v: CMvPolynomial n R} :
@@ -357,7 +363,7 @@ lemma map_mul (a b : CMvPolynomial n R) :
           getElem?_neg
         ]
       unfold MvPolynomial.coeff MonoidAlgebra.single
-      rw [Finsupp.single_eq_of_ne (by symm; exact m_in)]
+      rw [Finsupp.single_eq_of_ne (by symm; grind)]
       split
       next h contra =>
         exfalso; apply m_in; symm

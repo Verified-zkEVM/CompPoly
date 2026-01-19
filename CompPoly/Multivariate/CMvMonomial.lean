@@ -1,10 +1,16 @@
+/-
+Copyright (c) 2025 CompPoly. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa
+-/
+
 import Mathlib.Algebra.BigOperators.Group.Finset.Defs
 import Mathlib.Algebra.Group.Finsupp
 import Mathlib.Algebra.Group.TypeTags.Basic
 import Mathlib.Algebra.GroupWithZero.Nat
 import Mathlib.Algebra.Ring.Defs
 import Mathlib.Data.Nat.Lattice
-import Std.Classes.Ord.Vector
+import Batteries.Data.Vector.Basic
 
 /-!
 # Computable monomials
@@ -58,30 +64,6 @@ instance : Std.TransCmp (Ord.compare (α := CMvMonomial n)) :=
   inferInstanceAs (Std.TransCmp (Ord.compare (α := Vector ℕ n)))
 
 instance : Std.LawfulEqCmp (Ord.compare (α := CMvMonomial n)) :=
-  inferInstanceAs (Std.LawfulEqCmp (Ord.compare (α := Vector ℕ n)))
-
-instance : GetElem (CMvMonomial n) ℕ ℕ fun _ idx ↦ idx < n :=
-  inferInstanceAs (GetElem (Vector ℕ n) ℕ ℕ _)
-
-instance : GetElem? (CMvMonomial n) ℕ ℕ fun _ idx ↦ idx < n :=
-  inferInstanceAs (GetElem? (Vector ℕ n) ℕ ℕ _)
-
-instance : DecidableEq (CMvMonomial n) :=
-  inferInstanceAs (DecidableEq (Vector ℕ n))
-
-instance : Ord (CMvMonomial n) :=
-  inferInstanceAs (Ord (Vector ℕ n))
-
-instance : Std.TransCmp (α := Vector ℕ n) (Ord.compare (α := CMvMonomial n)) :=
-  inferInstanceAs (Std.TransCmp (Ord.compare (α := Vector ℕ n)))
-
-instance : Std.LawfulEqCmp (α := Vector ℕ n) (Ord.compare (α := CMvMonomial n)) :=
-  inferInstanceAs (Std.LawfulEqCmp (Ord.compare (α := Vector ℕ n)))
-
-instance : Std.TransCmp (α := CMvMonomial n) (Ord.compare (α := Vector ℕ n)) :=
-  inferInstanceAs (Std.TransCmp (Ord.compare (α := Vector ℕ n)))
-
-instance : Std.LawfulEqCmp (α := CMvMonomial n) (Ord.compare (α := Vector ℕ n)) :=
   inferInstanceAs (Std.LawfulEqCmp (Ord.compare (α := Vector ℕ n)))
 
 end Instances

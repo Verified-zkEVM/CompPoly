@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2025 CompPoly. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa
+-/
+
 import CompPoly.Multivariate.Lawful
 
 /-!
@@ -20,6 +26,9 @@ abbrev CMvPolynomial (n : ℕ) (R : Type) [Zero R] : Type := Lawful n R
 variable {R : Type}
 
 namespace CMvPolynomial
+
+def C {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R] (c : R) : CMvPolynomial n R :=
+  Lawful.C (n := n) (R := R) c
 
 def coeff {R : Type} {n : ℕ} [Zero R] (m : CMvMonomial n) (p : CMvPolynomial n R) : R :=
   p.1[m]?.getD 0
@@ -58,8 +67,8 @@ lemma add_getD? : (p + q).val[m]?.getD 0 = p.val[m]?.getD 0 + q.val[m]?.getD 0 :
 lemma coeff_add : coeff m (p + q) = coeff m p + coeff m q := by simp only [coeff, add_getD?]
 
 lemma fromUnlawful_fold_eq_fold_fromUnlawful₀
-  {t : List (CMvMonomial n × R)} {f : CMvMonomial n → R → Unlawful n R} :
-  ∀ init : Unlawful n R,
+    {t : List (CMvMonomial n × R)} {f : CMvMonomial n → R → Unlawful n R} :
+    ∀ init : Unlawful n R,
     Lawful.fromUnlawful (List.foldl (fun u term => (f term.1 term.2) + u) init t) =
     List.foldl (fun l term => (Lawful.fromUnlawful (f term.1 term.2)) + l)
                (Lawful.fromUnlawful init) t := by
