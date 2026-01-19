@@ -10,7 +10,7 @@ import Mathlib.Algebra.Group.TypeTags.Basic
 import Mathlib.Algebra.GroupWithZero.Nat
 import Mathlib.Algebra.Ring.Defs
 import Mathlib.Data.Nat.Lattice
-import Std.Classes.Ord.Vector
+import Batteries.Data.Vector.Basic
 
 /-!
 # Computable monomials
