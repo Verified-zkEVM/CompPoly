@@ -1,7 +1,7 @@
 {"version": "1.1.0",
  "packagesDir": ".lake/packages",
  "packages":
- [{"url": "https://github.com/dhsorens/ExtTreeMapLemmas",
+ [{"url": "https://github.com/Verified-zkEVM/ExtTreeMapLemmas",
    "type": "git",
    "subDir": null,
    "scope": "",
