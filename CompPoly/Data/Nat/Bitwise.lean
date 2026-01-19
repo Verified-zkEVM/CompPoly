@@ -144,7 +144,7 @@ lemma shiftRight_and_one_distrib {n m k : ℕ} :
     rw [Nat.and_assoc]
 
 lemma and_eq_zero_iff_and_each_getBit_eq_zero {n m : ℕ} :
-  n &&& m = 0 ↔ ∀ k, ((n >>> k) &&& 1) &&& ((m >>> k) &&& 1) = 0 := by
+    n &&& m = 0 ↔ ∀ k, ((n >>> k) &&& 1) &&& ((m >>> k) &&& 1) = 0 := by
   constructor
   · intro h_and_zero k
     have h_k := shiftRight_and_one_distrib (n := n) (m := m) (k := k)
@@ -938,7 +938,7 @@ lemma num_eq_highBits_xor_lowBits {n : ℕ} (numLowBits : ℕ) :
   · exact and_highBits_lowBits_eq_zero (n := n) (numLowBits := numLowBits)
 
 lemma getBit_of_highBits {n : ℕ} (numLowBits : ℕ) : ∀ k, getBit k (getHighBits numLowBits n) =
-  if k < numLowBits then 0 else getBit (k) (n) := by
+    if k < numLowBits then 0 else getBit (k) (n) := by
   intro k
   simp only [getHighBits, getHighBits_no_shl]
   rw [getBit_of_shiftLeft]
@@ -1022,7 +1022,7 @@ def binaryFinMapToNat {n : ℕ} (m : Fin n → ℕ) (h_binary : ∀ j : Fin n, m
   exact ⟨i_of_m, h_i_lt⟩
 
 lemma getBit_of_binaryFinMapToNat {n : ℕ} (m : Fin n → ℕ) (h_binary : ∀ j : Fin n, m j ≤ 1) :
-  ∀ k: ℕ, Nat.getBit k (binaryFinMapToNat m h_binary).val
+    ∀ k: ℕ, Nat.getBit k (binaryFinMapToNat m h_binary).val
   = if h_k: k < n then m ⟨k, by omega⟩ else 0 := by
   -- We prove this by induction on `n`.
   induction n with

@@ -216,7 +216,7 @@ def align
   )
 
 def liftPoly
-  (f : Lawful (n₁ ⊔ n₂) R →
+    (f : Lawful (n₁ ⊔ n₂) R →
   Lawful (n₁ ⊔ n₂) R →
   Lawful (n₁ ⊔ n₂) R)
   (p₁ : Lawful n₁ R) (p₂ : Lawful n₂ R) : Lawful (n₁ ⊔ n₂) R :=

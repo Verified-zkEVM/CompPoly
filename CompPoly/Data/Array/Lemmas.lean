@@ -87,7 +87,7 @@ where
 
 /-- if findIdxRev? finds an index, the condition is satisfied on that element -/
 lemma findIdxRev?_def {cond} {as : Array α} {k : Fin as.size} :
-  findIdxRev? cond as = some k → cond as[k] := by
+    findIdxRev? cond as = some k → cond as[k] := by
   suffices aux : ∀ i, findIdxRev?.find cond as i = some k → cond as[k] by apply aux
   intro i
   unfold findIdxRev?.find
@@ -98,7 +98,7 @@ lemma findIdxRev?_def {cond} {as : Array α} {k : Fin as.size} :
 
 /-- if findIdxRev? finds an index, then for every greater index the condition doesn't hold -/
 lemma findIdxRev?_maximal {cond} {as : Array α} {k : Fin as.size} :
-  findIdxRev? cond as = some k → ∀ j : Fin as.size, j > k → ¬ cond as[j] := by
+    findIdxRev? cond as = some k → ∀ j : Fin as.size, j > k → ¬ cond as[j] := by
   suffices aux : ∀ i, findIdxRev?.find cond as i = some k →
     ∀ j : Fin as.size, j > k → j.val < i → ¬ cond as[j] by
     intro h j j_gt_k

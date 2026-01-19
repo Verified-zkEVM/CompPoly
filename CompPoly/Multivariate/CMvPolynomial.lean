@@ -83,7 +83,7 @@ lemma fromUnlawful_fold_eq_fold_fromUnlawful₀
     exact Unlawful.add_getD?
 
 lemma fromUnlawful_fold_eq_fold_fromUnlawful {t : Unlawful n R}
-  {f : CMvMonomial n → R → Unlawful n R} :
+    {f : CMvMonomial n → R → Unlawful n R} :
   Lawful.fromUnlawful (ExtTreeMap.foldl (fun u m c => (f m c) + u) 0 t) =
   ExtTreeMap.foldl (fun l m c => (Lawful.fromUnlawful (f m c)) + l) 0 t := by
   simp only [CMvMonomial.eq_1, ExtTreeMap.foldl_eq_foldl_toList]

@@ -121,7 +121,7 @@ lemma eq_iff_fromCMvPolynomial {u v: CMvPolynomial n R} :
 
 @[simp]
 lemma map_add (a b : CMvPolynomial n R) :
-  fromCMvPolynomial (a + b) = fromCMvPolynomial a + fromCMvPolynomial b := by
+    fromCMvPolynomial (a + b) = fromCMvPolynomial a + fromCMvPolynomial b := by
   ext m
   rw [MvPolynomial.coeff_add, coeff_eq, coeff_eq, coeff_eq]
   unfold CMvPolynomial.coeff
@@ -273,7 +273,7 @@ instance {n : ℕ} : AddCommMonoid (CPoly.CMvPolynomial n R) where
 
 omit [BEq R] [LawfulBEq R] in
 lemma toList_pairs_monomial_coeff {β : Type} [AddCommMonoid β]
-  {t : Unlawful n R}
+    {t : Unlawful n R}
   {f : CMvMonomial n → R → β} :
   t.toList.map (fun term => f term.1 term.2) =
     t.monomials.map (fun m => f m (t.coeff m)) := by
@@ -324,7 +324,7 @@ lemma fromCMvPolynomial_sum_eq_sum_fromCMvPolynomial
 
 @[simp]
 lemma map_mul (a b : CMvPolynomial n R) :
-  fromCMvPolynomial (a * b) = fromCMvPolynomial a * fromCMvPolynomial b := by
+    fromCMvPolynomial (a * b) = fromCMvPolynomial a * fromCMvPolynomial b := by
   dsimp only [HMul.hMul, Mul.mul, Lawful.mul, Unlawful.mul]
   simp only [CMvPolynomial.fromUnlawful_fold_eq_fold_fromUnlawful]
   unfold MonoidAlgebra.mul'
@@ -406,7 +406,7 @@ noncomputable def polyRingEquiv :
 
 omit [BEq R] [LawfulBEq R] in
 lemma eval₂_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] {f : (R →+* S)}
-  {vals : Fin n → S} : p.eval₂ f vals = (fromCMvPolynomial p).eval₂ f vals := by
+    {vals : Fin n → S} : p.eval₂ f vals = (fromCMvPolynomial p).eval₂ f vals := by
   unfold CMvPolynomial.eval₂ MvPolynomial.eval₂
   rw [foldl_eq_sum]
   congr 1
@@ -430,7 +430,7 @@ lemma eval₂_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] {f : (R 
 
 omit [BEq R] [LawfulBEq R] in
 lemma eval_equiv {p : CMvPolynomial n R} {vals : Fin n → R} :
-  p.eval vals = (fromCMvPolynomial p).eval vals := by
+    p.eval vals = (fromCMvPolynomial p).eval vals := by
   unfold CMvPolynomial.eval MvPolynomial.eval MvPolynomial.eval₂Hom
   simp only [RingHom.coe_mk, MonoidHom.coe_mk, OneHom.coe_mk]
   exact eval₂_equiv
@@ -441,7 +441,7 @@ lemma totalDegree_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] :
 
 omit [BEq R] [LawfulBEq R] in
 lemma degreeOf_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] :
-  p.degreeOf = (fromCMvPolynomial p).degreeOf := by
+    p.degreeOf = (fromCMvPolynomial p).degreeOf := by
   ext i
   unfold MvPolynomial.degreeOf MvPolynomial.degrees
   unfold MvPolynomial.support fromCMvPolynomial
