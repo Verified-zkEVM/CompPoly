@@ -303,9 +303,9 @@ lemma foldl_eq_sum {β : Type} [AddCommMonoid β]
   rw [monomials_dedup_self]
   aesop
 
-lemma coeff_sum [AddCommMonoid X]
-    (s : Finset X)
-    (f : X → CMvPolynomial n R)
+lemma coeff_sum [AddCommMonoid α]
+    (s : Finset α)
+    (f : α → CMvPolynomial n R)
     (m : CMvMonomial n) :
     coeff m (∑ x ∈ s, f x) = ∑ x ∈ s, coeff m (f x) := by
   rw [←Finset.sum_map_toList s, ←Finset.sum_map_toList s]

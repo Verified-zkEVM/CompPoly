@@ -17,7 +17,8 @@ coefficients are non-zero.
 
 ## Main definitions
 
-* `CPoly.CMvPolynomial n R`: The type of multivariate polynomials in `n` variables with coefficients in `R`.
+* `CPoly.CMvPolynomial n R`: The type of multivariate polynomials in `n` variables
+  with coefficients in `R`.
 -/
 
 namespace CPoly
@@ -95,7 +96,8 @@ lemma fromUnlawful_fold_eq_fold_fromUnlawful₀
     iterate 3 erw [Unlawful.filter_get]
     exact Unlawful.add_getD?
 
-/-- Auxiliary lemma showing that conversion from unlawful polynomials respects the fold over terms. -/
+/-- Auxiliary lemma showing that conversion from unlawful polynomials respects
+    the fold over terms. -/
 lemma fromUnlawful_fold_eq_fold_fromUnlawful {t : Unlawful n R}
     {f : CMvMonomial n → R → Unlawful n R} :
   Lawful.fromUnlawful (ExtTreeMap.foldl (fun u m c => (f m c) + u) 0 t) =
@@ -107,7 +109,8 @@ lemma fromUnlawful_fold_eq_fold_fromUnlawful {t : Unlawful n R}
 
 end
 
-/-- Evaluate a polynomial at a point given by a ring homomorphism `f` and variable assignments `vs`. -/
+/-- Evaluate a polynomial at a point given by a ring homomorphism `f`
+    and variable assignments `vs`. -/
 def eval₂ {R S : Type} {n : ℕ} [Semiring R] [CommSemiring S] :
     (R →+* S) → (Fin n → S) → CMvPolynomial n R → S :=
   fun f vs p => ExtTreeMap.foldl (fun s m c => (f c * MonoR.evalMonomial vs m) + s) 0 p.1
@@ -116,7 +119,8 @@ def eval₂ {R S : Type} {n : ℕ} [Semiring R] [CommSemiring S] :
 def eval {R : Type} {n : ℕ} [CommSemiring R] : (Fin n → R) → CMvPolynomial n R → R :=
   eval₂ (RingHom.id _)
 
-/-- The support of a polynomial (set of monomials with non-zero coefficients), represented as Finsupps. -/
+/-- The support of a polynomial (set of monomials with non-zero coefficients),
+    represented as Finsupps. -/
 def support {R : Type} {n : ℕ} [Zero R] (p : CMvPolynomial n R) : Finset (Fin n →₀ ℕ) :=
   (Lawful.monomials p).map CMvMonomial.toFinsupp |>.toFinset
 

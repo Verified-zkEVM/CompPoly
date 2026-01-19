@@ -24,8 +24,9 @@ namespace CompPoly
 /-- A type analogous to `Polynomial` that supports computable operations. This is defined to be a
   wrapper around `Array`.
 
-For example, the Array `#[1,2,3]` represents the polynomial `1 + 2x + 3x^2`. Two arrays may represent
-the same polynomial via zero-padding, for example `#[1,2,3] = #[1,2,3,0,0,0,...]`.
+For example, the Array `#[1,2,3]` represents the polynomial `1 + 2x + 3x^2`.
+Two arrays may represent the same polynomial via zero-padding,
+for example `#[1,2,3] = #[1,2,3,0,0,0,...]`.
 -/
 @[reducible, inline, specialize]
 def CPolynomial (R : Type*) := Array R

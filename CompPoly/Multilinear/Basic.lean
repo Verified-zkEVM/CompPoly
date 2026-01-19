@@ -336,7 +336,8 @@ variable {R : Type*} [AddCommGroup R]
 
 This function performs the transformation for the `j`-th variable (corresponding to the `j`-th bit).
 It iterates over all indices `i` in the boolean hypercube. If the `j`-th bit of `i` is 1,
-it adds the value at the corresponding index with the `j`-th bit 0 (`i - stride`) to the current value.
+it adds the value at the corresponding index with the `j`-th bit 0 (`i - stride`)
+to the current value.
 This effectively computes the partial sum along the `j`-th dimension, which corresponds to
 evaluating the polynomial at $X_j = 1$ given its values at $X_j = 0$ (coefficients) and difference.
 
@@ -507,7 +508,8 @@ def monoToLagrange_segment (n : ℕ) (r : Fin n) (l : Fin (r.val + 1)) :
   (range.foldl (fun acc h => monoToLagrangeLevel h acc))
 
 /--
-Performs the inverse zeta-transform (evaluation to coefficient) on a segment of dimensions from `l` to `r`.
+Performs the inverse zeta-transform (evaluation to coefficient) on a segment of dimensions
+from `l` to `r`.
 Iteratively applies `lagrangeToMonoLevel` for each dimension in the range (in reverse order).
 `0 ≤ l ≤ r < n`.
 -/
@@ -664,7 +666,8 @@ lemma zeta_apply_mobius_apply_eq_id (n : ℕ) (r : Fin n) (l : Fin (r.val + 1))
 /--
 The equivalence between the monomial basis representation (`CMlPolynomial`)
 and the Lagrange basis representation (`CMlPolynomialEval`) of a multilinear polynomial.
-The forward map is `monoToLagrange` (zeta transform) and the inverse is `lagrangeToMono` (inverse zeta transform/Mobius transform).
+The forward map is `monoToLagrange` (zeta transform) and the inverse is `lagrangeToMono`
+(inverse zeta transform/Mobius transform).
 -/
 def equivMonomialLagrangeRepr : CMlPolynomial R n ≃ CMlPolynomialEval R n where
   toFun := monoToLagrange n

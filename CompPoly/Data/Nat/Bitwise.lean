@@ -881,7 +881,8 @@ lemma getLowBits_succ {n : ℕ} (numLowBits : ℕ) :
 def getHighBits_no_shl (numLowBits : ℕ) (n : ℕ) : ℕ := n >>> numLowBits
 
 /--
-Returns the high bits of `n` (bits at positions `≥ numLowBits`) shifted back to their original positions.
+Returns the high bits of `n` (bits at positions `≥ numLowBits`) shifted back to
+their original positions.
 `getHighBits numLowBits n = n >>> numLowBits <<< numLowBits`
 -/
 def getHighBits (numLowBits : ℕ) (n : ℕ) : ℕ :=
