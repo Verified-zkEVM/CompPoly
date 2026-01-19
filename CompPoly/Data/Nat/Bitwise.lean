@@ -407,7 +407,7 @@ lemma sum_eq_xor_plus_twice_and (n : Nat) : ∀ m : ℕ, n + m = (n ^^^ m) + 2 *
   --   have h_bits : getBitN + getBitM = (getBitN ^^^ getBitM) + 2 * (getBitN &&& getBitM) := by
   --     interval_cases getBitN <;> interval_cases getBitM <;> rfl
   --   omega
-  sorry
+  sorry -- TODO proof broke with update to 4.26.0
 
 lemma add_shiftRight_distrib {n m k : ℕ} (h_and_zero : n &&& m = 0) :
   (n + m) >>> k = (n >>> k) + (m >>> k) := by
