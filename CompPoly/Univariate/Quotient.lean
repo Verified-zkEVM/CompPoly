@@ -185,6 +185,7 @@ lemma zipIdx_trim_append {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
     · simp +decide [ List.mem_iff_get ]
       intro a; specialize hk; have := hk.2.2 ( k + 1 + a ); simp_all +decide [ Nat.add_assoc ]
 
+/-- Multiplication by a trimmed polynomial is equivalent to multiplication by the original. -/
 lemma mul_trim_equiv [LawfulBEq R] (a b : CPolynomial R) :
     a.mul b ≈ a.trim.mul b := by
   have h_zipIdx_split : ∃ l, a.zipIdx.toList = a.trim.zipIdx.toList ++ l ∧ ∀ x ∈ l, x.1 = 0 := by
@@ -202,6 +203,7 @@ lemma mul_trim_equiv [LawfulBEq R] (a b : CPolynomial R) :
   obtain ⟨ acc, h₁, h₂ ⟩ := h_foldl_split
   exact h₁.symm ▸ h₂.symm ▸ foldl_mul_step_zeros b acc l hl.2
 
+/-- Multiplication is well-defined on the left with respect to equivalence. -/
 lemma mul_equiv [LawfulBEq R] (a₁ a₂ b : CPolynomial R) :
     a₁ ≈ a₂ → a₁.mul b ≈ a₂.mul b := by
   intro h
@@ -210,6 +212,7 @@ lemma mul_equiv [LawfulBEq R] (a₁ a₂ b : CPolynomial R) :
     _ ≈ a₂.trim.mul b := by rw [eq_of_equiv h]
     _ ≈ a₂.mul b := equiv_symm (mul_trim_equiv a₂ b)
 
+/-- Multiplication is well-defined on the right with respect to equivalence. -/
 lemma mul_equiv₂ [LawfulBEq R] (a b₁ b₂ : CPolynomial R) :
     b₁ ≈ b₂ → a.mul b₁ ≈ a.mul b₂ := by
   -- By definition of multiplication, we can express `a.mul b₁` and `a.mul b₂` in terms of

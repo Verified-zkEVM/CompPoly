@@ -61,6 +61,7 @@ noncomputable def toPoly' (p : CPolynomial R) : Polynomial R :=
     contradiction
   ))
 
+/-- Convert a canonical polynomial to a (mathlib) `Polynomial`. -/
 noncomputable def CPolynomialC.toPoly (p : CPolynomialC R) : Polynomial R := p.val.toPoly
 
 alias ofPoly := Polynomial.toImpl

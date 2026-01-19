@@ -21,10 +21,10 @@ open Polynomial
 
 namespace CompPoly
 
-/-- A type analogous to `Polynomial` that supports computable operations. This defined to be a
+/-- A type analogous to `Polynomial` that supports computable operations. This is defined to be a
   wrapper around `Array`.
 
-For example the Array `#[1,2,3]` represents the polynomial `1 + 2x + 3x^2`. Two arrays may represent
+For example, the Array `#[1,2,3]` represents the polynomial `1 + 2x + 3x^2`. Two arrays may represent
 the same polynomial via zero-padding, for example `#[1,2,3] = #[1,2,3,0,0,0,...]`.
 -/
 @[reducible, inline, specialize]
@@ -96,7 +96,7 @@ def leadingCoeff (p : CPolynomial R) : R := p.trim.getLastD 0
 
 namespace Trim
 
--- characterize .last_nonzero
+/-- If all coefficients are zero, `last_nonzero` is `none`. -/
 theorem last_nonzero_none [LawfulBEq R] {p : CPolynomial R} :
     (∀ i, (hi : i < p.size) → p[i] = 0) → p.last_nonzero = none := by
   intro h
@@ -105,9 +105,11 @@ theorem last_nonzero_none [LawfulBEq R] {p : CPolynomial R} :
   rw [bne_iff_ne, ne_eq, not_not]
   apply_assumption
 
+/-- If there is a non-zero coefficient, `last_nonzero` is `some`. -/
 theorem last_nonzero_some [LawfulBEq R] {p : CPolynomial R} {i} (hi : i < p.size) (h : p[i] ≠ 0) :
     ∃ k, p.last_nonzero = some k := Array.findIdxRev?_eq_some ⟨i, hi, bne_iff_ne.mpr h⟩
 
+/-- `last_nonzero` returns the largest index with a non-zero coefficient. -/
 theorem last_nonzero_spec [LawfulBEq R] {p : CPolynomial R} {k} :
     p.last_nonzero = some k
   → p[k] ≠ 0 ∧ (∀ j, (hj : j < p.size) → j > k → p[j] = 0) := by
@@ -120,11 +122,11 @@ theorem last_nonzero_spec [LawfulBEq R] {p : CPolynomial R} {k} :
     have h : ¬(p[j] != 0) := Array.findIdxRev?_maximal h ⟨ j, hj ⟩ j_gt_k
     rwa [bne_iff_ne, ne_eq, not_not] at h
 
--- the property of `last_nonzero_spec` uniquely identifies an element,
--- and that allows us to prove the reverse as well
+/-- The property that an index is the last non-zero coefficient. -/
 def last_nonzero_prop {p : CPolynomial R} (k : Fin p.size) : Prop :=
   p[k] ≠ 0 ∧ (∀ j, (hj : j < p.size) → j > k → p[j] = 0)
 
+/-- The last non-zero index is unique. -/
 lemma last_nonzero_unique {p : CPolynomial Q} {k k' : Fin p.size} :
     last_nonzero_prop k → last_nonzero_prop k' → k = k' := by
   suffices weaker : ∀ k k', last_nonzero_prop k → last_nonzero_prop k' → k ≤ k' by
@@ -135,6 +137,7 @@ lemma last_nonzero_unique {p : CPolynomial Q} {k k' : Fin p.size} :
   have : p[k] = 0 := h' k k.is_lt (Nat.lt_of_not_ge k_not_le)
   contradiction
 
+/-- Characterization of `last_nonzero` via `last_nonzero_prop`. -/
 theorem last_nonzero_some_iff [LawfulBEq R] {p : CPolynomial R} {k} :
     p.last_nonzero = some k ↔ (p[k] ≠ 0 ∧ (∀ j, (hj : j < p.size) → j > k → p[j] = 0)) := by
   constructor
@@ -143,6 +146,7 @@ theorem last_nonzero_some_iff [LawfulBEq R] {p : CPolynomial R} {k} :
   have ⟨ k', h_some'⟩ := last_nonzero_some k.is_lt h_prop.left
   have k_is_k' := last_nonzero_unique (last_nonzero_spec h_some') h_prop
   rwa [← k_is_k']
+
 
 /-- eliminator for `p.last_nonzero`, e.g. use with the induction tactic as follows:
   ```

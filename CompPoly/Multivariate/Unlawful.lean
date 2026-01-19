@@ -11,11 +11,15 @@ import Std.Data.ExtTreeMap
 import ExtTreeMapLemmas.ExtTreeMap
 
 /-!
-# Maps of the form `CMvMonomial → R` with no additional restrictions.
+# Unlawful multivariate polynomials
+
+This file defines the `Unlawful` type, which represents multivariate polynomials
+as a map from monomials to coefficients. Unlike `Lawful`, it does not enforce
+the absence of zero coefficients.
 
 ## Main definitions
 
-* CPoly.Unlawful
+* `CPoly.Unlawful n R`: A map from `CMvMonomial n` to `R`, implemented using `Std.ExtTreeMap`.
 -/
 
 attribute [local instance 5] instDecidableEqOfLawfulBEq
@@ -26,6 +30,7 @@ open Std
 
 /--
   Polynomial in `n` variables with coefficients in `R`.
+  Internally represented as a tree map from monomials to coefficients.
 -/
 @[grind =]
 def Unlawful (n : ℕ) (R : Type) : Type :=
@@ -75,17 +80,21 @@ lemma ext_getElem? {n R} {t₁ t₂ : Unlawful n R}
 
 variable {n : ℕ} {R : Type}
 
+/-- Construct an `Unlawful` polynomial from a list of monomial-coefficient pairs. -/
 @[simp, grind =]
 def ofList (l : List (CMvMonomial n × R)) : Unlawful n R := ExtTreeMap.ofList l compare
 
+/-- Extend the number of variables by padding monomials with zeros. -/
 def extend (n' : ℕ) (p : Unlawful n R) : Unlawful (n ⊔ n') R :=
   .ofList (p.keys.map (CMvMonomial.extend n') |>.zip p.values)
 
+/-- Check if the polynomial has no zero coefficients. -/
 abbrev isNoZeroCoef [Zero R] (p : Unlawful n R) : Prop := ∀ (m : CMvMonomial n), p[m]? ≠ some 0
 
 def toFinset [DecidableEq R] (p : Unlawful n R) : Finset (CMvMonomial n × R) :=
   p.toList.toFinset
 
+/-- The list of monomials present in the polynomial. -/
 abbrev monomials (p : Unlawful n R) : List (CMvMonomial n) :=
   p.keys
 
@@ -100,6 +109,7 @@ instance [Repr R] : Repr (Unlawful n R) where
       ⟨λ (m, c) => repr c ++ " * " ++ repr m⟩
     @Std.Format.joinSep _ toFormat p.toList " + "
 
+/-- Constant polynomial. -/
 @[grind =]
 def C [BEq R] [LawfulBEq R] [Zero R] (c : R) : Unlawful n R :=
   if c = 0 then ∅ else .ofList [MonoR.C c]
@@ -146,6 +156,7 @@ end
 
 end
 
+/-- Pointwise addition of coefficients. -/
 def add [Add R] (p₁ p₂ : Unlawful n R) : Unlawful n R :=
   p₁.mergeWith (fun _ c₁ c₂ ↦ c₁ + c₂) p₂
 
@@ -155,9 +166,11 @@ instance [Add R] : Add (Unlawful n R) := ⟨add⟩
 protected lemma grind_add_skip [Add R] {p₁ p₂ : Unlawful n R} :
     p₁ + p₂ = p₁.mergeWith (fun _ c₁ c₂ ↦ c₁ + c₂) p₂ := rfl
 
+/-- Add a single monomial-coefficient term to a polynomial. -/
 def addMonoR [Add R] (p : Unlawful n R) (term : MonoR n R) : Unlawful n R :=
   p + .ofList [term]
 
+/-- Multiply a polynomial by a single monomial term. -/
 def mul₀ [Mul R] (t : MonoR n R) (p : Unlawful n R) : Unlawful n R :=
   .ofList (p.toList.map fun (k, v) ↦ (t.1+k, t.2*v))
 
@@ -168,6 +181,7 @@ lemma mul₀_zero [Zero R] [BEq R] [LawfulBEq R] [Mul R] {t : MonoR n R} : mul�
   unfold mul₀
   grind
 
+/-- Polynomial multiplication using a nested fold (distributive law). -/
 def mul [Mul R] [Add R] [Zero R] [BEq R] [LawfulBEq R] (p₁ p₂ : Unlawful n R) : Unlawful n R :=
   p₁.foldl (init := 0)
     fun p m₁ c₁ ↦
@@ -179,11 +193,13 @@ section Neg
 
 variable [Neg R]
 
+/-- Negation (negates all coefficients). -/
 def neg (p : Unlawful n R) : Unlawful n R :=
   p.map fun _ v ↦ -v
 
 instance : Neg (Unlawful n R) := ⟨neg⟩
 
+/-- Subtraction. -/
 def sub [Add R] (p₁ p₂ : Unlawful n R) : Unlawful n R :=
   Unlawful.add p₁ (-p₂)
 
@@ -191,9 +207,11 @@ instance [Add R] : Sub (Unlawful n R) := ⟨sub⟩
 
 end Neg
 
+/-- Return the term with the lexicographically largest monomial. -/
 def leadingTerm? : Unlawful n R → Option (MonoR n R) :=
   ExtTreeMap.maxEntry?
 
+/-- Return the lexicographically largest monomial. -/
 def leadingMonomial? : Unlawful n R → Option (CMvMonomial n) :=
   .map Prod.fst ∘ Unlawful.leadingTerm?
 

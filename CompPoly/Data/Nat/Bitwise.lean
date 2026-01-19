@@ -46,6 +46,9 @@ lemma testBit_false_eq_getBit_eq_0 (k n : Nat) :
   simp only [one_and_eq_mod_two, mod_two_bne_zero, beq_eq_false_iff_ne, ne_eq, mod_two_not_eq_one,
     and_one_is_mod]
 
+/--
+Hamming weight of `n`: the number of 1s in the binary representation of `n`.
+-/
 def popCount (n : Nat) := (Nat.digits 2 n).sum
 
 -- #eval Nat.popCount 13
@@ -877,6 +880,10 @@ lemma getLowBits_succ {n : ℕ} (numLowBits : ℕ) :
 /-- This takes a argument for the number of lowBitss to remove from the number -/
 def getHighBits_no_shl (numLowBits : ℕ) (n : ℕ) : ℕ := n >>> numLowBits
 
+/--
+Returns the high bits of `n` (bits at positions `≥ numLowBits`) shifted back to their original positions.
+`getHighBits numLowBits n = n >>> numLowBits <<< numLowBits`
+-/
 def getHighBits (numLowBits : ℕ) (n : ℕ) : ℕ :=
   (getHighBits_no_shl numLowBits n) <<< numLowBits
 
@@ -994,6 +1001,11 @@ lemma exist_bit_diff_if_diff {n : ℕ} (a : Fin (2 ^ n)) (b : Fin (2 ^ n)) (h_a_
   subst h_a_eq_b
   simp_all only [ne_eq, not_true_eq_false]
 
+/--
+Converts a finite map `m : Fin n → ℕ` (representing bits) to a natural number.
+Requires `m j ≤ 1` for all `j`.
+The result is `∑ j, (m j) * 2^j`.
+-/
 def binaryFinMapToNat {n : ℕ} (m : Fin n → ℕ) (h_binary : ∀ j : Fin n, m j ≤ 1) : Fin (2^n) := by
   let i_of_m := ∑ j ∈ Finset.univ, (2^j.val) * (m j)
   have h_lt: 2^n - 1 < 2^n := by

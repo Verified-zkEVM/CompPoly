@@ -332,10 +332,16 @@ namespace CMlPolynomial
 
 variable {R : Type*} [AddCommGroup R]
 
-/-- **One level** of the zeta‑transform.
+/-- **One level** of the zeta‑transform (coefficient to evaluation).
 
-If the `j`‑th least significant bit of the index `i` is `1`, we replace `v[i]` with
-`v[i] + v[i with bit j cleared]`; otherwise we leave it unchanged. -/
+This function performs the transformation for the `j`-th variable (corresponding to the `j`-th bit).
+It iterates over all indices `i` in the boolean hypercube. If the `j`-th bit of `i` is 1,
+it adds the value at the corresponding index with the `j`-th bit 0 (`i - stride`) to the current value.
+This effectively computes the partial sum along the `j`-th dimension, which corresponds to
+evaluating the polynomial at $X_j = 1$ given its values at $X_j = 0$ (coefficients) and difference.
+
+The `stride` is $2^j$, representing the distance between indices that differ only in the `j`-th bit.
+-/
 @[inline] def monoToLagrangeLevel {n : ℕ} (j : Fin n) : Vector R (2 ^ n) → Vector R (2 ^ n) :=
   fun v =>
     let stride : ℕ := 2 ^ j.val    -- distance to the "partner" index
@@ -349,10 +355,15 @@ If the `j`‑th least significant bit of the index `i` is `1`, we replace `v[i]`
 @[inline] def monoToLagrange (n : ℕ) : CMlPolynomial R n → CMlPolynomialEval R n :=
   (List.finRange n).foldl (fun acc level => monoToLagrangeLevel level acc)
 
-/-- **One level** of the inverse zeta‑transform.
+/-- **One level** of the inverse zeta‑transform (evaluation to coefficient).
 
-If the `j`‑th least significant bit of the index `i` is `1`, we replace `v[i]` with
-`v[i] - v[i with bit j cleared]`; otherwise we leave it unchanged. -/
+This function performs the inverse transformation for the `j`-th variable.
+It iterates over all indices `i`. If the `j`-th bit of `i` is 1, it subtracts the value
+at the corresponding index with the `j`-th bit 0 (`i - stride`) from the current value.
+This recovers the coefficient for the term involving $X_j$ from the evaluations.
+
+The `stride` is $2^j$.
+-/
 @[inline] def lagrangeToMonoLevel {n : ℕ} (j : Fin n) : Vector R (2 ^ n) → Vector R (2 ^ n) :=
   fun v =>
     let stride : ℕ := 2 ^ j.val  -- distance to the "partner" index
@@ -392,6 +403,12 @@ def lagrangeToMonoSpec (p : CMlPolynomialEval R n) : CMlPolynomialEval R n :=
 -- #eval lagrangeToMono 2 #v[(78 : ℤ), 3, 4, 100]
 -- #eval lagrangeToMonoSpec (n:=2) #v[(78 : ℤ), 3, 4, 100]
 
+/--
+Generates a list of indices representing a range of bit positions [l, r] in increasing order.
+Used for optimized recursive transforms that operate on segments of variables.
+Returns a list containing `l, l+1, ..., r`.
+The result is used to fold over dimensions in `monoToLagrange_segment` and `lagrangeToMono_segment`.
+-/
 def forwardRange (n : ℕ) (r : Fin (n)) (l : Fin (r.val + 1)) : List (Fin n) :=
   let len := r.val - l.val + 1
   List.ofFn (fun (k : Fin len) =>
@@ -479,13 +496,21 @@ lemma forwardRange_0_eq_finRange (n : ℕ) [NeZero n] : forwardRange n ⟨n - 1,
     ⟩)
     simpa [forwardRange] using h_fr_get
 
-/- 0 ≤ l ≤ r < n - where n is the number of bits -/
+/--
+Performs the zeta-transform (coefficient to evaluation) on a segment of dimensions from `l` to `r`.
+Iteratively applies `monoToLagrangeLevel` for each dimension in the range.
+`0 ≤ l ≤ r < n`.
+-/
 def monoToLagrange_segment (n : ℕ) (r : Fin n) (l : Fin (r.val + 1)) :
     Vector R (2 ^ n) → Vector R (2 ^ n) :=
   let range := forwardRange n r l
   (range.foldl (fun acc h => monoToLagrangeLevel h acc))
 
-/- 0 ≤ l ≤ r < n - where n is the number of bits -/
+/--
+Performs the inverse zeta-transform (evaluation to coefficient) on a segment of dimensions from `l` to `r`.
+Iteratively applies `lagrangeToMonoLevel` for each dimension in the range (in reverse order).
+`0 ≤ l ≤ r < n`.
+-/
 def lagrangeToMono_segment (n : ℕ) (r : Fin n) (l : Fin (r.val + 1)) :
     Vector R (2 ^ n) → Vector R (2 ^ n) :=
   let range := forwardRange n r l
@@ -636,6 +661,11 @@ lemma zeta_apply_mobius_apply_eq_id (n : ℕ) (r : Fin n) (l : Fin (r.val + 1))
       convert h
     convert h_inductive
 
+/--
+The equivalence between the monomial basis representation (`CMlPolynomial`)
+and the Lagrange basis representation (`CMlPolynomialEval`) of a multilinear polynomial.
+The forward map is `monoToLagrange` (zeta transform) and the inverse is `lagrangeToMono` (inverse zeta transform/Mobius transform).
+-/
 def equivMonomialLagrangeRepr : CMlPolynomial R n ≃ CMlPolynomialEval R n where
   toFun := monoToLagrange n
   invFun := lagrangeToMono n

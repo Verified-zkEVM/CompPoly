@@ -7,34 +7,41 @@ Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa
 import CompPoly.Multivariate.Lawful
 
 /-!
-# Polynomials of the form `α₁ * m₁ + α₂ * m₂ + ... + αₖ * mₖ` where `αᵢ` is any semiring
+# Computable multivariate polynomials
+
+Polynomials of the form `α₁ * m₁ + α₂ * m₂ + ... + αₖ * mₖ` where `αᵢ` is any semiring
 and `mᵢ` is a `CMvMonomial`.
 
-Just a shorthand for `CPoly.Lawful`.
+This is implemented as a wrapper around `CPoly.Lawful`, which ensures that all stored
+coefficients are non-zero.
 
 ## Main definitions
 
-* `CPoly.CMvPolynomial
+* `CPoly.CMvPolynomial n R`: The type of multivariate polynomials in `n` variables with coefficients in `R`.
 -/
 
 namespace CPoly
 
 open Std
 
+/-- A computable multivariate polynomial in `n` variables with coefficients in `R`. -/
 abbrev CMvPolynomial (n : ℕ) (R : Type) [Zero R] : Type := Lawful n R
 
 variable {R : Type}
 
 namespace CMvPolynomial
 
+/-- Construct a constant polynomial. -/
 def C {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R] (c : R) : CMvPolynomial n R :=
   Lawful.C (n := n) (R := R) c
 
+/-- Extract the coefficient of a monomial. -/
 def coeff {R : Type} {n : ℕ} [Zero R] (m : CMvMonomial n) (p : CMvPolynomial n R) : R :=
   p.1[m]?.getD 0
 
 attribute [grind =] coeff.eq_def
 
+/-- Extensionality: two polynomials are equal if all their coefficients are equal. -/
 @[ext, grind ext]
 theorem ext {n : ℕ} [Zero R] (p q : CMvPolynomial n R)
     (h : ∀ m, coeff m p = coeff m q) : p = q := by
@@ -66,6 +73,7 @@ lemma add_getD? : (p + q).val[m]?.getD 0 = p.val[m]?.getD 0 + q.val[m]?.getD 0 :
 @[simp, grind =]
 lemma coeff_add : coeff m (p + q) = coeff m p + coeff m q := by simp only [coeff, add_getD?]
 
+/-- Auxiliary lemma showing that conversion from unlawful polynomials respects the sum fold. -/
 lemma fromUnlawful_fold_eq_fold_fromUnlawful₀
     {t : List (CMvMonomial n × R)} {f : CMvMonomial n → R → Unlawful n R} :
     ∀ init : Unlawful n R,
@@ -82,6 +90,7 @@ lemma fromUnlawful_fold_eq_fold_fromUnlawful₀
     iterate 3 erw [Unlawful.filter_get]
     exact Unlawful.add_getD?
 
+/-- Auxiliary lemma showing that conversion from unlawful polynomials respects the fold over terms. -/
 lemma fromUnlawful_fold_eq_fold_fromUnlawful {t : Unlawful n R}
     {f : CMvMonomial n → R → Unlawful n R} :
   Lawful.fromUnlawful (ExtTreeMap.foldl (fun u m c => (f m c) + u) 0 t) =
@@ -93,17 +102,21 @@ lemma fromUnlawful_fold_eq_fold_fromUnlawful {t : Unlawful n R}
 
 end
 
+/-- Evaluate a polynomial at a point given by a ring homomorphism `f` and variable assignments `vs`. -/
 def eval₂ {R S : Type} {n : ℕ} [Semiring R] [CommSemiring S] :
     (R →+* S) → (Fin n → S) → CMvPolynomial n R → S :=
   fun f vs p => ExtTreeMap.foldl (fun s m c => (f c * MonoR.evalMonomial vs m) + s) 0 p.1
 
+/-- Evaluate a polynomial at a given point. -/
 def eval {R : Type} {n : ℕ} [CommSemiring R] : (Fin n → R) → CMvPolynomial n R → R :=
   eval₂ (RingHom.id _)
 
+/-- The total degree of a polynomial (maximum total degree of its monomials). -/
 def totalDegree {R : Type} {n : ℕ} [inst : CommSemiring R] : CMvPolynomial n R → ℕ :=
   fun p => Finset.sup (List.toFinset (List.map CMvMonomial.toFinsupp (Lawful.monomials p)))
     (fun s => Finsupp.sum s (fun _ e => e))
 
+/-- The degree of a polynomial in a specific variable. -/
 def degreeOf {R : Type} {n : ℕ} [CommSemiring R] (i : Fin n) : CMvPolynomial n R → ℕ :=
   fun p =>
     Multiset.count i
