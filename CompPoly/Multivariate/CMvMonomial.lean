@@ -3,7 +3,6 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa
 -/
-
 import Mathlib.Algebra.BigOperators.Group.Finset.Defs
 import Mathlib.Algebra.Group.Finsupp
 import Mathlib.Algebra.Group.TypeTags.Basic
@@ -15,13 +14,13 @@ import Batteries.Data.Vector.Basic
 /-!
 # Computable monomials
 
-Monomials of the form `X₀ᵃ * X₁ᵇ * ... * Xₖᶻ`.
+Monomials of the form `X₀ᵃ * X₁ᵇ * ... * Xₖᶻ`. These are represented as vectors of natural numbers,
+where each element corresponds to the exponent of a variable.
 
 ## Main definitions
 
-* `CPoly.CMvMonomial
+* `CPoly.CMvMonomial n`: The type of monomials in `n` variables, implemented as `Vector ℕ n`.
 -/
-
 namespace CPoly
 
 /--
@@ -76,6 +75,7 @@ variable {m m₁ m₂ : CMvMonomial n}
 protected theorem ext (h : (i : Nat) → (_ : i < n) → m₁[i] = m₂[i]) : m₁ = m₂ :=
   Vector.ext h
 
+/-- Extend a monomial to a larger number of variables by padding with zeros. -/
 def extend (n' : ℕ) (m : CMvMonomial n) : CMvMonomial (max n n') :=
   cast (have : n + (n' - n) = n ⊔ n' :=
           if h : n' ≤ n
@@ -85,14 +85,18 @@ def extend (n' : ℕ) (m : CMvMonomial n) : CMvMonomial (max n n') :=
         this ▸ rfl)
        (m.append (Vector.replicate (n' - n) 0))
 
+/-- The total degree of a monomial (sum of all exponents). -/
 def totalDegree (m : CMvMonomial n) : ℕ := m.sum
 
+/-- The degree of the $i$-th variable in the monomial. -/
 def degreeOf (m : CMvMonomial n) (i : Fin n) : ℕ := m.get i
 
+/-- The zero monomial (all exponents are zero). -/
 def zero : CMvMonomial n := Vector.replicate n 0
 
 instance : Zero (CMvMonomial n) := ⟨zero⟩
 
+/-- Monomial multiplication (adds exponents element-wise). -/
 def add : CMvMonomial n → CMvMonomial n → CMvMonomial n :=
   Vector.zipWith .add
 
@@ -101,6 +105,7 @@ instance : Add (CMvMonomial n) := ⟨add⟩
 @[simp]
 lemma add_zero : m + 0 = m := by unfold_projs; dsimp [add, zero, CMvMonomial]; grind
 
+/-- Check if $m_1$ divides $m_2$ (true if all exponents of $m_1$ are $\le$ those of $m_2$). -/
 def divides (m₁ m₂ : CMvMonomial n) : Bool :=
   Vector.all (Vector.zipWith (flip Nat.ble) m₁ m₂) (· == true)
 
@@ -109,9 +114,9 @@ instance : Dvd (CMvMonomial n) := ⟨fun m₁ m₂ ↦ divides m₁ m₂⟩
 instance : Decidable (m₁ ∣ m₂) := by dsimp [(·∣·)]; infer_instance
 
 /--
-  The polynomial `m₁ / m₂`.
+  The monomial division $m_1 / m_2$ (subtracts exponents element-wise).
 
-  The result makes sense assuming  `m₁ | m₂`.
+  The result makes sense assuming  `m₂ | m₁`.
 -/
 def div (m₁ m₂ : CMvMonomial n) : CMvMonomial n :=
   Vector.zipWith Nat.sub m₁ m₂
@@ -120,9 +125,11 @@ instance : Div (CMvMonomial n) := ⟨div⟩
 
 instance : Decidable (m₁ ∣ m₂) := by dsimp [(·∣·)]; infer_instance
 
+/-- Convert a `CMvMonomial` to a `Finsupp`. -/
 def toFinsupp (m : CMvMonomial n) : Fin n →₀ ℕ :=
   ⟨{i : Fin n | m[i] ≠ 0}, m.get, by aesop⟩
 
+/-- Convert a `Finsupp` to a `CMvMonomial`. -/
 def ofFinsupp (m : Fin n →₀ ℕ) : CPoly.CMvMonomial n := Vector.ofFn m
 
 @[grind =, simp]
@@ -170,7 +177,7 @@ section
 
 instance [Repr R] : Repr (MonoR n R) where
   reprPrec
-    | (m, c), _ => repr c ++ " * " ++ repr m
+  | (m, c), _ => repr c ++ " * " ++ repr m
 
 @[simp, grind=]
 def C (c : R) : MonoR n R := (CMvMonomial.zero, c)

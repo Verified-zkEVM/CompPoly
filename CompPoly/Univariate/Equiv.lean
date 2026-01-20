@@ -3,7 +3,6 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
 -/
-
 import Mathlib.Algebra.Tropical.Basic
 import Mathlib.RingTheory.Polynomial.Basic
 import CompPoly.Data.Array.Lemmas
@@ -29,7 +28,6 @@ import CompPoly.Univariate.Canonical
   - Prove CPolynomial R isomorphic to CMvPolynomial Unit R?
   - inspiration from MvPolyEquiv.lean
 -/
-
 open Polynomial
 
 /-- Convert a mathlib `Polynomial` to a `CPolynomial` by extracting coefficients up to the degree.
@@ -61,6 +59,7 @@ noncomputable def toPoly' (p : CPolynomial R) : Polynomial R :=
     contradiction
   ))
 
+/-- Convert a canonical polynomial to a (mathlib) `Polynomial`. -/
 noncomputable def CPolynomialC.toPoly (p : CPolynomialC R) : Polynomial R := p.val.toPoly
 
 alias ofPoly := Polynomial.toImpl
@@ -144,7 +143,7 @@ theorem toPoly_toImpl {p : Q[X]} : p.toImpl.toPoly = p := by
   exact coeff_eq_zero_of_natDegree_lt h
 
 /-- `toPoly` preserves addition. -/
-theorem toPoly_add {p q : CPolynomial Q} : (add_raw p q).toPoly = p.toPoly + q.toPoly := by
+theorem toPoly_add {p q : CPolynomial Q} : (addRaw p q).toPoly = p.toPoly + q.toPoly := by
   ext n
   rw [coeff_add, coeff_toPoly, coeff_toPoly, coeff_toPoly, add_coeff?]
 
@@ -222,7 +221,6 @@ section RingEquiv
 
   TODO: Construct this ring equivalence once prerequisites are met.
 -/
-
 -- TODO: Prove that `toPoly` preserves multiplication
 lemma toPoly_mul [CommSemiring R] [LawfulBEq R] (p q : CPolynomial R) :
     (p * q).toPoly = p.toPoly * q.toPoly := by sorry

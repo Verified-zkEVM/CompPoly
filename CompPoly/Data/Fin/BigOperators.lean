@@ -3,7 +3,6 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
-
 import Mathlib.Algebra.Order.Star.Basic
 import Mathlib.Algebra.Ring.Regular
 import Mathlib.Data.Fintype.BigOperators
@@ -15,7 +14,6 @@ import Mathlib.Tactic.IntervalCases
 # More lemmas about Fin and big operators
 
 -/
-
 theorem mul_two_add_bit_lt_two_pow (a b c : ℕ) (i : Fin 2)
     (h_a : a < 2 ^ b) (h_b : b < c) :
     a * 2 + i.val < 2^c := by
@@ -68,7 +66,7 @@ lemma Fin.val_add_one' (a : Fin r) (h_a_add_1 : a + 1 < r) : (a + 1).val = a.val
 
 @[simp]
 theorem Fin.cast_val_eq_val {n m : ℕ} [NeZero n] (a : Fin n) (h_eq : n = m):
-  (Fin.cast (h_eq) a).val = a.val := by
+    (Fin.cast (h_eq) a).val = a.val := by
   subst h_eq
   rfl
 
@@ -104,6 +102,11 @@ lemma Fin.le_succ (a : Fin r) (h_a_add_1 : a + 1 < r) : a ≤ a + 1 := by
   apply Fin.le_of_lt
   exact Fin.lt_succ' (a := a) (h_a_add_1 := h_a_add_1)
 
+/--
+Recursion principle for `Fin r` that iterates upwards from `0`.
+This is useful when the type `Fin r` is fixed and we want to induct on the element.
+It's similar to `Fin.inductionOn`, but formulated with an explicit upper bound check.
+-/
 @[elab_as_elim] def Fin.succRecOnSameFinType {motive : Fin r → Sort _}
     (zero : motive (0 : Fin r))
     (succ : ∀ i : Fin r, i + 1 < r → motive i → motive (i + 1)) : ∀ (i : Fin r), motive i
@@ -128,6 +131,10 @@ lemma Fin.le_succ (a : Fin r) (h_a_add_1 : a + 1 < r) : a ≤ a + 1 := by
       simp only at h_i_add_1
       contradiction
 
+/--
+Recursion principle for `Fin r` that iterates downwards from `r - 1`.
+This is useful for definitions that process elements in reverse order, like `foldr`.
+-/
 @[elab_as_elim] def Fin.predRecOnSameFinType {motive : Fin r → Sort _}
     (last : motive (⟨r - 1, by
       have h_r_ne_0: r ≠ 0 := by exact NeZero.ne r
@@ -160,6 +167,10 @@ termination_by (r - 1 - i.val)
 
 -- The theorem statement and its proof.
 -- TODO: state a more generalized and reusable version of this, where f is from Fin r → M
+/--
+Splits a sum over `Fin (2^n)` into a sum over even indices and a sum over odd indices.
+Useful for Fast Fourier Transform (FFT) type recursions.
+-/
 theorem Fin.sum_univ_odd_even {n : ℕ} {M : Type*} [AddCommMonoid M] (f : ℕ → M) :
     (∑ i : Fin (2 ^ n), f (2 * i)) + (∑ i : Fin (2 ^ n), f (2 * i + 1))
     = ∑ i: Fin (2 ^ (n+1)), f i := by
@@ -226,6 +237,10 @@ theorem Fin.sum_univ_odd_even {n : ℕ} {M : Type*} [AddCommMonoid M] (f : ℕ �
   -- Now, rewrite the RHS using this partition.
   rw [←h_union, Finset.sum_union h_disjoint]
 
+/--
+Splits a sum over an interval `[a, c]` into two sums over `[a, b]` and `[b+1, c]`.
+Requires `a ≤ b ≤ c`.
+-/
 theorem sum_Icc_split {α : Type*} [AddCommMonoid α] (f : ℕ → α) (a b c : ℕ)
     (h₁ : a ≤ b) (h₂ : b ≤ c):
     ∑ i ∈ Finset.Icc a c, f i = ∑ i ∈ Finset.Icc a b, f i + ∑ i ∈ Finset.Icc (b+1) c, f i := by

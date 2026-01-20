@@ -3,7 +3,6 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
 -/
-
 import CompPoly.Univariate.Basic
 
 /-!
@@ -13,7 +12,6 @@ import CompPoly.Univariate.Basic
   at powers of a root of unity `ω`, it constructs the unique polynomial of degree `n-1` that
   interpolates the given values.
 -/
-
 namespace CompPoly
 
 namespace CPolynomial

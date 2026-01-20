@@ -3,7 +3,6 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen, Gregor Mitscha-Baude
 -/
-
 import Mathlib.Algebra.GroupWithZero.Nat
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Lattice
@@ -12,13 +11,12 @@ import Mathlib.Tactic.Cases
 /-!
 # Auxiliary lemmas for `List`
 -/
-
 universe u v w
 
 namespace List
 
 theorem append_getLast_dropLast {α : Type u} (l : List α) (h : l ≠ []) :
-  l.dropLast ++ [l.getLast h] = l := by
+    l.dropLast ++ [l.getLast h] = l := by
   induction l with
   | nil =>
     contradiction
@@ -42,7 +40,7 @@ theorem foldl_split_inner {α : Type u} {β : Type v} (f : α → β → α) (in
     (l : List β) (h : l ≠ []): foldl (f:=f) (init:=init) (l)
     = foldl (f:=f) (init:=f (init) (l.head (by omega))) (l.tail) := by
   have h_l_eq: l = cons (l.head (by omega)) (l.tail) := by
-    exact Eq.symm (head_cons_tail l h)
+    exact Eq.symm (cons_head_tail h)
   conv_lhs => enter [3]; rw [h_l_eq]
   rw [foldl_cons]
 
@@ -50,7 +48,7 @@ theorem foldr_split_outer {α : Type u} {β : Type v} (f : α → β → β) (in
     (l : List α) (h : l ≠ []): foldr (f:=f) (init:=init) (l)
     = f (l.head (by omega)) (foldr (f:=f) (init:=init) (l.tail)) := by
   have h_l_eq: l = cons (l.head (by omega)) (l.tail) := by
-    exact Eq.symm (head_cons_tail l h)
+    exact Eq.symm (cons_head_tail h)
   conv_lhs => enter [3]; rw [h_l_eq]
   rw [foldr_cons]
 
@@ -99,13 +97,13 @@ theorem rightpad_eq_rightpad_max (l : List α) (n : Nat) :
     rightpad n unit l = rightpad (max n l.length) unit l := by simp [rightpad]; omega
 
 theorem rightpad_eq_rightpad_append_replicate_of_ge
-  (l : List α) (m n : Nat) (h : n ≤ m) :
-    rightpad m unit l = rightpad n unit l ++ replicate (m - max n l.length) unit := by
+    (l : List α) (m n : Nat) (h : n ≤ m) :
+  rightpad m unit l = rightpad n unit l ++ replicate (m - max n l.length) unit := by
   simp [rightpad]; omega
 
 theorem rightpad_eq_if_rightpad_eq_of_ge (l l' : List α) (m n n' : Nat) (h : n ≤ m) (h' : n' ≤ m) :
     rightpad n unit l = rightpad n' unit l' →
-        rightpad m unit l = rightpad m unit l' := by
+  rightpad m unit l = rightpad m unit l' := by
   intro hEq
   rw [rightpad_eq_rightpad_append_replicate_of_ge l _ n h]
   rw [rightpad_eq_rightpad_append_replicate_of_ge l' _ n' h']
@@ -155,8 +153,8 @@ theorem rightpad_eq_if_rightpad_eq_of_ge (l l' : List α) (m n n' : Nat) (h : n 
     rw [getD_eq_default _ _ h_ge'] -- eliminate first `getD`
 
 theorem rightpad_getElem_eq_getD {a b : List α} {unit : α} {i : Nat}
-  (h : i < (a.rightpad b.length unit).length) :
-    (a.rightpad b.length unit)[i] = a.getD i unit := by
+    (h : i < (a.rightpad b.length unit).length) :
+  (a.rightpad b.length unit)[i] = a.getD i unit := by
   rw [← rightpad_getD_eq_getD a b.length, getD_eq_getElem _ _ h]
 
 /-- Given two lists of potentially different lengths, right-pads the shorter list with `unit`
@@ -192,7 +190,7 @@ def dropLastWhile (p : α → Bool) (l : List α) : List α :=
   (l.reverse.dropWhile p).reverse
 
 lemma zipWith_const {α β : Type _} {f : α → β → β} {l₁ : List α} {l₂ : List β}
-  (h₁ : l₁.length = l₂.length) (h₂ : ∀ a b, f a b = b) : l₁.zipWith f l₂ = l₂ := by
+    (h₁ : l₁.length = l₂.length) (h₂ : ∀ a b, f a b = b) : l₁.zipWith f l₂ = l₂ := by
   induction' l₁ with hd tl ih generalizing l₂ <;> rcases l₂ <;> aesop
 
 end List

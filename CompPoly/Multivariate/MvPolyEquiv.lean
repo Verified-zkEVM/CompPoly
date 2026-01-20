@@ -3,7 +3,6 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa
 -/
-
 import Batteries.Data.Vector.Lemmas
 import CompPoly.Multivariate.CMvPolynomial
 import Mathlib.Algebra.MvPolynomial.Basic
@@ -75,8 +74,8 @@ theorem toCMvPolynomial_fromCMvPolynomial {p : CMvPolynomial n R} :
                                            (distinct := ?distinct)]
     grind
     case distinct =>
-    simp only [Std.compare_eq_iff_eq, List.pairwise_map]
-    exact List.distinct_of_inj_nodup CMvMonomial.injective_ofFinsupp (Finset.nodup_toList _)
+      simp only [Std.compare_eq_iff_eq, List.pairwise_map]
+      exact List.distinct_of_inj_nodup CMvMonomial.injective_ofFinsupp (Finset.nodup_toList _)
   · erw [ExtTreeMap.getElem?_ofList_of_contains_eq_false]
     simpa
 
@@ -90,7 +89,8 @@ theorem fromCMvPolynomial_toCMvPolynomial {p : MvPolynomial (Fin n) R} :
   simp only [Finsupp.coe_mk]
   generalize eq : (ExtTreeMap.ofList _ _) = p
   by_cases eq₁ : CMvMonomial.ofFinsupp m ∈ p
-  · obtain ⟨m', hm'₁, hm'₂⟩ : ∃ a ∈ s, CMvMonomial.ofFinsupp a = CMvMonomial.ofFinsupp m := by aesop
+  · obtain ⟨m', hm'₁, hm'₂⟩ : ∃ a ∈ s, CMvMonomial.ofFinsupp a = CMvMonomial.ofFinsupp m := by
+      aesop
     have : f m' ≠ 0 := by grind
     obtain ⟨rfl⟩ : m' = m := CMvMonomial.injective_ofFinsupp hm'₂
     suffices p[CMvMonomial.ofFinsupp m] = f m by simpa [eq₁]
@@ -133,10 +133,10 @@ lemma map_add (a b : CMvPolynomial n R) :
   erw [Unlawful.filter_get]
   by_cases h : (CMvMonomial.ofFinsupp m) ∈ a.1 <;> by_cases h' : (CMvMonomial.ofFinsupp m) ∈ b.1
   · erw [ExtTreeMap.mergeWith_of_mem_mem h h', Option.getD_some]
-    have h₁ : ((a.1)[CMvMonomial.ofFinsupp m]?.getD 0) = (a.1)[CMvMonomial.ofFinsupp m] :=
-      by simp [h]
-    have h₂ : ((b.1)[CMvMonomial.ofFinsupp m]?.getD 0) = (b.1)[CMvMonomial.ofFinsupp m] :=
-      by simp [h']
+    have h₁ : ((a.1)[CMvMonomial.ofFinsupp m]?.getD 0) =
+      (a.1)[CMvMonomial.ofFinsupp m] := by simp [h]
+    have h₂ : ((b.1)[CMvMonomial.ofFinsupp m]?.getD 0) =
+      (b.1)[CMvMonomial.ofFinsupp m] := by simp [h']
     erw [h₁, h₂]
     rfl
   · erw [ExtTreeMap.mergeWith_of_mem_left h h']
@@ -226,8 +226,9 @@ lemma map_one : fromCMvPolynomial (1 : CMvPolynomial n R) = 1 := by
       grind
     rw [finsupp_m_eq_one]
     have one_one_get₁ :
-        ({(CMvMonomial.zero, 1)} : Unlawful n R)[(@CMvMonomial.zero n)]?.getD 0 = One.one :=
-      by unfold_projs; simp
+      ({(CMvMonomial.zero, 1)} : Unlawful n R)[(@CMvMonomial.zero n)]?.getD 0 = One.one := by
+      unfold_projs; simp only [ExtTreeMap.empty_eq_emptyc, ExtTreeMap.get?_eq_getElem?,
+        ExtTreeMap.getElem?_insert_self, Unlawful.zero_eq_zero, Option.getD_some]
     convert one_one_get₁
   · have : CMvMonomial.ofFinsupp m ≠ CMvMonomial.zero := by
       unfold CMvMonomial.ofFinsupp CMvMonomial.zero
@@ -243,12 +244,11 @@ lemma map_one : fromCMvPolynomial (1 : CMvPolynomial n R) = 1 := by
     simp only [Unlawful.zero_eq_zero, Option.getD_none]
     unfold Unlawful.ofList
     simp only [ExtTreeMap.ofList_singleton, ExtTreeMap.mem_insert, Std.compare_eq_iff_eq,
-  ExtTreeMap.not_mem_empty, or_false]
+      ExtTreeMap.not_mem_empty, or_false]
     tauto
 
 noncomputable def polyEquiv :
-  Equiv (CMvPolynomial n R) (MvPolynomial (Fin n) R)
-where
+    Equiv (CMvPolynomial n R) (MvPolynomial (Fin n) R) where
   toFun := fromCMvPolynomial
   invFun := toCMvPolynomial
   left_inv := fun _ ↦ toCMvPolynomial_fromCMvPolynomial
@@ -273,9 +273,9 @@ instance {n : ℕ} : AddCommMonoid (CPoly.CMvPolynomial n R) where
 omit [BEq R] [LawfulBEq R] in
 lemma toList_pairs_monomial_coeff {β : Type} [AddCommMonoid β]
     {t : Unlawful n R}
-    {f : CMvMonomial n → R → β} :
-    t.toList.map (fun term => f term.1 term.2) =
-      t.monomials.map (fun m => f m (t.coeff m)) := by
+  {f : CMvMonomial n → R → β} :
+  t.toList.map (fun term => f term.1 term.2) =
+    t.monomials.map (fun m => f m (t.coeff m)) := by
   unfold Unlawful.monomials Unlawful.coeff
   rw [←ExtTreeMap.map_fst_toList_eq_keys]
   rw [List.map_congr_left, List.map_map]
@@ -302,9 +302,9 @@ lemma foldl_eq_sum {β : Type} [AddCommMonoid β]
   rw [monomials_dedup_self]
   aesop
 
-lemma coeff_sum {X : Type*} [AddCommMonoid X]
-    (s : Finset X)
-    (f : X → CMvPolynomial n R)
+lemma coeff_sum [AddCommMonoid α]
+    (s : Finset α)
+    (f : α → CMvPolynomial n R)
     (m : CMvMonomial n) :
     coeff m (∑ x ∈ s, f x) = ∑ x ∈ s, coeff m (f x) := by
   rw [←Finset.sum_map_toList s, ←Finset.sum_map_toList s]
@@ -332,12 +332,10 @@ lemma map_mul (a b : CMvPolynomial n R) :
     fun p_1 q_1 ↦ Lawful.fromUnlawful {(p + p_1 , q * q_1)}
   set F₁ : (Fin n →₀ ℕ) → R → Lawful n R :=
     (fun p q ↦ Finsupp.sum (fromCMvPolynomial b) (F₀ p q ∘ CMvMonomial.ofFinsupp))
-      ∘ CMvMonomial.ofFinsupp
-    with eqF₁
+      ∘ CMvMonomial.ofFinsupp with eqF₁
   let F₂ a₁ b₁ :
-      Multiplicative (Fin n →₀ ℕ) → R → MonoidAlgebra R (Multiplicative (Fin n →₀ ℕ)) :=
-    fun a₂ b₂ ↦
-    MonoidAlgebra.single (a₁ * a₂) (b₁ * b₂)
+    Multiplicative (Fin n →₀ ℕ) → R → MonoidAlgebra R (Multiplicative (Fin n →₀ ℕ)) :=
+    fun a₂ b₂ ↦ MonoidAlgebra.single (a₁ * a₂) (b₁ * b₂)
   set F₃ : Multiplicative (Fin n →₀ ℕ) → R → MvPolynomial (Fin n) R :=
     fun a₁ b₁ ↦ Finsupp.sum (fromCMvPolynomial b) (F₂ a₁ b₁) with eqF₃
   have fromCMvPolynomial_F₁_eq_F₃ {m₁ : Multiplicative (Fin n →₀ ℕ)} {c₁ : R} :
@@ -400,16 +398,14 @@ instance {n : ℕ} : CommSemiring (CPoly.CMvPolynomial n R) where
   mul_comm := by aesop (add safe apply _root_.mul_comm)
 
 noncomputable def polyRingEquiv :
-  RingEquiv (CPoly.CMvPolynomial n R) (MvPolynomial (Fin n) R)
-where
+  RingEquiv (CPoly.CMvPolynomial n R) (MvPolynomial (Fin n) R) where
   toEquiv := CPoly.polyEquiv
   map_mul' := map_mul
   map_add' := map_add
 
 omit [BEq R] [LawfulBEq R] in
 lemma eval₂_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] {f : (R →+* S)}
-    {vals : Fin n → S} :
-    p.eval₂ f vals = (fromCMvPolynomial p).eval₂ f vals := by
+    {vals : Fin n → S} : p.eval₂ f vals = (fromCMvPolynomial p).eval₂ f vals := by
   unfold CMvPolynomial.eval₂ MvPolynomial.eval₂
   rw [foldl_eq_sum]
   congr 1
@@ -464,11 +460,10 @@ lemma degreeOf_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] :
       apply g
       split at h
       · next g' g'' g''' =>
-          aesop
-            (add safe cases Fin)
-            (add safe (by simp only at g''))
+          aesop (add safe cases Fin) (add safe (by simp only at g''))
       · simp at h
 
 end
 
 end CPoly
+

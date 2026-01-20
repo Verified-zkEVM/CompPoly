@@ -3,29 +3,26 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen
 -/
-
 import Batteries.Data.Vector.Lemmas
 import CompPoly.Data.List.Lemmas
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.Order.Star.Basic
 import Mathlib.Algebra.Order.Sub.Basic
 import Mathlib.Data.Matrix.Mul
-import Mathlib.Data.Nat.Lattice
-import Mathlib.Tactic
+import Mathlib.Tactic.Ring
 
 /-!
 # Definitions and lemmas for `Vector`
 -/
-
 universe u
 
 namespace Vector
 
 @[elab_as_elim]
 def induction₂ {α β} {motive : {n : ℕ} → Vector α n → Vector β n → Sort*}
-  (v_empty : motive #v[] #v[])
+    (v_empty : motive #v[] #v[])
   (v_insert : {n : ℕ} → (hd : α) → (tl : Vector α n) → (hd' : β) → (tl' : Vector β n) →
-    motive tl tl' → motive (tl.insertIdx 0 hd) (tl'.insertIdx 0 hd')) {m : ℕ} :
+      motive tl tl' → motive (tl.insertIdx 0 hd) (tl'.insertIdx 0 hd')) {m : ℕ} :
     (v : Vector α m) → (v' : Vector β m) → motive v v' := by induction m with
   | zero => exact fun v v' => match v, v' with | ⟨⟨[]⟩, rfl⟩, ⟨⟨[]⟩, rfl⟩ => v_empty
   | succ n ih => exact fun v v' => match hv : v, hv' : v' with
@@ -37,7 +34,8 @@ def induction₂ {α β} {motive : {n : ℕ} → Vector α n → Vector β n →
 /-- The empty vector. -/
 def nil {α} : Vector α 0 := ⟨#[], rfl⟩ -- Vector.emptyWithCapacity 0
 
-/-- Construct a vector by prepending an element to the front of a vector, using `insertIdx` at `0`. -/
+/-- Construct a vector by prepending an element to the front of a vector,
+using `insertIdx` at `0`. -/
 def cons {α} {n : ℕ} (hd : α) (tl : Vector α n) : Vector α (n + 1) :=
   tl.insertIdx 0 hd
 
@@ -102,7 +100,7 @@ theorem cons_toList_eq_List_cons {α} {n : ℕ} (hd : α) (tl : Vector α n) :
   simp only [List.insertIdx_zero]
 
 theorem foldl_eq_toList_foldl {α β} {n : ℕ} (f : β → α → β) (init : β) (v : Vector α n) :
-  v.foldl (f:=f) (b:=init) = v.toList.foldl (f:=f) (init:=init) := by
+    v.foldl (f:=f) (b:=init) = v.toList.foldl (f:=f) (init:=init) := by
   rw [Vector.foldl]
   rw [←Array.foldl_toList]
   rfl
@@ -123,7 +121,7 @@ theorem foldl_succ
 
 theorem zipWith_cons {α β γ} {n : ℕ} (f : α → β → γ)
     (a : α) (b : Vector α n) (c : β) (d : Vector β n) :
-    zipWith f (cons a b) (cons c d) = cons (f a c) (zipWith f b d) := by
+  zipWith f (cons a b) (cons c d) = cons (f a c) (zipWith f b d) := by
   apply Vector.toList_inj.mp
   conv_lhs => simp only [toList_zipWith]
   simp_rw [cons_toList_eq_List_cons]
@@ -142,7 +140,7 @@ scoped notation:80 a " *ᵥ " b => dotProduct a b
 
 @[simp]
 lemma dotProduct_cons [AddCommMonoid R] [Mul R] (a : R) (b : Vector R n) (c : R) (d : Vector R n) :
-  dotProduct (cons a b) (cons c d) = a * c + dotProduct b d := by
+    dotProduct (cons a b) (cons c d) = a * c + dotProduct b d := by
   unfold dotProduct
   rw [zipWith_cons]
   simp_rw [foldl_eq_toList_foldl]
@@ -159,12 +157,11 @@ namespace Matrix
 variable {α : Type*}
 
 /- Note `Vector.flatten` converts a `Vector (m * n)` into a `Matrix α m n` -/
-
 /-- Matrix-vector multiplication over `α`.
 `M` is given as a vector of row-vectors. -/
 def mulVec [Zero α] [Add α] [Mul α] {numRows numCols : Nat}
     (M : Vector (Vector α numCols) numRows)
-    (x : Vector α numCols) : Vector α numRows :=
+  (x : Vector α numCols) : Vector α numRows :=
   M.map (fun row => row *ᵥ x)
 
 /-- Convert a flat row-major vector of length `m*n` into an `m × n` row-major matrix
@@ -237,11 +234,15 @@ theorem dotProduct_eq_root_dotProduct (a b : Vector R n) :
   · simp [dotProduct, _root_.dotProduct]
   · simp [Vector.cast]
     -- By definition of dot product, we can expand the right-hand side.
-    simp [dotProduct, ih];
-    -- By definition of dot product, we can expand the right-hand side. The left-hand side is the foldl of the zipWith operation on the two arrays, which is equivalent to the dot product of the corresponding vectors.
-    simp [dotProduct, _root_.dotProduct];
+    simp [dotProduct];
+    -- By definition of dot product, we can expand the right-hand side.
+    -- The left-hand side is the foldl of the zipWith operation on the two arrays,
+    -- which is equivalent to the dot product of the corresponding vectors.
+    simp [_root_.dotProduct];
     convert dotProduct_cons hd tl hd' tl' using 1;
-    · -- The array's foldl of the zipWith operation is the same as the dot product of the vectors because the vector's dot product is defined as the sum of the products of corresponding elements.
+    · -- The array's foldl of the zipWith operation is the same as the dot product
+      -- of the vectors because the vector's dot product is defined as the sum
+      -- of the products of corresponding elements.
       simp [dotProduct, Vector.cons];
       simp +decide [ Vector.foldl, Vector.zipWith ];
     · simp +decide [ Fin.sum_univ_succ, ih ];

@@ -3,7 +3,6 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen
 -/
-
 import CompPoly.Multilinear.Basic
 
 /-!
@@ -15,7 +14,6 @@ import CompPoly.Multilinear.Basic
   3. Equivalences with mathlib's `MvPolynomial.restrictDegree`: `equivMvPolynomialDeg1`
   4. Arithmetic operation compatibilities
 -/
-
 open MvPolynomial
 
 variable {R : Type*} [CommRing R] {n : ℕ}
@@ -30,7 +28,6 @@ namespace CMlPolynomial
 - Note: maybe we have to add more restrictions on `CMlPolynomial R n` and `CMlPolynomialEval R n`
   so we can differentiate them?
 -/
-
 /--
 Converts a natural number to a monomial with 0/1 exponents.
 Uses little‑endian bit encoding: bit 0 is the least significant bit.
@@ -41,7 +38,7 @@ noncomputable def monomialOfNat (i : ℕ) : (Fin n) →₀ ℕ :=
     simp only [ne_eq, Finset.mem_univ, implies_true]) -- the support set is exactly Finset.univ
 
 theorem eq_monomialOfNat_iff_eq_bitRepr (m : Fin n →₀ ℕ)
-  (h_binary : ∀ j : Fin n, m j ≤ 1) (i: Fin (2^n)) :
+    (h_binary : ∀ j : Fin n, m j ≤ 1) (i: Fin (2^n)) :
   monomialOfNat i = m ↔ i = Nat.binaryFinMapToNat m h_binary := by
   constructor
   · intro h_mono_eq
@@ -87,9 +84,10 @@ def toMvPolynomial (p : CMlPolynomial R n) : MvPolynomial (Fin n) R :=
 -- #check (toMvPolynomial (CMlPolynomial.mk 2 #v[(1: ℤ), 2, 3, 4]))
 
 theorem toMvPolynomial_is_multilinear (p : CMlPolynomial R n) :
-  (toMvPolynomial p) ∈ MvPolynomial.restrictDegree (Fin n) R 1 := by
+    (toMvPolynomial p) ∈ MvPolynomial.restrictDegree (Fin n) R 1 := by
   rw [toMvPolynomial]
-    -- ⊢ (∑ i, C p[i] * ∏ j, if { toFin := i }.getLsb j = true then X j else 1) ∈ MvPolynomial.restrictDegree (Fin n) R 1
+    -- ⊢ (∑ i, C p[i] * ∏ j, if { toFin := i }.getLsb j = true then X j else 1)
+    -- ∈ MvPolynomial.restrictDegree (Fin n) R 1
   simp only [MvPolynomial.mem_restrictDegree]
   intro s hs k -- s is a point X where the sum evaluates to non-zero
   rw [MvPolynomial.mem_support_iff] at hs
@@ -117,13 +115,12 @@ theorem toMvPolynomial_is_multilinear (p : CMlPolynomial R n) :
   exact hs h_sum_zero
 
 theorem coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p : CMlPolynomial R n) (m : Fin n →₀ ℕ) :
-  coeff m (toMvPolynomial p) =
-    if h_binary: (∀ j: Fin n, m j ≤ 1) then
-      let i_of_m: ℕ := Nat.binaryFinMapToNat (m:=m) (h_binary:=h_binary)
-      p[i_of_m]
-    else
-      0
-  := by
+    coeff m (toMvPolynomial p) =
+    if h_binary : (∀ j : Fin n, m j ≤ 1) then
+        let i_of_m : ℕ := Nat.binaryFinMapToNat (m := m) (h_binary := h_binary)
+        p[i_of_m]
+      else
+        0 := by
   if h_binary: (∀ j: Fin n, m j ≤ 1) then
     unfold toMvPolynomial
     simp only [h_binary, implies_true, ↓reduceDIte]
@@ -293,7 +290,8 @@ def equivMvPolynomialDeg1 : CMlPolynomial R n ≃ MvPolynomial.restrictDegree (F
       simp only [h_mono_ne, ↓reduceIte]
 
 /-- Linear equivalence between `CMlPolynomial` and `MvPolynomial.restrictDegree` -/
-noncomputable def linearEquivMvPolynomialDeg1 : CMlPolynomial R n ≃ₗ[R] MvPolynomial.restrictDegree (Fin n) R 1 :=
+noncomputable def linearEquivMvPolynomialDeg1 :
+  CMlPolynomial R n ≃ₗ[R] MvPolynomial.restrictDegree (Fin n) R 1 :=
   { toEquiv := equivMvPolynomialDeg1
     map_add' := by
       intro p q
@@ -330,5 +328,3 @@ noncomputable def linearEquivMvPolynomialDeg1 : CMlPolynomial R n ≃ₗ[R] MvPo
 end CMlPolynomial
 
 end CompPoly
-
-end

@@ -3,24 +3,28 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Frantisek Silvasi
 -/
-
 import CompPoly.Multivariate.Unlawful
 import Mathlib.Analysis.Normed.Ring.Lemmas
 
 /-!
-# 'Lawful' finite supports, i.e. `CPoly.Unlawful` quotiented by non-zero range.
+# 'Lawful' finite supports
+
+This file defines the `Lawful` subtype, which consists of `Unlawful` polynomials
+where all stored coefficients are guaranteed to be non-zero. This provides a canonical
+representation (similar to `Finsupp`) and is the primary representation used for
+computable multivariate polynomials.
 
 ## Main definitions
 
-* `CPoly.Lawful
+* `CPoly.Lawful n R`: The subtype of `Unlawful n R` with no zero coefficients.
 -/
-
 attribute [local instance 5] instDecidableEqOfLawfulBEq
 
 namespace CPoly
 
 open Std
 
+/-- The subtype of polynomials with no zero coefficients. -/
 def Lawful (n : ℕ) (R : Type) [Zero R] :=
   {p : Unlawful n R // p.isNoZeroCoef}
 
@@ -78,6 +82,7 @@ lemma getElem_eq_getElem (h : m ∈ p) : p[m] = p.1[m] := by rfl
 
 variable [BEq R] [LawfulBEq R]
 
+/-- Convert an `Unlawful` polynomial to a `Lawful` one by filtering out zero coefficients. -/
 def fromUnlawful (p : Unlawful n R) : Lawful n R :=
   {
     val := p.filter fun _ c ↦ c != 0
@@ -88,6 +93,7 @@ def fromUnlawful (p : Unlawful n R) : Lawful n R :=
 protected lemma grind_fromUnlawful_congr {p₁ p₂ : Unlawful n R}
     (h : p₁ = p₂) : Lawful.fromUnlawful p₁ = Lawful.fromUnlawful p₂ := by grind
 
+/-- Construct a constant polynomial. -/
 def C (c : R) : Lawful n R :=
   ⟨Unlawful.C c, by grind⟩
 
@@ -122,9 +128,11 @@ lemma cast_fromUnlawful : (fromUnlawful p.1).1 = p.1 := by
 
 section
 
+/-- Extend the number of variables in a polynomial. -/
 def extend (n' : ℕ) (p : Lawful n R) : Lawful (max n n') R :=
   fromUnlawful <| p.val.extend n'
 
+/-- Addition of polynomials (results in a lawful polynomial). -/
 def add [Add R] (p₁ p₂ : Lawful n R) : Lawful n R :=
   fromUnlawful <| p₁.val + p₂.val
 
@@ -141,20 +149,24 @@ protected lemma grind_add_skip [Add R] {p₁ p₂ : Lawful n R} :
 protected lemma grind_add_skip_aggressive [Add R] {p₁ p₂ : Lawful n R} :
     p₁ + p₂ = fromUnlawful (ExtTreeMap.mergeWith (fun _ c₁ c₂ => c₁ + c₂) p₁.1 p₂.1) := rfl
 
+/-- Multiplication of polynomials (results in a lawful polynomial). -/
 def mul [Mul R] [Add R] (p₁ p₂ : Lawful n R) : Lawful n R :=
   fromUnlawful <| p₁.val * p₂.val
 
 instance [Mul R] [Add R] [Zero R] : Mul (Lawful n R) := ⟨mul⟩
 
+/-- Polynomial exponentiation. -/
 def npow [NatCast R] [Add R] [Mul R] : ℕ → Lawful n R → Lawful n R
   | .zero  , _ => 1
   | .succ n, p => (npow n p) * p
 
 instance [NatCast R] [Add R] [Mul R] : NatPow (Lawful n R) := ⟨fun e b ↦ npow b e⟩
 
+/-- The list of monomials in a polynomial. -/
 abbrev monomials (p : Lawful n R) : List (CMvMonomial n) :=
   p.1.monomials
 
+/-- Check if a polynomial is a non-zero constant. -/
 def NZConst {n : ℕ} {R : Type} [Zero R] (p : Lawful n R) : Prop :=
   p.val.size = 1 ∧ p.val.contains CMvMonomial.zero
 
@@ -181,11 +193,13 @@ section
 
 variable [BEq R] [LawfulBEq R] [CommRing R]
 
+/-- Negation of a polynomial. -/
 def neg (p : Lawful n R) : Lawful n R :=
   fromUnlawful p.1.neg
 
 instance : Neg (Lawful n R) := ⟨neg⟩
 
+/-- Subtraction of polynomials. -/
 def sub (p₁ p₂ : Lawful n R) : Lawful n R :=
   p₁ + (-p₂)
 
@@ -198,6 +212,7 @@ instance instDecidableEq [DecidableEq R] : DecidableEq (Lawful n R) := fun x y �
                             grind)
   else Decidable.isFalse (by grind)
 
+/-- The $i$-th variable as a polynomial. -/
 def X (i : ℕ) : Lawful (i + 1) ℤ :=
   let monomial : CMvMonomial (i + 1) := Vector.replicate i 0 |>.push 1
   Lawful.fromUnlawful <| .ofList [(monomial, (1 : ℤ))]
@@ -206,6 +221,7 @@ section
 
 variable {n₁ n₂ : ℕ}
 
+/-- Align two polynomials by extending them to have the same number of variables. -/
 def align
     (p₁ : Lawful n₁ R) (p₂ : Lawful n₂ R) :
     Lawful (n₁ ⊔ n₂) R × Lawful (n₁ ⊔ n₂) R :=
@@ -215,13 +231,13 @@ def align
     cast (by congr 1; grind) (p₂.extend sup)
   )
 
+/-- Lift a binary polynomial operation to handle polynomials with different numbers of variables. -/
 def liftPoly
     (f : Lawful (n₁ ⊔ n₂) R →
-         Lawful (n₁ ⊔ n₂) R →
-         Lawful (n₁ ⊔ n₂) R)
-    (p₁ : Lawful n₁ R) (p₂ : Lawful n₂ R) : Lawful (n₁ ⊔ n₂) R :=
+  Lawful (n₁ ⊔ n₂) R →
+  Lawful (n₁ ⊔ n₂) R)
+  (p₁ : Lawful n₁ R) (p₂ : Lawful n₂ R) : Lawful (n₁ ⊔ n₂) R :=
   Function.uncurry f (align p₁ p₂)
-
 section
 
 variable [CommRing R]
