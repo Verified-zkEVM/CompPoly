@@ -90,6 +90,14 @@ def degree (p : CPolynomial R) : Nat :=
   | none => 0
   | some i => i.val + 1
 
+/-- Natural number degree of a `CPolynomial`.
+
+  Returns the degree as a natural number. For the zero polynomial, returns `0`.
+  This matches Mathlib's `Polynomial.natDegree` API.
+-/
+def natDegree (p : CPolynomial R) : ℕ :=
+  sorry
+
 /-- Return the leading coefficient of a `CPolynomial` as the last coefficient of the trimmed array,
 or `0` if the trimmed array is empty. -/
 def leadingCoeff (p : CPolynomial R) : R := p.trim.getLastD 0

@@ -122,14 +122,31 @@ instance : Mul (CPolynomialC R) where
 instance : One (CPolynomialC R) where
   one := ⟨CPolynomial.C 1, by sorry⟩
 
+/-- Construct a canonical monomial `c * X^n` as a `CPolynomialC R`.
+
+  The result is canonical (no trailing zeros) when `c ≠ 0`.
+  For example, `monomialC 2 3` represents `3 * X^2`.
+
+  Note: If `c = 0`, this returns `0` (the zero polynomial).
+-/
+def monomialC [DecidableEq R] (n : ℕ) (c : R) : CPolynomialC R :=
+  ⟨CPolynomial.monomial n c, by sorry⟩
+
+/-- Natural number degree of a canonical polynomial.
+
+  Returns the degree as a natural number. For the zero polynomial, returns `0`.
+  This matches Mathlib's `Polynomial.natDegree` API.
+-/
+def natDegree (p : CPolynomialC R) : ℕ := p.val.natDegree
+
 -- TODO: Prove multiplicative properties, e.g.
--- lemma one_mul (p : CPolynomialC R) : 1 * p = p := by sorry
--- lemma mul_one (p : CPolynomialC R) : p * 1 = p := by sorry
--- lemma mul_assoc (p q r : CPolynomialC R) : (p * q) * r = p * (q * r) := by sorry
--- lemma zero_mul (p : CPolynomialC R) : 0 * p = 0 := by sorry
--- lemma mul_zero (p : CPolynomialC R) : p * 0 = 0 := by sorry
--- lemma left_distrib (p q r : CPolynomialC R) : p * (q + r) = p * q + p * r := by sorry
--- lemma right_distrib (p q r : CPolynomialC R) : (p + q) * r = p * r + q * r := by sorry
+lemma one_mul (p : CPolynomialC R) : 1 * p = p := by sorry
+lemma mul_one (p : CPolynomialC R) : p * 1 = p := by sorry
+lemma mul_assoc (p q r : CPolynomialC R) : (p * q) * r = p * (q * r) := by sorry
+lemma zero_mul (p : CPolynomialC R) : 0 * p = 0 := by sorry
+lemma mul_zero (p : CPolynomialC R) : p * 0 = 0 := by sorry
+lemma left_distrib (p q r : CPolynomialC R) : p * (q + r) = p * q + p * r := by sorry
+lemma right_distrib (p q r : CPolynomialC R) : (p + q) * r = p * r + q * r := by sorry
 
 end MulOne
 
