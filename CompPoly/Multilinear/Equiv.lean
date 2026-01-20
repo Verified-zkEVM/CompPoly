@@ -3,7 +3,6 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen
 -/
-
 import CompPoly.Multilinear.Basic
 
 /-!
@@ -15,7 +14,6 @@ import CompPoly.Multilinear.Basic
   3. Equivalences with mathlib's `MvPolynomial.restrictDegree`: `equivMvPolynomialDeg1`
   4. Arithmetic operation compatibilities
 -/
-
 open MvPolynomial
 
 variable {R : Type*} [CommRing R] {n : ℕ}
@@ -30,7 +28,6 @@ namespace CMlPolynomial
 - Note: maybe we have to add more restrictions on `CMlPolynomial R n` and `CMlPolynomialEval R n`
   so we can differentiate them?
 -/
-
 /--
 Converts a natural number to a monomial with 0/1 exponents.
 Uses little‑endian bit encoding: bit 0 is the least significant bit.

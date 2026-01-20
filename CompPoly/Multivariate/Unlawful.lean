@@ -3,7 +3,6 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdusa
 -/
-
 import CompPoly.Multivariate.CMvMonomial
 import CompPoly.Multivariate.Wheels
 import Mathlib.Algebra.Lie.OfAssociative
@@ -21,7 +20,6 @@ the absence of zero coefficients.
 
 * `CPoly.Unlawful n R`: A map from `CMvMonomial n` to `R`, implemented using `Std.ExtTreeMap`.
 -/
-
 attribute [local instance 5] instDecidableEqOfLawfulBEq
 
 namespace CPoly

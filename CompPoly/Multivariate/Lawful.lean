@@ -3,7 +3,6 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Frantisek Silvasi
 -/
-
 import CompPoly.Multivariate.Unlawful
 import Mathlib.Analysis.Normed.Ring.Lemmas
 
@@ -19,7 +18,6 @@ computable multivariate polynomials.
 
 * `CPoly.Lawful n R`: The subtype of `Unlawful n R` with no zero coefficients.
 -/
-
 attribute [local instance 5] instDecidableEqOfLawfulBEq
 
 namespace CPoly

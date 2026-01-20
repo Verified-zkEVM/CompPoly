@@ -3,7 +3,6 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa
 -/
-
 import Mathlib.Algebra.BigOperators.Group.Finset.Defs
 import Mathlib.Algebra.Group.Finsupp
 import Mathlib.Algebra.Group.TypeTags.Basic
@@ -22,7 +21,6 @@ where each element corresponds to the exponent of a variable.
 
 * `CPoly.CMvMonomial n`: The type of monomials in `n` variables, implemented as `Vector ℕ n`.
 -/
-
 namespace CPoly
 
 /--

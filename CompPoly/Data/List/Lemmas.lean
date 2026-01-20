@@ -3,7 +3,6 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen, Gregor Mitscha-Baude
 -/
-
 import Mathlib.Algebra.GroupWithZero.Nat
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Lattice
@@ -12,7 +11,6 @@ import Mathlib.Tactic.Cases
 /-!
 # Auxiliary lemmas for `List`
 -/
-
 universe u v w
 
 namespace List
@@ -42,7 +40,7 @@ theorem foldl_split_inner {α : Type u} {β : Type v} (f : α → β → α) (in
     (l : List β) (h : l ≠ []): foldl (f:=f) (init:=init) (l)
     = foldl (f:=f) (init:=f (init) (l.head (by omega))) (l.tail) := by
   have h_l_eq: l = cons (l.head (by omega)) (l.tail) := by
-    exact Eq.symm (head_cons_tail l h)
+    exact Eq.symm (cons_head_tail h)
   conv_lhs => enter [3]; rw [h_l_eq]
   rw [foldl_cons]
 
@@ -50,7 +48,7 @@ theorem foldr_split_outer {α : Type u} {β : Type v} (f : α → β → β) (in
     (l : List α) (h : l ≠ []): foldr (f:=f) (init:=init) (l)
     = f (l.head (by omega)) (foldr (f:=f) (init:=init) (l.tail)) := by
   have h_l_eq: l = cons (l.head (by omega)) (l.tail) := by
-    exact Eq.symm (head_cons_tail l h)
+    exact Eq.symm (cons_head_tail h)
   conv_lhs => enter [3]; rw [h_l_eq]
   rw [foldr_cons]
 

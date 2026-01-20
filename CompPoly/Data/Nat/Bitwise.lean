@@ -3,7 +3,6 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
-
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Algebra.Order.Ring.Star
 import Mathlib.Data.Nat.Bitwise
@@ -18,7 +17,6 @@ import CompPoly.Data.Fin.BigOperators
 # Bit operations on natural numbers
 
 -/
-
 namespace Nat
 
 -- Note: this is already done with `Nat.sub_add_eq_max`
@@ -430,7 +428,7 @@ lemma xor_of_and_eq_zero_is_or {n m : ℕ} (h_n_AND_m : n &&& m = 0) : n ^^^ m =
   intro k
   rw [Nat.shiftRight_xor_distrib, Nat.shiftRight_or_distrib]
   rw [Nat.and_xor_distrib_right] -- lhs
-  rw [Nat.and_distrib_right] -- rhs
+  rw [Nat.and_or_distrib_right] -- rhs
   -- ⊢ (n >>> k &&& 1) ^^^ (m >>> k &&& 1) = (n >>> k &&& 1) ||| (m >>> k &&& 1)
   set getBitN := n >>> k &&& 1
   set getBitM := m >>> k &&& 1
@@ -469,13 +467,13 @@ lemma xor_eq_sub_iff_submask {n m : ℕ} (h : m ≤ n) : n ^^^ m = n - m ↔ n &
       cases (Nat.mul_eq_zero.mp h_sum) with
       | inl h_two => contradiction -- The case 2 = 0 is impossible.
       | inr h_and => -- h_and : n &&& m ^^^ m = 0
-        simp only [Nat.xor_eq_zero] at h_and
+        simp only [Nat.xor_eq_zero_iff] at h_and
         conv_lhs => enter [1]; rw [←h_and] -- h_and : n &&& m = m
         rw [Nat.and_xor_distrib_right] -- ⊢ n &&& m ^^^ n &&& m &&& m = 0
         rw [Nat.and_assoc, Nat.and_self, Nat.xor_self]
     -- ⊢ (n ^^^ m) &&& m = 0
     rw [Nat.and_xor_distrib_right, Nat.and_self] at h_and_zero --h_and_zero : n &&& m ^^^ m = 0
-    rw [Nat.xor_eq_zero] at h_and_zero
+    rw [Nat.xor_eq_zero_iff] at h_and_zero
     exact h_and_zero
   · intro h
     rw [Nat.sub_eq_of_eq_add (a:=n) (c:=n^^^m) (b:=m)]
@@ -561,7 +559,7 @@ lemma getBit_of_or {n m k : ℕ} : getBit k (n ||| m) = getBit k n ||| getBit k 
   unfold getBit
   rw [Nat.shiftRight_or_distrib]
   conv_lhs =>
-    rw [Nat.and_distrib_right]
+    rw [Nat.and_or_distrib_right]
 
 lemma getBit_of_xor {n m k : ℕ} : getBit k (n ^^^ m) = getBit k n ^^^ getBit k m := by
   unfold getBit
@@ -878,7 +876,7 @@ lemma getLowBits_succ {n : ℕ} (numLowBits : ℕ) :
       omega
 
 /-- This takes a argument for the number of lowBitss to remove from the number -/
-def getHighBits_no_shl (numLowBits : ℕ) (n : ℕ) : ℕ := n >>> numLowBits
+def getHighBitsNoShl (numLowBits : ℕ) (n : ℕ) : ℕ := n >>> numLowBits
 
 /--
 Returns the high bits of `n` (bits at positions `≥ numLowBits`) shifted back to
@@ -886,7 +884,7 @@ their original positions.
 `getHighBits numLowBits n = n >>> numLowBits <<< numLowBits`
 -/
 def getHighBits (numLowBits : ℕ) (n : ℕ) : ℕ :=
-  (getHighBits_no_shl numLowBits n) <<< numLowBits
+  (getHighBitsNoShl numLowBits n) <<< numLowBits
 
 theorem and_highBits_lowBits_eq_zero {n : ℕ} (numLowBits : ℕ) :
     getHighBits numLowBits n &&& getLowBits numLowBits n = 0 := by
@@ -925,7 +923,7 @@ lemma num_eq_highBits_add_lowBits {n : ℕ} (numLowBits : ℕ) :
   have h_and := and_highBits_lowBits_eq_zero (n := n) (numLowBits := numLowBits)
   rw [sum_of_and_eq_zero_is_or h_and]
   --- now reason on bitwise operations only
-  rw [Nat.shiftRight_or_distrib, Nat.and_distrib_right]
+  rw [Nat.shiftRight_or_distrib, Nat.and_or_distrib_right]
   change getBit k n = getBit k ((n >>> numLowBits) <<< numLowBits)
     ||| getBit k (getLowBits numLowBits n)
   rw [h_getBit_highBits_shl, h_getBit_lowBits]
@@ -948,7 +946,7 @@ lemma num_eq_highBits_xor_lowBits {n : ℕ} (numLowBits : ℕ) :
 lemma getBit_of_highBits {n : ℕ} (numLowBits : ℕ) : ∀ k, getBit k (getHighBits numLowBits n) =
     if k < numLowBits then 0 else getBit (k) (n) := by
   intro k
-  simp only [getHighBits, getHighBits_no_shl]
+  simp only [getHighBits, getHighBitsNoShl]
   rw [getBit_of_shiftLeft]
   if h_k: k < numLowBits then
     simp only [h_k, ↓reduceIte]
@@ -957,11 +955,11 @@ lemma getBit_of_highBits {n : ℕ} (numLowBits : ℕ) : ∀ k, getBit k (getHigh
     rw [getBit_of_shiftRight]
     rw [Nat.sub_add_cancel (by omega)]
 
-lemma getBit_of_highBits_no_shl {n : ℕ} (numLowBits : ℕ) :
-    ∀ k, getBit k (getHighBits_no_shl numLowBits n)
+lemma getBit_of_highBitsNoShl {n : ℕ} (numLowBits : ℕ) :
+    ∀ k, getBit k (getHighBitsNoShl numLowBits n)
     = getBit (k + numLowBits) (n) := by
   intro k
-  simp only [getHighBits_no_shl]
+  simp only [getHighBitsNoShl]
   exact getBit_of_shiftRight k
 
 lemma getBit_of_lt_two_pow {n : ℕ} (a : Fin (2 ^ n)) (k : ℕ) :

@@ -3,7 +3,6 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
 -/
-
 import Mathlib.Algebra.Tropical.Basic
 import Mathlib.RingTheory.Polynomial.Basic
 import CompPoly.Data.Array.Lemmas
@@ -19,7 +18,6 @@ import CompPoly.Univariate.Quotient
   This provides a unique representation for each polynomial, enabling stronger extensionality
   properties compared to the raw `CPolynomial` type.
 -/
-
 namespace CompPoly
 
 namespace CPolynomial
@@ -38,7 +36,8 @@ variable {Q : Type*} [Ring Q]
 def CPolynomialC (R : Type*) [BEq R] [Ring R] := { p : CPolynomial R // p.trim = p }
 
 /-- Extensionality for canonical polynomials. -/
-@[ext] theorem CPolynomialC.ext {p q : CPolynomialC R} (h : p.val = q.val) : p = q := Subtype.eq h
+@[ext] theorem CPolynomialC.ext {p q : CPolynomialC R} (h : p.val = q.val) : p = q := by
+  exact Subtype.ext h
 
 /-- Canonical polynomials coerce to raw polynomials. -/
 instance : Coe (CPolynomialC R) (CPolynomial R) where coe := Subtype.val

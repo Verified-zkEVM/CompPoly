@@ -3,7 +3,6 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdusa
 -/
-
 import Aesop
 import Mathlib.Logic.Function.Defs
 import Mathlib.Tactic.Cases
@@ -11,7 +10,6 @@ import Mathlib.Tactic.Cases
 /-!
 # Auxiliary lemmas for multivariate polynomials
 -/
-
 lemma List.distinct_of_inj_nodup {α β : Type*} {l : List α} {f : α → β}
     (h₁ : Function.Injective f) (h₂ : l.Nodup) :
   List.Pairwise (fun a b => f a ≠ f b) l := by

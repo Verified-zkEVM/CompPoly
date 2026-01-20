@@ -3,7 +3,6 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen
 -/
-
 import Batteries.Data.Vector.Lemmas
 import CompPoly.Data.List.Lemmas
 import Mathlib.Algebra.BigOperators.Fin
@@ -15,7 +14,6 @@ import Mathlib.Tactic.Ring
 /-!
 # Definitions and lemmas for `Vector`
 -/
-
 universe u
 
 namespace Vector
@@ -159,7 +157,6 @@ namespace Matrix
 variable {α : Type*}
 
 /- Note `Vector.flatten` converts a `Vector (m * n)` into a `Matrix α m n` -/
-
 /-- Matrix-vector multiplication over `α`.
 `M` is given as a vector of row-vectors. -/
 def mulVec [Zero α] [Add α] [Mul α] {numRows numCols : Nat}

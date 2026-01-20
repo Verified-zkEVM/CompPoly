@@ -3,7 +3,6 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
 -/
-
 import Mathlib.Algebra.Tropical.Basic
 import Mathlib.RingTheory.Polynomial.Basic
 import CompPoly.Data.Array.Lemmas
@@ -16,7 +15,6 @@ import CompPoly.Data.Array.Lemmas
 
   Note: this has been ported from ArkLib
 -/
-
 open Polynomial
 
 namespace CompPoly
@@ -75,19 +73,19 @@ def monomial [DecidableEq R] (n : ℕ) (c : R) : CPolynomial R :=
 -- TODO: `trim (monomial n c) = if c = 0 then #[] else monomial n c` (canonical property)
 
 /-- Return the index of the last non-zero coefficient of a `CPolynomial` -/
-def last_nonzero (p : CPolynomial R) : Option (Fin p.size) :=
+def lastNonzero (p : CPolynomial R) : Option (Fin p.size) :=
   p.findIdxRev? (· != 0)
 
 /-- Remove leading zeroes from a `CPolynomial`.
 Requires `BEq` to check if the coefficients are zero. -/
 def trim (p : CPolynomial R) : CPolynomial R :=
-  match p.last_nonzero with
+  match p.lastNonzero with
   | none => #[]
   | some i => p.extract 0 (i.val + 1)
 
 /-- Return the degree of a `CPolynomial`. -/
 def degree (p : CPolynomial R) : Nat :=
-  match p.last_nonzero with
+  match p.lastNonzero with
   | none => 0
   | some i => i.val + 1
 
@@ -97,24 +95,24 @@ def leadingCoeff (p : CPolynomial R) : R := p.trim.getLastD 0
 
 namespace Trim
 
-/-- If all coefficients are zero, `last_nonzero` is `none`. -/
-theorem last_nonzero_none [LawfulBEq R] {p : CPolynomial R} :
-    (∀ i, (hi : i < p.size) → p[i] = 0) → p.last_nonzero = none := by
+/-- If all coefficients are zero, `lastNonzero` is `none`. -/
+theorem lastNonzero_none [LawfulBEq R] {p : CPolynomial R} :
+    (∀ i, (hi : i < p.size) → p[i] = 0) → p.lastNonzero = none := by
   intro h
   apply Array.findIdxRev?_eq_none
   intros
   rw [bne_iff_ne, ne_eq, not_not]
   apply_assumption
 
-/-- If there is a non-zero coefficient, `last_nonzero` is `some`. -/
-theorem last_nonzero_some [LawfulBEq R] {p : CPolynomial R} {i} (hi : i < p.size) (h : p[i] ≠ 0) :
-    ∃ k, p.last_nonzero = some k := Array.findIdxRev?_eq_some ⟨i, hi, bne_iff_ne.mpr h⟩
+/-- If there is a non-zero coefficient, `lastNonzero` is `some`. -/
+theorem lastNonzero_some [LawfulBEq R] {p : CPolynomial R} {i} (hi : i < p.size) (h : p[i] ≠ 0) :
+    ∃ k, p.lastNonzero = some k := Array.findIdxRev?_eq_some ⟨i, hi, bne_iff_ne.mpr h⟩
 
-/-- `last_nonzero` returns the largest index with a non-zero coefficient. -/
-theorem last_nonzero_spec [LawfulBEq R] {p : CPolynomial R} {k} :
-    p.last_nonzero = some k
+/-- `lastNonzero` returns the largest index with a non-zero coefficient. -/
+theorem lastNonzero_spec [LawfulBEq R] {p : CPolynomial R} {k} :
+    p.lastNonzero = some k
   → p[k] ≠ 0 ∧ (∀ j, (hj : j < p.size) → j > k → p[j] = 0) := by
-  intro (h : p.last_nonzero = some k)
+  intro (h : p.lastNonzero = some k)
   constructor
   · by_contra
     have h : p[k] != 0 := Array.findIdxRev?_def h
@@ -124,13 +122,13 @@ theorem last_nonzero_spec [LawfulBEq R] {p : CPolynomial R} {k} :
     rwa [bne_iff_ne, ne_eq, not_not] at h
 
 /-- The property that an index is the last non-zero coefficient. -/
-def last_nonzero_prop {p : CPolynomial R} (k : Fin p.size) : Prop :=
+def lastNonzeroProp {p : CPolynomial R} (k : Fin p.size) : Prop :=
   p[k] ≠ 0 ∧ (∀ j, (hj : j < p.size) → j > k → p[j] = 0)
 
 /-- The last non-zero index is unique. -/
-lemma last_nonzero_unique {p : CPolynomial Q} {k k' : Fin p.size} :
-    last_nonzero_prop k → last_nonzero_prop k' → k = k' := by
-  suffices weaker : ∀ k k', last_nonzero_prop k → last_nonzero_prop k' → k ≤ k' by
+lemma lastNonzero_unique {p : CPolynomial Q} {k k' : Fin p.size} :
+    lastNonzeroProp k → lastNonzeroProp k' → k = k' := by
+  suffices weaker : ∀ k k', lastNonzeroProp k → lastNonzeroProp k' → k ≤ k' by
     intro h h'
     exact Fin.le_antisymm (weaker k k' h h') (weaker k' k h' h)
   intro k k' ⟨ h_nonzero, h ⟩ ⟨ h_nonzero', h' ⟩
@@ -138,34 +136,34 @@ lemma last_nonzero_unique {p : CPolynomial Q} {k k' : Fin p.size} :
   have : p[k] = 0 := h' k k.is_lt (Nat.lt_of_not_ge k_not_le)
   contradiction
 
-/-- Characterization of `last_nonzero` via `last_nonzero_prop`. -/
-theorem last_nonzero_some_iff [LawfulBEq R] {p : CPolynomial R} {k} :
-    p.last_nonzero = some k ↔ (p[k] ≠ 0 ∧ (∀ j, (hj : j < p.size) → j > k → p[j] = 0)) := by
+/-- Characterization of `lastNonzero` via `lastNonzeroProp`. -/
+theorem lastNonzero_some_iff [LawfulBEq R] {p : CPolynomial R} {k} :
+    p.lastNonzero = some k ↔ (p[k] ≠ 0 ∧ (∀ j, (hj : j < p.size) → j > k → p[j] = 0)) := by
   constructor
-  · apply last_nonzero_spec
+  · apply lastNonzero_spec
   intro h_prop
-  have ⟨ k', h_some'⟩ := last_nonzero_some k.is_lt h_prop.left
-  have k_is_k' := last_nonzero_unique (last_nonzero_spec h_some') h_prop
+  have ⟨ k', h_some'⟩ := lastNonzero_some k.is_lt h_prop.left
+  have k_is_k' := lastNonzero_unique (lastNonzero_spec h_some') h_prop
   rwa [← k_is_k']
 
 
-/-- eliminator for `p.last_nonzero`, e.g. use with the induction tactic as follows:
+/-- eliminator for `p.lastNonzero`, e.g. use with the induction tactic as follows:
   ```
-  induction p using last_nonzero_induct with
+  induction p using lastNonzero_induct with
   | case1 p h_none h_all_zero => ...
   | case2 p k h_some h_nonzero h_max => ...
   ```
 -/
-theorem last_nonzero_induct [LawfulBEq R] {motive : CPolynomial R → Prop}
-    (case1 : ∀ p, p.last_nonzero = none → (∀ i, (hi : i < p.size) → p[i] = 0) → motive p)
-  (case2 : ∀ p : CPolynomial R, ∀ k : Fin p.size, p.last_nonzero = some k → p[k] ≠ 0 →
+theorem lastNonzero_induct [LawfulBEq R] {motive : CPolynomial R → Prop}
+    (case1 : ∀ p, p.lastNonzero = none → (∀ i, (hi : i < p.size) → p[i] = 0) → motive p)
+  (case2 : ∀ p : CPolynomial R, ∀ k : Fin p.size, p.lastNonzero = some k → p[k] ≠ 0 →
     (∀ j : ℕ, (hj : j < p.size) → j > k → p[j] = 0) → motive p)
   (p : CPolynomial R) : motive p := by
   by_cases h : ∀ i, (hi : i < p.size) → p[i] = 0
-  · exact case1 p (last_nonzero_none h) h
+  · exact case1 p (lastNonzero_none h) h
   · push_neg at h; rcases h with ⟨ i, hi, h ⟩
-    obtain ⟨ k, h_some ⟩ := last_nonzero_some hi h
-    have ⟨ h_nonzero, h_max ⟩ := last_nonzero_spec h_some
+    obtain ⟨ k, h_some ⟩ := lastNonzero_some hi h
+    have ⟨ h_nonzero, h_max ⟩ := lastNonzero_spec h_some
     exact case2 p k h_some h_nonzero h_max
 
 /-- eliminator for `p.trim`; use with the induction tactic as follows:
@@ -179,7 +177,7 @@ theorem induct [LawfulBEq R] {motive : CPolynomial R → Prop}
     (case1 : ∀ p, p.trim = #[] → (∀ i, (hi : i < p.size) → p[i] = 0) → motive p)
   (case2 : ∀ p : CPolynomial R, ∀ k : Fin p.size, p.trim = p.extract 0 (k + 1)
     → p[k] ≠ 0 → (∀ j : ℕ, (hj : j < p.size) → j > k → p[j] = 0) → motive p)
-  (p : CPolynomial R) : motive p := by induction p using last_nonzero_induct with
+  (p : CPolynomial R) : motive p := by induction p using lastNonzero_induct with
   | case1 p h_none h_all_zero =>
     have h_empty : p.trim = #[] := by unfold trim; rw [h_none]
     exact case1 p h_empty h_all_zero
@@ -203,13 +201,13 @@ theorem elim [LawfulBEq R] (p : CPolynomial R) :
 
 theorem size_eq_degree (p : CPolynomial R) : p.trim.size = p.degree := by
   unfold trim degree
-  match h : p.last_nonzero with
+  match h : p.lastNonzero with
   | none => simp
   | some i => simp [Fin.is_lt, Nat.succ_le_of_lt]
 
 theorem size_le_size (p : CPolynomial R) : p.trim.size ≤ p.size := by
   unfold trim
-  match h : p.last_nonzero with
+  match h : p.lastNonzero with
   | none => simp
   | some i => simp [Array.size_extract]
 
@@ -261,11 +259,11 @@ lemma eq_degree_of_equiv [LawfulBEq R] {p q : CPolynomial R} :
     equiv p q → p.degree = q.degree := by
   unfold equiv degree
   intro h_equiv
-  induction p using last_nonzero_induct with
+  induction p using lastNonzero_induct with
   | case1 p h_none_p h_all_zero =>
     have h_zero_p : ∀ i, p.coeff i = 0 := coeff_eq_zero.mp h_all_zero
     have h_zero_q : ∀ i, q.coeff i = 0 := by intro i; rw [← h_equiv, h_zero_p]
-    have h_none_q : q.last_nonzero = none := last_nonzero_none (coeff_eq_zero.mpr h_zero_q)
+    have h_none_q : q.lastNonzero = none := lastNonzero_none (coeff_eq_zero.mpr h_zero_q)
     rw [h_none_p, h_none_q]
   | case2 p k h_some_p h_nonzero_p h_max_p =>
     have h_equiv_k := h_equiv k
@@ -284,8 +282,8 @@ lemma eq_degree_of_equiv [LawfulBEq R] {p q : CPolynomial R} :
       rcases Nat.lt_or_ge j p.size with hj | hj
       · simp [hj, h_max_p j hj j_gt_k]
       · simp [hj]
-    have h_some_q : q.last_nonzero = some ⟨ k, k_lt_q ⟩ :=
-      last_nonzero_some_iff.mpr ⟨ h_nonzero_q, h_max_q ⟩
+    have h_some_q : q.lastNonzero = some ⟨ k, k_lt_q ⟩ :=
+      lastNonzero_some_iff.mpr ⟨ h_nonzero_q, h_max_q ⟩
     rw [h_some_p, h_some_q]
 
 theorem eq_of_equiv [LawfulBEq R] {p q : CPolynomial R} : equiv p q → p.trim = q.trim := by
@@ -305,8 +303,8 @@ theorem trim_twice [LawfulBEq R] (p : CPolynomial R) : p.trim.trim = p.trim := b
   apply trim_equiv
 
 theorem canonical_empty : (CPolynomial.mk (R:=R) #[]).trim = #[] := by
-  have : (CPolynomial.mk (R:=R) #[]).last_nonzero = none := by
-    simp [last_nonzero];
+  have : (CPolynomial.mk (R:=R) #[]).lastNonzero = none := by
+    simp [lastNonzero];
     apply Array.findIdxRev?_empty_none
     rfl
   rw [trim, this]
@@ -317,9 +315,9 @@ theorem canonical_of_size_zero {p : CPolynomial R} : p.size = 0 → p.trim = p :
   exact Array.eq_empty_of_size_eq_zero h
 
 theorem canonical_nonempty_iff [LawfulBEq R] {p : CPolynomial R} (hp : p.size > 0) :
-    p.trim = p ↔ p.last_nonzero = some ⟨ p.size - 1, Nat.pred_lt_self hp ⟩ := by
+    p.trim = p ↔ p.lastNonzero = some ⟨ p.size - 1, Nat.pred_lt_self hp ⟩ := by
   unfold trim
-  induction p using last_nonzero_induct with
+  induction p using lastNonzero_induct with
   | case1 p h_none h_all_zero =>
     simp [h_none]
     by_contra h_empty
@@ -341,9 +339,9 @@ theorem canonical_nonempty_iff [LawfulBEq R] {p : CPolynomial R} (hp : p.size > 
       right
       exact le_refl _
 
-theorem last_nonzero_last_iff [LawfulBEq R] {p : CPolynomial R} (hp : p.size > 0) :
-    p.last_nonzero = some ⟨ p.size - 1, Nat.pred_lt_self hp ⟩ ↔ p.getLast hp ≠ 0 := by
-  induction p using last_nonzero_induct with
+theorem lastNonzero_last_iff [LawfulBEq R] {p : CPolynomial R} (hp : p.size > 0) :
+    p.lastNonzero = some ⟨ p.size - 1, Nat.pred_lt_self hp ⟩ ↔ p.getLast hp ≠ 0 := by
+  induction p using lastNonzero_induct with
   | case1 => simp [Array.getLast, *]
   | case2 p k h_some h_nonzero h_max =>
     simp only [h_some, Option.some_inj, Array.getLast]
@@ -365,11 +363,11 @@ theorem canonical_iff [LawfulBEq R] {p : CPolynomial R} :
     p.trim = p ↔ ∀ hp : p.size > 0, p.getLast hp ≠ 0 := by
   constructor
   · intro h hp
-    rwa [← last_nonzero_last_iff hp, ← canonical_nonempty_iff hp]
+    rwa [← lastNonzero_last_iff hp, ← canonical_nonempty_iff hp]
   · rintro h
     rcases Nat.eq_zero_or_pos p.size with h_zero | hp
     · exact canonical_of_size_zero h_zero
-    · rw [canonical_nonempty_iff hp, last_nonzero_last_iff hp]
+    · rw [canonical_nonempty_iff hp, lastNonzero_last_iff hp]
       exact h hp
 
 theorem non_zero_map [LawfulBEq R] (f : R → R) (hf : ∀ r, f r = 0 → r = 0) (p : CPolynomial R) :
@@ -426,14 +424,14 @@ def eval (x : R) (p : CPolynomial R) : R :=
 
   The result may have trailing zeros and should be trimmed for canonical form. -/
 @[inline, specialize]
-def add_raw (p q : CPolynomial R) : CPolynomial R :=
+def addRaw (p q : CPolynomial R) : CPolynomial R :=
   let ⟨p', q'⟩ := Array.matchSize p q 0
   .mk (Array.zipWith (· + ·) p' q' )
 
 /-- Addition of two `CPolynomial`s, with result trimmed. -/
 @[inline, specialize]
 def add (p q : CPolynomial R) : CPolynomial R :=
-  add_raw p q |> trim
+  addRaw p q |> trim
 
 /-- Scalar multiplication: multiplies each coefficient by `r`. -/
 @[inline, specialize]
@@ -442,13 +440,13 @@ def smul (r : R) (p : CPolynomial R) : CPolynomial R :=
 
 /-- Raw scalar multiplication by a natural number (may have trailing zeros). -/
 @[inline, specialize]
-def nsmul_raw (n : ℕ) (p : CPolynomial R) : CPolynomial R :=
+def nsmulRaw (n : ℕ) (p : CPolynomial R) : CPolynomial R :=
   .mk (Array.map (fun a => n * a) p)
 
 /-- Scalar multiplication of `CPolynomial` by a natural number, with result trimmed. -/
 @[inline, specialize]
 def nsmul (n : ℕ) (p : CPolynomial R) : CPolynomial R :=
-  nsmul_raw n p |> trim
+  nsmulRaw n p |> trim
 
 /-- Negation of a `CPolynomial`. -/
 @[inline, specialize]
@@ -567,7 +565,7 @@ lemma zipWith_size {R} {f : R → R → R} {a b : Array R} (h : a.size = b.size)
 
 -- TODO we could generalize the next few lemmas to matchSize + zipWith f for any f
 
-theorem add_size {p q : CPolynomial Q} : (add_raw p q).size = max p.size q.size := by
+theorem add_size {p q : CPolynomial Q} : (addRaw p q).size = max p.size q.size := by
   change (Array.zipWith _ _ _ ).size = max p.size q.size
   rw [zipWith_size matchSize_size_eq, matchSize_size]
 
@@ -580,14 +578,14 @@ omit [BEq R] in
 lemma concat_coeff₂ (i : ℕ) : i ≥ p.size →
     (p ++ q).coeff i = q.coeff (i - p.size) := by simp; grind
 
-theorem add_coeff {p q : CPolynomial Q} {i : ℕ} (hi : i < (add_raw p q).size) :
-    (add_raw p q)[i] = p.coeff i + q.coeff i := by
-  simp [add_raw]
+theorem add_coeff {p q : CPolynomial Q} {i : ℕ} (hi : i < (addRaw p q).size) :
+    (addRaw p q)[i] = p.coeff i + q.coeff i := by
+  simp [addRaw]
   by_cases hi' : i < p.size <;> by_cases hi'' : i < q.size <;> simp_all
 
 theorem add_coeff? (p q : CPolynomial Q) (i : ℕ) :
-    (add_raw p q).coeff i = p.coeff i + q.coeff i := by
-  rcases (Nat.lt_or_ge i (add_raw p q).size) with h_lt | h_ge
+    (addRaw p q).coeff i = p.coeff i + q.coeff i := by
+  rcases (Nat.lt_or_ge i (addRaw p q).size) with h_lt | h_ge
   · rw [← add_coeff h_lt]; simp [h_lt]
   have h_lt' : i ≥ max p.size q.size := by rwa [← add_size]
   have h_p : i ≥ p.size := by omega
@@ -595,9 +593,9 @@ theorem add_coeff? (p q : CPolynomial Q) (i : ℕ) :
   simp [h_ge, h_p, h_q]
 
 lemma add_equiv_raw [LawfulBEq R] (p q : CPolynomial R) :
-    Trim.equiv (p.add q) (p.add_raw q) := by
+    Trim.equiv (p.add q) (p.addRaw q) := by
   unfold Trim.equiv add
-  exact Trim.coeff_eq_coeff (p.add_raw q)
+  exact Trim.coeff_eq_coeff (p.addRaw q)
 
 omit [BEq R] in
 lemma smul_equiv : ∀ (i : ℕ) (r : R),
@@ -606,10 +604,10 @@ lemma smul_equiv : ∀ (i : ℕ) (r : R),
   unfold smul mk coeff
   rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
 
-lemma nsmul_raw_equiv [LawfulBEq R] : ∀ (n i : ℕ),
-    (nsmul_raw n p).trim.coeff i = n * p.trim.coeff i := by
+lemma nsmulRaw_equiv [LawfulBEq R] : ∀ (n i : ℕ),
+    (nsmulRaw n p).trim.coeff i = n * p.trim.coeff i := by
   intro n i
-  unfold nsmul_raw
+  unfold nsmulRaw
   repeat rw [Trim.coeff_eq_coeff]
   unfold mk
   rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
@@ -683,7 +681,7 @@ theorem add_zero (hp : p.canonical) : p + 0 = p := by
   rw [add_comm, zero_add p hp]
 
 theorem add_assoc [LawfulBEq R] : p + q + r = p + (q + r) := by
-  change (add_raw p q).trim + r = p + (add_raw q r).trim
+  change (addRaw p q).trim + r = p + (addRaw q r).trim
   rw [trim_add_trim, add_comm p, trim_add_trim, add_comm _ p]
   apply congrArg trim
   ext i
@@ -692,14 +690,14 @@ theorem add_assoc [LawfulBEq R] : p + q + r = p + (q + r) := by
     apply _root_.add_assoc
 
 theorem nsmul_zero [LawfulBEq R] (p : CPolynomial R) : nsmul 0 p = 0 := by
-  suffices (nsmul_raw 0 p).last_nonzero = none by simp [nsmul, trim, *]
-  apply Trim.last_nonzero_none
-  intros; unfold nsmul_raw
+  suffices (nsmulRaw 0 p).lastNonzero = none by simp [nsmul, trim, *]
+  apply Trim.lastNonzero_none
+  intros; unfold nsmulRaw
   simp only [Nat.cast_zero, zero_mul, Array.getElem_map]
 
-theorem nsmul_raw_succ (n : ℕ) (p : CPolynomial Q) :
-    nsmul_raw (n + 1) p = add_raw (nsmul_raw n p) p := by
-  unfold nsmul_raw
+theorem nsmulRawSucc (n : ℕ) (p : CPolynomial Q) :
+    nsmulRaw (n + 1) p = addRaw (nsmulRaw n p) p := by
+  unfold nsmulRaw
   ext
   · simp [add_size]
   next i _ hi =>
@@ -711,7 +709,7 @@ theorem nsmul_succ [LawfulBEq R] (n : ℕ) {p : CPolynomial R} : nsmul (n + 1) p
   unfold nsmul
   rw [trim_add_trim]
   apply congrArg trim
-  apply nsmul_raw_succ
+  apply nsmulRawSucc
 
 theorem neg_trim [LawfulBEq R] (p : CPolynomial R) : p.trim = p → (-p).trim = -p := by
   apply Trim.non_zero_map

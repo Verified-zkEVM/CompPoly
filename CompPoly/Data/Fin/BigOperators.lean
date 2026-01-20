@@ -3,7 +3,6 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
-
 import Mathlib.Algebra.Order.Star.Basic
 import Mathlib.Algebra.Ring.Regular
 import Mathlib.Data.Fintype.BigOperators
@@ -15,7 +14,6 @@ import Mathlib.Tactic.IntervalCases
 # More lemmas about Fin and big operators
 
 -/
-
 theorem mul_two_add_bit_lt_two_pow (a b c : ℕ) (i : Fin 2)
     (h_a : a < 2 ^ b) (h_b : b < c) :
     a * 2 + i.val < 2^c := by
