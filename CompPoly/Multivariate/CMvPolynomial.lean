@@ -271,7 +271,8 @@ def sumToIter {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 end CMvPolynomial
 
--- TODO: Phase 1 items requiring Semiring/CommSemiring instances from MvPolyEquiv.lean (circular dependency):
+-- TODO: Phase 1 items requiring Semiring/CommSemiring instances from MvPolyEquiv.lean
+--       (circular dependency):
 -- TODO: `Algebra R (CMvPolynomial n R)` instance
 -- TODO: `Module R (CMvPolynomial n R)` instance
 -- TODO: `eval₂Hom` - Ring homomorphism for evaluation
