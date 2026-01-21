@@ -47,6 +47,9 @@ CompPoly provides a solid foundation with:
 3. **API completeness**
    - Add `monomial` constructors for univariate and multivariate polynomials
    - Implement monomial order support (`MonomialOrder.degree`, `leadingCoeff`)
+   - `degreeLT`, `degreeLE`: Bounded-degree submodules for univariate polynomials
+   - `mem_degreeLT`, `mem_degreeLE`: Membership characterizations for bounded-degree polynomials
+   - `degreeLTEquiv`: Linear equivalence for coefficient access
    - `restrictDegree`: Degree restrictions for multilinear extensions
    - `vars`: Variable set extraction
    - `aeval`, `bind₁`: Algebra evaluation and substitution
