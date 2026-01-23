@@ -65,6 +65,10 @@ namespace QuotientCPolynomial
 
 section EquivalenceLemmas
 
+omit [BEq R] in
+/-- Convert propositional equality to equivalence. -/
+lemma eq_to_equiv (p q : CPolynomial R) : p = q → p ≈ q := by intro h; rw [h]
+
 /-- Scalar multiplication by 0 is equivalent to the zero polynomial. -/
 lemma smul_zero_equiv {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) :
     (smul 0 p) ≈ 0 := by
@@ -414,6 +418,108 @@ def pow {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p : QuotientCPolynomial R) (
   Quotient.lift (fun p => powDescending p n) (pow_descends n) p
 
 -- TODO: div/field operations?
+
+instance : Zero (QuotientCPolynomial R) := ⟨Quotient.mk _ #[]⟩
+instance : One (QuotientCPolynomial R) := ⟨Quotient.mk _ (CPolynomial.C 1)⟩
+instance [LawfulBEq R] : Add (QuotientCPolynomial R) := ⟨QuotientCPolynomial.add⟩
+instance [LawfulBEq R] : SMul R (QuotientCPolynomial R) := ⟨smul⟩
+instance [LawfulBEq R] : SMul ℕ (QuotientCPolynomial R) := ⟨nsmul⟩
+instance : Neg (QuotientCPolynomial R) := ⟨neg⟩
+instance [LawfulBEq R] : Sub (QuotientCPolynomial R) := ⟨sub⟩
+instance [LawfulBEq R] : Mul (QuotientCPolynomial R) := ⟨mul⟩
+instance [LawfulBEq R] : Pow (QuotientCPolynomial R) Nat := ⟨pow⟩
+instance : NatCast (QuotientCPolynomial R) := ⟨fun n => Quotient.mk _ (CPolynomial.C (n : R))⟩
+instance : IntCast (QuotientCPolynomial R) := ⟨fun n => Quotient.mk _ (CPolynomial.C (n : R))⟩
+-- instance [Field R] : Div (QuotientCPolynomial R) := ⟨div⟩
+-- instance [Field R] : Mod (QuotientCPolynomial R) := ⟨mod⟩
+
+section AddCommGroup
+
+lemma add_assoc [LawfulBEq R] : ∀ (a b c : QuotientCPolynomial R), a + b + c = a + (b + c) := by
+  intro a b c
+  refine Quotient.inductionOn₃ a b c ?_
+  intro p q r; clear a b c
+  apply Quotient.sound
+  apply eq_to_equiv
+  apply CPolynomial.add_assoc
+
+lemma zero_add [LawfulBEq R] : ∀ (a : QuotientCPolynomial R), 0 + a = a := by
+  intros a
+  refine Quotient.inductionOn a ?_
+  intro p; clear a
+  apply Quotient.sound
+  intro i
+  unfold CPolynomial.add
+  rw [Trim.coeff_eq_coeff]
+  rw [add_coeff?]
+  simp
+
+lemma add_zero [LawfulBEq R] : ∀ (a : QuotientCPolynomial R), a + 0 = a := by
+  intros a
+  refine Quotient.inductionOn a ?_
+  intro p; clear a
+  apply Quotient.sound
+  intro i
+  unfold CPolynomial.add
+  rw [Trim.coeff_eq_coeff]
+  rw [add_coeff?]
+  simp
+
+lemma add_comm [LawfulBEq R] : ∀ (a b : QuotientCPolynomial R), a + b = b + a := by
+  intro a b
+  refine Quotient.inductionOn₂ a b ?_
+  intros p q; clear a b
+  apply Quotient.sound
+  apply eq_to_equiv
+  apply CPolynomial.add_comm
+
+lemma neg_add_cancel [LawfulBEq R] : ∀ (a : QuotientCPolynomial R), -a + a = 0 := by
+  intros a
+  refine Quotient.inductionOn a ?_
+  intro p; clear a
+  apply Quotient.sound
+  apply eq_to_equiv
+  apply CPolynomial.neg_add_cancel
+
+lemma nsmul_zero [LawfulBEq R] : ∀ (x : QuotientCPolynomial R),
+    QuotientCPolynomial.nsmul 0 x = 0 := by
+  intros x
+  refine Quotient.inductionOn x ?_
+  intro p; clear x
+  apply Quotient.sound
+  apply eq_to_equiv
+  apply CPolynomial.nsmul_zero
+
+lemma nsmul_succ [LawfulBEq R] : ∀ (n : ℕ) (x : QuotientCPolynomial R),
+    QuotientCPolynomial.nsmul (n + 1) x = QuotientCPolynomial.nsmul n x + x := by
+  intro n x
+  refine Quotient.inductionOn x ?_
+  intro p; clear x
+  apply Quotient.sound
+  apply eq_to_equiv
+  apply CPolynomial.nsmul_succ
+
+lemma sub_eq_add_neg [LawfulBEq R] : ∀ (a b : QuotientCPolynomial R), a - b = a + -b := by
+  intro a b
+  refine Quotient.inductionOn₂ a b ?_
+  intros p q; clear a b
+  apply Quotient.sound
+  apply eq_to_equiv
+  rfl
+
+instance [LawfulBEq R] : AddCommGroup (QuotientCPolynomial R) where
+  add_assoc := QuotientCPolynomial.add_assoc
+  zero_add := QuotientCPolynomial.zero_add
+  add_zero := QuotientCPolynomial.add_zero
+  add_comm := QuotientCPolynomial.add_comm
+  neg_add_cancel := QuotientCPolynomial.neg_add_cancel
+  nsmul := QuotientCPolynomial.nsmul
+  nsmul_zero := QuotientCPolynomial.nsmul_zero
+  nsmul_succ := QuotientCPolynomial.nsmul_succ
+  zsmul := zsmulRec
+  sub_eq_add_neg := QuotientCPolynomial.sub_eq_add_neg
+
+end AddCommGroup
 
 end QuotientCPolynomial
 
