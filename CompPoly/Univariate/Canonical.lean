@@ -114,7 +114,7 @@ instance : Mul (CPolynomialC R) where
   mul p q :=
     ⟨p.val * q.val, by sorry⟩
 
-/-- The constant polynomial 1 is canonical.
+/-- The constant polynomial 1 is canonical, and is the Unit for mutliplication.
 
   This is `#[1]`, which has no trailing zeros.
 -/
@@ -127,6 +127,14 @@ instance [Nontrivial R]: One (CPolynomialC R) where
     simp; aesop
   rw[this]
   grind
+  ⟩
+
+/-- The 0 polynomial, as #[], is canonical, and is the Unit for mutliplication when R is trivial.
+-/
+instance [Subsingleton R]: One (CPolynomialC R) where
+  one := ⟨#[], by
+  unfold trim lastNonzero Array.findIdxRev? Array.findIdxRev?.find
+  simp; aesop
   ⟩
 
 /-- Construct a canonical monomial `c * X^n` as a `CPolynomialC R`.
