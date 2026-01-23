@@ -118,8 +118,16 @@ instance : Mul (CPolynomialC R) where
 
   This is `#[1]`, which has no trailing zeros.
 -/
-instance : One (CPolynomialC R) where
-  one := ⟨CPolynomial.C 1, by sorry⟩
+instance [Nontrivial R]: One (CPolynomialC R) where
+  one := ⟨CPolynomial.C 1, by
+  unfold C trim
+  have nonzero : #[(1 : R)].size = 1 := by aesop
+  have : lastNonzero #[(1 : R)] = some ⟨0, by simp⟩ := by
+    unfold lastNonzero Array.findIdxRev? Array.findIdxRev?.find
+    simp; aesop
+  rw[this]
+  grind
+  ⟩
 
 /-- Construct a canonical monomial `c * X^n` as a `CPolynomialC R`.
 
