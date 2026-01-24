@@ -105,6 +105,8 @@ instance [LawfulBEq R] : AddCommGroup (CPolynomialC R) where
 
 section MulOne
 
+variable [Nontrivial R]
+
 /-- Multiplication of canonical polynomials (result is canonical).
 
   The product of two canonical polynomials is canonical because multiplication
@@ -117,8 +119,10 @@ instance : Mul (CPolynomialC R) where
 /-- The constant polynomial 1 is canonical, and is the Unit for mutliplication.
 
   This is `#[1]`, which has no trailing zeros.
+
+  This proof does not work without the assumption that R is non-trivial.
 -/
-instance [Nontrivial R]: One (CPolynomialC R) where
+instance : One (CPolynomialC R) where
   one := ⟨CPolynomial.C 1, by
   unfold C trim
   have nonzero : #[(1 : R)].size = 1 := by aesop
@@ -127,14 +131,6 @@ instance [Nontrivial R]: One (CPolynomialC R) where
     simp; aesop
   rw[this]
   grind
-  ⟩
-
-/-- The 0 polynomial, as #[], is canonical, and is the Unit for mutliplication when R is trivial.
--/
-instance [Subsingleton R]: One (CPolynomialC R) where
-  one := ⟨#[], by
-  unfold trim lastNonzero Array.findIdxRev? Array.findIdxRev?.find
-  simp; aesop
   ⟩
 
 /-- Construct a canonical monomial `c * X^n` as a `CPolynomialC R`.
@@ -167,6 +163,9 @@ end MulOne
 
 section Semiring
 
+variable [Semiring R] [LawfulBEq R] [Nontrivial R]
+
+
 /-- `CPolynomialC R` forms a semiring when `R` is a semiring.
 
   The semiring structure extends the `AddCommGroup` structure with multiplication.
@@ -174,7 +173,7 @@ section Semiring
 
   TODO: Complete all the required proofs for the semiring axioms.
 -/
-instance [Semiring R] [LawfulBEq R] : Semiring (CPolynomialC R) where
+instance  : Semiring (CPolynomialC R) where
   add_assoc := add_assoc
   zero_add := zero_add
   add_zero := add_zero
@@ -199,23 +198,27 @@ end Semiring
 
 section CommSemiring
 
+variable [CommSemiring R] [LawfulBEq R] [Nontrivial R]
+
 /-- `CPolynomialC R` forms a commutative semiring when `R` is a commutative semiring.
 
   Commutativity follows from the commutativity of multiplication in the base ring.
 -/
-instance [CommSemiring R] [LawfulBEq R] : CommSemiring (CPolynomialC R) where
+instance : CommSemiring (CPolynomialC R) where
   mul_comm := by sorry
 
 end CommSemiring
 
 section Ring
 
+variable [Ring R] [LawfulBEq R] [Nontrivial R]
+
 /-- `CPolynomialC R` forms a ring when `R` is a ring.
 
   The ring structure extends the semiring structure with negation and subtraction.
   Most of the structure is already provided by the `Semiring` instance.
 -/
-instance [Ring R] [LawfulBEq R] : Ring (CPolynomialC R) where
+instance : Ring (CPolynomialC R) where
   sub_eq_add_neg := by intro a b; rfl
   zsmul := zsmulRec
   zsmul_zero' := by sorry
@@ -229,11 +232,13 @@ end Ring
 
 section CommRing
 
+variable [CommRing R] [LawfulBEq R] [Nontrivial R]
+
 /-- `CPolynomialC R` forms a commutative ring when `R` is a commutative ring.
 
   This combines the `CommSemiring` and `Ring` structures.
 -/
-instance [CommRing R] [LawfulBEq R] : CommRing (CPolynomialC R) where
+instance : CommRing (CPolynomialC R) where
   -- All structure inherited from `CommSemiring` and `Ring` instances
 
 end CommRing
