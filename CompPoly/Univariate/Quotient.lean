@@ -7,6 +7,7 @@ import Mathlib.Algebra.Tropical.Basic
 import Mathlib.RingTheory.Polynomial.Basic
 import CompPoly.Data.Array.Lemmas
 import CompPoly.Univariate.Basic
+import CompPoly.Univariate.Quotient_mul_coeff.mul_coeff_prover
 
 /-!
   # Quotient of Univariate Polynomials
@@ -236,20 +237,6 @@ lemma mul_equiv₂ [LawfulBEq R] (a b₁ b₂ : CPolynomial R) :
         apply mulPowX_equiv
         exact fun i => by rw [ smul_equiv, smul_equiv ]; exact congr_arg _ ( h i )
   convert h_foldl_equiv ( Array.toList ( Array.zipIdx a ) ) ( C 0 ) using 1 <;> grind
-
-/-- The coefficient of `X^i` in `p * q` is the sum of `p.coeff j * q.coeff (i - j)`
-  over all `j ≤ i`.
-
-  This is the standard convolution formula for polynomial multiplication. -/
-theorem mul_coeff (p q : CPolynomial R) (i : ℕ) :
-    (p * q).coeff i =
-      (Array.range (i + 1)).foldl (fun acc j => acc + p.coeff j * q.coeff (i - j)) 0 := by
-  change (p.mul q).coeff i =
-    (Array.range (i + 1)).foldl (fun acc j => acc + p.coeff j * q.coeff (i - j)) 0
-  unfold mul
-  simp
-
-  sorry
 
 end EquivalenceLemmas
 
@@ -616,7 +603,7 @@ lemma mul_one : ∀ (a : QuotientCPolynomial R), a * 1 = a := by
   apply Quotient.sound
   intro i
   change (p * (C 1)).coeff i = p.coeff i
-  rw [mul_coeff p (C 1) i]
+  rw [CPolynomial.mul_coeff p (C 1) i]
   let motive (size : ℕ) (acc : R) :=
     if size ≤ i then acc = 0 else acc = p.coeff i
   suffices h : motive (Array.range (i + 1)).size
