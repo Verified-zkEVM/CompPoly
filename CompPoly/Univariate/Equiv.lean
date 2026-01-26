@@ -208,6 +208,9 @@ end ToPoly
 
 section RingEquiv
 
+-- This is necessary to import results about the (semi)-ring structure in Canonical.lean.
+variable [Nontrivial R]
+
 /-- Ring equivalence between canonical computable polynomials and Mathlib polynomials.
 
   This establishes that `CPolynomialC R` and `Polynomial R` are isomorphic as rings.
