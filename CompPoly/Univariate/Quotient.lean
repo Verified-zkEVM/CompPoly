@@ -630,7 +630,7 @@ lemma mul_one : ∀ (a : QuotientCPolynomial R), a * 1 = a := by
   · intro l b h_l
     unfold motive at *
     by_cases h : ↑l + 1 ≤ i
-    . have h_b : b = 0 := by grind
+    · have h_b : b = 0 := by grind
       rw [if_pos h]
       rw [h_b]
       simp only [Fin.getElem_fin, Array.getElem_range, Array.getD_eq_getD_getElem?, _root_.zero_add]
@@ -639,7 +639,7 @@ lemma mul_one : ∀ (a : QuotientCPolynomial R), a * 1 = a := by
         have : (C (1 : R))[i - ↑l]?.getD 0 = (C 1).coeff (i - ↑l) := by simp
         grind
       rw [this]; grind
-    . have h_l : l = i := by grind
+    · have h_l : l = i := by grind
       rw [if_neg h]
       simp at h_l
       have h_c1 : (C (1 : R)).coeff (i - (Array.range (i + 1))[l]) = (C 1).coeff 0 := by grind
