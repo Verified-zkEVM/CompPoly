@@ -760,14 +760,17 @@ theorem one_mul_trimmed [LawfulBEq R] (p : CPolynomial R) : 1 * p = p.trim := by
 theorem mul_one_trim [LawfulBEq R] (p : CPolynomial R) : p * 1 = p.trim := by sorry
   -- take a similar approach to the above, but induct on the length of p
 
-lemma smul_addRaw_distrib [LawfulBEq R] : ∀ (a' : R) (q r : CPolynomial R), smul a' (q.addRaw r) = (smul a' q).addRaw (smul a' r) := by sorry
+lemma smul_addRaw_distrib [LawfulBEq R] :
+  ∀ (a' : R) (q r : CPolynomial R), smul a' (q.addRaw r) = (smul a' q).addRaw (smul a' r) := by sorry
 
-lemma smul_distrib_trim [LawfulBEq R] : ∀ (a' : R) (q r : CPolynomial R), (smul a' (q + r)).trim = smul a' q + smul a' r := by sorry
+lemma smul_distrib_trim [LawfulBEq R] :
+  ∀ (a' : R) (q r : CPolynomial R), (smul a' (q + r)).trim = smul a' q + smul a' r := by sorry
 
 theorem left_distrib [LawfulBEq R] (p q r : CPolynomial R) : p * (q + r) = p * q + p * r := by sorry
   -- induct on the length of p
 
-theorem right_distrib [LawfulBEq R] (p q r : CPolynomial R) : (p + q) * r = p * r + q * r := by sorry
+theorem right_distrib [LawfulBEq R] (p q r : CPolynomial R) :
+  (p + q) * r = p * r + q * r := by sorry
   -- induct on the length of p
 
 theorem mul_assoc [LawfulBEq R] (p q r : CPolynomial R) : p * q * r = p * (q * r) := by sorry
