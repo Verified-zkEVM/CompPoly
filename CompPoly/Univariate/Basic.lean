@@ -411,6 +411,38 @@ section Operations
 
 variable {S : Type*}
 
+-- Array utilities for polynomial operations
+theorem Array.foldl_range_zero {α : Type*} (f : α → ℕ → α) (init : α) :
+    Array.foldl f init (Array.range 0) 0 0 = init := rfl
+
+theorem Array.range_foldl_succ {α : Type*} (f : α → ℕ → α) (init : α) (n : ℕ) :
+    (Array.range (n + 1)).foldl f init = f ((Array.range n).foldl f init) n := by
+  simpa [Array.range_succ] using
+    (Array.foldl_push (f := f) (init := init) (xs := Array.range n) (a := n))
+
+theorem Array.range_foldl_min_succ {α : Type*} (f : α → ℕ → α) (init : α) (i k : ℕ) :
+    (Array.range (min (k + 1) (i + 1))).foldl f init =
+      if i < k then
+        (Array.range (min k (i + 1))).foldl f init
+      else
+        f ((Array.range (min k (i + 1))).foldl f init) k := by
+  by_cases h : i < k
+  · have hik : i + 1 ≤ k := Nat.succ_le_of_lt h
+    have hik' : i + 1 ≤ k + 1 := Nat.le_succ_of_le hik
+    simp [h, hik, hik']
+  · have hk : k ≤ i := Nat.le_of_not_gt h
+    have hk1 : k + 1 ≤ i + 1 := Nat.succ_le_succ hk
+    have hk' : k ≤ i + 1 := le_trans hk (Nat.le_succ i)
+    simp [h, hk1, hk']
+    simpa using (Array.range_foldl_succ (f := f) (init := init) (n := k))
+
+theorem Array.range_foldl_zero {α : Type*} (f : α → ℕ → α) (init : α) :
+    (Array.range 0).foldl f init = init := by
+  simp [Array.range]
+
+theorem Array.zipIdx_size {α : Type*} (a : Array α) : a.zipIdx.size = a.size := by
+  simp [Array.zipIdx]
+
 -- p(x) = a_0 + a_1 x + a_2 x^2 + ... + a_n x^n
 
 -- eval₂ f x p = f(a_0) + f(a_1) x + f(a_2) x^2 + ... + f(a_n) x^n
@@ -657,6 +689,188 @@ lemma neg_coeff : ∀ (p : CPolynomial R) (i : ℕ), p.neg.coeff i = - p.coeff i
   intro p i
   unfold neg coeff
   rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
+
+-- Multiplication coefficient lemmas
+theorem coeff_add [LawfulBEq R] (p q : CPolynomial R) (i : ℕ) :
+    (p + q).coeff i = p.coeff i + q.coeff i := by
+  change (add p q).coeff i = p.coeff i + q.coeff i
+  unfold add
+  rw [Trim.coeff_eq_coeff (p := addRaw p q) i]
+  simpa using (add_coeff? p q i)
+
+omit [BEq R] in
+theorem mulPowX_coeff (p : CPolynomial R) (k i : ℕ) :
+    (mulPowX k p).coeff i = if i < k then 0 else p.coeff (i - k) := by
+  classical
+  by_cases hi : i < k
+  · have hik : i < (Array.replicate k (0 : R)).size := by
+      simpa using hi
+    have h1 := concat_coeff₁ (p := Array.replicate k (0 : R)) (q := p) i hik
+    simp [mulPowX, mk, coeff, hi] at h1 ⊢
+    simpa using h1.trans (by simp)
+  · have hi' : i ≥ k := Nat.le_of_not_lt hi
+    have hik : i ≥ (Array.replicate k (0 : R)).size := by
+      simpa using hi'
+    have h1 := concat_coeff₂ (p := Array.replicate k (0 : R)) (q := p) i hik
+    simpa [mulPowX, mk, coeff, hi, hi'] using h1
+
+theorem mul_coeff_partial_base [LawfulBEq R] (p q : CPolynomial R) (i : ℕ) :
+    (C (R := R) 0).coeff i =
+      (Array.range (min 0 (i + 1))).foldl (fun acc j => acc + p.coeff j * q.coeff (i - j)) 0 := by
+  have hmin : min 0 (i + 1) = 0 := by
+    simp
+  rw [hmin]
+  rw [Array.range_foldl_zero
+    (f := fun acc j => acc + p.coeff j * q.coeff (i - j)) (init := (0 : R))]
+  simp [C, coeff]
+
+omit [BEq R] in
+theorem mul_coeff_partial_step (p q : CPolynomial R) (i k : ℕ) (s : R) :
+    let g : R → ℕ → R := fun t j => t + p.coeff j * q.coeff (i - j)
+    (Array.range (min k (i + 1))).foldl g s + (if i < k then 0 else p.coeff k * q.coeff (i - k)) =
+      (Array.range (min (k + 1) (i + 1))).foldl g s := by
+  classical
+  dsimp
+  have hfold :=
+    Array.range_foldl_min_succ
+      (f := fun t j => t + p.coeff j * q.coeff (i - j)) (init := s) (i := i) (k := k)
+  rw [hfold]
+  by_cases h : i < k
+  · simp [h, add_comm]
+  · simp [h, add_comm]
+
+omit [BEq R] in
+theorem range_foldl_min_eq_range_foldl (p q : CPolynomial R) (i : ℕ) :
+    (Array.range (min p.size (i + 1))).foldl (fun acc j => acc + p.coeff j * q.coeff (i - j)) 0 =
+      (Array.range (i + 1)).foldl (fun acc j => acc + p.coeff j * q.coeff (i - j)) 0 := by
+  classical
+  let f : R → ℕ → R := fun acc j => acc + p.coeff j * q.coeff (i - j)
+  change (Array.range (min p.size (i + 1))).foldl f 0 = (Array.range (i + 1)).foldl f 0
+  by_cases h : i + 1 ≤ p.size
+  · simp [min_eq_right h]
+  · have hp : p.size ≤ i + 1 := Nat.le_of_lt (Nat.lt_of_not_ge h)
+    let d : ℕ := (i + 1) - p.size
+    have hd : p.size + d = i + 1 := by
+      dsimp [d]
+      exact Nat.add_sub_of_le hp
+    have hfold : (Array.range (p.size + d)).foldl f 0 = (Array.range p.size).foldl f 0 := by
+      induction d with
+      | zero =>
+        simp
+      | succ d ih =>
+        have hsucc :
+            (Array.range (p.size + Nat.succ d)).foldl f 0 =
+              f ((Array.range (p.size + d)).foldl f 0) (p.size + d) := by
+          simpa [Nat.add_assoc] using
+            (Array.range_foldl_succ (f := f) (init := (0 : R)) (n := p.size + d))
+        rw [hsucc, ih]
+        have hpcoeff : p.coeff (p.size + d) = (0 : R) := by
+          have hge : p.size ≤ p.size + d := Nat.le_add_right p.size d
+          simp [coeff, Array.getD]
+        simp [f]
+    have h' : (Array.range p.size).foldl f 0 = (Array.range (i + 1)).foldl f 0 := by
+      calc
+        (Array.range p.size).foldl f 0 = (Array.range (p.size + d)).foldl f 0 := by
+          simpa using hfold.symm
+        _ = (Array.range (i + 1)).foldl f 0 := by
+          simp [hd]
+    simpa [min_eq_left hp] using h'
+
+omit [BEq R] in
+theorem smul_mulPowX_coeff (a : R) (q : CPolynomial R) (j i : ℕ) :
+    ((smul a q).mulPowX j).coeff i = if i < j then 0 else a * q.coeff (i - j) := by
+  classical
+  rw [mulPowX_coeff (p := smul a q) (k := j) (i := i)]
+  by_cases hij : i < j
+  · simp [hij]
+  · simpa [hij] using (smul_equiv (p := q) (i := i - j) (r := a))
+
+theorem coeff_add_smul_mulPowX [LawfulBEq R]
+    (acc q : CPolynomial R) (a : R) (k i : ℕ) :
+    (acc + ((smul a q).mulPowX k)).coeff i =
+      acc.coeff i + (if i < k then 0 else a * q.coeff (i - k)) := by
+  classical
+  rw [coeff_add (p := acc) (q := (smul a q).mulPowX k) (i := i)]
+  rw [smul_mulPowX_coeff (a := a) (q := q) (j := k) (i := i)]
+
+theorem mul_coeff_partial_fold_step [LawfulBEq R]
+    (p q : CPolynomial R) (i k : ℕ) (acc : CPolynomial R) :
+    (acc.coeff i =
+        (Array.range (min k (i + 1))).foldl
+          (fun t j => t + p.coeff j * q.coeff (i - j)) 0) →
+      (acc.add ((smul (p.coeff k) q).mulPowX k)).coeff i =
+        (Array.range (min (k + 1) (i + 1))).foldl
+          (fun t j => t + p.coeff j * q.coeff (i - j)) 0 := by
+  intro hk
+  have hcoeff :
+      (acc.add ((smul (p.coeff k) q).mulPowX k)).coeff i =
+        acc.coeff i + (if i < k then 0 else p.coeff k * q.coeff (i - k)) := by
+    simpa using
+      (coeff_add_smul_mulPowX (acc := acc) (q := q) (a := p.coeff k) (k := k) (i := i))
+  rw [hcoeff, hk]
+  simpa using
+    (mul_coeff_partial_step (p := p) (q := q) (i := i) (k := k) (s := (0 : R)))
+
+theorem mul_coeff_partial_fold_step_getElem [LawfulBEq R]
+    (p q : CPolynomial R) (i k : ℕ) (hklt : k < p.size) (acc : CPolynomial R) :
+    (acc.coeff i =
+        (Array.range (min k (i + 1))).foldl
+          (fun t j => t + p.coeff j * q.coeff (i - j)) 0) →
+      (acc.add ((smul (p[k]) q).mulPowX k)).coeff i =
+        (Array.range (min (k + 1) (i + 1))).foldl
+          (fun t j => t + p.coeff j * q.coeff (i - j)) 0 := by
+  intro hk
+  have hp : p.coeff k = p[k] := by
+    simpa using (Trim.coeff_eq_getElem (p := p) (i := k) hklt)
+  simpa [hp] using
+    (mul_coeff_partial_fold_step (p := p) (q := q) (i := i) (k := k) (acc := acc) hk)
+
+theorem mul_coeff_partial [LawfulBEq R] (p q : CPolynomial R) (i : ℕ) :
+    (p * q).coeff i =
+      (Array.range (min p.size (i + 1))).foldl
+        (fun acc j => acc + p.coeff j * q.coeff (i - j)) 0 := by
+  classical
+  change (mul p q).coeff i = _
+  unfold mul
+  let g : R → ℕ → R := fun t j => t + p.coeff j * q.coeff (i - j)
+  let motive : ℕ → CPolynomial R → Prop :=
+    fun k acc => acc.coeff i = (Array.range (min k (i + 1))).foldl g 0
+  have hm :
+      motive p.zipIdx.size
+        (p.zipIdx.foldl
+          (fun acc (x : R × ℕ) =>
+            acc.add ((smul x.1 q).mulPowX x.2))
+          (C (R := R) 0)) := by
+    refine Array.foldl_induction (as := p.zipIdx)
+      (motive := motive)
+      (init := (C (R := R) 0))
+      (f := fun acc (x : R × ℕ) =>
+        acc.add ((smul x.1 q).mulPowX x.2))
+      ?_ ?_
+    · simpa [motive, g] using
+        (mul_coeff_partial_base (p := p) (q := q) (i := i))
+    · intro k acc hk
+      set n : ℕ := (k : ℕ)
+      have hk' : acc.coeff i =
+          (Array.range (min n (i + 1))).foldl
+            (fun t j => t + p.coeff j * q.coeff (i - j)) 0 := by
+        simpa [motive, g, n] using hk
+      have hn : n < p.size := by
+        have : (k : ℕ) < p.size := by
+          simpa [Array.zipIdx_size (a := p)] using (show (k : ℕ) < p.zipIdx.size from k.is_lt)
+        simpa [n] using this
+      have hstep :=
+        mul_coeff_partial_fold_step_getElem
+          (p := p) (q := q) (i := i) (k := n) (hklt := hn) (acc := acc) hk'
+      simpa [motive, g, n, Array.getElem_zipIdx] using hstep
+  have hz : p.zipIdx.size = p.size := by
+    simp [Array.zipIdx_size (a := p)]
+  simpa [motive, g, hz] using hm
+
+theorem mul_coeff [LawfulBEq R] (p q : CPolynomial R) (i : ℕ) :
+    (p * q).coeff i =
+      (Array.range (i + 1)).foldl (fun acc j => acc + p.coeff j * q.coeff (i - j)) 0 := by
+  rw [mul_coeff_partial, range_foldl_min_eq_range_foldl]
 
 lemma trim_add_trim [LawfulBEq R] (p q : CPolynomial R) : p.trim + q = p + q := by
   apply Trim.eq_of_equiv

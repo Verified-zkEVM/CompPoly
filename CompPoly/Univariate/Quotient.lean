@@ -7,7 +7,6 @@ import Mathlib.Algebra.Tropical.Basic
 import Mathlib.RingTheory.Polynomial.Basic
 import CompPoly.Data.Array.Lemmas
 import CompPoly.Univariate.Basic
-import CompPoly.Univariate.Quotient_mul_coeff.mul_coeff_prover
 
 /-!
   # Quotient of Univariate Polynomials
