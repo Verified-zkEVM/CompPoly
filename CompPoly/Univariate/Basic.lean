@@ -713,7 +713,8 @@ theorem nsmulRawSucc (n : ℕ) (p : CPolynomial Q) :
     simp [add_coeff, hi]
     rw [_root_.add_mul (R:=Q) n 1 p[i], one_mul]
 
-theorem nsmul_succ [LawfulBEq R] (n : ℕ) {p : CPolynomial R} : nsmul (n + 1) p = nsmul n p + p := by
+theorem nsmul_succ [LawfulBEq R] (n : ℕ) {p : CPolynomial R} :
+    nsmul (n + 1) p = nsmul n p + p := by
   unfold nsmul
   rw [trim_add_trim]
   apply congrArg trim
@@ -749,7 +750,8 @@ theorem one_mul_trimmed [LawfulBEq R] (p : CPolynomial R) : 1 * p = p.trim := by
         by exact fun a b => rfl
   have : 1 * p = (mk #[1] : CPolynomial R).mul p := by rfl
   rw [this, h_mul_def]
-  show (mk #[1]).zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' p).mulPowX i)) (mk #[]) = p.trim
+  show (mk #[1]).zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' p).mulPowX i)) (mk #[])
+      = p.trim
   conv_lhs => rw [show (mk #[1] : CPolynomial R).zipIdx = #[(1, 0)] by rfl]
   rw [show Array.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' p).mulPowX i)) (mk #[]) #[(1, 0)] =
            (mk #[] : CPolynomial R).add ((smul 1 p).mulPowX 0) by rfl]
@@ -761,16 +763,19 @@ theorem mul_one_trim [LawfulBEq R] (p : CPolynomial R) : p * 1 = p.trim := by so
   -- take a similar approach to the above, but induct on the length of p
 
 lemma smul_addRaw_distrib [LawfulBEq R] :
-  ∀ (a' : R) (q r : CPolynomial R), smul a' (q.addRaw r) = (smul a' q).addRaw (smul a' r) := by sorry
+    ∀ (a' : R) (q r : CPolynomial R), smul a' (q.addRaw r)
+        = (smul a' q).addRaw (smul a' r) := by sorry
 
 lemma smul_distrib_trim [LawfulBEq R] :
-  ∀ (a' : R) (q r : CPolynomial R), (smul a' (q + r)).trim = smul a' q + smul a' r := by sorry
+    ∀ (a' : R) (q r : CPolynomial R), (smul a' (q + r)).trim
+        = smul a' q + smul a' r := by sorry
 
-theorem left_distrib [LawfulBEq R] (p q r : CPolynomial R) : p * (q + r) = p * q + p * r := by sorry
+theorem left_distrib [LawfulBEq R] (p q r : CPolynomial R) :
+    p * (q + r) = p * q + p * r := by sorry
   -- induct on the length of p
 
 theorem right_distrib [LawfulBEq R] (p q r : CPolynomial R) :
-  (p + q) * r = p * r + q * r := by sorry
+    (p + q) * r = p * r + q * r := by sorry
   -- induct on the length of p
 
 theorem mul_assoc [LawfulBEq R] (p q r : CPolynomial R) : p * q * r = p * (q * r) := by sorry
