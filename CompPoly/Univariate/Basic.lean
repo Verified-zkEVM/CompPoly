@@ -475,7 +475,7 @@ def mulX (p : CPolynomial R) : CPolynomial R := p.mulPowX 1
 /-- Multiplication using the naive `O(n²)` algorithm: `Σᵢ (aᵢ * q) * X^i`. -/
 @[inline, specialize]
 def mul (p q : CPolynomial R) : CPolynomial R :=
-  p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc.add <| (smul a q).mulPowX i) (C 0)
+  p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc.add <| (smul a q).mulPowX i) (mk #[])
 
 /-- Exponentiation of a `CPolynomial` by a natural number `n` via repeated multiplication. -/
 @[inline, specialize]
