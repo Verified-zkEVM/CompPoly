@@ -3,10 +3,29 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
 -/
+import Mathlib
+import Mathlib.Algebra.BigOperators.NatAntidiagonal
 import Mathlib.Algebra.Tropical.Basic
 import Mathlib.RingTheory.Polynomial.Basic
 import CompPoly.Data.Array.Lemmas
 import CompPoly.Univariate.Basic
+import CompPoly.Univariate.Equiv
+
+open scoped BigOperators
+
+theorem array_range_size: ∀ (n : ℕ), (Array.range n).size = n := by
+  intro n
+  simp
+
+theorem array_range_foldl_add_eq_sum_range: ∀ {β : Type*} [AddCommMonoid β] (f : ℕ → β) (n : ℕ),
+    Array.foldl (fun acc i => acc + f i) 0 (Array.range n) 0 n = ∑ i ∈ Finset.range n, f i := by
+  intro β _ f n
+  classical
+  induction n with
+  | zero =>
+      simp [Array.range]
+  | succ n ih =>
+      simp [Array.range_succ, ih, Finset.sum_range_succ, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
 
 /-!
   # Quotient of Univariate Polynomials
@@ -24,6 +43,33 @@ namespace CPolynomial
 
 variable {R : Type*} [Ring R] [BEq R]
 variable {Q : Type*} [Ring Q]
+
+theorem cpoly_toPoly_mul [LawfulBEq R] (p q : CPolynomial R) :
+    CPolynomial.toPoly (p * q) = CPolynomial.toPoly p * CPolynomial.toPoly q := by
+  classical
+  ext n
+  rw [CPolynomial.coeff_toPoly (p := p * q) (n := n)]
+  rw [CPolynomial.mul_coeff (p := p) (q := q) (i := n)]
+  change
+    Array.foldl (fun acc j => acc + p.coeff j * q.coeff (n - j)) 0 (Array.range (n + 1)) 0
+        (Array.range (n + 1)).size = (p.toPoly * q.toPoly).coeff n
+  rw [array_range_size (n + 1)]
+  rw [array_range_foldl_add_eq_sum_range (f := fun j => p.coeff j * q.coeff (n - j)) (n := n + 1)]
+  rw [Polynomial.coeff_mul]
+  rw [
+    Finset.Nat.sum_antidiagonal_eq_sum_range_succ_mk
+      (f := fun ij : ℕ × ℕ =>
+        (p.toPoly).coeff ij.1 * (q.toPoly).coeff ij.2)
+      n]
+  simp [CPolynomial.coeff_toPoly]
+
+theorem cpoly_mul_assoc_equiv [LawfulBEq R] (p q r : CPolynomial R) :
+    Trim.equiv ((p * q) * r) (p * (q * r)) := by
+  intro i
+  have hpoly : ((p * q) * r).toPoly = (p * (q * r)).toPoly := by
+    simpa [cpoly_toPoly_mul, _root_.mul_assoc]
+  have hcoeff := congrArg (fun P : Polynomial R => P.coeff i) hpoly
+  simpa [CPolynomial.coeff_toPoly] using hcoeff
 
 section Quotient
 
@@ -534,10 +580,12 @@ variable [LawfulBEq R]
 
 lemma mul_assoc : ∀ (a b c : QuotientCPolynomial R), a * b * c = a * (b * c) := by
   intro a b c
+  classical
   refine Quotient.inductionOn₃ a b c ?_
-  intro p q r; clear a b c
-  apply Quotient.sound
-  sorry
+  intro p q r
+  change Quotient.mk _ ((p * q) * r) = Quotient.mk _ (p * (q * r))
+  refine Quotient.sound ?_
+  simpa using (cpoly_mul_assoc_equiv (p := p) (q := q) (r := r))
 
 @[simp]
 lemma zip_one : (Array.zipIdx (C (1 : R))) = #[(1,0)] := by unfold Array.zipIdx C; simp
@@ -675,7 +723,7 @@ lemma mul_zero : ∀ (a : QuotientCPolynomial R), a * 0 = 0 := by
       · simp_all +decide [ List.zipIdx_append ];
         convert add_equiv _ _ _ _ ‹_› _;
         rotate_left;
-        exact #[ ];
+        exact #[];
         · convert mulPowX_zero_equiv _; aesop;
           infer_instance;
         · unfold CPolynomial.add; simp +decide only [List.nil_eq, Array.toList_eq_nil_iff]
@@ -689,63 +737,12 @@ lemma mul_zero : ∀ (a : QuotientCPolynomial R), a * 0 = 0 := by
     grind
   exact h_zero_fold p
 
-theorem range_foldl_add_distrib_proof {α : Type*} [AddCommMonoid α]
-    (f g : ℕ → α) (n : ℕ) :
-    (Array.range n).foldl (fun acc i => acc + (f i + g i)) 0 =
-        (Array.range n).foldl (fun acc i => acc + f i) 0 +
-        (Array.range n).foldl (fun acc i => acc + g i) 0 := by
-  induction n with
-  | zero =>
-      simp [CompPoly.CPolynomial.Array.foldl_range_zero]
-  | succ n ih =>
-      change (Array.range (n + 1)).foldl (fun acc i => acc + (f i + g i)) 0 =
-          (Array.range (n + 1)).foldl (fun acc i => acc + f i) 0 +
-            (Array.range (n + 1)).foldl (fun acc i => acc + g i) 0
-      rw [CompPoly.CPolynomial.Array.range_foldl_succ
-          (f := fun acc i => acc + (f i + g i)) (init := (0 : α)) (n := n)]
-      rw [CompPoly.CPolynomial.Array.range_foldl_succ
-          (f := fun acc i => acc + f i) (init := (0 : α)) (n := n)]
-      rw [CompPoly.CPolynomial.Array.range_foldl_succ
-          (f := fun acc i => acc + g i) (init := (0 : α)) (n := n)]
-      have ih' :
-          Array.foldl (fun acc i => acc + (f i + g i)) 0 (Array.range n) 0 n =
-              Array.foldl (fun acc i => acc + f i) 0 (Array.range n) 0 n +
-                Array.foldl (fun acc i => acc + g i) 0 (Array.range n) 0 n := by
-        simpa using ih
-      simpa [ih', add_assoc, add_left_comm, add_comm] using (by
-        ac_rfl :
-          f n +
-              (Array.foldl (fun acc i => acc + f i) 0 (Array.range n) 0 n +
-                  Array.foldl (fun acc i => acc + g i) 0 (Array.range n) 0 n +
-                g n) =
-            Array.foldl (fun acc i => acc + f i) 0 (Array.range n) 0 n + f n +
-              (Array.foldl (fun acc i => acc + g i) 0 (Array.range n) 0 n + g n))
-
-theorem mul_add_equiv_proof {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
-    (p q r : CPolynomial R) :
-    Trim.equiv (p * (q + r)) (p * q + p * r) := by
-  unfold Trim.equiv
-  intro i
-  rw [coeff_add]
-  rw [mul_coeff, mul_coeff, mul_coeff]
-  let f : ℕ → R := fun j => p.coeff j * q.coeff (i - j)
-  let g : ℕ → R := fun j => p.coeff j * r.coeff (i - j)
-  have hfun :
-      (fun acc j => acc + p.coeff j * (q + r).coeff (i - j)) =
-        (fun acc j => acc + (f j + g j)) := by
-    funext acc j
-    rw [coeff_add]
-    simp [f, g, mul_add, add_assoc, add_left_comm, add_comm]
-  rw [hfun]
-  simpa [f, g] using
-    (range_foldl_add_distrib_proof (f := f) (g := g) (n := i + 1))
-
-lemma left_distrib : ∀ (a b c : QuotientCPolynomial R),
-    a * (b + c) = a * b + a * c := by
+lemma left_distrib : ∀ (a b c : QuotientCPolynomial R), a * (b + c) = a * b + a * c := by
   intro a b c
   refine Quotient.inductionOn₃ a b c ?_
-  intro p q r
-  exact Quotient.sound (mul_add_equiv_proof (p := p) (q := q) (r := r))
+  intro p q r; clear a b c
+  apply Quotient.sound
+  sorry
 
 lemma right_distrib : ∀ (a b c : QuotientCPolynomial R), (a + b) * c = a * c + b * c := by
   intro a b c
