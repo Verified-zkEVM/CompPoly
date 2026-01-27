@@ -731,86 +731,12 @@ theorem neg_add_cancel [LawfulBEq R] (p : CPolynomial R) : -p + p = 0 := by
 
 end Operations
 
-section AddCommGroup
-instance [LawfulBEq R] : AddCommGroup (CPolynomial R) where
+section AddCommSemiroup
+instance [LawfulBEq R] : AddCommSemigroup (CPolynomial R) where
   add_assoc := by intro _ _ _; rw [add_assoc]
-  zero_add := sorry
-  add_zero := sorry
   add_comm := add_comm
-  neg_add_cancel := neg_add_cancel
-  nsmul := nsmul
-  nsmul_zero := nsmul_zero
-  nsmul_succ := nsmul_succ
-  zsmul := zsmulRec
 
-end AddCommGroup
-
-section Semiring
-
-/-- `CPolynomial R` forms a semiring when `R` is a semiring.
-
-  The semiring structure is inherited from the coefficient-wise operations on arrays,
-  with addition and multiplication defined via the standard polynomial operations.
-
-  TODO: Complete proofs for `natCast_zero` and `natCast_succ`.
--/
-instance [Semiring R] [LawfulBEq R] : Semiring (CPolynomial R) where
-  mul_assoc := sorry
-  one_mul := sorry
-  mul_one := sorry
-  zero_mul := sorry
-  mul_zero := sorry
-  left_distrib := sorry
-  right_distrib := sorry
-  npow n p := p.pow n
-  npow_zero := sorry
-  npow_succ := sorry
-  natCast_zero := by sorry
-  natCast_succ := by sorry
-
-end Semiring
-
-section CommSemiring
-
-/-- `CPolynomial R` forms a commutative semiring when `R` is a commutative semiring.
-
-  Commutativity follows from the commutativity of multiplication in the base ring.
--/
-instance [CommSemiring R] [LawfulBEq R] : CommSemiring (CPolynomial R) where
-  mul_comm := sorry
-
-end CommSemiring
-
-section Ring
-
-/-- `CPolynomial R` forms a ring when `R` is a ring.
-
-  The ring structure extends the semiring structure with negation and subtraction.
-  Most of the structure is already provided by the `Semiring` instance.
--/
-instance [Ring R] [LawfulBEq R] : Ring (CPolynomial R) where
-  sub_eq_add_neg := by intro a b; rfl
-  zsmul := zsmulRec
-  zsmul_zero' := by sorry
-  zsmul_succ' := by sorry
-  zsmul_neg' := by sorry
-  intCast_ofNat := by sorry
-  intCast_negSucc := by sorry
-  neg_add_cancel := by sorry
-
-end Ring
-
-section CommRing
-
-/-- `CPolynomial R` forms a commutative ring when `R` is a commutative ring.
-
-  This combines the `CommSemiring` and `Ring` structures.
--/
-instance [CommRing R] [LawfulBEq R] : CommRing (CPolynomial R) where
-  -- All structure inherited from `CommSemiring` and `Ring` instances
-
-end CommRing
-
+end AddCommSemiroup
 
 end CPolynomial
 
