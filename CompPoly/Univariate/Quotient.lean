@@ -231,7 +231,7 @@ lemma mul_equiv₂ [LawfulBEq R] (a b₁ b₂ : CPolynomial R) :
       · -- Apply the lemma that multiplying by X^i preserves equivalence.
         apply mulPowX_equiv
         exact fun i => by rw [ smul_equiv, smul_equiv ]; exact congr_arg _ ( h i )
-  convert h_foldl_equiv ( Array.toList ( Array.zipIdx a ) ) ( C 0 ) using 1 <;> grind
+  convert h_foldl_equiv ( Array.toList ( Array.zipIdx a ) ) ( mk #[] ) using 1 <;> grind
 
 end EquivalenceLemmas
 
