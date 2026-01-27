@@ -219,11 +219,11 @@ lemma mul_equiv₂ [LawfulBEq R] (a b₁ b₂ : CPolynomial R) :
     b₁ ≈ b₂ → a.mul b₁ ≈ a.mul b₂ := by
   -- By definition of multiplication, we can express `a.mul b₁` and `a.mul b₂` in terms of
   -- their sums of products of coefficients.
-  have h_mul_def : ∀ (a b : CompPoly.CPolynomial R),
+  have h_mul_def : ∀ (a b : CPolynomial R),
     a.mul b = (a.zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b).mulPowX i)) (C 0)) :=
       by exact fun a b => rfl
   intro h
-  have h_foldl_equiv : ∀ (l : List (R × ℕ)) (acc : CompPoly.CPolynomial R),
+  have h_foldl_equiv : ∀ (l : List (R × ℕ)) (acc : CPolynomial R),
     List.foldl (fun acc (a', i) => acc.add ((smul a' b₁).mulPowX i)) acc l ≈
     List.foldl (fun acc (a', i) => acc.add ((smul a' b₂).mulPowX i)) acc l := by
     intro l acc
@@ -443,17 +443,22 @@ lemma add_assoc [LawfulBEq R] : ∀ (a b c : QuotientCPolynomial R), a + b + c =
   apply eq_to_equiv
   apply CPolynomial.add_assoc
 
+@[grind]
+lemma zero_add_equiv [LawfulBEq R] (p : CPolynomial R) : 0 + p ≈ p := by
+  intro i
+  change ((0 : CPolynomial R).add p).coeff i = p.coeff i
+  unfold CPolynomial.add
+  rw [Trim.coeff_eq_coeff]
+  rw [add_coeff?]
+  simp
+
 @[simp]
 lemma zero_add [LawfulBEq R] : ∀ (a : QuotientCPolynomial R), 0 + a = a := by
   intros a
   refine Quotient.inductionOn a ?_
   intro p; clear a
   apply Quotient.sound
-  intro i
-  unfold CPolynomial.add
-  rw [Trim.coeff_eq_coeff]
-  rw [add_coeff?]
-  simp
+  apply zero_add_equiv
 
 @[simp]
 lemma add_zero [LawfulBEq R] : ∀ (a : QuotientCPolynomial R), a + 0 = a := by
@@ -532,14 +537,7 @@ lemma mul_assoc : ∀ (a b c : QuotientCPolynomial R), a * b * c = a * (b * c) :
   refine Quotient.inductionOn₃ a b c ?_
   intro p q r; clear a b c
   apply Quotient.sound
-  -- By the associativity of multiplication in the semiring, we have that
-  -- $(p * q) * r = p * (q * r)$.
-  have h_assoc : ∀ (p q r : CPolynomial R), (p.mul q).mul r = p.mul (q.mul r) := by
-    -- intros p q r
-    -- generalize_proofs at *
-    -- convert mul_assoc _ _ _
-    sorry
-  exact h_assoc p q r ▸ equiv_refl _
+  sorry
 
 @[simp]
 lemma zip_one : (Array.zipIdx (C (1 : R))) = #[(1,0)] := by unfold Array.zipIdx C; simp
@@ -566,13 +564,7 @@ lemma one_mul : ∀ (a : QuotientCPolynomial R), 1 * a = a := by
     0 + (CPolynomial.mulPowX 0 (CPolynomial.smul 1 p)) := by
       apply right_add_equiv
       apply zero_equiv
-    _ ≈ CPolynomial.mulPowX 0 (CPolynomial.smul 1 p) := by
-      intro i
-      unfold CPolynomial.mulPowX CPolynomial.smul
-      simp only [zero_def, Array.replicate_zero, _root_.one_mul, Array.map_id_fun',
-        id_eq, Array.empty_append, Array.getD_eq_getD_getElem?]
-      have h : (#[] + mk (mk p)) = (mk (mk p)) := by sorry -- simp
-      rw [h]
+    _ ≈ CPolynomial.mulPowX 0 (CPolynomial.smul 1 p) := by grind
     _ ≈ p := by
       unfold CPolynomial.mulPowX CPolynomial.smul
       simp only [Array.replicate_zero, _root_.one_mul, Array.map_id_fun', id_eq,
@@ -673,20 +665,20 @@ lemma mul_zero : ∀ (a : QuotientCPolynomial R), a * 0 = 0 := by
     have h_zero_fold : ∀ (p : List R),
       List.foldl
         (fun acc (a, i) =>
-          CompPoly.CPolynomial.add acc
-            (CompPoly.CPolynomial.mulPowX i (CompPoly.CPolynomial.smul a #[])))
-        (CompPoly.CPolynomial.C 0)
+          CPolynomial.add acc
+            (CPolynomial.mulPowX i (CPolynomial.smul a #[])))
+        (CPolynomial.C 0)
         (List.zipIdx p) ≈ #[] := by
       intro p
       induction' p using List.reverseRecOn with p ih
-      · exact fun i => by simp +decide [CompPoly.CPolynomial.C]
+      · exact fun i => by simp +decide [CPolynomial.C]
       · simp_all +decide [ List.zipIdx_append ];
         convert add_equiv _ _ _ _ ‹_› _;
         rotate_left;
         exact #[];
         · convert mulPowX_zero_equiv _; aesop;
           infer_instance;
-        · unfold CompPoly.CPolynomial.add; simp +decide only [List.nil_eq, Array.toList_eq_nil_iff]
+        · unfold CPolynomial.add; simp +decide only [List.nil_eq, Array.toList_eq_nil_iff]
           refine Array.eq_empty_of_size_eq_zero ?_
           simp only [Array.size_eq_zero_iff]
           unfold addRaw
@@ -702,38 +694,14 @@ lemma left_distrib : ∀ (a b c : QuotientCPolynomial R), a * (b + c) = a * b + 
   refine Quotient.inductionOn₃ a b c ?_
   intro p q r; clear a b c
   apply Quotient.sound
-  -- Since p.mul is a linear operation, it distributes over addition. Therefore,
-  -- p.mul (q.add r) = p.mul q + p.mul r.
-  have h_dist : ∀ (p q r : CompPoly.CPolynomial R),
-      p.mul (q.add r) ≈ (p.mul q).add (p.mul r) := by
-    -- By definition of polynomial multiplication, we can expand both sides.
-    have h_expand : ∀ (p q r : CompPoly.CPolynomial R),
-        p.mul (q.add r) = (p.mul q).add (p.mul r) := by
-      intros p q r
-      have h_expand : p.mul (q.add r) = p.mul q + p.mul r := by
-        -- convert mul_add p q r using 1
-        sorry
-      exact h_expand ▸ rfl
-    -- Since equality implies equivalence, we can conclude that the equivalence holds.
-    intros p q r
-    rw [h_expand p q r]
-  exact h_dist p q r
+  sorry
 
 lemma right_distrib : ∀ (a b c : QuotientCPolynomial R), (a + b) * c = a * c + b * c := by
   intro a b c
   refine Quotient.inductionOn₃ a b c ?_
   intro p q r; clear a b c
   apply Quotient.sound
-  -- By definition of polynomial multiplication, we can expand both sides.
-  have h_expand : ∀ (p q r : CPolynomial R), (p + q) * r ≈ p * r + q * r := by
-    -- By definition of polynomial multiplication, we can expand both sides and show they are equal.
-    have h_expand : ∀ (p q r : CPolynomial R), (p + q) * r = (p * r) + (q * r) := by
-      -- exact fun p q r => RightDistribClass.right_distrib p q r
-      sorry
-    generalize_proofs at *
-    exact fun p q r => h_expand p q r ▸ refl _
-  generalize_proofs at *
-  exact h_expand p q r
+  sorry
 
 lemma npow_zero : ∀ (x : QuotientCPolynomial R), x.pow 0 = 1 := by
   intros x
@@ -747,7 +715,7 @@ lemma npow_zero : ∀ (x : QuotientCPolynomial R), x.pow 0 = 1 := by
 x^(n+1) = x * x^n for QuotientCPolynomial
 -/
 lemma pow_succ_left {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (n : ℕ)
-    (x : CompPoly.CPolynomial.QuotientCPolynomial R) :
+    (x : QuotientCPolynomial R) :
     x.pow (n + 1) = x * x.pow n := by
   refine Quotient.inductionOn x ?_
   intro p
@@ -762,7 +730,7 @@ lemma pow_succ_left {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (n : ℕ)
 x commutes with x^n
 -/
 lemma commute_pow_self {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (n : ℕ)
-    (x : CompPoly.CPolynomial.QuotientCPolynomial R) :
+    (x : QuotientCPolynomial R) :
     x * x.pow n = x.pow n * x := by
   induction' n with n ih generalizing x
   all_goals generalize_proofs at *
@@ -804,7 +772,7 @@ instance [Semiring R] [LawfulBEq R] : Semiring (QuotientCPolynomial R) where
     convert Quotient.sound ?_
     -- The constant polynomial with coefficient 0 is equivalent to the empty array
     -- because their coefficients are the same.
-    simp [CompPoly.CPolynomial.C]
+    simp [CPolynomial.C]
     -- The foldl operation on the zipIdx of the array #[0] with the function
     -- (fun acc ⟨a, i⟩ => acc + a * x ^ i) and initial value 0 results in 0.
     have h_foldl_zero : ∀ (x : R),
