@@ -100,7 +100,7 @@ lemma coeff_toPoly {p : CPolynomial Q} {n : ℕ} : p.toPoly.coeff n = p.coeff n 
   intros i acc h
   have i_lt_p : i < p.size := by linarith [i.is_lt]
   have : p.zipIdx[i] = (p[i], ↑i) := by simp [Array.getElem_zipIdx]
-  rw [this, coeff_add, coeff_C_mul, coeff_X_pow, mul_ite, mul_one, mul_zero, h]
+  rw [this, Polynomial.coeff_add, coeff_C_mul, coeff_X_pow, mul_ite, mul_one, mul_zero, h]
   rcases (Nat.lt_trichotomy i n) with hlt | rfl | hgt
   · have h1 : ¬ (n < i) := by linarith
     have h2 : ¬ (n = i) := by linarith
@@ -145,7 +145,7 @@ theorem toPoly_toImpl {p : Q[X]} : p.toImpl.toPoly = p := by
 /-- `toPoly` preserves addition. -/
 theorem toPoly_add {p q : CPolynomial Q} : (addRaw p q).toPoly = p.toPoly + q.toPoly := by
   ext n
-  rw [coeff_add, coeff_toPoly, coeff_toPoly, coeff_toPoly, add_coeff?]
+  rw [Polynomial.coeff_add, coeff_toPoly, coeff_toPoly, coeff_toPoly, add_coeff?]
 
 /-- Trimming doesn't change the `toPoly` image. -/
 lemma toPoly_trim [LawfulBEq R] {p : CPolynomial R} : p.trim.toPoly = p.toPoly := by
