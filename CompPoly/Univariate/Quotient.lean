@@ -869,12 +869,24 @@ end Semiring
 
 section CommSemiring
 
+lemma mul_comm [CommSemiring R] [LawfulBEq R] : ∀ (a b : QuotientCPolynomial R), a * b = b * a := by
+  intro a b
+  refine Quotient.inductionOn₂ a b ?_
+  intros p q; clear a b
+  apply Quotient.sound
+  intro i
+  -- rw [mul_coeff p q i]
+  change (p * q).coeff i = (q * p).coeff i
+  rw [mul_coeff p q i, mul_coeff q p i]
+
+  sorry
+
 /-- `CPolynomial R` forms a commutative semiring when `R` is a commutative semiring.
 
   Commutativity follows from the commutativity of multiplication in the base ring.
 -/
 instance [CommSemiring R] [LawfulBEq R] : CommSemiring (QuotientCPolynomial R) where
-  mul_comm := sorry
+  mul_comm := mul_comm
 
 end CommSemiring
 
