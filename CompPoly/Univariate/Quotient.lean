@@ -747,12 +747,37 @@ lemma left_distrib : ∀ (a b c : QuotientCPolynomial R),
   intro p q r
   exact Quotient.sound (mul_add_equiv_proof (p := p) (q := q) (r := r))
 
+theorem add_mul_equiv_proof {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q r : CPolynomial R) :
+    Trim.equiv ((p + q) * r) (p * r + q * r) := by
+  unfold Trim.equiv
+  intro i
+  rw [coeff_add]
+  rw [mul_coeff, mul_coeff, mul_coeff]
+  let f : ℕ → R := fun j => p.coeff j * r.coeff (i - j)
+  let g : ℕ → R := fun j => q.coeff j * r.coeff (i - j)
+  have hfun :
+      (fun acc j => acc + (p + q).coeff j * r.coeff (i - j)) =
+        (fun acc j => acc + (f j + g j)) := by
+    funext acc j
+    rw [coeff_add]
+    simp [f, g, add_mul]
+  rw [hfun]
+  simpa [f, g] using
+    (QuotientCPolynomial.range_foldl_add_distrib_proof (f := f) (g := g) (n := i + 1))
+
+theorem right_distrib_proof {R : Type*} [Ring R] [BEq R] [LawfulBEq R] :
+    ∀ (a b c : QuotientCPolynomial R), (a + b) * c = a * c + b * c := by
+  intro a b c
+  refine Quotient.inductionOn₃ a b c ?_
+  intro p q r
+  apply Quotient.sound
+  simpa using add_mul_equiv_proof p q r
+
 lemma right_distrib : ∀ (a b c : QuotientCPolynomial R), (a + b) * c = a * c + b * c := by
   intro a b c
   refine Quotient.inductionOn₃ a b c ?_
   intro p q r; clear a b c
-  apply Quotient.sound
-  sorry
+  exact Quotient.sound (add_mul_equiv_proof (p := p) (q := q) (r := r))
 
 lemma npow_zero : ∀ (x : QuotientCPolynomial R), x.pow 0 = 1 := by
   intros x
@@ -861,14 +886,37 @@ section Ring
   Most of the structure is already provided by the `Semiring` instance.
 -/
 instance [Ring R] [LawfulBEq R] : Ring (QuotientCPolynomial R) where
-  sub_eq_add_neg := by intro a b; sorry
+  sub_eq_add_neg := by intro a b; (grind)
   zsmul := zsmulRec
-  zsmul_zero' := by sorry
-  zsmul_succ' := by sorry
-  zsmul_neg' := by sorry
-  intCast_ofNat := by sorry
-  intCast_negSucc := by sorry
-  neg_add_cancel := by sorry
+  zsmul_zero' := by
+    -- By definition of zsmulRec, we have zsmulRec nsmulRec 0 a = nsmulRec 0 a.
+    simp [zsmulRec];
+    -- By definition of nsmulRec, we have nsmulRec 0 a = 0 for any a.
+    simp [nsmulRec]
+  zsmul_succ' := by
+    exact?
+  zsmul_neg' := by
+    -- By definition of zsmulRec, for negative numbers, it is the negation of the positive case.
+    intros n a
+    simp [zsmulRec]
+  intCast_ofNat := by
+    -- By definition of `IntCast.intCast`, we know that `IntCast.intCast n` is equivalent to the constant polynomial with coefficient `n`.
+    intro n
+    simp [IntCast.intCast];
+    rfl
+  intCast_negSucc := by
+    -- By definition of `Int.negSucc`, we have `Int.negSucc n = - (n + 1)`.
+    have h_neg_succ : ∀ n : ℕ, Int.negSucc n = - (n + 1 : ℤ) := by
+      exact?;
+    convert h_neg_succ;
+    convert Quotient.eq using 1;
+    simp +decide [ CompPoly.CPolynomial.instSetoidCPolynomial ];
+    simp +decide [ CompPoly.CPolynomial.C, CompPoly.CPolynomial.neg ];
+    grind
+  neg_add_cancel := by
+    -- By definition of negation in the quotient, we know that -a + a is equivalent to 0.
+    intros a
+    apply neg_add_cancel
 
 end Ring
 
