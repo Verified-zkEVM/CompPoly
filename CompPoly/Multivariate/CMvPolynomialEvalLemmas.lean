@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa
+Authors: Natalia Klaus
 -/
 import CompPoly.Multivariate.MvPolyEquiv
 
@@ -22,43 +22,11 @@ variable (vals : Fin n → R)
 
 @[simp]
 lemma eval_add (p q : CMvPolynomial n R) :
-    (p + q).eval vals = p.eval vals + q.eval vals := by
-  -- rewrite both sides via Mathlib `MvPolynomial` using the equivalence
-  have hpq : (p + q).eval vals = (fromCMvPolynomial (p + q)).eval vals := by
-    simpa using (eval_equiv (p := p + q) (vals := vals))
-  have hp : (fromCMvPolynomial p).eval vals = p.eval vals := by
-    simpa using (eval_equiv (p := p) (vals := vals)).symm
-  have hq : (fromCMvPolynomial q).eval vals = q.eval vals := by
-    simpa using (eval_equiv (p := q) (vals := vals)).symm
-  calc
-    (p + q).eval vals
-        = (fromCMvPolynomial (p + q)).eval vals := by exact?
-    _   = (fromCMvPolynomial p + fromCMvPolynomial q).eval vals := by
-          simp [map_add]
-    _   = (fromCMvPolynomial p).eval vals + (fromCMvPolynomial q).eval vals := by
-          exact MvPolynomial.eval_add
-    _   = p.eval vals + q.eval vals := by
-          simp [hp, hq]
+    (p + q).eval vals = p.eval vals + q.eval vals := by simp [eval_equiv]
 
 @[simp]
 lemma eval_mul (p q : CMvPolynomial n R) :
-    (p * q).eval vals = p.eval vals * q.eval vals := by
-  have hpq : (p * q).eval vals = (fromCMvPolynomial (p * q)).eval vals := by
-    simpa using (eval_equiv (p := p * q) (vals := vals))
-  have hp : (fromCMvPolynomial p).eval vals = p.eval vals := by
-    simpa using (eval_equiv (p := p) (vals := vals)).symm
-  have hq : (fromCMvPolynomial q).eval vals = q.eval vals := by
-    simpa using (eval_equiv (p := q) (vals := vals)).symm
-
-  calc
-    (p * q).eval vals
-        = (fromCMvPolynomial (p * q)).eval vals := by exact hpq
-    _   = (fromCMvPolynomial p * fromCMvPolynomial q).eval vals := by
-          simp [map_mul]
-    _   = (fromCMvPolynomial p).eval vals * (fromCMvPolynomial q).eval vals := by
-          exact MvPolynomial.eval_mul
-    _   = p.eval vals * q.eval vals := by
-          simp [hp, hq]
+    (p * q).eval vals = p.eval vals * q.eval vals := by simp [eval_equiv]
 
 end
 
