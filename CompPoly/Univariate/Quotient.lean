@@ -3,6 +3,8 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
 -/
+import Mathlib.Algebra.BigOperators.Intervals
+import Mathlib.Algebra.Order.Sub.Unbundled.Basic
 import Mathlib.Algebra.Tropical.Basic
 import Mathlib.RingTheory.Polynomial.Basic
 import CompPoly.Data.Array.Lemmas
@@ -867,26 +869,92 @@ instance [Semiring R] [LawfulBEq R] : Semiring (QuotientCPolynomial R) where
 
 end Semiring
 
-section CommSemiring
+end QuotientCPolynomial
 
-lemma mul_comm [CommSemiring R] [LawfulBEq R] : ∀ (a b : QuotientCPolynomial R), a * b = b * a := by
+end Quotient
+
+end CPolynomial
+
+end CompPoly
+
+open scoped BigOperators
+
+theorem range_foldl_eq_sum_range {α : Type*} [AddCommMonoid α] (f : ℕ → α) (n : ℕ) :
+    (Array.range n).foldl (fun acc i => acc + f i) 0 = ∑ i ∈ Finset.range n, f i := by
+  classical
+  induction n with
+  | zero =>
+      -- `Array.range 0` is empty, so the fold is the initial value; the sum is over an empty range.
+      rw [CompPoly.CPolynomial.Array.range_foldl_zero
+        (f := fun acc i => acc + f i) (init := (0 : α))]
+      simp
+  | succ n ih =>
+      -- unfold the fold over `Array.range (n+1)`
+      rw [CompPoly.CPolynomial.Array.range_foldl_succ
+        (f := fun acc i => acc + f i) (init := (0 : α)) (n := n)]
+      -- replace the inner fold by the induction hypothesis
+      rw [ih]
+      -- match the recursive formula for `Finset.sum`
+      simpa [Finset.sum_range_succ]
+
+theorem mul_coeff_eq_sum_range {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
+    (p q : CompPoly.CPolynomial R) (i : ℕ) :
+    (p * q).coeff i = ∑ j ∈ Finset.range (i + 1), p.coeff j * q.coeff (i - j) := by
+  -- Expand the coefficient of the product as an `Array.range` fold.
+  rw [CompPoly.CPolynomial.mul_coeff (p := p) (q := q) i]
+  -- Convert the fold to a `Finset.range` sum.
+  simpa using
+    (range_foldl_eq_sum_range (f := fun j => p.coeff j * q.coeff (i - j)) (n := i + 1))
+
+
+theorem mul_coeff_comm {R : Type*} [CommRing R] [BEq R] [LawfulBEq R]
+    (p q : CompPoly.CPolynomial R) (i : ℕ) :
+    (p * q).coeff i = (q * p).coeff i := by
+  classical
+  rw [mul_coeff_eq_sum_range p q i, mul_coeff_eq_sum_range q p i]
+  -- Reindex the left-hand sum by reflection `j ↦ i - j`.
+  have hreflect :
+      (∑ j ∈ Finset.range (i + 1), p.coeff j * q.coeff (i - j)) =
+        ∑ j ∈ Finset.range (i + 1), p.coeff (i - j) * q.coeff (i - (i - j)) := by
+    simpa using
+      (Finset.sum_range_reflect (f := fun j => p.coeff j * q.coeff (i - j)) (i + 1)).symm
+  rw [hreflect]
+  -- Now simplify `i - (i - j) = j` (using `j ≤ i`) and commute the factors.
+  refine Finset.sum_congr rfl ?_
+  intro j hj
+  have hjle : j ≤ i := by
+    exact (Nat.lt_succ_iff.mp (Finset.mem_range.mp hj))
+  have htsub : i - (i - j) = j := tsub_tsub_cancel_of_le hjle
+  simpa [htsub] using (_root_.mul_comm (p.coeff (i - j)) (q.coeff j))
+
+theorem mul_comm_proof {R : Type*} [CommRing R] [BEq R] [LawfulBEq R] :
+    ∀ (a b : CompPoly.CPolynomial.QuotientCPolynomial R), a * b = b * a := by
   intro a b
   refine Quotient.inductionOn₂ a b ?_
-  intros p q; clear a b
+  intro p q
   apply Quotient.sound
   intro i
-  -- rw [mul_coeff p q i]
   change (p * q).coeff i = (q * p).coeff i
-  rw [mul_coeff p q i, mul_coeff q p i]
+  simpa using mul_coeff_comm (p := p) (q := q) i
 
-  sorry
+namespace CompPoly
+
+namespace CPolynomial
+
+namespace Quotient
+
+namespace QuotientCPolynomial
+
+section CommSemiring
 
 /-- `CPolynomial R` forms a commutative semiring when `R` is a commutative semiring.
 
   Commutativity follows from the commutativity of multiplication in the base ring.
 -/
-instance [CommSemiring R] [LawfulBEq R] : CommSemiring (QuotientCPolynomial R) where
-  mul_comm := mul_comm
+instance [CommRing R] [BEq R] [LawfulBEq R] : CommSemiring (QuotientCPolynomial R) where
+  mul_comm := by
+    intro a b
+    simpa using (_root_.mul_comm_proof (R := R) a b)
 
 end CommSemiring
 
@@ -897,7 +965,7 @@ section Ring
   The ring structure extends the semiring structure with negation and subtraction.
   Most of the structure is already provided by the `Semiring` instance.
 -/
-instance [Ring R] [LawfulBEq R] : Ring (QuotientCPolynomial R) where
+instance [Ring R] [BEq R] [LawfulBEq R] : Ring (QuotientCPolynomial R) where
   sub_eq_add_neg := by intro a b; (grind)
   zsmul := zsmulRec
   zsmul_zero' := by
@@ -926,10 +994,7 @@ instance [Ring R] [LawfulBEq R] : Ring (QuotientCPolynomial R) where
     simp +decide [ CompPoly.CPolynomial.instSetoidCPolynomial ];
     simp +decide [ CompPoly.CPolynomial.C, CompPoly.CPolynomial.neg ];
     grind
-  neg_add_cancel := by
-    -- By definition of negation in the quotient, we know that -a + a is equivalent to 0.
-    intros a
-    apply neg_add_cancel
+  neg_add_cancel := QuotientCPolynomial.neg_add_cancel
 
 end Ring
 
@@ -939,7 +1004,7 @@ section CommRing
 
   This combines the `CommSemiring` and `Ring` structures.
 -/
-instance [CommRing R] [LawfulBEq R] : CommRing (QuotientCPolynomial R) where
+instance [CommRing R] [BEq R] [LawfulBEq R] : CommRing (QuotientCPolynomial R) where
   -- All structure inherited from `CommSemiring` and `Ring` instances
 
 end CommRing
