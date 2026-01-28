@@ -900,7 +900,8 @@ instance [Ring R] [LawfulBEq R] : Ring (QuotientCPolynomial R) where
     intros n a
     simp [zsmulRec]
   intCast_ofNat := by
-    -- By definition of `IntCast.intCast`, we know that `IntCast.intCast n` is equivalent to the constant polynomial with coefficient `n`.
+    -- By definition of `IntCast.intCast`, we know that `IntCast.intCast n` is equivalent to
+    -- the constant polynomial with coefficient `n`.
     intro n
     simp [IntCast.intCast];
     rfl
