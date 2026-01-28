@@ -821,7 +821,7 @@ omit [BEq R] in
 /-- Computing `(p.zipIdx.map (fun ⟨a, i⟩ => ((smul a 1).mulPowX i).coeff k)).sum` -/
 lemma coeff_sum : ∀ (p : CPolynomial R) (k : ℕ),
     (p.zipIdx.map (fun ⟨a, i⟩ => ((smul a 1).mulPowX i).coeff k)).sum = p.coeff k := by
-  intro p k; induction' p with p ih generalizing k ; simp +decide [ * ]
+  intro p k; induction' p with p ih generalizing k; simp +decide [ * ]
   induction' p using List.reverseRecOn with p ih generalizing k <;>
     simp +decide [ *, List.zipIdx_append ]
   by_cases hk : k < p.length <;> simp_all +decide [ List.getElem?_append_right ]
@@ -830,7 +830,7 @@ lemma coeff_sum : ∀ (p : CPolynomial R) (k : ℕ),
     simp +decide [ Array.getElem?_append, hk ]
   · simp +decide [ CPolynomial.mulPowX ]
     unfold CompPoly.CPolynomial.smul; simp +decide [ Array.getElem?_append ]
-    rw [ if_neg hk.not_gt ] ; cases k - p.length <;> simp +decide
+    rw [ if_neg hk.not_gt ]; cases k - p.length <;> simp +decide
     · exact mul_one _
     · exact rfl
 
@@ -866,7 +866,7 @@ theorem mul_one_trim [LawfulBEq R] (p : CPolynomial R) : p * 1 = p.trim := by
   apply Trim.canonical_ext;
   · exact h_trim;
   · exact h_trim_p;
-  · exact fun i => by rw [ h_equiv i, Trim.coeff_eq_coeff .. ] ;)
+  · exact fun i => by rw [ h_equiv i, Trim.coeff_eq_coeff .. ])
 
 lemma smul_addRaw_distrib [LawfulBEq R] :
     ∀ (a' : R) (q r : CPolynomial R), smul a' (q.addRaw r)
