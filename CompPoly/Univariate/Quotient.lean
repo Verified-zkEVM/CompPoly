@@ -7,12 +7,6 @@ import Mathlib.Algebra.Tropical.Basic
 import Mathlib.RingTheory.Polynomial.Basic
 import CompPoly.Data.Array.Lemmas
 import CompPoly.Univariate.Basic
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.Algebra.BigOperators.NatAntidiagonal
-import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
-import Mathlib.Algebra.BigOperators.Group.Finset.Defs
-
-open scoped BigOperators
 
 /-!
   # Quotient of Univariate Polynomials
@@ -810,7 +804,7 @@ theorem array_size_range (n : ℕ) : (Array.range n).size = n := by
       simp
   | succ n ih =>
       -- try simp with range_succ
-      simpa [Array.range_succ, ih]
+      simp [Array.range_succ, ih]
 
 theorem range_foldl_eq_sum_range {α : Type*} [AddCommMonoid α] (f : ℕ → α) (n : ℕ) :
     (Array.range n).foldl (fun acc i => acc + f i) 0
@@ -835,7 +829,7 @@ theorem range_foldl_eq_sum_range {α : Type*} [AddCommMonoid α] (f : ℕ → α
             ∑ i ∈ Finset.range n, f i := by
         simpa using ih
       -- finish
-      simpa [Nat.succ_eq_add_one, Finset.sum_range_succ, hfold, ih', add_assoc]
+      simp [Finset.sum_range_succ, hfold, ih']
 
 theorem mul_coeff_antidiagonal {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
     (p q : CompPoly.CPolynomial R) (n : ℕ) :
@@ -901,13 +895,11 @@ theorem sum_antidiagonal_sigma_assoc {α : Type*} [AddCommMonoid α]
             z.2.1 + (z.2.2 + z.1.2)
                 = (z.2.1 + z.2.2) + z.1.2 := by
                     ac_rfl
-            _ = z.1.1 + z.1.2 := by
-                    simpa [hy']
-            _ = n := by
-                    simpa [hx']
-        simpa [Finset.mem_antidiagonal, this]
+            _ = z.1.1 + z.1.2 := by simp [hy']
+            _ = n := by simp [hx']
+        simp [Finset.mem_antidiagonal, this]
       · -- second component in antidiagonal of (i z).1.2
-        simpa [Finset.mem_antidiagonal, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+        simp [Finset.mem_antidiagonal, Nat.add_comm]
     · intro z hz
       -- show j z ∈ sL
       rcases (Finset.mem_sigma.mp hz) with ⟨hx, hy⟩
@@ -923,25 +915,23 @@ theorem sum_antidiagonal_sigma_assoc {α : Type*} [AddCommMonoid α]
             (z.1.1 + z.2.1) + z.2.2
                 = z.1.1 + (z.2.1 + z.2.2) := by
                     ac_rfl
-            _ = z.1.1 + z.1.2 := by
-                    simpa [hy']
-            _ = n := by
-                    simpa [hx']
-        simpa [Finset.mem_antidiagonal, this]
+            _ = z.1.1 + z.1.2 := by simp [hy']
+            _ = n := by simp [hx']
+        simp [Finset.mem_antidiagonal, this]
       · -- second component in antidiagonal of (j z).1.1
-        simpa [Finset.mem_antidiagonal, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+        simp [Finset.mem_antidiagonal]
     · intro z hz
       -- left inverse: j (i z) = z
       rcases (Finset.mem_sigma.mp hz) with ⟨hx, hy⟩
       have hy' : z.2.1 + z.2.2 = z.1.1 := by
         simpa [Finset.mem_antidiagonal] using hy
-      ext <;> simp [hy', Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+      ext <;> simp [hy']
     · intro z hz
       -- right inverse: i (j z) = z
       rcases (Finset.mem_sigma.mp hz) with ⟨hx, hy⟩
       have hy' : z.2.1 + z.2.2 = z.1.2 := by
         simpa [Finset.mem_antidiagonal] using hy
-      ext <;> simp [hy', Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+      ext <;> simp [hy']
     · intro z hz
       -- summands match
       simp
@@ -982,18 +972,13 @@ theorem mul_assoc_equiv {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
       (f := fun a b c => p.coeff a * (q.coeff b * r.coeff c))
       n)
 
-theorem QuotientCPolynomial_mul_assoc {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
-    (a b c : CompPoly.CPolynomial.QuotientCPolynomial R) :
+lemma mul_assoc {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
+    (a b c : QuotientCPolynomial R) :
     a * b * c = a * (b * c) := by
   refine Quotient.inductionOn₃ a b c ?_
   intro p q r
   apply Quotient.sound
   exact mul_assoc_equiv p q r
-
-lemma mul_assoc {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
-    (a b c : QuotientCPolynomial R) :
-    a * b * c = a * (b * c) :=
-  QuotientCPolynomial_mul_assoc a b c
 
 /-
 x commutes with x^n
@@ -1136,3 +1121,11 @@ instance [CommRing R] [LawfulBEq R] : CommRing (QuotientCPolynomial R) where
   -- All structure inherited from `CommSemiring` and `Ring` instances
 
 end CommRing
+
+end QuotientCPolynomial
+
+end Quotient
+
+end CPolynomial
+
+end CompPoly
