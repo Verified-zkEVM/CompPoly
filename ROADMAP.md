@@ -47,7 +47,7 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - `instCommRingMvPolynomial`, `isEmptyAlgEquiv`: Additional ring and algebra structures
    - `smulZeroClass`, `sumToIter`: Scalar multiplication and iteration utilities
 
-**Success Criteria**: Zero `sorry`s in core operations, all ring structures complete, clean build with no warnings.
+**Success Criteria**: Zero `sorry`s in core operations, all ring structures complete, clean build with no warnings, reasonable proof ergonomics.
 
 ---
 
@@ -61,32 +61,37 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - Focus on NTT for finite field arithmetic
    - Maintain correctness proofs alongside optimizations
 
-2. **Exponentiation optimization**
+1. **Exponentiation optimization**
    - Replace repeated multiplication with repeated squaring
    - Reduce complexity from O(n) to O(log n) multiplications
 
-3. **Evaluation optimizations**
+1. **Evaluation optimizations**
    - Implement batch evaluation at multiple points
    - Add Horner's method where beneficial
    - Optimize for common ZK evaluation patterns
 
-4. **Complete multilinear transform functions**
+1. **Complete multilinear transform functions**
    - Complete documentation of zeta/Möbius transform formulas
    - Prove equivalence between fast and spec implementations
    - Add performance guarantees and complexity proofs
 
-5. **Add rename operations**
+1. **Add rename operations**
    - Implement `rename` / `renameEquiv` for variable renaming
    - Critical for circuit composition and protocol flexibility
 
-6. **Bivariate polynomial operations**
-   - Implement efficient bivariate polynomial type: `CPolynomial (CPolynomial R)` or specialized representation
-   - Optimized bivariate multiplication leveraging univariate fast operations
-   - Efficient evaluation at points `(x, y)` with bivariate-specific optimizations
+1. **Bivariate polynomial operations**
+   - Implement efficient bivariate polynomial type: `CPolynomial (CPolynomial R)` or specialized representation, with optimized operations
+   - Efficient factorization algorithms for bivariate polynomials
    - Integration with existing `CMvPolynomial 2 R` with equivalence proofs
    - Critical for sum-check protocols, FRI commitments, and zkVM constraint systems
 
-**Success Criteria**: 10-100x speedup for large polynomial operations, verified correctness, benchmarks demonstrating competitive performance with industry-standard implementations (e.g., matching or exceeding unverified libraries for polynomials of degree 10⁴-10⁶).
+1. **Error-correcting interpolation algorithms**
+   - Implement Berlekamp-Welch algorithm for Reed-Solomon decoding
+   - Implement Guruswami-Sudan list-decoding algorithm
+   - Proofs of correctness
+   - Integration with FRI commitments and polynomial commitment schemes
+
+**Success Criteria**: notable speedup for large polynomial operations, verified correctness, benchmarks demonstrating competitive performance with industry-standard implementations.
 
 ---
 
@@ -138,14 +143,13 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - Best practices documentation
 
 2. **Performance benchmarking suite**
-   - Property-based tests for all operations
+   - Property-based tests/proofs of correctness for all operations
    - Performance benchmarks and regression tests
    - Edge case coverage
 
 3. **Integration with ArkLib and other libraries**
    - Ensure all equivalences are proven and documented
    - Add conversion utilities and compatibility layers
-   - Document when to use CompPoly vs Mathlib types
    - Seamless integration with Verified-zkEVM ecosystem
 
 4. **Developer experience & community**
