@@ -757,11 +757,36 @@ theorem neg_add_cancel [LawfulBEq R] (p : CPolynomial R) : -p + p = 0 := by
 
 lemma smul_addRaw_distrib [LawfulBEq R] :
     ∀ (a' : R) (q r : CPolynomial R), smul a' (q.addRaw r)
-        = (smul a' q).addRaw (smul a' r) := by sorry
+        = (smul a' q).addRaw (smul a' r) := by
+          intros a' q r
+          simp [CompPoly.CPolynomial.smul, CompPoly.CPolynomial.addRaw];
+          refine' congr_arg _ ( Array.ext _ _ );
+            simp [Array.size_zipWith];
+          · intro i hi₁ hi₂
+            rw [ Array.getElem_zipWith, Array.getElem_zipWith ]
+            simp +decide [ mul_add ];
+            by_cases hi₃ : i < q.size <;> by_cases hi₄ : i < r.size <;> simp_all +decide
 
 lemma smul_distrib_trim [LawfulBEq R] :
     ∀ (a' : R) (q r : CPolynomial R), (smul a' (q + r)).trim
-        = smul a' q + smul a' r := by sorry
+        = smul a' q + smul a' r := by
+          intros a' q r
+          have h_coeff : ∀ i, (CompPoly.CPolynomial.smul a' (q + r)).coeff i
+              = (CompPoly.CPolynomial.smul a' q).coeff i
+                  + (CompPoly.CPolynomial.smul a' r).coeff i := by
+            have h_smul : ∀ (a' : R) (q : CompPoly.CPolynomial R) (i : ℕ),
+                (CompPoly.CPolynomial.smul a' q).coeff i = a' * q.coeff i := by
+              exact fun a' q i => smul_equiv q i a'
+            have h_add : ∀ (q r : CompPoly.CPolynomial R) (i : ℕ), (q + r).coeff i
+                = q.coeff i + r.coeff i := by
+              exact fun q r i => add_coeff_trimmed q r i
+            simp +decide [ h_smul, h_add, mul_add ];
+          have h_trim_eq : ∀ p q : CPolynomial R,
+              (∀ i, p.coeff i = q.coeff i) → p.trim = q.trim := by
+            exact fun p q a => Trim.eq_of_equiv a
+          convert h_trim_eq _ _ _ using 1;
+          unfold CPolynomial.addRaw; simp +decide [ h_coeff ]
+          grind
 
 -- Algebra theorems about multiplication.
 
