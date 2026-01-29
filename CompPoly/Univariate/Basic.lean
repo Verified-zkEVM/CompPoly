@@ -672,7 +672,13 @@ lemma trim_add_trim [LawfulBEq R] (p q : CPolynomial R) : p.trim + q = p + q := 
   intro i
   rw [add_coeff?, add_coeff?, Trim.coeff_eq_coeff]
 
--- algebra theorems about addition
+/-
+CPolynomial does in general form a Ring or any other 'nice' structure,
+but many properties necessary to be a ring are satisfied or close to satisifed,
+as per the following theorems.
+-/
+
+-- Algebra theorems about addition.
 
 omit [Ring Q] in
 @[simp] theorem zero_def : (0 : CPolynomial Q) = #[] := rfl
@@ -697,6 +703,14 @@ theorem zero_add (hp : p.canonical) : 0 + p = p := by
 theorem add_zero (hp : p.canonical) : p + 0 = p := by
   rw [add_comm, zero_add p hp]
 
+theorem zero_add_trim [LawfulBEq R] (p : CPolynomial R) : 0 + p = p.trim := by
+  apply congrArg trim
+  ext <;> simp [add_size, add_coeff, *]
+
+theorem add_zero_trim [LawfulBEq R] (p : CPolynomial R) : p + 0 = p.trim := by
+  apply congrArg trim
+  ext <;> simp [add_size, add_coeff, *]
+
 theorem add_assoc [LawfulBEq R] : p + q + r = p + (q + r) := by
   change (addRaw p q).trim + r = p + (addRaw q r).trim
   rw [trim_add_trim, add_comm p, trim_add_trim, add_comm _ p]
@@ -705,6 +719,8 @@ theorem add_assoc [LawfulBEq R] : p + q + r = p + (q + r) := by
   · simp only [add_size]; omega
   · simp only [add_coeff, add_coeff?]
     apply _root_.add_assoc
+
+-- Algebra theorems about scalar multiplication.
 
 theorem nsmul_zero [LawfulBEq R] (p : CPolynomial R) : nsmul 0 p = 0 := by
   suffices (nsmulRaw 0 p).lastNonzero = none by simp [nsmul, trim, *]
@@ -739,36 +755,17 @@ theorem neg_add_cancel [LawfulBEq R] (p : CPolynomial R) : -p + p = 0 := by
   rw [add_coeff?]
   rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi, Neg.neg, neg]
 
-/-
-CPolynomial does in general form a Ring or any other 'nice' structure,
-but many properties necessary to be a ring are satisfied or close to satisifed,
-as per the following theorems.
--/
+lemma smul_addRaw_distrib [LawfulBEq R] :
+    ∀ (a' : R) (q r : CPolynomial R), smul a' (q.addRaw r)
+        = (smul a' q).addRaw (smul a' r) := by sorry
 
-theorem zero_add_trim [LawfulBEq R] (p : CPolynomial R) : 0 + p = p.trim := by
-  apply congrArg trim
-  ext <;> simp [add_size, add_coeff, *]
+lemma smul_distrib_trim [LawfulBEq R] :
+    ∀ (a' : R) (q r : CPolynomial R), (smul a' (q + r)).trim
+        = smul a' q + smul a' r := by sorry
 
-theorem add_zero_trim [LawfulBEq R] (p : CPolynomial R) : p + 0 = p.trim := by
-  apply congrArg trim
-  ext <;> simp [add_size, add_coeff, *]
+-- Algebra theorems about multiplication.
 
-theorem one_mul_trimmed [LawfulBEq R] (p : CPolynomial R) : 1 * p = p.trim := by
-  have h_mul_def : ∀ (a b : CompPoly.CPolynomial R),
-      a.mul b = (a.zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b).mulPowX i)) (mk #[])) :=
-        by exact fun a b => rfl
-  have : 1 * p = (mk #[1] : CPolynomial R).mul p := by rfl
-  rw [this, h_mul_def]
-  show (mk #[1]).zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' p).mulPowX i)) (mk #[])
-      = p.trim
-  conv_lhs => rw [show (mk #[1] : CPolynomial R).zipIdx = #[(1, 0)] by rfl]
-  rw [show Array.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' p).mulPowX i)) (mk #[]) #[(1, 0)] =
-           (mk #[] : CPolynomial R).add ((smul 1 p).mulPowX 0) by rfl]
-  rw [show (smul (1 : R) p).mulPowX 0 = p by simp [smul, mulPowX, one_mul]]
-  have : (mk #[]).add p = 0 + p := by rfl
-  rw[this, zero_add_trim]
-
-/--
+/-- Helper lemma for proving: mul_one_trim.
 If the initial value is canonical and the step function preserves canonicality,
 then `foldl` preserves canonicality.
 -/
@@ -792,7 +789,8 @@ lemma mul_is_trimmed [LawfulBEq R] (p q : CPolynomial R) : (p * q).trim = p * q 
           (mulPowX x.2 (smul x.1 q) ++
             Array.replicate (Array.size acc - Array.size (mulPowX x.2 (smul x.1 q))) 0)))
 
-/-- The coefficient of a sum (via foldl) is the sum of the coefficients. -/
+/-- Helper lemma for proving: mul_one_trim
+The coefficient of a sum (via foldl) is the sum of the coefficients. -/
 lemma coeff_foldl_add [LawfulBEq R]
     (l : List α)
     (f : α → CPolynomial R)
@@ -818,7 +816,8 @@ lemma coeff_foldl_add [LawfulBEq R]
         · module
 
 omit [BEq R] in
-/-- Computing `(p.zipIdx.map (fun ⟨a, i⟩ => ((smul a 1).mulPowX i).coeff k)).sum` -/
+/-- Helper lemma for proving: mul_one_trim
+Computing `(p.zipIdx.map (fun ⟨a, i⟩ => ((smul a 1).mulPowX i).coeff k)).sum` -/
 lemma coeff_sum : ∀ (p : CPolynomial R) (k : ℕ),
     (p.zipIdx.map (fun ⟨a, i⟩ => ((smul a 1).mulPowX i).coeff k)).sum = p.coeff k := by
   intro p k; induction' p with p ih generalizing k; simp +decide [ * ]
@@ -868,13 +867,20 @@ theorem mul_one_trim [LawfulBEq R] (p : CPolynomial R) : p * 1 = p.trim := by
   · exact h_trim_p;
   · exact fun i => by rw [ h_equiv i, Trim.coeff_eq_coeff .. ])
 
-lemma smul_addRaw_distrib [LawfulBEq R] :
-    ∀ (a' : R) (q r : CPolynomial R), smul a' (q.addRaw r)
-        = (smul a' q).addRaw (smul a' r) := by sorry
-
-lemma smul_distrib_trim [LawfulBEq R] :
-    ∀ (a' : R) (q r : CPolynomial R), (smul a' (q + r)).trim
-        = smul a' q + smul a' r := by sorry
+theorem one_mul_trim [LawfulBEq R] (p : CPolynomial R) : 1 * p = p.trim := by
+  have h_mul_def : ∀ (a b : CompPoly.CPolynomial R),
+      a.mul b = (a.zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b).mulPowX i)) (mk #[])) :=
+        by exact fun a b => rfl
+  have : 1 * p = (mk #[1] : CPolynomial R).mul p := by rfl
+  rw [this, h_mul_def]
+  show (mk #[1]).zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' p).mulPowX i)) (mk #[])
+      = p.trim
+  conv_lhs => rw [show (mk #[1] : CPolynomial R).zipIdx = #[(1, 0)] by rfl]
+  rw [show Array.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' p).mulPowX i)) (mk #[]) #[(1, 0)] =
+           (mk #[] : CPolynomial R).add ((smul 1 p).mulPowX 0) by rfl]
+  rw [show (smul (1 : R) p).mulPowX 0 = p by simp [smul, mulPowX, one_mul]]
+  have : (mk #[]).add p = 0 + p := by rfl
+  rw[this, zero_add_trim]
 
 theorem left_distrib [LawfulBEq R] (p q r : CPolynomial R) :
     p * (q + r) = p * q + p * r := by sorry
@@ -894,6 +900,7 @@ theorem mul_comm [CommRing R] [LawfulBEq R] (p q : CPolynomial R) : p * q = q * 
 end Operations
 
 section AddCommSemiroup
+
 instance [LawfulBEq R] : AddCommSemigroup (CPolynomial R) where
   add_assoc := by intro _ _ _; rw [add_assoc]
   add_comm := add_comm
