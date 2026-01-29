@@ -4,47 +4,35 @@
 
 CompPoly aims to be the premier formally verified library for computable polynomial operations over finite fields, serving as the mathematical foundation for zero-knowledge circuit verification. We aim to provide efficient, proven-correct implementations of univariate, multivariate, and multilinear polynomial arithmetic that seamlessly integrate with the Lean 4/Mathlib ecosystem.
 
-## Current Status
-
-CompPoly provides a solid foundation with:
-
-- ✅ **Univariate polynomials** (`CPolynomial`): Full arithmetic operations, evaluation, division
-- ✅ **Multivariate polynomials** (`CMvPolynomial`): Complete `CommSemiring` instance with `RingEquiv` to Mathlib
-- ✅ **Multilinear polynomials** (`CMlPolynomial`): Dual representation (coefficient + evaluation) with efficient transforms
-- ✅ **Mathematical rigor**: Proven equivalences with Mathlib's polynomial types
-- ⚠️ **Gaps**: Some proof obligations (`sorry`s), missing API completeness, performance optimizations pending
-
 ## V1.0 Criteria
 
-1. Zero sorrys in all shipped modules.
-2. Complete core API for `CPolynomial`, `CMvPolynomial`, `CMlPolynomial`, including evaluation + interpolation + conversions.
-3. At least one "fast path" implemented + proven correct (FFT/NTT multiplication OR fast multilinear transforms).
-4. Canonical serialization (bytes; JSON optional).
-5. Benchmarks exist for core ops and are reproducible (CI integration optional for v1.0).
-6. Property tests exist for core ops (eval, mul, interpolation).
-7. Proof ergonomics baseline: common operations (add, mul, eval) mostly simp/grind-driven, documented.
-8. At least one real integration example (ArkLib or RT extraction exemplar) demonstrating use as a dependency.
-9. Minimal docs: README + module docs sufficient for contributors.
-10. CI stability: all tests pass consistently.
+1. Zero `sorry`s in all shipped modules.
+1. Complete core API for `CPolynomial`, `CMvPolynomial`, `CMlPolynomial`, including evaluation + interpolation + conversions.
+1. At least one "fast path" implemented + proven correct (FFT/NTT multiplication OR fast multilinear transforms).
+<!-- 1. Canonical serialization (bytes; JSON optional). -->
+<!-- 1. Benchmarks exist for core ops and are reproducible (CI integration optional for v1.0). -->
+<!-- 1. Property tests exist for core ops (eval, mul, interpolation). -->
+1. Proof ergonomics baseline: common operations (add, mul, eval) mostly simp/grind-driven, documented.
+1. At least one real integration example (ArkLib or RT extraction exemplar) demonstrating use as a dependency.
+1. Minimal docs: README + module docs sufficient for contributors.
+1. CI stability: all tests pass consistently.
 
 ## Development Phases
 
-### Phase 1: Foundation Completion
+### Phase 1: Theoretical Foundation
 
 **Goal**: Establish complete mathematical foundations and close critical gaps.
 
 #### Priorities
-1. **Complete proof obligations**
-   - Prove the remaining `sorry`s and helper lemma proofs
+
+1. **Theoretical completeness**
+   - Prove all remaining `sorry`s 
    - Implement `nodal` and `interpolate` for Lagrange interpolation
+   - Implement `AddCommGroup`/`Semiring`/`CommSemiring`/`Ring`/`CommRing` instances for `CPolynomialC` and `QuotientCPolynomial`
+   - Prove isomorphism between `QuotientCPolynomial`, `CPolynomialC`, and Mathlib's relevant `Polynomial` types
+   - Prove remaining algebraic instances for `CMvPolynomial` etc and ring isomorphisms with Mathlib's `MvPolynomial`
 
-2. **Complete ring structures**
-   - Implement `Semiring`/`CommSemiring` for `CPolynomialC`
-   - Enable full integration with Mathlib's ring theory by:
-       - proving relevant isomorphisms
-       - implementing remaining relevant functions and definitions
-
-3. **API completeness**
+1. **API completenes for s**
    - Add `monomial` constructors for univariate and multivariate polynomials
    - Implement monomial order support (`MonomialOrder.degree`, `leadingCoeff`)
    - `degreeLT`, `degreeLE`: Bounded-degree submodules for univariate polynomials
@@ -91,6 +79,13 @@ CompPoly provides a solid foundation with:
    - Implement `rename` / `renameEquiv` for variable renaming
    - Critical for circuit composition and protocol flexibility
 
+6. **Bivariate polynomial operations**
+   - Implement efficient bivariate polynomial type: `CPolynomial (CPolynomial R)` or specialized representation
+   - Optimized bivariate multiplication leveraging univariate fast operations
+   - Efficient evaluation at points `(x, y)` with bivariate-specific optimizations
+   - Integration with existing `CMvPolynomial 2 R` with equivalence proofs
+   - Critical for sum-check protocols, FRI commitments, and zkVM constraint systems
+
 **Success Criteria**: 10-100x speedup for large polynomial operations, verified correctness, benchmarks demonstrating competitive performance with industry-standard implementations (e.g., matching or exceeding unverified libraries for polynomials of degree 10⁴-10⁶).
 
 ---
@@ -104,7 +99,7 @@ CompPoly provides a solid foundation with:
 1. **Lowering / interop with LLZK / ZKIR polynomial dialects**
 	- Explore representing CompPoly structures in the MLIR pipeline
 	- Evaluate tradeoffs: “fast Lean code” vs “Lean spec + lowering to fast backend”
-	- Goal: enable verification of ZKIR/LLCK polynomial implementations against CompPoly semantics
+	- Goal: enable verification of ZKIR/LLZK polynomial implementations against CompPoly semantics
 2.	**Serialization (bytes/JSON/protocol/hashing)**
 	- Define serialization format(s) for polynomial types
 	- Compatibility with ArkLib protocol serialization needs
@@ -131,7 +126,7 @@ CompPoly provides a solid foundation with:
 
 ---
 
-### Phase 4: Integration & Polish (Long-term - Ongoing)
+### Phase 4: Integration & Polish
 
 **Goal**: Ensure seamless integration, excellent developer experience, and production readiness.
 
