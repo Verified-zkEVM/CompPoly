@@ -927,7 +927,7 @@ lemma coeff_mul [LawfulBEq R] (p q : CPolynomial R) (k : ℕ) :
       exact CPolynomial.mk #[]
       exact k
       · congr
-        simp
+        simp only [Array.toList_zipIdx]
         have h_mul_def : ∀ (p q : CPolynomial R), p * q
             = (p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + (smul a q).mulPowX i) (mk #[])) := by
           exact fun p q => rfl
