@@ -1015,8 +1015,198 @@ theorem right_distrib [LawfulBEq R] (p q r : CPolynomial R) :
     (p + q) * r = p * r + q * r := by sorry
   -- induct on the length of p
 
-theorem mul_assoc [LawfulBEq R] (p q r : CPolynomial R) : p * q * r = p * (q * r) := by sorry
-  -- use induction and the distributivity theorems
+omit [BEq R] in
+/--
+Helper lemma for mul_assoc.
+Sum over list zipIdx equals sum over Finset.range for the relevant terms.
+-/
+lemma sum_zipIdx_eq_sum_range {α : Type*} [AddCommMonoid α] (p : CPolynomial R) (f : R → ℕ → α) :
+    (p.zipIdx.toList.map (fun ⟨a, i⟩ => f a i)).sum =
+    (Finset.range p.size).sum (fun i => f (p.coeff i) i) := by
+      refine' congr_arg _ ( List.ext_get _ _ ) <;> aesop
+
+/--
+Helper lemma for mul_assoc.
+Coefficient of smul.
+-/
+lemma smul_coeff [LawfulBEq R] (a : R) (p : CPolynomial R) (k : ℕ) :
+    (smul a p).coeff k = a * p.coeff k := by
+  exact smul_equiv p k a
+
+/--
+Helper lemma for mul_assoc.
+Computes double sum.
+-/
+theorem double_sum_eq [LawfulBEq R] (p q r : CPolynomial R) (n : ℕ) :
+    (Finset.range (n + 1)).sum (fun j =>
+      (Finset.range (j + 1)).sum (fun i =>
+        p.coeff i * q.coeff (j - i) * r.coeff (n - j)))
+    =
+    (Finset.range (n + 1)).sum (fun i =>
+      (Finset.range (n - i + 1)).sum (fun k =>
+        p.coeff i * q.coeff k * r.coeff (n - i - k))) := by
+          -- By interchanging the order of summation, we can rewrite the double sum.
+          have h_interchange : ∑ j ∈ Finset.range (n + 1), ∑ i ∈ Finset.range (j + 1), p.coeff i * q.coeff (j - i) * r.coeff (n - j) = ∑ i ∈ Finset.range (n + 1), ∑ j ∈ Finset.Ico i (n + 1), p.coeff i * q.coeff (j - i) * r.coeff (n - j) := by
+            rw [ Finset.range_eq_Ico, Finset.sum_Ico_Ico_comm ];
+          convert h_interchange using 2;
+          rw [ Finset.sum_Ico_eq_sum_range ];
+          simp +decide [ Nat.sub_add_comm ( Finset.mem_range_succ_iff.mp ‹_› ) ];
+          exact Finset.sum_congr rfl fun _ _ => by rw [ Nat.sub_sub ] ;
+
+/--
+Helper lemma for mul_assoc.
+Coefficient mutliplication by X, similar to coeff_mulPowX.
+-/
+lemma coeff_mulPowX' [LawfulBEq R] (p : CPolynomial R) (n i : ℕ) :
+    (p.mulPowX n).coeff i = if i < n then 0 else p.coeff (i - n) := by
+      unfold CPolynomial.mulPowX;
+      split_ifs <;> simp_all +decide [ CPolynomial.coeff ];
+      · rw [ Array.getElem?_append ] ; aesop;
+      · simp only [Array.getElem?_append, Array.getElem?_replicate,Array.size_replicate]
+        split_ifs
+        · omega
+        · rfl
+/-- Helper lemma for mul_assoc.
+Coefficient of mulPowX.
+ -/
+lemma mulPowX_coeff' [LawfulBEq R] (p : CPolynomial R) (n k : ℕ) :
+    (p.mulPowX n).coeff k = if k < n then 0 else p.coeff (k - n) := by
+  exact coeff_mulPowX' p n k
+
+/--
+Helper lemma for mul_assoc.
+Express mul as a foldl that adds terms.
+-/
+lemma mul_eq_foldl (p q : CPolynomial R) :
+    p * q = p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + (smul a q).mulPowX i) (mk #[]) := by
+  rfl
+
+/--
+Helper lemma for mul_assoc.
+Combining smul and mulPowX for the multiplication formula.
+-/
+lemma smul_mulPowX_coeff [LawfulBEq R] (a : R) (q : CPolynomial R) (i k : ℕ) :
+    ((smul a q).mulPowX i).coeff k = if k < i then 0 else a * q.coeff (k - i) := by
+    convert mulPowX_coeff' (CompPoly.CPolynomial.smul a q) i k using 1;
+    rw [ smul_coeff ]
+
+/--
+Helper lemma for mul_assoc.
+The coefficient of `p * q` at index `k`, expressed as a sum over indices of p.
+This is an intermediate form before converting to Finset.range.
+-/
+lemma mul_coeff_list [LawfulBEq R] (p q : CPolynomial R) (k : ℕ) :
+    (p * q).coeff k = (p.zipIdx.toList.map
+      (fun ⟨a, i⟩ => if k < i then 0 else a * q.coeff (k - i))).sum := by
+        convert coeff_foldl_add _ _ _ _ using 1;
+        case convert_4 => exact R × ℕ;
+        convert rfl;
+        rotate_left;
+        rotate_left;
+        (expose_names; exact inst_1)
+        (expose_names; exact inst_2)
+        exact ( Array.zipIdx p ).toList;
+        exact fun x => ( smul x.1 q ).mulPowX x.2;
+        exact mk #[];
+        · convert mul_eq_foldl p q |> Eq.symm;
+          grind;
+        · -- By definition of `mulPowX`, we know that `(mulPowX x.2 (smul x.1 q)).coeff k` is equal to `if k < x.2 then 0 else x.1 * q.coeff (k - x.2)`.
+          have h_mulPowX_coeff : ∀ x : R × ℕ, (mulPowX x.2 (smul x.1 q)).coeff k = if k < x.2 then 0 else x.1 * q.coeff (k - x.2) := by
+             exact fun x => smul_mulPowX_coeff x.1 q x.2 k
+          aesop
+
+/--
+Helper lemma for mul_assoc.
+The coefficient of `p * q` at index `k`, as a sum over 0..p.size-1
+ -/
+lemma mul_coeff_range_size [LawfulBEq R] (p q : CPolynomial R) (k : ℕ) :
+    (p * q).coeff k = (Finset.range p.size).sum
+      (fun i => if k < i then 0 else p.coeff i * q.coeff (k - i)) := by
+        have h_coeff_mul_ci : (p * q).coeff k = (p.zipIdx.toList.map (fun ⟨a, i⟩
+            => if k < i then 0 else a * q.coeff (k - i))).sum := by
+          exact mul_coeff_list p q k
+        convert sum_zipIdx_eq_sum_range p ( fun a i =>
+            if k < i then 0 else a * q.coeff ( k - i ) ) using 1
+
+omit [BEq R] in
+/--
+Helper lemma for mul_assoc.
+Extend a sum from range p.size to range (k+1) by noting extra terms are 0.
+-/
+lemma sum_range_extend  (p q : CPolynomial R) (k : ℕ) :
+    (Finset.range p.size).sum (fun i => if k < i then 0 else p.coeff i * q.coeff (k - i)) =
+    (Finset.range (k + 1)).sum (fun i => p.coeff i * q.coeff (k - i)) := by
+      by_cases h : p.size ≤ k + 1;
+      · rw [ ← Finset.sum_range_add_sum_Ico _ h ];
+        rw [ Finset.sum_congr rfl fun i hi => if_neg ( by linarith [ Finset.mem_range.mp hi ] ), Finset.sum_Ico_eq_sum_range ];
+        simp +decide [ CompPoly.CPolynomial.coeff ];
+      · rw [ Finset.sum_ite ];
+        rw [ show Finset.filter ( fun x => ¬k < x ) ( Finset.range ( Array.size p ) ) = Finset.range ( k + 1 ) from ?_ ];
+        · simp +zetaDelta at *;
+        · grind
+
+/--
+Helper lemma for mul_assoc.
+The coefficient of `p * q` at index `k` is the convolution sum `Σᵢ pᵢ * q_{k-i}`.
+-/
+lemma mul_coeff [LawfulBEq R] (p q : CPolynomial R) (k : ℕ) :
+    (p * q).coeff k = (Finset.range (k + 1)).sum (fun i => p.coeff i * q.coeff (k - i)) := by
+  rw [mul_coeff_range_size, sum_range_extend]
+
+
+/--
+Helper lemma for mul_assoc.
+The coefficient of `p * (q * r)` at index `n`.
+-/
+theorem mul_assoc_coeff_rhs [LawfulBEq R] (p q r : CPolynomial R) (n : ℕ) :
+    (p * (q * r)).coeff n =
+      (Finset.range (n + 1)).sum (fun i =>
+        (Finset.range (n - i + 1)).sum (fun j =>
+          p.coeff i * q.coeff j * r.coeff (n - i - j))) := by
+  rw [mul_coeff]
+  apply Finset.sum_congr rfl
+  intro i hi
+  rw [mul_coeff]
+  simp only [Finset.mem_range] at hi
+  rw [Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro j hj
+  grind
+
+/--
+Helper lemma for mul_assoc.
+The coefficient of `(p * q) * r` at index `n`.
+-/
+lemma mul_mul_coeff [LawfulBEq R] (p q r : CPolynomial R) (n : ℕ) :
+    ((p * q) * r).coeff n =
+      (Finset.range (n + 1)).sum (fun j =>
+        (Finset.range (j + 1)).sum (fun i =>
+          p.coeff i * q.coeff (j - i) * r.coeff (n - j))) := by
+            convert mul_coeff _ _ _;
+            · rw [ mul_coeff, Finset.sum_mul _ _ _ ];
+            · (expose_names; exact inst_2)
+ /--
+ Helper lemma for mul_assoc.
+ Coefficients of `(p * q) * r` and `p * (q * r)` are equal.
+ -/
+lemma mul_assoc_coeff [LawfulBEq R] (p q r : CPolynomial R) (n : ℕ) :
+    ((p * q) * r).coeff n = (p * (q * r)).coeff n := by
+  rw [mul_mul_coeff, mul_assoc_coeff_rhs, double_sum_eq]
+
+/--
+Helper lemma for mul_assoc.
+The two products are equivalent (have equal coefficients everywhere).
+-/
+lemma mul_assoc_equiv [LawfulBEq R] (p q r : CPolynomial R) :
+    Trim.equiv ((p * q) * r) (p * (q * r)) := by
+  intro i
+  exact mul_assoc_coeff p q r i
+
+theorem mul_assoc [LawfulBEq R] (p q r : CPolynomial R) : p * q * r = p * (q * r) := by
+  apply Trim.canonical_ext
+  · exact mul_is_trimmed (p * q) r
+  · exact mul_is_trimmed p (q * r)
+  · exact mul_assoc_equiv p q r
 
 theorem mul_comm [CommRing R] [LawfulBEq R] (p q : CPolynomial R) : p * q = q * p := by sorry
   -- define a new multiplication using raw addition and prove commutivity there
