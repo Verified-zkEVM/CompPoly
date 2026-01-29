@@ -32,7 +32,7 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - Prove isomorphism between `QuotientCPolynomial`, `CPolynomialC`, and Mathlib's relevant `Polynomial` types
    - Prove remaining algebraic instances for `CMvPolynomial` etc and ring isomorphisms with Mathlib's `MvPolynomial`
 
-1. **API completenes for s**
+1. **API completenes**
    - Add `monomial` constructors for univariate and multivariate polynomials
    - Implement monomial order support (`MonomialOrder.degree`, `leadingCoeff`)
    - `degreeLT`, `degreeLE`: Bounded-degree submodules for univariate polynomials
@@ -47,6 +47,10 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - `instCommRingMvPolynomial`, `isEmptyAlgEquiv`: Additional ring and algebra structures
    - `smulZeroClass`, `sumToIter`: Scalar multiplication and iteration utilities
 
+1. **Further data types**
+   - Basic field definitions (currently in Arklib) ported into CompPoly 
+   - Implement a specialized Bivariate polynomial type, e.g. as `CPolynomial (CPolynomial R)` with specialized polynomial operations (that can then be optimized)
+
 **Success Criteria**: Zero `sorry`s in core operations, all ring structures complete, clean build with no warnings, reasonable proof ergonomics.
 
 ---
@@ -56,6 +60,9 @@ CompPoly aims to be the premier formally verified library for computable polynom
 **Goal**: Optimize critical operations for production use in ZK verification.
 
 #### Priorities
+1. **Fast field arithmetic**
+   - optimized implementations of `ZMod` and other off-the-shelf available Field instances to enable performance
+
 1. **Polynomial multiplication**
    - Implement FFT/NTT-based multiplication (O(n log n) vs current O(n²))
    - Focus on NTT for finite field arithmetic
