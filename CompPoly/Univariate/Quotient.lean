@@ -532,13 +532,6 @@ end AddCommGroup
 section Semiring
 variable [LawfulBEq R]
 
-lemma mul_assoc : ∀ (a b c : QuotientCPolynomial R), a * b * c = a * (b * c) := by
-  intro a b c
-  refine Quotient.inductionOn₃ a b c ?_
-  intro p q r; clear a b c
-  apply Quotient.sound
-  sorry
-
 @[simp]
 lemma zip_one : (Array.zipIdx (C (1 : R))) = #[(1,0)] := by unfold Array.zipIdx C; simp
 
@@ -801,6 +794,191 @@ lemma pow_succ_left {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (n : ℕ)
   have h_pow : p.pow (n + 1) = p.mul (p.pow n) := by
     exact Function.iterate_succ_apply' _ _ _
   exact congrFun (congrArg coeff h_pow)
+
+/-
+Auxiliary lemmas for associativity of multiplication.
+-/
+theorem array_size_range (n : ℕ) : (Array.range n).size = n := by
+  induction n with
+  | zero =>
+      simp
+  | succ n ih =>
+      -- try simp with range_succ
+      simp [Array.range_succ, ih]
+
+theorem range_foldl_eq_sum_range {α : Type*} [AddCommMonoid α] (f : ℕ → α) (n : ℕ) :
+    (Array.range n).foldl (fun acc i => acc + f i) 0
+        = ∑ i ∈ Finset.range n, f i := by
+  induction n with
+  | zero =>
+      simpa using
+        (CompPoly.CPolynomial.Array.foldl_range_zero
+          (f := fun acc i => acc + f i) (init := (0 : α)))
+  | succ n ih =>
+      -- recursion for the explicit `Array.foldl` form
+      have hfold :
+          Array.foldl (fun acc i => acc + f i) (0 : α) (Array.range (n + 1)) 0 (n + 1) =
+            Array.foldl (fun acc i => acc + f i) (0 : α) (Array.range n) 0 n + f n := by
+        simpa [add_assoc] using
+          (CompPoly.CPolynomial.Array.range_foldl_succ
+            (f := fun acc i => acc + f i) (init := (0 : α)) (n := n))
+      -- now rewrite the goal using the induction hypothesis
+      -- (the 3-argument fold and the explicit `0 n` fold are definitional equal)
+      have ih' :
+          Array.foldl (fun acc i => acc + f i) (0 : α) (Array.range n) 0 n =
+            ∑ i ∈ Finset.range n, f i := by
+        simpa using ih
+      -- finish
+      simp [Finset.sum_range_succ, hfold, ih']
+
+theorem mul_coeff_antidiagonal {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
+    (p q : CompPoly.CPolynomial R) (n : ℕ) :
+    (p * q).coeff n = ∑ x ∈ Finset.antidiagonal n, p.coeff x.1 * q.coeff x.2 := by
+  classical
+  -- Start from the coefficient formula for multiplication
+  rw [CompPoly.CPolynomial.mul_coeff (p := p) (q := q) (i := n)]
+  -- Turn the `Array.range` fold into a `Finset.range` sum
+  rw [range_foldl_eq_sum_range (f := fun j => p.coeff j * q.coeff (n - j)) (n := n + 1)]
+  -- Re-express the range sum as a sum over the antidiagonal
+  simpa using
+    (Finset.Nat.sum_antidiagonal_eq_sum_range_succ_mk
+        (f := fun ij : ℕ × ℕ => p.coeff ij.1 * q.coeff ij.2) n).symm
+
+theorem sum_antidiagonal_sigma_assoc {α : Type*} [AddCommMonoid α]
+    (f : ℕ → ℕ → ℕ → α) (n : ℕ) :
+    (∑ x ∈ Finset.antidiagonal n, ∑ y ∈ Finset.antidiagonal x.1, f y.1 y.2 x.2)
+      = (∑ x ∈ Finset.antidiagonal n, ∑ y ∈ Finset.antidiagonal x.2,
+          f x.1 y.1 y.2) := by
+  classical
+  -- Turn the iterated sums into sums over sigma Finsets.
+  let sL : Finset (Sigma fun x : ℕ × ℕ => ℕ × ℕ) :=
+    (Finset.antidiagonal n).sigma (fun x => Finset.antidiagonal x.1)
+  let sR : Finset (Sigma fun x : ℕ × ℕ => ℕ × ℕ) :=
+    (Finset.antidiagonal n).sigma (fun x => Finset.antidiagonal x.2)
+
+  have hL :
+      (∑ x ∈ Finset.antidiagonal n, ∑ y ∈ Finset.antidiagonal x.1, f y.1 y.2 x.2)
+        = ∑ z ∈ sL, f z.2.1 z.2.2 z.1.2 := by
+    simp [sL, Finset.sum_sigma']
+
+  have hR :
+      (∑ x ∈ Finset.antidiagonal n, ∑ y ∈ Finset.antidiagonal x.2,
+          f x.1 y.1 y.2)
+        = ∑ z ∈ sR, f z.1.1 z.2.1 z.2.2 := by
+    simp [sR, Finset.sum_sigma']
+
+  have hbij :
+      (∑ z ∈ sL, f z.2.1 z.2.2 z.1.2)
+        = ∑ z ∈ sR, f z.1.1 z.2.1 z.2.2 := by
+    -- Reindex via an explicit dependent bijection.
+    refine Finset.sum_bij'
+      (s := sL) (t := sR)
+      (f := fun z => f z.2.1 z.2.2 z.1.2)
+      (g := fun z => f z.1.1 z.2.1 z.2.2)
+      (i := fun z _ => (⟨(z.2.1, z.2.2 + z.1.2), (z.2.2, z.1.2)⟩ :
+          Sigma fun x : ℕ × ℕ => ℕ × ℕ))
+      (j := fun z _ => (⟨(z.1.1 + z.2.1, z.2.2), (z.1.1, z.2.1)⟩ :
+          Sigma fun x : ℕ × ℕ => ℕ × ℕ))
+      ?_ ?_ ?_ ?_ ?_
+    · intro z hz
+      -- show i z ∈ sR
+      rcases (Finset.mem_sigma.mp hz) with ⟨hx, hy⟩
+      have hx' : z.1.1 + z.1.2 = n := by
+        simpa [Finset.mem_antidiagonal] using hx
+      have hy' : z.2.1 + z.2.2 = z.1.1 := by
+        simpa [Finset.mem_antidiagonal] using hy
+      refine Finset.mem_sigma.mpr ?_
+      constructor
+      · -- first component in antidiagonal n
+        have : z.2.1 + (z.2.2 + z.1.2) = n := by
+          calc
+            z.2.1 + (z.2.2 + z.1.2)
+                = (z.2.1 + z.2.2) + z.1.2 := by
+                    ac_rfl
+            _ = z.1.1 + z.1.2 := by simp [hy']
+            _ = n := by simp [hx']
+        simp [Finset.mem_antidiagonal, this]
+      · -- second component in antidiagonal of (i z).1.2
+        simp [Finset.mem_antidiagonal, Nat.add_comm]
+    · intro z hz
+      -- show j z ∈ sL
+      rcases (Finset.mem_sigma.mp hz) with ⟨hx, hy⟩
+      have hx' : z.1.1 + z.1.2 = n := by
+        simpa [Finset.mem_antidiagonal] using hx
+      have hy' : z.2.1 + z.2.2 = z.1.2 := by
+        simpa [Finset.mem_antidiagonal] using hy
+      refine Finset.mem_sigma.mpr ?_
+      constructor
+      · -- first component in antidiagonal n
+        have : (z.1.1 + z.2.1) + z.2.2 = n := by
+          calc
+            (z.1.1 + z.2.1) + z.2.2
+                = z.1.1 + (z.2.1 + z.2.2) := by
+                    ac_rfl
+            _ = z.1.1 + z.1.2 := by simp [hy']
+            _ = n := by simp [hx']
+        simp [Finset.mem_antidiagonal, this]
+      · -- second component in antidiagonal of (j z).1.1
+        simp [Finset.mem_antidiagonal]
+    · intro z hz
+      -- left inverse: j (i z) = z
+      rcases (Finset.mem_sigma.mp hz) with ⟨hx, hy⟩
+      have hy' : z.2.1 + z.2.2 = z.1.1 := by
+        simpa [Finset.mem_antidiagonal] using hy
+      ext <;> simp [hy']
+    · intro z hz
+      -- right inverse: i (j z) = z
+      rcases (Finset.mem_sigma.mp hz) with ⟨hx, hy⟩
+      have hy' : z.2.1 + z.2.2 = z.1.2 := by
+        simpa [Finset.mem_antidiagonal] using hy
+      ext <;> simp [hy']
+    · intro z hz
+      -- summands match
+      simp
+
+  exact hL.trans (hbij.trans hR.symm)
+
+theorem mul_assoc_equiv {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
+    (p q r : CompPoly.CPolynomial R) :
+    CompPoly.CPolynomial.Trim.equiv ((p * q) * r) (p * (q * r)) := by
+  classical
+  unfold CompPoly.CPolynomial.Trim.equiv
+  intro n
+  -- expand outer coefficients
+  rw [mul_coeff_antidiagonal (p := p * q) (q := r) (n := n)]
+  rw [mul_coeff_antidiagonal (p := p) (q := q * r) (n := n)]
+  -- expand the inner coefficients inside the sums
+  have hL :
+      (∑ x ∈ Finset.antidiagonal n, (p * q).coeff x.1 * r.coeff x.2) =
+        ∑ x ∈ Finset.antidiagonal n,
+          (∑ y ∈ Finset.antidiagonal x.1, p.coeff y.1 * q.coeff y.2) * r.coeff x.2 := by
+    refine Finset.sum_congr rfl ?_
+    intro x hx
+    rw [mul_coeff_antidiagonal (p := p) (q := q) (n := x.1)]
+  have hR :
+      (∑ x ∈ Finset.antidiagonal n, p.coeff x.1 * (q * r).coeff x.2) =
+        ∑ x ∈ Finset.antidiagonal n,
+          p.coeff x.1 *
+            (∑ y ∈ Finset.antidiagonal x.2, q.coeff y.1 * r.coeff y.2) := by
+    refine Finset.sum_congr rfl ?_
+    intro x hx
+    rw [mul_coeff_antidiagonal (p := q) (q := r) (n := x.2)]
+  rw [hL, hR]
+  -- distribute the ring multiplication across the inner sums
+  simp [Finset.sum_mul, Finset.mul_sum, mul_assoc]
+  -- now it's just reindexing of the nested antidiagonal sums
+  simpa using
+    (sum_antidiagonal_sigma_assoc
+      (f := fun a b c => p.coeff a * (q.coeff b * r.coeff c))
+      n)
+
+lemma mul_assoc {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
+    (a b c : QuotientCPolynomial R) :
+    a * b * c = a * (b * c) := by
+  refine Quotient.inductionOn₃ a b c ?_
+  intro p q r
+  apply Quotient.sound
+  exact mul_assoc_equiv p q r
 
 /-
 x commutes with x^n
