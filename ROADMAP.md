@@ -108,10 +108,10 @@ CompPoly aims to be the premier formally verified library for computable polynom
 
 #### Priorities 
 
-1. **Lowering / interop with LLZK / ZKIR polynomial dialects**
+1. **Lowering / interop with LLZK / PrimeIR polynomial dialects**
 	- Explore representing CompPoly structures in the MLIR pipeline
 	- Evaluate tradeoffs: “fast Lean code” vs “Lean spec + lowering to fast backend”
-	- Goal: enable verification of ZKIR/LLZK polynomial implementations against CompPoly semantics
+	- Goal: enable verification of PrimeIR/LLZK polynomial implementations against CompPoly semantics
 2.	**Serialization (bytes/JSON/protocol/hashing)**
 	- Define serialization format(s) for polynomial types
 	- Compatibility with ArkLib protocol serialization needs
@@ -134,7 +134,7 @@ CompPoly aims to be the premier formally verified library for computable polynom
 	- Ensure hax-extracted Rust polynomial structures can be mapped into CompPoly with minimal proof overhead
 	- Validate the integration with at least one downstream example (e.g. ArkLib protocol component or plonky3 polynomial routine)
 
-**Success criteria**: CompPoly is integration-ready—it supports canonical serialization, has strong simp/grind-based proof ergonomics, includes a validated interop pathway with LLCK/ZKIR-style representations, and demonstrates at least one end-to-end Rust extraction → Lean translation → refinement proof against CompPoly.
+**Success criteria**: CompPoly is integration-ready—it supports canonical serialization, has strong simp/grind-based proof ergonomics, includes a validated interop pathway with LLZK/PrimeIR-style representations, and demonstrates at least one end-to-end Rust extraction → Lean translation → refinement proof against CompPoly.
 
 ---
 
