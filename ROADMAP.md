@@ -9,7 +9,6 @@ CompPoly aims to be the premier formally verified library for computable polynom
 1. Zero `sorry`s in all shipped modules.
 1. Complete core API for `CPolynomial`, `CMvPolynomial`, `CMlPolynomial`, including evaluation + interpolation + conversions.
 1. At least one "fast path" implemented + proven correct (FFT/NTT multiplication OR fast multilinear transforms).
-<!-- 1. Canonical serialization (bytes; JSON optional). -->
 <!-- 1. Benchmarks exist for core ops and are reproducible (CI integration optional for v1.0). -->
 <!-- 1. Property tests exist for core ops (eval, mul, interpolation). -->
 1. Proof ergonomics baseline: common operations (add, mul, eval) mostly simp/grind-driven, documented.
@@ -48,7 +47,8 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - `smulZeroClass`, `sumToIter`: Scalar multiplication and iteration utilities
 
 1. **Further data types**
-   - Basic field definitions (currently in Arklib) ported into CompPoly 
+   - Basic field definitions (currently in Arklib) ported into CompPoly
+      - computable field extensions with interface
    - Implement a specialized Bivariate polynomial type, e.g. as `CPolynomial (CPolynomial R)` with specialized polynomial operations (that can then be optimized)
 
 **Success Criteria**: Zero `sorry`s in core operations, all ring structures complete, clean build with no warnings, reasonable proof ergonomics.
@@ -61,7 +61,7 @@ CompPoly aims to be the premier formally verified library for computable polynom
 
 #### Priorities
 1. **Fast field arithmetic**
-   - optimized implementations of `ZMod` and other off-the-shelf available Field instances to enable performance
+   - Optimized implementations of off-the-shelf available Field instances to enable performance, including for prime and other finite fields
 
 1. **Polynomial multiplication**
    - Implement FFT/NTT-based multiplication (O(n log n) vs current O(n²))
