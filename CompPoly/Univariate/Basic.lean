@@ -571,6 +571,7 @@ lemma zipWith_size {R} {f : R → R → R} {a b : Array R} (h : a.size = b.size)
     (Array.zipWith f a b).size = a.size := by
   simp; omega
 
+
 -- TODO we could generalize the next few lemmas to matchSize + zipWith f for any f
 
 theorem add_size {p q : CPolynomial Q} : (addRaw p q).size = max p.size q.size := by
@@ -720,6 +721,112 @@ theorem add_assoc [LawfulBEq R] : p + q + r = p + (q + r) := by
   · simp only [add_coeff, add_coeff?]
     apply _root_.add_assoc
 
+-- Lemmas about sums for proving facts about multiplication.
+
+/-- Helper lemma for proving: mul_one_trim.
+If the initial value is canonical and the step function preserves canonicality,
+then `foldl` preserves canonicality.
+-/
+lemma foldl_preserves_canonical {α : Type*}
+    (f : CPolynomial R → α → CPolynomial R)
+    (z : CPolynomial R) (as : Array α)
+    (hz : z.trim = z)
+    (hf : ∀ acc x, (f acc x).trim = f acc x) :
+    (as.foldl f z).trim = as.foldl f z := by
+      induction' as using Array.recOn with a as ih
+      induction a using List.reverseRecOn <;> aesop
+
+/-- Helper lemma for proving: mul_one_trim
+The coefficient of a sum (via foldl) is the sum of the coefficients. -/
+lemma coeff_foldl_add [LawfulBEq R]
+    (l : List α)
+    (f : α → CPolynomial R)
+    (z : CPolynomial R) (k : ℕ) :
+    (l.foldl (fun acc x => acc + f x) z).coeff k
+      = z.coeff k + (l.map (fun x => (f x).coeff k)).sum := by
+      induction' l using List.reverseRecOn with l ih generalizing z
+      · simp
+      · simp +zetaDelta at *
+        convert congr_arg₂ ( · + · ) ( ‹∀ z : CPolynomial R, (
+          List.foldl ( fun ( acc : CPolynomial R ) ( x : α ) => acc + f x ) z l )[ k ]?.getD 0
+            = z[k]?.getD 0 + ( List.map ( fun x => ( f x)[ k ]?.getD 0 ) l ).sum› z ) rfl using 1
+        any_goals exact ( f ih )[ k ]?.getD 0
+        · convert add_coeff_trimmed _ _ k
+          rotate_left 3
+          (expose_names; exact inst_1)
+          (expose_names; exact inst_2)
+          exact List.foldl ( fun acc x => acc + f x ) z l
+          exact f ih
+          · exact Eq.symm Array.getD_eq_getD_getElem?
+          · exact Eq.symm Array.getD_eq_getD_getElem?
+          · exact Eq.symm Array.getD_eq_getD_getElem?
+        · module
+
+omit [BEq R] in
+/--
+Helper lemma for mul_assoc.
+Sum over list zipIdx equals sum over Finset.range for the relevant terms.
+-/
+lemma sum_zipIdx_eq_sum_range {α : Type*} [AddCommMonoid α] (p : CPolynomial R) (f : R → ℕ → α) :
+    (p.zipIdx.toList.map (fun ⟨a, i⟩ => f a i)).sum =
+    (Finset.range p.size).sum (fun i => f (p.coeff i) i) := by
+      refine' congr_arg _ ( List.ext_get _ _ ) <;> aesop
+
+/--
+Helper lemma for mul_assoc.
+Computes double sum.
+-/
+theorem double_sum_eq [LawfulBEq R] (p q r : CPolynomial R) (n : ℕ) :
+    (Finset.range (n + 1)).sum (fun j =>
+      (Finset.range (j + 1)).sum (fun i =>
+        p.coeff i * q.coeff (j - i) * r.coeff (n - j)))
+    =
+    (Finset.range (n + 1)).sum (fun i =>
+      (Finset.range (n - i + 1)).sum (fun k =>
+        p.coeff i * q.coeff k * r.coeff (n - i - k))) := by
+          have h_interchange : ∑ j ∈ Finset.range (n + 1),
+              ∑ i ∈ Finset.range (j + 1), p.coeff i * q.coeff (j - i) * r.coeff (n - j)
+                  = ∑ i ∈ Finset.range (n + 1),
+                      ∑ j ∈ Finset.Ico i (n + 1),
+                          p.coeff i * q.coeff (j - i) * r.coeff (n - j) := by
+            rw [ Finset.range_eq_Ico, Finset.sum_Ico_Ico_comm ]
+          convert h_interchange using 2
+          rw [ Finset.sum_Ico_eq_sum_range ]
+          simp +decide [ Nat.sub_add_comm ( Finset.mem_range_succ_iff.mp ‹_› ) ]
+          exact Finset.sum_congr rfl fun _ _ => by rw [ Nat.sub_sub ]
+
+omit [BEq R] in
+/--
+Helper lemma for mul_assoc.
+Extend a sum from range p.size to range (k+1) by noting extra terms are 0.
+-/
+lemma sum_range_extend  (p q : CPolynomial R) (k : ℕ) :
+    (Finset.range p.size).sum (fun i => if k < i then 0 else p.coeff i * q.coeff (k - i)) =
+    (Finset.range (k + 1)).sum (fun i => p.coeff i * q.coeff (k - i)) := by
+      by_cases h : p.size ≤ k + 1
+      · rw [ ← Finset.sum_range_add_sum_Ico _ h ]
+        rw [ Finset.sum_congr rfl fun i hi =>
+            if_neg ( by linarith [ Finset.mem_range.mp hi ] ), Finset.sum_Ico_eq_sum_range ]
+        simp +decide [ coeff ]
+      · rw [ Finset.sum_ite ]
+        rw [ show Finset.filter ( fun x => ¬k < x ) ( Finset.range ( Array.size p ) )
+            = Finset.range ( k + 1 ) from ?_ ]
+        · simp +zetaDelta at *
+        · grind
+
+/--
+Helper lemma for mul_comm.
+The convolution sum is symmetric under reversal of the range. -/
+lemma sum_range_reverse [LawfulBEq R] (p q : CPolynomial R) (k : ℕ) :
+    (Finset.range (k + 1)).sum (fun i => p.coeff i * q.coeff (k - i)) =
+    (Finset.range (k + 1)).sum (fun j => p.coeff (k - j) * q.coeff j) := by
+  rw [← Finset.sum_range_reflect (fun j => p.coeff (k - j) * q.coeff j) (k + 1)]
+  apply Finset.sum_congr rfl
+  intro j hj
+  simp only [Finset.mem_range] at hj
+  have hj' : j ≤ k := Nat.lt_succ_iff.mp hj
+  simp only [Nat.add_sub_cancel, Nat.sub_sub_self hj']
+
 -- Algebra theorems about scalar multiplication.
 
 theorem nsmul_zero [LawfulBEq R] (p : CPolynomial R) : nsmul 0 p = 0 := by
@@ -755,6 +862,15 @@ theorem neg_add_cancel [LawfulBEq R] (p : CPolynomial R) : -p + p = 0 := by
   rw [add_coeff?]
   rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi, Neg.neg, neg]
 
+/--
+Helper lemma for mul_assoc.
+Coefficient after smul.
+-/
+lemma smul_coeff [LawfulBEq R] (a : R) (p : CPolynomial R) (k : ℕ) :
+    (smul a p).coeff k = a * p.coeff k := by
+  exact smul_equiv p k a
+
+
 lemma smul_addRaw_distrib [LawfulBEq R] :
     ∀ (a' : R) (q r : CPolynomial R), smul a' (q.addRaw r)
         = (smul a' q).addRaw (smul a' r) := by
@@ -788,57 +904,42 @@ lemma smul_distrib_trim [LawfulBEq R] :
           unfold addRaw; simp +decide [h_coeff ]
           grind
 
--- Algebra theorems about multiplication.
-
-/-- Helper lemma for proving: mul_one_trim.
-If the initial value is canonical and the step function preserves canonicality,
-then `foldl` preserves canonicality.
+/-
+Helper lemma for proving: left_distrib
+Distributivity of scalar multiplication over polynomial addition at the coefficient level.
 -/
-lemma foldl_preserves_canonical {α : Type*}
-    (f : CPolynomial R → α → CPolynomial R)
-    (z : CPolynomial R) (as : Array α)
-    (hz : z.trim = z)
-    (hf : ∀ acc x, (f acc x).trim = f acc x) :
-    (as.foldl f z).trim = as.foldl f z := by
-      induction' as using Array.recOn with a as ih
-      induction a using List.reverseRecOn <;> aesop
+lemma coeff_smul_add_distrib [LawfulBEq R] (a : R) (q r : CPolynomial R) (i : ℕ) :
+    (smul a (q + r)).coeff i = (smul a q).coeff i + (smul a r).coeff i := by
+      -- By definition of `smul` and `add`, we can expand both sides.
+      have h_expand : (smul a (q + r)).coeff i = a * ((q + r).coeff i) ∧
+                         ((smul a q).coeff i) + ((smul a r).coeff i) =
+                            a * (q.coeff i) + a * (r.coeff i) := by
+                           have h_expand : ∀ (p : CPolynomial R), (smul a p).coeff i
+                              = a * p.coeff i := by
+                             exact fun p => smul_equiv p i a
+                           exact ⟨ h_expand _, by rw [ h_expand, h_expand ] ⟩
+      convert h_expand.1 using 1
+      rw [ h_expand.2 ]
+      rw [ add_coeff_trimmed ]
+      simp +decide [ mul_add ]
 
-lemma mul_is_trimmed [LawfulBEq R] (p q : CPolynomial R) : (p * q).trim = p * q := by
-  convert foldl_preserves_canonical _ _ _ _ _
-  · exact Trim.canonical_empty
-  · intros acc x
-    simp [add, addRaw]
-    exact Trim.trim_twice
-      (mk (Array.zipWith (fun x1 x2 => x1 + x2)
-        (acc ++ Array.replicate (Array.size (mulPowX x.2 (smul x.1 q)) - Array.size acc) 0)
-          (mulPowX x.2 (smul x.1 q) ++
-            Array.replicate (Array.size acc - Array.size (mulPowX x.2 (smul x.1 q))) 0)))
+/--
+Helper lemma for proving: right_distrib.
+Distributivity of scalar multiplication one right at the coefficient level.
+-/
+lemma coeff_add_smul [LawfulBEq R]  (a b : R) (q : CPolynomial R) (k : ℕ) :
+    (smul (a + b) q).coeff k = (smul a q).coeff k + (smul b q).coeff k := by
+      have h_distrib : ∀ (a b : R) (q : CPolynomial R) (k : ℕ),
+          (a + b) * q.coeff k = a * q.coeff k + b * q.coeff k := by
+        exact fun a b q k => add_mul a b _
+      convert h_distrib a b q k using 1
+      · exact smul_equiv q k (a + b)
+      · congr! 1
+        · exact smul_equiv q k a
+        · exact smul_equiv q k b
 
-/-- Helper lemma for proving: mul_one_trim
-The coefficient of a sum (via foldl) is the sum of the coefficients. -/
-lemma coeff_foldl_add [LawfulBEq R]
-    (l : List α)
-    (f : α → CPolynomial R)
-    (z : CPolynomial R) (k : ℕ) :
-    (l.foldl (fun acc x => acc + f x) z).coeff k
-      = z.coeff k + (l.map (fun x => (f x).coeff k)).sum := by
-      induction' l using List.reverseRecOn with l ih generalizing z
-      · simp
-      · simp +zetaDelta at *
-        convert congr_arg₂ ( · + · ) ( ‹∀ z : CPolynomial R, (
-          List.foldl ( fun ( acc : CPolynomial R ) ( x : α ) => acc + f x ) z l )[ k ]?.getD 0
-            = z[k]?.getD 0 + ( List.map ( fun x => ( f x)[ k ]?.getD 0 ) l ).sum› z ) rfl using 1
-        any_goals exact ( f ih )[ k ]?.getD 0
-        · convert add_coeff_trimmed _ _ k
-          rotate_left 3
-          (expose_names; exact inst_1)
-          (expose_names; exact inst_2)
-          exact List.foldl ( fun acc x => acc + f x ) z l
-          exact f ih
-          · exact Eq.symm Array.getD_eq_getD_getElem?
-          · exact Eq.symm Array.getD_eq_getD_getElem?
-          · exact Eq.symm Array.getD_eq_getD_getElem?
-        · module
+
+-- Algebra lemmas and theorems about mulPowX
 
 omit [BEq R] in
 /-- Helper lemma for proving: mul_one_trim
@@ -858,56 +959,7 @@ lemma coeff_sum : ∀ (p : CPolynomial R) (k : ℕ),
     · exact mul_one _
     · exact rfl
 
-/-- Multiplying a polynomial by 1 does not change the coeffs-/
-lemma equiv_mul_one [LawfulBEq R] (p : CPolynomial R) : Trim.equiv (p * 1) p := by
-  have h_mul_one : ∀ (p : CPolynomial R), (p * 1).coeff = p.coeff := by
-    intro p; funext i
-    rw [ show p * 1 = p * 1 from rfl ]
-    have mul_one_unwrap : ∀ (p : CPolynomial R), (p * 1).coeff = fun k =>
-      (p.zipIdx.map (fun ⟨a, i⟩ => ((smul a 1).mulPowX i).coeff k)).sum := by
-      intro p; funext k; exact (by
-      convert coeff_foldl_add
-          ( p.zipIdx.toList ) ( fun ⟨ a, i ⟩ => ( smul a 1 ).mulPowX i ) ( mk #[] ) k using 1
-      · have h_mul_def : ∀ (p : CPolynomial R), p * 1 =
-            (p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + (smul a 1).mulPowX i) (mk #[])) := by
-          exact fun p => rfl
-        rw [h_mul_def, Array.foldl_toList]
-      · simp +decide
-        conv => rw [ ← Array.toList_zipIdx ]
-        conv => rw [ ← Array.toList_map ]
-        exact Eq.symm Array.sum_eq_sum_toList)
-    exact (by exact mul_one_unwrap p ▸ coeff_sum p i ▸ rfl)
-  exact congrFun (h_mul_one p)
-
-theorem mul_one_trim [LawfulBEq R] (p : CPolynomial R) : p * 1 = p.trim := by
-  have h_equiv : Trim.equiv (p * 1) p := by
-    exact equiv_mul_one p
-  have h_trim : (p * 1).trim = p * 1 := by
-    exact mul_is_trimmed p 1
-  have h_trim_p : p.trim.trim = p.trim := by
-    exact Trim.trim_twice p
-  exact (by
-  apply Trim.canonical_ext
-  · exact h_trim
-  · exact h_trim_p
-  · exact fun i => by rw [ h_equiv i, Trim.coeff_eq_coeff .. ])
-
-theorem one_mul_trim [LawfulBEq R] (p : CPolynomial R) : 1 * p = p.trim := by
-  have h_mul_def : ∀ (a b : CPolynomial R),
-      a.mul b = (a.zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b).mulPowX i)) (mk #[])) :=
-        by exact fun a b => rfl
-  have : 1 * p = (mk #[1] : CPolynomial R).mul p := by rfl
-  rw [this, h_mul_def]
-  show (mk #[1]).zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' p).mulPowX i)) (mk #[])
-      = p.trim
-  conv_lhs => rw [show (mk #[1] : CPolynomial R).zipIdx = #[(1, 0)] by rfl]
-  rw [show Array.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' p).mulPowX i)) (mk #[]) #[(1, 0)] =
-           (mk #[] : CPolynomial R).add ((smul 1 p).mulPowX 0) by rfl]
-  rw [show (smul (1 : R) p).mulPowX 0 = p by simp [smul, mulPowX, one_mul]]
-  have : (mk #[]).add p = 0 + p := by rfl
-  rw[this, zero_add_trim]
-
-/-
+/--
 Helper lemma for proving: left_distrib
 The coefficient of `p * q` at index `k` is the sum of the coefficients of the terms
  `(a_i * q) * X^i`.
@@ -937,25 +989,6 @@ lemma coeff_mul [LawfulBEq R] (p q : CPolynomial R) (k : ℕ) :
       · cases k <;> simp +decide [ * ]
 
 /-
-Helper lemma for proving: left_distrib
-Distributivity of scalar multiplication over polynomial addition at the coefficient level.
--/
-lemma coeff_smul_add_distrib [LawfulBEq R] (a : R) (q r : CPolynomial R) (i : ℕ) :
-    (smul a (q + r)).coeff i = (smul a q).coeff i + (smul a r).coeff i := by
-      -- By definition of `smul` and `add`, we can expand both sides.
-      have h_expand : (smul a (q + r)).coeff i = a * ((q + r).coeff i) ∧
-                         ((smul a q).coeff i) + ((smul a r).coeff i) =
-                            a * (q.coeff i) + a * (r.coeff i) := by
-                           have h_expand : ∀ (p : CPolynomial R), (smul a p).coeff i
-                              = a * p.coeff i := by
-                             exact fun p => smul_equiv p i a
-                           exact ⟨ h_expand _, by rw [ h_expand, h_expand ] ⟩
-      convert h_expand.1 using 1
-      rw [ h_expand.2 ]
-      rw [ add_coeff_trimmed ]
-      simp +decide [ mul_add ]
-
-/-
 Helper lemma for proving: left_distrib.
 The coefficient of `p * X^i` at index `k` is `0` if `k < i`, and `p_{k-i}` otherwise.
 This follows from `concat_coeff₁` and `concat_coeff₂` applied to `replicate i 0 ++ p`.
@@ -966,54 +999,78 @@ lemma coeff_mulPowX [LawfulBEq R] (i : ℕ) (p : CPolynomial R) (k : ℕ) :
       · rw [ Array.getElem?_append ]; aesop
       · grind
 
-theorem left_distrib [LawfulBEq R] (p q r : CPolynomial R) :
-    p * (q + r) = p * q + p * r := by
-      have h_eq : p * (q + r) = p * q + p * r ↔ p * (q + r) = (p * q + p * r).trim := by
-        have h_canonical : (p * q).trim = p * q ∧ (p * r).trim = p * r := by
-          exact ⟨ mul_is_trimmed p q, mul_is_trimmed p r ⟩
-        have h_add_trim : ∀ (p q : CPolynomial R), (p + q).trim = p.trim + q.trim := by
-          intros p q
-          have h_add_trim : ∀ (p q : CPolynomial R), (p + q).trim = p.trim + q.trim := by
-            intros p q
-            have h_add_trim : ∀ (p q : CPolynomial R), (p + q).coeff
-                = (p.trim + q.trim).coeff := by
-              intros p q
-              ext k
-              simp only [Array.getD_eq_getD_getElem?]
-              convert add_coeff_trimmed p q k using 1
-              ·exact Eq.symm Array.getD_eq_getD_getElem?
-              · convert add_coeff_trimmed p.trim q.trim k using 1
-                · exact Eq.symm Array.getD_eq_getD_getElem?
-                · rw [ Trim.coeff_eq_coeff, Trim.coeff_eq_coeff ]
-            apply Trim.canonical_ext
-            · exact Trim.trim_twice (p + q)
-            · apply Trim.trim_twice
-            · exact fun i => by rw [ Trim.coeff_eq_coeff, h_add_trim ]
-          exact h_add_trim p q
-        rw [ h_add_trim, h_canonical.1, h_canonical.2 ]
-      have h_equiv : (p * (q + r)).coeff = (p * q + p * r).coeff := by
-        ext k
-        rw [ coeff_mul, add_coeff_trimmed ]
-        rw [ coeff_mul, coeff_mul ]
-        rw [ ← List.sum_map_add ]
-        congr! 2
-        ext ⟨ a, i ⟩; by_cases hi : k < i <;> simp +decide
-        · simp +decide [mulPowX]
-          rw [ Array.getElem?_append, Array.getElem?_append, Array.getElem?_append ]; aesop
-        · convert coeff_smul_add_distrib a q r ( k - i ) using 1
-          · convert coeff_mulPowX i ( smul a ( q + r ) ) k using 1
-            · exact Eq.symm Array.getD_eq_getD_getElem?
-            · aesop
-          · simp +decide [ mulPowX]
-            grind
-      have h_trim : (p * (q + r)).trim = (p * q + p * r).trim := by
-        exact Trim.eq_of_equiv (congrFun h_equiv)
-      convert h_eq.mpr _
-      convert h_trim using 1
-      exact Eq.symm (mul_is_trimmed p (q + r))
+/--
+Helper lemma for mul_assoc.
+Coefficient mutliplication by X, similar to coeff_mulPowX.
+-/
+lemma coeff_mulPowX' [LawfulBEq R] (p : CPolynomial R) (n i : ℕ) :
+    (p.mulPowX n).coeff i = if i < n then 0 else p.coeff (i - n) := by
+      unfold mulPowX
+      split_ifs <;> simp_all +decide [ coeff ]
+      · rw [ Array.getElem?_append ]
+        aesop
+      · simp only [Array.getElem?_append, Array.getElem?_replicate,Array.size_replicate]
+        split_ifs
+        · omega
+        · rfl
+
+/-- Helper lemma for mul_assoc.
+Coefficient of mulPowX.
+ -/
+lemma mulPowX_coeff' [LawfulBEq R] (p : CPolynomial R) (n k : ℕ) :
+    (p.mulPowX n).coeff k = if k < n then 0 else p.coeff (k - n) := by
+  exact coeff_mulPowX' p n k
+
+/-
+Helper lemma for proving: right_distrib.
+Distributivity of scalar multiplication over polynomial addition at the coefficient level
+-/
+lemma coeff_mulPowX_smul_add [LawfulBEq R] (i : ℕ) (a b : R) (q : CPolynomial R) (k : ℕ) :
+    ((smul (a + b) q).mulPowX i).coeff k =
+        ((smul a q).mulPowX i).coeff k + ((smul b q).mulPowX i).coeff k := by
+  rw [coeff_mulPowX, coeff_mulPowX, coeff_mulPowX]
+  split_ifs
+  · simp
+  · rw [coeff_add_smul]
+
+-- Algebra lemmas and theorems about multiplication of general polynomials.
+
+/-- Multiplying a polynomial by 1 does not change the coeffs-/
+lemma equiv_mul_one [LawfulBEq R] (p : CPolynomial R) : Trim.equiv (p * 1) p := by
+  have h_mul_one : ∀ (p : CPolynomial R), (p * 1).coeff = p.coeff := by
+    intro p; funext i
+    rw [ show p * 1 = p * 1 from rfl ]
+    have mul_one_unwrap : ∀ (p : CPolynomial R), (p * 1).coeff = fun k =>
+      (p.zipIdx.map (fun ⟨a, i⟩ => ((smul a 1).mulPowX i).coeff k)).sum := by
+      intro p; funext k; exact (by
+      convert coeff_foldl_add
+          ( p.zipIdx.toList ) ( fun ⟨ a, i ⟩ => ( smul a 1 ).mulPowX i ) ( mk #[] ) k using 1
+      · have h_mul_def : ∀ (p : CPolynomial R), p * 1 =
+            (p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + (smul a 1).mulPowX i) (mk #[])) := by
+          exact fun p => rfl
+        rw [h_mul_def, Array.foldl_toList]
+      · simp +decide
+        conv => rw [ ← Array.toList_zipIdx ]
+        conv => rw [ ← Array.toList_map ]
+        exact Eq.symm Array.sum_eq_sum_toList)
+    exact (by exact mul_one_unwrap p ▸ coeff_sum p i ▸ rfl)
+  exact congrFun (h_mul_one p)
+
+/-- The product of two polynomails is trimmed. -/
+theorem mul_is_trimmed [LawfulBEq R] (p q : CPolynomial R) : (p * q).trim = p * q := by
+  convert foldl_preserves_canonical _ _ _ _ _
+  · exact Trim.canonical_empty
+  · intros acc x
+    simp [add, addRaw]
+    exact Trim.trim_twice
+      (mk (Array.zipWith (fun x1 x2 => x1 + x2)
+        (acc ++ Array.replicate (Array.size (mulPowX x.2 (smul x.1 q)) - Array.size acc) 0)
+          (mulPowX x.2 (smul x.1 q) ++
+            Array.replicate (Array.size acc - Array.size (mulPowX x.2 (smul x.1 q))) 0)))
 
 /-
 Helper lemma for proving: right_distrib
+Computing coefficents of `p * q` as a sum over monomialsin `q`.
 -/
 lemma coeff_mul_eq_sum_range [LawfulBEq R] (p q : CPolynomial R) (k : ℕ) (n : ℕ) (h : p.size ≤ n) :
     (p * q).coeff k =
@@ -1047,146 +1104,6 @@ lemma coeff_mul_eq_sum_range [LawfulBEq R] (p q : CPolynomial R) (k : ℕ) (n : 
       simp_all +decide
       congr! 1
       refine' List.ext_get _ _ <;> aesop
-
-/--
-Helper lemma for proving: right_distrib
--/
-lemma coeff_add_smul [LawfulBEq R]  (a b : R) (q : CPolynomial R) (k : ℕ) :
-    (smul (a + b) q).coeff k = (smul a q).coeff k + (smul b q).coeff k := by
-      have h_distrib : ∀ (a b : R) (q : CPolynomial R) (k : ℕ),
-          (a + b) * q.coeff k = a * q.coeff k + b * q.coeff k := by
-        exact fun a b q k => add_mul a b _
-      convert h_distrib a b q k using 1
-      · exact smul_equiv q k (a + b)
-      · congr! 1
-        · exact smul_equiv q k a
-        · exact smul_equiv q k b
-
-/-
-Helper lemma for proving: right_distrib
--/
-lemma coeff_mulPowX_smul_add [LawfulBEq R] (i : ℕ) (a b : R) (q : CPolynomial R) (k : ℕ) :
-    ((smul (a + b) q).mulPowX i).coeff k =
-        ((smul a q).mulPowX i).coeff k + ((smul b q).mulPowX i).coeff k := by
-  rw [coeff_mulPowX, coeff_mulPowX, coeff_mulPowX]
-  split_ifs
-  · simp
-  · rw [coeff_add_smul]
-
-
-theorem right_distrib [LawfulBEq R] (p q r : CPolynomial R) :
-    (p + q) * r = p * r + q * r := by
-  have h_coeff : ∀ k, ((p + q) * r).coeff k = (p * r + q * r).coeff k := by
-    intro k
-    have h_sum : ((p + q) * r).coeff k =
-        List.sum ((List.range (p.size + q.size)).map
-            (fun i => ((smul ((p + q).coeff i) r).mulPowX i).coeff k)) := by
-      convert coeff_mul_eq_sum_range ( p + q ) r k ( p.size + q.size ) _ using 1
-      have h_size_sum : (p + q).size ≤ max p.size q.size := by
-        convert Trim.size_le_size ( p.addRaw q ) using 1
-        exact Eq.symm add_size
-      exact le_trans h_size_sum ( max_le ( Nat.le_add_right _ _ ) ( Nat.le_add_left _ _ ) )
-    have h_split : List.sum ((List.range (p.size + q.size)).map
-        (fun i => ((smul ((p + q).coeff i) r).mulPowX i).coeff k)) =
-      List.sum ((List.range (p.size + q.size)).map
-          (fun i => ((smul (p.coeff i) r).mulPowX i).coeff k)) +
-          List.sum ((List.range (p.size + q.size)).map
-              (fun i => ((smul (q.coeff i) r).mulPowX i).coeff k)) := by
-        have h_split : ∀ i ∈ List.range (p.size + q.size),
-            ((smul ((p + q).coeff i) r).mulPowX i).coeff k =
-              ((smul (p.coeff i) r).mulPowX i).coeff k +
-                  ((smul (q.coeff i) r).mulPowX i).coeff k := by
-            intro i hi
-            have h_split : ((p + q).coeff i) = (p.coeff i) + (q.coeff i) := by
-              exact add_coeff_trimmed p q i
-            convert coeff_mulPowX_smul_add i ( p.coeff i ) ( q.coeff i ) r k using 1
-            rw [ h_split ]
-        rw [ ← List.sum_map_add, List.map_congr_left h_split ]
-    have h_coeff_r : (p * r).coeff k + (q * r).coeff k =
-        List.sum ((List.range (p.size + q.size)).map
-            (fun i => ((smul (p.coeff i) r).mulPowX i).coeff k)) +
-                List.sum ((List.range (p.size + q.size)).map
-                    (fun i => ((smul (q.coeff i) r).mulPowX i).coeff k)) := by
-      have h_coeff_r : (p * r).coeff k =
-          List.sum ((List.range (p.size + q.size)).map
-              (fun i => ((smul (p.coeff i) r).mulPowX i).coeff k))
-                  ∧ (q * r).coeff k = List.sum
-                      ((List.range (p.size + q.size)).map
-                          (fun i => ((smul (q.coeff i) r).mulPowX i).coeff k)) := by
-        apply And.intro
-        · convert coeff_mul_eq_sum_range p r k ( p.size + q.size )
-              ( by linarith ) using 1
-        · convert coeff_mul_eq_sum_range q r k ( p.size + q.size )
-              ( by linarith ) using 1
-      rw [h_coeff_r.1, h_coeff_r.2 ]
-    rw [ h_sum, h_split, ← h_coeff_r, add_coeff_trimmed ]
-  convert Trim.canonical_ext _ _ ( h_coeff )
-  · exact mul_is_trimmed (p + q) r
-  · apply Trim.trim_twice
-
-
-omit [BEq R] in
-/--
-Helper lemma for mul_assoc.
-Sum over list zipIdx equals sum over Finset.range for the relevant terms.
--/
-lemma sum_zipIdx_eq_sum_range {α : Type*} [AddCommMonoid α] (p : CPolynomial R) (f : R → ℕ → α) :
-    (p.zipIdx.toList.map (fun ⟨a, i⟩ => f a i)).sum =
-    (Finset.range p.size).sum (fun i => f (p.coeff i) i) := by
-      refine' congr_arg _ ( List.ext_get _ _ ) <;> aesop
-
-/--
-Helper lemma for mul_assoc.
-Coefficient of smul.
--/
-lemma smul_coeff [LawfulBEq R] (a : R) (p : CPolynomial R) (k : ℕ) :
-    (smul a p).coeff k = a * p.coeff k := by
-  exact smul_equiv p k a
-
-/--
-Helper lemma for mul_assoc.
-Computes double sum.
--/
-theorem double_sum_eq [LawfulBEq R] (p q r : CPolynomial R) (n : ℕ) :
-    (Finset.range (n + 1)).sum (fun j =>
-      (Finset.range (j + 1)).sum (fun i =>
-        p.coeff i * q.coeff (j - i) * r.coeff (n - j)))
-    =
-    (Finset.range (n + 1)).sum (fun i =>
-      (Finset.range (n - i + 1)).sum (fun k =>
-        p.coeff i * q.coeff k * r.coeff (n - i - k))) := by
-          have h_interchange : ∑ j ∈ Finset.range (n + 1),
-              ∑ i ∈ Finset.range (j + 1), p.coeff i * q.coeff (j - i) * r.coeff (n - j)
-                  = ∑ i ∈ Finset.range (n + 1),
-                      ∑ j ∈ Finset.Ico i (n + 1),
-                          p.coeff i * q.coeff (j - i) * r.coeff (n - j) := by
-            rw [ Finset.range_eq_Ico, Finset.sum_Ico_Ico_comm ]
-          convert h_interchange using 2
-          rw [ Finset.sum_Ico_eq_sum_range ]
-          simp +decide [ Nat.sub_add_comm ( Finset.mem_range_succ_iff.mp ‹_› ) ]
-          exact Finset.sum_congr rfl fun _ _ => by rw [ Nat.sub_sub ]
-
-/--
-Helper lemma for mul_assoc.
-Coefficient mutliplication by X, similar to coeff_mulPowX.
--/
-lemma coeff_mulPowX' [LawfulBEq R] (p : CPolynomial R) (n i : ℕ) :
-    (p.mulPowX n).coeff i = if i < n then 0 else p.coeff (i - n) := by
-      unfold mulPowX
-      split_ifs <;> simp_all +decide [ coeff ]
-      · rw [ Array.getElem?_append ]
-        aesop
-      · simp only [Array.getElem?_append, Array.getElem?_replicate,Array.size_replicate]
-        split_ifs
-        · omega
-        · rfl
-
-/-- Helper lemma for mul_assoc.
-Coefficient of mulPowX.
- -/
-lemma mulPowX_coeff' [LawfulBEq R] (p : CPolynomial R) (n k : ℕ) :
-    (p.mulPowX n).coeff k = if k < n then 0 else p.coeff (k - n) := by
-  exact coeff_mulPowX' p n k
 
 /--
 Helper lemma for mul_assoc.
@@ -1242,25 +1159,6 @@ lemma mul_coeff_range_size [LawfulBEq R] (p q : CPolynomial R) (k : ℕ) :
         convert sum_zipIdx_eq_sum_range p ( fun a i =>
             if k < i then 0 else a * q.coeff ( k - i ) ) using 1
 
-omit [BEq R] in
-/--
-Helper lemma for mul_assoc.
-Extend a sum from range p.size to range (k+1) by noting extra terms are 0.
--/
-lemma sum_range_extend  (p q : CPolynomial R) (k : ℕ) :
-    (Finset.range p.size).sum (fun i => if k < i then 0 else p.coeff i * q.coeff (k - i)) =
-    (Finset.range (k + 1)).sum (fun i => p.coeff i * q.coeff (k - i)) := by
-      by_cases h : p.size ≤ k + 1
-      · rw [ ← Finset.sum_range_add_sum_Ico _ h ]
-        rw [ Finset.sum_congr rfl fun i hi =>
-            if_neg ( by linarith [ Finset.mem_range.mp hi ] ), Finset.sum_Ico_eq_sum_range ]
-        simp +decide [ coeff ]
-      · rw [ Finset.sum_ite ]
-        rw [ show Finset.filter ( fun x => ¬k < x ) ( Finset.range ( Array.size p ) )
-            = Finset.range ( k + 1 ) from ?_ ]
-        · simp +zetaDelta at *
-        · grind
-
 /--
 Helper lemma for mul_assoc.
 The coefficient of `p * q` at index `k` is the convolution sum `Σᵢ pᵢ * q_{k-i}`.
@@ -1274,7 +1172,7 @@ lemma mul_coeff [LawfulBEq R] (p q : CPolynomial R) (k : ℕ) :
 Helper lemma for mul_assoc.
 The coefficient of `p * (q * r)` at index `n`.
 -/
-theorem mul_assoc_coeff_rhs [LawfulBEq R] (p q r : CPolynomial R) (n : ℕ) :
+lemma mul_assoc_coeff_rhs [LawfulBEq R] (p q r : CPolynomial R) (n : ℕ) :
     (p * (q * r)).coeff n =
       (Finset.range (n + 1)).sum (fun i =>
         (Finset.range (n - i + 1)).sum (fun j =>
@@ -1318,67 +1216,166 @@ lemma mul_assoc_equiv [LawfulBEq R] (p q r : CPolynomial R) :
   intro i
   exact mul_assoc_coeff p q r i
 
+-- Main theorems for typeclass instances
+
+/-- Multiplication by 1 on the right trims the polynomial. -/
+theorem mul_one_trim [LawfulBEq R] (p : CPolynomial R) : p * 1 = p.trim := by
+  have h_equiv : Trim.equiv (p * 1) p := by
+    exact equiv_mul_one p
+  have h_trim : (p * 1).trim = p * 1 := by
+    exact mul_is_trimmed p 1
+  have h_trim_p : p.trim.trim = p.trim := by
+    exact Trim.trim_twice p
+  exact (by
+  apply Trim.canonical_ext
+  · exact h_trim
+  · exact h_trim_p
+  · exact fun i => by rw [ h_equiv i, Trim.coeff_eq_coeff .. ])
+
+/-- Multiplication by 1 on the left trims the polynomial. -/
+theorem one_mul_trim [LawfulBEq R] (p : CPolynomial R) : 1 * p = p.trim := by
+  have h_mul_def : ∀ (a b : CPolynomial R),
+      a.mul b = (a.zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b).mulPowX i)) (mk #[])) :=
+        by exact fun a b => rfl
+  have : 1 * p = (mk #[1] : CPolynomial R).mul p := by rfl
+  rw [this, h_mul_def]
+  show (mk #[1]).zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' p).mulPowX i)) (mk #[])
+      = p.trim
+  conv_lhs => rw [show (mk #[1] : CPolynomial R).zipIdx = #[(1, 0)] by rfl]
+  rw [show Array.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' p).mulPowX i)) (mk #[]) #[(1, 0)] =
+           (mk #[] : CPolynomial R).add ((smul 1 p).mulPowX 0) by rfl]
+  rw [show (smul (1 : R) p).mulPowX 0 = p by simp [smul, mulPowX, one_mul]]
+  have : (mk #[]).add p = 0 + p := by rfl
+  rw[this, zero_add_trim]
+
+/-- Multiplication distributes on the left.-/
+theorem left_distrib [LawfulBEq R] (p q r : CPolynomial R) :
+    p * (q + r) = p * q + p * r := by
+      have h_eq : p * (q + r) = p * q + p * r ↔ p * (q + r) = (p * q + p * r).trim := by
+        have h_canonical : (p * q).trim = p * q ∧ (p * r).trim = p * r := by
+          exact ⟨ mul_is_trimmed p q, mul_is_trimmed p r ⟩
+        have h_add_trim : ∀ (p q : CPolynomial R), (p + q).trim = p.trim + q.trim := by
+          intros p q
+          have h_add_trim : ∀ (p q : CPolynomial R), (p + q).trim = p.trim + q.trim := by
+            intros p q
+            have h_add_trim : ∀ (p q : CPolynomial R), (p + q).coeff
+                = (p.trim + q.trim).coeff := by
+              intros p q
+              ext k
+              simp only [Array.getD_eq_getD_getElem?]
+              convert add_coeff_trimmed p q k using 1
+              ·exact Eq.symm Array.getD_eq_getD_getElem?
+              · convert add_coeff_trimmed p.trim q.trim k using 1
+                · exact Eq.symm Array.getD_eq_getD_getElem?
+                · rw [ Trim.coeff_eq_coeff, Trim.coeff_eq_coeff ]
+            apply Trim.canonical_ext
+            · exact Trim.trim_twice (p + q)
+            · apply Trim.trim_twice
+            · exact fun i => by rw [ Trim.coeff_eq_coeff, h_add_trim ]
+          exact h_add_trim p q
+        rw [ h_add_trim, h_canonical.1, h_canonical.2 ]
+      have h_equiv : (p * (q + r)).coeff = (p * q + p * r).coeff := by
+        ext k
+        rw [ coeff_mul, add_coeff_trimmed ]
+        rw [ coeff_mul, coeff_mul ]
+        rw [ ← List.sum_map_add ]
+        congr! 2
+        ext ⟨ a, i ⟩; by_cases hi : k < i <;> simp +decide
+        · simp +decide [mulPowX]
+          rw [ Array.getElem?_append, Array.getElem?_append, Array.getElem?_append ]; aesop
+        · convert coeff_smul_add_distrib a q r ( k - i ) using 1
+          · convert coeff_mulPowX i ( smul a ( q + r ) ) k using 1
+            · exact Eq.symm Array.getD_eq_getD_getElem?
+            · aesop
+          · simp +decide [ mulPowX]
+            grind
+      have h_trim : (p * (q + r)).trim = (p * q + p * r).trim := by
+        exact Trim.eq_of_equiv (congrFun h_equiv)
+      convert h_eq.mpr _
+      convert h_trim using 1
+      exact Eq.symm (mul_is_trimmed p (q + r))
+
+/-- Multiplication distributes on the right.-/
+theorem right_distrib [LawfulBEq R] (p q r : CPolynomial R) :
+    (p + q) * r = p * r + q * r := by
+  have h_coeff : ∀ k, ((p + q) * r).coeff k = (p * r + q * r).coeff k := by
+    intro k
+    have h_sum : ((p + q) * r).coeff k =
+        List.sum ((List.range (p.size + q.size)).map
+            (fun i => ((smul ((p + q).coeff i) r).mulPowX i).coeff k)) := by
+      convert coeff_mul_eq_sum_range ( p + q ) r k ( p.size + q.size ) _ using 1
+      have h_size_sum : (p + q).size ≤ max p.size q.size := by
+        convert Trim.size_le_size ( p.addRaw q ) using 1
+        exact Eq.symm add_size
+      exact le_trans h_size_sum ( max_le ( Nat.le_add_right _ _ ) ( Nat.le_add_left _ _ ) )
+    have h_split : List.sum ((List.range (p.size + q.size)).map
+        (fun i => ((smul ((p + q).coeff i) r).mulPowX i).coeff k)) =
+      List.sum ((List.range (p.size + q.size)).map
+          (fun i => ((smul (p.coeff i) r).mulPowX i).coeff k)) +
+          List.sum ((List.range (p.size + q.size)).map
+              (fun i => ((smul (q.coeff i) r).mulPowX i).coeff k)) := by
+        have h_split : ∀ i ∈ List.range (p.size + q.size),
+            ((smul ((p + q).coeff i) r).mulPowX i).coeff k =
+              ((smul (p.coeff i) r).mulPowX i).coeff k +
+                  ((smul (q.coeff i) r).mulPowX i).coeff k := by
+            intro i hi
+            have h_split : ((p + q).coeff i) = (p.coeff i) + (q.coeff i) := by
+              exact add_coeff_trimmed p q i
+            convert coeff_mulPowX_smul_add i ( p.coeff i ) ( q.coeff i ) r k using 1
+            rw [ h_split ]
+        rw [ ← List.sum_map_add, List.map_congr_left h_split ]
+    have h_coeff_r : (p * r).coeff k + (q * r).coeff k =
+        List.sum ((List.range (p.size + q.size)).map
+            (fun i => ((smul (p.coeff i) r).mulPowX i).coeff k)) +
+                List.sum ((List.range (p.size + q.size)).map
+                    (fun i => ((smul (q.coeff i) r).mulPowX i).coeff k)) := by
+      have h_coeff_r : (p * r).coeff k =
+          List.sum ((List.range (p.size + q.size)).map
+              (fun i => ((smul (p.coeff i) r).mulPowX i).coeff k))
+                  ∧ (q * r).coeff k = List.sum
+                      ((List.range (p.size + q.size)).map
+                          (fun i => ((smul (q.coeff i) r).mulPowX i).coeff k)) := by
+        apply And.intro
+        · convert coeff_mul_eq_sum_range p r k ( p.size + q.size )
+              ( by linarith ) using 1
+        · convert coeff_mul_eq_sum_range q r k ( p.size + q.size )
+              ( by linarith ) using 1
+      rw [h_coeff_r.1, h_coeff_r.2 ]
+    rw [ h_sum, h_split, ← h_coeff_r, add_coeff_trimmed ]
+  convert Trim.canonical_ext _ _ ( h_coeff )
+  · exact mul_is_trimmed (p + q) r
+  · apply Trim.trim_twice
+
+
 theorem mul_assoc [LawfulBEq R] (p q r : CPolynomial R) : p * q * r = p * (q * r) := by
   apply Trim.canonical_ext
   · exact mul_is_trimmed (p * q) r
   · exact mul_is_trimmed p (q * r)
   · exact mul_assoc_equiv p q r
 
-
-/--
-Helper lemma for mul_comm.
-The convolution sum is symmetric under reversal of the range.
--/
-lemma sum_range_reverse [LawfulBEq R] (p q : CPolynomial R) (k : ℕ) :
-    (Finset.range (k + 1)).sum (fun i => p.coeff i * q.coeff (k - i)) =
-    (Finset.range (k + 1)).sum (fun j => p.coeff (k - j) * q.coeff j) := by
-  -- sum_range_reflect: Σ_{j < n} f(n-1-j) = Σ_{j < n} f(j)
-  -- For n = k+1: Σ_{j < k+1} f(k-j) = Σ_{j < k+1} f(j)
-  -- We want to show: Σ p[i]*q[k-i] = Σ p[k-j]*q[j]
-  -- The RHS has the "reflected" form, so apply reflect to get LHS form
-  rw [← Finset.sum_range_reflect (fun j => p.coeff (k - j) * q.coeff j) (k + 1)]
-  apply Finset.sum_congr rfl
-  intro j hj
-  simp only [Finset.mem_range] at hj
-  -- j < k + 1 means j ≤ k
-  have hj' : j ≤ k := Nat.lt_succ_iff.mp hj
-  -- Goal: p.coeff (k - (k - j)) * q.coeff (k - j) = p.coeff j * q.coeff (k - j)
-  -- Use Nat.sub_sub_self: k - (k - j) = j when j ≤ k
-  simp only [Nat.add_sub_cancel, Nat.sub_sub_self hj']
-
-
 section CommutativeRing
+
+--Theorems about multiplication in the case where R is commutative
 
 variable {R : Type*} [CommRing R] [BEq R]
 
-/--
-Helper lemma for mul_comm.
-Using commutativity of R to swap the multiplication order.
--/
+/-- Using commutativity of R to swap the multiplication order.-/
 lemma mul_coeff_comm [LawfulBEq R] (p q : CPolynomial R) (k : ℕ) :
     (Finset.range (k + 1)).sum (fun i => p.coeff i * q.coeff (k - i)) =
     (Finset.range (k + 1)).sum (fun i => q.coeff i * p.coeff (k - i)) := by
-  -- Step 1: Reverse the sum (substitute j = k - i)
   rw [sum_range_reverse]
-  -- Step 2: Use commutativity in R
   apply Finset.sum_congr rfl
   intro j _
   ring_nf
 
 
-/--
-Helper lemma for mul_comm.
-Coefficients of p * q and q * p are equal.
--/
+/-- Coefficients of p * q and q * p are equal. -/
 lemma mul_comm_coeff [LawfulBEq R] (p q : CPolynomial R) (k : ℕ) :
     (p * q).coeff k = (q * p).coeff k := by
   rw [mul_coeff, mul_coeff]
   exact mul_coeff_comm p q k
 
-/--
-Helper lemma for mul_comm.
-p * q and q * p are equivalent (have equal coefficients everywhere).
- -/
+/-- p * q and q * p are equivalent (have equal coefficients everywhere).-/
 lemma mul_comm_equiv [LawfulBEq R] (p q : CPolynomial R) :
     Trim.equiv (p * q) (q * p) := by
   intro i
