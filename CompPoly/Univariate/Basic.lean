@@ -1218,6 +1218,28 @@ lemma mul_assoc_equiv [LawfulBEq R] (p q r : CPolynomial R) :
 
 -- Main theorems for typeclass instances
 
+/-- Multiplication on the right by zero gives zero. -/
+theorem mul_zero [LawfulBEq R] (p : CPolynomial R) : p * 0 = 0 := by
+  have : ∀ (k : ℕ), ( p * 0 ).coeff k = 0 := by
+    intro k
+    rw [ mul_coeff ]
+    simp
+  apply Trim.canonical_ext
+  · exact mul_is_trimmed p 0
+  · exact Trim.canonical_empty
+  · exact this
+
+/-- Multiplication on the left by zero gives zero. -/
+theorem zero_mul [LawfulBEq R] (p : CPolynomial R) : p * 0 = 0 := by
+  have : ∀ (k : ℕ), ( p * 0 ).coeff k = 0 := by
+    intro k
+    rw [ mul_coeff ]
+    simp
+  apply Trim.canonical_ext
+  · exact mul_is_trimmed p 0
+  · exact Trim.canonical_empty
+  · exact this
+
 /-- Multiplication by 1 on the right trims the polynomial. -/
 theorem mul_one_trim [LawfulBEq R] (p : CPolynomial R) : p * 1 = p.trim := by
   have h_equiv : Trim.equiv (p * 1) p := by
