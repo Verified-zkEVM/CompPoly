@@ -1220,9 +1220,9 @@ lemma mul_assoc_equiv [LawfulBEq R] (p q r : CPolynomial R) :
 
 -- Main theorems for typeclass instances
 
-/-
+
 /-- Multiplication on the right by zero gives zero. -/
-theorem mul_zero [LawfulBEq R] (p : CPolynomial R) : p * 0 = 0 := by
+protected theorem mul_zero [LawfulBEq R] (p : CPolynomial R) : p * 0 = 0 := by
   have : ∀ (k : ℕ), ( p * 0 ).coeff k = 0 := by
     intro k
     rw [ mul_coeff ]
@@ -1233,7 +1233,7 @@ theorem mul_zero [LawfulBEq R] (p : CPolynomial R) : p * 0 = 0 := by
   · exact this
 
 /-- Multiplication on the left by zero gives zero. -/
-theorem zero_mul [LawfulBEq R] (p : CPolynomial R) : p * 0 = 0 := by
+protected theorem zero_mul [LawfulBEq R] (p : CPolynomial R) : p * 0 = 0 := by
   have : ∀ (k : ℕ), ( p * 0 ).coeff k = 0 := by
     intro k
     rw [ mul_coeff ]
@@ -1242,7 +1242,7 @@ theorem zero_mul [LawfulBEq R] (p : CPolynomial R) : p * 0 = 0 := by
   · exact mul_is_trimmed p 0
   · exact Trim.canonical_empty
   · exact this
--/
+
 
 /-- Multiplication by 1 on the right trims the polynomial. -/
 theorem mul_one_trim [LawfulBEq R] (p : CPolynomial R) : p * 1 = p.trim := by
@@ -1275,7 +1275,7 @@ theorem one_mul_trim [LawfulBEq R] (p : CPolynomial R) : 1 * p = p.trim := by
   rw[this, zero_add_trim]
 
 /-- Multiplication distributes on the left.-/
-theorem left_distrib [LawfulBEq R] (p q r : CPolynomial R) :
+protected theorem left_distrib [LawfulBEq R] (p q r : CPolynomial R) :
     p * (q + r) = p * q + p * r := by
       have h_eq : p * (q + r) = p * q + p * r ↔ p * (q + r) = (p * q + p * r).trim := by
         have h_canonical : (p * q).trim = p * q ∧ (p * r).trim = p * r := by
@@ -1322,7 +1322,7 @@ theorem left_distrib [LawfulBEq R] (p q r : CPolynomial R) :
       exact Eq.symm (mul_is_trimmed p (q + r))
 
 /-- Multiplication distributes on the right.-/
-theorem right_distrib [LawfulBEq R] (p q r : CPolynomial R) :
+protected theorem right_distrib [LawfulBEq R] (p q r : CPolynomial R) :
     (p + q) * r = p * r + q * r := by
   have h_coeff : ∀ k, ((p + q) * r).coeff k = (p * r + q * r).coeff k := by
     intro k
@@ -1373,7 +1373,7 @@ theorem right_distrib [LawfulBEq R] (p q r : CPolynomial R) :
   · apply Trim.trim_twice
 
 
-theorem mul_assoc [LawfulBEq R] (p q r : CPolynomial R) : p * q * r = p * (q * r) := by
+protected theorem mul_assoc [LawfulBEq R] (p q r : CPolynomial R) : p * q * r = p * (q * r) := by
   apply Trim.canonical_ext
   · exact mul_is_trimmed (p * q) r
   · exact mul_is_trimmed p (q * r)
@@ -1408,7 +1408,7 @@ lemma mul_comm_equiv [LawfulBEq R] (p q : CPolynomial R) :
   exact mul_comm_coeff p q i
 
 /-- Commutativity of multiplication for CPolynomial over a CommRing. -/
-theorem mul_comm [LawfulBEq R] (p q : CPolynomial R) : p * q = q * p := by
+protected theorem mul_comm [LawfulBEq R] (p q : CPolynomial R) : p * q = q * p := by
   apply Trim.canonical_ext
   · exact mul_is_trimmed p q
   · exact mul_is_trimmed q p
