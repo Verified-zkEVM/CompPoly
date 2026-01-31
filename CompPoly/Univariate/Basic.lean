@@ -95,7 +95,9 @@ def degree (p : CPolynomial R) : Nat :=
   This matches Mathlib's `Polynomial.natDegree` API.
 -/
 def natDegree (p : CPolynomial R) : ℕ :=
-  sorry
+    match p.lastNonzero with
+    | none => 0
+    | some i => i.val + 1
 
 /-- Return the leading coefficient of a `CPolynomial` as the last coefficient of the trimmed array,
 or `0` if the trimmed array is empty. -/
