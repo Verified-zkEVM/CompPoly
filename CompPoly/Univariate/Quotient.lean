@@ -673,12 +673,10 @@ instance [Semiring R] [LawfulBEq R] : Semiring (QuotientCPolynomial R) where
   natCast_zero := by
     apply Quotient.sound
     intro i; unfold C; simp
-    -- TODO make this simp- or grind-able
   natCast_succ := by
     intro n
     apply Quotient.sound
     intro i; rw [const_sum (n : R) (1 : R)]; simp
-    -- TODO make this simp- or grind-able
 
 end Semiring
 
