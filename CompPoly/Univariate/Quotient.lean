@@ -222,23 +222,28 @@ lemma mul_equiv₂ [LawfulBEq R] (a b₁ b₂ : CPolynomial R) :
       by intros _ _; rfl
   intro h
   repeat rw [h_mul_def]
-  have h_foldl_equiv : ∀ (l : List (R × ℕ)) (acc₁ acc₂ : CPolynomial R), acc₁ ≈ acc₂ → List.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b₁).mulPowX i)) acc₁ l ≈ List.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b₂).mulPowX i)) acc₂ l := by
-    intro l acc₁ acc₂ h;
-    induction' l using List.reverseRecOn with l ihizing acc₁ acc₂ h;
-    · exact h;
-    · have h_add_equiv : ∀ (acc₁ acc₂ : CPolynomial R) (a' : R) (i : ℕ), acc₁ ≈ acc₂ → (acc₁.add ((smul a' b₁).mulPowX i)) ≈ (acc₂.add ((smul a' b₂).mulPowX i)) := by
-        intros acc₁ acc₂ a' i h;
-        apply add_equiv;
-        · exact h;
-        · apply mulPowX_equiv;
-          intro i; simp +decide [ *, CompPoly.CPolynomial.smul ] ;
-          cases h' : b₁[i]? <;> cases h'' : b₂[i]? <;> simp_all +decide [ CompPoly.CPolynomial.coeff ];
-          · have := ‹b₁ ≈ b₂› i; simp_all +decide [ CompPoly.CPolynomial.coeff ] ;
+  have h_foldl_equiv : ∀ (l : List (R × ℕ)) (acc₁ acc₂ : CPolynomial R), acc₁ ≈ acc₂ →
+    List.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b₁).mulPowX i)) acc₁ l ≈
+    List.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b₂).mulPowX i)) acc₂ l := by
+    intro l acc₁ acc₂ h
+    induction' l using List.reverseRecOn with l ihizing acc₁ acc₂ h
+    · exact h
+    · have h_add_equiv : ∀ (acc₁ acc₂ : CPolynomial R) (a' : R) (i : ℕ), acc₁ ≈ acc₂ →
+        (acc₁.add ((smul a' b₁).mulPowX i)) ≈ (acc₂.add ((smul a' b₂).mulPowX i)) := by
+        intros acc₁ acc₂ a' i h
+        apply add_equiv
+        · exact h
+        · apply mulPowX_equiv
+          intro i; simp +decide [ *, CPolynomial.smul ]
+          cases h' : b₁[i]? <;> cases h'' : b₂[i]?
+            <;> simp
+          · have := ‹b₁ ≈ b₂› i; simp_all +decide [ CPolynomial.coeff ]
             rw [ ← this, MulZeroClass.mul_zero ];
-          · have := ‹b₁ ≈ b₂› i; simp_all +decide [ CompPoly.CPolynomial.coeff ] ;
-          · have := ‹b₁ ≈ b₂› i; aesop;
-      grind;
-  convert h_foldl_equiv ( Array.toList ( Array.zipIdx a ) ) ( CompPoly.CPolynomial.mk #[] ) ( CompPoly.CPolynomial.mk #[] ) ( by rfl ) using 1 <;> grind
+          · have := ‹b₁ ≈ b₂› i; simp_all +decide [ CPolynomial.coeff ]
+          · have := ‹b₁ ≈ b₂› i; aesop
+      grind
+  convert h_foldl_equiv (Array.toList (Array.zipIdx a)) (CPolynomial.mk #[])
+    (CPolynomial.mk #[]) (by rfl) using 1 <;> grind
 
 end EquivalenceLemmas
 
@@ -723,8 +728,8 @@ instance [LawfulBEq R] : Ring (QuotientCPolynomial R) where
     have h_neg_succ : ∀ n : ℕ, Int.negSucc n = - (n + 1 : ℤ) := by grind
     convert h_neg_succ
     convert Quotient.eq using 1
-    simp +decide [ CompPoly.CPolynomial.instSetoidCPolynomial ]
-    simp +decide [ CompPoly.CPolynomial.C, CompPoly.CPolynomial.neg ]
+    simp +decide [ instSetoidCPolynomial ]
+    simp +decide [ C, neg ]
     grind
   neg_add_cancel := QuotientCPolynomial.neg_add_cancel
 
