@@ -514,7 +514,7 @@ lemma nsmul_succ [LawfulBEq R] : ∀ (n : ℕ) (x : QuotientCPolynomial R),
   apply eq_to_equiv
   apply CPolynomial.nsmul_succ
 
-@[grind =_]
+@[grind =]
 lemma sub_eq_add_neg [LawfulBEq R] : ∀ (a b : QuotientCPolynomial R), a - b = a + -b := by
   intro a b
   refine Quotient.inductionOn₂ a b ?_
