@@ -147,7 +147,7 @@ lemma foldl_mulStep_zeros {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
   (hl : ∀ x ∈ l, x.1 = 0) :
   equiv (l.foldl (mulStep q) acc) acc := by
   induction' l using List.reverseRecOn with x xs ih generalizing acc
-  · exact fun _ => rfl
+  · intro _; rfl
   · simp_all +decide [ List.foldl_append ]
     -- use the multiplication step and the induction hypothesis
     have h_mulStep : equiv (mulStep q (List.foldl (mulStep q) acc x) xs)
@@ -217,25 +217,28 @@ lemma mul_equiv [LawfulBEq R] (a₁ a₂ b : CPolynomial R) :
 /-- Multiplication is well-defined on the right with respect to equivalence. -/
 lemma mul_equiv₂ [LawfulBEq R] (a b₁ b₂ : CPolynomial R) :
     b₁ ≈ b₂ → a.mul b₁ ≈ a.mul b₂ := by
-  -- By definition of multiplication, we can express `a.mul b₁` and `a.mul b₂` in terms of
-  -- their sums of products of coefficients.
   have h_mul_def : ∀ (a b : CPolynomial R),
     a.mul b = (a.zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b).mulPowX i)) (mk #[])) :=
-      by exact fun a b => rfl
+      by intros _ _; rfl
   intro h
-  have h_foldl_equiv : ∀ (l : List (R × ℕ)) (acc : CPolynomial R),
-    List.foldl (fun acc (a', i) => acc.add ((smul a' b₁).mulPowX i)) acc l ≈
-    List.foldl (fun acc (a', i) => acc.add ((smul a' b₂).mulPowX i)) acc l := by
-    intro l acc
-    induction' l using List.reverseRecOn with l ih generalizing acc; rfl
-    · simp +zetaDelta at *
-      -- Apply the add_equiv lemma to the foldl results and the mulPowX terms.
-      apply add_equiv
-      · expose_names; exact h_1 acc
-      · -- Apply the lemma that multiplying by X^i preserves equivalence.
-        apply mulPowX_equiv
-        exact fun i => by rw [ smul_equiv, smul_equiv ]; exact congr_arg _ ( h i )
-  convert h_foldl_equiv ( Array.toList ( Array.zipIdx a ) ) ( C 0 ) using 1 <;> sorry
+  repeat rw [h_mul_def]
+  have h_foldl_equiv : ∀ (l : List (R × ℕ)) (acc₁ acc₂ : CPolynomial R), acc₁ ≈ acc₂ → List.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b₁).mulPowX i)) acc₁ l ≈ List.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b₂).mulPowX i)) acc₂ l := by
+    intro l acc₁ acc₂ h;
+    induction' l using List.reverseRecOn with l ihizing acc₁ acc₂ h;
+    · exact h;
+    · have h_add_equiv : ∀ (acc₁ acc₂ : CPolynomial R) (a' : R) (i : ℕ), acc₁ ≈ acc₂ → (acc₁.add ((smul a' b₁).mulPowX i)) ≈ (acc₂.add ((smul a' b₂).mulPowX i)) := by
+        intros acc₁ acc₂ a' i h;
+        apply add_equiv;
+        · exact h;
+        · apply mulPowX_equiv;
+          intro i; simp +decide [ *, CompPoly.CPolynomial.smul ] ;
+          cases h' : b₁[i]? <;> cases h'' : b₂[i]? <;> simp_all +decide [ CompPoly.CPolynomial.coeff ];
+          · have := ‹b₁ ≈ b₂› i; simp_all +decide [ CompPoly.CPolynomial.coeff ] ;
+            rw [ ← this, MulZeroClass.mul_zero ];
+          · have := ‹b₁ ≈ b₂› i; simp_all +decide [ CompPoly.CPolynomial.coeff ] ;
+          · have := ‹b₁ ≈ b₂› i; aesop;
+      grind;
+  convert h_foldl_equiv ( Array.toList ( Array.zipIdx a ) ) ( CompPoly.CPolynomial.mk #[] ) ( CompPoly.CPolynomial.mk #[] ) ( by rfl ) using 1 <;> grind
 
 end EquivalenceLemmas
 
@@ -435,6 +438,7 @@ instance : IntCast (QuotientCPolynomial R) := ⟨fun n => Quotient.mk _ (CPolyno
 
 section AddCommGroup
 
+@[grind =_]
 lemma add_assoc [LawfulBEq R] : ∀ (a b c : QuotientCPolynomial R), a + b + c = a + (b + c) := by
   intro a b c
   refine Quotient.inductionOn₃ a b c ?_
@@ -443,7 +447,7 @@ lemma add_assoc [LawfulBEq R] : ∀ (a b c : QuotientCPolynomial R), a + b + c =
   apply eq_to_equiv
   apply CPolynomial.add_assoc
 
-@[grind]
+@[simp]
 lemma zero_add_equiv [LawfulBEq R] (p : CPolynomial R) : 0 + p ≈ p := by
   intro i
   change ((0 : CPolynomial R).add p).coeff i = p.coeff i
@@ -472,6 +476,7 @@ lemma add_zero [LawfulBEq R] : ∀ (a : QuotientCPolynomial R), a + 0 = a := by
   rw [add_coeff?]
   simp
 
+@[grind =>]
 lemma add_comm [LawfulBEq R] : ∀ (a b : QuotientCPolynomial R), a + b = b + a := by
   intro a b
   refine Quotient.inductionOn₂ a b ?_
@@ -489,6 +494,7 @@ lemma neg_add_cancel [LawfulBEq R] : ∀ (a : QuotientCPolynomial R), -a + a = 0
   apply eq_to_equiv
   apply CPolynomial.neg_add_cancel
 
+@[simp]
 lemma nsmul_zero [LawfulBEq R] : ∀ (x : QuotientCPolynomial R),
     QuotientCPolynomial.nsmul 0 x = 0 := by
   intros x
@@ -498,6 +504,7 @@ lemma nsmul_zero [LawfulBEq R] : ∀ (x : QuotientCPolynomial R),
   apply eq_to_equiv
   apply CPolynomial.nsmul_zero
 
+@[grind =>]
 lemma nsmul_succ [LawfulBEq R] : ∀ (n : ℕ) (x : QuotientCPolynomial R),
     QuotientCPolynomial.nsmul (n + 1) x = QuotientCPolynomial.nsmul n x + x := by
   intro n x
@@ -507,6 +514,7 @@ lemma nsmul_succ [LawfulBEq R] : ∀ (n : ℕ) (x : QuotientCPolynomial R),
   apply eq_to_equiv
   apply CPolynomial.nsmul_succ
 
+@[grind =_]
 lemma sub_eq_add_neg [LawfulBEq R] : ∀ (a b : QuotientCPolynomial R), a - b = a + -b := by
   intro a b
   refine Quotient.inductionOn₂ a b ?_
@@ -525,7 +533,7 @@ instance [LawfulBEq R] : AddCommGroup (QuotientCPolynomial R) where
   nsmul_zero := nsmul_zero
   nsmul_succ := nsmul_succ
   zsmul := zsmulRec
-  sub_eq_add_neg := QuotientCPolynomial.sub_eq_add_neg
+  sub_eq_add_neg := sub_eq_add_neg
 
 end AddCommGroup
 
@@ -684,7 +692,7 @@ lemma mul_comm [LawfulBEq R]: ∀ (a b : QuotientCPolynomial R), a * b = b * a :
   intros p q; clear a b
   apply Quotient.sound
   change p * q ≈ q * p
-  rw [CPolynomial.mul_comm p q]
+  simp [CPolynomial.mul_comm p q]
 
 /-- `CPolynomial R` forms a commutative semiring when `R` is a commutative semiring.
 
@@ -697,31 +705,21 @@ end CommSemiring
 
 section Ring
 
+lemma zsmul_zero' [LawfulBEq R] : ∀ (a : QuotientCPolynomial R), zsmulRec nsmulRec 0 a = 0 := by
+  intro a; simp [zsmulRec]; simp [nsmulRec]
+
 /-- `CPolynomial R` forms a ring when `R` is a ring.
 
   The ring structure extends the semiring structure with negation and subtraction.
   Most of the structure is already provided by the `Semiring` instance.
 -/
-instance [Ring R] [BEq R] [LawfulBEq R] : Ring (QuotientCPolynomial R) where
+instance [LawfulBEq R] : Ring (QuotientCPolynomial R) where
   sub_eq_add_neg := by intro a b; (grind)
   zsmul := zsmulRec
-  zsmul_zero' := by
-    -- By definition of zsmulRec, we have zsmulRec nsmulRec 0 a = nsmulRec 0 a.
-    simp [zsmulRec];
-    -- By definition of nsmulRec, we have nsmulRec 0 a = 0 for any a.
-    simp [nsmulRec]
-  zsmul_succ' := by
-    exact?
-  zsmul_neg' := by
-    -- By definition of zsmulRec, for negative numbers, it is the negation of the positive case.
-    intros n a
-    simp [zsmulRec]
-  intCast_ofNat := by
-    -- By definition of `IntCast.intCast`, we know that `IntCast.intCast n` is equivalent to
-    -- the constant polynomial with coefficient `n`.
-    intro n
-    simp [IntCast.intCast];
-    rfl
+  zsmul_zero' := zsmul_zero'
+  zsmul_succ' := by intros _ _; rfl
+  zsmul_neg' := by intros n a; simp [zsmulRec]
+  intCast_ofNat := by intro n; simp [IntCast.intCast]; rfl
   intCast_negSucc := by
     -- By definition of `Int.negSucc`, we have `Int.negSucc n = - (n + 1)`.
     have h_neg_succ : ∀ n : ℕ, Int.negSucc n = - (n + 1 : ℤ) := by grind
