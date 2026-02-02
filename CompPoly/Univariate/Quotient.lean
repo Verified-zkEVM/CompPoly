@@ -728,8 +728,8 @@ instance [LawfulBEq R] : Ring (QuotientCPolynomial R) where
     have h_neg_succ : ∀ n : ℕ, Int.negSucc n = - (n + 1 : ℤ) := by grind
     convert h_neg_succ
     convert Quotient.eq using 1
-    simp +decide [ instSetoidCPolynomial ]
-    simp +decide [ C, neg ]
+    simp +decide [ CPolynomial.instSetoidCPolynomial ]
+    simp +decide [ CPolynomial.C, CPolynomial.neg ]
     grind
   neg_add_cancel := QuotientCPolynomial.neg_add_cancel
 
