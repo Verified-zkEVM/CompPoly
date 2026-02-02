@@ -116,12 +116,12 @@ CompPoly aims to be the premier formally verified library for computable polynom
 	- Define serialization format(s) for polynomial types
 	- Compatibility with ArkLib protocol serialization needs
 	- Consider: to/from bytes, to/from JSON, canonical encoding for hashing
-<!-- 3.	**FFT-based interpolation variants (post-FFT/NTT)**
+3.	**FFT-based interpolation variants (post-FFT/NTT)**
 	- Implement FFT-based Lagrange interpolation when the evaluation domain is an FFT/NTT-friendly subgroup
 	- Add fast barycentric interpolation for repeated interpolation queries over a fixed set of nodes
 	- Provide `interpolateFFT` / `interpolateNTT` APIs that reuse precomputed twiddle factors and domain metadata
 	- Prove equivalence to the spec (naive) `interpolate` implementation and document complexity (O(n log n))
-	- Include edge-case handling: non-power-of-two domains, zero-padding strategies, and domain mismatch errors -->
+	- Include edge-case handling: non-power-of-two domains, zero-padding strategies, and domain mismatch errors
 4.	**Proof ergonomics: simp/grind sets + tactics**
 	- Identify rewrite bottlenecks when porting Mathlib poly proofs → CompPoly
 	- Build simp sets and grind sets for common operations
