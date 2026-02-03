@@ -239,7 +239,7 @@ lemma toPoly_mul_coeff [LawfulBEq R] (p q : CPolynomial R) (i : ℕ) :
       Finset.HasAntidiagonal.antidiagonal i =
       Finset.image (fun x => (x, i - x)) (Finset.range (i + 1)) := by
     exact Finset.Nat.antidiagonal_eq_image i
-  rw [h_antidiagonal ]; simp
+  simp [h_antidiagonal ]
   -- equality of terms
   have h_coeff : ∀ x, p.toPoly.coeff x = p[x]?.getD 0 ∧ q.toPoly.coeff x = q[x]?.getD 0 := by
     intro x
@@ -274,8 +274,7 @@ lemma eval₂_C {R : Type*} [Ring R] [BEq R] {S : Type*} [Semiring S]
     (C r).eval₂ f x = f r := by
   unfold CPolynomial.eval₂ C
   ring_nf
-  unfold Array.zipIdx
-  simp +decide
+  simp [Array.zipIdx]
 
 /-
 Converting the constant polynomial `C r` to a `Polynomial` yields `Polynomial.C r`.
@@ -320,10 +319,10 @@ noncomputable def ringEquiv [LawfulBEq R] :
   toFun := CPolynomialC.toPoly
   invFun := fun p => ⟨p.toImpl, trim_toImpl p⟩
   left_inv := by
-    unfold Function.LeftInverse; intros x
+    unfold Function.LeftInverse; intro x
     apply Subtype.ext; apply toImpl_toPoly_of_canonical
   right_inv := by
-    unfold Function.RightInverse CPolynomialC.toPoly; intros x; simp
+    unfold Function.RightInverse CPolynomialC.toPoly
     apply toPoly_toImpl
   map_mul' := by intros p q; rw [toPoly_mul p q]
   map_add' := by intros p q; apply toPoly_add
