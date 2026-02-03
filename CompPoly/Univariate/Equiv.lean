@@ -249,7 +249,7 @@ lemma toPoly_mul_coeff [LawfulBEq R] (p q : CPolynomial R) (i : ℕ) :
 
 @[grind =]
 lemma toPoly_mul_coeffC [LawfulBEq R] (p q : CPolynomialC R) (i : ℕ) :
-  (p.val * q.val).toPoly.coeff i = (p.val.toPoly * q.val.toPoly).coeff i := by grind
+    (p.val * q.val).toPoly.coeff i = (p.val.toPoly * q.val.toPoly).coeff i := by grind
 
 /-- Converting the product of two canonical polynomials to a mathlib `Polynomial` is the same as
   the product of their conversions: `(p * q).toPoly = p.toPoly * q.toPoly`. -/
