@@ -94,10 +94,7 @@ def degree (p : CPolynomial R) : Nat :=
   Returns the degree as a natural number. For the zero polynomial, returns `0`.
   This matches Mathlib's `Polynomial.natDegree` API.
 -/
-def natDegree (p : CPolynomial R) : ℕ :=
-    match p.lastNonzero with
-    | none => 0
-    | some i => i.val + 1
+def natDegree (p : CPolynomial R) : ℕ := sorry
 
 /-- Return the leading coefficient of a `CPolynomial` as the last coefficient of the trimmed array,
 or `0` if the trimmed array is empty. -/
@@ -155,7 +152,6 @@ theorem lastNonzero_some_iff [LawfulBEq R] {p : CPolynomial R} {k} :
   have ⟨ k', h_some'⟩ := lastNonzero_some k.is_lt h_prop.left
   have k_is_k' := lastNonzero_unique (lastNonzero_spec h_some') h_prop
   rwa [← k_is_k']
-
 
 /-- eliminator for `p.lastNonzero`, e.g. use with the induction tactic as follows:
   ```
@@ -572,7 +568,6 @@ lemma matchSize_size {p q : CPolynomial Q} :
 lemma zipWith_size {R} {f : R → R → R} {a b : Array R} (h : a.size = b.size) :
     (Array.zipWith f a b).size = a.size := by
   simp; omega
-
 
 -- TODO we could generalize the next few lemmas to matchSize + zipWith f for any f
 
@@ -1169,7 +1164,6 @@ lemma mul_coeff [LawfulBEq R] (p q : CPolynomial R) (k : ℕ) :
     (p * q).coeff k = (Finset.range (k + 1)).sum (fun i => p.coeff i * q.coeff (k - i)) := by
   rw [mul_coeff_range_size, sum_range_extend]
 
-
 /--
 Helper lemma for mul_assoc.
 The coefficient of `p * (q * r)` at index `n`.
@@ -1201,6 +1195,7 @@ lemma mul_mul_coeff [LawfulBEq R] (p q r : CPolynomial R) (n : ℕ) :
             convert mul_coeff _ _ _
             · rw [ mul_coeff, Finset.sum_mul _ _ _ ]
             · (expose_names; exact inst_2)
+
  /--
  Helper lemma for mul_assoc.
  Coefficients of `(p * q) * r` and `p * (q * r)` are equal.
@@ -1220,7 +1215,6 @@ lemma mul_assoc_equiv [LawfulBEq R] (p q r : CPolynomial R) :
 
 -- Main theorems for typeclass instances
 
-
 /-- Multiplication on the right by zero gives zero. -/
 protected theorem mul_zero [LawfulBEq R] (p : CPolynomial R) : p * 0 = 0 := by
   have : ∀ (k : ℕ), ( p * 0 ).coeff k = 0 := by
@@ -1233,16 +1227,15 @@ protected theorem mul_zero [LawfulBEq R] (p : CPolynomial R) : p * 0 = 0 := by
   · exact this
 
 /-- Multiplication on the left by zero gives zero. -/
-protected theorem zero_mul [LawfulBEq R] (p : CPolynomial R) : p * 0 = 0 := by
-  have : ∀ (k : ℕ), ( p * 0 ).coeff k = 0 := by
+protected theorem zero_mul [LawfulBEq R] (p : CPolynomial R) : 0 * p = 0 := by
+  have : ∀ (k : ℕ), ( 0 * p ).coeff k = 0 := by
     intro k
     rw [ mul_coeff ]
     simp
   apply Trim.canonical_ext
-  · exact mul_is_trimmed p 0
+  · exact mul_is_trimmed 0 p
   · exact Trim.canonical_empty
   · exact this
-
 
 /-- Multiplication by 1 on the right trims the polynomial. -/
 theorem mul_one_trim [LawfulBEq R] (p : CPolynomial R) : p * 1 = p.trim := by
@@ -1372,7 +1365,6 @@ protected theorem right_distrib [LawfulBEq R] (p q r : CPolynomial R) :
   · exact mul_is_trimmed (p + q) r
   · apply Trim.trim_twice
 
-
 protected theorem mul_assoc [LawfulBEq R] (p q r : CPolynomial R) : p * q * r = p * (q * r) := by
   apply Trim.canonical_ext
   · exact mul_is_trimmed (p * q) r
@@ -1393,7 +1385,6 @@ lemma mul_coeff_comm [LawfulBEq R] (p q : CPolynomial R) (k : ℕ) :
   apply Finset.sum_congr rfl
   intro j _
   ring_nf
-
 
 /-- Coefficients of p * q and q * p are equal. -/
 lemma mul_comm_coeff [LawfulBEq R] (p q : CPolynomial R) (k : ℕ) :
