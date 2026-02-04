@@ -14,7 +14,7 @@ import CompPoly.Univariate.Raw
 -/
 namespace CompPoly
 
-namespace CPolynomialRaw
+namespace CPolynomial.Raw
 
 namespace Lagrange
 
@@ -22,7 +22,7 @@ namespace Lagrange
 
   This is the unique monic polynomial of degree `n` that vanishes at all `n`-th roots of unity
   (when `ω` is a primitive `n`-th root of unity). -/
-def nodal {R : Type*} [Ring R] [BEq R] (n : ℕ) (ω : R) : CPolynomialRaw R :=
+def nodal {R : Type*} [Ring R] [BEq R] (n : ℕ) (ω : R) : CPolynomial.Raw R :=
   (List.range n).foldl (fun acc i => acc.mul (X - C (ω ^ i))) (C 1)
 
 /-- Produces the unique polynomial of degree at most n-1 that equals r[i] at ω^i
@@ -30,7 +30,7 @@ def nodal {R : Type*} [Ring R] [BEq R] (n : ℕ) (ω : R) : CPolynomialRaw R :=
 
     Uses Lagrange interpolation: p(X) = Σᵢ rᵢ · Lᵢ(X)
     where Lᵢ(X) = ∏_{j≠i} (X - ωʲ) / (ωⁱ - ωʲ). -/
-def interpolate {R : Type*} [Field R] [BEq R] (n : ℕ) (ω : R) (r : Vector R n) : CPolynomialRaw R :=
+def interpolate {R : Type*} [Field R] [BEq R] (n : ℕ) (ω : R) (r : Vector R n) : CPolynomial.Raw R :=
   -- Lagrange interpolation: p(X) = Σᵢ rᵢ · Lᵢ(X)
   -- where Lᵢ(X) = ∏_{j≠i} (X - ωʲ) / (ωⁱ - ωʲ)
   (List.finRange n).foldl (fun acc i =>
@@ -39,7 +39,7 @@ def interpolate {R : Type*} [Field R] [BEq R] (n : ℕ) (ω : R) (r : Vector R n
   ) 0
 where
   /-- The i-th Lagrange basis polynomial Lᵢ(X) = ∏_{j≠i} (X - ωʲ) / (ωⁱ - ωʲ) -/
-  lagrangeBasis (n : ℕ) (ω : R) (i : Fin n) : CPolynomialRaw R :=
+  lagrangeBasis (n : ℕ) (ω : R) (i : Fin n) : CPolynomial.Raw R :=
     let numerator := (List.finRange n).foldl (fun acc j =>
       if i = j then acc
       else acc.mul (X - C (ω ^ j.val))
@@ -52,6 +52,6 @@ where
 
 end Lagrange
 
-end CPolynomialRaw
+end CPolynomial.Raw
 
 end CompPoly

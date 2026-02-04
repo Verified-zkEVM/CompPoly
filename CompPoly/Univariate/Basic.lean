@@ -15,30 +15,30 @@ import CompPoly.Univariate.Raw
   A polynomial is canonical if it has no trailing zeros, i.e., `p.trim = p`.
 
   This provides a unique representation for each polynomial, enabling stronger extensionality
-  properties compared to the raw `CPolynomialRaw` type.
+  properties compared to the raw `CPolynomial.Raw` type.
 -/
 namespace CompPoly
 
-namespace CPolynomialRaw
+namespace CPolynomial.Raw
 
 variable {R : Type*} [Ring R] [BEq R]
 variable {Q : Type*} [Ring Q]
 
 /-- Canonical univariate polynomials: those with no trailing zeros.
 
-  A polynomial `p : CPolynomialRaw R` is canonical if `p.trim = p`, meaning the last coefficient
+  A polynomial `p : CPolynomial.Raw R` is canonical if `p.trim = p`, meaning the last coefficient
   is non-zero (or the polynomial is empty). This provides a unique representative for each
   polynomial equivalence class.
 
 -/
-def CPolynomial (R : Type*) [BEq R] [Ring R] := { p : CPolynomialRaw R // p.trim = p }
+def CPolynomial (R : Type*) [BEq R] [Ring R] := { p : CPolynomial.Raw R // p.trim = p }
 
 /-- Extensionality for canonical polynomials. -/
 @[ext] theorem CPolynomial.ext {p q : CPolynomial R} (h : p.val = q.val) : p = q := by
   exact Subtype.ext h
 
 /-- Canonical polynomials coerce to raw polynomials. -/
-instance : Coe (CPolynomial R) (CPolynomialRaw R) where coe := Subtype.val
+instance : Coe (CPolynomial R) (CPolynomial.Raw R) where coe := Subtype.val
 
 /-- The zero polynomial is canonical. -/
 instance : Inhabited (CPolynomial R) := ⟨#[], Trim.canonical_empty⟩
@@ -55,30 +55,30 @@ instance : Add (CPolynomial R) where
   add p q := ⟨p.val + q.val, by apply Trim.trim_twice⟩
 
 theorem add_comm : p + q = q + p := by
-  apply CPolynomial.ext; apply CPolynomialRaw.add_comm
+  apply CPolynomial.ext; apply CPolynomial.Raw.add_comm
 
 theorem add_assoc : p + q + r = p + (q + r) := by
-  apply CPolynomial.ext; apply CPolynomialRaw.add_assoc
+  apply CPolynomial.ext; apply CPolynomial.Raw.add_assoc
 
 instance : Zero (CPolynomial R) := ⟨0, zero_canonical⟩
 
 theorem zero_add : 0 + p = p := by
   apply CPolynomial.ext
-  apply CPolynomialRaw.zero_add p.val p.prop
+  apply CPolynomial.Raw.zero_add p.val p.prop
 
 theorem add_zero : p + 0 = p := by
   apply CPolynomial.ext
-  apply CPolynomialRaw.add_zero p.val p.prop
+  apply CPolynomial.Raw.add_zero p.val p.prop
 
 /-- Scalar multiplication by a natural number (result is canonical). -/
 def nsmul (n : ℕ) (p : CPolynomial R) : CPolynomial R :=
-  ⟨CPolynomialRaw.nsmul n p.val, by apply Trim.trim_twice⟩
+  ⟨CPolynomial.Raw.nsmul n p.val, by apply Trim.trim_twice⟩
 
 theorem nsmul_zero : nsmul 0 p = 0 := by
-  apply CPolynomial.ext; apply CPolynomialRaw.nsmul_zero
+  apply CPolynomial.ext; apply CPolynomial.Raw.nsmul_zero
 
 theorem nsmul_succ (n : ℕ) (p : CPolynomial R) : nsmul (n + 1) p = nsmul n p + p := by
-  apply CPolynomial.ext; apply CPolynomialRaw.nsmul_succ
+  apply CPolynomial.ext; apply CPolynomial.Raw.nsmul_succ
 
 instance : Neg (CPolynomial R) where
   neg p := ⟨-p.val, neg_trim p.val p.prop⟩
@@ -88,7 +88,7 @@ instance : Sub (CPolynomial R) where
 
 theorem neg_add_cancel : -p + p = 0 := by
   apply CPolynomial.ext
-  apply CPolynomialRaw.neg_add_cancel
+  apply CPolynomial.Raw.neg_add_cancel
 
 instance [LawfulBEq R] : AddCommGroup (CPolynomial R) where
   add_assoc := add_assoc
@@ -121,7 +121,7 @@ instance : Mul (CPolynomial R) where
   This proof does not work without the assumption that R is non-trivial.
 -/
 instance : One (CPolynomial R) where
-  one := ⟨CPolynomialRaw.C 1, by
+  one := ⟨CPolynomial.Raw.C 1, by
   unfold C trim
   have nonzero : #[(1 : R)].size = 1 := by aesop
   have : lastNonzero #[(1 : R)] = some ⟨0, by simp⟩ := by
@@ -139,7 +139,7 @@ instance : One (CPolynomial R) where
   Note: If `c = 0`, this returns `0` (the zero polynomial).
 -/
 def monomialC [DecidableEq R] (n : ℕ) (c : R) : CPolynomial R :=
-  ⟨CPolynomialRaw.monomial n c, by sorry⟩
+  ⟨CPolynomial.Raw.monomial n c, by sorry⟩
 
 /-- Natural number degree of a canonical polynomial.
 
@@ -247,6 +247,6 @@ end Operations
 -- and back, preserving all ring operations.
 -- TODO: Implement `ringEquivQuotient : CPolynomial R ≃+* QuotientCPolynomial R`
 
-end CPolynomialRaw
+end CPolynomial.Raw
 
 end CompPoly
