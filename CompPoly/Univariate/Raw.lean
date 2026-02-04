@@ -8,12 +8,10 @@ import Mathlib.RingTheory.Polynomial.Basic
 import CompPoly.Data.Array.Lemmas
 
 /-!
-  # Computable Univariate Polynomials
+  # Raw Computable Univariate Polynomials
 
-  This file contains a computable datatype for univariate polynomial, `CPolynomial.Raw R`. This is
-  internally represented as an array of coefficients.
-
-  Note: this has been ported from ArkLib
+  This file contains a raw computable datatype for univariate polynomial, `CPolynomial.Raw R`.
+  It is internally represented as an array of coefficients.
 -/
 open Polynomial
 
@@ -22,9 +20,9 @@ namespace CompPoly
 /-- A type analogous to `Polynomial` that supports computable operations. This is defined to be a
   wrapper around `Array`.
 
-For example, the Array `#[1,2,3]` represents the polynomial `1 + 2x + 3x^2`.
-Two arrays may represent the same polynomial via zero-padding,
-for example `#[1,2,3] = #[1,2,3,0,0,0,...]`.
+  For example, the Array `#[1,2,3]` represents the polynomial `1 + 2x + 3x^2`.
+  Two arrays may represent the same polynomial via zero-padding,
+  for example `#[1,2,3] = #[1,2,3,0,0,0,...]`.
 -/
 @[reducible, inline, specialize]
 def CPolynomial.Raw (R : Type*) := Array R

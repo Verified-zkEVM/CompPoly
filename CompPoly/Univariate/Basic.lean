@@ -9,7 +9,7 @@ import CompPoly.Data.Array.Lemmas
 import CompPoly.Univariate.Raw
 
 /-!
-  # Canonical Univariate Polynomials
+  # Computable Univariate Polynomials
 
   This file defines `CPolynomial R`, the type of canonical (trimmed) univariate polynomials.
   A polynomial is canonical if it has no trailing zeros, i.e., `p.trim = p`.
@@ -24,7 +24,7 @@ namespace CPolynomial.Raw
 variable {R : Type*} [Ring R] [BEq R]
 variable {Q : Type*} [Ring Q]
 
-/-- Canonical univariate polynomials: those with no trailing zeros.
+/-- Computable univariate polynomials are represented canonically with no trailing zeros.
 
   A polynomial `p : CPolynomial.Raw R` is canonical if `p.trim = p`, meaning the last coefficient
   is non-zero (or the polynomial is empty). This provides a unique representative for each
@@ -105,7 +105,7 @@ section MulOne
 
 variable [Nontrivial R]
 
-/-- Multiplication of canonical polynomials (result is canonical).
+/-- Multiplication of canonical polynomials.
 
   The product of two canonical polynomials is canonical because multiplication
   preserves the "no trailing zeros" property.
@@ -114,7 +114,7 @@ instance : Mul (CPolynomial R) where
   mul p q :=
     ⟨p.val * q.val, by sorry⟩
 
-/-- The constant polynomial 1 is canonical, and is the Unit for mutliplication.
+/-- The constant polynomial 1 is canonical, and is the Unit for multiplication.
 
   This is `#[1]`, which has no trailing zeros.
 
