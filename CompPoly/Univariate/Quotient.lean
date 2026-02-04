@@ -217,33 +217,25 @@ lemma mul_equiv [LawfulBEq R] (a₁ a₂ b : CPolynomial R) :
 /-- Multiplication is well-defined on the right with respect to equivalence. -/
 lemma mul_equiv₂ [LawfulBEq R] (a b₁ b₂ : CPolynomial R) :
     b₁ ≈ b₂ → a.mul b₁ ≈ a.mul b₂ := by
-  have h_mul_def : ∀ (a b : CPolynomial R),
+  -- By definition of multiplication, we can express `a.mul b₁` and `a.mul b₂` in terms of
+  -- their sums of products of coefficients.
+  have h_mul_def : ∀ (a b : CompPoly.CPolynomial R),
     a.mul b = (a.zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b).mulPowX i)) (mk #[])) :=
-      by intros _ _; rfl
+      by exact fun a b => rfl
   intro h
-  repeat rw [h_mul_def]
-  have h_foldl_equiv : ∀ (l : List (R × ℕ)) (acc₁ acc₂ : CPolynomial R), acc₁ ≈ acc₂ →
-    List.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b₁).mulPowX i)) acc₁ l ≈
-    List.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b₂).mulPowX i)) acc₂ l := by
-    intro l acc₁ acc₂ h
-    induction' l using List.reverseRecOn with l ihizing acc₁ acc₂ h
-    · exact h
-    · have h_add_equiv : ∀ (acc₁ acc₂ : CPolynomial R) (a' : R) (i : ℕ), acc₁ ≈ acc₂ →
-        (acc₁.add ((smul a' b₁).mulPowX i)) ≈ (acc₂.add ((smul a' b₂).mulPowX i)) := by
-        intros acc₁ acc₂ a' i h
-        apply add_equiv
-        · exact h
-        · apply mulPowX_equiv
-          intro i; simp +decide [ *, CPolynomial.smul ]
-          cases h' : b₁[i]? <;> cases h'' : b₂[i]?
-            <;> simp
-          · have := ‹b₁ ≈ b₂› i; simp_all +decide [ CPolynomial.coeff ]
-            rw [ ← this, MulZeroClass.mul_zero ];
-          · have := ‹b₁ ≈ b₂› i; simp_all +decide [ CPolynomial.coeff ]
-          · have := ‹b₁ ≈ b₂› i; aesop
-      grind
-  convert h_foldl_equiv (Array.toList (Array.zipIdx a)) (CPolynomial.mk #[])
-    (CPolynomial.mk #[]) (by rfl) using 1 <;> grind
+  have h_foldl_equiv : ∀ (l : List (R × ℕ)) (acc : CompPoly.CPolynomial R),
+    List.foldl (fun acc (a', i) => acc.add ((smul a' b₁).mulPowX i)) acc l ≈
+    List.foldl (fun acc (a', i) => acc.add ((smul a' b₂).mulPowX i)) acc l := by
+    intro l acc
+    induction' l using List.reverseRecOn with l ih generalizing acc; rfl
+    · simp +zetaDelta at *
+      -- Apply the add_equiv lemma to the foldl results and the mulPowX terms.
+      apply add_equiv
+      · expose_names; exact h_1 acc
+      · -- Apply the lemma that multiplying by X^i preserves equivalence.
+        apply mulPowX_equiv
+        exact fun i => by rw [ smul_equiv, smul_equiv ]; exact congr_arg _ ( h i )
+  convert h_foldl_equiv ( Array.toList ( Array.zipIdx a ) ) ( mk #[] ) using 1 <;> grind
 
 end EquivalenceLemmas
 
