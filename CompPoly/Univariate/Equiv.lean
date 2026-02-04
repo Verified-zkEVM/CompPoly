@@ -257,7 +257,6 @@ lemma toPoly_mul_coeffC [LawfulBEq R] (p q : CPolynomialC R) (i : ℕ) :
 lemma toPoly_mul [LawfulBEq R] (p q : CPolynomialC R) :
     (p * q).toPoly = p.toPoly * q.toPoly := by
   convert Polynomial.ext (toPoly_mul_coeff p.val q.val)
-  convert congr_arg _ ( mul_is_trimmed p.val q.val )
 
 /-- Converting the sum of two raw polynomials to a mathlib `Polynomial` is the same as the sum of
   their conversions: `(p + q).toPoly = p.toPoly + q.toPoly`. -/
