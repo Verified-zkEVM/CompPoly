@@ -65,6 +65,10 @@ namespace QuotientCPolynomial
 
 section EquivalenceLemmas
 
+omit [BEq R] in
+/-- Convert propositional equality to equivalence. -/
+lemma eq_to_equiv (p q : CPolynomial R) : p = q → p ≈ q := by intro h; rw [h]
+
 /-- Scalar multiplication by 0 is equivalent to the zero polynomial. -/
 lemma smul_zero_equiv {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) :
     (smul 0 p) ≈ 0 := by
@@ -143,7 +147,7 @@ lemma foldl_mulStep_zeros {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
   (hl : ∀ x ∈ l, x.1 = 0) :
   equiv (l.foldl (mulStep q) acc) acc := by
   induction' l using List.reverseRecOn with x xs ih generalizing acc
-  · exact fun _ => rfl
+  · intro _; rfl
   · simp_all +decide [ List.foldl_append ]
     -- use the multiplication step and the induction hypothesis
     have h_mulStep : equiv (mulStep q (List.foldl (mulStep q) acc x) xs)
@@ -414,6 +418,327 @@ def pow {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p : QuotientCPolynomial R) (
   Quotient.lift (fun p => powDescending p n) (pow_descends n) p
 
 -- TODO: div/field operations?
+
+instance : Zero (QuotientCPolynomial R) := ⟨Quotient.mk _ #[]⟩
+instance : One (QuotientCPolynomial R) := ⟨Quotient.mk _ (CPolynomial.C 1)⟩
+instance [LawfulBEq R] : Add (QuotientCPolynomial R) := ⟨QuotientCPolynomial.add⟩
+instance [LawfulBEq R] : SMul R (QuotientCPolynomial R) := ⟨smul⟩
+instance [LawfulBEq R] : SMul ℕ (QuotientCPolynomial R) := ⟨nsmul⟩
+instance : Neg (QuotientCPolynomial R) := ⟨neg⟩
+instance [LawfulBEq R] : Sub (QuotientCPolynomial R) := ⟨sub⟩
+instance [LawfulBEq R] : Mul (QuotientCPolynomial R) := ⟨mul⟩
+instance [LawfulBEq R] : Pow (QuotientCPolynomial R) Nat := ⟨pow⟩
+instance : NatCast (QuotientCPolynomial R) := ⟨fun n => Quotient.mk _ (CPolynomial.C (n : R))⟩
+instance : IntCast (QuotientCPolynomial R) := ⟨fun n => Quotient.mk _ (CPolynomial.C (n : R))⟩
+-- instance [Field R] : Div (QuotientCPolynomial R) := ⟨div⟩
+-- instance [Field R] : Mod (QuotientCPolynomial R) := ⟨mod⟩
+
+section AddCommGroup
+
+@[grind =_]
+lemma add_assoc [LawfulBEq R] : ∀ (a b c : QuotientCPolynomial R), a + b + c = a + (b + c) := by
+  intro a b c
+  refine Quotient.inductionOn₃ a b c ?_
+  intro p q r; clear a b c
+  apply Quotient.sound
+  apply eq_to_equiv
+  apply CPolynomial.add_assoc
+
+@[simp]
+lemma zero_add_equiv [LawfulBEq R] (p : CPolynomial R) : 0 + p ≈ p := by
+  intro i
+  change ((0 : CPolynomial R).add p).coeff i = p.coeff i
+  unfold CPolynomial.add
+  rw [Trim.coeff_eq_coeff]
+  rw [add_coeff?]
+  simp
+
+@[simp]
+lemma zero_add [LawfulBEq R] : ∀ (a : QuotientCPolynomial R), 0 + a = a := by
+  intros a
+  refine Quotient.inductionOn a ?_
+  intro p; clear a
+  apply Quotient.sound
+  apply zero_add_equiv
+
+@[simp]
+lemma add_zero [LawfulBEq R] : ∀ (a : QuotientCPolynomial R), a + 0 = a := by
+  intros a
+  refine Quotient.inductionOn a ?_
+  intro p; clear a
+  apply Quotient.sound
+  intro i
+  unfold CPolynomial.add
+  rw [Trim.coeff_eq_coeff]
+  rw [add_coeff?]
+  simp
+
+@[grind =>]
+lemma add_comm [LawfulBEq R] : ∀ (a b : QuotientCPolynomial R), a + b = b + a := by
+  intro a b
+  refine Quotient.inductionOn₂ a b ?_
+  intros p q; clear a b
+  apply Quotient.sound
+  apply eq_to_equiv
+  apply CPolynomial.add_comm
+
+@[simp]
+lemma neg_add_cancel [LawfulBEq R] : ∀ (a : QuotientCPolynomial R), -a + a = 0 := by
+  intros a
+  refine Quotient.inductionOn a ?_
+  intro p; clear a
+  apply Quotient.sound
+  apply eq_to_equiv
+  apply CPolynomial.neg_add_cancel
+
+@[simp]
+lemma nsmul_zero [LawfulBEq R] : ∀ (x : QuotientCPolynomial R),
+    QuotientCPolynomial.nsmul 0 x = 0 := by
+  intros x
+  refine Quotient.inductionOn x ?_
+  intro p; clear x
+  apply Quotient.sound
+  apply eq_to_equiv
+  apply CPolynomial.nsmul_zero
+
+@[grind =>]
+lemma nsmul_succ [LawfulBEq R] : ∀ (n : ℕ) (x : QuotientCPolynomial R),
+    QuotientCPolynomial.nsmul (n + 1) x = QuotientCPolynomial.nsmul n x + x := by
+  intro n x
+  refine Quotient.inductionOn x ?_
+  intro p; clear x
+  apply Quotient.sound
+  apply eq_to_equiv
+  apply CPolynomial.nsmul_succ
+
+@[grind =]
+lemma sub_eq_add_neg [LawfulBEq R] : ∀ (a b : QuotientCPolynomial R), a - b = a + -b := by
+  intro a b
+  refine Quotient.inductionOn₂ a b ?_
+  intros p q; clear a b
+  apply Quotient.sound
+  apply eq_to_equiv
+  rfl
+
+instance [LawfulBEq R] : AddCommGroup (QuotientCPolynomial R) where
+  add_assoc := add_assoc
+  zero_add := zero_add
+  add_zero := add_zero
+  add_comm := add_comm
+  neg_add_cancel := neg_add_cancel
+  nsmul := nsmul
+  nsmul_zero := nsmul_zero
+  nsmul_succ := nsmul_succ
+  zsmul := zsmulRec
+  sub_eq_add_neg := sub_eq_add_neg
+
+end AddCommGroup
+
+section Semiring
+variable [LawfulBEq R]
+
+lemma mul_assoc {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
+    (a b c : QuotientCPolynomial R) :
+    a * b * c = a * (b * c) := by
+  refine Quotient.inductionOn₃ a b c ?_
+  intro p q r
+  apply Quotient.sound
+  exact mul_assoc_equiv p q r
+
+lemma one_mul : ∀ (a : QuotientCPolynomial R), 1 * a = a := by
+  intros a
+  refine Quotient.inductionOn a ?_
+  intro p; clear a
+  apply Quotient.sound
+  change 1 * p ≈ p
+  rw [one_mul_trim]
+  apply trim_equiv
+
+lemma mul_one : ∀ (a : QuotientCPolynomial R), a * 1 = a := by
+  intros a
+  refine Quotient.inductionOn a ?_
+  intro p; clear a
+  apply Quotient.sound
+  change p * 1 ≈ p
+  rw [mul_one_trim]
+  apply trim_equiv
+
+lemma zero_mul : ∀ (a : QuotientCPolynomial R), 0 * a = 0 := by
+  intros a
+  refine Quotient.inductionOn a ?_
+  intro p; clear a
+  apply Quotient.sound
+  change 0 * p ≈ 0
+  rw [CPolynomial.zero_mul]
+
+lemma mul_zero : ∀ (a : QuotientCPolynomial R), a * 0 = 0 := by
+  intros a
+  refine Quotient.inductionOn a ?_
+  intro p; clear a
+  apply Quotient.sound
+  change p * 0 ≈ 0
+  rw [CPolynomial.mul_zero]
+
+lemma left_distrib : ∀ (a b c : QuotientCPolynomial R),
+    a * (b + c) = a * b + a * c := by
+  intro a b c
+  refine Quotient.inductionOn₃ a b c ?_
+  intro p q r
+  apply Quotient.sound
+  change p * (q + r) ≈ (p * q) + (p * r)
+  rw [CPolynomial.left_distrib p q r]
+
+lemma right_distrib : ∀ (a b c : QuotientCPolynomial R), (a + b) * c = a * c + b * c := by
+  intro a b c
+  refine Quotient.inductionOn₃ a b c ?_
+  intro p q r; clear a b c
+  apply Quotient.sound
+  change (p + q) * r ≈ (p * r) + (q * r)
+  rw [CPolynomial.right_distrib]
+
+lemma npow_zero : ∀ (x : QuotientCPolynomial R), x.pow 0 = 1 := by
+  intros x
+  refine Quotient.inductionOn x ?_
+  intro p; clear x
+  apply Quotient.sound
+  unfold CPolynomial.pow
+  simp
+
+@[grind]
+lemma const_sum (r s : R) : (C r).add (C s) ≈ C (r + s) := by
+  calc
+    ((C r).addRaw (C s)).trim ≈ ((C r).addRaw (C s)) := by apply trim_equiv
+    _ ≈ C (r + s) := by
+      unfold C addRaw; simp
+
+/-
+x^(n+1) = x * x^n for QuotientCPolynomial
+-/
+lemma pow_succ_left {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (n : ℕ)
+    (x : QuotientCPolynomial R) :
+    x.pow (n + 1) = x * x.pow n := by
+  refine Quotient.inductionOn x ?_
+  intro p
+  apply Quotient.sound
+  -- p.pow (n+1) = p * p.pow n is true by definition of pow for CPolynomial
+  -- By definition of pow, we have p.pow (n + 1) = p.mul (p.pow n).
+  have h_pow : p.pow (n + 1) = p.mul (p.pow n) := by
+    exact Function.iterate_succ_apply' _ _ _
+  exact congrFun (congrArg coeff h_pow)
+
+/-
+x commutes with x^n
+-/
+lemma commute_pow_self {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (n : ℕ)
+    (x : QuotientCPolynomial R) :
+    x * x.pow n = x.pow n * x := by
+  induction' n with n ih generalizing x
+  all_goals generalize_proofs at *
+  · rw [show x.pow 0 = 1 from _]
+    · simp +decide [mul_one, one_mul]
+    · exact npow_zero x
+  · rw [ pow_succ_left, mul_assoc, ih, ← mul_assoc ]
+
+lemma npow_succ : ∀ (n : ℕ) (x : QuotientCPolynomial R), x.pow (n + 1) = x.pow n * x := by
+  intro n x
+  refine Quotient.inductionOn x ?_
+  intro p; clear x
+  apply Quotient.sound
+  -- By definition of exponentiation, we have `p.pow (n + 1) = p * p.pow n` for any `p`.
+  rw [show p.pow (n + 1) = p.mul (p.pow n) from by
+        exact Function.iterate_succ_apply' _ _ _]
+  convert commute_pow_self n ( Quotient.mk ( instSetoidCPolynomial ) p ) using 1
+  erw [ Quotient.eq ]
+  rfl
+
+/-- `CPolynomial R` forms a semiring when `R` is a semiring.
+
+  The semiring structure is inherited from the coefficient-wise operations on arrays,
+  with addition and multiplication defined via the standard polynomial operations.
+-/
+instance [Semiring R] [LawfulBEq R] : Semiring (QuotientCPolynomial R) where
+  mul_assoc := mul_assoc
+  one_mul := one_mul
+  mul_one := mul_one
+  zero_mul := zero_mul
+  mul_zero := mul_zero
+  left_distrib := left_distrib
+  right_distrib := right_distrib
+  npow n p := p.pow n
+  npow_zero := npow_zero
+  npow_succ := npow_succ
+  natCast_zero := by
+    apply Quotient.sound
+    intro i; unfold C; simp
+  natCast_succ := by
+    intro n
+    apply Quotient.sound
+    intro i; rw [const_sum (n : R) (1 : R)]; simp
+
+end Semiring
+
+section CommSemiring
+
+variable {R : Type*} [CommRing R] [BEq R]
+
+lemma mul_comm [LawfulBEq R]: ∀ (a b : QuotientCPolynomial R), a * b = b * a := by
+  intro a b
+  refine Quotient.inductionOn₂ a b ?_
+  intros p q; clear a b
+  apply Quotient.sound
+  change p * q ≈ q * p
+  simp [CPolynomial.mul_comm p q]
+
+/-- `CPolynomial R` forms a commutative semiring when `R` is a commutative semiring.
+
+  Commutativity follows from the commutativity of multiplication in the base ring.
+-/
+instance [CommRing R] [LawfulBEq R] : CommSemiring (QuotientCPolynomial R) where
+  mul_comm := mul_comm
+
+end CommSemiring
+
+section Ring
+
+lemma zsmul_zero' [LawfulBEq R] : ∀ (a : QuotientCPolynomial R), zsmulRec nsmulRec 0 a = 0 := by
+  intro a; simp [zsmulRec]; simp [nsmulRec]
+
+/-- `CPolynomial R` forms a ring when `R` is a ring.
+
+  The ring structure extends the semiring structure with negation and subtraction.
+  Most of the structure is already provided by the `Semiring` instance.
+-/
+instance [LawfulBEq R] : Ring (QuotientCPolynomial R) where
+  sub_eq_add_neg := by intro a b; (grind)
+  zsmul := zsmulRec
+  zsmul_zero' := zsmul_zero'
+  zsmul_succ' := by intros _ _; rfl
+  zsmul_neg' := by intros n a; simp [zsmulRec]
+  intCast_ofNat := by intro n; simp [IntCast.intCast]; rfl
+  intCast_negSucc := by
+    -- By definition of `Int.negSucc`, we have `Int.negSucc n = - (n + 1)`.
+    have h_neg_succ : ∀ n : ℕ, Int.negSucc n = - (n + 1 : ℤ) := by grind
+    convert h_neg_succ
+    convert Quotient.eq using 1
+    simp +decide [ CPolynomial.instSetoidCPolynomial ]
+    simp +decide [ CPolynomial.C, CPolynomial.neg ]
+    grind
+  neg_add_cancel := QuotientCPolynomial.neg_add_cancel
+
+end Ring
+
+section CommRing
+
+variable {R : Type*} [CommRing R] [BEq R]
+
+/-- `CPolynomial R` forms a commutative ring when `R` is a commutative ring.
+
+  This combines the `CommSemiring` and `Ring` structures.
+-/
+instance [CommRing R] [BEq R] [LawfulBEq R] : CommRing (QuotientCPolynomial R) where
+  -- All structure inherited from `CommSemiring` and `Ring` instances
+
+end CommRing
 
 end QuotientCPolynomial
 
