@@ -40,7 +40,8 @@ open Trim
   exact Eq.symm (h i)
 
 /-- Transitivity of the equivalence relation. -/
-@[simp] theorem equiv_trans {p q r : CPolynomialRaw Q} : Trim.equiv p q → equiv q r → equiv p r := by
+@[simp] theorem equiv_trans {p q r : CPolynomialRaw Q} :
+    Trim.equiv p q → equiv q r → equiv p r := by
   simp_all [Trim.equiv]
 
 /-- The `CPolynomialRaw.equiv` is indeed an equivalence relation. -/

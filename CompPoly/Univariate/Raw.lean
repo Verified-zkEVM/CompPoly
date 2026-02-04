@@ -96,8 +96,8 @@ def degree (p : CPolynomialRaw R) : Nat :=
 -/
 def natDegree (p : CPolynomialRaw R) : ℕ := sorry
 
-/-- Return the leading coefficient of a `CPolynomialRaw` as the last coefficient of the trimmed array,
-or `0` if the trimmed array is empty. -/
+/-- Return the leading coefficient of a `CPolynomialRaw` as the last coefficient
+of the trimmed array, or `0` if the trimmed array is empty. -/
 def leadingCoeff (p : CPolynomialRaw R) : R := p.trim.getLastD 0
 
 namespace Trim
@@ -1069,8 +1069,8 @@ theorem mul_is_trimmed [LawfulBEq R] (p q : CPolynomialRaw R) : (p * q).trim = p
 Helper lemma for proving: right_distrib
 Computing coefficents of `p * q` as a sum over monomialsin `q`.
 -/
-lemma coeff_mul_eq_sum_range [LawfulBEq R] (p q : CPolynomialRaw R) (k : ℕ) (n : ℕ) (h : p.size ≤ n) :
-    (p * q).coeff k =
+lemma coeff_mul_eq_sum_range [LawfulBEq R] (p q : CPolynomialRaw R) (k : ℕ) (n : ℕ)
+    (h : p.size ≤ n) : (p * q).coeff k =
         List.sum ((List.range n).map (fun i => ((smul (p.coeff i) q).mulPowX i).coeff k)) := by
       have h_coeff : (p * q).coeff k =
           ((p.zipIdx.toList).map

@@ -24,8 +24,8 @@ import CompPoly.Univariate.Basic
 
 open Polynomial
 
-/-- Convert a mathlib `Polynomial` to a `CPolynomialRaw` by extracting coefficients up to the degree.
--/
+/-- Convert a mathlib `Polynomial` to a `CPolynomialRaw` by extracting coefficients
+up to the degree. -/
 def Polynomial.toImpl {R : Type*} [Semiring R] (p : R[X]) : CompPoly.CPolynomialRaw R :=
   match p.degree with
   | ⊥ => #[]
@@ -210,7 +210,8 @@ theorem eval_toImpl_eq_eval [LawfulBEq R] (x : R) (p : R[X]) : p.toImpl.eval x =
 
 /-- Evaluation is unchanged by trimming. -/
 @[simp, grind =]
-lemma eval_trim_eq_eval [LawfulBEq R] (x : R) (p : CPolynomialRaw R) : p.trim.eval x = p.eval x := by
+lemma eval_trim_eq_eval [LawfulBEq R] (x : R) (p : CPolynomialRaw R) :
+    p.trim.eval x = p.eval x := by
   rw [← toImpl_toPoly, eval_toImpl_eq_eval, eval_toPoly_eq_eval]
 
 end ToPoly
