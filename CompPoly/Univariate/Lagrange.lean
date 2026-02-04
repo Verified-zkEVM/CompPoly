@@ -30,7 +30,8 @@ def nodal {R : Type*} [Ring R] [BEq R] (n : ℕ) (ω : R) : CPolynomial.Raw R :=
 
     Uses Lagrange interpolation: p(X) = Σᵢ rᵢ · Lᵢ(X)
     where Lᵢ(X) = ∏_{j≠i} (X - ωʲ) / (ωⁱ - ωʲ). -/
-def interpolate {R : Type*} [Field R] [BEq R] (n : ℕ) (ω : R) (r : Vector R n) : CPolynomial.Raw R :=
+def interpolate {R : Type*} [Field R] [BEq R] (n : ℕ) (ω : R) (r : Vector R n) :
+    CPolynomial.Raw R :=
   -- Lagrange interpolation: p(X) = Σᵢ rᵢ · Lᵢ(X)
   -- where Lᵢ(X) = ∏_{j≠i} (X - ωʲ) / (ωⁱ - ωʲ)
   (List.finRange n).foldl (fun acc i =>

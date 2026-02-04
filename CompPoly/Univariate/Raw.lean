@@ -112,8 +112,9 @@ theorem lastNonzero_none [LawfulBEq R] {p : CPolynomial.Raw R} :
   apply_assumption
 
 /-- If there is a non-zero coefficient, `lastNonzero` is `some`. -/
-theorem lastNonzero_some [LawfulBEq R] {p : CPolynomial.Raw R} {i} (hi : i < p.size) (h : p[i] ≠ 0) :
-    ∃ k, p.lastNonzero = some k := Array.findIdxRev?_eq_some ⟨i, hi, bne_iff_ne.mpr h⟩
+theorem lastNonzero_some [LawfulBEq R] {p : CPolynomial.Raw R} {i} (hi : i < p.size)
+    (h : p[i] ≠ 0) : ∃ k, p.lastNonzero = some k :=
+  Array.findIdxRev?_eq_some ⟨i, hi, bne_iff_ne.mpr h⟩
 
 /-- `lastNonzero` returns the largest index with a non-zero coefficient. -/
 theorem lastNonzero_spec [LawfulBEq R] {p : CPolynomial.Raw R} {k} :
@@ -764,8 +765,8 @@ omit [BEq R] in
 Helper lemma for mul_assoc.
 Sum over list zipIdx equals sum over Finset.range for the relevant terms.
 -/
-lemma sum_zipIdx_eq_sum_range {α : Type*} [AddCommMonoid α] (p : CPolynomial.Raw R) (f : R → ℕ → α) :
-    (p.zipIdx.toList.map (fun ⟨a, i⟩ => f a i)).sum =
+lemma sum_zipIdx_eq_sum_range {α : Type*} [AddCommMonoid α] (p : CPolynomial.Raw R)
+    (f : R → ℕ → α) : (p.zipIdx.toList.map (fun ⟨a, i⟩ => f a i)).sum =
     (Finset.range p.size).sum (fun i => f (p.coeff i) i) := by
       refine' congr_arg _ ( List.ext_get _ _ ) <;> aesop
 
@@ -1365,7 +1366,8 @@ protected theorem right_distrib [LawfulBEq R] (p q r : CPolynomial.Raw R) :
   · exact mul_is_trimmed (p + q) r
   · apply Trim.trim_twice
 
-protected theorem mul_assoc [LawfulBEq R] (p q r : CPolynomial.Raw R) : p * q * r = p * (q * r) := by
+protected theorem mul_assoc [LawfulBEq R] (p q r : CPolynomial.Raw R) :
+    p * q * r = p * (q * r) := by
   apply Trim.canonical_ext
   · exact mul_is_trimmed (p * q) r
   · exact mul_is_trimmed p (q * r)
