@@ -20,14 +20,8 @@ import CompPoly.Univariate.Canonical
   - `toImpl_toPoly_of_canonical`: the round-trip from canonical `CPolynomial` is the identity
 
   This shows that `CPolynomialC R` is isomorphic to `Polynomial R`.
-
-  HIGH LEVEL TODOs:
-  - equivalence theorems for univariate polynomials to the mathlib definition
-    - OR since multivariate polynomials are already defined, should we just prove a special case ..?
-  - equivalence between canonical and raw polynomials
-  - Prove CPolynomial R isomorphic to CMvPolynomial Unit R?
-  - inspiration from MvPolyEquiv.lean
 -/
+
 open Polynomial
 
 /-- Convert a mathlib `Polynomial` to a `CPolynomial` by extracting coefficients up to the degree.
@@ -40,7 +34,9 @@ def Polynomial.toImpl {R : Type*} [Semiring R] (p : R[X]) : CompPoly.CPolynomial
 namespace CompPoly
 
 namespace CPolynomial
+
 variable {R : Type*} [Ring R] [BEq R]
+
 variable {Q : Type*} [Ring Q]
 
 section ToPoly
@@ -142,15 +138,23 @@ theorem toPoly_toImpl {p : Q[X]} : p.toImpl.toPoly = p := by
   symm
   exact coeff_eq_zero_of_natDegree_lt h
 
-/-- `toPoly` preserves addition. -/
-theorem toPoly_add {p q : CPolynomial Q} : (addRaw p q).toPoly = p.toPoly + q.toPoly := by
-  ext n
-  rw [coeff_add, coeff_toPoly, coeff_toPoly, coeff_toPoly, add_coeff?]
-
 /-- Trimming doesn't change the `toPoly` image. -/
+@[grind =]
 lemma toPoly_trim [LawfulBEq R] {p : CPolynomial R} : p.trim.toPoly = p.toPoly := by
   ext n
   rw [coeff_toPoly, coeff_toPoly, Trim.coeff_eq_coeff]
+
+/-- `toPoly` preserves addition. -/
+@[grind =]
+theorem toPoly_addRaw {p q : CPolynomial Q} : (addRaw p q).toPoly = p.toPoly + q.toPoly := by
+  ext n
+  rw [Polynomial.coeff_add, coeff_toPoly, coeff_toPoly, coeff_toPoly, add_coeff?]
+
+@[grind =]
+lemma toPoly_add [LawfulBEq R] (p q : CPolynomial R) :
+    (p + q).toPoly = p.toPoly + q.toPoly := by
+  change (p.add q).toPoly = p.toPoly + q.toPoly; unfold add
+  rw [toPoly_trim, toPoly_addRaw]
 
 /-- Non-zero polynomials map to non-empty arrays. -/
 lemma toImpl_nonzero {p : Q[X]} (hp : p ≠ 0) : p.toImpl.size > 0 := by
@@ -167,6 +171,7 @@ lemma getLast_toImpl {p : Q[X]} (hp : p ≠ 0) : let h : p.toImpl.size > 0 := to
   simp [h]
 
 /-- `toImpl` produces canonical polynomials (no trailing zeros). -/
+@[simp, grind =]
 theorem trim_toImpl [LawfulBEq R] (p : R[X]) : p.toImpl.trim = p.toImpl := by
   rcases toImpl_elim p with ⟨rfl, h⟩ | ⟨h_nz, _⟩
   · rw [h, Trim.canonical_empty]
@@ -179,6 +184,7 @@ theorem trim_toImpl [LawfulBEq R] (p : R[X]) : p.toImpl.trim = p.toImpl := by
 /-- On canonical polynomials, `toImpl` is a left-inverse of `toPoly`.
 
   This shows `toPoly` is a bijection from `CPolynomialC R` to `Polynomial R`. -/
+@[grind =]
 lemma toImpl_toPoly_of_canonical [LawfulBEq R] (p : CPolynomialC R) : p.toPoly.toImpl = p := by
   -- we will change something slightly more general: `toPoly` is injective on canonical polynomials
   suffices h_inj : ∀ q : CPolynomialC R, p.toPoly = q.toPoly → p = q by
@@ -192,15 +198,18 @@ lemma toImpl_toPoly_of_canonical [LawfulBEq R] (p : CPolynomialC R) : p.toPoly.t
   exact hpq |> congrArg (fun p => p.coeff i)
 
 /-- The round-trip from `CPolynomial` to `Polynomial` and back yields the canonical form. -/
+@[simp, grind =]
 theorem toImpl_toPoly [LawfulBEq R] (p : CPolynomial R) : p.toPoly.toImpl = p.trim := by
   rw [← toPoly_trim]
   exact toImpl_toPoly_of_canonical ⟨ p.trim, Trim.trim_twice p⟩
 
 /-- Evaluation is preserved by `toImpl`. -/
+@[simp, grind =]
 theorem eval_toImpl_eq_eval [LawfulBEq R] (x : R) (p : R[X]) : p.toImpl.eval x = p.eval x := by
   rw [← toPoly_toImpl (p := p), toImpl_toPoly, ← toPoly_trim, eval_toPoly_eq_eval]
 
 /-- Evaluation is unchanged by trimming. -/
+@[simp, grind =]
 lemma eval_trim_eq_eval [LawfulBEq R] (x : R) (p : CPolynomial R) : p.trim.eval x = p.eval x := by
   rw [← toImpl_toPoly, eval_toImpl_eq_eval, eval_toPoly_eq_eval]
 
@@ -224,37 +233,102 @@ variable [Nontrivial R]
 
   TODO: Construct this ring equivalence once prerequisites are met.
 -/
--- TODO: Prove that `toPoly` preserves multiplication
-lemma toPoly_mul [CommSemiring R] [LawfulBEq R] (p q : CPolynomial R) :
-    (p * q).toPoly = p.toPoly * q.toPoly := by sorry
+@[grind =]
+lemma toPoly_mul_coeff [LawfulBEq R] (p q : CPolynomial R) (i : ℕ) :
+    (p * q).toPoly.coeff i = (p.toPoly * q.toPoly).coeff i := by
+  rw [coeff_toPoly, mul_coeff, Polynomial.coeff_mul]; simp
+  -- equality of indices
+  have h_antidiagonal :
+      Finset.HasAntidiagonal.antidiagonal i =
+      Finset.image (fun x => (x, i - x)) (Finset.range (i + 1)) := by
+    exact Finset.Nat.antidiagonal_eq_image i
+  simp [h_antidiagonal ]
+  -- equality of terms
+  have h_coeff : ∀ x, p.toPoly.coeff x = p[x]?.getD 0 ∧ q.toPoly.coeff x = q[x]?.getD 0 := by
+    intro x
+    repeat rw [coeff_toPoly]
+    constructor <;> simp
+  grind
 
--- TODO: Prove that `toPoly` preserves addition for trimmed polynomials
-lemma toPoly_add_trimmed [CommSemiring R] [LawfulBEq R] (p q : CPolynomial R) :
-    (p + q).toPoly = p.toPoly + q.toPoly := by sorry
+@[grind =]
+lemma toPoly_mul_coeffC [LawfulBEq R] (p q : CPolynomialC R) (i : ℕ) :
+    (p.val * q.val).toPoly.coeff i = (p.val.toPoly * q.val.toPoly).coeff i := by grind
 
--- TODO: Prove that `toPoly` preserves the multiplicative identity
+/-- Converting the product of two canonical polynomials to a mathlib `Polynomial` is the same as
+  the product of their conversions: `(p * q).toPoly = p.toPoly * q.toPoly`. -/
+@[grind =]
+lemma toPoly_mul [LawfulBEq R] (p q : CPolynomialC R) :
+    (p * q).toPoly = p.toPoly * q.toPoly := by
+  convert Polynomial.ext (toPoly_mul_coeff p.val q.val)
+
+/-- Converting the sum of two raw polynomials to a mathlib `Polynomial` is the same as the sum of
+  their conversions: `(p + q).toPoly = p.toPoly + q.toPoly`. -/
+@[grind =]
+lemma toPoly_addC [CommSemiring R] [LawfulBEq R] (p q : CPolynomial R) :
+    (p + q).toPoly = p.toPoly + q.toPoly := by rw [toPoly_add]
+
+/-
+Evaluating the constant polynomial `C r` yields `f r`.
+-/
+@[simp, grind =]
+lemma eval₂_C {R : Type*} [Ring R] [BEq R] {S : Type*} [Semiring S]
+    (f : R →+* S) (x : S) (r : R) :
+    (C r).eval₂ f x = f r := by
+  unfold CPolynomial.eval₂ C
+  ring_nf
+  simp [Array.zipIdx]
+
+/-
+Converting the constant polynomial `C r` to a `Polynomial` yields `Polynomial.C r`.
+-/
+@[simp, grind =]
+lemma toPoly_C {R : Type*} [Ring R] [BEq R] (r : R) :
+    (C r).toPoly = Polynomial.C r := by
+  unfold toPoly
+  exact eval₂_C Polynomial.C Polynomial.X r
+
+/--
+`toPoly` preserves the multiplicative identity
+-/
+@[simp, grind =]
 lemma toPoly_one [CommSemiring R] [LawfulBEq R] :
-    (1 : CPolynomial R).toPoly = 1 := by sorry
+    (1 : CPolynomial R).toPoly = 1 := by
+  have : (1 : CPolynomial R).toPoly = (C 1).toPoly := by rfl
+  apply this.trans; clear this
+  apply toPoly_C
 
--- TODO: Prove that `toPoly` preserves the additive identity
+/-- The ring equivalence sends the canonical variable `X` to `Polynomial.X`. -/
+@[simp, grind =]
+lemma toPoly_X [LawfulBEq R] :
+    (X : CPolynomial R).toPoly = Polynomial.X := by
+  unfold CPolynomial.X
+  simp [toPoly, eval₂]
+
+/--
+`toPoly` preserves the additive identity
+-/
+@[simp, grind =]
 lemma toPoly_zero [CommSemiring R] [LawfulBEq R] :
-    (0 : CPolynomial R).toPoly = 0 := by sorry
+    (0 : CPolynomial R).toPoly = 0 := by simp [toPoly, eval₂]
 
--- TODO: Construct the ring equivalence
--- This should be something like:
--- noncomputable def ringEquiv [CommSemiring R] [LawfulBEq R] :
---   CPolynomialC R ≃+* Polynomial R where
---   toFun := CPolynomialC.toPoly
---   invFun := fun p => ⟨p.toImpl, trim_toImpl p⟩
---   left_inv := toImpl_toPoly_of_canonical
---   right_inv := toPoly_toImpl
---   map_mul' := by sorry -- use `toPoly_mul`
---   map_add' := by sorry -- use `toPoly_add_trimmed`
+/-- Ring equivalence between canonical computable polynomials and mathlib's `Polynomial R`.
 
--- TODO: Prove additional properties:
--- TODO: `ringEquiv.symm = toImpl` (up to canonical wrapping)
--- TODO: `ringEquiv (C r) = Polynomial.C r`
--- TODO: `ringEquiv X = Polynomial.X`
+  `CPolynomialC R` (polynomials with no trailing zeros) is isomorphic as a ring to `Polynomial R`.
+  The forward map is `CPolynomialC.toPoly`; the inverse sends `p : Polynomial R` to
+  `⟨p.toImpl, trim_toImpl p⟩` (the canonical polynomial whose underlying array is `p.toImpl`). -/
+noncomputable def ringEquiv [LawfulBEq R] :
+  CPolynomialC R ≃+* Polynomial R where
+  toFun := CPolynomialC.toPoly
+  invFun := fun p => ⟨p.toImpl, trim_toImpl p⟩
+  left_inv := by
+    unfold Function.LeftInverse; intro x
+    apply Subtype.ext; apply toImpl_toPoly_of_canonical
+  right_inv := by
+    unfold Function.RightInverse CPolynomialC.toPoly
+    apply toPoly_toImpl
+  map_mul' := by intros p q; rw [toPoly_mul p q]
+  map_add' := by intros p q; apply toPoly_add
+
 
 end RingEquiv
 
