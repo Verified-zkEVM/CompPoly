@@ -82,17 +82,20 @@ def trim (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
   | some i => p.extract 0 (i.val + 1)
 
 /-- Return the degree of a `CPolynomial.Raw`. -/
-def degree (p : CPolynomial.Raw R) : Nat :=
+def degree (p : CPolynomial.Raw R) : WithBot ℕ :=
   match p.lastNonzero with
-  | none => 0
-  | some i => i.val + 1
+  | none => ⊥
+  | some i => i.val
 
 /-- Natural number degree of a `CPolynomial.Raw`.
 
   Returns the degree as a natural number. For the zero polynomial, returns `0`.
   This matches Mathlib's `Polynomial.natDegree` API.
 -/
-def natDegree (p : CPolynomial.Raw R) : ℕ := sorry
+def natDegree (p : CPolynomial.Raw R) : ℕ :=
+  match p.lastNonzero with
+  | none => 0
+  | some i => i.val
 
 /-- Return the leading coefficient of a `CPolynomial.Raw` as the last coefficient
 of the trimmed array, or `0` if the trimmed array is empty. -/
@@ -204,11 +207,29 @@ theorem elim [LawfulBEq R] (p : CPolynomial.Raw R) :
   | case1 p h_empty h_all_zero => left; exact ⟨h_empty, h_all_zero⟩
   | case2 p k h_extract h_nonzero h_max => right; exact ⟨k, h_extract, h_nonzero, h_max⟩
 
-theorem size_eq_degree (p : CPolynomial.Raw R) : p.trim.size = p.degree := by
+theorem size_eq_degree_plus_one (p : CPolynomial.Raw R) (h_trim: p.trim ≠ (mk #[])) :
+    p.trim.size = p.degree + 1 := by
   unfold trim degree
   match h : p.lastNonzero with
-  | none => simp
+  | none => exfalso; unfold trim at h_trim; rw [h] at h_trim; contradiction
   | some i => simp [Fin.is_lt, Nat.succ_le_of_lt]
+
+theorem size_eq_natDegree_plus_one (p : CPolynomial.Raw R) (h_trim: p.trim ≠ (mk #[])) :
+    p.trim.size = p.natDegree + 1 := by
+  unfold trim natDegree
+  match h : p.lastNonzero with
+  | none => exfalso; unfold trim at h_trim; rw [h] at h_trim; contradiction
+  | some i => simp [Fin.is_lt, Nat.succ_le_of_lt]
+
+theorem size_eq_natDegree_of_zero (p : CPolynomial.Raw R) (h_trim: p.trim = (mk #[])) :
+    p.trim.size = p.natDegree := by
+  unfold trim natDegree
+  match h : p.lastNonzero with
+  | none => simp
+  | some i => exfalso
+              unfold trim at h_trim
+              rw [h] at h_trim; have h_size := congrArg Array.size h_trim
+              simp [Array.size_extract, Nat.succ_le_of_lt i.is_lt] at h_size
 
 theorem size_le_size (p : CPolynomial.Raw R) : p.trim.size ≤ p.size := by
   unfold trim
@@ -295,10 +316,23 @@ theorem eq_of_equiv [LawfulBEq R] {p q : CPolynomial.Raw R} : equiv p q → p.tr
   unfold equiv
   intro h
   ext
-  · rw [size_eq_degree, size_eq_degree]
-    apply eq_degree_of_equiv h
-  rw [← coeff_eq_getElem, ← coeff_eq_getElem]
-  rw [coeff_eq_coeff, coeff_eq_coeff, h _]
+  · have h_deg := eq_degree_of_equiv h
+    unfold trim
+    cases hp : p.lastNonzero with
+    | none =>
+      cases hq : q.lastNonzero with
+      | none => rfl
+      | some j => unfold degree at h_deg; simp [hp, hq] at h_deg
+    | some i =>
+      cases hq : q.lastNonzero with
+      | none => unfold degree at h_deg; simp [hp, hq] at h_deg
+      | some j =>
+        unfold degree at h_deg
+        simp only [hp, hq] at h_deg
+        simp [Array.size_extract, Nat.succ_le_of_lt i.is_lt, Nat.succ_le_of_lt j.is_lt]
+        exact_mod_cast h_deg
+  · rw [← coeff_eq_getElem, ← coeff_eq_getElem]
+    rw [coeff_eq_coeff, coeff_eq_coeff, h _]
 
 theorem trim_equiv [LawfulBEq R] (p : CPolynomial.Raw R) : equiv p.trim p := by
   apply coeff_eq_coeff
