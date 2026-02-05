@@ -12,8 +12,8 @@ import CompPoly.Multivariate.Lawful
 import CompPoly.Multivariate.MvPolyEquiv
 import CompPoly.Multivariate.Unlawful
 import CompPoly.Multivariate.Wheels
+import CompPoly.Univariate.Raw
 import CompPoly.Univariate.Basic
-import CompPoly.Univariate.Canonical
+import CompPoly.Univariate.Quotient
 import CompPoly.Univariate.Equiv
 import CompPoly.Univariate.Lagrange
-import CompPoly.Univariate.Quotient
