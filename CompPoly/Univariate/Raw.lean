@@ -57,18 +57,8 @@ def X : CPolynomial.Raw R := #[0, 1]
 
   Note: If `c = 0`, this returns `#[]` (the zero polynomial).
 -/
-def monomial [DecidableEq R] (n : ℕ) (c : R) : CPolynomial.Raw R :=
+def monomialRaw [DecidableEq R] (n : ℕ) (c : R) : CPolynomial.Raw R :=
   if c = 0 then #[] else .mk (Array.replicate n 0 ++ #[c])
-
--- TODO: Prove basic properties of `monomial`, e.g.
--- TODO: `coeff (monomial n c) i = if i = n then c else 0`
--- TODO: `monomial n 0 = 0`
--- TODO: `monomial 0 c = C c`
--- TODO: `monomial n 1 = X^n` (where `X^n` is `X.pow n`)
--- TODO: `monomial n c = C c * X^n` (multiplicative property)
--- TODO: `monomial n c + monomial n d = monomial n (c + d)` (additive property)
--- TODO: `monomial m c * monomial n d = monomial (m + n) (c * d)` (multiplicative property)
--- TODO: `trim (monomial n c) = if c = 0 then #[] else monomial n c` (canonical property)
 
 /-- Return the index of the last non-zero coefficient of a `CPolynomial.Raw` -/
 def lastNonzero (p : CPolynomial.Raw R) : Option (Fin p.size) :=
@@ -409,6 +399,13 @@ theorem canonical_iff [LawfulBEq R] {p : CPolynomial.Raw R} :
     · rw [canonical_nonempty_iff hp, lastNonzero_last_iff hp]
       exact h hp
 
+lemma push_trim [LawfulBEq R] (arr : Array R) (c : R) :
+    ¬c = 0 → trim (arr.push c) = arr.push c := by
+  rw [Trim.canonical_iff]
+  intros h_c hp
+  simp [Array.getLast]
+  exact h_c
+
 theorem non_zero_map [LawfulBEq R] (f : R → R) (hf : ∀ r, f r = 0 → r = 0) (p : CPolynomial.Raw R) :
     let fp := CPolynomial.Raw.mk (p.map f);
   p.trim = p → fp.trim = fp := by
@@ -726,6 +723,58 @@ def canonical (p : CPolynomial.Raw R) := p.trim = p
 
 theorem zero_canonical : (0 : CPolynomial.Raw R).trim = 0 := Trim.canonical_empty
 
+theorem monomial_canonical [LawfulBEq R] [DecidableEq R] (n : ℕ) (c : R) :
+    (monomialRaw n c).trim = monomialRaw n c := by
+  by_cases h : c = 0
+  · simp [monomialRaw, if_pos h, Trim.canonical_empty]
+  · simp [monomialRaw, if_neg h, mk]
+    rw [Trim.push_trim _ _ h]
+
+omit [BEq R] in
+/-- monomial coefficient theorem -/
+lemma coeff_monomialRaw [DecidableEq R] {n i : ℕ} {c : R} :
+    ((monomialRaw n) c).coeff i = if n = i then c else 0 := by
+  by_cases hc : c = 0
+  · simp [monomialRaw, hc]
+  · unfold monomialRaw
+    rw [if_neg hc]; clear hc
+    have h_arr : (mk (Array.replicate n 0 ++ #[c])) =
+                   mk (Array.replicate n 0) ++ mk #[c] := by grind
+    rw [h_arr]; clear h_arr
+    by_cases hn : n = i
+    · rw [if_pos hn, hn]; clear hn
+      have : (mk (Array.replicate i 0) ++ mk #[c]).coeff i = (mk #[c]).coeff 0 := by
+        rw [concat_coeff₂]
+        simp only [Array.size_replicate, tsub_self, Array.getD_eq_getD_getElem?,
+                   List.size_toArray, List.length_cons, List.length_nil, zero_add,
+                   zero_lt_one, getElem?_pos, List.getElem_toArray,
+                   List.getElem_cons_zero, Option.getD_some]
+        have : Array.size (mk (Array.replicate i 0)) = i := by grind
+        rw [← this]
+        simp
+      rw [this]
+      simp
+    · rw [if_neg hn]
+      by_cases h_ineq : i < n
+      · have : (mk (Array.replicate n 0 ++ #[c])).coeff i =
+               (mk (Array.replicate n 0)).coeff i := by
+          rw [concat_coeff₁]
+          grind
+        rw [this]; clear this
+        simp [Array.getD_eq_getD_getElem?]
+        grind
+      · have hi : i > n := by grind
+        clear h_ineq hn
+        grind
+
+-- TODO: `monomial n 0 = 0`
+-- TODO: `monomial 0 c = C c`
+-- TODO: `monomial n 1 = X^n` (where `X^n` is `X.pow n`)
+-- TODO: `monomial n c = C c * X^n` (multiplicative property)
+-- TODO: `monomial n c + monomial n d = monomial n (c + d)` (additive property)
+-- TODO: `monomial m c * monomial n d = monomial (m + n) (c * d)` (multiplicative property)
+-- TODO: `trim (monomial n c) = if c = 0 then #[] else monomial n c` (canonical property)
+
 theorem zero_add (hp : p.canonical) : 0 + p = p := by
   rw (occs := .pos [2]) [← hp]
   apply congrArg trim
@@ -768,7 +817,7 @@ lemma foldl_preserves_canonical {α : Type*}
 
 /-- Helper lemma for proving: mul_one_trim
 The coefficient of a sum (via foldl) is the sum of the coefficients. -/
-lemma coeff_foldl_add [LawfulBEq R]
+lemma coeff_foldl_add {α : Type*} [LawfulBEq R]
     (l : List α)
     (f : α → CPolynomial.Raw R)
     (z : CPolynomial.Raw R) (k : ℕ) :

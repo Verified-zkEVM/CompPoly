@@ -330,6 +330,18 @@ noncomputable def ringEquiv [LawfulBEq R] :
 
 end RingEquiv
 
+section API
+open CPolynomial.Raw.Operations
+
+/-- the ipmlementation of monomial is correct -/
+theorem monomial_toPoly [DecidableEq R] [LawfulBEq R] (n : ℕ) (c : R) :
+    (monomialC n c).toPoly = Polynomial.monomial n c := by
+  ext i
+  simp [CPolynomial.toPoly, monomialC]
+  rw [Polynomial.coeff_monomial, coeff_toPoly, Raw.coeff_monomialRaw]
+
+end API
+
 end CPolynomial.Raw
 
 end CompPoly
