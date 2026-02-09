@@ -20,14 +20,13 @@ import CompPoly.Univariate.Raw
 -/
 namespace CompPoly
 
-namespace CPolynomial.Raw
+namespace CPolynomial
+
+open Raw Trim
 
 variable {R : Type*} [Ring R] [BEq R]
 variable {Q : Type*} [Ring Q]
 
-section Quotient
-
-open Trim
 
 /-- Reflexivity of the equivalence relation. -/
 @[simp] theorem equiv_refl (p : CPolynomial.Raw Q) : equiv p p :=
@@ -51,7 +50,7 @@ instance instEquivalenceEquiv : Equivalence (equiv (R := R)) where
   trans := equiv_trans
 
 /-- The `Setoid` instance for `CPolynomial.Raw R` induced by `CPolynomial.Raw.equiv`. -/
-instance instSetoidCPolynomial.Raw : Setoid (CPolynomial.Raw R) where
+instance Raw.instSetoidCPolynomial : Setoid (CPolynomial.Raw R) where
   r := equiv
   iseqv := instEquivalenceEquiv
 
@@ -59,11 +58,11 @@ instance instSetoidCPolynomial.Raw : Setoid (CPolynomial.Raw R) where
 
   This quotient identifies polynomials that differ only by trailing zeros, and is intended
   to be equivalent to mathlib's `Polynomial R`. -/
-def QuotientCPolynomial (R : Type*) [Ring R] [BEq R] := Quotient (@instSetoidCPolynomial.Raw R _)
+def QuotientCPolynomial (R : Type*) [Ring R] [BEq R] := Quotient (@Raw.instSetoidCPolynomial R _)
 
--- The operations on `CPolynomial.Raw` descend to `QuotientCPolynomial`
 namespace QuotientCPolynomial
 
+-- The operations on `CPolynomial.Raw` descend to `QuotientCPolynomial`
 section EquivalenceLemmas
 
 omit [BEq R] in
@@ -249,7 +248,7 @@ lemma add_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : CPolynomial.Raw R) :
   intros heq_a heq_b
   unfold addDescending
   rw [Quotient.eq]
-  simp [instSetoidCPolynomial.Raw]
+  simp [Raw.instSetoidCPolynomial]
   calc
     add a₁ b₁ ≈ addRaw a₁ b₁ := add_equiv_raw a₁ b₁
     _ ≈ addRaw a₂ b₂ := by
@@ -272,7 +271,7 @@ lemma smul_descends [LawfulBEq R] (r : R) (p₁ p₂ : CPolynomial.Raw R) :
   unfold equiv smulDescending
   intro heq
   rw [Quotient.eq]
-  simp [instSetoidCPolynomial.Raw]
+  simp [Raw.instSetoidCPolynomial]
   intro i
   rw [smul_equiv, smul_equiv, heq i]
 
@@ -292,7 +291,7 @@ lemma nsmul_descends [LawfulBEq R] (n : ℕ) (p₁ p₂ : CPolynomial.Raw R) :
   intro heq
   unfold nsmulDescending
   rw [Quotient.eq]
-  simp [instSetoidCPolynomial.Raw]
+  simp [Raw.instSetoidCPolynomial]
   unfold nsmul equiv
   intro i
   repeat rw [nsmulRaw_equiv, coeff_eq_coeff]
@@ -312,7 +311,7 @@ lemma neg_descends (a b : CPolynomial.Raw R) : equiv a b → negDescending a = n
   unfold equiv negDescending
   intros heq
   rw [Quotient.eq]
-  simp [instSetoidCPolynomial.Raw]
+  simp [Raw.instSetoidCPolynomial]
   unfold equiv
   intro i
   rw [neg_coeff a i, neg_coeff b i, heq i]
@@ -331,7 +330,7 @@ lemma sub_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : CPolynomial.Raw R) :
   unfold equiv subDescending
   intros heq_a heq_b
   rw [Quotient.eq]
-  simp [instSetoidCPolynomial.Raw]
+  simp [Raw.instSetoidCPolynomial]
   unfold sub equiv
   calc
     a₁.add b₁.neg ≈ a₁.addRaw b₁.neg := add_equiv_raw a₁ b₁.neg
@@ -356,7 +355,7 @@ lemma mulPowX_descends [LawfulBEq R] (i : ℕ) (p₁ p₂ : CPolynomial.Raw R) :
   unfold mulPowXDescending
   intro heq
   rw [Quotient.eq]
-  simp [instSetoidCPolynomial.Raw]
+  simp [Raw.instSetoidCPolynomial]
   apply mulPowX_equiv; exact heq
 
 /-- Multiplication by `X^i` on the quotient. -/
@@ -378,7 +377,7 @@ lemma mul_descends [LawfulBEq R] (a₁ b₁ a₂ b₂ : CPolynomial.Raw R) :
   unfold mulDescending
   intros heq_a heq_b
   rw [Quotient.eq]
-  simp [instSetoidCPolynomial.Raw]
+  simp [Raw.instSetoidCPolynomial]
   calc
     a₁.mul b₁ ≈ a₂.mul b₁ := mul_equiv a₁ a₂ b₁ heq_a
     _ ≈ a₂.mul b₂ := mul_equiv₂ a₂ b₁ b₂ heq_b
@@ -398,7 +397,7 @@ lemma pow_descends [LawfulBEq R] (n : ℕ) (p₁ p₂ : CPolynomial.Raw R) :
   intro heq
   unfold powDescending
   rw [Quotient.eq]
-  simp [instSetoidCPolynomial.Raw]
+  simp [Raw.instSetoidCPolynomial]
   unfold pow
   have mul_pow_succ_equiv (p : CPolynomial.Raw R) (n : ℕ):
     p.mul^[n + 1] (C 1) ≈ p.mul (p.mul^[n] (C 1)) := by
@@ -648,11 +647,11 @@ lemma npow_succ : ∀ (n : ℕ) (x : QuotientCPolynomial R), x.pow (n + 1) = x.p
   -- By definition of exponentiation, we have `p.pow (n + 1) = p * p.pow n` for any `p`.
   rw [show p.pow (n + 1) = p.mul (p.pow n) from by
         exact Function.iterate_succ_apply' _ _ _]
-  convert commute_pow_self n ( Quotient.mk ( instSetoidCPolynomial.Raw ) p ) using 1
+  convert commute_pow_self n ( Quotient.mk ( Raw.instSetoidCPolynomial ) p ) using 1
   erw [ Quotient.eq ]
   rfl
 
-/-- `CPolynomial.Raw R` forms a semiring when `R` is a semiring.
+/-- `QuotientCPolynomial R` forms a semiring when `R` is a semiring.
 
   The semiring structure is inherited from the coefficient-wise operations on arrays,
   with addition and multiplication defined via the standard polynomial operations.
@@ -690,7 +689,7 @@ lemma mul_comm [LawfulBEq R]: ∀ (a b : QuotientCPolynomial R), a * b = b * a :
   change p * q ≈ q * p
   simp [CPolynomial.Raw.mul_comm p q]
 
-/-- `CPolynomial.Raw R` forms a commutative semiring when `R` is a commutative semiring.
+/-- `QuotientCPolynomial R` forms a commutative semiring when `R` is a commutative semiring.
 
   Commutativity follows from the commutativity of multiplication in the base ring.
 -/
@@ -704,7 +703,7 @@ section Ring
 lemma zsmul_zero' [LawfulBEq R] : ∀ (a : QuotientCPolynomial R), zsmulRec nsmulRec 0 a = 0 := by
   intro a; simp [zsmulRec]; simp [nsmulRec]
 
-/-- `CPolynomial.Raw R` forms a ring when `R` is a ring.
+/-- `QuotientCPolynomial R` forms a ring when `R` is a ring.
 
   The ring structure extends the semiring structure with negation and subtraction.
   Most of the structure is already provided by the `Semiring` instance.
@@ -721,8 +720,8 @@ instance [LawfulBEq R] : Ring (QuotientCPolynomial R) where
     have h_neg_succ : ∀ n : ℕ, Int.negSucc n = - (n + 1 : ℤ) := by grind
     convert h_neg_succ
     convert Quotient.eq using 1
-    simp +decide [ CPolynomial.Raw.instSetoidCPolynomial.Raw ]
-    simp +decide [ CPolynomial.Raw.C, CPolynomial.Raw.neg ]
+    simp +decide [ Raw.instSetoidCPolynomial ]
+    simp +decide [ Raw.C, Raw.neg ]
     grind
   neg_add_cancel := QuotientCPolynomial.neg_add_cancel
 
@@ -732,7 +731,7 @@ section CommRing
 
 variable {R : Type*} [CommRing R] [BEq R]
 
-/-- `CPolynomial.Raw R` forms a commutative ring when `R` is a commutative ring.
+/-- `QuotientCPolynomial R` forms a commutative ring when `R` is a commutative ring.
 
   This combines the `CommSemiring` and `Ring` structures.
 -/
@@ -743,8 +742,6 @@ end CommRing
 
 end QuotientCPolynomial
 
-end Quotient
-
-end CPolynomial.Raw
+end CPolynomial
 
 end CompPoly
