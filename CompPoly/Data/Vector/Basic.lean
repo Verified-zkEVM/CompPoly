@@ -18,8 +18,10 @@ universe u
 
 namespace Vector
 
+-- TODO this is also defined in VCV-io, so is awkward as an Arklib dependency
+-- added _temp as a temporary fix
 @[elab_as_elim]
-def induction₂ {α β} {motive : {n : ℕ} → Vector α n → Vector β n → Sort*}
+def induction₂_temp {α β} {motive : {n : ℕ} → Vector α n → Vector β n → Sort*}
     (v_empty : motive #v[] #v[])
   (v_insert : {n : ℕ} → (hd : α) → (tl : Vector α n) → (hd' : β) → (tl' : Vector β n) →
       motive tl tl' → motive (tl.insertIdx 0 hd) (tl'.insertIdx 0 hd')) {m : ℕ} :
@@ -230,7 +232,7 @@ variable {R : Type*} [AddCommMonoid R] [Mul R] {n : ℕ}
 
 theorem dotProduct_eq_root_dotProduct (a b : Vector R n) :
     dotProduct a b = _root_.dotProduct a.get b.get := by
-  refine induction₂ ?_ (fun hd tl hd' tl' ih => ?_) a b
+  refine induction₂_temp ?_ (fun hd tl hd' tl' ih => ?_) a b
   · simp [dotProduct, _root_.dotProduct]
   · simp [Vector.cast]
     -- By definition of dot product, we can expand the right-hand side.
