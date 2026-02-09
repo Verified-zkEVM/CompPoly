@@ -140,8 +140,8 @@ instance : One (CPolynomial R) where
 
   Note: If `c = 0`, this returns `0` (the zero polynomial).
 -/
-def monomialC [DecidableEq R] (n : ℕ) (c : R) : CPolynomial R :=
-  ⟨CPolynomial.Raw.monomialRaw n c, Raw.monomial_canonical n c⟩
+def monomial [DecidableEq R] (n : ℕ) (c : R) : CPolynomial R :=
+  ⟨Raw.monomial n c, Raw.monomial_canonical n c⟩
 
 /-- Natural number degree of a canonical polynomial.
 

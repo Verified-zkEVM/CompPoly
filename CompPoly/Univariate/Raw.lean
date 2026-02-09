@@ -57,7 +57,7 @@ def X : CPolynomial.Raw R := #[0, 1]
 
   Note: If `c = 0`, this returns `#[]` (the zero polynomial).
 -/
-def monomialRaw [DecidableEq R] (n : ℕ) (c : R) : CPolynomial.Raw R :=
+def monomial [DecidableEq R] (n : ℕ) (c : R) : CPolynomial.Raw R :=
   if c = 0 then #[] else .mk (Array.replicate n 0 ++ #[c])
 
 /-- Return the index of the last non-zero coefficient of a `CPolynomial.Raw` -/
@@ -724,19 +724,19 @@ def canonical (p : CPolynomial.Raw R) := p.trim = p
 theorem zero_canonical : (0 : CPolynomial.Raw R).trim = 0 := Trim.canonical_empty
 
 theorem monomial_canonical [LawfulBEq R] [DecidableEq R] (n : ℕ) (c : R) :
-    (monomialRaw n c).trim = monomialRaw n c := by
+    (monomial n c).trim = monomial n c := by
   by_cases h : c = 0
-  · simp [monomialRaw, if_pos h, Trim.canonical_empty]
-  · simp [monomialRaw, if_neg h, mk]
+  · simp [monomial, if_pos h, Trim.canonical_empty]
+  · simp [monomial, if_neg h, mk]
     rw [Trim.push_trim _ _ h]
 
 omit [BEq R] in
 /-- monomial coefficient theorem -/
-lemma coeff_monomialRaw [DecidableEq R] {n i : ℕ} {c : R} :
-    ((monomialRaw n) c).coeff i = if n = i then c else 0 := by
+lemma coeff_monomial [DecidableEq R] {n i : ℕ} {c : R} :
+    ((monomial n) c).coeff i = if n = i then c else 0 := by
   by_cases hc : c = 0
-  · simp [monomialRaw, hc]
-  · unfold monomialRaw
+  · simp [monomial, hc]
+  · unfold monomial
     rw [if_neg hc]; clear hc
     have h_arr : (mk (Array.replicate n 0 ++ #[c])) =
                    mk (Array.replicate n 0) ++ mk #[c] := by grind
