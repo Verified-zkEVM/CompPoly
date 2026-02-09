@@ -19,7 +19,7 @@ import CompPoly.Univariate.Raw
 -/
 namespace CompPoly
 
-namespace CPolynomial.Raw
+open CPolynomial.Raw
 
 variable {R : Type*} [Ring R] [BEq R]
 variable {Q : Type*} [Ring Q]
@@ -33,8 +33,10 @@ variable {Q : Type*} [Ring Q]
 -/
 def CPolynomial (R : Type*) [BEq R] [Ring R] := { p : CPolynomial.Raw R // p.trim = p }
 
+namespace CPolynomial
+
 /-- Extensionality for canonical polynomials. -/
-@[ext] theorem CPolynomial.ext {p q : CPolynomial R} (h : p.val = q.val) : p = q := by
+@[ext] theorem ext {p q : CPolynomial R} (h : p.val = q.val) : p = q := by
   exact Subtype.ext h
 
 /-- Canonical polynomials coerce to raw polynomials. -/
@@ -45,7 +47,7 @@ instance : Inhabited (CPolynomial R) := ⟨#[], Trim.canonical_empty⟩
 
 -- TODO namespace organization may have to change for ergonomics, etc
 --      especially wrt the typeclass instances below
-namespace Operations
+section Operations
 
 variable {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
 variable (p q r : CPolynomial R)
@@ -247,6 +249,6 @@ end Operations
 -- and back, preserving all ring operations.
 -- TODO: Implement `ringEquivQuotient : CPolynomial R ≃+* QuotientCPolynomial R`
 
-end CPolynomial.Raw
+end CPolynomial
 
 end CompPoly

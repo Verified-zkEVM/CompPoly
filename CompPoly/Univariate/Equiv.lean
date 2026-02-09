@@ -33,7 +33,9 @@ def Polynomial.toImpl {R : Type*} [Semiring R] (p : R[X]) : CompPoly.CPolynomial
 
 namespace CompPoly
 
-namespace CPolynomial.Raw
+namespace CPolynomial
+
+open Raw
 
 variable {R : Type*} [Ring R] [BEq R]
 
@@ -42,11 +44,11 @@ variable {Q : Type*} [Ring Q]
 section ToPoly
 
 /-- Convert a `CPolynomial.Raw` to a (mathlib) `Polynomial`. -/
-noncomputable def toPoly (p : CPolynomial.Raw R) : Polynomial R :=
+noncomputable def Raw.toPoly (p : CPolynomial.Raw R) : Polynomial R :=
   p.eval₂ Polynomial.C Polynomial.X
 
 /-- Alternative definition of `toPoly` using `Finsupp`; currently unused. -/
-noncomputable def toPoly' (p : CPolynomial.Raw R) : Polynomial R :=
+noncomputable def Raw.toPoly' (p : CPolynomial.Raw R) : Polynomial R :=
   Polynomial.ofFinsupp (Finsupp.onFinset (Finset.range p.size) p.coeff (by
     intro n hn
     rw [Finset.mem_range]
@@ -56,13 +58,13 @@ noncomputable def toPoly' (p : CPolynomial.Raw R) : Polynomial R :=
   ))
 
 /-- Convert a canonical polynomial to a (mathlib) `Polynomial`. -/
-noncomputable def CPolynomial.toPoly (p : CPolynomial R) : Polynomial R := p.val.toPoly
+noncomputable def toPoly (p : CPolynomial R) : Polynomial R := p.val.toPoly
 
 alias ofPoly := Polynomial.toImpl
 
 /-- Evaluation is preserved by `toPoly`. -/
-theorem eval_toPoly_eq_eval (x : Q) (p : CPolynomial.Raw Q) : p.toPoly.eval x = p.eval x := by
-  unfold toPoly eval eval₂
+theorem Raw.eval_toPoly_eq_eval (x : Q) (p : CPolynomial.Raw Q) : p.toPoly.eval x = p.eval x := by
+  unfold Raw.toPoly Raw.eval eval₂
   rw [← Array.foldl_hom (Polynomial.eval x)
     (g₁ := fun acc (t : Q × ℕ) ↦ acc + Polynomial.C t.1 * Polynomial.X ^ t.2)
     (g₂ := fun acc (a, i) ↦ acc + a * x ^ i) ]
@@ -71,7 +73,7 @@ theorem eval_toPoly_eq_eval (x : Q) (p : CPolynomial.Raw Q) : p.toPoly.eval x = 
 
 /-- The coefficients of `p.toPoly` match those of `p`. -/
 lemma coeff_toPoly {p : CPolynomial.Raw Q} {n : ℕ} : p.toPoly.coeff n = p.coeff n := by
-  unfold toPoly eval₂
+  unfold Raw.toPoly Raw.eval₂
 
   let f := fun (acc: Q[X]) ((a,i): Q × ℕ) ↦ acc + Polynomial.C a * Polynomial.X ^ i
   change (Array.foldl f 0 p.zipIdx).coeff n = p.coeff n
@@ -85,7 +87,7 @@ lemma coeff_toPoly {p : CPolynomial.Raw Q} {n : ℕ} : p.toPoly.coeff n = p.coef
     rw [h, ite_eq_left_iff, zipIdx_size]
     intro hn
     replace hn : n ≥ p.size := by linarith
-    rw [coeff, Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hn, Option.getD_none]
+    rw [Raw.coeff, Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hn, Option.getD_none]
 
   apply Array.foldl_induction motive
   · change motive 0 0
@@ -96,7 +98,7 @@ lemma coeff_toPoly {p : CPolynomial.Raw Q} {n : ℕ} : p.toPoly.coeff n = p.coef
   intros i acc h
   have i_lt_p : i < p.size := by linarith [i.is_lt]
   have : p.zipIdx[i] = (p[i], ↑i) := by simp [Array.getElem_zipIdx]
-  rw [this, coeff_add, coeff_C_mul, coeff_X_pow, mul_ite, mul_one, mul_zero, h]
+  rw [this, coeff_add, coeff_C_mul, coeff_X_pow, mul_ite, h]
   rcases (Nat.lt_trichotomy i n) with hlt | rfl | hgt
   · have h1 : ¬ (n < i) := by linarith
     have h2 : ¬ (n = i) := by linarith
@@ -184,7 +186,7 @@ theorem trim_toImpl [LawfulBEq R] (p : R[X]) : p.toImpl.trim = p.toImpl := by
 /-- On canonical polynomials, `toImpl` is a left-inverse of `toPoly`.
 
   This shows `toPoly` is a bijection from `CPolynomial R` to `Polynomial R`. -/
-@[grind =]
+-- @[grind =]
 lemma toImpl_toPoly_of_canonical [LawfulBEq R] (p : CPolynomial R) : p.toPoly.toImpl = p := by
   -- we will change something slightly more general: `toPoly` is injective on canonical polynomials
   suffices h_inj : ∀ q : CPolynomial R, p.toPoly = q.toPoly → p = q by
@@ -271,8 +273,8 @@ Evaluating the constant polynomial `C r` yields `f r`.
 @[simp, grind =]
 lemma eval₂_C {R : Type*} [Ring R] [BEq R] {S : Type*} [Semiring S]
     (f : R →+* S) (x : S) (r : R) :
-    (C r).eval₂ f x = f r := by
-  unfold CPolynomial.Raw.eval₂ C
+    (Raw.C r).eval₂ f x = f r := by
+  unfold CPolynomial.Raw.eval₂ Raw.C
   ring_nf
   simp [Array.zipIdx]
 
@@ -281,8 +283,8 @@ Converting the constant polynomial `C r` to a `Polynomial` yields `Polynomial.C 
 -/
 @[simp, grind =]
 lemma toPoly_C {R : Type*} [Ring R] [BEq R] (r : R) :
-    (C r).toPoly = Polynomial.C r := by
-  unfold toPoly
+    (Raw.C r).toPoly = Polynomial.C r := by
+  unfold Raw.toPoly
   exact eval₂_C Polynomial.C Polynomial.X r
 
 /--
@@ -291,7 +293,7 @@ lemma toPoly_C {R : Type*} [Ring R] [BEq R] (r : R) :
 @[simp, grind =]
 lemma toPoly_one [CommSemiring R] [LawfulBEq R] :
     (1 : CPolynomial.Raw R).toPoly = 1 := by
-  have : (1 : CPolynomial.Raw R).toPoly = (C 1).toPoly := by rfl
+  have : (1 : CPolynomial.Raw R).toPoly = (Raw.C 1).toPoly := by rfl
   apply this.trans; clear this
   apply toPoly_C
 
@@ -300,14 +302,14 @@ lemma toPoly_one [CommSemiring R] [LawfulBEq R] :
 lemma toPoly_X [LawfulBEq R] :
     (X : CPolynomial.Raw R).toPoly = Polynomial.X := by
   unfold CPolynomial.Raw.X
-  simp [toPoly, eval₂]
+  simp [Raw.toPoly, Raw.eval₂]
 
 /--
 `toPoly` preserves the additive identity
 -/
 @[simp, grind =]
 lemma toPoly_zero [CommSemiring R] [LawfulBEq R] :
-    (0 : CPolynomial.Raw R).toPoly = 0 := by simp [toPoly, eval₂]
+    (0 : CPolynomial.Raw R).toPoly = 0 := by simp [Raw.toPoly, Raw.eval₂]
 
 /-- Ring equivalence between canonical computable polynomials and mathlib's `Polynomial R`.
 
@@ -330,6 +332,6 @@ noncomputable def ringEquiv [LawfulBEq R] :
 
 end RingEquiv
 
-end CPolynomial.Raw
+end CPolynomial
 
 end CompPoly
