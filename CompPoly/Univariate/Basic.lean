@@ -136,7 +136,7 @@ instance : One (CPolynomial R) where
 /-- Construct a canonical monomial `c * X^n` as a `CPolynomial R`.
 
   The result is canonical (no trailing zeros) when `c ≠ 0`.
-  For example, `monomialC 2 3` represents `3 * X^2`.
+  For example, `monomial 2 3` represents `3 * X^2`.
 
   Note: If `c = 0`, this returns `0` (the zero polynomial).
 -/

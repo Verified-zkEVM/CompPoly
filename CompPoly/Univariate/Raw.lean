@@ -767,14 +767,6 @@ lemma coeff_monomial [DecidableEq R] {n i : ℕ} {c : R} :
         clear h_ineq hn
         grind
 
--- TODO: `monomial n 0 = 0`
--- TODO: `monomial 0 c = C c`
--- TODO: `monomial n 1 = X^n` (where `X^n` is `X.pow n`)
--- TODO: `monomial n c = C c * X^n` (multiplicative property)
--- TODO: `monomial n c + monomial n d = monomial n (c + d)` (additive property)
--- TODO: `monomial m c * monomial n d = monomial (m + n) (c * d)` (multiplicative property)
--- TODO: `trim (monomial n c) = if c = 0 then #[] else monomial n c` (canonical property)
-
 theorem zero_add (hp : p.canonical) : 0 + p = p := by
   rw (occs := .pos [2]) [← hp]
   apply congrArg trim
