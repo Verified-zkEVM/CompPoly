@@ -283,3 +283,19 @@ theorem sum_Icc_split {α : Type*} [AddCommMonoid α] (f : ℕ → α) (a b c : 
       | inr h_right =>
         -- h_right : b + 1 ≤ j ∧ j ≤ c
         exact ⟨Nat.le_trans h₁ (Nat.le_of_succ_le h_right.1), h_right.2⟩
+
+def equivFinFunSplitLast {F : Type*} [Fintype F] [Nonempty F] {ϑ : ℕ} :
+    (Fin (ϑ + 1) → F) ≃ (F × (Fin ϑ → F)) where
+  toFun := fun r => (r (Fin.last ϑ), Fin.init r)
+  invFun := fun (r_last, r_init) => Fin.snoc r_init r_last
+  left_inv := by
+    simp only
+    intro r
+    ext i
+    simp only [Fin.snoc_init_self]
+  right_inv := by
+    simp only
+    intro (r_last, r_init)
+    ext i
+    · simp only [Fin.snoc_last]
+    · simp only [Fin.init_snoc]
