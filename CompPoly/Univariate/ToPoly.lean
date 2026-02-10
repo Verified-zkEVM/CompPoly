@@ -6,7 +6,6 @@ Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
 import Mathlib.Algebra.Tropical.Basic
 import Mathlib.RingTheory.Polynomial.Basic
 import CompPoly.Data.Array.Lemmas
-import CompPoly.Univariate.Raw
 import CompPoly.Univariate.Basic
 
 /-!
@@ -60,10 +59,12 @@ noncomputable def Raw.toPoly' (p : CPolynomial.Raw R) : Polynomial R :=
 /-- Convert a canonical polynomial to a (mathlib) `Polynomial`. -/
 noncomputable def toPoly (p : CPolynomial R) : Polynomial R := p.val.toPoly
 
+namespace Raw
+
 alias ofPoly := Polynomial.toImpl
 
 /-- Evaluation is preserved by `toPoly`. -/
-theorem Raw.eval_toPoly_eq_eval (x : Q) (p : CPolynomial.Raw Q) : p.toPoly.eval x = p.eval x := by
+theorem eval_toPoly_eq_eval (x : Q) (p : CPolynomial.Raw Q) : p.toPoly.eval x = p.eval x := by
   unfold Raw.toPoly Raw.eval eval₂
   rw [← Array.foldl_hom (Polynomial.eval x)
     (g₁ := fun acc (t : Q × ℕ) ↦ acc + Polynomial.C t.1 * Polynomial.X ^ t.2)
@@ -183,10 +184,12 @@ theorem trim_toImpl [LawfulBEq R] (p : R[X]) : p.toImpl.trim = p.toImpl := by
   rw [getLast_toImpl h_nz]
   exact Polynomial.leadingCoeff_ne_zero.mpr h_nz
 
+end Raw
+
 /-- On canonical polynomials, `toImpl` is a left-inverse of `toPoly`.
 
   This shows `toPoly` is a bijection from `CPolynomial R` to `Polynomial R`. -/
--- @[grind =]
+@[grind =]
 lemma toImpl_toPoly_of_canonical [LawfulBEq R] (p : CPolynomial R) : p.toPoly.toImpl = p := by
   -- we will change something slightly more general: `toPoly` is injective on canonical polynomials
   suffices h_inj : ∀ q : CPolynomial R, p.toPoly = q.toPoly → p = q by
@@ -201,7 +204,7 @@ lemma toImpl_toPoly_of_canonical [LawfulBEq R] (p : CPolynomial R) : p.toPoly.to
 
 /-- The round-trip from `CPolynomial.Raw` to `Polynomial` and back yields the canonical form. -/
 @[simp, grind =]
-theorem toImpl_toPoly [LawfulBEq R] (p : CPolynomial.Raw R) : p.toPoly.toImpl = p.trim := by
+theorem Raw.toImpl_toPoly [LawfulBEq R] (p : CPolynomial.Raw R) : p.toPoly.toImpl = p.trim := by
   rw [← toPoly_trim]
   exact toImpl_toPoly_of_canonical ⟨ p.trim, Trim.trim_twice p⟩
 
@@ -212,7 +215,7 @@ theorem eval_toImpl_eq_eval [LawfulBEq R] (x : R) (p : R[X]) : p.toImpl.eval x =
 
 /-- Evaluation is unchanged by trimming. -/
 @[simp, grind =]
-lemma eval_trim_eq_eval [LawfulBEq R] (x : R) (p : CPolynomial.Raw R) :
+lemma Raw.eval_trim_eq_eval [LawfulBEq R] (x : R) (p : CPolynomial.Raw R) :
     p.trim.eval x = p.eval x := by
   rw [← toImpl_toPoly, eval_toImpl_eq_eval, eval_toPoly_eq_eval]
 
@@ -234,7 +237,7 @@ section RingEquiv
   TODO: Construct this ring equivalence once prerequisites are met.
 -/
 @[grind =]
-lemma toPoly_mul_coeff [LawfulBEq R] (p q : CPolynomial.Raw R) (i : ℕ) :
+lemma Raw.toPoly_mul_coeff [LawfulBEq R] (p q : CPolynomial.Raw R) (i : ℕ) :
     (p * q).toPoly.coeff i = (p.toPoly * q.toPoly).coeff i := by
   rw [coeff_toPoly, mul_coeff, Polynomial.coeff_mul]; simp
   -- equality of indices
@@ -331,6 +334,19 @@ noncomputable def ringEquiv [LawfulBEq R] :
 
 
 end RingEquiv
+
+-- Lemmas stating that each operation (monomial, leadingCoeff, eval, etc.) matches its
+-- mathlib counterpart when viewed via `toPoly`, enabling transport back and forth
+section ImplementationCorrectness
+
+/-- The implementation of monomial is correct. -/
+theorem monomial_toPoly [DecidableEq R] [LawfulBEq R] (n : ℕ) (c : R) :
+    (monomial n c).toPoly = Polynomial.monomial n c := by
+  ext i
+  simp only [CPolynomial.toPoly, monomial]
+  rw [Polynomial.coeff_monomial, coeff_toPoly, CPolynomial.Raw.coeff_monomial]
+
+end ImplementationCorrectness
 
 end CPolynomial
 
