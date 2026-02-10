@@ -332,7 +332,9 @@ noncomputable def ringEquiv [LawfulBEq R] :
 
 end RingEquiv
 
-section API
+-- Lemmas stating that each operation (monomial, leadingCoeff, eval, etc.) matches its
+-- mathlib counterpart when viewed via `toPoly`, enabling transport back and forth
+section ImplementationCorrectness
 
 /-- The implementation of monomial is correct. -/
 theorem monomial_toPoly [DecidableEq R] [LawfulBEq R] (n : ℕ) (c : R) :
@@ -341,7 +343,7 @@ theorem monomial_toPoly [DecidableEq R] [LawfulBEq R] (n : ℕ) (c : R) :
   simp only [CPolynomial.toPoly, monomial]
   rw [Polynomial.coeff_monomial, coeff_toPoly, CPolynomial.Raw.coeff_monomial]
 
-end API
+end ImplementationCorrectness
 
 end CPolynomial
 
