@@ -131,7 +131,7 @@ def totalDegree {R : Type} {n : ℕ} [inst : CommSemiring R] : CMvPolynomial n R
     (fun s => Finsupp.sum s (fun _ e => e))
 
 /-- The degree of a polynomial in a specific variable. -/
-def degreeOf {R : Type} {n : ℕ} [CommSemiring R] (i : Fin n) : CMvPolynomial n R → ℕ :=
+def degreeOf {R : Type} {n : ℕ} [Zero R] (i : Fin n) : CMvPolynomial n R → ℕ :=
   fun p =>
     Multiset.count i
     (Finset.sup (List.toFinset (List.map CMvMonomial.toFinsupp (Lawful.monomials p)))
@@ -178,19 +178,37 @@ def leadingCoeff {n : ℕ} {R : Type} [Zero R] [MonomialOrder n]
     (p : CMvPolynomial n R) : R :=
   sorry
 
-/-- Extract the set of variables that appear in a polynomial.
-
-  Returns the set of variable indices `i : Fin n` such that `degreeOf i p > 0`.
--/
-def vars {n : ℕ} {R : Type} [Zero R] (p : CMvPolynomial n R) : Finset (Fin n) :=
-  sorry
-
 /-- Multiset of all variable degrees appearing in the polynomial.
 
   Each variable `i` appears `degreeOf i p` times in the multiset.
 -/
 def degrees {n : ℕ} {R : Type} [Zero R] (p : CMvPolynomial n R) : Multiset (Fin n) :=
-  sorry
+  Finset.univ.sum fun i => Multiset.replicate (p.degreeOf i) i
+
+/-- Extract the set of variables that appear in a polynomial.
+
+  Returns the set of variable indices `i : Fin n` such that `degreeOf i p > 0`.
+-/
+def vars {n : ℕ} {R : Type} [Zero R] (p : CMvPolynomial n R) : Finset (Fin n) :=
+  Finset.univ.filter fun i => 0 < p.degreeOf i
+
+/-- `degreeOf` is the multiplicity of a variable in `degrees`. -/
+lemma degreeOf_eq_count_degrees {n : ℕ} {R : Type} [Zero R]
+    (i : Fin n) (p : CMvPolynomial n R) :
+    p.degreeOf i = Multiset.count i p.degrees := by
+  classical
+  unfold CMvPolynomial.degrees
+  symm
+  calc
+    Multiset.count i (∑ j, Multiset.replicate (p.degreeOf j) j)
+        = ∑ j ∈ Finset.univ, Multiset.count i (Multiset.replicate (p.degreeOf j) j) := by
+          simpa [Finset.sum] using
+            (Multiset.count_sum' (s := Finset.univ)
+              (a := i) (f := fun j => Multiset.replicate (p.degreeOf j) j))
+    _ = ∑ j ∈ Finset.univ, if j = i then p.degreeOf j else 0 := by
+          simp [Multiset.count_replicate, eq_comm]
+    _ = p.degreeOf i := by
+          simp
 
 /-- Restrict polynomial to monomials with total degree ≤ d.
 
