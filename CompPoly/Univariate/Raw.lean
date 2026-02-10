@@ -37,8 +37,13 @@ def mk {R : Type*} (coeffs : Array R) : CPolynomial.Raw R := coeffs
 @[reducible]
 def coeffs {R : Type*} (p : CPolynomial.Raw R) : Array R := p
 
-variable {R : Type*} [Semiring R] [BEq R]
-variable {Q : Type*} [Semiring Q]
+variable {R : Type*}
+variable {Q : Type*}
+
+section Foundations
+
+variable [Semiring R] [BEq R]
+variable [Semiring Q]
 
 /-- The coefficient of `X^i` in the polynomial. Returns `0` if `i` is out of bounds. -/
 @[reducible]
@@ -435,7 +440,16 @@ theorem canonical_ext [LawfulBEq R] {p q : CPolynomial.Raw R} (hp : p.trim = p) 
   exact eq_of_equiv h_equiv
 end Trim
 
+end Foundations
+
 section Operations
+
+
+-- In this subsection we assume R and Q are semirings.
+section Semiring
+
+variable [Semiring R] [BEq R]
+variable [Semiring Q]
 
 variable {S : Type*}
 
@@ -1381,11 +1395,13 @@ protected theorem mul_assoc [LawfulBEq R] (p q r : CPolynomial.Raw R) :
   · exact mul_is_trimmed p (q * r)
   · exact mul_assoc_equiv p q r
 
+end Semiring
+
 section CommutativeSemiring
 
 --Theorems about multiplication in the case where R is commutative
 
-variable {R : Type*} [CommSemiring R] [BEq R]
+variable [CommSemiring R] [BEq R]
 
 /-- Using commutativity of R to swap the multiplication order.-/
 lemma mul_coeff_comm [LawfulBEq R] (p q : CPolynomial.Raw R) (k : ℕ) :
@@ -1419,7 +1435,7 @@ end CommutativeSemiring
 
 section Ring
 
-variable {R : Type*} [Ring R] [BEq R]
+variable [Ring R] [BEq R]
 
 --Theorems and instances for when R is a ring, so we have negation and subtraction.
 
@@ -1494,6 +1510,8 @@ end Ring
 end Operations
 
 section AddCommSemiroup
+
+variable [Semiring R] [BEq R]
 
 instance [LawfulBEq R] : AddCommSemigroup (CPolynomial.Raw R) where
   add_assoc := by intro _ _ _; rw [add_assoc]
