@@ -14,7 +14,9 @@ import CompPoly.Univariate.Raw
 -/
 namespace CompPoly
 
-namespace CPolynomial.Raw
+namespace CPolynomial
+
+open Raw
 
 namespace Lagrange
 
@@ -53,6 +55,6 @@ where
 
 end Lagrange
 
-end CPolynomial.Raw
+end CPolynomial
 
 end CompPoly

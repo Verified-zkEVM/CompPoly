@@ -19,7 +19,7 @@ import CompPoly.Univariate.Raw
 -/
 namespace CompPoly
 
-namespace CPolynomial.Raw
+open CPolynomial.Raw
 
 variable {R : Type*} [Semiring R] [BEq R]
 variable {Q : Type*} [Semiring Q]
@@ -33,8 +33,10 @@ variable {Q : Type*} [Semiring Q]
 -/
 def CPolynomial (R : Type*) [BEq R] [Semiring R] := { p : CPolynomial.Raw R // p.trim = p }
 
+namespace CPolynomial
+
 /-- Extensionality for canonical polynomials. -/
-@[ext] theorem CPolynomial.ext {p q : CPolynomial R} (h : p.val = q.val) : p = q := by
+@[ext] theorem ext {p q : CPolynomial R} (h : p.val = q.val) : p = q := by
   exact Subtype.ext h
 
 /-- Canonical polynomials coerce to raw polynomials. -/
@@ -45,7 +47,7 @@ instance : Inhabited (CPolynomial R) := ⟨#[], Trim.canonical_empty⟩
 
 -- TODO namespace organization may have to change for ergonomics, etc
 --      especially wrt the typeclass instances below
-namespace Operations
+section Operations
 
 variable {R : Type*} [Semiring R] [BEq R] [LawfulBEq R]
 variable (p q r : CPolynomial R)
@@ -117,28 +119,12 @@ instance : One (CPolynomial R) where
 /-- Construct a canonical monomial `c * X^n` as a `CPolynomial R`.
 
   The result is canonical (no trailing zeros) when `c ≠ 0`.
-  For example, `monomialC 2 3` represents `3 * X^2`.
+  For example, `monomial 2 3` represents `3 * X^2`.
 
   Note: If `c = 0`, this returns `0` (the zero polynomial).
 -/
-def monomialC [DecidableEq R] (n : ℕ) (c : R) : CPolynomial R :=
-  ⟨CPolynomial.Raw.monomial n c, by
-    unfold monomial
-    split_ifs with hc
-    · exact Trim.canonical_empty
-    · apply Trim.canonical_iff.mpr
-      intro hp
-      simp only [mk]
-      simp only [Array.append_singleton, ne_eq]
-      refine (Trim.lastNonzero_last_iff (id (Eq.refl ((Array.replicate n 0).push c)) ▸ hp)).mp ?_
-      refine (Trim.lastNonzero_last_iff hp).mpr ?_
-      refine (Trim.lastNonzero_last_iff hp).mp ?_
-      rw [Trim.lastNonzero_last_iff hp]
-      simp only [mk]
-      convert hc using 1
-      simp [Array.getLast]
-      grind
-    ⟩
+def monomial [DecidableEq R] (n : ℕ) (c : R) : CPolynomial R :=
+  ⟨Raw.monomial n c, Raw.monomial_canonical n c⟩
 
 /-- Natural number degree of a canonical polynomial.
 
@@ -315,6 +301,6 @@ end Operations
 -- and back, preserving all ring operations.
 -- TODO: Implement `ringEquivQuotient : CPolynomial R ≃+* QuotientCPolynomial R`
 
-end CPolynomial.Raw
+end CPolynomial
 
 end CompPoly
