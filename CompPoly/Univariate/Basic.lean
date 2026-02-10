@@ -21,8 +21,7 @@ namespace CompPoly
 
 open CPolynomial.Raw
 
-variable {R : Type*} [Semiring R] [BEq R]
-variable {Q : Type*} [Semiring Q]
+variable {R : Type*} [BEq R]
 
 /-- Computable univariate polynomials are represented canonically with no trailing zeros.
 
@@ -36,20 +35,23 @@ def CPolynomial (R : Type*) [BEq R] [Semiring R] := { p : CPolynomial.Raw R // p
 namespace CPolynomial
 
 /-- Extensionality for canonical polynomials. -/
-@[ext] theorem ext {p q : CPolynomial R} (h : p.val = q.val) : p = q := by
+@[ext] theorem ext [Semiring R] {p q : CPolynomial R} (h : p.val = q.val) : p = q := by
   exact Subtype.ext h
 
 /-- Canonical polynomials coerce to raw polynomials. -/
-instance : Coe (CPolynomial R) (CPolynomial.Raw R) where coe := Subtype.val
+instance [Semiring R] : Coe (CPolynomial R) (CPolynomial.Raw R) where coe := Subtype.val
 
 /-- The zero polynomial is canonical. -/
-instance : Inhabited (CPolynomial R) := ⟨#[], Trim.canonical_empty⟩
+instance [Semiring R] : Inhabited (CPolynomial R) := ⟨#[], Trim.canonical_empty⟩
 
 -- TODO namespace organization may have to change for ergonomics, etc
 --      especially wrt the typeclass instances below
+
 section Operations
 
-variable {R : Type*} [Semiring R] [BEq R] [LawfulBEq R]
+section Semiring
+
+variable [Semiring R] [LawfulBEq R]
 variable (p q r : CPolynomial R)
 
 /-- Addition of canonical polynomials (result is canonical). -/
@@ -86,10 +88,6 @@ instance [LawfulBEq R] : AddCommSemigroup (CPolynomial R) where
   add_assoc := add_assoc
   add_comm := add_comm
 
-section MulOne
-
-variable [Nontrivial R]
-
 /-- Multiplication of canonical polynomials.
 
   The product of two canonical polynomials is canonical because multiplication
@@ -99,21 +97,17 @@ instance : Mul (CPolynomial R) where
   mul p q :=
     ⟨p.val * q.val, by exact mul_is_trimmed p.val q.val⟩
 
+lemma one_is_trimmed [Nontrivial R] : (1 : CompPoly.CPolynomial.Raw R).trim = 1 :=
+  Trim.push_trim #[] 1 one_ne_zero
+
 /-- The constant polynomial 1 is canonical, and is the Unit for multiplication.
 
   This is `#[1]`, which has no trailing zeros.
 
   This proof does not work without the assumption that R is non-trivial.
 -/
-instance : One (CPolynomial R) where
-  one := ⟨CPolynomial.Raw.C 1, by
-  unfold C trim
-  have nonzero : #[(1 : R)].size = 1 := by aesop
-  have : lastNonzero #[(1 : R)] = some ⟨0, by simp⟩ := by
-    unfold lastNonzero Array.findIdxRev? Array.findIdxRev?.find
-    simp; aesop
-  rw[this]
-  grind
+instance [Nontrivial R] : One (CPolynomial R) where
+  one := ⟨CPolynomial.Raw.C 1, by exact one_is_trimmed
   ⟩
 
 /-- Construct a canonical monomial `c * X^n` as a `CPolynomial R`.
@@ -135,46 +129,70 @@ def natDegree (p : CPolynomial R) : ℕ := p.val.natDegree
 
 -- Lemmas for typeclass instances
 
-lemma one_mul (p : CPolynomial R) : 1 * p = p := by
+lemma one_mul [Nontrivial R] (p : CPolynomial R) : 1 * p = p := by
   apply Subtype.ext
   have : (1 * p : CPolynomial R) = (1: CPolynomial.Raw R) * p.val := rfl
   rw[this, one_mul_trim]
   exact p.prop
 
-lemma mul_one (p : CPolynomial R) : p * 1 = p := by
+lemma mul_one [Nontrivial R] (p : CPolynomial R) : p * 1 = p := by
   apply Subtype.ext
   have : (p * 1 : CPolynomial R) = p.val * (1: CPolynomial.Raw R) := rfl
   rw[this, mul_one_trim]
   exact p.prop
 
-omit [Nontrivial R] in
 lemma mul_assoc (p q r : CPolynomial R) : (p * q) * r = p * (q * r) := by
   apply Subtype.ext
   exact CPolynomial.Raw.mul_assoc p.val q.val r.val
 
-omit [Nontrivial R] in
 lemma zero_mul (p : CPolynomial R) : 0 * p = 0 := by
   apply Subtype.ext
   exact CPolynomial.Raw.zero_mul p.val
 
-omit [Nontrivial R] in
 lemma mul_zero (p : CPolynomial R) : p * 0 = 0 := by
   apply Subtype.ext
   exact CPolynomial.Raw.mul_zero p.val
 
-omit [Nontrivial R] in
 lemma left_distrib (p q r : CPolynomial R) : p * (q + r) = p * q + p * r := by
   apply Subtype.ext
   exact CPolynomial.Raw.left_distrib p.val q.val r.val
 
-omit [Nontrivial R] in
 lemma right_distrib (p q r : CPolynomial R) : (p + q) * r = p * r + q * r := by
   apply Subtype.ext
   exact CPolynomial.Raw.right_distrib p.val q.val r.val
 
-end MulOne
+omit [LawfulBEq R] in
+lemma pow_zero (p : CompPoly.CPolynomial.Raw R) :
+    p ^ 0 = CompPoly.CPolynomial.Raw.C 1 := by
+      exact rfl
 
-section Semiring
+omit [LawfulBEq R]
+lemma pow_succ (p : CompPoly.CPolynomial.Raw R) (n : ℕ) :
+    p ^ (n + 1) = p * (p ^ n) := by
+      convert ( Function.iterate_succ_apply' ( mul p ) n ( CompPoly.CPolynomial.Raw.C 1 ) )
+           using 1
+
+lemma pow_is_trimmed [LawfulBEq R] [Nontrivial R]
+    (p : CompPoly.CPolynomial.Raw R) (n : ℕ) : (p ^ n).trim = p ^ n := by
+      induction' n with n ih generalizing p;
+      · convert one_is_trimmed
+        · infer_instance
+        · infer_instance
+      · have h_exp : p ^ (n + 1) = p * p ^ n := by
+          exact pow_succ p n
+        rw [h_exp]
+        convert mul_is_trimmed p ( p ^ n ) using 1
+
+lemma pow_succ_right [LawfulBEq R] [Nontrivial R]
+    (p : CompPoly.CPolynomial.Raw R) (n : ℕ) : p ^ (n + 1) = p ^ n * p := by
+      convert pow_succ p n using 1;
+      induction' n with n ih;
+      · have h_pow_zero : p ^ 0 = 1 := by
+          exact rfl
+        rw [ h_pow_zero, mul_one_trim, one_mul_trim ];
+      · simp_all +decide [ pow_succ ];
+        convert CPolynomial.Raw.mul_assoc p ( p ^ n ) p using 1;
+        grind
 
 /-- `CPolynomial R` forms a semiring when `R` is a semiring.
 
@@ -198,9 +216,10 @@ instance [LawfulBEq R] [Nontrivial R] : Semiring (CPolynomial R) where
   nsmul := nsmul
   nsmul_zero := nsmul_zero
   nsmul_succ := nsmul_succ
-  npow n p := ⟨p.val ^ n, by sorry⟩
+  npow n p := ⟨p.val ^ n, by apply CompPoly.CPolynomial.pow_is_trimmed⟩
   npow_zero := by intro x; apply Subtype.ext; rfl
-  npow_succ := by sorry
+  npow_succ := by intro n p; apply Subtype.ext; exact
+      (CompPoly.CPolynomial.pow_succ_right p.val n)
   natCast_zero := by rfl
   natCast_succ := by intro n; rfl
 
@@ -208,10 +227,10 @@ end Semiring
 
 section CommSemiring
 
-variable {R : Type*} [CommSemiring R] [BEq R]
+variable [CommSemiring R] [LawfulBEq R]
 variable (p q : CPolynomial R)
 
-lemma mul_comm [LawfulBEq R] (p q : CPolynomial R) : p * q = q * p := by
+lemma mul_comm (p q : CPolynomial R) : p * q = q * p := by
   apply Subtype.ext
   have dist_lhs : (p * q : CPolynomial R) = (p.val * q.val : CPolynomial.Raw R) := rfl
   have dist_rhs : (q * p : CPolynomial R) = (q.val * p.val : CPolynomial.Raw R) := rfl
@@ -222,30 +241,30 @@ lemma mul_comm [LawfulBEq R] (p q : CPolynomial R) : p * q = q * p := by
 
   Commutativity follows from the commutativity of multiplication in the base ring.
 -/
-instance [CommSemiring R] [LawfulBEq R] [Nontrivial R] : CommSemiring (CPolynomial R) where
+instance [CommSemiring R] [Nontrivial R] : CommSemiring (CPolynomial R) where
   mul_comm := by intro p q; exact mul_comm p q
 
 end CommSemiring
 
 section Ring
 
-variable {R : Type*} [Ring R] [BEq R]
-variable (p q: CPolynomial R)
+variable [Ring R] [LawfulBEq R]
+variable (p q : CPolynomial R)
 
-instance [LawfulBEq R] : Neg (CPolynomial R) where
+instance : Neg (CPolynomial R) where
   neg p := ⟨-p.val, neg_trim p.val p.prop⟩
 
-instance [LawfulBEq R] : Sub (CPolynomial R) where
+instance : Sub (CPolynomial R) where
   sub p q := p + -q
 
-theorem neg_add_cancel [LawfulBEq R] : -p + p = 0 := by
+theorem neg_add_cancel : -p + p = 0 := by
   apply Subtype.ext
   let R' : Ring R := ‹Ring R›
   have dist_lhs : (-p + p).val  = ((-p).val + p.val) := rfl
   rw [dist_lhs]
   exact CPolynomial.Raw.neg_add_cancel p.val
 
-instance [LawfulBEq R] : AddCommGroup (CPolynomial R) where
+instance : AddCommGroup (CPolynomial R) where
   add_assoc := add_assoc
   zero_add := zero_add
   add_zero := add_zero
@@ -275,13 +294,13 @@ end Ring
 
 section CommRing
 
-variable {R : Type*} [CommRing R] [BEq R]
+variable [CommRing R] [LawfulBEq R]
 
 /-- `CPolynomial R` forms a commutative ring when `R` is a commutative ring.
 
   This combines the `CommSemiring` and `Ring` structures.
 -/
-instance [LawfulBEq R] [Nontrivial R] : CommRing (CPolynomial R) where
+instance [Nontrivial R] : CommRing (CPolynomial R) where
   -- All structure inherited from `CommSemiring` and `Ring` instances
 
 end CommRing
