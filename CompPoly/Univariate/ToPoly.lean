@@ -6,7 +6,6 @@ Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
 import Mathlib.Algebra.Tropical.Basic
 import Mathlib.RingTheory.Polynomial.Basic
 import CompPoly.Data.Array.Lemmas
-import CompPoly.Univariate.Raw
 import CompPoly.Univariate.Basic
 
 /-!

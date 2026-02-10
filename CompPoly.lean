@@ -15,5 +15,5 @@ import CompPoly.Multivariate.Wheels
 import CompPoly.Univariate.Raw
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.Quotient
-import CompPoly.Univariate.Equiv
+import CompPoly.Univariate.ToPoly
 import CompPoly.Univariate.Lagrange
