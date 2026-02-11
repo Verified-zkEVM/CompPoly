@@ -285,7 +285,8 @@ lemma eval₂_C {R : Type*} [Ring R] [BEq R] {S : Type*} [Semiring S]
 Converting the constant polynomial `C r` to a `Polynomial` yields `Polynomial.C r`.
 -/
 @[simp, grind =]
-lemma toPoly_C {R : Type*} [Ring R] [BEq R] (r : R) :
+-- TODO canoncial versions of these too?
+lemma Raw.toPoly_C {R : Type*} [Ring R] [BEq R] (r : R) :
     (Raw.C r).toPoly = Polynomial.C r := by
   unfold Raw.toPoly
   exact eval₂_C Polynomial.C Polynomial.X r
@@ -294,7 +295,7 @@ lemma toPoly_C {R : Type*} [Ring R] [BEq R] (r : R) :
 `toPoly` preserves the multiplicative identity
 -/
 @[simp, grind =]
-lemma toPoly_one [LawfulBEq R] :
+lemma Raw.toPoly_one [LawfulBEq R] :
     (1 : CPolynomial.Raw R).toPoly = 1 := by
   have : (1 : CPolynomial.Raw R).toPoly = (Raw.C 1).toPoly := by rfl
   apply this.trans; clear this
@@ -302,8 +303,8 @@ lemma toPoly_one [LawfulBEq R] :
 
 /-- The ring equivalence sends the canonical variable `X` to `Polynomial.X`. -/
 @[simp, grind =]
-lemma toPoly_X [LawfulBEq R] :
-    (X : CPolynomial.Raw R).toPoly = Polynomial.X := by
+lemma Raw.toPoly_X [LawfulBEq R] :
+    (Raw.X : CPolynomial.Raw R).toPoly = Polynomial.X := by
   unfold CPolynomial.Raw.X
   simp [Raw.toPoly, Raw.eval₂]
 
@@ -311,7 +312,7 @@ lemma toPoly_X [LawfulBEq R] :
 `toPoly` preserves the additive identity
 -/
 @[simp, grind =]
-lemma toPoly_zero [CommSemiring R] [LawfulBEq R] :
+lemma Raw.toPoly_zero [CommSemiring R] [LawfulBEq R] :
     (0 : CPolynomial.Raw R).toPoly = 0 := by simp [Raw.toPoly, Raw.eval₂]
 
 /-- Ring equivalence between canonical computable polynomials and mathlib's `Polynomial R`.
@@ -346,8 +347,56 @@ theorem monomial_toPoly [DecidableEq R] [LawfulBEq R] (n : ℕ) (c : R) :
   simp only [CPolynomial.toPoly, monomial]
   rw [Polynomial.coeff_monomial, coeff_toPoly, CPolynomial.Raw.coeff_monomial]
 
+/-- The implementation of `C` is correct. -/
+theorem C_toPoly [LawfulBEq R] (r : R) : (C r).toPoly = Polynomial.C r := by sorry
+
+/-- The implementation of `X` is correct. -/
+theorem X_toPoly [LawfulBEq R] [Nontrivial R] :
+    (X : CPolynomial R).toPoly = Polynomial.X := by sorry
+
+/-- The implementation of `eval` is correct. -/
+theorem eval_toPoly [LawfulBEq R] (x : R) (p : CPolynomial R) :
+    eval x p = p.toPoly.eval x := by sorry
+
+/-- The implementation of `support` is correct. -/
+theorem support_toPoly [LawfulBEq R] (p : CPolynomial R) :
+    p.support = p.toPoly.support := by sorry
+
+/-- The implementation of `degree` is correct. -/
+theorem degree_toPoly [LawfulBEq R] (p : CPolynomial R) :
+    p.degree = p.toPoly.degree := by sorry
+
+/-- The implementation of `natDegree` is correct. -/
+theorem natDegree_toPoly [LawfulBEq R] (p : CPolynomial R) :
+    p.natDegree = p.toPoly.natDegree := by sorry
+
+/-- The implementation of `leadingCoeff` is correct. -/
+theorem leadingCoeff_toPoly [LawfulBEq R] (p : CPolynomial R) :
+    p.leadingCoeff = p.toPoly.leadingCoeff := by sorry
+
+/-- The implementation of `erase` is correct. -/
+theorem erase_toPoly [LawfulBEq R] [DecidableEq R] (n : ℕ) (p : CPolynomial R) :
+    (erase n p).toPoly = p.toPoly.erase n := by sorry
+
+/-- The implementation of `C r * X^n` agrees with `Polynomial.monomial n r`. -/
+theorem C_mul_X_pow_toPoly [LawfulBEq R] [DecidableEq R] [Nontrivial R] (r : R) (n : ℕ) :
+    (C r * X ^ n).toPoly = Polynomial.monomial n r := by sorry
+
 end ImplementationCorrectness
 
 end CPolynomial
 
 end CompPoly
+
+-- TODO?: Ring equivalence between canonical polynomials and the quotient.
+-- This establishes that `CPolynomial R` and `QuotientCPolynomial R` are isomorphic
+-- as rings. The canonical polynomials serve as unique representatives of each
+-- equivalence class in the quotient.
+--
+-- TODO: Construct this ring equivalence after proving:
+-- 1. Operations on quotient correspond to operations on canonical representatives
+-- 2. `trim` gives a unique representative for each equivalence class
+--
+-- The equivalence should map canonical polynomials to their quotient classes
+-- and back, preserving all ring operations.
+-- TODO: Implement `ringEquivQuotient : CPolynomial R ≃+* QuotientCPolynomial R`

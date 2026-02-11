@@ -44,14 +44,9 @@ instance [Semiring R] : Coe (CPolynomial R) (CPolynomial.Raw R) where coe := Sub
 /-- The zero polynomial is canonical. -/
 instance [Semiring R] : Inhabited (CPolynomial R) := ⟨#[], Trim.canonical_empty⟩
 
--- TODO namespace organization may have to change for ergonomics, etc
---      especially wrt the typeclass instances below
-
 section Operations
 
-section Semiring
-
-variable [Semiring R] [LawfulBEq R]
+variable [Semiring R] [LawfulBEq R] [Nontrivial R]
 variable (p q r : CPolynomial R)
 
 /-- Addition of canonical polynomials (result is canonical). -/
@@ -110,6 +105,17 @@ instance [Nontrivial R] : One (CPolynomial R) where
   one := ⟨CPolynomial.Raw.C 1, by exact one_is_trimmed
   ⟩
 
+
+/-- The coefficient of `X^i` in the polynomial. Returns `0` if `i` is out of bounds. -/
+@[reducible]
+def coeff (p : CPolynomial R) (i : ℕ) : R := p.val.coeff i
+
+/-- The constant polynomial `C r`. -/
+def C (r : R) : CPolynomial R := ⟨(Raw.C r).trim, by rw [Trim.trim_twice]⟩
+
+/-- The variable `X`. -/
+def X : CPolynomial R := ⟨Raw.X, X_canonical⟩
+
 /-- Construct a canonical monomial `c * X^n` as a `CPolynomial R`.
 
   The result is canonical (no trailing zeros) when `c ≠ 0`.
@@ -120,6 +126,9 @@ instance [Nontrivial R] : One (CPolynomial R) where
 def monomial [DecidableEq R] (n : ℕ) (c : R) : CPolynomial R :=
   ⟨Raw.monomial n c, Raw.monomial_canonical n c⟩
 
+/-- Return the degree of a `CPolynomial`. -/
+def degree (p : CPolynomial R) : WithBot ℕ := p.val.degree
+
 /-- Natural number degree of a canonical polynomial.
 
   Returns the degree as a natural number. For the zero polynomial, returns `0`.
@@ -127,7 +136,48 @@ def monomial [DecidableEq R] (n : ℕ) (c : R) : CPolynomial R :=
 -/
 def natDegree (p : CPolynomial R) : ℕ := p.val.natDegree
 
--- Lemmas for typeclass instances
+/-- Return the leading coefficient of a `CPolynomial` as the last coefficient
+of the trimmed array, or `0` if the trimmed array is empty. -/
+def leadingCoeff (p : CPolynomial R) : R := p.val.leadingCoeff
+
+/-- Evaluate a polynomial at a point. -/
+def eval (x : R) (p : CPolynomial R) : R := p.val.eval x
+
+/-- The support of a polynomial: indices with nonzero coefficients. -/
+def support (p : CPolynomial R) : Finset ℕ :=
+  (Finset.range p.val.size).filter (fun i => p.val.coeff i != 0)
+
+/-- Coefficient of the constant polynomial `C r`. -/
+lemma coeff_C (r : R) (i : ℕ) : coeff (C r) i = if i = 0 then r else 0 := by sorry
+
+/-- Coefficient of the variable `X`. -/
+lemma coeff_X (i : ℕ) : coeff X i = if i = 1 then 1 else 0 := by sorry
+
+/-- Coefficient of the zero polynomial. -/
+@[simp] lemma coeff_zero (i : ℕ) : coeff (0 : CPolynomial R) i = 0 := by sorry
+
+/-- Coefficient of the constant polynomial `1`. -/
+lemma coeff_one [Nontrivial R] (i : ℕ) :
+    coeff (1 : CPolynomial R) i = if i = 0 then 1 else 0 := by sorry
+
+/-- Induction principle for polynomials (mirrors mathlib's `Polynomial.induction_on`). -/
+lemma induction_on {P : CPolynomial R → Prop} (p : CPolynomial R)
+    (h0 : P 0) (hC : ∀ a, P (C a)) (hadd : ∀ p q, P p → P q → P (p + q))
+    (hX : ∀ p, P p → P (X * p)) : P p := by
+  sorry
+
+/-- Degree equals the maximum of the support when the polynomial is non-zero.
+  Here `p.degree = some n` where `n` is the maximum index in `p.support`. -/
+lemma degree_eq_support_max (p : CPolynomial R) (hp : p ≠ 0) :
+    ∃ n, n ∈ p.support ∧ p.degree = n := by
+  sorry
+
+end Operations
+
+section Semiring
+
+variable [Semiring R] [LawfulBEq R]
+variable (p q r : CPolynomial R)
 
 lemma one_mul [Nontrivial R] (p : CPolynomial R) : 1 * p = p := by
   apply Subtype.ext
@@ -178,6 +228,7 @@ lemma pow_is_trimmed [LawfulBEq R] [Nontrivial R]
       · convert one_is_trimmed
         · infer_instance
         · infer_instance
+        · infer_instance
       · have h_exp : p ^ (n + 1) = p * p ^ n := by
           exact pow_succ p n
         rw [h_exp]
@@ -223,6 +274,10 @@ instance [LawfulBEq R] [Nontrivial R] : Semiring (CPolynomial R) where
   natCast_zero := by rfl
   natCast_succ := by intro n; rfl
 
+/-- `C r * X^n = monomial n r` as canonical polynomials. -/
+lemma C_mul_X_pow_eq_monomial [LawfulBEq R] [DecidableEq R] [Nontrivial R] (r : R) (n : ℕ) :
+    (C r : CPolynomial R) * (X ^ n) = monomial n r := by sorry
+
 end Semiring
 
 section CommSemiring
@@ -248,7 +303,7 @@ end CommSemiring
 
 section Ring
 
-variable [Ring R] [LawfulBEq R]
+variable [Ring R] [LawfulBEq R] [Nontrivial R]
 variable (p q : CPolynomial R)
 
 instance : Neg (CPolynomial R) where
@@ -256,6 +311,17 @@ instance : Neg (CPolynomial R) where
 
 instance : Sub (CPolynomial R) where
   sub p q := p + -q
+
+/-- Erase the coefficient at index `n` (same as `p` except `coeff n = 0`, then trimmed). -/
+def erase [DecidableEq R] (n : ℕ) (p : CPolynomial R) : CPolynomial R :=
+  let e := p.val - CPolynomial.Raw.monomial n (p.val.coeff n)
+  ⟨e, sorry⟩
+
+/-- A polynomial equals its leading monomial plus the rest (`erase` at `natDegree`). -/
+lemma monomial_add_erase [DecidableEq R] (p : CPolynomial R) :
+    p = monomial p.natDegree p.leadingCoeff + erase p.natDegree p := by
+  apply CPolynomial.ext
+  sorry
 
 theorem neg_add_cancel : -p + p = 0 := by
   apply Subtype.ext
@@ -304,21 +370,6 @@ instance [Nontrivial R] : CommRing (CPolynomial R) where
   -- All structure inherited from `CommSemiring` and `Ring` instances
 
 end CommRing
-
-end Operations
-
--- TODO: Ring equivalence between canonical polynomials and the quotient.
--- This establishes that `CPolynomial R` and `QuotientCPolynomial R` are isomorphic
--- as rings. The canonical polynomials serve as unique representatives of each
--- equivalence class in the quotient.
---
--- TODO: Construct this ring equivalence after proving:
--- 1. Operations on quotient correspond to operations on canonical representatives
--- 2. `trim` gives a unique representative for each equivalence class
---
--- The equivalence should map canonical polynomials to their quotient classes
--- and back, preserving all ring operations.
--- TODO: Implement `ringEquivQuotient : CPolynomial R ≃+* QuotientCPolynomial R`
 
 end CPolynomial
 

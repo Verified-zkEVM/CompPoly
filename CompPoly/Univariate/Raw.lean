@@ -404,6 +404,7 @@ theorem canonical_iff [LawfulBEq R] {p : CPolynomial.Raw R} :
     · rw [canonical_nonempty_iff hp, lastNonzero_last_iff hp]
       exact h hp
 
+@[grind =]
 lemma push_trim [LawfulBEq R] (arr : Array R) (c : R) :
     ¬c = 0 → trim (arr.push c) = arr.push c := by
   rw [Trim.canonical_iff]
@@ -689,6 +690,12 @@ theorem monomial_canonical [LawfulBEq R] [DecidableEq R] (n : ℕ) (c : R) :
   · simp [monomial, if_neg h, mk]
     rw [Trim.push_trim _ _ h]
 
+theorem X_canonical [Nontrivial R] [LawfulBEq R] : X.trim = (X : CPolynomial.Raw R) := by
+  unfold X
+  change trim (#[0].push 1) = #[0].push 1
+  apply Trim.push_trim
+  simp
+
 omit [BEq R] in
 /-- monomial coefficient theorem -/
 lemma coeff_monomial [DecidableEq R] {n i : ℕ} {c : R} :
@@ -725,6 +732,18 @@ lemma coeff_monomial [DecidableEq R] {n i : ℕ} {c : R} :
       · have hi : i > n := by grind
         clear h_ineq hn
         grind
+
+/-- Coefficient of the constant polynomial `C r`. -/
+lemma coeff_C (r : R) (i : ℕ) : (C r).coeff i = if i = 0 then r else 0 := by
+  unfold C coeff; split_ifs with h <;> simp [h]
+
+/-- Coefficient of the variable polynomial `X`. -/
+lemma coeff_X (i : ℕ) : (X : CPolynomial.Raw R).coeff i = if i = 1 then 1 else 0 := by
+  sorry
+
+/-- Coefficient of the zero polynomial. -/
+@[simp] lemma coeff_zero (i : ℕ) : (0 : CPolynomial.Raw R).coeff i = 0 := by
+  simp [coeff, zero_def]
 
 theorem zero_add (hp : p.canonical) : 0 + p = p := by
   rw (occs := .pos [2]) [← hp]
@@ -1488,6 +1507,10 @@ def mod [Field R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
 
 instance [Field R] : Div (CPolynomial.Raw R) := ⟨div⟩
 instance [Field R] : Mod (CPolynomial.Raw R) := ⟨mod⟩
+
+/-- Erase the coefficient at index `n`: same as `p` except `coeff n = 0`, then trimmed. -/
+def erase [DecidableEq R] (n : ℕ) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
+  p - monomial n (p.coeff n)
 
 omit [BEq R] in
 lemma neg_coeff : ∀ (p : CPolynomial.Raw R) (i : ℕ), p.neg.coeff i = - p.coeff i := by
