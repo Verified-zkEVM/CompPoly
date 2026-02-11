@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Dimitris
+Authors: Dimitris Mitsios
 -/
 import CompPoly.Multivariate.MvPolyEquiv
 import Mathlib.Algebra.MvPolynomial.Rename
@@ -16,7 +16,7 @@ by transferring results from Mathlib's `MvPolynomial.rename` through the
 ## Main results
 
 * `fromCMvPolynomial_rename` — correspondence between our `rename` and Mathlib's
-* `rename_C`, `rename_X`, `rename_add`, `rename_mul`, `rename_id` — algebraic properties
+* `rename_C`, `rename_X`, `rename_add`, `rename_mul`, `rename_id`, `rename_rename` — algebraic properties
 * `CMvPolynomial.renameEquiv` — ring isomorphism for bijective variable renaming
 
 -/
@@ -30,7 +30,7 @@ variable {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
 /-! ### Helper lemmas for `fromCMvPolynomial_rename` -/
 
 /-- In a commutative additive monoid, the order of addition in a list fold doesn't matter. -/
-private lemma list_foldl_add_comm {β K V : Type} [AddCommMonoid β]
+lemma list_foldl_add_comm {β K V : Type} [AddCommMonoid β]
     (g : K → V → β) (l : List (K × V)) (init : β) :
     List.foldl (fun acc pair => acc + g pair.1 pair.2) init l =
     List.foldl (fun acc pair => g pair.1 pair.2 + acc) init l := by
@@ -42,18 +42,19 @@ private lemma list_foldl_add_comm {β K V : Type} [AddCommMonoid β]
     exact ih _
 
 /-- Swapping addition order in `ExtTreeMap.foldl` doesn't change the result. -/
-private lemma foldl_add_comm' {β : Type} [AddCommMonoid β] {k : ℕ}
+lemma foldl_add_comm' {β : Type} [AddCommMonoid β] {k : ℕ}
     {R' : Type} (g : CMvMonomial k → R' → β) (t : Std.ExtTreeMap (CMvMonomial k) R') :
     Std.ExtTreeMap.foldl (fun acc m c => acc + g m c) (0 : β) t =
     Std.ExtTreeMap.foldl (fun acc m c => g m c + acc) (0 : β) t := by
   simp only [Std.ExtTreeMap.foldl_eq_foldl_toList]
   exact list_foldl_add_comm g t.toList 0
 
-/-- The renaming of a monomial corresponds to `Finsupp.mapDomain` on the Finsupp side. -/
-private lemma toFinsupp_apply (mono : CMvMonomial n) (i : Fin n) :
+/-- Applying `CMvMonomial.toFinsupp` at index `i` equals `Vector.get`. -/
+lemma toFinsupp_apply (mono : CMvMonomial n) (i : Fin n) :
     (CMvMonomial.toFinsupp mono) i = mono.get i := rfl
 
-private lemma renameMonomial_eq (f : Fin n → Fin m) (mono : CMvMonomial n) :
+/-- The renaming of a monomial corresponds to `Finsupp.mapDomain` on the Finsupp side. -/
+lemma renameMonomial_eq (f : Fin n → Fin m) (mono : CMvMonomial n) :
     (Vector.ofFn (fun j => (Finset.univ.filter (fun i => f i = j)).sum
       (fun i => mono.get i)) : CMvMonomial m) =
     CMvMonomial.ofFinsupp (Finsupp.mapDomain f (CMvMonomial.toFinsupp mono)) := by
@@ -77,7 +78,7 @@ private lemma renameMonomial_eq (f : Fin n → Fin m) (mono : CMvMonomial n) :
   simp [hxs]
 
 /-- `fromCMvPolynomial` applied to our `monomial` gives Mathlib's `MvPolynomial.monomial`. -/
-private lemma fromCMvPolynomial_monomial {k : ℕ} (mono : CMvMonomial k) (c : R) :
+lemma fromCMvPolynomial_monomial {k : ℕ} (mono : CMvMonomial k) (c : R) :
     fromCMvPolynomial (CMvPolynomial.monomial mono c) =
     MvPolynomial.monomial (CMvMonomial.toFinsupp mono) c := by
   by_cases hc : c = 0
@@ -107,7 +108,7 @@ private lemma fromCMvPolynomial_monomial {k : ℕ} (mono : CMvMonomial k) (c : R
       rfl
 
 /-- `fromCMvPolynomial` distributes over `Finsupp.sum` (generalized to different dimensions). -/
-private lemma fromCMvPolynomial_finsupp_sum {k : ℕ}
+lemma fromCMvPolynomial_finsupp_sum {k : ℕ}
     (g : (Fin n →₀ ℕ) → R → CMvPolynomial k R) (a : CMvPolynomial n R) :
     fromCMvPolynomial (Finsupp.sum (fromCMvPolynomial a) g) =
     Finsupp.sum (fromCMvPolynomial a) (fun μ c => fromCMvPolynomial (g μ c)) := by
@@ -151,7 +152,7 @@ lemma fromCMvPolynomial_rename (f : Fin n → Fin m) (p : CMvPolynomial n R) :
 /-! ### Bridging lemmas for C and X -/
 
 /-- Our constant `C c` equals `monomial 0 c`. -/
-private lemma C_eq_monomial {k : ℕ} (c : R) :
+lemma C_eq_monomial {k : ℕ} (c : R) :
     CMvPolynomial.C (n := k) c = CMvPolynomial.monomial 0 c := by
   by_cases hc : c = 0
   · subst hc; ext m
@@ -166,13 +167,14 @@ private lemma C_eq_monomial {k : ℕ} (c : R) :
     unfold Lawful.fromUnlawful
     erw [Unlawful.filter_get]
 
-private lemma toFinsupp_zero {k : ℕ} :
+/-- The `Finsupp` of the zero monomial is zero. -/
+lemma toFinsupp_zero {k : ℕ} :
     CMvMonomial.toFinsupp (0 : CMvMonomial k) = 0 := by
   ext i
   simp [CMvMonomial.toFinsupp, Vector.get]
 
 /-- `fromCMvPolynomial` maps our `C` to Mathlib's `C`. -/
-private lemma fromCMvPolynomial_C {k : ℕ} (c : R) :
+lemma fromCMvPolynomial_C {k : ℕ} (c : R) :
     fromCMvPolynomial (CMvPolynomial.C (n := k) c) = MvPolynomial.C c := by
   rw [C_eq_monomial, fromCMvPolynomial_monomial, toFinsupp_zero,
       ← MvPolynomial.C_apply]
@@ -188,7 +190,7 @@ lemma rename_C (f : Fin n → Fin m) (c : R) :
   exact MvPolynomial.rename_C f c
 
 /-- `X i` is a special case of `monomial`. -/
-private lemma X_eq_monomial {k : ℕ} (i : Fin k) :
+lemma X_eq_monomial {k : ℕ} (i : Fin k) :
     CMvPolynomial.X (R := R) i = CMvPolynomial.monomial
       (Vector.ofFn (fun j => if j = i then 1 else 0)) (1 : R) := by
   unfold CMvPolynomial.X CMvPolynomial.monomial
@@ -201,14 +203,14 @@ private lemma X_eq_monomial {k : ℕ} (i : Fin k) :
     exact (if_neg (by decide)).symm
 
 /-- The Finsupp of the unit monomial at `i` is `Finsupp.single i 1`. -/
-private lemma toFinsupp_unitMono {k : ℕ} (i : Fin k) :
+lemma toFinsupp_unitMono {k : ℕ} (i : Fin k) :
     CMvMonomial.toFinsupp (Vector.ofFn (fun j : Fin k => if j = i then 1 else 0)) =
     Finsupp.single i 1 := by
   ext j
   simp [CMvMonomial.toFinsupp, Vector.get, Finsupp.single_apply, eq_comm]
 
 /-- `fromCMvPolynomial` maps our `X i` to Mathlib's `X i`. -/
-private lemma fromCMvPolynomial_X {k : ℕ} (i : Fin k) :
+lemma fromCMvPolynomial_X {k : ℕ} (i : Fin k) :
     fromCMvPolynomial (CMvPolynomial.X (R := R) i) = MvPolynomial.X i := by
   rw [X_eq_monomial, fromCMvPolynomial_monomial, toFinsupp_unitMono]
   rfl
