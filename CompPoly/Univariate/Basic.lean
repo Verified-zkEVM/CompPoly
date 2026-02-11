@@ -53,18 +53,22 @@ variable (p q r : CPolynomial R)
 instance : Add (CPolynomial R) where
   add p q := ⟨p.val + q.val, by apply Trim.trim_twice⟩
 
+omit [Nontrivial R] in
 theorem add_comm : p + q = q + p := by
   apply CPolynomial.ext; apply CPolynomial.Raw.add_comm
 
+omit [Nontrivial R] in
 theorem add_assoc : p + q + r = p + (q + r) := by
   apply CPolynomial.ext; apply CPolynomial.Raw.add_assoc
 
 instance : Zero (CPolynomial R) := ⟨0, zero_canonical⟩
 
+omit [Nontrivial R] in
 theorem zero_add : 0 + p = p := by
   apply CPolynomial.ext
   apply CPolynomial.Raw.zero_add p.val p.prop
 
+omit [Nontrivial R] in
 theorem add_zero : p + 0 = p := by
   apply CPolynomial.ext
   apply CPolynomial.Raw.add_zero p.val p.prop
@@ -73,9 +77,11 @@ theorem add_zero : p + 0 = p := by
 def nsmul (n : ℕ) (p : CPolynomial R) : CPolynomial R :=
   ⟨CPolynomial.Raw.nsmul n p.val, by apply Trim.trim_twice⟩
 
+omit [Nontrivial R] in
 theorem nsmul_zero : nsmul 0 p = 0 := by
   apply CPolynomial.ext; apply CPolynomial.Raw.nsmul_zero
 
+omit [Nontrivial R] in
 theorem nsmul_succ (n : ℕ) (p : CPolynomial R) : nsmul (n + 1) p = nsmul n p + p := by
   apply CPolynomial.ext; apply CPolynomial.Raw.nsmul_succ
 
@@ -92,6 +98,7 @@ instance : Mul (CPolynomial R) where
   mul p q :=
     ⟨p.val * q.val, by exact mul_is_trimmed p.val q.val⟩
 
+omit [Nontrivial R] in
 lemma one_is_trimmed [Nontrivial R] : (1 : CompPoly.CPolynomial.Raw R).trim = 1 :=
   Trim.push_trim #[] 1 one_ne_zero
 
@@ -238,7 +245,6 @@ lemma pow_is_trimmed [LawfulBEq R] [Nontrivial R]
       · convert one_is_trimmed
         · infer_instance
         · infer_instance
-        · infer_instance
       · have h_exp : p ^ (n + 1) = p * p ^ n := by
           exact pow_succ p n
         rw [h_exp]
@@ -322,17 +328,25 @@ instance : Neg (CPolynomial R) where
 instance : Sub (CPolynomial R) where
   sub p q := p + -q
 
+ omit [Nontrivial R] in
+lemma erase_canonical [DecidableEq R] (n : ℕ) (p : CPolynomial R) :
+    let e := p.val - CPolynomial.Raw.monomial n (p.val.coeff n)
+    e.trim = e := by
+  simp; apply Trim.trim_twice
+
 /-- Erase the coefficient at index `n` (same as `p` except `coeff n = 0`, then trimmed). -/
 def erase [DecidableEq R] (n : ℕ) (p : CPolynomial R) : CPolynomial R :=
   let e := p.val - CPolynomial.Raw.monomial n (p.val.coeff n)
-  ⟨e, sorry⟩
+  ⟨e, by rw [erase_canonical]⟩
 
 /-- A polynomial equals its leading monomial plus the rest (`erase` at `natDegree`). -/
 lemma monomial_add_erase [DecidableEq R] (p : CPolynomial R) :
     p = monomial p.natDegree p.leadingCoeff + erase p.natDegree p := by
   apply CPolynomial.ext
+
   sorry
 
+omit [Nontrivial R] in
 theorem neg_add_cancel : -p + p = 0 := by
   apply Subtype.ext
   let R' : Ring R := ‹Ring R›
