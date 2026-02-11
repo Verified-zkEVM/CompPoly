@@ -177,11 +177,141 @@ lemma coeff_one (i : ℕ) :
   change Raw.coeff 1 i = if i = 0 then 1 else 0
   rw [Raw.coeff_one]
 
-/-- Induction principle for polynomials (mirrors mathlib's `Polynomial.induction_on`). -/
-lemma induction_on {P : CPolynomial R → Prop} (p : CPolynomial R)
+theorem coeff_X_mul_succ (p : CPolynomial R) (n : ℕ) : coeff (X * p) (n + 1) = coeff p n := by
+  classical
+  unfold coeff
+  change ((X.val * p.val).coeff (n + 1) = p.val.coeff n)
+  rw [Raw.mul_coeff (p := X.val) (q := p.val) (k := n + 1)]
+  simp only [X]
+  have hmem : (1 : ℕ) ∈ Finset.range (n + 1 + 1) := by
+    simp [Finset.mem_range]
+  have hsum :
+      (Finset.range (n + 1 + 1)).sum (fun i => Raw.X.coeff i * p.val.coeff (n + 1 - i)) =
+        Raw.X.coeff 1 * p.val.coeff (n + 1 - 1) := by
+    refine Finset.sum_eq_single_of_mem (a := 1) hmem ?_
+    intro i hi hne
+    rw [Raw.coeff_X (R := R) i]
+    simp [hne]
+  rw [hsum]
+  have hn : n + 1 - 1 = n := by
+    omega
+  rw [hn]
+  rw [Raw.coeff_X (R := R) 1]
+  simp
+
+theorem coeff_X_mul_zero (p : CPolynomial R) : coeff (X * p) 0 = 0 := by
+  unfold CPolynomial.coeff
+  change ((Raw.X * p.val) : Raw R).coeff 0 = 0
+  rw [Raw.mul_coeff]
+  -- (Finset.range 1).sum ... reduces to the single term at 0
+  simp [Raw.X]
+
+theorem coeff_extract_succ (a : CPolynomial.Raw R) (i : ℕ) : CPolynomial.Raw.coeff (a.extract 1 a.size) i = CPolynomial.Raw.coeff a (i + 1) := by
+  simp [CPolynomial.Raw.coeff, Array.getElem?_extract]
+  by_cases h : i < a.size - 1
+  · have h1 : 1 + i = i + 1 := by omega
+    simp [h, h1]
+  · have hge : a.size ≤ i + 1 := by omega
+    simp [h, Array.getElem?_eq_none (xs := a) (i := i + 1) hge]
+
+def tail (p : CPolynomial R) : CPolynomial R :=
+  ⟨CPolynomial.Raw.trim (p.val.extract 1 p.val.size), by
+    simpa using (CPolynomial.Raw.Trim.trim_twice (p.val.extract 1 p.val.size))⟩
+
+theorem coeff_tail (p : CPolynomial R) (i : ℕ) : coeff (tail p) i = coeff p (i + 1) := by
+  -- LHS: coeff of tail = coeff of trimmed extract
+  unfold tail
+  -- turn coefficients of CPolynomial into raw coefficients
+  simp only [CPolynomial.coeff]
+  -- remove the trim on coefficients
+  have htrim :=
+    (CPolynomial.Raw.Trim.coeff_eq_coeff
+      (p := ((↑p : CPolynomial.Raw R).extract 1 (↑p : CPolynomial.Raw R).size)) (i := i))
+  -- shift the extract
+  exact htrim.trans (coeff_extract_succ (a := (↑p : CPolynomial.Raw R)) (i := i))
+
+
+theorem eq_C_add_X_mul_tail (p : CPolynomial R) : p = C (coeff p 0) + X * tail p := by
+  classical
+  apply CPolynomial.ext
+  refine CPolynomial.Raw.Trim.canonical_ext (p := p.val)
+      (q := (C (coeff p 0) + X * tail p).val) ?_ ?_ ?_
+  · exact p.property
+  · exact (C (coeff p 0) + X * tail p).property
+  · intro k
+    change coeff p k = coeff (C (coeff p 0) + X * tail p) k
+
+    have coeff_add (a b : CPolynomial R) (i : ℕ) :
+        coeff (a + b) i = coeff a i + coeff b i := by
+      unfold coeff
+      change ((a.val + b.val).coeff i) = a.val.coeff i + b.val.coeff i
+      simpa using
+        (CPolynomial.Raw.add_coeff_trimmed (p := a.val) (q := b.val) (i := i))
+
+    cases k with
+    | zero =>
+        rw [coeff_add (a := C (coeff p 0)) (b := X * tail p) (i := 0)]
+        have hC0 : coeff (C (coeff p 0)) 0 = coeff p 0 := by
+          simpa using (coeff_C (R := R) (r := coeff p 0) (i := 0))
+        have hX0 : coeff (X * tail p) 0 = 0 := by
+          simpa using (coeff_X_mul_zero (R := R) (p := tail p))
+        rw [hC0, hX0]
+        simp only [_root_.add_zero]
+    | succ n =>
+        rw [coeff_add (a := C (coeff p 0)) (b := X * tail p) (i := n + 1)]
+        have hCsucc : coeff (C (coeff p 0)) (n + 1) = 0 := by
+          simpa [Nat.succ_ne_zero n] using
+            (coeff_C (R := R) (r := coeff p 0) (i := n + 1))
+        have hXsucc : coeff (X * tail p) (n + 1) = coeff (tail p) n := by
+          simpa using (coeff_X_mul_succ (R := R) (p := tail p) (n := n))
+        have htail : coeff (tail p) n = coeff p (n + 1) := by
+          simpa using (coeff_tail (p := p) (i := n))
+        rw [hCsucc, hXsucc, htail]
+        simp only [_root_.zero_add]
+
+theorem tail_size_lt (p : CPolynomial R) (hp : p.val.size > 0) : (tail p).val.size < p.val.size := by
+  unfold tail
+  have hle : (CPolynomial.Raw.trim (p.val.extract 1 p.val.size)).size
+      ≤ (p.val.extract 1 p.val.size).size := by
+    simpa using (CPolynomial.Raw.Trim.size_le_size (p := p.val.extract 1 p.val.size))
+  have hextract : (p.val.extract 1 p.val.size).size = p.val.size - 1 := by
+    simpa [Array.size_extract, Nat.succ_le_of_lt hp]
+  have hle' : (CPolynomial.Raw.trim (p.val.extract 1 p.val.size)).size ≤ p.val.size - 1 := by
+    simpa [hextract] using hle
+  exact lt_of_le_of_lt hle' (Nat.pred_lt_self hp)
+
+theorem induction_on {P : CPolynomial R → Prop} (p : CPolynomial R)
     (h0 : P 0) (hC : ∀ a, P (C a)) (hadd : ∀ p q, P p → P q → P (p + q))
     (hX : ∀ p, P p → P (X * p)) : P p := by
-  sorry
+  classical
+  -- Strong induction on the size of the underlying coefficient array
+  refine
+    (Nat.strong_induction_on
+        (p := fun n : ℕ => ∀ p : CPolynomial R, p.val.size = n → P p)
+        (p.val.size) ?_) p rfl
+  intro n ih p hn
+  cases n with
+  | zero =>
+      have hval : p.val = (#[] : CPolynomial.Raw R) := by
+        exact Array.eq_empty_of_size_eq_zero (by simpa using hn)
+      have hp0 : p = (0 : CPolynomial R) := by
+        apply CompPoly.CPolynomial.ext
+        simpa using hval
+      simpa [hp0] using h0
+  | succ n =>
+      have hp_pos : p.val.size > 0 := by
+        simpa [hn] using Nat.succ_pos n
+      have htail_lt : (tail p).val.size < Nat.succ n := by
+        have ht := tail_size_lt (p := p) hp_pos
+        simpa [hn] using ht
+      have htail : P (tail p) := ih (tail p).val.size htail_lt (tail p) rfl
+      have hXt : P (X * tail p) := hX (tail p) htail
+      have hC0 : P (C (coeff p 0)) := hC (coeff p 0)
+      have hsum : P (C (coeff p 0) + X * tail p) := hadd _ _ hC0 hXt
+      -- Rewrite using Horner decomposition
+      rw [eq_C_add_X_mul_tail (p := p)]
+      exact hsum
+
 
 /-- Degree equals the maximum of the support when the polynomial is non-zero.
   Here `p.degree = some n` where `n` is the maximum index in `p.support`. -/
