@@ -147,18 +147,28 @@ def eval (x : R) (p : CPolynomial R) : R := p.val.eval x
 def support (p : CPolynomial R) : Finset ℕ :=
   (Finset.range p.val.size).filter (fun i => p.val.coeff i != 0)
 
+omit [Nontrivial R] in
 /-- Coefficient of the constant polynomial `C r`. -/
-lemma coeff_C (r : R) (i : ℕ) : coeff (C r) i = if i = 0 then r else 0 := by sorry
+lemma coeff_C (r : R) (i : ℕ) : coeff (C r) i = if i = 0 then r else 0 := by
+  unfold C; simp only [coeff]
+  rw [Trim.coeff_eq_coeff, Raw.coeff_C]
 
 /-- Coefficient of the variable `X`. -/
-lemma coeff_X (i : ℕ) : coeff X i = if i = 1 then 1 else 0 := by sorry
+lemma coeff_X (i : ℕ) : coeff X i = if i = 1 then 1 else 0 := by
+  simp only [X, coeff]; rw [Raw.coeff_X]
 
+omit [LawfulBEq R] [Nontrivial R] in
 /-- Coefficient of the zero polynomial. -/
-@[simp] lemma coeff_zero (i : ℕ) : coeff (0 : CPolynomial R) i = 0 := by sorry
+@[simp]
+lemma coeff_zero (i : ℕ) : coeff (0 : CPolynomial R) i = 0 := by
+  simp; rfl
 
 /-- Coefficient of the constant polynomial `1`. -/
-lemma coeff_one [Nontrivial R] (i : ℕ) :
-    coeff (1 : CPolynomial R) i = if i = 0 then 1 else 0 := by sorry
+lemma coeff_one (i : ℕ) :
+    coeff (1 : CPolynomial R) i = if i = 0 then 1 else 0 := by
+  simp only [coeff]
+  change Raw.coeff 1 i = if i = 0 then 1 else 0
+  rw [Raw.coeff_one]
 
 /-- Induction principle for polynomials (mirrors mathlib's `Polynomial.induction_on`). -/
 lemma induction_on {P : CPolynomial R → Prop} (p : CPolynomial R)

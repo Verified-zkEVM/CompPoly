@@ -733,17 +733,33 @@ lemma coeff_monomial [DecidableEq R] {n i : ℕ} {c : R} :
         clear h_ineq hn
         grind
 
+omit [BEq R] in
 /-- Coefficient of the constant polynomial `C r`. -/
 lemma coeff_C (r : R) (i : ℕ) : (C r).coeff i = if i = 0 then r else 0 := by
   unfold C coeff; split_ifs with h <;> simp [h]
 
+omit [BEq R] in
 /-- Coefficient of the variable polynomial `X`. -/
 lemma coeff_X (i : ℕ) : (X : CPolynomial.Raw R).coeff i = if i = 1 then 1 else 0 := by
-  sorry
+  unfold CPolynomial.Raw.coeff
+  rcases i with ( _ | _ | i ) <;> rfl
 
+omit [BEq R] in
 /-- Coefficient of the zero polynomial. -/
-@[simp] lemma coeff_zero (i : ℕ) : (0 : CPolynomial.Raw R).coeff i = 0 := by
+@[simp]
+lemma coeff_zero (i : ℕ) : (0 : CPolynomial.Raw R).coeff i = 0 := by
   simp [coeff, zero_def]
+
+omit [BEq R] in
+lemma coeff_one (i : ℕ) :
+    coeff (1 : CPolynomial.Raw R) i = if i = 0 then 1 else 0 := by
+  by_cases h : i = 0
+  · rw [if_pos h, h]
+    change coeff #[1] 0 = 1
+    simp
+  · rw [if_neg h]
+    change coeff #[1] i = 0
+    grind
 
 theorem zero_add (hp : p.canonical) : 0 + p = p := by
   rw (occs := .pos [2]) [← hp]

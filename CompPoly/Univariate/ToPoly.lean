@@ -336,7 +336,7 @@ noncomputable def ringEquiv [LawfulBEq R] :
 
 end RingEquiv
 
--- Lemmas stating that each operation (monomial, leadingCoeff, eval, etc.) matches its
+-- Lemmas stating that each operation on computable polynomials matches its
 -- mathlib counterpart when viewed via `toPoly`, enabling transport back and forth
 section ImplementationCorrectness
 
@@ -348,39 +348,148 @@ theorem monomial_toPoly [DecidableEq R] [LawfulBEq R] (n : ℕ) (c : R) :
   rw [Polynomial.coeff_monomial, coeff_toPoly, CPolynomial.Raw.coeff_monomial]
 
 /-- The implementation of `C` is correct. -/
-theorem C_toPoly [LawfulBEq R] (r : R) : (C r).toPoly = Polynomial.C r := by sorry
+theorem C_toPoly [LawfulBEq R] (r : R) : (C r).toPoly = Polynomial.C r := by
+  convert Raw.toPoly_C r
+  convert Raw.toPoly_trim
+  infer_instance
 
 /-- The implementation of `X` is correct. -/
 theorem X_toPoly [LawfulBEq R] [Nontrivial R] :
-    (X : CPolynomial R).toPoly = Polynomial.X := by sorry
+    (X : CPolynomial R).toPoly = Polynomial.X := by
+      convert Raw.toPoly_X using 1
+      (expose_names; exact inst_1)
+      infer_instance
 
 /-- The implementation of `eval` is correct. -/
 theorem eval_toPoly [LawfulBEq R] (x : R) (p : CPolynomial R) :
-    eval x p = p.toPoly.eval x := by sorry
+    eval x p = p.toPoly.eval x := by
+      convert Raw.eval_toPoly_eq_eval x p.val
+      · rw [ Raw.eval_toPoly_eq_eval ]; rfl
+      · convert Raw.eval_toPoly_eq_eval x p.val
 
 /-- The implementation of `support` is correct. -/
 theorem support_toPoly [LawfulBEq R] (p : CPolynomial R) :
-    p.support = p.toPoly.support := by sorry
+    p.support = p.toPoly.support := by
+      convert Set.ext _
+      rotate_left
+      exact ℕ
+      exact { i | p.val.coeff i ≠ 0 }
+      exact { i | ( p.toPoly.coeff i ) ≠ 0 }
+      · simp +zetaDelta at *
+        intro x
+        convert Iff.rfl
+        convert Raw.coeff_toPoly
+        exact Eq.symm Array.getD_eq_getD_getElem?
+      · simp +decide [ CPolynomial.support, Finset.ext_iff, Set.ext_iff ]
+        grind
 
 /-- The implementation of `degree` is correct. -/
 theorem degree_toPoly [LawfulBEq R] (p : CPolynomial R) :
-    p.degree = p.toPoly.degree := by sorry
+    p.degree = p.toPoly.degree := by
+      -- Since `p` is a canonical polynomial, its degree is equal to the degree of
+      -- its polynomial representation.
+      have h_deg_eq : p.val.toPoly.degree = p.val.degree := by
+        unfold CPolynomial.Raw.degree at *
+        rcases h : ( p : CompPoly.CPolynomial.Raw R ).lastNonzero with ( _ | ⟨ k, hk ⟩ )
+          <;> simp_all +decide [ Polynomial.degree_eq_bot ]
+        · have := p.prop
+          unfold CompPoly.CPolynomial.Raw.trim at this; aesop
+        · have := CPolynomial.Raw.Trim.lastNonzero_spec h
+          rw [ Polynomial.degree_eq_of_le_of_coeff_ne_zero ]
+          · rw [ Polynomial.degree_le_iff_coeff_zero ]
+            intro m hm; by_cases hm' : m < p.val.size
+              <;> simp_all +decide [ CPolynomial.Raw.coeff_toPoly ]
+          · rw [ CompPoly.CPolynomial.Raw.coeff_toPoly ]; aesop
+      exact h_deg_eq.symm
 
 /-- The implementation of `natDegree` is correct. -/
 theorem natDegree_toPoly [LawfulBEq R] (p : CPolynomial R) :
-    p.natDegree = p.toPoly.natDegree := by sorry
+    p.natDegree = p.toPoly.natDegree := by
+      -- Since the degree of p is equal to the degree of p.toPoly, and the natural
+      -- degree is defined as the degree, we can conclude p.natDegree = p.toPoly.natDegree.
+      have h_deg_eq : p.degree = p.toPoly.degree := by
+        exact degree_toPoly p
+      -- Since the natural degree is the degree's natural number version, and
+      -- p.degree = p.toPoly.degree, their natural degrees must also be equal.
+      have h_natDegree_eq : p.natDegree = p.degree.unbotD 0 := by
+        unfold CPolynomial.natDegree CPolynomial.degree
+        unfold CPolynomial.Raw.natDegree CPolynomial.Raw.degree
+        cases p.val.lastNonzero <;> rfl
+      aesop
 
 /-- The implementation of `leadingCoeff` is correct. -/
 theorem leadingCoeff_toPoly [LawfulBEq R] (p : CPolynomial R) :
-    p.leadingCoeff = p.toPoly.leadingCoeff := by sorry
+    p.leadingCoeff = p.toPoly.leadingCoeff := by
+      by_contra h_contra
+      -- Apply the contradiction assumption to obtain the equality of leading coefficients.
+      apply h_contra
+      obtain ⟨q, hq⟩ : ∃ q : Polynomial R, p = ⟨q.toImpl, trim_toImpl q⟩ := by
+        use p.toPoly
+        generalize_proofs at *
+        convert Subtype.ext ?_
+        exact Eq.symm (toImpl_toPoly_of_canonical p)
+      -- Since `q.toImpl` is the array of coefficients of `q`, the leading
+      -- coefficient of `q.toImpl` is the same as the leading coefficient of `q`.
+      have h_leading_coeff_eq : q.toImpl.getLast (by
+      by_cases hq_zero : q = 0 <;> simp_all +decide [ Polynomial.toImpl ]
+      · -- Since the polynomial is zero, its leading coefficient is zero.
+        simp [CompPoly.CPolynomial.leadingCoeff, CompPoly.CPolynomial.toPoly] at h_contra
+        simp +decide [ CompPoly.CPolynomial.Raw.leadingCoeff, CompPoly.CPolynomial.Raw.toPoly ]
+          at h_contra
+        exact h_contra (by unfold CompPoly.CPolynomial.Raw.trim; aesop)
+      · cases h : q.degree <;> simp_all +decide [ Polynomial.degree_eq_natDegree hq_zero ])
+          = q.leadingCoeff := by
+        all_goals generalize_proofs at *
+        convert Raw.getLast_toImpl _
+        rintro rfl; simp_all +decide [ Polynomial.toImpl ]
+      generalize_proofs at *
+      convert h_leading_coeff_eq using 1
+      · unfold CPolynomial.leadingCoeff
+        unfold CPolynomial.Raw.leadingCoeff
+        unfold Array.getLastD; aesop
+      · rw [ ← h_leading_coeff_eq, hq ]
+        rw [ show (CompPoly.CPolynomial.toPoly ⟨q.toImpl, by assumption⟩ : Polynomial R) = q
+            from ?_ ]
+        · exact h_leading_coeff_eq.symm
+        · apply Raw.toPoly_toImpl
 
 /-- The implementation of `erase` is correct. -/
 theorem erase_toPoly [LawfulBEq R] [DecidableEq R] (n : ℕ) (p : CPolynomial R) :
-    (erase n p).toPoly = p.toPoly.erase n := by sorry
+    (erase n p).toPoly = p.toPoly.erase n := by
+      have h_erase_def : (CompPoly.CPolynomial.erase n p).toPoly
+          = p.toPoly - Polynomial.monomial n (p.val.coeff n) := by
+        have h_erase_toPoly : ∀ (p q : CompPoly.CPolynomial.Raw R),
+            (p - q).toPoly = p.toPoly - q.toPoly := by
+          intros p q;
+          have h_erase_toPoly : ∀ (p q : CompPoly.CPolynomial.Raw R),
+              (p + -q).toPoly = p.toPoly + (-q).toPoly := by
+            exact?;
+          convert h_erase_toPoly p q using 1;
+          simp +decide [ Raw.toPoly ]
+          rw [ show ( -q : CompPoly.CPolynomial.Raw R ) = q.map ( fun x => -x ) from ?_ ]
+          · simp +decide [ Raw.eval₂ ]
+            induction' q using Array.recOn with q ih; simp +decide [ *, Array.zipIdx ]
+            induction' q using List.reverseRecOn with q ih <;>
+              simp +decide [ *, List.mapIdx_append ]
+            grind
+          · rfl
+        convert h_erase_toPoly _ _
+        convert monomial_toPoly n ( p.val.coeff n ) |> Eq.symm
+      convert h_erase_def using 1
+      ext m; simp +decide [ Polynomial.coeff_monomial ]
+      by_cases h : n = m <;> simp +decide [ h ]
+      · rw [ eq_comm, sub_eq_zero ]
+        convert Raw.coeff_toPoly using 1
+        exact Eq.symm Array.getD_eq_getD_getElem?
+      · rw [ Polynomial.coeff_erase ]; aesop
 
 /-- The implementation of `C r * X^n` agrees with `Polynomial.monomial n r`. -/
 theorem C_mul_X_pow_toPoly [LawfulBEq R] [DecidableEq R] [Nontrivial R] (r : R) (n : ℕ) :
-    (C r * X ^ n).toPoly = Polynomial.monomial n r := by sorry
+    (C r * X ^ n).toPoly = Polynomial.monomial n r := by
+      convert C_mul_X_pow_eq_monomial r n using 1
+      constructor <;> intro h
+      · exact C_mul_X_pow_eq_monomial r n
+      · convert monomial_toPoly n r
 
 end ImplementationCorrectness
 
