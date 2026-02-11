@@ -37,8 +37,13 @@ def mk {R : Type*} (coeffs : Array R) : CPolynomial.Raw R := coeffs
 @[reducible]
 def coeffs {R : Type*} (p : CPolynomial.Raw R) : Array R := p
 
-variable {R : Type*} [Ring R] [BEq R]
-variable {Q : Type*} [Ring Q]
+variable {R : Type*}
+variable {Q : Type*}
+
+section Foundations
+
+variable [Semiring R] [BEq R]
+variable [Semiring Q]
 
 /-- The coefficient of `X^i` in the polynomial. Returns `0` if `i` is out of bounds. -/
 @[reducible]
@@ -435,7 +440,16 @@ theorem canonical_ext [LawfulBEq R] {p q : CPolynomial.Raw R} (hp : p.trim = p) 
   exact eq_of_equiv h_equiv
 end Trim
 
+end Foundations
+
 section Operations
+
+
+-- In this subsection we assume R and Q are semirings.
+section Semiring
+
+variable [Semiring R] [BEq R]
+variable [Semiring Q]
 
 variable {S : Type*}
 
@@ -484,14 +498,6 @@ def nsmulRaw (n : ℕ) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
 def nsmul (n : ℕ) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
   nsmulRaw n p |> trim
 
-/-- Negation of a `CPolynomial.Raw`. -/
-@[inline, specialize]
-def neg (p : CPolynomial.Raw R) : CPolynomial.Raw R := p.map (fun a => -a)
-
-/-- Subtraction of two `CPolynomial.Raw`s. -/
-@[inline, specialize]
-def sub (p q : CPolynomial.Raw R) : CPolynomial.Raw R := p.add q.neg
-
 /-- Multiplication by `X^i`: shifts coefficients right by `i` positions (prepends `i` zeros). -/
 @[inline, specialize]
 def mulPowX (i : Nat) (p : CPolynomial.Raw R) : CPolynomial.Raw R := .mk (Array.replicate i 0 ++ p)
@@ -516,12 +522,9 @@ instance : One (CPolynomial.Raw R) := ⟨CPolynomial.Raw.C 1⟩
 instance : Add (CPolynomial.Raw R) := ⟨CPolynomial.Raw.add⟩
 instance : SMul R (CPolynomial.Raw R) := ⟨CPolynomial.Raw.smul⟩
 instance : SMul ℕ (CPolynomial.Raw R) := ⟨nsmul⟩
-instance : Neg (CPolynomial.Raw R) := ⟨CPolynomial.Raw.neg⟩
-instance : Sub (CPolynomial.Raw R) := ⟨CPolynomial.Raw.sub⟩
 instance : Mul (CPolynomial.Raw R) := ⟨CPolynomial.Raw.mul⟩
 instance : Pow (CPolynomial.Raw R) Nat := ⟨CPolynomial.Raw.pow⟩
 instance : NatCast (CPolynomial.Raw R) := ⟨fun n => CPolynomial.Raw.C (n : R)⟩
-instance : IntCast (CPolynomial.Raw R) := ⟨fun n => CPolynomial.Raw.C (n : R)⟩
 
 /-- Upper bound on degree: `size - 1` if non-empty, `⊥` if empty. -/
 def degreeBound (p : CPolynomial.Raw R) : WithBot Nat :=
@@ -535,44 +538,6 @@ def natDegreeBound (p : CPolynomial.Raw R) : Nat :=
 
 /-- Check if a `CPolynomial.Raw` is monic, i.e. its leading coefficient is 1. -/
 def monic (p : CPolynomial.Raw R) : Bool := p.leadingCoeff == 1
-
-/-- Division with remainder by a monic polynomial using polynomial long division. -/
-def divModByMonicAux [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
-    CPolynomial.Raw R × CPolynomial.Raw R :=
-  go (p.size - q.size) p q
-where
-  go : Nat → CPolynomial.Raw R → CPolynomial.Raw R → CPolynomial.Raw R × CPolynomial.Raw R
-  | 0, p, _ => ⟨0, p⟩
-  | n+1, p, q =>
-      let k := p.size - q.size -- k should equal n, this is technically unneeded
-      let q' := C p.leadingCoeff * (q * X.pow k)
-      let p' := (p - q').trim
-      let (e, f) := go n p' q
-      -- p' = q * e + f
-      -- Thus p = p' + q' = q * e + f + p.leadingCoeff * q * X^n
-      -- = q * (e + p.leadingCoeff * X^n) + f
-      ⟨e + C p.leadingCoeff * X^k, f⟩
-
-/-- Division of `p : CPolynomial.Raw R` by a monic `q : CPolynomial.Raw R`. -/
-def divByMonic [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
-    CPolynomial.Raw R :=
-  (divModByMonicAux p q).1
-
-/-- Modulus of `p : CPolynomial.Raw R` by a monic `q : CPolynomial.Raw R`. -/
-def modByMonic [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
-    CPolynomial.Raw R :=
-  (divModByMonicAux p q).2
-
-/-- Division of two `CPolynomial.Raw`s. -/
-def div [Field R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
-  (C (q.leadingCoeff)⁻¹ • p).divByMonic (C (q.leadingCoeff)⁻¹ * q)
-
-/-- Modulus of two `CPolynomial.Raw`s. -/
-def mod [Field R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
-  (C (q.leadingCoeff)⁻¹ • p).modByMonic (C (q.leadingCoeff)⁻¹ * q)
-
-instance [Field R] : Div (CPolynomial.Raw R) := ⟨div⟩
-instance [Field R] : Mod (CPolynomial.Raw R) := ⟨mod⟩
 
 /-- Pseudo-division by `X`: removes the constant term and shifts remaining coefficients left. -/
 def divX (p : CPolynomial.Raw R) : CPolynomial.Raw R := p.extract 1 p.size
@@ -689,12 +654,6 @@ lemma mul_pow_succ (p q : CPolynomial.Raw R) (n : ℕ):
     p.mul^[n + 1] q = p.mul (p.mul^[n] q) := by
   rw [mul_pow_assoc p (n+1) q 1 n] <;> simp
 
-omit [BEq R] in
-lemma neg_coeff : ∀ (p : CPolynomial.Raw R) (i : ℕ), p.neg.coeff i = - p.coeff i := by
-  intro p i
-  unfold neg coeff
-  rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
-
 lemma trim_add_trim [LawfulBEq R] (p q : CPolynomial.Raw R) : p.trim + q = p + q := by
   apply Trim.eq_of_equiv
   intro i
@@ -708,7 +667,7 @@ as per the following theorems.
 
 -- Algebra theorems about addition.
 
-omit [Ring Q] in
+omit [Semiring Q] in
 @[simp] theorem zero_def : (0 : CPolynomial.Raw Q) = #[] := rfl
 
 theorem add_comm : p + q = q + p := by
@@ -922,16 +881,6 @@ theorem nsmul_succ [LawfulBEq R] (n : ℕ) {p : CPolynomial.Raw R} :
   rw [trim_add_trim]
   apply congrArg trim
   apply nsmulRawSucc
-
-theorem neg_trim [LawfulBEq R] (p : CPolynomial.Raw R) : p.trim = p → (-p).trim = -p := by
-  apply Trim.non_zero_map
-  simp
-
-theorem neg_add_cancel [LawfulBEq R] (p : CPolynomial.Raw R) : -p + p = 0 := by
-  rw [← zero_canonical]
-  apply Trim.eq_of_equiv; unfold Trim.equiv; intro i
-  rw [add_coeff?]
-  rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi, Neg.neg, neg]
 
 /--
 Helper lemma for mul_assoc.
@@ -1446,11 +1395,13 @@ protected theorem mul_assoc [LawfulBEq R] (p q r : CPolynomial.Raw R) :
   · exact mul_is_trimmed p (q * r)
   · exact mul_assoc_equiv p q r
 
-section CommutativeRing
+end Semiring
+
+section CommutativeSemiring
 
 --Theorems about multiplication in the case where R is commutative
 
-variable {R : Type*} [CommRing R] [BEq R]
+variable [CommSemiring R] [BEq R]
 
 /-- Using commutativity of R to swap the multiplication order.-/
 lemma mul_coeff_comm [LawfulBEq R] (p q : CPolynomial.Raw R) (k : ℕ) :
@@ -1480,11 +1431,87 @@ protected theorem mul_comm [LawfulBEq R] (p q : CPolynomial.Raw R) : p * q = q *
   · exact mul_is_trimmed q p
   · exact mul_comm_equiv p q
 
-end CommutativeRing
+end CommutativeSemiring
+
+section Ring
+
+variable [Ring R] [BEq R]
+
+--Theorems and instances for when R is a ring, so we have negation and subtraction.
+
+/-- Negation of a `CPolynomial.Raw`. -/
+@[inline, specialize]
+def neg (p : CPolynomial.Raw R) : CPolynomial.Raw R := p.map (fun a => -a)
+
+/-- Subtraction of two `CPolynomial.Raw`s. -/
+@[inline, specialize]
+def sub (p q : CPolynomial.Raw R) : CPolynomial.Raw R := p.add q.neg
+
+instance : Neg (CPolynomial.Raw R) := ⟨CPolynomial.Raw.neg⟩
+instance : Sub (CPolynomial.Raw R) := ⟨CPolynomial.Raw.sub⟩
+instance : IntCast (CPolynomial.Raw R) := ⟨fun n => CPolynomial.Raw.C (n : R)⟩
+
+/-- Division with remainder by a monic polynomial using polynomial long division. -/
+def divModByMonicAux [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
+    CPolynomial.Raw R × CPolynomial.Raw R :=
+  go (p.size - q.size) p q
+where
+  go : Nat → CPolynomial.Raw R → CPolynomial.Raw R → CPolynomial.Raw R × CPolynomial.Raw R
+  | 0, p, _ => ⟨0, p⟩
+  | n+1, p, q =>
+      let k := p.size - q.size -- k should equal n, this is technically unneeded
+      let q' := C p.leadingCoeff * (q * X.pow k)
+      let p' := (p - q').trim
+      let (e, f) := go n p' q
+      -- p' = q * e + f
+      -- Thus p = p' + q' = q * e + f + p.leadingCoeff * q * X^n
+      -- = q * (e + p.leadingCoeff * X^n) + f
+      ⟨e + C p.leadingCoeff * X^k, f⟩
+
+/-- Division of `p : CPolynomial.Raw R` by a monic `q : CPolynomial.Raw R`. -/
+def divByMonic [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
+    CPolynomial.Raw R :=
+  (divModByMonicAux p q).1
+
+/-- Modulus of `p : CPolynomial.Raw R` by a monic `q : CPolynomial.Raw R`. -/
+def modByMonic [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
+    CPolynomial.Raw R :=
+  (divModByMonicAux p q).2
+
+/-- Division of two `CPolynomial.Raw`s. -/
+def div [Field R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
+  (C (q.leadingCoeff)⁻¹ • p).divByMonic (C (q.leadingCoeff)⁻¹ * q)
+
+/-- Modulus of two `CPolynomial.Raw`s. -/
+def mod [Field R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
+  (C (q.leadingCoeff)⁻¹ • p).modByMonic (C (q.leadingCoeff)⁻¹ * q)
+
+instance [Field R] : Div (CPolynomial.Raw R) := ⟨div⟩
+instance [Field R] : Mod (CPolynomial.Raw R) := ⟨mod⟩
+
+omit [BEq R] in
+lemma neg_coeff : ∀ (p : CPolynomial.Raw R) (i : ℕ), p.neg.coeff i = - p.coeff i := by
+  intro p i
+  unfold neg coeff
+  rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
+
+theorem neg_trim [LawfulBEq R] (p : CPolynomial.Raw R) : p.trim = p → (-p).trim = -p := by
+  apply Trim.non_zero_map
+  simp
+
+theorem neg_add_cancel [LawfulBEq R] (p : CPolynomial.Raw R) : -p + p = 0 := by
+  rw [← zero_canonical]
+  apply Trim.eq_of_equiv; unfold Trim.equiv; intro i
+  rw [add_coeff?]
+  rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi, Neg.neg, neg]
+
+end Ring
 
 end Operations
 
 section AddCommSemiroup
+
+variable [Semiring R] [BEq R]
 
 instance [LawfulBEq R] : AddCommSemigroup (CPolynomial.Raw R) where
   add_assoc := by intro _ _ _; rw [add_assoc]

@@ -267,7 +267,7 @@ lemma toPoly_mul [LawfulBEq R] (p q : CPolynomial R) :
 /-- Converting the sum of two raw polynomials to a mathlib `Polynomial` is the same as the sum of
   their conversions: `(p + q).toPoly = p.toPoly + q.toPoly`. -/
 @[grind =]
-lemma toPoly_addC [CommSemiring R] [LawfulBEq R] (p q : CPolynomial.Raw R) :
+lemma toPoly_addC [LawfulBEq R] (p q : CPolynomial.Raw R) :
     (p + q).toPoly = p.toPoly + q.toPoly := by rw [toPoly_add]
 
 /-
@@ -294,7 +294,7 @@ lemma toPoly_C {R : Type*} [Ring R] [BEq R] (r : R) :
 `toPoly` preserves the multiplicative identity
 -/
 @[simp, grind =]
-lemma toPoly_one [CommSemiring R] [LawfulBEq R] :
+lemma toPoly_one [LawfulBEq R] :
     (1 : CPolynomial.Raw R).toPoly = 1 := by
   have : (1 : CPolynomial.Raw R).toPoly = (Raw.C 1).toPoly := by rfl
   apply this.trans; clear this
