@@ -214,9 +214,22 @@ lemma degreeOf_eq_count_degrees {n : ℕ} {R : Type} [Zero R]
 
   Filters out all monomials where `m.totalDegree > d`.
 -/
+def restrictBy {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R]
+    (keep : CMvMonomial n → Prop) [DecidablePred keep]
+    (p : CMvPolynomial n R) : CMvPolynomial n R :=
+  Lawful.fromUnlawful <| p.1.filter (fun m _ => decide (keep m))
+
+def restrictTotalDegree {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R]
+    (d : ℕ) (p : CMvPolynomial n R) : CMvPolynomial n R :=
+  restrictBy (fun m => m.totalDegree ≤ d) p
+
+/-- Restrict polynomial to monomials whose degree in each variable is ≤ d.
+
+  Filters out all monomials where `m.degreeOf i > d` for some variable `i`.
+-/
 def restrictDegree {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R]
     (d : ℕ) (p : CMvPolynomial n R) : CMvPolynomial n R :=
-  sorry
+  restrictBy (fun m => ∀ i : Fin n, m.degreeOf i ≤ d) p
 
 /-- Algebra evaluation: evaluates polynomial in an algebra.
 
