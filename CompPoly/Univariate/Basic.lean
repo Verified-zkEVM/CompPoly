@@ -183,12 +183,16 @@ lemma induction_on {P : CPolynomial R → Prop} (p : CPolynomial R)
     (hX : ∀ p, P p → P (X * p)) : P p := by
   sorry
 
-theorem degree_eq_support_max_aux_degree (p : CPolynomial R) {k : Fin p.val.size} (hk : p.val.lastNonzero = some k) : p.degree = k.val := by
+omit [LawfulBEq R] [Nontrivial R] in
+theorem degree_eq_support_max_aux_degree (p : CPolynomial R) {k : Fin p.val.size}
+    (hk : p.val.lastNonzero = some k) : p.degree = k.val := by
   unfold CPolynomial.degree
   unfold Raw.degree
   simp [hk]
 
-theorem degree_eq_support_max_aux_lastNonzero (p : CPolynomial R) (hp : p ≠ 0) : ∃ k : Fin p.val.size, p.val.lastNonzero = some k := by
+omit [LawfulBEq R] [Nontrivial R] in
+theorem degree_eq_support_max_aux_lastNonzero (p : CPolynomial R) (hp : p ≠ 0) :
+    ∃ k : Fin p.val.size, p.val.lastNonzero = some k := by
   classical
   cases hln : p.val.lastNonzero with
   | some k =>
@@ -205,7 +209,9 @@ theorem degree_eq_support_max_aux_lastNonzero (p : CPolynomial R) (hp : p ≠ 0)
         simpa using hval
       exact (hp hp0).elim
 
-theorem degree_eq_support_max_aux_mem_support (p : CPolynomial R) {k : Fin p.val.size} (hk : p.val.lastNonzero = some k) : k.val ∈ p.support := by
+omit [Nontrivial R] in
+theorem degree_eq_support_max_aux_mem_support (p : CPolynomial R) {k : Fin p.val.size}
+    (hk : p.val.lastNonzero = some k) : k.val ∈ p.support := by
   classical
   unfold CPolynomial.support
   rcases k with ⟨k, hklt⟩
@@ -222,6 +228,7 @@ theorem degree_eq_support_max_aux_mem_support (p : CPolynomial R) {k : Fin p.val
       simpa [hcoeff] using hnonzero
     exact bne_iff_ne.mpr hcoeff_ne
 
+omit [Nontrivial R] in
 theorem degree_eq_support_max (p : CPolynomial R) (hp : p ≠ 0) :
     ∃ n, n ∈ p.support ∧ p.degree = n := by
   classical
@@ -230,8 +237,6 @@ theorem degree_eq_support_max (p : CPolynomial R) (hp : p ≠ 0) :
   constructor
   · exact degree_eq_support_max_aux_mem_support (p := p) hk
   · exact degree_eq_support_max_aux_degree (p := p) hk
-
-
 
 end Operations
 
