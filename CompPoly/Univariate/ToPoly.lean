@@ -496,16 +496,3 @@ end ImplementationCorrectness
 end CPolynomial
 
 end CompPoly
-
--- TODO?: Ring equivalence between canonical polynomials and the quotient.
--- This establishes that `CPolynomial R` and `QuotientCPolynomial R` are isomorphic
--- as rings. The canonical polynomials serve as unique representatives of each
--- equivalence class in the quotient.
---
--- TODO: Construct this ring equivalence after proving:
--- 1. Operations on quotient correspond to operations on canonical representatives
--- 2. `trim` gives a unique representative for each equivalence class
---
--- The equivalence should map canonical polynomials to their quotient classes
--- and back, preserving all ring operations.
--- TODO: Implement `ringEquivQuotient : CPolynomial R ≃+* QuotientCPolynomial R`
