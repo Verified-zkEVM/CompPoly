@@ -183,11 +183,62 @@ lemma induction_on {P : CPolynomial R → Prop} (p : CPolynomial R)
     (hX : ∀ p, P p → P (X * p)) : P p := by
   sorry
 
+omit [LawfulBEq R] [Nontrivial R] in
+lemma degree_eq_support_max_aux_degree (p : CPolynomial R) {k : Fin p.val.size}
+    (hk : p.val.lastNonzero = some k) : p.degree = k.val := by
+  unfold CPolynomial.degree
+  unfold Raw.degree
+  simp [hk]
+
+omit [LawfulBEq R] [Nontrivial R] in
+lemma degree_eq_support_max_aux_lastNonzero (p : CPolynomial R) (hp : p ≠ 0) :
+    ∃ k : Fin p.val.size, p.val.lastNonzero = some k := by
+  classical
+  cases hln : p.val.lastNonzero with
+  | some k =>
+      exact ⟨k, rfl⟩
+  | none =>
+      have htrim : p.val.trim = (#[] : CompPoly.CPolynomial.Raw R) := by
+        simp [CompPoly.CPolynomial.Raw.trim, hln]
+      have hval : p.val = (#[] : CompPoly.CPolynomial.Raw R) := by
+        have htrim' := htrim
+        rw [p.prop] at htrim'
+        exact htrim'
+      have hp0 : p = 0 := by
+        apply Subtype.ext
+        simpa using hval
+      exact (hp hp0).elim
+
+omit [Nontrivial R] in
+lemma degree_eq_support_max_aux_mem_support (p : CPolynomial R) {k : Fin p.val.size}
+    (hk : p.val.lastNonzero = some k) : k.val ∈ p.support := by
+  classical
+  unfold CPolynomial.support
+  rcases k with ⟨k, hklt⟩
+  refine (Finset.mem_filter).2 ?_
+  refine ⟨?_, ?_⟩
+  · exact Finset.mem_range.2 hklt
+  · have hnonzeroFin : p.val[(⟨k, hklt⟩ : Fin p.val.size)] ≠ (0 : R) :=
+      (Trim.lastNonzero_spec (p := p.val) (k := ⟨k, hklt⟩) hk).1
+    have hnonzero : p.val[k]'hklt ≠ (0 : R) := by
+      simpa using hnonzeroFin
+    have hcoeff_ne : p.val.coeff k ≠ (0 : R) := by
+      have hcoeff : p.val.coeff k = p.val[k]'hklt := by
+        simpa using (Trim.coeff_eq_getElem (p := p.val) (i := k) hklt)
+      simpa [hcoeff] using hnonzero
+    exact bne_iff_ne.mpr hcoeff_ne
+
+omit [Nontrivial R] in
 /-- Degree equals the maximum of the support when the polynomial is non-zero.
   Here `p.degree = some n` where `n` is the maximum index in `p.support`. -/
-lemma degree_eq_support_max (p : CPolynomial R) (hp : p ≠ 0) :
+theorem degree_eq_support_max (p : CPolynomial R) (hp : p ≠ 0) :
     ∃ n, n ∈ p.support ∧ p.degree = n := by
-  sorry
+  classical
+  obtain ⟨k, hk⟩ := degree_eq_support_max_aux_lastNonzero (p := p) hp
+  refine ⟨k.val, ?_⟩
+  constructor
+  · exact degree_eq_support_max_aux_mem_support (p := p) hk
+  · exact degree_eq_support_max_aux_degree (p := p) hk
 
 end Operations
 
