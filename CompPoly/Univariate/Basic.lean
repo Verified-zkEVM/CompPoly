@@ -229,6 +229,8 @@ theorem degree_eq_support_max_aux_mem_support (p : CPolynomial R) {k : Fin p.val
     exact bne_iff_ne.mpr hcoeff_ne
 
 omit [Nontrivial R] in
+/-- Degree equals the maximum of the support when the polynomial is non-zero.
+  Here `p.degree = some n` where `n` is the maximum index in `p.support`. -/
 theorem degree_eq_support_max (p : CPolynomial R) (hp : p ≠ 0) :
     ∃ n, n ∈ p.support ∧ p.degree = n := by
   classical
