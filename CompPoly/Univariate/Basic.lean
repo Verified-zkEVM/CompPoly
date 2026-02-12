@@ -177,7 +177,8 @@ lemma coeff_one (i : ℕ) :
   change Raw.coeff 1 i = if i = 0 then 1 else 0
   rw [Raw.coeff_one]
 
-theorem coeff_X_mul_succ (p : CPolynomial R) (n : ℕ) : coeff (X * p) (n + 1) = coeff p n := by
+/-- Lemmas for induction_on -/
+lemma coeff_X_mul_succ (p : CPolynomial R) (n : ℕ) : coeff (X * p) (n + 1) = coeff p n := by
   classical
   unfold coeff
   change ((X.val * p.val).coeff (n + 1) = p.val.coeff n)
@@ -199,14 +200,16 @@ theorem coeff_X_mul_succ (p : CPolynomial R) (n : ℕ) : coeff (X * p) (n + 1) =
   rw [Raw.coeff_X (R := R) 1]
   simp
 
-theorem coeff_X_mul_zero (p : CPolynomial R) : coeff (X * p) 0 = 0 := by
+lemma coeff_X_mul_zero (p : CPolynomial R) : coeff (X * p) 0 = 0 := by
   unfold CPolynomial.coeff
   change ((Raw.X * p.val) : Raw R).coeff 0 = 0
   rw [Raw.mul_coeff]
   -- (Finset.range 1).sum ... reduces to the single term at 0
   simp [Raw.X]
 
-theorem coeff_extract_succ (a : CPolynomial.Raw R) (i : ℕ) : CPolynomial.Raw.coeff (a.extract 1 a.size) i = CPolynomial.Raw.coeff a (i + 1) := by
+omit [BEq R] [LawfulBEq R] [Nontrivial R] in
+lemma coeff_extract_succ (a : CPolynomial.Raw R) (i : ℕ) :
+    CPolynomial.Raw.coeff (a.extract 1 a.size) i = CPolynomial.Raw.coeff a (i + 1) := by
   simp [CPolynomial.Raw.coeff, Array.getElem?_extract]
   by_cases h : i < a.size - 1
   · have h1 : 1 + i = i + 1 := by omega
@@ -218,7 +221,8 @@ def tail (p : CPolynomial R) : CPolynomial R :=
   ⟨CPolynomial.Raw.trim (p.val.extract 1 p.val.size), by
     simpa using (CPolynomial.Raw.Trim.trim_twice (p.val.extract 1 p.val.size))⟩
 
-theorem coeff_tail (p : CPolynomial R) (i : ℕ) : coeff (tail p) i = coeff p (i + 1) := by
+omit [Nontrivial R] in
+lemma coeff_tail (p : CPolynomial R) (i : ℕ) : coeff (tail p) i = coeff p (i + 1) := by
   -- LHS: coeff of tail = coeff of trimmed extract
   unfold tail
   -- turn coefficients of CPolynomial into raw coefficients
@@ -231,7 +235,7 @@ theorem coeff_tail (p : CPolynomial R) (i : ℕ) : coeff (tail p) i = coeff p (i
   exact htrim.trans (coeff_extract_succ (a := (↑p : CPolynomial.Raw R)) (i := i))
 
 
-theorem eq_C_add_X_mul_tail (p : CPolynomial R) : p = C (coeff p 0) + X * tail p := by
+lemma eq_C_add_X_mul_tail (p : CPolynomial R) : p = C (coeff p 0) + X * tail p := by
   classical
   apply CPolynomial.ext
   refine CPolynomial.Raw.Trim.canonical_ext (p := p.val)
@@ -269,17 +273,20 @@ theorem eq_C_add_X_mul_tail (p : CPolynomial R) : p = C (coeff p 0) + X * tail p
         rw [hCsucc, hXsucc, htail]
         simp only [_root_.zero_add]
 
-theorem tail_size_lt (p : CPolynomial R) (hp : p.val.size > 0) : (tail p).val.size < p.val.size := by
+omit [Nontrivial R] in
+lemma tail_size_lt (p : CPolynomial R) (hp : p.val.size > 0) :
+    (tail p).val.size < p.val.size := by
   unfold tail
   have hle : (CPolynomial.Raw.trim (p.val.extract 1 p.val.size)).size
       ≤ (p.val.extract 1 p.val.size).size := by
     simpa using (CPolynomial.Raw.Trim.size_le_size (p := p.val.extract 1 p.val.size))
   have hextract : (p.val.extract 1 p.val.size).size = p.val.size - 1 := by
-    simpa [Array.size_extract, Nat.succ_le_of_lt hp]
+    simp only [Array.size_extract, min_self]
   have hle' : (CPolynomial.Raw.trim (p.val.extract 1 p.val.size)).size ≤ p.val.size - 1 := by
     simpa [hextract] using hle
   exact lt_of_le_of_lt hle' (Nat.pred_lt_self hp)
 
+/-- Induction principle for polynomials (mirrors mathlib's `Polynomial.induction_on`). -/
 theorem induction_on {P : CPolynomial R → Prop} (p : CPolynomial R)
     (h0 : P 0) (hC : ∀ a, P (C a)) (hadd : ∀ p q, P p → P q → P (p + q))
     (hX : ∀ p, P p → P (X * p)) : P p := by
@@ -300,7 +307,7 @@ theorem induction_on {P : CPolynomial R → Prop} (p : CPolynomial R)
       simpa [hp0] using h0
   | succ n =>
       have hp_pos : p.val.size > 0 := by
-        simpa [hn] using Nat.succ_pos n
+        simp [hn]
       have htail_lt : (tail p).val.size < Nat.succ n := by
         have ht := tail_size_lt (p := p) hp_pos
         simpa [hn] using ht
