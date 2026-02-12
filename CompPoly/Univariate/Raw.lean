@@ -47,7 +47,7 @@ variable [Semiring Q]
 
 /-- The coefficient of `X^i` in the polynomial. Returns `0` if `i` is out of bounds. -/
 @[reducible]
-def coeff (p : CPolynomial.Raw Q) (i : ℕ) : Q := p.getD i 0
+def coeff (p : CPolynomial.Raw R) (i : ℕ) : R := p.getD i 0
 
 /-- The constant polynomial `C r`. -/
 def C (r : R) : CPolynomial.Raw R := #[r]
@@ -1661,20 +1661,15 @@ theorem neg_add_cancel [LawfulBEq R] (p : CPolynomial.Raw R) : -p + p = 0 := by
   rw [add_coeff?]
   rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi, Neg.neg, neg]
 
-lemma sub_coeff [LawfulBEq R] (p q : CompPoly.CPolynomial.Raw R) (i : ℕ) :
+lemma sub_coeff [LawfulBEq R] (p q : CPolynomial.Raw R) (i : ℕ) :
     (p - q).coeff i = p.coeff i - q.coeff i := by
-      -- By definition, `p - q` is `p + (-q)`. Thus `(p - q).coeff i = (p + (-q)).coeff i`.
-      -- Using `add_coeff_trimmed`, this expands to `p.coeff i + (-q).coeff i`.
-      -- Using `neg_coeff`, `(-q).coeff i` is `- q.coeff i`.
-      -- So we have `p.coeff i + (- q.coeff i)` = `p.coeff i - q.coeff i` by ring subtraction.
-      have h_add : CompPoly.CPolynomial.Raw.coeff (p + -q) i =
-          CompPoly.CPolynomial.Raw.coeff p i + CompPoly.CPolynomial.Raw.coeff (-q) i := by
-        convert CompPoly.CPolynomial.Raw.add_coeff_trimmed p ( -q ) i using 1
-      have h_neg : CompPoly.CPolynomial.Raw.coeff (-q) i =
-          -CompPoly.CPolynomial.Raw.coeff q i := by
-        convert neg_coeff _ _
-      convert h_add.trans ( congr_arg₂ ( · + · ) rfl h_neg ) using 1
-      exact sub_eq_add_neg (p.coeff i) (q.coeff i)
+  have h_add : coeff (p + -q) i =
+      coeff p i + coeff (-q) i := by
+    convert add_coeff_trimmed p ( -q ) i using 1
+  have h_neg : coeff (-q) i = -coeff q i := by
+    convert neg_coeff _ _
+  convert h_add.trans ( congr_arg₂ ( · + · ) rfl h_neg ) using 1
+  exact sub_eq_add_neg (p.coeff i) (q.coeff i)
 
 end Ring
 
