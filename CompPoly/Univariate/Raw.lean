@@ -336,8 +336,8 @@ theorem trim_twice [LawfulBEq R] (p : CPolynomial.Raw R) : p.trim.trim = p.trim 
   apply eq_of_equiv
   apply trim_equiv
 
-theorem canonical_empty : (CPolynomial.Raw.mk (R:=R) #[]).trim = #[] := by
-  have : (CPolynomial.Raw.mk (R:=R) #[]).lastNonzero = none := by
+theorem canonical_empty : (mk (R:=R) #[]).trim = #[] := by
+  have : (mk (R:=R) #[]).lastNonzero = none := by
     simp [lastNonzero]
     apply Array.findIdxRev?_empty_none
     rfl
@@ -413,7 +413,7 @@ lemma push_trim [LawfulBEq R] (arr : Array R) (c : R) :
   exact h_c
 
 theorem non_zero_map [LawfulBEq R] (f : R → R) (hf : ∀ r, f r = 0 → r = 0) (p : CPolynomial.Raw R) :
-    let fp := CPolynomial.Raw.mk (p.map f);
+    let fp := mk (p.map f);
   p.trim = p → fp.trim = fp := by
   intro fp p_canon
   by_cases hp : p.size > 0
@@ -519,13 +519,13 @@ def pow (p : CPolynomial.Raw R) (n : Nat) : CPolynomial.Raw R := (mul p)^[n] (C 
 -- TODO: define repeated squaring version of `pow`
 
 instance : Zero (CPolynomial.Raw R) := ⟨#[]⟩
-instance : One (CPolynomial.Raw R) := ⟨CPolynomial.Raw.C 1⟩
-instance : Add (CPolynomial.Raw R) := ⟨CPolynomial.Raw.add⟩
-instance : SMul R (CPolynomial.Raw R) := ⟨CPolynomial.Raw.smul⟩
+instance : One (CPolynomial.Raw R) := ⟨C 1⟩
+instance : Add (CPolynomial.Raw R) := ⟨add⟩
+instance : SMul R (CPolynomial.Raw R) := ⟨smul⟩
 instance : SMul ℕ (CPolynomial.Raw R) := ⟨nsmul⟩
-instance : Mul (CPolynomial.Raw R) := ⟨CPolynomial.Raw.mul⟩
-instance : Pow (CPolynomial.Raw R) Nat := ⟨CPolynomial.Raw.pow⟩
-instance : NatCast (CPolynomial.Raw R) := ⟨fun n => CPolynomial.Raw.C (n : R)⟩
+instance : Mul (CPolynomial.Raw R) := ⟨mul⟩
+instance : Pow (CPolynomial.Raw R) Nat := ⟨pow⟩
+instance : NatCast (CPolynomial.Raw R) := ⟨fun n => C (n : R)⟩
 
 /-- Upper bound on degree: `size - 1` if non-empty, `⊥` if empty. -/
 def degreeBound (p : CPolynomial.Raw R) : WithBot Nat :=
@@ -544,6 +544,15 @@ def monic (p : CPolynomial.Raw R) : Bool := p.leadingCoeff == 1
 def divX (p : CPolynomial.Raw R) : CPolynomial.Raw R := p.extract 1 p.size
 
 variable (p q r : CPolynomial.Raw R)
+
+lemma pow_zero (p : CPolynomial.Raw R) :
+    p ^ 0 = C 1 := by
+      exact rfl
+
+lemma pow_succ (p : CPolynomial.Raw R) (n : ℕ) :
+    p ^ (n + 1) = p * (p ^ n) := by
+      convert ( Function.iterate_succ_apply' ( mul p ) n ( C 1 ) )
+           using 1
 
 -- some helper lemmas to characterize p + q
 
@@ -741,7 +750,7 @@ lemma coeff_C (r : R) (i : ℕ) : (C r).coeff i = if i = 0 then r else 0 := by
 omit [BEq R] in
 /-- Coefficient of the variable polynomial `X`. -/
 lemma coeff_X (i : ℕ) : (X : CPolynomial.Raw R).coeff i = if i = 1 then 1 else 0 := by
-  unfold CPolynomial.Raw.coeff
+  unfold coeff
   rcases i with ( _ | _ | i ) <;> rfl
 
 omit [BEq R] in
@@ -1088,6 +1097,13 @@ lemma coeff_mulPowX_smul_add [LawfulBEq R] (i : ℕ) (a b : R) (q : CPolynomial.
   · simp
   · rw [coeff_add_smul]
 
+omit [BEq R] in
+/- Multiplying by `X^0` is the identity. -/
+lemma mulPowX_zero (p : CPolynomial.Raw R) :
+    p.mulPowX 0 = p := by
+    -- By definition of `mulPowX`, we have `mulPowX 0 p = p ++ Array.replicate 0 0`.
+    simp [mulPowX]
+
 -- Algebra lemmas and theorems about multiplication of general polynomials.
 
 /-- Multiplying a polynomial by 1 does not change the coeffs-/
@@ -1167,6 +1183,107 @@ Express mul as a foldl that adds terms.
 lemma mul_eq_foldl (p q : CPolynomial.Raw R) :
     p * q = p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + (smul a q).mulPowX i) (mk #[]) := by
   rfl
+
+/- Multiplying by a constant `C r` is scalar multiplication followed by trimming. -/
+lemma C_mul_eq_smul_trim [LawfulBEq R] (r : R)
+    (q : CPolynomial.Raw R) :
+    C r * q = (smul r q).trim := by
+  rw [ mul_eq_foldl ]
+  simp +decide [ C ]
+  convert zero_add_trim ( smul r q ) using 1
+  congr
+  exact mulPowX_zero (smul r q)
+
+omit [BEq R] in
+/- Scalar multiplication by 1 is the identity. -/
+lemma smul_one_eq_self (p : CPolynomial.Raw R) :
+    smul 1 p = p := by
+  unfold smul
+  cases p; aesop
+
+omit [BEq R] in
+/- Scalar multiplication by 0 results in an array of zeros. -/
+lemma smul_zero_eq_replicate_zero (p : CPolynomial.Raw R) :
+    smul 0 p = mk (Array.replicate p.size 0) := by
+  unfold smul; aesop
+
+/- Trimming an array of zeros results in the zero polynomial. -/
+lemma trim_replicate_zero [LawfulBEq R] (n : ℕ) :
+    (mk (Array.replicate n (0 : R))).trim = 0 := by
+  convert Trim.trim_twice ( mk ( Array.replicate n 0 ) ) using 1;
+  -- Since the last element is zero, the trimmed array is empty, which is the zero polynomial.
+  have h_trim_empty : ∀ {p : CPolynomial.Raw R},
+      p = mk (Array.replicate p.size 0) → p.trim = 0 := by
+    intro p hp
+    have h_last : p.lastNonzero = none := by
+      apply Trim.lastNonzero_none
+      grind
+    unfold trim; simp +decide [ h_last ]
+  rw [ h_trim_empty ]
+  · exact iff_of_true rfl ( Trim.trim_twice _ )
+  · grind
+
+/- Scalar multiplication by 0 followed by trimming results in the zero polynomial. -/
+lemma smul_zero_trim [LawfulBEq R]
+    (p : CPolynomial.Raw R) : (smul 0 p).trim = 0 := by
+  rw [ smul_zero_eq_replicate_zero ];
+  exact trim_replicate_zero (Array.size p)
+
+/- Multiplying by `X` is equivalent to `mulX` followed by trimming. -/
+lemma X_mul_eq_mulX_trim [LawfulBEq R]
+    (p : CPolynomial.Raw R) :
+    X * p = (mulX p).trim := by
+  convert zero_add_trim p.mulX using 1
+  rw [ mul_eq_foldl ]
+  -- The foldl of zipIdx of X with the function adding mulPowX of coefficient times p
+  -- equals 0 + p.mulX (first element 0, second element p.mulX).
+  simp [X, Array.zipIdx]
+  congr! 1
+  · convert smul_zero_trim p using 1
+    convert zero_add_trim _ using 1
+    · exact congr_arg _ ( by exact Eq.symm (mulPowX_zero (smul 0 p)) )
+    · infer_instance
+  · rw [ smul_one_eq_self ]
+    rfl
+
+/- `mulX` of `monomial n 1` is `monomial (n+1) 1`. -/
+lemma mulX_monomial_one [DecidableEq R] [LawfulBEq R] [Nontrivial R] (n : ℕ) :
+    mulX (monomial n (1 : R)) =
+    monomial (n + 1) 1 := by
+  unfold monomial;
+  simp +decide [ mulX, Array.replicate_succ ];
+  unfold mulPowX;
+  simp +decide [ mk, Array.push ];
+  exact Nat.recOn n (by simp +decide) fun n ih =>
+    by simp +decide [ List.replicate ] at ih ⊢; tauto
+
+/- `X^n` is the monomial `X^n` (coefficient 1). -/
+lemma X_pow_eq_monomial_one [DecidableEq R] [LawfulBEq R] [Nontrivial R] (n : ℕ) :
+    (X : CPolynomial.Raw R) ^ n = monomial n 1 := by
+  have h_monomial : ∀ n : ℕ,
+      (monomial n (1 : R)).trim =
+      monomial n (1 : R) := by
+    exact fun n => monomial_canonical n 1
+  induction' n with n ih;
+  · unfold X monomial
+    aesop
+  · rw [ pow_succ, ih ];
+    rw [ X_mul_eq_mulX_trim ];
+    rw [ mulX_monomial_one, h_monomial ]
+
+/- Scalar multiplication of `monomial n 1` by `r` followed by trimming yields `monomial n r`. -/
+lemma smul_monomial_one_trim [DecidableEq R] [LawfulBEq R]
+    [Nontrivial R] (n : ℕ) (r : R) :
+    (smul r (monomial n 1)).trim =
+    monomial n r := by
+  unfold smul monomial
+  simp +decide
+  split_ifs with h;
+  · convert trim_replicate_zero ( n + 1 ) using 1;
+    congr! 1;
+    · simp +decide [ h, Array.replicate_succ ];
+    · infer_instance;
+  · exact Trim.push_trim (Array.replicate n 0) r h
 
 /--
 Helper lemma for mul_assoc.
@@ -1482,9 +1599,9 @@ def neg (p : CPolynomial.Raw R) : CPolynomial.Raw R := p.map (fun a => -a)
 @[inline, specialize]
 def sub (p q : CPolynomial.Raw R) : CPolynomial.Raw R := p.add q.neg
 
-instance : Neg (CPolynomial.Raw R) := ⟨CPolynomial.Raw.neg⟩
-instance : Sub (CPolynomial.Raw R) := ⟨CPolynomial.Raw.sub⟩
-instance : IntCast (CPolynomial.Raw R) := ⟨fun n => CPolynomial.Raw.C (n : R)⟩
+instance : Neg (CPolynomial.Raw R) := ⟨neg⟩
+instance : Sub (CPolynomial.Raw R) := ⟨sub⟩
+instance : IntCast (CPolynomial.Raw R) := ⟨fun n => C (n : R)⟩
 
 /-- Division with remainder by a monic polynomial using polynomial long division. -/
 def divModByMonicAux [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
@@ -1543,6 +1660,21 @@ theorem neg_add_cancel [LawfulBEq R] (p : CPolynomial.Raw R) : -p + p = 0 := by
   apply Trim.eq_of_equiv; unfold Trim.equiv; intro i
   rw [add_coeff?]
   rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi, Neg.neg, neg]
+
+lemma sub_coeff [LawfulBEq R] (p q : CompPoly.CPolynomial.Raw R) (i : ℕ) :
+    (p - q).coeff i = p.coeff i - q.coeff i := by
+      -- By definition, `p - q` is `p + (-q)`. Thus `(p - q).coeff i = (p + (-q)).coeff i`.
+      -- Using `add_coeff_trimmed`, this expands to `p.coeff i + (-q).coeff i`.
+      -- Using `neg_coeff`, `(-q).coeff i` is `- q.coeff i`.
+      -- So we have `p.coeff i + (- q.coeff i)` = `p.coeff i - q.coeff i` by ring subtraction.
+      have h_add : CompPoly.CPolynomial.Raw.coeff (p + -q) i =
+          CompPoly.CPolynomial.Raw.coeff p i + CompPoly.CPolynomial.Raw.coeff (-q) i := by
+        convert CompPoly.CPolynomial.Raw.add_coeff_trimmed p ( -q ) i using 1
+      have h_neg : CompPoly.CPolynomial.Raw.coeff (-q) i =
+          -CompPoly.CPolynomial.Raw.coeff q i := by
+        convert neg_coeff _ _
+      convert h_add.trans ( congr_arg₂ ( · + · ) rfl h_neg ) using 1
+      exact sub_eq_add_neg (p.coeff i) (q.coeff i)
 
 end Ring
 
