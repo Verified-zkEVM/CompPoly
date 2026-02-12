@@ -176,7 +176,7 @@ lemma coeff_one (i : ℕ) :
   change Raw.coeff 1 i = if i = 0 then 1 else 0
   rw [Raw.coeff_one]
 
-/-- Lemmas for induction_on -/
+/-- lemmas on coefficients -/
 lemma coeff_X_mul_succ (p : CPolynomial R) (n : ℕ) : coeff (X * p) (n + 1) = coeff p n := by
   classical
   unfold coeff

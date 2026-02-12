@@ -357,7 +357,7 @@ theorem C_toPoly [LawfulBEq R] (r : R) : (C r).toPoly = Polynomial.C r := by
 theorem X_toPoly [LawfulBEq R] [Nontrivial R] :
     (X : CPolynomial R).toPoly = Polynomial.X := by
       convert Raw.toPoly_X using 1
-      (expose_names; exact inst_1)
+      (expose_names; infer_instance)
       infer_instance
 
 /-- The implementation of `eval` is correct. -/
@@ -463,8 +463,8 @@ theorem erase_toPoly [LawfulBEq R] [DecidableEq R] (n : ℕ) (p : CPolynomial R)
           intros p q;
           have h_erase_toPoly : ∀ (p q : CompPoly.CPolynomial.Raw R),
               (p + -q).toPoly = p.toPoly + (-q).toPoly := by
-            exact?;
-          convert h_erase_toPoly p q using 1;
+            exact fun p q => toPoly_addC p (-q)
+          convert h_erase_toPoly p q using 1
           simp +decide [ Raw.toPoly ]
           rw [ show ( -q : CompPoly.CPolynomial.Raw R ) = q.map ( fun x => -x ) from ?_ ]
           · simp +decide [ Raw.eval₂ ]
