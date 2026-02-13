@@ -222,16 +222,11 @@ def bind₁ {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
 -/
 def rename {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
     (f : Fin n → Fin m) (p : CMvPolynomial n R) : CMvPolynomial m R :=
-  sorry
+  let renameMonomial (mono : CMvMonomial n) : CMvMonomial m :=
+    Vector.ofFn (fun j => (Finset.univ.filter (fun i => f i = j)).sum (fun i => mono.get i))
+  ExtTreeMap.foldl (fun acc mono c => acc + monomial (renameMonomial mono) c) 0 p.1
 
-/-- Ring equivalence for variable renaming when the function is a bijection.
-
-  Given `f : Fin n ≃ Fin m`, provides a ring isomorphism between
-  `CMvPolynomial n R` and `CMvPolynomial m R`.
--/
-def renameEquiv {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
-    (f : Fin n ≃ Fin m) : CMvPolynomial n R ≃+* CMvPolynomial m R :=
-  sorry
+-- `renameEquiv` is defined in `CompPoly.Multivariate.Rename`
 
 /-- Scalar multiplication with zero handling.
 
