@@ -652,6 +652,32 @@ instance [Nontrivial R] : CommRing (CPolynomial R) where
 
 end CommRing
 
+section Division
+
+variable [Field R] [LawfulBEq R] [Nontrivial R]
+variable (p q : CPolynomial R)
+
+/-- Quotient of `p` by a monic polynomial `q`. Matches Mathlib's `Polynomial.divByMonic`. -/
+def divByMonic (p q : CPolynomial R) : CPolynomial R :=
+  ⟨(Raw.divByMonic p.val q.val).trim, by simpa using Trim.trim_twice (Raw.divByMonic p.val q.val)⟩
+
+/-- Remainder of `p` modulo a monic polynomial `q`. Matches Mathlib's `Polynomial.modByMonic`. -/
+def modByMonic (p q : CPolynomial R) : CPolynomial R :=
+  ⟨(Raw.modByMonic p.val q.val).trim, by simpa using Trim.trim_twice (Raw.modByMonic p.val q.val)⟩
+
+/-- Quotient of `p` by `q` (when `R` is a field). -/
+def div (p q : CPolynomial R) : CPolynomial R :=
+  ⟨(Raw.div p.val q.val).trim, by simpa using Trim.trim_twice (Raw.div p.val q.val)⟩
+
+/-- Remainder of `p` modulo `q` (when `R` is a field). -/
+def mod (p q : CPolynomial R) : CPolynomial R :=
+  ⟨(Raw.mod p.val q.val).trim, by simpa using Trim.trim_twice (Raw.mod p.val q.val)⟩
+
+instance : Div (CPolynomial R) := ⟨div⟩
+instance : Mod (CPolynomial R) := ⟨mod⟩
+
+end Division
+
 end CPolynomial
 
 end CompPoly
