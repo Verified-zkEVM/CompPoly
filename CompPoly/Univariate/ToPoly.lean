@@ -374,7 +374,9 @@ theorem eval₂_toPoly {S : Type*} [Semiring S] (f : R →+* S) (x : S) (p : CPo
 
 /-- The implementation of `coeff` is correct. -/
 theorem coeff_toPoly [LawfulBEq R] (p : CPolynomial R) (i : ℕ) :
-    p.coeff i = p.toPoly.coeff i := sorry
+    p.coeff i = p.toPoly.coeff i := by
+  unfold toPoly coeff
+  simp [Raw.coeff_toPoly]
 
 theorem divX_toPoly [LawfulBEq R] (p : CPolynomial R) :
     (divX p).toPoly = p.toPoly.divX := by
