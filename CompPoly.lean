@@ -17,3 +17,13 @@ import CompPoly.Univariate.Basic
 import CompPoly.Univariate.Quotient
 import CompPoly.Univariate.ToPoly
 import CompPoly.Univariate.Lagrange
+import CompPoly.Fields.Basic
+import CompPoly.Fields.BabyBear
+import CompPoly.Fields.BLS12_377
+import CompPoly.Fields.BLS12_381
+import CompPoly.Fields.BN254
+import CompPoly.Fields.Goldilocks
+import CompPoly.Fields.KoalaBear
+import CompPoly.Fields.Mersenne
+import CompPoly.Fields.Secp256k1
+import CompPoly.Fields.PrattCertificate
