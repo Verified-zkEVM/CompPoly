@@ -380,7 +380,11 @@ theorem coeff_toPoly [LawfulBEq R] (p : CPolynomial R) (i : ℕ) :
 
 /-- The implementation of `divX` is correct. -/
 theorem divX_toPoly [LawfulBEq R] (p : CPolynomial R) :
-    (divX p).toPoly = p.toPoly.divX := sorry
+    (divX p).toPoly = p.toPoly.divX := by
+  ext n
+  simp only [CPolynomial.toPoly, CompPoly.CPolynomial.Raw.coeff_toPoly, CPolynomial.coeff,
+    CompPoly.CPolynomial.coeff_divX, Polynomial.coeff_divX]
+
 
 /-- The implementation of `support` is correct. -/
 theorem support_toPoly [LawfulBEq R] (p : CPolynomial R) :
