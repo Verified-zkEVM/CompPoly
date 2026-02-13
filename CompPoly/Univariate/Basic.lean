@@ -197,7 +197,60 @@ lemma coeff_one (i : ℕ) :
   change Raw.coeff 1 i = if i = 0 then 1 else 0
   rw [Raw.coeff_one]
 
-/-- lemmas on coefficients -/
+omit [Nontrivial R] in
+/-- Coefficient of a sum. -/
+lemma coeff_add (p q : CPolynomial R) (i : ℕ) : coeff (p + q) i = coeff p i + coeff q i := by
+  unfold coeff; exact Raw.add_coeff_trimmed p.val q.val i
+
+omit [Nontrivial R] in
+/-- Coefficient of a monomial. -/
+lemma coeff_monomial [DecidableEq R] (n i : ℕ) (c : R) :
+    coeff (monomial n c) i = if i = n then c else 0 := by
+  unfold coeff monomial; rw [Raw.coeff_monomial]; simp only [eq_comm]
+
+omit [Nontrivial R] in
+/-- Coefficient of a product (convolution sum). -/
+lemma coeff_mul (p q : CPolynomial R) (k : ℕ) :
+    coeff (p * q) k = (Finset.range (k + 1)).sum (fun i => coeff p i * coeff q (k - i)) := by
+  unfold coeff; exact Raw.mul_coeff p.val q.val k
+
+omit [Nontrivial R] in
+/-- Two polynomials are equal iff they have the same coefficients. -/
+theorem eq_iff_coeff {p q : CPolynomial R} :
+    p = q ↔ ∀ i, coeff p i = coeff q i := by
+  constructor
+  · intro h i; rw [h]
+  · intro h; apply ext; exact Trim.canonical_ext p.prop q.prop (fun i => h i)
+
+omit [Nontrivial R] in
+/-- Zero characterization: `p = 0` iff all coefficients are zero. -/
+theorem eq_zero_iff_coeff_zero {p : CPolynomial R} : p = 0 ↔ ∀ i, coeff p i = 0 := by
+  rw [eq_iff_coeff]; simp only [coeff_zero]
+
+omit [Nontrivial R] in
+/-- An index is in the support iff the coefficient there is nonzero. -/
+lemma mem_support_iff (p : CPolynomial R) (i : ℕ) : i ∈ p.support ↔ coeff p i ≠ 0 := by
+  unfold support coeff
+  rw [Finset.mem_filter]
+  constructor
+  · intro ⟨hi, h⟩; rwa [bne_iff_ne] at h
+  · intro h; constructor
+    · by_contra hle
+      have hge : p.val.size ≤ i := by rwa [Finset.mem_range, not_lt] at hle
+      rw [Raw.coeff, Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hge, Option.getD_none]
+        at h
+      exact h rfl
+    · exact bne_iff_ne.mpr h
+
+omit [Nontrivial R] in
+/-- The support is empty iff the polynomial is zero. -/
+theorem support_eq_empty_iff (p : CPolynomial R) : p.support = ∅ ↔ p = 0 := by
+  rw [eq_zero_iff_coeff_zero, Finset.eq_empty_iff_forall_notMem]
+  constructor
+  · intro h i; by_contra hne; exact h i ((mem_support_iff p i).mpr hne)
+  · intro h i; rw [mem_support_iff, h]; simp
+
+/-- Lemmas on coefficients and multiplication by `X`. -/
 lemma coeff_X_mul_succ (p : CPolynomial R) (n : ℕ) : coeff (X * p) (n + 1) = coeff p n := by
   unfold coeff
   change ((X.val * p.val).coeff (n + 1) = p.val.coeff n)
@@ -254,17 +307,9 @@ lemma eq_C_add_X_mul_divX (p : CPolynomial R) : p = C (coeff p 0) + X * divX p :
   · exact (C (coeff p 0) + X * divX p).property
   · intro k
     change coeff p k = coeff (C (coeff p 0) + X * divX p) k
-
-    have coeff_add (a b : CPolynomial R) (i : ℕ) :
-        coeff (a + b) i = coeff a i + coeff b i := by
-      unfold coeff
-      change ((a.val + b.val).coeff i) = a.val.coeff i + b.val.coeff i
-      simpa using
-        (Raw.add_coeff_trimmed (p := a.val) (q := b.val) (i := i))
-
     cases k with
     | zero =>
-        rw [coeff_add (a := C (coeff p 0)) (b := X * divX p) (i := 0)]
+        rw [coeff_add (p := C (coeff p 0)) (q := X * divX p) (i := 0)]
         have hC0 : coeff (C (coeff p 0)) 0 = coeff p 0 := by
           simpa using (coeff_C (R := R) (r := coeff p 0) (i := 0))
         have hX0 : coeff (X * divX p) 0 = 0 := by
@@ -272,7 +317,7 @@ lemma eq_C_add_X_mul_divX (p : CPolynomial R) : p = C (coeff p 0) + X * divX p :
         rw [hC0, hX0]
         simp only [_root_.add_zero]
     | succ n =>
-        rw [coeff_add (a := C (coeff p 0)) (b := X * divX p) (i := n + 1)]
+        rw [coeff_add (p := C (coeff p 0)) (q := X * divX p) (i := n + 1)]
         have hCsucc : coeff (C (coeff p 0)) (n + 1) = 0 := by
           simpa [Nat.succ_ne_zero n] using
             (coeff_C (R := R) (r := coeff p 0) (i := n + 1))
@@ -382,6 +427,15 @@ theorem degree_eq_support_max (p : CPolynomial R) (hp : p ≠ 0) :
   constructor
   · exact degree_eq_support_max_aux_mem_support (p := p) hk
   · exact degree_eq_support_max_aux_degree (p := p) hk
+
+omit [LawfulBEq R] [Nontrivial R] in
+/-- When `p ≠ 0`, `degree p` equals `natDegree p` (as `WithBot ℕ`). -/
+theorem degree_eq_natDegree (p : CPolynomial R) (hp : p ≠ 0) :
+    p.degree = p.natDegree := by
+  obtain ⟨k, hk⟩ := degree_eq_support_max_aux_lastNonzero (p := p) hp
+  rw [degree_eq_support_max_aux_degree (p := p) hk]
+  unfold natDegree Raw.natDegree
+  rw [hk]
 
 end Operations
 
@@ -546,6 +600,16 @@ def erase [DecidableEq R] (n : ℕ) (p : CPolynomial R) : CPolynomial R :=
   ⟨e, by rw [erase_canonical]⟩
 
 omit [Nontrivial R] in
+/-- Coefficient of `erase n p`: zero at `n`, otherwise `coeff p i`. -/
+lemma coeff_erase [DecidableEq R] (n i : ℕ) (p : CPolynomial R) :
+    coeff (erase n p) i = if i = n then 0 else coeff p i := by
+  unfold erase coeff
+  rw [Raw.sub_coeff, Raw.coeff_monomial]
+  by_cases h : n = i <;> simp [h]
+  intro h'; rw [h'] at h
+  contradiction
+
+omit [Nontrivial R] in
 lemma leadingCoeff_eq_coeff_natDegree [Semiring R] [DecidableEq R] (p : CompPoly.CPolynomial R) :
     p.leadingCoeff = p.coeff p.natDegree := by
       -- If empty, both leadingCoeff and coeff at natDegree are zero.
@@ -602,6 +666,14 @@ lemma monomial_add_erase [DecidableEq R] (p : CPolynomial R) :
           congr! 1
           exact leadingCoeff_eq_coeff_natDegree p
       · grind
+
+omit [Nontrivial R] in
+lemma coeff_neg (p : CPolynomial R) (i : ℕ) : coeff (-p) i = -coeff p i := by
+  unfold coeff; exact Raw.neg_coeff p.val i
+
+omit [Nontrivial R] in
+lemma coeff_sub (p q : CPolynomial R) (i : ℕ) : coeff (p - q) i = coeff p i - coeff q i := by
+  unfold coeff; exact Raw.sub_coeff p.val q.val i
 
 omit [Nontrivial R] in
 theorem neg_add_cancel : -p + p = 0 := by

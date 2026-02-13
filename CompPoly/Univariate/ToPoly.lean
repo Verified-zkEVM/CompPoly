@@ -99,7 +99,7 @@ lemma coeff_toPoly {p : CPolynomial.Raw Q} {n : ℕ} : p.toPoly.coeff n = p.coef
   intros i acc h
   have i_lt_p : i < p.size := by linarith [i.is_lt]
   have : p.zipIdx[i] = (p[i], ↑i) := by simp [Array.getElem_zipIdx]
-  rw [this, coeff_add, coeff_C_mul, coeff_X_pow, mul_ite, h]
+  rw [this, Polynomial.coeff_add, coeff_C_mul, coeff_X_pow, mul_ite, h]
   rcases (Nat.lt_trichotomy i n) with hlt | rfl | hgt
   · have h1 : ¬ (n < i) := by linarith
     have h2 : ¬ (n = i) := by linarith
@@ -121,7 +121,7 @@ lemma toImpl_elim (p : Q[X]) :
     rw [hbot]
   right
   use degree_ne_bot.mp hbot
-  have hnat : p.degree = p.natDegree := degree_eq_natDegree (degree_ne_bot.mp hbot)
+  have hnat : p.degree = p.natDegree := Polynomial.degree_eq_natDegree (degree_ne_bot.mp hbot)
   simp [hnat]
 
 /-- `toImpl` is a right-inverse of `toPoly`: the round-trip from `Polynomial` is the identity.
