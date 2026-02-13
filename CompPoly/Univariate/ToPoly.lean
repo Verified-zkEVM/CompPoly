@@ -378,10 +378,10 @@ theorem coeff_toPoly [LawfulBEq R] (p : CPolynomial R) (i : ℕ) :
   unfold toPoly coeff
   simp [Raw.coeff_toPoly]
 
+/-- The implementation of `divX` is correct. -/
 theorem divX_toPoly [LawfulBEq R] (p : CPolynomial R) :
     (divX p).toPoly = p.toPoly.divX := by
   ext n
-  -- compare coefficients after converting to mathlib polynomials
   simp only [CPolynomial.toPoly, CompPoly.CPolynomial.Raw.coeff_toPoly, CPolynomial.coeff,
     CompPoly.CPolynomial.coeff_divX, Polynomial.coeff_divX]
 
