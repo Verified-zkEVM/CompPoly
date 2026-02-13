@@ -314,6 +314,8 @@ lemma X_mul_divX_add [Nontrivial R] (p : CPolynomial R) : p = X * divX p + C (co
         rw [hCsucc, hXsucc, hdivX]
         simp only [_root_.zero_add]
 
+-- TODO divX_mul_X_add
+
 lemma divX_size_lt (p : CPolynomial R) (hp : p.val.size > 0) :
     (divX p).val.size < p.val.size := by
   unfold divX
