@@ -374,13 +374,15 @@ theorem eval₂_toPoly {S : Type*} [Semiring S] (f : R →+* S) (x : S) (p : CPo
 
 /-- The implementation of `coeff` is correct. -/
 theorem coeff_toPoly [LawfulBEq R] (p : CPolynomial R) (i : ℕ) :
-    p.coeff i = p.toPoly.coeff i := by
-  unfold toPoly coeff
-  simp [Raw.coeff_toPoly]
+    p.coeff i = p.toPoly.coeff i := sorry
 
-/-- The implementation of `divX` is correct. -/
 theorem divX_toPoly [LawfulBEq R] (p : CPolynomial R) :
-    (divX p).toPoly = p.toPoly.divX := sorry
+    (divX p).toPoly = p.toPoly.divX := by
+  ext n
+  -- compare coefficients after converting to mathlib polynomials
+  simp only [CPolynomial.toPoly, CompPoly.CPolynomial.Raw.coeff_toPoly, CPolynomial.coeff,
+    CompPoly.CPolynomial.coeff_divX, Polynomial.coeff_divX]
+
 
 /-- The implementation of `support` is correct. -/
 theorem support_toPoly [LawfulBEq R] (p : CPolynomial R) :
