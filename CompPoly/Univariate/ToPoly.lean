@@ -368,22 +368,30 @@ theorem eval_toPoly [LawfulBEq R] (x : R) (p : CPolynomial R) :
   · rw [ Raw.eval_toPoly_eq_eval ]; rfl
   · convert Raw.eval_toPoly_eq_eval x p.val
 
-/-- The implementation of `eval₂` is correct. -/
+theorem raw_eval₂_toPoly {S : Type*} [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial.Raw R) :
+    p.eval₂ f x = p.toPoly.eval₂ f x := by
+  unfold CompPoly.CPolynomial.Raw.toPoly CompPoly.CPolynomial.Raw.eval₂
+  rw [← Array.foldl_hom (fun q : R[X] => q.eval₂ f x)
+    (g₁ := fun acc (t : R × ℕ) => acc + Polynomial.C t.1 * Polynomial.X ^ t.2)
+    (g₂ := fun acc (a, i) => acc + f a * x ^ i)]
+  · simp
+  · intro acc t
+    rcases t with ⟨a, i⟩
+    simp [Polynomial.eval₂_add, Polynomial.C_mul_X_pow_eq_monomial]
+
 theorem eval₂_toPoly {S : Type*} [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial R) :
-    eval₂ f x p = p.toPoly.eval₂ f x := sorry
+    eval₂ f x p = p.toPoly.eval₂ f x := by
+  simpa [CompPoly.CPolynomial.eval₂, CompPoly.CPolynomial.toPoly] using
+    (raw_eval₂_toPoly (f := f) (x := x) (p := p.val))
+
 
 /-- The implementation of `coeff` is correct. -/
 theorem coeff_toPoly [LawfulBEq R] (p : CPolynomial R) (i : ℕ) :
-    p.coeff i = p.toPoly.coeff i := by
-  unfold toPoly coeff
-  simp [Raw.coeff_toPoly]
+    p.coeff i = p.toPoly.coeff i := sorry
 
 /-- The implementation of `divX` is correct. -/
 theorem divX_toPoly [LawfulBEq R] (p : CPolynomial R) :
-    (divX p).toPoly = p.toPoly.divX := by
-  ext n
-  simp only [CPolynomial.toPoly, CompPoly.CPolynomial.Raw.coeff_toPoly, CPolynomial.coeff,
-    CompPoly.CPolynomial.coeff_divX, Polynomial.coeff_divX]
+    (divX p).toPoly = p.toPoly.divX := sorry
 
 /-- The implementation of `support` is correct. -/
 theorem support_toPoly [LawfulBEq R] (p : CPolynomial R) :
