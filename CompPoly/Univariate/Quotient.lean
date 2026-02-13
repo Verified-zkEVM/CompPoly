@@ -579,22 +579,22 @@ lemma mul_zero : ∀ (a : QuotientCPolynomial R), a * 0 = 0 := by
   change p * 0 ≈ 0
   rw [CPolynomial.Raw.mul_zero]
 
-lemma left_distrib : ∀ (a b c : QuotientCPolynomial R),
+lemma mul_add : ∀ (a b c : QuotientCPolynomial R),
     a * (b + c) = a * b + a * c := by
   intro a b c
   refine Quotient.inductionOn₃ a b c ?_
   intro p q r
   apply Quotient.sound
   change p * (q + r) ≈ (p * q) + (p * r)
-  rw [CPolynomial.Raw.left_distrib p q r]
+  rw [CPolynomial.Raw.mul_add p q r]
 
-lemma right_distrib : ∀ (a b c : QuotientCPolynomial R), (a + b) * c = a * c + b * c := by
+lemma add_mul : ∀ (a b c : QuotientCPolynomial R), (a + b) * c = a * c + b * c := by
   intro a b c
   refine Quotient.inductionOn₃ a b c ?_
   intro p q r; clear a b c
   apply Quotient.sound
   change (p + q) * r ≈ (p * r) + (q * r)
-  rw [CPolynomial.Raw.right_distrib]
+  rw [CPolynomial.Raw.add_mul]
 
 lemma npow_zero : ∀ (x : QuotientCPolynomial R), x.pow 0 = 1 := by
   intros x
@@ -604,7 +604,6 @@ lemma npow_zero : ∀ (x : QuotientCPolynomial R), x.pow 0 = 1 := by
   unfold CPolynomial.Raw.pow
   simp
 
-@[grind]
 lemma const_sum (r s : R) : (C r).add (C s) ≈ C (r + s) := by
   calc
     ((C r).addRaw (C s)).trim ≈ ((C r).addRaw (C s)) := by apply trim_equiv
@@ -662,8 +661,8 @@ instance [Semiring R] [LawfulBEq R] : Semiring (QuotientCPolynomial R) where
   mul_one := mul_one
   zero_mul := zero_mul
   mul_zero := mul_zero
-  left_distrib := left_distrib
-  right_distrib := right_distrib
+  left_distrib := mul_add
+  right_distrib := add_mul
   npow n p := p.pow n
   npow_zero := npow_zero
   npow_succ := npow_succ
