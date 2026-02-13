@@ -385,7 +385,6 @@ theorem divX_toPoly [LawfulBEq R] (p : CPolynomial R) :
   simp only [CPolynomial.toPoly, CompPoly.CPolynomial.Raw.coeff_toPoly, CPolynomial.coeff,
     CompPoly.CPolynomial.coeff_divX, Polynomial.coeff_divX]
 
-
 /-- The implementation of `support` is correct. -/
 theorem support_toPoly [LawfulBEq R] (p : CPolynomial R) :
     p.support = p.toPoly.support := by
