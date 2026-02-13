@@ -969,7 +969,7 @@ lemma smul_distrib_trim [LawfulBEq R] :
           grind
 
 /-
-Helper lemma for proving: left_distrib
+Helper lemma for proving: mul_add
 Distributivity of scalar multiplication over polynomial addition at the coefficient level.
 -/
 lemma coeff_smul_add_distrib [LawfulBEq R] (a : R) (q r : CPolynomial.Raw R) (i : ℕ) :
@@ -988,7 +988,7 @@ lemma coeff_smul_add_distrib [LawfulBEq R] (a : R) (q r : CPolynomial.Raw R) (i 
       simp +decide [ mul_add ]
 
 /--
-Helper lemma for proving: right_distrib.
+Helper lemma for proving: add_mul.
 Distributivity of scalar multiplication one right at the coefficient level.
 -/
 lemma coeff_add_smul [LawfulBEq R]  (a b : R) (q : CPolynomial.Raw R) (k : ℕ) :
@@ -1024,7 +1024,7 @@ lemma coeff_sum : ∀ (p : CPolynomial.Raw R) (k : ℕ),
     · exact rfl
 
 /--
-Helper lemma for proving: left_distrib
+Helper lemma for proving: mul_add
 The coefficient of `p * q` at index `k` is the sum of the coefficients of the terms
  `(a_i * q) * X^i`.
 -/
@@ -1053,7 +1053,7 @@ lemma coeff_mul [LawfulBEq R] (p q : CPolynomial.Raw R) (k : ℕ) :
       · cases k <;> simp +decide [ * ]
 
 /-
-Helper lemma for proving: left_distrib.
+Helper lemma for proving: mul_add.
 The coefficient of `p * X^i` at index `k` is `0` if `k < i`, and `p_{k-i}` otherwise.
 This follows from `concat_coeff₁` and `concat_coeff₂` applied to `replicate i 0 ++ p`.
 -/
@@ -1086,7 +1086,7 @@ lemma mulPowX_coeff' [LawfulBEq R] (p : CPolynomial.Raw R) (n k : ℕ) :
   exact coeff_mulPowX' p n k
 
 /-
-Helper lemma for proving: right_distrib.
+Helper lemma for proving: add_mul.
 Distributivity of scalar multiplication over polynomial addition at the coefficient level
 -/
 lemma coeff_mulPowX_smul_add [LawfulBEq R] (i : ℕ) (a b : R) (q : CPolynomial.Raw R) (k : ℕ) :
@@ -1140,7 +1140,7 @@ theorem mul_is_trimmed [LawfulBEq R] (p q : CPolynomial.Raw R) : (p * q).trim = 
             Array.replicate (Array.size acc - Array.size (mulPowX x.2 (smul x.1 q))) 0)))
 
 /-
-Helper lemma for proving: right_distrib
+Helper lemma for proving: add_mul
 Computing coefficents of `p * q` as a sum over monomialsin `q`.
 -/
 lemma coeff_mul_eq_sum_range [LawfulBEq R] (p q : CPolynomial.Raw R) (k : ℕ) (n : ℕ)
@@ -1443,7 +1443,7 @@ theorem one_mul_trim [LawfulBEq R] (p : CPolynomial.Raw R) : 1 * p = p.trim := b
   rw[this, zero_add_trim]
 
 /-- Multiplication distributes on the left.-/
-protected theorem left_distrib [LawfulBEq R] (p q r : CPolynomial.Raw R) :
+protected theorem mul_add [LawfulBEq R] (p q r : CPolynomial.Raw R) :
     p * (q + r) = p * q + p * r := by
       have h_eq : p * (q + r) = p * q + p * r ↔ p * (q + r) = (p * q + p * r).trim := by
         have h_canonical : (p * q).trim = p * q ∧ (p * r).trim = p * r := by
@@ -1490,7 +1490,7 @@ protected theorem left_distrib [LawfulBEq R] (p q r : CPolynomial.Raw R) :
       exact Eq.symm (mul_is_trimmed p (q + r))
 
 /-- Multiplication distributes on the right.-/
-protected theorem right_distrib [LawfulBEq R] (p q r : CPolynomial.Raw R) :
+protected theorem add_mul [LawfulBEq R] (p q r : CPolynomial.Raw R) :
     (p + q) * r = p * r + q * r := by
   have h_coeff : ∀ k, ((p + q) * r).coeff k = (p * r + q * r).coeff k := by
     intro k

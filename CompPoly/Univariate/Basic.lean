@@ -229,7 +229,7 @@ lemma mem_support_iff (p : CPolynomial R) (i : ℕ) : i ∈ p.support ↔ coeff 
     · exact bne_iff_ne.mpr h
 
 /-- The support is empty iff the polynomial is zero. -/
-theorem support_eq_empty_iff (p : CPolynomial R) : p.support = ∅ ↔ p = 0 := by
+theorem support_empty_iff (p : CPolynomial R) : p.support = ∅ ↔ p = 0 := by
   rw [eq_zero_iff_coeff_zero, Finset.eq_empty_iff_forall_notMem]
   constructor
   · intro h i; by_contra hne; exact h i ((mem_support_iff p i).mpr hne)
@@ -284,8 +284,9 @@ lemma coeff_divX (p : CPolynomial R) (i : ℕ) : coeff (divX p) i = coeff p (i +
   -- shift the extract
   exact htrim.trans (coeff_extract_succ (a := (↑p : CPolynomial.Raw R)) (i := i))
 
-lemma eq_C_add_X_mul_divX [Nontrivial R] (p : CPolynomial R) : p = C (coeff p 0) + X * divX p := by
+lemma X_mul_divX_add [Nontrivial R] (p : CPolynomial R) : p = X * divX p + C (coeff p 0) := by
   apply CPolynomial.ext
+  rw [add_comm]
   refine Trim.canonical_ext (p := p.val)
       (q := (C (coeff p 0) + X * divX p).val) ?_ ?_ ?_
   · exact p.property
@@ -354,7 +355,7 @@ theorem induction_on [Nontrivial R] {P : CPolynomial R → Prop} (p : CPolynomia
       have hC0 : P (C (coeff p 0)) := hC (coeff p 0)
       have hsum : P (C (coeff p 0) + X * divX p) := hadd _ _ hC0 hXt
       -- Rewrite using Horner decomposition
-      rw [eq_C_add_X_mul_divX (p := p)]
+      rw [X_mul_divX_add (p := p), add_comm]
       exact hsum
 
 omit [LawfulBEq R] in
@@ -451,13 +452,13 @@ lemma mul_zero (p : CPolynomial R) : p * 0 = 0 := by
   apply Subtype.ext
   exact Raw.mul_zero p.val
 
-lemma left_distrib (p q r : CPolynomial R) : p * (q + r) = p * q + p * r := by
+lemma mul_add (p q r : CPolynomial R) : p * (q + r) = p * q + p * r := by
   apply Subtype.ext
-  exact Raw.left_distrib p.val q.val r.val
+  exact Raw.mul_add p.val q.val r.val
 
-lemma right_distrib (p q r : CPolynomial R) : (p + q) * r = p * r + q * r := by
+lemma add_mul (p q r : CPolynomial R) : (p + q) * r = p * r + q * r := by
   apply Subtype.ext
-  exact Raw.right_distrib p.val q.val r.val
+  exact Raw.add_mul p.val q.val r.val
 
 lemma pow_is_trimmed [Nontrivial R]
     (p : CPolynomial.Raw R) (n : ℕ) : (p ^ n).trim = p ^ n := by
@@ -496,8 +497,8 @@ instance [LawfulBEq R] [Nontrivial R] : Semiring (CPolynomial R) where
   mul_assoc := by intro p q r; exact mul_assoc p q r
   one_mul := by intro p; exact one_mul p
   mul_one := by intro p; exact mul_one p
-  left_distrib := by intro p q r; exact left_distrib p q r
-  right_distrib := by  intro p q r; exact right_distrib p q r
+  left_distrib := by intro p q r; exact mul_add p q r
+  right_distrib := by  intro p q r; exact add_mul p q r
   nsmul := nsmul
   nsmul_zero := nsmul_zero
   nsmul_succ := nsmul_succ
