@@ -178,7 +178,6 @@ lemma coeff_one (i : ℕ) :
 
 /-- lemmas on coefficients -/
 lemma coeff_X_mul_succ (p : CPolynomial R) (n : ℕ) : coeff (X * p) (n + 1) = coeff p n := by
-  classical
   unfold coeff
   change ((X.val * p.val).coeff (n + 1) = p.val.coeff n)
   rw [Raw.mul_coeff (p := X.val) (q := p.val) (k := n + 1)]
@@ -234,7 +233,6 @@ lemma coeff_tail (p : CPolynomial R) (i : ℕ) : coeff (tail p) i = coeff p (i +
   exact htrim.trans (coeff_extract_succ (a := (↑p : CPolynomial.Raw R)) (i := i))
 
 lemma eq_C_add_X_mul_tail (p : CPolynomial R) : p = C (coeff p 0) + X * tail p := by
-  classical
   apply CPolynomial.ext
   refine Trim.canonical_ext (p := p.val)
       (q := (C (coeff p 0) + X * tail p).val) ?_ ?_ ?_
@@ -288,7 +286,6 @@ lemma tail_size_lt (p : CPolynomial R) (hp : p.val.size > 0) :
 theorem induction_on {P : CPolynomial R → Prop} (p : CPolynomial R)
     (h0 : P 0) (hC : ∀ a, P (C a)) (hadd : ∀ p q, P p → P q → P (p + q))
     (hX : ∀ p, P p → P (X * p)) : P p := by
-  classical
   -- Strong induction on the size of the underlying coefficient array
   refine
     (Nat.strong_induction_on
@@ -328,7 +325,6 @@ lemma degree_eq_support_max_aux_degree (p : CPolynomial R) {k : Fin p.val.size}
 omit [LawfulBEq R] [Nontrivial R] in
 lemma degree_eq_support_max_aux_lastNonzero (p : CPolynomial R) (hp : p ≠ 0) :
     ∃ k : Fin p.val.size, p.val.lastNonzero = some k := by
-  classical
   cases hln : p.val.lastNonzero with
   | some k =>
       exact ⟨k, rfl⟩
@@ -347,7 +343,6 @@ lemma degree_eq_support_max_aux_lastNonzero (p : CPolynomial R) (hp : p ≠ 0) :
 omit [Nontrivial R] in
 lemma degree_eq_support_max_aux_mem_support (p : CPolynomial R) {k : Fin p.val.size}
     (hk : p.val.lastNonzero = some k) : k.val ∈ p.support := by
-  classical
   unfold CPolynomial.support
   rcases k with ⟨k, hklt⟩
   refine (Finset.mem_filter).2 ?_
@@ -368,7 +363,6 @@ omit [Nontrivial R] in
   Here `p.degree = some n` where `n` is the maximum index in `p.support`. -/
 theorem degree_eq_support_max (p : CPolynomial R) (hp : p ≠ 0) :
     ∃ n, n ∈ p.support ∧ p.degree = n := by
-  classical
   obtain ⟨k, hk⟩ := degree_eq_support_max_aux_lastNonzero (p := p) hp
   refine ⟨k.val, ?_⟩
   constructor
