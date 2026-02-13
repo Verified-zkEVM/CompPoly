@@ -262,6 +262,37 @@ lemma coeff_X_mul_zero [Nontrivial R] (p : CPolynomial R) : coeff (X * p) 0 = 0 
   -- (Finset.range 1).sum ... reduces to the single term at 0
   simp [Raw.X]
 
+theorem coeff_mul_X_succ [Nontrivial R] (p : CPolynomial R) (n : ℕ) :
+    coeff (p * X) (n + 1) = coeff p n := by
+  unfold coeff
+  change ((p.val * X.val).coeff (n + 1) = p.val.coeff n)
+  rw [Raw.mul_coeff]
+  simp only [X]
+  have hmem : n ∈ Finset.range (n + 1 + 1) := by
+    simp [Finset.mem_range]
+    omega
+  have hsum :
+      (Finset.range (n + 1 + 1)).sum (fun i => p.val.coeff i * Raw.X.coeff (n + 1 - i)) =
+        p.val.coeff n * Raw.X.coeff (n + 1 - n) := by
+    refine Finset.sum_eq_single_of_mem (a := n) hmem ?_
+    intro i hi hne
+    have hsub : n + 1 - i ≠ 1 := by
+      intro h
+      have : i = n := by
+        omega
+      exact hne this
+    rw [Raw.coeff_X (R := R) (n + 1 - i)]
+    simp [hsub]
+  rw [hsum]
+  have hn : n + 1 - n = 1 := by
+    omega
+  rw [hn, Raw.coeff_X (R := R) 1]
+  simp
+
+theorem coeff_mul_X_zero [Nontrivial R] (p : CPolynomial R) : coeff (p * X) 0 = 0 := by
+  rw [coeff_mul]
+  simp [X, Raw.X]
+
 omit [BEq R] [LawfulBEq R] in
 lemma coeff_extract_succ (a : CPolynomial.Raw R) (i : ℕ) :
     Raw.coeff (a.extract 1 a.size) i = Raw.coeff a (i + 1) := by
@@ -314,7 +345,25 @@ lemma X_mul_divX_add [Nontrivial R] (p : CPolynomial R) : p = X * divX p + C (co
         rw [hCsucc, hXsucc, hdivX]
         simp only [_root_.zero_add]
 
-lemma divX_mul_X_add [Nontrivial R] (p : CPolynomial R) : divX p * X + C (p.coeff 0) = p := sorry
+theorem divX_mul_X_add [Nontrivial R] (p : CPolynomial R) : divX p * X + C (p.coeff 0) = p := by
+  classical
+  rw [eq_iff_coeff]
+  intro k
+  cases k with
+  | zero =>
+      rw [coeff_add (p := divX p * X) (q := C (p.coeff 0)) (i := 0)]
+      rw [coeff_mul_X_zero (p := divX p)]
+      rw [coeff_C (R := R) (r := p.coeff 0) (i := 0)]
+      simp
+  | succ n =>
+      rw [coeff_add (p := divX p * X) (q := C (p.coeff 0)) (i := n + 1)]
+      rw [coeff_mul_X_succ (p := divX p) (n := n)]
+      rw [coeff_C (R := R) (r := p.coeff 0) (i := n + 1)]
+      have hne : n + 1 ≠ 0 := by
+        exact Nat.succ_ne_zero n
+      simp only [Array.getD_eq_getD_getElem?, Nat.add_eq_zero_iff, one_ne_zero,
+        and_false, ↓reduceIte, _root_.add_zero]
+      simpa using (coeff_divX (p := p) (i := n))
 
 lemma divX_size_lt (p : CPolynomial R) (hp : p.val.size > 0) :
     (divX p).val.size < p.val.size := by

@@ -368,7 +368,6 @@ theorem eval_toPoly [LawfulBEq R] (x : R) (p : CPolynomial R) :
   · rw [ Raw.eval_toPoly_eq_eval ]; rfl
   · convert Raw.eval_toPoly_eq_eval x p.val
 
-
 omit [BEq R] in
 /-- The implementation of `Raw.eval₂` is correct. -/
 theorem Raw.eval₂_toPoly {S : Type*} [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial.Raw R) :
