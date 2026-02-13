@@ -46,29 +46,25 @@ instance [Semiring R] : Inhabited (CPolynomial R) := ⟨#[], Trim.canonical_empt
 
 section Operations
 
-variable [Semiring R] [LawfulBEq R] [Nontrivial R]
+variable [Semiring R] [LawfulBEq R]
 variable (p q r : CPolynomial R)
 
 /-- Addition of canonical polynomials (result is canonical). -/
 instance : Add (CPolynomial R) where
   add p q := ⟨p.val + q.val, by apply Trim.trim_twice⟩
 
-omit [Nontrivial R] in
 theorem add_comm : p + q = q + p := by
   apply CPolynomial.ext; apply Raw.add_comm
 
-omit [Nontrivial R] in
 theorem add_assoc : p + q + r = p + (q + r) := by
   apply CPolynomial.ext; apply Raw.add_assoc
 
 instance : Zero (CPolynomial R) := ⟨0, zero_canonical⟩
 
-omit [Nontrivial R] in
 theorem zero_add : 0 + p = p := by
   apply CPolynomial.ext
   apply Raw.zero_add p.val p.prop
 
-omit [Nontrivial R] in
 theorem add_zero : p + 0 = p := by
   apply CPolynomial.ext
   apply Raw.add_zero p.val p.prop
@@ -77,11 +73,9 @@ theorem add_zero : p + 0 = p := by
 def nsmul (n : ℕ) (p : CPolynomial R) : CPolynomial R :=
   ⟨Raw.nsmul n p.val, by apply Trim.trim_twice⟩
 
-omit [Nontrivial R] in
 theorem nsmul_zero : nsmul 0 p = 0 := by
   apply CPolynomial.ext; apply Raw.nsmul_zero
 
-omit [Nontrivial R] in
 theorem nsmul_succ (n : ℕ) (p : CPolynomial R) : nsmul (n + 1) p = nsmul n p + p := by
   apply CPolynomial.ext; apply Raw.nsmul_succ
 
@@ -98,7 +92,6 @@ instance : Mul (CPolynomial R) where
   mul p q :=
     ⟨p.val * q.val, by exact mul_is_trimmed p.val q.val⟩
 
-omit [Nontrivial R] in
 lemma one_is_trimmed [Nontrivial R] : (1 : CPolynomial.Raw R).trim = 1 :=
   Trim.push_trim #[] 1 one_ne_zero
 
@@ -109,8 +102,7 @@ lemma one_is_trimmed [Nontrivial R] : (1 : CPolynomial.Raw R).trim = 1 :=
   This proof does not work without the assumption that R is non-trivial.
 -/
 instance [Nontrivial R] : One (CPolynomial R) where
-  one := ⟨Raw.C 1, by exact one_is_trimmed
-  ⟩
+  one := ⟨Raw.C 1, by exact one_is_trimmed⟩
 
 /-- The coefficient of `X^i` in the polynomial. Returns `0` if `i` is out of bounds. -/
 @[reducible]
@@ -120,7 +112,7 @@ def coeff (p : CPolynomial R) (i : ℕ) : R := p.val.coeff i
 def C (r : R) : CPolynomial R := ⟨(Raw.C r).trim, by rw [Trim.trim_twice]⟩
 
 /-- The variable `X`. -/
-def X : CPolynomial R := ⟨Raw.X, X_canonical⟩
+def X [Nontrivial R] : CPolynomial R := ⟨Raw.X, X_canonical⟩
 
 /-- Construct a canonical monomial `c * X^n` as a `CPolynomial R`.
 
@@ -174,47 +166,43 @@ def divX (p : CPolynomial R) : CPolynomial R :=
   ⟨(Raw.divX p.val).trim, by
     simpa using (Trim.trim_twice (p.val.extract 1 p.val.size))⟩
 
-omit [Nontrivial R] in
 /-- Coefficient of the constant polynomial `C r`. -/
 lemma coeff_C (r : R) (i : ℕ) : coeff (C r) i = if i = 0 then r else 0 := by
   unfold C; simp only [coeff]
   rw [Trim.coeff_eq_coeff, Raw.coeff_C]
 
+omit [BEq R] [Semiring R] [LawfulBEq R] in
 /-- Coefficient of the variable `X`. -/
-lemma coeff_X (i : ℕ) : coeff X i = if i = 1 then 1 else 0 := by
+lemma coeff_X [Nontrivial R] (i : ℕ) : coeff X i = if i = 1 then 1 else 0 := by
   simp only [X, coeff]; rw [Raw.coeff_X]
 
-omit [LawfulBEq R] [Nontrivial R] in
+omit [LawfulBEq R] in
 /-- Coefficient of the zero polynomial. -/
 @[simp]
 lemma coeff_zero (i : ℕ) : coeff (0 : CPolynomial R) i = 0 := by
   simp; rfl
 
 /-- Coefficient of the constant polynomial `1`. -/
-lemma coeff_one (i : ℕ) :
+lemma coeff_one [Nontrivial R] (i : ℕ) :
     coeff (1 : CPolynomial R) i = if i = 0 then 1 else 0 := by
   simp only [coeff]
   change Raw.coeff 1 i = if i = 0 then 1 else 0
   rw [Raw.coeff_one]
 
-omit [Nontrivial R] in
 /-- Coefficient of a sum. -/
 lemma coeff_add (p q : CPolynomial R) (i : ℕ) : coeff (p + q) i = coeff p i + coeff q i := by
   unfold coeff; exact Raw.add_coeff_trimmed p.val q.val i
 
-omit [Nontrivial R] in
 /-- Coefficient of a monomial. -/
 lemma coeff_monomial [DecidableEq R] (n i : ℕ) (c : R) :
     coeff (monomial n c) i = if i = n then c else 0 := by
   unfold coeff monomial; rw [Raw.coeff_monomial]; simp only [eq_comm]
 
-omit [Nontrivial R] in
 /-- Coefficient of a product (convolution sum). -/
 lemma coeff_mul (p q : CPolynomial R) (k : ℕ) :
     coeff (p * q) k = (Finset.range (k + 1)).sum (fun i => coeff p i * coeff q (k - i)) := by
   unfold coeff; exact Raw.mul_coeff p.val q.val k
 
-omit [Nontrivial R] in
 /-- Two polynomials are equal iff they have the same coefficients. -/
 theorem eq_iff_coeff {p q : CPolynomial R} :
     p = q ↔ ∀ i, coeff p i = coeff q i := by
@@ -222,12 +210,10 @@ theorem eq_iff_coeff {p q : CPolynomial R} :
   · intro h i; rw [h]
   · intro h; apply ext; exact Trim.canonical_ext p.prop q.prop (fun i => h i)
 
-omit [Nontrivial R] in
 /-- Zero characterization: `p = 0` iff all coefficients are zero. -/
 theorem eq_zero_iff_coeff_zero {p : CPolynomial R} : p = 0 ↔ ∀ i, coeff p i = 0 := by
   rw [eq_iff_coeff]; simp only [coeff_zero]
 
-omit [Nontrivial R] in
 /-- An index is in the support iff the coefficient there is nonzero. -/
 lemma mem_support_iff (p : CPolynomial R) (i : ℕ) : i ∈ p.support ↔ coeff p i ≠ 0 := by
   unfold support coeff
@@ -242,7 +228,6 @@ lemma mem_support_iff (p : CPolynomial R) (i : ℕ) : i ∈ p.support ↔ coeff 
       exact h rfl
     · exact bne_iff_ne.mpr h
 
-omit [Nontrivial R] in
 /-- The support is empty iff the polynomial is zero. -/
 theorem support_eq_empty_iff (p : CPolynomial R) : p.support = ∅ ↔ p = 0 := by
   rw [eq_zero_iff_coeff_zero, Finset.eq_empty_iff_forall_notMem]
@@ -251,11 +236,12 @@ theorem support_eq_empty_iff (p : CPolynomial R) : p.support = ∅ ↔ p = 0 := 
   · intro h i; rw [mem_support_iff, h]; simp
 
 /-- Lemmas on coefficients and multiplication by `X`. -/
-lemma coeff_X_mul_succ (p : CPolynomial R) (n : ℕ) : coeff (X * p) (n + 1) = coeff p n := by
+lemma coeff_X_mul_succ [Nontrivial R] (p : CPolynomial R) (n : ℕ) :
+    coeff (X * p) (n + 1) = coeff p n := by
   unfold coeff
   change ((X.val * p.val).coeff (n + 1) = p.val.coeff n)
-  rw [ Raw.mul_coeff ]
-  simp only [ X ]
+  rw [Raw.mul_coeff]
+  simp only [X]
   have hmem : (1 : ℕ) ∈ Finset.range (n + 1 + 1) := by simp
   have hsum :
       (Finset.range (n + 1 + 1)).sum (fun i => Raw.X.coeff i * p.val.coeff (n + 1 - i)) =
@@ -269,14 +255,14 @@ lemma coeff_X_mul_succ (p : CPolynomial R) (n : ℕ) : coeff (X * p) (n + 1) = c
   rw [hn, Raw.coeff_X (R := R) 1]
   simp
 
-lemma coeff_X_mul_zero (p : CPolynomial R) : coeff (X * p) 0 = 0 := by
+lemma coeff_X_mul_zero [Nontrivial R] (p : CPolynomial R) : coeff (X * p) 0 = 0 := by
   unfold coeff
   change ((Raw.X * p.val) : Raw R).coeff 0 = 0
-  rw [ Raw.mul_coeff ]
+  rw [Raw.mul_coeff]
   -- (Finset.range 1).sum ... reduces to the single term at 0
-  simp [ Raw.X ]
+  simp [Raw.X]
 
-omit [BEq R] [LawfulBEq R] [Nontrivial R] in
+omit [BEq R] [LawfulBEq R] in
 lemma coeff_extract_succ (a : CPolynomial.Raw R) (i : ℕ) :
     Raw.coeff (a.extract 1 a.size) i = Raw.coeff a (i + 1) := by
   simp [Raw.coeff, Array.getElem?_extract]
@@ -286,7 +272,6 @@ lemma coeff_extract_succ (a : CPolynomial.Raw R) (i : ℕ) :
   · have hge : a.size ≤ i + 1 := by omega
     simp [h, Array.getElem?_eq_none (xs := a) (i := i + 1) hge]
 
-omit [Nontrivial R] in
 lemma coeff_divX (p : CPolynomial R) (i : ℕ) : coeff (divX p) i = coeff p (i + 1) := by
   -- LHS: coeff of divX = coeff of trimmed extract
   unfold divX
@@ -299,7 +284,7 @@ lemma coeff_divX (p : CPolynomial R) (i : ℕ) : coeff (divX p) i = coeff p (i +
   -- shift the extract
   exact htrim.trans (coeff_extract_succ (a := (↑p : CPolynomial.Raw R)) (i := i))
 
-lemma eq_C_add_X_mul_divX (p : CPolynomial R) : p = C (coeff p 0) + X * divX p := by
+lemma eq_C_add_X_mul_divX [Nontrivial R] (p : CPolynomial R) : p = C (coeff p 0) + X * divX p := by
   apply CPolynomial.ext
   refine Trim.canonical_ext (p := p.val)
       (q := (C (coeff p 0) + X * divX p).val) ?_ ?_ ?_
@@ -328,7 +313,6 @@ lemma eq_C_add_X_mul_divX (p : CPolynomial R) : p = C (coeff p 0) + X * divX p :
         rw [hCsucc, hXsucc, hdivX]
         simp only [_root_.zero_add]
 
-omit [Nontrivial R] in
 lemma divX_size_lt (p : CPolynomial R) (hp : p.val.size > 0) :
     (divX p).val.size < p.val.size := by
   unfold divX
@@ -342,7 +326,7 @@ lemma divX_size_lt (p : CPolynomial R) (hp : p.val.size > 0) :
   exact lt_of_le_of_lt hle' (Nat.pred_lt_self hp)
 
 /-- Induction principle for polynomials (mirrors mathlib's `Polynomial.induction_on`). -/
-theorem induction_on {P : CPolynomial R → Prop} (p : CPolynomial R)
+theorem induction_on [Nontrivial R] {P : CPolynomial R → Prop} (p : CPolynomial R)
     (h0 : P 0) (hC : ∀ a, P (C a)) (hadd : ∀ p q, P p → P q → P (p + q))
     (hX : ∀ p, P p → P (X * p)) : P p := by
   -- Strong induction on the size of the underlying coefficient array
@@ -373,15 +357,16 @@ theorem induction_on {P : CPolynomial R → Prop} (p : CPolynomial R)
       rw [eq_C_add_X_mul_divX (p := p)]
       exact hsum
 
-omit [LawfulBEq R] [Nontrivial R] in
-/-- Lemmas for degree_eq_support_max -/
+omit [LawfulBEq R] in
+/- Auxiliary lemmas for `degree_eq_support_max`: relating `degree`, `support`, and `lastNonzero`. -/
+/-- Lemma for `degree_eq_support_max`: degree in terms of `lastNonzero`. -/
 lemma degree_eq_support_max_aux_degree (p : CPolynomial R) {k : Fin p.val.size}
     (hk : p.val.lastNonzero = some k) : p.degree = k.val := by
   unfold CPolynomial.degree
   unfold Raw.degree
   simp [hk]
 
-omit [LawfulBEq R] [Nontrivial R] in
+omit [LawfulBEq R] in
 lemma degree_eq_support_max_aux_lastNonzero (p : CPolynomial R) (hp : p ≠ 0) :
     ∃ k : Fin p.val.size, p.val.lastNonzero = some k := by
   cases hln : p.val.lastNonzero with
@@ -399,7 +384,6 @@ lemma degree_eq_support_max_aux_lastNonzero (p : CPolynomial R) (hp : p ≠ 0) :
         simpa using hval
       exact (hp hp0).elim
 
-omit [Nontrivial R] in
 lemma degree_eq_support_max_aux_mem_support (p : CPolynomial R) {k : Fin p.val.size}
     (hk : p.val.lastNonzero = some k) : k.val ∈ p.support := by
   unfold CPolynomial.support
@@ -417,7 +401,6 @@ lemma degree_eq_support_max_aux_mem_support (p : CPolynomial R) {k : Fin p.val.s
       simpa [hcoeff] using hnonzero
     exact bne_iff_ne.mpr hcoeff_ne
 
-omit [Nontrivial R] in
 /-- Degree equals the maximum of the support when the polynomial is non-zero.
   Here `p.degree = some n` where `n` is the maximum index in `p.support`. -/
 theorem degree_eq_support_max (p : CPolynomial R) (hp : p ≠ 0) :
@@ -428,7 +411,7 @@ theorem degree_eq_support_max (p : CPolynomial R) (hp : p ≠ 0) :
   · exact degree_eq_support_max_aux_mem_support (p := p) hk
   · exact degree_eq_support_max_aux_degree (p := p) hk
 
-omit [LawfulBEq R] [Nontrivial R] in
+omit [LawfulBEq R] in
 /-- When `p ≠ 0`, `degree p` equals `natDegree p` (as `WithBot ℕ`). -/
 theorem degree_eq_natDegree (p : CPolynomial R) (hp : p ≠ 0) :
     p.degree = p.natDegree := by
@@ -493,8 +476,8 @@ lemma pow_succ_right [Nontrivial R]
       induction' n with n ih;
       · have h_pow_zero : p ^ 0 = 1 := by
           exact rfl
-        rw [ h_pow_zero, mul_one_trim, one_mul_trim ];
-      · simp_all +decide [ Raw.pow_succ ];
+        rw [h_pow_zero, mul_one_trim, one_mul_trim];
+      · simp_all +decide [Raw.pow_succ];
         convert Raw.mul_assoc p ( p ^ n ) p using 1;
         grind
 
@@ -535,7 +518,7 @@ lemma C_mul_X_pow_eq_monomial [LawfulBEq R] [DecidableEq R] [Nontrivial R] (r : 
     exact R
     all_goals try infer_instance
     exact 0
-    simp +decide [ hr, C, X, monomial ]
+    simp +decide [hr, C, X, monomial]
     -- Since multiplying by 0 gives the zero polynomial, the left-hand side simplifies to 0.
     have h_lhs : (Raw.C 0).trim *
         (Raw.X : CPolynomial.Raw R) ^ n = 0 := by
@@ -544,7 +527,7 @@ lemma C_mul_X_pow_eq_monomial [LawfulBEq R] [DecidableEq R] [Nontrivial R] (r : 
       · exact Eq.symm ( Raw.trim_replicate_zero 1 )
       · infer_instance
     convert h_lhs using 1
-    exact Eq.symm (by induction n <;> simp +decide [ *, Raw.monomial ])
+    exact Eq.symm (by induction n <;> simp +decide [*, Raw.monomial])
   · convert Subtype.ext ?_
     have h_trim : (Raw.mk #[r]).trim = Raw.C r := by
       exact Trim.canonical_iff.mpr fun hp => hr
@@ -552,7 +535,7 @@ lemma C_mul_X_pow_eq_monomial [LawfulBEq R] [DecidableEq R] [Nontrivial R] (r : 
     convert Raw.C_mul_eq_smul_trim r (Raw.X ^ n) using 1
     · exact h_trim.symm ▸ rfl
     · convert Raw.smul_monomial_one_trim n r |> Eq.symm using 1
-      rw [ Raw.X_pow_eq_monomial_one ]
+      rw [Raw.X_pow_eq_monomial_one]
 
 end Semiring
 
@@ -579,7 +562,7 @@ end CommSemiring
 
 section Ring
 
-variable [Ring R] [LawfulBEq R] [Nontrivial R]
+variable [Ring R] [LawfulBEq R]
 variable (p q : CPolynomial R)
 
 instance : Neg (CPolynomial R) where
@@ -588,7 +571,6 @@ instance : Neg (CPolynomial R) where
 instance : Sub (CPolynomial R) where
   sub p q := p + -q
 
- omit [Nontrivial R] in
 lemma erase_canonical [DecidableEq R] (n : ℕ) (p : CPolynomial R) :
     let e := p.val - Raw.monomial n (p.val.coeff n)
     e.trim = e := by
@@ -599,7 +581,6 @@ def erase [DecidableEq R] (n : ℕ) (p : CPolynomial R) : CPolynomial R :=
   let e := p.val - Raw.monomial n (p.val.coeff n)
   ⟨e, by rw [erase_canonical]⟩
 
-omit [Nontrivial R] in
 /-- Coefficient of `erase n p`: zero at `n`, otherwise `coeff p i`. -/
 lemma coeff_erase [DecidableEq R] (n i : ℕ) (p : CPolynomial R) :
     coeff (erase n p) i = if i = n then 0 else coeff p i := by
@@ -609,18 +590,18 @@ lemma coeff_erase [DecidableEq R] (n i : ℕ) (p : CPolynomial R) :
   intro h'; rw [h'] at h
   contradiction
 
-omit [Nontrivial R] in
-lemma leadingCoeff_eq_coeff_natDegree [Semiring R] [DecidableEq R] (p : CompPoly.CPolynomial R) :
+/-- Leading coefficient equals the coefficient at `natDegree`. -/
+lemma leadingCoeff_eq_coeff_natDegree [Semiring R] [DecidableEq R] (p : CPolynomial R) :
     p.leadingCoeff = p.coeff p.natDegree := by
       -- If empty, both leadingCoeff and coeff at natDegree are zero.
       by_cases h_empty : p.val.size = 0;
-      · simp +decide [ h_empty, CPolynomial.leadingCoeff, CPolynomial.coeff,
-          CPolynomial.natDegree ]
+      · simp +decide [h_empty, CPolynomial.leadingCoeff, CPolynomial.coeff,
+          CPolynomial.natDegree]
         unfold Raw.leadingCoeff
         unfold Raw.trim; aesop
       · -- Since `p` is canonical, `p.val.getLastD 0` is the last element of `p.val`.
         have h_last : p.val.getLastD 0 = p.val.coeff (p.val.size - 1) := by
-          simp +decide [ Array.getLastD, Raw.coeff ]
+          simp +decide [Array.getLastD, Raw.coeff]
           cases h : (p : CPolynomial.Raw R)[(p : CPolynomial.Raw R).size - 1]? <;>
             aesop
         have h_natDegree : p.val.lastNonzero =
@@ -635,11 +616,10 @@ lemma leadingCoeff_eq_coeff_natDegree [Semiring R] [DecidableEq R] (p : CompPoly
           have h_natDegree_eq : p.natDegree = p.val.natDegree := by rfl
           unfold Raw.natDegree at *; aesop
         convert h_last using 1
-        · rw [ leadingCoeff, Raw.leadingCoeff, p.prop ]
+        · rw [leadingCoeff, Raw.leadingCoeff, p.prop]
           exact id (Eq.symm h_last)
         · exact h_natDegree_eq ▸ rfl
 
-omit [Nontrivial R] in
 /-- A polynomial equals its leading monomial plus the rest (`erase` at `natDegree`). -/
 lemma monomial_add_erase [DecidableEq R] (p : CPolynomial R) :
     p = monomial p.natDegree p.leadingCoeff + erase p.natDegree p := by
@@ -667,18 +647,14 @@ lemma monomial_add_erase [DecidableEq R] (p : CPolynomial R) :
           exact leadingCoeff_eq_coeff_natDegree p
       · grind
 
-omit [Nontrivial R] in
 lemma coeff_neg (p : CPolynomial R) (i : ℕ) : coeff (-p) i = -coeff p i := by
   unfold coeff; exact Raw.neg_coeff p.val i
 
-omit [Nontrivial R] in
 lemma coeff_sub (p q : CPolynomial R) (i : ℕ) : coeff (p - q) i = coeff p i - coeff q i := by
   unfold coeff; exact Raw.sub_coeff p.val q.val i
 
-omit [Nontrivial R] in
 theorem neg_add_cancel : -p + p = 0 := by
   apply Subtype.ext
-  let R' : Ring R := ‹Ring R›
   have dist_lhs : (-p + p).val  = ((-p).val + p.val) := rfl
   rw [dist_lhs]
   exact Raw.neg_add_cancel p.val
@@ -726,7 +702,7 @@ end CommRing
 
 section Division
 
-variable [Field R] [LawfulBEq R] [Nontrivial R]
+variable [Field R] [LawfulBEq R]
 variable (p q : CPolynomial R)
 
 /-- Quotient of `p` by a monic polynomial `q`. Matches Mathlib's `Polynomial.divByMonic`. -/
