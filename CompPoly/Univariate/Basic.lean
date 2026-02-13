@@ -149,9 +149,30 @@ def leadingCoeff (p : CPolynomial R) : R := p.val.leadingCoeff
 /-- Evaluate a polynomial at a point. -/
 def eval (x : R) (p : CPolynomial R) : R := p.val.eval x
 
+/-- Evaluate at `x : S` via a ring hom
+`f : R →+* S`; `eval₂ f x p = f(a₀) + f(a₁)*x + f(a₂)*x² + ...`. -/
+def eval₂ {S : Type*} [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial R) : S := p.val.eval₂ f x
+
 /-- The support of a polynomial: indices with nonzero coefficients. -/
 def support (p : CPolynomial R) : Finset ℕ :=
   (Finset.range p.val.size).filter (fun i => p.val.coeff i != 0)
+
+/-- Number of coefficients (length of the underlying array). -/
+def size (p : CPolynomial R) : ℕ := p.val.size
+
+/-- Upper bound on degree: `size - 1` if non-empty, `⊥` if empty. -/
+def degreeBound (p : CPolynomial R) : WithBot Nat := p.val.degreeBound
+
+/-- Convert `degreeBound` to a natural number by sending `⊥` to `0`. -/
+def natDegreeBound (p : CPolynomial R) : Nat := p.val.natDegreeBound
+
+/-- Check if a `CPolynomial` is monic, i.e. its leading coefficient is 1. -/
+def monic (p : CPolynomial R) : Bool := p.val.monic
+
+/-- The polynomial with the constant term removed; `coeff (divX p) i = coeff p (i + 1)`. -/
+def divX (p : CPolynomial R) : CPolynomial R :=
+  ⟨(Raw.divX p.val).trim, by
+    simpa using (Trim.trim_twice (p.val.extract 1 p.val.size))⟩
 
 omit [Nontrivial R] in
 /-- Coefficient of the constant polynomial `C r`. -/
@@ -180,10 +201,9 @@ lemma coeff_one (i : ℕ) :
 lemma coeff_X_mul_succ (p : CPolynomial R) (n : ℕ) : coeff (X * p) (n + 1) = coeff p n := by
   unfold coeff
   change ((X.val * p.val).coeff (n + 1) = p.val.coeff n)
-  rw [Raw.mul_coeff (p := X.val) (q := p.val) (k := n + 1)]
-  simp only [X]
-  have hmem : (1 : ℕ) ∈ Finset.range (n + 1 + 1) := by
-    simp [Finset.mem_range]
+  rw [ Raw.mul_coeff ]
+  simp only [ X ]
+  have hmem : (1 : ℕ) ∈ Finset.range (n + 1 + 1) := by simp
   have hsum :
       (Finset.range (n + 1 + 1)).sum (fun i => Raw.X.coeff i * p.val.coeff (n + 1 - i)) =
         Raw.X.coeff 1 * p.val.coeff (n + 1 - 1) := by
@@ -192,18 +212,16 @@ lemma coeff_X_mul_succ (p : CPolynomial R) (n : ℕ) : coeff (X * p) (n + 1) = c
     rw [Raw.coeff_X (R := R) i]
     simp [hne]
   rw [hsum]
-  have hn : n + 1 - 1 = n := by
-    omega
-  rw [hn]
-  rw [Raw.coeff_X (R := R) 1]
+  have hn : n + 1 - 1 = n := by omega
+  rw [hn, Raw.coeff_X (R := R) 1]
   simp
 
 lemma coeff_X_mul_zero (p : CPolynomial R) : coeff (X * p) 0 = 0 := by
-  unfold CPolynomial.coeff
+  unfold coeff
   change ((Raw.X * p.val) : Raw R).coeff 0 = 0
-  rw [Raw.mul_coeff]
+  rw [ Raw.mul_coeff ]
   -- (Finset.range 1).sum ... reduces to the single term at 0
-  simp [Raw.X]
+  simp [ Raw.X ]
 
 omit [BEq R] [LawfulBEq R] [Nontrivial R] in
 lemma coeff_extract_succ (a : CPolynomial.Raw R) (i : ℕ) :
@@ -215,14 +233,10 @@ lemma coeff_extract_succ (a : CPolynomial.Raw R) (i : ℕ) :
   · have hge : a.size ≤ i + 1 := by omega
     simp [h, Array.getElem?_eq_none (xs := a) (i := i + 1) hge]
 
-def tail (p : CPolynomial R) : CPolynomial R :=
-  ⟨Raw.trim (p.val.extract 1 p.val.size), by
-    simpa using (Trim.trim_twice (p.val.extract 1 p.val.size))⟩
-
 omit [Nontrivial R] in
-lemma coeff_tail (p : CPolynomial R) (i : ℕ) : coeff (tail p) i = coeff p (i + 1) := by
-  -- LHS: coeff of tail = coeff of trimmed extract
-  unfold tail
+lemma coeff_divX (p : CPolynomial R) (i : ℕ) : coeff (divX p) i = coeff p (i + 1) := by
+  -- LHS: coeff of divX = coeff of trimmed extract
+  unfold divX
   -- turn coefficients of CPolynomial into raw coefficients
   simp only [CPolynomial.coeff]
   -- remove the trim on coefficients
@@ -232,14 +246,14 @@ lemma coeff_tail (p : CPolynomial R) (i : ℕ) : coeff (tail p) i = coeff p (i +
   -- shift the extract
   exact htrim.trans (coeff_extract_succ (a := (↑p : CPolynomial.Raw R)) (i := i))
 
-lemma eq_C_add_X_mul_tail (p : CPolynomial R) : p = C (coeff p 0) + X * tail p := by
+lemma eq_C_add_X_mul_divX (p : CPolynomial R) : p = C (coeff p 0) + X * divX p := by
   apply CPolynomial.ext
   refine Trim.canonical_ext (p := p.val)
-      (q := (C (coeff p 0) + X * tail p).val) ?_ ?_ ?_
+      (q := (C (coeff p 0) + X * divX p).val) ?_ ?_ ?_
   · exact p.property
-  · exact (C (coeff p 0) + X * tail p).property
+  · exact (C (coeff p 0) + X * divX p).property
   · intro k
-    change coeff p k = coeff (C (coeff p 0) + X * tail p) k
+    change coeff p k = coeff (C (coeff p 0) + X * divX p) k
 
     have coeff_add (a b : CPolynomial R) (i : ℕ) :
         coeff (a + b) i = coeff a i + coeff b i := by
@@ -250,29 +264,29 @@ lemma eq_C_add_X_mul_tail (p : CPolynomial R) : p = C (coeff p 0) + X * tail p :
 
     cases k with
     | zero =>
-        rw [coeff_add (a := C (coeff p 0)) (b := X * tail p) (i := 0)]
+        rw [coeff_add (a := C (coeff p 0)) (b := X * divX p) (i := 0)]
         have hC0 : coeff (C (coeff p 0)) 0 = coeff p 0 := by
           simpa using (coeff_C (R := R) (r := coeff p 0) (i := 0))
-        have hX0 : coeff (X * tail p) 0 = 0 := by
-          simpa using (coeff_X_mul_zero (R := R) (p := tail p))
+        have hX0 : coeff (X * divX p) 0 = 0 := by
+          simpa using (coeff_X_mul_zero (R := R) (p := divX p))
         rw [hC0, hX0]
         simp only [_root_.add_zero]
     | succ n =>
-        rw [coeff_add (a := C (coeff p 0)) (b := X * tail p) (i := n + 1)]
+        rw [coeff_add (a := C (coeff p 0)) (b := X * divX p) (i := n + 1)]
         have hCsucc : coeff (C (coeff p 0)) (n + 1) = 0 := by
           simpa [Nat.succ_ne_zero n] using
             (coeff_C (R := R) (r := coeff p 0) (i := n + 1))
-        have hXsucc : coeff (X * tail p) (n + 1) = coeff (tail p) n := by
-          simpa using (coeff_X_mul_succ (R := R) (p := tail p) (n := n))
-        have htail : coeff (tail p) n = coeff p (n + 1) := by
-          simpa using (coeff_tail (p := p) (i := n))
-        rw [hCsucc, hXsucc, htail]
+        have hXsucc : coeff (X * divX p) (n + 1) = coeff (divX p) n := by
+          simpa using (coeff_X_mul_succ (R := R) (p := divX p) (n := n))
+        have hdivX : coeff (divX p) n = coeff p (n + 1) := by
+          simpa using (coeff_divX (p := p) (i := n))
+        rw [hCsucc, hXsucc, hdivX]
         simp only [_root_.zero_add]
 
 omit [Nontrivial R] in
-lemma tail_size_lt (p : CPolynomial R) (hp : p.val.size > 0) :
-    (tail p).val.size < p.val.size := by
-  unfold tail
+lemma divX_size_lt (p : CPolynomial R) (hp : p.val.size > 0) :
+    (divX p).val.size < p.val.size := by
+  unfold divX
   have hle : (Raw.trim (p.val.extract 1 p.val.size)).size
       ≤ (p.val.extract 1 p.val.size).size := by
     simpa using (Trim.size_le_size (p := p.val.extract 1 p.val.size))
@@ -303,15 +317,15 @@ theorem induction_on {P : CPolynomial R → Prop} (p : CPolynomial R)
   | succ n =>
       have hp_pos : p.val.size > 0 := by
         simp [hn]
-      have htail_lt : (tail p).val.size < Nat.succ n := by
-        have ht := tail_size_lt (p := p) hp_pos
+      have hdivX_lt : (divX p).val.size < Nat.succ n := by
+        have ht := divX_size_lt (p := p) hp_pos
         simpa [hn] using ht
-      have htail : P (tail p) := ih (tail p).val.size htail_lt (tail p) rfl
-      have hXt : P (X * tail p) := hX (tail p) htail
+      have hdivX : P (divX p) := ih (divX p).val.size hdivX_lt (divX p) rfl
+      have hXt : P (X * divX p) := hX (divX p) hdivX
       have hC0 : P (C (coeff p 0)) := hC (coeff p 0)
-      have hsum : P (C (coeff p 0) + X * tail p) := hadd _ _ hC0 hXt
+      have hsum : P (C (coeff p 0) + X * divX p) := hadd _ _ hC0 hXt
       -- Rewrite using Horner decomposition
-      rw [eq_C_add_X_mul_tail (p := p)]
+      rw [eq_C_add_X_mul_divX (p := p)]
       exact hsum
 
 omit [LawfulBEq R] [Nontrivial R] in
