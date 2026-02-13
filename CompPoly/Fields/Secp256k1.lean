@@ -29,8 +29,9 @@ namespace Secp256k1
 def BASE_FIELD_CARD : Nat := 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f
 
 /- Alternative representation -/
-example : BASE_FIELD_CARD = 2 ^ 256 - 2 ^ 32 - 2 ^ 9 - 2 ^ 8 - 2 ^ 7 - 2 ^ 6 - 2 ^ 4 - 1
-  := by unfold BASE_FIELD_CARD; norm_num
+example :
+    BASE_FIELD_CARD = 2 ^ 256 - 2 ^ 32 - 2 ^ 9 - 2 ^ 8 - 2 ^ 7 - 2 ^ 6 - 2 ^ 4 - 1 := by
+  unfold BASE_FIELD_CARD; norm_num
 
 abbrev BaseField := ZMod BASE_FIELD_CARD
 

@@ -46,7 +46,7 @@ lemma Nat.Prime.dvd_mul_list {p : ℕ} {l : List ℕ} (h : p.Prime) :
       rw [List.prod_cons] at hdiv
       rcases h.dvd_mul.mp hdiv with (hdiv|hdiv)
       · use hd
-        simp
+        simp only [List.mem_cons, true_or, true_and]
         exact hdiv
       · rcases ih hdiv with ⟨r, hr, hdiv⟩
         use r
@@ -387,9 +387,9 @@ def verifySmallPrime (n' : Q(ℕ)) : MetaM Q(Nat.Prime $n') :=
     | _ => failure
 
 theorem ZMod.powEqOfPowMod :
-   ∀ {n a' c : ℕ} (a : ZMod n), (a' : ZMod n) = a →
+    ∀ {n a' c : ℕ} (a : ZMod n), (a' : ZMod n) = a →
       Nat.mod (Nat.pow a' (n - 1)) n = c → c = 1 → a ^ (n - 1) = 1
-  | n, a, _,  _, rfl, h, rfl => by
+  | n, a, _, _, rfl, h, rfl => by
     change a ^ (n - 1) % n = 1 at h
     rw [← Nat.cast_pow, CharP.natCast_eq_natCast_mod (ZMod n) n, h, Nat.cast_one]
 
