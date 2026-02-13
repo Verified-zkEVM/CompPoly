@@ -1675,7 +1675,7 @@ end Ring
 
 end Operations
 
-section AddCommSemiroup
+section AddCommSemigroup
 
 variable [Semiring R] [BEq R]
 
@@ -1683,7 +1683,7 @@ instance [LawfulBEq R] : AddCommSemigroup (CPolynomial.Raw R) where
   add_assoc := by intro _ _ _; rw [add_assoc]
   add_comm := add_comm
 
-end AddCommSemiroup
+end AddCommSemigroup
 
 end CPolynomial.Raw
 
