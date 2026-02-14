@@ -533,6 +533,16 @@ lemma pow_succ_right [Nontrivial R]
         convert Raw.mul_assoc p ( p ^ n ) p using 1;
         grind
 
+/--
+`CPolynomial R` forms a commutative monoid when `R` is a semiring.
+-/
+instance : AddCommMonoid (CPolynomial R) where
+  zero_add := zero_add
+  add_zero := by intro p; exact add_zero p
+  nsmul := nsmul
+  nsmul_zero := nsmul_zero
+  nsmul_succ := nsmul_succ
+
 /-- `CPolynomial R` forms a semiring when `R` is a semiring.
 
   The semiring structure extends the `AddCommGroup` structure with multiplication.
@@ -777,6 +787,39 @@ instance : Div (CPolynomial R) := ⟨div⟩
 instance : Mod (CPolynomial R) := ⟨mod⟩
 
 end Division
+
+section ModuleTheory
+
+-- The assumptions are requried for `CPolynomial R` to be a module and s0 are necessary downsteam.
+variable [Semiring R] [LawfulBEq R]
+
+--TODO: Fill sorries state theorems.
+
+/-- `CPolynomail` forms a module when R is a semiring. -/
+instance : Module R (CPolynomial R) where
+  smul:= sorry
+  mul_smul := sorry
+  one_smul := sorry --likely requires non-trivial R
+  smul_zero := sorry
+  smul_add := sorry
+  add_smul := sorry
+  zero_smul := sorry
+
+/-- This is an R-linear function that returns the cofficient of X^n. -/
+def lcoeff (n : ℕ) : (CPolynomial R) →ₗ[R] R where
+  toFun p := coeff p n
+  map_add' p q := coeff_add p q n
+  map_smul' r p := sorry --coeff_smul r p n
+
+/-- The `R`-submodule of `CPolynomial R` consisting of polynomials of degree ≤ `n`. -/
+def degreeLE (n : WithBot ℕ) : Submodule R (CPolynomial R) :=
+  ⨅ k : ℕ, ⨅ _ : ↑k > n, LinearMap.ker (lcoeff k)
+
+/-- The `R`-submodule of `CPolynomial R` consisting of polynomials of degree < `n`. -/
+def degreeLT (n : ℕ) : Submodule R (CPolynomial R) :=
+  ⨅ k : ℕ, ⨅ (_ : k ≥ n), LinearMap.ker (lcoeff k)
+
+end ModuleTheory
 
 end CPolynomial
 
