@@ -533,6 +533,16 @@ lemma pow_succ_right [Nontrivial R]
         convert Raw.mul_assoc p ( p ^ n ) p using 1;
         grind
 
+/--
+`CPolynomial R` forms a commutative monoid when `R` is a semiring.
+-/
+instance : AddCommMonoid (CPolynomial R) where
+  zero_add := zero_add
+  add_zero := by intro p; exact add_zero p
+  nsmul := nsmul
+  nsmul_zero := nsmul_zero
+  nsmul_succ := nsmul_succ
+
 /-- `CPolynomial R` forms a semiring when `R` is a semiring.
 
   The semiring structure extends the `AddCommGroup` structure with multiplication.
@@ -777,6 +787,106 @@ instance : Div (CPolynomial R) := ⟨div⟩
 instance : Mod (CPolynomial R) := ⟨mod⟩
 
 end Division
+
+section ModuleTheory
+
+-- The assumptions are requried for `CPolynomial R` to be a module and s0 are necessary downstream.
+variable [Semiring R] [LawfulBEq R]
+
+/-- Scalar multiplication for canonical polynomials: multiply each coefficient by `r`,
+then trim to restore canonicity. -/
+instance smul : SMul R (CPolynomial R) where
+  smul r p := ⟨(Raw.smul r p.val).trim, Trim.trim_twice _⟩
+
+/-- Coefficient of a scalar multiple. -/
+lemma coeff_smul (r : R) (p : CPolynomial R) (i : ℕ) :
+    coeff (r • p) i = r * coeff p i := by
+  show (Raw.smul r p.val).trim.coeff i = r * p.val.coeff i
+  rw [Trim.coeff_eq_coeff, Raw.smul_equiv]
+
+lemma smul_zero' (r : R) : r • (0 : CPolynomial R) = 0 := by
+  rw [eq_iff_coeff]; intro i
+  rw [coeff_smul, coeff_zero]; simp
+
+lemma smul_eq_of_coeff_eq {p q : CPolynomial R}
+    (h : Trim.equiv p.val q.val) : p = q := by
+  apply CPolynomial.ext
+  exact Trim.canonical_ext p.prop q.prop h
+
+lemma smul_add' (r : R) (p q : CPolynomial R) :
+    r • (p + q) = r • p + r • q := by
+  apply smul_eq_of_coeff_eq; intro i
+  show (Raw.smul r (p.val + q.val)).trim.coeff i =
+    ((Raw.smul r p.val).trim + (Raw.smul r q.val).trim).coeff i
+  rw [Trim.coeff_eq_coeff, smul_equiv, add_coeff_trimmed,
+      add_coeff_trimmed, Trim.coeff_eq_coeff, Trim.coeff_eq_coeff,
+      smul_equiv, smul_equiv]
+  exact Distrib.left_distrib r (p.val.coeff i) (q.val.coeff i)
+
+lemma add_smul' (r s : R) (p : CPolynomial R) :
+    (r + s) • p = r • p + s • p := by
+  rw [eq_iff_coeff]; intro i
+  rw [coeff_smul, coeff_add, coeff_smul, coeff_smul]; grind
+
+lemma zero_smul' (p : CPolynomial R) : (0 : R) • p = 0 := by
+  apply smul_eq_of_coeff_eq; intro i
+  show (Raw.smul 0 p.val).trim.coeff i = (0 : Raw R).coeff i
+  rw [Trim.coeff_eq_coeff, smul_equiv]
+  exact MulZeroClass.zero_mul (p.val.coeff i)
+
+lemma one_smul' (p : CPolynomial R) : (1 : R) • p = p := by
+  rw [eq_iff_coeff]; intro i
+  rw [coeff_smul, _root_.one_mul]
+
+lemma mul_smul' (r s : R) (p : CPolynomial R) :
+    (r * s) • p = r • (s • p) := by
+  rw [eq_iff_coeff]; intro i
+  rw [coeff_smul, coeff_smul, coeff_smul, _root_.mul_assoc]
+
+/-- `CPolynomail` forms a module when R is a semiring. -/
+instance : Module R (CPolynomial R) where
+  smul:= SMul.smul
+  mul_smul := mul_smul'
+  one_smul := one_smul'
+  smul_zero := smul_zero'
+  smul_add := smul_add'
+  add_smul := add_smul'
+  zero_smul := zero_smul'
+
+/-- This is an R-linear function that returns the cofficient of X^n. -/
+def lcoeff (n : ℕ) : (CPolynomial R) →ₗ[R] R where
+  toFun p := coeff p n
+  map_add' p q := coeff_add p q n
+  map_smul' r p := coeff_smul r p n
+
+/-- The `R`-submodule of `CPolynomial R` consisting of polynomials of degree ≤ `n`. -/
+def degreeLE (S : Type*) [BEq S] [Semiring S] [LawfulBEq S] (n : WithBot ℕ) :
+    Submodule S (CPolynomial S) :=
+  ⨅ k : ℕ, ⨅ _ : ↑k > n, LinearMap.ker (lcoeff k)
+
+/-- The `R`-submodule of `CPolynomial R` consisting of polynomials of degree < `n`. -/
+def degreeLT (S : Type*) [BEq S] [Semiring S] [LawfulBEq S] (n : ℕ) :
+    Submodule S (CPolynomial S) :=
+  ⨅ k : ℕ, ⨅ (_ : k ≥ n), LinearMap.ker (lcoeff k)
+
+theorem mem_degreeLE {n : WithBot ℕ} {p : (CPolynomial R)} : p ∈ degreeLE R n ↔ degree p ≤ n := by
+    sorry
+
+theorem degreeLE_mono (m n : WithBot ℕ) (h_lessThan : m ≤ n) :
+    degreeLE R m ≤ degreeLE R n := fun _ hf =>
+        mem_degreeLE.2 (le_trans (mem_degreeLE.1 hf) h_lessThan)
+
+-- TODO add version of degreeLE_eq_span_X_pow and degreeLT_eq_span_X_pow
+
+theorem mem_degreeLT {n : ℕ} {p : CPolynomial R} : p ∈ degreeLT R n ↔ degree p < n := by
+  sorry
+
+theorem degreeLT_mono {m n : ℕ} (h_lessThan : m ≤ n) : degreeLT R m ≤ degreeLT R n := fun _ hf =>
+  mem_degreeLT.2 (lt_of_lt_of_le (mem_degreeLT.1 hf) <| WithBot.coe_le_coe.2 h_lessThan)
+
+--TOOD Add linear equivalance
+
+end ModuleTheory
 
 end CPolynomial
 
