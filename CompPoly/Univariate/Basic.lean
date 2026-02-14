@@ -860,13 +860,31 @@ def lcoeff (n : ℕ) : (CPolynomial R) →ₗ[R] R where
   map_smul' r p := coeff_smul r p n
 
 /-- The `R`-submodule of `CPolynomial R` consisting of polynomials of degree ≤ `n`. -/
-def degreeLE (n : WithBot ℕ) : Submodule R (CPolynomial R) :=
+def degreeLE (S : Type*) [BEq S] [Semiring S] [LawfulBEq S] (n : WithBot ℕ) :
+    Submodule S (CPolynomial S) :=
   ⨅ k : ℕ, ⨅ _ : ↑k > n, LinearMap.ker (lcoeff k)
 
 /-- The `R`-submodule of `CPolynomial R` consisting of polynomials of degree < `n`. -/
-def degreeLT (n : ℕ) : Submodule R (CPolynomial R) :=
+def degreeLT (S : Type*) [BEq S] [Semiring S] [LawfulBEq S] (n : ℕ) :
+    Submodule S (CPolynomial S) :=
   ⨅ k : ℕ, ⨅ (_ : k ≥ n), LinearMap.ker (lcoeff k)
 
+theorem mem_degreeLE {n : WithBot ℕ} {p : (CPolynomial R)} : p ∈ degreeLE R n ↔ degree p ≤ n := by
+    sorry
+
+theorem degreeLE_mono (m n : WithBot ℕ) (h_lessThan : m ≤ n) : degreeLE R m ≤ degreeLE R n := fun _ hf =>
+  mem_degreeLE.2 (le_trans (mem_degreeLE.1 hf) h_lessThan)
+
+-- TODO add version of degreeLE_eq_span_X_pow and degreeLT_eq_span_X_pow
+
+theorem mem_degreeLT {n : ℕ} {p : CPolynomial R} : p ∈ degreeLT R n ↔ degree p < n := by
+  sorry
+
+theorem degreeLT_mono {m n : ℕ} (h_lessThan : m ≤ n) : degreeLT R m ≤ degreeLT R n := fun _ hf =>
+  mem_degreeLT.2 (lt_of_lt_of_le (mem_degreeLT.1 hf) <| WithBot.coe_le_coe.2 h_lessThan)
+
+
+--TOOD Add linear equivalance
 end ModuleTheory
 
 end CPolynomial
