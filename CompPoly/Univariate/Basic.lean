@@ -793,23 +793,71 @@ section ModuleTheory
 -- The assumptions are requried for `CPolynomial R` to be a module and s0 are necessary downsteam.
 variable [Semiring R] [LawfulBEq R]
 
---TODO: Fill sorries state theorems.
+/-- Scalar multiplication for canonical polynomials: multiply each coefficient by `r`,
+then trim to restore canonicity. -/
+instance smul : SMul R (CPolynomial R) where
+  smul r p := ⟨(Raw.smul r p.val).trim, Trim.trim_twice _⟩
+
+/-- Coefficient of a scalar multiple. -/
+lemma coeff_smul (r : R) (p : CPolynomial R) (i : ℕ) :
+    coeff (r • p) i = r * coeff p i := by
+  show (Raw.smul r p.val).trim.coeff i = r * p.val.coeff i
+  rw [Trim.coeff_eq_coeff, Raw.smul_equiv]
+
+lemma smul_zero' (r : R) : r • (0 : CPolynomial R) = 0 := by
+  rw [eq_iff_coeff]; intro i
+  rw [coeff_smul, coeff_zero]; simp
+
+lemma smul_eq_of_coeff_eq {p q : CPolynomial R}
+    (h : Trim.equiv p.val q.val) : p = q := by
+  apply CPolynomial.ext
+  exact Trim.canonical_ext p.prop q.prop h
+
+lemma smul_add' (r : R) (p q : CPolynomial R) :
+    r • (p + q) = r • p + r • q := by
+  apply smul_eq_of_coeff_eq; intro i
+  show (Raw.smul r (p.val + q.val)).trim.coeff i =
+    ((Raw.smul r p.val).trim + (Raw.smul r q.val).trim).coeff i
+  rw [Trim.coeff_eq_coeff, smul_equiv, add_coeff_trimmed,
+      add_coeff_trimmed, Trim.coeff_eq_coeff, Trim.coeff_eq_coeff,
+      smul_equiv, smul_equiv]
+  exact Distrib.left_distrib r (p.val.coeff i) (q.val.coeff i)
+
+lemma add_smul' (r s : R) (p : CPolynomial R) :
+    (r + s) • p = r • p + s • p := by
+  rw [eq_iff_coeff]; intro i
+  rw [coeff_smul, coeff_add, coeff_smul, coeff_smul]; grind
+
+lemma zero_smul' (p : CPolynomial R) : (0 : R) • p = 0 := by
+  apply smul_eq_of_coeff_eq; intro i
+  show (Raw.smul 0 p.val).trim.coeff i = (0 : Raw R).coeff i
+  rw [Trim.coeff_eq_coeff, smul_equiv]
+  exact MulZeroClass.zero_mul (p.val.coeff i)
+
+lemma one_smul' (p : CPolynomial R) : (1 : R) • p = p := by
+  rw [eq_iff_coeff]; intro i
+  rw [coeff_smul, _root_.one_mul]
+
+lemma mul_smul' (r s : R) (p : CPolynomial R) :
+    (r * s) • p = r • (s • p) := by
+  rw [eq_iff_coeff]; intro i
+  rw [coeff_smul, coeff_smul, coeff_smul, _root_.mul_assoc]
 
 /-- `CPolynomail` forms a module when R is a semiring. -/
 instance : Module R (CPolynomial R) where
-  smul:= sorry
-  mul_smul := sorry
-  one_smul := sorry --likely requires non-trivial R
-  smul_zero := sorry
-  smul_add := sorry
-  add_smul := sorry
-  zero_smul := sorry
+  smul:= SMul.smul
+  mul_smul := mul_smul'
+  one_smul := one_smul'
+  smul_zero := smul_zero'
+  smul_add := smul_add'
+  add_smul := add_smul'
+  zero_smul := zero_smul'
 
 /-- This is an R-linear function that returns the cofficient of X^n. -/
 def lcoeff (n : ℕ) : (CPolynomial R) →ₗ[R] R where
   toFun p := coeff p n
   map_add' p q := coeff_add p q n
-  map_smul' r p := sorry --coeff_smul r p n
+  map_smul' r p := coeff_smul r p n
 
 /-- The `R`-submodule of `CPolynomial R` consisting of polynomials of degree ≤ `n`. -/
 def degreeLE (n : WithBot ℕ) : Submodule R (CPolynomial R) :=
