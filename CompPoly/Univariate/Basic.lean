@@ -790,7 +790,7 @@ end Division
 
 section ModuleTheory
 
--- The assumptions are requried for `CPolynomial R` to be a module and s0 are necessary downsteam.
+-- The assumptions are requried for `CPolynomial R` to be a module and s0 are necessary downstream.
 variable [Semiring R] [LawfulBEq R]
 
 /-- Scalar multiplication for canonical polynomials: multiply each coefficient by `r`,
@@ -872,7 +872,8 @@ def degreeLT (S : Type*) [BEq S] [Semiring S] [LawfulBEq S] (n : ℕ) :
 theorem mem_degreeLE {n : WithBot ℕ} {p : (CPolynomial R)} : p ∈ degreeLE R n ↔ degree p ≤ n := by
     sorry
 
-theorem degreeLE_mono (m n : WithBot ℕ) (h_lessThan : m ≤ n) : degreeLE R m ≤ degreeLE R n := fun _ hf =>
+theorem degreeLE_mono (m n : WithBot ℕ) (h_lessThan : m ≤ n) :
+   degreeLE R m ≤ degreeLE R n := fun _ hf =>
   mem_degreeLE.2 (le_trans (mem_degreeLE.1 hf) h_lessThan)
 
 -- TODO add version of degreeLE_eq_span_X_pow and degreeLT_eq_span_X_pow
@@ -883,8 +884,8 @@ theorem mem_degreeLT {n : ℕ} {p : CPolynomial R} : p ∈ degreeLT R n ↔ degr
 theorem degreeLT_mono {m n : ℕ} (h_lessThan : m ≤ n) : degreeLT R m ≤ degreeLT R n := fun _ hf =>
   mem_degreeLT.2 (lt_of_lt_of_le (mem_degreeLT.1 hf) <| WithBot.coe_le_coe.2 h_lessThan)
 
-
 --TOOD Add linear equivalance
+
 end ModuleTheory
 
 end CPolynomial
