@@ -873,8 +873,8 @@ theorem mem_degreeLE {n : WithBot ℕ} {p : (CPolynomial R)} : p ∈ degreeLE R 
     sorry
 
 theorem degreeLE_mono (m n : WithBot ℕ) (h_lessThan : m ≤ n) :
-   degreeLE R m ≤ degreeLE R n := fun _ hf =>
-  mem_degreeLE.2 (le_trans (mem_degreeLE.1 hf) h_lessThan)
+    degreeLE R m ≤ degreeLE R n := fun _ hf =>
+        mem_degreeLE.2 (le_trans (mem_degreeLE.1 hf) h_lessThan)
 
 -- TODO add version of degreeLE_eq_span_X_pow and degreeLT_eq_span_X_pow
 
