@@ -869,8 +869,98 @@ def degreeLT (S : Type*) [BEq S] [Semiring S] [LawfulBEq S] (n : ℕ) :
     Submodule S (CPolynomial S) :=
   ⨅ k : ℕ, ⨅ (_ : k ≥ n), LinearMap.ker (lcoeff k)
 
+/-- A polynomial has degree ≤ n iff all coefficients at indices > n are zero. -/
+theorem degree_le_iff_coeff_zero (p : CompPoly.CPolynomial R) (n : WithBot ℕ) :
+    p.degree ≤ n ↔ ∀ k : ℕ, n < k → p.coeff k = 0 := by
+      constructor
+      · intro hn k hk
+        contrapose! hn
+        refine' lt_of_lt_of_le hk _
+        unfold CPolynomial.degree
+        unfold CPolynomial.Raw.degree
+        cases h : p.val.lastNonzero <;> simp_all +decide;
+        · have := p.prop;
+          unfold CPolynomial.Raw.trim at this; aesop;
+        · have h_coeff_zero : ∀ i, i >
+              (↑‹Fin (Array.size (↑p : CompPoly.CPolynomial.Raw R))› : ℕ)
+                  → p.val.coeff i = 0 := by
+            intro i hi;
+            have h_coeff_zero : ∀ i, i >
+                (↑‹Fin (Array.size (↑p : CompPoly.CPolynomial.Raw R))› : ℕ)
+                    → p.val.coeff i = 0 := by
+              intro i hi
+              have h_lastNonzero : ∀ j, j >
+                  (↑‹Fin (Array.size (↑p : CompPoly.CPolynomial.Raw R))› : ℕ)
+                      → p.val.coeff j = 0 := by
+                intro j hj
+                have h_lastNonzero : ∀ j, j >
+                    (↑‹Fin (Array.size (↑p : CompPoly.CPolynomial.Raw R))› : ℕ)
+                        → p.val.coeff j = 0 := by
+                  intro j hj
+                  have h_lastNonzero : ∀ j, j >
+                      (↑‹Fin (Array.size (↑p : CompPoly.CPolynomial.Raw R))› : ℕ)
+                          → p.val.coeff j = 0 := by
+                    intro j hj
+                    exact (by
+                      have := p.prop
+                      replace this := congr_arg ( fun q => q.coeff j ) this
+                      simp_all +decide [ CPolynomial.Raw.trim ]
+                      rw [ ← this, Array.getElem?_eq_none ] <;> aesop)
+                  exact h_lastNonzero j hj
+                exact h_lastNonzero j hj
+              exact h_lastNonzero i hi
+            exact h_coeff_zero i hi;
+          exact le_of_not_gt fun hk' => hn <| by simpa using h_coeff_zero k hk'
+      · cases' eq_or_ne p ( 0 : CompPoly.CPolynomial R )
+            with hp hp <;> simp_all +decide [ CompPoly.CPolynomial.coeff ]
+        · simp [CompPoly.CPolynomial.degree]
+          simp +decide [ CompPoly.CPolynomial.Raw.degree ]
+          cases n <;> simp +decide [ CompPoly.CPolynomial.Raw.lastNonzero ]
+          · simp +decide [ Array.findIdxRev? ]
+            unfold Array.findIdxRev?.find; aesop
+          · cases h : Array.findIdxRev? ( fun x => x != 0 ) ( 0 : Array R ) <;> simp_all +decide
+            cases ‹Fin _› ; contradiction
+        · intro h
+          contrapose! h
+          obtain ⟨ k, hk ⟩ := degree_eq_support_max p hp
+          unfold CompPoly.CPolynomial.support at hk; aesop
+
+theorem degree_lt_iff_coeff_zero (p : CompPoly.CPolynomial R) (n : ℕ) :
+    p.degree < n ↔ ∀ k : ℕ, n ≤ k → p.coeff k = 0 := by
+    match n with
+    | 0 =>
+        have h_deg_lt_zero : p.degree < 0 → p = 0 := by
+          intro h_deg_neg
+          have h_zero : p = 0 := by
+            contrapose! h_deg_neg
+            obtain ⟨ k, hk ⟩ := degree_eq_support_max p h_deg_neg
+            exact hk.2.symm ▸ Nat.cast_nonneg _
+          exact h_zero
+        apply Iff.intro
+        · intro h k; induction k <;> simp_all +decide
+          · rfl
+          · (expose_names; exact h_1)
+        · intro h; exact (by
+          convert degree_le_iff_coeff_zero p ⊥ using 1;
+          simp +decide [ h ])
+    | m+1 =>
+        have nat_ineq : p.degree < ((m + 1) : ℕ) ↔ p.degree ≤ m := by
+          refine CovBy.lt_iff_le_left ?_
+          have : m < m+1 := by omega
+          constructor
+          · exact WithBot.coe_lt_coe.mpr (by omega)
+          · intro c hc1 hc2
+            rcases c with _ | c
+            · exact absurd hc1 (not_lt.mpr bot_le)
+            · exact absurd hc2 (not_lt_of_ge (Order.succ_le_of_lt hc1))
+        norm_cast at nat_ineq
+        rw [nat_ineq]
+        have nat_ineq_2 ( k : ℕ ): m+1 ≤ k ↔ m < k := by omega
+        simpa using degree_le_iff_coeff_zero p m
+
 theorem mem_degreeLE {n : WithBot ℕ} {p : (CPolynomial R)} : p ∈ degreeLE R n ↔ degree p ≤ n := by
-    sorry
+    simp [degreeLE]
+    exact Iff.symm (degree_le_iff_coeff_zero p n)
 
 theorem degreeLE_mono (m n : WithBot ℕ) (h_lessThan : m ≤ n) :
     degreeLE R m ≤ degreeLE R n := fun _ hf =>
@@ -879,12 +969,14 @@ theorem degreeLE_mono (m n : WithBot ℕ) (h_lessThan : m ≤ n) :
 -- TODO add version of degreeLE_eq_span_X_pow and degreeLT_eq_span_X_pow
 
 theorem mem_degreeLT {n : ℕ} {p : CPolynomial R} : p ∈ degreeLT R n ↔ degree p < n := by
-  sorry
+    simp [degreeLT]
+    rw[degree_lt_iff_coeff_zero]
+    exact Lex.forall
 
 theorem degreeLT_mono {m n : ℕ} (h_lessThan : m ≤ n) : degreeLT R m ≤ degreeLT R n := fun _ hf =>
   mem_degreeLT.2 (lt_of_lt_of_le (mem_degreeLT.1 hf) <| WithBot.coe_le_coe.2 h_lessThan)
 
---TOOD Add linear equivalance
+-- TODO: add linear equivalence.
 
 end ModuleTheory
 
