@@ -15,9 +15,10 @@ import CompPoly.Data.Array.Lemmas
 
   ## Structure
 
-  * **Foundations**: Core definitions (`coeff`, `C`, `X`, `monomial`, `trim`, `degree`, `leadingCoeff`)
-    and the `Trim` namespace. Polynomials may have trailing zeros; `trim` removes them to obtain
-    a canonical representative. Two arrays are *equivalent* (`equiv`) if they agree on all coefficients.
+  * **Foundations**: Core definitions (`coeff`, `C`, `X`, `monomial`, `trim`, `canonical`, `degree`,
+    `leadingCoeff`) and the `Trim` namespace. Polynomials may have trailing zeros; `trim` removes
+    them to obtain a canonical representative (`canonical` means `p.trim = p`). Two arrays are
+    *equivalent* (`equiv`) if they agree on all coefficients.
 
   * **Operations**: Ring structure and arithmetic (add, smul, mul, pow) with subsections for
     Add, SMul, MulPowX, MulInfrastructure, and MulTheorems. Also CommSemiring, Ring (neg/sub),
@@ -105,6 +106,9 @@ def natDegree (p : CPolynomial.Raw R) : ℕ :=
 /-- Return the leading coefficient of a `CPolynomial.Raw` as the last coefficient
 of the trimmed array, or `0` if the trimmed array is empty. -/
 def leadingCoeff (p : CPolynomial.Raw R) : R := p.trim.getLastD 0
+
+/-- A polynomial is canonical if it has no trailing zeros, i.e. `p.trim = p`. -/
+def canonical (p : CPolynomial.Raw R) : Prop := p.trim = p
 
 /- Lemmas about trimming and canonical forms.
   Central results: `trim_twice`, `canonical_iff`, `eq_of_equiv`, `canonical_ext`. -/
@@ -708,9 +712,6 @@ theorem add_comm : p + q = q + p := by
   · simp only [add_coeff]
     apply _root_.add_comm
 
-/-- A polynomial is canonical if it has no trailing zeros. -/
-def canonical (p : CPolynomial.Raw R) := p.trim = p
-
 theorem zero_canonical : (0 : CPolynomial.Raw R).trim = 0 := Trim.canonical_empty
 
 theorem monomial_canonical [LawfulBEq R] [DecidableEq R] (n : ℕ) (c : R) :
@@ -1096,7 +1097,7 @@ lemma coeff_mulPowX_smul_add [LawfulBEq R] (i : ℕ) (a b : R) (q : CPolynomial.
   · rw [coeff_add_smul]
 
 omit [BEq R] in
-/- Multiplying by `X^0` is the identity. -/
+/-- Multiplying by `X^0` is the identity. -/
 lemma mulPowX_zero (p : CPolynomial.Raw R) :
     p.mulPowX 0 = p := by
     -- By definition of `mulPowX`, we have `mulPowX 0 p = p ++ Array.replicate 0 0`.
@@ -1182,7 +1183,7 @@ lemma mul_eq_foldl (p q : CPolynomial.Raw R) :
     p * q = p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + (smul a q).mulPowX i) (mk #[]) := by
   rfl
 
-/- Multiplying by a constant `C r` is scalar multiplication followed by trimming. -/
+/-- Multiplying by a constant `C r` is scalar multiplication followed by trimming. -/
 lemma C_mul_eq_smul_trim [LawfulBEq R] (r : R)
     (q : CPolynomial.Raw R) :
     C r * q = (smul r q).trim := by
@@ -1193,19 +1194,19 @@ lemma C_mul_eq_smul_trim [LawfulBEq R] (r : R)
   exact mulPowX_zero (smul r q)
 
 omit [BEq R] in
-/- Scalar multiplication by 1 is the identity. -/
+/-- Scalar multiplication by 1 is the identity. -/
 lemma smul_one_eq_self (p : CPolynomial.Raw R) :
     smul 1 p = p := by
   unfold smul
   cases p; aesop
 
 omit [BEq R] in
-/- Scalar multiplication by 0 results in an array of zeros. -/
+/-- Scalar multiplication by 0 results in an array of zeros. -/
 lemma smul_zero_eq_replicate_zero (p : CPolynomial.Raw R) :
     smul 0 p = mk (Array.replicate p.size 0) := by
   unfold smul; aesop
 
-/- Trimming an array of zeros results in the zero polynomial. -/
+/-- Trimming an array of zeros results in the zero polynomial. -/
 lemma trim_replicate_zero [LawfulBEq R] (n : ℕ) :
     (mk (Array.replicate n (0 : R))).trim = 0 := by
   convert Trim.trim_twice ( mk ( Array.replicate n 0 ) ) using 1;
@@ -1221,13 +1222,13 @@ lemma trim_replicate_zero [LawfulBEq R] (n : ℕ) :
   · exact iff_of_true rfl ( Trim.trim_twice _ )
   · grind
 
-/- Scalar multiplication by 0 followed by trimming results in the zero polynomial. -/
+/-- Scalar multiplication by 0 followed by trimming results in the zero polynomial. -/
 lemma smul_zero_trim [LawfulBEq R]
     (p : CPolynomial.Raw R) : (smul 0 p).trim = 0 := by
   rw [ smul_zero_eq_replicate_zero ];
   exact trim_replicate_zero (Array.size p)
 
-/- Multiplying by `X` is equivalent to `mulX` followed by trimming. -/
+/-- Multiplying by `X` is equivalent to `mulX` followed by trimming. -/
 lemma X_mul_eq_mulX_trim [LawfulBEq R]
     (p : CPolynomial.Raw R) :
     X * p = (mulX p).trim := by
@@ -1244,7 +1245,7 @@ lemma X_mul_eq_mulX_trim [LawfulBEq R]
   · rw [ smul_one_eq_self ]
     rfl
 
-/- `mulX` of `monomial n 1` is `monomial (n+1) 1`. -/
+/-- `mulX` of `monomial n 1` is `monomial (n+1) 1`. -/
 lemma mulX_monomial_one [DecidableEq R] [LawfulBEq R] [Nontrivial R] (n : ℕ) :
     mulX (monomial n (1 : R)) =
     monomial (n + 1) 1 := by
@@ -1255,7 +1256,7 @@ lemma mulX_monomial_one [DecidableEq R] [LawfulBEq R] [Nontrivial R] (n : ℕ) :
   exact Nat.recOn n (by simp +decide) fun n ih =>
     by simp +decide [ List.replicate ] at ih ⊢; tauto
 
-/- `X^n` is the monomial `X^n` (coefficient 1). -/
+/-- `X^n` is the monomial `X^n` (coefficient 1). -/
 lemma X_pow_eq_monomial_one [DecidableEq R] [LawfulBEq R] [Nontrivial R] (n : ℕ) :
     (X : CPolynomial.Raw R) ^ n = monomial n 1 := by
   have h_monomial : ∀ n : ℕ,
@@ -1269,7 +1270,7 @@ lemma X_pow_eq_monomial_one [DecidableEq R] [LawfulBEq R] [Nontrivial R] (n : �
     rw [ X_mul_eq_mulX_trim ];
     rw [ mulX_monomial_one, h_monomial ]
 
-/- Scalar multiplication of `monomial n 1` by `r` followed by trimming yields `monomial n r`. -/
+/-- Scalar multiplication of `monomial n 1` by `r` followed by trimming yields `monomial n r`. -/
 lemma smul_monomial_one_trim [DecidableEq R] [LawfulBEq R]
     [Nontrivial R] (n : ℕ) (r : R) :
     (smul r (monomial n 1)).trim =
