@@ -882,23 +882,23 @@ theorem degree_le_iff_coeff_zero (p : CompPoly.CPolynomial R) (n : WithBot ℕ) 
         · have := p.prop;
           unfold CPolynomial.Raw.trim at this; aesop;
         · have h_coeff_zero : ∀ i, i >
-              (↑‹Fin (Array.size (↑p : CompPoly.CPolynomial.Raw R))› : ℕ)
+              (↑‹Fin (Array.size (↑p : CPolynomial.Raw R))› : ℕ)
                   → p.val.coeff i = 0 := by
             intro i hi;
             have h_coeff_zero : ∀ i, i >
-                (↑‹Fin (Array.size (↑p : CompPoly.CPolynomial.Raw R))› : ℕ)
+                (↑‹Fin (Array.size (↑p : CPolynomial.Raw R))› : ℕ)
                     → p.val.coeff i = 0 := by
               intro i hi
               have h_lastNonzero : ∀ j, j >
-                  (↑‹Fin (Array.size (↑p : CompPoly.CPolynomial.Raw R))› : ℕ)
+                  (↑‹Fin (Array.size (↑p : CPolynomial.Raw R))› : ℕ)
                       → p.val.coeff j = 0 := by
                 intro j hj
                 have h_lastNonzero : ∀ j, j >
-                    (↑‹Fin (Array.size (↑p : CompPoly.CPolynomial.Raw R))› : ℕ)
+                    (↑‹Fin (Array.size (↑p : CPolynomial.Raw R))› : ℕ)
                         → p.val.coeff j = 0 := by
                   intro j hj
                   have h_lastNonzero : ∀ j, j >
-                      (↑‹Fin (Array.size (↑p : CompPoly.CPolynomial.Raw R))› : ℕ)
+                      (↑‹Fin (Array.size (↑p : CPolynomial.Raw R))› : ℕ)
                           → p.val.coeff j = 0 := by
                     intro j hj
                     exact (by
@@ -912,10 +912,10 @@ theorem degree_le_iff_coeff_zero (p : CompPoly.CPolynomial R) (n : WithBot ℕ) 
             exact h_coeff_zero i hi;
           exact le_of_not_gt fun hk' => hn <| by simpa using h_coeff_zero k hk'
       · cases' eq_or_ne p ( 0 : CompPoly.CPolynomial R )
-            with hp hp <;> simp_all +decide [ CompPoly.CPolynomial.coeff ]
-        · simp [CompPoly.CPolynomial.degree]
-          simp +decide [ CompPoly.CPolynomial.Raw.degree ]
-          cases n <;> simp +decide [ CompPoly.CPolynomial.Raw.lastNonzero ]
+            with hp hp <;> simp_all +decide [ coeff ]
+        · simp [degree]
+          simp +decide [ CPolynomial.Raw.degree ]
+          cases n <;> simp +decide [ CPolynomial.Raw.lastNonzero ]
           · simp +decide [ Array.findIdxRev? ]
             unfold Array.findIdxRev?.find; aesop
           · cases h : Array.findIdxRev? ( fun x => x != 0 ) ( 0 : Array R ) <;> simp_all +decide
@@ -923,7 +923,7 @@ theorem degree_le_iff_coeff_zero (p : CompPoly.CPolynomial R) (n : WithBot ℕ) 
         · intro h
           contrapose! h
           obtain ⟨ k, hk ⟩ := degree_eq_support_max p hp
-          unfold CompPoly.CPolynomial.support at hk; aesop
+          unfold support at hk; aesop
 
 theorem degree_lt_iff_coeff_zero (p : CompPoly.CPolynomial R) (n : ℕ) :
     p.degree < n ↔ ∀ k : ℕ, n ≤ k → p.coeff k = 0 := by
@@ -975,8 +975,6 @@ theorem mem_degreeLT {n : ℕ} {p : CPolynomial R} : p ∈ degreeLT R n ↔ degr
 
 theorem degreeLT_mono {m n : ℕ} (h_lessThan : m ≤ n) : degreeLT R m ≤ degreeLT R n := fun _ hf =>
   mem_degreeLT.2 (lt_of_lt_of_le (mem_degreeLT.1 hf) <| WithBot.coe_le_coe.2 h_lessThan)
-
--- TODO: add linear equivalence.
 
 end ModuleTheory
 
