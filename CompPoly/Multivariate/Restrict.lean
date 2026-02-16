@@ -10,6 +10,11 @@ import CompPoly.Multivariate.CMvPolynomial
 
 Degree-bounded restriction of multivariate polynomials: filtering monomials by total degree
 or per-variable degree bounds.
+
+## TODO
+- Prove correspondence with Mathlib via `fromCMvPolynomial`: e.g. that
+  `fromCMvPolynomial (restrictTotalDegree d p) ∈ MvPolynomial.restrictTotalDegree (Fin n) R d`
+  and similarly for `restrictDegree`. This would establish correctness wrt Mathlib's submodule API.
 -/
 namespace CPoly
 
@@ -17,6 +22,7 @@ open CMvPolynomial
 
 variable {n : ℕ} {R : Type} [Zero R] [BEq R] [LawfulBEq R]
 
+/-- Coefficient of `restrictBy keep p` at `m`: `p.coeff m` if `keep m`, else `0`. -/
 lemma coeff_restrictBy (keep : CMvMonomial n → Prop) [DecidablePred keep]
     (m : CMvMonomial n) (p : CMvPolynomial n R) :
     (CMvPolynomial.restrictBy keep p).coeff m = if keep m then p.coeff m else 0 := by
@@ -43,6 +49,7 @@ lemma coeff_restrictBy (keep : CMvMonomial n → Prop) [DecidablePred keep]
   · cases hopt : p.1[m]? <;> simp [hk, Option.filter]
   · cases hopt : p.1[m]? <;> simp [hk, Option.filter]
 
+/-- Coefficient of `restrictTotalDegree d p` at `m`: `p.coeff m` if `m.totalDegree ≤ d`, else `0`. -/
 @[simp]
 lemma coeff_restrictTotalDegree (d : ℕ) (m : CMvMonomial n) (p : CMvPolynomial n R) :
     (CMvPolynomial.restrictTotalDegree d p).coeff m =
@@ -50,6 +57,7 @@ lemma coeff_restrictTotalDegree (d : ℕ) (m : CMvMonomial n) (p : CMvPolynomial
   simpa [CMvPolynomial.restrictTotalDegree] using
     (coeff_restrictBy (keep := fun m => m.totalDegree ≤ d) m p)
 
+/-- Coefficient of `restrictDegree d p` at `m`: `p.coeff m` if `∀ i, m.degreeOf i ≤ d`, else `0`. -/
 @[simp]
 lemma coeff_restrictDegree (d : ℕ) (m : CMvMonomial n) (p : CMvPolynomial n R) :
     (CMvPolynomial.restrictDegree d p).coeff m =
@@ -57,26 +65,31 @@ lemma coeff_restrictDegree (d : ℕ) (m : CMvMonomial n) (p : CMvPolynomial n R)
   simpa [CMvPolynomial.restrictDegree] using
     (coeff_restrictBy (keep := fun m => ∀ i : Fin n, m.degreeOf i ≤ d) m p)
 
+/-- When `m.totalDegree ≤ d`, coeff at `m` is unchanged by `restrictTotalDegree d`. -/
 lemma coeff_restrictTotalDegree_eq_self_of_le {d : ℕ} {m : CMvMonomial n}
     {p : CMvPolynomial n R} (h : m.totalDegree ≤ d) :
     (CMvPolynomial.restrictTotalDegree d p).coeff m = p.coeff m := by
   simp [coeff_restrictTotalDegree, h]
 
+/-- When `d < m.totalDegree`, coeff at `m` is `0` in `restrictTotalDegree d p`. -/
 lemma coeff_restrictTotalDegree_eq_zero_of_lt {d : ℕ} {m : CMvMonomial n}
     {p : CMvPolynomial n R} (h : d < m.totalDegree) :
     (CMvPolynomial.restrictTotalDegree d p).coeff m = 0 := by
   simp [coeff_restrictTotalDegree, Nat.not_le_of_lt h]
 
+/-- When `∀ i, m.degreeOf i ≤ d`, coeff at `m` is unchanged by `restrictDegree d`. -/
 lemma coeff_restrictDegree_eq_self_of_le {d : ℕ} {m : CMvMonomial n}
     {p : CMvPolynomial n R} (h : ∀ i : Fin n, m.degreeOf i ≤ d) :
     (CMvPolynomial.restrictDegree d p).coeff m = p.coeff m := by
   simp [coeff_restrictDegree, h]
 
+/-- When `¬(∀ i, m.degreeOf i ≤ d)`, coeff at `m` is `0` in `restrictDegree d p`. -/
 lemma coeff_restrictDegree_eq_zero_of_not_le {d : ℕ} {m : CMvMonomial n}
     {p : CMvPolynomial n R} (h : ¬ (∀ i : Fin n, m.degreeOf i ≤ d)) :
     (CMvPolynomial.restrictDegree d p).coeff m = 0 := by
   simp [coeff_restrictDegree, h]
 
+/-- Monomials in `restrictTotalDegree d p` have `totalDegree ≤ d`. -/
 lemma totalDegree_le_of_mem_monomials_restrictTotalDegree {d : ℕ} {m : CMvMonomial n}
     {p : CMvPolynomial n R}
     (hm : m ∈ Lawful.monomials (CMvPolynomial.restrictTotalDegree d p)) :
@@ -92,6 +105,7 @@ lemma totalDegree_le_of_mem_monomials_restrictTotalDegree {d : ℕ} {m : CMvMono
       simp [coeff_restrictTotalDegree, hdeg]
     exact False.elim (hcoeff_ne_zero hcoeff_zero)
 
+/-- Monomials in `restrictDegree d p` have `degreeOf i ≤ d` for each variable `i`. -/
 lemma degreeOf_le_of_mem_monomials_restrictDegree {d : ℕ} {m : CMvMonomial n}
     {p : CMvPolynomial n R}
     (hm : m ∈ Lawful.monomials (CMvPolynomial.restrictDegree d p)) :
@@ -107,6 +121,7 @@ lemma degreeOf_le_of_mem_monomials_restrictDegree {d : ℕ} {m : CMvMonomial n}
       simp [coeff_restrictDegree, hdeg]
     exact False.elim (hcoeff_ne_zero hcoeff_zero)
 
+/-- `List.ofFn s` sum equals `∑ i, s i`. -/
 private lemma list_ofFn_sum_eq_finSum {n : ℕ} (s : Fin n → ℕ) :
     (List.ofFn s).sum = ∑ i : Fin n, s i := by
   have hfin : (∑ x : Fin (List.ofFn s).length, (List.ofFn s)[x.1]) = (List.ofFn s).sum := by
@@ -130,6 +145,7 @@ private lemma list_ofFn_sum_eq_finSum {n : ℕ} (s : Fin n → ℕ) :
     exact congrArg s hx
   exact hfin_get.symm.trans hsum_cast
 
+/-- `Vector.ofFn s` sum equals `∑ i, s i`. -/
 private lemma vector_ofFn_sum_eq_finSum {n : ℕ} (s : Fin n → ℕ) :
     (Vector.ofFn s).sum = ∑ i : Fin n, s i := by
   calc
@@ -141,6 +157,7 @@ private lemma vector_ofFn_sum_eq_finSum {n : ℕ} (s : Fin n → ℕ) :
       exact congrArg List.sum (Array.toList_ofFn (f := s))
     _ = ∑ i : Fin n, s i := list_ofFn_sum_eq_finSum s
 
+/-- Monomial `totalDegree` equals `Finsupp.sum` of its exponents. -/
 private lemma totalDegree_eq_finsupp_sum {n : ℕ} (m : CMvMonomial n) :
     m.totalDegree = Finsupp.sum m.toFinsupp (fun _ e => e) := by
   have hof : (CMvMonomial.ofFinsupp m.toFinsupp).totalDegree =
@@ -152,6 +169,7 @@ private lemma totalDegree_eq_finsupp_sum {n : ℕ} (m : CMvMonomial n) :
       simp
   simpa [CMvMonomial.ofFinsupp_toFinsupp] using hof
 
+/-- `restrictTotalDegree d p` has `totalDegree ≤ d`. -/
 lemma totalDegree_restrictTotalDegree_le
     {R' : Type} [CommSemiring R'] [BEq R'] [LawfulBEq R']
     (d : ℕ) (p : CMvPolynomial n R') :
@@ -168,6 +186,7 @@ lemma totalDegree_restrictTotalDegree_le
     totalDegree_le_of_mem_monomials_restrictTotalDegree (d := d) (p := p) hm
   simpa [totalDegree_eq_finsupp_sum (m := m)] using hmdeg
 
+/-- `restrictTotalDegree d 0 = 0`. -/
 @[simp]
 lemma restrictTotalDegree_zero (d : ℕ) :
     CMvPolynomial.restrictTotalDegree d (0 : CMvPolynomial n R) = 0 := by
@@ -175,6 +194,7 @@ lemma restrictTotalDegree_zero (d : ℕ) :
   simpa [CMvPolynomial.coeff] using
     (coeff_restrictTotalDegree (d := d) (m := m) (p := (0 : CMvPolynomial n R)))
 
+/-- `restrictDegree d 0 = 0`. -/
 @[simp]
 lemma restrictDegree_zero (d : ℕ) :
     CMvPolynomial.restrictDegree d (0 : CMvPolynomial n R) = 0 := by
@@ -182,6 +202,7 @@ lemma restrictDegree_zero (d : ℕ) :
   simpa [CMvPolynomial.coeff] using
     (coeff_restrictDegree (d := d) (m := m) (p := (0 : CMvPolynomial n R)))
 
+/-- Double `restrictTotalDegree` equals `restrictTotalDegree (min d d')`. -/
 @[simp]
 lemma restrictTotalDegree_restrictTotalDegree (d d' : ℕ) (p : CMvPolynomial n R) :
     CMvPolynomial.restrictTotalDegree d (CMvPolynomial.restrictTotalDegree d' p) =
@@ -190,6 +211,7 @@ lemma restrictTotalDegree_restrictTotalDegree (d d' : ℕ) (p : CMvPolynomial n 
   by_cases h₁ : m.totalDegree ≤ d <;> by_cases h₂ : m.totalDegree ≤ d' <;>
     simp [coeff_restrictTotalDegree, h₁, h₂]
 
+/-- Double `restrictDegree` equals `restrictDegree (min d d')`. -/
 @[simp]
 lemma restrictDegree_restrictDegree (d d' : ℕ) (p : CMvPolynomial n R) :
     CMvPolynomial.restrictDegree d (CMvPolynomial.restrictDegree d' p) =
@@ -213,6 +235,7 @@ lemma restrictDegree_restrictDegree (d d' : ℕ) (p : CMvPolynomial n R) :
       exact h₁ (fun i => (h i).1)
     simp [coeff_restrictDegree, h₁, hpair]
 
+/-- `restrictTotalDegree d` and `restrictDegree d'` commute. -/
 @[simp]
 lemma restrictTotalDegree_restrictDegree_comm (d d' : ℕ) (p : CMvPolynomial n R) :
     CMvPolynomial.restrictTotalDegree d (CMvPolynomial.restrictDegree d' p) =

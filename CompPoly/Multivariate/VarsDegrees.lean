@@ -10,6 +10,9 @@ import Mathlib.Algebra.MvPolynomial.Variables
 # Lemmas for `CMvPolynomial.vars` and `CMvPolynomial.degrees`
 
 Correctness lemmas relating `vars`, `degrees`, and `degreeOf` to Mathlib's `MvPolynomial`.
+
+## TODO
+- `vars_mul_subset`: prove `(p * q).vars ⊆ p.vars ∪ q.vars`, mirroring `MvPolynomial.vars_mul`.
 -/
 namespace CPoly
 
@@ -17,12 +20,14 @@ open CMvPolynomial
 
 variable {n : ℕ} {R : Type}
 
+/-- `i ∈ p.vars` iff `0 < p.degreeOf i`. -/
 @[simp]
 lemma mem_vars_iff_degreeOf_pos [Zero R]
     (i : Fin n) (p : CMvPolynomial n R) :
     i ∈ p.vars ↔ 0 < p.degreeOf i := by
   simp [CMvPolynomial.vars]
 
+/-- `degrees` agrees with `MvPolynomial.degrees` via `fromCMvPolynomial`. -/
 lemma degrees_equiv [CommSemiring R] [BEq R] [LawfulBEq R]
     (p : CMvPolynomial n R) :
     p.degrees = (fromCMvPolynomial p).degrees := by
@@ -31,6 +36,7 @@ lemma degrees_equiv [CommSemiring R] [BEq R] [LawfulBEq R]
     congrFun (degreeOf_equiv (S := R) (p := p)) i
   simpa [degreeOf_eq_count_degrees, MvPolynomial.degreeOf_def] using hdeg
 
+/-- `vars` agrees with `MvPolynomial.vars` via `fromCMvPolynomial`. -/
 lemma vars_equiv [CommSemiring R] [BEq R] [LawfulBEq R]
     (p : CMvPolynomial n R) :
     p.vars = (fromCMvPolynomial p).vars := by
@@ -42,6 +48,7 @@ lemma vars_equiv [CommSemiring R] [BEq R] [LawfulBEq R]
   simpa [Multiset.mem_toFinset] using
     (Multiset.count_pos (a := i) (s := (fromCMvPolynomial p).degrees))
 
+/-- `(0 : CMvPolynomial n R).degreeOf i = 0`. -/
 @[simp]
 lemma degreeOf_zero [Zero R] [BEq R] [LawfulBEq R]
     (i : Fin n) :
@@ -52,21 +59,25 @@ lemma degreeOf_zero [Zero R] [BEq R] [LawfulBEq R]
     exact Lawful.not_mem_zero (x := m) ((Lawful.mem_monomials_iff).1 hm)
   simp [CMvPolynomial.degreeOf, hmonomials_zero]
 
+/-- `(0 : CMvPolynomial n R).degrees = 0`. -/
 @[simp]
 lemma degrees_zero [Zero R] [BEq R] [LawfulBEq R] :
     (0 : CMvPolynomial n R).degrees = 0 := by
   simp [CMvPolynomial.degrees, degreeOf_zero]
 
+/-- `(0 : CMvPolynomial n R).vars = ∅`. -/
 @[simp]
 lemma vars_zero [Zero R] [BEq R] [LawfulBEq R] :
     (0 : CMvPolynomial n R).vars = ∅ := by
   simp [CMvPolynomial.vars, degreeOf_zero]
 
+/-- `(1 : CMvPolynomial n R).degrees = 0`. -/
 @[simp]
 lemma degrees_one [CommSemiring R] [BEq R] [LawfulBEq R] :
     (1 : CMvPolynomial n R).degrees = 0 := by
   simp [degrees_equiv, map_one]
 
+/-- `(p + q).vars ⊆ p.vars ∪ q.vars`. -/
 lemma vars_add_subset [CommSemiring R] [BEq R] [LawfulBEq R]
     (p q : CMvPolynomial n R) :
     (p + q).vars ⊆ p.vars ∪ q.vars := by
