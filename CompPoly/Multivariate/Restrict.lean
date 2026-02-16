@@ -49,7 +49,7 @@ lemma coeff_restrictBy (keep : CMvMonomial n → Prop) [DecidablePred keep]
   · cases hopt : p.1[m]? <;> simp [hk, Option.filter]
   · cases hopt : p.1[m]? <;> simp [hk, Option.filter]
 
-/-- Coefficient of `restrictTotalDegree d p` at `m`: `p.coeff m` if `m.totalDegree ≤ d`, else `0`. -/
+/-- Coeff at `m`: `p.coeff m` if `m.totalDegree ≤ d`, else `0`. -/
 @[simp]
 lemma coeff_restrictTotalDegree (d : ℕ) (m : CMvMonomial n) (p : CMvPolynomial n R) :
     (CMvPolynomial.restrictTotalDegree d p).coeff m =
