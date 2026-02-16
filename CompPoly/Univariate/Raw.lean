@@ -80,7 +80,7 @@ def monomial [DecidableEq R] (n : ℕ) (c : R) : CPolynomial.Raw R :=
 def lastNonzero (p : CPolynomial.Raw R) : Option (Fin p.size) :=
   p.findIdxRev? (· != 0)
 
-/-- Remove leading zeroes from a `CPolynomial.Raw`.
+/-- Remove trailing zeroes from a `CPolynomial.Raw`.
 Requires `BEq` to check if the coefficients are zero. -/
 def trim (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
   match p.lastNonzero with
@@ -1134,7 +1134,7 @@ lemma equiv_mul_one [LawfulBEq R] (p : CPolynomial.Raw R) : Trim.equiv (p * 1) p
     exact (by exact mul_one_unwrap p ▸ coeff_sum p i ▸ rfl)
   exact congrFun (h_mul_one p)
 
-/-- The product of two polynomails is trimmed. -/
+/-- The product of two polynomials is trimmed. -/
 theorem mul_is_trimmed [LawfulBEq R] (p q : CPolynomial.Raw R) : (p * q).trim = p * q := by
   convert foldl_preserves_canonical _ _ _ _ _
   · exact Trim.canonical_empty
