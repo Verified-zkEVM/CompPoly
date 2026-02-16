@@ -12,6 +12,16 @@ import CompPoly.Data.Array.Lemmas
 
   This file contains a raw computable datatype for univariate polynomial, `CPolynomial.Raw R`.
   It is internally represented as an array of coefficients.
+
+  ## Structure
+
+  * **Foundations**: Core definitions (`coeff`, `C`, `X`, `monomial`, `trim`, `degree`, `leadingCoeff`)
+    and the `Trim` namespace. Polynomials may have trailing zeros; `trim` removes them to obtain
+    a canonical representative. Two arrays are *equivalent* (`equiv`) if they agree on all coefficients.
+
+  * **Operations**: Ring structure and arithmetic (add, smul, mul, pow) with subsections for
+    Add, SMul, MulPowX, MulInfrastructure, and MulTheorems. Also CommSemiring, Ring (neg/sub),
+    and division (divByMonic, modByMonic) for fields.
 -/
 open Polynomial
 
@@ -96,6 +106,8 @@ def natDegree (p : CPolynomial.Raw R) : ℕ :=
 of the trimmed array, or `0` if the trimmed array is empty. -/
 def leadingCoeff (p : CPolynomial.Raw R) : R := p.trim.getLastD 0
 
+/- Lemmas about trimming and canonical forms.
+  Central results: `trim_twice`, `canonical_iff`, `eq_of_equiv`, `canonical_ext`. -/
 namespace Trim
 
 /-- If all coefficients are zero, `lastNonzero` is `none`. -/
@@ -443,8 +455,10 @@ end Trim
 
 end Foundations
 
+/- Ring structure and arithmetic for `CPolynomial.Raw`: add, smul, mul, pow, and their properties.
+  Subsections: AddDefs/AddTheorems, SMulDefs/SMulTheorems, MulPowXDefs/MulPowXLemmas,
+  MulInfrastructure (convolution sums, coeff formulas), MulTheorems (mul_zero, mul_add, etc.). -/
 section Operations
-
 
 -- In this subsection we assume R and Q are semirings.
 section Semiring
