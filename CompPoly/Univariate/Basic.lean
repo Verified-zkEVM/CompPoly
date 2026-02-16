@@ -919,7 +919,7 @@ theorem degree_le_iff_coeff_zero (p : CompPoly.CPolynomial R) (n : WithBot ℕ) 
           · simp +decide [ Array.findIdxRev? ]
             unfold Array.findIdxRev?.find; aesop
           · cases h : Array.findIdxRev? ( fun x => x != 0 ) ( 0 : Array R ) <;> simp_all +decide
-            cases ‹Fin _› ; contradiction
+            cases ‹Fin _›; contradiction
         · intro h
           contrapose! h
           obtain ⟨ k, hk ⟩ := degree_eq_support_max p hp
