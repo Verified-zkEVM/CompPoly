@@ -7,7 +7,9 @@ import CompPoly.Multilinear.Basic
 import CompPoly.Multilinear.Equiv
 import CompPoly.Multivariate.CMvMonomial
 import CompPoly.Multivariate.CMvPolynomial
-import CompPoly.Multivariate.CMvPolynomialLemmas
+import CompPoly.Multivariate.CMvPolynomialEvalLemmas
+import CompPoly.Multivariate.Restrict
+import CompPoly.Multivariate.VarsDegrees
 import CompPoly.Multivariate.Lawful
 import CompPoly.Multivariate.MvPolyEquiv
 import CompPoly.Multivariate.Rename
