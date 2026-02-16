@@ -484,6 +484,8 @@ def addRaw (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
 def add (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
   addRaw p q |> trim
 
+section SMulDefs
+
 /-- Scalar multiplication: multiplies each coefficient by `r`. -/
 @[inline, specialize]
 def smul (r : R) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
@@ -499,6 +501,10 @@ def nsmulRaw (n : ℕ) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
 def nsmul (n : ℕ) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
   nsmulRaw n p |> trim
 
+end SMulDefs
+
+section MulPowXDefs
+
 /-- Multiplication by `X^i`: shifts coefficients right by `i` positions (prepends `i` zeros). -/
 @[inline, specialize]
 def mulPowX (i : Nat) (p : CPolynomial.Raw R) : CPolynomial.Raw R := .mk (Array.replicate i 0 ++ p)
@@ -506,6 +512,8 @@ def mulPowX (i : Nat) (p : CPolynomial.Raw R) : CPolynomial.Raw R := .mk (Array.
 /-- Multiplication of a `CPolynomial.Raw` by `X`, reduces to `mulPowX 1`. -/
 @[inline, specialize]
 def mulX (p : CPolynomial.Raw R) : CPolynomial.Raw R := p.mulPowX 1
+
+end MulPowXDefs
 
 /-- Multiplication using the naive `O(n²)` algorithm: `Σᵢ (aᵢ * q) * X^i`. -/
 @[inline, specialize]
@@ -554,8 +562,10 @@ lemma pow_succ (p : CPolynomial.Raw R) (n : ℕ) :
       convert ( Function.iterate_succ_apply' ( mul p ) n ( C 1 ) )
            using 1
 
--- some helper lemmas to characterize p + q
+section AddDefs
+-- addRaw, add, add_coeff, add_size, matchSize helpers, trim_add_trim
 
+-- some helper lemmas to characterize p + q
 lemma matchSize_size_eq {p q : CPolynomial.Raw Q} :
     let (p', q') := Array.matchSize p q 0
     p'.size = q'.size := by
@@ -669,13 +679,10 @@ lemma trim_add_trim [LawfulBEq R] (p q : CPolynomial.Raw R) : p.trim + q = p + q
   intro i
   rw [add_coeff?, add_coeff?, Trim.coeff_eq_coeff]
 
-/-
-CPolynomial.Raw does in general form a Ring or any other 'nice' structure,
-but many properties necessary to be a ring are satisfied or close to satisifed,
-as per the following theorems.
--/
+end AddDefs
 
--- Algebra theorems about addition.
+section AddTheorems
+-- add_comm, add_assoc, zero_add, add_zero, etc.
 
 omit [Semiring Q] in
 @[simp] theorem zero_def : (0 : CPolynomial.Raw Q) = #[] := rfl
@@ -795,7 +802,10 @@ theorem add_assoc [LawfulBEq R] : p + q + r = p + (q + r) := by
   · simp only [add_coeff, add_coeff?]
     apply _root_.add_assoc
 
--- Lemmas about sums for proving facts about multiplication.
+end AddTheorems
+
+section MulInfrastructure
+-- foldl lemmas, coeff_mul, mul_coeff_list, sum lemmas for convolution, etc.
 
 /-- Helper lemma for proving: mul_one_trim.
 If the initial value is canonical and the step function preserves canonicality,
@@ -901,7 +911,10 @@ lemma sum_range_reverse [LawfulBEq R] (p q : CPolynomial.Raw R) (k : ℕ) :
   have hj' : j ≤ k := Nat.lt_succ_iff.mp hj
   simp only [Nat.add_sub_cancel, Nat.sub_sub_self hj']
 
--- Algebra theorems about scalar multiplication.
+end MulInfrastructure
+
+section SMulTheorems
+-- smul_equiv, smul_distrib, nsmul_succ, etc.
 
 theorem nsmul_zero [LawfulBEq R] (p : CPolynomial.Raw R) : nsmul 0 p = 0 := by
   suffices (nsmulRaw 0 p).lastNonzero = none by simp [nsmul, trim, *]
@@ -1002,8 +1015,10 @@ lemma coeff_add_smul [LawfulBEq R]  (a b : R) (q : CPolynomial.Raw R) (k : ℕ) 
         · exact smul_equiv q k a
         · exact smul_equiv q k b
 
+end SMulTheorems
 
--- Algebra lemmas and theorems about mulPowX
+section MulPowXLemmas
+-- coeff_mulPowX, concat_coeff, etc.
 
 omit [BEq R] in
 /-- Helper lemma for proving: mul_one_trim
@@ -1104,7 +1119,10 @@ lemma mulPowX_zero (p : CPolynomial.Raw R) :
     -- By definition of `mulPowX`, we have `mulPowX 0 p = p ++ Array.replicate 0 0`.
     simp [mulPowX]
 
--- Algebra lemmas and theorems about multiplication of general polynomials.
+end MulPowXLemmas
+
+section MulInfrastructure
+-- foldl lemmas, coeff_mul, mul_coeff_list, equiv_mul_one, mul_is_trimmed, etc.
 
 /-- Multiplying a polynomial by 1 does not change the coeffs-/
 lemma equiv_mul_one [LawfulBEq R] (p : CPolynomial.Raw R) : Trim.equiv (p * 1) p := by
@@ -1388,7 +1406,10 @@ lemma mul_assoc_equiv [LawfulBEq R] (p q r : CPolynomial.Raw R) :
   intro i
   exact mul_assoc_coeff p q r i
 
--- Main theorems for typeclass instances
+end MulInfrastructure
+
+section MulTheorems
+-- mul_zero, mul_one, mul_add, add_mul, mul_assoc
 
 /-- Multiplication on the right by zero gives zero. -/
 protected theorem mul_zero [LawfulBEq R] (p : CPolynomial.Raw R) : p * 0 = 0 := by
@@ -1546,6 +1567,8 @@ protected theorem mul_assoc [LawfulBEq R] (p q r : CPolynomial.Raw R) :
   · exact mul_is_trimmed (p * q) r
   · exact mul_is_trimmed p (q * r)
   · exact mul_assoc_equiv p q r
+
+end MulTheorems
 
 end Semiring
 
