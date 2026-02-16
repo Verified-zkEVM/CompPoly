@@ -470,6 +470,8 @@ section Semiring
 variable [Semiring R] [BEq R]
 variable [Semiring Q]
 
+-- Note: Lemmas that only need coeff computation often omit [BEq R] since they don't use
+-- trim/lastNonzero. Lemmas involving add/mul use [LawfulBEq R].
 variable {S : Type*}
 
 -- p(x) = a_0 + a_1 x + a_2 x^2 + ... + a_n x^n
