@@ -1,13 +1,20 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors : Chung Thai Nguyen, Quang Dao
+Authors: Chung Thai Nguyen, Quang Dao
 -/
 
 import Mathlib.Algebra.Lie.OfAssociative
 import Mathlib.Algebra.Polynomial.FieldDivision
 import Mathlib.Algebra.EuclideanDomain.Int
 import Mathlib.NumberTheory.Zsqrtd.GaussianInt
+
+/-!
+# Canonical Euclidean Domains
+
+This module defines `CanonicalEuclideanDomain` and provides instances for ℤ, `Polynomial F`,
+and `Field`.
+-/
 
 universe u
 local infixl:50 " ≺ " => EuclideanDomain.r -- the valuation function

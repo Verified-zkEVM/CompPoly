@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors : Chung Thai Nguyen, Quang Dao
+Authors: Chung Thai Nguyen, Quang Dao
 -/
 
 import CompPoly.Fields.Binary.Common
@@ -268,8 +268,8 @@ def checkSquareStep (rPrev : B128) (q : B128) (rNext : B128) : Bool :=
 -- The Soundness Theorem
 -- This is what you apply in your 128 generated lemmas
 theorem verify_square_step_correct (rPrev q rNext : B128) :
-  checkSquareStep rPrev q rNext = true →
-  (toPoly rPrev)^2 = (toPoly (to256 q)) * (toPoly P_val) + (toPoly rNext) := by
+    checkSquareStep rPrev q rNext = true →
+    (toPoly rPrev)^2 = (toPoly (to256 q)) * (toPoly P_val) + (toPoly rNext) := by
   intro h
   dsimp only [checkSquareStep] at h
   rw [beq_iff_eq] at h
@@ -307,8 +307,8 @@ theorem verify_square_step_correct (rPrev q rNext : B128) :
 
 /-- Helper lemma to chain the modular squaring steps -/
 lemma chain_step {k : ℕ} {prev next : Polynomial (ZMod 2)} {q_val : B128}
-  (h_prev : X ^ (2 ^ k) % ghashPoly = prev % ghashPoly)
-  (h_step : prev ^ 2 = (toPoly (to256 q_val)) * ghashPoly + next) :
+    (h_prev : X ^ (2 ^ k) % ghashPoly = prev % ghashPoly)
+    (h_step : prev ^ 2 = (toPoly (to256 q_val)) * ghashPoly + next) :
   X^(2^(k+1)) % ghashPoly = next % ghashPoly := by
   rw [pow_succ', pow_mul, ←pow_mul, mul_comm, pow_mul, pow_two]
   rw [CanonicalEuclideanDomain.mul_mod_eq (hn := by exact ghashPoly_ne_zero), h_prev]

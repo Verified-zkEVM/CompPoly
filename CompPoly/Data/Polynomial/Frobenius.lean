@@ -71,7 +71,7 @@ The polynomial `X^q - X` factors into the product of `(X - c)` ∀ `c` ∈ `Fq`,
 i.e. `∏_{c ∈ Fq} (X - c) = X^q - X`.
 -/
 theorem prod_X_sub_C_eq_X_pow_card_sub_X :
-  (∏ c ∈ (Finset.univ : Finset Fq), (Polynomial.X - Polynomial.C c)) =
+    (∏ c ∈ (Finset.univ : Finset Fq), (Polynomial.X - Polynomial.C c)) =
     Polynomial.X^(Fintype.card Fq) - Polynomial.X := by
 
   set P : Fq[X] := ∏ c ∈ (Finset.univ : Finset Fq), (Polynomial.X - Polynomial.C c)
@@ -135,7 +135,7 @@ The identity `∏_{c ∈ Fq} (X - c) = X^q - X` also holds in the polynomial rin
 where `L` is any field extension of `Fq`.
 -/
 theorem prod_X_sub_C_eq_X_pow_card_sub_X_in_L :
-  (∏ c ∈ (Finset.univ : Finset Fq), (Polynomial.X - Polynomial.C (algebraMap Fq L c))) =
+    (∏ c ∈ (Finset.univ : Finset Fq), (Polynomial.X - Polynomial.C (algebraMap Fq L c))) =
     Polynomial.X^(Fintype.card Fq) - Polynomial.X := by
 
   let f := algebraMap Fq L
@@ -160,8 +160,8 @@ The identity `∏_{c ∈ Fq} (X - c) = X^q - X` also holds in the polynomial rin
 where `L` is any field extension of `Fq`.
 -/
 theorem prod_poly_sub_C_eq_poly_pow_card_sub_poly_in_L
-  (p : L[X]) :
-  (∏ c ∈ (Finset.univ : Finset Fq), (p - Polynomial.C (algebraMap Fq L c))) =
+    (p : L[X]) :
+    (∏ c ∈ (Finset.univ : Finset Fq), (p - Polynomial.C (algebraMap Fq L c))) =
     p^(Fintype.card Fq) - p := by
 
   -- The strategy is to take the known identity for the polynomial X and substitute
@@ -196,7 +196,7 @@ The Frobenius identity for polynomials in `Fq[X]`.
 The `q`-th power of a sum of polynomials is the sum of their `q`-th powers.
 -/
 theorem frobenius_identity_in_ground_field
-  [Fact (Nat.Prime (ringChar Fq))] (f g : Fq[X]) :
+    [Fact (Nat.Prime (ringChar Fq))] (f g : Fq[X]) :
     (f + g)^(Fintype.card Fq) = f^(Fintype.card Fq) + g^(Fintype.card Fq) := by
   -- The Freshman's Dream `(a+b)^e = a^e + b^e` holds if `e` is a power of the characteristic.
   let p := ringChar Fq
@@ -212,7 +212,7 @@ The lifted Frobenius identity for polynomials in `L[X]`, where `L` is an `Fq`-al
 The exponent `q` is the cardinality of the base field `Fq`.
 -/
 theorem frobenius_identity_in_algebra [Fact (Nat.Prime (ringChar Fq))]
-  (f g : L[X]) : (f + g)^(Fintype.card Fq) = f^(Fintype.card Fq) + g^(Fintype.card Fq) := by
+    (f g : L[X]) : (f + g)^(Fintype.card Fq) = f^(Fintype.card Fq) + g^(Fintype.card Fq) := by
   -- The logic is identical. The key is that `L` inherits the characteristic of `Fq`.
   let p := ringChar Fq
   obtain ⟨n, hp, hn⟩ := FiniteField.card Fq p
@@ -234,8 +234,8 @@ omit [Fintype Fq] [Nontrivial L] in
 /-- Restricting a linear map on polynomial composition to a linear map on polynomial evaluation.
 -/
 theorem linear_map_of_comp_to_linear_map_of_eval (f : L[X])
-  (h_f_linear : IsLinearMap (R := Fq) (M := L[X]) (M₂ := L[X])
-    (f := fun inner_p ↦ f.comp inner_p)) :
+    (h_f_linear : IsLinearMap (R := Fq) (M := L[X]) (M₂ := L[X])
+      (f := fun inner_p ↦ f.comp inner_p)) :
     IsLinearMap (R := Fq) (M := L) (M₂ := L) (f := fun x ↦ f.eval x) := by
   constructor
   · intro x y

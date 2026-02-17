@@ -111,9 +111,9 @@ def AlgebraTowerEquiv.toAlgebraOverRight (e : AlgebraTowerEquiv A B) (i j : ι)
   exact (e.algebraMapLeftUp i j h).toAlgebra
 
 def AlgebraTowerEquiv.toAlgEquivOverLeft (e : AlgebraTowerEquiv A B) (i j : ι) (h : i ≤ j) :
-  letI : Algebra (A i) (A j) := by exact AlgebraTower.toAlgebra h
-  letI : Algebra (A i) (B j) := by exact e.toAlgebraOverLeft i j h
-  AlgEquiv (A i) (A j) (B j) := by
+    letI : Algebra (A i) (A j) := by exact AlgebraTower.toAlgebra h
+    letI : Algebra (A i) (B j) := by exact e.toAlgebraOverLeft i j h
+    AlgEquiv (A i) (A j) (B j) := by
   letI instAij: Algebra (A i) (A j) := by exact AlgebraTower.toAlgebra h
   letI instAiBij: Algebra (A i) (B j) := by exact e.toAlgebraOverLeft i j h
   letI instAlgEquiv: AlgEquiv (A i) (A j) (B j) := by exact {
@@ -135,6 +135,6 @@ def AlgebraTowerEquiv.toAlgEquivOverLeft (e : AlgebraTowerEquiv A B) (i j : ι) 
   exact instAlgEquiv
 
 def AlgebraTowerEquiv.toAlgEquivOverRight (e : AlgebraTowerEquiv A B) (i j : ι) (h : i ≤ j) :
-  letI : Algebra (B i) (B j) := by exact AlgebraTower.toAlgebra h
-  letI : Algebra (B i) (A j) := by exact e.toAlgebraOverRight i j h
-  AlgEquiv (B i) (B j) (A j) := (e.symm.toAlgEquivOverLeft i j h)
+    letI : Algebra (B i) (B j) := by exact AlgebraTower.toAlgebra h
+    letI : Algebra (B i) (A j) := by exact e.toAlgebraOverRight i j h
+    AlgEquiv (B i) (B j) (A j) := (e.symm.toAlgEquivOverLeft i j h)

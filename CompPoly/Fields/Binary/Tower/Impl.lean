@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024 - 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors : Chung Thai Nguyen, Quang Dao
+Authors: Chung Thai Nguyen, Quang Dao
 -/
 
 import CompPoly.Data.Classes.DCast
@@ -35,7 +35,7 @@ def ConcreteBTField : ℕ → Type := fun k => BitVec (2 ^ k)
 
 section BitVecDCast
 lemma cast_ConcreteBTField_eq (k m : ℕ) (h_eq : k = m) :
-  ConcreteBTField k = ConcreteBTField m := by
+    ConcreteBTField k = ConcreteBTField m := by
   subst h_eq
   rfl
 
@@ -47,11 +47,11 @@ instance BitVec.instDCast : DCast Nat BitVec where
     rw [BitVec.cast_eq, id_eq]
 
 theorem BitVec.bitvec_cast_eq_dcast {n m : Nat} (h : n = m) (bv : BitVec n) :
-  BitVec.cast h bv = DCast.dcast h bv := by
+    BitVec.cast h bv = DCast.dcast h bv := by
   simp only [BitVec.cast, BitVec.instDCast]
 
 theorem BitVec.dcast_id {n : Nat} (bv : BitVec n) :
-  DCast.dcast (Eq.refl n) bv = bv := by
+    DCast.dcast (Eq.refl n) bv = bv := by
   simp only [BitVec.instDCast.dcast_id, id_eq]
 
 theorem BitVec.dcast_bitvec_eq {l r val : ℕ} (h_width_eq : l = r) :
@@ -73,7 +73,7 @@ theorem BitVec.dcast_bitvec_toNat_eq {w w2 : ℕ} (x : BitVec w) (h_width_eq : w
   rw [dcast_eq]
 
 theorem BitVec.dcast_bitvec_eq_zero {l r : ℕ} (h_width_eq : l = r) :
-  dcast (h_width_eq) 0#(l) = 0#(r) := by
+    dcast (h_width_eq) 0#(l) = 0#(r) := by
   exact BitVec.dcast_bitvec_eq (l:=l) (r:=r) (val:=0) (h_width_eq:=h_width_eq)
 
 theorem BitVec.dcast_bitvec_extractLsb_eq {w hi1 lo1 hi2 lo2 : ℕ}
@@ -88,18 +88,18 @@ theorem BitVec.dcast_bitvec_extractLsb_eq {w hi1 lo1 hi2 lo2 : ℕ}
   rw [BitVec.dcast_id]
 
 theorem BitVec.dcast_dcast_bitvec_extractLsb_eq {w hi lo : ℕ} (x : BitVec w)
-  (h_width_eq : w = hi - lo + 1) : dcast h_width_eq (dcast (h_width_eq.symm)
+    (h_width_eq : w = hi - lo + 1) : dcast h_width_eq (dcast (h_width_eq.symm)
   (BitVec.extractLsb (hi:=hi) (lo:=lo) x)) = BitVec.extractLsb (hi:=hi) (lo:=lo) x := by
   simp only [dcast, BitVec.cast_cast, BitVec.cast_eq]
 
 theorem BitVec.eq_mp_eq_dcast {w w2 : ℕ} (x : BitVec w) (h_width_eq : w = w2)
-  (h_bitvec_eq : BitVec w = BitVec w2 := by rw [h_width_eq]) :
+    (h_bitvec_eq : BitVec w = BitVec w2 := by rw [h_width_eq]) :
   Eq.mp (h:=h_bitvec_eq) (a:=x) = dcast (h_width_eq) (x) := by
   rw [eq_mp_eq_cast] -- convert Eq.mp into root.cast
   rw [dcast_eq_root_cast]
 
 theorem BitVec.extractLsb_concat_hi {hi_size lo_size : ℕ} (hi : BitVec hi_size)
-  (lo : BitVec lo_size) (h_hi : hi_size > 0) :
+    (lo : BitVec lo_size) (h_hi : hi_size > 0) :
   BitVec.extractLsb (hi:=hi_size + lo_size - 1) (lo:=lo_size)
   (BitVec.append (msbs:=hi) (lsbs:=lo)) = dcast (by
     rw [←Nat.sub_add_comm (by omega), Nat.sub_add_cancel (by omega), Nat.add_sub_cancel]
@@ -114,7 +114,7 @@ theorem BitVec.extractLsb_concat_hi {hi_size lo_size : ℕ} (hi : BitVec hi_size
   simp only [BitVec.ofNat_toNat, BitVec.setWidth_eq]
 
 theorem BitVec.extractLsb_concat_lo {hi_size lo_size : ℕ} (hi : BitVec hi_size)
-  (lo : BitVec lo_size) (h_lo : lo_size > 0) : BitVec.extractLsb (hi:=lo_size - 1) (lo:=0)
+    (lo : BitVec lo_size) (h_lo : lo_size > 0) : BitVec.extractLsb (hi:=lo_size - 1) (lo:=0)
   (BitVec.append (msbs:=hi) (lsbs:=lo)) = dcast (by
     rw [←Nat.sub_add_comm (h:=by omega), Nat.sub_add_cancel (h:=by omega), Nat.sub_zero]
   ) lo := by
@@ -132,12 +132,12 @@ theorem BitVec.extractLsb_concat_lo {hi_size lo_size : ℕ} (hi : BitVec hi_size
   simp only [h_le, ↓reduceDIte]
 
 theorem Nat.shiftRight_eq_sub_mod_then_div_two_pow {n lo_len : ℕ} :
-  n >>> lo_len = (n - n % 2 ^ lo_len) / 2 ^ lo_len := by
+    n >>> lo_len = (n - n % 2 ^ lo_len) / 2 ^ lo_len := by
   rw [Nat.shiftRight_eq_div_pow]
   rw (occs := .pos [1]) [Nat.div_eq_sub_mod_div]
 
 theorem Nat.shiftRight_lo_mod_2_pow_hi_shiftLeft_lo (n hi_len lo_len : ℕ)
-  (h_n : n < 2 ^ (hi_len + lo_len)) :
+    (h_n : n < 2 ^ (hi_len + lo_len)) :
   (((n >>> lo_len) % (2 ^ hi_len)) <<< lo_len) = (n - n % 2 ^ lo_len) := by
   rw [Nat.shiftLeft_eq]
   have n_shr_lo_mod_2_pow_hi : (n >>> lo_len) % 2 ^ hi_len = n >>> lo_len := by
@@ -174,7 +174,7 @@ theorem Nat.reconstruct_from_hi_and_lo_parts (n hi_len lo_len : ℕ)
   rw [Nat.sub_add_cancel h_mod_le]
 
 theorem Nat.reconstruct_from_hi_and_lo_parts_or_ver (n hi_len lo_len : ℕ)
-  (h_n : n < 2 ^ (hi_len + lo_len)) :
+    (h_n : n < 2 ^ (hi_len + lo_len)) :
     n = (((n >>> lo_len) % (2 ^ hi_len)) <<< lo_len) ||| (n % (2 ^ lo_len)) := by
   rw (occs := .pos [1]) [Nat.reconstruct_from_hi_and_lo_parts (n:=n) (hi_len:=hi_len)
     (lo_len:=lo_len) (h_n:=h_n)]
@@ -184,7 +184,7 @@ theorem Nat.reconstruct_from_hi_and_lo_parts_or_ver (n hi_len lo_len : ℕ)
     (b_lt:=by exact Nat.mod_lt n (by norm_num))]
 
 theorem BitVec.eq_append_iff_extract {lo_size hi_size : ℕ} (lo : BitVec lo_size)
-  (hi : BitVec hi_size) (h_hi_gt_0 : hi_size > 0) (h_lo_gt_0 : lo_size > 0)
+    (hi : BitVec hi_size) (h_hi_gt_0 : hi_size > 0) (h_lo_gt_0 : lo_size > 0)
   (x : BitVec (hi_size + lo_size)) : x = dcast (by rfl) (BitVec.append (msbs:=hi) (lsbs:=lo)) ↔
   hi = dcast (by omega) (BitVec.extractLsb (hi:=hi_size + lo_size - 1) (lo:=lo_size) x) ∧
   lo = dcast (by omega) (BitVec.extractLsb (hi:=lo_size - 1) (lo:=0) x) := by
@@ -274,7 +274,7 @@ lemma one_le_sub_middle_of_pow2 {k : ℕ} (h_k : 1 ≤ k) : 1 ≤ 2 ^ k - 2 ^ (k
   exact res
 
 lemma sub_middle_of_pow2_with_one_canceled {k : ℕ} (h_k : 1 ≤ k) : 2 ^ k - 1 - 2 ^ (k - 1) + 1
-  = 2 ^ (k - 1) := by
+    = 2 ^ (k - 1) := by
   calc 2 ^ k - 1 - 2 ^ (k - 1) + 1 = 2 ^ k - 2 ^ (k - 1) - 1 + 1 := by omega
     _ = 2 ^ k - 2 ^ (k - 1) := by
       rw [Nat.sub_add_cancel];exact one_le_sub_middle_of_pow2 (h_k:=h_k)
@@ -326,7 +326,7 @@ instance (k : ℕ) : Add (ConcreteBTField k) where
   add := add
 
 theorem sum_fromNat_eq_from_xor_Nat {k : ℕ} (x y : Nat) :
-  fromNat (k:=k) (x ^^^ y) = fromNat (k:=k) x + fromNat (k:=k) y := by
+    fromNat (k:=k) (x ^^^ y) = fromNat (k:=k) x + fromNat (k:=k) y := by
   unfold fromNat
   simp only [instHAddConcreteBTField, add, BitVec.xor_eq]
   rw [BitVec.ofNat_xor]
@@ -357,7 +357,7 @@ lemma neg_add_cancel {k : ℕ} (a : ConcreteBTField k) : neg a + a = 0 := by
   exact BitVec.xor_self (x:=a)
 
 lemma if_self_rfl {α : Type*} [DecidableEq α] (a b : α) :
-  (if a = b then b else a) = a := by
+    (if a = b then b else a) = a := by
   by_cases h : a = b
   · rw [if_pos h, h]
   · rw [if_neg h]
@@ -405,7 +405,7 @@ noncomputable def fromConcreteBTF0 : ConcreteBTField 0 → (GF(2)) :=
   fun x => if decide (x = zero) then 0 else 1
 
 lemma nsmul_succ {k : ℕ} (n : ℕ) (x : ConcreteBTField k) :
-  (if ↑n.succ % 2 = 0 then zero else x) = (if ↑n % 2 = 0 then zero else x) + x := by
+    (if ↑n.succ % 2 = 0 then zero else x) = (if ↑n % 2 = 0 then zero else x) + x := by
   have h : ↑n.succ % 2 = (↑n % 2 + 1) % 2 := by
     simp only [Nat.succ_eq_add_one, Nat.mod_add_mod]
   have zero_is_0 : (zero : ConcreteBTField k) = 0 := by rfl
@@ -436,7 +436,7 @@ lemma nsmul_succ {k : ℕ} (n : ℕ) (x : ConcreteBTField k) :
       linarith
 
 lemma zsmul_succ {k : ℕ} (n : ℕ) (x : ConcreteBTField k) :
-  (if (↑n.succ : ℤ) % 2 = 0 then zero else x) = (if (↑n : ℤ) % 2 = 0 then zero else x) + x := by
+    (if (↑n.succ : ℤ) % 2 = 0 then zero else x) = (if (↑n : ℤ) % 2 = 0 then zero else x) + x := by
   norm_cast
   exact nsmul_succ n x
 
@@ -453,9 +453,8 @@ lemma neg_mod_2_eq_0_iff_mod_2_eq_0 {n : ℤ} : ( - n) % 2 = 0 ↔ n % 2 = 0 := 
 
 -- Int.negSucc n = - (n + 1)
 lemma zsmul_neg' {k : ℕ} (n : ℕ) (a : ConcreteBTField k) :
-  (if ((Int.negSucc n) : ℤ) % (2 : ℤ) = (0 : ℤ) then zero else a) =
-    neg (if (↑n.succ : ℤ) % (2 : ℤ) = (0 : ℤ) then zero else a) :=
-by
+    (if ((Int.negSucc n) : ℤ) % (2 : ℤ) = (0 : ℤ) then zero else a) =
+    neg (if (↑n.succ : ℤ) % (2 : ℤ) = (0 : ℤ) then zero else a) := by
   have negSucc_eq_minus_of_n_plus_1 : Int.negSucc n = - (n + 1) := by rfl
   rw [negSucc_eq_minus_of_n_plus_1]
   have n_succ_eq_n_plus_1 : (↑n.succ : ℤ) = (↑n : ℤ) + 1 := by rfl
@@ -526,7 +525,7 @@ def join {k : ℕ} (h_pos : k > 0) (hi lo : ConcreteBTField (k - 1)) : ConcreteB
 scoped[ConcreteBinaryTower] notation "《" hi ", " lo "》" => join (h_pos:=by omega) hi lo
 
 lemma cast_join {k n : ℕ} (h_pos : k > 0) (hi lo : ConcreteBTField (k - 1)) (heq : k = n) :
-  join (k:=k) h_pos hi lo = cast (by rw [heq])
+    join (k:=k) h_pos hi lo = cast (by rw [heq])
     (join (k:=n) (by omega) (cast (by subst heq; rfl) hi) (lo:=cast (by subst heq; rfl) lo)) := by
   subst heq
   rfl
@@ -575,11 +574,11 @@ theorem BitVec.extractLsb_eq_shift_ofNat {n : Nat} (x : BitVec n) (l r : Nat) :
   rfl
 
 theorem setWidth_eq_ofNat_mod {n num_bits : Nat} (x : BitVec n) :
-  BitVec.setWidth num_bits x = BitVec.ofNat num_bits (x.toNat % 2 ^ num_bits) := by
+    BitVec.setWidth num_bits x = BitVec.ofNat num_bits (x.toNat % 2 ^ num_bits) := by
   simp only [BitVec.ofNat_toNat, ← BitVec.toNat_setWidth, BitVec.setWidth_eq]
 
 theorem BitVec.extractLsb_eq_and_pow_2_minus_1_ofNat {n num_bits : Nat}
-  (h_num_bits : num_bits > 0) (x : BitVec n) :
+    (h_num_bits : num_bits > 0) (x : BitVec n) :
   BitVec.extractLsb (hi:= num_bits - 1) (lo := 0) x =
     BitVec.ofNat (num_bits - 1 - 0 + 1) (x.toNat &&& (2 ^ num_bits - 1)) := by
   unfold BitVec.extractLsb BitVec.extractLsb'
@@ -595,7 +594,7 @@ theorem BitVec.extractLsb_eq_and_pow_2_minus_1_ofNat {n num_bits : Nat}
   rw [lhs, ←rhs]
 
 theorem split_bitvec_eq_iff_fromNat {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField k)
-  (hi_btf lo_btf : ConcreteBTField (k - 1)) :
+    (hi_btf lo_btf : ConcreteBTField (k - 1)) :
   split h_pos x = (hi_btf, lo_btf) ↔
   (hi_btf = fromNat (k:=k - 1) (x.toNat >>> 2 ^ (k - 1)) ∧
   lo_btf = fromNat (k:=k - 1) (x.toNat &&& (2 ^ (2 ^ (k - 1)) - 1))) := by
@@ -647,7 +646,7 @@ theorem split_bitvec_eq_iff_fromNat {k : ℕ} (h_pos : k > 0) (x : ConcreteBTFie
       h_lo]
 
 theorem join_eq_iff_dcast_extractLsb {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField k)
-  (hi_btf lo_btf : ConcreteBTField (k - 1)) :
+    (hi_btf lo_btf : ConcreteBTField (k - 1)) :
   x = 《 hi_btf, lo_btf 》 ↔
   (hi_btf = dcast (h_sub_middle h_pos) (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) ∧
   lo_btf = dcast (h_middle_sub) (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) := by
@@ -700,7 +699,7 @@ theorem join_eq_iff_dcast_extractLsb {k : ℕ} (h_pos : k > 0) (x : ConcreteBTFi
     rw [h_x_eq]
 
 theorem join_eq_join_iff {k : ℕ} (h_pos : k > 0) (hi₀ lo₀ hi₁ lo₁ : ConcreteBTField (k - 1)) :
-  《 hi₀, lo₀ 》 = 《 hi₁, lo₁ 》 ↔ (hi₀ = hi₁ ∧ lo₀ = lo₁) := by
+    《 hi₀, lo₀ 》 = 《 hi₁, lo₁ 》 ↔ (hi₀ = hi₁ ∧ lo₀ = lo₁) := by
   constructor
   · intro h_join
     let x₀ := 《 hi₀, lo₀ 》
@@ -719,7 +718,7 @@ theorem join_eq_join_iff {k : ℕ} (h_pos : k > 0) (hi₀ lo₀ hi₁ lo₁ : Co
     rw [h_eq.1, h_eq.2]
 
 theorem join_eq_bitvec_iff_fromNat {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField k)
-  (hi_btf lo_btf : ConcreteBTField (k - 1)) :
+    (hi_btf lo_btf : ConcreteBTField (k - 1)) :
   x = 《 hi_btf, lo_btf 》 ↔
   (hi_btf = fromNat (k:=k - 1) (x.toNat >>> 2 ^ (k - 1)) ∧
   lo_btf = fromNat (k:=k - 1) (x.toNat &&& (2 ^ (2 ^ (k - 1)) - 1))) := by
@@ -785,11 +784,11 @@ lemma split_join_eq_split {k : ℕ} (h_pos : k > 0)
   exact (split_of_join h_pos (《 hi_btf, lo_btf 》) hi_btf lo_btf rfl).symm
 
 lemma join_split_eq_join {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField k) :
-  《 (split h_pos x).fst, (split h_pos x).snd 》 = x := by
+    《 (split h_pos x).fst, (split h_pos x).snd 》 = x := by
   exact (join_of_split h_pos x (split h_pos x).fst (split h_pos x).snd rfl).symm
 
 theorem eq_iff_split_eq {k : ℕ} (h_pos : k > 0) (x₀ x₁ : ConcreteBTField k) :
-  x₀ = x₁ ↔ (split h_pos x₀ = split h_pos x₁) := by
+    x₀ = x₁ ↔ (split h_pos x₀ = split h_pos x₁) := by
   constructor
   · intro h_eq
     rw [h_eq]
@@ -808,7 +807,7 @@ theorem eq_iff_split_eq {k : ℕ} (h_pos : k > 0) (x₀ x₁ : ConcreteBTField k
     rw [h_x₀_eq_join, h_x₁_eq_join]
 
 theorem split_sum_eq_sum_split {k : ℕ} (h_pos : k > 0) (x₀ x₁ : ConcreteBTField k)
-  (hi₀ lo₀ hi₁ lo₁ : ConcreteBTField (k - 1))
+    (hi₀ lo₀ hi₁ lo₁ : ConcreteBTField (k - 1))
   (h_split_x₀ : split h_pos x₀ = (hi₀, lo₀))
   (h_split_x₁ : split h_pos x₁ = (hi₁, lo₁)) :
   split h_pos (x₀ + x₁) = (hi₀ + hi₁, lo₀ + lo₁) := by
@@ -842,7 +841,7 @@ theorem split_sum_eq_sum_split {k : ℕ} (h_pos : k > 0) (x₀ x₁ : ConcreteBT
   exact h_sum_hi_lo.symm
 
 theorem join_add_join {k : ℕ} (h_pos : k > 0) (hi₀ lo₀ hi₁ lo₁ : ConcreteBTField (k - 1)) :
-  《 hi₀, lo₀ 》 + 《 hi₁, lo₁ 》 = 《 hi₀ + hi₁, lo₀ + lo₁ 》 := by
+    《 hi₀, lo₀ 》 + 《 hi₁, lo₁ 》 = 《 hi₀ + hi₁, lo₀ + lo₁ 》 := by
   set x₀ := 《 hi₀, lo₀ 》
   set x₁ := 《 hi₁, lo₁ 》
   set x₂ := 《 hi₀ + hi₁, lo₀ + lo₁ 》
@@ -912,7 +911,7 @@ lemma split_one {k : ℕ} (h_k : k > 0) :
     rw [BitVec.dcast_bitvec_eq]
 
 lemma join_zero_zero {k : ℕ} (h_k : k > 0) :
-  《 zero (k:=k - 1), zero (k:=k - 1) 》 = zero (k:=k) := by
+    《 zero (k:=k - 1), zero (k:=k - 1) 》 = zero (k:=k) := by
   have h_1 := split_zero h_k
   exact (join_of_split h_k (zero) (zero) (zero) (h_1)).symm
 
@@ -923,7 +922,7 @@ theorem join_zero_one {k : ℕ} (h_k : k > 0) :
   exact res.symm
 
 def equivProd {k : ℕ} (h_k_pos : k > 0) :
-  ConcreteBTField k ≃ ConcreteBTField (k - 1) × ConcreteBTField (k - 1) where
+    ConcreteBTField k ≃ ConcreteBTField (k - 1) × ConcreteBTField (k - 1) where
   toFun := split h_k_pos
   invFun := fun (hi, lo) => 《 hi, lo 》
   left_inv := fun x => Eq.symm (join_of_split h_k_pos x _ _ rfl)
@@ -1022,7 +1021,7 @@ def concrete_pow_nat {k : ℕ} (x : ConcreteBTField k) (n : ℕ) : ConcreteBTFie
   else concrete_mul x (concrete_pow_nat (concrete_mul x x) (n / 2))
 
 lemma cast_mul (m n : ℕ) {x y : ConcreteBTField m} (h_eq : m = n) :
-  (cast (by exact cast_ConcreteBTField_eq m n h_eq) (x * y)) =
+    (cast (by exact cast_ConcreteBTField_eq m n h_eq) (x * y)) =
   (cast (by exact cast_ConcreteBTField_eq m n h_eq) x) *
   (cast (by exact cast_ConcreteBTField_eq m n h_eq) y) := by
   subst h_eq
@@ -1071,7 +1070,7 @@ instance (k : ℕ) : Preorder (ConcreteBTField k) where
       exact x_lt_y
 
 theorem toNatInRange {k : ℕ} (b : ConcreteBTField k) :
-  BitVec.toNat b ≤ 2 ^ (2 ^ k) * 1 := by
+    BitVec.toNat b ≤ 2 ^ (2 ^ k) * 1 := by
   unfold ConcreteBTField at b
   have le_symm : 2 ^ k ≤ 2 ^ k := by omega
   have toNat_le_2pow:= BitVec.toNat_lt_twoPow_of_le (m:=2 ^ k) (n:=(2 ^ k))
@@ -1091,8 +1090,8 @@ theorem eq_zero_or_eq_one {a : ConcreteBTField 0} : a = zero ∨ a = one := by
     unfold one
     exact h_one
 
-theorem concrete_eq_zero_or_eq_one {k : ℕ} {a : ConcreteBTField k} (h_k_zero : k = 0)
- : a = zero ∨ a = one := by
+theorem concrete_eq_zero_or_eq_one {k : ℕ} {a : ConcreteBTField k} (h_k_zero : k = 0) :
+    a = zero ∨ a = one := by
   if h_k_zero : k = 0 then
     have h_2_pow_k_eq_1 : 2 ^ k = 1 := by rw [h_k_zero]; norm_num
     let a0 : ConcreteBTField 0 := Eq.mp (congrArg ConcreteBTField h_k_zero) a
@@ -1129,7 +1128,7 @@ theorem concrete_eq_zero_or_eq_one {k : ℕ} {a : ConcreteBTField k} (h_k_zero :
     contradiction
 
 lemma add_eq_one_iff (a b : ConcreteBTField 0) :
-  a + b = 1 ↔ (a = 0 ∧ b = 1) ∨ (a = 1 ∧ b = 0) := by
+    a + b = 1 ↔ (a = 0 ∧ b = 1) ∨ (a = 1 ∧ b = 0) := by
   rcases eq_zero_or_eq_one (a := a) with (ha | ha)
   · simp [ha, zero_is_0]  -- a = zero
   · simp [ha, one_is_1]
@@ -1149,33 +1148,33 @@ lemma concrete_exists_pair_ne {k : ℕ} : ∃ x y : ConcreteBTField k, x ≠ y :
 section FieldLemmasOfLevel0
 
 lemma concrete_zero_mul0 (b : ConcreteBTField 0) :
-  concrete_mul (zero (k:=0)) b = zero (k:=0) := by
+    concrete_mul (zero (k:=0)) b = zero (k:=0) := by
   unfold concrete_mul
   simp only [↓reduceDIte, zero, Nat.pow_zero, BitVec.zero_eq, ↓reduceIte]
 
 lemma concrete_mul_zero0 (a : ConcreteBTField 0) :
-  concrete_mul a (zero (k:=0)) = zero (k:=0) := by
+    concrete_mul a (zero (k:=0)) = zero (k:=0) := by
   unfold concrete_mul
   by_cases h : a = zero
   · simp only [↓reduceDIte, h, ↓reduceIte]
   · simp only [↓reduceDIte, zero, Nat.pow_zero, BitVec.zero_eq, ↓reduceIte, ite_self]
 
 lemma concrete_one_mul0 (a : ConcreteBTField 0) :
-  concrete_mul (one (k:=0)) a = a := by
+    concrete_mul (one (k:=0)) a = a := by
   unfold concrete_mul
   by_cases h : a = zero
   · simp [h, zero]
   · norm_num; simp only [concrete_one_ne_zero, ↓reduceIte, h]
 
 lemma concrete_mul_one0 (a : ConcreteBTField 0) :
-  concrete_mul a (one (k:=0)) = a := by
+    concrete_mul a (one (k:=0)) = a := by
   unfold concrete_mul
   by_cases h : a = zero
   · simp [h]
   · norm_num; simp [h, concrete_one_ne_zero]; intro h_eq; exact h_eq.symm
 
 lemma concrete_mul_assoc0 (a b c : ConcreteBTField 0) :
-  concrete_mul (concrete_mul a b) c = concrete_mul a (concrete_mul b c) := by
+    concrete_mul (concrete_mul a b) c = concrete_mul a (concrete_mul b c) := by
   rcases eq_zero_or_eq_one (a := a) with (ha | ha)
   · simp [ha, concrete_mul]  -- a = zero case
   · rcases eq_zero_or_eq_one (a := b) with (hb | hb)
@@ -1185,7 +1184,7 @@ lemma concrete_mul_assoc0 (a b c : ConcreteBTField 0) :
       · simp [ha, hb, hc, concrete_mul, concrete_one_ne_zero]  -- a = one, b = one, c = one
 
 lemma concrete_mul_comm0 (a b : ConcreteBTField 0) :
-  concrete_mul a b = concrete_mul b a := by
+    concrete_mul a b = concrete_mul b a := by
   rcases eq_zero_or_eq_one (a := a) with (ha | ha)
   · simp [ha, concrete_mul]  -- a = zero
   · rcases eq_zero_or_eq_one (a := b) with (hb | hb)
@@ -1194,13 +1193,13 @@ lemma concrete_mul_comm0 (a b : ConcreteBTField 0) :
 
 -- Helper lemma : For GF(2), `if x = 0 then 0 else x` is just `x`.
 lemma if_zero_then_zero_else_self (x : ConcreteBTField 0) :
-  (if x = zero then zero else x) = x := by
+    (if x = zero then zero else x) = x := by
   rcases eq_zero_or_eq_one (a := x) with (hx_zero | hx_one)
   · simp only [hx_zero, ↓reduceIte]
   · simp only [hx_one, concrete_one_ne_zero, ↓reduceIte]
 
 lemma concrete_mul_left_distrib0 (a b c : ConcreteBTField 0) :
-  concrete_mul a (b + c) = concrete_mul a b + concrete_mul a c := by
+    concrete_mul a (b + c) = concrete_mul a b + concrete_mul a c := by
   rcases eq_zero_or_eq_one (a := a) with (ha | ha)
   · simp [ha, concrete_mul, zero_is_0]  -- a = zero
   · simp [ha, concrete_mul, zero_is_0, one_is_1];
@@ -1225,7 +1224,7 @@ lemma concrete_mul_left_distrib0 (a b c : ConcreteBTField 0) :
         exact c_cases
 
 lemma concrete_mul_right_distrib0 (a b c : ConcreteBTField 0) :
-  concrete_mul (a + b) c = concrete_mul a c + concrete_mul b c := by
+    concrete_mul (a + b) c = concrete_mul a c + concrete_mul b c := by
   rw [concrete_mul_comm0 (a:=(a + b)) (b:=c)]
   rw [concrete_mul_comm0 (a:=a) (b:=c)]
   rw [concrete_mul_comm0 (a:=b) (b:=c)]
@@ -1385,8 +1384,8 @@ def mkRingInstance {k : ℕ} (props : ConcreteBTFieldProps k) : Ring (ConcreteBT
   intCast_ofNat n := intCast_ofNat n
   intCast_negSucc n := intCast_negSucc n
 
-def mkDivisionRingInstance {k : ℕ} (props : ConcreteBTFieldProps k)
-    : DivisionRing (ConcreteBTField k) where
+def mkDivisionRingInstance {k : ℕ} (props : ConcreteBTFieldProps k) :
+    DivisionRing (ConcreteBTField k) where
   toRing := mkRingInstance (k:=k) props
   inv := concrete_inv
   exists_pair_ne := concrete_exists_pair_ne (k := k)
@@ -1419,7 +1418,7 @@ section BTFieldPropsOneLevelLiftingLemmas
 variable {k : ℕ} {h_k : k > 0}
 
 theorem concrete_mul_eq
-  (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
+    (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
   (a b : ConcreteBTField k) {a₁ a₀ b₁ b₀ : ConcreteBTField (k - 1)}
   (h_a : (a₁, a₀) = split h_k a) (h_b : (b₁, b₀) = split h_k b) :
   concrete_mul a b =
@@ -1456,7 +1455,7 @@ theorem concrete_mul_eq
   · rfl
 
 lemma concrete_zero_mul
-  (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
+    (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
   (a : ConcreteBTField k) : concrete_mul (zero (k:=k)) a = zero (k:=k) := by
   unfold concrete_mul
   by_cases h_k_zero : k = 0
@@ -1477,7 +1476,7 @@ lemma concrete_zero_mul
     simp only [← zero_is_0, join_zero_zero h_k_gt_0_proof]
 
 lemma concrete_mul_zero
-  (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
+    (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
   (a : ConcreteBTField k) : concrete_mul a (zero (k:=k)) = zero (k:=k) := by
   unfold concrete_mul
   by_cases h_k_zero : k = 0
@@ -1501,7 +1500,7 @@ lemma concrete_mul_zero
     simp only [← zero_is_0, prevBTFieldProps.zero_mul, join_zero_zero h_k_gt_0_proof]
 
 lemma concrete_one_mul
-  (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
+    (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
   (a : ConcreteBTField k) : concrete_mul (one (k:=k)) a = a := by
   unfold concrete_mul
   by_cases h_k_zero : k = 0
@@ -1523,7 +1522,7 @@ lemma concrete_one_mul
     exact join_result
 
 lemma concrete_mul_one
-  (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
+    (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
   (a : ConcreteBTField k) : concrete_mul a (one (k:=k)) = a := by
   unfold concrete_mul
   by_cases h_k_zero : k = 0
@@ -1549,7 +1548,7 @@ lemma concrete_mul_one
     exact join_result
 
 lemma concrete_pow_base_one
-  (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1)) (n : ℕ) :
+    (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1)) (n : ℕ) :
   concrete_pow_nat (k:=k) (x:=1) n = 1 := by
   induction n using Nat.strong_induction_on with
   | h n ih =>
@@ -1588,7 +1587,7 @@ lemma concrete_pow_base_one
         rw [concrete_one_mul prevBTFieldProps]  -- Assume concrete_mul 1 1 = 1
 
 lemma concrete_mul_comm
-  {h_k : k > 0} (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
+    {h_k : k > 0} (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
   (a b : ConcreteBTField k) :
   concrete_mul a b = concrete_mul b a := by
   letI : Field (ConcreteBTField (k - 1)) := mkFieldInstance prevBTFieldProps
@@ -1625,7 +1624,7 @@ lemma concrete_mul_comm
     simp only [and_self]
 
 lemma concrete_mul_assoc
-  {h_k : k > 0} (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
+    {h_k : k > 0} (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
   (a b c : ConcreteBTField k) :
   concrete_mul (concrete_mul a b) c = concrete_mul a (concrete_mul b c) := by
   letI : Field (ConcreteBTField (k - 1)) := mkFieldInstance prevBTFieldProps
@@ -1694,7 +1693,7 @@ lemma concrete_mul_assoc
     simp only [and_self]
 
 lemma concrete_mul_left_distrib
-  {h_k : k > 0} (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
+    {h_k : k > 0} (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
   (a b c : ConcreteBTField k) :
     concrete_mul a (b + c) = concrete_mul a b + concrete_mul a c := by
   letI : Field (ConcreteBTField (k - 1)) := mkFieldInstance prevBTFieldProps
@@ -1741,7 +1740,7 @@ lemma concrete_mul_left_distrib
     simp only [and_self]
 
 lemma concrete_mul_right_distrib
-  {h_k : k > 0} (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
+    {h_k : k > 0} (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
   (a b c : ConcreteBTField k) :
     concrete_mul (a + b) c = concrete_mul a c + concrete_mul b c := by
   rw [concrete_mul_comm prevBTFieldProps (h_k:=h_k) (a:=(a + b)) (b:=c)]
@@ -1750,7 +1749,7 @@ lemma concrete_mul_right_distrib
   exact concrete_mul_left_distrib prevBTFieldProps (h_k:=h_k) (a:=c) (b:=a) (c:=b)
 
 lemma norm_of_ne_zero_is_ne_zero {k : ℕ}
-  {h_k_gt_0 : k > 0} (prevBTFieldResult : ConcreteBTFStepResult (k := k - 1))
+    {h_k_gt_0 : k > 0} (prevBTFieldResult : ConcreteBTFStepResult (k := k - 1))
   (a : ConcreteBTField k) (h_a_ne_zero : a ≠ 0) :
   let a₁ := (split h_k_gt_0 a).1
   let a₀ := (split h_k_gt_0 a).2
@@ -1829,7 +1828,7 @@ lemma norm_of_ne_zero_is_ne_zero {k : ℕ}
     exact h_not_irreducible h
 
 lemma concrete_mul_inv_cancel
-  (prevBTFieldResult : ConcreteBTFStepResult (k := k - 1))
+    (prevBTFieldResult : ConcreteBTFStepResult (k := k - 1))
   (a : ConcreteBTField k) (h : a ≠ 0) :
   concrete_mul a (concrete_inv a) = one := by
   letI : Field (ConcreteBTField (k - 1)) := mkFieldInstance prevBTFieldResult.toConcreteBTFieldProps
@@ -1917,7 +1916,7 @@ lemma concrete_mul_inv_cancel
           exact CommGroupWithZero.mul_inv_cancel Na h_Na_ne_0
 
 lemma concrete_inv_one :
-  concrete_inv (k:=k) 1 = 1 := by
+    concrete_inv (k:=k) 1 = 1 := by
   unfold concrete_inv
   by_cases h_k_zero : k = 0
   · simp only [h_k_zero]; norm_num
@@ -2050,7 +2049,7 @@ instance instAlgebraLiftConcreteBTField (k : ℕ)
       (curBTFieldProps:=liftBTFieldProps (k:=k) (prevBTFResult:=prevBTFResult))))
 
 lemma Z_square_mul_form
-  (k : ℕ)
+    (k : ℕ)
   (prev : ConcreteBTFStepResult (k := k)) :
   letI : Field (ConcreteBTField k) := mkFieldInstance (prev.toConcreteBTFieldProps)
   letI : Field (ConcreteBTField (k + 1)) := mkFieldInstance (k:=k+1)
@@ -2086,7 +2085,7 @@ lemma Z_square_mul_form
   simp only [mul_zero, mul_one, _root_.zero_add, zero_mul, _root_.add_zero, zero_is_0, one_is_1]
 
 lemma sum_inv_Z_next_eq
-  (k : ℕ)
+    (k : ℕ)
   (prev : ConcreteBTFStepResult (k := k)) :
   letI : Field (ConcreteBTField k) := mkFieldInstance (prev.toConcreteBTFieldProps)
   letI : Field (ConcreteBTField (k + 1)) := mkFieldInstance (k:=k+1)
@@ -2254,10 +2253,10 @@ def getBTFResult (k : ℕ) : ConcreteBTFStepResult k :=
 
     letI instFintype_ConcreteBTField_k: Fintype (ConcreteBTField k) := prevBTFResult.instFintype
     letI : Finite (ConcreteBTField k) := by exact Fintype.finite instFintype_ConcreteBTField_k
-    have equivRelation: ConcreteBTField (k + 1) ≃ ConcreteBTField (k) × ConcreteBTField (k)
-      := equivProd (k:=k + 1) (by omega)
-    letI: Fintype (ConcreteBTField k × ConcreteBTField k)
-      := instFintypeProd (α:=ConcreteBTField k) (β:=ConcreteBTField k)
+    have equivRelation: ConcreteBTField (k + 1) ≃ ConcreteBTField (k) × ConcreteBTField (k) :=
+      equivProd (k:=k + 1) (by omega)
+    letI: Fintype (ConcreteBTField k × ConcreteBTField k) :=
+      instFintypeProd (α:=ConcreteBTField k) (β:=ConcreteBTField k)
 
     let instFintype : Fintype (ConcreteBTField (k + 1)) := by
       exact Fintype.ofEquiv (ConcreteBTField (k) × ConcreteBTField (k)) equivRelation.symm
@@ -2336,7 +2335,7 @@ def canonicalAlgMap (k : ℕ) := concreteCanonicalEmbedding (k:=k)
 lifted to `ConcreteBTField (k+1)` by `canonicalAlgMap` -/
 @[simp]
 theorem generator_is_not_lifted_to_succ (k : ℕ) :
-  ∀ x : ConcreteBTField k, canonicalAlgMap (k:=k) x ≠ Z (k + 1) := by
+    ∀ x : ConcreteBTField k, canonicalAlgMap (k:=k) x ≠ Z (k + 1) := by
   by_contra hx
   simp only [ne_eq, not_forall, Decidable.not_not] at hx
   -- unfold canonicalAlgMap at hx
@@ -2357,7 +2356,7 @@ theorem generator_is_not_lifted_to_succ (k : ℕ) :
 
 @[simp]
 lemma ConcreteBTField_add_eq (k n m) :
-      ConcreteBTField (k + n + m) = ConcreteBTField (k + (n + m)) := by
+    ConcreteBTField (k + n + m) = ConcreteBTField (k + (n + m)) := by
   rw [Nat.add_assoc]
 
 @[simp]
@@ -2376,7 +2375,7 @@ theorem ConcreteBTField.RingHom_eq_of_source_eq (k n m : ℕ) (h_eq : k = n) :
 
 @[simp]
 theorem ConcreteBTField.RingHom_cast_dest_apply (k m n : ℕ) (h_eq : m = n)
-  (f : ConcreteBTField k →+* ConcreteBTField m) (x : ConcreteBTField k) :
+    (f : ConcreteBTField k →+* ConcreteBTField m) (x : ConcreteBTField k) :
     (cast (ConcreteBTField.RingHom_eq_of_dest_eq (k:=k) (m:=m) (n:=n) h_eq) f) x
     = cast (by apply cast_ConcreteBTField_eq (h_eq:=h_eq)) (f x) := by
   subst h_eq
@@ -2384,7 +2383,7 @@ theorem ConcreteBTField.RingHom_cast_dest_apply (k m n : ℕ) (h_eq : m = n)
 
 @[simp]
 theorem ConcreteBTField.RingHom_cast_source_apply (k n m : ℕ) (h_eq : k = n)
-  (f : ConcreteBTField k →+* ConcreteBTField m) (x : ConcreteBTField n) :
+    (f : ConcreteBTField k →+* ConcreteBTField m) (x : ConcreteBTField n) :
     (cast (ConcreteBTField.RingHom_eq_of_source_eq (k:=k) (n:=n) (m:=m) h_eq) f) x
     = f (cast (by apply cast_ConcreteBTField_eq (h_eq:=h_eq.symm)) x) := by
   subst h_eq
@@ -2415,7 +2414,7 @@ lemma concreteTowerAlgebraMap_id (k : ℕ) :
   exact (Ne.dite_eq_left_iff fun h a ↦ h rfl).mpr rfl
 
 lemma concreteTowerAlgebraMap_succ_1 (k : ℕ) :
-  concreteTowerAlgebraMap (l:=k) (r:=k + 1) (h_le:=by omega) = canonicalAlgMap k := by
+    concreteTowerAlgebraMap (l:=k) (r:=k + 1) (h_le:=by omega) = canonicalAlgMap k := by
   unfold concreteTowerAlgebraMap
   simp only [Nat.left_eq_add, one_ne_zero, ↓reduceDIte,
     Nat.add_one_sub_one, eq_mp_eq_cast, cast_eq]
@@ -2424,7 +2423,7 @@ lemma concreteTowerAlgebraMap_succ_1 (k : ℕ) :
 
 /-! Right associativity of the Tower Map -/
 lemma concreteTowerAlgebraMap_succ (l r : ℕ) (h_le : l ≤ r) :
-  concreteTowerAlgebraMap (l:=l) (r:=r + 1) (h_le:=by omega) =
+    concreteTowerAlgebraMap (l:=l) (r:=r + 1) (h_le:=by omega) =
   (concreteTowerAlgebraMap (l:=r) (r:=r + 1) (h_le:=by omega)).comp
   (concreteTowerAlgebraMap (l:=l) (r:=r) (h_le:=by omega)) := by
   ext x
@@ -2436,7 +2435,7 @@ lemma concreteTowerAlgebraMap_succ (l r : ℕ) (h_le : l ≤ r) :
 
 /-! Left associativity of the Tower Map -/
 theorem concreteTowerAlgebraMap_succ_last (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) →
-  concreteTowerAlgebraMap (l:=l) (r:=r + 1) (h_le:=by
+    concreteTowerAlgebraMap (l:=l) (r:=r + 1) (h_le:=by
     exact Nat.le_trans (n:=l) (m:=r) (k:=r + 1) (h_le) (by omega)) =
   (concreteTowerAlgebraMap (l:=l + 1) (r:=r + 1) (by omega)).comp (concreteTowerAlgebraMap
     (l:=l) (r:=l + 1) (by omega)) := by
@@ -2531,7 +2530,7 @@ An element `x` lifted from the base field `ConcreteBTField (k-1)` has `(0, x)` a
 split representation in `ConcreteBTField k`.
 -/
 lemma split_algebraMap_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField (k - 1)) :
-  letI instAlgebra := ConcreteBTFieldAlgebra (l:=k-1) (r:=k) (h_le:=by omega)
+    letI instAlgebra := ConcreteBTFieldAlgebra (l:=k-1) (r:=k) (h_le:=by omega)
   split h_pos (algebraMap (ConcreteBTField (k - 1)) (ConcreteBTField k) x) = (0, x) := by
   -- this one is long because of the `cast` stuff, but it should be quite straightforward
   -- via def of `canonicalAlgMap` and `split_of_join`
@@ -2564,7 +2563,7 @@ lemma split_algebraMap_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField 
   simp only [Nat.add_one_sub_one, cast_eq, cast_cast]
 
 lemma algebraMap_succ_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField (k - 1)) :
-  letI instAlgebra := ConcreteBTFieldAlgebra (l:=k-1) (r:=k) (h_le:=by omega)
+    letI instAlgebra := ConcreteBTFieldAlgebra (l:=k-1) (r:=k) (h_le:=by omega)
   algebraMap (ConcreteBTField (k - 1)) (ConcreteBTField k) x = 《 0, x 》 := by
   apply join_of_split
   exact split_algebraMap_eq_zero_x h_pos x
@@ -2594,7 +2593,7 @@ lemma algebraMap_eq_zero_x {i j : ℕ} (h_le : i < j) (x : ConcreteBTField i) :
     rfl
 
 lemma split_smul_Z_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField (k - 1)) :
-  letI instAlgebra := ConcreteBTFieldAlgebra (l:=k-1) (r:=k) (h_le:=by omega)
+    letI instAlgebra := ConcreteBTFieldAlgebra (l:=k-1) (r:=k) (h_le:=by omega)
   split h_pos (x • Z k) = (x, 0) := by
   letI instAlgebra := ConcreteBTFieldAlgebra (l:=k-1) (r:=k) (h_le:=by omega)
   change split h_pos ((algebraMap (ConcreteBTField (k - 1)) (ConcreteBTField k) x) * Z k) = (x, 0)
@@ -2618,7 +2617,7 @@ lemma split_smul_Z_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField (k -
   rw [split_join_eq_split, zero_is_0]
 
 lemma smul_Z_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField (k - 1)) :
-  letI instAlgebra := ConcreteBTFieldAlgebra (l:=k-1) (r:=k) (h_le:=by omega)
+    letI instAlgebra := ConcreteBTFieldAlgebra (l:=k-1) (r:=k) (h_le:=by omega)
   x • Z k = 《 x, 0 》 := by
   apply join_of_split
   exact split_smul_Z_eq_zero_x h_pos x
@@ -2669,7 +2668,7 @@ lemma coe_one_succ (l : ℕ) :
   exact RingHom.map_one (ConcreteBTFieldAlgebra (l:=l) (r:=l + 1) (h_le:=by omega)).algebraMap
 
 theorem unique_linear_decomposition_succ (k : ℕ) :
-  letI : Algebra (ConcreteBTField k) (ConcreteBTField (k+1)) :=
+    letI : Algebra (ConcreteBTField k) (ConcreteBTField (k+1)) :=
     ConcreteBTFieldAlgebra (l:=k) (r:=k+1) (h_le:=by omega)
   ∀ (x : ConcreteBTField (k+1)), ∃! (p : ConcreteBTField k × ConcreteBTField k),
     x = join_via_add_smul (k+1) (by omega) p.1 p.2 := by
@@ -2710,8 +2709,7 @@ theorem ConcreteBTFieldAlgebra_apply_assoc (l mid r : ℕ)
     (@ConcreteBTFieldAlgebra (l:=l) (r:=r) (h_le:=by
       exact Nat.le_trans h_l_le_mid h_mid_le_r)).algebraMap x =
     (@ConcreteBTFieldAlgebra (l:=mid) (r:=r) (h_le:=h_mid_le_r)).algebraMap
-      ((@ConcreteBTFieldAlgebra (l:=l) (r:=mid) (h_le:=h_l_le_mid)).algebraMap x)
-    := by
+      ((@ConcreteBTFieldAlgebra (l:=l) (r:=mid) (h_le:=h_l_le_mid)).algebraMap x) := by
   intro x
   simp_rw [algebraMap_ConcreteBTFieldAlgebra_def]
   rw [←RingHom.comp_apply]
@@ -2735,7 +2733,7 @@ lemma algebraMap_adjacent_tower_def (l : ℕ) :
   exact concreteTowerAlgebraMap_succ_1 l
 
 lemma aeval_definingPoly_at_Z_succ (k : ℕ) :
-  (aeval (Z (k + 1))) (definingPoly (s:=Z (k))) = 0 := by
+    (aeval (Z (k + 1))) (definingPoly (s:=Z (k))) = 0 := by
   rw [aeval_def]
   set f := algebraMap (ConcreteBTField k) (ConcreteBTField (k + 1))
   have h_f_is_canonical_embedding :
@@ -2773,7 +2771,7 @@ theorem Basis_cast_index_eq (i j k n : ℕ) (h_le : k ≤ n) (h_eq : i = j) :
   rfl
 
 theorem Basis_cast_dest_eq {ι : Type*} (k n m : ℕ) (h_k_le_n : k ≤ n)
-  (h_k_le_m : k ≤ m) (h_eq : m = n) :
+    (h_k_le_m : k ≤ m) (h_eq : m = n) :
   letI instLeftAlgebra := ConcreteBTFieldAlgebra (l:=k) (r:=m) (h_le:=h_k_le_m)
   letI instRightAlgebra := ConcreteBTFieldAlgebra (l:=k) (r:=n) (h_le:=h_k_le_n)
   @Basis ι (ConcreteBTField k) (ConcreteBTField m) _ _ instLeftAlgebra.toModule =
@@ -2782,7 +2780,7 @@ theorem Basis_cast_dest_eq {ι : Type*} (k n m : ℕ) (h_k_le_n : k ≤ n)
   rfl
 
 theorem PowerBasis_cast_dest_eq (k n m : ℕ) (h_k_le_n : k ≤ n)
-  (h_k_le_m : k ≤ m) (h_eq : m = n) :
+    (h_k_le_m : k ≤ m) (h_eq : m = n) :
   letI instLeftAlgebra := ConcreteBTFieldAlgebra (l:=k) (r:=m) (h_le:=h_k_le_m)
   letI instRightAlgebra := ConcreteBTFieldAlgebra (l:=k) (r:=n) (h_le:=h_k_le_n)
   @PowerBasis (ConcreteBTField k) (ConcreteBTField m) _ _ instLeftAlgebra =
@@ -2914,11 +2912,11 @@ def powerBasisSucc (k : ℕ) :
   }
 
 lemma powerBasisSucc_gen (k : ℕ) :
-  (powerBasisSucc k).gen = (Z (k + 1)) := by rfl
+    (powerBasisSucc k).gen = (Z (k + 1)) := by rfl
 
 @[simp]
 theorem minPoly_of_powerBasisSucc_generator (k : ℕ) :
-  (minpoly (ConcreteBTField k) (powerBasisSucc k).gen) = X^2 + (Z k) • X + 1 := by
+    (minpoly (ConcreteBTField k) (powerBasisSucc k).gen) = X^2 + (Z k) • X + 1 := by
   unfold powerBasisSucc
   simp only
   rw [←C_mul']
@@ -3006,11 +3004,11 @@ theorem minPoly_of_powerBasisSucc_generator (k : ℕ) :
         contradiction
 
 lemma powerBasisSucc_dim (k : ℕ) :
-  powerBasisSucc (k:=k).dim = 2 := by
+    powerBasisSucc (k:=k).dim = 2 := by
   simp only [ConcreteBTField, powerBasisSucc]
 
 def hli_level_diff_0 (l : ℕ) :
-  letI instAlgebra:= ConcreteBTFieldAlgebra (l:=l) (r:=l) (h_le:=by omega)
+    letI instAlgebra:= ConcreteBTFieldAlgebra (l:=l) (r:=l) (h_le:=by omega)
   @Basis (Fin 1) (ConcreteBTField l) (ConcreteBTField l) _ _ instAlgebra.toModule:= by
   letI instAlgebra:= ConcreteBTFieldAlgebra (l:=l) (r:=l) (h_le:=by omega)
   letI instModule:= instAlgebra.toModule
@@ -3123,8 +3121,8 @@ theorem PowerBasis.cast_basis_succ_of_eq_rec_apply
       ConcreteBTFieldAlgebra (l:=r1) (r:=r) (h_le:=by omega)
     letI instAlgebraSucc : Algebra (ConcreteBTField (r1 + 1)) (ConcreteBTField (r)) :=
       ConcreteBTFieldAlgebra (l:=r1 + 1) (r:=r) (h_le:=by omega)
-    let b : PowerBasis (ConcreteBTField r1) (ConcreteBTField (r1 + 1))
-      := powerBasisSucc (k:=r1)
+    let b : PowerBasis (ConcreteBTField r1) (ConcreteBTField (r1 + 1)) :=
+      powerBasisSucc (k:=r1)
     let bCast : PowerBasis (ConcreteBTField r1) (ConcreteBTField r) := Eq.rec (motive:=
       fun (x : ℕ) (_ : r1 + 1 = x) => by
         letI instAlgebraCur : Algebra (ConcreteBTField r1) (ConcreteBTField x) :=
@@ -3143,8 +3141,8 @@ theorem PowerBasis.cast_basis_succ_of_eq_rec_apply
       congr
 
    -- The `cast` needs a proof that `bCast.dim = 2`. We construct it here.
-    let left : Basis (Fin 2) (ConcreteBTField r1) (ConcreteBTField r)
-      := cast (by exact h_pb_type_eq) bCast.basis
+    let left : Basis (Fin 2) (ConcreteBTField r1) (ConcreteBTField r) :=
+      cast (by exact h_pb_type_eq) bCast.basis
     let right := (algebraMap (ConcreteBTField (r1 + 1)) (ConcreteBTField r))
       (b.basis (Fin.cast h_pb_dim.symm k))
     left k = right := by
@@ -3158,7 +3156,7 @@ theorem PowerBasis.cast_basis_succ_of_eq_rec_apply
 
 @[simp]
 theorem coe_basis_apply {R S : Type*} [CommRing R] [Ring S] [Algebra R S]
-  (pb : PowerBasis R S) (i : Fin pb.dim) : ⇑pb.basis i = pb.gen ^ (i : ℕ) :=
+    (pb : PowerBasis R S) (i : Fin pb.dim) : ⇑pb.basis i = pb.gen ^ (i : ℕ) :=
   pb.basis_eq_pow i
 
 /-!
@@ -3166,7 +3164,7 @@ The basis element at index `j` is the product of the tower generators at
 the ON bits in binary representation of `j`.
 -/
 theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀ (j : Fin (2 ^ (r - l))),
-  multilinearBasis (l:=l) (r:=r) (h_le:=h_le) j =
+    multilinearBasis (l:=l) (r:=r) (h_le:=h_le) j =
     (Finset.univ : Finset (Fin (r - l))).prod (fun i =>
       (ConcreteBTFieldAlgebra (l:=l + i + 1) (r:=r) (h_le:=by omega)).algebraMap (
         (𝕏 (l + i)) ^ (Nat.getBit i j))) := by
@@ -3384,12 +3382,12 @@ noncomputable def towerRingHomBackwardMap (k : ℕ) : BTField k → ConcreteBTFi
     exact join_via_add_smul (k:=k) (h_pos:=by omega) (hi_btf:=hi_mapped) (lo_btf:=lo_mapped)
 
 lemma towerRingHomForwardMap0_eq :
-  towerRingEquivFromConcrete0.toFun = towerRingHomForwardMap 0 := by
+    towerRingEquivFromConcrete0.toFun = towerRingHomForwardMap 0 := by
   unfold towerRingHomForwardMap
   simp only [RingEquiv.toEquiv_eq_coe, Equiv.toFun_as_coe, EquivLike.coe_coe, ↓reduceDIte]
 
 lemma towerRingHomForwardMap_zero {k : ℕ} :
-  (towerRingHomForwardMap k) 0 = 0 := by
+    (towerRingHomForwardMap k) 0 = 0 := by
   induction k with
   | zero =>
     unfold towerRingHomForwardMap
@@ -3406,7 +3404,7 @@ lemma towerRingHomForwardMap_zero {k : ℕ} :
     exact BinaryTower.join_via_add_smul_zero (k:=k+1) (h_pos:=by omega)
 
 lemma towerRingHomForwardMap_one {k : ℕ} :
-  (towerRingHomForwardMap k) 1 = 1 := by
+    (towerRingHomForwardMap k) 1 = 1 := by
   induction k with
   | zero =>
     unfold towerRingHomForwardMap
@@ -3423,7 +3421,7 @@ lemma towerRingHomForwardMap_one {k : ℕ} :
     exact BinaryTower.join_via_add_smul_one (k:=k+1) (h_pos:=by omega)
 
 lemma towerRingHomForwardMap_Z (k : ℕ) :
-  towerRingHomForwardMap k (Z k) = BinaryTower.Z k := by
+    towerRingHomForwardMap k (Z k) = BinaryTower.Z k := by
   induction k with
   | zero =>
     unfold towerRingHomForwardMap
@@ -3440,7 +3438,7 @@ lemma towerRingHomForwardMap_Z (k : ℕ) :
     exact BinaryTower.join_via_add_smul_one_zero_eq_Z (k:=k+1) (h_pos:=by omega)
 
 lemma towerRingHomBackwardMap_forwardMap_eq (k : ℕ) (x : ConcreteBTField k) :
-  towerRingHomBackwardMap (k:=k) (towerRingHomForwardMap (k:=k) x) = x := by
+    towerRingHomBackwardMap (k:=k) (towerRingHomForwardMap (k:=k) x) = x := by
   induction k with
   | zero =>
     unfold towerRingHomBackwardMap towerRingHomForwardMap
@@ -3468,7 +3466,7 @@ lemma towerRingHomBackwardMap_forwardMap_eq (k : ℕ) (x : ConcreteBTField k) :
     simp only [Prod.mk.eta]
 
 lemma towerRingHomForwardMap_backwardMap_eq (k : ℕ) (x : BTField k) :
-  towerRingHomForwardMap (k:=k) (towerRingHomBackwardMap (k:=k) x) = x := by
+    towerRingHomForwardMap (k:=k) (towerRingHomBackwardMap (k:=k) x) = x := by
   induction k with
   | zero =>
     unfold towerRingHomForwardMap towerRingHomBackwardMap
@@ -3537,7 +3535,7 @@ lemma towerRingHomForwardMap_add_eq (k : ℕ) (x y : ConcreteBTField k) :
     · rw [ih (x:=x₀) (y:=y₀)]
 
 theorem split_mul_eq_mul_split {k : ℕ} (h_pos : k > 0) (x₀ x₁ : ConcreteBTField k)
-  (hi₀ lo₀ hi₁ lo₁ : ConcreteBTField (k - 1))
+    (hi₀ lo₀ hi₁ lo₁ : ConcreteBTField (k - 1))
   (h_split_x₀ : split h_pos x₀ = (hi₀, lo₀))
   (h_split_x₁ : split h_pos x₁ = (hi₁, lo₁)) :
   split h_pos (x₀ * x₁) =
@@ -3593,7 +3591,7 @@ lemma towerRingHomForwardMap_mul_eq (k : ℕ) (x y : ConcreteBTField k) :
     · rw [towerRingHomForwardMap_add_eq, ih, ih];
 
 lemma towerRingHomForwardMap_split_eq (k : ℕ) (h_pos : k > 0) (x : ConcreteBTField k) :
-  let p := split (k:=k) (h:=h_pos) x
+    let p := split (k:=k) (h:=h_pos) x
   towerRingHomForwardMap (k:=k) (x) =
     BinaryTower.join_via_add_smul (k:=k) (h_pos:=h_pos)
       (hi_btf := towerRingHomForwardMap (k:=k-1) (p.1))
@@ -3608,7 +3606,7 @@ lemma towerRingHomForwardMap_split_eq (k : ℕ) (h_pos : k > 0) (x : ConcreteBTF
   rw! [←hhi]
 
 lemma towerRingHomForwardMap_join {k : ℕ} (h_pos : k > 0) (hi lo : ConcreteBTField (k - 1)) :
-  towerRingHomForwardMap (k:=k) (《 hi, lo 》) =
+    towerRingHomForwardMap (k:=k) (《 hi, lo 》) =
     BinaryTower.join_via_add_smul (k:=k) (h_pos:=by omega)
       (hi_btf := towerRingHomForwardMap (k:=k-1) hi)
       (lo_btf := towerRingHomForwardMap (k:=k-1) lo) := by
@@ -3663,7 +3661,7 @@ noncomputable def towerEquiv (n : ℕ) : TowerEquivResult n := by
         rfl
     }
 lemma towerEquiv_commutes_left_diff (i d : ℕ) : ∀ r : ConcreteBTField i,
-  (AlgebraTower.algebraMap i (i+d) (by omega)) ((towerEquiv i).ringEquiv r) =
+    (AlgebraTower.algebraMap i (i+d) (by omega)) ((towerEquiv i).ringEquiv r) =
   (towerEquiv (i+d)).ringEquiv ((AlgebraTower.algebraMap i (i+d) (by omega)) r) := by
   -- If d = 0, then this is trivial
   -- For d > 0 : let j = i+d
@@ -3723,7 +3721,7 @@ lemma towerEquiv_commutes_left_diff (i d : ℕ) : ∀ r : ConcreteBTField i,
       rw [(towerEquiv (i+d')).ringEquivForwardMapEq]
 
 theorem towerEquiv_commutes_left (i j : ℕ) (h : i ≤ j) : ∀ r : ConcreteBTField i,
-  (AlgebraTower.algebraMap i j h) ((towerEquiv i).ringEquiv r) =
+    (AlgebraTower.algebraMap i j h) ((towerEquiv i).ringEquiv r) =
   (towerEquiv j).ringEquiv ((AlgebraTower.algebraMap i j h) r) := by
   let d := j - i
   have h_j_eq : j = i + d := by omega

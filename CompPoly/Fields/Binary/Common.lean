@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors : Chung Thai Nguyen, Quang Dao
+Authors: Chung Thai Nguyen, Quang Dao
 -/
 
 import Mathlib.FieldTheory.Finite.Basic
@@ -328,7 +328,7 @@ lemma toPoly_zero_eq_zero {w : Nat} : toPoly (BitVec.ofNat w 0) = 0 := by
     ↓reduceIte]
 
 lemma toPoly_ne_zero_iff_ne_zero {w : Nat} (v : BitVec w) :
-  toPoly v ≠ 0 ↔ v ≠ 0 := by
+    toPoly v ≠ 0 ↔ v ≠ 0 := by
   constructor
   · intro hToPoly_ne_zero
     by_contra h_v_eq_zero
@@ -392,7 +392,7 @@ lemma toPoly_ne_zero_iff_ne_zero {w : Nat} (v : BitVec w) :
 
 /-- ToPoly degree is less than width -/
 lemma toPoly_degree_lt_w {w : ℕ} (h_w_pos : w > 0) (v : BitVec w) :
-  (toPoly v).degree < w := by
+    (toPoly v).degree < w := by
   dsimp only [toPoly, BitVec.getLsb]
   have h_lt: (BitVec.toNat v) < 2^w := BitVec.isLt v
   have h_2_pow_x_gt_0: ∀ x, 2^x > 0 := fun x => by simp only [gt_iff_lt, Nat.ofNat_pos, pow_pos]
@@ -444,7 +444,7 @@ lemma toPoly_degree_of_lt_two_pow {w d : ℕ} (v : BitVec w)
   · exact compareOfLessAndEq_eq_lt.mp rfl
 
 lemma BitVec_lt_two_pow_of_toPoly_degree_lt {w d : ℕ} (v : BitVec w)
-  (h_toPoly_degree_lt : (toPoly v).degree < d) : v.toNat < 2 ^ d := by
+    (h_toPoly_degree_lt : (toPoly v).degree < d) : v.toNat < 2 ^ d := by
   apply Nat.lt_pow_two_of_testBit
   intro i h_i_ge_d
   by_cases hi_ge_w : i ≥ w
@@ -698,7 +698,7 @@ section VerificationHelpers
 -- Helper for GCD Chaining
 -- If a = q * b + r, then gcd(a, b) = gcd(b, r)
 lemma gcd_eq_gcd_next_step {a b q r : Polynomial (ZMod 2)} (hb : b ≠ 0) (h : a = q * b + r) :
-  EuclideanDomain.gcd a b = EuclideanDomain.gcd b r := by
+    EuclideanDomain.gcd a b = EuclideanDomain.gcd b r := by
   rw [ZMod2Poly.euclidean_gcd_comm]
   rw [EuclideanDomain.gcd_val]
   conv_lhs =>

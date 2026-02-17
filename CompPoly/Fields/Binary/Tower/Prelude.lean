@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors : Quang Dao, Chung Thai Nguyen
+Authors: Quang Dao, Chung Thai Nguyen
 -/
 
 import Mathlib.FieldTheory.Finite.GaloisField
@@ -459,7 +459,8 @@ structure SpecialElementRelation {F_prev : Type*} [Field F_prev] (t1 : F_prev)
 -------------------------------------------------------------------------------------------
 
 theorem two_eq_zero_in_char2_field {F : Type*} [Field F]
-  (sumZeroIffEq : ∀ (x y : F), x + y = 0 ↔ x = y) : (2 : F) = 0 := by
+    (sumZeroIffEq : ∀ (x y : F), x + y = 0 ↔ x = y) :
+    (2 : F) = 0 := by
   have char_two : (1 : F) + (1 : F) = 0 := by
     exact (sumZeroIffEq 1 1).mpr rfl
   have : (2 : F) = (1 : F) + (1 : F) := by norm_num
@@ -467,8 +468,8 @@ theorem two_eq_zero_in_char2_field {F : Type*} [Field F]
   exact char_two
 
 theorem sum_of_pow_exp_of_2 {F : Type*} [Field F]
-  (sumZeroIffEq : ∀ (x y : F), x + y = 0 ↔ x = y)
-  (i : ℕ) : ∀ (a b c : F), a + b = c → a^(2^i) + b^(2^i) = c^(2^i) := by
+    (sumZeroIffEq : ∀ (x y : F), x + y = 0 ↔ x = y)
+    (i : ℕ) : ∀ (a b c : F), a + b = c → a^(2^i) + b^(2^i) = c^(2^i) := by
   induction i with
   | zero =>
     simp [pow_zero] -- a^1 + b^1 = a + b = c = c^1
@@ -510,7 +511,8 @@ theorem sum_of_pow_exp_of_2 {F : Type*} [Field F]
     rw [x_plus_y_eq_z]
 
 theorem sum_square_char2 {F : Type*} [Field F] (sumZeroIffEq : ∀ (x y : F), x + y = 0 ↔ x = y)
-  (s : Finset ℕ) (f : ℕ → F) : (∑ j ∈ s, f j)^2 = ∑ j ∈ s, (f j)^2 := by
+    (s : Finset ℕ) (f : ℕ → F) :
+    (∑ j ∈ s, f j)^2 = ∑ j ∈ s, (f j)^2 := by
   induction s using Finset.induction_on with
   | empty =>
     rw [Finset.sum_empty, zero_pow (by norm_num), Finset.sum_empty]
@@ -562,11 +564,12 @@ theorem two_pow_ne_zero (n : ℕ) : 2 ^ n ≠ 0 := by
     _ = 0 := by rw [hn]
   exact Nat.not_le_of_gt (by decide) h_1_le_0
 
-/-- For any field element (x : F) where x^2 = x*z + 1, this theorem gives a closed form for x^(2^i) -/
+/-- For any field element (x : F) where x^2 = x*z + 1, this theorem gives
+    a closed form for x^(2^i). -/
 theorem pow_exp_of_2_repr_given_x_square_repr {F : Type*} [instField : Field F]
-  (sumZeroIffEq : ∀ (x y : F), x + y = 0 ↔ x = y) (x z : F) (h_z_non_zero : z ≠ 0)
-  (h_x_square : x ^ 2 = x * z + 1)
-  : ∀ i : ℕ, x^(2^i) = x * z^(2^i - 1) + ∑ j ∈ Finset.Icc 1 i, z^(2^i - 2^j) := by
+    (sumZeroIffEq : ∀ (x y : F), x + y = 0 ↔ x = y) (x z : F) (h_z_non_zero : z ≠ 0)
+    (h_x_square : x ^ 2 = x * z + 1) :
+    ∀ i : ℕ, x^(2^i) = x * z^(2^i - 1) + ∑ j ∈ Finset.Icc 1 i, z^(2^i - 2^j) := by
   intro i
   induction i with
   | zero =>
@@ -894,7 +897,8 @@ theorem self_sum_eq_zero
     _ = 0 := by ring
 
 theorem sum_zero_iff_eq_of_self_sum_zero {F : Type*} [AddGroup F]
-  (h_self_sum_eq_zero : ∀ (x : F), x + x = 0) : ∀ (x y : F), x + y = 0 ↔ x = y := by
+    (h_self_sum_eq_zero : ∀ (x : F), x + x = 0) :
+    ∀ (x y : F), x + y = 0 ↔ x = y := by
   intro x y
   have y_sum_y_eq_0 : y + y = 0 := h_self_sum_eq_zero y
   constructor
@@ -913,16 +917,17 @@ theorem sum_zero_iff_eq_of_self_sum_zero {F : Type*} [AddGroup F]
 /-- A variant of `Finset.mul_prod_erase` with the multiplication swapped. -/
 @[to_additive /-- A variant of `Finset.add_sum_erase` with the addition swapped.--/]
 theorem prod_mul_erase {α β : Type*} [CommMonoid β] [DecidableEq α] (s : Finset α) (f : α → β)
-{a : α} (h : a ∈ s) : f a * (∏ x ∈ s.erase a, f x) = ∏ x ∈ s, f x := by
+    {a : α} (h : a ∈ s) :
+    f a * (∏ x ∈ s.erase a, f x) = ∏ x ∈ s, f x := by
   rw [mul_comm]; exact Finset.prod_erase_mul s f h
 
 theorem eval₂_quadratic_prevField_coeff
-  {prevBTField : Type*} [CommRing prevBTField]
-  {curBTField : Type*} [CommRing curBTField]
-  (of_prev : prevBTField →+* curBTField)
-  (t1 : prevBTField)
-  (x : curBTField) :
-  eval₂ of_prev x (X^2 + (C t1 * X + 1)) = x^2 + of_prev t1 * x + 1 := by
+    {prevBTField : Type*} [CommRing prevBTField]
+    {curBTField : Type*} [CommRing curBTField]
+    (of_prev : prevBTField →+* curBTField)
+    (t1 : prevBTField)
+    (x : curBTField) :
+    eval₂ of_prev x (X^2 + (C t1 * X + 1)) = x^2 + of_prev t1 * x + 1 := by
   calc
     eval₂ of_prev x (X^2 + (C t1 * X + 1)) = eval₂ of_prev x (X^2) + eval₂ of_prev x (C t1 * X)
       + eval₂ of_prev x 1 := by rw [eval₂_add, add_assoc, eval₂_add]
@@ -1086,14 +1091,14 @@ theorem galois_automorphism_power
     exact res
 
 lemma lifted_trace_map_eval_at_roots_prev_BTField
-  {curBTField : Type*} [Field curBTField]
-  (u : curBTField) (t1 : curBTField) -- here t1 is already lifted to curBTField
-  (k : ℕ)
-  (sumZeroIffEq : ∀ (x y : curBTField), x + y = 0 ↔ x = y)
-  (u_plus_inv_eq_t1 : u + u⁻¹ = t1)
-  (galois_automorphism : u^(2^(2^k)) = u⁻¹ ∧ (u⁻¹)^(2^(2^k)) = u)
-  (trace_map_at_prev_root : ∑ i ∈ Finset.range (2 ^ k), t1 ^ (2 ^ i) = 1) :
-  ∑ i ∈ Finset.range (2 ^ (k+1)), u ^ (2 ^ i) = 1 := by
+    {curBTField : Type*} [Field curBTField]
+    (u : curBTField) (t1 : curBTField) -- here t1 is already lifted to curBTField
+    (k : ℕ)
+    (sumZeroIffEq : ∀ (x y : curBTField), x + y = 0 ↔ x = y)
+    (u_plus_inv_eq_t1 : u + u⁻¹ = t1)
+    (galois_automorphism : u^(2^(2^k)) = u⁻¹ ∧ (u⁻¹)^(2^(2^k)) = u)
+    (trace_map_at_prev_root : ∑ i ∈ Finset.range (2 ^ k), t1 ^ (2 ^ i) = 1) :
+    ∑ i ∈ Finset.range (2 ^ (k+1)), u ^ (2 ^ i) = 1 := by
 
   calc
     ∑ i ∈ Finset.range (2 ^ (k+1)), u ^ (2 ^ i)
@@ -1187,13 +1192,13 @@ lemma lifted_trace_map_eval_at_roots_prev_BTField
     _ = 1 := by rw [trace_map_at_prev_root]
 
 theorem rsum_eq_t1_square_aux
-  {curBTField : Type*} [Field curBTField] -- curBTField ≃ 𝔽_{2^{2^k}}
-  (u : curBTField) -- here u is already lifted to curBTField
-  (k : ℕ)
-  (x_pow_card : ∀ (x : curBTField), x ^ (2 ^ (2 ^ (k))) = x)
-  (u_ne_zero : u ≠ 0)
-  (trace_map_prop : TraceMapProperty curBTField u k):
-   ∑ j ∈ Finset.Icc 1 (2 ^ (k)), u ^ (2 ^ 2 ^ (k) - 2 ^ j) = u := by
+    {curBTField : Type*} [Field curBTField] -- curBTField ≃ 𝔽_{2^{2^k}}
+    (u : curBTField) -- here u is already lifted to curBTField
+    (k : ℕ)
+    (x_pow_card : ∀ (x : curBTField), x ^ (2 ^ (2 ^ (k))) = x)
+    (u_ne_zero : u ≠ 0)
+    (trace_map_prop : TraceMapProperty curBTField u k) :
+    ∑ j ∈ Finset.Icc 1 (2 ^ (k)), u ^ (2 ^ 2 ^ (k) - 2 ^ j) = u := by
 
   have trace_map_icc_t1 : ∑ j ∈ Finset.Icc 0 (2^(k)-1), u ^ (2^j) = 1 := by
     rw [←Nat.range_succ_eq_Icc_zero (2^(k)-1), Nat.sub_add_cancel (h:=one_le_two_pow_n (k))]
@@ -1333,8 +1338,8 @@ section FinHelpers
 
 @[simp]
 theorem bit_finProdFinEquiv_symm_2_pow_succ {n : ℕ} (j : Fin (2 ^ (n + 1))) (i : Fin (n + 1)) :
-  let e:=finProdFinEquiv (m:=2^(n)) (n:=2).symm
-  Nat.getBit (i) j = if i.val > 0 then Nat.getBit (i.val-1) (e j).1 else (e j).2 := by
+    let e:=finProdFinEquiv (m:=2^(n)) (n:=2).symm
+    Nat.getBit (i) j = if i.val > 0 then Nat.getBit (i.val-1) (e j).1 else (e j).2 := by
   simp only [finProdFinEquiv_symm_apply, Fin.coe_divNat, Fin.coe_modNat]
   if h_i_gt_0 : i.val > 0 then
     simp_rw [h_i_gt_0]
@@ -1368,7 +1373,7 @@ def leftModNat {m n : ℕ} (h_m : m > 0) (i : Fin (m * n)) : Fin m := ⟨i % m, 
 @[simps]
 def revFinProdFinEquiv {m n : ℕ} (h_m : m > 0) : Fin m × Fin n ≃ Fin (m * n) where
   toFun x :=
-    ⟨x.1.val + m * x.2.val,
+      ⟨x.1.val + m * x.2.val,
       calc
         x.1.val + m * x.2.val < m + m * x.2.val := Nat.add_lt_add_right x.1.is_lt _
         _ = m * (1 + x.2.val) := by rw [Nat.left_distrib, mul_one]
@@ -1395,12 +1400,12 @@ def revFinProdFinEquiv {m n : ℕ} (h_m : m > 0) : Fin m × Fin n ≃ Fin (m * n
   right_inv x := by exact Fin.eq_of_val_eq <| Nat.mod_add_div x.val m
 
 @[simp]
-theorem bit_revFinProdFinEquiv_symm_2_pow_succ {n : ℕ} (j : Fin (2 ^ (n + 1))) (i : Fin (n + 1)):
-  let e : Fin (2 ^ n * 2) ≃ Fin (2 ^ n) × Fin 2 :=revFinProdFinEquiv (m:=2^(n)) (n:=2)
-    (h_m:=by exact Nat.two_pow_pos n).symm
-  let msb : Fin 2 := (e j).2
-  let lsbs : Fin (2 ^ n) := (e j).1
-  Nat.getBit (i) j = if i.val < n then Nat.getBit (i.val) lsbs else msb := by
+theorem bit_revFinProdFinEquiv_symm_2_pow_succ {n : ℕ} (j : Fin (2 ^ (n + 1))) (i : Fin (n + 1)) :
+    let e : Fin (2 ^ n * 2) ≃ Fin (2 ^ n) × Fin 2 :=
+      revFinProdFinEquiv (m:=2^(n)) (n:=2) (h_m:=by exact Nat.two_pow_pos n).symm
+    let msb : Fin 2 := (e j).2
+    let lsbs : Fin (2 ^ n) := (e j).1
+    Nat.getBit (i) j = if i.val < n then Nat.getBit (i.val) lsbs else msb := by
   simp only [revFinProdFinEquiv_symm_apply]
   if h_i_lt_n : i < n then
     simp_rw [h_i_lt_n]
@@ -1458,22 +1463,22 @@ open Polynomial
 
 section DefiningPoly
 
-noncomputable def definingPoly {F : Type*} [instField : Field F] (s : F)
-  := X ^ 2 + C s * X + 1
+noncomputable def definingPoly {F : Type*} [instField : Field F] (s : F) :=
+  X ^ 2 + C s * X + 1
 
 lemma degree_s_smul_X {F : Type*} [Field F] [Fintype F] (s : F) [NeZero s] :
-  (C s * (X : (F)[X])).degree = 1 := by
+    (C s * (X : (F)[X])).degree = 1 := by
   apply degree_C_mul_X (a:=s)
   exact NeZero.ne s
 
 lemma degree_s_smul_X_add_1 {F : Type*} [Field F] [Fintype F] (s : F) [NeZero s] :
-  (C s * (X : (F)[X]) + 1).degree = 1 := by
+    (C s * (X : (F)[X]) + 1).degree = 1 := by
   rw [degree_add_eq_left_of_degree_lt]
   · exact degree_s_smul_X s
   · rw [degree_one]; rw [degree_s_smul_X]; norm_num
 
 lemma definingPoly_is_monic {F : Type*} [Field F] [Fintype F] (s : F) [NeZero s] :
-  (definingPoly s).Monic := by
+    (definingPoly s).Monic := by
   rw [definingPoly]
   -- Goal : ⊢ (X ^ 2 + (t1 * X + 1)).Monic
   have leadingCoeffIs1 : (definingPoly s).leadingCoeff = 1 := by
@@ -1490,7 +1495,7 @@ lemma definingPoly_is_monic {F : Type*} [Field F] [Fintype F] (s : F) [NeZero s]
   exact leadingCoeffIs1
 
 lemma degree_definingPoly {F : Type*} [Field F] [Fintype F] (s : F) [NeZero s] :
-  (definingPoly s).degree = 2 := by
+    (definingPoly s).degree = 2 := by
   rw [definingPoly, _root_.add_assoc, _root_.add_comm]
   -- ⊢ (s • X + 1 + X ^ 2).degree = 2
   rw [degree_add_eq_right_of_degree_lt]
@@ -1501,16 +1506,16 @@ lemma degree_definingPoly {F : Type*} [Field F] [Fintype F] (s : F) [NeZero s] :
     norm_num
 
 lemma natDegree_definingPoly {F : Type*} [Field F] [Fintype F] (s : F) [NeZero s] :
-  (definingPoly s).natDegree = 2 := natDegree_eq_of_degree_eq_some (h:=degree_definingPoly s)
+    (definingPoly s).natDegree = 2 := natDegree_eq_of_degree_eq_some (h:=degree_definingPoly s)
 
 lemma definingPoly_ne_zero {F : Type*} [Field F] [Fintype F] (s : F) [NeZero s] :
-  (definingPoly s) ≠ 0 := by
+    (definingPoly s) ≠ 0 := by
   refine Monic.ne_zero_of_ne ?_ ?_
   · exact zero_ne_one' (F)
   · exact definingPoly_is_monic s
 
 lemma definingPoly_is_not_unit {F : Type*} [Field F] [Fintype F] (s : F) [NeZero s] :
-  ¬IsUnit (definingPoly s) := by
+    ¬IsUnit (definingPoly s) := by
   by_contra h_unit
   have deg_poly_is_0 := degree_eq_zero_of_isUnit h_unit
   have deg_poly_is_2 : (definingPoly s).degree = 2 := by
@@ -1542,8 +1547,8 @@ This is the most general form that can be reused across different tower construc
 instance irreducible_quadratic_defining_poly_of_traceMap_eq_1
   {F : Type*} [Field F] [Fintype F] [CharP F 2] (s : F) [NeZero s] (k : ℕ)
   (trace_map_prop : TraceMapProperty F s k)
-  (fintypeCard : Fintype.card F = 2 ^ (2 ^ k))
-  : Irreducible (definingPoly s) := by
+  (fintypeCard : Fintype.card F = 2 ^ (2 ^ k)) :
+  Irreducible (definingPoly s) := by
   set p := definingPoly s
   have nat_deg_poly_is_2 : p.natDegree = 2 := natDegree_definingPoly s
   have coeffOfX_0 : p.coeff 0 = 1 := definingPoly_coeffOf0 s
@@ -1640,15 +1645,15 @@ Instance : The trace map property for a quadratic extension defined by a root u 
 assuming the trace property for t1 at the previous level.
 -/
 theorem traceMapProperty_of_quadratic_extension
-  (F_prev : Type*) [Field F_prev] [Fintype F_prev] (k : ℕ)
-  (fintypeCardPrev : Fintype.card F_prev = 2 ^ (2 ^ k))
-  (t1 : F_prev) [instNeZero_t1 : NeZero t1]
-  {F_cur : Type*} [Field F_cur] (u : F_cur) [instNeZero_u : NeZero u]
-  [Algebra F_prev F_cur]
-  (h_rel : SpecialElementRelation (t1 := t1) (u := u))
-  (prev_trace_map : TraceMapProperty F_prev t1 (k))
-  (sumZeroIffEq : ∀ (x y : F_cur), x + y = 0 ↔ x = y)
-  : TraceMapProperty F_cur u (k + 1) := by
+    (F_prev : Type*) [Field F_prev] [Fintype F_prev] (k : ℕ)
+    (fintypeCardPrev : Fintype.card F_prev = 2 ^ (2 ^ k))
+    (t1 : F_prev) [instNeZero_t1 : NeZero t1]
+    {F_cur : Type*} [Field F_cur] (u : F_cur) [instNeZero_u : NeZero u]
+    [Algebra F_prev F_cur]
+    (h_rel : SpecialElementRelation (t1 := t1) (u := u))
+    (prev_trace_map : TraceMapProperty F_prev t1 (k))
+    (sumZeroIffEq : ∀ (x y : F_cur), x + y = 0 ↔ x = y) :
+    TraceMapProperty F_cur u (k + 1) := by
   have h_t1_ne_0 : t1 ≠ 0 := NeZero.ne t1
   set algMap := algebraMap F_prev F_cur
   have liftedPrevTraceMapEvalAtRootsIs1 : ∑ i ∈ Finset.range (2 ^ k), algMap t1 ^ 2 ^ i = 1
@@ -1730,8 +1735,8 @@ variable {R : Type*} [CommRing R] [IsDomain R]
 A polynomial with a degree greater than 1 is not irreducible if it has a root in `R`.
 -/
 theorem not_irreducible_of_isRoot_of_degree_gt_one
-  (p : R[X]) (h_root : ∃ r : R, IsRoot p r) (h_deg : p.degree > 1) :
-  ¬ Irreducible p := by
+    (p : R[X]) (h_root : ∃ r : R, IsRoot p r) (h_deg : p.degree > 1) :
+    ¬ Irreducible p := by
   -- Assume p is irreducible for a contradiction.
   by_contra h_irreducible
   -- From the hypothesis, there exists a root `r`.

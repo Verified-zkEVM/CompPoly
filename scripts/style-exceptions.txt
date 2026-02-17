@@ -6,3 +6,5 @@ lean-toolchain : line 1 : ERR_COP : Malformed or missing copyright header : ERR_
 lean-toolchain : line 1 : ERR_MOD : Module docstring missing, or too late : ERR_MOD
 lakefile.lean : line 1 : ERR_TAC2 : In the past, importing 'Lake' has led to dramatic slow-downs of the linter (see e.g. mathlib4#13779). Please consider carefully if this import is useful and make sure to benchmark it. If this is fine, feel free to allow this linter. : ERR_TAC2
 CompPoly/Univariate/Raw.lean : line 1 : ERR_NUM_LIN : 1700 file contains 1505 lines, try to split it up : ERR_NUM_LIN
+CompPoly/Fields/Binary/Tower/Impl.lean : line 1 : ERR_NUM_LIN : 3900 file contains 3746 lines, try to split it up : ERR_NUM_LIN
+CompPoly/Fields/Binary/Tower/Prelude.lean : line 1 : ERR_NUM_LIN : 1900 file contains 1756 lines, try to split it up : ERR_NUM_LIN

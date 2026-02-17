@@ -164,7 +164,7 @@ instance instDCastForall : DCast α (fun a => ∀ b : β a, γ a b) where
   dcast ha f := fun b => dcast₂ ha ((dcast_trans ha.symm ha).trans dcast_eq) (f (dcast ha.symm b))
   dcast_id := by
     intros a; funext f; funext b
-    simp
+    simp only [id_eq]
     rw! [dcast_eq]
     simp
 

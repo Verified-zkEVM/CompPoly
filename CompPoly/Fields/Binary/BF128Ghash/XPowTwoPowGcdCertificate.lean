@@ -1,10 +1,16 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors : Chung Thai Nguyen, Quang Dao
+Authors: Chung Thai Nguyen, Quang Dao
 -/
 
 import CompPoly.Fields.Binary.BF128Ghash.XPowTwoPowModCertificate
+
+/-!
+# XPowTwoPow Gcd Certificate
+
+Certificates for gcd conditions in the BF128Ghash field.
+-/
 
 namespace BF128Ghash
 open Polynomial
@@ -49,7 +55,7 @@ lemma toPoly_gcd_b_0_val_mod_ghashPoly_eq_gcd_b_0_val :
   exact toPoly_degree_lt_w (w := 128) (h_w_pos := by omega) (v := _)
 
 lemma gcd_start_reduction :
-  EuclideanDomain.gcd ((X^(2^64)) + X) ghashPoly =
+    EuclideanDomain.gcd ((X^(2^64)) + X) ghashPoly =
   EuclideanDomain.gcd ghashPoly (toPoly gcd_b_0_val) := by
   -- 1. Swap order: gcd(A, B) = gcd(B, A)
   rw [ZMod2Poly.euclidean_gcd_comm]

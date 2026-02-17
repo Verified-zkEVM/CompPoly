@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors : Quang Dao, Chung Thai Nguyen
+Authors: Quang Dao, Chung Thai Nguyen
 -/
 
 import CompPoly.Fields.Binary.Tower.Prelude
@@ -63,10 +63,10 @@ structure BinaryTowerInductiveStepResult (k : ℕ) (prevBTField : Type _)
 set_option maxHeartbeats 1000000 in
 -- it takes more heartbeats to prove this theorem
 def binary_tower_inductive_step
-  (k : Nat)
+    (k : Nat)
   (prevBTField : Type _) [Field prevBTField]
-  (prevBTResult : BinaryTowerResult prevBTField k)
-: Σ' (F : Type _), BinaryTowerInductiveStepResult (k:=k) (prevBTField:=prevBTField)
+  (prevBTResult : BinaryTowerResult prevBTField k) :
+  Σ' (F : Type _), BinaryTowerInductiveStepResult (k:=k) (prevBTField:=prevBTField)
   (prevBTResult:=prevBTResult) (prevPoly:=definingPoly (F:=prevBTField)
     (instField:=prevBTResult.instField) (s:=prevBTResult.specialElement)) (F:=F)
   (instPrevBTFieldIsField:=prevBTResult.instField) := by
@@ -102,8 +102,9 @@ def binary_tower_inductive_step
   let newElts := elts.map (fun x => (AdjoinRoot.of prevPoly).toFun x)
 
   have unique_linear_form_of_elements_in_curBTField : ∀ (c1 : AdjoinRoot prevPoly),
-    ∃! (p : prevBTField × prevBTField), c1 = (of prevPoly) p.1 * root prevPoly + (of prevPoly) p.2
-      := unique_linear_form_of_elements_in_adjoined_commring
+    ∃! (p : prevBTField × prevBTField),
+    c1 = (of prevPoly) p.1 * root prevPoly + (of prevPoly) p.2 :=
+    unique_linear_form_of_elements_in_adjoined_commring
         (hf_deg := prevPolyNatDegIs2) (hf_monic := prevPolyIsMonic)
 
   have selfSumEqZero : ∀ (x : curBTField), x + x = 0 := self_sum_eq_zero
@@ -392,7 +393,7 @@ def BinaryTowerAux (k : ℕ) : (Σ' (F : Type 0), BinaryTowerResult F k) :=
 def BTField (k : ℕ) := (BinaryTowerAux k).1
 
 lemma BTField_is_BTFieldAux (k : ℕ) :
-  BTField k = (BinaryTowerAux k).1 := by
+    BTField k = (BinaryTowerAux k).1 := by
   unfold BTField
   rfl
 
@@ -422,8 +423,8 @@ instance BTFieldNeZero1 (k : ℕ) : NeZero (1 : BTField k) := by
 instance BTField_Fintype (k : ℕ) : Fintype (BTField k) := (BinaryTowerAux k).2.instFintype
 
 @[simp]
-def BTFieldCard (k : ℕ) : Fintype.card (BTField k) = 2^(2^k)
-  := (BinaryTowerAux k).2.fieldFintypeCard
+def BTFieldCard (k : ℕ) : Fintype.card (BTField k) = 2^(2^k) :=
+  (BinaryTowerAux k).2.fieldFintypeCard
 
 @[simp]
 instance BTFieldIsDomain (k : ℕ) : IsDomain (BTField k) := inferInstance
@@ -435,7 +436,7 @@ instance BTFieldNoZeroDiv (k : ℕ) : NoZeroDivisors (BTField k) := by
 
 @[simp]
 def sumZeroIffEq (k : ℕ) : ∀ (x y : BTField k),
-  x + y = 0 ↔ x = y := (BinaryTowerAux k).2.sumZeroIffEq
+    x + y = 0 ↔ x = y := (BinaryTowerAux k).2.sumZeroIffEq
 
 @[simp]
 instance BTFieldChar2 (k : ℕ) : CharP (BTField k) 2 :=
@@ -462,12 +463,12 @@ lemma poly_natDegree_eq_2 (k : ℕ) : (poly (k:=k)).natDegree = 2 :=
   natDegree_eq_of_degree_eq_some (degree_definingPoly (Z k))
 
 lemma BTField.cast_BTField_eq (k m : ℕ) (h_eq : k = m) :
-  BTField k = BTField m := by
+    BTField k = BTField m := by
   subst h_eq
   rfl
 
 lemma BTField.cast_mul (m n : ℕ) {x y : BTField m} (h_eq : m = n) :
-  (cast (by exact BTField.cast_BTField_eq m n h_eq) (x * y)) =
+    (cast (by exact BTField.cast_BTField_eq m n h_eq) (x * y)) =
   (cast (by exact BTField.cast_BTField_eq m n h_eq) x) *
   (cast (by exact BTField.cast_BTField_eq m n h_eq) y) := by
   subst h_eq
@@ -492,7 +493,7 @@ lemma list_0 : list 0 = List.Vector.cons (1 : GF(2)) List.Vector.nil := by
 
 @[simp]
 lemma list_eq (k : ℕ) :
-  list (k+1) = (Z (k+1)) ::ᵥ (list k).map (AdjoinRoot.of (poly k)) := by
+    list (k+1) = (Z (k+1)) ::ᵥ (list k).map (AdjoinRoot.of (poly k)) := by
   unfold list
   rfl
 
@@ -571,18 +572,18 @@ lemma BTField_add_eq (k n m) : BTField (k + n + m) = BTField (k + (n + m)) := by
 
 @[simp]
 theorem BTField.RingHom_eq_of_dest_eq (k m n : ℕ) (h_eq : m = n) :
-  (BTField k →+* BTField m) = (BTField k →+* BTField n) := by
+    (BTField k →+* BTField m) = (BTField k →+* BTField n) := by
   subst h_eq
   rfl
 
 @[simp]
 theorem BTField.RingHom_eq_of_dest_AdjoinRoot_eq (k m : ℕ) :
-  (BTField k →+* BTField (m+1)) = (BTField k →+* (AdjoinRoot (poly m))) := by
+    (BTField k →+* BTField (m+1)) = (BTField k →+* (AdjoinRoot (poly m))) := by
   rw! (castMode:=.all) [BTField_succ_eq_adjoinRoot m]
 
 @[simp]
 theorem BTField.RingHom_cast_dest_apply (k m n : ℕ) (h_eq : m = n)
-  (f : BTField k →+* BTField m) (x : BTField k) :
+    (f : BTField k →+* BTField m) (x : BTField k) :
     (cast (BTField.RingHom_eq_of_dest_eq (k:=k) (m:=m) (n:=n) h_eq) f) x
     = cast (by apply cast_BTField_eq (h_eq:=h_eq)) (f x) := by
   subst h_eq
@@ -590,7 +591,7 @@ theorem BTField.RingHom_cast_dest_apply (k m n : ℕ) (h_eq : m = n)
 
 @[simp]
 theorem BTField.RingHom_cast_dest_AdjoinRoot_apply (k m : ℕ)
-  (f : BTField k →+* AdjoinRoot (poly m)) (x : BTField k) :
+    (f : BTField k →+* AdjoinRoot (poly m)) (x : BTField k) :
   (cast (BTField.RingHom_eq_of_dest_AdjoinRoot_eq (k:=k) (m:=m)).symm f) x
   = cast (BTField_succ_eq_adjoinRoot m) (f x) := by
   rfl
@@ -616,7 +617,7 @@ lemma towerAlgebraMap_id (k : ℕ) : towerAlgebraMap (h_le:=by omega) = RingHom.
   exact (Ne.dite_eq_left_iff fun h a ↦ h rfl).mpr rfl
 
 lemma towerAlgebraMap_succ_1 (k : ℕ) :
-  towerAlgebraMap (l:=k) (r:=k+1) (h_le:=by omega) = canonicalEmbedding k := by
+    towerAlgebraMap (l:=k) (r:=k+1) (h_le:=by omega) = canonicalEmbedding k := by
   unfold towerAlgebraMap
   simp only [Nat.left_eq_add, one_ne_zero, ↓reduceDIte,
     Nat.add_one_sub_one, eq_mp_eq_cast, cast_eq]
@@ -625,7 +626,7 @@ lemma towerAlgebraMap_succ_1 (k : ℕ) :
 
 /-! Right associativity of the Tower Map -/
 lemma towerAlgebraMap_succ (l r : ℕ) (h_le : l ≤ r) :
-  towerAlgebraMap (l:=l) (r:=r+1) (h_le:=by omega) =
+    towerAlgebraMap (l:=l) (r:=r+1) (h_le:=by omega) =
   (towerAlgebraMap (l:=r) (r:=r+1) (h_le:=by omega)).comp
   (towerAlgebraMap (l:=l) (r:=r) (h_le:=by omega)) := by
   ext x
@@ -637,7 +638,7 @@ lemma towerAlgebraMap_succ (l r : ℕ) (h_le : l ≤ r) :
 
 /-! Left associativity of the Tower Map -/
 theorem towerAlgebraMap_succ_last (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) →
-  towerAlgebraMap (l:=l) (r:=r+1) (h_le:=by
+    towerAlgebraMap (l:=l) (r:=r+1) (h_le:=by
     exact Nat.le_trans (n:=l) (m:=r) (k:=r+1) (h_le) (by omega)) =
   (towerAlgebraMap (l:=l+1) (r:=r+1) (by omega)).comp (towerAlgebraMap
     (l:=l) (r:=l+1) (by omega)) := by
@@ -664,7 +665,7 @@ for both the input and output ring homs.
 -/
 @[simp]
 theorem BTField.RingHom_comp_cast {α β γ δ : ℕ} (f : BTField α →+* BTField β)
-  (g : BTField β →+* BTField γ) (h : γ = δ) :
+    (g : BTField β →+* BTField γ) (h : γ = δ) :
     ((cast (BTField.RingHom_eq_of_dest_eq (k:=β) (m:=γ) (n:=δ) h) g).comp f)
     = cast (BTField.RingHom_eq_of_dest_eq (k:=α) (m:=γ) (n:=δ) h) (g.comp f) := by
   have h1 := BTField.RingHom_eq_of_dest_eq (k:=β) (m:=γ) (n:=δ) h
@@ -721,10 +722,10 @@ lemma binaryTowerAlgebra_def (l r : ℕ) (h_le : l ≤ r) :
     = (towerAlgebraMap l r h_le).toAlgebra := by rfl
 
 lemma algebraMap_binaryTowerAlgebra_def (l r : ℕ) (h_le : l ≤ r) :
-  (@binaryAlgebraTower (l:=l) (r:=r) (h_le:=h_le)).algebraMap = towerAlgebraMap l r h_le := by rfl
+    (@binaryAlgebraTower (l:=l) (r:=r) (h_le:=h_le)).algebraMap = towerAlgebraMap l r h_le := by rfl
 
 lemma BTField.coe_one_succ (l : ℕ) :
-  (@binaryAlgebraTower (l:=l) (r:=l+1) (h_le:=by omega)).algebraMap (1 : BTField l) =
+    (@binaryAlgebraTower (l:=l) (r:=l+1) (h_le:=by omega)).algebraMap (1 : BTField l) =
     (1 : BTField (l+1)) := by
   exact RingHom.map_one (binaryAlgebraTower (l:=l) (r:=l+1) (h_le:=by omega)).algebraMap
 
@@ -741,8 +742,7 @@ theorem binaryTowerAlgebra_apply_assoc (l mid r : ℕ) (h_l_le_mid : l ≤ mid) 
     (@binaryAlgebraTower (l:=l) (r:=r) (h_le:=by
       exact Nat.le_trans h_l_le_mid h_mid_le_r)).algebraMap x =
     (@binaryAlgebraTower (l:=mid) (r:=r) (h_le:=h_mid_le_r)).algebraMap
-      ((@binaryAlgebraTower (l:=l) (r:=mid) (h_le:=h_l_le_mid)).algebraMap x)
-    := by
+      (    (@binaryAlgebraTower (l:=l) (r:=mid) (h_le:=h_l_le_mid)).algebraMap x) := by
   intro x
   simp_rw [algebraMap_binaryTowerAlgebra_def]
   rw [←RingHom.comp_apply]
@@ -758,24 +758,24 @@ instance (priority := 1000) algebra_adjacent_tower (l : ℕ) :
   exact binaryAlgebraTower (h_le:=by omega)
 
 lemma algebraMap_adjacent_tower_def (l : ℕ) :
-  (algebraMap (BTField l) (BTField (l + 1))) = canonicalEmbedding l := by
+    (algebraMap (BTField l) (BTField (l + 1))) = canonicalEmbedding l := by
   unfold algebra_adjacent_tower
   rw [binaryTowerAlgebra_def]
   exact towerAlgebraMap_succ_1 l
 
 lemma algebraMap_adjacent_tower_succ_eq_Adjoin_of (k : ℕ) :
-  (algebraMap (BTField k) (BTField (k + 1))) = of (poly k) := by
+    (algebraMap (BTField k) (BTField (k + 1))) = of (poly k) := by
   rw [algebraMap_adjacent_tower_def]
   rfl
 
 lemma algebra_adjacent_tower_def (l : ℕ) :
-  (algebra_adjacent_tower l) = (canonicalEmbedding l).toAlgebra := by
+    (algebra_adjacent_tower l) = (canonicalEmbedding l).toAlgebra := by
   unfold algebra_adjacent_tower
   rw [binaryTowerAlgebra_def]
   rw [towerAlgebraMap_succ_1]
 
 lemma algebra_adjacent_tower_eq_AdjoinRoot_algebra (k : ℕ) :
-  (algebra_adjacent_tower k) = (AdjoinRoot.instAlgebra (poly k)) := by
+    (algebra_adjacent_tower k) = (AdjoinRoot.instAlgebra (poly k)) := by
   rw [algebra_adjacent_tower_def]
   unfold canonicalEmbedding
   rw [←AdjoinRoot.algebraMap_eq]
@@ -785,7 +785,7 @@ lemma algebra_adjacent_tower_eq_AdjoinRoot_algebra (k : ℕ) :
       (AdjoinRoot.instAlgebra (poly k)) (congrFun rfl)
 
 def BTField_succ_alg_equiv_adjoinRoot (k : ℕ) :
-  AdjoinRoot (poly k) ≃ₐ[BTField k] BTField (k + 1) := by
+    AdjoinRoot (poly k) ≃ₐ[BTField k] BTField (k + 1) := by
   have h_eq : AdjoinRoot (poly k) = BTField (k + 1) := BTField_succ_eq_adjoinRoot k
   exact { -- We can construct RingEquiv in a similar way
     toFun     := Equiv.cast h_eq,
@@ -807,15 +807,15 @@ noncomputable section MultilinearBasis
 
 @[simp]
 theorem BTField.Basis_cast_index_eq (i j k n : ℕ) (h_le : k ≤ n) (h_eq : i = j) :
-    letI instAlgebra : Algebra (BTField k) (BTField n)
-      := binaryAlgebraTower (l:=k) (r:=n) (h_le:=h_le)
+    letI instAlgebra : Algebra (BTField k) (BTField n) :=
+      binaryAlgebraTower (l:=k) (r:=n) (h_le:=h_le)
     letI : Module (BTField k) (BTField n) := instAlgebra.toModule
     (Basis (Fin (i)) (BTField k) (BTField n)) = (Basis (Fin (j)) (BTField k) (BTField n)) := by
   subst h_eq
   rfl
 
 theorem BTField.Basis_cast_dest_eq {ι : Type*} (k n m : ℕ) (h_k_le_n : k ≤ n)
-  (h_k_le_m : k ≤ m) (h_eq : m = n) :
+    (h_k_le_m : k ≤ m) (h_eq : m = n) :
   letI instLeftAlgebra := binaryAlgebraTower (l:=k) (r:=m) (h_le:=h_k_le_m)
   letI instRightAlgebra := binaryAlgebraTower (l:=k) (r:=n) (h_le:=h_k_le_n)
   @Basis ι (BTField k) (BTField m) _ _ instLeftAlgebra.toModule =
@@ -824,7 +824,7 @@ theorem BTField.Basis_cast_dest_eq {ι : Type*} (k n m : ℕ) (h_k_le_n : k ≤ 
   rfl
 
 theorem BTField.PowerBasis_cast_dest_eq (k n m : ℕ) (h_k_le_n : k ≤ n)
-  (h_k_le_m : k ≤ m) (h_eq : m = n) :
+    (h_k_le_m : k ≤ m) (h_eq : m = n) :
   letI instLeftAlgebra := binaryAlgebraTower (l:=k) (r:=m) (h_le:=h_k_le_m)
   letI instRightAlgebra := binaryAlgebraTower (l:=k) (r:=n) (h_le:=h_k_le_n)
   @PowerBasis (BTField k) (BTField m) _ _ instLeftAlgebra =
@@ -837,7 +837,7 @@ via changing in index type : `Fin (i)` to `Fin (j)` when `α ≤ β`.
 -/
 @[simp]
 theorem BTField.Basis_cast_index_apply {α β i j : ℕ} {k : Fin j} (h_le : α ≤ β) (h_eq : i = j)
-  {b : @Basis (Fin (i)) (BTField α) (BTField β) _ _
+    {b : @Basis (Fin (i)) (BTField α) (BTField β) _ _
     (@binaryAlgebraTower (l := α) (r := β) (h_le := h_le)).toModule} :
   let castBasis : @Basis (Fin j) (BTField α) (BTField β) _ _
     (@binaryAlgebraTower (l:=α) (r:=β) (h_le:=h_le)).toModule :=
@@ -873,13 +873,13 @@ def powerBasisSucc (k : ℕ) :
   apply pb.map (e:=BTField_succ_alg_equiv_adjoinRoot k)
 
 lemma powerBasisSucc_gen (k : ℕ) :
-  (powerBasisSucc k).gen = (Z (k+1)) := by
+    (powerBasisSucc k).gen = (Z (k+1)) := by
   -- Z (k+1) is generator of BTField (k+1) over (BTField k)
   -- Correctness : Both sides are definitionally equal to AdjoinRoot.root (poly k)
   rfl
 
 lemma powerBasisSucc_dim (k : ℕ) :
-  powerBasisSucc (k:=k).dim = 2 := by
+    powerBasisSucc (k:=k).dim = 2 := by
   simp only [BTField, CommRing, BTFieldIsField, powerBasisSucc, poly, PowerBasis.map_dim,
     powerBasis_dim]
   exact natDegree_definingPoly (Z k)
@@ -892,26 +892,26 @@ def join_via_add_smul {k : ℕ} (h_pos : k > 0) (hi_btf lo_btf : BTField (k - 1)
 scoped[BinaryTower] notation "⋘" hi ", " lo "⋙" => join_via_add_smul (h_pos:=by omega) hi lo
 
 lemma join_via_add_smul_zero {k : ℕ} (h_pos : k > 0) :
-  ⋘ 0, 0 ⋙ = 0 := by
+    ⋘ 0, 0 ⋙ = 0 := by
   unfold join_via_add_smul
   simp only [map_zero, add_zero]
   letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   rw [Algebra.smul_def', map_zero, zero_mul]
 
 lemma join_via_add_smul_one_zero_eq_Z {k : ℕ} (h_pos : k > 0) :
-  ⋘ 1, 0 ⋙ = Z k := by
+    ⋘ 1, 0 ⋙ = Z k := by
   unfold join_via_add_smul
   letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   rw [Algebra.smul_def', map_one, map_zero, one_mul, add_zero]
 
 lemma join_via_add_smul_one {k : ℕ} (h_pos : k > 0) :
-  ⋘ 0, 1 ⋙ = 1 := by
+    ⋘ 0, 1 ⋙ = 1 := by
   unfold join_via_add_smul
   letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   rw [Algebra.smul_def', map_zero, map_one, zero_mul, zero_add]
 
 theorem sum_join_via_add_smul (k : ℕ) (h_pos : k > 0) (a₁ a₀ b₁ b₀ : BTField (k - 1)) :
-  ⋘ a₁, a₀ ⋙ + ⋘ b₁, b₀ ⋙ = ⋘ a₁ + b₁, a₀ + b₀ ⋙ := by
+    ⋘ a₁, a₀ ⋙ + ⋘ b₁, b₀ ⋙ = ⋘ a₁ + b₁, a₀ + b₀ ⋙ := by
   letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   unfold join_via_add_smul
   simp only [map_add]
@@ -925,7 +925,7 @@ theorem sum_join_via_add_smul (k : ℕ) (h_pos : k > 0) (a₁ a₀ b₁ b₀ : B
 = [a₁ * b₁ * Z (k - 1) + a₁ * b₀ + a₀ * b₁] * (Z k) + (a₀ * b₀ + a₁ * b₁)
 -/
 theorem mul_join_via_add_smul (k : ℕ) (h_pos : k > 0) (a₁ a₀ b₁ b₀ : BTField (k - 1)) :
-  ⋘ a₁, a₀ ⋙ * ⋘ b₁, b₀ ⋙ = ⋘ a₁ * b₁ * Z (k - 1) + a₁ * b₀ + a₀ * b₁, a₀ * b₀ + a₁ * b₁ ⋙ := by
+    ⋘ a₁, a₀ ⋙ * ⋘ b₁, b₀ ⋙ = ⋘ a₁ * b₁ * Z (k - 1) + a₁ * b₀ + a₀ * b₁, a₀ * b₀ + a₁ * b₁ ⋙ := by
   letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   conv_lhs =>
     unfold join_via_add_smul
@@ -977,7 +977,7 @@ theorem mul_join_via_add_smul (k : ℕ) (h_pos : k > 0) (a₁ a₀ b₁ b₀ : B
   rfl
 
 theorem unique_linear_decomposition_succ (k : ℕ) :
-  ∀ (x : BTField (k+1)), ∃! (p : BTField k × BTField k),
+    ∀ (x : BTField (k+1)), ∃! (p : BTField k × BTField k),
     x = ⋘ p.1, p.2 ⋙ := by
   intro x
   -- First, we have `AdjoinRoot.powerBasis'` of dim 2 (`powerBasis'_dim`)
@@ -988,8 +988,7 @@ theorem unique_linear_decomposition_succ (k : ℕ) :
   simp only [Nat.add_one_sub_one]
   simp only [Algebra.smul_def]
   have unique_linear_combination : ∀ (c1 : AdjoinRoot (poly k)),
-    ∃! (p : BTField k × BTField k), c1 = (of (poly k)) p.1 * root (poly k) + (of (poly k)) p.2
-      := by
+    ∃! (p : BTField k × BTField k), c1 = (of (poly k)) p.1 * root (poly k) + (of (poly k)) p.2 := by
     apply unique_linear_form_of_elements_in_adjoined_commring
     · apply BinaryTower.poly_natDegree_eq_2
     · apply BinaryTower.polyMonic
@@ -1068,7 +1067,7 @@ An element `x` lifted from the base field `BTField (k-1)` has `(0, x)` as its
 split representation in `BTField k`.
 -/
 lemma split_algebraMap_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : BTField (k - 1)) :
-  letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
+    letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   split (k:=k) (h_k:=h_pos) (algebraMap (BTField (k - 1)) (BTField k) x) = (0, x) := by
   -- this one is long because of the `cast` stuff, but it should be quite straightforward
   -- via def of `canonicalEmbedding` and `eq_join_via_add_smul_eq_iff_split`
@@ -1107,7 +1106,7 @@ lemma split_algebraMap_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : BTField (k - 1))
   rw [eqRec_eq_cast]
 
 lemma algebraMap_succ_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : BTField (k - 1)) :
-  letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
+    letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   algebraMap (BTField (k - 1)) (BTField k) x = ⋘ 0, x ⋙ := by
   letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   have h := eq_join_via_add_smul_eq_iff_split (k:=k) (h_pos:=h_pos)
@@ -1141,7 +1140,7 @@ lemma algebraMap_eq_zero_x {i j : ℕ} (h_le : i < j) (x : BTField i) :
 
 @[simp]
 theorem minPoly_of_powerBasisSucc_generator (k : ℕ) :
-  (minpoly (BTField k) (powerBasisSucc k).gen) = X^2 + (Z k) • X + 1 := by
+    (minpoly (BTField k) (powerBasisSucc k).gen) = X^2 + (Z k) • X + 1 := by
   have h_minPoly := AdjoinRoot.minpoly_powerBasis_gen_of_monic (f:=poly k)
     (hf:=by exact polyMonic k)
   conv_rhs at h_minPoly => rw [poly_form, ←add_assoc, ←Polynomial.smul_eq_C_mul]
@@ -1151,7 +1150,7 @@ theorem minPoly_of_powerBasisSucc_generator (k : ℕ) :
   simp only [PowerBasis.map_gen, powerBasis_gen, minpoly.algEquiv_eq]
 
 def hli_level_diff_0 (l : ℕ) :
-  letI instAlgebra:= binaryAlgebraTower (l:=l) (r:=l) (h_le:=by omega)
+    letI instAlgebra:= binaryAlgebraTower (l:=l) (r:=l) (h_le:=by omega)
   @Basis (Fin 1) (BTField l) (BTField l) _ _ instAlgebra.toModule:= by
   letI instAlgebra:= binaryAlgebraTower (l:=l) (r:=l) (h_le:=by omega)
   letI instModule:= instAlgebra.toModule
@@ -1208,14 +1207,14 @@ def multilinearBasis (l r : ℕ) (h_le : l ≤ r) :
     have h_r : r = r1 + 1 := by omega
     letI instAlgebraPrev : Algebra (BTField l) (BTField (r1)) :=
       binaryAlgebraTower (l:=l) (r:=r1) (h_le:=by omega)
-    set prevMultilinearBasis : Basis (Fin (2 ^ (r1 - l))) (BTField l) (BTField r1)
-      := multilinearBasis (l:=l) (r:=r1) (h_le:=by omega)
+    set prevMultilinearBasis : Basis (Fin (2 ^ (r1 - l))) (BTField l) (BTField r1) :=
+      multilinearBasis (l:=l) (r:=r1) (h_le:=by omega)
     rw! [h_r1_sub_l] at prevMultilinearBasis
     letI instAlgebra : Algebra (BTField l) (BTField (r1 + 1)) :=
       binaryAlgebraTower (l:=l) (r:=r1 + 1) (h_le:=by omega)
     rw! [h_r_sub_l]
-    apply Basis.reindex (e:=revFinProdFinEquiv (m:=2^(n')) (n:=2)
-      (h_m:=by exact Nat.two_pow_pos n'))
+    apply Basis.reindex
+      (e:=revFinProdFinEquiv (m:=2^(n')) (n:=2) (h_m:=by exact Nat.two_pow_pos n'))
     -- ⊢ Basis (Fin 2 × Fin (2 ^ n')) (BTField l) (BTField (r))
     have h_eq : l + (n' + 1) = (r1) + 1 := by rw [←add_assoc]
     letI instAlgebraSucc : Algebra (BTField (r1)) (BTField (r1 + 1)) := by
@@ -1298,7 +1297,7 @@ The basis element at index `j` is the product of the tower generators at
 the ON bits in binary representation of `j`.
 -/
 theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀ (j : Fin (2  ^ (r - l))),
-  multilinearBasis (l:=l) (r:=r) (h_le:=h_le) j =
+    multilinearBasis (l:=l) (r:=r) (h_le:=h_le) j =
     (Finset.univ : Finset (Fin (r - l))).prod (fun i =>
       (binaryAlgebraTower (l:=l + i + 1) (r:=r) (h_le:=by omega)).algebraMap (
         (𝕏 (l + i)) ^ (Nat.getBit i j))) := by

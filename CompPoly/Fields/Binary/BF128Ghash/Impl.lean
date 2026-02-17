@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors : Chung Thai Nguyen, Quang Dao
+Authors: Chung Thai Nguyen, Quang Dao
 -/
 
 import CompPoly.Fields.Binary.BF128Ghash.Basic
@@ -385,7 +385,7 @@ lemma add_self_cancel (a : ConcreteBF128Ghash) : a + a = 0 := by
   apply BitVec.xor_self
 
 lemma nsmul_succ (n : ℕ) (x : ConcreteBF128Ghash) :
-  (if (n + 1) % 2 = 0 then (0 : ConcreteBF128Ghash) else x)
+    (if (n + 1) % 2 = 0 then (0 : ConcreteBF128Ghash) else x)
     = (if n % 2 = 0 then (0 : ConcreteBF128Ghash) else x) + x := by
   have h_mod : (n + 1) % 2 = (n % 2 + 1) % 2 := Nat.add_mod n 1 2
   by_cases h : n % 2 = 0
@@ -404,7 +404,7 @@ lemma nsmul_succ (n : ℕ) (x : ConcreteBF128Ghash) :
     dsimp only [HAdd.hAdd, Add.add]; simp only [BitVec.xor_self]
 
 lemma zsmul_succ (n : ℕ) (x : ConcreteBF128Ghash) :
-  (if (n + 1 : ℤ) % 2 = 0 then (0 : ConcreteBF128Ghash) else x)
+    (if (n + 1 : ℤ) % 2 = 0 then (0 : ConcreteBF128Ghash) else x)
     = (if (n : ℤ) % 2 = 0 then (0 : ConcreteBF128Ghash) else x) + x := by
   norm_cast
   exact nsmul_succ n x
@@ -413,7 +413,7 @@ lemma int_neg_mod_two (n : ℤ) : (-n) % 2 = n % 2 := by
   simp only [Int.neg_emod_two]
 
 lemma zsmul_neg (n : ℕ) (x : ConcreteBF128Ghash) :
-  (if (Int.negSucc n) % 2 = 0 then (0 : ConcreteBF128Ghash) else x)
+    (if (Int.negSucc n) % 2 = 0 then (0 : ConcreteBF128Ghash) else x)
     = -(if (n + 1 : ℤ) % 2 = 0 then (0 : ConcreteBF128Ghash) else x) := by
   have h_neg : Int.negSucc n = - (n + 1 : ℤ) := rfl
   rw [h_neg]
