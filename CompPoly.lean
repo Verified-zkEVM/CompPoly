@@ -4,6 +4,7 @@ import CompPoly.Data.Fin.BigOperators
 import CompPoly.Data.List.Lemmas
 import CompPoly.Data.Nat.Bitwise
 import CompPoly.Data.Polynomial.Frobenius
+import CompPoly.Data.MvPolynomial.Notation
 import CompPoly.Data.RingTheory.AlgebraTower
 import CompPoly.Data.RingTheory.CanonicalEuclideanDomain
 import CompPoly.Data.Vector.Basic
@@ -21,8 +22,13 @@ import CompPoly.Univariate.Basic
 import CompPoly.Univariate.Quotient
 import CompPoly.Univariate.ToPoly
 import CompPoly.Univariate.Lagrange
+import CompPoly.ToMathlib.Finsupp.Fin
+import CompPoly.ToMathlib.MvPolynomial.Equiv
 import CompPoly.Fields.Basic
 import CompPoly.Fields.BabyBear
+import CompPoly.Fields.AdditiveNTT.NovelPolynomialBasis
+import CompPoly.Fields.AdditiveNTT.AdditiveNTT
+import CompPoly.Fields.AdditiveNTT.Impl
 import CompPoly.Fields.Binary.Common
 import CompPoly.Fields.Binary.Tower.Prelude
 import CompPoly.Fields.Binary.Tower.Basic
