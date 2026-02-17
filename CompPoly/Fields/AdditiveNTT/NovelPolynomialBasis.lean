@@ -59,8 +59,7 @@ variable (β : Fin r → L) [hβ_lin_indep : Fact (LinearIndependent 𝔽q β)]
 section LinearSubspaces
 
 lemma fintype_card_gt_one_of_field (K : Type*) [Field K] [Fintype K] :
-  1 < Fintype.card K :=
-by
+    1 < Fintype.card K := by
   exact Fintype.one_lt_card_iff.mpr ⟨(0 : K), 1, by simp only [ne_eq, zero_ne_one,
     not_false_eq_true]⟩
 
@@ -81,7 +80,7 @@ noncomputable instance {i : Fin r} (x : L) : Decidable (x ∈ (U 𝔽q β i : Se
 -- The dimension of `U i` is `i`.
 omit [Fintype L] [Fintype 𝔽q] h_Fq_char_prime in
 lemma finrank_U (i : Fin r) :
-  Module.finrank 𝔽q (U 𝔽q β i) = i := by
+    Module.finrank 𝔽q (U 𝔽q β i) = i := by
   -- The dimension of the span of linearly independent vectors is the number of vectors.
   unfold U
   set basisUᵢ := β '' Set.Ico 0 i
@@ -211,7 +210,7 @@ lemma βᵢ_not_in_Uᵢ (i : Fin r) :
 -- The main theorem
 omit [Fintype L] [DecidableEq L] [Fintype 𝔽q] h_Fq_char_prime in
 theorem root_U_lift_down
-  (i : Fin r) (h_i_add_1 : i + 1 < r) (a : L) :
+    (i : Fin r) (h_i_add_1 : i + 1 < r) (a : L) :
   a ∈ (U 𝔽q β (i+1)) → ∃! x: 𝔽q, a - x • β i ∈ (U 𝔽q β i) := by
   intro h_a_mem_U_i_plus_1
   apply existsUnique_of_exists_of_unique
@@ -259,7 +258,7 @@ theorem root_U_lift_down
 
 omit [Fintype L] [DecidableEq L] [Fintype 𝔽q] h_Fq_char_prime hβ_lin_indep in
 theorem root_U_lift_up (i : Fin r) (h_i_add_1 : i + 1 < r) (a : L) (x : 𝔽q) :
-  a - x • β i ∈ (U 𝔽q β i) → a ∈ (U 𝔽q β (i+1)) := by
+    a - x • β i ∈ (U 𝔽q β i) → a ∈ (U 𝔽q β (i+1)) := by
   intro h_a_sub_x_smul_β_i_mem_U_i
    -- We want to show `a ∈ U(i+1)`. We can rewrite `a` as `(a - x • β i) + x • β i`.
   rw [← sub_add_cancel a (x • β i)]
@@ -359,7 +358,7 @@ lemma Wᵢ_eval_βᵢ_neq_zero
 omit [DecidableEq L] [Fintype 𝔽q] hβ_lin_indep in
 -- `Wᵢ(X)` vanishes on `Uᵢ`
 lemma Wᵢ_vanishing (i : Fin r) :
-  ∀ u ∈ U 𝔽q β i, (W 𝔽q β i).eval u = 0 := by
+    ∀ u ∈ U 𝔽q β i, (W 𝔽q β i).eval u = 0 := by
   -- The roots of `Wᵢ(X)` are precisely the elements of `Uᵢ`.
    -- For any `u ∈ Uᵢ`, the product `Wᵢ(X)` contains the factor `(X - u)`.
   intro u hu
@@ -413,7 +412,7 @@ lemma W_splits (i : Fin r) : (W 𝔽q β i).Splits := by
 omit [Fintype 𝔽q] h_Fq_char_prime hβ_lin_indep in
 /-- The roots of `Wᵢ(X)` are precisely the elements of the subspace `Uᵢ`. -/
 lemma roots_W (i : Fin r) : -- converts root Multiset into (univ: Uᵢ.val.map)
-  (W 𝔽q β i).roots = (univ : Finset (U 𝔽q β i)).val.map (fun u => u.val) := by
+    (W 𝔽q β i).roots = (univ : Finset (U 𝔽q β i)).val.map (fun u => u.val) := by
   unfold W -- must unfold to reason on the form of `prod (X-C)`
   let f_inner : U 𝔽q β i → L := Subtype.val
   let f_outer : L → L[X] := fun y => X - C y
@@ -446,7 +445,7 @@ noncomputable def algEquivAevalXSubC {R : Type*} [CommRing R] (t : R) : R[X] ≃
 
 omit [Fintype L] [DecidableEq L] in
 lemma comp_X_sub_C_eq_zero_iff (p : L[X]) (a : L) :
-  p.comp (X - C a) = 0 ↔ p = 0 := EmbeddingLike.map_eq_zero_iff (f := algEquivAevalXSubC a)
+    p.comp (X - C a) = 0 ↔ p = 0 := EmbeddingLike.map_eq_zero_iff (f := algEquivAevalXSubC a)
   -- Reference: Polynomial.comp_X_add_C_eq_zero_iff
 
 omit [Fintype L] in
@@ -598,7 +597,7 @@ lemma rootMultiplicity_W (i : Fin r) (a : L) :
 
 omit [Fintype 𝔽q] h_Fq_char_prime hβ_lin_indep in
 lemma eval_W_eq_zero_iff_in_U (i : Fin r) (a : L) :
-  (W 𝔽q β i).eval a = 0 ↔ a ∈ U 𝔽q β i := by
+    (W 𝔽q β i).eval a = 0 ↔ a ∈ U 𝔽q β i := by
   constructor
   · -- Forward direction: Wᵢ(a) = 0 → a ∈ Uᵢ
     intro h_eval_zero -- h_eval_zero : eval a (W 𝔽q β i) = 0
@@ -817,7 +816,7 @@ omit [Fintype L] [DecidableEq L] [Fintype 𝔽q] h_Fq_char_prime hβ_lin_indep i
 -- This follows from the fact that a polynomial whose evaluation map is linear
 -- must be a "linearized polynomial" (or q-polynomial).
 lemma comp_sub_C_of_linear_eval (p : L[X])
-  (h_lin : IsLinearMap 𝔽q (f := fun inner_p ↦ p.comp inner_p)) (a : L) :
+    (h_lin : IsLinearMap 𝔽q (f := fun inner_p ↦ p.comp inner_p)) (a : L) :
     p.comp (X - C a) = p - C (eval a p) := by -- linearity: p ∘ (X - a) = p(X) - p(a)
   have h_comp_left: p.comp (X - C a) = p.comp X - p.comp (C a) := by
     rw [sub_eq_add_neg]
@@ -836,8 +835,8 @@ lemma comp_sub_C_of_linear_eval (p : L[X])
 omit h_Fq_char_prime hF₂ in
 lemma inductive_rec_form_W_comp (i : Fin r) (h_i_add_1 : i + 1 < r)
     (h_prev_linear_map : IsLinearMap (R := 𝔽q) (M := L[X]) (M₂ := L[X])
-      (f := fun inner_p ↦ (W 𝔽q β i).comp inner_p))
-    : ∀ p: L[X], (W 𝔽q β (i + 1)).comp p =
+      (f := fun inner_p ↦ (W 𝔽q β i).comp inner_p)) :
+    ∀ p: L[X], (W 𝔽q β (i + 1)).comp p =
       ((W 𝔽q β i).comp p) ^ Fintype.card 𝔽q -
         C (eval (β i) (W 𝔽q β i)) ^ (Fintype.card 𝔽q - 1) * ((W 𝔽q β i).comp p) := by
   intro p
@@ -968,8 +967,8 @@ lemma inductive_rec_form_W_comp (i : Fin r) (h_i_add_1 : i + 1 < r)
 
 omit hF₂ in
 lemma inductive_linear_map_W (i : Fin r) (h_i_add_1 : i + 1 < r)
-    (h_prev_linear_map : IsLinearMap 𝔽q (f := fun inner_p ↦ (W 𝔽q β i).comp inner_p))
-    : IsLinearMap 𝔽q (f := fun inner_p ↦ (W 𝔽q β (i + 1)).comp inner_p) := by
+    (h_prev_linear_map : IsLinearMap 𝔽q (f := fun inner_p ↦ (W 𝔽q β i).comp inner_p)) :
+    IsLinearMap 𝔽q (f := fun inner_p ↦ (W 𝔽q β (i + 1)).comp inner_p) := by
 
   have h_rec_form := inductive_rec_form_W_comp
     (hβ_lin_indep := hβ_lin_indep) (h_prev_linear_map := h_prev_linear_map) (i :=i)
@@ -1063,8 +1062,8 @@ omit hF₂ in
   `Wᵢ(c * f) = c * Wᵢ(f)`. As a corollary of this, `Wᵢ` is 𝔽q-linear when evaluated on elements
   of `L`: `Wᵢ(x + y) = Wᵢ(x) + Wᵢ(y)` for all `x, y ∈ L`.
 -/
-theorem W_linearity (i : Fin r)
-    : IsLinearMap 𝔽q (f := fun inner_p ↦ (W 𝔽q β i).comp inner_p) := by
+theorem W_linearity (i : Fin r) :
+    IsLinearMap 𝔽q (f := fun inner_p ↦ (W 𝔽q β i).comp inner_p) := by
   induction i using Fin.succRecOnSameFinType with
   | zero =>
     -- Base Case: i = 0 => Prove W₀ is linear.
@@ -1116,14 +1115,14 @@ theorem W_linear_comp_decomposition (i : Fin r) (h_i_add_1 : i + 1 < r) :
 omit hF₂ in
 /-- The additive property of `Wᵢ`: `Wᵢ(x + y) = Wᵢ(x) + Wᵢ(y)`. -/
 lemma W_is_additive
-  (i : Fin r) :
+    (i : Fin r) :
   IsLinearMap (R := 𝔽q) (M := L) (M₂ := L) (f := fun x ↦ (W 𝔽q β i).eval x) := by
   exact Polynomial.linear_map_of_comp_to_linear_map_of_eval (f := (W 𝔽q β i))
     (h_f_linear := W_linearity 𝔽q β (i :=i))
 
 omit hF₂ in
 theorem kernel_W_eq_U (i : Fin r) :
-  LinearMap.ker (polyEvalLinearMap (W 𝔽q β i)
+    LinearMap.ker (polyEvalLinearMap (W 𝔽q β i)
     (W_is_additive 𝔽q β i)) = U 𝔽q β i := by
   ext x
   -- Unfold the definition of kernel membership and polynomial evaluation.
@@ -1134,7 +1133,7 @@ theorem kernel_W_eq_U (i : Fin r) :
 omit hF₂ in
 /-- For all `y ∈ Uᵢ`, `Wᵢ(x + y) = Wᵢ(x)`. -/
 lemma W_add_U_invariant
-  (i : Fin r) :
+    (i : Fin r) :
   ∀ x : L, ∀ y ∈ U 𝔽q β i, (W 𝔽q β i).eval (x + y) = (W 𝔽q β i).eval x := by
   intro x y hy
   rw [(W_is_additive 𝔽q β (i :=i)).map_add]
@@ -1168,7 +1167,7 @@ lemma normalizedW₀_eq_1_div_β₀ : normalizedW (𝔽q := 𝔽q) (β := β) (i
 omit [Fintype 𝔽q] h_Fq_char_prime hβ_lin_indep in
 /-- The evaluation `Ŵᵢ₊₁(βᵢ)` is 0. This is because `Ŵᵢ₊₁ = q⁽ⁱ⁾ ∘ Ŵᵢ` and `q⁽ⁱ⁾(1) = 0`. -/
 lemma eval_normalizedW_succ_at_beta_prev (i : Fin r) (h_i_add_1 : i + 1 < r) :
-  (normalizedW 𝔽q β (i + 1)).eval (β i) = 0 := by
+    (normalizedW 𝔽q β (i + 1)).eval (β i) = 0 := by
   have h_W_eval: (W 𝔽q β (i+1)).eval (β i) = 0 := by
     rw [eval_W_eq_zero_iff_in_U]
     unfold U
@@ -1182,7 +1181,7 @@ lemma eval_normalizedW_succ_at_beta_prev (i : Fin r) (h_i_add_1 : i + 1 < r) :
 omit h_Fq_char_prime hF₂ in
 /-- The degree of `Ŵᵢ(X)` remains `|𝔽q|ⁱ`. -/
 lemma degree_normalizedW (i : Fin r) :
-  (normalizedW 𝔽q β i).degree = (Fintype.card 𝔽q)^(i.val) := by
+    (normalizedW 𝔽q β i).degree = (Fintype.card 𝔽q)^(i.val) := by
    -- Multiplication by a non-zero constant does not change the degree of a polynomial.
   let c := (1 / (W 𝔽q β i).eval (β i))
   have c_eq: c = (eval (β i) (W 𝔽q β i))⁻¹ := by
@@ -1197,7 +1196,7 @@ lemma degree_normalizedW (i : Fin r) :
 
 omit [Fintype L] [DecidableEq L] [Fintype 𝔽q] h_Fq_char_prime hβ_lin_indep in
 lemma β_lt_mem_U (i : Fin r) (j : Fin i) :
-  β ⟨j, by omega⟩ ∈ U 𝔽q β (i:=i) := by
+    β ⟨j, by omega⟩ ∈ U 𝔽q β (i:=i) := by
   unfold U
   -- It suffices to show the index lies in the generator set `β '' Set.Ico 0 i`.
   apply Submodule.subset_span
@@ -1208,7 +1207,7 @@ lemma β_lt_mem_U (i : Fin r) (j : Fin i) :
 omit [DecidableEq L] [Fintype 𝔽q] h_Fq_char_prime hβ_lin_indep in
 /-- The normalized polynomial `Ŵᵢ(X)` vanishes on `Uᵢ`. -/
 lemma normalizedWᵢ_vanishing (i : Fin r) :
-  ∀ u ∈ U 𝔽q β i, (normalizedW 𝔽q β i).eval u = 0 := by
+    ∀ u ∈ U 𝔽q β i, (normalizedW 𝔽q β i).eval u = 0 := by
   -- The roots of `Ŵᵢ(X)` are precisely the elements of `Uᵢ`.
   -- `Ŵᵢ` is just a constant multiple of `Wᵢ`, so they share the same roots.
   intro u hu
@@ -1217,7 +1216,7 @@ lemma normalizedWᵢ_vanishing (i : Fin r) :
 omit hF₂ in
 /-- The normalized subspace vanishing polynomial `Ŵᵢ(X)` is `𝔽q`-linear. -/
 theorem normalizedW_is_linear_map (i : Fin r) :
-  IsLinearMap 𝔽q (f := fun inner_p ↦ (normalizedW 𝔽q β i).comp inner_p) := by
+    IsLinearMap 𝔽q (f := fun inner_p ↦ (normalizedW 𝔽q β i).comp inner_p) := by
   let c := 1 / (W 𝔽q β i).eval (β i)
   have hW_lin : IsLinearMap 𝔽q (f := fun inner_p ↦ (W 𝔽q β i).comp inner_p) :=
     W_linearity 𝔽q β (i :=i)
@@ -1273,7 +1272,7 @@ theorem normalizedW_is_linear_map (i : Fin r) :
 
 omit hF₂ in
 theorem normalizedW_is_additive (i : Fin r) :
-  IsLinearMap 𝔽q (f := fun x ↦ (normalizedW 𝔽q β i).eval x) := by
+    IsLinearMap 𝔽q (f := fun x ↦ (normalizedW 𝔽q β i).eval x) := by
   exact Polynomial.linear_map_of_comp_to_linear_map_of_eval (f := (normalizedW 𝔽q β i))
     (h_f_linear := normalizedW_is_linear_map 𝔽q β (i :=i))
 
@@ -1305,7 +1304,7 @@ noncomputable def Xⱼ (ℓ : ℕ) (h_ℓ : ℓ ≤ r) (j : Fin (2 ^ ℓ)) : L[X
 omit [DecidableEq L] [Fintype 𝔽q] h_Fq_char_prime hβ_lin_indep in
 /-- The zero-th element of the novel polynomial basis is the constant 1 -/
 lemma Xⱼ_zero_eq_one (ℓ : ℕ) (h_ℓ : ℓ ≤ r) :
-  Xⱼ 𝔽q β ℓ h_ℓ ⟨0, by exact Nat.two_pow_pos ℓ⟩ = 1 := by
+    Xⱼ 𝔽q β ℓ h_ℓ ⟨0, by exact Nat.two_pow_pos ℓ⟩ = 1 := by
   unfold Xⱼ
   simp only [Nat.getBit_zero_eq_zero, pow_zero]
   exact Finset.prod_const_one
@@ -1314,7 +1313,7 @@ omit h_Fq_char_prime in
 /-- The degree of `Xⱼ(X)` is `j`:
   `deg(Xⱼ(X)) = Σ_{i=0}^{ℓ-1} jᵢ * deg(Ŵᵢ(X)) = Σ_{i=0}^{ℓ-1} jᵢ * 2ⁱ = j` -/
 lemma degree_Xⱼ (ℓ : ℕ) (h_ℓ : ℓ ≤ r) (j : Fin (2 ^ ℓ)) :
-  (Xⱼ 𝔽q β ℓ h_ℓ j).degree = j := by
+    (Xⱼ 𝔽q β ℓ h_ℓ j).degree = j := by
   rw [Xⱼ, degree_prod]
   set rangeL := Fin ℓ
   -- ⊢ ∑ i ∈ rangeL, (normalizedW 𝔽q β i ^ bit (↑i) j).degree = ↑j
@@ -1409,7 +1408,7 @@ def toCoeffsVec (ℓ : Nat) : L⦃<2^ℓ⦄[X] →ₗ[L] CoeffVecSpace L ℓ whe
 /-- The rows of a square lower-triangular matrix with
 non-zero diagonal entries are linearly independent. -/
 lemma linearIndependent_rows_of_lower_triangular_ne_zero_diag
-  {n : ℕ} {R : Type*} [Field R] (A : Matrix (Fin n) (Fin n) R)
+    {n : ℕ} {R : Type*} [Field R] (A : Matrix (Fin n) (Fin n) R)
   (h_lower_triangular : A.BlockTriangular ⇑OrderDual.toDual) (h_diag : ∀ i, A i i ≠ 0) :
   LinearIndependent R A := by -- This follows from the fact that such a matrix is invertible
   -- because its determinant is non-zero.
@@ -1427,7 +1426,7 @@ noncomputable def changeOfBasisMatrix (ℓ : Nat) (h_ℓ : ℓ ≤ r) : Matrix (
 
 omit h_Fq_char_prime in
 theorem changeOfBasisMatrix_lower_triangular
-  (ℓ : Nat) (h_ℓ : ℓ ≤ r) :
+    (ℓ : Nat) (h_ℓ : ℓ ≤ r) :
   (changeOfBasisMatrix 𝔽q β ℓ h_ℓ).BlockTriangular ⇑OrderDual.toDual := by
   intro i j hij
   dsimp only [toCoeffsVec, basisVectors, LinearMap.coe_mk, AddHom.coe_mk, changeOfBasisMatrix]
@@ -1446,7 +1445,7 @@ theorem changeOfBasisMatrix_lower_triangular
 
 omit h_Fq_char_prime in
 theorem changeOfBasisMatrix_diag_ne_zero
-  (ℓ : Nat) (h_ℓ : ℓ ≤ r) :
+    (ℓ : Nat) (h_ℓ : ℓ ≤ r) :
   (∀ i, (changeOfBasisMatrix 𝔽q β ℓ h_ℓ) i i ≠ 0) := by
   intro i
   dsimp [changeOfBasisMatrix, toCoeffsVec, basisVectors]
@@ -1457,7 +1456,7 @@ theorem changeOfBasisMatrix_diag_ne_zero
 omit h_Fq_char_prime in
 /-- The determinant of the change-of-basis matrix is non-zero. -/
 theorem changeOfBasisMatrix_det_ne_zero
-  (ℓ : Nat) (h_ℓ : ℓ ≤ r) :
+    (ℓ : Nat) (h_ℓ : ℓ ≤ r) :
   (changeOfBasisMatrix 𝔽q β ℓ h_ℓ).det ≠ 0 := by
   let A := changeOfBasisMatrix 𝔽q β ℓ h_ℓ
   -- Use the fact that A is lower-triangular with non-zero diagonal
@@ -1486,7 +1485,7 @@ This is proven by showing that the change-of-basis matrix to the monomial basis
 is lower-triangular with a non-zero diagonal.
 -/
 lemma coeff_vectors_linear_independent
-  (ℓ : Nat) (h_ℓ : ℓ ≤ r) :
+    (ℓ : Nat) (h_ℓ : ℓ ≤ r) :
     LinearIndependent L (toCoeffsVec (ℓ := ℓ) ∘ (basisVectors 𝔽q β ℓ h_ℓ)) := by
   -- Let `A` be the `2^ℓ x 2^ℓ` change-of-basis matrix.
   set A := changeOfBasisMatrix 𝔽q β ℓ h_ℓ
@@ -1595,7 +1594,7 @@ noncomputable def novelToMonomialCoeffs
 omit h_Fq_char_prime in
 /-- The conversion functions are inverses of each other. (Monomial -> Novel -> Monomial) -/
 theorem monomialToNovel_novelToMonomial_inverse
-  (ℓ : ℕ) (h_ℓ : ℓ ≤ r) :
+    (ℓ : ℕ) (h_ℓ : ℓ ≤ r) :
   ∀ coeffs : Fin (2^ℓ) → L,
     novelToMonomialCoeffs 𝔽q β ℓ h_ℓ
     (monomialToNovelCoeffs 𝔽q β ℓ h_ℓ coeffs) = coeffs := by
@@ -1617,7 +1616,7 @@ theorem monomialToNovel_novelToMonomial_inverse
 omit h_Fq_char_prime in
 /-- The conversion functions are inverses of each other. (Novel -> Monomial -> Novel) -/
 theorem novelToMonomial_monomialToNovel_inverse
-  (ℓ : ℕ) (h_ℓ : ℓ ≤ r) :
+    (ℓ : ℕ) (h_ℓ : ℓ ≤ r) :
   ∀ coeffs : Fin (2^ℓ) → L,
     monomialToNovelCoeffs 𝔽q β ℓ h_ℓ
       (novelToMonomialCoeffs 𝔽q β ℓ h_ℓ coeffs) = coeffs := by

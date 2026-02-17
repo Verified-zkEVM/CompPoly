@@ -7,6 +7,12 @@ Authors: Chung Thai Nguyen, Quang Dao
 import CompPoly.Fields.AdditiveNTT.AdditiveNTT
 import CompPoly.Fields.Binary.Tower.Impl
 
+/-!
+# Additive NTT Implementation
+
+Concrete implementation of the Additive NTT algorithm.
+-/
+
 namespace AdditiveNTT
 open ConcreteBinaryTower
 
@@ -59,7 +65,7 @@ omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
 /-- The `bitsToU` mapping is a bijection: showing that iterating bits corresponds
 exactly to the linear span. -/
 theorem bitsToU_bijective (i : Fin r) :
-  Function.Bijective (bitsToU (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) i) := by
+    Function.Bijective (bitsToU (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) i) := by
   -- A map between finite sets of the same size is bijective iff it is injective.
   apply (Fintype.bijective_iff_injective_and_card
     (f := bitsToU (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) i)).mpr ?_
@@ -149,7 +155,7 @@ def evalWAt (i : Fin r) (x : L) : L :=
 omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
 /-- Prove that `evalWAt` equals the standard definition of `W_i(x)`. -/
 theorem evalWAt_eq_W (i : Fin r) (x : L) :
-  evalWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) x =
+    evalWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) x =
     (W (𝔽q := 𝔽q) (β := β) (i := i)).eval x := by
   -- 1. Convert implementation to mathematical product over Fin(2^i)
   unfold evalWAt getUElements
@@ -199,7 +205,7 @@ def evalNormalizedWAt (i : Fin r) (x : L) : L :=
 omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
 /-- Prove that `evalNormalizedWAt` equals the standard definition of `Ŵ_i(x)`. -/
 theorem evalNormalizedWAt_eq_normalizedW (i : Fin r) (x : L) :
-  evalNormalizedWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) x
+    evalNormalizedWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) x
     = (normalizedW (𝔽q := 𝔽q) (β := β) (i := i)).eval x := by
   unfold evalNormalizedWAt
   -- 3. Apply the correctness theorem we just proved (evalWAt_eq_standardWAt)
@@ -231,7 +237,7 @@ def computableTwiddleFactor (i : Fin ℓ) (u : Fin (2 ^ (ℓ + R_rate - i - 1)))
 omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
 /-- Prove that `computableTwiddleFactor` equals the standard definition of `twiddleFactor`. -/
 theorem computableTwiddleFactor_eq_twiddleFactor (i : Fin ℓ) :
-  computableTwiddleFactor (r := r) (ℓ := ℓ) (β := β) (L := L)
+    computableTwiddleFactor (r := r) (ℓ := ℓ) (β := β) (L := L)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨i, by omega⟩) =
   twiddleFactor (𝔽q := 𝔽q) (L := L) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := ⟨i, by omega⟩) := by
@@ -242,7 +248,7 @@ theorem computableTwiddleFactor_eq_twiddleFactor (i : Fin ℓ) :
 /-- Performs one stage of the Additive NTT. This corresponds to `NTTStage` in the abstract
 definition: `b` is the array of coefficients. `i` is the stage index (0 to r-1). -/
 def computableNTTStage [Fact (LinearIndependent 𝔽q β)]
-  (i : Fin ℓ) (b : Fin (2 ^ (ℓ + R_rate)) → L) : Fin (2^(ℓ + R_rate)) → L :=
+    (i : Fin ℓ) (b : Fin (2 ^ (ℓ + R_rate)) → L) : Fin (2^(ℓ + R_rate)) → L :=
   have h_2_pow_i_lt_2_pow_ℓ_add_R_rate: 2^i.val < 2^(ℓ + R_rate) := by
     calc
       2^i.val < 2 ^ (ℓ) := by
@@ -317,7 +323,7 @@ def computableNTTStage [Fact (LinearIndependent 𝔽q β)]
 omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
 /-- Prove that `computableNTTStage` equals the standard definition of `NTTStage`. -/
 theorem computableNTTStage_eq_NTTStage (i : Fin ℓ) :
-  computableNTTStage (𝔽q := 𝔽q) (r := r) (L := L) (ℓ := ℓ) (β := β) (R_rate := R_rate)
+    computableNTTStage (𝔽q := 𝔽q) (r := r) (L := L) (ℓ := ℓ) (β := β) (R_rate := R_rate)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨i, by omega⟩) =
   NTTStage (𝔽q := 𝔽q) (L := L) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := ⟨i, by omega⟩) := by
@@ -338,7 +344,7 @@ def computableAdditiveNTT (a : Fin (2 ^ ℓ) → L) : Fin (2^(ℓ + R_rate)) →
 omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
 /-- Prove that `computableAdditiveNTT` equals the standard definition of `additiveNTT`. -/
 theorem computableAdditiveNTT_eq_additiveNTT (a : Fin (2 ^ ℓ) → L) :
-  computableAdditiveNTT (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+    computableAdditiveNTT (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a) =
   additiveNTT (𝔽q := 𝔽q) (L := L) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a) := by
   unfold computableAdditiveNTT additiveNTT

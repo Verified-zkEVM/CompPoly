@@ -30,7 +30,7 @@ variable (β : Nat → L) (hβ_lin_indep : LinearIndependent K β)
 
 @[simp]
 theorem sum_degreeLT_monomial_eq_subtype {n : ℕ} (p : L⦃< n⦄[X]) :
-  (⟨p.val.sum (fun n a => Polynomial.monomial n a), by
+    (⟨p.val.sum (fun n a => Polynomial.monomial n a), by
     -- degree of sum is degree of p.val, which is < n
     rw [Polynomial.sum_monomial_eq p.val]
     exact p.property
