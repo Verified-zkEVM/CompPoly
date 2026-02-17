@@ -67,6 +67,8 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - Implement FFT/NTT-based multiplication (O(n log n) vs current O(n²))
    - Focus on NTT for finite field arithmetic
    - Maintain correctness proofs alongside optimizations
+   
+**Note**: [erdkocak](https://github.com/erdkocak) and [doran2728](https://github.com/doran2728) have communicated they will be working on this.
 
 1. **Exponentiation optimization**
    - Replace repeated multiplication with repeated squaring
