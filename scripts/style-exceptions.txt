@@ -8,6 +8,6 @@ lakefile.lean : line 1 : ERR_TAC2 : In the past, importing 'Lake' has led to dra
 CompPoly/Univariate/Raw.lean : line 1 : ERR_NUM_LIN : 1700 file contains 1691 lines, try to split it up : ERR_NUM_LIN
 CompPoly/Fields/Binary/Tower/Impl.lean : line 1 : ERR_NUM_LIN : 3900 file contains 3746 lines, try to split it up : ERR_NUM_LIN
 CompPoly/Fields/Binary/Tower/Prelude.lean : line 1 : ERR_NUM_LIN : 1900 file contains 1756 lines, try to split it up : ERR_NUM_LIN
-CompPoly/Fields/AdditiveNTT/AdditiveNTT.lean : line 1 : ERR_NUM_LIN : 3000 file contains 2826 lines, try to split it up : ERR_NUM_LIN
-CompPoly/Fields/AdditiveNTT/AdditiveNTT.lean : line 8 : ERR_TAC : Files in CompPoly should not import the whole Mathlib.Tactic folder : ERR_TAC
-CompPoly/Fields/AdditiveNTT/NovelPolynomialBasis.lean : line 1 : ERR_NUM_LIN : 1800 file contains 1636 lines, try to split it up : ERR_NUM_LIN
+CompPoly/Fields/Binary/AdditiveNTT/AdditiveNTT.lean : line 1 : ERR_NUM_LIN : 3000 file contains 2826 lines, try to split it up : ERR_NUM_LIN
+CompPoly/Fields/Binary/AdditiveNTT/AdditiveNTT.lean : line 8 : ERR_TAC : Files in CompPoly should not import the whole Mathlib.Tactic folder : ERR_TAC
+CompPoly/Fields/Binary/AdditiveNTT/NovelPolynomialBasis.lean : line 1 : ERR_NUM_LIN : 1800 file contains 1636 lines, try to split it up : ERR_NUM_LIN

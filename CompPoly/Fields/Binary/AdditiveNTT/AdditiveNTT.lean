@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 
-import CompPoly.Fields.AdditiveNTT.NovelPolynomialBasis
+import CompPoly.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
 import Mathlib.Tactic
 import Mathlib.Data.Finsupp.Defs
 import Mathlib.LinearAlgebra.LinearIndependent.Defs

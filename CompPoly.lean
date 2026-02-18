@@ -29,9 +29,9 @@ import CompPoly.ToMathlib.Finsupp.Fin
 import CompPoly.ToMathlib.MvPolynomial.Equiv
 import CompPoly.Fields.Basic
 import CompPoly.Fields.BabyBear
-import CompPoly.Fields.AdditiveNTT.NovelPolynomialBasis
-import CompPoly.Fields.AdditiveNTT.AdditiveNTT
-import CompPoly.Fields.AdditiveNTT.Impl
+import CompPoly.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
+import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
+import CompPoly.Fields.Binary.AdditiveNTT.Impl
 import CompPoly.Fields.Binary.Common
 import CompPoly.Fields.Binary.Tower.Prelude
 import CompPoly.Fields.Binary.Tower.Basic
