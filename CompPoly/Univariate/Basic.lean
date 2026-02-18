@@ -44,6 +44,25 @@ instance [Semiring R] : Coe (CPolynomial R) (CPolynomial.Raw R) where coe := Sub
 /-- The zero polynomial is canonical. -/
 instance [Semiring R] : Inhabited (CPolynomial R) := ⟨#[], Trim.canonical_empty⟩
 
+/-- `CPolynomial R` has `BEq` when `R` does, comparing the underlying coefficient arrays. -/
+instance (R : Type*) [BEq R] [Semiring R] : BEq (CPolynomial R) where
+  beq p q := p.val == q.val
+
+/-- `CPolynomial R` has `LawfulBEq` when `R` does: `p == q` iff `p = q`. -/
+instance (R : Type*) [BEq R] [LawfulBEq R] [Semiring R] : LawfulBEq (CPolynomial R) where
+  rfl := by
+    have h_raw : ∀ (a : CPolynomial.Raw R), a == a ↔ a = a := by
+      aesop
+    convert h_raw _
+    swap
+    exact #[]
+    simp +decide [ BEq.beq ]
+  eq_of_beq h := Subtype.ext (LawfulBEq.eq_of_beq h)
+
+/-- `CPolynomial R` has `DecidableEq` when `R` does, via the underlying `Array R` representation. -/
+instance (R : Type*) [BEq R] [DecidableEq R] [Semiring R] : DecidableEq (CPolynomial R) :=
+  @Subtype.instDecidableEq (CPolynomial.Raw R) (fun p => p.trim = p) inferInstance
+
 section Operations
 
 variable [Semiring R] [LawfulBEq R]

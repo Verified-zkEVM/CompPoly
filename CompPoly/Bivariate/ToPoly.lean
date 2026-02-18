@@ -37,7 +37,7 @@ namespace CPolynomial.Bivariate
   via `eval₂` (analogous to univariate `Raw.toPoly`).
   -/
 noncomputable def toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
-  [BEq (CPolynomial R)] (p : Bivariate R) : R[X][Y] := sorry
+    (p : Bivariate R) : R[X][Y] := sorry
 
 /-- Convert Mathlib's `R[X][Y]` to `Bivariate R` (inverse of `toPoly`).
 
@@ -45,7 +45,7 @@ noncomputable def toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semir
   `CPolynomial R` via `Polynomial.toImpl`, then build canonical bivariate.
   TODO: implement and prove round-trip lemmas. -/
 noncomputable def ofPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
-  [BEq (CPolynomial R)] (p : R[X][Y]) : Bivariate R := sorry
+    (p : R[X][Y]) : Bivariate R := sorry
 
 -- TODO: toPoly_ofPoly, ofPoly_toPoly (round-trips), ring equiv, evalEval/toPoly compatibility
 

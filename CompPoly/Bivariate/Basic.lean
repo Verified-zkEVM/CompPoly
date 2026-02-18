@@ -27,13 +27,12 @@ namespace CompPoly
   Each `p : Bivariate R` is a polynomial in `Y` whose coefficients are univariate polynomials
   in `X`. The outer structure is indexed by powers of `Y`, the inner by powers of `X`.
   -/
-def CPolynomial.Bivariate (R : Type*) [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
-    [BEq (CPolynomial R)] := CPolynomial (CPolynomial R)
+def CPolynomial.Bivariate (R : Type*) [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R] :=
+    CPolynomial (CPolynomial R)
 
 namespace CPolynomial.Bivariate
 
--- TODO prove that BEq R => BEq (CPolynomial R)
-variable {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R] [BEq (CPolynomial R)]
+variable {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
 
 /-- Extensionality: two bivariate polynomials are equal iff their underlying values are. -/
 @[ext] theorem ext {p q : Bivariate R} (h : p.val = q.val) : p = q :=
@@ -55,21 +54,19 @@ instance : Inhabited (Bivariate R) := inferInstanceAs (Inhabited (CPolynomial (C
 
 section Operations
 
--- TODO simplify these variables so only assumptions on R are needed if possible
-variable (R : Type*) [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R] [Semiring R]
-  [BEq (CPolynomial R)] [LawfulBEq (CPolynomial R)] [DecidableEq (CPolynomial R)]
+variable (R : Type*) [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
 
 /-- Constant as a bivariate polynomial. Mathlib: `Polynomial.Bivariate.CC`. -/
 def CC (r : R) : Bivariate R := CPolynomial.C (CPolynomial.C r)
 
 /-- The variable X (inner variable). As bivariate: polynomial in Y with single coeff `X` at Y^0. -/
-def C_X [Nontrivial R] : Bivariate R := CPolynomial.C CPolynomial.X
+def C_X : Bivariate R := CPolynomial.C CPolynomial.X
 
 /-- The variable Y (outer variable). Monomial `Y^1` with coefficient 1. -/
-def Y : Bivariate R := CPolynomial.monomial 1 (CPolynomial.C 1)
+def Y [DecidableEq R] : Bivariate R := CPolynomial.monomial 1 (CPolynomial.C 1)
 
 /-- Monomial `c * X^n * Y^m`. ArkLib: `Polynomial.Bivariate.monomialXY`. -/
-def monomialXY (n m : ℕ) (c : R) : Bivariate R :=
+def monomialXY [DecidableEq R] (n m : ℕ) (c : R) : Bivariate R :=
   CPolynomial.monomial m (CPolynomial.monomial n c)
 
 /-- Coefficient of `X^i Y^j` in the bivariate polynomial. Here `i` is the X-exponent (inner)
