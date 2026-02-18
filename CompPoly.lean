@@ -21,3 +21,4 @@ import CompPoly.Univariate.Quotient
 import CompPoly.Univariate.ToPoly
 import CompPoly.Univariate.Lagrange
 import CompPoly.Bivariate.Basic
+import CompPoly.Bivariate.ToPoly
