@@ -161,30 +161,32 @@ lemma foldl_mulStep_zeros {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
 lemma zipIdx_trim_append {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
     (p : CPolynomial.Raw R) :
     ∃ l, p.zipIdx.toList = p.trim.zipIdx.toList ++ l ∧ ∀ x ∈ l, x.1 = 0 := by
-  -- Let `n` be `p.trim.size`. `p.trim` is the prefix of `p` of length `n`.
-  set n := p.trim.size with hn_def
-  by_cases hn : n = 0
-  · unfold n at hn
-    -- Since `p.trim` is empty, `p` must be the zero polynomial.
-    have hp_zero : ∀ i (hi : i < p.size), p[i] = 0 := by
-      have := Trim.elim p; aesop
-    use List.map (fun i => (0, i)) (List.range p.size)
-    simp
-    refine' List.ext_get _ _ <;> aesop
-  · -- Since `n` is not zero, `p.lastNonzero` is `some k` and `n = k + 1`.
-    obtain ⟨k, hk⟩ : ∃ k : Fin p.size,
-      p.trim = p.extract 0 (k.val + 1) ∧ p[k] ≠ 0
-      ∧ (∀ j, (hj : j < p.size) → j > k → p[j] = 0) := by
-        have := Trim.elim p; aesop
-    refine' ⟨ _, _, _ ⟩
-    exact ( Array.zipIdx p ).toList.drop ( k + 1 )
-    · rw [ hk.1 ]
-      refine' List.ext_get _ _ <;> simp
-      · --rw [ min_eq_left ( by linarith [ Fin.is_lt k ] ),
-        --   add_tsub_cancel_of_le ( by linarith [ Fin.is_lt k ] ) ]
-        sorry
-    · simp +decide [ List.mem_iff_get ]
-      intro a; specialize hk; have := hk.2.2 ( k + 1 + a ); simp_all +decide [ Nat.add_assoc ]
+  have h_zipIdx : (p.zipIdx.toList.take p.trim.size) = (p.trim.zipIdx.toList) := by
+    have h_trim : p.trim.coeff = p.coeff := by
+      ext i; exact (by exact coeff_eq_coeff p i)
+    refine' List.ext_get _ _ <;> simp
+    · exact size_le_size p
+    · intro n hn hn' hn''; have := congr_fun h_trim n; aesop;
+  refine' ⟨ List.drop ( Array.size p.trim ) ( Array.zipIdx p |> Array.toList ), _, _ ⟩ <;> simp_all
+  · rw [ ← h_zipIdx, List.take_append_drop ];
+  · intro a b hab
+    have h_trailing : ∀ i ≥ p.trim.size, p.coeff i = 0 := by
+      intro i hi
+      have h_trailing : p.coeff i = (p.trim).coeff i := by
+        exact Eq.symm (coeff_eq_coeff p i)
+      grind;
+    have h_trailing : ∀ x ∈ List.drop (Array.size p.trim) (Array.zipIdx p |> Array.toList),
+        x.1 = p.coeff x.2 := by
+      intro x hx
+      have h_trailing : ∀ x ∈ List.zipIdx p.toList, x.1 = p.coeff x.2 := by
+        simp +decide [ List.mem_iff_get]
+        grind
+      convert h_trailing x _
+      exact List.mem_of_mem_drop hx |> fun h => by simpa using h
+    have h_trailing : ∀ x ∈ List.drop (Array.size p.trim) (Array.zipIdx p |> Array.toList),
+        x.2 ≥ p.trim.size := by
+      intro x hx; have := List.mem_iff_get.mp hx; aesop
+    aesop
 
 /-- Multiplication by a trimmed polynomial is equivalent to multiplication by the original. -/
 lemma mul_trim_equiv [LawfulBEq R] (a b : CPolynomial.Raw R) :
