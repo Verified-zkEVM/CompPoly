@@ -1290,7 +1290,7 @@ lemma getSDomainBasisCoeff_of_iteratedQuotientMap
     rw! (castMode:=.all) [h_index_add];
     conv_lhs => -- split the sum in LHS into two parts
       rw [Fin.sum_univ_add]
-      simp only [Fin.coe_castAdd, Fin.coe_natAdd]
+      simp only [Fin.val_castAdd, Fin.val_natAdd]
     -- Eliminate the first sum of LHS
     have hβ: ∀ x: Fin a, β ⟨↑i + x, by omega⟩ ∈ U 𝔽q β (i := ⟨i + k, by omega⟩) := by
       intro x
@@ -1313,12 +1313,11 @@ lemma getSDomainBasisCoeff_of_iteratedQuotientMap
     have h3: (Fin.natAdd a j2) = ⟨↑j2 + k, by omega⟩ := by
       simp only [Fin.natAdd, Fin.mk.injEq, a]
       rw [add_comm]
-    -- simp only
-    -- congr 1
-    -- simp only [final_y_coeffs]
-    -- rw [h3]
-    -- rw! (castMode:=.all) [←h_index_add];
-    sorry
+    congr 1
+    simp only [final_y_coeffs]
+    rw [h3]
+    rw! (castMode:=.all) [←h_index_add]
+    simp
 
   rw [getSDomainBasisCoeff_of_sum_repr 𝔽q β h_ℓ_add_R_rate
     (i := ⟨i.val, by omega⟩) (x:=x) (hx:=by exact hx_sum)]
@@ -2374,7 +2373,6 @@ lemma NTTStage_correctness (i : Fin (ℓ))
     conv_rhs => enter [1]; rw [h_msb]
     norm_num; rw [Nat.getHighBits, Nat.getHighBits_no_shl, Nat.shiftLeft_eq,
       Nat.shiftRight_eq_div_pow]
-  -- sorry
   by_cases h_b_bit_eq_0: (j.val / (2 ^ i.val)) % 2 = 0
   · simp only [h_b_bit_eq_0, ↓reduceDIte]
     simp only at h_b_bit_eq_0
