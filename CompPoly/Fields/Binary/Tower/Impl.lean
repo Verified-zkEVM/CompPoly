@@ -658,9 +658,10 @@ theorem join_eq_dcast_append {k : ℕ} (h_pos : k > 0) (hi lo : ConcreteBTField 
       dcast (h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos))
         (BitVec.append (msbs:=hi) (lsbs:=lo)) := by
   unfold join
-  simp [BitVec.eq_mp_eq_dcast, dcast_eq_root_cast]
+  simp [dcast_eq_root_cast]
 
-theorem eq_join_iff_dcast_eq_append {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField k) (hi lo : ConcreteBTField (k - 1)) :
+theorem eq_join_iff_dcast_eq_append {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField k)
+    (hi lo : ConcreteBTField (k - 1)) :
     x = join (k:=k) h_pos hi lo ↔
       dcast (h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos)).symm x =
         BitVec.append (msbs:=hi) (lsbs:=lo) := by
