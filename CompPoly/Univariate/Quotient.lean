@@ -157,34 +157,112 @@ lemma foldl_mulStep_zeros {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
       aesop
     exact equiv_trans h_mulStep (ih acc)
 
-/-- The `zipIdx` of a polynomial is the `zipIdx` of its trim followed by zero coefficients. -/
-lemma zipIdx_trim_append {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
+theorem drop_zipIdx_eq_zipIdx_drop {α : Type*} (l : List α) (n m : ℕ) :
+    List.drop n (l.zipIdx m) = (List.drop n l).zipIdx (m + n) := by
+  induction n generalizing l m with
+  | zero =>
+      simp
+  | succ n ih =>
+      cases l with
+      | nil =>
+          simp
+      | cons a l =>
+          simp [List.zipIdx, ih, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+
+theorem forall_mem_drop_zipIdx_toList_fst_eq_zero {α : Type*} [Zero α] (a : Array α) (n : ℕ)
+    (h : ∀ j, (hj : j < a.size) → n ≤ j → a[j] = 0) :
+    ∀ x ∈ a.zipIdx.toList.drop n, x.1 = 0 := by
+  classical
+  -- Rewrite the `∀ x ∈ ...` goal in terms of list indices.
+  rw [List.forall_mem_iff_getElem]
+  intro i hi
+
+  -- `i` indexes into `drop n`, so `n + i` indexes into the original list.
+  have hj : n + i < (a.zipIdx.toList).length := by
+    have hi' : i < (a.zipIdx.toList).length - n := by
+      simpa using hi
+    omega
+
+  have hjArr : n + i < a.size := by
+    simpa using hj
+
+  have ha0 : a[n + i] = 0 :=
+    h (n + i) hjArr (Nat.le_add_right n i)
+
+  have hdrop : (a.zipIdx.toList.drop n)[i] = (a.zipIdx.toList)[n + i] := by
+    simpa using (List.getElem_drop (l := a.zipIdx.toList) (n := n) (i := i) hj)
+
+  -- Now compute the first component of the corresponding `zipIdx` entry.
+  calc
+    ((a.zipIdx.toList.drop n)[i]).1 = ((a.zipIdx.toList)[n + i]).1 := by
+      simpa using congrArg Prod.fst hdrop
+    _ = a[n + i] := by
+      simp
+    _ = 0 := ha0
+
+theorem take_zipIdx_eq_zipIdx_take {α : Type*} (l : List α) (n m : ℕ) :
+    (List.take n (l.zipIdx m)) = (List.take n l).zipIdx m := by
+  induction n generalizing l m with
+  | zero =>
+      simp
+  | succ n ih =>
+      cases l with
+      | nil =>
+          simp
+      | cons a l =>
+          simp [List.zipIdx, ih, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+
+
+theorem zipIdx_toList_extract_prefix {α : Type*} (a : Array α) (n : ℕ) (hn : n ≤ a.size) :
+    (a.extract 0 n).zipIdx.toList = a.zipIdx.toList.take n := by
+  classical
+  simpa using (take_zipIdx_eq_zipIdx_take (l := a.toList) (n := n) (m := 0)).symm
+
+
+theorem zipIdx_trim_append {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
     (p : CPolynomial.Raw R) :
     ∃ l, p.zipIdx.toList = p.trim.zipIdx.toList ++ l ∧ ∀ x ∈ l, x.1 = 0 := by
-  -- Let `n` be `p.trim.size`. `p.trim` is the prefix of `p` of length `n`.
-  set n := p.trim.size with hn_def
-  by_cases hn : n = 0
-  · unfold n at hn
-    -- Since `p.trim` is empty, `p` must be the zero polynomial.
-    have hp_zero : ∀ i (hi : i < p.size), p[i] = 0 := by
-      have := Trim.elim p; aesop
-    use List.map (fun i => (0, i)) (List.range p.size)
-    simp
-    refine' List.ext_get _ _ <;> aesop
-  · -- Since `n` is not zero, `p.lastNonzero` is `some k` and `n = k + 1`.
-    obtain ⟨k, hk⟩ : ∃ k : Fin p.size,
-      p.trim = p.extract 0 (k.val + 1) ∧ p[k] ≠ 0
-      ∧ (∀ j, (hj : j < p.size) → j > k → p[j] = 0) := by
-        have := Trim.elim p; aesop
-    refine' ⟨ _, _, _ ⟩
-    exact ( Array.zipIdx p ).toList.drop ( k + 1 )
-    · rw [ hk.1 ]
-      refine' List.ext_get _ _ <;> simp
-      · --rw [ min_eq_left ( by linarith [ Fin.is_lt k ] ),
-        --   add_tsub_cancel_of_le ( by linarith [ Fin.is_lt k ] ) ]
-        sorry
-    · simp +decide [ List.mem_iff_get ]
-      intro a; specialize hk; have := hk.2.2 ( k + 1 + a ); simp_all +decide [ Nat.add_assoc ]
+  classical
+  cases (CompPoly.CPolynomial.Raw.Trim.elim (p := p)) with
+  | inl h =>
+      rcases h with ⟨htrim, h0⟩
+      refine ⟨p.zipIdx.toList, ?_, ?_⟩
+      · -- `p.trim` is empty, so the prefix is `[]`.
+        simpa [htrim]
+      · intro x hx
+        have hcoeff : ∀ j, (hj : j < p.size) → 0 ≤ j → p[j] = 0 := by
+          intro j hj _
+          exact h0 j hj
+        have hdrop :=
+          forall_mem_drop_zipIdx_toList_fst_eq_zero (a := (p : Array R)) (n := 0) hcoeff
+        -- `drop 0` is the whole list
+        simpa using (hdrop x (by simpa using hx))
+  | inr h =>
+      rcases h with ⟨k, htrim, hkne, hmax⟩
+      let l := p.zipIdx.toList.drop (↑k + 1)
+      refine ⟨l, ?_, ?_⟩
+      · have hk : (↑k + 1) ≤ p.size := by
+          exact Nat.succ_le_of_lt k.is_lt
+        have hprefix : (p.extract 0 (↑k + 1)).zipIdx.toList = p.zipIdx.toList.take (↑k + 1) := by
+          simpa using
+            (zipIdx_toList_extract_prefix (a := (p : Array R)) (n := (↑k + 1)) hk)
+        calc
+          p.zipIdx.toList
+              = p.zipIdx.toList.take (↑k + 1) ++ p.zipIdx.toList.drop (↑k + 1) := by
+                  simpa using (List.take_append_drop (↑k + 1) p.zipIdx.toList).symm
+          _ = p.trim.zipIdx.toList ++ l := by
+                  simp only [l, htrim, hprefix]
+      · intro x hx
+        have hcoeff : ∀ j, (hj : j < p.size) → (↑k + 1) ≤ j → p[j] = 0 := by
+          intro j hj hnj
+          have hjk : j > (↑k) := by
+            exact lt_of_lt_of_le (Nat.lt_succ_self (↑k)) hnj
+          exact hmax j hj hjk
+        have hdrop :=
+          forall_mem_drop_zipIdx_toList_fst_eq_zero (a := (p : Array R)) (n := (↑k + 1)) hcoeff
+        simpa [l] using (hdrop x (by simpa [l] using hx))
+
+
 
 /-- Multiplication by a trimmed polynomial is equivalent to multiplication by the original. -/
 lemma mul_trim_equiv [LawfulBEq R] (a b : CPolynomial.Raw R) :
