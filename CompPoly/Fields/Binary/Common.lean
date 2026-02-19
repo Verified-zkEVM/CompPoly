@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Chung Thai Nguyen, Quang Dao
+Authors: Chung Thai Nguyen, Quang Dao, Derek Sorensen
 -/
 
 import Mathlib.FieldTheory.Finite.Basic
@@ -551,21 +551,22 @@ lemma toPoly_128_extend_256 (a : B128) :
   rw! (castMode := .all) [h_split_256]
   rw [Fin.sum_univ_add]
   rw [←Finset.sum_add_distrib]
-  simp only [Nat.reduceAdd, Fin.getElem_fin, Fin.natAdd_eq_addNat]
+  simp only [Nat.reduceAdd, Fin.natAdd_eq_addNat]
   apply Finset.sum_congr (h := by rfl)
   intro (i : Fin (128)) hi_mem_univ
   dsimp only [BitVec.getLsb]
   simp_rw [to256_toNat]
-  simp only [Fin.coe_castAdd, Fin.coe_addNat, add_eq_left, ite_eq_right_iff, ne_eq, Nat.add_eq_zero,
-    Fin.val_eq_zero_iff, Fin.isValue, OfNat.ofNat_ne_zero, and_false, not_false_eq_true,
-    pow_eq_zero_iff, X_ne_zero, imp_false, Bool.not_eq_true]
+  simp only [Fin.val_castAdd, Fin.val_addNat, add_eq_left, ite_eq_right_iff, ne_eq,
+    Nat.add_eq_zero_iff, Fin.val_eq_zero_iff, Fin.isValue, OfNat.ofNat_ne_zero, and_false,
+    not_false_eq_true, pow_eq_zero_iff, X_ne_zero, imp_false, Bool.not_eq_true]
   -- ⊢ (BitVec.toNat a).testBit (↑i + 128) = false
   apply Nat.testBit_lt_two_pow
   have h_toNat_lt := BitVec.toNat_lt_twoPow_of_le (n := i.val + 128) (x := a) (h := by omega)
   exact h_toNat_lt
 
 -- Lemma: Left Shift corresponds to Multiplication by X^k
-theorem BitVec_getLsb_eq_false_of_toNat_lt_two_pow {w d : ℕ} (a : BitVec w) (ha : a.toNat < 2 ^ d) (i : Fin w) (hd : d ≤ (i : ℕ)) : a.getLsb i = false := by
+theorem BitVec_getLsb_eq_false_of_toNat_lt_two_pow {w d : ℕ} (a : BitVec w) (ha : a.toNat < 2 ^ d)
+    (i : Fin w) (hd : d ≤ (i : ℕ)) : a.getLsb i = false := by
   have hlt : a.toNat < 2 ^ (i : ℕ) := by
     apply lt_of_lt_of_le ha
     exact pow_le_pow_right' (by decide : (1 : ℕ) ≤ 2) hd
@@ -573,13 +574,18 @@ theorem BitVec_getLsb_eq_false_of_toNat_lt_two_pow {w d : ℕ} (a : BitVec w) (h
   simpa [BitVec.getLsb] using hbit
 
 
-theorem BitVec_getElem_eq_false_of_toNat_lt_two_pow {w d : ℕ} (a : BitVec w) (ha : a.toNat < 2 ^ d) (n : ℕ) (hn : n < w) (hd : d ≤ n) : a[n] = false := by
+theorem BitVec_getElem_eq_false_of_toNat_lt_two_pow {w d : ℕ} (a : BitVec w) (ha : a.toNat < 2 ^ d)
+    (n : ℕ) (hn : n < w) (hd : d ≤ n) : a[n] = false := by
   classical
   -- Convert `a[n]` to `a.getLsb ⟨n, hn⟩` and use the `getLsb` lemma.
   simpa [BitVec.getLsb_eq_getElem] using
     (BitVec_getLsb_eq_false_of_toNat_lt_two_pow (a := a) ha ⟨n, hn⟩ hd)
 
-theorem BitVec_getLsb_shiftLeft {w : ℕ} (a : BitVec w) (shift n : ℕ) (hn : n < w) : (a <<< shift).getLsb ⟨n, hn⟩ = (if h : shift ≤ n then a.getLsb ⟨n - shift, lt_of_le_of_lt (Nat.sub_le n shift) hn⟩ else false) := by
+theorem BitVec_getLsb_shiftLeft {w : ℕ} (a : BitVec w) (shift n : ℕ) (hn : n < w) :
+    (a <<< shift).getLsb ⟨n, hn⟩ =
+      (if _ : shift ≤ n then
+          a.getLsb ⟨n - shift, lt_of_le_of_lt (Nat.sub_le n shift) hn⟩
+        else false) := by
   classical
   by_cases h : shift ≤ n
   · have hnlt : ¬ n < shift := by
@@ -590,7 +596,9 @@ theorem BitVec_getLsb_shiftLeft {w : ℕ} (a : BitVec w) (shift n : ℕ) (hn : n
       exact Nat.lt_of_not_ge h
     simp [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_shiftLeft, h, hlt]
 
-theorem toPoly_coeff {w : ℕ} (v : BitVec w) (n : ℕ) : (toPoly v).coeff n = (if h : n < w then (if v.getLsb ⟨n, h⟩ = true then (1 : ZMod 2) else 0) else 0) := by
+theorem toPoly_coeff {w : ℕ} (v : BitVec w) (n : ℕ) :
+    (toPoly v).coeff n =
+      (if h : n < w then (if v.getLsb ⟨n, h⟩ = true then (1 : ZMod 2) else 0) else 0) := by
   classical
   unfold toPoly
   rw [Polynomial.finset_sum_coeff]
@@ -631,7 +639,7 @@ theorem toPoly_coeff {w : ℕ} (v : BitVec w) (n : ℕ) : (toPoly v).coeff n = (
           simp only [if_neg hb, Polynomial.coeff_zero]
       · -- i0 ∈ univ
         intro hi0_not
-        simpa [Finset.mem_univ] using hi0_not
+        simp [Finset.mem_univ] at hi0_not
     -- conclude
     simpa [Polynomial.finset_sum_coeff, i0] using hmain
   · -- case ¬ n < w
@@ -646,7 +654,8 @@ theorem toPoly_coeff {w : ℕ} (v : BitVec w) (n : ℕ) : (toPoly v).coeff n = (
       simp only [if_pos hb, Polynomial.coeff_X_pow, if_neg hne_val]
     · simp only [if_neg hb, Polynomial.coeff_zero]
 
-theorem toPoly_shiftLeft_no_overflow {w d : ℕ} (a : BitVec w) (ha : a.toNat < 2 ^ d) {shift : ℕ} (h_no_overflow : d + shift ≤ w) : toPoly (a <<< shift) = (toPoly a) * X^shift := by
+theorem toPoly_shiftLeft_no_overflow {w d : ℕ} (a : BitVec w) (ha : a.toNat < 2 ^ d) {shift : ℕ}
+    (h_no_overflow : d + shift ≤ w) : toPoly (a <<< shift) = (toPoly a) * X^shift := by
   classical
   -- Shadowing guard: prevents accidental use of any existing lemma with this name
   have toPoly_shiftLeft_no_overflow : True := trivial
@@ -655,11 +664,12 @@ theorem toPoly_shiftLeft_no_overflow {w d : ℕ} (a : BitVec w) (ha : a.toNat < 
   by_cases hn : n < w
   · by_cases hs : shift ≤ n
     · have hns : n - shift < w := lt_of_le_of_lt (Nat.sub_le n shift) hn
-      have hfin : (⟨n - shift, lt_of_le_of_lt (Nat.sub_le n shift) hn⟩ : Fin w) = ⟨n - shift, hns⟩ := by
+      have hfin : (⟨n - shift, lt_of_le_of_lt (Nat.sub_le n shift) hn⟩ : Fin w) =
+          ⟨n - shift, hns⟩ := by
         ext
         rfl
-      simp [toPoly_coeff, hn, hs, hns, BitVec_getLsb_shiftLeft, hfin]
-    · simp [toPoly_coeff, hn, hs, BitVec_getLsb_shiftLeft]
+      simp [toPoly_coeff, hn, hs, hns, hfin]
+    · simp [toPoly_coeff, hn, hs]
   · have hwle : w ≤ n := Nat.le_of_not_gt hn
     by_cases hs : shift ≤ n
     · by_cases hns : n - shift < w
@@ -671,7 +681,6 @@ theorem toPoly_shiftLeft_no_overflow {w d : ℕ} (a : BitVec w) (ha : a.toNat < 
         simp [toPoly_coeff, hn, hs, hns, hbitElem]
       · simp [toPoly_coeff, hn, hs, hns]
     · simp [toPoly_coeff, hn, hs]
-
 
 /--
 Generalized No-Overflow Multiplication.
