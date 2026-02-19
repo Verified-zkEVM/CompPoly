@@ -790,7 +790,7 @@ end Division
 
 section ModuleTheory
 
--- The assumptions are requried for `CPolynomial R` to be a module and s0 are necessary downstream.
+-- The assumptions are requried for `CPolynomial R` to be a module and so are necessary downstream.
 variable [Semiring R] [LawfulBEq R]
 
 /-- Scalar multiplication for canonical polynomials: multiply each coefficient by `r`,
@@ -804,15 +804,18 @@ lemma coeff_smul (r : R) (p : CPolynomial R) (i : ℕ) :
   show (Raw.smul r p.val).trim.coeff i = r * p.val.coeff i
   rw [Trim.coeff_eq_coeff, Raw.smul_equiv]
 
+/-- Scalar multiplication on 0 gives 0. -/
 lemma smul_zero' (r : R) : r • (0 : CPolynomial R) = 0 := by
   rw [eq_iff_coeff]; intro i
   rw [coeff_smul, coeff_zero]; simp
 
+/-- Two CPolynomials are equal if the underlying Raw CPolynomials are trim equivalent. -/
 lemma smul_eq_of_coeff_eq {p q : CPolynomial R}
     (h : Trim.equiv p.val q.val) : p = q := by
   apply CPolynomial.ext
   exact Trim.canonical_ext p.prop q.prop h
 
+/-- Scalar multiplication distributes. -/
 lemma smul_add' (r : R) (p q : CPolynomial R) :
     r • (p + q) = r • p + r • q := by
   apply smul_eq_of_coeff_eq; intro i
@@ -823,21 +826,25 @@ lemma smul_add' (r : R) (p q : CPolynomial R) :
       smul_equiv, smul_equiv]
   exact Distrib.left_distrib r (p.val.coeff i) (q.val.coeff i)
 
+/-- Scalar multiplication distributes across scalar addition. -/
 lemma add_smul' (r s : R) (p : CPolynomial R) :
     (r + s) • p = r • p + s • p := by
   rw [eq_iff_coeff]; intro i
   rw [coeff_smul, coeff_add, coeff_smul, coeff_smul]; grind
 
+/-- Scalar multiplication by 0 gives 0. -/
 lemma zero_smul' (p : CPolynomial R) : (0 : R) • p = 0 := by
   apply smul_eq_of_coeff_eq; intro i
   show (Raw.smul 0 p.val).trim.coeff i = (0 : Raw R).coeff i
   rw [Trim.coeff_eq_coeff, smul_equiv]
   exact MulZeroClass.zero_mul (p.val.coeff i)
 
+/-- Scalar multiplication on p by 1 gives p. -/
 lemma one_smul' (p : CPolynomial R) : (1 : R) • p = p := by
   rw [eq_iff_coeff]; intro i
   rw [coeff_smul, _root_.one_mul]
 
+/-- Scalar multiplication is associative. -/
 lemma mul_smul' (r s : R) (p : CPolynomial R) :
     (r * s) • p = r • (s • p) := by
   rw [eq_iff_coeff]; intro i
@@ -925,6 +932,8 @@ theorem degree_le_iff_coeff_zero (p : CompPoly.CPolynomial R) (n : WithBot ℕ) 
           obtain ⟨ k, hk ⟩ := degree_eq_support_max p hp
           unfold support at hk; aesop
 
+/-- A polynomial has degree less than `n` iff the coefficients of X^k are zero for k
+    greater than `n`. -/
 theorem degree_lt_iff_coeff_zero (p : CompPoly.CPolynomial R) (n : ℕ) :
     p.degree < n ↔ ∀ k : ℕ, n ≤ k → p.coeff k = 0 := by
     match n with
@@ -958,23 +967,33 @@ theorem degree_lt_iff_coeff_zero (p : CompPoly.CPolynomial R) (n : ℕ) :
         have nat_ineq_2 ( k : ℕ ): m+1 ≤ k ↔ m < k := by omega
         simpa using degree_le_iff_coeff_zero p m
 
+/-- A polynomial is contained in `degreeLE R n` iff if has degree at most `n`. -/
 theorem mem_degreeLE {n : WithBot ℕ} {p : (CPolynomial R)} : p ∈ degreeLE R n ↔ degree p ≤ n := by
     simp [degreeLE]
     exact Iff.symm (degree_le_iff_coeff_zero p n)
 
+/-- The submodule of polynomials with degree less than or equal to `n ` contains the submodule
+  of polynomials with degree less or equal to than `m` when `m` is less than or equal to `n`. -/
 theorem degreeLE_mono (m n : WithBot ℕ) (h_lessThan : m ≤ n) :
     degreeLE R m ≤ degreeLE R n := fun _ hf =>
         mem_degreeLE.2 (le_trans (mem_degreeLE.1 hf) h_lessThan)
 
--- TODO add version of degreeLE_eq_span_X_pow and degreeLT_eq_span_X_pow
-
+/-- A polynomial is contained in `degreeLT R n` iff if has degree less than `n`. -/
 theorem mem_degreeLT {n : ℕ} {p : CPolynomial R} : p ∈ degreeLT R n ↔ degree p < n := by
     simp [degreeLT]
     rw[degree_lt_iff_coeff_zero]
     exact Lex.forall
 
+/-- The submodule of polynomials with degree strictly less than `n ` contains the submodule
+  of polynomials with degree at less than `m` when `m` is less than or equal to `n`. -/
 theorem degreeLT_mono {m n : ℕ} (h_lessThan : m ≤ n) : degreeLT R m ≤ degreeLT R n := fun _ hf =>
   mem_degreeLT.2 (lt_of_lt_of_le (mem_degreeLT.1 hf) <| WithBot.coe_le_coe.2 h_lessThan)
+
+/-- The submodule of polynomials with degree strictly less than `n + 1` equals the submodule
+  of polynomials with degree at most `n`. -/
+theorem degreeLT_succ_eq_degreeLE {n : ℕ} : degreeLT R (n + 1) = degreeLE R ↑n := by
+  simp +decide [ degreeLT, degreeLE ]
+  rfl
 
 end ModuleTheory
 
