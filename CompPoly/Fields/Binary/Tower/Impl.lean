@@ -3308,155 +3308,225 @@ theorem coe_basis_apply {R S : Type*} [CommRing R] [Ring S] [Algebra R S]
 The basis element at index `j` is the product of the tower generators at
 the ON bits in binary representation of `j`.
 -/
+theorem getBit_revFinProdFinEquiv_symm_castSucc: (n : ℕ) → (j : Fin (2 ^ (n + 1))) → (i : Fin n) →
+    Nat.getBit (Fin.castSucc i) j =
+      Nat.getBit i (((revFinProdFinEquiv (m:=2 ^ n) (n:=2)
+        (h_m:=by exact Nat.two_pow_pos n)).symm j).1) := by
+  intro n j i
+  -- try applying the helper lemma from Prelude
+  have h := (bit_revFinProdFinEquiv_symm_2_pow_succ (n:=n) j (Fin.castSucc i))
+  -- simplify the if-branch using that (i.castSucc).val < n
+  have hi : (Fin.castSucc i).val < n := by
+    simpa using i.is_lt
+  -- now rewrite h using hi
+  --
+  simpa [hi] using h
+
+theorem getBit_revFinProdFinEquiv_symm_last: (n : ℕ) → (j : Fin (2 ^ (n + 1))) →
+    Nat.getBit (Fin.last n) j =
+      ((revFinProdFinEquiv (m:=2 ^ n) (n:=2)
+        (h_m:=by exact Nat.two_pow_pos n)).symm j).2 := by
+  intro n j
+  simpa using (bit_revFinProdFinEquiv_symm_2_pow_succ (n:=n) (i:=Fin.last n) (j:=j))
+
+
+theorem multilinearBasis_apply_of_sub_eq_zero: ∀ (l r : ℕ) (h_le : l ≤ r) (hdiff : r - l = 0) (j : Fin (2 ^ (r - l))),
+    multilinearBasis (l:=l) (r:=r) (h_le:=h_le) j =
+    (Finset.univ : Finset (Fin (r - l))).prod (fun i =>
+      (ConcreteBTFieldAlgebra (l:=l + i + 1) (r:=r) (h_le:=by omega)).algebraMap (
+        (𝕏 (l + i)) ^ (Nat.getBit i j))) := by
+  intro l r h_le hdiff j
+  have hrle : r ≤ l := Nat.sub_eq_zero_iff_le.mp hdiff
+  have h_eq : l = r := le_antisymm h_le hrle
+  subst h_eq
+  -- simplify multilinearBasis on the LHS (the `r-l=0` branch)
+  simp [multilinearBasis, hli_level_diff_0]
+  classical
+  -- the index type on the RHS is empty since `l - l = 0`
+  haveI : IsEmpty (Fin (l - l)) := by
+    -- rewrite `l - l` to `0` using `hdiff`
+    simpa [hdiff] using (Fin.isEmpty : IsEmpty (Fin 0))
+  simp
+
+theorem multilinearBasis_apply_zero: ∀ l : ℕ, (h_le : l ≤ 0) → ∀ (j : Fin (2 ^ (0 - l))),
+    multilinearBasis (l:=l) (r:=0) (h_le:=h_le) j =
+    (Finset.univ : Finset (Fin (0 - l))).prod (fun i =>
+      (ConcreteBTFieldAlgebra (l:=l + i + 1) (r:=0) (h_le:=by omega)).algebraMap (
+        (𝕏 (l + i)) ^ (Nat.getBit i j))) := by
+  intro l h_le j
+  have hl : l = 0 := by omega
+  subst hl
+  -- Now `j : Fin (2 ^ (0 - 0)) = Fin 1`
+  have hj : (j : Nat) = 0 := by
+    -- `j.val < 1`
+    have hjlt : (j : Nat) < 1 := j.isLt
+    omega
+  have hj' : j = 0 := by
+    -- ext on `val`
+    apply Fin.ext
+    exact hj
+  subst hj'
+  simp [multilinearBasis, hli_level_diff_0]
+
+
+theorem multilinearBasis_unfold_succ: ∀ (l n : ℕ) (j : Fin (2 ^ (n + 1))),
+    multilinearBasis (l:=l) (r:=l + n + 1) (h_le:=by omega)
+      (Fin.cast (by
+        have h : l + n + 1 - l = n + 1 := by omega
+        simpa [h]) j)
+    =
+      (ConcreteBTFieldAlgebra (l:=l + n) (r:=l + n + 1) (h_le:=by omega)).algebraMap
+        (multilinearBasis (l:=l) (r:=l + n) (h_le:=by omega)
+          (Fin.cast (by
+            have h : l + n - l = n := by omega
+            simpa [h])
+            (((revFinProdFinEquiv (m:=2 ^ n) (n:=2)
+              (h_m:=by exact Nat.two_pow_pos n)).symm j).1)))
+      * (powerBasisSucc (l + n)).basis
+          (((revFinProdFinEquiv (m:=2 ^ n) (n:=2)
+            (h_m:=by exact Nat.two_pow_pos n)).symm j).2) := by
+  -- Unfold the definition of `multilinearBasis` at `r := l+n+1`.
+  -- 
+  -- Key arithmetic facts (prove by `omega` and rewrite via `simp`):
+  -- - `(l+n+1) - l = n+1` so the `if h_r_sub_l : r-l=0` branch is the recursive branch.
+  -- - The internal `n' := r-l-1` is definitional to `n`, and the internal `r1 := l+n'` is `l+n`.
+  -- 
+  -- Then compute the basis value at the casted index:
+  -- 1. Reduce the `if` with `simp [multilinearBasis, dif_neg]`.
+  -- 2. Use `Basis_cast_index_apply` to remove the index cast.
+  -- 3. Evaluate `Basis.reindex` at the index with `Basis.coe_reindex` / `Basis.reindex_apply`, turning it into evaluation at `(revFinProdFinEquiv ...).symm j`.
+  -- 4. Use `Basis.smulTower_apply` to get a scalar action.
+  -- 5. Rewrite `•` via `Algebra.smul_def` to obtain `algebraMap * _`.
+  -- 6. If any destination casts appear, remove them using `Basis_cast_dest_apply` and `cast_mul`.
+  -- 7. If `powerBasisSucc` appears behind an `Eq.rec`, use `PowerBasis.cast_basis_succ_of_eq_rec_apply`.
+  -- 
+  -- This lemma is purely transport/cast cleanup; no IH or big-operator algebra is needed.
+  sorry
+
+theorem rhs_prod_decompose_succ: ∀ (l n : ℕ) (j : Fin (2 ^ (n + 1))),
+    (Finset.univ : Finset (Fin (n + 1))).prod (fun i =>
+      (ConcreteBTFieldAlgebra (l:=l + i + 1) (r:=l + n + 1) (h_le:=by omega)).algebraMap
+        ((𝕏 (l + i)) ^ (Nat.getBit i j)))
+    =
+    ((Finset.univ : Finset (Fin n)).prod (fun i =>
+      (ConcreteBTFieldAlgebra (l:=l + (Fin.castSucc i) + 1) (r:=l + n + 1) (h_le:=by omega)).algebraMap
+        ((𝕏 (l + Fin.castSucc i)) ^
+          (Nat.getBit i (((revFinProdFinEquiv (m:=2 ^ n) (n:=2)
+            (h_m:=by exact Nat.two_pow_pos n)).symm j).1)))))
+    * ((𝕏 (l + n)) ^
+        (((revFinProdFinEquiv (m:=2 ^ n) (n:=2)
+          (h_m:=by exact Nat.two_pow_pos n)).symm j).2 : ℕ)) := by
+  intro l n j
+  classical
+  -- Abbreviate the "bit-splitting" equivalence.
+  set e := (revFinProdFinEquiv (m := 2 ^ n) (n := 2)
+      (h_m := by exact Nat.two_pow_pos n)).symm
+
+  -- 1. Split the product over `Fin (n+1)` into `castSucc` and the last element.
+  rw [Fin.prod_univ_castSucc (f := fun i : Fin (n + 1) =>
+      (ConcreteBTFieldAlgebra (l := l + i + 1) (r := l + n + 1) (h_le := by omega)).algebraMap
+        ((𝕏 (l + i)) ^ (Nat.getBit i j)))]
+
+  -- 2. Rewrite the exponents in the `castSucc` part.
+  have h_castSucc :
+      (∏ i : Fin n,
+          (ConcreteBTFieldAlgebra (l := l + (Fin.castSucc i) + 1) (r := l + n + 1)
+                (h_le := by omega)).algebraMap
+            ((𝕏 (l + Fin.castSucc i)) ^ Nat.getBit (Fin.castSucc i) j))
+        =
+        (∏ i : Fin n,
+          (ConcreteBTFieldAlgebra (l := l + (Fin.castSucc i) + 1) (r := l + n + 1)
+                (h_le := by omega)).algebraMap
+            ((𝕏 (l + Fin.castSucc i)) ^ Nat.getBit i (e j).1)) := by
+    classical
+    refine Finset.prod_congr rfl ?_
+    intro i hi
+    simpa [e] using
+      congrArg (fun t =>
+        (ConcreteBTFieldAlgebra (l := l + (Fin.castSucc i) + 1) (r := l + n + 1)
+              (h_le := by omega)).algebraMap
+          ((𝕏 (l + Fin.castSucc i)) ^ t))
+        (getBit_revFinProdFinEquiv_symm_castSucc (n := n) (j := j) (i := i))
+
+  rw [h_castSucc]
+
+  -- 3. Rewrite the bit at the last position.
+  have h_lastBit : Nat.getBit (Fin.last n) j = (e j).2 := by
+    simpa [e] using getBit_revFinProdFinEquiv_symm_last (n := n) (j := j)
+
+  -- 4. Simplify the last factor.
+  have h_lastFactor :
+      (ConcreteBTFieldAlgebra (l := l + (Fin.last n) + 1) (r := l + n + 1) (h_le := by omega)).algebraMap
+          ((𝕏 (l + Fin.last n)) ^ ((e j).2 : ℕ))
+        = (𝕏 (l + n)) ^ ((e j).2 : ℕ) := by
+    have h_eq : l + (Fin.last n : ℕ) + 1 = l + n + 1 := by
+      simp
+    -- eliminate the transport in the indices
+    cases h_eq
+    -- rewrite the tower algebra at equal levels to the identity algebra
+    simp [ConcreteBTFieldAlgebra_id]
+    -- the remaining goal is about the self-algebra map
+    change (algebraMap (ConcreteBTField (l + n + 1)) (ConcreteBTField (l + n + 1))
+        (Z (l + n + 1))) ^ (↑(e j).2 : ℕ)
+      = Z (l + n + 1) ^ (↑(e j).2 : ℕ)
+    simp [Algebra.algebraMap_self]
+
+  -- Use the rewritten last factor to finish.
+  rw [h_lastBit]
+  rw [h_lastFactor]
+
+
+theorem multilinearBasis_apply_succ_step: (r1 : ℕ) →
+  (∀ l : ℕ, (h_le : l ≤ r1) → ∀ (j : Fin (2 ^ (r1 - l))),
+    multilinearBasis (l:=l) (r:=r1) (h_le:=h_le) j =
+    (Finset.univ : Finset (Fin (r1 - l))).prod (fun i =>
+      (ConcreteBTFieldAlgebra (l:=l + i + 1) (r:=r1) (h_le:=by omega)).algebraMap (
+        (𝕏 (l + i)) ^ (Nat.getBit i j)))) →
+  ∀ l : ℕ, (h_le : l ≤ r1 + 1) → ∀ (j : Fin (2 ^ (r1 + 1 - l))),
+    multilinearBasis (l:=l) (r:=r1+1) (h_le:=h_le) j =
+    (Finset.univ : Finset (Fin (r1 + 1 - l))).prod (fun i =>
+      (ConcreteBTFieldAlgebra (l:=l + i + 1) (r:=r1+1) (h_le:=by omega)).algebraMap (
+        (𝕏 (l + i)) ^ (Nat.getBit i j))) := by
+  -- Induction step `r1 → r1+1`.
+  -- 
+  -- **Case split** on `hdiff : r1+1-l = 0`.
+  -- 
+  -- 1) If `hdiff`, finish with `multilinearBasis_apply_of_sub_eq_zero`.
+  -- 
+  -- 2) Otherwise, set `n := r1 - l` so `r1 = l + n` and `r1+1 = l + n + 1` (all by `omega`).
+  -- Let `j' : Fin (2^(n+1)) := Fin.cast (by
+  --   have : r1 + 1 - l = n + 1 := by omega
+  --   simpa [this]) j`.
+  -- 
+  -- **Unfold LHS** using `multilinearBasis_unfold_succ (l:=l) (n:=n) (j:=j')`, after rewriting `r1+1 = l+n+1`. This expresses
+  -- `multilinearBasis (r:=r1+1) j` as
+  -- `algebraMap_{l+n→l+n+1} (multilinearBasis (r:=l+n) (lsbs)) * (powerBasisSucc (l+n)).basis msb`.
+  -- 
+  -- Rewrite the power-basis factor using `coe_basis_apply` + `powerBasisSucc_gen`:
+  -- `(powerBasisSucc (l+n)).basis k = (𝕏 (l+n)) ^ (k:ℕ)`.
+  -- 
+  -- **Apply IH** (at level `r1=l+n`) to the `multilinearBasis (r:=l+n)` term. Then:
+  -- - push `algebraMap` through the product with `RingHom.map_prod` and `RingHom.map_pow`;
+  -- - rewrite composed maps in each factor using `ConcreteBTFieldAlgebra_apply_assoc`.
+  -- 
+  -- **Rewrite RHS product** using `rhs_prod_decompose_succ (l:=l) (n:=n) (j:=j')`, which already converts `Nat.getBit` to bits of `(revFinProdFinEquiv ...).symm j'`.
+  -- 
+  -- Finally, close by associativity and `Finset.prod_congr` (and arithmetic rewrites like `r1=l+n`).
+  -- 
+  -- Prefer `simp only [...]` over bare `simp` once the lemma list stabilizes.
+  sorry
+
 theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀ (j : Fin (2 ^ (r - l))),
     multilinearBasis (l:=l) (r:=r) (h_le:=h_le) j =
     (Finset.univ : Finset (Fin (r - l))).prod (fun i =>
       (ConcreteBTFieldAlgebra (l:=l + i + 1) (r:=r) (h_le:=by omega)).algebraMap (
         (𝕏 (l + i)) ^ (Nat.getBit i j))) := by
   induction r with
-  | zero => -- Fin (2 ^ 0) = Fin 1, so j = 0
-    intro l h_l_le_0 j
-    simp only [zero_tsub, pow_zero] at j
-    have h_l_eq_r : l = 0 := by omega
-    subst h_l_eq_r
-    simp only [Nat.sub_zero, Nat.pow_zero, Finset.univ_eq_empty, 𝕏, Z, _root_.zero_add,
-      Nat.add_eq_zero, one_ne_zero, and_false, Fin.val_eq_zero,
-      map_pow, Finset.prod_empty]
-    have hj_eq_0 : j = 0 := by exact Fin.eq_of_val_eq (by omega)
-    rw! [hj_eq_0]
-    rw [multilinearBasis]
-    simp only [tsub_self, ↓reduceDIte, Nat.sub_zero, Nat.pow_zero, Fin.isValue]
-    rw [hli_level_diff_0]
-    simp only [eq_mp_eq_cast, cast_eq, Fin.isValue, Basis.coe_mk]
-  | succ r1 ih_r1 =>
-    set r := r1 + 1 with hr
-    intro l h_l_le_r j
-    haveI instAlgebraR : Algebra (ConcreteBTField r) (ConcreteBTField r) :=
-      ConcreteBTFieldAlgebra (l:=r) (r:=r) (h_le:=by omega)
-    if h_r_sub_l : r - l = 0 then
-      rw [multilinearBasis]
-      have h_l_eq_r : l = r := by omega
-      subst h_l_eq_r
-      simp only [tsub_self, ↓reduceDIte, Nat.pow_zero,
-        hli_level_diff_0, eq_mp_eq_cast, cast_eq]
-      have h1 : 1 = 2 ^ (r - r) := by rw [Nat.sub_self, Nat.pow_zero];
-      have h_r_sub_r : r - r = 0 := by omega
-      rw [←Fin.prod_congr' (b:=r - r) (a:=0) (h:=by omega), Fin.prod_univ_zero]
-      rw [Basis_cast_index_apply (h_eq:=by omega) (h_le:=by omega)]
-      simp only [Basis.coe_mk]
-    else
-      rw [multilinearBasis]
-      -- key to remove Eq.rec : dif_neg h_r_sub_l
-      simp only [Nat.pow_zero, eq_mp_eq_cast, cast_eq,
-        eq_mpr_eq_cast, dif_neg h_r_sub_l]
-      have h2 : 2 ^ (r - l - 1) * 2 = 2 ^ (r - l) := by
-        rw [←Nat.pow_succ, Nat.succ_eq_add_one, Nat.sub_add_cancel (by omega)]
-      rw [Basis_cast_index_apply (h_eq:=by omega) (h_le:=by omega)]
-      simp only [Basis.coe_reindex, Function.comp_apply,
-        revFinProdFinEquiv_symm_apply]
-      rw [Basis_cast_dest_apply (h_eq:=by omega)
-        (h_le1:=by omega) (h_le2:=by omega)]
+  | zero =>
+      exact multilinearBasis_apply_zero
+  | succ r1 ih =>
+      exact multilinearBasis_apply_succ_step r1 ih
 
-      set prevDiff := r - l - 1 with h_prevDiff
-      have h_r_sub_l : r - l = prevDiff + 1 := by omega
-      have h_r1_sub_l : r1 - l = prevDiff := by omega
-      have h_r1_eq_l_plus_prevDiff : r1 = l + prevDiff := by omega
-      have h_r : r = r1 + 1 := by omega
-      have h1 : l + (r - l - 1) = r1 := by omega
-      letI instAlgebraPrev : Algebra (ConcreteBTField l) (ConcreteBTField (r1)) :=
-        ConcreteBTFieldAlgebra (l:=l) (r:=r1) (h_le:=by omega)
-      set prevMultilinearBasis :=
-        multilinearBasis (l:=l) (r:=r1) (h_le:=by omega) with h_prevMultilinearBasis
-      rw! [h_r1_sub_l] at prevMultilinearBasis
-      letI instAlgebra : Algebra (ConcreteBTField l) (ConcreteBTField (r1 + 1)) :=
-        ConcreteBTFieldAlgebra (l:=l) (r:=r1 + 1) (h_le:=by omega)
-      rw! (castMode:=.all) [h1]
-
-      letI instAlgebraSucc : Algebra (ConcreteBTField (r1)) (ConcreteBTField (r1 + 1)) := by
-        exact algebra_adjacent_tower (r1)
-      letI instModuleSucc : Module (ConcreteBTField l) (ConcreteBTField (r1 + 1)) := by
-        exact instAlgebra.toModule
-
-      letI : IsScalarTower (ConcreteBTField l) (ConcreteBTField (r1))
-        (ConcreteBTField (r1 + 1)) := by
-        exact isScalarTower_succ_right (l:=l) (r:=r1) (h_le:=by omega)
-      rw [Basis.smulTower_apply]
-      rw [Algebra.smul_def]
-      rw! [cast_mul (m:=r1 + 1) (n:=r) (h_eq:=by omega)]
-      -- simp_rw [h_.r]
-      rw [cast_eq, cast_eq]
-
-      letI instAlgebra2 : Algebra (ConcreteBTField r1) (ConcreteBTField r) :=
-        ConcreteBTFieldAlgebra (l:=r1) (r:=r) (h_le:=by omega)
-      set b := (powerBasisSucc r1) with hb
-      rw! (castMode:=.all) [←hb]
-      -- simp_rw [eqRec_eq_cast]
-      -- rw [cast_eq]
-      -- have h : (2 ^ (r1 - l)) = (2 ^ (r - l - 1)) := by
-      --   rw [h_r]
-      --   rw [Nat.sub_right_comm, Nat.add_sub_cancel r1 1]
-      -- rw [Basis_cast_index_apply (h_eq:=h) (h_le:=by omega)]
-      -- simp only [leftDivNat, Fin.coe_cast]
-
-      -- set indexLeft : Fin 2 := ⟨j.val / 2 ^ (r - l - 1), by
-      --   change j.val / 2 ^ (r - l - 1) < 2 ^ 1
-      --   apply div_two_pow_lt_two_pow (x:=j.val) (i:=1) (j:=r - l - 1) (h_x_lt_2_pow_i:=by
-      --     rw [Nat.add_comm, Nat.sub_add_cancel (by omega)];
-      --     exact j.isLt
-      --   )
-      -- ⟩
-      -- unfold algebra_adjacent_tower
-      -- -- unfold indexLeft
-      -- -- All casts eliminated, now we prove equality on revFinProdFinEquiv and bit stuff
-      -- have h: b.basis indexLeft = b.gen ^ (indexLeft.val) :=
-      --   coe_basis_apply (pb:=b) (i:=indexLeft)
-      -- conv_lhs =>
-      --   enter [2];
-      --   -- @DFunLike.coe (Basis (Fin 2) ...
-      --   change b.basis indexLeft;
-      --   -- @DFunLike.coe (Basis (Fin b.dim) ...
-      --   rw! [h] -- `rw` can't work without `change` here
-      -- rw! [powerBasisSucc_gen, ←𝕏]
-      -- conv_lhs =>
-      --   rw [ih_r1 (l:=l) (h_le:=by omega)] -- inductive hypothesis of level r - 1
-      --   rw [Fin.cast_val_eq_val (h_eq:=by omega)]
-
-      -- conv_rhs =>
-      --   rw [←Fin.prod_congr' (b:=r - l) (a:=prevDiff + 1) (h:=by omega)]
-      --   rw [Fin.prod_univ_castSucc] -- split the prod of rhs
-      --   simp only [Fin.coe_cast, Fin.coe_castSucc, Fin.val_last]
-      -- · simp_rw [algebraMap.coe_prod] -- lhs
-      --   unfold Algebra.cast
-      --   rw! (castMode:=.all) [←algebraMap]
-      --   conv_lhs =>
-      --     rw [←Fin.prod_congr' (b:=r1 - l) (a:=prevDiff) (h:=by omega)]
-      --     simp only [Fin.coe_cast]
-      --   simp_rw [algebraMap, instAlgebraSucc]
-      --   rw [algebra_adjacent_tower]
-      --   rw [RingHom.map_pow]
-      --   ------------------ Equality of bit - based powers of generators -----------------
-      --   conv_rhs => rw! [←algebraMap, h_r1_eq_l_plus_prevDiff.symm]
-      --   -- algebraMap.coe_pow] -- rhs
-      --   --- The outtermost term
-      --   have hfinProd_msb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)
-      --     (i:=⟨prevDiff, by omega⟩) (j:=⟨j, by omega⟩)
-      --   simp only [lt_self_iff_false, ↓reduceIte,
-      --     revFinProdFinEquiv_symm_apply] at hfinProd_msb
-      --   conv_rhs =>
-      --     simp only [hfinProd_msb, leftDivNat];
-      --     simp only [h_prevDiff]
-      --     rw! [ConcreteBTFieldAlgebra_id (by omega)]
-      --   --- Inner - prod term
-      --   congr
-      --   funext i
-      --   have hfinProd_lsb := bit_revFinProdFinEquiv_symm_2_pow_succ
-      --     (n:=prevDiff) (i:=⟨i, by omega⟩)
-      --     (j:=⟨j, by omega⟩)
-      --   simp only [Fin.is_lt, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_lsb
-      --   rw [hfinProd_lsb]
-      --   simp_rw [←ConcreteBTFieldAlgebra_apply_assoc]
-      --   rfl
-      sorry
 
 end ConcreteMultilinearBasis
 
