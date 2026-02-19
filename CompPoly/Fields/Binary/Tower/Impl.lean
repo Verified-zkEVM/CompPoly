@@ -3667,6 +3667,7 @@ noncomputable def towerEquiv (n : ℕ) : TowerEquivResult n := by
         change curRingHom.toFun = towerRingHomForwardMap (n+1)
         rfl
     }
+
 theorem BTField_algebraMap_succ_eq_join (k : ℕ) (x : BTField k) :
     algebraMap (BTField k) (BTField (k+1)) x =
       BinaryTower.join_via_add_smul (k:=k+1) (h_pos:=by omega) 0 x := by
@@ -3678,10 +3679,10 @@ theorem ConcreteBTField_algebraMap_succ_eq_join (k : ℕ) (r : ConcreteBTField k
   simpa [Nat.add_one_sub_one] using
     (algebraMap_succ_eq_zero_x (k:=k+1) (h_pos:=by omega) (x:=r))
 
-theorem towerEquiv_ringEquiv_apply (k : ℕ) (r : ConcreteBTField k) : (towerEquiv k).ringEquiv r = towerRingHomForwardMap k r := by
+theorem towerEquiv_ringEquiv_apply (k : ℕ) (r : ConcreteBTField k) :
+    (towerEquiv k).ringEquiv r = towerRingHomForwardMap k r := by
   -- Use the forward-map characterization of the ring equivalence
   simpa using congrArg (fun f => f r) (towerEquiv k).ringEquivForwardMapEq
-
 
 theorem towerEquiv_commutes_left_succ (k : ℕ) : ∀ r : ConcreteBTField k,
     (AlgebraTower.algebraMap k (k+1) (by omega)) ((towerEquiv k).ringEquiv r) =
@@ -3726,7 +3727,8 @@ theorem towerEquiv_commutes_left_diff (i d : ℕ) : ∀ r : ConcreteBTField i,
               ((AlgebraTower.algebraMap i (i + d) (by omega)) ((towerEquiv i).ringEquiv r)) := by
               simp only [RingHom.coe_comp, Function.comp_apply]
         _ = (AlgebraTower.algebraMap (i + d) (i + d + 1) (by omega))
-              ((towerEquiv (i + d)).ringEquiv ((AlgebraTower.algebraMap i (i + d) (by omega)) r)) := by
+              ((towerEquiv (i + d)).ringEquiv
+                ((AlgebraTower.algebraMap i (i + d) (by omega)) r)) := by
               rw [ih]
         _ = (towerEquiv (i + d + 1)).ringEquiv
               ((AlgebraTower.algebraMap (i + d) (i + d + 1) (by omega))
@@ -3736,20 +3738,21 @@ theorem towerEquiv_commutes_left_diff (i d : ℕ) : ∀ r : ConcreteBTField i,
         _ = (towerEquiv (i + d + 1)).ringEquiv
               ((AlgebraTower.algebraMap i (i + d + 1) (by omega)) r) := by
               have hconc : (AlgebraTower.algebraMap (AT:=ConcreteBTField) i (i + d + 1) (by omega))
-                    = (AlgebraTower.algebraMap (AT:=ConcreteBTField) (i + d) (i + d + 1) (by omega)).comp
+                    = (AlgebraTower.algebraMap (AT:=ConcreteBTField) (i + d) (i + d + 1)
+                        (by omega)).comp
                         (AlgebraTower.algebraMap (AT:=ConcreteBTField) i (i + d) (by omega)) := by
-                simpa [Nat.add_assoc] using (concreteTowerAlgebraMap_succ (l:=i) (r:=i + d) (h_le:=by omega))
+                simpa [Nat.add_assoc] using
+                  (concreteTowerAlgebraMap_succ (l:=i) (r:=i + d) (h_le:=by omega))
               have hconc_apply := congrArg (fun f => f r) hconc
               have h_inner :
                   (AlgebraTower.algebraMap (AT:=ConcreteBTField) (i + d) (i + d + 1) (by omega))
                       ((AlgebraTower.algebraMap (AT:=ConcreteBTField) i (i + d) (by omega)) r) =
                     (AlgebraTower.algebraMap (AT:=ConcreteBTField) i (i + d + 1) (by omega)) r := by
                 simpa [RingHom.comp_apply] using hconc_apply.symm
-              simpa [h_inner]
+              simp [h_inner]
         _ = (towerEquiv (i + Nat.succ d)).ringEquiv
               ((AlgebraTower.algebraMap i (i + Nat.succ d) (by omega)) r) := by
               rfl
-
 
 theorem towerEquiv_commutes_left (i j : ℕ) (h : i ≤ j) : ∀ r : ConcreteBTField i,
     (AlgebraTower.algebraMap i j h) ((towerEquiv i).ringEquiv r) =
