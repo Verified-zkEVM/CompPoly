@@ -472,6 +472,17 @@ theorem degree_eq_natDegree (p : CPolynomial R) (hp : p ≠ 0) :
   unfold natDegree Raw.natDegree
   rw [hk]
 
+omit [LawfulBEq R] in
+/-- Lemma for computing the degree of 0 in proofs. -/
+lemma degree_zero : degree (0 : CPolynomial R) = ⊥ := by
+  unfold degree Raw.degree
+  have : (0 : CPolynomial.Raw R).lastNonzero = none := by
+    simp [Raw.lastNonzero]
+    apply Array.findIdxRev?_empty_none
+    rfl
+  show Raw.degree (0 : CPolynomial.Raw R) = ⊥
+  rw [Raw.degree, this]
+
 end Operations
 
 section Semiring
@@ -790,7 +801,8 @@ end Division
 
 section ModuleTheory
 
--- The assumptions are requried for `CPolynomial R` to be a module and so are necessary downstream.
+-- The assumptions are requried for `CPolynomial R` to be a module and are necessary downstream.
+
 variable [Semiring R] [LawfulBEq R]
 
 /-- Scalar multiplication for canonical polynomials: multiply each coefficient by `r`,
@@ -996,17 +1008,17 @@ theorem degreeLT_succ_eq_degreeLE {n : ℕ} : degreeLT R (n + 1) = degreeLE R �
   simp +decide [ degreeLT, degreeLE ]
   rfl
 
-/-- When `R` has decidable equality so does `(CPolynomial R)`. -/
-instance [DecidableEq R] : DecidableEq (CPolynomial R) :=
-  inferInstanceAs (DecidableEq { p : CPolynomial.Raw R // p.trim = p })
-
 section bases
 
 -- This section contains theorems and lemmas about generators of submodules of `CPolynomial R`.
 
+/-- When `R` has decidable equality so does `(CPolynomial R)`. -/
+instance [DecidableEq R] : DecidableEq (CPolynomial R) :=
+  inferInstanceAs (DecidableEq { p : CPolynomial.Raw R // p.trim = p })
+
 /-- Helper lemma: The degree of `monomial n c` is `n`. -/
 lemma degree_monomial [DecidableEq R] (n : ℕ) (c : R) (hc : c ≠ 0) :
-  degree (monomial n c) = n := by
+    degree (monomial n c) = n := by
     have := degree_eq_support_max ( monomial n c )
     specialize this (by
     unfold monomial
@@ -1019,7 +1031,7 @@ lemma degree_monomial [DecidableEq R] (n : ℕ) (c : R) (hc : c ≠ 0) :
 
 /--  Helper lemma: `monomial n r` is equal to `X^n` times `r`.-/
 lemma monomial_eq_smul_X_pow [DecidableEq R] [Nontrivial R] (n : ℕ) (r : R) :
-  monomial n r = r • ((X : CPolynomial R) ^ n) := by
+    monomial n r = r • ((X : CPolynomial R) ^ n) := by
     have h_smul : r • (X ^ n : CPolynomial R)
         = (C r : CPolynomial R) * (X ^ n : CPolynomial R) := by
       have h_coeff : ∀ (p : CPolynomial R) (i : ℕ), coeff (r • p) i
@@ -1039,7 +1051,7 @@ lemma monomial_eq_smul_X_pow [DecidableEq R] [Nontrivial R] (n : ℕ) (r : R) :
 
 /-- Helper lemma: We can write a monomial as a sum of monomials multiplied by the coefficients. -/
 lemma eq_sum_monomials [DecidableEq R] (p : CPolynomial R) :
-  p = (Finset.range (p.natDegree + 1)).sum (fun i => .monomial i (coeff p i)) := by
+    p = (Finset.range (p.natDegree + 1)).sum (fun i => .monomial i (coeff p i)) := by
     rw [eq_iff_coeff]; intro i
     have h_distrib : coeff (∑ j ∈ Finset.range (p.natDegree + 1),
         monomial j (coeff p j)) i =
@@ -1065,7 +1077,7 @@ lemma eq_sum_monomials [DecidableEq R] (p : CPolynomial R) :
 
 /-- `degreeLE R ↑n` is spanned by monic monomials of degree at most `n`. -/
 theorem degreeLE_eq_span_X_pow [DecidableEq R] [Nontrivial R] {n : ℕ} :
-  degreeLE R ↑n =
+    degreeLE R ↑n =
     Submodule.span R ↑((Finset.range (n + 1)).image fun n => (X : CPolynomial R) ^ n) := by
   symm
   refine' le_antisymm _ _ <;> intro p hp <;> simp_all +decide [ degreeLE ]
@@ -1093,7 +1105,150 @@ theorem degreeLE_eq_span_X_pow [DecidableEq R] [Nontrivial R] {n : ℕ} :
     · exact Submodule.smul_mem _ _ ( Submodule.subset_span ⟨ i, Nat.lt_succ_of_le h, rfl ⟩ )
     · simp +decide [ show p.coeff i = 0 from hp i ( not_le.mp h ) ] at hi ⊢
 
+/-- `degreeLT R ↑n` is spanned by monic monomials of degree less than `n`. -/
+theorem degreeLT_eq_span_X_pow [DecidableEq R] [Nontrivial R] {n : ℕ} :
+    degreeLT R n
+        = Submodule.span R ↑((Finset.range n).image fun n => (X : CPolynomial R) ^ n) := by
+      cases n with
+    | zero =>
+      simp only [Finset.range_zero, Finset.image_empty, Finset.coe_empty, Submodule.span_empty]
+      ext p; simp [Submodule.mem_bot, mem_degreeLT, eq_zero_iff_coeff_zero]
+      have zero : (∀ (i : ℕ), (p.val : Array R)[i]?.getD 0 = 0) ↔ p = 0 := by
+        rw [eq_iff_coeff]; simp
+        exact⟨fun h i => (h i).trans (coeff_zero i).symm, fun h i => (h i).trans
+  (coeff_zero i)⟩
+      have zero_deg : p.degree = ⊥ ↔ p = 0 := by
+        constructor
+        · intro h
+          have hlt : p.degree < ↑(0 : ℕ) := by rw [h]; exact WithBot.bot_lt_coe 0
+          exact eq_zero_iff_coeff_zero.mpr
+            (fun k => (degree_lt_iff_coeff_zero p 0).mp hlt k (Nat.zero_le k))
+        · rintro rfl; exact degree_zero
+      rw [zero_deg]
+      grind
+    | succ m => rw [degreeLT_succ_eq_degreeLE, degreeLE_eq_span_X_pow]
+
 end bases
+
+section LinearEquivalences
+
+-- This section contains theorem about lienar isomoprhism between modules.
+
+/-- The sum `∑ i : Fin n, monomial i (f i)` has degree less than `n`,
+  so it lies in `degreeLT R n`. -/
+lemma degreeLTEquiv_invFun_mem [DecidableEq R] (n : ℕ) (f : Fin n → R) :
+    Finset.univ.sum (fun i : Fin n => monomial (↑i) (f i)) ∈ degreeLT R n := by
+  simp [degreeLT]
+  intro i hi
+  simp [lcoeff, monomial]
+  rw [ Finset.sum_eq_zero ]; intros; simp_all +decide [ CPolynomial.Raw.monomial ];
+  grind
+
+/-- The forward map of `degreeLTEquiv` preserves addition:
+  extracting coefficients commutes with polynomial addition.  -/
+lemma degreeLTEquiv_map_add (n : ℕ)
+    (p q : ↥(degreeLT R n)) :
+    (fun i : Fin n => coeff (↑(p + q) : CPolynomial R) (↑i)) =
+    (fun i : Fin n => coeff (↑p : CPolynomial R) (↑i) + coeff (↑q : CPolynomial R) (↑i)) := by
+  exact funext fun i => coeff_add _ _ _
+
+/-- The forward map of `degreeLTEquiv` preserves scalar multiplication:
+  extracting coefficients commutes with scalar multiplication. -/
+lemma degreeLTEquiv_map_smul (n : ℕ)
+    (r : R) (p : ↥(degreeLT R n)) :
+    (fun i : Fin n => coeff (↑(r • p) : CPolynomial R) (↑i)) =
+    (fun i : Fin n => r * coeff (↑p : CPolynomial R) (↑i)) := by
+  have h_coeff_smul : ∀ i : ℕ, coeff (r • (p : CPolynomial R)) i
+      = r *coeff (p : CPolynomial R) i := by
+    exact fun i => coeff_smul r (↑p) i
+  exact funext fun i => h_coeff_smul i
+
+/-- Left inverse: reconstructing a polynomial from its coefficients via monomials
+  recovers the original polynomial. -/
+lemma degreeLTEquiv_left_inv [DecidableEq R] (n : ℕ)
+    (p : ↥(degreeLT R n)) :
+    (⟨Finset.univ.sum (fun i : Fin n => monomial (↑i) (coeff p.1 i)),
+      degreeLTEquiv_invFun_mem n (fun i => coeff p.1 i)⟩ : ↥(degreeLT R n)) = p := by
+    apply Subtype.ext
+    rw [eq_iff_coeff]; intro i
+    rw [show coeff (∑ j : Fin n, monomial (↑j) (coeff p.1 j)) i =
+      ∑ j : Fin n, coeff (monomial (↑j) (coeff p.1 j)) i from map_sum (lcoeff i) _ _]
+    simp only [coeff_monomial]
+    by_cases hi : i < n
+    · rw [Finset.sum_eq_single_of_mem ⟨i, hi⟩ (Finset.mem_univ _)
+        (fun j _ hji => if_neg fun h => hji (Fin.ext (by aesop)))]
+      simp
+    · rw [show coeff p.1 i = 0 from
+        (degree_lt_iff_coeff_zero p.1 n).mp (mem_degreeLT.mp p.2) i (by omega)]
+      exact Finset.sum_eq_zero fun j _ => if_neg (by have := j.isLt; omega)
+
+/-- Right inverse: extracting coefficients from the polynomial built from `f`
+  recovers `f`. -/
+lemma degreeLTEquiv_right_inv [DecidableEq R] (n : ℕ)
+    (f : Fin n → R) :
+    (fun i : Fin n => coeff
+      (Finset.univ.sum (fun j : Fin n => monomial (↑j) (f j))) i) = f := by
+    funext i
+    rw [show coeff (∑ j : Fin n, monomial (↑j) (f j)) ↑i =
+      ∑ j : Fin n, coeff (monomial (↑j) (f j)) ↑i from map_sum (lcoeff ↑i) _ _]
+    simp only [coeff_monomial]
+    rw [Finset.sum_eq_single_of_mem i (Finset.mem_univ _)
+      (fun j _ hji => if_neg fun h => hji (Fin.ext (by omega)))]
+    simp
+
+/-- The first `n` coefficients on `degreeLT n` form a linear equivalence with `Fin n → R`.
+
+  This is the computable polynomial analogue of `Polynomial.degreeLTEquiv`.
+
+  The forward map sends a polynomial `p` with `degree p < n` to the function
+  `i ↦ coeff p i` for `i : Fin n`.
+
+  The inverse map sends a function `f : Fin n → R` to the polynomial
+  `∑ i, monomial i (f i)`. -/
+def degreeLTEquiv (S : Type*) [BEq S] [Semiring S] [LawfulBEq S] [DecidableEq S] (n : ℕ) :
+    degreeLT S n ≃ₗ[S] (Fin n → S) where
+  toFun p i := coeff p.1 i
+  invFun f :=
+    ⟨Finset.univ.sum (fun i : Fin n => monomial (↑i) (f i)),
+      by exact degreeLTEquiv_invFun_mem n f⟩
+  map_add' := fun p q => degreeLTEquiv_map_add n p q
+  map_smul' := fun r p => degreeLTEquiv_map_smul n r p
+  left_inv := by apply degreeLTEquiv_left_inv
+  right_inv := by intro f; generalize_proofs at *; exact degreeLTEquiv_right_inv n f
+
+/-- The `degreeLTEquiv` maps a polynomial to zero if and only if the polynomial is zero. -/
+theorem degreeLTEquiv_eq_zero_iff_eq_zero [DecidableEq R] {n : ℕ} {p : CPolynomial R}
+    (hp : p ∈ degreeLT R n) :
+    degreeLTEquiv R n ⟨p, hp⟩ = 0 ↔ p = 0 := by simp
+
+/-- Evaluation of a polynomial in `degreeLT R n` can be expressed as a sum over its
+  coefficients via `degreeLTEquiv`. -/
+theorem eval_eq_sum_degreeLTEquiv [DecidableEq R] {n : ℕ} {p : CPolynomial R}
+    (hp : p ∈ degreeLT R n) (x : R) :
+    eval x p =
+      Finset.univ.sum (fun i : Fin n => degreeLTEquiv R n ⟨p, hp⟩ i * x ^ (i : ℕ)) := by
+  unfold CPolynomial.eval degreeLTEquiv;
+  unfold CPolynomial.Raw.eval; simp +decide
+  have h_coeff_zero : ∀ i ≥ n, p.val.coeff i = 0 := by
+    intro i hi; have := hp; simp_all +decide [ degreeLT ]
+    convert hp i hi using 1
+    unfold CPolynomial.lcoeff; aesop
+  have h_sum_eq : ∑ i ∈ Finset.range (p.val.size), (p.val.coeff i) * x ^ i
+      = ∑ i ∈ Finset.range n, (p.val.coeff i) * x ^ i := by
+    by_cases h : n ≤ p.val.size <;> simp_all +decide
+    · rw [ ← Finset.sum_range_add_sum_Ico _ h ]
+      simp +decide [ Finset.sum_Ico_eq_sum_range, h_coeff_zero ]
+    · rw [ Finset.sum_subset ( Finset.range_mono h.le ) fun i hi₁ hi₂ => by aesop ]
+  convert h_sum_eq using 1
+  · unfold CPolynomial.Raw.eval₂
+    induction' ( p.val : Array R ) using Array.recOn with p ih; simp +decide
+    induction p using List.reverseRecOn <;> simp +decide [ *, Finset.sum_range_succ ]
+    simp_all +decide [ List.zipIdx_append ]
+    exact congr_arg₂ _ ( Finset.sum_congr rfl fun i hi => by
+         rw [ List.getElem?_append ]; aesop ) rfl
+  · simp +decide [ Finset.sum_range, CPolynomial.Raw.coeff ]
+
+end LinearEquivalences
 
 end ModuleTheory
 
