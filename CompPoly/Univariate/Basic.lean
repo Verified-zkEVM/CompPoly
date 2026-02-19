@@ -707,13 +707,13 @@ lemma monomial_add_erase [DecidableEq R] (p : CPolynomial R) :
     (expose_names; exact inst_1.toSemiring)
     (expose_names; exact inst)
     (expose_names; exact inst_2)
-    exact Raw.monomial p.natDegree p.leadingCoeff;
-    exact p.val - Raw.monomial p.natDegree ( p.val.coeff p.natDegree );
+    exact Raw.monomial p.natDegree p.leadingCoeff
+    exact p.val - Raw.monomial p.natDegree ( p.val.coeff p.natDegree )
     · exact Eq.symm Array.getD_eq_getD_getElem?
-    · convert Eq.symm ( add_sub_cancel _ _ ) using 1;
-      congr! 1;
-      convert Raw.sub_coeff _ _ _ using 1;
-      · congr! 1;
+    · convert Eq.symm ( add_sub_cancel _ _ ) using 1
+      congr! 1
+      convert Raw.sub_coeff _ _ _ using 1
+      · congr! 1
         · exact Eq.symm Array.getD_eq_getD_getElem?
         · congr! 1
           congr! 1
@@ -901,36 +901,16 @@ theorem degree_le_iff_coeff_zero (p : CPolynomial R) (n : WithBot ℕ) :
         cases h : p.val.lastNonzero <;> simp_all +decide;
         · have := p.prop;
           unfold CPolynomial.Raw.trim at this; aesop;
-        · have h_coeff_zero : ∀ i, i >
+        · have h_coeff_zero : ∀ j : ℕ, j >
               (↑‹Fin (Array.size (↑p : CPolynomial.Raw R))› : ℕ)
-                  → p.val.coeff i = 0 := by
-            intro i hi;
-            have h_coeff_zero : ∀ i, i >
-                (↑‹Fin (Array.size (↑p : CPolynomial.Raw R))› : ℕ)
-                    → p.val.coeff i = 0 := by
-              intro i hi
-              have h_lastNonzero : ∀ j, j >
-                  (↑‹Fin (Array.size (↑p : CPolynomial.Raw R))› : ℕ)
-                      → p.val.coeff j = 0 := by
-                intro j hj
-                have h_lastNonzero : ∀ j, j >
-                    (↑‹Fin (Array.size (↑p : CPolynomial.Raw R))› : ℕ)
-                        → p.val.coeff j = 0 := by
-                  intro j hj
-                  have h_lastNonzero : ∀ j, j >
-                      (↑‹Fin (Array.size (↑p : CPolynomial.Raw R))› : ℕ)
-                          → p.val.coeff j = 0 := by
-                    intro j hj
-                    exact (by
-                      have := p.prop
-                      replace this := congr_arg ( fun q => q.coeff j ) this
-                      simp_all +decide [ CPolynomial.Raw.trim ]
-                      rw [ ← this, Array.getElem?_eq_none ] <;> aesop)
-                  exact h_lastNonzero j hj
-                exact h_lastNonzero j hj
-              exact h_lastNonzero i hi
-            exact h_coeff_zero i hi;
-          exact le_of_not_gt fun hk' => hn <| by simpa using h_coeff_zero k hk'
+                  → p.val.coeff j = 0 := by
+            intro j hj
+            have htrim := p.prop
+            have := congr_arg (fun q => q.coeff j) htrim
+            simp_all +decide [ CPolynomial.Raw.trim ]
+            rw [ ← this, Array.getElem?_eq_none ] <;> aesop
+          exact le_of_not_gt fun hk' => hn <| by
+            simpa [Raw.coeff, Array.getD_eq_getD_getElem?] using h_coeff_zero k hk'
       · cases' eq_or_ne p ( 0 : CPolynomial R )
             with hp hp <;> simp_all +decide [ coeff ]
         · simp [degree]
@@ -961,7 +941,7 @@ theorem degree_lt_iff_coeff_zero (p : CPolynomial R) (n : ℕ) :
         apply Iff.intro
         · intro h k; induction k <;> simp_all +decide
           · rfl
-          · (expose_names; exact h_1)
+          · assumption
         · intro h; exact (by
           convert degree_le_iff_coeff_zero p ⊥ using 1;
           simp +decide [ h ])
