@@ -801,7 +801,7 @@ end Division
 
 section ModuleTheory
 
--- The assumptions are requried for `CPolynomial R` to be a module and are necessary downstream.
+-- The assumptions are required for `CPolynomial R` to be a module and are necessary downstream.
 
 variable [Semiring R] [LawfulBEq R]
 
@@ -863,7 +863,7 @@ lemma mul_smul' (r s : R) (p : CPolynomial R) :
   rw [eq_iff_coeff]; intro i
   rw [coeff_smul, coeff_smul, coeff_smul, _root_.mul_assoc]
 
-/-- `CPolynomail` forms a module when R is a semiring. -/
+/-- `CPolynomial` forms a module when R is a semiring. -/
 instance : Module R (CPolynomial R) where
   smul:= SMul.smul
   mul_smul := mul_smul'
@@ -873,7 +873,7 @@ instance : Module R (CPolynomial R) where
   add_smul := add_smul'
   zero_smul := zero_smul'
 
-/-- This is an R-linear function that returns the cofficient of X^n. -/
+/-- This is an R-linear function that returns the coefficient of X^n. -/
 def lcoeff (n : ℕ) : (CPolynomial R) →ₗ[R] R where
   toFun p := coeff p n
   map_add' p q := coeff_add p q n
@@ -980,25 +980,25 @@ theorem degree_lt_iff_coeff_zero (p : CPolynomial R) (n : ℕ) :
         have nat_ineq_2 ( k : ℕ ): m+1 ≤ k ↔ m < k := by omega
         simpa using degree_le_iff_coeff_zero p m
 
-/-- A polynomial is contained in `degreeLE R n` iff if has degree at most `n`. -/
+/-- A polynomial is contained in `degreeLE R n` iff it has degree at most `n`. -/
 theorem mem_degreeLE {n : WithBot ℕ} {p : (CPolynomial R)} : p ∈ degreeLE R n ↔ degree p ≤ n := by
     simp [degreeLE]
     exact Iff.symm (degree_le_iff_coeff_zero p n)
 
-/-- The submodule of polynomials with degree less than or equal to `n ` contains the submodule
-    of polynomials with degree less or equal to than `m` when `m` is less than or equal to `n`. -/
+/-- The submodule of polynomials with degree less than or equal to `n` contains the submodule
+    of polynomials with degree less than or equal to `m` when `m` is less than or equal to `n`. -/
 theorem degreeLE_mono (m n : WithBot ℕ) (h_lessThan : m ≤ n) :
     degreeLE R m ≤ degreeLE R n := fun _ hf =>
         mem_degreeLE.2 (le_trans (mem_degreeLE.1 hf) h_lessThan)
 
-/-- A polynomial is contained in `degreeLT R n` iff if has degree less than `n`. -/
+/-- A polynomial is contained in `degreeLT R n` iff it has degree less than `n`. -/
 theorem mem_degreeLT {n : ℕ} {p : CPolynomial R} : p ∈ degreeLT R n ↔ degree p < n := by
     simp [degreeLT]
     rw[degree_lt_iff_coeff_zero]
     exact Lex.forall
 
 /-- The submodule of polynomials with degree strictly less than `n ` contains the submodule
-    of polynomials with degree at less than `m` when `m` is less than or equal to `n`. -/
+    of polynomials with degree less than `m` when `m` is less than or equal to `n`. -/
 theorem degreeLT_mono {m n : ℕ} (h_lessThan : m ≤ n) : degreeLT R m ≤ degreeLT R n := fun _ hf =>
   mem_degreeLT.2 (lt_of_lt_of_le (mem_degreeLT.1 hf) <| WithBot.coe_le_coe.2 h_lessThan)
 
@@ -1132,7 +1132,7 @@ end bases
 
 section LinearEquivalences
 
--- This section contains theorem about lienar isomoprhism between modules.
+-- This section contains theorem about linear isomoprhism between modules.
 
 /-- The sum `∑ i : Fin n, monomial i (f i)` has degree less than `n`,
   so it lies in `degreeLT R n`. -/
