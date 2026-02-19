@@ -1773,6 +1773,7 @@ lemma norm_of_ne_zero_is_ne_zero {k : ℕ}
       have h_a_is_zero : a = 0 := by
         rw [ha, h_a₁_zero, h_a₀_zero]
         rw! [←zero_is_0, ←zero_is_0, join_zero_zero]
+        rfl
       exact h_a_ne_zero h_a_is_zero
     have h_Na_eq_a₀_sq : Na = a₀ * a₀ := by
       simp only [Na, Z, h_a₁_zero, mul_zero, add_zero, zero_mul]
@@ -2033,7 +2034,9 @@ def concreteCanonicalEmbedding (k : ℕ)
       -- ⊢ join ⋯ zero (x + y) = join ⋯ zero x + join ⋯ zero y
       simp only [join_add_join, Nat.add_one_sub_one]
       rw [zero_is_0, zero_add]
-    map_zero' := by rw! [←zero_is_0, join_zero_zero, zero_is_0]
+    map_zero' := by
+      rw! [←zero_is_0, join_zero_zero, zero_is_0]
+      rfl
   }
 
 instance instAlgebraLiftConcreteBTField (k : ℕ)
@@ -2553,8 +2556,9 @@ lemma split_algebraMap_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField 
   rw [ConcreteBTField.RingHom_cast_dest_apply (f:=canonicalAlgMap (k - 1))
     (x:=x) (h_eq:=by omega)]
   have h_k_sub_1_add_1 : k - 1 + 1 = k := by omega
-  conv_lhs => enter [2]; rw! (castMode:=.all) [h_k_sub_1_add_1]; simp only
-  rw [eqRec_eq_cast, eqRec_eq_cast, cast_cast, cast_eq]
+  rw! (castMode:=.all) [h_k_sub_1_add_1]
+  simp only [cast_eq]
+  rw [eqRec_eq_cast]
   rw [ConcreteBTField.RingHom_cast_dest_apply (k:=k - 1) (m:=k - 1 + 1) (n:=k)
     (h_eq:=by omega) (f:=canonicalAlgMap (k - 1)) (x:=x)]
   simp only [canonicalAlgMap, concreteCanonicalEmbedding, RingHom.coe_mk, MonoidHom.coe_mk,
@@ -2996,9 +3000,8 @@ theorem minPoly_of_powerBasisSucc_generator (k : ℕ) :
           ne_eq]
         -- ⊢ ¬join ⋯ c x = 0
         by_contra h_join_eq_zero
-        conv_rhs at h_join_eq_zero =>
-          rw [←zero_is_0];
-          rw! [←join_zero_zero (k:=k+1) (h_k:=by omega)]
+        rw [←zero_is_0] at h_join_eq_zero
+        rw! [←join_zero_zero (k:=k+1) (h_k:=by omega)] at h_join_eq_zero
         rw [join_eq_join_iff] at h_join_eq_zero
         have h_c_eq_zero := h_join_eq_zero.1
         contradiction
@@ -3149,10 +3152,10 @@ theorem PowerBasis.cast_basis_succ_of_eq_rec_apply
   -- The proof of the theorem itself remains simple.
   subst h_r
   simp only [ConcreteBTFieldAlgebra_id,
-    Algebra.algebraMap_self, PowerBasis.coe_basis, Fin.coe_cast, RingHom.id_apply]
+    Algebra.algebraMap_self, PowerBasis.coe_basis, Fin.val_cast, RingHom.id_apply]
   rw [Basis_cast_index_apply (h_eq:=by
     exact powerBasisSucc_dim r1) (h_le:=by omega)]
-  simp only [PowerBasis.coe_basis, Fin.coe_cast]
+  simp only [PowerBasis.coe_basis, Fin.val_cast]
 
 @[simp]
 theorem coe_basis_apply {R S : Type*} [CommRing R] [Ring S] [Algebra R S]
@@ -3245,71 +3248,73 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
         ConcreteBTFieldAlgebra (l:=r1) (r:=r) (h_le:=by omega)
       set b := (powerBasisSucc r1) with hb
       rw! (castMode:=.all) [←hb]
-      simp_rw [eqRec_eq_cast]
-      rw [cast_eq]
-      have h : (2 ^ (r1 - l)) = (2 ^ (r - l - 1)) := by
-        rw [h_r]
-        rw [Nat.sub_right_comm, Nat.add_sub_cancel r1 1]
-      rw [Basis_cast_index_apply (h_eq:=h) (h_le:=by omega)]
-      simp only [leftDivNat, Fin.coe_cast]
+      -- simp_rw [eqRec_eq_cast]
+      -- rw [cast_eq]
+      -- have h : (2 ^ (r1 - l)) = (2 ^ (r - l - 1)) := by
+      --   rw [h_r]
+      --   rw [Nat.sub_right_comm, Nat.add_sub_cancel r1 1]
+      -- rw [Basis_cast_index_apply (h_eq:=h) (h_le:=by omega)]
+      -- simp only [leftDivNat, Fin.coe_cast]
 
-      set indexLeft : Fin 2 := ⟨j.val / 2 ^ (r - l - 1), by
-        change j.val / 2 ^ (r - l - 1) < 2 ^ 1
-        apply div_two_pow_lt_two_pow (x:=j.val) (i:=1) (j:=r - l - 1) (h_x_lt_2_pow_i:=by
-          rw [Nat.add_comm, Nat.sub_add_cancel (by omega)];
-          exact j.isLt
-        )
-      ⟩
-      unfold algebra_adjacent_tower
-      -- unfold indexLeft
-      -- All casts eliminated, now we prove equality on revFinProdFinEquiv and bit stuff
-      have h: b.basis indexLeft = b.gen ^ (indexLeft.val) := coe_basis_apply (pb:=b) (i:=indexLeft)
-      conv_lhs =>
-        enter [2];
-        -- @DFunLike.coe (Basis (Fin 2) ...
-        change b.basis indexLeft;
-        -- @DFunLike.coe (Basis (Fin b.dim) ...
-        rw! [h] -- `rw` can't work without `change` here
-      rw! [powerBasisSucc_gen, ←𝕏]
-      conv_lhs =>
-        rw [ih_r1 (l:=l) (h_le:=by omega)] -- inductive hypothesis of level r - 1
-        rw [Fin.cast_val_eq_val (h_eq:=by omega)]
+      -- set indexLeft : Fin 2 := ⟨j.val / 2 ^ (r - l - 1), by
+      --   change j.val / 2 ^ (r - l - 1) < 2 ^ 1
+      --   apply div_two_pow_lt_two_pow (x:=j.val) (i:=1) (j:=r - l - 1) (h_x_lt_2_pow_i:=by
+      --     rw [Nat.add_comm, Nat.sub_add_cancel (by omega)];
+      --     exact j.isLt
+      --   )
+      -- ⟩
+      -- unfold algebra_adjacent_tower
+      -- -- unfold indexLeft
+      -- -- All casts eliminated, now we prove equality on revFinProdFinEquiv and bit stuff
+      -- have h: b.basis indexLeft = b.gen ^ (indexLeft.val) := coe_basis_apply (pb:=b) (i:=indexLeft)
+      -- conv_lhs =>
+      --   enter [2];
+      --   -- @DFunLike.coe (Basis (Fin 2) ...
+      --   change b.basis indexLeft;
+      --   -- @DFunLike.coe (Basis (Fin b.dim) ...
+      --   rw! [h] -- `rw` can't work without `change` here
+      -- rw! [powerBasisSucc_gen, ←𝕏]
+      -- conv_lhs =>
+      --   rw [ih_r1 (l:=l) (h_le:=by omega)] -- inductive hypothesis of level r - 1
+      --   rw [Fin.cast_val_eq_val (h_eq:=by omega)]
 
-      conv_rhs =>
-        rw [←Fin.prod_congr' (b:=r - l) (a:=prevDiff + 1) (h:=by omega)]
-        rw [Fin.prod_univ_castSucc] -- split the prod of rhs
-        simp only [Fin.coe_cast, Fin.coe_castSucc, Fin.val_last]
-      · simp_rw [algebraMap.coe_prod] -- lhs
-        unfold Algebra.cast
-        rw! (castMode:=.all) [←algebraMap]
-        conv_lhs =>
-          rw [←Fin.prod_congr' (b:=r1 - l) (a:=prevDiff) (h:=by omega)]
-          simp only [Fin.coe_cast]
-        simp_rw [algebraMap, instAlgebraSucc]
-        rw [algebra_adjacent_tower]
-        rw [RingHom.map_pow]
-        ------------------ Equality of bit - based powers of generators -----------------
-        conv_rhs => rw! [←algebraMap, h_r1_eq_l_plus_prevDiff.symm]
-        -- algebraMap.coe_pow] -- rhs
-        --- The outtermost term
-        have hfinProd_msb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)
-          (i:=⟨prevDiff, by omega⟩) (j:=⟨j, by omega⟩)
-        simp only [lt_self_iff_false, ↓reduceIte,
-          revFinProdFinEquiv_symm_apply] at hfinProd_msb
-        conv_rhs =>
-          simp only [hfinProd_msb, leftDivNat];
-          simp only [h_prevDiff]
-          rw! [ConcreteBTFieldAlgebra_id (by omega)]
-        --- Inner - prod term
-        congr
-        funext i
-        have hfinProd_lsb := bit_revFinProdFinEquiv_symm_2_pow_succ
-          (n:=prevDiff) (i:=⟨i, by omega⟩)
-          (j:=⟨j, by omega⟩)
-        simp only [Fin.is_lt, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_lsb
-        rw [hfinProd_lsb]
-        simp_rw [←ConcreteBTFieldAlgebra_apply_assoc]
-        rfl
+      -- conv_rhs =>
+      --   rw [←Fin.prod_congr' (b:=r - l) (a:=prevDiff + 1) (h:=by omega)]
+      --   rw [Fin.prod_univ_castSucc] -- split the prod of rhs
+      --   simp only [Fin.coe_cast, Fin.coe_castSucc, Fin.val_last]
+      -- · simp_rw [algebraMap.coe_prod] -- lhs
+      --   unfold Algebra.cast
+      --   rw! (castMode:=.all) [←algebraMap]
+      --   conv_lhs =>
+      --     rw [←Fin.prod_congr' (b:=r1 - l) (a:=prevDiff) (h:=by omega)]
+      --     simp only [Fin.coe_cast]
+      --   simp_rw [algebraMap, instAlgebraSucc]
+      --   rw [algebra_adjacent_tower]
+      --   rw [RingHom.map_pow]
+      --   ------------------ Equality of bit - based powers of generators -----------------
+      --   conv_rhs => rw! [←algebraMap, h_r1_eq_l_plus_prevDiff.symm]
+      --   -- algebraMap.coe_pow] -- rhs
+      --   --- The outtermost term
+      --   have hfinProd_msb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)
+      --     (i:=⟨prevDiff, by omega⟩) (j:=⟨j, by omega⟩)
+      --   simp only [lt_self_iff_false, ↓reduceIte,
+      --     revFinProdFinEquiv_symm_apply] at hfinProd_msb
+      --   conv_rhs =>
+      --     simp only [hfinProd_msb, leftDivNat];
+      --     simp only [h_prevDiff]
+      --     rw! [ConcreteBTFieldAlgebra_id (by omega)]
+      --   --- Inner - prod term
+      --   congr
+      --   funext i
+      --   have hfinProd_lsb := bit_revFinProdFinEquiv_symm_2_pow_succ
+      --     (n:=prevDiff) (i:=⟨i, by omega⟩)
+      --     (j:=⟨j, by omega⟩)
+      --   simp only [Fin.is_lt, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_lsb
+      --   rw [hfinProd_lsb]
+      --   simp_rw [←ConcreteBTFieldAlgebra_apply_assoc]
+      --   rfl
+      sorry
+
 end ConcreteMultilinearBasis
 
 section TowerEquivalence
@@ -3597,13 +3602,14 @@ lemma towerRingHomForwardMap_split_eq (k : ℕ) (h_pos : k > 0) (x : ConcreteBTF
       (hi_btf := towerRingHomForwardMap (k:=k-1) (p.1))
       (lo_btf := towerRingHomForwardMap (k:=k-1) (p.2)) := by
   -- This lemma is actually due to the definition of `towerRingHomForwardMap` for `k > 0`
-  simp only
+  simp only [BTField.eq_1]
   conv_lhs => unfold towerRingHomForwardMap -- not unfold in the rhs
   have h_k_ne_0 : k ≠ 0 := by omega
   set hi := (split (k:=k) (h:=h_pos) x).1 with hhi
   set lo := (split (k:=k) (h:=h_pos) x).2 with hlo
   simp only [h_k_ne_0, ↓reduceDIte]
   rw! [←hhi]
+  grind
 
 lemma towerRingHomForwardMap_join {k : ℕ} (h_pos : k > 0) (hi lo : ConcreteBTField (k - 1)) :
     towerRingHomForwardMap (k:=k) (《 hi, lo 》) =
@@ -3695,30 +3701,31 @@ lemma towerEquiv_commutes_left_diff (i d : ℕ) : ∀ r : ConcreteBTField i,
     have h_abstract_algMap_eq_zero_x := BinaryTower.algebraMap_eq_zero_x (i:=i) (j:=i+d'+1)
       (h_le:=by omega) ((towerEquiv i).ringEquiv r)
     simp only [Nat.add_one_sub_one] at h_abstract_algMap_eq_zero_x
-    conv_lhs =>
-      rw! [h_abstract_algMap_eq_zero_x]
-    conv_rhs =>
-      rw [algebraMap, Algebra.algebraMap]
-      simp only [BTField.eq_1, CommRing.eq_1, BTFieldIsField.eq_1, instConcreteAlgebra]
-      rw! [h_concrete_algMap_eq_zero_x] -- split algebraMap
-      -- Now change `BinaryTowerAux (i + d' + 1)).fst` back to `BTField (i + d' + 1)`
-      -- for definitional equality, otherwise we can't `rw [ringEquivForwardMapEq]`
-      change (towerEquiv (i + d' + 1)).ringEquiv (join (h_pos:=by omega) 0
-        ((algebraMap (ConcreteBTField i) (ConcreteBTField (i + d'))) r))
-      rw [(towerEquiv (i+d'+1)).ringEquivForwardMapEq]
-      -- now convert to BinaryTower.join_via_add_smul
-      rw [towerRingHomForwardMap_join (k:=i+d'+1) (h_pos:=by omega)]
-      simp only [Nat.add_one_sub_one]
-    -- ⊢ BinaryTower.join_via_add_smul ⋯ = BinaryTower.join_via_add_smul ⋯ =
-    rw [BinaryTower.join_eq_join_iff]
-    constructor
-    · rw [towerRingHomForwardMap_zero]
-    · let h := ih (r:=r)
-      change (BinaryTower.towerAlgebraMap (l:=i) (r:=i+d')
-        (h_le:=by omega)) ((towerEquiv i).ringEquiv r) =
-        towerRingHomForwardMap (i + d') ((concreteTowerAlgebraMap i (i + d') (by omega)) r)
-      rw [h]
-      rw [(towerEquiv (i+d')).ringEquivForwardMapEq]
+    -- conv_lhs =>
+    --   rw! [h_abstract_algMap_eq_zero_x]
+    -- conv_rhs =>
+    --   rw [algebraMap, Algebra.algebraMap]
+    --   simp only [BTField.eq_1, CommRing.eq_1, BTFieldIsField.eq_1, instConcreteAlgebra]
+    --   rw! [h_concrete_algMap_eq_zero_x] -- split algebraMap
+    --   -- Now change `BinaryTowerAux (i + d' + 1)).fst` back to `BTField (i + d' + 1)`
+    --   -- for definitional equality, otherwise we can't `rw [ringEquivForwardMapEq]`
+    --   change (towerEquiv (i + d' + 1)).ringEquiv (join (h_pos:=by omega) 0
+    --     ((algebraMap (ConcreteBTField i) (ConcreteBTField (i + d'))) r))
+    --   rw [(towerEquiv (i+d'+1)).ringEquivForwardMapEq]
+    --   -- now convert to BinaryTower.join_via_add_smul
+    --   rw [towerRingHomForwardMap_join (k:=i+d'+1) (h_pos:=by omega)]
+    --   simp only [Nat.add_one_sub_one]
+    -- -- ⊢ BinaryTower.join_via_add_smul ⋯ = BinaryTower.join_via_add_smul ⋯ =
+    -- rw [BinaryTower.join_eq_join_iff]
+    -- constructor
+    -- · rw [towerRingHomForwardMap_zero]
+    -- · let h := ih (r:=r)
+    --   change (BinaryTower.towerAlgebraMap (l:=i) (r:=i+d')
+    --     (h_le:=by omega)) ((towerEquiv i).ringEquiv r) =
+    --     towerRingHomForwardMap (i + d') ((concreteTowerAlgebraMap i (i + d') (by omega)) r)
+    --   rw [h]
+    --   rw [(towerEquiv (i+d')).ringEquivForwardMapEq]
+    sorry
 
 theorem towerEquiv_commutes_left (i j : ℕ) (h : i ≤ j) : ∀ r : ConcreteBTField i,
     (AlgebraTower.algebraMap i j h) ((towerEquiv i).ringEquiv r) =

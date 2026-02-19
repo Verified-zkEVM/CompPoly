@@ -454,16 +454,13 @@ lemma degreeOf_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] :
     by_contra! h
     generalize h' : Classical.choice _ = out at h
     match h'' : out with
-    | isTrue g =>
-      aesop
+    | isTrue g => grind
     | isFalse g =>
       apply g
       split at h
-      · next g' g'' g''' =>
-          aesop (add safe cases Fin) (add safe (by simp only at g''))
+      · next g' g'' g''' => grind
       · simp at h
 
 end
 
 end CPoly
-

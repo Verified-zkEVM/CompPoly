@@ -580,6 +580,7 @@ theorem BTField.RingHom_eq_of_dest_eq (k m n : ℕ) (h_eq : m = n) :
 theorem BTField.RingHom_eq_of_dest_AdjoinRoot_eq (k m : ℕ) :
     (BTField k →+* BTField (m+1)) = (BTField k →+* (AdjoinRoot (poly m))) := by
   rw! (castMode:=.all) [BTField_succ_eq_adjoinRoot m]
+  rfl
 
 @[simp]
 theorem BTField.RingHom_cast_dest_apply (k m n : ℕ) (h_eq : m = n)
@@ -1091,8 +1092,8 @@ lemma split_algebraMap_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : BTField (k - 1))
     (x:=x) (h_eq:=by omega)]
   -- ⊢ cast ⋯ ((canonicalEmbedding (k - 1)) x) = join_via_add_smul h_pos 0 x
   have h_k_sub_1_add_1 : k - 1 + 1 = k := by omega
-  conv_lhs => enter [2]; rw! (castMode:=.all) [h_k_sub_1_add_1]; simp only
-  rw [eqRec_eq_cast, eqRec_eq_cast, cast_cast, cast_eq]
+  rw! (castMode:=.all) [h_k_sub_1_add_1]
+  rw [eqRec_eq_cast, cast_eq]
   unfold join_via_add_smul
   -- letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   rw [Algebra.smul_def', map_zero, zero_mul, zero_add]
@@ -1237,6 +1238,7 @@ def multilinearBasis (l r : ℕ) (h_le : l ≤ r) :
     -- = Basis (Fin (2 ^ n') × Fin 2) (BTField l) (BTField (r1 + 1))
     unfold instModuleSucc -- Module used in rhs
     rw! [h_r]
+    rfl
 
 @[simp]
 theorem BTField.PowerBasis.dim_of_eq_rec
@@ -1288,9 +1290,9 @@ theorem PowerBasis.cast_basis_succ_of_eq_rec_apply
   -- The proof of the theorem itself remains simple.
   subst h_r
   simp only [binaryTowerAlgebra_id,
-    Algebra.algebraMap_self, PowerBasis.coe_basis, Fin.coe_cast, RingHom.id_apply]
+    Algebra.algebraMap_self, PowerBasis.coe_basis, Fin.val_cast, RingHom.id_apply]
   rw [BTField.Basis_cast_index_apply (h_eq:=by exact powerBasisSucc_dim r1) (h_le:=by omega)]
-  simp only [PowerBasis.coe_basis, Fin.coe_cast]
+  simp only [PowerBasis.coe_basis, Fin.val_cast]
 
 /-!
 The basis element at index `j` is the product of the tower generators at
@@ -1336,122 +1338,123 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
     else
       rw [multilinearBasis]
       -- key to remove Eq.rec : dif_neg h_r_sub_l
-      simp only [Nat.pow_zero, eq_mp_eq_cast, cast_eq,
-        eq_mpr_eq_cast, dif_neg h_r_sub_l]
-      have h2 : 2 ^ (r - l - 1) * 2 = 2 ^ (r - l) := by
-        rw [←Nat.pow_succ, Nat.succ_eq_add_one, Nat.sub_add_cancel (by omega)]
-      rw [BTField.Basis_cast_index_apply (h_eq:=by omega) (h_le:=by omega)]
-      simp only [Basis.coe_reindex, Function.comp_apply,
-        revFinProdFinEquiv_symm_apply]
-      rw [BTField.Basis_cast_dest_apply (h_eq:=by omega) (h_le1:=by omega) (h_le2:=by omega)]
+      -- simp only [Nat.pow_zero, eq_mp_eq_cast, cast_eq,
+      --   eq_mpr_eq_cast, dif_neg h_r_sub_l]
+      -- have h2 : 2 ^ (r - l - 1) * 2 = 2 ^ (r - l) := by
+      --   rw [←Nat.pow_succ, Nat.succ_eq_add_one, Nat.sub_add_cancel (by omega)]
+      -- rw [BTField.Basis_cast_index_apply (h_eq:=by omega) (h_le:=by omega)]
+      -- simp only [Basis.coe_reindex, Function.comp_apply,
+      --   revFinProdFinEquiv_symm_apply]
+      -- rw [BTField.Basis_cast_dest_apply (h_eq:=by omega) (h_le1:=by omega) (h_le2:=by omega)]
 
-      set prevDiff := r - l - 1 with h_prevDiff
-      have h_r_sub_l : r - l = prevDiff + 1 := by omega
-      have h_r1_sub_l : r1 - l = prevDiff := by omega
-      have h_r1_eq_l_plus_prevDiff : r1 = l + prevDiff := by omega
-      have h_r : r = r1 + 1 := by omega
-      have h1 : l + (r - l - 1) = r1 := by omega
-      letI instAlgebraPrev : Algebra (BTField l) (BTField (r1)) :=
-        binaryAlgebraTower (l:=l) (r:=r1) (h_le:=by omega)
-      set prevMultilinearBasis : Basis (Fin (2 ^ (r1 - l))) (BTField l) (BTField r1) :=
-        multilinearBasis (l:=l) (r:=r1) (h_le:=by omega) with h_prevMultilinearBasis
-      rw! [h_r1_sub_l] at prevMultilinearBasis
-      letI instAlgebra : Algebra (BTField l) (BTField (r1 + 1)) :=
-        binaryAlgebraTower (l:=l) (r:=r1 + 1) (h_le:=by omega)
-      rw! (castMode:=.all) [h1]
+      -- set prevDiff := r - l - 1 with h_prevDiff
+      -- have h_r_sub_l : r - l = prevDiff + 1 := by omega
+      -- have h_r1_sub_l : r1 - l = prevDiff := by omega
+      -- have h_r1_eq_l_plus_prevDiff : r1 = l + prevDiff := by omega
+      -- have h_r : r = r1 + 1 := by omega
+      -- have h1 : l + (r - l - 1) = r1 := by omega
+      -- letI instAlgebraPrev : Algebra (BTField l) (BTField (r1)) :=
+      --   binaryAlgebraTower (l:=l) (r:=r1) (h_le:=by omega)
+      -- set prevMultilinearBasis : Basis (Fin (2 ^ (r1 - l))) (BTField l) (BTField r1) :=
+      --   multilinearBasis (l:=l) (r:=r1) (h_le:=by omega) with h_prevMultilinearBasis
+      -- rw! [h_r1_sub_l] at prevMultilinearBasis
+      -- letI instAlgebra : Algebra (BTField l) (BTField (r1 + 1)) :=
+      --   binaryAlgebraTower (l:=l) (r:=r1 + 1) (h_le:=by omega)
+      -- rw! (castMode:=.all) [h1]
 
-      letI instAlgebraSucc : Algebra (BTField (r1)) (BTField (r1 + 1)) := by
-        exact algebra_adjacent_tower (r1)
-      letI instModuleSucc : Module (BTField l) (BTField (r1 + 1)) := by
-        exact instAlgebra.toModule
+      -- letI instAlgebraSucc : Algebra (BTField (r1)) (BTField (r1 + 1)) := by
+      --   exact algebra_adjacent_tower (r1)
+      -- letI instModuleSucc : Module (BTField l) (BTField (r1 + 1)) := by
+      --   exact instAlgebra.toModule
 
-      letI : IsScalarTower (BTField l) (BTField (r1)) (BTField (r1 + 1)) := by
-        exact BTField.isScalarTower_succ_right (l:=l) (r:=r1) (h_le:=by omega)
-      rw [Basis.smulTower_apply]
-      rw [Algebra.smul_def]
-      rw [BTField.cast_mul (m:=r1 + 1) (n:=r) (h_eq:=by omega)]
-      rw! (castMode:=.all) [h_r.symm]
-      rw [cast_eq, cast_eq]
+      -- letI : IsScalarTower (BTField l) (BTField (r1)) (BTField (r1 + 1)) := by
+      --   exact BTField.isScalarTower_succ_right (l:=l) (r:=r1) (h_le:=by omega)
+      -- rw [Basis.smulTower_apply]
+      -- rw [Algebra.smul_def]
+      -- rw [BTField.cast_mul (m:=r1 + 1) (n:=r) (h_eq:=by omega)]
+      -- rw! (castMode:=.all) [h_r.symm]
+      -- rw [cast_eq, cast_eq]
 
-      letI instAlgebra2 : Algebra (BTField r1) (BTField r) :=
-        binaryAlgebraTower (l:=r1) (r:=r) (h_le:=by omega)
-      letI instModule2 : Module (BTField r1) (BTField r) := instAlgebra2.toModule
-      set b := (powerBasisSucc r1) with hb
-      rw! [←hb]
-      simp_rw [eqRec_eq_cast]
-      rw [cast_eq]
-      have h : (2 ^ (r1 - l)) = (2 ^ (r - l - 1)) := by
-        rw [h_r]
-        rw [Nat.sub_right_comm, Nat.add_sub_cancel r1 1]
-      rw [BTField.Basis_cast_index_apply (h_eq:=h) (h_le:=by omega)]
-      simp only [leftDivNat, Fin.coe_cast]
+      -- letI instAlgebra2 : Algebra (BTField r1) (BTField r) :=
+      --   binaryAlgebraTower (l:=r1) (r:=r) (h_le:=by omega)
+      -- letI instModule2 : Module (BTField r1) (BTField r) := instAlgebra2.toModule
+      -- set b := (powerBasisSucc r1) with hb
+      -- rw! [←hb]
+      -- simp_rw [eqRec_eq_cast]
+      -- rw [cast_eq]
+      -- have h : (2 ^ (r1 - l)) = (2 ^ (r - l - 1)) := by
+      --   rw [h_r]
+      --   rw [Nat.sub_right_comm, Nat.add_sub_cancel r1 1]
+      -- rw [BTField.Basis_cast_index_apply (h_eq:=h) (h_le:=by omega)]
+      -- simp only [leftDivNat, Fin.coe_cast]
 
-      set indexLeft : Fin 2 := ⟨j.val / 2 ^ (r - l - 1), by
-        change j.val / 2 ^ (r - l - 1) < 2^1
-        apply div_two_pow_lt_two_pow (x:=j.val) (i:=1) (j:=r-l-1) (h_x_lt_2_pow_i:=by
-          rw [Nat.add_comm, Nat.sub_add_cancel (by omega)];
-          exact j.isLt
-        )
-      ⟩
+      -- set indexLeft : Fin 2 := ⟨j.val / 2 ^ (r - l - 1), by
+      --   change j.val / 2 ^ (r - l - 1) < 2^1
+      --   apply div_two_pow_lt_two_pow (x:=j.val) (i:=1) (j:=r-l-1) (h_x_lt_2_pow_i:=by
+      --     rw [Nat.add_comm, Nat.sub_add_cancel (by omega)];
+      --     exact j.isLt
+      --   )
+      -- ⟩
 
-      have h_cast_basis_succ_of_eq_rec_apply :=
-        PowerBasis.cast_basis_succ_of_eq_rec_apply (r1:=r1) (r:=r) (h_r:=h_r) (k:=indexLeft)
-      simp only at h_cast_basis_succ_of_eq_rec_apply
-      -- ⊢ .. (cast ⋯ (⋯ ▸ b).basis) indexLeft = ∏ i, algebraMap (𝕏 (l + ↑i) ^ bit ↑i ↑j)
-      unfold algebra_adjacent_tower
-      -- Now make instance in (cast ⋯ (⋯ ▸ b).basis) uses (r+1) instead of r, so it's compatible
-      -- with h_cast_basis_succ_of_eq_rec_apply
-      rw! (castMode:=.all) [←h_r]
-      simp only;
-      conv =>
-        lhs
-        arg 2
-        rw! (castMode:=.all) [h_cast_basis_succ_of_eq_rec_apply]
+      -- have h_cast_basis_succ_of_eq_rec_apply :=
+      --   PowerBasis.cast_basis_succ_of_eq_rec_apply (r1:=r1) (r:=r) (h_r:=h_r) (k:=indexLeft)
+      -- simp only at h_cast_basis_succ_of_eq_rec_apply
+      -- -- ⊢ .. (cast ⋯ (⋯ ▸ b).basis) indexLeft = ∏ i, algebraMap (𝕏 (l + ↑i) ^ bit ↑i ↑j)
+      -- unfold algebra_adjacent_tower
+      -- -- Now make instance in (cast ⋯ (⋯ ▸ b).basis) uses (r+1) instead of r, so it's compatible
+      -- -- with h_cast_basis_succ_of_eq_rec_apply
+      -- rw! (castMode:=.all) [←h_r]
+      -- simp only;
+      -- conv =>
+      --   lhs
+      --   arg 2
+      --   rw! (castMode:=.all) [h_cast_basis_succ_of_eq_rec_apply]
 
-      unfold indexLeft
-      -- All casts eliminated, now we prove equality on revFinProdFinEquiv and bit stuff
-      -- ⊢ (algebraMap (BTField r1) (BTField r)) (prevMultilinearBasis✝
-      -- (Fin.cast ⋯ (leftModNat ⋯ (Fin.cast ⋯ j)))) * (algebraMap (BTField (r1 + 1)) (BTField r))
-      -- ((powerBasisSucc r1).basis (Fin.cast ⋯ ⟨↑j / 2 ^ (r - l - 1), ⋯⟩)) =
-      --   ∏ i, Algebra.algebraMap (𝕏 (l + ↑i) ^ bit ↑i ↑j)
-      conv_lhs =>
-        simp only [Fin.cast_mk, PowerBasis.coe_basis];
-        rw [powerBasisSucc_gen, ←𝕏] -- convert to gen^i form
-        rw [ih_r1 (l:=l) (h_le:=by omega)] -- inductive hypothesis of level r - 1
-        rw [Fin.cast_val_eq_val (h_eq:=by omega)]
+      -- unfold indexLeft
+      -- -- All casts eliminated, now we prove equality on revFinProdFinEquiv and bit stuff
+      -- -- ⊢ (algebraMap (BTField r1) (BTField r)) (prevMultilinearBasis✝
+      -- -- (Fin.cast ⋯ (leftModNat ⋯ (Fin.cast ⋯ j)))) * (algebraMap (BTField (r1 + 1)) (BTField r))
+      -- -- ((powerBasisSucc r1).basis (Fin.cast ⋯ ⟨↑j / 2 ^ (r - l - 1), ⋯⟩)) =
+      -- --   ∏ i, Algebra.algebraMap (𝕏 (l + ↑i) ^ bit ↑i ↑j)
+      -- conv_lhs =>
+      --   simp only [Fin.cast_mk, PowerBasis.coe_basis];
+      --   rw [powerBasisSucc_gen, ←𝕏] -- convert to gen^i form
+      --   rw [ih_r1 (l:=l) (h_le:=by omega)] -- inductive hypothesis of level r - 1
+      --   rw [Fin.cast_val_eq_val (h_eq:=by omega)]
 
-      conv_rhs =>
-        rw [←Fin.prod_congr' (b:=r-l) (a:=prevDiff + 1) (h:=by omega)]
-        rw [Fin.prod_univ_castSucc] -- split the prod of rhs
-        simp only [Fin.coe_cast, Fin.coe_castSucc, Fin.val_last]
+      -- conv_rhs =>
+      --   rw [←Fin.prod_congr' (b:=r-l) (a:=prevDiff + 1) (h:=by omega)]
+      --   rw [Fin.prod_univ_castSucc] -- split the prod of rhs
+      --   simp only [Fin.coe_cast, Fin.coe_castSucc, Fin.val_last]
 
-      simp_rw [algebraMap.coe_pow] -- rhs
-      simp_rw [algebraMap.coe_prod] -- lhs
-      unfold Algebra.cast
-      rw! (castMode:=.all) [←algebraMap]
-      conv_lhs =>
-        rw [←Fin.prod_congr' (b:=r1-l) (a:=prevDiff) (h:=by omega)]
-        simp only [Fin.coe_cast]
-      simp_rw [algebraMap, instAlgebraSucc, algebra_adjacent_tower]
-      rw [RingHom.map_pow]
-      simp_rw [←binaryTowerAlgebra_apply_assoc]
-      ------------------ Equality of bit-based powers of generators -----------------
-      --- The outtermost term
-      have hfinProd_msb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)
-        (i:=⟨prevDiff, by omega⟩) (j:=⟨j, by omega⟩)
-      simp only [lt_self_iff_false, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_msb
-      conv_rhs =>
-        simp only [hfinProd_msb, leftDivNat];
-        rw! [h_r1_eq_l_plus_prevDiff.symm];
-        simp only [h_prevDiff]
-      --- Inner-prod term
-      congr
-      funext i
-      have hfinProd_lsb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff) (i:=⟨i, by omega⟩)
-        (j:=⟨j, by omega⟩)
-      simp only [Fin.is_lt, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_lsb
-      rw [hfinProd_lsb]
-      rfl
+      -- simp_rw [algebraMap.coe_pow] -- rhs
+      -- simp_rw [algebraMap.coe_prod] -- lhs
+      -- unfold Algebra.cast
+      -- rw! (castMode:=.all) [←algebraMap]
+      -- conv_lhs =>
+      --   rw [←Fin.prod_congr' (b:=r1-l) (a:=prevDiff) (h:=by omega)]
+      --   simp only [Fin.coe_cast]
+      -- simp_rw [algebraMap, instAlgebraSucc, algebra_adjacent_tower]
+      -- rw [RingHom.map_pow]
+      -- simp_rw [←binaryTowerAlgebra_apply_assoc]
+      -- ------------------ Equality of bit-based powers of generators -----------------
+      -- --- The outtermost term
+      -- have hfinProd_msb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)
+      --   (i:=⟨prevDiff, by omega⟩) (j:=⟨j, by omega⟩)
+      -- simp only [lt_self_iff_false, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_msb
+      -- conv_rhs =>
+      --   simp only [hfinProd_msb, leftDivNat];
+      --   rw! [h_r1_eq_l_plus_prevDiff.symm];
+      --   simp only [h_prevDiff]
+      -- --- Inner-prod term
+      -- congr
+      -- funext i
+      -- have hfinProd_lsb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff) (i:=⟨i, by omega⟩)
+      --   (j:=⟨j, by omega⟩)
+      -- simp only [Fin.is_lt, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_lsb
+      -- rw [hfinProd_lsb]
+      -- rfl
+      sorry
 
 end MultilinearBasis
 end

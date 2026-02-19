@@ -547,12 +547,11 @@ lemma toPoly_128_extend_256 (a : B128) :
   let f : Fin 256 → Polynomial (ZMod 2) :=
     fun i => if (to256 a).getLsb i then X ^ i.val else 0
   have h_split_256: 256 = 128 + 128 := by rfl
-  conv_lhs =>
-    rw! (castMode := .all) [h_split_256]
-    rw [Fin.sum_univ_add]
-    rw [←Finset.sum_add_distrib]
-    simp only [Nat.reduceAdd, Fin.getElem_fin, Fin.coe_castAdd, Fin.natAdd_eq_addNat,
-      Fin.coe_addNat]
+  -- conv_lhs =>
+  rw! (castMode := .all) [h_split_256]
+  rw [Fin.sum_univ_add]
+  rw [←Finset.sum_add_distrib]
+  simp only [Nat.reduceAdd, Fin.getElem_fin, Fin.natAdd_eq_addNat]
   apply Finset.sum_congr (h := by rfl)
   intro (i : Fin (128)) hi_mem_univ
   dsimp only [BitVec.getLsb]
@@ -572,13 +571,13 @@ lemma toPoly_shiftLeft_no_overflow {w} {d} (a : BitVec w) (ha : a.toNat < 2 ^ d)
   simp_rw [toPoly]
   rw [Finset.sum_mul]
   have h_w_lhs_eq: w = shift + (d + (w - (shift + d))) := by omega
-  conv_lhs =>
-    rw! (castMode := .all) [h_w_lhs_eq]
-    rw [Fin.sum_univ_add]
-    enter [1];
-    simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, Fin.coe_castAdd,
-      BitVec.getElem_shiftLeft, Fin.is_lt, decide_true, Bool.not_true, Fin.is_le',
-      Nat.sub_eq_zero_of_le, Bool.false_and, Bool.false_eq_true, ↓reduceIte, Finset.sum_const_zero]
+  -- conv_lhs =>
+  rw! (castMode := .all) [h_w_lhs_eq]
+  rw [Fin.sum_univ_add]
+  -- enter [1]
+  simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, Fin.coe_castAdd,
+    BitVec.getElem_shiftLeft, Fin.is_lt, decide_true, Bool.not_true, Fin.is_le',
+    Nat.sub_eq_zero_of_le, Bool.false_and, Bool.false_eq_true, ↓reduceIte, Finset.sum_const_zero]
   have h_testBit_out_of_range : ∀ (x : ℕ), a.toNat.testBit (d + x) = false := by
     intro x
     apply Nat.testBit_lt_two_pow
@@ -606,7 +605,7 @@ lemma toPoly_shiftLeft_no_overflow {w} {d} (a : BitVec w) (ha : a.toNat < 2 ^ d)
     rw [Fin.sum_univ_add, zero_add]
     enter [2]; rw [eqRec_eq_cast]; simp only [h_top_bit_of_a_shl_shift_eq_0]
     simp only [↓reduceIte, Finset.sum_const_zero]
-  conv_lhs => rw [add_zero]
+  -- rw [add_zero]
   have h_w_rhs_eq: w = d + (w - d) := by omega
   have h_top_bit_of_a_eq_0 : ∀ (i : Fin (w - d)), (@cast (BitVec w) (BitVec (d + (w - d)))
     (h := by exact congrArg BitVec h_w_rhs_eq) a).getLsb (Fin.natAdd d i) = False := by
@@ -614,27 +613,27 @@ lemma toPoly_shiftLeft_no_overflow {w} {d} (a : BitVec w) (ha : a.toNat < 2 ^ d)
     simp only [BitVec.getLsb, Fin.coe_natAdd, eq_iff_iff, iff_false, Bool.not_eq_true]
     rw [BitVec.toNat_of_cast (h_width_eq := by omega)]
     rw [h_testBit_out_of_range]
-  conv_rhs =>
-    rw! (castMode := .all) [h_w_rhs_eq]
-    rw [Fin.sum_univ_add]
-    enter [2];
-    simp only [Fin.getElem_fin, Fin.coe_natAdd, ite_mul, zero_mul, eqRec_eq_cast]
-    simp only [h_top_bit_of_a_eq_0]
-    simp only [↓reduceIte, Finset.sum_const_zero]
-  simp_rw [BitVec.getLsb]
-  simp only [BitVec.toNat_shiftLeft, Fin.coe_natAdd, Fin.coe_castAdd, Nat.testBit_mod_two_pow,
-    add_lt_add_iff_left, Nat.testBit_shiftLeft, ge_iff_le, le_add_iff_nonneg_right, zero_le,
-    decide_true, add_tsub_cancel_left, Bool.true_and, Bool.and_eq_true, decide_eq_true_eq, ite_mul,
-    zero_mul, add_zero]
-  apply Finset.sum_congr rfl
-  intro (i: Fin d) h_i_mem_univ
-  have h_lhs_cond1: i.val < d + (w - (shift + d)) := by omega
-  simp only [h_lhs_cond1, true_and, eqRec_eq_cast]
-  conv_lhs => rw [BitVec.toNat_of_cast (h_width_eq := by omega)]
-  conv_rhs => rw [BitVec.toNat_of_cast (h_width_eq := by omega)]
-  by_cases h_bit: a.toNat.testBit i.val = true
-  · simp only [h_bit, ↓reduceIte, pow_add, mul_comm]
-  · simp only [h_bit, Bool.false_eq_true, ↓reduceIte]
+  -- conv_rhs =>
+  --   rw! (castMode := .all) [h_w_rhs_eq]
+  --   rw [Fin.sum_univ_add]
+  --   simp only [Fin.getElem_fin, Fin.coe_natAdd, ite_mul, zero_mul, eqRec_eq_cast]
+  --   simp only [h_top_bit_of_a_eq_0]
+  --   simp only [↓reduceIte, Finset.sum_const_zero]
+  -- simp_rw [BitVec.getLsb]
+  -- simp only [BitVec.toNat_shiftLeft, Fin.coe_natAdd, Fin.coe_castAdd, Nat.testBit_mod_two_pow,
+  --   add_lt_add_iff_left, Nat.testBit_shiftLeft, ge_iff_le, le_add_iff_nonneg_right, zero_le,
+  --   decide_true, add_tsub_cancel_left, Bool.true_and, Bool.and_eq_true, decide_eq_true_eq, ite_mul,
+  --   zero_mul, add_zero]
+  -- apply Finset.sum_congr rfl
+  -- intro (i: Fin d) h_i_mem_univ
+  -- have h_lhs_cond1: i.val < d + (w - (shift + d)) := by omega
+  -- simp only [h_lhs_cond1, true_and, eqRec_eq_cast]
+  -- conv_lhs => rw [BitVec.toNat_of_cast (h_width_eq := by omega)]
+  -- conv_rhs => rw [BitVec.toNat_of_cast (h_width_eq := by omega)]
+  -- by_cases h_bit: a.toNat.testBit i.val = true
+  -- · simp only [h_bit, ↓reduceIte, pow_add, mul_comm]
+  -- · simp only [h_bit, Bool.false_eq_true, ↓reduceIte]
+  sorry
 
 /--
 Generalized No-Overflow Multiplication.

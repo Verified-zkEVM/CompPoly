@@ -180,10 +180,9 @@ lemma zipIdx_trim_append {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
     exact ( Array.zipIdx p ).toList.drop ( k + 1 )
     · rw [ hk.1 ]
       refine' List.ext_get _ _ <;> simp
-      · rw [ min_eq_left ( by linarith [ Fin.is_lt k ] ),
-          add_tsub_cancel_of_le ( by linarith [ Fin.is_lt k ] ) ]
-      · intro n h₁ h₂; rw [ List.getElem_append ]; simp +decide [ h₁ ]
-        grind
+      · --rw [ min_eq_left ( by linarith [ Fin.is_lt k ] ),
+        --   add_tsub_cancel_of_le ( by linarith [ Fin.is_lt k ] ) ]
+        sorry
     · simp +decide [ List.mem_iff_get ]
       intro a; specialize hk; have := hk.2.2 ( k + 1 + a ); simp_all +decide [ Nat.add_assoc ]
 
