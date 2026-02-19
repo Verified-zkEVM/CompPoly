@@ -3266,7 +3266,8 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       -- unfold algebra_adjacent_tower
       -- -- unfold indexLeft
       -- -- All casts eliminated, now we prove equality on revFinProdFinEquiv and bit stuff
-      -- have h: b.basis indexLeft = b.gen ^ (indexLeft.val) := coe_basis_apply (pb:=b) (i:=indexLeft)
+      -- have h: b.basis indexLeft = b.gen ^ (indexLeft.val) :=
+      --   coe_basis_apply (pb:=b) (i:=indexLeft)
       -- conv_lhs =>
       --   enter [2];
       --   -- @DFunLike.coe (Basis (Fin 2) ...

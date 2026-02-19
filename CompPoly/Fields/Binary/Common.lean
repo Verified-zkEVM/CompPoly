@@ -622,7 +622,8 @@ lemma toPoly_shiftLeft_no_overflow {w} {d} (a : BitVec w) (ha : a.toNat < 2 ^ d)
   -- simp_rw [BitVec.getLsb]
   -- simp only [BitVec.toNat_shiftLeft, Fin.coe_natAdd, Fin.coe_castAdd, Nat.testBit_mod_two_pow,
   --   add_lt_add_iff_left, Nat.testBit_shiftLeft, ge_iff_le, le_add_iff_nonneg_right, zero_le,
-  --   decide_true, add_tsub_cancel_left, Bool.true_and, Bool.and_eq_true, decide_eq_true_eq, ite_mul,
+  --   decide_true, add_tsub_cancel_left, Bool.true_and,
+  --   Bool.and_eq_true, decide_eq_true_eq, ite_mul,
   --   zero_mul, add_zero]
   -- apply Finset.sum_congr rfl
   -- intro (i: Fin d) h_i_mem_univ

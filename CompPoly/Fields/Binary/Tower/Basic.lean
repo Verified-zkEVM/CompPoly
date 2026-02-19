@@ -1413,7 +1413,8 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       -- unfold indexLeft
       -- -- All casts eliminated, now we prove equality on revFinProdFinEquiv and bit stuff
       -- -- ⊢ (algebraMap (BTField r1) (BTField r)) (prevMultilinearBasis✝
-      -- -- (Fin.cast ⋯ (leftModNat ⋯ (Fin.cast ⋯ j)))) * (algebraMap (BTField (r1 + 1)) (BTField r))
+      -- -- (Fin.cast ⋯ (leftModNat ⋯ (Fin.cast ⋯ j)))) *
+      -- -- (algebraMap (BTField (r1 + 1)) (BTField r))
       -- -- ((powerBasisSucc r1).basis (Fin.cast ⋯ ⟨↑j / 2 ^ (r - l - 1), ⋯⟩)) =
       -- --   ∏ i, Algebra.algebraMap (𝕏 (l + ↑i) ^ bit ↑i ↑j)
       -- conv_lhs =>
@@ -1449,7 +1450,8 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       -- --- Inner-prod term
       -- congr
       -- funext i
-      -- have hfinProd_lsb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff) (i:=⟨i, by omega⟩)
+      -- have hfinProd_lsb := bit_revFinProdFinEquiv_symm_2_pow_succ
+      --   (n:=prevDiff) (i:=⟨i, by omega⟩)
       --   (j:=⟨j, by omega⟩)
       -- simp only [Fin.is_lt, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_lsb
       -- rw [hfinProd_lsb]
