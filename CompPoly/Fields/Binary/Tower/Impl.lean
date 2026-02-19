@@ -645,58 +645,200 @@ theorem split_bitvec_eq_iff_fromNat {k : ℕ} (h_pos : k > 0) (x : ConcreteBTFie
     simp only [hi_extract_eq, Nat.sub_zero, lo_extract_eq, Nat.and_two_pow_sub_one_eq_mod, h_hi,
       h_lo]
 
+theorem BitVec.extractLsb_dcast_eq {w w2 hi lo : ℕ} (x : BitVec w) (h : w = w2) :
+    BitVec.extractLsb (hi:=hi) (lo:=lo) (dcast h x) =
+      BitVec.extractLsb (hi:=hi) (lo:=lo) x := by
+  unfold BitVec.extractLsb BitVec.extractLsb'
+  have h_toNat : BitVec.toNat (dcast h x) = BitVec.toNat x := by
+    simpa using (BitVec.dcast_bitvec_toNat_eq (x:=x) (h_width_eq:=h)).symm
+  rw [h_toNat]
+
+theorem join_eq_dcast_append {k : ℕ} (h_pos : k > 0) (hi lo : ConcreteBTField (k - 1)) :
+    join (k:=k) h_pos hi lo =
+      dcast (h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos))
+        (BitVec.append (msbs:=hi) (lsbs:=lo)) := by
+  unfold join
+  simp [dcast_eq_root_cast]
+
+theorem eq_join_iff_dcast_eq_append {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField k)
+    (hi lo : ConcreteBTField (k - 1)) :
+    x = join (k:=k) h_pos hi lo ↔
+      dcast (h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos)).symm x =
+        BitVec.append (msbs:=hi) (lsbs:=lo) := by
+  classical
+  constructor
+  · intro hx
+    have hx' := hx
+    rw [join_eq_dcast_append (k:=k) (h_pos:=h_pos) (hi:=hi) (lo:=lo)] at hx'
+    -- hx' : x = dcast sum (append ..)
+    exact
+      dcast_symm (ha := h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos)) (hb := hx'.symm)
+  · intro hx
+    have hx' :
+        dcast (h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos))
+            (BitVec.append (msbs:=hi) (lsbs:=lo)) =
+          x :=
+      dcast_symm (ha := (h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos)).symm) (hb := hx)
+    have hx'' :
+        x =
+          dcast (h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos))
+            (BitVec.append (msbs:=hi) (lsbs:=lo)) :=
+      hx'.symm
+    rw [← join_eq_dcast_append (k:=k) (h_pos:=h_pos) (hi:=hi) (lo:=lo)] at hx''
+    exact hx''
+
+
 theorem join_eq_iff_dcast_extractLsb {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField k)
     (hi_btf lo_btf : ConcreteBTField (k - 1)) :
   x = 《 hi_btf, lo_btf 》 ↔
-  (hi_btf = dcast (h_sub_middle h_pos) (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) ∧
-  lo_btf = dcast (h_middle_sub) (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) := by
-  constructor
-  · intro h_join
-    unfold join at h_join
-    have h_two_pow_k_minus_1_gt_0 : 2 ^ (k - 1) > 0 := by exact Nat.two_pow_pos (k - 1)
-    have h_x : x = dcast (h_sum_two_same_pow2 h_pos)
-      (BitVec.append (msbs:=hi_btf) (lsbs:=lo_btf)) := by
-      rw [h_join]
-      simp only
-      sorry
-      -- rw [BitVec.eq_mp_eq_dcast]
-    have h_x_symm := dcast_symm (hb:=h_x.symm)
-    have h_hi : hi_btf = dcast (h_sub_middle h_pos)
-      (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) := by
-      have hi_btf_is_dcast_extract := (dcast_symm (hb:=(BitVec.extractLsb_concat_hi (hi:=hi_btf)
-        (lo:=lo_btf) (h_hi:=h_two_pow_k_minus_1_gt_0)).symm)).symm
-      rw [hi_btf_is_dcast_extract]
-      rw [dcast_eq_dcast_iff] -- undcast in lhs
-      rw [h_x]
-      rw [BitVec.dcast_bitvec_extractLsb_eq (h_lo_eq:=rfl)]
-      rfl
-    have h_lo :
-      lo_btf = dcast (h_middle_sub) (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo :=0) x) := by
-      have lo_btf_is_dcast_extract := (dcast_symm (hb:=(BitVec.extractLsb_concat_lo (hi:=hi_btf)
-        (lo:=lo_btf) (h_lo:=h_two_pow_k_minus_1_gt_0)).symm)).symm
-      rw [lo_btf_is_dcast_extract]
-      rw [dcast_eq_dcast_iff] -- undcast in lhs
-      rw [h_x]
-      rw [BitVec.dcast_bitvec_extractLsb_eq (h_lo_eq:=rfl)]
-      rfl
-    exact ⟨h_hi, h_lo⟩
-  -- Backward direction : bitwise operations → x = join h_pos hi_btf lo_btf
-  · intro h_bits
-    -- ⊢ x = join h_pos hi_btf lo_btf
-    have two_pow_k_minus_1_gt_0 : 2 ^ (k - 1) > 0 := by
-      simp only [Nat.two_pow_pos]
-    have sum1:= h_sum_two_same_pow2 (k:=k) (h_pos:=by omega).symm
-    have res := BitVec.eq_append_iff_extract (lo:=lo_btf) (hi:=hi_btf)
-      (h_hi_gt_0:=two_pow_k_minus_1_gt_0) (h_lo_gt_0:=two_pow_k_minus_1_gt_0)
-        (x:=dcast (by exact sum1) x).mpr
-    have ⟨h_hi, h_lo⟩ := h_bits
-    have sum2 : 2 ^ k - 1 = 2 ^ (k - 1) + 2 ^ (k - 1) - 1 := by omega
-    rw! [sum2] at h_hi
-    have h_x_eq := res ⟨h_hi, h_lo⟩
-    rw [dcast_eq_dcast_iff] at h_x_eq
-    unfold join
-    rw [BitVec.eq_mp_eq_dcast (h_width_eq:=by exact sum1.symm) (h_bitvec_eq:=by rw [sum1.symm])]
-    rw [h_x_eq]
+  (hi_btf = dcast (h_sub_middle h_pos)
+      (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) ∧
+    lo_btf = dcast (h_middle_sub)
+      (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) := by
+  classical
+  have hpos_eq : h_pos = (by omega : k > 0) := Subsingleton.elim _ _
+  cases hpos_eq
+  -- unfold the join notation
+  change x = join (k := k) h_pos hi_btf lo_btf ↔
+    (hi_btf = dcast (h_sub_middle h_pos)
+        (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) ∧
+      lo_btf = dcast (h_middle_sub)
+        (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x))
+
+  let sum := h_sum_two_same_pow2 (k := k) (h_pos := h_pos)
+  have hpow : 2 ^ (k - 1) > 0 := Nat.two_pow_pos (k - 1)
+
+  -- main chain of iff's
+  have h_join :
+      x = join (k := k) h_pos hi_btf lo_btf ↔
+        dcast sum.symm x = BitVec.append (msbs := hi_btf) (lsbs := lo_btf) := by
+    -- avoid simp (which may use the target theorem as a simp lemma)
+    dsimp [sum]
+    exact (eq_join_iff_dcast_eq_append (k := k) (h_pos := h_pos) (x := x)
+      (hi := hi_btf) (lo := lo_btf))
+
+  have h_extract' :
+      dcast sum.symm x = BitVec.append (msbs := hi_btf) (lsbs := lo_btf) ↔
+        (hi_btf = dcast (by omega)
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x) ∧
+          lo_btf = dcast (by omega)
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) := by
+    -- use BitVec.eq_append_iff_extract on the casted x
+    have h := (BitVec.eq_append_iff_extract (lo_size := 2 ^ (k - 1)) (hi_size := 2 ^ (k - 1))
+      (lo := lo_btf) (hi := hi_btf)
+      (h_hi_gt_0 := hpow)
+      (h_lo_gt_0 := hpow)
+      (x := dcast sum.symm x))
+    have h1 :
+        dcast sum.symm x = BitVec.append (msbs := hi_btf) (lsbs := lo_btf) ↔
+          (hi_btf = dcast (by omega)
+              (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1))
+                (dcast sum.symm x)) ∧
+            lo_btf = dcast (by omega)
+              (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) (dcast sum.symm x))) := by
+      simpa using h
+    -- now rewrite the extractLsb of dcast sum.symm x into extractLsb of x
+    simpa [BitVec.extractLsb_dcast_eq (x := x) (h := sum.symm)] using h1
+
+  have h_final :
+      (hi_btf = dcast (by omega)
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x) ∧
+          lo_btf = dcast (by omega)
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) ↔
+        (hi_btf = dcast (h_sub_middle h_pos)
+            (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) ∧
+          lo_btf = dcast (h_middle_sub)
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) := by
+    -- prepare the cast equality for the hi-part
+    have h_hi1_eq :
+        2 ^ (k - 1) + 2 ^ (k - 1) - 1 = 2 ^ k - 1 := by
+      simpa [sum] using congrArg (fun n => n - 1) sum
+
+    have h_width_eq :
+        (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = (2 ^ k - 1) - 2 ^ (k - 1) + 1 := by
+      simp [h_hi1_eq]
+
+    have h_extract_cast :
+        dcast h_width_eq
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x)
+          = BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x := by
+      simpa using
+        (BitVec.dcast_bitvec_extractLsb_eq (x := x) (h_lo_eq := rfl) (h_width_eq := h_width_eq))
+
+    have h_extract_cast_symm :
+        dcast h_width_eq.symm
+            (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x)
+          = BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x := by
+      exact dcast_symm (ha := h_width_eq) (hb := h_extract_cast)
+
+    have h_hi_term :
+        dcast (by omega :
+              (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = 2 ^ (k - 1))
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x)
+          =
+          dcast (h_sub_middle h_pos)
+            (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) := by
+      -- rewrite extractLsb hi-parameter and compose casts
+      calc
+        dcast (by omega :
+              (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = 2 ^ (k - 1))
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x)
+            =
+            dcast (by omega :
+              (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = 2 ^ (k - 1))
+              (dcast h_width_eq.symm
+                (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x)) := by
+              -- replace the extracted bits using the casted equality
+              rw [← h_extract_cast_symm]
+        _ =
+            dcast (h_width_eq.symm.trans (by omega :
+              (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = 2 ^ (k - 1)))
+              (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) := by
+              -- compose the two casts
+              simp [dcast_trans]
+        _ =
+            dcast (h_sub_middle h_pos)
+              (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) := by
+              -- proof irrelevance for the cast proof
+              have hproof :
+                  h_width_eq.symm.trans (by omega :
+                    (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = 2 ^ (k - 1))
+                    = h_sub_middle h_pos := by
+                exact Subsingleton.elim _ _
+              simp only
+
+    -- proof irrelevance for the lo-part cast proof
+    have h_lo_proof :
+        (by omega : 2 ^ (k - 1) - 1 - 0 + 1 = 2 ^ (k - 1)) = h_middle_sub (k := k) := by
+      exact Subsingleton.elim _ _
+
+    constructor
+    · intro h
+      refine ⟨?_, ?_⟩
+      · -- hi part
+        simpa [h_hi_term] using h.1
+      · -- lo part
+        simpa [h_lo_proof] using h.2
+    · intro h
+      refine ⟨?_, ?_⟩
+      · -- hi part
+        simpa [h_hi_term.symm] using h.1
+      · -- lo part
+        simpa [h_lo_proof.symm] using h.2
+
+  calc
+    x = join (k := k) h_pos hi_btf lo_btf ↔
+        dcast sum.symm x = BitVec.append (msbs := hi_btf) (lsbs := lo_btf) := h_join
+    _ ↔
+        (hi_btf = dcast (by omega)
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x) ∧
+          lo_btf = dcast (by omega)
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) := h_extract'
+    _ ↔
+        (hi_btf = dcast (h_sub_middle h_pos)
+            (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) ∧
+          lo_btf = dcast (h_middle_sub)
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) := h_final
 
 theorem join_eq_join_iff {k : ℕ} (h_pos : k > 0) (hi₀ lo₀ hi₁ lo₁ : ConcreteBTField (k - 1)) :
     《 hi₀, lo₀ 》 = 《 hi₁, lo₁ 》 ↔ (hi₀ = hi₁ ∧ lo₀ = lo₁) := by
