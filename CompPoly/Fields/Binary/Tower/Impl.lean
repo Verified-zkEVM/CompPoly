@@ -756,7 +756,7 @@ theorem join_eq_iff_dcast_extractLsb {k : ℕ} (h_pos : k > 0) (x : ConcreteBTFi
 
     have h_width_eq :
         (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = (2 ^ k - 1) - 2 ^ (k - 1) + 1 := by
-      simpa [h_hi1_eq]
+      simp [h_hi1_eq]
 
     have h_extract_cast :
         dcast h_width_eq
@@ -795,7 +795,7 @@ theorem join_eq_iff_dcast_extractLsb {k : ℕ} (h_pos : k > 0) (x : ConcreteBTFi
               (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = 2 ^ (k - 1)))
               (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) := by
               -- compose the two casts
-              simpa [dcast_trans]
+              simp [dcast_trans]
         _ =
             dcast (h_sub_middle h_pos)
               (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) := by
@@ -805,7 +805,7 @@ theorem join_eq_iff_dcast_extractLsb {k : ℕ} (h_pos : k > 0) (x : ConcreteBTFi
                     (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = 2 ^ (k - 1))
                     = h_sub_middle h_pos := by
                 exact Subsingleton.elim _ _
-              simpa [hproof]
+              simp only
 
     -- proof irrelevance for the lo-part cast proof
     have h_lo_proof :
