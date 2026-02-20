@@ -1112,7 +1112,7 @@ end bases
 
 section LinearEquivalences
 
--- This section contains theorem about linear isomoprhism between modules.
+-- This section contains theorems about linear isomorphisms between modules.
 
 /-- The sum `∑ i : Fin n, monomial i (f i)` has degree less than `n`,
   so it lies in `degreeLT R n`. -/
