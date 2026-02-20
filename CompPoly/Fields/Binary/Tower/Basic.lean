@@ -1295,10 +1295,11 @@ theorem PowerBasis.cast_basis_succ_of_eq_rec_apply
   simp only [PowerBasis.coe_basis, Fin.val_cast]
 
 /-- When two indices are equal, the tower algebra maps send the respective 𝕏 to the same element. -/
-lemma algebraMap_𝕏_eq_of_index_eq (r k m : ℕ) (h_k_le : k + 1 ≤ r) (h_m_le : m + 1 ≤ r) (h_eq : k = m) :
-  letI := binaryAlgebraTower (l := k + 1) (r := r) (h_le := h_k_le)
-  letI := binaryAlgebraTower (l := m + 1) (r := r) (h_le := h_m_le)
-  (Algebra.algebraMap (𝕏 k) : BTField r) = (Algebra.algebraMap (𝕏 m) : BTField r) := by
+lemma algebraMap_𝕏_eq_of_index_eq (r k m : ℕ) (h_k_le : k + 1 ≤ r) (h_m_le : m + 1 ≤ r)
+    (h_eq : k = m) :
+    letI := binaryAlgebraTower (l := k + 1) (r := r) (h_le := h_k_le)
+    letI := binaryAlgebraTower (l := m + 1) (r := r) (h_le := h_m_le)
+    (Algebra.algebraMap (𝕏 k) : BTField r) = (Algebra.algebraMap (𝕏 m) : BTField r) := by
   subst h_eq
   rfl
 
@@ -1306,7 +1307,7 @@ lemma algebraMap_𝕏_eq_of_index_eq (r k m : ℕ) (h_k_le : k + 1 ≤ r) (h_m_l
 The basis element at index `j` is the product of the tower generators at
 the ON bits in binary representation of `j`.
 -/
-set_option maxHeartbeats 2000000 in
+set_option maxHeartbeats 350000 in
 theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀ (j : Fin (2  ^ (r - l))),
     multilinearBasis (l:=l) (r:=r) (h_le:=h_le) j =
     (Finset.univ : Finset (Fin (r - l))).prod (fun i =>
@@ -1319,7 +1320,7 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
     have h_l_eq_r : l = 0 := by omega
     subst h_l_eq_r
     simp only [Nat.sub_zero, Nat.pow_zero, Finset.univ_eq_empty,
-      𝕏, Z, Inhabited, list, Fin.val_eq_zero, Finset.prod_empty]
+      𝕏, Z, Fin.val_eq_zero, Finset.prod_empty]
     have hj_eq_0 : j = 0 := by exact Fin.eq_of_val_eq (by omega)
     rw! [hj_eq_0]
     rw [multilinearBasis]
@@ -1450,7 +1451,10 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
         rfl
       · have h_exp_eq : (↑j : ℕ) / 2 ^ (r - l - 1) = (↑j : ℕ) / 2 ^ prevDiff :=
           congr_arg (fun d => (↑j : ℕ) / 2 ^ d) h_prevDiff.symm
-        refine congr_arg₂ (· ^ ·) (algebraMap_𝕏_eq_of_index_eq r r1 (l + prevDiff) (by omega) (by omega) h_r1_eq_l_plus_prevDiff) h_exp_eq
+        refine congr_arg₂ (· ^ ·)
+            (algebraMap_𝕏_eq_of_index_eq r r1 (l + prevDiff) (by omega) (by omega)
+              h_r1_eq_l_plus_prevDiff)
+            h_exp_eq
 
 end MultilinearBasis
 end
