@@ -3304,6 +3304,16 @@ theorem coe_basis_apply {R S : Type*} [CommRing R] [Ring S] [Algebra R S]
     (pb : PowerBasis R S) (i : Fin pb.dim) : ⇑pb.basis i = pb.gen ^ (i : ℕ) :=
   pb.basis_eq_pow i
 
+/-- When two indices are equal, the tower algebra maps send the respective 𝕏 to the same element. -/
+lemma algebraMap_𝕏_eq_of_index_eq (r k m : ℕ) (h_k_le : k + 1 ≤ r) (h_m_le : m + 1 ≤ r)
+    (h_eq : k = m) :
+    letI := ConcreteBTFieldAlgebra (l := k + 1) (r := r) (h_le := h_k_le)
+    letI := ConcreteBTFieldAlgebra (l := m + 1) (r := r) (h_le := h_m_le)
+    (Algebra.algebraMap (𝕏 k) : ConcreteBTField r) =
+      (Algebra.algebraMap (𝕏 m) : ConcreteBTField r) := by
+  subst h_eq
+  rfl
+
 /-!
 The basis element at index `j` is the product of the tower generators at
 the ON bits in binary representation of `j`.
@@ -3390,73 +3400,70 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
         ConcreteBTFieldAlgebra (l:=r1) (r:=r) (h_le:=by omega)
       set b := (powerBasisSucc r1) with hb
       rw! (castMode:=.all) [←hb]
-      -- simp_rw [eqRec_eq_cast]
-      -- rw [cast_eq]
-      -- have h : (2 ^ (r1 - l)) = (2 ^ (r - l - 1)) := by
-      --   rw [h_r]
-      --   rw [Nat.sub_right_comm, Nat.add_sub_cancel r1 1]
-      -- rw [Basis_cast_index_apply (h_eq:=h) (h_le:=by omega)]
-      -- simp only [leftDivNat, Fin.coe_cast]
+      have h : (2 ^ (r1 - l)) = (2 ^ (r - l - 1)) := by
+        rw [h_r]
+        rw [Nat.sub_right_comm, Nat.add_sub_cancel r1 1]
+      rw [Basis_cast_index_apply (h_eq:=h) (h_le:=by omega)]
+      simp only [leftDivNat, Fin.val_cast]
 
-      -- set indexLeft : Fin 2 := ⟨j.val / 2 ^ (r - l - 1), by
-      --   change j.val / 2 ^ (r - l - 1) < 2 ^ 1
-      --   apply div_two_pow_lt_two_pow (x:=j.val) (i:=1) (j:=r - l - 1) (h_x_lt_2_pow_i:=by
-      --     rw [Nat.add_comm, Nat.sub_add_cancel (by omega)];
-      --     exact j.isLt
-      --   )
-      -- ⟩
-      -- unfold algebra_adjacent_tower
-      -- -- unfold indexLeft
-      -- -- All casts eliminated, now we prove equality on revFinProdFinEquiv and bit stuff
-      -- have h: b.basis indexLeft = b.gen ^ (indexLeft.val) :=
-      --   coe_basis_apply (pb:=b) (i:=indexLeft)
-      -- conv_lhs =>
-      --   enter [2];
-      --   -- @DFunLike.coe (Basis (Fin 2) ...
-      --   change b.basis indexLeft;
-      --   -- @DFunLike.coe (Basis (Fin b.dim) ...
-      --   rw! [h] -- `rw` can't work without `change` here
-      -- rw! [powerBasisSucc_gen, ←𝕏]
-      -- conv_lhs =>
-      --   rw [ih_r1 (l:=l) (h_le:=by omega)] -- inductive hypothesis of level r - 1
-      --   rw [Fin.cast_val_eq_val (h_eq:=by omega)]
+      set indexLeft : Fin 2 := ⟨j.val / 2 ^ (r - l - 1), by
+        change j.val / 2 ^ (r - l - 1) < 2 ^ 1
+        apply div_two_pow_lt_two_pow (x:=j.val) (i:=1) (j:=r - l - 1) (h_x_lt_2_pow_i:=by
+          rw [Nat.add_comm, Nat.sub_add_cancel (by omega)];
+          exact j.isLt
+        )
+      ⟩
+      have h_cast_basis_succ_of_eq_rec_apply :=
+        PowerBasis.cast_basis_succ_of_eq_rec_apply (r1:=r1) (r:=r) (h_r:=h_r) (k:=indexLeft)
+      unfold algebra_adjacent_tower
+      rw! (castMode:=.all) [←h_r]
+      conv_lhs =>
+        arg 2
+        erw [h_cast_basis_succ_of_eq_rec_apply]
 
-      -- conv_rhs =>
-      --   rw [←Fin.prod_congr' (b:=r - l) (a:=prevDiff + 1) (h:=by omega)]
-      --   rw [Fin.prod_univ_castSucc] -- split the prod of rhs
-      --   simp only [Fin.coe_cast, Fin.coe_castSucc, Fin.val_last]
-      -- · simp_rw [algebraMap.coe_prod] -- lhs
-      --   unfold Algebra.cast
-      --   rw! (castMode:=.all) [←algebraMap]
-      --   conv_lhs =>
-      --     rw [←Fin.prod_congr' (b:=r1 - l) (a:=prevDiff) (h:=by omega)]
-      --     simp only [Fin.coe_cast]
-      --   simp_rw [algebraMap, instAlgebraSucc]
-      --   rw [algebra_adjacent_tower]
-      --   rw [RingHom.map_pow]
-      --   ------------------ Equality of bit - based powers of generators -----------------
-      --   conv_rhs => rw! [←algebraMap, h_r1_eq_l_plus_prevDiff.symm]
-      --   -- algebraMap.coe_pow] -- rhs
-      --   --- The outtermost term
-      --   have hfinProd_msb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)
-      --     (i:=⟨prevDiff, by omega⟩) (j:=⟨j, by omega⟩)
-      --   simp only [lt_self_iff_false, ↓reduceIte,
-      --     revFinProdFinEquiv_symm_apply] at hfinProd_msb
-      --   conv_rhs =>
-      --     simp only [hfinProd_msb, leftDivNat];
-      --     simp only [h_prevDiff]
-      --     rw! [ConcreteBTFieldAlgebra_id (by omega)]
-      --   --- Inner - prod term
-      --   congr
-      --   funext i
-      --   have hfinProd_lsb := bit_revFinProdFinEquiv_symm_2_pow_succ
-      --     (n:=prevDiff) (i:=⟨i, by omega⟩)
-      --     (j:=⟨j, by omega⟩)
-      --   simp only [Fin.is_lt, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_lsb
-      --   rw [hfinProd_lsb]
-      --   simp_rw [←ConcreteBTFieldAlgebra_apply_assoc]
-      --   rfl
-      sorry
+      unfold indexLeft
+      conv_lhs =>
+        simp only [Fin.cast_mk, PowerBasis.coe_basis];
+        rw [powerBasisSucc_gen, ←𝕏]
+        rw [ih_r1 (l:=l) (h_le:=by omega)]
+        rw [Fin.cast_val_eq_val (h_eq:=by omega)]
+
+      conv_rhs =>
+        rw [←Fin.prod_congr' (b:=r - l) (a:=prevDiff + 1) (h:=by omega)]
+        rw [Fin.prod_univ_castSucc]
+        simp only [Fin.val_cast, Fin.val_castSucc, Fin.val_last]
+
+      simp_rw [algebraMap.coe_pow]
+      simp_rw [algebraMap.coe_prod]
+      unfold Algebra.cast
+      rw! (castMode:=.all) [←algebraMap]
+      conv_lhs =>
+        rw [←Fin.prod_congr' (b:=r1 - l) (a:=prevDiff) (h:=by omega)]
+        simp only [Fin.val_cast]
+      simp_rw [algebraMap, instAlgebraSucc, algebra_adjacent_tower]
+      rw [RingHom.map_pow]
+      simp_rw [←ConcreteBTFieldAlgebra_apply_assoc]
+      ------------------ Equality of bit-based powers of generators -----------------
+      have hfinProd_msb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)
+        (i:=⟨prevDiff, by omega⟩) (j:=⟨j, by omega⟩)
+      simp only [lt_self_iff_false, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_msb
+      conv_rhs => simp only [hfinProd_msb, leftDivNat]
+      --- Inner-prod term: prove equality of the two factors
+      refine congr_arg₂ (· * ·) ?_ ?_
+      · congr 1
+        funext i
+        have hfinProd_lsb := bit_revFinProdFinEquiv_symm_2_pow_succ
+          (n:=prevDiff) (i:=⟨i, by omega⟩)
+          (j:=⟨j, by omega⟩)
+        simp only [Fin.is_lt, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_lsb
+        rw [hfinProd_lsb]
+        rfl
+      · have h_exp_eq : (↑j : ℕ) / 2 ^ (r - l - 1) = (↑j : ℕ) / 2 ^ prevDiff :=
+          congr_arg (fun d => (↑j : ℕ) / 2 ^ d) h_prevDiff.symm
+        refine congr_arg₂ (· ^ ·)
+            (algebraMap_𝕏_eq_of_index_eq r r1 (l + prevDiff) (by omega) (by omega)
+              h_r1_eq_l_plus_prevDiff)
+            h_exp_eq
 
 end ConcreteMultilinearBasis
 
