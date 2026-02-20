@@ -6,7 +6,7 @@ package CompPoly where version := v!"0.1.0"
 
 require "leanprover-community" / mathlib @ git "v4.26.0"
 
-require ExtTreeMapLemmas from git "https://github.com/Verified-zkEVM/ExtTreeMapLemmas"
+require ExtTreeMapLemmas from git "https://github.com/Verified-zkEVM/ExtTreeMapLemmas"@"v4.26.0"
 
 @[default_target]
 lean_lib CompPoly
