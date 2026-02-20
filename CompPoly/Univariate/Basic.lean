@@ -123,6 +123,13 @@ lemma one_is_trimmed [Nontrivial R] : (1 : CPolynomial.Raw R).trim = 1 :=
 instance [Nontrivial R] : One (CPolynomial R) where
   one := ⟨Raw.C 1, by exact one_is_trimmed⟩
 
+instance [Nontrivial R] : Nontrivial (CPolynomial R) where
+  exists_pair_ne := ⟨0, 1, by
+    intro h
+    have := congr_arg (fun p : CPolynomial R => p.val.size) h
+    simp at this
+    exact Nat.zero_ne_one this⟩
+
 /-- The coefficient of `X^i` in the polynomial. Returns `0` if `i` is out of bounds. -/
 @[reducible]
 def coeff (p : CPolynomial R) (i : ℕ) : R := p.val.coeff i

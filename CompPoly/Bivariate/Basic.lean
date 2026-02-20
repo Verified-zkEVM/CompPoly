@@ -44,6 +44,10 @@ instance : Coe (CBivariate R) (CPolynomial (CPolynomial R)) where coe := id
 /-- The zero bivariate polynomial is canonical. -/
 instance : Inhabited (CBivariate R) := inferInstanceAs (Inhabited (CPolynomial (CPolynomial R)))
 
+/-- Additive structure on CBivariate R -/
+instance : AddCommMonoid (CBivariate R) :=
+  inferInstanceAs (AddCommMonoid (CPolynomial (CPolynomial R)))
+
 -- ---------------------------------------------------------------------------
 -- Operation stubs (for ArkLib compatibility; proofs deferred)
 -- ---------------------------------------------------------------------------
@@ -60,7 +64,7 @@ variable (R : Type*) [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
 def CC (r : R) : CBivariate R := CPolynomial.C (CPolynomial.C r)
 
 /-- The variable X (inner variable). As bivariate: polynomial in Y with single coeff `X` at Y^0. -/
-def C_X : CBivariate R := CPolynomial.C CPolynomial.X
+def X : CBivariate R := CPolynomial.C CPolynomial.X
 
 /-- The variable Y (outer variable). Monomial `Y^1` with coefficient 1. -/
 def Y [DecidableEq R] : CBivariate R := CPolynomial.monomial 1 (CPolynomial.C 1)
@@ -75,7 +79,12 @@ def coeff (f : CBivariate R) (i j : ℕ) : R :=
   (f.val.coeff j).coeff i
 
 /-- The Y-support: indices j such that the coefficient of Y^j is nonzero. -/
-def support (f : CBivariate R) : Finset ℕ := CPolynomial.support f
+def supportY (f : CBivariate R) : Finset ℕ := CPolynomial.support f
+
+/-- The X-support: indices i such that the coefficient of X^i is nonzero
+    (i.e. some monomial X^i Y^j has nonzero coefficient). -/
+def supportX (f : CBivariate R) : Finset ℕ :=
+  (CPolynomial.support f).biUnion (fun j => CPolynomial.support (f.val.coeff j))
 
 /-- The `Y`-degree (degree when viewed as a polynomial in `Y`).
     ArkLib: `Polynomial.Bivariate.natDegreeY`. -/
@@ -93,17 +102,17 @@ def totalDegree (f : CBivariate R) : ℕ :=
   (CPolynomial.support f).sup (fun m => (f.val.coeff m).natDegree + m)
 
 /-- Evaluate in the first variable (X) at `a`, yielding a univariate polynomial in Y.
-    ArkLib: `Polynomial.Bivariate.evalX`.
-    TODO: implement via mapping each Y-coefficient through `eval a`. -/
-def evalX (a : R) (f : CBivariate R) : CPolynomial R := sorry
+    ArkLib: `Polynomial.Bivariate.evalX`. -/
+def evalX [DecidableEq R] (a : R) (f : CBivariate R) : CPolynomial R :=
+  (CPolynomial.support f).sum (fun j => CPolynomial.monomial j (CPolynomial.eval a (f.val.coeff j)))
 
 /-- Evaluate in the second variable (Y) at `a`, yielding a univariate polynomial in X.
     ArkLib: `Polynomial.Bivariate.evalY`. -/
 def evalY (a : R) (f : CBivariate R) : CPolynomial R :=
   f.val.eval (CPolynomial.C a)
 
-/-- Full evaluation at `(x, y)`: `p(x, y)`. Equivalently `(evalY y f).eval x`.
-    Mathlib: `Polynomial.evalEval`. -/
+/-- Full evaluation at `(x, y)`: `p(x, y)`. Inner variable X at `x`, outer variable Y at `y`.
+    Equivalently `(evalY y f).eval x`. Mathlib: `Polynomial.evalEval`. -/
 def evalEval (x y : R) (f : CBivariate R) : R :=
   CPolynomial.eval x (f.val.eval (CPolynomial.C y))
 
@@ -114,12 +123,17 @@ def leadingCoeffY (f : CBivariate R) : CPolynomial R :=
 
 /-- Swap the roles of X and Y.
     ArkLib/Mathlib: `Polynomial.Bivariate.swap`. -/
-def swap (f : CBivariate R) : CBivariate R := sorry
+def swap [DecidableEq R] (f : CBivariate R) : CBivariate R :=
+  (f.supportY).sum (fun j =>
+    let coeffJ : CPolynomial R :=
+      (CPolynomial.support (f.val.coeff j)).sum (fun i =>
+        CPolynomial.monomial i ((f.val.coeff j).coeff i))
+    CPolynomial.monomial j coeffJ)
 
 /-- Leading coefficient when viewed as a polynomial in X.
-    The coefficient of X^(degreeX f): a polynomial in Y. Equivalently, `leadingCoeffY (swap f)`.
-    TODO: implement as `leadingCoeffY (swap f)` once `swap` has a computable definition. -/
-def leadingCoeffX (f : CBivariate R) : CPolynomial R := sorry  -- leadingCoeffY (swap f)
+    The coefficient of X^(degreeX f): a polynomial in Y. -/
+def leadingCoeffX [DecidableEq R] (f : CBivariate R) : CPolynomial R :=
+  (f.swap).leadingCoeffY
 
 end Operations
 

@@ -32,20 +32,24 @@ namespace CBivariate
 
 /-- Convert `CBivariate R` to Mathlib's bivariate polynomial `R[X][Y]`.
 
-  Intended implementation: map each Y-coefficient (a `CPolynomial R`) through
-  `CPolynomial.toPoly` to obtain `Polynomial R`, then build `Polynomial (Polynomial R)`
-  via `eval₂` (analogous to univariate `Raw.toPoly`).
+  Maps each Y-coefficient through `CPolynomial.toPoly`, then builds
+  `Polynomial (Polynomial R)` as the sum of monomials.
   -/
-noncomputable def toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
-    (p : CBivariate R) : R[X][Y] := sorry
+noncomputable def toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+    (p : CBivariate R) : R[X][Y] :=
+  (CPolynomial.support p).sum (fun j =>
+    monomial j (CPolynomial.toPoly (p.val.coeff j)))
 
 /-- Convert Mathlib's `R[X][Y]` to `CBivariate R` (inverse of `toPoly`).
 
-  Intended implementation: extract each Y-coefficient via `p.coeff`, convert to
-  `CPolynomial R` via `Polynomial.toImpl`, then build canonical bivariate.
-  TODO: implement and prove round-trip lemmas. -/
-noncomputable def ofPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
-    (p : R[X][Y]) : CBivariate R := sorry
+  Extracts each Y-coefficient via `p.coeff`, converts to `CPolynomial R` via
+  `toImpl` and trimming, then builds the canonical bivariate sum.
+  -/
+def ofPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+    [DecidableEq R] (p : R[X][Y]) : CBivariate R :=
+  (p.support).sum (fun j =>
+    let cj := p.coeff j
+    CPolynomial.monomial j ⟨cj.toImpl, CPolynomial.Raw.trim_toImpl cj⟩)
 
 -- TODO: toPoly_ofPoly, ofPoly_toPoly (round-trips), ring equiv, evalEval/toPoly compatibility
 
