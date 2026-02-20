@@ -1190,7 +1190,7 @@ instance (k : ℕ) : Preorder (ConcreteBTField k) where
   lt := fun x y => x < y
   lt_iff_le_not_ge := fun x y => by
     unfold ConcreteBTField at x y
-    have bitvec_statement := (BitVec.not_lt_iff_le : ¬x < y ↔ y ≤ x)
+    have bitvec_statement := (BitVec.not_lt : ¬x < y ↔ y ≤ x)
     -- We need to prove : x < y ↔ x ≤ y ∧ ¬y ≤ x
     constructor
     · -- Forward direction : x < y → x ≤ y ∧ ¬y ≤ x
@@ -3330,8 +3330,7 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
     have h_l_eq_r : l = 0 := by omega
     subst h_l_eq_r
     simp only [Nat.sub_zero, Nat.pow_zero, Finset.univ_eq_empty, 𝕏, Z, _root_.zero_add,
-      Nat.add_eq_zero, one_ne_zero, and_false, Fin.val_eq_zero,
-      map_pow, Finset.prod_empty]
+      Fin.val_eq_zero, map_pow, Finset.prod_empty]
     have hj_eq_0 : j = 0 := by exact Fin.eq_of_val_eq (by omega)
     rw! [hj_eq_0]
     rw [multilinearBasis]
@@ -3585,7 +3584,7 @@ lemma towerRingHomForwardMap_Z (k : ℕ) :
     rfl
   | succ k ih =>
     unfold towerRingHomForwardMap
-    simp only [Nat.add_eq_zero, one_ne_zero, and_false, ↓reduceDIte,
+    simp only [Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceDIte,
       Nat.add_one_sub_one]
     rw! [split_Z]
     simp only [Nat.add_one_sub_one, one_is_1, zero_is_0]
@@ -3607,9 +3606,9 @@ lemma towerRingHomBackwardMap_forwardMap_eq (k : ℕ) (x : ConcreteBTField k) :
       simp only [RingEquiv.apply_symm_apply] -- due to definition of `towerRingEquiv0`
   | succ k ih =>
     rw [towerRingHomForwardMap] -- split inner
-    simp only [Nat.add_eq_zero, one_ne_zero, and_false, ↓reduceDIte, Nat.add_one_sub_one]
+    simp only [Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceDIte, Nat.add_one_sub_one]
     rw [towerRingHomBackwardMap] -- split outer
-    simp only [Nat.add_eq_zero, one_ne_zero, and_false, ↓reduceDIte, Nat.add_one_sub_one]
+    simp only [Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceDIte, Nat.add_one_sub_one]
     rw [←join_eq_join_via_add_smul]
     apply Eq.symm
     apply join_of_split
@@ -3635,10 +3634,10 @@ lemma towerRingHomForwardMap_backwardMap_eq (k : ℕ) (x : BTField k) :
       exact RingEquiv.symm_apply_apply towerRingEquiv0 1
   | succ k ih =>
     rw [towerRingHomBackwardMap] -- split inner
-    simp only [Nat.add_eq_zero, one_ne_zero, and_false, ↓reduceDIte,
+    simp only [Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceDIte,
       Nat.add_one_sub_one]
     rw [towerRingHomForwardMap] -- split outer
-    simp only [Nat.add_eq_zero, one_ne_zero, and_false, ↓reduceDIte,
+    simp only [Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceDIte,
       Nat.add_one_sub_one]
     apply Eq.symm
     rw! [split_join_via_add_smul_eq_iff_split (k:=k + 1)]
@@ -3672,7 +3671,7 @@ lemma towerRingHomForwardMap_add_eq (k : ℕ) (x y : ConcreteBTField k) :
         rfl
   | succ k ih =>
     unfold towerRingHomForwardMap
-    simp only [Nat.add_eq_zero, one_ne_zero, and_false, ↓reduceDIte,
+    simp only [Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceDIte,
       Nat.add_one_sub_one]
     rw [BinaryTower.sum_join_via_add_smul (k:=k+1)]
     simp only [Nat.add_one_sub_one]
@@ -3722,7 +3721,7 @@ lemma towerRingHomForwardMap_mul_eq (k : ℕ) (x y : ConcreteBTField k) :
       · simp only [y_one, one_is_1, mul_one, h_map_1]
   | succ k ih =>
     unfold towerRingHomForwardMap
-    simp only [Nat.add_eq_zero, one_ne_zero, and_false, ↓reduceDIte,
+    simp only [Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceDIte,
       Nat.add_one_sub_one]
     rw [BinaryTower.mul_join_via_add_smul (k:=k+1) (h_pos:=by omega)]
     simp only [Nat.add_one_sub_one]

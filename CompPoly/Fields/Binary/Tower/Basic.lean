@@ -1307,7 +1307,7 @@ lemma algebraMap_𝕏_eq_of_index_eq (r k m : ℕ) (h_k_le : k + 1 ≤ r) (h_m_l
 The basis element at index `j` is the product of the tower generators at
 the ON bits in binary representation of `j`.
 -/
-set_option maxHeartbeats 350000 in
+set_option maxHeartbeats 1000000 in -- in 4.28.0 can be decreased to 350000
 theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀ (j : Fin (2  ^ (r - l))),
     multilinearBasis (l:=l) (r:=r) (h_le:=h_le) j =
     (Finset.univ : Finset (Fin (r - l))).prod (fun i =>
