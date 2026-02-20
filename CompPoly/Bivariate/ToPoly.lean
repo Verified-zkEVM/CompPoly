@@ -51,8 +51,46 @@ def ofPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
     let cj := p.coeff j
     CPolynomial.monomial j ⟨cj.toImpl, CPolynomial.Raw.trim_toImpl cj⟩)
 
--- TODO: toPoly_ofPoly, ofPoly_toPoly (round-trips), ring equiv, evalEval/toPoly compatibility
+/-- Round-trip from Mathlib: converting a polynomial to `CBivariate` and back is the identity. -/
+theorem ofPoly_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] [DecidableEq R]
+    (p : R[X][Y]) : toPoly (ofPoly p) = p := sorry
+
+/-- Round-trip from `CBivariate`: converting to Mathlib and back is the identity. -/
+theorem toPoly_ofPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] [DecidableEq R]
+    (p : CBivariate R) : ofPoly (toPoly p) = p := sorry
+
+/-- Ring equivalence between `CBivariate R` and Mathlib's `R[X][Y]`. -/
+noncomputable def ringEquiv
+    {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] [DecidableEq R] :
+    CBivariate R ≃+* R[X][Y] where
+  toFun := toPoly
+  invFun := ofPoly
+  left_inv := toPoly_ofPoly
+  right_inv := ofPoly_toPoly
+  map_mul' := sorry
+  map_add' := sorry
+
+/-- `toPoly` preserves full evaluation: `evalEval x y f = (toPoly f).evalEval x y`. -/
+theorem evalEval_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+    (x y : R) (f : CBivariate R) :
+    @CompPoly.CBivariate.evalEval R _ _ _ _ x y f = (toPoly f).evalEval x y := sorry
+
+/-- `toPoly` preserves coefficients: coefficient of `X^i Y^j` matches. -/
+theorem coeff_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+    (f : CBivariate R) (i j : ℕ) :
+    ((toPoly f).coeff j).coeff i = @CompPoly.CBivariate.coeff R _ _ _ _ f i j := sorry
+
+/-- `toPoly` preserves Y-degree. -/
+theorem natDegreeY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+    (f : CBivariate R) : (toPoly f).natDegree = f.natDegreeY := sorry
+
+/-- `toPoly` preserves X-degree (max over Y-coefficients of their degree in X). -/
+theorem degreeX_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+    (f : CBivariate R) :
+    (toPoly f).support.sup (fun j => ((toPoly f).coeff j).natDegree) = f.degreeX := sorry
 
 end CBivariate
+
+-- TODO correctness lemmas for operations and API functions
 
 end CompPoly

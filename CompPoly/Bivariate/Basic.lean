@@ -48,6 +48,10 @@ instance : Inhabited (CBivariate R) := inferInstanceAs (Inhabited (CPolynomial (
 instance : AddCommMonoid (CBivariate R) :=
   inferInstanceAs (AddCommMonoid (CPolynomial (CPolynomial R)))
 
+/-- Ring structure on CBivariate R (for ring equiv with Mathlib in ToPoly). -/
+instance : Semiring (CBivariate R) :=
+  inferInstanceAs (Semiring (CPolynomial (CPolynomial R)))
+
 -- ---------------------------------------------------------------------------
 -- Operation stubs (for ArkLib compatibility; proofs deferred)
 -- ---------------------------------------------------------------------------
