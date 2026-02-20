@@ -261,7 +261,6 @@ theorem coeff_eq_getElem_of_lt [LawfulBEq R] {p : CPolynomial.Raw R} {i} (hi : i
     -- split between i > k and i <= k
     have h_size : k + 1 = (p.extract 0 (k + 1)).size := by
       simp [Array.size_extract]
-      exact Nat.succ_le_of_lt k.is_lt
     rcases (Nat.lt_or_ge k i) with hik | hik
     · have hik' : i ≥ (p.extract 0 (k + 1)).size := by linarith
       rw [Array.getElem?_eq_none hik', Option.getD_none]

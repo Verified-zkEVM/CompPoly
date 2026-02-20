@@ -28,6 +28,7 @@ For BitVec operations (`clMul`, `clSq`, `toPoly`) and shared lemmas, see
 -/
 
 namespace BF128Ghash
+set_option maxRecDepth 550 -- for ghashPoly_eq_P_val
 
 open Polynomial AdjoinRoot BinaryField
 

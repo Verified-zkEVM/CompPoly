@@ -353,7 +353,7 @@ lemma qCompositionChain_eq_foldl (i : Fin r) :
       rw [Fin.val_add_one']
       exact k_h
     simp only [h_eq.symm, Nat.succ_eq_add_one, Fin.eta]
-    simp only [Fin.coe_cast, Fin.foldl_succ_last, Fin.val_last, Fin.eta, Fin.coe_castSucc]
+    simp only [Fin.val_cast, Fin.foldl_succ_last, Fin.val_last, Fin.eta, Fin.val_castSucc]
     congr
 
 omit [DecidableEq 𝔽q] hF₂ in
@@ -818,7 +818,7 @@ noncomputable def sDomainFinEquiv (i : Fin r) (h_i : i < ℓ + R_rate) :
       by_cases h_k : k < ℓ + R_rate - ↑i
       · simp only [h_k, ↓reduceDIte]
         simp only [finToSDomain, Basis.repr_symm_apply, Basis.repr_linearCombination,
-          Finsupp.equivFunOnFinite_symm_apply_toFun]
+          Finsupp.coe_equivFunOnFinite_symm]
         simp only [finToBinaryCoeffs, ite_eq_right_iff, one_ne_zero, imp_false, ite_not]
         rw  [Nat.getBit_of_lt_two_pow (k:=k) (a:=y)]
         simp only [h_k, ↓reduceIte]
@@ -866,12 +866,12 @@ lemma intermediateNormVpoly_eval_is_linear_map (i : Fin (ℓ + 1)) (k : Fin (ℓ
     exact { map_add := fun x ↦ congrFun rfl, map_smul := fun c ↦ congrFun rfl }
   | succ k' ih =>
     unfold intermediateNormVpoly
-    simp only [intermediateNormVpoly, Fin.coe_castSucc] at ih
+    simp only [intermediateNormVpoly, Fin.val_castSucc] at ih
     conv =>
       enter [2, x, 2];
       simp only [Fin.val_succ]
       rw [Fin.foldl_succ_last]
-    simp only [Fin.val_last, Fin.coe_castSucc, eval_comp]
+    simp only [Fin.val_last, Fin.val_castSucc, eval_comp]
     set q_eval_is_linear_map := linear_map_of_comp_to_linear_map_of_eval
       (f:=qMap 𝔽q β ⟨i + k', by omega⟩) (h_f_linear := qMap_is_linear_map 𝔽q β
       (i := ⟨i + k', by omega⟩))
@@ -1012,7 +1012,7 @@ theorem intermediateNormVpoly_comp (i : Fin ℓ) (k : Fin (ℓ - i + 1))
       simp_rw [h_j_add_1_val]
       simp_rw [←Nat.add_assoc (n:=k.val) (m:=j.val) (k:=1)]
       rw [Fin.foldl_succ_last, Fin.foldl_succ_last]
-      simp only [Fin.cast_eq_self, Fin.coe_cast, Fin.val_last, Fin.coe_castSucc]
+      simp only [Fin.cast_eq_self, Fin.val_cast, Fin.val_last, Fin.val_castSucc]
       simp_rw [←Nat.add_assoc (n:=i.val) (m:=k.val) (k:=j.val)]
       rw [comp_assoc]
       -- ⊢ qMap (i := i + k + j)(...) = qMap (i := i + k + j)(...)
@@ -1187,7 +1187,7 @@ lemma getSDomainBasisCoeff_of_sum_repr [NeZero R_rate] (i : Fin (ℓ + 1))
   -- Applying `j` to both sides of the `Finsupp` equality gives the goal.
   rw [h_coeffs_eq]
   -- ⊢ (Finsupp.equivFunOnFinite.symm x_coeffs) j = x_coeffs j
-  simp only [Finsupp.equivFunOnFinite_symm_apply_toFun]
+  rw [Finsupp.coe_equivFunOnFinite_symm]
 
 omit [DecidableEq 𝔽q] hF₂ in
 lemma getSDomainBasisCoeff_of_iteratedQuotientMap
@@ -1271,6 +1271,7 @@ lemma getSDomainBasisCoeff_of_iteratedQuotientMap
       rw [h_interW_comp]
       have h_index: 0 + i.val = i.val := by omega
       rw! (castMode:=.all) [h_index]
+      rfl
     rw [get_sDomain_basis, ←Polynomial.eval_comp, h_comp_eq]
   -- Using this, we rewrite `hy_sum_from_x`.
   simp_rw [h_eval_basis_i] at hy_sum_from_x
@@ -1289,7 +1290,7 @@ lemma getSDomainBasisCoeff_of_iteratedQuotientMap
     rw! (castMode:=.all) [h_index_add];
     conv_lhs => -- split the sum in LHS into two parts
       rw [Fin.sum_univ_add]
-      simp only [Fin.coe_castAdd, Fin.coe_natAdd]
+      simp only [Fin.val_castAdd, Fin.val_natAdd]
     -- Eliminate the first sum of LHS
     have hβ: ∀ x: Fin a, β ⟨↑i + x, by omega⟩ ∈ U 𝔽q β (i := ⟨i + k, by omega⟩) := by
       intro x
@@ -1312,11 +1313,11 @@ lemma getSDomainBasisCoeff_of_iteratedQuotientMap
     have h3: (Fin.natAdd a j2) = ⟨↑j2 + k, by omega⟩ := by
       simp only [Fin.natAdd, Fin.mk.injEq, a]
       rw [add_comm]
-    simp only
     congr 1
     simp only [final_y_coeffs]
     rw [h3]
-    rw! (castMode:=.all) [←h_index_add];
+    rw! (castMode:=.all) [←h_index_add]
+    simp
 
   rw [getSDomainBasisCoeff_of_sum_repr 𝔽q β h_ℓ_add_R_rate
     (i := ⟨i.val, by omega⟩) (x:=x) (hx:=by exact hx_sum)]
@@ -1351,8 +1352,8 @@ theorem basis_repr_of_sDomain_lift (i j : Fin r) (h_j : j < ℓ + R_rate) (h_le 
           (h_i := by omega)).repr y ⟨k - (j.val - i.val), by omega⟩ := by
   simp only;
   intro k
-  simp only [sDomain.lift, Basis.repr_symm_apply, Basis.repr_linearCombination,
-    Finsupp.equivFunOnFinite_symm_apply_toFun]
+  simp only [sDomain.lift, Basis.repr_symm_apply, Basis.repr_linearCombination]
+  rw [Finsupp.coe_equivFunOnFinite_symm]
 
 omit [DecidableEq L] [DecidableEq 𝔽q] h_Fq_char_prime hF₂ hβ_lin_indep h_β₀_eq_1 in
 -- A helper derivation for intermediateNormVpoly_comp_qmap
@@ -1793,7 +1794,7 @@ lemma evaluationPointω_eq_twiddleFactor_of_div_2 (i : Fin ℓ) (x : Fin (2 ^ (�
     rw [←Fin.sum_congr' (b:=ℓ + R_rate - i) (a:=ℓ + R_rate - (i + 1) + 1) (f:=f_left) (h:=by omega)]
     rw [Fin.sum_univ_succ (n:=ℓ + R_rate - (i + 1))]
   unfold f_left
-  simp only [Fin.coe_cast, Fin.coe_ofNat_eq_mod, Nat.zero_mod, add_zero, Fin.val_succ]
+  simp only [Fin.val_cast, Fin.coe_ofNat_eq_mod, Nat.zero_mod, add_zero, Fin.val_succ]
   have h_bit_shift: ∀ x_1: Fin (ℓ + R_rate - (↑i + 1)),
     Nat.getBit (↑x_1 + 1) ↑x = Nat.getBit ↑x_1 (↑x / 2) := by
     intro x_1 -- ⊢ Nat.getBit (↑x_1 + 1) ↑x = Nat.getBit (↑x_1) (↑x / 2)
@@ -2372,7 +2373,6 @@ lemma NTTStage_correctness (i : Fin (ℓ))
     conv_rhs => enter [1]; rw [h_msb]
     norm_num; rw [Nat.getHighBits, Nat.getHighBits_no_shl, Nat.shiftLeft_eq,
       Nat.shiftRight_eq_div_pow]
-  -- sorry
   by_cases h_b_bit_eq_0: (j.val / (2 ^ i.val)) % 2 = 0
   · simp only [h_b_bit_eq_0, ↓reduceDIte]
     simp only at h_b_bit_eq_0
@@ -2752,12 +2752,12 @@ lemma foldl_NTTStage_inductive_aux (h_ℓ : ℓ ≤ r) (k : Fin (ℓ + 1))
   simp only at invariant_init
   induction k using Fin.succRecOnSameFinType with
   | zero =>
-    sorry
-    -- exact invariant_init
+    simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, Fin.foldl_zero, tsub_zero]
+    exact invariant_init
   | succ k k_h i_h =>
     have h_k_add_one := Fin.val_add_one' (a:=k) (by omega)
-    simp only [h_k_add_one, Fin.coe_cast]
-    simp only [Fin.foldl_succ_last, Fin.val_last, Fin.coe_castSucc]
+    simp only [h_k_add_one, Fin.val_cast]
+    simp only [Fin.foldl_succ_last, Fin.val_last, Fin.val_castSucc]
     set ntt_round := ℓ - (k + 1)
     set input_buffer := Fin.foldl k (fun current_b i ↦ NTTStage 𝔽q β h_ℓ_add_R_rate
       ⟨ℓ - i -1, by omega⟩ current_b) (tileCoeffs original_coeffs)

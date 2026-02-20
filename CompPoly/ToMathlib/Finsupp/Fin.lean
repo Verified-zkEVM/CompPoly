@@ -163,13 +163,13 @@ theorem insertNth_self_removeNth : insertNth p (t p) (removeNth p t) = t := by
 @[simp]
 theorem snoc_zero_zero : snoc (0 : Fin n →₀ M) 0 = 0 := by
   ext a
-  simp only [snoc, coe_zero, equivFunOnFinite_symm_apply_toFun, Fin.snoc, Fin.castSucc_castLT,
+  simp only [snoc, coe_zero, coe_equivFunOnFinite_symm, Fin.snoc, Fin.castSucc_castLT,
     Pi.zero_apply, cast_eq, dite_eq_ite, ite_self]
 
 @[simp]
 theorem insertNth_zero_zero : insertNth p 0 (0 : Fin n →₀ M) = 0 := by
   ext a
-  simp only [insertNth, coe_zero, equivFunOnFinite_symm_apply_toFun, Fin.insertNth,
+  simp only [insertNth, coe_zero, coe_equivFunOnFinite_symm, Fin.insertNth,
     Fin.succAboveCases, eq_rec_constant, Pi.zero_apply, dite_eq_ite, ite_self]
 
 variable {y} {s}
