@@ -237,7 +237,7 @@ theorem support_empty_iff (p : CPolynomial R) : p.support = ∅ ↔ p = 0 := by
 
 
 lemma coeff_C_mul [Nontrivial R] (p : CPolynomial R) (c : R) :
-  ∀ i, coeff ((C c) * p) i = c * (coeff p i) := by
+    ∀ i, coeff ((C c) * p) i = c * (coeff p i) := by
   intros i
   rw [coeff_mul, Finset.sum_eq_single 0]
   · simp only [coeff_C, ↓reduceIte, tsub_zero]
