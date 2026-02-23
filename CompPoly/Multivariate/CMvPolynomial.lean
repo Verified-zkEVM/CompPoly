@@ -131,7 +131,7 @@ def totalDegree {R : Type} {n : ℕ} [inst : CommSemiring R] : CMvPolynomial n R
     (fun s => Finsupp.sum s (fun _ e => e))
 
 /-- The degree of a polynomial in a specific variable. -/
-def degreeOf {R : Type} {n : ℕ} [CommSemiring R] (i : Fin n) : CMvPolynomial n R → ℕ :=
+def degreeOf {R : Type} {n : ℕ} [Zero R] (i : Fin n) : CMvPolynomial n R → ℕ :=
   fun p =>
     Multiset.count i
     (Finset.sup (List.toFinset (List.map CMvMonomial.toFinsupp (Lawful.monomials p)))
@@ -178,27 +178,58 @@ def leadingCoeff {n : ℕ} {R : Type} [Zero R] [MonomialOrder n]
     (p : CMvPolynomial n R) : R :=
   sorry
 
-/-- Extract the set of variables that appear in a polynomial.
-
-  Returns the set of variable indices `i : Fin n` such that `degreeOf i p > 0`.
--/
-def vars {n : ℕ} {R : Type} [Zero R] (p : CMvPolynomial n R) : Finset (Fin n) :=
-  sorry
-
 /-- Multiset of all variable degrees appearing in the polynomial.
 
   Each variable `i` appears `degreeOf i p` times in the multiset.
 -/
 def degrees {n : ℕ} {R : Type} [Zero R] (p : CMvPolynomial n R) : Multiset (Fin n) :=
-  sorry
+  Finset.univ.sum fun i => Multiset.replicate (p.degreeOf i) i
+
+/-- Extract the set of variables that appear in a polynomial.
+
+  Returns the set of variable indices `i : Fin n` such that `degreeOf i p > 0`.
+-/
+def vars {n : ℕ} {R : Type} [Zero R] (p : CMvPolynomial n R) : Finset (Fin n) :=
+  Finset.univ.filter fun i => 0 < p.degreeOf i
+
+/-- `degreeOf` is the multiplicity of a variable in `degrees`. -/
+lemma degreeOf_eq_count_degrees {n : ℕ} {R : Type} [Zero R]
+    (i : Fin n) (p : CMvPolynomial n R) :
+    p.degreeOf i = Multiset.count i p.degrees := by
+  classical
+  unfold CMvPolynomial.degrees
+  symm
+  calc
+    Multiset.count i (∑ j, Multiset.replicate (p.degreeOf j) j)
+        = ∑ j ∈ Finset.univ, Multiset.count i (Multiset.replicate (p.degreeOf j) j) := by
+          simpa [Finset.sum] using
+            (Multiset.count_sum' (s := Finset.univ)
+              (a := i) (f := fun j => Multiset.replicate (p.degreeOf j) j))
+    _ = ∑ j ∈ Finset.univ, if j = i then p.degreeOf j else 0 := by
+          simp [Multiset.count_replicate, eq_comm]
+    _ = p.degreeOf i := by
+          simp
 
 /-- Restrict polynomial to monomials with total degree ≤ d.
 
   Filters out all monomials where `m.totalDegree > d`.
 -/
+def restrictBy {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R]
+    (keep : CMvMonomial n → Prop) [DecidablePred keep]
+    (p : CMvPolynomial n R) : CMvPolynomial n R :=
+  Lawful.fromUnlawful <| p.1.filter (fun m _ => decide (keep m))
+
+def restrictTotalDegree {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R]
+    (d : ℕ) (p : CMvPolynomial n R) : CMvPolynomial n R :=
+  restrictBy (fun m => m.totalDegree ≤ d) p
+
+/-- Restrict polynomial to monomials whose degree in each variable is ≤ d.
+
+  Filters out all monomials where `m.degreeOf i > d` for some variable `i`.
+-/
 def restrictDegree {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R]
     (d : ℕ) (p : CMvPolynomial n R) : CMvPolynomial n R :=
-  sorry
+  restrictBy (fun m => ∀ i : Fin n, m.degreeOf i ≤ d) p
 
 /-- Algebra evaluation: evaluates polynomial in an algebra.
 
@@ -222,16 +253,11 @@ def bind₁ {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
 -/
 def rename {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
     (f : Fin n → Fin m) (p : CMvPolynomial n R) : CMvPolynomial m R :=
-  sorry
+  let renameMonomial (mono : CMvMonomial n) : CMvMonomial m :=
+    Vector.ofFn (fun j => (Finset.univ.filter (fun i => f i = j)).sum (fun i => mono.get i))
+  ExtTreeMap.foldl (fun acc mono c => acc + monomial (renameMonomial mono) c) 0 p.1
 
-/-- Ring equivalence for variable renaming when the function is a bijection.
-
-  Given `f : Fin n ≃ Fin m`, provides a ring isomorphism between
-  `CMvPolynomial n R` and `CMvPolynomial m R`.
--/
-def renameEquiv {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
-    (f : Fin n ≃ Fin m) : CMvPolynomial n R ≃+* CMvPolynomial m R :=
-  sorry
+-- `renameEquiv` is defined in `CompPoly.Multivariate.Rename`
 
 /-- Scalar multiplication with zero handling.
 

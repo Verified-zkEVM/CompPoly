@@ -25,31 +25,31 @@ CompPoly aims to be the premier formally verified library for computable polynom
 #### Priorities
 
 1. **Theoretical completeness**
-   - Prove all remaining `sorry`s 
-   - Implement `nodal` and `interpolate` for Lagrange interpolation
-   - Implement `AddCommGroup`/`Semiring`/`CommSemiring`/`Ring`/`CommRing` instances for `CPolynomialC` and `QuotientCPolynomial`
-   - Prove isomorphism between `QuotientCPolynomial`, `CPolynomialC`, and Mathlib's relevant `Polynomial` types
-   - Prove remaining algebraic instances for `CMvPolynomial` etc and ring isomorphisms with Mathlib's `MvPolynomial`
+   - Prove all remaining `sorry`s
+   - ✅ Implement `nodal` and `interpolate` for Lagrange interpolation
+   - ✅ Implement `AddCommGroup`/`Semiring`/`CommSemiring`/`Ring`/`CommRing` instances for `CPolynomial` and `QuotientCPolynomial`
+   - ✅ Prove isomorphism between `CPolynomial` and Mathlib's `Polynomial` (`ringEquiv` in `Univariate/ToPoly.lean`); prove for `QuotientCPolynomial` as needed
+   - ✅ Prove `CommSemiring` for `CMvPolynomial` and `polyRingEquiv` (ring isomorphism with Mathlib's `MvPolynomial (Fin n) R`); prove remaining algebraic instances (`CommRing`, `Algebra`, `Module`) without `sorry`
 
-1. **API completenes**
-   - Add `monomial` constructors for univariate and multivariate polynomials
-   - Implement monomial order support (`MonomialOrder.degree`, `leadingCoeff`)
+1. **API completeness**
+   - ✅ Add `monomial` constructors for univariate and multivariate polynomials
+   - Implement monomial order support (`MonomialOrder.degree`, `leadingCoeff`) — stubs exist, proofs pending
    - `degreeLT`, `degreeLE`: Bounded-degree submodules for univariate polynomials
    - `mem_degreeLT`, `mem_degreeLE`: Membership characterizations for bounded-degree polynomials
    - `degreeLTEquiv`: Linear equivalence for coefficient access
-   - `restrictDegree`: Degree restrictions for multilinear extensions
-   - `vars`: Variable set extraction
-   - `aeval`, `bind₁`: Algebra evaluation and substitution
+   - ✅ `restrictDegree`: Degree restrictions for multilinear extensions
+   - ✅ `vars`: Variable set extraction
+   - `aeval`, `bind₁`: Algebra evaluation and substitution — stubs exist, proofs pending
    - `algebra`, `module`: Algebra and module structures
-   - `degrees`, `eval₂Hom`: Degree utilities and evaluation homomorphisms
-   - `finSuccEquiv`, `optionEquivLeft`: Variable manipulation equivalences
-   - `instCommRingMvPolynomial`, `isEmptyAlgEquiv`: Additional ring and algebra structures
-   - `smulZeroClass`, `sumToIter`: Scalar multiplication and iteration utilities
+   - ✅ `degrees`; `eval₂Hom`: Degree utilities and evaluation homomorphisms (latter pending)
+   - `finSuccEquiv`, `optionEquivLeft`: Variable manipulation equivalences (for `CMvPolynomial`)
+   - ✅ `CommSemiring` for `CMvPolynomial`; `isEmptyAlgEquiv`: Additional algebra structures (latter pending)
+   - `smulZeroClass`, `sumToIter`: Scalar multiplication and iteration utilities — stubs exist, proofs pending
 
 1. **Further data types**
-   - Basic field definitions (currently in Arklib) ported into CompPoly
+   - ✅ Basic field definitions (currently in Arklib) ported into CompPoly (e.g. BabyBear, Goldilocks, BN254, BLS12_381, binary tower)
       - computable field extensions with interface
-   - Implement a specialized Bivariate polynomial type, e.g. as `CPolynomial (CPolynomial R)` with specialized polynomial operations (that can then be optimized)
+   - ✅ Implement a specialized Bivariate polynomial type, e.g. as `CPolynomial (CPolynomial R)` with specialized polynomial operations (that can then be optimized)
 
 **Success Criteria**: Zero `sorry`s in core operations, all ring structures complete, clean build with no warnings, reasonable proof ergonomics.
 
@@ -67,6 +67,8 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - Implement FFT/NTT-based multiplication (O(n log n) vs current O(n²))
    - Focus on NTT for finite field arithmetic
    - Maintain correctness proofs alongside optimizations
+   
+**Note**: [erdkocak](https://github.com/erdkocak) and [doran2728](https://github.com/doran2728) have communicated they will be working on this.
 
 1. **Exponentiation optimization**
    - Replace repeated multiplication with repeated squaring
@@ -181,4 +183,4 @@ CompPoly aims to be the premier formally verified library for computable polynom
 
 ---
 
-*Last updated: January 2026*
+*Last updated: February 2026*

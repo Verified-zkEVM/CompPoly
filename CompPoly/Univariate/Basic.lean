@@ -270,7 +270,6 @@ theorem coeff_mul_X_succ [Nontrivial R] (p : CPolynomial R) (n : ℕ) :
   simp only [X]
   have hmem : n ∈ Finset.range (n + 1 + 1) := by
     simp [Finset.mem_range]
-    omega
   have hsum :
       (Finset.range (n + 1 + 1)).sum (fun i => p.val.coeff i * Raw.X.coeff (n + 1 - i)) =
         p.val.coeff n * Raw.X.coeff (n + 1 - n) := by
