@@ -10,13 +10,12 @@ import CompPoly.Univariate.ToPoly
 /-!
   # Lagrange Interpolation
 
-  This file defines computable Lagrange interpolation for univariate polynomials, i.e. `CPolynomial`s.
+  This file defines computable Lagrange interpolation
+  for univariate polynomials, i.e. `CPolynomial`s.
 -/
 namespace CompPoly
 
 namespace CPolynomial
-
-open Raw
 
 namespace CLagrange
 
@@ -81,13 +80,13 @@ lemma toPoly_sum.{u} {ι : Type u} [DecidableEq ι] {s : Finset ι} {f : ι → 
     rw [this, Finset.sum_union s_disjoint, Finset.sum_union s_disjoint]
     simp only [Finset.sum_singleton]
     have CPoly_add {p q : CPolynomial R} : (p + q).toPoly = p.toPoly + q.toPoly := by
-      apply toPoly_add
+      apply Raw.toPoly_add
     rw [CPoly_add, @ih (s.erase i)]
     simp [Finset.card_erase_of_mem i_in_s, h]
 
 /-- `basisDivisor xᵢ xⱼ` is the unique linear or constant computable polynomial such that
-when evaluated at `xᵢ` it gives `1` and `xⱼ` it gives `0` (where when `xᵢ = xⱼ` it is identically `0`).
-Such polynomials are the building blocks for the Lagrange interpolants. -/
+when evaluated at `xᵢ` it gives `1` and `xⱼ` it gives `0` (where when `xᵢ = xⱼ` it is
+identically `0`). Such polynomials are the building blocks for the Lagrange interpolants. -/
 def basisDivisor (xᵢ xⱼ : R) : CPolynomial R :=
   C (xᵢ - xⱼ)⁻¹ * (X - C xⱼ)
 
@@ -109,8 +108,8 @@ lemma cBasisEq {ι : Type u} [DecidableEq ι] (s : Finset ι) (x : ι → R) (i 
   funext j
   rw [cBasisDivisorEq]
 
-/-- Computable Lagrange interpolation: given a finset `s : Finset ι`, a nodal map `x : ι → F` injective on
-`s` and a value function `y : ι → F`, `interpolate s x y` is the unique computable
+/-- Computable Lagrange interpolation: given a finset `s : Finset ι`, a nodal map `x : ι → F`
+injective on `s` and a value function `y : ι → F`, `interpolate s x y` is the unique computable
 polynomial of degree `< #s` that takes value `y i` on `x i` for all `i` in `s`. -/
 def interpolate.{u} {ι : Type u} [DecidableEq ι] (s : Finset ι) (x : ι → R) :
   (ι → R) →ₗ[R] CPolynomial R where
