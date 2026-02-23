@@ -30,7 +30,7 @@ lemma toPoly_sub {p q : CPolynomial R} : (p - q).toPoly = p.toPoly - q.toPoly :=
   rw [hp, hq, @coeff_sub]
 
 lemma toPoly_prod.{u} {ι : Type u} [DecidableEq ι] {s : Finset ι} {f : ι → CPolynomial R} :
-  (∏ j ∈ s, f j).toPoly = ∏ j ∈ s, ((f j).toPoly) := by
+    (∏ j ∈ s, f j).toPoly = ∏ j ∈ s, ((f j).toPoly) := by
   generalize n_eq : s.card = n
   revert s
   induction n with
@@ -57,7 +57,7 @@ lemma toPoly_prod.{u} {ι : Type u} [DecidableEq ι] {s : Finset ι} {f : ι →
     simp [i_in_s, h]
 
 lemma toPoly_sum.{u} {ι : Type u} [DecidableEq ι] {s : Finset ι} {f : ι → CPolynomial R} :
-  (∑ j ∈ s, f j).toPoly = ∑ j ∈ s, ((f j).toPoly) := by
+    (∑ j ∈ s, f j).toPoly = ∑ j ∈ s, ((f j).toPoly) := by
   generalize n_eq : s.card = n
   revert s
   induction n with
@@ -138,7 +138,7 @@ def interpolate.{u} {ι : Type u} [DecidableEq ι] (s : Finset ι) (x : ι → R
       rfl
 
 lemma lagrangeEq {ι : Type u} [DecidableEq ι] {s : Finset ι} {x : ι → R} {y : ι → R} :
-  (interpolate s x y).toPoly = Lagrange.interpolate s x y := by
+    (interpolate s x y).toPoly = Lagrange.interpolate s x y := by
   unfold interpolate
   simp only [LinearMap.coe_mk, AddHom.coe_mk, Lagrange.interpolate_apply]
   rw [toPoly_sum]
