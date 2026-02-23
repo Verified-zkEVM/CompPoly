@@ -645,58 +645,200 @@ theorem split_bitvec_eq_iff_fromNat {k : ℕ} (h_pos : k > 0) (x : ConcreteBTFie
     simp only [hi_extract_eq, Nat.sub_zero, lo_extract_eq, Nat.and_two_pow_sub_one_eq_mod, h_hi,
       h_lo]
 
+theorem BitVec.extractLsb_dcast_eq {w w2 hi lo : ℕ} (x : BitVec w) (h : w = w2) :
+    BitVec.extractLsb (hi:=hi) (lo:=lo) (dcast h x) =
+      BitVec.extractLsb (hi:=hi) (lo:=lo) x := by
+  unfold BitVec.extractLsb BitVec.extractLsb'
+  have h_toNat : BitVec.toNat (dcast h x) = BitVec.toNat x := by
+    simpa using (BitVec.dcast_bitvec_toNat_eq (x:=x) (h_width_eq:=h)).symm
+  rw [h_toNat]
+
+theorem join_eq_dcast_append {k : ℕ} (h_pos : k > 0) (hi lo : ConcreteBTField (k - 1)) :
+    join (k:=k) h_pos hi lo =
+      dcast (h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos))
+        (BitVec.append (msbs:=hi) (lsbs:=lo)) := by
+  unfold join
+  simp [dcast_eq_root_cast]
+
+theorem eq_join_iff_dcast_eq_append {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField k)
+    (hi lo : ConcreteBTField (k - 1)) :
+    x = join (k:=k) h_pos hi lo ↔
+      dcast (h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos)).symm x =
+        BitVec.append (msbs:=hi) (lsbs:=lo) := by
+  classical
+  constructor
+  · intro hx
+    have hx' := hx
+    rw [join_eq_dcast_append (k:=k) (h_pos:=h_pos) (hi:=hi) (lo:=lo)] at hx'
+    -- hx' : x = dcast sum (append ..)
+    exact
+      dcast_symm (ha := h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos)) (hb := hx'.symm)
+  · intro hx
+    have hx' :
+        dcast (h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos))
+            (BitVec.append (msbs:=hi) (lsbs:=lo)) =
+          x :=
+      dcast_symm (ha := (h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos)).symm) (hb := hx)
+    have hx'' :
+        x =
+          dcast (h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos))
+            (BitVec.append (msbs:=hi) (lsbs:=lo)) :=
+      hx'.symm
+    rw [← join_eq_dcast_append (k:=k) (h_pos:=h_pos) (hi:=hi) (lo:=lo)] at hx''
+    exact hx''
+
+
 theorem join_eq_iff_dcast_extractLsb {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField k)
     (hi_btf lo_btf : ConcreteBTField (k - 1)) :
   x = 《 hi_btf, lo_btf 》 ↔
-  (hi_btf = dcast (h_sub_middle h_pos) (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) ∧
-  lo_btf = dcast (h_middle_sub) (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) := by
-  constructor
-  · intro h_join
-    unfold join at h_join
-    have h_two_pow_k_minus_1_gt_0 : 2 ^ (k - 1) > 0 := by exact Nat.two_pow_pos (k - 1)
-    have h_x : x = dcast (h_sum_two_same_pow2 h_pos)
-      (BitVec.append (msbs:=hi_btf) (lsbs:=lo_btf)) := by
-      rw [h_join]
-      simp only
-      sorry
-      -- rw [BitVec.eq_mp_eq_dcast]
-    have h_x_symm := dcast_symm (hb:=h_x.symm)
-    have h_hi : hi_btf = dcast (h_sub_middle h_pos)
-      (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) := by
-      have hi_btf_is_dcast_extract := (dcast_symm (hb:=(BitVec.extractLsb_concat_hi (hi:=hi_btf)
-        (lo:=lo_btf) (h_hi:=h_two_pow_k_minus_1_gt_0)).symm)).symm
-      rw [hi_btf_is_dcast_extract]
-      rw [dcast_eq_dcast_iff] -- undcast in lhs
-      rw [h_x]
-      rw [BitVec.dcast_bitvec_extractLsb_eq (h_lo_eq:=rfl)]
-      rfl
-    have h_lo :
-      lo_btf = dcast (h_middle_sub) (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo :=0) x) := by
-      have lo_btf_is_dcast_extract := (dcast_symm (hb:=(BitVec.extractLsb_concat_lo (hi:=hi_btf)
-        (lo:=lo_btf) (h_lo:=h_two_pow_k_minus_1_gt_0)).symm)).symm
-      rw [lo_btf_is_dcast_extract]
-      rw [dcast_eq_dcast_iff] -- undcast in lhs
-      rw [h_x]
-      rw [BitVec.dcast_bitvec_extractLsb_eq (h_lo_eq:=rfl)]
-      rfl
-    exact ⟨h_hi, h_lo⟩
-  -- Backward direction : bitwise operations → x = join h_pos hi_btf lo_btf
-  · intro h_bits
-    -- ⊢ x = join h_pos hi_btf lo_btf
-    have two_pow_k_minus_1_gt_0 : 2 ^ (k - 1) > 0 := by
-      simp only [Nat.two_pow_pos]
-    have sum1:= h_sum_two_same_pow2 (k:=k) (h_pos:=by omega).symm
-    have res := BitVec.eq_append_iff_extract (lo:=lo_btf) (hi:=hi_btf)
-      (h_hi_gt_0:=two_pow_k_minus_1_gt_0) (h_lo_gt_0:=two_pow_k_minus_1_gt_0)
-        (x:=dcast (by exact sum1) x).mpr
-    have ⟨h_hi, h_lo⟩ := h_bits
-    have sum2 : 2 ^ k - 1 = 2 ^ (k - 1) + 2 ^ (k - 1) - 1 := by omega
-    rw! [sum2] at h_hi
-    have h_x_eq := res ⟨h_hi, h_lo⟩
-    rw [dcast_eq_dcast_iff] at h_x_eq
-    unfold join
-    rw [BitVec.eq_mp_eq_dcast (h_width_eq:=by exact sum1.symm) (h_bitvec_eq:=by rw [sum1.symm])]
-    rw [h_x_eq]
+  (hi_btf = dcast (h_sub_middle h_pos)
+      (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) ∧
+    lo_btf = dcast (h_middle_sub)
+      (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) := by
+  classical
+  have hpos_eq : h_pos = (by omega : k > 0) := Subsingleton.elim _ _
+  cases hpos_eq
+  -- unfold the join notation
+  change x = join (k := k) h_pos hi_btf lo_btf ↔
+    (hi_btf = dcast (h_sub_middle h_pos)
+        (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) ∧
+      lo_btf = dcast (h_middle_sub)
+        (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x))
+
+  let sum := h_sum_two_same_pow2 (k := k) (h_pos := h_pos)
+  have hpow : 2 ^ (k - 1) > 0 := Nat.two_pow_pos (k - 1)
+
+  -- main chain of iff's
+  have h_join :
+      x = join (k := k) h_pos hi_btf lo_btf ↔
+        dcast sum.symm x = BitVec.append (msbs := hi_btf) (lsbs := lo_btf) := by
+    -- avoid simp (which may use the target theorem as a simp lemma)
+    dsimp [sum]
+    exact (eq_join_iff_dcast_eq_append (k := k) (h_pos := h_pos) (x := x)
+      (hi := hi_btf) (lo := lo_btf))
+
+  have h_extract' :
+      dcast sum.symm x = BitVec.append (msbs := hi_btf) (lsbs := lo_btf) ↔
+        (hi_btf = dcast (by omega)
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x) ∧
+          lo_btf = dcast (by omega)
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) := by
+    -- use BitVec.eq_append_iff_extract on the casted x
+    have h := (BitVec.eq_append_iff_extract (lo_size := 2 ^ (k - 1)) (hi_size := 2 ^ (k - 1))
+      (lo := lo_btf) (hi := hi_btf)
+      (h_hi_gt_0 := hpow)
+      (h_lo_gt_0 := hpow)
+      (x := dcast sum.symm x))
+    have h1 :
+        dcast sum.symm x = BitVec.append (msbs := hi_btf) (lsbs := lo_btf) ↔
+          (hi_btf = dcast (by omega)
+              (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1))
+                (dcast sum.symm x)) ∧
+            lo_btf = dcast (by omega)
+              (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) (dcast sum.symm x))) := by
+      simpa using h
+    -- now rewrite the extractLsb of dcast sum.symm x into extractLsb of x
+    simpa [BitVec.extractLsb_dcast_eq (x := x) (h := sum.symm)] using h1
+
+  have h_final :
+      (hi_btf = dcast (by omega)
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x) ∧
+          lo_btf = dcast (by omega)
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) ↔
+        (hi_btf = dcast (h_sub_middle h_pos)
+            (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) ∧
+          lo_btf = dcast (h_middle_sub)
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) := by
+    -- prepare the cast equality for the hi-part
+    have h_hi1_eq :
+        2 ^ (k - 1) + 2 ^ (k - 1) - 1 = 2 ^ k - 1 := by
+      simpa [sum] using congrArg (fun n => n - 1) sum
+
+    have h_width_eq :
+        (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = (2 ^ k - 1) - 2 ^ (k - 1) + 1 := by
+      simp [h_hi1_eq]
+
+    have h_extract_cast :
+        dcast h_width_eq
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x)
+          = BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x := by
+      simpa using
+        (BitVec.dcast_bitvec_extractLsb_eq (x := x) (h_lo_eq := rfl) (h_width_eq := h_width_eq))
+
+    have h_extract_cast_symm :
+        dcast h_width_eq.symm
+            (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x)
+          = BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x := by
+      exact dcast_symm (ha := h_width_eq) (hb := h_extract_cast)
+
+    have h_hi_term :
+        dcast (by omega :
+              (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = 2 ^ (k - 1))
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x)
+          =
+          dcast (h_sub_middle h_pos)
+            (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) := by
+      -- rewrite extractLsb hi-parameter and compose casts
+      calc
+        dcast (by omega :
+              (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = 2 ^ (k - 1))
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x)
+            =
+            dcast (by omega :
+              (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = 2 ^ (k - 1))
+              (dcast h_width_eq.symm
+                (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x)) := by
+              -- replace the extracted bits using the casted equality
+              rw [← h_extract_cast_symm]
+        _ =
+            dcast (h_width_eq.symm.trans (by omega :
+              (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = 2 ^ (k - 1)))
+              (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) := by
+              -- compose the two casts
+              simp [dcast_trans]
+        _ =
+            dcast (h_sub_middle h_pos)
+              (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) := by
+              -- proof irrelevance for the cast proof
+              have hproof :
+                  h_width_eq.symm.trans (by omega :
+                    (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = 2 ^ (k - 1))
+                    = h_sub_middle h_pos := by
+                exact Subsingleton.elim _ _
+              simp only
+
+    -- proof irrelevance for the lo-part cast proof
+    have h_lo_proof :
+        (by omega : 2 ^ (k - 1) - 1 - 0 + 1 = 2 ^ (k - 1)) = h_middle_sub (k := k) := by
+      exact Subsingleton.elim _ _
+
+    constructor
+    · intro h
+      refine ⟨?_, ?_⟩
+      · -- hi part
+        simpa [h_hi_term] using h.1
+      · -- lo part
+        simpa [h_lo_proof] using h.2
+    · intro h
+      refine ⟨?_, ?_⟩
+      · -- hi part
+        simpa [h_hi_term.symm] using h.1
+      · -- lo part
+        simpa [h_lo_proof.symm] using h.2
+
+  calc
+    x = join (k := k) h_pos hi_btf lo_btf ↔
+        dcast sum.symm x = BitVec.append (msbs := hi_btf) (lsbs := lo_btf) := h_join
+    _ ↔
+        (hi_btf = dcast (by omega)
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x) ∧
+          lo_btf = dcast (by omega)
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) := h_extract'
+    _ ↔
+        (hi_btf = dcast (h_sub_middle h_pos)
+            (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) ∧
+          lo_btf = dcast (h_middle_sub)
+            (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) := h_final
 
 theorem join_eq_join_iff {k : ℕ} (h_pos : k > 0) (hi₀ lo₀ hi₁ lo₁ : ConcreteBTField (k - 1)) :
     《 hi₀, lo₀ 》 = 《 hi₁, lo₁ 》 ↔ (hi₀ = hi₁ ∧ lo₀ = lo₁) := by
@@ -1048,7 +1190,7 @@ instance (k : ℕ) : Preorder (ConcreteBTField k) where
   lt := fun x y => x < y
   lt_iff_le_not_ge := fun x y => by
     unfold ConcreteBTField at x y
-    have bitvec_statement := (BitVec.not_lt_iff_le : ¬x < y ↔ y ≤ x)
+    have bitvec_statement := (BitVec.not_lt : ¬x < y ↔ y ≤ x)
     -- We need to prove : x < y ↔ x ≤ y ∧ ¬y ≤ x
     constructor
     · -- Forward direction : x < y → x ≤ y ∧ ¬y ≤ x
@@ -1773,6 +1915,7 @@ lemma norm_of_ne_zero_is_ne_zero {k : ℕ}
       have h_a_is_zero : a = 0 := by
         rw [ha, h_a₁_zero, h_a₀_zero]
         rw! [←zero_is_0, ←zero_is_0, join_zero_zero]
+        rfl
       exact h_a_ne_zero h_a_is_zero
     have h_Na_eq_a₀_sq : Na = a₀ * a₀ := by
       simp only [Na, Z, h_a₁_zero, mul_zero, add_zero, zero_mul]
@@ -2033,7 +2176,9 @@ def concreteCanonicalEmbedding (k : ℕ)
       -- ⊢ join ⋯ zero (x + y) = join ⋯ zero x + join ⋯ zero y
       simp only [join_add_join, Nat.add_one_sub_one]
       rw [zero_is_0, zero_add]
-    map_zero' := by rw! [←zero_is_0, join_zero_zero, zero_is_0]
+    map_zero' := by
+      rw! [←zero_is_0, join_zero_zero, zero_is_0]
+      rfl
   }
 
 instance instAlgebraLiftConcreteBTField (k : ℕ)
@@ -2553,8 +2698,9 @@ lemma split_algebraMap_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField 
   rw [ConcreteBTField.RingHom_cast_dest_apply (f:=canonicalAlgMap (k - 1))
     (x:=x) (h_eq:=by omega)]
   have h_k_sub_1_add_1 : k - 1 + 1 = k := by omega
-  conv_lhs => enter [2]; rw! (castMode:=.all) [h_k_sub_1_add_1]; simp only
-  rw [eqRec_eq_cast, eqRec_eq_cast, cast_cast, cast_eq]
+  rw! (castMode:=.all) [h_k_sub_1_add_1]
+  simp only [cast_eq]
+  rw [eqRec_eq_cast]
   rw [ConcreteBTField.RingHom_cast_dest_apply (k:=k - 1) (m:=k - 1 + 1) (n:=k)
     (h_eq:=by omega) (f:=canonicalAlgMap (k - 1)) (x:=x)]
   simp only [canonicalAlgMap, concreteCanonicalEmbedding, RingHom.coe_mk, MonoidHom.coe_mk,
@@ -2996,9 +3142,8 @@ theorem minPoly_of_powerBasisSucc_generator (k : ℕ) :
           ne_eq]
         -- ⊢ ¬join ⋯ c x = 0
         by_contra h_join_eq_zero
-        conv_rhs at h_join_eq_zero =>
-          rw [←zero_is_0];
-          rw! [←join_zero_zero (k:=k+1) (h_k:=by omega)]
+        rw [←zero_is_0] at h_join_eq_zero
+        rw! [←join_zero_zero (k:=k+1) (h_k:=by omega)] at h_join_eq_zero
         rw [join_eq_join_iff] at h_join_eq_zero
         have h_c_eq_zero := h_join_eq_zero.1
         contradiction
@@ -3149,15 +3294,25 @@ theorem PowerBasis.cast_basis_succ_of_eq_rec_apply
   -- The proof of the theorem itself remains simple.
   subst h_r
   simp only [ConcreteBTFieldAlgebra_id,
-    Algebra.algebraMap_self, PowerBasis.coe_basis, Fin.coe_cast, RingHom.id_apply]
+    Algebra.algebraMap_self, PowerBasis.coe_basis, Fin.val_cast, RingHom.id_apply]
   rw [Basis_cast_index_apply (h_eq:=by
     exact powerBasisSucc_dim r1) (h_le:=by omega)]
-  simp only [PowerBasis.coe_basis, Fin.coe_cast]
+  simp only [PowerBasis.coe_basis, Fin.val_cast]
 
 @[simp]
 theorem coe_basis_apply {R S : Type*} [CommRing R] [Ring S] [Algebra R S]
     (pb : PowerBasis R S) (i : Fin pb.dim) : ⇑pb.basis i = pb.gen ^ (i : ℕ) :=
   pb.basis_eq_pow i
+
+/-- When two indices are equal, the tower algebra maps send the respective 𝕏 to the same element. -/
+lemma algebraMap_𝕏_eq_of_index_eq (r k m : ℕ) (h_k_le : k + 1 ≤ r) (h_m_le : m + 1 ≤ r)
+    (h_eq : k = m) :
+    letI := ConcreteBTFieldAlgebra (l := k + 1) (r := r) (h_le := h_k_le)
+    letI := ConcreteBTFieldAlgebra (l := m + 1) (r := r) (h_le := h_m_le)
+    (Algebra.algebraMap (𝕏 k) : ConcreteBTField r) =
+      (Algebra.algebraMap (𝕏 m) : ConcreteBTField r) := by
+  subst h_eq
+  rfl
 
 /-!
 The basis element at index `j` is the product of the tower generators at
@@ -3175,8 +3330,7 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
     have h_l_eq_r : l = 0 := by omega
     subst h_l_eq_r
     simp only [Nat.sub_zero, Nat.pow_zero, Finset.univ_eq_empty, 𝕏, Z, _root_.zero_add,
-      Nat.add_eq_zero, one_ne_zero, and_false, Fin.val_eq_zero,
-      map_pow, Finset.prod_empty]
+      Fin.val_eq_zero, map_pow, Finset.prod_empty]
     have hj_eq_0 : j = 0 := by exact Fin.eq_of_val_eq (by omega)
     rw! [hj_eq_0]
     rw [multilinearBasis]
@@ -3245,13 +3399,11 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
         ConcreteBTFieldAlgebra (l:=r1) (r:=r) (h_le:=by omega)
       set b := (powerBasisSucc r1) with hb
       rw! (castMode:=.all) [←hb]
-      simp_rw [eqRec_eq_cast]
-      rw [cast_eq]
       have h : (2 ^ (r1 - l)) = (2 ^ (r - l - 1)) := by
         rw [h_r]
         rw [Nat.sub_right_comm, Nat.add_sub_cancel r1 1]
       rw [Basis_cast_index_apply (h_eq:=h) (h_le:=by omega)]
-      simp only [leftDivNat, Fin.coe_cast]
+      simp only [leftDivNat, Fin.val_cast]
 
       set indexLeft : Fin 2 := ⟨j.val / 2 ^ (r - l - 1), by
         change j.val / 2 ^ (r - l - 1) < 2 ^ 1
@@ -3260,56 +3412,58 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
           exact j.isLt
         )
       ⟩
+      have h_cast_basis_succ_of_eq_rec_apply :=
+        PowerBasis.cast_basis_succ_of_eq_rec_apply (r1:=r1) (r:=r) (h_r:=h_r) (k:=indexLeft)
       unfold algebra_adjacent_tower
-      -- unfold indexLeft
-      -- All casts eliminated, now we prove equality on revFinProdFinEquiv and bit stuff
-      have h: b.basis indexLeft = b.gen ^ (indexLeft.val) := coe_basis_apply (pb:=b) (i:=indexLeft)
+      rw! (castMode:=.all) [←h_r]
       conv_lhs =>
-        enter [2];
-        -- @DFunLike.coe (Basis (Fin 2) ...
-        change b.basis indexLeft;
-        -- @DFunLike.coe (Basis (Fin b.dim) ...
-        rw! [h] -- `rw` can't work without `change` here
-      rw! [powerBasisSucc_gen, ←𝕏]
+        arg 2
+        erw [h_cast_basis_succ_of_eq_rec_apply]
+
+      unfold indexLeft
       conv_lhs =>
-        rw [ih_r1 (l:=l) (h_le:=by omega)] -- inductive hypothesis of level r - 1
+        simp only [Fin.cast_mk, PowerBasis.coe_basis];
+        rw [powerBasisSucc_gen, ←𝕏]
+        rw [ih_r1 (l:=l) (h_le:=by omega)]
         rw [Fin.cast_val_eq_val (h_eq:=by omega)]
 
       conv_rhs =>
         rw [←Fin.prod_congr' (b:=r - l) (a:=prevDiff + 1) (h:=by omega)]
-        rw [Fin.prod_univ_castSucc] -- split the prod of rhs
-        simp only [Fin.coe_cast, Fin.coe_castSucc, Fin.val_last]
-      · simp_rw [algebraMap.coe_prod] -- lhs
-        unfold Algebra.cast
-        rw! (castMode:=.all) [←algebraMap]
-        conv_lhs =>
-          rw [←Fin.prod_congr' (b:=r1 - l) (a:=prevDiff) (h:=by omega)]
-          simp only [Fin.coe_cast]
-        simp_rw [algebraMap, instAlgebraSucc]
-        rw [algebra_adjacent_tower]
-        rw [RingHom.map_pow]
-        ------------------ Equality of bit - based powers of generators -----------------
-        conv_rhs => rw! [←algebraMap, h_r1_eq_l_plus_prevDiff.symm]
-        -- algebraMap.coe_pow] -- rhs
-        --- The outtermost term
-        have hfinProd_msb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)
-          (i:=⟨prevDiff, by omega⟩) (j:=⟨j, by omega⟩)
-        simp only [lt_self_iff_false, ↓reduceIte,
-          revFinProdFinEquiv_symm_apply] at hfinProd_msb
-        conv_rhs =>
-          simp only [hfinProd_msb, leftDivNat];
-          simp only [h_prevDiff]
-          rw! [ConcreteBTFieldAlgebra_id (by omega)]
-        --- Inner - prod term
-        congr
+        rw [Fin.prod_univ_castSucc]
+        simp only [Fin.val_cast, Fin.val_castSucc, Fin.val_last]
+
+      simp_rw [algebraMap.coe_pow]
+      simp_rw [algebraMap.coe_prod]
+      unfold Algebra.cast
+      rw! (castMode:=.all) [←algebraMap]
+      conv_lhs =>
+        rw [←Fin.prod_congr' (b:=r1 - l) (a:=prevDiff) (h:=by omega)]
+        simp only [Fin.val_cast]
+      simp_rw [algebraMap, instAlgebraSucc, algebra_adjacent_tower]
+      rw [RingHom.map_pow]
+      simp_rw [←ConcreteBTFieldAlgebra_apply_assoc]
+      ------------------ Equality of bit-based powers of generators -----------------
+      have hfinProd_msb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)
+        (i:=⟨prevDiff, by omega⟩) (j:=⟨j, by omega⟩)
+      simp only [lt_self_iff_false, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_msb
+      conv_rhs => simp only [hfinProd_msb, leftDivNat]
+      --- Inner-prod term: prove equality of the two factors
+      refine congr_arg₂ (· * ·) ?_ ?_
+      · congr 1
         funext i
         have hfinProd_lsb := bit_revFinProdFinEquiv_symm_2_pow_succ
           (n:=prevDiff) (i:=⟨i, by omega⟩)
           (j:=⟨j, by omega⟩)
         simp only [Fin.is_lt, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_lsb
         rw [hfinProd_lsb]
-        simp_rw [←ConcreteBTFieldAlgebra_apply_assoc]
         rfl
+      · have h_exp_eq : (↑j : ℕ) / 2 ^ (r - l - 1) = (↑j : ℕ) / 2 ^ prevDiff :=
+          congr_arg (fun d => (↑j : ℕ) / 2 ^ d) h_prevDiff.symm
+        refine congr_arg₂ (· ^ ·)
+            (algebraMap_𝕏_eq_of_index_eq r r1 (l + prevDiff) (by omega) (by omega)
+              h_r1_eq_l_plus_prevDiff)
+            h_exp_eq
+
 end ConcreteMultilinearBasis
 
 section TowerEquivalence
@@ -3430,7 +3584,7 @@ lemma towerRingHomForwardMap_Z (k : ℕ) :
     rfl
   | succ k ih =>
     unfold towerRingHomForwardMap
-    simp only [Nat.add_eq_zero, one_ne_zero, and_false, ↓reduceDIte,
+    simp only [Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceDIte,
       Nat.add_one_sub_one]
     rw! [split_Z]
     simp only [Nat.add_one_sub_one, one_is_1, zero_is_0]
@@ -3452,9 +3606,9 @@ lemma towerRingHomBackwardMap_forwardMap_eq (k : ℕ) (x : ConcreteBTField k) :
       simp only [RingEquiv.apply_symm_apply] -- due to definition of `towerRingEquiv0`
   | succ k ih =>
     rw [towerRingHomForwardMap] -- split inner
-    simp only [Nat.add_eq_zero, one_ne_zero, and_false, ↓reduceDIte, Nat.add_one_sub_one]
+    simp only [Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceDIte, Nat.add_one_sub_one]
     rw [towerRingHomBackwardMap] -- split outer
-    simp only [Nat.add_eq_zero, one_ne_zero, and_false, ↓reduceDIte, Nat.add_one_sub_one]
+    simp only [Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceDIte, Nat.add_one_sub_one]
     rw [←join_eq_join_via_add_smul]
     apply Eq.symm
     apply join_of_split
@@ -3480,10 +3634,10 @@ lemma towerRingHomForwardMap_backwardMap_eq (k : ℕ) (x : BTField k) :
       exact RingEquiv.symm_apply_apply towerRingEquiv0 1
   | succ k ih =>
     rw [towerRingHomBackwardMap] -- split inner
-    simp only [Nat.add_eq_zero, one_ne_zero, and_false, ↓reduceDIte,
+    simp only [Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceDIte,
       Nat.add_one_sub_one]
     rw [towerRingHomForwardMap] -- split outer
-    simp only [Nat.add_eq_zero, one_ne_zero, and_false, ↓reduceDIte,
+    simp only [Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceDIte,
       Nat.add_one_sub_one]
     apply Eq.symm
     rw! [split_join_via_add_smul_eq_iff_split (k:=k + 1)]
@@ -3517,7 +3671,7 @@ lemma towerRingHomForwardMap_add_eq (k : ℕ) (x y : ConcreteBTField k) :
         rfl
   | succ k ih =>
     unfold towerRingHomForwardMap
-    simp only [Nat.add_eq_zero, one_ne_zero, and_false, ↓reduceDIte,
+    simp only [Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceDIte,
       Nat.add_one_sub_one]
     rw [BinaryTower.sum_join_via_add_smul (k:=k+1)]
     simp only [Nat.add_one_sub_one]
@@ -3567,7 +3721,7 @@ lemma towerRingHomForwardMap_mul_eq (k : ℕ) (x y : ConcreteBTField k) :
       · simp only [y_one, one_is_1, mul_one, h_map_1]
   | succ k ih =>
     unfold towerRingHomForwardMap
-    simp only [Nat.add_eq_zero, one_ne_zero, and_false, ↓reduceDIte,
+    simp only [Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceDIte,
       Nat.add_one_sub_one]
     rw [BinaryTower.mul_join_via_add_smul (k:=k+1) (h_pos:=by omega)]
     simp only [Nat.add_one_sub_one]
@@ -3597,13 +3751,14 @@ lemma towerRingHomForwardMap_split_eq (k : ℕ) (h_pos : k > 0) (x : ConcreteBTF
       (hi_btf := towerRingHomForwardMap (k:=k-1) (p.1))
       (lo_btf := towerRingHomForwardMap (k:=k-1) (p.2)) := by
   -- This lemma is actually due to the definition of `towerRingHomForwardMap` for `k > 0`
-  simp only
+  simp only [BTField.eq_1]
   conv_lhs => unfold towerRingHomForwardMap -- not unfold in the rhs
   have h_k_ne_0 : k ≠ 0 := by omega
   set hi := (split (k:=k) (h:=h_pos) x).1 with hhi
   set lo := (split (k:=k) (h:=h_pos) x).2 with hlo
   simp only [h_k_ne_0, ↓reduceDIte]
   rw! [←hhi]
+  grind
 
 lemma towerRingHomForwardMap_join {k : ℕ} (h_pos : k > 0) (hi lo : ConcreteBTField (k - 1)) :
     towerRingHomForwardMap (k:=k) (《 hi, lo 》) =
@@ -3660,65 +3815,92 @@ noncomputable def towerEquiv (n : ℕ) : TowerEquivResult n := by
         change curRingHom.toFun = towerRingHomForwardMap (n+1)
         rfl
     }
-lemma towerEquiv_commutes_left_diff (i d : ℕ) : ∀ r : ConcreteBTField i,
+
+theorem BTField_algebraMap_succ_eq_join (k : ℕ) (x : BTField k) :
+    algebraMap (BTField k) (BTField (k+1)) x =
+      BinaryTower.join_via_add_smul (k:=k+1) (h_pos:=by omega) 0 x := by
+  simpa using (BinaryTower.algebraMap_succ_eq_zero_x (k := k+1) (h_pos := by omega) (x := x))
+
+theorem ConcreteBTField_algebraMap_succ_eq_join (k : ℕ) (r : ConcreteBTField k) :
+    algebraMap (ConcreteBTField k) (ConcreteBTField (k+1)) r =
+      join (k:=k+1) (h_pos:=by omega) 0 r := by
+  simpa [Nat.add_one_sub_one] using
+    (algebraMap_succ_eq_zero_x (k:=k+1) (h_pos:=by omega) (x:=r))
+
+theorem towerEquiv_ringEquiv_apply (k : ℕ) (r : ConcreteBTField k) :
+    (towerEquiv k).ringEquiv r = towerRingHomForwardMap k r := by
+  -- Use the forward-map characterization of the ring equivalence
+  simpa using congrArg (fun f => f r) (towerEquiv k).ringEquivForwardMapEq
+
+theorem towerEquiv_commutes_left_succ (k : ℕ) : ∀ r : ConcreteBTField k,
+    (AlgebraTower.algebraMap k (k+1) (by omega)) ((towerEquiv k).ringEquiv r) =
+  (towerEquiv (k+1)).ringEquiv ((AlgebraTower.algebraMap k (k+1) (by omega)) r) := by
+  intro r
+  -- Rewrite the tower equivalence maps to the explicit forward map
+  rw [towerEquiv_ringEquiv_apply (k:=k) (r:=r)]
+  rw [towerEquiv_ringEquiv_apply (k:=k + 1)
+    (r:=(AlgebraTower.algebraMap k (k + 1) (by omega) r))]
+  -- Turn the adjacent tower maps into the usual `algebraMap` so we can use the join rewrite lemmas
+  change algebraMap (BTField k) (BTField (k + 1)) (towerRingHomForwardMap k r) =
+      towerRingHomForwardMap (k + 1)
+        (algebraMap (ConcreteBTField k) (ConcreteBTField (k + 1)) r)
+  -- Rewrite both adjacent algebra maps as joins
+  rw [BTField_algebraMap_succ_eq_join (k:=k) (x:=towerRingHomForwardMap k r)]
+  rw [ConcreteBTField_algebraMap_succ_eq_join (k:=k) (r:=r)]
+  -- Evaluate `towerRingHomForwardMap` on a concrete join
+  rw [towerRingHomForwardMap_join (k:=k + 1) (h_pos:=by omega) (hi:=0) (lo:=r)]
+  -- Normalize the predecessor index `k + 1 - 1`
+  simp only [Nat.add_one_sub_one] at *
+  -- Simplify the `hi` part
+  rw [towerRingHomForwardMap_zero (k:=k)]
+
+theorem towerEquiv_commutes_left_diff (i d : ℕ) : ∀ r : ConcreteBTField i,
     (AlgebraTower.algebraMap i (i+d) (by omega)) ((towerEquiv i).ringEquiv r) =
   (towerEquiv (i+d)).ringEquiv ((AlgebraTower.algebraMap i (i+d) (by omega)) r) := by
-  -- If d = 0, then this is trivial
-  -- For d > 0 : let j = i+d
-    -- lhs of goal : right => 《 0, ringMap x 》 => up => 《 algMap 0 = 0, algMap (ringMap x) 》
-    -- rhs of goal : up => 《 0, algMap x 》 => right => 《 ringMap 0 = 0, ringMap (algMap x) 》
-    -- where both `algMap (ringMap x)` and `ringMap (algMap x)` are in `BTField (j-1)`
-  -- => Strategy : For each i => do induction upwards on d
-  change ∀ r : ConcreteBTField i,
-    (BinaryTower.towerAlgebraMap (l:=i) (r:=i+d) (h_le:=by omega)) ((towerEquiv i).ringEquiv r) =
-    (towerEquiv (i+d)).ringEquiv ((concreteTowerAlgebraMap i (i+d) (by omega)) r)
-  induction d using Nat.rec with
+  intro r
+  induction d with
   | zero =>
-    intro r
-    simp only [Nat.add_zero]
-    rw [BinaryTower.towerAlgebraMap_id, concreteTowerAlgebraMap_id]
-    rfl
-  | succ d' ih =>
-    intro r
-    letI instAbstractAlgebra : Algebra (BTField i) (BTField (i + d' + 1)) :=
-      binaryAlgebraTower (by omega)
-    let : Algebra (ConcreteBTField i) (ConcreteBTField (i + d')) :=
-      ConcreteBTFieldAlgebra (l:=i) (r:=i+d') (h_le:=by omega)
-    letI instConcreteAlgebra : Algebra (ConcreteBTField i) (ConcreteBTField (i + d' + 1)) :=
-      ConcreteBTFieldAlgebra (l:=i) (r:=i+d'+1) (h_le:=by omega)
-    change (algebraMap (R:=BTField i) (A:=BTField (i + d' + 1))) ((towerEquiv i).ringEquiv r) =
-      (towerEquiv (i + d' + 1)).ringEquiv ((algebraMap (R:=ConcreteBTField i)
-      (A:=ConcreteBTField (i + d' + 1))) r)
-    have h_concrete_algMap_eq_zero_x := algebraMap_eq_zero_x (i:=i) (j:=i+d'+1) (h_le:=by omega) r
-    simp only [Nat.add_one_sub_one] at h_concrete_algMap_eq_zero_x
-    rw [algebraMap, Algebra.algebraMap] at h_concrete_algMap_eq_zero_x
-    have h_abstract_algMap_eq_zero_x := BinaryTower.algebraMap_eq_zero_x (i:=i) (j:=i+d'+1)
-      (h_le:=by omega) ((towerEquiv i).ringEquiv r)
-    simp only [Nat.add_one_sub_one] at h_abstract_algMap_eq_zero_x
-    conv_lhs =>
-      rw! [h_abstract_algMap_eq_zero_x]
-    conv_rhs =>
-      rw [algebraMap, Algebra.algebraMap]
-      simp only [BTField.eq_1, CommRing.eq_1, BTFieldIsField.eq_1, instConcreteAlgebra]
-      rw! [h_concrete_algMap_eq_zero_x] -- split algebraMap
-      -- Now change `BinaryTowerAux (i + d' + 1)).fst` back to `BTField (i + d' + 1)`
-      -- for definitional equality, otherwise we can't `rw [ringEquivForwardMapEq]`
-      change (towerEquiv (i + d' + 1)).ringEquiv (join (h_pos:=by omega) 0
-        ((algebraMap (ConcreteBTField i) (ConcreteBTField (i + d'))) r))
-      rw [(towerEquiv (i+d'+1)).ringEquivForwardMapEq]
-      -- now convert to BinaryTower.join_via_add_smul
-      rw [towerRingHomForwardMap_join (k:=i+d'+1) (h_pos:=by omega)]
-      simp only [Nat.add_one_sub_one]
-    -- ⊢ BinaryTower.join_via_add_smul ⋯ = BinaryTower.join_via_add_smul ⋯ =
-    rw [BinaryTower.join_eq_join_iff]
-    constructor
-    · rw [towerRingHomForwardMap_zero]
-    · let h := ih (r:=r)
-      change (BinaryTower.towerAlgebraMap (l:=i) (r:=i+d')
-        (h_le:=by omega)) ((towerEquiv i).ringEquiv r) =
-        towerRingHomForwardMap (i + d') ((concreteTowerAlgebraMap i (i + d') (by omega)) r)
-      rw [h]
-      rw [(towerEquiv (i+d')).ringEquivForwardMapEq]
+      simp only [Nat.add_zero]
+      change (towerAlgebraMap (l:=i) (r:=i) (h_le:=by omega)) ((towerEquiv i).ringEquiv r) =
+        (towerEquiv i).ringEquiv ((concreteTowerAlgebraMap (l:=i) (r:=i) (h_le:=by omega)) r)
+      simp [towerAlgebraMap_id, concreteTowerAlgebraMap_id]
+  | succ d ih =>
+      calc
+        (AlgebraTower.algebraMap i (i + Nat.succ d) (by omega)) ((towerEquiv i).ringEquiv r)
+            = ((AlgebraTower.algebraMap (i + d) (i + d + 1) (by omega)).comp
+                (AlgebraTower.algebraMap i (i + d) (by omega))) ((towerEquiv i).ringEquiv r) := by
+              simpa [Nat.add_assoc] using congrArg (fun f => f ((towerEquiv i).ringEquiv r))
+                (towerAlgebraMap_succ (l:=i) (r:=i + d) (h_le:=by omega))
+        _ = (AlgebraTower.algebraMap (i + d) (i + d + 1) (by omega))
+              ((AlgebraTower.algebraMap i (i + d) (by omega)) ((towerEquiv i).ringEquiv r)) := by
+              simp only [RingHom.coe_comp, Function.comp_apply]
+        _ = (AlgebraTower.algebraMap (i + d) (i + d + 1) (by omega))
+              ((towerEquiv (i + d)).ringEquiv
+                ((AlgebraTower.algebraMap i (i + d) (by omega)) r)) := by
+              rw [ih]
+        _ = (towerEquiv (i + d + 1)).ringEquiv
+              ((AlgebraTower.algebraMap (i + d) (i + d + 1) (by omega))
+                ((AlgebraTower.algebraMap i (i + d) (by omega)) r)) := by
+              simpa using (towerEquiv_commutes_left_succ (k:=i + d)
+                ((AlgebraTower.algebraMap i (i + d) (by omega)) r))
+        _ = (towerEquiv (i + d + 1)).ringEquiv
+              ((AlgebraTower.algebraMap i (i + d + 1) (by omega)) r) := by
+              have hconc : (AlgebraTower.algebraMap (AT:=ConcreteBTField) i (i + d + 1) (by omega))
+                    = (AlgebraTower.algebraMap (AT:=ConcreteBTField) (i + d) (i + d + 1)
+                        (by omega)).comp
+                        (AlgebraTower.algebraMap (AT:=ConcreteBTField) i (i + d) (by omega)) := by
+                simpa [Nat.add_assoc] using
+                  (concreteTowerAlgebraMap_succ (l:=i) (r:=i + d) (h_le:=by omega))
+              have hconc_apply := congrArg (fun f => f r) hconc
+              have h_inner :
+                  (AlgebraTower.algebraMap (AT:=ConcreteBTField) (i + d) (i + d + 1) (by omega))
+                      ((AlgebraTower.algebraMap (AT:=ConcreteBTField) i (i + d) (by omega)) r) =
+                    (AlgebraTower.algebraMap (AT:=ConcreteBTField) i (i + d + 1) (by omega)) r := by
+                simpa [RingHom.comp_apply] using hconc_apply.symm
+              simp [h_inner]
+        _ = (towerEquiv (i + Nat.succ d)).ringEquiv
+              ((AlgebraTower.algebraMap i (i + Nat.succ d) (by omega)) r) := by
+              rfl
 
 theorem towerEquiv_commutes_left (i j : ℕ) (h : i ≤ j) : ∀ r : ConcreteBTField i,
     (AlgebraTower.algebraMap i j h) ((towerEquiv i).ringEquiv r) =

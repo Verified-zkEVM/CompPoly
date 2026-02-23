@@ -580,6 +580,7 @@ theorem BTField.RingHom_eq_of_dest_eq (k m n : ℕ) (h_eq : m = n) :
 theorem BTField.RingHom_eq_of_dest_AdjoinRoot_eq (k m : ℕ) :
     (BTField k →+* BTField (m+1)) = (BTField k →+* (AdjoinRoot (poly m))) := by
   rw! (castMode:=.all) [BTField_succ_eq_adjoinRoot m]
+  rfl
 
 @[simp]
 theorem BTField.RingHom_cast_dest_apply (k m n : ℕ) (h_eq : m = n)
@@ -1091,8 +1092,8 @@ lemma split_algebraMap_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : BTField (k - 1))
     (x:=x) (h_eq:=by omega)]
   -- ⊢ cast ⋯ ((canonicalEmbedding (k - 1)) x) = join_via_add_smul h_pos 0 x
   have h_k_sub_1_add_1 : k - 1 + 1 = k := by omega
-  conv_lhs => enter [2]; rw! (castMode:=.all) [h_k_sub_1_add_1]; simp only
-  rw [eqRec_eq_cast, eqRec_eq_cast, cast_cast, cast_eq]
+  rw! (castMode:=.all) [h_k_sub_1_add_1]
+  rw [eqRec_eq_cast, cast_eq]
   unfold join_via_add_smul
   -- letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   rw [Algebra.smul_def', map_zero, zero_mul, zero_add]
@@ -1237,6 +1238,7 @@ def multilinearBasis (l r : ℕ) (h_le : l ≤ r) :
     -- = Basis (Fin (2 ^ n') × Fin 2) (BTField l) (BTField (r1 + 1))
     unfold instModuleSucc -- Module used in rhs
     rw! [h_r]
+    rfl
 
 @[simp]
 theorem BTField.PowerBasis.dim_of_eq_rec
@@ -1288,20 +1290,29 @@ theorem PowerBasis.cast_basis_succ_of_eq_rec_apply
   -- The proof of the theorem itself remains simple.
   subst h_r
   simp only [binaryTowerAlgebra_id,
-    Algebra.algebraMap_self, PowerBasis.coe_basis, Fin.coe_cast, RingHom.id_apply]
+    Algebra.algebraMap_self, PowerBasis.coe_basis, Fin.val_cast, RingHom.id_apply]
   rw [BTField.Basis_cast_index_apply (h_eq:=by exact powerBasisSucc_dim r1) (h_le:=by omega)]
-  simp only [PowerBasis.coe_basis, Fin.coe_cast]
+  simp only [PowerBasis.coe_basis, Fin.val_cast]
+
+/-- When two indices are equal, the tower algebra maps send the respective 𝕏 to the same element. -/
+lemma algebraMap_𝕏_eq_of_index_eq (r k m : ℕ) (h_k_le : k + 1 ≤ r) (h_m_le : m + 1 ≤ r)
+    (h_eq : k = m) :
+    letI := binaryAlgebraTower (l := k + 1) (r := r) (h_le := h_k_le)
+    letI := binaryAlgebraTower (l := m + 1) (r := r) (h_le := h_m_le)
+    (Algebra.algebraMap (𝕏 k) : BTField r) = (Algebra.algebraMap (𝕏 m) : BTField r) := by
+  subst h_eq
+  rfl
 
 /-!
 The basis element at index `j` is the product of the tower generators at
 the ON bits in binary representation of `j`.
 -/
+set_option maxHeartbeats 350000
 theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀ (j : Fin (2  ^ (r - l))),
     multilinearBasis (l:=l) (r:=r) (h_le:=h_le) j =
     (Finset.univ : Finset (Fin (r - l))).prod (fun i =>
       (binaryAlgebraTower (l:=l + i + 1) (r:=r) (h_le:=by omega)).algebraMap (
         (𝕏 (l + i)) ^ (Nat.getBit i j))) := by
-  -- letI instAlgebra : Algebra (BTField l) (BTField r) := binaryAlgebraTower (h_le:=h_le)
   induction r with
   | zero => -- Fin (2^0) = Fin 1, so j = 0
     intro l h_l_le_0 j
@@ -1309,7 +1320,7 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
     have h_l_eq_r : l = 0 := by omega
     subst h_l_eq_r
     simp only [Nat.sub_zero, Nat.pow_zero, Finset.univ_eq_empty,
-      𝕏, Z, Inhabited, list, Fin.val_eq_zero, Finset.prod_empty]
+      𝕏, Z, Fin.val_eq_zero, Finset.prod_empty]
     have hj_eq_0 : j = 0 := by exact Fin.eq_of_val_eq (by omega)
     rw! [hj_eq_0]
     rw [multilinearBasis]
@@ -1378,13 +1389,11 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       letI instModule2 : Module (BTField r1) (BTField r) := instAlgebra2.toModule
       set b := (powerBasisSucc r1) with hb
       rw! [←hb]
-      simp_rw [eqRec_eq_cast]
-      rw [cast_eq]
       have h : (2 ^ (r1 - l)) = (2 ^ (r - l - 1)) := by
         rw [h_r]
         rw [Nat.sub_right_comm, Nat.add_sub_cancel r1 1]
       rw [BTField.Basis_cast_index_apply (h_eq:=h) (h_le:=by omega)]
-      simp only [leftDivNat, Fin.coe_cast]
+      simp only [leftDivNat, Fin.val_cast]
 
       set indexLeft : Fin 2 := ⟨j.val / 2 ^ (r - l - 1), by
         change j.val / 2 ^ (r - l - 1) < 2^1
@@ -1396,24 +1405,13 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
 
       have h_cast_basis_succ_of_eq_rec_apply :=
         PowerBasis.cast_basis_succ_of_eq_rec_apply (r1:=r1) (r:=r) (h_r:=h_r) (k:=indexLeft)
-      simp only at h_cast_basis_succ_of_eq_rec_apply
-      -- ⊢ .. (cast ⋯ (⋯ ▸ b).basis) indexLeft = ∏ i, algebraMap (𝕏 (l + ↑i) ^ bit ↑i ↑j)
       unfold algebra_adjacent_tower
-      -- Now make instance in (cast ⋯ (⋯ ▸ b).basis) uses (r+1) instead of r, so it's compatible
-      -- with h_cast_basis_succ_of_eq_rec_apply
       rw! (castMode:=.all) [←h_r]
-      simp only;
-      conv =>
-        lhs
+      conv_lhs =>
         arg 2
-        rw! (castMode:=.all) [h_cast_basis_succ_of_eq_rec_apply]
+        erw [h_cast_basis_succ_of_eq_rec_apply]
 
       unfold indexLeft
-      -- All casts eliminated, now we prove equality on revFinProdFinEquiv and bit stuff
-      -- ⊢ (algebraMap (BTField r1) (BTField r)) (prevMultilinearBasis✝
-      -- (Fin.cast ⋯ (leftModNat ⋯ (Fin.cast ⋯ j)))) * (algebraMap (BTField (r1 + 1)) (BTField r))
-      -- ((powerBasisSucc r1).basis (Fin.cast ⋯ ⟨↑j / 2 ^ (r - l - 1), ⋯⟩)) =
-      --   ∏ i, Algebra.algebraMap (𝕏 (l + ↑i) ^ bit ↑i ↑j)
       conv_lhs =>
         simp only [Fin.cast_mk, PowerBasis.coe_basis];
         rw [powerBasisSucc_gen, ←𝕏] -- convert to gen^i form
@@ -1423,7 +1421,7 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       conv_rhs =>
         rw [←Fin.prod_congr' (b:=r-l) (a:=prevDiff + 1) (h:=by omega)]
         rw [Fin.prod_univ_castSucc] -- split the prod of rhs
-        simp only [Fin.coe_cast, Fin.coe_castSucc, Fin.val_last]
+        simp only [Fin.val_cast, Fin.val_castSucc, Fin.val_last]
 
       simp_rw [algebraMap.coe_pow] -- rhs
       simp_rw [algebraMap.coe_prod] -- lhs
@@ -1431,7 +1429,7 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       rw! (castMode:=.all) [←algebraMap]
       conv_lhs =>
         rw [←Fin.prod_congr' (b:=r1-l) (a:=prevDiff) (h:=by omega)]
-        simp only [Fin.coe_cast]
+        simp only [Fin.val_cast]
       simp_rw [algebraMap, instAlgebraSucc, algebra_adjacent_tower]
       rw [RingHom.map_pow]
       simp_rw [←binaryTowerAlgebra_apply_assoc]
@@ -1440,18 +1438,23 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       have hfinProd_msb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)
         (i:=⟨prevDiff, by omega⟩) (j:=⟨j, by omega⟩)
       simp only [lt_self_iff_false, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_msb
-      conv_rhs =>
-        simp only [hfinProd_msb, leftDivNat];
-        rw! [h_r1_eq_l_plus_prevDiff.symm];
-        simp only [h_prevDiff]
-      --- Inner-prod term
-      congr
-      funext i
-      have hfinProd_lsb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff) (i:=⟨i, by omega⟩)
-        (j:=⟨j, by omega⟩)
-      simp only [Fin.is_lt, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_lsb
-      rw [hfinProd_lsb]
-      rfl
+      conv_rhs => simp only [hfinProd_msb, leftDivNat]
+      --- Inner-prod term: prove equality of the two factors
+      refine congr_arg₂ (· * ·) ?_ ?_
+      · congr 1
+        funext i
+        have hfinProd_lsb := bit_revFinProdFinEquiv_symm_2_pow_succ
+          (n:=prevDiff) (i:=⟨i, by omega⟩)
+          (j:=⟨j, by omega⟩)
+        simp only [Fin.is_lt, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_lsb
+        rw [hfinProd_lsb]
+        rfl
+      · have h_exp_eq : (↑j : ℕ) / 2 ^ (r - l - 1) = (↑j : ℕ) / 2 ^ prevDiff :=
+          congr_arg (fun d => (↑j : ℕ) / 2 ^ d) h_prevDiff.symm
+        refine congr_arg₂ (· ^ ·)
+            (algebraMap_𝕏_eq_of_index_eq r r1 (l + prevDiff) (by omega) (by omega)
+              h_r1_eq_l_plus_prevDiff)
+            h_exp_eq
 
 end MultilinearBasis
 end

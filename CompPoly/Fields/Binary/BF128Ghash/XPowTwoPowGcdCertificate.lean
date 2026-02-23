@@ -28,11 +28,12 @@ lemma toPoly_gcd_b_0_val_mod_ghashPoly_eq_gcd_b_0_val :
   rw [toPoly]; simp_rw [BitVec.getLsb]
   have h_gcd_b_0_val_lt : 129460184901158119860735353079755610612 < 2^128 := by omega
   have h_256_eq: 256 = 128 + 128 := by rfl
-  conv_lhs => rw! (castMode:=.all) [h_256_eq]
+  -- conv_lhs =>
+  rw! (castMode:=.all) [h_256_eq]
   rw [Fin.sum_univ_add]
   conv_rhs => rw [ghashPoly_degree]
   -- conv_lhs => rw [←Finset.sum_add_distrib]
-  simp only [Nat.reduceAdd, Fin.coe_castAdd, Fin.natAdd_eq_addNat, Fin.coe_addNat]
+  simp only [Nat.reduceAdd, Fin.natAdd_eq_addNat, Fin.coe_addNat]
   have h_lt: (BitVec.toNat gcd_b_0_val) < 2^128 := by apply h_gcd_b_0_val_lt
   -- ∑ ... + ∑ ... < 128 => the second sum is actually 0
   have h_2_pow_x_gt_0: ∀ x, 2^x > 0 := fun x => by simp only [gt_iff_lt, Nat.ofNat_pos, pow_pos]

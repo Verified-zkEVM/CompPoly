@@ -29,6 +29,8 @@ We verify them by proving isomorphism to `GF(2)[X] / (X^128 + X^7 + X^2 + X + 1)
 
 namespace BF128Ghash
 
+set_option maxRecDepth 1500
+
 open BitVec Polynomial Ideal BF128Ghash AdjoinRoot
 
 @[reducible]
@@ -193,7 +195,7 @@ lemma fold_step_mod_eq (x : B256) :
     have h_first_eq : (toPoly (extractLsb 255 128 x) * ghashTail) % ghashPoly =
                       (toPoly (extractLsb 255 128 x) * X^128) % ghashPoly := by
       symm; apply poly_reduce_step
-    congr 1; congr 1
+    grind
   · rw [to256_toNat]; omega
   · rw [to256_toNat]; dsimp only [R_val, reduceToNat, Nat.reducePow]; omega
   · norm_num
@@ -240,7 +242,6 @@ lemma reduce_clMul_correct (prod : B256) :
           · rw [h_deg_bot]; exact bot_le
           · obtain ⟨n, h_n_eq⟩ := WithBot.ne_bot_iff_exists.mp h_deg_bot
             rw [←h_n_eq] at h_deg_R_nat
-            norm_cast at h_deg_R_nat
             rw [h_n_eq.symm]
             change (n : WithBot ℕ) ≤ (7 : ℕ)
             change (n : WithBot ℕ) < (8 : ℕ) at h_deg_R_nat
@@ -310,7 +311,6 @@ lemma reduce_clMul_correct (prod : B256) :
           · rw [h_deg_bot]; exact bot_le
           · obtain ⟨n, h_n_eq⟩ := WithBot.ne_bot_iff_exists.mp h_deg_bot
             rw [←h_n_eq] at deg_R
-            norm_cast at deg_R
             rw [h_n_eq.symm]
             change (n : WithBot ℕ) ≤ (7 : ℕ)
             change (n : WithBot ℕ) < (8 : ℕ) at deg_R
@@ -533,7 +533,7 @@ lemma toQuot_mul (a b : ConcreteBF128Ghash) : toQuot (a * b) = toQuot a * toQuot
   have h_div : ghashPoly ∣ ((toPoly a * toPoly b) % ghashPoly) - (toPoly a * toPoly b) := by
     apply dvd_sub_comm.mp
     apply CanonicalEuclideanDomain.dvd_sub_mod (b := ghashPoly)
-  exact h_div
+  grind
 
 -- Ring axioms verified via toQuot isomorphism
 lemma mul_assoc (a b c : ConcreteBF128Ghash) : a * b * c = a * (b * c) := by

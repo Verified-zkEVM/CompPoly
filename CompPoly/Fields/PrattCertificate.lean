@@ -505,7 +505,7 @@ elab "pratt" : tactic => do
   let g ← getMainGoal
   let .app (f : Q(ℕ → Prop)) (n : Q(ℕ)) ← whnf (← g.getType) | failure
   guard <|← withDefault <| withNewMCtxDepth <| isDefEq f q(Nat.Prime)
-  let ⟨n', pn⟩ ← deriveNat n q(instAddMonoidWithOneNat)
+  let ⟨n', pn⟩ ← deriveNat n q(Nat.instAddMonoidWithOne)
   let some unverifiedCert := computePrattCertificate n'.natLit! | failure
   let cert ← verifyCertificate n' n'.natLit! unverifiedCert
   let u := q(Nat.Prime_of_isNat $pn $cert)
