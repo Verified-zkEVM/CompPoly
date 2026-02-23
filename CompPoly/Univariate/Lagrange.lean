@@ -98,7 +98,7 @@ lemma cBasisDivisorEq {xᵢ xⱼ : R} : (basisDivisor xᵢ xⱼ).toPoly = Lagran
 map `x : ι → F`. For `i, j ∈ s`, `basis s x i` evaluates to `0` at `x j` for `i ≠ j`. When
 `x` is injective on `s`, `basis s x i` evaluates to 1 at `x i`. -/
 def basis.{u} {ι : Type u} [DecidableEq ι] (s : Finset ι) (x : ι → R) (i : ι) :
-  CPolynomial R := ∏ j ∈ s.erase i, basisDivisor (x i) (x j)
+    CPolynomial R := ∏ j ∈ s.erase i, basisDivisor (x i) (x j)
 
 lemma cBasisEq {ι : Type u} [DecidableEq ι] (s : Finset ι) (x : ι → R) (i : ι) :
     (basis s x i).toPoly = Lagrange.basis s x i := by
@@ -112,7 +112,7 @@ lemma cBasisEq {ι : Type u} [DecidableEq ι] (s : Finset ι) (x : ι → R) (i 
 injective on `s` and a value function `y : ι → F`, `interpolate s x y` is the unique computable
 polynomial of degree `< #s` that takes value `y i` on `x i` for all `i` in `s`. -/
 def interpolate.{u} {ι : Type u} [DecidableEq ι] (s : Finset ι) (x : ι → R) :
-  (ι → R) →ₗ[R] CPolynomial R where
+    (ι → R) →ₗ[R] CPolynomial R where
     toFun := fun y ↦ ∑ i ∈ s, C (y i) * basis s x i
     map_add' := by
       intros r₁ r₂
