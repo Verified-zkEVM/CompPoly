@@ -209,6 +209,16 @@ theorem Raw.toImpl_toPoly [LawfulBEq R] (p : CPolynomial.Raw R) : p.toPoly.toImp
   rw [← toPoly_trim]
   exact toImpl_toPoly_of_canonical ⟨ p.trim, Trim.trim_twice p⟩
 
+/-- `toPoly` maps a canonical polynomial to `0` iff the polynomial is `0`. -/
+theorem toPoly_eq_zero_iff [Nontrivial R] [LawfulBEq R] (p : CPolynomial R) :
+    p.toPoly = 0 ↔ p = 0 := by
+  constructor
+  · intro hp
+    have hround : p.toPoly.toImpl = p := toImpl_toPoly_of_canonical p
+    rw [eq_comm] at hround
+    aesop
+  · aesop
+
 /-- Evaluation is preserved by `toImpl`. -/
 @[simp, grind =]
 theorem eval_toImpl_eq_eval [LawfulBEq R] (x : R) (p : R[X]) : p.toImpl.eval x = p.eval x := by
