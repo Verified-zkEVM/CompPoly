@@ -235,6 +235,16 @@ theorem support_empty_iff (p : CPolynomial R) : p.support = ∅ ↔ p = 0 := by
   · intro h i; by_contra hne; exact h i ((mem_support_iff p i).mpr hne)
   · intro h i; rw [mem_support_iff, h]; simp
 
+
+lemma coeff_C_mul [Nontrivial R] (p : CPolynomial R) (c : R) :
+  ∀ i, coeff ((C c) * p) i = c * (coeff p i) := by
+  intros i
+  rw [coeff_mul, Finset.sum_eq_single 0]
+  · simp only [coeff_C, ↓reduceIte, tsub_zero]
+  · intros b _ h
+    simp only [coeff_C, ↓reduceIte, h, NonUnitalNonAssocSemiring.zero_mul]
+  · simp
+
 /-- Lemmas on coefficients and multiplication by `X`. -/
 lemma coeff_X_mul_succ [Nontrivial R] (p : CPolynomial R) (n : ℕ) :
     coeff (X * p) (n + 1) = coeff p n := by
@@ -776,6 +786,64 @@ instance : Div (CPolynomial R) := ⟨div⟩
 instance : Mod (CPolynomial R) := ⟨mod⟩
 
 end Division
+
+section Module
+
+instance [BEq R] [LawfulBEq R] [Ring R] [Nontrivial R] : Module R (CPolynomial R) where
+  smul r p := C r * p
+  mul_smul := by
+    intros a b p
+    change C (a * b) * p = C a * (C b * p)
+    rw [eq_iff_coeff]
+    intros i
+    repeat rw [coeff_C_mul]
+    rw [_root_.mul_assoc]
+  one_smul := by
+    intros p
+    change C 1 * p = p
+    rw [eq_iff_coeff]
+    intros i
+    rw [coeff_C_mul, _root_.one_mul]
+  smul_zero := by
+    intros a
+    change C a * 0 = 0
+    rw [eq_iff_coeff]
+    intros i
+    rw [
+      coeff_C_mul,
+      coeff_zero,
+      NonUnitalNonAssocRing.mul_zero
+    ]
+  smul_add := by
+    intros a p q
+    change C a * (p + q) = C a * p + C a * q
+    rw [eq_iff_coeff]
+    intros i
+    rw [mul_add]
+  add_smul := by
+    intros a b p
+    change C (a + b) * p = (C a * p) + (C b * p)
+    rw [eq_iff_coeff]
+    intros i
+    rw [
+      coeff_C_mul,
+      coeff_add,
+      coeff_C_mul,
+      coeff_C_mul,
+      NonUnitalNonAssocRing.right_distrib
+    ]
+  zero_smul := by
+    intros x
+    change C 0 * x = 0
+    rw [eq_iff_coeff]
+    intros i
+    rw [
+      coeff_C_mul,
+      coeff_zero,
+      NonUnitalNonAssocSemiring.zero_mul
+    ]
+
+end Module
 
 end CPolynomial
 
