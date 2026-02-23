@@ -123,16 +123,14 @@ def evalEval (x y : R) (f : CBivariate R) : R :=
 /-- Leading coefficient when viewed as a polynomial in Y.
     ArkLib: `Polynomial.Bivariate.leadingCoeffY`. -/
 def leadingCoeffY (f : CBivariate R) : CPolynomial R :=
-  f.val.coeff (f.val.natDegree)
+  f.val.leadingCoeff
 
 /-- Swap the roles of X and Y.
     ArkLib/Mathlib: `Polynomial.Bivariate.swap`. -/
 def swap [DecidableEq R] (f : CBivariate R) : CBivariate R :=
   (f.supportY).sum (fun j =>
-    let coeffJ : CPolynomial R :=
-      (CPolynomial.support (f.val.coeff j)).sum (fun i =>
-        CPolynomial.monomial i ((f.val.coeff j).coeff i))
-    CPolynomial.monomial j coeffJ)
+    (CPolynomial.support (f.val.coeff j)).sum (fun i =>
+      CPolynomial.monomial i (CPolynomial.monomial j ((f.val.coeff j).coeff i))))
 
 /-- Leading coefficient when viewed as a polynomial in X.
     The coefficient of X^(degreeX f): a polynomial in Y. -/

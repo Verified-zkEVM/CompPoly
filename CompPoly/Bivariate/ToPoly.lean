@@ -430,10 +430,161 @@ theorem degreeX_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
         rw [ coeff_toPoly_Y ]
         exact Eq.symm (CPolynomial.natDegree_toPoly (f.val.coeff j))
 
+/--
+`CC` corresponds to the nested constant polynomial in `R[X][Y]`.
+-/
+theorem CC_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] (r : R) :
+    toPoly (CC (R := R) r) = Polynomial.C (Polynomial.C r) := by
+  rw [ toPoly_eq_map ]
+  unfold CBivariate.CC
+  simp [ CPolynomial.C_toPoly ]
+  change (CPolynomial.C r).toPoly = Polynomial.C r
+  exact CPolynomial.C_toPoly r
+
+/--
+`X` (inner variable) corresponds to `Polynomial.C Polynomial.X` in `R[X][Y]`.
+-/
+theorem X_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] :
+    toPoly (X (R := R)) = Polynomial.C Polynomial.X := by
+  rw [ toPoly_eq_map ]
+  simp [ CBivariate.X, CPolynomial.C_toPoly ]
+  change (CPolynomial.X : CPolynomial R).toPoly = Polynomial.X
+  exact CPolynomial.X_toPoly
+
+/--
+`Y` (outer variable) corresponds to `Polynomial.X` in `R[X][Y]`.
+-/
+theorem Y_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] [DecidableEq R] :
+    toPoly (CBivariate.Y (R := R)) = (Polynomial.X : Polynomial (Polynomial R)) := by
+  simpa [CBivariate.Y, CPolynomial.C_toPoly] using
+    (toPoly_monomial (R := R) 1 (CPolynomial.C 1))
+
+/--
+`monomialXY n m c` corresponds to `Y^m` with inner coefficient `X^n * c`.
+-/
+theorem monomialXY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+    [DecidableEq R] (n m : ℕ) (c : R) :
+    toPoly (monomialXY (R := R) n m c) = Polynomial.monomial m (Polynomial.monomial n c) := by
+  unfold CBivariate.monomialXY
+  rw [ toPoly_monomial ]
+  congr
+  simpa using CPolynomial.monomial_toPoly (R := R) n c
+
+/--
+`supportX` corresponds to the union of inner supports of outer coefficients.
+-/
+theorem supportX_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+    (f : CBivariate R) :
+    CBivariate.supportX (R := R) f =
+      (toPoly f).support.biUnion (fun j => ((toPoly f).coeff j).support) := by
+  unfold CBivariate.supportX
+  rw [ support_toPoly_outer ]
+  refine Finset.biUnion_congr rfl ?_
+  intro j hj
+  simpa [ coeff_toPoly_outer ] using (CPolynomial.support_toPoly (f.val.coeff j))
+
+/--
+`totalDegree` corresponds to the supremum over `j` of `natDegree ((toPoly f).coeff j) + j`.
+-/
+theorem totalDegree_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+    (f : CBivariate R) :
+    CBivariate.totalDegree (R := R) f =
+      (toPoly f).support.sup (fun j => ((toPoly f).coeff j).natDegree + j) := by
+  unfold CBivariate.totalDegree
+  rw [ support_toPoly_outer ]
+  refine Finset.sup_congr rfl ?_
+  intro j hj
+  rw [ coeff_toPoly_outer ]
+  simpa using congrArg (fun n => n + j) (CPolynomial.natDegree_toPoly (f.val.coeff j))
+
+/--
+`evalX a` evaluates each inner coefficient at `a`.
+-/
+theorem evalX_toPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+    [DecidableEq R] (a : R) (f : CBivariate R) (j : ℕ) :
+    ((evalX (R := R) a f).toPoly).coeff j = ((toPoly f).coeff j).eval a := by
+  sorry
+
+/--
+`evalX` is compatible with full bivariate evaluation.
+-/
+theorem evalX_toPoly_eval {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+    [DecidableEq R] (a y : R) (f : CBivariate R) :
+    (evalX (R := R) a f).eval y = (toPoly f).evalEval a y := by
+  sorry
+
+/--
+`evalY a` corresponds to outer evaluation at `Polynomial.C a`.
+-/
+theorem evalY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+    (a : R) (f : CBivariate R) :
+    (evalY (R := R) a f).toPoly = (toPoly f).eval (Polynomial.C a) := by
+  unfold CBivariate.evalY
+  have h_toPoly : (toPoly f).eval (Polynomial.C a) = (f.val.eval (CPolynomial.C a)).toPoly := by
+    unfold CBivariate.toPoly
+    simp +decide [ Polynomial.eval_finset_sum, CPolynomial.Raw.eval ]
+    unfold CPolynomial.Raw.eval₂
+    simp +decide
+    have h_foldl : ∀ (arr : Array (CPolynomial R)) (y : R),
+        (Array.foldl (fun (acc : CPolynomial R) (x : CPolynomial R × ℕ) =>
+          acc + x.1 * CPolynomial.C y ^ x.2) 0 (Array.zipIdx arr) 0 arr.size).toPoly =
+        ∑ i ∈ Finset.range arr.size, (arr[i]?.getD 0).toPoly * (Polynomial.C y) ^ i := by
+      intro arr y
+      induction' arr using Array.recOn with arr ih
+      induction' arr using List.reverseRecOn with arr ih
+      · rfl
+      · simp_all +decide [ Finset.sum_range_succ, Array.zipIdx ]
+        rw [ Finset.sum_congr rfl fun i hi => by rw [ List.getElem?_append ] ]
+        rw [ Finset.sum_congr rfl fun i hi => by rw [ if_pos (Finset.mem_range.mp hi) ] ]
+        convert congr_arg₂ ( · + · ) ‹_› rfl using 1
+        convert CPolynomial.Raw.toPoly_add _ _ using 1
+        · congr! 1
+          have h_toPoly_mul : ∀ (p q : CPolynomial R),
+              (p * q).toPoly = p.toPoly * q.toPoly := by grind
+          convert h_toPoly_mul ih (CPolynomial.C y ^ arr.length) |> Eq.symm using 1
+          congr! 1
+          induction' arr.length with n ih <;> simp_all +decide [ pow_succ ]
+          · exact Eq.symm ( CPolynomial.Raw.toPoly_one )
+          · congr! 1
+            exact Eq.symm (CPolynomial.C_toPoly y)
+        · infer_instance
+    rw [ h_foldl, Finset.sum_subset ]
+    · exact fun i hi => Finset.mem_range.mpr
+        (Nat.lt_of_lt_of_le (Finset.mem_range.mp (Finset.mem_filter.mp hi |>.1)) (by simp))
+    · simp +contextual [ CPolynomial.support ]
+      simp +decide [ CPolynomial.toPoly, CPolynomial.Raw.toPoly ]
+      unfold CPolynomial.Raw.eval₂
+      erw [ Array.foldl_empty ]
+      simp
+  exact h_toPoly.symm
+
+/--
+`leadingCoeffY` corresponds to the leading coefficient in the outer variable.
+-/
+theorem leadingCoeffY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+    (f : CBivariate R) :
+    (leadingCoeffY (R := R) f).toPoly = (toPoly f).leadingCoeff := by
+  sorry
+
+/--
+`swap` exchanges X- and Y-exponents.
+-/
+theorem swap_toPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+    [DecidableEq R] (f : CBivariate R) (i j : ℕ) :
+    ((toPoly (swap (R := R) f)).coeff j).coeff i = ((toPoly f).coeff i).coeff j := by
+  sorry
+
+/--
+`leadingCoeffX` is the Y-leading coefficient of the swapped polynomial.
+-/
+theorem leadingCoeffX_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+    [DecidableEq R] (f : CBivariate R) :
+    (leadingCoeffX (R := R) f).toPoly = (toPoly (swap (R := R) f)).leadingCoeff := by
+  simpa [ CBivariate.leadingCoeffX ] using
+    (leadingCoeffY_toPoly (R := R) (f := CBivariate.swap (R := R) f))
+
 end ImplementationCorrectness
 
 end CBivariate
-
--- TODO correctness lemmas for operations and API functions
 
 end CompPoly
