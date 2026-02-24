@@ -564,7 +564,16 @@ theorem evalY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
 theorem leadingCoeffY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
     (f : CBivariate R) :
     (leadingCoeffY (R := R) f).toPoly = (toPoly f).leadingCoeff := by
-  sorry
+  have h_leadingCoeffY : (f.val.leadingCoeff).toPoly = (toPoly f).coeff (f.val.natDegree) := by
+    rw [ CBivariate.toPoly_coeff ]
+    congr
+    convert CompPoly.CPolynomial.leadingCoeff_eq_coeff_natDegree f
+    exact instDecidableEqOfLawfulBEq
+  convert h_leadingCoeffY
+  rw [ Polynomial.leadingCoeff, Polynomial.natDegree ]
+  by_cases h : f.toPoly = 0 <;> simp_all +decide [ Polynomial.degree_eq_natDegree ]
+  rw [ CompPoly.CBivariate.natDegreeY_toPoly ]
+  rfl
 
 /--
 `swap` exchanges X- and Y-exponents.
