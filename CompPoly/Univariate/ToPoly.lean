@@ -349,8 +349,9 @@ lemma toPoly_pow [Nontrivial R] [LawfulBEq R] (p : CPolynomial R) (n : ℕ) :
       simpa using (_root_.pow_succ (p.toPoly : R[X]) n)
     rw [hp, toPoly_mul, ih, htp]
 
-lemma toPoly_prod.{u} {R : Type*} [BEq R] [Field R] [LawfulBEq R] {ι : Type u} [DecidableEq ι] {s : Finset ι} {f : ι → CPolynomial R} :
-    (∏ j ∈ s, f j).toPoly = ∏ j ∈ s, ((f j).toPoly) := by
+lemma toPoly_prod.{u} {R : Type*} [BEq R] [Field R] [LawfulBEq R] {ι : Type u} [DecidableEq ι]
+    {s : Finset ι} {f : ι → CPolynomial R} :
+      (∏ j ∈ s, f j).toPoly = ∏ j ∈ s, ((f j).toPoly) := by
   generalize n_eq : s.card = n
   revert s
   induction n with
@@ -376,8 +377,9 @@ lemma toPoly_prod.{u} {R : Type*} [BEq R] [Field R] [LawfulBEq R] {ι : Type u} 
     rw [@Finset.card_erase_eq_ite]
     simp [i_in_s, h]
 
-lemma toPoly_sum.{u} {R : Type*} [BEq R] [Field R] [LawfulBEq R]{ι : Type u} [DecidableEq ι] {s : Finset ι} {f : ι → CPolynomial R} :
-    (∑ j ∈ s, f j).toPoly = ∑ j ∈ s, ((f j).toPoly) := by
+lemma toPoly_sum.{u} {R : Type*} [BEq R] [Field R] [LawfulBEq R] {ι : Type u} [DecidableEq ι]
+    {s : Finset ι} {f : ι → CPolynomial R} :
+      (∑ j ∈ s, f j).toPoly = ∑ j ∈ s, ((f j).toPoly) := by
   generalize n_eq : s.card = n
   revert s
   induction n with
