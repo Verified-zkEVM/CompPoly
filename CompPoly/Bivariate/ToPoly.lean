@@ -356,17 +356,6 @@ theorem coeff_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
       · congr
       · by_cases h : j < ( f.val.size : ℕ ) <;> aesop
 
-/-- The outer `Y`-coefficient of `toPoly f` is `CPolynomial.toPoly (f.val.coeff j)`. -/
-theorem coeff_toPoly_outer {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
-    (f : CBivariate R) (j : ℕ) :
-    (toPoly f).coeff j = CPolynomial.toPoly (f.val.coeff j) := by
-      simp [CBivariate.toPoly]
-      rw [ Finset.sum_eq_single j ] <;> simp +decide [ Polynomial.coeff_monomial ]
-      · aesop
-      · intro hj
-        rw [ CPolynomial.support ] at hj
-        by_cases hj' : j < f.val.size <;> aesop
-
 /-- The outer support of `toPoly f` equals the Y-support of `f`. -/
 theorem support_toPoly_outer {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
     (f : CBivariate R) : (toPoly f).support = f.supportY := by
@@ -481,7 +470,7 @@ theorem supportX_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R
   rw [ support_toPoly_outer ]
   refine Finset.biUnion_congr rfl ?_
   intro j hj
-  simpa [ coeff_toPoly_outer ] using (CPolynomial.support_toPoly (f.val.coeff j))
+  simpa [ toPoly_coeff ] using (CPolynomial.support_toPoly (f.val.coeff j))
 
 /--
 `totalDegree` corresponds to the supremum over `j` of `natDegree ((toPoly f).coeff j) + j`.
@@ -494,7 +483,7 @@ theorem totalDegree_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Rin
   rw [ support_toPoly_outer ]
   refine Finset.sup_congr rfl ?_
   intro j hj
-  rw [ coeff_toPoly_outer ]
+  rw [ toPoly_coeff ]
   simpa using congrArg (fun n => n + j) (CPolynomial.natDegree_toPoly (f.val.coeff j))
 
 /--
