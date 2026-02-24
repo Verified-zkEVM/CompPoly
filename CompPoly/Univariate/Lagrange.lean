@@ -21,69 +21,6 @@ namespace CLagrange
 
 variable {R : Type*} [BEq R] [Field R] [LawfulBEq R]
 
-lemma toPoly_sub {p q : CPolynomial R} : (p - q).toPoly = p.toPoly - q.toPoly := by
-  rw [← Polynomial.coeff_inj]
-  funext i
-  rw [Polynomial.coeff_sub, ← coeff_toPoly]
-  have hp : p.toPoly.coeff i = p.coeff i := by rw [coeff_toPoly]
-  have hq : q.toPoly.coeff i = q.coeff i := by rw [coeff_toPoly]
-  rw [hp, hq, @coeff_sub]
-
-lemma toPoly_prod.{u} {ι : Type u} [DecidableEq ι] {s : Finset ι} {f : ι → CPolynomial R} :
-    (∏ j ∈ s, f j).toPoly = ∏ j ∈ s, ((f j).toPoly) := by
-  generalize n_eq : s.card = n
-  revert s
-  induction n with
-  | zero =>
-    simp only [Finset.card_eq_zero, forall_eq, Finset.prod_empty]
-    exact Raw.toPoly_one
-  | succ n ih =>
-    intros s h
-    have s_has_elm : ∃ i, i ∈ s := by
-      rw [←Finset.nonempty_def, ←Finset.card_pos]
-      simp [h]
-    rcases s_has_elm with ⟨i, i_in_s⟩
-    have : s = {i} ∪ (s.erase i) := by
-      refine Eq.symm (Finset.ext ?_)
-      intros a
-      simp only [Finset.singleton_union, Finset.mem_insert, Finset.mem_erase, ne_eq]
-      have := eq_or_ne a i
-      aesop
-    have s_disjoint : Disjoint {i} (s.erase i) := by simp
-    rw [this, Finset.prod_union s_disjoint, Finset.prod_union s_disjoint]
-    simp only [Finset.prod_singleton, toPoly_mul]
-    rw [@ih (s.erase i)]
-    rw [@Finset.card_erase_eq_ite]
-    simp [i_in_s, h]
-
-lemma toPoly_sum.{u} {ι : Type u} [DecidableEq ι] {s : Finset ι} {f : ι → CPolynomial R} :
-    (∑ j ∈ s, f j).toPoly = ∑ j ∈ s, ((f j).toPoly) := by
-  generalize n_eq : s.card = n
-  revert s
-  induction n with
-  | zero =>
-    simp only [Finset.card_eq_zero, forall_eq, Finset.sum_empty]
-    exact Raw.toPoly_zero
-  | succ n ih =>
-    intros s h
-    have s_has_elm : ∃ i, i ∈ s := by
-      rw [←Finset.nonempty_def, ←Finset.card_pos]
-      simp [h]
-    rcases s_has_elm with ⟨i, i_in_s⟩
-    have : s = {i} ∪ (s.erase i) := by
-      refine Eq.symm (Finset.ext ?_)
-      intros a
-      simp only [Finset.singleton_union, Finset.mem_insert, Finset.mem_erase, ne_eq]
-      have := eq_or_ne a i
-      aesop
-    have s_disjoint : Disjoint {i} (s.erase i) := by simp
-    rw [this, Finset.sum_union s_disjoint, Finset.sum_union s_disjoint]
-    simp only [Finset.sum_singleton]
-    have CPoly_add {p q : CPolynomial R} : (p + q).toPoly = p.toPoly + q.toPoly := by
-      apply Raw.toPoly_add
-    rw [CPoly_add, @ih (s.erase i)]
-    simp [Finset.card_erase_of_mem i_in_s, h]
-
 /-- `basisDivisor xᵢ xⱼ` is the unique linear or constant computable polynomial such that
 when evaluated at `xᵢ` it gives `1` and `xⱼ` it gives `0` (where when `xᵢ = xⱼ` it is
 identically `0`). Such polynomials are the building blocks for the Lagrange interpolants. -/
