@@ -547,7 +547,7 @@ theorem degree_eq_natDegree (p : CPolynomial R) (hp : p ≠ 0) :
   rw [hk]
 
 /-- The natural degree is the maximum element of the support. -/
-theorem natDegree_eq_support_sup [Nontrivial R] (p : CPolynomial R) :
+theorem natDegree_eq_support_sup (p : CPolynomial R) :
     p.natDegree = p.support.sup (fun n => n) := by
   have := p.2
   unfold CPolynomial.Raw.trim at this

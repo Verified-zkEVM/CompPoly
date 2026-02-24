@@ -210,7 +210,7 @@ theorem Raw.toImpl_toPoly [LawfulBEq R] (p : CPolynomial.Raw R) : p.toPoly.toImp
   exact toImpl_toPoly_of_canonical ⟨ p.trim, Trim.trim_twice p⟩
 
 /-- `toPoly` maps a canonical polynomial to `0` iff the polynomial is `0`. -/
-theorem toPoly_eq_zero_iff [Nontrivial R] [LawfulBEq R] (p : CPolynomial R) :
+theorem toPoly_eq_zero_iff [LawfulBEq R] (p : CPolynomial R) :
     p.toPoly = 0 ↔ p = 0 := by
   constructor
   · intro hp
