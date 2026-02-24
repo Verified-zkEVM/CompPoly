@@ -315,6 +315,16 @@ lemma Raw.toPoly_one [LawfulBEq R] :
 lemma toPoly_one [LawfulBEq R] [Nontrivial R] :
     (1 : CPolynomial R).toPoly = 1 := by apply Raw.toPoly_one
 
+omit [BEq R] in
+/-- `toPoly` preserves the additive identity -/
+@[simp, grind =]
+lemma Raw.toPoly_zero : (0 : CPolynomial.Raw R).toPoly = 0 := by
+  simp [Raw.toPoly, Raw.eval₂]
+
+/-- `toPoly` preserves the additive identity -/
+lemma toPoly_zero : (0 : CPolynomial R).toPoly = 0 := by
+  apply Raw.toPoly_zero
+
 /-- The ring equivalence sends the canonical variable `X` to `Polynomial.X`. -/
 @[simp, grind =]
 lemma Raw.toPoly_X [LawfulBEq R] :
@@ -338,11 +348,6 @@ lemma toPoly_pow [Nontrivial R] [LawfulBEq R] (p : CPolynomial R) (n : ℕ) :
     have htp : p.toPoly ^ (n + 1) = p.toPoly ^ n * p.toPoly := by
       simpa using (_root_.pow_succ (p.toPoly : R[X]) n)
     rw [hp, toPoly_mul, ih, htp]
-
-/-- `toPoly` preserves the additive identity -/
-@[simp, grind =]
-lemma Raw.toPoly_zero [CommSemiring R] [LawfulBEq R] :
-    (0 : CPolynomial.Raw R).toPoly = 0 := by simp [Raw.toPoly, Raw.eval₂]
 
 /-- Ring equivalence between canonical computable polynomials and mathlib's `Polynomial R`.
 
