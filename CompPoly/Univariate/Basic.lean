@@ -904,10 +904,10 @@ theorem degree_le_iff_coeff_zero (p : CPolynomial R) (n : WithBot ℕ) :
               (↑‹Fin (Array.size (↑p : CPolynomial.Raw R))› : ℕ)
                   → p.val.coeff j = 0 := by
             intro j hj
-            have htrim := p.prop
-            have := congr_arg (fun q => q.coeff j) htrim
-            simp_all +decide [ CPolynomial.Raw.trim ]
-            rw [ ← this, Array.getElem?_eq_none ] <;> aesop
+            by_cases hjlt : j < p.val.size
+            · rw [Trim.coeff_eq_getElem hjlt]
+              exact (Trim.lastNonzero_spec h).2 j hjlt hj
+            · simp [show p.val.size ≤ j from by omega]
           exact le_of_not_gt fun hk' => hn <| by
             simpa [Raw.coeff, Array.getD_eq_getD_getElem?] using h_coeff_zero k hk'
       · cases' eq_or_ne p ( 0 : CPolynomial R )
@@ -985,7 +985,6 @@ theorem degreeLT_mono {m n : ℕ} (h_lessThan : m ≤ n) : degreeLT R m ≤ degr
   of polynomials with degree at most `n`. -/
 theorem degreeLT_succ_eq_degreeLE {n : ℕ} : degreeLT R (n + 1) = degreeLE R ↑n := by
   simp +decide [ degreeLT, degreeLE ]
-  rfl
 
 section bases
 
