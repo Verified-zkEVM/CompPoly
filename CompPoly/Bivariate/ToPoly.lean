@@ -396,9 +396,9 @@ theorem coeff_toPoly_Y {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
       · exact (CPolynomial.toPoly_eq_zero_iff 0).mpr rfl
 
 /-- `toPoly` preserves X-degree (max over Y-coefficients of their degree in X). -/
-theorem degreeX_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+theorem natDegreeX_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
     (f : CBivariate R) :
-    (toPoly f).support.sup (fun j => ((toPoly f).coeff j).natDegree) = f.degreeX := by
+    (toPoly f).support.sup (fun j => ((toPoly f).coeff j).natDegree) = f.natDegreeX := by
       convert (Finset.sup_congr ?_ ?_)
       · ext
         simp +decide [ coeff_toPoly_Y ]
