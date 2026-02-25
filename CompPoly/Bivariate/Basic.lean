@@ -32,7 +32,11 @@ def CBivariate (R : Type*) [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R] :=
 
 namespace CBivariate
 
-variable {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
+variable {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R]
+
+section Semiring
+
+variable [Semiring R]
 
 /-- Extensionality: two bivariate polynomials are equal if their underlying values are. -/
 @[ext] theorem ext {p q : CBivariate R} (h : p.val = q.val) : p = q :=
@@ -51,6 +55,40 @@ instance : AddCommMonoid (CBivariate R) :=
 /-- Ring structure on CBivariate R (for ring equiv with Mathlib in ToPoly). -/
 instance : Semiring (CBivariate R) :=
   inferInstanceAs (Semiring (CPolynomial (CPolynomial R)))
+
+end Semiring
+
+section CommSemiring
+
+variable [CommSemiring R]
+
+instance : CommSemiring (CBivariate R) := by
+  letI : CommSemiring (CPolynomial R) := inferInstance
+  simpa [CBivariate] using (inferInstance : CommSemiring (CPolynomial (CPolynomial R)))
+
+end CommSemiring
+
+section Ring
+
+variable [Ring R]
+
+instance : Ring (CBivariate R) := by
+  letI : Ring (CPolynomial R) := inferInstance
+  simpa [CBivariate] using (inferInstance : Ring (CPolynomial (CPolynomial R)))
+
+end Ring
+
+section CommRing
+
+variable [CommRing R]
+
+instance : CommRing (CBivariate R) := by
+  letI : CommRing (CPolynomial R) := inferInstance
+  simpa [CBivariate] using (inferInstance : CommRing (CPolynomial (CPolynomial R)))
+
+end CommRing
+
+-- TODO any remaining typeclasses?
 
 -- ---------------------------------------------------------------------------
 -- Operation stubs (for ArkLib compatibility; proofs deferred)
@@ -121,7 +159,9 @@ def evalEval (x y : R) (f : CBivariate R) : R :=
   CPolynomial.eval x (f.val.eval (CPolynomial.C y))
 
 /-- Swap the roles of X and Y.
-    ArkLib/Mathlib: `Polynomial.Bivariate.swap`. -/
+    ArkLib/Mathlib: `Polynomial.Bivariate.swap`.
+    TODO a more efficient implementation
+    -/
 def swap [DecidableEq R] (f : CBivariate R) : CBivariate R :=
   (f.supportY).sum (fun j =>
     (CPolynomial.support (f.val.coeff j)).sum (fun i =>
