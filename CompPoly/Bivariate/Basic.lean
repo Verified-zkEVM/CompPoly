@@ -128,7 +128,7 @@ def supportY (f : CBivariate R) : Finset ℕ := CPolynomial.support f
 /-- The X-support: indices i such that the coefficient of X^i is nonzero
     (i.e. some monomial X^i Y^j has nonzero coefficient). -/
 def supportX (f : CBivariate R) : Finset ℕ :=
-  (CPolynomial.support f).biUnion (fun j => CPolynomial.support (f.val.coeff j))
+  (CPolynomial.support f).biUnion (fun j ↦ CPolynomial.support (f.val.coeff j))
 
 /-- The `Y`-degree (degree when viewed as a polynomial in `Y`).
     ArkLib: `Polynomial.Bivariate.natDegreeY`. -/
@@ -138,17 +138,17 @@ def natDegreeY (f : CBivariate R) : ℕ :=
 /-- The `X`-degree: maximum over all Y-coefficients of their degree in X.
     ArkLib: `Polynomial.Bivariate.natDegreeX`. -/
 def natDegreeX (f : CBivariate R) : ℕ :=
-  (CPolynomial.support f).sup (fun n => (f.val.coeff n).natDegree)
+  (CPolynomial.support f).sup (fun n ↦ (f.val.coeff n).natDegree)
 
 /-- Total degree: max over monomials of (deg_X + deg_Y).
     ArkLib: `Polynomial.Bivariate.totalDegree`. -/
 def totalDegree (f : CBivariate R) : ℕ :=
-  (CPolynomial.support f).sup (fun m => (f.val.coeff m).natDegree + m)
+  (CPolynomial.support f).sup (fun m ↦ (f.val.coeff m).natDegree + m)
 
 /-- Evaluate in the first variable (X) at `a`, yielding a univariate polynomial in Y.
     ArkLib: `Polynomial.Bivariate.evalX`. -/
 def evalX [DecidableEq R] (a : R) (f : CBivariate R) : CPolynomial R :=
-  (CPolynomial.support f).sum (fun j => CPolynomial.monomial j (CPolynomial.eval a (f.val.coeff j)))
+  (CPolynomial.support f).sum (fun j ↦ CPolynomial.monomial j (CPolynomial.eval a (f.val.coeff j)))
 
 /-- Evaluate in the second variable (Y) at `a`, yielding a univariate polynomial in X.
     ArkLib: `Polynomial.Bivariate.evalY`. -/
@@ -165,8 +165,8 @@ def evalEval (x y : R) (f : CBivariate R) : R :=
     TODO a more efficient implementation
     -/
 def swap [DecidableEq R] (f : CBivariate R) : CBivariate R :=
-  (f.supportY).sum (fun j =>
-    (CPolynomial.support (f.val.coeff j)).sum (fun i =>
+  (f.supportY).sum (fun j ↦
+    (CPolynomial.support (f.val.coeff j)).sum (fun i ↦
       CPolynomial.monomial i (CPolynomial.monomial j ((f.val.coeff j).coeff i))))
 
 /-- Leading coefficient when viewed as a polynomial in Y.
