@@ -27,7 +27,8 @@ identically `0`). Such polynomials are the building blocks for the Lagrange inte
 def basisDivisor (xᵢ xⱼ : R) : CPolynomial R :=
   C (xᵢ - xⱼ)⁻¹ * (X - C xⱼ)
 
-lemma cbasisDivisor_eq_basisDivisor {xᵢ xⱼ : R} : (basisDivisor xᵢ xⱼ).toPoly = Lagrange.basisDivisor xᵢ xⱼ := by
+lemma cbasisDivisor_eq_basisDivisor {xᵢ xⱼ : R} :
+    (basisDivisor xᵢ xⱼ).toPoly = Lagrange.basisDivisor xᵢ xⱼ := by
   unfold basisDivisor Lagrange.basisDivisor
   simp only [toPoly_mul, C_toPoly, toPoly_sub, X_toPoly]
 
@@ -74,8 +75,9 @@ def interpolate {ι : Type*} [DecidableEq ι] (s : Finset ι) (x : ι → R) :
       rw [h₁, ←Finset.mul_sum]
       rfl
 
-lemma cinterpolate_eq_interpolate {ι : Type*} [DecidableEq ι] {s : Finset ι} {x : ι → R} {y : ι → R} :
-    (interpolate s x y).toPoly = Lagrange.interpolate s x y := by
+lemma cinterpolate_eq_interpolate
+    {ι : Type*} [DecidableEq ι] {s : Finset ι} {x : ι → R} {y : ι → R} :
+      (interpolate s x y).toPoly = Lagrange.interpolate s x y := by
   unfold interpolate
   simp only [LinearMap.coe_mk, AddHom.coe_mk, Lagrange.interpolate_apply]
   rw [toPoly_sum]
