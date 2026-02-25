@@ -96,6 +96,8 @@ end CommRing
 -- ArkLib's Polynomial.Bivariate uses: coeff, natDegreeY, degreeX, totalDegree,
 -- evalX, evalY, leadingCoeffY, swap. These will be implemented and proven
 -- equivalent to Mathlib/ArkLib via ToPoly.lean.
+-- TODO: Add bridge lemmas/equivalences between `CBivariate R` and
+--   `CMvPolynomial 2 R` for interoperability with the multivariate API.
 -- ---------------------------------------------------------------------------
 
 section Operations

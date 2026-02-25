@@ -29,6 +29,7 @@ variable {R : Type*} [BEq R]
   is non-zero (or the polynomial is empty). This provides a unique representative for each
   polynomial equivalence class.
 
+  TODO optimizations may be had by trimming only at the end of iterative operations
 -/
 def CPolynomial (R : Type*) [BEq R] [Semiring R] := { p : CPolynomial.Raw R // p.trim = p }
 
