@@ -29,6 +29,7 @@ variable {R : Type*} [BEq R]
   is non-zero (or the polynomial is empty). This provides a unique representative for each
   polynomial equivalence class.
 
+  TODO optimizations may be had by trimming only at the end of iterative operations
 -/
 def CPolynomial (R : Type*) [BEq R] [Semiring R] := { p : CPolynomial.Raw R // p.trim = p }
 
@@ -43,6 +44,25 @@ instance [Semiring R] : Coe (CPolynomial R) (CPolynomial.Raw R) where coe := Sub
 
 /-- The zero polynomial is canonical. -/
 instance [Semiring R] : Inhabited (CPolynomial R) := ⟨#[], Trim.canonical_empty⟩
+
+/-- `CPolynomial R` has `BEq` when `R` does, comparing the underlying coefficient arrays. -/
+instance (R : Type*) [BEq R] [Semiring R] : BEq (CPolynomial R) where
+  beq p q := p.val == q.val
+
+/-- `CPolynomial R` has `LawfulBEq` when `R` does: `p == q` iff `p = q`. -/
+instance (R : Type*) [BEq R] [LawfulBEq R] [Semiring R] : LawfulBEq (CPolynomial R) where
+  rfl := by
+    have h_raw : ∀ (a : CPolynomial.Raw R), a == a ↔ a = a := by
+      aesop
+    convert h_raw _
+    swap
+    exact #[]
+    simp +decide [ BEq.beq ]
+  eq_of_beq h := Subtype.ext (LawfulBEq.eq_of_beq h)
+
+/-- `CPolynomial R` has `DecidableEq` when `R` does, via the underlying `Array R` representation. -/
+instance (R : Type*) [BEq R] [DecidableEq R] [Semiring R] : DecidableEq (CPolynomial R) :=
+  @Subtype.instDecidableEq (CPolynomial.Raw R) (fun p => p.trim = p) inferInstance
 
 section Operations
 
@@ -103,6 +123,13 @@ lemma one_is_trimmed [Nontrivial R] : (1 : CPolynomial.Raw R).trim = 1 :=
 -/
 instance [Nontrivial R] : One (CPolynomial R) where
   one := ⟨Raw.C 1, by exact one_is_trimmed⟩
+
+instance [Nontrivial R] : Nontrivial (CPolynomial R) where
+  exists_pair_ne := ⟨0, 1, by
+    intro h
+    have := congr_arg (fun p : CPolynomial R => p.val.size) h
+    simp at this
+    exact Nat.zero_ne_one this⟩
 
 /-- The coefficient of `X^i` in the polynomial. Returns `0` if `i` is out of bounds. -/
 @[reducible]
@@ -210,6 +237,14 @@ theorem eq_iff_coeff {p q : CPolynomial R} :
   · intro h i; rw [h]
   · intro h; apply ext; exact Trim.canonical_ext p.prop q.prop (fun i => h i)
 
+/-- Monomials are additive in their coefficient. -/
+theorem monomial_add [DecidableEq R] (n : ℕ) (a b : R) :
+    monomial n (a + b) = monomial n a + monomial n b := by
+  apply (eq_iff_coeff).2
+  intro i
+  rw [coeff_monomial, coeff_add, coeff_monomial, coeff_monomial]
+  split_ifs <;> simp_all
+
 /-- Zero characterization: `p = 0` iff all coefficients are zero. -/
 theorem eq_zero_iff_coeff_zero {p : CPolynomial R} : p = 0 ↔ ∀ i, coeff p i = 0 := by
   rw [eq_iff_coeff]; simp only [coeff_zero]
@@ -235,6 +270,46 @@ theorem support_empty_iff (p : CPolynomial R) : p.support = ∅ ↔ p = 0 := by
   · intro h i; by_contra hne; exact h i ((mem_support_iff p i).mpr hne)
   · intro h i; rw [mem_support_iff, h]; simp
 
+/-- Evaluation equals the sum over support of coefficients times powers. -/
+theorem eval_eq_sum_support (p : CPolynomial R) (x : R) :
+    p.eval x = p.support.sum (fun i => p.coeff i * x ^ i) := by
+  have h_eval_def : p.val.eval x =
+      (p.val.zipIdx.toList.map (fun ⟨a, i⟩ => a * x ^ i)).sum := by
+    unfold CPolynomial.Raw.eval
+    unfold CPolynomial.Raw.eval₂
+    simp +decide
+    induction p.val
+    simp +decide [ * ]
+    induction' ‹List R› using List.reverseRecOn with a l ih <;>
+      simp +decide [ *, List.zipIdx_append ]
+  have h_sum_range : (p.val.zipIdx.toList.map (fun ⟨a, i⟩ => a * x ^ i)).sum =
+      (Finset.range p.val.size).sum (fun i => p.val.coeff i * x ^ i) := by
+    convert CPolynomial.Raw.sum_zipIdx_eq_sum_range p.val (fun a i => a * x ^ i)
+      using 1
+  convert h_eval_def.trans h_sum_range using 1
+  refine' Finset.sum_subset _ _ <;> intro i hi <;>
+    simp_all +decide [ CPolynomial.Raw.coeff ]
+  · exact Finset.mem_range.mp (Finset.mem_filter.mp hi |>.1)
+  · unfold CPolynomial.support
+    aesop
+
+/--
+Evaluation via a ring hom equals the sum over support of mapped coefficients times powers.
+-/
+theorem eval₂_eq_sum_support {S : Type*} [Semiring S]
+    (f : R →+* S) (p : CPolynomial R) (x : S) :
+    p.eval₂ f x = p.support.sum (fun i => f (p.coeff i) * x ^ i) := by
+  unfold CPolynomial.support
+  convert CPolynomial.Raw.sum_zipIdx_eq_sum_range p.val _ using 1
+  rotate_right
+  use fun a i => if a != 0 then f a * x ^ i else 0
+  all_goals try infer_instance
+  · unfold CPolynomial.eval₂
+    unfold CPolynomial.Raw.eval₂
+    induction' (Array.zipIdx p.val) with a ha ih
+    simp +decide [ * ]
+    induction a using List.reverseRecOn <;> aesop
+  · rw [ Finset.sum_filter ]
 
 lemma coeff_C_mul [Nontrivial R] (p : CPolynomial R) (c : R) :
     ∀ i, coeff ((C c) * p) i = c * (coeff p i) := by
@@ -480,6 +555,38 @@ theorem degree_eq_natDegree (p : CPolynomial R) (hp : p ≠ 0) :
   rw [degree_eq_support_max_aux_degree (p := p) hk]
   unfold natDegree Raw.natDegree
   rw [hk]
+
+/-- The natural degree is the maximum element of the support. -/
+theorem natDegree_eq_support_sup (p : CPolynomial R) :
+    p.natDegree = p.support.sup (fun n => n) := by
+  have := p.2
+  unfold CPolynomial.Raw.trim at this
+  cases h' : (p : CPolynomial.Raw R).lastNonzero <;>
+    simp_all +decide [ Array.ext_iff ]
+  · have h_zero : p.val = #[] := by
+      exact Array.eq_empty_of_size_eq_zero this.symm
+    cases p
+    simp_all +decide [ CPolynomial.natDegree ]
+    unfold CPolynomial.Raw.natDegree CPolynomial.support
+    simp +decide
+    grind
+  · rename_i k
+    have h_deg : ∀ n, n ∈ p.support → n ≤ k := by
+      intro n hn
+      have h_coeff : p.val.coeff n ≠ 0 := by
+        exact (CPolynomial.mem_support_iff p n).mp hn
+      have h_last : ∀ j, (hj : j < p.val.size) → j > k → p.val[j] = 0 := by
+        exact fun j hj₁ hj₂ => by linarith
+      have h_le : n ≤ k := by
+        grind
+      exact h_le
+    have h_deg : k.val ∈ p.support := by
+      exact CPolynomial.degree_eq_support_max_aux_mem_support p h'
+    rw [ show p.natDegree = k from ?_ ]
+    · exact le_antisymm (Finset.le_sup (f := fun n => n) h_deg) (Finset.sup_le ‹_›)
+    · rw [ CPolynomial.natDegree ]
+      unfold CPolynomial.Raw.natDegree
+      aesop
 
 end Operations
 
