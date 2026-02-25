@@ -94,9 +94,14 @@ def interpolatePow {n : ℕ} (ω : R) (r : Vector R n) :
 /-
 If ω^a = ω^b for a, b < n ≤ orderOf ω, then a = b.
 -/
-theorem eq_of_pow_eq_pow_of_lt_orderOf {G : Type*} [Group G] {ω : G} {n : ℕ} (h_order : n ≤ orderOf ω) (a b : Fin n) (h_pow : ω ^ (a : ℕ) = ω ^ (b : ℕ)) : a = b := by
+theorem eq_of_pow_eq_pow_of_lt_orderOf {G : Type*} [Group G] {ω : G} {n : ℕ}
+    (h_order : n ≤ orderOf ω) (a b : Fin n) (h_pow : ω ^ (a : ℕ) = ω ^ (b : ℕ)) : a = b := by
   rw [ pow_eq_pow_iff_modEq ] at h_pow;
-  exact Fin.ext ( Nat.mod_eq_of_lt ( show ( a : ℕ ) < orderOf ω from lt_of_lt_of_le a.2 h_order ) ▸ Nat.mod_eq_of_lt ( show ( b : ℕ ) < orderOf ω from lt_of_lt_of_le b.2 h_order ) ▸ h_pow )
+  exact Fin.ext
+    (
+      (Nat.mod_eq_of_lt ( show ( a : ℕ ) < orderOf ω from lt_of_lt_of_le a.2 h_order )) ▸
+        Nat.mod_eq_of_lt ( show ( b : ℕ ) < orderOf ω from lt_of_lt_of_le b.2 h_order ) ▸ h_pow
+    )
 
 /--
   Key correctness theorem for `interpolatePow`.
