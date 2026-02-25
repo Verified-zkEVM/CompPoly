@@ -789,59 +789,76 @@ end Division
 
 section Module
 
-instance [BEq R] [LawfulBEq R] [Ring R] [Nontrivial R] : Module R (CPolynomial R) where
-  smul r p := C r * p
-  mul_smul := by
-    intros a b p
-    change C (a * b) * p = C a * (C b * p)
-    rw [eq_iff_coeff]
-    intros i
-    repeat rw [coeff_C_mul]
-    rw [_root_.mul_assoc]
-  one_smul := by
-    intros p
-    change C 1 * p = p
-    rw [eq_iff_coeff]
-    intros i
-    rw [coeff_C_mul, _root_.one_mul]
-  smul_zero := by
-    intros a
-    change C a * 0 = 0
-    rw [eq_iff_coeff]
-    intros i
-    rw [
-      coeff_C_mul,
-      coeff_zero,
-      NonUnitalNonAssocRing.mul_zero
-    ]
-  smul_add := by
-    intros a p q
-    change C a * (p + q) = C a * p + C a * q
-    rw [eq_iff_coeff]
-    intros i
-    rw [mul_add]
-  add_smul := by
-    intros a b p
-    change C (a + b) * p = (C a * p) + (C b * p)
-    rw [eq_iff_coeff]
-    intros i
-    rw [
-      coeff_C_mul,
-      coeff_add,
-      coeff_C_mul,
-      coeff_C_mul,
-      NonUnitalNonAssocRing.right_distrib
-    ]
-  zero_smul := by
-    intros x
-    change C 0 * x = 0
-    rw [eq_iff_coeff]
-    intros i
-    rw [
-      coeff_C_mul,
-      coeff_zero,
-      NonUnitalNonAssocSemiring.zero_mul
-    ]
+variable [LawfulBEq R] [Ring R] [Nontrivial R]
+
+def smul (r : R) (p : CPolynomial R) : CPolynomial R := C r * p
+
+lemma mul_smul : ∀ (x y : R) (b : CPolynomial R), smul (x * y) b = smul x (smul y b) := by
+  intros a b p
+  unfold smul
+  rw [eq_iff_coeff]
+  intros i
+  repeat rw [coeff_C_mul]
+  rw [_root_.mul_assoc]
+
+lemma one_smul : ∀ (b : CPolynomial R), smul 1 b = b := by
+  intros p
+  unfold smul
+  rw [eq_iff_coeff]
+  intros i
+  rw [coeff_C_mul, _root_.one_mul]
+
+lemma smul_zero : ∀ (a : R), smul a 0 = 0 := by
+  intros a
+  change C a * 0 = 0
+  rw [eq_iff_coeff]
+  intros i
+  rw [
+    coeff_C_mul,
+    coeff_zero,
+    NonUnitalNonAssocRing.mul_zero
+  ]
+
+omit [Nontrivial R] in
+lemma smul_add : ∀ (a : R) (x y : CPolynomial R), smul a (x + y) = smul a x + smul a y := by
+  intros a p q
+  unfold smul
+  rw [eq_iff_coeff]
+  intros i
+  rw [mul_add]
+
+lemma add_smul : ∀ (r s : R) (x : CPolynomial R), smul (r + s) x = smul r x + smul s x := by
+  intros a b p
+  unfold smul
+  rw [eq_iff_coeff]
+  intros i
+  rw [
+    coeff_C_mul,
+    coeff_add,
+    coeff_C_mul,
+    coeff_C_mul,
+    NonUnitalNonAssocRing.right_distrib
+  ]
+
+lemma zero_smul : ∀ (x : CPolynomial R), smul 0 x = 0 := by
+  intros x
+  unfold smul
+  rw [eq_iff_coeff]
+  intros i
+  rw [
+    coeff_C_mul,
+    coeff_zero,
+    NonUnitalNonAssocSemiring.zero_mul
+  ]
+
+instance : Module R (CPolynomial R) where
+  smul := smul
+  mul_smul := mul_smul
+  one_smul := one_smul
+  smul_zero := smul_zero
+  smul_add := smul_add
+  add_smul := add_smul
+  zero_smul := zero_smul
 
 end Module
 

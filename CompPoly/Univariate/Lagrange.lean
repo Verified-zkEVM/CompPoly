@@ -34,10 +34,10 @@ lemma cBasisDivisorEq {xᵢ xⱼ : R} : (basisDivisor xᵢ xⱼ).toPoly = Lagran
 /-- Computable Lagrange basis polynomials indexed by `s : Finset ι`, defined at nodes `x i` for a
 map `x : ι → F`. For `i, j ∈ s`, `basis s x i` evaluates to `0` at `x j` for `i ≠ j`. When
 `x` is injective on `s`, `basis s x i` evaluates to 1 at `x i`. -/
-def basis.{u} {ι : Type u} [DecidableEq ι] (s : Finset ι) (x : ι → R) (i : ι) :
+def basis {ι : Type*} [DecidableEq ι] (s : Finset ι) (x : ι → R) (i : ι) :
     CPolynomial R := ∏ j ∈ s.erase i, basisDivisor (x i) (x j)
 
-lemma cBasisEq {ι : Type u} [DecidableEq ι] (s : Finset ι) (x : ι → R) (i : ι) :
+lemma cBasisEq {ι : Type*} [DecidableEq ι] (s : Finset ι) (x : ι → R) (i : ι) :
     (basis s x i).toPoly = Lagrange.basis s x i := by
   unfold basis Lagrange.basis
   rw [toPoly_prod]
@@ -48,7 +48,7 @@ lemma cBasisEq {ι : Type u} [DecidableEq ι] (s : Finset ι) (x : ι → R) (i 
 /-- Computable Lagrange interpolation: given a finset `s : Finset ι`, a nodal map `x : ι → F`
 injective on `s` and a value function `y : ι → F`, `interpolate s x y` is the unique computable
 polynomial of degree `< #s` that takes value `y i` on `x i` for all `i` in `s`. -/
-def interpolate.{u} {ι : Type u} [DecidableEq ι] (s : Finset ι) (x : ι → R) :
+def interpolate {ι : Type*} [DecidableEq ι] (s : Finset ι) (x : ι → R) :
     (ι → R) →ₗ[R] CPolynomial R where
     toFun := fun y ↦ ∑ i ∈ s, C (y i) * basis s x i
     map_add' := by
@@ -74,7 +74,7 @@ def interpolate.{u} {ι : Type u} [DecidableEq ι] (s : Finset ι) (x : ι → R
       rw [h₁, ←Finset.mul_sum]
       rfl
 
-lemma lagrangeEq {ι : Type u} [DecidableEq ι] {s : Finset ι} {x : ι → R} {y : ι → R} :
+lemma lagrangeEq {ι : Type*} [DecidableEq ι] {s : Finset ι} {x : ι → R} {y : ι → R} :
     (interpolate s x y).toPoly = Lagrange.interpolate s x y := by
   unfold interpolate
   simp only [LinearMap.coe_mk, AddHom.coe_mk, Lagrange.interpolate_apply]
@@ -89,7 +89,42 @@ lemma lagrangeEq {ι : Type u} [DecidableEq ι] {s : Finset ι} {x : ι → R} {
     Uses Lagrange interpolation: p(X) = Σᵢ rᵢ · Lᵢ(X)
     where Lᵢ(X) = ∏_{j≠i} (X - ωʲ) / (ωⁱ - ωʲ). -/
 def interpolatePow {n : ℕ} (ω : R) (r : Vector R n) :
-    CPolynomial R := interpolate (Finset.univ : Finset (Fin n)) (fun i ↦ ω ^ i.val) r.get
+    CPolynomial R := interpolate Finset.univ (fun i ↦ ω ^ i.val) r.get
+
+/-
+If ω^a = ω^b for a, b < n ≤ orderOf ω, then a = b.
+-/
+theorem eq_of_pow_eq_pow_of_lt_orderOf {G : Type*} [Group G] {ω : G} {n : ℕ} (h_order : n ≤ orderOf ω) (a b : Fin n) (h_pow : ω ^ (a : ℕ) = ω ^ (b : ℕ)) : a = b := by
+  rw [ pow_eq_pow_iff_modEq ] at h_pow;
+  exact Fin.ext ( Nat.mod_eq_of_lt ( show ( a : ℕ ) < orderOf ω from lt_of_lt_of_le a.2 h_order ) ▸ Nat.mod_eq_of_lt ( show ( b : ℕ ) < orderOf ω from lt_of_lt_of_le b.2 h_order ) ▸ h_pow )
+
+/--
+  Key correctness theorem for `interpolatePow`.
+-/
+lemma eval_interpolatePow_at_node {n : ℕ} {ω : Rˣ} {r : Vector R n} : n < orderOf ω →
+    ∀ i : Fin n, (interpolatePow ω.1 r).eval (ω.1 ^ i.1) = r.get i := by
+  intros order_ω_lt_n i
+  unfold interpolatePow
+  rw [
+    eval_toPoly,
+    lagrangeEq,
+    Lagrange.eval_interpolate_at_node (v := (fun (i : Fin n) ↦ ω.1 ^ i.val))
+  ]
+  · simp only [Finset.coe_univ, Set.injOn_univ]
+    intros a b h
+    simp only at h
+    apply Fin.eq_of_val_eq
+    have h₁ : a.1 < orderOf ω := by
+      omega
+    have h₂ : b.1 < orderOf ω := by
+      omega
+    have h₃ : ω ^ a.1 = ω ^ b.1 := by
+      rw [←Units.val_inj]
+      simpa using h
+    have h_le : n ≤ orderOf ω := le_of_lt order_ω_lt_n
+    have h_eq : a = b := eq_of_pow_eq_pow_of_lt_orderOf h_le a b h₃
+    exact congr_arg Fin.val h_eq
+  · exact Finset.mem_univ _
 
 end CLagrange
 
