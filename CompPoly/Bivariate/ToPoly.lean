@@ -55,14 +55,6 @@ def ofPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
     let cj := p.coeff j
     CPolynomial.monomial j ⟨cj.toImpl, CPolynomial.Raw.trim_toImpl cj⟩)
 
-/-- `toPoly` maps the zero bivariate polynomial to `0`. -/
-lemma toPoly_zero {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] :
-    toPoly (0 : CBivariate R) = 0 := by
-      -- The sum over the empty set is zero.
-      simp [CBivariate.toPoly]
-      rw [ Finset.sum_eq_zero ]
-      aesop
-
 /-- `toPoly` preserves addition. -/
 lemma toPoly_add {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
     (p q : CBivariate R) : toPoly (p + q) = toPoly p + toPoly q := by
@@ -119,12 +111,6 @@ lemma toPoly_monomial {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] 
       · grind
       · split_ifs <;> simp_all +decide [ Array.push ]
         exact toFinsupp_eq_zero.mp rfl
-
-/-- `ofPoly` maps `0` in `R[X][Y]` to the zero bivariate polynomial. -/
-lemma ofPoly_zero {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] [DecidableEq R] :
-    ofPoly (0 : R[X][Y]) = 0 := by
-      unfold CBivariate.ofPoly
-      simp +decide [ Polynomial.support ]
 
 /-- `ofPoly` sends a Y-monomial in `R[X][Y]` to a bivariate monomial. -/
 lemma ofPoly_monomial {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] [DecidableEq R]
@@ -291,6 +277,55 @@ noncomputable def ringEquiv
   right_inv := ofPoly_toPoly
   map_mul' := by apply toPoly_mul
   map_add' := by exact fun x y => toPoly_add x y
+
+/-- `toPoly` preserves `1`. -/
+theorem toPoly_one
+    {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] [DecidableEq R] :
+    toPoly (1 : CBivariate R) = 1 := by
+  simpa [ringEquiv] using (ringEquiv (R := R)).map_one
+
+/-- `ofPoly` preserves `1`. -/
+theorem ofPoly_one
+    {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] [DecidableEq R] :
+    ofPoly (1 : R[X][Y]) = 1 := by
+  apply (ringEquiv (R := R)).injective
+  change toPoly (ofPoly (1 : R[X][Y])) = toPoly (1 : CBivariate R)
+  rw [ofPoly_toPoly, toPoly_one]
+
+/-- `toPoly` maps the zero bivariate polynomial to `0`. -/
+lemma toPoly_zero {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] :
+    toPoly (0 : CBivariate R) = 0 := by
+      -- The sum over the empty set is zero.
+      simp [CBivariate.toPoly]
+      rw [ Finset.sum_eq_zero ]
+      aesop
+
+/-- `ofPoly` maps `0` in `R[X][Y]` to the zero bivariate polynomial. -/
+lemma ofPoly_zero {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] [DecidableEq R] :
+    ofPoly (0 : R[X][Y]) = 0 := by
+      unfold CBivariate.ofPoly
+      simp +decide [ Polynomial.support ]
+
+/-- Ring hom from computable bivariates to Mathlib bivariates. -/
+noncomputable def toPolyRingHom
+    {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] [DecidableEq R] :
+    CBivariate R →+* R[X][Y] :=
+  (ringEquiv (R := R)).toRingHom
+
+/-- Ring hom from Mathlib bivariates to computable bivariates. -/
+noncomputable def ofPolyRingHom
+    {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] [DecidableEq R] :
+    R[X][Y] →+* CBivariate R :=
+  (ringEquiv (R := R)).symm.toRingHom
+
+/-- `ofPoly` preserves multiplication. -/
+theorem ofPoly_mul
+    {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] [DecidableEq R]
+    (p q : R[X][Y]) :
+    ofPoly (p * q) = ofPoly p * ofPoly q := by
+  apply (ringEquiv (R := R)).injective
+  change toPoly (ofPoly (p * q)) = toPoly (ofPoly p * ofPoly q)
+  rw [ofPoly_toPoly, toPoly_mul, ofPoly_toPoly, ofPoly_toPoly]
 
 end RingEquiv
 
