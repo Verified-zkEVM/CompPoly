@@ -27,7 +27,7 @@ identically `0`). Such polynomials are the building blocks for the Lagrange inte
 def basisDivisor (xᵢ xⱼ : R) : CPolynomial R :=
   C (xᵢ - xⱼ)⁻¹ * (X - C xⱼ)
 
-lemma cBasisDivisorEq {xᵢ xⱼ : R} : (basisDivisor xᵢ xⱼ).toPoly = Lagrange.basisDivisor xᵢ xⱼ := by
+lemma cbasisDivisor_eq_basisDivisor {xᵢ xⱼ : R} : (basisDivisor xᵢ xⱼ).toPoly = Lagrange.basisDivisor xᵢ xⱼ := by
   unfold basisDivisor Lagrange.basisDivisor
   simp only [toPoly_mul, C_toPoly, toPoly_sub, X_toPoly]
 
@@ -37,13 +37,13 @@ map `x : ι → F`. For `i, j ∈ s`, `basis s x i` evaluates to `0` at `x j` fo
 def basis {ι : Type*} [DecidableEq ι] (s : Finset ι) (x : ι → R) (i : ι) :
     CPolynomial R := ∏ j ∈ s.erase i, basisDivisor (x i) (x j)
 
-lemma cBasisEq {ι : Type*} [DecidableEq ι] (s : Finset ι) (x : ι → R) (i : ι) :
+lemma cbasis_eq_basis {ι : Type*} [DecidableEq ι] (s : Finset ι) (x : ι → R) (i : ι) :
     (basis s x i).toPoly = Lagrange.basis s x i := by
   unfold basis Lagrange.basis
   rw [toPoly_prod]
   congr
   funext j
-  rw [cBasisDivisorEq]
+  rw [cbasisDivisor_eq_basisDivisor]
 
 /-- Computable Lagrange interpolation: given a finset `s : Finset ι`, a nodal map `x : ι → F`
 injective on `s` and a value function `y : ι → F`, `interpolate s x y` is the unique computable
@@ -74,14 +74,14 @@ def interpolate {ι : Type*} [DecidableEq ι] (s : Finset ι) (x : ι → R) :
       rw [h₁, ←Finset.mul_sum]
       rfl
 
-lemma lagrangeEq {ι : Type*} [DecidableEq ι] {s : Finset ι} {x : ι → R} {y : ι → R} :
+lemma cinterpolate_eq_interpolate {ι : Type*} [DecidableEq ι] {s : Finset ι} {x : ι → R} {y : ι → R} :
     (interpolate s x y).toPoly = Lagrange.interpolate s x y := by
   unfold interpolate
   simp only [LinearMap.coe_mk, AddHom.coe_mk, Lagrange.interpolate_apply]
   rw [toPoly_sum]
   congr
   funext i
-  rw [toPoly_mul, C_toPoly, cBasisEq]
+  rw [toPoly_mul, C_toPoly, cbasis_eq_basis]
 
 /-- Produces the unique polynomial of degree at most n-1 that equals r[i] at ω^i
     for i = 0, 1, ..., n-1.
@@ -112,7 +112,7 @@ lemma eval_interpolatePow_at_node {n : ℕ} {ω : Rˣ} {r : Vector R n} : n < or
   unfold interpolatePow
   rw [
     eval_toPoly,
-    lagrangeEq,
+    cinterpolate_eq_interpolate,
     Lagrange.eval_interpolate_at_node (v := (fun (i : Fin n) ↦ ω.1 ^ i.val))
   ]
   · simp only [Finset.coe_univ, Set.injOn_univ]
