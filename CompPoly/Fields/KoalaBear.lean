@@ -8,6 +8,7 @@ import CompPoly.Fields.Basic
 import CompPoly.Fields.PrattCertificate
 import Mathlib.Algebra.Order.Ring.Star
 import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
+import Mathlib.FieldTheory.Finite.Basic
 
 /-!
   # KoalaBear Field `2^{31} - 2^{24} + 1`
@@ -116,17 +117,29 @@ def twoAdicGenerators : List Field :=
     twoAdicGenerators[idx + 1] ^ 2 = twoAdicGenerators[idx] :=
   twoAdicGenerators_succ_square_eq' ⟨idx, h⟩
 
-/-! Statements requested by the Python spec translation. We leave them with `sorry` proofs
-    to be filled later. -/
+/-! Statements requested by the Python spec translation. -/
 
+set_option maxRecDepth 4096 in
 /-- Fermat-style inversion in `ZMod fieldSize`. -/
 lemma inv_eq_pow (a : Field) (ha : a ≠ 0) : a⁻¹ = a ^ (fieldSize - 2) := by
-  sorry
+  have hcard : Fintype.card Field = fieldSize := ZMod.card fieldSize
+  have h1 : a ^ (fieldSize - 1) = 1 := by
+    have h := FiniteField.pow_card_sub_one_eq_one a ha
+    rw [hcard] at h; exact h
+  have hmul : a * a ^ (fieldSize - 2) = 1 := by
+    rw [← pow_succ']; show a ^ (fieldSize - 2 + 1) = 1
+    have : fieldSize - 2 + 1 = fieldSize - 1 := by unfold fieldSize; omega
+    rw [this]; exact h1
+  exact (eq_inv_of_mul_eq_one_left (by rwa [mul_comm])).symm
 
 /-- Bijectivity of the cube map on the unit group, using `gcd(3, fieldSize-1)=1`. -/
 lemma cube_map_bijective :
-    Function.Bijective (fun x : (Field)ˣ => x ^ (3 : Nat)) := by
-  sorry
+    Function.Bijective (fun x : Fieldˣ ↦ x ^ 3) := by
+  have hcard : Nat.card (Field)ˣ = fieldSize - 1 := by
+    rw [Nat.card_units]; simp [Nat.card_eq_fintype_card, ZMod.card]
+  have hcop : (Nat.card (Field)ˣ).Coprime 3 := by
+    rw [hcard]; decide
+  exact (powCoprime hcop).bijective
 
 /-! The cube map x ↦ x^3 is an automorphism on the multiplicative group because
     `Nat.coprime 3 (fieldSize - 1)` holds. We record the coprimality here. -/
@@ -136,45 +149,71 @@ lemma coprime_three_fieldSize_sub_one : Nat.Coprime 3 (fieldSize - 1) := by
     (by decide : Nat.Coprime 3 (2 ^ 24 * 127))
 
 /-!
-  Additional statements matching the Python spec API, left as `sorry` per request.
+  Additional statements matching the Python spec API.
 -/
 
 /-- `twoAdicity` is maximal: `2^(twoAdicity+1)` does not divide `fieldSize - 1`. -/
 lemma twoAdicity_maximal : ¬ (2 ^ (twoAdicity + 1)) ∣ (fieldSize - 1) := by
   decide
 
-/-- The precomputed element at index `bits` is a primitive `2^bits`-th root of unity. -/
-lemma isPrimitiveRoot_twoAdicGenerator (bits : Fin (twoAdicity + 1)) :
-    IsPrimitiveRoot (twoAdicGenerators[bits]) (2 ^ (bits : Nat)) := by
-  sorry
-
-/-- As a unit, the precomputed element is a member of `rootsOfUnity (2^bits)`. -/
-lemma twoAdicGenerator_unit_mem_rootsOfUnity
-    (bits : Fin (twoAdicity + 1)) (h : twoAdicGenerators[bits] ≠ 0) :
-    Units.mk0 (twoAdicGenerators[bits]) h ∈ rootsOfUnity (2 ^ (bits : Nat)) (Field) := by
-  sorry
-
+set_option maxHeartbeats 800000 in
 /-- The power `(twoAdicGenerators[bits])^(2^bits) = 1`. -/
 lemma twoAdicGenerators_pow_twoPow_eq_one (bits : Fin (twoAdicity + 1)) :
-    (twoAdicGenerators[bits]) ^ (2 ^ (bits : Nat)) = (1 : Field) := by
-  sorry
+    twoAdicGenerators[bits] ^ (2 ^ (bits : Nat)) = 1 := by
+  fin_cases bits <;> native_decide
+
+set_option maxHeartbeats 1600000 in
+/-- Helper: Fin-indexed version for computational verification of non-triviality. -/
+private lemma twoAdicGenerators_pow_ne_one_aux (n : Fin 25) (m : Fin 25)
+    (hm : m.val < n.val) :
+    twoAdicGenerators[n] ^ (2 ^ m.val) ≠ (1 : Field) := by
+  fin_cases n <;> fin_cases m <;> simp_all <;> native_decide
 
 /-- If `m < bits`, then `(twoAdicGenerators[bits])^(2^m) ≠ 1`. -/
 lemma twoAdicGenerators_pow_twoPow_ne_one_of_lt
     {bits : Fin (twoAdicity + 1)} {m : Nat} (hm : m < bits) :
     (twoAdicGenerators[bits]) ^ (2 ^ m) ≠ (1 : Field) := by
-  sorry
+  have hm_lt : m < 25 := Nat.lt_trans hm bits.isLt
+  exact twoAdicGenerators_pow_ne_one_aux bits ⟨m, hm_lt⟩ hm
+
+/-- The precomputed element at index `bits` is a primitive `2^bits`-th root of unity. -/
+lemma isPrimitiveRoot_twoAdicGenerator (n : Fin (twoAdicity + 1)) :
+    IsPrimitiveRoot (twoAdicGenerators[n]) (2 ^ (n : Nat)) := by
+  rw [IsPrimitiveRoot.iff_def]
+  rcases n with ⟨_ | k, hb⟩
+  · -- bits = 0: 2^0 = 1, and any element satisfies x^1 = x, but twoAdicGenerators[0] = 1
+    simp [twoAdicGenerators]
+  · -- bits = k + 1
+    constructor
+    · exact twoAdicGenerators_pow_twoPow_eq_one ⟨k + 1, hb⟩
+    · intro m hm
+      by_contra h
+      have hord := orderOf_eq_prime_pow
+        (twoAdicGenerators_pow_twoPow_ne_one_of_lt (bits := ⟨k + 1, hb⟩) (m := k) (by simp))
+        (twoAdicGenerators_pow_twoPow_eq_one ⟨k + 1, hb⟩)
+      -- hord : orderOf (twoAdicGenerators[⟨k+1, hb⟩]) = 2 ^ (k + 1)
+      have hdvd := orderOf_dvd_of_pow_eq_one hm
+      rw [hord] at hdvd
+      exact h hdvd
+
+/-- As a unit, the precomputed element is a member of `rootsOfUnity (2^bits)`. -/
+lemma twoAdicGenerator_unit_mem_rootsOfUnity
+    (bits : Fin (twoAdicity + 1)) (h : twoAdicGenerators[bits] ≠ 0) :
+    Units.mk0 (twoAdicGenerators[bits]) h ∈ rootsOfUnity (2 ^ (bits : Nat)) Field := by
+  rw [mem_rootsOfUnity]
+  rw [Units.ext_iff]
+  simp only [Units.val_pow_eq_pow_val, Units.val_mk0, Units.val_one]
+  exact twoAdicGenerators_pow_twoPow_eq_one bits
 
 /-- The order of `twoAdicGenerators[bits]` equals `2^bits`. -/
 lemma twoAdicGenerators_order (bits : Fin (twoAdicity + 1)) :
     orderOf (twoAdicGenerators[bits]) = 2 ^ (bits : Nat) := by
-  rw [orderOf_eq_of_pow_and_pow_div_prime]
-  · simp
-  · exact twoAdicGenerators_pow_twoPow_eq_one bits
-  · intro m hm hm'
-    have : m = 2 := sorry
-    rw [this]
-    sorry
-    -- exact twoAdicGenerators_pow_twoPow_ne_one_of_lt (by sorry)
+  rcases bits with ⟨_ | n, hb⟩
+  · -- bits = 0: twoAdicGenerators[0] = 1, orderOf 1 = 1 = 2^0
+    simp [twoAdicGenerators, orderOf_one]
+  · -- bits = n + 1
+    exact orderOf_eq_prime_pow
+      (twoAdicGenerators_pow_twoPow_ne_one_of_lt (bits := ⟨n + 1, hb⟩) (m := n) (by simp))
+      (twoAdicGenerators_pow_twoPow_eq_one ⟨n + 1, hb⟩)
 
 end KoalaBear
