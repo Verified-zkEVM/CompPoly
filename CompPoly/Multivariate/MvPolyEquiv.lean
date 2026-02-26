@@ -6,6 +6,7 @@ Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa
 import Batteries.Data.Vector.Lemmas
 import CompPoly.Multivariate.CMvPolynomial
 import Mathlib.Algebra.MvPolynomial.Basic
+import Mathlib.Algebra.MvPolynomial.Equiv
 import Mathlib.Algebra.Ring.Defs
 import CompPoly.Multivariate.Lawful
 import Batteries.Data.Vector.Basic
@@ -462,5 +463,38 @@ lemma degreeOf_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] :
       · simp at h
 
 end
+
+namespace CMvPolynomial
+
+variable {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+
+/-- `eval₂` as a ring homomorphism. -/
+def eval₂Hom {S : Type} [CommSemiring S]
+    (f : R →+* S) (vs : Fin n → S) : CMvPolynomial n R →+* S where
+  toFun := eval₂ f vs
+  map_zero' := by simp [eval₂_equiv]
+  map_one' := by simp [eval₂_equiv]
+  map_add' _ _ := by simp [eval₂_equiv, MvPolynomial.eval₂_add]
+  map_mul' _ _ := by simp [eval₂_equiv, MvPolynomial.eval₂_mul]
+
+@[simp]
+lemma eval₂Hom_apply {S : Type} [CommSemiring S]
+    (f : R →+* S) (vs : Fin n → S) (p : CMvPolynomial n R) :
+    eval₂Hom f vs p = eval₂ f vs p := rfl
+
+/-- Ring equivalence between `CMvPolynomial 0 R` and `R`. -/
+noncomputable def isEmptyRingEquiv : CMvPolynomial 0 R ≃+* R :=
+  polyRingEquiv.trans (MvPolynomial.isEmptyAlgEquiv R (Fin 0)).toRingEquiv
+
+instance instSMul : SMul R (CMvPolynomial n R) where
+  smul r p := C r * p
+
+instance instSMulZeroClass : SMulZeroClass R (CMvPolynomial n R) where
+  smul_zero r := mul_zero (C r)
+
+@[simp]
+lemma smul_def (r : R) (p : CMvPolynomial n R) : r • p = C r * p := rfl
+
+end CMvPolynomial
 
 end CPoly
