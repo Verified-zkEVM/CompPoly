@@ -1588,7 +1588,7 @@ instance : IntCast (CPolynomial.Raw R) := ⟨fun n => C (n : R)⟩
 /-- Division with remainder by a monic polynomial using polynomial long division. -/
 def divModByMonicAux [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
     CPolynomial.Raw R × CPolynomial.Raw R :=
-  go (p.size - q.size) p q
+  go (p.size + 1 - q.size) p q
 where
   go : Nat → CPolynomial.Raw R → CPolynomial.Raw R → CPolynomial.Raw R × CPolynomial.Raw R
   | 0, p, _ => ⟨0, p⟩
