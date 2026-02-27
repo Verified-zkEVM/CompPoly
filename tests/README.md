@@ -15,7 +15,7 @@ For example:
 Build all tests:
 
 ```bash
-lake build CompPolyTests
+lake test
 ```
 
 Build a single test module:
