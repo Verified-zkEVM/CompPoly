@@ -1,4 +1,16 @@
+/-
+Copyright (c) 2026 CompPoly. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Derek Sorensen
+-/
 import CompPoly.Univariate.ToPoly
+
+/-!
+  # Univariate ToPoly Tests
+
+  First-pass sanity checks for conversion and transport lemmas in
+  `CompPoly.Univariate.ToPoly`.
+-/
 
 namespace CompPoly
 namespace CPolynomial
