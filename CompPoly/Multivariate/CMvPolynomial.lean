@@ -162,20 +162,21 @@ class MonomialOrder (n : ℕ) where
 def MonomialOrder.degree {n : ℕ} [MonomialOrder n] (m : CMvMonomial n) : ℕ :=
   sorry
 
-/-- Leading monomial of a polynomial according to a monomial order.
-
-  Returns `none` for the zero polynomial.
--/
-def leadingMonomial {n : ℕ} {R : Type} [Zero R] [MonomialOrder n]
-    (p : CMvPolynomial n R) : Option (CMvMonomial n) :=
-  sorry
-
 /-- Leading coefficient of a polynomial according to a monomial order.
 
   Returns `0` for the zero polynomial.
 -/
 def leadingCoeff {n : ℕ} {R : Type} [Zero R] [MonomialOrder n]
     (p : CMvPolynomial n R) : R :=
+  sorry
+
+/-- Leading term of a polynomial according to a monomial order.
+
+  Equals `monomial (degree p) (leadingCoeff p)` when `p ≠ 0`, and `0` otherwise.
+  Matches Mathlib's `MonomialOrder.leadingTerm`.
+-/
+def leadingTerm {n : ℕ} {R : Type} [Zero R] [BEq R] [LawfulBEq R] [MonomialOrder n]
+    (p : CMvPolynomial n R) : CMvPolynomial n R :=
   sorry
 
 /-- Multiset of all variable degrees appearing in the polynomial.
