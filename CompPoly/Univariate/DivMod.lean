@@ -75,7 +75,7 @@ lemma toPoly_pow (p : CPolynomial.Raw R) (n : ℕ) :
 lemma trim_size_zero_iff_toPoly_zero (p : CPolynomial.Raw R) :
     p.trim.size = 0 ↔ p.toPoly = 0 := by
   constructor <;> intro h
-  · rw [ ← toPoly_trim ] ; aesop
+  · rw [ ← toPoly_trim ]; aesop
   · have h_trim_zero : p.trim = 0 := by
       convert toImpl_toPoly p
       · convert toImpl_toPoly p |> Eq.symm
@@ -90,7 +90,7 @@ lemma trim_size_pos_iff_toPoly_ne_zero (p : CPolynomial.Raw R) :
   · contrapose! h
     convert trim_size_zero_iff_toPoly_zero p |>.2 h |> le_of_eq
   · contrapose! h
-    convert trim_size_zero_iff_toPoly_zero p |>.1 ( le_antisymm h ( Nat.zero_le _ ) ) using 1
+    convert trim_size_zero_iff_toPoly_zero p |>.1 (le_antisymm h (Nat.zero_le _)) using 1
 
 /-- The size of the trim of a Raw polynomial is equal to its `natDegree` plus 1 -/
 lemma trim_size_eq_natDegree_succ (p : CPolynomial.Raw R) (hp : p.toPoly ≠ 0) :
@@ -149,19 +149,22 @@ private lemma toPoly_monom (lc : R) (n : ℕ) :
     (C lc * X ^ n : CPolynomial.Raw R).toPoly = Polynomial.C lc * Polynomial.X ^ n := by
   rw [toPoly_mul (C lc) (X ^ n), toPoly_C lc, toPoly_pow X n, toPoly_X ]
 
-/-- Helper lemma for rewriting `toPoly` in the argument of the recursive call of `divModByMonicAux` -/
+/-- Helper lemma for rewriting `toPoly` in the argument of the recursive call of
+`   divModByMonicAux` -/
 private lemma toPoly_div_step (p q : CPolynomial.Raw R) :
     (p - q * (C p.leadingCoeff * (X : CPolynomial.Raw R) ^ (p.natDegree - q.natDegree))).toPoly =
-    p.toPoly - q.toPoly * (Polynomial.C p.leadingCoeff * Polynomial.X ^ (p.natDegree - q.natDegree)) := by
-  convert toPoly_sub p ( q * ( C p.leadingCoeff * (X : CPolynomial.Raw R) ^ ( p.natDegree - q.natDegree ) ) ) using 1
+    p.toPoly - q.toPoly * (Polynomial.C p.leadingCoeff * Polynomial.X ^ (p.natDegree - q.natDegree))
+    := by
+  convert toPoly_sub p (q * (C p.leadingCoeff * X ^ (p.natDegree - q.natDegree))) using 1
   have h_poly_mul : ∀ (p q : CPolynomial.Raw R), (p * q).toPoly = p.toPoly * q.toPoly := by
     exact fun p q => toPoly_mul p q
   convert rfl using 2
-  convert h_poly_mul q ( C p.leadingCoeff * X ^ ( p.natDegree - q.natDegree ) ) using 1
+  convert h_poly_mul q (C p.leadingCoeff * X ^ (p.natDegree - q.natDegree)) using 1
   congr! 1
-  convert toPoly_monom p.leadingCoeff ( p.natDegree - q.natDegree ) |> Eq.symm using 1
+  convert toPoly_monom p.leadingCoeff (p.natDegree - q.natDegree) |> Eq.symm using 1
 
-/-- The argument of the recursive call of `divModByMonicAux` has a `degree` smaller than the original argument  -/
+/-- The argument of the recursive call of `divModByMonicAux` has a `degree` smaller than the
+    original argument  -/
 lemma div_step_degree_lt (p q : CPolynomial.Raw R)
     (hp : p.toPoly ≠ 0) (hq : q.toPoly.Monic)
     (hdeg : Polynomial.degree q.toPoly ≤ Polynomial.degree p.toPoly) :
@@ -171,7 +174,7 @@ lemma div_step_degree_lt (p q : CPolynomial.Raw R)
   have := @Polynomial.div_wf_lemma R
   convert this ⟨ hdeg, hp ⟩ hq using 1
   rw [ ← leadingCoeff_toPoly, ← natDegree_eq_toPoly_natDegree ]
-  · convert congr_arg Polynomial.degree ( toPoly_div_step p q ) using 1
+  · convert congr_arg Polynomial.degree (toPoly_div_step p q) using 1
     rw [ show q.toPoly.natDegree = q.natDegree from ?_ ]
     by_cases hq_zero : q.toPoly = 0
     · simp_all [ Polynomial.Monic.def ]
@@ -189,22 +192,25 @@ lemma trim_size_lt_of_degree_lt (r p : CPolynomial.Raw R)
   · have := trim_size_zero_iff_toPoly_zero r
     exact this.mpr hr ▸ trim_size_pos_iff_toPoly_ne_zero p |>.2 hp
   · rw [ trim_size_eq_natDegree_succ, trim_size_eq_natDegree_succ ]
-    · exact Nat.succ_lt_succ ( Polynomial.natDegree_lt_natDegree hr hdeg )
+    · exact Nat.succ_lt_succ (Polynomial.natDegree_lt_natDegree hr hdeg)
     · exact hp
     · exact hr
 
-/-- If the size of `trim q` is smaller or equal to the size of `trim p` then `degree q` ≤ `degree p` -/
+/-- If the size of `trim q` is smaller or equal to the size of `trim p` then
+    `degree q` ≤ `degree p` -/
 lemma degree_le_of_trim_size_le (p q : CPolynomial.Raw R)
     (h1 : q.trim.size ≤ p.trim.size) (h2 : 0 < p.trim.size) :
     Polynomial.degree q.toPoly ≤ Polynomial.degree p.toPoly := by
-  by_cases hp : p.toPoly = 0 <;> by_cases hq : q.toPoly = 0 <;> simp_all [ Polynomial.degree_eq_natDegree ]
+  by_cases hp : p.toPoly = 0
+    <;> by_cases hq : q.toPoly = 0 <;> simp_all [Polynomial.degree_eq_natDegree]
   · have hp_zero : p.trim.size = 0 := (trim_size_zero_iff_toPoly_zero p).mpr hp
     linarith
   · have h_deg : q.trim.size = q.toPoly.natDegree + 1 ∧ p.trim.size = p.toPoly.natDegree + 1 := by
-      exact ⟨ trim_size_eq_natDegree_succ q hq, trim_size_eq_natDegree_succ p hp ⟩
+      exact ⟨trim_size_eq_natDegree_succ q hq, trim_size_eq_natDegree_succ p hp⟩
     linarith
 
-/-- The argument of the recursive call of `divModByMonicAux` has a `trim` smaller than the original argument  -/
+/-- The argument of the recursive call of `divModByMonicAux` has a `trim` smaller than the original
+    argument  -/
 lemma divByMonic_wf_termination (p q : CPolynomial.Raw R)
     (hq : q.monic = true) (h1 : q.trim.size ≤ p.trim.size) (h2 : 0 < p.trim.size) :
     (p - q * (C p.leadingCoeff * X ^ (p.natDegree - q.natDegree))).trim.size <
@@ -254,11 +260,13 @@ end Raw
 
 /-- Quotient of `p` by a monic polynomial `q`. Matches Mathlib's `Polynomial.divByMonic`. -/
 def divByMonic (p q : CPolynomial R) : CPolynomial R :=
-  ⟨(Raw.divByMonic p.val q.val).trim, by simpa using Raw.Trim.trim_twice (Raw.divByMonic p.val q.val)⟩
+  ⟨(Raw.divByMonic p.val q.val).trim,
+   by simpa using Raw.Trim.trim_twice (Raw.divByMonic p.val q.val)⟩
 
 /-- Remainder of `p` modulo a monic polynomial `q`. Matches Mathlib's `Polynomial.modByMonic`. -/
 def modByMonic (p q : CPolynomial R) : CPolynomial R :=
-  ⟨(Raw.modByMonic p.val q.val).trim, by simpa using Raw.Trim.trim_twice (Raw.modByMonic p.val q.val)⟩
+  ⟨(Raw.modByMonic p.val q.val).trim,
+   by simpa using Raw.Trim.trim_twice (Raw.modByMonic p.val q.val)⟩
 
 /-- Quotient of `p` by `q` (when `R` is a field). -/
 def div [Field R] (p q : CPolynomial R) : CPolynomial R :=
@@ -302,24 +310,29 @@ lemma divModByMonicAux_go_unfold_2 (p q : CPolynomial.Raw R) (hq : q.monic = tru
   rw [ divModByMonicAux.go ]
   split_ifs <;> aesop
 
-/-- The termination condition for `CPolynomial.Raw.divModByMonicAux` matches the one in `Polynomial.divModByMonicAux -/
+/-- The termination condition for `CPolynomial.Raw.divModByMonicAux` matches the one in
+    `Polynomial.divModByMonicAux -/
 lemma size_cond_iff_degree_cond (p q : CPolynomial.Raw R) (hq : q.toPoly.Monic) :
     (q.trim.size ≤ p.trim.size ∧ 0 < p.trim.size) ↔
     (Polynomial.degree q.toPoly ≤ Polynomial.degree p.toPoly ∧ p.toPoly ≠ 0) := by
-  by_cases hp : p.toPoly ≠ 0 <;> by_cases hq : q.toPoly ≠ 0 <;> simp_all [ trim_size_pos_iff_toPoly_ne_zero ]
+  by_cases hp : p.toPoly ≠ 0
+    <;> by_cases hq : q.toPoly ≠ 0 <;> simp_all [trim_size_pos_iff_toPoly_ne_zero]
   · constructor <;> intro h
-    · rw [ Polynomial.degree_eq_natDegree hp, Polynomial.degree_eq_natDegree hq ] ; norm_cast ; linarith [ trim_size_eq_natDegree_succ p hp, trim_size_eq_natDegree_succ q hq ]
-    · rw [ trim_size_eq_natDegree_succ q hq, trim_size_eq_natDegree_succ p hp ]
-      exact Nat.succ_le_succ ( Polynomial.natDegree_le_natDegree h )
-  · cases subsingleton_or_nontrivial R <;> simp_all [ eq_iff_true_of_subsingleton ]
+    · rw [Polynomial.degree_eq_natDegree hp, Polynomial.degree_eq_natDegree hq]
+      norm_cast
+      linarith [trim_size_eq_natDegree_succ p hp, trim_size_eq_natDegree_succ q hq]
+    · rw [trim_size_eq_natDegree_succ q hq, trim_size_eq_natDegree_succ p hp]
+      exact Nat.succ_le_succ (Polynomial.natDegree_le_natDegree h)
+  · cases subsingleton_or_nontrivial R <;> simp_all [eq_iff_true_of_subsingleton]
 
 /-- Rewrites `toPoly` lemmas on the definition of `z` in `divModByMonicAux.go`  -/
 lemma z_toPoly_eq (p q : CPolynomial.Raw R) (hp : p.toPoly ≠ 0) :
     (C p.leadingCoeff * X ^ (p.natDegree - q.natDegree)).toPoly =
-    Polynomial.C p.toPoly.leadingCoeff * Polynomial.X ^ (p.toPoly.natDegree - q.toPoly.natDegree) := by
+    Polynomial.C p.toPoly.leadingCoeff * Polynomial.X ^ (p.toPoly.natDegree - q.toPoly.natDegree)
+    := by
   have h_deg : p.natDegree = p.toPoly.natDegree ∧ q.natDegree = q.toPoly.natDegree := by
     constructor <;> by_cases hq : q.toPoly = 0 <;> simp_all [ natDegree_eq_toPoly_natDegree ]
-    rw [ natDegree ]
+    rw [natDegree]
     cases h : q.lastNonzero <;> simp_all [ toPoly ]
     have h_deg : q.toPoly = 0 := by
       convert hq using 1
@@ -327,9 +340,9 @@ lemma z_toPoly_eq (p q : CPolynomial.Raw R) (hp : p.toPoly ≠ 0) :
     have h_deg : q.trim.size = 0 := by
       exact (trim_size_zero_iff_toPoly_zero q).mpr hq
     generalize_proofs at *
-    cases h' : q.trim ; simp_all [ trim ]
-  convert toPoly_monom p.leadingCoeff ( p.natDegree - q.natDegree ) using 1
-  rw [ h_deg.1, h_deg.2, leadingCoeff_toPoly ]
+    cases h' : q.trim; simp_all [trim]
+  convert toPoly_monom p.leadingCoeff (p.natDegree - q.natDegree) using 1
+  rw [h_deg.1, h_deg.2, leadingCoeff_toPoly]
 
 /-- The result of `divModByMonic` if the condition is not met -/
 lemma divModByMonic_of_not_cond (p q : CPolynomial.Raw R) (hq : q.toPoly.Monic)
@@ -347,7 +360,12 @@ lemma divByMonic_unfold_step (p q : CPolynomial.Raw R) (hq : q.toPoly.Monic)
     Polynomial.C p.toPoly.leadingCoeff * Polynomial.X ^ (p.toPoly.natDegree - q.toPoly.natDegree) +
     (p.toPoly - q.toPoly * (Polynomial.C p.toPoly.leadingCoeff *
       Polynomial.X ^ (p.toPoly.natDegree - q.toPoly.natDegree))) /ₘ q.toPoly := by
-  have h_eq : ∀ (p q : Polynomial R), q.Monic → q ≠ 0 → p.degree ≥ q.degree → p /ₘ q = Polynomial.C p.leadingCoeff * Polynomial.X ^ (p.natDegree - q.natDegree) + (p - q * (Polynomial.C p.leadingCoeff * Polynomial.X ^ (p.natDegree - q.natDegree))) /ₘ q := by
+  have h_eq : ∀ (p q : Polynomial R),
+      q.Monic → q ≠ 0 → p.degree ≥ q.degree →
+      p /ₘ q =
+        Polynomial.C p.leadingCoeff * Polynomial.X ^ (p.natDegree - q.natDegree) +
+        (p - q * (Polynomial.C p.leadingCoeff * Polynomial.X ^ (p.natDegree - q.natDegree))) /ₘ q
+        := by
     intros p q hq hq' hpq
     rw [ Polynomial.divByMonic ]
     unfold Polynomial.divModByMonicAux
@@ -363,7 +381,9 @@ lemma modByMonic_unfold_step (p q : CPolynomial.Raw R) (hq : q.toPoly.Monic)
     (p.toPoly - q.toPoly * (Polynomial.C p.toPoly.leadingCoeff *
       Polynomial.X ^ (p.toPoly.natDegree - q.toPoly.natDegree))) %ₘ q.toPoly := by
   have h_eq : ∀ (p q : Polynomial R), q.Monic → q ≠ 0 → p.degree ≥ q.degree →
-      p %ₘ q = (p - q * (Polynomial.C p.leadingCoeff * Polynomial.X ^ (p.natDegree - q.natDegree))) %ₘ q := by
+      p %ₘ q =
+      (p - q * (Polynomial.C p.leadingCoeff * Polynomial.X ^ (p.natDegree - q.natDegree))) %ₘ q
+      := by
     intros p q hq hq' hpq
     rw [ Polynomial.modByMonic ]
     unfold Polynomial.divModByMonicAux
@@ -373,7 +393,8 @@ lemma modByMonic_unfold_step (p q : CPolynomial.Raw R) (hq : q.toPoly.Monic)
   · have := size_cond_iff_degree_cond p q hq
     aesop
 
-/-- The first projection of `Raw.divModByMonicAux.go` matches `Polyomial.divByMonic` with respect to `toPoly`  -/
+/-- The first projection of `Raw.divModByMonicAux.go` matches `Polyomial.divByMonic` with respect
+    to `toPoly`  -/
 lemma divModByMonicAux_go_toPoly_1 (p q : CPolynomial.Raw R)
     (hq : q.monic = true) :
     (divModByMonicAux.go p q hq).1.toPoly = p.toPoly /ₘ q.toPoly := by
@@ -393,7 +414,8 @@ lemma divModByMonicAux_go_toPoly_1 (p q : CPolynomial.Raw R)
       apply (divModByMonic_of_not_cond p q ((monic_iff_toPoly_monic q).mp hq) h).1
     unfold divModByMonicAux.go; aesop
 
-/-- The second projection of `Raw.divModByMonicAux.go` matches `Polyomial.modByMonic` with respect to `toPoly`  -/
+/-- The second projection of `Raw.divModByMonicAux.go` matches `Polyomial.modByMonic` with respect
+    to `toPoly`  -/
 lemma divModByMonicAux_go_toPoly_2 (p q : CPolynomial.Raw R) (hq : q.monic = true)  :
     (divModByMonicAux.go p q hq).2.toPoly = p.toPoly %ₘ q.toPoly := by
   induction' n : p.trim.size using Nat.strong_induction_on with n ih generalizing p q hq
@@ -453,7 +475,8 @@ private lemma not_monic_of_toPoly_zero (q : CPolynomial.Raw R)
       leadingCoeff_toPoly, hq'] at this
   simp [Polynomial.Monic] at this
 
-/-- If `q` is not the zero Raw polynomial, multiplying it by the inverse of its leading coefficient results in a monic polynomial -/
+/-- If `q` is not the zero Raw polynomial, multiplying it by the inverse of its leading coefficient
+    results in a monic polynomial -/
 private lemma monic_raw_of_toPoly_ne_zero (q : CPolynomial.Raw R)
     (hq' : q.toPoly ≠ 0) : (C q.leadingCoeff⁻¹ * q).monic = true := by
   rw [monic_iff_toPoly_monic, toPoly_mul, toPoly_C, leadingCoeff_toPoly]
@@ -461,7 +484,8 @@ private lemma monic_raw_of_toPoly_ne_zero (q : CPolynomial.Raw R)
   rwa [_root_.mul_comm] at this
 
 omit [BEq R] [LawfulBEq R] in
-/-- If `q` is not the zero Rpolynomial, multiplying it by the inverse of its leading coefficient results in a monic polynomial -/
+/-- If `q` is not the zero Rpolynomial, multiplying it by the inverse of its leading coefficient
+    results in a monic polynomial -/
 private lemma monic_poly_of_toPoly_ne_zero (q : CPolynomial.Raw R)
     (hq' : q.toPoly ≠ 0) :
     (Polynomial.C q.toPoly.leadingCoeff⁻¹ * q.toPoly).Monic := by
