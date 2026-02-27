@@ -1585,14 +1585,7 @@ instance : Neg (CPolynomial.Raw R) := ⟨neg⟩
 instance : Sub (CPolynomial.Raw R) := ⟨sub⟩
 instance : IntCast (CPolynomial.Raw R) := ⟨fun n => C (n : R)⟩
 
-/-- Division with remainder by a monic polynomial using polynomial long division.
-
-We use `p.size` as fuel for the recursion. This is always sufficient because
-each division step strictly decreases the size of the remainder (the leading
-term is cancelled by a monic divisor, and `trim` removes any resulting trailing
-zeros). The guard `p.size < q.size` triggers as soon as the remainder is of
-lower degree than the divisor, so the recursion terminates cleanly even when
-cancellation causes the size to drop by more than one in a single step. -/
+/-- Division with remainder by a monic polynomial using polynomial long division. -/
 def divModByMonicAux [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
     CPolynomial.Raw R × CPolynomial.Raw R :=
   go (p.size - q.size) p q
