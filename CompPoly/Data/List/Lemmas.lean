@@ -68,8 +68,8 @@ theorem mapM_single (f : α → m β) (a : α) : List.mapM f [a] = return [← f
 
 @[simp]
 theorem getLastI_append_single [Inhabited α] (x : α) : (l ++ [x]).getLastI = x := by
-  simp only [List.getLastI_eq_getLast?, List.getLast?_append, List.getLast?_singleton,
-    Option.some_or]
+  simp only [List.getLastI_eq_getLast?_getD, List.getLast?_append, List.getLast?_singleton,
+    Option.some_or, Option.getD_some]
 
 variable {α : Type*} {unit : α}
 
