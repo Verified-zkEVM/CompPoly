@@ -1,1 +1,6 @@
 import CompPolyTests.Univariate.Raw
+import CompPolyTests.Univariate.Basic
+import CompPolyTests.Univariate.ToPoly
+import CompPolyTests.Multivariate.CMvMonomial
+import CompPolyTests.Multivariate.Restrict
+import CompPolyTests.Multivariate.VarsDegrees
