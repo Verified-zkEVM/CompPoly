@@ -1585,69 +1585,6 @@ instance : Neg (CPolynomial.Raw R) := ⟨neg⟩
 instance : Sub (CPolynomial.Raw R) := ⟨sub⟩
 instance : IntCast (CPolynomial.Raw R) := ⟨fun n => C (n : R)⟩
 
-/-- Division with remainder by a monic polynomial using polynomial long division. -/
-def divModByMonicAux [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
-    CPolynomial.Raw R × CPolynomial.Raw R :=
-  go p.size p q
-where
-  go : Nat → CPolynomial.Raw R → CPolynomial.Raw R → CPolynomial.Raw R × CPolynomial.Raw R
-  | 0, p, _ => ⟨0, p⟩
-  | n+1, p, q =>
-      if p.size < q.size then
-        ⟨0, p⟩
-      else
-        let k := p.size - q.size
-        let q' := C p.leadingCoeff * (q * X.pow k)
-        let p' := (p - q').trim
-        let (e, f) := go n p' q
-        -- p' = q * e + f
-        -- Thus p = p' + q' = q * e + f + p.leadingCoeff * q * X^k
-        -- = q * (e + p.leadingCoeff * X^k) + f
-        ⟨e + C p.leadingCoeff * X^k, f⟩
-
-/-- Division of `p : CPolynomial.Raw R` by a monic `q : CPolynomial.Raw R`. -/
-def divByMonic [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
-    CPolynomial.Raw R :=
-  (divModByMonicAux p q).1
-
-/-- Modulus of `p : CPolynomial.Raw R` by a monic `q : CPolynomial.Raw R`. -/
-def modByMonic [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
-    CPolynomial.Raw R :=
-  (divModByMonicAux p q).2
-
-/-- Regression test for issue #115: `(X^2 - 1) / (X + 1) = X - 1` with zero remainder. -/
-example :
-    divByMonic ((X : CPolynomial.Raw ℚ) ^ 2 - C 1) ((X : CPolynomial.Raw ℚ) + C 1)
-      = #[-(1 : ℚ), 1] := by
-  native_decide
-
-example :
-    modByMonic ((X : CPolynomial.Raw ℚ) ^ 2 - C 1) ((X : CPolynomial.Raw ℚ) + C 1)
-      = #[] := by
-  native_decide
-
-/-- Regression test for review-thread case: `X^3 = (X^2 + 1) * X + (-X)`. -/
-example :
-    divByMonic ((X : CPolynomial.Raw ℚ) ^ 3) ((X : CPolynomial.Raw ℚ) ^ 2 + C 1)
-      = #[(0 : ℚ), 1] := by
-  native_decide
-
-example :
-    modByMonic ((X : CPolynomial.Raw ℚ) ^ 3) ((X : CPolynomial.Raw ℚ) ^ 2 + C 1)
-      = #[(0 : ℚ), -(1 : ℚ)] := by
-  native_decide
-
-/-- Division of two `CPolynomial.Raw`s. -/
-def div [Field R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
-  (C (q.leadingCoeff)⁻¹ • p).divByMonic (C (q.leadingCoeff)⁻¹ * q)
-
-/-- Modulus of two `CPolynomial.Raw`s. -/
-def mod [Field R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
-  (C (q.leadingCoeff)⁻¹ • p).modByMonic (C (q.leadingCoeff)⁻¹ * q)
-
-instance [Field R] : Div (CPolynomial.Raw R) := ⟨div⟩
-instance [Field R] : Mod (CPolynomial.Raw R) := ⟨mod⟩
-
 /-- Erase the coefficient at index `n`: same as `p` except `coeff n = 0`, then trimmed. -/
 def erase [DecidableEq R] (n : ℕ) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
   p - monomial n (p.coeff n)

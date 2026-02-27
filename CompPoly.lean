@@ -26,6 +26,7 @@ import CompPoly.Univariate.Quotient
 import CompPoly.Univariate.ToPoly
 import CompPoly.Univariate.QuotientEquiv
 import CompPoly.Univariate.Lagrange
+import CompPoly.Univariate.DivMod
 import CompPoly.Bivariate.Basic
 import CompPoly.Bivariate.ToPoly
 import CompPoly.ToMathlib.Finsupp.Fin
