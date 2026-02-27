@@ -546,19 +546,53 @@ theorem evalX_toPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Rin
     simp +decide [Polynomial.coeff_monomial]
 
 /--
-`evalX` is compatible with full bivariate evaluation.
+`evalX` is compatible with full bivariate evaluation when `a` and `y` commute.
+-/
+theorem evalX_toPoly_eval_commute {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+    [DecidableEq R] (a y : R) (hc : Commute a y) (f : CBivariate R) :
+    (evalX (R := R) a f).eval y = (toPoly f).evalEval a y := by
+  have h_lhs :
+      (evalX (R := R) a f).toPoly.eval y =
+        ∑ j ∈ (f.toPoly).support, ((f.toPoly).coeff j).eval a * y ^ j := by
+    rw [Polynomial.eval_eq_sum, Polynomial.sum_def]
+    rw [Finset.sum_subset (show
+      (evalX (R := R) a f |> CPolynomial.toPoly |> Polynomial.support) ⊆ f.toPoly.support from ?_)]
+    · exact Finset.sum_congr rfl (fun x _ => by rw [CBivariate.evalX_toPoly_coeff])
+    · aesop
+    · intro j hj
+      simp_all +decide
+      contrapose! hj
+      simp_all +decide [evalX_toPoly_coeff]
+  convert h_lhs using 1
+  · exact CPolynomial.eval_toPoly y (evalX (R := R) a f)
+  · have h_eval_mul_C :
+      ∀ (q : Polynomial R) (r : R), Commute a r →
+        Polynomial.eval a (q * Polynomial.C r) = Polynomial.eval a q * r := by
+      intro q r hr
+      induction' q using Polynomial.induction_on' with p q hp hq <;>
+        simp_all +decide [mul_assoc, Polynomial.eval_add]
+      · simp +decide [add_mul, hp, hq]
+      · exact congrArg _ (hr.symm.pow_right _ |> Commute.eq)
+    have h_sum :
+        ∀ (s : Finset ℕ) (g : ℕ → Polynomial R),
+          (∀ j ∈ s, Commute a (y ^ j)) →
+            Polynomial.eval a (∑ j ∈ s, g j * Polynomial.C (y ^ j)) =
+              ∑ j ∈ s, Polynomial.eval a (g j) * y ^ j := by
+      exact fun s g hg => by
+        rw [Polynomial.eval_finset_sum,
+          Finset.sum_congr rfl (fun j hj => h_eval_mul_C _ _ (hg j hj))]
+    convert h_sum _ _ _
+    · simp +decide [Polynomial.eval_eq_sum, Polynomial.sum_def]
+    · exact fun j hj => hc.pow_right j
+
+/--
+`evalX_toPoly_eval_commute` specialized to commutative rings.
 -/
 theorem evalX_toPoly_eval {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [CommRing R]
     [DecidableEq R] (a y : R) (f : CBivariate R) :
     (evalX (R := R) a f).eval y = (toPoly f).evalEval a y := by
-  have h :
-      ((evalX (R := R) a f).toPoly) = (toPoly f).map (Polynomial.evalRingHom a) := by
-    ext j
-    rw [Polynomial.coeff_map]
-    simpa [CPolynomial.eval_toPoly] using
-      (evalX_toPoly_coeff (R := R) (a := a) (f := f) (j := j))
-  rw [CPolynomial.eval_toPoly y (evalX (R := R) a f), h]
-  simpa using (Polynomial.map_evalRingHom_eval (x := a) (y := y) (p := toPoly f))
+  simpa using
+    (evalX_toPoly_eval_commute (R := R) (a := a) (y := y) (hc := Commute.all a y) (f := f))
 
 /--
 `evalY a` corresponds to outer evaluation at `Polynomial.C a`.
