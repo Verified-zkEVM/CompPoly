@@ -10,3 +10,6 @@ require ExtTreeMapLemmas from git "https://github.com/Verified-zkEVM/ExtTreeMapL
 
 @[default_target]
 lean_lib CompPoly
+
+lean_lib CompPolyTests where
+  srcDir := "tests"
