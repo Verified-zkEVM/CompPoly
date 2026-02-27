@@ -232,8 +232,7 @@ theorem toPoly_mul {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
     (p q : CBivariate R) :
     toPoly (p * q) = toPoly p * toPoly q := by
       have h_mul : (p * q).toPoly =
-          (CPolynomial.toPoly (p * q)).map (CPolynomial.ringEquiv (R := R)) := by
-        exact toPoly_eq_map (p * q)
+          (CPolynomial.toPoly (p * q)).map (CPolynomial.ringEquiv (R := R)) := toPoly_eq_map (p * q)
       rw [ h_mul, CPolynomial.toPoly_mul ]
       rw [ Polynomial.map_mul, ← toPoly_eq_map, ← toPoly_eq_map ]
 
@@ -527,15 +526,39 @@ theorem totalDegree_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Rin
 theorem evalX_toPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
     [DecidableEq R] (a : R) (f : CBivariate R) (j : ℕ) :
     ((evalX (R := R) a f).toPoly).coeff j = ((toPoly f).coeff j).eval a := by
-  sorry
+  have h₁ :
+      ∀ (s : Finset ℕ) (g : ℕ → CPolynomial R),
+        (Finset.sum s (fun j => CPolynomial.monomial j (CPolynomial.eval a (g j)))).toPoly.coeff j =
+          ∑ i ∈ s, (CPolynomial.monomial i (CPolynomial.eval a (g i))).toPoly.coeff j := by
+    intro s g
+    induction s using Finset.induction <;>
+      simp_all +decide [Finset.sum_insert, CPolynomial.toPoly_add]
+    exact WithTop.coe_eq_zero.mp rfl
+  have h₂ :
+      eval a (f.toPoly.coeff j) =
+        ∑ i ∈ f.support, if i = j then CPolynomial.eval a (f.val.coeff i) else 0 := by
+    simp +decide [CBivariate.toPoly, Polynomial.coeff_monomial]
+    split_ifs <;> simp +decide [*, CPolynomial.eval_toPoly]
+  convert h₁ (CPolynomial.support f) (fun i => f.val.coeff i) using 1
+  convert h₂ using 1
+  exact Finset.sum_congr rfl fun i hi => by
+    rw [CPolynomial.monomial_toPoly]
+    simp +decide [Polynomial.coeff_monomial]
 
 /--
 `evalX` is compatible with full bivariate evaluation.
 -/
-theorem evalX_toPoly_eval {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+theorem evalX_toPoly_eval {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [CommRing R]
     [DecidableEq R] (a y : R) (f : CBivariate R) :
     (evalX (R := R) a f).eval y = (toPoly f).evalEval a y := by
-  sorry
+  have h :
+      ((evalX (R := R) a f).toPoly) = (toPoly f).map (Polynomial.evalRingHom a) := by
+    ext j
+    rw [Polynomial.coeff_map]
+    simpa [CPolynomial.eval_toPoly] using
+      (evalX_toPoly_coeff (R := R) (a := a) (f := f) (j := j))
+  rw [CPolynomial.eval_toPoly y (evalX (R := R) a f), h]
+  simpa using (Polynomial.map_evalRingHom_eval (x := a) (y := y) (p := toPoly f))
 
 /--
 `evalY a` corresponds to outer evaluation at `Polynomial.C a`.
@@ -605,7 +628,106 @@ theorem leadingCoeffY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [R
 theorem swap_toPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
     [DecidableEq R] (f : CBivariate R) (i j : ℕ) :
     ((toPoly (swap (R := R) f)).coeff j).coeff i = ((toPoly f).coeff i).coeff j := by
-  sorry
+  rw [coeff_toPoly, coeff_toPoly]
+  have hCoeffSumOuter :
+      ∀ (s : Finset ℕ) (g : ℕ → CPolynomial (CPolynomial R)),
+        CPolynomial.coeff (∑ x ∈ s, g x) j = ∑ x ∈ s, CPolynomial.coeff (g x) j := by
+    intro s g
+    induction s using Finset.induction with
+    | empty =>
+        simpa [CPolynomial.coeff] using (CPolynomial.coeff_zero (R := CPolynomial R) j)
+    | @insert a s ha hs =>
+        rw [Finset.sum_insert ha, Finset.sum_insert ha, CPolynomial.coeff_add, hs]
+  have hCoeffSumInner :
+      ∀ (s : Finset ℕ) (g : ℕ → CPolynomial R),
+        CPolynomial.coeff (∑ x ∈ s, g x) i = ∑ x ∈ s, CPolynomial.coeff (g x) i := by
+    intro s g
+    induction s using Finset.induction with
+    | empty =>
+        simpa [CPolynomial.coeff] using (CPolynomial.coeff_zero (R := R) i)
+    | @insert a s ha hs =>
+        rw [Finset.sum_insert ha, Finset.sum_insert ha, CPolynomial.coeff_add, hs]
+  have hInner :
+      ∀ x : ℕ,
+        CPolynomial.coeff
+            (∑ x₁ ∈ (f.val.coeff x).support,
+              CPolynomial.monomial x₁ (CPolynomial.monomial x ((f.val.coeff x).coeff x₁))) j =
+          CPolynomial.monomial x ((f.val.coeff x).coeff j) := by
+    intro x
+    by_cases h : j ∈ (f.val.coeff x).support
+    · rw [hCoeffSumOuter]
+      rw [Finset.sum_eq_single_of_mem j h]
+      · simpa [CPolynomial.coeff] using
+          (CPolynomial.coeff_monomial (R := CPolynomial R) j j
+            (CPolynomial.monomial x ((f.val.coeff x).coeff j)))
+      · intro b hb hbne
+        have hbne' : j ≠ b := Ne.symm hbne
+        change
+          CPolynomial.coeff
+              (CPolynomial.monomial b (CPolynomial.monomial x ((f.val.coeff x).coeff b))) j = 0
+        simpa [CPolynomial.coeff, hbne'] using
+          (CPolynomial.coeff_monomial (R := CPolynomial R) b j
+            (CPolynomial.monomial x ((f.val.coeff x).coeff b)))
+    · rw [hCoeffSumOuter]
+      rw [Finset.sum_eq_zero]
+      · have h₁ : (f.val.coeff x).coeff j = 0 := by
+          by_contra h₁
+          exact h ((CPolynomial.mem_support_iff (f.val.coeff x) j).2 h₁)
+        have hmon : CPolynomial.monomial x ((f.val.coeff x).coeff j) = 0 :=
+          (CPolynomial.eq_zero_iff_coeff_zero).2 (by
+            intro k
+            rw [CPolynomial.coeff_monomial]
+            by_cases hk : k = x
+            · subst hk
+              simpa [CPolynomial.coeff] using h₁
+            · simp [hk])
+        simpa [CPolynomial.coeff] using Eq.symm hmon
+      · intro b hb
+        have h₁ : j ≠ b := by
+          intro h₁
+          apply h
+          simpa [h₁] using hb
+        change
+          CPolynomial.coeff
+              (CPolynomial.monomial b (CPolynomial.monomial x ((f.val.coeff x).coeff b))) j = 0
+        simpa [CPolynomial.coeff, h₁] using
+          (CPolynomial.coeff_monomial (R := CPolynomial R) b j
+            (CPolynomial.monomial x ((f.val.coeff x).coeff b)))
+  have hSwapCoeff :
+      CPolynomial.coeff (swap (R := R) f) j =
+        ∑ x ∈ f.supportY, CPolynomial.monomial x ((f.val.coeff x).coeff j) := by
+    unfold CBivariate.swap CBivariate.supportY
+    rw [hCoeffSumOuter]
+    exact Finset.sum_congr rfl (fun x hx => hInner x)
+  change CPolynomial.coeff (CPolynomial.coeff (swap (R := R) f) j) i =
+    CPolynomial.coeff (CPolynomial.coeff f i) j
+  rw [hSwapCoeff]
+  rw [hCoeffSumInner]
+  by_cases h : i ∈ f.supportY
+  · rw [Finset.sum_eq_single_of_mem i h]
+    · simpa [CPolynomial.coeff] using
+        (CPolynomial.coeff_monomial (R := R) i i ((f.val.coeff i).coeff j))
+    · intro b hb hbne
+      have hbne' : i ≠ b := Ne.symm hbne
+      change CPolynomial.coeff (CPolynomial.monomial b ((f.val.coeff b).coeff j)) i = 0
+      simpa [CPolynomial.coeff, hbne'] using
+        (CPolynomial.coeff_monomial (R := R) b i ((f.val.coeff b).coeff j))
+  · rw [Finset.sum_eq_zero]
+    · have h₁ : CPolynomial.coeff f i = 0 := by
+        by_contra h₁
+        exact h (by simpa [CBivariate.supportY] using (CPolynomial.mem_support_iff f i).2 h₁)
+      have h₂ : (f.val.coeff i).coeff j = 0 := by
+        simpa [CPolynomial.coeff] using
+          congrArg (fun p : CPolynomial R => CPolynomial.coeff p j) h₁
+      simpa [CPolynomial.coeff] using Eq.symm h₂
+    · intro b hb
+      have h₁ : i ≠ b := by
+        intro h₁
+        apply h
+        simpa [h₁] using hb
+      change CPolynomial.coeff (CPolynomial.monomial b ((f.val.coeff b).coeff j)) i = 0
+      simpa [CPolynomial.coeff, h₁] using
+        (CPolynomial.coeff_monomial (R := R) b i ((f.val.coeff b).coeff j))
 
 /--
 `leadingCoeffX` is the Y-leading coefficient of the swapped polynomial.
