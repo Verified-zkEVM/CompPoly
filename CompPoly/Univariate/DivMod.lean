@@ -153,8 +153,8 @@ private lemma toPoly_monom (lc : R) (n : ℕ) :
 `   divModByMonicAux` -/
 private lemma toPoly_div_step (p q : CPolynomial.Raw R) :
     (p - q * (C p.leadingCoeff * (X : CPolynomial.Raw R) ^ (p.natDegree - q.natDegree))).toPoly =
-    p.toPoly - q.toPoly * (Polynomial.C p.leadingCoeff * Polynomial.X ^ (p.natDegree - q.natDegree))
-    := by
+    p.toPoly - q.toPoly *
+    (Polynomial.C p.leadingCoeff * Polynomial.X ^ (p.natDegree - q.natDegree)) := by
   convert toPoly_sub p (q * (C p.leadingCoeff * X ^ (p.natDegree - q.natDegree))) using 1
   have h_poly_mul : ∀ (p q : CPolynomial.Raw R), (p * q).toPoly = p.toPoly * q.toPoly := by
     exact fun p q => toPoly_mul p q
@@ -328,8 +328,8 @@ lemma size_cond_iff_degree_cond (p q : CPolynomial.Raw R) (hq : q.toPoly.Monic) 
 /-- Rewrites `toPoly` lemmas on the definition of `z` in `divModByMonicAux.go`  -/
 lemma z_toPoly_eq (p q : CPolynomial.Raw R) (hp : p.toPoly ≠ 0) :
     (C p.leadingCoeff * X ^ (p.natDegree - q.natDegree)).toPoly =
-    Polynomial.C p.toPoly.leadingCoeff * Polynomial.X ^ (p.toPoly.natDegree - q.toPoly.natDegree)
-    := by
+    Polynomial.C p.toPoly.leadingCoeff *
+    Polynomial.X ^ (p.toPoly.natDegree - q.toPoly.natDegree) := by
   have h_deg : p.natDegree = p.toPoly.natDegree ∧ q.natDegree = q.toPoly.natDegree := by
     constructor <;> by_cases hq : q.toPoly = 0 <;> simp_all [ natDegree_eq_toPoly_natDegree ]
     rw [natDegree]
@@ -364,8 +364,8 @@ lemma divByMonic_unfold_step (p q : CPolynomial.Raw R) (hq : q.toPoly.Monic)
       q.Monic → q ≠ 0 → p.degree ≥ q.degree →
       p /ₘ q =
         Polynomial.C p.leadingCoeff * Polynomial.X ^ (p.natDegree - q.natDegree) +
-        (p - q * (Polynomial.C p.leadingCoeff * Polynomial.X ^ (p.natDegree - q.natDegree))) /ₘ q
-        := by
+        (p - q *
+        (Polynomial.C p.leadingCoeff * Polynomial.X ^ (p.natDegree - q.natDegree))) /ₘ q := by
     intros p q hq hq' hpq
     rw [ Polynomial.divByMonic ]
     unfold Polynomial.divModByMonicAux
@@ -382,8 +382,8 @@ lemma modByMonic_unfold_step (p q : CPolynomial.Raw R) (hq : q.toPoly.Monic)
       Polynomial.X ^ (p.toPoly.natDegree - q.toPoly.natDegree))) %ₘ q.toPoly := by
   have h_eq : ∀ (p q : Polynomial R), q.Monic → q ≠ 0 → p.degree ≥ q.degree →
       p %ₘ q =
-      (p - q * (Polynomial.C p.leadingCoeff * Polynomial.X ^ (p.natDegree - q.natDegree))) %ₘ q
-      := by
+      (p - q *
+      (Polynomial.C p.leadingCoeff * Polynomial.X ^ (p.natDegree - q.natDegree))) %ₘ q := by
     intros p q hq hq' hpq
     rw [ Polynomial.modByMonic ]
     unfold Polynomial.divModByMonicAux
