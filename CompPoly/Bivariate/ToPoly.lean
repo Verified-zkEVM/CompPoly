@@ -595,6 +595,34 @@ theorem evalX_toPoly_eval {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Comm
     (evalX_toPoly_eval_commute (R := R) (a := a) (y := y) (hc := Commute.all a y) (f := f))
 
 /--
+The `Commute` hypothesis in `evalX_toPoly_eval_commute` is necessary:
+if the identity holds for every bivariate polynomial then `a` and `y` commute.
+-/
+theorem evalX_toPoly_eval_commute_converse
+    {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] [DecidableEq R]
+    (a y : R)
+    (h : ∀ f : CBivariate R,
+      (evalX (R := R) a f).eval y = (toPoly f).evalEval a y) :
+    Commute a y := by
+  have key := h (monomialXY (R := R) 1 1 1)
+  have lhs : (evalX (R := R) a (monomialXY (R := R) 1 1 1)).eval y = a * y := by
+    rw [CPolynomial.eval_toPoly]
+    have htoPoly : (evalX (R := R) a (monomialXY (R := R) 1 1 1)).toPoly =
+        Polynomial.monomial 1 a := by
+      ext j
+      rw [evalX_toPoly_coeff, monomialXY_toPoly]
+      simp [Polynomial.coeff_monomial]
+      split_ifs with h
+      · subst h
+        simp [Polynomial.eval_monomial]
+      · simp
+    rw [htoPoly, Polynomial.eval_monomial, pow_one]
+  have rhs : (toPoly (monomialXY (R := R) 1 1 1)).evalEval a y = y * a := by
+    rw [monomialXY_toPoly]
+    simp [Polynomial.evalEval, Polynomial.eval_monomial]
+  exact lhs.symm.trans key |>.trans rhs
+
+/--
 `evalY a` corresponds to outer evaluation at `Polynomial.C a`.
 -/
 theorem evalY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
