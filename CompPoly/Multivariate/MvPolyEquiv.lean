@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa
+Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa, Dimitris Mitsios
 -/
 import Batteries.Data.Vector.Lemmas
 import CompPoly.Multivariate.CMvPolynomial
@@ -397,6 +397,42 @@ instance {n : ℕ} : CommSemiring (CPoly.CMvPolynomial n R) where
   npow_zero := by intro x; simp [npowRecAuto, npowRec]
   npow_succ := by intro n x; simp [npowRecAuto, npowRec]
   mul_comm := by aesop (add safe apply _root_.mul_comm)
+
+section CommRingBridge
+
+variable {n : ℕ} {R : Type} [CommRing R] [BEq R] [LawfulBEq R]
+
+@[simp]
+lemma map_neg (a : CMvPolynomial n R) :
+    fromCMvPolynomial (-a) = -fromCMvPolynomial a := by
+  ext m
+  simp only [MvPolynomial.coeff_neg, coeff_eq]
+  unfold CMvPolynomial.coeff
+  unfold_projs
+  unfold Lawful.neg Unlawful.neg Lawful.fromUnlawful
+  simp only [ExtTreeMap.get?_eq_getElem?, Unlawful.zero_eq_zero]
+  erw [Unlawful.filter_get, ExtTreeMap.getElem?_map]
+  cases h : (a.1)[CMvMonomial.ofFinsupp m]? with
+  | none => simp
+  | some v => simp
+
+lemma map_sub (a b : CMvPolynomial n R) :
+    fromCMvPolynomial (Sub.sub a b) = fromCMvPolynomial a - fromCMvPolynomial b := by
+  unfold Sub.sub Lawful.instSub Lawful.sub
+  rw [map_add, map_neg, sub_eq_add_neg]
+
+instance : CommRing (CPoly.CMvPolynomial n R) where
+  neg_add_cancel a := by
+    apply fromCMvPolynomial_injective
+    simp [map_neg, map_add, map_zero]
+  mul_comm := by
+    aesop (add safe apply _root_.mul_comm)
+  zsmul := zsmulRec
+  zsmul_zero' := fun _ => rfl
+  zsmul_succ' := fun _ _ => rfl
+  zsmul_neg' := fun _ _ => rfl
+
+end CommRingBridge
 
 noncomputable def polyRingEquiv :
   RingEquiv (CPoly.CMvPolynomial n R) (MvPolynomial (Fin n) R) where
