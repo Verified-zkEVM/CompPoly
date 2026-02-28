@@ -536,6 +536,18 @@ theorem singleton_subset_Icc (n : ℕ) : {1} ⊆ Finset.Icc 1 (n + 1) := by
   rw [add_comm] at one_le_n_plus_1
   exact ⟨Nat.le_refl 1, one_le_n_plus_1⟩
 
+theorem sum_Icc_shift {M : Type*} [AddCommMonoid M] (f : ℕ → M) (a b shift : ℕ) :
+    ∑ j ∈ Finset.Icc a b, f (j + shift) = ∑ j ∈ Finset.Icc (a + shift) (b + shift), f j := by
+  calc
+    ∑ j ∈ Finset.Icc a b, f (j + shift) = ∑ j ∈ Finset.Ico a (b + 1), f (j + shift) := by
+      rw [Finset.Ico_add_one_right_eq_Icc]
+    _ = ∑ j ∈ Finset.Ico (a + shift) ((b + 1) + shift), f j := by
+      simpa using (Finset.sum_Ico_add' (f := f) (a := a) (b := b + 1) (c := shift))
+    _ = ∑ j ∈ Finset.Ico (a + shift) ((b + shift) + 1), f j := by
+      simp [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+    _ = ∑ j ∈ Finset.Icc (a + shift) (b + shift), f j := by
+      rw [Finset.Ico_add_one_right_eq_Icc]
+
 theorem two_le_two_pow_n_plus_1 (n : ℕ) : 2 ≤ 2 ^ (n + 1) := by
   calc
     2 = 2 ^ 1               := by rw [Nat.pow_one]
@@ -665,43 +677,10 @@ theorem pow_exp_of_2_repr_given_x_square_repr {F : Type*} [instField : Field F]
           apply Finset.sum_congr rfl (fun j _ => by
             rw [←Nat.pow_succ, ←Nat.pow_succ])
         _ = ∑(j ∈ Finset.Icc 2 (n+1)), z^(2^(n+1) - 2^j) := by
-          -- TODO : shorten this sum range shift
-          apply Finset.sum_bij' (fun i _ => i + 1) (fun i _ => i - 1)
-          · -- left inverse
-            intro i hi
-            simp only [Finset.mem_Icc] at hi ⊢
-            -- ⊢ i + 1 - 1 = i
-            rfl
-          · -- right inverse
-            intro i hi
-            -- ⊢ i - 1 + 1 = i
-            have ⟨left_bound, _⟩ := Finset.mem_Icc.mp hi -- hi : i ∈ Finset.Icc 2 (n + 1)
-            have one_le_left_bound : 1 ≤ i := by
-              calc
-                1 ≤ 2 := by norm_num
-                _ ≤ i := by exact left_bound
-            exact Nat.sub_add_cancel one_le_left_bound
-          · -- function value match
-            intro i hi
-            simp only
-          · -- left membership preservation
-            intro i hi
-            -- ⊢ i + 1 ∈ Finset.Icc 2 (n + 1)
-            rw [Finset.mem_Icc]
-            have ⟨left_bound, right_bound⟩ := Finset.mem_Icc.mp hi
-            -- ⊢ 2 ≤ i + 1 ∧ i + 1 ≤ n + 1
-            apply And.intro
-            · exact Nat.succ_le_succ left_bound
-            · exact Nat.succ_le_succ right_bound
-          -- ⊢ ∀ a ∈ Finset.Icc 2 (n + 1), a - 1 ∈ Finset.Icc 1 n
-          · -- right membership preservation
-            intro a ha
-            simp only [Finset.mem_Icc] at ha
-            rw [Finset.mem_Icc]
-            have ⟨left_bound, right_bound⟩ := ha
-            apply And.intro
-            · exact Nat.pred_le_pred left_bound
-            · exact Nat.pred_le_pred right_bound
+          simpa [Nat.succ_eq_add_one, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using
+            (sum_Icc_shift
+              (f := fun j => z ^ (2 ^ (n + 1) - 2 ^ j))
+              (a := 1) (b := n) (shift := 1))
         _ = ∑(j ∈ Finset.Icc 1 (n+1)), z^(2^(n+1) - 2^j) - z^(2^(n+1) - 2^1) := by
           calc
             ∑ j ∈ Finset.Icc 2 (n + 1), z ^ (2 ^ (n + 1) - 2 ^ j) =
