@@ -293,14 +293,16 @@ instance {n : ℕ} {R : Type} [CommRing R] [BEq R] [LawfulBEq R] :
   neg_add_cancel := sorry
   mul_comm := sorry
 
-/-- Convert sum representation to iterative form.
+/-- Horner-style iterative reconstruction of a polynomial.
 
-  TODO: Clarify intended behavior - may be related to converting between different
-  polynomial representations or evaluation strategies.
+  Folds over the monomial–coefficient pairs of `p`, rebuilding the polynomial
+  one term at a time via `monomial m c` and addition.  The result is
+  extensionally equal to `p` (same coefficients, hence same evaluation), but
+  has been reconstructed through the iterative accumulation path.
 -/
 def sumToIter {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
     (p : CMvPolynomial n R) : CMvPolynomial n R :=
-  sorry
+  ExtTreeMap.foldl (fun acc m c => acc + monomial m c) 0 p.1
 
 end CMvPolynomial
 
