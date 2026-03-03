@@ -495,6 +495,58 @@ instance instSMulZeroClass : SMulZeroClass R (CMvPolynomial n R) where
 @[simp]
 lemma smul_def (r : R) (p : CMvPolynomial n R) : r • p = C r * p := rfl
 
+open Std in
+/-- `fromCMvPolynomial` maps `CMvPolynomial.C` to `MvPolynomial.C`. -/
+lemma fromCMvPolynomial_C (r : R) :
+    fromCMvPolynomial (C r : CMvPolynomial n R) = MvPolynomial.C r := by
+  by_cases hr : r = 0
+  · subst hr
+    have : (C 0 : CMvPolynomial n R) = 0 := by show Lawful.C 0 = Lawful.C 0; rfl
+    rw [this, CPoly.map_zero, MvPolynomial.C_0]
+  · ext m
+    rw [coeff_eq, MvPolynomial.coeff_C]
+    unfold C Lawful.C coeff Unlawful.C MonoR.C
+    simp only [hr, ite_false]
+    have ofFinsupp_zero : CMvMonomial.ofFinsupp (0 : Fin n →₀ ℕ) = CMvMonomial.zero := by
+      unfold CMvMonomial.ofFinsupp CMvMonomial.zero; ext i hi; grind
+    by_cases hm : (0 : Fin n →₀ ℕ) = m
+    · subst hm; rw [if_pos rfl]
+      erw [ExtTreeMap.getElem?_ofList_of_mem
+        (k := CMvMonomial.zero) (k' := CMvMonomial.ofFinsupp 0)
+        (by rw [ofFinsupp_zero]; exact compare_self)
+        (v := r) (by simp) (by simp)]
+      simp
+    · rw [if_neg hm]
+      have hne : CMvMonomial.ofFinsupp m ≠ CMvMonomial.zero := by
+        intro h; apply hm; ext i
+        have hi := congr_fun (congr_arg Vector.get h) i
+        simp [CMvMonomial.ofFinsupp, CMvMonomial.zero] at hi; exact hi.symm
+      erw [ExtTreeMap.getElem?_ofList_of_contains_eq_false (by simp [hne])]
+      rfl
+
+/-- `C` is a ring homomorphism. -/
+noncomputable def CRingHom : R →+* CMvPolynomial n R where
+  toFun := C
+  map_one' := by
+    rw [eq_iff_fromCMvPolynomial]
+    simp [fromCMvPolynomial_C, CPoly.map_one]
+  map_mul' x y := by
+    rw [eq_iff_fromCMvPolynomial]
+    simp [fromCMvPolynomial_C, CPoly.map_mul]
+  map_zero' := by
+    rw [eq_iff_fromCMvPolynomial]
+    simp [fromCMvPolynomial_C, CPoly.map_zero]
+  map_add' x y := by
+    rw [eq_iff_fromCMvPolynomial]
+    simp [fromCMvPolynomial_C, CPoly.map_add]
+
+/-- `CMvPolynomial n R` is an `R`-algebra, with scalars acting by multiplication
+    via constant polynomials. -/
+noncomputable instance instAlgebra : Algebra R (CMvPolynomial n R) :=
+  Algebra.mk (toSMul := instSMul) CRingHom
+    (fun r x => mul_comm (C r) x)
+    (fun _ _ => rfl)
+
 end CMvPolynomial
 
 end CPoly
