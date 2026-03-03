@@ -18,6 +18,7 @@ import CompPoly.Multivariate.VarsDegrees
 import CompPoly.Multivariate.Lawful
 import CompPoly.Multivariate.MvPolyEquiv
 import CompPoly.Multivariate.Rename
+import CompPoly.Multivariate.FinSuccEquiv
 import CompPoly.Multivariate.Unlawful
 import CompPoly.Multivariate.Wheels
 import CompPoly.Univariate.Raw
