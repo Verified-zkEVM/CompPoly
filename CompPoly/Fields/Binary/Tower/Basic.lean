@@ -647,8 +647,8 @@ private lemma towerAlgebraMapCore_succ_last (l d : ℕ) :
   exact congrArg (fun f => ((canonicalEmbedding (l + d)).comp f) x) hfold
 
 def towerAlgebraMap (l r : ℕ) (h_le : l ≤ r) : BTField l →+* BTField r := by
-  if h_lt : l = r then
-    subst h_lt
+  if h_eq : l = r then
+    subst h_eq
     exact RingHom.id (BTField l)
   else
     exact cast (BTField.RingHom_eq_of_dest_eq (k:=l) (m:=l + (r - l)) (n:=r)
