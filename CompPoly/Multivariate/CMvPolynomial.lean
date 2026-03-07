@@ -259,15 +259,6 @@ def rename {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 -- `renameEquiv` is defined in `CompPoly.Multivariate.Rename`
 
-/-- Scalar multiplication with zero handling.
-
-  This is automatically provided by `Module`, but we list it for completeness.
-
-  TODO: Requires `Module` instance (see above).
--/
-instance {n : ℕ} {R : Type} [Zero R] [BEq R] [LawfulBEq R] : SMulZeroClass R (CMvPolynomial n R) :=
-  sorry
-
 /-- `CMvPolynomial n R` forms a commutative ring when `R` is a commutative ring.
 
   Extends the `CommSemiring` structure with subtraction.
@@ -317,9 +308,8 @@ end CMvPolynomial
 --       (circular dependency):
 -- TODO: `Algebra R (CMvPolynomial n R)` instance
 -- TODO: `Module R (CMvPolynomial n R)` instance
--- TODO: `eval₂Hom` - Ring homomorphism for evaluation
 -- TODO: `finSuccEquiv` - Equivalence between (n+1)-variable and n-variable polynomials
 -- TODO: `optionEquivLeft` - Equivalence for option-indexed variables
--- TODO: `isEmptyAlgEquiv` - Algebra equivalence for empty variable set
+-- See MvPolyEquiv.lean for: eval₂Hom, isEmptyRingEquiv, SMulZeroClass
 
 end CPoly

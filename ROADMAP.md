@@ -45,6 +45,7 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - `finSuccEquiv`, `optionEquivLeft`: Variable manipulation equivalences (for `CMvPolynomial`)
    - ✅ `CommSemiring` for `CMvPolynomial`; `isEmptyAlgEquiv`: Additional algebra structures (latter pending)
    - `smulZeroClass`, `sumToIter`: Scalar multiplication and iteration utilities — stubs exist, proofs pending
+   - ✅ Implement `rename` / `renameEquiv` for variable renaming
 
 1. **Further data types**
    - ✅ Basic field definitions (currently in Arklib) ported into CompPoly (e.g. BabyBear, Goldilocks, BN254, BLS12_381, binary tower)
@@ -63,38 +64,34 @@ CompPoly aims to be the premier formally verified library for computable polynom
 1. **Fast field arithmetic**
    - Optimized implementations of off-the-shelf available Field instances to enable performance, including for prime and other finite fields
 
-1. **Polynomial multiplication**
+2. **Polynomial multiplication**
    - Implement FFT/NTT-based multiplication (O(n log n) vs current O(n²))
    - Focus on NTT for finite field arithmetic
    - Maintain correctness proofs alongside optimizations
    
 **Note**: [erdkocak](https://github.com/erdkocak) and [doran2728](https://github.com/doran2728) have communicated they will be working on this.
 
-1. **Exponentiation optimization**
+3. **Exponentiation optimization**
    - Replace repeated multiplication with repeated squaring
    - Reduce complexity from O(n) to O(log n) multiplications
 
-1. **Evaluation optimizations**
+4. **Evaluation optimizations**
    - Implement batch evaluation at multiple points
    - Add Horner's method where beneficial
    - Optimize for common ZK evaluation patterns
 
-1. **Complete multilinear transform functions**
+5. **Complete multilinear transform functions**
    - Complete documentation of zeta/Möbius transform formulas
    - Prove equivalence between fast and spec implementations
    - Add performance guarantees and complexity proofs
 
-1. **Add rename operations**
-   - Implement `rename` / `renameEquiv` for variable renaming
-   - Critical for circuit composition and protocol flexibility
-
-1. **Bivariate polynomial operations**
+6. **Bivariate polynomial operations**
    - Implement efficient bivariate polynomial type: `CPolynomial (CPolynomial R)` or specialized representation, with optimized operations
    - Efficient factorization algorithms for bivariate polynomials
    - Integration with existing `CMvPolynomial 2 R` with equivalence proofs
    - Critical for sum-check protocols, FRI commitments, and zkVM constraint systems
 
-1. **Error-correcting interpolation algorithms**
+7. **Error-correcting interpolation algorithms**
    - Implement Berlekamp-Welch algorithm for Reed-Solomon decoding
    - Implement Guruswami-Sudan list-decoding algorithm
    - Proofs of correctness

@@ -2638,9 +2638,6 @@ lemma NTTStage_correctness (i : Fin (ℓ))
       simp only [Fin.eta] at h_res
       rw [h_res]
 
-      congr
-      rw [h_eval_qmap_at_1, add_zero]
-
       have h_bit0: Nat.getBit (i.val) (j.val ^^^ 2 ^ i.val) = 0 := by
         rw [Nat.getBit_of_xor (n:=j.val) (m:=2^i.val) (k:=i.val)]
         rw [bit_i_j_eq_1, Nat.getBit_two_pow]
@@ -2663,9 +2660,16 @@ lemma NTTStage_correctness (i : Fin (ℓ))
           simp only [beq_iff_eq, h_ne_i_eq_k, ↓reduceIte, Nat.xor_zero]
         else
           simp only [h_k, ↓reduceIte]
-      · sorry
-      · sorry
-      -- simp_rw [h_v_eq]
+      have h_suffix_fin_eq : (⟨Nat.getLowBits (i.val + 1) (j.val ^^^ 2 ^ i.val),
+        Nat.getLowBits_lt_two_pow (numLowBits := i.val + 1)⟩ : Fin (2 ^ (i.val + 1))) =
+        ⟨Nat.getLowBits i.val j.val, by
+          calc Nat.getLowBits i.val j.val
+            < 2 ^ i.val := Nat.getLowBits_lt_two_pow (numLowBits := i.val)
+            _ < 2 ^ (i.val + 1) := Nat.pow_lt_pow_right (by omega) (by omega)⟩ :=
+        Fin.ext h_v_eq
+      simp only [h_suffix_fin_eq]
+      congr 1
+      rw [h_eval_qmap_at_1, add_zero]
 
     have h_odd_split: input_buffer j = eval x1
       (odd_coeffs_poly.comp (qMap 𝔽q β ⟨↑i, by omega⟩)) := by
