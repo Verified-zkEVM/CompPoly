@@ -990,7 +990,7 @@ instance : Module R (CPolynomial R) where
   zero_smul := zero_smul'
 
 /-- This is an R-linear function that returns the coefficient of X^n. -/
-def lcoeff (n : ℕ) : (CPolynomial R) →ₗ[R] R where
+def lcoeff (S : Type*) [BEq S] [Semiring S] [LawfulBEq S] (n : ℕ) : (CPolynomial S) →ₗ[S] S where
   toFun p := coeff p n
   map_add' p q := coeff_add p q n
   map_smul' r p := coeff_smul r p n
@@ -998,12 +998,12 @@ def lcoeff (n : ℕ) : (CPolynomial R) →ₗ[R] R where
 /-- The `R`-submodule of `CPolynomial R` consisting of polynomials of degree ≤ `n`. -/
 def degreeLE (S : Type*) [BEq S] [Semiring S] [LawfulBEq S] (n : WithBot ℕ) :
     Submodule S (CPolynomial S) :=
-  ⨅ k : ℕ, ⨅ _ : ↑k > n, LinearMap.ker (lcoeff k)
+  ⨅ k : ℕ, ⨅ _ : ↑k > n, LinearMap.ker (lcoeff S k)
 
 /-- The `R`-submodule of `CPolynomial R` consisting of polynomials of degree < `n`. -/
 def degreeLT (S : Type*) [BEq S] [Semiring S] [LawfulBEq S] (n : ℕ) :
     Submodule S (CPolynomial S) :=
-  ⨅ k : ℕ, ⨅ (_ : k ≥ n), LinearMap.ker (lcoeff k)
+  ⨅ k : ℕ, ⨅ (_ : k ≥ n), LinearMap.ker (lcoeff S k)
 
 end ModuleTheory
 
