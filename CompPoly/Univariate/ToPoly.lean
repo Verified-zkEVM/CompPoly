@@ -588,6 +588,109 @@ theorem C_mul_X_pow_toPoly [LawfulBEq R] [DecidableEq R] [Nontrivial R] (r : R) 
 
 end ImplementationCorrectness
 
+
+section LinearEquiv
+
+variable [LawfulBEq R]
+
+-- R-Module equivalence between canonical computable polynomials and Mathlib polynomials
+-- and their submodules.
+
+/-- A polynomial has degree ≤ n iff all coefficients at indices > n are zero. -/
+theorem degree_le_iff_coeff_zero (p : CPolynomial R) (n : WithBot ℕ) :
+    p.degree ≤ n ↔ ∀ k : ℕ, n < k → p.coeff k = 0 := by sorry
+    --new proof using mathlib API
+
+/-- A polynomial has degree less than `n` iff the coefficients of X^k are zero for k
+    greater than `n`. -/
+theorem degree_lt_iff_coeff_zero (p : CPolynomial R) (n : ℕ) :
+    p.degree < n ↔ ∀ k : ℕ, n ≤ k → p.coeff k = 0 := by sorry
+    -- new proof using mathlib api
+
+/-- A polynomial is contained in `degreeLE R n` iff it has degree at most `n`. -/
+theorem mem_degreeLE {n : WithBot ℕ} {p : (CPolynomial R)} : p ∈ degreeLE R n ↔ degree p ≤ n := by
+    simp [degreeLE]
+    exact Iff.symm (degree_le_iff_coeff_zero p n)
+
+/-- The submodule of polynomials with degree less than or equal to `n` contains the submodule
+    of polynomials with degree less than or equal to `m` when `m` is less than or equal to `n`. -/
+theorem degreeLE_mono (m n : WithBot ℕ) (h_lessThan : m ≤ n) :
+    degreeLE R m ≤ degreeLE R n :=
+    fun _ hf => mem_degreeLE.2 (le_trans (mem_degreeLE.1 hf) h_lessThan)
+
+/-- A polynomial is contained in `degreeLT R n` iff it has degree less than `n`. -/
+theorem mem_degreeLT {n : ℕ} {p : CPolynomial R} : p ∈ degreeLT R n ↔ degree p < n := by
+    simp [degreeLT]
+    rw[degree_lt_iff_coeff_zero]
+    exact Lex.forall
+
+/-- The submodule of polynomials with degree strictly less than `n ` contains the submodule
+    of polynomials with degree less than `m` when `m` is less than or equal to `n`. -/
+theorem degreeLT_mono {m n : ℕ} (h_lessThan : m ≤ n) : degreeLT R m ≤ degreeLT R n := fun _ hf =>
+  mem_degreeLT.2 (lt_of_lt_of_le (mem_degreeLT.1 hf) <| WithBot.coe_le_coe.2 h_lessThan)
+
+/-- The submodule of polynomials with degree strictly less than `n + 1` equals the submodule
+  of polynomials with degree at most `n`. -/
+theorem degreeLT_succ_eq_degreeLE {n : ℕ} : degreeLT R (n + 1) = degreeLE R ↑n := by
+  simp +decide [ degreeLT, degreeLE ]
+
+section bases
+
+-- This section contains theorems and lemmas about generators of submodules of `CPolynomial R`.
+
+/-- When `R` has decidable equality so does `(CPolynomial R)`. -/
+instance [DecidableEq R] : DecidableEq (CPolynomial R) :=
+  inferInstanceAs (DecidableEq { p : CPolynomial.Raw R // p.trim = p })
+
+/-- `degreeLE R ↑n` is spanned by monic monomials of degree at most `n`. -/
+theorem degreeLE_eq_span_X_pow [DecidableEq R] [Nontrivial R] {n : ℕ} :
+    degreeLE R ↑n =
+    Submodule.span R ↑((Finset.range (n + 1)).image fun n => (X : CPolynomial R) ^ n) := by sorry
+    --new proof with mathlib API
+
+/-- `degreeLT R ↑n` is spanned by monic monomials of degree less than `n`. -/
+theorem degreeLT_eq_span_X_pow [DecidableEq R] [Nontrivial R] {n : ℕ} :
+    degreeLT R n
+        = Submodule.span R ↑((Finset.range n).image fun n => (X : CPolynomial R) ^ n) := by sorry
+      --new proof with mathlib API
+end bases
+
+/-- The first `n` coefficients on `degreeLT n` form a linear equivalence with `Fin n → R`.
+
+  This is the computable polynomial analogue of `Polynomial.degreeLTEquiv`.
+
+  The forward map sends a polynomial `p` with `degree p < n` to the function
+  `i ↦ coeff p i` for `i : Fin n`.
+
+  The inverse map sends a function `f : Fin n → R` to the polynomial
+  `∑ i, monomial i (f i)`. -/
+def degreeLTEquiv (S : Type*) [BEq S] [Semiring S] [LawfulBEq S] [DecidableEq S] (n : ℕ) :
+    degreeLT S n ≃ₗ[S] (Fin n → S) where
+  toFun p i := coeff p.1 i
+  invFun f :=
+    ⟨Finset.univ.sum (fun i : Fin n => monomial (↑i) (f i)),
+      sorry⟩
+  map_add' := sorry
+  map_smul' := sorry
+  left_inv := sorry
+  right_inv := sorry
+  --new proof using mathlib
+
+/-- The `degreeLTEquiv` maps a polynomial to zero if and only if the polynomial is zero. -/
+theorem degreeLTEquiv_eq_zero_iff_eq_zero [DecidableEq R] {n : ℕ} {p : CPolynomial R}
+    (hp : p ∈ degreeLT R n) :
+    degreeLTEquiv R n ⟨p, hp⟩ = 0 ↔ p = 0 := by sorry
+
+/-- Evaluation of a polynomial in `degreeLT R n` can be expressed as a sum over its
+  coefficients via `degreeLTEquiv`. -/
+theorem eval_eq_sum_degreeLTEquiv [DecidableEq R] {n : ℕ} {p : CPolynomial R}
+    (hp : p ∈ degreeLT R n) (x : R) :
+    eval x p =
+      Finset.univ.sum (fun i : Fin n => degreeLTEquiv R n ⟨p, hp⟩ i * x ^ (i : ℕ)) := by sorry
+
+
+end LinearEquiv
+
 end CPolynomial
 
 end CompPoly
