@@ -1005,6 +1005,37 @@ def degreeLT (S : Type*) [BEq S] [Semiring S] [LawfulBEq S] (n : ℕ) :
     Submodule S (CPolynomial S) :=
   ⨅ k : ℕ, ⨅ (_ : k ≥ n), LinearMap.ker (lcoeff S k)
 
+/-- The forward map of `degreeLTEquiv` preserves addition:
+  extracting coefficients commutes with polynomial addition.  -/
+lemma degreeLTEquiv_map_add (n : ℕ)
+    (p q : ↥(degreeLT R n)) :
+    (fun i : Fin n => coeff (↑(p + q) : CPolynomial R) (↑i)) =
+    (fun i : Fin n => coeff (↑p : CPolynomial R) (↑i) + coeff (↑q : CPolynomial R) (↑i)) := by
+  exact funext fun i => coeff_add _ _ _
+
+/-- The forward map of `degreeLTEquiv` preserves scalar multiplication:
+  extracting coefficients commutes with scalar multiplication. -/
+lemma degreeLTEquiv_map_smul (n : ℕ)
+    (r : R) (p : ↥(degreeLT R n)) :
+    (fun i : Fin n => coeff (↑(r • p) : CPolynomial R) (↑i)) =
+    (fun i : Fin n => r * coeff (↑p : CPolynomial R) (↑i)) := by
+  have h_coeff_smul : ∀ i : ℕ, coeff (r • (p : CPolynomial R)) i
+      = r *coeff (p : CPolynomial R) i := by
+    exact fun i => coeff_smul r (↑p) i
+  exact funext fun i => h_coeff_smul i
+
+/-- The first `n` coefficients on `degreeLT n` define a linear map to `Fin n → R`.
+
+  This is the computable polynomial analogue of `Polynomial.degreeLTEquiv`.
+
+  The map sends a polynomial `p` with `degree p < n` to the function
+  `i ↦ coeff p i` for `i : Fin n`. -/
+def degreeLTEquiv (S : Type*) [BEq S] [Semiring S] [LawfulBEq S] [DecidableEq S] (n : ℕ) :
+    degreeLT S n →ₗ[S] (Fin n → S) where
+  toFun p i := coeff p.1 i
+  map_add' := fun p q => degreeLTEquiv_map_add n p q
+  map_smul' := fun r p => degreeLTEquiv_map_smul n r p
+
 end ModuleTheory
 
 end CPolynomial

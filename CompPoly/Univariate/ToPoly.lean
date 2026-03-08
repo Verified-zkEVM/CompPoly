@@ -588,20 +588,27 @@ theorem C_mul_X_pow_toPoly [LawfulBEq R] [DecidableEq R] [Nontrivial R] (r : R) 
 
 /-- The implementation of `lcoeff` agrees with `Polynomial.lcoeff`. -/
 theorem lcoeff_toPoly [LawfulBEq R] (n : ℕ) (p : CPolynomial R) :
-  lcoeff R n p  = Polynomial.lcoeff R n (toPoly p) := by
+    lcoeff R n p  = Polynomial.lcoeff R n (toPoly p) := by
     simp [lcoeff, Polynomial.lcoeff_apply, ← coeff_toPoly]
 
-  /-- The implementation of 'degreeLE' is correct. -/
-  theorem degreeLE_toPoly {n : WithBot ℕ} [LawfulBEq R] {p : CPolynomial R} :
-      p ∈ degreeLE R n ↔ p.toPoly ∈ Polynomial.degreeLE R n := by
-    simp only [degreeLE, Polynomial.degreeLE, Submodule.mem_iInf, LinearMap.mem_ker,
-      lcoeff_toPoly]
+/-- The implementation of 'degreeLE' is correct. -/
+theorem degreeLE_toPoly {n : WithBot ℕ} [LawfulBEq R] {p : CPolynomial R} :
+    p ∈ degreeLE R n ↔ p.toPoly ∈ Polynomial.degreeLE R n := by
+  simp only [degreeLE, Polynomial.degreeLE, Submodule.mem_iInf, LinearMap.mem_ker,
+    lcoeff_toPoly]
 
-  /-- The implementation of 'degreeLT' is correct. -/
-  theorem degreeLT_toPoly {n : ℕ} [LawfulBEq R] {p : CPolynomial R} :
-      p ∈ degreeLT R n ↔ p.toPoly ∈ Polynomial.degreeLT R n := by
-    simp only [degreeLT, Polynomial.degreeLT, Submodule.mem_iInf, LinearMap.mem_ker,
-      lcoeff_toPoly]
+/-- The implementation of 'degreeLT' is correct. -/
+theorem degreeLT_toPoly {n : ℕ} [LawfulBEq R] {p : CPolynomial R} :
+    p ∈ degreeLT R n ↔ p.toPoly ∈ Polynomial.degreeLT R n := by
+  simp only [degreeLT, Polynomial.degreeLT, Submodule.mem_iInf, LinearMap.mem_ker,
+    lcoeff_toPoly]
+
+/-- The implementation of 'degreeLTEquiv' is correct. -/
+theorem degreeLTEquiv_toPoly {n : ℕ} [LawfulBEq R] [DecidableEq R] {p : CPolynomial R}
+    (hp : p ∈ degreeLT R n) (i : Fin n) :
+      degreeLTEquiv R n ⟨p, hp⟩ i =
+          Polynomial.degreeLTEquiv R n ⟨p.toPoly, degreeLT_toPoly.mp hp⟩ i := by
+    simp [degreeLTEquiv, Polynomial.degreeLTEquiv, ← coeff_toPoly]
 
 end ImplementationCorrectness
 
@@ -627,7 +634,7 @@ noncomputable def toPolyLinearEquiv : CPolynomial R ≃ₗ[R] R[X] where
   right_inv := fun _ => toPoly_toImpl
 
 /-- `Polynomial.degreeLE` is the image of `CPolynomial.degreeLE` under `LinearEquiv`. -/
-theorem degreeLE_map_LinearEquiv {n : WithBot ℕ} :
+theorem degreeLE_map_toPolyLinearEquiv {n : WithBot ℕ} :
     (degreeLE R n).map toPolyLinearEquiv.toLinearMap = Polynomial.degreeLE R n :=
   le_antisymm (fun _ ⟨p, hp, h⟩ => h ▸ degreeLE_toPoly.mp hp)
     (fun q hq => ⟨toPolyLinearEquiv.symm q, degreeLE_toPoly.mpr (by
@@ -658,7 +665,8 @@ theorem degree_lt_iff_coeff_zero (p : CPolynomial R) (n : ℕ) :
     simp only [coeff_toPoly]
 
 /-- A polynomial is contained in `degreeLE R n` iff it has degree at most `n`. -/
-theorem mem_degreeLE {n : WithBot ℕ} {p : (CPolynomial R)} : p ∈ degreeLE R n ↔ degree p ≤ n := by
+theorem mem_degreeLE {n : WithBot ℕ} {p : (CPolynomial R)} :
+    p ∈ degreeLE R n ↔ degree p ≤ n := by
     simp [degreeLE]
     exact Iff.symm (degree_le_iff_coeff_zero p n)
 
@@ -676,8 +684,8 @@ theorem mem_degreeLT {n : ℕ} {p : CPolynomial R} : p ∈ degreeLT R n ↔ degr
 
 /-- The submodule of polynomials with degree strictly less than `n ` contains the submodule
     of polynomials with degree less than `m` when `m` is less than or equal to `n`. -/
-theorem degreeLT_mono {m n : ℕ} (h_lessThan : m ≤ n) : degreeLT R m ≤ degreeLT R n := fun _ hf =>
-  mem_degreeLT.2 (lt_of_lt_of_le (mem_degreeLT.1 hf) <| WithBot.coe_le_coe.2 h_lessThan)
+theorem degreeLT_mono {m n : ℕ} (h : m ≤ n) : degreeLT R m ≤ degreeLT R n := fun _ hf =>
+  mem_degreeLT.2 (lt_of_lt_of_le (mem_degreeLT.1 hf) <| WithBot.coe_le_coe.2 h)
 
 /-- The submodule of polynomials with degree strictly less than `n + 1` equals the submodule
   of polynomials with degree at most `n`. -/
@@ -687,10 +695,6 @@ theorem degreeLT_succ_eq_degreeLE {n : ℕ} : degreeLT R (n + 1) = degreeLE R �
 section bases
 
 -- This section contains theorems and lemmas about generators of submodules of `CPolynomial R`.
-
-/-- When `R` has decidable equality so does `(CPolynomial R)`. -/
-instance [DecidableEq R] : DecidableEq (CPolynomial R) :=
-  inferInstanceAs (DecidableEq { p : CPolynomial.Raw R // p.trim = p })
 
 /-- Helper lemma: `toPoly` maps `X ^ k` to `Polynomial.X ^ k`. -/
 lemma toPolyLinearEquiv_X_pow [Nontrivial R] (k : ℕ) :
@@ -704,7 +708,7 @@ theorem degreeLE_eq_span_X_pow [DecidableEq R] [Nontrivial R] {n : ℕ} :
     Submodule.span R ↑((Finset.range (n + 1)).image fun n => (X : CPolynomial R) ^ n) := by
   set e := toPolyLinearEquiv (R := R)
   apply Submodule.map_injective_of_injective e.injective
-  rw [degreeLE_map_LinearEquiv, Submodule.map_span, Polynomial.degreeLE_eq_span_X_pow]
+  rw [degreeLE_map_toPolyLinearEquiv, Submodule.map_span, Polynomial.degreeLE_eq_span_X_pow]
   congr 1
   simp only [Finset.coe_image, Set.image_image, LinearEquiv.coe_toLinearMap]
   congr 1; funext k; exact (toPolyLinearEquiv_X_pow (R := R) k).symm
@@ -722,40 +726,80 @@ theorem degreeLT_eq_span_X_pow [DecidableEq R] [Nontrivial R] {n : ℕ} :
 
 end bases
 
-/-- The first `n` coefficients on `degreeLT n` form a linear equivalence with `Fin n → R`.
+section degreeLTEquiv
 
-  This is the computable polynomial analogue of `Polynomial.degreeLTEquiv`.
+-- In this section we prove properties about the map degreeLTEquiv
 
-  The forward map sends a polynomial `p` with `degree p < n` to the function
-  `i ↦ coeff p i` for `i : Fin n`.
+/-- The sum `∑ i : Fin n, monomial i (f i)` has degree less than `n`,
+  so it lies in `degreeLT R n`. -/
+lemma degreeLTEquiv_invFun_mem [DecidableEq R] (n : ℕ) (f : Fin n → R) :
+    Finset.univ.sum (fun i : Fin n => monomial (↑i) (f i)) ∈ degreeLT R n := by
+  simp [degreeLT]
+  intro i hi
+  simp [lcoeff, monomial]
+  rw [ Finset.sum_eq_zero ]; intros; simp_all +decide [ CPolynomial.Raw.monomial ];
+  grind
 
-  The inverse map sends a function `f : Fin n → R` to the polynomial
-  `∑ i, monomial i (f i)`. -/
-def degreeLTEquiv (S : Type*) [BEq S] [Semiring S] [LawfulBEq S] [DecidableEq S] (n : ℕ) :
-    degreeLT S n ≃ₗ[S] (Fin n → S) where
-  toFun p i := coeff p.1 i
-  invFun f :=
-    ⟨Finset.univ.sum (fun i : Fin n => monomial (↑i) (f i)),
-      sorry⟩
-  map_add' := sorry
-  map_smul' := sorry
-  left_inv := sorry
-  right_inv := sorry
-  --define map in Basic, prove that it is equal to the same map for polynomials in ToPoly
+/-- Left inverse: reconstructing a polynomial from its coefficients via monomials
+  recovers the original polynomial. -/
+lemma degreeLTEquiv_left_inv [DecidableEq R] (n : ℕ)
+    (p : ↥(degreeLT R n)) :
+    (⟨Finset.univ.sum (fun i : Fin n => monomial (↑i) (coeff p.1 i)),
+      degreeLTEquiv_invFun_mem n (fun i => coeff p.1 i)⟩ : ↥(degreeLT R n)) = p := by
+    apply Subtype.ext
+    rw [eq_iff_coeff]; intro i
+    rw [show coeff (∑ j : Fin n, monomial (↑j) (coeff p.1 j)) i =
+      ∑ j : Fin n, coeff (monomial (↑j) (coeff p.1 j)) i from map_sum (lcoeff R i) _ _]
+    simp only [coeff_monomial]
+    by_cases hi : i < n
+    · rw [Finset.sum_eq_single_of_mem ⟨i, hi⟩ (Finset.mem_univ _)
+        (fun j _ hji => if_neg fun h => hji (Fin.ext (by aesop)))]
+      simp
+    · rw [show coeff p.1 i = 0 from
+        (degree_lt_iff_coeff_zero p.1 n).mp (mem_degreeLT.mp p.2) i (by omega)]
+      exact Finset.sum_eq_zero fun j _ => if_neg (by have := j.isLt; omega)
 
-/-- The `degreeLTEquiv` maps a polynomial to zero if and only if the polynomial is zero. -/
+/-- Right inverse: extracting coefficients from the polynomial built from `f`
+  recovers `f`. -/
+lemma degreeLTEquiv_right_inv [DecidableEq R] (n : ℕ)
+    (f : Fin n → R) :
+    (fun i : Fin n => coeff
+      (Finset.univ.sum (fun j : Fin n => monomial (↑j) (f j))) i) = f := by
+    funext i
+    rw [show coeff (∑ j : Fin n, monomial (↑j) (f j)) ↑i =
+      ∑ j : Fin n, coeff (monomial (↑j) (f j)) ↑i from map_sum (lcoeff R ↑i) _ _]
+    simp only [coeff_monomial]
+    rw [Finset.sum_eq_single_of_mem i (Finset.mem_univ _)
+      (fun j _ hji => if_neg fun h => hji (Fin.ext (by omega)))]
+    simp
+
+/-- The map `degreeLTEquiv` is a linear isomorphism. -/
+noncomputable def degreeLTLinearEquiv [DecidableEq R] (n : ℕ) : degreeLT R n ≃ₗ[R] (Fin n → R) :=
+    LinearEquiv.ofBijective (degreeLTEquiv R n)
+        ⟨Function.HasLeftInverse.injective ⟨fun f =>
+              ⟨_, degreeLTEquiv_invFun_mem n f⟩, degreeLTEquiv_left_inv n⟩,
+            fun f => ⟨⟨_, degreeLTEquiv_invFun_mem n f⟩, degreeLTEquiv_right_inv n f⟩⟩
+
+
+/-- The map `degreeLTEquiv` maps a polynomial to zero if and only if the polynomial is zero. -/
 theorem degreeLTEquiv_eq_zero_iff_eq_zero [DecidableEq R] {n : ℕ} {p : CPolynomial R}
     (hp : p ∈ degreeLT R n) :
-    degreeLTEquiv R n ⟨p, hp⟩ = 0 ↔ p = 0 := by sorry
-      --new proof using mathlib
+    degreeLTEquiv R n ⟨p, hp⟩ = 0 ↔ p = 0 := by
+    change (degreeLTLinearEquiv n) ⟨p, hp⟩ = 0 ↔ p = 0
+    rw [← map_zero (degreeLTLinearEquiv n), (degreeLTLinearEquiv n).injective.eq_iff,
+      Subtype.ext_iff, Submodule.coe_zero]
 
 /-- Evaluation of a polynomial in `degreeLT R n` can be expressed as a sum over its
   coefficients via `degreeLTEquiv`. -/
 theorem eval_eq_sum_degreeLTEquiv [DecidableEq R] {n : ℕ} {p : CPolynomial R}
     (hp : p ∈ degreeLT R n) (x : R) :
     eval x p =
-      Finset.univ.sum (fun i : Fin n => degreeLTEquiv R n ⟨p, hp⟩ i * x ^ (i : ℕ)) := by sorry
-      --new proof using mathlib
+      Finset.univ.sum (fun i : Fin n => degreeLTEquiv R n ⟨p, hp⟩ i * x ^ (i : ℕ)) := by
+      rw [eval_toPoly, Polynomial.eval_eq_sum_degreeLTEquiv (degreeLT_toPoly.mp hp)]
+      congr 1; ext i; congr 1
+      rw [degreeLTEquiv_toPoly hp i]
+
+end degreeLTEquiv
 
 end LinearEquiv
 
