@@ -398,7 +398,7 @@ instance {n : ℕ} : CommSemiring (CPoly.CMvPolynomial n R) where
   npow_succ := by intro n x; simp [npowRecAuto, npowRec]
   mul_comm := by aesop (add safe apply _root_.mul_comm)
 
-section CommRingBridge
+section CommRing
 
 variable {n : ℕ} {R : Type} [CommRing R] [BEq R] [LawfulBEq R]
 
@@ -421,7 +421,7 @@ lemma map_sub (a b : CMvPolynomial n R) :
   unfold Sub.sub Lawful.instSub Lawful.sub
   rw [map_add, map_neg, sub_eq_add_neg]
 
-instance : CommRing (CPoly.CMvPolynomial n R) where
+instance : CommRing (CMvPolynomial n R) where
   neg_add_cancel a := by
     apply fromCMvPolynomial_injective
     simp [map_neg, map_add, map_zero]
@@ -432,7 +432,7 @@ instance : CommRing (CPoly.CMvPolynomial n R) where
   zsmul_succ' := fun _ _ => rfl
   zsmul_neg' := fun _ _ => rfl
 
-end CommRingBridge
+end CommRing
 
 noncomputable def polyRingEquiv :
   RingEquiv (CPoly.CMvPolynomial n R) (MvPolynomial (Fin n) R) where
