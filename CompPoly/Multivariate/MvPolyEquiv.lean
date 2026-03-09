@@ -495,7 +495,8 @@ instance instSMulZeroClass : SMulZeroClass R (CMvPolynomial n R) where
 @[simp]
 lemma smul_def (r : R) (p : CMvPolynomial n R) : r • p = C r * p := rfl
 
-open Std in
+section Algebra
+
 /-- `fromCMvPolynomial` maps `CMvPolynomial.C` to `MvPolynomial.C`. -/
 lemma fromCMvPolynomial_C (r : R) :
     fromCMvPolynomial (C r : CMvPolynomial n R) = MvPolynomial.C r := by
@@ -546,6 +547,8 @@ noncomputable instance instAlgebra : Algebra R (CMvPolynomial n R) :=
   Algebra.mk (toSMul := instSMul) CRingHom
     (fun r x => mul_comm (C r) x)
     (fun _ _ => rfl)
+
+end Algebra
 
 end CMvPolynomial
 
