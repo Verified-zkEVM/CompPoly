@@ -12,6 +12,7 @@ import CompPoly.Multilinear.Basic
 import CompPoly.Multilinear.Equiv
 import CompPoly.Multivariate.CMvMonomial
 import CompPoly.Multivariate.CMvPolynomial
+import CompPoly.Multivariate.Operations
 import CompPoly.Multivariate.CMvPolynomialEvalLemmas
 import CompPoly.Multivariate.Restrict
 import CompPoly.Multivariate.VarsDegrees
