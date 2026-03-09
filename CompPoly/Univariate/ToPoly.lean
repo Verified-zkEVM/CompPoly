@@ -9,6 +9,8 @@ import Mathlib.Algebra.Tropical.Basic
 import Mathlib.RingTheory.Polynomial.Basic
 import CompPoly.Data.Array.Lemmas
 import CompPoly.Univariate.Basic
+import CompPoly.Univariate.Linear
+
 /-!
   # Equivalence with Mathlib Polynomials
 
@@ -401,6 +403,7 @@ end RingEquiv
 
 -- Lemmas stating that each operation on computable polynomials matches its
 -- mathlib counterpart when viewed via `toPoly`, enabling transport back and forth
+-- TODO consider a refactor such that these lemmas are put in theory, each importing ToPoly
 section ImplementationCorrectness
 
 /-- The implementation of monomial is correct. -/
