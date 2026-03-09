@@ -51,10 +51,7 @@ lemma degreeLTEquiv_map_smul (n : ℕ)
     (r : R) (p : ↥(degreeLT R n)) :
     (fun i : Fin n => coeff (↑(r • p) : CPolynomial R) (↑i)) =
     (fun i : Fin n => r * coeff (↑p : CPolynomial R) (↑i)) := by
-  have h_coeff_smul : ∀ i : ℕ, coeff (r • (p : CPolynomial R)) i
-      = r * coeff (p : CPolynomial R) i := by
-    exact fun i => coeff_smul r (↑p) i
-  exact funext fun i => h_coeff_smul i
+  exact funext fun i => coeff_smul r ↑p i
 
 /-- The first `n` coefficients on `degreeLT n` define a linear map to `Fin n → R`.
 
