@@ -933,7 +933,7 @@ lemma coeff_smul (r : R) (p : CPolynomial R) (i : ℕ) :
   rw [Trim.coeff_eq_coeff, Raw.smul_equiv]
 
 /-- Scalar multiplication on 0 gives 0. -/
-lemma smul_zero' (r : R) : r • (0 : CPolynomial R) = 0 := by
+lemma smul_zero (r : R) : r • (0 : CPolynomial R) = 0 := by
   rw [eq_iff_coeff]; intro i
   rw [coeff_smul, coeff_zero]; simp
 
@@ -945,7 +945,7 @@ lemma smul_eq_of_coeff_eq {p q : CPolynomial R}
   exact Trim.canonical_ext p.prop q.prop h
 
 /-- Scalar multiplication distributes. -/
-lemma smul_add' (r : R) (p q : CPolynomial R) :
+lemma smul_add (r : R) (p q : CPolynomial R) :
     r • (p + q) = r • p + r • q := by
   apply smul_eq_of_coeff_eq; intro i
   show (Raw.smul r (p.val + q.val)).trim.coeff i =
@@ -956,25 +956,25 @@ lemma smul_add' (r : R) (p q : CPolynomial R) :
   exact Distrib.left_distrib r (p.val.coeff i) (q.val.coeff i)
 
 /-- Scalar multiplication distributes across scalar addition. -/
-lemma add_smul' (r s : R) (p : CPolynomial R) :
+lemma add_smul (r s : R) (p : CPolynomial R) :
     (r + s) • p = r • p + s • p := by
   rw [eq_iff_coeff]; intro i
   rw [coeff_smul, coeff_add, coeff_smul, coeff_smul]; grind
 
 /-- Scalar multiplication by 0 gives 0. -/
-lemma zero_smul' (p : CPolynomial R) : (0 : R) • p = 0 := by
+lemma zero_smul (p : CPolynomial R) : (0 : R) • p = 0 := by
   apply smul_eq_of_coeff_eq; intro i
   show (Raw.smul 0 p.val).trim.coeff i = (0 : Raw R).coeff i
   rw [Trim.coeff_eq_coeff, smul_equiv]
   exact MulZeroClass.zero_mul (p.val.coeff i)
 
 /-- Scalar multiplication on p by 1 gives p. -/
-lemma one_smul' (p : CPolynomial R) : (1 : R) • p = p := by
+lemma one_smul (p : CPolynomial R) : (1 : R) • p = p := by
   rw [eq_iff_coeff]; intro i
   rw [coeff_smul, _root_.one_mul]
 
 /-- Scalar multiplication is associative. -/
-lemma mul_smul' (r s : R) (p : CPolynomial R) :
+lemma mul_smul (r s : R) (p : CPolynomial R) :
     (r * s) • p = r • (s • p) := by
   rw [eq_iff_coeff]; intro i
   rw [coeff_smul, coeff_smul, coeff_smul, _root_.mul_assoc]
@@ -982,59 +982,12 @@ lemma mul_smul' (r s : R) (p : CPolynomial R) :
 /-- `CPolynomial` forms a module when R is a semiring. -/
 instance : Module R (CPolynomial R) where
   smul:= SMul.smul
-  mul_smul := mul_smul'
-  one_smul := one_smul'
-  smul_zero := smul_zero'
-  smul_add := smul_add'
-  add_smul := add_smul'
-  zero_smul := zero_smul'
-
-/-- This is an R-linear function that returns the coefficient of X^n. -/
-def lcoeff (S : Type*) [BEq S] [Semiring S] [LawfulBEq S] (n : ℕ) : (CPolynomial S) →ₗ[S] S where
-  toFun p := coeff p n
-  map_add' p q := coeff_add p q n
-  map_smul' r p := coeff_smul r p n
-
-/-- The `R`-submodule of `CPolynomial R` consisting of polynomials of degree ≤ `n`. -/
-def degreeLE (S : Type*) [BEq S] [Semiring S] [LawfulBEq S] (n : WithBot ℕ) :
-    Submodule S (CPolynomial S) :=
-  ⨅ k : ℕ, ⨅ _ : ↑k > n, LinearMap.ker (lcoeff S k)
-
-/-- The `R`-submodule of `CPolynomial R` consisting of polynomials of degree < `n`. -/
-def degreeLT (S : Type*) [BEq S] [Semiring S] [LawfulBEq S] (n : ℕ) :
-    Submodule S (CPolynomial S) :=
-  ⨅ k : ℕ, ⨅ (_ : k ≥ n), LinearMap.ker (lcoeff S k)
-
-/-- The forward map of `degreeLTEquiv` preserves addition:
-  extracting coefficients commutes with polynomial addition.  -/
-lemma degreeLTEquiv_map_add (n : ℕ)
-    (p q : ↥(degreeLT R n)) :
-    (fun i : Fin n => coeff (↑(p + q) : CPolynomial R) (↑i)) =
-    (fun i : Fin n => coeff (↑p : CPolynomial R) (↑i) + coeff (↑q : CPolynomial R) (↑i)) := by
-  exact funext fun i => coeff_add _ _ _
-
-/-- The forward map of `degreeLTEquiv` preserves scalar multiplication:
-  extracting coefficients commutes with scalar multiplication. -/
-lemma degreeLTEquiv_map_smul (n : ℕ)
-    (r : R) (p : ↥(degreeLT R n)) :
-    (fun i : Fin n => coeff (↑(r • p) : CPolynomial R) (↑i)) =
-    (fun i : Fin n => r * coeff (↑p : CPolynomial R) (↑i)) := by
-  have h_coeff_smul : ∀ i : ℕ, coeff (r • (p : CPolynomial R)) i
-      = r *coeff (p : CPolynomial R) i := by
-    exact fun i => coeff_smul r (↑p) i
-  exact funext fun i => h_coeff_smul i
-
-/-- The first `n` coefficients on `degreeLT n` define a linear map to `Fin n → R`.
-
-  This is the computable polynomial analogue of `Polynomial.degreeLTEquiv`.
-
-  The map sends a polynomial `p` with `degree p < n` to the function
-  `i ↦ coeff p i` for `i : Fin n`. -/
-def degreeLTEquiv (S : Type*) [BEq S] [Semiring S] [LawfulBEq S] [DecidableEq S] (n : ℕ) :
-    degreeLT S n →ₗ[S] (Fin n → S) where
-  toFun p i := coeff p.1 i
-  map_add' := fun p q => degreeLTEquiv_map_add n p q
-  map_smul' := fun r p => degreeLTEquiv_map_smul n r p
+  mul_smul := mul_smul
+  one_smul := one_smul
+  smul_zero := smul_zero
+  smul_add := smul_add
+  add_smul := add_smul
+  zero_smul := zero_smul
 
 end ModuleTheory
 
