@@ -73,7 +73,10 @@ def interpolate {ι : Type*} [DecidableEq ι] (s : Finset ι) (x : ι → R) :
         intros n
         rw [coeff_C_mul, coeff_C_mul, coeff_C_mul, ←_root_.mul_assoc]
       rw [h₁, ←Finset.mul_sum]
-      rfl
+      simp only [RingHom.id_apply]
+      rw [eq_iff_coeff]; intro i; rw [coeff_C_mul, coeff_smul]
+
+
 
 lemma cinterpolate_eq_interpolate
     {ι : Type*} [DecidableEq ι] {s : Finset ι} {x : ι → R} {y : ι → R} :
