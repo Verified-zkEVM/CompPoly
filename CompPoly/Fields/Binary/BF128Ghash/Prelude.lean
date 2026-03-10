@@ -309,10 +309,10 @@ def checkSquareStep (rPrev q rNext : B128) : Bool :=
   lhs == rhs
 
 /-- Kernel-efficient version of `checkDivStep`.
-    The public API stays on `B256`, but the internal computation runs on `Nat`
-    using `clMulNat` to avoid the slow `BitVec` fold. -/
+    Preserves the full `B256` semantics of the public checker, but computes via
+    `Nat` structural recursion instead of the `BitVec` fold. -/
 def checkDivStep (a q b r : B256) : Bool :=
-  let rhs := clMulNat q.toNat b.toNat 128 ^^^ r.toNat
+  let rhs := clMulNat q.toNat b.toNat 256 ^^^ r.toNat
   a.toNat == rhs
 
 /-- If `a < 2^m`, then iterating `clMulNat` beyond bit `m-1` is a no-op,
@@ -398,6 +398,16 @@ private theorem clMul_eq_fold_range (a b : B256) :
     · intro hi
       exact Finset.mem_image.mpr ⟨⟨i, Finset.mem_range.mp hi⟩, by simp, rfl⟩
   simpa [hRange, Function.comp, BitVec.getLsb] using hImage.symm
+
+/-- The 256-step Nat checker matches `clMul` on all `B256` inputs. -/
+private theorem clMulNat_bv_eq_clMul (a b : B256) :
+    (BitVec.ofNat 256 (clMulNat a.toNat b.toNat 256) : B256) = clMul a b := by
+  calc
+    (BitVec.ofNat 256 (clMulNat a.toNat b.toNat 256) : B256)
+        = (Finset.range 256).fold BitVec.xor 0
+            (fun i => if a.toNat.testBit i then b <<< i else 0) := by
+              simpa [ofNat_toB256 b] using (clMulNat_bv_eq_fold_range a.toNat b.toNat 256)
+    _ = clMul a b := clMul_eq_fold_range a b |>.symm
 
 /-- The 128-step Nat checker matches `clMul` when the first multiplicand is 128-bit. -/
 private theorem clMulNat_bv_eq_clMul_128 (a b : B256) (ha : a.toNat < 2 ^ 128) :
@@ -507,10 +517,10 @@ theorem verify_div_step (a q b r : B256) (hq : q.toNat < 2 ^ 128)
   unfold checkDivStep at h
   rw [beq_iff_eq] at h
   have hBv : (BitVec.ofNat 256 a.toNat : B256) =
-      (BitVec.ofNat 256 (clMulNat q.toNat b.toNat 128 ^^^ r.toNat) : B256) := by
+      (BitVec.ofNat 256 (clMulNat q.toNat b.toNat 256 ^^^ r.toNat) : B256) := by
     simpa using congrArg (fun n => (BitVec.ofNat 256 n : B256)) h
   rw [ofNat_toB256 a, ofNat_xor_256, ofNat_toB256 r] at hBv
-  rw [clMulNat_bv_eq_clMul_128 q b hq] at hBv
+  rw [clMulNat_bv_eq_clMul q b] at hBv
   apply_fun toPoly at hBv
   rw [toPoly_xor, toPoly_clMul_no_overflow (da := 128) (db := 128) q b hq hb (by omega)] at hBv
   exact hBv
