@@ -389,7 +389,9 @@ private theorem clMul_eq_fold_range (a b : B256) :
       (H := by
         intro x _ y _ hxy
         exact Fin.ext hxy)
-  have hRange : ((Finset.univ : Finset (Fin 256)).image fun i : Fin 256 => i.val) = Finset.range 256 := by
+  have hRange :
+      ((Finset.univ : Finset (Fin 256)).image fun i : Fin 256 => i.val) =
+        Finset.range 256 := by
     ext i
     constructor
     · intro hi
