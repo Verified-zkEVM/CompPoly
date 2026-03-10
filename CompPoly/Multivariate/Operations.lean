@@ -151,14 +151,104 @@ def rename {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
 instance {n : ℕ} {R : Type} [Zero R] [BEq R] [LawfulBEq R] : SMulZeroClass R (CMvPolynomial n R) :=
   sorry
 
-/-- Convert sum representation to iterative form.
+/-- Horner-style iterative reconstruction of a polynomial.
 
-  Folds over the monomial-coefficient pairs of `p`, rebuilding the polynomial
-  one term at a time via `monomial m c` and addition.
+  Folds over the monomial–coefficient pairs of `p`, rebuilding the polynomial
+  one term at a time via `monomial m c` and addition.  The result is
+  extensionally equal to `p` (same coefficients, hence same evaluation), but
+  has been reconstructed through the iterative accumulation path.
 -/
 def sumToIter {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
     (p : CMvPolynomial n R) : CMvPolynomial n R :=
   ExtTreeMap.foldl (fun acc m c => acc + monomial m c) 0 p.1
+
+lemma list_foldl_add_comm {β K V : Type} [AddCommMonoid β]
+    (g : K → V → β) (l : List (K × V)) (init : β) :
+    List.foldl (fun acc pair => acc + g pair.1 pair.2) init l =
+    List.foldl (fun acc pair => g pair.1 pair.2 + acc) init l := by
+  induction l generalizing init with
+  | nil => rfl
+  | cons h t ih =>
+    simp only [List.foldl_cons]
+    rw [show init + g h.1 h.2 = g h.1 h.2 + init from add_comm _ _]
+    exact ih _
+
+lemma foldl_add_comm' {β : Type} [AddCommMonoid β] {k : ℕ}
+    {R' : Type} (g : CMvMonomial k → R' → β)
+    (t : Std.ExtTreeMap (CMvMonomial k) R') :
+    Std.ExtTreeMap.foldl (fun acc m c => acc + g m c) (0 : β) t =
+    Std.ExtTreeMap.foldl (fun acc m c => g m c + acc) (0 : β) t := by
+  simp only [Std.ExtTreeMap.foldl_eq_foldl_toList]
+  exact list_foldl_add_comm g t.toList 0
+
+/-- `fromCMvPolynomial` maps `CMvPolynomial.monomial` to
+`MvPolynomial.monomial`. -/
+lemma fromCMvPolynomial_monomial {k : ℕ} [CommSemiring R] [BEq R] [LawfulBEq R]
+    (mono : CMvMonomial k) (c : R) :
+    fromCMvPolynomial (CMvPolynomial.monomial mono c) =
+    MvPolynomial.monomial (CMvMonomial.toFinsupp mono) c := by
+  by_cases hc : c = 0
+  · subst hc; simp [CMvPolynomial.monomial, map_zero]
+  · ext μ
+    rw [coeff_eq, MvPolynomial.coeff_monomial]
+    unfold CMvPolynomial.coeff CMvPolynomial.monomial
+    simp only [show (c == (0 : R)) = false from by simp [hc]]
+    unfold Lawful.fromUnlawful
+    erw [Unlawful.filter_get]
+    simp only [Unlawful.ofList]
+    by_cases hm : CMvMonomial.toFinsupp mono = μ
+    · subst hm; rw [if_pos rfl, CMvMonomial.ofFinsupp_toFinsupp]
+      erw [ExtTreeMap.getElem?_ofList_of_mem
+        (k := mono) (k_eq := compare_self) (v := c)
+        (mem := by simp) (distinct := ?distinct)]
+      · simp
+      case distinct => simp
+    · rw [if_neg hm]
+      have hne : CMvMonomial.ofFinsupp μ ≠ mono :=
+        fun h => hm (h ▸ CMvMonomial.toFinsupp_ofFinsupp)
+      erw [ExtTreeMap.getElem?_ofList_of_contains_eq_false
+        (by simp [hne])]
+      rfl
+
+/-- `fromCMvPolynomial` distributes over `Finsupp.sum`. -/
+lemma fromCMvPolynomial_finsupp_sum {k : ℕ} [CommSemiring R] [BEq R] [LawfulBEq R]
+    (g : (Fin n →₀ ℕ) → R → CMvPolynomial k R)
+    (a : CMvPolynomial n R) :
+    fromCMvPolynomial (Finsupp.sum (fromCMvPolynomial a) g) =
+    Finsupp.sum (fromCMvPolynomial a)
+      (fun μ c => fromCMvPolynomial (g μ c)) := by
+  unfold Finsupp.sum; ext
+  simp [MvPolynomial.coeff_sum, coeff_eq, coeff_sum]
+
+lemma sumToIter_eq {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+    (p : CMvPolynomial n R) : sumToIter p = p := by
+  rw [eq_iff_fromCMvPolynomial]
+  unfold sumToIter
+  rw [foldl_add_comm' (g := fun m c => monomial m c) (t := p.1)]
+  rw [foldl_eq_sum (t := p) (f := fun m c => monomial m c)]
+  rw [fromCMvPolynomial_finsupp_sum]
+  simp [fromCMvPolynomial_monomial, CMvMonomial.toFinsupp_ofFinsupp]
+  rw [Finsupp.sum]
+  exact MvPolynomial.support_sum_monomial_coeff (fromCMvPolynomial p)
+
+lemma coeff_sumToIter {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+    (m : CMvMonomial n) (p : CMvPolynomial n R) :
+    coeff m (sumToIter p) = coeff m p := by
+  simp [sumToIter_eq (p := p)]
+
+@[simp] lemma sumToIter_zero {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R] :
+    sumToIter (0 : CMvPolynomial n R) = 0 := by
+  simpa using sumToIter_eq (p := (0 : CMvPolynomial n R))
+
+lemma sumToIter_add {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+    (p q : CMvPolynomial n R) :
+    sumToIter (p + q) = sumToIter p + sumToIter q := by
+  simp [sumToIter_eq]
+
+@[simp] lemma sumToIter_idempotent {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+    (p : CMvPolynomial n R) :
+    sumToIter (sumToIter p) = sumToIter p := by
+  simp [sumToIter_eq]
 
 end CMvPolynomial
 
