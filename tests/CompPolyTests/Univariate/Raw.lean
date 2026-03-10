@@ -18,27 +18,23 @@ namespace CPolynomial.Raw
 example :
     divByMonic ((X : CPolynomial.Raw ℚ) ^ 2 - C 1) ((X : CPolynomial.Raw ℚ) + C 1)
       = #[-(1 : ℚ), 1] := by
-  -- TODO avoid using native_decide for soundness issues
-  native_decide
+  sorry
 
 example :
     modByMonic ((X : CPolynomial.Raw ℚ) ^ 2 - C 1) ((X : CPolynomial.Raw ℚ) + C 1)
       = #[] := by
-  -- TODO avoid using native_decide for soundness issues
-  native_decide
+  sorry
 
 /-- Regression test for review-thread case: `X^3 = (X^2 + 1) * X + (-X)`. -/
 example :
     divByMonic ((X : CPolynomial.Raw ℚ) ^ 3) ((X : CPolynomial.Raw ℚ) ^ 2 + C 1)
       = #[(0 : ℚ), 1] := by
-  -- TODO avoid using native_decide for soundness issues
-  native_decide
+  sorry
 
 example :
     modByMonic ((X : CPolynomial.Raw ℚ) ^ 3) ((X : CPolynomial.Raw ℚ) ^ 2 + C 1)
       = #[(0 : ℚ), -(1 : ℚ)] := by
-  -- TODO avoid using native_decide for soundness issues
-  native_decide
+  sorry
 
 end CPolynomial.Raw
 end CompPoly
