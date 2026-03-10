@@ -12,6 +12,7 @@ import CompPoly.Multilinear.Basic
 import CompPoly.Multilinear.Equiv
 import CompPoly.Multivariate.CMvMonomial
 import CompPoly.Multivariate.CMvPolynomial
+import CompPoly.Multivariate.Operations
 import CompPoly.Multivariate.CMvPolynomialEvalLemmas
 import CompPoly.Multivariate.Restrict
 import CompPoly.Multivariate.VarsDegrees
@@ -22,6 +23,7 @@ import CompPoly.Multivariate.Unlawful
 import CompPoly.Multivariate.Wheels
 import CompPoly.Univariate.Raw
 import CompPoly.Univariate.Basic
+import CompPoly.Univariate.Linear
 import CompPoly.Univariate.Quotient
 import CompPoly.Univariate.ToPoly
 import CompPoly.Univariate.QuotientEquiv

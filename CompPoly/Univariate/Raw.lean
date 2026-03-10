@@ -1588,19 +1588,22 @@ instance : IntCast (CPolynomial.Raw R) := ⟨fun n => C (n : R)⟩
 /-- Division with remainder by a monic polynomial using polynomial long division. -/
 def divModByMonicAux [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
     CPolynomial.Raw R × CPolynomial.Raw R :=
-  go (p.size - q.size) p q
+  go p.size p q
 where
   go : Nat → CPolynomial.Raw R → CPolynomial.Raw R → CPolynomial.Raw R × CPolynomial.Raw R
   | 0, p, _ => ⟨0, p⟩
   | n+1, p, q =>
-      let k := p.size - q.size -- k should equal n, this is technically unneeded
-      let q' := C p.leadingCoeff * (q * X.pow k)
-      let p' := (p - q').trim
-      let (e, f) := go n p' q
-      -- p' = q * e + f
-      -- Thus p = p' + q' = q * e + f + p.leadingCoeff * q * X^n
-      -- = q * (e + p.leadingCoeff * X^n) + f
-      ⟨e + C p.leadingCoeff * X^k, f⟩
+      if p.size < q.size then
+        ⟨0, p⟩
+      else
+        let k := p.size - q.size
+        let q' := C p.leadingCoeff * (q * X.pow k)
+        let p' := (p - q').trim
+        let (e, f) := go n p' q
+        -- p' = q * e + f
+        -- Thus p = p' + q' = q * e + f + p.leadingCoeff * q * X^k
+        -- = q * (e + p.leadingCoeff * X^k) + f
+        ⟨e + C p.leadingCoeff * X^k, f⟩
 
 /-- Division of `p : CPolynomial.Raw R` by a monic `q : CPolynomial.Raw R`. -/
 def divByMonic [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
