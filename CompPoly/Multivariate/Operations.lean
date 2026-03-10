@@ -112,12 +112,4 @@ def sumToIter {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 end CMvPolynomial
 
--- TODO: Phase 1 items requiring Semiring/CommSemiring instances from MvPolyEquiv.lean:
--- TODO: `Algebra R (CMvPolynomial n R)` instance
--- TODO: `Module R (CMvPolynomial n R)` instance
--- TODO: `eval₂Hom` - Ring homomorphism for evaluation
--- TODO: `finSuccEquiv` - Equivalence between (n+1)-variable and n-variable polynomials
--- TODO: `optionEquivLeft` - Equivalence for option-indexed variables
--- TODO: `isEmptyAlgEquiv` - Algebra equivalence for empty variable set
-
 end CPoly
