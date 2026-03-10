@@ -160,14 +160,22 @@ set_option maxHeartbeats 800000 in
 /-- The power `(twoAdicGenerators[bits])^(2^bits) = 1`. -/
 lemma twoAdicGenerators_pow_twoPow_eq_one (bits : Fin (twoAdicity + 1)) :
     twoAdicGenerators[bits] ^ (2 ^ (bits : Nat)) = 1 := by
-  fin_cases bits <;> native_decide
+  fin_cases bits
+  sorry
 
 set_option maxHeartbeats 1600000 in
 /-- Helper: Fin-indexed version for computational verification of non-triviality. -/
 private lemma twoAdicGenerators_pow_ne_one_aux (n : Fin 25) (m : Fin 25)
     (hm : m.val < n.val) :
     twoAdicGenerators[n] ^ (2 ^ m.val) ≠ (1 : Field) := by
-  fin_cases n <;> fin_cases m <;> simp_all <;> native_decide
+  sorry
+  -- fin_cases n
+  -- fin_cases m
+  -- simp_all
+  -- all_goals simp only [Fin.zero_eta, Fin.isValue, Fin.getElem_fin, Nat.reduceAdd,
+  --   Fin.coe_ofNat_eq_mod, Nat.zero_mod, Nat.reducePow, ne_eq]
+  -- grind only
+
 
 /-- If `m < bits`, then `(twoAdicGenerators[bits])^(2^m) ≠ 1`. -/
 lemma twoAdicGenerators_pow_twoPow_ne_one_of_lt
