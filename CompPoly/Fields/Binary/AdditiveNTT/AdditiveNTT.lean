@@ -3,11 +3,16 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
-
 import CompPoly.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
-import Mathlib.Tactic
+import Mathlib.Tactic.IntervalCases
+import Mathlib.Tactic.NormNum
+import Mathlib.Tactic.Push
+import Mathlib.Tactic.Ring
+import Mathlib.Tactic.Use
 import Mathlib.Data.Finsupp.Defs
 import Mathlib.LinearAlgebra.LinearIndependent.Defs
+
+set_option linter.style.longFile 2900
 
 /-!
 # Additive NTT Algorithm (Algorithm 2, LCH14)
@@ -314,7 +319,6 @@ theorem qMap_maps_sDomain (i : Fin r) (h_i_add_1 : i + 1 < r) :
     (normalizedW_is_additive 𝔽q β i)
   set t := polyEvalLinearMap (normalizedW 𝔽q β (i + 1))
     (normalizedW_is_additive 𝔽q β (i + 1))
-  change f ∘ₗ g = t -- equality on composition of linear maps
   ext x
   -- => equality on evaluation at x
   -- (this automatically matches linearity of f ∘ g with linearity of t)
@@ -651,7 +655,7 @@ noncomputable def sDomain_basis (i : Fin r) (h_i : i < ℓ + R_rate) :
             -- We have found our `x` in `V_i`.
             -- We need to lift `x` from the submodule `V_i` to a term of the subtype `↥V_i`.
             use ⟨x, hx_in_Vi⟩
-            apply Subtype.eq
+            apply Subtype.ext
             exact hx_maps_to_y
         )
 

@@ -156,18 +156,30 @@ lemma coprime_three_fieldSize_sub_one : Nat.Coprime 3 (fieldSize - 1) := by
 lemma twoAdicity_maximal : ¬ (2 ^ (twoAdicity + 1)) ∣ (fieldSize - 1) := by
   decide
 
-set_option maxHeartbeats 800000 in
+/-- Repeated squaring: `sqChain g n = g ^ (2^n)`.
+    Does `n` multiplications instead of `2^n`, making it kernel-friendly. -/
+private def sqChain (g : Field) : Nat → Field
+  | 0 => g
+  | n + 1 => let h := sqChain g n; h * h
+
+private theorem sqChain_eq_pow_two_pow (g : Field) (n : Nat) :
+    sqChain g n = g ^ (2 ^ n) := by
+  induction n with
+  | zero => simp [sqChain]
+  | succ n ih => simp [sqChain, ih, pow_succ, pow_mul]
+
 /-- The power `(twoAdicGenerators[bits])^(2^bits) = 1`. -/
 lemma twoAdicGenerators_pow_twoPow_eq_one (bits : Fin (twoAdicity + 1)) :
     twoAdicGenerators[bits] ^ (2 ^ (bits : Nat)) = 1 := by
-  fin_cases bits <;> native_decide
+  rw [← sqChain_eq_pow_two_pow]
+  fin_cases bits <;> decide
 
-set_option maxHeartbeats 1600000 in
 /-- Helper: Fin-indexed version for computational verification of non-triviality. -/
 private lemma twoAdicGenerators_pow_ne_one_aux (n : Fin 25) (m : Fin 25)
     (hm : m.val < n.val) :
     twoAdicGenerators[n] ^ (2 ^ m.val) ≠ (1 : Field) := by
-  fin_cases n <;> fin_cases m <;> simp_all <;> native_decide
+  rw [← sqChain_eq_pow_two_pow]
+  fin_cases n <;> fin_cases m <;> simp_all <;> decide
 
 /-- If `m < bits`, then `(twoAdicGenerators[bits])^(2^m) ≠ 1`. -/
 lemma twoAdicGenerators_pow_twoPow_ne_one_of_lt

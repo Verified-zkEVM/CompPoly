@@ -397,16 +397,12 @@ lemma BTField_is_BTFieldAux (k : ℕ) :
   unfold BTField
   rfl
 
-@[simp]
 instance BTFieldIsField (k : ℕ) : Field (BTField k) := (BinaryTowerAux k).2.instField
 
-@[simp]
 instance CommRing (k : ℕ) : CommRing (BTField k) := Field.toCommRing
 
-@[simp]
-instance Nontrivial (k : ℕ) : Nontrivial (BTField k) := inferInstance
+instance Nontrivial (k : ℕ) : Nontrivial (BTField k) := Field.toNontrivial
 
-@[simp]
 instance Inhabited (k : ℕ) : Inhabited (BTField k) where
   default := (0 : BTField k)
 
@@ -414,22 +410,18 @@ instance {k : ℕ} : _root_.Inhabited (BinaryTowerAux k).fst := by
   change _root_.Inhabited (BTField k)
   exact Inhabited k
 
-@[simp]
 instance BTFieldNeZero1 (k : ℕ) : NeZero (1 : BTField k) := by
   unfold BTField
   exact @neZero_one_of_nontrivial_comm_monoid_zero (BTField k) _ (Nontrivial k)
 
-@[simp]
 instance BTField_Fintype (k : ℕ) : Fintype (BTField k) := (BinaryTowerAux k).2.instFintype
 
 @[simp]
 def BTFieldCard (k : ℕ) : Fintype.card (BTField k) = 2^(2^k) :=
   (BinaryTowerAux k).2.fieldFintypeCard
 
-@[simp]
 instance BTFieldIsDomain (k : ℕ) : IsDomain (BTField k) := inferInstance
 
-@[simp]
 instance BTFieldNoZeroDiv (k : ℕ) : NoZeroDivisors (BTField k) := by
   unfold BTField
   infer_instance
@@ -438,7 +430,6 @@ instance BTFieldNoZeroDiv (k : ℕ) : NoZeroDivisors (BTField k) := by
 def sumZeroIffEq (k : ℕ) : ∀ (x y : BTField k),
     x + y = 0 ↔ x = y := (BinaryTowerAux k).2.sumZeroIffEq
 
-@[simp]
 instance BTFieldChar2 (k : ℕ) : CharP (BTField k) 2 :=
   charP_eq_2_of_add_self_eq_zero (sumZeroIffEq:=sumZeroIffEq k)
 

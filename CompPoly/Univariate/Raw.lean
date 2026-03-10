@@ -223,14 +223,14 @@ theorem size_eq_degree_plus_one (p : CPolynomial.Raw R) (h_trim: p.trim ≠ (mk 
   unfold trim degree
   match h : p.lastNonzero with
   | none => exfalso; unfold trim at h_trim; rw [h] at h_trim; contradiction
-  | some i => simp [Fin.is_lt, Nat.succ_le_of_lt]
+  | some i => simp [Fin.is_lt]
 
 theorem size_eq_natDegree_plus_one (p : CPolynomial.Raw R) (h_trim: p.trim ≠ (mk #[])) :
     p.trim.size = p.natDegree + 1 := by
   unfold trim natDegree
   match h : p.lastNonzero with
   | none => exfalso; unfold trim at h_trim; rw [h] at h_trim; contradiction
-  | some i => simp [Fin.is_lt, Nat.succ_le_of_lt]
+  | some i => simp [Fin.is_lt]
 
 theorem size_eq_natDegree_of_zero (p : CPolynomial.Raw R) (h_trim: p.trim = (mk #[])) :
     p.trim.size = p.natDegree := by
@@ -737,7 +737,7 @@ lemma coeff_monomial [DecidableEq R] {n i : ℕ} {c : R} :
   · unfold monomial
     rw [if_neg hc]; clear hc
     have h_arr : (mk (Array.replicate n 0 ++ #[c])) =
-                   mk (Array.replicate n 0) ++ mk #[c] := by grind
+                   mk (Array.replicate n 0) ++ mk #[c] := by rfl
     rw [h_arr]; clear h_arr
     by_cases hn : n = i
     · rw [if_pos hn, hn]; clear hn
@@ -908,7 +908,7 @@ lemma sum_range_extend  (p q : CPolynomial.Raw R) (k : ℕ) :
         rw [ show Finset.filter ( fun x => ¬k < x ) ( Finset.range ( Array.size p ) )
             = Finset.range ( k + 1 ) from ?_ ]
         · simp +zetaDelta at *
-        · grind
+        · ext; simp; omega
 
 /-- The convolution sum is symmetric under reversal of the range. -/
 lemma sum_range_reverse [LawfulBEq R] (p q : CPolynomial.Raw R) (k : ℕ) :
@@ -1340,7 +1340,7 @@ lemma mul_assoc_coeff_rhs [LawfulBEq R] (p q r : CPolynomial.Raw R) (n : ℕ) :
   rw [Finset.mul_sum]
   apply Finset.sum_congr rfl
   intro j hj
-  grind
+  exact (mul_assoc _ _ _).symm
 
 /-- The coefficient of `(p * q) * r` at index `n` as a double sum. -/
 lemma mul_mul_coeff [LawfulBEq R] (p q r : CPolynomial.Raw R) (n : ℕ) :

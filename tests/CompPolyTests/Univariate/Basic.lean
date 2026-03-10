@@ -23,7 +23,7 @@ example (r : ℚ) : (C r).coeff 3 = 0 := by
   simpa using coeff_C (R := ℚ) r 3
 
 example : (X : CPolynomial ℚ).coeff 1 = 1 := by
-  native_decide
+  decide
 
 example (p : CPolynomial ℚ) : (divX p).coeff 2 = p.coeff 3 := by
   simpa using coeff_divX (R := ℚ) p 2
