@@ -994,71 +994,15 @@ theorem X_pow_2_pow_64_eq : (X : Polynomial (ZMod 2))^(2^64) % ghashPoly
 
 /-- Final Result: X^(2^128) = X (mod P). -/
 theorem X_pow_2_pow_128_eq : (X : Polynomial (ZMod 2))^(2^128) % ghashPoly = X := by
-  have s0 : X^(2^0) % ghashPoly = r0 % ghashPoly := by rw [pow_zero, pow_one, r0, X_ZMod2Poly_eq_X]
-  have s1 := chain_step s0 step_1
-  have s2 := chain_step s1 step_2
-  have s3 := chain_step s2 step_3
-  have s4 := chain_step s3 step_4
-  have s5 := chain_step s4 step_5
-  have s6 := chain_step s5 step_6
-  have s7 := chain_step s6 step_7
-  have s8 := chain_step s7 step_8
-  have s9 := chain_step s8 step_9
-  have s10 := chain_step s9 step_10
-  have s11 := chain_step s10 step_11
-  have s12 := chain_step s11 step_12
-  have s13 := chain_step s12 step_13
-  have s14 := chain_step s13 step_14
-  have s15 := chain_step s14 step_15
-  have s16 := chain_step s15 step_16
-  have s17 := chain_step s16 step_17
-  have s18 := chain_step s17 step_18
-  have s19 := chain_step s18 step_19
-  have s20 := chain_step s19 step_20
-  have s21 := chain_step s20 step_21
-  have s22 := chain_step s21 step_22
-  have s23 := chain_step s22 step_23
-  have s24 := chain_step s23 step_24
-  have s25 := chain_step s24 step_25
-  have s26 := chain_step s25 step_26
-  have s27 := chain_step s26 step_27
-  have s28 := chain_step s27 step_28
-  have s29 := chain_step s28 step_29
-  have s30 := chain_step s29 step_30
-  have s31 := chain_step s30 step_31
-  have s32 := chain_step s31 step_32
-  have s33 := chain_step s32 step_33
-  have s34 := chain_step s33 step_34
-  have s35 := chain_step s34 step_35
-  have s36 := chain_step s35 step_36
-  have s37 := chain_step s36 step_37
-  have s38 := chain_step s37 step_38
-  have s39 := chain_step s38 step_39
-  have s40 := chain_step s39 step_40
-  have s41 := chain_step s40 step_41
-  have s42 := chain_step s41 step_42
-  have s43 := chain_step s42 step_43
-  have s44 := chain_step s43 step_44
-  have s45 := chain_step s44 step_45
-  have s46 := chain_step s45 step_46
-  have s47 := chain_step s46 step_47
-  have s48 := chain_step s47 step_48
-  have s49 := chain_step s48 step_49
-  have s50 := chain_step s49 step_50
-  have s51 := chain_step s50 step_51
-  have s52 := chain_step s51 step_52
-  have s53 := chain_step s52 step_53
-  have s54 := chain_step s53 step_54
-  have s55 := chain_step s54 step_55
-  have s56 := chain_step s55 step_56
-  have s57 := chain_step s56 step_57
-  have s58 := chain_step s57 step_58
-  have s59 := chain_step s58 step_59
-  have s60 := chain_step s59 step_60
-  have s61 := chain_step s60 step_61
-  have s62 := chain_step s61 step_62
-  have s63 := chain_step s62 step_63
-  have s64 := chain_step s63 step_64
+  have hr64_mod : r64 % ghashPoly = r64 := by
+    rw [r64, r64Val, Polynomial.mod_eq_self_iff]
+    · conv_rhs => rw [ghashPoly_degree]
+      exact (toPoly_degree_lt_w (w := 128)
+        (h_w_pos := by simp only [gt_iff_lt, Nat.ofNat_pos]) (v := r64Val))
+    · exact ghashPoly_ne_zero
+  have s64 : X^(2^64) % ghashPoly = r64 % ghashPoly := by
+    rw [hr64_mod]
+    simpa [r64, r64Val] using X_pow_2_pow_64_eq
   have s65 := chain_step s64 step_65
   have s66 := chain_step s65 step_66
   have s67 := chain_step s66 step_67

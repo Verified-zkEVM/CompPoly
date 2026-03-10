@@ -511,6 +511,21 @@ theorem verify_square_step_correct (rPrev q rNext : B128) :
   simpa [pow_two, toPoly_128_extend_256] using hBv
 
 /-- Soundness of the kernel-efficient division-step checker. -/
+theorem verify_div_step_bounded (a q b r : B256) (hq : q.toNat < 2 ^ 128)
+    (hb : b.toNat < 2 ^ 128) :
+    a.toNat = clMulNat q.toNat b.toNat 128 ^^^ r.toNat →
+    toPoly a = (toPoly q) * (toPoly b) + (toPoly r) := by
+  intro h
+  have hBv : (BitVec.ofNat 256 a.toNat : B256) =
+      (BitVec.ofNat 256 (clMulNat q.toNat b.toNat 128 ^^^ r.toNat) : B256) := by
+    simpa using congrArg (fun n => (BitVec.ofNat 256 n : B256)) h
+  rw [ofNat_toB256 a, ofNat_xor_256, ofNat_toB256 r] at hBv
+  rw [clMulNat_bv_eq_clMul_128 q b hq] at hBv
+  apply_fun toPoly at hBv
+  rw [toPoly_xor, toPoly_clMul_no_overflow (da := 128) (db := 128) q b hq hb (by omega)] at hBv
+  exact hBv
+
+/-- Soundness of the kernel-efficient division-step checker. -/
 theorem verify_div_step (a q b r : B256) (hq : q.toNat < 2 ^ 128)
     (hb : b.toNat < 2 ^ 128) :
     checkDivStep a q b r = true →
