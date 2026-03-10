@@ -18,7 +18,8 @@ are in `CMvPolynomial.lean`. The `CommSemiring` and `CommRing` instances are in
 ## Main definitions
 
 * `MonomialOrder`: Typeclass for comparing monomials.
-* `leadingMonomial`, `leadingCoeff`: Leading term according to a monomial order.
+* `leadingMonomial`, `leadingCoeff`, `leadingTerm`: Leading term operations
+  according to a monomial order.
 * `rename`: Rename variables using a function `Fin n → Fin m`.
 * `aeval`: Algebra evaluation.
 * `bind₁`: Substitution of polynomials for variables.
@@ -39,14 +40,13 @@ class MonomialOrder (n : ℕ) where
   compare : CMvMonomial n → CMvMonomial n → Ordering
   -- TODO: Add ordering axioms (transitivity, etc.)
 
-/-- Degree of a monomial according to a monomial order.
+/-- Baseline degree of a monomial.
 
-  Returns the degree of a monomial as determined by the ordering.
-  The exact meaning depends on the specific monomial order implementation
-  (e.g., total degree for graded orders, weighted degree, etc.).
+  Currently this is the ordinary total degree and is independent of
+  `MonomialOrder.compare`.
 -/
-def MonomialOrder.degree {n : ℕ} [MonomialOrder n] (m : CMvMonomial n) : ℕ :=
-  sorry
+def MonomialOrder.degree {n : ℕ} (m : CMvMonomial n) : ℕ :=
+  m.totalDegree
 
 /-- Leading monomial of a polynomial according to a monomial order.
 
@@ -54,7 +54,26 @@ def MonomialOrder.degree {n : ℕ} [MonomialOrder n] (m : CMvMonomial n) : ℕ :
 -/
 def leadingMonomial {n : ℕ} {R : Type} [Zero R] [MonomialOrder n]
     (p : CMvPolynomial n R) : Option (CMvMonomial n) :=
-  sorry
+  ExtTreeMap.foldl
+    (fun acc m _ =>
+      match acc with
+      | none => some m
+      | some m' =>
+          match MonomialOrder.compare m m' with
+          | .gt => some m
+          | _ => some m')
+    none p.1
+
+/-- Leading term of a polynomial according to a monomial order.
+
+  Returns `0` for the zero polynomial, and otherwise returns the monomial with
+  leading monomial and leading coefficient.
+-/
+def leadingTerm {n : ℕ} {R : Type} [Zero R] [BEq R] [LawfulBEq R] [MonomialOrder n]
+    (p : CMvPolynomial n R) : CMvPolynomial n R :=
+  match leadingMonomial p with
+  | none => 0
+  | some m => monomial m (coeff m p)
 
 /-- Leading coefficient of a polynomial according to a monomial order.
 
@@ -62,7 +81,38 @@ def leadingMonomial {n : ℕ} {R : Type} [Zero R] [MonomialOrder n]
 -/
 def leadingCoeff {n : ℕ} {R : Type} [Zero R] [MonomialOrder n]
     (p : CMvPolynomial n R) : R :=
-  sorry
+  match leadingMonomial p with
+  | none => 0
+  | some m => coeff m p
+
+@[simp] lemma leadingCoeff_eq_zero_of_leadingMonomial_eq_none
+    {n : ℕ} {R : Type} [Zero R] [MonomialOrder n] {p : CMvPolynomial n R}
+    (h : leadingMonomial p = none) : leadingCoeff p = 0 := by
+  simp [leadingCoeff, h]
+
+lemma leadingCoeff_eq_coeff_of_leadingMonomial_eq_some
+    {n : ℕ} {R : Type} [Zero R] [MonomialOrder n] {p : CMvPolynomial n R}
+    {m : CMvMonomial n} (h : leadingMonomial p = some m) : leadingCoeff p = coeff m p := by
+  simp [leadingCoeff, h]
+
+/-- Packaged form of `leadingCoeff`: it is the coefficient at the optional leading monomial,
+defaulting to `0` when no leading monomial exists. -/
+lemma leadingCoeff_eq_coeff_leadingMonomial
+    {n : ℕ} {R : Type} [Zero R] [MonomialOrder n] (p : CMvPolynomial n R) :
+    leadingCoeff p = (leadingMonomial p).elim 0 (fun m => coeff m p) := by
+  grind [leadingCoeff]
+
+@[simp] lemma leadingTerm_eq_zero_of_leadingMonomial_eq_none
+    {n : ℕ} {R : Type} [Zero R] [BEq R] [LawfulBEq R] [MonomialOrder n]
+    {p : CMvPolynomial n R} (h : leadingMonomial p = none) :
+    leadingTerm p = 0 := by
+  grind [leadingTerm]
+
+@[simp] lemma leadingTerm_eq_monomial_of_leadingMonomial_eq_some
+    {n : ℕ} {R : Type} [Zero R] [BEq R] [LawfulBEq R] [MonomialOrder n]
+    {p : CMvPolynomial n R} {m : CMvMonomial n} (h : leadingMonomial p = some m) :
+    leadingTerm p = monomial m (coeff m p) := by
+  grind [leadingTerm]
 
 /-- Algebra evaluation: evaluates polynomial in an algebra.
 
