@@ -289,6 +289,61 @@ lemma fromCMvPolynomial_X {k : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulB
   rw [bind₁_eq_aeval]
   simpa using (aeval_X (n := n) (R := R) (σ := CMvPolynomial m R) f i)
 
+@[simp] lemma bind₁_id {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+    (p : CMvPolynomial n R) :
+    bind₁ (fun i => CMvPolynomial.X (R := R) i) p = p := by
+  rw [bind₁_eq_aeval]
+  unfold aeval
+  apply (CPoly.polyRingEquiv (n := n) (R := R)).injective
+  rw [eval₂_equiv (p := p) (f := algebraMap R (CMvPolynomial n R))
+    (vals := fun i => CMvPolynomial.X (R := R) i)]
+  have hmap := MvPolynomial.map_eval₂Hom
+    (f := algebraMap R (CMvPolynomial n R))
+    (g := fun i => CMvPolynomial.X (R := R) i)
+    (φ := (CPoly.polyRingEquiv (n := n) (R := R)).toRingHom)
+    (p := fromCMvPolynomial p)
+  have hcomp :
+      ((CPoly.polyRingEquiv (n := n) (R := R)).toRingHom).comp
+        (algebraMap R (CMvPolynomial n R)) = MvPolynomial.C := by
+    ext r m
+    rw [RingHom.comp_apply]
+    rw [show (algebraMap R (CMvPolynomial n R)) r = CMvPolynomial.C (n := n) r from rfl]
+    simpa using congrArg (fun q => MvPolynomial.coeff m q)
+      (CMvPolynomial.fromCMvPolynomial_C (n := n) (R := R) r)
+  have hcomp' :
+      ((CPoly.polyRingEquiv (n := n) (R := R) : CMvPolynomial n R →+* MvPolynomial (Fin n) R).comp
+        (algebraMap R (CMvPolynomial n R))) = MvPolynomial.C := by
+    simpa using hcomp
+  have hvars :
+      (fun i => CPoly.polyRingEquiv (n := n) (R := R) (CMvPolynomial.X (R := R) i)) =
+      (fun i => MvPolynomial.X i) := by
+    funext i
+    exact fromCMvPolynomial_X (R := R) i
+  have hmap' :
+      CPoly.polyRingEquiv (n := n) (R := R)
+          (MvPolynomial.eval₂ (algebraMap R (CMvPolynomial n R))
+            (fun i => CMvPolynomial.X (R := R) i) (fromCMvPolynomial p))
+        = MvPolynomial.eval₂
+            (((CPoly.polyRingEquiv (n := n) (R := R)).toRingHom).comp
+              (algebraMap R (CMvPolynomial n R)))
+            (fun i => MvPolynomial.X i)
+            (fromCMvPolynomial p) := by
+    simpa [MvPolynomial.eval₂Hom, hvars] using hmap
+  have hmap'' :
+      CPoly.polyRingEquiv (n := n) (R := R)
+          (MvPolynomial.eval₂ (algebraMap R (CMvPolynomial n R))
+            (fun i => CMvPolynomial.X (R := R) i) (fromCMvPolynomial p))
+        = MvPolynomial.eval₂ MvPolynomial.C MvPolynomial.X (fromCMvPolynomial p) := by
+    simpa [hcomp'] using hmap'
+  calc
+    CPoly.polyRingEquiv (n := n) (R := R)
+        (MvPolynomial.eval₂ (algebraMap R (CMvPolynomial n R))
+          (fun i => CMvPolynomial.X (R := R) i) (fromCMvPolynomial p))
+      = MvPolynomial.eval₂ MvPolynomial.C MvPolynomial.X (fromCMvPolynomial p) := hmap''
+    _ = fromCMvPolynomial p := by
+          simp [MvPolynomial.eval₂_eta (p := fromCMvPolynomial p)]
+    _ = CPoly.polyRingEquiv (n := n) (R := R) p := rfl
+
 lemma list_foldl_add_comm {β K V : Type} [AddCommMonoid β]
     (g : K → V → β) (l : List (K × V)) (init : β) :
     List.foldl (fun acc pair => acc + g pair.1 pair.2) init l =
