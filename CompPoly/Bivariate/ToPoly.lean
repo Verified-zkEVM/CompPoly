@@ -5,7 +5,7 @@ Authors: Derek Sorensen
 -/
 
 import CompPoly.Bivariate.Basic
-import CompPoly.Univariate.ToPoly
+import CompPoly.Univariate.ToPoly.Degree
 import Mathlib.Algebra.Polynomial.Bivariate
 
 /-!
