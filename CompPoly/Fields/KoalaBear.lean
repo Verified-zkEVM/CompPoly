@@ -119,7 +119,6 @@ def twoAdicGenerators : List Field :=
 
 /-! Statements requested by the Python spec translation. -/
 
-set_option maxRecDepth 4096 in
 /-- Fermat-style inversion in `ZMod fieldSize`. -/
 lemma inv_eq_pow (a : Field) (ha : a ≠ 0) : a⁻¹ = a ^ (fieldSize - 2) := by
   have hcard : Fintype.card Field = fieldSize := ZMod.card fieldSize
@@ -145,8 +144,8 @@ lemma cube_map_bijective :
     `Nat.coprime 3 (fieldSize - 1)` holds. We record the coprimality here. -/
 lemma coprime_three_fieldSize_sub_one : Nat.Coprime 3 (fieldSize - 1) := by
   -- Using the explicit factorization and concrete numerals
-  simpa [fieldSize_sub_one_factorization, twoAdicity] using
-    (by decide : Nat.Coprime 3 (2 ^ 24 * 127))
+  simp_all only [add_tsub_cancel_right, Nat.reducePow, Nat.reduceSub]
+  rfl
 
 /-!
   Additional statements matching the Python spec API.
@@ -154,35 +153,59 @@ lemma coprime_three_fieldSize_sub_one : Nat.Coprime 3 (fieldSize - 1) := by
 
 /-- `twoAdicity` is maximal: `2^(twoAdicity+1)` does not divide `fieldSize - 1`. -/
 lemma twoAdicity_maximal : ¬ (2 ^ (twoAdicity + 1)) ∣ (fieldSize - 1) := by
-  decide
+  grind only
 
-set_option maxHeartbeats 800000 in
 /-- The power `(twoAdicGenerators[bits])^(2^bits) = 1`. -/
 lemma twoAdicGenerators_pow_twoPow_eq_one (bits : Fin (twoAdicity + 1)) :
     twoAdicGenerators[bits] ^ (2 ^ (bits : Nat)) = 1 := by
-  fin_cases bits
-  sorry
+  induction bits using Fin.induction with
+  | zero => simp [twoAdicGenerators]
+  | succ i ih =>
+    rw [Fin.val_succ, Nat.pow_succ', pow_mul]
+    show (twoAdicGenerators[i.val + 1] ^ 2) ^ 2 ^ i.val = 1
+    rw [twoAdicGenerators_succ_square_eq i.val i.isLt]
+    exact ih
 
-set_option maxHeartbeats 1600000 in
-/-- Helper: Fin-indexed version for computational verification of non-triviality. -/
-private lemma twoAdicGenerators_pow_ne_one_aux (n : Fin 25) (m : Fin 25)
-    (hm : m.val < n.val) :
-    twoAdicGenerators[n] ^ (2 ^ m.val) ≠ (1 : Field) := by
-  sorry
-  -- fin_cases n
-  -- fin_cases m
-  -- simp_all
-  -- all_goals simp only [Fin.zero_eta, Fin.isValue, Fin.getElem_fin, Nat.reduceAdd,
-  --   Fin.coe_ofNat_eq_mod, Nat.zero_mod, Nat.reducePow, ne_eq]
-  -- grind only
-
+/-- The power `(twoAdicGenerators[bits])^(2^(bits-1)) = -1` for `bits > 0`. -/
+lemma twoAdicGenerators_pow_twoPow_minus_one_eq_neg_one (bits : Fin (twoAdicity + 1)) (h : bits.val > 0) :
+    twoAdicGenerators[bits] ^ (2 ^ (bits.val - 1)) = (-1 : Field) := by
+  induction bits using Fin.induction with
+  | zero => contradiction
+  | succ i ih =>
+    rcases i with ⟨_ | i_val, i_lt⟩
+    · have : (1 : Fin (twoAdicity + 1)) = ⟨1, by exact Nat.lt_add_of_pos_left i_lt⟩ := rfl
+      simp [twoAdicGenerators]
+      exact ZMod.eq_neg_of_valMinAbs_eq_neg_valMinAbs rfl
+    · have hi : 0 < (⟨i_val + 1, i_lt⟩ : Fin twoAdicity).val := Nat.succ_pos i_val
+      rw [Fin.val_succ, Nat.add_sub_cancel, Nat.pow_succ', pow_mul]
+      have h_len : i_val + 2 < twoAdicGenerators.length := by
+        rw [twoAdicGenerators_length, twoAdicity]
+        have h_i := i_lt
+        rw [twoAdicity] at h_i
+        grind only
+      show (twoAdicGenerators[i_val + 2]'h_len ^ 2) ^ 2 ^ i_val = -1
+      rw [twoAdicGenerators_succ_square_eq (i_val + 1) i_lt]
+      apply ih
+      exact hi
 
 /-- If `m < bits`, then `(twoAdicGenerators[bits])^(2^m) ≠ 1`. -/
 lemma twoAdicGenerators_pow_twoPow_ne_one_of_lt
     {bits : Fin (twoAdicity + 1)} {m : Nat} (hm : m < bits) :
     (twoAdicGenerators[bits]) ^ (2 ^ m) ≠ (1 : Field) := by
-  have hm_lt : m < 25 := Nat.lt_trans hm bits.isLt
-  exact twoAdicGenerators_pow_ne_one_aux bits ⟨m, hm_lt⟩ hm
+  intro h
+  have h_bits_pos : bits.val > 0 := Nat.lt_of_le_of_lt (Nat.zero_le m) hm
+  have h_neg_one := twoAdicGenerators_pow_twoPow_minus_one_eq_neg_one bits h_bits_pos
+  have h_pow : (twoAdicGenerators[bits] ^ (2 ^ m)) ^ (2 ^ (bits.val - 1 - m)) = 1 := by
+    rw [h, one_pow]
+  rw [← pow_mul] at h_pow
+  have h_idx : 2 ^ m * 2 ^ (bits.val - 1 - m) = 2 ^ (bits.val - 1) := by
+    rw [← pow_add]
+    congr
+    grind only [usr Fin.isLt, usr List.eq_nil_of_length_eq_zero, = Lean.Grind.toInt_fin]
+  rw [h_idx] at h_pow
+  rw [h_pow] at h_neg_one
+  apply char_neq_2 (F := Field)
+  linear_combination h_neg_one
 
 /-- The precomputed element at index `bits` is a primitive `2^bits`-th root of unity. -/
 lemma isPrimitiveRoot_twoAdicGenerator (n : Fin (twoAdicity + 1)) :
