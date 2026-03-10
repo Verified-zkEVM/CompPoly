@@ -34,17 +34,18 @@ CompPoly aims to be the premier formally verified library for computable polynom
 1. **API completeness**
    - ✅ Add `monomial` constructors for univariate and multivariate polynomials
    - Implement monomial order support (`MonomialOrder.degree`, `leadingCoeff`) — stubs exist, proofs pending
-   - `degreeLT`, `degreeLE`: Bounded-degree submodules for univariate polynomials
-   - `mem_degreeLT`, `mem_degreeLE`: Membership characterizations for bounded-degree polynomials
-   - `degreeLTEquiv`: Linear equivalence for coefficient access
+   - ✅ `degreeLT`, `degreeLE`: Bounded-degree submodules for univariate polynomials
+   - ✅ `mem_degreeLT`, `mem_degreeLE`: Membership characterizations for bounded-degree polynomials
+   - ✅ `degreeLTEquiv`: Linear equivalence for coefficient access
    - ✅ `restrictDegree`: Degree restrictions for multilinear extensions
    - ✅ `vars`: Variable set extraction
    - `aeval`, `bind₁`: Algebra evaluation and substitution — stubs exist, proofs pending
-   - `algebra`, `module`: Algebra and module structures
-   - ✅ `degrees`; `eval₂Hom`: Degree utilities and evaluation homomorphisms (latter pending)
+   - ✅ `algebra`, `module`: Algebra and module structures
+   - ✅ `degrees`; ✅ `eval₂Hom`: Degree utilities and evaluation homomorphisms
    - `finSuccEquiv`, `optionEquivLeft`: Variable manipulation equivalences (for `CMvPolynomial`)
    - ✅ `CommSemiring` for `CMvPolynomial`; `isEmptyAlgEquiv`: Additional algebra structures (latter pending)
-   - `smulZeroClass`, `sumToIter`: Scalar multiplication and iteration utilities — stubs exist, proofs pending
+   - ✅ `smulZeroClass`: Scalar multiplication with zero behavior
+   - `sumToIter`: Iteration utility — stub exists, proof/semantics pending
    - ✅ Implement `rename` / `renameEquiv` for variable renaming
 
 1. **Further data types**
