@@ -259,53 +259,6 @@ lemma X_ZMod2Poly_eq_X : X_ZMod2Poly = X := by
   )]
   simp only [↓reduceIte]
 
--- The check function (Executes in Kernel)
--- Returns true iff rPrev^2 == q * P + rNext
-def checkSquareStep (rPrev : B128) (q : B128) (rNext : B128) : Bool :=
-  let lhs := clSq rPrev
-  let rhs := (clMul (to256 q) P_val) ^^^ (to256 rNext)
-  lhs == rhs
-
--- The Soundness Theorem
--- This is what you apply in your 128 generated lemmas
-theorem verify_square_step_correct (rPrev q rNext : B128) :
-    checkSquareStep rPrev q rNext = true →
-    (toPoly rPrev)^2 = (toPoly (to256 q)) * (toPoly P_val) + (toPoly rNext) := by
-  intro h
-  dsimp only [checkSquareStep] at h
-  rw [beq_iff_eq] at h
-  -- h is now: clSq rPrev = (clMul (to256 q) P_val) ^^^ (to256 rNext)
-  -- The huge loop is still "folded" inside clSq/clMul, so it's fast.
-  -- 3. Apply the bridge to the BitVec equation
-  --    Now we transform the functions using theorems, rather than computing them.
-  rw [clSq] at h -- Unfold clSq to clMul (only 1 step)
-  apply_fun toPoly at h
-  -- 4. Apply your Bridge Lemmas
-  rw [toPoly_xor] at h
-  have h_res : toPoly rPrev ^ 2 = toPoly (to256 q) * toPoly P_val + toPoly rNext := by
-    rw [pow_two]
-    rw [toPoly_128_extend_256] at ⊢ h
-    have h_rPrev_lt : BitVec.toNat (to256 rPrev) < 2 ^ 128 := by
-      rw [to256_toNat];
-      exact BitVec.toNat_lt_twoPow_of_le (m := 128) (n := 128) (x := rPrev) (h := by omega)
-    have h_q_lt : BitVec.toNat (to256 q) < 2 ^ 128 := by
-      rw [to256_toNat];
-      exact BitVec.toNat_lt_twoPow_of_le (m := 128) (n := 128) (x := q) (h := by omega)
-    have h_P_val_lt : BitVec.toNat P_val < 2 ^ 129 := by
-      unfold P_val
-      simp only [Nat.reduceShiftLeft, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat, BitVec.reduceXOr,
-        BitVec.toNat_ofNat, Nat.reducePow, Nat.reduceMod, Nat.reduceLT]
-    conv_lhs at h =>
-        rw [toPoly_clMul_no_overflow (da := 128) (db := 128) (ha := by omega)
-          (hb := h_rPrev_lt) (h_sum := by omega)]
-        rw [toPoly_128_extend_256]
-    conv_rhs at h =>
-      rw [toPoly_clMul_no_overflow (da := 128) (db := 129) (ha := by
-        rw [to256_toNat]; exact h_q_lt) (hb := h_P_val_lt) (h_sum := by omega)]
-      rw [toPoly_128_extend_256]
-    rw [h]
-  exact h_res
-
 /-- Helper lemma to chain the modular squaring steps -/
 lemma chain_step {k : ℕ} {prev next : Polynomial (ZMod 2)} {q_val : B128}
     (h_prev : X ^ (2 ^ k) % ghashPoly = prev % ghashPoly)
@@ -347,12 +300,12 @@ abbrev clSqNat (a n : Nat) : Nat := clMulNat a a n
 def mulByP_Nat (a : Nat) : Nat :=
   a ^^^ (a <<< 1) ^^^ (a <<< 2) ^^^ (a <<< 7) ^^^ (a <<< 128)
 
-/-- Kernel-efficient version of `checkSquareStep`, operating on raw `Nat` values.
-    Uses `clSqNat` (128 structural-recursion steps) and `mulByP_Nat`
-    (constant-time) instead of `Finset.fold` over `BitVec 256`. -/
-def checkSquareStepFast (rPrev q rNext : Nat) : Bool :=
-  let lhs := clSqNat rPrev 128
-  let rhs := mulByP_Nat q ^^^ rNext
+/-- Kernel-efficient version of `checkSquareStep`.
+    The public API stays on `B128`, but the internal computation runs on `Nat`
+    using `clSqNat` and the specialized `mulByP_Nat` helper. -/
+def checkSquareStep (rPrev q rNext : B128) : Bool :=
+  let lhs := clSqNat rPrev.toNat 128
+  let rhs := mulByP_Nat q.toNat ^^^ rNext.toNat
   lhs == rhs
 
 /-- Kernel-efficient version of `checkDivStep`.
@@ -525,13 +478,12 @@ private theorem toPoly_mulByP_Nat (x : B128) :
   rw [← ghashPoly_eq_P_val, ghashPoly]
   ring
 
-/-- Soundness of the kernel-efficient square-step checker.
-    Drop-in replacement for `verify_square_step_correct` in certificate lemmas. -/
-theorem verify_square_step_correct_fast (rPrev q rNext : B128) :
-    checkSquareStepFast rPrev.toNat q.toNat rNext.toNat = true →
+/-- Soundness of the kernel-efficient square-step checker. -/
+theorem verify_square_step_correct (rPrev q rNext : B128) :
+    checkSquareStep rPrev q rNext = true →
     (toPoly rPrev) ^ 2 = (toPoly (to256 q)) * (toPoly P_val) + (toPoly rNext) := by
   intro h
-  unfold checkSquareStepFast at h
+  unfold checkSquareStep at h
   rw [beq_iff_eq] at h
   have hBv : (BitVec.ofNat 256 (clSqNat rPrev.toNat 128) : B256) =
       (BitVec.ofNat 256 (mulByP_Nat q.toNat ^^^ rNext.toNat) : B256) := by

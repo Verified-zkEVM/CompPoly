@@ -10,10 +10,9 @@ import CompPoly.Univariate.Raw
 
   Lightweight regression checks for `CompPoly.Univariate.Raw`.
 
-  Note: These tests previously used `native_decide` which is banned from the
-  project TCB (see AGENTS.md). The `divByMonic`/`modByMonic` operations over `ℚ`
-  do not reduce by `decide` or `rfl` because `ℚ` normalization is not
-  definitionally computable. Tests are verified at meta-level via `#guard`.
+  The `divByMonic`/`modByMonic` operations over `ℚ` do not reduce by `decide`
+  or `rfl` because `ℚ` normalization is not definitionally computable. These
+  regressions are checked at meta-level via `#guard`.
 -/
 
 open CompPoly CPolynomial.Raw in

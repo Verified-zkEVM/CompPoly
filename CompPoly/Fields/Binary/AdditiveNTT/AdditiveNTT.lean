@@ -12,8 +12,6 @@ import Mathlib.Tactic.Use
 import Mathlib.Data.Finsupp.Defs
 import Mathlib.LinearAlgebra.LinearIndependent.Defs
 
-set_option linter.style.longFile 2900
-
 /-!
 # Additive NTT Algorithm (Algorithm 2, LCH14)
 
@@ -55,7 +53,7 @@ this proves that if the previous round satisfies the invariant, then the current
 
 -/
 
-set_option linter.style.longFile 2400
+set_option linter.style.longFile 3000
 
 open Polynomial AdditiveNTT Module
 namespace AdditiveNTT
