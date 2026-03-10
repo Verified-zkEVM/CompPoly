@@ -116,6 +116,8 @@ lemma leadingCoeff_eq_coeff_leadingMonomial
     leadingTerm p = monomial m (coeff m p) := by
   grind [leadingTerm]
 
+/-! ## Evaluation and substitution -/
+
 /-- Algebra evaluation: evaluates polynomial in an algebra.
 
   Given an algebra `σ` over `R` and a function `f : Fin n → σ`, evaluates the polynomial.
@@ -156,30 +158,51 @@ def aeval {n : ℕ} {R σ : Type} [CommSemiring R] [CommSemiring σ] [Algebra R 
   simpa [CMvPolynomial.eval₂Hom_apply] using
     (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_mul p q
 
-noncomputable def bind₁ {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+/-- Substitution: substitutes polynomials for variables.
+
+  Given `f : Fin n → CMvPolynomial m R`, substitutes `f i` for variable `X i`.
+-/
+def bind₁ {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
     (f : Fin n → CMvPolynomial m R) (p : CMvPolynomial n R) : CMvPolynomial m R :=
-  aeval (σ := CMvPolynomial m R) f p
+  ExtTreeMap.foldl
+    (fun acc mono c => CMvPolynomial.C (n := m) c * MonoR.evalMonomial f mono + acc)
+    0 p.1
+
+/-- The computable substitution `bind₁` agrees with algebraic evaluation. -/
+lemma bind₁_eq_aeval {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+    (f : Fin n → CMvPolynomial m R) (p : CMvPolynomial n R) :
+    bind₁ f p = aeval (σ := CMvPolynomial m R) f p := by
+  have hmap : ∀ c : R,
+      (algebraMap R (CMvPolynomial m R)) c = CMvPolynomial.C (n := m) c := by
+    intro c
+    rfl
+  unfold bind₁ aeval CMvPolynomial.eval₂
+  simp [hmap]
 
 @[simp] lemma bind₁_C {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
     (f : Fin n → CMvPolynomial m R) (c : R) :
     bind₁ f (CMvPolynomial.C (n := n) c) = CMvPolynomial.C (n := m) c := by
-  unfold bind₁
+  rw [bind₁_eq_aeval]
   simpa using (aeval_C (n := n) (R := R) (σ := CMvPolynomial m R) f c)
 
 @[simp] lemma bind₁_add {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
     (f : Fin n → CMvPolynomial m R) (p q : CMvPolynomial n R) :
     bind₁ f (p + q) = bind₁ f p + bind₁ f q := by
-  unfold bind₁
+  repeat rw [bind₁_eq_aeval]
   simpa using (aeval_add (n := n) (R := R) (σ := CMvPolynomial m R) f p q)
 
 @[simp] lemma bind₁_mul {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
     (f : Fin n → CMvPolynomial m R) (p q : CMvPolynomial n R) :
     bind₁ f (p * q) = bind₁ f p * bind₁ f q := by
-  unfold bind₁
+  repeat rw [bind₁_eq_aeval]
   simpa using (aeval_mul (n := n) (R := R) (σ := CMvPolynomial m R) f p q)
 
 /-! ## Core operations -/
 
+/-- Rename variables using a function.
+
+  Given `f : Fin n → Fin m`, renames variable `X i` to `X (f i)`.
+-/
 def rename {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
     (f : Fin n → Fin m) (p : CMvPolynomial n R) : CMvPolynomial m R :=
   let renameMonomial (mono : CMvMonomial n) : CMvMonomial m :=
@@ -188,6 +211,7 @@ def rename {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 -- `renameEquiv` is defined in `CompPoly.Multivariate.Rename`
 
+/-- Iterative reconstruction of a polynomial by folding over terms. -/
 def sumToIter {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
     (p : CMvPolynomial n R) : CMvPolynomial n R :=
   ExtTreeMap.foldl (fun acc m c => acc + monomial m c) 0 p.1
@@ -262,7 +286,7 @@ lemma fromCMvPolynomial_X {k : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulB
 @[simp] lemma bind₁_X {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
     (f : Fin n → CMvPolynomial m R) (i : Fin n) :
     bind₁ f (CMvPolynomial.X (R := R) i) = f i := by
-  unfold bind₁
+  rw [bind₁_eq_aeval]
   simpa using (aeval_X (n := n) (R := R) (σ := CMvPolynomial m R) f i)
 
 lemma list_foldl_add_comm {β K V : Type} [AddCommMonoid β]
@@ -284,7 +308,7 @@ lemma foldl_add_comm {β : Type} [AddCommMonoid β] {k : ℕ}
   simp only [Std.ExtTreeMap.foldl_eq_foldl_toList]
   exact list_foldl_add_comm g t.toList 0
 
-lemma fromCMvPolynomial_finsupp_sum {k : ℕ} [CommSemiring R] [BEq R] [LawfulBEq R]
+lemma fromCMvPolynomial_finsupp_sum {n k : ℕ} [CommSemiring R] [BEq R] [LawfulBEq R]
     (g : (Fin n →₀ ℕ) → R → CMvPolynomial k R)
     (a : CMvPolynomial n R) :
     fromCMvPolynomial (Finsupp.sum (fromCMvPolynomial a) g) =
