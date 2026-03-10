@@ -6,6 +6,12 @@ Authors: Chung Thai Nguyen, Quang Dao
 
 import CompPoly.Fields.Binary.Tower.Concrete.Core
 
+/-!
+# Concrete Binary Tower Field
+
+Field-structure lemmas for successive levels of the concrete binary tower.
+-/
+
 namespace ConcreteBinaryTower
 
 open Polynomial

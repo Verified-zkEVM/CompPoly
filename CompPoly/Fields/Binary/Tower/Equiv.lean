@@ -6,6 +6,12 @@ Authors: Chung Thai Nguyen, Quang Dao
 
 import CompPoly.Fields.Binary.Tower.Concrete.Basis
 
+/-!
+# Binary Tower Equivalence
+
+Equivalences between the abstract and concrete binary tower constructions.
+-/
+
 namespace ConcreteBinaryTower
 
 open Polynomial

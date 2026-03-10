@@ -1,9 +1,15 @@
- /-
+/-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles
- -/
+-/
 import CompPoly.Univariate.Raw.Ops
+
+/-!
+# Raw Univariate Polynomial Proofs
+
+Proofs about operations on raw computable univariate polynomials.
+-/
 
 namespace CompPoly
 
@@ -128,8 +134,7 @@ lemma mul_pow_assoc : ∀ (p : CPolynomial.Raw R) (n : ℕ),
     | succ l₀ =>
       have h_sizes_simp : l₀ + m = n₀ := by linarith
       clear h_sizes
-      simp
-      rw [ih (p.mul q) m l₀ h_sizes_simp]
+      simpa using ih (p.mul q) m l₀ h_sizes_simp
 
 lemma mul_pow_succ (p q : CPolynomial.Raw R) (n : ℕ):
     p.mul^[n + 1] q = p.mul (p.mul^[n] q) := by

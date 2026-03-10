@@ -6,6 +6,12 @@ Authors: Quang Dao, Chung Thai Nguyen
 
 import CompPoly.Fields.Binary.Tower.Abstract.Core
 
+/-!
+# Abstract Binary Tower Algebra
+
+Algebra maps and tower embeddings for the abstract binary tower fields.
+-/
+
 namespace BinaryTower
 
 noncomputable section

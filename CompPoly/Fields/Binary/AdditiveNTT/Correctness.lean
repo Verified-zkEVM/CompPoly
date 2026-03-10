@@ -209,7 +209,8 @@ lemma NTTStage_correctness (i : Fin (ℓ))
           apply Nat.add_lt_add_right
           have h_j : j = j / 2^(i.val + 1) * 2^(i.val + 1) + Nat.getLowBits i.val j.val := by
             conv_lhs => rw [Nat.num_eq_highBits_add_lowBits (n := j.val) (numLowBits := i.val + 1)]
-            rw [Nat.getHighBits, Nat.getHighBits_no_shl, Nat.shiftLeft_eq, Nat.shiftRight_eq_div_pow]
+            rw [Nat.getHighBits, Nat.getHighBits_no_shl, Nat.shiftLeft_eq,
+              Nat.shiftRight_eq_div_pow]
             apply Nat.add_left_cancel_iff.mpr
             rw [Nat.getLowBits_succ]
             conv_rhs => rw [← Nat.add_zero (n := Nat.getLowBits i.val j.val)]
@@ -248,7 +249,8 @@ lemma NTTStage_correctness (i : Fin (ℓ))
           = (Nat.getLowBits i.val j.val) ||| 1 <<< i.val := by
         rw [Nat.getLowBits_succ]
         rw [h_bit1]
-        have h_get_lsb_eq : Nat.getLowBits i.val (j.val + 2^i.val) = Nat.getLowBits i.val j.val := by
+        have h_get_lsb_eq :
+            Nat.getLowBits i.val (j.val + 2^i.val) = Nat.getLowBits i.val j.val := by
           apply Nat.eq_iff_eq_all_getBits.mpr
           intro k
           change Nat.getBit k (Nat.getLowBits i.val (j.val + 2^i.val)) =
@@ -359,7 +361,8 @@ lemma NTTStage_correctness (i : Fin (ℓ))
         rw [Nat.getBit_of_xor (n := j.val) (m := 2^i.val) (k := i.val)]
         rw [bit_i_j_eq_1, Nat.getBit_two_pow]
         simp only [BEq.rfl, ↓reduceIte, Nat.xor_self]
-      have h_v_eq : Nat.getLowBits (i.val + 1) (j.val ^^^ 2^i.val) = Nat.getLowBits i.val j.val := by
+      have h_v_eq :
+          Nat.getLowBits (i.val + 1) (j.val ^^^ 2^i.val) = Nat.getLowBits i.val j.val := by
         rw [Nat.getLowBits_succ]
         rw [h_bit0, Nat.zero_shiftLeft, Nat.add_zero]
         apply Nat.eq_iff_eq_all_getBits.mpr
@@ -459,8 +462,11 @@ lemma foldl_NTTStage_inductive_aux (h_ℓ : ℓ ≤ r) (k : Fin (ℓ + 1))
       set ntt_round := ℓ - (k + 1)
       set input_buffer := Fin.foldl k (fun current_b i ↦ NTTStage 𝔽q β h_ℓ_add_R_rate
         ⟨ℓ - i - 1, by omega⟩ current_b) (tileCoeffs original_coeffs)
-      have correctness_transition := NTTStage_correctness 𝔽q β h_ℓ_add_R_rate
-        (i := ⟨ntt_round, by omega⟩) (input_buffer := input_buffer) (original_coeffs := original_coeffs)
+      have correctness_transition :=
+        NTTStage_correctness 𝔽q β h_ℓ_add_R_rate
+          (i := ⟨ntt_round, by omega⟩)
+          (input_buffer := input_buffer)
+          (original_coeffs := original_coeffs)
       simp only at correctness_transition
       have h_ℓ_sub_k : ℓ - k = ntt_round + 1 := by omega
       simp_rw [h_ℓ_sub_k] at i_h

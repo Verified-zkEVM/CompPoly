@@ -60,7 +60,11 @@ lemma evaluationPointω_eq_twiddleFactor_of_div_2 (i : Fin ℓ) (x : Fin (2 ^ (�
     if Nat.getBit x_1 x = 1 then eval (β ⟨i + x_1, by omega⟩) (normalizedW 𝔽q β ⟨i, by omega⟩)
     else 0
   conv_lhs =>
-    rw [← Fin.sum_congr' (b := ℓ + R_rate - i) (a := ℓ + R_rate - (i + 1) + 1) (f := f_left) (h := by omega)]
+    rw [← Fin.sum_congr'
+      (b := ℓ + R_rate - i)
+      (a := ℓ + R_rate - (i + 1) + 1)
+      (f := f_left)
+      (h := by omega)]
     rw [Fin.sum_univ_succ (n := ℓ + R_rate - (i + 1))]
   unfold f_left
   simp only [Fin.val_cast, Fin.coe_ofNat_eq_mod, Nat.zero_mod, add_zero, Fin.val_succ]
@@ -79,7 +83,11 @@ lemma evaluationPointω_eq_twiddleFactor_of_div_2 (i : Fin ℓ) (x : Fin (2 ^ (�
     if Nat.getBit (↑x_1) (↑x / 2) = 1 then
       eval (β ⟨↑i + 1 + ↑x_1, by omega⟩) (normalizedW 𝔽q β ⟨↑i, by omega⟩)
     else 0
-  rw [← Fin.sum_congr' (b := ℓ + R_rate - (↑i + 1)) (a := ℓ + R_rate - i - 1) (f := f_right) (h := by omega)]
+  rw [← Fin.sum_congr'
+    (b := ℓ + R_rate - (↑i + 1))
+    (a := ℓ + R_rate - i - 1)
+    (f := f_right)
+    (h := by omega)]
   unfold f_right
   simp only [Fin.cast_eq_self]
   rw [add_comm]
@@ -104,22 +112,29 @@ lemma eval_point_ω_eq_next_twiddleFactor_comp_qmap
         calc x.val < 2 ^ (ℓ + R_rate - (i.val + 1)) := by omega
           _ = 2 ^ (ℓ + R_rate - i.val - 1) := by rfl⟩) (qMap 𝔽q β ⟨i, by omega⟩) := by
   simp [evaluationPointω, twiddleFactor]
-  set q_eval_is_linear_map := linear_map_of_comp_to_linear_map_of_eval (f := qMap 𝔽q β ⟨i, by omega⟩)
-    (h_f_linear := qMap_is_linear_map 𝔽q β (i := ⟨i, by omega⟩))
+  set q_eval_is_linear_map :=
+    linear_map_of_comp_to_linear_map_of_eval
+      (f := qMap 𝔽q β ⟨i, by omega⟩)
+      (h_f_linear := qMap_is_linear_map 𝔽q β (i := ⟨i, by omega⟩))
   let eval_qmap_linear := polyEvalLinearMap (qMap 𝔽q β ⟨i, by omega⟩) q_eval_is_linear_map
   set right_inner_func := fun x_1 : Fin (ℓ + R_rate - i - 1) =>
-    if Nat.getBit ↑x_1 ↑x = 1 then eval (β ⟨↑i + 1 + ↑x_1, by omega⟩) (normalizedW 𝔽q β ⟨↑i, by omega⟩)
+    if Nat.getBit ↑x_1 ↑x = 1 then
+      eval (β ⟨↑i + 1 + ↑x_1, by omega⟩) (normalizedW 𝔽q β ⟨↑i, by omega⟩)
     else 0
   have h_rhs :
-      eval (∑ x_1 : Fin (ℓ + R_rate - i - 1), right_inner_func x_1) (qMap 𝔽q β ⟨↑i, by omega⟩) =
-        ∑ x_1 : Fin (ℓ + R_rate - i - 1), (eval (right_inner_func x_1) (qMap 𝔽q β ⟨↑i, by omega⟩)) := by
+      eval
+          (∑ x_1 : Fin (ℓ + R_rate - i - 1), right_inner_func x_1)
+          (qMap 𝔽q β ⟨↑i, by omega⟩) =
+        ∑ x_1 : Fin (ℓ + R_rate - i - 1),
+          eval (right_inner_func x_1) (qMap 𝔽q β ⟨↑i, by omega⟩) := by
     change eval_qmap_linear (∑ x_1, right_inner_func x_1) = _
     rw [map_sum (g := eval_qmap_linear) (f := right_inner_func)
       (s := (Finset.univ : Finset (Fin (ℓ + R_rate - i - 1))))]
     congr
   rw [h_rhs]
   set left_inner_func := fun x_1 : Fin (ℓ + R_rate - (i.val + 1)) =>
-    if Nat.getBit ↑x_1 ↑x = 1 then eval (β ⟨↑i + 1 + ↑x_1, by omega⟩) (normalizedW 𝔽q β ⟨↑i + 1, by omega⟩)
+    if Nat.getBit ↑x_1 ↑x = 1 then
+      eval (β ⟨↑i + 1 + ↑x_1, by omega⟩) (normalizedW 𝔽q β ⟨↑i + 1, by omega⟩)
     else 0
   conv_lhs =>
     rw [← Fin.sum_congr' (b := ℓ + R_rate - (i.val + 1))
@@ -230,7 +245,8 @@ def coeffsBySuffix (a : Fin (2 ^ ℓ) → L) (i : Fin (ℓ + 1)) (v : Fin (2 ^ i
     set originalIndex := (j <<< i.val) ||| v
     have h_originalIndex_lt_2_pow_ℓ : originalIndex < 2 ^ ℓ := by
       unfold originalIndex
-      have res := Nat.append_lt (y := j) (x := v) (m := ℓ - i.val) (n := i.val) (by omega) (by omega)
+      have res :=
+        Nat.append_lt (y := j) (x := v) (m := ℓ - i.val) (n := i.val) (by omega) (by omega)
       have h_exp_eq : (↑i + (ℓ - ↑i)) = ℓ := by omega
       rw [h_exp_eq] at res
       exact res
@@ -252,7 +268,8 @@ theorem evenRefinement_eq_novel_poly_of_0_leading_suffix (i : Fin ℓ) (v : Fin 
     evenRefinement 𝔽q β h_ℓ_add_R_rate i (coeffsBySuffix (r := r)
       (R_rate := R_rate) (a := original_coeffs) ⟨i, by omega⟩ v) =
       intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate ⟨i + 1, by omega⟩
-        (coeffsBySuffix (r := r) (R_rate := R_rate) original_coeffs ⟨i + 1, by omega⟩ ⟨v, h_v⟩) := by
+        (coeffsBySuffix (r := r) (R_rate := R_rate) original_coeffs
+          ⟨i + 1, by omega⟩ ⟨v, h_v⟩) := by
   simp only [evenRefinement, Fin.eta, intermediateEvaluationPoly]
   set right_inner_func := fun x : Fin (2^(ℓ - (i.val + 1))) =>
     C (coeffsBySuffix (R_rate := R_rate) original_coeffs ⟨i.val + 1, by omega⟩ ⟨v.val, by

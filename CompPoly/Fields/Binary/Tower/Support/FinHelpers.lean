@@ -6,6 +6,12 @@ Authors: Quang Dao, Chung Thai Nguyen
 
 import CompPoly.Fields.Binary.Tower.Support.Preliminaries
 
+/-!
+# Binary Tower Fin Helpers
+
+Finite-index helper lemmas for bit manipulations used in binary tower proofs.
+-/
+
 open Polynomial
 open AdjoinRoot
 open Module

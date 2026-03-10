@@ -348,7 +348,8 @@ lemma sDomain_eq_image_of_upper_span (i : Fin r) (h_i : i < ℓ + R_rate) :
   have h_span_supremum_decomposition : U 𝔽q β ⟨ℓ + R_rate, h_ℓ_add_R_rate⟩ = U 𝔽q β i ⊔ V_i := by
     unfold U
     have h_ico :
-        Set.Ico 0 ⟨ℓ + R_rate, h_ℓ_add_R_rate⟩ = Set.Ico 0 i ∪ Set.Ico i ⟨ℓ + R_rate, h_ℓ_add_R_rate⟩ := by
+        Set.Ico 0 ⟨ℓ + R_rate, h_ℓ_add_R_rate⟩ =
+          Set.Ico 0 i ∪ Set.Ico i ⟨ℓ + R_rate, h_ℓ_add_R_rate⟩ := by
       ext k
       simp only [Set.mem_Ico, Fin.zero_le, true_and, Set.mem_union]
       constructor
@@ -538,7 +539,8 @@ noncomputable def finToSDomain (i : Fin r) (h_i : i < ℓ + R_rate)
 noncomputable def sDomainFinEquiv (i : Fin r) (h_i : i < ℓ + R_rate) :
     (sDomain 𝔽q β h_ℓ_add_R_rate i) ≃ Fin (2^(ℓ + R_rate - i.val)) := by
   have h_card_eq :
-      Fintype.card (sDomain 𝔽q β h_ℓ_add_R_rate i) = Fintype.card (Fin (2^(ℓ + R_rate - i.val))) := by
+      Fintype.card (sDomain 𝔽q β h_ℓ_add_R_rate i) =
+        Fintype.card (Fin (2^(ℓ + R_rate - i.val))) := by
     rw [sDomain_card 𝔽q β h_ℓ_add_R_rate i h_i, hF₂.out]
     simp only [Fintype.card_fin]
   exact {

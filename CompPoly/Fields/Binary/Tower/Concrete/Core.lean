@@ -7,6 +7,12 @@ Authors: Chung Thai Nguyen, Quang Dao
 import CompPoly.Data.Classes.DCast
 import CompPoly.Fields.Binary.Tower.Abstract.Basis
 
+/-!
+# Concrete Binary Tower Core
+
+Core definitions for the concrete bitvector model of the binary tower.
+-/
+
 namespace ConcreteBinaryTower
 
 open Polynomial

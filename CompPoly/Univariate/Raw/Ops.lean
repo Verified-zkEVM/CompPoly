@@ -1,9 +1,15 @@
- /-
+/-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles
- -/
+-/
 import CompPoly.Univariate.Raw.Core
+
+/-!
+# Raw Univariate Polynomial Operations
+
+Operations and evaluation lemmas for raw computable univariate polynomials.
+-/
 
 namespace CompPoly
 

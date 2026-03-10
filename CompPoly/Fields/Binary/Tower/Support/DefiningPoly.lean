@@ -6,6 +6,12 @@ Authors: Quang Dao, Chung Thai Nguyen
 
 import CompPoly.Fields.Binary.Tower.Support.LinearIndependentFin2
 
+/-!
+# Binary Tower Defining Polynomials
+
+Defining polynomials and basic degree lemmas used by the binary tower files.
+-/
+
 open Polynomial
 open AdjoinRoot
 open Module

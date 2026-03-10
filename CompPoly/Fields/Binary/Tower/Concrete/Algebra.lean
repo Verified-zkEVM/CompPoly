@@ -6,6 +6,12 @@ Authors: Chung Thai Nguyen, Quang Dao
 
 import CompPoly.Fields.Binary.Tower.Concrete.Field
 
+/-!
+# Concrete Binary Tower Algebra
+
+Algebra maps and embeddings for the concrete bitvector binary tower.
+-/
+
 namespace ConcreteBinaryTower
 
 open Polynomial

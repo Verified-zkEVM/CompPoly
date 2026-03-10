@@ -8,6 +8,12 @@ import CompPoly.Fields.Binary.Tower.Support.IrreducibilityAndTraceMapProperty
 import CompPoly.Data.RingTheory.AlgebraTower
 import Mathlib.Tactic.DepRewrite
 
+/-!
+# Abstract Binary Tower Core
+
+Core definitions and existence data for the abstract binary tower construction.
+-/
+
 namespace BinaryTower
 
 noncomputable section

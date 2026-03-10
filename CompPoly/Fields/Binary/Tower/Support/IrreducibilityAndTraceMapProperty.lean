@@ -6,6 +6,12 @@ Authors: Quang Dao, Chung Thai Nguyen
 
 import CompPoly.Fields.Binary.Tower.Support.DefiningPoly
 
+/-!
+# Binary Tower Irreducibility and Trace
+
+Irreducibility and trace-map criteria for binary tower defining polynomials.
+-/
+
 open Polynomial
 open AdjoinRoot
 open Module

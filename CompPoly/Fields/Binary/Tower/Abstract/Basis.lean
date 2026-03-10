@@ -6,6 +6,12 @@ Authors: Quang Dao, Chung Thai Nguyen
 
 import CompPoly.Fields.Binary.Tower.Abstract.Split
 
+/-!
+# Abstract Binary Tower Basis
+
+Basis constructions and index-casting lemmas for abstract binary tower extensions.
+-/
+
 namespace BinaryTower
 
 noncomputable section MultilinearBasis

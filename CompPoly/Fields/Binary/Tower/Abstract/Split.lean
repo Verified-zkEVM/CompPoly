@@ -6,6 +6,12 @@ Authors: Quang Dao, Chung Thai Nguyen
 
 import CompPoly.Fields.Binary.Tower.Abstract.Algebra
 
+/-!
+# Abstract Binary Tower Split
+
+Splitting and recombination lemmas for abstract binary tower extensions.
+-/
+
 namespace BinaryTower
 
 noncomputable section MultilinearBasis

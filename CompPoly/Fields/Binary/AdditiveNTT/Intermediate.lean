@@ -496,7 +496,8 @@ lemma even_index_intermediate_novel_basis_decomposition (i : Fin ℓ) (j : Fin (
     intermediateNovelBasisX 𝔽q β h_ℓ_add_R_rate ⟨i, by omega⟩ ⟨j * 2, by
       apply mul_two_add_bit_lt_two_pow j (ℓ - i - 1) (ℓ - i) ⟨0, by omega⟩ (by omega) (by omega)⟩ =
       (intermediateNovelBasisX 𝔽q β h_ℓ_add_R_rate ⟨i + 1, by omega⟩ ⟨j, by
-        apply lt_two_pow_of_lt_two_pow_exp_le j (ℓ - i - 1) (ℓ - (i + 1)) (by omega) (by omega)⟩).comp
+        apply lt_two_pow_of_lt_two_pow_exp_le j
+          (ℓ - i - 1) (ℓ - (i + 1)) (by omega) (by omega)⟩).comp
         (qMap 𝔽q β ⟨i, by omega⟩) := by
   unfold intermediateNovelBasisX
   rw [prod_comp]
@@ -512,7 +513,8 @@ lemma even_index_intermediate_novel_basis_decomposition (i : Fin ℓ) (j : Fin (
     rw [h_n_shift]
   have h_left_prod_shift :=
     Fin.prod_univ_succ (M := L[X]) (n := ℓ - (↑i + 1)) (f := fun x => fleft ⟨x, by omega⟩)
-  have h_lhs_prod_eq : ∏ x : Fin (ℓ - ↑i), fleft x = ∏ x : Fin (ℓ - (↑i + 1) + 1), fleft ⟨x, by omega⟩ := by
+  have h_lhs_prod_eq :
+      ∏ x : Fin (ℓ - ↑i), fleft x = ∏ x : Fin (ℓ - (↑i + 1) + 1), fleft ⟨x, by omega⟩ := by
     exact Eq.symm (Fin.prod_congr' fleft h_n_shift)
   rw [← h_lhs_prod_eq] at h_left_prod_shift
   rw [h_left_prod_shift]
@@ -544,7 +546,8 @@ lemma odd_index_intermediate_novel_basis_decomposition
     intermediateNovelBasisX 𝔽q β h_ℓ_add_R_rate ⟨i, by omega⟩ ⟨j * 2 + 1, by
       apply mul_two_add_bit_lt_two_pow j (ℓ - i - 1) (ℓ - i) ⟨1, by omega⟩ (by omega) (by omega)⟩ =
       X * (intermediateNovelBasisX 𝔽q β h_ℓ_add_R_rate ⟨i + 1, by omega⟩ ⟨j, by
-        apply lt_two_pow_of_lt_two_pow_exp_le j (ℓ - i - 1) (ℓ - (i + 1)) (by omega) (by omega)⟩).comp
+        apply lt_two_pow_of_lt_two_pow_exp_le j
+          (ℓ - i - 1) (ℓ - (i + 1)) (by omega) (by omega)⟩).comp
         (qMap 𝔽q β ⟨i, by omega⟩) := by
   unfold intermediateNovelBasisX
   rw [prod_comp]
@@ -562,7 +565,8 @@ lemma odd_index_intermediate_novel_basis_decomposition
     rw [h_n_shift]
   have h_left_prod_shift :=
     Fin.prod_univ_succ (M := L[X]) (n := ℓ - (↑i + 1)) (f := fun x => fleft ⟨x, by omega⟩)
-  have h_lhs_prod_eq : ∏ x : Fin (ℓ - ↑i), fleft x = ∏ x : Fin (ℓ - (↑i + 1) + 1), fleft ⟨x, by omega⟩ := by
+  have h_lhs_prod_eq :
+      ∏ x : Fin (ℓ - ↑i), fleft x = ∏ x : Fin (ℓ - (↑i + 1) + 1), fleft ⟨x, by omega⟩ := by
     exact Eq.symm (Fin.prod_congr' fleft h_n_shift)
   rw [← h_lhs_prod_eq] at h_left_prod_shift
   rw [h_left_prod_shift]
@@ -652,7 +656,9 @@ theorem evaluation_poly_split_identity (i : Fin ℓ)
           calc _ < 2 ^ (ℓ - i - 1) * 2 := by omega
             _ = 2 ^ (ℓ - i) := Nat.two_pow_pred_mul_two (w := ℓ - i) (h := by omega)⟩) *
           intermediateNovelBasisX 𝔽q β h_ℓ_add_R_rate ⟨↑i, by omega⟩ ⟨x.val * 2, by
-            exact mul_two_add_bit_lt_two_pow x.val (ℓ - i - 1) (ℓ - i) ⟨0, by omega⟩ (by omega) (by omega)⟩ := by
+            exact
+              mul_two_add_bit_lt_two_pow x.val (ℓ - i - 1) (ℓ - i) ⟨0, by omega⟩
+                (by omega) (by omega)⟩ := by
       intro x
       unfold f1
       simp only
@@ -668,7 +674,9 @@ theorem evaluation_poly_split_identity (i : Fin ℓ)
           calc _ < 2 ^ (ℓ - i - 1) * 2 := by omega
             _ = 2 ^ (ℓ - i) := Nat.two_pow_pred_mul_two (w := ℓ - i) (h := by omega)⟩) *
           intermediateNovelBasisX 𝔽q β h_ℓ_add_R_rate ⟨↑i, by omega⟩ ⟨x.val * 2 + 1, by
-            exact mul_two_add_bit_lt_two_pow x.val (ℓ - i - 1) (ℓ - i) ⟨1, by omega⟩ (by omega) (by omega)⟩ := by
+            exact
+              mul_two_add_bit_lt_two_pow x.val (ℓ - i - 1) (ℓ - i) ⟨1, by omega⟩
+                (by omega) (by omega)⟩ := by
       intro x
       unfold f1
       simp only

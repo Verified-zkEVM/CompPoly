@@ -9,6 +9,12 @@ import CompPoly.Data.Fin.BigOperators
 import CompPoly.Data.Nat.Bitwise
 import Mathlib.LinearAlgebra.StdBasis
 
+/-!
+# Binary Tower Preliminaries
+
+Shared finite-field and bitwise preliminaries for the binary tower development.
+-/
+
 noncomputable section Preliminaries
 
 open Polynomial

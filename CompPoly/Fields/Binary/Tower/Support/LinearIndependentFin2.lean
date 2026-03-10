@@ -6,6 +6,12 @@ Authors: Quang Dao, Chung Thai Nguyen
 
 import CompPoly.Fields.Binary.Tower.Support.FinHelpers
 
+/-!
+# Binary Tower `Fin 2` Linear Independence
+
+Linear-independence lemmas specialized to functions indexed by `Fin 2`.
+-/
+
 open Polynomial
 open AdjoinRoot
 open Module

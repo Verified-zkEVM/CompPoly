@@ -1,9 +1,15 @@
- /-
+/-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa, Dimitris Mitsios
- -/
+-/
 import CompPoly.Multivariate.MvPolyEquiv.Core
+
+/-!
+# `CMvPolynomial`/`MvPolynomial` Instances
+
+Compatibility lemmas used to transport algebraic structure across the conversion.
+-/
 
 open Std
 
