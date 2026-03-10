@@ -25,27 +25,27 @@ CompPoly aims to be the premier formally verified library for computable polynom
 #### Priorities
 
 1. **Theoretical completeness**
-   - Prove all remaining `sorry`s
    - ✅ Implement `nodal` and `interpolate` for Lagrange interpolation
    - ✅ Implement `AddCommGroup`/`Semiring`/`CommSemiring`/`Ring`/`CommRing` instances for `CPolynomial` and `QuotientCPolynomial`
    - ✅ Prove isomorphism between `CPolynomial` and Mathlib's `Polynomial` (`ringEquiv` in `Univariate/ToPoly.lean`); prove for `QuotientCPolynomial` as needed
-   - ✅ Prove `CommSemiring` for `CMvPolynomial` and `polyRingEquiv` (ring isomorphism with Mathlib's `MvPolynomial (Fin n) R`); prove remaining algebraic instances (`CommRing`, `Algebra`, `Module`) without `sorry`
+   - ✅ Prove `CommSemiring` for `CMvPolynomial` and `polyRingEquiv` (ring isomorphism with Mathlib's `MvPolynomial (Fin n) R`)
+   - ✅ Complete remaining algebraic structures (`CommRing`, `Algebra`, scalar action / `SMulZeroClass`)
 
 1. **API completeness**
    - ✅ Add `monomial` constructors for univariate and multivariate polynomials
-   - Implement monomial order support (`MonomialOrder.degree`, `leadingCoeff`) — stubs exist, proofs pending
+   - ✅ Implement monomial-order baseline (`MonomialOrder.degree`, `leadingMonomial`, `leadingCoeff`, `leadingTerm`)
    - ✅ `degreeLT`, `degreeLE`: Bounded-degree submodules for univariate polynomials
    - ✅ `mem_degreeLT`, `mem_degreeLE`: Membership characterizations for bounded-degree polynomials
    - ✅ `degreeLTEquiv`: Linear equivalence for coefficient access
    - ✅ `restrictDegree`: Degree restrictions for multilinear extensions
    - ✅ `vars`: Variable set extraction
-   - `aeval`, `bind₁`: Algebra evaluation and substitution — stubs exist, proofs pending
+   - ✅ `aeval`, `bind₁`: Algebra evaluation and substitution
    - ✅ `algebra`, `module`: Algebra and module structures
    - ✅ `degrees`; ✅ `eval₂Hom`: Degree utilities and evaluation homomorphisms
-   - `finSuccEquiv`, `optionEquivLeft`: Variable manipulation equivalences (for `CMvPolynomial`)
-   - ✅ `CommSemiring` for `CMvPolynomial`; `isEmptyAlgEquiv`: Additional algebra structures (latter pending)
+   - ✅ `finSuccEquiv`, `optionEquivLeft`: Variable manipulation equivalences (for `CMvPolynomial`)
+   - ✅ `isEmptyRingEquiv` for `CMvPolynomial 0 R`
    - ✅ `smulZeroClass`: Scalar multiplication with zero behavior
-   - `sumToIter`: Iteration utility — stub exists, proof/semantics pending
+   - ✅ `sumToIter`: Iteration utility with reconstruction/API lemmas
    - ✅ Implement `rename` / `renameEquiv` for variable renaming
 
 1. **Further data types**
@@ -181,4 +181,4 @@ CompPoly aims to be the premier formally verified library for computable polynom
 
 ---
 
-*Last updated: February 2026*
+*Last updated: March 2026*
