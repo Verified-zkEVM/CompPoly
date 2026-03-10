@@ -48,13 +48,26 @@ class MonomialOrder (n : ℕ) where
 def MonomialOrder.degree {n : ℕ} [MonomialOrder n] (m : CMvMonomial n) : ℕ :=
   sorry
 
-/-- Leading monomial of a polynomial according to a monomial order.
+/-- Leading term of a polynomial according to a monomial order.
 
-  Returns `none` for the zero polynomial.
+  Equals `monomial (degree p) (leadingCoeff p)` when `p ≠ 0`, and `0` otherwise.
+  Matches Mathlib's `MonomialOrder.leadingTerm`.
 -/
-def leadingMonomial {n : ℕ} {R : Type} [Zero R] [MonomialOrder n]
-    (p : CMvPolynomial n R) : Option (CMvMonomial n) :=
-  sorry
+def leadingTerm {n : ℕ} {R : Type} [Zero R] [BEq R] [LawfulBEq R] [MonomialOrder n]
+    (p : CMvPolynomial n R) : CMvPolynomial n R :=
+  let lead? : Option (CMvMonomial n × R) :=
+    ExtTreeMap.foldl
+      (fun acc m c =>
+        match acc with
+        | none => some (m, c)
+        | some (m', c') =>
+            match MonomialOrder.compare m m' with
+            | .gt => some (m, c)
+            | _ => some (m', c'))
+      none p.1
+  match lead? with
+  | none => 0
+  | some (m, c) => monomial m c
 
 /-- Leading coefficient of a polynomial according to a monomial order.
 
