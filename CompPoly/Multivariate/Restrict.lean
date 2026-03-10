@@ -3,7 +3,7 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Fawad Haider
 -/
-import CompPoly.Multivariate.CMvPolynomial
+import CompPoly.Multivariate.Operations
 
 /-!
 # Lemmas for `CMvPolynomial.restrictBy`, `restrictTotalDegree`, and `restrictDegree`

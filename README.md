@@ -57,7 +57,7 @@ import CompPoly
 
 ### Implemented
 
-- **Multivariate (`CMvPolynomial`):** `C`, `X`, `coeff`, `monomial`, `support`, `totalDegree`, `degreeOf`, `degrees`, `vars`, `eval`, `eval₂`, `restrictBy` / `restrictTotalDegree` / `restrictDegree`, `rename`, `renameEquiv`; `CommSemiring` instance and `polyRingEquiv` to Mathlib's `MvPolynomial (Fin n) R`. Stubs exist for `aeval`, `bind₁`, `MonomialOrder.degree`, `leadingCoeff` (proofs pending).
+- **Multivariate (`CMvPolynomial`):** `C`, `X`, `coeff`, `monomial`, `support`, `totalDegree`, `degreeOf`, `degrees`, `vars`, `eval`, `eval₂`, `restrictBy` / `restrictTotalDegree` / `restrictDegree`, `rename`, `renameEquiv`, `MonomialOrder.degree`, `leadingMonomial`, `leadingCoeff`, `leadingTerm`; `CommSemiring` instance and `polyRingEquiv` to Mathlib's `MvPolynomial (Fin n) R`. Stubs still exist for `aeval` and `bind₁`.
 
 - **Univariate (`CPolynomial`):** Full ring structure (`Semiring`, `CommSemiring`, `Ring`, `CommRing`), `C`, `X`, `monomial`, `coeff`, `eval`, `eval₂`, `degree`, `natDegree`, `leadingCoeff`, `support`; `ringEquiv` with Mathlib's `Polynomial R`. Lagrange interpolation: `nodal` and `interpolate` (in `CompPoly.Univariate.Lagrange`). Quotient polynomials: `QuotientCPolynomial` with matching ring instances.
 

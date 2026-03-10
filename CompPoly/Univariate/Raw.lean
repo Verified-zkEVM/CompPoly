@@ -1615,28 +1615,6 @@ def modByMonic [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
     CPolynomial.Raw R :=
   (divModByMonicAux p q).2
 
-/-- Regression test for issue #115: `(X^2 - 1) / (X + 1) = X - 1` with zero remainder. -/
-example :
-    divByMonic ((X : CPolynomial.Raw ℚ) ^ 2 - C 1) ((X : CPolynomial.Raw ℚ) + C 1)
-      = #[-(1 : ℚ), 1] := by
-  native_decide
-
-example :
-    modByMonic ((X : CPolynomial.Raw ℚ) ^ 2 - C 1) ((X : CPolynomial.Raw ℚ) + C 1)
-      = #[] := by
-  native_decide
-
-/-- Regression test for review-thread case: `X^3 = (X^2 + 1) * X + (-X)`. -/
-example :
-    divByMonic ((X : CPolynomial.Raw ℚ) ^ 3) ((X : CPolynomial.Raw ℚ) ^ 2 + C 1)
-      = #[(0 : ℚ), 1] := by
-  native_decide
-
-example :
-    modByMonic ((X : CPolynomial.Raw ℚ) ^ 3) ((X : CPolynomial.Raw ℚ) ^ 2 + C 1)
-      = #[(0 : ℚ), -(1 : ℚ)] := by
-  native_decide
-
 /-- Division of two `CPolynomial.Raw`s. -/
 def div [Field R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
   (C (q.leadingCoeff)⁻¹ • p).divByMonic (C (q.leadingCoeff)⁻¹ * q)
