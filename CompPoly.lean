@@ -43,7 +43,7 @@ import CompPoly.Multivariate.Lawful
 import CompPoly.Multivariate.MvPolyEquiv
 import CompPoly.Multivariate.Operations
 import CompPoly.Multivariate.Rename
-import CompPoly.Multivariate.Restrict
+import CompPoly.Multivariate.FinSuccEquiv
 import CompPoly.Multivariate.Unlawful
 import CompPoly.Multivariate.VarsDegrees
 import CompPoly.Multivariate.Wheels
