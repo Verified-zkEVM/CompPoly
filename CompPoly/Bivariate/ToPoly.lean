@@ -5,7 +5,7 @@ Authors: Derek Sorensen
 -/
 
 import CompPoly.Bivariate.Basic
-import CompPoly.Univariate.ToPoly
+import CompPoly.Univariate.ToPoly.Degree
 import Mathlib.Algebra.Polynomial.Bivariate
 
 /-!
@@ -328,6 +328,35 @@ theorem ofPoly_mul
 
 end RingEquiv
 
+/-! ### Shared helper: foldl-to-Finset.sum equivalence -/
+
+/-- Converting a `foldl` over `Array.zipIdx` of `CPolynomial` coefficients to a
+    `Finset.sum` of their `toPoly` images commutes with the `toPoly` map. -/
+private theorem toPoly_foldl_zipIdx_eq_sum {R : Type*} [BEq R] [LawfulBEq R]
+    [Nontrivial R] [Ring R] (arr : Array (CPolynomial R)) (y : R) :
+    (Array.foldl (fun (acc : CPolynomial R) (x : CPolynomial R × ℕ) ↦
+      acc + x.1 * CPolynomial.C y ^ x.2) 0 (Array.zipIdx arr) 0 arr.size).toPoly =
+    ∑ i ∈ Finset.range arr.size, (arr[i]?.getD 0).toPoly * (Polynomial.C y) ^ i := by
+  induction' arr using Array.recOn with arr ih
+  induction' arr using List.reverseRecOn with arr ih
+  · rfl
+  · simp_all +decide [ Finset.sum_range_succ, Array.zipIdx ]
+    rw [ Finset.sum_congr rfl fun i hi ↦ by rw [ List.getElem?_append ] ]
+    rw [ Finset.sum_congr rfl fun i hi ↦ by rw [ if_pos (Finset.mem_range.mp hi) ] ]
+    convert congr_arg₂ ( · + · ) ‹_› rfl using 1
+    convert CPolynomial.Raw.toPoly_add _ _ using 1
+    · congr! 1
+      have h_toPoly_mul : ∀ (p q : CPolynomial R),
+          (p * q).toPoly = p.toPoly * q.toPoly :=
+        fun p q => CPolynomial.toPoly_mul p q
+      convert h_toPoly_mul ih (CPolynomial.C y ^ arr.length) |> Eq.symm using 1
+      congr! 1
+      induction' arr.length with n ih <;> simp_all +decide [ pow_succ ]
+      · exact Eq.symm ( CPolynomial.Raw.toPoly_one )
+      · congr! 1
+        exact Eq.symm (CPolynomial.C_toPoly y)
+    · infer_instance
+
 /-! Correctness lemmas for evaluation, coefficients, support, and degrees. -/
 section ImplementationCorrectness
 
@@ -342,32 +371,7 @@ theorem evalEval_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R
         simp +decide [ Polynomial.eval_finset_sum, CPolynomial.Raw.eval ]
         unfold CPolynomial.Raw.eval₂
         simp +decide
-        -- Rewrite the right-hand side to match the left-hand side.
-        have h_foldl : ∀ (arr : Array (CPolynomial R)) (y : R),
-            (Array.foldl (fun (acc : CPolynomial R) (x : CPolynomial R × ℕ) ↦
-              acc + x.1 * CPolynomial.C y ^ x.2) 0 (Array.zipIdx arr) 0 arr.size).toPoly =
-            ∑ i ∈ Finset.range arr.size, (arr[i]?.getD 0).toPoly * (Polynomial.C y) ^ i := by
-          intro arr y
-          induction' arr using Array.recOn with arr ih
-          induction' arr using List.reverseRecOn with arr ih
-          · rfl
-          · simp_all +decide [ Finset.sum_range_succ, Array.zipIdx ]
-            rw [ Finset.sum_congr rfl fun i hi ↦ by rw [ List.getElem?_append ] ]
-            rw [ Finset.sum_congr rfl fun i hi ↦ by rw [ if_pos (Finset.mem_range.mp hi) ] ]
-            convert congr_arg₂ ( · + · ) ‹_› rfl using 1
-            convert CPolynomial.Raw.toPoly_add _ _ using 1
-            · congr! 1
-              -- `toPoly (ih * C y ^ arr.length) = toPoly ih * toPoly (C y ^ arr.length)`.
-              have h_toPoly_mul : ∀ (p q : CPolynomial R),
-                  (p * q).toPoly = p.toPoly * q.toPoly := by grind
-              convert h_toPoly_mul ih (CPolynomial.C y ^ arr.length) |> Eq.symm using 1
-              congr! 1
-              induction' arr.length with n ih <;> simp_all +decide [ pow_succ ]
-              · exact Eq.symm ( CPolynomial.Raw.toPoly_one )
-              · congr! 1
-                exact Eq.symm (CPolynomial.C_toPoly y)
-            · infer_instance
-        rw [ h_foldl, Finset.sum_subset ]
+        rw [ toPoly_foldl_zipIdx_eq_sum, Finset.sum_subset ]
         · exact fun i hi ↦ Finset.mem_range.mpr
             (Nat.lt_of_lt_of_le (Finset.mem_range.mp (Finset.mem_filter.mp hi |>.1)) (by simp))
         · simp +contextual [ CPolynomial.support ]
@@ -634,30 +638,7 @@ theorem evalY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
     simp +decide [ Polynomial.eval_finset_sum, CPolynomial.Raw.eval ]
     unfold CPolynomial.Raw.eval₂
     simp +decide
-    have h_foldl : ∀ (arr : Array (CPolynomial R)) (y : R),
-        (Array.foldl (fun (acc : CPolynomial R) (x : CPolynomial R × ℕ) ↦
-          acc + x.1 * CPolynomial.C y ^ x.2) 0 (Array.zipIdx arr) 0 arr.size).toPoly =
-        ∑ i ∈ Finset.range arr.size, (arr[i]?.getD 0).toPoly * (Polynomial.C y) ^ i := by
-      intro arr y
-      induction' arr using Array.recOn with arr ih
-      induction' arr using List.reverseRecOn with arr ih
-      · rfl
-      · simp_all +decide [ Finset.sum_range_succ, Array.zipIdx ]
-        rw [ Finset.sum_congr rfl fun i hi ↦ by rw [ List.getElem?_append ] ]
-        rw [ Finset.sum_congr rfl fun i hi ↦ by rw [ if_pos (Finset.mem_range.mp hi) ] ]
-        convert congr_arg₂ ( · + · ) ‹_› rfl using 1
-        convert CPolynomial.Raw.toPoly_add _ _ using 1
-        · congr! 1
-          have h_toPoly_mul : ∀ (p q : CPolynomial R),
-              (p * q).toPoly = p.toPoly * q.toPoly := by grind
-          convert h_toPoly_mul ih (CPolynomial.C y ^ arr.length) |> Eq.symm using 1
-          congr! 1
-          induction' arr.length with n ih <;> simp_all +decide [ pow_succ ]
-          · exact Eq.symm ( CPolynomial.Raw.toPoly_one )
-          · congr! 1
-            exact Eq.symm (CPolynomial.C_toPoly y)
-        · infer_instance
-    rw [ h_foldl, Finset.sum_subset ]
+    rw [ toPoly_foldl_zipIdx_eq_sum, Finset.sum_subset ]
     · exact fun i hi ↦ Finset.mem_range.mpr
         (Nat.lt_of_lt_of_le (Finset.mem_range.mp (Finset.mem_filter.mp hi |>.1)) (by simp))
     · simp +contextual [ CPolynomial.support ]

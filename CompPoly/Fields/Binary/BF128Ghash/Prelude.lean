@@ -259,53 +259,6 @@ lemma X_ZMod2Poly_eq_X : X_ZMod2Poly = X := by
   )]
   simp only [↓reduceIte]
 
--- The check function (Executes in Kernel)
--- Returns true iff rPrev^2 == q * P + rNext
-def checkSquareStep (rPrev : B128) (q : B128) (rNext : B128) : Bool :=
-  let lhs := clSq rPrev
-  let rhs := (clMul (to256 q) P_val) ^^^ (to256 rNext)
-  lhs == rhs
-
--- The Soundness Theorem
--- This is what you apply in your 128 generated lemmas
-theorem verify_square_step_correct (rPrev q rNext : B128) :
-    checkSquareStep rPrev q rNext = true →
-    (toPoly rPrev)^2 = (toPoly (to256 q)) * (toPoly P_val) + (toPoly rNext) := by
-  intro h
-  dsimp only [checkSquareStep] at h
-  rw [beq_iff_eq] at h
-  -- h is now: clSq rPrev = (clMul (to256 q) P_val) ^^^ (to256 rNext)
-  -- The huge loop is still "folded" inside clSq/clMul, so it's fast.
-  -- 3. Apply the bridge to the BitVec equation
-  --    Now we transform the functions using theorems, rather than computing them.
-  rw [clSq] at h -- Unfold clSq to clMul (only 1 step)
-  apply_fun toPoly at h
-  -- 4. Apply your Bridge Lemmas
-  rw [toPoly_xor] at h
-  have h_res : toPoly rPrev ^ 2 = toPoly (to256 q) * toPoly P_val + toPoly rNext := by
-    rw [pow_two]
-    rw [toPoly_128_extend_256] at ⊢ h
-    have h_rPrev_lt : BitVec.toNat (to256 rPrev) < 2 ^ 128 := by
-      rw [to256_toNat];
-      exact BitVec.toNat_lt_twoPow_of_le (m := 128) (n := 128) (x := rPrev) (h := by omega)
-    have h_q_lt : BitVec.toNat (to256 q) < 2 ^ 128 := by
-      rw [to256_toNat];
-      exact BitVec.toNat_lt_twoPow_of_le (m := 128) (n := 128) (x := q) (h := by omega)
-    have h_P_val_lt : BitVec.toNat P_val < 2 ^ 129 := by
-      unfold P_val
-      simp only [Nat.reduceShiftLeft, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat, BitVec.reduceXOr,
-        BitVec.toNat_ofNat, Nat.reducePow, Nat.reduceMod, Nat.reduceLT]
-    conv_lhs at h =>
-        rw [toPoly_clMul_no_overflow (da := 128) (db := 128) (ha := by omega)
-          (hb := h_rPrev_lt) (h_sum := by omega)]
-        rw [toPoly_128_extend_256]
-    conv_rhs at h =>
-      rw [toPoly_clMul_no_overflow (da := 128) (db := 129) (ha := by
-        rw [to256_toNat]; exact h_q_lt) (hb := h_P_val_lt) (h_sum := by omega)]
-      rw [toPoly_128_extend_256]
-    rw [h]
-  exact h_res
-
 /-- Helper lemma to chain the modular squaring steps -/
 lemma chain_step {k : ℕ} {prev next : Polynomial (ZMod 2)} {q_val : B128}
     (h_prev : X ^ (2 ^ k) % ghashPoly = prev % ghashPoly)
@@ -321,26 +274,274 @@ lemma chain_step {k : ℕ} {prev next : Polynomial (ZMod 2)} {q_val : B128}
   conv_lhs => rw [EuclideanDomain.zero_mod, zero_add]
   rw [CanonicalEuclideanDomain.mod_mod_eq_mod (hn := by exact ghashPoly_ne_zero)]
 
--- 3. We can reuse 'verify_step_correct' for the division check!
--- Recall: verify_step_correct checks: rPrev^2 = q * P + rNext
--- WE NEED A NEW ONE for simple linear division: A = Q * B + R
-def checkDivStep (a : B256) (q : B256) (b : B256) (r : B256) : Bool :=
-  let rhs := (clMul q b) ^^^ r
-  a == rhs
-
-theorem verify_div_step (a q b r : B256) (hq : q.toNat < 2 ^ 128) (hb : b.toNat < 2 ^ 128) :
-  -- for rabin gcd condition
-  checkDivStep a q b r = true → -- check q * b + (XOR) r = a
-  toPoly a = (toPoly q) * (toPoly b) + (toPoly r) := by
-  intro h
-  dsimp only [checkDivStep] at h
-  rw [beq_iff_eq] at h
-  apply_fun toPoly at h
-  rw [toPoly_xor] at h
-  rw [toPoly_clMul_no_overflow (da := 128) (db := 128) (ha := hq) (hb := hb)
-    (h_sum := by omega)] at h
-  exact h
-
 end VerificationFunctions
+
+/-! ### Kernel-Efficient Checkers -/
+
+section KernelEfficientCheckers
+
+/-- Carry-less (polynomial) multiply using structural recursion on `n`,
+    iterating over bits `0 .. n-1` of `a`.
+    Uses only `Nat.testBit`, `Nat.xor`, `Nat.shiftLeft` —
+    no `Finset.fold`, no `BitVec`, no `Nat.mod`. -/
+def clMulNat (a b : Nat) : Nat → Nat
+  | 0 => 0
+  | n + 1 =>
+    let prev := clMulNat a b n
+    if a.testBit n then prev ^^^ (b <<< n) else prev
+
+/-- Carry-less square via `clMulNat`. -/
+abbrev clSqNat (a n : Nat) : Nat := clMulNat a a n
+
+/-- Specialized carry-less multiply by `P_val` (the GHASH polynomial
+    `P(X) = X^128 + X^7 + X^2 + X + 1`).
+    `P_val` has bits set at positions `{0, 1, 2, 7, 128}`, so we hardcode the
+    5 XOR-shift operations instead of iterating over all bits. -/
+def mulByP_Nat (a : Nat) : Nat :=
+  a ^^^ (a <<< 1) ^^^ (a <<< 2) ^^^ (a <<< 7) ^^^ (a <<< 128)
+
+/-- Kernel-efficient version of `checkSquareStep`.
+    The public API stays on `B128`, but the internal computation runs on `Nat`
+    using `clSqNat` and the specialized `mulByP_Nat` helper. -/
+def checkSquareStep (rPrev q rNext : B128) : Bool :=
+  let lhs := clSqNat rPrev.toNat 128
+  let rhs := mulByP_Nat q.toNat ^^^ rNext.toNat
+  lhs == rhs
+
+/-- Kernel-efficient version of `checkDivStep`.
+    Preserves the full `B256` semantics of the public checker, but computes via
+    `Nat` structural recursion instead of the `BitVec` fold. -/
+def checkDivStep (a q b r : B256) : Bool :=
+  let rhs := clMulNat q.toNat b.toNat 256 ^^^ r.toNat
+  a.toNat == rhs
+
+/-- If `a < 2^m`, then iterating `clMulNat` beyond bit `m-1` is a no-op,
+    because `a.testBit i = false` for all `i ≥ m`. -/
+theorem clMulNat_high_bits_zero (a b m n : Nat) (hmn : m ≤ n) (ha : a < 2 ^ m) :
+    clMulNat a b n = clMulNat a b m := by
+  induction n with
+  | zero => simp [show m = 0 by omega]
+  | succ k ih =>
+    by_cases hk : m ≤ k
+    · have h_bit : a.testBit k = false :=
+        Nat.testBit_lt_two_pow
+          (lt_of_lt_of_le ha (pow_le_pow_right' (by omega : 1 ≤ 2) hk))
+      have step : clMulNat a b (k + 1) = clMulNat a b k := by
+        show (if a.testBit k then (clMulNat a b k) ^^^ (b <<< k)
+              else clMulNat a b k) = clMulNat a b k
+        simp [h_bit]
+      rw [step]; exact ih (by omega)
+    · simp [show m = k + 1 by omega]
+
+/-- Reinterpret a bounded `Nat` as the zero-extended 256-bit vector. -/
+private theorem ofNat_to256 (x : B128) : (BitVec.ofNat 256 x.toNat : B256) = to256 x := by
+  apply BitVec.eq_of_toNat_eq
+  rw [to256_toNat]
+  exact Nat.mod_eq_of_lt (lt_of_lt_of_le x.isLt (by omega))
+
+/-- Reinterpret a 256-bit vector's `toNat` back as the original bitvector. -/
+private theorem ofNat_toB256 (x : B256) : (BitVec.ofNat 256 x.toNat : B256) = x := by
+  simp [BitVec.ofNat_toNat]
+
+/-- `BitVec.ofNat 256` transports `Nat.xor` to `BitVec.xor`. -/
+private theorem ofNat_xor_256 (x y : Nat) :
+    (BitVec.ofNat 256 (x ^^^ y) : B256) =
+      (BitVec.ofNat 256 x : B256) ^^^ (BitVec.ofNat 256 y : B256) := by
+  apply BitVec.eq_of_toNat_eq
+  change (x ^^^ y) % 2 ^ 256 =
+    (((BitVec.ofNat 256 x : B256) ^^^ (BitVec.ofNat 256 y : B256)).toNat)
+  rw [BitVec.toNat_xor, BitVec.toNat_ofNat, BitVec.toNat_ofNat, Nat.xor_mod_two_pow]
+
+/-- `BitVec.ofNat 256` transports left shift modulo `2^256`. -/
+private theorem ofNat_shiftLeft_256 (x n : Nat) :
+    (BitVec.ofNat 256 (x <<< n) : B256) =
+      ((BitVec.ofNat 256 x : B256) <<< n) := by
+  apply BitVec.eq_of_toNat_eq
+  simp [Nat.shiftLeft_eq, Nat.mod_mul_mod]
+
+/-- Bitvector view of `clMulNat`: a `range`-fold using the same xor/shift pattern. -/
+private theorem clMulNat_bv_eq_fold_range (a b : Nat) :
+    ∀ n,
+      (BitVec.ofNat 256 (clMulNat a b n) : B256) =
+        (Finset.range n).fold BitVec.xor 0
+          (fun i => if a.testBit i then ((BitVec.ofNat 256 b : B256) <<< i) else 0)
+  | 0 => by simp [clMulNat]
+  | n + 1 => by
+      rw [Finset.range_add_one, Finset.fold_insert (by simp)]
+      by_cases hbit : a.testBit n
+      · simp [clMulNat, hbit, clMulNat_bv_eq_fold_range a b n,
+          ofNat_shiftLeft_256, BitVec.xor_comm]
+      · simp [clMulNat, hbit, clMulNat_bv_eq_fold_range a b n]
+
+/-- Rewrite `clMul` from a fold over `Fin 256` to a fold over `range 256`. -/
+private theorem clMul_eq_fold_range (a b : B256) :
+    clMul a b =
+      (Finset.range 256).fold BitVec.xor 0
+        (fun i => if a.toNat.testBit i then b <<< i else 0) := by
+  rw [clMul_eq_fold]
+  have hImage :=
+    Finset.fold_image
+      (op := BitVec.xor)
+      (b := (0 : B256))
+      (f := fun i => if a.toNat.testBit i then b <<< i else 0)
+      (g := fun i : Fin 256 => i.val)
+      (s := (Finset.univ : Finset (Fin 256)))
+      (H := by
+        intro x _ y _ hxy
+        exact Fin.ext hxy)
+  have hRange :
+      ((Finset.univ : Finset (Fin 256)).image fun i : Fin 256 => i.val) =
+        Finset.range 256 := by
+    ext i
+    constructor
+    · intro hi
+      rcases Finset.mem_image.mp hi with ⟨j, _, rfl⟩
+      exact Finset.mem_range.mpr j.isLt
+    · intro hi
+      exact Finset.mem_image.mpr ⟨⟨i, Finset.mem_range.mp hi⟩, by simp, rfl⟩
+  simpa [hRange, Function.comp, BitVec.getLsb] using hImage.symm
+
+/-- The 256-step Nat checker matches `clMul` on all `B256` inputs. -/
+private theorem clMulNat_bv_eq_clMul (a b : B256) :
+    (BitVec.ofNat 256 (clMulNat a.toNat b.toNat 256) : B256) = clMul a b := by
+  calc
+    (BitVec.ofNat 256 (clMulNat a.toNat b.toNat 256) : B256)
+        = (Finset.range 256).fold BitVec.xor 0
+            (fun i => if a.toNat.testBit i then b <<< i else 0) := by
+              simpa [ofNat_toB256 b] using (clMulNat_bv_eq_fold_range a.toNat b.toNat 256)
+    _ = clMul a b := clMul_eq_fold_range a b |>.symm
+
+/-- The 128-step Nat checker matches `clMul` when the first multiplicand is 128-bit. -/
+private theorem clMulNat_bv_eq_clMul_128 (a b : B256) (ha : a.toNat < 2 ^ 128) :
+    (BitVec.ofNat 256 (clMulNat a.toNat b.toNat 128) : B256) = clMul a b := by
+  have htrim :
+      (Finset.range 256).fold BitVec.xor 0
+          (fun i => if a.toNat.testBit i then b <<< i else 0) =
+        (Finset.range 128).fold BitVec.xor 0
+          (fun i => if a.toNat.testBit i then b <<< i else 0) := by
+    calc
+      (Finset.range 256).fold BitVec.xor 0
+          (fun i => if a.toNat.testBit i then b <<< i else 0)
+          = (BitVec.ofNat 256 (clMulNat a.toNat b.toNat 256) : B256) := by
+              simpa [ofNat_toB256 b] using (clMulNat_bv_eq_fold_range a.toNat b.toNat 256).symm
+      _ = (BitVec.ofNat 256 (clMulNat a.toNat b.toNat 128) : B256) := by
+            exact congrArg (fun n => (BitVec.ofNat 256 n : B256))
+              (clMulNat_high_bits_zero a.toNat b.toNat 128 256 (by omega) ha)
+      _ = (Finset.range 128).fold BitVec.xor 0
+            (fun i => if a.toNat.testBit i then b <<< i else 0) := by
+            simpa [ofNat_toB256 b] using (clMulNat_bv_eq_fold_range a.toNat b.toNat 128)
+  calc
+    (BitVec.ofNat 256 (clMulNat a.toNat b.toNat 128) : B256)
+        = (Finset.range 128).fold BitVec.xor 0
+            (fun i => if a.toNat.testBit i then b <<< i else 0) := by
+              simpa [ofNat_toB256 b] using (clMulNat_bv_eq_fold_range a.toNat b.toNat 128)
+    _ = (Finset.range 256).fold BitVec.xor 0
+          (fun i => if a.toNat.testBit i then b <<< i else 0) := htrim.symm
+    _ = clMul a b := clMul_eq_fold_range a b |>.symm
+
+/-- Polynomial semantics of the 128-step Nat carry-less multiply. -/
+private theorem toPoly_clMulNat_eq_mul_128 (a b : B256)
+    (ha : a.toNat < 2 ^ 128) (hb : b.toNat < 2 ^ 128) :
+    toPoly (BitVec.ofNat 256 (clMulNat a.toNat b.toNat 128)) = (toPoly a) * (toPoly b) := by
+  rw [clMulNat_bv_eq_clMul_128 a b ha]
+  exact toPoly_clMul_no_overflow (da := 128) (db := 128) a b ha hb (by omega)
+
+/-- Bitvector semantics of `clSqNat` for a 128-bit input. -/
+private theorem clSqNat_bv_eq_clSq (x : B128) :
+    (BitVec.ofNat 256 (clSqNat x.toNat 128) : B256) = clSq x := by
+  have hx : (to256 x).toNat < 2 ^ 128 := by
+    rw [to256_toNat]
+    exact x.isLt
+  simpa [clSqNat, clSq, to256_toNat] using
+    (clMulNat_bv_eq_clMul_128 (to256 x) (to256 x) hx)
+
+/-- Polynomial semantics of `clSqNat` for a 128-bit input. -/
+private theorem toPoly_clSqNat_eq_sq (x : B128) :
+    toPoly (BitVec.ofNat 256 (clSqNat x.toNat 128)) = (toPoly x) ^ 2 := by
+  have hx : (to256 x).toNat < 2 ^ 128 := by
+    rw [to256_toNat]
+    exact x.isLt
+  simpa [clSqNat, pow_two, to256_toNat, toPoly_128_extend_256] using
+    (toPoly_clMulNat_eq_mul_128 (to256 x) (to256 x) hx hx)
+
+/-- Shift a 128-bit input inside 256 bits without changing its polynomial meaning. -/
+private theorem toPoly_ofNat_shiftLeft_to256 (x : B128) (shift : Nat) (hshift : 128 + shift ≤ 256) :
+    toPoly (BitVec.ofNat 256 (x.toNat <<< shift)) = (toPoly (to256 x)) * X ^ shift := by
+  have hx : (to256 x).toNat < 2 ^ 128 := by
+    rw [to256_toNat]
+    exact x.isLt
+  have hEq : (BitVec.ofNat 256 (x.toNat <<< shift) : B256) = (to256 x) <<< shift := by
+    apply BitVec.eq_of_toNat_eq
+    simp [BitVec.toNat_shiftLeft, to256_toNat, BitVec.toNat_ofNat]
+  rw [hEq]
+  exact toPoly_shiftLeft_no_overflow (a := to256 x) hx (shift := shift) hshift
+
+/-- Polynomial semantics of the specialized GHASH multiplication by `P_val`. -/
+private theorem toPoly_mulByP_Nat (x : B128) :
+    toPoly (BitVec.ofNat 256 (mulByP_Nat x.toNat)) = (toPoly (to256 x)) * (toPoly P_val) := by
+  unfold mulByP_Nat
+  rw [ofNat_xor_256, ofNat_xor_256, ofNat_xor_256, ofNat_xor_256]
+  repeat rw [toPoly_xor]
+  rw [ofNat_to256]
+  rw [toPoly_ofNat_shiftLeft_to256 x 1 (by omega)]
+  rw [toPoly_ofNat_shiftLeft_to256 x 2 (by omega)]
+  rw [toPoly_ofNat_shiftLeft_to256 x 7 (by omega)]
+  rw [toPoly_ofNat_shiftLeft_to256 x 128 (by omega)]
+  rw [← ghashPoly_eq_P_val, ghashPoly]
+  ring
+
+/-- Soundness of the kernel-efficient square-step checker. -/
+theorem verify_square_step_correct (rPrev q rNext : B128) :
+    checkSquareStep rPrev q rNext = true →
+    (toPoly rPrev) ^ 2 = (toPoly (to256 q)) * (toPoly P_val) + (toPoly rNext) := by
+  intro h
+  unfold checkSquareStep at h
+  rw [beq_iff_eq] at h
+  have hBv : (BitVec.ofNat 256 (clSqNat rPrev.toNat 128) : B256) =
+      (BitVec.ofNat 256 (mulByP_Nat q.toNat ^^^ rNext.toNat) : B256) := by
+    simpa using congrArg (fun n => (BitVec.ofNat 256 n : B256)) h
+  rw [clSqNat_bv_eq_clSq rPrev, ofNat_xor_256, ofNat_to256 rNext] at hBv
+  apply_fun toPoly at hBv
+  rw [clSq, toPoly_xor, toPoly_mulByP_Nat, toPoly_128_extend_256] at hBv
+  have hr : (to256 rPrev).toNat < 2 ^ 128 := by
+    rw [to256_toNat]
+    exact rPrev.isLt
+  rw [toPoly_clMul_no_overflow (da := 128) (db := 128) (a := to256 rPrev) (b := to256 rPrev) hr hr
+    (by omega), toPoly_128_extend_256, toPoly_128_extend_256] at hBv
+  simpa [pow_two, toPoly_128_extend_256] using hBv
+
+/-- Soundness of the kernel-efficient division-step checker. -/
+theorem verify_div_step_bounded (a q b r : B256) (hq : q.toNat < 2 ^ 128)
+    (hb : b.toNat < 2 ^ 128) :
+    a.toNat = clMulNat q.toNat b.toNat 128 ^^^ r.toNat →
+    toPoly a = (toPoly q) * (toPoly b) + (toPoly r) := by
+  intro h
+  have hBv : (BitVec.ofNat 256 a.toNat : B256) =
+      (BitVec.ofNat 256 (clMulNat q.toNat b.toNat 128 ^^^ r.toNat) : B256) := by
+    simpa using congrArg (fun n => (BitVec.ofNat 256 n : B256)) h
+  rw [ofNat_toB256 a, ofNat_xor_256, ofNat_toB256 r] at hBv
+  rw [clMulNat_bv_eq_clMul_128 q b hq] at hBv
+  apply_fun toPoly at hBv
+  rw [toPoly_xor, toPoly_clMul_no_overflow (da := 128) (db := 128) q b hq hb (by omega)] at hBv
+  exact hBv
+
+/-- Soundness of the kernel-efficient division-step checker. -/
+theorem verify_div_step (a q b r : B256) (hq : q.toNat < 2 ^ 128)
+    (hb : b.toNat < 2 ^ 128) :
+    checkDivStep a q b r = true →
+    toPoly a = (toPoly q) * (toPoly b) + (toPoly r) := by
+  intro h
+  unfold checkDivStep at h
+  rw [beq_iff_eq] at h
+  have hBv : (BitVec.ofNat 256 a.toNat : B256) =
+      (BitVec.ofNat 256 (clMulNat q.toNat b.toNat 256 ^^^ r.toNat) : B256) := by
+    simpa using congrArg (fun n => (BitVec.ofNat 256 n : B256)) h
+  rw [ofNat_toB256 a, ofNat_xor_256, ofNat_toB256 r] at hBv
+  rw [clMulNat_bv_eq_clMul q b] at hBv
+  apply_fun toPoly at hBv
+  rw [toPoly_xor, toPoly_clMul_no_overflow (da := 128) (db := 128) q b hq hb (by omega)] at hBv
+  exact hBv
+
+end KernelEfficientCheckers
 
 end BF128Ghash

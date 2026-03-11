@@ -26,12 +26,10 @@ example {n : ℕ} (m : CMvMonomial n) : m + 0 = m := by
   simp [add_zero]
 
 example : CMvMonomial.totalDegree (#m[1, 2] : CMvMonomial 2) = 3 := by
-  -- TODO avoid using native_decide for soundness issues
-  native_decide
+  decide
 
 example : CMvMonomial.degreeOf (#m[3, 4] : CMvMonomial 2) ⟨1, by decide⟩ = 4 := by
-  -- TODO avoid using native_decide for soundness issues
-  native_decide
+  decide
 
 end CMvMonomial
 end CPoly

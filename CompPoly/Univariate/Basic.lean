@@ -6,7 +6,8 @@ Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles
 import Mathlib.Algebra.Tropical.Basic
 import Mathlib.RingTheory.Polynomial.Basic
 import CompPoly.Data.Array.Lemmas
-import CompPoly.Univariate.Raw
+import CompPoly.Univariate.Raw.Proofs
+import CompPoly.Univariate.Raw.Division
 
 /-!
   # Computable Univariate Polynomials
