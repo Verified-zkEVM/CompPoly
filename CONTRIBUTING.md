@@ -89,6 +89,11 @@ Our [linting script](`./scripts/lint-style.sh`) helps enforce some aspects of th
     * `induction` / `rec`: Use when the constructions come before the value.
 * **Predicates**: Generally use prefixes (e.g., `isClosed_Icc` not `Icc_isClosed`). Exceptions include property suffixes like `_inj`, `_mono`, `_injective`, `_surjective`.
 
+### Module Layout
+
+* **Theorem-only helper modules**: Prefer `Lemmas` for new theorem-only leaf modules.
+* **Proof placement**: Keep transport and equivalence lemmas near the bridge layer (`ToPoly`, `MvPolyEquiv`, etc.), but keep the first user-facing correctness theorem next to the definition it justifies. For example, bridge lemmas like those in `CompPoly/Univariate/ToPoly/Core.lean` and `CompPoly/Multivariate/MvPolyEquiv/Eval.lean` stay with the bridge, while a theorem like `eval_interpolatePow_at_node` stays with `interpolatePow` in `CompPoly/Univariate/Lagrange.lean`.
+
 ### Variable Conventions
 
 * `u`, `v`, `w`, ... : Universes
