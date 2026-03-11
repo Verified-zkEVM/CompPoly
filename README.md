@@ -4,11 +4,9 @@ A formally verified library for computable polynomial operations over finite fie
 
 ## Representation
 
-**Multivariate:** A polynomial in `n` variables is represented by `CMvPolynomial (n : ℕ) (R : Type) [Zero R] : Type`, where `n` is the number of variables (indexed from 0) and `R` is the type of coefficients. 
-
-`CMvPolynomial` is implemented internally as a map from monomials in `n` variables (`CMvMonomial n`) to coefficients, with the constraint that no monomial maps to the `0` coefficient. We instantiate a `RingEquiv` between `CMvPolynomial n R` and Mathlib's `MvPolynomial (Fin n) R` (`Mathlib.Algebra.MvPolynomial.Basic`).
-
-**Univariate** polynomials use `CPolynomial R` (canonical coefficient sequences) and are in `RingEquiv` with Mathlib's `Polynomial R`. **Bivariate** polynomials are represented as `CPolynomial (CPolynomial R)` (`CBivariate R`) with specialized operations and an equivalence to `Polynomial (Polynomial R)`.
+- **Multivariate (`CMvPolynomial n R`)**: computable polynomials in `n` variables over coefficients `R`, represented internally as sparse monomial-to-coefficient maps (`CMvMonomial n → R`) with zero coefficients filtered out. The library provides a `RingEquiv` to Mathlib `MvPolynomial (Fin n) R`.
+- **Univariate (`CPolynomial R`)**: canonical computable coefficient-sequence representation, with a `RingEquiv` to Mathlib `Polynomial R`.
+- **Bivariate (`CBivariate R`)**: represented as `CPolynomial (CPolynomial R)` with dedicated bivariate operations, plus equivalence to `Polynomial (Polynomial R)`.
 
 ## Importing the library
 
@@ -53,18 +51,17 @@ import CompPoly
 
 ## Current status and plans
 
-**Phase 1 progress (Theoretical Foundation):** approximately **50%** complete. See [ROADMAP.md](ROADMAP.md) for details and checkmarks.
+**Phase 1 status (Theoretical Foundation):** **essentially complete**.
 
-### Implemented
+### Implemented highlights
 
-- **Multivariate (`CMvPolynomial`):** `C`, `X`, `coeff`, `monomial`, `support`, `totalDegree`, `degreeOf`, `degrees`, `vars`, `eval`, `eval₂`, `restrictBy` / `restrictTotalDegree` / `restrictDegree`, `rename`, `renameEquiv`, `MonomialOrder.degree`, `leadingMonomial`, `leadingCoeff`, `leadingTerm`; `CommSemiring` instance and `polyRingEquiv` to Mathlib's `MvPolynomial (Fin n) R`. Stubs still exist for `aeval` and `bind₁`.
+- **Multivariate (`CMvPolynomial`)**: full core API (`eval`, `eval₂`, `eval₂Hom`, `aeval`, `bind₁`, `rename`, `restrict*`, `finSuccEquiv`/`optionEquivLeft`, leading-term operations, `sumToIter`), plus `CommSemiring`/`CommRing`, algebra/scalar-action instances, and equivalence to Mathlib `MvPolynomial`.
+- **Univariate (`CPolynomial`)**: full ring structure, core operations (`C`, `X`, `monomial`, `coeff`, `eval`, `eval₂`, degree/leading/support), `ringEquiv` to Mathlib `Polynomial`, and Lagrange interpolation (`nodal`, `interpolate`).
+- **Bivariate (`CBivariate`)**: specialized `CPolynomial (CPolynomial R)` API with `X`, `Y`, `monomialXY`, evaluation, leading coefficients, `swap`, and equivalence to `Polynomial (Polynomial R)`.
+- **Fields**: broad set of finite-field instances and extensions (including BabyBear/Goldilocks/BN254/BLS12 family), binary tower support, and additive NTT infrastructure.
 
-- **Univariate (`CPolynomial`):** Full ring structure (`Semiring`, `CommSemiring`, `Ring`, `CommRing`), `C`, `X`, `monomial`, `coeff`, `eval`, `eval₂`, `degree`, `natDegree`, `leadingCoeff`, `support`; `ringEquiv` with Mathlib's `Polynomial R`. Lagrange interpolation: `nodal` and `interpolate` (in `CompPoly.Univariate.Lagrange`). Quotient polynomials: `QuotientCPolynomial` with matching ring instances.
+### Current focus: Phase 2
 
-- **Bivariate:** Type `CBivariate R` as `CPolynomial (CPolynomial R)` with `X`, `Y`, `monomialXY`, `eval`, `leadingCoeffY`, `leadingCoeffX`, `swap`, and `toPoly` equivalence with `Polynomial (Polynomial R)`.
+Primary roadmap focus is now shifting to **Performance & Efficiency**: optimized field arithmetic, FFT/NTT-based multiplication, faster exponentiation, and improved evaluation/interpolation pathways, with proof-first correctness maintained throughout.
 
-- **Fields:** Basic field and extension definitions (e.g. BabyBear, Goldilocks, BN254, BLS12_381, BLS12_377, KoalaBear, Mersenne, Secp256k1), binary tower, and additive NTT support.
-
-### Still planned (Phase 1)
-
-Counterparts or proofs for: `degreeLT` / `degreeLE` and related membership/equivalence for univariate; `MonomialOrder.degree` / `leadingCoeff` (without `sorry`); `aeval`, `bind₁`, `algebra`, `module`, `eval₂Hom`, `finSuccEquiv`, `optionEquivLeft`, `isEmptyAlgEquiv`, `smulZeroClass`, `sumToIter`; removing remaining `sorry`s and completing `CommRing` / `Algebra` / `Module` for `CMvPolynomial`.
+*Last updated: March 2026*

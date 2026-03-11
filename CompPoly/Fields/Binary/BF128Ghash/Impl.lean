@@ -530,10 +530,8 @@ lemma toQuot_mul (a b : ConcreteBF128Ghash) : toQuot (a * b) = toQuot a * toQuot
   change AdjoinRoot.mk ghashPoly (toPoly (reduce_clMul (clMul (to256 a) (to256 b)))) =
          AdjoinRoot.mk ghashPoly (toPoly a) * AdjoinRoot.mk ghashPoly (toPoly b)
   rw [h_reduce, h_clMul, ← map_mul (AdjoinRoot.mk ghashPoly), AdjoinRoot.mk_eq_mk]
-  have h_div : ghashPoly ∣ ((toPoly a * toPoly b) % ghashPoly) - (toPoly a * toPoly b) := by
-    apply dvd_sub_comm.mp
-    apply CanonicalEuclideanDomain.dvd_sub_mod (b := ghashPoly)
-  exact h_div
+  apply dvd_sub_comm.mp
+  exact CanonicalEuclideanDomain.dvd_sub_mod (a := toPoly a * toPoly b) (b := ghashPoly)
 
 -- Ring axioms verified via toQuot isomorphism
 lemma mul_assoc (a b c : ConcreteBF128Ghash) : a * b * c = a * (b * c) := by
@@ -834,7 +832,7 @@ lemma mul_inv_cancel (a : ConcreteBF128Ghash) (h : a ≠ 0) : a * a⁻¹ = 1 := 
     contrapose! h
     rw [← toQuot_zero] at h
     exact toQuot_injective h
-  simpa using _root_.mul_inv_cancel₀ h_quot_ne_zero
+  exact _root_.mul_inv_cancel₀ h_quot_ne_zero
 
 instance instDivConcreteBF128Ghash : Div (ConcreteBF128Ghash) where
   div a b := a * (Inv.inv b)

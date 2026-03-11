@@ -15,24 +15,22 @@ import CompPoly.Univariate.Raw.Division
   regressions are checked at meta-level via `#guard`.
 -/
 
-open CompPoly CPolynomial.Raw in
+open CompPoly CPolynomial.Raw
+
 -- Regression test for issue #115: (X^2 - 1) / (X + 1) = X - 1
 #guard
   divByMonic ((X : CPolynomial.Raw ℚ) ^ 2 - C 1) ((X : CPolynomial.Raw ℚ) + C 1)
     == #[-(1 : ℚ), 1]
 
-open CompPoly CPolynomial.Raw in
 #guard
   modByMonic ((X : CPolynomial.Raw ℚ) ^ 2 - C 1) ((X : CPolynomial.Raw ℚ) + C 1)
     == #[]
 
-open CompPoly CPolynomial.Raw in
 -- Regression test for review-thread case: X^3 = (X^2 + 1) * X + (-X)
 #guard
   divByMonic ((X : CPolynomial.Raw ℚ) ^ 3) ((X : CPolynomial.Raw ℚ) ^ 2 + C 1)
     == #[(0 : ℚ), 1]
 
-open CompPoly CPolynomial.Raw in
 #guard
   modByMonic ((X : CPolynomial.Raw ℚ) ^ 3) ((X : CPolynomial.Raw ℚ) ^ 2 + C 1)
     == #[(0 : ℚ), -(1 : ℚ)]

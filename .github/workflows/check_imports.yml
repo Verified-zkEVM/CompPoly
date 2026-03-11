@@ -5,13 +5,17 @@ on:
     branches: ["main"]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-imports:
     name: Check Library File Imports
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Update CompPoly.lean
         run: ./scripts/update-lib.sh
