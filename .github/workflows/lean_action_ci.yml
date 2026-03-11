@@ -22,6 +22,7 @@ jobs:
       - name: Initialize timing paths
         run: |
           echo "BUILD_TIMING_RESULTS=$RUNNER_TEMP/build-timing.jsonl" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_LOG_DIR=$RUNNER_TEMP/build-timing-logs" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_REPORT=$RUNNER_TEMP/build-timing.md" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_COMMENT=$RUNNER_TEMP/build-timing-comment.md" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_SOURCE_SHA=$GITHUB_SHA" >> "$GITHUB_ENV"

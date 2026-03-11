@@ -61,10 +61,22 @@ run_command() {
 
   local timing_file
   timing_file="$(mktemp)"
+  local log_dir="${BUILD_TIMING_LOG_DIR:-}"
+  local log_file=""
+
+  if [ -n "$log_dir" ]; then
+    mkdir -p "$log_dir"
+    log_file="$log_dir/${label}.log"
+  fi
 
   set +e
-  /usr/bin/time -p -o "$timing_file" "$@"
-  local exit_code=$?
+  if [ -n "$log_file" ]; then
+    /usr/bin/time -p -o "$timing_file" "$@" 2>&1 | tee "$log_file"
+    local exit_code=${PIPESTATUS[0]}
+  else
+    /usr/bin/time -p -o "$timing_file" "$@"
+    local exit_code=$?
+  fi
   set -e
 
   local real_time user_time sys_time
@@ -89,6 +101,7 @@ render_report() {
 import json
 import os
 import pathlib
+import re
 import sys
 
 path = pathlib.Path(sys.argv[1])
@@ -117,10 +130,58 @@ def status(record: dict) -> str:
     return "ok" if record["exit_code"] == 0 else f"exit {record['exit_code']}"
 
 
+def module_to_source_path(target: str) -> str | None:
+    if target == "CompPoly":
+        return "CompPoly.lean"
+    if target.startswith("CompPoly."):
+        return target.replace(".", "/") + ".lean"
+    if target == "CompPolyTests":
+        return "tests/CompPolyTests.lean"
+    if target.startswith("CompPolyTests."):
+        return "tests/" + target.replace(".", "/") + ".lean"
+    return None
+
+
+def extract_clean_build_targets() -> list[dict]:
+    log_dir = os.environ.get("BUILD_TIMING_LOG_DIR")
+    if not log_dir:
+        return []
+
+    clean_log = pathlib.Path(log_dir) / "clean_build.log"
+    if not clean_log.exists():
+        return []
+
+    pattern = re.compile(r"Built\s+(.+?)\s+\((\d+(?:\.\d+)?)s\)")
+    entries = []
+    seen = set()
+    for line in clean_log.read_text(encoding="utf-8", errors="replace").splitlines():
+        match = pattern.search(line)
+        if not match:
+            continue
+        target = match.group(1).strip()
+        if target in seen:
+            continue
+        seen.add(target)
+        entries.append(
+            {
+                "target": target,
+                "seconds": float(match.group(2)),
+                "source": module_to_source_path(target),
+            }
+        )
+
+    preferred = [
+        entry for entry in entries if entry["target"].startswith(("CompPoly", "CompPolyTests"))
+    ]
+    selected = preferred if preferred else entries
+    return sorted(selected, key=lambda entry: entry["seconds"], reverse=True)
+
+
 source_sha = os.environ.get("BUILD_TIMING_SOURCE_SHA")
 source_subject = os.environ.get("BUILD_TIMING_SOURCE_SUBJECT")
 source_branch = os.environ.get("BUILD_TIMING_SOURCE_BRANCH") or os.environ.get("GITHUB_REF_NAME")
 source_repo = os.environ.get("GITHUB_REPOSITORY")
+clean_build_targets = extract_clean_build_targets()
 
 print("## Build Timing Report")
 print()
@@ -185,6 +246,23 @@ print(
     "This compares a clean project build against an incremental rebuild in the same CI job; "
     "it is a lightweight variability signal, not a full cross-run benchmark."
 )
+
+print()
+print("### Top 20 clean-build modules")
+print()
+if clean_build_targets:
+    shown = clean_build_targets[:20]
+    print(
+        f"Showing {len(shown)} of {len(clean_build_targets)} built targets parsed from the clean build log."
+    )
+    print()
+    print("| File | Target | Real (s) |")
+    print("| --- | --- | ---: |")
+    for entry in shown:
+        source = f"`{entry['source']}`" if entry["source"] else "-"
+        print(f"| {source} | `{entry['target']}` | {entry['seconds']:.2f} |")
+else:
+    print("No per-target timings were parsed from the clean build log.")
 PY
 }
 
