@@ -4,10 +4,11 @@ We enthusiastically welcome contributions to CompPoly!
 
 Whether you are fixing bugs, improving documentation, or adding new formalizations, your input is valuable. We particularly encourage contributions that address:
 
+* **Repository handbook:** Contributors should usually start with [`README.md`](README.md), [`docs/wiki/README.md`](docs/wiki/README.md), and the module-level `README.md` files. [`AGENTS.md`](AGENTS.md) is the AI-agent entrypoint and is mainly for agent-oriented tooling and workflow guardrails.
 * **Active formalizations:** Please see the list of active formalization efforts and their blueprints.
 * **Open Issues:** Please see the list of open issues for bugs, requested features, and specific formalization tasks. Issues tagged as `good first issue` or `help wanted` are great places to start.
 * **Roadmap Goals:** We maintain a [ROADMAP](ROADMAP.md) outlining the planned direction and major goals for the library.
-* **Documentation:** Please check the repository `README.md` and module-level `README.md` files for current usage and structure notes, and feel free to propose improvements.
+* **Documentation:** Please check [`README.md`](README.md), [`docs/wiki/README.md`](docs/wiki/README.md), and the module-level `README.md` files for current usage and structure notes, and feel free to propose improvements.
 
 If you are interested in contributing but unsure where to begin, please get in touch.
 
@@ -55,6 +56,7 @@ The description should include:
 * Motivation for the change.
 * Contrast with previous behavior.
 * References to issues (e.g., `Closes #123`).
+* If the PR changes commands, repo structure, generated outputs, or recurring contributor guidance, update the matching page in [`docs/wiki/`](docs/wiki/README.md) in the same PR.
 
 ## Style and Naming Guidelines
 We aim to adhere to the [Lean community's contribution guidelines](https://github.com/leanprover-community/leanprover-community.github.io/tree/lean4/templates/contribute).
