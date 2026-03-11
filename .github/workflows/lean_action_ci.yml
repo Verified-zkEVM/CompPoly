@@ -16,13 +16,14 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-    env:
-      BUILD_TIMING_RESULTS: ${{ runner.temp }}/build-timing.jsonl
-      BUILD_TIMING_REPORT: ${{ runner.temp }}/build-timing.md
-      BUILD_TIMING_COMMENT: ${{ runner.temp }}/build-timing-comment.md
 
     steps:
       - uses: actions/checkout@v4
+      - name: Initialize timing paths
+        run: |
+          echo "BUILD_TIMING_RESULTS=$RUNNER_TEMP/build-timing.jsonl" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_REPORT=$RUNNER_TEMP/build-timing.md" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_COMMENT=$RUNNER_TEMP/build-timing-comment.md" >> "$GITHUB_ENV"
       - name: Restore Lake cache
         id: lake-cache
         uses: actions/cache/restore@v4
