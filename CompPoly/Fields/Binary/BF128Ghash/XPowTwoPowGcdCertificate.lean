@@ -33,7 +33,7 @@ lemma toPoly_gcd_b_0_val_mod_ghashPoly_eq_gcd_b_0_val :
   rw [Fin.sum_univ_add]
   conv_rhs => rw [ghashPoly_degree]
   -- conv_lhs => rw [←Finset.sum_add_distrib]
-  simp only [Nat.reduceAdd, Fin.natAdd_eq_addNat, Fin.coe_addNat]
+  simp only [Nat.reduceAdd, Fin.natAdd_eq_addNat, Fin.val_addNat]
   have h_lt: (BitVec.toNat gcd_b_0_val) < 2^128 := by apply h_gcd_b_0_val_lt
   -- ∑ ... + ∑ ... < 128 => the second sum is actually 0
   have h_2_pow_x_gt_0: ∀ x, 2^x > 0 := fun x => by simp only [gt_iff_lt, Nat.ofNat_pos, pow_pos]
