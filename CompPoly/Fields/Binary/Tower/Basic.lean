@@ -7,6 +7,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 import CompPoly.Fields.Binary.Tower.Prelude
 import CompPoly.Data.RingTheory.AlgebraTower
 import Mathlib.Tactic.DepRewrite
+import Batteries.Data.Fin.Fold
 
 /-!
 # Binary Tower Fields
@@ -598,20 +599,60 @@ theorem BTField.RingHom_cast_dest_AdjoinRoot_apply (k m : ℕ)
   rfl
 
 /--
-Auxiliary definition for `towerAlgebraMap` using structural recursion.
-This is easier to reason about in proofs than the `Nat.rec` version.
-TODO : migrate to Fin.dfoldl
+Auxiliary definition for `towerAlgebraMap` using `Fin.dfoldl`.
+It folds adjacent embeddings from level `l` up to level `l + d`.
 -/
+private def towerAlgebraMapCore (l d : ℕ) : BTField l →+* BTField (l + d) := by
+  let α : Fin (d + 1) → Type := fun i => BTField l →+* BTField (l + i)
+  let init : α 0 := by
+    simpa [α] using (RingHom.id (BTField l))
+  let step : ∀ i : Fin d, α i.castSucc → α i.succ := by
+    intro i f
+    simpa [α, Fin.succ, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using
+      ((canonicalEmbedding (l + i)).comp f)
+  let folded : α (Fin.last d) := Fin.dfoldl d α step init
+  have h_last : l + (Fin.last d : Fin (d + 1)) = l + d := by simp
+  exact cast (BTField.RingHom_eq_of_dest_eq (k:=l)
+    (m:=l + (Fin.last d : Fin (d + 1))) (n:=l + d) h_last) folded
+
+private lemma towerAlgebraMapCore_one (l : ℕ) :
+    towerAlgebraMapCore l 1 = canonicalEmbedding l := by
+  ext x
+  rw [towerAlgebraMapCore]
+  simp [Fin.dfoldl_succ, Fin.dfoldl_zero]
+
+private lemma towerAlgebraMapCore_succ_last (l d : ℕ) :
+    towerAlgebraMapCore l (d + 1) =
+      (canonicalEmbedding (l + d)).comp (towerAlgebraMapCore l d) := by
+  ext x
+  rw [towerAlgebraMapCore, towerAlgebraMapCore]
+  simp only [Fin.dfoldl_succ_last, Function.comp_apply]
+  have hfold :
+      Fin.dfoldl d
+        ((fun i : Fin (d + 2) => BTField l →+* BTField (l + i)) ∘ Fin.castSucc)
+        (fun i f => (canonicalEmbedding (l + i.castSucc)).comp f)
+        (RingHom.id (BTField l))
+      =
+      Fin.dfoldl d
+        (fun i : Fin (d + 1) => BTField l →+* BTField (l + i))
+        (fun i f => (canonicalEmbedding (l + i)).comp f)
+        (RingHom.id (BTField l)) := by
+    have hα :
+        ((fun i : Fin (d + 2) => BTField l →+* BTField (l + i)) ∘ Fin.castSucc)
+        = (fun i : Fin (d + 1) => BTField l →+* BTField (l + i)) := by
+      funext i
+      simp
+    cases hα
+    rfl
+  exact congrArg (fun f => ((canonicalEmbedding (l + d)).comp f) x) hfold
+
 def towerAlgebraMap (l r : ℕ) (h_le : l ≤ r) : BTField l →+* BTField r := by
-  if h_lt : l = r then
-    subst h_lt
+  if h_eq : l = r then
+    subst h_eq
     exact RingHom.id (BTField l)
   else
-    let map_to_r_sub_1 : BTField l →+* BTField (r - 1) := towerAlgebraMap (h_le:=by omega)
-    let next_embedding : BTField (r - 1) →+* BTField r := by
-      have ringHomEq := BTField.RingHom_eq_of_dest_eq (k:=r-1) (m:=r) (n:=r - 1 + 1) (by omega)
-      exact Eq.mp ringHomEq.symm (canonicalEmbedding (r - 1))
-    exact next_embedding.comp map_to_r_sub_1
+    exact cast (BTField.RingHom_eq_of_dest_eq (k:=l) (m:=l + (r - l)) (n:=r)
+      (Nat.add_sub_of_le h_le)) (towerAlgebraMapCore l (r - l))
 
 lemma towerAlgebraMap_id (k : ℕ) : towerAlgebraMap (h_le:=by omega) = RingHom.id (BTField k) := by
   unfold towerAlgebraMap
@@ -620,22 +661,43 @@ lemma towerAlgebraMap_id (k : ℕ) : towerAlgebraMap (h_le:=by omega) = RingHom.
 lemma towerAlgebraMap_succ_1 (k : ℕ) :
     towerAlgebraMap (l:=k) (r:=k+1) (h_le:=by omega) = canonicalEmbedding k := by
   unfold towerAlgebraMap
-  simp only [Nat.left_eq_add, one_ne_zero, ↓reduceDIte,
-    Nat.add_one_sub_one, eq_mp_eq_cast, cast_eq]
-  rw [towerAlgebraMap_id]
-  rw [RingHom.comp_id]
+  simp only [Nat.left_eq_add, one_ne_zero, ↓reduceDIte]
+  have h_sub : k + 1 - k = 1 := by omega
+  rw! (castMode := .all) [h_sub]
+  rw [towerAlgebraMapCore_one]
+  simp
 
 /-! Right associativity of the Tower Map -/
 lemma towerAlgebraMap_succ (l r : ℕ) (h_le : l ≤ r) :
     towerAlgebraMap (l:=l) (r:=r+1) (h_le:=by omega) =
   (towerAlgebraMap (l:=r) (r:=r+1) (h_le:=by omega)).comp
   (towerAlgebraMap (l:=l) (r:=r) (h_le:=by omega)) := by
-  ext x
-  conv_lhs => rw [towerAlgebraMap]
-  have h_l_ne_eq_r_add_1 : l ≠ r + 1 := by omega
-  simp only [h_l_ne_eq_r_add_1, ↓reduceDIte, Nat.add_one_sub_one,
-    eq_mp_eq_cast, cast_eq, RingHom.coe_comp, Function.comp_apply]
-  rw [towerAlgebraMap_succ_1]
+  by_cases h_lr : l = r
+  · subst h_lr
+    rw [towerAlgebraMap_id, RingHom.comp_id]
+  · ext x
+    conv_lhs => rw [towerAlgebraMap]
+    have h_l_ne_eq_r_add_1 : l ≠ r + 1 := by omega
+    simp only [h_l_ne_eq_r_add_1, ↓reduceDIte, RingHom.coe_comp, Function.comp_apply]
+    rw [towerAlgebraMap_succ_1]
+    conv_rhs =>
+      enter [2]
+      rw [towerAlgebraMap]
+    simp only [h_lr, ↓reduceDIte]
+    set d := r - l with hd
+    have h_diff : r + 1 - l = d + 1 := by omega
+    rw! (castMode := .all) [h_diff]
+    rw [towerAlgebraMapCore_succ_last]
+    have h_idx : l + d = r := by omega
+    rw! (castMode := .all) [h_idx]
+    rw! (castMode := .all) [hd]
+    conv_rhs =>
+      enter [2]
+      rw [BTField.RingHom_cast_dest_apply]
+    rw [BTField.RingHom_cast_dest_apply]
+    · rw! (castMode := .all) [h_idx]
+      rfl
+    · omega
 
 /-! Left associativity of the Tower Map -/
 theorem towerAlgebraMap_succ_last (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) →
