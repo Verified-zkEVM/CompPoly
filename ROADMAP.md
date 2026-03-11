@@ -87,7 +87,7 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - Add performance guarantees and complexity proofs
 
 6. **Bivariate polynomial operations**
-   - Implement efficient bivariate polynomial type: `CPolynomial (CPolynomial R)` or specialized representation, with optimized operations
+   - Optimize the existing bivariate polynomial type `CPolynomial (CPolynomial R)` and evaluate whether a more specialized representation is beneficial
    - Efficient factorization algorithms for bivariate polynomials
    - Integration with existing `CMvPolynomial 2 R` with equivalence proofs
    - Critical for sum-check protocols, FRI commitments, and zkVM constraint systems
