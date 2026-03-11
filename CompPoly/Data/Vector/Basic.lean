@@ -61,14 +61,14 @@ lemma cons_get_eq {α} {n : ℕ} (hd : α) (tl : Vector α n) (i : Fin (n + 1)) 
     subst h_i
     simp only [h_i_val, beq_iff_eq, ↓reduceDIte]
     simp only [cons, get, insertIdx] -- unfold everything
-    simp_all only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, Array.insertIdx_zero, Fin.coe_cast,
+    simp_all only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, Array.insertIdx_zero, Fin.val_cast,
                   List.size_toArray, List.length_cons, List.length_nil, _root_.zero_add,
                   zero_lt_one, Array.getElem_append_left, List.getElem_toArray,
                   List.getElem_cons_zero]
   else
     simp only [h_i_val, beq_iff_eq, ↓reduceDIte]
     simp only [cons, get, insertIdx] -- unfold everything
-    simp only [Array.insertIdx_zero, Fin.coe_cast, Fin.cast_mk, getElem_toArray]
+    simp only [Array.insertIdx_zero, Fin.val_cast, Fin.cast_mk, getElem_toArray]
     apply Array.getElem_append_right -- key counterpart for cons_get_eq in `Array` realm
     simp only [List.size_toArray, List.length_cons, List.length_nil]
     omega
