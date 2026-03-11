@@ -24,6 +24,13 @@ jobs:
           echo "BUILD_TIMING_RESULTS=$RUNNER_TEMP/build-timing.jsonl" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_REPORT=$RUNNER_TEMP/build-timing.md" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_COMMENT=$RUNNER_TEMP/build-timing-comment.md" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_SOURCE_SHA=$GITHUB_SHA" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_SOURCE_BRANCH=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
+          {
+            echo "BUILD_TIMING_SOURCE_SUBJECT<<EOF"
+            git log -1 --format=%s
+            echo "EOF"
+          } >> "$GITHUB_ENV"
       - name: Restore Lake cache
         id: lake-cache
         uses: actions/cache/restore@v4

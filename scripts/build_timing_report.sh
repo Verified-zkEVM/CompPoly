@@ -87,6 +87,7 @@ render_report() {
 
   python3 - "$results_file" <<'PY'
 import json
+import os
 import pathlib
 import sys
 
@@ -116,9 +117,26 @@ def status(record: dict) -> str:
     return "ok" if record["exit_code"] == 0 else f"exit {record['exit_code']}"
 
 
+source_sha = os.environ.get("BUILD_TIMING_SOURCE_SHA")
+source_subject = os.environ.get("BUILD_TIMING_SOURCE_SUBJECT")
+source_branch = os.environ.get("BUILD_TIMING_SOURCE_BRANCH") or os.environ.get("GITHUB_REF_NAME")
+source_repo = os.environ.get("GITHUB_REPOSITORY")
+
 print("## Build Timing Report")
 print()
-print("Measured on `ubuntu-latest` with `/usr/bin/time -p`.")
+
+if source_sha:
+    short_sha = source_sha[:7]
+    if source_repo:
+        commit_ref = f"[`{short_sha}`](https://github.com/{source_repo}/commit/{source_sha})"
+    else:
+        commit_ref = f"`{short_sha}`"
+    print(f"- Commit: {commit_ref}")
+if source_subject:
+    print(f"- Message: {source_subject}")
+if source_branch:
+    print(f"- Ref: `{source_branch}`")
+print("- Measured on `ubuntu-latest` with `/usr/bin/time -p`.")
 print()
 
 if not records:
