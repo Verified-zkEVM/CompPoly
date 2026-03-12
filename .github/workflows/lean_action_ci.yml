@@ -178,9 +178,15 @@ jobs:
             const exactMergeBaseCandidates = mergeBaseSha
               ? baseCandidates.filter(run => run.head_sha === mergeBaseSha)
               : [];
-            const baseRun = await firstRunWithArtifact(
-              exactMergeBaseCandidates.length > 0 ? exactMergeBaseCandidates : baseCandidates
-            );
+            const exactMergeBaseRun =
+              exactMergeBaseCandidates.length > 0
+                ? await firstRunWithArtifact(exactMergeBaseCandidates)
+                : null;
+            const fallbackBaseCandidates = mergeBaseSha
+              ? baseCandidates.filter(run => run.head_sha !== mergeBaseSha)
+              : baseCandidates;
+            const baseRun =
+              exactMergeBaseRun ?? await firstRunWithArtifact(fallbackBaseCandidates);
             if (baseRun) {
               const isMergeBase = Boolean(mergeBaseSha) && baseRun.head_sha === mergeBaseSha;
               core.setOutput('run-id', String(baseRun.id));
