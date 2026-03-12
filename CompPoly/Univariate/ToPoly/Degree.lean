@@ -42,7 +42,7 @@ theorem degree_toPoly [LawfulBEq R] (p : CPolynomial R) :
     p.degree = p.toPoly.degree := by
   by_cases hp : p = 0
   · subst hp
-    rw [toPoly_zero, CPolynomial.degree, CPolynomial.Raw.degreeBound]
+    rw [toPoly_zero, CPolynomial.degree]
     rfl
   · have hsize := size_eq_toPoly_natDegree_succ p hp
     have htoPoly : p.toPoly ≠ 0 := (toPoly_eq_zero_iff p).not.mpr hp
@@ -51,7 +51,7 @@ theorem degree_toPoly [LawfulBEq R] (p : CPolynomial R) :
         simp [hs] at hsize
     | succ n =>
         have hnat : p.toPoly.natDegree = n := by omega
-        simp [CPolynomial.degree, CPolynomial.Raw.degreeBound, hs, hnat,
+        simp [CPolynomial.degree, hs, hnat,
           Polynomial.degree_eq_natDegree htoPoly]
 
 theorem natDegree_toPoly [LawfulBEq R] (p : CPolynomial R) :
@@ -60,9 +60,7 @@ theorem natDegree_toPoly [LawfulBEq R] (p : CPolynomial R) :
   · subst hp
     rw [
       toPoly_zero,
-      CPolynomial.natDegree,
-      CPolynomial.Raw.natDegreeBound,
-      CPolynomial.Raw.degreeBound
+      CPolynomial.natDegree
     ]
     rfl
   · have hsize := size_eq_toPoly_natDegree_succ p hp
@@ -74,11 +72,8 @@ theorem natDegree_toPoly [LawfulBEq R] (p : CPolynomial R) :
         rw [
           hnat,
           CPolynomial.natDegree,
-          CPolynomial.Raw.natDegreeBound,
-          CPolynomial.Raw.degreeBound,
           hs
         ]
-        rfl
 
 theorem leadingCoeff_toPoly [LawfulBEq R] (p : CPolynomial R) :
     p.leadingCoeff = p.toPoly.leadingCoeff := by

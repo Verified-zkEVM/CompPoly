@@ -386,13 +386,10 @@ theorem evalEval_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R
 /-- `toPoly` preserves coefficients: coefficient of `X^i Y^j` matches. -/
 theorem coeff_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
     (f : CBivariate R) (i j : ℕ) :
-    ((toPoly f).coeff j).coeff i = @CBivariate.coeff R _ _ _ _ f i j := by
-      convert CPolynomial.Raw.coeff_toPoly using 1
-      rw [ CBivariate.toPoly ]
-      simp +decide [ Polynomial.coeff_monomial ]
-      split_ifs <;> simp_all +decide [ CPolynomial.support ]
-      · congr
-      · by_cases h : j < ( f.val.size : ℕ ) <;> aesop
+    ((toPoly f).coeff j).coeff i = CBivariate.coeff (R := R) f i j := by
+  rw [toPoly_coeff]
+  simpa [CBivariate.coeff] using
+    (CPolynomial.coeff_toPoly (p := CPolynomial.coeff f j) (i := i)).symm
 
 /-- The outer support of `toPoly f` equals the Y-support of `f`. -/
 theorem support_toPoly_outer {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]

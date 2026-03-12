@@ -201,7 +201,8 @@ theorem Raw.eval₂_toPoly {S : Type*} [Semiring S] (f : R →+* S) (x : S) (p :
 omit [BEq R] in
 theorem eval₂_toPoly {S : Type*} [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial R) :
     eval₂ f x p = p.toPoly.eval₂ f x := by
-  simpa [CompPoly.CPolynomial.eval₂, CompPoly.CPolynomial.toPoly] using
+  simpa [CompPoly.CPolynomial.eval₂, CompPoly.CPolynomial.toPoly, CompPoly.CPolynomial.Raw.eval₂]
+    using
     (Raw.eval₂_toPoly (f := f) (x := x) (p := p.val))
 
 theorem coeff_toPoly [LawfulBEq R] (p : CPolynomial R) (i : ℕ) :
