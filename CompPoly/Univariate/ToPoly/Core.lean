@@ -32,17 +32,17 @@ namespace CPolynomial
 
 open Raw
 
-variable {R : Type*} [Ring R] [BEq R]
-variable {Q : Type*} [Ring Q]
+variable {R : Type*}
+variable {Q : Type*}
 
-section ToPoly
+section ToPolyDefs
 
 /-- Convert a `CPolynomial.Raw` to a (mathlib) `Polynomial`. -/
-noncomputable def Raw.toPoly (p : CPolynomial.Raw R) : Polynomial R :=
+noncomputable def Raw.toPoly [Semiring R] (p : CPolynomial.Raw R) : Polynomial R :=
   p.eval₂ Polynomial.C Polynomial.X
 
 /-- Alternative definition of `toPoly` using `Finsupp`; currently unused. -/
-noncomputable def Raw.toPoly' (p : CPolynomial.Raw R) : Polynomial R :=
+noncomputable def Raw.toPoly' [Semiring R] (p : CPolynomial.Raw R) : Polynomial R :=
   Polynomial.ofFinsupp (Finsupp.onFinset (Finset.range p.size) p.coeff (by
     intro n hn
     rw [Finset.mem_range]
@@ -52,7 +52,14 @@ noncomputable def Raw.toPoly' (p : CPolynomial.Raw R) : Polynomial R :=
   ))
 
 /-- Convert a canonical polynomial to a (mathlib) `Polynomial`. -/
-noncomputable def toPoly (p : CPolynomial R) : Polynomial R := p.val.toPoly
+noncomputable def toPoly [Zero R] [Semiring R] (p : CPolynomial R) : Polynomial R := p.val.toPoly
+
+end ToPolyDefs
+
+section ToPoly
+
+variable [Ring R] [BEq R]
+variable [Ring Q]
 
 namespace Raw
 

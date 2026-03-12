@@ -191,19 +191,19 @@ lemma fromUnlawful_cast {p : Lawful n R} : fromUnlawful p.1 = p := by
 
 section
 
-variable [BEq R] [LawfulBEq R] [CommRing R]
+variable [BEq R] [LawfulBEq R]
 
 /-- Negation of a polynomial. -/
-def neg (p : Lawful n R) : Lawful n R :=
+def neg [Neg R] (p : Lawful n R) : Lawful n R :=
   fromUnlawful p.1.neg
 
-instance : Neg (Lawful n R) := ⟨neg⟩
+instance [Neg R] : Neg (Lawful n R) := ⟨neg⟩
 
 /-- Subtraction of polynomials. -/
-def sub (p₁ p₂ : Lawful n R) : Lawful n R :=
+def sub [Add R] [Neg R] (p₁ p₂ : Lawful n R) : Lawful n R :=
   p₁ + (-p₂)
 
-instance : Sub (Lawful n R) := ⟨sub⟩
+instance [Add R] [Neg R] : Sub (Lawful n R) := ⟨sub⟩
 
 instance instDecidableEq [DecidableEq R] : DecidableEq (Lawful n R) := fun x y ↦
   if h : x.1.toList = y.1.toList
@@ -238,6 +238,11 @@ def liftPoly
   Lawful (n₁ ⊔ n₂) R)
   (p₁ : Lawful n₁ R) (p₂ : Lawful n₂ R) : Lawful (n₁ ⊔ n₂) R :=
   Function.uncurry f (align p₁ p₂)
+
+def polyCoe (p : Lawful n R) : Lawful (n + 1) R := cast (by simp) (p.extend n.succ)
+
+instance : Coe (Lawful n R) (Lawful (n + 1) R) := ⟨polyCoe⟩
+
 section
 
 variable [CommRing R]
@@ -253,10 +258,6 @@ instance : HMul (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
 
 instance : HPow (Lawful n R) ℕ (Lawful n R) :=
   ⟨fun p₁ exp ↦ exp.iterate p₁.mul 1⟩
-
-def polyCoe (p : Lawful n R) : Lawful (n + 1) R := cast (by simp) (p.extend n.succ)
-
-instance : Coe (Lawful n R) (Lawful (n + 1) R) := ⟨polyCoe⟩
 
 end
 

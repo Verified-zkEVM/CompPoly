@@ -50,7 +50,8 @@ def C {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R] (c : R) : CMvPolynomia
   Lawful.C (n := n) (R := R) c
 
 /-- Construct the polynomial $X_i$. -/
-def X {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R] (i : Fin n) : CMvPolynomial n R :=
+def X {n : ℕ} {R : Type} [Zero R] [One R] [BEq R] [LawfulBEq R]
+    (i : Fin n) : CMvPolynomial n R :=
   let monomial : CMvMonomial n := Vector.ofFn (fun j => if j = i then 1 else 0)
   Lawful.fromUnlawful <| .ofList [(monomial, (1 : R))]
 
@@ -138,7 +139,7 @@ def support {R : Type} {n : ℕ} [Zero R] (p : CMvPolynomial n R) : Finset (Fin 
   (Lawful.monomials p).map CMvMonomial.toFinsupp |>.toFinset
 
 /-- The total degree of a polynomial (maximum total degree of its monomials). -/
-def totalDegree {R : Type} {n : ℕ} [inst : CommSemiring R] : CMvPolynomial n R → ℕ :=
+def totalDegree {R : Type} {n : ℕ} [Zero R] : CMvPolynomial n R → ℕ :=
   fun p => Finset.sup (List.toFinset (List.map CMvMonomial.toFinsupp (Lawful.monomials p)))
     (fun s => Finsupp.sum s (fun _ e => e))
 

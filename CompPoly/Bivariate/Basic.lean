@@ -114,81 +114,89 @@ end CommRing
 
 section Operations
 
-variable (R : Type*) [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
-
 /-- Constant as a bivariate polynomial. Mathlib: `Polynomial.Bivariate.CC`. -/
-def CC (r : R) : CBivariate R := CPolynomial.C (CPolynomial.C r)
+def CC {R : Type*} [Zero R] [BEq R] [LawfulBEq R] (r : R) : CBivariate R :=
+  CPolynomial.C (CPolynomial.C r)
 
 /-- The variable X (inner variable). As bivariate: polynomial in Y with single coeff `X` at Y^0. -/
-def X : CBivariate R := CPolynomial.C CPolynomial.X
+def X {R : Type*} [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] : CBivariate R :=
+  CPolynomial.C CPolynomial.X
 
 /-- The variable Y (outer variable). Monomial `Y^1` with coefficient 1. -/
-def Y [DecidableEq R] : CBivariate R := CPolynomial.monomial 1 (CPolynomial.C 1)
+def Y {R : Type*} [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R] :
+    CBivariate R :=
+  CPolynomial.monomial 1 (CPolynomial.C 1)
 
 /-- Monomial `c * X^n * Y^m`. ArkLib: `Polynomial.Bivariate.monomialXY`. -/
-def monomialXY [DecidableEq R] (n m : ℕ) (c : R) : CBivariate R :=
+def monomialXY {R : Type*} [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (n m : ℕ) (c : R) : CBivariate R :=
   CPolynomial.monomial m (CPolynomial.monomial n c)
 
 /-- Coefficient of `X^i Y^j` in the bivariate polynomial. Here `i` is the X-exponent (inner)
     and `j` is the Y-exponent (outer). ArkLib: `Polynomial.Bivariate.coeff f i j`. -/
-def coeff (f : CBivariate R) (i j : ℕ) : R :=
+def coeff {R : Type*} [Zero R] (f : CBivariate R) (i j : ℕ) : R :=
   (f.val.coeff j).coeff i
 
 /-- The Y-support: indices j such that the coefficient of Y^j is nonzero. -/
-def supportY (f : CBivariate R) : Finset ℕ := CPolynomial.support f
+def supportY {R : Type*} [Zero R] [BEq R] (f : CBivariate R) : Finset ℕ := CPolynomial.support f
 
 /-- The X-support: indices i such that the coefficient of X^i is nonzero
     (i.e. some monomial X^i Y^j has nonzero coefficient). -/
-def supportX (f : CBivariate R) : Finset ℕ :=
+def supportX {R : Type*} [Zero R] [BEq R] (f : CBivariate R) : Finset ℕ :=
   (CPolynomial.support f).biUnion (fun j ↦ CPolynomial.support (f.val.coeff j))
 
 /-- The `Y`-degree (degree when viewed as a polynomial in `Y`).
     ArkLib: `Polynomial.Bivariate.natDegreeY`. -/
-def natDegreeY (f : CBivariate R) : ℕ :=
+def natDegreeY {R : Type*} [Zero R] (f : CBivariate R) : ℕ :=
   f.natDegree
 
 /-- The `X`-degree: maximum over all Y-coefficients of their degree in X.
     ArkLib: `Polynomial.Bivariate.natDegreeX`. -/
-def natDegreeX (f : CBivariate R) : ℕ :=
+def natDegreeX {R : Type*} [Zero R] [BEq R] (f : CBivariate R) : ℕ :=
   (CPolynomial.support f).sup (fun n ↦ (f.val.coeff n).natDegree)
 
 /-- Total degree: max over monomials of (deg_X + deg_Y).
     ArkLib: `Polynomial.Bivariate.totalDegree`. -/
-def totalDegree (f : CBivariate R) : ℕ :=
+def totalDegree {R : Type*} [Zero R] [BEq R] (f : CBivariate R) : ℕ :=
   (CPolynomial.support f).sup (fun m ↦ (f.val.coeff m).natDegree + m)
 
 /-- Evaluate in the first variable (X) at `a`, yielding a univariate polynomial in Y.
     ArkLib: `Polynomial.Bivariate.evalX`. -/
-def evalX [DecidableEq R] (a : R) (f : CBivariate R) : CPolynomial R :=
+def evalX {R : Type*} [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R]
+    (a : R) (f : CBivariate R) : CPolynomial R :=
   (CPolynomial.support f).sum (fun j ↦ CPolynomial.monomial j (CPolynomial.eval a (f.val.coeff j)))
 
 /-- Evaluate in the second variable (Y) at `a`, yielding a univariate polynomial in X.
     ArkLib: `Polynomial.Bivariate.evalY`. -/
-def evalY (a : R) (f : CBivariate R) : CPolynomial R :=
+def evalY {R : Type*} [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (a : R) (f : CBivariate R) : CPolynomial R :=
   f.val.eval (CPolynomial.C a)
 
 /-- Full evaluation at `(x, y)`: `p(x, y)`. Inner variable X at `x`, outer variable Y at `y`.
     Equivalently `(evalY y f).eval x`. Mathlib: `Polynomial.evalEval`. -/
-def evalEval (x y : R) (f : CBivariate R) : R :=
+def evalEval {R : Type*} [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (x y : R) (f : CBivariate R) : R :=
   CPolynomial.eval x (f.val.eval (CPolynomial.C y))
 
 /-- Swap the roles of X and Y.
     ArkLib/Mathlib: `Polynomial.Bivariate.swap`.
     TODO a more efficient implementation
     -/
-def swap [DecidableEq R] (f : CBivariate R) : CBivariate R :=
+def swap {R : Type*} [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (f : CBivariate R) : CBivariate R :=
   (f.supportY).sum (fun j ↦
     (CPolynomial.support (f.val.coeff j)).sum (fun i ↦
       CPolynomial.monomial i (CPolynomial.monomial j ((f.val.coeff j).coeff i))))
 
 /-- Leading coefficient when viewed as a polynomial in Y.
     ArkLib: `Polynomial.Bivariate.leadingCoeffY`. -/
-def leadingCoeffY (f : CBivariate R) : CPolynomial R :=
+def leadingCoeffY {R : Type*} [Zero R] (f : CBivariate R) : CPolynomial R :=
   f.leadingCoeff
 
 /-- Leading coefficient when viewed as a polynomial in X.
     The coefficient of X^(degreeX f): a polynomial in Y. -/
-def leadingCoeffX [DecidableEq R] (f : CBivariate R) : CPolynomial R :=
+def leadingCoeffX {R : Type*} [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (f : CBivariate R) : CPolynomial R :=
   (f.swap).leadingCoeffY
 
 end Operations
