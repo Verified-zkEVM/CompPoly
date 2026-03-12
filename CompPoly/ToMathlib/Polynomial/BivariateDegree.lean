@@ -49,17 +49,14 @@ def leadingCoeffY (f : F[X][Y]) : F[X] :=
 /-- The polynomial coefficient of the highest power of `Y` is `0` if and only if the bivariate
 polynomial is the zero polynomial. -/
 @[simp, grind =]
-theorem leadingCoeffY_eq_zero (f : F[X][Y]) : leadingCoeffY f = 0 ↔ f = 0 :=
-  ⟨fun h =>
-    Classical.by_contradiction fun hp =>
-      mt mem_support_iff.1 (Classical.not_not.2 h) (Finset.mem_of_max (degree_eq_natDegree hp)),
-    fun h => h.symm ▸ leadingCoeff_zero⟩
+theorem leadingCoeffY_eq_zero (f : F[X][Y]) : leadingCoeffY f = 0 ↔ f = 0 := by
+  simp [leadingCoeffY]
 
 /-- The polynomial coefficient of the highest power of `Y` is not `0` if and only if the
 bivariate polynomial is non-zero. -/
 @[simp, grind =]
 lemma leadingCoeffY_ne_zero (f : F[X][Y]) : leadingCoeffY f ≠ 0 ↔ f ≠ 0 := by
-  rw [Ne, leadingCoeffY_eq_zero]
+  exact not_congr (leadingCoeffY_eq_zero (f := f))
 
 /-- The `Y`-degree of a bivariate polynomial, as a natural number. -/
 def natDegreeY (f : F[X][Y]) : ℕ :=
@@ -92,72 +89,79 @@ lemma weightedDegree_ne_none (f : F[X][Y]) (u v : ℕ) :
   unfold weightedDegree
   aesop
 
-theorem natWeightedDegree_mem_weight_list {u v : ℕ} (hf : f ≠ 0) :
+theorem natWeightedDegree_mem_weight_list {u v : ℕ} :
     natWeightedDegree f u v ∈
       List.map (fun n => u * (f.coeff n).natDegree + v * n)
         (List.range f.natDegree.succ) := by
   classical
-  have hsupp : f.support.Nonempty := by
-    refine ⟨f.natDegree, ?_⟩
-    exact Polynomial.natDegree_mem_support_of_nonzero (p := f) hf
-  obtain ⟨m, hm, hsup⟩ :=
-    Finset.exists_mem_eq_sup (s := f.support) hsupp
-      (fun n => u * (f.coeff n).natDegree + v * n)
-  have hm_le : m ≤ f.natDegree := Polynomial.le_natDegree_of_mem_supp (p := f) m hm
-  have hm_range : m ∈ List.range f.natDegree.succ := by
-    exact List.mem_range.mpr (Nat.lt_succ_of_le hm_le)
-  have hw_mem :
-      (u * (f.coeff m).natDegree + v * m) ∈
-        List.map (fun n => u * (f.coeff n).natDegree + v * n)
-          (List.range f.natDegree.succ) := by
-    exact List.mem_map_of_mem (f := fun n => u * (f.coeff n).natDegree + v * n) hm_range
-  unfold natWeightedDegree
-  simpa [hsup] using hw_mem
+  by_cases hf : f = 0
+  · simp [hf, natWeightedDegree]
+  · have hsupp : f.support.Nonempty := by
+      refine ⟨f.natDegree, ?_⟩
+      exact Polynomial.natDegree_mem_support_of_nonzero (p := f) hf
+    obtain ⟨m, hm, hsup⟩ :=
+      Finset.exists_mem_eq_sup (s := f.support) hsupp
+        (fun n => u * (f.coeff n).natDegree + v * n)
+    have hm_le : m ≤ f.natDegree := Polynomial.le_natDegree_of_mem_supp (p := f) m hm
+    have hm_range : m ∈ List.range f.natDegree.succ := by
+      exact List.mem_range.mpr (Nat.lt_succ_of_le hm_le)
+    have hw_mem :
+        (u * (f.coeff m).natDegree + v * m) ∈
+          List.map (fun n => u * (f.coeff n).natDegree + v * n)
+            (List.range f.natDegree.succ) := by
+      exact List.mem_map_of_mem (f := fun n => u * (f.coeff n).natDegree + v * n) hm_range
+    unfold natWeightedDegree
+    simpa [hsup] using hw_mem
 
 theorem weight_le_natWeightedDegree_of_lt_natDegree_succ {u v n : ℕ}
-    (hf : f ≠ 0) (hn : n < f.natDegree.succ) :
+    (hn : n < f.natDegree.succ) :
     u * (f.coeff n).natDegree + v * n ≤ natWeightedDegree f u v := by
   classical
-  unfold natWeightedDegree
-  by_cases hns : n ∈ f.support
-  · exact Finset.le_sup (f := fun m => u * (f.coeff m).natDegree + v * m) hns
-  · have hcoeff : f.coeff n = 0 := Polynomial.notMem_support_iff.1 hns
-    have hnle : n ≤ f.natDegree := Nat.lt_succ_iff.mp hn
-    have hmul : v * n ≤ v * f.natDegree := Nat.mul_le_mul_left v hnle
-    have hdegmem : f.natDegree ∈ f.support := Polynomial.natDegree_mem_support_of_nonzero hf
-    have hsup : u * (f.coeff f.natDegree).natDegree + v * f.natDegree ≤
-        f.support.sup (fun m => u * (f.coeff m).natDegree + v * m) := by
-      exact Finset.le_sup (f := fun m => u * (f.coeff m).natDegree + v * m) hdegmem
-    have hvdeg : v * f.natDegree ≤ u * (f.coeff f.natDegree).natDegree + v * f.natDegree := by
-      exact Nat.le_add_left _ _
-    have hvdeg' : v * f.natDegree ≤
-        f.support.sup (fun m => u * (f.coeff m).natDegree + v * m) :=
-      le_trans hvdeg hsup
-    have : v * n ≤ f.support.sup (fun m => u * (f.coeff m).natDegree + v * m) :=
-      le_trans hmul hvdeg'
-    simpa [hcoeff] using this
+  by_cases hf : f = 0
+  · have hn0 : n < 1 := by simpa [hf] using hn
+    have hzero : n = 0 := by simpa using hn0
+    simp [hf, hzero, natWeightedDegree]
+  · unfold natWeightedDegree
+    by_cases hns : n ∈ f.support
+    · exact Finset.le_sup (f := fun m => u * (f.coeff m).natDegree + v * m) hns
+    · have hcoeff : f.coeff n = 0 := Polynomial.notMem_support_iff.1 hns
+      have hnle : n ≤ f.natDegree := Nat.lt_succ_iff.mp hn
+      have hmul : v * n ≤ v * f.natDegree := Nat.mul_le_mul_left v hnle
+      have hdegmem : f.natDegree ∈ f.support := Polynomial.natDegree_mem_support_of_nonzero hf
+      have hsup : u * (f.coeff f.natDegree).natDegree + v * f.natDegree ≤
+          f.support.sup (fun m => u * (f.coeff m).natDegree + v * m) := by
+        exact Finset.le_sup (f := fun m => u * (f.coeff m).natDegree + v * m) hdegmem
+      have hvdeg : v * f.natDegree ≤ u * (f.coeff f.natDegree).natDegree + v * f.natDegree := by
+        exact Nat.le_add_left _ _
+      have hvdeg' : v * f.natDegree ≤
+          f.support.sup (fun m => u * (f.coeff m).natDegree + v * m) :=
+        le_trans hvdeg hsup
+      have : v * n ≤ f.support.sup (fun m => u * (f.coeff m).natDegree + v * m) :=
+        le_trans hmul hvdeg'
+      simpa [hcoeff] using this
 
 @[grind _=_]
 lemma weightedDegree_eq_natWeightedDegree {u v : ℕ} :
-    f ≠ 0 → weightedDegree f u v = natWeightedDegree f u v := by
-  intro hf
-  let w : ℕ → ℕ := fun n => u * (f.coeff n).natDegree + v * n
-  let xs : List ℕ := List.map w (List.range f.natDegree.succ)
-  have ha : natWeightedDegree f u v ∈ xs := by
-    simpa [xs, w] using (natWeightedDegree_mem_weight_list (f := f) (u := u) (v := v) hf)
-  have hle : ∀ b, b ∈ xs → b ≤ natWeightedDegree f u v := by
-    intro b hb
-    rcases List.mem_map.1 hb with ⟨n, hn, rfl⟩
-    have hnlt : n < f.natDegree.succ := List.mem_range.1 hn
-    exact
-      weight_le_natWeightedDegree_of_lt_natDegree_succ
-        (f := f) (u := u) (v := v) (n := n) hf hnlt
-  have hmax : xs.max? = some (natWeightedDegree f u v) := by
-    apply (List.max?_eq_some_iff (xs := xs) (a := natWeightedDegree f u v)).2
-    refine ⟨ha, ?_⟩
-    intro b hb
-    exact hle b hb
-  simpa [weightedDegree, xs, w] using hmax
+    weightedDegree f u v = natWeightedDegree f u v := by
+  by_cases hf : f = 0
+  · simp [hf, weightedDegree, natWeightedDegree]
+  · let w : ℕ → ℕ := fun n => u * (f.coeff n).natDegree + v * n
+    let xs : List ℕ := List.map w (List.range f.natDegree.succ)
+    have ha : natWeightedDegree f u v ∈ xs := by
+      simpa [xs, w] using (natWeightedDegree_mem_weight_list (f := f) (u := u) (v := v))
+    have hle : ∀ b, b ∈ xs → b ≤ natWeightedDegree f u v := by
+      intro b hb
+      rcases List.mem_map.1 hb with ⟨n, hn, rfl⟩
+      have hnlt : n < f.natDegree.succ := List.mem_range.1 hn
+      exact
+        weight_le_natWeightedDegree_of_lt_natDegree_succ
+          (f := f) (u := u) (v := v) (n := n) hnlt
+    have hmax : xs.max? = some (natWeightedDegree f u v) := by
+      apply (List.max?_eq_some_iff (xs := xs) (a := natWeightedDegree f u v)).2
+      refine ⟨ha, ?_⟩
+      intro b hb
+      exact hle b hb
+    simpa [weightedDegree, xs, w] using hmax
 
 /-- The total degree of a bivariate polynomial is equal to the `(1, 1)`-weighted degree. -/
 @[grind _=_]
@@ -173,13 +177,15 @@ lemma degreeX_as_weighted_deg :
 
 /-- The `Y`-degree of a bivariate polynomial is equal to the `(0, 1)`-weighted degree. -/
 @[grind _=_]
-lemma degreeY_as_weighted_deg (hf : f ≠ 0) :
+lemma degreeY_as_weighted_deg :
     natDegreeY f = natWeightedDegree f 0 1 := by
-  rw [
-    natDegreeY, natWeightedDegree,
-    Polynomial.natDegree_eq_support_max' (p := f) hf, Finset.max'_eq_sup'
-  ]
-  simp [Finset.sup'_eq_sup]
+  by_cases hf : f = 0
+  · simp [hf, natDegreeY, natWeightedDegree]
+  · rw [
+      natDegreeY, natWeightedDegree,
+      Polynomial.natDegree_eq_support_max' (p := f) hf, Finset.max'_eq_sup'
+    ]
+    simp [Finset.sup'_eq_sup]
 
 /-- Over an integral domain, the product of two non-zero bivariate polynomials is non-zero. -/
 @[grind ←]
@@ -192,10 +198,7 @@ equal to the sum of their degrees. -/
 @[simp, grind _=_]
 lemma degreeY_mul [IsDomain F] (f g : F[X][Y]) (hf : f ≠ 0) (hg : g ≠ 0) :
     natDegreeY (f * g) = natDegreeY f + natDegreeY g := by
-  unfold natDegreeY
-  rw [← leadingCoeffY_ne_zero] at hf hg
-  have h_lc : leadingCoeffY f * leadingCoeffY g ≠ 0 := _root_.mul_ne_zero hf hg
-  exact Polynomial.natDegree_mul' h_lc
+  simpa [natDegreeY] using (Polynomial.natDegree_mul hf hg)
 
 theorem coeff_natDegree_le_degreeX (f : F[X][Y]) (n : ℕ) : (f.coeff n).natDegree ≤ degreeX f := by
   classical
