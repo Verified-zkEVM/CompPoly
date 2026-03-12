@@ -107,9 +107,18 @@ import sys
 path = pathlib.Path(sys.argv[1])
 
 display = {
-    "clean_build": ("Clean build", "`rm -rf .lake/build && lake build`"),
-    "warm_rebuild": ("Warm rebuild", "`lake build`"),
-    "test_path": ("Test path", "`lake test`"),
+    "clean_build": {
+        "name": "Clean build",
+        "command": "`rm -rf .lake/build && lake build`",
+    },
+    "warm_rebuild": {
+        "name": "Warm rebuild",
+        "command": "`lake build`",
+    },
+    "test_path": {
+        "name": "Test path",
+        "command": "`lake test`",
+    },
 }
 ordered_labels = ["clean_build", "warm_rebuild", "test_path"]
 
@@ -198,48 +207,43 @@ if source_subject:
 if source_branch:
     print(f"- Ref: `{source_branch}`")
 print("- Measured on `ubuntu-latest` with `/usr/bin/time -p`.")
+print(
+    "- Commands: "
+    + "; ".join(
+        f"{display[label]['name'].lower()} {display[label]['command']}" for label in ordered_labels
+    )
+    + "."
+)
 print()
 
 if not records:
     print("No timing data was captured.")
     sys.exit(0)
 
-print("| Measurement | Command | Real (s) | User (s) | Sys (s) | Status |")
-print("| --- | --- | ---: | ---: | ---: | --- |")
+print("| Measurement | Wall (s) | Status |")
+print("| --- | ---: | --- |")
 for label in ordered_labels:
     if label not in records:
         continue
     record = records[label]
-    name, command = display[label]
-    print(
-        f"| {name} | {command} | {fmt(record['real'])} | {fmt(record['user'])} | "
-        f"{fmt(record['sys'])} | {status(record)} |"
-    )
+    print(f"| {display[label]['name']} | {fmt(record['real'])} | {status(record)} |")
 
 clean = records.get("clean_build")
 warm = records.get("warm_rebuild")
-test_path = records.get("test_path")
 
 print()
-print("### Variability")
+print("### Incremental Rebuild Signal")
 print()
 if clean and warm:
     delta = clean["real"] - warm["real"]
-    spread = abs(delta)
     ratio = clean["real"] / warm["real"] if warm["real"] else None
-    print(f"- Clean vs warm delta: `{delta:.2f}s`")
     if ratio is None:
-        print("- Clean vs warm ratio: unavailable (`warm rebuild` reported `0.00s`)")
+        print(f"- Warm rebuild saved `{delta:.2f}s` vs clean.")
+        print("- Clean:warm ratio is unavailable because `warm rebuild` reported `0.00s`.")
     else:
-        print(f"- Clean vs warm ratio: `{ratio:.2f}x`")
-    print(f"- Clean/warm spread: `{spread:.2f}s`")
+        print(f"- Warm rebuild saved `{delta:.2f}s` vs clean (`{ratio:.2f}x` faster).")
 else:
-    print("- Clean/warm variability is unavailable because one of the build measurements is missing.")
-
-if test_path:
-    print(f"- Test path wall-clock: `{test_path['real']:.2f}s`")
-else:
-    print("- Test path timing is unavailable because the test measurement is missing.")
+    print("- Clean:warm comparison is unavailable because one of the build measurements is missing.")
 
 print()
 print(
@@ -248,19 +252,19 @@ print(
 )
 
 print()
-print("### Top 20 clean-build modules")
+print("### Slowest Clean-Build Files")
 print()
 if clean_build_targets:
     shown = clean_build_targets[:20]
     print(
-        f"Showing {len(shown)} of {len(clean_build_targets)} built targets parsed from the clean build log."
+        f"Showing {len(shown)} slowest of {len(clean_build_targets)} repo targets parsed from the clean build log."
     )
     print()
-    print("| File | Target | Real (s) |")
-    print("| --- | --- | ---: |")
+    print("| Wall (s) | Path |")
+    print("| ---: | --- |")
     for entry in shown:
-        source = f"`{entry['source']}`" if entry["source"] else "-"
-        print(f"| {source} | `{entry['target']}` | {entry['seconds']:.2f} |")
+        path_label = entry["source"] or entry["target"]
+        print(f"| {entry['seconds']:.2f} | `{path_label}` |")
 else:
     print("No per-target timings were parsed from the clean build log.")
 PY
