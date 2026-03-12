@@ -45,6 +45,20 @@ example (f : ℚ[X][Y]) :
     natDegreeY (swap f) = degreeX f := by
   exact natDegreeY_swap f
 
+example (A : ℚ[X][Y]) (hA : A ≠ 0) (P : Finset ℚ) :
+    (P.filter (fun x => evalX x A = 0)).card ≤ degreeX A := by
+  exact card_evalX_eq_zero_le_degreeX A hA P
+
+example {A B G A1 B1 : ℚ[X][Y]} (hA : A = G * A1) (hB : B = G * B1)
+    (x : ℚ) (hx : evalX x G ≠ 0) (q : ℚ[X])
+    (h : evalX x B = q * evalX x A) :
+    evalX x B1 = q * evalX x A1 := by
+  exact descend_evalX hA hB x hx q h
+
+example (B : ℚ[X][Y]) (hB : B ≠ 0) (P : Finset ℚ) (hcard : degreeX B < P.card) :
+    ∃ x ∈ P, (evalX x B).natDegree = natDegreeY B := by
+  exact exists_x_preserve_natDegreeY B hB P hcard
+
 end Polynomial.Bivariate
 
 namespace CompPoly
