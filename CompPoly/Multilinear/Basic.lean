@@ -304,10 +304,9 @@ theorem lagrangeBasis_getElem {w : Vector R n} (i : Fin (2 ^ n)) :
   rw [lagrangeBasis]
   simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin, Vector.getElem_ofFn]
 
-variable {S : Type*} [CommRing S]
-
 /-- Map a ring homomorphism over a `CMlPolynomialEval` -/
-def map (f : R →+* S) (p : CMlPolynomialEval R n) : CMlPolynomialEval S n :=
+def map {R S : Type*} [Semiring R] [Semiring S]
+    (f : R →+* S) (p : CMlPolynomialEval R n) : CMlPolynomialEval S n :=
   Vector.map (fun a => f a) p
 
 /-- Evaluate a `CMlPolynomialEval` at a point -/

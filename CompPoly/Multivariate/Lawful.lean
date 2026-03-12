@@ -245,18 +245,22 @@ instance : Coe (Lawful n R) (Lawful (n + 1) R) := ⟨polyCoe⟩
 
 section
 
-variable [CommRing R]
-
-instance : HAdd (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
+-- Mixed-arity fallbacks: keep these low-priority so same-arity `Add`/`Sub`/`Mul`/`NatPow`
+-- instances win when both operands already live in `Lawful n R`.
+instance (priority := low) [Add R] :
+    HAdd (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
   ⟨fun p₁ p₂ ↦ liftPoly (·+·) p₁ p₂⟩
 
-instance : HSub (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
+instance (priority := low) [Add R] [Neg R] :
+    HSub (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
   ⟨fun p₁ p₂ ↦ liftPoly (·-·) p₁ p₂⟩
 
-instance : HMul (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
+instance (priority := low) [Add R] [Mul R] :
+    HMul (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
   ⟨fun p₁ p₂ ↦ liftPoly (·*·) p₁ p₂⟩
 
-instance : HPow (Lawful n R) ℕ (Lawful n R) :=
+instance (priority := low) [NatCast R] [Add R] [Mul R] :
+    HPow (Lawful n R) ℕ (Lawful n R) :=
   ⟨fun p₁ exp ↦ exp.iterate p₁.mul 1⟩
 
 end

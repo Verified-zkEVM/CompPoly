@@ -339,7 +339,7 @@ end RingEquiv
 /-- Converting a `foldl` over `Array.zipIdx` of `CPolynomial` coefficients to a
     `Finset.sum` of their `toPoly` images commutes with the `toPoly` map. -/
 private theorem toPoly_foldl_zipIdx_eq_sum {R : Type*} [BEq R] [LawfulBEq R]
-    [Nontrivial R] [Ring R] (arr : Array (CPolynomial R)) (y : R) :
+    [Nontrivial R] [Semiring R] (arr : Array (CPolynomial R)) (y : R) :
     (Array.foldl (fun (acc : CPolynomial R) (x : CPolynomial R × ℕ) ↦
       acc + x.1 * CPolynomial.C y ^ x.2) 0 (Array.zipIdx arr) 0 arr.size).toPoly =
     ∑ i ∈ Finset.range arr.size, (arr[i]?.getD 0).toPoly * (Polynomial.C y) ^ i := by
@@ -367,7 +367,7 @@ private theorem toPoly_foldl_zipIdx_eq_sum {R : Type*} [BEq R] [LawfulBEq R]
 section ImplementationCorrectness
 
 /-- `toPoly` preserves full evaluation: `evalEval x y f = (toPoly f).evalEval x y`. -/
-theorem evalEval_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+theorem evalEval_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
     (x y : R) (f : CBivariate R) :
     @CBivariate.evalEval R _ _ _ _ x y f = (toPoly f).evalEval x y := by
       unfold CBivariate.evalEval Polynomial.evalEval
@@ -390,7 +390,7 @@ theorem evalEval_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R
       exact CPolynomial.eval_toPoly x (CPolynomial.Raw.eval (CPolynomial.C y) ↑f)
 
 /-- `toPoly` preserves coefficients: coefficient of `X^i Y^j` matches. -/
-theorem coeff_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+theorem coeff_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
     (f : CBivariate R) (i j : ℕ) :
     ((toPoly f).coeff j).coeff i = CBivariate.coeff (R := R) f i j := by
   rw [toPoly_coeff]
@@ -398,7 +398,7 @@ theorem coeff_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
     (CPolynomial.coeff_toPoly (p := CPolynomial.coeff f j) (i := i)).symm
 
 /-- The outer support of `toPoly f` equals the Y-support of `f`. -/
-theorem support_toPoly_outer {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+theorem support_toPoly_outer {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
     (f : CBivariate R) : (toPoly f).support = f.supportY := by
       ext x
       simp +decide [ CPolynomial.mem_support_iff, CBivariate.supportY ]
@@ -408,7 +408,7 @@ theorem support_toPoly_outer {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [R
       aesop
 
 /-- `toPoly` preserves Y-degree. -/
-theorem natDegreeY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+theorem natDegreeY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
     (f : CBivariate R) : (toPoly f).natDegree = f.natDegreeY := by
       -- The degree of the polynomial is the supremum of the exponents in its support.
       have h_deg : ∀ p : Polynomial (Polynomial R), p.natDegree = p.support.sup id := by
@@ -425,7 +425,7 @@ theorem natDegreeY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring
         (CPolynomial.natDegree_eq_support_sup (p := f))
 
 /-- The outer `Y`-coefficient formula used for X-degree transport. -/
-theorem coeff_toPoly_Y {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+theorem coeff_toPoly_Y {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
     (f : CBivariate R) (j : ℕ) :
     (toPoly f).coeff j = CPolynomial.toPoly (f.val.coeff j) := by
       erw [ Polynomial.finset_sum_coeff ]
@@ -437,7 +437,7 @@ theorem coeff_toPoly_Y {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
       · exact (CPolynomial.toPoly_eq_zero_iff 0).mpr rfl
 
 /-- `toPoly` preserves X-degree (max over Y-coefficients of their degree in X). -/
-theorem natDegreeX_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+theorem natDegreeX_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
     (f : CBivariate R) :
     (toPoly f).support.sup (fun j ↦ ((toPoly f).coeff j).natDegree) = f.natDegreeX := by
       convert (Finset.sup_congr ?_ ?_)
@@ -463,7 +463,7 @@ theorem natDegreeX_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring
 /--
 `CC` corresponds to the nested constant polynomial in `R[X][Y]`.
 -/
-theorem CC_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] (r : R) :
+theorem CC_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R] (r : R) :
     toPoly (CC (R := R) r) = Polynomial.C (Polynomial.C r) := by
   rw [ toPoly_eq_map ]
   unfold CBivariate.CC
@@ -474,7 +474,7 @@ theorem CC_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] (r :
 /--
 `X` (inner variable) corresponds to `Polynomial.C Polynomial.X` in `R[X][Y]`.
 -/
-theorem X_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] :
+theorem X_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R] :
     toPoly (X (R := R)) = Polynomial.C Polynomial.X := by
   rw [ toPoly_eq_map ]
   simp [ CBivariate.X, CPolynomial.C_toPoly ]
@@ -484,7 +484,7 @@ theorem X_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] :
 /--
 `Y` (outer variable) corresponds to `Polynomial.X` in `R[X][Y]`.
 -/
-theorem Y_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] [DecidableEq R] :
+theorem Y_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R] [DecidableEq R] :
     toPoly (CBivariate.Y (R := R)) = (Polynomial.X : Polynomial (Polynomial R)) := by
   simpa [CBivariate.Y, CPolynomial.C_toPoly] using
     (toPoly_monomial (R := R) 1 (CPolynomial.C 1))
@@ -492,7 +492,7 @@ theorem Y_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] [Deci
 /--
 `monomialXY n m c` corresponds to `Y^m` with inner coefficient `X^n * c`.
 -/
-theorem monomialXY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+theorem monomialXY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
     [DecidableEq R] (n m : ℕ) (c : R) :
     toPoly (monomialXY (R := R) n m c) = Polynomial.monomial m (Polynomial.monomial n c) := by
   unfold CBivariate.monomialXY
@@ -503,7 +503,7 @@ theorem monomialXY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring
 /--
 `supportX` corresponds to the union of inner supports of outer coefficients.
 -/
-theorem supportX_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+theorem supportX_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
     (f : CBivariate R) :
     CBivariate.supportX (R := R) f =
       (toPoly f).support.biUnion (fun j ↦ ((toPoly f).coeff j).support) := by
@@ -516,7 +516,7 @@ theorem supportX_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R
 /--
 `totalDegree` corresponds to the supremum over `j` of `natDegree ((toPoly f).coeff j) + j`.
 -/
-theorem totalDegree_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+theorem totalDegree_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
     (f : CBivariate R) :
     CBivariate.totalDegree (R := R) f =
       (toPoly f).support.sup (fun j ↦ ((toPoly f).coeff j).natDegree + j) := by
@@ -530,7 +530,7 @@ theorem totalDegree_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Rin
 /--
 `evalX a` evaluates each inner coefficient at `a`.
 -/
-theorem evalX_toPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+theorem evalX_toPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
     [DecidableEq R] (a : R) (f : CBivariate R) (j : ℕ) :
     ((evalX (R := R) a f).toPoly).coeff j = ((toPoly f).coeff j).eval a := by
   have h₁ :
@@ -555,7 +555,7 @@ theorem evalX_toPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Rin
 /--
 `evalX` is compatible with full bivariate evaluation when `a` and `y` commute.
 -/
-theorem evalX_toPoly_eval_commute {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+theorem evalX_toPoly_eval_commute {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
     [DecidableEq R] (a y : R) (hc : Commute a y) (f : CBivariate R) :
     (evalX (R := R) a f).eval y = (toPoly f).evalEval a y := by
   have h_lhs :
@@ -595,7 +595,7 @@ theorem evalX_toPoly_eval_commute {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial 
 /--
 `evalX_toPoly_eval_commute` specialized to commutative rings.
 -/
-theorem evalX_toPoly_eval {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [CommRing R]
+theorem evalX_toPoly_eval {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [CommSemiring R]
     [DecidableEq R] (a y : R) (f : CBivariate R) :
     (evalX (R := R) a f).eval y = (toPoly f).evalEval a y := by
   simpa using
@@ -606,7 +606,7 @@ The `Commute` hypothesis in `evalX_toPoly_eval_commute` is necessary:
 if the identity holds for every bivariate polynomial then `a` and `y` commute.
 -/
 theorem evalX_toPoly_eval_commute_converse
-    {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] [DecidableEq R]
+    {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R] [DecidableEq R]
     (a y : R)
     (h : ∀ f : CBivariate R,
       (evalX (R := R) a f).eval y = (toPoly f).evalEval a y) :
@@ -632,7 +632,7 @@ theorem evalX_toPoly_eval_commute_converse
 /--
 `evalY a` corresponds to outer evaluation at `Polynomial.C a`.
 -/
-theorem evalY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+theorem evalY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
     (a : R) (f : CBivariate R) :
     (evalY (R := R) a f).toPoly = (toPoly f).eval (Polynomial.C a) := by
   unfold CBivariate.evalY
@@ -654,7 +654,7 @@ theorem evalY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
 /--
 `leadingCoeffY` corresponds to the leading coefficient in the outer variable.
 -/
-theorem leadingCoeffY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+theorem leadingCoeffY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
     (f : CBivariate R) :
     (leadingCoeffY (R := R) f).toPoly = (toPoly f).leadingCoeff := by
   classical
@@ -669,7 +669,7 @@ theorem leadingCoeffY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [R
 /--
 `swap` exchanges X- and Y-exponents.
 -/
-theorem swap_toPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+theorem swap_toPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
     [DecidableEq R] (f : CBivariate R) (i j : ℕ) :
     ((toPoly (swap (R := R) f)).coeff j).coeff i = ((toPoly f).coeff i).coeff j := by
   rw [coeff_toPoly, coeff_toPoly]
@@ -776,7 +776,7 @@ theorem swap_toPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring
 /--
 `leadingCoeffX` is the Y-leading coefficient of the swapped polynomial.
 -/
-theorem leadingCoeffX_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+theorem leadingCoeffX_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
     [DecidableEq R] (f : CBivariate R) :
     (leadingCoeffX (R := R) f).toPoly = (toPoly (swap (R := R) f)).leadingCoeff := by
   simpa [ CBivariate.leadingCoeffX ] using
