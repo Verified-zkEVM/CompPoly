@@ -120,8 +120,7 @@ theorem weight_le_natWeightedDegree_of_lt_natDegree_succ {u v n : ℕ}
   unfold natWeightedDegree
   by_cases hns : n ∈ f.support
   · exact Finset.le_sup (f := fun m => u * (f.coeff m).natDegree + v * m) hns
-  ·
-    have hcoeff : f.coeff n = 0 := Polynomial.notMem_support_iff.1 hns
+  · have hcoeff : f.coeff n = 0 := Polynomial.notMem_support_iff.1 hns
     have hnle : n ≤ f.natDegree := Nat.lt_succ_iff.mp hn
     have hmul : v * n ≤ v * f.natDegree := Nat.mul_le_mul_left v hnle
     have hdegmem : f.natDegree ∈ f.support := Polynomial.natDegree_mem_support_of_nonzero hf
@@ -202,8 +201,7 @@ theorem coeff_natDegree_le_degreeX (f : F[X][Y]) (n : ℕ) : (f.coeff n).natDegr
   unfold degreeX
   by_cases hn : n ∈ f.support
   · exact Finset.le_sup (s := f.support) (f := fun m => (f.coeff m).natDegree) hn
-  ·
-    have hcoeff : f.coeff n = 0 := by
+  · have hcoeff : f.coeff n = 0 := by
       exact Polynomial.notMem_support_iff.mp hn
     simp [hcoeff]
 
@@ -241,20 +239,17 @@ theorem exists_max_index_degreeX (f : F[X][Y]) (hf : f ≠ 0) :
 
   set mm : ℕ := s₁.max' hs₁ with hmm
   refine ⟨mm, ?_, ?_, ?_⟩
-  ·
-    have hmm_mem : mm ∈ s₁ := by
+  · have hmm_mem : mm ∈ s₁ := by
       simpa [hmm] using (Finset.max'_mem s₁ hs₁)
     have : mm ∈ f.support ∧ (f.coeff mm).natDegree = degreeX f := by
       simpa [s₁] using (Finset.mem_filter.1 hmm_mem)
     exact this.1
-  ·
-    have hmm_mem : mm ∈ s₁ := by
+  · have hmm_mem : mm ∈ s₁ := by
       simpa [hmm] using (Finset.max'_mem s₁ hs₁)
     have : mm ∈ f.support ∧ (f.coeff mm).natDegree = degreeX f := by
       simpa [s₁] using (Finset.mem_filter.1 hmm_mem)
     exact this.2
-  ·
-    have hmm_mem : mm ∈ s₁ := by
+  · have hmm_mem : mm ∈ s₁ := by
       simpa [hmm] using (Finset.max'_mem s₁ hs₁)
     have hmm_upper : ∀ b ∈ s₁, b ≤ mm := by
       have hchar : mm ∈ s₁ ∧ ∀ b, b ∈ s₁ → b ≤ mm := by
@@ -265,8 +260,7 @@ theorem exists_max_index_degreeX (f : F[X][Y]) (hf : f ≠ 0) :
     intro n hmn
     by_cases hn0 : f.coeff n = 0
     · exact Or.inr hn0
-    ·
-      have hn_support : n ∈ f.support := by
+    · have hn_support : n ∈ f.support := by
         exact (Polynomial.mem_support_iff).2 hn0
       have hn_le : (f.coeff n).natDegree ≤ degreeX f := coeff_natDegree_le_degreeX f n
       have hn_ne : (f.coeff n).natDegree ≠ degreeX f := by
@@ -289,8 +283,7 @@ theorem natDegree_sum_eq_of_unique {α : Type*} {s : Finset α} {f : α → F[X]
     by_cases hym : y = mx
     · subst hym
       simp [hdeg]
-    ·
-      have hy' := hothers y hy hym
+    · have hy' := hothers y hy hym
       cases hy' with
       | inl hlt =>
           exact le_of_lt hlt
@@ -299,11 +292,9 @@ theorem natDegree_sum_eq_of_unique {α : Type*} {s : Finset α} {f : α → F[X]
   have hSle : (∑ x ∈ s, f x).natDegree ≤ deg :=
     Polynomial.natDegree_sum_le_of_forall_le (s := s) (f := f) (n := deg) hle
   by_cases hdeg0 : deg = 0
-  ·
-    subst hdeg0
+  · subst hdeg0
     exact Nat.eq_zero_of_le_zero hSle
-  ·
-    have hmx_ne0 : f mx ≠ 0 := by
+  · have hmx_ne0 : f mx ≠ 0 := by
       intro h0
       apply hdeg0
       have : (0 : ℕ) = deg := by
@@ -388,11 +379,9 @@ theorem degreeX_mul_ge [IsDomain F] (f g : F[X][Y]) (hf : f ≠ 0) (hg : g ≠ 0
             simp [term, hfi0]
         | inl hfi_lt =>
             by_cases hgj0 : g.coeff j = 0
-            ·
-              right
+            · right
               simp [term, hgj0]
-            ·
-              left
+            · left
               have hnat_le :
                   (term (i, j)).natDegree ≤ (f.coeff i).natDegree + (g.coeff j).natDegree := by
                 simpa [term] using
@@ -412,11 +401,9 @@ theorem degreeX_mul_ge [IsDomain F] (f g : F[X][Y]) (hf : f ≠ 0) (hg : g ≠ 0
             simp [term, hgj0]
         | inl hgj_lt =>
             by_cases hfi0 : f.coeff i = 0
-            ·
-              right
+            · right
               simp [term, hfi0]
-            ·
-              left
+            · left
               have hnat_le :
                   (term (i, j)).natDegree ≤ (f.coeff i).natDegree + (g.coeff j).natDegree := by
                 simpa [term] using
@@ -514,10 +501,8 @@ lemma degreeX_swap (f : F[X][Y]) :
   by_cases hf : f = 0
   · subst hf
     simp
-  ·
-    apply le_antisymm
-    ·
-      refine Finset.sup_le_iff.2 ?_
+  · apply le_antisymm
+    · refine Finset.sup_le_iff.2 ?_
       intro n hn
       rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
       intro m hm
@@ -526,8 +511,7 @@ lemma degreeX_swap (f : F[X][Y]) :
         exact hcoeff f m n
       rw [hmn]
       simp [hfm]
-    ·
-      have hNmem : natDegree f ∈ f.support :=
+    · have hNmem : natDegree f ∈ f.support :=
         Polynomial.natDegree_mem_support_of_nonzero hf
       have hcoeffN0 : f.coeff (natDegree f) ≠ 0 := by
         exact mem_support_iff.mp hNmem
