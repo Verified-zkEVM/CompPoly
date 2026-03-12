@@ -48,7 +48,9 @@ Use this directly only when you want to lint a specific subset of files.
 ### `build_timing_report.sh`
 
 Helper used by CI to measure and render build timings for clean builds, warm
-rebuilds, and the `lake test` path. This supports
+rebuilds, and the `lake test` path. The CI workflow also uploads timing-data
+artifacts so PR runs can compare against a previously recorded baseline without
+rerunning that baseline in the same job. This supports
 [`../.github/workflows/lean_action_ci.yml`](../.github/workflows/lean_action_ci.yml).
 
 ## Typical Workflows
