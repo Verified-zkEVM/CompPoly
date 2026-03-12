@@ -13,8 +13,10 @@ Formally verified computable bivariate polynomials for [CompPoly](../../README.m
 - **Basic.lean** — Type definition, constructors (`CC`, `C_X`, `Y`, `monomialXY`), operations (`coeff`, `evalX`, `evalY`, `evalEval`, `natDegreeX`, `natDegreeY`, `totalDegree`, `natWeightedDegree`, `leadingCoeffY`, `leadingCoeffX`, `swap`, `support`).
 - **ToPoly.lean** — Conversion to/from Mathlib's `R[X][Y]` via `toPoly` and `ofPoly`, with round-trip theorems, ring equivalence, and correctness lemmas for coefficients, evaluation, support, and degree APIs.
 
-Mathlib-facing degree/evaluation helper lemmas for `R[X][Y]` live in
-[`../ToMathlib/Polynomial/BivariateDegree.lean`](../ToMathlib/Polynomial/BivariateDegree.lean).
+Mathlib-facing helper files for `R[X][Y]` live under `CompPoly/ToMathlib/Polynomial/`:
+- [`../ToMathlib/Polynomial/BivariateDegree.lean`](../ToMathlib/Polynomial/BivariateDegree.lean)
+- [`../ToMathlib/Polynomial/BivariateWeightedDegree.lean`](../ToMathlib/Polynomial/BivariateWeightedDegree.lean)
+- [`../ToMathlib/Polynomial/BivariateMultiplicity.lean`](../ToMathlib/Polynomial/BivariateMultiplicity.lean)
 
 ## Indexing
 
