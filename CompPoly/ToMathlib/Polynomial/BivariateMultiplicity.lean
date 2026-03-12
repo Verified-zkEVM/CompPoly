@@ -35,7 +35,7 @@ def rootMultiplicity₀ [DecidableEq F] (f : F[X][Y]) : Option ℕ :=
   | some deg =>
       List.min? <|
         List.filterMap
-          (fun p ↦ if coeff f p.1 p.2 = 0 then none else some (p.1 + p.2))
+          (fun (i, j) ↦ if coeff f i j = 0 then none else some (i + j))
           (List.product (List.range deg.succ) (List.range deg.succ))
 
 end Semiring
@@ -60,22 +60,14 @@ section CommRing
 
 variable [CommRing F]
 
-private theorem resultant_deriv_divisible_by_leadingCoeff (f : F[X]) (hf : 0 < f.degree) :
-    ∃ r',
-      Polynomial.resultant f f.derivative f.natDegree (f.natDegree - 1) =
-        f.leadingCoeff * r' := by
-  refine ⟨(-1) ^ (f.natDegree * (f.natDegree - 1) / 2) * f.discr, ?_⟩
-  rw [Polynomial.resultant_deriv (f := f) hf]
-  simp [mul_left_comm, mul_comm]
-
 /-- A discriminant-like helper in the outer `Y` variable.
 
 Unlike Mathlib's univariate `discr`, this returns `0` for constant bivariate polynomials. -/
-def discr_y (f : F[X][Y]) : F[X] := by
-  classical
-  by_cases h : 0 < f.degree
-  · exact Classical.choose (resultant_deriv_divisible_by_leadingCoeff f h)
-  · exact 0
+def discr_y (f : F[X][Y]) : F[X] :=
+  if 0 < f.degree then
+    (-1) ^ (f.natDegree * (f.natDegree - 1) / 2) * f.discr
+  else
+    0
 
 end CommRing
 
