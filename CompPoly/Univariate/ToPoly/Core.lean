@@ -58,8 +58,8 @@ end ToPolyDefs
 
 section ToPoly
 
-variable [Ring R] [BEq R]
-variable [Ring Q]
+variable [Semiring R] [BEq R]
+variable [Semiring Q]
 
 namespace Raw
 

@@ -141,8 +141,8 @@ end CMlPolynomialInstances
 
 section CMlPolynomialMonomialBasisAndEvaluations
 
-variable [CommRing R]
-variable {S : Type*} [CommRing S]
+variable [CommSemiring R]
+variable {S : Type*} [CommSemiring S]
 
 /-
 Monomial-basis evaluations at point `w`.
@@ -167,7 +167,7 @@ theorem monomialBasis_getElem {w : Vector R n} (i : Fin (2 ^ n)) :
   rw [monomialBasis]
   simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin, Vector.getElem_ofFn]
 
-variable {S : Type*} [CommRing S]
+variable {S : Type*} [CommSemiring S]
 
 def map (f : R →+* S) (p : CMlPolynomial R n) : CMlPolynomial S n :=
   Vector.map (fun a => f a) p

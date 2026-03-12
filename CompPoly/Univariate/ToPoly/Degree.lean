@@ -19,7 +19,7 @@ namespace CPolynomial
 
 open Raw
 
-variable {R : Type*} [Ring R] [BEq R]
+variable {R : Type*} [Semiring R] [BEq R]
 
 section ImplementationCorrectness
 
@@ -94,7 +94,8 @@ theorem leadingCoeff_toPoly [LawfulBEq R] (p : CPolynomial R) :
       simpa [hround] using hlastImpl
     simpa [CPolynomial.leadingCoeff, Array.getLastD, hpos] using hlast
 
-theorem erase_toPoly [LawfulBEq R] [DecidableEq R] (n : ℕ) (p : CPolynomial R) :
+theorem erase_toPoly {R : Type*} [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
+    (n : ℕ) (p : CPolynomial R) :
     (erase n p).toPoly = p.toPoly.erase n := by
   have h_erase_def : (CPolynomial.erase n p).toPoly
       = p.toPoly - Polynomial.monomial n (p.val.coeff n) := by

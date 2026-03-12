@@ -19,13 +19,12 @@ namespace CPolynomial
 
 open Raw
 
-variable {R : Type*} [Ring R] [BEq R]
-variable {Q : Type*} [Ring Q]
+variable {R : Type*} [Semiring R] [BEq R]
 
 section RingEquiv
 
 @[grind =]
-lemma toPoly_neg [LawfulBEq R] (p : CPolynomial R) :
+lemma toPoly_neg {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) :
     (-p).toPoly = -p.toPoly := by
   ext i
   rw [Polynomial.coeff_neg, CPolynomial.toPoly, CPolynomial.toPoly]
@@ -38,7 +37,7 @@ lemma toPoly_add [LawfulBEq R] (p q : CPolynomial R) :
   apply Raw.toPoly_add
 
 @[grind =]
-lemma toPoly_sub [LawfulBEq R] (p q : CPolynomial R) :
+lemma toPoly_sub {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) :
     (p - q).toPoly = p.toPoly - q.toPoly := by
   change (p + -q).toPoly = p.toPoly + -q.toPoly
   rw [toPoly_add, toPoly_neg]
@@ -74,7 +73,7 @@ lemma toPoly_mul [LawfulBEq R] (p q : CPolynomial R) :
   exact toPoly_mul_coeffC p q i
 
 @[simp, grind =]
-lemma eval₂_C {R : Type*} [Ring R] [BEq R] {S : Type*} [Semiring S]
+lemma eval₂_C {R : Type*} [Semiring R] {S : Type*} [Semiring S]
     (f : R →+* S) (x : S) (r : R) :
     (Raw.C r).eval₂ f x = f r := by
   unfold CPolynomial.Raw.eval₂ Raw.C
@@ -82,13 +81,13 @@ lemma eval₂_C {R : Type*} [Ring R] [BEq R] {S : Type*} [Semiring S]
   simp [Array.zipIdx]
 
 @[simp, grind =]
-lemma Raw.toPoly_C {R : Type*} [Ring R] [BEq R] (r : R) :
+lemma Raw.toPoly_C {R : Type*} [Semiring R] (r : R) :
     (Raw.C r).toPoly = Polynomial.C r := by
   unfold Raw.toPoly
   exact eval₂_C Polynomial.C Polynomial.X r
 
 @[simp, grind =]
-lemma Raw.toPoly_one [LawfulBEq R] :
+lemma Raw.toPoly_one {R : Type*} [Semiring R] :
     (1 : CPolynomial.Raw R).toPoly = 1 := by
   have : (1 : CPolynomial.Raw R).toPoly = (Raw.C 1).toPoly := by rfl
   apply this.trans; clear this
@@ -97,17 +96,15 @@ lemma Raw.toPoly_one [LawfulBEq R] :
 lemma toPoly_one [LawfulBEq R] [Nontrivial R] :
     (1 : CPolynomial R).toPoly = 1 := by apply Raw.toPoly_one
 
-omit [BEq R] in
 @[simp, grind =]
-lemma Raw.toPoly_zero : (0 : CPolynomial.Raw R).toPoly = 0 := by
+lemma Raw.toPoly_zero {R : Type*} [Semiring R] : (0 : CPolynomial.Raw R).toPoly = 0 := by
   simp [Raw.toPoly, Raw.eval₂]
 
-omit [BEq R] in
-lemma toPoly_zero : (0 : CPolynomial R).toPoly = 0 := by
+lemma toPoly_zero {R : Type*} [Semiring R] : (0 : CPolynomial R).toPoly = 0 := by
   apply Raw.toPoly_zero
 
 @[simp, grind =]
-lemma Raw.toPoly_X [LawfulBEq R] :
+lemma Raw.toPoly_X {R : Type*} [Semiring R] :
     (Raw.X : CPolynomial.Raw R).toPoly = Polynomial.X := by
   unfold CPolynomial.Raw.X
   simp [Raw.toPoly, Raw.eval₂]
@@ -128,7 +125,8 @@ lemma toPoly_pow [Nontrivial R] [LawfulBEq R] (p : CPolynomial R) (n : ℕ) :
       simpa using (_root_.pow_succ (p.toPoly : R[X]) n)
     rw [hp, toPoly_mul, ih, htp]
 
-lemma toPoly_sum.{u} {R : Type*} [BEq R] [Field R] [LawfulBEq R] {ι : Type u} [DecidableEq ι]
+lemma toPoly_sum.{u} {R : Type*} [Semiring R] [BEq R] [LawfulBEq R] {ι : Type u}
+    [DecidableEq ι]
     {s : Finset ι} {f : ι → CPolynomial R} :
       (∑ j ∈ s, f j).toPoly = ∑ j ∈ s, ((f j).toPoly) := by
   induction s using Finset.induction_on with
@@ -137,7 +135,8 @@ lemma toPoly_sum.{u} {R : Type*} [BEq R] [Field R] [LawfulBEq R] {ι : Type u} [
   | insert a s ha ih =>
       simp [Finset.sum_insert, ha, toPoly_add, ih]
 
-lemma toPoly_prod.{u} {R : Type*} [BEq R] [Field R] [LawfulBEq R] {ι : Type u} [DecidableEq ι]
+lemma toPoly_prod.{u} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    {ι : Type u} [DecidableEq ι]
     {s : Finset ι} {f : ι → CPolynomial R} :
       (∏ j ∈ s, f j).toPoly = ∏ j ∈ s, ((f j).toPoly) := by
   induction s using Finset.induction_on with
@@ -146,7 +145,7 @@ lemma toPoly_prod.{u} {R : Type*} [BEq R] [Field R] [LawfulBEq R] {ι : Type u} 
   | insert a s ha ih =>
       simp [Finset.prod_insert, ha, toPoly_mul, ih]
 
-noncomputable def ringEquiv [LawfulBEq R] :
+noncomputable def ringEquiv [LawfulBEq R] [Nontrivial R] :
   CPolynomial R ≃+* Polynomial R where
   toFun := CPolynomial.toPoly
   invFun := fun p => ⟨p.toImpl, isCanonical_toImpl p⟩
@@ -176,9 +175,8 @@ theorem C_toPoly [LawfulBEq R] (r : R) : (C r).toPoly = Polynomial.C r := by
 
 theorem X_toPoly [LawfulBEq R] [Nontrivial R] :
     (X : CPolynomial R).toPoly = Polynomial.X := by
-  convert Raw.toPoly_X using 1
-  (expose_names; infer_instance)
-  infer_instance
+  change (CPolynomial.Raw.X : CPolynomial.Raw R).toPoly = Polynomial.X
+  exact CPolynomial.Raw.toPoly_X (R := R)
 
 theorem eval_toPoly [LawfulBEq R] (x : R) (p : CPolynomial R) :
     eval x p = p.toPoly.eval x := by
@@ -186,8 +184,8 @@ theorem eval_toPoly [LawfulBEq R] (x : R) (p : CPolynomial R) :
   · rw [ Raw.eval_toPoly_eq_eval ]; rfl
   · convert Raw.eval_toPoly_eq_eval x p.val
 
-omit [BEq R] in
-theorem Raw.eval₂_toPoly {S : Type*} [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial.Raw R) :
+theorem Raw.eval₂_toPoly {R : Type*} [Semiring R] {S : Type*} [Semiring S]
+    (f : R →+* S) (x : S) (p : CPolynomial.Raw R) :
     p.eval₂ f x = p.toPoly.eval₂ f x := by
   unfold CompPoly.CPolynomial.Raw.toPoly CompPoly.CPolynomial.Raw.eval₂
   rw [← Array.foldl_hom (fun q : R[X] => q.eval₂ f x)
@@ -198,8 +196,8 @@ theorem Raw.eval₂_toPoly {S : Type*} [Semiring S] (f : R →+* S) (x : S) (p :
     rcases t with ⟨a, i⟩
     simp [Polynomial.eval₂_add, Polynomial.C_mul_X_pow_eq_monomial]
 
-omit [BEq R] in
-theorem eval₂_toPoly {S : Type*} [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial R) :
+theorem eval₂_toPoly {R : Type*} [Semiring R] {S : Type*} [Semiring S]
+    (f : R →+* S) (x : S) (p : CPolynomial R) :
     eval₂ f x p = p.toPoly.eval₂ f x := by
   simpa [CompPoly.CPolynomial.eval₂, CompPoly.CPolynomial.toPoly, CompPoly.CPolynomial.Raw.eval₂]
     using
