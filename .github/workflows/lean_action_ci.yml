@@ -107,7 +107,6 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const core = require('@actions/core');
             const { owner, repo } = context.repo;
             const artifactName = process.env.BUILD_TIMING_ARTIFACT_NAME;
             const workflowName = process.env.GITHUB_WORKFLOW;
