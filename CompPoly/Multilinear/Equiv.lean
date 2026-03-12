@@ -16,7 +16,7 @@ import CompPoly.Multilinear.Basic
 -/
 open MvPolynomial
 
-variable {R : Type*} [CommRing R] {n : ℕ}
+variable {R : Type*} [CommSemiring R] {n : ℕ}
 
 noncomputable section
 
