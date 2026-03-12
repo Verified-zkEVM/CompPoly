@@ -190,12 +190,12 @@ section WeightedDegreeLemmas
 variable {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
 
 /-- The total degree is the `(1, 1)`-weighted degree. -/
-@[simp] theorem totalDegree_as_weightedDegree (f : CBivariate R) :
+theorem totalDegree_as_weightedDegree (f : CBivariate R) :
     CBivariate.totalDegree (R := R) f = CBivariate.natWeightedDegree (R := R) f 1 1 := by
   simp [CBivariate.totalDegree, CBivariate.natWeightedDegree]
 
 /-- The X-degree is the `(1, 0)`-weighted degree. -/
-@[simp] theorem natDegreeX_as_weightedDegree (f : CBivariate R) :
+theorem natDegreeX_as_weightedDegree (f : CBivariate R) :
     CBivariate.natDegreeX (R := R) f = CBivariate.natWeightedDegree (R := R) f 1 0 := by
   simp [CBivariate.natDegreeX, CBivariate.natWeightedDegree]
 

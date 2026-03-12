@@ -22,8 +22,8 @@ example (f : ℚ[X][Y]) : totalDegree f = natWeightedDegree f 1 1 := by
 example (f : ℚ[X][Y]) : degreeX f = natWeightedDegree f 1 0 := by
   exact degreeX_as_weighted_deg (f := f)
 
-example (f : ℚ[X][Y]) (hf : f ≠ 0) : natDegreeY f = natWeightedDegree f 0 1 := by
-  exact degreeY_as_weighted_deg (f := f) hf
+example (f : ℚ[X][Y]) : natDegreeY f = natWeightedDegree f 0 1 := by
+  exact degreeY_as_weighted_deg (f := f)
 
 example (f g : ℚ[X][Y]) (hf : f ≠ 0) (hg : g ≠ 0) :
     degreeX (f * g) = degreeX f + degreeX g := by
