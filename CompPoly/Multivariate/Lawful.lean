@@ -191,19 +191,19 @@ lemma fromUnlawful_cast {p : Lawful n R} : fromUnlawful p.1 = p := by
 
 section
 
-variable [BEq R] [LawfulBEq R] [CommRing R]
+variable [BEq R] [LawfulBEq R]
 
 /-- Negation of a polynomial. -/
-def neg (p : Lawful n R) : Lawful n R :=
+def neg [Neg R] (p : Lawful n R) : Lawful n R :=
   fromUnlawful p.1.neg
 
-instance : Neg (Lawful n R) := ⟨neg⟩
+instance [Neg R] : Neg (Lawful n R) := ⟨neg⟩
 
 /-- Subtraction of polynomials. -/
-def sub (p₁ p₂ : Lawful n R) : Lawful n R :=
+def sub [Add R] [Neg R] (p₁ p₂ : Lawful n R) : Lawful n R :=
   p₁ + (-p₂)
 
-instance : Sub (Lawful n R) := ⟨sub⟩
+instance [Add R] [Neg R] : Sub (Lawful n R) := ⟨sub⟩
 
 instance instDecidableEq [DecidableEq R] : DecidableEq (Lawful n R) := fun x y ↦
   if h : x.1.toList = y.1.toList
@@ -238,25 +238,30 @@ def liftPoly
   Lawful (n₁ ⊔ n₂) R)
   (p₁ : Lawful n₁ R) (p₂ : Lawful n₂ R) : Lawful (n₁ ⊔ n₂) R :=
   Function.uncurry f (align p₁ p₂)
-section
-
-variable [CommRing R]
-
-instance : HAdd (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
-  ⟨fun p₁ p₂ ↦ liftPoly (·+·) p₁ p₂⟩
-
-instance : HSub (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
-  ⟨fun p₁ p₂ ↦ liftPoly (·-·) p₁ p₂⟩
-
-instance : HMul (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
-  ⟨fun p₁ p₂ ↦ liftPoly (·*·) p₁ p₂⟩
-
-instance : HPow (Lawful n R) ℕ (Lawful n R) :=
-  ⟨fun p₁ exp ↦ exp.iterate p₁.mul 1⟩
 
 def polyCoe (p : Lawful n R) : Lawful (n + 1) R := cast (by simp) (p.extend n.succ)
 
 instance : Coe (Lawful n R) (Lawful (n + 1) R) := ⟨polyCoe⟩
+
+section
+
+-- Mixed-arity fallbacks: keep these low-priority so same-arity `Add`/`Sub`/`Mul`/`NatPow`
+-- instances win when both operands already live in `Lawful n R`.
+instance (priority := low) [Add R] :
+    HAdd (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
+  ⟨fun p₁ p₂ ↦ liftPoly (·+·) p₁ p₂⟩
+
+instance (priority := low) [Add R] [Neg R] :
+    HSub (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
+  ⟨fun p₁ p₂ ↦ liftPoly (·-·) p₁ p₂⟩
+
+instance (priority := low) [Add R] [Mul R] :
+    HMul (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
+  ⟨fun p₁ p₂ ↦ liftPoly (·*·) p₁ p₂⟩
+
+instance (priority := low) [NatCast R] [Add R] [Mul R] :
+    HPow (Lawful n R) ℕ (Lawful n R) :=
+  ⟨fun p₁ exp ↦ exp.iterate p₁.mul 1⟩
 
 end
 
