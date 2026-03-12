@@ -167,10 +167,9 @@ theorem monomialBasis_getElem {w : Vector R n} (i : Fin (2 ^ n)) :
   rw [monomialBasis]
   simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin, Vector.getElem_ofFn]
 
-variable {S : Type*} [CommSemiring S]
-
-def map (f : R →+* S) (p : CMlPolynomial R n) : CMlPolynomial S n :=
-  Vector.map (fun a => f a) p
+def map {R S : Type*} [Semiring R] [Semiring S] (f : R →+* S)
+    (p : CMlPolynomial R n) : CMlPolynomial S n :=
+  Vector.map f p
 
 /-- Evaluate a `CMlPolynomial` at a point -/
 def eval (p : CMlPolynomial R n) (x : Vector R n) : R :=
