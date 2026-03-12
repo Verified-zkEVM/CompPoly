@@ -619,7 +619,8 @@ lemma descend_evalX {A B G A1 B1 : F[X][Y]} (hA : A = G * A1) (hB : B = G * B1)
   have hmap : B.map (Polynomial.evalRingHom x) = q * (A.map (Polynomial.evalRingHom x)) := by
     simpa [evalX_eq_map] using h
   have hmap' :
-      ((G * B1).map (Polynomial.evalRingHom x)) = q * ((G * A1).map (Polynomial.evalRingHom x)) := by
+      ((G * B1).map (Polynomial.evalRingHom x)) =
+        q * ((G * A1).map (Polynomial.evalRingHom x)) := by
     simpa [hB, hA] using hmap
   have hmap'' : (G.map (Polynomial.evalRingHom x)) * (B1.map (Polynomial.evalRingHom x))
       = q * ((G.map (Polynomial.evalRingHom x)) * (A1.map (Polynomial.evalRingHom x))) := by
@@ -658,7 +659,8 @@ lemma exists_x_preserve_natDegreeY (B : F[X][Y]) (hB : B ≠ 0) (P : Finset F)
     exact (not_lt_of_ge hle) hlt
   rcases hx with ⟨x, hxP, hxne⟩
   refine ⟨x, hxP, ?_⟩
-  have hnat_le : (Polynomial.Bivariate.evalX x B).natDegree ≤ Polynomial.Bivariate.natDegreeY B := by
+  have hnat_le :
+      (Polynomial.Bivariate.evalX x B).natDegree ≤ Polynomial.Bivariate.natDegreeY B := by
     rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
     intro N hN
     have hBN : B.coeff N = 0 := coeff_eq_zero_of_natDegree_lt hN

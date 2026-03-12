@@ -38,31 +38,25 @@ lemma natWeightedDegree_add_le (p q : F[X][Y]) (u v : ℕ) :
   refine Finset.sup_le fun m hm ↦ ?_
   by_cases h : m ∈ p.support <;> by_cases h' : m ∈ q.support <;>
     simp_all only [Polynomial.mem_support_iff, coeff_add, ne_eq, le_sup_iff]
-  ·
-    have h_deg : (p.coeff m + q.coeff m).natDegree ≤
+  · have h_deg : (p.coeff m + q.coeff m).natDegree ≤
         max ((p.coeff m).natDegree) ((q.coeff m).natDegree) :=
       natDegree_add_le (p.coeff m) (q.coeff m)
     cases max_cases (natDegree (p.coeff m)) (natDegree (q.coeff m)) <;>
       simp_all only [sup_of_le_left, sup_eq_left, and_self, natWeightedDegree]
-    ·
-      exact Or.inl <|
+    · exact Or.inl <|
         le_trans
           (add_le_add (mul_le_mul_of_nonneg_left h_deg <| Nat.zero_le _) le_rfl)
           (Finset.le_sup (f := fun m ↦ u * natDegree (p.coeff m) + v * m) <| by aesop)
-    ·
-      exact Or.inr <|
+    · exact Or.inr <|
         le_trans
           (add_le_add (mul_le_mul_of_nonneg_left h_deg <| Nat.zero_le _) le_rfl)
           (Finset.le_sup (f := fun m ↦ u * natDegree (q.coeff m) + v * m) <| by aesop)
   all_goals simp_all only [not_not, add_zero, zero_add, not_false_eq_true]
-  ·
-    exact Or.inl <|
+  · exact Or.inl <|
       Finset.le_sup (f := fun m ↦ u * natDegree (p.coeff m) + v * m) <| by aesop
-  ·
-    exact Or.inr <|
+  · exact Or.inr <|
       Finset.le_sup (f := fun m ↦ u * natDegree (q.coeff m) + v * m) <| by aesop
-  ·
-    simp at hm
+  · simp at hm
 
 /-- The weighted degree of a sum is bounded by the supremum of the weighted degrees. -/
 lemma natWeightedDegree_sum_le {ι : Type*} (s : Finset ι) (f : ι → F[X][Y]) (u v : ℕ) :
@@ -96,8 +90,7 @@ lemma degree_eval_le_weightedDegree (Q : F[X][Y]) (P : F[X]) (k : ℕ) (hP : P.n
   intro i hi
   by_cases hi' : Q.coeff i = 0
   · simp [hi', natWeightedDegree]
-  ·
-    have hpow : (P ^ i).natDegree ≤ (k - 1) * i := by
+  · have hpow : (P ^ i).natDegree ≤ (k - 1) * i := by
       simpa [Nat.mul_comm] using
         (Polynomial.natDegree_pow_le_of_le (p := P) (m := k - 1) i hP)
     refine le_trans ?_
@@ -118,12 +111,10 @@ lemma natWeightedDegree_monomial (i j u v : ℕ) :
   classical
   simp only [natWeightedDegree, monomial]
   refine le_antisymm ?_ ?_ <;> norm_num
-  ·
-    intros b hb
+  · intros b hb
     simp [coeff_monomial] at hb
     simp [← hb]
-  ·
-    refine le_trans ?_ (Finset.le_sup
+  · refine le_trans ?_ (Finset.le_sup
       (f := fun m ↦ u * (Polynomial.monomial j (Polynomial.monomial i 1) |>.coeff m |>.natDegree)
         + v * m) (b := j) ?_)
     all_goals norm_num [coeff_monomial]
