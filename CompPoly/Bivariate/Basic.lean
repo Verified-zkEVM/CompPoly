@@ -145,6 +145,10 @@ def natDegreeX (f : CBivariate R) : ℕ :=
 def totalDegree (f : CBivariate R) : ℕ :=
   (CPolynomial.support f).sup (fun m ↦ (f.val.coeff m).natDegree + m)
 
+/-- The `(u, v)`-weighted degree: max over monomials of `u * deg_X + v * deg_Y`. -/
+def natWeightedDegree (f : CBivariate R) (u v : ℕ) : ℕ :=
+  (CPolynomial.support f).sup (fun m ↦ u * (f.val.coeff m).natDegree + v * m)
+
 /-- Evaluate in the first variable (X) at `a`, yielding a univariate polynomial in Y.
     ArkLib: `Polynomial.Bivariate.evalX`. -/
 def evalX [DecidableEq R] (a : R) (f : CBivariate R) : CPolynomial R :=
@@ -180,6 +184,22 @@ def leadingCoeffX [DecidableEq R] (f : CBivariate R) : CPolynomial R :=
   (f.swap).leadingCoeffY
 
 end Operations
+
+section WeightedDegreeLemmas
+
+variable {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
+
+/-- The total degree is the `(1, 1)`-weighted degree. -/
+@[simp] theorem totalDegree_as_weightedDegree (f : CBivariate R) :
+    CBivariate.totalDegree (R := R) f = CBivariate.natWeightedDegree (R := R) f 1 1 := by
+  simp [CBivariate.totalDegree, CBivariate.natWeightedDegree]
+
+/-- The X-degree is the `(1, 0)`-weighted degree. -/
+@[simp] theorem natDegreeX_as_weightedDegree (f : CBivariate R) :
+    CBivariate.natDegreeX (R := R) f = CBivariate.natWeightedDegree (R := R) f 1 0 := by
+  simp [CBivariate.natDegreeX, CBivariate.natWeightedDegree]
+
+end WeightedDegreeLemmas
 
 end CBivariate
 
