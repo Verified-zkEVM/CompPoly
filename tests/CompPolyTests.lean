@@ -1,6 +1,8 @@
 import CompPolyTests.Univariate.Raw
 import CompPolyTests.Univariate.Basic
+import CompPolyTests.Univariate.Linear
 import CompPolyTests.Univariate.ToPoly
+import CompPolyTests.Bivariate.Basic
 import CompPolyTests.BF128GhashPrelude
 import CompPolyTests.Multivariate.CMvMonomial
 import CompPolyTests.Multivariate.Restrict

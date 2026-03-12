@@ -23,62 +23,70 @@ variable {R : Type*} [Ring R] [BEq R]
 
 section ImplementationCorrectness
 
+omit [BEq R] in
+private theorem size_toImpl_eq_natDegree_succ {q : R[X]} (hq : q ≠ 0) :
+    q.toImpl.size = q.natDegree + 1 := by
+  rcases Raw.toImpl_elim q with ⟨hzero, _⟩ | ⟨_, himpl⟩
+  · exact (hq hzero).elim
+  · simp [himpl]
+
+private theorem size_eq_toPoly_natDegree_succ [LawfulBEq R] (p : CPolynomial R) (hp : p ≠ 0) :
+    p.val.size = p.toPoly.natDegree + 1 := by
+  have htoPoly : p.toPoly ≠ 0 := (toPoly_eq_zero_iff p).not.mpr hp
+  have hsize : p.toPoly.toImpl.size = p.val.size := by
+    simpa using congrArg Array.size (toImpl_toPoly_of_canonical p)
+  rw [← hsize]
+  exact size_toImpl_eq_natDegree_succ htoPoly
+
 theorem degree_toPoly [LawfulBEq R] (p : CPolynomial R) :
     p.degree = p.toPoly.degree := by
-  have h_deg_eq : p.val.toPoly.degree = p.val.degree := by
-    unfold CPolynomial.Raw.degree at *
-    rcases h : ( p : CompPoly.CPolynomial.Raw R ).lastNonzero with ( _ | ⟨ k, hk ⟩ )
-      <;> simp_all +decide [ Polynomial.degree_eq_bot ]
-    · have := p.prop
-      unfold CompPoly.CPolynomial.Raw.trim at this; aesop
-    · have := CPolynomial.Raw.Trim.lastNonzero_spec h
-      rw [ Polynomial.degree_eq_of_le_of_coeff_ne_zero ]
-      · rw [ Polynomial.degree_le_iff_coeff_zero ]
-        intro m hm; by_cases hm' : m < p.val.size
-          <;> simp_all +decide [ CPolynomial.Raw.coeff_toPoly ]
-      · rw [ CompPoly.CPolynomial.Raw.coeff_toPoly ]; aesop
-  exact h_deg_eq.symm
+  by_cases hp : p = 0
+  · subst hp
+    rw [toPoly_zero, CPolynomial.degree, CPolynomial.Raw.degreeBound]
+    rfl
+  · have hsize := size_eq_toPoly_natDegree_succ p hp
+    have htoPoly : p.toPoly ≠ 0 := (toPoly_eq_zero_iff p).not.mpr hp
+    cases hs : p.val.size with
+    | zero =>
+        simp [hs] at hsize
+    | succ n =>
+        have hnat : p.toPoly.natDegree = n := by omega
+        simp [CPolynomial.degree, CPolynomial.Raw.degreeBound, hs, hnat,
+          Polynomial.degree_eq_natDegree htoPoly]
 
 theorem natDegree_toPoly [LawfulBEq R] (p : CPolynomial R) :
     p.natDegree = p.toPoly.natDegree := by
-  have h_deg_eq : p.degree = p.toPoly.degree := by
-    exact degree_toPoly p
-  have h_natDegree_eq : p.natDegree = p.degree.unbotD 0 := by
-    unfold CPolynomial.natDegree CPolynomial.degree
-    unfold CPolynomial.Raw.natDegree CPolynomial.Raw.degree
-    cases p.val.lastNonzero <;> rfl
-  aesop
+  by_cases hp : p = 0
+  · subst hp
+    rw [toPoly_zero, CPolynomial.natDegree, CPolynomial.Raw.natDegreeBound, CPolynomial.Raw.degreeBound]
+    rfl
+  · have hsize := size_eq_toPoly_natDegree_succ p hp
+    cases hs : p.val.size with
+    | zero =>
+        simp [hs] at hsize
+    | succ n =>
+        have hnat : p.toPoly.natDegree = n := by omega
+        rw [hnat, CPolynomial.natDegree, CPolynomial.Raw.natDegreeBound, CPolynomial.Raw.degreeBound, hs]
+        rfl
 
 theorem leadingCoeff_toPoly [LawfulBEq R] (p : CPolynomial R) :
     p.leadingCoeff = p.toPoly.leadingCoeff := by
-  by_contra h_contra
-  apply h_contra
-  obtain ⟨q, hq⟩ : ∃ q : Polynomial R, p = ⟨q.toImpl, trim_toImpl q⟩ := by
-    use p.toPoly
-    generalize_proofs at *
-    convert Subtype.ext ?_
-    exact Eq.symm (toImpl_toPoly_of_canonical p)
-  have h_leading_coeff_eq : q.toImpl.getLast (by
-  by_cases hq_zero : q = 0 <;> simp_all +decide [ Polynomial.toImpl ]
-  · simp [CompPoly.CPolynomial.leadingCoeff, CompPoly.CPolynomial.toPoly] at h_contra
-    simp +decide [ CompPoly.CPolynomial.Raw.leadingCoeff, CompPoly.CPolynomial.Raw.toPoly ]
-      at h_contra
-    exact h_contra (by unfold CompPoly.CPolynomial.Raw.trim; aesop)
-  · cases h : q.degree <;> simp_all +decide [ Polynomial.degree_eq_natDegree hq_zero ])
-      = q.leadingCoeff := by
-    all_goals generalize_proofs at *
-    convert Raw.getLast_toImpl _
-    rintro rfl; simp_all +decide [ Polynomial.toImpl ]
-  generalize_proofs at *
-  convert h_leading_coeff_eq using 1
-  · unfold CPolynomial.leadingCoeff
-    unfold CPolynomial.Raw.leadingCoeff
-    unfold Array.getLastD; aesop
-  · rw [ ← h_leading_coeff_eq, hq ]
-    rw [ show (CompPoly.CPolynomial.toPoly ⟨q.toImpl, by assumption⟩ : Polynomial R) = q
-        from ?_ ]
-    · exact h_leading_coeff_eq.symm
-    · apply Raw.toPoly_toImpl
+  by_cases hp : p = 0
+  · subst hp
+    rw [toPoly_zero, CPolynomial.leadingCoeff]
+    rfl
+  · have htoPoly : p.toPoly ≠ 0 := (toPoly_eq_zero_iff p).not.mpr hp
+    have hpos : p.val.size > 0 := by
+      have hsize := size_eq_toPoly_natDegree_succ p hp
+      omega
+    have hlastImpl :
+        p.toPoly.toImpl.getLast (Raw.toImpl_nonzero htoPoly) = p.toPoly.leadingCoeff := by
+      simpa using Raw.getLast_toImpl htoPoly
+    have hround : p.toPoly.toImpl = (p : CPolynomial.Raw R) := by
+      simpa using toImpl_toPoly_of_canonical p
+    have hlast : p.val.getLast hpos = p.toPoly.leadingCoeff := by
+      simpa [hround] using hlastImpl
+    simpa [CPolynomial.leadingCoeff, Array.getLastD, hpos] using hlast
 
 theorem erase_toPoly [LawfulBEq R] [DecidableEq R] (n : ℕ) (p : CPolynomial R) :
     (erase n p).toPoly = p.toPoly.erase n := by
@@ -117,24 +125,18 @@ theorem C_mul_X_pow_toPoly [LawfulBEq R] [DecidableEq R] [Nontrivial R] (r : R) 
   · convert monomial_toPoly n r
 
 theorem lcoeff_toPoly [LawfulBEq R] (n : ℕ) (p : CPolynomial R) :
-    lcoeff R n p  = Polynomial.lcoeff R n (toPoly p) := by
+    lcoeff (R := R) n p = Polynomial.lcoeff R n (toPoly p) := by
     simp [lcoeff, Polynomial.lcoeff_apply, ← coeff_toPoly]
 
 theorem degreeLE_toPoly {n : WithBot ℕ} [LawfulBEq R] {p : CPolynomial R} :
-    p ∈ degreeLE R n ↔ p.toPoly ∈ Polynomial.degreeLE R n := by
-  simp only [degreeLE, Polynomial.degreeLE, Submodule.mem_iInf, LinearMap.mem_ker,
-    lcoeff_toPoly]
+    p ∈ degreeLE (R := R) n ↔ p.toPoly ∈ Polynomial.degreeLE R n := by
+  rw [Polynomial.mem_degreeLE]
+  convert (show p.degree ≤ n ↔ p.toPoly.degree ≤ n by rw [degree_toPoly]) using 1
 
 theorem degreeLT_toPoly {n : ℕ} [LawfulBEq R] {p : CPolynomial R} :
-    p ∈ degreeLT R n ↔ p.toPoly ∈ Polynomial.degreeLT R n := by
-  simp only [degreeLT, Polynomial.degreeLT, Submodule.mem_iInf, LinearMap.mem_ker,
-    lcoeff_toPoly]
-
-theorem degreeLTEquiv_toPoly {n : ℕ} [LawfulBEq R] [DecidableEq R] {p : CPolynomial R}
-    (hp : p ∈ degreeLT R n) (i : Fin n) :
-      degreeLTEquiv R n ⟨p, hp⟩ i =
-          Polynomial.degreeLTEquiv R n ⟨p.toPoly, degreeLT_toPoly.mp hp⟩ i := by
-    simp [degreeLTEquiv, Polynomial.degreeLTEquiv, ← coeff_toPoly]
+    p ∈ degreeLT (R := R) n ↔ p.toPoly ∈ Polynomial.degreeLT R n := by
+  rw [Polynomial.mem_degreeLT]
+  convert (show p.degree < n ↔ p.toPoly.degree < n by rw [degree_toPoly]) using 1
 
 end ImplementationCorrectness
 
@@ -148,28 +150,11 @@ lemma toPoly_smul (r : R) (p : CPolynomial R) :
 
 noncomputable def toPolyLinearEquiv : CPolynomial R ≃ₗ[R] R[X] where
   toFun := toPoly
-  invFun := fun p => ⟨p.toImpl, trim_toImpl p⟩
+  invFun := fun p => ⟨p.toImpl, isCanonical_toImpl p⟩
   map_add' := toPoly_add
   map_smul' := toPoly_smul
   left_inv := fun p => Subtype.ext (toImpl_toPoly_of_canonical p)
   right_inv := fun _ => toPoly_toImpl
-
-theorem degreeLE_map_toPolyLinearEquiv {n : WithBot ℕ} :
-    (degreeLE R n).map toPolyLinearEquiv.toLinearMap = Polynomial.degreeLE R n :=
-  le_antisymm (fun _ ⟨p, hp, h⟩ => h ▸ degreeLE_toPoly.mp hp)
-    (fun q hq => ⟨toPolyLinearEquiv.symm q, degreeLE_toPoly.mpr (by
-      show (toPolyLinearEquiv.symm q).toPoly ∈ _
-      rw [show (toPolyLinearEquiv.symm q).toPoly = q from toPolyLinearEquiv.apply_symm_apply q]
-      exact hq), toPolyLinearEquiv.apply_symm_apply q⟩)
-
-theorem degreeLT_map_toPolyLinearEquiv {n : ℕ} :
-    (degreeLT R n).map toPolyLinearEquiv.toLinearMap = Polynomial.degreeLT R n :=
-  le_antisymm (fun _ ⟨p, hp, h⟩ => h ▸ degreeLT_toPoly.mp hp)
-    (fun q hq => ⟨toPolyLinearEquiv.symm q, degreeLT_toPoly.mpr (by
-      show (toPolyLinearEquiv.symm q).toPoly ∈ _
-      rw [show (toPolyLinearEquiv.symm q).toPoly = q from toPolyLinearEquiv.apply_symm_apply q]
-      exact hq), toPolyLinearEquiv.apply_symm_apply q⟩)
-
 theorem degree_le_iff_coeff_zero (p : CPolynomial R) (n : WithBot ℕ) :
     p.degree ≤ n ↔ ∀ k : ℕ, n < k → p.coeff k = 0 := by
     rw [degree_toPoly, Polynomial.degree_le_iff_coeff_zero]
@@ -180,114 +165,133 @@ theorem degree_lt_iff_coeff_zero (p : CPolynomial R) (n : ℕ) :
     rw [degree_toPoly, Polynomial.degree_lt_iff_coeff_zero]
     simp only [coeff_toPoly]
 
+omit [BEq R] [LawfulBEq R] in
 theorem mem_degreeLE {n : WithBot ℕ} {p : (CPolynomial R)} :
-    p ∈ degreeLE R n ↔ degree p ≤ n := by
-    simp [degreeLE]
-    exact Iff.symm (degree_le_iff_coeff_zero p n)
+    p ∈ degreeLE (R := R) n ↔ degree p ≤ n := by
+  rfl
 
+omit [BEq R] [LawfulBEq R] in
 theorem degreeLE_mono (m n : WithBot ℕ) (h_lessThan : m ≤ n) :
-    degreeLE R m ≤ degreeLE R n :=
-    fun _ hf => mem_degreeLE.2 (le_trans (mem_degreeLE.1 hf) h_lessThan)
+    degreeLE (R := R) m ≤ degreeLE (R := R) n :=
+  fun _ hf => mem_degreeLE.2 (le_trans (mem_degreeLE.1 hf) h_lessThan)
 
-theorem mem_degreeLT {n : ℕ} {p : CPolynomial R} : p ∈ degreeLT R n ↔ degree p < n := by
-    simp [degreeLT]
-    rw[degree_lt_iff_coeff_zero]
-    exact Lex.forall
+omit [BEq R] [LawfulBEq R] in
+theorem mem_degreeLT {n : ℕ} {p : CPolynomial R} : p ∈ degreeLT (R := R) n ↔ degree p < n := by
+  rfl
 
-theorem degreeLT_mono {m n : ℕ} (h : m ≤ n) : degreeLT R m ≤ degreeLT R n := fun _ hf =>
+omit [BEq R] [LawfulBEq R] in
+theorem degreeLT_mono {m n : ℕ} (h : m ≤ n) :
+    degreeLT (R := R) m ≤ degreeLT (R := R) n := fun _ hf =>
   mem_degreeLT.2 (lt_of_lt_of_le (mem_degreeLT.1 hf) <| WithBot.coe_le_coe.2 h)
 
-theorem degreeLT_succ_eq_degreeLE {n : ℕ} : degreeLT R (n + 1) = degreeLE R ↑n := by
-  simp +decide [ degreeLT, degreeLE ]
-
-section bases
-
-lemma toPolyLinearEquiv_X_pow [Nontrivial R] (k : ℕ) :
-    toPolyLinearEquiv (R := R) (X ^ k) = Polynomial.X ^ k := by
-  show toPoly (X ^ k) = Polynomial.X ^ k
-  rw [toPoly_pow, X_toPoly]
-
-theorem degreeLE_eq_span_X_pow [DecidableEq R] [Nontrivial R] {n : ℕ} :
-    degreeLE R ↑n =
-    Submodule.span R ↑((Finset.range (n + 1)).image fun n => (X : CPolynomial R) ^ n) := by
-  set e := toPolyLinearEquiv (R := R)
-  apply Submodule.map_injective_of_injective e.injective
-  rw [degreeLE_map_toPolyLinearEquiv, Submodule.map_span, Polynomial.degreeLE_eq_span_X_pow]
-  congr 1
-  simp only [Finset.coe_image, Set.image_image, LinearEquiv.coe_toLinearMap]
-  congr 1; funext k; exact (toPolyLinearEquiv_X_pow (R := R) k).symm
-
-theorem degreeLT_eq_span_X_pow [DecidableEq R] [Nontrivial R] {n : ℕ} :
-    degreeLT R n
-        = Submodule.span R ↑((Finset.range n).image fun n => (X : CPolynomial R) ^ n) := by
-  set e := toPolyLinearEquiv (R := R)
-  apply Submodule.map_injective_of_injective e.injective
-  rw [degreeLT_map_toPolyLinearEquiv, Submodule.map_span, Polynomial.degreeLT_eq_span_X_pow]
-  congr 1
-  simp only [Finset.coe_image, Set.image_image, LinearEquiv.coe_toLinearMap]
-  congr 1; funext k; exact (toPolyLinearEquiv_X_pow (R := R) k).symm
-
-end bases
+omit [BEq R] [LawfulBEq R] in
+theorem degreeLT_succ_eq_degreeLE {n : ℕ} :
+    degreeLT (R := R) (n + 1) = degreeLE (R := R) ↑n := by
+  ext p
+  change p.val.degreeBound < (n + 1 : ℕ) ↔ p.val.degreeBound ≤ (n : WithBot ℕ)
+  cases hd : p.val.degreeBound with
+  | bot =>
+      simp
+  | coe a =>
+      change ((a : WithBot ℕ) < (n + 1 : ℕ)) ↔ ((a : WithBot ℕ) ≤ (n : ℕ))
+      exact WithBot.coe_lt_coe.trans (Nat.lt_succ_iff.trans WithBot.coe_le_coe.symm)
 
 section degreeLTEquiv
 
+lemma monomial_mem_degreeLT [DecidableEq R] {n : ℕ} (i : Fin n) (c : R) :
+    monomial (R := R) (i : ℕ) c ∈ degreeLT (R := R) n := by
+  rw [mem_degreeLT_iff_size_le]
+  by_cases hc : c = 0
+  · simp [monomial, Raw.monomial, hc]
+  · simp [monomial, Raw.monomial, hc, Nat.succ_le_of_lt i.isLt]
+
 lemma degreeLTEquiv_invFun_mem [DecidableEq R] (n : ℕ) (f : Fin n → R) :
-    Finset.univ.sum (fun i : Fin n => monomial (↑i) (f i)) ∈ degreeLT R n := by
-  simp [degreeLT]
-  intro i hi
-  simp [lcoeff, monomial]
-  rw [ Finset.sum_eq_zero ]; intros; simp_all +decide [ CPolynomial.Raw.monomial ];
-  grind
+    Finset.univ.sum (fun i : Fin n => monomial (R := R) (i : ℕ) (f i)) ∈ degreeLT (R := R) n := by
+  refine Finset.induction_on Finset.univ ?_ ?_
+  · exact zero_mem_degreeLT (R := R) n
+  · intro i s hi hs
+    rw [Finset.sum_insert hi]
+    exact add_mem_degreeLT (monomial_mem_degreeLT (R := R) i (f i)) hs
 
 lemma degreeLTEquiv_left_inv [DecidableEq R] (n : ℕ)
-    (p : ↥(degreeLT R n)) :
-    (⟨Finset.univ.sum (fun i : Fin n => monomial (↑i) (coeff p.1 i)),
-      degreeLTEquiv_invFun_mem n (fun i => coeff p.1 i)⟩ : ↥(degreeLT R n)) = p := by
-    apply Subtype.ext
-    rw [eq_iff_coeff]; intro i
-    rw [show coeff (∑ j : Fin n, monomial (↑j) (coeff p.1 j)) i =
-      ∑ j : Fin n, coeff (monomial (↑j) (coeff p.1 j)) i from map_sum (lcoeff R i) _ _]
-    simp only [coeff_monomial]
-    by_cases hi : i < n
-    · rw [Finset.sum_eq_single_of_mem ⟨i, hi⟩ (Finset.mem_univ _)
-        (fun j _ hji => if_neg fun h => hji (Fin.ext (by aesop)))]
-      simp
-    · rw [show coeff p.1 i = 0 from
-        (degree_lt_iff_coeff_zero p.1 n).mp (mem_degreeLT.mp p.2) i (by omega)]
-      exact Finset.sum_eq_zero fun j _ => if_neg (by have := j.isLt; omega)
+    (p : ↥(degreeLT (R := R) n)) :
+    (⟨Finset.univ.sum (fun i : Fin n => monomial (R := R) (↑i) (coeff p.1 i)),
+      degreeLTEquiv_invFun_mem (R := R) n (fun i => coeff p.1 i)⟩ : ↥(degreeLT (R := R) n)) = p := by
+  apply Subtype.ext
+  rw [eq_iff_coeff]
+  intro i
+  rw [show coeff (∑ j : Fin n, monomial (R := R) (↑j) (coeff p.1 j)) i =
+    ∑ j : Fin n, coeff (monomial (R := R) (↑j) (coeff p.1 j)) i from
+      map_sum (lcoeff (R := R) i) _ _]
+  simp only [coeff_monomial]
+  by_cases hi : i < n
+  · rw [Finset.sum_eq_single_of_mem ⟨i, hi⟩ (Finset.mem_univ _)
+      (fun j _ hji => if_neg fun h => hji (Fin.ext h.symm))]
+    simp
+  · rw [show coeff p.1 i = 0 from
+      (degree_lt_iff_coeff_zero p.1 n).mp (mem_degreeLT.mp p.2) i (by omega)]
+    exact Finset.sum_eq_zero fun j _ => if_neg (by have := j.isLt; omega)
 
 lemma degreeLTEquiv_right_inv [DecidableEq R] (n : ℕ)
     (f : Fin n → R) :
     (fun i : Fin n => coeff
-      (Finset.univ.sum (fun j : Fin n => monomial (↑j) (f j))) i) = f := by
-    funext i
-    rw [show coeff (∑ j : Fin n, monomial (↑j) (f j)) ↑i =
-      ∑ j : Fin n, coeff (monomial (↑j) (f j)) ↑i from map_sum (lcoeff R ↑i) _ _]
-    simp only [coeff_monomial]
-    rw [Finset.sum_eq_single_of_mem i (Finset.mem_univ _)
-      (fun j _ hji => if_neg fun h => hji (Fin.ext (by omega)))]
-    simp
+      (Finset.univ.sum (fun j : Fin n => monomial (R := R) (↑j) (f j))) i) = f := by
+  funext i
+  rw [show coeff (∑ j : Fin n, monomial (R := R) (↑j) (f j)) ↑i =
+    ∑ j : Fin n, coeff (monomial (R := R) (↑j) (f j)) ↑i from
+      map_sum (lcoeff (R := R) ↑i) _ _]
+  simp only [coeff_monomial]
+  rw [Finset.sum_eq_single_of_mem i (Finset.mem_univ _)
+    (fun j _ hji => if_neg fun h => hji (Fin.ext (by omega)))]
+  simp
 
-noncomputable def degreeLTLinearEquiv [DecidableEq R] (n : ℕ) : degreeLT R n ≃ₗ[R] (Fin n → R) :=
-    LinearEquiv.ofBijective (degreeLTEquiv R n)
-        ⟨Function.HasLeftInverse.injective ⟨fun f =>
-              ⟨_, degreeLTEquiv_invFun_mem n f⟩, degreeLTEquiv_left_inv n⟩,
-            fun f => ⟨⟨_, degreeLTEquiv_invFun_mem n f⟩, degreeLTEquiv_right_inv n f⟩⟩
+def degreeLTEquiv [DecidableEq R] (n : ℕ) :
+    ↥(degreeLT (R := R) n) ≃ₗ[R] (Fin n → R) where
+  toFun := degreeLTCoeffs (R := R) n
+  invFun := fun f => ⟨Finset.univ.sum (fun i : Fin n => monomial (R := R) (↑i) (f i)),
+    degreeLTEquiv_invFun_mem (R := R) n f⟩
+  left_inv := degreeLTEquiv_left_inv (R := R) n
+  right_inv := degreeLTEquiv_right_inv (R := R) n
+  map_add' := by
+    intro p q
+    exact (degreeLTCoeffs (R := R) n).map_add p q
+  map_smul' := by
+    intro r p
+    exact (degreeLTCoeffs (R := R) n).map_smul r p
+
+abbrev degreeLTLinearEquiv [DecidableEq R] (n : ℕ) :
+    ↥(degreeLT (R := R) n) ≃ₗ[R] (Fin n → R) :=
+  degreeLTEquiv (R := R) n
+
+theorem degreeLTEquiv_toPoly [DecidableEq R] {n : ℕ} {p : CPolynomial R}
+    (hp : p ∈ degreeLT (R := R) n) (i : Fin n) :
+      degreeLTEquiv (R := R) n ⟨p, hp⟩ i =
+          Polynomial.degreeLTEquiv R n ⟨p.toPoly, degreeLT_toPoly.mp hp⟩ i := by
+  simp [degreeLTEquiv, degreeLTCoeffs, Polynomial.degreeLTEquiv, ← coeff_toPoly]
 
 theorem degreeLTEquiv_eq_zero_iff_eq_zero [DecidableEq R] {n : ℕ} {p : CPolynomial R}
-    (hp : p ∈ degreeLT R n) :
-    degreeLTEquiv R n ⟨p, hp⟩ = 0 ↔ p = 0 := by
-    change (degreeLTLinearEquiv n) ⟨p, hp⟩ = 0 ↔ p = 0
-    rw [← map_zero (degreeLTLinearEquiv n), (degreeLTLinearEquiv n).injective.eq_iff,
-      Subtype.ext_iff, Submodule.coe_zero]
+    (hp : p ∈ degreeLT (R := R) n) :
+    degreeLTEquiv (R := R) n ⟨p, hp⟩ = 0 ↔ p = 0 := by
+  constructor
+  · intro h
+    have h_subtype : (⟨p, hp⟩ : ↥(degreeLT (R := R) n)) = 0 :=
+      (degreeLTEquiv (R := R) n).injective (by simpa using h)
+    exact congrArg Subtype.val h_subtype
+  · rintro rfl
+    have h_subtype : (⟨(0 : CPolynomial R), hp⟩ : ↥(degreeLT (R := R) n)) = 0 := by
+      apply Subtype.ext
+      rfl
+    rw [h_subtype]
+    exact map_zero (degreeLTEquiv (R := R) n)
 
 theorem eval_eq_sum_degreeLTEquiv [DecidableEq R] {n : ℕ} {p : CPolynomial R}
-    (hp : p ∈ degreeLT R n) (x : R) :
+    (hp : p ∈ degreeLT (R := R) n) (x : R) :
     eval x p =
-      Finset.univ.sum (fun i : Fin n => degreeLTEquiv R n ⟨p, hp⟩ i * x ^ (i : ℕ)) := by
-      rw [eval_toPoly, Polynomial.eval_eq_sum_degreeLTEquiv (degreeLT_toPoly.mp hp)]
-      congr 1; ext i; congr 1
-      rw [degreeLTEquiv_toPoly hp i]
+      Finset.univ.sum (fun i : Fin n => degreeLTEquiv (R := R) n ⟨p, hp⟩ i * x ^ (i : ℕ)) := by
+  rw [eval_toPoly, Polynomial.eval_eq_sum_degreeLTEquiv (degreeLT_toPoly.mp hp)]
+  refine Finset.sum_congr rfl ?_
+  intro i _
+  rw [degreeLTEquiv_toPoly (R := R) hp i]
 
 end degreeLTEquiv
 

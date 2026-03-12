@@ -96,6 +96,12 @@ def natDegree (p : CPolynomial.Raw R) : ℕ :=
 of the trimmed array, or `0` if the trimmed array is empty. -/
 def leadingCoeff (p : CPolynomial.Raw R) : R := p.trim.getLastD 0
 
+/-- Semantic canonicality for raw coefficient arrays: a polynomial is canonical iff its
+last stored coefficient, when present, is nonzero. This invariant is independent of any
+particular `BEq` instance. -/
+def IsCanonical [Zero R] (p : CPolynomial.Raw R) : Prop :=
+  ∀ hp : p.size > 0, p.getLast hp ≠ 0
+
 /-- A polynomial is canonical if it has no trailing zeros, i.e. `p.trim = p`. -/
 def canonical (p : CPolynomial.Raw R) : Prop := p.trim = p
 
@@ -397,7 +403,7 @@ theorem lastNonzero_last_iff [LawfulBEq R] {p : CPolynomial.Raw R} (hp : p.size 
         linarith
 
 theorem canonical_iff [LawfulBEq R] {p : CPolynomial.Raw R} :
-    p.trim = p ↔ ∀ hp : p.size > 0, p.getLast hp ≠ 0 := by
+    p.trim = p ↔ IsCanonical p := by
   constructor
   · intro h hp
     rwa [← lastNonzero_last_iff hp, ← canonical_nonempty_iff hp]
@@ -406,6 +412,28 @@ theorem canonical_iff [LawfulBEq R] {p : CPolynomial.Raw R} :
     · exact canonical_of_size_zero h_zero
     · rw [canonical_nonempty_iff hp, lastNonzero_last_iff hp]
       exact h hp
+
+omit [Semiring R] [BEq R] in
+theorem isCanonical_empty [Zero R] : IsCanonical (mk (R := R) #[]) := by
+  intro hp
+  simp at hp
+
+omit [Semiring R] [BEq R] in
+theorem isCanonical_of_size_zero [Zero R] {p : CPolynomial.Raw R} (hp : p.size = 0) :
+    IsCanonical p := by
+  intro hPos
+  simp [hp] at hPos
+
+theorem trim_eq_of_isCanonical [LawfulBEq R] {p : CPolynomial.Raw R} (hp : IsCanonical p) :
+    p.trim = p :=
+  canonical_iff.mpr hp
+
+theorem isCanonical_of_trim_eq [LawfulBEq R] {p : CPolynomial.Raw R} (hp : p.trim = p) :
+    IsCanonical p :=
+  canonical_iff.mp hp
+
+theorem isCanonical_trim [LawfulBEq R] (p : CPolynomial.Raw R) : IsCanonical p.trim :=
+  isCanonical_of_trim_eq (trim_twice p)
 
 @[grind =]
 lemma push_trim [LawfulBEq R] (arr : Array R) (c : R) :
@@ -440,6 +468,11 @@ theorem canonical_ext [LawfulBEq R] {p q : CPolynomial.Raw R} (hp : p.trim = p) 
   intro h_equiv
   rw [← hp, ← hq]
   exact eq_of_equiv h_equiv
+
+theorem isCanonical_ext [LawfulBEq R] {p q : CPolynomial.Raw R}
+    (hp : IsCanonical p) (hq : IsCanonical q) :
+    equiv p q → p = q := by
+  exact canonical_ext (trim_eq_of_isCanonical hp) (trim_eq_of_isCanonical hq)
 
 end Trim
 

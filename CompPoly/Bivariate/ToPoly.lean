@@ -53,7 +53,7 @@ def ofPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
     [DecidableEq R] (p : R[X][Y]) : CBivariate R :=
   (p.support).sum (fun j ↦
     let cj := p.coeff j
-    CPolynomial.monomial j ⟨cj.toImpl, CPolynomial.Raw.trim_toImpl cj⟩)
+    CPolynomial.monomial j ⟨cj.toImpl, CPolynomial.Raw.isCanonical_toImpl cj⟩)
 
 /-- `toPoly` preserves addition. -/
 lemma toPoly_add {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
@@ -116,7 +116,7 @@ lemma toPoly_monomial {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] 
 lemma ofPoly_monomial {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] [DecidableEq R]
     (n : ℕ) (c : R[X]) :
     ofPoly (monomial n c) =
-    CPolynomial.monomial n ⟨c.toImpl, CPolynomial.Raw.trim_toImpl c⟩ := by
+    CPolynomial.monomial n ⟨c.toImpl, CPolynomial.Raw.isCanonical_toImpl c⟩ := by
       unfold CBivariate.ofPoly
       simp +decide
       rw [ Finset.sum_eq_single n ] <;> simp +decide [ Polynomial.coeff_monomial ]
@@ -187,7 +187,7 @@ theorem ofPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R] [
             CPolynomial.coeff
               (CPolynomial.monomial j
                 ⟨Polynomial.toImpl (Polynomial.coeff p j),
-                  CPolynomial.Raw.trim_toImpl (Polynomial.coeff p j)⟩) n) := by
+                  CPolynomial.Raw.isCanonical_toImpl (Polynomial.coeff p j)⟩) n) := by
         unfold CBivariate.ofPoly
         induction' p.support using Finset.induction with j s hj ih
         · exact CPolynomial.eq_iff_coeff.mpr (congrFun rfl)
@@ -407,7 +407,6 @@ theorem support_toPoly_outer {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [R
 /-- `toPoly` preserves Y-degree. -/
 theorem natDegreeY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
     (f : CBivariate R) : (toPoly f).natDegree = f.natDegreeY := by
-      unfold CBivariate.natDegreeY
       -- The degree of the polynomial is the supremum of the exponents in its support.
       have h_deg : ∀ p : Polynomial (Polynomial R), p.natDegree = p.support.sup id := by
         intro p
@@ -419,7 +418,8 @@ theorem natDegreeY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring
       rw [ h_deg, support_toPoly_outer ]
       -- Apply the fact that the degree of a polynomial is equal to the supremum of its support.
       apply Eq.symm
-      exact CPolynomial.natDegree_eq_support_sup f
+      simpa [CBivariate.natDegreeY, CBivariate.supportY, id] using
+        (CPolynomial.natDegree_eq_support_sup (p := f))
 
 /-- The outer `Y`-coefficient formula used for X-degree transport. -/
 theorem coeff_toPoly_Y {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
@@ -654,16 +654,12 @@ theorem evalY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
 theorem leadingCoeffY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
     (f : CBivariate R) :
     (leadingCoeffY (R := R) f).toPoly = (toPoly f).leadingCoeff := by
-  have h_leadingCoeffY : (f.val.leadingCoeff).toPoly = (toPoly f).coeff (f.val.natDegree) := by
-    rw [ CBivariate.toPoly_coeff ]
-    congr
-    convert CompPoly.CPolynomial.leadingCoeff_eq_coeff_natDegree f
-    exact instDecidableEqOfLawfulBEq
-  convert h_leadingCoeffY
-  rw [ Polynomial.leadingCoeff, Polynomial.natDegree ]
-  by_cases h : f.toPoly = 0 <;> simp_all +decide [ Polynomial.degree_eq_natDegree ]
-  rw [ CompPoly.CBivariate.natDegreeY_toPoly ]
-  rfl
+  classical
+  have h_leadingCoeffY : f.leadingCoeff.toPoly = (toPoly f).coeff f.natDegree := by
+    rw [CBivariate.toPoly_coeff]
+    exact congrArg CPolynomial.toPoly (CompPoly.CPolynomial.leadingCoeff_eq_coeff_natDegree (p := f))
+  rw [← Polynomial.coeff_natDegree, CompPoly.CBivariate.natDegreeY_toPoly]
+  simpa [CBivariate.leadingCoeffY, CBivariate.natDegreeY] using h_leadingCoeffY
 
 /--
 `swap` exchanges X- and Y-exponents.

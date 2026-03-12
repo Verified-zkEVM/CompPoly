@@ -102,6 +102,7 @@ omit [BEq R] in
 lemma Raw.toPoly_zero : (0 : CPolynomial.Raw R).toPoly = 0 := by
   simp [Raw.toPoly, Raw.eval₂]
 
+omit [BEq R] in
 lemma toPoly_zero : (0 : CPolynomial R).toPoly = 0 := by
   apply Raw.toPoly_zero
 
@@ -148,7 +149,7 @@ lemma toPoly_prod.{u} {R : Type*} [BEq R] [Field R] [LawfulBEq R] {ι : Type u} 
 noncomputable def ringEquiv [LawfulBEq R] :
   CPolynomial R ≃+* Polynomial R where
   toFun := CPolynomial.toPoly
-  invFun := fun p => ⟨p.toImpl, trim_toImpl p⟩
+  invFun := fun p => ⟨p.toImpl, isCanonical_toImpl p⟩
   left_inv := by
     unfold Function.LeftInverse; intro x
     apply Subtype.ext; apply toImpl_toPoly_of_canonical
@@ -197,6 +198,7 @@ theorem Raw.eval₂_toPoly {S : Type*} [Semiring S] (f : R →+* S) (x : S) (p :
     rcases t with ⟨a, i⟩
     simp [Polynomial.eval₂_add, Polynomial.C_mul_X_pow_eq_monomial]
 
+omit [BEq R] in
 theorem eval₂_toPoly {S : Type*} [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial R) :
     eval₂ f x p = p.toPoly.eval₂ f x := by
   simpa [CompPoly.CPolynomial.eval₂, CompPoly.CPolynomial.toPoly] using

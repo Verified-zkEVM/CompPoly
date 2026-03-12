@@ -27,16 +27,14 @@ namespace CompPoly
   Each `p : CBivariate R` is a polynomial in `Y` whose coefficients are univariate polynomials
   in `X`. The outer structure is indexed by powers of `Y`, the inner by powers of `X`.
   -/
-def CBivariate (R : Type*) [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R] :=
+def CBivariate (R : Type*) [Zero R] :=
     CPolynomial (CPolynomial R)
 
 namespace CBivariate
 
-variable {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R]
+section ZeroOnly
 
-section Semiring
-
-variable [Semiring R]
+variable {R : Type*} [Zero R]
 
 /-- Extensionality: two bivariate polynomials are equal if their underlying values are. -/
 @[ext] theorem ext {p q : CBivariate R} (h : p.val = q.val) : p = q :=
@@ -47,6 +45,13 @@ instance : Coe (CBivariate R) (CPolynomial (CPolynomial R)) where coe := id
 
 /-- The zero bivariate polynomial is canonical. -/
 instance : Inhabited (CBivariate R) := inferInstanceAs (Inhabited (CPolynomial (CPolynomial R)))
+
+end ZeroOnly
+
+section Semiring
+
+variable {R : Type*}
+variable [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
 
 /-- Additive structure on CBivariate R -/
 instance : AddCommMonoid (CBivariate R) :=
@@ -60,31 +65,31 @@ end Semiring
 
 section CommSemiring
 
-variable [CommSemiring R]
+variable {R : Type*}
+variable [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
 
-instance : CommSemiring (CBivariate R) := by
-  letI : CommSemiring (CPolynomial R) := inferInstance
-  simpa [CBivariate] using (inferInstance : CommSemiring (CPolynomial (CPolynomial R)))
+instance : CommSemiring (CBivariate R) :=
+  inferInstanceAs (CommSemiring (CPolynomial (CPolynomial R)))
 
 end CommSemiring
 
 section Ring
 
-variable [Ring R]
+variable {R : Type*}
+variable [Ring R] [BEq R] [LawfulBEq R] [Nontrivial R]
 
-instance : Ring (CBivariate R) := by
-  letI : Ring (CPolynomial R) := inferInstance
-  simpa [CBivariate] using (inferInstance : Ring (CPolynomial (CPolynomial R)))
+instance : Ring (CBivariate R) :=
+  inferInstanceAs (Ring (CPolynomial (CPolynomial R)))
 
 end Ring
 
 section CommRing
 
-variable [CommRing R]
+variable {R : Type*}
+variable [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R]
 
-instance : CommRing (CBivariate R) := by
-  letI : CommRing (CPolynomial R) := inferInstance
-  simpa [CBivariate] using (inferInstance : CommRing (CPolynomial (CPolynomial R)))
+instance : CommRing (CBivariate R) :=
+  inferInstanceAs (CommRing (CPolynomial (CPolynomial R)))
 
 end CommRing
 
@@ -133,7 +138,7 @@ def supportX (f : CBivariate R) : Finset ℕ :=
 /-- The `Y`-degree (degree when viewed as a polynomial in `Y`).
     ArkLib: `Polynomial.Bivariate.natDegreeY`. -/
 def natDegreeY (f : CBivariate R) : ℕ :=
-  f.val.natDegree
+  f.natDegree
 
 /-- The `X`-degree: maximum over all Y-coefficients of their degree in X.
     ArkLib: `Polynomial.Bivariate.natDegreeX`. -/
@@ -172,7 +177,7 @@ def swap [DecidableEq R] (f : CBivariate R) : CBivariate R :=
 /-- Leading coefficient when viewed as a polynomial in Y.
     ArkLib: `Polynomial.Bivariate.leadingCoeffY`. -/
 def leadingCoeffY (f : CBivariate R) : CPolynomial R :=
-  f.val.leadingCoeff
+  f.leadingCoeff
 
 /-- Leading coefficient when viewed as a polynomial in X.
     The coefficient of X^(degreeX f): a polynomial in Y. -/
