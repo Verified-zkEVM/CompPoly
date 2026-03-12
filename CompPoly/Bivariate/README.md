@@ -1,6 +1,6 @@
 # Bivariate Polynomials
 
-Formally verified computable bivariate polynomials for [CompPoly](../README.md), represented as `CPolynomial (CPolynomial R)` — polynomials in Y whose coefficients are univariate polynomials in X. Matches Mathlib's `R[X][Y]` and is compatible with [ArkLib](https://github.com/Verified-zkEVM/ArkLib)'s `Polynomial.Bivariate` interface.
+Formally verified computable bivariate polynomials for [CompPoly](../../README.md), represented as `CPolynomial (CPolynomial R)` — polynomials in Y whose coefficients are univariate polynomials in X. Matches Mathlib's `R[X][Y]` and is compatible with [ArkLib](https://github.com/Verified-zkEVM/ArkLib)'s `Polynomial.Bivariate` interface.
 
 ## Type
 
@@ -11,7 +11,7 @@ Formally verified computable bivariate polynomials for [CompPoly](../README.md),
 ## Modules
 
 - **Basic.lean** — Type definition, constructors (`CC`, `C_X`, `Y`, `monomialXY`), operations (`coeff`, `evalX`, `evalY`, `evalEval`, `degreeX`, `natDegreeY`, `totalDegree`, `leadingCoeffY`, `leadingCoeffX`, `swap`, `support`).
-- **ToPoly.lean** — Conversion to/from Mathlib's `R[X][Y]` via `toPoly` and `ofPoly` (stubs; proofs to follow).
+- **ToPoly.lean** — Conversion to/from Mathlib's `R[X][Y]` via `toPoly` and `ofPoly`, with round-trip theorems, ring equivalence, and correctness lemmas for coefficients, evaluation, support, and degree APIs.
 
 ## Indexing
 

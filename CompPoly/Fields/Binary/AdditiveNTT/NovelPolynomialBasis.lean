@@ -8,7 +8,7 @@ import CompPoly.Data.Nat.Bitwise
 import CompPoly.Data.Polynomial.Frobenius
 import CompPoly.Data.Polynomial.MonomialBasis
 import Mathlib.LinearAlgebra.StdBasis
-import Mathlib.Algebra.Polynomial.Degree.Definitions
+import Mathlib.Algebra.Polynomial.Degree.Defs
 
 /-!
 # Novel Polynomial Basis
@@ -37,7 +37,7 @@ algebra over its prime-characteristic subfield `𝔽q`, and an `𝔽q`-basis `β
     over F2 (extended abstract)*][GGJ96]
 -/
 
-set_option linter.style.longFile 1600
+set_option linter.style.longFile 1800
 
 open Polynomial FiniteDimensional Finset Module
 
@@ -1332,7 +1332,7 @@ lemma degree_Xⱼ (ℓ : ℕ) (h_ℓ : ℓ ≤ r) (j : Fin (2 ^ ℓ)) :
       intro i _
       rw [degree_pow]
       rw [degree_normalizedW 𝔽q β (i :=Fin.castLE h_ℓ i)]
-      simp only [Nat.getBit, Nat.and_one_is_mod, Fin.coe_castLE, nsmul_eq_mul, Nat.cast_ite,
+      simp only [Nat.getBit, Nat.and_one_is_mod, Fin.val_castLE, nsmul_eq_mul, Nat.cast_ite,
         Nat.cast_pow, Nat.cast_ofNat, CharP.cast_eq_zero, hF₂.out]
       -- ⊢ ↑(↑j >>> ↑i % 2) * 2 ^ ↑i = if ↑j >>> ↑i % 2 = 1 then 2 ^ ↑i else 0
       by_cases h: (j.val >>> i.val) % 2 = 1

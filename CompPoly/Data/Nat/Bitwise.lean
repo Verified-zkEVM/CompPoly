@@ -219,7 +219,7 @@ def popCount (n : Nat) := (Nat.digits 2 n).sum
 lemma getBit_lt_2 {k n : Nat} : getBit k n < 2 := by
   unfold getBit
   rw [Nat.and_one_is_mod]
-  simp only [gt_iff_lt, Nat.ofNat_pos, Nat.mod_lt]
+  simp only [Nat.ofNat_pos, Nat.mod_lt]
 
 lemma getBit_eq_testBit (k n : Nat) : getBit k n = if n.testBit k then 1 else 0 := by
   unfold getBit
@@ -278,8 +278,7 @@ lemma getLowBits_le_self {n : ℕ} (numLowBits : ℕ) : getLowBits numLowBits n 
 
 lemma and_eq_zero_iff {n m : ℕ} : n &&& m = 0 ↔ ∀ k, (n >>> k) &&& (m >>> k) = 0 := by
   constructor
-  · intro h_and_zero -- h_and_zero : n &&& m = 0
-    intro k
+  · intro h_and_zero k -- h_and_zero : n &&& m = 0
     rw [← Nat.shiftRight_and_distrib]
     rw [h_and_zero]
     rw [Nat.zero_shiftRight]
@@ -291,8 +290,7 @@ lemma and_eq_zero_iff {n m : ℕ} : n &&& m = 0 ↔ ∀ k, (n >>> k) &&& (m >>> 
 lemma eq_iff_eq_all_getBits {n m : ℕ} : n = m ↔ ∀ k, getBit k n = getBit k m := by
   unfold getBit
   constructor
-  · intro h_eq -- h_eq : n = m
-    intro k
+  · intro h_eq k -- h_eq : n = m
     rw [h_eq]
   · intro h_all_getBits -- h_all_getBits : ∀ k, (n >>> k) &&& 1 = (m >>> k) &&& 1
     apply Nat.eq_of_testBit_eq
@@ -315,8 +313,7 @@ lemma shiftRight_and_one_distrib {n m k : ℕ} :
 lemma and_eq_zero_iff_and_each_getBit_eq_zero {n m : ℕ} :
     n &&& m = 0 ↔ ∀ k, Nat.getBit k n &&& Nat.getBit k m = 0 := by
   constructor
-  · intro h_and_zero
-    intro k
+  · intro h_and_zero k
     have h_k := shiftRight_and_one_distrib (n := n) (m := m) (k := k)
     rw [←h_k]
     rw [h_and_zero, getBit, Nat.zero_shiftRight, Nat.zero_and]
@@ -605,7 +602,7 @@ lemma sum_eq_xor_plus_twice_and (n : Nat) : ∀ m : ℕ, n + m = (n ^^^ m) + 2 *
       rw [←h_m]
       unfold mVal
       simp only [h_bm, h_m2]
-      exact Nat.bit_decomp m
+      exact Nat.bit_bodd_div2 m
     rw [←h_mVal_eq_m]
     -- h_prev : n2 + m2 = n2 ^^^ m2 + 2 * (n2 &&& m2)
     -- ⊢ nVal + mVal = nVal ^^^ mVal + 2 * (nVal &&& mVal)
@@ -719,16 +716,16 @@ lemma xor_of_and_eq_zero_is_or {n m : ℕ} (h_n_AND_m : n &&& m = 0) : n ^^^ m =
   intro k
   rw [Nat.shiftRight_xor_distrib, Nat.shiftRight_or_distrib]
   rw [Nat.and_xor_distrib_right] -- lhs
-  rw [Nat.and_distrib_right] -- rhs
+  rw [Nat.and_or_distrib_right] -- rhs
   -- ⊢ (n >>> k &&& 1) ^^^ (m >>> k &&& 1) = (n >>> k &&& 1) ||| (m >>> k &&& 1)
   set getBitN := n >>> k &&& 1
   set getBitM := m >>> k &&& 1
   have h_getBitN : getBitN < 2 := by
     simp only [getBitN, Nat.and_one_is_mod]
-    simp only [gt_iff_lt, Nat.ofNat_pos, Nat.mod_lt (x := n >>> k) (y := 2)]
+    simp only [Nat.ofNat_pos, Nat.mod_lt (x := n >>> k) (y := 2)]
   have h_getBitM : getBitM < 2 := by
     simp only [getBitM, Nat.and_one_is_mod]
-    simp only [gt_iff_lt, Nat.ofNat_pos, Nat.mod_lt (x := m >>> k) (y := 2)]
+    simp only [Nat.ofNat_pos, Nat.mod_lt (x := m >>> k) (y := 2)]
   -- ⊢ getBitN ^^^ getBitM = getBitN ||| getBitM
   have h_and_getBitN_getBitM : (getBitN &&& getBitM) = 0 := by
     exact and_eq_zero_iff_and_each_getBit_eq_zero.mp h_n_AND_m k
@@ -758,13 +755,13 @@ lemma xor_eq_sub_iff_submask {n m : ℕ} (h: m ≤ n) : n ^^^ m = n - m ↔ n &&
       cases (Nat.mul_eq_zero.mp h_sum) with
       | inl h_two => contradiction -- The case 2 = 0 is impossible.
       | inr h_and => -- h_and : n &&& m ^^^ m = 0
-        simp only [Nat.xor_eq_zero] at h_and
+        simp only [Nat.xor_eq_zero_iff] at h_and
         conv_lhs => enter [1]; rw [←h_and] -- h_and : n &&& m = m
         rw [Nat.and_xor_distrib_right] -- ⊢ n &&& m ^^^ n &&& m &&& m = 0
         rw [Nat.and_assoc, Nat.and_self, Nat.xor_self]
     -- ⊢ (n ^^^ m) &&& m = 0
     rw [Nat.and_xor_distrib_right, Nat.and_self] at h_and_zero --h_and_zero : n &&& m ^^^ m = 0
-    rw [Nat.xor_eq_zero] at h_and_zero
+    rw [Nat.xor_eq_zero_iff] at h_and_zero
     exact h_and_zero
   · intro h
     rw [Nat.sub_eq_of_eq_add (a:=n) (c:=n^^^m) (b:=m)]
@@ -782,10 +779,10 @@ lemma getBit_of_add_distrib {n m k : ℕ}
   set getBitM := m >>> k &&& 1
   have h_getBitN : getBitN < 2 := by
     simp only [getBitN, Nat.and_one_is_mod]
-    simp only [gt_iff_lt, Nat.ofNat_pos, Nat.mod_lt (x := n >>> k) (y := 2)]
+    simp only [Nat.ofNat_pos, Nat.mod_lt (x := n >>> k) (y := 2)]
   have h_getBitM : getBitM < 2 := by
     simp only [getBitM, Nat.and_one_is_mod]
-    simp only [gt_iff_lt, Nat.ofNat_pos, Nat.mod_lt (x := m >>> k) (y := 2)]
+    simp only [Nat.ofNat_pos, Nat.mod_lt (x := m >>> k) (y := 2)]
   have h_getBitN_and_getBitM : (getBitN &&& getBitM) = 0 := by
     exact and_eq_zero_iff_and_each_getBit_eq_zero.mp h_n_AND_m k
   exact (sum_of_and_eq_zero_is_xor (n := getBitN) (m := getBitM) h_getBitN_and_getBitM).symm
@@ -850,7 +847,7 @@ lemma getBit_of_or {n m k: ℕ} : getBit k (n ||| m) = getBit k n ||| getBit k m
   unfold getBit
   rw [Nat.shiftRight_or_distrib]
   conv_lhs =>
-    rw [Nat.and_distrib_right]
+    rw [Nat.and_or_distrib_right]
 
 lemma getBit_of_xor {n m k: ℕ} : getBit k (n ^^^ m) = getBit k n ^^^ getBit k m := by
   unfold getBit
@@ -1209,7 +1206,7 @@ lemma num_eq_highBits_add_lowBits {n: ℕ} (numLowBits: ℕ) :
   have h_and := and_highBits_lowBits_eq_zero (n := n) (numLowBits := numLowBits)
   rw [sum_of_and_eq_zero_is_or h_and]
   --- now reason on bitwise operations only
-  rw [Nat.shiftRight_or_distrib, Nat.and_distrib_right]
+  rw [Nat.shiftRight_or_distrib, Nat.and_or_distrib_right]
   change getBit k n = getBit k ((n >>> numLowBits) <<< numLowBits)
     ||| getBit k (getLowBits numLowBits n)
   rw [h_getBit_highBits_shl, h_getBit_lowBits]
