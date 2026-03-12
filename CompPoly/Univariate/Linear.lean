@@ -31,7 +31,7 @@ end LinearMaps
 
 section DegreeBounds
 
-variable [Semiring R] [BEq R]
+variable [Zero R]
 
 /-- The set of `CPolynomial R` consisting of polynomials of degree ≤ `n`. -/
 def degreeLE (n : WithBot ℕ) : Set (CPolynomial R) :=
@@ -41,7 +41,6 @@ def degreeLE (n : WithBot ℕ) : Set (CPolynomial R) :=
 def degreeLT (n : ℕ) : Set (CPolynomial R) :=
   { p | p.val.degreeBound < n }
 
-omit [BEq R] in
 /-- `degreeLT n` is exactly the bounded-size carrier storing at most `n` coefficients. -/
 theorem mem_degreeLT_iff_size_le {n : ℕ} {p : CPolynomial R} :
     p ∈ degreeLT (R := R) n ↔ p.val.size ≤ n := by
@@ -51,7 +50,6 @@ theorem mem_degreeLT_iff_size_le {n : ℕ} {p : CPolynomial R} :
   | succ m =>
       simp [degreeLT, Raw.degreeBound, hs]
 
-omit [BEq R] in
 /-- The zero polynomial has bounded degree for every cutoff. -/
 theorem zero_mem_degreeLT (n : ℕ) : (0 : CPolynomial R) ∈ degreeLT (R := R) n := by
   rw [mem_degreeLT_iff_size_le]
@@ -96,9 +94,19 @@ theorem smul_mem_degreeLT {n : ℕ} (r : R) {p : CPolynomial R}
     _ = p.val.size := by simp [Raw.smul]
     _ ≤ n := hp
 
-instance (n : ℕ) : AddCommMonoid ↥(degreeLT (R := R) n) where
+instance (n : ℕ) : Zero ↥(degreeLT (R := R) n) where
   zero := ⟨0, zero_mem_degreeLT (R := R) n⟩
+
+instance (n : ℕ) : Add ↥(degreeLT (R := R) n) where
   add p q := ⟨p.1 + q.1, add_mem_degreeLT p.2 q.2⟩
+
+instance (n : ℕ) : SMul ℕ ↥(degreeLT (R := R) n) where
+  smul m p := ⟨m • p.1, nsmul_mem_degreeLT (R := R) (n := n) (m := m) p.2⟩
+
+instance (n : ℕ) : SMul R ↥(degreeLT (R := R) n) where
+  smul r p := ⟨r • p.1, smul_mem_degreeLT (R := R) (n := n) r p.2⟩
+
+instance (n : ℕ) : AddCommMonoid ↥(degreeLT (R := R) n) where
   add_assoc := by
     intro a b c
     apply Subtype.ext
@@ -115,7 +123,7 @@ instance (n : ℕ) : AddCommMonoid ↥(degreeLT (R := R) n) where
     intro a
     apply Subtype.ext
     exact CPolynomial.add_zero a.1
-  nsmul m p := ⟨m • p.1, nsmul_mem_degreeLT (R := R) (n := n) (m := m) p.2⟩
+  nsmul := (· • ·)
   nsmul_zero := by
     intro p
     apply Subtype.ext
@@ -126,7 +134,7 @@ instance (n : ℕ) : AddCommMonoid ↥(degreeLT (R := R) n) where
     simpa using (CPolynomial.nsmul_succ m p.1)
 
 instance (n : ℕ) : Module R ↥(degreeLT (R := R) n) where
-  smul r p := ⟨r • p.1, smul_mem_degreeLT (R := R) (n := n) r p.2⟩
+  smul := (· • ·)
   one_smul := by
     intro p
     apply Subtype.ext
@@ -154,7 +162,7 @@ instance (n : ℕ) : Module R ↥(degreeLT (R := R) n) where
 
 /-- The first `n` coefficients on `degreeLT n` form a computable linear map to `Fin n → R`. -/
 def degreeLTCoeffs (n : ℕ) : ↥(degreeLT (R := R) n) →ₗ[R] (Fin n → R) where
-  toFun p i := coeff p.1 i
+  toFun p i := coeff p.1 ↑i
   map_add' := by
     intro p q
     funext i

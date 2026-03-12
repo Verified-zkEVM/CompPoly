@@ -58,7 +58,12 @@ theorem natDegree_toPoly [LawfulBEq R] (p : CPolynomial R) :
     p.natDegree = p.toPoly.natDegree := by
   by_cases hp : p = 0
   · subst hp
-    rw [toPoly_zero, CPolynomial.natDegree, CPolynomial.Raw.natDegreeBound, CPolynomial.Raw.degreeBound]
+    rw [
+      toPoly_zero,
+      CPolynomial.natDegree,
+      CPolynomial.Raw.natDegreeBound,
+      CPolynomial.Raw.degreeBound
+    ]
     rfl
   · have hsize := size_eq_toPoly_natDegree_succ p hp
     cases hs : p.val.size with
@@ -66,7 +71,13 @@ theorem natDegree_toPoly [LawfulBEq R] (p : CPolynomial R) :
         simp [hs] at hsize
     | succ n =>
         have hnat : p.toPoly.natDegree = n := by omega
-        rw [hnat, CPolynomial.natDegree, CPolynomial.Raw.natDegreeBound, CPolynomial.Raw.degreeBound, hs]
+        rw [
+          hnat,
+          CPolynomial.natDegree,
+          CPolynomial.Raw.natDegreeBound,
+          CPolynomial.Raw.degreeBound,
+          hs
+        ]
         rfl
 
 theorem leadingCoeff_toPoly [LawfulBEq R] (p : CPolynomial R) :
@@ -215,8 +226,10 @@ lemma degreeLTEquiv_invFun_mem [DecidableEq R] (n : ℕ) (f : Fin n → R) :
 
 lemma degreeLTEquiv_left_inv [DecidableEq R] (n : ℕ)
     (p : ↥(degreeLT (R := R) n)) :
-    (⟨Finset.univ.sum (fun i : Fin n => monomial (R := R) (↑i) (coeff p.1 i)),
-      degreeLTEquiv_invFun_mem (R := R) n (fun i => coeff p.1 i)⟩ : ↥(degreeLT (R := R) n)) = p := by
+    (⟨
+      Finset.univ.sum (fun i : Fin n => monomial (R := R) (↑i) (coeff p.1 i)),
+      degreeLTEquiv_invFun_mem (R := R) n (fun i => coeff p.1 i)
+    ⟩ : ↥(degreeLT (R := R) n)) = p := by
   apply Subtype.ext
   rw [eq_iff_coeff]
   intro i

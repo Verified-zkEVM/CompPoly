@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 CompPoly. All rights reserved.
+Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
@@ -14,28 +14,28 @@ import CompPoly.Univariate.ToPoly.Degree
 namespace CompPoly
 namespace CPolynomial
 
-private def natBEqEq : BEq Nat := ⟨fun a b => decide (a = b)⟩
+private def nat_beq_eq : BEq Nat := ⟨fun a b => decide (a = b)⟩
 
-private theorem natLawfulBEqEq : @LawfulBEq Nat natBEqEq := by
-  letI : BEq Nat := natBEqEq
+private theorem nat_lawful_beq_eq : @LawfulBEq Nat nat_beq_eq := by
+  letI : BEq Nat := nat_beq_eq
   refine { rfl := ?_, eq_of_beq := ?_ }
   · intro a
-    simp [natBEqEq]
+    simp [nat_beq_eq]
   · intro a b h
-    simpa [natBEqEq] using h
+    simpa [nat_beq_eq] using h
 
-private def natBEqSucc : BEq Nat := ⟨fun a b => decide (a.succ = b.succ)⟩
+private def nat_beq_succ : BEq Nat := ⟨fun a b => decide (a.succ = b.succ)⟩
 
-private theorem natLawfulBEqSucc : @LawfulBEq Nat natBEqSucc := by
-  letI : BEq Nat := natBEqSucc
+private theorem nat_lawful_beq_succ : @LawfulBEq Nat nat_beq_succ := by
+  letI : BEq Nat := nat_beq_succ
   refine { rfl := ?_, eq_of_beq := ?_ }
   · intro a
-    simp [natBEqSucc]
+    simp [nat_beq_succ]
   · intro a b h
-    exact Nat.succ.inj <| by simpa [natBEqSucc] using h
+    exact Nat.succ.inj <| by simpa [nat_beq_succ] using h
 
 private def leftPoly : CPolynomial Nat :=
-  @CPolynomial.monomial Nat _ natBEqEq natLawfulBEqEq _ 1 7
+  @CPolynomial.monomial Nat _ nat_beq_eq nat_lawful_beq_eq _ 1 7
 
 private def leftDegreeLT : ↥(CPolynomial.degreeLT (R := Nat) 3) := by
   refine ⟨leftPoly, ?_⟩
@@ -44,13 +44,14 @@ private def leftDegreeLT : ↥(CPolynomial.degreeLT (R := Nat) 3) := by
 
 section CrossInstance
 
-local instance : BEq Nat := natBEqSucc
-local instance : LawfulBEq Nat := natLawfulBEqSucc
+local instance : BEq Nat := nat_beq_succ
+local instance : LawfulBEq Nat := nat_lawful_beq_succ
 
 /-- Reuse a `CPolynomial` built under one lawful `BEq Nat` under another, with no cast. -/
 private def reusedPoly : CPolynomial Nat := leftPoly
 
-/-- Reuse a nonzero bounded-degree subtype value under a different lawful `BEq Nat`, with no cast. -/
+/-- Reuse a nonzero bounded-degree subtype value under a different lawful `BEq Nat`,
+with no cast. -/
 private def reusedDegreeLT : ↥(CPolynomial.degreeLT (R := Nat) 3) := leftDegreeLT
 
 example : reusedPoly.coeff 1 = 7 := by

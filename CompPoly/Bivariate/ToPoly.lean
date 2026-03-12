@@ -657,7 +657,9 @@ theorem leadingCoeffY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [R
   classical
   have h_leadingCoeffY : f.leadingCoeff.toPoly = (toPoly f).coeff f.natDegree := by
     rw [CBivariate.toPoly_coeff]
-    exact congrArg CPolynomial.toPoly (CompPoly.CPolynomial.leadingCoeff_eq_coeff_natDegree (p := f))
+    exact
+      congrArg CPolynomial.toPoly
+        (CompPoly.CPolynomial.leadingCoeff_eq_coeff_natDegree (p := f))
   rw [← Polynomial.coeff_natDegree, CompPoly.CBivariate.natDegreeY_toPoly]
   simpa [CBivariate.leadingCoeffY, CBivariate.natDegreeY] using h_leadingCoeffY
 

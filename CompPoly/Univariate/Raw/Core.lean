@@ -96,6 +96,7 @@ def natDegree (p : CPolynomial.Raw R) : ℕ :=
 of the trimmed array, or `0` if the trimmed array is empty. -/
 def leadingCoeff (p : CPolynomial.Raw R) : R := p.trim.getLastD 0
 
+omit [Semiring R] [BEq R] in
 /-- Semantic canonicality for raw coefficient arrays: a polynomial is canonical iff its
 last stored coefficient, when present, is nonzero. This invariant is independent of any
 particular `BEq` instance. -/

@@ -71,7 +71,10 @@ instance (R : Type*) [Zero R] [BEq R] [LawfulBEq R] : LawfulBEq (CPolynomial R) 
 
 /-- `CPolynomial R` has `DecidableEq` when `R` does, via the underlying `Array R` representation. -/
 instance (R : Type*) [Zero R] [DecidableEq R] : DecidableEq (CPolynomial R) :=
-  @Subtype.instDecidableEq (CPolynomial.Raw R) (fun p => CPolynomial.Raw.IsCanonical p) inferInstance
+  @Subtype.instDecidableEq
+    (CPolynomial.Raw R)
+    (fun p => CPolynomial.Raw.IsCanonical p)
+    inferInstance
 
 end ZeroOnly
 
@@ -826,7 +829,7 @@ lemma coeff_erase [DecidableEq R] (n i : ℕ) (p : CPolynomial R) :
 
 omit [BEq R] [LawfulBEq R] in
 /-- Leading coefficient equals the coefficient at `natDegree`. -/
-lemma leadingCoeff_eq_coeff_natDegree [DecidableEq R] (p : CPolynomial R) :
+lemma leadingCoeff_eq_coeff_natDegree (p : CPolynomial R) :
     p.leadingCoeff = p.coeff p.natDegree := by
   cases hs : p.val.size with
   | zero =>
@@ -878,11 +881,11 @@ instance : AddCommGroup (CPolynomial R) where
   add_zero := CPolynomial.add_zero
   add_comm := CPolynomial.add_comm
   neg_add_cancel := by intro a; exact CPolynomial.neg_add_cancel (p := a)
-  nsmul := CPolynomial.nsmul -- TODO do we actually need this custom implementation?
+  nsmul := CPolynomial.nsmul
   nsmul_zero := CPolynomial.nsmul_zero
   nsmul_succ := CPolynomial.nsmul_succ
   sub_eq_add_neg := by intro a b; rfl
-  zsmul := zsmulRec -- TODO do we want a custom efficient implementation?
+  zsmul := zsmulRec
   zsmul_zero' := by intro p; apply Subtype.ext; rfl
   zsmul_succ' := by intro n p; apply Subtype.ext; rfl
   zsmul_neg' := by intro n p; apply Subtype.ext; rfl
@@ -895,14 +898,8 @@ instance : AddCommGroup (CPolynomial R) where
 instance [LawfulBEq R] [Nontrivial R] : Ring (CPolynomial R) where
   __ := (inferInstance : Semiring (CPolynomial R))
   __ := (inferInstance : AddCommGroup (CPolynomial R))
-  sub_eq_add_neg := by intro a b; rfl
-  zsmul := zsmulRec
-  zsmul_zero' := by intro p; apply Subtype.ext; rfl
-  zsmul_succ' := by intro n p; apply Subtype.ext; rfl
-  zsmul_neg' := by intro n p; apply Subtype.ext; rfl
   intCast_ofNat := by intro n; apply Subtype.ext; rfl
   intCast_negSucc := by intro n; apply Subtype.ext; rfl
-  neg_add_cancel := by intro p; exact neg_add_cancel p
 
 end Ring
 

@@ -167,9 +167,10 @@ lemma getLast_toImpl {p : Q[X]} (hp : p ≠ 0) : let h : p.toImpl.size > 0 := to
   · contradiction
   simp [h]
 
+omit [BEq R] in
 /-- `toImpl` lands in the semantic canonical carrier used by `CPolynomial`. -/
 @[simp]
-theorem isCanonical_toImpl [LawfulBEq R] (p : R[X]) : CPolynomial.Raw.IsCanonical p.toImpl := by
+theorem isCanonical_toImpl (p : R[X]) : CPolynomial.Raw.IsCanonical p.toImpl := by
   rcases toImpl_elim p with ⟨rfl, h⟩ | ⟨h_nz, _⟩
   · simpa [h] using (Trim.isCanonical_empty (R := R))
   · intro hp
@@ -192,7 +193,10 @@ end Raw
 lemma toImpl_toPoly_of_canonical [LawfulBEq R] (p : CPolynomial R) : p.toPoly.toImpl = p := by
   suffices h_inj : ∀ q : CPolynomial R, p.toPoly = q.toPoly → p = q by
     have : p.toPoly = p.toPoly.toImpl.toPoly := by rw [toPoly_toImpl]
-    exact h_inj ⟨ p.toPoly.toImpl, isCanonical_toImpl p.toPoly ⟩ this |> congrArg Subtype.val |>.symm
+    exact
+      h_inj ⟨p.toPoly.toImpl, isCanonical_toImpl p.toPoly⟩ this
+        |> congrArg Subtype.val
+        |>.symm
   intro q hpq
   apply CPolynomial.ext
   apply Trim.isCanonical_ext p.property q.property

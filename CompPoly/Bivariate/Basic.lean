@@ -46,6 +46,15 @@ instance : Coe (CBivariate R) (CPolynomial (CPolynomial R)) where coe := id
 /-- The zero bivariate polynomial is canonical. -/
 instance : Inhabited (CBivariate R) := inferInstanceAs (Inhabited (CPolynomial (CPolynomial R)))
 
+instance [BEq R] : BEq (CBivariate R) :=
+  inferInstanceAs (BEq (CPolynomial (CPolynomial R)))
+
+instance [BEq R] [LawfulBEq R] : LawfulBEq (CBivariate R) :=
+  inferInstanceAs (LawfulBEq (CPolynomial (CPolynomial R)))
+
+instance [DecidableEq R] : DecidableEq (CBivariate R) :=
+  inferInstanceAs (DecidableEq (CPolynomial (CPolynomial R)))
+
 end ZeroOnly
 
 section Semiring
@@ -92,8 +101,6 @@ instance : CommRing (CBivariate R) :=
   inferInstanceAs (CommRing (CPolynomial (CPolynomial R)))
 
 end CommRing
-
--- TODO any remaining typeclasses?
 
 -- ---------------------------------------------------------------------------
 -- Operation stubs (for ArkLib compatibility; proofs deferred)
