@@ -13,6 +13,8 @@ are too specific or too changeable to keep at the repo root.
   truth.
 - [`representations-and-bridges.md`](representations-and-bridges.md) - the main
   polynomial representations and Mathlib bridge layers.
+- [`typeclass-minimization.md`](typeclass-minimization.md) - declaration-level
+  typeclass discipline and minimal-assumption examples.
 - [`binary-fields-and-ntt.md`](binary-fields-and-ntt.md) - the binary-field stack,
   GHASH model, and additive-NTT architecture.
 
@@ -25,6 +27,8 @@ are too specific or too changeable to keep at the repo root.
   - `repo-map.md` for repo structure and work-area routing.
   - `generated-files.md` for derived outputs and source-of-truth rules.
   - `representations-and-bridges.md` for representation choice and Mathlib bridges.
+  - `typeclass-minimization.md` for minimal typeclass assumptions and avoiding
+    blanket instance scopes.
   - `binary-fields-and-ntt.md` for the specialized field and NTT stack.
 - Add new pages when a recurring topic no longer fits cleanly in an existing page.
 - If a PR changes commands, repo structure, generated-file behavior, or recurring
