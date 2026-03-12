@@ -23,62 +23,69 @@ variable {R : Type*} [Ring R] [BEq R]
 
 section ImplementationCorrectness
 
+omit [BEq R] in
+private theorem size_toImpl_eq_natDegree_succ {q : R[X]} (hq : q ≠ 0) :
+    q.toImpl.size = q.natDegree + 1 := by
+  rcases Raw.toImpl_elim q with ⟨hzero, _⟩ | ⟨_, himpl⟩
+  · exact (hq hzero).elim
+  · simp [himpl]
+
+private theorem size_eq_toPoly_natDegree_succ [LawfulBEq R] (p : CPolynomial R) (hp : p ≠ 0) :
+    p.val.size = p.toPoly.natDegree + 1 := by
+  have htoPoly : p.toPoly ≠ 0 := (toPoly_eq_zero_iff p).not.mpr hp
+  have hsize : p.toPoly.toImpl.size = p.val.size := by
+    simpa using congrArg Array.size (toImpl_toPoly_of_canonical p)
+  rw [← hsize]
+  exact size_toImpl_eq_natDegree_succ htoPoly
+
 theorem degree_toPoly [LawfulBEq R] (p : CPolynomial R) :
     p.degree = p.toPoly.degree := by
-  have h_deg_eq : p.val.toPoly.degree = p.val.degree := by
-    unfold CPolynomial.Raw.degree at *
-    rcases h : ( p : CompPoly.CPolynomial.Raw R ).lastNonzero with ( _ | ⟨ k, hk ⟩ )
-      <;> simp_all +decide [ Polynomial.degree_eq_bot ]
-    · have := p.prop
-      unfold CompPoly.CPolynomial.Raw.trim at this; aesop
-    · have := CPolynomial.Raw.Trim.lastNonzero_spec h
-      rw [ Polynomial.degree_eq_of_le_of_coeff_ne_zero ]
-      · rw [ Polynomial.degree_le_iff_coeff_zero ]
-        intro m hm; by_cases hm' : m < p.val.size
-          <;> simp_all +decide [ CPolynomial.Raw.coeff_toPoly ]
-      · rw [ CompPoly.CPolynomial.Raw.coeff_toPoly ]; aesop
-  exact h_deg_eq.symm
+  by_cases hp : p = 0
+  · subst hp
+    rw [toPoly_zero, CPolynomial.degree]
+    rfl
+  · have hsize := size_eq_toPoly_natDegree_succ p hp
+    have htoPoly : p.toPoly ≠ 0 := (toPoly_eq_zero_iff p).not.mpr hp
+    cases hs : p.val.size with
+    | zero =>
+        simp [hs] at hsize
+    | succ n =>
+        have hnat : p.toPoly.natDegree = n := by omega
+        simp [CPolynomial.degree, hs, hnat,
+          Polynomial.degree_eq_natDegree htoPoly]
 
 theorem natDegree_toPoly [LawfulBEq R] (p : CPolynomial R) :
     p.natDegree = p.toPoly.natDegree := by
-  have h_deg_eq : p.degree = p.toPoly.degree := by
-    exact degree_toPoly p
-  have h_natDegree_eq : p.natDegree = p.degree.unbotD 0 := by
-    unfold CPolynomial.natDegree CPolynomial.degree
-    unfold CPolynomial.Raw.natDegree CPolynomial.Raw.degree
-    cases p.val.lastNonzero <;> rfl
-  aesop
+  by_cases hp : p = 0
+  · subst hp
+    rw [toPoly_zero, CPolynomial.natDegree]
+    rfl
+  · have hsize := size_eq_toPoly_natDegree_succ p hp
+    cases hs : p.val.size with
+    | zero =>
+        simp [hs] at hsize
+    | succ n =>
+        have hnat : p.toPoly.natDegree = n := by omega
+        rw [hnat, CPolynomial.natDegree, hs]
 
 theorem leadingCoeff_toPoly [LawfulBEq R] (p : CPolynomial R) :
     p.leadingCoeff = p.toPoly.leadingCoeff := by
-  by_contra h_contra
-  apply h_contra
-  obtain ⟨q, hq⟩ : ∃ q : Polynomial R, p = ⟨q.toImpl, trim_toImpl q⟩ := by
-    use p.toPoly
-    generalize_proofs at *
-    convert Subtype.ext ?_
-    exact Eq.symm (toImpl_toPoly_of_canonical p)
-  have h_leading_coeff_eq : q.toImpl.getLast (by
-  by_cases hq_zero : q = 0 <;> simp_all +decide [ Polynomial.toImpl ]
-  · simp [CompPoly.CPolynomial.leadingCoeff, CompPoly.CPolynomial.toPoly] at h_contra
-    simp +decide [ CompPoly.CPolynomial.Raw.leadingCoeff, CompPoly.CPolynomial.Raw.toPoly ]
-      at h_contra
-    exact h_contra (by unfold CompPoly.CPolynomial.Raw.trim; aesop)
-  · cases h : q.degree <;> simp_all +decide [ Polynomial.degree_eq_natDegree hq_zero ])
-      = q.leadingCoeff := by
-    all_goals generalize_proofs at *
-    convert Raw.getLast_toImpl _
-    rintro rfl; simp_all +decide [ Polynomial.toImpl ]
-  generalize_proofs at *
-  convert h_leading_coeff_eq using 1
-  · unfold CPolynomial.leadingCoeff
-    unfold CPolynomial.Raw.leadingCoeff
-    unfold Array.getLastD; aesop
-  · rw [ ← h_leading_coeff_eq, hq ]
-    rw [ show (CompPoly.CPolynomial.toPoly ⟨q.toImpl, by assumption⟩ : Polynomial R) = q
-        from ?_ ]
-    · exact h_leading_coeff_eq.symm
-    · apply Raw.toPoly_toImpl
+  by_cases hp : p = 0
+  · subst hp
+    rw [toPoly_zero, CPolynomial.leadingCoeff]
+    rfl
+  · have htoPoly : p.toPoly ≠ 0 := (toPoly_eq_zero_iff p).not.mpr hp
+    have hpos : p.val.size > 0 := by
+      have hsize := size_eq_toPoly_natDegree_succ p hp
+      omega
+    have hlastImpl :
+        p.toPoly.toImpl.getLast (Raw.toImpl_nonzero htoPoly) = p.toPoly.leadingCoeff := by
+      simpa using Raw.getLast_toImpl htoPoly
+    have hround : p.toPoly.toImpl = (p : CPolynomial.Raw R) := by
+      simpa using toImpl_toPoly_of_canonical p
+    have hlast : p.val.getLast hpos = p.toPoly.leadingCoeff := by
+      simpa [hround] using hlastImpl
+    simpa [CPolynomial.leadingCoeff, Array.getLastD, hpos] using hlast
 
 theorem erase_toPoly [LawfulBEq R] [DecidableEq R] (n : ℕ) (p : CPolynomial R) :
     (erase n p).toPoly = p.toPoly.erase n := by
@@ -148,7 +155,7 @@ lemma toPoly_smul (r : R) (p : CPolynomial R) :
 
 noncomputable def toPolyLinearEquiv : CPolynomial R ≃ₗ[R] R[X] where
   toFun := toPoly
-  invFun := fun p => ⟨p.toImpl, trim_toImpl p⟩
+  invFun := fun p => ⟨p.toImpl, isCanonical_toImpl p⟩
   map_add' := toPoly_add
   map_smul' := toPoly_smul
   left_inv := fun p => Subtype.ext (toImpl_toPoly_of_canonical p)
