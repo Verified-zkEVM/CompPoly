@@ -937,15 +937,14 @@ protected theorem mul_comm [LawfulBEq R] (p q : CPolynomial.Raw R) : p * q = q *
 
 end CommutativeSemiring
 
+lemma neg_coeff {R : Type*} [NegZeroClass R] (p : CPolynomial.Raw R) (i : ℕ) :
+    p.neg.coeff i = - p.coeff i := by
+  unfold neg coeff
+  rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
+
 section Ring
 
 variable [Ring R] [BEq R]
-
-omit [BEq R] in
-lemma neg_coeff : ∀ (p : CPolynomial.Raw R) (i : ℕ), p.neg.coeff i = - p.coeff i := by
-  intro p i
-  unfold neg coeff
-  rcases (Nat.lt_or_ge i p.size) with hi | hi <;> simp [hi]
 
 theorem neg_trim [LawfulBEq R] (p : CPolynomial.Raw R) : p.trim = p → (-p).trim = -p := by
   apply Trim.non_zero_map
