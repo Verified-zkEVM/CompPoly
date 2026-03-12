@@ -5,7 +5,7 @@ usage() {
   cat <<'EOF'
 Usage:
   build_timing_report.sh run <label> <results-file> -- <command> [args...]
-  build_timing_report.sh render <results-file>
+  build_timing_report.sh render <results-file> [baseline-artifact-dir]
 
 Labels:
   clean_build
@@ -90,40 +90,59 @@ run_command() {
 }
 
 render_report() {
-  if [ "$#" -ne 1 ]; then
+  if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
     usage
     exit 2
   fi
 
   local results_file="$1"
+  local baseline_dir="${2:-}"
 
-  python3 - "$results_file" <<'PY'
+  python3 - "$results_file" "$baseline_dir" <<'PY'
 import json
 import os
 import pathlib
 import re
 import sys
 
-path = pathlib.Path(sys.argv[1])
+results_path = pathlib.Path(sys.argv[1])
+baseline_dir = pathlib.Path(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[2] else None
 
 display = {
-    "clean_build": ("Clean build", "`rm -rf .lake/build && lake build`"),
-    "warm_rebuild": ("Warm rebuild", "`lake build`"),
-    "test_path": ("Test path", "`lake test`"),
+    "clean_build": {
+        "name": "Clean build",
+        "command": "`rm -rf .lake/build && lake build`",
+    },
+    "warm_rebuild": {
+        "name": "Warm rebuild",
+        "command": "`lake build`",
+    },
+    "test_path": {
+        "name": "Test path",
+        "command": "`lake test`",
+    },
 }
 ordered_labels = ["clean_build", "warm_rebuild", "test_path"]
 
-records = {}
-if path.exists():
+
+def load_records(path: pathlib.Path) -> dict[str, dict]:
+    records = {}
+    if not path.exists():
+        return records
     for line in path.read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
         record = json.loads(line)
         records[record["label"]] = record
+    return records
 
 
 def fmt(value: float) -> str:
     return f"{value:.2f}"
+
+
+def fmt_delta(value: float) -> str:
+    return f"{value:+.2f}"
 
 
 def status(record: dict) -> str:
@@ -142,19 +161,14 @@ def module_to_source_path(target: str) -> str | None:
     return None
 
 
-def extract_clean_build_targets() -> list[dict]:
-    log_dir = os.environ.get("BUILD_TIMING_LOG_DIR")
-    if not log_dir:
-        return []
-
-    clean_log = pathlib.Path(log_dir) / "clean_build.log"
-    if not clean_log.exists():
+def extract_clean_build_targets(log_path: pathlib.Path | None) -> list[dict]:
+    if log_path is None or not log_path.exists():
         return []
 
     pattern = re.compile(r"Built\s+(.+?)\s+\((\d+(?:\.\d+)?)s\)")
     entries = []
     seen = set()
-    for line in clean_log.read_text(encoding="utf-8", errors="replace").splitlines():
+    for line in log_path.read_text(encoding="utf-8", errors="replace").splitlines():
         match = pattern.search(line)
         if not match:
             continue
@@ -177,11 +191,26 @@ def extract_clean_build_targets() -> list[dict]:
     return sorted(selected, key=lambda entry: entry["seconds"], reverse=True)
 
 
+def target_key(entry: dict) -> str:
+    return entry["source"] or entry["target"]
+
+
+current_records = load_records(results_path)
+baseline_records = load_records(baseline_dir / "results.jsonl") if baseline_dir else {}
+
+current_log_dir = os.environ.get("BUILD_TIMING_LOG_DIR")
+current_log_path = pathlib.Path(current_log_dir) / "clean_build.log" if current_log_dir else None
+current_clean_build_targets = extract_clean_build_targets(current_log_path)
+baseline_clean_build_targets = (
+    extract_clean_build_targets(baseline_dir / "clean_build.log") if baseline_dir else []
+)
+
 source_sha = os.environ.get("BUILD_TIMING_SOURCE_SHA")
 source_subject = os.environ.get("BUILD_TIMING_SOURCE_SUBJECT")
 source_branch = os.environ.get("BUILD_TIMING_SOURCE_BRANCH") or os.environ.get("GITHUB_REF_NAME")
 source_repo = os.environ.get("GITHUB_REPOSITORY")
-clean_build_targets = extract_clean_build_targets()
+baseline_sha = os.environ.get("BUILD_TIMING_BASELINE_SHA")
+baseline_label = os.environ.get("BUILD_TIMING_BASELINE_LABEL")
 
 print("## Build Timing Report")
 print()
@@ -197,49 +226,92 @@ if source_subject:
     print(f"- Message: {source_subject}")
 if source_branch:
     print(f"- Ref: `{source_branch}`")
+if baseline_records:
+    if baseline_sha:
+        baseline_short_sha = baseline_sha[:7]
+        if source_repo:
+            baseline_commit_ref = (
+                f"[`{baseline_short_sha}`](https://github.com/{source_repo}/commit/{baseline_sha})"
+            )
+        else:
+            baseline_commit_ref = f"`{baseline_short_sha}`"
+        if baseline_label:
+            print(f"- Comparison baseline: {baseline_commit_ref} from {baseline_label}.")
+        else:
+            print(f"- Comparison baseline: {baseline_commit_ref}.")
+    elif baseline_label:
+        print(f"- Comparison baseline: {baseline_label}.")
 print("- Measured on `ubuntu-latest` with `/usr/bin/time -p`.")
+print(
+    "- Commands: "
+    + "; ".join(
+        f"{display[label]['name'].lower()} {display[label]['command']}" for label in ordered_labels
+    )
+    + "."
+)
 print()
 
-if not records:
+if not current_records:
     print("No timing data was captured.")
     sys.exit(0)
 
-print("| Measurement | Command | Real (s) | User (s) | Sys (s) | Status |")
-print("| --- | --- | ---: | ---: | ---: | --- |")
-for label in ordered_labels:
-    if label not in records:
-        continue
-    record = records[label]
-    name, command = display[label]
-    print(
-        f"| {name} | {command} | {fmt(record['real'])} | {fmt(record['user'])} | "
-        f"{fmt(record['sys'])} | {status(record)} |"
-    )
+if baseline_records:
+    print("| Measurement | Baseline (s) | Current (s) | Delta (s) | Status |")
+    print("| --- | ---: | ---: | ---: | --- |")
+    for label in ordered_labels:
+        baseline_record = baseline_records.get(label)
+        current_record = current_records.get(label)
+        if not baseline_record and not current_record:
+            continue
+        baseline_time = fmt(baseline_record["real"]) if baseline_record else "-"
+        current_time = fmt(current_record["real"]) if current_record else "-"
+        delta = (
+            fmt_delta(current_record["real"] - baseline_record["real"])
+            if baseline_record and current_record
+            else "-"
+        )
+        current_status = status(current_record) if current_record else "-"
+        print(
+            f"| {display[label]['name']} | {baseline_time} | {current_time} | {delta} | "
+            f"{current_status} |"
+        )
+else:
+    print("| Measurement | Wall (s) | Status |")
+    print("| --- | ---: | --- |")
+    for label in ordered_labels:
+        if label not in current_records:
+            continue
+        record = current_records[label]
+        print(f"| {display[label]['name']} | {fmt(record['real'])} | {status(record)} |")
 
-clean = records.get("clean_build")
-warm = records.get("warm_rebuild")
-test_path = records.get("test_path")
+clean = current_records.get("clean_build")
+warm = current_records.get("warm_rebuild")
 
 print()
-print("### Variability")
+print("### Incremental Rebuild Signal")
 print()
 if clean and warm:
     delta = clean["real"] - warm["real"]
-    spread = abs(delta)
     ratio = clean["real"] / warm["real"] if warm["real"] else None
-    print(f"- Clean vs warm delta: `{delta:.2f}s`")
     if ratio is None:
-        print("- Clean vs warm ratio: unavailable (`warm rebuild` reported `0.00s`)")
+        print(f"- Warm rebuild saved `{delta:.2f}s` vs clean.")
+        print("- Clean:warm ratio is unavailable because `warm rebuild` reported `0.00s`.")
+    elif delta > 0:
+        print(f"- Warm rebuild saved `{delta:.2f}s` vs clean (`{ratio:.2f}x` faster).")
+    elif delta < 0:
+        slowdown = warm["real"] - clean["real"]
+        slowdown_ratio = warm["real"] / clean["real"] if clean["real"] else None
+        if slowdown_ratio is None:
+            print(f"- Warm rebuild took `{slowdown:.2f}s` longer than clean in this run.")
+        else:
+            print(
+                f"- Warm rebuild took `{slowdown:.2f}s` longer than clean in this run "
+                f"(`{slowdown_ratio:.2f}x` slower)."
+            )
     else:
-        print(f"- Clean vs warm ratio: `{ratio:.2f}x`")
-    print(f"- Clean/warm spread: `{spread:.2f}s`")
+        print("- Warm rebuild matched clean build wall-clock in this run.")
 else:
-    print("- Clean/warm variability is unavailable because one of the build measurements is missing.")
-
-if test_path:
-    print(f"- Test path wall-clock: `{test_path['real']:.2f}s`")
-else:
-    print("- Test path timing is unavailable because the test measurement is missing.")
+    print("- Clean:warm comparison is unavailable because one of the build measurements is missing.")
 
 print()
 print(
@@ -248,21 +320,41 @@ print(
 )
 
 print()
-print("### Top 20 clean-build modules")
+print("### Slowest Current Clean-Build Files")
 print()
-if clean_build_targets:
-    shown = clean_build_targets[:20]
-    print(
-        f"Showing {len(shown)} of {len(clean_build_targets)} built targets parsed from the clean build log."
-    )
-    print()
-    print("| File | Target | Real (s) |")
-    print("| --- | --- | ---: |")
-    for entry in shown:
-        source = f"`{entry['source']}`" if entry["source"] else "-"
-        print(f"| {source} | `{entry['target']}` | {entry['seconds']:.2f} |")
+if current_clean_build_targets:
+    shown = current_clean_build_targets[:20]
+    if baseline_clean_build_targets:
+        baseline_targets_by_key = {
+            target_key(entry): entry for entry in baseline_clean_build_targets
+        }
+        print(
+            f"Showing {len(shown)} slowest current targets, with comparison against the selected baseline when available."
+        )
+        print()
+        print("| Current (s) | Baseline (s) | Delta (s) | Path |")
+        print("| ---: | ---: | ---: | --- |")
+        for entry in shown:
+            key = target_key(entry)
+            baseline_entry = baseline_targets_by_key.get(key)
+            baseline_time = fmt(baseline_entry["seconds"]) if baseline_entry else "-"
+            delta = (
+                fmt_delta(entry["seconds"] - baseline_entry["seconds"])
+                if baseline_entry
+                else "-"
+            )
+            print(f"| {fmt(entry['seconds'])} | {baseline_time} | {delta} | `{key}` |")
+    else:
+        print(
+            f"Showing {len(shown)} slowest of {len(current_clean_build_targets)} repo targets parsed from the current clean build log."
+        )
+        print()
+        print("| Wall (s) | Path |")
+        print("| ---: | --- |")
+        for entry in shown:
+            print(f"| {fmt(entry['seconds'])} | `{target_key(entry)}` |")
 else:
-    print("No per-target timings were parsed from the clean build log.")
+    print("No per-target timings were parsed from the current clean build log.")
 PY
 }
 
