@@ -33,13 +33,13 @@ variable {Q : Type*}
   by simp [equiv]
 
 /-- Symmetry of the equivalence relation. -/
-@[simp] theorem equiv_symm [Zero Q] {p q : CPolynomial.Raw Q} : equiv p q → equiv q p := by
+theorem equiv_symm [Zero Q] {p q : CPolynomial.Raw Q} : equiv p q → equiv q p := by
   simp [equiv]
   intro h i
   exact Eq.symm (h i)
 
 /-- Transitivity of the equivalence relation. -/
-@[simp] theorem equiv_trans [Zero Q] {p q r : CPolynomial.Raw Q} :
+theorem equiv_trans [Zero Q] {p q r : CPolynomial.Raw Q} :
     Trim.equiv p q → equiv q r → equiv p r := by
   simp_all [Trim.equiv]
 
@@ -552,8 +552,15 @@ lemma sub_eq_add_neg : ∀ (a b : QuotientCPolynomial R), a - b = a + -b := by
 
 instance : AddCommGroup (QuotientCPolynomial R) where
   neg_add_cancel := neg_add_cancel
-  zsmul := zsmulRec
   sub_eq_add_neg := sub_eq_add_neg
+  zsmul := zsmulRec nsmul
+  zsmul_zero' := nsmul_zero
+  zsmul_succ' := by
+    intro n a
+    simpa [zsmulRec] using nsmul_succ n a
+  zsmul_neg' := by
+    intro n a
+    rfl
 
 end AddCommGroup
 
@@ -722,20 +729,12 @@ section Ring
 
 variable [Ring R] [BEq R] [LawfulBEq R]
 
-lemma zsmul_zero' : ∀ (a : QuotientCPolynomial R), zsmulRec nsmulRec 0 a = 0 := by
-  intro a; simp [zsmulRec]; simp [nsmulRec]
-
 /-- `QuotientCPolynomial R` forms a ring when `R` is a ring.
 
   The ring structure extends the semiring structure with negation and subtraction.
   Most of the structure is already provided by the `Semiring` instance.
 -/
 instance : Ring (QuotientCPolynomial R) where
-  sub_eq_add_neg := by intro a b; (grind)
-  zsmul := zsmulRec
-  zsmul_zero' := zsmul_zero'
-  zsmul_succ' := by intros _ _; rfl
-  zsmul_neg' := by intros n a; simp [zsmulRec]
   intCast_ofNat := by intro n; simp [IntCast.intCast]; rfl
   intCast_negSucc := by
     -- By definition of `Int.negSucc`, we have `Int.negSucc n = - (n + 1)`.
@@ -745,8 +744,6 @@ instance : Ring (QuotientCPolynomial R) where
     simp +decide [ Raw.instSetoidCPolynomial ]
     simp +decide [ Raw.C, Raw.neg ]
     grind
-  neg_add_cancel := QuotientCPolynomial.neg_add_cancel
-
 end Ring
 
 section CommRing
