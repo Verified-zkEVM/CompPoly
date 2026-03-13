@@ -71,6 +71,7 @@ import CompPoly.Multivariate.VarsDegrees
 import CompPoly.Multivariate.Wheels
 import CompPoly.ToMathlib.Finsupp.Fin
 import CompPoly.ToMathlib.MvPolynomial.Equiv
+import CompPoly.ToMathlib.Polynomial.BivariateDegree
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.Lagrange
 import CompPoly.Univariate.Linear
