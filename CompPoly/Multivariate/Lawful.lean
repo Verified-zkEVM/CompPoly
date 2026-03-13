@@ -259,10 +259,6 @@ instance (priority := low) [Add R] [Mul R] :
     HMul (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
   ⟨fun p₁ p₂ ↦ liftPoly (·*·) p₁ p₂⟩
 
-instance (priority := low) [NatCast R] [Add R] [Mul R] :
-    HPow (Lawful n R) ℕ (Lawful n R) :=
-  ⟨fun p₁ exp ↦ exp.iterate p₁.mul 1⟩
-
 end
 
 end
