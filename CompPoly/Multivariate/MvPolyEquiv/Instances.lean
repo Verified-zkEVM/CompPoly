@@ -334,7 +334,8 @@ lemma map_neg (a : CMvPolynomial n R) :
 
 lemma map_sub (a b : CMvPolynomial n R) :
     fromCMvPolynomial (Sub.sub a b) = fromCMvPolynomial a - fromCMvPolynomial b := by
-  unfold Sub.sub Lawful.instSub Lawful.sub
+  change fromCMvPolynomial (Lawful.sub a b) = fromCMvPolynomial a - fromCMvPolynomial b
+  unfold Lawful.sub
   rw [map_add, map_neg, sub_eq_add_neg]
 
 instance : CommRing (CMvPolynomial n R) where
