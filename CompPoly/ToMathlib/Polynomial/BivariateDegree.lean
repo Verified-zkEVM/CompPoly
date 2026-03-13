@@ -593,6 +593,22 @@ end Polynomial.Bivariate
 namespace CompPoly
 namespace CBivariate
 
+/-- The computable X-degree agrees with the Mathlib-facing `degreeX` after `toPoly`. -/
+theorem degreeX_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+    (f : CBivariate R) :
+    Polynomial.Bivariate.degreeX (toPoly f) =
+      CBivariate.natDegreeX (R := R) f := by
+  simpa [Polynomial.Bivariate.degreeX] using
+    (natDegreeX_toPoly (R := R) (f := f))
+
+/-- The computable total degree agrees with the Mathlib-facing total degree after `toPoly`. -/
+theorem totalDegree_toPoly_spec {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
+    (f : CBivariate R) :
+    Polynomial.Bivariate.totalDegree (toPoly f) =
+      CBivariate.totalDegree (R := R) f := by
+  simpa [Polynomial.Bivariate.totalDegree] using
+    (CompPoly.CBivariate.totalDegree_toPoly (R := R) (f := f)).symm
+
 theorem natWeightedDegree_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Ring R]
     (f : CBivariate R) (u v : ℕ) :
     Polynomial.Bivariate.natWeightedDegree (toPoly f) u v =

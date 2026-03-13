@@ -51,6 +51,18 @@ namespace CompPoly
 namespace CBivariate
 
 example (f : CBivariate ℚ) :
+    Polynomial.Bivariate.natDegreeY (toPoly f) = CBivariate.natDegreeY (R := ℚ) f := by
+  simpa [Polynomial.Bivariate.natDegreeY] using natDegreeY_toPoly (R := ℚ) f
+
+example (f : CBivariate ℚ) :
+    Polynomial.Bivariate.degreeX (toPoly f) = CBivariate.natDegreeX (R := ℚ) f := by
+  exact degreeX_toPoly f
+
+example (f : CBivariate ℚ) :
+    Polynomial.Bivariate.totalDegree (toPoly f) = CBivariate.totalDegree (R := ℚ) f := by
+  exact totalDegree_toPoly_spec f
+
+example (f : CBivariate ℚ) :
     Polynomial.Bivariate.natWeightedDegree (toPoly f) 2 3 =
       CBivariate.natWeightedDegree (R := ℚ) f 2 3 := by
   exact natWeightedDegree_toPoly f 2 3
