@@ -14,28 +14,28 @@ import CompPoly.Univariate.ToPoly.Degree
 namespace CompPoly
 namespace CPolynomial
 
-private def nat_beq_eq : BEq Nat := ⟨fun a b => decide (a = b)⟩
+private def natBeqEq : BEq Nat := ⟨fun a b => decide (a = b)⟩
 
-private theorem nat_lawful_beq_eq : @LawfulBEq Nat nat_beq_eq := by
-  letI : BEq Nat := nat_beq_eq
+private theorem nat_lawful_beq_eq : @LawfulBEq Nat natBeqEq := by
+  letI : BEq Nat := natBeqEq
   refine { rfl := ?_, eq_of_beq := ?_ }
   · intro a
-    simp [nat_beq_eq]
+    simp [natBeqEq]
   · intro a b h
-    simpa [nat_beq_eq] using h
+    simpa [natBeqEq] using h
 
-private def nat_beq_succ : BEq Nat := ⟨fun a b => decide (a.succ = b.succ)⟩
+private def natBeqSucc : BEq Nat := ⟨fun a b => decide (a.succ = b.succ)⟩
 
-private theorem nat_lawful_beq_succ : @LawfulBEq Nat nat_beq_succ := by
-  letI : BEq Nat := nat_beq_succ
+private theorem nat_lawful_beq_succ : @LawfulBEq Nat natBeqSucc := by
+  letI : BEq Nat := natBeqSucc
   refine { rfl := ?_, eq_of_beq := ?_ }
   · intro a
-    simp [nat_beq_succ]
+    simp [natBeqSucc]
   · intro a b h
-    exact Nat.succ.inj <| by simpa [nat_beq_succ] using h
+    exact Nat.succ.inj <| by simpa [natBeqSucc] using h
 
 private def leftPoly : CPolynomial Nat :=
-  @CPolynomial.monomial Nat _ nat_beq_eq nat_lawful_beq_eq _ 1 7
+  @CPolynomial.monomial Nat _ natBeqEq nat_lawful_beq_eq _ 1 7
 
 private def leftDegreeLT : ↥(CPolynomial.degreeLT (R := Nat) 3) := by
   refine ⟨leftPoly, ?_⟩
@@ -44,7 +44,7 @@ private def leftDegreeLT : ↥(CPolynomial.degreeLT (R := Nat) 3) := by
 
 section CrossInstance
 
-local instance : BEq Nat := nat_beq_succ
+local instance : BEq Nat := natBeqSucc
 local instance : LawfulBEq Nat := nat_lawful_beq_succ
 
 /-- Reuse a `CPolynomial` built under one lawful `BEq Nat` under another, with no cast. -/
