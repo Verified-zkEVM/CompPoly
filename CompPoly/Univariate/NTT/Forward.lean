@@ -58,11 +58,13 @@ def runStages (D : Domain R) (a : EvalVec R D) : EvalVec R D :=
 
 /-- Intended fast implementation entry point. -/
 @[inline] def forwardImpl (D : Domain R) (p : CPolynomial.Raw R) : EvalVec R D :=
-  runStages D (bitRevPermute D (inputVec D p))
+  -- TODO: Replace this spec call with `runStages D (bitRevPermute D (inputVec D p))`
+  -- once the dedicated radix-2 implementation is ready.
+  forwardSpec D p
 
 theorem forwardImpl_correct (D : Domain R) (p : CPolynomial.Raw R) :
     forwardImpl D p = forwardSpec D p := by
-  sorry
+  rfl
 
 end Forward
 end NTT

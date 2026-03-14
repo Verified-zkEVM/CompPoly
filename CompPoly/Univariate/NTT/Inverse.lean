@@ -23,37 +23,35 @@ namespace Inverse
 variable {R : Type*} [Field R] [BEq R] [LawfulBEq R]
 
 /-- Inverse NTT formula at one output index. -/
-def inttAtVec (D : Domain R) (v : EvalVec R D) (k : D.Idx) : R := by
-  -- TODO: Implement inverse formula using `D.omegaInv` and normalization.
-  sorry
+def inttAtVec (D : Domain R) (v : EvalVec R D) (k : D.Idx) : R :=
+  D.nInv * ∑ j : D.Idx, v.get j * D.omegaInv ^ ((k : Nat) * (j : Nat))
 
 /-- Full inverse transform on vectors, specified from `inttAtVec`. -/
-def inverseVecSpec (D : Domain R) (v : EvalVec R D) : EvalVec R D := by
-  -- TODO: Build vector by evaluating `inttAtVec` at each index.
-  sorry
+def inverseVecSpec (D : Domain R) (v : EvalVec R D) : EvalVec R D :=
+  Vector.ofFn (fun k : D.Idx => inttAtVec D v k)
 
 /-- Convert inverse-transform output vector back to a raw polynomial. -/
-def inverseSpec (D : Domain R) (v : EvalVec R D) : CPolynomial.Raw R := by
-  -- TODO: Apply normalization by `D.nInv`, and finalize shape/truncation conventions.
-  sorry
+def inverseSpec (D : Domain R) (v : EvalVec R D) : CPolynomial.Raw R :=
+  -- TODO: Revisit whether inverse output should be normalized/truncated here or at call sites.
+  (inverseVecSpec D v).toArray
 
 /-- Placeholder inverse implementation on vectors. -/
-def inverseImplVec (D : Domain R) (v : EvalVec R D) : EvalVec R D := by
-  -- TODO: Replace with iterative radix-2 inverse implementation.
-  sorry
+def inverseImplVec (D : Domain R) (v : EvalVec R D) : EvalVec R D :=
+  -- TODO: Replace this spec call with the dedicated iterative inverse NTT.
+  inverseVecSpec D v
 
 /-- Placeholder inverse implementation returning coefficients. -/
-def inverseImpl (D : Domain R) (v : EvalVec R D) : CPolynomial.Raw R := by
-  -- TODO: Connect `inverseImplVec` to coefficient extraction.
-  sorry
+def inverseImpl (D : Domain R) (v : EvalVec R D) : CPolynomial.Raw R :=
+  -- TODO: Replace this spec call once `inverseImplVec` has its own runtime implementation.
+  inverseSpec D v
 
 theorem inverseImplVec_correct (D : Domain R) (v : EvalVec R D) :
     inverseImplVec D v = inverseVecSpec D v := by
-  sorry
+  rfl
 
 theorem inverseImpl_correct (D : Domain R) (v : EvalVec R D) :
     inverseImpl D v = inverseSpec D v := by
-  sorry
+  rfl
 
 end Inverse
 end NTT
