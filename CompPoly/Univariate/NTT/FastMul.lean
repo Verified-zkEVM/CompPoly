@@ -44,7 +44,7 @@ variable {R : Type*} [Field R] [BEq R] [LawfulBEq R]
 
 theorem fastMulImpl_correct (D : Domain R) (p q : CPolynomial.Raw R) :
     fastMulImpl D p q = fastMulSpec D p q := by
-  sorry
+  rfl
 
 theorem fastMulSpec_coeff (D : Domain R) (p q : CPolynomial.Raw R) (i : Nat) :
     (fastMulSpec D p q).coeff i = (p * q).coeff i := by
