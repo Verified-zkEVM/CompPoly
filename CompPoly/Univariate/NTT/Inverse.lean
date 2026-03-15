@@ -20,36 +20,35 @@ namespace CPolynomial
 namespace NTT
 namespace Inverse
 
-variable {R : Type*} [Field R] [BEq R] [LawfulBEq R]
+variable {R : Type*} [Field R]
 
 /-- Inverse NTT formula at one output index. -/
-def inttAtVec (D : Domain R) (v : EvalVec R D) (k : D.Idx) : R :=
-  D.nInv * ∑ j : D.Idx, v.get j * D.omegaInv ^ ((k : Nat) * (j : Nat))
+def inttAt (D : Domain R) (v : Array R) (k : D.Idx) : R :=
+  D.nInv * ∑ j : D.Idx, v.getD j.1 0 * D.omegaInv ^ ((k : Nat) * (j : Nat))
 
-/-- Full inverse transform on vectors, specified from `inttAtVec`. -/
-def inverseVecSpec (D : Domain R) (v : EvalVec R D) : EvalVec R D :=
-  Vector.ofFn (fun k : D.Idx => inttAtVec D v k)
+/-- Full inverse transform on arrays, specified from `inttAt`. -/
+def inverseArraySpec (D : Domain R) (v : Array R) : Array R :=
+  Array.ofFn (fun k : D.Idx => inttAt D v k)
 
-/-- Convert inverse-transform output vector back to a raw polynomial. -/
-def inverseSpec (D : Domain R) (v : EvalVec R D) : CPolynomial.Raw R :=
+/-- Convert inverse-transform output array back to raw polynomial coefficients. -/
+def inverseSpec (D : Domain R) (v : Array R) : CPolynomial.Raw R :=
   -- TODO: Revisit whether inverse output should be normalized/truncated here or at call sites.
-  (inverseVecSpec D v).toArray
+  inverseArraySpec D v
 
-/-- Placeholder inverse implementation on vectors. -/
-def inverseImplVec (D : Domain R) (v : EvalVec R D) : EvalVec R D :=
-  -- TODO: Replace this spec call with the dedicated iterative inverse NTT.
-  inverseVecSpec D v
+@[simp] theorem size_inverseArraySpec (D : Domain R) (v : Array R) :
+    (inverseArraySpec D v).size = D.n := by
+  simp [inverseArraySpec]
+
+@[simp] theorem size_inverseSpec (D : Domain R) (v : Array R) :
+    (inverseSpec D v).size = D.n := by
+  simp [inverseSpec]
 
 /-- Placeholder inverse implementation returning coefficients. -/
-def inverseImpl (D : Domain R) (v : EvalVec R D) : CPolynomial.Raw R :=
-  -- TODO: Replace this spec call once `inverseImplVec` has its own runtime implementation.
+def inverseImpl (D : Domain R) (v : Array R) : CPolynomial.Raw R :=
+  -- TODO: Replace this spec call with the dedicated iterative inverse NTT.
   inverseSpec D v
 
-theorem inverseImplVec_correct (D : Domain R) (v : EvalVec R D) :
-    inverseImplVec D v = inverseVecSpec D v := by
-  rfl
-
-theorem inverseImpl_correct (D : Domain R) (v : EvalVec R D) :
+theorem inverseImpl_correct (D : Domain R) (v : Array R) :
     inverseImpl D v = inverseSpec D v := by
   rfl
 

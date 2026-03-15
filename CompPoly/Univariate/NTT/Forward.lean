@@ -19,48 +19,60 @@ namespace CPolynomial
 namespace NTT
 namespace Forward
 
-variable {R : Type*} [Field R] [BEq R]
+variable {R : Type*} [Field R]
 
-/-- Input coefficients packed as a fixed-size vector over the domain. -/
-@[inline] def inputVec (D : Domain R) (p : CPolynomial.Raw R) : EvalVec R D :=
-  Vector.ofFn (fun i : D.Idx => p.coeff i.1)
+/-- Input coefficients packed as a fixed-size array over the domain. -/
+@[inline] def inputArray (D : Domain R) (p : CPolynomial.Raw R) : Array R :=
+  Array.ofFn (fun i : D.Idx => p.coeff i.1)
 
 /-- DFT/NTT formula at one output index. -/
-@[inline] def nttAtVec (D : Domain R) (a : EvalVec R D) (k : D.Idx) : R :=
-  ∑ j : D.Idx, a.get j * D.omega ^ ((k : Nat) * (j : Nat))
+@[inline] def nttAt (D : Domain R) (a : Array R) (k : D.Idx) : R :=
+  ∑ j : D.Idx, a.getD j.1 0 * D.omega ^ ((k : Nat) * (j : Nat))
 
 /-- Full forward transform specified directly from the NTT formula. -/
-@[inline] def forwardVecSpec (D : Domain R) (a : EvalVec R D) : EvalVec R D :=
-  Vector.ofFn (fun k : D.Idx => nttAtVec D a k)
+@[inline] def forwardArraySpec (D : Domain R) (a : Array R) : Array R :=
+  Array.ofFn (fun k : D.Idx => nttAt D a k)
 
 /-- Spec-level forward NTT from a raw polynomial input. -/
-@[inline] def forwardSpec (D : Domain R) (p : CPolynomial.Raw R) : EvalVec R D :=
-  forwardVecSpec D (inputVec D p)
+@[inline] def forwardSpec (D : Domain R) (p : CPolynomial.Raw R) : Array R :=
+  forwardArraySpec D (inputArray D p)
 
 /-- Bit-reversal index map used by iterative Cooley-Tukey layouts. -/
 def bitRevIndex (D : Domain R) (i : D.Idx) : D.Idx := by
   -- TODO: Implement bit-reversal on `D.logN` bits.
   sorry
 
-/-- Apply bit-reversal permutation to an evaluation vector. -/
-def bitRevPermute (D : Domain R) (a : EvalVec R D) : EvalVec R D := by
+/-- Apply bit-reversal permutation to an evaluation array. -/
+def bitRevPermute (D : Domain R) (a : Array R) : Array R := by
   -- TODO: Implement permutation using `bitRevIndex`.
   sorry
 
 /-- One butterfly stage of the iterative radix-2 transform. -/
-def butterflyStage (D : Domain R) (stage : Nat) (a : EvalVec R D) : EvalVec R D := by
+def butterflyStage (D : Domain R) (stage : Nat) (a : Array R) : Array R := by
   -- TODO: Implement in-place/out-of-place stage update.
   sorry
 
 /-- Run all radix-2 butterfly stages (target complexity: `O(n log n)`). -/
-def runStages (D : Domain R) (a : EvalVec R D) : EvalVec R D :=
+def runStages (D : Domain R) (a : Array R) : Array R :=
   Nat.rec a (fun stage acc => butterflyStage D stage acc) D.logN
 
 /-- Intended fast implementation entry point. -/
-@[inline] def forwardImpl (D : Domain R) (p : CPolynomial.Raw R) : EvalVec R D :=
-  -- TODO: Replace this spec call with `runStages D (bitRevPermute D (inputVec D p))`
+@[inline] def forwardImpl (D : Domain R) (p : CPolynomial.Raw R) : Array R :=
+  -- TODO: Replace this spec call with `runStages D (bitRevPermute D (inputArray D p))`
   -- once the dedicated radix-2 implementation is ready.
   forwardSpec D p
+
+@[simp] theorem size_inputArray (D : Domain R) (p : CPolynomial.Raw R) :
+    (inputArray D p).size = D.n := by
+  simp [inputArray]
+
+@[simp] theorem size_forwardArraySpec (D : Domain R) (a : Array R) :
+    (forwardArraySpec D a).size = D.n := by
+  simp [forwardArraySpec]
+
+@[simp] theorem size_forwardSpec (D : Domain R) (p : CPolynomial.Raw R) :
+    (forwardSpec D p).size = D.n := by
+  simp [forwardSpec]
 
 theorem forwardImpl_correct (D : Domain R) (p : CPolynomial.Raw R) :
     forwardImpl D p = forwardSpec D p := by
