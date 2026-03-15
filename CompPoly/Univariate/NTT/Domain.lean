@@ -5,7 +5,6 @@ Authors: CompPoly Contributors
 -/
 import CompPoly.Univariate.Raw
 import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
-import Mathlib.Data.Vector.Basic
 
 /-!
 # NTT Domain Scaffolding
@@ -81,9 +80,6 @@ def truncate (m : Nat) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
 
 end RawHelpers
 end Domain
-
-/-- Evaluation vectors over a fixed NTT domain. -/
-abbrev EvalVec (R : Type*) [Field R] (D : Domain R) := Vector R D.n
 
 end NTT
 end CPolynomial

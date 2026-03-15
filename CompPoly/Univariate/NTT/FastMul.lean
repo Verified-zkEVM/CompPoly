@@ -20,11 +20,19 @@ namespace CPolynomial
 namespace NTT
 namespace FastMul
 
-variable {R : Type*} [Field R] [BEq R] [LawfulBEq R]
+variable {R : Type*} [Field R]
 
 /-- Pointwise multiplication in evaluation form. -/
-@[inline] def pointwiseMul (D : Domain R) (a b : EvalVec R D) : EvalVec R D :=
-  Vector.ofFn (fun i : D.Idx => a.get i * b.get i)
+@[inline] def pointwiseMul (D : Domain R) (a b : Array R) : Array R :=
+  Array.ofFn (fun i : D.Idx => a.getD i.1 0 * b.getD i.1 0)
+
+@[simp] theorem size_pointwiseMul (D : Domain R) (a b : Array R) :
+    (pointwiseMul D a b).size = D.n := by
+  simp [pointwiseMul]
+
+section RawMul
+
+variable [BEq R] [LawfulBEq R]
 
 /-- Spec pipeline for NTT-based multiplication. -/
 @[inline] def fastMulSpec (D : Domain R) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
@@ -65,6 +73,8 @@ theorem fastMulImpl_eq_mul (D : Domain R) (p q : CPolynomial.Raw R)
 theorem mulWithFastPath_eq_mul (D : Domain R) (p q : CPolynomial.Raw R) :
     mulWithFastPath D p q = p * q := by
   sorry
+
+end RawMul
 
 end FastMul
 end NTT
