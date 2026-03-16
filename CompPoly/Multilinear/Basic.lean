@@ -315,6 +315,10 @@ def eval (p : CMlPolynomialEval R n) (x : Vector R n) : R :=
 /-- Evaluate a `CMlPolynomialEval` at a point using a ring homomorphism -/
 def eval₂ (p : CMlPolynomialEval R n) (f : R →+* S) (x : Vector S n) : S := eval (map f p) x
 
+/-- Evaluate the multilinear equality kernel `eq̃(w, x)`. -/
+@[inline] def eqTilde (w x : Vector R n) : R :=
+  eval (lagrangeBasis w) x
+
 -- Theorems about evaluations
 
 end CMlPolynomialLagrangeBasisAndEvaluations

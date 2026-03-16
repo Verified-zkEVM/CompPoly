@@ -1,7 +1,11 @@
 import CompPolyTests.Univariate.Raw
 import CompPolyTests.Univariate.Basic
 import CompPolyTests.Univariate.ToPoly
+import CompPolyTests.Bivariate.Degree
+import CompPolyTests.Bivariate.WeightedDegree
+import CompPolyTests.Bivariate.Multiplicity
 import CompPolyTests.BF128GhashPrelude
+import CompPolyTests.Multilinear.Equiv
 import CompPolyTests.Multivariate.CMvMonomial
 import CompPolyTests.Multivariate.Restrict
 import CompPolyTests.Multivariate.VarsDegrees
