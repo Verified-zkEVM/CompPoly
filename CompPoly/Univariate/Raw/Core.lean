@@ -431,6 +431,32 @@ theorem isCanonical_of_size_zero [Zero R] {p : CPolynomial.Raw R} (hp : p.size =
   intro hPos
   simp [hp] at hPos
 
+/-- Canonicality bridge (semantic view to computational view). -/
+theorem isCanonical_iff_trim_eq [Zero R] [BEq R] [LawfulBEq R]
+    {p : CPolynomial.Raw R} :
+    IsCanonical p ↔ p.trim = p :=
+  canonical_iff.symm
+
+/-- Non-dependent canonicality criterion using `getLastD`. -/
+theorem isCanonical_iff_size_eq_zero_or_getLastD_ne_zero [Zero R]
+    {p : CPolynomial.Raw R} :
+    IsCanonical p ↔ p.size = 0 ∨ p.getLastD 0 ≠ 0 := by
+  constructor
+  · intro h
+    rcases Nat.eq_zero_or_pos p.size with h0 | hp
+    · exact Or.inl h0
+    · exact Or.inr (by simpa [Array.getLastD, hp] using h hp)
+  · intro h hp
+    rcases h with h0 | hlast
+    · exact (Nat.ne_of_gt hp h0).elim
+    · simpa [Array.getLastD, hp] using hlast
+
+/-- Computational canonicality criterion in non-dependent form. -/
+theorem trim_eq_iff_size_eq_zero_or_getLastD_ne_zero [Zero R] [BEq R] [LawfulBEq R]
+    {p : CPolynomial.Raw R} :
+    p.trim = p ↔ p.size = 0 ∨ p.getLastD 0 ≠ 0 := by
+  rw [canonical_iff, isCanonical_iff_size_eq_zero_or_getLastD_ne_zero]
+
 theorem trim_eq_of_isCanonical [Zero R] [BEq R] [LawfulBEq R]
     {p : CPolynomial.Raw R} (hp : IsCanonical p) :
     p.trim = p :=

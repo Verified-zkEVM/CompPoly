@@ -177,7 +177,7 @@ lemma getLast_toImpl {p : Q[X]} (hp : p ≠ 0) : let h : p.toImpl.size > 0 := to
 omit [BEq R] in
 /-- `toImpl` lands in the semantic canonical carrier used by `CPolynomial`. -/
 @[simp]
-theorem isCanonical_toImpl (p : R[X]) : CPolynomial.Raw.IsCanonical p.toImpl := by
+theorem isCanonical_toImpl (p : R[X]) : IsCanonical p.toImpl := by
   rcases toImpl_elim p with ⟨rfl, h⟩ | ⟨h_nz, _⟩
   · simpa [h] using (Trim.isCanonical_empty (R := R))
   · intro hp

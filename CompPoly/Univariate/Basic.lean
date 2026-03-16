@@ -33,7 +33,7 @@ variable {R : Type*}
 
   TODO optimizations may be had by trimming only at the end of iterative operations
 -/
-def CPolynomial (R : Type*) [Zero R] := { p : CPolynomial.Raw R // CPolynomial.Raw.IsCanonical p }
+def CPolynomial (R : Type*) [Zero R] := { p : CPolynomial.Raw R // IsCanonical p }
 
 namespace CPolynomial
 
@@ -71,7 +71,7 @@ instance (R : Type*) [Zero R] [BEq R] [LawfulBEq R] : LawfulBEq (CPolynomial R) 
 instance (R : Type*) [Zero R] [DecidableEq R] : DecidableEq (CPolynomial R) :=
   @Subtype.instDecidableEq
     (CPolynomial.Raw R)
-    (fun p => CPolynomial.Raw.IsCanonical p)
+    (fun p => IsCanonical p)
     inferInstance
 
 end ZeroOnly
