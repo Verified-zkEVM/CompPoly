@@ -73,7 +73,7 @@ lemma mem_iff : x ∈ p ↔ ∃ v, v ≠ 0 ∧ p[x]? = .some v := by
 theorem getElem?_ne_some_zero : p[m]? ≠ some 0 := by
   rcases p; grind
 
-@[grind]
+@[grind .]
 theorem getD_getElem?_ne_zero_of_mem (h : m ∈ p) : p[m]?.getD 0 ≠ 0 := by
   grind
 
@@ -103,20 +103,20 @@ lemma zero_def : Zero.zero (α := Lawful n R) = C 0 := rfl
 
 instance instOfNat {m : ℕ} [NeZero m] [NatCast R] : OfNat (Lawful n R) m := ⟨C m⟩
 
-@[simp, grind]
+@[simp, grind =]
 lemma C_zero : C (n := n) (0 : R) = 0 := rfl
 
-@[simp, grind]
+@[simp, grind =]
 lemma C_zero' : C (n := n) (0 : ℕ) = 0 := rfl
 
 lemma zero_eq_zero : (0 : Lawful n R) = ⟨0, by grind⟩ := rfl
 
 lemma zero_eq_empty : (0 : Lawful n R) = ∅ := by unfold_projs; simp [C, Unlawful.zero_eq_empty]
 
-@[simp, grind]
+@[simp, grind .]
 lemma not_mem_C_zero : x ∉ C 0 := by simp [zero_eq_empty]; unfold_projs; grind
 
-@[simp, grind]
+@[simp, grind .]
 lemma not_mem_zero : x ∉ (0 : Lawful n R) := by rw [zero_eq_zero]; exact Unlawful.not_mem_zero
 
 @[simp]

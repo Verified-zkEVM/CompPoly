@@ -137,17 +137,17 @@ lemma zero_eq_zero : (Zero.zero : R) = 0 := rfl
 
 lemma zero_eq_empty [BEq R] [LawfulBEq R] : (0 : Unlawful n R) = ∅ := by unfold_projs; simp [C]
 
-@[simp, grind]
+@[simp, grind .]
 lemma not_mem_C_zero : x ∉ C 0 := by grind
 
 section
 
 variable [BEq R] [LawfulBEq R]
 
-@[simp, grind]
+@[simp, grind .]
 lemma not_mem_zero : x ∉ (0 : Unlawful n R) := by rw [←C_zero]; grind
 
-@[simp, grind]
+@[simp, grind .]
 lemma isNoZeroCoef_zero : isNoZeroCoef (n := n) (R := R) 0 := by rw [←C_zero]; grind
 
 end
