@@ -8,6 +8,7 @@ import CompPoly.Bivariate.ToPoly
 import Aesop
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Algebra.Polynomial.BigOperators
+import Mathlib.Algebra.Polynomial.Roots
 
 /-!
 # Mathlib-Facing Bivariate Degree Helpers
@@ -586,6 +587,86 @@ lemma natDegreeY_swap (f : F[X][Y]) :
   exact h'.trans hdeg
 
 end CommRing
+
+section Field
+
+variable [Field F] [DecidableEq F]
+
+lemma card_evalX_eq_zero_le_degreeX (A : F[X][Y]) (hA : A ≠ 0) (P : Finset F) :
+    (P.filter (fun x => evalX x A = 0)).card ≤ degreeX A := by
+  classical
+  obtain ⟨j0, hj0mem, hj0deg, _⟩ := exists_max_index_degreeX A hA
+  have hc0 : A.coeff j0 ≠ 0 := mem_support_iff.mp hj0mem
+  let S : Finset F := P.filter (fun x => evalX x A = 0)
+  have hsub : S.val ⊆ (A.coeff j0).roots := by
+    intro x hx
+    have hxS : x ∈ S := by
+      simpa [S] using hx
+    have hxEval : evalX x A = 0 := (Finset.mem_filter.1 hxS).2
+    have hxcoeff : (A.coeff j0).eval x = 0 := by
+      have := congrArg (fun q : Polynomial F => q.coeff j0) hxEval
+      simpa [evalX_eq_map, Polynomial.coeff_map] using this
+    have hxroot : Polynomial.IsRoot (A.coeff j0) x := by
+      simpa [Polynomial.IsRoot] using hxcoeff
+    exact (Polynomial.mem_roots hc0).2 hxroot
+  have hcard : S.card ≤ (A.coeff j0).natDegree := by
+    simpa using (Polynomial.card_le_degree_of_subset_roots (p := A.coeff j0) (Z := S) hsub)
+  simpa [S, hj0deg] using hcard
+
+omit [DecidableEq F] in
+lemma descend_evalX {A B G A1 B1 : F[X][Y]} (hA : A = G * A1) (hB : B = G * B1)
+    (x : F) (hx : evalX x G ≠ 0) (q : F[X]) (h : evalX x B = q * evalX x A) :
+    evalX x B1 = q * evalX x A1 := by
+  have hmap : B.map (Polynomial.evalRingHom x) = q * (A.map (Polynomial.evalRingHom x)) := by
+    simpa [evalX_eq_map] using h
+  have hmap' :
+      ((G * B1).map (Polynomial.evalRingHom x)) =
+        q * ((G * A1).map (Polynomial.evalRingHom x)) := by
+    simpa [hB, hA] using hmap
+  have hmap'' : (G.map (Polynomial.evalRingHom x)) * (B1.map (Polynomial.evalRingHom x))
+      = q * ((G.map (Polynomial.evalRingHom x)) * (A1.map (Polynomial.evalRingHom x))) := by
+    simpa [mul_assoc] using hmap'
+  have hg' : (G.map (Polynomial.evalRingHom x)) ≠ 0 := by
+    simpa [evalX_eq_map] using hx
+  have hcancel : (B1.map (Polynomial.evalRingHom x)) = q * (A1.map (Polynomial.evalRingHom x)) := by
+    apply mul_left_cancel₀ hg'
+    simpa [mul_assoc, mul_left_comm, mul_comm] using hmap''
+  simpa [evalX_eq_map] using hcancel
+
+lemma exists_x_preserve_natDegreeY (B : F[X][Y]) (hB : B ≠ 0) (P : Finset F)
+    (hcard : degreeX B < P.card) :
+    ∃ x ∈ P, (evalX x B).natDegree = natDegreeY B := by
+  classical
+  let p : F[X] := leadingCoeffY B
+  have hp0 : p ≠ 0 := by
+    simpa [p] using (leadingCoeffY_ne_zero (f := B)).2 hB
+  have hp_deg : p.natDegree ≤ degreeX B := by
+    simpa [p, leadingCoeffY, natDegreeY] using
+      (coeff_natDegree_le_degreeX B B.natDegree)
+  have hlt : p.natDegree < P.card := lt_of_le_of_lt hp_deg hcard
+  have hx : ∃ x ∈ P, p.eval x ≠ 0 := by
+    by_contra h
+    push_neg at h
+    have hsub : P.val ⊆ p.roots := by
+      intro x hxP
+      have hxroot : Polynomial.IsRoot p x := by
+        exact h x hxP
+      exact (Polynomial.mem_roots hp0).2 hxroot
+    have hle : P.card ≤ p.natDegree := by
+      simpa using (Polynomial.card_le_degree_of_subset_roots (p := p) (Z := P) hsub)
+    exact (not_lt_of_ge hle) hlt
+  rcases hx with ⟨x, hxP, hxne⟩
+  refine ⟨x, hxP, ?_⟩
+  have hnat_le : (evalX x B).natDegree ≤ natDegreeY B := by
+    rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
+    intro N hN
+    have hBN : B.coeff N = 0 := coeff_eq_zero_of_natDegree_lt hN
+    simp [evalX_eq_map, Polynomial.coeff_map, hBN]
+  have hcoeff : (evalX x B).coeff (natDegreeY B) ≠ 0 := by
+    simpa [p, leadingCoeffY, natDegreeY, evalX_eq_map, Polynomial.coeff_map] using hxne
+  exact Polynomial.natDegree_eq_of_le_of_coeff_ne_zero hnat_le hcoeff
+
+end Field
 
 end
 end Polynomial.Bivariate
