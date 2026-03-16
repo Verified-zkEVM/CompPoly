@@ -501,15 +501,13 @@ theorem Nat.Prime_of_isNat : ∀ {n n' : ℕ}, IsNat n n' → n'.Prime → n.Pri
   | _, _, ⟨rfl⟩, hp => hp
 
 elab "pratt" : tactic => do
-  -- TODO: use closeMainGoalUsing
-  let g ← getMainGoal
-  let .app (f : Q(ℕ → Prop)) (n : Q(ℕ)) ← whnf (← g.getType) | failure
-  guard <|← withDefault <| withNewMCtxDepth <| isDefEq f q(Nat.Prime)
-  let ⟨n', pn⟩ ← deriveNat n q(Nat.instAddMonoidWithOne)
-  let some unverifiedCert := computePrattCertificate n'.natLit! | failure
-  let cert ← verifyCertificate n' n'.natLit! unverifiedCert
-  let u := q(Nat.Prime_of_isNat $pn $cert)
-  closeMainGoal (Name.mkSimple "pratt") u
+  closeMainGoalUsing `pratt fun target _tag => do
+    let .app (f : Q(ℕ → Prop)) (n : Q(ℕ)) ← whnf target | failure
+    guard <|← withDefault <| withNewMCtxDepth <| isDefEq f q(Nat.Prime)
+    let ⟨n', pn⟩ ← deriveNat n q(Nat.instAddMonoidWithOne)
+    let some unverifiedCert := computePrattCertificate n'.natLit! | failure
+    let cert ← verifyCertificate n' n'.natLit! unverifiedCert
+    return q(Nat.Prime_of_isNat $pn $cert)
 
 -- set_option linter.style.setOption false
 -- set_option trace.profiler true
