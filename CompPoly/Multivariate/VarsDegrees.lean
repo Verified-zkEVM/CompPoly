@@ -85,7 +85,7 @@ lemma vars_add_subset [CommSemiring R] [BEq R] [LawfulBEq R]
   simpa [map_add] using
     (MvPolynomial.vars_add_subset (fromCMvPolynomial p) (fromCMvPolynomial q))
 
-attribute [grind] mem_vars_iff_degreeOf_pos
+attribute [grind =] mem_vars_iff_degreeOf_pos
 attribute [grind =] degreeOf_zero degrees_zero vars_zero degrees_one
 
 end CPoly
