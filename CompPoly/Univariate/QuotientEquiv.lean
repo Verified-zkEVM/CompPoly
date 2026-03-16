@@ -30,9 +30,8 @@ namespace QuotientCPolynomial
 
 open Raw Trim
 
-variable {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
+variable {R : Type*} [Semiring R]
 
-omit [BEq R] [LawfulBEq R] in
 /-- Well-definedness: equivalent raw polynomials map to the same `Polynomial`. -/
 private theorem toPoly_resp (p q : CPolynomial.Raw R) (h : p ≈ q) :
     p.toPoly = q.toPoly := by
@@ -54,7 +53,6 @@ noncomputable def toPoly (p : QuotientCPolynomial R) : Polynomial R :=
 def ofPoly (p : Polynomial R) : QuotientCPolynomial R :=
   Quotient.mk _ (Polynomial.toImpl p)
 
-omit [LawfulBEq R] in
 /-- Round-trip identity: `toPoly ∘ ofPoly = id`. -/
 @[simp]
 theorem toPoly_ofPoly (p : Polynomial R) : toPoly (ofPoly p) = p := by
@@ -62,7 +60,8 @@ theorem toPoly_ofPoly (p : Polynomial R) : toPoly (ofPoly p) = p := by
 
 /-- Round-trip identity: `ofPoly ∘ toPoly = id`. -/
 @[simp]
-theorem ofPoly_toPoly (q : QuotientCPolynomial R) : ofPoly (toPoly q) = q := by
+theorem ofPoly_toPoly [BEq R] [LawfulBEq R] (q : QuotientCPolynomial R) :
+    ofPoly (toPoly q) = q := by
   refine Quotient.inductionOn q ?_
   intro p
   simp only [toPoly, ofPoly, Quotient.lift_mk]
@@ -77,7 +76,7 @@ theorem ofPoly_toPoly (q : QuotientCPolynomial R) : ofPoly (toPoly q) = q := by
   The forward map is `toPoly` (quotient-lift of `Raw.toPoly`); the inverse is
   `ofPoly` (coefficient extraction via `Polynomial.toImpl`).
   Preserves both addition and multiplication. -/
-noncomputable def ringEquiv : QuotientCPolynomial R ≃+* Polynomial R where
+noncomputable def ringEquiv [BEq R] [LawfulBEq R] : QuotientCPolynomial R ≃+* Polynomial R where
   toFun := toPoly
   invFun := ofPoly
   left_inv := ofPoly_toPoly

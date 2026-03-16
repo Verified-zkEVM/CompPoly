@@ -54,6 +54,8 @@ Human contributors should usually start with [`README.md`](README.md),
   rules for generated or derived outputs.
 - [`docs/wiki/representations-and-bridges.md`](docs/wiki/representations-and-bridges.md)
   - main polynomial representations and Mathlib bridge layers.
+- [`docs/wiki/typeclass-minimization.md`](docs/wiki/typeclass-minimization.md) -
+  minimal typeclass assumptions and no-blanket-scope guidance.
 - [`docs/wiki/binary-fields-and-ntt.md`](docs/wiki/binary-fields-and-ntt.md) -
   binary-field stack, GHASH, and additive NTT.
 
@@ -88,6 +90,10 @@ trusting the compiler.
   that cause `simp` to unfold typeclass internals and balloon unification work.
 - Prefer explicit instance constructions such as `Field.isDomain` over
   `inferInstance` when the synthesis path is long or ambiguous.
+- State the minimal typeclass assumptions for each new `def`, `instance`,
+  `lemma`, and `theorem`. Avoid blanket section-level `variable [...]`
+  declarations unless every declaration in scope genuinely needs them; see
+  [`docs/wiki/typeclass-minimization.md`](docs/wiki/typeclass-minimization.md).
 
 ### Tactics
 
