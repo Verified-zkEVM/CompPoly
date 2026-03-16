@@ -16,7 +16,7 @@ import CompPoly.Multilinear.Basic
 -/
 open MvPolynomial
 
-variable {R : Type*} [CommRing R] {n : ℕ}
+variable {R : Type*} [CommSemiring R] {n : ℕ}
 
 noncomputable section
 
@@ -331,21 +331,21 @@ namespace CMlPolynomialEval
 
 /-- Converts a hypercube-evaluation representation to a Mathlib multivariate polynomial by first
 recovering the monomial-basis representation. -/
-def toMvPolynomial (p : CMlPolynomialEval R n) : MvPolynomial (Fin n) R :=
+def toMvPolynomial [AddCommGroup R] (p : CMlPolynomialEval R n) : MvPolynomial (Fin n) R :=
   CMlPolynomial.toMvPolynomial (CMlPolynomial.lagrangeToMono n p)
 
 /-- Converts a hypercube-evaluation representation to a Mathlib restricted-degree multivariate
 polynomial. -/
-def toMvPolynomialDeg1 (p : CMlPolynomialEval R n) :
+def toMvPolynomialDeg1 [AddCommGroup R] (p : CMlPolynomialEval R n) :
     MvPolynomial.restrictDegree (Fin n) R 1 :=
   CMlPolynomial.toMvPolynomialDeg1 (CMlPolynomial.lagrangeToMono n p)
 
 /-- The multilinear equality polynomial centered at `w`. -/
-def eqPolynomial (w : Vector R n) : MvPolynomial (Fin n) R :=
+def eqPolynomial [CommRing R] (w : Vector R n) : MvPolynomial (Fin n) R :=
   toMvPolynomial (lagrangeBasis w)
 
 /-- The restricted-degree multilinear equality polynomial centered at `w`. -/
-def eqPolynomialDeg1 (w : Vector R n) :
+def eqPolynomialDeg1 [CommRing R] (w : Vector R n) :
     MvPolynomial.restrictDegree (Fin n) R 1 :=
   toMvPolynomialDeg1 (lagrangeBasis w)
 
