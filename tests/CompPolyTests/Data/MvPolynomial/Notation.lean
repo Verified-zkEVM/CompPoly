@@ -5,13 +5,13 @@ Authors: Derek Sorensen
 -/
 import CompPoly.Data.MvPolynomial.Notation
 
-open MvPolynomial
-
 /-!
   # Notation Tests
 
   Examples showing that the notation is correct
 -/
+
+open MvPolynomial
 
 example : (X 0 + X 1 * X 2 : ℕ[X Fin 3]) ⸨![1, 2], ![8], ![]⸩ = 17 := by simp +arith +decide
 
