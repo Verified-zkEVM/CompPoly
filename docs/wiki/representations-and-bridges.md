@@ -10,7 +10,7 @@ usually the first architectural decision in a change.
 | Univariate | `CPolynomial.Raw R`, `CPolynomial R`, `QuotientCPolynomial R` | Canonical coefficient-sequence arithmetic, quotient reasoning, interpolation | `CompPoly/Univariate/README.md`, `CompPoly/Univariate/Basic.lean`, `CompPoly/Univariate/ToPoly.lean` |
 | Multivariate | `CMvPolynomial n R` | Sparse computable multivariate operations and `MvPolynomial` interop | `CompPoly/Multivariate/CMvPolynomial.lean`, `CompPoly/Multivariate/Operations.lean`, `CompPoly/Multivariate/MvPolyEquiv.lean` |
 | Multilinear | `CMlPolynomial R n`, `CMlPolynomialEval R n` | Boolean-hypercube evaluation form, basis conversion, multilinear extensions | `CompPoly/Multilinear/Basic.lean`, `CompPoly/Multilinear/Equiv.lean` |
-| Bivariate | `CBivariate R` | Specialized two-variable APIs and `R[X][Y]` transport | `CompPoly/Bivariate/README.md`, `CompPoly/Bivariate/Basic.lean`, `CompPoly/Bivariate/ToPoly.lean` |
+| Bivariate | `CBivariate R` | Specialized two-variable APIs and `R[X][Y]` transport | `CompPoly/Bivariate/README.md`, `CompPoly/Bivariate/Basic.lean`, `CompPoly/Bivariate/ToPoly.lean`, `CompPoly/ToMathlib/Polynomial/BivariateDegree.lean`, `CompPoly/ToMathlib/Polynomial/BivariateWeightedDegree.lean`, `CompPoly/ToMathlib/Polynomial/BivariateMultiplicity.lean` |
 
 ## Univariate Family
 
@@ -84,6 +84,9 @@ The key files are:
 
 - [`../../CompPoly/Bivariate/Basic.lean`](../../CompPoly/Bivariate/Basic.lean)
 - [`../../CompPoly/Bivariate/ToPoly.lean`](../../CompPoly/Bivariate/ToPoly.lean)
+- [`../../CompPoly/ToMathlib/Polynomial/BivariateDegree.lean`](../../CompPoly/ToMathlib/Polynomial/BivariateDegree.lean)
+- [`../../CompPoly/ToMathlib/Polynomial/BivariateWeightedDegree.lean`](../../CompPoly/ToMathlib/Polynomial/BivariateWeightedDegree.lean)
+- [`../../CompPoly/ToMathlib/Polynomial/BivariateMultiplicity.lean`](../../CompPoly/ToMathlib/Polynomial/BivariateMultiplicity.lean)
 - [`../../CompPoly/Bivariate/README.md`](../../CompPoly/Bivariate/README.md)
 
 ## Bridge Layers
@@ -93,7 +96,7 @@ bridge layer rather than the implementation file:
 
 - Univariate bridge: `Univariate/ToPoly/*`
 - Multivariate bridge: `Multivariate/MvPolyEquiv/*`
-- Bivariate bridge: `Bivariate/ToPoly.lean`
+- Bivariate bridge: `Bivariate/ToPoly.lean` plus `ToMathlib/Polynomial/BivariateDegree.lean`, `ToMathlib/Polynomial/BivariateWeightedDegree.lean`, and `ToMathlib/Polynomial/BivariateMultiplicity.lean`
 - Multilinear bridge: `Multilinear/Equiv.lean`
 - Supporting upstream-facing lemmas: `ToMathlib/*`
 

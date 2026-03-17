@@ -19,7 +19,7 @@ variable {R : Type*}
 
 section Division
 
-variable [Ring R] [BEq R]
+variable [BEq R]
 
 /-- Division with remainder by a monic polynomial using polynomial long division. -/
 def divModByMonicAux [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :

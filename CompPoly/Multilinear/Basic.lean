@@ -141,8 +141,8 @@ end CMlPolynomialInstances
 
 section CMlPolynomialMonomialBasisAndEvaluations
 
-variable [CommRing R]
-variable {S : Type*} [CommRing S]
+variable [CommSemiring R]
+variable {S : Type*} [CommSemiring S]
 
 /-
 Monomial-basis evaluations at point `w`.
@@ -167,10 +167,9 @@ theorem monomialBasis_getElem {w : Vector R n} (i : Fin (2 ^ n)) :
   rw [monomialBasis]
   simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin, Vector.getElem_ofFn]
 
-variable {S : Type*} [CommRing S]
-
-def map (f : R →+* S) (p : CMlPolynomial R n) : CMlPolynomial S n :=
-  Vector.map (fun a => f a) p
+def map {R S : Type*} [Semiring R] [Semiring S] (f : R →+* S)
+    (p : CMlPolynomial R n) : CMlPolynomial S n :=
+  Vector.map f p
 
 /-- Evaluate a `CMlPolynomial` at a point -/
 def eval (p : CMlPolynomial R n) (x : Vector R n) : R :=
@@ -304,10 +303,9 @@ theorem lagrangeBasis_getElem {w : Vector R n} (i : Fin (2 ^ n)) :
   rw [lagrangeBasis]
   simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin, Vector.getElem_ofFn]
 
-variable {S : Type*} [CommRing S]
-
 /-- Map a ring homomorphism over a `CMlPolynomialEval` -/
-def map (f : R →+* S) (p : CMlPolynomialEval R n) : CMlPolynomialEval S n :=
+def map {R S : Type*} [Semiring R] [Semiring S]
+    (f : R →+* S) (p : CMlPolynomialEval R n) : CMlPolynomialEval S n :=
   Vector.map (fun a => f a) p
 
 /-- Evaluate a `CMlPolynomialEval` at a point -/
@@ -316,6 +314,10 @@ def eval (p : CMlPolynomialEval R n) (x : Vector R n) : R :=
 
 /-- Evaluate a `CMlPolynomialEval` at a point using a ring homomorphism -/
 def eval₂ (p : CMlPolynomialEval R n) (f : R →+* S) (x : Vector S n) : S := eval (map f p) x
+
+/-- Evaluate the multilinear equality kernel `eq̃(w, x)`. -/
+@[inline] def eqTilde (w x : Vector R n) : R :=
+  eval (lagrangeBasis w) x
 
 -- Theorems about evaluations
 
