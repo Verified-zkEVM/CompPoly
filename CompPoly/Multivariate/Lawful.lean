@@ -245,8 +245,10 @@ instance : Coe (Lawful n R) (Lawful (n + 1) R) := ⟨polyCoe⟩
 
 section
 
--- Mixed-arity fallbacks: keep these low-priority so same-arity `Add`/`Sub`/`Mul`/`NatPow`
+-- Mixed-arity fallbacks: keep these low-priority so same-arity `Add`/`Sub`/`Mul`
 -- instances win when both operands already live in `Lawful n R`.
+-- We intentionally do not add an `HPow` fallback here: exponentiation is unary, preserves
+-- arity, and is already handled above by the same-arity `NatPow (Lawful n R)` instance.
 instance (priority := low) [Add R] :
     HAdd (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
   ⟨fun p₁ p₂ ↦ liftPoly (·+·) p₁ p₂⟩
