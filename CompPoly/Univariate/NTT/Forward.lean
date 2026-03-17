@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: CompPoly Contributors
 -/
 import CompPoly.Univariate.NTT.Domain
+import CompPoly.Data.Nat.Bitwise
 
 /-!
 # Forward NTT Scaffolding
@@ -37,30 +38,44 @@ variable {R : Type*} [Field R]
 @[inline] def forwardSpec (D : Domain R) (p : CPolynomial.Raw R) : Array R :=
   forwardArraySpec D (inputArray D p)
 
-/-- Bit-reversal index map used by iterative Cooley-Tukey layouts. -/
-def bitRevIndex (D : Domain R) (i : D.Idx) : D.Idx := by
-  -- TODO: Implement bit-reversal on `D.logN` bits.
-  sorry
+/-- Reverse the lowest `bits` bits of `i`. -/
+def bitRevNat : Nat → Nat → Nat
+  | 0, _ => 0
+  | bits + 1, i => ((i &&& 1) <<< bits) ||| bitRevNat bits (i >>> 1)
 
 /-- Apply bit-reversal permutation to an evaluation array. -/
-def bitRevPermute (D : Domain R) (a : Array R) : Array R := by
-  -- TODO: Implement permutation using `bitRevIndex`.
-  sorry
+def bitRevPermute (D : Domain R) (a : Array R) : Array R :=
+  Array.ofFn (fun i : D.Idx => a.getD (bitRevNat D.logN i.1) 0)
 
 /-- One butterfly stage of the iterative radix-2 transform. -/
-def butterflyStage (D : Domain R) (stage : Nat) (a : Array R) : Array R := by
-  -- TODO: Implement in-place/out-of-place stage update.
-  sorry
+def butterflyStage (D : Domain R) (stage : Nat) (a : Array R) : Array R := Id.run do
+  let blockSize : Nat := 2 ^ (stage + 1)
+  let half : Nat := 2 ^ stage
+  let wm := D.omega ^ (D.n / blockSize)
+  let mut acc := a
+  for base in [0:D.n] do
+    if base % blockSize == 0 then
+      let mut w : R := 1
+      for j in [0:half] do
+        let i0 := base + j
+        let i1 := i0 + half
+        let u := acc.getD i0 0
+        let t := w * acc.getD i1 0
+        acc := acc.set! i0 (u + t)
+        acc := acc.set! i1 (u - t)
+        w := w * wm
+  return acc
 
 /-- Run all radix-2 butterfly stages (target complexity: `O(n log n)`). -/
-def runStages (D : Domain R) (a : Array R) : Array R :=
-  Nat.rec a (fun stage acc => butterflyStage D stage acc) D.logN
+def runStages (D : Domain R) (a : Array R) : Array R := Id.run do
+  let mut acc := a
+  for stage in [0:D.logN] do
+    acc := butterflyStage D stage acc
+  return acc
 
 /-- Intended fast implementation entry point. -/
 @[inline] def forwardImpl (D : Domain R) (p : CPolynomial.Raw R) : Array R :=
-  -- TODO: Replace this spec call with `runStages D (bitRevPermute D (inputArray D p))`
-  -- once the dedicated radix-2 implementation is ready.
-  forwardSpec D p
+  runStages D (bitRevPermute D (inputArray D p))
 
 @[simp] theorem size_inputArray (D : Domain R) (p : CPolynomial.Raw R) :
     (inputArray D p).size = D.n := by
@@ -76,7 +91,8 @@ def runStages (D : Domain R) (a : Array R) : Array R :=
 
 theorem forwardImpl_correct (D : Domain R) (p : CPolynomial.Raw R) :
     forwardImpl D p = forwardSpec D p := by
-  rfl
+  -- TODO: Prove the iterative radix-2 implementation matches the direct NTT formula.
+  sorry
 
 end Forward
 end NTT

@@ -52,7 +52,7 @@ variable [BEq R] [LawfulBEq R]
 
 theorem fastMulImpl_correct (D : Domain R) (p q : CPolynomial.Raw R) :
     fastMulImpl D p q = fastMulSpec D p q := by
-  rfl
+  simp [fastMulImpl, fastMulSpec, Forward.forwardImpl_correct, Inverse.inverseImpl_correct]
 
 theorem fastMulSpec_coeff (D : Domain R) (p q : CPolynomial.Raw R) (i : Nat) :
     (fastMulSpec D p q).coeff i = (p * q).coeff i := by
