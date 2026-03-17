@@ -76,6 +76,9 @@ jobs:
         run: |
           bash scripts/build_timing_report.sh run test_path "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c 'lake test'
+      - name: Fail on build warnings
+        continue-on-error: true
+        run: lake build --wfail
       - name: Save Lake cache
         if: success() && steps.lake-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4

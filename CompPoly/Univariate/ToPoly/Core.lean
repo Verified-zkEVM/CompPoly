@@ -32,17 +32,17 @@ namespace CPolynomial
 
 open Raw
 
-variable {R : Type*} [Ring R] [BEq R]
-variable {Q : Type*} [Ring Q]
+variable {R : Type*}
+variable {Q : Type*}
 
-section ToPoly
+section ToPolyDefs
 
 /-- Convert a `CPolynomial.Raw` to a (mathlib) `Polynomial`. -/
-noncomputable def Raw.toPoly (p : CPolynomial.Raw R) : Polynomial R :=
+noncomputable def Raw.toPoly [Semiring R] (p : CPolynomial.Raw R) : Polynomial R :=
   p.eval₂ Polynomial.C Polynomial.X
 
 /-- Alternative definition of `toPoly` using `Finsupp`; currently unused. -/
-noncomputable def Raw.toPoly' (p : CPolynomial.Raw R) : Polynomial R :=
+noncomputable def Raw.toPoly' [Semiring R] (p : CPolynomial.Raw R) : Polynomial R :=
   Polynomial.ofFinsupp (Finsupp.onFinset (Finset.range p.size) p.coeff (by
     intro n hn
     rw [Finset.mem_range]
@@ -52,7 +52,14 @@ noncomputable def Raw.toPoly' (p : CPolynomial.Raw R) : Polynomial R :=
   ))
 
 /-- Convert a canonical polynomial to a (mathlib) `Polynomial`. -/
-noncomputable def toPoly (p : CPolynomial R) : Polynomial R := p.val.toPoly
+noncomputable def toPoly [Zero R] [Semiring R] (p : CPolynomial R) : Polynomial R := p.val.toPoly
+
+end ToPolyDefs
+
+section ToPoly
+
+variable [Semiring R] [BEq R]
+variable [Semiring Q]
 
 namespace Raw
 
@@ -167,16 +174,22 @@ lemma getLast_toImpl {p : Q[X]} (hp : p ≠ 0) : let h : p.toImpl.size > 0 := to
   · contradiction
   simp [h]
 
+omit [BEq R] in
+/-- `toImpl` lands in the semantic canonical carrier used by `CPolynomial`. -/
+@[simp]
+theorem isCanonical_toImpl (p : R[X]) : IsCanonical p.toImpl := by
+  rcases toImpl_elim p with ⟨rfl, h⟩ | ⟨h_nz, _⟩
+  · simpa [h] using (Trim.isCanonical_empty (R := R))
+  · intro hp
+    have hlast : p.toImpl.getLast hp = p.leadingCoeff := by
+      simpa using (getLast_toImpl (Q := R) (p := p) h_nz)
+    rw [hlast]
+    exact Polynomial.leadingCoeff_ne_zero.mpr h_nz
+
 /-- `toImpl` produces canonical polynomials (no trailing zeros). -/
 @[simp, grind =]
 theorem trim_toImpl [LawfulBEq R] (p : R[X]) : p.toImpl.trim = p.toImpl := by
-  rcases toImpl_elim p with ⟨rfl, h⟩ | ⟨h_nz, _⟩
-  · rw [h, Trim.canonical_empty]
-  rw [Trim.canonical_iff]
-  unfold Array.getLast
-  intro
-  rw [getLast_toImpl h_nz]
-  exact Polynomial.leadingCoeff_ne_zero.mpr h_nz
+  exact Trim.trim_eq_of_isCanonical (isCanonical_toImpl p)
 
 end Raw
 
@@ -187,10 +200,13 @@ end Raw
 lemma toImpl_toPoly_of_canonical [LawfulBEq R] (p : CPolynomial R) : p.toPoly.toImpl = p := by
   suffices h_inj : ∀ q : CPolynomial R, p.toPoly = q.toPoly → p = q by
     have : p.toPoly = p.toPoly.toImpl.toPoly := by rw [toPoly_toImpl]
-    exact h_inj ⟨ p.toPoly.toImpl, trim_toImpl p.toPoly ⟩ this |> congrArg Subtype.val |>.symm
+    exact
+      h_inj ⟨p.toPoly.toImpl, isCanonical_toImpl p.toPoly⟩ this
+        |> congrArg Subtype.val
+        |>.symm
   intro q hpq
   apply CPolynomial.ext
-  apply Trim.canonical_ext p.property q.property
+  apply Trim.isCanonical_ext p.property q.property
   intro i
   rw [← coeff_toPoly, ← coeff_toPoly]
   exact hpq |> congrArg (fun p => p.coeff i)
@@ -199,7 +215,7 @@ lemma toImpl_toPoly_of_canonical [LawfulBEq R] (p : CPolynomial R) : p.toPoly.to
 @[simp, grind =]
 theorem Raw.toImpl_toPoly [LawfulBEq R] (p : CPolynomial.Raw R) : p.toPoly.toImpl = p.trim := by
   rw [← toPoly_trim]
-  exact toImpl_toPoly_of_canonical ⟨ p.trim, Trim.trim_twice p⟩
+  exact toImpl_toPoly_of_canonical ⟨ p.trim, Trim.isCanonical_trim p⟩
 
 /-- `toPoly` maps a canonical polynomial to `0` iff the polynomial is `0`. -/
 theorem toPoly_eq_zero_iff [LawfulBEq R] (p : CPolynomial R) :
