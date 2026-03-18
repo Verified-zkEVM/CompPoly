@@ -100,13 +100,15 @@ theorem support_toPoly [BEq R] [LawfulBEq R] (p : CPolynomial R) :
   · simp +decide [ CPolynomial.support, Finset.ext_iff, Set.ext_iff ]
     grind
 
-private theorem size_toImpl_eq_natDegree_succ {q : R[X]} (hq : q ≠ 0) :
+/-- lemma: toImpl is natDegree's succ -/
+private lemma size_toImpl_eq_natDegree_succ {q : R[X]} (hq : q ≠ 0) :
     q.toImpl.size = q.natDegree + 1 := by
   rcases Raw.toImpl_elim q with ⟨hzero, _⟩ | ⟨_, himpl⟩
   · exact (hq hzero).elim
   · simp [himpl]
 
-private theorem size_eq_toPoly_natDegree_succ [BEq R] [LawfulBEq R]
+/-- lemma: size = natDegree's succ -/
+private lemma size_eq_toPoly_natDegree_succ [BEq R] [LawfulBEq R]
     (p : CPolynomial R) (hp : p ≠ 0) :
     p.val.size = p.toPoly.natDegree + 1 := by
   have htoPoly : p.toPoly ≠ 0 := (toPoly_eq_zero_iff p).not.mpr hp
@@ -115,6 +117,7 @@ private theorem size_eq_toPoly_natDegree_succ [BEq R] [LawfulBEq R]
   rw [← hsize]
   exact size_toImpl_eq_natDegree_succ htoPoly
 
+/-- CPolynomial.degree is correct wrt the Mathlib spec. -/
 theorem degree_toPoly [BEq R] [LawfulBEq R] (p : CPolynomial R) :
     p.degree = p.toPoly.degree := by
   by_cases hp : p = 0
@@ -131,6 +134,7 @@ theorem degree_toPoly [BEq R] [LawfulBEq R] (p : CPolynomial R) :
         simp [CPolynomial.degree, hs, hnat,
           Polynomial.degree_eq_natDegree htoPoly]
 
+/-- CPolynomial.natDegree is correct wrt the Mathlib spec. -/
 theorem natDegree_toPoly [BEq R] [LawfulBEq R] (p : CPolynomial R) :
     p.natDegree = p.toPoly.natDegree := by
   by_cases hp : p = 0
@@ -152,6 +156,7 @@ theorem natDegree_toPoly [BEq R] [LawfulBEq R] (p : CPolynomial R) :
           hs
         ]
 
+/-- CPolynomial.leadingCoeff is correct wrt the Mathlib spec. -/
 theorem leadingCoeff_toPoly [BEq R] [LawfulBEq R] (p : CPolynomial R) :
     p.leadingCoeff = p.toPoly.leadingCoeff := by
   by_cases hp : p = 0
@@ -171,6 +176,7 @@ theorem leadingCoeff_toPoly [BEq R] [LawfulBEq R] (p : CPolynomial R) :
       simpa [hround] using hlastImpl
     simpa [CPolynomial.leadingCoeff, Array.getLastD, hpos] using hlast
 
+/-- CPolynomial.erase is correct wrt the Mathlib spec. -/
 theorem erase_toPoly {R : Type*} [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
     (n : ℕ) (p : CPolynomial R) :
     (erase n p).toPoly = p.toPoly.erase n := by
@@ -201,6 +207,7 @@ theorem erase_toPoly {R : Type*} [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
     exact Eq.symm Array.getD_eq_getD_getElem?
   · rw [ Polynomial.coeff_erase ]; aesop
 
+/-- CPolynomial.C r mul CPolynomial.X ^ n is correct wrt the Mathlib spec. -/
 theorem C_mul_X_pow_toPoly [BEq R] [LawfulBEq R] [DecidableEq R] [Nontrivial R] (r : R) (n : ℕ) :
     (C r * X ^ n).toPoly = Polynomial.monomial n r := by
   convert C_mul_X_pow_eq_monomial r n using 1
@@ -208,15 +215,18 @@ theorem C_mul_X_pow_toPoly [BEq R] [LawfulBEq R] [DecidableEq R] [Nontrivial R] 
   · exact C_mul_X_pow_eq_monomial r n
   · convert monomial_toPoly n r
 
+/-- CPolynomial.lcoeff is correct wrt the Mathlib spec. -/
 theorem lcoeff_toPoly [BEq R] [LawfulBEq R] (n : ℕ) (p : CPolynomial R) :
     lcoeff (R := R) n p = Polynomial.lcoeff R n (toPoly p) := by
     simp [lcoeff, Polynomial.lcoeff_apply, ← coeff_toPoly]
 
+/-- CPolynomial.degreeLE is correct wrt the Mathlib spec. -/
 theorem degreeLE_toPoly {n : WithBot ℕ} [BEq R] [LawfulBEq R] {p : CPolynomial R} :
     p ∈ degreeLE (R := R) n ↔ p.toPoly ∈ Polynomial.degreeLE R n := by
   rw [Polynomial.mem_degreeLE]
   convert (show p.degree ≤ n ↔ p.toPoly.degree ≤ n by rw [degree_toPoly]) using 1
 
+/-- CPolynomial.degreeLT is correct wrt the Mathlib spec. -/
 theorem degreeLT_toPoly {n : ℕ} [BEq R] [LawfulBEq R] {p : CPolynomial R} :
     p ∈ degreeLT (R := R) n ↔ p.toPoly ∈ Polynomial.degreeLT R n := by
   rw [Polynomial.mem_degreeLT]
