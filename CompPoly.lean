@@ -77,8 +77,8 @@ import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.Lagrange
 import CompPoly.Univariate.Linear
-import CompPoly.Univariate.Quotient
-import CompPoly.Univariate.QuotientEquiv
+import CompPoly.Univariate.Quotient.Core
+import CompPoly.Univariate.Quotient.Equiv
 import CompPoly.Univariate.Raw
 import CompPoly.Univariate.Raw.Core
 import CompPoly.Univariate.Raw.Division
@@ -88,3 +88,4 @@ import CompPoly.Univariate.ToPoly
 import CompPoly.Univariate.ToPoly.Core
 import CompPoly.Univariate.ToPoly.Degree
 import CompPoly.Univariate.ToPoly.Equiv
+import CompPoly.Univariate.ToPoly.Impl

@@ -5,7 +5,7 @@ Authors: Derek Sorensen
 -/
 
 import CompPoly.Bivariate.Basic
-import CompPoly.Univariate.ToPoly.Degree
+import CompPoly.Univariate.ToPoly.Impl
 import Mathlib.Algebra.Polynomial.Bivariate
 
 /-!
@@ -549,8 +549,10 @@ theorem evalX_toPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Sem
   convert h₁ (CPolynomial.support f) (fun i => f.val.coeff i) using 1
   convert h₂ using 1
   exact Finset.sum_congr rfl fun i hi => by
-    rw [CPolynomial.monomial_toPoly]
-    simp +decide [Polynomial.coeff_monomial]
+    have (n : ℕ) (c : R) : (CPolynomial.monomial n c).toPoly = Polynomial.monomial n c := by
+        apply CPolynomial.monomial_toPoly
+    rw [this]
+    simp [Polynomial.coeff_monomial]
 
 /--
 `evalX` is compatible with full bivariate evaluation when `a` and `y` commute.
