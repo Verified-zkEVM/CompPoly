@@ -1,4 +1,3 @@
-
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
@@ -107,7 +106,8 @@ private theorem size_toImpl_eq_natDegree_succ {q : R[X]} (hq : q ≠ 0) :
   · exact (hq hzero).elim
   · simp [himpl]
 
-private theorem size_eq_toPoly_natDegree_succ [BEq R] [LawfulBEq R] (p : CPolynomial R) (hp : p ≠ 0) :
+private theorem size_eq_toPoly_natDegree_succ [BEq R] [LawfulBEq R]
+    (p : CPolynomial R) (hp : p ≠ 0) :
     p.val.size = p.toPoly.natDegree + 1 := by
   have htoPoly : p.toPoly ≠ 0 := (toPoly_eq_zero_iff p).not.mpr hp
   have hsize : p.toPoly.toImpl.size = p.val.size := by
