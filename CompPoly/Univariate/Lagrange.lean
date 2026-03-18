@@ -5,7 +5,7 @@ Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Katerina Hristova, Jul
 -/
 import Mathlib.LinearAlgebra.Lagrange
 import CompPoly.Univariate.Basic
-import CompPoly.Univariate.ToPoly.Equiv
+import CompPoly.Univariate.ToPoly.Impl
 
 /-!
   # Lagrange Interpolation
