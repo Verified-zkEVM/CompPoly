@@ -328,11 +328,6 @@ lemma W_ne_zero (i : Fin r) : (W 𝔽q β i) ≠ 0 := by
     exact Polynomial.X_sub_C_ne_zero (c: L)
   contradiction
 
-example (i : Fin r) (h_i_eq_0 : i = 0) : Set.Ico 0 i = ∅ := by
-  rw [h_i_eq_0] -- ⊢ Set.Ico 0 0 = ∅
-  simp only [Set.Ico_eq_empty_iff]
-  exact Nat.not_lt_zero 0
-
 omit [DecidableEq L] [Fintype 𝔽q]  in
 /-- The evaluation of `Wᵢ(X)` at `βᵢ` is non-zero. -/
 lemma Wᵢ_eval_βᵢ_neq_zero
