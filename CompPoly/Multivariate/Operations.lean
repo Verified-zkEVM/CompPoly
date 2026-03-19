@@ -204,7 +204,7 @@ lemma bind₁_eq_aeval {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBE
 
   Given `f : Fin n → Fin m`, renames variable `X i` to `X (f i)`.
 -/
-def rename {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+def rename {n m : ℕ} {R : Type} [Zero R] [Add R] [BEq R] [LawfulBEq R]
     (f : Fin n → Fin m) (p : CMvPolynomial n R) : CMvPolynomial m R :=
   let renameMonomial (mono : CMvMonomial n) : CMvMonomial m :=
     Vector.ofFn (fun j => (Finset.univ.filter (fun i => f i = j)).sum (fun i => mono.get i))
@@ -213,7 +213,7 @@ def rename {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
 -- `renameEquiv` is defined in `CompPoly.Multivariate.Rename`
 
 /-- Iterative reconstruction of a polynomial by folding over terms. -/
-def sumToIter {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+def sumToIter {n : ℕ} {R : Type} [Zero R] [Add R] [BEq R] [LawfulBEq R]
     (p : CMvPolynomial n R) : CMvPolynomial n R :=
   ExtTreeMap.foldl (fun acc m c => acc + monomial m c) 0 p.1
 
