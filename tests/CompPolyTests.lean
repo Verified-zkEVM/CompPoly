@@ -10,4 +10,5 @@ import CompPolyTests.BF128GhashPrelude
 import CompPolyTests.Multilinear.Equiv
 import CompPolyTests.Multivariate.CMvMonomial
 import CompPolyTests.Multivariate.Restrict
+import CompPolyTests.Multivariate.TypeclassMinimization
 import CompPolyTests.Multivariate.VarsDegrees
