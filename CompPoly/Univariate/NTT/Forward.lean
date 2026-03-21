@@ -22,10 +22,6 @@ namespace Forward
 
 variable {R : Type*} [Field R]
 
-/-- Input coefficients packed as a fixed-size array over the domain. -/
-@[inline] def inputArray (D : Domain R) (p : CPolynomial.Raw R) : Array R :=
-  Array.ofFn (fun i : D.Idx => p.coeff i.1)
-
 /-- DFT/NTT formula at one output index. -/
 @[inline] def nttAt (D : Domain R) (a : Array R) (k : D.Idx) : R :=
   ∑ j : D.Idx, a.getD j.1 0 * D.omega ^ ((k : Nat) * (j : Nat))
@@ -36,7 +32,7 @@ variable {R : Type*} [Field R]
 
 /-- Spec-level forward NTT from a raw polynomial input. -/
 @[inline] def forwardSpec (D : Domain R) (p : CPolynomial.Raw R) : Array R :=
-  forwardArraySpec D (inputArray D p)
+  forwardArraySpec D p
 
 /-- Reverse the lowest `bits` bits of `i`. -/
 def bitRevNat : Nat → Nat → Nat
@@ -75,11 +71,7 @@ def runStages (D : Domain R) (a : Array R) : Array R := Id.run do
 
 /-- Intended fast implementation entry point. -/
 @[inline] def forwardImpl (D : Domain R) (p : CPolynomial.Raw R) : Array R :=
-  runStages D (bitRevPermute D (inputArray D p))
-
-@[simp] theorem size_inputArray (D : Domain R) (p : CPolynomial.Raw R) :
-    (inputArray D p).size = D.n := by
-  simp [inputArray]
+  runStages D (bitRevPermute D p)
 
 @[simp] theorem size_forwardArraySpec (D : Domain R) (a : Array R) :
     (forwardArraySpec D a).size = D.n := by
