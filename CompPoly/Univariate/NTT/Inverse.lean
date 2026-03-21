@@ -7,10 +7,9 @@ import CompPoly.Univariate.NTT.Domain
 import CompPoly.Univariate.NTT.Forward
 
 /-!
-# Inverse NTT Scaffolding
+# Inverse NTT
 
-This file provides placeholder inverse NTT APIs and correctness statement
-targets for future implementation/proofs.
+This file provides inverse NTT APIs and correctness statement.
 -/
 
 open scoped BigOperators
@@ -27,13 +26,8 @@ def inttAt (D : Domain R) (v : Array R) (k : D.Idx) : R :=
   D.nInv * ∑ j : D.Idx, v.getD j.1 0 * D.omegaInv ^ ((k : Nat) * (j : Nat))
 
 /-- Full inverse transform on arrays, specified from `inttAt`. -/
-def inverseArraySpec (D : Domain R) (v : Array R) : Array R :=
+def inverseSpec (D : Domain R) (v : Array R) : Array R :=
   Array.ofFn (fun k : D.Idx => inttAt D v k)
-
-/-- Convert inverse-transform output array back to raw polynomial coefficients. -/
-def inverseSpec (D : Domain R) (v : Array R) : CPolynomial.Raw R :=
-  -- TODO: Revisit whether inverse output should be normalized/truncated here or at call sites.
-  inverseArraySpec D v
 
 /-- Apply bit-reversal permutation to an evaluation array. -/
 def bitRevPermute (D : Domain R) (a : Array R) : Array R :=
@@ -69,10 +63,6 @@ def runStages (D : Domain R) (a : Array R) : Array R := Id.run do
 def normalize (D : Domain R) (a : Array R) : Array R :=
   Array.ofFn (fun i : D.Idx => D.nInv * a.getD i.1 0)
 
-@[simp] theorem size_inverseArraySpec (D : Domain R) (v : Array R) :
-    (inverseArraySpec D v).size = D.n := by
-  simp [inverseArraySpec]
-
 @[simp] theorem size_inverseSpec (D : Domain R) (v : Array R) :
     (inverseSpec D v).size = D.n := by
   simp [inverseSpec]
@@ -81,7 +71,7 @@ def normalize (D : Domain R) (a : Array R) : Array R :=
     (normalize D a).size = D.n := by
   simp [normalize]
 
-/-- Placeholder inverse implementation returning coefficients. -/
+/-- Intended fast implementation entry point for inverse NTT. -/
 def inverseImpl (D : Domain R) (v : Array R) : CPolynomial.Raw R :=
   normalize D (runStages D (bitRevPermute D v))
 
