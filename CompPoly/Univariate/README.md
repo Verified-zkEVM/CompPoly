@@ -12,11 +12,20 @@ Formally verified computable univariate polynomials for [CompPoly](../../README.
 
 ## Modules
 
-- **Raw.lean** — Core datatype, `coeff`, `C`, `X`, `monomial`, `trim`, `degree`, `eval`, addition, multiplication, and proofs.
+- **Raw.lean** — Umbrella import for the raw array-backed representation and its split implementation files.
+- **Raw/Core.lean** — Raw datatype and core operations (`coeff`, `C`, `X`, `monomial`, `trim`, `degree`, `eval`).
+- **Raw/Ops.lean** — Raw algebraic operations and related operational lemmas.
+- **Raw/Division.lean** — Raw polynomial division APIs (`divByMonic`, `modByMonic`, `div`, `mod`).
+- **Raw/Proofs.lean** — Proof layer for the raw API (algebraic laws and operation correctness).
 - **Basic.lean** — Canonical `CPolynomial` with ring structure (Add, Mul, Zero, One, etc.).
 - **Quotient.lean** — Quotient type and operations descending from `Raw`.
-- **ToPoly.lean** — Isomorphism with Mathlib's `Polynomial R` via `toPoly` and `ofPoly`, including round-trip lemmas.
+- **QuotientEquiv.lean** — Equivalence between the quotient representation and canonical `CPolynomial`.
+- **ToPoly.lean** — Umbrella import for conversion/equivalence with Mathlib's `Polynomial R`.
+- **ToPoly/Core.lean** — Core conversion maps and API lemmas.
+- **ToPoly/Equiv.lean** — Round-trip theorems and ring equivalence with Mathlib polynomials.
+- **ToPoly/Degree.lean** — Degree/support transport lemmas for conversions.
 - **Lagrange.lean** — Lagrange interpolation: `nodal`, `interpolate` at roots of unity.
+- **Linear.lean** — Linear-factor and affine helper lemmas for univariate workflows.
 
 ## Example
 

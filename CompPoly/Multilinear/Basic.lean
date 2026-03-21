@@ -141,8 +141,8 @@ end CMlPolynomialInstances
 
 section CMlPolynomialMonomialBasisAndEvaluations
 
-variable [CommRing R]
-variable {S : Type*} [CommRing S]
+variable [CommSemiring R]
+variable {S : Type*} [CommSemiring S]
 
 /-
 Monomial-basis evaluations at point `w`.
@@ -167,10 +167,9 @@ theorem monomialBasis_getElem {w : Vector R n} (i : Fin (2 ^ n)) :
   rw [monomialBasis]
   simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin, Vector.getElem_ofFn]
 
-variable {S : Type*} [CommRing S]
-
-def map (f : R →+* S) (p : CMlPolynomial R n) : CMlPolynomial S n :=
-  Vector.map (fun a => f a) p
+def map {R S : Type*} [Semiring R] [Semiring S] (f : R →+* S)
+    (p : CMlPolynomial R n) : CMlPolynomial S n :=
+  Vector.map f p
 
 /-- Evaluate a `CMlPolynomial` at a point -/
 def eval (p : CMlPolynomial R n) (x : Vector R n) : R :=
@@ -304,10 +303,9 @@ theorem lagrangeBasis_getElem {w : Vector R n} (i : Fin (2 ^ n)) :
   rw [lagrangeBasis]
   simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin, Vector.getElem_ofFn]
 
-variable {S : Type*} [CommRing S]
-
 /-- Map a ring homomorphism over a `CMlPolynomialEval` -/
-def map (f : R →+* S) (p : CMlPolynomialEval R n) : CMlPolynomialEval S n :=
+def map {R S : Type*} [Semiring R] [Semiring S]
+    (f : R →+* S) (p : CMlPolynomialEval R n) : CMlPolynomialEval S n :=
   Vector.map (fun a => f a) p
 
 /-- Evaluate a `CMlPolynomialEval` at a point -/
@@ -316,6 +314,10 @@ def eval (p : CMlPolynomialEval R n) (x : Vector R n) : R :=
 
 /-- Evaluate a `CMlPolynomialEval` at a point using a ring homomorphism -/
 def eval₂ (p : CMlPolynomialEval R n) (f : R →+* S) (x : Vector S n) : S := eval (map f p) x
+
+/-- Evaluate the multilinear equality kernel `eq̃(w, x)`. -/
+@[inline] def eqTilde (w x : Vector R n) : R :=
+  eval (lagrangeBasis w) x
 
 -- Theorems about evaluations
 
@@ -598,7 +600,7 @@ theorem mobius_apply_zeta_apply_eq_id (n : ℕ) [NeZero n] (r : Fin n) (l : Fin 
     rw [lagrangeToMonoSegment, monoToLagrangeSegment, forwardRange]
     simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, Fin.val_eq_zero, tsub_self, zero_add,
       List.ofFn_succ, Fin.isValue, Fin.cast_zero, Nat.mod_succ, add_zero, Fin.mk_zero',
-      Fin.cast_succ_eq, Fin.val_succ, Fin.coe_cast, List.ofFn_zero, List.foldl_cons, List.foldl_nil,
+      Fin.cast_succ_eq, Fin.val_succ, Fin.val_cast, List.ofFn_zero, List.foldl_cons, List.foldl_nil,
       List.foldr_cons, List.foldr_nil]
     exact lagrangeToMonoLevel_monoToLagrangeLevel_id v 0
   | succ r1 r1_lt_n h_r1 =>
@@ -643,7 +645,7 @@ lemma zeta_apply_mobius_apply_eq_id (n : ℕ) (r : Fin n) (l : Fin (r.val + 1))
     rw [lagrangeToMonoSegment, monoToLagrangeSegment, forwardRange]
     simp only [add_tsub_cancel_right, tsub_self, zero_add, List.ofFn_succ, Nat.add_one_sub_one,
       Fin.isValue, Fin.cast_zero, Fin.coe_ofNat_eq_mod, Nat.mod_succ, add_zero, Fin.eta,
-      Fin.cast_succ_eq, Fin.val_succ, Fin.coe_cast, List.ofFn_zero, List.foldr_cons, List.foldr_nil,
+      Fin.cast_succ_eq, Fin.val_succ, Fin.val_cast, List.ofFn_zero, List.foldr_cons, List.foldr_nil,
       List.foldl_cons, List.foldl_nil]
     exact monoToLagrangeLevel_lagrangeToMonoLevel_id v r
   | succ l1 l1_gt_0 h_l1 =>

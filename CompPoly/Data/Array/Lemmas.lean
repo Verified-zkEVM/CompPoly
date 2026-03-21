@@ -170,7 +170,9 @@ def rightpadPowerOfTwo (unit : α) (a : Array α) : Array α :=
 
 @[simp] lemma rightpadPowerOfTwo_size (unit : α) (a : Array α) :
   (a.rightpadPowerOfTwo unit).size = 2 ^ (Nat.clog 2 a.size) := by
-  simp [rightpadPowerOfTwo, Nat.le_pow_iff_clog_le]
+  have h_le : a.size ≤ 2 ^ Nat.clog 2 a.size := by
+    exact (Nat.clog_le_iff_le_pow (b := 2) (by decide)).1 le_rfl
+  simp [rightpadPowerOfTwo, Nat.add_sub_of_le h_le]
 
 /-- Get the last element of an array, assuming the array is non-empty. -/
 def getLast (a : Array α) (h : a.size > 0) : α := a[a.size - 1]

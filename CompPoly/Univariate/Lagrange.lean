@@ -5,7 +5,7 @@ Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Katerina Hristova, Jul
 -/
 import Mathlib.LinearAlgebra.Lagrange
 import CompPoly.Univariate.Basic
-import CompPoly.Univariate.ToPoly
+import CompPoly.Univariate.ToPoly.Impl
 
 /-!
   # Lagrange Interpolation
@@ -73,7 +73,10 @@ def interpolate {ι : Type*} [DecidableEq ι] (s : Finset ι) (x : ι → R) :
         intros n
         rw [coeff_C_mul, coeff_C_mul, coeff_C_mul, ←_root_.mul_assoc]
       rw [h₁, ←Finset.mul_sum]
-      rfl
+      simp only [RingHom.id_apply]
+      rw [eq_iff_coeff]; intro i; rw [coeff_C_mul, coeff_smul]
+
+
 
 lemma cinterpolate_eq_interpolate
     {ι : Type*} [DecidableEq ι] {s : Finset ι} {x : ι → R} {y : ι → R} :

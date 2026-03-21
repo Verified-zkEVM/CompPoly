@@ -3,7 +3,7 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Fawad Haider
 -/
-import CompPoly.Multivariate.MvPolyEquiv
+import CompPoly.Multivariate.MvPolyEquiv.Eval
 import Mathlib.Algebra.MvPolynomial.Variables
 
 /-!
@@ -85,7 +85,7 @@ lemma vars_add_subset [CommSemiring R] [BEq R] [LawfulBEq R]
   simpa [map_add] using
     (MvPolynomial.vars_add_subset (fromCMvPolynomial p) (fromCMvPolynomial q))
 
-attribute [grind] mem_vars_iff_degreeOf_pos
+attribute [grind =] mem_vars_iff_degreeOf_pos
 attribute [grind =] degreeOf_zero degrees_zero vars_zero degrees_one
 
 end CPoly

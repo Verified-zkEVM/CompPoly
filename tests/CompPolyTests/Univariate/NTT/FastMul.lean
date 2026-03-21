@@ -46,7 +46,7 @@ example :
 example :
     let p : CPolynomial.Raw KoalaBear.Field := #[(1 : KoalaBear.Field), 2, 3, 4, 5, 6]
     let q : CPolynomial.Raw KoalaBear.Field := #[(7 : KoalaBear.Field), 8, 9, 10, 11]
-    FastMul.mulWithFastPath testDomain p q = p * q := by
+    FastMul.fastMulImpl testDomain32 p q = p * q := by
   native_decide
 
 example :

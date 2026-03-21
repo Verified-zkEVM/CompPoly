@@ -73,7 +73,7 @@ lemma mem_iff : x ∈ p ↔ ∃ v, v ≠ 0 ∧ p[x]? = .some v := by
 theorem getElem?_ne_some_zero : p[m]? ≠ some 0 := by
   rcases p; grind
 
-@[grind]
+@[grind .]
 theorem getD_getElem?_ne_zero_of_mem (h : m ∈ p) : p[m]?.getD 0 ≠ 0 := by
   grind
 
@@ -103,20 +103,20 @@ lemma zero_def : Zero.zero (α := Lawful n R) = C 0 := rfl
 
 instance instOfNat {m : ℕ} [NeZero m] [NatCast R] : OfNat (Lawful n R) m := ⟨C m⟩
 
-@[simp, grind]
+@[simp, grind =]
 lemma C_zero : C (n := n) (0 : R) = 0 := rfl
 
-@[simp, grind]
+@[simp, grind =]
 lemma C_zero' : C (n := n) (0 : ℕ) = 0 := rfl
 
 lemma zero_eq_zero : (0 : Lawful n R) = ⟨0, by grind⟩ := rfl
 
 lemma zero_eq_empty : (0 : Lawful n R) = ∅ := by unfold_projs; simp [C, Unlawful.zero_eq_empty]
 
-@[simp, grind]
+@[simp, grind .]
 lemma not_mem_C_zero : x ∉ C 0 := by simp [zero_eq_empty]; unfold_projs; grind
 
-@[simp, grind]
+@[simp, grind .]
 lemma not_mem_zero : x ∉ (0 : Lawful n R) := by rw [zero_eq_zero]; exact Unlawful.not_mem_zero
 
 @[simp]
@@ -191,19 +191,19 @@ lemma fromUnlawful_cast {p : Lawful n R} : fromUnlawful p.1 = p := by
 
 section
 
-variable [BEq R] [LawfulBEq R] [CommRing R]
+variable [BEq R] [LawfulBEq R]
 
 /-- Negation of a polynomial. -/
-def neg (p : Lawful n R) : Lawful n R :=
+def neg [Neg R] (p : Lawful n R) : Lawful n R :=
   fromUnlawful p.1.neg
 
-instance : Neg (Lawful n R) := ⟨neg⟩
+instance [Neg R] : Neg (Lawful n R) := ⟨neg⟩
 
 /-- Subtraction of polynomials. -/
-def sub (p₁ p₂ : Lawful n R) : Lawful n R :=
+def sub [Add R] [Neg R] (p₁ p₂ : Lawful n R) : Lawful n R :=
   p₁ + (-p₂)
 
-instance : Sub (Lawful n R) := ⟨sub⟩
+instance [Add R] [Neg R] : Sub (Lawful n R) := ⟨sub⟩
 
 instance instDecidableEq [DecidableEq R] : DecidableEq (Lawful n R) := fun x y ↦
   if h : x.1.toList = y.1.toList
@@ -238,25 +238,28 @@ def liftPoly
   Lawful (n₁ ⊔ n₂) R)
   (p₁ : Lawful n₁ R) (p₂ : Lawful n₂ R) : Lawful (n₁ ⊔ n₂) R :=
   Function.uncurry f (align p₁ p₂)
-section
-
-variable [CommRing R]
-
-instance : HAdd (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
-  ⟨fun p₁ p₂ ↦ liftPoly (·+·) p₁ p₂⟩
-
-instance : HSub (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
-  ⟨fun p₁ p₂ ↦ liftPoly (·-·) p₁ p₂⟩
-
-instance : HMul (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
-  ⟨fun p₁ p₂ ↦ liftPoly (·*·) p₁ p₂⟩
-
-instance : HPow (Lawful n R) ℕ (Lawful n R) :=
-  ⟨fun p₁ exp ↦ exp.iterate p₁.mul 1⟩
 
 def polyCoe (p : Lawful n R) : Lawful (n + 1) R := cast (by simp) (p.extend n.succ)
 
 instance : Coe (Lawful n R) (Lawful (n + 1) R) := ⟨polyCoe⟩
+
+section
+
+-- Mixed-arity fallbacks: keep these low-priority so same-arity `Add`/`Sub`/`Mul`
+-- instances win when both operands already live in `Lawful n R`.
+-- We intentionally do not add an `HPow` fallback here: exponentiation is unary, preserves
+-- arity, and is already handled above by the same-arity `NatPow (Lawful n R)` instance.
+instance (priority := low) [Add R] :
+    HAdd (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
+  ⟨fun p₁ p₂ ↦ liftPoly (·+·) p₁ p₂⟩
+
+instance (priority := low) [Add R] [Neg R] :
+    HSub (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
+  ⟨fun p₁ p₂ ↦ liftPoly (·-·) p₁ p₂⟩
+
+instance (priority := low) [Add R] [Mul R] :
+    HMul (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
+  ⟨fun p₁ p₂ ↦ liftPoly (·*·) p₁ p₂⟩
 
 end
 

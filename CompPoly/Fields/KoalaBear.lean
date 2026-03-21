@@ -156,18 +156,81 @@ lemma coprime_three_fieldSize_sub_one : Nat.Coprime 3 (fieldSize - 1) := by
 lemma twoAdicity_maximal : ¬ (2 ^ (twoAdicity + 1)) ∣ (fieldSize - 1) := by
   decide
 
-set_option maxHeartbeats 800000 in
+/-- Repeated squaring: `sqChain g n = g ^ (2^n)`.
+    Does `n` multiplications instead of `2^n`, making it kernel-friendly. -/
+private def sqChain (g : Field) : Nat → Field
+  | 0 => g
+  | n + 1 => let h := sqChain g n; h * h
+
+private theorem sqChain_eq_pow_two_pow (g : Field) (n : Nat) :
+    sqChain g n = g ^ (2 ^ n) := by
+  induction n with
+  | zero => simp [sqChain]
+  | succ n ih => simp [sqChain, ih, pow_succ, pow_mul]
+
+/-- Repeated squaring walks backward through the precomputed two-adic generator table. -/
+private theorem sqChain_twoAdicGenerators_shift (k n : Nat) (hkn : k + n ≤ twoAdicity) :
+    sqChain twoAdicGenerators[(⟨k + n, by omega⟩ : Fin (twoAdicity + 1))] n =
+      twoAdicGenerators[(⟨k, by omega⟩ : Fin (twoAdicity + 1))] := by
+  induction n generalizing k with
+  | zero =>
+      simp [sqChain]
+  | succ n ih =>
+      calc
+        sqChain twoAdicGenerators[(⟨k + (n + 1), by omega⟩ : Fin (twoAdicity + 1))] (n + 1)
+            =
+              sqChain twoAdicGenerators[(⟨k + (n + 1), by omega⟩ : Fin (twoAdicity + 1))] n *
+                sqChain twoAdicGenerators[(⟨k + (n + 1), by omega⟩ : Fin (twoAdicity + 1))] n := by
+                  simp [sqChain]
+        _ = twoAdicGenerators[(⟨k + 1, by omega⟩ : Fin (twoAdicity + 1))] *
+              twoAdicGenerators[(⟨k + 1, by omega⟩ : Fin (twoAdicity + 1))] := by
+              have hshift :
+                  sqChain twoAdicGenerators[(⟨k + (n + 1), by omega⟩ : Fin (twoAdicity + 1))] n =
+                    twoAdicGenerators[(⟨k + 1, by omega⟩ : Fin (twoAdicity + 1))] := by
+                simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using
+                  (ih (k := k + 1) (by omega))
+              exact congrArg (fun x => x * x) hshift
+        _ = twoAdicGenerators[(⟨k + 1, by omega⟩ : Fin (twoAdicity + 1))] ^ 2 := by
+              simp [pow_two]
+        _ = twoAdicGenerators[(⟨k, by omega⟩ : Fin (twoAdicity + 1))] := by
+              simpa [Nat.succ_eq_add_one, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using
+                (twoAdicGenerators_succ_square_eq k (by omega))
+
+/-- Every nonzero index in the precomputed table is genuinely nontrivial. -/
+private lemma twoAdicGenerators_ne_one_of_pos (n : Fin (twoAdicity + 1)) (hn : 0 < n) :
+    twoAdicGenerators[n] ≠ (1 : Field) := by
+  fin_cases n <;> simp_all [twoAdicGenerators] <;> decide
+
 /-- The power `(twoAdicGenerators[bits])^(2^bits) = 1`. -/
 lemma twoAdicGenerators_pow_twoPow_eq_one (bits : Fin (twoAdicity + 1)) :
     twoAdicGenerators[bits] ^ (2 ^ (bits : Nat)) = 1 := by
-  fin_cases bits <;> native_decide
+  rw [← sqChain_eq_pow_two_pow]
+  rcases bits with ⟨n, hn⟩
+  have hshift :
+      sqChain twoAdicGenerators[(⟨n, hn⟩ : Fin (twoAdicity + 1))] n =
+        twoAdicGenerators[(⟨0, by omega⟩ : Fin (twoAdicity + 1))] := by
+    simpa using sqChain_twoAdicGenerators_shift 0 n (by omega)
+  simpa [twoAdicGenerators] using hshift
 
-set_option maxHeartbeats 1600000 in
 /-- Helper: Fin-indexed version for computational verification of non-triviality. -/
 private lemma twoAdicGenerators_pow_ne_one_aux (n : Fin 25) (m : Fin 25)
     (hm : m.val < n.val) :
     twoAdicGenerators[n] ^ (2 ^ m.val) ≠ (1 : Field) := by
-  fin_cases n <;> fin_cases m <;> simp_all <;> native_decide
+  rw [← sqChain_eq_pow_two_pow]
+  let nMinus : Fin (twoAdicity + 1) :=
+    ⟨n.val - m.val, lt_of_le_of_lt (Nat.sub_le _ _) n.isLt⟩
+  have hshift :
+      sqChain twoAdicGenerators[n] m.val = twoAdicGenerators[nMinus] := by
+    have hn_le : n.val ≤ twoAdicity := by
+      simpa [twoAdicity] using Nat.le_of_lt_succ n.isLt
+    have hbound : (n.val - m.val) + m.val ≤ twoAdicity := by
+      simpa [Nat.sub_add_cancel (Nat.le_of_lt hm)] using hn_le
+    simpa [Nat.sub_add_cancel (Nat.le_of_lt hm)] using
+      (sqChain_twoAdicGenerators_shift (n.val - m.val) m.val hbound)
+  rw [hshift]
+  exact twoAdicGenerators_ne_one_of_pos nMinus (by
+    change 0 < n.val - m.val
+    exact Nat.sub_pos_of_lt hm)
 
 /-- If `m < bits`, then `(twoAdicGenerators[bits])^(2^m) ≠ 1`. -/
 lemma twoAdicGenerators_pow_twoPow_ne_one_of_lt
