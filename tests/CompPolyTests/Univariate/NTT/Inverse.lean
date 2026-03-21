@@ -19,28 +19,25 @@ namespace InverseTests
 
 open TestCommon
 
-example :
-    let v : Array KoalaBear.Field := #[
-      (1 : KoalaBear.Field), 4, 2, 7, 3, 6, 5, 8
-    ]
-    Inverse.inverseImpl testDomain v = Inverse.inverseSpec testDomain v := by
-  native_decide
+#guard
+  let v : Array KoalaBear.Field := #[
+    (1 : KoalaBear.Field), 4, 2, 7, 3, 6, 5, 8
+  ]
+  Inverse.inverseImpl testDomain v == Inverse.inverseSpec testDomain v
 
-example :
-    let p : CPolynomial.Raw KoalaBear.Field := #[(3 : KoalaBear.Field), 4, 5]
-    let v := Forward.forwardSpec testDomain p
-    Inverse.inverseImpl testDomain v = Inverse.inverseSpec testDomain v := by
-  native_decide
+#guard
+  let p : CPolynomial.Raw KoalaBear.Field := #[(3 : KoalaBear.Field), 4, 5]
+  let v := Forward.forwardSpec testDomain p
+  Inverse.inverseImpl testDomain v == Inverse.inverseSpec testDomain v
 
-example :
-    let v : Array KoalaBear.Field := #[
-      (1 : KoalaBear.Field), 2, 3, 4, 5, 6, 7, 8,
-      9, 10, 11, 12, 13, 14, 15, 16,
-      17, 18, 19, 20, 21, 22, 23, 24,
-      25, 26, 27, 28, 29, 30, 31, 32
-    ]
-    Inverse.inverseImpl testDomain32 v = Inverse.inverseSpec testDomain32 v := by
-  native_decide
+#guard
+  let v : Array KoalaBear.Field := #[
+    (1 : KoalaBear.Field), 2, 3, 4, 5, 6, 7, 8,
+    9, 10, 11, 12, 13, 14, 15, 16,
+    17, 18, 19, 20, 21, 22, 23, 24,
+    25, 26, 27, 28, 29, 30, 31, 32
+  ]
+  Inverse.inverseImpl testDomain32 v == Inverse.inverseSpec testDomain32 v
 
 end InverseTests
 end NTT

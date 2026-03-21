@@ -19,22 +19,19 @@ namespace ForwardTests
 
 open TestCommon
 
-example :
-    let p : CPolynomial.Raw KoalaBear.Field := #[(3 : KoalaBear.Field), 4, 5]
-    Forward.forwardImpl testDomain p = Forward.forwardSpec testDomain p := by
-  native_decide
+#guard
+  let p : CPolynomial.Raw KoalaBear.Field := #[(3 : KoalaBear.Field), 4, 5]
+  Forward.forwardImpl testDomain p == Forward.forwardSpec testDomain p
 
-example :
-    let p : CPolynomial.Raw KoalaBear.Field := #[(1 : KoalaBear.Field), 2, 0, 0]
-    Forward.forwardImpl testDomain p = Forward.forwardSpec testDomain p := by
-  native_decide
+#guard
+  let p : CPolynomial.Raw KoalaBear.Field := #[(1 : KoalaBear.Field), 2, 0, 0]
+  Forward.forwardImpl testDomain p == Forward.forwardSpec testDomain p
 
-example :
-    let p : CPolynomial.Raw KoalaBear.Field := #[
-      (1 : KoalaBear.Field), 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-    ]
-    Forward.forwardImpl testDomain32 p = Forward.forwardSpec testDomain32 p := by
-  native_decide
+#guard
+  let p : CPolynomial.Raw KoalaBear.Field := #[
+    (1 : KoalaBear.Field), 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+  ]
+  Forward.forwardImpl testDomain32 p == Forward.forwardSpec testDomain32 p
 
 end ForwardTests
 end NTT
