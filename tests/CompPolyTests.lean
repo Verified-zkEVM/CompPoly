@@ -1,6 +1,8 @@
 import CompPolyTests.Univariate.Raw
 import CompPolyTests.Univariate.Basic
 import CompPolyTests.Univariate.ToPoly
+import CompPolyTests.Univariate.NTT.Forward
+import CompPolyTests.Univariate.NTT.Inverse
 import CompPolyTests.Univariate.NTT.FastMul
 import CompPolyTests.Multivariate.CMvMonomial
 import CompPolyTests.Multivariate.Restrict
