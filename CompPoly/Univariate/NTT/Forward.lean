@@ -9,7 +9,8 @@ import CompPoly.Data.Nat.Bitwise
 /-!
 # Forward NTT
 
-This file provides spec-level forward NTT definitions together with iterative radix-2 implementation.
+This file provides spec-level forward NTT definitions together with an
+iterative radix-2 implementation.
 -/
 
 open scoped BigOperators

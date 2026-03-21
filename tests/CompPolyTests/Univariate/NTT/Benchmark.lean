@@ -45,7 +45,8 @@ def bestDomainForLength? (requiredLen : Nat) : Option (Domain KoalaBear.Field) :
           exact Nat.pow_le_pow_right (by decide : 1 ≤ 2) hlogN
         have hpow_lt : 2 ^ logN < KoalaBear.fieldSize := by
           have htop : 2 ^ KoalaBear.twoAdicity < KoalaBear.fieldSize := by
-            native_decide
+            simpa [KoalaBear.twoAdicity, KoalaBear.fieldSize] using
+              (by decide : 2 ^ 24 < 2 ^ 31 - 2 ^ 24 + 1)
           exact lt_of_le_of_lt hpow_le htop
         have hdiv : KoalaBear.fieldSize ∣ 2 ^ logN := by
           exact (ZMod.natCast_eq_zero_iff (2 ^ logN) KoalaBear.fieldSize).mp hzero
@@ -109,8 +110,11 @@ def timeRepeated {α : Type} (reps : Nat) (f : Unit → α) : IO (Nat × α) := 
     let winner := if nttMs ≤ rawMs then "NTT" else "raw"
     if crossover?.isNone && nttMs ≤ rawMs then
       crossover? := some n
-    IO.println
-      s!"{n} | {reps} | {benchDomain.logN} | {benchDomain.n} | {avgMsString nttMs reps} | {avgMsString rawMs reps} | {winner} | {speedupString nttMs rawMs}x"
+    let row :=
+      s!"{n} | {reps} | {benchDomain.logN} | {benchDomain.n} | " ++
+      s!"{avgMsString nttMs reps} | {avgMsString rawMs reps} | " ++
+      s!"{winner} | {speedupString nttMs rawMs}x"
+    IO.println row
   match crossover? with
   | some n => IO.println s!"first measured crossover: NTT wins at size {n}"
   | none => IO.println "no measured crossover in this sweep"
