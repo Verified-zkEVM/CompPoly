@@ -26,6 +26,10 @@ import CompPoly.Univariate.Quotient
 import CompPoly.Univariate.ToPoly
 import CompPoly.Univariate.QuotientEquiv
 import CompPoly.Univariate.Lagrange
+import CompPoly.Univariate.NTT.Domain
+import CompPoly.Univariate.NTT.Forward
+import CompPoly.Univariate.NTT.Inverse
+import CompPoly.Univariate.NTT.FastMul
 import CompPoly.Bivariate.Basic
 import CompPoly.Bivariate.ToPoly
 import CompPoly.ToMathlib.Finsupp.Fin
