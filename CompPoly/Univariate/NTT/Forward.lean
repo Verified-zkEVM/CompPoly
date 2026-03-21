@@ -49,17 +49,17 @@ def butterflyStage (D : Domain R) (stage : Nat) (a : Array R) : Array R := Id.ru
   let half : Nat := 2 ^ stage
   let wm := D.omega ^ (D.n / blockSize)
   let mut acc := a
-  for base in [0:D.n] do
-    if base % blockSize == 0 then
-      let mut w : R := 1
-      for j in [0:half] do
-        let i0 := base + j
-        let i1 := i0 + half
-        let u := acc.getD i0 0
-        let t := w * acc.getD i1 0
-        acc := acc.set! i0 (u + t)
-        acc := acc.set! i1 (u - t)
-        w := w * wm
+  for block in [0:D.n / blockSize] do
+    let base := block * blockSize
+    let mut w : R := 1
+    for j in [0:half] do
+      let i0 := base + j
+      let i1 := i0 + half
+      let u := acc.getD i0 0
+      let t := w * acc.getD i1 0
+      acc := acc.set! i0 (u + t)
+      acc := acc.set! i1 (u - t)
+      w := w * wm
   return acc
 
 /-- Run all radix-2 butterfly stages (target complexity: `O(n log n)`). -/
