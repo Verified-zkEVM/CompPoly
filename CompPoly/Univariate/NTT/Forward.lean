@@ -7,10 +7,9 @@ import CompPoly.Univariate.NTT.Domain
 import CompPoly.Data.Nat.Bitwise
 
 /-!
-# Forward NTT Scaffolding
+# Forward NTT
 
-This file provides spec-level forward NTT definitions together with placeholder
-hooks for a future iterative radix-2 implementation.
+This file provides spec-level forward NTT definitions together with iterative radix-2 implementation.
 -/
 
 open scoped BigOperators
@@ -27,12 +26,8 @@ variable {R : Type*} [Field R]
   ∑ j : D.Idx, a.getD j.1 0 * D.omega ^ ((k : Nat) * (j : Nat))
 
 /-- Full forward transform specified directly from the NTT formula. -/
-@[inline] def forwardArraySpec (D : Domain R) (a : Array R) : Array R :=
+@[inline] def forwardSpec (D : Domain R) (a : Array R) : Array R :=
   Array.ofFn (fun k : D.Idx => nttAt D a k)
-
-/-- Spec-level forward NTT from a raw polynomial input. -/
-@[inline] def forwardSpec (D : Domain R) (p : CPolynomial.Raw R) : Array R :=
-  forwardArraySpec D p
 
 /-- Reverse the lowest `bits` bits of `i`. -/
 def bitRevNat : Nat → Nat → Nat
@@ -62,23 +57,19 @@ def butterflyStage (D : Domain R) (stage : Nat) (a : Array R) : Array R := Id.ru
       w := w * wm
   return acc
 
-/-- Run all radix-2 butterfly stages (target complexity: `O(n log n)`). -/
+/-- Run all radix-2 butterfly stages (complexity: `O(n log n)`). -/
 def runStages (D : Domain R) (a : Array R) : Array R := Id.run do
   let mut acc := a
   for stage in [0:D.logN] do
     acc := butterflyStage D stage acc
   return acc
 
-/-- Intended fast implementation entry point. -/
+/-- Intended fast implementation entry point for NTT. -/
 @[inline] def forwardImpl (D : Domain R) (p : CPolynomial.Raw R) : Array R :=
   runStages D (bitRevPermute D p)
 
-@[simp] theorem size_forwardArraySpec (D : Domain R) (a : Array R) :
-    (forwardArraySpec D a).size = D.n := by
-  simp [forwardArraySpec]
-
-@[simp] theorem size_forwardSpec (D : Domain R) (p : CPolynomial.Raw R) :
-    (forwardSpec D p).size = D.n := by
+@[simp] theorem size_forwardSpec (D : Domain R) (a : Array R) :
+    (forwardSpec D a).size = D.n := by
   simp [forwardSpec]
 
 theorem forwardImpl_correct (D : Domain R) (p : CPolynomial.Raw R) :

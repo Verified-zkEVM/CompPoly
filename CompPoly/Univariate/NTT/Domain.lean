@@ -7,10 +7,10 @@ import CompPoly.Univariate.Raw
 import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
 
 /-!
-# NTT Domain Scaffolding
+# NTT Domain
 
 This file defines the radix-2 NTT domain parameters and basic raw-polynomial
-shape helpers used by forward/inverse NTT scaffolding.
+shape helpers used by forward/inverse NTT.
 -/
 
 namespace CompPoly

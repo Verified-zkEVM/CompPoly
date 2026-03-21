@@ -9,10 +9,10 @@ import CompPoly.Univariate.NTT.Inverse
 import CompPoly.Univariate.Raw
 
 /-!
-# Fast Multiplication via NTT (Scaffolding)
+# Fast Multiplication via NTT
 
 This file wires forward NTT, pointwise multiplication, and inverse NTT into a
-spec/implementation pipeline for future optimized polynomial multiplication.
+spec/implementation pipeline.
 -/
 
 namespace CompPoly
@@ -64,14 +64,6 @@ theorem fastMulSpec_eq_mul (D : Domain R) (p q : CPolynomial.Raw R)
 
 theorem fastMulImpl_eq_mul (D : Domain R) (p q : CPolynomial.Raw R)
     (hfit : Domain.fits D p q) : fastMulImpl D p q = p * q := by
-  sorry
-
-/-- Optional wrapper that uses NTT only when the operands fit the domain. -/
-@[inline] def mulWithFastPath (D : Domain R) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
-  if Domain.requiredLength p q ≤ D.n then fastMulImpl D p q else p * q
-
-theorem mulWithFastPath_eq_mul (D : Domain R) (p q : CPolynomial.Raw R) :
-    mulWithFastPath D p q = p * q := by
   sorry
 
 end RawMul
