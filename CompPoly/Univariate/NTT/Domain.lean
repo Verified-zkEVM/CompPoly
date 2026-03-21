@@ -61,19 +61,6 @@ def requiredLength (p q : CPolynomial.Raw R) : Nat :=
 def fits (D : Domain R) (p q : CPolynomial.Raw R) : Prop :=
   requiredLength p q ≤ D.n
 
-/-- Right-pad an array with zeros up to at least length `n`. -/
-def zeroPad (n : Nat) (a : Array R) : Array R :=
-  a ++ Array.replicate (n - a.size) 0
-
-@[simp] lemma size_zeroPad (n : Nat) (a : Array R) :
-    (zeroPad (R := R) n a).size = max n a.size := by
-  -- TODO: Replace with a direct arithmetic proof once helper lemmas are finalized.
-  sorry
-
-/-- Trim a polynomial and pad it to the domain size. -/
-def pad (D : Domain R) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
-  zeroPad (R := R) D.n p.trim
-
 /-- Truncate a polynomial to at most `m` coefficients. -/
 def truncate (m : Nat) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
   p.extract 0 m

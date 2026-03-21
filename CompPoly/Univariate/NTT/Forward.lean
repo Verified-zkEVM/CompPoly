@@ -22,10 +22,6 @@ namespace Forward
 
 variable {R : Type*} [Field R]
 
-/-- Input coefficients packed as a fixed-size array over the domain. -/
-@[inline] def inputArray (D : Domain R) (p : CPolynomial.Raw R) : Array R :=
-  Array.ofFn (fun i : D.Idx => p.coeff i.1)
-
 /-- DFT/NTT formula at one output index. -/
 @[inline] def nttAt (D : Domain R) (a : Array R) (k : D.Idx) : R :=
   ∑ j : D.Idx, a.getD j.1 0 * D.omega ^ ((k : Nat) * (j : Nat))
@@ -36,7 +32,7 @@ variable {R : Type*} [Field R]
 
 /-- Spec-level forward NTT from a raw polynomial input. -/
 @[inline] def forwardSpec (D : Domain R) (p : CPolynomial.Raw R) : Array R :=
-  forwardArraySpec D (inputArray D p)
+  forwardArraySpec D p
 
 /-- Reverse the lowest `bits` bits of `i`. -/
 def bitRevNat : Nat → Nat → Nat
@@ -53,17 +49,17 @@ def butterflyStage (D : Domain R) (stage : Nat) (a : Array R) : Array R := Id.ru
   let half : Nat := 2 ^ stage
   let wm := D.omega ^ (D.n / blockSize)
   let mut acc := a
-  for base in [0:D.n] do
-    if base % blockSize == 0 then
-      let mut w : R := 1
-      for j in [0:half] do
-        let i0 := base + j
-        let i1 := i0 + half
-        let u := acc.getD i0 0
-        let t := w * acc.getD i1 0
-        acc := acc.set! i0 (u + t)
-        acc := acc.set! i1 (u - t)
-        w := w * wm
+  for block in [0:D.n / blockSize] do
+    let base := block * blockSize
+    let mut w : R := 1
+    for j in [0:half] do
+      let i0 := base + j
+      let i1 := i0 + half
+      let u := acc.getD i0 0
+      let t := w * acc.getD i1 0
+      acc := acc.set! i0 (u + t)
+      acc := acc.set! i1 (u - t)
+      w := w * wm
   return acc
 
 /-- Run all radix-2 butterfly stages (target complexity: `O(n log n)`). -/
@@ -75,11 +71,7 @@ def runStages (D : Domain R) (a : Array R) : Array R := Id.run do
 
 /-- Intended fast implementation entry point. -/
 @[inline] def forwardImpl (D : Domain R) (p : CPolynomial.Raw R) : Array R :=
-  runStages D (bitRevPermute D (inputArray D p))
-
-@[simp] theorem size_inputArray (D : Domain R) (p : CPolynomial.Raw R) :
-    (inputArray D p).size = D.n := by
-  simp [inputArray]
+  runStages D (bitRevPermute D p)
 
 @[simp] theorem size_forwardArraySpec (D : Domain R) (a : Array R) :
     (forwardArraySpec D a).size = D.n := by
