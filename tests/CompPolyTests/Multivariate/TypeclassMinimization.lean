@@ -3,7 +3,7 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import CompPoly.Multivariate.Operations
+import CompPoly.Multivariate.CMvPolynomial
 
 /-!
   # Multivariate Typeclass-Minimization Tests
@@ -31,6 +31,27 @@ instance : One MinimalCoeff where
 
 instance : Add MinimalCoeff where
   add a b := ⟨a.val + b.val⟩
+
+instance : AddMonoid MinimalCoeff where
+  add := (· + ·)
+  nsmul := nsmulRec
+  add_assoc a b c := by
+    cases a; cases b; cases c
+    apply congrArg MinimalCoeff.mk
+    exact Int.add_assoc _ _ _
+  zero := 0
+  zero_add a := by
+    cases a
+    apply congrArg MinimalCoeff.mk
+    exact Int.zero_add _
+  add_zero a := by
+    cases a
+    apply congrArg MinimalCoeff.mk
+    exact Int.add_zero _
+  nsmul_zero a := by
+    rfl
+  nsmul_succ n a := by
+    rfl
 
 instance : Neg MinimalCoeff where
   neg a := ⟨-a.val⟩
@@ -65,36 +86,40 @@ private def x1 : Fin 2 := ⟨1, by decide⟩
 
 private def collapse : Fin 2 → Fin 1 := fun _ => ⟨0, by decide⟩
 
-example : CMvPolynomial 2 MinimalCoeff :=
+example : CMvPolynomial (Fin 2) MinimalCoeff :=
   X (R := MinimalCoeff) x0
 
 example : ℕ :=
   totalDegree <| X (R := MinimalCoeff) x0
 
-example : CMvPolynomial 1 MinimalCoeff :=
+example : CMvPolynomial (Fin 1) MinimalCoeff :=
   rename (R := MinimalCoeff) collapse (X (R := MinimalCoeff) x0)
 
-example : CMvPolynomial 2 MinimalCoeff :=
-  sumToIter <|
-    X (R := MinimalCoeff) x0 +
-    X (R := MinimalCoeff) x1
+example :
+    Std.ExtTreeMap.foldl
+        (fun acc mono c => monomial mono c + acc)
+        0
+        ((X (R := MinimalCoeff) x0 + X (R := MinimalCoeff) x1).1)
+      =
+    X (R := MinimalCoeff) x0 + X (R := MinimalCoeff) x1 :=
+  fold_monomials_eq _
 
-example (p : CMvPolynomial 2 MinimalCoeff) : CMvPolynomial 2 MinimalCoeff :=
+example (p : CMvPolynomial (Fin 2) MinimalCoeff) : CMvPolynomial (Fin 2) MinimalCoeff :=
   -p
 
-example (p q : CMvPolynomial 2 MinimalCoeff) : CMvPolynomial 2 MinimalCoeff :=
+example (p q : CMvPolynomial (Fin 2) MinimalCoeff) : CMvPolynomial (Fin 2) MinimalCoeff :=
   p - q
 
-example (p : CMvPolynomial 1 MinimalCoeff) (q : CMvPolynomial 2 MinimalCoeff) :
-    CMvPolynomial 2 MinimalCoeff :=
+example (p q : CMvPolynomial (Fin 2) MinimalCoeff) :
+    CMvPolynomial (Fin 2) MinimalCoeff :=
   p + q
 
-example (p : CMvPolynomial 1 MinimalCoeff) (q : CMvPolynomial 2 MinimalCoeff) :
-    CMvPolynomial 2 MinimalCoeff :=
+example (p q : CMvPolynomial (Fin 2) MinimalCoeff) :
+    CMvPolynomial (Fin 2) MinimalCoeff :=
   p - q
 
-example (p : CMvPolynomial 1 MinimalCoeff) (q : CMvPolynomial 2 MinimalCoeff) :
-    CMvPolynomial 2 MinimalCoeff :=
+example (p q : CMvPolynomial (Fin 2) MinimalCoeff) :
+    CMvPolynomial (Fin 2) MinimalCoeff :=
   p * q
 
 end CMvPolynomial

@@ -216,10 +216,31 @@ noncomputable def toFinsupp [Ord σ] [LawfulEqOrd σ] (m : CMvMonomial σ) : σ 
   letI : DecidableEq σ := decEqOfLawfulEqOrd _
   m.entries.foldl (fun acc entry => acc + Finsupp.single entry.1 entry.2) 0
 
+theorem toFinsupp_eq_toList_foldl [Ord σ] [LawfulEqOrd σ] (m : CMvMonomial σ) :
+    CMvMonomial.toFinsupp m =
+      m.entries.toList.foldl (fun acc entry => acc + Finsupp.single entry.1 entry.2) 0 := by
+  letI : DecidableEq σ := decEqOfLawfulEqOrd _
+  rw [CMvMonomial.toFinsupp, Array.foldl_toList]
+
 /-- Convert a `Finsupp` to a computable monomial. -/
 noncomputable def ofFinsupp [Ord σ] [LawfulEqOrd σ] (m : σ →₀ ℕ) : CMvMonomial σ :=
   letI : DecidableEq σ := decEqOfLawfulEqOrd _
-  ofEntries <| m.support.toList.toArray.map fun i => (i, m i)
+  m.support.toList.foldl (fun acc i => acc + single i (m i)) 0
+
+@[simp]
+theorem ofFinsupp_zero [Ord σ] [LawfulEqOrd σ] :
+    CMvMonomial.ofFinsupp (0 : σ →₀ ℕ) = 0 := by
+  letI : DecidableEq σ := decEqOfLawfulEqOrd _
+  simp [CMvMonomial.ofFinsupp]
+
+@[simp]
+theorem toFinsupp_zero [Ord σ] [LawfulEqOrd σ] :
+    CMvMonomial.toFinsupp (0 : CMvMonomial σ) = 0 := by
+  letI : DecidableEq σ := decEqOfLawfulEqOrd _
+  ext i
+  have hEntries : CMvMonomial.entries (0 : CMvMonomial σ) = #[] := rfl
+  rw [CMvMonomial.toFinsupp, hEntries]
+  simp
 
 /-- Rename variables in a monomial, merging collisions in the target support. -/
 def rename [Ord σ] [Ord τ] (f : σ → τ) (m : CMvMonomial σ) : CMvMonomial τ :=

@@ -191,10 +191,44 @@ lemma filter_get [BEq R] [LawfulBEq R] {v : R} {m : CMvMonomial σ} (p : Unlawfu
     (ExtTreeMap.filter (fun _ c => c != v) p)[m]?.getD v = p[m]?.getD v := by
   grind
 
-lemma add_getD? [CommSemiring R] {m : CMvMonomial σ} {p q : Unlawful σ R} :
+lemma add_getD? [AddMonoid R] {m : CMvMonomial σ} {p q : Unlawful σ R} :
     (p.add q)[m]?.getD 0 = p[m]?.getD 0 + q[m]?.getD 0 := by
   unfold Unlawful.add
-  by_cases hm₁ : m ∈ p <;> by_cases hm₂ : m ∈ q <;> grind [zero_add, add_zero]
+  by_cases hm₁ : m ∈ p
+  · by_cases hm₂ : m ∈ q
+    · have hp : p[m]? = some p[m] := Std.ExtTreeMap.getElem?_eq_some_getElem hm₁
+      have hq : q[m]? = some q[m] := Std.ExtTreeMap.getElem?_eq_some_getElem hm₂
+      simpa [hp, hq] using
+        congrArg (fun o => o.getD 0) (Std.ExtTreeMap.mergeWith_of_mem_mem
+          (f := fun _ c₁ c₂ => c₁ + c₂) hm₁ hm₂)
+    · have hp : p[m]? = some p[m] := Std.ExtTreeMap.getElem?_eq_some_getElem hm₁
+      have hq : q[m]? = none := Std.ExtTreeMap.getElem?_eq_none hm₂
+      calc
+        (ExtTreeMap.mergeWith (fun _ c₁ c₂ => c₁ + c₂) p q)[m]?.getD 0
+          = p[m]?.getD 0 := by
+              simpa using congrArg (fun o => o.getD 0) (Std.ExtTreeMap.mergeWith_of_mem_left
+                (f := fun _ c₁ c₂ => c₁ + c₂) hm₁ hm₂)
+        _ = p[m]?.getD 0 + q[m]?.getD 0 := by
+              simp [hq, add_zero]
+  · by_cases hm₂ : m ∈ q
+    · have hp : p[m]? = none := Std.ExtTreeMap.getElem?_eq_none hm₁
+      have hq : q[m]? = some q[m] := Std.ExtTreeMap.getElem?_eq_some_getElem hm₂
+      calc
+        (ExtTreeMap.mergeWith (fun _ c₁ c₂ => c₁ + c₂) p q)[m]?.getD 0
+          = q[m]?.getD 0 := by
+              simpa using congrArg (fun o => o.getD 0) (Std.ExtTreeMap.mergeWith_of_mem_right
+                (f := fun _ c₁ c₂ => c₁ + c₂) hm₁ hm₂)
+        _ = p[m]?.getD 0 + q[m]?.getD 0 := by
+              simp [hp, zero_add]
+    · have hp : p[m]? = none := Std.ExtTreeMap.getElem?_eq_none hm₁
+      have hq : q[m]? = none := Std.ExtTreeMap.getElem?_eq_none hm₂
+      calc
+        (ExtTreeMap.mergeWith (fun _ c₁ c₂ => c₁ + c₂) p q)[m]?.getD 0
+          = 0 := by
+              simpa using congrArg (fun o => o.getD 0) (Std.ExtTreeMap.mergeWith_of_not_mem
+                (f := fun _ c₁ c₂ => c₁ + c₂) hm₁ hm₂)
+        _ = p[m]?.getD 0 + q[m]?.getD 0 := by
+              simp [hp, hq, zero_add]
 
 end Unlawful
 
