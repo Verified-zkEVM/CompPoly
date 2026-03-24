@@ -1,13 +1,13 @@
-# Scalar Prime Fields for ZK Protocols
+# Fields for ZK Protocols
 
-Formally verified prime fields used in zero-knowledge proof systems and elliptic-curve cryptography.
+This directory contains formally verified field infrastructure used in zero-knowledge proof systems and elliptic-curve cryptography, including scalar prime fields and binary-field constructions.
 
 ## Modules
 
 | Module | Description |
 |--------|-------------|
 | **Basic.lean** | `NonBinaryField` type class (char ≠ 2), polynomial composition lemmas (`coeffs_of_comp_minus_x`, `comp_x_square_coeff`). |
-| **PrattCertificate.lean** | Lucas test for primality, Pratt primality certificates, and the `pratt` tactic. |
+| **PrattCertificate.lean** | Lucas test for primality and Pratt certificate infrastructure (`PrattCertificate`, `PrattCertificate'`) for proving concrete primality goals. |
 | **BabyBear.lean** | \(2^{31} - 2^{27} + 1\) — Risc Zero. |
 | **BLS12_377.lean** | Scalar field of BLS12-377 (253-bit, 2-adicity 47) — Zexe. |
 | **BLS12_381.lean** | Scalar field of BLS12-381 (253-bit, 2-adicity 47). |
@@ -17,9 +17,17 @@ Formally verified prime fields used in zero-knowledge proof systems and elliptic
 | **Mersenne.lean** | \(2^{31} - 1\) — Circle STARKs. |
 | **Secp256k1.lean** | Base and scalar fields for the Secp256k1 curve (used in Bitcoin/Ethereum). |
 
+## Binary-field modules
+
+The `Binary/` subtree provides characteristic-2 field infrastructure used by GHASH and additive-NTT workflows:
+
+- `Binary/BF128Ghash/*` — GF(2^128) model, implementation, and certificates.
+- `Binary/AdditiveNTT/*` — additive-NTT domain/algorithm/correctness stack.
+- `Binary/Tower/*` — abstract/concrete binary tower-field constructions and supporting lemmas.
+
 ## Primality proofs
 
-Primality is proved via Pratt certificates (Lucas witnesses). The `pratt` tactic discharges concrete primality goals using the certificate infrastructure. Some field definitions (e.g. BN254, BLS12_377) use explicit `PrattCertificate'` proofs; others use the `pratt` tactic with certificates generated from the Kestrel ACL2 formalization.
+Primality is proved via Pratt certificates (Lucas witnesses). Some field definitions (e.g. BN254, BLS12_377) use explicit `PrattCertificate'` proofs, while others construct certificate-driven primality proofs in a similar style.
 
 ## References
 

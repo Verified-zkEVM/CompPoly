@@ -56,6 +56,7 @@ ERR_ARR = 18 # space after "←"
 ERR_NUM_LIN = 19 # file is too large
 ERR_NSP = 20 # non-terminal simp
 ERR_ADN = 25 # the string "Adaptation note"
+ERR_NDEC = 26 # forbidden native_decide / Lean.ofReduceBool
 
 exceptions = []
 
@@ -85,6 +86,8 @@ with SCRIPTS_DIR.joinpath("style-exceptions.txt").open(encoding="utf-8") as f:
             exceptions += [(ERR_TAC2, path, None)]
         elif errno == "ERR_NUM_LIN":
             exceptions += [(ERR_NUM_LIN, path, extra[1])]
+        elif errno == "ERR_NDEC":
+            exceptions += [(ERR_NDEC, path, None)]
         else:
             print(f"Error: unexpected errno in style-exceptions.txt: {errno}")
             sys.exit(1)
@@ -316,6 +319,16 @@ def banned_import_check(lines, path):
             errors += [(ERR_TAC2, line_nr, path)]
     return errors, lines
 
+def forbidden_tcb_check(lines, path):
+    errors = []
+    pattern = re.compile(r"\bnative_decide\b|Lean\.ofReduceBool")
+    for line_nr, line, is_comment, in_string in annotate_strings(annotate_comments(lines)):
+        if is_comment or in_string:
+            continue
+        if pattern.search(line):
+            errors += [(ERR_NDEC, line_nr, path)]
+    return errors, lines
+
 def isolated_by_dot_semicolon_check(lines, path):
     errors = []
     newlines = []
@@ -424,6 +437,8 @@ def format_errors(errors):
             output_message(path, line_nr, "ERR_NSP", "Non-terminal simp. Replace with `simp?` and use the suggested output")
         if errno == ERR_ADN:
             output_message(path, line_nr, "ERR_ADN", 'Found the string "Adaptation note:", please use the #adaptation_note command instead')
+        if errno == ERR_NDEC:
+            output_message(path, line_nr, "ERR_NDEC", "Forbidden TCB-bypassing construct (`native_decide` or `Lean.ofReduceBool`) found")
 
 def lint(path, fix=False):
     global new_exceptions
@@ -463,6 +478,8 @@ def lint(path, fix=False):
             errs, newlines = regular_check(newlines, path)
             format_errors(errs)
             errs, newlines = banned_import_check(newlines, path)
+            format_errors(errs)
+            errs, newlines = forbidden_tcb_check(newlines, path)
             format_errors(errs)
     # if we haven't been asked to fix errors, or there are no errors or no fixes, we're done
     if fix and new_exceptions and enum_lines != newlines:

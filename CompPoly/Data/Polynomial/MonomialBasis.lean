@@ -36,7 +36,7 @@ theorem sum_degreeLT_monomial_eq_subtype {n : ℕ} (p : L⦃< n⦄[X]) :
     exact p.property
   ⟩ : L⦃< n⦄[X]) = p :=
       -- `span_le` changes the goal to showing every vector in the generating set
-  Subtype.eq (Polynomial.sum_monomial_eq p.val)
+  Subtype.ext (Polynomial.sum_monomial_eq p.val)
 
 noncomputable def monomialBasisOfDegreeLT {n : ℕ} : Basis (Fin n) L (L⦃< n⦄[X]) := by
   set monomials_in_submodule:Fin n → L⦃< n⦄[X] := fun ⟨i, hi⟩ =>
