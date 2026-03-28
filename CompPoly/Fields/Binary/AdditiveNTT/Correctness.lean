@@ -501,12 +501,13 @@ theorem additiveNTT_correctness (h_ℓ : ℓ ≤ r)
   have res := output_foldl_correctness j
   unfold output_foldl at res
   simp only [Fin.zero_eta, Nat.sub_zero, pow_zero, Nat.div_one, Fin.eta,
-    Nat.pow_zero, Nat.getLowBits_zero_eq_zero (n := j.val), Fin.isValue, base_coeffsBySuffix] at res
+    Nat.pow_zero, Nat.getLowBits_zero_eq_zero (n := j.val), Fin.isValue] at res
   simp only [←
     intermediate_poly_P_base 𝔽q β h_ℓ_add_R_rate
       h_ℓ original_coeffs,
     Fin.zero_eta]
-  rw [← res]
+  erw [base_coeffsBySuffix] at res
+  erw [← res]
   simp_rw [Nat.sub_right_comm]
 
 end AlgorithmCorrectness

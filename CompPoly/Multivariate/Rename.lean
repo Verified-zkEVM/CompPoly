@@ -180,6 +180,7 @@ lemma toFinsupp_zero {k : ℕ} :
     CMvMonomial.toFinsupp (0 : CMvMonomial k) = 0 := by
   ext i
   simp [CMvMonomial.toFinsupp, Vector.get]
+  exact Vector.getElem_zero i.val i.isLt
 
 /-- `fromCMvPolynomial` maps `CMvPolynomial.C` to `MvPolynomial.C`. -/
 lemma fromCMvPolynomial_C {k : ℕ} (c : R) :

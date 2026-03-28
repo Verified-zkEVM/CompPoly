@@ -35,7 +35,7 @@ lemma ENat.le_floor_NNReal_iff (x : ENat) (y : ℝ≥0) (hx_ne_top : x ≠ ⊤) 
     (x : ENat) ≤ ((Nat.floor y) : ENat) ↔ x.toNat ≤ Nat.floor y := by
   lift x to ℕ using hx_ne_top
   -- y : ℝ≥0, x : ℕ, ⊢ ↑x ≤ ↑⌊y⌋₊ ↔ (↑x).toNat ≤ ⌊y⌋₊
-  simp only [Nat.cast_le, toNat_coe]
+  simp only [ENat.coe_le_coe, toNat_coe]
 
 section ENNReal
 open ENNReal
@@ -49,29 +49,11 @@ variable {a b c d : ℝ≥0∞} {r p q : ℝ≥0}
 -- lemma ENNReal.div_lt_div_right (hc₀ : c ≠ 0) (hc : c ≠ ∞) (hab : a < b) : a / c < b / c :=
 --   (ENNReal.div_lt_div_iff_left hc₀ hc).2 hab
 
-theorem ENNReal.mul_inv_rev_ENNReal {a b : ℕ} (ha : a ≠ 0) (hb : b ≠ 0) :
-    ((a : ENNReal)⁻¹ * (b : ENNReal)⁻¹) = ((a : ENNReal) * (b : ENNReal))⁻¹ := by
--- Let x = ↑a and y = ↑b for readability
-  let x : ENNReal := a
-  let y : ENNReal := b
-  -- Prove x and y are non-zero and finite (needed for inv_cancel)
-  have hx_ne_zero : x ≠ 0 := by exact Nat.cast_ne_zero.mpr ha
-  have hy_ne_zero : y ≠ 0 := by exact Nat.cast_ne_zero.mpr hb
-  have hx_ne_top : x ≠ ∞ := by exact ENNReal.natCast_ne_top a
-  have hy_ne_top : y ≠ ∞ := by exact ENNReal.natCast_ne_top b
-  have ha_NNReal_ne0 : (a : ℝ≥0) ≠ 0 := by exact Nat.cast_ne_zero.mpr ha
-  have hb_NNReal_ne0 : (b : ℝ≥0) ≠ 0 := by exact Nat.cast_ne_zero.mpr hb
-  -- (a * b)⁻¹ = b⁻¹ * a⁻¹
-  have hlhs : ((a : ENNReal)⁻¹ * (b : ENNReal)⁻¹) = ((a : ℝ≥0)⁻¹ * (b : ℝ≥0)⁻¹) := by
-    rw [coe_inv (hr := by exact ha_NNReal_ne0)]
-    rw [coe_inv (hr := by exact hb_NNReal_ne0)]
-    rw [ENNReal.coe_natCast, ENNReal.coe_natCast]
-  have hrhs : ((a : ENNReal) * (b : ENNReal))⁻¹ = ((a : ℝ≥0) * (b : ℝ≥0))⁻¹ := by
-    rw [coe_inv (hr := (mul_ne_zero_iff_right hb_NNReal_ne0).mpr (ha_NNReal_ne0))]
-    simp only [coe_mul, coe_natCast]
-  rw [hlhs, hrhs]
-  rw [mul_inv_rev (a := (a : ℝ≥0)) (b := (b : ℝ≥0))]
-  rw [coe_mul, mul_comm]
+theorem ENNReal.mul_inv_rev_ENNReal {a b : ℕ} (ha : a ≠ 0) :
+    ((a : ENNReal)⁻¹ * (b : ENNReal)⁻¹) = ((a : ENNReal) * (b : ENNReal))⁻¹ :=
+  (ENNReal.mul_inv
+    (Or.inl (Nat.cast_ne_zero.mpr ha))
+    (Or.inl (ENNReal.natCast_ne_top a))).symm
 
 lemma ENNReal.coe_le_of_NNRat {a b : ℚ≥0} : ((a : ENNReal)) ≤ (b) ↔ a ≤ b := by
   exact ENNReal.coe_le_coe.trans (by norm_cast)

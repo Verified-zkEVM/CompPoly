@@ -14,25 +14,23 @@ import CompPoly.Univariate.ToPoly.Degree
 namespace CompPoly
 namespace CPolynomial
 
-private def natBeqEq : BEq Nat := ⟨fun a b => decide (a = b)⟩
+@[reducible] private def natBeqEq : BEq Nat := ⟨fun a b => decide (a = b)⟩
 
 private theorem nat_lawful_beq_eq : @LawfulBEq Nat natBeqEq := by
   letI : BEq Nat := natBeqEq
   refine { rfl := ?_, eq_of_beq := ?_ }
-  · intro a
-    simp [natBeqEq]
-  · intro a b h
-    simpa [natBeqEq] using h
+  · intro a; erw [show natBeqEq.beq a a = decide (a = a) from rfl]; simp
+  · intro a b h; erw [show natBeqEq.beq a b = decide (a = b) from rfl] at h; simpa using h
 
-private def natBeqSucc : BEq Nat := ⟨fun a b => decide (a.succ = b.succ)⟩
+@[reducible] private def natBeqSucc : BEq Nat := ⟨fun a b => decide (a.succ = b.succ)⟩
 
 private theorem nat_lawful_beq_succ : @LawfulBEq Nat natBeqSucc := by
   letI : BEq Nat := natBeqSucc
   refine { rfl := ?_, eq_of_beq := ?_ }
-  · intro a
-    simp [natBeqSucc]
+  · intro a; erw [show natBeqSucc.beq a a = decide (a.succ = a.succ) from rfl]; simp
   · intro a b h
-    exact Nat.succ.inj <| by simpa [natBeqSucc] using h
+    erw [show natBeqSucc.beq a b = decide (a.succ = b.succ) from rfl] at h
+    exact Nat.succ.inj <| by simpa using h
 
 private def leftPoly : CPolynomial Nat :=
   @CPolynomial.monomial Nat _ natBeqEq nat_lawful_beq_eq _ 1 7

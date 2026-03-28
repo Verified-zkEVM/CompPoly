@@ -258,8 +258,8 @@ lemma map_mul (a b : CMvPolynomial n R) :
     · rw [←m_in]
       simp only [compare_self]
       unfold MvPolynomial.coeff MonoidAlgebra.single
-      simp only [m_in, Finsupp.single_eq_same]
-      rfl
+      simp only [m_in, ite_true, Option.getD_some]
+      erw [Finsupp.single_eq_same]
     · simp only
         [ Std.compare_eq_iff_eq,
           ExtTreeMap.not_mem_empty,
@@ -267,18 +267,18 @@ lemma map_mul (a b : CMvPolynomial n R) :
           getElem?_neg
         ]
       unfold MvPolynomial.coeff MonoidAlgebra.single
-      rw [Finsupp.single_eq_of_ne (by symm; grind)]
+      erw [Finsupp.single_eq_of_ne (by symm; grind)]
       split
       next h contra =>
         exfalso; apply m_in; symm
         apply CMvMonomial.injective_ofFinsupp contra
       next h => simp_all only [Option.getD_none]
-  have : F₃ = fun σ x ↦ fromCMvPolynomial (F₁ σ x) := by
-    ext x
-    rw [fromCMvPolynomial_F₁_eq_F₃]
-  rw [this]
+  -- Lean 4.29 may beta-reduce F₃; fold it back then rewrite
+  change fromCMvPolynomial (Finsupp.sum (fromCMvPolynomial a) F₁) =
+    Finsupp.sum (fromCMvPolynomial a) F₃
+  rw [show F₃ = fun σ x ↦ fromCMvPolynomial (F₁ σ x) from by
+    ext x; rw [fromCMvPolynomial_F₁_eq_F₃]]
   rw [fromCMvPolynomial_sum_eq_sum_fromCMvPolynomial]
-  rfl
 
 instance {n : ℕ} : MonoidWithZero (CPoly.CMvPolynomial n R) where
   zero_mul a := by

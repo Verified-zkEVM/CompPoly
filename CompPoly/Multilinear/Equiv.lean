@@ -301,13 +301,12 @@ noncomputable def linearEquivMvPolynomialDeg1 :
       -- coeff i ↑(p.toMvPolynomialDeg1 + q.toMvPolynomialDeg1)
       unfold equivMvPolynomialDeg1 toMvPolynomialDeg1
       simp only [AddMemClass.mk_add_mk, coeff_add]
+      erw [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p := p + q)]
       simp only [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p := p)]
-      simp only [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p := p + q)]
       simp only [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p := q)]
       if h_binary: (∀ j: Fin n, i j ≤ 1) then
         simp only [h_binary, implies_true, ↓reduceDIte]
-        conv_lhs => enter [1]; change CMlPolynomial.add p q
-        simp only [add, Vector.getElem_zipWith]
+        erw [Vector.getElem_zipWith]
       else
         simp only [h_binary, ↓reduceDIte, add_zero]
     map_smul' := by
@@ -315,12 +314,11 @@ noncomputable def linearEquivMvPolynomialDeg1 :
       ext i
       unfold equivMvPolynomialDeg1 toMvPolynomialDeg1
       simp only [RingHom.id_apply, SetLike.mk_smul_mk, coeff_smul, smul_eq_mul]
+      erw [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p := r • p)]
       simp only [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p := p)]
-      simp only [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p := r • p)]
       if h_binary: (∀ j: Fin n, i j ≤ 1) then
         simp only [h_binary, implies_true, ↓reduceDIte]
-        conv_lhs => enter [1]; change CMlPolynomial.smul r p
-        simp only [smul, Vector.getElem_map]
+        erw [Vector.getElem_map]; rfl
       else
         simp only [h_binary, ↓reduceDIte, mul_zero]
     }

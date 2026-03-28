@@ -12,6 +12,8 @@ import CompPoly.Fields.Binary.Tower.Concrete.Field
 Algebra maps and embeddings for the concrete bitvector binary tower.
 -/
 
+set_option backward.isDefEq.respectTransparency false
+
 namespace ConcreteBinaryTower
 
 open Polynomial
@@ -207,7 +209,7 @@ instance instAlgebraTowerConcreteBTF : AlgebraTower (ConcreteBTField) where
     intro i j k h1 h2
     exact concreteTowerAlgebraMap_assoc k j i h1 h2
 
-def ConcreteBTFieldAlgebra {l r : ℕ} (h_le : l ≤ r) :
+@[reducible] def ConcreteBTFieldAlgebra {l r : ℕ} (h_le : l ≤ r) :
     Algebra (ConcreteBTField l) (ConcreteBTField r) := instAlgebraTowerConcreteBTF.toAlgebra h_le
 
 -- Since `join_via_add_smul` is equal `join`, it is also inverse of `split`
@@ -409,7 +411,7 @@ theorem ConcreteBTFieldAlgebra_apply_assoc (l mid r : ℕ)
     (h_l_le_mid:=h_l_le_mid) (h_mid_le_r:=h_mid_le_r)]
 
 /-- This also provides the corresponding Module instance. -/
-def binaryTowerModule {l r : ℕ} (h_le : l ≤ r) :
+@[reducible] def binaryTowerModule {l r : ℕ} (h_le : l ≤ r) :
     Module (ConcreteBTField l) (ConcreteBTField r) :=
   (ConcreteBTFieldAlgebra (h_le:=h_le)).toModule
 

@@ -12,6 +12,7 @@ import CompPoly.Fields.Binary.Tower.Concrete.Algebra
 Basis constructions for the concrete bitvector binary tower.
 -/
 
+set_option backward.isDefEq.respectTransparency false
 namespace ConcreteBinaryTower
 
 open Polynomial
@@ -299,7 +300,7 @@ def hli_level_diff_0 (l : ℕ) :
     rw [Ideal.submodule_span_eq]
     rw [Ideal.span_singleton_one]
 
-def isScalarTower_succ_right (l r : ℕ) (h_le : l ≤ r) :=
+@[reducible] def isScalarTower_succ_right (l r : ℕ) (h_le : l ≤ r) :=
     instAlgebraTowerConcreteBTF.toIsScalarTower (i:=l) (j:=r) (k:=r+1)
     (h1:=by omega) (h2:=by omega)
 /--
@@ -407,12 +408,9 @@ theorem PowerBasis.cast_basis_succ_of_eq_rec_apply
       (b.basis (Fin.cast h_pb_dim.symm k))
     left k = right := by
   -- The proof of the theorem itself remains simple.
-  subst h_r
-  simp only [ConcreteBTFieldAlgebra_id,
-    Algebra.algebraMap_self, PowerBasis.coe_basis, Fin.val_cast, RingHom.id_apply]
-  rw [Basis_cast_index_apply (h_eq:=by
-    exact powerBasisSucc_dim r1) (h_le:=by omega)]
-  simp only [PowerBasis.coe_basis, Fin.val_cast]
+  subst h_r; dsimp only
+  convert rfl using 2
+  rw [ConcreteBTFieldAlgebra_id rfl]; rfl
 
 @[simp]
 theorem coe_basis_apply {R S : Type*} [CommRing R] [Ring S] [Algebra R S]
@@ -554,9 +552,9 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       conv_lhs =>
         rw [←Fin.prod_congr' (b:=r1 - l) (a:=prevDiff) (h:=by omega)]
         simp only [Fin.val_cast]
-      simp_rw [algebraMap, instAlgebraSucc, algebra_adjacent_tower]
-      rw [RingHom.map_pow]
-      simp_rw [←ConcreteBTFieldAlgebra_apply_assoc]
+      simp (config := { failIfUnchanged := false }) only [algebraMap, instAlgebraSucc]
+      erw [RingHom.map_pow]
+      simp (config := { failIfUnchanged := false }) only [←ConcreteBTFieldAlgebra_apply_assoc]
       ------------------ Equality of bit-based powers of generators -----------------
       have hfinProd_msb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)
         (i:=⟨prevDiff, by omega⟩) (j:=⟨j, by omega⟩)

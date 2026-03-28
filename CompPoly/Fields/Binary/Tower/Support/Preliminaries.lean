@@ -388,6 +388,7 @@ theorem unique_linear_sum_repr (R : Type*) [CommRing R] (S : Type*) [CommRing S]
         _ = b := by rw [b_def]
     exact Prod.ext y1_eq_a y2_eq_b
 
+set_option backward.isDefEq.respectTransparency false in
 theorem linear_form_of_elements_in_adjoined_commring
     {R : Type*} [CommRing R] (f : R[X]) (hf_deg : f.natDegree = 2)
     (hf_monic : Monic f) (c1 : AdjoinRoot f) :
@@ -409,6 +410,7 @@ theorem linear_form_of_elements_in_adjoined_commring
   rw [oleft, oright] at c1_linear_comb_over_a_b
   exact c1_linear_comb_over_a_b
 
+set_option backward.isDefEq.respectTransparency false in
 theorem unique_linear_form_of_elements_in_adjoined_commring
     {R : Type*} [CommRing R] (f : R[X]) (hf_deg : f.natDegree = 2)
     (hf_monic : Monic f) (c1 : AdjoinRoot f) :

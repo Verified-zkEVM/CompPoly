@@ -18,6 +18,8 @@ computable multivariate polynomials.
 
 * `CPoly.Lawful n R`: The subtype of `Unlawful n R` with no zero coefficients.
 -/
+set_option allowUnsafeReducibility true in
+attribute [local reducible] instDecidableEqOfLawfulBEq
 attribute [local instance 5] instDecidableEqOfLawfulBEq
 
 namespace CPoly
@@ -64,7 +66,7 @@ lemma mem_iff_cast : x ∈ p.1 ↔ x ∈ p := by rfl
 
 @[grind =]
 lemma mem_iff : x ∈ p ↔ ∃ v, v ≠ 0 ∧ p[x]? = .some v := by
-  rw [←mem_iff_cast, ExtTreeMap.mem_iff_isSome_getElem?, Option.isSome_iff_exists]
+  erw [←mem_iff_cast, ExtTreeMap.mem_iff_isSome_getElem?, Option.isSome_iff_exists]
   rcases p with ⟨p, hp⟩
   specialize hp x
   grind
@@ -111,7 +113,8 @@ lemma C_zero' : C (n := n) (0 : ℕ) = 0 := rfl
 
 lemma zero_eq_zero : (0 : Lawful n R) = ⟨0, by grind⟩ := rfl
 
-lemma zero_eq_empty : (0 : Lawful n R) = ∅ := by unfold_projs; simp [C, Unlawful.zero_eq_empty]
+lemma zero_eq_empty : (0 : Lawful n R) = ∅ := by
+  unfold_projs; simp [C, Unlawful.zero_eq_empty]; rfl
 
 @[simp, grind .]
 lemma not_mem_C_zero : x ∉ C 0 := by simp [zero_eq_empty]; unfold_projs; grind

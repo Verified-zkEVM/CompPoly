@@ -20,6 +20,8 @@ the absence of zero coefficients.
 
 * `CPoly.Unlawful n R`: A map from `CMvMonomial n` to `R`, implemented using `Std.ExtTreeMap`.
 -/
+set_option allowUnsafeReducibility true in
+attribute [local reducible] instDecidableEqOfLawfulBEq
 attribute [local instance 5] instDecidableEqOfLawfulBEq
 
 namespace CPoly
@@ -135,7 +137,7 @@ lemma C_zero' : C (n := n) (0 : ℕ) = 0 := rfl
 @[simp, grind =]
 lemma zero_eq_zero : (Zero.zero : R) = 0 := rfl
 
-lemma zero_eq_empty [BEq R] [LawfulBEq R] : (0 : Unlawful n R) = ∅ := by unfold_projs; simp [C]
+lemma zero_eq_empty [BEq R] [LawfulBEq R] : (0 : Unlawful n R) = ∅ := by unfold_projs; simp [C]; rfl
 
 @[simp, grind .]
 lemma not_mem_C_zero : x ∉ C 0 := by grind

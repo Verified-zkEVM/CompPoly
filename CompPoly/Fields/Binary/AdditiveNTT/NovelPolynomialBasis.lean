@@ -368,7 +368,7 @@ lemma W₀_eq_X : W 𝔽q β 0 = X := by
   rw [W]
   have : (univ : Finset (U 𝔽q β 0)) = {0} := by
     ext x
-    simp only [U, Set.Ico, mem_univ, mem_singleton, true_iff]
+    simp only [mem_univ, mem_singleton, true_iff]
     --x : ↥(U 𝔽q β 0), ⊢ x = 0
     unfold U at x
     have h_empty : Set.Ico 0 (0: Fin r) = ∅ := by
@@ -1340,11 +1340,19 @@ lemma degree_Xⱼ (ℓ : ℕ) (h_ℓ : ℓ ≤ r) (j : Fin (2 ^ ℓ)) :
     -- We use the `Nat.digits` API for this.
     rw [Finset.sum_congr rfl deg_each] -- .degree introduces (WithBot ℕ)
     -- ⊢ ⊢ ∑ x, ↑(if bit ↑x ↑j = 1 then 2 ^ ↑x else 0) = ↑↑j
-    set f:= fun x: ℕ => if Nat.getBit x j = 1 then (2: ℕ) ^ (x: ℕ) else 0
-    norm_cast -- from WithBot ℕ to ℕ
-    change (∑ x : Fin ℓ, f x) = (j.val: WithBot ℕ)
-    norm_cast
-    -- ⊢ (∑ x ∈ Icc 0 (ℓ - 1), if bit x j = 1 then 2 ^ x else 0) = ↑j => in Withbot ℕ
+    -- The goal is: ∑ x, ↑(if ... then 2^↑x else 0) = ↑↑j in WithBot ℕ
+    -- Reduce to ℕ equality via suffices and cast lemma
+    set f := fun x : ℕ => if Nat.getBit x j = 1 then (2 : ℕ) ^ x else 0
+    suffices h : (∑ x : Fin ℓ, f x.val) = j.val by
+      simp only [f] at h
+      have h2 := congrArg (fun n : ℕ => (n : WithBot ℕ)) h
+      simp only [Nat.cast_sum, Nat.cast_ite, Nat.cast_pow, Nat.cast_ofNat,
+        Nat.cast_zero] at h2
+      convert h2 using 1
+      apply Finset.sum_congr rfl
+      intro x _
+      simp only [Nat.cast_ite, Nat.cast_pow, Nat.cast_ofNat, Nat.cast_zero]
+    -- ⊢ (∑ x, f x.val) = j.val in ℕ
     rw [Fin.sum_univ_eq_sum_range (n:=ℓ)] -- switch to sum over Finset.range ℓ
     have h_range: range ℓ = Icc 0 (ℓ-1) := by
       rw [←Nat.range_succ_eq_Icc_zero (n:=ℓ - 1)]
@@ -1385,10 +1393,6 @@ noncomputable def basisVectors (ℓ : Nat) (h_ℓ : ℓ ≤ r) :
 /-- The vector space of coefficients for polynomials of degree < 2^ℓ. -/
 abbrev CoeffVecSpace (L : Type u) (ℓ : Nat) := Fin (2^ℓ) → L
 
-noncomputable instance (ℓ : Nat) : AddCommGroup (CoeffVecSpace L ℓ) := by
-  unfold CoeffVecSpace
-  infer_instance -- default additive group for `Fin (2^ℓ) → L`
-
 noncomputable instance finiteDimensionalCoeffVecSpace (ℓ : ℕ) :
   FiniteDimensional (K := L) (V := CoeffVecSpace L ℓ) := by
   unfold CoeffVecSpace
@@ -1398,7 +1402,10 @@ noncomputable instance finiteDimensionalCoeffVecSpace (ℓ : ℕ) :
 def toCoeffsVec (ℓ : Nat) : L⦃<2^ℓ⦄[X] →ₗ[L] CoeffVecSpace L ℓ where
   toFun := fun p => fun i => p.val.coeff i.val
   map_add' := fun p q => by ext i; simp [coeff_add]
-  map_smul' := fun c p => by ext i; simp [coeff_smul, smul_eq_mul]
+  map_smul' := fun c p => by
+    ext i
+    simp only [Pi.smul_apply, RingHom.id_apply, smul_eq_mul]
+    rw [Submodule.coe_smul, Polynomial.coeff_smul, smul_eq_mul]
 
 /-- The rows of a square lower-triangular matrix with
 non-zero diagonal entries are linearly independent. -/

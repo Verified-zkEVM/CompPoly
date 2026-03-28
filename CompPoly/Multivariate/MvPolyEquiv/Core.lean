@@ -43,7 +43,7 @@ noncomputable def toCMvPolynomial (p : MvPolynomial (Fin n) R) : CMvPolynomial n
       obtain ⟨elem, h₁⟩ : ∃ (h : m ∈ unlawful), unlawful[m] = 0 :=
         ExtTreeMap.getElem?_eq_some_iff.1 contra
       obtain ⟨a, ha₁, ⟨rfl⟩⟩ : ∃ a ∈ s, .ofFinsupp a = m := by
-        simp [unlawful] at elem; rw [ExtTreeMap.mem_ofList] at elem; simp at elem
+        simp [unlawful] at elem; erw [ExtTreeMap.mem_ofList] at elem; simp at elem
         exact elem
       have : f a = 0 := by
         dsimp [unlawful] at h₁
@@ -93,7 +93,9 @@ theorem fromCMvPolynomial_toCMvPolynomial {p : MvPolynomial (Fin n) R} :
       aesop
     have : f m' ≠ 0 := by grind
     obtain ⟨rfl⟩ : m' = m := CMvMonomial.injective_ofFinsupp hm'₂
-    suffices p[CMvMonomial.ofFinsupp m] = f m by simpa [eq₁]
+    suffices p[CMvMonomial.ofFinsupp m] = f m by
+      erw [show p[CMvMonomial.ofFinsupp m]? = some (f m) from
+        ExtTreeMap.getElem?_eq_some_iff.mpr ⟨eq₁, this⟩]; rfl
     simp_rw [←eq]
     rw [ExtTreeMap.getElem_ofList_of_mem (k := CMvMonomial.ofFinsupp m) (k_eq := by simp)
                                          (mem := by simp; use m) (distinct := ?distinct)]

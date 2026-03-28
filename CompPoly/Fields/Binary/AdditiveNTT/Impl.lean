@@ -399,7 +399,7 @@ abbrev BTF₃ := ConcreteBTField 3 -- 8 bits
 instance : NeZero (2^3) := ⟨by norm_num⟩
 instance : Field BTF₃ := instFieldConcrete
 instance : DecidableEq BTF₃ := (inferInstance : DecidableEq (ConcreteBTField 3))
-instance : Fintype BTF₃ := (inferInstance : Fintype (ConcreteBTField 3))
+noncomputable instance : Fintype BTF₃ := (inferInstance : Fintype (ConcreteBTField 3))
 
 /-- Test of the computable additive NTT over BTF₃ (an 8-bit binary tower field `BTF₃`).
 **Input polynomial:** p(x) = x (novel coefficients [7, 1, 0, 0]) of size `2^ℓ` in `BTF₃`

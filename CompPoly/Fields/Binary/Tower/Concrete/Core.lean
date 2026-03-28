@@ -314,7 +314,7 @@ instance (k : ℕ) : Add (ConcreteBTField k) where
 theorem sum_fromNat_eq_from_xor_Nat {k : ℕ} (x y : Nat) :
     fromNat (k:=k) (x ^^^ y) = fromNat (k:=k) x + fromNat (k:=k) y := by
   unfold fromNat
-  simp only [instHAddConcreteBTField, add, BitVec.xor_eq]
+  show BitVec.ofNat _ (x ^^^ y) = (BitVec.ofNat _ x) ^^^ (BitVec.ofNat _ y)
   rw [BitVec.ofNat_xor]
 
 -- Basic lemmas for addition
@@ -535,7 +535,7 @@ instance {k : ℕ} : NeZero (1 : ConcreteBTField k) := by
   unfold ConcreteBTField
   exact {out := concrete_one_ne_zero (k:=k) }
 
-def mkAddCommGroupInstance {k : ℕ} : AddCommGroup (ConcreteBTField k) := {
+@[reducible] def mkAddCommGroupInstance {k : ℕ} : AddCommGroup (ConcreteBTField k) := {
   zero := zero
   neg := neg
   sub := fun x y => add x y
@@ -950,17 +950,15 @@ theorem split_sum_eq_sum_split {k : ℕ} (h_pos : k > 0) (x₀ x₁ : ConcreteBT
     have h_nat_eq : BitVec.toNat x₀ >>> 2 ^ (k - 1) ^^^ BitVec.toNat x₁ >>> 2 ^ (k - 1)
       = BitVec.toNat (x₀ + x₁) >>> 2 ^ (k - 1) := by
       -- unfold Concrete BTF addition into BitVec.xor
-      simp only [instHAddConcreteBTField, add, BitVec.xor_eq]
+      erw [BitVec.toNat_xor]
       rw [Nat.shiftRight_xor_distrib.symm]
-      rw [BitVec.toNat_xor] -- distribution of BitVec.xor over BitVec.toNat
     rw [h_nat_eq]
   have h_sum_lo : (lo₀ + lo₁) = fromNat (BitVec.toNat (x₀ + x₁) &&& 2 ^ 2 ^ (k - 1) - 1) := by
     rw [h₀.2, h₁.2]
     rw [←sum_fromNat_eq_from_xor_Nat]
     have h_nat_eq : BitVec.toNat x₀ &&& 2 ^ 2 ^ (k - 1) - 1 ^^^ BitVec.toNat x₁
       &&& 2 ^ 2 ^ (k - 1) - 1 = BitVec.toNat (x₀ + x₁) &&& 2 ^ 2 ^ (k - 1) - 1 := by
-      simp only [instHAddConcreteBTField, add, BitVec.xor_eq]
-      rw [BitVec.toNat_xor]
+      erw [BitVec.toNat_xor]
       rw [Nat.and_xor_distrib_right.symm]
     rw [h_nat_eq]
   have h_sum_hi_lo : (hi₀ + hi₁, lo₀ + lo₁) = split h_pos (x₀ + x₁) := by
@@ -1234,7 +1232,7 @@ theorem concrete_eq_zero_or_eq_one {k : ℕ} {a : ConcreteBTField k} (h_k_zero :
       -- zero (k:=k) = Eq.mpr ... (zero (k:=0))
       have : zero = Eq.mpr (congrArg ConcreteBTField h_k_zero) (zero (k:=0)) := by
         simp only [zero, eq_mpr_eq_cast, BitVec.zero]
-        rw [←dcast_eq_root_cast]
+        erw [←dcast_eq_root_cast]
         simp only [BitVec.ofNatLT_zero, Nat.pow_zero]
         rw [BitVec.dcast_zero] -- ⊢ 1 = 2 ^ k
         exact h_2_pow_k_eq_1.symm
@@ -1246,7 +1244,7 @@ theorem concrete_eq_zero_or_eq_one {k : ℕ} {a : ConcreteBTField k} (h_k_zero :
       rw [this, ha1]
       have : one = Eq.mpr (congrArg ConcreteBTField h_k_zero) (one (k:=0)) := by
         simp only [one, eq_mpr_eq_cast]
-        rw [←dcast_eq_root_cast]
+        erw [←dcast_eq_root_cast]
         simp only [Nat.pow_zero]
         rw [BitVec.dcast_one] -- ⊢ 1 = 2 ^ k
         exact h_2_pow_k_eq_1.symm
@@ -1256,9 +1254,9 @@ theorem concrete_eq_zero_or_eq_one {k : ℕ} {a : ConcreteBTField k} (h_k_zero :
 
 lemma add_eq_one_iff (a b : ConcreteBTField 0) :
     a + b = 1 ↔ (a = 0 ∧ b = 1) ∨ (a = 1 ∧ b = 0) := by
-  rcases eq_zero_or_eq_one (a := a) with (ha | ha)
-  · simp [ha, zero_is_0]  -- a = zero
-  · simp [ha, one_is_1]
+  rcases eq_zero_or_eq_one (a := a) with (ha | ha) <;>
+    rcases eq_zero_or_eq_one (a := b) with (hb | hb) <;>
+    simp_all [zero_is_0, one_is_1, add_self_cancel]
 
 instance instInvConcreteBTF {k : ℕ} : Inv (ConcreteBTField k) where
   inv := concrete_inv
@@ -1346,9 +1344,7 @@ lemma concrete_mul_left_distrib0 (a b c : ConcreteBTField 0) :
           simp only [c_cases, ne_eq, one_ne_zero, not_false_eq_true]
         rw [if_neg c_ne_0]
         exact c_cases.symm
-      · rw [one_is_1] at hb; simp [hb];
-        simp [hb] at c_cases
-        exact c_cases
+      · rw [one_is_1] at hb; simp [hb] at c_cases; simp [hb, c_cases]
 
 lemma concrete_mul_right_distrib0 (a b c : ConcreteBTField 0) :
     concrete_mul (a + b) c = concrete_mul a c + concrete_mul b c := by
@@ -1369,7 +1365,7 @@ def natCast_succ {k : ℕ} (n : ℕ) : natCast (k:=k) (n + 1) = natCast (k:=k) n
   by_cases h : n % 2 = 0
   · -- If n % 2 = 0, then (n + 1) % 2 = 1
     have h_succ : (n + 1) % 2 = 1 := by omega
-    simp only [natCast, h, h_succ]; norm_num; rw [one_is_1, zero_is_0]; norm_num
+    simp only [natCast, h, h_succ]; norm_num; rw [one_is_1, zero_is_0, zero_add]
   · -- If n % 2 = 1, then (n + 1) % 2 = 0
     have h_succ : (n + 1) % 2 = 0 := by omega
     simp only [natCast, h, h_succ]; norm_num; rw [one_is_1, zero_is_0, add_self_cancel]
@@ -1492,7 +1488,7 @@ structure ConcreteBTFieldProps (k : ℕ) extends (ConcreteBTFDivisionRingProps k
   -- Commutativity (what makes it a Field vs just a DivisionRing)
   mul_comm : ∀ a b : ConcreteBTField k, concrete_mul a b = concrete_mul b a
 
-def mkRingInstance {k : ℕ} (props : ConcreteBTFieldProps k) : Ring (ConcreteBTField k) where
+@[reducible] def mkRingInstance {k : ℕ} (props : ConcreteBTFieldProps k) : Ring (ConcreteBTField k) where
   toAddCommGroup := mkAddCommGroupInstance
   toOne := inferInstance
   mul := concrete_mul
@@ -1511,7 +1507,7 @@ def mkRingInstance {k : ℕ} (props : ConcreteBTFieldProps k) : Ring (ConcreteBT
   intCast_ofNat n := intCast_ofNat n
   intCast_negSucc n := intCast_negSucc n
 
-def mkDivisionRingInstance {k : ℕ} (props : ConcreteBTFieldProps k) :
+@[reducible] def mkDivisionRingInstance {k : ℕ} (props : ConcreteBTFieldProps k) :
     DivisionRing (ConcreteBTField k) where
   toRing := mkRingInstance (k:=k) props
   inv := concrete_inv
@@ -1521,7 +1517,7 @@ def mkDivisionRingInstance {k : ℕ} (props : ConcreteBTFieldProps k) :
   qsmul := (Rat.castRec · * ·)
   nnqsmul := (NNRat.castRec · * ·)
 
-def mkFieldInstance {k : ℕ} (props : ConcreteBTFieldProps k) : Field (ConcreteBTField k) where
+@[reducible] def mkFieldInstance {k : ℕ} (props : ConcreteBTFieldProps k) : Field (ConcreteBTField k) where
   toDivisionRing := mkDivisionRingInstance (k:=k) props
   mul_comm := props.mul_comm
 

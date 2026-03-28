@@ -152,7 +152,7 @@ private lemma vector_ofFn_sum_eq_finSum {n : ℕ} (s : Fin n → ℕ) :
     (Vector.ofFn s).sum = (Array.ofFn s).sum := by
       simp [Vector.sum, Vector.toArray_ofFn]
     _ = (Array.ofFn s).toList.sum := by
-      exact (Array.sum_eq_sum_toList (as := Array.ofFn s)).symm
+      exact (Array.sum_toList (as := Array.ofFn s)).symm
     _ = (List.ofFn s).sum := by
       exact congrArg List.sum (Array.toList_ofFn (f := s))
     _ = ∑ i : Fin n, s i := list_ofFn_sum_eq_finSum s
