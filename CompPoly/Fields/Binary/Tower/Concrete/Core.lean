@@ -1488,7 +1488,8 @@ structure ConcreteBTFieldProps (k : ℕ) extends (ConcreteBTFDivisionRingProps k
   -- Commutativity (what makes it a Field vs just a DivisionRing)
   mul_comm : ∀ a b : ConcreteBTField k, concrete_mul a b = concrete_mul b a
 
-@[reducible] def mkRingInstance {k : ℕ} (props : ConcreteBTFieldProps k) : Ring (ConcreteBTField k) where
+@[reducible] def mkRingInstance {k : ℕ} (props : ConcreteBTFieldProps k) :
+    Ring (ConcreteBTField k) where
   toAddCommGroup := mkAddCommGroupInstance
   toOne := inferInstance
   mul := concrete_mul
@@ -1517,7 +1518,8 @@ structure ConcreteBTFieldProps (k : ℕ) extends (ConcreteBTFDivisionRingProps k
   qsmul := (Rat.castRec · * ·)
   nnqsmul := (NNRat.castRec · * ·)
 
-@[reducible] def mkFieldInstance {k : ℕ} (props : ConcreteBTFieldProps k) : Field (ConcreteBTField k) where
+@[reducible] def mkFieldInstance {k : ℕ} (props : ConcreteBTFieldProps k) :
+    Field (ConcreteBTField k) where
   toDivisionRing := mkDivisionRingInstance (k:=k) props
   mul_comm := props.mul_comm
 

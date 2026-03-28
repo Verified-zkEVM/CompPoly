@@ -923,7 +923,8 @@ instance instCharP2 {k : ℕ} : CharP (ConcreteBTField k) 2 :=
 
 noncomputable instance (k : ℕ) : Fintype (ConcreteBTField k) := (getBTFResult k).instFintype
 
-noncomputable instance instFintype {k : ℕ} : Fintype (ConcreteBTField k) := (getBTFResult k).instFintype
+noncomputable instance instFintype {k : ℕ} : Fintype (ConcreteBTField k) :=
+  (getBTFResult k).instFintype
 
 /-- adjoined root of poly k, generator of successor field BTField (k + 1) -/
 @[simp]
