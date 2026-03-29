@@ -19,47 +19,58 @@ namespace CMvPolynomial
 open CompPoly
 
 example (p : CMvPolynomial 1 ℚ) : ofUnivariate (toUnivariate p) = p := by
-  exact ofUnivariate_toUnivariate (R := ℚ) p
+  exact of_univariate_to_univariate p
 
-example (p : CompPoly.CPolynomial ℚ) : toUnivariate (ofUnivariate p) = p := by
-  exact toUnivariate_ofUnivariate (R := ℚ) p
+example (p : CPolynomial ℚ) : toUnivariate (ofUnivariate p) = p := by
+  exact to_univariate_of_univariate p
 
 example (p q : CMvPolynomial 1 ℚ) :
-    univariateRingEquiv (R := ℚ) (p + q) =
-      univariateRingEquiv (R := ℚ) p + univariateRingEquiv (R := ℚ) q := by
+    univariateRingEquiv (p + q) = univariateRingEquiv p + univariateRingEquiv q := by
   exact (univariateRingEquiv (R := ℚ)).map_add p q
 
 example (p q : CMvPolynomial 1 ℚ) :
-    univariateRingEquiv (R := ℚ) (p * q) =
-      univariateRingEquiv (R := ℚ) p * univariateRingEquiv (R := ℚ) q := by
+    univariateRingEquiv (p * q) = univariateRingEquiv p * univariateRingEquiv q := by
   exact (univariateRingEquiv (R := ℚ)).map_mul p q
 
 example (p : CMvPolynomial 1 ℚ) (n : ℕ) :
-    CompPoly.CPolynomial.coeff (toUnivariate p) n =
+    CPolynomial.coeff (toUnivariate p) n =
       coeff (univariateMonomial n) p := by
-  simpa using coeff_toUnivariate (R := ℚ) p n
+  simpa using coeff_to_univariate p n
 
-example (p : CompPoly.CPolynomial ℚ) (n : ℕ) :
+example (p : CPolynomial ℚ) (n : ℕ) :
     coeff (univariateMonomial n) (ofUnivariate p) =
-      CompPoly.CPolynomial.coeff p n := by
-  simpa using coeff_ofUnivariate (R := ℚ) p n
+      CPolynomial.coeff p n := by
+  simpa using coeff_of_univariate p n
 
 example :
-    coeff (univariateMonomial 1) (ofUnivariate (CompPoly.CPolynomial.X (R := ℚ))) = 1 := by
-  rw [coeff_ofUnivariate]
-  simp [CompPoly.CPolynomial.coeff, CompPoly.CPolynomial.X,
-    CompPoly.CPolynomial.Raw.X, CompPoly.CPolynomial.Raw.coeff]
+    coeff (univariateMonomial 1) (ofUnivariate (CPolynomial.X (R := ℚ))) = 1 := by
+  rw [coeff_of_univariate]
+  simp [CPolynomial.coeff, CPolynomial.X, CPolynomial.Raw.X, CPolynomial.Raw.coeff]
 
 example :
-    coeff (univariateMonomial 0) (ofUnivariate (CompPoly.CPolynomial.X (R := ℚ))) = 0 := by
-  rw [coeff_ofUnivariate]
-  simp [CompPoly.CPolynomial.coeff, CompPoly.CPolynomial.X,
-    CompPoly.CPolynomial.Raw.X, CompPoly.CPolynomial.Raw.coeff]
+    coeff (univariateMonomial 0) (ofUnivariate (CPolynomial.X (R := ℚ))) = 0 := by
+  rw [coeff_of_univariate]
+  simp [CPolynomial.coeff, CPolynomial.X, CPolynomial.Raw.X, CPolynomial.Raw.coeff]
 
 example (c : ℚ) :
-    coeff (univariateMonomial 0) (ofUnivariate (CompPoly.CPolynomial.C c)) = c := by
-  rw [coeff_ofUnivariate, CompPoly.CPolynomial.coeff_C]
+    coeff (univariateMonomial 0) (ofUnivariate (CPolynomial.C c)) = c := by
+  rw [coeff_of_univariate, CPolynomial.coeff_C]
   simp
+
+example :
+    univariateRingEquiv (R := ℚ) =
+      (CPoly.CMvPolynomial.finSuccEquiv (n := 0) (R := ℚ)).trans
+        ((Polynomial.mapEquiv (CMvPolynomial.isEmptyRingEquiv (R := ℚ))).trans
+          (CPolynomial.ringEquiv (R := ℚ)).symm) := by
+  simpa using univariate_ring_equiv_eq_fin_succ_composite (R := ℚ)
+
+example (p : CMvPolynomial 1 ℚ) :
+    univariateRingEquiv p =
+      ((CPoly.CMvPolynomial.finSuccEquiv (n := 0) (R := ℚ)).trans
+        ((Polynomial.mapEquiv (CMvPolynomial.isEmptyRingEquiv (R := ℚ))).trans
+          (CPolynomial.ringEquiv (R := ℚ)).symm)) p := by
+  simpa using congrArg (fun e : CMvPolynomial 1 ℚ ≃+* CPolynomial ℚ => e p)
+    (univariate_ring_equiv_eq_fin_succ_composite (R := ℚ))
 
 end CMvPolynomial
 
