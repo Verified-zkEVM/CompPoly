@@ -66,6 +66,7 @@ import CompPoly.Multivariate.MvPolyEquiv.Instances
 import CompPoly.Multivariate.Operations
 import CompPoly.Multivariate.Rename
 import CompPoly.Multivariate.Restrict
+import CompPoly.Multivariate.UnivariateEquiv
 import CompPoly.Multivariate.Unlawful
 import CompPoly.Multivariate.VarsDegrees
 import CompPoly.Multivariate.Wheels

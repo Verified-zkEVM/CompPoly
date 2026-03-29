@@ -36,6 +36,9 @@ scripts/              repo utilities and validation helpers
   start in `CompPoly/Univariate/`.
 - Extending sparse monomial-based polynomial operations or `MvPolynomial`
   interoperability: start in `CompPoly/Multivariate/`.
+- Working on the dedicated one-variable
+  `CMvPolynomial 1 R ≃+* CPolynomial R` bridge:
+  start in `CompPoly/Multivariate/UnivariateEquiv.lean`.
 - Working on Boolean-hypercube evaluation form, basis conversion, or multilinear
   equivalences: start in `CompPoly/Multilinear/`.
 - Working on the specialized two-variable API or the `R[X][Y]` bridge:

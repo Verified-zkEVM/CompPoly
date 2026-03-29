@@ -14,4 +14,5 @@ import CompPolyTests.Multilinear.Equiv
 import CompPolyTests.Multivariate.CMvMonomial
 import CompPolyTests.Multivariate.Restrict
 import CompPolyTests.Multivariate.TypeclassMinimization
+import CompPolyTests.Multivariate.UnivariateEquiv
 import CompPolyTests.Multivariate.VarsDegrees

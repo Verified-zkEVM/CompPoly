@@ -52,6 +52,9 @@ The main split is:
   for core type-level definitions,
 - [`../../CompPoly/Multivariate/Operations.lean`](../../CompPoly/Multivariate/Operations.lean)
   for the higher-level operation surface,
+- [`../../CompPoly/Multivariate/UnivariateEquiv.lean`](../../CompPoly/Multivariate/UnivariateEquiv.lean)
+  for the dedicated computable bridge
+  `CMvPolynomial 1 R ≃+* CPolynomial R`,
 - [`../../CompPoly/Multivariate/MvPolyEquiv/`](../../CompPoly/Multivariate/MvPolyEquiv/)
   for ring instances and bridge lemmas.
 
@@ -96,6 +99,7 @@ bridge layer rather than the implementation file:
 
 - Univariate bridge: `Univariate/ToPoly/*`
 - Multivariate bridge: `Multivariate/MvPolyEquiv/*`
+- Direct one-variable bridge: `Multivariate/UnivariateEquiv.lean`
 - Bivariate bridge: `Bivariate/ToPoly.lean` plus `ToMathlib/Polynomial/BivariateDegree.lean`, `ToMathlib/Polynomial/BivariateWeightedDegree.lean`, and `ToMathlib/Polynomial/BivariateMultiplicity.lean`
 - Multilinear bridge: `Multilinear/Equiv.lean`
 - Supporting upstream-facing lemmas: `ToMathlib/*`
