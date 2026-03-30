@@ -28,7 +28,11 @@ namespace CompPoly
 
 namespace CPolynomial
 
-variable {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+variable {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+
+section Nontrivial
+
+variable [Nontrivial R]
 
 /-- The constant-polynomial constructor bundled as a ring homomorphism. -/
 def cRingHom : R →+* CPolynomial R where
@@ -56,19 +60,8 @@ def cRingHom : R →+* CPolynomial R where
 @[simp]
 lemma cRingHom_apply (r : R) : cRingHom (R := R) r = C r := rfl
 
-omit [Nontrivial R] in
-/-- Coefficients commute with finite sums of canonical polynomials. -/
-lemma coeff_sum {ι : Type*} (s : Finset ι) (f : ι → CPolynomial R) (i : ℕ) :
-    coeff (∑ x ∈ s, f x) i = ∑ x ∈ s, coeff (f x) i := by
-  classical
-  induction s using Finset.induction_on with
-  | empty =>
-      simpa using (coeff_zero (R := R) (i := i))
-  | insert a s ha ih =>
-      rw [Finset.sum_insert ha, Finset.sum_insert ha, coeff_add, ih]
-
 /-- The coefficient of `C c * X^n` is `c` at degree `n` and zero elsewhere. -/
-lemma coeff_c_mul_x_pow (c : R) :
+lemma coeff_C_mul_X_pow (c : R) :
     ∀ n i : ℕ, coeff (C c * X ^ n) i = if i = n then c else 0
   | 0, i => by
       rw [pow_zero, coeff_C_mul]
@@ -79,7 +72,19 @@ lemma coeff_c_mul_x_pow (c : R) :
       simp
   | n + 1, i + 1 => by
       rw [pow_succ, ← mul_assoc, coeff_mul_X_succ]
-      simpa using coeff_c_mul_x_pow c n i
+      simpa using coeff_C_mul_X_pow c n i
+
+end Nontrivial
+
+/-- Coefficients commute with finite sums of canonical polynomials. -/
+lemma coeff_sum {ι : Type*} (s : Finset ι) (f : ι → CPolynomial R) (i : ℕ) :
+    coeff (∑ x ∈ s, f x) i = ∑ x ∈ s, coeff (f x) i := by
+  classical
+  induction s using Finset.induction_on with
+  | empty =>
+      simpa using (coeff_zero (R := R) (i := i))
+  | insert a s ha ih =>
+      rw [Finset.sum_insert ha, Finset.sum_insert ha, coeff_add, ih]
 
 end CPolynomial
 
@@ -91,7 +96,7 @@ namespace CMvPolynomial
 
 open CompPoly
 
-variable {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+variable {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 /-- The monomial `X^n` viewed in `CMvPolynomial 1`. -/
 def univariateMonomial (n : ℕ) : CMvMonomial 1 :=
@@ -127,28 +132,32 @@ private lemma single_finsupp_eq_of_apply_eq {m : Fin 1 →₀ ℕ} {n : ℕ} (h 
     m = Finsupp.single 0 (m 0) := single_finsupp_eq m
     _ = Finsupp.single 0 n := by rw [h]
 
+/-- The constant-polynomial constructor bundled as a computable ring homomorphism into
+`CMvPolynomial 1`. -/
+def cRingHom : R →+* CMvPolynomial 1 R where
+  toFun := CMvPolynomial.C (n := 1)
+  map_zero' := by
+    exact (CMvPolynomial.CRingHom (n := 1) (R := R)).map_zero
+  map_one' := by
+    exact (CMvPolynomial.CRingHom (n := 1) (R := R)).map_one
+  map_add' x y := by
+    exact (CMvPolynomial.CRingHom (n := 1) (R := R)).map_add x y
+  map_mul' x y := by
+    exact (CMvPolynomial.CRingHom (n := 1) (R := R)).map_mul x y
+
+@[simp]
+lemma cRingHom_apply (r : R) : cRingHom (R := R) r = CMvPolynomial.C (n := 1) r := rfl
+
 /-- Interpret a sparse one-variable multivariate polynomial as a canonical univariate polynomial. -/
-def toUnivariate (p : CMvPolynomial 1 R) : CompPoly.CPolynomial R :=
+def toUnivariate [Nontrivial R] (p : CMvPolynomial 1 R) : CompPoly.CPolynomial R :=
   eval₂ (CompPoly.CPolynomial.cRingHom (R := R)) (fun _ ↦ CompPoly.CPolynomial.X) p
 
 /-- Interpret a canonical univariate polynomial as a sparse one-variable multivariate polynomial. -/
 def ofUnivariate (p : CompPoly.CPolynomial R) : CMvPolynomial 1 R :=
-  let cRingHom : R →+* CMvPolynomial 1 R := {
-    toFun := CMvPolynomial.C (n := 1)
-    map_zero' := by
-      exact (CMvPolynomial.CRingHom (n := 1) (R := R)).map_zero
-    map_one' := by
-      exact (CMvPolynomial.CRingHom (n := 1) (R := R)).map_one
-    map_add' := by
-      intros x y
-      exact (CMvPolynomial.CRingHom (n := 1) (R := R)).map_add x y
-    map_mul' := by
-      intros x y
-      exact (CMvPolynomial.CRingHom (n := 1) (R := R)).map_mul x y
-  }
-  CompPoly.CPolynomial.eval₂ cRingHom (CMvPolynomial.X (R := R) 0) p
+  CompPoly.CPolynomial.eval₂ (cRingHom (R := R)) (CMvPolynomial.X (R := R) 0) p
 
-lemma to_univariate_add (p q : CMvPolynomial 1 R) :
+/-- `toUnivariate` preserves addition. -/
+lemma toUnivariate_add [Nontrivial R] (p q : CMvPolynomial 1 R) :
     toUnivariate (p + q) = toUnivariate p + toUnivariate q := by
   simpa [toUnivariate, CMvPolynomial.eval₂Hom_apply] using
     (CMvPolynomial.eval₂Hom
@@ -156,7 +165,8 @@ lemma to_univariate_add (p q : CMvPolynomial 1 R) :
       (CompPoly.CPolynomial.cRingHom (R := R))
       (fun _ ↦ CompPoly.CPolynomial.X)).map_add p q
 
-lemma to_univariate_mul (p q : CMvPolynomial 1 R) :
+/-- `toUnivariate` preserves multiplication. -/
+lemma toUnivariate_mul [Nontrivial R] (p q : CMvPolynomial 1 R) :
     toUnivariate (p * q) = toUnivariate p * toUnivariate q := by
   simpa [toUnivariate, CMvPolynomial.eval₂Hom_apply] using
     (CMvPolynomial.eval₂Hom
@@ -164,7 +174,7 @@ lemma to_univariate_mul (p q : CMvPolynomial 1 R) :
       (CompPoly.CPolynomial.cRingHom (R := R))
       (fun _ ↦ CompPoly.CPolynomial.X)).map_mul p q
 
-private lemma to_univariate_eq_support_sum (p : CMvPolynomial 1 R) :
+private lemma to_univariate_eq_support_sum [Nontrivial R] (p : CMvPolynomial 1 R) :
     toUnivariate p =
       (fromCMvPolynomial p).support.sum
         (fun m ↦
@@ -182,7 +192,6 @@ private lemma to_univariate_eq_support_sum (p : CMvPolynomial 1 R) :
   intro m hm
   simp [MonoR.evalMonomial, CMvMonomial.ofFinsupp, MvPolynomial.coeff]
 
-omit [Nontrivial R] in
 private lemma coeff_single_monomial_c_mul_x_pow (c : R) (n i : ℕ) :
     CMvPolynomial.coeff (univariateMonomial i)
       (CMvPolynomial.C (n := 1) c * (CMvPolynomial.X (R := R) 0) ^ n) =
@@ -206,7 +215,6 @@ private lemma coeff_single_monomial_c_mul_x_pow (c : R) (n i : ℕ) :
   rw [MvPolynomial.C_mul_X_pow_eq_monomial]
   simp [eq_comm]
 
-omit [Nontrivial R] in
 private lemma of_univariate_eq_support_sum (p : CompPoly.CPolynomial R) :
     ofUnivariate p =
       p.support.sum
@@ -220,19 +228,20 @@ private lemma of_univariate_eq_support_sum (p : CompPoly.CPolynomial R) :
       (f := CMvPolynomial.CRingHom (n := 1) (R := R))
       (x := CMvPolynomial.X (R := R) 0))
 
-lemma coeff_to_univariate (p : CMvPolynomial 1 R) (i : ℕ) :
+/-- The `i`-th coefficient of `toUnivariate p` is the coefficient of the monomial `X^i` in `p`. -/
+lemma coeff_toUnivariate [Nontrivial R] (p : CMvPolynomial 1 R) (i : ℕ) :
     CompPoly.CPolynomial.coeff (toUnivariate p) i =
       CMvPolynomial.coeff (univariateMonomial i) p := by
   rw [to_univariate_eq_support_sum, CompPoly.CPolynomial.coeff_sum]
   rw [Finset.sum_eq_single (Finsupp.single 0 i)]
-  · rw [CompPoly.CPolynomial.coeff_c_mul_x_pow]
+  · rw [CompPoly.CPolynomial.coeff_C_mul_X_pow]
     simp [coeff_eq, single_monomial_eq_of_finsupp]
   · intro m hm hne
     have hmi : m 0 ≠ i := by
       intro h
       apply hne
       exact single_finsupp_eq_of_apply_eq h
-    rw [CompPoly.CPolynomial.coeff_c_mul_x_pow]
+    rw [CompPoly.CPolynomial.coeff_C_mul_X_pow]
     by_cases him : i = m 0
     · exfalso
       exact hmi him.symm
@@ -240,11 +249,11 @@ lemma coeff_to_univariate (p : CMvPolynomial 1 R) (i : ℕ) :
   · intro hnot
     have hcoeff0 : (fromCMvPolynomial p).coeff (Finsupp.single 0 i) = 0 := by
       simpa [MvPolynomial.mem_support_iff] using hnot
-    rw [CompPoly.CPolynomial.coeff_c_mul_x_pow]
+    rw [CompPoly.CPolynomial.coeff_C_mul_X_pow]
     simp [hcoeff0]
 
-omit [Nontrivial R] in
-lemma coeff_of_univariate (p : CompPoly.CPolynomial R) (i : ℕ) :
+/-- The coefficient of `X^i` in `ofUnivariate p` is the `i`-th coefficient of `p`. -/
+lemma coeff_ofUnivariate (p : CompPoly.CPolynomial R) (i : ℕ) :
     CMvPolynomial.coeff (univariateMonomial i) (ofUnivariate p) =
       CompPoly.CPolynomial.coeff p i := by
   rw [of_univariate_eq_support_sum]
@@ -265,22 +274,24 @@ lemma coeff_of_univariate (p : CompPoly.CPolynomial R) (i : ℕ) :
     rw [coeff_single_monomial_c_mul_x_pow]
     simp [hcoeff0]
 
+/-- `toUnivariate` is a left inverse to `ofUnivariate`. -/
 @[simp]
-lemma to_univariate_of_univariate (p : CompPoly.CPolynomial R) :
+lemma toUnivariate_ofUnivariate [Nontrivial R] (p : CompPoly.CPolynomial R) :
     toUnivariate (ofUnivariate p) = p := by
   apply CompPoly.CPolynomial.eq_iff_coeff.2
   intro i
-  rw [coeff_to_univariate, coeff_of_univariate]
+  rw [coeff_toUnivariate, coeff_ofUnivariate]
 
+/-- `ofUnivariate` is a left inverse to `toUnivariate`. -/
 @[simp]
-lemma of_univariate_to_univariate (p : CMvPolynomial 1 R) :
+lemma ofUnivariate_toUnivariate [Nontrivial R] (p : CMvPolynomial 1 R) :
     ofUnivariate (toUnivariate p) = p := by
   ext m
   let i := m.get 0
   have h :
       CMvPolynomial.coeff (univariateMonomial i) (ofUnivariate (toUnivariate p)) =
         CMvPolynomial.coeff (univariateMonomial i) p := by
-    rw [coeff_of_univariate, coeff_to_univariate]
+    rw [coeff_ofUnivariate, coeff_toUnivariate]
   have hm : m = univariateMonomial i := by
     dsimp [i]
     exact single_monomial_eq m
@@ -288,7 +299,8 @@ lemma of_univariate_to_univariate (p : CMvPolynomial 1 R) :
 
 /-- The direct forward map agrees with the existing `finSucc` transport path after converting
 to Mathlib `Polynomial`. -/
-private theorem to_univariate_to_poly_eq_fin_succ_composite (p : CMvPolynomial 1 R) :
+private theorem to_univariate_to_poly_eq_fin_succ_composite [Nontrivial R]
+    (p : CMvPolynomial 1 R) :
     (CompPoly.CPolynomial.ringEquiv (R := R)) (toUnivariate p) =
       (Polynomial.mapEquiv (CMvPolynomial.isEmptyRingEquiv (R := R)))
         (CPoly.CMvPolynomial.finSuccEquiv (n := 0) (R := R) p) := by
@@ -296,7 +308,7 @@ private theorem to_univariate_to_poly_eq_fin_succ_composite (p : CMvPolynomial 1
   change (toUnivariate p).toPoly.coeff i =
     ((Polynomial.mapEquiv (CMvPolynomial.isEmptyRingEquiv (R := R)))
       (CPoly.CMvPolynomial.finSuccEquiv (n := 0) (R := R) p)).coeff i
-  rw [← CompPoly.CPolynomial.coeff_toPoly, coeff_to_univariate]
+  rw [← CompPoly.CPolynomial.coeff_toPoly, coeff_toUnivariate]
   simp [CPoly.CMvPolynomial.finSuccEquiv, CPoly.polynomialCMvPolyEquiv,
     CMvPolynomial.isEmptyRingEquiv, Polynomial.coeff_map]
   symm
@@ -316,17 +328,27 @@ private theorem to_univariate_to_poly_eq_fin_succ_composite (p : CMvPolynomial 1
 
 /-- Direct computable ring equivalence between sparse one-variable multivariate polynomials
 and canonical univariate polynomials. -/
-def univariateRingEquiv : CMvPolynomial 1 R ≃+* CompPoly.CPolynomial R where
+def univariateRingEquiv [Nontrivial R] : CMvPolynomial 1 R ≃+* CompPoly.CPolynomial R where
   toFun := toUnivariate
   invFun := ofUnivariate
-  left_inv := of_univariate_to_univariate
-  right_inv := to_univariate_of_univariate
-  map_mul' := to_univariate_mul
-  map_add' := to_univariate_add
+  left_inv := ofUnivariate_toUnivariate
+  right_inv := toUnivariate_ofUnivariate
+  map_mul' := toUnivariate_mul
+  map_add' := toUnivariate_add
+
+/-- The forward direction of `univariateRingEquiv` is `toUnivariate`. -/
+@[simp]
+lemma univariateRingEquiv_apply [Nontrivial R] (p : CMvPolynomial 1 R) :
+    univariateRingEquiv (R := R) p = toUnivariate p := rfl
+
+/-- The inverse direction of `univariateRingEquiv` is `ofUnivariate`. -/
+@[simp]
+lemma univariateRingEquiv_symm_apply [Nontrivial R] (p : CompPoly.CPolynomial R) :
+    (univariateRingEquiv (R := R)).symm p = ofUnivariate p := rfl
 
 /-- The direct computable one-variable bridge agrees with the existing `finSucc` transport
 composite. -/
-theorem univariate_ring_equiv_eq_fin_succ_composite :
+theorem univariateRingEquiv_eq_finSucc_composite [Nontrivial R] :
     univariateRingEquiv (R := R) =
       (CPoly.CMvPolynomial.finSuccEquiv (n := 0) (R := R)).trans
         ((Polynomial.mapEquiv (CMvPolynomial.isEmptyRingEquiv (R := R))).trans
