@@ -27,13 +27,13 @@ namespace CPoly
 
 open Std CMvPolynomial
 
-variable {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+variable {n m : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 /-! ### Helper lemmas for `fromCMvPolynomial_rename` -/
 
 /-- In a commutative additive monoid, the order of addition in a list fold
 does not matter. -/
-lemma list_foldl_add_comm {β K V : Type} [AddCommMonoid β]
+lemma list_foldl_add_comm {β K V : Type*} [AddCommMonoid β]
     (g : K → V → β) (l : List (K × V)) (init : β) :
     List.foldl (fun acc pair => acc + g pair.1 pair.2) init l =
     List.foldl (fun acc pair => g pair.1 pair.2 + acc) init l := by
@@ -45,8 +45,8 @@ lemma list_foldl_add_comm {β K V : Type} [AddCommMonoid β]
     exact ih _
 
 /-- Swapping addition order in `ExtTreeMap.foldl` does not change the result. -/
-lemma foldl_add_comm' {β : Type} [AddCommMonoid β] {k : ℕ}
-    {R' : Type} (g : CMvMonomial k → R' → β)
+lemma foldl_add_comm' {β : Type*} [AddCommMonoid β] {k : ℕ}
+    {R' : Type*} (g : CMvMonomial k → R' → β)
     (t : Std.ExtTreeMap (CMvMonomial k) R') :
     Std.ExtTreeMap.foldl (fun acc m c => acc + g m c) (0 : β) t =
     Std.ExtTreeMap.foldl (fun acc m c => g m c + acc) (0 : β) t := by

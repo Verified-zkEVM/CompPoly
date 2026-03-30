@@ -27,10 +27,10 @@ namespace CPoly
 open Std
 
 /-- The subtype of polynomials with no zero coefficients. -/
-def Lawful (n : ℕ) (R : Type) [Zero R] :=
+def Lawful (n : ℕ) (R : Type*) [Zero R] : Type _ :=
   {p : Unlawful n R // p.isNoZeroCoef}
 
-variable {n : ℕ} {R : Type} [Zero R]
+variable {n : ℕ} {R : Type*} [Zero R]
 
 section Instances
 
@@ -170,7 +170,7 @@ abbrev monomials (p : Lawful n R) : List (CMvMonomial n) :=
   p.1.monomials
 
 /-- Check if a polynomial is a non-zero constant. -/
-def NZConst {n : ℕ} {R : Type} [Zero R] (p : Lawful n R) : Prop :=
+def NZConst {n : ℕ} {R : Type*} [Zero R] (p : Lawful n R) : Prop :=
   p.val.size = 1 ∧ p.val.contains CMvMonomial.zero
 
 omit [BEq R] [LawfulBEq R] in

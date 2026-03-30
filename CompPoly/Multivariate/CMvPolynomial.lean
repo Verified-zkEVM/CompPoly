@@ -39,24 +39,24 @@ namespace CPoly
 open Std
 
 /-- A computable multivariate polynomial in `n` variables with coefficients in `R`. -/
-abbrev CMvPolynomial (n : ℕ) (R : Type) [Zero R] : Type := Lawful n R
+abbrev CMvPolynomial (n : ℕ) (R : Type*) [Zero R] : Type _ := Lawful n R
 
-variable {R : Type}
+variable {R : Type*}
 
 namespace CMvPolynomial
 
 /-- Construct a constant polynomial. -/
-def C {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R] (c : R) : CMvPolynomial n R :=
+def C {n : ℕ} {R : Type*} [BEq R] [LawfulBEq R] [Zero R] (c : R) : CMvPolynomial n R :=
   Lawful.C (n := n) (R := R) c
 
 /-- Construct the polynomial $X_i$. -/
-def X {n : ℕ} {R : Type} [Zero R] [One R] [BEq R] [LawfulBEq R]
+def X {n : ℕ} {R : Type*} [Zero R] [One R] [BEq R] [LawfulBEq R]
     (i : Fin n) : CMvPolynomial n R :=
   let monomial : CMvMonomial n := Vector.ofFn (fun j => if j = i then 1 else 0)
   Lawful.fromUnlawful <| .ofList [(monomial, (1 : R))]
 
 /-- Extract the coefficient of a monomial. -/
-def coeff {R : Type} {n : ℕ} [Zero R] (m : CMvMonomial n) (p : CMvPolynomial n R) : R :=
+def coeff {R : Type*} {n : ℕ} [Zero R] (m : CMvMonomial n) (p : CMvPolynomial n R) : R :=
   p.1[m]?.getD 0
 
 attribute [grind =] coeff.eq_def
@@ -125,26 +125,26 @@ end
 
 /-- Evaluate a polynomial at a point given by a ring homomorphism `f`
     and variable assignments `vs`. -/
-def eval₂ {R S : Type} {n : ℕ} [Semiring R] [CommSemiring S] :
+def eval₂ {R S : Type*} {n : ℕ} [Semiring R] [CommSemiring S] :
     (R →+* S) → (Fin n → S) → CMvPolynomial n R → S :=
   fun f vs p => ExtTreeMap.foldl (fun s m c => (f c * MonoR.evalMonomial vs m) + s) 0 p.1
 
 /-- Evaluate a polynomial at a given point. -/
-def eval {R : Type} {n : ℕ} [CommSemiring R] : (Fin n → R) → CMvPolynomial n R → R :=
+def eval {R : Type*} {n : ℕ} [CommSemiring R] : (Fin n → R) → CMvPolynomial n R → R :=
   eval₂ (RingHom.id _)
 
 /-- The support of a polynomial (set of monomials with non-zero coefficients),
     represented as Finsupps. -/
-def support {R : Type} {n : ℕ} [Zero R] (p : CMvPolynomial n R) : Finset (Fin n →₀ ℕ) :=
+def support {R : Type*} {n : ℕ} [Zero R] (p : CMvPolynomial n R) : Finset (Fin n →₀ ℕ) :=
   (Lawful.monomials p).map CMvMonomial.toFinsupp |>.toFinset
 
 /-- The total degree of a polynomial (maximum total degree of its monomials). -/
-def totalDegree {R : Type} {n : ℕ} [Zero R] : CMvPolynomial n R → ℕ :=
+def totalDegree {R : Type*} {n : ℕ} [Zero R] : CMvPolynomial n R → ℕ :=
   fun p => Finset.sup (List.toFinset (List.map CMvMonomial.toFinsupp (Lawful.monomials p)))
     (fun s => Finsupp.sum s (fun _ e => e))
 
 /-- The degree of a polynomial in a specific variable. -/
-noncomputable def degreeOf {R : Type} {n : ℕ} [Zero R] (i : Fin n) : CMvPolynomial n R → ℕ :=
+noncomputable def degreeOf {R : Type*} {n : ℕ} [Zero R] (i : Fin n) : CMvPolynomial n R → ℕ :=
   fun p =>
     Multiset.count i
     (Finset.sup (List.toFinset (List.map CMvMonomial.toFinsupp (Lawful.monomials p)))
@@ -154,7 +154,7 @@ noncomputable def degreeOf {R : Type} {n : ℕ} [Zero R] (i : Fin n) : CMvPolyno
 
   Creates a polynomial with a single monomial term. If `c = 0`, returns the zero polynomial.
 -/
-def monomial {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R]
+def monomial {n : ℕ} {R : Type*} [BEq R] [LawfulBEq R] [Zero R]
     (m : CMvMonomial n) (c : R) : CMvPolynomial n R :=
   if c == 0 then 0 else Lawful.fromUnlawful <| Unlawful.ofList [(m, c)]
 
@@ -162,11 +162,11 @@ def monomial {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R]
 
   Each variable `i` appears `degreeOf i p` times in the multiset.
 -/
-noncomputable def degrees {n : ℕ} {R : Type} [Zero R] (p : CMvPolynomial n R) : Multiset (Fin n) :=
+noncomputable def degrees {n : ℕ} {R : Type*} [Zero R] (p : CMvPolynomial n R) : Multiset (Fin n) :=
   Finset.univ.sum fun i => Multiset.replicate (p.degreeOf i) i
 
 /-- `degreeOf` is the multiplicity of a variable in `degrees`. -/
-lemma degreeOf_eq_count_degrees {n : ℕ} {R : Type} [Zero R]
+lemma degreeOf_eq_count_degrees {n : ℕ} {R : Type*} [Zero R]
     (i : Fin n) (p : CMvPolynomial n R) :
     p.degreeOf i = Multiset.count i p.degrees := by
   classical
@@ -187,11 +187,11 @@ lemma degreeOf_eq_count_degrees {n : ℕ} {R : Type} [Zero R]
 
   Returns the set of variable indices `i : Fin n` such that `degreeOf i p > 0`.
 -/
-noncomputable def vars {n : ℕ} {R : Type} [Zero R] (p : CMvPolynomial n R) : Finset (Fin n) :=
+noncomputable def vars {n : ℕ} {R : Type*} [Zero R] (p : CMvPolynomial n R) : Finset (Fin n) :=
   Finset.univ.filter fun i => 0 < p.degreeOf i
 
 /-- Filter a polynomial, keeping only monomials for which `keep m` is true. -/
-def restrictBy {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R]
+def restrictBy {n : ℕ} {R : Type*} [BEq R] [LawfulBEq R] [Zero R]
     (keep : CMvMonomial n → Prop) [DecidablePred keep]
     (p : CMvPolynomial n R) : CMvPolynomial n R :=
   Lawful.fromUnlawful <| p.1.filter (fun m _ => decide (keep m))
@@ -200,7 +200,7 @@ def restrictBy {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R]
 
   Filters out all monomials where `m.totalDegree > d`.
 -/
-def restrictTotalDegree {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R]
+def restrictTotalDegree {n : ℕ} {R : Type*} [BEq R] [LawfulBEq R] [Zero R]
     (d : ℕ) (p : CMvPolynomial n R) : CMvPolynomial n R :=
   restrictBy (fun m => m.totalDegree ≤ d) p
 
@@ -208,7 +208,7 @@ def restrictTotalDegree {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R]
 
   Filters out all monomials where `m.degreeOf i > d` for some variable `i`.
 -/
-def restrictDegree {n : ℕ} {R : Type} [BEq R] [LawfulBEq R] [Zero R]
+def restrictDegree {n : ℕ} {R : Type*} [BEq R] [LawfulBEq R] [Zero R]
     (d : ℕ) (p : CMvPolynomial n R) : CMvPolynomial n R :=
   restrictBy (fun m => ∀ i : Fin n, m.degreeOf i ≤ d) p
 

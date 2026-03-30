@@ -19,7 +19,7 @@ open CMvPolynomial
 
 section
 
-variable {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 @[simp]
 lemma map_add (a b : CMvPolynomial n R) :
@@ -176,7 +176,7 @@ instance {n : ℕ} : AddCommMonoid (CPoly.CMvPolynomial n R) where
     simp [add_comm]
 
 omit [BEq R] [LawfulBEq R] in
-lemma toList_pairs_monomial_coeff {β : Type} [AddCommMonoid β]
+lemma toList_pairs_monomial_coeff {β : Type*} [AddCommMonoid β]
     {t : Unlawful n R}
   {f : CMvMonomial n → R → β} :
   t.toList.map (fun term => f term.1 term.2) =
@@ -187,7 +187,7 @@ lemma toList_pairs_monomial_coeff {β : Type} [AddCommMonoid β]
   grind
 
 omit [BEq R] [LawfulBEq R] in
-lemma foldl_eq_sum {β : Type} [AddCommMonoid β]
+lemma foldl_eq_sum {β : Type*} [AddCommMonoid β]
     {t : CMvPolynomial n R}
     {f : CMvMonomial n → R → β} :
     ExtTreeMap.foldl (fun x m c => (f m c) + x) 0 t.1 =
@@ -316,7 +316,7 @@ instance {n : ℕ} : CommSemiring (CPoly.CMvPolynomial n R) where
 
 section CommRing
 
-variable {n : ℕ} {R : Type} [CommRing R] [BEq R] [LawfulBEq R]
+variable {n : ℕ} {R : Type*} [CommRing R] [BEq R] [LawfulBEq R]
 
 @[simp]
 lemma map_neg (a : CMvPolynomial n R) :
@@ -362,7 +362,7 @@ end
 
 namespace CMvPolynomial
 
-variable {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 /-- Ring equivalence between `CMvPolynomial 0 R` and `R`. -/
 noncomputable def isEmptyRingEquiv : CMvPolynomial 0 R ≃+* R :=
