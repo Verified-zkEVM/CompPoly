@@ -170,7 +170,7 @@ abbrev monomials (p : Lawful n R) : List (CMvMonomial n) :=
   p.1.monomials
 
 /-- Check if a polynomial is a non-zero constant. -/
-def NZConst {n : ℕ} {R : Type*} [Zero R] (p : Lawful n R) : Prop :=
+def NzConst {n : ℕ} {R : Type*} [Zero R] (p : Lawful n R) : Prop :=
   p.val.size = 1 ∧ p.val.contains CMvMonomial.zero
 
 omit [BEq R] [LawfulBEq R] in
@@ -178,8 +178,8 @@ omit [BEq R] [LawfulBEq R] in
 lemma mem_monomials_iff {w : CMvMonomial n} : w ∈ Lawful.monomials p ↔ w ∈ p := by
   grind
 
-instance {p : Lawful n R} : Decidable (NZConst p) := by
-  dsimp [NZConst]
+instance {p : Lawful n R} : Decidable (NzConst p) := by
+  dsimp [NzConst]
   infer_instance
 
 end
