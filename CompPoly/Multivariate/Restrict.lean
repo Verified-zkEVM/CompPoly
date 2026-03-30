@@ -20,7 +20,7 @@ namespace CPoly
 
 open CMvPolynomial
 
-variable {n : ℕ} {R : Type} [Zero R] [BEq R] [LawfulBEq R]
+variable {n : ℕ} {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
 
 /-- Coefficient of `restrictBy keep p` at `m`: `p.coeff m` if `keep m`, else `0`. -/
 lemma coeff_restrictBy (keep : CMvMonomial n → Prop) [DecidablePred keep]
@@ -171,7 +171,7 @@ private lemma totalDegree_eq_finsupp_sum {n : ℕ} (m : CMvMonomial n) :
 
 /-- `restrictTotalDegree d p` has `totalDegree ≤ d`. -/
 lemma totalDegree_restrictTotalDegree_le
-    {R' : Type} [CommSemiring R'] [BEq R'] [LawfulBEq R']
+    {R' : Type*} [CommSemiring R'] [BEq R'] [LawfulBEq R']
     (d : ℕ) (p : CMvPolynomial n R') :
     (CMvPolynomial.restrictTotalDegree d p).totalDegree ≤ d := by
   classical

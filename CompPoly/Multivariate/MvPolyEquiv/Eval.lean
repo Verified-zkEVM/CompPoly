@@ -19,10 +19,10 @@ open CMvPolynomial
 
 section
 
-variable {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 omit [BEq R] [LawfulBEq R] in
-lemma eval₂_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] {f : (R →+* S)}
+lemma eval₂_equiv {S : Type*} {p : CMvPolynomial n R} [CommSemiring S] {f : (R →+* S)}
     {vals : Fin n → S} : p.eval₂ f vals = (fromCMvPolynomial p).eval₂ f vals := by
   unfold CMvPolynomial.eval₂ MvPolynomial.eval₂
   rw [foldl_eq_sum]
@@ -53,11 +53,11 @@ lemma eval_equiv {p : CMvPolynomial n R} {vals : Fin n → R} :
   exact eval₂_equiv
 
 omit [BEq R] [LawfulBEq R] in
-lemma totalDegree_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] :
+lemma totalDegree_equiv {S : Type*} {p : CMvPolynomial n R} [CommSemiring S] :
     p.totalDegree = (fromCMvPolynomial p).totalDegree := by rfl
 
 omit [BEq R] [LawfulBEq R] in
-lemma degreeOf_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] :
+lemma degreeOf_equiv {S : Type*} {p : CMvPolynomial n R} [CommSemiring S] :
     p.degreeOf = (fromCMvPolynomial p).degreeOf := by
   ext i
   unfold MvPolynomial.degreeOf MvPolynomial.degrees
@@ -83,10 +83,10 @@ end
 
 namespace CMvPolynomial
 
-variable {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 /-- `eval₂` as a ring homomorphism. -/
-def eval₂Hom {S : Type} [CommSemiring S]
+def eval₂Hom {S : Type*} [CommSemiring S]
     (f : R →+* S) (vs : Fin n → S) : CMvPolynomial n R →+* S where
   toFun := eval₂ f vs
   map_zero' := by simp [eval₂_equiv]
@@ -95,7 +95,7 @@ def eval₂Hom {S : Type} [CommSemiring S]
   map_mul' _ _ := by simp [eval₂_equiv, MvPolynomial.eval₂_mul]
 
 @[simp]
-lemma eval₂Hom_apply {S : Type} [CommSemiring S]
+lemma eval₂Hom_apply {S : Type*} [CommSemiring S]
     (f : R →+* S) (vs : Fin n → S) (p : CMvPolynomial n R) :
     eval₂Hom f vs p = eval₂ f vs p := rfl
 
