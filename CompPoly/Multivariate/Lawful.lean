@@ -114,7 +114,8 @@ lemma C_zero' : C (n := n) (0 : ℕ) = 0 := rfl
 lemma zero_eq_zero : (0 : Lawful n R) = ⟨0, by grind⟩ := rfl
 
 lemma zero_eq_empty : (0 : Lawful n R) = ∅ := by
-  unfold_projs; simp [C, Unlawful.zero_eq_empty]; rfl
+  unfold_projs
+  simp [C, Unlawful.zero_eq_empty]
 
 @[simp, grind .]
 lemma not_mem_C_zero : x ∉ C 0 := by simp [zero_eq_empty]; unfold_projs; grind

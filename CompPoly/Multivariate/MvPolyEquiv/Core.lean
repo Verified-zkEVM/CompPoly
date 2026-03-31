@@ -43,8 +43,12 @@ noncomputable def toCMvPolynomial (p : MvPolynomial (Fin n) R) : CMvPolynomial n
       obtain ⟨elem, h₁⟩ : ∃ (h : m ∈ unlawful), unlawful[m] = 0 :=
         ExtTreeMap.getElem?_eq_some_iff.1 contra
       obtain ⟨a, ha₁, ⟨rfl⟩⟩ : ∃ a ∈ s, .ofFinsupp a = m := by
-        simp [unlawful] at elem; erw [ExtTreeMap.mem_ofList] at elem; simp at elem
-        exact elem
+        have elem' :
+            m ∈ ExtTreeMap.ofList
+              (s.toList.map fun m => (CMvMonomial.ofFinsupp m, f m)) compare := by
+          simpa [unlawful] using elem
+        rw [ExtTreeMap.mem_ofList] at elem'
+        simpa using elem'
       have : f a = 0 := by
         dsimp [unlawful] at h₁
         erw [ExtTreeMap.getElem_ofList_of_mem (v := f a)
