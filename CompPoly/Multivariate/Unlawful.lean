@@ -5,9 +5,8 @@ Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdusa
 -/
 import CompPoly.Multivariate.CMvMonomial
 import CompPoly.Multivariate.Wheels
-import Mathlib.Algebra.Lie.OfAssociative
-import Std.Data.ExtTreeMap
 import ExtTreeMapLemmas.ExtTreeMap
+import Mathlib.Algebra.Lie.OfAssociative
 
 /-!
 # Unlawful multivariate polynomials
@@ -32,13 +31,12 @@ open Std
   Polynomial in `n` variables with coefficients in `R`.
   Internally represented as a tree map from monomials to coefficients.
 -/
-@[grind =]
-def Unlawful (n : ℕ) (R : Type) : Type :=
+abbrev Unlawful (n : ℕ) (R : Type*) : Type _ :=
   Std.ExtTreeMap (CMvMonomial n) R (Ord.compare (α := CMvMonomial n))
 
 section Instances
 
-variable {n : ℕ} {R : Type}
+variable {n : ℕ} {R : Type*}
 
 instance : EmptyCollection (Unlawful n R) := ⟨(∅ : Std.ExtTreeMap (CMvMonomial n) R compare)⟩
 
@@ -78,7 +76,7 @@ lemma ext_getElem? {n R} {t₁ t₂ : Unlawful n R}
     (h : ∀ (k : CMvMonomial n), t₁[k]? = t₂[k]?) : t₁ = t₂ :=
   Std.ExtTreeMap.ext_getElem? h
 
-variable {n : ℕ} {R : Type}
+variable {n : ℕ} {R : Type*}
 
 /-- Construct an `Unlawful` polynomial from a list of monomial-coefficient pairs. -/
 @[simp, grind =]
@@ -106,7 +104,7 @@ instance [Repr R] : Repr (Unlawful n R) where
   reprPrec p _ :=
     if p.isEmpty then "0" else
     let toFormat : Std.ToFormat (CMvMonomial n × R) :=
-      ⟨λ (m, c) => repr c ++ " * " ++ repr m⟩
+      ⟨fun (m, c) => repr c ++ " * " ++ repr m⟩
     @Std.Format.joinSep _ toFormat p.toList " + "
 
 /-- Constant polynomial. -/
@@ -137,7 +135,9 @@ lemma C_zero' : C (n := n) (0 : ℕ) = 0 := rfl
 @[simp, grind =]
 lemma zero_eq_zero : (Zero.zero : R) = 0 := rfl
 
-lemma zero_eq_empty [BEq R] [LawfulBEq R] : (0 : Unlawful n R) = ∅ := by unfold_projs; simp [C]; rfl
+lemma zero_eq_empty [BEq R] [LawfulBEq R] : (0 : Unlawful n R) = ∅ := by
+  unfold_projs
+  simp [C]
 
 @[simp, grind .]
 lemma not_mem_C_zero : x ∉ C 0 := by grind
@@ -147,10 +147,10 @@ section
 variable [BEq R] [LawfulBEq R]
 
 @[simp, grind .]
-lemma not_mem_zero : x ∉ (0 : Unlawful n R) := by rw [←C_zero]; grind
+lemma not_mem_zero : x ∉ (0 : Unlawful n R) := by rw [← C_zero]; grind
 
 @[simp, grind .]
-lemma isNoZeroCoef_zero : isNoZeroCoef (n := n) (R := R) 0 := by rw [←C_zero]; grind
+lemma isNoZeroCoef_zero : isNoZeroCoef (n := n) (R := R) 0 := by rw [← C_zero]; grind
 
 end
 
@@ -162,7 +162,7 @@ def add [Add R] (p₁ p₂ : Unlawful n R) : Unlawful n R :=
 
 instance [Add R] : Add (Unlawful n R) := ⟨add⟩
 
-@[grind=]
+@[grind =]
 protected lemma grind_add_skip [Add R] {p₁ p₂ : Unlawful n R} :
     p₁ + p₂ = p₁.mergeWith (fun _ c₁ c₂ ↦ c₁ + c₂) p₂ := rfl
 
@@ -172,11 +172,11 @@ def addMonoR [Add R] (p : Unlawful n R) (term : MonoR n R) : Unlawful n R :=
 
 /-- Multiply a polynomial by a single monomial term. -/
 def mul₀ [Mul R] (t : MonoR n R) (p : Unlawful n R) : Unlawful n R :=
-  .ofList (p.toList.map fun (k, v) ↦ (t.1+k, t.2*v))
+  .ofList (p.toList.map fun (k, v) => (t.1 + k, t.2 * v))
 
-attribute [grind=] ExtTreeMap.ofList_eq_empty_iff List.map_eq_nil_iff ExtTreeMap.toList_eq_nil_iff
+attribute [grind =] ExtTreeMap.ofList_eq_empty_iff List.map_eq_nil_iff ExtTreeMap.toList_eq_nil_iff
 
-@[simp, grind=]
+@[simp, grind =]
 lemma mul₀_zero [Zero R] [BEq R] [LawfulBEq R] [Mul R] {t : MonoR n R} : mul₀ t 0 = 0 := by
   unfold mul₀
   grind
@@ -220,15 +220,15 @@ instance instDecidableEq [DecidableEq R] : DecidableEq (Unlawful n R) := fun x y
   then Decidable.isTrue (ExtTreeMap.ext_toList (h ▸ List.perm_rfl))
   else Decidable.isFalse (by grind)
 
-def coeff {R : Type} {n : ℕ} [Zero R] (m : CMvMonomial n) (p : Unlawful n R) : R :=
+def coeff {R : Type*} {n : ℕ} [Zero R] (m : CMvMonomial n) (p : Unlawful n R) : R :=
   p[m]?.getD 0
 
 @[simp, grind =]
-lemma filter_get {R : Type} [BEq R] [LawfulBEq R] {v : R} {m : CMvMonomial n} (a : Unlawful n R) :
+lemma filter_get {R : Type*} [BEq R] [LawfulBEq R] {v : R} {m : CMvMonomial n} (a : Unlawful n R) :
     (ExtTreeMap.filter (fun _ c => c != v) a)[m]?.getD v = a[m]?.getD v := by
   grind
 
-lemma add_getD? [CommSemiring R] {m : CMvMonomial n} {p q : Unlawful n R} :
+lemma add_getD? [AddZeroClass R] {m : CMvMonomial n} {p q : Unlawful n R} :
     (p.add q)[m]?.getD 0 = p[m]?.getD 0 + q[m]?.getD 0 := by
   unfold Unlawful.add
   by_cases m ∈ p <;> by_cases m ∈ q <;> grind [add_zero, zero_add]
