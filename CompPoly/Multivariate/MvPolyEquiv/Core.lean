@@ -78,7 +78,7 @@ theorem toCMvPolynomial_fromCMvPolynomial {p : CMvPolynomial n R} :
       exact List.distinct_of_inj_nodup CMvMonomial.injective_ofFinsupp (Finset.nodup_toList _)
 
 omit [BEq R] [LawfulBEq R] in
-@[grind=, simp]
+@[grind =, simp]
 theorem fromCMvPolynomial_toCMvPolynomial {p : MvPolynomial (Fin n) R} :
     fromCMvPolynomial (toCMvPolynomial p) = p := by
   dsimp [fromCMvPolynomial, toCMvPolynomial, toCMvPolynomial, fromCMvPolynomial]

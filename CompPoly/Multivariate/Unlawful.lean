@@ -104,7 +104,7 @@ instance [Repr R] : Repr (Unlawful n R) where
   reprPrec p _ :=
     if p.isEmpty then "0" else
     let toFormat : Std.ToFormat (CMvMonomial n × R) :=
-      ⟨fun (m, c) ↦ repr c ++ " * " ++ repr m⟩
+      ⟨fun (m, c) => repr c ++ " * " ++ repr m⟩
     @Std.Format.joinSep _ toFormat p.toList " + "
 
 /-- Constant polynomial. -/
@@ -170,7 +170,7 @@ def addMonoR [Add R] (p : Unlawful n R) (term : MonoR n R) : Unlawful n R :=
 
 /-- Multiply a polynomial by a single monomial term. -/
 def mul₀ [Mul R] (t : MonoR n R) (p : Unlawful n R) : Unlawful n R :=
-  .ofList (p.toList.map fun (k, v) ↦ (t.1 + k, t.2 * v))
+  .ofList (p.toList.map fun (k, v) => (t.1 + k, t.2 * v))
 
 attribute [grind =] ExtTreeMap.ofList_eq_empty_iff List.map_eq_nil_iff ExtTreeMap.toList_eq_nil_iff
 
@@ -223,7 +223,7 @@ def coeff {R : Type*} {n : ℕ} [Zero R] (m : CMvMonomial n) (p : Unlawful n R) 
 
 @[simp, grind =]
 lemma filter_get {R : Type*} [BEq R] [LawfulBEq R] {v : R} {m : CMvMonomial n} (a : Unlawful n R) :
-    (ExtTreeMap.filter (fun _ c ↦ c != v) a)[m]?.getD v = a[m]?.getD v := by
+    (ExtTreeMap.filter (fun _ c => c != v) a)[m]?.getD v = a[m]?.getD v := by
   grind
 
 lemma add_getD? [AddZeroClass R] {m : CMvMonomial n} {p q : Unlawful n R} :
