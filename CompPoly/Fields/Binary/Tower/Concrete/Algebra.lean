@@ -5,6 +5,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 
 import CompPoly.Fields.Binary.Tower.Concrete.Field
+import Batteries.Data.Fin.Fold
 
 /-!
 # Concrete Binary Tower Algebra
@@ -80,24 +81,37 @@ theorem ConcreteBTField.RingHom_cast_source_apply (k n m : ℕ) (h_eq : k = n)
   subst h_eq
   rfl
 
-/--
-Auxiliary definition for `concreteTowerAlgebraMap` using structural recursion.
-This is easier to reason about in proofs than the `Nat.rec` version.
-TODO : migrate to Fin.dfoldl
--/
+/-- Compose `d` adjacent canonical embeddings starting from level `l`:
+    `ConcreteBTField l →+* ConcreteBTField (l+1) →+* ⋯ →+* ConcreteBTField (l+d)`. -/
+def concreteTowerAlgebraMapCore (l d : ℕ) :
+    ConcreteBTField l →+* ConcreteBTField (l + d) :=
+  Fin.dfoldl d
+    (fun (i : Fin (d + 1)) => ConcreteBTField l →+* ConcreteBTField (l + i.val))
+    (fun i acc => (canonicalAlgMap (l + i.val)).comp acc)
+    (RingHom.id (ConcreteBTField l))
+
+@[simp]
+lemma concreteTowerAlgebraMapCore_zero (l : ℕ) :
+    concreteTowerAlgebraMapCore l 0 = RingHom.id (ConcreteBTField l) :=
+  Fin.dfoldl_zero _ _
+
+lemma concreteTowerAlgebraMapCore_succ (l d : ℕ) :
+    concreteTowerAlgebraMapCore l (d + 1) =
+      (canonicalAlgMap (l + d)).comp (concreteTowerAlgebraMapCore l d) := by
+  simp only [concreteTowerAlgebraMapCore]
+  rw [Fin.dfoldl_succ_last]
+  simp only [Fin.val_last, Function.comp_def, Fin.val_castSucc]
+
+/-- Ring homomorphism embedding `ConcreteBTField l` into `ConcreteBTField r`,
+    constructed by iterating `canonicalAlgMap` from the left.
+    The core computation uses `Fin.dfoldl` via `concreteTowerAlgebraMapCore`. -/
 def concreteTowerAlgebraMap (l r : ℕ) (h_le : l ≤ r) :
-    ConcreteBTField l →+* ConcreteBTField r := by
-  if h_lt : l = r then
-    subst h_lt
-    exact RingHom.id (ConcreteBTField l)
+    ConcreteBTField l →+* ConcreteBTField r :=
+  if h_eq : l = r then
+    h_eq ▸ RingHom.id (ConcreteBTField l)
   else
-    let map_to_r_sub_1 : ConcreteBTField l →+* ConcreteBTField (r - 1) :=
-      concreteTowerAlgebraMap (h_le:=by omega)
-    let next_embedding : ConcreteBTField (r - 1) →+* ConcreteBTField r := by
-      have ringHomEq :=
-        ConcreteBTField.RingHom_eq_of_dest_eq (k:=r - 1) (m:=r) (n:=r - 1 + 1) (by omega)
-      exact Eq.mp ringHomEq.symm (canonicalAlgMap (r - 1))
-    exact next_embedding.comp map_to_r_sub_1
+    (concreteTowerAlgebraMap (l + 1) r (by omega)).comp (canonicalAlgMap l)
+termination_by r - l
 
 lemma concreteTowerAlgebraMap_id (k : ℕ) :
     concreteTowerAlgebraMap (h_le:=by omega) = RingHom.id (ConcreteBTField k) := by
@@ -106,23 +120,53 @@ lemma concreteTowerAlgebraMap_id (k : ℕ) :
 
 lemma concreteTowerAlgebraMap_succ_1 (k : ℕ) :
     concreteTowerAlgebraMap (l:=k) (r:=k + 1) (h_le:=by omega) = canonicalAlgMap k := by
-  unfold concreteTowerAlgebraMap
-  simp only [Nat.left_eq_add, one_ne_zero, ↓reduceDIte,
-    Nat.add_one_sub_one, eq_mp_eq_cast, cast_eq]
-  rw [concreteTowerAlgebraMap_id]
-  rw [RingHom.comp_id]
+  conv_lhs => rw [concreteTowerAlgebraMap]
+  have : k ≠ k + 1 := by omega
+  simp only [this, ↓reduceDIte]
+  rw [concreteTowerAlgebraMap_id, RingHom.id_comp]
+
+/-! Left decomposition of the Tower Map (helper for right associativity) -/
+private lemma concreteTowerAlgebraMap_succ_left (l r : ℕ) (h_le : l ≤ r) :
+    concreteTowerAlgebraMap (l:=l) (r:=r + 1) (h_le:=by omega) =
+  (concreteTowerAlgebraMap (l:=l + 1) (r:=r + 1) (by omega)).comp
+  (canonicalAlgMap l) := by
+  conv_lhs => rw [concreteTowerAlgebraMap]
+  have : l ≠ r + 1 := by omega
+  simp only [this, ↓reduceDIte]
 
 /-! Right associativity of the Tower Map -/
 lemma concreteTowerAlgebraMap_succ (l r : ℕ) (h_le : l ≤ r) :
     concreteTowerAlgebraMap (l:=l) (r:=r + 1) (h_le:=by omega) =
   (concreteTowerAlgebraMap (l:=r) (r:=r + 1) (h_le:=by omega)).comp
   (concreteTowerAlgebraMap (l:=l) (r:=r) (h_le:=by omega)) := by
-  ext x
-  conv_lhs => rw [concreteTowerAlgebraMap]
-  have h_l_ne_eq_r_add_1 : l ≠ r + 1 := by omega
-  simp only [h_l_ne_eq_r_add_1, ↓reduceDIte, Nat.add_one_sub_one,
-    eq_mp_eq_cast, cast_eq, RingHom.coe_comp, Function.comp_apply]
-  rw [concreteTowerAlgebraMap_succ_1]
+  -- Induction on the gap r - l, with both l and r free
+  suffices aux : ∀ g l r (hle : l ≤ r), g = r - l →
+      concreteTowerAlgebraMap l (r + 1) (Nat.le_succ_of_le hle) =
+      (concreteTowerAlgebraMap r (r + 1) (Nat.le_succ r)).comp
+        (concreteTowerAlgebraMap l r hle) from
+    aux (r - l) l r h_le rfl
+  intro g
+  induction g with
+  | zero =>
+    intro l r hle hg
+    have : l = r := by omega
+    subst this
+    rw [concreteTowerAlgebraMap_id, RingHom.comp_id]
+  | succ g ih =>
+    intro l r hle hg
+    have h_lt : l < r := by omega
+    have h_le' : l + 1 ≤ r := by omega
+    -- l < r, so we can decompose from the left
+    rw [concreteTowerAlgebraMap_succ_left l r hle]
+    -- Apply IH with l' = l+1 (gap = r - (l+1) = g)
+    rw [ih (l + 1) r h_le' (by omega)]
+    rw [RingHom.comp_assoc]
+    congr 1
+    -- Need: (concreteTowerAlgebraMap (l+1) r).comp (canonicalAlgMap l) = concreteTowerAlgebraMap l r
+    -- This is succ_left backwards: unfold concreteTowerAlgebraMap l r once
+    conv_rhs => rw [concreteTowerAlgebraMap]
+    have : l ≠ r := by omega
+    simp only [this, ↓reduceDIte]
 
 /-! Left associativity of the Tower Map -/
 theorem concreteTowerAlgebraMap_succ_last (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) →
