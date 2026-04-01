@@ -944,7 +944,6 @@ lemma getBit_eq_pred_getBit_of_div_two {n k : ℕ} (h_k: k > 0) :
   conv_lhs => rw [←Nat.sub_add_cancel (n:=k) (m:=1) (h:=by omega)]
   exact Eq.symm (getBit_of_shiftRight (k - 1))
 
--- TODO: uniqueness of this representation?
 theorem getBit_repr {ℓ : Nat} :
     ∀ j, j < 2^ℓ → j = ∑ k ∈ Finset.Icc 0 (ℓ-1), (getBit k j) * 2^k := by
   induction ℓ with
@@ -1095,6 +1094,77 @@ theorem getBit_repr_univ {ℓ : Nat} :
       simp only [Finset.mem_Icc, _root_.zero_le, true_and]
       have h_a_lt_ℓ: a < ℓ := by exact a.isLt
       omega
+
+/-- Two natural numbers with identical bits at every position are equal. -/
+theorem getBit_injective (a b : ℕ) (h : ∀ k, getBit k a = getBit k b) : a = b := by
+  apply Nat.eq_of_testBit_eq
+  intro i
+  unfold Nat.testBit
+  unfold getBit at h
+  simp only [Nat.one_and_eq_mod_two, Nat.and_one_is_mod] at h ⊢
+  rw [h i]
+
+/-- The binary representation of a number via `getBit` is unique: any sequence of
+    0/1 coefficients that sums to `j` must agree with `getBit` at each position. -/
+theorem getBit_repr_unique {ℓ : ℕ} {j : ℕ} (h_j : j < 2 ^ ℓ)
+    (c : ℕ → ℕ) (h_bin : ∀ k, k < ℓ → c k = 0 ∨ c k = 1)
+    (h_sum : j = ∑ k ∈ Finset.Icc 0 (ℓ - 1), c k * 2 ^ k) :
+    ∀ k, k < ℓ → c k = getBit k j := by
+  -- Proof by induction on ℓ, extracting the lowest bit at each step.
+  induction ℓ generalizing j c with
+  | zero => intro k hk; omega
+  | succ ℓ ih =>
+    intro k hk
+    rw [show ℓ + 1 - 1 = ℓ from by omega] at h_sum
+    by_cases hℓ0 : ℓ = 0
+    · subst hℓ0
+      simp only [Finset.Icc_self, Finset.sum_singleton, pow_zero, mul_one] at h_sum
+      interval_cases k
+      rw [h_sum]
+      simp only [getBit, Nat.shiftRight_zero, Nat.and_one_is_mod]
+      rcases h_bin 0 (by omega) with h0 | h1 <;> [rw [h0]; rw [h1]]
+    · -- Split: j = c 0 + (even tail). Extract c 0 via mod 2, then recurse on j/2.
+      have h_split := sum_Icc_split (fun k => c k * 2 ^ k) 0 0 ℓ (by omega) (by omega)
+      rw [h_split, Finset.Icc_self, Finset.sum_singleton, pow_zero, mul_one] at h_sum
+      -- The tail sum is even
+      set S := ∑ i ∈ Finset.Icc 1 ℓ, c i * 2 ^ i with hS_def
+      have h_even : 2 ∣ S :=
+        Finset.dvd_sum (fun i hi =>
+          dvd_mul_of_dvd_right (dvd_pow_self 2 (by simp [Finset.mem_Icc] at hi; omega)) _)
+      -- c 0 = getBit 0 j (parity argument)
+      have h_c0 : c 0 = getBit 0 j := by
+        simp only [getBit, Nat.shiftRight_zero, Nat.and_one_is_mod]
+        obtain ⟨m, hm⟩ := h_even
+        rw [h_sum, hm]
+        rcases h_bin 0 (by omega) with h0 | h1 <;> [rw [h0]; rw [h1]] <;> omega
+      by_cases hk0 : k = 0
+      · exact hk0 ▸ h_c0
+      · -- k > 0: recurse on j/2 with shifted coefficients
+        -- We need: j / 2 = ∑ i ∈ Icc 0 (ℓ-1), c(i+1) * 2^i
+        -- Reindex the tail: S = 2 * ∑ c(i+1) * 2^i
+        have h_reindex : S = 2 * ∑ i ∈ Finset.Icc 0 (ℓ - 1), c (i + 1) * 2 ^ i := by
+          rw [hS_def, Finset.mul_sum]
+          apply Finset.sum_nbij' (fun i => i - 1) (fun i => i + 1)
+          · intro i hi; simp only [Finset.mem_Icc] at hi ⊢; omega
+          · intro i hi; simp only [Finset.mem_Icc] at hi ⊢; omega
+          · intro i hi; simp only [Finset.mem_Icc] at hi; omega
+          · intro i hi; simp only [Finset.mem_Icc] at hi; omega
+          · intro i hi
+            have hi' := (Finset.mem_Icc.mp hi).1
+            rw [show i - 1 + 1 = i from by omega]
+            rw [show 2 ^ i = 2 ^ (i - 1) * 2 from by rw [← pow_succ, show i - 1 + 1 = i from by omega]]
+            ring
+        have h_div : j / 2 = ∑ i ∈ Finset.Icc 0 (ℓ - 1), c (i + 1) * 2 ^ i := by
+          rw [h_sum, h_reindex]
+          rcases h_bin 0 (by omega) with h0 | h1 <;> [rw [h0]; rw [h1]] <;> omega
+        -- Apply IH to j / 2 with shifted coefficients
+        have h_res := ih (by omega : j / 2 < 2 ^ ℓ) (fun i => c (i + 1))
+            (fun i hi => h_bin (i + 1) (by omega)) h_div (k - 1) (by omega)
+        -- h_res : c ((k-1) + 1) = getBit (k-1) (j/2)
+        -- Rewrite (k-1)+1 to k in h_res
+        have hk_sub : k - 1 + 1 = k := by omega
+        simp only [hk_sub] at h_res
+        rw [h_res, getBit_eq_pred_getBit_of_div_two (by omega : k > 0)]
 
 lemma getLowBits_succ {n: ℕ} (numLowBits: ℕ) :
     getLowBits (numLowBits + 1) n = getLowBits numLowBits n

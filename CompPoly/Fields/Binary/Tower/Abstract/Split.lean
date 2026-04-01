@@ -81,8 +81,8 @@ def powerBasisSucc (k : ℕ) :
     PowerBasis (BTField k) (BTField (k+1)) := by
   let pb : PowerBasis (BTField k) (AdjoinRoot (poly k)) :=
     AdjoinRoot.powerBasis (hf:=by exact poly_ne_zero k)
-  -- ⊢ algebra_adjacent_tower k = AdjoinRoot.instAlgebra (poly k) => TODO : make a lemma for this
   -- NOTE : pb.gen is definitionally equal to AdjoinRoot.root (poly k)
+  -- See `algebra_adjacent_tower_eq_AdjoinRoot_algebra` for the algebra instance equality.
   have h_eq : AdjoinRoot (poly k) = BTField (k+1) := BTField_succ_eq_adjoinRoot k
   -- ⊢ PowerBasis (BTField k) (BTField (k + 1))
   apply pb.map (e:=BTField_succ_alg_equiv_adjoinRoot k)
