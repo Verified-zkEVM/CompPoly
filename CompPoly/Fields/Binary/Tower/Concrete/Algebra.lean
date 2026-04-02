@@ -90,11 +90,13 @@ def concreteTowerAlgebraMapCore (l d : ℕ) :
     (fun i acc => (canonicalAlgMap (l + i.val)).comp acc)
     (RingHom.id (ConcreteBTField l))
 
+/-- The zero-step tower map is the identity. -/
 @[simp]
 lemma concreteTowerAlgebraMapCore_zero (l : ℕ) :
     concreteTowerAlgebraMapCore l 0 = RingHom.id (ConcreteBTField l) :=
   Fin.dfoldl_zero _ _
 
+/-- The `(d+1)`-step tower map decomposes as the `d`-step map followed by one canonical embedding. -/
 lemma concreteTowerAlgebraMapCore_succ (l d : ℕ) :
     concreteTowerAlgebraMapCore l (d + 1) =
       (canonicalAlgMap (l + d)).comp (concreteTowerAlgebraMapCore l d) := by
@@ -113,13 +115,15 @@ def concreteTowerAlgebraMap (l r : ℕ) (h_le : l ≤ r) :
     (concreteTowerAlgebraMap (l + 1) r (by omega)).comp (canonicalAlgMap l)
 termination_by r - l
 
+/-- The tower map from a field to itself is the identity. -/
 lemma concreteTowerAlgebraMap_id (k : ℕ) :
-    concreteTowerAlgebraMap (h_le:=by omega) = RingHom.id (ConcreteBTField k) := by
+    concreteTowerAlgebraMap (h_le := by omega) = RingHom.id (ConcreteBTField k) := by
   unfold concreteTowerAlgebraMap
   exact (Ne.dite_eq_left_iff fun h a ↦ h rfl).mpr rfl
 
+/-- The single-step tower map equals the canonical embedding. -/
 lemma concreteTowerAlgebraMap_succ_1 (k : ℕ) :
-    concreteTowerAlgebraMap (l:=k) (r:=k + 1) (h_le:=by omega) = canonicalAlgMap k := by
+    concreteTowerAlgebraMap (l := k) (r := k + 1) (h_le := by omega) = canonicalAlgMap k := by
   conv_lhs => rw [concreteTowerAlgebraMap]
   have : k ≠ k + 1 := by omega
   simp only [this, ↓reduceDIte]
@@ -127,18 +131,18 @@ lemma concreteTowerAlgebraMap_succ_1 (k : ℕ) :
 
 /-! Left decomposition of the Tower Map (helper for right associativity) -/
 private lemma concreteTowerAlgebraMap_succ_left (l r : ℕ) (h_le : l ≤ r) :
-    concreteTowerAlgebraMap (l:=l) (r:=r + 1) (h_le:=by omega) =
-  (concreteTowerAlgebraMap (l:=l + 1) (r:=r + 1) (by omega)).comp
+    concreteTowerAlgebraMap (l := l) (r := r + 1) (h_le := by omega) =
+  (concreteTowerAlgebraMap (l := l + 1) (r := r + 1) (by omega)).comp
   (canonicalAlgMap l) := by
   conv_lhs => rw [concreteTowerAlgebraMap]
   have : l ≠ r + 1 := by omega
   simp only [this, ↓reduceDIte]
 
-/-! Right associativity of the Tower Map -/
+/-- The tower map decomposes as the single-step map at `r` composed with the map up to `r`. -/
 lemma concreteTowerAlgebraMap_succ (l r : ℕ) (h_le : l ≤ r) :
-    concreteTowerAlgebraMap (l:=l) (r:=r + 1) (h_le:=by omega) =
-  (concreteTowerAlgebraMap (l:=r) (r:=r + 1) (h_le:=by omega)).comp
-  (concreteTowerAlgebraMap (l:=l) (r:=r) (h_le:=by omega)) := by
+    concreteTowerAlgebraMap (l := l) (r := r + 1) (h_le := by omega) =
+  (concreteTowerAlgebraMap (l := r) (r := r + 1) (h_le := by omega)).comp
+  (concreteTowerAlgebraMap (l := l) (r := r) (h_le := by omega)) := by
   -- Induction on the gap r - l, with both l and r free
   suffices aux : ∀ g l r (hle : l ≤ r), g = r - l →
       concreteTowerAlgebraMap l (r + 1) (Nat.le_succ_of_le hle) =
