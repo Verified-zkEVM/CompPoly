@@ -89,7 +89,7 @@ def multilinearBasis (l r : ℕ) (h_le : l ≤ r) :
     -- ⊢ Basis (Fin 2 × Fin (2 ^ n')) (BTField l) (BTField (r))
     have h_eq : l + (n' + 1) = (r1) + 1 := by rw [←add_assoc]
     letI instAlgebraSucc : Algebra (BTField (r1)) (BTField (r1 + 1)) := by
-      exact algebra_adjacent_tower (r1)
+      exact algebraAdjacentTower (r1)
     letI instModuleSucc : Module (BTField l) (BTField (r1 + 1)) := by
       exact instAlgebra.toModule
     letI : IsScalarTower (BTField l) (BTField (r1)) (BTField (r1 + 1)) := by
@@ -242,7 +242,7 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       rw! (castMode:=.all) [h1]
 
       letI instAlgebraSucc : Algebra (BTField (r1)) (BTField (r1 + 1)) := by
-        exact algebra_adjacent_tower (r1)
+        exact algebraAdjacentTower (r1)
       letI instModuleSucc : Module (BTField l) (BTField (r1 + 1)) := by
         exact instAlgebra.toModule
 
@@ -275,7 +275,7 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
 
       have h_cast_basis_succ_of_eq_rec_apply :=
         PowerBasis.cast_basis_succ_of_eq_rec_apply (r1:=r1) (r:=r) (h_r:=h_r) (k:=indexLeft)
-      unfold algebra_adjacent_tower
+      unfold algebraAdjacentTower
       rw! (castMode:=.all) [←h_r]
       conv_lhs =>
         arg 2
@@ -300,7 +300,7 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       conv_lhs =>
         rw [←Fin.prod_congr' (b:=r1-l) (a:=prevDiff) (h:=by omega)]
         simp only [Fin.val_cast]
-      simp_rw [algebraMap, instAlgebraSucc, algebra_adjacent_tower]
+      simp_rw [algebraMap, instAlgebraSucc, algebraAdjacentTower]
       rw [RingHom.map_pow]
       simp_rw [←binaryTowerAlgebra_apply_assoc]
       ------------------ Equality of bit-based powers of generators -----------------

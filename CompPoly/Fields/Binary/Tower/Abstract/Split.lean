@@ -81,11 +81,11 @@ def powerBasisSucc (k : ℕ) :
     PowerBasis (BTField k) (BTField (k+1)) := by
   let pb : PowerBasis (BTField k) (AdjoinRoot (poly k)) :=
     AdjoinRoot.powerBasis (hf:=by exact poly_ne_zero k)
-  -- ⊢ algebra_adjacent_tower k = AdjoinRoot.instAlgebra (poly k) => TODO : make a lemma for this
+  -- ⊢ algebraAdjacentTower k = AdjoinRoot.instAlgebra (poly k) => TODO : make a lemma for this
   -- NOTE : pb.gen is definitionally equal to AdjoinRoot.root (poly k)
   have h_eq : AdjoinRoot (poly k) = BTField (k+1) := BTField_succ_eq_adjoinRoot k
   -- ⊢ PowerBasis (BTField k) (BTField (k + 1))
-  apply pb.map (e:=BTField_succ_alg_equiv_adjoinRoot k)
+  apply pb.map (e:=btFieldSuccAlgEquivAdjoinRoot k)
 
 lemma powerBasisSucc_gen (k : ℕ) :
     (powerBasisSucc k).gen = (Z (k+1)) := by
@@ -313,7 +313,7 @@ lemma split_algebraMap_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : BTField (k - 1))
   rw [Algebra.smul_def', map_zero, zero_mul, zero_add]
   have h := algebraMap_adjacent_tower_def (l:=k-1)
   rw! (castMode:=.all) [Nat.sub_one_add_one (by omega)] at h
-  simp only [algebra_adjacent_tower, eqRec_eq_cast] at h
+  simp only [algebraAdjacentTower, eqRec_eq_cast] at h
   rw [algebraMap, Algebra.algebraMap] at ⊢ h
   rw! (castMode:=.all) [Nat.sub_one_add_one (by omega)] at h
   simp only [cast_eq] at h

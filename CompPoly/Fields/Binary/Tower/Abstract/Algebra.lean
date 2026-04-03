@@ -285,14 +285,14 @@ def binaryTowerModule {l r : ℕ} (h_le : l ≤ r) : Module (BTField l) (BTField
   (binaryAlgebraTower (h_le := h_le)).toModule
 
 /-- The canonical `Algebra` instance between adjacent tower levels `l` and `l + 1`. -/
-instance (priority := 1000) algebra_adjacent_tower (l : ℕ) :
+instance (priority := 1000) algebraAdjacentTower (l : ℕ) :
   Algebra (BTField l) (BTField (l + 1)) := by
   exact binaryAlgebraTower (h_le := by omega)
 
 /-- The `algebraMap` between adjacent levels equals the `canonicalEmbedding`. -/
 lemma algebraMap_adjacent_tower_def (l : ℕ) :
     (algebraMap (BTField l) (BTField (l + 1))) = canonicalEmbedding l := by
-  unfold algebra_adjacent_tower
+  unfold algebraAdjacentTower
   rw [binaryTowerAlgebra_def]
   exact towerAlgebraMap_succ_1 l
 
@@ -303,16 +303,16 @@ lemma algebraMap_adjacent_tower_succ_eq_Adjoin_of (k : ℕ) :
   rfl
 
 /-- The adjacent tower algebra instance equals the canonical embedding's algebra. -/
-lemma algebra_adjacent_tower_def (l : ℕ) :
-    (algebra_adjacent_tower l) = (canonicalEmbedding l).toAlgebra := by
-  unfold algebra_adjacent_tower
+lemma algebraAdjacentTower_def (l : ℕ) :
+    (algebraAdjacentTower l) = (canonicalEmbedding l).toAlgebra := by
+  unfold algebraAdjacentTower
   rw [binaryTowerAlgebra_def]
   rw [towerAlgebraMap_succ_1]
 
 /-- The adjacent tower algebra instance equals the `AdjoinRoot` algebra instance. -/
-lemma algebra_adjacent_tower_eq_AdjoinRoot_algebra (k : ℕ) :
-    (algebra_adjacent_tower k) = (AdjoinRoot.instAlgebra (poly k)) := by
-  rw [algebra_adjacent_tower_def]
+lemma algebraAdjacentTower_eq_adjoinRoot_algebra (k : ℕ) :
+    (algebraAdjacentTower k) = (AdjoinRoot.instAlgebra (poly k)) := by
+  rw [algebraAdjacentTower_def]
   unfold canonicalEmbedding
   rw [←AdjoinRoot.algebraMap_eq]
   rw [algebraMap, Algebra.algebraMap]
@@ -321,7 +321,7 @@ lemma algebra_adjacent_tower_eq_AdjoinRoot_algebra (k : ℕ) :
       (AdjoinRoot.instAlgebra (poly k)) (congrFun rfl)
 
 /-- The algebra equivalence between `AdjoinRoot (poly k)` and `BTField (k + 1)`. -/
-def BTField_succ_alg_equiv_adjoinRoot (k : ℕ) :
+def btFieldSuccAlgEquivAdjoinRoot (k : ℕ) :
     AdjoinRoot (poly k) ≃ₐ[BTField k] BTField (k + 1) := by
   have h_eq : AdjoinRoot (poly k) = BTField (k + 1) := BTField_succ_eq_adjoinRoot k
   exact { -- We can construct RingEquiv in a similar way
