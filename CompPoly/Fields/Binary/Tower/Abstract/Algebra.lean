@@ -23,57 +23,65 @@ open Module
 
 section BinaryAlgebraTower
 /--
-The canonical ring homomorphism embedding `BTField k` into `BTField (k+1)`.
+The canonical ring homomorphism embedding `BTField k` into `BTField (k + 1)`.
 This is the `AdjoinRoot.of` map.
 -/
-def canonicalEmbedding (k : ℕ) : BTField k →+* BTField (k+1) :=
+def canonicalEmbedding (k : ℕ) : BTField k →+* BTField (k + 1) :=
   AdjoinRoot.of (poly k)
 
+/-- Associativity of addition in `BTField` level indices. -/
 @[simp]
 lemma BTField_add_eq (k n m) : BTField (k + n + m) = BTField (k + (n + m)) := by
   rw [add_assoc]
 
+/-- Ring homomorphism types between `BTField`s are equal when the destination levels are equal. -/
 @[simp]
 theorem BTField.RingHom_eq_of_dest_eq (k m n : ℕ) (h_eq : m = n) :
     (BTField k →+* BTField m) = (BTField k →+* BTField n) := by
   subst h_eq
   rfl
 
+/-- Ring homomorphism type from `BTField k` to `BTField (m + 1)` equals that to `AdjoinRoot`. -/
 @[simp]
 theorem BTField.RingHom_eq_of_dest_AdjoinRoot_eq (k m : ℕ) :
-    (BTField k →+* BTField (m+1)) = (BTField k →+* (AdjoinRoot (poly m))) := by
-  rw! (castMode:=.all) [BTField_succ_eq_adjoinRoot m]
+    (BTField k →+* BTField (m + 1)) = (BTField k →+* (AdjoinRoot (poly m))) := by
+  rw! (castMode := .all) [BTField_succ_eq_adjoinRoot m]
   rfl
 
+/-- Casting a ring homomorphism's destination commutes with function application. -/
 @[simp]
 theorem BTField.RingHom_cast_dest_apply (k m n : ℕ) (h_eq : m = n)
     (f : BTField k →+* BTField m) (x : BTField k) :
-    (cast (BTField.RingHom_eq_of_dest_eq (k:=k) (m:=m) (n:=n) h_eq) f) x
-    = cast (by apply cast_BTField_eq (h_eq:=h_eq)) (f x) := by
+    (cast (BTField.RingHom_eq_of_dest_eq (k := k) (m := m) (n := n) h_eq) f) x
+    = cast (by apply cast_BTField_eq (h_eq := h_eq)) (f x) := by
   subst h_eq
   rfl
 
+/-- Casting a ring homomorphism via `AdjoinRoot` commutes with function application. -/
 @[simp]
 theorem BTField.RingHom_cast_dest_AdjoinRoot_apply (k m : ℕ)
     (f : BTField k →+* AdjoinRoot (poly m)) (x : BTField k) :
-  (cast (BTField.RingHom_eq_of_dest_AdjoinRoot_eq (k:=k) (m:=m)).symm f) x
+  (cast (BTField.RingHom_eq_of_dest_AdjoinRoot_eq (k := k) (m := m)).symm f) x
   = cast (BTField_succ_eq_adjoinRoot m) (f x) := by
   rfl
 
 /-- Compose `d` adjacent canonical embeddings starting from level `l`:
-    `BTField l →+* BTField (l+1) →+* ⋯ →+* BTField (l+d)`. -/
+    `BTField l →+* BTField (l + 1) →+* ⋯ →+* BTField (l + d)`. -/
 def towerAlgebraMapCore (l d : ℕ) :
     BTField l →+* BTField (l + d) :=
   Fin.dfoldl d
-    (fun (i : Fin (d + 1)) => BTField l →+* BTField (l + i.val))
-    (fun i acc => (canonicalEmbedding (l + i.val)).comp acc)
+    (fun (i : Fin (d + 1)) ↦ BTField l →+* BTField (l + i.val))
+    (fun i acc ↦ (canonicalEmbedding (l + i.val)).comp acc)
     (RingHom.id (BTField l))
 
+/-- The core tower map with zero steps is the identity. -/
 @[simp]
 lemma towerAlgebraMapCore_zero (l : ℕ) :
     towerAlgebraMapCore l 0 = RingHom.id (BTField l) :=
   Fin.dfoldl_zero _ _
 
+/-- The core tower map with `d + 1` steps decomposes as the last embedding composed with the
+first `d` steps. -/
 lemma towerAlgebraMapCore_succ (l d : ℕ) :
     towerAlgebraMapCore l (d + 1) =
       (canonicalEmbedding (l + d)).comp (towerAlgebraMapCore l d) := by
@@ -90,31 +98,35 @@ def towerAlgebraMap (l r : ℕ) (h_le : l ≤ r) : BTField l →+* BTField r :=
     (towerAlgebraMap (l + 1) r (by omega)).comp (canonicalEmbedding l)
 termination_by r - l
 
-lemma towerAlgebraMap_id (k : ℕ) : towerAlgebraMap (h_le:=by omega) = RingHom.id (BTField k) := by
+/-- The tower algebra map from a level to itself is the identity. -/
+lemma towerAlgebraMap_id (k : ℕ) :
+    towerAlgebraMap (h_le := by omega) = RingHom.id (BTField k) := by
   unfold towerAlgebraMap
   exact (Ne.dite_eq_left_iff fun h a ↦ h rfl).mpr rfl
 
+/-- The tower algebra map between adjacent levels equals the canonical embedding. -/
 lemma towerAlgebraMap_succ_1 (k : ℕ) :
-    towerAlgebraMap (l:=k) (r:=k+1) (h_le:=by omega) = canonicalEmbedding k := by
+    towerAlgebraMap (l := k) (r := k + 1) (h_le := by omega) = canonicalEmbedding k := by
   conv_lhs => rw [towerAlgebraMap]
   have : k ≠ k + 1 := by omega
   simp only [this, ↓reduceDIte]
   rw [towerAlgebraMap_id, RingHom.id_comp]
 
-/-! Left decomposition of the Tower Map (helper for right associativity) -/
+/-- Left decomposition: the tower map to `r + 1` factors as the map from `l + 1` composed
+with the canonical embedding at `l`. -/
 private lemma towerAlgebraMap_succ_left (l r : ℕ) (h_le : l ≤ r) :
-    towerAlgebraMap (l:=l) (r:=r + 1) (h_le:=by omega) =
-  (towerAlgebraMap (l:=l + 1) (r:=r + 1) (by omega)).comp
+    towerAlgebraMap (l := l) (r := r + 1) (h_le := by omega) =
+  (towerAlgebraMap (l := l + 1) (r := r + 1) (by omega)).comp
   (canonicalEmbedding l) := by
   conv_lhs => rw [towerAlgebraMap]
   have : l ≠ r + 1 := by omega
   simp only [this, ↓reduceDIte]
 
-/-! Right associativity of the Tower Map -/
+/-- Right associativity: the tower map to `r + 1` factors through `r`. -/
 lemma towerAlgebraMap_succ (l r : ℕ) (h_le : l ≤ r) :
-    towerAlgebraMap (l:=l) (r:=r+1) (h_le:=by omega) =
-  (towerAlgebraMap (l:=r) (r:=r+1) (h_le:=by omega)).comp
-  (towerAlgebraMap (l:=l) (r:=r) (h_le:=by omega)) := by
+    towerAlgebraMap (l := l) (r := r + 1) (h_le := by omega) =
+  (towerAlgebraMap (l := r) (r := r + 1) (h_le := by omega)).comp
+  (towerAlgebraMap (l := l) (r := r) (h_le := by omega)) := by
   -- Induction on the gap r - l, with both l and r free
   suffices aux : ∀ g l r (hle : l ≤ r), g = r - l →
       towerAlgebraMap l (r + 1) (Nat.le_succ_of_le hle) =
@@ -143,12 +155,12 @@ lemma towerAlgebraMap_succ (l r : ℕ) (h_le : l ≤ r) :
     have : l ≠ r := by omega
     simp only [this, ↓reduceDIte]
 
-/-! Left associativity of the Tower Map -/
+/-- Left associativity: the tower map to `r + 1` factors through `l + 1`. -/
 theorem towerAlgebraMap_succ_last (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) →
-    towerAlgebraMap (l:=l) (r:=r+1) (h_le:=by
-    exact Nat.le_trans (n:=l) (m:=r) (k:=r+1) (h_le) (by omega)) =
-  (towerAlgebraMap (l:=l+1) (r:=r+1) (by omega)).comp (towerAlgebraMap
-    (l:=l) (r:=l+1) (by omega)) := by
+    towerAlgebraMap (l := l) (r := r + 1) (h_le := by
+    exact Nat.le_trans (n := l) (m := r) (k := r + 1) (h_le) (by omega)) =
+  (towerAlgebraMap (l := l + 1) (r := r + 1) (by omega)).comp (towerAlgebraMap
+    (l := l) (r := l + 1) (by omega)) := by
   induction r using Nat.strong_induction_on with
   | h r ih_r => -- prove for width = r + 1
     intro l h_le
@@ -159,8 +171,8 @@ theorem towerAlgebraMap_succ_last (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) →
       -- A = |l| --- (1) --- |l+1| --- (2) --- |r| --- (3) --- |r+1|
       -- ⊢ towerMap l (r + 1) = (towerMap (l + 1) r).comp (towerMap l l+1) => ⊢ A = (23) ∘ (1)
       -- Proof : A = 3 ∘ (12) (succ decomposition) = 3 ∘ (2 ∘ 1) (ind of width = r)
-      rw [towerAlgebraMap_succ (l:=l) (r:=r) (by omega)]
-      have h_l_r := ih_r (m:=r-1) (l:=l) (h_le:=by omega) (by omega)
+      rw [towerAlgebraMap_succ (l := l) (r := r) (by omega)]
+      have h_l_r := ih_r (m := r - 1) (l := l) (h_le := by omega) (by omega)
       have h_r_sub_1_add_1 : r - 1 + 1 = r := by omega
       rw! [h_r_sub_1_add_1] at h_l_r
       rw [h_l_r, ←RingHom.comp_assoc, ←towerAlgebraMap_succ]
@@ -173,20 +185,22 @@ for both the input and output ring homs.
 @[simp]
 theorem BTField.RingHom_comp_cast {α β γ δ : ℕ} (f : BTField α →+* BTField β)
     (g : BTField β →+* BTField γ) (h : γ = δ) :
-    ((cast (BTField.RingHom_eq_of_dest_eq (k:=β) (m:=γ) (n:=δ) h) g).comp f)
-    = cast (BTField.RingHom_eq_of_dest_eq (k:=α) (m:=γ) (n:=δ) h) (g.comp f) := by
-  have h1 := BTField.RingHom_eq_of_dest_eq (k:=β) (m:=γ) (n:=δ) h
-  have h2 := BTField.RingHom_eq_of_dest_eq (k:=α) (m:=γ) (n:=δ) h
+    ((cast (BTField.RingHom_eq_of_dest_eq (k := β) (m := γ) (n := δ) h) g).comp f)
+    = cast (BTField.RingHom_eq_of_dest_eq (k := α) (m := γ) (n := δ) h) (g.comp f) := by
+  have h1 := BTField.RingHom_eq_of_dest_eq (k := β) (m := γ) (n := δ) h
+  have h2 := BTField.RingHom_eq_of_dest_eq (k := α) (m := γ) (n := δ) h
   have h_heq : HEq ((cast (h1) g).comp f) (cast (h2) (g.comp f)) := by
     subst h -- this simplifies h1 h2 in cast which makes them trivial equality
       -- => hence it becomes easier to simplify
     simp only [BTField, BTFieldIsField, cast_eq, heq_eq_eq]
   apply eq_of_heq h_heq
 
+/-- The tower algebra map is associative: composing through an intermediate level is the same as
+the direct map. -/
 theorem towerAlgebraMap_assoc : ∀ r mid l : ℕ, (h_l_le_mid : l ≤ mid) → (h_mid_le_r : mid ≤ r) →
-    towerAlgebraMap (l:=l) (r:=r) (h_le:=by exact Nat.le_trans h_l_le_mid h_mid_le_r) =
-    (towerAlgebraMap (l:=mid) (r:=r) (h_le:=h_mid_le_r)).comp
-    (towerAlgebraMap (l:=l) (r:=mid) (h_le:=h_l_le_mid)) := by
+    towerAlgebraMap (l := l) (r := r) (h_le := by exact Nat.le_trans h_l_le_mid h_mid_le_r) =
+    (towerAlgebraMap (l := mid) (r := r) (h_le := h_mid_le_r)).comp
+    (towerAlgebraMap (l := l) (r := mid) (h_le := h_l_le_mid)) := by
   -- We induct on `r`, keeping `l` and `mid` as variables in the induction hypothesis.
   intro r
   induction r using Nat.strong_induction_on with
@@ -204,9 +218,10 @@ theorem towerAlgebraMap_assoc : ∀ r mid l : ℕ, (h_l_le_mid : l ≤ mid) → 
       have h_r_sub_1_add_1 : r_sub_1 + 1 = r := by omega
       -- A = 3 ∘ (12)
       rw! [h_r_sub_1_add_1.symm]
-      rw [towerAlgebraMap_succ (l:=l) (r:=r_sub_1) (by omega)]
+      rw [towerAlgebraMap_succ (l := l) (r := r_sub_1) (by omega)]
       -- A = 3 ∘ (2 ∘ 1)
-      have right_split := ih_r (m:=r_sub_1) (l:=l) (mid:=mid) (by omega) (by omega) (by omega)
+      have right_split := ih_r (m := r_sub_1) (l := l) (mid := mid)
+        (by omega) (by omega) (by omega)
       rw [right_split, ←RingHom.comp_assoc]
       -- A = (23) ∘ 1
       rw [←towerAlgebraMap_succ]
@@ -221,66 +236,80 @@ instance : AlgebraTower (BTField) where
     exact CommMonoid.mul_comm ((towerAlgebraMap i j h) r) x
   coherence' := by exact fun i j k h1 h2 ↦ towerAlgebraMap_assoc k j i h1 h2
 
+/-- Constructs the `Algebra` instance for `BTField l` over `BTField r` given `l ≤ r`. -/
 def binaryAlgebraTower {l r : ℕ} (h_le : l ≤ r) : Algebra (BTField l) (BTField r) := by
   exact AlgebraTower.toAlgebra h_le
 
+/-- The binary tower algebra is given by the `towerAlgebraMap` ring homomorphism. -/
 lemma binaryTowerAlgebra_def (l r : ℕ) (h_le : l ≤ r) :
-    @binaryAlgebraTower (l:=l) (r:=r) (h_le:=h_le)
+    @binaryAlgebraTower (l := l) (r := r) (h_le := h_le)
     = (towerAlgebraMap l r h_le).toAlgebra := by rfl
 
+/-- The `algebraMap` of the binary tower algebra equals `towerAlgebraMap`. -/
 lemma algebraMap_binaryTowerAlgebra_def (l r : ℕ) (h_le : l ≤ r) :
-    (@binaryAlgebraTower (l:=l) (r:=r) (h_le:=h_le)).algebraMap = towerAlgebraMap l r h_le := by rfl
+    (@binaryAlgebraTower (l := l) (r := r) (h_le := h_le)).algebraMap
+    = towerAlgebraMap l r h_le := by rfl
 
+/-- The algebra map sends `1 : BTField l` to `1 : BTField (l + 1)`. -/
 lemma BTField.coe_one_succ (l : ℕ) :
-    (@binaryAlgebraTower (l:=l) (r:=l+1) (h_le:=by omega)).algebraMap (1 : BTField l) =
-    (1 : BTField (l+1)) := by
-  exact RingHom.map_one (binaryAlgebraTower (l:=l) (r:=l+1) (h_le:=by omega)).algebraMap
+    (@binaryAlgebraTower (l := l) (r := l + 1) (h_le := by omega)).algebraMap (1 : BTField l) =
+    (1 : BTField (l + 1)) := by
+  exact RingHom.map_one
+    (binaryAlgebraTower (l := l) (r := l + 1) (h_le := by omega)).algebraMap
 
+/-- The binary tower algebra at equal levels is the identity algebra. -/
 @[simp]
 theorem binaryTowerAlgebra_id {l r : ℕ} (h_eq : l = r) :
-    @binaryAlgebraTower l r (h_le:=by omega) =
+    @binaryAlgebraTower l r (h_le := by omega) =
     (h_eq ▸ (Algebra.id (BTField l)) : Algebra (BTField l) (BTField r)) := by
   subst h_eq
   simp only [binaryTowerAlgebra_def, towerAlgebraMap_id]
   rfl
 
-theorem binaryTowerAlgebra_apply_assoc (l mid r : ℕ) (h_l_le_mid : l ≤ mid) (h_mid_le_r : mid ≤ r) :
+/-- The binary tower algebra map is associative at the element level. -/
+theorem binaryTowerAlgebra_apply_assoc (l mid r : ℕ)
+    (h_l_le_mid : l ≤ mid) (h_mid_le_r : mid ≤ r) :
     ∀ x : BTField l,
-    (@binaryAlgebraTower (l:=l) (r:=r) (h_le:=by
+    (@binaryAlgebraTower (l := l) (r := r) (h_le := by
       exact Nat.le_trans h_l_le_mid h_mid_le_r)).algebraMap x =
-    (@binaryAlgebraTower (l:=mid) (r:=r) (h_le:=h_mid_le_r)).algebraMap
-      (    (@binaryAlgebraTower (l:=l) (r:=mid) (h_le:=h_l_le_mid)).algebraMap x) := by
+    (@binaryAlgebraTower (l := mid) (r := r) (h_le := h_mid_le_r)).algebraMap
+      (    (@binaryAlgebraTower (l := l) (r := mid) (h_le := h_l_le_mid)).algebraMap x) := by
   intro x
   simp_rw [algebraMap_binaryTowerAlgebra_def]
   rw [←RingHom.comp_apply]
-  rw [towerAlgebraMap_assoc (l:=l) (mid:=mid) (r:=r)
-    (h_l_le_mid:=h_l_le_mid) (h_mid_le_r:=h_mid_le_r)]
+  rw [towerAlgebraMap_assoc (l := l) (mid := mid) (r := r)
+    (h_l_le_mid := h_l_le_mid) (h_mid_le_r := h_mid_le_r)]
 
 /-- This also provides the corresponding Module instance. -/
 def binaryTowerModule {l r : ℕ} (h_le : l ≤ r) : Module (BTField l) (BTField r) :=
-  (binaryAlgebraTower (h_le:=h_le)).toModule
+  (binaryAlgebraTower (h_le := h_le)).toModule
 
+/-- The canonical `Algebra` instance between adjacent tower levels `l` and `l + 1`. -/
 instance (priority := 1000) algebra_adjacent_tower (l : ℕ) :
-  Algebra (BTField l) (BTField (l+1)) := by
-  exact binaryAlgebraTower (h_le:=by omega)
+  Algebra (BTField l) (BTField (l + 1)) := by
+  exact binaryAlgebraTower (h_le := by omega)
 
+/-- The `algebraMap` between adjacent levels equals the `canonicalEmbedding`. -/
 lemma algebraMap_adjacent_tower_def (l : ℕ) :
     (algebraMap (BTField l) (BTField (l + 1))) = canonicalEmbedding l := by
   unfold algebra_adjacent_tower
   rw [binaryTowerAlgebra_def]
   exact towerAlgebraMap_succ_1 l
 
+/-- The `algebraMap` between adjacent levels equals `AdjoinRoot.of`. -/
 lemma algebraMap_adjacent_tower_succ_eq_Adjoin_of (k : ℕ) :
     (algebraMap (BTField k) (BTField (k + 1))) = of (poly k) := by
   rw [algebraMap_adjacent_tower_def]
   rfl
 
+/-- The adjacent tower algebra instance equals the canonical embedding's algebra. -/
 lemma algebra_adjacent_tower_def (l : ℕ) :
     (algebra_adjacent_tower l) = (canonicalEmbedding l).toAlgebra := by
   unfold algebra_adjacent_tower
   rw [binaryTowerAlgebra_def]
   rw [towerAlgebraMap_succ_1]
 
+/-- The adjacent tower algebra instance equals the `AdjoinRoot` algebra instance. -/
 lemma algebra_adjacent_tower_eq_AdjoinRoot_algebra (k : ℕ) :
     (algebra_adjacent_tower k) = (AdjoinRoot.instAlgebra (poly k)) := by
   rw [algebra_adjacent_tower_def]
@@ -291,6 +320,7 @@ lemma algebra_adjacent_tower_eq_AdjoinRoot_algebra (k : ℕ) :
     Algebra.algebra_ext (AdjoinRoot.instAlgebra (poly k)).2.toAlgebra
       (AdjoinRoot.instAlgebra (poly k)) (congrFun rfl)
 
+/-- The algebra equivalence between `AdjoinRoot (poly k)` and `BTField (k + 1)`. -/
 def BTField_succ_alg_equiv_adjoinRoot (k : ℕ) :
     AdjoinRoot (poly k) ≃ₐ[BTField k] BTField (k + 1) := by
   have h_eq : AdjoinRoot (poly k) = BTField (k + 1) := BTField_succ_eq_adjoinRoot k
