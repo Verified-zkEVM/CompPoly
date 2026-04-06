@@ -54,6 +54,7 @@ import CompPoly.Fields.PrattCertificate
 import CompPoly.Fields.Secp256k1
 import CompPoly.Multilinear.Basic
 import CompPoly.Multilinear.Equiv
+import CompPoly.Multilinear.FastSpecEquiv
 import CompPoly.Multivariate.CMvMonomial
 import CompPoly.Multivariate.CMvPolynomial
 import CompPoly.Multivariate.CMvPolynomialEvalLemmas
