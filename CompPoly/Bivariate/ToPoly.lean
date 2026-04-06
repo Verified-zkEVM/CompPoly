@@ -375,14 +375,16 @@ theorem evalEval_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiri
       have h_toPoly : (toPoly f).eval (Polynomial.C y) = (f.val.eval (CPolynomial.C y)).toPoly := by
         unfold CBivariate.toPoly
         simp +decide [ Polynomial.eval_finset_sum, CPolynomial.Raw.eval ]
-        unfold CPolynomial.Raw.eval₂
+        rw [CPolynomial.Raw.eval₂_eq_eval₂_naive]
+        unfold CPolynomial.Raw.eval₂Naive
         simp +decide
         rw [ toPoly_foldl_zipIdx_eq_sum, Finset.sum_subset ]
         · exact fun i hi ↦ Finset.mem_range.mpr
             (Nat.lt_of_lt_of_le (Finset.mem_range.mp (Finset.mem_filter.mp hi |>.1)) (by simp))
         · simp +contextual [ CPolynomial.support ]
           simp +decide [ CPolynomial.toPoly, CPolynomial.Raw.toPoly ]
-          unfold CPolynomial.Raw.eval₂
+          rw [CPolynomial.Raw.eval₂_eq_eval₂_naive]
+          unfold CPolynomial.Raw.eval₂Naive
           erw [ Array.foldl_empty ]
           simp
       -- `toPoly (f.val.eval (C y))` equals the polynomial with coefficients `f.val.coeff i`.
@@ -641,14 +643,16 @@ theorem evalY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring 
   have h_toPoly : (toPoly f).eval (Polynomial.C a) = (f.val.eval (CPolynomial.C a)).toPoly := by
     unfold CBivariate.toPoly
     simp +decide [ Polynomial.eval_finset_sum, CPolynomial.Raw.eval ]
-    unfold CPolynomial.Raw.eval₂
+    rw [CPolynomial.Raw.eval₂_eq_eval₂_naive]
+    unfold CPolynomial.Raw.eval₂Naive
     simp +decide
     rw [ toPoly_foldl_zipIdx_eq_sum, Finset.sum_subset ]
     · exact fun i hi ↦ Finset.mem_range.mpr
         (Nat.lt_of_lt_of_le (Finset.mem_range.mp (Finset.mem_filter.mp hi |>.1)) (by simp))
     · simp +contextual [ CPolynomial.support ]
       simp +decide [ CPolynomial.toPoly, CPolynomial.Raw.toPoly ]
-      unfold CPolynomial.Raw.eval₂
+      rw [CPolynomial.Raw.eval₂_eq_eval₂_naive]
+      unfold CPolynomial.Raw.eval₂Naive
       erw [ Array.foldl_empty ]
       simp
   exact h_toPoly.symm

@@ -24,13 +24,20 @@ section Semiring
 
 variable {S : Type*}
 
-/-- Evaluates a `CPolynomial.Raw` at `x : S` using a ring homomorphism `f : R →+* S`.
+/-- Naive sum-of-powers evaluation (reference implementation).
 
   Computes `f(a₀) + f(a₁) * x + f(a₂) * x² + ...` where `aᵢ` are the coefficients.
-
-  TODO: define an efficient version of this with caching -/
-def eval₂ [Semiring R] [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial.Raw R) : S :=
+  Retained as a specification target for the optimized Horner backend. -/
+def eval₂Naive [Semiring R] [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial.Raw R) : S :=
   p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + f a * x ^ i) 0
+
+/-- Evaluates a `CPolynomial.Raw` at `x : S` using a ring homomorphism `f : R →+* S`.
+
+  Uses Horner's method, processing coefficients from high degree to low degree:
+  `f(a₀) + x * (f(a₁) + x * (... + x * f(aₙ)))`, which avoids explicit exponentiation. -/
+@[inline, specialize]
+def eval₂ [Semiring R] [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial.Raw R) : S :=
+  p.foldr (fun a acc => f a + acc * x) 0
 
 /-- Evaluates a `CPolynomial.Raw` at a given value -/
 @[inline, specialize]
@@ -87,10 +94,19 @@ end MulPowXDefs
 def mul [Semiring R] [BEq R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
   p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc.add <| (smul a q).mulPowX i) (mk #[])
 
-/-- Exponentiation of a `CPolynomial.Raw` by a natural number `n` via repeated multiplication. -/
-@[inline, specialize]
-def pow [Semiring R] [BEq R] (p : CPolynomial.Raw R) (n : Nat) : CPolynomial.Raw R :=
+/-- Linear exponentiation of a `CPolynomial.Raw` by repeated multiplication (reference impl). -/
+def powIterate [Semiring R] [BEq R] (p : CPolynomial.Raw R) (n : Nat) : CPolynomial.Raw R :=
   (mul p)^[n] (C 1)
+
+/-- Exponentiation of a `CPolynomial.Raw` by a natural number `n` via squaring. -/
+@[inline, specialize]
+def pow [Semiring R] [BEq R] (p : CPolynomial.Raw R) : Nat → CPolynomial.Raw R
+  | 0 => C 1
+  | 1 => p.mul (C 1)
+  | n + 2 =>
+    let half := pow p ((n + 2) / 2)
+    let sq := mul half half
+    if (n + 2) % 2 == 0 then sq else mul p sq
 
 instance : Zero (CPolynomial.Raw R) := ⟨#[]⟩
 instance [One R] : One (CPolynomial.Raw R) := ⟨C 1⟩

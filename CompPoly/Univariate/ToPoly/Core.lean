@@ -67,7 +67,9 @@ alias ofPoly := Polynomial.toImpl
 
 /-- Evaluation is preserved by `toPoly`. -/
 theorem eval_toPoly_eq_eval (x : Q) (p : CPolynomial.Raw Q) : p.toPoly.eval x = p.eval x := by
-  unfold Raw.toPoly Raw.eval eval₂
+  unfold Raw.toPoly Raw.eval
+  rw [eval₂_eq_eval₂_naive, eval₂_eq_eval₂_naive]
+  unfold eval₂Naive
   rw [← Array.foldl_hom (Polynomial.eval x)
     (g₁ := fun acc (t : Q × ℕ) ↦ acc + Polynomial.C t.1 * Polynomial.X ^ t.2)
     (g₂ := fun acc (a, i) ↦ acc + a * x ^ i) ]
@@ -76,7 +78,9 @@ theorem eval_toPoly_eq_eval (x : Q) (p : CPolynomial.Raw Q) : p.toPoly.eval x = 
 
 /-- The coefficients of `p.toPoly` match those of `p`. -/
 lemma coeff_toPoly {p : CPolynomial.Raw Q} {n : ℕ} : p.toPoly.coeff n = p.coeff n := by
-  unfold Raw.toPoly Raw.eval₂
+  unfold Raw.toPoly
+  rw [eval₂_eq_eval₂_naive]
+  unfold eval₂Naive
 
   let f := fun (acc: Q[X]) ((a,i): Q × ℕ) ↦ acc + Polynomial.C a * Polynomial.X ^ i
   change (Array.foldl f 0 p.zipIdx).coeff n = p.coeff n

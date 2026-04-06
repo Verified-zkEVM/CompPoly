@@ -196,15 +196,16 @@ def natDegree [Zero R] (p : CPolynomial R) : ℕ :=
 of the trimmed array, or `0` if the trimmed array is empty. -/
 def leadingCoeff [Zero R] (p : CPolynomial R) : R := p.val.getLastD 0
 
-/-- Evaluate a polynomial at a point. -/
+/-- Evaluate a polynomial at a point using Horner's method. -/
 def eval [Semiring R] (x : R) (p : CPolynomial R) : R :=
-  p.val.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + a * x ^ i) 0
+  p.val.eval x
 
 /-- Evaluate at `x : S` via a ring hom
-`f : R →+* S`; `eval₂ f x p = f(a₀) + f(a₁)*x + f(a₂)*x² + ...`. -/
+`f : R →+* S`; `eval₂ f x p = f(a₀) + f(a₁)*x + f(a₂)*x² + ...`.
+Uses the optimized Horner backend. -/
 def eval₂ {S : Type*} [Semiring R] [Semiring S]
     (f : R →+* S) (x : S) (p : CPolynomial R) : S :=
-  p.val.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + f a * x ^ i) 0
+  p.val.eval₂ f x
 
 /-- The support of a polynomial: indices with nonzero coefficients. -/
 def support [Zero R] [BEq R] (p : CPolynomial R) : Finset ℕ :=
@@ -316,19 +317,13 @@ theorem support_empty_iff [Zero R] [BEq R] [LawfulBEq R] (p : CPolynomial R) :
 /-- Evaluation equals the sum over support of coefficients times powers. -/
 theorem eval_eq_sum_support [Semiring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) (x : R) :
     p.eval x = p.support.sum (fun i => p.coeff i * x ^ i) := by
-  have h_eval_def : p.eval x =
-      (p.val.zipIdx.toList.map (fun ⟨a, i⟩ => a * x ^ i)).sum := by
-    unfold CPolynomial.eval
-    simp +decide
-    induction p.val
-    simp +decide [ * ]
-    induction' ‹List R› using List.reverseRecOn with a l ih <;>
-      simp +decide [ *, List.zipIdx_append ]
-  have h_sum_range : (p.val.zipIdx.toList.map (fun ⟨a, i⟩ => a * x ^ i)).sum =
+  have h_eval_sum : p.eval x =
       (Finset.range p.val.size).sum (fun i => p.val.coeff i * x ^ i) := by
-    convert CPolynomial.Raw.sum_zipIdx_eq_sum_range p.val (fun a i => a * x ^ i)
-      using 1
-  convert h_eval_def.trans h_sum_range using 1
+    show p.val.eval x = _
+    show p.val.eval₂ (RingHom.id R) x = _
+    rw [Raw.eval₂_eq_sum]
+    simp
+  convert h_eval_sum using 1
   refine' Finset.sum_subset _ _ <;> intro i hi <;>
     simp_all +decide [ CPolynomial.Raw.coeff ]
   · exact Finset.mem_range.mp (Finset.mem_filter.mp hi |>.1)
@@ -341,19 +336,11 @@ Evaluation via a ring hom equals the sum over support of mapped coefficients tim
 theorem eval₂_eq_sum_support {S : Type*} [Semiring R] [BEq R] [LawfulBEq R] [Semiring S]
     (f : R →+* S) (p : CPolynomial R) (x : S) :
     p.eval₂ f x = p.support.sum (fun i => f (p.coeff i) * x ^ i) := by
-  have h_eval_def : p.eval₂ f x =
-      (p.val.zipIdx.toList.map (fun ⟨a, i⟩ => f a * x ^ i)).sum := by
-    unfold CPolynomial.eval₂
-    simp +decide
-    induction p.val
-    simp +decide [*]
-    induction' ‹List R› using List.reverseRecOn with a l ih <;>
-      simp +decide [*, List.zipIdx_append]
-  have h_sum_range : (p.val.zipIdx.toList.map (fun ⟨a, i⟩ => f a * x ^ i)).sum =
+  have h_eval_sum : p.eval₂ f x =
       (Finset.range p.val.size).sum (fun i => f (p.val.coeff i) * x ^ i) := by
-    convert CPolynomial.Raw.sum_zipIdx_eq_sum_range p.val (fun a i => f a * x ^ i)
-      using 1
-  convert h_eval_def.trans h_sum_range using 1
+    show p.val.eval₂ f x = _
+    exact Raw.eval₂_eq_sum f x p.val
+  convert h_eval_sum using 1
   refine' Finset.sum_subset _ _ <;> intro i hi <;>
     simp_all +decide [CPolynomial.Raw.coeff]
   · exact Finset.mem_range.mp (Finset.mem_filter.mp hi |>.1)
@@ -736,25 +723,18 @@ lemma add_mul [Semiring R] [BEq R] [LawfulBEq R]
 
 lemma pow_is_trimmed [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (p : CPolynomial.Raw R) (n : ℕ) : (p ^ n).trim = p ^ n := by
-      induction' n with n ih generalizing p;
-      · convert one_is_trimmed
-        · infer_instance
-        · infer_instance
-      · have h_exp : p ^ (n + 1) = p * p ^ n := by
-          exact pow_succ p n
-        rw [h_exp]
-        convert mul_is_trimmed p ( p ^ n ) using 1
+      induction n with
+      | zero =>
+        show (Raw.pow p 0).trim = Raw.pow p 0
+        unfold Raw.pow
+        exact one_is_trimmed
+      | succ n ih =>
+        rw [Raw.pow_succ]
+        exact mul_is_trimmed p (p ^ n)
 
 lemma pow_succ_right [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
-    (p : CPolynomial.Raw R) (n : ℕ) : p ^ (n + 1) = p ^ n * p := by
-      convert pow_succ p n using 1;
-      induction' n with n ih;
-      · have h_pow_zero : p ^ 0 = 1 := by
-          exact rfl
-        rw [h_pow_zero, mul_one_trim, one_mul_trim];
-      · simp_all +decide [Raw.pow_succ];
-        convert Raw.mul_assoc p ( p ^ n ) p using 1;
-        grind
+    (p : CPolynomial.Raw R) (n : ℕ) : p ^ (n + 1) = p ^ n * p :=
+  Raw.pow_succ_right p n
 
 /--
 `CPolynomial R` forms a commutative monoid when `R` is a semiring.
@@ -795,7 +775,7 @@ instance [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] : Semiring (CPolynomi
   nsmul_zero := CPolynomial.nsmul_zero
   nsmul_succ := CPolynomial.nsmul_succ
   npow n p := ⟨p.val ^ n, Trim.isCanonical_of_trim_eq (CPolynomial.pow_is_trimmed p.val n)⟩
-  npow_zero := by intro x; apply Subtype.ext; rfl
+  npow_zero := by intro x; apply Subtype.ext; show Raw.pow x.val 0 = _; unfold Raw.pow; rfl
   npow_succ := by intro n p; apply Subtype.ext; exact
       (CPolynomial.pow_succ_right p.val n)
   natCast_zero := by rfl

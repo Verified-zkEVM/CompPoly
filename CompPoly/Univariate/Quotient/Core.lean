@@ -407,18 +407,14 @@ lemma pow_descends [Semiring R] [BEq R] [LawfulBEq R] (n : ℕ) (p₁ p₂ : CPo
   unfold powDescending
   rw [Quotient.eq]
   simp [Raw.instSetoidCPolynomial]
-  unfold pow
-  have mul_pow_succ_equiv (p : CPolynomial.Raw R) (n : ℕ):
-    p.mul^[n + 1] (C 1) ≈ p.mul (p.mul^[n] (C 1)) := by
-    rw [mul_pow_succ]
+  rw [Raw.pow_eq_powIterate, Raw.pow_eq_powIterate]
   induction n with
-  | zero => simp
+  | zero => exact equiv_refl _
   | succ n ih =>
+    rw [powIterate_succ, powIterate_succ]
     calc
-      p₁.mul^[n + 1] (C 1) ≈ p₁.mul (p₁.mul^[n] (C 1)) := mul_pow_succ_equiv p₁ n
-      _ ≈ p₁.mul (p₂.mul^[n] (C 1)) := mul_equiv₂ p₁ _ _ ih
-      _ ≈ p₂.mul (p₂.mul^[n] (C 1)) := mul_equiv _ _ (p₂.mul^[n] (C 1)) heq
-      _ ≈ p₂.mul^[n + 1] (C 1) := equiv_symm (mul_pow_succ_equiv p₂ n)
+      p₁.mul (p₁.powIterate n) ≈ p₁.mul (p₂.powIterate n) := mul_equiv₂ p₁ _ _ ih
+      _ ≈ p₂.mul (p₂.powIterate n) := mul_equiv _ _ _ heq
 
 /-- Exponentiation on the quotient. -/
 @[inline, specialize]
@@ -631,6 +627,7 @@ lemma npow_zero : ∀ (x : QuotientCPolynomial R), x.pow 0 = 1 := by
   refine Quotient.inductionOn x ?_
   intro p; clear x
   apply Quotient.sound
+  show CPolynomial.Raw.pow p 0 ≈ C 1
   unfold CPolynomial.Raw.pow
   simp
 
@@ -648,10 +645,9 @@ lemma pow_succ_left (n : ℕ) (x : QuotientCPolynomial R) :
   refine Quotient.inductionOn x ?_
   intro p
   apply Quotient.sound
-  -- p.pow (n+1) = p * p.pow n is true by definition of pow for CPolynomial.Raw
-  -- By definition of pow, we have p.pow (n + 1) = p.mul (p.pow n).
-  have h_pow : p.pow (n + 1) = p.mul (p.pow n) := by
-    exact Function.iterate_succ_apply' _ _ _
+  -- By Raw.pow_succ, we have p ^ (n + 1) = p * p ^ n.
+  have h_pow : CPolynomial.Raw.pow p (n + 1) = p.mul (CPolynomial.Raw.pow p n) := by
+    exact Raw.pow_succ p n
   exact congrFun (congrArg coeff h_pow)
 
 /-
@@ -671,9 +667,9 @@ lemma npow_succ : ∀ (n : ℕ) (x : QuotientCPolynomial R), x.pow (n + 1) = x.p
   refine Quotient.inductionOn x ?_
   intro p; clear x
   apply Quotient.sound
-  -- By definition of exponentiation, we have `p.pow (n + 1) = p * p.pow n` for any `p`.
-  rw [show p.pow (n + 1) = p.mul (p.pow n) from by
-        exact Function.iterate_succ_apply' _ _ _]
+  -- By Raw.pow_succ, we have `p ^ (n + 1) = p * p ^ n`.
+  rw [show CPolynomial.Raw.pow p (n + 1) = p.mul (CPolynomial.Raw.pow p n) from
+        Raw.pow_succ p n]
   convert commute_pow_self n ( Quotient.mk ( Raw.instSetoidCPolynomial ) p ) using 1
   erw [ Quotient.eq ]
   rfl

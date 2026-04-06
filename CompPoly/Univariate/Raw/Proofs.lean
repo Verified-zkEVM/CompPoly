@@ -30,12 +30,90 @@ variable (p q r : CPolynomial.Raw R)
 
 lemma pow_zero (p : CPolynomial.Raw R) :
     p ^ 0 = C 1 := by
-      exact rfl
+      show pow p 0 = C 1; unfold pow; rfl
 
-lemma pow_succ (p : CPolynomial.Raw R) (n : ℕ) :
-    p ^ (n + 1) = p * (p ^ n) := by
-      convert ( Function.iterate_succ_apply' ( mul p ) n ( C 1 ) )
-           using 1
+/-- `powIterate` unfolds one step: `powIterate p (n+1) = p * powIterate p n`. -/
+lemma powIterate_succ (p : CPolynomial.Raw R) (n : ℕ) :
+    powIterate p (n + 1) = mul p (powIterate p n) :=
+  Function.iterate_succ_apply' (mul p) n (C 1)
+
+end Semiring
+
+section EvalBridge
+
+variable {R : Type*} [Semiring R]
+variable {S : Type*} [Semiring S]
+
+/-- Horner eval₂ on an empty array is zero. -/
+@[simp]
+lemma eval₂_empty (f : R →+* S) (x : S) :
+    eval₂ f x (#[] : CPolynomial.Raw R) = 0 := by
+  simp [eval₂]
+
+/-- Naive eval₂ on an empty array is zero. -/
+@[simp]
+lemma eval₂Naive_empty (f : R →+* S) (x : S) :
+    eval₂Naive f x (#[] : CPolynomial.Raw R) = 0 := by
+  simp [eval₂Naive]
+
+/-
+Helper: Horner foldr equals the naive sum-of-powers for lists.
+-/
+private lemma horner_eq_naive_list (f : R →+* S) (x : S) :
+    ∀ (l : List R),
+    l.foldr (fun a acc => f a + acc * x) 0 =
+    (l.zipIdx.map (fun ⟨a, i⟩ => f a * x ^ i)).sum := by
+      intro l;
+      induction' l using List.reverseRecOn with a l ih;
+      · rfl;
+      · simp +decide [ *, List.zipIdx_append ];
+        rw [ ← ih ];
+        clear ih;
+        induction a <;> simp +decide [ *, pow_succ, mul_assoc, add_mul, add_assoc ]
+
+/-
+The Horner backend agrees with the naive sum-of-powers backend.
+-/
+theorem eval₂_eq_eval₂_naive (f : R →+* S) (x : S) (p : CPolynomial.Raw R) :
+    eval₂ f x p = eval₂Naive f x p := by
+      convert horner_eq_naive_list f x p.toList using 1;
+      · unfold eval₂; aesop;
+      · unfold CPolynomial.Raw.eval₂Naive;
+        induction p using Array.recOn; simp +decide [*];
+        induction ‹List R› using List.reverseRecOn <;> simp +decide [ *, List.zipIdx_append ]
+
+/-
+`eval₂` equals the Finset sum over `range p.size`.
+-/
+theorem eval₂_eq_sum (f : R →+* S) (x : S) (p : CPolynomial.Raw R) :
+    eval₂ f x p =
+    (Finset.range p.size).sum (fun i => f (p.coeff i) * x ^ i) := by
+      convert eval₂_eq_eval₂_naive f x p using 1;
+      unfold CPolynomial.Raw.eval₂Naive;
+      induction p using Array.recOn; simp_all +decide;
+      induction ‹List R› using List.reverseRecOn <;> simp_all +decide [ Finset.sum_range_succ ];
+      simp_all +decide [ Finset.sum_range, List.zipIdx_append ]
+
+/-
+`eval₂` equals the list sum of mapped `zipIdx` pairs.
+-/
+theorem eval₂_eq_list_sum (f : R →+* S) (x : S) (p : CPolynomial.Raw R) :
+    eval₂ f x p =
+    (p.zipIdx.toList.map (fun ⟨a, i⟩ => f a * x ^ i)).sum := by
+      convert eval₂_eq_eval₂_naive f x p using 1;
+      unfold CPolynomial.Raw.eval₂Naive;
+      induction p using Array.recOn; simp +decide [*];
+      induction' ‹List R› using List.reverseRecOn with _ _ ih <;>
+        simp +decide [ *, List.zipIdx_append ]
+
+end EvalBridge
+
+section Semiring
+
+variable {R : Type*} [Semiring R] [BEq R]
+variable {Q : Type*} [Semiring Q]
+variable {S : Type*}
+variable (p q r : CPolynomial.Raw R)
 
 section AddDefs
 
@@ -659,18 +737,6 @@ lemma mulX_monomial_one [DecidableEq R] [LawfulBEq R] [Nontrivial R] (n : ℕ) :
   exact Nat.recOn n (by simp +decide) fun n ih =>
     by simp +decide [ List.replicate ] at ih ⊢; tauto
 
-lemma X_pow_eq_monomial_one [DecidableEq R] [LawfulBEq R] [Nontrivial R] (n : ℕ) :
-    (X : CPolynomial.Raw R) ^ n = monomial n 1 := by
-  have h_monomial : ∀ n : ℕ,
-      (monomial n (1 : R)).trim =
-      monomial n (1 : R) := by
-    exact fun n => monomial_canonical n 1
-  induction' n with n ih;
-  · unfold X monomial
-    aesop
-  · rw [ pow_succ, ih ];
-    rw [ X_mul_eq_mulX_trim ];
-    rw [ mulX_monomial_one, h_monomial ]
 
 lemma smul_monomial_one_trim [DecidableEq R] [LawfulBEq R]
     [Nontrivial R] (n : ℕ) (r : R) :
@@ -904,6 +970,103 @@ protected theorem mul_assoc [LawfulBEq R] (p q r : CPolynomial.Raw R) :
   · exact mul_assoc_equiv p q r
 
 end MulTheorems
+
+section PowTheorems
+
+variable [LawfulBEq R]
+
+/-- Multiplication absorbs a left `trim`: `p.trim * q = p * q`. -/
+lemma mul_trim_left (p q : CPolynomial.Raw R) : mul p.trim q = mul p q := by
+  apply Trim.canonical_ext (mul_is_trimmed _ _) (mul_is_trimmed _ _)
+  intro i; rw [mul_coeff, mul_coeff]; congr 1; ext j; congr 1
+  exact Trim.coeff_eq_coeff p j
+
+/-- Multiplication absorbs a right `trim`: `p * q.trim = p * q`. -/
+lemma mul_trim_right (p q : CPolynomial.Raw R) : mul p q.trim = mul p q := by
+  apply Trim.canonical_ext (mul_is_trimmed _ _) (mul_is_trimmed _ _)
+  intro i; rw [mul_coeff, mul_coeff]; congr 1; ext j; congr 1
+  exact Trim.coeff_eq_coeff q _
+
+/-- Product of iterate-powers adds exponents (for positive first exponent). -/
+lemma powIterate_mul_add (p : CPolynomial.Raw R) (m n : ℕ) :
+    mul (powIterate p (m + 1)) (powIterate p n) = powIterate p (m + 1 + n) := by
+  induction m with
+  | zero =>
+    simp only [Nat.zero_add]
+    show mul (powIterate p 1) (powIterate p n) = powIterate p (1 + n)
+    have h1 : powIterate p 1 = p.trim := by
+      simp [powIterate_succ, show powIterate p 0 = C 1 from rfl]
+      exact mul_one_trim p
+    rw [h1, mul_trim_left, show 1 + n = n + 1 from by omega, powIterate_succ]
+  | succ m ih =>
+    have h_unfold : powIterate p (m + 1 + 1) = mul p (powIterate p (m + 1)) := by
+      exact powIterate_succ p (m + 1)
+    rw [h_unfold]
+    have h_assoc : mul (mul p (powIterate p (m + 1))) (powIterate p n) =
+        mul p (mul (powIterate p (m + 1)) (powIterate p n)) := by
+      exact Raw.mul_assoc p (powIterate p (m + 1)) (powIterate p n)
+    rw [h_assoc, ih, ← powIterate_succ]
+    congr 1; omega
+
+/-- The fast squaring backend agrees with linear iteration under `LawfulBEq`. -/
+theorem pow_eq_powIterate (p : CPolynomial.Raw R) : ∀ n : ℕ,
+    pow p n = powIterate p n
+  | 0 => by unfold pow; rfl
+  | 1 => by unfold pow; rfl
+  | n + 2 => by
+    unfold pow
+    have ih := pow_eq_powIterate p ((n + 2) / 2)
+    have h_half : (n + 2) / 2 = n / 2 + 1 := by omega
+    rw [ih, h_half]
+    by_cases h : (n + 2) % 2 = 0
+    · simp [h]
+      rw [powIterate_mul_add]
+      have : n / 2 + 1 + (n / 2 + 1) = n + 2 := by omega
+      rw [this]
+    · simp [show (n + 2) % 2 = 1 from by omega]
+      rw [powIterate_mul_add]
+      have h_sum : n / 2 + 1 + (n / 2 + 1) = n + 1 := by omega
+      rw [h_sum, ← powIterate_succ]
+
+/-- `p ^ (n + 1) = p * p ^ n` under `LawfulBEq`. -/
+lemma pow_succ (p : CPolynomial.Raw R) (n : ℕ) :
+    p ^ (n + 1) = p * (p ^ n) := by
+  change pow p (n + 1) = mul p (pow p n)
+  rw [pow_eq_powIterate, pow_eq_powIterate]
+  exact powIterate_succ p n
+
+/-- `p` commutes with `p ^ n` under multiplication (self-commutativity). -/
+lemma pow_mul_comm (p : CPolynomial.Raw R) : ∀ n : ℕ,
+    p * (p ^ n) = p ^ n * p
+  | 0 => by
+    show mul p (pow p 0) = mul (pow p 0) p
+    have h0 : pow p 0 = C 1 := by unfold pow; rfl
+    rw [h0]
+    show p * 1 = 1 * p
+    rw [mul_one_trim, one_mul_trim]
+  | n + 1 => by
+    have ih := pow_mul_comm p n
+    rw [Raw.pow_succ]
+    calc p * (p * p ^ n) = p * (p ^ n * p) := by rw [ih]
+      _ = (p * p ^ n) * p := by rw [Raw.mul_assoc]
+
+/-- `p ^ (n + 1) = p ^ n * p` under `LawfulBEq`. -/
+lemma pow_succ_right (p : CPolynomial.Raw R) (n : ℕ) :
+    p ^ (n + 1) = p ^ n * p := by
+  rw [pow_succ]
+  exact pow_mul_comm p n
+
+lemma X_pow_eq_monomial_one [DecidableEq R] [Nontrivial R] (n : ℕ) :
+    (X : CPolynomial.Raw R) ^ n = monomial n 1 := by
+  have h_monomial : ∀ n : ℕ,
+      (monomial n (1 : R)).trim =
+      monomial n (1 : R) := by
+    exact fun n => monomial_canonical n 1
+  induction' n with n ih;
+  · unfold X monomial; show pow _ 0 = _; unfold pow; aesop
+  · rw [ pow_succ X n, ih, X_mul_eq_mulX_trim, mulX_monomial_one, h_monomial ]
+
+end PowTheorems
 
 end Semiring
 

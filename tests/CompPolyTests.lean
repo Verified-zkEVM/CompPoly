@@ -1,3 +1,4 @@
+import CompPolyTests.Univariate.Eval
 import CompPolyTests.Univariate.Raw
 import CompPolyTests.Univariate.Basic
 import CompPolyTests.Univariate.Linear

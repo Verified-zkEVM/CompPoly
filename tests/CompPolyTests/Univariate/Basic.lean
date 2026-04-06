@@ -41,4 +41,41 @@ example (p : CPolynomial ℚ) : 1 * p = p := by
   simp
 
 end CPolynomial
+
+-- Power regression tests: canonical powers agree with repeated multiplication
+section PowerTests
+
+open CPolynomial.Raw
+
+private abbrev p1x : CPolynomial.Raw ℤ := CPolynomial.Raw.mk #[1, 1]
+
+-- Zero polynomial: 0^n = 0 for n ≥ 1
+#guard (0 : CPolynomial.Raw ℤ) ^ 0 == C 1
+#guard (0 : CPolynomial.Raw ℤ) ^ 1 == (0 : CPolynomial.Raw ℤ)
+#guard (0 : CPolynomial.Raw ℤ) ^ 5 == (0 : CPolynomial.Raw ℤ)
+
+-- Constant: (C 3)^n = C (3^n)
+#guard (C 3 : CPolynomial.Raw ℤ) ^ 0 == C 1
+#guard (C 3 : CPolynomial.Raw ℤ) ^ 1 == C 3
+#guard (C 3 : CPolynomial.Raw ℤ) ^ 2 == C 9
+#guard (C 3 : CPolynomial.Raw ℤ) ^ 3 == C 27
+
+-- Monomial: X^n
+#guard (X : CPolynomial.Raw ℤ) ^ 0 == C 1
+#guard (X : CPolynomial.Raw ℤ) ^ 1 == (X : CPolynomial.Raw ℤ)
+#guard (X : CPolynomial.Raw ℤ) ^ 3 == CPolynomial.Raw.mk #[(0 : ℤ), 0, 0, 1]
+
+-- Nontrivial: (1 + X)^n = binomial coefficients
+#guard p1x ^ 0 == C 1
+#guard p1x ^ 1 == p1x
+#guard p1x ^ 2 == CPolynomial.Raw.mk #[(1 : ℤ), 2, 1]
+#guard p1x ^ 3 == CPolynomial.Raw.mk #[(1 : ℤ), 3, 3, 1]
+#guard p1x ^ 4 == CPolynomial.Raw.mk #[(1 : ℤ), 4, 6, 4, 1]
+
+-- Agrees with repeated multiplication
+#guard p1x ^ 3 == p1x * (p1x * p1x)
+#guard p1x ^ 4 == p1x * (p1x * (p1x * p1x))
+
+end PowerTests
+
 end CompPoly
