@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles
+Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles, Natalie Klaus
 -/
 import CompPoly.Univariate.Raw.Ops
 
@@ -979,6 +979,49 @@ instance [LawfulBEq R] : AddCommSemigroup (CPolynomial.Raw R) where
   add_comm := add_comm
 
 end AddCommSemigroup
+
+section RepeatedSquaring
+
+variable [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+
+/-- `pow` preserves trimming (Raw-level version). -/
+lemma pow_is_trimmed (p : CPolynomial.Raw R) (n : ℕ) :
+    (p ^ n).trim = p ^ n := by
+  induction n with
+  | zero => exact Trim.push_trim #[] 1 one_ne_zero
+  | succ n ih => rw [pow_succ]; exact mul_is_trimmed p (p ^ n)
+
+/-- Additive law for exponentiation: $ p ^ {a + b} = p ^ a \cdot p ^ b $. -/
+theorem pow_add (p : CPolynomial.Raw R) (a b : ℕ) :
+    p ^ (a + b) = p ^ a * p ^ b := by
+  induction a with
+  | zero =>
+    simp only [Nat.zero_add, pow_zero]
+    show p ^ b = C 1 * p ^ b
+    rw [show (C 1 : CPolynomial.Raw R) = 1 from rfl, one_mul_trim, pow_is_trimmed]
+  | succ n ih =>
+    rw [Nat.succ_add, pow_succ, ih, pow_succ, Raw.mul_assoc]
+
+omit [LawfulBEq R] [Nontrivial R] in
+private theorem mul_eq_hmul (a b : CPolynomial.Raw R) : a.mul b = a * b := rfl
+
+/-- `powBySq` agrees with `pow` (repeated squaring = repeated multiplication). -/
+theorem powBySq_eq_pow (p : CPolynomial.Raw R) : ∀ n : ℕ, powBySq p n = p ^ n
+  | 0 => by unfold powBySq; exact (pow_zero p).symm
+  | n + 1 => by
+    unfold powBySq
+    have ih : powBySq p ((n + 1) / 2) = p ^ ((n + 1) / 2) :=
+      powBySq_eq_pow p ((n + 1) / 2)
+    simp only [ih, mul_eq_hmul, ← pow_add]
+    by_cases heven : (n + 1) % 2 = 0
+    · simp only [heven, ↓reduceIte]
+      congr 1; omega
+    · simp only [heven, ↓reduceIte, ← pow_succ]
+      congr 1; omega
+termination_by n => n
+decreasing_by omega
+
+end RepeatedSquaring
 
 end CPolynomial.Raw
 
