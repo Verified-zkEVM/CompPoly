@@ -265,14 +265,13 @@ instance {w : Nat} : Std.Associative (α := BitVec w) BitVec.xor where
 
 -- TODO: optimize clMul, potentially using Karatsuba decomposition
 /-- Carry-less (polynomial) multiplication of two 256-bit vectors. -/
-def clMul (a b : B256) : B256 :=
-  (Finset.univ : Finset (Fin 256)).fold BitVec.xor 0
-      (fun i => if a.getLsb i then b <<< i.val else 0)
+def clMul (a b : B128) : B256 :=
+  let b256 := to256 b
+  Fin.foldl 128 (fun acc i => if a.getLsbD i then acc ^^^ (b256 <<< (i : Nat)) else acc) (0 : B256)
 
 /-- Carry-less squaring of a 128-bit vector. -/
 def clSq (a : B128) : B256 :=
-  let a256 := to256 a
-  clMul a256 a256
+  clMul a a
 
 end BitVecOperations
 
@@ -289,9 +288,9 @@ noncomputable def toPoly {w : Nat} (v : BitVec w) : (ZMod 2)[X] :=
 -- We define this lemma to exactly match the structure above:
 -- s = Finset.univ (Fin 256)
 -- f = fun i => if a[i] then b <<< i else 0
-lemma clMul_eq_fold (a b : B256) :
-    clMul a b = (Finset.univ : Finset (Fin 256)).fold BitVec.xor 0
-      (fun i => if a.getLsb i then b <<< i.val else 0) := by rfl
+-- lemma clMul_eq_fold (a b : B256) :
+--     clMul a b = (Finset.univ : Finset (Fin 256)).fold BitVec.xor 0
+--       (fun i => if a.getLsb i then b <<< i.val else 0) := by rfl
 
 lemma toPoly_one_eq_one {w : Nat} (h_w_pos : w > 0) : toPoly (BitVec.ofNat w 1) = 1 := by
   unfold toPoly
@@ -681,11 +680,15 @@ theorem toPoly_shiftLeft_no_overflow {w d : ℕ} (a : BitVec w) (ha : a.toNat < 
       · simp [toPoly_coeff, hn, hs, hns]
     · simp [toPoly_coeff, hn, hs]
 
+lemma toPoly_clMul_no_overflow (a b : B128) :
+    toPoly (clMul a b) = toPoly a * toPoly b := by
+
+
 /--
 Generalized No-Overflow Multiplication.
 Safe to use whenever the bit-widths sum to ≤ 257.
 This covers both squaring (128+128=256) and reduction check (128+129=257).
--/
+
 lemma toPoly_clMul_no_overflow {da db : ℕ} (a b : B256)
     (ha : a.toNat < 2 ^ da)
     (hb : b.toNat < 2 ^ db)
@@ -718,7 +721,8 @@ lemma toPoly_clMul_no_overflow {da db : ℕ} (a b : B256)
 
   · simp [toPoly_zero_eq_zero]
 
-/-- Helper lemma to chain the modular squaring steps -/
+
+Helper lemma to chain the modular squaring steps -/
 lemma chain_step {P : Polynomial (ZMod 2)} (hP : P ≠ 0) {k : ℕ}
     {prev next : Polynomial (ZMod 2)} {q_val : B128}
     (h_prev : X ^ (2 ^ k) % P = prev % P)
