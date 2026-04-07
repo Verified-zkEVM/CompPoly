@@ -119,8 +119,9 @@ lemma toPoly_pow [Nontrivial R] [LawfulBEq R] (p : CPolynomial R) (n : ℕ) :
   | succ n ih =>
     have hp : p ^ (n + 1) = p ^ n * p := by
       apply ext
-      change (p.val ^ (n + 1)) = (p.val ^ n * p.val)
-      rw [pow_succ_right]
+      show (p ^ (n + 1)).val = (p ^ n * p).val
+      rw [val_pow, show (p ^ n * p).val = (p ^ n).val * p.val from rfl, val_pow]
+      exact pow_succ_right p.val n
     have htp : p.toPoly ^ (n + 1) = p.toPoly ^ n * p.toPoly := by
       simpa using (_root_.pow_succ (p.toPoly : R[X]) n)
     rw [hp, toPoly_mul, ih, htp]
