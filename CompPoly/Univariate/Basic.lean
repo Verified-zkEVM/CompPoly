@@ -812,7 +812,8 @@ instance [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] : Semiring (CPolynomi
 
 /-- The underlying `Raw` value of `p ^ n` equals `p.val ^ n`
 (using the Raw `Pow` instance). This bridges the optimized
-`powBySq` used in the `Semiring` instance with the spec `pow`. -/
+`powBySq` used in the `Semiring` instance with the spec
+`pow`. -/
 lemma val_pow [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (p : CPolynomial R) (n : ℕ) : (p ^ n).val = p.val ^ n :=
   Raw.powBySq_eq_pow p.val n
@@ -820,7 +821,7 @@ lemma val_pow [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
 /-- `C r * X^n = monomial n r` as canonical polynomials. -/
 lemma C_mul_X_pow_eq_monomial [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R] [Nontrivial R]
     (r : R) (n : ℕ) :
-    (C r : CPolynomial R) * (X ^ n) = monomial n r := by
+    (C r : CPolynomial R) * X ^ n = monomial n r := by
   apply Subtype.ext
   -- Reduce to Raw-level equality via val_pow
   have hval : (C r * X ^ n : CPolynomial R).val =
@@ -834,7 +835,7 @@ lemma C_mul_X_pow_eq_monomial [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R]
     rw [show (Raw.C (0 : R)).trim = (0 : CPolynomial.Raw R) from Raw.trim_replicate_zero 1,
         Raw.zero_mul]
     simp [Raw.monomial]
-  · rw [show (Raw.C r).trim = Raw.C r from Trim.canonical_iff.mpr fun hp => hr,
+  · rw [show (Raw.C r).trim = Raw.C r from Trim.canonical_iff.mpr fun hp ↦ hr,
         Raw.C_mul_eq_smul_trim, Raw.X_pow_eq_monomial_one]
     exact Raw.smul_monomial_one_trim n r
 

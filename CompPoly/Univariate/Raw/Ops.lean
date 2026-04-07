@@ -93,11 +93,12 @@ This is the specification; `powBySq` is the efficient O(log n) implementation. -
 def pow [Semiring R] [BEq R] (p : CPolynomial.Raw R) (n : Nat) : CPolynomial.Raw R :=
   (mul p)^[n] (C 1)
 
-/-- Exponentiation via repeated squaring: O(log n) multiplications instead of O(n).
+/-- Exponentiation via repeated squaring: $ O(\log n) $ multiplications
+instead of $ O(n) $.
 
-For `n > 0`, computes `p ^ n` by recursing on `n / 2`:
-* If `n` is even: `(p ^ (n/2))²`
-* If `n` is odd:  `p · (p ^ (n/2))²`
+For $ n > 0 $, computes $ p ^ n $ by recursing on $ n / 2 $:
+* If $ n $ is even: $ (p ^ {n/2})^2 $
+* If $ n $ is odd:  $ p \cdot (p ^ {n/2})^2 $
 -/
 @[inline, specialize]
 def powBySq [Semiring R] [BEq R] (p : CPolynomial.Raw R) : Nat → CPolynomial.Raw R

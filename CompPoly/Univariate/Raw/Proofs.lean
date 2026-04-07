@@ -991,13 +991,13 @@ lemma pow_is_trimmed (p : CPolynomial.Raw R) (n : ℕ) :
   | zero => exact Trim.push_trim #[] 1 one_ne_zero
   | succ n ih => rw [pow_succ]; exact mul_is_trimmed p (p ^ n)
 
-/-- Additive law for exponentiation: `p ^ (a + b) = p ^ a * p ^ b`. -/
+/-- Additive law for exponentiation: $ p ^ {a + b} = p ^ a \cdot p ^ b $. -/
 theorem pow_add (p : CPolynomial.Raw R) (a b : ℕ) :
     p ^ (a + b) = p ^ a * p ^ b := by
   induction a with
   | zero =>
     simp only [Nat.zero_add, pow_zero]
-    show p ^ b = (C 1) * p ^ b
+    show p ^ b = C 1 * p ^ b
     rw [show (C 1 : CPolynomial.Raw R) = 1 from rfl, one_mul_trim, pow_is_trimmed]
   | succ n ih =>
     rw [Nat.succ_add, pow_succ, ih, pow_succ, Raw.mul_assoc]
