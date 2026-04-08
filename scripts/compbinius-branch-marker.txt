@@ -1,0 +1,1 @@
+CompBinius branch marker (Cursor agent bootstrap). Safe to delete.
