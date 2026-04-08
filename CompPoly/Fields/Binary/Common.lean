@@ -291,8 +291,15 @@ noncomputable def toPoly {w : Nat} (v : BitVec w) : (ZMod 2)[X] :=
 --     clMul a b = (Finset.univ : Finset (Fin 256)).fold BitVec.xor 0
 --       (fun i => if a.getLsb i then b <<< i.val else 0) := by rfl
 
+/-- Unfold clMul modifying the return value to always perform a xor operation. This form of clMul simplifies the proof of toPoly_clMul128 because toPoly_fold_xor applies directly. -/
 lemma clMul_unfold (a b : B128) :
-  clMul a b = Fin.foldl 128 (fun acc i => if a.getLsbD i then acc ^^^ (to256 b <<< (i : Nat)) else acc) (0 : B256) := by rfl
+  clMul a b = Fin.foldl 128 (fun acc i => acc ^^^ (if a.getLsbD i then to256 b <<< (i : Nat) else 0)) (0 : B256) := by
+    unfold clMul
+    congr
+    funext acc i
+    cases h : BitVec.getLsbD a i
+    · simp
+    · simp
 
 lemma toPoly_one_eq_one {w : Nat} (h_w_pos : w > 0) : toPoly (BitVec.ofNat w 1) = 1 := by
   unfold toPoly
@@ -524,11 +531,13 @@ lemma toPoly_xor {w} (a b : BitVec w) : toPoly (a ^^^ b) = toPoly a + toPoly b :
     rw [h_a_getLsb_i, h_b_getLsb_i]
     simp only [bne_self_eq_false, Bool.false_eq_true, ↓reduceIte, add_zero]
 
+
+#check Finset Nat
 /--
 The "Homomorphism" Lemma.
 Since toPoly(a ^^^ b) = toPoly a + toPoly b,
 toPoly preserves the structure from Fold-XOR to Sum-Add.
--/
+
 lemma toPoly_fold_xor {α} {w} (s : Finset α) (f : α → (BitVec w)) :
     toPoly (s.fold BitVec.xor 0 f) = ∑ i ∈ s, toPoly (f i) := by
   induction s using Finset.cons_induction with
@@ -540,6 +549,15 @@ lemma toPoly_fold_xor {α} {w} (s : Finset α) (f : α → (BitVec w)) :
     change toPoly (f x ^^^ s.fold BitVec.xor 0 f) = toPoly (f x) + ∑ i ∈ s, toPoly (f i)
     rw [toPoly_xor]
     rw [ih]
+-/
+
+lemma toPoly_fold_xor {w : Nat} (n : Nat) (f : Nat → (BitVec w)) :
+  toPoly (Fin.foldl n (fun acc i => acc ^^^ (f i)) 0) = ∑ i ∈ (Finset.range n), toPoly (f i) := by
+    induction n with
+    | zero =>
+           simp [toPoly_zero_eq_zero]
+    | succ =>
+
 
 lemma toPoly_128_extend_256 (a : B128) :
     toPoly (to256 a) = toPoly a := by
