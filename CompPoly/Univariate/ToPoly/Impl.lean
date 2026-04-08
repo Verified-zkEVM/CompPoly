@@ -57,9 +57,9 @@ theorem Raw.eval₂_toPoly {S : Type*} [Semiring S]
   unfold CompPoly.CPolynomial.Raw.toPoly
   rw [CPolynomial.Raw.eval₂_eq_eval₂_naive, CPolynomial.Raw.eval₂_eq_eval₂_naive]
   unfold CompPoly.CPolynomial.Raw.eval₂Naive
-  rw [← Array.foldl_hom (fun q : R[X] => q.eval₂ f x)
-    (g₁ := fun acc (t : R × ℕ) => acc + Polynomial.C t.1 * Polynomial.X ^ t.2)
-    (g₂ := fun acc (a, i) => acc + f a * x ^ i)]
+  rw [← Array.foldl_hom (fun q : R[X] ↦ q.eval₂ f x)
+    (g₁ := fun acc (t : R × ℕ) ↦ acc + Polynomial.C t.1 * Polynomial.X ^ t.2)
+    (g₂ := fun acc (a, i) ↦ acc + f a * x ^ i)]
   · simp
   · intro acc t
     rcases t with ⟨a, i⟩
@@ -187,10 +187,10 @@ theorem erase_toPoly {R : Type*} [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
       intros p q;
       have h_erase_toPoly : ∀ (p q : CPolynomial.Raw R),
           (p + -q).toPoly = p.toPoly + (-q).toPoly := by
-        exact fun p q => Raw.toPoly_add p (-q)
+        exact fun p q ↦ Raw.toPoly_add p (-q)
       convert h_erase_toPoly p q using 1
-      simp +decide [ Raw.toPoly ]
-      rw [ show ( -q : CompPoly.CPolynomial.Raw R ) = q.map ( fun x => -x ) from ?_ ]
+      simp +decide [Raw.toPoly]
+      rw [show (-q : CompPoly.CPolynomial.Raw R) = q.map (fun x ↦ -x) from ?_]
       · simp only [CPolynomial.Raw.eval₂_eq_eval₂_naive]
         simp +decide [ Raw.eval₂Naive ]
         induction' q using Array.recOn with q ih; simp +decide [ *, Array.zipIdx ]

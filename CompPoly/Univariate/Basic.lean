@@ -775,16 +775,23 @@ instance [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] : Semiring (CPolynomi
   nsmul_zero := CPolynomial.nsmul_zero
   nsmul_succ := CPolynomial.nsmul_succ
   npow n p := ⟨p.val ^ n, Trim.isCanonical_of_trim_eq (CPolynomial.pow_is_trimmed p.val n)⟩
-  npow_zero := by intro x; apply Subtype.ext; show Raw.pow x.val 0 = _; unfold Raw.pow; rfl
-  npow_succ := by intro n p; apply Subtype.ext; exact
-      (CPolynomial.pow_succ_right p.val n)
+  npow_zero := by
+    intro x
+    apply Subtype.ext
+    show Raw.pow x.val 0 = _
+    unfold Raw.pow
+    rfl
+  npow_succ := by
+    intro n p
+    apply Subtype.ext
+    exact CPolynomial.pow_succ_right p.val n
   natCast_zero := by rfl
   natCast_succ := by intro n; rfl
 
 /-- `C r * X^n = monomial n r` as canonical polynomials. -/
 lemma C_mul_X_pow_eq_monomial [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R] [Nontrivial R]
     (r : R) (n : ℕ) :
-    (C r : CPolynomial R) * (X ^ n) = monomial n r := by
+    (C r : CPolynomial R) * X ^ n = monomial n r := by
   by_cases hr : r = 0
   · convert Subtype.ext ?_
     convert zero_mul _
@@ -798,13 +805,13 @@ lemma C_mul_X_pow_eq_monomial [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R]
         (Raw.X : CPolynomial.Raw R) ^ n = 0 := by
       convert Raw.zero_mul _ using 1
       convert rfl
-      · exact Eq.symm ( Raw.trim_replicate_zero 1 )
+      · exact Eq.symm (Raw.trim_replicate_zero 1)
       · infer_instance
     convert h_lhs using 1
     exact Eq.symm (by induction n <;> simp +decide [*, Raw.monomial])
   · convert Subtype.ext ?_
     have h_trim : (Raw.mk #[r]).trim = Raw.C r := by
-      exact Trim.canonical_iff.mpr fun hp => hr
+      exact Trim.canonical_iff.mpr fun hp ↦ hr
     generalize_proofs at *
     convert Raw.C_mul_eq_smul_trim r (Raw.X ^ n) using 1
     · exact h_trim.symm ▸ rfl

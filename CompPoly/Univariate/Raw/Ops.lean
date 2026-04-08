@@ -29,7 +29,7 @@ variable {S : Type*}
   Computes `f(a₀) + f(a₁) * x + f(a₂) * x² + ...` where `aᵢ` are the coefficients.
   Retained as a specification target for the optimized Horner backend. -/
 def eval₂Naive [Semiring R] [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial.Raw R) : S :=
-  p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + f a * x ^ i) 0
+  p.zipIdx.foldl (fun acc ⟨a, i⟩ ↦ acc + f a * x ^ i) 0
 
 /-- Evaluates a `CPolynomial.Raw` at `x : S` using a ring homomorphism `f : R →+* S`.
 
@@ -37,7 +37,7 @@ def eval₂Naive [Semiring R] [Semiring S] (f : R →+* S) (x : S) (p : CPolynom
   `f(a₀) + x * (f(a₁) + x * (... + x * f(aₙ)))`, which avoids explicit exponentiation. -/
 @[inline, specialize]
 def eval₂ [Semiring R] [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial.Raw R) : S :=
-  p.foldr (fun a acc => f a + acc * x) 0
+  p.foldr (fun a acc ↦ f a + acc * x) 0
 
 /-- Evaluates a `CPolynomial.Raw` at a given value -/
 @[inline, specialize]
@@ -62,12 +62,12 @@ section SMulDefs
 /-- Scalar multiplication: multiplies each coefficient by `r`. -/
 @[inline, specialize]
 def smul [Mul R] (r : R) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
-  .mk (Array.map (fun a => r * a) p)
+  .mk (Array.map (fun a ↦ r * a) p)
 
 /-- Raw scalar multiplication by a natural number (may have trailing zeros). -/
 @[inline, specialize]
 def nsmulRaw [Semiring R] (n : ℕ) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
-  .mk (Array.map (fun a => n * a) p)
+  .mk (Array.map (fun a ↦ n * a) p)
 
 /-- Scalar multiplication of `CPolynomial.Raw` by a natural number, with result trimmed. -/
 @[inline, specialize]
@@ -92,7 +92,7 @@ end MulPowXDefs
 /-- Multiplication using the naive `O(n²)` algorithm: `Σᵢ (aᵢ * q) * X^i`. -/
 @[inline, specialize]
 def mul [Semiring R] [BEq R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
-  p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc.add <| (smul a q).mulPowX i) (mk #[])
+  p.zipIdx.foldl (fun acc ⟨a, i⟩ ↦ acc.add <| (smul a q).mulPowX i) (mk #[])
 
 /-- Linear exponentiation of a `CPolynomial.Raw` by repeated multiplication (reference impl). -/
 def powIterate [Semiring R] [BEq R] (p : CPolynomial.Raw R) (n : Nat) : CPolynomial.Raw R :=
@@ -115,7 +115,7 @@ instance [Mul R] : SMul R (CPolynomial.Raw R) := ⟨smul⟩
 instance [Semiring R] [BEq R] : SMul ℕ (CPolynomial.Raw R) := ⟨nsmul⟩
 instance [Semiring R] [BEq R] : Mul (CPolynomial.Raw R) := ⟨mul⟩
 instance [Semiring R] [BEq R] : Pow (CPolynomial.Raw R) Nat := ⟨pow⟩
-instance [NatCast R] : NatCast (CPolynomial.Raw R) := ⟨fun n => C (n : R)⟩
+instance [NatCast R] : NatCast (CPolynomial.Raw R) := ⟨fun n ↦ C (n : R)⟩
 
 /-- Upper bound on degree: `size - 1` if non-empty, `⊥` if empty. -/
 def degreeBound (p : CPolynomial.Raw R) : WithBot Nat :=
@@ -139,7 +139,7 @@ section Ring
 
 /-- Negation of a `CPolynomial.Raw`. -/
 @[inline, specialize]
-def neg [Neg R] (p : CPolynomial.Raw R) : CPolynomial.Raw R := p.map (fun a => -a)
+def neg [Neg R] (p : CPolynomial.Raw R) : CPolynomial.Raw R := p.map (fun a ↦ -a)
 
 /-- Subtraction of two `CPolynomial.Raw`s. -/
 @[inline, specialize]
@@ -149,7 +149,7 @@ def sub [Zero R] [Add R] [Neg R] [BEq R]
 
 instance [Neg R] : Neg (CPolynomial.Raw R) := ⟨neg⟩
 instance [Zero R] [Add R] [Neg R] [BEq R] : Sub (CPolynomial.Raw R) := ⟨sub⟩
-instance [IntCast R] : IntCast (CPolynomial.Raw R) := ⟨fun n => C (n : R)⟩
+instance [IntCast R] : IntCast (CPolynomial.Raw R) := ⟨fun n ↦ C (n : R)⟩
 
 /-- Erase the coefficient at index `n`: same as `p` except `coeff n = 0`, then trimmed. -/
 def erase [Zero R] [Add R] [Neg R] [BEq R] [DecidableEq R]

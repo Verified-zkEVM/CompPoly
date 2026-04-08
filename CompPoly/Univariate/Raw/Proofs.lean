@@ -30,7 +30,9 @@ variable (p q r : CPolynomial.Raw R)
 
 lemma pow_zero (p : CPolynomial.Raw R) :
     p ^ 0 = C 1 := by
-      show pow p 0 = C 1; unfold pow; rfl
+  show pow p 0 = C 1
+  unfold pow
+  rfl
 
 /-- `powIterate` unfolds one step: `powIterate p (n+1) = p * powIterate p n`. -/
 lemma powIterate_succ (p : CPolynomial.Raw R) (n : ℕ) :
@@ -61,50 +63,56 @@ Helper: Horner foldr equals the naive sum-of-powers for lists.
 -/
 private lemma horner_eq_naive_list (f : R →+* S) (x : S) :
     ∀ (l : List R),
-    l.foldr (fun a acc => f a + acc * x) 0 =
-    (l.zipIdx.map (fun ⟨a, i⟩ => f a * x ^ i)).sum := by
-      intro l;
-      induction' l using List.reverseRecOn with a l ih;
-      · rfl;
-      · simp +decide [ *, List.zipIdx_append ];
-        rw [ ← ih ];
-        clear ih;
-        induction a <;> simp +decide [ *, pow_succ, mul_assoc, add_mul, add_assoc ]
+    l.foldr (fun a acc ↦ f a + acc * x) 0 =
+    (l.zipIdx.map (fun ⟨a, i⟩ ↦ f a * x ^ i)).sum := by
+  intro l
+  induction' l using List.reverseRecOn with a l ih
+  · rfl
+  · simp +decide [*, List.zipIdx_append]
+    rw [← ih]
+    clear ih
+    induction a <;> simp +decide [*, pow_succ, mul_assoc, add_mul, add_assoc]
 
 /-
 The Horner backend agrees with the naive sum-of-powers backend.
 -/
 theorem eval₂_eq_eval₂_naive (f : R →+* S) (x : S) (p : CPolynomial.Raw R) :
     eval₂ f x p = eval₂Naive f x p := by
-      convert horner_eq_naive_list f x p.toList using 1;
-      · unfold eval₂; aesop;
-      · unfold CPolynomial.Raw.eval₂Naive;
-        induction p using Array.recOn; simp +decide [*];
-        induction ‹List R› using List.reverseRecOn <;> simp +decide [ *, List.zipIdx_append ]
+  convert horner_eq_naive_list f x p.toList using 1
+  · unfold eval₂
+    aesop
+  · unfold CPolynomial.Raw.eval₂Naive
+    induction p using Array.recOn
+    simp +decide [*]
+    induction ‹List R› using List.reverseRecOn <;>
+      simp +decide [*, List.zipIdx_append]
 
 /-
 `eval₂` equals the Finset sum over `range p.size`.
 -/
 theorem eval₂_eq_sum (f : R →+* S) (x : S) (p : CPolynomial.Raw R) :
     eval₂ f x p =
-    (Finset.range p.size).sum (fun i => f (p.coeff i) * x ^ i) := by
-      convert eval₂_eq_eval₂_naive f x p using 1;
-      unfold CPolynomial.Raw.eval₂Naive;
-      induction p using Array.recOn; simp_all +decide;
-      induction ‹List R› using List.reverseRecOn <;> simp_all +decide [ Finset.sum_range_succ ];
-      simp_all +decide [ Finset.sum_range, List.zipIdx_append ]
+    (Finset.range p.size).sum (fun i ↦ f (p.coeff i) * x ^ i) := by
+  convert eval₂_eq_eval₂_naive f x p using 1
+  · unfold CPolynomial.Raw.eval₂Naive
+    induction p using Array.recOn
+    simp_all +decide
+    induction ‹List R› using List.reverseRecOn <;>
+      simp_all +decide [Finset.sum_range_succ]
+    simp_all +decide [Finset.sum_range, List.zipIdx_append]
 
 /-
 `eval₂` equals the list sum of mapped `zipIdx` pairs.
 -/
 theorem eval₂_eq_list_sum (f : R →+* S) (x : S) (p : CPolynomial.Raw R) :
     eval₂ f x p =
-    (p.zipIdx.toList.map (fun ⟨a, i⟩ => f a * x ^ i)).sum := by
-      convert eval₂_eq_eval₂_naive f x p using 1;
-      unfold CPolynomial.Raw.eval₂Naive;
-      induction p using Array.recOn; simp +decide [*];
-      induction' ‹List R› using List.reverseRecOn with _ _ ih <;>
-        simp +decide [ *, List.zipIdx_append ]
+    (p.zipIdx.toList.map (fun ⟨a, i⟩ ↦ f a * x ^ i)).sum := by
+  convert eval₂_eq_eval₂_naive f x p using 1
+  · unfold CPolynomial.Raw.eval₂Naive
+    induction p using Array.recOn
+    simp +decide [*]
+    induction' ‹List R› using List.reverseRecOn with _ _ ih <;>
+      simp +decide [*, List.zipIdx_append]
 
 end EvalBridge
 
