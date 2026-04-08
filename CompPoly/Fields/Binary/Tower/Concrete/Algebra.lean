@@ -96,7 +96,8 @@ lemma concreteTowerAlgebraMapCore_zero (l : ℕ) :
     concreteTowerAlgebraMapCore l 0 = RingHom.id (ConcreteBTField l) :=
   Fin.dfoldl_zero _ _
 
-/-- The `(d+1)`-step tower map decomposes as the `d`-step map followed by one canonical embedding. -/
+/-- The `(d+1)`-step tower map decomposes as the `d`-step map
+    followed by one canonical embedding. -/
 lemma concreteTowerAlgebraMapCore_succ (l d : ℕ) :
     concreteTowerAlgebraMapCore l (d + 1) =
       (canonicalAlgMap (l + d)).comp (concreteTowerAlgebraMapCore l d) := by
@@ -166,7 +167,8 @@ lemma concreteTowerAlgebraMap_succ (l r : ℕ) (h_le : l ≤ r) :
     rw [ih (l + 1) r h_le' (by omega)]
     rw [RingHom.comp_assoc]
     congr 1
-    -- Need: (concreteTowerAlgebraMap (l+1) r).comp (canonicalAlgMap l) = concreteTowerAlgebraMap l r
+    -- Need: (concreteTowerAlgebraMap (l+1) r).comp (canonicalAlgMap l)
+    --   = concreteTowerAlgebraMap l r
     -- This is succ_left backwards: unfold concreteTowerAlgebraMap l r once
     conv_rhs => rw [concreteTowerAlgebraMap]
     have : l ≠ r := by omega
