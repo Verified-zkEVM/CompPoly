@@ -556,8 +556,11 @@ lemma toPoly_fold_xor {w : Nat} (n : Nat) (f : Nat → (BitVec w)) :
     induction n with
     | zero =>
            simp [toPoly_zero_eq_zero]
-    | succ =>
-
+    | succ k ih =>
+           rw [Fin.foldl_succ_last]
+           rw [toPoly_xor]
+           simp only [Fin.val_castSucc, ih]
+           simp [Finset.sum_range_succ]
 
 lemma toPoly_128_extend_256 (a : B128) :
     toPoly (to256 a) = toPoly a := by
