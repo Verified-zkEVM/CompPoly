@@ -794,42 +794,50 @@ instance [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] : Semiring (CPolynomi
   nsmul := CPolynomial.nsmul
   nsmul_zero := CPolynomial.nsmul_zero
   nsmul_succ := CPolynomial.nsmul_succ
-  npow n p := ⟨p.val ^ n, Trim.isCanonical_of_trim_eq (CPolynomial.pow_is_trimmed p.val n)⟩
-  npow_zero := by intro x; apply Subtype.ext; rfl
-  npow_succ := by intro n p; apply Subtype.ext; exact
-      (CPolynomial.pow_succ_right p.val n)
+  npow n p := ⟨Raw.powBySq p.val n, by
+    rw [Raw.powBySq_eq_pow]
+    exact Trim.isCanonical_of_trim_eq
+      (CPolynomial.pow_is_trimmed p.val n)⟩
+  npow_zero := by
+    intro x; apply Subtype.ext
+    show Raw.powBySq x.val 0 = Raw.C 1
+    rw [Raw.powBySq_eq_pow]; rfl
+  npow_succ := by
+    intro n p; apply Subtype.ext
+    show Raw.powBySq p.val (n + 1) = (⟨Raw.powBySq p.val n, _⟩ * p).val
+    simp only [Raw.powBySq_eq_pow]
+    exact CPolynomial.pow_succ_right p.val n
   natCast_zero := by rfl
   natCast_succ := by intro n; rfl
+
+/-- The underlying `Raw` value of `p ^ n` equals `p.val ^ n`
+(using the Raw `Pow` instance). This bridges the optimized
+`powBySq` used in the `Semiring` instance with the spec
+`pow`. -/
+lemma val_pow [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (p : CPolynomial R) (n : ℕ) : (p ^ n).val = p.val ^ n :=
+  Raw.powBySq_eq_pow p.val n
 
 /-- `C r * X^n = monomial n r` as canonical polynomials. -/
 lemma C_mul_X_pow_eq_monomial [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R] [Nontrivial R]
     (r : R) (n : ℕ) :
-    (C r : CPolynomial R) * (X ^ n) = monomial n r := by
+    (C r : CPolynomial R) * X ^ n = monomial n r := by
+  apply Subtype.ext
+  -- Reduce to Raw-level equality via val_pow
+  have hval : (C r * X ^ n : CPolynomial R).val =
+      (Raw.C r).trim * (Raw.X : CPolynomial.Raw R) ^ n := by
+    show (C r).val * (X ^ n : CPolynomial R).val = _
+    rw [val_pow]; rfl
+  rw [hval]
+  show (Raw.C r).trim * Raw.X ^ n = Raw.monomial n r
   by_cases hr : r = 0
-  · convert Subtype.ext ?_
-    convert zero_mul _
-    rotate_left
-    exact R
-    all_goals try infer_instance
-    exact 0
-    simp +decide [hr, C, X, monomial]
-    -- Since multiplying by 0 gives the zero polynomial, the left-hand side simplifies to 0.
-    have h_lhs : (Raw.C 0).trim *
-        (Raw.X : CPolynomial.Raw R) ^ n = 0 := by
-      convert Raw.zero_mul _ using 1
-      convert rfl
-      · exact Eq.symm ( Raw.trim_replicate_zero 1 )
-      · infer_instance
-    convert h_lhs using 1
-    exact Eq.symm (by induction n <;> simp +decide [*, Raw.monomial])
-  · convert Subtype.ext ?_
-    have h_trim : (Raw.mk #[r]).trim = Raw.C r := by
-      exact Trim.canonical_iff.mpr fun hp => hr
-    generalize_proofs at *
-    convert Raw.C_mul_eq_smul_trim r (Raw.X ^ n) using 1
-    · exact h_trim.symm ▸ rfl
-    · convert Raw.smul_monomial_one_trim n r |> Eq.symm using 1
-      rw [Raw.X_pow_eq_monomial_one]
+  · subst hr
+    rw [show (Raw.C (0 : R)).trim = (0 : CPolynomial.Raw R) from Raw.trim_replicate_zero 1,
+        Raw.zero_mul]
+    simp [Raw.monomial]
+  · rw [show (Raw.C r).trim = Raw.C r from Trim.canonical_iff.mpr fun hp ↦ hr,
+        Raw.C_mul_eq_smul_trim, Raw.X_pow_eq_monomial_one]
+    exact Raw.smul_monomial_one_trim n r
 
 end Semiring
 
