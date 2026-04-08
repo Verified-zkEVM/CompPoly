@@ -705,7 +705,9 @@ theorem toPoly_shiftLeft_no_overflow {w d : ℕ} (a : BitVec w) (ha : a.toNat < 
 
 lemma toPoly_clMul_no_overflow (a b : B128) :
     toPoly (clMul a b) = toPoly a * toPoly b := by
-    rw[clMul_unfold]
+    rw [clMul_unfold]
+    rw [toPoly_fold_xor]
+
 
 
 
