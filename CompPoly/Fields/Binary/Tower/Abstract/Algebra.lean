@@ -62,7 +62,6 @@ theorem BTField.RingHom_cast_dest_AdjoinRoot_apply (k m : ℕ)
 /--
 Auxiliary definition for `towerAlgebraMap` using structural recursion.
 This is easier to reason about in proofs than the `Nat.rec` version.
-TODO : migrate to Fin.dfoldl
 -/
 def towerAlgebraMap (l r : ℕ) (h_le : l ≤ r) : BTField l →+* BTField r := by
   if h_lt : l = r then
