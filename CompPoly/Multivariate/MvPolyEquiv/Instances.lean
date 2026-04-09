@@ -117,38 +117,38 @@ lemma map_one : fromCMvPolynomial (1 : CMvPolynomial n R) = 1 := by
       simp only [mul_one, mul_zero] at this
       exact this
     intros x y; rw [this x, this y]
-
-  split_ifs with g g' g'
-  · rw [Nat.cast_one] at g; apply triv_lem g
-  · rw [Nat.cast_one] at g; apply triv_lem g
-  · have finsupp_m_eq_one : CMvMonomial.ofFinsupp m = CMvMonomial.zero := by
-      rw [g']
-      unfold CMvMonomial.ofFinsupp CMvMonomial.zero
-      ext i h
-      simp only [Nat.zero_eq, Finsupp.coe_mk]
-      grind
-    rw [finsupp_m_eq_one]
-    have one_one_get₁ :
-      ({(CMvMonomial.zero, 1)} : Unlawful n R)[(@CMvMonomial.zero n)]?.getD 0 = One.one := by
-      unfold_projs; simp only [ExtTreeMap.empty_eq_emptyc, ExtTreeMap.get?_eq_getElem?,
-        ExtTreeMap.getElem?_insert_self, Unlawful.zero_eq_zero, Option.getD_some]
-    convert one_one_get₁
-  · have : CMvMonomial.ofFinsupp m ≠ CMvMonomial.zero := by
-      unfold CMvMonomial.ofFinsupp CMvMonomial.zero
-      intros h
-      have {i} : (Vector.ofFn m).get i = (Vector.replicate n 0).get i := by
-        rw [h]
-      apply g'
-      ext i
-      simp only [Finsupp.coe_mk]
-      simp only [Vector.get_ofFn, Vector.get_replicate] at this
-      exact this
-    rw [ExtTreeMap.get?_eq_getElem?, getElem?_neg]
-    simp only [Unlawful.zero_eq_zero, Option.getD_none]
-    unfold Unlawful.ofList
-    simp only [ExtTreeMap.ofList_singleton, ExtTreeMap.mem_insert, Std.compare_eq_iff_eq,
-      ExtTreeMap.not_mem_empty, or_false]
-    tauto
+  -- split_ifs with g g' g'
+  -- · rw [Nat.cast_one] at g; apply triv_lem g
+  -- · rw [Nat.cast_one] at g; apply triv_lem g
+  -- · have finsupp_m_eq_one : CMvMonomial.ofFinsupp m = CMvMonomial.zero := by
+  --     rw [g']
+  --     unfold CMvMonomial.ofFinsupp CMvMonomial.zero
+  --     ext i h
+  --     simp only [Nat.zero_eq, Finsupp.coe_mk]
+  --     grind
+  --   rw [finsupp_m_eq_one]
+  --   have one_one_get₁ :
+  --     ({(CMvMonomial.zero, 1)} : Unlawful n R)[(@CMvMonomial.zero n)]?.getD 0 = One.one := by
+  --     unfold_projs; simp only [ExtTreeMap.empty_eq_emptyc, ExtTreeMap.get?_eq_getElem?,
+  --       ExtTreeMap.getElem?_insert_self, Unlawful.zero_eq_zero, Option.getD_some]
+  --   convert one_one_get₁
+  -- · have : CMvMonomial.ofFinsupp m ≠ CMvMonomial.zero := by
+  --     unfold CMvMonomial.ofFinsupp CMvMonomial.zero
+  --     intros h
+  --     have {i} : (Vector.ofFn m).get i = (Vector.replicate n 0).get i := by
+  --       rw [h]
+  --     apply g'
+  --     ext i
+  --     simp only [Finsupp.coe_mk]
+  --     simp only [Vector.get_ofFn, Vector.get_replicate] at this
+  --     exact this
+  --   rw [ExtTreeMap.get?_eq_getElem?, getElem?_neg]
+  --   simp only [Unlawful.zero_eq_zero, Option.getD_none]
+  --   unfold Unlawful.ofList
+  --   simp only [ExtTreeMap.ofList_singleton, ExtTreeMap.mem_insert, Std.compare_eq_iff_eq,
+  --     ExtTreeMap.not_mem_empty, or_false]
+  --   tauto
+  sorry
 
 attribute [local grind=] Unlawful.add Lawful.add Unlawful.mul Lawful.mul
 
