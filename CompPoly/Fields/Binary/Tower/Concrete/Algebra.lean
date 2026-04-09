@@ -85,7 +85,6 @@ theorem ConcreteBTField.RingHom_cast_source_apply (k n m : ℕ) (h_eq : k = n)
 /--
 Auxiliary definition for `concreteTowerAlgebraMap` using structural recursion.
 This is easier to reason about in proofs than the `Nat.rec` version.
-TODO : migrate to Fin.dfoldl
 -/
 def concreteTowerAlgebraMap (l r : ℕ) (h_le : l ≤ r) :
     ConcreteBTField l →+* ConcreteBTField r := by
