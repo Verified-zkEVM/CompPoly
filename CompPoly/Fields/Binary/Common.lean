@@ -706,10 +706,28 @@ theorem toPoly_shiftLeft_no_overflow {w d : ℕ} (a : BitVec w) (ha : a.toNat < 
 lemma toPoly_clMul_no_overflow (a b : B128) :
     toPoly (clMul a b) = toPoly a * toPoly b := by
     rw [clMul_unfold]
-    rw [toPoly_fold_xor]
-
-
-
+    rw [toPoly_fold_xor (f := fun k => if a.getLsbD k = true then to256 b <<<
+  k else 0)]
+    conv_rhs => enter [1]; unfold toPoly
+    unfold BitVec.getLsb
+    rw [Fin.sum_univ_eq_sum_range  (f := fun i => if (BitVec.toNat a).testBit i = true then X ^ i else 0)]
+    rw [Finset.sum_mul]
+    apply Finset.sum_congr rfl
+    intro i hi
+    simp only [Finset.mem_range] at hi
+    unfold BitVec.getLsbD
+    split_ifs
+    · have ha_proof : (to256 b).toNat < 2 ^ 128 := by
+           rw [to256_toNat]
+           exact b.isLt
+      have h_no_overflow_proof : 128 + i ≤ 256 := by
+           omega
+      rw  [toPoly_shiftLeft_no_overflow (d := 128) (to256 b)
+                                        (ha := ha_proof)
+                                        (h_no_overflow := h_no_overflow_proof)]
+      rw [toPoly_128_extend_256]
+      ring
+    · simp [toPoly_zero_eq_zero]
 
 /--
 Generalized No-Overflow Multiplication.
