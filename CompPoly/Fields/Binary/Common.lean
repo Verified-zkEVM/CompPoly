@@ -272,6 +272,17 @@ def clMul (a b : B128) : B256 :=
 def clSq (a : B128) : B256 :=
   clMul a a
 
+lemma fold_range_xor_eq_foldl {w : Nat} (n : Nat) (f : Nat → BitVec w) :
+  (Finset.range n).fold BitVec.xor 0 f = Fin.foldl n (fun acc i => acc ^^^ (f i)) 0 := by
+  induction n with
+  | zero => simp
+  | succ k ih =>
+    rw [Finset.range_add_one, Finset.fold_insert Finset.notMem_range_self,
+        Fin.foldl_succ_last]
+    simp only [Fin.val_last, Fin.val_castSucc]
+    rw [← ih, BitVec.xor_comm]
+    rfl
+
 end BitVecOperations
 
 /-! ## Section 4: BitVec ↔ Polynomial Isomorphism -/
@@ -531,8 +542,6 @@ lemma toPoly_xor {w} (a b : BitVec w) : toPoly (a ^^^ b) = toPoly a + toPoly b :
     rw [h_a_getLsb_i, h_b_getLsb_i]
     simp only [bne_self_eq_false, Bool.false_eq_true, ↓reduceIte, add_zero]
 
-
-#check Finset Nat
 /--
 The "Homomorphism" Lemma.
 Since toPoly(a ^^^ b) = toPoly a + toPoly b,
@@ -703,11 +712,10 @@ theorem toPoly_shiftLeft_no_overflow {w d : ℕ} (a : BitVec w) (ha : a.toNat < 
       · simp [toPoly_coeff, hn, hs, hns]
     · simp [toPoly_coeff, hn, hs]
 
-lemma toPoly_clMul_no_overflow (a b : B128) :
+lemma toPoly_clMul (a b : B128) :
     toPoly (clMul a b) = toPoly a * toPoly b := by
     rw [clMul_unfold]
-    rw [toPoly_fold_xor (f := fun k => if a.getLsbD k = true then to256 b <<<
-  k else 0)]
+    rw [toPoly_fold_xor (f := fun k => if a.getLsbD k = true then to256 b <<< k else 0)]
     conv_rhs => enter [1]; unfold toPoly
     unfold BitVec.getLsb
     rw [Fin.sum_univ_eq_sum_range  (f := fun i => if (BitVec.toNat a).testBit i = true then X ^ i else 0)]
