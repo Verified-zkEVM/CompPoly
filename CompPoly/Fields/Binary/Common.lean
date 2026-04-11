@@ -277,10 +277,9 @@ lemma fold_range_xor_eq_foldl {w : Nat} (n : Nat) (f : Nat → BitVec w) :
   induction n with
   | zero => simp
   | succ k ih =>
-    rw [Finset.range_add_one, Finset.fold_insert Finset.notMem_range_self,
-        Fin.foldl_succ_last]
-    simp only [Fin.val_last, Fin.val_castSucc]
-    rw [← ih, BitVec.xor_comm]
+    rw [Fin.foldl_succ_last, Finset.range_add_one, Finset.fold_insert Finset.notMem_range_self]
+    simp only [Fin.val_castSucc, Fin.val_last]
+    rw [←ih, BitVec.xor_comm]
     rfl
 
 end BitVecOperations

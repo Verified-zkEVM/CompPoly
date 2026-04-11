@@ -373,33 +373,14 @@ private theorem clMulNat_bv_eq_fold_range (a b : Nat) :
           ofNat_shiftLeft_256, BitVec.xor_comm]
       · simp [clMulNat, hbit, clMulNat_bv_eq_fold_range a b n]
 
-/-- Rewrite `clMul` from a fold over `Fin 256` to a fold over `range 256`. -/
-private theorem clMul_eq_fold_range (a b : B256) :
+/-- Rewrite `clMul` from a fold over `Fin 128` to a fold over `range 128`. -/
+private theorem clMul_eq_fold_range (a b : B128) :
     clMul a b =
-      (Finset.range 256).fold BitVec.xor 0
-        (fun i => if a.toNat.testBit i then b <<< i else 0) := by
-  rw [clMul_eq_fold]
-  have hImage :=
-    Finset.fold_image
-      (op := BitVec.xor)
-      (b := (0 : B256))
-      (f := fun i => if a.toNat.testBit i then b <<< i else 0)
-      (g := fun i : Fin 256 => i.val)
-      (s := (Finset.univ : Finset (Fin 256)))
-      (H := by
-        intro x _ y _ hxy
-        exact Fin.ext hxy)
-  have hRange :
-      ((Finset.univ : Finset (Fin 256)).image fun i : Fin 256 => i.val) =
-        Finset.range 256 := by
-    ext i
-    constructor
-    · intro hi
-      rcases Finset.mem_image.mp hi with ⟨j, _, rfl⟩
-      exact Finset.mem_range.mpr j.isLt
-    · intro hi
-      exact Finset.mem_image.mpr ⟨⟨i, Finset.mem_range.mp hi⟩, by simp, rfl⟩
-  simpa [hRange, Function.comp, BitVec.getLsb] using hImage.symm
+      (Finset.range 128).fold BitVec.xor 0
+        (fun i => if a.toNat.testBit i then (to256 b) <<< i else 0) := by
+      rw [clMul_unfold, fold_range_xor_eq_foldl]
+      rfl
+
 
 /-- The 256-step Nat checker matches `clMul` on all `B256` inputs. -/
 private theorem clMulNat_bv_eq_clMul (a b : B256) :
