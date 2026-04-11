@@ -418,6 +418,15 @@ private theorem clMulNat_bv_eq_clMul_128 (a b : B256) (ha : a.toNat < 2 ^ 128) :
           (fun i => if a.toNat.testBit i then b <<< i else 0) := htrim.symm
     _ = clMul a b := clMul_eq_fold_range a b |>.symm
 
+
+theorem to256_truncate_128 (v : B256) (hv : v.toNat < 2^128) :
+        to256 (v.truncate 128) = v := by
+          apply BitVec.eq_of_toNat_eq
+          rw [to256_toNat, BitVec.truncate_eq_setWidth, BitVec.toNat_setWidth]
+          exact Nat.mod_eq_of_lt hv
+
+
+
 /-- Polynomial semantics of the 128-step Nat carry-less multiply. -/
 private theorem toPoly_clMulNat_eq_mul_128 (a b : B256)
     (ha : a.toNat < 2 ^ 128) (hb : b.toNat < 2 ^ 128) :
