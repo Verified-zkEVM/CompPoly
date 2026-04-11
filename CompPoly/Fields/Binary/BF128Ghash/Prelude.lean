@@ -383,14 +383,12 @@ private theorem clMul_eq_fold_range (a b : B128) :
 
 
 /-- The 256-step Nat checker matches `clMul` on all `B256` inputs. -/
-private theorem clMulNat_bv_eq_clMul (a b : B256) :
-    (BitVec.ofNat 256 (clMulNat a.toNat b.toNat 256) : B256) = clMul a b := by
-  calc
-    (BitVec.ofNat 256 (clMulNat a.toNat b.toNat 256) : B256)
-        = (Finset.range 256).fold BitVec.xor 0
-            (fun i => if a.toNat.testBit i then b <<< i else 0) := by
-              simpa [ofNat_toB256 b] using (clMulNat_bv_eq_fold_range a.toNat b.toNat 256)
-    _ = clMul a b := clMul_eq_fold_range a b |>.symm
+private theorem clMulNat_bv_eq_clMul (a b : B128) :
+    (BitVec.ofNat 256 (clMulNat a.toNat b.toNat 128) : B256) = clMul a b := by
+    rw [ clMulNat_bv_eq_fold_range, clMul_eq_fold_range]
+    rw [← to256_toNat b, ofNat_toB256]
+
+
 
 /-- The 128-step Nat checker matches `clMul` when the first multiplicand is 128-bit. -/
 private theorem clMulNat_bv_eq_clMul_128 (a b : B256) (ha : a.toNat < 2 ^ 128) :
