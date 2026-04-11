@@ -425,7 +425,13 @@ theorem to256_truncate_128 (v : B256) (hv : v.toNat < 2^128) :
           rw [to256_toNat, BitVec.truncate_eq_setWidth, BitVec.toNat_setWidth]
           exact Nat.mod_eq_of_lt hv
 
+theorem toPoly_truncate_128 (v : B256) (hv : v.toNat < 2^128) :
+  toPoly (v.truncate 128) = toPoly v := by
+    rw [← toPoly_128_extend_256, to256_truncate_128 v hv]
 
+theorem toPoly_clMul_B256 (q b : B256) (hq : q.toNat < 2^128) (hb : b.toNat < 2^128) :
+    toPoly (clMul (q.truncate 128) (b.truncate 128)) = toPoly q * toPoly b := by
+      rw [toPoly_clMul, toPoly_truncate_128 q hq, toPoly_truncate_128 b hb]
 
 /-- Polynomial semantics of the 128-step Nat carry-less multiply. -/
 private theorem toPoly_clMulNat_eq_mul_128 (a b : B256)
