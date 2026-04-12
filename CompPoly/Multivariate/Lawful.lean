@@ -221,9 +221,47 @@ section
 
 variable {n₁ n₂ : ℕ}
 
+/-- Align two polynomials by extending them to have the same number of variables. -/
+def align
+    (p₁ : Lawful n₁ R) (p₂ : Lawful n₂ R) :
+    Lawful (n₁ ⊔ n₂) R × Lawful (n₁ ⊔ n₂) R :=
+  letI sup := n₁ ⊔ n₂
+  (
+    cast (by congr 1; grind) (p₁.extend sup),
+    cast (by congr 1; grind) (p₂.extend sup)
+  )
+
+/-- Lift a binary polynomial operation to handle polynomials with different numbers of variables. -/
+def liftPoly
+    (f : Lawful (n₁ ⊔ n₂) R →
+  Lawful (n₁ ⊔ n₂) R →
+  Lawful (n₁ ⊔ n₂) R)
+  (p₁ : Lawful n₁ R) (p₂ : Lawful n₂ R) : Lawful (n₁ ⊔ n₂) R :=
+  Function.uncurry f (align p₁ p₂)
+
 def polyCoe (p : Lawful n R) : Lawful (n + 1) R := cast (by simp) (p.extend n.succ)
 
 instance : Coe (Lawful n R) (Lawful (n + 1) R) := ⟨polyCoe⟩
+
+section
+
+-- Mixed-arity fallbacks: keep these low-priority so same-arity `Add`/`Sub`/`Mul`
+-- instances win when both operands already live in `Lawful n R`.
+-- We intentionally do not add an `HPow` fallback here: exponentiation is unary, preserves
+-- arity, and is already handled above by the same-arity `NatPow (Lawful n R)` instance.
+instance (priority := low) [Add R] :
+    HAdd (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
+  ⟨fun p₁ p₂ ↦ liftPoly (·+·) p₁ p₂⟩
+
+instance (priority := low) [Add R] [Neg R] :
+    HSub (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
+  ⟨fun p₁ p₂ ↦ liftPoly (·-·) p₁ p₂⟩
+
+instance (priority := low) [Add R] [Mul R] :
+    HMul (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
+  ⟨fun p₁ p₂ ↦ liftPoly (·*·) p₁ p₂⟩
+
+end
 
 end
 
