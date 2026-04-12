@@ -390,7 +390,7 @@ private theorem clMulNat_bv_eq_clMul (a b : B128) :
 
 
 
-private lemma toNat_truncate_of_lt {n m : Nat} (v : BitVec n)
+private theorem toNat_truncate_of_lt {n m : Nat} (v : BitVec n)
     (hv : v.toNat < 2^m) :
     (v.truncate m).toNat = v.toNat := by
   rw [BitVec.truncate_eq_setWidth, BitVec.toNat_setWidth]
