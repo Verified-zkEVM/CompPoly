@@ -144,11 +144,8 @@ def totalDegree {R : Type*} {n : ℕ} [Zero R] : CMvPolynomial n R → ℕ :=
     (fun s => Finsupp.sum s (fun _ e => e))
 
 /-- The degree of a polynomial in a specific variable. -/
-noncomputable def degreeOf {R : Type*} {n : ℕ} [Zero R] (i : Fin n) : CMvPolynomial n R → ℕ :=
-  fun p =>
-    Multiset.count i
-    (Finset.sup (List.toFinset (List.map CMvMonomial.toFinsupp (Lawful.monomials p)))
-      fun s => Finsupp.toMultiset s)
+def degreeOf {R : Type*} {n : ℕ} [Zero R] (i : Fin n) : CMvPolynomial n R → ℕ :=
+  fun p => Finset.sup (Lawful.monomials p).toFinset (fun m => m.degreeOf i)
 
 /-- Construct a monomial `c * m` as a `CMvPolynomial n R`.
 
@@ -162,7 +159,7 @@ def monomial {n : ℕ} {R : Type*} [BEq R] [LawfulBEq R] [Zero R]
 
   Each variable `i` appears `degreeOf i p` times in the multiset.
 -/
-noncomputable def degrees {n : ℕ} {R : Type*} [Zero R] (p : CMvPolynomial n R) : Multiset (Fin n) :=
+def degrees {n : ℕ} {R : Type*} [Zero R] (p : CMvPolynomial n R) : Multiset (Fin n) :=
   Finset.univ.sum fun i => Multiset.replicate (p.degreeOf i) i
 
 /-- `degreeOf` is the multiplicity of a variable in `degrees`. -/
@@ -187,7 +184,7 @@ lemma degreeOf_eq_count_degrees {n : ℕ} {R : Type*} [Zero R]
 
   Returns the set of variable indices `i : Fin n` such that `degreeOf i p > 0`.
 -/
-noncomputable def vars {n : ℕ} {R : Type*} [Zero R] (p : CMvPolynomial n R) : Finset (Fin n) :=
+def vars {n : ℕ} {R : Type*} [Zero R] (p : CMvPolynomial n R) : Finset (Fin n) :=
   Finset.univ.filter fun i => 0 < p.degreeOf i
 
 /-- Filter a polynomial, keeping only monomials for which `keep m` is true. -/

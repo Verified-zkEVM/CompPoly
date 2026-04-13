@@ -60,24 +60,19 @@ omit [BEq R] [LawfulBEq R] in
 lemma degreeOf_equiv {S : Type*} {p : CMvPolynomial n R} [CommSemiring S] :
     p.degreeOf = (fromCMvPolynomial p).degreeOf := by
   ext i
-  unfold MvPolynomial.degreeOf MvPolynomial.degrees
-  unfold MvPolynomial.support fromCMvPolynomial
-  simp only
-  unfold degreeOf
-  congr
-  unfold instDecidableEqFin Classical.decEq inferInstance
-  unfold Classical.propDecidable
-  ext a b
-  next h heq =>
-    by_contra! h
-    generalize h' : Classical.choice _ = out at h
-    match h'' : out with
-    | isTrue g => grind
-    | isFalse g =>
-      apply g
-      split at h
-      · next g' g'' g''' => grind
-      · simp at h
+  rw [MvPolynomial.degreeOf_eq_sup]
+  unfold CMvPolynomial.degreeOf fromCMvPolynomial
+  change ((Lawful.monomials p).toFinset.sup fun m => m.degreeOf i) =
+    ((List.map CMvMonomial.toFinsupp (Lawful.monomials p)).toFinset).sup fun m => m i
+  have hsupp :
+      (List.map CMvMonomial.toFinsupp (Lawful.monomials p)).toFinset =
+        (Lawful.monomials p).toFinset.image CMvMonomial.toFinsupp := by
+    ext s
+    simp [Finset.mem_image]
+  rw [hsupp, Finset.sup_image]
+  refine Finset.sup_congr rfl ?_
+  intro m hm
+  rfl
 
 end
 
