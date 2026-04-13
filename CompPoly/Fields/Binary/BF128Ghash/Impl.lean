@@ -211,11 +211,10 @@ lemma reduce_clMul_correct (prod : B256) :
     let h := prod.extractLsb 255 128
     let l := prod.extractLsb 127 0
     have h_toPoly_l_deg_lt := toPoly_degree_lt_w (by omega) l
-    let term1 := clMul (to256 h) (to256 R_val)
+    let term1 := clMul h R_val
     have h_term1_deg : (toPoly term1).degree < 135 := by
-      rw [toPoly_clMul_no_overflow (da := 128) (db := 8)]
+      rw [toPoly_clMul]
       · apply (Polynomial.degree_mul_le _ _).trans_lt
-        rw [toPoly_128_extend_256, toPoly_128_extend_256]
         have deg_h : (toPoly h).degree < 128 := toPoly_degree_lt_w (by omega) h
         have deg_R : (toPoly R_val).degree < 8 := by
           apply toPoly_degree_of_lt_two_pow;
@@ -246,10 +245,6 @@ lemma reduce_clMul_correct (prod : B256) :
             exact Nat.le_of_lt_succ h_deg_R_nat
         apply lt_of_le_of_lt (add_le_add h_deg_h_le h_deg_R_le)
         norm_cast
-        · rw [to256_toNat]; apply BitVec.toNat_lt_twoPow_of_le (by omega)
-      · rw [to256_toNat]; simp only [R_val, toNat_ofNat, Nat.reducePow, Nat.reduceMod,
-        Nat.reduceLT]
-      · norm_num
     have h_term1_lt : term1.toNat < 2^135 := by
       apply BitVec_lt_two_pow_of_toPoly_degree_lt term1 h_term1_deg
     have h_acc_deg : (toPoly (term1 ^^^ to256 l)).degree < 135 := by
@@ -281,46 +276,42 @@ lemma reduce_clMul_correct (prod : B256) :
     unfold fold_step
     let h2 := acc.extractLsb 255 128
     let l2 := acc.extractLsb 127 0
-    let term2 := clMul (to256 h2) (to256 R_val)
+    let term2 := clMul h2  R_val
 
-    rw [toPoly_xor, toPoly_clMul_no_overflow (da := 7) (db := 8)]
-    · apply (Polynomial.degree_add_le _ _).trans_lt
-      rw [max_lt_iff]
-      constructor
-      · apply (Polynomial.degree_mul_le _ _).trans_lt
-        rw [toPoly_128_extend_256, toPoly_128_extend_256]
-        have deg_h2 : (toPoly h2).degree < 7 := toPoly_degree_of_lt_two_pow _ h_h2_bound
-        have deg_R : (toPoly R_val).degree < 8 := by
-          apply toPoly_degree_of_lt_two_pow; dsimp only [R_val, reduceToNat, Nat.reducePow]; omega
-        have h_deg_h2_le : (toPoly h2).degree ≤ (6 : WithBot ℕ) := by
-          by_cases h_deg_bot : (toPoly h2).degree = ⊥
-          · rw [h_deg_bot]; exact bot_le
-          · obtain ⟨n, h_n_eq⟩ := WithBot.ne_bot_iff_exists.mp h_deg_bot
-            rw [←h_n_eq] at deg_h2
-            norm_cast at deg_h2
-            rw [h_n_eq.symm]
-            change (n : WithBot ℕ) ≤ (6 : ℕ)
-            change (n : WithBot ℕ) < (7 : ℕ) at deg_h2
-            norm_cast at deg_h2 ⊢
-            exact Nat.le_of_lt_succ deg_h2
-        have h_deg_R_le : (toPoly R_val).degree ≤ (7 : WithBot ℕ) := by
-          by_cases h_deg_bot : (toPoly R_val).degree = ⊥
-          · rw [h_deg_bot]; exact bot_le
-          · obtain ⟨n, h_n_eq⟩ := WithBot.ne_bot_iff_exists.mp h_deg_bot
-            rw [←h_n_eq] at deg_R
-            rw [h_n_eq.symm]
-            change (n : WithBot ℕ) ≤ (7 : ℕ)
-            change (n : WithBot ℕ) < (8 : ℕ) at deg_R
-            norm_cast at deg_R ⊢
-            exact Nat.le_of_lt_succ deg_R
-        apply lt_of_le_of_lt (add_le_add h_deg_h2_le h_deg_R_le)
-        norm_cast
-      · rw [toPoly_128_extend_256]
-        apply toPoly_degree_of_lt_two_pow
-        exact BitVec.isLt l2
-    · rw [to256_toNat]; exact h_h2_bound
-    · rw [to256_toNat]; dsimp only [R_val, reduceToNat, Nat.reducePow]; omega
-    · norm_num
+    rw [toPoly_xor, toPoly_clMul]
+    apply (Polynomial.degree_add_le _ _).trans_lt
+    rw [max_lt_iff]
+    constructor
+    · apply (Polynomial.degree_mul_le _ _).trans_lt
+      have deg_h2 : (toPoly h2).degree < 7 := toPoly_degree_of_lt_two_pow _ h_h2_bound
+      have deg_R : (toPoly R_val).degree < 8 := by
+        apply toPoly_degree_of_lt_two_pow; dsimp only [R_val, reduceToNat, Nat.reducePow]; omega
+      have h_deg_h2_le : (toPoly h2).degree ≤ (6 : WithBot ℕ) := by
+        by_cases h_deg_bot : (toPoly h2).degree = ⊥
+        · rw [h_deg_bot]; exact bot_le
+        · obtain ⟨n, h_n_eq⟩ := WithBot.ne_bot_iff_exists.mp h_deg_bot
+          rw [←h_n_eq] at deg_h2
+          norm_cast at deg_h2
+          rw [h_n_eq.symm]
+          change (n : WithBot ℕ) ≤ (6 : ℕ)
+          change (n : WithBot ℕ) < (7 : ℕ) at deg_h2
+          norm_cast at deg_h2 ⊢
+          exact Nat.le_of_lt_succ deg_h2
+      have h_deg_R_le : (toPoly R_val).degree ≤ (7 : WithBot ℕ) := by
+        by_cases h_deg_bot : (toPoly R_val).degree = ⊥
+        · rw [h_deg_bot]; exact bot_le
+        · obtain ⟨n, h_n_eq⟩ := WithBot.ne_bot_iff_exists.mp h_deg_bot
+          rw [←h_n_eq] at deg_R
+          rw [h_n_eq.symm]
+          change (n : WithBot ℕ) ≤ (7 : ℕ)
+          change (n : WithBot ℕ) < (8 : ℕ) at deg_R
+          norm_cast at deg_R ⊢
+          exact Nat.le_of_lt_succ deg_R
+      apply lt_of_le_of_lt (add_le_add h_deg_h2_le h_deg_R_le)
+      norm_cast
+    · rw [toPoly_128_extend_256]
+      apply toPoly_degree_of_lt_two_pow
+      exact BitVec.isLt l2
   have h_extract : toPoly (res.extractLsb 127 0) = toPoly res := by
     have h_res_eq : res = to256 (res.extractLsb 127 0) := by
       dsimp only [to256]
@@ -354,7 +345,7 @@ instance : Sub ConcreteBF128Ghash where sub a b := a ^^^ b
 
 instance : Mul ConcreteBF128Ghash where
   mul a b :=
-    let prod := clMul (to256 a) (to256 b)
+    let prod := clMul a b
     reduce_clMul prod
 
 -- -----------------------------------------------------------------------------
@@ -438,7 +429,7 @@ instance : AddCommGroup ConcreteBF128Ghash where
 
 instance : Mul ConcreteBF128Ghash where
   mul a b :=
-    let prod := clMul (to256 a) (to256 b)
+    let prod := clMul a b
     reduce_clMul prod
 
 end AddCommGroupInstance
@@ -515,16 +506,11 @@ lemma toQuot_ne_zero (a : ConcreteBF128Ghash) (h_a_ne_zero : a ≠ 0) : toQuot a
 mod P. -/
 lemma toQuot_mul (a b : ConcreteBF128Ghash) : toQuot (a * b) = toQuot a * toQuot b := by
   unfold toQuot
-  have h_clMul : toPoly (clMul (to256 a) (to256 b)) = toPoly (to256 a) * toPoly (to256 b) := by
-    apply toPoly_clMul_no_overflow (da := 128) (db := 128)
-    · rw [to256_toNat]; exact BitVec.toNat_lt_twoPow_of_le (n := 128) (by omega)
-    · rw [to256_toNat]; exact BitVec.toNat_lt_twoPow_of_le (n := 128) (by omega)
-    · norm_num
-  rw [toPoly_128_extend_256, toPoly_128_extend_256] at h_clMul
-  have h_reduce : toPoly (reduce_clMul (clMul (to256 a) (to256 b))) =
-                  toPoly (clMul (to256 a) (to256 b)) % ghashPoly := by
+  have h_clMul : toPoly (clMul a b) = toPoly a * toPoly b :=  toPoly_clMul a b
+  have h_reduce : toPoly (reduce_clMul (clMul a b)) =
+                  toPoly (clMul a b) % ghashPoly := by
     apply reduce_clMul_correct
-  change AdjoinRoot.mk ghashPoly (toPoly (reduce_clMul (clMul (to256 a) (to256 b)))) =
+  change AdjoinRoot.mk ghashPoly (toPoly (reduce_clMul (clMul a b))) =
          AdjoinRoot.mk ghashPoly (toPoly a) * AdjoinRoot.mk ghashPoly (toPoly b)
   rw [h_reduce, h_clMul, ← map_mul (AdjoinRoot.mk ghashPoly), AdjoinRoot.mk_eq_mk]
   apply dvd_sub_comm.mp
