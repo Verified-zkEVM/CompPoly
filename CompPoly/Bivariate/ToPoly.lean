@@ -49,8 +49,8 @@ noncomputable def toPoly {R : Type*} [BEq R] [LawfulBEq R] [Semiring R]
   Extracts each Y-coefficient via `p.coeff`, converts to `CPolynomial R` via
   `toImpl` and trimming, then builds the canonical bivariate sum.
   -/
-noncomputable def ofPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
-    [DecidableEq R] (p : R[X][Y]) : CBivariate R :=
+def ofPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
+    [DecidableEq R] [Semiring (Polynomial R)] (p : R[X][Y]) : CBivariate R :=
   (p.support).sum (fun j ↦
     let cj := p.coeff j
     CPolynomial.monomial j ⟨cj.toImpl, CPolynomial.Raw.isCanonical_toImpl cj⟩)
