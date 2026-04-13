@@ -170,7 +170,7 @@ lemma poly_reduce_step (A : Polynomial (ZMod 2)) :
 def fold_step (prod : B256) : B256 :=
   let h := prod.extractLsb 255 128
   let l := prod.extractLsb 127 0
-  clMul (to256 h) (to256 R_val) ^^^ (to256 l)
+  clMul h R_val ^^^ (to256 l)
 
 /-- Modular Reduction using Folding (Algebraic).
   Fast O(1) reduction replacing long division.
@@ -187,18 +187,15 @@ lemma fold_step_mod_eq (x : B256) :
   let h := x.extractLsb 255 128
   let l := x.extractLsb 127 0
   rw [toPoly_xor]
-  rw [toPoly_clMul_no_overflow (da := 128) (db := 8)]
-  · rw [toPoly_128_extend_256, toPoly_128_extend_256, R_val_eq_ghashTail, toPoly_128_extend_256]
-    rw [toPoly_split_256 x]
-    rw [CanonicalEuclideanDomain.add_mod_eq (hn := ghashPoly_ne_zero)]
-    conv_rhs => rw [CanonicalEuclideanDomain.add_mod_eq (hn := ghashPoly_ne_zero)]
-    have h_first_eq : (toPoly (extractLsb 255 128 x) * ghashTail) % ghashPoly =
-                      (toPoly (extractLsb 255 128 x) * X^128) % ghashPoly := by
-      symm; apply poly_reduce_step
-    grind
-  · rw [to256_toNat]; omega
-  · rw [to256_toNat]; dsimp only [R_val, reduceToNat, Nat.reducePow]; omega
-  · norm_num
+  rw [toPoly_clMul]
+  rw [toPoly_128_extend_256, R_val_eq_ghashTail]
+  rw [toPoly_split_256 x]
+  rw [CanonicalEuclideanDomain.add_mod_eq (hn := ghashPoly_ne_zero)]
+  conv_rhs => rw [CanonicalEuclideanDomain.add_mod_eq (hn := ghashPoly_ne_zero)]
+  have h_first_eq : (toPoly (extractLsb 255 128 x) * ghashTail) % ghashPoly =
+                    (toPoly (extractLsb 255 128 x) * X^128) % ghashPoly := by
+    symm; apply poly_reduce_step
+  grind
 
 /-- Main Theorem: reduce_clMul correctly computes modulo P. -/
 lemma reduce_clMul_correct (prod : B256) :
@@ -249,7 +246,7 @@ lemma reduce_clMul_correct (prod : B256) :
             exact Nat.le_of_lt_succ h_deg_R_nat
         apply lt_of_le_of_lt (add_le_add h_deg_h_le h_deg_R_le)
         norm_cast
-      · rw [to256_toNat]; apply BitVec.toNat_lt_twoPow_of_le (by omega)
+        · rw [to256_toNat]; apply BitVec.toNat_lt_twoPow_of_le (by omega)
       · rw [to256_toNat]; simp only [R_val, toNat_ofNat, Nat.reducePow, Nat.reduceMod,
         Nat.reduceLT]
       · norm_num
