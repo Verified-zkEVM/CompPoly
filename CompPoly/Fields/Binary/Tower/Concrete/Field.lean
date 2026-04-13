@@ -921,8 +921,6 @@ instance instFieldConcrete {k : ℕ} : Field (ConcreteBTField k) :=
 instance instCharP2 {k : ℕ} : CharP (ConcreteBTField k) 2 :=
   charP_eq_2_of_add_self_eq_zero (F:=(ConcreteBTField k)) (sumZeroIffEq:=add_eq_zero_iff_eq)
 
-noncomputable instance (k : ℕ) : Fintype (ConcreteBTField k) := (getBTFResult k).instFintype
-
 noncomputable instance instFintype {k : ℕ} : Fintype (ConcreteBTField k) :=
   (getBTFResult k).instFintype
 

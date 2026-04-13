@@ -447,10 +447,7 @@ lemma eq_zero_or_eq_one_of_lt_two {n : ℕ} (h_lt : n < 2) : n = 0 ∨ n = 1 := 
 
 lemma div_2_form {nD2 b : ℕ} (h_b : b < 2) :
     (nD2 * 2 + b) / 2 = nD2 := by
-  rw [←add_comm, ←mul_comm]
-  rw [Nat.add_mul_div_left (x := b) (y := 2) (z := nD2) (H := by norm_num)]
-  norm_num
-  exact le_of_lt_succ h_b
+  omega
 
 lemma and_by_split_lowBits {n m n1 m1 bn bm : ℕ} (h_bn : bn < 2) (h_bm : bm < 2)
     (h_n : n = n1 * 2 + bn) (h_m : m = m1 * 2 + bm) :
