@@ -1331,7 +1331,7 @@ lemma degree_Xⱼ (ℓ : ℕ) (h_ℓ : ℓ ≤ r) (j : Fin (2 ^ ℓ)) :
         Nat.cast_pow, Nat.cast_ofNat, CharP.cast_eq_zero, hF₂.out]
       -- ⊢ ↑(↑j >>> ↑i % 2) * 2 ^ ↑i = if ↑j >>> ↑i % 2 = 1 then 2 ^ ↑i else 0
       by_cases h: (j.val >>> i.val) % 2 = 1
-      · simp only [h, Nat.cast_one, one_mul, ↓reduceIte]; sorry -- TODO
+      · simp only [h, Nat.cast_one, one_mul, ↓reduceIte]; rfl
       · simp only [h, if_false];
         have h_0: (j.val >>> i.val) % 2 = 0 := by
           exact Nat.mod_two_ne_one.mp h
@@ -1385,10 +1385,7 @@ noncomputable def basisVectors (ℓ : Nat) (h_ℓ : ℓ ≤ r) :
     -- proof of coercion of `Xⱼ(X)` to `L⦃<2^ℓ⦄[X]`, i.e. `degree < 2^ℓ`
     apply Polynomial.mem_degreeLT.mpr
     rw [degree_Xⱼ 𝔽q β ℓ h_ℓ j]
-    change (j.val: WithBot ℕ) < ((2: WithBot ℕ) ^ ℓ)
-    norm_cast -- somehow `change` helps `norm_cast` to work better here
-    -- omega
-    sorry
+    apply WithBot.coe_lt_coe.mpr j.isLt
   ⟩
 
 /-- The vector space of coefficients for polynomials of degree < 2^ℓ. -/
@@ -1564,7 +1561,7 @@ noncomputable def polynomialFromNovelCoeffsF₂
         _ ≤ 0 + (Xⱼ 𝔽q β ℓ h_ℓ j).degree := by gcongr; exact Polynomial.degree_C_le
         _ = ↑j.val := by
           simp only [degree_Xⱼ 𝔽q β ℓ h_ℓ j, zero_add]; norm_cast
-        _ < ↑(2^ℓ) := by norm_cast; sorry -- exact j.isLt
+        _ < ↑(2^ℓ) := WithBot.coe_lt_coe.mpr j.isLt
   ⟩
 
 omit h_Fq_char_prime in
