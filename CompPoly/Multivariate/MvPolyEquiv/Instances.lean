@@ -142,8 +142,8 @@ lemma map_one : fromCMvPolynomial (1 : CMvPolynomial n R) = 1 := by
       simp only [Finsupp.coe_mk]
       simp only [Vector.get_ofFn, Vector.get_replicate] at this
       exact this
-    show ((Unlawful.ofList [(MonoR.C (1 : R) : MonoR n R)])[CMvMonomial.ofFinsupp m]?.getD 0
-            : R) = 0
+    show ((Unlawful.ofList [(MonoR.C (1 : R) : MonoR n R)])[CMvMonomial.ofFinsupp m]?.getD 0 : R)
+      = 0
     erw [ExtTreeMap.getElem?_ofList_of_contains_eq_false (by simp [hne])]
     rfl
 
