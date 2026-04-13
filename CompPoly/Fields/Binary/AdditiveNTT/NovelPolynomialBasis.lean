@@ -188,7 +188,7 @@ lemma βᵢ_not_in_Uᵢ (i : Fin r) :
       simp only [Set.subset_compl_singleton_iff, Set.mem_Ico]
       omega
     else
-      push_neg at h_i
+      push Not at h_i
       have h_i_eq_0: i = 0 := by exact Fin.le_zero_iff'.mp h_i
       have set_empty: Set.Ico 0 i = ∅ := by
         rw [h_i_eq_0]
@@ -605,7 +605,7 @@ lemma eval_W_eq_zero_iff_in_U (i : Fin r) (a : L) :
     have h_root_W_pos : 0 < rootMultiplicity a (W 𝔽q β i) := by
       simp only [rootMultiplicity_pos', ne_eq, IsRoot.def]
       constructor
-      · push_neg; exact W_ne_zero 𝔽q β i
+      · push Not; exact W_ne_zero 𝔽q β i
       · exact h_root_W
     rw [rootMultiplicity_W] at h_root_W_pos
     by_cases h_a_in_U : a ∈ U 𝔽q β i
@@ -711,7 +711,7 @@ lemma rootMultiplicity_prod_W_comp_X_sub_C
         simp only [hx0]
       · rw [if_neg h_x_eq_x0]
         by_contra h_mem
-        push_neg at h_mem
+        push Not at h_mem
         simp only [ne_eq, eq_iff_iff, iff_false, not_not] at h_mem
         have h2 := hx0_unique x
         simp only [h_mem, forall_const] at h2
@@ -1320,7 +1320,7 @@ lemma degree_Xⱼ (ℓ : ℕ) (h_ℓ : ℓ ≤ r) (j : Fin (2 ^ ℓ)) :
     have h_j := j.isLt
     simp only [h_ℓ_0, pow_zero, Nat.lt_one_iff, Fin.val_eq_zero_iff] at h_j
     exact h_j
-  · push_neg at h_ℓ_0
+  · push Not at h_ℓ_0
     have deg_each: ∀ i ∈ (Finset.univ : Finset (Fin ℓ)),
       ((normalizedW 𝔽q β (Fin.castLE h_ℓ i))^(Nat.getBit i j)).degree
       = if Nat.getBit i j = 1 then (2:ℕ)^i.val else 0 := by
@@ -1366,7 +1366,7 @@ lemma degree_Xⱼ (ℓ : ℕ) (h_ℓ : ℓ ≤ r) (j : Fin (2 ^ ℓ)) :
         have h_res: (if Nat.getBit x j = 1 then 2 ^ x else 0) = (Nat.getBit x j) * 2^x := by
           by_cases h: Nat.getBit x j = 1
           · simp only [h, if_true]; norm_num
-          · simp only [h, if_false]; push_neg at h;
+          · simp only [h, if_false]; push Not at h;
             have h_bit_x_j_eq_0: Nat.getBit x j = 0 := by
               have h_either_eq := Nat.getBit_eq_zero_or_one (k := x) (n := j)
               simp only [h, or_false] at h_either_eq

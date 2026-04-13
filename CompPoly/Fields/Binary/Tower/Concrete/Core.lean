@@ -459,7 +459,7 @@ lemma zsmul_neg' {k : ℕ} (n : ℕ) (a : ConcreteBTField k) :
     rfl
   }
   { -- h : ¬(n + 1) % 2 = 0
-    push_neg at h -- h : (n + 1) % 2 ≠ 0
+    push Not at h -- h : (n + 1) % 2 ≠ 0
     have n_succ_mod_2_ne_1 : ((↑n : ℤ) + 1) % 2 = 1 := by
       have h_mod : (n + 1) % 2 = 1 := by -- prove the ℕ - version of the hypothesis & use norm_cast
         have tmp := Nat.mod_two_eq_zero_or_one (n:=n + 1)
@@ -1184,14 +1184,14 @@ instance (k : ℕ) : Preorder (ConcreteBTField k) where
       · -- x < y → ¬y ≤ x
         intro h_le_yx
         have h_not_le := mt bitvec_statement.mpr
-        push_neg at h_not_le
+        push Not at h_not_le
         have neg_y_le_x := h_not_le h_lt
         contradiction
     · -- Reverse direction : x ≤ y ∧ ¬y ≤ x → x < y
       intro h
       cases h with | intro h_le_xy h_not_le_yx =>
       have x_lt_y:= mt bitvec_statement.mp h_not_le_yx
-      push_neg at x_lt_y
+      push Not at x_lt_y
       exact x_lt_y
 
 theorem toNatInRange {k : ℕ} (b : ConcreteBTField k) :

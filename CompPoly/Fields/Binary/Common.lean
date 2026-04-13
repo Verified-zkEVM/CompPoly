@@ -170,7 +170,7 @@ lemma Polynomial.exists_factor_le_64_of_reducible.{u} {R : Type u} [Field R] (P 
     rw [irreducible_iff, not_and_or, not_forall] at h_red
     -- We know P is not a unit, so the first part of the OR is false
     simp only [h_not_unit, not_false_eq_true] at h_red
-    push_neg at h_red
+    push Not at h_red
     simp only [IsEmpty.exists_iff, false_or] at h_red
     rcases h_red with ⟨a, b, h_eq, h_non_units⟩
     use a, b
@@ -204,7 +204,7 @@ lemma Polynomial.exists_factor_le_64_of_reducible.{u} {R : Type u} [Field R] (P 
     -- deg(q) ≤ deg(a) ≤ 64
     apply le_trans (Polynomial.natDegree_le_of_dvd hq_dvd_a h_a_ne_zero) h_deg_a
   · -- Case: b is the small one
-    push_neg at h_le
+    push Not at h_le
     have h_deg_b : b.natDegree ≤ 64 := by omega
     obtain ⟨q, hq_irr, hq_dvd_b⟩ := WfDvdMonoid.exists_irreducible_factor hb_nu h_b_ne_zero
     use q

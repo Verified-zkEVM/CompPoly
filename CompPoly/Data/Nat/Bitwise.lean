@@ -349,7 +349,7 @@ lemma getBit_two_pow {i k : ℕ} : (getBit k (2^i) = if i == k then 1 else 0) :=
     simp only [Nat.and_one_is_mod, BEq.rfl, ↓reduceIte]
     rw [Nat.shiftLeft_shiftRight]
   else
-    push_neg at h_i_eq_k
+    push Not at h_i_eq_k
     simp only [beq_iff_eq, h_i_eq_k, ↓reduceIte]
     if h_k_lt_i: i < k then
       have h_res : (1 <<< i >>> k &&& 1) = 0 := by
@@ -372,7 +372,7 @@ lemma getBit_two_pow {i k : ℕ} : (getBit k (2^i) = if i == k then 1 else 0) :=
         rw [h_one_div_2_pow_k_sub_i, Nat.zero_and]
       rw [h_res]
     else
-      push_neg at h_k_lt_i
+      push Not at h_k_lt_i
       have h_res : (1 <<< i >>> k &&& 1) = 0 := by
         set i_sub_k := i - k with h_i_sub_k
         have h_i_sub_k_le_1: i_sub_k ≥ 1 := by omega
@@ -401,7 +401,7 @@ lemma and_two_pow_eq_zero_of_getBit_0 {n i : ℕ} (h_getBit : getBit i n = 0) :
     rw [getBit, h_k.symm] at h_getBit
     rw [getBit, h_getBit, Nat.zero_and]
   else
-    push_neg at h_k
+    push Not at h_k
     simp only [beq_iff_eq, h_k.symm, ↓reduceIte] at h_getBit_two_pow
     rw [getBit] at h_getBit_two_pow
     rw [getBit, getBit, h_getBit_two_pow]
@@ -430,7 +430,7 @@ lemma and_two_pow_eq_two_pow_of_getBit_eq_one {n i : ℕ} (h_getBit: getBit i n 
     rw [Nat.shiftRight_and_distrib, Nat.and_assoc, Nat.and_comm (2^k >>> k) 1, ←Nat.and_assoc]
     rw [h_getBit, ←one_mul (2^k), ←Nat.shiftLeft_eq, Nat.shiftLeft_shiftRight, Nat.and_self]
   else
-    push_neg at h_k
+    push Not at h_k
     simp only [beq_iff_eq, h_k.symm, ↓reduceIte] at h_getBit_two_pow
     rw [getBit] at h_getBit_two_pow
     rw [h_getBit_two_pow, Nat.shiftRight_and_distrib, Nat.and_assoc, h_getBit_two_pow]
@@ -639,7 +639,7 @@ lemma sum_eq_xor_plus_twice_and (n : Nat) : ∀ m : ℕ, n + m = (n ^^^ m) + 2 *
             rw [h_and_getBits, mul_comm (a := (n2 &&& m2)) (b := 2)];
           _ = 2 * (nVal &&& mVal) := by rw [h_and];
       rw [h_right]
-    · push_neg at h_and_getBitN_getBitM_eq_1;
+    · push Not at h_and_getBitN_getBitM_eq_1;
       have h_and_getBitN_getBitM_eq_0 : (getBitN &&& getBitM) = 0 := by
         interval_cases (getBitN &&& getBitM)
         · rfl
@@ -878,7 +878,7 @@ lemma getBit_of_sub_two_pow_of_bit_1 {n i j: ℕ} (h_getBit_eq_1: getBit i n = 1
     rw [Nat.getBit_two_pow]
     simp only [beq_iff_eq]
     simp only [h_j_eq_i, ↓reduceIte]
-    push_neg at h_j_eq_i
+    push Not at h_j_eq_i
     simp only [if_neg h_j_eq_i.symm, xor_zero]
 
 lemma getBit_of_lowBits {n: ℕ} (numLowBits : ℕ) : ∀ k, getBit k (getLowBits numLowBits n) =
@@ -898,7 +898,7 @@ lemma getBit_of_lowBits {n: ℕ} (numLowBits : ℕ) : ∀ k, getBit k (getLowBit
     · simp only [Nat.and_one_is_mod]
     · simp only [Nat.and_one_is_mod]
   else
-    push_neg at h_k
+    push Not at h_k
     have getBit_k_mask : getBit k (1 <<< numLowBits - 1) = 0:= by
       rw [Nat.shiftLeft_eq, one_mul]
       rw [getBit_of_two_pow_sub_one (i := numLowBits) (k := k)]
@@ -947,7 +947,7 @@ theorem getBit_repr {ℓ : Nat} :
       interval_cases j
       · simp only [getBit, Nat.shiftRight_zero, Nat.and_one_is_mod, Nat.zero_mod]
       · simp only [getBit, Nat.shiftRight_zero, Nat.and_one_is_mod]
-    · push_neg at h_ℓ₁
+    · push Not at h_ℓ₁
       set ℓ := ℓ₁ + 1
       have h_ℓ_eq : ℓ = ℓ₁ + 1 := by rfl
       intro j h_j
@@ -974,7 +974,7 @@ theorem getBit_repr {ℓ : Nat} :
           _ = b + 2 * m := by omega;
       have h_m : m < 2^ℓ₁ := by
         by_contra h_m_ge_2_pow_ℓ
-        push_neg at h_m_ge_2_pow_ℓ
+        push Not at h_m_ge_2_pow_ℓ
         have h_j_ge : j ≥ 2^ℓ := by
           calc _ = 2 * m + b := by rw [h_j_eq]; omega
             _ ≥ 2 * (2^ℓ₁) + b := by omega
@@ -1244,7 +1244,7 @@ lemma getBit_of_lt_two_pow {n: ℕ} (a: Fin (2^n)) (k: ℕ) :
 lemma exist_bit_diff_if_diff {n: ℕ} (a: Fin (2^n)) (b: Fin (2^n)) (h_a_ne_b: a ≠ b) :
     ∃ k: Fin n, getBit k a ≠ getBit k b := by
   by_contra h_no_diff
-  push_neg at h_no_diff
+  push Not at h_no_diff
   have h_a_eq_b: a = b := by
     apply Fin.eq_of_val_eq
     apply eq_iff_eq_all_getBits.mpr
@@ -1354,7 +1354,7 @@ lemma getBit_of_binaryFinMapToNat {n : ℕ} (m : Fin n → ℕ) (h_binary: ∀ j
       if h_k_lt_n: k < n then
         have h_k_lt_n_add_1: k < n + 1 := by omega
         simp only [h_k_lt_n_add_1, ↓reduceDIte]
-        push_neg at h_k_eq
+        push Not at h_k_eq
         simp only [h_k_lt_n, ↓reduceDIte]
         unfold msbTerm
         interval_cases h_m_last_val: m ⟨n, by omega⟩

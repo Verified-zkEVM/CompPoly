@@ -277,7 +277,7 @@ lemma NTTStage_correctness (i : Fin (ℓ))
     rw [h_x0_eq_cur_evaluation_point]
     simp only [eval_comp, eval_add, eval_mul, eval_X]
   · simp only [h_b_bit_eq_0, ↓reduceDIte]
-    push_neg at h_b_bit_eq_0
+    push Not at h_b_bit_eq_0
     have bit_i_j_eq_1 : Nat.getBit i.val j.val = 1 := by omega
     simp only [ne_eq, Nat.mod_two_not_eq_zero] at h_b_bit_eq_0
     set x1 := twiddleFactor 𝔽q β h_ℓ_add_R_rate i

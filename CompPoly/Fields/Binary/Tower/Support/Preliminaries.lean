@@ -194,7 +194,7 @@ theorem non_trivial_factors_of_non_trivial_poly_have_deg_ge_1 {R : Type*} [Field
   have h_deg_a_ge_1_or_deg_b_ge_1 := not_and_or.mp h_deg_a_not_nat -- ¬1 ≤ a.degree ∨ ¬1 ≤ b.degree
   cases h_deg_a_ge_1_or_deg_b_ge_1 with
   | inl h_deg_a_lt_1 =>
-    push_neg at h_deg_a_lt_1
+    push Not at h_deg_a_lt_1
     have a_deg_cases := withBot_lt_one_cases a.degree h_deg_a_lt_1
     cases a_deg_cases with
     | inl h_a_deg_bot =>
@@ -204,7 +204,7 @@ theorem non_trivial_factors_of_non_trivial_poly_have_deg_ge_1 {R : Type*} [Field
     | inr h_a_deg_zero =>
       exact h_a_non_unit (is_unit_iff_deg_0.mp h_a_deg_zero)
   | inr h_deg_b_lt_1 =>
-    push_neg at h_deg_b_lt_1 -- b.degree < 1
+    push Not at h_deg_b_lt_1 -- b.degree < 1
     have b_deg_cases := withBot_lt_one_cases b.degree h_deg_b_lt_1
     cases b_deg_cases with
     | inl h_b_deg_bot =>
@@ -707,13 +707,13 @@ theorem pow_exp_of_2_repr_given_x_square_repr {F : Type*} [instField : Field F]
                     norm_num at h
                   exact ⟨⟨one_le_j, h.2⟩, j_ne_one⟩
                 · intro ⟨⟨h1, h2⟩, hj⟩
-                  push_neg at hj
+                  push Not at hj
                   -- ⊢ 2 ≤ j ∧ j ≤ n + 1, h1 : 1 ≤ j, h2 : j ≤ n + 1, hj : j ≠ 1
                   constructor
                   · apply Nat.succ_le_of_lt
                     apply Nat.lt_of_le_of_ne
                     · exact h1
-                    · push_neg
+                    · push Not
                       exact hj.symm
                   · exact h2
               rw [h]
