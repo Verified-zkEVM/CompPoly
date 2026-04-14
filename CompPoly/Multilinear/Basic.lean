@@ -484,7 +484,7 @@ private lemma popCount_sub_two_pow {m k : ℕ}
   induction k generalizing m with
   | zero =>
     have hm_pos : 0 < m := by
-      by_contra h; push_neg at h
+      by_contra h; push Not at h
       simp only [Nat.le_zero] at h
       subst h; simp at hbit
     have hm_odd : m % 2 = 1 := by
@@ -720,7 +720,7 @@ private lemma popCount_le_of_and_eq :
     by_cases hn : n = 0
     · subst hn; simp [popCount_zero']
     · have hm : m > 0 := by
-        by_contra h0; push_neg at h0
+        by_contra h0; push Not at h0
         simp only [Nat.le_zero] at h0; subst h0
         simp at h; exact hn h.symm
       rw [popCount_pos' (by omega : 0 < n),
