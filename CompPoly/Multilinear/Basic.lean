@@ -898,7 +898,7 @@ private lemma lagrangeToMono_eq_mobiusPartial_zero
 /-- The fast Möbius transform `lagrangeToMono` is pointwise equal to the inclusion-exclusion
 specification `lagrangeToMonoSpec`. Combines the fold lemma with the `k = 0` base case. -/
 theorem lagrangeToMono_eq_lagrangeToMonoSpec
-    {R : Type*} [CommRing R] {n : ℕ}
+    {R : Type*} [AddCommGroup R] {n : ℕ}
     (p : Vector R (2 ^ n)) :
     CMlPolynomial.lagrangeToMono n p =
       CMlPolynomial.lagrangeToMonoSpec p := by
