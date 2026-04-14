@@ -82,9 +82,8 @@ lemma towerAlgebraMap_succ_1 (k : ℕ) :
     towerAlgebraMap (l:=k) (r:=k+1) (h_le:=by omega) = canonicalEmbedding k := by
   unfold towerAlgebraMap
   simp only [Nat.left_eq_add, one_ne_zero, ↓reduceDIte,
-    Nat.add_one_sub_one, eq_mp_eq_cast, cast_eq]
-  rw [towerAlgebraMap_id]
-  rw [RingHom.comp_id]
+    Nat.add_one_sub_one, eq_mp_eq_cast]
+  erw [cast_eq, towerAlgebraMap_id, RingHom.comp_id]
 
 /-! Right associativity of the Tower Map -/
 lemma towerAlgebraMap_succ (l r : ℕ) (h_le : l ≤ r) :
@@ -95,8 +94,8 @@ lemma towerAlgebraMap_succ (l r : ℕ) (h_le : l ≤ r) :
   conv_lhs => rw [towerAlgebraMap]
   have h_l_ne_eq_r_add_1 : l ≠ r + 1 := by omega
   simp only [h_l_ne_eq_r_add_1, ↓reduceDIte, Nat.add_one_sub_one,
-    eq_mp_eq_cast, cast_eq, RingHom.coe_comp, Function.comp_apply]
-  rw [towerAlgebraMap_succ_1]
+    eq_mp_eq_cast, RingHom.coe_comp, Function.comp_apply]
+  erw [cast_eq, towerAlgebraMap_succ_1]; congr 1
 
 /-! Left associativity of the Tower Map -/
 theorem towerAlgebraMap_succ_last (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) →
@@ -135,7 +134,7 @@ theorem BTField.RingHom_comp_cast {α β γ δ : ℕ} (f : BTField α →+* BTFi
   have h_heq : HEq ((cast (h1) g).comp f) (cast (h2) (g.comp f)) := by
     subst h -- this simplifies h1 h2 in cast which makes them trivial equality
       -- => hence it becomes easier to simplify
-    simp only [BTField, BTFieldIsField, cast_eq, heq_eq_eq]
+    simp only [BTField, cast_eq, heq_eq_eq]
   apply eq_of_heq h_heq
 
 theorem towerAlgebraMap_assoc : ∀ r mid l : ℕ, (h_l_le_mid : l ≤ mid) → (h_mid_le_r : mid ≤ r) →
@@ -176,7 +175,7 @@ instance : AlgebraTower (BTField) where
     exact CommMonoid.mul_comm ((towerAlgebraMap i j h) r) x
   coherence' := by exact fun i j k h1 h2 ↦ towerAlgebraMap_assoc k j i h1 h2
 
-def binaryAlgebraTower {l r : ℕ} (h_le : l ≤ r) : Algebra (BTField l) (BTField r) := by
+@[reducible] def binaryAlgebraTower {l r : ℕ} (h_le : l ≤ r) : Algebra (BTField l) (BTField r) := by
   exact AlgebraTower.toAlgebra h_le
 
 lemma binaryTowerAlgebra_def (l r : ℕ) (h_le : l ≤ r) :
@@ -212,7 +211,7 @@ theorem binaryTowerAlgebra_apply_assoc (l mid r : ℕ) (h_l_le_mid : l ≤ mid) 
     (h_l_le_mid:=h_l_le_mid) (h_mid_le_r:=h_mid_le_r)]
 
 /-- This also provides the corresponding Module instance. -/
-def binaryTowerModule {l r : ℕ} (h_le : l ≤ r) : Module (BTField l) (BTField r) :=
+@[reducible] def binaryTowerModule {l r : ℕ} (h_le : l ≤ r) : Module (BTField l) (BTField r) :=
   (binaryAlgebraTower (h_le:=h_le)).toModule
 
 instance (priority := 1000) algebra_adjacent_tower (l : ℕ) :

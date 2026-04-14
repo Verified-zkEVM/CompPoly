@@ -143,6 +143,7 @@ theorem totalDegree_coeff_finSuccEquivNth_add_le (f : MvPolynomial (Fin (n + 1))
   · rw [totalDegree, hσ2, sum_insertNth _ _ p, add_comm]
   · rwa [← support_coeff_finSuccEquivNth]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The support of `finSuccEquivNth R p f` equals the support of `f` projected onto the `p`-th
 variable. -/
 theorem support_finSuccEquivNth (f : MvPolynomial (Fin (n + 1)) R) :

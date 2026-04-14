@@ -486,7 +486,7 @@ theorem degree_dvd_of_irreducible_dvd_X_pow_card_pow_sub_X
     have h_exponent_dvd : Monoid.exponent Kˣ ∣ q ^ n - 1 :=
       Monoid.exponent_dvd_of_forall_pow_eq_one h_units_pow_eq_one
     have h_order_K : Fintype.card Kˣ = q ^ d - 1 := by
-      rw [Fintype.card_units, h_card_K]
+      erw [Fintype.card_units, h_card_K]
     have h_exp_eq_order : Monoid.exponent Kˣ = Fintype.card Kˣ := by
       rw [IsCyclic.exponent_eq_card, Nat.card_eq_fintype_card]
     rw [h_exp_eq_order, h_order_K] at h_exponent_dvd

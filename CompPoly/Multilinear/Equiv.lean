@@ -93,7 +93,7 @@ theorem toMvPolynomial_is_multilinear (p : CMlPolynomial R n) :
   rw [MvPolynomial.mem_support_iff] at hs
   rw [MvPolynomial.coeff_sum] at hs
   by_contra h_s_k_gt_1
-  push_neg at h_s_k_gt_1 -- h_s_k_gt_1 : 1 < s k
+  push Not at h_s_k_gt_1 -- h_s_k_gt_1 : 1 < s k
   have h_invalid: ∀ x: Fin (2^n),
     (coeff s (MvPolynomial.monomial (R:=R) (monomialOfNat x) (a:=p[x]))) = 0 := by
     intro x
@@ -261,7 +261,7 @@ def equivMvPolynomialDeg1 : CMlPolynomial R n ≃ MvPolynomial.restrictDegree (F
       -- Goal 3: Prove `i` is in the summation set.
       · simp [Finset.mem_univ]
     · -- `m` is not a multilinear monomial => rhs = `coeff m v = 0`, since `v` is multilinear.
-      push_neg at h_m_is_ML_mono
+      push Not at h_m_is_ML_mono
       obtain ⟨j, hj⟩ := h_m_is_ML_mono
       have h_v_coeff_zero : v.val.coeff m = 0 := by
         refine notMem_support_iff.mp ?_
@@ -301,13 +301,12 @@ noncomputable def linearEquivMvPolynomialDeg1 :
       -- coeff i ↑(p.toMvPolynomialDeg1 + q.toMvPolynomialDeg1)
       unfold equivMvPolynomialDeg1 toMvPolynomialDeg1
       simp only [AddMemClass.mk_add_mk, coeff_add]
+      erw [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p := p + q)]
       simp only [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p := p)]
-      simp only [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p := p + q)]
       simp only [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p := q)]
       if h_binary: (∀ j: Fin n, i j ≤ 1) then
         simp only [h_binary, implies_true, ↓reduceDIte]
-        conv_lhs => enter [1]; change CMlPolynomial.add p q
-        simp only [add, Vector.getElem_zipWith]
+        erw [Vector.getElem_zipWith]
       else
         simp only [h_binary, ↓reduceDIte, add_zero]
     map_smul' := by
@@ -315,12 +314,11 @@ noncomputable def linearEquivMvPolynomialDeg1 :
       ext i
       unfold equivMvPolynomialDeg1 toMvPolynomialDeg1
       simp only [RingHom.id_apply, SetLike.mk_smul_mk, coeff_smul, smul_eq_mul]
+      erw [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p := r • p)]
       simp only [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p := p)]
-      simp only [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p := r • p)]
       if h_binary: (∀ j: Fin n, i j ≤ 1) then
         simp only [h_binary, implies_true, ↓reduceDIte]
-        conv_lhs => enter [1]; change CMlPolynomial.smul r p
-        simp only [smul, Vector.getElem_map]
+        erw [Vector.getElem_map]; rfl
       else
         simp only [h_binary, ↓reduceDIte, mul_zero]
     }

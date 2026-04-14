@@ -173,7 +173,7 @@ theorem lastNonzero_induct [Zero R] [BEq R] [LawfulBEq R] {motive : CPolynomial.
   (p : CPolynomial.Raw R) : motive p := by
   by_cases h : ∀ i, (hi : i < p.size) → p[i] = 0
   · exact case1 p (lastNonzero_none h) h
-  · push_neg at h; rcases h with ⟨ i, hi, h ⟩
+  · push Not at h; rcases h with ⟨ i, hi, h ⟩
     obtain ⟨ k, h_some ⟩ := lastNonzero_some hi h
     have ⟨ h_nonzero, h_max ⟩ := lastNonzero_spec h_some
     exact case2 p k h_some h_nonzero h_max

@@ -50,7 +50,7 @@ noncomputable def toPoly {R : Type*} [BEq R] [LawfulBEq R] [Semiring R]
   `toImpl` and trimming, then builds the canonical bivariate sum.
   -/
 def ofPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
-    [DecidableEq R] (p : R[X][Y]) : CBivariate R :=
+    [DecidableEq R] [Semiring (Polynomial R)] (p : R[X][Y]) : CBivariate R :=
   (p.support).sum (fun j ↦
     let cj := p.coeff j
     CPolynomial.monomial j ⟨cj.toImpl, CPolynomial.Raw.isCanonical_toImpl cj⟩)
@@ -171,9 +171,10 @@ lemma ofPoly_add {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
               (show q.support ⊆ p.support ∪ q.support from Finset.subset_union_right) ]
           · rw [ ← Finset.sum_add_distrib ]
             refine' Finset.sum_congr rfl fun x hx ↦ _
-            rw [ ← CPolynomial.monomial_add ]
-            congr
-            exact Eq.symm (toImpl_add (p.coeff x) (q.coeff x))
+            erw [ ← CPolynomial.monomial_add ]
+            congr 1
+            apply Subtype.ext
+            exact (toImpl_add (p.coeff x) (q.coeff x)).symm
           · aesop
           · aesop
         · aesop
@@ -195,7 +196,8 @@ theorem ofPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring 
         unfold CBivariate.ofPoly
         induction' p.support using Finset.induction with j s hj ih
         · exact CPolynomial.eq_iff_coeff.mpr (congrFun rfl)
-        · rw [ Finset.sum_insert hj, CPolynomial.coeff_add, ih, Finset.sum_insert hj ]
+        · rw [Finset.sum_insert hj]
+          erw [CPolynomial.coeff_add, ih, Finset.sum_insert hj]
       rw [ h_coeff_sum, Finset.sum_eq_single n ]
       · rw [ CPolynomial.coeff_monomial ]
         simp +decide [ CPolynomial.toPoly ]
@@ -237,7 +239,8 @@ theorem toPoly_mul {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
     toPoly (p * q) = toPoly p * toPoly q := by
       have h_mul : (p * q).toPoly =
           (CPolynomial.toPoly (p * q)).map (CPolynomial.ringEquiv (R := R)) := toPoly_eq_map (p * q)
-      rw [ h_mul, CPolynomial.toPoly_mul ]
+      rw [ h_mul ]
+      erw [CPolynomial.toPoly_mul]
       rw [ Polynomial.map_mul, ← toPoly_eq_map, ← toPoly_eq_map ]
 
 end ToPolyCore
@@ -310,6 +313,8 @@ lemma ofPoly_zero {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R] 
     ofPoly (0 : R[X][Y]) = 0 := by
       unfold CBivariate.ofPoly
       simp +decide [ Polynomial.support ]
+      erw [Finsupp.support_zero]
+      exact Finset.sum_empty
 
 /-- Ring hom from computable bivariates to Mathlib bivariates. -/
 noncomputable def toPolyRingHom
@@ -743,7 +748,7 @@ theorem swap_toPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semi
       CPolynomial.coeff (swap (R := R) f) j =
         ∑ x ∈ f.supportY, CPolynomial.monomial x ((f.val.coeff x).coeff j) := by
     unfold CBivariate.swap CBivariate.supportY
-    rw [hCoeffSumOuter]
+    erw [hCoeffSumOuter]
     exact Finset.sum_congr rfl (fun x hx => hInner x)
   change CPolynomial.coeff (CPolynomial.coeff (swap (R := R) f) j) i =
     CPolynomial.coeff (CPolynomial.coeff f i) j

@@ -42,7 +42,7 @@ variable {ι : Type*} [Preorder ι]
   {C : ι → Type*} [∀ i, CommSemiring (C i)] [AlgebraTower C]
 
 @[simp]
-def AlgebraTower.toAlgebra {i j : ι} (h : i ≤ j) : Algebra (A i) (A j) :=
+abbrev AlgebraTower.toAlgebra {i j : ι} (h : i ≤ j) : Algebra (A i) (A j) :=
   (AlgebraTower.algebraMap (i:=i) (j:=j) (h:=h)).toAlgebra
 
 @[simp]
@@ -102,11 +102,11 @@ def AlgebraTowerEquiv.algebraMapLeftUp (e : AlgebraTowerEquiv A B) (i j : ι)
   have hjRingEquiv: RingEquiv (B i) (A i) := (e.toRingEquiv i).symm
   exact hAij.comp hjRingEquiv.toRingHom
 
-def AlgebraTowerEquiv.toAlgebraOverLeft (e : AlgebraTowerEquiv A B) (i j : ι)
+abbrev AlgebraTowerEquiv.toAlgebraOverLeft (e : AlgebraTowerEquiv A B) (i j : ι)
     (h : i ≤ j) : Algebra (A i) (B j) := by
   exact (e.algebraMapRightUp i j h).toAlgebra
 
-def AlgebraTowerEquiv.toAlgebraOverRight (e : AlgebraTowerEquiv A B) (i j : ι)
+abbrev AlgebraTowerEquiv.toAlgebraOverRight (e : AlgebraTowerEquiv A B) (i j : ι)
     (h : i ≤ j) : Algebra (B i) (A j) := by
   exact (e.algebraMapLeftUp i j h).toAlgebra
 

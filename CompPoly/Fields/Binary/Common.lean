@@ -170,7 +170,7 @@ lemma Polynomial.exists_factor_le_64_of_reducible.{u} {R : Type u} [Field R] (P 
     rw [irreducible_iff, not_and_or, not_forall] at h_red
     -- We know P is not a unit, so the first part of the OR is false
     simp only [h_not_unit, not_false_eq_true] at h_red
-    push_neg at h_red
+    push Not at h_red
     simp only [IsEmpty.exists_iff, false_or] at h_red
     rcases h_red with ⟨a, b, h_eq, h_non_units⟩
     use a, b
@@ -204,7 +204,7 @@ lemma Polynomial.exists_factor_le_64_of_reducible.{u} {R : Type u} [Field R] (P 
     -- deg(q) ≤ deg(a) ≤ 64
     apply le_trans (Polynomial.natDegree_le_of_dvd hq_dvd_a h_a_ne_zero) h_deg_a
   · -- Case: b is the small one
-    push_neg at h_le
+    push Not at h_le
     have h_deg_b : b.natDegree ≤ 64 := by omega
     obtain ⟨q, hq_irr, hq_dvd_b⟩ := WfDvdMonoid.exists_irreducible_factor hb_nu h_b_ne_zero
     use q
@@ -556,13 +556,12 @@ lemma toPoly_128_extend_256 (a : B128) :
   intro (i : Fin (128)) hi_mem_univ
   dsimp only [BitVec.getLsb]
   simp_rw [to256_toNat]
-  simp only [Fin.val_castAdd, Fin.val_addNat, add_eq_left, ite_eq_right_iff, ne_eq,
-    Nat.add_eq_zero_iff, Fin.val_eq_zero_iff, Fin.isValue, OfNat.ofNat_ne_zero, and_false,
-    not_false_eq_true, pow_eq_zero_iff, X_ne_zero, imp_false, Bool.not_eq_true]
-  -- ⊢ (BitVec.toNat a).testBit (↑i + 128) = false
-  apply Nat.testBit_lt_two_pow
+  simp only [Fin.val_castAdd, Fin.val_addNat]
   have h_toNat_lt := BitVec.toNat_lt_twoPow_of_le (n := i.val + 128) (x := a) (h := by omega)
-  exact h_toNat_lt
+  have h_testBit_false : (BitVec.toNat a).testBit (↑i + 128) = false :=
+    Nat.testBit_lt_two_pow h_toNat_lt
+  simp only [h_testBit_false, Bool.false_eq_true, ↓reduceIte, add_zero]
+  rfl
 
 -- Lemma: Left Shift corresponds to Multiplication by X^k
 theorem BitVec_getLsb_eq_false_of_toNat_lt_two_pow {w d : ℕ} (a : BitVec w) (ha : a.toNat < 2 ^ d)
