@@ -11,6 +11,7 @@ import CompPolyTests.Fields.Binary.BF128Ghash.Prelude
 import CompPolyTests.Fields.PrattCertificate
 import CompPolyTests.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
 import CompPolyTests.Multilinear.Equiv
+import CompPolyTests.Multilinear.FastSpecEquiv
 import CompPolyTests.Multivariate.CMvMonomial
 import CompPolyTests.Multivariate.Restrict
 import CompPolyTests.Multivariate.TypeclassMinimization
