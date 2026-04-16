@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Chung Thai Nguyen, Quang Dao, Derek Sorensen
+Authors: Chung Thai Nguyen, Quang Dao, Derek Sorensen, Dimitris Mitsios
 -/
 
 import Mathlib.FieldTheory.Finite.Basic
@@ -265,14 +265,17 @@ instance {w : Nat} : Std.Associative (α := BitVec w) BitVec.xor where
 
 /-- Carry-less (polynomial) multiplication of two 128-bit vectors. -/
 def clMul (a b : B128) : B256 :=
-  Fin.foldl 128 (fun acc i => if a.getLsbD i then acc ^^^ (to256 b <<< (i : Nat)) else acc) (0 : B256)
+  Fin.foldl 128 (fun acc i =>
+    if a.getLsbD i then acc ^^^ (to256 b <<< (i : Nat))
+    else acc) (0 : B256)
 
 /-- Carry-less squaring of a 128-bit vector. -/
 def clSq (a : B128) : B256 :=
   clMul a a
 
 lemma fold_range_xor_eq_foldl {w : Nat} (n : Nat) (f : Nat → BitVec w) :
-  (Finset.range n).fold BitVec.xor 0 f = Fin.foldl n (fun acc i => acc ^^^ (f i)) 0 := by
+    (Finset.range n).fold BitVec.xor 0 f =
+    Fin.foldl n (fun acc i => acc ^^^ (f i)) 0 := by
   induction n with
   | zero => simp
   | succ k ih =>
@@ -292,9 +295,12 @@ section PolynomialIsomorphism
 noncomputable def toPoly {w : Nat} (v : BitVec w) : (ZMod 2)[X] :=
   ∑ i : Fin w, if v.getLsb i then X^i.val else 0
 
-/-- Unfold clMul modifying the return value to always perform a xor operation. This form of clMul simplifies the proof of toPoly_clMul because toPoly_fold_xor applies directly. -/
+/-- Unfold `clMul` into an always-XOR form so that `toPoly_fold_xor`
+applies directly in the proof of `toPoly_clMul`. -/
 lemma clMul_unfold (a b : B128) :
-  clMul a b = Fin.foldl 128 (fun acc i => acc ^^^ (if a.getLsbD i then to256 b <<< (i : Nat) else 0)) (0 : B256) := by
+    clMul a b = Fin.foldl 128
+      (fun acc i => acc ^^^ (if a.getLsbD i
+        then to256 b <<< (i : Nat) else 0)) (0 : B256) := by
     unfold clMul
     congr
     funext acc i
@@ -551,7 +557,8 @@ lemma toPoly_fold_xor {α} {w} (s : Finset α) (f : α → (BitVec w)) :
 -/
 
 lemma toPoly_fold_xor {w : Nat} (n : Nat) (f : Nat → (BitVec w)) :
-  toPoly (Fin.foldl n (fun acc i => acc ^^^ (f i)) 0) = ∑ i ∈ (Finset.range n), toPoly (f i) := by
+    toPoly (Fin.foldl n (fun acc i => acc ^^^ (f i)) 0) =
+    ∑ i ∈ (Finset.range n), toPoly (f i) := by
     induction n with
     | zero =>
            simp [toPoly_zero_eq_zero]
@@ -708,7 +715,9 @@ lemma toPoly_clMul (a b : B128) :
     rw [toPoly_fold_xor (f := fun k => if a.getLsbD k = true then to256 b <<< k else 0)]
     conv_rhs => enter [1]; unfold toPoly
     unfold BitVec.getLsb
-    rw [Fin.sum_univ_eq_sum_range  (f := fun i => if (BitVec.toNat a).testBit i = true then X ^ i else 0)]
+    rw [Fin.sum_univ_eq_sum_range
+      (f := fun i => if (BitVec.toNat a).testBit i = true
+        then X ^ i else 0)]
     rw [Finset.sum_mul]
     apply Finset.sum_congr rfl
     intro i hi

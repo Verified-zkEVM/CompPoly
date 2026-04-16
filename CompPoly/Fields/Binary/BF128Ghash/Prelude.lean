@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Chung Thai Nguyen, Quang Dao
+Authors: Chung Thai Nguyen, Quang Dao, Dimitris Mitsios
 -/
 
 import CompPoly.Fields.Binary.Common
@@ -397,13 +397,13 @@ private theorem toNat_truncate_of_lt {n m : Nat} (v : BitVec n)
   exact Nat.mod_eq_of_lt hv
 
 theorem to256_truncate_128 (v : B256) (hv : v.toNat < 2^128) :
-        to256 (v.truncate 128) = v := by
-          apply BitVec.eq_of_toNat_eq
-          rw [to256_toNat, toNat_truncate_of_lt v hv]
+    to256 (v.truncate 128) = v := by
+  apply BitVec.eq_of_toNat_eq
+  rw [to256_toNat, toNat_truncate_of_lt v hv]
 
 theorem toPoly_truncate_128 (v : B256) (hv : v.toNat < 2^128) :
-  toPoly (v.truncate 128) = toPoly v := by
-    rw [← toPoly_128_extend_256, to256_truncate_128 v hv]
+    toPoly (v.truncate 128) = toPoly v := by
+  rw [← toPoly_128_extend_256, to256_truncate_128 v hv]
 
 theorem toPoly_clMul_B256 (q b : B256) (hq : q.toNat < 2^128) (hb : b.toNat < 2^128) :
     toPoly (clMul (q.truncate 128) (b.truncate 128)) = toPoly q * toPoly b := by
