@@ -381,14 +381,11 @@ private theorem clMul_eq_fold_range (a b : B128) :
       rw [clMul_unfold, fold_range_xor_eq_foldl]
       rfl
 
-
 /-- The 256-step Nat checker matches `clMul` on all `B256` inputs. -/
 private theorem clMulNat_bv_eq_clMul (a b : B128) :
     (BitVec.ofNat 256 (clMulNat a.toNat b.toNat 128) : B256) = clMul a b := by
     rw [ clMulNat_bv_eq_fold_range, clMul_eq_fold_range]
     rw [← to256_toNat b, ofNat_toB256]
-
-
 
 private theorem toNat_truncate_of_lt {n m : Nat} (v : BitVec n)
     (hv : v.toNat < 2^m) :
@@ -422,7 +419,6 @@ private theorem clSqNat_bv_eq_clSq (x : B128) :
 private theorem toPoly_clSqNat_eq_sq (x : B128) :
     toPoly (BitVec.ofNat 256 (clSqNat x.toNat 128)) = (toPoly x) ^ 2 := by
       rw [clSqNat_bv_eq_clSq x, clSq, toPoly_clMul, pow_two]
-
 
 /-- Shift a 128-bit input inside 256 bits without changing its polynomial meaning. -/
 private theorem toPoly_ofNat_shiftLeft_to256 (x : B128) (shift : Nat) (hshift : 128 + shift ≤ 256) :

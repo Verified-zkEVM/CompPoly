@@ -600,7 +600,6 @@ theorem BitVec_getLsb_eq_false_of_toNat_lt_two_pow {w d : ℕ} (a : BitVec w) (h
   have hbit : a.toNat.testBit (i : ℕ) = false := Nat.testBit_eq_false_of_lt hlt
   simpa [BitVec.getLsb] using hbit
 
-
 theorem BitVec_getElem_eq_false_of_toNat_lt_two_pow {w d : ℕ} (a : BitVec w) (ha : a.toNat < 2 ^ d)
     (n : ℕ) (hn : n < w) (hd : d ≤ n) : a[n] = false := by
   classical
