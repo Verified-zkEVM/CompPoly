@@ -54,7 +54,7 @@ theorem eval₂_eq_eval₂Horner [Semiring R] [Semiring S] (f : R →+* S) (x : 
 /-- Evaluates a `CPolynomial.Raw` at a given value -/
 @[inline, specialize]
 def eval [Semiring R] (x : R) (p : CPolynomial.Raw R) : R :=
-  p.eval₂ (RingHom.id R) x
+  p.eval₂Horner (RingHom.id R) x
 
 /-- Raw addition: pointwise sum of coefficient arrays (padded to equal length).
 
