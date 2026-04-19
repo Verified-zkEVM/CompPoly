@@ -48,12 +48,8 @@ theorem eval₂_eq_eval₂Horner [Semiring R] [Semiring S] (f : R →+* S) (x : 
   eval₂ f x p = eval₂Horner f x p := by
     unfold eval₂ eval₂Horner
     rw [← Array.foldl_toList, ← Array.foldr_toList, Array.toList_zipIdx]
-    induction p.toList with
-    | nil => simp
-    | cons head tail tail_ih =>
-           simp
-           rw [foldl_zipIdx_eq_foldr_pow_k]
-           simp
+    have := foldl_zipIdx_eq_foldr_pow_k f x 0 0 p.toList
+    simpa using this
 
 /-- Evaluates a `CPolynomial.Raw` at a given value -/
 @[inline, specialize]
