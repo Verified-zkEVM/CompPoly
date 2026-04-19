@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Chung Thai Nguyen, Quang Dao, Derek Sorensen
+Authors: Chung Thai Nguyen, Quang Dao, Derek Sorensen, Dimitris Mitsios
 -/
 
 import Mathlib.FieldTheory.Finite.Basic
@@ -31,7 +31,7 @@ direct GF(2^128) implementation (`BF128Ghash/`).
 - `toPoly`: Convert a BitVec to a polynomial over GF(2)
 - `clMul`: Carry-less multiplication of bit vectors
 - `toPoly_xor`: `toPoly (a ^^^ b) = toPoly a + toPoly b`
-- `toPoly_clMul_no_overflow`: `toPoly (clMul a b) = toPoly a * toPoly b`
+- `toPoly_clMul`: `toPoly (clMul a b) = toPoly a * toPoly b`
 -/
 
 /-! ## Section 1: ZMod 2 Polynomial Lemmas -/
@@ -263,16 +263,26 @@ instance {w : Nat} : Std.Associative (α := BitVec w) BitVec.xor where
     ext i
     simp only [BitVec.xor_eq, BitVec.getElem_xor, Bool.bne_assoc]
 
--- TODO: optimize clMul, potentially using Karatsuba decomposition
-/-- Carry-less (polynomial) multiplication of two 256-bit vectors. -/
-def clMul (a b : B256) : B256 :=
-  (Finset.univ : Finset (Fin 256)).fold BitVec.xor 0
-      (fun i => if a.getLsb i then b <<< i.val else 0)
+/-- Carry-less (polynomial) multiplication of two 128-bit vectors. -/
+def clMul (a b : B128) : B256 :=
+  Fin.foldl 128 (fun acc i =>
+    if a.getLsbD i then acc ^^^ (to256 b <<< (i : Nat))
+    else acc) (0 : B256)
 
 /-- Carry-less squaring of a 128-bit vector. -/
 def clSq (a : B128) : B256 :=
-  let a256 := to256 a
-  clMul a256 a256
+  clMul a a
+
+lemma fold_range_xor_eq_foldl {w : Nat} (n : Nat) (f : Nat → BitVec w) :
+    (Finset.range n).fold BitVec.xor 0 f =
+    Fin.foldl n (fun acc i => acc ^^^ (f i)) 0 := by
+  induction n with
+  | zero => simp
+  | succ k ih =>
+    rw [Fin.foldl_succ_last, Finset.range_add_one, Finset.fold_insert Finset.notMem_range_self]
+    simp only [Fin.val_castSucc, Fin.val_last]
+    rw [←ih, BitVec.xor_comm]
+    rfl
 
 end BitVecOperations
 
@@ -285,13 +295,18 @@ section PolynomialIsomorphism
 noncomputable def toPoly {w : Nat} (v : BitVec w) : (ZMod 2)[X] :=
   ∑ i : Fin w, if v.getLsb i then X^i.val else 0
 
--- 2. The clMul Definition in Fold Form
--- We define this lemma to exactly match the structure above:
--- s = Finset.univ (Fin 256)
--- f = fun i => if a[i] then b <<< i else 0
-lemma clMul_eq_fold (a b : B256) :
-    clMul a b = (Finset.univ : Finset (Fin 256)).fold BitVec.xor 0
-      (fun i => if a.getLsb i then b <<< i.val else 0) := by rfl
+/-- Unfold `clMul` into an always-XOR form so that `toPoly_fold_xor`
+applies directly in the proof of `toPoly_clMul`. -/
+lemma clMul_unfold (a b : B128) :
+    clMul a b = Fin.foldl 128
+      (fun acc i => acc ^^^ (if a.getLsbD i
+        then to256 b <<< (i : Nat) else 0)) (0 : B256) := by
+    unfold clMul
+    congr
+    funext acc i
+    cases h : BitVec.getLsbD a i
+    · simp
+    · simp
 
 lemma toPoly_one_eq_one {w : Nat} (h_w_pos : w > 0) : toPoly (BitVec.ofNat w 1) = 1 := by
   unfold toPoly
@@ -527,7 +542,7 @@ lemma toPoly_xor {w} (a b : BitVec w) : toPoly (a ^^^ b) = toPoly a + toPoly b :
 The "Homomorphism" Lemma.
 Since toPoly(a ^^^ b) = toPoly a + toPoly b,
 toPoly preserves the structure from Fold-XOR to Sum-Add.
--/
+
 lemma toPoly_fold_xor {α} {w} (s : Finset α) (f : α → (BitVec w)) :
     toPoly (s.fold BitVec.xor 0 f) = ∑ i ∈ s, toPoly (f i) := by
   induction s using Finset.cons_induction with
@@ -539,6 +554,19 @@ lemma toPoly_fold_xor {α} {w} (s : Finset α) (f : α → (BitVec w)) :
     change toPoly (f x ^^^ s.fold BitVec.xor 0 f) = toPoly (f x) + ∑ i ∈ s, toPoly (f i)
     rw [toPoly_xor]
     rw [ih]
+-/
+
+lemma toPoly_fold_xor {w : Nat} (n : Nat) (f : Nat → (BitVec w)) :
+    toPoly (Fin.foldl n (fun acc i => acc ^^^ (f i)) 0) =
+    ∑ i ∈ (Finset.range n), toPoly (f i) := by
+    induction n with
+    | zero =>
+           simp [toPoly_zero_eq_zero]
+    | succ k ih =>
+           rw [Fin.foldl_succ_last]
+           rw [toPoly_xor]
+           simp only [Fin.val_castSucc, ih]
+           simp [Finset.sum_range_succ]
 
 lemma toPoly_128_extend_256 (a : B128) :
     toPoly (to256 a) = toPoly a := by
@@ -571,7 +599,6 @@ theorem BitVec_getLsb_eq_false_of_toNat_lt_two_pow {w d : ℕ} (a : BitVec w) (h
     exact pow_le_pow_right' (by decide : (1 : ℕ) ≤ 2) hd
   have hbit : a.toNat.testBit (i : ℕ) = false := Nat.testBit_eq_false_of_lt hlt
   simpa [BitVec.getLsb] using hbit
-
 
 theorem BitVec_getElem_eq_false_of_toNat_lt_two_pow {w d : ℕ} (a : BitVec w) (ha : a.toNat < 2 ^ d)
     (n : ℕ) (hn : n < w) (hd : d ≤ n) : a[n] = false := by
@@ -681,44 +708,34 @@ theorem toPoly_shiftLeft_no_overflow {w d : ℕ} (a : BitVec w) (ha : a.toNat < 
       · simp [toPoly_coeff, hn, hs, hns]
     · simp [toPoly_coeff, hn, hs]
 
-/--
-Generalized No-Overflow Multiplication.
-Safe to use whenever the bit-widths sum to ≤ 257.
-This covers both squaring (128+128=256) and reduction check (128+129=257).
--/
-lemma toPoly_clMul_no_overflow {da db : ℕ} (a b : B256)
-    (ha : a.toNat < 2 ^ da)
-    (hb : b.toNat < 2 ^ db)
-    (h_sum : da + db ≤ 257) :
+lemma toPoly_clMul (a b : B128) :
     toPoly (clMul a b) = toPoly a * toPoly b := by
+    rw [clMul_unfold]
+    rw [toPoly_fold_xor (f := fun k => if a.getLsbD k = true then to256 b <<< k else 0)]
+    conv_rhs => enter [1]; unfold toPoly
+    unfold BitVec.getLsb
+    rw [Fin.sum_univ_eq_sum_range
+      (f := fun i => if (BitVec.toNat a).testBit i = true
+        then X ^ i else 0)]
+    rw [Finset.sum_mul]
+    apply Finset.sum_congr rfl
+    intro i hi
+    simp only [Finset.mem_range] at hi
+    unfold BitVec.getLsbD
+    split_ifs
+    · have ha_proof : (to256 b).toNat < 2 ^ 128 := by
+           rw [to256_toNat]
+           exact b.isLt
+      have h_no_overflow_proof : 128 + i ≤ 256 := by
+           omega
+      rw  [toPoly_shiftLeft_no_overflow (d := 128) (to256 b)
+                                        (ha := ha_proof)
+                                        (h_no_overflow := h_no_overflow_proof)]
+      rw [toPoly_128_extend_256]
+      ring
+    · simp [toPoly_zero_eq_zero]
 
-  rw [clMul_eq_fold]
-  rw [toPoly_fold_xor]
-
-  conv_rhs => rw [toPoly]
-  rw [Finset.sum_mul]
-
-  apply Finset.sum_congr rfl
-  intro i _
-
-  split_ifs with h_bit
-  · rw [mul_comm]
-    rw [toPoly_shiftLeft_no_overflow (d := db) (ha := hb)]
-    · have h_i_lt_da : i.val < da := by
-        simp only [BitVec.getLsb] at h_bit
-        by_contra h_i_ge_da
-        simp only [not_lt] at h_i_ge_da
-        have h_testBit_lt_2_pow := Nat.testBit_lt_two_pow (i := i) (x := BitVec.toNat a)
-          (lt := by
-            apply lt_of_lt_of_le (b := 2^da) (by omega) (by
-              apply Nat.pow_le_pow_right (hx := by omega) (by omega)))
-        rw [h_testBit_lt_2_pow] at h_bit
-        exact (Bool.eq_not_self false).mp h_bit
-      omega
-
-  · simp [toPoly_zero_eq_zero]
-
-/-- Helper lemma to chain the modular squaring steps -/
+/-- Helper lemma to chain the modular squaring steps. -/
 lemma chain_step {P : Polynomial (ZMod 2)} (hP : P ≠ 0) {k : ℕ}
     {prev next : Polynomial (ZMod 2)} {q_val : B128}
     (h_prev : X ^ (2 ^ k) % P = prev % P)
