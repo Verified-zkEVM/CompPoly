@@ -32,6 +32,21 @@ variable {S : Type*}
 def eval₂ [Semiring R] [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial.Raw R) : S :=
   p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + f a * x ^ i) 0
 
+def eval₂Horner [Semiring R] [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial.Raw R) : S :=
+  p.foldr (fun a acc => acc * x + f a) 0
+
+theorem eval₂_eq_eval₂Horner [Semiring R] [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial.Raw R) :
+  eval₂ f x p = eval₂Horner f x p := by
+    unfold eval₂ eval₂Horner
+    rw [← Array.foldl_toList, ← Array.foldr_toList, Array.toList_zipIdx]
+    induction p.toList with
+    | nil => simp
+    | cons head tail tail_ih =>
+
+
+
+private lemma
+
 /-- Evaluates a `CPolynomial.Raw` at a given value -/
 @[inline, specialize]
 def eval [Semiring R] (x : R) (p : CPolynomial.Raw R) : R :=
