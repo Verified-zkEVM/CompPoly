@@ -31,6 +31,9 @@ variable {S : Type*}
 def eval₂ [Semiring R] [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial.Raw R) : S :=
   p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + f a * x ^ i) 0
 
+/-- Evaluates a `CPolynomial.Raw` at `x : S` using Horner's method.
+
+  Computes `f(aₙ) + x * (f(aₙ₋₁) + x * (... + x * f(a₀)))` via a right fold. -/
 @[inline, specialize]
 def eval₂Horner [Semiring R] [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial.Raw R) : S :=
   p.foldr (fun a acc => acc * x + f a) 0
@@ -46,6 +49,7 @@ private lemma foldl_zipIdx_eq_foldr_pow_k [Semiring R] [Semiring S]
            rw [tail_ih]
            rw [add_mul, mul_assoc, ← pow_succ', add_comm init, add_assoc]
 
+/-- Horner evaluation agrees with the sum-of-powers evaluation. -/
 theorem eval₂_eq_eval₂Horner [Semiring R] [Semiring S]
     (f : R →+* S) (x : S) (p : CPolynomial.Raw R) :
     eval₂ f x p = eval₂Horner f x p := by
