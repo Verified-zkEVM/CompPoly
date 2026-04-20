@@ -336,14 +336,19 @@ variable {R : Type*} [AddCommGroup R]
 
 /-- **One level** of the zeta‑transform (coefficient to evaluation).
 
-This function performs the transformation for the `j`-th variable (corresponding to the `j`-th bit).
-It iterates over all indices `i` in the boolean hypercube. If the `j`-th bit of `i` is 1,
-it adds the value at the corresponding index with the `j`-th bit 0 (`i - stride`)
-to the current value.
-This effectively computes the partial sum along the `j`-th dimension, which corresponds to
-evaluating the polynomial at $X_j = 1$ given its values at $X_j = 0$ (coefficients) and difference.
+Processes the `j`-th variable by folding the "partner" index (with bit `j` cleared) into
+every index that has bit `j` set. At output index `i`:
+$$ (\text{monoToLagrangeLevel}\ j\ v)[i] \ =\ \begin{cases}
+  v[i] + v[i - 2^j] & \text{if bit } j \text{ of } i \text{ is } 1 \\
+  v[i] & \text{otherwise}
+\end{cases} $$
 
-The `stride` is $2^j$, representing the distance between indices that differ only in the `j`-th bit.
+After applying every level `0, 1, …, n-1` the resulting entry at `i` is
+$\sum_{j \subseteq i} p[j]$ (bitwise subset), which is the hypercube evaluation at the
+Boolean point encoded by `i`. Cost per level: $O(2^n)$ additions, so the full transform
+is $O(n \cdot 2^n)$.
+
+The `stride` is $2^j$, the distance between indices that differ only in bit `j`.
 -/
 @[inline] def monoToLagrangeLevel {n : ℕ} (j : Fin n) : Vector R (2 ^ n) → Vector R (2 ^ n) :=
   fun v =>
@@ -354,16 +359,29 @@ The `stride` is $2^j$, representing the distance between indices that differ onl
       else
         v[i])
 
-/-- **Full transform**: coefficients → evaluations. -/
+/-- **Full zeta transform**: coefficients → evaluations.
+
+Applies `monoToLagrangeLevel 0, 1, …, n-1` in that order via `foldl`. The resulting entry
+at each index `i : Fin (2 ^ n)` is $\sum_{j \subseteq i} p[j]$ (the classical zeta
+transform on the Boolean lattice).
+
+**Complexity:** $O(n \cdot 2^n)$ additions — this is the butterfly form. Contrast with
+the naive `monoToLagrangeSpec` which is $O(4^n)$. -/
 @[inline] def monoToLagrange (n : ℕ) : CMlPolynomial R n → CMlPolynomialEval R n :=
   (List.finRange n).foldl (fun acc level => monoToLagrangeLevel level acc)
 
-/-- **One level** of the inverse zeta‑transform (evaluation to coefficient).
+/-- **One level** of the inverse zeta‑transform / Möbius transform (evaluation to
+coefficient).
 
-This function performs the inverse transformation for the `j`-th variable.
-It iterates over all indices `i`. If the `j`-th bit of `i` is 1, it subtracts the value
-at the corresponding index with the `j`-th bit 0 (`i - stride`) from the current value.
-This recovers the coefficient for the term involving $X_j$ from the evaluations.
+Processes the `j`-th variable by subtracting the partner entry (bit `j` cleared) from
+every index that has bit `j` set. At output index `i`:
+$$ (\text{lagrangeToMonoLevel}\ j\ v)[i] \ =\ \begin{cases}
+  v[i] - v[i - 2^j] & \text{if bit } j \text{ of } i \text{ is } 1 \\
+  v[i] & \text{otherwise}
+\end{cases} $$
+
+Each level is the exact inverse of `monoToLagrangeLevel j` (see
+`lagrangeToMonoLevel_monoToLagrangeLevel_id`).
 
 The `stride` is $2^j$.
 -/
@@ -376,16 +394,30 @@ The `stride` is $2^j$.
       else
         v[i])
 
-/-- **Full inverse transform**: evaluations → coefficients. -/
+/-- **Full inverse / Möbius transform**: evaluations → coefficients.
+
+Applies `lagrangeToMonoLevel (n-1), (n-2), …, 0` via `foldr`. The resulting entry at
+each index `i : Fin (2 ^ n)` is the inclusion-exclusion sum
+$\sum_{j \subseteq i} (-1)^{\mathrm{popCount}(i) - \mathrm{popCount}(j)} \cdot p[j]$ —
+see `lagrangeToMono_eq_lagrangeToMonoSpec`.
+
+**Complexity:** $O(n \cdot 2^n)$ additions/subtractions. Contrast with the naive
+`lagrangeToMonoSpec` which is $O(4^n)$. -/
 @[inline]
 def lagrangeToMono (n : ℕ) :
     Vector R (2 ^ n) → Vector R (2 ^ n) :=
   (List.finRange n).foldr (fun h acc => lagrangeToMonoLevel h acc)
 
-/-- The $ O(4^n) $ computable version of the Mobius Transform, serving as the spec.
+/-- The $O(4^n)$ inclusion-exclusion specification for the Möbius transform.
 
-For each output index $ i $, this sums over all indices $ j $ that are bitwise subsets
-of $ i $, with sign determined by the parity of the Hamming-weight difference. -/
+For each output index `i`, this sums over all indices `j` that are bitwise subsets of `i`
+(`i &&& j = j`), with sign
+$(-1)^{\mathrm{popCount}(i) - \mathrm{popCount}(j)}$:
+$$ (\text{lagrangeToMonoSpec}\ p)[i]
+  = \sum_{j \subseteq i} (-1)^{\mathrm{popCount}(i) - \mathrm{popCount}(j)} \cdot p[j]. $$
+
+Provable equivalent to the fast `lagrangeToMono` — see `lagrangeToMono_eq_lagrangeToMonoSpec`.
+-/
 def lagrangeToMonoSpec (p : CMlPolynomialEval R n) : CMlPolynomialEval R n :=
   -- We define the output vector by specifying the value for each entry `i`.
   Vector.ofFn (fun i =>
@@ -403,6 +435,20 @@ def lagrangeToMonoSpec (p : CMlPolynomialEval R n) : CMlPolynomialEval R n :=
         0 -- If j is not a subset of i, the term is zero.
     )
   )
+
+/-- The $O(4^n)$ specification for the zeta transform (the mirror of
+`lagrangeToMonoSpec`).
+
+For each output index `i`, this sums `p[j]` over every index `j` that is a bitwise subset
+of `i` (`i &&& j = j`):
+$$ (\text{monoToLagrangeSpec}\ p)[i]\ =\ \sum_{j \subseteq i} p[j]. $$
+
+Provable equivalent to the fast `monoToLagrange` — see `monoToLagrange_eq_monoToLagrangeSpec`.
+-/
+def monoToLagrangeSpec (p : CMlPolynomial R n) : CMlPolynomialEval R n :=
+  Vector.ofFn (fun i =>
+    Finset.sum Finset.univ (fun j =>
+      if (i.val &&& j.val = j.val) then p.get j else 0))
 
 -- #eval lagrangeToMono 2 #v[(78 : ℤ), 3, 4, 100]
 -- #eval lagrangeToMonoSpec (n:=2) #v[(78 : ℤ), 3, 4, 100]
@@ -908,6 +954,261 @@ theorem lagrangeToMono_eq_lagrangeToMonoSpec
   exact mobiusPartial_zero_eq_spec p ⟨i, hi⟩
 
 end MobiusEquivalence
+
+section ZetaEquivalence
+
+/-! ### Fast ↔ Spec equivalence for the zeta transform
+
+Mirror of `MobiusEquivalence`: we prove `monoToLagrange = monoToLagrangeSpec` with an
+indexed family `zetaPartial k` of partial subset sums. Instead of the low-bits constraint
+used in the Möbius proof, here `k` counts how many leading levels have already been
+applied — the constraint is that `j` must agree with `i` on bits **at or above**
+position `k` (`i / 2 ^ k = j / 2 ^ k`).
+
+* At `k = 0` only `j = i` matches, so `zetaPartial 0 p i = p[i]`.
+* At `k = n` the constraint is vacuous, recovering `monoToLagrangeSpec`.
+
+Each application of `monoToLagrangeLevel k` to `Vector.ofFn (zetaPartial k p)` increments
+`k` by one. `monoToLagrange n` is a `foldl`, so applying the levels `0, 1, …, n-1`
+transports us from `zetaPartial 0 = id` to `zetaPartial n = spec`. -/
+
+/-- Partial zeta sum at index `i` after processing levels `[0, 1, …, k - 1]`.
+
+Sums `p[j]` over `j : Fin (2 ^ n)` that are bitwise subsets of `i` and that agree with `i`
+on all bits at or above position `k` (`i / 2 ^ k = j / 2 ^ k`).
+
+* At `k = 0` only `j = i` satisfies the constraints, so the result is `p[i]`.
+* At `k = n` the high-bits constraint is vacuous and the formula coincides with
+  `monoToLagrangeSpec`.
+-/
+private def zetaPartial (k : ℕ) (p : Vector R (2 ^ n)) (i : Fin (2 ^ n)) : R :=
+  ∑ j : Fin (2 ^ n),
+    if (i.val &&& j.val = j.val) ∧ (i.val / 2 ^ k = j.val / 2 ^ k) then
+      p.get j
+    else 0
+
+/-- Base case: at `k = 0` the high-bits constraint forces `j = i`, so the partial zeta
+sum collapses to `p.get i`. -/
+private lemma zetaPartial_zero (p : Vector R (2 ^ n)) (i : Fin (2 ^ n)) :
+    zetaPartial 0 p i = p.get i := by
+  unfold zetaPartial
+  rw [Finset.sum_eq_single i]
+  · have h1 : i.val &&& i.val = i.val := by simp [Nat.and_self]
+    simp only [h1, pow_zero, Nat.div_one, and_self, if_true]
+  · intro j _ hji
+    have hji' : j.val ≠ i.val := fun h => hji (Fin.ext h)
+    simp only [pow_zero, Nat.div_one]
+    have : i.val ≠ j.val := fun h => hji' h.symm
+    simp [this]
+  · intro h; exact absurd (Finset.mem_univ i) h
+
+/-- At `k = n` the high-bits constraint is vacuous (both `i / 2 ^ n` and `j / 2 ^ n`
+are `0`), so the partial sum equals `monoToLagrangeSpec`. -/
+private lemma zetaPartial_n_eq_spec (p : Vector R (2 ^ n)) (i : Fin (2 ^ n)) :
+    zetaPartial n p i = (monoToLagrangeSpec p).get i := by
+  unfold zetaPartial monoToLagrangeSpec
+  simp only [Vector.get_ofFn]
+  apply Finset.sum_congr rfl
+  intro j _
+  have hi : i.val / 2 ^ n = 0 := Nat.div_eq_of_lt i.isLt
+  have hj : j.val / 2 ^ n = 0 := Nat.div_eq_of_lt j.isLt
+  by_cases hsub : i.val &&& j.val = j.val
+  · simp [hsub, hi, hj]
+  · simp [hsub]
+
+/-- `m / 2 ^ (k + 1) = (m / 2 ^ k) / 2`: increasing the shift exponent by one is one
+extra halving. -/
+private lemma div_pow_succ (m k : ℕ) :
+    m / 2 ^ (k + 1) = (m / 2 ^ k) / 2 := by
+  rw [pow_succ, Nat.div_div_eq_div_mul]
+
+/-- If bit `k` of both `m` and `n` is `0`, then equality modulo `2 ^ k` (high-bits sense,
+i.e. of the quotients `/ 2 ^ k`) is equivalent to equality modulo `2 ^ (k + 1)`. -/
+private lemma div_pow_succ_eq_of_both_false {m n k : ℕ}
+    (hm : m.testBit k = false) (hn : n.testBit k = false) :
+    m / 2 ^ k = n / 2 ^ k ↔ m / 2 ^ (k + 1) = n / 2 ^ (k + 1) := by
+  have hm_even : (m / 2 ^ k) % 2 = 0 := div_mod2_of_testBit_false hm
+  have hn_even : (n / 2 ^ k) % 2 = 0 := div_mod2_of_testBit_false hn
+  have hm_div : m / 2 ^ (k + 1) = (m / 2 ^ k) / 2 := div_pow_succ m k
+  have hn_div : n / 2 ^ (k + 1) = (n / 2 ^ k) / 2 := div_pow_succ n k
+  have hm_split := Nat.div_add_mod (m / 2 ^ k) 2
+  have hn_split := Nat.div_add_mod (n / 2 ^ k) 2
+  omega
+
+/-- If bit `k` of both `m` and `n` is `1`, then equality modulo `2 ^ k` (high-bits sense)
+is equivalent to equality modulo `2 ^ (k + 1)`. -/
+private lemma div_pow_succ_eq_of_both_true {m n k : ℕ}
+    (hm : m.testBit k = true) (hn : n.testBit k = true) :
+    m / 2 ^ k = n / 2 ^ k ↔ m / 2 ^ (k + 1) = n / 2 ^ (k + 1) := by
+  have hm_odd : (m / 2 ^ k) % 2 = 1 := div_mod2_of_testBit_true hm
+  have hn_odd : (n / 2 ^ k) % 2 = 1 := div_mod2_of_testBit_true hn
+  have hm_div : m / 2 ^ (k + 1) = (m / 2 ^ k) / 2 := div_pow_succ m k
+  have hn_div : n / 2 ^ (k + 1) = (n / 2 ^ k) / 2 := div_pow_succ n k
+  have hm_split := Nat.div_add_mod (m / 2 ^ k) 2
+  have hn_split := Nat.div_add_mod (n / 2 ^ k) 2
+  omega
+
+/-- When bit `k` disagrees between `m` and `n` (set vs clear), the quotients
+`m / 2 ^ k` and `n / 2 ^ k` have different parities and are therefore unequal. -/
+private lemma div_pow_ne_of_diff {m n k : ℕ}
+    (hm : m.testBit k = true) (hn : n.testBit k = false) :
+    m / 2 ^ k ≠ n / 2 ^ k := by
+  have hm_odd : (m / 2 ^ k) % 2 = 1 := div_mod2_of_testBit_true hm
+  have hn_even : (n / 2 ^ k) % 2 = 0 := div_mod2_of_testBit_false hn
+  intro h; rw [h] at hm_odd; omega
+
+/-- Clearing bit `k` in `m` (when set) preserves the high-bits quotient at level `k + 1`:
+`(m - 2 ^ k) / 2 ^ (k + 1) = m / 2 ^ (k + 1)`. -/
+private lemma div_pow_succ_sub_of_testBit_true {m k : ℕ}
+    (hbit : m.testBit k = true) :
+    (m - 2 ^ k) / 2 ^ (k + 1) = m / 2 ^ (k + 1) := by
+  have hm_ge : 2 ^ k ≤ m := Nat.ge_two_pow_of_testBit hbit
+  have hpos : 0 < 2 ^ (k + 1) := Nat.two_pow_pos (k + 1)
+  have hmod_sub : (m - 2 ^ k) % 2 ^ (k + 1) = m % 2 ^ k :=
+    mod_pow_succ_sub_of_testBit_true hbit
+  have hmod_m : m % 2 ^ (k + 1) = 2 ^ k + m % 2 ^ k := by
+    have := mod_double_of_odd_div m (2 ^ k) (Nat.two_pow_pos k)
+      (div_mod2_of_testBit_true hbit)
+    rwa [pow_succ]
+  have h1 := Nat.div_add_mod m (2 ^ (k + 1))
+  have h2 := Nat.div_add_mod (m - 2 ^ k) (2 ^ (k + 1))
+  have hstep :
+      2 ^ (k + 1) * (m / 2 ^ (k + 1)) =
+      2 ^ (k + 1) * ((m - 2 ^ k) / 2 ^ (k + 1)) := by omega
+  exact (Nat.eq_of_mul_eq_mul_left hpos hstep).symm
+
+/-- Step lemma (zeta version): applying `monoToLagrangeLevel k` to the partial zeta sum
+at level `k` gives the partial sum at level `k + 1`. -/
+private lemma zetaPartial_step
+    {k : ℕ} (hk : k < n) (p : Vector R (2 ^ n))
+    (i : Fin (2 ^ n)) :
+    Vector.get
+      (monoToLagrangeLevel ⟨k, hk⟩
+        (Vector.ofFn (zetaPartial k p)))
+      i =
+    zetaPartial (k + 1) p i := by
+  unfold monoToLagrangeLevel zetaPartial
+  simp only [Vector.get_eq_getElem, Vector.getElem_ofFn,
+    BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin]
+  if hbit : i.val.testBit k = true then
+    simp only [hbit, ↓reduceIte]
+    have h2k_le := Nat.ge_two_pow_of_testBit hbit
+    have hbit' : (i.val - 2 ^ k).testBit k = false := testBit_sub_self hbit
+    rw [← Finset.sum_add_distrib]
+    apply Finset.sum_congr rfl; intro j _
+    by_cases hjbit : j.val.testBit k = true
+    · -- bit k of j = 1: contributes to zetaPartial k p i but not to zetaPartial k p (i - 2^k).
+      have hnsub' : ¬((i.val - 2 ^ k) &&& j.val = j.val) := by
+        intro h; have := submask_testBit_false h hbit'; simp [this] at hjbit
+      simp only [hnsub', false_and, ite_false, add_zero]
+      by_cases hsub : i.val &&& j.val = j.val
+      · simp only [hsub, true_and]
+        have hiff := div_pow_succ_eq_of_both_true hbit hjbit
+        by_cases heq : i.val / 2 ^ k = j.val / 2 ^ k
+        · simp [heq, hiff.mp heq]
+        · have : ¬ i.val / 2 ^ (k + 1) = j.val / 2 ^ (k + 1) := fun h => heq (hiff.mpr h)
+          simp [heq, this]
+      · simp [hsub]
+    · -- bit k of j = 0
+      simp only [Bool.not_eq_true] at hjbit
+      by_cases hsub : i.val &&& j.val = j.val
+      · -- j ⊆ i, bit k of i = 1, bit k of j = 0.
+        have hne : i.val / 2 ^ k ≠ j.val / 2 ^ k := div_pow_ne_of_diff hbit hjbit
+        have hsub' : (i.val - 2 ^ k) &&& j.val = j.val :=
+          submask_sub_two_pow hsub hbit hjbit
+        have hbit_sub : (i.val - 2 ^ k).testBit k = false := hbit'
+        simp only [hsub, hsub', true_and, hne, ite_false, zero_add]
+        have hiff := div_pow_succ_eq_of_both_false hbit_sub hjbit
+        have hdiv_sub := div_pow_succ_sub_of_testBit_true hbit
+        by_cases heq : (i.val - 2 ^ k) / 2 ^ k = j.val / 2 ^ k
+        · have hiff_applied := hiff.mp heq
+          rw [hdiv_sub] at hiff_applied
+          simp [heq, hiff_applied]
+        · have : ¬ i.val / 2 ^ (k + 1) = j.val / 2 ^ (k + 1) := by
+            intro h; apply heq
+            apply hiff.mpr
+            rw [hdiv_sub]; exact h
+          simp [heq, this]
+      · -- j not a subset of i; also not a subset of i - 2^k.
+        have hnsub' : ¬((i.val - 2 ^ k) &&& j.val = j.val) := by
+          intro h'; apply hsub
+          apply Nat.eq_of_testBit_eq; intro l
+          rw [Nat.testBit_and]
+          have hh := Nat.testBit_and (i.val - 2 ^ k) j.val l
+          rw [h'] at hh
+          if hl : l = k then
+            subst hl; simp [hjbit]
+          else
+            rw [testBit_sub_ne hbit hl] at hh; exact hh.symm
+        simp [hsub, hnsub']
+  else
+    simp only [Bool.not_eq_true] at hbit
+    simp only [hbit]
+    apply Finset.sum_congr rfl; intro j _
+    by_cases hsub : i.val &&& j.val = j.val
+    · have hjf : j.val.testBit k = false := submask_testBit_false hsub hbit
+      simp only [hsub, true_and]
+      have hiff := div_pow_succ_eq_of_both_false hbit hjf
+      by_cases heq : i.val / 2 ^ k = j.val / 2 ^ k
+      · simp [heq, hiff.mp heq]
+      · have : ¬ i.val / 2 ^ (k + 1) = j.val / 2 ^ (k + 1) := fun h => heq (hiff.mpr h)
+        simp [heq, this]
+    · simp [hsub]
+
+/-- Fold lemma (zeta version): applying all `n` levels of `monoToLagrange` via `foldl`
+yields `Vector.ofFn (zetaPartial n p)`. Proved by induction on the number of levels
+already applied, using `zetaPartial_step`. -/
+private lemma monoToLagrange_eq_zetaPartial_n
+    (p : Vector R (2 ^ n)) :
+    monoToLagrange n p = Vector.ofFn (zetaPartial n p) := by
+  unfold monoToLagrange
+  have htake_full : (List.finRange n).take n = List.finRange n :=
+    List.take_of_length_le (by simp)
+  suffices h : ∀ m ≤ n,
+      ((List.finRange n).take m).foldl
+        (fun acc level => monoToLagrangeLevel level acc)
+        p =
+      Vector.ofFn (zetaPartial m p) by
+    have := h n (le_refl n)
+    rw [htake_full] at this
+    exact this
+  intro m hm
+  induction m with
+  | zero =>
+    simp only [List.take_zero, List.foldl_nil]
+    ext i hi
+    simp only [Vector.getElem_ofFn]
+    exact (zetaPartial_zero p ⟨i, hi⟩).symm
+  | succ m' ih =>
+    have hm' : m' ≤ n := by omega
+    have hk : m' < n := by omega
+    have hlen : m' < (List.finRange n).length := by
+      rw [List.length_finRange]; exact hk
+    have hget : (List.finRange n)[m'] = ⟨m', hk⟩ := List.getElem_finRange hlen
+    have htake : (List.finRange n).take (m' + 1) =
+        (List.finRange n).take m' ++ [⟨m', hk⟩] := by
+      rw [List.take_add_one, List.getElem?_eq_getElem hlen, hget]
+      rfl
+    rw [htake, List.foldl_append, List.foldl_cons, List.foldl_nil, ih hm']
+    ext idx hidx
+    simp only [Vector.getElem_ofFn]
+    have hstep := zetaPartial_step hk p ⟨idx, hidx⟩
+    simp only [Vector.get_eq_getElem] at hstep
+    exact hstep
+
+/-- The fast zeta transform `monoToLagrange` is pointwise equal to the naive
+`monoToLagrangeSpec`. Mirror of `lagrangeToMono_eq_lagrangeToMonoSpec`. -/
+theorem monoToLagrange_eq_monoToLagrangeSpec
+    {R : Type*} [AddCommGroup R] {n : ℕ}
+    (p : Vector R (2 ^ n)) :
+    CMlPolynomial.monoToLagrange n p =
+      CMlPolynomial.monoToLagrangeSpec p := by
+  rw [monoToLagrange_eq_zetaPartial_n]
+  ext i hi
+  simp only [Vector.getElem_ofFn]
+  exact zetaPartial_n_eq_spec p ⟨i, hi⟩
+
+end ZetaEquivalence
 
 /--
 Generates a list of indices representing a range of bit positions [l, r] in increasing order.
