@@ -446,8 +446,8 @@ $$ (\text{monoToLagrangeSpec}\ p)[i]\ =\ \sum_{j \subseteq i} p[j]. $$
 Provable equivalent to the fast `monoToLagrange` — see `monoToLagrange_eq_monoToLagrangeSpec`.
 -/
 def monoToLagrangeSpec (p : CMlPolynomial R n) : CMlPolynomialEval R n :=
-  Vector.ofFn (fun i =>
-    Finset.sum Finset.univ (fun j =>
+  Vector.ofFn (fun i ↦
+    Finset.sum Finset.univ (fun j ↦
       if (i.val &&& j.val = j.val) then p.get j else 0))
 
 -- #eval lagrangeToMono 2 #v[(78 : ℤ), 3, 4, 100]
@@ -996,9 +996,9 @@ private lemma zetaPartial_zero (p : Vector R (2 ^ n)) (i : Fin (2 ^ n)) :
   · have h1 : i.val &&& i.val = i.val := by simp [Nat.and_self]
     simp only [h1, pow_zero, Nat.div_one, and_self, if_true]
   · intro j _ hji
-    have hji' : j.val ≠ i.val := fun h => hji (Fin.ext h)
+    have hji' : j.val ≠ i.val := fun h ↦ hji (Fin.ext h)
     simp only [pow_zero, Nat.div_one]
-    have : i.val ≠ j.val := fun h => hji' h.symm
+    have : i.val ≠ j.val := fun h ↦ hji' h.symm
     simp [this]
   · intro h; exact absurd (Finset.mem_univ i) h
 
@@ -1106,7 +1106,7 @@ private lemma zetaPartial_step
         have hiff := div_pow_succ_eq_of_both_true hbit hjbit
         by_cases heq : i.val / 2 ^ k = j.val / 2 ^ k
         · simp [heq, hiff.mp heq]
-        · have : ¬ i.val / 2 ^ (k + 1) = j.val / 2 ^ (k + 1) := fun h => heq (hiff.mpr h)
+        · have : ¬ i.val / 2 ^ (k + 1) = j.val / 2 ^ (k + 1) := fun h ↦ heq (hiff.mpr h)
           simp [heq, this]
       · simp [hsub]
     · -- bit k of j = 0
@@ -1151,7 +1151,7 @@ private lemma zetaPartial_step
       have hiff := div_pow_succ_eq_of_both_false hbit hjf
       by_cases heq : i.val / 2 ^ k = j.val / 2 ^ k
       · simp [heq, hiff.mp heq]
-      · have : ¬ i.val / 2 ^ (k + 1) = j.val / 2 ^ (k + 1) := fun h => heq (hiff.mpr h)
+      · have : ¬ i.val / 2 ^ (k + 1) = j.val / 2 ^ (k + 1) := fun h ↦ heq (hiff.mpr h)
         simp [heq, this]
     · simp [hsub]
 
@@ -1166,7 +1166,7 @@ private lemma monoToLagrange_eq_zetaPartial_n
     List.take_of_length_le (by simp)
   suffices h : ∀ m ≤ n,
       ((List.finRange n).take m).foldl
-        (fun acc level => monoToLagrangeLevel level acc)
+        (fun acc level ↦ monoToLagrangeLevel level acc)
         p =
       Vector.ofFn (zetaPartial m p) by
     have := h n (le_refl n)
