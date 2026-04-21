@@ -11,3 +11,4 @@ CompPoly/Fields/Binary/Tower/Concrete/Core.lean : line 1 : ERR_NUM_LIN : 1700 fi
 CompPoly/Fields/Binary/AdditiveNTT/AdditiveNTT.lean : line 1 : ERR_NUM_LIN : 3000 file contains 2826 lines, try to split it up : ERR_NUM_LIN
 CompPoly/Fields/Binary/AdditiveNTT/AdditiveNTT.lean : line 8 : ERR_TAC : Files in CompPoly should not import the whole Mathlib.Tactic folder : ERR_TAC
 CompPoly/Fields/Binary/AdditiveNTT/NovelPolynomialBasis.lean : line 1 : ERR_NUM_LIN : 1800 file contains 1636 lines, try to split it up : ERR_NUM_LIN
+CompPoly/Multilinear/Basic.lean : line 1 : ERR_NUM_LIN : 1700 file contains 1549 lines, try to split it up : ERR_NUM_LIN
