@@ -1,7 +1,8 @@
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles, Natalie Klaus
+Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles,
+  Natalie Klaus, Dimitris Mitsios
 -/
 import CompPoly.Univariate.Raw.Core
 
@@ -26,11 +27,36 @@ variable {S : Type*}
 
 /-- Evaluates a `CPolynomial.Raw` at `x : S` using a ring homomorphism `f : R →+* S`.
 
-  Computes `f(a₀) + f(a₁) * x + f(a₂) * x² + ...` where `aᵢ` are the coefficients.
-
-  TODO: define an efficient version of this with caching -/
+  Computes `f(a₀) + f(a₁) * x + f(a₂) * x² + ...` where `aᵢ` are the coefficients.  -/
 def eval₂ [Semiring R] [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial.Raw R) : S :=
   p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + f a * x ^ i) 0
+
+/-- Evaluates a `CPolynomial.Raw` at `x : S` using Horner's method.
+
+  Computes `f(aₙ) + x * (f(aₙ₋₁) + x * (... + x * f(a₀)))` via a right fold. -/
+@[inline, specialize]
+def eval₂Horner [Semiring R] [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial.Raw R) : S :=
+  p.foldr (fun a acc => acc * x + f a) 0
+
+private lemma foldl_zipIdx_eq_foldr_pow_k [Semiring R] [Semiring S]
+    (f : R →+* S) (x : S) (init : S) (k : Nat) (l : List R) :
+    List.foldl (fun acc a => acc + (f a.1) * x ^ a.2) init (l.zipIdx k) =
+      List.foldr (fun a acc => acc * x + f a) 0 l * x ^ k + init := by
+    induction l generalizing init k with
+    | nil => simp
+    | cons head tail tail_ih =>
+           simp only [List.foldr_cons, List.zipIdx_cons, List.foldl_cons]
+           rw [tail_ih]
+           rw [add_mul, mul_assoc, ← pow_succ', add_comm init, add_assoc]
+
+/-- Horner evaluation agrees with the sum-of-powers evaluation. -/
+theorem eval₂_eq_eval₂Horner [Semiring R] [Semiring S]
+    (f : R →+* S) (x : S) (p : CPolynomial.Raw R) :
+    eval₂ f x p = eval₂Horner f x p := by
+    unfold eval₂ eval₂Horner
+    rw [← Array.foldl_toList, ← Array.foldr_toList, Array.toList_zipIdx]
+    have := foldl_zipIdx_eq_foldr_pow_k f x 0 0 p.toList
+    simpa using this
 
 /-- Evaluates a `CPolynomial.Raw` at a given value -/
 @[inline, specialize]
