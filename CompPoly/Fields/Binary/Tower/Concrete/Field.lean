@@ -12,6 +12,7 @@ import CompPoly.Fields.Binary.Tower.Concrete.Core
 Field-structure lemmas for successive levels of the concrete binary tower.
 -/
 
+set_option backward.isDefEq.respectTransparency false
 namespace ConcreteBinaryTower
 
 open Polynomial
@@ -586,7 +587,7 @@ def liftBTFieldProps (k : ℕ) (prevBTFResult : ConcreteBTFStepResult (k := k)) 
           (h_k:=h_k)
   }
 
-def liftConcreteBTField (k : ℕ) (prevBTFResult : ConcreteBTFStepResult (k := k)) :
+@[reducible] def liftConcreteBTField (k : ℕ) (prevBTFResult : ConcreteBTFStepResult (k := k)) :
   Field (ConcreteBTField (k + 1)) := by
   exact mkFieldInstance (k:=k + 1) (props:=liftBTFieldProps (k:=k) (prevBTFResult:=prevBTFResult))
 
@@ -712,7 +713,7 @@ lemma sum_inv_Z_next_eq
   rw [h_mul_inv, Z_square_mul_form (k:=k) (prev:=prev), add_assoc]
   rw [add_self_cancel, add_zero]
 -------------------------------------------------------------------------------------------
-def getBTFResult (k : ℕ) : ConcreteBTFStepResult k :=
+noncomputable def getBTFResult (k : ℕ) : ConcreteBTFStepResult k :=
   match k with
   | 0 =>
     let base : ConcreteBTFieldProps 0 := {
@@ -920,9 +921,8 @@ instance instFieldConcrete {k : ℕ} : Field (ConcreteBTField k) :=
 instance instCharP2 {k : ℕ} : CharP (ConcreteBTField k) 2 :=
   charP_eq_2_of_add_self_eq_zero (F:=(ConcreteBTField k)) (sumZeroIffEq:=add_eq_zero_iff_eq)
 
-instance (k : ℕ) : Fintype (ConcreteBTField k) := (getBTFResult k).instFintype
-
-instance instFintype {k : ℕ} : Fintype (ConcreteBTField k) := (getBTFResult k).instFintype
+noncomputable instance instFintype {k : ℕ} : Fintype (ConcreteBTField k) :=
+  (getBTFResult k).instFintype
 
 /-- adjoined root of poly k, generator of successor field BTField (k + 1) -/
 @[simp]

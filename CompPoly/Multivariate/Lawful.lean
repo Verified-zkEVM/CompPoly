@@ -18,6 +18,8 @@ computable multivariate polynomials.
 
 * `CPoly.Lawful n R`: The subtype of `Unlawful n R` with no zero coefficients.
 -/
+set_option allowUnsafeReducibility true in
+attribute [local reducible] instDecidableEqOfLawfulBEq
 attribute [local instance 5] instDecidableEqOfLawfulBEq
 
 namespace CPoly
@@ -25,10 +27,10 @@ namespace CPoly
 open Std
 
 /-- The subtype of polynomials with no zero coefficients. -/
-def Lawful (n : ℕ) (R : Type) [Zero R] :=
+def Lawful (n : ℕ) (R : Type*) [Zero R] : Type _ :=
   {p : Unlawful n R // p.isNoZeroCoef}
 
-variable {n : ℕ} {R : Type} [Zero R]
+variable {n : ℕ} {R : Type*} [Zero R]
 
 section Instances
 
@@ -64,7 +66,7 @@ lemma mem_iff_cast : x ∈ p.1 ↔ x ∈ p := by rfl
 
 @[grind =]
 lemma mem_iff : x ∈ p ↔ ∃ v, v ≠ 0 ∧ p[x]? = .some v := by
-  rw [←mem_iff_cast, ExtTreeMap.mem_iff_isSome_getElem?, Option.isSome_iff_exists]
+  erw [←mem_iff_cast, ExtTreeMap.mem_iff_isSome_getElem?, Option.isSome_iff_exists]
   rcases p with ⟨p, hp⟩
   specialize hp x
   grind
@@ -111,7 +113,9 @@ lemma C_zero' : C (n := n) (0 : ℕ) = 0 := rfl
 
 lemma zero_eq_zero : (0 : Lawful n R) = ⟨0, by grind⟩ := rfl
 
-lemma zero_eq_empty : (0 : Lawful n R) = ∅ := by unfold_projs; simp [C, Unlawful.zero_eq_empty]
+lemma zero_eq_empty : (0 : Lawful n R) = ∅ := by
+  unfold_projs
+  simp [C, Unlawful.zero_eq_empty]
 
 @[simp, grind .]
 lemma not_mem_C_zero : x ∉ C 0 := by simp [zero_eq_empty]; unfold_projs; grind
@@ -167,7 +171,7 @@ abbrev monomials (p : Lawful n R) : List (CMvMonomial n) :=
   p.1.monomials
 
 /-- Check if a polynomial is a non-zero constant. -/
-def NZConst {n : ℕ} {R : Type} [Zero R] (p : Lawful n R) : Prop :=
+def NzConst {n : ℕ} {R : Type*} [Zero R] (p : Lawful n R) : Prop :=
   p.val.size = 1 ∧ p.val.contains CMvMonomial.zero
 
 omit [BEq R] [LawfulBEq R] in
@@ -175,8 +179,8 @@ omit [BEq R] [LawfulBEq R] in
 lemma mem_monomials_iff {w : CMvMonomial n} : w ∈ Lawful.monomials p ↔ w ∈ p := by
   grind
 
-instance {p : Lawful n R} : Decidable (NZConst p) := by
-  dsimp [NZConst]
+instance {p : Lawful n R} : Decidable (NzConst p) := by
+  dsimp [NzConst]
   infer_instance
 
 end

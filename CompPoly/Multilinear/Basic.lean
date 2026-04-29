@@ -21,7 +21,9 @@ import CompPoly.Data.Nat.Bitwise
   `MvPolynomial.restrictDegree (Fin n) R 1`).
 
   ## TODOs
-  - The abstract formula for `monoToLagrange` (zeta formula) and `lagrangeToMono` (mobius formula)
+  - The abstract zeta formula for `monoToLagrange`
+  - A naive `O(4^n)` zeta spec `monoToLagrangeSpec` mirroring `lagrangeToMonoSpec`,
+    plus equivalence `monoToLagrange = monoToLagrangeSpec`
 -/
 
 namespace CompPoly
@@ -334,14 +336,19 @@ variable {R : Type*} [AddCommGroup R]
 
 /-- **One level** of the zeta‑transform (coefficient to evaluation).
 
-This function performs the transformation for the `j`-th variable (corresponding to the `j`-th bit).
-It iterates over all indices `i` in the boolean hypercube. If the `j`-th bit of `i` is 1,
-it adds the value at the corresponding index with the `j`-th bit 0 (`i - stride`)
-to the current value.
-This effectively computes the partial sum along the `j`-th dimension, which corresponds to
-evaluating the polynomial at $X_j = 1$ given its values at $X_j = 0$ (coefficients) and difference.
+Processes the `j`-th variable by folding the "partner" index (with bit `j` cleared) into
+every index that has bit `j` set. At output index `i`:
+$$ (\text{monoToLagrangeLevel}\ j\ v)[i] \ =\ \begin{cases}
+  v[i] + v[i - 2^j] & \text{if bit } j \text{ of } i \text{ is } 1 \\
+  v[i] & \text{otherwise}
+\end{cases} $$
 
-The `stride` is $2^j$, representing the distance between indices that differ only in the `j`-th bit.
+After applying every level `0, 1, …, n-1` the resulting entry at `i` is
+$\sum_{j \subseteq i} p[j]$ (bitwise subset), which is the hypercube evaluation at the
+Boolean point encoded by `i`. Cost per level: $O(2^n)$ additions, so the full transform
+is $O(n \cdot 2^n)$.
+
+The `stride` is $2^j$, the distance between indices that differ only in bit `j`.
 -/
 @[inline] def monoToLagrangeLevel {n : ℕ} (j : Fin n) : Vector R (2 ^ n) → Vector R (2 ^ n) :=
   fun v =>
@@ -352,16 +359,29 @@ The `stride` is $2^j$, representing the distance between indices that differ onl
       else
         v[i])
 
-/-- **Full transform**: coefficients → evaluations. -/
+/-- **Full zeta transform**: coefficients → evaluations.
+
+Applies `monoToLagrangeLevel 0, 1, …, n-1` in that order via `foldl`. The resulting entry
+at each index `i : Fin (2 ^ n)` is $\sum_{j \subseteq i} p[j]$ (the classical zeta
+transform on the Boolean lattice).
+
+**Complexity:** $O(n \cdot 2^n)$ additions — this is the butterfly form. Contrast with
+the naive `monoToLagrangeSpec` which is $O(4^n)$. -/
 @[inline] def monoToLagrange (n : ℕ) : CMlPolynomial R n → CMlPolynomialEval R n :=
   (List.finRange n).foldl (fun acc level => monoToLagrangeLevel level acc)
 
-/-- **One level** of the inverse zeta‑transform (evaluation to coefficient).
+/-- **One level** of the inverse zeta‑transform / Möbius transform (evaluation to
+coefficient).
 
-This function performs the inverse transformation for the `j`-th variable.
-It iterates over all indices `i`. If the `j`-th bit of `i` is 1, it subtracts the value
-at the corresponding index with the `j`-th bit 0 (`i - stride`) from the current value.
-This recovers the coefficient for the term involving $X_j$ from the evaluations.
+Processes the `j`-th variable by subtracting the partner entry (bit `j` cleared) from
+every index that has bit `j` set. At output index `i`:
+$$ (\text{lagrangeToMonoLevel}\ j\ v)[i] \ =\ \begin{cases}
+  v[i] - v[i - 2^j] & \text{if bit } j \text{ of } i \text{ is } 1 \\
+  v[i] & \text{otherwise}
+\end{cases} $$
+
+Each level is the exact inverse of `monoToLagrangeLevel j` (see
+`lagrangeToMonoLevel_monoToLagrangeLevel_id`).
 
 The `stride` is $2^j$.
 -/
@@ -374,15 +394,30 @@ The `stride` is $2^j$.
       else
         v[i])
 
-/-- **Full inverse transform**: evaluations → coefficients. -/
+/-- **Full inverse / Möbius transform**: evaluations → coefficients.
+
+Applies `lagrangeToMonoLevel (n-1), (n-2), …, 0` via `foldr`. The resulting entry at
+each index `i : Fin (2 ^ n)` is the inclusion-exclusion sum
+$\sum_{j \subseteq i} (-1)^{\mathrm{popCount}(i) - \mathrm{popCount}(j)} \cdot p[j]$ —
+see `lagrangeToMono_eq_lagrangeToMonoSpec`.
+
+**Complexity:** $O(n \cdot 2^n)$ additions/subtractions. Contrast with the naive
+`lagrangeToMonoSpec` which is $O(4^n)$. -/
 @[inline]
 def lagrangeToMono (n : ℕ) :
     Vector R (2 ^ n) → Vector R (2 ^ n) :=
   (List.finRange n).foldr (fun h acc => lagrangeToMonoLevel h acc)
 
-/-- The O(n^3) computable version of the Mobius Transform, serving as the spec.
+/-- The $O(4^n)$ inclusion-exclusion specification for the Möbius transform.
 
-TODO: prove equivalence between `lagrangeToMono` and `lagrangeToMonoSpec` -/
+For each output index `i`, this sums over all indices `j` that are bitwise subsets of `i`
+(`i &&& j = j`), with sign
+$(-1)^{\mathrm{popCount}(i) - \mathrm{popCount}(j)}$:
+$$ (\text{lagrangeToMonoSpec}\ p)[i]
+  = \sum_{j \subseteq i} (-1)^{\mathrm{popCount}(i) - \mathrm{popCount}(j)} \cdot p[j]. $$
+
+Provable equivalent to the fast `lagrangeToMono` — see `lagrangeToMono_eq_lagrangeToMonoSpec`.
+-/
 def lagrangeToMonoSpec (p : CMlPolynomialEval R n) : CMlPolynomialEval R n :=
   -- We define the output vector by specifying the value for each entry `i`.
   Vector.ofFn (fun i =>
@@ -400,6 +435,20 @@ def lagrangeToMonoSpec (p : CMlPolynomialEval R n) : CMlPolynomialEval R n :=
         0 -- If j is not a subset of i, the term is zero.
     )
   )
+
+/-- The $O(4^n)$ specification for the zeta transform (the mirror of
+`lagrangeToMonoSpec`).
+
+For each output index `i`, this sums `p[j]` over every index `j` that is a bitwise subset
+of `i` (`i &&& j = j`):
+$$ (\text{monoToLagrangeSpec}\ p)[i]\ =\ \sum_{j \subseteq i} p[j]. $$
+
+Provable equivalent to the fast `monoToLagrange` — see `monoToLagrange_eq_monoToLagrangeSpec`.
+-/
+def monoToLagrangeSpec (p : CMlPolynomial R n) : CMlPolynomialEval R n :=
+  Vector.ofFn (fun i ↦
+    Finset.sum Finset.univ (fun j ↦
+      if (i.val &&& j.val = j.val) then p.get j else 0))
 
 -- #eval lagrangeToMono 2 #v[(78 : ℤ), 3, 4, 100]
 -- #eval lagrangeToMonoSpec (n:=2) #v[(78 : ℤ), 3, 4, 100]
@@ -600,7 +649,7 @@ theorem mobius_apply_zeta_apply_eq_id (n : ℕ) [NeZero n] (r : Fin n) (l : Fin 
     rw [lagrangeToMonoSegment, monoToLagrangeSegment, forwardRange]
     simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, Fin.val_eq_zero, tsub_self, zero_add,
       List.ofFn_succ, Fin.isValue, Fin.cast_zero, Nat.mod_succ, add_zero, Fin.mk_zero',
-      Fin.cast_succ_eq, Fin.val_succ, Fin.val_cast, List.ofFn_zero, List.foldl_cons, List.foldl_nil,
+      Fin.val_cast, List.ofFn_zero, List.foldl_cons, List.foldl_nil,
       List.foldr_cons, List.foldr_nil]
     exact lagrangeToMonoLevel_monoToLagrangeLevel_id v 0
   | succ r1 r1_lt_n h_r1 =>
@@ -645,7 +694,7 @@ lemma zeta_apply_mobius_apply_eq_id (n : ℕ) (r : Fin n) (l : Fin (r.val + 1))
     rw [lagrangeToMonoSegment, monoToLagrangeSegment, forwardRange]
     simp only [add_tsub_cancel_right, tsub_self, zero_add, List.ofFn_succ, Nat.add_one_sub_one,
       Fin.isValue, Fin.cast_zero, Fin.coe_ofNat_eq_mod, Nat.mod_succ, add_zero, Fin.eta,
-      Fin.cast_succ_eq, Fin.val_succ, Fin.val_cast, List.ofFn_zero, List.foldr_cons, List.foldr_nil,
+      Fin.val_cast, List.ofFn_zero, List.foldr_cons, List.foldr_nil,
       List.foldl_cons, List.foldl_nil]
     exact monoToLagrangeLevel_lagrangeToMonoLevel_id v r
   | succ l1 l1_gt_0 h_l1 =>

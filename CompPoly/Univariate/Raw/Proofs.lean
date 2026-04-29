@@ -544,7 +544,7 @@ lemma equiv_mul_one [LawfulBEq R] (p : CPolynomial.Raw R) : Trim.equiv (p * 1) p
       · simp +decide
         conv => rw [ ← Array.toList_zipIdx ]
         conv => rw [ ← Array.toList_map ]
-        exact Eq.symm Array.sum_eq_sum_toList)
+        exact Eq.symm Array.sum_toList)
     exact (by exact mul_one_unwrap p ▸ coeff_sum p i ▸ rfl)
   exact congrFun (h_mul_one p)
 

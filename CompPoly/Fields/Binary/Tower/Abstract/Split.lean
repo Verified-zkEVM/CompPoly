@@ -95,7 +95,7 @@ lemma powerBasisSucc_gen (k : ℕ) :
 
 lemma powerBasisSucc_dim (k : ℕ) :
     powerBasisSucc (k:=k).dim = 2 := by
-  simp only [BTField, CommRing, BTFieldIsField, powerBasisSucc, poly, PowerBasis.map_dim,
+  simp only [BTField, BTFieldIsField, powerBasisSucc, poly, PowerBasis.map_dim,
     powerBasis_dim]
   exact natDegree_definingPoly (Z k)
 
@@ -201,15 +201,28 @@ theorem unique_linear_decomposition_succ (k : ℕ) :
   -- Last, we prove the equality : `•` => `*`, `lo_btf` and `hi_btf` => `algebraMap`
   unfold join_via_add_smul
   simp only [Nat.add_one_sub_one]
-  simp only [Algebra.smul_def]
   have unique_linear_combination : ∀ (c1 : AdjoinRoot (poly k)),
     ∃! (p : BTField k × BTField k), c1 = (of (poly k)) p.1 * root (poly k) + (of (poly k)) p.2 := by
     apply unique_linear_form_of_elements_in_adjoined_commring
     · apply BinaryTower.poly_natDegree_eq_2
     · apply BinaryTower.polyMonic
   let px := unique_linear_combination (c1:=x)
-  simp_rw [algebraMap_adjacent_tower_succ_eq_Adjoin_of k]
-  convert px
+  have h_alg : (algebraMap (BTField k) (BTField (k + 1))) = of (poly k) :=
+    algebraMap_adjacent_tower_succ_eq_Adjoin_of k
+  have h_eq : ∀ p : BTField k × BTField k,
+      ((of (poly k)) p.1 * root (poly k) + (of (poly k)) p.2) =
+      (p.1 • Z (k + 1) + (algebraMap (BTField k) (BTField (k + 1))) p.2) := by
+    intro p; simp only [Z_succ_eq_adjointRoot_root]
+    erw [Algebra.smul_def, h_alg]; rfl
+  obtain ⟨p, hp, hu⟩ := px
+  refine ⟨p, ?_, fun q hq => hu q ?_⟩
+  · show x = p.1 • Z (k + 1) + (algebraMap (BTField k) (BTField (k + 1))) p.2
+    erw [Z_succ_eq_adjointRoot_root, Algebra.smul_def,
+      algebraMap_adjacent_tower_succ_eq_Adjoin_of k]; exact hp
+  · change x = (of (poly k)) q.1 * root (poly k) + (of (poly k)) q.2
+    change x = q.1 • Z (k + 1) + (algebraMap (BTField k) (BTField (k + 1))) q.2 at hq
+    erw [Z_succ_eq_adjointRoot_root, Algebra.smul_def,
+      algebraMap_adjacent_tower_succ_eq_Adjoin_of k] at hq; exact hq
 
 def split (k : ℕ) (h_k : k > 0) (x : BTField k) : BTField (k-1) × BTField (k-1) := by
   have h_eq : k - 1 + 1 = k := by omega
@@ -313,12 +326,15 @@ lemma split_algebraMap_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : BTField (k - 1))
   rw [Algebra.smul_def', map_zero, zero_mul, zero_add]
   have h := algebraMap_adjacent_tower_def (l:=k-1)
   rw! (castMode:=.all) [Nat.sub_one_add_one (by omega)] at h
-  simp only [algebra_adjacent_tower, eqRec_eq_cast] at h
+  simp only [eqRec_eq_cast] at h
   rw [algebraMap, Algebra.algebraMap] at ⊢ h
   rw! (castMode:=.all) [Nat.sub_one_add_one (by omega)] at h
   simp only [cast_eq] at h
-  conv_rhs => rw [h]
-  rw [eqRec_eq_cast]
+  unfold binaryAlgebraTower AlgebraTower.toAlgebra AlgebraTower.algebraMap
+    instAlgebraTowerNatBTField
+  simp only [] -- normalize eqRec before rewrite
+  -- Both sides reduce to (cast ⋯ (canonicalEmbedding (k-1))) x through different paths
+  erw [h_concrete_embedding_succ_1]; simp only [eqRec_eq_cast]
 
 lemma algebraMap_succ_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : BTField (k - 1)) :
     letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
@@ -350,7 +366,7 @@ lemma algebraMap_eq_zero_x {i j : ℕ} (h_le : i < j) (x : BTField i) :
     set r := towerAlgebraMap (l:=i) (r:=i+d') (h_le:=by omega) x with h_r
     have h := algebraMap_succ_eq_zero_x (k:=i+d'+1) (h_pos:=by omega) r
     simp only [Nat.add_one_sub_one] at h
-    rw [←h]
+    erw [←h]
     rfl
 
 @[simp]

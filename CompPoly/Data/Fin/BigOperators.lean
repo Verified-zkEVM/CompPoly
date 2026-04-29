@@ -42,7 +42,7 @@ theorem div_two_pow_lt_two_pow (x i j : ℕ) (h_x_lt_2_pow_i : x < 2 ^ (i + j)):
   · simp only [h_i_eq_0, zero_add, pow_zero, Nat.lt_one_iff, Nat.div_eq_zero_iff, Nat.pow_eq_zero,
     OfNat.ofNat_ne_zero, ne_eq, false_and, false_or] at *;
     omega
-  · push_neg at h_i_eq_0
+  · push Not at h_i_eq_0
     apply Nat.div_lt_of_lt_mul (m:=x) (n:=2^j) (k:=2^i) (by
       have h_rhs_eq : 2^(i+j) = 2^j * 2^i := by
         rw [pow_add (a:=2) (m:=i) (n:=j), mul_comm]
@@ -151,7 +151,7 @@ This is useful for definitions that process elements in reverse order, like `fol
       have h := Fin.lt_last_iff_ne_last (n:=r - 1) (a:=⟨i, by omega⟩)
       simp only [Fin.last, mk_lt_mk, ne_eq, mk.injEq] at h
       have h_i_val_ne_eq: (i.val ≠ r - 1) := by
-        push_neg at h_i_eq_last
+        push Not at h_i_eq_last
         exact Fin.val_ne_of_ne h_i_eq_last
       apply Fin.mk_lt_of_lt_val
       apply h.mpr

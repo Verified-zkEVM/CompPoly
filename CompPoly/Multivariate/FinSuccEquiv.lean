@@ -37,7 +37,7 @@ namespace CPoly
 
 open Std CMvPolynomial
 
-variable {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 /-! ### Polynomial-level ring equivalence -/
 
