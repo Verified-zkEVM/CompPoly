@@ -1,7 +1,8 @@
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles, Natalie Klaus
+Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles,
+  Natalie Klaus, Dimitris Mitsios
 -/
 import CompPoly.Univariate.Raw.Ops
 
@@ -904,6 +905,34 @@ protected theorem mul_assoc [LawfulBEq R] (p q r : CPolynomial.Raw R) :
   · exact mul_assoc_equiv p q r
 
 end MulTheorems
+
+section EvalTheorems
+
+variable [Semiring S]
+
+omit [BEq R] in
+private lemma foldl_zipIdx_eq_foldr_pow_k
+    (f : R →+* S) (x : S) (init : S) (k : Nat) (l : List R) :
+    List.foldl (fun acc a => acc + (f a.1) * x ^ a.2) init (l.zipIdx k) =
+      List.foldr (fun a acc => acc * x + f a) 0 l * x ^ k + init := by
+    induction l generalizing init k with
+    | nil => simp
+    | cons head tail tail_ih =>
+           simp only [List.foldr_cons, List.zipIdx_cons, List.foldl_cons]
+           rw [tail_ih]
+           rw [add_mul, mul_assoc, ← pow_succ', _root_.add_comm init, _root_.add_assoc]
+
+omit [BEq R] in
+/-- Horner evaluation agrees with the sum-of-powers evaluation. -/
+theorem eval₂_eq_eval₂Horner
+    (f : R →+* S) (x : S) (p : CPolynomial.Raw R) :
+    eval₂ f x p = eval₂Horner f x p := by
+    unfold eval₂ eval₂Horner
+    rw [← Array.foldl_toList, ← Array.foldr_toList, Array.toList_zipIdx]
+    have := foldl_zipIdx_eq_foldr_pow_k f x 0 0 p.toList
+    simpa using this
+
+end EvalTheorems
 
 end Semiring
 
