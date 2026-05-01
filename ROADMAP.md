@@ -73,24 +73,23 @@ CompPoly aims to be the premier formally verified library for computable polynom
 **Note**: [erdkocak](https://github.com/erdkocak) and [doran2728](https://github.com/doran2728) have communicated they will be working on this.
 
 3. **Exponentiation optimization**
-   - Replace repeated multiplication with repeated squaring
-   - Reduce complexity from O(n) to O(log n) multiplications
+   - ✅ Replace repeated multiplication with repeated squaring
+   - ✅ Reduce complexity from O(n) to O(log n) multiplications
 
 4. **Evaluation optimizations**
    - Implement batch evaluation at multiple points
-   - Add Horner's method where beneficial
+   - ✅ Add Horner's method where beneficial
    - Optimize for common ZK evaluation patterns
 
 5. **Complete multilinear transform functions**
-   - Complete documentation of zeta/Möbius transform formulas
-   - Prove equivalence between fast and spec implementations
-   - Add performance guarantees and complexity proofs
+   - ✅ Complete documentation of zeta/Möbius transform formulas
+   - ✅ Prove equivalence between fast and spec implementations
+   - 🔄 Add performance guarantees and complexity proofs (done in comments, formal benchmarking still TODO)
 
 6. **Bivariate polynomial operations**
    - Optimize the existing bivariate polynomial type `CPolynomial (CPolynomial R)` and evaluate whether a more specialized representation is beneficial
    - Efficient factorization algorithms for bivariate polynomials
    - Integration with existing `CMvPolynomial 2 R` with equivalence proofs
-   - Critical for sum-check protocols, FRI commitments, and zkVM constraint systems
 
 7. **Error-correcting interpolation algorithms**
    - Implement Berlekamp-Welch algorithm for Reed-Solomon decoding
@@ -127,7 +126,7 @@ CompPoly aims to be the premier formally verified library for computable polynom
 	- Build simp sets and grind sets for common operations
 	- Goal: “one-liner conversions” (or near) between spec polynomials and computable polynomials
 
-6.	**Integration with ArkLib / Hax + Rust libraries (e.g. plonky3)**
+5.	**Integration with ArkLib / Hax + Rust libraries (e.g. plonky3)**
 	- Make CompPoly the canonical polynomial backend for ArkLib specs where applicable
 	- Add bridging lemmas and conversion utilities across representations (CompPoly ↔ Mathlib ↔ extracted Rust ↔ downstream libs)
 	- Document and implement invariants required for robust interop (canonical ordering, normalization, domain metadata)
@@ -181,4 +180,4 @@ CompPoly aims to be the premier formally verified library for computable polynom
 
 ---
 
-*Last updated: March 2026*
+*Last updated: May 2026*
