@@ -69,8 +69,6 @@ import CompPoly.Multivariate.Restrict
 import CompPoly.Multivariate.Unlawful
 import CompPoly.Multivariate.VarsDegrees
 import CompPoly.Multivariate.Wheels
-import CompPoly.Univariate.Basic
-import CompPoly.Univariate.Lagrange
 import CompPoly.ToMathlib.Finsupp.Fin
 import CompPoly.ToMathlib.MvPolynomial.Equiv
 import CompPoly.ToMathlib.Polynomial.BivariateDegree
@@ -79,6 +77,11 @@ import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.Lagrange
 import CompPoly.Univariate.Linear
+import CompPoly.Univariate.NTT.Domain
+import CompPoly.Univariate.NTT.FastMul
+import CompPoly.Univariate.NTT.Forward
+import CompPoly.Univariate.NTT.Inverse
+import CompPoly.Univariate.NTT.Transform
 import CompPoly.Univariate.Quotient.Core
 import CompPoly.Univariate.Quotient.Equiv
 import CompPoly.Univariate.Raw
@@ -86,10 +89,6 @@ import CompPoly.Univariate.Raw.Core
 import CompPoly.Univariate.Raw.Division
 import CompPoly.Univariate.Raw.Ops
 import CompPoly.Univariate.Raw.Proofs
-import CompPoly.Univariate.NTT.Domain
-import CompPoly.Univariate.NTT.Forward
-import CompPoly.Univariate.NTT.Inverse
-import CompPoly.Univariate.NTT.FastMul
 import CompPoly.Univariate.ToPoly
 import CompPoly.Univariate.ToPoly.Core
 import CompPoly.Univariate.ToPoly.Degree
