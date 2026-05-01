@@ -3,6 +3,7 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Salih Erdem Koçak, Doran Pamukçu
 -/
+import CompPoly.Univariate.NTT.Forward
 import CompPoly.Univariate.NTT.Transform
 
 /-!
@@ -40,14 +41,26 @@ def normalize (D : Domain R) (a : Array R) : Array R :=
     (normalize D a).size = D.n := by
   simp [normalize]
 
+theorem normalize_forwardSpec_inverse_eq_inverseSpec (D : Domain R) (v : Array R) :
+    normalize D (Forward.forwardSpec D.inverse v) = inverseSpec D v := by
+  apply Array.ext
+  · simp [normalize, inverseSpec, Forward.forwardSpec]
+  · intro i hi₁ hi₂
+    simp [normalize, inverseSpec, inttAt, Forward.forwardSpec, Forward.nttAt,
+      Domain.inverse, Domain.omegaInv]
+    left
+    rfl
+
 /-- Intended fast implementation entry point for inverse NTT. -/
 def inverseImpl (D : Domain R) (v : Array R) : CPolynomial.Raw R :=
   normalize D (Transform.runStages D.inverse (Transform.bitRevPermute D.inverse v))
 
 theorem inverseImpl_correct (D : Domain R) (v : Array R) :
     inverseImpl D v = inverseSpec D v := by
-  -- TODO: Prove the iterative radix-2 inverse implementation matches the direct formula.
-  sorry
+  rw [inverseImpl]
+  change normalize D (Forward.forwardImpl D.inverse v) = inverseSpec D v
+  rw [Forward.forwardImpl_correct]
+  exact normalize_forwardSpec_inverse_eq_inverseSpec D v
 
 end Inverse
 end NTT
