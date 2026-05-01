@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Salih Erdem Koçak, Doran Pamukçu
 -/
 import CompPoly.Univariate.NTT.Inverse
+import CompPoly.Univariate.NTT.Forward
 import CompPolyTests.Univariate.NTT.Common
 
 /-!

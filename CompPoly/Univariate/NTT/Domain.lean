@@ -40,6 +40,14 @@ abbrev Idx (D : Domain R) := Fin D.n
 /-- Inverse root of unity. -/
 @[inline] def omegaInv (D : Domain R) : R := D.omega⁻¹
 
+/-- The domain with the inverse root, used by inverse NTT butterflies. -/
+def inverse (D : Domain R) : Domain R where
+  logN := D.logN
+  omega := D.omegaInv
+  primitive := by
+    simpa [omegaInv] using D.primitive.inv
+  natCast_ne_zero := D.natCast_ne_zero
+
 /-- Multiplicative inverse of the domain size in `R`. -/
 @[inline] def nInv (D : Domain R) : R := ((D.n : Nat) : R)⁻¹
 
