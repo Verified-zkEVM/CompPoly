@@ -7,7 +7,6 @@ import Mathlib.Algebra.Tropical.Basic
 import Mathlib.RingTheory.Polynomial.Basic
 import CompPoly.Data.Array.Lemmas
 import CompPoly.Univariate.Raw.Proofs
-import CompPoly.Univariate.Raw.Division
 
 /-!
   # Computable Univariate Polynomials
@@ -669,29 +668,6 @@ theorem natDegree_eq_support_sup [Zero R] [BEq R] [LawfulBEq R] (p : CPolynomial
       apply le_antisymm
       · simpa using (Finset.le_sup (f := fun m => m) hn_mem)
       · exact Finset.sup_le fun m hm => hle m hm
-
-section Division
-
-/-- Quotient of `p` by a monic polynomial `q`. Matches Mathlib's `Polynomial.divByMonic`. -/
-def divByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
-  ⟨(Raw.divByMonic p.val q.val).trim, Trim.isCanonical_trim (Raw.divByMonic p.val q.val)⟩
-
-/-- Remainder of `p` modulo a monic polynomial `q`. Matches Mathlib's `Polynomial.modByMonic`. -/
-def modByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
-  ⟨(Raw.modByMonic p.val q.val).trim, Trim.isCanonical_trim (Raw.modByMonic p.val q.val)⟩
-
-/-- Quotient of `p` by `q` (when `R` is a field). -/
-def div [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
-  ⟨(Raw.div p.val q.val).trim, Trim.isCanonical_trim (Raw.div p.val q.val)⟩
-
-/-- Remainder of `p` modulo `q` (when `R` is a field). -/
-def mod [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
-  ⟨(Raw.mod p.val q.val).trim, Trim.isCanonical_trim (Raw.mod p.val q.val)⟩
-
-instance [Field R] [BEq R] [LawfulBEq R] : Div (CPolynomial R) := ⟨div⟩
-instance [Field R] [BEq R] [LawfulBEq R] : Mod (CPolynomial R) := ⟨mod⟩
-
-end Division
 
 end Operations
 
