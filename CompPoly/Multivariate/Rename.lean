@@ -287,9 +287,17 @@ lemma rename_rename {k : ℕ} (f : Fin n → Fin m)
     fromCMvPolynomial_rename]
   exact MvPolynomial.rename_rename f g (fromCMvPolynomial p)
 
+end CPoly
+
+namespace CMvPolynomial
+
+open CPoly
+
+variable {n m : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+
 /-- Ring equivalence for variable renaming when the function is
 a bijection. -/
-noncomputable def CMvPolynomial.renameEquiv
+noncomputable def renameEquiv
     (f : Fin n ≃ Fin m) :
     CMvPolynomial n R ≃+* CMvPolynomial m R where
   toFun := CMvPolynomial.rename f
@@ -301,4 +309,4 @@ noncomputable def CMvPolynomial.renameEquiv
   map_add' p q := rename_add f p q
   map_mul' p q := rename_mul f p q
 
-end CPoly
+end CMvPolynomial
