@@ -77,7 +77,7 @@ import CompPoly
 
 - **Multivariate (`CMvPolynomial`)**: full core API (`eval`, `eval₂`, `eval₂Hom`, `aeval`, `bind₁`, `rename`, `restrict*`, `finSuccEquiv`/`optionEquivLeft`, leading-term operations, `sumToIter`), plus `CommSemiring`/`CommRing`, algebra/scalar-action instances, and equivalence to Mathlib `MvPolynomial`.
 - **Multilinear (`CMlPolynomial`, `CMlPolynomialEval`)**: coefficient and Boolean-hypercube evaluation representations, basis conversions, and equivalence to Mathlib's multilinear polynomial surface.
-- **Univariate (`CPolynomial`)**: full ring structure, core operations (`C`, `X`, `monomial`, `coeff`, `eval`, `eval₂`, degree/leading/support), `ringEquiv` to Mathlib `Polynomial`, and Lagrange interpolation (`basis`, `interpolate`, `interpolatePow`).
+- **Univariate (`CPolynomial`)**: full ring structure, core operations (`C`, `X`, `monomial`, `coeff`, `eval`, `eval₂`, degree/leading/support), `ringEquiv` to Mathlib `Polynomial`, Lagrange interpolation (`basis`, `interpolate`, `interpolatePow`), and fixed-domain barycentric interpolation for repeated-query evaluation.
 - **Bivariate (`CBivariate`)**: specialized `CPolynomial (CPolynomial R)` API with `X`, `Y`, `monomialXY`, evaluation, leading coefficients, `swap`, and equivalence to `Polynomial (Polynomial R)`.
 - **Fields**: broad set of finite-field instances and extensions (including BabyBear/Goldilocks/BN254/BLS12 family), binary tower support, and additive NTT infrastructure.
 

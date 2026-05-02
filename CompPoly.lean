@@ -75,6 +75,7 @@ import CompPoly.ToMathlib.MvPolynomial.Equiv
 import CompPoly.ToMathlib.Polynomial.BivariateDegree
 import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
 import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
+import CompPoly.Univariate.Barycentric
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.Lagrange
 import CompPoly.Univariate.Linear

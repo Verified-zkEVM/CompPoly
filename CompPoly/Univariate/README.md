@@ -25,6 +25,9 @@ Formally verified computable univariate polynomials for [CompPoly](../../README.
 - **ToPoly/Equiv.lean** — Round-trip theorems and ring equivalence with Mathlib polynomials.
 - **ToPoly/Degree.lean** — Degree/support transport lemmas for conversions.
 - **Lagrange.lean** — Lagrange interpolation: `nodal`, `interpolate` at roots of unity.
+- **Barycentric.lean** — Fixed-domain barycentric interpolation with precomputed weights and
+  correctness lemmas comparing repeated-query evaluation against `Lagrange.interpolate` and
+  `CLagrange.interpolate`.
 - **Linear.lean** — Linear-factor and affine helper lemmas for univariate workflows.
 
 ## Example
