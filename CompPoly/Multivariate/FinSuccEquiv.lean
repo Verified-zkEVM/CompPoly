@@ -14,7 +14,7 @@ This file defines the computable multivariate polynomial equivalence for
 splitting off one variable, mirroring `MvPolynomial.finSuccEquiv` from Mathlib.
 
 In Mathlib, `MvPolynomial` accepts a general type `σ` for the index set of the
-variables. Then `optionEquivLeft` provides the algebra isomorphism
+variables. Then, `optionEquivLeft` provides the algebra isomorphism
 `MvPolynomial (Option σ) R ≃ₐ[R] Polynomial (MvPolynomial σ R)`. Finally,
 `finSuccEquiv` is defined as the composition of the rename step
 (`Fin (n+1) ≃ Option (Fin n)`) with `optionEquivLeft`. There is no such
