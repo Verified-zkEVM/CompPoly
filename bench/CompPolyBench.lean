@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2026 CompPoly Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Valerii Huhnin
+-/
+
 import Init.Data.Random
 import Std.Time
 import CompPoly.Bivariate.Basic
@@ -8,6 +14,12 @@ import CompPoly.Fields.Goldilocks
 import CompPoly.Multilinear.Basic
 import CompPoly.Multivariate.CMvPolynomial
 import CompPoly.Univariate.Raw.Ops
+
+/-!
+# Evaluation Benchmarks
+
+Compiled benchmark executable for polynomial evaluation methods.
+-/
 
 open CompPoly
 open ConcreteBinaryTower
@@ -166,7 +178,8 @@ private def formatCells : List String → List Nat → List Bool → List String
       formatCell alignRight width cell :: formatCells cells widths alignRights
   | _, _, _ => []
 
-private def markdownRow (cells : List String) (widths : List Nat) (alignRights : List Bool) : String :=
+private def markdownRow (cells : List String) (widths : List Nat)
+    (alignRights : List Bool) : String :=
   "| " ++ String.intercalate " | " (formatCells cells widths alignRights) ++ " |"
 
 private def markdownSeparatorCell (alignRight : Bool) (width : Nat) : String :=
@@ -213,7 +226,8 @@ private def renderMarkdown (records : Array BenchRecord) : String :=
 private def appendRecords (xs ys : Array BenchRecord) : Array BenchRecord :=
   ys.foldl (init := xs) fun acc record => acc.push record
 
-private def buildCMvPolynomial (terms : Array BabyBear.Field) : CPoly.CMvPolynomial 3 BabyBear.Field :=
+private def buildCMvPolynomial
+    (terms : Array BabyBear.Field) : CPoly.CMvPolynomial 3 BabyBear.Field :=
   Id.run do
     let mut p : CPoly.CMvPolynomial 3 BabyBear.Field := 0
     for i in [0:terms.size] do
