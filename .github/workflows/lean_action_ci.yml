@@ -31,6 +31,8 @@ jobs:
           echo "BUILD_TIMING_BASELINE_DIR=$RUNNER_TEMP/build-timing-baseline" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_REPORT=$RUNNER_TEMP/build-timing.md" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_COMMENT=$RUNNER_TEMP/build-timing-comment.md" >> "$GITHUB_ENV"
+          echo "EVALUATION_BENCH_ARTIFACT_DIR=$RUNNER_TEMP/evaluation-bench-artifact" >> "$GITHUB_ENV"
+          echo "EVALUATION_BENCH_ARTIFACT_NAME=evaluation-bench-results" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_SOURCE_SHA=$GITHUB_SHA" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_SOURCE_BRANCH=${{ github.head_ref || github.ref_name }}" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_BASE_REF=" >> "$GITHUB_ENV"
@@ -79,6 +81,32 @@ jobs:
       - name: Fail on build warnings
         continue-on-error: true
         run: lake build --wfail
+      - name: Run evaluation benchmarks
+        run: lake exe CompPolyBench
+      - name: Prepare evaluation benchmark artifact
+        if: always()
+        run: |
+          rm -rf "$EVALUATION_BENCH_ARTIFACT_DIR"
+          mkdir -p "$EVALUATION_BENCH_ARTIFACT_DIR"
+          results=(bench/evaluation-bench-results-*.jsonl)
+          reports=(bench/evaluation-bench-report-*.md)
+          if [ -e "${results[0]}" ]; then
+            cp "${results[@]}" "$EVALUATION_BENCH_ARTIFACT_DIR/"
+          fi
+          if [ -e "${reports[0]}" ]; then
+            cp "${reports[@]}" "$EVALUATION_BENCH_ARTIFACT_DIR/"
+            for report in "${reports[@]}"; do
+              cat "$report" >> "$GITHUB_STEP_SUMMARY"
+            done
+          fi
+      - name: Upload evaluation benchmark artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.EVALUATION_BENCH_ARTIFACT_NAME }}
+          path: ${{ env.EVALUATION_BENCH_ARTIFACT_DIR }}
+          if-no-files-found: warn
+          retention-days: 30
       - name: Save Lake cache
         if: success() && steps.lake-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
