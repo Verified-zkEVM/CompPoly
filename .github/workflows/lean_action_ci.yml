@@ -81,6 +81,8 @@ jobs:
       - name: Fail on build warnings
         continue-on-error: true
         run: lake build --wfail
+      - name: Build evaluation benchmark executable
+        run: lake build CompPolyBench
       - name: Run evaluation benchmarks
         run: lake exe CompPolyBench
       - name: Prepare evaluation benchmark artifact
