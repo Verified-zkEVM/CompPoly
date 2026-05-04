@@ -166,16 +166,6 @@ The benchmark also measures the current implementations as they exist. For
 example, `Goldilocks.Field` is currently generic `ZMod` arithmetic, not a
 specialized `UInt64` Goldilocks implementation.
 
-Additional notes:
-
-- [`naive-vs-horner-performance.md`](naive-vs-horner-performance.md)
-  explains the current univariate Horner speedup.
-- [`additive-ntt-performance.md`](additive-ntt-performance.md)
-  explains why the additive NTT benchmark is slow.
-- [`small-big-nat-performance.md`](small-big-nat-performance.md)
-  explains the small-`Nat` versus big-`Nat` effect behind the BabyBear,
-  Goldilocks, and BN254 timings.
-
 ## CI
 
 GitHub Actions runs:
