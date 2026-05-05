@@ -608,6 +608,41 @@ theorem evalX_toPoly_eval {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Comm
   simpa using
     (evalX_toPoly_eval_commute (R := R) (a := a) (y := y) (hc := Commute.all a y) (f := f))
 
+/-- `X`-then-`Y` Horner full evaluation agrees with the existing evaluator over
+commutative coefficient semirings. -/
+theorem evalEvalHornerXThenY_eq_evalEval {R : Type*}
+    [BEq R] [LawfulBEq R] [Nontrivial R] [CommSemiring R] [DecidableEq R]
+    (x y : R) (f : CBivariate R) :
+    evalEvalHornerXThenY x y f = evalEval x y f := by
+  let coeffEval : CPolynomial R →+* R :=
+    (Polynomial.evalRingHom x).comp (CPolynomial.ringEquiv (R := R)).toRingHom
+  have h_horner :
+      evalEvalHornerXThenY x y f = CPolynomial.eval₂Horner coeffEval y f := by
+    unfold evalEvalHornerXThenY CPolynomial.eval₂Horner
+    dsimp [coeffEval]
+    congr
+    ext c acc
+    simp [CPolynomial.evalHorner_eq_eval, CPolynomial.eval_toPoly, CPolynomial.ringEquiv]
+  have h_evalX_map :
+      (evalX (R := R) x f).toPoly = (CPolynomial.toPoly f).map coeffEval := by
+    ext j
+    rw [evalX_toPoly_coeff]
+    simp [toPoly_coeff, coeffEval, CPolynomial.ringEquiv]
+    rw [← CPolynomial.coeff_toPoly (p := f) (i := j)]
+    simp [CPolynomial.coeff, CPolynomial.Raw.coeff]
+  calc
+    evalEvalHornerXThenY x y f = CPolynomial.eval₂Horner coeffEval y f := h_horner
+    _ = CPolynomial.eval₂ coeffEval y f :=
+      (CPolynomial.eval₂_eq_eval₂Horner coeffEval y f).symm
+    _ = (CPolynomial.toPoly f).eval₂ coeffEval y := CPolynomial.eval₂_toPoly coeffEval y f
+    _ = Polynomial.eval y ((CPolynomial.toPoly f).map coeffEval) :=
+      Polynomial.eval₂_eq_eval_map coeffEval
+    _ = Polynomial.eval y (evalX (R := R) x f).toPoly := by rw [← h_evalX_map]
+    _ = (evalX (R := R) x f).eval y :=
+      (CPolynomial.eval_toPoly y (evalX (R := R) x f)).symm
+    _ = (toPoly f).evalEval x y := evalX_toPoly_eval x y f
+    _ = evalEval x y f := (evalEval_toPoly x y f).symm
+
 /--
 The `Commute` hypothesis in `evalX_toPoly_eval_commute` is necessary:
 if the identity holds for every bivariate polynomial then `a` and `y` commute.

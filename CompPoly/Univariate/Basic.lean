@@ -206,6 +206,34 @@ def eval₂ {S : Type*} [Semiring R] [Semiring S]
     (f : R →+* S) (x : S) (p : CPolynomial R) : S :=
   p.val.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + f a * x ^ i) 0
 
+/-- Evaluate at `x : S` via a ring hom using Horner's method. -/
+@[inline, specialize]
+def eval₂Horner {S : Type*} [Semiring R] [Semiring S]
+    (f : R →+* S) (x : S) (p : CPolynomial R) : S :=
+  p.val.eval₂Horner f x
+
+/-- Evaluate a polynomial at a point using Horner's method. -/
+@[inline, specialize]
+def evalHorner [Semiring R] (x : R) (p : CPolynomial R) : R :=
+  p.eval₂Horner (RingHom.id R) x
+
+/-- Horner evaluation agrees with the sum-of-powers evaluation. -/
+theorem eval₂_eq_eval₂Horner {S : Type*} [Semiring R] [Semiring S]
+    (f : R →+* S) (x : S) (p : CPolynomial R) :
+    eval₂ f x p = eval₂Horner f x p :=
+  CPolynomial.Raw.eval₂_eq_eval₂Horner f x p.val
+
+/-- Horner evaluation agrees with the sum-of-powers evaluation. -/
+theorem eval_eq_evalHorner [Semiring R] (x : R) (p : CPolynomial R) :
+    eval x p = evalHorner x p := by
+  simpa [eval, evalHorner, eval₂, eval₂Horner] using
+    (eval₂_eq_eval₂Horner (f := RingHom.id R) (x := x) (p := p))
+
+/-- Horner evaluation agrees with the sum-of-powers evaluation. -/
+theorem evalHorner_eq_eval [Semiring R] (x : R) (p : CPolynomial R) :
+    evalHorner x p = eval x p :=
+  (eval_eq_evalHorner x p).symm
+
 /-- The support of a polynomial: indices with nonzero coefficients. -/
 def support [Zero R] [BEq R] (p : CPolynomial R) : Finset ℕ :=
   (Finset.range p.val.size).filter (fun i => p.val.coeff i != 0)

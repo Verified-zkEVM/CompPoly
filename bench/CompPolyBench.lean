@@ -14,7 +14,6 @@ import CompPoly.Fields.BN254
 import CompPoly.Fields.Goldilocks
 import CompPoly.Multilinear.Basic
 import CompPoly.Multivariate.CMvPolynomial
-import CompPoly.Univariate.Raw.Ops
 
 /-!
 # Evaluation Benchmarks
@@ -216,6 +215,12 @@ private def babyBearVector (size : Nat) (sparse : Bool) : StateM StdGen (Array B
 /-- Generate dense BabyBear evaluation points. -/
 private def babyBearPoints (size : Nat) : StateM StdGen (Array BabyBear.Field) :=
   babyBearArray size false
+
+/-- Build a canonical computable polynomial from generated coefficients. -/
+private def cpolyOfArray {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
+    (coeffs : Array R) : CPolynomial R :=
+  let p : CPolynomial.Raw R := coeffs
+  ⟨p.trim, CPolynomial.Raw.Trim.isCanonical_trim p⟩
 
 /-- Mix one benchmark output value into a stable checksum accumulator. -/
 private def mixChecksum (acc value : Nat) : Nat :=
@@ -438,9 +443,11 @@ private def buildCMvPolynomial
     pure p
 
 /-- Build a bivariate polynomial from generated coefficients. -/
-private def buildCBivariate (terms : Array BabyBear.Field) : CBivariate BabyBear.Field :=
+private def buildCBivariate {R : Type*}
+    [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (terms : Array R) : CBivariate R :=
   Id.run do
-    let mut p : CBivariate BabyBear.Field := 0
+    let mut p : CBivariate R := 0
     for i in [0:terms.size] do
       let xDegree := i % 8
       let yDegree := i / 8
@@ -452,18 +459,17 @@ private def runDenseUnivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
     (nameSuffix fieldName : String) (gen : StdGen) : IO (Array BenchRecord × StdGen) := do
   let (denseCoeffs, gen) := (zmodArray modulus 512 false).run gen
   let (points, gen) := (zmodArray modulus 32 false).run gen
-  let densePoly : CPolynomial.Raw (ZMod modulus) := denseCoeffs
+  let densePoly := cpolyOfArray denseCoeffs
   let mut records := #[]
   records := records.push (← runTimed
-    ("univariate-dense-sum-" ++ nameSuffix) "CPolynomial.Raw" "eval₂ sum-of-powers" fieldName
+    ("univariate-dense-sum-" ++ nameSuffix) "CPolynomial" "eval sum-of-powers" fieldName
     "degree<512, dense, 32 points" warmupIterations measuredIterations
-    (fun i ↦ CPolynomial.Raw.eval (points.getD (i % points.size) 0) densePoly)
+    (fun i ↦ CPolynomial.eval (points.getD (i % points.size) 0) densePoly)
     checksumZMod)
   records := records.push (← runTimed
-    ("univariate-dense-horner-" ++ nameSuffix) "CPolynomial.Raw" "eval₂Horner" fieldName
+    ("univariate-dense-horner-" ++ nameSuffix) "CPolynomial" "evalHorner" fieldName
     "degree<512, dense, 32 points" warmupIterations measuredIterations
-    (fun i ↦ CPolynomial.Raw.eval₂Horner (RingHom.id (ZMod modulus))
-      (points.getD (i % points.size) 0) densePoly)
+    (fun i ↦ CPolynomial.evalHorner (points.getD (i % points.size) 0) densePoly)
     checksumZMod)
   pure (records, gen)
 
@@ -472,31 +478,29 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
   let (denseCoeffs, gen) := (babyBearArray 512 false).run gen
   let (sparseCoeffs, gen) := (babyBearArray 512 true).run gen
   let (points, gen) := (babyBearPoints 32).run gen
-  let densePoly : CPolynomial.Raw BabyBear.Field := denseCoeffs
-  let sparsePoly : CPolynomial.Raw BabyBear.Field := sparseCoeffs
+  let densePoly := cpolyOfArray denseCoeffs
+  let sparsePoly := cpolyOfArray sparseCoeffs
   let nextGen := gen
   let mut records := #[]
   records := records.push (← runTimed
-    "univariate-dense-sum" "CPolynomial.Raw" "eval₂ sum-of-powers" "BabyBear.Field"
+    "univariate-dense-sum" "CPolynomial" "eval sum-of-powers" "BabyBear.Field"
     "degree<512, dense, 32 points" warmupIterations measuredIterations
-    (fun i ↦ CPolynomial.Raw.eval (points.getD (i % points.size) 0) densePoly)
+    (fun i ↦ CPolynomial.eval (points.getD (i % points.size) 0) densePoly)
     checksumBabyBear)
   records := records.push (← runTimed
-    "univariate-dense-horner" "CPolynomial.Raw" "eval₂Horner" "BabyBear.Field"
+    "univariate-dense-horner" "CPolynomial" "evalHorner" "BabyBear.Field"
     "degree<512, dense, 32 points" warmupIterations measuredIterations
-    (fun i ↦ CPolynomial.Raw.eval₂Horner (RingHom.id BabyBear.Field)
-      (points.getD (i % points.size) 0) densePoly)
+    (fun i ↦ CPolynomial.evalHorner (points.getD (i % points.size) 0) densePoly)
     checksumBabyBear)
   records := records.push (← runTimed
-    "univariate-sparse-sum" "CPolynomial.Raw" "eval₂ sum-of-powers" "BabyBear.Field"
+    "univariate-sparse-sum" "CPolynomial" "eval sum-of-powers" "BabyBear.Field"
     "degree<512, one nonzero per 4 coeffs, 32 points" warmupIterations measuredIterations
-    (fun i ↦ CPolynomial.Raw.eval (points.getD (i % points.size) 0) sparsePoly)
+    (fun i ↦ CPolynomial.eval (points.getD (i % points.size) 0) sparsePoly)
     checksumBabyBear)
   records := records.push (← runTimed
-    "univariate-sparse-horner" "CPolynomial.Raw" "eval₂Horner" "BabyBear.Field"
+    "univariate-sparse-horner" "CPolynomial" "evalHorner" "BabyBear.Field"
     "degree<512, one nonzero per 4 coeffs, 32 points" warmupIterations measuredIterations
-    (fun i ↦ CPolynomial.Raw.eval₂Horner (RingHom.id BabyBear.Field)
-      (points.getD (i % points.size) 0) sparsePoly)
+    (fun i ↦ CPolynomial.evalHorner (points.getD (i % points.size) 0) sparsePoly)
     checksumBabyBear)
   let (goldilocksRecords, extraGen) ← runDenseUnivariateZMod
     Goldilocks.fieldSize "goldilocks" "Goldilocks.Field" nextGen
@@ -542,20 +546,80 @@ private def runMultilinear (gen : StdGen) : IO (Array BenchRecord × StdGen) := 
     checksumBabyBear)
   pure (records, gen)
 
+/-- Shared input-shape label for bivariate evaluation benchmarks. -/
+private def bivariateInputShape : String :=
+  "xDegree<8, yDegree<64, one nonzero per 4 coeffs, 32 points"
+
+/-- Run bivariate full-evaluation benchmarks over a generic prime `ZMod` field. -/
+private def runBivariateZMod (p : Nat) [Fact (Nat.Prime p)]
+    (nameSuffix fieldName : String) (gen : StdGen) : IO (Array BenchRecord × StdGen) := do
+  let (terms, gen) := (zmodArray p 512 true).run gen
+  let (points, gen) := (zmodArray p 64 false).run gen
+  let poly := buildCBivariate terms
+  let evalPoint (i : Nat) : ZMod p × ZMod p :=
+    let offset := 2 * (i % 32)
+    (points.getD (offset % points.size) 0, points.getD ((offset + 1) % points.size) 0)
+  let mut records := #[]
+  records := records.push (← runTimed
+    ("bivariate-full-eval-naive" ++ nameSuffix) "CBivariate" "evalEval" fieldName
+    bivariateInputShape warmupIterations measuredIterations
+    (fun i ↦
+      let point := evalPoint i
+      CBivariate.evalEval point.1 point.2 poly)
+    checksumZMod)
+  records := records.push (← runTimed
+    ("bivariate-full-eval-horner-yx" ++ nameSuffix) "CBivariate" "evalEvalHornerYThenX"
+    fieldName bivariateInputShape warmupIterations measuredIterations
+    (fun i ↦
+      let point := evalPoint i
+      CBivariate.evalEvalHornerYThenX point.1 point.2 poly)
+    checksumZMod)
+  records := records.push (← runTimed
+    ("bivariate-full-eval-horner-xy" ++ nameSuffix) "CBivariate" "evalEvalHornerXThenY"
+    fieldName bivariateInputShape warmupIterations measuredIterations
+    (fun i ↦
+      let point := evalPoint i
+      CBivariate.evalEvalHornerXThenY point.1 point.2 poly)
+    checksumZMod)
+  pure (records, gen)
+
 /-- Run the bivariate full-evaluation benchmark. -/
 private def runBivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := do
   let (terms, gen) := (babyBearArray 512 true).run gen
   let (points, gen) := (babyBearPoints 64).run gen
   let p := buildCBivariate terms
-  let record ← runTimed
-    "bivariate-full-eval" "CBivariate" "evalEval" "BabyBear.Field"
-    "xDegree<32, yDegree<16, sparse coeffs, 32 points" warmupIterations measuredIterations
+  let evalPoint (i : Nat) : BabyBear.Field × BabyBear.Field :=
+    let offset := 2 * (i % 32)
+    (points.getD (offset % points.size) 0, points.getD ((offset + 1) % points.size) 0)
+  let mut records := #[]
+  records := records.push (← runTimed
+    "bivariate-full-eval-naive" "CBivariate" "evalEval" "BabyBear.Field"
+    bivariateInputShape warmupIterations measuredIterations
     (fun i ↦
-      let x := points.getD ((2 * (i % 32)) % points.size) 0
-      let y := points.getD ((2 * (i % 32) + 1) % points.size) 0
-      CBivariate.evalEval x y p)
-    checksumBabyBear
-  pure (#[record], gen)
+      let point := evalPoint i
+      CBivariate.evalEval point.1 point.2 p)
+    checksumBabyBear)
+  records := records.push (← runTimed
+    "bivariate-full-eval-horner-yx" "CBivariate" "evalEvalHornerYThenX" "BabyBear.Field"
+    bivariateInputShape warmupIterations measuredIterations
+    (fun i ↦
+      let point := evalPoint i
+      CBivariate.evalEvalHornerYThenX point.1 point.2 p)
+    checksumBabyBear)
+  records := records.push (← runTimed
+    "bivariate-full-eval-horner-xy" "CBivariate" "evalEvalHornerXThenY" "BabyBear.Field"
+    bivariateInputShape warmupIterations measuredIterations
+    (fun i ↦
+      let point := evalPoint i
+      CBivariate.evalEvalHornerXThenY point.1 point.2 p)
+    checksumBabyBear)
+  let (goldilocksRecords, extraGen) ← runBivariateZMod
+    Goldilocks.fieldSize "-goldilocks" "Goldilocks.Field" gen
+  records := appendRecords records goldilocksRecords
+  let (bn254Records, finalGen) ← runBivariateZMod
+    BN254.scalarFieldSize "-bn254" "BN254.ScalarField" extraGen
+  records := appendRecords records bn254Records
+  pure (records, finalGen)
 
 /-- Checksum all output values from the `BTF₃` additive NTT benchmark. -/
 private def checksumBtf3Output (output : Fin (2 ^ (2 + 2)) → AdditiveNTT.BTF₃) : Nat :=
