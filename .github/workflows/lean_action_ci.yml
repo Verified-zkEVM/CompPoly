@@ -83,13 +83,6 @@ jobs:
         run: lake build --wfail
       - name: Build evaluation benchmark executable
         run: lake build CompPolyBench
-      - name: Show runner hardware
-        run: |
-          echo "Runner: ${{ runner.os }} ${{ runner.arch }}"
-          nproc
-          lscpu
-          free -h
-          df -h
       - name: Run evaluation benchmarks
         run: lake exe CompPolyBench
       - name: Prepare evaluation benchmark artifact

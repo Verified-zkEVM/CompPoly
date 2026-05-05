@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 
 import Init.Data.Random
+import Lean.Data.Json.Parser
 import Std.Time
 import CompPoly.Bivariate.Basic
 import CompPoly.Fields.BabyBear
@@ -47,6 +48,18 @@ structure BenchRecord where
   averageNanos : Nat
   checksum : Nat
 
+structure RunnerHardware where
+  runnerOs : Option String
+  runnerArch : Option String
+  cpuModel : Option String
+  logicalCpus : Option String
+  coresPerSocket : Option String
+  threadsPerCore : Option String
+  sockets : Option String
+  ramTotal : Option String
+  rootDisk : Option String
+  hypervisor : Option String
+
 private def makeRunId : IO String := do
   let started ← Std.Time.ZonedDateTime.now
   pure <| started.format "yyMMdd-HHmmss"
@@ -56,6 +69,86 @@ private def resultsPath (runId : String) : System.FilePath :=
 
 private def reportPath (runId : String) : System.FilePath :=
   "bench" / ("evaluation-bench-report-" ++ runId ++ ".md")
+
+private def trimCommandOutput (s : String) : String :=
+  let trimmed := s.trimAscii.toString
+  if trimmed.isEmpty then "" else trimmed
+
+private def runInfoCommand (cmd : String) (args : Array String) : IO (Option String) := do
+  try
+    let output ← IO.Process.output { cmd := cmd, args := args }
+    if output.exitCode = 0 then
+      let text := trimCommandOutput output.stdout
+      pure <| if text.isEmpty then none else some text
+    else
+      pure none
+  catch _ =>
+    pure none
+
+private def jsonObjString? (json : Lean.Json) (key : String) : Option String :=
+  (json.getObjVal? key >>= Lean.Json.getStr?).toOption
+
+private def lscpuJsonField (output key : String) : Option String := do
+  let json ← (Lean.Json.parse output).toOption
+  let fields ← (json.getObjVal? "lscpu" >>= Lean.Json.getArr?).toOption
+  let rec go : List Lean.Json → Option String
+    | [] => none
+    | field :: fields =>
+        match jsonObjString? field "field", jsonObjString? field "data" with
+        | some name, some value => if name = key then some value else go fields
+        | _, _ => go fields
+  go fields.toList
+
+private def whitespaceFields (s : String) : List String :=
+  (s.replace "\t" " ").splitOn " " |>.filter fun field => !field.isEmpty
+
+private def dfRootSize (output : String) : Option String :=
+  let lines := output.splitOn "\n"
+  match lines with
+  | _header :: row :: _ =>
+      match whitespaceFields row with
+      | size :: _ => some size
+      | _ => none
+  | _ => none
+
+private def memTotalGiB (output : String) : Option String :=
+  let rec go : List String → Option String
+    | [] => none
+    | line :: lines =>
+        match whitespaceFields line with
+        | "MemTotal:" :: kib :: _ =>
+            match kib.toNat? with
+            | some kib =>
+                let gib := kib / (1024 * 1024)
+                some <| toString gib ++ " GiB"
+            | none => go lines
+        | _ => go lines
+  go (output.splitOn "\n")
+
+private def collectRunnerHardware : IO RunnerHardware := do
+  let runnerOs ← IO.getEnv "RUNNER_OS"
+  let runnerArch ← IO.getEnv "RUNNER_ARCH"
+  let nproc ← runInfoCommand "nproc" #[]
+  let lscpu ← runInfoCommand "lscpu" #["--json"]
+  let meminfo ←
+    try
+      let text ← IO.FS.readFile "/proc/meminfo"
+      pure (some text)
+    catch _ =>
+      pure none
+  let dfRoot ← runInfoCommand "df" #["--output=size", "-h", "/"]
+  pure {
+    runnerOs := runnerOs
+    runnerArch := runnerArch
+    cpuModel := lscpu.bind fun output => lscpuJsonField output "Model name:"
+    logicalCpus := nproc.orElse fun _ => lscpu.bind fun output => lscpuJsonField output "CPU(s):"
+    coresPerSocket := lscpu.bind fun output => lscpuJsonField output "Core(s) per socket:"
+    threadsPerCore := lscpu.bind fun output => lscpuJsonField output "Thread(s) per core:"
+    sockets := lscpu.bind fun output => lscpuJsonField output "Socket(s):"
+    ramTotal := meminfo.bind memTotalGiB
+    rootDisk := dfRoot.bind dfRootSize
+    hypervisor := lscpu.bind fun output => lscpuJsonField output "Hypervisor vendor:"
+  }
 
 private def nextNat (lo hi : Nat) : StateM StdGen Nat := do
   let g ← get
@@ -208,13 +301,59 @@ private def renderConfigSection (record : BenchRecord) : List String := [
   ""
 ]
 
-private def renderMarkdown (records : Array BenchRecord) : String :=
+private def renderRunnerLine (hardware : RunnerHardware) : String :=
+  match hardware.runnerOs, hardware.runnerArch with
+  | some os, some arch => "- Runner: `" ++ os ++ " " ++ arch ++ "`"
+  | some os, none => "- Runner OS: `" ++ os ++ "`"
+  | none, some arch => "- Runner architecture: `" ++ arch ++ "`"
+  | none, none => "- Runner: unavailable outside GitHub Actions"
+
+private def renderOptionalLine (label : String) (value : Option String) : Option String :=
+  value.map fun value => "- " ++ label ++ ": `" ++ value ++ "`"
+
+private def renderTopologyLine (hardware : RunnerHardware) : Option String :=
+  match hardware.coresPerSocket, hardware.threadsPerCore, hardware.sockets with
+  | some cores, some threads, some sockets =>
+      some <| "- Topology: `" ++ cores ++ " cores per socket, " ++ threads ++
+        " threads per core, " ++ sockets ++ " socket(s)`"
+  | some cores, some threads, none =>
+      some <| "- Topology: `" ++ cores ++ " cores per socket, " ++ threads ++
+        " threads per core`"
+  | some cores, none, _ => some <| "- Cores per socket: `" ++ cores ++ "`"
+  | none, some threads, _ => some <| "- Threads per core: `" ++ threads ++ "`"
+  | none, none, some sockets => some <| "- Sockets: `" ++ sockets ++ "`"
+  | none, none, none => none
+
+private def keepSome : List (Option String) → List String
+  | [] => []
+  | some line :: lines => line :: keepSome lines
+  | none :: lines => keepSome lines
+
+private def renderHardwareSection (hardware : RunnerHardware) : List String :=
+  [
+    "## Runner Hardware",
+    "",
+    renderRunnerLine hardware,
+  ] ++ keepSome [
+    renderOptionalLine "CPU" hardware.cpuModel,
+    renderOptionalLine "Exposed CPUs"
+      (hardware.logicalCpus.map fun cpus => cpus ++ " logical CPUs"),
+    renderTopologyLine hardware,
+    renderOptionalLine "RAM" hardware.ramTotal,
+    renderOptionalLine "Root disk" hardware.rootDisk,
+    renderOptionalLine "Hypervisor" hardware.hypervisor
+  ] ++ [
+    ""
+  ]
+
+private def renderMarkdown (hardware : RunnerHardware) (records : Array BenchRecord) : String :=
   String.intercalate "\n" ([
     "# Evaluation Benchmark Report",
     "",
     "- Seed: `" ++ toString seed ++ "`",
     "- Early CI performance comparisons are informational only.",
     "",
+  ] ++ renderHardwareSection hardware ++ [
     "## Results",
     ""
   ] ++ renderMarkdownTable resultColumns records.toList ++ [
@@ -379,6 +518,7 @@ private def runAdditiveNTT (gen : StdGen) : IO (Array BenchRecord × StdGen) := 
 
 def run : IO UInt32 := do
   let runId ← makeRunId
+  let hardware ← collectRunnerHardware
   let mut gen := mkStdGen seed
   let mut records := #[]
   let (univariateRecords, gen') ← runUnivariate gen
@@ -398,7 +538,7 @@ def run : IO UInt32 := do
   let results := resultsPath runId
   let report := reportPath runId
   IO.FS.writeFile results (renderJsonl records)
-  IO.FS.writeFile report (renderMarkdown records)
+  IO.FS.writeFile report (renderMarkdown hardware records)
   IO.println s!"wrote {records.size} benchmark records for run {runId}"
   pure 0
 

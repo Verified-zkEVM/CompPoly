@@ -43,7 +43,9 @@ The JSONL file is the machine-readable output. Each line is one benchmark
 record.
 
 The Markdown report is the human-readable output used by CI artifacts and the
-GitHub Actions step summary.
+GitHub Actions step summary. It also includes a runner hardware section with
+the available GitHub runner metadata and host-reported CPU, memory, and disk
+information.
 
 Generated benchmark artifacts are ignored by `bench/.gitignore`.
 
@@ -51,6 +53,7 @@ Generated benchmark artifacts are ignored by `bench/.gitignore`.
 
 The benchmark currently records:
 
+- runner hardware information,
 - benchmark name,
 - representation,
 - evaluation method,
@@ -177,3 +180,8 @@ lake exe CompPolyBench
 The generated Markdown and JSONL files are uploaded as the
 `evaluation-bench-results` artifact. Markdown reports are also appended to the
 GitHub Actions step summary.
+
+The Markdown report records the runner hardware visible to the benchmark
+process by querying `RUNNER_OS`, `RUNNER_ARCH`, `nproc`, `lscpu --json`,
+`/proc/meminfo`, and `df --output=size -h /`. These values describe the CI VM
+environment seen by the benchmark, not exclusive physical host ownership.
