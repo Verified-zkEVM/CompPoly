@@ -75,7 +75,7 @@ import CompPoly
 
 ### Implemented highlights
 
-- **Multivariate (`CMvPolynomial`)**: full core API (`eval`, `eval₂`, `eval₂Hom`, `aeval`, `bind₁`, `rename`, `restrict*`, `finSuccEquiv`/`optionEquivLeft`, leading-term operations, `sumToIter`), plus `CommSemiring`/`CommRing`, algebra/scalar-action instances, and equivalence to Mathlib `MvPolynomial`.
+- **Multivariate (`CMvPolynomial`)**: full core API (`eval`, `eval₂`, `eval₂Hom`, `aeval`, `bind₁`, `rename`, `restrict*`, `finSuccEquiv`, leading-term operations, `sumToIter`), plus `CommSemiring`/`CommRing`, algebra/scalar-action instances, and equivalence to Mathlib `MvPolynomial`.
 - **Multilinear (`CMlPolynomial`, `CMlPolynomialEval`)**: coefficient and Boolean-hypercube evaluation representations, basis conversions, and equivalence to Mathlib's multilinear polynomial surface.
 - **Univariate (`CPolynomial`)**: full ring structure, core operations (`C`, `X`, `monomial`, `coeff`, `eval`, `eval₂`, degree/leading/support), `ringEquiv` to Mathlib `Polynomial`, and Lagrange interpolation (`basis`, `interpolate`, `interpolatePow`).
 - **Bivariate (`CBivariate`)**: specialized `CPolynomial (CPolynomial R)` API with `X`, `Y`, `monomialXY`, evaluation, leading coefficients, `swap`, and equivalence to `Polynomial (Polynomial R)`.
