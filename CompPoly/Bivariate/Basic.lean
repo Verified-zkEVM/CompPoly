@@ -213,7 +213,7 @@ theorem eval_eval_horner_y_then_x_eq_eval_eval {R : Type*}
 /-- Full evaluation at `(x, y)` by evaluating each X-coefficient polynomial at
     `x`, then Horner-evaluating the resulting scalar polynomial in Y. -/
 def evalEvalHornerXThenY {R : Type*} [Semiring R] (x y : R) (p : CBivariate R) : R :=
-  p.val.foldr (fun c acc => acc * y + CPolynomial.evalHorner x c) 0
+  p.val.foldr (fun c acc ↦ acc * y + CPolynomial.evalHorner x c) 0
 
 /-- Swap the roles of X and Y.
     ArkLib/Mathlib: `Polynomial.Bivariate.swap`.
