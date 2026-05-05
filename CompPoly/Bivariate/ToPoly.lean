@@ -610,38 +610,38 @@ theorem evalX_toPoly_eval {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Comm
 
 /-- `X`-then-`Y` Horner full evaluation agrees with the existing evaluator over
 commutative coefficient semirings. -/
-theorem evalEvalHornerXThenY_eq_evalEval {R : Type*}
+theorem eval_eval_horner_x_then_y_eq_eval_eval {R : Type*}
     [BEq R] [LawfulBEq R] [Nontrivial R] [CommSemiring R] [DecidableEq R]
-    (x y : R) (f : CBivariate R) :
-    evalEvalHornerXThenY x y f = evalEval x y f := by
+    (x y : R) (p : CBivariate R) :
+    evalEvalHornerXThenY x y p = evalEval x y p := by
   let coeffEval : CPolynomial R →+* R :=
     (Polynomial.evalRingHom x).comp (CPolynomial.ringEquiv (R := R)).toRingHom
   have h_horner :
-      evalEvalHornerXThenY x y f = CPolynomial.eval₂Horner coeffEval y f := by
+      evalEvalHornerXThenY x y p = CPolynomial.eval₂Horner coeffEval y p := by
     unfold evalEvalHornerXThenY CPolynomial.eval₂Horner
     dsimp [coeffEval]
     congr
     ext c acc
-    simp [CPolynomial.evalHorner_eq_eval, CPolynomial.eval_toPoly, CPolynomial.ringEquiv]
+    simp [CPolynomial.eval_horner_eq_eval, CPolynomial.eval_toPoly, CPolynomial.ringEquiv]
   have h_evalX_map :
-      (evalX (R := R) x f).toPoly = (CPolynomial.toPoly f).map coeffEval := by
+      (evalX (R := R) x p).toPoly = (CPolynomial.toPoly p).map coeffEval := by
     ext j
     rw [evalX_toPoly_coeff]
     simp [toPoly_coeff, coeffEval, CPolynomial.ringEquiv]
-    rw [← CPolynomial.coeff_toPoly (p := f) (i := j)]
+    rw [← CPolynomial.coeff_toPoly (p := p) (i := j)]
     simp [CPolynomial.coeff, CPolynomial.Raw.coeff]
   calc
-    evalEvalHornerXThenY x y f = CPolynomial.eval₂Horner coeffEval y f := h_horner
-    _ = CPolynomial.eval₂ coeffEval y f :=
-      (CPolynomial.eval₂_eq_eval₂Horner coeffEval y f).symm
-    _ = (CPolynomial.toPoly f).eval₂ coeffEval y := CPolynomial.eval₂_toPoly coeffEval y f
-    _ = Polynomial.eval y ((CPolynomial.toPoly f).map coeffEval) :=
+    evalEvalHornerXThenY x y p = CPolynomial.eval₂Horner coeffEval y p := h_horner
+    _ = CPolynomial.eval₂ coeffEval y p :=
+      (CPolynomial.eval₂_eq_eval₂_horner coeffEval y p).symm
+    _ = (CPolynomial.toPoly p).eval₂ coeffEval y := CPolynomial.eval₂_toPoly coeffEval y p
+    _ = Polynomial.eval y ((CPolynomial.toPoly p).map coeffEval) :=
       Polynomial.eval₂_eq_eval_map coeffEval
-    _ = Polynomial.eval y (evalX (R := R) x f).toPoly := by rw [← h_evalX_map]
-    _ = (evalX (R := R) x f).eval y :=
-      (CPolynomial.eval_toPoly y (evalX (R := R) x f)).symm
-    _ = (toPoly f).evalEval x y := evalX_toPoly_eval x y f
-    _ = evalEval x y f := (evalEval_toPoly x y f).symm
+    _ = Polynomial.eval y (evalX (R := R) x p).toPoly := by rw [← h_evalX_map]
+    _ = (evalX (R := R) x p).eval y :=
+      (CPolynomial.eval_toPoly y (evalX (R := R) x p)).symm
+    _ = (toPoly p).evalEval x y := evalX_toPoly_eval x y p
+    _ = evalEval x y p := (evalEval_toPoly x y p).symm
 
 /--
 The `Commute` hypothesis in `evalX_toPoly_eval_commute` is necessary:
