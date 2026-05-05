@@ -42,11 +42,11 @@ private def additiveNttWarmupIterations : Nat := 10
 /-- Number of measured iterations for the slower additive NTT benchmark. -/
 private def additiveNttMeasuredIterations : Nat := 100
 
-/-- Primality witness used for generic `ZMod` benchmarks over BabyBear. -/
+/-- Primality witness used for generic `ZMod` benchmarks over `BabyBear`. -/
 instance : Fact (Nat.Prime BabyBear.fieldSize) where
   out := BabyBear.is_prime
 
-/-- Primality witness used for generic `ZMod` benchmarks over Goldilocks. -/
+/-- Primality witness used for generic `ZMod` benchmarks over `Goldilocks`. -/
 instance : Fact (Nat.Prime Goldilocks.fieldSize) where
   out := Goldilocks.is_prime
 
@@ -137,7 +137,7 @@ private def dfRootSize (output : String) : Option String :=
   | _ => none
 
 /-- Parse total memory from `/proc/meminfo` and report whole GiB. -/
-private def memTotalGiB (output : String) : Option String :=
+private def memTotalGib (output : String) : Option String :=
   let rec go : List String → Option String
     | [] => none
     | line :: lines =>
@@ -172,7 +172,7 @@ private def collectRunnerHardware : IO RunnerHardware := do
     coresPerSocket := lscpu.bind fun output ↦ lscpuJsonField output "Core(s) per socket:"
     threadsPerCore := lscpu.bind fun output ↦ lscpuJsonField output "Thread(s) per core:"
     sockets := lscpu.bind fun output ↦ lscpuJsonField output "Socket(s):"
-    ramTotal := meminfo.bind memTotalGiB
+    ramTotal := meminfo.bind memTotalGib
     rootDisk := dfRoot.bind dfRootSize
     hypervisor := lscpu.bind fun output ↦ lscpuJsonField output "Hypervisor vendor:"
   }
