@@ -78,6 +78,11 @@ import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.Lagrange
 import CompPoly.Univariate.Linear
+import CompPoly.Univariate.NTT.Domain
+import CompPoly.Univariate.NTT.FastMul
+import CompPoly.Univariate.NTT.Forward
+import CompPoly.Univariate.NTT.Inverse
+import CompPoly.Univariate.NTT.Transform
 import CompPoly.Univariate.Quotient.Core
 import CompPoly.Univariate.Quotient.Equiv
 import CompPoly.Univariate.Raw
