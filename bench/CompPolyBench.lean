@@ -696,7 +696,7 @@ def run : IO UInt32 := do
   let report := reportPath runId
   IO.FS.writeFile results (renderJsonl records)
   IO.FS.writeFile report (renderMarkdown hardware records)
-  IO.println s!"wrote {records.size} benchmark records for run {runId}"
+  IO.println s!"wrote `{records.size}` benchmark records for run `{runId}`"
   pure 0
 
 end CompPolyBench

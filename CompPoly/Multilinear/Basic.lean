@@ -169,7 +169,7 @@ theorem monomialBasis_getElem {w : Vector R n} (i : Fin (2 ^ n)) :
   rw [monomialBasis]
   simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin, Vector.getElem_ofFn]
 
-private lemma monomialBasis_even {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^ n)) :
+private lemma monomial_basis_even {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^ n)) :
     (monomialBasis x).get ⟨2 * j.val, by omega⟩ =
     (monomialBasis x.tail).get j := by
   unfold monomialBasis
@@ -184,7 +184,7 @@ private lemma monomialBasis_even {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^ 
   rw [Nat.testBit_bit_succ]
   simp [Vector.tail_eq_cast_extract, Nat.add_comm]
 
-private lemma monomialBasis_odd {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^ n)) :
+private lemma monomial_basis_odd {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^ n)) :
     (monomialBasis x).get ⟨2 * j.val + 1, by omega⟩ =
     x.head * (monomialBasis x.tail).get j := by
   unfold monomialBasis
@@ -208,7 +208,7 @@ def map {R S : Type*} [Semiring R] [Semiring S] (f : R →+* S)
 @[inline, specialize]
 private def evalHornerStep [CommSemiring R] {n : ℕ}
     (coeffs : Vector R (2 ^ (n + 1))) (x0 : R) : Vector R (2 ^ n) :=
-  Vector.ofFn fun j : Fin (2 ^ n) =>
+  Vector.ofFn fun j : Fin (2 ^ n) ↦
     coeffs.get ⟨2 * j.val, by omega⟩ + x0 * coeffs.get ⟨2 * j.val + 1, by omega⟩
 
 /-- Evaluate dense multilinear coefficients by eliminating one variable at a time. -/
@@ -235,7 +235,7 @@ def eval (p : CMlPolynomial R n) (x : Vector R n) : R :=
 
 def eval₂ (p : CMlPolynomial R n) (f : R →+* S) (x : Vector S n) : S := eval (map f p) x
 
-private lemma evalHornerStep_dotProduct {n : ℕ}
+private lemma eval_horner_step_dot_product {n : ℕ}
     (p : CMlPolynomial R (n + 1)) (x : Vector R (n + 1)) :
     Vector.dotProduct (evalHornerStep p x.head) (monomialBasis x.tail) =
     Vector.dotProduct p (monomialBasis x) := by
@@ -248,7 +248,7 @@ private lemma evalHornerStep_dotProduct {n : ℕ}
         (∑ i : Fin (2 ^ n), p.get ⟨2 * i.val + 1, by omega⟩ *
           (monomialBasis x).get ⟨2 * i.val + 1, by omega⟩) := by
     convert (Fin.sum_univ_odd_even (n := n)
-        (f := fun i => if h : i < 2 ^ (n + 1) then
+        (f := fun i ↦ if h : i < 2 ^ (n + 1) then
           p.get ⟨i, h⟩ * (monomialBasis x).get ⟨i, h⟩ else 0)).symm using 1
     · apply Finset.sum_congr rfl
       intro i _
@@ -263,7 +263,7 @@ private lemma evalHornerStep_dotProduct {n : ℕ}
   rw [hsplit]
   unfold evalHornerStep
   simp only [Vector.get_ofFn]
-  simp only [monomialBasis_even, monomialBasis_odd]
+  simp only [monomial_basis_even, monomial_basis_odd]
   rw [← Finset.sum_add_distrib]
   apply Finset.sum_congr rfl
   intro j _
@@ -284,7 +284,7 @@ theorem eval_horner_eq_eval (p : CMlPolynomial R n) (x : Vector R n) :
       trans Vector.dotProduct (evalHornerStep p x.head) (monomialBasis x.tail)
       · exact ih _ _
       · simp only [eval]
-        exact evalHornerStep_dotProduct p x
+        exact eval_horner_step_dot_product p x
 
 /-- Horner evaluation through a ring homomorphism agrees with the dot-product evaluator. -/
 theorem eval₂_horner_eq_eval₂ (p : CMlPolynomial R n) (f : R →+* S) (x : Vector S n) :
