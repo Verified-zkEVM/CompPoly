@@ -540,10 +540,31 @@ private def runMultilinear (gen : StdGen) : IO (Array BenchRecord × StdGen) := 
     (fun i ↦ CMlPolynomial.eval coeffPoly (evalPoint (i % 32)))
     checksumBabyBear)
   records := records.push (← runTimed
+    "multilinear-coeff-horner" "CMlPolynomial" "evalHorner" "BabyBear.Field"
+    "8 vars, 256 coefficients, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CMlPolynomial.evalHorner coeffPoly (evalPoint (i % 32)))
+    checksumBabyBear)
+  records := records.push (← runTimed
     "multilinear-hypercube-eval" "CMlPolynomialEval" "eval" "BabyBear.Field"
     "8 vars, 256 hypercube values, 32 points" warmupIterations measuredIterations
     (fun i ↦ CMlPolynomialEval.eval evalPoly (evalPoint (i % 32)))
     checksumBabyBear)
+  let (goldilocksCoeffs, gen) := (zmodArray Goldilocks.fieldSize 256 false).run gen
+  let (goldilocksPoints, gen) := (zmodArray Goldilocks.fieldSize 256 false).run gen
+  let goldilocksCoeffPoly : CMlPolynomial Goldilocks.Field 8 :=
+    CMlPolynomial.ofArray goldilocksCoeffs 8
+  let goldilocksEvalPoint (offset : Nat) : Vector Goldilocks.Field 8 :=
+    Vector.ofFn fun j ↦ goldilocksPoints.getD ((offset + j.val) % goldilocksPoints.size) 0
+  records := records.push (← runTimed
+    "multilinear-coeff-eval-goldilocks" "CMlPolynomial" "eval" "Goldilocks.Field"
+    "8 vars, 256 coefficients, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CMlPolynomial.eval goldilocksCoeffPoly (goldilocksEvalPoint (i % 32)))
+    checksumZMod)
+  records := records.push (← runTimed
+    "multilinear-coeff-horner-goldilocks" "CMlPolynomial" "evalHorner" "Goldilocks.Field"
+    "8 vars, 256 coefficients, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CMlPolynomial.evalHorner goldilocksCoeffPoly (goldilocksEvalPoint (i % 32)))
+    checksumZMod)
   pure (records, gen)
 
 /-- Shared input-shape label for bivariate evaluation benchmarks. -/
