@@ -176,11 +176,44 @@ def evalY {R : Type*} [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (a : R) (f : CBivariate R) : CPolynomial R :=
   f.val.eval (CPolynomial.C a)
 
+/-- Evaluate in the second variable (Y) at `a` using Horner's method,
+    yielding a univariate polynomial in X. -/
+def evalYHorner {R : Type*} [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (a : R) (p : CBivariate R) : CPolynomial R :=
+  CPolynomial.evalHorner (CPolynomial.C a) p
+
+/-- Horner evaluation in Y agrees with the existing sum-of-powers evaluator. -/
+theorem eval_y_horner_eq_eval_y {R : Type*}
+    [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] (a : R) (p : CBivariate R) :
+    evalYHorner a p = evalY a p := by
+  simpa [evalYHorner, evalY] using
+    (CPolynomial.eval_horner_eq_eval (x := CPolynomial.C a) (p := p))
+
 /-- Full evaluation at `(x, y)`: `p(x, y)`. Inner variable X at `x`, outer variable Y at `y`.
     Equivalently `(evalY y f).eval x`. Mathlib: `Polynomial.evalEval`. -/
 def evalEval {R : Type*} [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (x y : R) (f : CBivariate R) : R :=
   CPolynomial.eval x (f.val.eval (CPolynomial.C y))
+
+/-- Full evaluation at `(x, y)` using Horner in Y, then Horner in X on the
+    intermediate univariate polynomial. -/
+def evalEvalHornerYThenX {R : Type*} [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (x y : R) (p : CBivariate R) : R :=
+  CPolynomial.evalHorner x (evalYHorner y p)
+
+/-- `Y`-then-`X` Horner full evaluation agrees with the existing evaluator. -/
+theorem eval_eval_horner_y_then_x_eq_eval_eval {R : Type*}
+    [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (x y : R) (p : CBivariate R) :
+    evalEvalHornerYThenX x y p = evalEval x y p := by
+  simp only [evalEvalHornerYThenX, evalEval]
+  rw [CPolynomial.eval_horner_eq_eval, eval_y_horner_eq_eval_y]
+  rfl
+
+/-- Full evaluation at `(x, y)` by evaluating each X-coefficient polynomial at
+    `x`, then Horner-evaluating the resulting scalar polynomial in Y. -/
+def evalEvalHornerXThenY {R : Type*} [Semiring R] (x y : R) (p : CBivariate R) : R :=
+  p.val.foldr (fun c acc ↦ acc * y + CPolynomial.evalHorner x c) 0
 
 /-- Swap the roles of X and Y.
     ArkLib/Mathlib: `Polynomial.Bivariate.swap`.

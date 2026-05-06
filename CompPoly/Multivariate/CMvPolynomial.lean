@@ -129,9 +129,93 @@ def eval₂ {R S : Type*} {n : ℕ} [Semiring R] [CommSemiring S] :
     (R →+* S) → (Fin n → S) → CMvPolynomial n R → S :=
   fun f vs p => ExtTreeMap.foldl (fun s m c => (f c * MonoR.evalMonomial vs m) + s) 0 p.1
 
+/-- Term representation used by the fixed-order multivariate Horner evaluator. -/
+abbrev HornerTerm (n : ℕ) (S : Type*) := CMvMonomial n × S
+
+/-- Terms grouped by one variable exponent. -/
+abbrev HornerGroup (n : ℕ) (S : Type*) := ℕ × List (HornerTerm n S)
+
+/-- Read the exponent for a variable index represented as a natural number. -/
+def hornerExponent {n : ℕ} (k : ℕ) (m : CMvMonomial n) : ℕ :=
+  m[k]?.getD 0
+
+/-- Add a term to an association list keyed by the current variable exponent. -/
+def insertHornerTerm {n : ℕ} {S : Type*}
+    (exponent : ℕ) (term : HornerTerm n S) :
+    List (HornerGroup n S) → List (HornerGroup n S)
+  | [] => [(exponent, [term])]
+  | group :: groups =>
+      if group.1 = exponent then
+        (group.1, term :: group.2) :: groups
+      else
+        group :: insertHornerTerm exponent term groups
+
+/-- Insert an exponent group into descending exponent order. -/
+def insertHornerGroupDesc {n : ℕ} {S : Type*}
+    (group : HornerGroup n S) : List (HornerGroup n S) → List (HornerGroup n S)
+  | [] => [group]
+  | group' :: groups =>
+      if group'.1 < group.1 then
+        group :: group' :: groups
+      else
+        group' :: insertHornerGroupDesc group groups
+
+/-- Collect terms into association-list groups keyed by the current variable exponent. -/
+def collectHornerGroups {n : ℕ} {S : Type*}
+    (k : ℕ) (terms : List (HornerTerm n S)) : List (HornerGroup n S) :=
+  terms.foldl
+    (fun groups term => insertHornerTerm (hornerExponent k term.1) term groups) []
+
+/-- Sort exponent groups from high exponent to low exponent. -/
+def sortHornerGroups {n : ℕ} {S : Type*}
+    (groups : List (HornerGroup n S)) : List (HornerGroup n S) :=
+  groups.foldl (fun sorted group => insertHornerGroupDesc group sorted) []
+
+/-- Group terms by the current variable exponent, sorted from high to low exponent. -/
+def hornerGroups {n : ℕ} {S : Type*}
+    (k : ℕ) (terms : List (HornerTerm n S)) : List (HornerGroup n S) :=
+  sortHornerGroups (collectHornerGroups k terms)
+
+/-- Sparse Horner fold for already-evaluated coefficient groups. -/
+def evalSparseHornerGroups {S : Type*} [CommSemiring S]
+    (x : S) : List (ℕ × S) → S
+  | [] => 0
+  | group :: groups =>
+      let state := groups.foldl
+        (fun state group =>
+          let previousExponent := state.1
+          let acc := state.2
+          let exponent := group.1
+          (exponent, acc * x ^ (previousExponent - exponent) + group.2))
+        group
+      state.2 * x ^ state.1
+
+/-- Evaluate sparse multivariate terms by fixed-order Horner in variables `0, 1, ..., n-1`. -/
+def eval₂HornerTerms {n : ℕ} {S : Type*} [CommSemiring S]
+    (xs : ℕ → S) : ℕ → ℕ → List (HornerTerm n S) → S
+  | 0, _, terms => terms.foldl (fun acc term => acc + term.2) 0
+  | fuel + 1, k, terms =>
+      let groups := hornerGroups k terms
+      let evaluatedGroups := groups.map fun group =>
+        (group.1, eval₂HornerTerms xs fuel (k + 1) group.2)
+      evalSparseHornerGroups (xs k) evaluatedGroups
+
+/-- Evaluate a polynomial using fixed-order multivariate Horner evaluation. -/
+def eval₂Horner {R S : Type*} {n : ℕ} [Semiring R] [CommSemiring S] :
+    (R →+* S) → (Fin n → S) → CMvPolynomial n R → S :=
+  fun f vs p =>
+    let xs : ℕ → S := fun k => if h : k < n then vs ⟨k, h⟩ else 0
+    let terms := p.1.toList.map fun term => (term.1, f term.2)
+    eval₂HornerTerms xs n 0 terms
+
 /-- Evaluate a polynomial at a given point. -/
 def eval {R : Type*} {n : ℕ} [CommSemiring R] : (Fin n → R) → CMvPolynomial n R → R :=
   eval₂ (RingHom.id _)
+
+/-- Evaluate a polynomial at a given point using fixed-order multivariate Horner evaluation. -/
+def evalHorner {R : Type*} {n : ℕ} [CommSemiring R] :
+    (Fin n → R) → CMvPolynomial n R → R :=
+  eval₂Horner (RingHom.id _)
 
 /-- The support of a polynomial (set of monomials with non-zero coefficients),
     represented as Finsupps. -/
