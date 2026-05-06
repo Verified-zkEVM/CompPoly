@@ -173,6 +173,33 @@ def map {R S : Type*} [Semiring R] [Semiring S] (f : R →+* S)
     (p : CMlPolynomial R n) : CMlPolynomial S n :=
   Vector.map f p
 
+/-- Evaluate dense multilinear coefficients by eliminating one variable at a time. -/
+@[inline, specialize]
+private def evalHornerCoeffs [CommSemiring R] :
+    {n : ℕ} → Vector R (2 ^ n) → Vector R n → R
+  | 0, coeffs, _ => coeffs.get ⟨0, by norm_num⟩
+  | n + 1, coeffs, x =>
+      evalHornerCoeffs
+        (Vector.ofFn fun j : Fin (2 ^ n) =>
+          coeffs.get ⟨2 * j.1, by
+            have hj := j.2
+            rw [Nat.pow_succ']
+            omega⟩ + x.head * coeffs.get ⟨2 * j.1 + 1, by
+            have hj := j.2
+            rw [Nat.pow_succ']
+            omega⟩)
+        x.tail
+
+/-- Evaluate a `CMlPolynomial` at a point using a multilinear Horner method. -/
+@[inline, specialize]
+def evalHorner (p : CMlPolynomial R n) (x : Vector R n) : R :=
+  evalHornerCoeffs p x
+
+/-- Evaluate a `CMlPolynomial` using a ring homomorphism and multilinear Horner method. -/
+@[inline, specialize]
+def eval₂Horner (p : CMlPolynomial R n) (f : R →+* S) (x : Vector S n) : S :=
+  evalHorner (map f p) x
+
 /-- Evaluate a `CMlPolynomial` at a point -/
 def eval (p : CMlPolynomial R n) (x : Vector R n) : R :=
   Vector.dotProduct p (monomialBasis x)
