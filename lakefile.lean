@@ -15,3 +15,6 @@ lean_lib CompPoly
 
 lean_lib CompPolyTests where
   srcDir := "tests"
+
+lean_exe CompPolyBench where
+  srcDir := "bench"
