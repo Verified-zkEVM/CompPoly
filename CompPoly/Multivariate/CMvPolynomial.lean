@@ -130,17 +130,17 @@ def eval₂ {R S : Type*} {n : ℕ} [Semiring R] [CommSemiring S] :
   fun f vs p => ExtTreeMap.foldl (fun s m c => (f c * MonoR.evalMonomial vs m) + s) 0 p.1
 
 /-- Term representation used by the fixed-order multivariate Horner evaluator. -/
-private abbrev HornerTerm (n : ℕ) (S : Type*) := CMvMonomial n × S
+abbrev HornerTerm (n : ℕ) (S : Type*) := CMvMonomial n × S
 
 /-- Terms grouped by one variable exponent. -/
-private abbrev HornerGroup (n : ℕ) (S : Type*) := ℕ × List (HornerTerm n S)
+abbrev HornerGroup (n : ℕ) (S : Type*) := ℕ × List (HornerTerm n S)
 
 /-- Read the exponent for a variable index represented as a natural number. -/
-private def hornerExponent {n : ℕ} (k : ℕ) (m : CMvMonomial n) : ℕ :=
+def hornerExponent {n : ℕ} (k : ℕ) (m : CMvMonomial n) : ℕ :=
   m[k]?.getD 0
 
 /-- Add a term to an association list keyed by the current variable exponent. -/
-private def insertHornerTerm {n : ℕ} {S : Type*}
+def insertHornerTerm {n : ℕ} {S : Type*}
     (exponent : ℕ) (term : HornerTerm n S) :
     List (HornerGroup n S) → List (HornerGroup n S)
   | [] => [(exponent, [term])]
@@ -151,7 +151,7 @@ private def insertHornerTerm {n : ℕ} {S : Type*}
         group :: insertHornerTerm exponent term groups
 
 /-- Insert an exponent group into descending exponent order. -/
-private def insertHornerGroupDesc {n : ℕ} {S : Type*}
+def insertHornerGroupDesc {n : ℕ} {S : Type*}
     (group : HornerGroup n S) : List (HornerGroup n S) → List (HornerGroup n S)
   | [] => [group]
   | group' :: groups =>
@@ -160,15 +160,24 @@ private def insertHornerGroupDesc {n : ℕ} {S : Type*}
       else
         group' :: insertHornerGroupDesc group groups
 
-/-- Group terms by the current variable exponent, sorted from high to low exponent. -/
-private def hornerGroups {n : ℕ} {S : Type*}
+/-- Collect terms into association-list groups keyed by the current variable exponent. -/
+def collectHornerGroups {n : ℕ} {S : Type*}
     (k : ℕ) (terms : List (HornerTerm n S)) : List (HornerGroup n S) :=
-  let groups := terms.foldl
+  terms.foldl
     (fun groups term => insertHornerTerm (hornerExponent k term.1) term groups) []
+
+/-- Sort exponent groups from high exponent to low exponent. -/
+def sortHornerGroups {n : ℕ} {S : Type*}
+    (groups : List (HornerGroup n S)) : List (HornerGroup n S) :=
   groups.foldl (fun sorted group => insertHornerGroupDesc group sorted) []
 
+/-- Group terms by the current variable exponent, sorted from high to low exponent. -/
+def hornerGroups {n : ℕ} {S : Type*}
+    (k : ℕ) (terms : List (HornerTerm n S)) : List (HornerGroup n S) :=
+  sortHornerGroups (collectHornerGroups k terms)
+
 /-- Sparse Horner fold for already-evaluated coefficient groups. -/
-private def evalSparseHornerGroups {S : Type*} [CommSemiring S]
+def evalSparseHornerGroups {S : Type*} [CommSemiring S]
     (x : S) : List (ℕ × S) → S
   | [] => 0
   | group :: groups =>
@@ -182,7 +191,7 @@ private def evalSparseHornerGroups {S : Type*} [CommSemiring S]
       state.2 * x ^ state.1
 
 /-- Evaluate sparse multivariate terms by fixed-order Horner in variables `0, 1, ..., n-1`. -/
-private def eval₂HornerTerms {n : ℕ} {S : Type*} [CommSemiring S]
+def eval₂HornerTerms {n : ℕ} {S : Type*} [CommSemiring S]
     (xs : ℕ → S) : ℕ → ℕ → List (HornerTerm n S) → S
   | 0, _, terms => terms.foldl (fun acc term => acc + term.2) 0
   | fuel + 1, k, terms =>
