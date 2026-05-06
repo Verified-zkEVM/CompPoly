@@ -431,7 +431,7 @@ private def renderMarkdown (hardware : RunnerHardware) (records : Array BenchRec
 private def appendRecords (xs ys : Array BenchRecord) : Array BenchRecord :=
   ys.foldl (init := xs) fun acc record ↦ acc.push record
 
-/-- Build a sparse computable multivariate polynomial from generated coefficients. -/
+/-- Build a computable multivariate polynomial from generated coefficients. -/
 private def buildCMvPolynomial
     (terms : Array BabyBear.Field) : CPoly.CMvPolynomial 3 BabyBear.Field :=
   Id.run do
@@ -510,19 +510,27 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
   records := appendRecords records bn254Records
   pure (records, nextGen)
 
-/-- Run the sparse multivariate evaluation benchmark. -/
+/-- Run sparse and dense multivariate evaluation benchmarks. -/
 private def runMultivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := do
-  let (terms, gen) := (babyBearArray 512 true).run gen
+  let (sparseTerms, gen) := (babyBearArray 512 true).run gen
+  let (denseTerms, gen) := (babyBearArray 512 false).run gen
   let (points, gen) := (babyBearPoints 96).run gen
-  let p := buildCMvPolynomial terms
+  let sparsePoly := buildCMvPolynomial sparseTerms
+  let densePoly := buildCMvPolynomial denseTerms
   let evalPoint (offset : Nat) : Fin 3 → BabyBear.Field :=
     fun j ↦ points.getD ((offset + j.val) % points.size) 0
-  let record ← runTimed
-    "multivariate-eval" "CMvPolynomial" "eval" "BabyBear.Field"
+  let mut records := #[]
+  records := records.push (← runTimed
+    "multivariate-dense-eval" "CMvPolynomial" "eval" "BabyBear.Field"
+    "3 vars, 512 generated terms, dense coeffs, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CPoly.CMvPolynomial.eval (evalPoint (i % 32)) densePoly)
+    checksumBabyBear)
+  records := records.push (← runTimed
+    "multivariate-sparse-eval" "CMvPolynomial" "eval" "BabyBear.Field"
     "3 vars, 512 generated terms, sparse coeffs, 32 points" warmupIterations measuredIterations
-    (fun i ↦ CPoly.CMvPolynomial.eval (evalPoint (i % 32)) p)
-    checksumBabyBear
-  pure (#[record], gen)
+    (fun i ↦ CPoly.CMvPolynomial.eval (evalPoint (i % 32)) sparsePoly)
+    checksumBabyBear)
+  pure (records, gen)
 
 /-- Run coefficient-form and hypercube-form multilinear evaluation benchmarks. -/
 private def runMultilinear (gen : StdGen) : IO (Array BenchRecord × StdGen) := do
