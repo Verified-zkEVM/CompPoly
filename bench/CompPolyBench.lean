@@ -549,10 +549,17 @@ private def runMultilinear (gen : StdGen) : IO (Array BenchRecord × StdGen) := 
     "8 vars, 256 hypercube values, 32 points" warmupIterations measuredIterations
     (fun i ↦ CMlPolynomialEval.eval evalPoly (evalPoint (i % 32)))
     checksumBabyBear)
+  records := records.push (← runTimed
+    "multilinear-hypercube-mle" "CMlPolynomialEval" "evalMle" "BabyBear.Field"
+    "8 vars, 256 hypercube values, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CMlPolynomialEval.evalMle evalPoly (evalPoint (i % 32)))
+    checksumBabyBear)
   let (goldilocksCoeffs, gen) := (zmodArray Goldilocks.fieldSize 256 false).run gen
   let (goldilocksPoints, gen) := (zmodArray Goldilocks.fieldSize 256 false).run gen
   let goldilocksCoeffPoly : CMlPolynomial Goldilocks.Field 8 :=
     CMlPolynomial.ofArray goldilocksCoeffs 8
+  let goldilocksEvalPoly : CMlPolynomialEval Goldilocks.Field 8 :=
+    CMlPolynomialEval.ofArray goldilocksCoeffs 8
   let goldilocksEvalPoint (offset : Nat) : Vector Goldilocks.Field 8 :=
     Vector.ofFn fun j ↦ goldilocksPoints.getD ((offset + j.val) % goldilocksPoints.size) 0
   records := records.push (← runTimed
@@ -564,6 +571,16 @@ private def runMultilinear (gen : StdGen) : IO (Array BenchRecord × StdGen) := 
     "multilinear-coeff-horner-goldilocks" "CMlPolynomial" "evalHorner" "Goldilocks.Field"
     "8 vars, 256 coefficients, 32 points" warmupIterations measuredIterations
     (fun i ↦ CMlPolynomial.evalHorner goldilocksCoeffPoly (goldilocksEvalPoint (i % 32)))
+    checksumZMod)
+  records := records.push (← runTimed
+    "multilinear-hypercube-eval-goldilocks" "CMlPolynomialEval" "eval" "Goldilocks.Field"
+    "8 vars, 256 hypercube values, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CMlPolynomialEval.eval goldilocksEvalPoly (goldilocksEvalPoint (i % 32)))
+    checksumZMod)
+  records := records.push (← runTimed
+    "multilinear-hypercube-mle-goldilocks" "CMlPolynomialEval" "evalMle" "Goldilocks.Field"
+    "8 vars, 256 hypercube values, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CMlPolynomialEval.evalMle goldilocksEvalPoly (goldilocksEvalPoint (i % 32)))
     checksumZMod)
   pure (records, gen)
 
