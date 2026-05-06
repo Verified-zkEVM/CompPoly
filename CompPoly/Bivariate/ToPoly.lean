@@ -631,15 +631,16 @@ theorem eval_eval_horner_x_then_y_eq_eval_eval {R : Type*}
     rw [← CPolynomial.coeff_toPoly (p := p) (i := j)]
     simp [CPolynomial.coeff, CPolynomial.Raw.coeff]
   calc
-    evalEvalHornerXThenY x y p = CPolynomial.eval₂Horner coeffEval y p := h_horner
+    evalEvalHornerXThenY x y p
+        = CPolynomial.eval₂Horner coeffEval y p := h_horner
     _ = CPolynomial.eval₂ coeffEval y p :=
-      (CPolynomial.eval₂_eq_eval₂_horner coeffEval y p).symm
+        (CPolynomial.eval₂_eq_eval₂_horner coeffEval y p).symm
     _ = (CPolynomial.toPoly p).eval₂ coeffEval y := CPolynomial.eval₂_toPoly coeffEval y p
     _ = Polynomial.eval y ((CPolynomial.toPoly p).map coeffEval) :=
-      Polynomial.eval₂_eq_eval_map coeffEval
+        Polynomial.eval₂_eq_eval_map coeffEval
     _ = Polynomial.eval y (evalX (R := R) x p).toPoly := by rw [← h_evalX_map]
     _ = (evalX (R := R) x p).eval y :=
-      (CPolynomial.eval_toPoly y (evalX (R := R) x p)).symm
+        (CPolynomial.eval_toPoly y (evalX (R := R) x p)).symm
     _ = (toPoly p).evalEval x y := evalX_toPoly_eval x y p
     _ = evalEval x y p := (evalEval_toPoly x y p).symm
 
