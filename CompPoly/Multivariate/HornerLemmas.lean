@@ -5,8 +5,6 @@ Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa, Derek Sorensen, 
 -/
 import CompPoly.Multivariate.CMvPolynomial
 
-open Std
-
 /-!
 # Correctness lemmas for multivariate Horner evaluation
 
@@ -14,6 +12,8 @@ This file proves that the fixed-order multivariate Horner evaluator in
 `CompPoly.Multivariate.CMvPolynomial` agrees with ordinary multivariate
 evaluation.
 -/
+
+open Std
 
 namespace CPoly
 
