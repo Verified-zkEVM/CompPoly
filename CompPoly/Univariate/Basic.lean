@@ -218,21 +218,16 @@ def evalHorner [Semiring R] (x : R) (p : CPolynomial R) : R :=
   p.eval₂Horner (RingHom.id R) x
 
 /-- Horner evaluation agrees with the sum-of-powers evaluation. -/
-theorem eval₂_eq_eval₂_horner {S : Type*} [Semiring R] [Semiring S]
+theorem eval₂_horner_eq_eval₂ {S : Type*} [Semiring R] [Semiring S]
     (f : R →+* S) (x : S) (p : CPolynomial R) :
-    eval₂ f x p = eval₂Horner f x p :=
-  CPolynomial.Raw.eval₂_eq_eval₂Horner f x p.val
-
-/-- Horner evaluation agrees with the sum-of-powers evaluation. -/
-theorem eval_eq_eval_horner [Semiring R] (x : R) (p : CPolynomial R) :
-    eval x p = evalHorner x p := by
-  simpa [eval, evalHorner, eval₂, eval₂Horner] using
-    (eval₂_eq_eval₂_horner (f := RingHom.id R) (x := x) (p := p))
+    eval₂Horner f x p = eval₂ f x p :=
+  CPolynomial.Raw.eval₂Horner_eq_eval₂ f x p.val
 
 /-- Horner evaluation agrees with the sum-of-powers evaluation. -/
 theorem eval_horner_eq_eval [Semiring R] (x : R) (p : CPolynomial R) :
-    evalHorner x p = eval x p :=
-  (eval_eq_eval_horner x p).symm
+    evalHorner x p = eval x p := by
+  simpa [eval, evalHorner, eval₂, eval₂Horner] using
+    (eval₂_horner_eq_eval₂ (f := RingHom.id R) (x := x) (p := p))
 
 /-- The support of a polynomial: indices with nonzero coefficients. -/
 def support [Zero R] [BEq R] (p : CPolynomial R) : Finset ℕ :=

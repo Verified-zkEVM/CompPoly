@@ -924,13 +924,13 @@ private lemma foldl_zipIdx_eq_foldr_pow_k
 
 omit [BEq R] in
 /-- Horner evaluation agrees with the sum-of-powers evaluation. -/
-theorem eval₂_eq_eval₂Horner
+theorem eval₂Horner_eq_eval₂
     (f : R →+* S) (x : S) (p : CPolynomial.Raw R) :
-    eval₂ f x p = eval₂Horner f x p := by
+    eval₂Horner f x p = eval₂ f x p := by
     unfold eval₂ eval₂Horner
     rw [← Array.foldl_toList, ← Array.foldr_toList, Array.toList_zipIdx]
     have := foldl_zipIdx_eq_foldr_pow_k f x 0 0 p.toList
-    simpa using this
+    simpa using this.symm
 
 end EvalTheorems
 

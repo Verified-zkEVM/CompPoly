@@ -634,7 +634,7 @@ theorem eval_eval_horner_x_then_y_eq_eval_eval {R : Type*}
     evalEvalHornerXThenY x y p
         = CPolynomial.eval₂Horner coeffEval y p := h_horner
     _ = CPolynomial.eval₂ coeffEval y p :=
-        (CPolynomial.eval₂_eq_eval₂_horner coeffEval y p).symm
+        CPolynomial.eval₂_horner_eq_eval₂ coeffEval y p
     _ = (CPolynomial.toPoly p).eval₂ coeffEval y := CPolynomial.eval₂_toPoly coeffEval y p
     _ = Polynomial.eval y ((CPolynomial.toPoly p).map coeffEval) :=
         Polynomial.eval₂_eq_eval_map coeffEval
