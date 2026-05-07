@@ -30,6 +30,7 @@ that depend on ring instances (monomial orders, `rename`, `aeval`, etc.) are in
 * `CPoly.CMvPolynomial.monomial`: Monomial constructor.
 * `CPoly.CMvPolynomial.coeff`: Extract the coefficient of a monomial.
 * `CPoly.CMvPolynomial.eval₂`, `CPoly.CMvPolynomial.eval`: Polynomial evaluation.
+* `CPoly.CMvPolynomial.eval₂Horner`, `CPoly.CMvPolynomial.evalHorner`: Evaluation using Horner's method.
 * `CPoly.CMvPolynomial.support`, `CPoly.CMvPolynomial.totalDegree`,
   `CPoly.CMvPolynomial.degreeOf`, `CPoly.CMvPolynomial.degrees`,
   `CPoly.CMvPolynomial.vars`: Degree and support queries.
