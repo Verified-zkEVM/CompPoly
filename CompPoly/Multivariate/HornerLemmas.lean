@@ -42,23 +42,23 @@ private def groupWeightedSpec {n : ℕ} {S : Type*} [CommSemiring S]
 private def termsWeightedSpec {n : ℕ} {S : Type*} [CommSemiring S]
     (k : ℕ) (weight : HornerTerm n S → S) (x : S)
     (terms : List (HornerTerm n S)) : S :=
-  (terms.map fun term => weight term * x ^ hornerExponent k term.1).sum
+  (terms.map fun term ↦ weight term * x ^ hornerExponent k term.1).sum
 
 /-- Specification for evaluated exponent groups as a sparse sum of powers. -/
 private def sparseGroupsSpec {S : Type*} [CommSemiring S]
     (x : S) (groups : List (ℕ × S)) : S :=
-  (groups.map fun group => group.2 * x ^ group.1).sum
+  (groups.map fun group ↦ group.2 * x ^ group.1).sum
 
 /-- The order invariant required by the sparse Horner gap fold. -/
 private def descendingByExponent {α : Type*} (groups : List (ℕ × α)) : Prop :=
-  groups.Pairwise fun group group' => group'.1 ≤ group.1
+  groups.Pairwise fun group group' ↦ group'.1 ≤ group.1
 
 /-! ### Shared list algebra -/
 
 private lemma foldl_add_eq_add_sum {α S : Type*} [CommSemiring S]
     (weight : α → S) :
     ∀ (terms : List α) (init : S),
-      terms.foldl (fun acc term => acc + weight term) init =
+      terms.foldl (fun acc term ↦ acc + weight term) init =
         init + (terms.map weight).sum := by
   intro terms
   induction terms with
@@ -123,7 +123,7 @@ private lemma sortHornerGroups_descending {n : ℕ} {S : Type*}
       ∀ (groups sorted : List (HornerGroup n S)),
         descendingByExponent sorted →
           descendingByExponent
-            (groups.foldl (fun sorted group => insertHornerGroupDesc group sorted) sorted) := by
+            (groups.foldl (fun sorted group ↦ insertHornerGroupDesc group sorted) sorted) := by
     intro groups
     induction groups with
     | nil =>
@@ -164,7 +164,7 @@ private lemma groupWeightedSpec_insertHornerGroupDesc {n : ℕ} {S : Type*}
 private lemma groupWeightedSpec_sortGroups {n : ℕ} {S : Type*}
     [CommSemiring S] (weight : HornerTerm n S → S) (x : S) :
     ∀ (groups sorted : List (HornerGroup n S)),
-      ((groups.foldl (fun sorted group => insertHornerGroupDesc group sorted) sorted).map
+      ((groups.foldl (fun sorted group ↦ insertHornerGroupDesc group sorted) sorted).map
           (groupWeightedSpec weight x)).sum =
         (groups.map (groupWeightedSpec weight x)).sum +
           (sorted.map (groupWeightedSpec weight x)).sum := by
@@ -208,7 +208,7 @@ private lemma groupWeightedSpec_groupTerms {n : ℕ} {S : Type*}
     [CommSemiring S] (k : ℕ) (weight : HornerTerm n S → S) (x : S) :
     ∀ (terms : List (HornerTerm n S)) groups,
       (((terms.foldl
-        (fun groups term => insertHornerTerm (hornerExponent k term.1) term groups)
+        (fun groups term ↦ insertHornerTerm (hornerExponent k term.1) term groups)
         groups).map (groupWeightedSpec weight x)).sum) =
         termsWeightedSpec k weight x terms + (groups.map (groupWeightedSpec weight x)).sum := by
   intro terms
@@ -258,7 +258,7 @@ private lemma evalSparseHornerGroups_foldl_invariant {S : Type*} [CommSemiring S
     ∀ (groups : List (ℕ × S)) (state : ℕ × S),
       descendingByExponent (state :: groups) →
         let finalState := groups.foldl
-          (fun state group =>
+          (fun state group ↦
             let previousExponent := state.1
             let acc := state.2
             let exponent := group.1
@@ -277,7 +277,7 @@ private lemma evalSparseHornerGroups_foldl_invariant {S : Type*} [CommSemiring S
       simp only [List.foldl_cons]
       have hcons :
           (∀ y ∈ group :: groups, y.1 ≤ state.1) ∧
-            (group :: groups).Pairwise (fun group group' => group'.1 ≤ group.1) := by
+            (group :: groups).Pairwise (fun group group' ↦ group'.1 ≤ group.1) := by
         simpa [List.pairwise_cons] using hsorted
       have hle : group.1 ≤ state.1 := by
         exact hcons.1 group (by simp)
@@ -302,7 +302,7 @@ private lemma evalSparseHornerGroups_eq_sparseGroupsSpec {S : Type*} [CommSemiri
       unfold evalSparseHornerGroups
       change
         (let state := groups.foldl
-          (fun state group =>
+          (fun state group ↦
             let previousExponent := state.1
             let acc := state.2
             let exponent := group.1
@@ -317,7 +317,7 @@ private lemma evalSparseHornerGroups_eq_sparseGroupsSpec {S : Type*} [CommSemiri
 
 private lemma descendingByExponent_map {α β : Type*} (f : α → β) :
     ∀ groups : List (ℕ × α), descendingByExponent groups →
-      descendingByExponent (groups.map fun group => (group.1, f group.2)) := by
+      descendingByExponent (groups.map fun group ↦ (group.1, f group.2)) := by
   intro groups
   induction groups with
   | nil =>
@@ -339,7 +339,7 @@ private lemma eval₂HornerTerms_eq_eval₂HornerTermsSpec {n : ℕ} {S : Type*}
       eval₂HornerTerms xs fuel k terms = eval₂HornerTermsSpec xs fuel k terms
   | 0, k, terms => by
       simp only [eval₂HornerTerms, eval₂HornerTermsSpec, eval₂HornerTermSpec]
-      rw [foldl_add_eq_add_sum (fun term : HornerTerm n S => term.2)]
+      rw [foldl_add_eq_add_sum (fun term : HornerTerm n S ↦ term.2)]
       simp
   | fuel + 1, k, terms => by
       unfold eval₂HornerTerms
@@ -348,13 +348,13 @@ private lemma eval₂HornerTerms_eq_eval₂HornerTermsSpec {n : ℕ} {S : Type*}
         simp only [List.map_map]
         calc
           (List.map
-              (((fun group => group.2 * xs k ^ group.1) ∘
-                fun group => (group.1, eval₂HornerTerms xs fuel (k + 1) group.2)))
+              (((fun group ↦ group.2 * xs k ^ group.1) ∘
+                fun group ↦ (group.1, eval₂HornerTerms xs fuel (k + 1) group.2)))
               (hornerGroups k terms)).sum
               =
             ((hornerGroups k terms).map
               (groupWeightedSpec
-                (fun term : HornerTerm n S =>
+                (fun term : HornerTerm n S ↦
                   eval₂HornerTermSpec xs fuel (k + 1) term)
                 (xs k))).sum := by
                 apply congrArg List.sum
@@ -365,17 +365,17 @@ private lemma eval₂HornerTerms_eq_eval₂HornerTermsSpec {n : ℕ} {S : Type*}
                 rw [eval₂HornerTerms_eq_eval₂HornerTermsSpec xs fuel (k + 1) group.2]
                 rfl
           _ = termsWeightedSpec k
-              (fun term : HornerTerm n S => eval₂HornerTermSpec xs fuel (k + 1) term)
+              (fun term : HornerTerm n S ↦ eval₂HornerTermSpec xs fuel (k + 1) term)
               (xs k) terms := by
                 exact groupWeightedSpec_hornerGroups k
-                  (fun term : HornerTerm n S =>
+                  (fun term : HornerTerm n S ↦
                     eval₂HornerTermSpec xs fuel (k + 1) term)
                   (xs k) terms
           _ = (List.map (eval₂HornerTermSpec xs (fuel + 1) k) terms).sum := by
                 unfold termsWeightedSpec
                 simp [eval₂HornerTermSpec]
       · exact descendingByExponent_map
-          (fun terms => eval₂HornerTerms xs fuel (k + 1) terms)
+          (fun terms ↦ eval₂HornerTerms xs fuel (k + 1) terms)
           (hornerGroups k terms) (hornerGroups_descending k terms)
 
 private lemma eval₂HornerTermSpec_eq_product {n : ℕ} {S : Type*} [CommSemiring S]
@@ -407,7 +407,7 @@ private lemma eval₂HornerTermSpec_eq_product {n : ℕ} {S : Type*} [CommSemiri
 private lemma eval₂HornerTermSpec_eq_evalMonomial {S : Type*} {n : ℕ}
     [CommSemiring S] (vs : Fin n → S) (m : CMvMonomial n) (c : S) :
     eval₂HornerTermSpec
-        (fun k => if h : k < n then vs ⟨k, h⟩ else 0) n 0 (m, c) =
+        (fun k ↦ if h : k < n then vs ⟨k, h⟩ else 0) n 0 (m, c) =
       c * MonoR.evalMonomial vs m := by
   rw [eval₂HornerTermSpec_eq_product]
   congr 1
@@ -423,13 +423,13 @@ private lemma eval₂HornerTermSpec_eq_evalMonomial {S : Type*} {n : ℕ}
 private lemma eval₂HornerTerms_fold_eq_eval₂_fold {R S : Type*} {n : ℕ}
     [Semiring R] [CommSemiring S] (f : R →+* S) (vs : Fin n → S) :
     ∀ (terms : List (CMvMonomial n × R)) (init : S),
-      (terms.map fun term => (term.1, f term.2)).foldl
-        (fun acc term => acc +
+      (terms.map fun term ↦ (term.1, f term.2)).foldl
+        (fun acc term ↦ acc +
           eval₂HornerTermSpec
-            (fun k => if h : k < n then vs ⟨k, h⟩ else 0) n 0 term)
+            (fun k ↦ if h : k < n then vs ⟨k, h⟩ else 0) n 0 term)
         init =
       terms.foldl
-        (fun acc term => f term.2 * MonoR.evalMonomial vs term.1 + acc)
+        (fun acc term ↦ f term.2 * MonoR.evalMonomial vs term.1 + acc)
         init := by
   intro terms
   induction terms with
@@ -453,19 +453,19 @@ theorem eval₂Horner_eq_eval₂ {R S : Type*} {n : ℕ} [Semiring R] [CommSemir
   have hfold :
       (List.map
         (eval₂HornerTermSpec
-          (fun k => if h : k < n then vs ⟨k, h⟩ else 0) n 0)
-        (p.1.toList.map fun term => (term.1, f term.2))).sum =
-      (p.1.toList.map fun term => (term.1, f term.2)).foldl
-        (fun acc term => acc +
+          (fun k ↦ if h : k < n then vs ⟨k, h⟩ else 0) n 0)
+        (p.1.toList.map fun term ↦ (term.1, f term.2))).sum =
+      (p.1.toList.map fun term ↦ (term.1, f term.2)).foldl
+        (fun acc term ↦ acc +
           eval₂HornerTermSpec
-            (fun k => if h : k < n then vs ⟨k, h⟩ else 0) n 0 term)
+            (fun k ↦ if h : k < n then vs ⟨k, h⟩ else 0) n 0 term)
         0 := by
     simpa using
       (foldl_add_eq_add_sum
-        (fun term : HornerTerm n S =>
+        (fun term : HornerTerm n S ↦
           eval₂HornerTermSpec
-            (fun k => if h : k < n then vs ⟨k, h⟩ else 0) n 0 term)
-        (p.1.toList.map fun term => (term.1, f term.2)) 0).symm
+            (fun k ↦ if h : k < n then vs ⟨k, h⟩ else 0) n 0 term)
+        (p.1.toList.map fun term ↦ (term.1, f term.2)) 0).symm
   rw [hfold]
   rw [ExtTreeMap.foldl_eq_foldl_toList]
   exact eval₂HornerTerms_fold_eq_eval₂_fold f vs p.1.toList 0
