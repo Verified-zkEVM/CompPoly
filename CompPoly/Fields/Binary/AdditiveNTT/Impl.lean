@@ -25,6 +25,7 @@ def Array.toFinVec {α : Type _} (n : ℕ) (arr : Array α) (h : arr.size = n) :
 /- The product of a function mapped over the list `0..n-1`. -/
 lemma List.prod_finRange_eq_finset_prod {M : Type*} [CommMonoid M] {n : ℕ} (f : Fin n → M) :
     ((List.finRange n).map f).prod = ∏ i : Fin n, f i := rfl
+
 end HelperFunctions
 
 universe u
@@ -341,6 +342,135 @@ def computableAdditiveNTT (a : Fin (2 ^ ℓ) → L) : Fin (2^(ℓ + R_rate)) →
     computableNTTStage (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - 1 - i, by omega⟩) (b:=current_b)
   ) (init:=b)
+
+/-- Array-backed coefficient tiling for the ST fast additive NTT path. -/
+def tileCoeffsArray (R_rate : ℕ) (a : Fin (2 ^ ℓ) → L) : Array L :=
+  Array.ofFn (n := 2^(ℓ + R_rate)) fun v =>
+    a ⟨v.val % (2^ℓ), Nat.mod_lt v.val (pow_pos (zero_lt_two) ℓ)⟩
+
+/-- Evaluate a subspace polynomial using cached constants `W_k(β_k)`.
+
+Starting from `W_0(x) = x`, each cached constant advances the recurrence
+`W_{k+1}(x) = W_k(x) * (W_k(x) + W_k(β_k))`. -/
+def evalWAtCachedConstants (constants : Array L) (x : L) : L :=
+  let rec loop (j : Nat) (acc : L) : L :=
+    if _h_j : j < constants.size then
+      let c := constants.getD j 0
+      loop (j + 1) (acc * (acc + c))
+    else
+      acc
+  termination_by constants.size - j
+  loop 0 x
+
+/-- Precompute the constants `W_k(β_k)` needed by the recursive subspace
+polynomial evaluator up to stage `i`. -/
+def subspacePolynomialConstantsArray (i : Fin r) : Array L :=
+  let rec loop (k : Nat) (constants : Array L) : Array L :=
+    if h_k : k < i.val then
+      let constant := evalWAtCachedConstants constants (β ⟨k, by omega⟩)
+      loop (k + 1) (constants.push constant)
+    else
+      constants
+  termination_by i.val - k
+  loop 0 #[]
+
+/-- Precompute normalized vanishing evaluations used by one stage's twiddle factors. -/
+def computableNormalizedWValuesArray (i : Fin ℓ) : Array L :=
+  let stage : Fin r := ⟨i, by omega⟩
+  let constants := subspacePolynomialConstantsArray (β := β) (ℓ := ℓ) (R_rate := R_rate)
+    (i := stage)
+  let denominatorInv := (evalWAtCachedConstants constants (β stage))⁻¹
+  Array.ofFn (n := ℓ + R_rate - i - 1) fun k =>
+    evalWAtCachedConstants constants (β ⟨i + 1 + k.val, by omega⟩) * denominatorInv
+
+/-- Precompute all twiddle factors for one additive NTT stage.
+
+The table is built as subset sums of the cached normalized values. When bit `k`
+is added, the new entries `u + 2^k` are copied from `u` plus the `k`th
+normalized value. -/
+def computableTwiddleTableArray (i : Fin ℓ) : Array L :=
+  let normalizedValues := computableNormalizedWValuesArray (β := β) (ℓ := ℓ)
+    (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
+  let numBits := ℓ + R_rate - i - 1
+  let tableSize := 2 ^ numBits
+  let initial : Array L := Array.replicate tableSize 0
+  let rec fillBit (k : Nat) (table : Array L) : Array L :=
+    if _h_k : k < numBits then
+      let bit := 2 ^ k
+      let value := normalizedValues.getD k 0
+      let rec fillBase (u : Nat) (table : Array L) : Array L :=
+        if _h_u : u < bit then
+          let baseValue := table.getD u 0
+          fillBase (u + 1) (table.set! (u + bit) (baseValue + value))
+        else
+          table
+      termination_by bit - u
+      fillBit (k + 1) (fillBase 0 table)
+    else
+      table
+  termination_by numBits - k
+  fillBit 0 initial
+
+/-- In-place array update for one additive NTT stage.
+
+The loop visits butterfly pairs directly by block and low-bit offset, avoiding
+the odd-index no-op iterations from a full output scan. `Array.set!` updates
+destructively when the array is uniquely owned by the runtime, which is the case
+targeted by the ST fast path.
+
+The `twiddles` array stores the values of `computableTwiddleFactor` for this
+stage, indexed by `u`. -/
+def computableNTTStageArrayInPlace (i : Fin ℓ) (twiddles : Array L) (b : Array L) : Array L :=
+  let stride := 2^i.val
+  let blockSize := 2^(i.val + 1)
+  let blockCount := 2^(ℓ + R_rate - (i.val + 1))
+  let rec loopV (u v : Nat) (b : Array L) : Array L :=
+    if h_v : v < stride then
+      let evenIndex := u * blockSize + v
+      let oddIndex := evenIndex + stride
+      let twiddleFactor: L := twiddles.getD u 0
+      let x0 := twiddleFactor
+      let x1: L := x0 + 1
+      let evenValue := b.getD evenIndex 0
+      let oddValue := b.getD oddIndex 0
+      let newEven := evenValue + x0 * oddValue
+      let newOdd := evenValue + x1 * oddValue
+      loopV u (v + 1) ((b.set! evenIndex newEven).set! oddIndex newOdd)
+    else
+      b
+  termination_by stride - v
+  let rec loopU (u : Nat) (b : Array L) : Array L :=
+    if h_u : u < blockCount then
+      loopU (u + 1) (loopV u 0 b)
+    else
+      b
+  termination_by blockCount - u
+  loopU 0 b
+
+/-- ST-backed additive NTT that updates the stage buffer in place. -/
+def computableAdditiveNTTFastArrayST {σ : Type} (a : Fin (2 ^ ℓ) → L) :
+    ST σ (Array L) := do
+  let initial : Array L := tileCoeffsArray (ℓ := ℓ) R_rate a
+  let buffer : ST.Ref σ (Array L) ← ST.mkRef initial
+  let _ ← Fin.foldlM (m := ST σ) (n := ℓ) (f := fun (_ : Unit) i => do
+    let stage : Fin ℓ := ⟨ℓ - 1 - i, by omega⟩
+    let twiddles := computableTwiddleTableArray (β := β) (ℓ := ℓ)
+      (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := stage)
+    buffer.modify fun current =>
+      computableNTTStageArrayInPlace (ℓ := ℓ) (R_rate := R_rate)
+        (i := stage) (twiddles := twiddles) current
+    pure ()) (init := ())
+  buffer.get
+
+/-- ST-backed fast additive NTT producer.
+
+The returned function closes over the materialized final array when the ST action
+is run before the function is consumed. -/
+def computableAdditiveNTTFastST {σ : Type} (a : Fin (2 ^ ℓ) → L) :
+    ST σ (Fin (2^(ℓ + R_rate)) → L) := do
+  let b ← computableAdditiveNTTFastArrayST (β := β) (ℓ := ℓ)
+    (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) a
+  pure fun i => b.getD i.val 0
 
 omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
 /-- Prove that `computableAdditiveNTT` equals the standard definition of `additiveNTT`. -/
