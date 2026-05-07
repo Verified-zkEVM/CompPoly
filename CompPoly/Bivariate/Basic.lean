@@ -215,6 +215,104 @@ theorem eval_eval_horner_y_then_x_eq_eval_eval {R : Type*}
 def evalEvalHornerXThenY {R : Type*} [Semiring R] (x y : R) (p : CBivariate R) : R :=
   p.val.foldr (fun c acc ↦ acc * y + CPolynomial.evalHorner x c) 0
 
+private theorem eval_eq_sum_superset {R : Type*} [Semiring R] [BEq R] [LawfulBEq R]
+    (x : R) (p : CPolynomial R) (s : Finset ℕ) (hs : p.support ⊆ s) :
+    CPolynomial.eval x p = s.sum (fun i ↦ p.coeff i * x ^ i) := by
+  rw [CPolynomial.eval_eq_sum_support]
+  exact Finset.sum_subset hs (fun i _ hi ↦ by
+    have hcoeff : p.coeff i = 0 := by
+      by_contra hne
+      exact hi ((CPolynomial.mem_support_iff p i).mpr hne)
+    simp [hcoeff])
+
+private theorem eval_add {R : Type*} [Semiring R] [BEq R] [LawfulBEq R]
+    (x : R) (p q : CPolynomial R) :
+    CPolynomial.eval x (p + q) = CPolynomial.eval x p + CPolynomial.eval x q := by
+  let s := (p + q).support ∪ p.support ∪ q.support
+  rw [eval_eq_sum_superset x (p + q) s (by
+      intro i hi
+      simp [s, hi]),
+    eval_eq_sum_superset x p s (by
+      intro i hi
+      simp [s, hi]),
+    eval_eq_sum_superset x q s (by
+      intro i hi
+      simp [s, hi]),
+    ← Finset.sum_add_distrib]
+  apply Finset.sum_congr rfl
+  intro i _
+  rw [CPolynomial.coeff_add, add_mul]
+
+private theorem eval_mul_C {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+    [Nontrivial R] (x c : R) (p : CPolynomial R) :
+    CPolynomial.eval x (p * CPolynomial.C c) = CPolynomial.eval x p * c := by
+  let s := (p * CPolynomial.C c).support ∪ p.support
+  rw [eval_eq_sum_superset x (p * CPolynomial.C c) s (by
+      intro i hi
+      simp [s, hi]),
+    eval_eq_sum_superset x p s (by
+      intro i hi
+      simp [s, hi]),
+    Finset.sum_mul]
+  apply Finset.sum_congr rfl
+  intro i _
+  have hcoeff :
+      CPolynomial.coeff (p * CPolynomial.C c) i = CPolynomial.coeff p i * c := by
+    rw [CPolynomial.coeff_mul, Finset.sum_eq_single i]
+    · rw [CPolynomial.coeff_C]
+      simp
+    · intro j hj hji
+      rw [CPolynomial.coeff_C]
+      have hsub_ne : i - j ≠ 0 := by
+        intro hsub
+        have hjle : j ≤ i := Nat.lt_succ_iff.mp (Finset.mem_range.mp hj)
+        apply hji
+        omega
+      simp [hsub_ne]
+    · simp
+  rw [hcoeff]
+  ac_rfl
+
+private theorem eval_foldr_mul_C_add {R : Type*}
+    [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (x y : R) (coeffs : Array (CPolynomial R)) :
+    CPolynomial.eval x (coeffs.foldr (fun c acc ↦ acc * CPolynomial.C y + c) 0) =
+      coeffs.foldr (fun c acc ↦ acc * y + CPolynomial.eval x c) 0 := by
+  rw [← Array.foldr_toList, ← Array.foldr_toList]
+  induction coeffs.toList with
+  | nil =>
+      rfl
+  | cons c tail ih =>
+      simp [List.foldr_cons, eval_add, eval_mul_C, ih]
+
+private theorem foldr_eval_horner_eq_eval {R : Type*} [CommSemiring R]
+    (x y : R) (coeffs : Array (CPolynomial R)) :
+    coeffs.foldr (fun c acc ↦ acc * y + CPolynomial.evalHorner x c) 0 =
+      coeffs.foldr (fun c acc ↦ acc * y + CPolynomial.eval x c) 0 := by
+  rw [← Array.foldr_toList, ← Array.foldr_toList]
+  induction coeffs.toList with
+  | nil => simp
+  | cons c tail ih =>
+      simp [List.foldr_cons, CPolynomial.eval_horner_eq_eval]
+
+/-- `X`-then-`Y` Horner full evaluation agrees with the existing evaluator. -/
+theorem eval_eval_horner_x_then_y_eq_eval_eval {R : Type*}
+    [BEq R] [LawfulBEq R] [Nontrivial R] [CommSemiring R] [DecidableEq R]
+    (x y : R) (p : CBivariate R) :
+    evalEvalHornerXThenY x y p = evalEval x y p := by
+  unfold evalEvalHornerXThenY evalEval
+  have houter :
+      CPolynomial.Raw.eval (CPolynomial.C y) p.val =
+        CPolynomial.Raw.eval₂Horner (RingHom.id (CPolynomial R)) (CPolynomial.C y) p.val := by
+    simpa [CPolynomial.Raw.eval] using
+      (CPolynomial.Raw.eval₂Horner_eq_eval₂
+        (f := RingHom.id (CPolynomial R)) (x := CPolynomial.C y) (p := p.val)).symm
+  rw [houter]
+  unfold CPolynomial.evalHorner CPolynomial.eval₂Horner CPolynomial.Raw.eval₂Horner
+  simp only [RingHom.id_apply]
+  rw [eval_foldr_mul_C_add]
+  exact foldr_eval_horner_eq_eval x y p.val
+
 /-- Swap the roles of X and Y.
     ArkLib/Mathlib: `Polynomial.Bivariate.swap`.
     TODO a more efficient implementation
