@@ -63,85 +63,6 @@ def bitsToU (i : Fin r) (k : Fin (2 ^ i.val)) :
     · exact Submodule.zero_mem _
   ⟩
 
-omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
-/-- The `bitsToU` mapping is a bijection: showing that iterating bits corresponds
-exactly to the linear span. -/
-theorem bitsToU_bijective (i : Fin r) :
-    Function.Bijective (bitsToU (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) i) := by
-  -- A map between finite sets of the same size is bijective iff it is injective.
-  apply (Fintype.bijective_iff_injective_and_card
-    (f := bitsToU (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) i)).mpr ?_
-  constructor
-  -- Part A: Injectivity (Linear Independence)
-  · intro k1 k2 h_eq
-    unfold bitsToU at h_eq
-    simp only [Subtype.mk.injEq] at h_eq
-    -- We define the coefficients c_j based on the bits of k
-    let c (k : ℕ) (j : Fin i) : 𝔽q :=
-      if (Nat.getBit (n := k) (k := j.val) == 1) then 1 else 0
-    -- The sum can be rewritten as a linear combination with coefficients in Fq
-    have h_sum (k : Fin (2^i.val)) :
-      (Finset.univ.sum fun (j : Fin i) =>
-        if (Nat.getBit (n := k.val) (k := j.val) == 1) then
-          β ⟨j, by omega⟩
-        else (0 : L)) =
-      Finset.univ.sum fun j => (c k.val j) • β ⟨j, by omega⟩ := by
-      apply Finset.sum_congr rfl
-      intro j _
-      dsimp [c]
-      split_ifs <;> simp
-    rw [h_sum k1, h_sum k2] at h_eq
-    -- 1. Move everything to LHS: sum (c1 - c2) * beta = 0
-    rw [←sub_eq_zero] at h_eq
-    rw [←Finset.sum_sub_distrib] at h_eq
-    simp_rw [←sub_smul] at h_eq
-    rw [←sub_eq_zero] at h_eq
-    -- 2. Establish that the first `i` basis elements are Linearly Independent
-    have h_lin_indep := hβ_lin_indep.out
-    -- We restrict the global independence (Fin r) to the subset (Fin i)
-    have h_indep_restricted := LinearIndependent.comp h_lin_indep
-      (Fin.castLE (Nat.le_of_lt_succ (by omega)) : Fin i → Fin r)
-      (Fin.castLE_injective _)
-    -- 3. Apply Linear Independence to show every coefficient is 0
-    -- This gives us: ∀ j, c k1 j - c k2 j = 0
-    simp only [sub_zero] at h_eq
-    have h_coeffs_zero : ∀ j : Fin i, j ∈ Finset.univ → c k1.val j - c k2.val j = 0 :=
-      linearIndependent_iff'.mp h_indep_restricted
-        (Finset.univ)
-        (fun j => c k1.val j - c k2.val j)
-        h_eq
-    -- 4. Prove k1 = k2 by showing all bits are equal
-    ext
-    apply Nat.eq_iff_eq_all_getBits.mpr
-    intro n
-    have h_bit_k1_lt_2 := Nat.getBit_lt_2 (n := k1) (k := n)
-    have h_bit_k2_lt_2 := Nat.getBit_lt_2 (n := k2) (k := n)
-    if hn : n < i.val then
-      let j : Fin i := ⟨n, hn⟩
-      have h_c_diff_zero := h_coeffs_zero j (Finset.mem_univ j)
-      simp only [sub_eq_zero] at h_c_diff_zero
-      dsimp only [beq_iff_eq, c] at h_c_diff_zero
-      interval_cases hk1: Nat.getBit (n := k1) (k := j)
-      · interval_cases hk2: Nat.getBit (n := k2) (k := j)
-        · rfl;
-        · simp only [Nat.reduceBEq, Bool.false_eq_true, ↓reduceIte, BEq.rfl,
-          zero_ne_one] at h_c_diff_zero;
-      · interval_cases hk2: Nat.getBit (n := k2) (k := j)
-        · simp only [BEq.rfl, ↓reduceIte, Nat.reduceBEq, Bool.false_eq_true,
-          one_ne_zero] at h_c_diff_zero;
-        · rfl
-    else
-      have h_k1 := Nat.getBit_of_lt_two_pow (n := i) (a := k1) (k := n)
-      have h_k2 := Nat.getBit_of_lt_two_pow (n := i) (a := k2) (k := n)
-      simp only [hn, ↓reduceIte] at h_k1 h_k2
-      rw [h_k1, h_k2]
-  -- Part B: Cardinality (Surjectivity check)
-  · -- ⊢ Fintype.card (Fin (2 ^ ↑i)) = Fintype.card ↥(U i)
-    rw [Fintype.card_fin]
-    rw [AdditiveNTT.U_card (𝔽q := 𝔽q)
-      (β := β) (i := i)]
-    rw [hFq_card.out]
-
 /-- Computes the elements of the subspace: `U_i = span({β_0, ..., β_{i-1}})`. -/
 def getUElements (i : Fin r) : List L :=
   (List.finRange (2^i.val)).map fun k =>
@@ -154,74 +75,12 @@ def getUElements (i : Fin r) : List L :=
 def evalWAt (i : Fin r) (x : L) : L :=
   ((getUElements (β := β) (ℓ := ℓ) (R_rate := R_rate) i).map (fun u => x - u)).prod
 
-omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
-/-- Prove that `evalWAt` equals the standard definition of `W_i(x)`. -/
-theorem evalWAt_eq_W (i : Fin r) (x : L) :
-    evalWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) x =
-    (W (𝔽q := 𝔽q) (β := β) (i := i)).eval x := by
-  -- 1. Convert implementation to mathematical product over Fin(2^i)
-  unfold evalWAt getUElements
-  rw [List.map_map]
-  rw [List.prod_finRange_eq_finset_prod] -- Now the pattern matches!
-  -- 2. Prepare RHS
-  rw [AdditiveNTT.W, Polynomial.eval_prod]
-  simp only [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C]
-  -- 3. Use Finset.prod_bij to show equality via the bijection
-  -- LHS: ∏ k : Fin(2^i), (x - bitsToU k), RHS: ∏ u : U i,      (x - u)
-  apply Finset.prod_bij (s := ((Finset.univ (α := (Fin (2^(i.val)))))))
-    (t := (Finset.univ : Finset (U 𝔽q β i)))
-    (i := fun k _ =>
-      bitsToU (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (r := r) (R_rate := R_rate) (L := L) (i := i) k)
-    (hi := by
-      -- Proof that the map lands in the target set (Finset.univ)
-      intro a _
-      exact Finset.mem_univ _)
-    (i_inj := by
-      -- Proof of Injectivity (uses our previous theorem)
-      intro a₁ _ a₂ _ h_eq
-      exact (bitsToU_bijective (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
-        (r := r) (R_rate := R_rate) (L := L) (i := i)).1 h_eq)
-    (i_surj := by
-      -- Proof of Surjectivity (uses our previous theorem)
-      intro b _
-      -- We need to provide the element 'a' and the proof it is in the set
-      obtain ⟨a, ha_eq⟩ := (bitsToU_bijective (𝔽q := 𝔽q)
-        (β := β) (ℓ := ℓ) (r := r) (R_rate := R_rate) (L := L) (i := i)).2 b
-      use a
-      constructor
-      · exact ha_eq
-      · exact Finset.mem_univ a
-    )
-    (h := by -- Proof that the values are equal: (x - bitsToU k) = (x - (bitsToU k))
-      intro a ha_univ
-      rfl
-    )
-
 /-- Evaluates the normalized subspace vanishing polynomial `Ŵ_i(x) = W_i(x) / W_i(β_i)`. -/
 def evalNormalizedWAt (i : Fin r) (x : L) : L :=
   let W_x := evalWAt (r := r) (L := L) (ℓ := ℓ) (β := β) (R_rate := R_rate) (i := i) x
   let beta_i := β i
   let W_beta := evalWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) beta_i
   W_x * W_beta⁻¹
-
-omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
-/-- Prove that `evalNormalizedWAt` equals the standard definition of `Ŵ_i(x)`. -/
-theorem evalNormalizedWAt_eq_normalizedW (i : Fin r) (x : L) :
-    evalNormalizedWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) x
-    = (normalizedW (𝔽q := 𝔽q) (β := β) (i := i)).eval x := by
-  unfold evalNormalizedWAt
-  -- 3. Apply the correctness theorem we just proved (evalWAt_eq_standardWAt)
-  -- We apply it twice: once for 'x' and once for 'β i'
-  rw [evalWAt_eq_W (r := r) (L := L) (𝔽q := 𝔽q) (β := β) i x]
-  simp only
-  rw [evalWAt_eq_W (r := r) (L := L) (𝔽q := 𝔽q) (β := β) i (β i)]
-  -- normalizedW is defined as: C (eval (W i) (β i))⁻¹ * W i
-  rw [AdditiveNTT.normalizedW]
-  -- Property: (Constant * Poly).eval x = Constant * (Poly.eval x)
-  simp only [Polynomial.eval_mul, Polynomial.eval_C]
-  simp only [one_div]
-  -- LHS: (W.eval x) * (W.eval beta)⁻¹, RHS: (W.eval beta)⁻¹ * (W.eval x)
-  apply mul_comm
 
 /-- Computes the twiddle factor used in the butterfly operation.
 Corresponds to `AdditiveNTT.twiddleFactor`.
@@ -235,17 +94,6 @@ def computableTwiddleFactor (i : Fin ℓ) (u : Fin (2 ^ (ℓ + R_rate - i - 1)))
     (evalNormalizedWAt (β := β) (ℓ := ℓ) (R_rate := R_rate)
       (i := ⟨i, by omega⟩) (x := β ⟨i + 1 + k, by omega⟩))
   else 0
-
-omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
-/-- Prove that `computableTwiddleFactor` equals the standard definition of `twiddleFactor`. -/
-theorem computableTwiddleFactor_eq_twiddleFactor (i : Fin ℓ) :
-    computableTwiddleFactor (r := r) (ℓ := ℓ) (β := β) (L := L)
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨i, by omega⟩) =
-  twiddleFactor (𝔽q := 𝔽q) (L := L) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-    (i := ⟨i, by omega⟩) := by
-  unfold computableTwiddleFactor twiddleFactor
-  simp_rw [evalNormalizedWAt_eq_normalizedW (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
-    (R_rate := R_rate) (i := ⟨i, by omega⟩)]
 
 /-- Performs one stage of the Additive NTT. This corresponds to `NTTStage` in the abstract
 definition: `b` is the array of coefficients. `i` is the stage index (0 to r-1). -/
@@ -321,18 +169,6 @@ def computableNTTStage [Fact (LinearIndependent 𝔽q β)]
       -- b j is now the odd refinement P₁,₍₁ᵥ₎⁽ⁱ⁺¹⁾(X),
       -- b (j - 2^i) stores the even refinement P₀,₍₀ᵥ₎⁽ⁱ⁺¹⁾(X)
       b ⟨even_split_index, h_lt⟩ + x1 * b j
-
-omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
-/-- Prove that `computableNTTStage` equals the standard definition of `NTTStage`. -/
-theorem computableNTTStage_eq_NTTStage (i : Fin ℓ) :
-    computableNTTStage (𝔽q := 𝔽q) (r := r) (L := L) (ℓ := ℓ) (β := β) (R_rate := R_rate)
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨i, by omega⟩) =
-  NTTStage (𝔽q := 𝔽q) (L := L) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-    (i := ⟨i, by omega⟩) := by
-  unfold computableNTTStage NTTStage
-  simp only [Fin.eta]
-  simp_rw [computableTwiddleFactor_eq_twiddleFactor (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
-    (R_rate := R_rate) (i := ⟨i, by omega⟩)]
 
 /-- The main computable Additive NTT function. `a` is the input array of coefficients.
 `r` is the number of stages (dimension of the domain). The input array size must be at least 2^r. -/
@@ -471,19 +307,6 @@ def computableAdditiveNTTFastST {σ : Type} (a : Fin (2 ^ ℓ) → L) :
   let b ← computableAdditiveNTTFastArrayST (β := β) (ℓ := ℓ)
     (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) a
   pure fun i => b.getD i.val 0
-
-omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
-/-- Prove that `computableAdditiveNTT` equals the standard definition of `additiveNTT`. -/
-theorem computableAdditiveNTT_eq_additiveNTT (a : Fin (2 ^ ℓ) → L) :
-    computableAdditiveNTT (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a) =
-  additiveNTT (𝔽q := 𝔽q) (L := L) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a) := by
-  unfold computableAdditiveNTT additiveNTT
-  simp only
-  congr
-  funext current_b i
-  rw [computableNTTStage_eq_NTTStage (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - 1 - i, by omega⟩)]
 
 end Algorithm
 
