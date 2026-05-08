@@ -270,6 +270,10 @@ private def checksumZMod {modulus : Nat} (x : ZMod modulus) : Nat :=
 private def checksumBtf3 (x : AdditiveNTT.BTF₃) : Nat :=
   BitVec.toNat x
 
+/-- Convert a concrete binary-tower field element to a checksum word. -/
+private def checksumConcreteBtf {k : Nat} (x : ConcreteBTField k) : Nat :=
+  BitVec.toNat x
+
 /-- Time one benchmark closure and package its metadata and checksum. -/
 private def runTimed (name representation method field inputShape : String)
     (warmup measured : Nat) (run : Nat → α) (checksum : α → Nat) : IO BenchRecord := do
@@ -754,6 +758,14 @@ private def checksumBtf3Output {n : Nat} (output : Fin (2 ^ n) → AdditiveNTT.B
 private def checksumBtf3OutputArray {n : Nat} (output : Array AdditiveNTT.BTF₃) : Nat :=
   checksumBtf3Output (AdditiveNTT.arrayToFinFunction (2 ^ n) output)
 
+/-- Checksum a concrete binary-tower additive NTT output array. -/
+private def checksumConcreteBtfOutputArray {k n : Nat} (output : Array (ConcreteBTField k)) :
+    Nat :=
+  (List.finRange (2 ^ n)).foldl
+    (fun acc i ↦
+      mixChecksum acc
+        (checksumConcreteBtf ((AdditiveNTT.arrayToFinFunction (2 ^ n) output) i))) 0
+
 /-- Run an additive NTT over `BTF₃`. -/
 private def runBtf3Ntt (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ 3)
     (input : Fin (2 ^ ℓ) → AdditiveNTT.BTF₃) :
@@ -778,6 +790,20 @@ private def runBtf3NttFast (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_rate <
     (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (β := AdditiveNTT.computableBasisExplicit (k := 3)) (a := input)
 
+/-- Run the fast additive NTT implementation over a concrete binary-tower field. -/
+private def runConcreteBtfNttFast (k ℓ R_rate : Nat)
+    (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ k)
+    (input : Fin (2 ^ ℓ) → ConcreteBTField k) :
+    Array (ConcreteBTField k) := by
+  letI : Fintype (ConcreteBTField k) :=
+    Fintype.ofEquiv (Fin (2 ^ (2 ^ k))) (BitVec.equivFin (m := 2 ^ k)).symm.toEquiv
+  letI : Algebra (ConcreteBTField 0) (ConcreteBTField k) :=
+    ConcreteBTFieldAlgebra (l := 0) (r := k) (h_le := by omega)
+  exact AdditiveNTT.computableAdditiveNTTFast
+    (L := ConcreteBTField k) (r := 2 ^ k)
+    (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (β := AdditiveNTT.computableBasisExplicit (k := k)) (a := input)
+
 /-- Run one additive NTT benchmark case over `BTF₃`. -/
 private def runAdditiveNttCase (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ 3)
     (currentName fastName : String) (warmup measured : Nat) (gen : StdGen) :
@@ -801,6 +827,24 @@ private def runAdditiveNttCase (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_ra
     (checksumBtf3OutputArray (n := ℓ + R_rate))
   pure (#[currentRecord, fastRecord], gen)
 
+/-- Run one larger fast-only additive NTT benchmark over a concrete binary-tower field. -/
+private def runAdditiveNttFastLargeCase (k ℓ R_rate : Nat)
+    (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ k) (fastName : String)
+    (warmup measured : Nat) (gen : StdGen) : IO (BenchRecord × StdGen) := do
+  let inputSize := 2 ^ ℓ
+  let outputSize := 2 ^ (ℓ + R_rate)
+  let (values, gen) := (randomNatArray inputSize (2 ^ (2 ^ k) - 1)).run gen
+  let input : Fin (2 ^ ℓ) → ConcreteBTField k :=
+    fun i ↦ ConcreteBinaryTower.fromNat (k := k) (values.getD i.val 0)
+  let fieldLabel := s!"ConcreteBTField 0 -> BTF{k}, l={ℓ}, R_rate={R_rate}"
+  let inputShape := s!"{inputSize} input coeffs, {outputSize} output evals"
+  let fastRecord ← runTimed
+    fastName "computableAdditiveNTTFast" "computableAdditiveNTTFast"
+    fieldLabel inputShape warmup measured
+    (fun _ ↦ runConcreteBtfNttFast k ℓ R_rate h_ℓ_add_R_rate input)
+    (checksumConcreteBtfOutputArray (k := k) (n := ℓ + R_rate))
+  pure (fastRecord, gen)
+
 /-- Run the additive NTT benchmark. -/
 private def runAdditiveNtt (gen : StdGen) : IO (Array BenchRecord × StdGen) := do
   let (smallRecords, gen) ← runAdditiveNttCase 2 2 (by omega)
@@ -808,7 +852,9 @@ private def runAdditiveNtt (gen : StdGen) : IO (Array BenchRecord × StdGen) := 
     additiveNttWarmupIterations additiveNttMeasuredIterations gen
   let (widerRecords, gen) ← runAdditiveNttCase 4 2 (by omega)
     "additive-ntt-btf3-l4-r2" "additive-ntt-btf3-l4-r2-fast" 2 10 gen
-  pure (appendRecords smallRecords widerRecords, gen)
+  let (largerFastRecord, gen) ← runAdditiveNttFastLargeCase 4 7 2 (by omega)
+    "additive-ntt-btf4-l7-r2-fast" 1 10 gen
+  pure ((appendRecords smallRecords widerRecords).push largerFastRecord, gen)
 
 /-- Run the complete benchmark suite and write reports. -/
 def run : IO UInt32 := do
