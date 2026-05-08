@@ -6,7 +6,6 @@ Authors: Chung Thai Nguyen, Quang Dao
 
 import CompPoly.Fields.Binary.AdditiveNTT.Algorithm
 import CompPoly.Fields.Binary.Tower.Concrete.Basis
-import Init.Control.StateRef
 import Mathlib.Data.BitVec
 
 /-!
@@ -288,17 +287,13 @@ def computableNTTStageArrayInPlace (i : Fin ℓ) (twiddles : Array L) (b : Array
   termination_by blockCount - u
   loopU 0 b
 
-namespace Internal
-
-/-- Generic fast additive NTT stage driver over any monad with an `Array L` state.
+/-- Fast additive NTT stage driver over an `Array L` state.
 
 The state is expected to contain the initialized output buffer. Each stage
-updates that buffer using the same array transition as the ST fast path. This is
-the shared core used by the transparent `StateT` specialization and the
-reference-backed `ST` specialization. -/
-def computableAdditiveNTTFastStagesM {m : Type → Type} [Monad m]
-    [MonadStateOf (Array L) m] : m Unit := do
-  let _ ← Fin.foldlM (m := m) (n := ℓ) (f := fun (_ : Unit) i => do
+updates that buffer using the array transition from
+`computableNTTStageArrayInPlace`. -/
+def computableAdditiveNTTFastStages : StateM (Array L) Unit := do
+  let _ ← Fin.foldlM (m := StateM (Array L)) (n := ℓ) (f := fun (_ : Unit) i => do
     let stage : Fin ℓ := ⟨ℓ - 1 - i, by omega⟩
     let twiddles := computableTwiddleTableArray (β := β) (ℓ := ℓ)
       (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := stage)
@@ -308,33 +303,18 @@ def computableAdditiveNTTFastStagesM {m : Type → Type} [Monad m]
     pure ()) (init := ())
   pure ()
 
-end Internal
-
-/-- Generic fast additive NTT array producer over any monad with an `Array L` state. -/
-def computableAdditiveNTTFastArrayM {m : Type → Type} [Monad m]
-    [MonadStateOf (Array L) m] (a : Fin (2 ^ ℓ) → L) : m (Array L) := do
+/-- Fast additive NTT array producer as a state action. -/
+def computableAdditiveNTTFastAction (a : Fin (2 ^ ℓ) → L) :
+    StateM (Array L) (Array L) := do
   set (tileCoeffsArray (ℓ := ℓ) R_rate a)
-  Internal.computableAdditiveNTTFastStagesM (β := β) (ℓ := ℓ) (R_rate := R_rate)
+  computableAdditiveNTTFastStages (β := β) (ℓ := ℓ) (R_rate := R_rate)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
   getThe (Array L)
 
-/-- Pure `StateT`/`StateM` specialization of the fast additive NTT array producer.
-
-This is the proof-friendly entry point because `StateT` is the transparent
-tuple-threaded state implementation. -/
-def computableAdditiveNTTFastState (a : Fin (2 ^ ℓ) → L) : Array L :=
-  ((computableAdditiveNTTFastArrayM (β := β) (ℓ := ℓ)
-    (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-    (m := StateT (Array L) Id) a).run #[]).1
-
-/-- ST-backed fast additive NTT array producer. -/
-def computableAdditiveNTTFastST {σ : Type} (a : Fin (2 ^ ℓ) → L) :
-    ST σ (Array L) := do
-  let action : StateRefT' σ (Array L) (ST σ) (Array L) :=
-    computableAdditiveNTTFastArrayM (β := β) (ℓ := ℓ) (R_rate := R_rate)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) a
-  let ref ← ST.mkRef #[]
-  action ref
+/-- Fast additive NTT array producer. -/
+def computableAdditiveNTTFast (a : Fin (2 ^ ℓ) → L) : Array L :=
+  ((computableAdditiveNTTFastAction (β := β) (ℓ := ℓ)
+    (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) a).run #[]).1
 
 end Algorithm
 

@@ -754,12 +754,6 @@ private def checksumBtf3Output {n : Nat} (output : Fin (2 ^ n) → AdditiveNTT.B
 private def checksumBtf3OutputArray {n : Nat} (output : Array AdditiveNTT.BTF₃) : Nat :=
   checksumBtf3Output (AdditiveNTT.arrayToFinFunction (2 ^ n) output)
 
-/-- Checksum an ST-produced `BTF₃` additive NTT array after materializing it once. -/
-private def checksumBtf3OutputArrayST {n : Nat}
-    (output : (σ : Type) → ST σ (Array AdditiveNTT.BTF₃)) : Nat :=
-  let values := runST output
-  checksumBtf3OutputArray (n := n) values
-
 /-- Run an additive NTT over `BTF₃`. -/
 private def runBtf3Ntt (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ 3)
     (input : Fin (2 ^ ℓ) → AdditiveNTT.BTF₃) :
@@ -773,32 +767,20 @@ private def runBtf3Ntt (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^
     (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (β := AdditiveNTT.computableBasisExplicit (k := 3)) (a := input)
 
-/-- Run a State-backed fast additive NTT over `BTF₃`. -/
-private def runBtf3NttFastState (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ 3)
+/-- Run the fast additive NTT implementation over `BTF₃`. -/
+private def runBtf3NttFast (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ 3)
     (input : Fin (2 ^ ℓ) → AdditiveNTT.BTF₃) :
     Array AdditiveNTT.BTF₃ := by
   letI : Algebra (ConcreteBTField 0) AdditiveNTT.BTF₃ :=
     ConcreteBTFieldAlgebra (l := 0) (r := 3) (h_le := by omega)
-  exact AdditiveNTT.computableAdditiveNTTFastState
+  exact AdditiveNTT.computableAdditiveNTTFast
     (L := AdditiveNTT.BTF₃) (r := 2 ^ 3)
     (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (β := AdditiveNTT.computableBasisExplicit (k := 3)) (a := input)
 
-/-- Run an ST-backed fast additive NTT over `BTF₃`. -/
-private def runBtf3NttFastST (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ 3)
-    (input : Fin (2 ^ ℓ) → AdditiveNTT.BTF₃) :
-    (σ : Type) → ST σ (Array AdditiveNTT.BTF₃) := by
-  letI : Algebra (ConcreteBTField 0) AdditiveNTT.BTF₃ :=
-    ConcreteBTFieldAlgebra (l := 0) (r := 3) (h_le := by omega)
-  exact fun σ =>
-    AdditiveNTT.computableAdditiveNTTFastST
-      (σ := σ) (L := AdditiveNTT.BTF₃) (r := 2 ^ 3)
-      (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (β := AdditiveNTT.computableBasisExplicit (k := 3)) (a := input)
-
 /-- Run one additive NTT benchmark case over `BTF₃`. -/
 private def runAdditiveNttCase (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ 3)
-    (currentName fastStateName fastStName : String) (warmup measured : Nat) (gen : StdGen) :
+    (currentName fastName : String) (warmup measured : Nat) (gen : StdGen) :
     IO (Array BenchRecord × StdGen) := do
   let inputSize := 2 ^ ℓ
   let outputSize := 2 ^ (ℓ + R_rate)
@@ -812,26 +794,20 @@ private def runAdditiveNttCase (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_ra
     fieldLabel inputShape warmup measured
     (fun _ ↦ runBtf3Ntt ℓ R_rate h_ℓ_add_R_rate input)
     (checksumBtf3Output (n := ℓ + R_rate))
-  let fastStateRecord ← runTimed
-    fastStateName "computableAdditiveNTTFastState" "computableAdditiveNTTFastState"
+  let fastRecord ← runTimed
+    fastName "computableAdditiveNTTFast" "computableAdditiveNTTFast"
     fieldLabel inputShape warmup measured
-    (fun _ ↦ runBtf3NttFastState ℓ R_rate h_ℓ_add_R_rate input)
+    (fun _ ↦ runBtf3NttFast ℓ R_rate h_ℓ_add_R_rate input)
     (checksumBtf3OutputArray (n := ℓ + R_rate))
-  let fastStRecord ← runTimed
-    fastStName "computableAdditiveNTTFastST" "computableAdditiveNTTFastST"
-    fieldLabel inputShape warmup measured
-    (fun _ ↦ runBtf3NttFastST ℓ R_rate h_ℓ_add_R_rate input)
-    (checksumBtf3OutputArrayST (n := ℓ + R_rate))
-  pure (#[currentRecord, fastStateRecord, fastStRecord], gen)
+  pure (#[currentRecord, fastRecord], gen)
 
 /-- Run the additive NTT benchmark. -/
 private def runAdditiveNtt (gen : StdGen) : IO (Array BenchRecord × StdGen) := do
   let (smallRecords, gen) ← runAdditiveNttCase 2 2 (by omega)
-    "additive-ntt-btf3" "additive-ntt-btf3-fast-state" "additive-ntt-btf3-fast-st"
+    "additive-ntt-btf3" "additive-ntt-btf3-fast"
     additiveNttWarmupIterations additiveNttMeasuredIterations gen
   let (widerRecords, gen) ← runAdditiveNttCase 4 2 (by omega)
-    "additive-ntt-btf3-l4-r2" "additive-ntt-btf3-l4-r2-fast-state"
-    "additive-ntt-btf3-l4-r2-fast-st" 2 10 gen
+    "additive-ntt-btf3-l4-r2" "additive-ntt-btf3-l4-r2-fast" 2 10 gen
   pure (appendRecords smallRecords widerRecords, gen)
 
 /-- Run the complete benchmark suite and write reports. -/
