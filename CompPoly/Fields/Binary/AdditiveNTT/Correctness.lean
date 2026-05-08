@@ -198,31 +198,33 @@ theorem computableAdditiveNTT_eq_additiveNTT (a : Fin (2 ^ ℓ) → L) :
   rw [computableNTTStage_eq_NTTStage (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
     (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - 1 - i, by omega⟩)]
 
-/-- The ST-backed fast additive NTT is extensionally equal to the proof-oriented
-computable implementation after running the ST action.
+/-- The pure `StateT` specialization of the fast additive NTT is extensionally
+equal to the proof-oriented computable implementation after converting its
+output array to a `Fin`-indexed function.
 
 This is the preferred proof boundary for the fast path: once this theorem is
 proved, correctness against the abstract additive NTT specification follows from
-`computableAdditiveNTT_eq_additiveNTT`. -/
-theorem computableAdditiveNTTFastST_eq_computableAdditiveNTT (a : Fin (2 ^ ℓ) → L) :
-    runST (fun σ =>
-      computableAdditiveNTTFastST (L := L) (r := r) (β := β)
-        (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (σ := σ) (a := a)) =
+`computableAdditiveNTT_eq_additiveNTT`. The ST-backed runtime path shares the
+same monadic core, but `ST.Ref` itself is opaque, so this transparent `StateT`
+specialization is the kernel-checkable correctness surface. -/
+theorem computableAdditiveNTTFastState_eq_computableAdditiveNTT (a : Fin (2 ^ ℓ) → L) :
+    AdditiveNTT.arrayToFinFunction (2^(ℓ + R_rate))
+      (computableAdditiveNTTFastState (L := L) (r := r) (β := β)
+        (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a)) =
     computableAdditiveNTT (𝔽q := 𝔽q) (L := L) (r := r) (β := β)
       (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a) := by
   sorry
 
-/-- The ST-backed fast additive NTT is correct against the abstract additive NTT
-specification after running the ST action. -/
-theorem computableAdditiveNTTFastST_eq_additiveNTT (a : Fin (2 ^ ℓ) → L) :
-    runST (fun σ =>
-      computableAdditiveNTTFastST (L := L) (r := r) (β := β)
-        (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (σ := σ) (a := a)) =
+/-- The pure `StateT` specialization of the fast additive NTT is correct against
+the abstract additive NTT specification after converting its output array to a
+`Fin`-indexed function. -/
+theorem computableAdditiveNTTFastState_eq_additiveNTT (a : Fin (2 ^ ℓ) → L) :
+    AdditiveNTT.arrayToFinFunction (2^(ℓ + R_rate))
+      (computableAdditiveNTTFastState (L := L) (r := r) (β := β)
+        (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a)) =
     additiveNTT (𝔽q := 𝔽q) (L := L) (β := β)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a) := by
-  rw [computableAdditiveNTTFastST_eq_computableAdditiveNTT (𝔽q := 𝔽q) (β := β)
+  rw [computableAdditiveNTTFastState_eq_computableAdditiveNTT (𝔽q := 𝔽q) (β := β)
     (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a)]
   exact computableAdditiveNTT_eq_additiveNTT (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
     (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a)
