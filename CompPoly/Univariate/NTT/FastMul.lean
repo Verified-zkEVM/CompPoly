@@ -314,7 +314,8 @@ private theorem pointwise_forwardSpec_eq_forwardSpec_mul_of_natDegree_lt
     let k : D.Idx := ⟨i, hiD⟩
     have hpsize : i < (Forward.forwardSpec D p).size := by simpa [Forward.forwardSpec] using hiD
     have hqsize : i < (Forward.forwardSpec D q).size := by simpa [Forward.forwardSpec] using hiD
-    have hpqsize : i < (Forward.forwardSpec D (p * q)).size := by simpa [Forward.forwardSpec] using hiD
+    have hpqsize : i < (Forward.forwardSpec D (p * q)).size := by
+      simpa [Forward.forwardSpec] using hiD
     have hpget : (Forward.forwardSpec D p)[i]'hpsize = p.eval (D.node k) := by
       simpa [k] using forwardSpec_get_eq_eval_of_natDegree_lt D p hpdeg k
     have hqget : (Forward.forwardSpec D q)[i]'hqsize = q.eval (D.node k) := by
