@@ -62,6 +62,12 @@ lemma Raw.toPoly_mul_coeff [LawfulBEq R] (p q : CPolynomial.Raw R) (i : ℕ) :
   simp [hp, hq]
 
 @[grind =]
+lemma Raw.toPoly_mul [LawfulBEq R] (p q : CPolynomial.Raw R) :
+    (p * q).toPoly = p.toPoly * q.toPoly := by
+  ext i
+  exact Raw.toPoly_mul_coeff p q i
+
+@[grind =]
 lemma toPoly_mul_coeffC [LawfulBEq R] (p q : CPolynomial R) (i : ℕ) :
     (p.val * q.val).toPoly.coeff i = (p.val.toPoly * q.val.toPoly).coeff i := by
   simpa using Raw.toPoly_mul_coeff p.val q.val i

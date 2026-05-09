@@ -283,10 +283,7 @@ private theorem raw_eval_mul (x : R) (p q : CPolynomial.Raw R) :
   rw [← CPolynomial.Raw.eval_toPoly_eq_eval x (p * q)]
   rw [← CPolynomial.Raw.eval_toPoly_eq_eval x p]
   rw [← CPolynomial.Raw.eval_toPoly_eq_eval x q]
-  have hpoly : (p * q).toPoly = p.toPoly * q.toPoly := by
-    ext i
-    exact CPolynomial.Raw.toPoly_mul_coeff p q i
-  rw [hpoly]
+  rw [CPolynomial.Raw.toPoly_mul p q]
   simp
 
 private theorem pointwise_forwardSpec_eq_forwardSpec_mul_of_natDegree_lt
@@ -449,10 +446,7 @@ theorem fastMulSpec_coeff (D : Domain R) (p q : CPolynomial.Raw R)
       have hqdeg : q.toPoly.natDegree < D.n := by
         omega
       have hpqdeg : (p * q).toPoly.natDegree < D.n := by
-        have hpoly : (p * q).toPoly = p.toPoly * q.toPoly := by
-          ext j
-          exact CPolynomial.Raw.toPoly_mul_coeff p q j
-        rw [hpoly]
+        rw [CPolynomial.Raw.toPoly_mul p q]
         refine lt_of_le_of_lt Polynomial.natDegree_mul_le ?_
         omega
       rw [fastMulSpec]
