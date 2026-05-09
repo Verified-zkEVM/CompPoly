@@ -336,7 +336,12 @@ private theorem fastMulSpec_coeff_eq_zero_of_right_trim_size_zero
   rw [Domain.requiredLength_eq_zero_of_right_trim_size_zero p q hq]
   simp
 
-/-- Implementation pipeline for NTT-based multiplication. -/
+/--
+Implementation pipeline for NTT-based multiplication.
+
+Callers must provide a domain satisfying `Domain.fits D p q`; otherwise the
+result is truncated to the domain-supported convolution length.
+-/
 @[inline] def fastMulImpl (D : Domain R) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
   let pHat := Forward.forwardImpl D p
   let qHat := Forward.forwardImpl D q
