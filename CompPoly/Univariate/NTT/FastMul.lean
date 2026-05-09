@@ -241,20 +241,6 @@ private theorem mul_coeff_eq_zero_of_right_trim_size_zero
   have hq0 : q.coeff (i - x) = 0 := coeff_zero_of_trim_size_le q (by omega)
   simp [hq0]
 
-private theorem natDegree_toPoly_lt_of_trim_size_le
-    (D : Domain R) (a : CPolynomial.Raw R) (ha : a.trim.size ≤ D.n) :
-    a.toPoly.natDegree < D.n := by
-  by_cases hzero : a.toPoly = 0
-  · rw [hzero]
-    exact D.n_pos
-  · have hround := CPolynomial.Raw.toImpl_toPoly (R := R) a
-    have hsize : a.toPoly.toImpl.size = a.trim.size := congrArg Array.size hround
-    rcases CPolynomial.Raw.toImpl_elim a.toPoly with ⟨hz, _himpl⟩ | ⟨_hnz, himpl⟩
-    · exact (hzero hz).elim
-    · have himpl_size : a.toPoly.toImpl.size = a.toPoly.natDegree + 1 := by
-        simp [himpl]
-      omega
-
 private theorem natDegree_toPoly_lt_trim_size_of_pos
     (a : CPolynomial.Raw R) (ha : 0 < a.trim.size) :
     a.toPoly.natDegree < a.trim.size := by
