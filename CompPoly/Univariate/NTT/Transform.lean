@@ -208,19 +208,14 @@ private theorem size_butterflyStageSpec_aux
   | n + 1, acc => by
       simp [size_butterflyStageSpec_aux blockSize half wm n acc]
 
-theorem size_butterflyStageSpec (D : Domain R) (stage : Nat) (a : Array R) (ha : a.size = D.n) :
-    (butterflyStageSpec D stage a).size = D.n := by
-  let blockSize : Nat := 2 ^ (stage + 1)
-  let half : Nat := 2 ^ stage
-  let wm := D.omega ^ (D.n / blockSize)
-  rw [show (butterflyStageSpec D stage a).size = a.size by
-    simp [butterflyStageSpec, size_butterflyStageSpec_aux]]
-  exact ha
+theorem size_butterflyStageSpec (D : Domain R) (stage : Nat) (a : Array R) :
+    (butterflyStageSpec D stage a).size = a.size := by
+  simp [butterflyStageSpec, size_butterflyStageSpec_aux]
 
-theorem size_butterflyStage (D : Domain R) (stage : Nat) (a : Array R) (ha : a.size = D.n) :
-    (butterflyStage D stage a).size = D.n := by
+theorem size_butterflyStage (D : Domain R) (stage : Nat) (a : Array R) :
+    (butterflyStage D stage a).size = a.size := by
   rw [butterflyStage_eq_butterflyStageSpec D stage a]
-  exact size_butterflyStageSpec D stage a ha
+  exact size_butterflyStageSpec D stage a
 
 /-- Run all radix-2 butterfly stages (complexity: `O(n log n)`). -/
 def runStages (D : Domain R) (a : Array R) : Array R := Id.run do

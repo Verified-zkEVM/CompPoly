@@ -136,7 +136,8 @@ private def forwardMathPairsSpec
       simp [forwardStageSpec, bitRevPermute]
   | succ completed ih =>
       rw [forwardStageSpec_succ]
-      exact size_butterflyStage D completed (forwardStageSpec D completed a) ih
+      rw [size_butterflyStage]
+      exact ih
 
 @[simp] theorem size_forwardStagePureSpec (D : Domain R) (completed : Nat) (a : Array R) :
     (forwardStagePureSpec D completed a).size = D.n := by
@@ -145,7 +146,8 @@ private def forwardMathPairsSpec
       simp [forwardStagePureSpec, bitRevPermute]
   | succ completed ih =>
       rw [forwardStagePureSpec_succ]
-      exact size_butterflyStageSpec D completed (forwardStagePureSpec D completed a) ih
+      rw [size_butterflyStageSpec]
+      exact ih
 
 /--
 The algorithmic stage recursion agrees with the pure stage recursion.
