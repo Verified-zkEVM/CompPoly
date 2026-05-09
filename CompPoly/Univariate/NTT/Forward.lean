@@ -162,7 +162,6 @@ theorem forwardStageSpec_eq_forwardStagePureSpec (D : Domain R) (a : Array R) :
   | succ completed ih =>
       rw [forwardStageSpec_succ, forwardStagePureSpec_succ, ih]
       rw [butterflyStage_eq_butterflyStageSpec D completed (forwardStagePureSpec D completed a)]
-      exact size_forwardStagePureSpec D completed a
 
 /--
 Base case of the mathematical stage invariant: before any butterflies, the

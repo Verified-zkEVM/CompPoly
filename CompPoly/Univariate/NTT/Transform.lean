@@ -132,9 +132,8 @@ specification.
 This is where the local `set!` bookkeeping for one stage belongs.
 -/
 theorem butterflyStage_eq_butterflyStageSpec
-    (D : Domain R) (stage : Nat) (a : Array R) (ha : a.size = D.n) :
+    (D : Domain R) (stage : Nat) (a : Array R) :
     butterflyStage D stage a = butterflyStageSpec D stage a := by
-  have _ := ha
   let blockSize : Nat := 2 ^ (stage + 1)
   let half : Nat := 2 ^ stage
   let wm := D.omega ^ (D.n / blockSize)
@@ -220,7 +219,7 @@ theorem size_butterflyStageSpec (D : Domain R) (stage : Nat) (a : Array R) (ha :
 
 theorem size_butterflyStage (D : Domain R) (stage : Nat) (a : Array R) (ha : a.size = D.n) :
     (butterflyStage D stage a).size = D.n := by
-  rw [butterflyStage_eq_butterflyStageSpec D stage a ha]
+  rw [butterflyStage_eq_butterflyStageSpec D stage a]
   exact size_butterflyStageSpec D stage a ha
 
 /-- Run all radix-2 butterfly stages (complexity: `O(n log n)`). -/
