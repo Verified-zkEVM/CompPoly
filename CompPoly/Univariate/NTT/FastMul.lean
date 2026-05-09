@@ -310,71 +310,6 @@ private theorem pointwise_forwardSpec_eq_forwardSpec_mul_of_natDegree_lt
     simp [pointwiseMul]
     rw [hpget, hqget, hpqget, raw_eval_mul]
 
-private theorem forwardSpec_getD_eq_zero_of_trim_size_zero
-    (D : Domain R) (p : CPolynomial.Raw R) (hp : p.trim.size = 0) (i : Nat) :
-    (Forward.forwardSpec D p).getD i 0 = 0 := by
-  by_cases hi : i < (Forward.forwardSpec D p).size
-  · rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hi]
-    simp only [Option.getD_some]
-    have hiD : i < D.n := by simpa [Forward.forwardSpec] using hi
-    let k : D.Idx := ⟨i, hiD⟩
-    change (Forward.forwardSpec D p)[k.1] = 0
-    simp [Forward.forwardSpec, Forward.nttAt]
-    apply Finset.sum_eq_zero
-    intro j _
-    have hp0 : p.coeff j.1 = 0 := coeff_zero_of_trim_size_le p (by omega)
-    simp [CPolynomial.Raw.coeff] at hp0
-    simp [hp0]
-  · rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none (Nat.le_of_not_lt hi)]
-    simp
-
-omit [BEq R] [LawfulBEq R] in
-private theorem inverseSpec_getD_eq_zero_of_getD_zero
-    (D : Domain R) (a : Array R) (ha : ∀ i : Nat, a.getD i 0 = 0) (i : Nat) :
-    (Inverse.inverseSpec D a).getD i 0 = 0 := by
-  by_cases hi : i < (Inverse.inverseSpec D a).size
-  · rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hi]
-    simp only [Option.getD_some]
-    simp only [Inverse.inverseSpec, Inverse.inttAt, Array.getElem_ofFn]
-    have hsum : (∑ j : D.Idx, a.getD j.1 0 * D.omegaInv ^ (i * j.1)) = 0 := by
-      apply Finset.sum_eq_zero
-      intro j _
-      simp [ha j.1]
-    rw [hsum]
-    simp
-  · rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none (Nat.le_of_not_lt hi)]
-    simp
-
-private theorem pointwise_getD_eq_zero_of_left_trim_size_zero
-    (D : Domain R) (p q : CPolynomial.Raw R) (hp : p.trim.size = 0) (i : Nat) :
-    (pointwiseMul D (Forward.forwardSpec D p) (Forward.forwardSpec D q)).getD i 0 = 0 := by
-  by_cases hi : i < (pointwiseMul D (Forward.forwardSpec D p) (Forward.forwardSpec D q)).size
-  · rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hi]
-    simp [pointwiseMul]
-    left
-    have hpsize : i < (Forward.forwardSpec D p).size := by
-      simpa [Forward.forwardSpec, pointwiseMul] using hi
-    have hpget := forwardSpec_getD_eq_zero_of_trim_size_zero D p hp i
-    rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hpsize] at hpget
-    simpa using hpget
-  · rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none (Nat.le_of_not_lt hi)]
-    simp
-
-private theorem pointwise_getD_eq_zero_of_right_trim_size_zero
-    (D : Domain R) (p q : CPolynomial.Raw R) (hq : q.trim.size = 0) (i : Nat) :
-    (pointwiseMul D (Forward.forwardSpec D p) (Forward.forwardSpec D q)).getD i 0 = 0 := by
-  by_cases hi : i < (pointwiseMul D (Forward.forwardSpec D p) (Forward.forwardSpec D q)).size
-  · rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hi]
-    simp [pointwiseMul]
-    right
-    have hqsize : i < (Forward.forwardSpec D q).size := by
-      simpa [Forward.forwardSpec, pointwiseMul] using hi
-    have hqget := forwardSpec_getD_eq_zero_of_trim_size_zero D q hq i
-    rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hqsize] at hqget
-    simpa using hqget
-  · rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none (Nat.le_of_not_lt hi)]
-    simp
-
 /-- Spec pipeline for NTT-based multiplication. -/
 @[inline] def fastMulSpec (D : Domain R) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
   let pHat := Forward.forwardSpec D p
@@ -389,13 +324,8 @@ private theorem fastMulSpec_coeff_eq_zero_of_left_trim_size_zero
   rw [fastMulSpec]
   rw [CPolynomial.Raw.Trim.coeff_eq_coeff]
   rw [coeff_truncate]
-  by_cases hi : i < Domain.requiredLength p q
-  · rw [if_pos hi]
-    rw [CPolynomial.Raw.coeff]
-    exact inverseSpec_getD_eq_zero_of_getD_zero D
-      (pointwiseMul D (Forward.forwardSpec D p) (Forward.forwardSpec D q))
-      (pointwise_getD_eq_zero_of_left_trim_size_zero D p q hp) i
-  · rw [if_neg hi]
+  rw [Domain.requiredLength_eq_zero_of_left_trim_size_zero p q hp]
+  simp
 
 private theorem fastMulSpec_coeff_eq_zero_of_right_trim_size_zero
     (D : Domain R) (p q : CPolynomial.Raw R) (hq : q.trim.size = 0) (i : Nat) :
@@ -403,13 +333,8 @@ private theorem fastMulSpec_coeff_eq_zero_of_right_trim_size_zero
   rw [fastMulSpec]
   rw [CPolynomial.Raw.Trim.coeff_eq_coeff]
   rw [coeff_truncate]
-  by_cases hi : i < Domain.requiredLength p q
-  · rw [if_pos hi]
-    rw [CPolynomial.Raw.coeff]
-    exact inverseSpec_getD_eq_zero_of_getD_zero D
-      (pointwiseMul D (Forward.forwardSpec D p) (Forward.forwardSpec D q))
-      (pointwise_getD_eq_zero_of_right_trim_size_zero D p q hq) i
-  · rw [if_neg hi]
+  rw [Domain.requiredLength_eq_zero_of_right_trim_size_zero p q hq]
+  simp
 
 /-- Implementation pipeline for NTT-based multiplication. -/
 @[inline] def fastMulImpl (D : Domain R) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
