@@ -206,8 +206,11 @@ private theorem coeff_truncate (m : Nat) (a : CPolynomial.Raw R) (i : Nat) :
   · simp [hi]
 
 private theorem mul_coeff_eq_zero_of_requiredLength_le
-    (p q : CPolynomial.Raw R) {i : Nat} (hi : Domain.requiredLength p q ≤ i) :
+    (p q : CPolynomial.Raw R) (hppos : 0 < p.trim.size) (hqpos : 0 < q.trim.size)
+    {i : Nat} (hi : Domain.requiredLength p q ≤ i) :
     (p * q).coeff i = 0 := by
+  have hreq : p.trim.size + q.trim.size - 1 ≤ i := by
+    simpa [Domain.requiredLength_eq_of_trim_size_pos p q hppos hqpos] using hi
   rw [CPolynomial.Raw.mul_coeff]
   apply Finset.sum_eq_zero
   intro x hx
@@ -216,7 +219,6 @@ private theorem mul_coeff_eq_zero_of_requiredLength_le
     simp [hp0]
   · have hxlt : x < p.trim.size := Nat.lt_of_not_ge hpx
     have hqle : q.trim.size ≤ i - x := by
-      simp [Domain.requiredLength] at hi
       omega
     have hq0 : q.coeff (i - x) = 0 := coeff_zero_of_trim_size_le q hqle
     simp [hq0]
@@ -453,7 +455,7 @@ theorem fastMulSpec_coeff (D : Domain R) (p q : CPolynomial.Raw R)
       have hfit' : Domain.requiredLength p q ≤ D.n := by
         simpa [Domain.fits] using hfit
       have hfitLen : p.trim.size + q.trim.size - 1 ≤ D.n := by
-        simpa [Domain.requiredLength] using hfit'
+        simpa [Domain.requiredLength_eq_of_trim_size_pos p q hppos hqpos] using hfit'
       have hpdeg_lt_trim := natDegree_toPoly_lt_trim_size_of_pos p hppos
       have hqdeg_lt_trim := natDegree_toPoly_lt_trim_size_of_pos q hqpos
       have hpdeg : p.toPoly.natDegree < D.n := by
@@ -479,7 +481,8 @@ theorem fastMulSpec_coeff (D : Domain R) (p q : CPolynomial.Raw R)
         rw [hpoint]
         exact inverse_forwardSpec_coeff_of_lt D (p * q) hiD
       · rw [if_neg hi]
-        exact (mul_coeff_eq_zero_of_requiredLength_le p q (Nat.le_of_not_lt hi)).symm
+        exact (mul_coeff_eq_zero_of_requiredLength_le p q hppos hqpos
+          (Nat.le_of_not_lt hi)).symm
 
 theorem fastMulSpec_eq_mul (D : Domain R) (p q : CPolynomial.Raw R)
     (hfit : Domain.fits D p q) : fastMulSpec D p q = p * q := by
