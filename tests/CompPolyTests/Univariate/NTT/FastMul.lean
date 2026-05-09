@@ -9,7 +9,7 @@ import CompPolyTests.Univariate.NTT.Common
 /-!
   # Univariate NTT FastMul Tests
 
-  Concrete executable checks for the temporary spec-backed NTT multiplication path.
+  Concrete executable checks for the iterative butterfly NTT multiplication path.
 -/
 
 namespace CompPoly

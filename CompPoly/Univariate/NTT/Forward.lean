@@ -372,12 +372,6 @@ private theorem omega_pow_domain_half_eq_neg_one
     exact IsPrimitiveRoot.pow D.n_pos D.primitive hprod
   exact IsPrimitiveRoot.eq_neg_one_of_two_right hprim2
 
-private theorem omega_pow_stage_stride_eq_neg_one
-    (D : Domain R) (stage : Nat) (hstage : stage < D.logN) :
-    D.omega ^ (2 ^ stage * 2 ^ (D.logN - (stage + 1))) = -1 := by
-  rw [stage_stride_half_eq_domain_half D stage hstage]
-  exact omega_pow_domain_half_eq_neg_one D (by omega)
-
 private theorem forwardMathPairsSpec_get_lower_current
     (D : Domain R) (stage block j : Nat) (a : Array R) (hj : j < 2 ^ stage)
     (hi : block * 2 ^ (stage + 1) + j < (forwardMathPairsSpec D stage block j a).size) :

@@ -9,7 +9,7 @@ import CompPolyTests.Univariate.NTT.Common
 /-!
   # Univariate NTT Forward Tests
 
-  Concrete executable checks for the temporary spec-backed forward NTT path.
+  Concrete executable checks for the iterative butterfly forward NTT path.
 -/
 
 namespace CompPoly

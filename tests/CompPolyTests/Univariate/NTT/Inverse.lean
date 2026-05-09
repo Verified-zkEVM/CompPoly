@@ -10,7 +10,7 @@ import CompPolyTests.Univariate.NTT.Common
 /-!
   # Univariate NTT Inverse Tests
 
-  Concrete executable checks for the temporary spec-backed inverse NTT path.
+  Concrete executable checks for the iterative butterfly inverse NTT path.
 -/
 
 namespace CompPoly
