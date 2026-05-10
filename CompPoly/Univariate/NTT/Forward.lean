@@ -136,7 +136,8 @@ private def forwardMathPairsSpec
       simp [forwardStageSpec, bitRevPermute]
   | succ completed ih =>
       rw [forwardStageSpec_succ]
-      exact size_butterflyStage D completed (forwardStageSpec D completed a) ih
+      rw [size_butterflyStage]
+      exact ih
 
 @[simp] theorem size_forwardStagePureSpec (D : Domain R) (completed : Nat) (a : Array R) :
     (forwardStagePureSpec D completed a).size = D.n := by
@@ -145,7 +146,8 @@ private def forwardMathPairsSpec
       simp [forwardStagePureSpec, bitRevPermute]
   | succ completed ih =>
       rw [forwardStagePureSpec_succ]
-      exact size_butterflyStageSpec D completed (forwardStagePureSpec D completed a) ih
+      rw [size_butterflyStageSpec]
+      exact ih
 
 /--
 The algorithmic stage recursion agrees with the pure stage recursion.
@@ -162,7 +164,6 @@ theorem forwardStageSpec_eq_forwardStagePureSpec (D : Domain R) (a : Array R) :
   | succ completed ih =>
       rw [forwardStageSpec_succ, forwardStagePureSpec_succ, ih]
       rw [butterflyStage_eq_butterflyStageSpec D completed (forwardStagePureSpec D completed a)]
-      exact size_forwardStagePureSpec D completed a
 
 /--
 Base case of the mathematical stage invariant: before any butterflies, the
@@ -371,12 +372,6 @@ private theorem omega_pow_domain_half_eq_neg_one
     exact IsPrimitiveRoot.pow D.n_pos D.primitive hprod
   exact IsPrimitiveRoot.eq_neg_one_of_two_right hprim2
 
-private theorem omega_pow_stage_stride_eq_neg_one
-    (D : Domain R) (stage : Nat) (hstage : stage < D.logN) :
-    D.omega ^ (2 ^ stage * 2 ^ (D.logN - (stage + 1))) = -1 := by
-  rw [stage_stride_half_eq_domain_half D stage hstage]
-  exact omega_pow_domain_half_eq_neg_one D (by omega)
-
 private theorem forwardMathPairsSpec_get_lower_current
     (D : Domain R) (stage block j : Nat) (a : Array R) (hj : j < 2 ^ stage)
     (hi : block * 2 ^ (stage + 1) + j < (forwardMathPairsSpec D stage block j a).size) :
@@ -540,7 +535,7 @@ private theorem forwardMathValueAt_succ_upper
     ring
 
 private theorem eq_lower_or_upper_of_block_pair
-    (stage block j i : Nat) (_hj : j < 2 ^ stage)
+    (stage block j i : Nat)
     (hblock : i / 2 ^ (stage + 1) = block) (hpair : i % 2 ^ stage = j) :
     i = block * 2 ^ (stage + 1) + j ∨
       i = block * 2 ^ (stage + 1) + j + 2 ^ stage := by
@@ -583,7 +578,7 @@ private theorem eq_lower_or_upper_of_block_pair
     omega
 
 private theorem forwardMathPairsSpec_get_unchanged
-    (D : Domain R) (stage block j : Nat) (a : Array R) (hj : j < 2 ^ stage)
+    (D : Domain R) (stage block j : Nat) (a : Array R)
     {i : Nat}
     (hiOld : i < (forwardMathPairsSpec D stage block j a).size)
     (hiNew : i < (forwardMathPairsSpec D stage block (j + 1) a).size)
@@ -603,7 +598,7 @@ private theorem forwardMathPairsSpec_get_unchanged
         rw [if_neg hltPair]
         by_cases hltPairNext : i % 2 ^ stage < j + 1
         · have hpair : i % 2 ^ stage = j := by omega
-          rcases eq_lower_or_upper_of_block_pair stage block j i hj hEqBlock hpair with h | h
+          rcases eq_lower_or_upper_of_block_pair stage block j i hEqBlock hpair with h | h
           · exact (hneLower h.symm).elim
           · exact (hneUpper h.symm).elim
         · rw [if_neg hltPairNext]
@@ -708,7 +703,7 @@ private theorem butterflyInnerStep_forwardMathPairsSpec_succ
           rw [forwardMathPairsSpec_get_lower_next D stage block donePairs a hdonePairs hi₂]
           exact (forwardMathValueAt_succ_lower D stage block donePairs a hstage hdonePairs).symm
         · rw [if_neg hLower]
-          exact forwardMathPairsSpec_get_unchanged D stage block donePairs a hdonePairs
+          exact forwardMathPairsSpec_get_unchanged D stage block donePairs a
             hi₁ hi₂ hLower hUpper
   · rw [pow_succ]
 

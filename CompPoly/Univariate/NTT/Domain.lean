@@ -59,11 +59,31 @@ def inverse (D : Domain R) : Domain R where
 
 section RawHelpers
 
-variable [BEq R] [LawfulBEq R]
+variable [BEq R]
 
 /-- Required convolution length for multiplying `p` and `q`. -/
 def requiredLength (p q : CPolynomial.Raw R) : Nat :=
-  p.trim.size + q.trim.size - 1
+  if p.trim.size = 0 ∨ q.trim.size = 0 then
+    0
+  else
+    p.trim.size + q.trim.size - 1
+
+@[simp] theorem requiredLength_eq_zero_of_left_trim_size_zero
+    (p q : CPolynomial.Raw R) (hp : p.trim.size = 0) :
+    requiredLength p q = 0 := by
+  simp [requiredLength, hp]
+
+@[simp] theorem requiredLength_eq_zero_of_right_trim_size_zero
+    (p q : CPolynomial.Raw R) (hq : q.trim.size = 0) :
+    requiredLength p q = 0 := by
+  simp [requiredLength, hq]
+
+theorem requiredLength_eq_of_trim_size_pos
+    (p q : CPolynomial.Raw R) (hp : 0 < p.trim.size) (hq : 0 < q.trim.size) :
+    requiredLength p q = p.trim.size + q.trim.size - 1 := by
+  have hp0 : p.trim.size ≠ 0 := Nat.ne_of_gt hp
+  have hq0 : q.trim.size ≠ 0 := Nat.ne_of_gt hq
+  simp [requiredLength, hp0, hq0]
 
 /-- Whether domain `D` is large enough for multiplying `p` and `q`. -/
 def fits (D : Domain R) (p q : CPolynomial.Raw R) : Prop :=
