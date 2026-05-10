@@ -159,6 +159,51 @@ def aeval {n : ℕ} {R σ : Type*} [CommSemiring R] [CommSemiring σ] [Algebra R
   simpa [CMvPolynomial.eval₂Hom_apply] using
     (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_mul p q
 
+@[simp] lemma aeval_zero {n : ℕ} {R σ : Type*}
+    [CommSemiring R] [BEq R] [LawfulBEq R]
+    [CommSemiring σ] [Algebra R σ]
+    (f : Fin n → σ) :
+    aeval f (0 : CMvPolynomial n R) = 0 := by
+  unfold aeval
+  simpa [CMvPolynomial.eval₂Hom_apply] using
+    (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_zero
+
+@[simp] lemma aeval_one {n : ℕ} {R σ : Type*}
+    [CommSemiring R] [BEq R] [LawfulBEq R]
+    [CommSemiring σ] [Algebra R σ]
+    (f : Fin n → σ) :
+    aeval f (1 : CMvPolynomial n R) = 1 := by
+  unfold aeval
+  simpa [CMvPolynomial.eval₂Hom_apply] using
+    (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_one
+
+@[simp] lemma aeval_pow {n : ℕ} {R σ : Type*}
+    [CommSemiring R] [BEq R] [LawfulBEq R]
+    [CommSemiring σ] [Algebra R σ]
+    (f : Fin n → σ) (p : CMvPolynomial n R) (k : ℕ) :
+    aeval f (p ^ k) = (aeval f p) ^ k := by
+  unfold aeval
+  simpa [CMvPolynomial.eval₂Hom_apply] using
+    (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_pow p k
+
+@[simp] lemma aeval_neg {n : ℕ} {R σ : Type*}
+    [CommRing R] [BEq R] [LawfulBEq R]
+    [CommRing σ] [Algebra R σ]
+    (f : Fin n → σ) (p : CMvPolynomial n R) :
+    aeval f (-p) = -(aeval f p) := by
+  unfold aeval
+  simpa [CMvPolynomial.eval₂Hom_apply] using
+    (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_neg p
+
+@[simp] lemma aeval_sub {n : ℕ} {R σ : Type*}
+    [CommRing R] [BEq R] [LawfulBEq R]
+    [CommRing σ] [Algebra R σ]
+    (f : Fin n → σ) (p q : CMvPolynomial n R) :
+    aeval f (p - q) = aeval f p - aeval f q := by
+  unfold aeval
+  simpa [CMvPolynomial.eval₂Hom_apply] using
+    (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_sub p q
+
 /-- Substitution: substitutes polynomials for variables.
 
   Given `f : Fin n → CMvPolynomial m R`, substitutes `f i` for variable `X i`.
@@ -404,6 +449,10 @@ lemma sumToIter_add {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
     (p : CMvPolynomial n R) :
     sumToIter (sumToIter p) = sumToIter p := by
   simp [sumToIter_eq]
+
+attribute [grind =]
+  aeval_C aeval_X aeval_add aeval_mul
+  aeval_zero aeval_one aeval_pow aeval_neg aeval_sub
 
 end CMvPolynomial
 
