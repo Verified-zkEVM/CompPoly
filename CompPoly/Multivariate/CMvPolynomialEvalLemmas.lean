@@ -40,6 +40,11 @@ lemma eval_add (p q : CMvPolynomial n R) :
 lemma eval_mul (p q : CMvPolynomial n R) :
     (p * q).eval vals = p.eval vals * q.eval vals := by simp [eval_equiv]
 
+@[simp]
+lemma eval_pow (p : CMvPolynomial n R) (k : ℕ) :
+    (p ^ k).eval vals = (p.eval vals) ^ k := by
+  simpa [eval₂Hom_apply] using (eval₂Hom (RingHom.id R) vals).map_pow p k
+
 end
 
 section
@@ -59,6 +64,7 @@ lemma eval_sub (p q : CMvPolynomial n R) :
 
 end
 
-attribute [grind =] eval_zero eval_one eval_C eval_add eval_mul eval_neg eval_sub
+attribute [grind =]
+  eval_zero eval_one eval_C eval_add eval_mul eval_pow eval_neg eval_sub
 
 end CPoly
