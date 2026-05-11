@@ -1,7 +1,19 @@
+/-
+Copyright (c) 2025 CompPoly. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles, Tomaz Mascarenhas
+-/
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.Raw.Core
 import CompPoly.Univariate.Raw.Division
 
+/-!
+  # Polynomial Division
+
+  This file defines computable univariate polynomial
+  division, and proves an equivalence with Mathlib's
+  polynomial division.
+-/
 namespace CompPoly
 
 open CPolynomial
