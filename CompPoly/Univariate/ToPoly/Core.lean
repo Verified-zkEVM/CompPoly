@@ -217,6 +217,21 @@ theorem Raw.toImpl_toPoly [LawfulBEq R] (p : CPolynomial.Raw R) : p.toPoly.toImp
   rw [← toPoly_trim]
   exact toImpl_toPoly_of_canonical ⟨ p.trim, Trim.isCanonical_trim p⟩
 
+/-- A nonempty trimmed raw polynomial bounds the degree of its `toPoly` image. -/
+theorem Raw.toPoly_natDegree_lt_trim_size_of_pos [LawfulBEq R]
+    (p : CPolynomial.Raw R) (hp : 0 < p.trim.size) :
+    p.toPoly.natDegree < p.trim.size := by
+  have hround := Raw.toImpl_toPoly (R := R) p
+  have hsize : p.toPoly.toImpl.size = p.trim.size := congrArg Array.size hround
+  rcases Raw.toImpl_elim p.toPoly with ⟨_hzero, himpl⟩ | ⟨_hnz, himpl⟩
+  · have : p.trim.size = 0 := by
+      rw [← hsize, himpl]
+      simp
+    omega
+  · have himpl_size : p.toPoly.toImpl.size = p.toPoly.natDegree + 1 := by
+      simp [himpl]
+    omega
+
 /-- `toPoly` maps a canonical polynomial to `0` iff the polynomial is `0`. -/
 theorem toPoly_eq_zero_iff [LawfulBEq R] (p : CPolynomial R) :
     p.toPoly = 0 ↔ p = 0 := by

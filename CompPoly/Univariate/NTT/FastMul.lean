@@ -241,20 +241,6 @@ private theorem mul_coeff_eq_zero_of_right_trim_size_zero
   have hq0 : q.coeff (i - x) = 0 := coeff_zero_of_trim_size_le q (by omega)
   simp [hq0]
 
-private theorem natDegree_toPoly_lt_trim_size_of_pos
-    (a : CPolynomial.Raw R) (ha : 0 < a.trim.size) :
-    a.toPoly.natDegree < a.trim.size := by
-  have hround := CPolynomial.Raw.toImpl_toPoly (R := R) a
-  have hsize : a.toPoly.toImpl.size = a.trim.size := congrArg Array.size hround
-  rcases CPolynomial.Raw.toImpl_elim a.toPoly with ⟨hz, himpl⟩ | ⟨_hnz, himpl⟩
-  · have : a.trim.size = 0 := by
-      rw [← hsize, himpl]
-      simp
-    omega
-  · have himpl_size : a.toPoly.toImpl.size = a.toPoly.natDegree + 1 := by
-      simp [himpl]
-    omega
-
 omit [BEq R] [LawfulBEq R] in
 private theorem forwardSpec_get_eq_eval_of_natDegree_lt
     (D : Domain R) (a : CPolynomial.Raw R) (hdeg : a.toPoly.natDegree < D.n)
@@ -371,8 +357,8 @@ theorem fastMulSpec_coeff (D : Domain R) (p q : CPolynomial.Raw R)
         simpa [Domain.fits] using hfit
       have hfitLen : p.trim.size + q.trim.size - 1 ≤ D.n := by
         simpa [Domain.requiredLength_eq_of_trim_size_pos p q hppos hqpos] using hfit'
-      have hpdeg_lt_trim := natDegree_toPoly_lt_trim_size_of_pos p hppos
-      have hqdeg_lt_trim := natDegree_toPoly_lt_trim_size_of_pos q hqpos
+      have hpdeg_lt_trim := CPolynomial.Raw.toPoly_natDegree_lt_trim_size_of_pos p hppos
+      have hqdeg_lt_trim := CPolynomial.Raw.toPoly_natDegree_lt_trim_size_of_pos q hqpos
       have hpdeg : p.toPoly.natDegree < D.n := by
         omega
       have hqdeg : q.toPoly.natDegree < D.n := by
