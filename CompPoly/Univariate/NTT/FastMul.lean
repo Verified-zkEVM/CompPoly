@@ -339,8 +339,10 @@ private theorem fastMulSpec_coeff_eq_zero_of_right_trim_size_zero
 /--
 Implementation pipeline for NTT-based multiplication.
 
-Callers must provide a domain satisfying `Domain.fits D p q`; otherwise the
-result is truncated to the domain-supported convolution length.
+Correctness as ordinary polynomial multiplication requires
+`Domain.fits D p q`; see `fastMulImpl_eq_mul`. Without this precondition, this
+function only exposes the raw NTT pipeline result, which may include cyclic
+wraparound and has no product-correctness guarantee.
 -/
 @[inline] def fastMulImpl (D : Domain R) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
   let pHat := Forward.forwardImpl D p
