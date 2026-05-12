@@ -45,8 +45,7 @@ def bestDomainForLength? (requiredLen : Nat) : Option (Domain KoalaBear.Field) :
           exact Nat.pow_le_pow_right (by decide : 1 ≤ 2) hlogN
         have hpow_lt : 2 ^ logN < KoalaBear.fieldSize := by
           have htop : 2 ^ KoalaBear.twoAdicity < KoalaBear.fieldSize := by
-            simpa [KoalaBear.twoAdicity, KoalaBear.fieldSize] using
-              (by decide : 2 ^ 24 < 2 ^ 31 - 2 ^ 24 + 1)
+            simp [KoalaBear.twoAdicity, KoalaBear.fieldSize]
           exact lt_of_le_of_lt hpow_le htop
         have hdiv : KoalaBear.fieldSize ∣ 2 ^ logN := by
           exact (ZMod.natCast_eq_zero_iff (2 ^ logN) KoalaBear.fieldSize).mp hzero
@@ -82,11 +81,11 @@ def repeatsFor (n : Nat) : Nat :=
 
 def timeRepeated {α : Type} (reps : Nat) (f : Unit → α) : IO (Nat × α) := do
   let actualReps := max reps 1
-  let start <- IO.monoMsNow
+  let start ← IO.monoMsNow
   let mut last := f ()
   for _ in [1:actualReps] do
     last := f ()
-  let stop <- IO.monoMsNow
+  let stop ← IO.monoMsNow
   pure (stop - start, last)
 
 #eval show IO Unit from do
@@ -103,8 +102,8 @@ def timeRepeated {α : Type} (reps : Nat) (f : Unit → α) : IO (Nat × α) := 
     let some benchDomain := bestDomainForLength? reqLen
       | throw <| IO.userError
           s!"no KoalaBear domain supports required length {reqLen} for size {n}"
-    let (nttMs, nttRes) <- timeRepeated reps (fun _ => FastMul.fastMulImpl benchDomain p q)
-    let (rawMs, rawRes) <- timeRepeated reps (fun _ => p * q)
+    let (nttMs, nttRes) ← timeRepeated reps (fun _ => FastMul.fastMulImpl benchDomain p q)
+    let (rawMs, rawRes) ← timeRepeated reps (fun _ => p * q)
     unless nttRes = rawRes do
       throw <| IO.userError s!"benchmark mismatch at size {n}"
     let winner := if nttMs ≤ rawMs then "NTT" else "raw"
