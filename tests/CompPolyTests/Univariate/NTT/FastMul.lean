@@ -22,22 +22,22 @@ open TestCommon
 #guard
   let p : CPolynomial.Raw KoalaBear.Field := #[(0 : KoalaBear.Field)]
   let q : CPolynomial.Raw KoalaBear.Field := #[(5 : KoalaBear.Field), 7, 9]
-  FastMul.fastMulImpl testDomain p q == p * q
+  FastMul.fastMulImpl testDomain8 p q == p * q
 
 #guard
   let p : CPolynomial.Raw KoalaBear.Field := #[(3 : KoalaBear.Field), 4, 5]
   let q : CPolynomial.Raw KoalaBear.Field := #[(7 : KoalaBear.Field), 2]
-  FastMul.fastMulImpl testDomain p q == p * q
+  FastMul.fastMulImpl testDomain8 p q == p * q
 
 #guard
   let p : CPolynomial.Raw KoalaBear.Field := #[(1 : KoalaBear.Field), 2, 3, 4, 5]
   let q : CPolynomial.Raw KoalaBear.Field := #[(6 : KoalaBear.Field), 7, 8, 9]
-  FastMul.fastMulImpl testDomain p q == p * q
+  FastMul.fastMulImpl testDomain8 p q == p * q
 
 #guard
   let p : CPolynomial.Raw KoalaBear.Field := #[(1 : KoalaBear.Field), 2, 0, 0]
   let q : CPolynomial.Raw KoalaBear.Field := #[(3 : KoalaBear.Field), 0, 4, 0]
-  FastMul.fastMulImpl testDomain p q == p * q
+  FastMul.fastMulImpl testDomain8 p q == p * q
 
 #guard
   let p : CPolynomial.Raw KoalaBear.Field := #[(1 : KoalaBear.Field), 2, 3, 4, 5, 6]

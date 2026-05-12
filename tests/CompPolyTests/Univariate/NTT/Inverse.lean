@@ -27,7 +27,7 @@ open TestCommon
     1065353221, 1641696606, 1587585025, 758523484,
     1598029823, 2074505892, 10444799, 1917393316
   ]
-  Inverse.inverseImpl testDomain v == expected
+  Inverse.inverseImpl testDomain8 v == expected
 
 #guard
   let v : Array KoalaBear.Field := #[
@@ -35,7 +35,7 @@ open TestCommon
     4, 1446577892, 66846714, 650258111
   ]
   let expected : Array KoalaBear.Field := #[(3 : KoalaBear.Field), 4, 5, 0, 0, 0, 0, 0]
-  Inverse.inverseImpl testDomain v == expected
+  Inverse.inverseImpl testDomain8 v == expected
 
 #guard
   let v : Array KoalaBear.Field := #[

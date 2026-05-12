@@ -25,7 +25,7 @@ open TestCommon
     12, 517011757, 2063859715, 1647565118,
     4, 1446577892, 66846714, 650258111
   ]
-  Forward.forwardImpl testDomain p == expected
+  Forward.forwardImpl testDomain8 p == expected
 
 #guard
   let p : CPolynomial.Raw KoalaBear.Field := #[(1 : KoalaBear.Field), 2, 0, 0]
@@ -33,7 +33,7 @@ open TestCommon
     3, 1365638292, 2097283076, 782003361,
     2130706432, 765068143, 33423359, 1348703074
   ]
-  Forward.forwardImpl testDomain p == expected
+  Forward.forwardImpl testDomain8 p == expected
 
 #guard
   let p : CPolynomial.Raw KoalaBear.Field := #[

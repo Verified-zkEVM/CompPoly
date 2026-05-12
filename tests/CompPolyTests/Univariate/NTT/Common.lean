@@ -17,44 +17,43 @@ namespace CPolynomial
 namespace NTT
 namespace TestCommon
 
-def testLogN : Nat := 3
+def testBitsOfLogN (logN : Nat) (hlogN : logN ≤ KoalaBear.twoAdicity) :
+    Fin (KoalaBear.twoAdicity + 1) :=
+  ⟨logN, Nat.lt_succ_of_le hlogN⟩
 
-def testBits : Fin (KoalaBear.twoAdicity + 1) := ⟨testLogN, by decide⟩
+private theorem koalaBear_twoPow_natCast_ne_zero
+    (logN : Nat) (hlogN : logN ≤ KoalaBear.twoAdicity) :
+    (((2 ^ logN : Nat) : KoalaBear.Field) ≠ 0) := by
+  intro hzero
+  have hpow_pos : 0 < 2 ^ logN := by
+    positivity
+  have hpow_le : 2 ^ logN ≤ 2 ^ KoalaBear.twoAdicity := by
+    exact Nat.pow_le_pow_right (by decide : 1 ≤ 2) hlogN
+  have hpow_lt : 2 ^ logN < KoalaBear.fieldSize := by
+    have htop : 2 ^ KoalaBear.twoAdicity < KoalaBear.fieldSize := by
+      simp [KoalaBear.twoAdicity, KoalaBear.fieldSize]
+    exact lt_of_le_of_lt hpow_le htop
+  have hdiv : KoalaBear.fieldSize ∣ 2 ^ logN := by
+    exact (ZMod.natCast_eq_zero_iff (2 ^ logN) KoalaBear.fieldSize).mp hzero
+  exact (not_le_of_gt hpow_lt) (Nat.le_of_dvd hpow_pos hdiv)
 
-def testDomain : Domain KoalaBear.Field where
-  logN := testLogN
-  omega := KoalaBear.twoAdicGenerators[testBits]
+def testDomainOfLogN (logN : Nat) (hlogN : logN ≤ KoalaBear.twoAdicity) :
+    Domain KoalaBear.Field where
+  logN := logN
+  omega := KoalaBear.twoAdicGenerators[testBitsOfLogN logN hlogN]
   primitive := by
-    simpa [testLogN, testBits] using KoalaBear.isPrimitiveRoot_twoAdicGenerator testBits
-  natCast_ne_zero := by
-    change ((8 : Nat) : KoalaBear.Field) ≠ 0
-    decide
+    simpa [testBitsOfLogN] using
+      KoalaBear.isPrimitiveRoot_twoAdicGenerator (testBitsOfLogN logN hlogN)
+  natCast_ne_zero := koalaBear_twoPow_natCast_ne_zero logN hlogN
 
-def testLogN32 : Nat := 5
+def testDomain8 : Domain KoalaBear.Field :=
+  testDomainOfLogN 3 (by decide)
 
-def testBits32 : Fin (KoalaBear.twoAdicity + 1) := ⟨testLogN32, by decide⟩
+def testDomain32 : Domain KoalaBear.Field :=
+  testDomainOfLogN 5 (by decide)
 
-def testDomain32 : Domain KoalaBear.Field where
-  logN := testLogN32
-  omega := KoalaBear.twoAdicGenerators[testBits32]
-  primitive := by
-    simpa [testLogN32, testBits32] using KoalaBear.isPrimitiveRoot_twoAdicGenerator testBits32
-  natCast_ne_zero := by
-    change ((32 : Nat) : KoalaBear.Field) ≠ 0
-    decide
-
-def testLogN64 : Nat := 6
-
-def testBits64 : Fin (KoalaBear.twoAdicity + 1) := ⟨testLogN64, by decide⟩
-
-def testDomain64 : Domain KoalaBear.Field where
-  logN := testLogN64
-  omega := KoalaBear.twoAdicGenerators[testBits64]
-  primitive := by
-    simpa [testLogN64, testBits64] using KoalaBear.isPrimitiveRoot_twoAdicGenerator testBits64
-  natCast_ne_zero := by
-    change ((64 : Nat) : KoalaBear.Field) ≠ 0
-    decide
+def testDomain64 : Domain KoalaBear.Field :=
+  testDomainOfLogN 6 (by decide)
 
 end TestCommon
 end NTT
