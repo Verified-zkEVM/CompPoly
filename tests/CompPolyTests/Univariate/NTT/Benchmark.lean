@@ -67,7 +67,7 @@ def avgMsString (totalMs reps : Nat) : String :=
   s!"{(Float.ofNat totalMs) / (Float.ofNat reps)}"
 
 def speedupString (nttMs rawMs : Nat) : String :=
-  if nttMs == 0 then
+  if nttMs = 0 then
     "inf"
   else
     s!"{(Float.ofNat rawMs) / (Float.ofNat nttMs)}"
