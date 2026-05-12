@@ -25,7 +25,7 @@ open Transform
 
 /-- DFT/NTT formula at one output index. -/
 @[inline] def nttAt (D : Domain R) (a : Array R) (k : D.Idx) : R :=
-  ∑ j : D.Idx, a.getD j.1 0 * D.omega ^ ((k : Nat) * (j : Nat))
+  ∑ j : D.Idx, a.getD (j : Nat) 0 * D.omega ^ ((k : Nat) * (j : Nat))
 
 /-- Full forward transform specified directly from the NTT formula. -/
 @[inline] def forwardSpec (D : Domain R) (a : Array R) : Array R :=

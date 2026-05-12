@@ -23,7 +23,7 @@ variable {R : Type*} [Field R]
 
 /-- Inverse NTT formula at one output index. -/
 def inttAt (D : Domain R) (v : Array R) (k : D.Idx) : R :=
-  D.nInv * ∑ j : D.Idx, v.getD j.1 0 * D.omegaInv ^ ((k : Nat) * (j : Nat))
+  D.nInv * ∑ j : D.Idx, v.getD (j : Nat) 0 * D.omegaInv ^ ((k : Nat) * (j : Nat))
 
 /-- Full inverse transform on arrays, specified from `inttAt`. -/
 def inverseSpec (D : Domain R) (v : Array R) : Array R :=
