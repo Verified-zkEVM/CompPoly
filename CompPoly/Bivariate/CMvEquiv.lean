@@ -9,10 +9,9 @@ import CompPoly.Multivariate.CMvPolynomial
 
 open CompPoly CPoly
 
-variable R
+variable {R : Type*} [CommSemiring R]
 
-#check CPolynomial
-#print CPolynomial
+noncomputable def univariateEquiv
 
 /- theorem CBivariate_eq_CMvPolynomial {R : Type*}  [CommSemiring R] [BEq R] [LawfulBEq R] : CBivariate R ≃+* CMvPolynomial 2 R := by sorry -/
 noncomputable def bivariateEquiv {R : Type*} [Semiring R] : CBivariate R ≃+* CMvPolynomial 2 R := sorry
