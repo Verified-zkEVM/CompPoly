@@ -14,6 +14,7 @@ import CompPoly.Fields.BN254
 import CompPoly.Fields.Goldilocks
 import CompPoly.Multilinear.Basic
 import CompPoly.Multivariate.CMvPolynomial
+import CompPoly.Univariate.BatchEval
 import CompPoly.Univariate.NTT.BabyBear
 import CompPoly.Univariate.NTT.KoalaBear
 import CompPoly.Univariate.NTT.FastMul
@@ -38,14 +39,30 @@ private def warmupIterations : Nat := 100
 /-- Number of measured iterations for ordinary evaluation benchmarks. -/
 private def measuredIterations : Nat := 5000
 
+/-- Number of warmup iterations for full-array batch-evaluation benchmarks. -/
+private def batchWarmupIterations : Nat := 1
+
+/-- Number of measured iterations for full-array batch-evaluation benchmarks. -/
+private def batchMeasuredIterations : Nat := 5
+
 /-- Number of warmup iterations for direct univariate multiplication benchmarks. -/
 private def mulWarmupIterations : Nat := 1
 
 /-- Number of measured iterations for direct univariate multiplication benchmarks. -/
 private def mulMeasuredIterations : Nat := 20
 
+/-- Number of coefficient slots used by univariate batch-evaluation benchmarks. -/
+private def univariateBatchCoeffSlots : Nat := 128
+
+/-- Number of points used by univariate batch-evaluation benchmarks. -/
+private def univariateBatchPointCount : Nat := 16
+
 /-- Number of coefficient slots used by direct univariate multiplication benchmarks. -/
 private def univariateMulCoeffSlots : Nat := 128
+
+/-- Input-shape label for univariate batch-evaluation benchmarks. -/
+private def univariateBatchShape : String :=
+  s!"degree<{univariateBatchCoeffSlots}, dense, {univariateBatchPointCount} points"
 
 /-- Input-shape label for direct univariate multiplication benchmarks. -/
 private def univariateMulShape : String :=
@@ -592,12 +609,17 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
   let (koalaMulLhsCoeffs, gen) := (koalaBearArray univariateMulCoeffSlots false).run gen
   let (koalaMulRhsCoeffs, gen) := (koalaBearArray univariateMulCoeffSlots false).run gen
   let (points, gen) := (babyBearPoints 32).run gen
+  let (batchCoeffs, gen) := (babyBearArray univariateBatchCoeffSlots false).run gen
+  let (batchPoints, gen) := (babyBearPoints univariateBatchPointCount).run gen
   let densePoly := cpolyOfArray denseCoeffs
   let sparsePoly := cpolyOfArray sparseCoeffs
   let mulLhsPoly := cpolyOfArray mulLhsCoeffs
   let mulRhsPoly := cpolyOfArray mulRhsCoeffs
   let koalaMulLhsPoly := cpolyOfArray koalaMulLhsCoeffs
   let koalaMulRhsPoly := cpolyOfArray koalaMulRhsCoeffs
+  let batchPoly := cpolyOfArray batchCoeffs
+  let naiveMul : CPolynomial.MulContext BabyBear.Field := CPolynomial.MulContext.naive
+  let naiveMod : CPolynomial.ModContext BabyBear.Field := CPolynomial.ModContext.naive
   let nextGen := gen
   let mut records := #[]
   records := records.push (← runTimed
@@ -643,6 +665,22 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     (fun _ ↦ CPolynomial.NTT.FastMul.fastMulImpl koalaBearMulNttDomain koalaMulLhsPoly
       koalaMulRhsPoly)
     (checksumCPolynomial checksumKoalaBear))
+  records := records.push (← runTimed
+    "univariate-batch-naive-sum" "CPolynomial" "evalBatch" "BabyBear.Field"
+    univariateBatchShape batchWarmupIterations batchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatch batchPoly batchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-naive-horner" "CPolynomial" "evalBatchHorner" "BabyBear.Field"
+    univariateBatchShape batchWarmupIterations batchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchHorner batchPoly batchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-subproduct-naive-mul-naive-mod" "CPolynomial"
+    "evalBatchSubproduct naive mul/mod" "BabyBear.Field"
+    univariateBatchShape batchWarmupIterations batchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct naiveMul naiveMod batchPoly batchPoints)
+    (checksumArray checksumBabyBear))
   let (goldilocksRecords, extraGen) ← runDenseUnivariateZMod
     Goldilocks.fieldSize "goldilocks" "Goldilocks.Field" nextGen
   records := appendRecords records goldilocksRecords
