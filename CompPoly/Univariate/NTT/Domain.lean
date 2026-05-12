@@ -68,12 +68,12 @@ def requiredLength (p q : CPolynomial.Raw R) : Nat :=
   else
     p.trim.size + q.trim.size - 1
 
-@[simp] theorem requiredLength_eq_zero_of_left_trim_size_zero
+theorem requiredLength_eq_zero_of_left_trim_size_zero
     (p q : CPolynomial.Raw R) (hp : p.trim.size = 0) :
     requiredLength p q = 0 := by
   simp [requiredLength, hp]
 
-@[simp] theorem requiredLength_eq_zero_of_right_trim_size_zero
+theorem requiredLength_eq_zero_of_right_trim_size_zero
     (p q : CPolynomial.Raw R) (hq : q.trim.size = 0) :
     requiredLength p q = 0 := by
   simp [requiredLength, hq]
