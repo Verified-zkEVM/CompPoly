@@ -61,11 +61,19 @@ python3 ./scripts/check-docs-integrity.py
 Run this when editing `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, or files under
 `docs/`.
 
+### Benchmark changes
+
+```bash
+lake build CompPolyBench
+lake exe CompPolyBench
+```
+
 ## CI Mapping
 
 - [`../../.github/workflows/lean_action_ci.yml`](../../.github/workflows/lean_action_ci.yml)
   runs a clean build, warm rebuild, and `lake test`, then posts a build-timing
-  report.
+  report. It also builds and runs `CompPolyBench`, then uploads benchmark reports
+  as CI artifacts.
 - [`../../.github/workflows/linting.yml`](../../.github/workflows/linting.yml) runs
   the style linter on changed `.lean` files in PRs and push builds.
 - [`../../.github/workflows/check_imports.yml`](../../.github/workflows/check_imports.yml)
@@ -83,6 +91,7 @@ Use the direct scripts when debugging a specific failure:
 ./scripts/lint-style.sh
 python3 ./scripts/check-docs-integrity.py
 lake test
+lake build CompPolyBench
 ```
 
 For more detail on the helper scripts, see

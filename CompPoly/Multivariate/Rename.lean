@@ -27,13 +27,13 @@ namespace CPoly
 
 open Std CMvPolynomial
 
-variable {n m : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+variable {n m : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 /-! ### Helper lemmas for `fromCMvPolynomial_rename` -/
 
 /-- In a commutative additive monoid, the order of addition in a list fold
 does not matter. -/
-lemma list_foldl_add_comm {β K V : Type} [AddCommMonoid β]
+lemma list_foldl_add_comm {β K V : Type*} [AddCommMonoid β]
     (g : K → V → β) (l : List (K × V)) (init : β) :
     List.foldl (fun acc pair => acc + g pair.1 pair.2) init l =
     List.foldl (fun acc pair => g pair.1 pair.2 + acc) init l := by
@@ -45,8 +45,8 @@ lemma list_foldl_add_comm {β K V : Type} [AddCommMonoid β]
     exact ih _
 
 /-- Swapping addition order in `ExtTreeMap.foldl` does not change the result. -/
-lemma foldl_add_comm' {β : Type} [AddCommMonoid β] {k : ℕ}
-    {R' : Type} (g : CMvMonomial k → R' → β)
+lemma foldl_add_comm' {β : Type*} [AddCommMonoid β] {k : ℕ}
+    {R' : Type*} (g : CMvMonomial k → R' → β)
     (t : Std.ExtTreeMap (CMvMonomial k) R') :
     Std.ExtTreeMap.foldl (fun acc m c => acc + g m c) (0 : β) t =
     Std.ExtTreeMap.foldl (fun acc m c => g m c + acc) (0 : β) t := by
@@ -180,6 +180,7 @@ lemma toFinsupp_zero {k : ℕ} :
     CMvMonomial.toFinsupp (0 : CMvMonomial k) = 0 := by
   ext i
   simp [CMvMonomial.toFinsupp, Vector.get]
+  exact Vector.getElem_zero i.val i.isLt
 
 /-- `fromCMvPolynomial` maps `CMvPolynomial.C` to `MvPolynomial.C`. -/
 lemma fromCMvPolynomial_C {k : ℕ} (c : R) :
@@ -286,9 +287,17 @@ lemma rename_rename {k : ℕ} (f : Fin n → Fin m)
     fromCMvPolynomial_rename]
   exact MvPolynomial.rename_rename f g (fromCMvPolynomial p)
 
+end CPoly
+
+namespace CMvPolynomial
+
+open CPoly
+
+variable {n m : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+
 /-- Ring equivalence for variable renaming when the function is
 a bijection. -/
-noncomputable def CMvPolynomial.renameEquiv
+noncomputable def renameEquiv
     (f : Fin n ≃ Fin m) :
     CMvPolynomial n R ≃+* CMvPolynomial m R where
   toFun := CMvPolynomial.rename f
@@ -300,4 +309,4 @@ noncomputable def CMvPolynomial.renameEquiv
   map_add' p q := rename_add f p q
   map_mul' p q := rename_mul f p q
 
-end CPoly
+end CMvPolynomial

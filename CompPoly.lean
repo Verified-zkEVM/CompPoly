@@ -54,10 +54,12 @@ import CompPoly.Fields.PrattCertificate
 import CompPoly.Fields.Secp256k1
 import CompPoly.Multilinear.Basic
 import CompPoly.Multilinear.Equiv
+import CompPoly.Multilinear.TransformEquiv
 import CompPoly.Multivariate.CMvMonomial
 import CompPoly.Multivariate.CMvPolynomial
 import CompPoly.Multivariate.CMvPolynomialEvalLemmas
 import CompPoly.Multivariate.FinSuccEquiv
+import CompPoly.Multivariate.HornerLemmas
 import CompPoly.Multivariate.Lawful
 import CompPoly.Multivariate.MvPolyEquiv
 import CompPoly.Multivariate.MvPolyEquiv.Core

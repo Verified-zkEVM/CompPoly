@@ -188,7 +188,7 @@ lemma βᵢ_not_in_Uᵢ (i : Fin r) :
       simp only [Set.subset_compl_singleton_iff, Set.mem_Ico]
       omega
     else
-      push_neg at h_i
+      push Not at h_i
       have h_i_eq_0: i = 0 := by exact Fin.le_zero_iff'.mp h_i
       have set_empty: Set.Ico 0 i = ∅ := by
         rw [h_i_eq_0]
@@ -368,7 +368,7 @@ lemma W₀_eq_X : W 𝔽q β 0 = X := by
   rw [W]
   have : (univ : Finset (U 𝔽q β 0)) = {0} := by
     ext x
-    simp only [U, Set.Ico, mem_univ, mem_singleton, true_iff]
+    simp only [mem_univ, mem_singleton, true_iff]
     --x : ↥(U 𝔽q β 0), ⊢ x = 0
     unfold U at x
     have h_empty : Set.Ico 0 (0: Fin r) = ∅ := by
@@ -605,7 +605,7 @@ lemma eval_W_eq_zero_iff_in_U (i : Fin r) (a : L) :
     have h_root_W_pos : 0 < rootMultiplicity a (W 𝔽q β i) := by
       simp only [rootMultiplicity_pos', ne_eq, IsRoot.def]
       constructor
-      · push_neg; exact W_ne_zero 𝔽q β i
+      · push Not; exact W_ne_zero 𝔽q β i
       · exact h_root_W
     rw [rootMultiplicity_W] at h_root_W_pos
     by_cases h_a_in_U : a ∈ U 𝔽q β i
@@ -711,7 +711,7 @@ lemma rootMultiplicity_prod_W_comp_X_sub_C
         simp only [hx0]
       · rw [if_neg h_x_eq_x0]
         by_contra h_mem
-        push_neg at h_mem
+        push Not at h_mem
         simp only [ne_eq, eq_iff_iff, iff_false, not_not] at h_mem
         have h2 := hx0_unique x
         simp only [h_mem, forall_const] at h2
@@ -1320,7 +1320,7 @@ lemma degree_Xⱼ (ℓ : ℕ) (h_ℓ : ℓ ≤ r) (j : Fin (2 ^ ℓ)) :
     have h_j := j.isLt
     simp only [h_ℓ_0, pow_zero, Nat.lt_one_iff, Fin.val_eq_zero_iff] at h_j
     exact h_j
-  · push_neg at h_ℓ_0
+  · push Not at h_ℓ_0
     have deg_each: ∀ i ∈ (Finset.univ : Finset (Fin ℓ)),
       ((normalizedW 𝔽q β (Fin.castLE h_ℓ i))^(Nat.getBit i j)).degree
       = if Nat.getBit i j = 1 then (2:ℕ)^i.val else 0 := by
@@ -1331,7 +1331,7 @@ lemma degree_Xⱼ (ℓ : ℕ) (h_ℓ : ℓ ≤ r) (j : Fin (2 ^ ℓ)) :
         Nat.cast_pow, Nat.cast_ofNat, CharP.cast_eq_zero, hF₂.out]
       -- ⊢ ↑(↑j >>> ↑i % 2) * 2 ^ ↑i = if ↑j >>> ↑i % 2 = 1 then 2 ^ ↑i else 0
       by_cases h: (j.val >>> i.val) % 2 = 1
-      · simp only [h, Nat.cast_one, one_mul, ↓reduceIte];
+      · simp only [h, Nat.cast_one, one_mul, ↓reduceIte]; rfl
       · simp only [h, if_false];
         have h_0: (j.val >>> i.val) % 2 = 0 := by
           exact Nat.mod_two_ne_one.mp h
@@ -1340,11 +1340,19 @@ lemma degree_Xⱼ (ℓ : ℕ) (h_ℓ : ℓ ≤ r) (j : Fin (2 ^ ℓ)) :
     -- We use the `Nat.digits` API for this.
     rw [Finset.sum_congr rfl deg_each] -- .degree introduces (WithBot ℕ)
     -- ⊢ ⊢ ∑ x, ↑(if bit ↑x ↑j = 1 then 2 ^ ↑x else 0) = ↑↑j
-    set f:= fun x: ℕ => if Nat.getBit x j = 1 then (2: ℕ) ^ (x: ℕ) else 0
-    norm_cast -- from WithBot ℕ to ℕ
-    change (∑ x : Fin ℓ, f x) = (j.val: WithBot ℕ)
-    norm_cast
-    -- ⊢ (∑ x ∈ Icc 0 (ℓ - 1), if bit x j = 1 then 2 ^ x else 0) = ↑j => in Withbot ℕ
+    -- The goal is: ∑ x, ↑(if ... then 2^↑x else 0) = ↑↑j in WithBot ℕ
+    -- Reduce to ℕ equality via suffices and cast lemma
+    set f := fun x : ℕ => if Nat.getBit x j = 1 then (2 : ℕ) ^ x else 0
+    suffices h : (∑ x : Fin ℓ, f x.val) = j.val by
+      simp only [f] at h
+      have h2 := congrArg (fun n : ℕ => (n : WithBot ℕ)) h
+      simp only [Nat.cast_sum, Nat.cast_ite, Nat.cast_pow, Nat.cast_ofNat,
+        Nat.cast_zero] at h2
+      convert h2 using 1
+      apply Finset.sum_congr rfl
+      intro x _
+      simp only [Nat.cast_ite, Nat.cast_pow, Nat.cast_ofNat, Nat.cast_zero]
+    -- ⊢ (∑ x, f x.val) = j.val in ℕ
     rw [Fin.sum_univ_eq_sum_range (n:=ℓ)] -- switch to sum over Finset.range ℓ
     have h_range: range ℓ = Icc 0 (ℓ-1) := by
       rw [←Nat.range_succ_eq_Icc_zero (n:=ℓ - 1)]
@@ -1358,7 +1366,7 @@ lemma degree_Xⱼ (ℓ : ℕ) (h_ℓ : ℓ ≤ r) (j : Fin (2 ^ ℓ)) :
         have h_res: (if Nat.getBit x j = 1 then 2 ^ x else 0) = (Nat.getBit x j) * 2^x := by
           by_cases h: Nat.getBit x j = 1
           · simp only [h, if_true]; norm_num
-          · simp only [h, if_false]; push_neg at h;
+          · simp only [h, if_false]; push Not at h;
             have h_bit_x_j_eq_0: Nat.getBit x j = 0 := by
               have h_either_eq := Nat.getBit_eq_zero_or_one (k := x) (n := j)
               simp only [h, or_false] at h_either_eq
@@ -1377,17 +1385,11 @@ noncomputable def basisVectors (ℓ : Nat) (h_ℓ : ℓ ≤ r) :
     -- proof of coercion of `Xⱼ(X)` to `L⦃<2^ℓ⦄[X]`, i.e. `degree < 2^ℓ`
     apply Polynomial.mem_degreeLT.mpr
     rw [degree_Xⱼ 𝔽q β ℓ h_ℓ j]
-    change (j.val: WithBot ℕ) < ((2: WithBot ℕ) ^ ℓ)
-    norm_cast -- somehow `change` helps `norm_cast` to work better here
-    omega
+    apply WithBot.coe_lt_coe.mpr j.isLt
   ⟩
 
 /-- The vector space of coefficients for polynomials of degree < 2^ℓ. -/
 abbrev CoeffVecSpace (L : Type u) (ℓ : Nat) := Fin (2^ℓ) → L
-
-noncomputable instance (ℓ : Nat) : AddCommGroup (CoeffVecSpace L ℓ) := by
-  unfold CoeffVecSpace
-  infer_instance -- default additive group for `Fin (2^ℓ) → L`
 
 noncomputable instance finiteDimensionalCoeffVecSpace (ℓ : ℕ) :
   FiniteDimensional (K := L) (V := CoeffVecSpace L ℓ) := by
@@ -1398,7 +1400,10 @@ noncomputable instance finiteDimensionalCoeffVecSpace (ℓ : ℕ) :
 def toCoeffsVec (ℓ : Nat) : L⦃<2^ℓ⦄[X] →ₗ[L] CoeffVecSpace L ℓ where
   toFun := fun p => fun i => p.val.coeff i.val
   map_add' := fun p q => by ext i; simp [coeff_add]
-  map_smul' := fun c p => by ext i; simp [coeff_smul, smul_eq_mul]
+  map_smul' := fun c p => by
+    ext i
+    simp only [Pi.smul_apply, RingHom.id_apply, smul_eq_mul]
+    rw [Submodule.coe_smul, Polynomial.coeff_smul, smul_eq_mul]
 
 /-- The rows of a square lower-triangular matrix with
 non-zero diagonal entries are linearly independent. -/
@@ -1556,7 +1561,7 @@ noncomputable def polynomialFromNovelCoeffsF₂
         _ ≤ 0 + (Xⱼ 𝔽q β ℓ h_ℓ j).degree := by gcongr; exact Polynomial.degree_C_le
         _ = ↑j.val := by
           simp only [degree_Xⱼ 𝔽q β ℓ h_ℓ j, zero_add]; norm_cast
-        _ < ↑(2^ℓ) := by norm_cast; exact j.isLt
+        _ < ↑(2^ℓ) := WithBot.coe_lt_coe.mpr j.isLt
   ⟩
 
 omit h_Fq_char_prime in

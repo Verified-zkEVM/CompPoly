@@ -19,7 +19,7 @@ open CMvPolynomial
 
 section
 
-variable {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 @[simp]
 lemma map_add (a b : CMvPolynomial n R) :
@@ -117,7 +117,6 @@ lemma map_one : fromCMvPolynomial (1 : CMvPolynomial n R) = 1 := by
       simp only [mul_one, mul_zero] at this
       exact this
     intros x y; rw [this x, this y]
-
   split_ifs with g g' g'
   · rw [Nat.cast_one] at g; apply triv_lem g
   · rw [Nat.cast_one] at g; apply triv_lem g
@@ -133,7 +132,7 @@ lemma map_one : fromCMvPolynomial (1 : CMvPolynomial n R) = 1 := by
       unfold_projs; simp only [ExtTreeMap.empty_eq_emptyc, ExtTreeMap.get?_eq_getElem?,
         ExtTreeMap.getElem?_insert_self, Unlawful.zero_eq_zero, Option.getD_some]
     convert one_one_get₁
-  · have : CMvMonomial.ofFinsupp m ≠ CMvMonomial.zero := by
+  · have hne : CMvMonomial.ofFinsupp m ≠ CMvMonomial.zero := by
       unfold CMvMonomial.ofFinsupp CMvMonomial.zero
       intros h
       have {i} : (Vector.ofFn m).get i = (Vector.replicate n 0).get i := by
@@ -143,12 +142,10 @@ lemma map_one : fromCMvPolynomial (1 : CMvPolynomial n R) = 1 := by
       simp only [Finsupp.coe_mk]
       simp only [Vector.get_ofFn, Vector.get_replicate] at this
       exact this
-    rw [ExtTreeMap.get?_eq_getElem?, getElem?_neg]
-    simp only [Unlawful.zero_eq_zero, Option.getD_none]
-    unfold Unlawful.ofList
-    simp only [ExtTreeMap.ofList_singleton, ExtTreeMap.mem_insert, Std.compare_eq_iff_eq,
-      ExtTreeMap.not_mem_empty, or_false]
-    tauto
+    show ((Unlawful.ofList [(MonoR.C (1 : R) : MonoR n R)])[CMvMonomial.ofFinsupp m]?.getD 0 : R)
+      = 0
+    erw [ExtTreeMap.getElem?_ofList_of_contains_eq_false (by simp [hne])]
+    rfl
 
 attribute [local grind=] Unlawful.add Lawful.add Unlawful.mul Lawful.mul
 
@@ -176,7 +173,7 @@ instance {n : ℕ} : AddCommMonoid (CPoly.CMvPolynomial n R) where
     simp [add_comm]
 
 omit [BEq R] [LawfulBEq R] in
-lemma toList_pairs_monomial_coeff {β : Type} [AddCommMonoid β]
+lemma toList_pairs_monomial_coeff {β : Type*} [AddCommMonoid β]
     {t : Unlawful n R}
   {f : CMvMonomial n → R → β} :
   t.toList.map (fun term => f term.1 term.2) =
@@ -187,7 +184,7 @@ lemma toList_pairs_monomial_coeff {β : Type} [AddCommMonoid β]
   grind
 
 omit [BEq R] [LawfulBEq R] in
-lemma foldl_eq_sum {β : Type} [AddCommMonoid β]
+lemma foldl_eq_sum {β : Type*} [AddCommMonoid β]
     {t : CMvPolynomial n R}
     {f : CMvMonomial n → R → β} :
     ExtTreeMap.foldl (fun x m c => (f m c) + x) 0 t.1 =
@@ -258,8 +255,8 @@ lemma map_mul (a b : CMvPolynomial n R) :
     · rw [←m_in]
       simp only [compare_self]
       unfold MvPolynomial.coeff MonoidAlgebra.single
-      simp only [m_in, Finsupp.single_eq_same]
-      rfl
+      simp only [m_in, ite_true, Option.getD_some]
+      erw [Finsupp.single_eq_same]
     · simp only
         [ Std.compare_eq_iff_eq,
           ExtTreeMap.not_mem_empty,
@@ -267,18 +264,18 @@ lemma map_mul (a b : CMvPolynomial n R) :
           getElem?_neg
         ]
       unfold MvPolynomial.coeff MonoidAlgebra.single
-      rw [Finsupp.single_eq_of_ne (by symm; grind)]
+      erw [Finsupp.single_eq_of_ne (by symm; grind)]
       split
       next h contra =>
         exfalso; apply m_in; symm
         apply CMvMonomial.injective_ofFinsupp contra
       next h => simp_all only [Option.getD_none]
-  have : F₃ = fun σ x ↦ fromCMvPolynomial (F₁ σ x) := by
-    ext x
-    rw [fromCMvPolynomial_F₁_eq_F₃]
-  rw [this]
+  -- Lean 4.29 may beta-reduce F₃; fold it back then rewrite
+  change fromCMvPolynomial (Finsupp.sum (fromCMvPolynomial a) F₁) =
+    Finsupp.sum (fromCMvPolynomial a) F₃
+  rw [show F₃ = fun σ x ↦ fromCMvPolynomial (F₁ σ x) from by
+    ext x; rw [fromCMvPolynomial_F₁_eq_F₃]]
   rw [fromCMvPolynomial_sum_eq_sum_fromCMvPolynomial]
-  rfl
 
 instance {n : ℕ} : MonoidWithZero (CPoly.CMvPolynomial n R) where
   zero_mul a := by
@@ -316,7 +313,7 @@ instance {n : ℕ} : CommSemiring (CPoly.CMvPolynomial n R) where
 
 section CommRing
 
-variable {n : ℕ} {R : Type} [CommRing R] [BEq R] [LawfulBEq R]
+variable {n : ℕ} {R : Type*} [CommRing R] [BEq R] [LawfulBEq R]
 
 @[simp]
 lemma map_neg (a : CMvPolynomial n R) :
@@ -362,7 +359,7 @@ end
 
 namespace CMvPolynomial
 
-variable {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 /-- Ring equivalence between `CMvPolynomial 0 R` and `R`. -/
 noncomputable def isEmptyRingEquiv : CMvPolynomial 0 R ≃+* R :=

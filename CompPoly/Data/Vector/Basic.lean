@@ -89,7 +89,7 @@ lemma cons_empty_tail_eq_nil {α} (hd : α) (tl : Vector α 0) :
 theorem tail_cons {α} {n : ℕ} (hd : α) (tl : Vector α n) : (cons hd tl).tail = tl := by
   rw [cons, Vector.insertIdx]
   simp only [Nat.add_one_sub_one, Array.insertIdx_zero, tail_eq_cast_extract, extract_mk,
-    Array.extract_append, List.extract_toArray, List.extract_eq_drop_take, add_tsub_cancel_right,
+    Array.extract_append, List.extract_toArray, List.extract_eq_take_drop, add_tsub_cancel_right,
     List.drop_succ_cons, List.drop_nil, List.take_nil, List.size_toArray, List.length_cons,
     List.length_nil, tsub_self, Array.take_eq_extract, Array.empty_append, cast_mk, mk_eq,
     Array.extract_eq_self_iff, size_toArray, le_refl, and_self, or_true]

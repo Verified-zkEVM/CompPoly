@@ -1,7 +1,8 @@
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles
+Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles,
+  Natalie Klaus, Dimitris Mitsios
 -/
 import CompPoly.Univariate.Raw.Core
 
@@ -26,11 +27,16 @@ variable {S : Type*}
 
 /-- Evaluates a `CPolynomial.Raw` at `x : S` using a ring homomorphism `f : R →+* S`.
 
-  Computes `f(a₀) + f(a₁) * x + f(a₂) * x² + ...` where `aᵢ` are the coefficients.
-
-  TODO: define an efficient version of this with caching -/
+  Computes `f(a₀) + f(a₁) * x + f(a₂) * x² + ...` where `aᵢ` are the coefficients.  -/
 def eval₂ [Semiring R] [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial.Raw R) : S :=
   p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + f a * x ^ i) 0
+
+/-- Evaluates a `CPolynomial.Raw` at `x : S` using Horner's method.
+
+  Computes `f(aₙ) + x * (f(aₙ₋₁) + x * (... + x * f(a₀)))` via a right fold. -/
+@[inline, specialize]
+def eval₂Horner [Semiring R] [Semiring S] (f : R →+* S) (x : S) (p : CPolynomial.Raw R) : S :=
+  p.foldr (fun a acc => acc * x + f a) 0
 
 /-- Evaluates a `CPolynomial.Raw` at a given value -/
 @[inline, specialize]
@@ -87,10 +93,27 @@ end MulPowXDefs
 def mul [Semiring R] [BEq R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
   p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc.add <| (smul a q).mulPowX i) (mk #[])
 
-/-- Exponentiation of a `CPolynomial.Raw` by a natural number `n` via repeated multiplication. -/
+/-- Exponentiation of a `CPolynomial.Raw` by a natural number `n` via repeated multiplication.
+This is the specification; `powBySq` is the efficient O(log n) implementation. -/
 @[inline, specialize]
 def pow [Semiring R] [BEq R] (p : CPolynomial.Raw R) (n : Nat) : CPolynomial.Raw R :=
   (mul p)^[n] (C 1)
+
+/-- Exponentiation via repeated squaring: $ O(\log n) $ multiplications
+instead of $ O(n) $.
+
+For $ n > 0 $, computes $ p ^ n $ by recursing on $ n / 2 $:
+* If $ n $ is even: $ (p ^ {n/2})^2 $
+* If $ n $ is odd:  $ p \cdot (p ^ {n/2})^2 $
+-/
+@[inline, specialize]
+def powBySq [Semiring R] [BEq R] (p : CPolynomial.Raw R) : Nat → CPolynomial.Raw R
+  | 0 => C 1
+  | n + 1 =>
+    let half := powBySq p ((n + 1) / 2)
+    let sq := mul half half
+    if (n + 1) % 2 = 0 then sq else mul p sq
+  decreasing_by omega
 
 instance : Zero (CPolynomial.Raw R) := ⟨#[]⟩
 instance [One R] : One (CPolynomial.Raw R) := ⟨C 1⟩
