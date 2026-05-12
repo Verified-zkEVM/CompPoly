@@ -83,7 +83,9 @@ import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.BatchEval
 import CompPoly.Univariate.BatchEval.Context
+import CompPoly.Univariate.BatchEval.Correctness
 import CompPoly.Univariate.BatchEval.Naive
+import CompPoly.Univariate.BatchEval.SubproductTree
 import CompPoly.Univariate.Lagrange
 import CompPoly.Univariate.Linear
 import CompPoly.Univariate.NTT.BabyBear
