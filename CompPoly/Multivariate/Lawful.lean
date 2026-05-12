@@ -159,10 +159,31 @@ def mul [Mul R] [Add R] (p₁ p₂ : Lawful n R) : Lawful n R :=
 
 instance [Mul R] [Add R] [Zero R] : Mul (Lawful n R) := ⟨mul⟩
 
-/-- Polynomial exponentiation. -/
+/-- Polynomial exponentiation via repeated multiplication. `O(k)` multiplications.
+
+This is the specification; `npowBySq` is the efficient `O(log k)` implementation
+used by the `NatPow` instance once the equivalence with this naive form has been
+proven. -/
 def npow [NatCast R] [Add R] [Mul R] : ℕ → Lawful n R → Lawful n R
   | .zero  , _ => 1
   | .succ n, p => (npow n p) * p
+
+/-- Polynomial exponentiation via repeated squaring. `O(log k)` multiplications
+instead of `O(k)`.
+
+For `k > 0`, computes `p ^ k` by recursing on `k / 2`:
+* If `k` is even: `(p ^ (k / 2))²`
+* If `k` is odd:  `p · (p ^ (k / 2))²`
+
+Equivalent to `npow` (see `npowBySq_eq_npow`). -/
+@[inline, specialize]
+def npowBySq [NatCast R] [Add R] [Mul R] (p : Lawful n R) : ℕ → Lawful n R
+  | 0 => 1
+  | k + 1 =>
+    let half := npowBySq p ((k + 1) / 2)
+    let sq := half * half
+    if (k + 1) % 2 = 0 then sq else p * sq
+  decreasing_by omega
 
 instance [NatCast R] [Add R] [Mul R] : NatPow (Lawful n R) := ⟨fun e b ↦ npow b e⟩
 
