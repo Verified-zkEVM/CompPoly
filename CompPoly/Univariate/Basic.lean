@@ -703,6 +703,17 @@ def divByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomi
 def modByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
   ⟨(Raw.modByMonic p.val q.val).trim, Trim.isCanonical_trim (Raw.modByMonic p.val q.val)⟩
 
+/-- Remainder of `p` modulo a monic polynomial `q`, using a remainder-only implementation. -/
+def modByMonicFast [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
+  ⟨(Raw.modByMonicRemainderOnly p.val q.val).trim,
+    Trim.isCanonical_trim (Raw.modByMonicRemainderOnly p.val q.val)⟩
+
+/-- The remainder-only monic remainder agrees with the canonical monic remainder. -/
+theorem modByMonicFast_eq_modByMonic [Field R] [BEq R] [LawfulBEq R]
+    (p q : CPolynomial R) : modByMonicFast p q = modByMonic p q := by
+  apply CPolynomial.ext
+  simp [modByMonicFast, modByMonic, Raw.modByMonicRemainderOnly_eq_modByMonic]
+
 /-- Quotient of `p` by `q` (when `R` is a field). -/
 def div [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
   ⟨(Raw.div p.val q.val).trim, Trim.isCanonical_trim (Raw.div p.val q.val)⟩

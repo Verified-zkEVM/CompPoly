@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles,
   Natalie Klaus, Dimitris Mitsios
 -/
-import CompPoly.Univariate.Raw.Ops
+import CompPoly.Univariate.Raw.Division
 
 /-!
 # Raw Univariate Polynomial Proofs
@@ -996,6 +996,102 @@ lemma sub_coeff [LawfulBEq R] (p q : CPolynomial.Raw R) (i : ℕ) :
   exact sub_eq_add_neg (p.coeff i) (q.coeff i)
 
 end Ring
+
+section DivisionTheorems
+
+variable [Field R] [BEq R]
+
+lemma coeff_mul_X_pow [LawfulBEq R] (p : CPolynomial.Raw R) (n i : ℕ) :
+    (p * X ^ n).coeff i =
+      if n ≤ i ∧ i - n < p.size then p.coeff (i - n) else 0 := by
+  classical
+  rw [X_pow_eq_monomial_one, mul_coeff]
+  by_cases hn : n ≤ i
+  · have hmem : i - n ∈ Finset.range (i + 1) := by
+      simp only [Finset.mem_range]
+      omega
+    rw [Finset.sum_eq_single (i - n)]
+    · rw [coeff_monomial]
+      have hidx : n = i - (i - n) := by omega
+      by_cases hp : i - n < p.size
+      · rw [if_pos hidx, if_pos ⟨hn, hp⟩, mul_one]
+      · have hp' : p.size ≤ i - n := by omega
+        have hcoeff : p.coeff (i - n) = 0 := by
+          simp [coeff, Array.getElem?_eq_none hp']
+        rw [if_pos hidx, if_neg (by intro h; exact hp h.2), mul_one]
+        exact hcoeff
+    · intro b hbmem hb
+      rw [coeff_monomial]
+      have hidx : n ≠ i - b := by
+        intro h
+        have hb_le : b ≤ i := Nat.lt_succ_iff.mp (Finset.mem_range.mp hbmem)
+        have : b = i - n := by omega
+        exact hb this
+      simp [hidx]
+    · intro h
+      exact (h hmem).elim
+  · have hsum :
+        (∑ x ∈ Finset.range (i + 1), p.coeff x * (monomial n (1 : R)).coeff (i - x)) =
+          0 := by
+      apply Finset.sum_eq_zero
+      intro b _
+      rw [coeff_monomial]
+      have hidx : n ≠ i - b := by
+        intro h
+        have : n ≤ i := by omega
+        exact hn this
+      simp [hidx]
+    rw [hsum]
+    simp [hn]
+
+lemma coeff_C_mul_X_pow [LawfulBEq R] (scale : R) (p : CPolynomial.Raw R) (n i : ℕ) :
+    (C scale * (p * X ^ n)).coeff i =
+      if n ≤ i ∧ i - n < p.size then scale * p.coeff (i - n) else 0 := by
+  rw [C_mul_eq_smul_trim, Trim.coeff_eq_coeff, smul_coeff, coeff_mul_X_pow]
+  split_ifs <;> simp
+
+lemma subScaledShift_eq_sub_C_mul_X_pow [LawfulBEq R]
+    (p q : CPolynomial.Raw R) (scale : R) (shift : ℕ)
+    (hsize : shift + q.size ≤ p.size) :
+    subScaledShift p q scale shift = (p - C scale * (q * X ^ shift)).trim := by
+  apply Trim.eq_of_equiv
+  intro i
+  change (CPolynomial.Raw.mk (Array.ofFn fun j : Fin p.size =>
+      let i := j.val - shift
+      let subtractCoeff := if shift ≤ j.val ∧ i < q.size then scale * q.coeff i else 0
+      p.coeff j.val - subtractCoeff)).coeff i =
+    (p - C scale * (q * X ^ shift)).coeff i
+  rw [sub_coeff, coeff_C_mul_X_pow]
+  by_cases hi : i < p.size
+  · simp [coeff, hi]
+  · have hnot : ¬(shift ≤ i ∧ i - shift < q.size) := by omega
+    simp [coeff, hi, hnot]
+
+lemma modByMonicRemainderOnly_go_eq_divModByMonicAux_go_snd [LawfulBEq R] :
+    ∀ (n : ℕ) (p q : CPolynomial.Raw R),
+      modByMonicRemainderOnly.go n p q = (divModByMonicAux.go n p q).2 := by
+  intro n
+  induction n with
+  | zero =>
+      intro p q
+      rfl
+  | succ n ih =>
+      intro p q
+      unfold modByMonicRemainderOnly.go divModByMonicAux.go
+      by_cases hsize : p.size < q.size
+      · simp [hsize]
+      · simp [hsize]
+        have hle : p.size - q.size + q.size ≤ p.size := by omega
+        rw [subScaledShift_eq_sub_C_mul_X_pow p q p.leadingCoeff (p.size - q.size) hle]
+        exact ih _ _
+
+/-- The remainder-only raw monic remainder agrees with the canonical raw monic remainder. -/
+theorem modByMonicRemainderOnly_eq_modByMonic [LawfulBEq R]
+    (p q : CPolynomial.Raw R) :
+    modByMonicRemainderOnly p q = modByMonic p q := by
+  exact modByMonicRemainderOnly_go_eq_divModByMonicAux_go_snd p.size p q
+
+end DivisionTheorems
 
 end Operations
 

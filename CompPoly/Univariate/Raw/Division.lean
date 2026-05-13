@@ -48,6 +48,37 @@ def modByMonic [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
     CPolynomial.Raw R :=
   (divModByMonicAux p q).2
 
+/-- Subtract `scale * q * X^shift` from `p` without using general polynomial multiplication. -/
+@[inline, specialize]
+def subScaledShift [Field R] (p q : CPolynomial.Raw R) (scale : R) (shift : Nat) :
+    CPolynomial.Raw R :=
+  let coeffs := Array.ofFn (n := p.size) fun j : Fin p.size =>
+    let i := j.val - shift
+    let subtractCoeff := if shift ≤ j.val ∧ i < q.size then scale * q.coeff i else 0
+    p.coeff j.val - subtractCoeff
+  (CPolynomial.Raw.mk coeffs).trim
+
+/-- Remainder-only long division by a monic polynomial.
+
+Unlike `modByMonic`, this does not compute the quotient and avoids the general
+polynomial multiplications used by each cancellation step. It is intended as an
+executable implementation for the canonical `modByMonic` specification.
+-/
+@[inline, specialize]
+def modByMonicRemainderOnly [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
+    CPolynomial.Raw R :=
+  go p.size p q
+where
+  go : Nat → CPolynomial.Raw R → CPolynomial.Raw R → CPolynomial.Raw R
+  | 0, p, _ => p
+  | n + 1, p, q =>
+      if p.size < q.size then
+        p
+      else
+        let k := p.size - q.size
+        let p' := subScaledShift p q p.leadingCoeff k
+        go n p' q
+
 /-- Division of two `CPolynomial.Raw`s. -/
 def div [Field R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
   (C (q.leadingCoeff)⁻¹ • p).divByMonic (C (q.leadingCoeff)⁻¹ * q)
