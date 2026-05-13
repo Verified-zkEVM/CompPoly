@@ -337,6 +337,17 @@ wraparound and has no product-correctness guarantee.
   let c := Inverse.inverseImpl D cHat
   (Domain.truncate (Domain.requiredLength p q) c).trim
 
+/--
+Safe NTT-based multiplication wrapper.
+
+This computes with `fastMulImpl`, but requires the caller to provide the
+`Domain.fits D p q` proof at the call site.
+-/
+@[inline] def safeFastMul
+    (D : Domain R) (p q : CPolynomial.Raw R) (_hfit : Domain.fits D p q) :
+    CPolynomial.Raw R :=
+  fastMulImpl D p q
+
 omit [LawfulBEq R] in
 theorem fastMulImpl_correct (D : Domain R) (p q : CPolynomial.Raw R) :
     fastMulImpl D p q = fastMulSpec D p q := by
@@ -397,6 +408,16 @@ theorem fastMulImpl_eq_mul (D : Domain R) (p q : CPolynomial.Raw R)
   rw[fastMulImpl_correct]
   rw[fastMulSpec_eq_mul]
   exact hfit
+
+/--
+The safe wrapper is equivalent to ordinary raw-polynomial multiplication.
+
+There are no extra assumptions because the required `Domain.fits D p q` proof is
+already an argument of `safeFastMul`.
+-/
+theorem safeFastMul_eq_mul (D : Domain R) (p q : CPolynomial.Raw R)
+    (hfit : Domain.fits D p q) : safeFastMul D p q hfit = p * q := by
+  exact fastMulImpl_eq_mul D p q hfit
 
 end RawMul
 
