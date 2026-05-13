@@ -71,7 +71,7 @@ Our [linting script](`./scripts/lint-style.sh`) helps enforce some aspects of th
 * **Acronyms**: Treat as words (e.g., `HtmlParser` not `HTMLParser`).
 * **Prop-valued Classes**: Use `UpperCamelCase`. If the class is an adjective, use the `Is` prefix (e.g., `IsCompact`, `IsPrime`). If it is a noun, no prefix is needed (e.g., `Group`, `TopologicalSpace`).
 * **Spelling**: Use American English for declaration names (e.g., `analyze` not `analyse`, `color` not `colour`).
-* **Dot Notation**: Use namespaces to group related definitions (e.g., `List.map`). This enables dot notation (e.g., `l.map f`) when the type is known. Use manual dot notation for logical connectives and equality (e.g., `And.intro`, `Eq.refl`, `Iff.mp`).
+* **Dot Notation**: Use namespaces to group related definitions (e.g., `List.map`). This enables dot notation (e.g., `l.map f`) when the type is known. Use manual dot notation for logical connectives and equality (e.g., `And.intro`, `Eq.refl`, `Iff.mp`). *Preferred but not enforced — the merged codebase uses both `h.symm` and `Eq.symm h` forms freely; flag only when truly ambiguous.*
 * **Axiomatic Names**: Use standard names for properties: `refl`, `symm`, `trans`, `comm`, `assoc`, `inj` (injective), `congr`.
 * **Identifiers**: 
     * Use namespaces for logical properties (e.g., `And.comm`, `Or.intro`).
@@ -164,12 +164,12 @@ When translating theorem statements into names, we use standard mappings for sym
 * **Operators**: Put spaces on both sides of `:`, `:=`, and infix operators. Place them before a line break rather than at the start of the next line.
 * **Hypotheses**: Prefer placing hypotheses to the left of the colon (e.g., `(h : P) : Q`) rather than using arrows (`: P → Q`) when the proof introduces them.
 * **Functions**: Prefer `fun x ↦ ...` over `λ x, ...`.
-* **Instances**: Use the `where` syntax for defining instances and structures.
+* **Instances**: Use the `where` syntax for defining instances and structures. *Preferred but not enforced — the merged codebase uses both `instance ... := ⟨...⟩` and `instance ... where` forms freely.*
 * **Binders**: Use a space after binders (e.g., `∀ x,` not `∀x,`).
 * **Tactic Mode**: Place `by` at the end of the line preceding the tactic block. Indent the tactic block.
 * **Calculations**: In `calc` blocks, align relations.
 * **Empty Lines**: Avoid empty lines *inside* definitions or proofs.
-* **Delimiters**: Avoid parentheses where possible. Use `<|` (pipe left) and `|>` (pipe right) to reduce nesting. Avoid using `;` to separate tactics unless writing short, single-line tactic sequences.
+* **Delimiters**: Avoid parentheses where possible. Use `<|` (pipe left) and `|>` (pipe right) to reduce nesting. Avoid using `;` to separate tactics unless writing short, single-line tactic sequences. *The `<|` / `|>` preference is preferred but not enforced — the merged codebase uses both styles freely. The `;` guidance still applies.*
 * **Error Messages**: In custom error or trace messages, surround interpolated data with backticks (inline) or place it on a new indented line.
 
 ### Normal Forms
