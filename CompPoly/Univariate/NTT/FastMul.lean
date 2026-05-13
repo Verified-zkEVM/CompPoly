@@ -296,57 +296,54 @@ private theorem pointwise_forwardSpec_eq_forwardSpec_mul_of_natDegree_lt
     simp [pointwiseMul]
     rw [hpget, hqget, hpqget, raw_eval_mul]
 
-/-- Spec pipeline for NTT-based multiplication. -/
+namespace Raw
+
+/--
+Raw spec pipeline for NTT-based multiplication.
+
+This is the low-level array computation and deliberately does not trim the
+output.
+-/
 @[inline] def fastMulSpec (D : Domain R) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
   let pHat := Forward.forwardSpec D p
   let qHat := Forward.forwardSpec D q
   let cHat := pointwiseMul D pHat qHat
   let c := Inverse.inverseSpec D cHat
-  (Domain.truncate (Domain.requiredLength p q) c).trim
+  Domain.truncate (Domain.requiredLength p q) c
 
+omit [LawfulBEq R] in
 private theorem fastMulSpec_coeff_eq_zero_of_left_trim_size_zero
     (D : Domain R) (p q : CPolynomial.Raw R) (hp : p.trim.size = 0) (i : Nat) :
     (fastMulSpec D p q).coeff i = 0 := by
   rw [fastMulSpec]
-  rw [CPolynomial.Raw.Trim.coeff_eq_coeff]
   rw [coeff_truncate]
   rw [Domain.requiredLength_eq_zero_of_left_trim_size_zero p q hp]
   simp
 
+omit [LawfulBEq R] in
 private theorem fastMulSpec_coeff_eq_zero_of_right_trim_size_zero
     (D : Domain R) (p q : CPolynomial.Raw R) (hq : q.trim.size = 0) (i : Nat) :
     (fastMulSpec D p q).coeff i = 0 := by
   rw [fastMulSpec]
-  rw [CPolynomial.Raw.Trim.coeff_eq_coeff]
   rw [coeff_truncate]
   rw [Domain.requiredLength_eq_zero_of_right_trim_size_zero p q hq]
   simp
 
 /--
-Implementation pipeline for NTT-based multiplication.
+Raw implementation pipeline for NTT-based multiplication.
 
 Correctness as ordinary polynomial multiplication requires
-`Domain.fits D p q`; see `fastMulImpl_eq_mul`. Without this precondition, this
-function only exposes the raw NTT pipeline result, which may include cyclic
-wraparound and has no product-correctness guarantee.
+`Domain.fits D p q`; see `fastMulImpl_trim_eq_mul`. Without this precondition,
+this function only exposes the raw NTT pipeline result, which may include cyclic
+wraparound and has no product-correctness guarantee. The output is not trimmed;
+use `FastMul.fastMulImpl` for the canonical public API.
 -/
 @[inline] def fastMulImpl (D : Domain R) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
   let pHat := Forward.forwardImpl D p
   let qHat := Forward.forwardImpl D q
   let cHat := pointwiseMul D pHat qHat
   let c := Inverse.inverseImpl D cHat
-  (Domain.truncate (Domain.requiredLength p q) c).trim
-
-/--
-Safe NTT-based multiplication wrapper.
-
-This computes with `fastMulImpl`, but requires the caller to provide the
-`Domain.fits D p q` proof at the call site.
--/
-@[inline] def safeFastMul
-    (D : Domain R) (p q : CPolynomial.Raw R) (_hfit : Domain.fits D p q) :
-    CPolynomial.Raw R :=
-  fastMulImpl D p q
+  Domain.truncate (Domain.requiredLength p q) c
 
 omit [LawfulBEq R] in
 theorem fastMulImpl_correct (D : Domain R) (p q : CPolynomial.Raw R) :
@@ -379,7 +376,6 @@ theorem fastMulSpec_coeff (D : Domain R) (p q : CPolynomial.Raw R)
         refine lt_of_le_of_lt Polynomial.natDegree_mul_le ?_
         omega
       rw [fastMulSpec]
-      rw [CPolynomial.Raw.Trim.coeff_eq_coeff]
       rw [coeff_truncate]
       by_cases hi : i < Domain.requiredLength p q
       · rw [if_pos hi]
@@ -393,30 +389,75 @@ theorem fastMulSpec_coeff (D : Domain R) (p q : CPolynomial.Raw R)
         exact (mul_coeff_eq_zero_of_requiredLength_le p q hppos hqpos
           (Nat.le_of_not_lt hi)).symm
 
-theorem fastMulSpec_eq_mul (D : Domain R) (p q : CPolynomial.Raw R)
-    (hfit : Domain.fits D p q) : fastMulSpec D p q = p * q := by
-  have hp : (fastMulSpec D p q).trim = fastMulSpec D p q := by
-    simp [fastMulSpec, CPolynomial.Raw.Trim.trim_twice]
+theorem fastMulSpec_trim_eq_mul (D : Domain R) (p q : CPolynomial.Raw R)
+    (hfit : Domain.fits D p q) : (fastMulSpec D p q).trim = p * q := by
+  have hp : (fastMulSpec D p q).trim.trim = (fastMulSpec D p q).trim := by
+    exact CPolynomial.Raw.Trim.trim_twice (fastMulSpec D p q)
   have hq : (p * q).trim = p * q := by
     simpa using (CPolynomial.Raw.mul_is_trimmed (p := p) (q := q))
-  refine CPolynomial.Raw.Trim.canonical_ext (p := fastMulSpec D p q) (q := p * q) hp hq ?_
+  refine CPolynomial.Raw.Trim.canonical_ext (p := (fastMulSpec D p q).trim) (q := p * q) hp hq ?_
   intro i
+  rw [CPolynomial.Raw.Trim.coeff_eq_coeff]
   exact fastMulSpec_coeff D p q hfit i
 
-theorem fastMulImpl_eq_mul (D : Domain R) (p q : CPolynomial.Raw R)
-    (hfit : Domain.fits D p q) : fastMulImpl D p q = p * q := by
-  rw[fastMulImpl_correct]
-  rw[fastMulSpec_eq_mul]
+theorem fastMulImpl_trim_eq_mul (D : Domain R) (p q : CPolynomial.Raw R)
+    (hfit : Domain.fits D p q) : (fastMulImpl D p q).trim = p * q := by
+  rw [fastMulImpl_correct]
+  rw [fastMulSpec_trim_eq_mul]
   exact hfit
 
-/--
-The safe wrapper is equivalent to ordinary raw-polynomial multiplication.
+end Raw
 
-There are no extra assumptions because the required `Domain.fits D p q` proof is
-already an argument of `safeFastMul`.
+/-- Spec pipeline for NTT-based multiplication as a canonical polynomial. -/
+@[inline] def fastMulSpec (D : Domain R) (p q : CPolynomial R) : CPolynomial R :=
+  ⟨(Raw.fastMulSpec D p.val q.val).trim,
+    CPolynomial.Raw.Trim.isCanonical_trim (Raw.fastMulSpec D p.val q.val)⟩
+
+/--
+Implementation pipeline for NTT-based multiplication as a canonical polynomial.
+
+Correctness as ordinary polynomial multiplication requires
+`Domain.fits D p.val q.val`; see `fastMulImpl_eq_mul`. Without this precondition,
+the raw NTT computation may include cyclic wraparound before canonicalization.
 -/
-theorem safeFastMul_eq_mul (D : Domain R) (p q : CPolynomial.Raw R)
-    (hfit : Domain.fits D p q) : safeFastMul D p q hfit = p * q := by
+@[inline] def fastMulImpl (D : Domain R) (p q : CPolynomial R) : CPolynomial R :=
+  ⟨(Raw.fastMulImpl D p.val q.val).trim,
+    CPolynomial.Raw.Trim.isCanonical_trim (Raw.fastMulImpl D p.val q.val)⟩
+
+/--
+Safe NTT-based multiplication wrapper.
+
+This computes with `fastMulImpl`, but requires the caller to provide the
+`Domain.fits D p.val q.val` proof at the call site.
+-/
+@[inline] def safeFastMul
+    (D : Domain R) (p q : CPolynomial R) (_hfit : Domain.fits D p.val q.val) :
+    CPolynomial R :=
+  fastMulImpl D p q
+
+theorem fastMulImpl_correct (D : Domain R) (p q : CPolynomial R) :
+    fastMulImpl D p q = fastMulSpec D p q := by
+  apply CPolynomial.ext
+  simp [fastMulImpl, fastMulSpec, Raw.fastMulImpl_correct]
+
+theorem fastMulSpec_eq_mul (D : Domain R) (p q : CPolynomial R)
+    (hfit : Domain.fits D p.val q.val) : fastMulSpec D p q = p * q := by
+  apply CPolynomial.ext
+  exact Raw.fastMulSpec_trim_eq_mul D p.val q.val hfit
+
+theorem fastMulImpl_eq_mul (D : Domain R) (p q : CPolynomial R)
+    (hfit : Domain.fits D p.val q.val) : fastMulImpl D p q = p * q := by
+  rw [fastMulImpl_correct]
+  exact fastMulSpec_eq_mul D p q hfit
+
+/--
+The safe wrapper is equivalent to ordinary canonical polynomial multiplication.
+
+There are no extra assumptions because the required `Domain.fits D p.val q.val`
+proof is already an argument of `safeFastMul`.
+-/
+theorem safeFastMul_eq_mul (D : Domain R) (p q : CPolynomial R)
+    (hfit : Domain.fits D p.val q.val) : safeFastMul D p q hfit = p * q := by
   exact fastMulImpl_eq_mul D p q hfit
 
 end RawMul

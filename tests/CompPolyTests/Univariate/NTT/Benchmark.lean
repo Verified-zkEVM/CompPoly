@@ -102,7 +102,7 @@ def timeRepeated {α : Type} (reps : Nat) (f : Unit → α) : IO (Nat × α) := 
     let some benchDomain := bestDomainForLength? reqLen
       | throw <| IO.userError
           s!"no KoalaBear domain supports required length {reqLen} for size {n}"
-    let (nttMs, nttRes) ← timeRepeated reps (fun _ => FastMul.fastMulImpl benchDomain p q)
+    let (nttMs, nttRes) ← timeRepeated reps (fun _ => FastMul.Raw.fastMulImpl benchDomain p q)
     let (rawMs, rawRes) ← timeRepeated reps (fun _ => p * q)
     unless nttRes = rawRes do
       throw <| IO.userError s!"benchmark mismatch at size {n}"
