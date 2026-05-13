@@ -104,6 +104,9 @@
               - "Use manual dot notation for equality" — both `h.symm` and `Eq.symm h` are accepted.
               - "Use <| / |> to reduce nesting" — both pipe-style and parens are accepted.
 
+            File scope of style rules:
+              - The 100-character line-length rule applies ONLY to `.lean` source files. Do NOT flag long lines in `.md`, `.yml`, `.toml`, or any other non-Lean files. The enforced linter (`scripts/lint-style.py`) only processes `.lean` files.
+
             Review scope:
               - Flag ONLY lines introduced by this PR (the diff). Do not comment on pre-existing code that this PR did not modify.
             PRECEDENT

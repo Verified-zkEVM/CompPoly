@@ -150,7 +150,7 @@ When translating theorem statements into names, we use standard mappings for sym
 
 ### Syntax and Formatting
 
-* **Line Length**: Keep lines under 100 characters.
+* **Line Length**: Keep `.lean` source lines under 100 characters. (Markdown and CI / workflow files are not subject to this rule — the enforced linter at `scripts/lint-style.py` only processes `.lean` files.)
 * **Indentation**: Use 2 spaces for indentation.
 * **Headers**: Use standard file headers including copyright, license (Apache 2.0), and authors.
   ```lean
