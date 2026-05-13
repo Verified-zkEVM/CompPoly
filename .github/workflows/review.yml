@@ -82,6 +82,41 @@
             ' <<< "$COMMENT_BODY"
           shell: bash
 
+        - name: Build review instructions
+          id: build_instructions
+          env:
+            USER_COMMENTS: ${{ steps.get_args.outputs.additional_comments }}
+          run: |
+            EOF=$(openssl rand -hex 8)
+            {
+              echo "final<<${EOF}"
+              cat <<'PRECEDENT'
+            Project precedent (CompPoly-specific conventions that override generic CONTRIBUTING.md rules — do NOT flag these as violations):
+
+            Variable naming overrides (algebraic context):
+              - Algebraic carrier types use R, M, G, F (rings, modules, groups, fields), not α, β.
+              - Polynomial-typed values use p, q (e.g. CPolynomial, CMvPolynomial, CMlPolynomial), not just predicates.
+              - Indices into vectors, lists, and Fin n use i, j, k regardless of underlying numeric type.
+              - In algebraic lemma names that mirror Mathlib (e.g. pow_add, npow_add), exponent variables may be a, b.
+
+            Style rules marked "preferred but not enforced" in CONTRIBUTING.md (the merged codebase uses both styles freely — do not flag):
+              - "Use the where syntax for instances" — both `instance ... := ⟨...⟩` and `instance ... where` are accepted.
+              - "Use manual dot notation for equality" — both `h.symm` and `Eq.symm h` are accepted.
+              - "Use <| / |> to reduce nesting" — both pipe-style and parens are accepted.
+
+            File scope of style rules:
+              - The 100-character line-length rule applies ONLY to `.lean` source files. Do NOT flag long lines in `.md`, `.yml`, `.toml`, or any other non-Lean files. The enforced linter (`scripts/lint-style.py`) only processes `.lean` files.
+
+            Review scope:
+              - Flag ONLY lines introduced by this PR (the diff). Do not comment on pre-existing code that this PR did not modify.
+            PRECEDENT
+              if [ -n "${USER_COMMENTS}" ]; then
+                printf '\n\nUser-supplied additional context:\n%s\n' "${USER_COMMENTS}"
+              fi
+              echo "${EOF}"
+            } >> $GITHUB_OUTPUT
+          shell: bash
+
         - uses: alexanderlhicks/lean-review-workflow@main
           with:
             github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -91,5 +126,5 @@
             pr_number: ${{ github.event.issue.number || github.event.pull_request.number }}
             external_refs: "${{ steps.get_args.outputs.external_refs }}"
             repo_context_refs: "${{ steps.get_args.outputs.repo_context_refs }}"
-            additional_comments: "${{ steps.get_args.outputs.additional_comments }}"
+            additional_comments: "${{ steps.build_instructions.outputs.final }}"
 
