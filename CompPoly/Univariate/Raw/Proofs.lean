@@ -1,7 +1,8 @@
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles
+Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles,
+  Natalie Klaus, Dimitris Mitsios
 -/
 import CompPoly.Univariate.Raw.Ops
 
@@ -544,7 +545,7 @@ lemma equiv_mul_one [LawfulBEq R] (p : CPolynomial.Raw R) : Trim.equiv (p * 1) p
       · simp +decide
         conv => rw [ ← Array.toList_zipIdx ]
         conv => rw [ ← Array.toList_map ]
-        exact Eq.symm Array.sum_eq_sum_toList)
+        exact Eq.symm Array.sum_toList)
     exact (by exact mul_one_unwrap p ▸ coeff_sum p i ▸ rfl)
   exact congrFun (h_mul_one p)
 
@@ -905,6 +906,34 @@ protected theorem mul_assoc [LawfulBEq R] (p q r : CPolynomial.Raw R) :
 
 end MulTheorems
 
+section EvalTheorems
+
+variable [Semiring S]
+
+omit [BEq R] in
+private lemma foldl_zipIdx_eq_foldr_pow_k
+    (f : R →+* S) (x : S) (init : S) (k : Nat) (l : List R) :
+    List.foldl (fun acc a => acc + (f a.1) * x ^ a.2) init (l.zipIdx k) =
+      List.foldr (fun a acc => acc * x + f a) 0 l * x ^ k + init := by
+    induction l generalizing init k with
+    | nil => simp
+    | cons head tail tail_ih =>
+           simp only [List.foldr_cons, List.zipIdx_cons, List.foldl_cons]
+           rw [tail_ih]
+           rw [add_mul, mul_assoc, ← pow_succ', _root_.add_comm init, _root_.add_assoc]
+
+omit [BEq R] in
+/-- Horner evaluation agrees with the sum-of-powers evaluation. -/
+theorem eval₂Horner_eq_eval₂
+    (f : R →+* S) (x : S) (p : CPolynomial.Raw R) :
+    eval₂Horner f x p = eval₂ f x p := by
+    unfold eval₂ eval₂Horner
+    rw [← Array.foldl_toList, ← Array.foldr_toList, Array.toList_zipIdx]
+    have := foldl_zipIdx_eq_foldr_pow_k f x 0 0 p.toList
+    simpa using this.symm
+
+end EvalTheorems
+
 end Semiring
 
 section CommutativeSemiring
@@ -979,6 +1008,49 @@ instance [LawfulBEq R] : AddCommSemigroup (CPolynomial.Raw R) where
   add_comm := add_comm
 
 end AddCommSemigroup
+
+section RepeatedSquaring
+
+variable [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+
+/-- `pow` preserves trimming (Raw-level version). -/
+lemma pow_is_trimmed (p : CPolynomial.Raw R) (n : ℕ) :
+    (p ^ n).trim = p ^ n := by
+  induction n with
+  | zero => exact Trim.push_trim #[] 1 one_ne_zero
+  | succ n ih => rw [pow_succ]; exact mul_is_trimmed p (p ^ n)
+
+/-- Additive law for exponentiation: $ p ^ {a + b} = p ^ a \cdot p ^ b $. -/
+theorem pow_add (p : CPolynomial.Raw R) (a b : ℕ) :
+    p ^ (a + b) = p ^ a * p ^ b := by
+  induction a with
+  | zero =>
+    simp only [Nat.zero_add, pow_zero]
+    show p ^ b = C 1 * p ^ b
+    rw [show (C 1 : CPolynomial.Raw R) = 1 from rfl, one_mul_trim, pow_is_trimmed]
+  | succ n ih =>
+    rw [Nat.succ_add, pow_succ, ih, pow_succ, Raw.mul_assoc]
+
+omit [LawfulBEq R] [Nontrivial R] in
+private theorem mul_eq_hmul (a b : CPolynomial.Raw R) : a.mul b = a * b := rfl
+
+/-- `powBySq` agrees with `pow` (repeated squaring = repeated multiplication). -/
+theorem powBySq_eq_pow (p : CPolynomial.Raw R) : ∀ n : ℕ, powBySq p n = p ^ n
+  | 0 => by unfold powBySq; exact (pow_zero p).symm
+  | n + 1 => by
+    unfold powBySq
+    have ih : powBySq p ((n + 1) / 2) = p ^ ((n + 1) / 2) :=
+      powBySq_eq_pow p ((n + 1) / 2)
+    simp only [ih, mul_eq_hmul, ← pow_add]
+    by_cases heven : (n + 1) % 2 = 0
+    · simp only [heven, ↓reduceIte]
+      congr 1; omega
+    · simp only [heven, ↓reduceIte, ← pow_succ]
+      congr 1; omega
+termination_by n => n
+decreasing_by omega
+
+end RepeatedSquaring
 
 end CPolynomial.Raw
 

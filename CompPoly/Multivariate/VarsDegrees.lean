@@ -18,7 +18,7 @@ namespace CPoly
 
 open CMvPolynomial
 
-variable {n : ℕ} {R : Type}
+variable {n : ℕ} {R : Type*}
 
 /-- `i ∈ p.vars` iff `0 < p.degreeOf i`. -/
 @[simp]

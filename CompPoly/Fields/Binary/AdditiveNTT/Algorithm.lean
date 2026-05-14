@@ -100,7 +100,7 @@ lemma evaluationPointω_eq_twiddleFactor_of_div_2 (i : Fin ℓ) (x : Fin (2 ^ (�
   simp only [Nat.getBit, Nat.shiftRight_zero, Nat.and_one_is_mod]
   by_cases h_lsb_of_x_eq_0 : x.val % 2 = 0
   · simp only [h_lsb_of_x_eq_0, zero_ne_one, ↓reduceIte, Nat.cast_zero, zero_mul]
-  · push_neg at h_lsb_of_x_eq_0
+  · push Not at h_lsb_of_x_eq_0
     simp only [ne_eq, Nat.mod_two_not_eq_zero] at h_lsb_of_x_eq_0
     simp only [h_lsb_of_x_eq_0, ↓reduceIte, Nat.cast_one, one_mul]
 
@@ -159,7 +159,7 @@ lemma eval_point_ω_eq_next_twiddleFactor_comp_qmap
     conv_rhs => rw [h_0_is_algebra_map]
     have h_res := qMap_eval_𝔽q_eq_0 𝔽q β (i := ⟨i, by omega⟩) (c := 0)
     rw [h_res]
-  · push_neg at h_bit_of_x_eq_0
+  · push Not at h_bit_of_x_eq_0
     have h_bit_lt_2 := Nat.getBit_lt_2 (k := x1) (n := x)
     have bit_eq_1 : Nat.getBit x1 x = 1 := by
       interval_cases Nat.getBit x1 x

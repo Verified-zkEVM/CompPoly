@@ -38,7 +38,7 @@ def hli_level_diff_0 (l : ℕ) :
       smul_eq_mul, Finset.sum_singleton] at hg -- hg : g 0 = 0 ∨ 1 = 0
     have h_one_ne_zero : (1 : BTField l) ≠ (0 : BTField l) := by
       exact BTFieldNeZero1 (k:=l).out
-    simp only [BTField, BTFieldIsField, Fin.isValue] at hg
+    simp only [BTField, Fin.isValue] at hg
     rw [Subsingleton.elim j 0] -- j must be 0
     rw [hg.symm]
     exact Eq.symm (MulOneClass.mul_one (g 0))
@@ -50,7 +50,7 @@ def hli_level_diff_0 (l : ℕ) :
     rw [Ideal.submodule_span_eq]
     rw [Ideal.span_singleton_one]
 
-def BTField.isScalarTower_succ_right (l r : ℕ) (h_le : l ≤ r) :=
+@[reducible] def BTField.isScalarTower_succ_right (l r : ℕ) (h_le : l ≤ r) :=
   instAlgebraTowerNatBTField.toIsScalarTower (i:=l) (j:=r) (k:=r+1)
   (h1:=by omega) (h2:=by omega)
 
@@ -126,6 +126,7 @@ theorem BTField.PowerBasis.dim_of_eq_rec
   subst h_r
   rfl
 
+set_option backward.isDefEq.respectTransparency false in
 @[simp]
 theorem PowerBasis.cast_basis_succ_of_eq_rec_apply
     (r1 r : ℕ) (h_r : r = r1 + 1)
@@ -145,7 +146,7 @@ theorem PowerBasis.cast_basis_succ_of_eq_rec_apply
 
     have h_pb'_dim : bCast.dim = 2 := by
       dsimp [bCast]
-      rw [BTField.PowerBasis.dim_of_eq_rec (r1:=r1) (r:=r) (h_r:=h_r) (b:=b)]
+      erw [BTField.PowerBasis.dim_of_eq_rec (r1:=r1) (r:=r) (h_r:=h_r) (b:=b)]
       exact h_pb_dim
 
     have h_pb_type_eq : Basis (Fin bCast.dim) (BTField r1) (BTField r) =
@@ -159,8 +160,12 @@ theorem PowerBasis.cast_basis_succ_of_eq_rec_apply
     left k = right := by
   -- The proof of the theorem itself remains simple.
   subst h_r
-  simp only [binaryTowerAlgebra_id,
-    Algebra.algebraMap_self, PowerBasis.coe_basis, Fin.val_cast, RingHom.id_apply]
+  simp only [PowerBasis.coe_basis, Fin.val_cast]
+  -- algebraMap from BTField (r1+1) to itself is identity, but the instance is binaryAlgebraTower
+  -- which simp can't rewrite. Use erw to bridge the instance gap.
+  conv_rhs => erw [show @algebraMap _ _ _ _ (binaryAlgebraTower (by omega : r1 + 1 ≤ r1 + 1))
+    ((powerBasisSucc r1).gen ^ (k : ℕ)) = (powerBasisSucc r1).gen ^ (k : ℕ) from by
+    erw [binaryTowerAlgebra_id (rfl : r1 + 1 = r1 + 1)]; rfl]
   rw [BTField.Basis_cast_index_apply (h_eq:=by exact powerBasisSucc_dim r1) (h_le:=by omega)]
   simp only [PowerBasis.coe_basis, Fin.val_cast]
 
@@ -177,7 +182,8 @@ lemma algebraMap_𝕏_eq_of_index_eq (r k m : ℕ) (h_k_le : k + 1 ≤ r) (h_m_l
 The basis element at index `j` is the product of the tower generators at
 the ON bits in binary representation of `j`.
 -/
-set_option maxHeartbeats 350000
+set_option maxHeartbeats 800000
+set_option backward.isDefEq.respectTransparency false in
 theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀ (j : Fin (2  ^ (r - l))),
     multilinearBasis (l:=l) (r:=r) (h_le:=h_le) j =
     (Finset.univ : Finset (Fin (r - l))).prod (fun i =>
@@ -217,14 +223,14 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
     else
       rw [multilinearBasis]
       -- key to remove Eq.rec : dif_neg h_r_sub_l
-      simp only [Nat.pow_zero, eq_mp_eq_cast, cast_eq,
+      simp (config := { maxSteps := 100000 }) only [Nat.pow_zero, eq_mp_eq_cast, cast_eq,
         eq_mpr_eq_cast, dif_neg h_r_sub_l]
       have h2 : 2 ^ (r - l - 1) * 2 = 2 ^ (r - l) := by
         rw [←Nat.pow_succ, Nat.succ_eq_add_one, Nat.sub_add_cancel (by omega)]
-      rw [BTField.Basis_cast_index_apply (h_eq:=by omega) (h_le:=by omega)]
+      erw [BTField.Basis_cast_index_apply (h_eq:=by omega) (h_le:=by omega)]
       simp only [Basis.coe_reindex, Function.comp_apply,
         revFinProdFinEquiv_symm_apply]
-      rw [BTField.Basis_cast_dest_apply (h_eq:=by omega) (h_le1:=by omega) (h_le2:=by omega)]
+      erw [BTField.Basis_cast_dest_apply (h_eq:=by omega) (h_le1:=by omega) (h_le2:=by omega)]
 
       set prevDiff := r - l - 1 with h_prevDiff
       have h_r_sub_l : r - l = prevDiff + 1 := by omega
@@ -300,9 +306,9 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       conv_lhs =>
         rw [←Fin.prod_congr' (b:=r1-l) (a:=prevDiff) (h:=by omega)]
         simp only [Fin.val_cast]
-      simp_rw [algebraMap, instAlgebraSucc, algebra_adjacent_tower]
-      rw [RingHom.map_pow]
-      simp_rw [←binaryTowerAlgebra_apply_assoc]
+      simp (config := { failIfUnchanged := false }) only [algebraMap, instAlgebraSucc]
+      erw [RingHom.map_pow]
+      simp (config := { failIfUnchanged := false }) only [←binaryTowerAlgebra_apply_assoc]
       ------------------ Equality of bit-based powers of generators -----------------
       --- The outtermost term
       have hfinProd_msb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)

@@ -62,6 +62,12 @@ lemma Raw.toPoly_mul_coeff [LawfulBEq R] (p q : CPolynomial.Raw R) (i : ℕ) :
   simp [hp, hq]
 
 @[grind =]
+lemma Raw.toPoly_mul [LawfulBEq R] (p q : CPolynomial.Raw R) :
+    (p * q).toPoly = p.toPoly * q.toPoly := by
+  ext i
+  exact Raw.toPoly_mul_coeff p q i
+
+@[grind =]
 lemma toPoly_mul_coeffC [LawfulBEq R] (p q : CPolynomial R) (i : ℕ) :
     (p.val * q.val).toPoly.coeff i = (p.val.toPoly * q.val.toPoly).coeff i := by
   simpa using Raw.toPoly_mul_coeff p.val q.val i
@@ -119,8 +125,9 @@ lemma toPoly_pow [Nontrivial R] [LawfulBEq R] (p : CPolynomial R) (n : ℕ) :
   | succ n ih =>
     have hp : p ^ (n + 1) = p ^ n * p := by
       apply ext
-      change (p.val ^ (n + 1)) = (p.val ^ n * p.val)
-      rw [pow_succ_right]
+      show (p ^ (n + 1)).val = (p ^ n * p).val
+      rw [val_pow, show (p ^ n * p).val = (p ^ n).val * p.val from rfl, val_pow]
+      exact pow_succ_right p.val n
     have htp : p.toPoly ^ (n + 1) = p.toPoly ^ n * p.toPoly := by
       simpa using (_root_.pow_succ (p.toPoly : R[X]) n)
     rw [hp, toPoly_mul, ih, htp]

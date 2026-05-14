@@ -164,11 +164,11 @@ lemma map_mul {m₁ m₂ : Multiplicative (Fin n →₀ ℕ)} :
 
 end CMvMonomial
 
-abbrev MonoR (n : ℕ) (R : Type) := CMvMonomial n × R
+abbrev MonoR (n : ℕ) (R : Type*) := CMvMonomial n × R
 
 namespace MonoR
 
-variable {n : ℕ} {R : Type}
+variable {n : ℕ} {R : Type*}
 
 instance [DecidableEq R] : DecidableEq (CMvMonomial n × R) :=
   instDecidableEqProd
@@ -195,7 +195,7 @@ instance {t₁ t₂ : MonoR n R} : Decidable (t₁ ∣ t₂) := by
 
 end
 
-def evalMonomial {R : Type} {n : ℕ} [CommSemiring R] : (Fin n → R) → CMvMonomial n → R :=
+def evalMonomial {R : Type*} {n : ℕ} [CommSemiring R] : (Fin n → R) → CMvMonomial n → R :=
   fun vals m => ∏ (i : Fin n), (vals i) ^ m.get i
 
 end MonoR

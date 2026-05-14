@@ -380,7 +380,7 @@ lemma getSDomainBasisCoeff_of_iteratedQuotientMap
           simp only [zero_add]
           omega⟩)
       simp only [Fin.zero_eta, Fin.coe_ofNat_eq_mod, Nat.sub_zero] at h_interW_comp
-      rw [h_interW_comp]
+      erw [h_interW_comp]
       have h_index : 0 + i.val = i.val := by omega
       rw! (castMode := .all) [h_index]
       rfl
@@ -480,7 +480,7 @@ theorem base_intermediateNovelBasisX (j : Fin (2 ^ ℓ)) :
   simp only [Fin.mk_zero'] at h_res
   conv_lhs =>
     enter [2, x, 1]
-    rw [h_res ⟨x, by omega⟩]
+    erw [h_res ⟨x, by omega⟩]
   congr
 
 omit [DecidableEq L] [DecidableEq 𝔽q] h_Fq_char_prime hF₂ hβ_lin_indep h_β₀_eq_1 in
