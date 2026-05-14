@@ -45,6 +45,12 @@ private def batchWarmupIterations : Nat := 1
 /-- Number of measured iterations for full-array batch-evaluation benchmarks. -/
 private def batchMeasuredIterations : Nat := 5
 
+/-- Number of warmup iterations for larger full-array batch-evaluation benchmarks. -/
+private def largeBatchWarmupIterations : Nat := 1
+
+/-- Number of measured iterations for larger full-array batch-evaluation benchmarks. -/
+private def largeBatchMeasuredIterations : Nat := 10
+
 /-- Number of warmup iterations for direct monic-remainder benchmarks. -/
 private def modWarmupIterations : Nat := 1
 
@@ -63,6 +69,12 @@ private def univariateBatchCoeffSlots : Nat := 128
 /-- Number of points used by univariate batch-evaluation benchmarks. -/
 private def univariateBatchPointCount : Nat := 16
 
+/-- Number of coefficient slots used by larger univariate batch-evaluation benchmarks. -/
+private def largeUnivariateBatchCoeffSlots : Nat := 8192
+
+/-- Number of points used by larger univariate batch-evaluation benchmarks. -/
+private def largeUnivariateBatchPointCount : Nat := 1024
+
 /-- Number of linear factors in the direct monic-remainder benchmark divisor. -/
 private def univariateModDivisorPointCount : Nat := 16
 
@@ -72,6 +84,10 @@ private def univariateMulCoeffSlots : Nat := 128
 /-- Input-shape label for univariate batch-evaluation benchmarks. -/
 private def univariateBatchShape : String :=
   s!"degree<{univariateBatchCoeffSlots}, dense, {univariateBatchPointCount} points"
+
+/-- Input-shape label for larger univariate batch-evaluation benchmarks. -/
+private def largeUnivariateBatchShape : String :=
+  s!"degree<{largeUnivariateBatchCoeffSlots}, dense, {largeUnivariateBatchPointCount} points"
 
 /-- Input-shape label for direct univariate monic-remainder benchmarks. -/
 private def univariateModShape : String :=
@@ -630,6 +646,8 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
   let (points, gen) := (babyBearPoints 32).run gen
   let (batchCoeffs, gen) := (babyBearArray univariateBatchCoeffSlots false).run gen
   let (batchPoints, gen) := (babyBearPoints univariateBatchPointCount).run gen
+  let (largeBatchCoeffs, gen) := (babyBearArray largeUnivariateBatchCoeffSlots false).run gen
+  let (largeBatchPoints, gen) := (babyBearPoints largeUnivariateBatchPointCount).run gen
   let densePoly := cpolyOfArray denseCoeffs
   let sparsePoly := cpolyOfArray sparseCoeffs
   let mulLhsPoly := cpolyOfArray mulLhsCoeffs
@@ -637,6 +655,7 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
   let koalaMulLhsPoly := cpolyOfArray koalaMulLhsCoeffs
   let koalaMulRhsPoly := cpolyOfArray koalaMulRhsCoeffs
   let batchPoly := cpolyOfArray batchCoeffs
+  let largeBatchPoly := cpolyOfArray largeBatchCoeffs
   let modDivisor := monicDivisorFromPoints batchPoints
   let naiveMul : CPolynomial.MulContext BabyBear.Field := CPolynomial.MulContext.naive
   let nttMul : CPolynomial.MulContext BabyBear.Field :=
@@ -725,6 +744,28 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     "evalBatchSubproduct ntt mul/fast mod" "BabyBear.Field"
     univariateBatchShape batchWarmupIterations batchMeasuredIterations
     (fun _ ↦ CPolynomial.evalBatchSubproduct nttMul fastMod batchPoly batchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-large-naive-sum" "CPolynomial" "evalBatch" "BabyBear.Field"
+    largeUnivariateBatchShape largeBatchWarmupIterations largeBatchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatch largeBatchPoly largeBatchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-large-naive-horner" "CPolynomial" "evalBatchHorner" "BabyBear.Field"
+    largeUnivariateBatchShape largeBatchWarmupIterations largeBatchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchHorner largeBatchPoly largeBatchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-large-subproduct-naive-mul-fast-mod" "CPolynomial"
+    "evalBatchSubproduct naive mul/fast mod" "BabyBear.Field"
+    largeUnivariateBatchShape largeBatchWarmupIterations largeBatchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct naiveMul fastMod largeBatchPoly largeBatchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-large-subproduct-ntt-mul-fast-mod" "CPolynomial"
+    "evalBatchSubproduct ntt mul/fast mod" "BabyBear.Field"
+    largeUnivariateBatchShape largeBatchWarmupIterations largeBatchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct nttMul fastMod largeBatchPoly largeBatchPoints)
     (checksumArray checksumBabyBear))
   let (goldilocksRecords, extraGen) ← runDenseUnivariateZMod
     Goldilocks.fieldSize "goldilocks" "Goldilocks.Field" nextGen
