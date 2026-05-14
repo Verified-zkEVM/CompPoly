@@ -24,15 +24,10 @@ def benchSizes : Array Nat :=
   #[4, 8, 12, 16, 24, 32, 48, 64, 96, 128,
     192, 256, 384, 512, 768, 1024, 1536, 2048, 2560, 3000]
 
-def bestLogN (requiredLen : Nat) : Nat :=
-  Nat.clog 2 requiredLen
-
-def bestDomainForLength? (requiredLen : Nat) : Option (Domain _root_.KoalaBear.Field) :=
-  let logN := bestLogN requiredLen
-  if hlogN : logN ≤ _root_.KoalaBear.twoAdicity then
-    some (KoalaBear.domainOfLogN logN hlogN)
-  else
-    none
+def bestDomainForLength? (requiredLen : Nat) :
+    Option (FittingDomain _root_.KoalaBear.Field requiredLen) :=
+  CPolynomial.NTT.bestDomainForLength? _root_.KoalaBear.twoAdicity KoalaBear.domainOfLogN
+    (by intro _ _; rfl) requiredLen
 
 def mkPoly (n seed : Nat) : CPolynomial.Raw _root_.KoalaBear.Field :=
   Array.ofFn (fun i : Fin n => (((i.1 + 1) * seed + i.1 * i.1 + 17) :
@@ -80,7 +75,7 @@ def timeRepeated {α : Type} (reps : Nat) (f : Unit → α) : IO (Nat × α) := 
     let p := mkPoly n (41 + 13 * i)
     let q := mkPoly n (73 + 17 * i)
     let reqLen := Domain.requiredLength p q
-    let some benchDomain := bestDomainForLength? reqLen
+    let some ⟨benchDomain, _⟩ := bestDomainForLength? reqLen
       | throw <| IO.userError
           s!"no KoalaBear domain supports required length {reqLen} for size {n}"
     let (nttMs, nttRes) ← timeRepeated reps (fun _ => FastMul.Raw.fastMulImpl benchDomain p q)
