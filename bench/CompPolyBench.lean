@@ -661,7 +661,8 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
   let nttMul : CPolynomial.MulContext BabyBear.Field :=
     CPolynomial.MulContext.ntt BabyBear.twoAdicity CPolynomial.NTT.BabyBear.domainOfLogN
   let naiveMod : CPolynomial.ModContext BabyBear.Field := CPolynomial.ModContext.naive
-  let fastMod : CPolynomial.ModContext BabyBear.Field := CPolynomial.ModContext.fast
+  let remainderOnlyMod : CPolynomial.ModContext BabyBear.Field :=
+    CPolynomial.ModContext.remainderOnly
   let nextGen := gen
   let mut records := #[]
   records := records.push (← runTimed
@@ -690,9 +691,10 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     (fun _ ↦ CPolynomial.modByMonic batchPoly modDivisor)
     (checksumCPolynomial checksumBabyBear))
   records := records.push (← runTimed
-    "univariate-mod-by-monic-fast" "CPolynomial" "modByMonicFast" "BabyBear.Field"
+    "univariate-mod-by-monic-remainder-only" "CPolynomial" "modByMonicRemainderOnly"
+    "BabyBear.Field"
     univariateModShape modWarmupIterations modMeasuredIterations
-    (fun _ ↦ CPolynomial.modByMonicFast batchPoly modDivisor)
+    (fun _ ↦ CPolynomial.modByMonicRemainderOnly batchPoly modDivisor)
     (checksumCPolynomial checksumBabyBear))
   records := records.push (← runTimed
     "univariate-mul-naive" "CPolynomial" "mul" "BabyBear.Field"
@@ -734,16 +736,16 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     (fun _ ↦ CPolynomial.evalBatchSubproduct naiveMul naiveMod batchPoly batchPoints)
     (checksumArray checksumBabyBear))
   records := records.push (← runTimed
-    "univariate-batch-subproduct-naive-mul-fast-mod" "CPolynomial"
-    "evalBatchSubproduct naive mul/fast mod" "BabyBear.Field"
+    "univariate-batch-subproduct-naive-mul-remainder-only-mod" "CPolynomial"
+    "evalBatchSubproduct naive mul/remainder-only mod" "BabyBear.Field"
     univariateBatchShape batchWarmupIterations batchMeasuredIterations
-    (fun _ ↦ CPolynomial.evalBatchSubproduct naiveMul fastMod batchPoly batchPoints)
+    (fun _ ↦ CPolynomial.evalBatchSubproduct naiveMul remainderOnlyMod batchPoly batchPoints)
     (checksumArray checksumBabyBear))
   records := records.push (← runTimed
-    "univariate-batch-subproduct-ntt-mul-fast-mod" "CPolynomial"
-    "evalBatchSubproduct ntt mul/fast mod" "BabyBear.Field"
+    "univariate-batch-subproduct-ntt-mul-remainder-only-mod" "CPolynomial"
+    "evalBatchSubproduct ntt mul/remainder-only mod" "BabyBear.Field"
     univariateBatchShape batchWarmupIterations batchMeasuredIterations
-    (fun _ ↦ CPolynomial.evalBatchSubproduct nttMul fastMod batchPoly batchPoints)
+    (fun _ ↦ CPolynomial.evalBatchSubproduct nttMul remainderOnlyMod batchPoly batchPoints)
     (checksumArray checksumBabyBear))
   records := records.push (← runTimed
     "univariate-batch-large-naive-sum" "CPolynomial" "evalBatch" "BabyBear.Field"
@@ -756,16 +758,18 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     (fun _ ↦ CPolynomial.evalBatchHorner largeBatchPoly largeBatchPoints)
     (checksumArray checksumBabyBear))
   records := records.push (← runTimed
-    "univariate-batch-large-subproduct-naive-mul-fast-mod" "CPolynomial"
-    "evalBatchSubproduct naive mul/fast mod" "BabyBear.Field"
+    "univariate-batch-large-subproduct-naive-mul-remainder-only-mod" "CPolynomial"
+    "evalBatchSubproduct naive mul/remainder-only mod" "BabyBear.Field"
     largeUnivariateBatchShape largeBatchWarmupIterations largeBatchMeasuredIterations
-    (fun _ ↦ CPolynomial.evalBatchSubproduct naiveMul fastMod largeBatchPoly largeBatchPoints)
+    (fun _ ↦ CPolynomial.evalBatchSubproduct naiveMul remainderOnlyMod largeBatchPoly
+      largeBatchPoints)
     (checksumArray checksumBabyBear))
   records := records.push (← runTimed
-    "univariate-batch-large-subproduct-ntt-mul-fast-mod" "CPolynomial"
-    "evalBatchSubproduct ntt mul/fast mod" "BabyBear.Field"
+    "univariate-batch-large-subproduct-ntt-mul-remainder-only-mod" "CPolynomial"
+    "evalBatchSubproduct ntt mul/remainder-only mod" "BabyBear.Field"
     largeUnivariateBatchShape largeBatchWarmupIterations largeBatchMeasuredIterations
-    (fun _ ↦ CPolynomial.evalBatchSubproduct nttMul fastMod largeBatchPoly largeBatchPoints)
+    (fun _ ↦ CPolynomial.evalBatchSubproduct nttMul remainderOnlyMod largeBatchPoly
+      largeBatchPoints)
     (checksumArray checksumBabyBear))
   let (goldilocksRecords, extraGen) ← runDenseUnivariateZMod
     Goldilocks.fieldSize "goldilocks" "Goldilocks.Field" nextGen

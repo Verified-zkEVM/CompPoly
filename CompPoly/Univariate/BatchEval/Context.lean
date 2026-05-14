@@ -74,9 +74,9 @@ def naive [Field R] [BEq R] [LawfulBEq R] : ModContext R where
   modByMonic_eq_modByMonic _ _ := rfl
 
 /-- A remainder-only compiled backend for monic remainders. -/
-def fast [Field R] [BEq R] [LawfulBEq R] : ModContext R where
-  modByMonic p q := CPolynomial.modByMonicFast p q
-  modByMonic_eq_modByMonic p q := CPolynomial.modByMonicFast_eq_modByMonic p q
+def remainderOnly [Field R] [BEq R] [LawfulBEq R] : ModContext R where
+  modByMonic p q := CPolynomial.modByMonicRemainderOnly p q
+  modByMonic_eq_modByMonic p q := CPolynomial.modByMonicRemainderOnly_eq_modByMonic p q
 
 end ModContext
 
