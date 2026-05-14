@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
 import CompPoly.Univariate.Basic
+import CompPoly.Univariate.NTT.FastMul
 
 /-!
 # Batch Evaluation Contexts
@@ -37,6 +38,31 @@ namespace MulContext
 def naive [Semiring R] [BEq R] [LawfulBEq R] : MulContext R where
   mulAtLevel _ p q := p * q
   mulAtLevel_eq_mul _ _ _ := rfl
+
+/--
+Subproduct-tree NTT-backed multiplication context with canonical multiplication as a fallback.
+
+At subproduct-tree level `level`, this context uses an NTT domain with
+`logN = min (level + 2) maxLogN`. If the selected domain is still too small for
+the current operands, the backend falls back to ordinary `CPolynomial`
+multiplication.
+-/
+def ntt [Field R] [BEq R] [LawfulBEq R]
+    (maxLogN : Nat) (domainOfLogN : (logN : Nat) → logN ≤ maxLogN → NTT.Domain R) :
+    MulContext R where
+  mulAtLevel level p q :=
+    let D := domainOfLogN (min (level + 2) maxLogN) (Nat.min_le_right _ _)
+    if hfit : NTT.Domain.requiredLength p.val q.val ≤ 2 ^ D.logN then
+      NTT.FastMul.fastMulImpl D p q
+    else
+      p * q
+  mulAtLevel_eq_mul level p q := by
+    let D := domainOfLogN (min (level + 2) maxLogN) (Nat.min_le_right _ _)
+    by_cases hfit :
+        NTT.Domain.requiredLength p.val q.val ≤ 2 ^ D.logN
+    · simp [D, hfit, NTT.FastMul.fastMulImpl_eq_mul D p q (by
+        simpa [NTT.Domain.fits, NTT.Domain.n] using hfit)]
+    · simp [D, hfit]
 
 end MulContext
 
