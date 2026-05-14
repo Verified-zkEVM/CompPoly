@@ -16,11 +16,14 @@ import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
 
 namespace BabyBear
 
+/-- The BabyBear field modulus, `2^31 - 2^27 + 1`. -/
 @[reducible]
 def fieldSize : Nat := 2 ^ 31 - 2 ^ 27 + 1
 
+/-- The BabyBear prime field as a `ZMod`. -/
 abbrev Field := ZMod fieldSize
 
+/-- The BabyBear modulus is prime. -/
 theorem is_prime : Nat.Prime fieldSize := by
   unfold fieldSize
   pratt
@@ -33,9 +36,11 @@ theorem is_prime : Nat.Prime fieldSize := by
   - `twoAdicity = 27` with `fieldSize - 1 = 2^27 * 15`
 -/
 
+/-- Bit width of the BabyBear modulus. -/
 @[reducible]
 def pBits : Nat := 31
 
+/-- The largest supported power-of-two root-of-unity exponent for BabyBear. -/
 @[reducible]
 def twoAdicity : Nat := 27
 
@@ -55,6 +60,7 @@ instance : NonBinaryField Field where
   of `2^n`-th roots of unity for `0 ≤ n ≤ twoAdicity`.
 -/
 
+/-- The factorization `fieldSize - 1 = 2^twoAdicity * 15`. -/
 lemma fieldSize_sub_one_factorization : fieldSize - 1 = 2 ^ twoAdicity * 15 := by
   unfold fieldSize twoAdicity
   decide
@@ -65,6 +71,7 @@ lemma fieldSize_sub_one_factorization : fieldSize - 1 = 2 ^ twoAdicity * 15 := b
 
   The first entry n = 0 is 1.
 -/
+/-- Precomputed generators for the BabyBear two-adic subgroups. -/
 def twoAdicGenerators : List Field :=
   [
     (0x1 : Field),
@@ -97,14 +104,17 @@ def twoAdicGenerators : List Field :=
     (0x1A427A41 : Field)
   ]
 
+/-- The BabyBear two-adic generator table has one entry for each supported exponent. -/
 @[simp] lemma twoAdicGenerators_length : twoAdicGenerators.length = twoAdicity + 1 := by
   decide
 
+/-- Consecutive BabyBear two-adic generators square to the previous generator. -/
 @[simp] lemma twoAdicGenerators_succ_square_eq' (idx : Fin twoAdicity) :
     twoAdicGenerators[idx.val + 1] ^ 2 = twoAdicGenerators[idx] := by
   fin_cases idx
   <;> simp [twoAdicGenerators] <;> decide
 
+/-- Consecutive BabyBear two-adic generators square to the previous generator. -/
 @[simp] lemma twoAdicGenerators_succ_square_eq (idx : Nat) (h : idx < twoAdicity) :
     haveI : idx + 1 < twoAdicGenerators.length := by simp [twoAdicGenerators_length, h]
     twoAdicGenerators[idx + 1] ^ 2 = twoAdicGenerators[idx] :=
@@ -120,6 +130,7 @@ private def sqChain (g : Field) : Nat → Field
   | 0 => g
   | n + 1 => let h := sqChain g n; h * h
 
+/-- Repeated squaring agrees with exponentiation by a power of two. -/
 private theorem sqChain_eq_pow_two_pow (g : Field) (n : Nat) :
     sqChain g n = g ^ (2 ^ n) := by
   induction n with
@@ -137,12 +148,11 @@ private theorem sqChain_twoAdicGenerators_shift (k n : Nat) (hkn : k + n ≤ two
       calc
         sqChain twoAdicGenerators[(⟨k + (n + 1), by omega⟩ : Fin (twoAdicity + 1))]
             (n + 1)
-            =
+          = sqChain twoAdicGenerators[(⟨k + (n + 1), by omega⟩ :
+                Fin (twoAdicity + 1))] n *
               sqChain twoAdicGenerators[(⟨k + (n + 1), by omega⟩ :
-                  Fin (twoAdicity + 1))] n *
-                sqChain twoAdicGenerators[(⟨k + (n + 1), by omega⟩ :
-                  Fin (twoAdicity + 1))] n := by
-                  simp [sqChain]
+                Fin (twoAdicity + 1))] n := by
+              simp [sqChain]
         _ = twoAdicGenerators[(⟨k + 1, by omega⟩ : Fin (twoAdicity + 1))] *
               twoAdicGenerators[(⟨k + 1, by omega⟩ : Fin (twoAdicity + 1))] := by
               have hshift :
@@ -151,7 +161,7 @@ private theorem sqChain_twoAdicGenerators_shift (k n : Nat) (hkn : k + n ≤ two
                     twoAdicGenerators[(⟨k + 1, by omega⟩ : Fin (twoAdicity + 1))] := by
                 simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using
                   (ih (k := k + 1) (by omega))
-              exact congrArg (fun x => x * x) hshift
+              exact congrArg (fun x ↦ x * x) hshift
         _ = twoAdicGenerators[(⟨k + 1, by omega⟩ : Fin (twoAdicity + 1))] ^ 2 := by
               simp [pow_two]
         _ = twoAdicGenerators[(⟨k, by omega⟩ : Fin (twoAdicity + 1))] := by
