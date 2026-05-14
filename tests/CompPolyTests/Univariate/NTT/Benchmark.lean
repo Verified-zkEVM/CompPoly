@@ -5,7 +5,7 @@ Authors: Salih Erdem Koçak, Doran Pamukçu
 -/
 
 import CompPoly.Univariate.NTT.FastMul
-import CompPoly.Fields.KoalaBear
+import CompPoly.Univariate.NTT.KoalaBear
 
 /-!
   # Univariate Multiplication Benchmark
@@ -27,41 +27,22 @@ def benchSizes : Array Nat :=
 def bestLogN (requiredLen : Nat) : Nat :=
   Nat.clog 2 requiredLen
 
-def bestDomainForLength? (requiredLen : Nat) : Option (Domain KoalaBear.Field) :=
+def bestDomainForLength? (requiredLen : Nat) : Option (Domain _root_.KoalaBear.Field) :=
   let logN := bestLogN requiredLen
-  if hlogN : logN ≤ KoalaBear.twoAdicity then
-    let bits : Fin (KoalaBear.twoAdicity + 1) := ⟨logN, Nat.lt_succ_of_le hlogN⟩
-    some {
-      logN := logN
-      omega := KoalaBear.twoAdicGenerators[bits]
-      primitive := by
-        simpa using KoalaBear.isPrimitiveRoot_twoAdicGenerator bits
-      natCast_ne_zero := by
-        change (((2 ^ logN : Nat) : KoalaBear.Field) ≠ 0)
-        intro hzero
-        have hpow_pos : 0 < 2 ^ logN := by
-          positivity
-        have hpow_le : 2 ^ logN ≤ 2 ^ KoalaBear.twoAdicity := by
-          exact Nat.pow_le_pow_right (by decide : 1 ≤ 2) hlogN
-        have hpow_lt : 2 ^ logN < KoalaBear.fieldSize := by
-          have htop : 2 ^ KoalaBear.twoAdicity < KoalaBear.fieldSize := by
-            simp [KoalaBear.twoAdicity, KoalaBear.fieldSize]
-          exact lt_of_le_of_lt hpow_le htop
-        have hdiv : KoalaBear.fieldSize ∣ 2 ^ logN := by
-          exact (ZMod.natCast_eq_zero_iff (2 ^ logN) KoalaBear.fieldSize).mp hzero
-        exact (not_le_of_gt hpow_lt) (Nat.le_of_dvd hpow_pos hdiv)
-    }
+  if hlogN : logN ≤ _root_.KoalaBear.twoAdicity then
+    some (KoalaBear.domainOfLogN logN hlogN)
   else
     none
 
-def mkPoly (n seed : Nat) : CPolynomial.Raw KoalaBear.Field :=
-  Array.ofFn (fun i : Fin n => (((i.1 + 1) * seed + i.1 * i.1 + 17) : KoalaBear.Field))
+def mkPoly (n seed : Nat) : CPolynomial.Raw _root_.KoalaBear.Field :=
+  Array.ofFn (fun i : Fin n => (((i.1 + 1) * seed + i.1 * i.1 + 17) :
+    _root_.KoalaBear.Field))
 
 def checkSize : Nat := 512
 
-def p : CPolynomial.Raw KoalaBear.Field := mkPoly checkSize 60
+def p : CPolynomial.Raw _root_.KoalaBear.Field := mkPoly checkSize 60
 
-def q : CPolynomial.Raw KoalaBear.Field := mkPoly checkSize 29
+def q : CPolynomial.Raw _root_.KoalaBear.Field := mkPoly checkSize 29
 
 def avgMsString (totalMs reps : Nat) : String :=
   s!"{(Float.ofNat totalMs) / (Float.ofNat reps)}"
