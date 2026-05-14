@@ -124,6 +124,31 @@ instance [Semiring R] [BEq R] : Mul (CPolynomial.Raw R) := ⟨mul⟩
 instance [Semiring R] [BEq R] : Pow (CPolynomial.Raw R) Nat := ⟨pow⟩
 instance [NatCast R] : NatCast (CPolynomial.Raw R) := ⟨fun n => C (n : R)⟩
 
+/-- Keep only the stored coefficients with index `< k`. -/
+@[inline, specialize]
+def truncate [Zero R] (k : Nat) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
+  p.extract 0 k
+
+/-- Return exactly the first `k` coefficients, padding missing coefficients with zero. -/
+@[inline, specialize]
+def takeLow [Zero R] (k : Nat) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
+  Array.ofFn fun i : Fin k => p.coeff i
+
+/-- Naive low product, computing only coefficients below `k`. -/
+@[inline, specialize]
+def mulLowNaive [Semiring R] (k : Nat) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
+  Array.ofFn fun i : Fin k =>
+    (Finset.range (i.val + 1)).sum fun j => p.coeff j * q.coeff (i.val - j)
+
+/-- Backend for computing the low `k` coefficients of a raw product. -/
+structure MulLowContext (R : Type*) [Semiring R] [BEq R] [LawfulBEq R] where
+  /-- Return the low `k` coefficients of `p * q`. -/
+  mulLow : Nat → CPolynomial.Raw R → CPolynomial.Raw R → CPolynomial.Raw R
+  /-- The backend does not return coefficients at degree `>= k`. -/
+  size_le : ∀ k p q, (mulLow k p q).size ≤ k
+  /-- Low coefficients agree with ordinary raw multiplication. -/
+  coeff_of_lt : ∀ k p q i, i < k → (mulLow k p q).coeff i = (p * q).coeff i
+
 /-- Upper bound on degree: `size - 1` if non-empty, `⊥` if empty. -/
 def degreeBound (p : CPolynomial.Raw R) : WithBot Nat :=
   match p.size with

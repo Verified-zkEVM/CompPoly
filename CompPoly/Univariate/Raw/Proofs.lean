@@ -714,6 +714,26 @@ lemma mul_coeff [LawfulBEq R] (p q : CPolynomial.Raw R) (k : ℕ) :
     (p * q).coeff k = (Finset.range (k + 1)).sum (fun i => p.coeff i * q.coeff (k - i)) := by
   rw [mul_coeff_range_size, sum_range_extend]
 
+namespace MulLowContext
+
+/-- Low-product backend using the direct coefficient formula. -/
+def naive [LawfulBEq R] : MulLowContext R where
+  mulLow := mulLowNaive
+  size_le := by
+    intro k p q
+    simp [mulLowNaive]
+  coeff_of_lt := by
+    intro k p q i hi
+    rw [mulLowNaive, CPolynomial.Raw.coeff]
+    have hsize : i < (Array.ofFn fun j : Fin k =>
+        (Finset.range (j.val + 1)).sum fun l => p.coeff l * q.coeff (j.val - l)).size := by
+      simpa using hi
+    rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hsize]
+    simp only [Option.getD_some]
+    simpa using (mul_coeff p q i).symm
+
+end MulLowContext
+
 lemma mul_assoc_coeff_rhs [LawfulBEq R] (p q r : CPolynomial.Raw R) (n : ℕ) :
     (p * (q * r)).coeff n =
       (Finset.range (n + 1)).sum (fun i =>
