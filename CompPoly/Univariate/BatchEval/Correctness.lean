@@ -61,11 +61,12 @@ private theorem valid_leafFor [Field R] [BEq R] [LawfulBEq R] (x : R) :
   exact eval_linearFactor x
 
 private theorem valid_combine [Field R] [BEq R] [LawfulBEq R] (M : MulContext R)
+    (level : Nat)
     {left right : SubproductTree R} (hleft : Valid left) (hright : Valid right) :
-    Valid (combine M left right) := by
+    Valid (combine M level left right) := by
   constructor
   · intro x hx
-    rw [M.mul_eq_mul, eval_mul]
+    rw [M.mulAtLevel_eq_mul, eval_mul]
     rcases List.mem_append.mp hx with hx | hx
     · rw [valid_root hleft hx]
       simp
@@ -73,30 +74,31 @@ private theorem valid_combine [Field R] [BEq R] [LawfulBEq R] (M : MulContext R)
       simp
   · exact ⟨hleft, hright⟩
 
-private theorem valid_combinePairs [Field R] [BEq R] [LawfulBEq R] (M : MulContext R) :
+private theorem valid_combinePairs [Field R] [BEq R] [LawfulBEq R] (M : MulContext R)
+    (level : Nat) :
     ∀ {trees : List (SubproductTree R)}, List.Forall Valid trees →
-      List.Forall Valid (combinePairs M trees)
+      List.Forall Valid (combinePairs M level trees)
   | [], _ => by
       simp [combinePairs]
   | [_], h => by
       simpa [combinePairs] using h
   | left :: right :: rest, h => by
       simp [combinePairs] at h ⊢
-      exact ⟨valid_combine M h.1 h.2.1, valid_combinePairs M h.2.2⟩
+      exact ⟨valid_combine M level h.1 h.2.1, valid_combinePairs M level h.2.2⟩
 
 private theorem pointsList_combinePairs [Field R] [BEq R] [LawfulBEq R]
-    (M : MulContext R) :
+    (M : MulContext R) (level : Nat) :
     ∀ trees : List (SubproductTree R),
-      pointsList (combinePairs M trees) = pointsList trees
+      pointsList (combinePairs M level trees) = pointsList trees
   | [] => rfl
   | [_] => rfl
   | left :: right :: rest => by
-      simp [combinePairs, combine, pointsList, points, pointsList_combinePairs M rest,
+      simp [combinePairs, combine, pointsList, points, pointsList_combinePairs M level rest,
         List.append_assoc]
 
 private theorem length_combinePairs_le [Field R] [BEq R] [LawfulBEq R]
-    (M : MulContext R) :
-    ∀ trees : List (SubproductTree R), (combinePairs M trees).length ≤ trees.length
+    (M : MulContext R) (level : Nat) :
+    ∀ trees : List (SubproductTree R), (combinePairs M level trees).length ≤ trees.length
   | [] => by
       simp [combinePairs]
   | [_] => by
@@ -104,16 +106,17 @@ private theorem length_combinePairs_le [Field R] [BEq R] [LawfulBEq R]
   | _ :: _ :: rest => by
       simpa [combinePairs] using
         Nat.succ_le_succ
-          (Nat.le_trans (length_combinePairs_le M rest) (Nat.le_succ rest.length))
+          (Nat.le_trans (length_combinePairs_le M level rest) (Nat.le_succ rest.length))
 
 private theorem length_combinePairs_pair_le [Field R] [BEq R] [LawfulBEq R]
-    (M : MulContext R) (left right : SubproductTree R) (rest : List (SubproductTree R)) :
-    (combinePairs M (left :: right :: rest)).length ≤ rest.length + 1 := by
-  simpa [combinePairs] using Nat.succ_le_succ (length_combinePairs_le M rest)
+    (M : MulContext R) (level : Nat) (left right : SubproductTree R)
+    (rest : List (SubproductTree R)) :
+    (combinePairs M level (left :: right :: rest)).length ≤ rest.length + 1 := by
+  simpa [combinePairs] using Nat.succ_le_succ (length_combinePairs_le M level rest)
 
 private theorem combinePairs_ne_nil_of_ne_nil [Field R] [BEq R] [LawfulBEq R]
-    (M : MulContext R) :
-    ∀ {trees : List (SubproductTree R)}, trees ≠ [] → combinePairs M trees ≠ []
+    (M : MulContext R) (level : Nat) :
+    ∀ {trees : List (SubproductTree R)}, trees ≠ [] → combinePairs M level trees ≠ []
   | [], h => by
       contradiction
   | [_], _ => by
@@ -123,10 +126,10 @@ private theorem combinePairs_ne_nil_of_ne_nil [Field R] [BEq R] [LawfulBEq R]
 
 private theorem buildFromTrees_exists_of_length_le [Field R] [BEq R] [LawfulBEq R]
     (M : MulContext R) :
-    ∀ (fuel : ℕ) (trees : List (SubproductTree R)), trees ≠ [] →
-      trees.length ≤ fuel + 1 → ∃ tree, buildFromTrees M fuel trees = some tree := by
-  intro fuel
-  induction fuel with
+    ∀ (level fuel : ℕ) (trees : List (SubproductTree R)), trees ≠ [] →
+      trees.length ≤ fuel + 1 → ∃ tree, buildFromTrees M level fuel trees = some tree := by
+  intro level fuel
+  induction fuel generalizing level with
   | zero =>
       intro trees hne hlen
       cases trees with
@@ -143,14 +146,15 @@ private theorem buildFromTrees_exists_of_length_le [Field R] [BEq R] [LawfulBEq 
           cases rest with
           | nil => exact ⟨left, rfl⟩
           | cons right rest =>
-              have hlen' : (combinePairs M (left :: right :: rest)).length ≤ fuel + 1 := by
-                have hpair := length_combinePairs_pair_le M left right rest
+              have hlen' : (combinePairs M level (left :: right :: rest)).length ≤ fuel + 1 := by
+                have hpair := length_combinePairs_pair_le M level left right rest
                 have hlen_rest : rest.length + 2 ≤ fuel + 2 := by
                   simpa using hlen
                 omega
-              have hne' : combinePairs M (left :: right :: rest) ≠ [] :=
-                combinePairs_ne_nil_of_ne_nil M (by simp)
-              simpa [buildFromTrees] using ih (combinePairs M (left :: right :: rest)) hne' hlen'
+              have hne' : combinePairs M level (left :: right :: rest) ≠ [] :=
+                combinePairs_ne_nil_of_ne_nil M level (by simp)
+              simpa [buildFromTrees] using
+                ih (level + 1) (combinePairs M level (left :: right :: rest)) hne' hlen'
 
 private theorem buildList_exists_of_ne_nil [Field R] [BEq R] [LawfulBEq R]
     (M : MulContext R) {xs : List R} (hxs : xs ≠ []) :
@@ -160,7 +164,7 @@ private theorem buildList_exists_of_ne_nil [Field R] [BEq R] [LawfulBEq R]
     | nil => contradiction
     | cons _ _ => simp
   simpa [buildList] using
-    buildFromTrees_exists_of_length_le M (xs.map leafFor).length (xs.map leafFor)
+    buildFromTrees_exists_of_length_le M 0 (xs.map leafFor).length (xs.map leafFor)
       hleaves (Nat.le_succ _)
 
 private theorem valid_leafFor_list [Field R] [BEq R] [LawfulBEq R] :
@@ -178,11 +182,11 @@ private theorem pointsList_map_leafFor [Field R] [BEq R] [LawfulBEq R] :
 
 private theorem buildFromTrees_valid_points [Field R] [BEq R] [LawfulBEq R]
     (M : MulContext R) :
-    ∀ (fuel : ℕ) (trees : List (SubproductTree R)) (tree : SubproductTree R),
-      buildFromTrees M fuel trees = some tree → List.Forall Valid trees →
+    ∀ (level fuel : ℕ) (trees : List (SubproductTree R)) (tree : SubproductTree R),
+      buildFromTrees M level fuel trees = some tree → List.Forall Valid trees →
         Valid tree ∧ points tree = pointsList trees := by
-  intro fuel
-  induction fuel with
+  intro level fuel
+  induction fuel generalizing level with
   | zero =>
       intro trees tree hbuild hvalid
       cases trees with
@@ -210,18 +214,20 @@ private theorem buildFromTrees_valid_points [Field R] [BEq R] [LawfulBEq R]
               exact ⟨hhead, by simp [pointsList]⟩
           | cons second rest =>
               have hnext :
-                  Valid tree ∧ points tree = pointsList (combinePairs M (head :: second :: rest)) :=
-                ih (combinePairs M (head :: second :: rest)) tree
+                  Valid tree ∧ points tree =
+                    pointsList (combinePairs M level (head :: second :: rest)) :=
+                ih (level + 1) (combinePairs M level (head :: second :: rest)) tree
                   (by simpa [buildFromTrees] using hbuild)
-                  (valid_combinePairs M hvalid)
-              exact ⟨hnext.1, hnext.2.trans (pointsList_combinePairs M (head :: second :: rest))⟩
+                  (valid_combinePairs M level hvalid)
+              exact ⟨hnext.1,
+                hnext.2.trans (pointsList_combinePairs M level (head :: second :: rest))⟩
 
 private theorem buildList_valid_points [Field R] [BEq R] [LawfulBEq R]
     (M : MulContext R) {xs : List R} {tree : SubproductTree R}
     (hbuild : buildList M xs = some tree) :
     Valid tree ∧ points tree = xs := by
   have h :=
-    buildFromTrees_valid_points M (xs.map leafFor).length (xs.map leafFor) tree
+    buildFromTrees_valid_points M 0 (xs.map leafFor).length (xs.map leafFor) tree
       (by simpa [buildList] using hbuild) (valid_leafFor_list xs)
   exact ⟨h.1, h.2.trans (pointsList_map_leafFor xs)⟩
 

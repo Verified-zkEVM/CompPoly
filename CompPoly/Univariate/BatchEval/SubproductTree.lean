@@ -40,32 +40,32 @@ def poly [Zero R] : SubproductTree R → CPolynomial R
 def leafFor [Field R] [BEq R] [LawfulBEq R] (x : R) : SubproductTree R :=
   leaf x (linearFactor x)
 
-/-- Combine two neighboring trees using the selected multiplication backend. -/
+/-- Combine two neighboring trees using the selected multiplication backend at this level. -/
 def combine [Field R] [BEq R] [LawfulBEq R] (M : MulContext R)
-    (left right : SubproductTree R) : SubproductTree R :=
-  node (M.mul left.poly right.poly) left right
+    (level : Nat) (left right : SubproductTree R) : SubproductTree R :=
+  node (M.mulAtLevel level left.poly right.poly) left right
 
 /-- Pair adjacent trees into the next subproduct-tree level. -/
-def combinePairs [Field R] [BEq R] [LawfulBEq R] (M : MulContext R) :
+def combinePairs [Field R] [BEq R] [LawfulBEq R] (M : MulContext R) (level : Nat) :
     List (SubproductTree R) → List (SubproductTree R)
   | [] => []
   | [tree] => [tree]
-  | left :: right :: rest => combine M left right :: combinePairs M rest
+  | left :: right :: rest => combine M level left right :: combinePairs M level rest
 
 /-- Repeatedly combine tree levels, bounded by fuel for straightforward termination. -/
-def buildFromTrees [Field R] [BEq R] [LawfulBEq R] (M : MulContext R) :
+def buildFromTrees [Field R] [BEq R] [LawfulBEq R] (M : MulContext R) (level : Nat) :
     Nat → List (SubproductTree R) → Option (SubproductTree R)
   | 0, [tree] => some tree
   | 0, _ => none
   | _ + 1, [] => none
   | _ + 1, [tree] => some tree
-  | fuel + 1, trees => buildFromTrees M fuel (combinePairs M trees)
+  | fuel + 1, trees => buildFromTrees M (level + 1) fuel (combinePairs M level trees)
 
 /-- Build a subproduct tree from an ordered list of evaluation points. -/
 def buildList [Field R] [BEq R] [LawfulBEq R] (M : MulContext R)
     (xs : List R) : Option (SubproductTree R) :=
   let leaves := xs.map leafFor
-  buildFromTrees M leaves.length leaves
+  buildFromTrees M 0 leaves.length leaves
 
 /-- Build a subproduct tree from an ordered array of evaluation points. -/
 def buildArray [Field R] [BEq R] [LawfulBEq R] (M : MulContext R)

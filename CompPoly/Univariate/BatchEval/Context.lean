@@ -19,10 +19,10 @@ variable {R : Type*}
 /-- Explicit multiplication backend for algorithms that should not replace the canonical `Mul`
 instance on `CPolynomial R`. -/
 structure MulContext (R : Type*) [Semiring R] [BEq R] [LawfulBEq R] where
-  /-- Multiply two canonical polynomials. -/
-  mul : CPolynomial R → CPolynomial R → CPolynomial R
-  /-- The backend agrees with canonical polynomial multiplication. -/
-  mul_eq_mul : ∀ p q, mul p q = p * q
+  /-- Multiply two canonical polynomials while seeing the subproduct-tree level. -/
+  mulAtLevel : Nat → CPolynomial R → CPolynomial R → CPolynomial R
+  /-- The backend agrees with canonical polynomial multiplication at every level. -/
+  mulAtLevel_eq_mul : ∀ level p q, mulAtLevel level p q = p * q
 
 /-- Explicit remainder backend for algorithms that only need reduction modulo monic divisors. -/
 structure ModContext (R : Type*) [Field R] [BEq R] [LawfulBEq R] where
@@ -35,8 +35,8 @@ namespace MulContext
 
 /-- The default multiplication context, backed by canonical `CPolynomial` multiplication. -/
 def naive [Semiring R] [BEq R] [LawfulBEq R] : MulContext R where
-  mul p q := p * q
-  mul_eq_mul _ _ := rfl
+  mulAtLevel _ p q := p * q
+  mulAtLevel_eq_mul _ _ _ := rfl
 
 end MulContext
 
