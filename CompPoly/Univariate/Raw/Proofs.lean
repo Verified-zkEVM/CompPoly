@@ -734,6 +734,42 @@ def direct [LawfulBEq R] : MulLowContext R where
 
 end MulLowContext
 
+omit [BEq R] in
+lemma truncate_coeff (k : Nat) (p : CPolynomial.Raw R) (i : Nat) :
+    (truncate k p).coeff i = if i < k then p.coeff i else 0 := by
+  unfold truncate coeff
+  simp [Array.getElem?_extract]
+  by_cases hik : i < k
+  · by_cases hip : i < p.size
+    · simp [hik, hip]
+    · simp [hik, hip]
+  · simp [hik]
+
+omit [BEq R] in
+lemma reverse_coeff (n : Nat) (p : CPolynomial.Raw R) (i : Nat) :
+    (reverse n p).coeff i = if i < n then p.coeff (n - 1 - i) else 0 := by
+  unfold reverse coeff
+  by_cases hi : i < n
+  · simp only [Array.getD_eq_getD_getElem?]
+    have hsize : i < (Array.ofFn fun i : Fin n => p[n - 1 - ↑i]?.getD 0).size := by
+      simpa using hi
+    rw [Array.getElem?_eq_getElem hsize]
+    simp [hi]
+  · simp only [Array.getD_eq_getD_getElem?]
+    have hsize : (Array.ofFn fun i : Fin n => p[n - 1 - ↑i]?.getD 0).size ≤ i := by
+      simpa using Nat.le_of_not_lt hi
+    rw [Array.getElem?_eq_none hsize]
+    simp [hi]
+
+lemma mulLow_coeff [LawfulBEq R] (M : MulLowContext R) (k : Nat)
+    (p q : CPolynomial.Raw R) (i : Nat) :
+    (M.mulLow k p q).coeff i = if i < k then (p * q).coeff i else 0 := by
+  by_cases hi : i < k
+  · simp [hi, M.coeff_of_lt k p q i hi]
+  · have hsize : (M.mulLow k p q).size ≤ i := by
+      exact le_trans (M.size_le k p q) (Nat.le_of_not_lt hi)
+    simp [hi, coeff, Array.getElem?_eq_none hsize]
+
 lemma mul_assoc_coeff_rhs [LawfulBEq R] (p q r : CPolynomial.Raw R) (n : ℕ) :
     (p * (q * r)).coeff n =
       (Finset.range (n + 1)).sum (fun i =>
@@ -1110,12 +1146,6 @@ theorem modByMonicRemainderOnly_eq_modByMonic [LawfulBEq R]
     (p q : CPolynomial.Raw R) :
     modByMonicRemainderOnly p q = modByMonic p q := by
   exact modByMonicRemainderOnly_go_eq_divModByMonicAux_go_snd p.size p q
-
-/-- The reversal raw monic remainder agrees with the canonical raw monic remainder. -/
-theorem modByMonicByReversal_eq_modByMonic [LawfulBEq R]
-    (M : MulLowContext R) (p q : CPolynomial.Raw R) :
-    modByMonicByReversal M p q = modByMonic p q := by
-  sorry
 
 end DivisionTheorems
 
