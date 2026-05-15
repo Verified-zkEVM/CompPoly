@@ -721,12 +721,14 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
   let naiveMod : CPolynomial.ModContext BabyBear.Field := CPolynomial.ModContext.naive
   let remainderOnlyMod : CPolynomial.ModContext BabyBear.Field :=
     CPolynomial.ModContext.remainderOnly
-  let directLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
-    CPolynomial.Raw.MulLowContext.direct
+  let naiveLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
+    CPolynomial.Raw.MulLowContext.naive
+  let convolutionLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
+    CPolynomial.Raw.MulLowContext.convolution
   let nttWithFallbackLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
     CPolynomial.NTT.FastMulLow.withFallback babyBearBestDomainForLength?
-  let reversalDirectLowMod : CPolynomial.ModContext BabyBear.Field :=
-    CPolynomial.ModContext.reversal directLowMul
+  let reversalConvolutionLowMod : CPolynomial.ModContext BabyBear.Field :=
+    CPolynomial.ModContext.reversal convolutionLowMul
   let reversalNttLowMod : CPolynomial.ModContext BabyBear.Field :=
     CPolynomial.ModContext.reversal nttWithFallbackLowMul
   let nextGen := gen
@@ -775,15 +777,16 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
       koalaMulRhsPoly)
     (checksumCPolynomial checksumKoalaBear))
   records := records.push (← runTimed
-    "univariate-mul-low-naive" "CPolynomial.Raw" "truncate (mul)" "BabyBear.Field"
+    "univariate-mul-low-naive" "CPolynomial.Raw" "MulLowContext.naive" "BabyBear.Field"
     univariateMulLowShape mulWarmupIterations mulMeasuredIterations
-    (fun _ ↦
-      CPolynomial.Raw.truncate univariateMulLowOutputCoeffSlots (mulLowLhsRaw * mulLowRhsRaw))
+    (fun _ ↦ naiveLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw mulLowRhsRaw)
     (checksumRawPolynomial checksumBabyBear))
   records := records.push (← runTimed
-    "univariate-mul-low-direct" "CPolynomial.Raw" "MulLowContext.direct" "BabyBear.Field"
+    "univariate-mul-low-convolution" "CPolynomial.Raw" "MulLowContext.convolution"
+    "BabyBear.Field"
     univariateMulLowShape mulWarmupIterations mulMeasuredIterations
-    (fun _ ↦ directLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw mulLowRhsRaw)
+    (fun _ ↦ convolutionLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
+      mulLowRhsRaw)
     (checksumRawPolynomial checksumBabyBear))
   records := records.push (← runTimed
     "univariate-mul-low-ntt-with-fallback" "CPolynomial.Raw" "FastMulLow.withFallback"
@@ -804,10 +807,10 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     (fun _ ↦ CPolynomial.modByMonicRemainderOnly batchPoly modDivisor)
     (checksumCPolynomial checksumBabyBear))
   records := records.push (← runTimed
-    "univariate-mod-by-monic-reversal-direct-low-mul" "CPolynomial"
-    "modByMonicByReversal, MulLowContext.direct" "BabyBear.Field"
+    "univariate-mod-by-monic-reversal-convolution-low-mul" "CPolynomial"
+    "modByMonicByReversal, MulLowContext.convolution" "BabyBear.Field"
     univariateModShape modWarmupIterations modMeasuredIterations
-    (fun _ ↦ reversalDirectLowMod.modByMonic batchPoly modDivisor)
+    (fun _ ↦ reversalConvolutionLowMod.modByMonic batchPoly modDivisor)
     (checksumCPolynomial checksumBabyBear))
   records := records.push (← runTimed
     "univariate-mod-by-monic-reversal-ntt-low-mul" "CPolynomial"
@@ -822,10 +825,10 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     (fun _ ↦ CPolynomial.modByMonicRemainderOnly mediumBatchPoly mediumModDivisor)
     (checksumCPolynomial checksumBabyBear))
   records := records.push (← runTimed
-    "univariate-mod-by-monic-medium-reversal-direct-low-mul" "CPolynomial"
-    "modByMonicByReversal, MulLowContext.direct" "BabyBear.Field"
+    "univariate-mod-by-monic-medium-reversal-convolution-low-mul" "CPolynomial"
+    "modByMonicByReversal, MulLowContext.convolution" "BabyBear.Field"
     mediumUnivariateModShape mediumModWarmupIterations mediumModMeasuredIterations
-    (fun _ ↦ reversalDirectLowMod.modByMonic mediumBatchPoly mediumModDivisor)
+    (fun _ ↦ reversalConvolutionLowMod.modByMonic mediumBatchPoly mediumModDivisor)
     (checksumCPolynomial checksumBabyBear))
   records := records.push (← runTimed
     "univariate-mod-by-monic-medium-reversal-ntt-low-mul" "CPolynomial"
@@ -862,10 +865,11 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     (fun _ ↦ CPolynomial.evalBatchSubproduct nttMul remainderOnlyMod batchPoly batchPoints)
     (checksumArray checksumBabyBear))
   records := records.push (← runTimed
-    "univariate-batch-subproduct-naive-mul-reversal-direct-low-mod" "CPolynomial"
-    "evalBatchSubproduct naive mul/reversal-direct-low mod" "BabyBear.Field"
+    "univariate-batch-subproduct-naive-mul-reversal-convolution-low-mod" "CPolynomial"
+    "evalBatchSubproduct naive mul/reversal-convolution-low mod" "BabyBear.Field"
     univariateBatchShape batchWarmupIterations batchMeasuredIterations
-    (fun _ ↦ CPolynomial.evalBatchSubproduct naiveMul reversalDirectLowMod batchPoly batchPoints)
+    (fun _ ↦ CPolynomial.evalBatchSubproduct naiveMul reversalConvolutionLowMod batchPoly
+      batchPoints)
     (checksumArray checksumBabyBear))
   records := records.push (← runTimed
     "univariate-batch-subproduct-ntt-mul-reversal-ntt-low-mod" "CPolynomial"

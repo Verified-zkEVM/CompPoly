@@ -716,15 +716,15 @@ lemma mul_coeff [LawfulBEq R] (p q : CPolynomial.Raw R) (k : ℕ) :
 
 namespace MulLowContext
 
-/-- Low-product backend using the direct coefficient formula. -/
-def direct [LawfulBEq R] : MulLowContext R where
-  mulLow := mulLowDirect
+/-- Low-product backend using the coefficient convolution formula. -/
+def convolution [LawfulBEq R] : MulLowContext R where
+  mulLow := mulLowConvolution
   size_le := by
     intro k p q
-    simp [mulLowDirect]
+    simp [mulLowConvolution]
   coeff_of_lt := by
     intro k p q i hi
-    rw [mulLowDirect, CPolynomial.Raw.coeff]
+    rw [mulLowConvolution, CPolynomial.Raw.coeff]
     have hsize : i < (Array.ofFn fun j : Fin k =>
         (Finset.range (j.val + 1)).sum fun l => p.coeff l * q.coeff (j.val - l)).size := by
       simpa using hi
@@ -744,6 +744,21 @@ lemma truncate_coeff (k : Nat) (p : CPolynomial.Raw R) (i : Nat) :
     · simp [hik, hip]
     · simp [hik, hip]
   · simp [hik]
+
+namespace MulLowContext
+
+/-- Low-product backend using ordinary multiplication followed by truncation. -/
+def naive [LawfulBEq R] : MulLowContext R where
+  mulLow k p q := truncate k (p * q)
+  size_le := by
+    intro k p q
+    simp [truncate]
+  coeff_of_lt := by
+    intro k p q i hi
+    rw [truncate_coeff]
+    simp [hi]
+
+end MulLowContext
 
 omit [BEq R] in
 lemma reverse_coeff (n : Nat) (p : CPolynomial.Raw R) (i : Nat) :

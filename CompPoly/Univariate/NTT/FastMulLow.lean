@@ -51,15 +51,15 @@ private def run
         (FastMul.Raw.fastMulImpl D (CPolynomial.Raw.truncate k p)
           (CPolynomial.Raw.truncate k q))
   | none =>
-      (CPolynomial.Raw.MulLowContext.direct (R := R)).mulLow k p q
+      (CPolynomial.Raw.MulLowContext.convolution (R := R)).mulLow k p q
 
 /--
-NTT-backed low-product context with direct low-convolution as a fallback.
+NTT-backed low-product context with low-convolution as a fallback.
 
 This truncates both inputs to the requested output precision, multiplies them
 with the selected fitting NTT domain when one is available, and truncates the
 result back to the requested precision. If the domain table cannot cover the
-requested product length, it falls back to the direct low-convolution backend.
+requested product length, it falls back to the low-convolution backend.
 -/
 def withFallback
     (bestDomainForLength? : (requiredLen : Nat) →
@@ -74,7 +74,8 @@ def withFallback
           (Domain.requiredLength (CPolynomial.Raw.truncate k p)
             (CPolynomial.Raw.truncate k q)) with
     | none =>
-        simpa [hdomain] using (CPolynomial.Raw.MulLowContext.direct (R := R)).size_le k p q
+        simpa [hdomain] using
+          (CPolynomial.Raw.MulLowContext.convolution (R := R)).size_le k p q
     | some fitted =>
         rcases fitted with ⟨D, hfit⟩
         simp [CPolynomial.Raw.truncate]
@@ -87,7 +88,7 @@ def withFallback
             (CPolynomial.Raw.truncate k q)) with
     | none =>
         simpa [hdomain] using
-          (CPolynomial.Raw.MulLowContext.direct (R := R)).coeff_of_lt k p q i hi
+          (CPolynomial.Raw.MulLowContext.convolution (R := R)).coeff_of_lt k p q i hi
     | some fitted =>
         rcases fitted with ⟨D, hfit⟩
         rw [truncate_coeff_of_lt]

@@ -139,9 +139,9 @@ def takeLow [Zero R] (k : Nat) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
 def reverse [Zero R] (n : Nat) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
   Array.ofFn fun i : Fin n => p.coeff (n - 1 - i.val)
 
-/-- Direct low product, computing only coefficients below `k`. -/
+/-- Low product computed by the coefficient convolution formula. -/
 @[inline, specialize]
-def mulLowDirect [Semiring R] (k : Nat) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
+def mulLowConvolution [Semiring R] (k : Nat) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
   Array.ofFn fun i : Fin k =>
     (Finset.range (i.val + 1)).sum fun j => p.coeff j * q.coeff (i.val - j)
 
