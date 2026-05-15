@@ -57,7 +57,7 @@ private def run
 NTT-backed low-product context with direct low-convolution as a fallback.
 
 This truncates both inputs to the requested output precision, multiplies them
-with the smallest fitting NTT domain when one is available, and truncates the
+with the selected fitting NTT domain when one is available, and truncates the
 result back to the requested precision. If the domain table cannot cover the
 requested product length, it falls back to the direct low-convolution backend.
 -/

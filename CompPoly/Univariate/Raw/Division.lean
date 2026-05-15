@@ -105,7 +105,7 @@ Remainder by a monic polynomial through reversal and truncated products.
 
 For canonical monic inputs this computes the quotient from the reversed divisor
 inverse modulo `X^k`, then subtracts only the low coefficients needed for the
-remainder. Inputs outside that executable contract fall back to the older
+remainder. Inputs outside that executable contract fall back to the
 remainder-only implementation.
 -/
 @[inline, specialize]

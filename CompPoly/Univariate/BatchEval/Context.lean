@@ -17,8 +17,7 @@ namespace CPolynomial
 
 variable {R : Type*}
 
-/-- Explicit multiplication backend for algorithms that should not replace the canonical `Mul`
-instance on `CPolynomial R`. -/
+/-- Explicit multiplication backend for batch-evaluation algorithms. -/
 structure MulContext (R : Type*) [Semiring R] [BEq R] [LawfulBEq R] where
   /-- Multiply two canonical polynomials. -/
   mul : CPolynomial R → CPolynomial R → CPolynomial R
@@ -42,9 +41,9 @@ def naive [Semiring R] [BEq R] [LawfulBEq R] : MulContext R where
 /--
 NTT-backed multiplication context with canonical multiplication as a fallback.
 
-The context asks for the smallest supported domain that fits the current
-operands. If no supported domain is available, it falls back to ordinary
-`CPolynomial` multiplication.
+The context asks the selector for a domain that fits the current operands. If no
+supported domain is available, it falls back to ordinary `CPolynomial`
+multiplication.
 -/
 def ntt [Field R] [BEq R] [LawfulBEq R]
     (bestDomainForLength? : (requiredLen : Nat) →
@@ -62,7 +61,7 @@ def naive [Field R] [BEq R] [LawfulBEq R] : ModContext R where
   modByMonic p q := CPolynomial.modByMonic p q
   modByMonic_eq_modByMonic _ _ := rfl
 
-/-- A remainder-only compiled backend for monic remainders. -/
+/-- A remainder-only backend for monic remainders. -/
 def remainderOnly [Field R] [BEq R] [LawfulBEq R] : ModContext R where
   modByMonic p q := CPolynomial.modByMonicRemainderOnly p q
   modByMonic_eq_modByMonic p q := CPolynomial.modByMonicRemainderOnly_eq_modByMonic p q

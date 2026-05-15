@@ -52,10 +52,10 @@ private def mediumBatchWarmupIterations : Nat := 1
 /-- Number of measured iterations for medium full-array batch-evaluation benchmarks. -/
 private def mediumBatchMeasuredIterations : Nat := 10
 
-/-- Number of warmup iterations for larger full-array batch-evaluation benchmarks. -/
+/-- Number of warmup iterations for large full-array batch-evaluation benchmarks. -/
 private def largeBatchWarmupIterations : Nat := 1
 
-/-- Number of measured iterations for larger full-array batch-evaluation benchmarks. -/
+/-- Number of measured iterations for large full-array batch-evaluation benchmarks. -/
 private def largeBatchMeasuredIterations : Nat := 10
 
 /-- Number of warmup iterations for direct monic-remainder benchmarks. -/
@@ -88,10 +88,10 @@ private def mediumUnivariateBatchCoeffSlots : Nat := 8192
 /-- Number of points used by medium univariate batch-evaluation benchmarks. -/
 private def mediumUnivariateBatchPointCount : Nat := 1024
 
-/-- Number of coefficient slots used by larger univariate batch-evaluation benchmarks. -/
+/-- Number of coefficient slots used by large univariate batch-evaluation benchmarks. -/
 private def largeUnivariateBatchCoeffSlots : Nat := 65536
 
-/-- Number of points used by larger univariate batch-evaluation benchmarks. -/
+/-- Number of points used by large univariate batch-evaluation benchmarks. -/
 private def largeUnivariateBatchPointCount : Nat := 8192
 
 /-- Number of linear factors in the direct monic-remainder benchmark divisor. -/
@@ -115,7 +115,7 @@ private def mediumUnivariateBatchShape : String :=
   s!"degree<{mediumUnivariateBatchCoeffSlots}, dense, " ++
     s!"{mediumUnivariateBatchPointCount} points"
 
-/-- Input-shape label for larger univariate batch-evaluation benchmarks. -/
+/-- Input-shape label for large univariate batch-evaluation benchmarks. -/
 private def largeUnivariateBatchShape : String :=
   s!"degree<{largeUnivariateBatchCoeffSlots}, dense, " ++
     s!"{largeUnivariateBatchPointCount} points"
