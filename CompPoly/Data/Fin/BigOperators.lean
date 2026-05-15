@@ -169,7 +169,7 @@ termination_by (r - 1 - i.val)
 Splits a sum over `Fin (2 * r)` into a sum over even indices and a sum over odd indices.
 Useful for Fast Fourier Transform (FFT) type recursions.
 -/
-theorem Fin.sum_univ_even_odd {r : ℕ} {M : Type*} [AddCommMonoid M]
+theorem Fin.sum_univ_split_even_add_odd {r : ℕ} {M : Type*} [AddCommMonoid M]
     (f : Fin (2 * r) → M) :
     ∑ i : Fin (2 * r), f i
     = (∑ i : Fin r, f ⟨2 * i.val, by have := i.isLt; omega⟩)
@@ -217,12 +217,12 @@ theorem Fin.sum_univ_even_odd {r : ℕ} {M : Type*} [AddCommMonoid M]
     _ = (∑ i : Fin r, f ⟨2 * i.val, by have := i.isLt; omega⟩)
       + (∑ i : Fin r, f ⟨2 * i.val + 1, by have := i.isLt; omega⟩) := rfl
 
-/-- Specialized form of `Fin.sum_univ_even_odd` for `r = 2 ^ n`. -/
-theorem Fin.sum_univ_odd_even {n : ℕ} {M : Type*} [AddCommMonoid M] (f : ℕ → M) :
+/-- Specialized form of `Fin.sum_univ_split_even_add_odd` for `r = 2 ^ n`. -/
+theorem Fin.sum_univ_pow_two_even_add_odd {n : ℕ} {M : Type*} [AddCommMonoid M] (f : ℕ → M) :
     (∑ i : Fin (2 ^ n), f (2 * i)) + (∑ i : Fin (2 ^ n), f (2 * i + 1))
     = ∑ i : Fin (2 ^ (n + 1)), f i := by
   rw [show (2 ^ (n + 1) : ℕ) = 2 * 2 ^ n from by rw [pow_succ, Nat.mul_comm]]
-  exact (Fin.sum_univ_even_odd (fun i : Fin (2 * 2 ^ n) ↦ f i.val)).symm
+  exact (Fin.sum_univ_split_even_add_odd (fun i : Fin (2 * 2 ^ n) ↦ f i.val)).symm
 
 /--
 Splits a sum over an interval `[a, c]` into two sums over `[a, b]` and `[b+1, c]`.

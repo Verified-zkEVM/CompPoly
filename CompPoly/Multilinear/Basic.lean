@@ -247,7 +247,7 @@ private lemma eval_horner_step_dot_product {n : ℕ}
           (monomialBasis x).get ⟨2 * i.val, by omega⟩) +
         (∑ i : Fin (2 ^ n), p.get ⟨2 * i.val + 1, by omega⟩ *
           (monomialBasis x).get ⟨2 * i.val + 1, by omega⟩) := by
-    convert (Fin.sum_univ_odd_even (n := n)
+    convert (Fin.sum_univ_pow_two_even_add_odd (n := n)
         (f := fun i ↦ if h : i < 2 ^ (n + 1) then
           p.get ⟨i, h⟩ * (monomialBasis x).get ⟨i, h⟩ else 0)).symm using 1
     · apply Finset.sum_congr rfl
@@ -507,7 +507,7 @@ private lemma eval_mle_step_dot_product {n : ℕ}
           (lagrangeBasis x).get ⟨2 * i.val, by omega⟩) +
         (∑ i : Fin (2 ^ n), p.get ⟨2 * i.val + 1, by omega⟩ *
           (lagrangeBasis x).get ⟨2 * i.val + 1, by omega⟩) := by
-    convert (Fin.sum_univ_odd_even (n := n)
+    convert (Fin.sum_univ_pow_two_even_add_odd (n := n)
         (f := fun i ↦ if h : i < 2 ^ (n + 1) then
           p.get ⟨i, h⟩ * (lagrangeBasis x).get ⟨i, h⟩ else 0)).symm using 1
     · apply Finset.sum_congr rfl
