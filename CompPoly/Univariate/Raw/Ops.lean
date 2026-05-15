@@ -132,18 +132,18 @@ def truncate [Zero R] (k : Nat) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
 /-- Return exactly the first `k` coefficients, padding missing coefficients with zero. -/
 @[inline, specialize]
 def takeLow [Zero R] (k : Nat) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
-  Array.ofFn fun i : Fin k => p.coeff i
+  Array.ofFn fun i : Fin k ↦ p.coeff i
 
 /-- Reverse the first `n` coefficients, padding missing coefficients with zero. -/
 @[inline, specialize]
 def reverse [Zero R] (n : Nat) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
-  Array.ofFn fun i : Fin n => p.coeff (n - 1 - i.val)
+  Array.ofFn fun i : Fin n ↦ p.coeff (n - 1 - i.val)
 
 /-- Low product computed by the coefficient convolution formula. -/
 @[inline, specialize]
 def mulLowConvolution [Semiring R] (k : Nat) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
-  Array.ofFn fun i : Fin k =>
-    (Finset.range (i.val + 1)).sum fun j => p.coeff j * q.coeff (i.val - j)
+  Array.ofFn fun i : Fin k ↦
+    (Finset.range (i.val + 1)).sum fun j ↦ p.coeff j * q.coeff (i.val - j)
 
 /-- Backend for computing the low `k` coefficients of a raw product. -/
 structure MulLowContext (R : Type*) [Semiring R] [BEq R] [LawfulBEq R] where

@@ -26,7 +26,8 @@ section Division
 
 variable [Field R] [BEq R] [LawfulBEq R]
 
-private def LowEq (k : Nat) (p q : R[X]) : Prop :=
+/-- Two polynomials agree on all coefficients below `k`. -/
+private def lowEq (k : Nat) (p q : R[X]) : Prop :=
   ∀ i, i < k → p.coeff i = q.coeff i
 
 omit [BEq R] [LawfulBEq R] in
@@ -51,61 +52,61 @@ private lemma toPoly_mulLow_coeff (M : MulLowContext R) (k : Nat)
 
 omit [BEq R] [LawfulBEq R] in
 private lemma toPoly_truncate_lowEq (k : Nat) (p : Raw R) :
-    LowEq k (truncate k p).toPoly p.toPoly := by
+    lowEq k (truncate k p).toPoly p.toPoly := by
   intro i hi
   simp [toPoly_truncate_coeff, hi]
 
 private lemma toPoly_mulLow_lowEq (M : MulLowContext R) (k : Nat)
     (p q : Raw R) :
-    LowEq k (M.mulLow k p q).toPoly (p.toPoly * q.toPoly) := by
+    lowEq k (M.mulLow k p q).toPoly (p.toPoly * q.toPoly) := by
   intro i hi
   simp [toPoly_mulLow_coeff, hi]
 
 omit [BEq R] [LawfulBEq R] in
-private lemma LowEq.refl (k : Nat) (p : R[X]) : LowEq k p p := by
+private lemma lowEq.refl (k : Nat) (p : R[X]) : lowEq k p p := by
   intro _ _
   rfl
 
 omit [BEq R] [LawfulBEq R] in
-private lemma LowEq.symm {k : Nat} {p q : R[X]} (h : LowEq k p q) :
-    LowEq k q p := by
+private lemma lowEq.symm {k : Nat} {p q : R[X]} (h : lowEq k p q) :
+    lowEq k q p := by
   intro i hi
   exact (h i hi).symm
 
 omit [BEq R] [LawfulBEq R] in
-private lemma LowEq.trans {k : Nat} {p q r : R[X]} (hpq : LowEq k p q)
-    (hqr : LowEq k q r) : LowEq k p r := by
+private lemma lowEq.trans {k : Nat} {p q r : R[X]} (hpq : lowEq k p q)
+    (hqr : lowEq k q r) : lowEq k p r := by
   intro i hi
   exact (hpq i hi).trans (hqr i hi)
 
 omit [BEq R] [LawfulBEq R] in
-private lemma LowEq.of_le {k l : Nat} {p q : R[X]} (hle : k ≤ l)
-    (h : LowEq l p q) : LowEq k p q := by
+private lemma lowEq.of_le {k l : Nat} {p q : R[X]} (hle : k ≤ l)
+    (h : lowEq l p q) : lowEq k p q := by
   intro i hi
   exact h i (lt_of_lt_of_le hi hle)
 
 omit [BEq R] [LawfulBEq R] in
-private lemma LowEq.add {k : Nat} {p₁ p₂ q₁ q₂ : R[X]}
-    (h₁ : LowEq k p₁ q₁) (h₂ : LowEq k p₂ q₂) :
-    LowEq k (p₁ + p₂) (q₁ + q₂) := by
+private lemma lowEq.add {k : Nat} {p₁ p₂ q₁ q₂ : R[X]}
+    (h₁ : lowEq k p₁ q₁) (h₂ : lowEq k p₂ q₂) :
+    lowEq k (p₁ + p₂) (q₁ + q₂) := by
   intro i hi
   simp [h₁ i hi, h₂ i hi]
 
 omit [BEq R] [LawfulBEq R] in
-private lemma LowEq.neg {k : Nat} {p q : R[X]} (h : LowEq k p q) :
-    LowEq k (-p) (-q) := by
+private lemma lowEq.neg {k : Nat} {p q : R[X]} (h : lowEq k p q) :
+    lowEq k (-p) (-q) := by
   intro i hi
   simp [h i hi]
 
 omit [BEq R] [LawfulBEq R] in
-private lemma LowEq.sub {k : Nat} {p₁ p₂ q₁ q₂ : R[X]}
-    (h₁ : LowEq k p₁ q₁) (h₂ : LowEq k p₂ q₂) :
-    LowEq k (p₁ - p₂) (q₁ - q₂) := by
+private lemma lowEq.sub {k : Nat} {p₁ p₂ q₁ q₂ : R[X]}
+    (h₁ : lowEq k p₁ q₁) (h₂ : lowEq k p₂ q₂) :
+    lowEq k (p₁ - p₂) (q₁ - q₂) := by
   exact h₁.add h₂.neg
 
 omit [BEq R] [LawfulBEq R] in
-private lemma LowEq.mul_left {k : Nat} {p q : R[X]} (r : R[X])
-    (h : LowEq k p q) : LowEq k (r * p) (r * q) := by
+private lemma lowEq.mul_left {k : Nat} {p q : R[X]} (r : R[X])
+    (h : lowEq k p q) : lowEq k (r * p) (r * q) := by
   intro i hi
   rw [Polynomial.coeff_mul, Polynomial.coeff_mul]
   apply Finset.sum_congr rfl
@@ -116,12 +117,12 @@ private lemma LowEq.mul_left {k : Nat} {p q : R[X]} (r : R[X])
   rw [h b hb]
 
 omit [BEq R] [LawfulBEq R] in
-private lemma LowEq.mul_right {k : Nat} {p q : R[X]} (r : R[X])
-    (h : LowEq k p q) : LowEq k (p * r) (q * r) := by
+private lemma lowEq.mul_right {k : Nat} {p q : R[X]} (r : R[X])
+    (h : lowEq k p q) : lowEq k (p * r) (q * r) := by
   intro i hi
   calc
     (p * r).coeff i = (r * p).coeff i := by rw [_root_.mul_comm p r]
-    _ = (r * q).coeff i := LowEq.mul_left (k := k) (p := p) (q := q) r h i hi
+    _ = (r * q).coeff i := lowEq.mul_left (k := k) (p := p) (q := q) r h i hi
     _ = (q * r).coeff i := by rw [_root_.mul_comm q r]
 
 omit [BEq R] [LawfulBEq R] in
@@ -129,14 +130,14 @@ private lemma polynomial_C_two : Polynomial.C (2 : R) = (2 : R[X]) := by
   exact Polynomial.C_eq_natCast 2
 
 omit [BEq R] [LawfulBEq R] in
-private lemma LowEq.eq_one_of_sub {k : Nat} {p : R[X]}
-    (h : LowEq k (p - 1) 0) : LowEq k p 1 := by
+private lemma lowEq.eq_one_of_sub {k : Nat} {p : R[X]}
+    (h : lowEq k (p - 1) 0) : lowEq k p 1 := by
   intro i hi
   exact sub_eq_zero.mp (by simpa [Polynomial.coeff_sub] using h i hi)
 
 omit [BEq R] [LawfulBEq R] in
-private lemma LowEq.mul_self_zero {n : Nat} {p : R[X]}
-    (h : LowEq n p 0) : LowEq (2 * n) (p * p) 0 := by
+private lemma lowEq.mul_self_zero {n : Nat} {p : R[X]}
+    (h : lowEq n p 0) : lowEq (2 * n) (p * p) 0 := by
   intro i hi
   rw [Polynomial.coeff_mul]
   apply Finset.sum_eq_zero
@@ -151,40 +152,40 @@ private lemma LowEq.mul_self_zero {n : Nat} {p : R[X]}
     simp
 
 omit [BEq R] [LawfulBEq R] in
-private lemma LowEq.newton_step {n next : Nat} {p g fg correction g' : R[X]}
+private lemma lowEq.newton_step {n next : Nat} {p g fg correction g' : R[X]}
     (hnext : next ≤ 2 * n)
-    (hfg : LowEq next fg (p * g))
-    (hcorrection : LowEq next correction (Polynomial.C (2 : R) - fg))
-    (hg' : LowEq next g' (g * correction))
-    (h : LowEq n (p * g) 1) :
-    LowEq next (p * g') 1 := by
-  have hpg : LowEq next (p * g') (p * (g * correction)) :=
-    LowEq.mul_left p hg'
-  have hcorrection' : LowEq next correction (Polynomial.C (2 : R) - p * g) := by
+    (hfg : lowEq next fg (p * g))
+    (hcorrection : lowEq next correction (Polynomial.C (2 : R) - fg))
+    (hg' : lowEq next g' (g * correction))
+    (h : lowEq n (p * g) 1) :
+    lowEq next (p * g') 1 := by
+  have hpg : lowEq next (p * g') (p * (g * correction)) :=
+    lowEq.mul_left p hg'
+  have hcorrection' : lowEq next correction (Polynomial.C (2 : R) - p * g) := by
     intro i hi
     have h1 := hcorrection i hi
     have h2 := hfg i hi
     simp [h1, h2]
   have hpgcorrection :
-      LowEq next (p * (g * correction)) ((p * g) * (Polynomial.C (2 : R) - p * g)) := by
+      lowEq next (p * (g * correction)) ((p * g) * (Polynomial.C (2 : R) - p * g)) := by
     intro i hi
     rw [← _root_.mul_assoc p g correction]
-    exact LowEq.mul_left (p * g) hcorrection' i hi
-  have hE : LowEq n (p * g - 1) 0 := by
+    exact lowEq.mul_left (p * g) hcorrection' i hi
+  have h_e : lowEq n (p * g - 1) 0 := by
     intro i hi
     have hcoeff := h i hi
     simp [Polynomial.coeff_sub, hcoeff]
-  have hE2 : LowEq next ((p * g - 1) * (p * g - 1)) 0 := by
-    exact (LowEq.mul_self_zero hE).of_le hnext
-  have hmain : LowEq next (((p * g) * (Polynomial.C (2 : R) - p * g)) - 1) 0 := by
+  have h_e2 : lowEq next ((p * g - 1) * (p * g - 1)) 0 := by
+    exact (lowEq.mul_self_zero h_e).of_le hnext
+  have hmain : lowEq next (((p * g) * (Polynomial.C (2 : R) - p * g)) - 1) 0 := by
     have hpoly :
         ((p * g) * (Polynomial.C (2 : R) - p * g)) - 1 =
           -((p * g - 1) * (p * g - 1)) := by
       rw [polynomial_C_two (R := R)]
       ring
     rw [hpoly]
-    simpa using hE2.neg
-  exact hpg.trans (hpgcorrection.trans (LowEq.eq_one_of_sub hmain))
+    simpa using h_e2.neg
+  exact hpg.trans (hpgcorrection.trans (lowEq.eq_one_of_sub hmain))
 
 private lemma min_mul_two_pow_le_min_min_mul (k n fuel : Nat) :
     Nat.min k (n * 2 ^ (fuel + 1)) ≤
@@ -205,7 +206,7 @@ private lemma min_mul_two_pow_le_min_min_mul (k n fuel : Nat) :
 omit [BEq R] [LawfulBEq R] in
 private lemma inverseModX_base_lowEq (p : Raw R)
     (h0 : p.toPoly.coeff 0 ≠ 0) :
-    LowEq 1 (p.toPoly * (Raw.C (p.coeff 0)⁻¹).toPoly) 1 := by
+    lowEq 1 (p.toPoly * (Raw.C (p.coeff 0)⁻¹).toPoly) 1 := by
   intro i hi
   have hi0 : i = 0 := by omega
   subst i
@@ -216,8 +217,8 @@ private lemma inverseModX_base_lowEq (p : Raw R)
 
 private lemma inverseModX_go_lowEq (M : MulLowContext R) (k : Nat) (p : Raw R) :
     ∀ fuel n g,
-      LowEq n (p.toPoly * g.toPoly) 1 →
-      LowEq (Nat.min k (n * 2 ^ fuel))
+      lowEq n (p.toPoly * g.toPoly) 1 →
+      lowEq (Nat.min k (n * 2 ^ fuel))
         (p.toPoly * (Raw.inverseModX.go M k p fuel n g).toPoly) 1 := by
   intro fuel
   induction fuel with
@@ -225,20 +226,20 @@ private lemma inverseModX_go_lowEq (M : MulLowContext R) (k : Nat) (p : Raw R) :
       intro n g h
       unfold Raw.inverseModX.go
       have hg :
-          LowEq (Nat.min k n) (truncate k g).toPoly g.toPoly :=
+          lowEq (Nat.min k n) (truncate k g).toPoly g.toPoly :=
         (toPoly_truncate_lowEq k g).of_le (Nat.min_le_left k n)
       simpa using
-        (LowEq.mul_left p.toPoly hg).trans (h.of_le (Nat.min_le_right k n))
+        (lowEq.mul_left p.toPoly hg).trans (h.of_le (Nat.min_le_right k n))
   | succ fuel ih =>
       intro n g h
       unfold Raw.inverseModX.go
       by_cases hkn : k ≤ n
       · simp [hkn]
         have hg :
-            LowEq k (truncate k g).toPoly g.toPoly :=
+            lowEq k (truncate k g).toPoly g.toPoly :=
           toPoly_truncate_lowEq k g
-        have hkg : LowEq k (p.toPoly * (truncate k g).toPoly) 1 :=
-          (LowEq.mul_left p.toPoly hg).trans (h.of_le hkn)
+        have hkg : lowEq k (p.toPoly * (truncate k g).toPoly) 1 :=
+          (lowEq.mul_left p.toPoly hg).trans (h.of_le hkn)
         exact hkg.of_le (Nat.min_le_left k (n * 2 ^ (fuel + 1)))
       · simp [hkn]
         let next := Nat.min k (2 * n)
@@ -246,26 +247,26 @@ private lemma inverseModX_go_lowEq (M : MulLowContext R) (k : Nat) (p : Raw R) :
         let correction := Raw.C (2 : R) - fg
         let g' := M.mulLow next g correction
         have hnext : next ≤ 2 * n := Nat.min_le_right k (2 * n)
-        have hfg : LowEq next fg.toPoly (p.toPoly * g.toPoly) :=
+        have hfg : lowEq next fg.toPoly (p.toPoly * g.toPoly) :=
           toPoly_mulLow_lowEq M next p g
         have hcorrection :
-            LowEq next correction.toPoly (Polynomial.C (2 : R) - fg.toPoly) := by
+            lowEq next correction.toPoly (Polynomial.C (2 : R) - fg.toPoly) := by
           have hpoly : correction.toPoly = Polynomial.C (2 : R) - fg.toPoly := by
             change (Raw.C (2 : R) - fg).toPoly = Polynomial.C (2 : R) - fg.toPoly
             rw [Raw.toPoly_sub, Raw.toPoly_C]
           intro i hi
           rw [hpoly]
         have hg' :
-            LowEq next g'.toPoly (g.toPoly * correction.toPoly) :=
+            lowEq next g'.toPoly (g.toPoly * correction.toPoly) :=
           toPoly_mulLow_lowEq M next g correction
-        have hstep : LowEq next (p.toPoly * g'.toPoly) 1 :=
-          LowEq.newton_step hnext hfg hcorrection hg' h
+        have hstep : lowEq next (p.toPoly * g'.toPoly) 1 :=
+          lowEq.newton_step hnext hfg hcorrection hg' h
         exact (ih next g' hstep).of_le
           (min_mul_two_pow_le_min_min_mul k n fuel)
 
 private lemma inverseModX_lowEq (M : MulLowContext R) (k : Nat)
     (p : Raw R) (h0 : p.toPoly.coeff 0 ≠ 0) :
-    LowEq k (p.toPoly * (inverseModX M k p).toPoly) 1 := by
+    lowEq k (p.toPoly * (inverseModX M k p).toPoly) 1 := by
   unfold inverseModX
   by_cases hk : k = 0
   · subst k
@@ -298,18 +299,18 @@ omit [BEq R] [LawfulBEq R] in
 private lemma toPoly_reverse_natDegree_le (k : Nat) (p : Raw R) :
     (reverse k p).toPoly.natDegree ≤ k - 1 := by
   rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
-  intro N hN
+  intro i hi
   rw [toPoly_reverse_coeff]
-  have hnot : ¬N < k := by omega
+  have hnot : ¬i < k := by omega
   simp [hnot]
 
 private lemma toPoly_mulLow_natDegree_le (M : MulLowContext R) (k : Nat)
     (p q : Raw R) :
     (M.mulLow k p q).toPoly.natDegree ≤ k - 1 := by
   rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
-  intro N hN
+  intro i hi
   rw [toPoly_mulLow_coeff]
-  have hnot : ¬N < k := by omega
+  have hnot : ¬i < k := by omega
   simp [hnot]
 
 private lemma raw_toPoly_natDegree_lt_size_of_trim_eq (p : Raw R)
@@ -453,16 +454,16 @@ private theorem raw_modByMonic_toPoly_eq_modByMonic (p q : CPolynomial R)
     (hmonic : (q.leadingCoeff == 1) = true) :
     ((p.val : Raw R).modByMonic q.val).toPoly = p.toPoly %ₘ q.toPoly := by
   have hqtrim : (q.val : Raw R).trim = q.val := Trim.trim_eq_of_isCanonical q.property
-  have hqLC : q.leadingCoeff = 1 := by
+  have hq_lc : q.leadingCoeff = 1 := by
     simpa using (LawfulBEq.eq_of_beq hmonic)
-  have hqrawMonic : (q.val : Raw R).leadingCoeff = 1 := by
-    simpa [Raw.leadingCoeff, CPolynomial.leadingCoeff, hqtrim] using hqLC
+  have hq_raw_monic : (q.val : Raw R).leadingCoeff = 1 := by
+    simpa [Raw.leadingCoeff, CPolynomial.leadingCoeff, hqtrim] using hq_lc
   have hqpos : 0 < (q.val : Raw R).size := by
     by_contra hpos
     have hsize : (q.val : Raw R).size = 0 := Nat.eq_zero_of_not_pos hpos
     have hzero : q.leadingCoeff = 0 := by
       simp [CPolynomial.leadingCoeff, Array.getLastD, hsize]
-    have : (1 : R) = 0 := by simpa [hqLC] using hzero.symm
+    have : (1 : R) = 0 := by simpa [hq_lc] using hzero.symm
     exact one_ne_zero this
   have hqdegree : q.toPoly.degree = (((q.val : Raw R).size - 1 : Nat) : WithBot Nat) := by
     have hdeg := degree_toPoly q
@@ -472,17 +473,17 @@ private theorem raw_modByMonic_toPoly_eq_modByMonic (p q : CPolynomial R)
     | succ n =>
         simp [CPolynomial.degree, hs] at hdeg ⊢
         exact hdeg.symm
-  have hspec := raw_divModByMonicAux_go_spec (R := R) q.val hqtrim hqrawMonic hqpos
+  have hspec := raw_divModByMonicAux_go_spec (R := R) q.val hqtrim hq_raw_monic hqpos
     hqdegree p.val.size p.val (Trim.trim_eq_of_isCanonical p.property) (Nat.le_refl p.val.size)
   rcases hspec with ⟨hrel, hdeg⟩
-  have hqMonicPoly : q.toPoly.Monic := by
+  have hq_monic_poly : q.toPoly.Monic := by
     rw [Polynomial.Monic.def, ← leadingCoeff_toPoly]
-    exact hqLC
+    exact hq_lc
   have hunique :=
     Polynomial.div_modByMonic_unique
       ((Raw.divModByMonicAux p.val q.val).1.toPoly)
       ((Raw.divModByMonicAux p.val q.val).2.toPoly)
-      hqMonicPoly ⟨hrel, hdeg⟩
+      hq_monic_poly ⟨hrel, hdeg⟩
   exact hunique.2.symm
 
 private theorem reversal_remainder_toPoly_eq_modByMonic
@@ -510,22 +511,22 @@ private theorem reversal_remainder_toPoly_eq_modByMonic
   let rem := truncate n p.val - productLow
   have hptrim : (p.val : Raw R).trim = p.val := Trim.trim_eq_of_isCanonical p.property
   have hqtrim : (q.val : Raw R).trim = q.val := Trim.trim_eq_of_isCanonical q.property
-  have hqLC : q.leadingCoeff = 1 := by
+  have hq_lc : q.leadingCoeff = 1 := by
     simpa using (LawfulBEq.eq_of_beq hmonic)
-  have hqrawMonic : (q.val : Raw R).leadingCoeff = 1 := by
-    simpa [Raw.leadingCoeff, CPolynomial.leadingCoeff, hqtrim] using hqLC
+  have hq_raw_monic : (q.val : Raw R).leadingCoeff = 1 := by
+    simpa [Raw.leadingCoeff, CPolynomial.leadingCoeff, hqtrim] using hq_lc
   have hqpos : 0 < (q.val : Raw R).size := by
     by_contra hpos
     have hsizeq : (q.val : Raw R).size = 0 := Nat.eq_zero_of_not_pos hpos
     have hzero : q.leadingCoeff = 0 := by
       simp [CPolynomial.leadingCoeff, Array.getLastD, hsizeq]
-    have : (1 : R) = 0 := by simpa [hqLC] using hzero.symm
+    have : (1 : R) = 0 := by simpa [hq_lc] using hzero.symm
     exact one_ne_zero this
   have hppos : 0 < (p.val : Raw R).size := by omega
   have hkpos : 0 < k := by omega
-  have hqMonicPoly : q.toPoly.Monic := by
+  have hq_monic_poly : q.toPoly.Monic := by
     rw [Polynomial.Monic.def, ← leadingCoeff_toPoly]
-    exact hqLC
+    exact hq_lc
   have hqdegree : q.toPoly.degree = ((n : Nat) : WithBot Nat) := by
     have hdeg := degree_toPoly q
     cases hs : (q.val : Raw R).size with
@@ -540,65 +541,66 @@ private theorem reversal_remainder_toPoly_eq_modByMonic
     raw_toPoly_natDegree_lt_size_of_trim_eq p.val hptrim hppos
   have hqdeg_lt : (q.val : Raw R).toPoly.natDegree < q.val.size :=
     raw_toPoly_natDegree_lt_size_of_trim_eq q.val hqtrim hqpos
-  have hrevP : revP.toPoly = Polynomial.reflect m p.toPoly := by
+  have h_revP : revP.toPoly = Polynomial.reflect m p.toPoly := by
     simpa [revP, m, CPolynomial.toPoly] using
       toPoly_reverse_eq_reflect (R := R) p.val.size p.val hpdeg_lt
-  have hrevQ : revQ.toPoly = Polynomial.reflect n q.toPoly := by
+  have h_revQ : revQ.toPoly = Polynomial.reflect n q.toPoly := by
     simpa [revQ, n, CPolynomial.toPoly] using
       toPoly_reverse_eq_reflect (R := R) q.val.size q.val hqdeg_lt
-  have hrevQ0 : revQ.toPoly.coeff 0 = 1 := by
-    rw [hrevQ, Polynomial.coeff_reflect]
+  have h_revQ0 : revQ.toPoly.coeff 0 = 1 := by
+    rw [h_revQ, Polynomial.coeff_reflect]
     have hle : 0 ≤ n := Nat.zero_le n
     simp [Polynomial.revAt, hle, n, raw_coeff_last_eq_leadingCoeff_of_trim_eq q.val hqtrim hqpos,
-      hqrawMonic, CPolynomial.toPoly, Raw.coeff_toPoly]
-  have hinv : LowEq k (revQ.toPoly * invRevQ.toPoly) 1 :=
-    inverseModX_lowEq M k revQ (by simp [hrevQ0])
-  have hquotRevLow :
-      LowEq k quotientRev.toPoly (revP.toPoly * invRevQ.toPoly) := by
+      hq_raw_monic, CPolynomial.toPoly, Raw.coeff_toPoly]
+  have hinv : lowEq k (revQ.toPoly * invRevQ.toPoly) 1 :=
+    inverseModX_lowEq M k revQ (by simp [h_revQ0])
+  have h_quotientRevLow :
+      lowEq k quotientRev.toPoly (revP.toPoly * invRevQ.toPoly) := by
     simpa [quotientRev] using toPoly_mulLow_lowEq M k revP invRevQ
-  have hrevProd : LowEq k (revQ.toPoly * quotientRev.toPoly) revP.toPoly := by
-    have h₁ : LowEq k (revQ.toPoly * quotientRev.toPoly)
+  have h_rev_prod : lowEq k (revQ.toPoly * quotientRev.toPoly) revP.toPoly := by
+    have h₁ : lowEq k (revQ.toPoly * quotientRev.toPoly)
         (revQ.toPoly * (revP.toPoly * invRevQ.toPoly)) :=
-      LowEq.mul_left revQ.toPoly hquotRevLow
+      lowEq.mul_left revQ.toPoly h_quotientRevLow
     have h₂ : revQ.toPoly * (revP.toPoly * invRevQ.toPoly) =
         revP.toPoly * (revQ.toPoly * invRevQ.toPoly) := by ring
-    have h₃ : LowEq k (revP.toPoly * (revQ.toPoly * invRevQ.toPoly)) revP.toPoly := by
-      simpa using LowEq.mul_left revP.toPoly hinv
-    exact h₁.trans ((by simpa [h₂] using h₃) : LowEq k
+    have h₃ : lowEq k (revP.toPoly * (revQ.toPoly * invRevQ.toPoly)) revP.toPoly := by
+      simpa using lowEq.mul_left revP.toPoly hinv
+    exact h₁.trans ((by simpa [h₂] using h₃) : lowEq k
       (revQ.toPoly * (revP.toPoly * invRevQ.toPoly)) revP.toPoly)
-  have hquotRevNat : quotientRev.toPoly.natDegree ≤ k - 1 := by
+  have h_quotientRevNat : quotientRev.toPoly.natDegree ≤ k - 1 := by
     simpa [quotientRev] using toPoly_mulLow_natDegree_le M k revP invRevQ
-  have hquotRevDegLt : quotientRev.toPoly.natDegree < k := by omega
-  have hquotReflect : quotient.toPoly = Polynomial.reflect (k - 1) quotientRev.toPoly := by
-    simpa [quotient] using toPoly_reverse_eq_reflect (R := R) k quotientRev hquotRevDegLt
-  have hquotRevReflect : quotientRev.toPoly = Polynomial.reflect (k - 1) quotient.toPoly := by
-    rw [hquotReflect, Polynomial.reflect_reflect]
-  have hquotNat : quotient.toPoly.natDegree ≤ k - 1 := by
+  have h_quotientRevDegreeLt : quotientRev.toPoly.natDegree < k := by omega
+  have h_quotientReflect : quotient.toPoly = Polynomial.reflect (k - 1) quotientRev.toPoly := by
+    simpa [quotient] using
+      toPoly_reverse_eq_reflect (R := R) k quotientRev h_quotientRevDegreeLt
+  have h_quotientRevReflect : quotientRev.toPoly = Polynomial.reflect (k - 1) quotient.toPoly := by
+    rw [h_quotientReflect, Polynomial.reflect_reflect]
+  have h_quotientNat : quotient.toPoly.natDegree ≤ k - 1 := by
     simpa [quotient] using toPoly_reverse_natDegree_le (R := R) k quotientRev
   have hm : m = n + (k - 1) := by omega
-  have hreflectMul :
+  have h_reflect_mul :
       Polynomial.reflect m (q.toPoly * quotient.toPoly) =
         revQ.toPoly * quotientRev.toPoly := by
     calc
       Polynomial.reflect m (q.toPoly * quotient.toPoly)
           = Polynomial.reflect (n + (k - 1)) (q.toPoly * quotient.toPoly) := by rw [hm]
       _ = Polynomial.reflect n q.toPoly * Polynomial.reflect (k - 1) quotient.toPoly := by
-          rw [Polynomial.reflect_mul q.toPoly quotient.toPoly hqnat hquotNat]
-      _ = revQ.toPoly * quotientRev.toPoly := by rw [← hrevQ, ← hquotRevReflect]
-  have hreflectHigh : LowEq k
+          rw [Polynomial.reflect_mul q.toPoly quotient.toPoly hqnat h_quotientNat]
+      _ = revQ.toPoly * quotientRev.toPoly := by rw [← h_revQ, ← h_quotientRevReflect]
+  have h_reflect_high : lowEq k
       (Polynomial.reflect m (q.toPoly * quotient.toPoly))
       (Polynomial.reflect m p.toPoly) := by
-    rw [hreflectMul, ← hrevP]
-    exact hrevProd
-  have hprodNat : (q.toPoly * quotient.toPoly).natDegree ≤ m := by
+    rw [h_reflect_mul, ← h_revP]
+    exact h_rev_prod
+  have h_prod_nat : (q.toPoly * quotient.toPoly).natDegree ≤ m := by
     have hmul : (q.toPoly * quotient.toPoly).natDegree ≤
         q.toPoly.natDegree + quotient.toPoly.natDegree :=
       Polynomial.natDegree_mul_le
     have hsum : q.toPoly.natDegree + quotient.toPoly.natDegree ≤ n + (k - 1) :=
-      Nat.add_le_add hqnat hquotNat
+      Nat.add_le_add hqnat h_quotientNat
     omega
-  have hpNat : p.toPoly.natDegree < p.val.size := hpdeg_lt
-  have hremDegree : rem.toPoly.degree < q.toPoly.degree := by
+  have hp_nat : p.toPoly.natDegree < p.val.size := hpdeg_lt
+  have h_remDegree : rem.toPoly.degree < q.toPoly.degree := by
     rw [hqdegree, Polynomial.degree_lt_iff_coeff_zero]
     intro i hi
     dsimp only [rem, productLow]
@@ -624,7 +626,7 @@ private theorem reversal_remainder_toPoly_eq_modByMonic
         have hij : Polynomial.revAt m j = i := by
           simp [Polynomial.revAt, hjm, j]
           omega
-        have hcoeff := hreflectHigh j hjk
+        have hcoeff := h_reflect_high j hjk
         rw [Polynomial.coeff_reflect, Polynomial.coeff_reflect, hij] at hcoeff
         rw [Polynomial.coeff_add, Raw.toPoly_sub, Polynomial.coeff_sub,
           toPoly_truncate_coeff]
@@ -634,9 +636,9 @@ private theorem reversal_remainder_toPoly_eq_modByMonic
         simp [hnotn, hcoeff]
       · have hmi : m < i := lt_of_not_ge him
         have hpzero : p.toPoly.coeff i = 0 := by
-          exact Polynomial.coeff_eq_zero_of_natDegree_lt (lt_of_lt_of_le hpNat (by omega))
+          exact Polynomial.coeff_eq_zero_of_natDegree_lt (lt_of_lt_of_le hp_nat (by omega))
         have hprodzero : (q.toPoly * quotient.toPoly).coeff i = 0 := by
-          exact Polynomial.coeff_eq_zero_of_natDegree_lt (lt_of_le_of_lt hprodNat hmi)
+          exact Polynomial.coeff_eq_zero_of_natDegree_lt (lt_of_le_of_lt h_prod_nat hmi)
         rw [Polynomial.coeff_add, Raw.toPoly_sub, Polynomial.coeff_sub,
           toPoly_truncate_coeff]
         dsimp only [productLow]
@@ -644,7 +646,7 @@ private theorem reversal_remainder_toPoly_eq_modByMonic
         have hnotn : ¬i < n := not_lt_of_ge hni
         simp [hnotn, hpzero, hprodzero]
   have hunique :=
-    Polynomial.div_modByMonic_unique quotient.toPoly rem.toPoly hqMonicPoly ⟨hrel, hremDegree⟩
+    Polynomial.div_modByMonic_unique quotient.toPoly rem.toPoly hq_monic_poly ⟨hrel, h_remDegree⟩
   dsimp only [rem, productLow, quotient, quotientRev, invRevQ, revQ, revP, n, k]
   exact hunique.2.symm
 
@@ -657,12 +659,12 @@ theorem modByMonicByReversal_eq_modByMonic
     · apply CPolynomial.ext
       have hptrim : (p.val : Raw R).trim = p.val := Trim.trim_eq_of_isCanonical p.property
       have hqtrim : (q.val : Raw R).trim = q.val := Trim.trim_eq_of_isCanonical q.property
-      have hrawMonic : ((q.val : Raw R).leadingCoeff == 1) = true := by
+      have h_raw_monic : ((q.val : Raw R).leadingCoeff == 1) = true := by
         simpa [Raw.leadingCoeff, CPolynomial.leadingCoeff, hqtrim] using hmonic
       have hguard :
           ((p.val : Raw R).trim == p.val && (q.val : Raw R).trim == q.val &&
               (q.val : Raw R).leadingCoeff == 1) = true := by
-        simp [hptrim, hqtrim, hrawMonic]
+        simp [hptrim, hqtrim, h_raw_monic]
       unfold modByMonicByReversal CPolynomial.modByMonic
       change (Raw.modByMonicByReversal M (p.val : Raw R) q.val).trim =
         ((p.val : Raw R).modByMonic q.val).trim
@@ -680,12 +682,12 @@ theorem modByMonicByReversal_eq_modByMonic
     · apply CPolynomial.ext
       have hptrim : (p.val : Raw R).trim = p.val := Trim.trim_eq_of_isCanonical p.property
       have hqtrim : (q.val : Raw R).trim = q.val := Trim.trim_eq_of_isCanonical q.property
-      have hrawMonic : ((q.val : Raw R).leadingCoeff == 1) = true := by
+      have h_raw_monic : ((q.val : Raw R).leadingCoeff == 1) = true := by
         simpa [Raw.leadingCoeff, CPolynomial.leadingCoeff, hqtrim] using hmonic
       have hguard :
           ((p.val : Raw R).trim == p.val && (q.val : Raw R).trim == q.val &&
               (q.val : Raw R).leadingCoeff == 1) = true := by
-        simp [hptrim, hqtrim, hrawMonic]
+        simp [hptrim, hqtrim, h_raw_monic]
       unfold modByMonicByReversal CPolynomial.modByMonic
       change (Raw.modByMonicByReversal M (p.val : Raw R) q.val).trim =
         ((p.val : Raw R).modByMonic q.val).trim
@@ -705,16 +707,16 @@ theorem modByMonicByReversal_eq_modByMonic
       rw [← Raw.toImpl_toPoly rem,
         ← Raw.toImpl_toPoly ((p.val : Raw R).modByMonic q.val)]
       congr 1
-      have hremMath : rem.toPoly = p.toPoly %ₘ q.toPoly := by
+      have h_remMath : rem.toPoly = p.toPoly %ₘ q.toPoly := by
         simpa [rem] using reversal_remainder_toPoly_eq_modByMonic M p q hmonic hsize
-      have hrawMath :
+      have h_raw_math :
           ((p.val : Raw R).modByMonic q.val).toPoly = p.toPoly %ₘ q.toPoly :=
         raw_modByMonic_toPoly_eq_modByMonic p q hmonic
-      exact hremMath.trans hrawMath.symm
+      exact h_remMath.trans h_raw_math.symm
   · apply CPolynomial.ext
     have hptrim : (p.val : Raw R).trim = p.val := Trim.trim_eq_of_isCanonical p.property
     have hqtrim : (q.val : Raw R).trim = q.val := Trim.trim_eq_of_isCanonical q.property
-    have hrawNotMonic : ¬(((q.val : Raw R).leadingCoeff == 1) = true) := by
+    have h_raw_not_monic : ¬(((q.val : Raw R).leadingCoeff == 1) = true) := by
       intro hraw
       apply hmonic
       simpa [Raw.leadingCoeff, CPolynomial.leadingCoeff, hqtrim] using hraw
@@ -724,7 +726,7 @@ theorem modByMonicByReversal_eq_modByMonic
       intro hguard
       have hraw : (((q.val : Raw R).leadingCoeff == 1) = true) := by
         simpa [hptrim, hqtrim] using hguard
-      exact hrawNotMonic hraw
+      exact h_raw_not_monic hraw
     unfold modByMonicByReversal
     change (Raw.modByMonicByReversal M (p.val : Raw R) q.val).trim =
       (CPolynomial.modByMonic p q).val

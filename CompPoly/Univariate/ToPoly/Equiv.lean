@@ -111,7 +111,8 @@ lemma Raw.toPoly_one {R : Type*} [Semiring R] :
   apply toPoly_C
 
 lemma toPoly_one [LawfulBEq R] [Nontrivial R] :
-    (1 : CPolynomial R).toPoly = 1 := by apply Raw.toPoly_one
+    (1 : CPolynomial R).toPoly = 1 := by
+  apply Raw.toPoly_one
 
 @[grind =]
 lemma Raw.toPoly_pow [LawfulBEq R] (p : CPolynomial.Raw R) :

@@ -52,7 +52,7 @@ def modByMonic [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
 @[inline, specialize]
 def subScaledShift [Field R] (p q : CPolynomial.Raw R) (scale : R) (shift : Nat) :
     CPolynomial.Raw R :=
-  let coeffs := Array.ofFn (n := p.size) fun j : Fin p.size =>
+  let coeffs := Array.ofFn (n := p.size) fun j : Fin p.size ↦
     let i := j.val - shift
     let subtractCoeff := if shift ≤ j.val ∧ i < q.size then scale * q.coeff i else 0
     p.coeff j.val - subtractCoeff

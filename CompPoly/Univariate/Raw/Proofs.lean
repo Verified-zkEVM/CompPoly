@@ -725,8 +725,8 @@ def convolution [LawfulBEq R] : MulLowContext R where
   coeff_of_lt := by
     intro k p q i hi
     rw [mulLowConvolution, CPolynomial.Raw.coeff]
-    have hsize : i < (Array.ofFn fun j : Fin k =>
-        (Finset.range (j.val + 1)).sum fun l => p.coeff l * q.coeff (j.val - l)).size := by
+    have hsize : i < (Array.ofFn fun j : Fin k ↦
+        (Finset.range (j.val + 1)).sum fun l ↦ p.coeff l * q.coeff (j.val - l)).size := by
       simpa using hi
     rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hsize]
     simp only [Option.getD_some]
@@ -766,12 +766,12 @@ lemma reverse_coeff (n : Nat) (p : CPolynomial.Raw R) (i : Nat) :
   unfold reverse coeff
   by_cases hi : i < n
   · simp only [Array.getD_eq_getD_getElem?]
-    have hsize : i < (Array.ofFn fun i : Fin n => p[n - 1 - ↑i]?.getD 0).size := by
+    have hsize : i < (Array.ofFn fun i : Fin n ↦ p[n - 1 - ↑i]?.getD 0).size := by
       simpa using hi
     rw [Array.getElem?_eq_getElem hsize]
     simp [hi]
   · simp only [Array.getD_eq_getD_getElem?]
-    have hsize : (Array.ofFn fun i : Fin n => p[n - 1 - ↑i]?.getD 0).size ≤ i := by
+    have hsize : (Array.ofFn fun i : Fin n ↦ p[n - 1 - ↑i]?.getD 0).size ≤ i := by
       simpa using Nat.le_of_not_lt hi
     rw [Array.getElem?_eq_none hsize]
     simp [hi]
@@ -1127,7 +1127,7 @@ lemma subScaledShift_eq_sub_C_mul_X_pow [LawfulBEq R]
     subScaledShift p q scale shift = (p - C scale * (q * X ^ shift)).trim := by
   apply Trim.eq_of_equiv
   intro i
-  change (CPolynomial.Raw.mk (Array.ofFn fun j : Fin p.size =>
+  change (CPolynomial.Raw.mk (Array.ofFn fun j : Fin p.size ↦
       let i := j.val - shift
       let subtractCoeff := if shift ≤ j.val ∧ i < q.size then scale * q.coeff i else 0
       p.coeff j.val - subtractCoeff)).coeff i =
