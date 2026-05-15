@@ -2,6 +2,9 @@ import CompPoly.Bivariate.Basic
 import CompPoly.Bivariate.ToPoly
 import CompPoly.Data.Array.Lemmas
 import CompPoly.Data.Classes.DCast
+import CompPoly.Data.ExtTreeMap.DTreeMap
+import CompPoly.Data.ExtTreeMap.ExtDTreeMap
+import CompPoly.Data.ExtTreeMap.ExtTreeMap
 import CompPoly.Data.Fin.BigOperators
 import CompPoly.Data.List.Lemmas
 import CompPoly.Data.MvPolynomial.Notation
