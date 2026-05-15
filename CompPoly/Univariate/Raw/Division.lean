@@ -79,6 +79,54 @@ where
         let p' := subScaledShift p q p.leadingCoeff k
         go n p' q
 
+/-- Inverse modulo `X^k`, using Newton iteration and the supplied low-product backend. -/
+@[inline, specialize]
+def inverseModX [Field R] [LawfulBEq R] (M : MulLowContext R) (k : Nat)
+    (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
+  if k = 0 then
+    #[]
+  else
+    go (k + 1) 1 (C (p.coeff 0)⁻¹)
+where
+  go : Nat → Nat → CPolynomial.Raw R → CPolynomial.Raw R
+  | 0, _, g => truncate k g
+  | fuel + 1, n, g =>
+      if k ≤ n then
+        truncate k g
+      else
+        let next := Nat.min k (2 * n)
+        let fg := M.mulLow next p g
+        let correction := C (2 : R) - fg
+        let g' := M.mulLow next g correction
+        go fuel next g'
+
+/--
+Remainder by a monic polynomial through reversal and truncated products.
+
+For canonical monic inputs this computes the quotient from the reversed divisor
+inverse modulo `X^k`, then subtracts only the low coefficients needed for the
+remainder. Inputs outside that executable contract fall back to the older
+remainder-only implementation.
+-/
+@[inline, specialize]
+def modByMonicByReversal [Field R] [LawfulBEq R] (M : MulLowContext R)
+    (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) : CPolynomial.Raw R :=
+  if p.trim == p && q.trim == q && q.leadingCoeff == 1 then
+    if p.size < q.size then
+      p
+    else
+      let k := p.size - q.size + 1
+      let remainderLen := q.size - 1
+      let revP := reverse p.size p
+      let revQ := reverse q.size q
+      let invRevQ := inverseModX M k revQ
+      let quotientRev := M.mulLow k revP invRevQ
+      let quotient := reverse k quotientRev
+      let productLow := M.mulLow remainderLen q quotient
+      truncate remainderLen p - productLow
+  else
+    modByMonicRemainderOnly p q
+
 /-- Division of two `CPolynomial.Raw`s. -/
 def div [Field R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
   (C (q.leadingCoeff)⁻¹ • p).divByMonic (C (q.leadingCoeff)⁻¹ * q)

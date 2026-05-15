@@ -134,6 +134,11 @@ def truncate [Zero R] (k : Nat) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
 def takeLow [Zero R] (k : Nat) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
   Array.ofFn fun i : Fin k => p.coeff i
 
+/-- Reverse the first `n` coefficients, padding missing coefficients with zero. -/
+@[inline, specialize]
+def reverse [Zero R] (n : Nat) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
+  Array.ofFn fun i : Fin n => p.coeff (n - 1 - i.val)
+
 /-- Direct low product, computing only coefficients below `k`. -/
 @[inline, specialize]
 def mulLowDirect [Semiring R] (k : Nat) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=

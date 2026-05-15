@@ -709,11 +709,24 @@ def modByMonicRemainderOnly [Field R] [BEq R] [LawfulBEq R]
   ⟨(Raw.modByMonicRemainderOnly p.val q.val).trim,
     Trim.isCanonical_trim (Raw.modByMonicRemainderOnly p.val q.val)⟩
 
+/-- Remainder of `p` modulo a monic polynomial `q`, using reversal and low products. -/
+def modByMonicByReversal [Field R] [BEq R] [LawfulBEq R]
+    (M : Raw.MulLowContext R) (p q : CPolynomial R) : CPolynomial R :=
+  ⟨(Raw.modByMonicByReversal M p.val q.val).trim,
+    Trim.isCanonical_trim (Raw.modByMonicByReversal M p.val q.val)⟩
+
 /-- The remainder-only monic remainder agrees with the canonical monic remainder. -/
 theorem modByMonicRemainderOnly_eq_modByMonic [Field R] [BEq R] [LawfulBEq R]
     (p q : CPolynomial R) : modByMonicRemainderOnly p q = modByMonic p q := by
   apply CPolynomial.ext
   simp [modByMonicRemainderOnly, modByMonic, Raw.modByMonicRemainderOnly_eq_modByMonic]
+
+/-- The reversal monic remainder agrees with the canonical monic remainder. -/
+theorem modByMonicByReversal_eq_modByMonic [Field R] [BEq R] [LawfulBEq R]
+    (M : Raw.MulLowContext R) (p q : CPolynomial R) :
+    modByMonicByReversal M p q = modByMonic p q := by
+  apply CPolynomial.ext
+  simp [modByMonicByReversal, modByMonic, Raw.modByMonicByReversal_eq_modByMonic]
 
 /-- Quotient of `p` by `q` (when `R` is a field). -/
 def div [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=

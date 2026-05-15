@@ -90,6 +90,12 @@ def remainderOnly [Field R] [BEq R] [LawfulBEq R] : ModContext R where
   modByMonic p q := CPolynomial.modByMonicRemainderOnly p q
   modByMonic_eq_modByMonic p q := CPolynomial.modByMonicRemainderOnly_eq_modByMonic p q
 
+/-- A reversal-based monic-remainder backend parameterized by low-product multiplication. -/
+def reversal [Field R] [BEq R] [LawfulBEq R]
+    (M : Raw.MulLowContext R) : ModContext R where
+  modByMonic p q := CPolynomial.modByMonicByReversal M p q
+  modByMonic_eq_modByMonic p q := CPolynomial.modByMonicByReversal_eq_modByMonic M p q
+
 end ModContext
 
 end CPolynomial

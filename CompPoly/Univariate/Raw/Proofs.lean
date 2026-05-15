@@ -1111,6 +1111,12 @@ theorem modByMonicRemainderOnly_eq_modByMonic [LawfulBEq R]
     modByMonicRemainderOnly p q = modByMonic p q := by
   exact modByMonicRemainderOnly_go_eq_divModByMonicAux_go_snd p.size p q
 
+/-- The reversal raw monic remainder agrees with the canonical raw monic remainder. -/
+theorem modByMonicByReversal_eq_modByMonic [LawfulBEq R]
+    (M : MulLowContext R) (p q : CPolynomial.Raw R) :
+    modByMonicByReversal M p q = modByMonic p q := by
+  sorry
+
 end DivisionTheorems
 
 end Operations
