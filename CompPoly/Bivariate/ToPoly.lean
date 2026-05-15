@@ -695,6 +695,17 @@ theorem evalY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring 
   exact h_toPoly.symm
 
 /--
+Computable analogue of `Polynomial.Bivariate.eval_comm`:
+evaluating `Y` at `a` and then `X` at `x` agrees with first applying the
+`X = x` evaluation through the inner coefficients and then evaluating `Y`
+at `a`.
+-/
+theorem eval_comm {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [CommSemiring R]
+    [DecidableEq R] (a x : R) (f : CBivariate R) :
+    (evalY (R := R) a f).eval x = (evalX (R := R) x f).eval a := by
+  rw [evalX_toPoly_eval, CPolynomial.eval_toPoly, evalY_toPoly]
+
+/--
 `leadingCoeffY` corresponds to the leading coefficient in the outer variable.
 -/
 theorem leadingCoeffY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
