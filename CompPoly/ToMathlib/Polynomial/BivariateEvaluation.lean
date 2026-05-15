@@ -33,8 +33,10 @@ theorem eval_comm {f : Polynomial (Polynomial F)} {a x : F} :
     (f.eval (Polynomial.C a)).eval x =
     (Polynomial.map (evalRingHom x) f).eval a := by
   induction f using Polynomial.induction_on' with
-  | add p q hp hq => simp [hp, hq]
-  | monomial n c => simp [Polynomial.eval_monomial, Polynomial.map_monomial]
+  | add p q hp hq => simp only [Polynomial.eval_add, Polynomial.map_add, hp, hq]
+  | monomial n c =>
+      simp only [Polynomial.eval_monomial, Polynomial.eval_mul, Polynomial.eval_pow,
+        Polynomial.eval_C, Polynomial.map_monomial, Polynomial.coe_evalRingHom]
 
 end CommSemiring
 
