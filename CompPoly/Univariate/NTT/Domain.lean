@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Salih Erdem Koçak, Doran Pamukçu
+Authors: Salih Erdem Koçak, Doran Pamukçu, Valerii Huhnin
 -/
 import CompPoly.Univariate.Raw
 import Mathlib.Data.Nat.Log
