@@ -32,12 +32,9 @@ variable [CommSemiring F]
 theorem eval_comm {f : Polynomial (Polynomial F)} {a x : F} :
     (f.eval (Polynomial.C a)).eval x =
     (Polynomial.map (evalRingHom x) f).eval a := by
-  simp only [Polynomial.eval_map]
-  have h_eval : Polynomial.eval (Polynomial.C a) f =
-    ∑ i ∈ f.support, f.coeff i * (Polynomial.C a) ^ i := by
-    aesop (add simp [Polynomial.eval_eq_sum])
-  simp [h_eval, Polynomial.eval_finset_sum,
-        Polynomial.eval₂_eq_sum, Polynomial.sum_def]
+  induction f using Polynomial.induction_on' with
+  | add p q hp hq => simp [hp, hq]
+  | monomial n c => simp [Polynomial.eval_monomial, Polynomial.map_monomial]
 
 end CommSemiring
 
