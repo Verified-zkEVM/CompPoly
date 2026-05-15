@@ -5,7 +5,7 @@ Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdusa
 -/
 import CompPoly.Multivariate.CMvMonomial
 import CompPoly.Multivariate.Wheels
-import ExtTreeMapLemmas.ExtTreeMap
+import CompPoly.Data.ExtTreeMap.ExtTreeMap
 import Mathlib.Algebra.Lie.OfAssociative
 
 /-!
