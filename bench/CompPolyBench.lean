@@ -79,7 +79,13 @@ private def largeUnivariateBatchPointCount : Nat := 1024
 private def univariateModDivisorPointCount : Nat := 16
 
 /-- Number of coefficient slots used by direct univariate multiplication benchmarks. -/
-private def univariateMulCoeffSlots : Nat := 128
+private def univariateMulCoeffSlots : Nat := 512
+
+/-- Number of coefficient slots used by low-product benchmarks. -/
+private def univariateMulLowCoeffSlots : Nat := 512
+
+/-- Number of low coefficients kept by low-product benchmarks. -/
+private def univariateMulLowOutputCoeffSlots : Nat := 512
 
 /-- Input-shape label for univariate batch-evaluation benchmarks. -/
 private def univariateBatchShape : String :=
@@ -97,6 +103,10 @@ private def univariateModShape : String :=
 /-- Input-shape label for direct univariate multiplication benchmarks. -/
 private def univariateMulShape : String :=
   s!"degree<{univariateMulCoeffSlots} dense lhs/rhs"
+
+/-- Input-shape label for direct univariate low-product benchmarks. -/
+private def univariateMulLowShape : String :=
+  s!"degree<{univariateMulLowCoeffSlots} dense lhs/rhs, low<{univariateMulLowOutputCoeffSlots}"
 
 /-- Number of warmup iterations for the slower additive NTT benchmark. -/
 private def additiveNttWarmupIterations : Nat := 10
@@ -134,13 +144,19 @@ instance : Fact (Nat.Prime BabyBear.fieldSize) where
 instance : Fact (Nat.Prime Goldilocks.fieldSize) where
   out := Goldilocks.is_prime
 
-/-- NTT domain large enough for direct degree-128 BabyBear multiplication benchmarks. -/
+/-- NTT domain large enough for direct degree-512 BabyBear multiplication benchmarks. -/
 private def babyBearMulNttDomain : CPolynomial.NTT.Domain BabyBear.Field :=
-  CPolynomial.NTT.BabyBear.domainOfLogN 8 (by decide)
+  CPolynomial.NTT.BabyBear.domainOfLogN 10 (by decide)
 
-/-- NTT domain large enough for direct degree-128 KoalaBear multiplication benchmarks. -/
+/-- Best-fitting BabyBear NTT domain lookup for dynamic multiplication contexts. -/
+private def babyBearBestDomainForLength? (requiredLen : Nat) :
+    Option (CPolynomial.NTT.FittingDomain BabyBear.Field requiredLen) :=
+  CPolynomial.NTT.bestDomainForLength? BabyBear.twoAdicity
+    CPolynomial.NTT.BabyBear.domainOfLogN (by intro _ _; rfl) requiredLen
+
+/-- NTT domain large enough for direct degree-512 KoalaBear multiplication benchmarks. -/
 private def koalaBearMulNttDomain : CPolynomial.NTT.Domain KoalaBear.Field :=
-  CPolynomial.NTT.KoalaBear.domainOfLogN 8 (by decide)
+  CPolynomial.NTT.KoalaBear.domainOfLogN 10 (by decide)
 
 /-- Result row emitted by one timed benchmark case. -/
 structure BenchRecord where
@@ -366,6 +382,10 @@ private def checksumArray (checksum : α → Nat) (xs : Array α) : Nat :=
 /-- Checksum a canonical univariate polynomial by its coefficient array. -/
 private def checksumCPolynomial [Zero α] (checksum : α → Nat) (p : CPolynomial α) : Nat :=
   checksumArray checksum p.val
+
+/-- Checksum a raw univariate polynomial by its stored coefficient array. -/
+private def checksumRawPolynomial (checksum : α → Nat) (p : CPolynomial.Raw α) : Nat :=
+  checksumArray checksum p
 
 /-- Time one benchmark closure and package its metadata and checksum. -/
 private def runTimed (name representation method field inputShape : String)
@@ -641,6 +661,8 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
   let (sparseCoeffs, gen) := (babyBearArray 512 true).run gen
   let (mulLhsCoeffs, gen) := (babyBearArray univariateMulCoeffSlots false).run gen
   let (mulRhsCoeffs, gen) := (babyBearArray univariateMulCoeffSlots false).run gen
+  let (mulLowLhsCoeffs, gen) := (babyBearArray univariateMulLowCoeffSlots false).run gen
+  let (mulLowRhsCoeffs, gen) := (babyBearArray univariateMulLowCoeffSlots false).run gen
   let (koalaMulLhsCoeffs, gen) := (koalaBearArray univariateMulCoeffSlots false).run gen
   let (koalaMulRhsCoeffs, gen) := (koalaBearArray univariateMulCoeffSlots false).run gen
   let (points, gen) := (babyBearPoints 32).run gen
@@ -650,6 +672,8 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
   let (largeBatchPoints, gen) := (babyBearPoints largeUnivariateBatchPointCount).run gen
   let densePoly := cpolyOfArray denseCoeffs
   let sparsePoly := cpolyOfArray sparseCoeffs
+  let mulLowLhsRaw : CPolynomial.Raw BabyBear.Field := mulLowLhsCoeffs
+  let mulLowRhsRaw : CPolynomial.Raw BabyBear.Field := mulLowRhsCoeffs
   let mulLhsPoly := cpolyOfArray mulLhsCoeffs
   let mulRhsPoly := cpolyOfArray mulRhsCoeffs
   let koalaMulLhsPoly := cpolyOfArray koalaMulLhsCoeffs
@@ -659,10 +683,14 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
   let modDivisor := monicDivisorFromPoints batchPoints
   let naiveMul : CPolynomial.MulContext BabyBear.Field := CPolynomial.MulContext.naive
   let nttMul : CPolynomial.MulContext BabyBear.Field :=
-    CPolynomial.MulContext.ntt BabyBear.twoAdicity CPolynomial.NTT.BabyBear.domainOfLogN
+    CPolynomial.MulContext.ntt babyBearBestDomainForLength?
   let naiveMod : CPolynomial.ModContext BabyBear.Field := CPolynomial.ModContext.naive
   let remainderOnlyMod : CPolynomial.ModContext BabyBear.Field :=
     CPolynomial.ModContext.remainderOnly
+  let directLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
+    CPolynomial.Raw.MulLowContext.direct
+  let nttTruncateLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
+    CPolynomial.Raw.MulLowContext.nttTruncate babyBearBestDomainForLength?
   let nextGen := gen
   let mut records := #[]
   records := records.push (← runTimed
@@ -702,7 +730,7 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     (fun _ ↦ mulLhsPoly * mulRhsPoly)
     (checksumCPolynomial checksumBabyBear))
   records := records.push (← runTimed
-    "univariate-mul-ntt" "CPolynomial" "FastMul.fastMulImpl, domain n=256"
+    "univariate-mul-ntt" "CPolynomial" "FastMul.fastMulImpl, domain n=1024"
     "BabyBear.Field"
     univariateMulShape mulWarmupIterations mulMeasuredIterations
     (fun _ ↦ CPolynomial.NTT.FastMul.fastMulImpl babyBearMulNttDomain mulLhsPoly mulRhsPoly)
@@ -713,12 +741,30 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     (fun _ ↦ koalaMulLhsPoly * koalaMulRhsPoly)
     (checksumCPolynomial checksumKoalaBear))
   records := records.push (← runTimed
-    "univariate-mul-ntt-koalabear" "CPolynomial" "FastMul.fastMulImpl, domain n=256"
+    "univariate-mul-ntt-koalabear" "CPolynomial" "FastMul.fastMulImpl, domain n=1024"
     "KoalaBear.Field"
     univariateMulShape mulWarmupIterations mulMeasuredIterations
     (fun _ ↦ CPolynomial.NTT.FastMul.fastMulImpl koalaBearMulNttDomain koalaMulLhsPoly
       koalaMulRhsPoly)
     (checksumCPolynomial checksumKoalaBear))
+  records := records.push (← runTimed
+    "univariate-mul-low-naive" "CPolynomial.Raw" "truncate (mul)" "BabyBear.Field"
+    univariateMulLowShape mulWarmupIterations mulMeasuredIterations
+    (fun _ ↦
+      CPolynomial.Raw.truncate univariateMulLowOutputCoeffSlots (mulLowLhsRaw * mulLowRhsRaw))
+    (checksumRawPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-mul-low-direct" "CPolynomial.Raw" "MulLowContext.direct" "BabyBear.Field"
+    univariateMulLowShape mulWarmupIterations mulMeasuredIterations
+    (fun _ ↦ directLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw mulLowRhsRaw)
+    (checksumRawPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-mul-low-ntt-truncate" "CPolynomial.Raw" "MulLowContext.nttTruncate"
+    "BabyBear.Field"
+    univariateMulLowShape mulWarmupIterations mulMeasuredIterations
+    (fun _ ↦ nttTruncateLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
+      mulLowRhsRaw)
+    (checksumRawPolynomial checksumBabyBear))
   records := records.push (← runTimed
     "univariate-batch-naive-sum" "CPolynomial" "evalBatch" "BabyBear.Field"
     univariateBatchShape batchWarmupIterations batchMeasuredIterations

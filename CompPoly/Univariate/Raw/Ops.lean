@@ -134,9 +134,9 @@ def truncate [Zero R] (k : Nat) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
 def takeLow [Zero R] (k : Nat) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
   Array.ofFn fun i : Fin k => p.coeff i
 
-/-- Naive low product, computing only coefficients below `k`. -/
+/-- Direct low product, computing only coefficients below `k`. -/
 @[inline, specialize]
-def mulLowNaive [Semiring R] (k : Nat) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
+def mulLowDirect [Semiring R] (k : Nat) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
   Array.ofFn fun i : Fin k =>
     (Finset.range (i.val + 1)).sum fun j => p.coeff j * q.coeff (i.val - j)
 

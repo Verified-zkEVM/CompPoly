@@ -20,10 +20,10 @@ variable {R : Type*}
 /-- Explicit multiplication backend for algorithms that should not replace the canonical `Mul`
 instance on `CPolynomial R`. -/
 structure MulContext (R : Type*) [Semiring R] [BEq R] [LawfulBEq R] where
-  /-- Multiply two canonical polynomials while seeing the subproduct-tree level. -/
-  mulAtLevel : Nat → CPolynomial R → CPolynomial R → CPolynomial R
-  /-- The backend agrees with canonical polynomial multiplication at every level. -/
-  mulAtLevel_eq_mul : ∀ level p q, mulAtLevel level p q = p * q
+  /-- Multiply two canonical polynomials. -/
+  mul : CPolynomial R → CPolynomial R → CPolynomial R
+  /-- The backend agrees with canonical polynomial multiplication. -/
+  mul_eq_mul : ∀ p q, mul p q = p * q
 
 /-- Explicit remainder backend for algorithms that only need reduction modulo monic divisors. -/
 structure ModContext (R : Type*) [Field R] [BEq R] [LawfulBEq R] where
@@ -36,33 +36,45 @@ namespace MulContext
 
 /-- The default multiplication context, backed by canonical `CPolynomial` multiplication. -/
 def naive [Semiring R] [BEq R] [LawfulBEq R] : MulContext R where
-  mulAtLevel _ p q := p * q
-  mulAtLevel_eq_mul _ _ _ := rfl
+  mul p q := p * q
+  mul_eq_mul _ _ := rfl
+
+private def nttMul [Field R] [BEq R] [LawfulBEq R]
+    (bestDomainForLength? : (requiredLen : Nat) →
+      Option (NTT.FittingDomain R requiredLen))
+    (p q : CPolynomial R) : CPolynomial R :=
+  let requiredLen := NTT.Domain.requiredLength p.val q.val
+  match bestDomainForLength? requiredLen with
+  | some ⟨D, _⟩ => NTT.FastMul.fastMulImpl D p q
+  | none => p * q
+
+private theorem nttMul_eq_mul [Field R] [BEq R] [LawfulBEq R]
+    (bestDomainForLength? : (requiredLen : Nat) →
+      Option (NTT.FittingDomain R requiredLen))
+    (p q : CPolynomial R) :
+    nttMul bestDomainForLength? p q = p * q := by
+  let requiredLen := NTT.Domain.requiredLength p.val q.val
+  cases hdomain : bestDomainForLength? requiredLen with
+  | none =>
+      simp [nttMul, requiredLen, hdomain]
+  | some fitted =>
+      rcases fitted with ⟨D, hfit⟩
+      simp [nttMul, requiredLen, hdomain, NTT.FastMul.fastMulImpl_eq_mul D p q (by
+        simpa [NTT.Domain.fits] using hfit)]
 
 /--
-Subproduct-tree NTT-backed multiplication context with canonical multiplication as a fallback.
+NTT-backed multiplication context with canonical multiplication as a fallback.
 
-At subproduct-tree level `level`, this context uses an NTT domain with
-`logN = min (level + 2) maxLogN`. If the selected domain is still too small for
-the current operands, the backend falls back to ordinary `CPolynomial`
-multiplication.
+The context asks for the smallest supported domain that fits the current
+operands. If no supported domain is available, it falls back to ordinary
+`CPolynomial` multiplication.
 -/
 def ntt [Field R] [BEq R] [LawfulBEq R]
-    (maxLogN : Nat) (domainOfLogN : (logN : Nat) → logN ≤ maxLogN → NTT.Domain R) :
+    (bestDomainForLength? : (requiredLen : Nat) →
+      Option (NTT.FittingDomain R requiredLen)) :
     MulContext R where
-  mulAtLevel level p q :=
-    let D := domainOfLogN (min (level + 2) maxLogN) (Nat.min_le_right _ _)
-    if hfit : NTT.Domain.requiredLength p.val q.val ≤ 2 ^ D.logN then
-      NTT.FastMul.fastMulImpl D p q
-    else
-      p * q
-  mulAtLevel_eq_mul level p q := by
-    let D := domainOfLogN (min (level + 2) maxLogN) (Nat.min_le_right _ _)
-    by_cases hfit :
-        NTT.Domain.requiredLength p.val q.val ≤ 2 ^ D.logN
-    · simp [D, hfit, NTT.FastMul.fastMulImpl_eq_mul D p q (by
-        simpa [NTT.Domain.fits, NTT.Domain.n] using hfit)]
-    · simp [D, hfit]
+  mul := nttMul bestDomainForLength?
+  mul_eq_mul := nttMul_eq_mul bestDomainForLength?
 
 end MulContext
 
