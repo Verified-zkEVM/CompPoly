@@ -1,9 +1,10 @@
 /-
 Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Salih Erdem Koçak, Doran Pamukçu
+Authors: Salih Erdem Koçak, Doran Pamukçu, Valerii Huhnin
 -/
 import CompPoly.Univariate.Raw
+import Mathlib.Data.Nat.Log
 import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
 
 /-!
@@ -95,6 +96,33 @@ def truncate (m : Nat) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
 
 end RawHelpers
 end Domain
+
+/-- The smallest radix-2 exponent that can cover a requested convolution length. -/
+def bestLogN (requiredLen : Nat) : Nat :=
+  Nat.clog 2 requiredLen
+
+/-- An NTT domain bundled with proof that it covers the requested convolution length. -/
+abbrev FittingDomain (R : Type*) [Field R] (requiredLen : Nat) :=
+  { D : Domain R // requiredLen ≤ D.n }
+
+/--
+Generic adapter from field-specific radix-2 domain tables to a best-fitting domain lookup.
+
+The adapter chooses `logN = Nat.clog 2 requiredLen`, then returns `none` if that exponent
+is outside the supported table.
+-/
+def bestDomainForLength? [Field R]
+    (maxLogN : Nat) (domainOfLogN : (logN : Nat) → logN ≤ maxLogN → Domain R)
+    (domainOfLogN_logN : ∀ logN hlogN, (domainOfLogN logN hlogN).logN = logN)
+    (requiredLen : Nat) : Option (FittingDomain R requiredLen) :=
+  let logN := bestLogN requiredLen
+  if hlogN : logN ≤ maxLogN then
+    some ⟨domainOfLogN logN hlogN, by
+      have hfit : requiredLen ≤ 2 ^ logN := by
+        simpa [logN, bestLogN] using Nat.le_pow_clog (by decide : 1 < 2) requiredLen
+      simpa [Domain.n, domainOfLogN_logN logN hlogN] using hfit⟩
+  else
+    none
 
 end NTT
 end CPolynomial
