@@ -39,29 +39,6 @@ def naive [Semiring R] [BEq R] [LawfulBEq R] : MulContext R where
   mul p q := p * q
   mul_eq_mul _ _ := rfl
 
-private def nttMul [Field R] [BEq R] [LawfulBEq R]
-    (bestDomainForLength? : (requiredLen : Nat) →
-      Option (NTT.FittingDomain R requiredLen))
-    (p q : CPolynomial R) : CPolynomial R :=
-  let requiredLen := NTT.Domain.requiredLength p.val q.val
-  match bestDomainForLength? requiredLen with
-  | some ⟨D, _⟩ => NTT.FastMul.fastMulImpl D p q
-  | none => p * q
-
-private theorem nttMul_eq_mul [Field R] [BEq R] [LawfulBEq R]
-    (bestDomainForLength? : (requiredLen : Nat) →
-      Option (NTT.FittingDomain R requiredLen))
-    (p q : CPolynomial R) :
-    nttMul bestDomainForLength? p q = p * q := by
-  let requiredLen := NTT.Domain.requiredLength p.val q.val
-  cases hdomain : bestDomainForLength? requiredLen with
-  | none =>
-      simp [nttMul, requiredLen, hdomain]
-  | some fitted =>
-      rcases fitted with ⟨D, hfit⟩
-      simp [nttMul, requiredLen, hdomain, NTT.FastMul.fastMulImpl_eq_mul D p q (by
-        simpa [NTT.Domain.fits] using hfit)]
-
 /--
 NTT-backed multiplication context with canonical multiplication as a fallback.
 
@@ -73,8 +50,8 @@ def ntt [Field R] [BEq R] [LawfulBEq R]
     (bestDomainForLength? : (requiredLen : Nat) →
       Option (NTT.FittingDomain R requiredLen)) :
     MulContext R where
-  mul := nttMul bestDomainForLength?
-  mul_eq_mul := nttMul_eq_mul bestDomainForLength?
+  mul := NTT.FastMul.withFallback bestDomainForLength?
+  mul_eq_mul := NTT.FastMul.withFallback_eq_mul bestDomainForLength?
 
 end MulContext
 

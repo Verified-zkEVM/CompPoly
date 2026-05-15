@@ -92,6 +92,7 @@ import CompPoly.Univariate.Linear
 import CompPoly.Univariate.NTT.BabyBear
 import CompPoly.Univariate.NTT.Domain
 import CompPoly.Univariate.NTT.FastMul
+import CompPoly.Univariate.NTT.FastMulLow
 import CompPoly.Univariate.NTT.Forward
 import CompPoly.Univariate.NTT.Inverse
 import CompPoly.Univariate.NTT.KoalaBear
