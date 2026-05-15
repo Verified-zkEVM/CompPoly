@@ -5,6 +5,9 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 
 import CompPoly.Fields.Binary.AdditiveNTT.Algorithm
+import CompPoly.Fields.Binary.AdditiveNTT.Impl
+import Mathlib.Algebra.CharP.CharAndCard
+import Mathlib.Algebra.CharP.Two
 
 /-!
 # Additive NTT Correctness
@@ -15,6 +18,572 @@ Additive NTT.
 
 open Polynomial AdditiveNTT Module
 namespace AdditiveNTT
+
+section ImplementationEquivalence
+
+/-- Running a state fold made only of state updates gives the same final state as
+the corresponding pure fold. -/
+lemma run_foldlM_modify_eq_foldl {σ : Type} (n : Nat) (f : σ → Fin n → σ) (init : σ) :
+    ((Fin.foldlM (m := StateM σ) (n := n)
+      (f := fun (_ : Unit) i => do
+        modifyThe σ fun current => f current i
+        pure ()) (init := ())).run init).2 =
+      Fin.foldl n f init := by
+  induction n generalizing init with
+  | zero =>
+      simp only [Fin.foldlM_zero, Fin.foldl_zero]
+      rfl
+  | succ n ih =>
+      simp only [Fin.foldlM_succ_last, Fin.foldl_succ_last]
+      change f ((Fin.foldlM (m := StateM σ) (n := n)
+        (f := fun (_ : Unit) i => do
+          modifyThe σ fun current => f current i.castSucc
+          pure ()) (init := ())).run init).2 (Fin.last n) =
+        f (Fin.foldl n (fun current i => f current i.castSucc) init) (Fin.last n)
+      rw [ih (f := fun current i => f current i.castSucc) (init := init)]
+
+variable {r : ℕ} [NeZero r]
+variable {L : Type} [Field L] [Fintype L] [DecidableEq L]
+variable {𝔽q : Type} [Field 𝔽q] [Fintype 𝔽q] [DecidableEq 𝔽q]
+variable [hFq_card : Fact (Fintype.card 𝔽q = 2)]
+variable [h_Fq_char_prime : Fact (Nat.Prime (ringChar 𝔽q))]
+variable [Algebra 𝔽q L]
+variable (β : Fin r → L) [hβ_lin_indep : Fact (LinearIndependent 𝔽q β)]
+variable [h_β₀_eq_1 : Fact (β 0 = 1)]
+variable {ℓ R_rate : ℕ} (h_ℓ_add_R_rate : ℓ + R_rate < r)
+
+omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
+/-- The `bitsToU` mapping is a bijection: showing that iterating bits corresponds
+exactly to the linear span. -/
+theorem bitsToU_bijective (i : Fin r) :
+    Function.Bijective (bitsToU (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) i) := by
+  -- A map between finite sets of the same size is bijective iff it is injective.
+  apply (Fintype.bijective_iff_injective_and_card
+    (f := bitsToU (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate) i)).mpr ?_
+  constructor
+  -- Part A: Injectivity (Linear Independence)
+  · intro k1 k2 h_eq
+    unfold bitsToU at h_eq
+    simp only [Subtype.mk.injEq] at h_eq
+    -- We define the coefficients c_j based on the bits of k
+    let c (k : ℕ) (j : Fin i) : 𝔽q :=
+      if (Nat.getBit (n := k) (k := j.val) == 1) then 1 else 0
+    -- The sum can be rewritten as a linear combination with coefficients in Fq
+    have h_sum (k : Fin (2^i.val)) :
+      (Finset.univ.sum fun (j : Fin i) =>
+        if (Nat.getBit (n := k.val) (k := j.val) == 1) then
+          β ⟨j, by omega⟩
+        else (0 : L)) =
+      Finset.univ.sum fun j => (c k.val j) • β ⟨j, by omega⟩ := by
+      apply Finset.sum_congr rfl
+      intro j _
+      dsimp [c]
+      split_ifs <;> simp
+    rw [h_sum k1, h_sum k2] at h_eq
+    -- 1. Move everything to LHS: sum (c1 - c2) * beta = 0
+    rw [←sub_eq_zero] at h_eq
+    rw [←Finset.sum_sub_distrib] at h_eq
+    simp_rw [←sub_smul] at h_eq
+    rw [←sub_eq_zero] at h_eq
+    -- 2. Establish that the first `i` basis elements are Linearly Independent
+    have h_lin_indep := hβ_lin_indep.out
+    -- We restrict the global independence (Fin r) to the subset (Fin i)
+    have h_indep_restricted := LinearIndependent.comp h_lin_indep
+      (Fin.castLE (Nat.le_of_lt_succ (by omega)) : Fin i → Fin r)
+      (Fin.castLE_injective _)
+    -- 3. Apply Linear Independence to show every coefficient is 0
+    -- This gives us: ∀ j, c k1 j - c k2 j = 0
+    simp only [sub_zero] at h_eq
+    have h_coeffs_zero : ∀ j : Fin i, j ∈ Finset.univ → c k1.val j - c k2.val j = 0 :=
+      linearIndependent_iff'.mp h_indep_restricted
+        (Finset.univ)
+        (fun j => c k1.val j - c k2.val j)
+        h_eq
+    -- 4. Prove k1 = k2 by showing all bits are equal
+    ext
+    apply Nat.eq_iff_eq_all_getBits.mpr
+    intro n
+    have h_bit_k1_lt_2 := Nat.getBit_lt_2 (n := k1) (k := n)
+    have h_bit_k2_lt_2 := Nat.getBit_lt_2 (n := k2) (k := n)
+    if hn : n < i.val then
+      let j : Fin i := ⟨n, hn⟩
+      have h_c_diff_zero := h_coeffs_zero j (Finset.mem_univ j)
+      simp only [sub_eq_zero] at h_c_diff_zero
+      dsimp only [beq_iff_eq, c] at h_c_diff_zero
+      interval_cases hk1: Nat.getBit (n := k1) (k := j)
+      · interval_cases hk2: Nat.getBit (n := k2) (k := j)
+        · rfl;
+        · simp only [Nat.reduceBEq, Bool.false_eq_true, ↓reduceIte, BEq.rfl,
+          zero_ne_one] at h_c_diff_zero;
+      · interval_cases hk2: Nat.getBit (n := k2) (k := j)
+        · simp only [BEq.rfl, ↓reduceIte, Nat.reduceBEq, Bool.false_eq_true,
+          one_ne_zero] at h_c_diff_zero;
+        · rfl
+    else
+      have h_k1 := Nat.getBit_of_lt_two_pow (n := i) (a := k1) (k := n)
+      have h_k2 := Nat.getBit_of_lt_two_pow (n := i) (a := k2) (k := n)
+      simp only [hn, ↓reduceIte] at h_k1 h_k2
+      rw [h_k1, h_k2]
+  -- Part B: Cardinality (Surjectivity check)
+  · -- ⊢ Fintype.card (Fin (2 ^ ↑i)) = Fintype.card ↥(U i)
+    rw [Fintype.card_fin]
+    rw [AdditiveNTT.U_card (𝔽q := 𝔽q)
+      (β := β) (i := i)]
+    rw [hFq_card.out]
+
+omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
+/-- Prove that `evalWAt` equals the standard definition of `W_i(x)`. -/
+theorem evalWAt_eq_W (i : Fin r) (x : L) :
+    evalWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) x =
+    (W (𝔽q := 𝔽q) (β := β) (i := i)).eval x := by
+  -- 1. Convert implementation to mathematical product over Fin(2^i)
+  unfold evalWAt getUElements
+  rw [List.map_map]
+  rw [List.prod_finRange_eq_finset_prod]
+  -- 2. Prepare RHS
+  rw [AdditiveNTT.W, Polynomial.eval_prod]
+  simp only [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C]
+  -- 3. Use Finset.prod_bij to show equality via the bijection
+  apply Finset.prod_bij (s := ((Finset.univ (α := (Fin (2^(i.val)))))))
+    (t := (Finset.univ : Finset (U 𝔽q β i)))
+    (i := fun k _ =>
+      bitsToU (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (r := r) (R_rate := R_rate) (L := L) (i := i) k)
+    (hi := by
+      intro a _
+      exact Finset.mem_univ _)
+    (i_inj := by
+      intro a₁ _ a₂ _ h_eq
+      exact (bitsToU_bijective (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
+        (r := r) (R_rate := R_rate) (L := L) (i := i)).1 h_eq)
+    (i_surj := by
+      intro b _
+      obtain ⟨a, ha_eq⟩ := (bitsToU_bijective (𝔽q := 𝔽q)
+        (β := β) (ℓ := ℓ) (r := r) (R_rate := R_rate) (L := L) (i := i)).2 b
+      use a
+      constructor
+      · exact ha_eq
+      · exact Finset.mem_univ a
+    )
+    (h := by
+      intro a ha_univ
+      rfl
+    )
+
+omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
+/-- Prove that `evalNormalizedWAt` equals the standard definition of `Ŵ_i(x)`. -/
+theorem evalNormalizedWAt_eq_normalizedW (i : Fin r) (x : L) :
+    evalNormalizedWAt (β := β) (ℓ := ℓ) (R_rate := R_rate) (i := i) x
+    = (normalizedW (𝔽q := 𝔽q) (β := β) (i := i)).eval x := by
+  unfold evalNormalizedWAt
+  rw [evalWAt_eq_W (r := r) (L := L) (𝔽q := 𝔽q) (β := β) i x]
+  simp only
+  rw [evalWAt_eq_W (r := r) (L := L) (𝔽q := 𝔽q) (β := β) i (β i)]
+  rw [AdditiveNTT.normalizedW]
+  simp only [Polynomial.eval_mul, Polynomial.eval_C]
+  simp only [one_div]
+  apply mul_comm
+
+omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
+/-- Prove that `computableTwiddleFactor` equals the standard definition of `twiddleFactor`. -/
+theorem computableTwiddleFactor_eq_twiddleFactor (i : Fin ℓ) :
+    computableTwiddleFactor (r := r) (ℓ := ℓ) (β := β) (L := L)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨i, by omega⟩) =
+  twiddleFactor (𝔽q := 𝔽q) (L := L) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (i := ⟨i, by omega⟩) := by
+  unfold computableTwiddleFactor twiddleFactor
+  simp_rw [evalNormalizedWAt_eq_normalizedW (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
+    (R_rate := R_rate) (i := ⟨i, by omega⟩)]
+
+omit [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
+/-- Prove that `computableNTTStage` equals the standard definition of `NTTStage`. -/
+theorem computableNTTStage_eq_NTTStage (i : Fin ℓ) :
+    computableNTTStage (𝔽q := 𝔽q) (r := r) (L := L) (ℓ := ℓ) (β := β) (R_rate := R_rate)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨i, by omega⟩) =
+  NTTStage (𝔽q := 𝔽q) (L := L) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (i := ⟨i, by omega⟩) := by
+  unfold computableNTTStage NTTStage
+  simp only [Fin.eta]
+  simp_rw [computableTwiddleFactor_eq_twiddleFactor (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
+    (R_rate := R_rate) (i := ⟨i, by omega⟩)]
+
+omit [DecidableEq 𝔽q] h_β₀_eq_1 in
+/-- In the binary-field setting, the subspace vanishing polynomials satisfy the
+runtime recurrence used by `evalWAtCachedConstants`. -/
+lemma W_eval_succ_eq_mul_add (i : Fin r) (h_i_add_1 : i + 1 < r) (x : L) :
+    (W (𝔽q := 𝔽q) (β := β) (i := i + 1)).eval x =
+      (W (𝔽q := 𝔽q) (β := β) (i := i)).eval x *
+        ((W (𝔽q := 𝔽q) (β := β) (i := i)).eval x +
+          (W (𝔽q := 𝔽q) (β := β) (i := i)).eval (β i)) := by
+  haveI : CharP 𝔽q 2 := charP_of_card_eq_prime hFq_card.out
+  haveI : CharP L 2 := (Algebra.charP_iff 𝔽q L 2).mp inferInstance
+  have h := W_linear_comp_decomposition (𝔽q := 𝔽q) (β := β) (i := i)
+    h_i_add_1 (p := C x)
+  have h_eval := congrArg (fun p : L[X] => p.eval 0) h
+  simp only [eval_comp, eval_C, eval_pow, eval_sub, eval_mul] at h_eval
+  rw [hFq_card.out] at h_eval
+  simp only [pow_two] at h_eval
+  rw [h_eval]
+  rw [CharTwo.sub_eq_add]
+  ring
+
+omit [DecidableEq 𝔽q] h_β₀_eq_1 in
+/-- The cached evaluator computes `W_i(x)` when the cache stores exactly
+`W_k(β_k)` for `k < i`. This is stated for the internal loop so later proofs can
+resume from a partially consumed cache. -/
+lemma evalWAtCachedConstantsLoop_eq_W_of_correct (constants : Array L) (i : Fin r)
+    (j : Nat) (x acc : L)
+    (hsize : constants.size = i.val) (hj_le : j ≤ i.val) (hj_lt_r : j < r)
+    (hacc : acc = (W (𝔽q := 𝔽q) (β := β) (i := ⟨j, hj_lt_r⟩)).eval x)
+    (hcorrect : ∀ k, j ≤ k → (hki : k < i.val) →
+      constants.getD k 0 =
+        (W (𝔽q := 𝔽q) (β := β) (i := ⟨k, Nat.lt_trans hki i.isLt⟩)).eval
+          (β ⟨k, Nat.lt_trans hki i.isLt⟩)) :
+    evalWAtCachedConstantsLoop constants j acc =
+      (W (𝔽q := 𝔽q) (β := β) (i := i)).eval x := by
+  generalize hn_eq : i.val - j = n
+  revert j acc
+  induction n with
+  | zero =>
+      intro j acc hj_le hj_lt_r hacc hcorrect hn_eq
+      have hji : j = i.val := by omega
+      unfold evalWAtCachedConstantsLoop
+      simp only [hsize, hji, lt_self_iff_false, ↓reduceDIte]
+      rw [hacc]
+      congr
+  | succ n ih =>
+      intro j acc hj_le hj_lt_r hacc hcorrect hn_eq
+      have hj_lt_i : j < i.val := by omega
+      have hj1_lt_r : j + 1 < r := by omega
+      unfold evalWAtCachedConstantsLoop
+      simp only [hsize, hj_lt_i, ↓reduceDIte]
+      exact ih (j + 1) (acc * (acc + constants.getD j 0)) (by omega) hj1_lt_r (by
+        rw [hacc, hcorrect j (by omega) hj_lt_i]
+        have hsucc : (⟨j, hj_lt_r⟩ : Fin r) + 1 = ⟨j + 1, hj1_lt_r⟩ := by
+          ext
+          exact Fin.val_add_one' (a := ⟨j, hj_lt_r⟩) (h_a_add_1 := hj1_lt_r)
+        simpa [hsucc] using (W_eval_succ_eq_mul_add (𝔽q := 𝔽q) (β := β)
+          (i := ⟨j, hj_lt_r⟩) (h_i_add_1 := by
+            simpa using hj1_lt_r) (x := x)).symm)
+        (by
+          intro k hk_ge hk_lt
+          exact hcorrect k (by omega) hk_lt)
+        (by omega)
+
+omit [DecidableEq 𝔽q] h_β₀_eq_1 in
+/-- The cached evaluator computes `W_i(x)` from a complete cache for stage `i`. -/
+lemma evalWAtCachedConstants_eq_W_of_correct (constants : Array L) (i : Fin r) (x : L)
+    (hsize : constants.size = i.val)
+    (hcorrect : ∀ k, (hki : k < i.val) →
+      constants.getD k 0 =
+        (W (𝔽q := 𝔽q) (β := β) (i := ⟨k, Nat.lt_trans hki i.isLt⟩)).eval
+          (β ⟨k, Nat.lt_trans hki i.isLt⟩)) :
+    evalWAtCachedConstants constants x =
+      (W (𝔽q := 𝔽q) (β := β) (i := i)).eval x := by
+  unfold evalWAtCachedConstants
+  exact evalWAtCachedConstantsLoop_eq_W_of_correct (𝔽q := 𝔽q) (β := β)
+    (constants := constants) (i := i) (j := 0) (x := x) (acc := x)
+    hsize (by omega) (NeZero.pos r) (by
+      change x = (W (𝔽q := 𝔽q) (β := β) (i := (0 : Fin r))).eval x
+      rw [W₀_eq_X (𝔽q := 𝔽q) (β := β)]
+      simp only [eval_X])
+    (by
+      intro k _ hk
+      exact hcorrect k hk)
+
+omit [DecidableEq 𝔽q] h_β₀_eq_1 in
+/-- The constants-array builder preserves the invariant that entry `k` stores
+`W_k(β_k)`, and finishes with one entry for every `k < i`. -/
+lemma subspacePolynomialConstantsArrayLoop_spec (i : Fin r) (k : Nat) (constants : Array L)
+    (hsize : constants.size = k) (hk_le : k ≤ i.val)
+    (hcorrect : ∀ m, (hmk : m < k) →
+      constants.getD m 0 =
+        (W (𝔽q := 𝔽q) (β := β) (i := ⟨m, by omega⟩)).eval (β ⟨m, by omega⟩)) :
+    let result := subspacePolynomialConstantsArrayLoop (β := β) (ℓ := ℓ)
+      (R_rate := R_rate) i k constants
+    result.size = i.val ∧
+      ∀ m, (hmi : m < i.val) →
+        result.getD m 0 =
+          (W (𝔽q := 𝔽q) (β := β) (i := ⟨m, Nat.lt_trans hmi i.isLt⟩)).eval
+            (β ⟨m, Nat.lt_trans hmi i.isLt⟩) := by
+  generalize hn_eq : i.val - k = n
+  revert k constants
+  induction n with
+  | zero =>
+      intro k constants hsize hk_le hcorrect hn_eq
+      have hki : k = i.val := by omega
+      unfold subspacePolynomialConstantsArrayLoop
+      simp only [hki, lt_self_iff_false, ↓reduceDIte]
+      constructor
+      · rw [hsize, hki]
+      · intro m hm
+        exact hcorrect m (by omega)
+  | succ n ih =>
+      intro k constants hsize hk_le hcorrect hn_eq
+      have hk_lt_i : k < i.val := by omega
+      have hk_lt_r : k < r := by omega
+      unfold subspacePolynomialConstantsArrayLoop
+      simp only [hk_lt_i, ↓reduceDIte]
+      exact ih (k + 1)
+        (constants.push (evalWAtCachedConstants constants (β ⟨k, by omega⟩)))
+        (by simp only [Array.size_push, hsize])
+        (by omega)
+        (by
+          intro m hm
+          by_cases hmk : m < k
+          · have hm_ne_size : m ≠ constants.size := by
+              rw [hsize]
+              omega
+            simp only [Array.getD_eq_getD_getElem?, Array.getElem?_push, hm_ne_size,
+              ↓reduceIte]
+            rw [← Array.getD_eq_getD_getElem?]
+            exact hcorrect m hmk
+          · have hmk_eq : m = k := by omega
+            subst m
+            simp only [hsize, Array.getD_eq_getD_getElem?, Array.getElem?_push,
+              ↓reduceIte, Option.getD_some]
+            simpa using evalWAtCachedConstants_eq_W_of_correct (𝔽q := 𝔽q) (β := β)
+              (constants := constants) (i := ⟨k, hk_lt_r⟩) (x := β ⟨k, hk_lt_r⟩)
+              hsize hcorrect)
+        (by omega)
+
+omit [NeZero r] [Fintype L] [DecidableEq L] [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
+lemma subspacePolynomialConstantsArrayLoop_size (i : Fin r) (k : Nat) (constants : Array L)
+    (hsize : constants.size = k) (hk_le : k ≤ i.val) :
+    (subspacePolynomialConstantsArrayLoop (β := β) (ℓ := ℓ)
+      (R_rate := R_rate) i k constants).size = i.val := by
+  generalize hn_eq : i.val - k = n
+  revert k constants
+  induction n with
+  | zero =>
+      intro k constants hsize hk_le hn_eq
+      have hki : k = i.val := by omega
+      unfold subspacePolynomialConstantsArrayLoop
+      simp only [hki, lt_self_iff_false, ↓reduceDIte]
+      rw [hsize, hki]
+  | succ n ih =>
+      intro k constants hsize hk_le hn_eq
+      have hk_lt_i : k < i.val := by omega
+      unfold subspacePolynomialConstantsArrayLoop
+      simp only [hk_lt_i, ↓reduceDIte]
+      exact ih (k + 1)
+        (constants.push (evalWAtCachedConstants constants (β ⟨k, by omega⟩)))
+        (by simp only [Array.size_push, hsize])
+        (by omega)
+        (by omega)
+
+omit [NeZero r] [Fintype L] [DecidableEq L] [DecidableEq 𝔽q] h_β₀_eq_1 in
+lemma subspacePolynomialConstantsArray_size (i : Fin r) :
+    (subspacePolynomialConstantsArray (β := β) (ℓ := ℓ) (R_rate := R_rate) i).size =
+      i.val := by
+  exact subspacePolynomialConstantsArrayLoop_size (β := β)
+    (ℓ := ℓ) (R_rate := R_rate) (i := i) (k := 0) (constants := #[])
+    rfl (Nat.zero_le _)
+
+omit [DecidableEq 𝔽q] h_β₀_eq_1 in
+lemma subspacePolynomialConstantsArray_getD (i : Fin r) (m : Nat) (hm : m < i.val) :
+    (subspacePolynomialConstantsArray (β := β) (ℓ := ℓ) (R_rate := R_rate) i).getD m 0 =
+      (W (𝔽q := 𝔽q) (β := β) (i := ⟨m, Nat.lt_trans hm i.isLt⟩)).eval
+        (β ⟨m, Nat.lt_trans hm i.isLt⟩) := by
+  exact (subspacePolynomialConstantsArrayLoop_spec (𝔽q := 𝔽q) (β := β)
+    (ℓ := ℓ) (R_rate := R_rate) (i := i) (k := 0) (constants := #[])
+    rfl (Nat.zero_le _) (by intro m hm; omega)).2 m hm
+
+omit [DecidableEq 𝔽q] h_β₀_eq_1 in
+lemma evalWAtCachedConstants_subspacePolynomialConstantsArray_eq_W (i : Fin r) (x : L) :
+    evalWAtCachedConstants
+      (subspacePolynomialConstantsArray (β := β) (ℓ := ℓ) (R_rate := R_rate) i) x =
+      (W (𝔽q := 𝔽q) (β := β) (i := i)).eval x := by
+  apply evalWAtCachedConstants_eq_W_of_correct (𝔽q := 𝔽q) (β := β)
+  · exact subspacePolynomialConstantsArray_size (β := β)
+      (ℓ := ℓ) (R_rate := R_rate) (i := i)
+  · intro k hk
+    exact subspacePolynomialConstantsArray_getD (𝔽q := 𝔽q) (β := β)
+      (ℓ := ℓ) (R_rate := R_rate) (i := i) k hk
+
+omit [DecidableEq 𝔽q] h_β₀_eq_1 in
+lemma computableNormalizedWValuesArray_getD (i : Fin ℓ)
+    (k : Fin (ℓ + R_rate - i - 1)) :
+    (computableNormalizedWValuesArray (β := β) (ℓ := ℓ) (R_rate := R_rate)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)).getD k.val 0 =
+      (normalizedW (𝔽q := 𝔽q) (β := β) (i := ⟨i, by omega⟩)).eval
+        (β ⟨i + 1 + k.val, by omega⟩) := by
+  unfold computableNormalizedWValuesArray
+  simp [Array.getD_eq_getD_getElem?]
+  rw [evalWAtCachedConstants_subspacePolynomialConstantsArray_eq_W (𝔽q := 𝔽q) (β := β)]
+  rw [evalWAtCachedConstants_subspacePolynomialConstantsArray_eq_W (𝔽q := 𝔽q) (β := β)]
+  rw [normalizedW]
+  simp only [eval_mul, eval_C, one_div]
+  ring
+
+omit [DecidableEq 𝔽q] h_β₀_eq_1 in
+lemma computableTwiddleTableArray_getD (i : Fin ℓ)
+    (u : Fin (2 ^ (ℓ + R_rate - i - 1))) :
+    (computableTwiddleTableArray (β := β) (ℓ := ℓ) (R_rate := R_rate)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)).getD u.val 0 =
+      twiddleFactor (𝔽q := 𝔽q) (L := L) (ℓ := ℓ) (R_rate := R_rate)
+        (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨i, by omega⟩) (u := u) := by
+  unfold computableTwiddleTableArray twiddleFactor
+  simp [Array.getD_eq_getD_getElem?]
+  apply Finset.sum_congr rfl
+  intro k _hk
+  by_cases h_bit : Nat.getBit k.val u.val = 1
+  · simpa [h_bit] using
+      (computableNormalizedWValuesArray_getD (𝔽q := 𝔽q) (β := β)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (k := k))
+  · simp [h_bit]
+
+omit [Fintype L] [DecidableEq L] [DecidableEq 𝔽q] h_β₀_eq_1 in
+lemma arrayToFinFunction_tileCoeffsArray (a : Fin (2 ^ ℓ) → L) :
+    arrayToFinFunction (2 ^ (ℓ + R_rate))
+      (tileCoeffsArray (L := L) (ℓ := ℓ) R_rate a) =
+      tileCoeffs (L := L) (ℓ := ℓ) (R_rate := R_rate) a := by
+  ext v
+  unfold arrayToFinFunction tileCoeffsArray tileCoeffs
+  simp [Array.getD_eq_getD_getElem?]
+
+omit [DecidableEq 𝔽q] h_β₀_eq_1 in
+lemma computableNTTStageArray_eq_computableNTTStage (i : Fin ℓ) (b : Array L) :
+    arrayToFinFunction (2 ^ (ℓ + R_rate))
+        (computableNTTStageArray (L := L) (ℓ := ℓ) (R_rate := R_rate)
+          (i := i)
+          (twiddles := computableTwiddleTableArray (β := β) (ℓ := ℓ)
+            (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)) b) =
+      computableNTTStage (𝔽q := 𝔽q) (r := r) (L := L) (ℓ := ℓ) (R_rate := R_rate)
+        (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨i, by omega⟩)
+        (b := arrayToFinFunction (2 ^ (ℓ + R_rate)) b) := by
+  ext j
+  unfold computableNTTStageArray computableNTTStage arrayToFinFunction
+  simp [Array.getD_eq_getD_getElem?]
+  let u : Fin (2 ^ (ℓ + R_rate - i - 1)) := ⟨j.val / 2 ^ i.val / 2, by
+    rw [Nat.div_div_eq_div_mul]
+    have hpow : 2 ^ i.val * 2 = 2 ^ (i.val + 1) := by
+      rw [Nat.mul_comm, Nat.pow_succ']
+    rw [hpow]
+    have h_exp : ℓ + R_rate - i.val - 1 + (i.val + 1) = ℓ + R_rate := by omega
+    have h_j_lt :
+        j.val < 2 ^ (ℓ + R_rate - i.val - 1 + (i.val + 1)) := by
+      rw [h_exp]
+      exact j.isLt
+    exact div_two_pow_lt_two_pow (x := j.val) (i := ℓ + R_rate - i.val - 1)
+      (j := i.val + 1) h_j_lt⟩
+  have h_table :
+      (computableTwiddleTableArray (β := β) (ℓ := ℓ) (R_rate := R_rate)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i))[j.val / 2 ^ i.val / 2]?.getD 0 =
+        twiddleFactor (𝔽q := 𝔽q) (L := L) (ℓ := ℓ) (R_rate := R_rate)
+          (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨i, by omega⟩) (u := u) := by
+    simpa [u, Array.getD_eq_getD_getElem?] using
+      (computableTwiddleTableArray_getD (𝔽q := 𝔽q) (β := β)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (u := u))
+  have h_factor :
+      twiddleFactor (𝔽q := 𝔽q) (L := L) (ℓ := ℓ) (R_rate := R_rate)
+        (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨i, by omega⟩) (u := u) =
+        computableTwiddleFactor (r := r) (L := L) (ℓ := ℓ) (R_rate := R_rate)
+          (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨i, by omega⟩) (u := u) :=
+    (congrFun (computableTwiddleFactor_eq_twiddleFactor (𝔽q := 𝔽q) (β := β)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)) u).symm
+  rw [h_table, h_factor]
+
+omit [DecidableEq 𝔽q] h_Fq_char_prime [Fact (β 0 = 1)] in
+/-- The proof-oriented computable additive NTT agrees with the abstract
+additive NTT specification. -/
+theorem computableAdditiveNTT_eq_additiveNTT (a : Fin (2 ^ ℓ) → L) :
+    computableAdditiveNTT (𝔽q := 𝔽q) (L := L) (r := r) (β := β)
+      (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a) =
+    additiveNTT (𝔽q := 𝔽q) (L := L) (β := β)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a) := by
+  unfold computableAdditiveNTT additiveNTT
+  simp only
+  congr
+  funext current_b i
+  rw [computableNTTStage_eq_NTTStage (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
+    (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - 1 - i, by omega⟩)]
+
+omit [NeZero r] [Fintype L] [DecidableEq L] [Field 𝔽q] [Fintype 𝔽q] [DecidableEq 𝔽q]
+  h_Fq_char_prime hFq_card [Algebra 𝔽q L] hβ_lin_indep h_β₀_eq_1 in
+lemma computableAdditiveNTTFastAction_run_eq_fold (a : Fin (2 ^ ℓ) → L) :
+    ((computableAdditiveNTTFastAction (L := L) (r := r) (β := β)
+      (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) a).run #[]).1 =
+    Fin.foldl (n := ℓ) (f := fun current i =>
+      let stage : Fin ℓ := ⟨ℓ - 1 - i, by omega⟩
+      let twiddles := computableTwiddleTableArray (β := β) (ℓ := ℓ)
+        (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := stage)
+      computableNTTStageArray (ℓ := ℓ) (R_rate := R_rate)
+        (i := stage) (twiddles := twiddles) current)
+      (init := tileCoeffsArray (L := L) (ℓ := ℓ) R_rate a) := by
+  unfold computableAdditiveNTTFastAction computableAdditiveNTTFastStages
+  simp only [bind_assoc, StateT.run, MonadStateOf.set, getThe]
+  simpa using run_foldlM_modify_eq_foldl (σ := Array L) (n := ℓ)
+    (f := fun current i =>
+      let stage : Fin ℓ := ⟨ℓ - 1 - i, by omega⟩
+      let twiddles := computableTwiddleTableArray (β := β) (ℓ := ℓ)
+        (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := stage)
+      computableNTTStageArray (ℓ := ℓ) (R_rate := R_rate)
+        (i := stage) (twiddles := twiddles) current)
+    (init := tileCoeffsArray (L := L) (ℓ := ℓ) R_rate a)
+
+omit [DecidableEq 𝔽q] h_β₀_eq_1 in
+/-- The fast additive NTT array implementation is extensionally equal to the
+proof-oriented computable implementation after converting its output array to a
+`Fin`-indexed function.
+
+This is the preferred proof boundary for the fast path: once this theorem is
+proved, correctness against the abstract additive NTT specification follows from
+`computableAdditiveNTT_eq_additiveNTT`. -/
+theorem computableAdditiveNTTFast_eq_computableAdditiveNTT (a : Fin (2 ^ ℓ) → L) :
+    AdditiveNTT.arrayToFinFunction (2^(ℓ + R_rate))
+      (computableAdditiveNTTFast (L := L) (r := r) (β := β)
+        (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a)) =
+    computableAdditiveNTT (𝔽q := 𝔽q) (L := L) (r := r) (β := β)
+      (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a) := by
+  unfold computableAdditiveNTTFast computableAdditiveNTT
+  rw [computableAdditiveNTTFastAction_run_eq_fold (β := β)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a)]
+  have h_fold : ∀ k, (hk_le : k ≤ ℓ) →
+      arrayToFinFunction (2 ^ (ℓ + R_rate))
+        (Fin.foldl (n := k) (f := fun current i =>
+          let stage : Fin ℓ := ⟨ℓ - 1 - i, by omega⟩
+          let twiddles := computableTwiddleTableArray (β := β) (ℓ := ℓ)
+            (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := stage)
+          computableNTTStageArray (ℓ := ℓ) (R_rate := R_rate)
+            (i := stage) (twiddles := twiddles) current)
+          (init := tileCoeffsArray (L := L) (ℓ := ℓ) R_rate a)) =
+      Fin.foldl (n := k) (f := fun current i =>
+        computableNTTStage (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - 1 - i, by omega⟩) (b := current))
+        (init := tileCoeffs (L := L) (ℓ := ℓ) (R_rate := R_rate) a) := by
+    intro k hk_le
+    induction k with
+    | zero =>
+        simp only [Fin.foldl_zero]
+        exact arrayToFinFunction_tileCoeffsArray (L := L) (ℓ := ℓ)
+          (R_rate := R_rate) (a := a)
+    | succ k ih =>
+        have hk_le' : k ≤ ℓ := by omega
+        simp only [Fin.foldl_succ_last, Fin.val_last, Fin.val_castSucc]
+        rw [computableNTTStageArray_eq_computableNTTStage (𝔽q := 𝔽q) (β := β)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - 1 - k, by omega⟩)]
+        exact congrArg (fun current =>
+          computableNTTStage (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - 1 - k, by omega⟩)
+            (b := current)) (ih hk_le')
+  simpa using h_fold ℓ (le_rfl)
+
+omit [DecidableEq 𝔽q] h_β₀_eq_1 in
+/-- The fast additive NTT array implementation is correct against the abstract
+additive NTT specification after converting its output array to a `Fin`-indexed
+function. -/
+theorem computableAdditiveNTTFast_eq_additiveNTT (a : Fin (2 ^ ℓ) → L) :
+    AdditiveNTT.arrayToFinFunction (2^(ℓ + R_rate))
+      (computableAdditiveNTTFast (L := L) (r := r) (β := β)
+        (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a)) =
+    additiveNTT (𝔽q := 𝔽q) (L := L) (β := β)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a) := by
+  rw [computableAdditiveNTTFast_eq_computableAdditiveNTT (𝔽q := 𝔽q) (β := β)
+    (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a)]
+  exact computableAdditiveNTT_eq_additiveNTT (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
+    (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a)
+
+end ImplementationEquivalence
 
 universe u
 
@@ -511,4 +1080,5 @@ theorem additiveNTT_correctness (h_ℓ : ℓ ≤ r)
   simp_rw [Nat.sub_right_comm]
 
 end AlgorithmCorrectness
+
 end AdditiveNTT

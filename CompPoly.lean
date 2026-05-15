@@ -54,10 +54,12 @@ import CompPoly.Fields.PrattCertificate
 import CompPoly.Fields.Secp256k1
 import CompPoly.Multilinear.Basic
 import CompPoly.Multilinear.Equiv
+import CompPoly.Multilinear.TransformEquiv
 import CompPoly.Multivariate.CMvMonomial
 import CompPoly.Multivariate.CMvPolynomial
 import CompPoly.Multivariate.CMvPolynomialEvalLemmas
 import CompPoly.Multivariate.FinSuccEquiv
+import CompPoly.Multivariate.HornerLemmas
 import CompPoly.Multivariate.Lawful
 import CompPoly.Multivariate.MvPolyEquiv
 import CompPoly.Multivariate.MvPolyEquiv.Core
@@ -78,6 +80,11 @@ import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.Lagrange
 import CompPoly.Univariate.Linear
+import CompPoly.Univariate.NTT.Domain
+import CompPoly.Univariate.NTT.FastMul
+import CompPoly.Univariate.NTT.Forward
+import CompPoly.Univariate.NTT.Inverse
+import CompPoly.Univariate.NTT.Transform
 import CompPoly.Univariate.Quotient.Core
 import CompPoly.Univariate.Quotient.Equiv
 import CompPoly.Univariate.Raw

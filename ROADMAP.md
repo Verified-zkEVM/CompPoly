@@ -42,7 +42,7 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - ✅ `aeval`, `bind₁`: Algebra evaluation and substitution
    - ✅ `algebra`, `module`: Algebra and module structures
    - ✅ `degrees`; ✅ `eval₂Hom`: Degree utilities and evaluation homomorphisms
-   - ✅ `finSuccEquiv`, `optionEquivLeft`: Variable manipulation equivalences (for `CMvPolynomial`)
+   - ✅ `finSuccEquiv`: Variable manipulation equivalences (for `CMvPolynomial`)
    - ✅ `isEmptyRingEquiv` for `CMvPolynomial 0 R`
    - ✅ `smulZeroClass`: Scalar multiplication with zero behavior
    - ✅ `sumToIter`: Iteration utility with reconstruction/API lemmas
@@ -69,28 +69,27 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - Implement FFT/NTT-based multiplication (O(n log n) vs current O(n²))
    - Focus on NTT for finite field arithmetic
    - Maintain correctness proofs alongside optimizations
-   
+
 **Note**: [erdkocak](https://github.com/erdkocak) and [doran2728](https://github.com/doran2728) have communicated they will be working on this.
 
 3. **Exponentiation optimization**
-   - Replace repeated multiplication with repeated squaring
-   - Reduce complexity from O(n) to O(log n) multiplications
+   - ✅ Replace repeated multiplication with repeated squaring
+   - ✅ Reduce complexity from O(n) to O(log n) multiplications
 
 4. **Evaluation optimizations**
    - Implement batch evaluation at multiple points
-   - Add Horner's method where beneficial
+   - ✅ Add Horner's method where beneficial
    - Optimize for common ZK evaluation patterns
 
 5. **Complete multilinear transform functions**
-   - Complete documentation of zeta/Möbius transform formulas
-   - Prove equivalence between fast and spec implementations
-   - Add performance guarantees and complexity proofs
+   - ✅ Complete documentation of zeta/Möbius transform formulas
+   - ✅ Prove equivalence between fast and spec implementations
+   - 🔄 Add performance guarantees and complexity proofs (done in comments, formal benchmarking still TODO)
 
 6. **Bivariate polynomial operations**
    - Optimize the existing bivariate polynomial type `CPolynomial (CPolynomial R)` and evaluate whether a more specialized representation is beneficial
    - Efficient factorization algorithms for bivariate polynomials
    - Integration with existing `CMvPolynomial 2 R` with equivalence proofs
-   - Critical for sum-check protocols, FRI commitments, and zkVM constraint systems
 
 7. **Error-correcting interpolation algorithms**
    - Implement Berlekamp-Welch algorithm for Reed-Solomon decoding
@@ -106,7 +105,7 @@ CompPoly aims to be the premier formally verified library for computable polynom
 
 **Goal**: Turn CompPoly into an integration-ready, downstream-friendly library by adding interoperability layers, serialization, proof automation, and extraction compatibility.
 
-#### Priorities 
+#### Priorities
 
 1. **Lowering / interop with LLZK / PrimeIR polynomial dialects**
 	- Explore representing CompPoly structures in the MLIR pipeline
@@ -127,7 +126,7 @@ CompPoly aims to be the premier formally verified library for computable polynom
 	- Build simp sets and grind sets for common operations
 	- Goal: “one-liner conversions” (or near) between spec polynomials and computable polynomials
 
-6.	**Integration with ArkLib / Hax + Rust libraries (e.g. plonky3)**
+5.	**Integration with ArkLib / Hax + Rust libraries (e.g. plonky3)**
 	- Make CompPoly the canonical polynomial backend for ArkLib specs where applicable
 	- Add bridging lemmas and conversion utilities across representations (CompPoly ↔ Mathlib ↔ extracted Rust ↔ downstream libs)
 	- Document and implement invariants required for robust interop (canonical ordering, normalization, domain metadata)
@@ -181,4 +180,4 @@ CompPoly aims to be the premier formally verified library for computable polynom
 
 ---
 
-*Last updated: March 2026*
+*Last updated: May 2026*

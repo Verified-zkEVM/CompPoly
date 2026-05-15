@@ -159,6 +159,51 @@ def aeval {n : ℕ} {R σ : Type*} [CommSemiring R] [CommSemiring σ] [Algebra R
   simpa [CMvPolynomial.eval₂Hom_apply] using
     (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_mul p q
 
+@[simp] lemma aeval_zero {n : ℕ} {R σ : Type*}
+    [CommSemiring R] [BEq R] [LawfulBEq R]
+    [CommSemiring σ] [Algebra R σ]
+    (f : Fin n → σ) :
+    aeval f (0 : CMvPolynomial n R) = 0 := by
+  unfold aeval
+  simpa [CMvPolynomial.eval₂Hom_apply] using
+    (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_zero
+
+@[simp] lemma aeval_one {n : ℕ} {R σ : Type*}
+    [CommSemiring R] [BEq R] [LawfulBEq R]
+    [CommSemiring σ] [Algebra R σ]
+    (f : Fin n → σ) :
+    aeval f (1 : CMvPolynomial n R) = 1 := by
+  unfold aeval
+  simpa [CMvPolynomial.eval₂Hom_apply] using
+    (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_one
+
+@[simp] lemma aeval_pow {n : ℕ} {R σ : Type*}
+    [CommSemiring R] [BEq R] [LawfulBEq R]
+    [CommSemiring σ] [Algebra R σ]
+    (f : Fin n → σ) (p : CMvPolynomial n R) (k : ℕ) :
+    aeval f (p ^ k) = (aeval f p) ^ k := by
+  unfold aeval
+  simpa [CMvPolynomial.eval₂Hom_apply] using
+    (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_pow p k
+
+@[simp] lemma aeval_neg {n : ℕ} {R σ : Type*}
+    [CommRing R] [BEq R] [LawfulBEq R]
+    [CommRing σ] [Algebra R σ]
+    (f : Fin n → σ) (p : CMvPolynomial n R) :
+    aeval f (-p) = -(aeval f p) := by
+  unfold aeval
+  simpa [CMvPolynomial.eval₂Hom_apply] using
+    (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_neg p
+
+@[simp] lemma aeval_sub {n : ℕ} {R σ : Type*}
+    [CommRing R] [BEq R] [LawfulBEq R]
+    [CommRing σ] [Algebra R σ]
+    (f : Fin n → σ) (p q : CMvPolynomial n R) :
+    aeval f (p - q) = aeval f p - aeval f q := by
+  unfold aeval
+  simpa [CMvPolynomial.eval₂Hom_apply] using
+    (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_sub p q
+
 /-- Substitution: substitutes polynomials for variables.
 
   Given `f : Fin n → CMvPolynomial m R`, substitutes `f i` for variable `X i`.
@@ -405,6 +450,63 @@ lemma sumToIter_add {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
     sumToIter (sumToIter p) = sumToIter p := by
   simp [sumToIter_eq]
 
+attribute [grind =]
+  aeval_C aeval_X aeval_add aeval_mul
+  aeval_zero aeval_one aeval_pow aeval_neg aeval_sub
+
 end CMvPolynomial
+
+namespace Lawful
+
+/-! ### Equivalence between `npow` and `npowBySq`
+
+`Lawful.npow` (defined in `Multivariate/Lawful.lean`) is the naive `O(k)`
+specification; `Lawful.npowBySq` is the `O(log k)` repeated-squaring
+implementation. We prove pointwise equality here so that the `NatPow` instance
+can be safely routed through the fast version.
+
+The proofs need `mul_assoc` / `mul_one` / `mul_comm`, which are only available
+once the `CommSemiring (CMvPolynomial n R)` instance has been built — that is
+why these lemmas live in `Operations.lean` rather than in `Lawful.lean`. -/
+
+variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+
+/-- Additive law for the naive `npow`: $p^{a+b} = p^a \cdot p^b$. -/
+lemma npow_add (p : Lawful n R) (a b : ℕ) :
+    npow (a + b) p = npow a p * npow b p := by
+  induction b with
+  | zero => simp [npow, mul_one]
+  | succ b ih =>
+    show npow (a + b + 1) p = npow a p * npow (b + 1) p
+    show npow (a + b) p * p = npow a p * (npow b p * p)
+    rw [ih, mul_assoc]
+
+/-- The fast repeated-squaring `npowBySq` agrees pointwise with the naive
+`npow`. This is the equivalence that lets the `NatPow (Lawful n R)` instance
+be routed through `npowBySq` without changing observable behavior. -/
+theorem npowBySq_eq_npow (p : Lawful n R) : ∀ k : ℕ, npowBySq p k = npow k p
+  | 0 => by unfold npowBySq; rfl
+  | k + 1 => by
+    unfold npowBySq
+    have ih : npowBySq p ((k + 1) / 2) = npow ((k + 1) / 2) p :=
+      npowBySq_eq_npow p ((k + 1) / 2)
+    rw [ih]
+    have hsq : npow ((k + 1) / 2) p * npow ((k + 1) / 2) p =
+        npow ((k + 1) / 2 + (k + 1) / 2) p := (npow_add p _ _).symm
+    by_cases heven : (k + 1) % 2 = 0
+    · simp only [heven, ↓reduceIte, hsq]
+      congr 1; omega
+    · simp only [heven, ↓reduceIte, hsq]
+      have hodd : (k + 1) / 2 + (k + 1) / 2 + 1 = k + 1 := by omega
+      -- Goal: p * npow ((k+1)/2 + (k+1)/2) p = npow (k+1) p.
+      -- Rewriting (k+1) on the right-hand side as the explicit successor unfolds
+      -- npow once into npow _ p * p, after which the equality is just commutativity.
+      conv_rhs => rw [← hodd]
+      show p * npow _ p = npow _ p * p
+      exact mul_comm _ _
+  termination_by k => k
+  decreasing_by omega
+
+end Lawful
 
 end CPoly
