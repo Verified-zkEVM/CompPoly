@@ -786,7 +786,8 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     (checksumCPolynomial checksumBabyBear))
   records := records.push (← runTimed
     "univariate-mul-ntt-fast-plan" "CPolynomial"
-    (univariateMulNttMethod "NTTFast.Plan.fastMulImpl, cached twiddles, mixed radix-4 DIF/DIT")
+    (univariateMulNttMethod
+      "NTTFast.Plan.fastMulImpl, cached twiddles, mixed radix-4 DIF/DIT, dual forward")
     "BabyBear.Field"
     univariateMulShape mulWarmupIterations mulMeasuredIterations
     (fun _ ↦ CPolynomial.NTTFast.Plan.fastMulImpl babyBearMulNttFastPlan mulLhsPoly
@@ -815,7 +816,8 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     (checksumCPolynomial checksumKoalaBear))
   records := records.push (← runTimed
     "univariate-mul-ntt-fast-plan-koalabear" "CPolynomial"
-    (univariateMulNttMethod "NTTFast.Plan.fastMulImpl, cached twiddles, mixed radix-4 DIF/DIT")
+    (univariateMulNttMethod
+      "NTTFast.Plan.fastMulImpl, cached twiddles, mixed radix-4 DIF/DIT, dual forward")
     "KoalaBear.Field"
     univariateMulShape mulWarmupIterations mulMeasuredIterations
     (fun _ ↦ CPolynomial.NTTFast.Plan.fastMulImpl koalaBearMulNttFastPlan koalaMulLhsPoly

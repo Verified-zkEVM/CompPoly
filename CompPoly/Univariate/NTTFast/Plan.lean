@@ -213,6 +213,45 @@ def runStagesDIFWithTwiddles (D : NTT.Domain R) (twiddles : Array (Array R)) (a 
     acc := butterflyStageDIFWithTwiddles D stage (twiddles.getD stage #[]) acc
   return acc
 
+/-- Inner paired DIF butterfly loop for one block. -/
+def butterflyDIFPairInner
+    (twiddles : Array R) (limit : Nat) (j i0 i1 : Nat) (accA accB : Array R) :
+    Array R × Array R :=
+  if j < limit then
+    let w := twiddles.getD j 0
+    let uA := accA.getD i0 0
+    let vA := accA.getD i1 0
+    let accA := (accA.set! i0 (uA + vA)).set! i1 (w * (uA - vA))
+    let uB := accB.getD i0 0
+    let vB := accB.getD i1 0
+    let accB := (accB.set! i0 (uB + vB)).set! i1 (w * (uB - vB))
+    butterflyDIFPairInner twiddles limit (j + 1) (i0 + 1) (i1 + 1) accA accB
+  else
+    (accA, accB)
+termination_by limit - j
+decreasing_by omega
+
+/-- Outer paired DIF butterfly loop over blocks. -/
+def butterflyDIFPairBlocks
+    (twiddles : Array R) (blockSize half blocks block : Nat) (accA accB : Array R) :
+    Array R × Array R :=
+  if block < blocks then
+    let base := block * blockSize
+    let (accA, accB) := butterflyDIFPairInner twiddles half 0 base (base + half) accA accB
+    butterflyDIFPairBlocks twiddles blockSize half blocks (block + 1) accA accB
+  else
+    (accA, accB)
+termination_by blocks - block
+decreasing_by omega
+
+/-- One paired DIF butterfly stage using precomputed twiddle powers. -/
+def butterflyStageDIFPairWithTwiddles
+    (D : NTT.Domain R) (stage : Nat) (twiddles : Array R) (a b : Array R) :
+    Array R × Array R :=
+  let blockSize : Nat := 2 ^ (stage + 1)
+  let half : Nat := 2 ^ stage
+  butterflyDIFPairBlocks twiddles blockSize half (D.n / blockSize) 0 a b
+
 /-- Inner fused DIF loop for two adjacent radix-2 stages. -/
 def butterflyDIFRadix4Inner
     (twiddlesHigh twiddlesLow : Array R) (limit : Nat) (j i0 i1 i2 i3 : Nat)
@@ -274,9 +313,94 @@ def runStagesDIFRadix4WithTwiddles
     acc := butterflyStageDIFWithTwiddles D 0 (twiddles.getD 0 #[]) acc
   return acc
 
+/-- Inner paired fused DIF loop for two adjacent radix-2 stages. -/
+def butterflyDIFRadix4PairInner
+    (twiddlesHigh twiddlesLow : Array R) (limit : Nat) (j i0 i1 i2 i3 : Nat)
+    (accA accB : Array R) : Array R × Array R :=
+  if j < limit then
+    let wHigh0 := twiddlesHigh.getD j 0
+    let wHigh1 := twiddlesHigh.getD (j + limit) 0
+    let wLow := twiddlesLow.getD j 0
+    let x0A := accA.getD i0 0
+    let x1A := accA.getD i1 0
+    let x2A := accA.getD i2 0
+    let x3A := accA.getD i3 0
+    let a0A := x0A + x2A
+    let a2A := wHigh0 * (x0A - x2A)
+    let a1A := x1A + x3A
+    let a3A := wHigh1 * (x1A - x3A)
+    let accA := (((accA.set! i0 (a0A + a1A)).set! i1 (wLow * (a0A - a1A))).set! i2
+      (a2A + a3A)).set! i3 (wLow * (a2A - a3A))
+    let x0B := accB.getD i0 0
+    let x1B := accB.getD i1 0
+    let x2B := accB.getD i2 0
+    let x3B := accB.getD i3 0
+    let a0B := x0B + x2B
+    let a2B := wHigh0 * (x0B - x2B)
+    let a1B := x1B + x3B
+    let a3B := wHigh1 * (x1B - x3B)
+    let accB := (((accB.set! i0 (a0B + a1B)).set! i1 (wLow * (a0B - a1B))).set! i2
+      (a2B + a3B)).set! i3 (wLow * (a2B - a3B))
+    butterflyDIFRadix4PairInner twiddlesHigh twiddlesLow limit (j + 1) (i0 + 1)
+      (i1 + 1) (i2 + 1) (i3 + 1) accA accB
+  else
+    (accA, accB)
+termination_by limit - j
+decreasing_by omega
+
+/-- Outer paired fused DIF loop over radix-4 blocks. -/
+def butterflyDIFRadix4PairBlocks
+    (twiddlesHigh twiddlesLow : Array R) (blockSize quarter blocks block : Nat)
+    (accA accB : Array R) : Array R × Array R :=
+  if block < blocks then
+    let base := block * blockSize
+    let (accA, accB) := butterflyDIFRadix4PairInner twiddlesHigh twiddlesLow quarter 0
+      base (base + quarter) (base + 2 * quarter) (base + 3 * quarter) accA accB
+    butterflyDIFRadix4PairBlocks twiddlesHigh twiddlesLow blockSize quarter blocks
+      (block + 1) accA accB
+  else
+    (accA, accB)
+termination_by blocks - block
+decreasing_by omega
+
+/-- Run two adjacent paired DIF radix-2 stages as one radix-4 pass. -/
+def butterflyRadix4StageDIFPairWithTwiddles
+    (D : NTT.Domain R) (lowStage : Nat) (twiddlesHigh twiddlesLow : Array R)
+    (a b : Array R) : Array R × Array R :=
+  let blockSize : Nat := 2 ^ (lowStage + 2)
+  let quarter : Nat := 2 ^ lowStage
+  butterflyDIFRadix4PairBlocks twiddlesHigh twiddlesLow blockSize quarter (D.n / blockSize)
+    0 a b
+
+/-- Run paired DIF stages using fused radix-4 passes where possible. -/
+def runStagesDIFRadix4PairWithTwiddles
+    (D : NTT.Domain R) (twiddles : Array (Array R)) (a b : Array R) :
+    Array R × Array R := Id.run do
+  let mut accA := a
+  let mut accB := b
+  let pairs := D.logN / 2
+  for pass in [0:pairs] do
+    let highStage := D.logN - 1 - 2 * pass
+    let lowStage := highStage - 1
+    let (nextA, nextB) := butterflyRadix4StageDIFPairWithTwiddles D lowStage
+      (twiddles.getD highStage #[]) (twiddles.getD lowStage #[]) accA accB
+    accA := nextA
+    accB := nextB
+  if D.logN % 2 = 1 then
+    let (nextA, nextB) := butterflyStageDIFPairWithTwiddles D 0 (twiddles.getD 0 #[]) accA
+      accB
+    accA := nextA
+    accB := nextB
+  return (accA, accB)
+
 /-- Forward transform through a reusable plan. -/
 @[inline] def forwardImpl (P : Plan R) (p : CPolynomial.Raw R) : Array R :=
   runStagesDIFRadix4WithTwiddles P.domain P.twiddles (loadNatural P.domain p)
+
+/-- Forward-transform two multiplication inputs through the same stage loops. -/
+@[inline] def forwardPairImpl (P : Plan R) (p q : CPolynomial.Raw R) : Array R × Array R :=
+  runStagesDIFRadix4PairWithTwiddles P.domain P.twiddles (loadNatural P.domain p)
+    (loadNatural P.domain q)
 
 /-- Apply the cached inverse-domain normalization factor. -/
 @[inline] def normalize (P : Plan R) (a : Array R) : Array R :=
@@ -291,8 +415,7 @@ namespace Raw
 /-- Raw experimental planned pipeline for NTT-based multiplication. -/
 @[inline] def fastMulImpl [BEq R]
     (P : Plan R) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
-  let pHat := forwardImpl P p
-  let qHat := forwardImpl P q
+  let (pHat, qHat) := forwardPairImpl P p q
   let cHat := pointwiseMul P.domain pHat qHat
   let c := inverseImpl P cHat
   NTT.Domain.truncate (NTT.Domain.requiredLength p q) c
