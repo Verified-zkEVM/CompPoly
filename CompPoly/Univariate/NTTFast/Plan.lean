@@ -60,16 +60,13 @@ def ofDomain (D : NTT.Domain R) : Plan R :=
 
 /-- Inner DIT butterfly loop for one block. -/
 def butterflyDITInner
-    (twiddles : Array R) (block blockSize half : Nat) (limit : Nat)
-    (j : Nat) (acc : Array R) : Array R :=
+    (twiddles : Array R) (limit : Nat) (j i0 i1 : Nat) (acc : Array R) : Array R :=
   if j < limit then
     let w := twiddles.getD j 0
-    let i0 := block * blockSize + j
-    let i1 := i0 + half
     let u := acc.getD i0 0
     let t := w * acc.getD i1 0
     let acc := (acc.set! i0 (u + t)).set! i1 (u - t)
-    butterflyDITInner twiddles block blockSize half limit (j + 1) acc
+    butterflyDITInner twiddles limit (j + 1) (i0 + 1) (i1 + 1) acc
   else
     acc
 termination_by limit - j
@@ -80,7 +77,8 @@ def butterflyDITBlocks
     (twiddles : Array R) (blockSize half blocks : Nat) (block : Nat) (acc : Array R) :
     Array R :=
   if block < blocks then
-    let acc := butterflyDITInner twiddles block blockSize half half 0 acc
+    let base := block * blockSize
+    let acc := butterflyDITInner twiddles half 0 base (base + half) acc
     butterflyDITBlocks twiddles blockSize half blocks (block + 1) acc
   else
     acc
@@ -104,16 +102,13 @@ def runStagesWithTwiddles (D : NTT.Domain R) (twiddles : Array (Array R)) (a : A
 
 /-- Inner DIF butterfly loop for one block. -/
 def butterflyDIFInner
-    (twiddles : Array R) (block blockSize half : Nat) (limit : Nat)
-    (j : Nat) (acc : Array R) : Array R :=
+    (twiddles : Array R) (limit : Nat) (j i0 i1 : Nat) (acc : Array R) : Array R :=
   if j < limit then
     let w := twiddles.getD j 0
-    let i0 := block * blockSize + j
-    let i1 := i0 + half
     let u := acc.getD i0 0
     let v := acc.getD i1 0
     let acc := (acc.set! i0 (u + v)).set! i1 (w * (u - v))
-    butterflyDIFInner twiddles block blockSize half limit (j + 1) acc
+    butterflyDIFInner twiddles limit (j + 1) (i0 + 1) (i1 + 1) acc
   else
     acc
 termination_by limit - j
@@ -124,7 +119,8 @@ def butterflyDIFBlocks
     (twiddles : Array R) (blockSize half blocks : Nat) (block : Nat) (acc : Array R) :
     Array R :=
   if block < blocks then
-    let acc := butterflyDIFInner twiddles block blockSize half half 0 acc
+    let base := block * blockSize
+    let acc := butterflyDIFInner twiddles half 0 base (base + half) acc
     butterflyDIFBlocks twiddles blockSize half blocks (block + 1) acc
   else
     acc
