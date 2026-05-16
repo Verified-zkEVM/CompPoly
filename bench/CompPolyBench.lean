@@ -19,6 +19,7 @@ import CompPoly.Univariate.NTT.BabyBear
 import CompPoly.Univariate.NTT.KoalaBear
 import CompPoly.Univariate.NTT.FastMul
 import CompPoly.Univariate.NTT.FastMulLow
+import CompPoly.Univariate.NTTFast.FastMul
 
 /-!
 # Evaluation Benchmarks
@@ -765,6 +766,12 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     (fun _ ↦ CPolynomial.NTT.FastMul.fastMulImpl babyBearMulNttDomain mulLhsPoly mulRhsPoly)
     (checksumCPolynomial checksumBabyBear))
   records := records.push (← runTimed
+    "univariate-mul-ntt-fast" "CPolynomial" "NTTFast.fastMulImpl, domain n=256"
+    "BabyBear.Field"
+    univariateMulShape mulWarmupIterations mulMeasuredIterations
+    (fun _ ↦ CPolynomial.NTTFast.fastMulImpl babyBearMulNttDomain mulLhsPoly mulRhsPoly)
+    (checksumCPolynomial checksumBabyBear))
+  records := records.push (← runTimed
     "univariate-mul-naive-koalabear" "CPolynomial" "mul" "KoalaBear.Field"
     univariateMulShape mulWarmupIterations mulMeasuredIterations
     (fun _ ↦ koalaMulLhsPoly * koalaMulRhsPoly)
@@ -774,6 +781,13 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     "KoalaBear.Field"
     univariateMulShape mulWarmupIterations mulMeasuredIterations
     (fun _ ↦ CPolynomial.NTT.FastMul.fastMulImpl koalaBearMulNttDomain koalaMulLhsPoly
+      koalaMulRhsPoly)
+    (checksumCPolynomial checksumKoalaBear))
+  records := records.push (← runTimed
+    "univariate-mul-ntt-fast-koalabear" "CPolynomial" "NTTFast.fastMulImpl, domain n=1024"
+    "KoalaBear.Field"
+    univariateMulShape mulWarmupIterations mulMeasuredIterations
+    (fun _ ↦ CPolynomial.NTTFast.fastMulImpl koalaBearMulNttDomain koalaMulLhsPoly
       koalaMulRhsPoly)
     (checksumCPolynomial checksumKoalaBear))
   records := records.push (← runTimed
