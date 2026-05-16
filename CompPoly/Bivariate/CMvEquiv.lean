@@ -15,6 +15,24 @@ open CompPoly CPoly CBivariate
 variable {R : Type*}
 variable [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
 
+namespace CMvPolynomial
+
+@[simp]
+lemma isEmptyRingEquiv_symm_apply (r : R) :
+  CMvPolynomial.isEmptyRingEquiv.symm r = CMvPolynomial.C r := by
+    unfold CMvPolynomial.isEmptyRingEquiv
+    exact CPoly.polyRingEquiv.symm_apply_eq.mpr (CMvPolynomial.fromCMvPolynomial_C r).symm
+
+
+
+
+#check CPoly.polyRingEquiv.symm_apply_eq.mpr (CMvPolynomial.fromCMvPolynomial_C r).symm
+#check CMvPolynomial.isEmptyRingEquiv
+#check CMvPolynomial.C
+#check CMvPolynomial.fromCMvPolynomial_C
+
+end CMvPolynomial
+
 /- theorem CBivariate_eq_CMvPolynomial {R : Type*}  [CommSemiring R] [BEq R] [LawfulBEq R] : CBivariate R ≃+* CMvPolynomial 2 R := by sorry -/
 noncomputable def bivariateEquiv : CBivariate R ≃+* CMvPolynomial 2 R :=
   let step1 := CBivariate.ringEquiv
@@ -35,7 +53,5 @@ lemma bivariateEquiv_zero : bivariateEquiv (0 : CBivariate R) = 0 :=
   map_zero bivariateEquiv
 
 lemma bivariateEquiv_CC (r : R) : bivariateEquiv (CBivariate.CC r) = CMvPolynomial.C r := by
-  unfold CC
-
-
-#check toPoly
+  unfold bivariateEquiv
+  simp [ringEquiv]
