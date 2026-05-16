@@ -100,6 +100,71 @@ def runStagesWithTwiddles (D : NTT.Domain R) (twiddles : Array (Array R)) (a : A
     acc := butterflyStageWithTwiddles D stage (twiddles.getD stage #[]) acc
   return acc
 
+/-- Inner fused DIT loop for two adjacent radix-2 stages. -/
+def butterflyDITRadix4Inner
+    (twiddlesLow twiddlesHigh : Array R) (limit : Nat) (j i0 i1 i2 i3 : Nat)
+    (acc : Array R) : Array R :=
+  if j < limit then
+    let wLow := twiddlesLow.getD j 0
+    let wHigh0 := twiddlesHigh.getD j 0
+    let wHigh1 := twiddlesHigh.getD (j + limit) 0
+    let x0 := acc.getD i0 0
+    let x1 := acc.getD i1 0
+    let x2 := acc.getD i2 0
+    let x3 := acc.getD i3 0
+    let t1 := wLow * x1
+    let t3 := wLow * x3
+    let a0 := x0 + t1
+    let a1 := x0 - t1
+    let a2 := x2 + t3
+    let a3 := x2 - t3
+    let u2 := wHigh0 * a2
+    let u3 := wHigh1 * a3
+    let acc := (((acc.set! i0 (a0 + u2)).set! i1 (a1 + u3)).set! i2 (a0 - u2)).set! i3
+      (a1 - u3)
+    butterflyDITRadix4Inner twiddlesLow twiddlesHigh limit (j + 1) (i0 + 1) (i1 + 1)
+      (i2 + 1) (i3 + 1) acc
+  else
+    acc
+termination_by limit - j
+decreasing_by omega
+
+/-- Outer fused DIT loop over radix-4 blocks. -/
+def butterflyDITRadix4Blocks
+    (twiddlesLow twiddlesHigh : Array R) (blockSize quarter blocks block : Nat)
+    (acc : Array R) : Array R :=
+  if block < blocks then
+    let base := block * blockSize
+    let acc := butterflyDITRadix4Inner twiddlesLow twiddlesHigh quarter 0 base
+      (base + quarter) (base + 2 * quarter) (base + 3 * quarter) acc
+    butterflyDITRadix4Blocks twiddlesLow twiddlesHigh blockSize quarter blocks (block + 1) acc
+  else
+    acc
+termination_by blocks - block
+decreasing_by omega
+
+/-- Run two adjacent DIT radix-2 stages as one radix-4 pass. -/
+def butterflyRadix4StageWithTwiddles
+    (D : NTT.Domain R) (lowStage : Nat) (twiddlesLow twiddlesHigh : Array R)
+    (a : Array R) : Array R :=
+  let blockSize : Nat := 2 ^ (lowStage + 2)
+  let quarter : Nat := 2 ^ lowStage
+  butterflyDITRadix4Blocks twiddlesLow twiddlesHigh blockSize quarter (D.n / blockSize) 0 a
+
+/-- Run DIT stages using fused radix-4 passes where possible. -/
+def runStagesRadix4WithTwiddles (D : NTT.Domain R) (twiddles : Array (Array R)) (a : Array R) :
+    Array R := Id.run do
+  let mut acc := a
+  let pairs := D.logN / 2
+  for pass in [0:pairs] do
+    let lowStage := 2 * pass
+    let highStage := lowStage + 1
+    acc := butterflyRadix4StageWithTwiddles D lowStage (twiddles.getD lowStage #[])
+      (twiddles.getD highStage #[]) acc
+  if D.logN % 2 = 1 then
+    acc := butterflyStageWithTwiddles D (D.logN - 1) (twiddles.getD (D.logN - 1) #[]) acc
+  return acc
+
 /-- Inner DIF butterfly loop for one block. -/
 def butterflyDIFInner
     (twiddles : Array R) (limit : Nat) (j i0 i1 : Nat) (acc : Array R) : Array R :=
@@ -148,9 +213,70 @@ def runStagesDIFWithTwiddles (D : NTT.Domain R) (twiddles : Array (Array R)) (a 
     acc := butterflyStageDIFWithTwiddles D stage (twiddles.getD stage #[]) acc
   return acc
 
+/-- Inner fused DIF loop for two adjacent radix-2 stages. -/
+def butterflyDIFRadix4Inner
+    (twiddlesHigh twiddlesLow : Array R) (limit : Nat) (j i0 i1 i2 i3 : Nat)
+    (acc : Array R) : Array R :=
+  if j < limit then
+    let wHigh0 := twiddlesHigh.getD j 0
+    let wHigh1 := twiddlesHigh.getD (j + limit) 0
+    let wLow := twiddlesLow.getD j 0
+    let x0 := acc.getD i0 0
+    let x1 := acc.getD i1 0
+    let x2 := acc.getD i2 0
+    let x3 := acc.getD i3 0
+    let a0 := x0 + x2
+    let a2 := wHigh0 * (x0 - x2)
+    let a1 := x1 + x3
+    let a3 := wHigh1 * (x1 - x3)
+    let acc := (((acc.set! i0 (a0 + a1)).set! i1 (wLow * (a0 - a1))).set! i2
+      (a2 + a3)).set! i3 (wLow * (a2 - a3))
+    butterflyDIFRadix4Inner twiddlesHigh twiddlesLow limit (j + 1) (i0 + 1) (i1 + 1)
+      (i2 + 1) (i3 + 1) acc
+  else
+    acc
+termination_by limit - j
+decreasing_by omega
+
+/-- Outer fused DIF loop over radix-4 blocks. -/
+def butterflyDIFRadix4Blocks
+    (twiddlesHigh twiddlesLow : Array R) (blockSize quarter blocks block : Nat)
+    (acc : Array R) : Array R :=
+  if block < blocks then
+    let base := block * blockSize
+    let acc := butterflyDIFRadix4Inner twiddlesHigh twiddlesLow quarter 0 base
+      (base + quarter) (base + 2 * quarter) (base + 3 * quarter) acc
+    butterflyDIFRadix4Blocks twiddlesHigh twiddlesLow blockSize quarter blocks (block + 1) acc
+  else
+    acc
+termination_by blocks - block
+decreasing_by omega
+
+/-- Run two adjacent DIF radix-2 stages as one radix-4 pass. -/
+def butterflyRadix4StageDIFWithTwiddles
+    (D : NTT.Domain R) (lowStage : Nat) (twiddlesHigh twiddlesLow : Array R)
+    (a : Array R) : Array R :=
+  let blockSize : Nat := 2 ^ (lowStage + 2)
+  let quarter : Nat := 2 ^ lowStage
+  butterflyDIFRadix4Blocks twiddlesHigh twiddlesLow blockSize quarter (D.n / blockSize) 0 a
+
+/-- Run DIF stages using fused radix-4 passes where possible. -/
+def runStagesDIFRadix4WithTwiddles
+    (D : NTT.Domain R) (twiddles : Array (Array R)) (a : Array R) : Array R := Id.run do
+  let mut acc := a
+  let pairs := D.logN / 2
+  for pass in [0:pairs] do
+    let highStage := D.logN - 1 - 2 * pass
+    let lowStage := highStage - 1
+    acc := butterflyRadix4StageDIFWithTwiddles D lowStage (twiddles.getD highStage #[])
+      (twiddles.getD lowStage #[]) acc
+  if D.logN % 2 = 1 then
+    acc := butterflyStageDIFWithTwiddles D 0 (twiddles.getD 0 #[]) acc
+  return acc
+
 /-- Forward transform through a reusable plan. -/
 @[inline] def forwardImpl (P : Plan R) (p : CPolynomial.Raw R) : Array R :=
-  runStagesDIFWithTwiddles P.domain P.twiddles (loadNatural P.domain p)
+  runStagesDIFRadix4WithTwiddles P.domain P.twiddles (loadNatural P.domain p)
 
 /-- Apply the cached inverse-domain normalization factor. -/
 @[inline] def normalize (P : Plan R) (a : Array R) : Array R :=
@@ -158,7 +284,7 @@ def runStagesDIFWithTwiddles (D : NTT.Domain R) (twiddles : Array (Array R)) (a 
 
 /-- Inverse transform through a reusable plan. -/
 @[inline] def inverseImpl (P : Plan R) (v : Array R) : CPolynomial.Raw R :=
-  normalize P (runStagesWithTwiddles P.inverseDomain P.inverseTwiddles v)
+  normalize P (runStagesRadix4WithTwiddles P.inverseDomain P.inverseTwiddles v)
 
 namespace Raw
 
