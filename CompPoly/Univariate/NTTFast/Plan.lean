@@ -58,22 +58,41 @@ def ofDomain (D : NTT.Domain R) : Plan R :=
 @[inline] def loadNatural (D : NTT.Domain R) (a : Array R) : Array R :=
   Array.ofFn (fun i : D.Idx => a.getD i.1 0)
 
+/-- Inner DIT butterfly loop for one block. -/
+def butterflyDITInner
+    (twiddles : Array R) (block blockSize half : Nat) (limit : Nat)
+    (j : Nat) (acc : Array R) : Array R :=
+  if j < limit then
+    let w := twiddles.getD j 0
+    let i0 := block * blockSize + j
+    let i1 := i0 + half
+    let u := acc.getD i0 0
+    let t := w * acc.getD i1 0
+    let acc := (acc.set! i0 (u + t)).set! i1 (u - t)
+    butterflyDITInner twiddles block blockSize half limit (j + 1) acc
+  else
+    acc
+termination_by limit - j
+decreasing_by omega
+
+/-- Outer DIT butterfly loop over blocks. -/
+def butterflyDITBlocks
+    (twiddles : Array R) (blockSize half blocks : Nat) (block : Nat) (acc : Array R) :
+    Array R :=
+  if block < blocks then
+    let acc := butterflyDITInner twiddles block blockSize half half 0 acc
+    butterflyDITBlocks twiddles blockSize half blocks (block + 1) acc
+  else
+    acc
+termination_by blocks - block
+decreasing_by omega
+
 /-- One butterfly stage using precomputed twiddle powers for that stage. -/
 def butterflyStageWithTwiddles
     (D : NTT.Domain R) (stage : Nat) (twiddles : Array R) (a : Array R) : Array R :=
-  Id.run do
-    let blockSize : Nat := 2 ^ (stage + 1)
-    let half : Nat := 2 ^ stage
-    let mut acc := a
-    for block in [0:D.n / blockSize] do
-      for j in [0:half] do
-        let w := twiddles.getD j 0
-        let i0 := block * blockSize + j
-        let i1 := i0 + half
-        let u := acc.getD i0 0
-        let t := w * acc.getD i1 0
-        acc := (acc.set! i0 (u + t)).set! i1 (u - t)
-    return acc
+  let blockSize : Nat := 2 ^ (stage + 1)
+  let half : Nat := 2 ^ stage
+  butterflyDITBlocks twiddles blockSize half (D.n / blockSize) 0 a
 
 /-- Run all radix-2 stages using a precomputed per-stage twiddle table. -/
 def runStagesWithTwiddles (D : NTT.Domain R) (twiddles : Array (Array R)) (a : Array R) :
@@ -83,6 +102,35 @@ def runStagesWithTwiddles (D : NTT.Domain R) (twiddles : Array (Array R)) (a : A
     acc := butterflyStageWithTwiddles D stage (twiddles.getD stage #[]) acc
   return acc
 
+/-- Inner DIF butterfly loop for one block. -/
+def butterflyDIFInner
+    (twiddles : Array R) (block blockSize half : Nat) (limit : Nat)
+    (j : Nat) (acc : Array R) : Array R :=
+  if j < limit then
+    let w := twiddles.getD j 0
+    let i0 := block * blockSize + j
+    let i1 := i0 + half
+    let u := acc.getD i0 0
+    let v := acc.getD i1 0
+    let acc := (acc.set! i0 (u + v)).set! i1 (w * (u - v))
+    butterflyDIFInner twiddles block blockSize half limit (j + 1) acc
+  else
+    acc
+termination_by limit - j
+decreasing_by omega
+
+/-- Outer DIF butterfly loop over blocks. -/
+def butterflyDIFBlocks
+    (twiddles : Array R) (blockSize half blocks : Nat) (block : Nat) (acc : Array R) :
+    Array R :=
+  if block < blocks then
+    let acc := butterflyDIFInner twiddles block blockSize half half 0 acc
+    butterflyDIFBlocks twiddles blockSize half blocks (block + 1) acc
+  else
+    acc
+termination_by blocks - block
+decreasing_by omega
+
 /--
 One decimation-in-frequency butterfly stage using precomputed twiddle powers.
 
@@ -91,19 +139,9 @@ stages, produces bit-reversed evaluation order.
 -/
 def butterflyStageDIFWithTwiddles
     (D : NTT.Domain R) (stage : Nat) (twiddles : Array R) (a : Array R) : Array R :=
-  Id.run do
-    let blockSize : Nat := 2 ^ (stage + 1)
-    let half : Nat := 2 ^ stage
-    let mut acc := a
-    for block in [0:D.n / blockSize] do
-      for j in [0:half] do
-        let w := twiddles.getD j 0
-        let i0 := block * blockSize + j
-        let i1 := i0 + half
-        let u := acc.getD i0 0
-        let v := acc.getD i1 0
-        acc := (acc.set! i0 (u + v)).set! i1 (w * (u - v))
-    return acc
+  let blockSize : Nat := 2 ^ (stage + 1)
+  let half : Nat := 2 ^ stage
+  butterflyDIFBlocks twiddles blockSize half (D.n / blockSize) 0 a
 
 /-- Run decimation-in-frequency stages, producing bit-reversed evaluation order. -/
 def runStagesDIFWithTwiddles (D : NTT.Domain R) (twiddles : Array (Array R)) (a : Array R) :
