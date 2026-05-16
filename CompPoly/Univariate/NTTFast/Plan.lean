@@ -5,7 +5,6 @@ Authors: Valerii Huhnin
 -/
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.NTTFast.FastMulImpl
-import CompPoly.Univariate.NTTFast.Transform
 
 /-!
 # Experimental planned NTT multiplication
@@ -26,15 +25,10 @@ structure Plan (R : Type*) [Field R] where
   domain : NTT.Domain R
   inverseDomain : NTT.Domain R
   nInv : R
-  bitRevIndices : Array Nat
   twiddles : Array (Array R)
   inverseTwiddles : Array (Array R)
 
 namespace Plan
-
-/-- Precompute bit-reversed source indices for a domain. -/
-def bitRevTable (D : NTT.Domain R) : Array Nat :=
-  Array.ofFn (fun i : D.Idx => Transform.bitRevNat D.logN i.1)
 
 /-- Precompute the twiddle powers used by one radix-2 stage. -/
 def twiddlePowers (D : NTT.Domain R) (stage : Nat) : Array R := Id.run do
@@ -57,14 +51,12 @@ def ofDomain (D : NTT.Domain R) : Plan R :=
   { domain := D
     inverseDomain := D.inverse
     nInv := D.nInv
-    bitRevIndices := bitRevTable D
     twiddles := twiddleTable D
     inverseTwiddles := twiddleTable D.inverse }
 
-/-- Apply a bit-reversal permutation using precomputed source indices. -/
-@[inline] def bitRevPermuteWithTable
-    (D : NTT.Domain R) (indices : Array Nat) (a : Array R) : Array R :=
-  Array.ofFn (fun i : D.Idx => a.getD (indices.getD i.1 0) 0)
+/-- Load coefficients in natural order and pad to the domain size. -/
+@[inline] def loadNatural (D : NTT.Domain R) (a : Array R) : Array R :=
+  Array.ofFn (fun i : D.Idx => a.getD i.1 0)
 
 /-- One butterfly stage using precomputed twiddle powers for that stage. -/
 def butterflyStageWithTwiddles
@@ -91,10 +83,40 @@ def runStagesWithTwiddles (D : NTT.Domain R) (twiddles : Array (Array R)) (a : A
     acc := butterflyStageWithTwiddles D stage (twiddles.getD stage #[]) acc
   return acc
 
+/--
+One decimation-in-frequency butterfly stage using precomputed twiddle powers.
+
+This accepts natural-order data and, when run from large stages down to small
+stages, produces bit-reversed evaluation order.
+-/
+def butterflyStageDIFWithTwiddles
+    (D : NTT.Domain R) (stage : Nat) (twiddles : Array R) (a : Array R) : Array R :=
+  Id.run do
+    let blockSize : Nat := 2 ^ (stage + 1)
+    let half : Nat := 2 ^ stage
+    let mut acc := a
+    for block in [0:D.n / blockSize] do
+      for j in [0:half] do
+        let w := twiddles.getD j 0
+        let i0 := block * blockSize + j
+        let i1 := i0 + half
+        let u := acc.getD i0 0
+        let v := acc.getD i1 0
+        acc := (acc.set! i0 (u + v)).set! i1 (w * (u - v))
+    return acc
+
+/-- Run decimation-in-frequency stages, producing bit-reversed evaluation order. -/
+def runStagesDIFWithTwiddles (D : NTT.Domain R) (twiddles : Array (Array R)) (a : Array R) :
+    Array R := Id.run do
+  let mut acc := a
+  for pass in [0:D.logN] do
+    let stage := D.logN - pass - 1
+    acc := butterflyStageDIFWithTwiddles D stage (twiddles.getD stage #[]) acc
+  return acc
+
 /-- Forward transform through a reusable plan. -/
 @[inline] def forwardImpl (P : Plan R) (p : CPolynomial.Raw R) : Array R :=
-  runStagesWithTwiddles P.domain P.twiddles
-    (bitRevPermuteWithTable P.domain P.bitRevIndices p)
+  runStagesDIFWithTwiddles P.domain P.twiddles (loadNatural P.domain p)
 
 /-- Apply the cached inverse-domain normalization factor. -/
 @[inline] def normalize (P : Plan R) (a : Array R) : Array R :=
@@ -102,9 +124,7 @@ def runStagesWithTwiddles (D : NTT.Domain R) (twiddles : Array (Array R)) (a : A
 
 /-- Inverse transform through a reusable plan. -/
 @[inline] def inverseImpl (P : Plan R) (v : Array R) : CPolynomial.Raw R :=
-  normalize P
-    (runStagesWithTwiddles P.inverseDomain P.inverseTwiddles
-      (bitRevPermuteWithTable P.inverseDomain P.bitRevIndices v))
+  normalize P (runStagesWithTwiddles P.inverseDomain P.inverseTwiddles v)
 
 namespace Raw
 

@@ -100,7 +100,7 @@ private def largeUnivariateBatchPointCount : Nat := 8192
 private def univariateModDivisorPointCount : Nat := 16
 
 /-- Number of coefficient slots used by direct univariate multiplication benchmarks. -/
-private def univariateMulCoeffSlots : Nat := 512
+private def univariateMulCoeffSlots : Nat := 1024
 
 /-- Number of coefficient slots used by low-product benchmarks. -/
 private def univariateMulLowCoeffSlots : Nat := 512
@@ -109,7 +109,7 @@ private def univariateMulLowCoeffSlots : Nat := 512
 private def univariateMulLowOutputCoeffSlots : Nat := 512
 
 /-- Radix-2 domain exponent used by direct univariate multiplication benchmarks. -/
-private def univariateMulLogN : Nat := 10
+private def univariateMulLogN : Nat := 11
 
 /-- Domain size used by direct univariate multiplication benchmarks. -/
 private def univariateMulDomainSize : Nat := 2 ^ univariateMulLogN
@@ -786,7 +786,7 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     (checksumCPolynomial checksumBabyBear))
   records := records.push (← runTimed
     "univariate-mul-ntt-fast-plan" "CPolynomial"
-    (univariateMulNttMethod "NTTFast.Plan.fastMulImpl, cached twiddles + bitrev")
+    (univariateMulNttMethod "NTTFast.Plan.fastMulImpl, cached twiddles, DIF/DIT")
     "BabyBear.Field"
     univariateMulShape mulWarmupIterations mulMeasuredIterations
     (fun _ ↦ CPolynomial.NTTFast.Plan.fastMulImpl babyBearMulNttFastPlan mulLhsPoly
@@ -815,7 +815,7 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     (checksumCPolynomial checksumKoalaBear))
   records := records.push (← runTimed
     "univariate-mul-ntt-fast-plan-koalabear" "CPolynomial"
-    (univariateMulNttMethod "NTTFast.Plan.fastMulImpl, cached twiddles + bitrev")
+    (univariateMulNttMethod "NTTFast.Plan.fastMulImpl, cached twiddles, DIF/DIT")
     "KoalaBear.Field"
     univariateMulShape mulWarmupIterations mulMeasuredIterations
     (fun _ ↦ CPolynomial.NTTFast.Plan.fastMulImpl koalaBearMulNttFastPlan koalaMulLhsPoly
