@@ -1,8 +1,9 @@
 # Evaluation Benchmarks
 
-This directory contains the compiled evaluation benchmark executable for
+This directory contains the compiled benchmark executable for
 CompPoly. The benchmark is intentionally small enough for CI, but broad enough
-to cover the main polynomial evaluation surfaces and the existing additive NTT
+to cover the main polynomial evaluation surfaces, direct univariate
+multiplication, root-of-unity NTT multiplication, and the existing additive NTT
 implementation.
 
 ## Running
@@ -29,9 +30,10 @@ Generated benchmark artifacts are ignored by `bench/.gitignore`.
 
 ## What Is Measured
 
-The benchmark covers the main polynomial evaluation paths and the existing
-additive NTT implementation. Exact cases, input shapes, deterministic input
-generation, and reported fields are defined in `bench/CompPolyBench.lean`.
+The benchmark covers the main polynomial evaluation paths, direct versus
+NTT-backed univariate multiplication, and the existing additive NTT
+implementation. Exact cases, input shapes, deterministic input generation, and
+reported fields are defined in `bench/CompPolyBench.lean`.
 
 ## Determinism
 
