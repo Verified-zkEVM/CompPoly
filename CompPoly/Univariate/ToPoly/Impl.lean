@@ -180,32 +180,8 @@ theorem leadingCoeff_toPoly [BEq R] [LawfulBEq R] (p : CPolynomial R) :
 theorem erase_toPoly {R : Type*} [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
     (n : ℕ) (p : CPolynomial R) :
     (erase n p).toPoly = p.toPoly.erase n := by
-  have h_erase_def : (CPolynomial.erase n p).toPoly
-      = p.toPoly - Polynomial.monomial n (p.val.coeff n) := by
-    have h_erase_toPoly : ∀ (p q : CPolynomial.Raw R),
-        (p - q).toPoly = p.toPoly - q.toPoly := by
-      intros p q;
-      have h_erase_toPoly : ∀ (p q : CPolynomial.Raw R),
-          (p + -q).toPoly = p.toPoly + (-q).toPoly := by
-        exact fun p q => Raw.toPoly_add p (-q)
-      convert h_erase_toPoly p q using 1
-      simp +decide [ Raw.toPoly ]
-      rw [ show ( -q : CompPoly.CPolynomial.Raw R ) = q.map ( fun x => -x ) from ?_ ]
-      · simp +decide [ Raw.eval₂ ]
-        induction' q using Array.recOn with q ih; simp +decide [ *, Array.zipIdx ]
-        induction' q using List.reverseRecOn with q ih <;>
-          simp +decide [ *, List.mapIdx_append ]
-        grind
-      · rfl
-    convert h_erase_toPoly _ _
-    convert monomial_toPoly n ( p.val.coeff n ) |> Eq.symm
-  convert h_erase_def using 1
-  ext m; simp +decide [ Polynomial.coeff_monomial ]
-  by_cases h : n = m <;> simp +decide [ h ]
-  · rw [ eq_comm, sub_eq_zero ]
-    convert Raw.coeff_toPoly using 1
-    exact Eq.symm Array.getD_eq_getD_getElem?
-  · rw [ Polynomial.coeff_erase ]; aesop
+  ext i
+  rw [← coeff_toPoly, Polynomial.coeff_erase, coeff_erase, ← coeff_toPoly]
 
 /-- CPolynomial.C r mul CPolynomial.X ^ n is correct wrt the Mathlib spec. -/
 theorem C_mul_X_pow_toPoly [BEq R] [LawfulBEq R] [DecidableEq R] [Nontrivial R] (r : R) (n : ℕ) :

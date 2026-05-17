@@ -891,27 +891,26 @@ instance [Ring R] [BEq R] [LawfulBEq R] : Neg (CPolynomial R) where
 instance [Ring R] [BEq R] [LawfulBEq R] : Sub (CPolynomial R) where
   sub p q := p + -q
 
-lemma erase_canonical [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
-    (n : ℕ) (p : CPolynomial R) :
-    let e := p.val - Raw.monomial n (p.val.coeff n)
-    e.trim = e := by
-  simp; apply Trim.trim_twice
+/-- Erase the coefficient at index `n` (same as `p` except `coeff n = 0`, then trimmed).
 
-/-- Erase the coefficient at index `n` (same as `p` except `coeff n = 0`, then trimmed). -/
-def erase [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
-    (n : ℕ) (p : CPolynomial R) : CPolynomial R :=
-  let e := p.val - Raw.monomial n (p.val.coeff n)
-  ⟨e, Trim.isCanonical_of_trim_eq (by rw [erase_canonical])⟩
+  Uses an in-place `Array.setIfInBounds` rather than subtracting a monomial, avoiding
+  the allocation of a length-`n` monomial array plus the padding/zip passes of `sub`. -/
+def erase [Zero R] [BEq R] [LawfulBEq R] (n : ℕ) (p : CPolynomial R) : CPolynomial R :=
+  let arr : CPolynomial.Raw R := p.val.setIfInBounds n 0
+  ⟨arr.trim, Trim.isCanonical_trim arr⟩
 
 /-- Coefficient of `erase n p`: zero at `n`, otherwise `coeff p i`. -/
-lemma coeff_erase [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
+lemma coeff_erase [Zero R] [BEq R] [LawfulBEq R]
     (n i : ℕ) (p : CPolynomial R) :
     coeff (erase n p) i = if i = n then 0 else coeff p i := by
   unfold erase coeff
-  rw [Raw.sub_coeff, Raw.coeff_monomial]
-  by_cases h : n = i <;> simp [h]
-  intro h'; rw [h'] at h
-  contradiction
+  rw [Trim.coeff_eq_coeff, Raw.coeff, Raw.coeff,
+    Array.getD_eq_getD_getElem?, Array.getD_eq_getD_getElem?,
+    Array.getElem?_setIfInBounds]
+  by_cases hni : i = n
+  · rw [if_pos hni.symm, if_pos hni]
+    split <;> rfl
+  · rw [if_neg hni, if_neg (fun h => hni h.symm)]
 
 /-- Leading coefficient equals the coefficient at `natDegree`. -/
 lemma leadingCoeff_eq_coeff_natDegree [Zero R] (p : CPolynomial R) :

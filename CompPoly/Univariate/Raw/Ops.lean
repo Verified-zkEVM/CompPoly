@@ -158,11 +158,6 @@ instance [Neg R] : Neg (CPolynomial.Raw R) := ⟨neg⟩
 instance [Zero R] [Add R] [Neg R] [BEq R] : Sub (CPolynomial.Raw R) := ⟨sub⟩
 instance [IntCast R] : IntCast (CPolynomial.Raw R) := ⟨fun n => C (n : R)⟩
 
-/-- Erase the coefficient at index `n`: same as `p` except `coeff n = 0`, then trimmed. -/
-def erase [Zero R] [Add R] [Neg R] [BEq R] [DecidableEq R]
-    (n : ℕ) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
-  p - monomial n (p.coeff n)
-
 end Ring
 
 end Operations
