@@ -185,6 +185,7 @@ theorem loadNatural_eq (D : NTT.Domain R) (a : Array R) :
     loadNatural D a = Array.ofFn (fun i : D.Idx ↦ a.getD i.1 0) := by
   rfl
 
+/-- Folding over `List.range` is equivalent to the corresponding natural recursion. -/
 theorem foldl_range_eq_rec {α : Type*} (f : Nat → α → α) (x : α) :
     ∀ n : Nat,
       List.foldl (fun acc i ↦ f i acc) x (List.range n) = Nat.rec x (fun i acc ↦ f i acc) n
@@ -192,6 +193,7 @@ theorem foldl_range_eq_rec {α : Type*} (f : Nat → α → α) (x : α) :
   | n + 1 => by
       simp [List.range_succ, List.foldl_append, foldl_range_eq_rec f x n]
 
+/-- First projections of pair-valued folds over `List.range` match natural recursion. -/
 theorem foldl_range_eq_rec_fst {α β : Type*}
     (f : Nat → α × β → α × β) (x : α × β) (n : Nat) :
     (List.foldl (fun acc i ↦ f i acc) x (List.range n)).1 =
@@ -201,6 +203,7 @@ theorem foldl_range_eq_rec_fst {α β : Type*}
         Nat.rec (motive := fun _ ↦ α × β) x (fun i acc ↦ f i acc) n from
       foldl_range_eq_rec f x n)
 
+/-- Two fold functions give the same range fold when they agree at every step. -/
 theorem foldl_range_congr {α : Type*} (f g : α → Nat → α) :
     ∀ n : Nat,
       (∀ i, i < n → ∀ acc, f acc i = g acc i) →
@@ -213,6 +216,7 @@ theorem foldl_range_congr {α : Type*} (f g : α → Nat → α) :
       simp [List.range_succ, List.foldl_append, foldl_range_congr f g n hprev acc,
         h n (Nat.lt_succ_self n)]
 
+/-- A property preserved by every step is preserved by folding over `List.range`. -/
 theorem foldl_range_preserve {α : Type*} (p : α → Prop) (f : α → Nat → α) :
     ∀ n : Nat,
       (∀ i, i < n → ∀ acc, p acc → p (f acc i)) →
@@ -226,6 +230,7 @@ theorem foldl_range_preserve {α : Type*} (p : α → Prop) (f : α → Nat → 
         foldl_range_preserve p f n hprev acc hacc,
         h n (Nat.lt_succ_self n)]
 
+/-- Congruence for range folds under an invariant preserved by the left fold. -/
 theorem foldl_range_congr_inv {α : Type*} (p : α → Prop) (f g : α → Nat → α) :
     ∀ n : Nat,
       (∀ i, i < n → ∀ acc, p acc → f acc i = g acc i) →
@@ -246,6 +251,7 @@ theorem foldl_range_congr_inv {α : Type*} (p : α → Prop) (f g : α → Nat �
       rw [← ih]
       exact hfg n (Nat.lt_succ_self n) _ haccTail
 
+/-- Shift a `List.range'` fold by one when the folded function shifts its index. -/
 theorem foldl_range'_succ_shift {α : Type*} (f : Nat → α → α) :
     ∀ n offset (acc : α),
       List.foldl (fun acc t ↦ f (t + 1) acc) acc (List.range' offset n) =
@@ -256,12 +262,14 @@ theorem foldl_range'_succ_shift {α : Type*} (f : Nat → α → α) :
       simp only [List.range'_succ, List.foldl_cons]
       simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using ih
 
+/-- Reindex a `List.range'` fold as a fold over `List.range` with an offset. -/
 theorem foldl_range'_eq_range_add {α : Type*} (f : Nat → α → α)
     (n offset : Nat) (acc : α) :
     List.foldl (fun acc t ↦ f t acc) acc (List.range' offset n) =
       List.foldl (fun acc t ↦ f (offset + t) acc) acc (List.range n) := by
   simp [List.range'_eq_map_range, List.foldl_map]
 
+/-- Split a `List.range'` fold over an appended interval into two folds. -/
 theorem foldl_range'_append_split {α : Type*} (f : α → Nat → α)
     (acc : α) (s m n : Nat) :
     List.foldl f acc (List.range' s (m + n)) =
@@ -271,10 +279,12 @@ theorem foldl_range'_append_split {α : Type*} (f : α → Nat → α)
     exact List.range'_append (s := s) (m := m) (n := n) (step := 1)
   rw [← h, List.foldl_append]
 
+/-- Arithmetic normal form used when rearranging adjacent radix-4 block indices. -/
 theorem three_mul_add_eq_add_two_mul_add (q b : Nat) :
     3 * q + b = q + (2 * q + b) := by
   nlinarith
 
+/-- Move an operation through a range fold when it commutes with every step. -/
 theorem foldl_commute {α : Type*} (op : α → α) (f : Nat → α → α) :
     ∀ n : Nat,
       (∀ i, i < n → ∀ x, op (f i x) = f i (op x)) →
@@ -288,6 +298,7 @@ theorem foldl_commute {α : Type*} (op : α → α) (f : Nat → α → α) :
       simp [List.range_succ, List.foldl_append, foldl_commute op f n hprev x,
         h n (Nat.lt_succ_self n)]
 
+/-- Swap two range folds when every step of one commutes with every step of the other. -/
 theorem foldl_commute_foldl {α : Type*} (f g : Nat → α → α) (m n : Nat)
     (hcomm : ∀ i j, i < m → j < n → ∀ x, g j (f i x) = f i (g j x)) :
     ∀ x,
@@ -304,6 +315,7 @@ theorem foldl_commute_foldl {α : Type*} (f g : Nat → α → α) (m n : Nat)
   intro i hi x
   exact hcomm i j hi hj x
 
+/-- Split a fold of paired same-index operations into two separate range folds. -/
 theorem foldl_pair {α : Type*} (f g : Nat → α → α) :
     ∀ n : Nat,
       (∀ i j, i < j → j < n → ∀ x, f j (g i x) = g i (f j x)) →
@@ -322,6 +334,7 @@ theorem foldl_pair {α : Type*} (f g : Nat → α → α) :
         intro i hi
         exact comm i n hi (Nat.lt_succ_self n))]
 
+/-- Fold a pair of consecutive indexed operations as one fold over twice the range. -/
 theorem foldl_range_pair {α : Type*} (f : Nat → α → α) :
     ∀ n (acc : α),
       List.foldl (fun acc b ↦ f (2 * b + 1) (f (2 * b) acc)) acc (List.range n) =
@@ -338,6 +351,7 @@ theorem foldl_range_pair {α : Type*} (f : Nat → α → α) :
       rw [h, List.foldl_append]
       simp [Nat.add_comm]
 
+/-- Split a fold of four same-index operations into four separate range folds. -/
 theorem foldl_quad {α : Type*} (l₁ l₂ h₁ h₂ : Nat → α → α) :
     ∀ n : Nat,
       (∀ i j, i < j → j < n → ∀ x, l₁ j (l₂ i x) = l₂ i (l₁ j x)) →
@@ -440,6 +454,7 @@ private theorem butterflyDITInner_eq_butterflyBlockStep
       (f := fun j st ↦ NTT.Transform.butterflyInnerStep blockSize half wm block j st)
       (x := (acc, (1 : R))) half
 
+/-- Express the recursive DIT block loop as a fold over baseline NTT block steps. -/
 theorem butterflyDITBlocks_eq_foldl
     (twiddles : Array R) (blockSize half : Nat) (wm : R)
     (htwiddles : ∀ j, j < half → twiddles.getD j 0 = wm ^ j) :

@@ -29,6 +29,7 @@ def bitRevNat : Nat → Nat → Nat
 def bitRevPermute (D : NTT.Domain R) (a : Array R) : Array R :=
   Array.ofFn (fun i : D.Idx ↦ a.getD (bitRevNat D.logN i.1) 0)
 
+/-- One radix-2 butterfly update, together with the next twiddle power. -/
 def butterflyInnerStep
     (blockSize half : Nat) (wm : R) (block j : Nat) (st : Array R × R) : Array R × R :=
   let acc := st.1

@@ -29,6 +29,7 @@ private def difMathValueAt (D : NTT.Domain R) (completed : Nat) (a : Array R)
     a.getD (offset + t.1 * blockSize) 0 *
       D.omega ^ (NTT.Transform.bitRevNat completed block * (offset + t.1 * blockSize))
 
+/-- Mathematical state after completing `completed` descending DIF stages. -/
 def difMathStageSpec (D : NTT.Domain R) (completed : Nat) (a : Array R) : Array R :=
   Array.ofFn (fun i : D.Idx ↦ difMathValueAt D completed a i.1)
 
@@ -59,9 +60,10 @@ private def difMathPairsSpec
         difMathValueAt D newCompleted a i.1
       else
         difMathValueAt D oldCompleted a i.1
-    else
-      difMathValueAt D oldCompleted a i.1)
+      else
+        difMathValueAt D oldCompleted a i.1)
 
+/-- The initial DIF mathematical state is the naturally ordered input. -/
 theorem difMathStageSpec_zero (D : NTT.Domain R) (a : Array R) :
     difMathStageSpec D 0 a = loadNatural D a := by
   apply Array.ext
@@ -73,6 +75,7 @@ theorem difMathStageSpec_zero (D : NTT.Domain R) (a : Array R) :
     simp [difMathStageSpec, difMathValueAt, loadNatural, NTT.Domain.n, himod,
       NTT.Transform.bitRevNat]
 
+/-- The final DIF mathematical state is the bit-reversed forward NTT output. -/
 theorem difMathStageSpec_final (D : NTT.Domain R) (a : Array R) :
     difMathStageSpec D D.logN a =
       NTT.Transform.bitRevPermute D (NTT.Forward.forwardSpec D a) := by
@@ -678,6 +681,7 @@ private theorem butterflyDIFBlocks_difMathBlocksSpec_final
       exact butterflyDIFBlocks_difMathBlocksSpec_final D stage twiddles a hstage htw
         n blocks (block + 1) htail
 
+/-- One executable DIF butterfly stage advances the mathematical DIF stage spec. -/
 theorem butterflyStageDIFWithTwiddles_difMathStageSpec_succ
     (D : NTT.Domain R) (stage : Nat) (twiddles : Array R) (a : Array R)
     (hstage : stage < D.logN)
