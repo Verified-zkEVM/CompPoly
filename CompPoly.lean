@@ -103,6 +103,7 @@ import CompPoly.Univariate.NTTFast.Forward
 import CompPoly.Univariate.NTTFast.Inverse
 import CompPoly.Univariate.NTTFast.Plan
 import CompPoly.Univariate.NTTFast.Transform
+import CompPoly.Univariate.NTTFast.Correctness
 import CompPoly.Univariate.Quotient.Core
 import CompPoly.Univariate.Quotient.Equiv
 import CompPoly.Univariate.Raw
