@@ -97,13 +97,13 @@ import CompPoly.Univariate.NTT.Forward
 import CompPoly.Univariate.NTT.Inverse
 import CompPoly.Univariate.NTT.KoalaBear
 import CompPoly.Univariate.NTT.Transform
+import CompPoly.Univariate.NTTFast.Correctness
 import CompPoly.Univariate.NTTFast.FastMul
 import CompPoly.Univariate.NTTFast.FastMulImpl
 import CompPoly.Univariate.NTTFast.Forward
 import CompPoly.Univariate.NTTFast.Inverse
 import CompPoly.Univariate.NTTFast.Plan
 import CompPoly.Univariate.NTTFast.Transform
-import CompPoly.Univariate.NTTFast.Correctness
 import CompPoly.Univariate.Quotient.Core
 import CompPoly.Univariate.Quotient.Equiv
 import CompPoly.Univariate.Raw
