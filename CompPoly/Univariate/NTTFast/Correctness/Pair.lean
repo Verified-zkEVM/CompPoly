@@ -195,7 +195,7 @@ theorem runStagesDIFRadix4PairWithTwiddles_eq_pair
   have hfoldFst :
       ∀ xs (accA accB : Array R),
         (List.foldl
-            (fun (acc : MProd (Array R) (Array R)) pass =>
+            (fun (acc : MProd (Array R) (Array R)) pass ↦
               ⟨(butterflyRadix4StageDIFPairWithTwiddles D
                     (D.logN - 1 - 2 * pass - 1)
                     ((twiddleTable D)[D.logN - 1 - 2 * pass]?.getD #[])
@@ -208,7 +208,7 @@ theorem runStagesDIFRadix4PairWithTwiddles_eq_pair
                     acc.fst acc.snd).2⟩)
             (⟨accA, accB⟩ : MProd (Array R) (Array R)) xs).fst =
           List.foldl
-            (fun acc pass =>
+            (fun acc pass ↦
               butterflyRadix4StageDIFWithTwiddles D (D.logN - 1 - 2 * pass - 1)
                 ((twiddleTable D)[D.logN - 1 - 2 * pass]?.getD #[])
                 ((twiddleTable D)[D.logN - 1 - 2 * pass - 1]?.getD #[]) acc)
@@ -248,7 +248,7 @@ theorem runStagesDIFRadix4PairWithTwiddles_eq_pair
   have hfoldSnd :
       ∀ xs (accA accB : Array R),
         (List.foldl
-            (fun (acc : MProd (Array R) (Array R)) pass =>
+            (fun (acc : MProd (Array R) (Array R)) pass ↦
               ⟨(butterflyRadix4StageDIFPairWithTwiddles D
                     (D.logN - 1 - 2 * pass - 1)
                     ((twiddleTable D)[D.logN - 1 - 2 * pass]?.getD #[])
@@ -261,7 +261,7 @@ theorem runStagesDIFRadix4PairWithTwiddles_eq_pair
                     acc.fst acc.snd).2⟩)
             (⟨accA, accB⟩ : MProd (Array R) (Array R)) xs).snd =
           List.foldl
-            (fun acc pass =>
+            (fun acc pass ↦
               butterflyRadix4StageDIFWithTwiddles D (D.logN - 1 - 2 * pass - 1)
                 ((twiddleTable D)[D.logN - 1 - 2 * pass]?.getD #[])
                 ((twiddleTable D)[D.logN - 1 - 2 * pass - 1]?.getD #[]) acc)

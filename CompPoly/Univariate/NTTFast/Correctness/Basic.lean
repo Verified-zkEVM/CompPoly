@@ -108,7 +108,7 @@ def WellFormed (P : Plan R) : Prop :=
 
 private theorem foldl_push_size (wm : R) :
     ∀ xs : List Nat, ∀ (powers : Array R) (w : R),
-      (List.foldl (fun (b : MProd (Array R) R) (_ : Nat) =>
+      (List.foldl (fun (b : MProd (Array R) R) (_ : Nat) ↦
         ⟨b.fst.push b.snd, b.snd * wm⟩) ⟨powers, w⟩ xs).fst.size =
         powers.size + xs.length
   | [], powers, _ => by simp
@@ -122,7 +122,7 @@ private theorem foldl_push_getD (wm : R) :
       (∀ i, i < offset → powers.getD i 0 = base * wm ^ i) →
       w = base * wm ^ offset →
       ∀ i, i < offset + xs.length →
-        (List.foldl (fun (b : MProd (Array R) R) (_ : Nat) =>
+        (List.foldl (fun (b : MProd (Array R) R) (_ : Nat) ↦
           ⟨b.fst.push b.snd, b.snd * wm⟩) ⟨powers, w⟩ xs).fst.getD i 0 =
           base * wm ^ i
   | [], powers, _w, base, offset, _hsize, hvals, _hw, i, hi => by
@@ -182,23 +182,23 @@ theorem ofDomain_wellFormed (D : NTT.Domain R) :
 
 /-- Loading raw coefficients into a domain-sized array is `Array.ofFn` with zero padding. -/
 theorem loadNatural_eq (D : NTT.Domain R) (a : Array R) :
-    loadNatural D a = Array.ofFn (fun i : D.Idx => a.getD i.1 0) := by
+    loadNatural D a = Array.ofFn (fun i : D.Idx ↦ a.getD i.1 0) := by
   rfl
 
 theorem foldl_range_eq_rec {α : Type*} (f : Nat → α → α) (x : α) :
     ∀ n : Nat,
-      List.foldl (fun acc i => f i acc) x (List.range n) = Nat.rec x (fun i acc => f i acc) n
+      List.foldl (fun acc i ↦ f i acc) x (List.range n) = Nat.rec x (fun i acc ↦ f i acc) n
   | 0 => by simp
   | n + 1 => by
       simp [List.range_succ, List.foldl_append, foldl_range_eq_rec f x n]
 
 theorem foldl_range_eq_rec_fst {α β : Type*}
     (f : Nat → α × β → α × β) (x : α × β) (n : Nat) :
-    (List.foldl (fun acc i => f i acc) x (List.range n)).1 =
-      (Nat.rec (motive := fun _ => α × β) x (fun i acc => f i acc) n).1 := by
+    (List.foldl (fun acc i ↦ f i acc) x (List.range n)).1 =
+      (Nat.rec (motive := fun _ ↦ α × β) x (fun i acc ↦ f i acc) n).1 := by
   simpa using congrArg Prod.fst
-    (show List.foldl (fun acc i => f i acc) x (List.range n) =
-        Nat.rec (motive := fun _ => α × β) x (fun i acc => f i acc) n from
+    (show List.foldl (fun acc i ↦ f i acc) x (List.range n) =
+        Nat.rec (motive := fun _ ↦ α × β) x (fun i acc ↦ f i acc) n from
       foldl_range_eq_rec f x n)
 
 theorem foldl_range_congr {α : Type*} (f g : α → Nat → α) :
@@ -248,8 +248,8 @@ theorem foldl_range_congr_inv {α : Type*} (p : α → Prop) (f g : α → Nat �
 
 theorem foldl_range'_succ_shift {α : Type*} (f : Nat → α → α) :
     ∀ n offset (acc : α),
-      List.foldl (fun acc t => f (t + 1) acc) acc (List.range' offset n) =
-        List.foldl (fun acc t => f t acc) acc (List.range' (offset + 1) n)
+      List.foldl (fun acc t ↦ f (t + 1) acc) acc (List.range' offset n) =
+        List.foldl (fun acc t ↦ f t acc) acc (List.range' (offset + 1) n)
   | 0, _offset, _acc => by simp
   | n + 1, offset, acc => by
       have ih := foldl_range'_succ_shift f n (offset + 1) (f (offset + 1) acc)
@@ -258,8 +258,8 @@ theorem foldl_range'_succ_shift {α : Type*} (f : Nat → α → α) :
 
 theorem foldl_range'_eq_range_add {α : Type*} (f : Nat → α → α)
     (n offset : Nat) (acc : α) :
-    List.foldl (fun acc t => f t acc) acc (List.range' offset n) =
-      List.foldl (fun acc t => f (offset + t) acc) acc (List.range n) := by
+    List.foldl (fun acc t ↦ f t acc) acc (List.range' offset n) =
+      List.foldl (fun acc t ↦ f (offset + t) acc) acc (List.range n) := by
   simp [List.range'_eq_map_range, List.foldl_map]
 
 theorem foldl_range'_append_split {α : Type*} (f : α → Nat → α)
@@ -278,8 +278,8 @@ theorem three_mul_add_eq_add_two_mul_add (q b : Nat) :
 theorem foldl_commute {α : Type*} (op : α → α) (f : Nat → α → α) :
     ∀ n : Nat,
       (∀ i, i < n → ∀ x, op (f i x) = f i (op x)) →
-      ∀ x, op (List.foldl (fun x i => f i x) x (List.range n)) =
-        List.foldl (fun x i => f i x) (op x) (List.range n)
+      ∀ x, op (List.foldl (fun x i ↦ f i x) x (List.range n)) =
+        List.foldl (fun x i ↦ f i x) (op x) (List.range n)
   | 0, _h, x => by simp
   | n + 1, h, x => by
       have hprev : ∀ i, i < n → ∀ x, op (f i x) = f i (op x) := by
@@ -291,13 +291,13 @@ theorem foldl_commute {α : Type*} (op : α → α) (f : Nat → α → α) :
 theorem foldl_commute_foldl {α : Type*} (f g : Nat → α → α) (m n : Nat)
     (hcomm : ∀ i j, i < m → j < n → ∀ x, g j (f i x) = f i (g j x)) :
     ∀ x,
-      List.foldl (fun x i => f i x) (List.foldl (fun x j => g j x) x (List.range n))
+      List.foldl (fun x i ↦ f i x) (List.foldl (fun x j ↦ g j x) x (List.range n))
           (List.range m) =
-        List.foldl (fun x j => g j x) (List.foldl (fun x i => f i x) x (List.range m))
+        List.foldl (fun x j ↦ g j x) (List.foldl (fun x i ↦ f i x) x (List.range m))
           (List.range n) := by
   intro x
-  apply foldl_commute (fun x => List.foldl (fun x i => f i x) x (List.range m))
-    (fun j x => g j x) n
+  apply foldl_commute (fun x ↦ List.foldl (fun x i ↦ f i x) x (List.range m))
+    (fun j x ↦ g j x) n
   intro j hj x
   symm
   apply foldl_commute (g j) f m
@@ -308,9 +308,9 @@ theorem foldl_pair {α : Type*} (f g : Nat → α → α) :
     ∀ n : Nat,
       (∀ i j, i < j → j < n → ∀ x, f j (g i x) = g i (f j x)) →
       ∀ x,
-        List.foldl (fun x i => g i (f i x)) x (List.range n) =
-          List.foldl (fun x i => g i x)
-            (List.foldl (fun x i => f i x) x (List.range n)) (List.range n)
+        List.foldl (fun x i ↦ g i (f i x)) x (List.range n) =
+          List.foldl (fun x i ↦ g i x)
+            (List.foldl (fun x i ↦ f i x) x (List.range n)) (List.range n)
   | 0, _comm, x => by simp
   | n + 1, comm, x => by
       have commPrev : ∀ i j, i < j → j < n → ∀ x, f j (g i x) = g i (f j x) := by
@@ -318,14 +318,14 @@ theorem foldl_pair {α : Type*} (f g : Nat → α → α) :
         exact comm i j hij (Nat.lt_trans hj (Nat.lt_succ_self n))
       have ih := foldl_pair f g n commPrev x
       simp [List.range_succ, List.foldl_append, ih]
-      rw [foldl_commute (f n) (fun i x => g i x) n (by
+      rw [foldl_commute (f n) (fun i x ↦ g i x) n (by
         intro i hi
         exact comm i n hi (Nat.lt_succ_self n))]
 
 theorem foldl_range_pair {α : Type*} (f : Nat → α → α) :
     ∀ n (acc : α),
-      List.foldl (fun acc b => f (2 * b + 1) (f (2 * b) acc)) acc (List.range n) =
-        List.foldl (fun acc k => f k acc) acc (List.range (2 * n))
+      List.foldl (fun acc b ↦ f (2 * b + 1) (f (2 * b) acc)) acc (List.range n) =
+        List.foldl (fun acc k ↦ f k acc) acc (List.range (2 * n))
   | 0, acc => by simp
   | n + 1, acc => by
       rw [List.range_succ, List.foldl_append]
@@ -347,11 +347,11 @@ theorem foldl_quad {α : Type*} (l₁ l₂ h₁ h₂ : Nat → α → α) :
       (∀ i j, i < j → j < n → ∀ x, l₂ j (h₂ i x) = h₂ i (l₂ j x)) →
       (∀ i j, i < j → j < n → ∀ x, h₁ j (h₂ i x) = h₂ i (h₁ j x)) →
       ∀ x,
-        List.foldl (fun x i => h₂ i (h₁ i (l₂ i (l₁ i x)))) x (List.range n) =
-          List.foldl (fun x i => h₂ i x)
-            (List.foldl (fun x i => h₁ i x)
-              (List.foldl (fun x i => l₂ i x)
-                (List.foldl (fun x i => l₁ i x) x (List.range n)) (List.range n))
+        List.foldl (fun x i ↦ h₂ i (h₁ i (l₂ i (l₁ i x)))) x (List.range n) =
+          List.foldl (fun x i ↦ h₂ i x)
+            (List.foldl (fun x i ↦ h₁ i x)
+              (List.foldl (fun x i ↦ l₂ i x)
+                (List.foldl (fun x i ↦ l₁ i x) x (List.range n)) (List.range n))
               (List.range n))
             (List.range n)
   | 0, _, _, _, _, _, _, x => by simp
@@ -376,22 +376,22 @@ theorem foldl_quad {α : Type*} (l₁ l₂ h₁ h₂ : Nat → α → α) :
         exact c₃₄ i j hij (Nat.lt_trans hj (Nat.lt_succ_self n))
       have ih := foldl_quad l₁ l₂ h₁ h₂ n c₁₂' c₁₃' c₁₄' c₂₃' c₂₄' c₃₄' x
       simp [List.range_succ, List.foldl_append, ih]
-      rw [foldl_commute (l₁ n) (fun i x => h₂ i x) n (by
+      rw [foldl_commute (l₁ n) (fun i x ↦ h₂ i x) n (by
         intro i hi
         exact c₁₄ i n hi (Nat.lt_succ_self n))]
-      rw [foldl_commute (l₁ n) (fun i x => h₁ i x) n (by
+      rw [foldl_commute (l₁ n) (fun i x ↦ h₁ i x) n (by
         intro i hi
         exact c₁₃ i n hi (Nat.lt_succ_self n))]
-      rw [foldl_commute (l₁ n) (fun i x => l₂ i x) n (by
+      rw [foldl_commute (l₁ n) (fun i x ↦ l₂ i x) n (by
         intro i hi
         exact c₁₂ i n hi (Nat.lt_succ_self n))]
-      rw [foldl_commute (l₂ n) (fun i x => h₂ i x) n (by
+      rw [foldl_commute (l₂ n) (fun i x ↦ h₂ i x) n (by
         intro i hi
         exact c₂₄ i n hi (Nat.lt_succ_self n))]
-      rw [foldl_commute (l₂ n) (fun i x => h₁ i x) n (by
+      rw [foldl_commute (l₂ n) (fun i x ↦ h₁ i x) n (by
         intro i hi
         exact c₂₃ i n hi (Nat.lt_succ_self n))]
-      rw [foldl_commute (h₁ n) (fun i x => h₂ i x) n (by
+      rw [foldl_commute (h₁ n) (fun i x ↦ h₂ i x) n (by
         intro i hi
         exact c₃₄ i n hi (Nat.lt_succ_self n))]
 
@@ -403,7 +403,7 @@ private theorem butterflyDITInner_eq_foldl
       butterflyDITInner twiddles limit j (block * blockSize + j)
           (block * blockSize + j + half) acc =
         (List.foldl
-          (fun st k => NTT.Transform.butterflyInnerStep blockSize half wm block k st)
+          (fun st k ↦ NTT.Transform.butterflyInnerStep blockSize half wm block k st)
           (acc, wm ^ j) (List.range' j n)).1
   | 0, j, acc, hlimit => by
       have hnot : ¬j < limit := by omega
@@ -437,7 +437,7 @@ private theorem butterflyDITInner_eq_butterflyBlockStep
     half 0 acc (by simp)]
   simpa [NTT.Transform.butterflyBlockStep, List.range_eq_range'] using
     foldl_range_eq_rec_fst
-      (f := fun j st => NTT.Transform.butterflyInnerStep blockSize half wm block j st)
+      (f := fun j st ↦ NTT.Transform.butterflyInnerStep blockSize half wm block j st)
       (x := (acc, (1 : R))) half
 
 theorem butterflyDITBlocks_eq_foldl
@@ -446,7 +446,7 @@ theorem butterflyDITBlocks_eq_foldl
     ∀ n blocks block (acc : Array R),
       blocks = block + n →
       butterflyDITBlocks twiddles blockSize half blocks block acc =
-        List.foldl (fun acc block => NTT.Transform.butterflyBlockStep blockSize half wm block acc)
+        List.foldl (fun acc block ↦ NTT.Transform.butterflyBlockStep blockSize half wm block acc)
           acc (List.range' block n)
   | 0, blocks, block, acc, hblocks => by
       have hnot : ¬block < blocks := by omega

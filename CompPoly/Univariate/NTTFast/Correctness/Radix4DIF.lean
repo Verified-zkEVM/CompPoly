@@ -29,8 +29,8 @@ private def difButterfly (w : R) (i0 i1 : Nat) (acc : Array R) : Array R :=
 private theorem getD_difButterfly_of_ne
     (w : R) (i0 i1 k : Nat) (acc : Array R) (hk0 : k ≠ i0) (hk1 : k ≠ i1) :
     (difButterfly w i0 i1 acc).getD k 0 = acc.getD k 0 := by
-  have h0 : i0 ≠ k := fun h => hk0 h.symm
-  have h1 : i1 ≠ k := fun h => hk1 h.symm
+  have h0 : i0 ≠ k := fun h ↦ hk0 h.symm
+  have h1 : i1 ≠ k := fun h ↦ hk1 h.symm
   unfold difButterfly
   simp only [Array.set!, Array.getD_eq_getD_getElem?]
   rw [Array.getElem?_setIfInBounds]
@@ -65,7 +65,7 @@ private theorem butterflyDIFInner_eq_foldl_dif (twiddles : Array R) :
     ∀ n j i0 i1 (acc : Array R),
       butterflyDIFInner twiddles (j + n) j i0 i1 acc =
         List.foldl
-          (fun acc t => difButterfly (twiddles.getD (j + t) 0) (i0 + t) (i1 + t) acc)
+          (fun acc t ↦ difButterfly (twiddles.getD (j + t) 0) (i0 + t) (i1 + t) acc)
           acc (List.range' 0 n)
   | 0, j, i0, i1, acc => by
       simp [butterflyDIFInner]
@@ -75,16 +75,16 @@ private theorem butterflyDIFInner_eq_foldl_dif (twiddles : Array R) :
         (difButterfly (twiddles.getD j 0) i0 i1 acc)
       have hshift :
           List.foldl
-              (fun acc t =>
+              (fun acc t ↦
                 difButterfly (twiddles.getD (j + 1 + t) 0) (i0 + 1 + t)
                   (i1 + 1 + t) acc)
               (difButterfly (twiddles.getD j 0) i0 i1 acc) (List.range' 0 n) =
             List.foldl
-              (fun acc t => difButterfly (twiddles.getD (j + t) 0) (i0 + t) (i1 + t) acc)
+              (fun acc t ↦ difButterfly (twiddles.getD (j + t) 0) (i0 + t) (i1 + t) acc)
               (difButterfly (twiddles.getD j 0) i0 i1 acc) (List.range' 1 n) := by
         simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
           (foldl_range'_succ_shift
-            (fun t acc => difButterfly (twiddles.getD (j + t) 0) (i0 + t) (i1 + t) acc)
+            (fun t acc ↦ difButterfly (twiddles.getD (j + t) 0) (i0 + t) (i1 + t) acc)
             n 0 (difButterfly (twiddles.getD j 0) i0 i1 acc))
       rw [butterflyDIFInner]
       simp only [hj, ↓reduceIte]
@@ -106,15 +106,15 @@ private theorem butterflyDIFInner_comm
           (butterflyDIFInner twiddlesA limitA 0 baseA (baseA + halfA) acc) := by
   intro acc
   let foldA : Array R → Array R :=
-    fun acc =>
+    fun acc ↦
       List.foldl
-        (fun acc i => difButterfly (twiddlesA.getD i 0) (baseA + i)
+        (fun acc i ↦ difButterfly (twiddlesA.getD i 0) (baseA + i)
           (baseA + halfA + i) acc)
         acc (List.range limitA)
   let foldB : Array R → Array R :=
-    fun acc =>
+    fun acc ↦
       List.foldl
-        (fun acc j => difButterfly (twiddlesB.getD j 0) (baseB + j)
+        (fun acc j ↦ difButterfly (twiddlesB.getD j 0) (baseB + j)
           (baseB + halfB + j) acc)
         acc (List.range limitB)
   have hA (acc' : Array R) :
@@ -131,10 +131,10 @@ private theorem butterflyDIFInner_comm
         foldA (foldB acc) := by
           rw [hB, hA]
     _ = List.foldl
-          (fun acc j => difButterfly (twiddlesB.getD j 0) (baseB + j)
+          (fun acc j ↦ difButterfly (twiddlesB.getD j 0) (baseB + j)
             (baseB + halfB + j) acc)
           (List.foldl
-            (fun acc i => difButterfly (twiddlesA.getD i 0) (baseA + i)
+            (fun acc i ↦ difButterfly (twiddlesA.getD i 0) (baseA + i)
               (baseA + halfA + i) acc)
             acc (List.range limitA))
           (List.range limitB) := by
@@ -154,7 +154,7 @@ private theorem butterflyDIFBlocks_eq_foldl_inner
       blocks = block + n →
       butterflyDIFBlocks twiddles blockSize half blocks block acc =
         List.foldl
-          (fun acc block =>
+          (fun acc block ↦
             butterflyDIFInner twiddles half 0 (block * blockSize) (block * blockSize + half)
               acc)
           acc (List.range' block n)
@@ -223,7 +223,7 @@ private theorem butterflyDIFRadix4Inner_eq_foldl_cell
     ∀ n j i0 i1 i2 i3 (acc : Array R),
       butterflyDIFRadix4Inner twiddlesHigh twiddlesLow (j + n) j i0 i1 i2 i3 acc =
         List.foldl
-          (fun acc t =>
+          (fun acc t ↦
             radix4DIFCell (twiddlesHigh.getD (j + t) 0)
               (twiddlesHigh.getD (j + t + (j + n)) 0) (twiddlesLow.getD (j + t) 0)
               (i0 + t) (i1 + t) (i2 + t) (i3 + t) acc)
@@ -239,7 +239,7 @@ private theorem butterflyDIFRadix4Inner_eq_foldl_cell
           i0 i1 i2 i3 acc)
       have hshift :
           List.foldl
-              (fun acc t =>
+              (fun acc t ↦
                 radix4DIFCell (twiddlesHigh.getD (j + 1 + t) 0)
                   (twiddlesHigh.getD (j + 1 + t + (j + 1 + n)) 0)
                   (twiddlesLow.getD (j + 1 + t) 0) (i0 + 1 + t) (i1 + 1 + t)
@@ -249,7 +249,7 @@ private theorem butterflyDIFRadix4Inner_eq_foldl_cell
                 i0 i1 i2 i3 acc)
               (List.range' 0 n) =
             List.foldl
-              (fun acc t =>
+              (fun acc t ↦
                 radix4DIFCell (twiddlesHigh.getD (j + t) 0)
                   (twiddlesHigh.getD (j + t + (j + (n + 1))) 0)
                   (twiddlesLow.getD (j + t) 0) (i0 + t) (i1 + t) (i2 + t)
@@ -260,7 +260,7 @@ private theorem butterflyDIFRadix4Inner_eq_foldl_cell
               (List.range' 1 n) := by
         simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
           (foldl_range'_succ_shift
-            (fun t acc =>
+            (fun t acc ↦
               radix4DIFCell (twiddlesHigh.getD (j + t) 0)
                 (twiddlesHigh.getD (j + t + (j + (n + 1))) 0)
                 (twiddlesLow.getD (j + t) 0) (i0 + t) (i1 + t) (i2 + t) (i3 + t)
@@ -280,7 +280,7 @@ private theorem butterflyDIFRadix4Blocks_eq_foldl_inner
       blocks = block + n →
       butterflyDIFRadix4Blocks twiddlesHigh twiddlesLow blockSize quarter blocks block acc =
         List.foldl
-          (fun acc block =>
+          (fun acc block ↦
             butterflyDIFRadix4Inner twiddlesHigh twiddlesLow quarter 0 (block * blockSize)
               (block * blockSize + quarter) (block * blockSize + 2 * quarter)
               (block * blockSize + 3 * quarter) acc)
@@ -314,7 +314,7 @@ private theorem butterflyDIFRadix4Inner_eq_two_dif_inners
     butterflyDIFRadix4Inner twiddlesHigh twiddlesLow q 0 base (base + q)
         (base + 2 * q) (base + 3 * q) acc =
         List.foldl
-          (fun acc j =>
+          (fun acc j ↦
             radix4DIFCell (twiddlesHigh.getD j 0) (twiddlesHigh.getD (j + q) 0)
               (twiddlesLow.getD j 0) (base + j) (base + q + j) (base + 2 * q + j)
               (base + 3 * q + j) acc)
@@ -323,7 +323,7 @@ private theorem butterflyDIFRadix4Inner_eq_two_dif_inners
             (butterflyDIFRadix4Inner_eq_foldl_cell twiddlesHigh twiddlesLow q 0 base
               (base + q) (base + 2 * q) (base + 3 * q) acc)
     _ = List.foldl
-          (fun acc j =>
+          (fun acc j ↦
             difButterfly (twiddlesLow.getD j 0) (base + 2 * q + j)
               (base + 3 * q + j)
               (difButterfly (twiddlesLow.getD j 0) (base + j) (base + q + j)
@@ -332,7 +332,7 @@ private theorem butterflyDIFRadix4Inner_eq_two_dif_inners
                   (difButterfly (twiddlesHigh.getD j 0) (base + j) (base + 2 * q + j)
                     acc))))
           acc (List.range q) := by
-          apply foldl_range_congr_inv (p := fun b : Array R => b.size = acc.size)
+          apply foldl_range_congr_inv (p := fun b : Array R ↦ b.size = acc.size)
           · intro j hj acc hacc
             exact (radix4DIFCell_eq_two_stage_cells (twiddlesHigh.getD j 0)
                 (twiddlesHigh.getD (j + q) 0) (twiddlesLow.getD j 0) (base + j)
@@ -344,15 +344,15 @@ private theorem butterflyDIFRadix4Inner_eq_two_dif_inners
             simp [hacc]
           · rfl
     _ = List.foldl
-          (fun acc j => difButterfly (twiddlesLow.getD j 0) (base + 2 * q + j)
+          (fun acc j ↦ difButterfly (twiddlesLow.getD j 0) (base + 2 * q + j)
             (base + 3 * q + j) acc)
           (List.foldl
-            (fun acc j => difButterfly (twiddlesLow.getD j 0) (base + j) (base + q + j) acc)
+            (fun acc j ↦ difButterfly (twiddlesLow.getD j 0) (base + j) (base + q + j) acc)
             (List.foldl
-              (fun acc j => difButterfly (twiddlesHigh.getD (j + q) 0) (base + q + j)
+              (fun acc j ↦ difButterfly (twiddlesHigh.getD (j + q) 0) (base + q + j)
                 (base + 3 * q + j) acc)
               (List.foldl
-                (fun acc j => difButterfly (twiddlesHigh.getD j 0) (base + j)
+                (fun acc j ↦ difButterfly (twiddlesHigh.getD j 0) (base + j)
                   (base + 2 * q + j) acc)
                 acc (List.range q)) (List.range q))
             (List.range q))
@@ -377,45 +377,45 @@ private theorem butterflyDIFRadix4Inner_eq_two_dif_inners
           have hhigh (acc' : Array R) :
               butterflyDIFInner twiddlesHigh (2 * q) 0 base (base + 2 * q) acc' =
                 List.foldl
-                  (fun acc j => difButterfly (twiddlesHigh.getD (j + q) 0)
+                  (fun acc j ↦ difButterfly (twiddlesHigh.getD (j + q) 0)
                     (base + q + j) (base + 3 * q + j) acc)
                   (List.foldl
-                    (fun acc j => difButterfly (twiddlesHigh.getD j 0) (base + j)
+                    (fun acc j ↦ difButterfly (twiddlesHigh.getD j 0) (base + j)
                       (base + 2 * q + j) acc)
                     acc' (List.range q))
                   (List.range q) := by
             calc
               butterflyDIFInner twiddlesHigh (2 * q) 0 base (base + 2 * q) acc' =
                   List.foldl
-                    (fun acc j => difButterfly (twiddlesHigh.getD j 0) (base + j)
+                    (fun acc j ↦ difButterfly (twiddlesHigh.getD j 0) (base + j)
                       (base + 2 * q + j) acc)
                     acc' (List.range' 0 (2 * q)) := by
                     simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
                       (butterflyDIFInner_eq_foldl_dif twiddlesHigh (2 * q) 0 base
                         (base + 2 * q) acc')
               _ = List.foldl
-                    (fun acc j => difButterfly (twiddlesHigh.getD j 0) (base + j)
+                    (fun acc j ↦ difButterfly (twiddlesHigh.getD j 0) (base + j)
                       (base + 2 * q + j) acc)
                     (List.foldl
-                      (fun acc j => difButterfly (twiddlesHigh.getD j 0) (base + j)
+                      (fun acc j ↦ difButterfly (twiddlesHigh.getD j 0) (base + j)
                         (base + 2 * q + j) acc)
                       acc' (List.range' 0 q))
                     (List.range' q q) := by
                     simpa [two_mul] using
                       (foldl_range'_append_split
-                      (fun acc j => difButterfly (twiddlesHigh.getD j 0) (base + j)
+                      (fun acc j ↦ difButterfly (twiddlesHigh.getD j 0) (base + j)
                         (base + 2 * q + j) acc) acc' 0 q q)
               _ = List.foldl
-                    (fun acc j =>
+                    (fun acc j ↦
                       difButterfly (twiddlesHigh.getD (j + q) 0) (base + q + j)
                         (base + 3 * q + j) acc)
                     (List.foldl
-                      (fun acc j => difButterfly (twiddlesHigh.getD j 0) (base + j)
+                      (fun acc j ↦ difButterfly (twiddlesHigh.getD j 0) (base + j)
                         (base + 2 * q + j) acc)
                       acc' (List.range q))
                     (List.range q) := by
                     rw [foldl_range'_eq_range_add
-                      (fun j acc => difButterfly (twiddlesHigh.getD j 0) (base + j)
+                      (fun j acc ↦ difButterfly (twiddlesHigh.getD j 0) (base + j)
                         (base + 2 * q + j) acc) q q]
                     rw [← List.range_eq_range']
                     apply foldl_range_congr
@@ -426,7 +426,7 @@ private theorem butterflyDIFRadix4Inner_eq_two_dif_inners
           have hlow₁ (acc' : Array R) :
               butterflyDIFInner twiddlesLow q 0 base (base + q) acc' =
                 List.foldl
-                  (fun acc j => difButterfly (twiddlesLow.getD j 0) (base + j)
+                  (fun acc j ↦ difButterfly (twiddlesLow.getD j 0) (base + j)
                     (base + q + j) acc)
                   acc' (List.range q) := by
             simpa [List.range_eq_range', Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
@@ -434,7 +434,7 @@ private theorem butterflyDIFRadix4Inner_eq_two_dif_inners
           have hlow₂ (acc' : Array R) :
               butterflyDIFInner twiddlesLow q 0 (base + 2 * q) (base + 3 * q) acc' =
                 List.foldl
-                  (fun acc j => difButterfly (twiddlesLow.getD j 0) (base + 2 * q + j)
+                  (fun acc j ↦ difButterfly (twiddlesLow.getD j 0) (base + 2 * q + j)
                     (base + 3 * q + j) acc)
                   acc' (List.range q) := by
             simpa [List.range_eq_range', Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
@@ -450,22 +450,22 @@ private theorem butterflyDIFRadix4Blocks_eq_two_dif_blocks
       butterflyDIFBlocks twiddlesLow (2 * q) q (2 * blocks) 0
         (butterflyDIFBlocks twiddlesHigh (4 * q) (2 * q) blocks 0 acc) := by
   let highBlock : Nat → Array R → Array R :=
-    fun block acc =>
+    fun block acc ↦
       butterflyDIFInner twiddlesHigh (2 * q) 0 (block * (4 * q))
         (block * (4 * q) + 2 * q) acc
   let lowBlock : Nat → Array R → Array R :=
-    fun block acc =>
+    fun block acc ↦
       butterflyDIFInner twiddlesLow q 0 (2 * q + block * (4 * q))
         (2 * q + (block * (4 * q) + q))
         (butterflyDIFInner twiddlesLow q 0 (block * (4 * q)) (q + block * (4 * q))
           acc)
   let lowStep : Nat → Array R → Array R :=
-    fun block acc =>
+    fun block acc ↦
       butterflyDIFInner twiddlesLow q 0 (block * (2 * q)) (block * (2 * q) + q) acc
   calc
     butterflyDIFRadix4Blocks twiddlesHigh twiddlesLow (4 * q) q blocks 0 acc =
         List.foldl
-          (fun acc block =>
+          (fun acc block ↦
             butterflyDIFRadix4Inner twiddlesHigh twiddlesLow q 0 (block * (4 * q))
               (block * (4 * q) + q) (block * (4 * q) + 2 * q)
               (block * (4 * q) + 3 * q) acc)
@@ -473,9 +473,9 @@ private theorem butterflyDIFRadix4Blocks_eq_two_dif_blocks
           simpa [List.range_eq_range'] using
             (butterflyDIFRadix4Blocks_eq_foldl_inner twiddlesHigh twiddlesLow (4 * q)
               q blocks blocks 0 acc (by simp))
-    _ = List.foldl (fun acc block => lowBlock block (highBlock block acc)) acc
+    _ = List.foldl (fun acc block ↦ lowBlock block (highBlock block acc)) acc
           (List.range blocks) := by
-          apply foldl_range_congr_inv (p := fun b : Array R => b.size = acc.size)
+          apply foldl_range_congr_inv (p := fun b : Array R ↦ b.size = acc.size)
           · intro block hblock acc hacc
             simpa [lowBlock, highBlock, three_mul_add_eq_add_two_mul_add, Nat.add_assoc,
               Nat.add_comm, Nat.add_left_comm]
@@ -484,8 +484,8 @@ private theorem butterflyDIFRadix4Blocks_eq_two_dif_blocks
           · intro block hblock acc hacc
             simp [hacc]
           · rfl
-    _ = List.foldl (fun acc block => lowBlock block acc)
-          (List.foldl (fun acc block => highBlock block acc) acc (List.range blocks))
+    _ = List.foldl (fun acc block ↦ lowBlock block acc)
+          (List.foldl (fun acc block ↦ highBlock block acc) acc (List.range blocks))
           (List.range blocks) := by
           apply foldl_pair
           intro i j hij hj x
@@ -514,21 +514,21 @@ private theorem butterflyDIFRadix4Blocks_eq_two_dif_blocks
           simp only [lowBlock]
           rw [← hlow₁]
           rw [← hlow₂]
-    _ = List.foldl (fun acc block => lowStep block acc)
-          (List.foldl (fun acc block => highBlock block acc) acc (List.range blocks))
+    _ = List.foldl (fun acc block ↦ lowStep block acc)
+          (List.foldl (fun acc block ↦ highBlock block acc) acc (List.range blocks))
           (List.range (2 * blocks)) := by
           calc
-            List.foldl (fun acc block => lowBlock block acc)
-                (List.foldl (fun acc block => highBlock block acc) acc (List.range blocks))
+            List.foldl (fun acc block ↦ lowBlock block acc)
+                (List.foldl (fun acc block ↦ highBlock block acc) acc (List.range blocks))
                 (List.range blocks) =
-                List.foldl (fun acc block => lowStep (2 * block + 1) (lowStep (2 * block) acc))
-                  (List.foldl (fun acc block => highBlock block acc) acc (List.range blocks))
+                List.foldl (fun acc block ↦ lowStep (2 * block + 1) (lowStep (2 * block) acc))
+                  (List.foldl (fun acc block ↦ highBlock block acc) acc (List.range blocks))
                   (List.range blocks) := by
                   apply foldl_range_congr
                   intro block hblock acc
                   unfold lowBlock lowStep
                   exact congrArg
-                    (fun p : Nat × Nat × Nat × Nat =>
+                    (fun p : Nat × Nat × Nat × Nat ↦
                       butterflyDIFInner twiddlesLow q 0 p.1 p.2.1
                         (butterflyDIFInner twiddlesLow q 0 p.2.2.1 p.2.2.2 acc))
                     (show
@@ -538,15 +538,15 @@ private theorem butterflyDIFRadix4Blocks_eq_two_dif_blocks
                           2 * block * (2 * q), 2 * block * (2 * q) + q) :
                           Nat × Nat × Nat × Nat) by
                       ext <;> nlinarith)
-            _ = List.foldl (fun acc block => lowStep block acc)
-                  (List.foldl (fun acc block => highBlock block acc) acc (List.range blocks))
+            _ = List.foldl (fun acc block ↦ lowStep block acc)
+                  (List.foldl (fun acc block ↦ highBlock block acc) acc (List.range blocks))
                   (List.range (2 * blocks)) := by
                   exact foldl_range_pair lowStep blocks
-                    (List.foldl (fun acc block => highBlock block acc) acc (List.range blocks))
+                    (List.foldl (fun acc block ↦ highBlock block acc) acc (List.range blocks))
     _ = butterflyDIFBlocks twiddlesLow (2 * q) q (2 * blocks) 0
           (butterflyDIFBlocks twiddlesHigh (4 * q) (2 * q) blocks 0 acc) := by
           have hhigh :
-              List.foldl (fun acc block => highBlock block acc) acc (List.range blocks) =
+              List.foldl (fun acc block ↦ highBlock block acc) acc (List.range blocks) =
                 butterflyDIFBlocks twiddlesHigh (4 * q) (2 * q) blocks 0 acc := by
             symm
             simpa [List.range_eq_range', highBlock] using
@@ -600,14 +600,14 @@ private theorem runStagesDIFRadix4WithTwiddles_eq_difMathStageSpec
     runStagesDIFRadix4WithTwiddles D (twiddleTable D) (loadNatural D a) =
       difMathStageSpec D D.logN a := by
   let radixStep : Nat → Array R → Array R :=
-    fun pass acc =>
+    fun pass acc ↦
       let highStage := D.logN - 1 - 2 * pass
       let lowStage := highStage - 1
       butterflyRadix4StageDIFWithTwiddles D lowStage
         ((twiddleTable D).getD highStage #[]) ((twiddleTable D).getD lowStage #[]) acc
   have hloop :
       ∀ n, n ≤ D.logN / 2 →
-        List.foldl (fun acc pass => radixStep pass acc) (loadNatural D a) (List.range n) =
+        List.foldl (fun acc pass ↦ radixStep pass acc) (loadNatural D a) (List.range n) =
           difMathStageSpec D (2 * n) a := by
     intro n hn
     induction n with
@@ -681,14 +681,14 @@ private theorem runStagesDIFRadix4WithTwiddles_eq_difMathStageSpec
         exact hlowStep
   have hpairs := hloop (D.logN / 2) le_rfl
   let stageZero : Array R → Array R :=
-    fun acc => butterflyStageDIFWithTwiddles D 0 ((twiddleTable D).getD 0 #[]) acc
+    fun acc ↦ butterflyStageDIFWithTwiddles D 0 ((twiddleTable D).getD 0 #[]) acc
   calc
     runStagesDIFRadix4WithTwiddles D (twiddleTable D) (loadNatural D a) =
         (if D.logN % 2 = 1 then
-          stageZero (List.foldl (fun acc pass => radixStep pass acc) (loadNatural D a)
+          stageZero (List.foldl (fun acc pass ↦ radixStep pass acc) (loadNatural D a)
             (List.range (D.logN / 2)))
         else
-          List.foldl (fun acc pass => radixStep pass acc) (loadNatural D a)
+          List.foldl (fun acc pass ↦ radixStep pass acc) (loadNatural D a)
             (List.range (D.logN / 2))) := by
           by_cases hodd : D.logN % 2 = 1
           · simp [runStagesDIFRadix4WithTwiddles, radixStep, stageZero, List.range_eq_range',

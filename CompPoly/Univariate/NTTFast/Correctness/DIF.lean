@@ -30,14 +30,14 @@ private def difMathValueAt (D : NTT.Domain R) (completed : Nat) (a : Array R)
       D.omega ^ (NTT.Transform.bitRevNat completed block * (offset + t.1 * blockSize))
 
 def difMathStageSpec (D : NTT.Domain R) (completed : Nat) (a : Array R) : Array R :=
-  Array.ofFn (fun i : D.Idx => difMathValueAt D completed a i.1)
+  Array.ofFn (fun i : D.Idx ↦ difMathValueAt D completed a i.1)
 
 private def difMathBlocksSpec
     (D : NTT.Domain R) (stage doneBlocks : Nat) (a : Array R) : Array R :=
   let oldCompleted : Nat := D.logN - (stage + 1)
   let newCompleted : Nat := D.logN - stage
   let blockSize : Nat := 2 ^ (stage + 1)
-  Array.ofFn (fun i : D.Idx =>
+  Array.ofFn (fun i : D.Idx ↦
     if i.1 / blockSize < doneBlocks then
       difMathValueAt D newCompleted a i.1
     else
@@ -49,7 +49,7 @@ private def difMathPairsSpec
   let newCompleted : Nat := D.logN - stage
   let half : Nat := 2 ^ stage
   let blockSize : Nat := 2 ^ (stage + 1)
-  Array.ofFn (fun i : D.Idx =>
+  Array.ofFn (fun i : D.Idx ↦
     let bigBlock := i.1 / blockSize
     let pair := i.1 % half
     if bigBlock < block then
@@ -431,7 +431,7 @@ private theorem difMathValueAt_succ_lower
   rw [hbits]
   rw [← Fin.sum_univ_pow_two_even_add_odd
     (n := D.logN - (stage + 1))
-    (f := fun x =>
+    (f := fun x ↦
       a[j + x * 2 ^ stage]?.getD 0 *
         D.omega ^ (NTT.Transform.bitRevNat ((D.logN - (stage + 1)) + 1) (block * 2) *
           (j + x * 2 ^ stage)))]
@@ -482,7 +482,7 @@ private theorem difMathValueAt_succ_upper
   rw [hbits]
   rw [← Fin.sum_univ_pow_two_even_add_odd
     (n := D.logN - (stage + 1))
-    (f := fun x =>
+    (f := fun x ↦
       a[j + x * 2 ^ stage]?.getD 0 *
         D.omega ^ (NTT.Transform.bitRevNat ((D.logN - (stage + 1)) + 1) (block * 2 + 1) *
           (j + x * 2 ^ stage)))]
@@ -705,7 +705,7 @@ private theorem runStagesDIFWithTwiddles_eq_difMathStageSpec
   have hloop :
       ∀ n, n ≤ D.logN →
         List.foldl
-          (fun acc pass =>
+          (fun acc pass ↦
             butterflyStageDIFWithTwiddles D (D.logN - pass - 1)
               ((twiddleTable D).getD (D.logN - pass - 1) #[]) acc)
           (loadNatural D a) (List.range n) =

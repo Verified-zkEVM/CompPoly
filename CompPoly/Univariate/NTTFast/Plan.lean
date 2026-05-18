@@ -43,7 +43,7 @@ def twiddlePowers (D : NTT.Domain R) (stage : Nat) : Array R := Id.run do
 
 /-- Precompute the per-stage twiddle table for a domain. -/
 def twiddleTable (D : NTT.Domain R) : Array (Array R) :=
-  Array.ofFn (fun stage : Fin D.logN => twiddlePowers D stage.1)
+  Array.ofFn (fun stage : Fin D.logN ↦ twiddlePowers D stage.1)
 
 /-- Build a reusable plan from an NTT domain. -/
 def ofDomain (D : NTT.Domain R) : Plan R :=
@@ -55,7 +55,7 @@ def ofDomain (D : NTT.Domain R) : Plan R :=
 
 /-- Load coefficients in natural order and pad to the domain size. -/
 @[inline] def loadNatural (D : NTT.Domain R) (a : Array R) : Array R :=
-  Array.ofFn (fun i : D.Idx => a.getD i.1 0)
+  Array.ofFn (fun i : D.Idx ↦ a.getD i.1 0)
 
 /-- Inner DIT butterfly loop for one block. -/
 def butterflyDITInner
@@ -403,7 +403,7 @@ def runStagesDIFRadix4PairWithTwiddles
 
 /-- Apply the cached inverse-domain normalization factor. -/
 @[inline] def normalize (P : Plan R) (a : Array R) : Array R :=
-  Array.ofFn (fun i : P.domain.Idx => P.nInv * a.getD i.1 0)
+  Array.ofFn (fun i : P.domain.Idx ↦ P.nInv * a.getD i.1 0)
 
 /-- Inverse transform through a reusable plan. -/
 @[inline] def inverseImpl (P : Plan R) (v : Array R) : CPolynomial.Raw R :=

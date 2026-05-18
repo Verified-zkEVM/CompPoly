@@ -27,7 +27,7 @@ def bitRevNat : Nat → Nat → Nat
 
 /-- Apply bit-reversal permutation to an evaluation array. -/
 def bitRevPermute (D : NTT.Domain R) (a : Array R) : Array R :=
-  Array.ofFn (fun i : D.Idx => a.getD (bitRevNat D.logN i.1) 0)
+  Array.ofFn (fun i : D.Idx ↦ a.getD (bitRevNat D.logN i.1) 0)
 
 def butterflyInnerStep
     (blockSize half : Nat) (wm : R) (block j : Nat) (st : Array R × R) : Array R × R :=

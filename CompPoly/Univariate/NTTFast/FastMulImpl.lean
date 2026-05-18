@@ -20,7 +20,7 @@ variable {R : Type*} [Field R]
 
 /-- Pointwise multiplication in evaluation form. -/
 @[inline] def pointwiseMul (D : NTT.Domain R) (a b : Array R) : Array R :=
-  Array.ofFn (fun i : D.Idx => a.getD i.1 0 * b.getD i.1 0)
+  Array.ofFn (fun i : D.Idx ↦ a.getD i.1 0 * b.getD i.1 0)
 
 end NTTFast
 end CPolynomial
