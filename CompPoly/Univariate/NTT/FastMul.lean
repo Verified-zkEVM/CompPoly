@@ -460,9 +460,41 @@ theorem safeFastMul_eq_mul (D : Domain R) (p q : CPolynomial R)
     (hfit : Domain.fits D p.val q.val) : safeFastMul D p q hfit = p * q := by
   exact fastMulImpl_eq_mul D p q hfit
 
+/--
+NTT-backed multiplication with canonical multiplication as a fallback.
+
+The selector should return a domain fitting the required convolution length.
+When it does, this uses `fastMulImpl`; otherwise it falls back to canonical
+`CPolynomial` multiplication.
+-/
+@[inline] def withFallback
+    (bestDomainForLength? : (requiredLen : Nat) →
+      Option (FittingDomain R requiredLen))
+    (p q : CPolynomial R) : CPolynomial R :=
+  let requiredLen := Domain.requiredLength p.val q.val
+  match bestDomainForLength? requiredLen with
+  | some ⟨D, _⟩ => fastMulImpl D p q
+  | none => p * q
+
+/-- `withFallback` agrees with canonical polynomial multiplication. -/
+theorem withFallback_eq_mul
+    (bestDomainForLength? : (requiredLen : Nat) →
+      Option (FittingDomain R requiredLen))
+    (p q : CPolynomial R) :
+    withFallback bestDomainForLength? p q = p * q := by
+  let requiredLen := Domain.requiredLength p.val q.val
+  cases hdomain : bestDomainForLength? requiredLen with
+  | none =>
+      simp [withFallback, requiredLen, hdomain]
+  | some fitted =>
+      rcases fitted with ⟨D, hfit⟩
+      simp [withFallback, requiredLen, hdomain, fastMulImpl_eq_mul D p q (by
+        simpa [Domain.fits] using hfit)]
+
 end RawMul
 
 end FastMul
 end NTT
+
 end CPolynomial
 end CompPoly

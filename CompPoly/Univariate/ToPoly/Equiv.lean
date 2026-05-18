@@ -24,17 +24,29 @@ variable {R : Type*} [Semiring R] [BEq R]
 section RingEquiv
 
 @[grind =]
-lemma toPoly_neg {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) :
+lemma Raw.toPoly_neg {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p : CPolynomial.Raw R) :
     (-p).toPoly = -p.toPoly := by
   ext i
-  rw [Polynomial.coeff_neg, CPolynomial.toPoly, CPolynomial.toPoly]
-  rw [Raw.coeff_toPoly, Raw.coeff_toPoly]
-  simpa using (Raw.neg_coeff (p := p.val) (i := i))
+  rw [Polynomial.coeff_neg, Raw.coeff_toPoly, Raw.coeff_toPoly]
+  change p.neg.coeff i = -p.coeff i
+  exact Raw.neg_coeff p i
+
+@[grind =]
+lemma toPoly_neg {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) :
+    (-p).toPoly = -p.toPoly := by
+  exact Raw.toPoly_neg p.val
 
 @[grind =]
 lemma toPoly_add [LawfulBEq R] (p q : CPolynomial R) :
     (p + q).toPoly = p.toPoly + q.toPoly := by
   apply Raw.toPoly_add
+
+@[grind =]
+lemma Raw.toPoly_sub {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
+    (p q : CPolynomial.Raw R) :
+    (p - q).toPoly = p.toPoly - q.toPoly := by
+  change (p + -q).toPoly = p.toPoly + -q.toPoly
+  rw [Raw.toPoly_add, Raw.toPoly_neg]
 
 @[grind =]
 lemma toPoly_sub {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) :
@@ -75,8 +87,7 @@ lemma toPoly_mul_coeffC [LawfulBEq R] (p q : CPolynomial R) (i : ℕ) :
 @[grind =]
 lemma toPoly_mul [LawfulBEq R] (p q : CPolynomial R) :
     (p * q).toPoly = p.toPoly * q.toPoly := by
-  ext i
-  exact toPoly_mul_coeffC p q i
+  exact Raw.toPoly_mul p.val q.val
 
 @[simp, grind =]
 lemma eval₂_C {R : Type*} [Semiring R] {S : Type*} [Semiring S]
@@ -100,7 +111,17 @@ lemma Raw.toPoly_one {R : Type*} [Semiring R] :
   apply toPoly_C
 
 lemma toPoly_one [LawfulBEq R] [Nontrivial R] :
-    (1 : CPolynomial R).toPoly = 1 := by apply Raw.toPoly_one
+    (1 : CPolynomial R).toPoly = 1 := by
+  apply Raw.toPoly_one
+
+@[grind =]
+lemma Raw.toPoly_pow [LawfulBEq R] (p : CPolynomial.Raw R) :
+    ∀ n : ℕ, (p ^ n).toPoly = p.toPoly ^ n
+  | 0 => by
+      simp [Raw.pow_zero]
+  | n + 1 => by
+      rw [Raw.pow_succ, Raw.toPoly_mul, Raw.toPoly_pow p n]
+      simp [pow_succ']
 
 @[simp, grind =]
 lemma Raw.toPoly_zero {R : Type*} [Semiring R] : (0 : CPolynomial.Raw R).toPoly = 0 := by
@@ -118,19 +139,9 @@ lemma Raw.toPoly_X {R : Type*} [Semiring R] :
 @[grind =]
 lemma toPoly_pow [Nontrivial R] [LawfulBEq R] (p : CPolynomial R) (n : ℕ) :
     (p ^ n).toPoly = p.toPoly ^ n := by
-  induction n with
-  | zero =>
-    simp only [_root_.pow_zero]
-    rw [toPoly_one]
-  | succ n ih =>
-    have hp : p ^ (n + 1) = p ^ n * p := by
-      apply ext
-      show (p ^ (n + 1)).val = (p ^ n * p).val
-      rw [val_pow, show (p ^ n * p).val = (p ^ n).val * p.val from rfl, val_pow]
-      exact pow_succ_right p.val n
-    have htp : p.toPoly ^ (n + 1) = p.toPoly ^ n * p.toPoly := by
-      simpa using (_root_.pow_succ (p.toPoly : R[X]) n)
-    rw [hp, toPoly_mul, ih, htp]
+  change (p ^ n).val.toPoly = p.val.toPoly ^ n
+  rw [val_pow]
+  exact Raw.toPoly_pow p.val n
 
 lemma toPoly_sum.{u} {R : Type*} [Semiring R] [BEq R] [LawfulBEq R] {ι : Type u}
     [DecidableEq ι]

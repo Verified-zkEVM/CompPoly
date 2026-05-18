@@ -690,7 +690,7 @@ theorem evaluation_poly_split_identity (i : Fin ℓ)
         ∑ i ∈ Finset.range (2 ^ (ℓ - ↑i - 1 + 1)), f1 i := by
       congr
       omega
-    have res := Fin.sum_univ_odd_even (f := f1) (n := (ℓ - ↑i - 1))
+    have res := Fin.sum_univ_pow_two_even_add_odd (f := f1) (n := (ℓ - ↑i - 1))
     conv_rhs at res =>
       rw [Fin.sum_univ_eq_sum_range]
       rw [← h_1]

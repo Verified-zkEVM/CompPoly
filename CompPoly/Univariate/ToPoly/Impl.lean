@@ -210,6 +210,71 @@ theorem degreeLT_toPoly {n : ℕ} [BEq R] [LawfulBEq R] {p : CPolynomial R} :
 
 end ImplementationCorrectness
 
+section EvaluationDivision
+
+variable {R : Type*}
+
+/-- Evaluation preserves multiplication. -/
+theorem eval_mul [CommSemiring R] [BEq R] [LawfulBEq R]
+    (p q : CPolynomial R) (x : R) :
+    (p * q).eval x = p.eval x * q.eval x := by
+  rw [eval_toPoly, toPoly_mul, Polynomial.eval_mul, ← eval_toPoly, ← eval_toPoly]
+
+namespace Raw
+
+theorem eval_sub_C_mul_X_pow_trim_eq_self_of_eval_eq_zero
+    [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial.Raw R) (scale : R)
+    (shift : ℕ) {x : R} (hq : q.eval x = 0) :
+    ((p - C scale * (q * X ^ shift)).trim).eval x = p.eval x := by
+  rw [eval_trim_eq_eval]
+  rw [← eval_toPoly_eq_eval x]
+  rw [toPoly_sub, toPoly_mul, toPoly_C, toPoly_mul, toPoly_pow, toPoly_X]
+  rw [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_mul,
+    Polynomial.eval_pow, Polynomial.eval_X]
+  simp [eval_toPoly_eq_eval, hq]
+
+theorem eval_divModByMonicAux_go_snd_eq_self_of_eval_eq_zero
+    [Field R] [BEq R] [LawfulBEq R] :
+    ∀ (fuel : ℕ) (p q : CPolynomial.Raw R) {x : R}, q.eval x = 0 →
+      (divModByMonicAux.go fuel p q).2.eval x = p.eval x := by
+  intro fuel
+  induction fuel with
+  | zero =>
+      intro p q x hq
+      rfl
+  | succ fuel ih =>
+      intro p q x hq
+      unfold divModByMonicAux.go
+      by_cases hsize : p.size < q.size
+      · simp [hsize]
+      · simp [hsize]
+        trans ((p - C p.leadingCoeff * (q * X ^ (p.size - q.size))).trim).eval x
+        · exact ih _ _ hq
+        · exact eval_sub_C_mul_X_pow_trim_eq_self_of_eval_eq_zero p q p.leadingCoeff
+            (p.size - q.size) hq
+
+/-- Reducing by a polynomial that vanishes at `x` preserves evaluation at `x`. -/
+theorem eval_modByMonic_eq_self_of_eval_eq_zero
+    [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial.Raw R) {x : R}
+    (hq : q.eval x = 0) :
+    (modByMonic p q).eval x = p.eval x :=
+  eval_divModByMonicAux_go_snd_eq_self_of_eval_eq_zero p.size p q hq
+
+end Raw
+
+/-- Reducing by a polynomial that vanishes at `x` preserves evaluation at `x`. -/
+theorem eval_modByMonic_eq_self_of_eval_eq_zero
+    [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) {x : R}
+    (hq : q.eval x = 0) :
+    (CPolynomial.modByMonic p q).eval x = p.eval x := by
+  have hq_raw : q.val.eval x = 0 := by
+    simpa [CPolynomial.eval, Raw.eval, Raw.eval₂] using hq
+  change ((Raw.modByMonic p.val q.val).trim).eval x = p.val.eval x
+  rw [Raw.eval_trim_eq_eval]
+  exact Raw.eval_modByMonic_eq_self_of_eval_eq_zero p.val q.val hq_raw
+
+end EvaluationDivision
+
 end CPolynomial
 
 end CompPoly
