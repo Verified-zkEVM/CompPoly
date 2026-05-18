@@ -175,6 +175,21 @@ theorem safeFastMul_eq_mul [BEq R] [LawfulBEq R]
     safeFastMul D p q hfit = p * q := by
   exact fastMulImpl_eq_mul D p q hfit
 
+/-- `withFallback` agrees with canonical polynomial multiplication. -/
+theorem withFallback_eq_mul [BEq R] [LawfulBEq R]
+    (bestDomainForLength? : (requiredLen : Nat) →
+      Option (NTT.FittingDomain R requiredLen))
+    (p q : CPolynomial R) :
+    withFallback bestDomainForLength? p q = p * q := by
+  let requiredLen := NTT.Domain.requiredLength p.val q.val
+  cases hdomain : bestDomainForLength? requiredLen with
+  | none =>
+      simp [withFallback, requiredLen, hdomain]
+  | some fitted =>
+      rcases fitted with ⟨D, hfit⟩
+      simp [withFallback, requiredLen, hdomain, fastMulImpl_eq_mul D p q (by
+        simpa [NTT.Domain.fits] using hfit)]
+
 end NTTFast
 end CPolynomial
 end CompPoly

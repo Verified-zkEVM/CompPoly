@@ -50,6 +50,22 @@ convolution length.
     CPolynomial R :=
   fastMulImpl D p q
 
+/--
+NTTFast-backed multiplication with canonical multiplication as a fallback.
+
+The selector should return a domain fitting the required convolution length.
+When it does, this uses `fastMulImpl`; otherwise it falls back to canonical
+`CPolynomial` multiplication.
+-/
+@[inline] def withFallback [BEq R] [LawfulBEq R]
+    (bestDomainForLength? : (requiredLen : Nat) →
+      Option (NTT.FittingDomain R requiredLen))
+    (p q : CPolynomial R) : CPolynomial R :=
+  let requiredLen := NTT.Domain.requiredLength p.val q.val
+  match bestDomainForLength? requiredLen with
+  | some ⟨D, _⟩ => fastMulImpl D p q
+  | none => p * q
+
 end NTTFast
 end CPolynomial
 end CompPoly

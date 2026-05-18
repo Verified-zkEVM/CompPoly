@@ -429,7 +429,7 @@ private theorem difMathValueAt_succ_lower
   have hbits : D.logN - stage = (D.logN - (stage + 1)) + 1 := by
     omega
   rw [hbits]
-  rw [← Fin.sum_univ_odd_even
+  rw [← Fin.sum_univ_pow_two_even_add_odd
     (n := D.logN - (stage + 1))
     (f := fun x =>
       a[j + x * 2 ^ stage]?.getD 0 *
@@ -480,7 +480,7 @@ private theorem difMathValueAt_succ_upper
   rw [hstride']
   rw [← pow_mul]
   rw [hbits]
-  rw [← Fin.sum_univ_odd_even
+  rw [← Fin.sum_univ_pow_two_even_add_odd
     (n := D.logN - (stage + 1))
     (f := fun x =>
       a[j + x * 2 ^ stage]?.getD 0 *

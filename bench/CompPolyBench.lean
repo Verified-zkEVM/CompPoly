@@ -20,6 +20,7 @@ import CompPoly.Univariate.NTT.KoalaBear
 import CompPoly.Univariate.NTT.FastMul
 import CompPoly.Univariate.NTT.FastMulLow
 import CompPoly.Univariate.NTTFast.FastMul
+import CompPoly.Univariate.NTTFast.FastMulLow
 import CompPoly.Univariate.NTTFast.Plan
 
 /-!
@@ -730,6 +731,8 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
   let naiveMul : CPolynomial.MulContext BabyBear.Field := CPolynomial.MulContext.naive
   let nttMul : CPolynomial.MulContext BabyBear.Field :=
     CPolynomial.MulContext.ntt babyBearBestDomainForLength?
+  let nttFastMul : CPolynomial.MulContext BabyBear.Field :=
+    CPolynomial.MulContext.nttFast babyBearBestDomainForLength?
   let naiveMod : CPolynomial.ModContext BabyBear.Field := CPolynomial.ModContext.naive
   let remainderOnlyMod : CPolynomial.ModContext BabyBear.Field :=
     CPolynomial.ModContext.remainderOnly
@@ -739,10 +742,14 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     CPolynomial.Raw.MulLowContext.convolution
   let nttWithFallbackLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
     CPolynomial.NTT.FastMulLow.withFallback babyBearBestDomainForLength?
+  let nttFastWithFallbackLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
+    CPolynomial.NTTFast.FastMulLow.withFallback babyBearBestDomainForLength?
   let reversalConvolutionLowMod : CPolynomial.ModContext BabyBear.Field :=
     CPolynomial.ModContext.reversal convolutionLowMul
   let reversalNttLowMod : CPolynomial.ModContext BabyBear.Field :=
     CPolynomial.ModContext.reversal nttWithFallbackLowMul
+  let reversalNttFastLowMod : CPolynomial.ModContext BabyBear.Field :=
+    CPolynomial.ModContext.reversal nttFastWithFallbackLowMul
   let babyBearMulNttFastPlan := CPolynomial.NTTFast.Plan.ofDomain babyBearMulNttDomain
   let koalaBearMulNttFastPlan := CPolynomial.NTTFast.Plan.ofDomain koalaBearMulNttDomain
   let nextGen := gen
@@ -843,6 +850,13 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
       mulLowRhsRaw)
     (checksumRawPolynomial checksumBabyBear))
   records := records.push (← runTimed
+    "univariate-mul-low-ntt-fast-with-fallback" "CPolynomial.Raw"
+    "NTTFast.FastMulLow.withFallback" "BabyBear.Field"
+    univariateMulLowShape mulWarmupIterations mulMeasuredIterations
+    (fun _ ↦ nttFastWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
+      mulLowRhsRaw)
+    (checksumRawPolynomial checksumBabyBear))
+  records := records.push (← runTimed
     "univariate-mod-by-monic-naive" "CPolynomial" "modByMonic" "BabyBear.Field"
     univariateModShape modWarmupIterations modMeasuredIterations
     (fun _ ↦ CPolynomial.modByMonic batchPoly modDivisor)
@@ -866,6 +880,12 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     (fun _ ↦ reversalNttLowMod.modByMonic batchPoly modDivisor)
     (checksumCPolynomial checksumBabyBear))
   records := records.push (← runTimed
+    "univariate-mod-by-monic-reversal-ntt-fast-low-mul" "CPolynomial"
+    "modByMonicByReversal, NTTFast.FastMulLow.withFallback" "BabyBear.Field"
+    univariateModShape modWarmupIterations modMeasuredIterations
+    (fun _ ↦ reversalNttFastLowMod.modByMonic batchPoly modDivisor)
+    (checksumCPolynomial checksumBabyBear))
+  records := records.push (← runTimed
     "univariate-mod-by-monic-medium-remainder-only" "CPolynomial"
     "modByMonicRemainderOnly" "BabyBear.Field"
     mediumUnivariateModShape mediumModWarmupIterations mediumModMeasuredIterations
@@ -882,6 +902,12 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     "modByMonicByReversal, FastMulLow.withFallback" "BabyBear.Field"
     mediumUnivariateModShape mediumModWarmupIterations mediumModMeasuredIterations
     (fun _ ↦ reversalNttLowMod.modByMonic mediumBatchPoly mediumModDivisor)
+    (checksumCPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-mod-by-monic-medium-reversal-ntt-fast-low-mul" "CPolynomial"
+    "modByMonicByReversal, NTTFast.FastMulLow.withFallback" "BabyBear.Field"
+    mediumUnivariateModShape mediumModWarmupIterations mediumModMeasuredIterations
+    (fun _ ↦ reversalNttFastLowMod.modByMonic mediumBatchPoly mediumModDivisor)
     (checksumCPolynomial checksumBabyBear))
   records := records.push (← runTimed
     "univariate-batch-naive-sum" "CPolynomial" "evalBatch" "BabyBear.Field"
@@ -912,6 +938,12 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     (fun _ ↦ CPolynomial.evalBatchSubproduct nttMul remainderOnlyMod batchPoly batchPoints)
     (checksumArray checksumBabyBear))
   records := records.push (← runTimed
+    "univariate-batch-subproduct-ntt-fast-mul-remainder-only-mod" "CPolynomial"
+    "evalBatchSubproduct ntt-fast mul/remainder-only mod" "BabyBear.Field"
+    univariateBatchShape batchWarmupIterations batchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct nttFastMul remainderOnlyMod batchPoly batchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
     "univariate-batch-subproduct-naive-mul-reversal-convolution-low-mod" "CPolynomial"
     "evalBatchSubproduct naive mul/reversal-convolution-low mod" "BabyBear.Field"
     univariateBatchShape batchWarmupIterations batchMeasuredIterations
@@ -923,6 +955,13 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     "evalBatchSubproduct ntt mul/reversal-ntt-low mod" "BabyBear.Field"
     univariateBatchShape batchWarmupIterations batchMeasuredIterations
     (fun _ ↦ CPolynomial.evalBatchSubproduct nttMul reversalNttLowMod batchPoly batchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-subproduct-ntt-fast-mul-reversal-ntt-fast-low-mod" "CPolynomial"
+    "evalBatchSubproduct ntt-fast mul/reversal-ntt-fast-low mod" "BabyBear.Field"
+    univariateBatchShape batchWarmupIterations batchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct nttFastMul reversalNttFastLowMod batchPoly
+      batchPoints)
     (checksumArray checksumBabyBear))
   records := records.push (← runTimed
     "univariate-batch-medium-naive-sum" "CPolynomial" "evalBatch" "BabyBear.Field"
@@ -949,11 +988,26 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
       mediumBatchPoints)
     (checksumArray checksumBabyBear))
   records := records.push (← runTimed
+    "univariate-batch-medium-subproduct-ntt-fast-mul-remainder-only-mod" "CPolynomial"
+    "evalBatchSubproduct ntt-fast mul/remainder-only mod" "BabyBear.Field"
+    mediumUnivariateBatchShape mediumBatchWarmupIterations mediumBatchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct nttFastMul remainderOnlyMod mediumBatchPoly
+      mediumBatchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
     "univariate-batch-medium-subproduct-ntt-mul-reversal-ntt-low-mod" "CPolynomial"
     "evalBatchSubproduct ntt mul/reversal-ntt-low mod" "BabyBear.Field"
     mediumUnivariateBatchShape mediumBatchWarmupIterations mediumBatchMeasuredIterations
     (fun _ ↦ CPolynomial.evalBatchSubproduct nttMul reversalNttLowMod mediumBatchPoly
       mediumBatchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-medium-subproduct-ntt-fast-mul-reversal-ntt-fast-low-mod"
+    "CPolynomial" "evalBatchSubproduct ntt-fast mul/reversal-ntt-fast-low mod"
+    "BabyBear.Field"
+    mediumUnivariateBatchShape mediumBatchWarmupIterations mediumBatchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct nttFastMul reversalNttFastLowMod
+      mediumBatchPoly mediumBatchPoints)
     (checksumArray checksumBabyBear))
   records := records.push (← runTimed
     "univariate-batch-large-naive-horner" "CPolynomial" "evalBatchHorner" "BabyBear.Field"
@@ -965,6 +1019,14 @@ private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := d
     "evalBatchSubproduct ntt mul/reversal-ntt-low mod" "BabyBear.Field"
     largeUnivariateBatchShape largeBatchWarmupIterations largeBatchMeasuredIterations
     (fun _ ↦ CPolynomial.evalBatchSubproduct nttMul reversalNttLowMod largeBatchPoly
+      largeBatchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-large-subproduct-ntt-fast-mul-reversal-ntt-fast-low-mod"
+    "CPolynomial" "evalBatchSubproduct ntt-fast mul/reversal-ntt-fast-low mod"
+    "BabyBear.Field"
+    largeUnivariateBatchShape largeBatchWarmupIterations largeBatchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct nttFastMul reversalNttFastLowMod largeBatchPoly
       largeBatchPoints)
     (checksumArray checksumBabyBear))
   let (goldilocksRecords, extraGen) ← runDenseUnivariateZMod
