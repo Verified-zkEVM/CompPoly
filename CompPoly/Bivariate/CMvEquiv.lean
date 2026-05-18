@@ -4,6 +4,25 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dimitris Mitsios
 -/
 
+/-!
+# Equivalence between `CBivariate` and `CMvPolynomial 2`
+
+This file establishes the ring equivalence
+`bivariateEquiv : CBivariate R ≃+* CMvPolynomial 2 R`
+by composing `CBivariate.ringEquiv` with `CMvPolynomial.finSuccEquiv`
+and `CMvPolynomial.isEmptyRingEquiv`.
+
+## Main definitions
+
+* `bivariateEquiv` — ring equivalence `CBivariate R ≃+* CMvPolynomial 2 R`
+
+## Helper lemmas
+
+* `CMvPolynomial.isEmptyRingEquiv_symm_apply` — `isEmptyRingEquiv.symm r = C r`
+* `CMvPolynomial.finSuccEquiv_symm_C` —
+  `finSuccEquiv.symm (Polynomial.C x) = rename Fin.succ x`
+-/
+
 import CompPoly.Bivariate.Basic
 import CompPoly.Bivariate.ToPoly
 import CompPoly.Multivariate.CMvPolynomial
