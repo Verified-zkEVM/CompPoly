@@ -168,7 +168,7 @@ theorem towerAlgebraMap_assoc : ∀ r mid l : ℕ, (h_l_le_mid : l ≤ mid) → 
 **Formalization of Cross-Level Algebra** : For any `k ≤ τ`, `BTField τ` is an
 algebra over `BTField k`.
 -/
-instance : AlgebraTower (BTField) where
+noncomputable instance : AlgebraTower (BTField) where
   algebraMap := towerAlgebraMap
   commutes' := by
     intro i j h r x

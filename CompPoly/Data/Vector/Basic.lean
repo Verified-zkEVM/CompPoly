@@ -8,6 +8,7 @@ import CompPoly.Data.List.Lemmas
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.Order.Star.Basic
 import Mathlib.Algebra.Order.Sub.Basic
+import Mathlib.Data.List.Fold
 import Mathlib.Data.Matrix.Mul
 import Mathlib.Tactic.Ring
 
@@ -147,8 +148,17 @@ lemma dotProduct_cons [AddCommMonoid R] [Mul R] (a : R) (b : Vector R n) (c : R)
   rw [zipWith_cons]
   simp_rw [foldl_eq_toList_foldl]
   rw [cons_toList_eq_List_cons]
-  rw [List.foldl_eq_of_comm' (hf:=by exact fun a b c ↦ add_right_comm a b c)]
-  rw [@AddCommMonoid.add_comm]
+  have h : ∀ (init : R) (L : List R),
+      List.foldl (fun x1 x2 => x1 + x2) init L = init + List.foldl (fun x1 x2 => x1 + x2) 0 L := by
+    intro init L
+    induction L generalizing init with
+    | nil => simp
+    | cons x xs ih =>
+      show List.foldl _ (init + x) xs = init + List.foldl _ (0 + x) xs
+      rw [ih (init + x), ih (0 + x), _root_.zero_add, _root_.add_assoc]
+  rw [List.foldl_cons]
+  show List.foldl _ (0 + a * c) _ = _
+  rw [_root_.zero_add, h]
 
 /-- A matrix represented as iterated vectors in row-major order.
 `m` is the number of rows, and `n` is the number of columns -/

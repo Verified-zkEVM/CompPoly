@@ -123,9 +123,9 @@ lemma map_one : fromCMvPolynomial (1 : CMvPolynomial n R) = 1 := by
   · have finsupp_m_eq_one : CMvMonomial.ofFinsupp m = CMvMonomial.zero := by
       rw [g']
       unfold CMvMonomial.ofFinsupp CMvMonomial.zero
-      ext i h
-      simp only [Nat.zero_eq, Finsupp.coe_mk]
-      grind
+      ext i hi
+      show (Vector.ofFn (⇑(0 : Fin n →₀ ℕ)))[i] = (Vector.replicate n 0)[i]
+      simp only [Finsupp.coe_zero, Pi.zero_apply, Vector.getElem_ofFn, Vector.getElem_replicate]
     rw [finsupp_m_eq_one]
     have one_one_get₁ :
       ({(CMvMonomial.zero, 1)} : Unlawful n R)[(@CMvMonomial.zero n)]?.getD 0 = One.one := by
@@ -387,7 +387,9 @@ lemma fromCMvPolynomial_C (r : R) :
     unfold C Lawful.C coeff Unlawful.C MonoR.C
     simp only [hr, ite_false]
     have ofFinsupp_zero : CMvMonomial.ofFinsupp (0 : Fin n →₀ ℕ) = CMvMonomial.zero := by
-      unfold CMvMonomial.ofFinsupp CMvMonomial.zero; ext i hi; grind
+      unfold CMvMonomial.ofFinsupp CMvMonomial.zero; ext i hi
+      show (Vector.ofFn (⇑(0 : Fin n →₀ ℕ)))[i] = (Vector.replicate n 0)[i]
+      simp only [Finsupp.coe_zero, Pi.zero_apply, Vector.getElem_ofFn, Vector.getElem_replicate]
     by_cases hm : (0 : Fin n →₀ ℕ) = m
     · subst hm; rw [if_pos rfl]
       erw [ExtTreeMap.getElem?_ofList_of_mem
