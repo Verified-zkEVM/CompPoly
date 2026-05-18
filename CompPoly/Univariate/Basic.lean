@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles
+Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles, Valerii Huhnin
 -/
 import Mathlib.Algebra.Tropical.Basic
 import Mathlib.RingTheory.Polynomial.Basic
@@ -702,6 +702,24 @@ def divByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomi
 /-- Remainder of `p` modulo a monic polynomial `q`. Matches Mathlib's `Polynomial.modByMonic`. -/
 def modByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
   ⟨(Raw.modByMonic p.val q.val).trim, Trim.isCanonical_trim (Raw.modByMonic p.val q.val)⟩
+
+/-- Remainder of `p` modulo a monic polynomial `q`, using a remainder-only implementation. -/
+def modByMonicRemainderOnly [Field R] [BEq R] [LawfulBEq R]
+    (p q : CPolynomial R) : CPolynomial R :=
+  ⟨(Raw.modByMonicRemainderOnly p.val q.val).trim,
+    Trim.isCanonical_trim (Raw.modByMonicRemainderOnly p.val q.val)⟩
+
+/-- Remainder of `p` modulo a monic polynomial `q`, using reversal and low products. -/
+def modByMonicByReversal [Field R] [BEq R] [LawfulBEq R]
+    (M : Raw.MulLowContext R) (p q : CPolynomial R) : CPolynomial R :=
+  ⟨(Raw.modByMonicByReversal M p.val q.val).trim,
+    Trim.isCanonical_trim (Raw.modByMonicByReversal M p.val q.val)⟩
+
+/-- The remainder-only monic remainder agrees with the canonical monic remainder. -/
+theorem modByMonicRemainderOnly_eq_modByMonic [Field R] [BEq R] [LawfulBEq R]
+    (p q : CPolynomial R) : modByMonicRemainderOnly p q = modByMonic p q := by
+  apply CPolynomial.ext
+  simp [modByMonicRemainderOnly, modByMonic, Raw.modByMonicRemainderOnly_eq_modByMonic]
 
 /-- Quotient of `p` by `q` (when `R` is a field). -/
 def div [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
