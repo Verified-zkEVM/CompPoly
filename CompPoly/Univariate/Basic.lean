@@ -950,6 +950,18 @@ lemma coeff_sub [Ring R] [BEq R] [LawfulBEq R]
     (p q : CPolynomial R) (i : ℕ) : coeff (p - q) i = coeff p i - coeff q i := by
   unfold coeff; exact Raw.sub_coeff p.val q.val i
 
+/-- The in-place `erase` agrees with the subtraction-based characterization:
+  `erase n p` equals `p - monomial n (p.coeff n)`. -/
+lemma erase_correct [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
+    (n : ℕ) (p : CPolynomial R) :
+    erase n p = p - monomial n (p.coeff n) := by
+  apply (eq_iff_coeff).2
+  intro i
+  rw [coeff_erase, coeff_sub, coeff_monomial]
+  by_cases hi : i = n
+  · subst hi; simp
+  · rw [if_neg hi, if_neg hi]; simp
+
 theorem neg_add_cancel [Ring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) : -p + p = 0 := by
   apply Subtype.ext
   have dist_lhs : (-p + p).val  = ((-p).val + p.val) := rfl
