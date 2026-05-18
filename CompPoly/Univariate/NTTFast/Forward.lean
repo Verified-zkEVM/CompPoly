@@ -6,11 +6,10 @@ Authors: Valerii Huhnin
 import CompPoly.Univariate.NTTFast.Transform
 
 /-!
-# Experimental forward NTT
+# NTTFast forward NTT
 
-This file mirrors the executable forward-transform entry point from
-`CompPoly.Univariate.NTT.Forward`, but routes through the `NTTFast` transform
-copy so the transform can be optimized independently.
+This file defines the forward NTT entry point implemented by bit-reversal followed
+by `NTTFast.Transform` stages.
 -/
 
 namespace CompPoly
@@ -20,7 +19,7 @@ namespace Forward
 
 variable {R : Type*} [Field R]
 
-/-- Experimental forward NTT implementation entry point. -/
+/-- NTTFast forward NTT implementation entry point. -/
 @[inline] def forwardImpl (D : NTT.Domain R) (p : CPolynomial.Raw R) : Array R :=
   Transform.runStages D (Transform.bitRevPermute D p)
 

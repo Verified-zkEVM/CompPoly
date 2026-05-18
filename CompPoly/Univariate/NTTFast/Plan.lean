@@ -7,11 +7,10 @@ import CompPoly.Univariate.Basic
 import CompPoly.Univariate.NTTFast.FastMulImpl
 
 /-!
-# Experimental planned NTT multiplication
+# Planned NTTFast multiplication
 
 This file adds a reusable `NTTFast` plan that caches domain-derived data for
-benchmark experiments. The proved baseline remains under
-`CompPoly.Univariate.NTT`.
+repeated NTT-based multiplication.
 -/
 
 namespace CompPoly
@@ -20,7 +19,7 @@ namespace NTTFast
 
 variable {R : Type*} [Field R]
 
-/-- Cached domain data for repeated experimental NTT multiplications. -/
+/-- Cached domain data for repeated NTTFast multiplications. -/
 structure Plan (R : Type*) [Field R] where
   domain : NTT.Domain R
   inverseDomain : NTT.Domain R
@@ -46,7 +45,7 @@ def twiddlePowers (D : NTT.Domain R) (stage : Nat) : Array R := Id.run do
 def twiddleTable (D : NTT.Domain R) : Array (Array R) :=
   Array.ofFn (fun stage : Fin D.logN => twiddlePowers D stage.1)
 
-/-- Build a reusable experimental plan from an NTT domain. -/
+/-- Build a reusable plan from an NTT domain. -/
 def ofDomain (D : NTT.Domain R) : Plan R :=
   { domain := D
     inverseDomain := D.inverse
@@ -412,7 +411,7 @@ def runStagesDIFRadix4PairWithTwiddles
 
 namespace Raw
 
-/-- Raw experimental planned pipeline for NTT-based multiplication. -/
+/-- Raw planned pipeline for NTT-based multiplication. -/
 @[inline] def fastMulImpl [BEq R]
     (P : Plan R) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
   let (pHat, qHat) := forwardPairImpl P p q
@@ -422,7 +421,7 @@ namespace Raw
 
 end Raw
 
-/-- Experimental planned pipeline for NTT-based multiplication as a canonical polynomial. -/
+/-- Planned pipeline for NTT-based multiplication as a canonical polynomial. -/
 @[inline] def fastMulImpl [BEq R] [LawfulBEq R]
     (P : Plan R) (p q : CPolynomial R) : CPolynomial R :=
   let raw := Raw.fastMulImpl P p.val q.val

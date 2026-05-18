@@ -6,7 +6,7 @@ Authors: Valerii Huhnin
 import CompPoly.Univariate.NTT.Domain
 
 /-!
-# Shared experimental NTT multiplication helpers
+# Shared NTTFast multiplication helpers
 
 This file contains small helpers shared by direct and planned `NTTFast`
 multiplication implementations.

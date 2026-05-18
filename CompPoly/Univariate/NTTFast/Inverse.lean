@@ -7,11 +7,10 @@ import CompPoly.Univariate.NTT.Inverse
 import CompPoly.Univariate.NTTFast.Transform
 
 /-!
-# Experimental inverse NTT
+# NTTFast inverse NTT
 
-This file mirrors the executable inverse-transform entry point from
-`CompPoly.Univariate.NTT.Inverse`, reusing the existing normalization helper and
-routing the stage computation through `NTTFast.Transform`.
+This file defines the inverse NTT entry point implemented by inverse-domain
+`NTTFast.Transform` stages followed by normalization.
 -/
 
 namespace CompPoly
@@ -21,7 +20,7 @@ namespace Inverse
 
 variable {R : Type*} [Field R]
 
-/-- Experimental inverse NTT implementation entry point. -/
+/-- NTTFast inverse NTT implementation entry point. -/
 def inverseImpl (D : NTT.Domain R) (v : Array R) : CPolynomial.Raw R :=
   NTT.Inverse.normalize D (Transform.runStages D.inverse (Transform.bitRevPermute D.inverse v))
 

@@ -9,12 +9,11 @@ import CompPoly.Univariate.NTTFast.Forward
 import CompPoly.Univariate.NTTFast.Inverse
 
 /-!
-# Correctness skeleton for experimental NTTFast multiplication
+# Correctness proofs for NTTFast multiplication
 
-This file separates the proof surface for `CompPoly.Univariate.NTTFast` from the
-executable implementation.  The declarations below are the intended correctness
-chain for the optimized planned implementation; proofs are intentionally left as
-`sorry` until each optimization layer is discharged.
+This file proves that the `NTTFast` transforms and multiplication pipelines agree
+with the NTT specifications, and that multiplication agrees with ordinary
+polynomial multiplication under the usual domain-fit hypothesis.
 -/
 
 namespace CompPoly
@@ -27,6 +26,7 @@ variable {R : Type*} [Field R]
 
 namespace Transform
 
+/-- `NTTFast` bit reversal agrees with the `NTT` bit-reversal function. -/
 theorem bitRevNat_eq_ntt (bits i : Nat) :
     bitRevNat bits i = NTT.Transform.bitRevNat bits i := by
   induction bits generalizing i with
@@ -35,41 +35,49 @@ theorem bitRevNat_eq_ntt (bits i : Nat) :
   | succ bits ih =>
       simp [bitRevNat, NTT.Transform.bitRevNat, ih]
 
+/-- `NTTFast` bit-reversal permutation agrees with `NTT.Transform.bitRevPermute`. -/
 theorem bitRevPermute_eq_ntt (D : NTT.Domain R) (a : Array R) :
     bitRevPermute D a = NTT.Transform.bitRevPermute D a := by
   simp [bitRevPermute, NTT.Transform.bitRevPermute, bitRevNat_eq_ntt]
 
+/-- One `NTTFast` radix-2 butterfly step agrees with the `NTT` implementation. -/
 theorem butterflyInnerStep_eq_ntt
     (blockSize half : Nat) (wm : R) (block j : Nat) (st : Array R × R) :
     butterflyInnerStep blockSize half wm block j st =
       NTT.Transform.butterflyInnerStep blockSize half wm block j st := by
   rfl
 
+/-- One `NTTFast` radix-2 butterfly stage agrees with the `NTT` implementation. -/
 theorem butterflyStage_eq_ntt (D : NTT.Domain R) (stage : Nat) (a : Array R) :
     butterflyStage D stage a = NTT.Transform.butterflyStage D stage a := by
   simp [butterflyStage, NTT.Transform.butterflyStage, butterflyInnerStep_eq_ntt]
 
+/-- The full `NTTFast` radix-2 stage loop agrees with `NTT.Transform.runStages`. -/
 theorem runStages_eq_ntt (D : NTT.Domain R) (a : Array R) :
     runStages D a = NTT.Transform.runStages D a := by
   simp [runStages, NTT.Transform.runStages, butterflyStage_eq_ntt]
 
 end Transform
 
+/-- `NTTFast` pointwise multiplication agrees with `NTT.FastMul.pointwiseMul`. -/
 theorem pointwiseMul_eq_ntt (D : NTT.Domain R) (a b : Array R) :
     pointwiseMul D a b = NTT.FastMul.pointwiseMul D a b := by
   rfl
 
+/-- Pointwise multiplication over a domain returns an array of the domain size. -/
 @[simp] theorem size_pointwiseMul (D : NTT.Domain R) (a b : Array R) :
     (pointwiseMul D a b).size = D.n := by
   simp [pointwiseMul]
 
 namespace Forward
 
+/-- The standalone `NTTFast` forward implementation agrees with `NTT.Forward.forwardImpl`. -/
 theorem forwardImpl_eq_ntt (D : NTT.Domain R) (p : CPolynomial.Raw R) :
     forwardImpl D p = NTT.Forward.forwardImpl D p := by
   simp [forwardImpl, NTT.Forward.forwardImpl, Transform.runStages_eq_ntt,
     Transform.bitRevPermute_eq_ntt]
 
+/-- The standalone `NTTFast` forward implementation computes the forward NTT spec. -/
 theorem forwardImpl_correct (D : NTT.Domain R) (p : CPolynomial.Raw R) :
     forwardImpl D p = NTT.Forward.forwardSpec D p := by
   rw [forwardImpl_eq_ntt, NTT.Forward.forwardImpl_correct]
@@ -78,11 +86,13 @@ end Forward
 
 namespace Inverse
 
+/-- The standalone `NTTFast` inverse implementation agrees with `NTT.Inverse.inverseImpl`. -/
 theorem inverseImpl_eq_ntt (D : NTT.Domain R) (v : Array R) :
     inverseImpl D v = NTT.Inverse.inverseImpl D v := by
   simp [inverseImpl, NTT.Inverse.inverseImpl, Transform.runStages_eq_ntt,
     Transform.bitRevPermute_eq_ntt]
 
+/-- The standalone `NTTFast` inverse implementation computes the inverse NTT spec. -/
 theorem inverseImpl_correct (D : NTT.Domain R) (v : Array R) :
     inverseImpl D v = NTT.Inverse.inverseSpec D v := by
   rw [inverseImpl_eq_ntt, NTT.Inverse.inverseImpl_correct]
@@ -91,7 +101,7 @@ end Inverse
 
 namespace Plan
 
-/-- A reusable plan is correct only when its cached data matches its domain. -/
+/-- Well-formedness condition for cached plan data. -/
 def WellFormed (P : Plan R) : Prop :=
   P.inverseDomain = P.domain.inverse ∧
     P.nInv = P.domain.nInv ∧
@@ -138,6 +148,7 @@ private theorem foldl_push_getD (wm : R) :
         ring
       · simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hi
 
+/-- The cached twiddle powers for a stage have exactly one entry per butterfly offset. -/
 theorem twiddlePowers_size (D : NTT.Domain R) (stage : Nat) :
     (twiddlePowers D stage).size = 2 ^ stage := by
   unfold twiddlePowers
@@ -146,6 +157,7 @@ theorem twiddlePowers_size (D : NTT.Domain R) (stage : Nat) :
   simpa [wm] using
     foldl_push_size wm (List.range' 0 (2 ^ stage)) (#[] : Array R) (1 : R)
 
+/-- Entries of the cached twiddle powers are the corresponding powers of the stage root. -/
 theorem twiddlePowers_getD_eq_pow (D : NTT.Domain R) (stage j : Nat)
     (hj : j < 2 ^ stage) :
     (twiddlePowers D stage).getD j 0 =
@@ -159,15 +171,18 @@ theorem twiddlePowers_getD_eq_pow (D : NTT.Domain R) (stage j : Nat)
   rw [Array.getD_eq_getD_getElem?] at h
   simpa [wm, NTT.Domain.n] using h
 
+/-- Looking up a valid stage in the twiddle table returns that stage's twiddle powers. -/
 theorem twiddleTable_getD_eq_twiddlePowers
     (D : NTT.Domain R) (stage : Nat) (hstage : stage < D.logN) :
     (twiddleTable D).getD stage #[] = twiddlePowers D stage := by
   simp [twiddleTable, hstage]
 
+/-- A plan built directly from a domain has well-formed cached data. -/
 theorem ofDomain_wellFormed (D : NTT.Domain R) :
     WellFormed (ofDomain D) := by
   simp [WellFormed, ofDomain]
 
+/-- Loading raw coefficients into a domain-sized array is `Array.ofFn` with zero padding. -/
 theorem loadNatural_eq (D : NTT.Domain R) (a : Array R) :
     loadNatural D a = Array.ofFn (fun i : D.Idx => a.getD i.1 0) := by
   rfl
@@ -2483,6 +2498,7 @@ private theorem butterflyRadix4StageDIFWithTwiddles_eq_two_stages
     (butterflyDIFRadix4Blocks_eq_two_dif_blocks twiddlesHigh twiddlesLow
       (2 ^ lowStage) (D.n / 2 ^ (lowStage + 2)) a hq hbound)
 
+/-- A DIT butterfly stage with matching cached twiddles agrees with the `NTT` stage. -/
 theorem butterflyStageWithTwiddles_eq_ntt
     (D : NTT.Domain R) (stage : Nat) (twiddles : Array R) (a : Array R)
     (htwiddles :
@@ -2506,6 +2522,7 @@ theorem butterflyStageWithTwiddles_eq_ntt
           (D.omega ^ (2 ^ D.logN / 2 ^ (stage + 1))) block acc)
       (x := a) (2 ^ D.logN / 2 ^ (stage + 1))
 
+/-- The DIT radix-2 stage loop with the full twiddle table agrees with `NTT`. -/
 theorem runStagesWithTwiddles_eq_ntt (D : NTT.Domain R) (a : Array R) :
     runStagesWithTwiddles D (twiddleTable D) a = NTT.Transform.runStages D a := by
   simp [runStagesWithTwiddles, NTT.Transform.runStages]
@@ -2516,6 +2533,10 @@ theorem runStagesWithTwiddles_eq_ntt (D : NTT.Domain R) (a : Array R) :
   intro j hj
   simpa [twiddleTable, hstage] using twiddlePowers_getD_eq_pow D stage j hj
 
+/--
+The mixed radix-4 DIT stage loop agrees with the radix-2 `NTT` stage loop on
+domain-sized arrays.
+-/
 theorem runStagesRadix4WithTwiddles_eq_ntt (D : NTT.Domain R) (a : Array R)
     (ha : a.size = D.n) :
     runStagesRadix4WithTwiddles D (twiddleTable D) a =
@@ -2578,6 +2599,7 @@ theorem runStagesRadix4WithTwiddles_eq_ntt (D : NTT.Domain R) (a : Array R)
           symm
           simp [runStagesWithTwiddles, stageStep, List.range_eq_range']
 
+/-- The DIF stage loop computes the bit-reversed forward NTT output. -/
 theorem runStagesDIFWithTwiddles_correct (D : NTT.Domain R) (a : Array R) :
     runStagesDIFWithTwiddles D (twiddleTable D) (loadNatural D a) =
       NTT.Transform.bitRevPermute D (NTT.Forward.forwardSpec D a) := by
@@ -2703,6 +2725,7 @@ private theorem runStagesDIFRadix4WithTwiddles_eq_difMathStageSpec
           · have hcompleted : 2 * (D.logN / 2) = D.logN := by omega
             simp [hodd, hcompleted]
 
+/-- The mixed radix-4 DIF stage loop computes the bit-reversed forward NTT output. -/
 theorem runStagesDIFRadix4WithTwiddles_correct (D : NTT.Domain R) (a : Array R) :
     runStagesDIFRadix4WithTwiddles D (twiddleTable D) (loadNatural D a) =
       NTT.Transform.bitRevPermute D (NTT.Forward.forwardSpec D a) := by
@@ -2873,6 +2896,7 @@ private theorem butterflyRadix4StageDIFPairWithTwiddles_eq_pair
     (2 ^ (lowStage + 2)) (2 ^ lowStage) (D.n / 2 ^ (lowStage + 2))
     (D.n / 2 ^ (lowStage + 2)) 0 a b (by simp)
 
+/-- The paired radix-4 DIF stage loop is extensionally two independent stage loops. -/
 theorem runStagesDIFRadix4PairWithTwiddles_eq_pair
     (D : NTT.Domain R) (a b : Array R) :
     runStagesDIFRadix4PairWithTwiddles D (twiddleTable D)
@@ -3006,17 +3030,20 @@ theorem runStagesDIFRadix4PairWithTwiddles_eq_pair
         hfoldSnd (List.range' 0 (D.logN / 2)) (loadNatural D a)
         (loadNatural D b)
 
+/-- A well-formed plan's forward transform computes the bit-reversed forward NTT. -/
 theorem forwardImpl_correct (P : Plan R) (hP : WellFormed P) (p : CPolynomial.Raw R) :
     forwardImpl P p =
       NTT.Transform.bitRevPermute P.domain (NTT.Forward.forwardSpec P.domain p) := by
   rcases hP with ⟨_, _, htwiddles, _⟩
   simp [forwardImpl, htwiddles, runStagesDIFRadix4WithTwiddles_correct]
 
+/-- A plan built from a domain has a correct forward transform. -/
 theorem forwardImpl_ofDomain_correct (D : NTT.Domain R) (p : CPolynomial.Raw R) :
     forwardImpl (ofDomain D) p =
       NTT.Transform.bitRevPermute D (NTT.Forward.forwardSpec D p) := by
   simpa using forwardImpl_correct (P := ofDomain D) (ofDomain_wellFormed D) p
 
+/-- The paired forward transform equals the pair of individual forward transforms. -/
 theorem forwardPairImpl_eq_pair
     (P : Plan R) (hP : WellFormed P) (p q : CPolynomial.Raw R) :
     forwardPairImpl P p q = (forwardImpl P p, forwardImpl P q) := by
@@ -3024,6 +3051,7 @@ theorem forwardPairImpl_eq_pair
   simp [forwardPairImpl, forwardImpl, htwiddles,
     runStagesDIFRadix4PairWithTwiddles_eq_pair]
 
+/-- The paired forward transform computes the two bit-reversed forward NTT outputs. -/
 theorem forwardPairImpl_correct
     (P : Plan R) (hP : WellFormed P) (p q : CPolynomial.Raw R) :
     forwardPairImpl P p q =
@@ -3032,11 +3060,13 @@ theorem forwardPairImpl_correct
   rw [forwardPairImpl_eq_pair P hP p q]
   simp [forwardImpl_correct P hP]
 
+/-- Plan normalization agrees with `NTT.Inverse.normalize` for the same domain. -/
 theorem normalize_eq_ntt_normalize (P : Plan R) (hP : WellFormed P) (a : Array R) :
     normalize P a = NTT.Inverse.normalize P.domain a := by
   rcases hP with ⟨_, hnInv, _⟩
   simp [normalize, NTT.Inverse.normalize, hnInv]
 
+/-- A well-formed plan's inverse transform computes the inverse NTT spec. -/
 theorem inverseImpl_correct (P : Plan R) (hP : WellFormed P) (v : Array R) :
     inverseImpl P (NTT.Transform.bitRevPermute P.domain v) =
       NTT.Inverse.inverseSpec P.domain v := by
@@ -3055,6 +3085,7 @@ theorem inverseImpl_correct (P : Plan R) (hP : WellFormed P) (v : Array R) :
   rw [normalize_eq_ntt_normalize P ⟨hinverseDomain, hnInv, htwiddles, hinverseTwiddles⟩]
   exact NTT.Inverse.inverseImpl_correct P.domain v
 
+/-- Pointwise multiplication commutes with applying the bit-reversal permutation. -/
 theorem pointwiseMul_bitRevPermute_forwardSpec_eq
     (D : NTT.Domain R) (p q : CPolynomial.Raw R) :
     pointwiseMul D
@@ -3075,6 +3106,7 @@ theorem pointwiseMul_bitRevPermute_forwardSpec_eq
 
 namespace Raw
 
+/-- The planned raw multiplication implementation computes the raw NTT multiplication spec. -/
 theorem fastMulImpl_correct [BEq R] [LawfulBEq R]
     (P : Plan R) (hP : WellFormed P) (p q : CPolynomial.Raw R) :
     fastMulImpl P p q = NTT.FastMul.Raw.fastMulSpec P.domain p q := by
@@ -3084,6 +3116,7 @@ theorem fastMulImpl_correct [BEq R] [LawfulBEq R]
   rw [pointwiseMul_bitRevPermute_forwardSpec_eq]
   rw [inverseImpl_correct P hP]
 
+/-- The planned raw multiplication implementation trims to ordinary multiplication. -/
 theorem fastMulImpl_trim_eq_mul [BEq R] [LawfulBEq R]
     (P : Plan R) (hP : WellFormed P) (p q : CPolynomial.Raw R)
     (hfit : NTT.Domain.fits P.domain p q) :
@@ -3093,12 +3126,14 @@ theorem fastMulImpl_trim_eq_mul [BEq R] [LawfulBEq R]
 
 end Raw
 
+/-- The planned multiplication implementation computes the NTT multiplication spec. -/
 theorem fastMulImpl_correct [BEq R] [LawfulBEq R]
     (P : Plan R) (hP : WellFormed P) (p q : CPolynomial R) :
     fastMulImpl P p q = NTT.FastMul.fastMulSpec P.domain p q := by
   apply CPolynomial.ext
   simp [fastMulImpl, NTT.FastMul.fastMulSpec, Raw.fastMulImpl_correct P hP]
 
+/-- The planned multiplication implementation agrees with ordinary multiplication. -/
 theorem fastMulImpl_eq_mul [BEq R] [LawfulBEq R]
     (P : Plan R) (hP : WellFormed P) (p q : CPolynomial R)
     (hfit : NTT.Domain.fits P.domain p.val q.val) :
@@ -3110,12 +3145,14 @@ end Plan
 
 namespace Raw
 
+/-- The one-shot raw multiplication implementation computes the raw NTT multiplication spec. -/
 theorem fastMulImpl_correct [BEq R] [LawfulBEq R]
     (D : NTT.Domain R) (p q : CPolynomial.Raw R) :
     fastMulImpl D p q = NTT.FastMul.Raw.fastMulSpec D p q := by
   simpa [fastMulImpl] using
     Plan.Raw.fastMulImpl_correct (P := Plan.ofDomain D) (Plan.ofDomain_wellFormed D) p q
 
+/-- The one-shot raw multiplication implementation trims to ordinary multiplication. -/
 theorem fastMulImpl_trim_eq_mul [BEq R] [LawfulBEq R]
     (D : NTT.Domain R) (p q : CPolynomial.Raw R)
     (hfit : NTT.Domain.fits D p q) :
@@ -3125,12 +3162,14 @@ theorem fastMulImpl_trim_eq_mul [BEq R] [LawfulBEq R]
 
 end Raw
 
+/-- The one-shot multiplication implementation computes the NTT multiplication spec. -/
 theorem fastMulImpl_correct [BEq R] [LawfulBEq R]
     (D : NTT.Domain R) (p q : CPolynomial R) :
     fastMulImpl D p q = NTT.FastMul.fastMulSpec D p q := by
   simpa [fastMulImpl] using
     Plan.fastMulImpl_correct (P := Plan.ofDomain D) (Plan.ofDomain_wellFormed D) p q
 
+/-- The one-shot multiplication implementation agrees with ordinary multiplication. -/
 theorem fastMulImpl_eq_mul [BEq R] [LawfulBEq R]
     (D : NTT.Domain R) (p q : CPolynomial R)
     (hfit : NTT.Domain.fits D p.val q.val) :
@@ -3138,6 +3177,7 @@ theorem fastMulImpl_eq_mul [BEq R] [LawfulBEq R]
   rw [fastMulImpl_correct D p q]
   exact NTT.FastMul.fastMulSpec_eq_mul D p q hfit
 
+/-- The safe one-shot wrapper agrees with ordinary multiplication. -/
 theorem safeFastMul_eq_mul [BEq R] [LawfulBEq R]
     (D : NTT.Domain R) (p q : CPolynomial R)
     (hfit : NTT.Domain.fits D p.val q.val) :

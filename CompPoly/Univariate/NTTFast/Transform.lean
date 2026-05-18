@@ -7,11 +7,10 @@ import CompPoly.Univariate.NTT.Domain
 import CompPoly.Data.Nat.Bitwise
 
 /-!
-# Experimental radix-2 NTT transform
+# Radix-2 NTTFast transform
 
-This file mirrors the executable transform path from `CompPoly.Univariate.NTT`.
-It intentionally stays behavior-equivalent to the current implementation so
-future performance changes can be benchmarked against the original NTT path.
+This file defines the radix-2 transform primitives used by `NTTFast`, including
+bit-reversal permutation, butterfly stages, and the stage loop.
 -/
 
 namespace CompPoly
