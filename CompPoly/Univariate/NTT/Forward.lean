@@ -427,7 +427,7 @@ private theorem forwardMathValueAt_succ_lower
     stageTwiddle_eq_stride D stage hstage]
   have hbits : D.logN - stage = (D.logN - (stage + 1)) + 1 := by
     omega
-  rw [← Fin.sum_univ_odd_even
+  rw [← Fin.sum_univ_pow_two_even_add_odd
     (n := stage)
     (f := fun x =>
       a[bitRevNat (D.logN - (stage + 1)) block +
@@ -481,7 +481,7 @@ private theorem forwardMathValueAt_succ_upper
     stageTwiddle_eq_stride D stage hstage]
   have hbits : D.logN - stage = (D.logN - (stage + 1)) + 1 := by
     omega
-  rw [← Fin.sum_univ_odd_even
+  rw [← Fin.sum_univ_pow_two_even_add_odd
     (n := stage)
     (f := fun x =>
       a[bitRevNat (D.logN - (stage + 1)) block +
