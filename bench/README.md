@@ -14,8 +14,16 @@ Run the benchmark from the repository root:
 lake exe CompPolyBench
 ```
 
-The executable is defined by the `CompPolyBench` Lake target and uses
-`bench/CompPolyBench.lean` as its source module.
+The executable is defined by the `CompPolyBench` Lake target. Its entrypoint is
+`bench/CompPolyBench.lean`; shared helpers live in
+`bench/CompPolyBench/Common.lean`, and `bench/CompPolyBench/Setup.lean`
+assembles the full suite.
+
+Benchmark files mirror the source tree they exercise. For example,
+benchmarks for `CompPoly/Univariate/NTT/FastMul.lean` live in
+`bench/CompPolyBench/Univariate/NTT/FastMul.lean`, and benchmarks for
+`CompPoly/Fields/Binary/AdditiveNTT/Impl.lean` live in
+`bench/CompPolyBench/Fields/Binary/AdditiveNTT/Impl.lean`.
 
 ## Output
 
@@ -28,12 +36,16 @@ evaluation-bench-report-YYMMDD-HHMMSS.md
 
 Generated benchmark artifacts are ignored by `bench/.gitignore`.
 
+The JSONL output remains one row per benchmark case. The Markdown report groups
+rows into separate result tables when those rows are expected to produce a
+matching checksum.
+
 ## What Is Measured
 
 The benchmark covers the main polynomial evaluation paths, direct versus
 NTT-backed univariate multiplication, and the existing additive NTT
 implementation. Exact cases, input shapes, deterministic input generation, and
-reported fields are defined in `bench/CompPolyBench.lean`.
+reported fields are defined by the benchmark modules under `bench/CompPolyBench/`.
 
 ## Determinism
 
