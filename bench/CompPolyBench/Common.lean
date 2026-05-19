@@ -152,6 +152,69 @@ def BenchTask.fromGroupRunner (info : BenchGroupInfo)
 def totalGroupNanos (records : List BenchRecord) : Nat :=
   records.foldl (fun acc record => acc + record.totalNanos) 0
 
+/-- Human-readable time units for benchmark reports. -/
+inductive TimeUnit where
+  | ns
+  | us
+  | ms
+  | s
+
+/-- Unit label used in Markdown and CLI output. -/
+def TimeUnit.label : TimeUnit → String
+  | TimeUnit.ns => "ns"
+  | TimeUnit.us => "us"
+  | TimeUnit.ms => "ms"
+  | TimeUnit.s => "s"
+
+/-- Number of nanoseconds represented by one unit. -/
+def TimeUnit.divisor : TimeUnit → Nat
+  | TimeUnit.ns => 1
+  | TimeUnit.us => 1000
+  | TimeUnit.ms => 1000000
+  | TimeUnit.s => 1000000000
+
+/-- Select the largest readable unit that keeps the largest value at least one unit. -/
+def chooseTimeUnit (values : List Nat) : TimeUnit :=
+  let largest := values.foldl Nat.max 0
+  if largest >= TimeUnit.s.divisor then
+    TimeUnit.s
+  else if largest >= TimeUnit.ms.divisor then
+    TimeUnit.ms
+  else if largest >= TimeUnit.us.divisor then
+    TimeUnit.us
+  else
+    TimeUnit.ns
+
+/-- Render a fractional part rounded to two decimal places, dropping trailing zeroes. -/
+def renderCentiFraction (centi : Nat) : String :=
+  if centi = 0 then
+    ""
+  else if centi % 10 = 0 then
+    "." ++ toString (centi / 10)
+  else
+    "." ++ (if centi < 10 then "0" else "") ++ toString centi
+
+/-- Render a nanosecond duration in a fixed unit, rounded to at most two decimals. -/
+def formatNanosInUnit (unit : TimeUnit) (nanos : Nat) : String :=
+  match unit with
+  | TimeUnit.ns => toString nanos
+  | _ =>
+      let divisor := unit.divisor
+      let scaled := (nanos * 100 + divisor / 2) / divisor
+      if nanos != 0 && scaled = 0 then
+        "<0.01"
+      else
+        toString (scaled / 100) ++ renderCentiFraction (scaled % 100)
+
+/-- Render a nanosecond duration with an explicit fixed unit label. -/
+def formatNanosWithUnit (unit : TimeUnit) (nanos : Nat) : String :=
+  formatNanosInUnit unit nanos ++ " " ++ unit.label
+
+/-- Render one nanosecond duration using the best unit for that single value. -/
+def formatNanosAuto (nanos : Nat) : String :=
+  let unit := chooseTimeUnit [nanos]
+  formatNanosWithUnit unit nanos
+
 /-- Run selected tasks from a registry and concatenate their emitted groups. -/
 def runSelectedTasks (tasks : List BenchTask) (selection : BenchSelection) (gen : StdGen) :
     IO (Array BenchGroup × StdGen) := do
@@ -161,7 +224,8 @@ def runSelectedTasks (tasks : List BenchTask) (selection : BenchSelection) (gen 
     let (taskGroups, nextGen) ← task.runTask selection gen
     gen := nextGen
     for group in taskGroups do
-      IO.println s!"finished `{group.groupKey}` in `{totalGroupNanos group.records.toList} ns`"
+      let groupTotal := totalGroupNanos group.records.toList
+      IO.println s!"finished `{group.groupKey}` in `{formatNanosAuto groupTotal}`"
       groups := groups.push group
   pure (groups, gen)
 
@@ -646,16 +710,19 @@ def implementationLabel (record : BenchRecord) : String :=
       | none => record.method
 
 /-- Columns rendered in a group result table after shared metadata is lifted out. -/
-def groupResultColumns : List (String × Bool × (BenchRecord → String)) :=
+def groupResultColumns (totalUnit avgUnit : TimeUnit) :
+    List (String × Bool × (BenchRecord → String)) :=
   [
     ("Implementation", false, implementationLabel),
     ("Iterations", true, fun r => toString r.measuredIterations),
-    ("Total ns", true, fun r => toString r.totalNanos),
-    ("Avg ns", true, fun r => toString r.averageNanos)
+    ("Total (" ++ totalUnit.label ++ ")", true, fun r =>
+      formatNanosInUnit totalUnit r.totalNanos),
+    ("Avg (" ++ avgUnit.label ++ ")", true, fun r =>
+      formatNanosInUnit avgUnit r.averageNanos)
   ]
 
 /-- Shared metadata rendered before each benchmark group result table. -/
-def renderGroupMetadata (records : List BenchRecord) : List String :=
+def renderGroupMetadata (records : List BenchRecord) (totalUnit : TimeUnit) : List String :=
   keepSome [
     renderSharedStringLine "Representation" records (fun r => r.representation),
     renderSharedStringLine "Field / configuration" records (fun r => r.field),
@@ -663,18 +730,23 @@ def renderGroupMetadata (records : List BenchRecord) : List String :=
     renderSharedNatLine "Warmup iterations" records (fun r => r.warmupIterations),
     renderSharedNatLine "Checksum iterations" records (fun r => r.checksumIterations)
   ] ++ [
-    "- Total group time: `" ++ toString (totalGroupNanos records) ++ " ns`",
+    "- Total group time: `" ++ formatNanosWithUnit totalUnit (totalGroupNanos records) ++
+      "`",
     renderChecksumStatus records
   ]
 
 /-- Render one benchmark group result table. -/
 def renderGroupResults (group : BenchGroup) : List String :=
   let records := group.records.toList
+  let groupTotal := totalGroupNanos records
+  let totalUnit := chooseTimeUnit (groupTotal :: records.map fun r => r.totalNanos)
+  let avgUnit := chooseTimeUnit (records.map fun r => r.averageNanos)
   [
     "### " ++ group.title,
     "",
     "- Group key: `" ++ group.groupKey ++ "`",
-  ] ++ renderGroupMetadata records ++ [""] ++ renderMarkdownTable groupResultColumns records ++ [""]
+  ] ++ renderGroupMetadata records totalUnit ++ [""] ++
+    renderMarkdownTable (groupResultColumns totalUnit avgUnit) records ++ [""]
 
 /-- Render the runner OS and architecture line. -/
 def renderRunnerLine (hardware : RunnerHardware) : String :=
