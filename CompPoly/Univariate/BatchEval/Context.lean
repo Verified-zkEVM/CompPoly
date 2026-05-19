@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 import CompPoly.Univariate.DivisionCorrectness
 import CompPoly.Univariate.NTT.FastMul
+import CompPoly.Univariate.NTTFast.Correctness.Pipeline
 
 /-!
 # Batch Evaluation Contexts
@@ -51,6 +52,20 @@ def ntt [Field R] [BEq R] [LawfulBEq R]
     MulContext R where
   mul := NTT.FastMul.withFallback bestDomainForLength?
   mul_eq_mul := NTT.FastMul.withFallback_eq_mul bestDomainForLength?
+
+/--
+NTTFast-backed multiplication context with canonical multiplication as a fallback.
+
+The context asks the selector for a domain that fits the current operands. If no
+supported domain is available, it falls back to ordinary `CPolynomial`
+multiplication.
+-/
+def nttFast [Field R] [BEq R] [LawfulBEq R]
+    (bestDomainForLength? : (requiredLen : Nat) →
+      Option (NTT.FittingDomain R requiredLen)) :
+    MulContext R where
+  mul := NTTFast.withFallback bestDomainForLength?
+  mul_eq_mul := NTTFast.withFallback_eq_mul bestDomainForLength?
 
 end MulContext
 
