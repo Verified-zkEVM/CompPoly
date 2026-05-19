@@ -18,7 +18,7 @@ namespace CompPolyBench
 
 /-- Benchmark group metadata for `CompPoly.Univariate.NTT.FastMulLow`. -/
 def univariateNttFastMulLowGroupInfos : List BenchGroupInfo := [
-  ⟨"babybear-univariate-low-product", "BabyBear univariate low product"⟩
+  ⟨"univariate-low-product-babybear", "Univariate low product (BabyBear)"⟩
 ]
 
 /-- Benchmark low-product multiplication variants used by remainder and batch-evaluation paths. -/
@@ -62,15 +62,15 @@ private def runBabyBearUnivariateLowProduct (gen : StdGen) : IO (BenchGroup × S
       mulLowRhsRaw)
     (checksumRawPolynomial checksumBabyBear)
   pure ({
-    groupKey := "babybear-univariate-low-product",
-    title := "BabyBear univariate low product",
+    groupKey := "univariate-low-product-babybear",
+    title := "Univariate low product (BabyBear)",
     records := #[lowNaive, lowConvolution, lowNtt, lowNttFast]
   }, gen)
 
 /-- Runnable `CompPoly.Univariate.NTT.FastMulLow` benchmark tasks. -/
 def univariateNttFastMulLowTasks : List BenchTask := [
   BenchTask.fromGroupRunner
-    ⟨"babybear-univariate-low-product", "BabyBear univariate low product"⟩
+    ⟨"univariate-low-product-babybear", "Univariate low product (BabyBear)"⟩
     runBabyBearUnivariateLowProduct
 ]
 

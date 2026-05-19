@@ -17,10 +17,11 @@ namespace CompPolyBench
 
 /-- Benchmark group metadata for `CompPoly.Multilinear.Basic`. -/
 def multilinearGroupInfos : List BenchGroupInfo := [
-  ⟨"babybear-multilinear-coeff", "BabyBear multilinear coefficient-form evaluation"⟩,
-  ⟨"babybear-multilinear-hypercube", "BabyBear multilinear hypercube-form evaluation"⟩,
-  ⟨"goldilocks-multilinear-coeff", "Goldilocks multilinear coefficient-form evaluation"⟩,
-  ⟨"goldilocks-multilinear-hypercube", "Goldilocks multilinear hypercube-form evaluation"⟩
+  ⟨"multilinear-coeff-babybear", "Multilinear coefficient-form evaluation (BabyBear)"⟩,
+  ⟨"multilinear-hypercube-babybear", "Multilinear hypercube-form evaluation (BabyBear)"⟩,
+  ⟨"multilinear-coeff-goldilocks", "Multilinear coefficient-form evaluation (Goldilocks)"⟩,
+  ⟨"multilinear-hypercube-goldilocks",
+    "Multilinear hypercube-form evaluation (Goldilocks)"⟩
 ]
 
 /-- Run BabyBear coefficient-form multilinear evaluation benchmarks. -/
@@ -41,8 +42,8 @@ private def runBabyBearMultilinearCoeff (gen : StdGen) : IO (BenchGroup × StdGe
     (fun i => CMlPolynomial.evalHorner coeffPoly (evalPoint (i % 32)))
     checksumBabyBear
   pure ({
-    groupKey := "babybear-multilinear-coeff",
-    title := "BabyBear multilinear coefficient-form evaluation",
+    groupKey := "multilinear-coeff-babybear",
+    title := "Multilinear coefficient-form evaluation (BabyBear)",
     records := #[coeffEval, coeffHorner]
   }, gen)
 
@@ -64,8 +65,8 @@ private def runBabyBearMultilinearHypercube (gen : StdGen) : IO (BenchGroup × S
     (fun i => CMlPolynomialEval.evalMle evalPoly (evalPoint (i % 32)))
     checksumBabyBear
   pure ({
-    groupKey := "babybear-multilinear-hypercube",
-    title := "BabyBear multilinear hypercube-form evaluation",
+    groupKey := "multilinear-hypercube-babybear",
+    title := "Multilinear hypercube-form evaluation (BabyBear)",
     records := #[hypercubeEval, hypercubeMle]
   }, gen)
 
@@ -88,8 +89,8 @@ private def runGoldilocksMultilinearCoeff (gen : StdGen) : IO (BenchGroup × Std
     (fun i => CMlPolynomial.evalHorner goldilocksCoeffPoly (goldilocksEvalPoint (i % 32)))
     checksumZMod
   pure ({
-    groupKey := "goldilocks-multilinear-coeff",
-    title := "Goldilocks multilinear coefficient-form evaluation",
+    groupKey := "multilinear-coeff-goldilocks",
+    title := "Multilinear coefficient-form evaluation (Goldilocks)",
     records := #[goldilocksCoeffEval, goldilocksCoeffHorner]
   }, gen)
 
@@ -112,24 +113,25 @@ private def runGoldilocksMultilinearHypercube (gen : StdGen) : IO (BenchGroup ×
     (fun i => CMlPolynomialEval.evalMle goldilocksEvalPoly (goldilocksEvalPoint (i % 32)))
     checksumZMod
   pure ({
-    groupKey := "goldilocks-multilinear-hypercube",
-    title := "Goldilocks multilinear hypercube-form evaluation",
+    groupKey := "multilinear-hypercube-goldilocks",
+    title := "Multilinear hypercube-form evaluation (Goldilocks)",
     records := #[goldilocksHypercubeEval, goldilocksHypercubeMle]
   }, gen)
 
 /-- Runnable multilinear benchmark tasks. -/
 def multilinearTasks : List BenchTask := [
   BenchTask.fromGroupRunner
-    ⟨"babybear-multilinear-coeff", "BabyBear multilinear coefficient-form evaluation"⟩
+    ⟨"multilinear-coeff-babybear", "Multilinear coefficient-form evaluation (BabyBear)"⟩
     runBabyBearMultilinearCoeff,
   BenchTask.fromGroupRunner
-    ⟨"babybear-multilinear-hypercube", "BabyBear multilinear hypercube-form evaluation"⟩
+    ⟨"multilinear-hypercube-babybear", "Multilinear hypercube-form evaluation (BabyBear)"⟩
     runBabyBearMultilinearHypercube,
   BenchTask.fromGroupRunner
-    ⟨"goldilocks-multilinear-coeff", "Goldilocks multilinear coefficient-form evaluation"⟩
+    ⟨"multilinear-coeff-goldilocks", "Multilinear coefficient-form evaluation (Goldilocks)"⟩
     runGoldilocksMultilinearCoeff,
   BenchTask.fromGroupRunner
-    ⟨"goldilocks-multilinear-hypercube", "Goldilocks multilinear hypercube-form evaluation"⟩
+    ⟨"multilinear-hypercube-goldilocks",
+      "Multilinear hypercube-form evaluation (Goldilocks)"⟩
     runGoldilocksMultilinearHypercube
 ]
 

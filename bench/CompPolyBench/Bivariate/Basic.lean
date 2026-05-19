@@ -18,9 +18,9 @@ namespace CompPolyBench
 
 /-- Benchmark group metadata for `CompPoly.Bivariate.Basic`. -/
 def bivariateGroupInfos : List BenchGroupInfo := [
-  ⟨"babybear-bivariate-full", "BabyBear bivariate full evaluation"⟩,
-  ⟨"goldilocks-bivariate-full", "Goldilocks.Field bivariate full evaluation"⟩,
-  ⟨"bn254-bivariate-full", "BN254.ScalarField bivariate full evaluation"⟩
+  ⟨"bivariate-full-babybear", "Bivariate full evaluation (BabyBear)"⟩,
+  ⟨"bivariate-full-goldilocks", "Bivariate full evaluation (Goldilocks)"⟩,
+  ⟨"bivariate-full-bn254", "Bivariate full evaluation (BN254)"⟩
 ]
 
 /-- Shared input-shape label for bivariate evaluation benchmarks. -/
@@ -41,7 +41,8 @@ private def buildCBivariate {R : Type*}
 
 /-- Run bivariate full-evaluation benchmarks over a generic prime `ZMod` field. -/
 private def runBivariateZMod (p : Nat) [Fact (Nat.Prime p)]
-    (key nameSuffix fieldName : String) (gen : StdGen) : IO (BenchGroup × StdGen) := do
+    (key nameSuffix fieldName fieldTitle : String) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
   let (terms, gen) := (zmodArray p 512 true).run gen
   let (points, gen) := (zmodArray p 64 false).run gen
   let poly := buildCBivariate terms
@@ -71,7 +72,7 @@ private def runBivariateZMod (p : Nat) [Fact (Nat.Prime p)]
     checksumZMod
   pure ({
       groupKey := key,
-      title := fieldName ++ " bivariate full evaluation",
+      title := "Bivariate full evaluation (" ++ fieldTitle ++ ")",
       records := #[naive, hornerYx, hornerXy] }, gen)
 
 /-- Run the BabyBear bivariate full-evaluation benchmark. -/
@@ -104,31 +105,32 @@ private def runBabyBearBivariate (gen : StdGen) : IO (BenchGroup × StdGen) := d
       CBivariate.evalEvalHornerXThenY point.1 point.2 p)
     checksumBabyBear
   pure ({
-    groupKey := "babybear-bivariate-full",
-    title := "BabyBear bivariate full evaluation",
+    groupKey := "bivariate-full-babybear",
+    title := "Bivariate full evaluation (BabyBear)",
     records := #[naive, hornerYx, hornerXy]
   }, gen)
 
 /-- Run the Goldilocks bivariate full-evaluation benchmark. -/
 private def runGoldilocksBivariate (gen : StdGen) : IO (BenchGroup × StdGen) := do
   runBivariateZMod
-    Goldilocks.fieldSize "goldilocks-bivariate-full" "-goldilocks" "Goldilocks.Field" gen
+    Goldilocks.fieldSize "bivariate-full-goldilocks" "-goldilocks" "Goldilocks.Field"
+    "Goldilocks" gen
 
 /-- Run the BN254 bivariate full-evaluation benchmark. -/
 private def runBn254Bivariate (gen : StdGen) : IO (BenchGroup × StdGen) := do
   runBivariateZMod
-    BN254.scalarFieldSize "bn254-bivariate-full" "-bn254" "BN254.ScalarField" gen
+    BN254.scalarFieldSize "bivariate-full-bn254" "-bn254" "BN254.ScalarField" "BN254" gen
 
 /-- Runnable bivariate benchmark tasks. -/
 def bivariateTasks : List BenchTask := [
   BenchTask.fromGroupRunner
-    ⟨"babybear-bivariate-full", "BabyBear bivariate full evaluation"⟩
+    ⟨"bivariate-full-babybear", "Bivariate full evaluation (BabyBear)"⟩
     runBabyBearBivariate,
   BenchTask.fromGroupRunner
-    ⟨"goldilocks-bivariate-full", "Goldilocks.Field bivariate full evaluation"⟩
+    ⟨"bivariate-full-goldilocks", "Bivariate full evaluation (Goldilocks)"⟩
     runGoldilocksBivariate,
   BenchTask.fromGroupRunner
-    ⟨"bn254-bivariate-full", "BN254.ScalarField bivariate full evaluation"⟩
+    ⟨"bivariate-full-bn254", "Bivariate full evaluation (BN254)"⟩
     runBn254Bivariate
 ]
 

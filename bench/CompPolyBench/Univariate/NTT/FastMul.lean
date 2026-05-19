@@ -19,8 +19,8 @@ namespace CompPolyBench
 
 /-- Benchmark group metadata for `CompPoly.Univariate.NTT.FastMul`. -/
 def univariateNttFastMulGroupInfos : List BenchGroupInfo := [
-  ⟨"babybear-univariate-mul", "BabyBear univariate multiplication"⟩,
-  ⟨"koalabear-univariate-mul", "KoalaBear univariate multiplication"⟩
+  ⟨"univariate-mul-babybear", "Univariate multiplication (BabyBear)"⟩,
+  ⟨"univariate-mul-koalabear", "Univariate multiplication (KoalaBear)"⟩
 ]
 
 /-- Benchmark BabyBear direct univariate multiplication and root-of-unity NTT variants. -/
@@ -57,8 +57,8 @@ private def runBabyBearUnivariateMul (gen : StdGen) : IO (BenchGroup × StdGen) 
       mulRhsPoly)
     (checksumCPolynomial checksumBabyBear)
   pure ({
-    groupKey := "babybear-univariate-mul",
-    title := "BabyBear univariate multiplication",
+    groupKey := "univariate-mul-babybear",
+    title := "Univariate multiplication (BabyBear)",
     records := #[babyBearMulNaive, babyBearMulNtt, babyBearMulNttFast,
       babyBearMulNttFastPlanRecord]
   }, gen)
@@ -101,18 +101,18 @@ private def runKoalaBearUnivariateMul (gen : StdGen) : IO (BenchGroup × StdGen)
       koalaMulRhsPoly)
     (checksumCPolynomial checksumKoalaBear)
   pure ({
-    groupKey := "koalabear-univariate-mul",
-    title := "KoalaBear univariate multiplication",
+    groupKey := "univariate-mul-koalabear",
+    title := "Univariate multiplication (KoalaBear)",
     records := #[koalaMulNaive, koalaMulNtt, koalaMulNttFast, koalaMulNttFastPlanRecord]
   }, gen)
 
 /-- Runnable `CompPoly.Univariate.NTT.FastMul` benchmark tasks. -/
 def univariateNttFastMulTasks : List BenchTask := [
   BenchTask.fromGroupRunner
-    ⟨"babybear-univariate-mul", "BabyBear univariate multiplication"⟩
+    ⟨"univariate-mul-babybear", "Univariate multiplication (BabyBear)"⟩
     runBabyBearUnivariateMul,
   BenchTask.fromGroupRunner
-    ⟨"koalabear-univariate-mul", "KoalaBear univariate multiplication"⟩
+    ⟨"univariate-mul-koalabear", "Univariate multiplication (KoalaBear)"⟩
     runKoalaBearUnivariateMul
 ]
 

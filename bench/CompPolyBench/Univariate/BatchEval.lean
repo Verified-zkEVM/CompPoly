@@ -19,9 +19,9 @@ namespace CompPolyBench
 
 /-- Benchmark group metadata for `CompPoly.Univariate.BatchEval`. -/
 def univariateBatchEvalGroupInfos : List BenchGroupInfo := [
-  ⟨"babybear-univariate-batch-small", "BabyBear univariate batch evaluation, small"⟩,
-  ⟨"babybear-univariate-batch-medium", "BabyBear univariate batch evaluation, medium"⟩,
-  ⟨"babybear-univariate-batch-large", "BabyBear univariate batch evaluation, large"⟩
+  ⟨"univariate-batch-small-babybear", "Univariate batch evaluation, small (BabyBear)"⟩,
+  ⟨"univariate-batch-medium-babybear", "Univariate batch evaluation, medium (BabyBear)"⟩,
+  ⟨"univariate-batch-large-babybear", "Univariate batch evaluation, large (BabyBear)"⟩
 ]
 
 /-- Run the small BabyBear univariate batch-evaluation benchmark group. -/
@@ -104,8 +104,8 @@ private def runBabyBearUnivariateBatchSmall (gen : StdGen) : IO (BenchGroup × S
       batchPoints)
     (checksumArray checksumBabyBear)
   pure ({
-    groupKey := "babybear-univariate-batch-small",
-    title := "BabyBear univariate batch evaluation, small",
+    groupKey := "univariate-batch-small-babybear",
+    title := "Univariate batch evaluation, small (BabyBear)",
     records := #[smallBatchSum, smallBatchHorner, smallBatchSubproductNaive,
       smallBatchSubproductRemainder, smallBatchSubproductNtt, smallBatchSubproductNttFast,
       smallBatchSubproductReversalConvolution, smallBatchSubproductReversalNtt,
@@ -179,8 +179,8 @@ private def runBabyBearUnivariateBatchMedium (gen : StdGen) : IO (BenchGroup × 
       mediumBatchPoly mediumBatchPoints)
     (checksumArray checksumBabyBear)
   pure ({
-    groupKey := "babybear-univariate-batch-medium",
-    title := "BabyBear univariate batch evaluation, medium",
+    groupKey := "univariate-batch-medium-babybear",
+    title := "Univariate batch evaluation, medium (BabyBear)",
     records := #[mediumBatchSum, mediumBatchHorner, mediumBatchSubproductRemainder,
       mediumBatchSubproductNtt, mediumBatchSubproductNttFast, mediumBatchSubproductReversalNtt,
       mediumBatchSubproductReversalNttFast]
@@ -224,8 +224,8 @@ private def runBabyBearUnivariateBatchLarge (gen : StdGen) : IO (BenchGroup × S
       largeBatchPoints)
     (checksumArray checksumBabyBear)
   pure ({
-    groupKey := "babybear-univariate-batch-large",
-    title := "BabyBear univariate batch evaluation, large",
+    groupKey := "univariate-batch-large-babybear",
+    title := "Univariate batch evaluation, large (BabyBear)",
     records := #[largeBatchHorner, largeBatchSubproductReversalNtt,
       largeBatchSubproductReversalNttFast]
   }, gen)
@@ -233,13 +233,13 @@ private def runBabyBearUnivariateBatchLarge (gen : StdGen) : IO (BenchGroup × S
 /-- Runnable `CompPoly.Univariate.BatchEval` benchmark tasks. -/
 def univariateBatchEvalTasks : List BenchTask := [
   BenchTask.fromGroupRunner
-    ⟨"babybear-univariate-batch-small", "BabyBear univariate batch evaluation, small"⟩
+    ⟨"univariate-batch-small-babybear", "Univariate batch evaluation, small (BabyBear)"⟩
     runBabyBearUnivariateBatchSmall,
   BenchTask.fromGroupRunner
-    ⟨"babybear-univariate-batch-medium", "BabyBear univariate batch evaluation, medium"⟩
+    ⟨"univariate-batch-medium-babybear", "Univariate batch evaluation, medium (BabyBear)"⟩
     runBabyBearUnivariateBatchMedium,
   BenchTask.fromGroupRunner
-    ⟨"babybear-univariate-batch-large", "BabyBear univariate batch evaluation, large"⟩
+    ⟨"univariate-batch-large-babybear", "Univariate batch evaluation, large (BabyBear)"⟩
     runBabyBearUnivariateBatchLarge
 ]
 

@@ -19,19 +19,19 @@ namespace CompPolyBench
 
 /-- Benchmark group metadata for `CompPoly.Univariate.Basic`. -/
 def univariateBasicGroupInfos : List BenchGroupInfo := [
-  ⟨"babybear-univariate-dense", "BabyBear univariate dense evaluation"⟩,
-  ⟨"babybear-univariate-sparse", "BabyBear univariate sparse evaluation"⟩,
-  ⟨"babybear-univariate-monic-remainder-small",
-    "BabyBear univariate monic remainder, small"⟩,
-  ⟨"babybear-univariate-monic-remainder-medium",
-    "BabyBear univariate monic remainder, medium"⟩,
-  ⟨"goldilocks-univariate-dense", "Goldilocks.Field univariate dense evaluation"⟩,
-  ⟨"bn254-univariate-dense", "BN254.ScalarField univariate dense evaluation"⟩
+  ⟨"univariate-dense-babybear", "Univariate dense evaluation (BabyBear)"⟩,
+  ⟨"univariate-sparse-babybear", "Univariate sparse evaluation (BabyBear)"⟩,
+  ⟨"univariate-monic-remainder-small-babybear",
+    "Univariate monic remainder, small (BabyBear)"⟩,
+  ⟨"univariate-monic-remainder-medium-babybear",
+    "Univariate monic remainder, medium (BabyBear)"⟩,
+  ⟨"univariate-dense-goldilocks", "Univariate dense evaluation (Goldilocks)"⟩,
+  ⟨"univariate-dense-bn254", "Univariate dense evaluation (BN254)"⟩
 ]
 
 /-- Benchmark dense univariate evaluation over a generic prime `ZMod` field. -/
 private def runDenseUnivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
-    (key nameSuffix fieldName : String) (gen : StdGen) : IO (BenchGroup × StdGen) := do
+    (key nameSuffix fieldName fieldTitle : String) (gen : StdGen) : IO (BenchGroup × StdGen) := do
   let (denseCoeffs, gen) := (zmodArray modulus 512 false).run gen
   let (points, gen) := (zmodArray modulus 32 false).run gen
   let densePoly := cpolyOfArray denseCoeffs
@@ -47,7 +47,7 @@ private def runDenseUnivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
     checksumZMod
   pure ({
     groupKey := key,
-    title := fieldName ++ " univariate dense evaluation",
+    title := "Univariate dense evaluation (" ++ fieldTitle ++ ")",
     records := #[sumRecord, hornerRecord]
   }, gen)
 
@@ -67,8 +67,8 @@ private def runBabyBearUnivariateDense (gen : StdGen) : IO (BenchGroup × StdGen
     (fun i => CPolynomial.evalHorner (points.getD (i % points.size) 0) densePoly)
     checksumBabyBear
   pure ({
-    groupKey := "babybear-univariate-dense",
-    title := "BabyBear univariate dense evaluation",
+    groupKey := "univariate-dense-babybear",
+    title := "Univariate dense evaluation (BabyBear)",
     records := #[denseSum, denseHorner]
   }, gen)
 
@@ -88,8 +88,8 @@ private def runBabyBearUnivariateSparse (gen : StdGen) : IO (BenchGroup × StdGe
     (fun i => CPolynomial.evalHorner (points.getD (i % points.size) 0) sparsePoly)
     checksumBabyBear
   pure ({
-    groupKey := "babybear-univariate-sparse",
-    title := "BabyBear univariate sparse evaluation",
+    groupKey := "univariate-sparse-babybear",
+    title := "Univariate sparse evaluation (BabyBear)",
     records := #[sparseSum, sparseHorner]
   }, gen)
 
@@ -142,8 +142,8 @@ private def runBabyBearUnivariateMonicRemainderSmall (gen : StdGen) :
     (fun _ => reversalNttFastLowMod.modByMonic batchPoly modDivisor)
     (checksumCPolynomial checksumBabyBear)
   pure ({
-    groupKey := "babybear-univariate-monic-remainder-small",
-    title := "BabyBear univariate monic remainder, small",
+    groupKey := "univariate-monic-remainder-small-babybear",
+    title := "Univariate monic remainder, small (BabyBear)",
     records := #[smallModNaive, smallModRemainder, smallModReversalConvolution,
       smallModReversalNtt, smallModReversalNttFast]
   }, gen)
@@ -192,8 +192,8 @@ private def runBabyBearUnivariateMonicRemainderMedium (gen : StdGen) :
     (fun _ => reversalNttFastLowMod.modByMonic mediumBatchPoly mediumModDivisor)
     (checksumCPolynomial checksumBabyBear)
   pure ({
-    groupKey := "babybear-univariate-monic-remainder-medium",
-    title := "BabyBear univariate monic remainder, medium",
+    groupKey := "univariate-monic-remainder-medium-babybear",
+    title := "Univariate monic remainder, medium (BabyBear)",
     records := #[mediumModRemainder, mediumModReversalConvolution, mediumModReversalNtt,
       mediumModReversalNttFast]
   }, gen)
@@ -201,34 +201,35 @@ private def runBabyBearUnivariateMonicRemainderMedium (gen : StdGen) :
 /-- Benchmark dense Goldilocks univariate evaluation. -/
 private def runGoldilocksUnivariateDense (gen : StdGen) : IO (BenchGroup × StdGen) := do
   runDenseUnivariateZMod
-    Goldilocks.fieldSize "goldilocks-univariate-dense" "goldilocks" "Goldilocks.Field" gen
+    Goldilocks.fieldSize "univariate-dense-goldilocks" "goldilocks" "Goldilocks.Field"
+    "Goldilocks" gen
 
 /-- Benchmark dense BN254 univariate evaluation. -/
 private def runBn254UnivariateDense (gen : StdGen) : IO (BenchGroup × StdGen) := do
   runDenseUnivariateZMod
-    BN254.scalarFieldSize "bn254-univariate-dense" "bn254" "BN254.ScalarField" gen
+    BN254.scalarFieldSize "univariate-dense-bn254" "bn254" "BN254.ScalarField" "BN254" gen
 
 /-- Runnable `CompPoly.Univariate.Basic` benchmark tasks. -/
 def univariateBasicTasks : List BenchTask := [
   BenchTask.fromGroupRunner
-    ⟨"babybear-univariate-dense", "BabyBear univariate dense evaluation"⟩
+    ⟨"univariate-dense-babybear", "Univariate dense evaluation (BabyBear)"⟩
     runBabyBearUnivariateDense,
   BenchTask.fromGroupRunner
-    ⟨"babybear-univariate-sparse", "BabyBear univariate sparse evaluation"⟩
+    ⟨"univariate-sparse-babybear", "Univariate sparse evaluation (BabyBear)"⟩
     runBabyBearUnivariateSparse,
   BenchTask.fromGroupRunner
-    ⟨"babybear-univariate-monic-remainder-small",
-      "BabyBear univariate monic remainder, small"⟩
+    ⟨"univariate-monic-remainder-small-babybear",
+      "Univariate monic remainder, small (BabyBear)"⟩
     runBabyBearUnivariateMonicRemainderSmall,
   BenchTask.fromGroupRunner
-    ⟨"babybear-univariate-monic-remainder-medium",
-      "BabyBear univariate monic remainder, medium"⟩
+    ⟨"univariate-monic-remainder-medium-babybear",
+      "Univariate monic remainder, medium (BabyBear)"⟩
     runBabyBearUnivariateMonicRemainderMedium,
   BenchTask.fromGroupRunner
-    ⟨"goldilocks-univariate-dense", "Goldilocks.Field univariate dense evaluation"⟩
+    ⟨"univariate-dense-goldilocks", "Univariate dense evaluation (Goldilocks)"⟩
     runGoldilocksUnivariateDense,
   BenchTask.fromGroupRunner
-    ⟨"bn254-univariate-dense", "BN254.ScalarField univariate dense evaluation"⟩
+    ⟨"univariate-dense-bn254", "Univariate dense evaluation (BN254)"⟩
     runBn254UnivariateDense
 ]
 
