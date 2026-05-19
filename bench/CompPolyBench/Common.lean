@@ -148,6 +148,10 @@ def BenchTask.fromGroupRunner (info : BenchGroupInfo)
     let (group, gen) ← runGroup gen
     pure (#[group], gen)
 
+/-- Total measured runtime across all benchmark records in a group. -/
+def totalGroupNanos (records : List BenchRecord) : Nat :=
+  records.foldl (fun acc record => acc + record.totalNanos) 0
+
 /-- Run selected tasks from a registry and concatenate their emitted groups. -/
 def runSelectedTasks (tasks : List BenchTask) (selection : BenchSelection) (gen : StdGen) :
     IO (Array BenchGroup × StdGen) := do
@@ -157,6 +161,7 @@ def runSelectedTasks (tasks : List BenchTask) (selection : BenchSelection) (gen 
     let (taskGroups, nextGen) ← task.runTask selection gen
     gen := nextGen
     for group in taskGroups do
+      IO.println s!"finished `{group.groupKey}` in `{totalGroupNanos group.records.toList} ns`"
       groups := groups.push group
   pure (groups, gen)
 
@@ -648,10 +653,6 @@ def groupResultColumns : List (String × Bool × (BenchRecord → String)) :=
     ("Total ns", true, fun r => toString r.totalNanos),
     ("Avg ns", true, fun r => toString r.averageNanos)
   ]
-
-/-- Total measured runtime across all benchmark records in a group. -/
-def totalGroupNanos (records : List BenchRecord) : Nat :=
-  records.foldl (fun acc record => acc + record.totalNanos) 0
 
 /-- Shared metadata rendered before each benchmark group result table. -/
 def renderGroupMetadata (records : List BenchRecord) : List String :=
