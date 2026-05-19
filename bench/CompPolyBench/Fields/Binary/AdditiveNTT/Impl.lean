@@ -78,7 +78,7 @@ private def runConcreteBtfNttFast (k ℓ R_rate : Nat)
 
 /-- Run one additive NTT benchmark case over `BTF₃`. -/
 private def runAdditiveNttCase (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ 3)
-    (key currentName fastName : String) (warmup measured : Nat) (gen : StdGen) :
+    (key currentName fastName : String) (warmup measured fastMeasured : Nat) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let inputSize := 2 ^ ℓ
   let outputSize := 2 ^ (ℓ + R_rate)
@@ -87,16 +87,17 @@ private def runAdditiveNttCase (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_ra
     fun i => ConcreteBinaryTower.fromNat (k := 3) (values.getD i.val 0)
   let fieldLabel := s!"ConcreteBTField 0 -> BTF3, l={ℓ}, R_rate={R_rate}"
   let inputShape := s!"{inputSize} input coeffs, {outputSize} output evals"
+  let checksumIterations := groupChecksumIterations measured [fastMeasured]
   let currentRecord ← runTimed
     currentName "computableAdditiveNTT" "computableAdditiveNTT"
     fieldLabel inputShape warmup measured
     (fun _ => runBtf3Ntt ℓ R_rate h_ℓ_add_R_rate input)
-    (checksumBtf3Output (n := ℓ + R_rate))
+    (checksumBtf3Output (n := ℓ + R_rate)) (checksumIterations := checksumIterations)
   let fastRecord ← runTimed
     fastName "computableAdditiveNTTFast" "computableAdditiveNTTFast"
-    fieldLabel inputShape warmup measured
+    fieldLabel inputShape warmup fastMeasured
     (fun _ => runBtf3NttFast ℓ R_rate h_ℓ_add_R_rate input)
-    (checksumBtf3OutputArray (n := ℓ + R_rate))
+    (checksumBtf3OutputArray (n := ℓ + R_rate)) (checksumIterations := checksumIterations)
   pure ({
       groupKey := key,
       title := s!"Additive NTT BTF3 l={ℓ} R_rate={R_rate}",
@@ -127,13 +128,13 @@ private def runAdditiveNttFastLargeCase (k ℓ R_rate : Nat)
 private def runAdditiveNttBtf3L2R2 (gen : StdGen) : IO (BenchGroup × StdGen) := do
   runAdditiveNttCase 2 2 (by omega)
     "additive-ntt-btf3-l2-r2" "additive-ntt-btf3" "additive-ntt-btf3-fast"
-    additiveNttWarmupIterations additiveNttMeasuredIterations gen
+    additiveNttWarmupIterations additiveNttMeasuredIterations 13000 gen
 
 /-- Run the wider additive NTT benchmark over `BTF₃`. -/
 private def runAdditiveNttBtf3L4R2 (gen : StdGen) : IO (BenchGroup × StdGen) := do
   runAdditiveNttCase 4 2 (by omega)
     "additive-ntt-btf3-l4-r2" "additive-ntt-btf3-l4-r2"
-    "additive-ntt-btf3-l4-r2-fast" 2 10 gen
+    "additive-ntt-btf3-l4-r2-fast" 2 10 2000 gen
 
 /-- Run the large fast-only additive NTT benchmark over `BTF₄`. -/
 private def runAdditiveNttBtf4L7R2 (gen : StdGen) : IO (BenchGroup × StdGen) := do

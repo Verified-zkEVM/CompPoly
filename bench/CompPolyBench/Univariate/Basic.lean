@@ -31,20 +31,22 @@ def univariateBasicGroupInfos : List BenchGroupInfo := [
 
 /-- Benchmark dense univariate evaluation over a generic prime `ZMod` field. -/
 private def runDenseUnivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
-    (key nameSuffix fieldName fieldTitle : String) (gen : StdGen) : IO (BenchGroup × StdGen) := do
+    (key nameSuffix fieldName fieldTitle : String) (hornerMeasured : Nat) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
   let (denseCoeffs, gen) := (zmodArray modulus 512 false).run gen
   let (points, gen) := (zmodArray modulus 32 false).run gen
   let densePoly := cpolyOfArray denseCoeffs
+  let checksumIterations := groupChecksumIterations measuredIterations [hornerMeasured]
   let sumRecord ← runTimed
     ("univariate-dense-sum-" ++ nameSuffix) "CPolynomial" "eval sum-of-powers" fieldName
     "degree<512, dense, 32 points" warmupIterations measuredIterations
     (fun i => CPolynomial.eval (points.getD (i % points.size) 0) densePoly)
-    checksumZMod
+    checksumZMod (checksumIterations := checksumIterations)
   let hornerRecord ← runTimed
     ("univariate-dense-horner-" ++ nameSuffix) "CPolynomial" "evalHorner" fieldName
-    "degree<512, dense, 32 points" warmupIterations measuredIterations
+    "degree<512, dense, 32 points" warmupIterations hornerMeasured
     (fun i => CPolynomial.evalHorner (points.getD (i % points.size) 0) densePoly)
-    checksumZMod
+    checksumZMod (checksumIterations := checksumIterations)
   pure ({
     groupKey := key,
     title := "Univariate dense evaluation (" ++ fieldTitle ++ ")",
@@ -56,16 +58,18 @@ private def runBabyBearUnivariateDense (gen : StdGen) : IO (BenchGroup × StdGen
   let (denseCoeffs, gen) := (babyBearArray 512 false).run gen
   let (points, gen) := (babyBearPoints 32).run gen
   let densePoly := cpolyOfArray denseCoeffs
+  let hornerMeasured := 45000
+  let checksumIterations := groupChecksumIterations measuredIterations [hornerMeasured]
   let denseSum ← runTimed
     "univariate-dense-sum" "CPolynomial" "eval sum-of-powers" "BabyBear.Field"
     "degree<512, dense, 32 points" warmupIterations measuredIterations
     (fun i => CPolynomial.eval (points.getD (i % points.size) 0) densePoly)
-    checksumBabyBear
+    checksumBabyBear (checksumIterations := checksumIterations)
   let denseHorner ← runTimed
     "univariate-dense-horner" "CPolynomial" "evalHorner" "BabyBear.Field"
-    "degree<512, dense, 32 points" warmupIterations measuredIterations
+    "degree<512, dense, 32 points" warmupIterations hornerMeasured
     (fun i => CPolynomial.evalHorner (points.getD (i % points.size) 0) densePoly)
-    checksumBabyBear
+    checksumBabyBear (checksumIterations := checksumIterations)
   pure ({
     groupKey := "univariate-dense-babybear",
     title := "Univariate dense evaluation (BabyBear)",
@@ -77,16 +81,18 @@ private def runBabyBearUnivariateSparse (gen : StdGen) : IO (BenchGroup × StdGe
   let (sparseCoeffs, gen) := (babyBearArray 512 true).run gen
   let (points, gen) := (babyBearPoints 32).run gen
   let sparsePoly := cpolyOfArray sparseCoeffs
+  let hornerMeasured := 50000
+  let checksumIterations := groupChecksumIterations measuredIterations [hornerMeasured]
   let sparseSum ← runTimed
     "univariate-sparse-sum" "CPolynomial" "eval sum-of-powers" "BabyBear.Field"
     "degree<512, one nonzero per 4 coeffs, 32 points" warmupIterations measuredIterations
     (fun i => CPolynomial.eval (points.getD (i % points.size) 0) sparsePoly)
-    checksumBabyBear
+    checksumBabyBear (checksumIterations := checksumIterations)
   let sparseHorner ← runTimed
     "univariate-sparse-horner" "CPolynomial" "evalHorner" "BabyBear.Field"
-    "degree<512, one nonzero per 4 coeffs, 32 points" warmupIterations measuredIterations
+    "degree<512, one nonzero per 4 coeffs, 32 points" warmupIterations hornerMeasured
     (fun i => CPolynomial.evalHorner (points.getD (i % points.size) 0) sparsePoly)
-    checksumBabyBear
+    checksumBabyBear (checksumIterations := checksumIterations)
   pure ({
     groupKey := "univariate-sparse-babybear",
     title := "Univariate sparse evaluation (BabyBear)",
@@ -112,35 +118,42 @@ private def runBabyBearUnivariateMonicRemainderSmall (gen : StdGen) :
     CPolynomial.ModContext.reversal nttWithFallbackLowMul
   let reversalNttFastLowMod : CPolynomial.ModContext BabyBear.Field :=
     CPolynomial.ModContext.reversal nttFastWithFallbackLowMul
+  let remainderMeasured := 3400
+  let reversalConvolutionMeasured := 650
+  let reversalNttMeasured := 550
+  let reversalNttFastMeasured := 2200
+  let checksumIterations := groupChecksumIterations modMeasuredIterations [
+    remainderMeasured, reversalConvolutionMeasured, reversalNttMeasured, reversalNttFastMeasured
+  ]
   let smallModNaive ← runTimed
     "univariate-mod-by-monic-naive" "CPolynomial" "modByMonic" "BabyBear.Field"
     univariateModShape modWarmupIterations modMeasuredIterations
     (fun _ => CPolynomial.modByMonic batchPoly modDivisor)
-    (checksumCPolynomial checksumBabyBear)
+    (checksumCPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   let smallModRemainder ← runTimed
     "univariate-mod-by-monic-remainder-only" "CPolynomial" "modByMonicRemainderOnly"
     "BabyBear.Field"
-    univariateModShape modWarmupIterations modMeasuredIterations
+    univariateModShape modWarmupIterations remainderMeasured
     (fun _ => CPolynomial.modByMonicRemainderOnly batchPoly modDivisor)
-    (checksumCPolynomial checksumBabyBear)
+    (checksumCPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   let smallModReversalConvolution ← runTimed
     "univariate-mod-by-monic-reversal-convolution-low-mul" "CPolynomial"
     "modByMonicByReversal, MulLowContext.convolution" "BabyBear.Field"
-    univariateModShape modWarmupIterations modMeasuredIterations
+    univariateModShape modWarmupIterations reversalConvolutionMeasured
     (fun _ => reversalConvolutionLowMod.modByMonic batchPoly modDivisor)
-    (checksumCPolynomial checksumBabyBear)
+    (checksumCPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   let smallModReversalNtt ← runTimed
     "univariate-mod-by-monic-reversal-ntt-low-mul" "CPolynomial"
     "modByMonicByReversal, FastMulLow.withFallback" "BabyBear.Field"
-    univariateModShape modWarmupIterations modMeasuredIterations
+    univariateModShape modWarmupIterations reversalNttMeasured
     (fun _ => reversalNttLowMod.modByMonic batchPoly modDivisor)
-    (checksumCPolynomial checksumBabyBear)
+    (checksumCPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   let smallModReversalNttFast ← runTimed
     "univariate-mod-by-monic-reversal-ntt-fast-low-mul" "CPolynomial"
     "modByMonicByReversal, NTTFast.FastMulLow.withFallback" "BabyBear.Field"
-    univariateModShape modWarmupIterations modMeasuredIterations
+    univariateModShape modWarmupIterations reversalNttFastMeasured
     (fun _ => reversalNttFastLowMod.modByMonic batchPoly modDivisor)
-    (checksumCPolynomial checksumBabyBear)
+    (checksumCPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   pure ({
     groupKey := "univariate-monic-remainder-small-babybear",
     title := "Univariate monic remainder, small (BabyBear)",
@@ -167,30 +180,36 @@ private def runBabyBearUnivariateMonicRemainderMedium (gen : StdGen) :
     CPolynomial.ModContext.reversal nttWithFallbackLowMul
   let reversalNttFastLowMod : CPolynomial.ModContext BabyBear.Field :=
     CPolynomial.ModContext.reversal nttFastWithFallbackLowMul
+  let remainderMeasured := 30
+  let reversalNttMeasured := 200
+  let reversalNttFastMeasured := 900
+  let checksumIterations := groupChecksumIterations mediumModMeasuredIterations [
+    remainderMeasured, reversalNttMeasured, reversalNttFastMeasured
+  ]
   let mediumModRemainder ← runTimed
     "univariate-mod-by-monic-medium-remainder-only" "CPolynomial"
     "modByMonicRemainderOnly" "BabyBear.Field"
-    mediumUnivariateModShape mediumModWarmupIterations mediumModMeasuredIterations
+    mediumUnivariateModShape mediumModWarmupIterations remainderMeasured
     (fun _ => CPolynomial.modByMonicRemainderOnly mediumBatchPoly mediumModDivisor)
-    (checksumCPolynomial checksumBabyBear)
+    (checksumCPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   let mediumModReversalConvolution ← runTimed
     "univariate-mod-by-monic-medium-reversal-convolution-low-mul" "CPolynomial"
     "modByMonicByReversal, MulLowContext.convolution" "BabyBear.Field"
     mediumUnivariateModShape mediumModWarmupIterations mediumModMeasuredIterations
     (fun _ => reversalConvolutionLowMod.modByMonic mediumBatchPoly mediumModDivisor)
-    (checksumCPolynomial checksumBabyBear)
+    (checksumCPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   let mediumModReversalNtt ← runTimed
     "univariate-mod-by-monic-medium-reversal-ntt-low-mul" "CPolynomial"
     "modByMonicByReversal, FastMulLow.withFallback" "BabyBear.Field"
-    mediumUnivariateModShape mediumModWarmupIterations mediumModMeasuredIterations
+    mediumUnivariateModShape mediumModWarmupIterations reversalNttMeasured
     (fun _ => reversalNttLowMod.modByMonic mediumBatchPoly mediumModDivisor)
-    (checksumCPolynomial checksumBabyBear)
+    (checksumCPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   let mediumModReversalNttFast ← runTimed
     "univariate-mod-by-monic-medium-reversal-ntt-fast-low-mul" "CPolynomial"
     "modByMonicByReversal, NTTFast.FastMulLow.withFallback" "BabyBear.Field"
-    mediumUnivariateModShape mediumModWarmupIterations mediumModMeasuredIterations
+    mediumUnivariateModShape mediumModWarmupIterations reversalNttFastMeasured
     (fun _ => reversalNttFastLowMod.modByMonic mediumBatchPoly mediumModDivisor)
-    (checksumCPolynomial checksumBabyBear)
+    (checksumCPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   pure ({
     groupKey := "univariate-monic-remainder-medium-babybear",
     title := "Univariate monic remainder, medium (BabyBear)",
@@ -202,12 +221,13 @@ private def runBabyBearUnivariateMonicRemainderMedium (gen : StdGen) :
 private def runGoldilocksUnivariateDense (gen : StdGen) : IO (BenchGroup × StdGen) := do
   runDenseUnivariateZMod
     Goldilocks.fieldSize "univariate-dense-goldilocks" "goldilocks" "Goldilocks.Field"
-    "Goldilocks" gen
+    "Goldilocks" 40000 gen
 
 /-- Benchmark dense BN254 univariate evaluation. -/
 private def runBn254UnivariateDense (gen : StdGen) : IO (BenchGroup × StdGen) := do
   runDenseUnivariateZMod
-    BN254.scalarFieldSize "univariate-dense-bn254" "bn254" "BN254.ScalarField" "BN254" gen
+    BN254.scalarFieldSize "univariate-dense-bn254" "bn254" "BN254.ScalarField" "BN254"
+    40000 gen
 
 /-- Runnable `CompPoly.Univariate.Basic` benchmark tasks. -/
 def univariateBasicTasks : List BenchTask := [

@@ -31,16 +31,18 @@ private def runBabyBearMultilinearCoeff (gen : StdGen) : IO (BenchGroup × StdGe
   let coeffPoly : CMlPolynomial BabyBear.Field 8 := CMlPolynomial.ofArray coeffs 8
   let evalPoint (offset : Nat) : Vector BabyBear.Field 8 :=
     Vector.ofFn fun j => points.getD ((offset + j.val) % points.size) 0
+  let hornerMeasured := 120000
+  let checksumIterations := groupChecksumIterations measuredIterations [hornerMeasured]
   let coeffEval ← runTimed
     "multilinear-coeff-eval" "CMlPolynomial" "eval" "BabyBear.Field"
     "8 vars, 256 coefficients, 32 points" warmupIterations measuredIterations
     (fun i => CMlPolynomial.eval coeffPoly (evalPoint (i % 32)))
-    checksumBabyBear
+    checksumBabyBear (checksumIterations := checksumIterations)
   let coeffHorner ← runTimed
     "multilinear-coeff-horner" "CMlPolynomial" "evalHorner" "BabyBear.Field"
-    "8 vars, 256 coefficients, 32 points" warmupIterations measuredIterations
+    "8 vars, 256 coefficients, 32 points" warmupIterations hornerMeasured
     (fun i => CMlPolynomial.evalHorner coeffPoly (evalPoint (i % 32)))
-    checksumBabyBear
+    checksumBabyBear (checksumIterations := checksumIterations)
   pure ({
     groupKey := "multilinear-coeff-babybear",
     title := "Multilinear coefficient-form evaluation (BabyBear)",
@@ -54,16 +56,18 @@ private def runBabyBearMultilinearHypercube (gen : StdGen) : IO (BenchGroup × S
   let evalPoly : CMlPolynomialEval BabyBear.Field 8 := CMlPolynomialEval.ofArray evals 8
   let evalPoint (offset : Nat) : Vector BabyBear.Field 8 :=
     Vector.ofFn fun j => points.getD ((offset + j.val) % points.size) 0
+  let mleMeasured := 90000
+  let checksumIterations := groupChecksumIterations measuredIterations [mleMeasured]
   let hypercubeEval ← runTimed
     "multilinear-hypercube-eval" "CMlPolynomialEval" "eval" "BabyBear.Field"
     "8 vars, 256 hypercube values, 32 points" warmupIterations measuredIterations
     (fun i => CMlPolynomialEval.eval evalPoly (evalPoint (i % 32)))
-    checksumBabyBear
+    checksumBabyBear (checksumIterations := checksumIterations)
   let hypercubeMle ← runTimed
     "multilinear-hypercube-mle" "CMlPolynomialEval" "evalMle" "BabyBear.Field"
-    "8 vars, 256 hypercube values, 32 points" warmupIterations measuredIterations
+    "8 vars, 256 hypercube values, 32 points" warmupIterations mleMeasured
     (fun i => CMlPolynomialEval.evalMle evalPoly (evalPoint (i % 32)))
-    checksumBabyBear
+    checksumBabyBear (checksumIterations := checksumIterations)
   pure ({
     groupKey := "multilinear-hypercube-babybear",
     title := "Multilinear hypercube-form evaluation (BabyBear)",
@@ -78,16 +82,18 @@ private def runGoldilocksMultilinearCoeff (gen : StdGen) : IO (BenchGroup × Std
     CMlPolynomial.ofArray goldilocksCoeffs 8
   let goldilocksEvalPoint (offset : Nat) : Vector Goldilocks.Field 8 :=
     Vector.ofFn fun j => goldilocksPoints.getD ((offset + j.val) % goldilocksPoints.size) 0
+  let hornerMeasured := 32000
+  let checksumIterations := groupChecksumIterations measuredIterations [hornerMeasured]
   let goldilocksCoeffEval ← runTimed
     "multilinear-coeff-eval-goldilocks" "CMlPolynomial" "eval" "Goldilocks.Field"
     "8 vars, 256 coefficients, 32 points" warmupIterations measuredIterations
     (fun i => CMlPolynomial.eval goldilocksCoeffPoly (goldilocksEvalPoint (i % 32)))
-    checksumZMod
+    checksumZMod (checksumIterations := checksumIterations)
   let goldilocksCoeffHorner ← runTimed
     "multilinear-coeff-horner-goldilocks" "CMlPolynomial" "evalHorner" "Goldilocks.Field"
-    "8 vars, 256 coefficients, 32 points" warmupIterations measuredIterations
+    "8 vars, 256 coefficients, 32 points" warmupIterations hornerMeasured
     (fun i => CMlPolynomial.evalHorner goldilocksCoeffPoly (goldilocksEvalPoint (i % 32)))
-    checksumZMod
+    checksumZMod (checksumIterations := checksumIterations)
   pure ({
     groupKey := "multilinear-coeff-goldilocks",
     title := "Multilinear coefficient-form evaluation (Goldilocks)",
@@ -102,16 +108,18 @@ private def runGoldilocksMultilinearHypercube (gen : StdGen) : IO (BenchGroup ×
     CMlPolynomialEval.ofArray goldilocksEvals 8
   let goldilocksEvalPoint (offset : Nat) : Vector Goldilocks.Field 8 :=
     Vector.ofFn fun j => goldilocksPoints.getD ((offset + j.val) % goldilocksPoints.size) 0
+  let mleMeasured := 25000
+  let checksumIterations := groupChecksumIterations measuredIterations [mleMeasured]
   let goldilocksHypercubeEval ← runTimed
     "multilinear-hypercube-eval-goldilocks" "CMlPolynomialEval" "eval" "Goldilocks.Field"
     "8 vars, 256 hypercube values, 32 points" warmupIterations measuredIterations
     (fun i => CMlPolynomialEval.eval goldilocksEvalPoly (goldilocksEvalPoint (i % 32)))
-    checksumZMod
+    checksumZMod (checksumIterations := checksumIterations)
   let goldilocksHypercubeMle ← runTimed
     "multilinear-hypercube-mle-goldilocks" "CMlPolynomialEval" "evalMle" "Goldilocks.Field"
-    "8 vars, 256 hypercube values, 32 points" warmupIterations measuredIterations
+    "8 vars, 256 hypercube values, 32 points" warmupIterations mleMeasured
     (fun i => CMlPolynomialEval.evalMle goldilocksEvalPoly (goldilocksEvalPoint (i % 32)))
-    checksumZMod
+    checksumZMod (checksumIterations := checksumIterations)
   pure ({
     groupKey := "multilinear-hypercube-goldilocks",
     title := "Multilinear hypercube-form evaluation (Goldilocks)",

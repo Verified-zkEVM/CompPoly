@@ -58,23 +58,24 @@ private def buildCMvPolynomial {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R
 
 /-- Benchmark dense multivariate evaluation over a generic prime `ZMod` field. -/
 private def runDenseMultivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
-    (key nameSuffix fieldName fieldTitle : String) (gen : StdGen) :
+    (key nameSuffix fieldName fieldTitle : String) (hornerMeasured : Nat) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (terms, gen) := (zmodArray modulus multivariateTermSlots false).run gen
   let (points, gen) := (zmodArray modulus (multivariateVars * multivariatePointCount) false).run gen
   let poly := buildCMvPolynomial terms
   let evalPoint (offset : Nat) : Fin multivariateVars → ZMod modulus :=
     fun j => points.getD ((offset + j.val) % points.size) 0
+  let checksumIterations := groupChecksumIterations measuredIterations [hornerMeasured]
   let denseEval ← runTimed
     ("multivariate-dense-eval-" ++ nameSuffix) "CMvPolynomial" "eval" fieldName
     multivariateDenseShape warmupIterations measuredIterations
     (fun i => CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) poly)
-    checksumZMod
+    checksumZMod (checksumIterations := checksumIterations)
   let denseHorner ← runTimed
     ("multivariate-dense-horner-" ++ nameSuffix) "CMvPolynomial" "evalHorner" fieldName
-    multivariateDenseShape warmupIterations measuredIterations
+    multivariateDenseShape warmupIterations hornerMeasured
     (fun i => CPoly.CMvPolynomial.evalHorner (evalPoint (i % multivariatePointCount)) poly)
-    checksumZMod
+    checksumZMod (checksumIterations := checksumIterations)
   pure ({
     groupKey := key,
     title := "Multivariate dense evaluation (" ++ fieldTitle ++ ")",
@@ -83,23 +84,24 @@ private def runDenseMultivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
 
 /-- Benchmark sparse multivariate evaluation over a generic prime `ZMod` field. -/
 private def runSparseMultivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
-    (key nameSuffix fieldName fieldTitle : String) (gen : StdGen) :
+    (key nameSuffix fieldName fieldTitle : String) (hornerMeasured : Nat) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (terms, gen) := (zmodArrayWithStride modulus multivariateTermSlots 16).run gen
   let (points, gen) := (zmodArray modulus (multivariateVars * multivariatePointCount) false).run gen
   let poly := buildCMvPolynomial terms
   let evalPoint (offset : Nat) : Fin multivariateVars → ZMod modulus :=
     fun j => points.getD ((offset + j.val) % points.size) 0
+  let checksumIterations := groupChecksumIterations measuredIterations [hornerMeasured]
   let sparseEval ← runTimed
     ("multivariate-sparse-eval-" ++ nameSuffix) "CMvPolynomial" "eval" fieldName
     multivariateSparseShape warmupIterations measuredIterations
     (fun i => CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) poly)
-    checksumZMod
+    checksumZMod (checksumIterations := checksumIterations)
   let sparseHorner ← runTimed
     ("multivariate-sparse-horner-" ++ nameSuffix) "CMvPolynomial" "evalHorner" fieldName
-    multivariateSparseShape warmupIterations measuredIterations
+    multivariateSparseShape warmupIterations hornerMeasured
     (fun i => CPoly.CMvPolynomial.evalHorner (evalPoint (i % multivariatePointCount)) poly)
-    checksumZMod
+    checksumZMod (checksumIterations := checksumIterations)
   pure ({
     groupKey := key,
     title := "Multivariate sparse evaluation (" ++ fieldTitle ++ ")",
@@ -113,16 +115,18 @@ private def runBabyBearMultivariateDense (gen : StdGen) : IO (BenchGroup × StdG
   let poly := buildCMvPolynomial terms
   let evalPoint (offset : Nat) : Fin multivariateVars → BabyBear.Field :=
     fun j => points.getD ((offset + j.val) % points.size) 0
+  let hornerMeasured := 10000
+  let checksumIterations := groupChecksumIterations measuredIterations [hornerMeasured]
   let denseEval ← runTimed
     "multivariate-dense-eval" "CMvPolynomial" "eval" "BabyBear.Field"
     multivariateDenseShape warmupIterations measuredIterations
     (fun i => CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) poly)
-    checksumBabyBear
+    checksumBabyBear (checksumIterations := checksumIterations)
   let denseHorner ← runTimed
     "multivariate-dense-horner" "CMvPolynomial" "evalHorner" "BabyBear.Field"
-    multivariateDenseShape warmupIterations measuredIterations
+    multivariateDenseShape warmupIterations hornerMeasured
     (fun i => CPoly.CMvPolynomial.evalHorner (evalPoint (i % multivariatePointCount)) poly)
-    checksumBabyBear
+    checksumBabyBear (checksumIterations := checksumIterations)
   pure ({
     groupKey := "multivariate-dense-babybear",
     title := "Multivariate dense evaluation (BabyBear)",
@@ -136,16 +140,18 @@ private def runBabyBearMultivariateSparse (gen : StdGen) : IO (BenchGroup × Std
   let poly := buildCMvPolynomial terms
   let evalPoint (offset : Nat) : Fin multivariateVars → BabyBear.Field :=
     fun j => points.getD ((offset + j.val) % points.size) 0
+  let hornerMeasured := 10000
+  let checksumIterations := groupChecksumIterations measuredIterations [hornerMeasured]
   let sparseEval ← runTimed
     "multivariate-sparse-eval" "CMvPolynomial" "eval" "BabyBear.Field"
     multivariateSparseShape warmupIterations measuredIterations
     (fun i => CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) poly)
-    checksumBabyBear
+    checksumBabyBear (checksumIterations := checksumIterations)
   let sparseHorner ← runTimed
     "multivariate-sparse-horner" "CMvPolynomial" "evalHorner" "BabyBear.Field"
-    multivariateSparseShape warmupIterations measuredIterations
+    multivariateSparseShape warmupIterations hornerMeasured
     (fun i => CPoly.CMvPolynomial.evalHorner (evalPoint (i % multivariatePointCount)) poly)
-    checksumBabyBear
+    checksumBabyBear (checksumIterations := checksumIterations)
   pure ({
     groupKey := "multivariate-sparse-babybear",
     title := "Multivariate sparse evaluation (BabyBear)",
@@ -155,12 +161,12 @@ private def runBabyBearMultivariateSparse (gen : StdGen) : IO (BenchGroup × Std
 /-- Run Goldilocks dense multivariate evaluation benchmarks. -/
 private def runGoldilocksMultivariateDense (gen : StdGen) : IO (BenchGroup × StdGen) := do
   runDenseMultivariateZMod Goldilocks.fieldSize
-    "multivariate-dense-goldilocks" "goldilocks" "Goldilocks.Field" "Goldilocks" gen
+    "multivariate-dense-goldilocks" "goldilocks" "Goldilocks.Field" "Goldilocks" 14000 gen
 
 /-- Run Goldilocks sparse multivariate evaluation benchmarks. -/
 private def runGoldilocksMultivariateSparse (gen : StdGen) : IO (BenchGroup × StdGen) := do
   runSparseMultivariateZMod Goldilocks.fieldSize
-    "multivariate-sparse-goldilocks" "goldilocks" "Goldilocks.Field" "Goldilocks" gen
+    "multivariate-sparse-goldilocks" "goldilocks" "Goldilocks.Field" "Goldilocks" 11000 gen
 
 /-- Runnable multivariate benchmark tasks. -/
 def multivariateTasks : List BenchTask := [
