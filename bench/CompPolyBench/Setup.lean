@@ -94,7 +94,12 @@ def runSelected (selection : BenchSelection) : IO UInt32 := do
   IO.FS.writeFile report (renderMarkdown hardware groups)
   IO.println <|
     s!"wrote `{records.size}` benchmark records in `{groups.size}` groups for run `{runId}`"
-  pure 0
+  match checksumMismatchGroups groups with
+  | [] => pure 0
+  | mismatchedGroups =>
+      for group in mismatchedGroups do
+        IO.eprintln s!"ERROR: checksum mismatch in benchmark group `{group.groupKey}`"
+      pure 1
 
 /-- Run the complete benchmark suite according to command-line arguments. -/
 def run (args : List String) : IO UInt32 := do

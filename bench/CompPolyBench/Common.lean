@@ -451,14 +451,11 @@ def padRight (s : String) (width : Nat) : String :=
 def padLeft (s : String) (width : Nat) : String :=
   spaces (width - s.length) ++ s
 
-/-- Columns rendered in each grouped benchmark result table. -/
-def resultColumns : List (String × Bool × (BenchRecord → String)) := [
-  ("Name", false, fun r => r.name),
-  ("Iterations", true, fun r => toString r.measuredIterations),
-  ("Total ns", true, fun r => toString r.totalNanos),
-  ("Avg ns", true, fun r => toString r.averageNanos),
-  ("Checksum", true, fun r => toString r.checksum)
-]
+/-- Drop missing optional lines while preserving present ones. -/
+def keepSome : List (Option String) → List String
+  | [] => []
+  | some line :: lines => line :: keepSome lines
+  | none :: lines => keepSome lines
 
 /-- Compute the Markdown width required for a result table column. -/
 def columnWidth (records : List BenchRecord)
@@ -507,11 +504,138 @@ def matchingChecksum? (records : List BenchRecord) : Option Nat :=
       else
         none
 
+/-- Return a shared string field for a group if all rows agree. -/
+def matchingString? (records : List BenchRecord) (field : BenchRecord → String) : Option String :=
+  match records with
+  | [] => none
+  | record :: records =>
+      let value := field record
+      if records.all (fun other => field other == value) then
+        some value
+      else
+        none
+
+/-- Return a shared natural-number field for a group if all rows agree. -/
+def matchingNat? (records : List BenchRecord) (field : BenchRecord → Nat) : Option Nat :=
+  match records with
+  | [] => none
+  | record :: records =>
+      let value := field record
+      if records.all (fun other => field other == value) then
+        some value
+      else
+        none
+
+/-- Render a shared string metadata line for a benchmark group. -/
+def renderSharedStringLine (label : String) (records : List BenchRecord)
+    (field : BenchRecord → String) : Option String :=
+  (matchingString? records field).map fun value => "- " ++ label ++ ": `" ++ value ++ "`"
+
+/-- Render a shared natural-number metadata line for a benchmark group. -/
+def renderSharedNatLine (label : String) (records : List BenchRecord)
+    (field : BenchRecord → Nat) : Option String :=
+  (matchingNat? records field).map fun value => "- " ++ label ++ ": `" ++ toString value ++ "`"
+
 /-- Render a short checksum status line for a benchmark group. -/
 def renderChecksumStatus (records : List BenchRecord) : String :=
   match matchingChecksum? records with
-  | some checksum => "- Expected matching checksum: `" ++ toString checksum ++ "`"
-  | none => "- Expected matching checksum: `mismatch detected`"
+  | some checksum => "- Checksum: `" ++ toString checksum ++ "`"
+  | none => "- Checksum: **ERROR: mismatch detected**"
+
+/-- Return benchmark groups whose rows do not have a shared checksum. -/
+def checksumMismatchGroups (groups : Array BenchGroup) : List BenchGroup :=
+  groups.toList.filter fun group => (matchingChecksum? group.records.toList).isNone
+
+/-- Lookup a rendered implementation label by exact benchmark metadata. -/
+def lookupImplementationLabel? : String → List (String × String) → Option String
+  | _, [] => none
+  | key, (source, label) :: labels =>
+      if key == source then some label else lookupImplementationLabel? key labels
+
+/-- Human-readable implementation labels keyed by benchmark record name. -/
+def implementationNameLabels : List (String × String) := [
+  ("univariate-mul-naive", "Naive"),
+  ("univariate-mul-ntt", "NTT"),
+  ("univariate-mul-ntt-fast", "Fast NTT"),
+  ("univariate-mul-ntt-fast-plan", "Fast NTT with cached plan"),
+  ("univariate-mul-naive-koalabear", "Naive"),
+  ("univariate-mul-ntt-koalabear", "NTT"),
+  ("univariate-mul-ntt-fast-koalabear", "Fast NTT"),
+  ("univariate-mul-ntt-fast-plan-koalabear", "Fast NTT with cached plan"),
+  ("additive-ntt-btf3", "Reference implementation"),
+  ("additive-ntt-btf3-fast", "Fast implementation"),
+  ("additive-ntt-btf3-l4-r2", "Reference implementation"),
+  ("additive-ntt-btf3-l4-r2-fast", "Fast implementation"),
+  ("additive-ntt-btf4-l7-r2-fast", "Fast implementation")
+]
+
+/-- Human-readable implementation labels keyed by benchmark method. -/
+def implementationMethodLabels : List (String × String) := [
+  ("eval sum-of-powers", "Sum of powers"),
+  ("evalHorner", "Horner"),
+  ("eval", "Direct evaluation"),
+  ("evalMle", "Multilinear extension"),
+  ("evalEval", "Direct evaluation"),
+  ("evalEvalHornerYThenX", "Horner in Y, then in X"),
+  ("evalEvalHornerXThenY", "Horner in X, then in Y"),
+  ("evalBatch", "Batch sum of powers"),
+  ("evalBatchHorner", "Batch Horner"),
+  ("evalBatchSubproduct naive mul/mod", "Subproduct tree, naive mul/mod"),
+  ("evalBatchSubproduct naive mul/remainder-only mod",
+    "Subproduct tree, naive mul/remainder-only"),
+  ("evalBatchSubproduct ntt mul/remainder-only mod",
+    "Subproduct tree, NTT mul/remainder-only"),
+  ("evalBatchSubproduct ntt-fast mul/remainder-only mod",
+    "Subproduct tree, fast NTT mul/remainder-only"),
+  ("evalBatchSubproduct naive mul/reversal-convolution-low mod",
+    "Subproduct tree, naive mul/reversal convolution"),
+  ("evalBatchSubproduct ntt mul/reversal-ntt-low mod",
+    "Subproduct tree, NTT mul/reversal low product"),
+  ("evalBatchSubproduct ntt-fast mul/reversal-ntt-fast-low mod",
+    "Subproduct tree, fast NTT mul/reversal low product"),
+  ("mul", "Naive"),
+  ("modByMonic", "Long division"),
+  ("modByMonicRemainderOnly", "Remainder-only division"),
+  ("modByMonicByReversal, MulLowContext.convolution",
+    "Reversal with convolution low product"),
+  ("modByMonicByReversal, FastMulLow.withFallback",
+    "Reversal with NTT low product"),
+  ("modByMonicByReversal, NTTFast.FastMulLow.withFallback",
+    "Reversal with fast NTT low product"),
+  ("MulLowContext.naive", "Naive"),
+  ("MulLowContext.convolution", "Convolution"),
+  ("FastMulLow.withFallback", "NTT with fallback"),
+  ("NTTFast.FastMulLow.withFallback", "Fast NTT with fallback"),
+  ("computableAdditiveNTT", "Reference implementation"),
+  ("computableAdditiveNTTFast", "Fast implementation")
+]
+
+/-- Render the implementation label shown in result tables. -/
+def implementationLabel (record : BenchRecord) : String :=
+  match lookupImplementationLabel? record.name implementationNameLabels with
+  | some label => label
+  | none =>
+      match lookupImplementationLabel? record.method implementationMethodLabels with
+      | some label => label
+      | none => record.method
+
+/-- Columns rendered in a group result table after shared metadata is lifted out. -/
+def groupResultColumns : List (String × Bool × (BenchRecord → String)) :=
+  [
+    ("Implementation", false, implementationLabel),
+    ("Total ns", true, fun r => toString r.totalNanos),
+    ("Avg ns", true, fun r => toString r.averageNanos)
+  ]
+
+/-- Shared metadata rendered before each benchmark group result table. -/
+def renderGroupMetadata (records : List BenchRecord) : List String :=
+  keepSome [
+    renderSharedStringLine "Representation" records (fun r => r.representation),
+    renderSharedStringLine "Field / configuration" records (fun r => r.field),
+    renderSharedStringLine "Input shape" records (fun r => r.inputShape),
+    renderSharedNatLine "Warmup iterations" records (fun r => r.warmupIterations),
+    renderSharedNatLine "Measured iterations" records (fun r => r.measuredIterations)
+  ] ++ [renderChecksumStatus records]
 
 /-- Render one benchmark group result table. -/
 def renderGroupResults (group : BenchGroup) : List String :=
@@ -520,21 +644,7 @@ def renderGroupResults (group : BenchGroup) : List String :=
     "### " ++ group.title,
     "",
     "- Group key: `" ++ group.groupKey ++ "`",
-    renderChecksumStatus records,
-    ""
-  ] ++ renderMarkdownTable resultColumns records ++ [""]
-
-/-- Render detailed configuration lines for one benchmark record. -/
-def renderConfigSection (record : BenchRecord) : List String := [
-  "### " ++ record.name,
-  "",
-  "- Representation: `" ++ record.representation ++ "`",
-  "- Method: `" ++ record.method ++ "`",
-  "- Field / configuration: `" ++ record.field ++ "`",
-  "- Input shape: " ++ record.inputShape,
-  "- Warmup iterations: `" ++ toString record.warmupIterations ++ "`",
-  ""
-]
+  ] ++ renderGroupMetadata records ++ [""] ++ renderMarkdownTable groupResultColumns records ++ [""]
 
 /-- Render the runner OS and architecture line. -/
 def renderRunnerLine (hardware : RunnerHardware) : String :=
@@ -562,12 +672,6 @@ def renderTopologyLine (hardware : RunnerHardware) : Option String :=
   | none, none, some sockets => some <| "- Sockets: `" ++ sockets ++ "`"
   | none, none, none => none
 
-/-- Drop missing optional lines while preserving present ones. -/
-def keepSome : List (Option String) → List String
-  | [] => []
-  | some line :: lines => line :: keepSome lines
-  | none :: lines => keepSome lines
-
 /-- Render the hardware section of the Markdown report. -/
 def renderHardwareSection (hardware : RunnerHardware) : List String :=
   [
@@ -588,7 +692,6 @@ def renderHardwareSection (hardware : RunnerHardware) : List String :=
 
 /-- Render the complete Markdown benchmark report. -/
 def renderMarkdown (hardware : RunnerHardware) (groups : Array BenchGroup) : String :=
-  let records := flattenGroups groups
   String.intercalate "\n" ([
     "# Evaluation Benchmark Report",
     "",
@@ -598,9 +701,6 @@ def renderMarkdown (hardware : RunnerHardware) (groups : Array BenchGroup) : Str
   ] ++ renderHardwareSection hardware ++ [
     "## Results",
     ""
-  ] ++ (groups.toList.map renderGroupResults).foldr List.append [] ++ [
-    "## Benchmark Configuration",
-    ""
-  ] ++ (records.toList.map renderConfigSection).foldr List.append []) ++ "\n"
+  ] ++ (groups.toList.map renderGroupResults).foldr List.append []) ++ "\n"
 
 end CompPolyBench
