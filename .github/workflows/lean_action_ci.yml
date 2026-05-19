@@ -90,8 +90,8 @@ jobs:
         run: |
           rm -rf "$EVALUATION_BENCH_ARTIFACT_DIR"
           mkdir -p "$EVALUATION_BENCH_ARTIFACT_DIR"
-          results=(bench/evaluation-bench-results-*.jsonl)
-          reports=(bench/evaluation-bench-report-*.md)
+          results=(bench/results-*.jsonl)
+          reports=(bench/report-*.md)
           if [ -e "${results[0]}" ]; then
             cp "${results[@]}" "$EVALUATION_BENCH_ARTIFACT_DIR/"
           fi

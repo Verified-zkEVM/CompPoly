@@ -54,8 +54,8 @@ benchmarks for `CompPoly/Univariate/NTT/FastMul.lean` live in
 Each run writes generated JSONL and Markdown reports under `bench/`:
 
 ```text
-evaluation-bench-results-YYMMDD-HHMMSS.jsonl
-evaluation-bench-report-YYMMDD-HHMMSS.md
+results-YYMMDD-HHMMSS.jsonl
+report-YYMMDD-HHMMSS.md
 ```
 
 Generated benchmark artifacts are ignored by `bench/.gitignore`.
@@ -83,6 +83,5 @@ so checksums should stay stable.
 
 ## CI
 
-GitHub Actions builds and runs `CompPolyBench`, uploads generated reports as
-the `evaluation-bench-results` artifact, and appends the Markdown report to the
-step summary.
+GitHub Actions builds and runs `CompPolyBench`, uploads generated benchmark
+artifacts, and appends the Markdown report to the step summary.

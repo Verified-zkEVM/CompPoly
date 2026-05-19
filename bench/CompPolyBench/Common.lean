@@ -179,11 +179,11 @@ def makeRunId : IO String := do
 
 /-- Path for the generated JSONL benchmark results. -/
 def resultsPath (runId : String) : System.FilePath :=
-  "bench" / ("evaluation-bench-results-" ++ runId ++ ".jsonl")
+  "bench" / ("results-" ++ runId ++ ".jsonl")
 
 /-- Path for the generated Markdown benchmark report. -/
 def reportPath (runId : String) : System.FilePath :=
-  "bench" / ("evaluation-bench-report-" ++ runId ++ ".md")
+  "bench" / ("report-" ++ runId ++ ".md")
 
 /-- Trim command output and normalize empty output to the empty string. -/
 def trimCommandOutput (s : String) : String :=
