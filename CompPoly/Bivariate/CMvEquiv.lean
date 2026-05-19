@@ -27,7 +27,7 @@ The equivalence chain is:
 
 * `bivariateEquiv` — ring equivalence `CBivariate R ≃+* CMvPolynomial 2 R`
 
-## Generator mappings
+## Bridge lemmas
 
 * `bivariateEquiv_CC` — `bivariateEquiv (CC r) = C r`
 * `bivariateEquiv_X` — `bivariateEquiv X = CMvPolynomial.X 1`
