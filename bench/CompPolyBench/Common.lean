@@ -649,6 +649,10 @@ def groupResultColumns : List (String × Bool × (BenchRecord → String)) :=
     ("Avg ns", true, fun r => toString r.averageNanos)
   ]
 
+/-- Total measured runtime across all benchmark records in a group. -/
+def totalGroupNanos (records : List BenchRecord) : Nat :=
+  records.foldl (fun acc record => acc + record.totalNanos) 0
+
 /-- Shared metadata rendered before each benchmark group result table. -/
 def renderGroupMetadata (records : List BenchRecord) : List String :=
   keepSome [
@@ -657,7 +661,10 @@ def renderGroupMetadata (records : List BenchRecord) : List String :=
     renderSharedStringLine "Input shape" records (fun r => r.inputShape),
     renderSharedNatLine "Warmup iterations" records (fun r => r.warmupIterations),
     renderSharedNatLine "Checksum iterations" records (fun r => r.checksumIterations)
-  ] ++ [renderChecksumStatus records]
+  ] ++ [
+    "- Total group time: `" ++ toString (totalGroupNanos records) ++ " ns`",
+    renderChecksumStatus records
+  ]
 
 /-- Render one benchmark group result table. -/
 def renderGroupResults (group : BenchGroup) : List String :=
