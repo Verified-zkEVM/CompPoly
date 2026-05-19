@@ -4,6 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dimitris Mitsios
 -/
 
+import CompPoly.Bivariate.Basic
+import CompPoly.Bivariate.ToPoly
+import CompPoly.Multivariate.CMvPolynomial
+import CompPoly.Multivariate.MvPolyEquiv.Instances
+import CompPoly.Multivariate.FinSuccEquiv
+import CompPoly.Multivariate.Rename
+
 /-!
 # Equivalence between `CBivariate` and `CMvPolynomial 2`
 
@@ -18,17 +25,11 @@ and `CMvPolynomial.isEmptyRingEquiv`.
 
 ## Helper lemmas
 
-* `CMvPolynomial.isEmptyRingEquiv_symm_apply` — `isEmptyRingEquiv.symm r = C r`
+* `CMvPolynomial.isEmptyRingEquiv_symm_apply` —
+  `isEmptyRingEquiv.symm r = C r`
 * `CMvPolynomial.finSuccEquiv_symm_C` —
   `finSuccEquiv.symm (Polynomial.C x) = rename Fin.succ x`
 -/
-
-import CompPoly.Bivariate.Basic
-import CompPoly.Bivariate.ToPoly
-import CompPoly.Multivariate.CMvPolynomial
-import CompPoly.Multivariate.MvPolyEquiv.Instances
-import CompPoly.Multivariate.FinSuccEquiv
-import CompPoly.Multivariate.Rename
 
 open CompPoly CPoly CBivariate
 
@@ -74,18 +75,37 @@ lemma finSuccEquiv_symm_C
     simp only [_root_.map_mul, MvPolynomial.rename_X, hp,
                MvPolynomial.finSuccEquiv_X_succ]
 
+@[simp]
+lemma finSuccEquiv_symm_X
+    {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+    {n : ℕ} :
+    CMvPolynomial.finSuccEquiv.symm
+      (Polynomial.X : Polynomial (CMvPolynomial n R)) =
+      CMvPolynomial.X 0 := by
+    rw [finSuccEquiv, polyRingEquiv.symm_trans_apply,
+      polyRingEquiv.symm_apply_eq, RingEquiv.symm_trans_apply]
+    simp only [AlgEquiv.toRingEquiv_eq_coe, RingEquiv.symm_symm]
+    rw [polynomialCMvPolyEquiv, Polynomial.mapEquiv_apply, Polynomial.map_X]
+    have h : (MvPolynomial.finSuccEquiv R n).symm Polynomial.X = MvPolynomial.X 0 := by
+      apply (MvPolynomial.finSuccEquiv R n).injective
+      simp [MvPolynomial.finSuccEquiv_X_zero]
+    change (MvPolynomial.finSuccEquiv R n).symm Polynomial.X = polyRingEquiv (CMvPolynomial.X 0)
+    rw [h]
+    exact (fromCMvPolynomial_X (R := R) 0).symm
+
 end CMvPolynomial
 
 noncomputable def bivariateEquiv :
     CBivariate R ≃+* CMvPolynomial 2 R :=
-  let step1 := CBivariate.ringEquiv
-  let step2 := Polynomial.mapEquiv
+  let toPolyEquiv := CBivariate.ringEquiv
+  let embedCoeffs := Polynomial.mapEquiv
     (Polynomial.mapEquiv CMvPolynomial.isEmptyRingEquiv.symm)
-  let step3 := Polynomial.mapEquiv
+  let foldInner := Polynomial.mapEquiv
     (CMvPolynomial.finSuccEquiv (n := 0) (R := R)).symm
-  let step4 :=
+  let foldOuter :=
     (CMvPolynomial.finSuccEquiv (n := 1) (R := R)).symm
-  step1.trans <| step2.trans <| step3.trans step4
+  toPolyEquiv.trans <|
+    embedCoeffs.trans <| foldInner.trans foldOuter
 
 lemma bivariateEquiv_add (p q : CBivariate R) :
     bivariateEquiv (p + q) =
@@ -107,3 +127,31 @@ lemma bivariateEquiv_CC (r : R) :
   simp [ringEquiv, Polynomial.map_C, CC_toPoly,
         CMvPolynomial.isEmptyRingEquiv_symm_apply,
         CMvPolynomial.finSuccEquiv_symm_C]
+
+lemma bivariateEquiv_X :
+    bivariateEquiv (CBivariate.X : CBivariate R) =
+      CMvPolynomial.X 1 := by
+      simp [bivariateEquiv, ringEquiv, X_toPoly]
+
+lemma bivariateEquiv_Y :
+    bivariateEquiv (CBivariate.Y : CBivariate R) =
+      CMvPolynomial.X 0 := by
+     simp [bivariateEquiv, ringEquiv, Y_toPoly]
+
+lemma bivariateEquiv_symm_C (r : R) :
+    bivariateEquiv.symm (CMvPolynomial.C r) =
+      CBivariate.CC r := by
+    apply bivariateEquiv.injective
+    simp [bivariateEquiv_CC]
+
+lemma bivariateEquiv_symm_X0 :
+    bivariateEquiv.symm (CMvPolynomial.X 0 : CMvPolynomial 2 R) =
+      CBivariate.Y := by
+    apply bivariateEquiv.injective
+    simp [bivariateEquiv_Y]
+
+lemma bivariateEquiv_symm_X1 :
+    bivariateEquiv.symm (CMvPolynomial.X 1 : CMvPolynomial 2 R) =
+      CBivariate.X := by
+    apply bivariateEquiv.injective
+    simp [bivariateEquiv_X]
