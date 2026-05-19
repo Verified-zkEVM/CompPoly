@@ -19,16 +19,31 @@ This file establishes the ring equivalence
 by composing `CBivariate.ringEquiv` with `CMvPolynomial.finSuccEquiv`
 and `CMvPolynomial.isEmptyRingEquiv`.
 
+The equivalence chain is:
+  `CBivariate R ≃ R[X][Y] ≃ (CMvPolynomial 0 R)[X][Y]
+    ≃ (CMvPolynomial 1 R)[Y] ≃ CMvPolynomial 2 R`
+
 ## Main definitions
 
 * `bivariateEquiv` — ring equivalence `CBivariate R ≃+* CMvPolynomial 2 R`
 
-## Helper lemmas
+## Generator mappings
+
+* `bivariateEquiv_CC` — `bivariateEquiv (CC r) = C r`
+* `bivariateEquiv_X` — `bivariateEquiv X = CMvPolynomial.X 1`
+* `bivariateEquiv_Y` — `bivariateEquiv Y = CMvPolynomial.X 0`
+* `bivariateEquiv_symm_C` — `bivariateEquiv.symm (C r) = CC r`
+* `bivariateEquiv_symm_X0` — `bivariateEquiv.symm (X 0) = Y`
+* `bivariateEquiv_symm_X1` — `bivariateEquiv.symm (X 1) = X`
+
+## Helper lemmas (for `CMvPolynomial.finSuccEquiv`)
 
 * `CMvPolynomial.isEmptyRingEquiv_symm_apply` —
   `isEmptyRingEquiv.symm r = C r`
 * `CMvPolynomial.finSuccEquiv_symm_C` —
   `finSuccEquiv.symm (Polynomial.C x) = rename Fin.succ x`
+* `CMvPolynomial.finSuccEquiv_symm_X` —
+  `finSuccEquiv.symm Polynomial.X = CMvPolynomial.X 0`
 -/
 
 open CompPoly CPoly CBivariate
