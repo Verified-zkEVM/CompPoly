@@ -27,6 +27,15 @@ To run only selected groups, pass group keys either positionally or with
 lake exe CompPolyBench babybear-univariate-low-product
 lake exe CompPolyBench --group babybear-univariate-low-product --group additive-ntt-btf3-l2-r2
 lake exe CompPolyBench --groups babybear-univariate-low-product,additive-ntt-btf3-l2-r2
+lake exe CompPolyBench -g babybear-univariate-low-product,additive-ntt-btf3-l2-r2
+```
+
+By default, each run writes both JSONL and Markdown outputs. To write only one
+artifact type, pass `--json-only`/`-j` or `--markdown-only`/`-m`:
+
+```bash
+lake exe CompPolyBench -j babybear-univariate-low-product
+lake exe CompPolyBench -m --groups babybear-univariate-low-product,additive-ntt-btf3-l2-r2
 ```
 
 The executable is defined by the `CompPolyBench` Lake target. Its entrypoint is

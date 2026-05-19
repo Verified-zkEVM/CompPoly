@@ -26,9 +26,39 @@ def allTasks : List BenchTask :=
 def allGroupInfos : List BenchGroupInfo :=
   (allTasks.map fun task => task.infos).flatten
 
+/-- Output artifact set requested by the command line. -/
+inductive BenchOutput where
+  | all
+  | markdownOnly
+  | jsonOnly
+deriving BEq
+
+/-- Whether to write JSONL benchmark rows for this output mode. -/
+def BenchOutput.writeJson : BenchOutput → Bool
+  | BenchOutput.all => true
+  | BenchOutput.markdownOnly => false
+  | BenchOutput.jsonOnly => true
+
+/-- Whether to write the Markdown benchmark report for this output mode. -/
+def BenchOutput.writeMarkdown : BenchOutput → Bool
+  | BenchOutput.all => true
+  | BenchOutput.markdownOnly => true
+  | BenchOutput.jsonOnly => false
+
+/-- Add an output-mode flag, rejecting contradictory modes. -/
+def setOutputMode (current : Option BenchOutput) (mode : BenchOutput) :
+    Except String (Option BenchOutput) :=
+  match current with
+  | none => Except.ok (some mode)
+  | some existing =>
+      if existing == mode then
+        Except.ok current
+      else
+        Except.error "cannot combine Markdown-only and JSON-only output modes"
+
 /-- Command selected by benchmark CLI arguments. -/
 inductive BenchCommand where
-  | run (selection : BenchSelection)
+  | run (selection : BenchSelection) (output : BenchOutput)
   | list
   | help
 
@@ -38,6 +68,8 @@ def usage : String :=
   "  lake exe CompPolyBench\n" ++
   "  lake exe CompPolyBench --list\n" ++
   "  lake exe CompPolyBench --group <key> [--group <key> ...]\n" ++
+  "  lake exe CompPolyBench -g <key,key,...>\n" ++
+  "  lake exe CompPolyBench [-m|--markdown-only|-j|--json-only] <key> [<key> ...]\n" ++
   "  lake exe CompPolyBench <key> [<key> ...]\n"
 
 /-- Split a comma-separated CLI argument into nonempty group keys. -/
@@ -50,30 +82,42 @@ def knownGroupKey (key : String) : Bool :=
 
 /-- Parse benchmark CLI arguments. -/
 partial def parseArgs : List String → Except String BenchCommand
-  | [] => Except.ok (BenchCommand.run BenchSelection.all)
+  | [] => Except.ok (BenchCommand.run BenchSelection.all BenchOutput.all)
   | args =>
-      let rec go (args : List String) (keys : List String) : Except String BenchCommand :=
+      let rec go (args : List String) (keys : List String) (output : Option BenchOutput) :
+          Except String BenchCommand :=
         match args with
         | [] =>
             let unknown := keys.filter fun key => !knownGroupKey key
             match unknown with
             | [] =>
-                Except.ok <| BenchCommand.run <|
+                let selection :=
                   if keys.isEmpty then BenchSelection.all else BenchSelection.only keys.reverse
+                Except.ok <| BenchCommand.run selection (output.getD BenchOutput.all)
             | key :: _ => Except.error s!"unknown benchmark group `{key}`; use `--list`"
         | "--help" :: _ => Except.ok BenchCommand.help
         | "-h" :: _ => Except.ok BenchCommand.help
         | "--list" :: _ => Except.ok BenchCommand.list
-        | "--group" :: key :: rest => go rest (key :: keys)
+        | "--markdown-only" :: rest =>
+            setOutputMode output BenchOutput.markdownOnly >>= go rest keys
+        | "-m" :: rest =>
+            setOutputMode output BenchOutput.markdownOnly >>= go rest keys
+        | "--json-only" :: rest =>
+            setOutputMode output BenchOutput.jsonOnly >>= go rest keys
+        | "-j" :: rest =>
+            setOutputMode output BenchOutput.jsonOnly >>= go rest keys
+        | "--group" :: key :: rest => go rest (key :: keys) output
         | "--group" :: [] => Except.error "missing value after `--group`"
-        | "--groups" :: rawKeys :: rest => go rest ((splitGroupKeys rawKeys).reverse ++ keys)
+        | "--groups" :: rawKeys :: rest => go rest ((splitGroupKeys rawKeys).reverse ++ keys) output
         | "--groups" :: [] => Except.error "missing value after `--groups`"
+        | "-g" :: rawKeys :: rest => go rest ((splitGroupKeys rawKeys).reverse ++ keys) output
+        | "-g" :: [] => Except.error "missing value after `-g`"
         | arg :: rest =>
             if arg.startsWith "-" then
               Except.error s!"unknown option `{arg}`"
             else
-              go rest (arg :: keys)
-      go args []
+              go rest (arg :: keys) output
+      go args [] none
 
 /-- Print all runnable benchmark group keys. -/
 def printGroupList : IO Unit := do
@@ -81,17 +125,17 @@ def printGroupList : IO Unit := do
   for info in allGroupInfos do
     IO.println s!"  {info.groupKey}  -  {info.title}"
 
-/-- Run the complete benchmark suite and write reports. -/
-def runSelected (selection : BenchSelection) : IO UInt32 := do
+/-- Run the complete benchmark suite and write selected reports. -/
+def runSelected (selection : BenchSelection) (output : BenchOutput) : IO UInt32 := do
   let runId ← makeRunId
-  let hardware ← collectRunnerHardware
   let gen := mkStdGen seed
   let (groups, _) ← runSelectedTasks allTasks selection gen
   let records := flattenGroups groups
-  let results := resultsPath runId
-  let report := reportPath runId
-  IO.FS.writeFile results (renderJsonl records)
-  IO.FS.writeFile report (renderMarkdown hardware groups)
+  if output.writeJson then
+    IO.FS.writeFile (resultsPath runId) (renderJsonl records)
+  if output.writeMarkdown then
+    let hardware ← collectRunnerHardware
+    IO.FS.writeFile (reportPath runId) (renderMarkdown hardware groups)
   IO.println <|
     s!"wrote `{records.size}` benchmark records in `{groups.size}` groups for run `{runId}`"
   match checksumMismatchGroups groups with
@@ -114,7 +158,7 @@ def run (args : List String) : IO UInt32 := do
   | Except.ok BenchCommand.list =>
       printGroupList
       pure 0
-  | Except.ok (BenchCommand.run selection) =>
-      runSelected selection
+  | Except.ok (BenchCommand.run selection output) =>
+      runSelected selection output
 
 end CompPolyBench
