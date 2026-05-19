@@ -93,6 +93,7 @@ structure BenchRecord where
   field : String
   inputShape : String
   warmupIterations : Nat
+  checksumIterations : Nat
   measuredIterations : Nat
   totalNanos : Nat
   averageNanos : Nat
@@ -375,17 +376,33 @@ def checksumCPolynomial [Zero α] (checksum : α → Nat) (p : CPolynomial α) :
 def checksumRawPolynomial (checksum : α → Nat) (p : CPolynomial.Raw α) : Nat :=
   checksumArray checksum p
 
-/-- Time one benchmark closure and package its metadata and checksum. -/
+/-- Compute the checksum iteration count shared by a benchmark group. -/
+def groupChecksumIterations (first : Nat) (rest : List Nat) : Nat :=
+  rest.foldl Nat.min first
+
+/--
+Time one benchmark closure and package its metadata and checksum.
+
+The checksum is computed before timing over `checksumIterations`, which should be
+the minimum measured-iteration count used by the records in the surrounding
+benchmark group. The timed loop still consumes each result so implementations
+with different iteration counts remain comparable within the same group.
+-/
 def runTimed (name representation method field inputShape : String)
-    (warmup measured : Nat) (run : Nat → α) (checksum : α → Nat) : IO BenchRecord := do
+    (warmup measured : Nat) (run : Nat → α) (checksum : α → Nat)
+    (checksumIterations : Nat := measured) : IO BenchRecord := do
   for i in [0:warmup] do
     let _ := run i
     pure ()
+  let mut validationChecksum := 0
+  for i in [0:checksumIterations] do
+    validationChecksum := mixChecksum validationChecksum (checksum (run i))
   let start ← IO.monoNanosNow
-  let mut acc := 0
+  let mut timingChecksum := 0
   for i in [0:measured] do
-    acc := mixChecksum acc (checksum (run i))
+    timingChecksum := mixChecksum timingChecksum (checksum (run i))
   let stop ← IO.monoNanosNow
+  let _ := timingChecksum
   let total := stop - start
   pure {
     name := name
@@ -394,10 +411,11 @@ def runTimed (name representation method field inputShape : String)
     field := field
     inputShape := inputShape
     warmupIterations := warmup
+    checksumIterations := checksumIterations
     measuredIterations := measured
     totalNanos := total
     averageNanos := if measured = 0 then 0 else total / measured
-    checksum := acc
+    checksum := validationChecksum
   }
 
 /-- Append benchmark records without relying on array append notation. -/
@@ -425,6 +443,7 @@ def BenchRecord.toJsonLine (record : BenchRecord) : String :=
     "\"field\":" ++ jsonString record.field,
     "\"input_shape\":" ++ jsonString record.inputShape,
     "\"warmup_iterations\":" ++ toString record.warmupIterations,
+    "\"checksum_iterations\":" ++ toString record.checksumIterations,
     "\"measured_iterations\":" ++ toString record.measuredIterations,
     "\"total_nanos\":" ++ toString record.totalNanos,
     "\"average_nanos\":" ++ toString record.averageNanos,
@@ -499,7 +518,9 @@ def matchingChecksum? (records : List BenchRecord) : Option Nat :=
   match records with
   | [] => none
   | record :: records =>
-      if records.all (fun other => other.checksum == record.checksum) then
+      if records.all (fun other =>
+          other.checksumIterations == record.checksumIterations &&
+            other.checksum == record.checksum) then
         some record.checksum
       else
         none
@@ -623,6 +644,7 @@ def implementationLabel (record : BenchRecord) : String :=
 def groupResultColumns : List (String × Bool × (BenchRecord → String)) :=
   [
     ("Implementation", false, implementationLabel),
+    ("Iterations", true, fun r => toString r.measuredIterations),
     ("Total ns", true, fun r => toString r.totalNanos),
     ("Avg ns", true, fun r => toString r.averageNanos)
   ]
@@ -634,7 +656,7 @@ def renderGroupMetadata (records : List BenchRecord) : List String :=
     renderSharedStringLine "Field / configuration" records (fun r => r.field),
     renderSharedStringLine "Input shape" records (fun r => r.inputShape),
     renderSharedNatLine "Warmup iterations" records (fun r => r.warmupIterations),
-    renderSharedNatLine "Measured iterations" records (fun r => r.measuredIterations)
+    renderSharedNatLine "Checksum iterations" records (fun r => r.checksumIterations)
   ] ++ [renderChecksumStatus records]
 
 /-- Render one benchmark group result table. -/

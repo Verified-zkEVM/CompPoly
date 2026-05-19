@@ -63,10 +63,12 @@ Generated benchmark artifacts are ignored by `bench/.gitignore`.
 The JSONL output remains one row per benchmark case. The Markdown report groups
 rows into separate result tables when those rows are expected to produce a
 matching checksum. Each result table includes the group key accepted by the
-command-line selector and shared configuration fields once before the table.
-The table uses human-readable implementation labels plus timing columns. A
-checksum mismatch is reported as an error in the generated Markdown and makes
-the executable exit nonzero after writing the artifacts.
+command-line selector and shared configuration fields once before the table,
+including the common checksum-iteration count used for group validation. The
+table uses human-readable implementation labels plus per-implementation
+iteration and timing columns. A checksum mismatch is reported as an error in
+the generated Markdown and makes the executable exit nonzero after writing the
+artifacts.
 
 ## What Is Measured
 
