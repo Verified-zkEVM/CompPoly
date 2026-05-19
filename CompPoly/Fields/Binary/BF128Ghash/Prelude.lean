@@ -214,7 +214,7 @@ lemma toPoly_one_shiftLeft {w : Nat} (n : Nat) (h : n < w) :
 
 -- Main Proof
 lemma ghashPoly_eq_P_val : ghashPoly = toPoly P_val := by
-  rw [ghashPoly, P_val]
+  unfold ghashPoly P_val
   repeat rw [toPoly_xor]
   rw [toPoly_one_shiftLeft (h := by omega), toPoly_one_shiftLeft (h := by omega),
     toPoly_one_shiftLeft (h := by omega), toPoly_one_shiftLeft (h := by omega)]
@@ -443,7 +443,8 @@ private theorem toPoly_mulByP_Nat (x : B128) :
   rw [toPoly_ofNat_shiftLeft_to256 x 2 (by omega)]
   rw [toPoly_ofNat_shiftLeft_to256 x 7 (by omega)]
   rw [toPoly_ofNat_shiftLeft_to256 x 128 (by omega)]
-  rw [← ghashPoly_eq_P_val, ghashPoly]
+  rw [← ghashPoly_eq_P_val]
+  unfold ghashPoly
   ring
 
 /-- Soundness of the kernel-efficient square-step checker. -/

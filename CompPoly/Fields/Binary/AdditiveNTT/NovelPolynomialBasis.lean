@@ -1331,7 +1331,7 @@ lemma degree_Xⱼ (ℓ : ℕ) (h_ℓ : ℓ ≤ r) (j : Fin (2 ^ ℓ)) :
         Nat.cast_pow, Nat.cast_ofNat, CharP.cast_eq_zero, hF₂.out]
       -- ⊢ ↑(↑j >>> ↑i % 2) * 2 ^ ↑i = if ↑j >>> ↑i % 2 = 1 then 2 ^ ↑i else 0
       by_cases h: (j.val >>> i.val) % 2 = 1
-      · simp only [h, Nat.cast_one, one_mul, ↓reduceIte]; rfl
+      · simp only [h, Nat.cast_one, one_mul, ↓reduceIte]
       · simp only [h, if_false];
         have h_0: (j.val >>> i.val) % 2 = 0 := by
           exact Nat.mod_two_ne_one.mp h

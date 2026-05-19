@@ -323,7 +323,8 @@ theorem double_sum_eq [LawfulBEq R] (p q r : CPolynomial.Raw R) (n : ℕ) :
                   = ∑ i ∈ Finset.range (n + 1),
                       ∑ j ∈ Finset.Ico i (n + 1),
                           p.coeff i * q.coeff (j - i) * r.coeff (n - j) := by
-            rw [ Finset.range_eq_Ico, Finset.sum_Ico_Ico_comm ]
+            simp_rw [Finset.range_eq_Ico]
+            rw [Finset.sum_Ico_Ico_comm]
           convert h_interchange using 2
           rw [ Finset.sum_Ico_eq_sum_range ]
           simp +decide [ Nat.sub_add_comm ( Finset.mem_range_succ_iff.mp ‹_› ) ]
