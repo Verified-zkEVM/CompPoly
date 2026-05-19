@@ -15,14 +15,18 @@ import CompPolyBench.Univariate.NTT.FastMulLow
 
 namespace CompPolyBench
 
+/-- Benchmark group metadata for all univariate benchmark modules. -/
+def univariateGroupInfos : List BenchGroupInfo :=
+  univariateBasicGroupInfos ++ univariateBatchEvalGroupInfos ++
+    univariateNttFastMulGroupInfos ++ univariateNttFastMulLowGroupInfos
+
+/-- Runnable univariate benchmark tasks. -/
+def univariateTasks : List BenchTask :=
+  univariateBasicTasks ++ univariateBatchEvalTasks ++
+    univariateNttFastMulTasks ++ univariateNttFastMulLowTasks
+
 /-- Run all univariate benchmarks. -/
-def runUnivariate (gen : StdGen) : IO (Array BenchGroup × StdGen) := do
-  let (basicGroups, gen) ← runUnivariateBasic gen
-  let (fastMulGroups, gen) ← runUnivariateNttFastMul gen
-  let (fastMulLowGroups, gen) ← runUnivariateNttFastMulLow gen
-  let (batchGroups, gen) ← runUnivariateBatchEval gen
-  let groups := appendGroups (appendGroups (appendGroups basicGroups fastMulGroups) fastMulLowGroups)
-    batchGroups
-  pure (groups, gen)
+def runUnivariate (selection : BenchSelection) (gen : StdGen) : IO (Array BenchGroup × StdGen) := do
+  runSelectedTasks univariateTasks selection gen
 
 end CompPolyBench

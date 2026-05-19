@@ -16,8 +16,13 @@ open CompPoly
 
 namespace CompPolyBench
 
+/-- Benchmark group metadata for `CompPoly.Univariate.NTT.FastMulLow`. -/
+def univariateNttFastMulLowGroupInfos : List BenchGroupInfo := [
+  ⟨"babybear-univariate-low-product", "BabyBear univariate low product"⟩
+]
+
 /-- Benchmark low-product multiplication variants used by remainder and batch-evaluation paths. -/
-def runUnivariateNttFastMulLow (gen : StdGen) : IO (Array BenchGroup × StdGen) := do
+private def runBabyBearUnivariateLowProduct (gen : StdGen) : IO (BenchGroup × StdGen) := do
   let (mulLowLhsCoeffs, gen) := (babyBearArray univariateMulLowCoeffSlots false).run gen
   let (mulLowRhsCoeffs, gen) := (babyBearArray univariateMulLowCoeffSlots false).run gen
   let mulLowLhsRaw : CPolynomial.Raw BabyBear.Field := mulLowLhsCoeffs
@@ -56,9 +61,22 @@ def runUnivariateNttFastMulLow (gen : StdGen) : IO (Array BenchGroup × StdGen) 
     (fun _ => nttFastWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
       mulLowRhsRaw)
     (checksumRawPolynomial checksumBabyBear)
-  pure (#[{
-    title := "BabyBear univariate low product"
+  pure ({
+    groupKey := "babybear-univariate-low-product",
+    title := "BabyBear univariate low product",
     records := #[lowNaive, lowConvolution, lowNtt, lowNttFast]
-  }], gen)
+  }, gen)
+
+/-- Runnable `CompPoly.Univariate.NTT.FastMulLow` benchmark tasks. -/
+def univariateNttFastMulLowTasks : List BenchTask := [
+  BenchTask.fromGroupRunner
+    ⟨"babybear-univariate-low-product", "BabyBear univariate low product"⟩
+    runBabyBearUnivariateLowProduct
+]
+
+/-- Benchmark low-product multiplication variants used by remainder and batch-evaluation paths. -/
+def runUnivariateNttFastMulLow (selection : BenchSelection) (gen : StdGen) :
+    IO (Array BenchGroup × StdGen) := do
+  runSelectedTasks univariateNttFastMulLowTasks selection gen
 
 end CompPolyBench

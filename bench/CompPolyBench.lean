@@ -13,5 +13,5 @@ Compiled benchmark executable for polynomial evaluation methods.
 -/
 
 /-- Executable entry point for `lake exe CompPolyBench`. -/
-def main : IO UInt32 :=
-  CompPolyBench.run
+def main (args : List String) : IO UInt32 :=
+  CompPolyBench.run args

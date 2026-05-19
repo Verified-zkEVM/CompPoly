@@ -14,6 +14,13 @@ open ConcreteBinaryTower
 
 namespace CompPolyBench
 
+/-- Benchmark group metadata for `CompPoly.Fields.Binary.AdditiveNTT.Impl`. -/
+def additiveNttGroupInfos : List BenchGroupInfo := [
+  ⟨"additive-ntt-btf3-l2-r2", "Additive NTT BTF3 l=2 R_rate=2"⟩,
+  ⟨"additive-ntt-btf3-l4-r2", "Additive NTT BTF3 l=4 R_rate=2"⟩,
+  ⟨"additive-ntt-btf4-l7-r2", "Additive NTT BTF4 l=7 R_rate=2"⟩
+]
+
 /-- Checksum all output values from a `BTF₃` additive NTT benchmark. -/
 private def checksumBtf3Output {n : Nat} (output : Fin (2 ^ n) → AdditiveNTT.BTF₃) : Nat :=
   (List.finRange (2 ^ n)).foldl
@@ -71,7 +78,7 @@ private def runConcreteBtfNttFast (k ℓ R_rate : Nat)
 
 /-- Run one additive NTT benchmark case over `BTF₃`. -/
 private def runAdditiveNttCase (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ 3)
-    (currentName fastName : String) (warmup measured : Nat) (gen : StdGen) :
+    (key currentName fastName : String) (warmup measured : Nat) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let inputSize := 2 ^ ℓ
   let outputSize := 2 ^ (ℓ + R_rate)
@@ -91,12 +98,13 @@ private def runAdditiveNttCase (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_ra
     (fun _ => runBtf3NttFast ℓ R_rate h_ℓ_add_R_rate input)
     (checksumBtf3OutputArray (n := ℓ + R_rate))
   pure ({
-      title := s!"Additive NTT BTF3 l={ℓ} R_rate={R_rate}"
+      groupKey := key,
+      title := s!"Additive NTT BTF3 l={ℓ} R_rate={R_rate}",
       records := #[currentRecord, fastRecord] }, gen)
 
 /-- Run one larger fast-only additive NTT benchmark over a concrete binary-tower field. -/
 private def runAdditiveNttFastLargeCase (k ℓ R_rate : Nat)
-    (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ k) (fastName : String)
+    (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ k) (key fastName : String)
     (warmup measured : Nat) (gen : StdGen) : IO (BenchGroup × StdGen) := do
   let inputSize := 2 ^ ℓ
   let outputSize := 2 ^ (ℓ + R_rate)
@@ -111,18 +119,43 @@ private def runAdditiveNttFastLargeCase (k ℓ R_rate : Nat)
     (fun _ => runConcreteBtfNttFast k ℓ R_rate h_ℓ_add_R_rate input)
     (checksumConcreteBtfOutputArray (k := k) (n := ℓ + R_rate))
   pure ({
-      title := s!"Additive NTT BTF{k} l={ℓ} R_rate={R_rate}"
+      groupKey := key,
+      title := s!"Additive NTT BTF{k} l={ℓ} R_rate={R_rate}",
       records := #[fastRecord] }, gen)
 
-/-- Run the additive NTT benchmark. -/
-def runAdditiveNtt (gen : StdGen) : IO (Array BenchGroup × StdGen) := do
-  let (smallGroup, gen) ← runAdditiveNttCase 2 2 (by omega)
-    "additive-ntt-btf3" "additive-ntt-btf3-fast"
+/-- Run the small additive NTT benchmark over `BTF₃`. -/
+private def runAdditiveNttBtf3L2R2 (gen : StdGen) : IO (BenchGroup × StdGen) := do
+  runAdditiveNttCase 2 2 (by omega)
+    "additive-ntt-btf3-l2-r2" "additive-ntt-btf3" "additive-ntt-btf3-fast"
     additiveNttWarmupIterations additiveNttMeasuredIterations gen
-  let (widerGroup, gen) ← runAdditiveNttCase 4 2 (by omega)
-    "additive-ntt-btf3-l4-r2" "additive-ntt-btf3-l4-r2-fast" 2 10 gen
-  let (largerFastGroup, gen) ← runAdditiveNttFastLargeCase 4 7 2 (by omega)
-    "additive-ntt-btf4-l7-r2-fast" 1 10 gen
-  pure (#[smallGroup, widerGroup, largerFastGroup], gen)
+
+/-- Run the wider additive NTT benchmark over `BTF₃`. -/
+private def runAdditiveNttBtf3L4R2 (gen : StdGen) : IO (BenchGroup × StdGen) := do
+  runAdditiveNttCase 4 2 (by omega)
+    "additive-ntt-btf3-l4-r2" "additive-ntt-btf3-l4-r2"
+    "additive-ntt-btf3-l4-r2-fast" 2 10 gen
+
+/-- Run the large fast-only additive NTT benchmark over `BTF₄`. -/
+private def runAdditiveNttBtf4L7R2 (gen : StdGen) : IO (BenchGroup × StdGen) := do
+  runAdditiveNttFastLargeCase 4 7 2 (by omega)
+    "additive-ntt-btf4-l7-r2" "additive-ntt-btf4-l7-r2-fast" 1 10 gen
+
+/-- Runnable additive-NTT benchmark tasks. -/
+def additiveNttTasks : List BenchTask := [
+  BenchTask.fromGroupRunner
+    ⟨"additive-ntt-btf3-l2-r2", "Additive NTT BTF3 l=2 R_rate=2"⟩
+    runAdditiveNttBtf3L2R2,
+  BenchTask.fromGroupRunner
+    ⟨"additive-ntt-btf3-l4-r2", "Additive NTT BTF3 l=4 R_rate=2"⟩
+    runAdditiveNttBtf3L4R2,
+  BenchTask.fromGroupRunner
+    ⟨"additive-ntt-btf4-l7-r2", "Additive NTT BTF4 l=7 R_rate=2"⟩
+    runAdditiveNttBtf4L7R2
+]
+
+/-- Run the additive NTT benchmark. -/
+def runAdditiveNtt (selection : BenchSelection) (gen : StdGen) :
+    IO (Array BenchGroup × StdGen) := do
+  runSelectedTasks additiveNttTasks selection gen
 
 end CompPolyBench

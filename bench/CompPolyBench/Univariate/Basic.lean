@@ -17,9 +17,21 @@ open CompPoly
 
 namespace CompPolyBench
 
+/-- Benchmark group metadata for `CompPoly.Univariate.Basic`. -/
+def univariateBasicGroupInfos : List BenchGroupInfo := [
+  ⟨"babybear-univariate-dense", "BabyBear univariate dense evaluation"⟩,
+  ⟨"babybear-univariate-sparse", "BabyBear univariate sparse evaluation"⟩,
+  ⟨"babybear-univariate-monic-remainder-small",
+    "BabyBear univariate monic remainder, small"⟩,
+  ⟨"babybear-univariate-monic-remainder-medium",
+    "BabyBear univariate monic remainder, medium"⟩,
+  ⟨"goldilocks-univariate-dense", "Goldilocks.Field univariate dense evaluation"⟩,
+  ⟨"bn254-univariate-dense", "BN254.ScalarField univariate dense evaluation"⟩
+]
+
 /-- Benchmark dense univariate evaluation over a generic prime `ZMod` field. -/
 private def runDenseUnivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
-    (nameSuffix fieldName : String) (gen : StdGen) : IO (BenchGroup × StdGen) := do
+    (key nameSuffix fieldName : String) (gen : StdGen) : IO (BenchGroup × StdGen) := do
   let (denseCoeffs, gen) := (zmodArray modulus 512 false).run gen
   let (points, gen) := (zmodArray modulus 32 false).run gen
   let densePoly := cpolyOfArray denseCoeffs
@@ -34,24 +46,60 @@ private def runDenseUnivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
     (fun i => CPolynomial.evalHorner (points.getD (i % points.size) 0) densePoly)
     checksumZMod
   pure ({
-      title := fieldName ++ " univariate dense evaluation"
-      records := #[sumRecord, hornerRecord] }, gen)
+    groupKey := key,
+    title := fieldName ++ " univariate dense evaluation",
+    records := #[sumRecord, hornerRecord]
+  }, gen)
 
-/-- Benchmark evaluation and public monic-remainder operations from `CompPoly.Univariate.Basic`. -/
-def runUnivariateBasic (gen : StdGen) : IO (Array BenchGroup × StdGen) := do
+/-- Benchmark dense BabyBear univariate evaluation. -/
+private def runBabyBearUnivariateDense (gen : StdGen) : IO (BenchGroup × StdGen) := do
   let (denseCoeffs, gen) := (babyBearArray 512 false).run gen
+  let (points, gen) := (babyBearPoints 32).run gen
+  let densePoly := cpolyOfArray denseCoeffs
+  let denseSum ← runTimed
+    "univariate-dense-sum" "CPolynomial" "eval sum-of-powers" "BabyBear.Field"
+    "degree<512, dense, 32 points" warmupIterations measuredIterations
+    (fun i => CPolynomial.eval (points.getD (i % points.size) 0) densePoly)
+    checksumBabyBear
+  let denseHorner ← runTimed
+    "univariate-dense-horner" "CPolynomial" "evalHorner" "BabyBear.Field"
+    "degree<512, dense, 32 points" warmupIterations measuredIterations
+    (fun i => CPolynomial.evalHorner (points.getD (i % points.size) 0) densePoly)
+    checksumBabyBear
+  pure ({
+    groupKey := "babybear-univariate-dense",
+    title := "BabyBear univariate dense evaluation",
+    records := #[denseSum, denseHorner]
+  }, gen)
+
+/-- Benchmark sparse BabyBear univariate evaluation. -/
+private def runBabyBearUnivariateSparse (gen : StdGen) : IO (BenchGroup × StdGen) := do
   let (sparseCoeffs, gen) := (babyBearArray 512 true).run gen
   let (points, gen) := (babyBearPoints 32).run gen
+  let sparsePoly := cpolyOfArray sparseCoeffs
+  let sparseSum ← runTimed
+    "univariate-sparse-sum" "CPolynomial" "eval sum-of-powers" "BabyBear.Field"
+    "degree<512, one nonzero per 4 coeffs, 32 points" warmupIterations measuredIterations
+    (fun i => CPolynomial.eval (points.getD (i % points.size) 0) sparsePoly)
+    checksumBabyBear
+  let sparseHorner ← runTimed
+    "univariate-sparse-horner" "CPolynomial" "evalHorner" "BabyBear.Field"
+    "degree<512, one nonzero per 4 coeffs, 32 points" warmupIterations measuredIterations
+    (fun i => CPolynomial.evalHorner (points.getD (i % points.size) 0) sparsePoly)
+    checksumBabyBear
+  pure ({
+    groupKey := "babybear-univariate-sparse",
+    title := "BabyBear univariate sparse evaluation",
+    records := #[sparseSum, sparseHorner]
+  }, gen)
+
+/-- Benchmark small BabyBear monic-remainder variants. -/
+private def runBabyBearUnivariateMonicRemainderSmall (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
   let (batchCoeffs, gen) := (babyBearArray univariateBatchCoeffSlots false).run gen
   let (batchPoints, gen) := (babyBearPoints univariateBatchPointCount).run gen
-  let (mediumBatchCoeffs, gen) := (babyBearArray mediumUnivariateBatchCoeffSlots false).run gen
-  let (mediumBatchPoints, gen) := (babyBearPoints mediumUnivariateBatchPointCount).run gen
-  let densePoly := cpolyOfArray denseCoeffs
-  let sparsePoly := cpolyOfArray sparseCoeffs
   let batchPoly := cpolyOfArray batchCoeffs
-  let mediumBatchPoly := cpolyOfArray mediumBatchCoeffs
   let modDivisor := monicDivisorFromPoints batchPoints
-  let mediumModDivisor := monicDivisorFromPoints mediumBatchPoints
   let convolutionLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
     CPolynomial.Raw.MulLowContext.convolution
   let nttWithFallbackLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
@@ -64,35 +112,6 @@ def runUnivariateBasic (gen : StdGen) : IO (Array BenchGroup × StdGen) := do
     CPolynomial.ModContext.reversal nttWithFallbackLowMul
   let reversalNttFastLowMod : CPolynomial.ModContext BabyBear.Field :=
     CPolynomial.ModContext.reversal nttFastWithFallbackLowMul
-  let mut groups := #[]
-  let denseSum ← runTimed
-    "univariate-dense-sum" "CPolynomial" "eval sum-of-powers" "BabyBear.Field"
-    "degree<512, dense, 32 points" warmupIterations measuredIterations
-    (fun i => CPolynomial.eval (points.getD (i % points.size) 0) densePoly)
-    checksumBabyBear
-  let denseHorner ← runTimed
-    "univariate-dense-horner" "CPolynomial" "evalHorner" "BabyBear.Field"
-    "degree<512, dense, 32 points" warmupIterations measuredIterations
-    (fun i => CPolynomial.evalHorner (points.getD (i % points.size) 0) densePoly)
-    checksumBabyBear
-  groups := groups.push {
-    title := "BabyBear univariate dense evaluation"
-    records := #[denseSum, denseHorner]
-  }
-  let sparseSum ← runTimed
-    "univariate-sparse-sum" "CPolynomial" "eval sum-of-powers" "BabyBear.Field"
-    "degree<512, one nonzero per 4 coeffs, 32 points" warmupIterations measuredIterations
-    (fun i => CPolynomial.eval (points.getD (i % points.size) 0) sparsePoly)
-    checksumBabyBear
-  let sparseHorner ← runTimed
-    "univariate-sparse-horner" "CPolynomial" "evalHorner" "BabyBear.Field"
-    "degree<512, one nonzero per 4 coeffs, 32 points" warmupIterations measuredIterations
-    (fun i => CPolynomial.evalHorner (points.getD (i % points.size) 0) sparsePoly)
-    checksumBabyBear
-  groups := groups.push {
-    title := "BabyBear univariate sparse evaluation"
-    records := #[sparseSum, sparseHorner]
-  }
   let smallModNaive ← runTimed
     "univariate-mod-by-monic-naive" "CPolynomial" "modByMonic" "BabyBear.Field"
     univariateModShape modWarmupIterations modMeasuredIterations
@@ -122,11 +141,32 @@ def runUnivariateBasic (gen : StdGen) : IO (Array BenchGroup × StdGen) := do
     univariateModShape modWarmupIterations modMeasuredIterations
     (fun _ => reversalNttFastLowMod.modByMonic batchPoly modDivisor)
     (checksumCPolynomial checksumBabyBear)
-  groups := groups.push {
-    title := "BabyBear univariate monic remainder, small"
+  pure ({
+    groupKey := "babybear-univariate-monic-remainder-small",
+    title := "BabyBear univariate monic remainder, small",
     records := #[smallModNaive, smallModRemainder, smallModReversalConvolution,
       smallModReversalNtt, smallModReversalNttFast]
-  }
+  }, gen)
+
+/-- Benchmark medium BabyBear monic-remainder variants. -/
+private def runBabyBearUnivariateMonicRemainderMedium (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  let (mediumBatchCoeffs, gen) := (babyBearArray mediumUnivariateBatchCoeffSlots false).run gen
+  let (mediumBatchPoints, gen) := (babyBearPoints mediumUnivariateBatchPointCount).run gen
+  let mediumBatchPoly := cpolyOfArray mediumBatchCoeffs
+  let mediumModDivisor := monicDivisorFromPoints mediumBatchPoints
+  let convolutionLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
+    CPolynomial.Raw.MulLowContext.convolution
+  let nttWithFallbackLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
+    CPolynomial.NTT.FastMulLow.withFallback babyBearBestDomainForLength?
+  let nttFastWithFallbackLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
+    CPolynomial.NTTFast.FastMulLow.withFallback babyBearBestDomainForLength?
+  let reversalConvolutionLowMod : CPolynomial.ModContext BabyBear.Field :=
+    CPolynomial.ModContext.reversal convolutionLowMul
+  let reversalNttLowMod : CPolynomial.ModContext BabyBear.Field :=
+    CPolynomial.ModContext.reversal nttWithFallbackLowMul
+  let reversalNttFastLowMod : CPolynomial.ModContext BabyBear.Field :=
+    CPolynomial.ModContext.reversal nttFastWithFallbackLowMul
   let mediumModRemainder ← runTimed
     "univariate-mod-by-monic-medium-remainder-only" "CPolynomial"
     "modByMonicRemainderOnly" "BabyBear.Field"
@@ -151,17 +191,50 @@ def runUnivariateBasic (gen : StdGen) : IO (Array BenchGroup × StdGen) := do
     mediumUnivariateModShape mediumModWarmupIterations mediumModMeasuredIterations
     (fun _ => reversalNttFastLowMod.modByMonic mediumBatchPoly mediumModDivisor)
     (checksumCPolynomial checksumBabyBear)
-  groups := groups.push {
-    title := "BabyBear univariate monic remainder, medium"
+  pure ({
+    groupKey := "babybear-univariate-monic-remainder-medium",
+    title := "BabyBear univariate monic remainder, medium",
     records := #[mediumModRemainder, mediumModReversalConvolution, mediumModReversalNtt,
       mediumModReversalNttFast]
-  }
-  let (goldilocksGroup, gen) ← runDenseUnivariateZMod
-    Goldilocks.fieldSize "goldilocks" "Goldilocks.Field" gen
-  groups := groups.push goldilocksGroup
-  let (bn254Group, gen) ← runDenseUnivariateZMod
-    BN254.scalarFieldSize "bn254" "BN254.ScalarField" gen
-  groups := groups.push bn254Group
-  pure (groups, gen)
+  }, gen)
+
+/-- Benchmark dense Goldilocks univariate evaluation. -/
+private def runGoldilocksUnivariateDense (gen : StdGen) : IO (BenchGroup × StdGen) := do
+  runDenseUnivariateZMod
+    Goldilocks.fieldSize "goldilocks-univariate-dense" "goldilocks" "Goldilocks.Field" gen
+
+/-- Benchmark dense BN254 univariate evaluation. -/
+private def runBn254UnivariateDense (gen : StdGen) : IO (BenchGroup × StdGen) := do
+  runDenseUnivariateZMod
+    BN254.scalarFieldSize "bn254-univariate-dense" "bn254" "BN254.ScalarField" gen
+
+/-- Runnable `CompPoly.Univariate.Basic` benchmark tasks. -/
+def univariateBasicTasks : List BenchTask := [
+  BenchTask.fromGroupRunner
+    ⟨"babybear-univariate-dense", "BabyBear univariate dense evaluation"⟩
+    runBabyBearUnivariateDense,
+  BenchTask.fromGroupRunner
+    ⟨"babybear-univariate-sparse", "BabyBear univariate sparse evaluation"⟩
+    runBabyBearUnivariateSparse,
+  BenchTask.fromGroupRunner
+    ⟨"babybear-univariate-monic-remainder-small",
+      "BabyBear univariate monic remainder, small"⟩
+    runBabyBearUnivariateMonicRemainderSmall,
+  BenchTask.fromGroupRunner
+    ⟨"babybear-univariate-monic-remainder-medium",
+      "BabyBear univariate monic remainder, medium"⟩
+    runBabyBearUnivariateMonicRemainderMedium,
+  BenchTask.fromGroupRunner
+    ⟨"goldilocks-univariate-dense", "Goldilocks.Field univariate dense evaluation"⟩
+    runGoldilocksUnivariateDense,
+  BenchTask.fromGroupRunner
+    ⟨"bn254-univariate-dense", "BN254.ScalarField univariate dense evaluation"⟩
+    runBn254UnivariateDense
+]
+
+/-- Benchmark evaluation and public monic-remainder operations from `CompPoly.Univariate.Basic`. -/
+def runUnivariateBasic (selection : BenchSelection) (gen : StdGen) :
+    IO (Array BenchGroup × StdGen) := do
+  runSelectedTasks univariateBasicTasks selection gen
 
 end CompPolyBench

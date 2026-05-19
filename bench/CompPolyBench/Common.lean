@@ -100,8 +100,64 @@ structure BenchRecord where
 
 /-- A set of benchmark rows expected to produce matching checksums. -/
 structure BenchGroup where
+  groupKey : String
   title : String
   records : Array BenchRecord
+
+/-- Lightweight metadata for a runnable benchmark group. -/
+structure BenchGroupInfo where
+  groupKey : String
+  title : String
+
+/-- Selection of benchmark groups requested by the command line. -/
+inductive BenchSelection where
+  | all
+  | only (keys : List String)
+
+/-- Runnable benchmark group entry used by the command-line registry. -/
+structure BenchTask where
+  infos : List BenchGroupInfo
+  runTask : BenchSelection → StdGen → IO (Array BenchGroup × StdGen)
+
+/-- Decide whether a group key should run under a selection. -/
+def BenchSelection.selects : BenchSelection → String → Bool
+  | BenchSelection.all, _ => true
+  | BenchSelection.only keys, key => keys.any fun selected => selected == key
+
+/-- Decide whether any key in a collection should run under a selection. -/
+def BenchSelection.selectsAny (selection : BenchSelection) (keys : List String) : Bool :=
+  match selection with
+  | BenchSelection.all => true
+  | BenchSelection.only _ => keys.any selection.selects
+
+/-- Select runnable benchmark tasks from a registry. -/
+def BenchSelection.filterTasks (selection : BenchSelection)
+    (tasks : List BenchTask) : List BenchTask :=
+  match selection with
+  | BenchSelection.all => tasks
+  | BenchSelection.only _ =>
+      tasks.filter fun task =>
+        selection.selectsAny (task.infos.map fun info => info.groupKey)
+
+/-- Build one registry task from metadata and a single-group runner. -/
+def BenchTask.fromGroupRunner (info : BenchGroupInfo)
+    (runGroup : StdGen → IO (BenchGroup × StdGen)) : BenchTask where
+  infos := [info]
+  runTask := fun _ gen => do
+    let (group, gen) ← runGroup gen
+    pure (#[group], gen)
+
+/-- Run selected tasks from a registry and concatenate their emitted groups. -/
+def runSelectedTasks (tasks : List BenchTask) (selection : BenchSelection) (gen : StdGen) :
+    IO (Array BenchGroup × StdGen) := do
+  let mut gen := gen
+  let mut groups := #[]
+  for task in selection.filterTasks tasks do
+    let (taskGroups, nextGen) ← task.runTask selection gen
+    gen := nextGen
+    for group in taskGroups do
+      groups := groups.push group
+  pure (groups, gen)
 
 /-- Hardware metadata included in benchmark reports when available. -/
 structure RunnerHardware where
@@ -463,6 +519,7 @@ def renderGroupResults (group : BenchGroup) : List String :=
   [
     "### " ++ group.title,
     "",
+    "- Group key: `" ++ group.groupKey ++ "`",
     renderChecksumStatus records,
     ""
   ] ++ renderMarkdownTable resultColumns records ++ [""]

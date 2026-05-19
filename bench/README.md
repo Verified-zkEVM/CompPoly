@@ -14,6 +14,21 @@ Run the benchmark from the repository root:
 lake exe CompPolyBench
 ```
 
+To inspect runnable benchmark groups without running them:
+
+```bash
+lake exe CompPolyBench --list
+```
+
+To run only selected groups, pass group keys either positionally or with
+`--group`:
+
+```bash
+lake exe CompPolyBench babybear-univariate-low-product
+lake exe CompPolyBench --group babybear-univariate-low-product --group additive-ntt-btf3-l2-r2
+lake exe CompPolyBench --groups babybear-univariate-low-product,additive-ntt-btf3-l2-r2
+```
+
 The executable is defined by the `CompPolyBench` Lake target. Its entrypoint is
 `bench/CompPolyBench.lean`; shared helpers live in
 `bench/CompPolyBench/Common.lean`, and `bench/CompPolyBench/Setup.lean`
@@ -38,7 +53,8 @@ Generated benchmark artifacts are ignored by `bench/.gitignore`.
 
 The JSONL output remains one row per benchmark case. The Markdown report groups
 rows into separate result tables when those rows are expected to produce a
-matching checksum.
+matching checksum. Each result table includes the group key accepted by the
+command-line selector.
 
 ## What Is Measured
 

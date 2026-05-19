@@ -17,18 +17,19 @@ open CompPoly
 
 namespace CompPolyBench
 
-/-- Benchmark direct univariate multiplication and root-of-unity NTT variants. -/
-def runUnivariateNttFastMul (gen : StdGen) : IO (Array BenchGroup × StdGen) := do
+/-- Benchmark group metadata for `CompPoly.Univariate.NTT.FastMul`. -/
+def univariateNttFastMulGroupInfos : List BenchGroupInfo := [
+  ⟨"babybear-univariate-mul", "BabyBear univariate multiplication"⟩,
+  ⟨"koalabear-univariate-mul", "KoalaBear univariate multiplication"⟩
+]
+
+/-- Benchmark BabyBear direct univariate multiplication and root-of-unity NTT variants. -/
+private def runBabyBearUnivariateMul (gen : StdGen) : IO (BenchGroup × StdGen) := do
   let (mulLhsCoeffs, gen) := (babyBearArray univariateMulCoeffSlots false).run gen
   let (mulRhsCoeffs, gen) := (babyBearArray univariateMulCoeffSlots false).run gen
-  let (koalaMulLhsCoeffs, gen) := (koalaBearArray univariateMulCoeffSlots false).run gen
-  let (koalaMulRhsCoeffs, gen) := (koalaBearArray univariateMulCoeffSlots false).run gen
   let mulLhsPoly := cpolyOfArray mulLhsCoeffs
   let mulRhsPoly := cpolyOfArray mulRhsCoeffs
-  let koalaMulLhsPoly := cpolyOfArray koalaMulLhsCoeffs
-  let koalaMulRhsPoly := cpolyOfArray koalaMulRhsCoeffs
   let babyBearMulNttFastPlan := CPolynomial.NTTFast.Plan.ofDomain babyBearMulNttDomain
-  let koalaBearMulNttFastPlan := CPolynomial.NTTFast.Plan.ofDomain koalaBearMulNttDomain
   let babyBearMulNaive ← runTimed
     "univariate-mul-naive" "CPolynomial" "mul" "BabyBear.Field"
     univariateMulShape mulWarmupIterations mulMeasuredIterations
@@ -55,6 +56,20 @@ def runUnivariateNttFastMul (gen : StdGen) : IO (Array BenchGroup × StdGen) := 
     (fun _ => CPolynomial.NTTFast.Plan.fastMulImpl babyBearMulNttFastPlan mulLhsPoly
       mulRhsPoly)
     (checksumCPolynomial checksumBabyBear)
+  pure ({
+    groupKey := "babybear-univariate-mul",
+    title := "BabyBear univariate multiplication",
+    records := #[babyBearMulNaive, babyBearMulNtt, babyBearMulNttFast,
+      babyBearMulNttFastPlanRecord]
+  }, gen)
+
+/-- Benchmark KoalaBear direct univariate multiplication and root-of-unity NTT variants. -/
+private def runKoalaBearUnivariateMul (gen : StdGen) : IO (BenchGroup × StdGen) := do
+  let (koalaMulLhsCoeffs, gen) := (koalaBearArray univariateMulCoeffSlots false).run gen
+  let (koalaMulRhsCoeffs, gen) := (koalaBearArray univariateMulCoeffSlots false).run gen
+  let koalaMulLhsPoly := cpolyOfArray koalaMulLhsCoeffs
+  let koalaMulRhsPoly := cpolyOfArray koalaMulRhsCoeffs
+  let koalaBearMulNttFastPlan := CPolynomial.NTTFast.Plan.ofDomain koalaBearMulNttDomain
   let koalaMulNaive ← runTimed
     "univariate-mul-naive-koalabear" "CPolynomial" "mul" "KoalaBear.Field"
     univariateMulShape mulWarmupIterations mulMeasuredIterations
@@ -85,13 +100,25 @@ def runUnivariateNttFastMul (gen : StdGen) : IO (Array BenchGroup × StdGen) := 
     (fun _ => CPolynomial.NTTFast.Plan.fastMulImpl koalaBearMulNttFastPlan koalaMulLhsPoly
       koalaMulRhsPoly)
     (checksumCPolynomial checksumKoalaBear)
-  pure (#[{
-    title := "BabyBear univariate multiplication"
-    records := #[babyBearMulNaive, babyBearMulNtt, babyBearMulNttFast,
-      babyBearMulNttFastPlanRecord]
-  }, {
-    title := "KoalaBear univariate multiplication"
+  pure ({
+    groupKey := "koalabear-univariate-mul",
+    title := "KoalaBear univariate multiplication",
     records := #[koalaMulNaive, koalaMulNtt, koalaMulNttFast, koalaMulNttFastPlanRecord]
-  }], gen)
+  }, gen)
+
+/-- Runnable `CompPoly.Univariate.NTT.FastMul` benchmark tasks. -/
+def univariateNttFastMulTasks : List BenchTask := [
+  BenchTask.fromGroupRunner
+    ⟨"babybear-univariate-mul", "BabyBear univariate multiplication"⟩
+    runBabyBearUnivariateMul,
+  BenchTask.fromGroupRunner
+    ⟨"koalabear-univariate-mul", "KoalaBear univariate multiplication"⟩
+    runKoalaBearUnivariateMul
+]
+
+/-- Benchmark direct univariate multiplication and root-of-unity NTT variants. -/
+def runUnivariateNttFastMul (selection : BenchSelection) (gen : StdGen) :
+    IO (Array BenchGroup × StdGen) := do
+  runSelectedTasks univariateNttFastMulTasks selection gen
 
 end CompPolyBench

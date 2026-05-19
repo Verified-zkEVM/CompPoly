@@ -17,17 +17,18 @@ open CompPoly
 
 namespace CompPolyBench
 
-/-- Run univariate batch-evaluation benchmarks. -/
-def runUnivariateBatchEval (gen : StdGen) : IO (Array BenchGroup × StdGen) := do
+/-- Benchmark group metadata for `CompPoly.Univariate.BatchEval`. -/
+def univariateBatchEvalGroupInfos : List BenchGroupInfo := [
+  ⟨"babybear-univariate-batch-small", "BabyBear univariate batch evaluation, small"⟩,
+  ⟨"babybear-univariate-batch-medium", "BabyBear univariate batch evaluation, medium"⟩,
+  ⟨"babybear-univariate-batch-large", "BabyBear univariate batch evaluation, large"⟩
+]
+
+/-- Run the small BabyBear univariate batch-evaluation benchmark group. -/
+private def runBabyBearUnivariateBatchSmall (gen : StdGen) : IO (BenchGroup × StdGen) := do
   let (batchCoeffs, gen) := (babyBearArray univariateBatchCoeffSlots false).run gen
   let (batchPoints, gen) := (babyBearPoints univariateBatchPointCount).run gen
-  let (mediumBatchCoeffs, gen) := (babyBearArray mediumUnivariateBatchCoeffSlots false).run gen
-  let (mediumBatchPoints, gen) := (babyBearPoints mediumUnivariateBatchPointCount).run gen
-  let (largeBatchCoeffs, gen) := (babyBearArray largeUnivariateBatchCoeffSlots false).run gen
-  let (largeBatchPoints, gen) := (babyBearPoints largeUnivariateBatchPointCount).run gen
   let batchPoly := cpolyOfArray batchCoeffs
-  let mediumBatchPoly := cpolyOfArray mediumBatchCoeffs
-  let largeBatchPoly := cpolyOfArray largeBatchCoeffs
   let naiveMul : CPolynomial.MulContext BabyBear.Field := CPolynomial.MulContext.naive
   let nttMul : CPolynomial.MulContext BabyBear.Field :=
     CPolynomial.MulContext.ntt babyBearBestDomainForLength?
@@ -102,6 +103,35 @@ def runUnivariateBatchEval (gen : StdGen) : IO (Array BenchGroup × StdGen) := d
     (fun _ => CPolynomial.evalBatchSubproduct nttFastMul reversalNttFastLowMod batchPoly
       batchPoints)
     (checksumArray checksumBabyBear)
+  pure ({
+    groupKey := "babybear-univariate-batch-small",
+    title := "BabyBear univariate batch evaluation, small",
+    records := #[smallBatchSum, smallBatchHorner, smallBatchSubproductNaive,
+      smallBatchSubproductRemainder, smallBatchSubproductNtt, smallBatchSubproductNttFast,
+      smallBatchSubproductReversalConvolution, smallBatchSubproductReversalNtt,
+      smallBatchSubproductReversalNttFast]
+  }, gen)
+
+/-- Run the medium BabyBear univariate batch-evaluation benchmark group. -/
+private def runBabyBearUnivariateBatchMedium (gen : StdGen) : IO (BenchGroup × StdGen) := do
+  let (mediumBatchCoeffs, gen) := (babyBearArray mediumUnivariateBatchCoeffSlots false).run gen
+  let (mediumBatchPoints, gen) := (babyBearPoints mediumUnivariateBatchPointCount).run gen
+  let mediumBatchPoly := cpolyOfArray mediumBatchCoeffs
+  let naiveMul : CPolynomial.MulContext BabyBear.Field := CPolynomial.MulContext.naive
+  let nttMul : CPolynomial.MulContext BabyBear.Field :=
+    CPolynomial.MulContext.ntt babyBearBestDomainForLength?
+  let nttFastMul : CPolynomial.MulContext BabyBear.Field :=
+    CPolynomial.MulContext.nttFast babyBearBestDomainForLength?
+  let remainderOnlyMod : CPolynomial.ModContext BabyBear.Field :=
+    CPolynomial.ModContext.remainderOnly
+  let nttWithFallbackLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
+    CPolynomial.NTT.FastMulLow.withFallback babyBearBestDomainForLength?
+  let nttFastWithFallbackLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
+    CPolynomial.NTTFast.FastMulLow.withFallback babyBearBestDomainForLength?
+  let reversalNttLowMod : CPolynomial.ModContext BabyBear.Field :=
+    CPolynomial.ModContext.reversal nttWithFallbackLowMul
+  let reversalNttFastLowMod : CPolynomial.ModContext BabyBear.Field :=
+    CPolynomial.ModContext.reversal nttFastWithFallbackLowMul
   let mediumBatchSum ← runTimed
     "univariate-batch-medium-naive-sum" "CPolynomial" "evalBatch" "BabyBear.Field"
     mediumUnivariateBatchShape mediumBatchWarmupIterations mediumBatchMeasuredIterations
@@ -148,6 +178,31 @@ def runUnivariateBatchEval (gen : StdGen) : IO (Array BenchGroup × StdGen) := d
     (fun _ => CPolynomial.evalBatchSubproduct nttFastMul reversalNttFastLowMod
       mediumBatchPoly mediumBatchPoints)
     (checksumArray checksumBabyBear)
+  pure ({
+    groupKey := "babybear-univariate-batch-medium",
+    title := "BabyBear univariate batch evaluation, medium",
+    records := #[mediumBatchSum, mediumBatchHorner, mediumBatchSubproductRemainder,
+      mediumBatchSubproductNtt, mediumBatchSubproductNttFast, mediumBatchSubproductReversalNtt,
+      mediumBatchSubproductReversalNttFast]
+  }, gen)
+
+/-- Run the large BabyBear univariate batch-evaluation benchmark group. -/
+private def runBabyBearUnivariateBatchLarge (gen : StdGen) : IO (BenchGroup × StdGen) := do
+  let (largeBatchCoeffs, gen) := (babyBearArray largeUnivariateBatchCoeffSlots false).run gen
+  let (largeBatchPoints, gen) := (babyBearPoints largeUnivariateBatchPointCount).run gen
+  let largeBatchPoly := cpolyOfArray largeBatchCoeffs
+  let nttMul : CPolynomial.MulContext BabyBear.Field :=
+    CPolynomial.MulContext.ntt babyBearBestDomainForLength?
+  let nttFastMul : CPolynomial.MulContext BabyBear.Field :=
+    CPolynomial.MulContext.nttFast babyBearBestDomainForLength?
+  let nttWithFallbackLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
+    CPolynomial.NTT.FastMulLow.withFallback babyBearBestDomainForLength?
+  let nttFastWithFallbackLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
+    CPolynomial.NTTFast.FastMulLow.withFallback babyBearBestDomainForLength?
+  let reversalNttLowMod : CPolynomial.ModContext BabyBear.Field :=
+    CPolynomial.ModContext.reversal nttWithFallbackLowMul
+  let reversalNttFastLowMod : CPolynomial.ModContext BabyBear.Field :=
+    CPolynomial.ModContext.reversal nttFastWithFallbackLowMul
   let largeBatchHorner ← runTimed
     "univariate-batch-large-naive-horner" "CPolynomial" "evalBatchHorner" "BabyBear.Field"
     largeUnivariateBatchShape largeBatchWarmupIterations largeBatchMeasuredIterations
@@ -168,21 +223,29 @@ def runUnivariateBatchEval (gen : StdGen) : IO (Array BenchGroup × StdGen) := d
     (fun _ => CPolynomial.evalBatchSubproduct nttFastMul reversalNttFastLowMod largeBatchPoly
       largeBatchPoints)
     (checksumArray checksumBabyBear)
-  pure (#[{
-    title := "BabyBear univariate batch evaluation, small"
-    records := #[smallBatchSum, smallBatchHorner, smallBatchSubproductNaive,
-      smallBatchSubproductRemainder, smallBatchSubproductNtt, smallBatchSubproductNttFast,
-      smallBatchSubproductReversalConvolution, smallBatchSubproductReversalNtt,
-      smallBatchSubproductReversalNttFast]
-  }, {
-    title := "BabyBear univariate batch evaluation, medium"
-    records := #[mediumBatchSum, mediumBatchHorner, mediumBatchSubproductRemainder,
-      mediumBatchSubproductNtt, mediumBatchSubproductNttFast, mediumBatchSubproductReversalNtt,
-      mediumBatchSubproductReversalNttFast]
-  }, {
-    title := "BabyBear univariate batch evaluation, large"
+  pure ({
+    groupKey := "babybear-univariate-batch-large",
+    title := "BabyBear univariate batch evaluation, large",
     records := #[largeBatchHorner, largeBatchSubproductReversalNtt,
       largeBatchSubproductReversalNttFast]
-  }], gen)
+  }, gen)
+
+/-- Runnable `CompPoly.Univariate.BatchEval` benchmark tasks. -/
+def univariateBatchEvalTasks : List BenchTask := [
+  BenchTask.fromGroupRunner
+    ⟨"babybear-univariate-batch-small", "BabyBear univariate batch evaluation, small"⟩
+    runBabyBearUnivariateBatchSmall,
+  BenchTask.fromGroupRunner
+    ⟨"babybear-univariate-batch-medium", "BabyBear univariate batch evaluation, medium"⟩
+    runBabyBearUnivariateBatchMedium,
+  BenchTask.fromGroupRunner
+    ⟨"babybear-univariate-batch-large", "BabyBear univariate batch evaluation, large"⟩
+    runBabyBearUnivariateBatchLarge
+]
+
+/-- Run univariate batch-evaluation benchmarks. -/
+def runUnivariateBatchEval (selection : BenchSelection) (gen : StdGen) :
+    IO (Array BenchGroup × StdGen) := do
+  runSelectedTasks univariateBatchEvalTasks selection gen
 
 end CompPolyBench

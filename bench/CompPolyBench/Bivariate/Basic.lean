@@ -16,6 +16,13 @@ open CompPoly
 
 namespace CompPolyBench
 
+/-- Benchmark group metadata for `CompPoly.Bivariate.Basic`. -/
+def bivariateGroupInfos : List BenchGroupInfo := [
+  ⟨"babybear-bivariate-full", "BabyBear bivariate full evaluation"⟩,
+  ⟨"goldilocks-bivariate-full", "Goldilocks.Field bivariate full evaluation"⟩,
+  ⟨"bn254-bivariate-full", "BN254.ScalarField bivariate full evaluation"⟩
+]
+
 /-- Shared input-shape label for bivariate evaluation benchmarks. -/
 private def bivariateInputShape : String :=
   "xDegree<8, yDegree<64, one nonzero per 4 coeffs, 32 points"
@@ -34,7 +41,7 @@ private def buildCBivariate {R : Type*}
 
 /-- Run bivariate full-evaluation benchmarks over a generic prime `ZMod` field. -/
 private def runBivariateZMod (p : Nat) [Fact (Nat.Prime p)]
-    (nameSuffix fieldName : String) (gen : StdGen) : IO (BenchGroup × StdGen) := do
+    (key nameSuffix fieldName : String) (gen : StdGen) : IO (BenchGroup × StdGen) := do
   let (terms, gen) := (zmodArray p 512 true).run gen
   let (points, gen) := (zmodArray p 64 false).run gen
   let poly := buildCBivariate terms
@@ -63,18 +70,18 @@ private def runBivariateZMod (p : Nat) [Fact (Nat.Prime p)]
       CBivariate.evalEvalHornerXThenY point.1 point.2 poly)
     checksumZMod
   pure ({
-      title := fieldName ++ " bivariate full evaluation"
+      groupKey := key,
+      title := fieldName ++ " bivariate full evaluation",
       records := #[naive, hornerYx, hornerXy] }, gen)
 
-/-- Run the bivariate full-evaluation benchmark. -/
-def runBivariate (gen : StdGen) : IO (Array BenchGroup × StdGen) := do
+/-- Run the BabyBear bivariate full-evaluation benchmark. -/
+private def runBabyBearBivariate (gen : StdGen) : IO (BenchGroup × StdGen) := do
   let (terms, gen) := (babyBearArray 512 true).run gen
   let (points, gen) := (babyBearPoints 64).run gen
   let p := buildCBivariate terms
   let evalPoint (i : Nat) : BabyBear.Field × BabyBear.Field :=
     let offset := 2 * (i % 32)
     (points.getD (offset % points.size) 0, points.getD ((offset + 1) % points.size) 0)
-  let mut groups := #[]
   let naive ← runTimed
     "bivariate-full-eval-naive" "CBivariate" "evalEval" "BabyBear.Field"
     bivariateInputShape warmupIterations measuredIterations
@@ -96,16 +103,37 @@ def runBivariate (gen : StdGen) : IO (Array BenchGroup × StdGen) := do
       let point := evalPoint i
       CBivariate.evalEvalHornerXThenY point.1 point.2 p)
     checksumBabyBear
-  groups := groups.push {
-    title := "BabyBear bivariate full evaluation"
+  pure ({
+    groupKey := "babybear-bivariate-full",
+    title := "BabyBear bivariate full evaluation",
     records := #[naive, hornerYx, hornerXy]
-  }
-  let (goldilocksGroup, extraGen) ← runBivariateZMod
-    Goldilocks.fieldSize "-goldilocks" "Goldilocks.Field" gen
-  groups := groups.push goldilocksGroup
-  let (bn254Group, finalGen) ← runBivariateZMod
-    BN254.scalarFieldSize "-bn254" "BN254.ScalarField" extraGen
-  groups := groups.push bn254Group
-  pure (groups, finalGen)
+  }, gen)
+
+/-- Run the Goldilocks bivariate full-evaluation benchmark. -/
+private def runGoldilocksBivariate (gen : StdGen) : IO (BenchGroup × StdGen) := do
+  runBivariateZMod
+    Goldilocks.fieldSize "goldilocks-bivariate-full" "-goldilocks" "Goldilocks.Field" gen
+
+/-- Run the BN254 bivariate full-evaluation benchmark. -/
+private def runBn254Bivariate (gen : StdGen) : IO (BenchGroup × StdGen) := do
+  runBivariateZMod
+    BN254.scalarFieldSize "bn254-bivariate-full" "-bn254" "BN254.ScalarField" gen
+
+/-- Runnable bivariate benchmark tasks. -/
+def bivariateTasks : List BenchTask := [
+  BenchTask.fromGroupRunner
+    ⟨"babybear-bivariate-full", "BabyBear bivariate full evaluation"⟩
+    runBabyBearBivariate,
+  BenchTask.fromGroupRunner
+    ⟨"goldilocks-bivariate-full", "Goldilocks.Field bivariate full evaluation"⟩
+    runGoldilocksBivariate,
+  BenchTask.fromGroupRunner
+    ⟨"bn254-bivariate-full", "BN254.ScalarField bivariate full evaluation"⟩
+    runBn254Bivariate
+]
+
+/-- Run the bivariate full-evaluation benchmark. -/
+def runBivariate (selection : BenchSelection) (gen : StdGen) : IO (Array BenchGroup × StdGen) := do
+  runSelectedTasks bivariateTasks selection gen
 
 end CompPolyBench
