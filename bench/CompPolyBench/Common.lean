@@ -262,7 +262,7 @@ def runSelectedTasks (tasks : List BenchTask) (preset : BenchPreset) (selection 
     gen := nextGen
     for group in taskGroups do
       let groupTotal := totalGroupNanos group.records.toList
-      IO.println s!"finished `{group.groupKey}` in `{formatNanosAuto groupTotal}`"
+      IO.println s!"finished {group.groupKey} in {formatNanosAuto groupTotal}"
       groups := groups.push group
   pure (groups, gen)
 

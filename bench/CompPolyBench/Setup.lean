@@ -156,7 +156,7 @@ def runSelected (selection : BenchSelection) (output : BenchOutput) (preset : Be
     let hardware ← collectRunnerHardware
     IO.FS.writeFile (reportPath runId) (renderMarkdown hardware preset groups)
   IO.println <|
-    s!"wrote `{records.size}` benchmark records in `{groups.size}` groups for run `{runId}`"
+    s!"wrote {records.size} benchmark records in {groups.size} groups for run {runId}"
   match checksumMismatchGroups groups with
   | [] => pure 0
   | mismatchedGroups =>
