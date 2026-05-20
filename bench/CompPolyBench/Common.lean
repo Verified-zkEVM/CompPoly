@@ -29,53 +29,89 @@ namespace CompPolyBench
 /-- Fixed seed used to make benchmark inputs deterministic across runs. -/
 def seed : Nat := 20260504
 
+/-- Runtime/precision preset used by the benchmark executable. -/
+inductive BenchPreset where
+  | small
+  | medium
+  | large
+deriving BEq
+
+/-- Lowercase CLI/report label for a benchmark preset. -/
+def BenchPreset.name : BenchPreset → String
+  | BenchPreset.small => "small"
+  | BenchPreset.medium => "medium"
+  | BenchPreset.large => "large"
+
+/-- Select a precomputed value for the active benchmark preset. -/
+def BenchPreset.selectNat (preset : BenchPreset) (large medium small : Nat) : Nat :=
+  match preset with
+  | BenchPreset.large => large
+  | BenchPreset.medium => medium
+  | BenchPreset.small => small
+
 /-- Number of warmup iterations for ordinary evaluation benchmarks. -/
-def warmupIterations : Nat := 100
+def warmupIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 100 10 0
 
 /-- Number of measured iterations for ordinary evaluation benchmarks. -/
-def measuredIterations : Nat := 5000
+def measuredIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 5000 700 150
 
 /-- Number of warmup iterations for full-array batch-evaluation benchmarks. -/
-def batchWarmupIterations : Nat := 1
+def batchWarmupIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 1 1 0
 
 /-- Number of measured iterations for full-array batch-evaluation benchmarks. -/
-def batchMeasuredIterations : Nat := 5
+def batchMeasuredIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 5 1 1
 
 /-- Number of warmup iterations for medium full-array batch-evaluation benchmarks. -/
-def mediumBatchWarmupIterations : Nat := 1
+def mediumBatchWarmupIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 1 1 0
 
 /-- Number of measured iterations for medium full-array batch-evaluation benchmarks. -/
-def mediumBatchMeasuredIterations : Nat := 10
+def mediumBatchMeasuredIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 10 1 1
 
 /-- Number of warmup iterations for large full-array batch-evaluation benchmarks. -/
-def largeBatchWarmupIterations : Nat := 1
+def largeBatchWarmupIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 1 1 0
 
 /-- Number of measured iterations for large full-array batch-evaluation benchmarks. -/
-def largeBatchMeasuredIterations : Nat := 10
+def largeBatchMeasuredIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 10 1 1
 
 /-- Number of warmup iterations for direct monic-remainder benchmarks. -/
-def modWarmupIterations : Nat := 1
+def modWarmupIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 1 1 0
 
 /-- Number of measured iterations for direct monic-remainder benchmarks. -/
-def modMeasuredIterations : Nat := 20
+def modMeasuredIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 20 3 1
 
 /-- Number of warmup iterations for medium direct monic-remainder benchmarks. -/
-def mediumModWarmupIterations : Nat := 1
+def mediumModWarmupIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 1 1 0
 
 /-- Number of measured iterations for medium direct monic-remainder benchmarks. -/
-def mediumModMeasuredIterations : Nat := 5
+def mediumModMeasuredIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 5 1 1
 
 /-- Number of warmup iterations for direct univariate multiplication benchmarks. -/
-def mulWarmupIterations : Nat := 1
+def mulWarmupIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 1 1 0
 
 /-- Number of measured iterations for direct univariate multiplication benchmarks. -/
-def mulMeasuredIterations : Nat := 20
+def mulMeasuredIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 20 3 1
 
 /-- Number of warmup iterations for the slower additive NTT benchmark. -/
-def additiveNttWarmupIterations : Nat := 10
+def additiveNttWarmupIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 10 1 0
 
 /-- Number of measured iterations for the smaller additive NTT benchmark. -/
-def additiveNttMeasuredIterations : Nat := 1000
+def additiveNttMeasuredIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 1000 150 30
 
 /-- Primality witness used for generic `ZMod` benchmarks over `BabyBear`. -/
 instance : Fact (Nat.Prime BabyBear.fieldSize) where
@@ -90,6 +126,7 @@ structure BenchRecord where
   name : String
   representation : String
   method : String
+  preset : String
   field : String
   inputShape : String
   warmupIterations : Nat
@@ -118,7 +155,7 @@ inductive BenchSelection where
 /-- Runnable benchmark group entry used by the command-line registry. -/
 structure BenchTask where
   infos : List BenchGroupInfo
-  runTask : BenchSelection → StdGen → IO (Array BenchGroup × StdGen)
+  runTask : BenchPreset → BenchSelection → StdGen → IO (Array BenchGroup × StdGen)
 
 /-- Decide whether a group key should run under a selection. -/
 def BenchSelection.selects : BenchSelection → String → Bool
@@ -142,10 +179,10 @@ def BenchSelection.filterTasks (selection : BenchSelection)
 
 /-- Build one registry task from metadata and a single-group runner. -/
 def BenchTask.fromGroupRunner (info : BenchGroupInfo)
-    (runGroup : StdGen → IO (BenchGroup × StdGen)) : BenchTask where
+    (runGroup : BenchPreset → StdGen → IO (BenchGroup × StdGen)) : BenchTask where
   infos := [info]
-  runTask := fun _ gen => do
-    let (group, gen) ← runGroup gen
+  runTask := fun preset _ gen => do
+    let (group, gen) ← runGroup preset gen
     pure (#[group], gen)
 
 /-- Total measured runtime across all benchmark records in a group. -/
@@ -216,12 +253,12 @@ def formatNanosAuto (nanos : Nat) : String :=
   formatNanosWithUnit unit nanos
 
 /-- Run selected tasks from a registry and concatenate their emitted groups. -/
-def runSelectedTasks (tasks : List BenchTask) (selection : BenchSelection) (gen : StdGen) :
-    IO (Array BenchGroup × StdGen) := do
+def runSelectedTasks (tasks : List BenchTask) (preset : BenchPreset) (selection : BenchSelection)
+    (gen : StdGen) : IO (Array BenchGroup × StdGen) := do
   let mut gen := gen
   let mut groups := #[]
   for task in selection.filterTasks tasks do
-    let (taskGroups, nextGen) ← task.runTask selection gen
+    let (taskGroups, nextGen) ← task.runTask preset selection gen
     gen := nextGen
     for group in taskGroups do
       let groupTotal := totalGroupNanos group.records.toList
@@ -457,7 +494,7 @@ the minimum measured-iteration count used by the records in the surrounding
 benchmark group. The timed loop still consumes each result so implementations
 with different iteration counts remain comparable within the same group.
 -/
-def runTimed (name representation method field inputShape : String)
+def runTimed (name representation method field inputShape : String) (preset : BenchPreset)
     (warmup measured : Nat) (run : Nat → α) (checksum : α → Nat)
     (checksumIterations : Nat := measured) : IO BenchRecord := do
   for i in [0:warmup] do
@@ -477,6 +514,7 @@ def runTimed (name representation method field inputShape : String)
     name := name
     representation := representation
     method := method
+    preset := preset.name
     field := field
     inputShape := inputShape
     warmupIterations := warmup
@@ -509,6 +547,7 @@ def BenchRecord.toJsonLine (record : BenchRecord) : String :=
     "\"name\":" ++ jsonString record.name,
     "\"representation\":" ++ jsonString record.representation,
     "\"method\":" ++ jsonString record.method,
+    "\"preset\":" ++ jsonString record.preset,
     "\"field\":" ++ jsonString record.field,
     "\"input_shape\":" ++ jsonString record.inputShape,
     "\"warmup_iterations\":" ++ toString record.warmupIterations,
@@ -793,11 +832,13 @@ def renderHardwareSection (hardware : RunnerHardware) : List String :=
   ]
 
 /-- Render the complete Markdown benchmark report. -/
-def renderMarkdown (hardware : RunnerHardware) (groups : Array BenchGroup) : String :=
+def renderMarkdown (hardware : RunnerHardware) (preset : BenchPreset) (groups : Array BenchGroup) :
+    String :=
   String.intercalate "\n" ([
     "# Evaluation Benchmark Report",
     "",
     "- Seed: `" ++ toString seed ++ "`",
+    "- Preset: `" ++ preset.name ++ "`",
     "- Early CI performance comparisons are informational only.",
     "",
   ] ++ renderHardwareSection hardware ++ [

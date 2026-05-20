@@ -25,22 +25,25 @@ def multilinearGroupInfos : List BenchGroupInfo := [
 ]
 
 /-- Run BabyBear coefficient-form multilinear evaluation benchmarks. -/
-private def runBabyBearMultilinearCoeff (gen : StdGen) : IO (BenchGroup × StdGen) := do
+private def runBabyBearMultilinearCoeff (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
   let (coeffs, gen) := (babyBearVector 256 false).run gen
   let (points, gen) := (babyBearPoints 256).run gen
   let coeffPoly : CMlPolynomial BabyBear.Field 8 := CMlPolynomial.ofArray coeffs 8
   let evalPoint (offset : Nat) : Vector BabyBear.Field 8 :=
     Vector.ofFn fun j => points.getD ((offset + j.val) % points.size) 0
-  let hornerMeasured := 120000
-  let checksumIterations := groupChecksumIterations measuredIterations [hornerMeasured]
+  let warmup := warmupIterations preset
+  let measured := measuredIterations preset
+  let hornerMeasured := preset.selectNat 120000 17000 3500
+  let checksumIterations := groupChecksumIterations measured [hornerMeasured]
   let coeffEval ← runTimed
     "multilinear-coeff-eval" "CMlPolynomial" "eval" "BabyBear.Field"
-    "8 vars, 256 coefficients, 32 points" warmupIterations measuredIterations
+    "8 vars, 256 coefficients, 32 points" preset warmup measured
     (fun i => CMlPolynomial.eval coeffPoly (evalPoint (i % 32)))
     checksumBabyBear (checksumIterations := checksumIterations)
   let coeffHorner ← runTimed
     "multilinear-coeff-horner" "CMlPolynomial" "evalHorner" "BabyBear.Field"
-    "8 vars, 256 coefficients, 32 points" warmupIterations hornerMeasured
+    "8 vars, 256 coefficients, 32 points" preset warmup hornerMeasured
     (fun i => CMlPolynomial.evalHorner coeffPoly (evalPoint (i % 32)))
     checksumBabyBear (checksumIterations := checksumIterations)
   pure ({
@@ -50,22 +53,25 @@ private def runBabyBearMultilinearCoeff (gen : StdGen) : IO (BenchGroup × StdGe
   }, gen)
 
 /-- Run BabyBear hypercube-form multilinear evaluation benchmarks. -/
-private def runBabyBearMultilinearHypercube (gen : StdGen) : IO (BenchGroup × StdGen) := do
+private def runBabyBearMultilinearHypercube (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
   let (evals, gen) := (babyBearVector 256 false).run gen
   let (points, gen) := (babyBearPoints 256).run gen
   let evalPoly : CMlPolynomialEval BabyBear.Field 8 := CMlPolynomialEval.ofArray evals 8
   let evalPoint (offset : Nat) : Vector BabyBear.Field 8 :=
     Vector.ofFn fun j => points.getD ((offset + j.val) % points.size) 0
-  let mleMeasured := 90000
-  let checksumIterations := groupChecksumIterations measuredIterations [mleMeasured]
+  let warmup := warmupIterations preset
+  let measured := measuredIterations preset
+  let mleMeasured := preset.selectNat 90000 13000 2500
+  let checksumIterations := groupChecksumIterations measured [mleMeasured]
   let hypercubeEval ← runTimed
     "multilinear-hypercube-eval" "CMlPolynomialEval" "eval" "BabyBear.Field"
-    "8 vars, 256 hypercube values, 32 points" warmupIterations measuredIterations
+    "8 vars, 256 hypercube values, 32 points" preset warmup measured
     (fun i => CMlPolynomialEval.eval evalPoly (evalPoint (i % 32)))
     checksumBabyBear (checksumIterations := checksumIterations)
   let hypercubeMle ← runTimed
     "multilinear-hypercube-mle" "CMlPolynomialEval" "evalMle" "BabyBear.Field"
-    "8 vars, 256 hypercube values, 32 points" warmupIterations mleMeasured
+    "8 vars, 256 hypercube values, 32 points" preset warmup mleMeasured
     (fun i => CMlPolynomialEval.evalMle evalPoly (evalPoint (i % 32)))
     checksumBabyBear (checksumIterations := checksumIterations)
   pure ({
@@ -75,23 +81,26 @@ private def runBabyBearMultilinearHypercube (gen : StdGen) : IO (BenchGroup × S
   }, gen)
 
 /-- Run Goldilocks coefficient-form multilinear evaluation benchmarks. -/
-private def runGoldilocksMultilinearCoeff (gen : StdGen) : IO (BenchGroup × StdGen) := do
+private def runGoldilocksMultilinearCoeff (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
   let (goldilocksCoeffs, gen) := (zmodArray Goldilocks.fieldSize 256 false).run gen
   let (goldilocksPoints, gen) := (zmodArray Goldilocks.fieldSize 256 false).run gen
   let goldilocksCoeffPoly : CMlPolynomial Goldilocks.Field 8 :=
     CMlPolynomial.ofArray goldilocksCoeffs 8
   let goldilocksEvalPoint (offset : Nat) : Vector Goldilocks.Field 8 :=
     Vector.ofFn fun j => goldilocksPoints.getD ((offset + j.val) % goldilocksPoints.size) 0
-  let hornerMeasured := 32000
-  let checksumIterations := groupChecksumIterations measuredIterations [hornerMeasured]
+  let warmup := warmupIterations preset
+  let measured := measuredIterations preset
+  let hornerMeasured := preset.selectNat 32000 4500 900
+  let checksumIterations := groupChecksumIterations measured [hornerMeasured]
   let goldilocksCoeffEval ← runTimed
     "multilinear-coeff-eval-goldilocks" "CMlPolynomial" "eval" "Goldilocks.Field"
-    "8 vars, 256 coefficients, 32 points" warmupIterations measuredIterations
+    "8 vars, 256 coefficients, 32 points" preset warmup measured
     (fun i => CMlPolynomial.eval goldilocksCoeffPoly (goldilocksEvalPoint (i % 32)))
     checksumZMod (checksumIterations := checksumIterations)
   let goldilocksCoeffHorner ← runTimed
     "multilinear-coeff-horner-goldilocks" "CMlPolynomial" "evalHorner" "Goldilocks.Field"
-    "8 vars, 256 coefficients, 32 points" warmupIterations hornerMeasured
+    "8 vars, 256 coefficients, 32 points" preset warmup hornerMeasured
     (fun i => CMlPolynomial.evalHorner goldilocksCoeffPoly (goldilocksEvalPoint (i % 32)))
     checksumZMod (checksumIterations := checksumIterations)
   pure ({
@@ -101,23 +110,26 @@ private def runGoldilocksMultilinearCoeff (gen : StdGen) : IO (BenchGroup × Std
   }, gen)
 
 /-- Run Goldilocks hypercube-form multilinear evaluation benchmarks. -/
-private def runGoldilocksMultilinearHypercube (gen : StdGen) : IO (BenchGroup × StdGen) := do
+private def runGoldilocksMultilinearHypercube (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
   let (goldilocksEvals, gen) := (zmodArray Goldilocks.fieldSize 256 false).run gen
   let (goldilocksPoints, gen) := (zmodArray Goldilocks.fieldSize 256 false).run gen
   let goldilocksEvalPoly : CMlPolynomialEval Goldilocks.Field 8 :=
     CMlPolynomialEval.ofArray goldilocksEvals 8
   let goldilocksEvalPoint (offset : Nat) : Vector Goldilocks.Field 8 :=
     Vector.ofFn fun j => goldilocksPoints.getD ((offset + j.val) % goldilocksPoints.size) 0
-  let mleMeasured := 25000
-  let checksumIterations := groupChecksumIterations measuredIterations [mleMeasured]
+  let warmup := warmupIterations preset
+  let measured := measuredIterations preset
+  let mleMeasured := preset.selectNat 25000 3500 700
+  let checksumIterations := groupChecksumIterations measured [mleMeasured]
   let goldilocksHypercubeEval ← runTimed
     "multilinear-hypercube-eval-goldilocks" "CMlPolynomialEval" "eval" "Goldilocks.Field"
-    "8 vars, 256 hypercube values, 32 points" warmupIterations measuredIterations
+    "8 vars, 256 hypercube values, 32 points" preset warmup measured
     (fun i => CMlPolynomialEval.eval goldilocksEvalPoly (goldilocksEvalPoint (i % 32)))
     checksumZMod (checksumIterations := checksumIterations)
   let goldilocksHypercubeMle ← runTimed
     "multilinear-hypercube-mle-goldilocks" "CMlPolynomialEval" "evalMle" "Goldilocks.Field"
-    "8 vars, 256 hypercube values, 32 points" warmupIterations mleMeasured
+    "8 vars, 256 hypercube values, 32 points" preset warmup mleMeasured
     (fun i => CMlPolynomialEval.evalMle goldilocksEvalPoly (goldilocksEvalPoint (i % 32)))
     checksumZMod (checksumIterations := checksumIterations)
   pure ({
@@ -144,8 +156,8 @@ def multilinearTasks : List BenchTask := [
 ]
 
 /-- Run coefficient-form and hypercube-form multilinear evaluation benchmarks. -/
-def runMultilinear (selection : BenchSelection) (gen : StdGen) :
+def runMultilinear (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :
     IO (Array BenchGroup × StdGen) := do
-  runSelectedTasks multilinearTasks selection gen
+  runSelectedTasks multilinearTasks preset selection gen
 
 end CompPolyBench

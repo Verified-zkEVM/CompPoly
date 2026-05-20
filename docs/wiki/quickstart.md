@@ -65,15 +65,15 @@ Run this when editing `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, or files unde
 
 ```bash
 lake build CompPolyBench
-lake exe CompPolyBench
+lake exe CompPolyBench --medium
 ```
 
 ## CI Mapping
 
 - [`../../.github/workflows/lean_action_ci.yml`](../../.github/workflows/lean_action_ci.yml)
   runs a clean build, warm rebuild, and `lake test`, then posts a build-timing
-  report. It also builds and runs `CompPolyBench`, then uploads benchmark reports
-  as CI artifacts.
+  report. It also builds and runs `CompPolyBench --medium`, then uploads benchmark
+  reports as CI artifacts.
 - [`../../.github/workflows/linting.yml`](../../.github/workflows/linting.yml) runs
   the style linter on changed `.lean` files in PRs and push builds.
 - [`../../.github/workflows/check_imports.yml`](../../.github/workflows/check_imports.yml)

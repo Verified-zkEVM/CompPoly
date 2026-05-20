@@ -78,7 +78,8 @@ private def runConcreteBtfNttFast (k ℓ R_rate : Nat)
 
 /-- Run one additive NTT benchmark case over `BTF₃`. -/
 private def runAdditiveNttCase (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ 3)
-    (key currentName fastName : String) (warmup measured fastMeasured : Nat) (gen : StdGen) :
+    (key currentName fastName : String) (warmup measured fastMeasured : Nat)
+    (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let inputSize := 2 ^ ℓ
   let outputSize := 2 ^ (ℓ + R_rate)
@@ -90,12 +91,12 @@ private def runAdditiveNttCase (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_ra
   let checksumIterations := groupChecksumIterations measured [fastMeasured]
   let currentRecord ← runTimed
     currentName "computableAdditiveNTT" "computableAdditiveNTT"
-    fieldLabel inputShape warmup measured
+    fieldLabel inputShape preset warmup measured
     (fun _ => runBtf3Ntt ℓ R_rate h_ℓ_add_R_rate input)
     (checksumBtf3Output (n := ℓ + R_rate)) (checksumIterations := checksumIterations)
   let fastRecord ← runTimed
     fastName "computableAdditiveNTTFast" "computableAdditiveNTTFast"
-    fieldLabel inputShape warmup fastMeasured
+    fieldLabel inputShape preset warmup fastMeasured
     (fun _ => runBtf3NttFast ℓ R_rate h_ℓ_add_R_rate input)
     (checksumBtf3OutputArray (n := ℓ + R_rate)) (checksumIterations := checksumIterations)
   pure ({
@@ -106,7 +107,8 @@ private def runAdditiveNttCase (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_ra
 /-- Run one larger fast-only additive NTT benchmark over a concrete binary-tower field. -/
 private def runAdditiveNttFastLargeCase (k ℓ R_rate : Nat)
     (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ k) (key fastName : String)
-    (warmup measured : Nat) (gen : StdGen) : IO (BenchGroup × StdGen) := do
+    (warmup measured : Nat) (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
   let inputSize := 2 ^ ℓ
   let outputSize := 2 ^ (ℓ + R_rate)
   let (values, gen) := (randomNatArray inputSize (2 ^ (2 ^ k) - 1)).run gen
@@ -116,7 +118,7 @@ private def runAdditiveNttFastLargeCase (k ℓ R_rate : Nat)
   let inputShape := s!"{inputSize} input coeffs, {outputSize} output evals"
   let fastRecord ← runTimed
     fastName "computableAdditiveNTTFast" "computableAdditiveNTTFast"
-    fieldLabel inputShape warmup measured
+    fieldLabel inputShape preset warmup measured
     (fun _ => runConcreteBtfNttFast k ℓ R_rate h_ℓ_add_R_rate input)
     (checksumConcreteBtfOutputArray (k := k) (n := ℓ + R_rate))
   pure ({
@@ -125,21 +127,32 @@ private def runAdditiveNttFastLargeCase (k ℓ R_rate : Nat)
       records := #[fastRecord] }, gen)
 
 /-- Run the small additive NTT benchmark over `BTF₃`. -/
-private def runAdditiveNttBtf3L2R2 (gen : StdGen) : IO (BenchGroup × StdGen) := do
+private def runAdditiveNttBtf3L2R2 (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  let warmup := additiveNttWarmupIterations preset
+  let measured := additiveNttMeasuredIterations preset
+  let fastMeasured := preset.selectNat 13000 2000 400
   runAdditiveNttCase 2 2 (by omega)
     "additive-ntt-btf3-l2-r2" "additive-ntt-btf3" "additive-ntt-btf3-fast"
-    additiveNttWarmupIterations additiveNttMeasuredIterations 13000 gen
+    warmup measured fastMeasured preset gen
 
 /-- Run the wider additive NTT benchmark over `BTF₃`. -/
-private def runAdditiveNttBtf3L4R2 (gen : StdGen) : IO (BenchGroup × StdGen) := do
+private def runAdditiveNttBtf3L4R2 (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  let warmup := preset.selectNat 2 1 0
+  let measured := preset.selectNat 10 1 1
+  let fastMeasured := preset.selectNat 2000 300 60
   runAdditiveNttCase 4 2 (by omega)
     "additive-ntt-btf3-l4-r2" "additive-ntt-btf3-l4-r2"
-    "additive-ntt-btf3-l4-r2-fast" 2 10 2000 gen
+    "additive-ntt-btf3-l4-r2-fast" warmup measured fastMeasured preset gen
 
 /-- Run the large fast-only additive NTT benchmark over `BTF₄`. -/
-private def runAdditiveNttBtf4L7R2 (gen : StdGen) : IO (BenchGroup × StdGen) := do
+private def runAdditiveNttBtf4L7R2 (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  let warmup := preset.selectNat 1 1 0
+  let measured := preset.selectNat 10 1 1
   runAdditiveNttFastLargeCase 4 7 2 (by omega)
-    "additive-ntt-btf4-l7-r2" "additive-ntt-btf4-l7-r2-fast" 1 10 gen
+    "additive-ntt-btf4-l7-r2" "additive-ntt-btf4-l7-r2-fast" warmup measured preset gen
 
 /-- Runnable additive-NTT benchmark tasks. -/
 def additiveNttTasks : List BenchTask := [
@@ -155,8 +168,8 @@ def additiveNttTasks : List BenchTask := [
 ]
 
 /-- Run the additive NTT benchmark. -/
-def runAdditiveNtt (selection : BenchSelection) (gen : StdGen) :
+def runAdditiveNtt (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :
     IO (Array BenchGroup × StdGen) := do
-  runSelectedTasks additiveNttTasks selection gen
+  runSelectedTasks additiveNttTasks preset selection gen
 
 end CompPolyBench

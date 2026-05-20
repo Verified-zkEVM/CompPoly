@@ -14,6 +14,15 @@ Run the benchmark from the repository root:
 lake exe CompPolyBench
 ```
 
+The default preset is `--large`, which preserves the full local benchmark
+iteration counts. `--medium` and `--small` run every benchmark group with lower
+precomputed iteration counts:
+
+```bash
+lake exe CompPolyBench --medium
+lake exe CompPolyBench --small
+```
+
 To inspect runnable benchmark groups without running them:
 
 ```bash
@@ -27,15 +36,15 @@ To run only selected groups, pass group keys either positionally or with
 lake exe CompPolyBench univariate-low-product-babybear
 lake exe CompPolyBench --group univariate-low-product-babybear --group additive-ntt-btf3-l2-r2
 lake exe CompPolyBench --groups univariate-low-product-babybear,additive-ntt-btf3-l2-r2
-lake exe CompPolyBench -g univariate-low-product-babybear,additive-ntt-btf3-l2-r2
+lake exe CompPolyBench --small univariate-low-product-babybear
 ```
 
 By default, each run writes both JSONL and Markdown outputs. To write only one
-artifact type, pass `--json-only`/`-j` or `--markdown-only`/`-m`:
+artifact type, pass `--json-only` or `--markdown-only`:
 
 ```bash
-lake exe CompPolyBench -j univariate-low-product-babybear
-lake exe CompPolyBench -m --groups univariate-low-product-babybear,additive-ntt-btf3-l2-r2
+lake exe CompPolyBench --json-only univariate-low-product-babybear
+lake exe CompPolyBench --markdown-only --groups univariate-low-product-babybear,additive-ntt-btf3-l2-r2
 ```
 
 The executable is defined by the `CompPolyBench` Lake target. Its entrypoint is
@@ -86,4 +95,6 @@ so checksums should stay stable.
 ## CI
 
 GitHub Actions builds and runs `CompPolyBench`, uploads generated benchmark
-artifacts, and appends the Markdown report to the step summary.
+artifacts, and appends the Markdown report to the step summary. CI uses the
+`--medium` preset so it still covers every benchmark group with reduced
+iteration counts.

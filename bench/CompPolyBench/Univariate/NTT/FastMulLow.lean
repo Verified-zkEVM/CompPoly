@@ -22,7 +22,8 @@ def univariateNttFastMulLowGroupInfos : List BenchGroupInfo := [
 ]
 
 /-- Benchmark low-product multiplication variants used by remainder and batch-evaluation paths. -/
-private def runBabyBearUnivariateLowProduct (gen : StdGen) : IO (BenchGroup × StdGen) := do
+private def runBabyBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
   let (mulLowLhsCoeffs, gen) := (babyBearArray univariateMulLowCoeffSlots false).run gen
   let (mulLowRhsCoeffs, gen) := (babyBearArray univariateMulLowCoeffSlots false).run gen
   let mulLowLhsRaw : CPolynomial.Raw BabyBear.Field := mulLowLhsCoeffs
@@ -35,35 +36,37 @@ private def runBabyBearUnivariateLowProduct (gen : StdGen) : IO (BenchGroup × S
     CPolynomial.NTT.FastMulLow.withFallback babyBearBestDomainForLength?
   let nttFastWithFallbackLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
     CPolynomial.NTTFast.FastMulLow.withFallback babyBearBestDomainForLength?
-  let convolutionMeasured := 30
-  let nttMeasured := 100
-  let nttFastMeasured := 500
-  let checksumIterations := groupChecksumIterations mulMeasuredIterations [
+  let warmup := mulWarmupIterations preset
+  let measured := mulMeasuredIterations preset
+  let convolutionMeasured := preset.selectNat 30 5 1
+  let nttMeasured := preset.selectNat 100 15 3
+  let nttFastMeasured := preset.selectNat 500 70 15
+  let checksumIterations := groupChecksumIterations measured [
     convolutionMeasured, nttMeasured, nttFastMeasured
   ]
   let lowNaive ← runTimed
     "univariate-mul-low-naive" "CPolynomial.Raw" "MulLowContext.naive" "BabyBear.Field"
-    univariateMulLowShape mulWarmupIterations mulMeasuredIterations
+    univariateMulLowShape preset warmup measured
     (fun _ => naiveLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw mulLowRhsRaw)
     (checksumRawPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   let lowConvolution ← runTimed
     "univariate-mul-low-convolution" "CPolynomial.Raw" "MulLowContext.convolution"
     "BabyBear.Field"
-    univariateMulLowShape mulWarmupIterations convolutionMeasured
+    univariateMulLowShape preset warmup convolutionMeasured
     (fun _ => convolutionLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
       mulLowRhsRaw)
     (checksumRawPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   let lowNtt ← runTimed
     "univariate-mul-low-ntt-with-fallback" "CPolynomial.Raw" "FastMulLow.withFallback"
     "BabyBear.Field"
-    univariateMulLowShape mulWarmupIterations nttMeasured
+    univariateMulLowShape preset warmup nttMeasured
     (fun _ => nttWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
       mulLowRhsRaw)
     (checksumRawPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   let lowNttFast ← runTimed
     "univariate-mul-low-ntt-fast-with-fallback" "CPolynomial.Raw"
     "NTTFast.FastMulLow.withFallback" "BabyBear.Field"
-    univariateMulLowShape mulWarmupIterations nttFastMeasured
+    univariateMulLowShape preset warmup nttFastMeasured
     (fun _ => nttFastWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
       mulLowRhsRaw)
     (checksumRawPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
@@ -81,8 +84,9 @@ def univariateNttFastMulLowTasks : List BenchTask := [
 ]
 
 /-- Benchmark low-product multiplication variants used by remainder and batch-evaluation paths. -/
-def runUnivariateNttFastMulLow (selection : BenchSelection) (gen : StdGen) :
+def runUnivariateNttFastMulLow (preset : BenchPreset) (selection : BenchSelection)
+    (gen : StdGen) :
     IO (Array BenchGroup × StdGen) := do
-  runSelectedTasks univariateNttFastMulLowTasks selection gen
+  runSelectedTasks univariateNttFastMulLowTasks preset selection gen
 
 end CompPolyBench

@@ -25,7 +25,8 @@ def univariateBatchEvalGroupInfos : List BenchGroupInfo := [
 ]
 
 /-- Run the small BabyBear univariate batch-evaluation benchmark group. -/
-private def runBabyBearUnivariateBatchSmall (gen : StdGen) : IO (BenchGroup × StdGen) := do
+private def runBabyBearUnivariateBatchSmall (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
   let (batchCoeffs, gen) := (babyBearArray univariateBatchCoeffSlots false).run gen
   let (batchPoints, gen) := (babyBearPoints univariateBatchPointCount).run gen
   let batchPoly := cpolyOfArray batchCoeffs
@@ -49,69 +50,71 @@ private def runBabyBearUnivariateBatchSmall (gen : StdGen) : IO (BenchGroup × S
     CPolynomial.ModContext.reversal nttWithFallbackLowMul
   let reversalNttFastLowMod : CPolynomial.ModContext BabyBear.Field :=
     CPolynomial.ModContext.reversal nttFastWithFallbackLowMul
-  let sumMeasured := 1750
-  let hornerMeasured := 11500
-  let remainderMeasured := 900
-  let nttMeasured := 700
-  let nttFastMeasured := 800
-  let reversalConvolutionMeasured := 150
-  let reversalNttMeasured := 150
-  let reversalNttFastMeasured := 450
-  let checksumIterations := groupChecksumIterations batchMeasuredIterations [
+  let warmup := batchWarmupIterations preset
+  let measured := batchMeasuredIterations preset
+  let sumMeasured := preset.selectNat 1750 250 50
+  let hornerMeasured := preset.selectNat 11500 1600 300
+  let remainderMeasured := preset.selectNat 900 130 30
+  let nttMeasured := preset.selectNat 700 100 20
+  let nttFastMeasured := preset.selectNat 800 120 25
+  let reversalConvolutionMeasured := preset.selectNat 150 20 5
+  let reversalNttMeasured := preset.selectNat 150 20 5
+  let reversalNttFastMeasured := preset.selectNat 450 60 15
+  let checksumIterations := groupChecksumIterations measured [
     sumMeasured, hornerMeasured, remainderMeasured, nttMeasured, nttFastMeasured,
     reversalConvolutionMeasured, reversalNttMeasured, reversalNttFastMeasured
   ]
   let smallBatchSum ← runTimed
     "univariate-batch-naive-sum" "CPolynomial" "evalBatch" "BabyBear.Field"
-    univariateBatchShape batchWarmupIterations sumMeasured
+    univariateBatchShape preset warmup sumMeasured
     (fun _ => CPolynomial.evalBatch batchPoly batchPoints)
     (checksumArray checksumBabyBear) (checksumIterations := checksumIterations)
   let smallBatchHorner ← runTimed
     "univariate-batch-naive-horner" "CPolynomial" "evalBatchHorner" "BabyBear.Field"
-    univariateBatchShape batchWarmupIterations hornerMeasured
+    univariateBatchShape preset warmup hornerMeasured
     (fun _ => CPolynomial.evalBatchHorner batchPoly batchPoints)
     (checksumArray checksumBabyBear) (checksumIterations := checksumIterations)
   let smallBatchSubproductNaive ← runTimed
     "univariate-batch-subproduct-naive-mul-naive-mod" "CPolynomial"
     "evalBatchSubproduct naive mul/mod" "BabyBear.Field"
-    univariateBatchShape batchWarmupIterations batchMeasuredIterations
+    univariateBatchShape preset warmup measured
     (fun _ => CPolynomial.evalBatchSubproduct naiveMul naiveMod batchPoly batchPoints)
     (checksumArray checksumBabyBear) (checksumIterations := checksumIterations)
   let smallBatchSubproductRemainder ← runTimed
     "univariate-batch-subproduct-naive-mul-remainder-only-mod" "CPolynomial"
     "evalBatchSubproduct naive mul/remainder-only mod" "BabyBear.Field"
-    univariateBatchShape batchWarmupIterations remainderMeasured
+    univariateBatchShape preset warmup remainderMeasured
     (fun _ => CPolynomial.evalBatchSubproduct naiveMul remainderOnlyMod batchPoly batchPoints)
     (checksumArray checksumBabyBear) (checksumIterations := checksumIterations)
   let smallBatchSubproductNtt ← runTimed
     "univariate-batch-subproduct-ntt-mul-remainder-only-mod" "CPolynomial"
     "evalBatchSubproduct ntt mul/remainder-only mod" "BabyBear.Field"
-    univariateBatchShape batchWarmupIterations nttMeasured
+    univariateBatchShape preset warmup nttMeasured
     (fun _ => CPolynomial.evalBatchSubproduct nttMul remainderOnlyMod batchPoly batchPoints)
     (checksumArray checksumBabyBear) (checksumIterations := checksumIterations)
   let smallBatchSubproductNttFast ← runTimed
     "univariate-batch-subproduct-ntt-fast-mul-remainder-only-mod" "CPolynomial"
     "evalBatchSubproduct ntt-fast mul/remainder-only mod" "BabyBear.Field"
-    univariateBatchShape batchWarmupIterations nttFastMeasured
+    univariateBatchShape preset warmup nttFastMeasured
     (fun _ => CPolynomial.evalBatchSubproduct nttFastMul remainderOnlyMod batchPoly batchPoints)
     (checksumArray checksumBabyBear) (checksumIterations := checksumIterations)
   let smallBatchSubproductReversalConvolution ← runTimed
     "univariate-batch-subproduct-naive-mul-reversal-convolution-low-mod" "CPolynomial"
     "evalBatchSubproduct naive mul/reversal-convolution-low mod" "BabyBear.Field"
-    univariateBatchShape batchWarmupIterations reversalConvolutionMeasured
+    univariateBatchShape preset warmup reversalConvolutionMeasured
     (fun _ => CPolynomial.evalBatchSubproduct naiveMul reversalConvolutionLowMod batchPoly
       batchPoints)
     (checksumArray checksumBabyBear) (checksumIterations := checksumIterations)
   let smallBatchSubproductReversalNtt ← runTimed
     "univariate-batch-subproduct-ntt-mul-reversal-ntt-low-mod" "CPolynomial"
     "evalBatchSubproduct ntt mul/reversal-ntt-low mod" "BabyBear.Field"
-    univariateBatchShape batchWarmupIterations reversalNttMeasured
+    univariateBatchShape preset warmup reversalNttMeasured
     (fun _ => CPolynomial.evalBatchSubproduct nttMul reversalNttLowMod batchPoly batchPoints)
     (checksumArray checksumBabyBear) (checksumIterations := checksumIterations)
   let smallBatchSubproductReversalNttFast ← runTimed
     "univariate-batch-subproduct-ntt-fast-mul-reversal-ntt-fast-low-mod" "CPolynomial"
     "evalBatchSubproduct ntt-fast mul/reversal-ntt-fast-low mod" "BabyBear.Field"
-    univariateBatchShape batchWarmupIterations reversalNttFastMeasured
+    univariateBatchShape preset warmup reversalNttFastMeasured
     (fun _ => CPolynomial.evalBatchSubproduct nttFastMul reversalNttFastLowMod batchPoly
       batchPoints)
     (checksumArray checksumBabyBear) (checksumIterations := checksumIterations)
@@ -125,7 +128,8 @@ private def runBabyBearUnivariateBatchSmall (gen : StdGen) : IO (BenchGroup × S
   }, gen)
 
 /-- Run the medium BabyBear univariate batch-evaluation benchmark group. -/
-private def runBabyBearUnivariateBatchMedium (gen : StdGen) : IO (BenchGroup × StdGen) := do
+private def runBabyBearUnivariateBatchMedium (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
   let (mediumBatchCoeffs, gen) := (babyBearArray mediumUnivariateBatchCoeffSlots false).run gen
   let (mediumBatchPoints, gen) := (babyBearPoints mediumUnivariateBatchPointCount).run gen
   let mediumBatchPoly := cpolyOfArray mediumBatchCoeffs
@@ -144,47 +148,49 @@ private def runBabyBearUnivariateBatchMedium (gen : StdGen) : IO (BenchGroup × 
     CPolynomial.ModContext.reversal nttWithFallbackLowMul
   let reversalNttFastLowMod : CPolynomial.ModContext BabyBear.Field :=
     CPolynomial.ModContext.reversal nttFastWithFallbackLowMul
-  let hornerMeasured := 150
-  let reversalNttMeasured := 50
-  let reversalNttFastMeasured := 170
-  let checksumIterations := groupChecksumIterations mediumBatchMeasuredIterations [
+  let warmup := mediumBatchWarmupIterations preset
+  let measured := mediumBatchMeasuredIterations preset
+  let hornerMeasured := preset.selectNat 150 20 5
+  let reversalNttMeasured := preset.selectNat 50 10 1
+  let reversalNttFastMeasured := preset.selectNat 170 25 5
+  let checksumIterations := groupChecksumIterations measured [
     hornerMeasured, reversalNttMeasured, reversalNttFastMeasured
   ]
   let mediumBatchSum ← runTimed
     "univariate-batch-medium-naive-sum" "CPolynomial" "evalBatch" "BabyBear.Field"
-    mediumUnivariateBatchShape mediumBatchWarmupIterations mediumBatchMeasuredIterations
+    mediumUnivariateBatchShape preset warmup measured
     (fun _ => CPolynomial.evalBatch mediumBatchPoly mediumBatchPoints)
     (checksumArray checksumBabyBear) (checksumIterations := checksumIterations)
   let mediumBatchHorner ← runTimed
     "univariate-batch-medium-naive-horner" "CPolynomial" "evalBatchHorner" "BabyBear.Field"
-    mediumUnivariateBatchShape mediumBatchWarmupIterations hornerMeasured
+    mediumUnivariateBatchShape preset warmup hornerMeasured
     (fun _ => CPolynomial.evalBatchHorner mediumBatchPoly mediumBatchPoints)
     (checksumArray checksumBabyBear) (checksumIterations := checksumIterations)
   let mediumBatchSubproductRemainder ← runTimed
     "univariate-batch-medium-subproduct-naive-mul-remainder-only-mod" "CPolynomial"
     "evalBatchSubproduct naive mul/remainder-only mod" "BabyBear.Field"
-    mediumUnivariateBatchShape mediumBatchWarmupIterations mediumBatchMeasuredIterations
+    mediumUnivariateBatchShape preset warmup measured
     (fun _ => CPolynomial.evalBatchSubproduct naiveMul remainderOnlyMod mediumBatchPoly
       mediumBatchPoints)
     (checksumArray checksumBabyBear) (checksumIterations := checksumIterations)
   let mediumBatchSubproductNtt ← runTimed
     "univariate-batch-medium-subproduct-ntt-mul-remainder-only-mod" "CPolynomial"
     "evalBatchSubproduct ntt mul/remainder-only mod" "BabyBear.Field"
-    mediumUnivariateBatchShape mediumBatchWarmupIterations mediumBatchMeasuredIterations
+    mediumUnivariateBatchShape preset warmup measured
     (fun _ => CPolynomial.evalBatchSubproduct nttMul remainderOnlyMod mediumBatchPoly
       mediumBatchPoints)
     (checksumArray checksumBabyBear) (checksumIterations := checksumIterations)
   let mediumBatchSubproductNttFast ← runTimed
     "univariate-batch-medium-subproduct-ntt-fast-mul-remainder-only-mod" "CPolynomial"
     "evalBatchSubproduct ntt-fast mul/remainder-only mod" "BabyBear.Field"
-    mediumUnivariateBatchShape mediumBatchWarmupIterations mediumBatchMeasuredIterations
+    mediumUnivariateBatchShape preset warmup measured
     (fun _ => CPolynomial.evalBatchSubproduct nttFastMul remainderOnlyMod mediumBatchPoly
       mediumBatchPoints)
     (checksumArray checksumBabyBear) (checksumIterations := checksumIterations)
   let mediumBatchSubproductReversalNtt ← runTimed
     "univariate-batch-medium-subproduct-ntt-mul-reversal-ntt-low-mod" "CPolynomial"
     "evalBatchSubproduct ntt mul/reversal-ntt-low mod" "BabyBear.Field"
-    mediumUnivariateBatchShape mediumBatchWarmupIterations reversalNttMeasured
+    mediumUnivariateBatchShape preset warmup reversalNttMeasured
     (fun _ => CPolynomial.evalBatchSubproduct nttMul reversalNttLowMod mediumBatchPoly
       mediumBatchPoints)
     (checksumArray checksumBabyBear) (checksumIterations := checksumIterations)
@@ -192,7 +198,7 @@ private def runBabyBearUnivariateBatchMedium (gen : StdGen) : IO (BenchGroup × 
     "univariate-batch-medium-subproduct-ntt-fast-mul-reversal-ntt-fast-low-mod"
     "CPolynomial" "evalBatchSubproduct ntt-fast mul/reversal-ntt-fast-low mod"
     "BabyBear.Field"
-    mediumUnivariateBatchShape mediumBatchWarmupIterations reversalNttFastMeasured
+    mediumUnivariateBatchShape preset warmup reversalNttFastMeasured
     (fun _ => CPolynomial.evalBatchSubproduct nttFastMul reversalNttFastLowMod
       mediumBatchPoly mediumBatchPoints)
     (checksumArray checksumBabyBear) (checksumIterations := checksumIterations)
@@ -205,7 +211,8 @@ private def runBabyBearUnivariateBatchMedium (gen : StdGen) : IO (BenchGroup × 
   }, gen)
 
 /-- Run the large BabyBear univariate batch-evaluation benchmark group. -/
-private def runBabyBearUnivariateBatchLarge (gen : StdGen) : IO (BenchGroup × StdGen) := do
+private def runBabyBearUnivariateBatchLarge (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
   let (largeBatchCoeffs, gen) := (babyBearArray largeUnivariateBatchCoeffSlots false).run gen
   let (largeBatchPoints, gen) := (babyBearPoints largeUnivariateBatchPointCount).run gen
   let largeBatchPoly := cpolyOfArray largeBatchCoeffs
@@ -221,20 +228,22 @@ private def runBabyBearUnivariateBatchLarge (gen : StdGen) : IO (BenchGroup × S
     CPolynomial.ModContext.reversal nttWithFallbackLowMul
   let reversalNttFastLowMod : CPolynomial.ModContext BabyBear.Field :=
     CPolynomial.ModContext.reversal nttFastWithFallbackLowMul
-  let reversalNttMeasured := 20
-  let reversalNttFastMeasured := 80
-  let checksumIterations := groupChecksumIterations largeBatchMeasuredIterations [
+  let warmup := largeBatchWarmupIterations preset
+  let measured := largeBatchMeasuredIterations preset
+  let reversalNttMeasured := preset.selectNat 20 3 1
+  let reversalNttFastMeasured := preset.selectNat 80 10 2
+  let checksumIterations := groupChecksumIterations measured [
     reversalNttMeasured, reversalNttFastMeasured
   ]
   let largeBatchHorner ← runTimed
     "univariate-batch-large-naive-horner" "CPolynomial" "evalBatchHorner" "BabyBear.Field"
-    largeUnivariateBatchShape largeBatchWarmupIterations largeBatchMeasuredIterations
+    largeUnivariateBatchShape preset warmup measured
     (fun _ => CPolynomial.evalBatchHorner largeBatchPoly largeBatchPoints)
     (checksumArray checksumBabyBear) (checksumIterations := checksumIterations)
   let largeBatchSubproductReversalNtt ← runTimed
     "univariate-batch-large-subproduct-ntt-mul-reversal-ntt-low-mod" "CPolynomial"
     "evalBatchSubproduct ntt mul/reversal-ntt-low mod" "BabyBear.Field"
-    largeUnivariateBatchShape largeBatchWarmupIterations reversalNttMeasured
+    largeUnivariateBatchShape preset warmup reversalNttMeasured
     (fun _ => CPolynomial.evalBatchSubproduct nttMul reversalNttLowMod largeBatchPoly
       largeBatchPoints)
     (checksumArray checksumBabyBear) (checksumIterations := checksumIterations)
@@ -242,7 +251,7 @@ private def runBabyBearUnivariateBatchLarge (gen : StdGen) : IO (BenchGroup × S
     "univariate-batch-large-subproduct-ntt-fast-mul-reversal-ntt-fast-low-mod"
     "CPolynomial" "evalBatchSubproduct ntt-fast mul/reversal-ntt-fast-low mod"
     "BabyBear.Field"
-    largeUnivariateBatchShape largeBatchWarmupIterations reversalNttFastMeasured
+    largeUnivariateBatchShape preset warmup reversalNttFastMeasured
     (fun _ => CPolynomial.evalBatchSubproduct nttFastMul reversalNttFastLowMod largeBatchPoly
       largeBatchPoints)
     (checksumArray checksumBabyBear) (checksumIterations := checksumIterations)
@@ -267,8 +276,8 @@ def univariateBatchEvalTasks : List BenchTask := [
 ]
 
 /-- Run univariate batch-evaluation benchmarks. -/
-def runUnivariateBatchEval (selection : BenchSelection) (gen : StdGen) :
+def runUnivariateBatchEval (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :
     IO (Array BenchGroup × StdGen) := do
-  runSelectedTasks univariateBatchEvalTasks selection gen
+  runSelectedTasks univariateBatchEvalTasks preset selection gen
 
 end CompPolyBench

@@ -84,7 +84,7 @@ jobs:
       - name: Build evaluation benchmark executable
         run: lake build CompPolyBench
       - name: Run evaluation benchmarks
-        run: lake exe CompPolyBench
+        run: lake exe CompPolyBench --medium
       - name: Prepare evaluation benchmark artifact
         if: always()
         run: |
