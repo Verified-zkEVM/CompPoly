@@ -14,22 +14,9 @@ lean_lib CompPoly
 lean_lib CompPolyTests where
   srcDir := "tests"
 
-lean_lib CompPolyBenchSupport where
+lean_lib CompPolyBenchLib where
   srcDir := "bench"
-  roots := #[
-    `CompPolyBench.Bivariate.Basic,
-    `CompPolyBench.Common,
-    `CompPolyBench.Fields.Binary.AdditiveNTT.Impl,
-    `CompPolyBench.Multilinear.Basic,
-    `CompPolyBench.Multivariate.CMvPolynomial,
-    `CompPolyBench.Setup,
-    `CompPolyBench.Univariate,
-    `CompPolyBench.Univariate.Basic,
-    `CompPolyBench.Univariate.BatchEval,
-    `CompPolyBench.Univariate.Common,
-    `CompPolyBench.Univariate.NTT.FastMul,
-    `CompPolyBench.Univariate.NTT.FastMulLow
-  ]
+  globs := #[Glob.submodules `CompPolyBench]
 
 lean_exe CompPolyBench where
   srcDir := "bench"
