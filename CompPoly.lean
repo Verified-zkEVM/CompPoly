@@ -80,6 +80,7 @@ import CompPoly.ToMathlib.Polynomial.BivariateDegree
 import CompPoly.ToMathlib.Polynomial.BivariateEvaluation
 import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
 import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
+import CompPoly.Univariate.Barycentric
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.BatchEval
 import CompPoly.Univariate.BatchEval.Context

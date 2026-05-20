@@ -32,8 +32,13 @@ The main bridge to Mathlib lives in:
 - [`../../CompPoly/Univariate/ToPoly/Equiv.lean`](../../CompPoly/Univariate/ToPoly/Equiv.lean)
 - [`../../CompPoly/Univariate/ToPoly/Degree.lean`](../../CompPoly/Univariate/ToPoly/Degree.lean)
 
-For interpolation work, also read
-[`../../CompPoly/Univariate/Lagrange.lean`](../../CompPoly/Univariate/Lagrange.lean).
+For interpolation work, also read:
+
+- [`../../CompPoly/Univariate/Lagrange.lean`](../../CompPoly/Univariate/Lagrange.lean)
+  for the baseline interpolation surface and correctness statements.
+- [`../../CompPoly/Univariate/Barycentric.lean`](../../CompPoly/Univariate/Barycentric.lean)
+  for repeated-query barycentric evaluation over a fixed node set with precomputed
+  barycentric weights.
 
 ## Multivariate Family
 
@@ -107,7 +112,8 @@ specific polynomial representation.
 ## Choosing A Surface
 
 - If you need canonical coefficient arrays and interpolation, start with
-  `CPolynomial`.
+  `CPolynomial`; for repeated interpolation queries over a fixed domain, also
+  inspect `Univariate/Barycentric.lean`.
 - If you need sparse multivariate monomials or `MvPolynomial` equivalence, start
   with `CMvPolynomial`.
 - If you need Boolean-cube evaluation data or multilinear transforms, start with
