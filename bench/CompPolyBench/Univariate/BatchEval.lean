@@ -275,7 +275,7 @@ def univariateBatchEvalTasks : List BenchTask := [
     runBabyBearUnivariateBatchLarge
 ]
 
-/-- Run univariate batch-evaluation benchmarks. -/
+/-- Run selected univariate batch-evaluation benchmarks. -/
 def runUnivariateBatchEval (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :
     IO (Array BenchGroup × StdGen) := do
   runSelectedTasks univariateBatchEvalTasks preset selection gen

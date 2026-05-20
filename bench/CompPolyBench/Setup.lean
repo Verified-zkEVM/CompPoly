@@ -143,7 +143,7 @@ def printGroupList : IO Unit := do
   for info in allGroupInfos do
     IO.println s!"  {info.groupKey}  -  {info.title}"
 
-/-- Run the complete benchmark suite and write selected reports. -/
+/-- Run selected benchmark groups and write the requested reports. -/
 def runSelected (selection : BenchSelection) (output : BenchOutput) (preset : BenchPreset) :
     IO UInt32 := do
   let runId ← makeRunId
@@ -164,7 +164,7 @@ def runSelected (selection : BenchSelection) (output : BenchOutput) (preset : Be
         IO.eprintln s!"ERROR: checksum mismatch in benchmark group `{group.groupKey}`"
       pure 1
 
-/-- Run the complete benchmark suite according to command-line arguments. -/
+/-- Execute the benchmark command selected by command-line arguments. -/
 def run (args : List String) : IO UInt32 := do
   match parseArgs args with
   | Except.error message =>

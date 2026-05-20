@@ -29,7 +29,7 @@ namespace CompPolyBench
 /-- Fixed seed used to make benchmark inputs deterministic across runs. -/
 def seed : Nat := 20260504
 
-/-- Runtime/precision preset used by the benchmark executable. -/
+/-- Benchmark preset controlling warmup and measured iteration counts. -/
 inductive BenchPreset where
   | small
   | medium
@@ -42,74 +42,74 @@ def BenchPreset.name : BenchPreset → String
   | BenchPreset.medium => "medium"
   | BenchPreset.large => "large"
 
-/-- Select a precomputed value for the active benchmark preset. -/
+/-- Return the precomputed value for the active benchmark preset. -/
 def BenchPreset.selectNat (preset : BenchPreset) (large medium small : Nat) : Nat :=
   match preset with
   | BenchPreset.large => large
   | BenchPreset.medium => medium
   | BenchPreset.small => small
 
-/-- Number of warmup iterations for ordinary evaluation benchmarks. -/
+/-- Warmup iteration count for ordinary evaluation benchmarks. -/
 def warmupIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 100 10 0
 
-/-- Number of measured iterations for ordinary evaluation benchmarks. -/
+/-- Measured iteration count for ordinary evaluation benchmarks. -/
 def measuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 5000 700 150
 
-/-- Number of warmup iterations for full-array batch-evaluation benchmarks. -/
+/-- Warmup iteration count for batch-evaluation benchmarks over the base input shape. -/
 def batchWarmupIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 1 1 0
 
-/-- Number of measured iterations for full-array batch-evaluation benchmarks. -/
+/-- Measured iteration count for batch-evaluation benchmarks over the base input shape. -/
 def batchMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 5 1 1
 
-/-- Number of warmup iterations for medium full-array batch-evaluation benchmarks. -/
+/-- Warmup iteration count for batch-evaluation benchmarks over the medium input shape. -/
 def mediumBatchWarmupIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 1 1 0
 
-/-- Number of measured iterations for medium full-array batch-evaluation benchmarks. -/
+/-- Measured iteration count for batch-evaluation benchmarks over the medium input shape. -/
 def mediumBatchMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 10 1 1
 
-/-- Number of warmup iterations for large full-array batch-evaluation benchmarks. -/
+/-- Warmup iteration count for batch-evaluation benchmarks over the large input shape. -/
 def largeBatchWarmupIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 1 1 0
 
-/-- Number of measured iterations for large full-array batch-evaluation benchmarks. -/
+/-- Measured iteration count for batch-evaluation benchmarks over the large input shape. -/
 def largeBatchMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 10 1 1
 
-/-- Number of warmup iterations for direct monic-remainder benchmarks. -/
+/-- Warmup iteration count for direct monic-remainder benchmarks. -/
 def modWarmupIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 1 1 0
 
-/-- Number of measured iterations for direct monic-remainder benchmarks. -/
+/-- Measured iteration count for direct monic-remainder benchmarks. -/
 def modMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 20 3 1
 
-/-- Number of warmup iterations for medium direct monic-remainder benchmarks. -/
+/-- Warmup iteration count for direct monic-remainder benchmarks over the medium input shape. -/
 def mediumModWarmupIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 1 1 0
 
-/-- Number of measured iterations for medium direct monic-remainder benchmarks. -/
+/-- Measured iteration count for direct monic-remainder benchmarks over the medium input shape. -/
 def mediumModMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 5 1 1
 
-/-- Number of warmup iterations for direct univariate multiplication benchmarks. -/
+/-- Warmup iteration count for direct univariate multiplication benchmarks. -/
 def mulWarmupIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 1 1 0
 
-/-- Number of measured iterations for direct univariate multiplication benchmarks. -/
+/-- Measured iteration count for direct univariate multiplication benchmarks. -/
 def mulMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 20 3 1
 
-/-- Number of warmup iterations for the slower additive NTT benchmark. -/
+/-- Warmup iteration count for the base additive NTT benchmark. -/
 def additiveNttWarmupIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 10 1 0
 
-/-- Number of measured iterations for the smaller additive NTT benchmark. -/
+/-- Measured iteration count for the base additive NTT benchmark. -/
 def additiveNttMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 1000 150 30
 
@@ -489,10 +489,10 @@ def groupChecksumIterations (first : Nat) (rest : List Nat) : Nat :=
 /--
 Time one benchmark closure and package its metadata and checksum.
 
-The checksum is computed before timing over `checksumIterations`, which should be
-the minimum measured-iteration count used by the records in the surrounding
-benchmark group. The timed loop still consumes each result so implementations
-with different iteration counts remain comparable within the same group.
+The checksum is computed before timing over `checksumIterations`, the minimum
+measured-iteration count used by the records in the surrounding benchmark group.
+The timed loop consumes each result so implementations with different iteration
+counts remain comparable within the same group.
 -/
 def runTimed (name representation method field inputShape : String) (preset : BenchPreset)
     (warmup measured : Nat) (run : Nat → α) (checksum : α → Nat)
@@ -525,11 +525,11 @@ def runTimed (name representation method field inputShape : String) (preset : Be
     checksum := validationChecksum
   }
 
-/-- Append benchmark records without relying on array append notation. -/
+/-- Append benchmark records from `ys` onto `xs`. -/
 def appendRecords (xs ys : Array BenchRecord) : Array BenchRecord :=
   ys.foldl (init := xs) fun acc record => acc.push record
 
-/-- Append benchmark groups without relying on array append notation. -/
+/-- Append benchmark groups from `ys` onto `xs`. -/
 def appendGroups (xs ys : Array BenchGroup) : Array BenchGroup :=
   ys.foldl (init := xs) fun acc group => acc.push group
 
@@ -839,7 +839,7 @@ def renderMarkdown (hardware : RunnerHardware) (preset : BenchPreset) (groups : 
     "",
     "- Seed: `" ++ toString seed ++ "`",
     "- Preset: `" ++ preset.name ++ "`",
-    "- Early CI performance comparisons are informational only.",
+    "- Benchmark timings are informational and depend on runner hardware.",
     "",
   ] ++ renderHardwareSection hardware ++ [
     "## Results",

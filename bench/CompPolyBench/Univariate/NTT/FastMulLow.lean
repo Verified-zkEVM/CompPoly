@@ -83,7 +83,7 @@ def univariateNttFastMulLowTasks : List BenchTask := [
     runBabyBearUnivariateLowProduct
 ]
 
-/-- Benchmark low-product multiplication variants used by remainder and batch-evaluation paths. -/
+/-- Run selected low-product multiplication benchmarks. -/
 def runUnivariateNttFastMulLow (preset : BenchPreset) (selection : BenchSelection)
     (gen : StdGen) :
     IO (Array BenchGroup × StdGen) := do

@@ -1,10 +1,6 @@
 # Evaluation Benchmarks
 
-This directory contains the compiled benchmark executable for
-CompPoly. The benchmark is intentionally small enough for CI, but broad enough
-to cover the main polynomial evaluation surfaces, direct univariate
-multiplication, root-of-unity NTT multiplication, and the existing additive NTT
-implementation.
+This directory contains the compiled benchmark executable for CompPoly.
 
 ## Running
 
@@ -14,23 +10,25 @@ Run the benchmark from the repository root:
 lake exe CompPolyBench
 ```
 
-The default preset is `--large`, which preserves the full local benchmark
-iteration counts. `--medium` and `--small` run every benchmark group with lower
-precomputed iteration counts:
+Presets:
 
 ```bash
+lake exe CompPolyBench --large
 lake exe CompPolyBench --medium
 lake exe CompPolyBench --small
 ```
 
-To inspect runnable benchmark groups without running them:
+The default preset is `--large`. CI uses `--medium`.
+Presets only change warmup and measured iteration counts; they do not change
+which benchmark groups run.
+
+List benchmark groups:
 
 ```bash
 lake exe CompPolyBench --list
 ```
 
-To run only selected groups, pass group keys either positionally or with
-`--group`:
+Run selected groups:
 
 ```bash
 lake exe CompPolyBench univariate-low-product-babybear
@@ -39,24 +37,12 @@ lake exe CompPolyBench --groups univariate-low-product-babybear,additive-ntt-btf
 lake exe CompPolyBench --small univariate-low-product-babybear
 ```
 
-By default, each run writes both JSONL and Markdown outputs. To write only one
-artifact type, pass `--json-only` or `--markdown-only`:
+Output modes:
 
 ```bash
 lake exe CompPolyBench --json-only univariate-low-product-babybear
 lake exe CompPolyBench --markdown-only --groups univariate-low-product-babybear,additive-ntt-btf3-l2-r2
 ```
-
-The executable is defined by the `CompPolyBench` Lake target. Its entrypoint is
-`bench/CompPolyBench.lean`; shared helpers live in
-`bench/CompPolyBench/Common.lean`, and `bench/CompPolyBench/Setup.lean`
-assembles the full suite.
-
-Benchmark files mirror the source tree they exercise. For example,
-benchmarks for `CompPoly/Univariate/NTT/FastMul.lean` live in
-`bench/CompPolyBench/Univariate/NTT/FastMul.lean`, and benchmarks for
-`CompPoly/Fields/Binary/AdditiveNTT/Impl.lean` live in
-`bench/CompPolyBench/Fields/Binary/AdditiveNTT/Impl.lean`.
 
 ## Output
 
@@ -67,34 +53,22 @@ results-YYMMDD-HHMMSS.jsonl
 report-YYMMDD-HHMMSS.md
 ```
 
-Generated benchmark artifacts are ignored by `bench/.gitignore`.
-
-The JSONL output remains one row per benchmark case. The Markdown report groups
-rows into separate result tables when those rows are expected to produce a
-matching checksum. Each result table includes the group key accepted by the
-command-line selector and shared configuration fields once before the table,
-including the common checksum-iteration count used for group validation. The
-table uses human-readable implementation labels plus per-implementation
-iteration and timing columns. A checksum mismatch is reported as an error in
-the generated Markdown and makes the executable exit nonzero after writing the
-artifacts.
+By default, a run writes both files. A checksum mismatch is reported in the
+Markdown report and makes the executable exit nonzero after writing artifacts.
+Within each group, checksums are computed over the shared prefix of iterations
+run by every implementation in that group.
 
 ## What Is Measured
 
-The benchmark covers the main polynomial evaluation paths, direct versus
-NTT-backed univariate multiplication, and the existing additive NTT
-implementation. Exact cases, input shapes, deterministic input generation, and
-reported fields are defined by the benchmark modules under `bench/CompPolyBench/`.
+The benchmark covers evaluation paths, direct and NTT-backed univariate
+multiplication, and additive NTT implementations.
 
 ## Determinism
 
-Input generation is deterministic and uses a fixed seed. This keeps
-the generated polynomial data and evaluation points fixed across runs,
-so checksums should stay stable.
+Input generation uses a fixed seed. Checksums are stable for the same group
+selection and preset.
 
 ## CI
 
-GitHub Actions builds and runs `CompPolyBench`, uploads generated benchmark
-artifacts, and appends the Markdown report to the step summary. CI uses the
-`--medium` preset so it still covers every benchmark group with reduced
-iteration counts.
+GitHub Actions runs `lake exe CompPolyBench --medium`, uploads generated
+artifacts, and appends the Markdown report to the step summary.

@@ -155,7 +155,7 @@ def multilinearTasks : List BenchTask := [
     runGoldilocksMultilinearHypercube
 ]
 
-/-- Run coefficient-form and hypercube-form multilinear evaluation benchmarks. -/
+/-- Run selected coefficient-form and hypercube-form multilinear evaluation benchmarks. -/
 def runMultilinear (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :
     IO (Array BenchGroup × StdGen) := do
   runSelectedTasks multilinearTasks preset selection gen

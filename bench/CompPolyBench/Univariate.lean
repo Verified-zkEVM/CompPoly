@@ -25,7 +25,7 @@ def univariateTasks : List BenchTask :=
   univariateBasicTasks ++ univariateBatchEvalTasks ++
     univariateNttFastMulTasks ++ univariateNttFastMulLowTasks
 
-/-- Run all univariate benchmarks. -/
+/-- Run selected univariate benchmarks. -/
 def runUnivariate (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :
     IO (Array BenchGroup × StdGen) := do
   runSelectedTasks univariateTasks preset selection gen

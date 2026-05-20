@@ -206,7 +206,7 @@ def multivariateTasks : List BenchTask := [
     runGoldilocksMultivariateSparse
 ]
 
-/-- Run sparse and dense multivariate evaluation benchmarks. -/
+/-- Run selected sparse and dense multivariate evaluation benchmarks. -/
 def runMultivariate (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :
     IO (Array BenchGroup × StdGen) := do
   runSelectedTasks multivariateTasks preset selection gen

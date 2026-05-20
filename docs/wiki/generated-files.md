@@ -34,12 +34,12 @@ the script runs.
 - Build-timing reports and timing-data artifacts produced by
   [`../../scripts/build_timing_report.sh`](../../scripts/build_timing_report.sh) are
   CI artifacts, not committed repo state.
-- When debugging stale build issues, deleting `.lake/build/` and rebuilding is often
-  the right reset, but do not commit changes from that directory.
+- When debugging stale build issues, deleting `.lake/build/` and rebuilding resets
+  local build artifacts. Do not commit changes from that directory.
 
 ## Documentation Compatibility Files
 
-- `AGENTS.md` is canonical for AI-agent tooling.
+- `AGENTS.md` is canonical for agent-oriented tooling.
 - `CLAUDE.md` exists only so tooling that looks for that filename lands on the same
   content.
 - `python3 ./scripts/check-docs-integrity.py` is the enforcement point for the

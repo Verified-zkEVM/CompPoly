@@ -134,7 +134,7 @@ def univariateNttFastMulTasks : List BenchTask := [
     runKoalaBearUnivariateMul
 ]
 
-/-- Benchmark direct univariate multiplication and root-of-unity NTT variants. -/
+/-- Run selected direct univariate multiplication and root-of-unity NTT benchmarks. -/
 def runUnivariateNttFastMul (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :
     IO (Array BenchGroup × StdGen) := do
   runSelectedTasks univariateNttFastMulTasks preset selection gen

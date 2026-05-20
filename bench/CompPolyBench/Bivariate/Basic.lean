@@ -157,7 +157,7 @@ def bivariateTasks : List BenchTask := [
     runBn254Bivariate
 ]
 
-/-- Run the bivariate full-evaluation benchmark. -/
+/-- Run selected bivariate full-evaluation benchmarks. -/
 def runBivariate (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :
     IO (Array BenchGroup × StdGen) := do
   runSelectedTasks bivariateTasks preset selection gen

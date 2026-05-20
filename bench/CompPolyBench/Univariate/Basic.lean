@@ -271,7 +271,7 @@ def univariateBasicTasks : List BenchTask := [
     runBn254UnivariateDense
 ]
 
-/-- Benchmark evaluation and public monic-remainder operations from `CompPoly.Univariate.Basic`. -/
+/-- Run selected evaluation and public monic-remainder benchmarks. -/
 def runUnivariateBasic (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :
     IO (Array BenchGroup × StdGen) := do
   runSelectedTasks univariateBasicTasks preset selection gen
