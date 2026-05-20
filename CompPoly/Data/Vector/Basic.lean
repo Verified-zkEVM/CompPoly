@@ -8,6 +8,7 @@ import CompPoly.Data.List.Lemmas
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.Order.Star.Basic
 import Mathlib.Algebra.Order.Sub.Basic
+import Mathlib.Data.List.Fold
 import Mathlib.Data.Matrix.Mul
 import Mathlib.Tactic.Ring
 
@@ -89,7 +90,7 @@ lemma cons_empty_tail_eq_nil {α} (hd : α) (tl : Vector α 0) :
 theorem tail_cons {α} {n : ℕ} (hd : α) (tl : Vector α n) : (cons hd tl).tail = tl := by
   rw [cons, Vector.insertIdx]
   simp only [Nat.add_one_sub_one, Array.insertIdx_zero, tail_eq_cast_extract, extract_mk,
-    Array.extract_append, List.extract_toArray, List.extract_eq_drop_take, add_tsub_cancel_right,
+    Array.extract_append, List.extract_toArray, List.extract_eq_take_drop, add_tsub_cancel_right,
     List.drop_succ_cons, List.drop_nil, List.take_nil, List.size_toArray, List.length_cons,
     List.length_nil, tsub_self, Array.take_eq_extract, Array.empty_append, cast_mk, mk_eq,
     Array.extract_eq_self_iff, size_toArray, le_refl, and_self, or_true]
@@ -147,8 +148,17 @@ lemma dotProduct_cons [AddCommMonoid R] [Mul R] (a : R) (b : Vector R n) (c : R)
   rw [zipWith_cons]
   simp_rw [foldl_eq_toList_foldl]
   rw [cons_toList_eq_List_cons]
-  rw [List.foldl_eq_of_comm' (hf:=by exact fun a b c ↦ add_right_comm a b c)]
-  rw [@AddCommMonoid.add_comm]
+  have h : ∀ (init : R) (L : List R),
+      List.foldl (fun x1 x2 => x1 + x2) init L = init + List.foldl (fun x1 x2 => x1 + x2) 0 L := by
+    intro init L
+    induction L generalizing init with
+    | nil => simp
+    | cons x xs ih =>
+      show List.foldl _ (init + x) xs = init + List.foldl _ (0 + x) xs
+      rw [ih (init + x), ih (0 + x), _root_.zero_add, _root_.add_assoc]
+  rw [List.foldl_cons]
+  show List.foldl _ (0 + a * c) _ = _
+  rw [_root_.zero_add, h]
 
 /-- A matrix represented as iterated vectors in row-major order.
 `m` is the number of rows, and `n` is the number of columns -/

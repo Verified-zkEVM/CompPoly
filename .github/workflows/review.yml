@@ -1,216 +1,130 @@
-name: PR Review
-on:
-  pull_request:
-    types: [opened, synchronize]
-  issue_comment:
-    types: [created]
+  name: PR Review
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number }}
-  cancel-in-progress: true
+  on:
+    pull_request:
+      types: [opened]
+    issue_comment:
+      types: [created]
 
-jobs:
-  review:
-    if: >-
-      (
-        github.event_name == 'pull_request' &&
+  concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number }}
+    cancel-in-progress: true
+
+  jobs:
+    review:
+      if: >-
         (
-          github.event.pull_request.author_association == 'OWNER' ||
-          github.event.pull_request.author_association == 'MEMBER' ||
-          github.event.pull_request.author_association == 'COLLABORATOR'
-        )
-      ) ||
-      (
-        github.event_name == 'issue_comment' &&
-        github.event.issue.pull_request &&
-        startsWith(github.event.comment.body, '/review') &&
+          github.event_name == 'pull_request' &&
+          (
+            github.event.pull_request.author_association == 'OWNER' ||
+            github.event.pull_request.author_association == 'MEMBER' ||
+            github.event.pull_request.author_association == 'COLLABORATOR'
+          )
+        ) ||
         (
-          github.event.comment.author_association == 'OWNER' ||
-          github.event.comment.author_association == 'MEMBER' ||
-          github.event.comment.author_association == 'COLLABORATOR'
+          github.event_name == 'issue_comment' &&
+          github.event.issue.pull_request &&
+          startsWith(github.event.comment.body, '/review') &&
+          (
+            github.event.comment.author_association == 'OWNER' ||
+            github.event.comment.author_association == 'MEMBER' ||
+            github.event.comment.author_association == 'COLLABORATOR'
+          )
         )
-      )
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - name: Extract arguments from comment
-        id: get_args
-        if: github.event_name == 'issue_comment'
-        env:
-          COMMENT_BODY: ${{ github.event.comment.body }}
-        run: |
-          # Generate a random EOF marker for the GITHUB_OUTPUT heredoc.
-          # This variable is passed to awk which handles all output writing.
-          EOF=$(openssl rand -hex 8)
+      runs-on: ubuntu-latest
+      timeout-minutes: 90
+      permissions:
+        contents: read
+        pull-requests: write
+      steps:
+        - name: Extract arguments from comment
+          id: get_args
+          if: github.event_name == 'issue_comment'
+          env:
+            COMMENT_BODY: ${{ github.event.comment.body }}
+          run: |
+            EOF=$(openssl rand -hex 8)
 
-          awk -v eof="$EOF" -v gh_out="$GITHUB_OUTPUT" '
-            BEGIN {
-              ext = ""
-              repo = ""
-              com = ""
-              section = ""
-            }
-            /^External:/ { section="ext"; next }
-            /^Internal:/ { section="repo"; next }
-            /^Comments:/ { section="com"; next }
-            { 
-              gsub(/\r/, "", $0);
-              gsub(/^[ \t]+|[ \t]+$/, "", $0);
-              if ($0 == "" || $0 == "/review") { next }
-
-              if (section == "ext") {
-                sub(/^- +/, "");
-                if (ext != "") { ext = ext "," $0 } else { ext = $0 }
+            awk -v eof="$EOF" -v gh_out="$GITHUB_OUTPUT" '
+              BEGIN {
+                ext = ""
+                repo = ""
+                com = ""
+                section = ""
               }
-              else if (section == "repo") {
-                sub(/^- +/, "");
-                if (repo != "") { repo = repo "," $0 } else { repo = $0 }
+              /^External:/ { section="ext"; next }
+              /^Internal:/ { section="repo"; next }
+              /^Comments:/ { section="com"; next }
+              {
+                gsub(/\r/, "", $0);
+                gsub(/^[ \t]+|[ \t]+$/, "", $0);
+                if ($0 == "" || $0 == "/review") { next }
+
+                if (section == "ext") {
+                  sub(/^- +/, "");
+                  if (ext != "") { ext = ext "," $0 } else { ext = $0 }
+                }
+                else if (section == "repo") {
+                  sub(/^- +/, "");
+                  if (repo != "") { repo = repo "," $0 } else { repo = $0 }
+                }
+                else if (section == "com") {
+                  if (com != "") { com = com "\n" $0 } else { com = $0 }
+                }
               }
-              else if (section == "com") {
-                if (com != "") { com = com "\n" $0 } else { com = $0 }
+              END {
+                printf "external_refs=%s\n", ext >> gh_out
+                printf "repo_context_refs=%s\n", repo >> gh_out
+                printf "additional_comments<<%s\n", eof >> gh_out
+                printf "%s\n", com >> gh_out
+                printf "%s\n", eof >> gh_out
               }
-            }
-            END {
-              printf "external_refs=%s\n", ext >> gh_out
-              printf "repo_context_refs=%s\n", repo >> gh_out
-              printf "additional_comments<<%s\n", eof >> gh_out
-              printf "%s\n", com >> gh_out
-              printf "%s\n", eof >> gh_out
-            }
-          ' <<< "$COMMENT_BODY"
-        shell: bash
-      - name: Install large-PR diff fallback
-        run: |
-          REAL_GH="$(command -v gh)"
-          mkdir -p "$RUNNER_TEMP/bin"
-          cat > "$RUNNER_TEMP/bin/gh" <<EOF
-          #!/usr/bin/env bash
-          set -euo pipefail
+            ' <<< "$COMMENT_BODY"
+          shell: bash
 
-          REAL_GH="$REAL_GH"
+        - name: Build review instructions
+          id: build_instructions
+          env:
+            USER_COMMENTS: ${{ steps.get_args.outputs.additional_comments }}
+          run: |
+            EOF=$(openssl rand -hex 8)
+            {
+              echo "final<<${EOF}"
+              cat <<'PRECEDENT'
+            Project precedent (CompPoly-specific conventions that override generic CONTRIBUTING.md rules — do NOT flag these as violations):
 
-          if [[ "\${1-}" == "pr" && "\${2-}" == "diff" && "\${#}" -ge 3 ]]; then
-            PR_NUMBER="\$3"
-            shift 3
+            Variable naming overrides (algebraic context):
+              - Algebraic carrier types use R, M, G, F (rings, modules, groups, fields), not α, β.
+              - Polynomial-typed values use p, q (e.g. CPolynomial, CMvPolynomial, CMlPolynomial), not just predicates.
+              - Indices into vectors, lists, and Fin n use i, j, k regardless of underlying numeric type.
+              - In algebraic lemma names that mirror Mathlib (e.g. pow_add, npow_add), exponent variables may be a, b.
 
-            if [[ "\${#}" -eq 1 && "\$1" == "--name-only" ]]; then
-              python3 - "\$PR_NUMBER" <<'PY'
-          import json
-          import os
-          import sys
-          import urllib.request
+            Style rules marked "preferred but not enforced" in CONTRIBUTING.md (the merged codebase uses both styles freely — do not flag):
+              - "Use the where syntax for instances" — both `instance ... := ⟨...⟩` and `instance ... where` are accepted.
+              - "Use manual dot notation for equality" — both `h.symm` and `Eq.symm h` are accepted.
+              - "Use <| / |> to reduce nesting" — both pipe-style and parens are accepted.
 
-          pr_number = sys.argv[1]
-          repo = os.environ["GITHUB_REPOSITORY"]
-          token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
-          headers = {
-              "Accept": "application/vnd.github+json",
-              "Authorization": f"Bearer {token}",
-              "X-GitHub-Api-Version": "2022-11-28",
-          }
+            File scope of style rules:
+              - The 100-character line-length rule applies ONLY to `.lean` source files. Do NOT flag long lines in `.md`, `.yml`, `.toml`, or any other non-Lean files. The enforced linter (`scripts/lint-style.py`) only processes `.lean` files.
 
-          page = 1
-          while True:
-              url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}/files?per_page=100&page={page}"
-              request = urllib.request.Request(url, headers=headers)
-              with urllib.request.urlopen(request) as response:
-                  batch = json.load(response)
-              if not batch:
-                  break
-              for item in batch:
-                  print(item["filename"])
-              if len(batch) < 100:
-                  break
-              page += 1
-          PY
-              exit 0
-            fi
+            Review scope:
+              - Flag ONLY lines introduced by this PR (the diff). Do not comment on pre-existing code that this PR did not modify.
+            PRECEDENT
+              if [ -n "${USER_COMMENTS}" ]; then
+                printf '\n\nUser-supplied additional context:\n%s\n' "${USER_COMMENTS}"
+              fi
+              echo "${EOF}"
+            } >> $GITHUB_OUTPUT
+          shell: bash
 
-            if [[ "\${#}" -eq 0 ]]; then
-              python3 - "\$PR_NUMBER" <<'PY'
-          import json
-          import os
-          import sys
-          import urllib.request
+        - uses: alexanderlhicks/lean-review-workflow@main
+          with:
+            github_token: ${{ secrets.GITHUB_TOKEN }}
+            api_key: ${{ secrets.GEMINI_API_KEY }}
+            provider: gemini
+            model: gemini-3.1-pro-preview
+            pr_number: ${{ github.event.issue.number || github.event.pull_request.number }}
+            external_refs: "${{ steps.get_args.outputs.external_refs }}"
+            repo_context_refs: "${{ steps.get_args.outputs.repo_context_refs }}"
+            additional_comments: "${{ steps.build_instructions.outputs.final }}"
 
-          pr_number = sys.argv[1]
-          repo = os.environ["GITHUB_REPOSITORY"]
-          token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
-          headers = {
-              "Accept": "application/vnd.github+json",
-              "Authorization": f"Bearer {token}",
-              "X-GitHub-Api-Version": "2022-11-28",
-          }
-
-          files = []
-          page = 1
-          while True:
-              url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}/files?per_page=100&page={page}"
-              request = urllib.request.Request(url, headers=headers)
-              with urllib.request.urlopen(request) as response:
-                  batch = json.load(response)
-              if not batch:
-                  break
-              files.extend(batch)
-              if len(batch) < 100:
-                  break
-              page += 1
-
-          for item in files:
-              new_path = item["filename"]
-              old_path = item.get("previous_filename") or new_path
-              status = item["status"]
-              additions = item["additions"]
-              deletions = item["deletions"]
-              changes = item["changes"]
-              patch = item.get("patch")
-
-              print(f"diff --git a/{old_path} b/{new_path}")
-              if status == "added":
-                  print("new file mode 100644")
-                  print("--- /dev/null")
-                  print(f"+++ b/{new_path}")
-              elif status == "removed":
-                  print("deleted file mode 100644")
-                  print(f"--- a/{old_path}")
-                  print("+++ /dev/null")
-              else:
-                  if status == "renamed" and old_path != new_path:
-                      print(f"rename from {old_path}")
-                      print(f"rename to {new_path}")
-                  print(f"--- a/{old_path}")
-                  print(f"+++ b/{new_path}")
-
-              if patch:
-                  print(patch.rstrip("\\n"))
-              else:
-                  print("@@ review-workflow fallback @@")
-                  print(
-                      f"+Patch unavailable from the GitHub files API "
-                      f"(status={status}, additions={additions}, deletions={deletions}, changes={changes})."
-                  )
-              print()
-          PY
-              exit 0
-            fi
-          fi
-
-          exec "\$REAL_GH" "\$@"
-          EOF
-          chmod +x "$RUNNER_TEMP/bin/gh"
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
-        shell: bash
-      - uses: alexanderlhicks/lean-review-workflow@main
-        env:
-          # Give the action a wider context budget on large PRs after file discovery.
-          CONTEXT_LIMIT: "25"
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          pr_number: ${{ github.event.issue.number || github.event.pull_request.number }}
-          external_refs: "${{ steps.get_args.outputs.external_refs }}"
-          repo_context_refs: "${{ steps.get_args.outputs.repo_context_refs }}"
-          additional_comments: "${{ steps.get_args.outputs.additional_comments }}"

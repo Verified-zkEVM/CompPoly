@@ -189,7 +189,9 @@ def root : BF128Ghash := AdjoinRoot.root ghashPoly
 theorem root_satisfies_poly : root^128 + root^7 + root^2 + root + 1 = 0 := by
   unfold root ghashPoly
   have h := AdjoinRoot.eval₂_root ghashPoly
-  simp only [ghashPoly, eval₂_add, eval₂_pow, eval₂_X, eval₂_one] at h
+  unfold ghashPoly at h
+  simp only [eval₂_add, eval₂_X, eval₂_one] at h
+  erw [eval₂_pow, eval₂_X, eval₂_pow, eval₂_X, eval₂_pow, eval₂_X] at h
   exact h
 
 /-- BF128Ghash is a finite type. -/

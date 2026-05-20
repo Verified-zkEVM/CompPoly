@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles
+Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles, Valerii Huhnin
 -/
 import Mathlib.Algebra.Tropical.Basic
 import Mathlib.RingTheory.Polynomial.Basic
@@ -205,6 +205,29 @@ def eval [Semiring R] (x : R) (p : CPolynomial R) : R :=
 def eval₂ {S : Type*} [Semiring R] [Semiring S]
     (f : R →+* S) (x : S) (p : CPolynomial R) : S :=
   p.val.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + f a * x ^ i) 0
+
+/-- Evaluate at `x : S` via a ring hom using Horner's method. -/
+@[inline, specialize]
+def eval₂Horner {S : Type*} [Semiring R] [Semiring S]
+    (f : R →+* S) (x : S) (p : CPolynomial R) : S :=
+  p.val.eval₂Horner f x
+
+/-- Evaluate a polynomial at a point using Horner's method. -/
+@[inline, specialize]
+def evalHorner [Semiring R] (x : R) (p : CPolynomial R) : R :=
+  p.eval₂Horner (RingHom.id R) x
+
+/-- Horner evaluation agrees with the sum-of-powers evaluation. -/
+theorem eval₂_horner_eq_eval₂ {S : Type*} [Semiring R] [Semiring S]
+    (f : R →+* S) (x : S) (p : CPolynomial R) :
+    eval₂Horner f x p = eval₂ f x p :=
+  CPolynomial.Raw.eval₂Horner_eq_eval₂ f x p.val
+
+/-- Horner evaluation agrees with the sum-of-powers evaluation. -/
+theorem eval_horner_eq_eval [Semiring R] (x : R) (p : CPolynomial R) :
+    evalHorner x p = eval x p := by
+  simpa [eval, evalHorner, eval₂, eval₂Horner] using
+    (eval₂_horner_eq_eval₂ (f := RingHom.id R) (x := x) (p := p))
 
 /-- The support of a polynomial: indices with nonzero coefficients. -/
 def support [Zero R] [BEq R] (p : CPolynomial R) : Finset ℕ :=
@@ -680,6 +703,24 @@ def divByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomi
 def modByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
   ⟨(Raw.modByMonic p.val q.val).trim, Trim.isCanonical_trim (Raw.modByMonic p.val q.val)⟩
 
+/-- Remainder of `p` modulo a monic polynomial `q`, using a remainder-only implementation. -/
+def modByMonicRemainderOnly [Field R] [BEq R] [LawfulBEq R]
+    (p q : CPolynomial R) : CPolynomial R :=
+  ⟨(Raw.modByMonicRemainderOnly p.val q.val).trim,
+    Trim.isCanonical_trim (Raw.modByMonicRemainderOnly p.val q.val)⟩
+
+/-- Remainder of `p` modulo a monic polynomial `q`, using reversal and low products. -/
+def modByMonicByReversal [Field R] [BEq R] [LawfulBEq R]
+    (M : Raw.MulLowContext R) (p q : CPolynomial R) : CPolynomial R :=
+  ⟨(Raw.modByMonicByReversal M p.val q.val).trim,
+    Trim.isCanonical_trim (Raw.modByMonicByReversal M p.val q.val)⟩
+
+/-- The remainder-only monic remainder agrees with the canonical monic remainder. -/
+theorem modByMonicRemainderOnly_eq_modByMonic [Field R] [BEq R] [LawfulBEq R]
+    (p q : CPolynomial R) : modByMonicRemainderOnly p q = modByMonic p q := by
+  apply CPolynomial.ext
+  simp [modByMonicRemainderOnly, modByMonic, Raw.modByMonicRemainderOnly_eq_modByMonic]
+
 /-- Quotient of `p` by `q` (when `R` is a field). -/
 def div [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
   ⟨(Raw.div p.val q.val).trim, Trim.isCanonical_trim (Raw.div p.val q.val)⟩
@@ -794,42 +835,50 @@ instance [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] : Semiring (CPolynomi
   nsmul := CPolynomial.nsmul
   nsmul_zero := CPolynomial.nsmul_zero
   nsmul_succ := CPolynomial.nsmul_succ
-  npow n p := ⟨p.val ^ n, Trim.isCanonical_of_trim_eq (CPolynomial.pow_is_trimmed p.val n)⟩
-  npow_zero := by intro x; apply Subtype.ext; rfl
-  npow_succ := by intro n p; apply Subtype.ext; exact
-      (CPolynomial.pow_succ_right p.val n)
+  npow n p := ⟨Raw.powBySq p.val n, by
+    rw [Raw.powBySq_eq_pow]
+    exact Trim.isCanonical_of_trim_eq
+      (CPolynomial.pow_is_trimmed p.val n)⟩
+  npow_zero := by
+    intro x; apply Subtype.ext
+    show Raw.powBySq x.val 0 = Raw.C 1
+    rw [Raw.powBySq_eq_pow]; rfl
+  npow_succ := by
+    intro n p; apply Subtype.ext
+    show Raw.powBySq p.val (n + 1) = (⟨Raw.powBySq p.val n, _⟩ * p).val
+    simp only [Raw.powBySq_eq_pow]
+    exact CPolynomial.pow_succ_right p.val n
   natCast_zero := by rfl
   natCast_succ := by intro n; rfl
+
+/-- The underlying `Raw` value of `p ^ n` equals `p.val ^ n`
+(using the Raw `Pow` instance). This bridges the optimized
+`powBySq` used in the `Semiring` instance with the spec
+`pow`. -/
+lemma val_pow [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (p : CPolynomial R) (n : ℕ) : (p ^ n).val = p.val ^ n :=
+  Raw.powBySq_eq_pow p.val n
 
 /-- `C r * X^n = monomial n r` as canonical polynomials. -/
 lemma C_mul_X_pow_eq_monomial [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R] [Nontrivial R]
     (r : R) (n : ℕ) :
-    (C r : CPolynomial R) * (X ^ n) = monomial n r := by
+    (C r : CPolynomial R) * X ^ n = monomial n r := by
+  apply Subtype.ext
+  -- Reduce to Raw-level equality via val_pow
+  have hval : (C r * X ^ n : CPolynomial R).val =
+      (Raw.C r).trim * (Raw.X : CPolynomial.Raw R) ^ n := by
+    show (C r).val * (X ^ n : CPolynomial R).val = _
+    rw [val_pow]; rfl
+  rw [hval]
+  show (Raw.C r).trim * Raw.X ^ n = Raw.monomial n r
   by_cases hr : r = 0
-  · convert Subtype.ext ?_
-    convert zero_mul _
-    rotate_left
-    exact R
-    all_goals try infer_instance
-    exact 0
-    simp +decide [hr, C, X, monomial]
-    -- Since multiplying by 0 gives the zero polynomial, the left-hand side simplifies to 0.
-    have h_lhs : (Raw.C 0).trim *
-        (Raw.X : CPolynomial.Raw R) ^ n = 0 := by
-      convert Raw.zero_mul _ using 1
-      convert rfl
-      · exact Eq.symm ( Raw.trim_replicate_zero 1 )
-      · infer_instance
-    convert h_lhs using 1
-    exact Eq.symm (by induction n <;> simp +decide [*, Raw.monomial])
-  · convert Subtype.ext ?_
-    have h_trim : (Raw.mk #[r]).trim = Raw.C r := by
-      exact Trim.canonical_iff.mpr fun hp => hr
-    generalize_proofs at *
-    convert Raw.C_mul_eq_smul_trim r (Raw.X ^ n) using 1
-    · exact h_trim.symm ▸ rfl
-    · convert Raw.smul_monomial_one_trim n r |> Eq.symm using 1
-      rw [Raw.X_pow_eq_monomial_one]
+  · subst hr
+    rw [show (Raw.C (0 : R)).trim = (0 : CPolynomial.Raw R) from Raw.trim_replicate_zero 1,
+        Raw.zero_mul]
+    simp [Raw.monomial]
+  · rw [show (Raw.C r).trim = Raw.C r from Trim.canonical_iff.mpr fun hp ↦ hr,
+        Raw.C_mul_eq_smul_trim, Raw.X_pow_eq_monomial_one]
+    exact Raw.smul_monomial_one_trim n r
 
 end Semiring
 
@@ -860,27 +909,26 @@ instance [Ring R] [BEq R] [LawfulBEq R] : Neg (CPolynomial R) where
 instance [Ring R] [BEq R] [LawfulBEq R] : Sub (CPolynomial R) where
   sub p q := p + -q
 
-lemma erase_canonical [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
-    (n : ℕ) (p : CPolynomial R) :
-    let e := p.val - Raw.monomial n (p.val.coeff n)
-    e.trim = e := by
-  simp; apply Trim.trim_twice
+/-- Erase the coefficient at index `n` (same as `p` except `coeff n = 0`, then trimmed).
 
-/-- Erase the coefficient at index `n` (same as `p` except `coeff n = 0`, then trimmed). -/
-def erase [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
-    (n : ℕ) (p : CPolynomial R) : CPolynomial R :=
-  let e := p.val - Raw.monomial n (p.val.coeff n)
-  ⟨e, Trim.isCanonical_of_trim_eq (by rw [erase_canonical])⟩
+  Uses an in-place `Array.setIfInBounds` rather than subtracting a monomial, avoiding
+  the allocation of a length-`n` monomial array plus the padding/zip passes of `sub`. -/
+def erase [Zero R] [BEq R] [LawfulBEq R] (n : ℕ) (p : CPolynomial R) : CPolynomial R :=
+  let arr : CPolynomial.Raw R := p.val.setIfInBounds n 0
+  ⟨arr.trim, Trim.isCanonical_trim arr⟩
 
 /-- Coefficient of `erase n p`: zero at `n`, otherwise `coeff p i`. -/
-lemma coeff_erase [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
+lemma coeff_erase [Zero R] [BEq R] [LawfulBEq R]
     (n i : ℕ) (p : CPolynomial R) :
     coeff (erase n p) i = if i = n then 0 else coeff p i := by
   unfold erase coeff
-  rw [Raw.sub_coeff, Raw.coeff_monomial]
-  by_cases h : n = i <;> simp [h]
-  intro h'; rw [h'] at h
-  contradiction
+  rw [Trim.coeff_eq_coeff, Raw.coeff, Raw.coeff,
+    Array.getD_eq_getD_getElem?, Array.getD_eq_getD_getElem?,
+    Array.getElem?_setIfInBounds]
+  by_cases hni : i = n
+  · rw [if_pos hni.symm, if_pos hni]
+    split <;> rfl
+  · rw [if_neg hni, if_neg (fun h => hni h.symm)]
 
 /-- Leading coefficient equals the coefficient at `natDegree`. -/
 lemma leadingCoeff_eq_coeff_natDegree [Zero R] (p : CPolynomial R) :
@@ -919,6 +967,18 @@ lemma coeff_neg [Ring R] [BEq R] [LawfulBEq R]
 lemma coeff_sub [Ring R] [BEq R] [LawfulBEq R]
     (p q : CPolynomial R) (i : ℕ) : coeff (p - q) i = coeff p i - coeff q i := by
   unfold coeff; exact Raw.sub_coeff p.val q.val i
+
+/-- The in-place `erase` agrees with the subtraction-based characterization:
+  `erase n p` equals `p - monomial n (p.coeff n)`. -/
+lemma erase_correct [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
+    (n : ℕ) (p : CPolynomial R) :
+    erase n p = p - monomial n (p.coeff n) := by
+  apply (eq_iff_coeff).2
+  intro i
+  rw [coeff_erase, coeff_sub, coeff_monomial]
+  by_cases hi : i = n
+  · subst hi; simp
+  · rw [if_neg hi, if_neg hi]; simp
 
 theorem neg_add_cancel [Ring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) : -p + p = 0 := by
   apply Subtype.ext

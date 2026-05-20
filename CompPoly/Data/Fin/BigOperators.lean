@@ -42,7 +42,7 @@ theorem div_two_pow_lt_two_pow (x i j : ℕ) (h_x_lt_2_pow_i : x < 2 ^ (i + j)):
   · simp only [h_i_eq_0, zero_add, pow_zero, Nat.lt_one_iff, Nat.div_eq_zero_iff, Nat.pow_eq_zero,
     OfNat.ofNat_ne_zero, ne_eq, false_and, false_or] at *;
     omega
-  · push_neg at h_i_eq_0
+  · push Not at h_i_eq_0
     apply Nat.div_lt_of_lt_mul (m:=x) (n:=2^j) (k:=2^i) (by
       have h_rhs_eq : 2^(i+j) = 2^j * 2^i := by
         rw [pow_add (a:=2) (m:=i) (n:=j), mul_comm]
@@ -151,7 +151,7 @@ This is useful for definitions that process elements in reverse order, like `fol
       have h := Fin.lt_last_iff_ne_last (n:=r - 1) (a:=⟨i, by omega⟩)
       simp only [Fin.last, mk_lt_mk, ne_eq, mk.injEq] at h
       have h_i_val_ne_eq: (i.val ≠ r - 1) := by
-        push_neg at h_i_eq_last
+        push Not at h_i_eq_last
         exact Fin.val_ne_of_ne h_i_eq_last
       apply Fin.mk_lt_of_lt_val
       apply h.mpr
@@ -165,77 +165,64 @@ This is useful for definitions that process elements in reverse order, like `fol
     convert motive_next_ind
 termination_by (r - 1 - i.val)
 
--- The theorem statement and its proof.
--- TODO: state a more generalized and reusable version of this, where f is from Fin r → M
 /--
-Splits a sum over `Fin (2^n)` into a sum over even indices and a sum over odd indices.
+Splits a sum over `Fin (2 * r)` into a sum over even indices and a sum over odd indices.
 Useful for Fast Fourier Transform (FFT) type recursions.
 -/
-theorem Fin.sum_univ_odd_even {n : ℕ} {M : Type*} [AddCommMonoid M] (f : ℕ → M) :
-    (∑ i : Fin (2 ^ n), f (2 * i)) + (∑ i : Fin (2 ^ n), f (2 * i + 1))
-    = ∑ i: Fin (2 ^ (n+1)), f i := by
-  set f_even := fun i => f (2 * i)
-  set f_odd := fun i => f (2 * i + 1)
-  conv_lhs =>
-    enter [1, 2, i]
-    change f_even i
-  conv_lhs =>
-    enter [2, 2, i]
-    change f_odd i
-  simp only [Fin.sum_univ_eq_sum_range]
-
-  -- Let's define the sets of even and odd numbers.
-  let evens: Finset ℕ := Finset.image (fun i ↦ 2 * i) (Finset.range (2^n))
-  let odds: Finset ℕ := Finset.image (fun i ↦ 2 * i + 1) (Finset.range (2^n))
-
-  conv_lhs =>
-    enter [1];
-    rw [←Finset.sum_image (g:=fun i => 2 * i) (by simp)]
-
-  conv_lhs =>
-    enter [2];
-    rw [← Finset.sum_image (g:=fun i => 2 * i + 1) (by simp)]
-
-  -- First, we prove that the set on the RHS is the disjoint union of evens and odds.
-  have h_disjoint : Disjoint evens odds := by
-    apply Finset.disjoint_iff_ne.mpr
-  -- Assume for contradiction that an element `x` is in both sets.
-    rintro x hx y hy hxy
-    -- Unpack the definitions of `evens` and `odds`.
-    rcases Finset.mem_image.mp hx with ⟨k₁, _, rfl⟩
-    rcases Finset.mem_image.mp hy with ⟨k₂, _, rfl⟩
+theorem Fin.sum_univ_split_even_add_odd {r : ℕ} {M : Type*} [AddCommMonoid M]
+    (f : Fin (2 * r) → M) :
+    ∑ i : Fin (2 * r), f i
+    = (∑ i : Fin r, f ⟨2 * i.val, by have := i.isLt; omega⟩)
+    + (∑ i : Fin r, f ⟨2 * i.val + 1, by have := i.isLt; omega⟩) := by
+  let toEven : Fin r → Fin (2 * r) :=
+    fun i ↦ ⟨2 * i.val, by have := i.isLt; omega⟩
+  let toOdd : Fin r → Fin (2 * r) :=
+    fun i ↦ ⟨2 * i.val + 1, by have := i.isLt; omega⟩
+  have hEvenInj : Function.Injective toEven := by
+    intro a b h
+    simp only [toEven, Fin.mk.injEq] at h
+    exact Fin.ext (by omega)
+  have hOddInj : Function.Injective toOdd := by
+    intro a b h
+    simp only [toOdd, Fin.mk.injEq] at h
+    exact Fin.ext (by omega)
+  let evens : Finset (Fin (2 * r)) := (Finset.univ : Finset (Fin r)).image toEven
+  let odds : Finset (Fin (2 * r)) := (Finset.univ : Finset (Fin r)).image toOdd
+  have hDisjoint : Disjoint evens odds := by
+    rw [Finset.disjoint_iff_ne]
+    rintro a ha b hb hab
+    obtain ⟨k₁, _, rfl⟩ := Finset.mem_image.mp ha
+    obtain ⟨k₂, _, rfl⟩ := Finset.mem_image.mp hb
+    simp only [toEven, toOdd, Fin.mk.injEq] at hab
     omega
+  have hUnion : evens ∪ odds = Finset.univ := by
+    apply Finset.ext
+    intro x
+    refine ⟨fun _ ↦ Finset.mem_univ _, fun _ ↦ ?_⟩
+    simp only [evens, odds, Finset.mem_union, Finset.mem_image, Finset.mem_univ, true_and]
+    have hx : x.val < 2 * r := x.isLt
+    obtain ⟨k, hk | hk⟩ := Nat.even_or_odd' x.val
+    · left
+      refine ⟨⟨k, by omega⟩, ?_⟩
+      exact Fin.ext (by simp only [toEven]; omega)
+    · right
+      refine ⟨⟨k, by omega⟩, ?_⟩
+      exact Fin.ext (by simp only [toOdd]; omega)
+  calc ∑ i : Fin (2 * r), f i
+      = ∑ i ∈ evens ∪ odds, f i := by rw [hUnion]
+    _ = (∑ i ∈ evens, f i) + (∑ i ∈ odds, f i) := Finset.sum_union hDisjoint
+    _ = (∑ i : Fin r, f (toEven i)) + (∑ i : Fin r, f (toOdd i)) := by
+        rw [Finset.sum_image fun a _ b _ h ↦ hEvenInj h,
+            Finset.sum_image fun a _ b _ h ↦ hOddInj h]
+    _ = (∑ i : Fin r, f ⟨2 * i.val, by have := i.isLt; omega⟩)
+      + (∑ i : Fin r, f ⟨2 * i.val + 1, by have := i.isLt; omega⟩) := rfl
 
-  have h_union : evens ∪ odds = Finset.range (2 ^ (n + 1)) := by
-    apply Finset.ext; intro x
-    simp only [Finset.mem_union, Finset.mem_range]
-    -- ⊢ x ∈ evens ∨ x ∈ odds ↔ x < 2 ^ (n + 1)
-    constructor
-    · -- First direction: `x ∈ evens ∪ odds → x < 2^(n+1)`
-      -- This follows from the bounds of the original range `Finset.range (2^n)`.
-      intro h
-      rcases h with (h_even | h_odd)
-      · rcases Finset.mem_image.mp h_even with ⟨k₁, hk₁, rfl⟩
-        simp at hk₁
-        omega
-      · rcases Finset.mem_image.mp h_odd with ⟨k₂, hk₂, rfl⟩
-        simp at hk₂
-        omega
-    · -- Second direction: `x < 2^(n+1) → x ∈ evens ∪ odds`
-      intro hx
-      obtain (⟨k, rfl⟩ | ⟨k, rfl⟩) := Nat.even_or_odd x
-      · left;
-        unfold evens
-        simp only [Finset.mem_image, Finset.mem_range]
-        use k;
-        omega
-      · right;
-        unfold odds
-        simp only [Finset.mem_image, Finset.mem_range]
-        use k;
-        omega
-  -- Now, rewrite the RHS using this partition.
-  rw [←h_union, Finset.sum_union h_disjoint]
+/-- Specialized form of `Fin.sum_univ_split_even_add_odd` for `r = 2 ^ n`. -/
+theorem Fin.sum_univ_pow_two_even_add_odd {n : ℕ} {M : Type*} [AddCommMonoid M] (f : ℕ → M) :
+    (∑ i : Fin (2 ^ n), f (2 * i)) + (∑ i : Fin (2 ^ n), f (2 * i + 1))
+    = ∑ i : Fin (2 ^ (n + 1)), f i := by
+  rw [show (2 ^ (n + 1) : ℕ) = 2 * 2 ^ n from by rw [pow_succ, Nat.mul_comm]]
+  exact (Fin.sum_univ_split_even_add_odd (fun i : Fin (2 * 2 ^ n) ↦ f i.val)).symm
 
 /--
 Splits a sum over an interval `[a, c]` into two sums over `[a, b]` and `[b+1, c]`.

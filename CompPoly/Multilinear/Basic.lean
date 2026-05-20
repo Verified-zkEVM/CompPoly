@@ -21,7 +21,9 @@ import CompPoly.Data.Nat.Bitwise
   `MvPolynomial.restrictDegree (Fin n) R 1`).
 
   ## TODOs
-  - The abstract formula for `monoToLagrange` (zeta formula) and `lagrangeToMono` (mobius formula)
+  - The abstract zeta formula for `monoToLagrange`
+  - A naive `O(4^n)` zeta spec `monoToLagrangeSpec` mirroring `lagrangeToMonoSpec`,
+    plus equivalence `monoToLagrange = monoToLagrangeSpec`
 -/
 
 namespace CompPoly
@@ -167,15 +169,128 @@ theorem monomialBasis_getElem {w : Vector R n} (i : Fin (2 ^ n)) :
   rw [monomialBasis]
   simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin, Vector.getElem_ofFn]
 
+private lemma monomial_basis_even {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^ n)) :
+    (monomialBasis x).get ⟨2 * j.val, by omega⟩ =
+    (monomialBasis x.tail).get j := by
+  unfold monomialBasis
+  simp only [Vector.get_ofFn]
+  simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin]
+  rw [Fin.prod_univ_succ]
+  simp only [Fin.val_zero, Fin.val_succ]
+  rw [← Nat.bit_false_apply j.val, Nat.testBit_bit_zero]
+  simp only [Bool.false_eq_true, if_false, one_mul]
+  apply Finset.prod_congr rfl
+  intro k _
+  rw [Nat.testBit_bit_succ]
+  simp [Vector.tail_eq_cast_extract, Nat.add_comm]
+
+private lemma monomial_basis_odd {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^ n)) :
+    (monomialBasis x).get ⟨2 * j.val + 1, by omega⟩ =
+    x.head * (monomialBasis x.tail).get j := by
+  unfold monomialBasis
+  simp only [Vector.get_ofFn]
+  simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin]
+  rw [Fin.prod_univ_succ]
+  simp only [Fin.val_zero, Fin.val_succ]
+  rw [← Nat.bit_true_apply j.val, Nat.testBit_bit_zero]
+  simp only [if_true]
+  congr 1
+  apply Finset.prod_congr rfl
+  intro k _
+  rw [Nat.testBit_bit_succ]
+  simp [Vector.tail_eq_cast_extract, Nat.add_comm]
+
 def map {R S : Type*} [Semiring R] [Semiring S] (f : R →+* S)
     (p : CMlPolynomial R n) : CMlPolynomial S n :=
   Vector.map f p
+
+/-- One Horner reduction step, eliminating the next little-endian variable. -/
+@[inline, specialize]
+private def evalHornerStep [CommSemiring R] {n : ℕ}
+    (coeffs : Vector R (2 ^ (n + 1))) (x0 : R) : Vector R (2 ^ n) :=
+  Vector.ofFn fun j : Fin (2 ^ n) ↦
+    coeffs.get ⟨2 * j.val, by omega⟩ + x0 * coeffs.get ⟨2 * j.val + 1, by omega⟩
+
+/-- Evaluate dense multilinear coefficients by eliminating one variable at a time. -/
+@[inline, specialize]
+private def evalHornerCoeffs [CommSemiring R] :
+    {n : ℕ} → Vector R (2 ^ n) → Vector R n → R
+  | 0, coeffs, _ => coeffs.get ⟨0, by norm_num⟩
+  | n + 1, coeffs, x =>
+      evalHornerCoeffs (evalHornerStep coeffs x.head) x.tail
+
+/-- Evaluate a `CMlPolynomial` at a point using a multilinear Horner method. -/
+@[inline, specialize]
+def evalHorner (p : CMlPolynomial R n) (x : Vector R n) : R :=
+  evalHornerCoeffs p x
+
+/-- Evaluate a `CMlPolynomial` using a ring homomorphism and multilinear Horner method. -/
+@[inline, specialize]
+def eval₂Horner (p : CMlPolynomial R n) (f : R →+* S) (x : Vector S n) : S :=
+  evalHorner (map f p) x
 
 /-- Evaluate a `CMlPolynomial` at a point -/
 def eval (p : CMlPolynomial R n) (x : Vector R n) : R :=
   Vector.dotProduct p (monomialBasis x)
 
 def eval₂ (p : CMlPolynomial R n) (f : R →+* S) (x : Vector S n) : S := eval (map f p) x
+
+private lemma eval_horner_step_dot_product {n : ℕ}
+    (p : CMlPolynomial R (n + 1)) (x : Vector R (n + 1)) :
+    Vector.dotProduct (evalHornerStep p x.head) (monomialBasis x.tail) =
+    Vector.dotProduct p (monomialBasis x) := by
+  rw [Vector.dotProduct_eq_root_dotProduct, Vector.dotProduct_eq_root_dotProduct]
+  unfold _root_.dotProduct
+  have hsplit :
+      (∑ i : Fin (2 ^ (n + 1)), p.get i * (monomialBasis x).get i) =
+        (∑ i : Fin (2 ^ n), p.get ⟨2 * i.val, by omega⟩ *
+          (monomialBasis x).get ⟨2 * i.val, by omega⟩) +
+        (∑ i : Fin (2 ^ n), p.get ⟨2 * i.val + 1, by omega⟩ *
+          (monomialBasis x).get ⟨2 * i.val + 1, by omega⟩) := by
+    convert (Fin.sum_univ_pow_two_even_add_odd (n := n)
+        (f := fun i ↦ if h : i < 2 ^ (n + 1) then
+          p.get ⟨i, h⟩ * (monomialBasis x).get ⟨i, h⟩ else 0)).symm using 1
+    · apply Finset.sum_congr rfl
+      intro i _
+      simp only [Fin.is_lt, dif_pos]
+    · congr 1
+      · apply Finset.sum_congr rfl
+        intro i _
+        rw [dif_pos (by omega)]
+      · apply Finset.sum_congr rfl
+        intro i _
+        rw [dif_pos (by omega)]
+  rw [hsplit]
+  unfold evalHornerStep
+  simp only [Vector.get_ofFn]
+  simp only [monomial_basis_even, monomial_basis_odd]
+  rw [← Finset.sum_add_distrib]
+  apply Finset.sum_congr rfl
+  intro j _
+  rw [add_mul]
+  congr 1
+  rw [mul_comm x.head, mul_assoc]
+  rfl
+
+/-- Horner evaluation agrees with the dot-product evaluator. -/
+theorem eval_horner_eq_eval (p : CMlPolynomial R n) (x : Vector R n) :
+    evalHorner p x = eval p x := by
+  induction n with
+  | zero =>
+      rw [eval, Vector.dotProduct_eq_root_dotProduct]
+      simp [evalHorner, evalHornerCoeffs, monomialBasis, _root_.dotProduct]
+  | succ n ih =>
+      simp only [evalHorner, evalHornerCoeffs]
+      trans Vector.dotProduct (evalHornerStep p x.head) (monomialBasis x.tail)
+      · exact ih _ _
+      · simp only [eval]
+        exact eval_horner_step_dot_product p x
+
+/-- Horner evaluation through a ring homomorphism agrees with the dot-product evaluator. -/
+theorem eval₂_horner_eq_eval₂ (p : CMlPolynomial R n) (f : R →+* S) (x : Vector S n) :
+    eval₂Horner p f x = eval₂ p f x := by
+  simpa [eval₂Horner, eval₂] using
+    (eval_horner_eq_eval (p := map f p) (x := x))
 end CMlPolynomialMonomialBasisAndEvaluations
 
 end CMlPolynomial
@@ -303,10 +418,69 @@ theorem lagrangeBasis_getElem {w : Vector R n} (i : Fin (2 ^ n)) :
   rw [lagrangeBasis]
   simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin, Vector.getElem_ofFn]
 
+private lemma lagrange_basis_even {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^ n)) :
+    (lagrangeBasis x).get ⟨2 * j.val, by omega⟩ =
+    (1 - x.head) * (lagrangeBasis x.tail).get j := by
+  unfold lagrangeBasis
+  simp only [Vector.get_ofFn]
+  simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin]
+  rw [Fin.prod_univ_succ]
+  simp only [Fin.val_zero, Fin.val_succ]
+  rw [← Nat.bit_false_apply j.val, Nat.testBit_bit_zero]
+  simp only [Bool.false_eq_true, if_false]
+  congr 1
+  apply Finset.prod_congr rfl
+  intro k _
+  rw [Nat.testBit_bit_succ]
+  simp [Vector.tail_eq_cast_extract, Nat.add_comm]
+
+private lemma lagrange_basis_odd {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^ n)) :
+    (lagrangeBasis x).get ⟨2 * j.val + 1, by omega⟩ =
+    x.head * (lagrangeBasis x.tail).get j := by
+  unfold lagrangeBasis
+  simp only [Vector.get_ofFn]
+  simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin]
+  rw [Fin.prod_univ_succ]
+  simp only [Fin.val_zero, Fin.val_succ]
+  rw [← Nat.bit_true_apply j.val, Nat.testBit_bit_zero]
+  simp only [if_true]
+  congr 1
+  apply Finset.prod_congr rfl
+  intro k _
+  rw [Nat.testBit_bit_succ]
+  simp [Vector.tail_eq_cast_extract, Nat.add_comm]
+
 /-- Map a ring homomorphism over a `CMlPolynomialEval` -/
 def map {R S : Type*} [Semiring R] [Semiring S]
     (f : R →+* S) (p : CMlPolynomialEval R n) : CMlPolynomialEval S n :=
   Vector.map (fun a => f a) p
+
+/-- One multilinear-extension interpolation step, eliminating the next little-endian variable. -/
+@[inline, specialize]
+private def evalMleStep [CommRing R] {n : ℕ}
+    (values : Vector R (2 ^ (n + 1))) (x0 : R) : Vector R (2 ^ n) :=
+  Vector.ofFn fun j : Fin (2 ^ n) ↦
+    (1 - x0) * values.get ⟨2 * j.val, by omega⟩ +
+      x0 * values.get ⟨2 * j.val + 1, by omega⟩
+
+/-- Evaluate hypercube values by recursively interpolating the multilinear extension. -/
+@[inline, specialize]
+private def evalMleValues [CommRing R] :
+    {n : ℕ} → Vector R (2 ^ n) → Vector R n → R
+  | 0, values, _ => values.get ⟨0, by norm_num⟩
+  | n + 1, values, x =>
+      evalMleValues (evalMleStep values x.head) x.tail
+
+/-- Evaluate a `CMlPolynomialEval` by recursive multilinear-extension interpolation. -/
+@[inline, specialize]
+def evalMle (p : CMlPolynomialEval R n) (x : Vector R n) : R :=
+  evalMleValues p x
+
+/-- Evaluate a `CMlPolynomialEval` through a ring homomorphism using multilinear-extension
+interpolation. -/
+@[inline, specialize]
+def eval₂Mle (p : CMlPolynomialEval R n) (f : R →+* S) (x : Vector S n) : S :=
+  evalMle (map f p) x
 
 /-- Evaluate a `CMlPolynomialEval` at a point -/
 def eval (p : CMlPolynomialEval R n) (x : Vector R n) : R :=
@@ -321,6 +495,66 @@ def eval₂ (p : CMlPolynomialEval R n) (f : R →+* S) (x : Vector S n) : S := 
 
 -- Theorems about evaluations
 
+private lemma eval_mle_step_dot_product {n : ℕ}
+    (p : CMlPolynomialEval R (n + 1)) (x : Vector R (n + 1)) :
+    Vector.dotProduct (evalMleStep p x.head) (lagrangeBasis x.tail) =
+    Vector.dotProduct p (lagrangeBasis x) := by
+  rw [Vector.dotProduct_eq_root_dotProduct, Vector.dotProduct_eq_root_dotProduct]
+  unfold _root_.dotProduct
+  have hsplit :
+      (∑ i : Fin (2 ^ (n + 1)), p.get i * (lagrangeBasis x).get i) =
+        (∑ i : Fin (2 ^ n), p.get ⟨2 * i.val, by omega⟩ *
+          (lagrangeBasis x).get ⟨2 * i.val, by omega⟩) +
+        (∑ i : Fin (2 ^ n), p.get ⟨2 * i.val + 1, by omega⟩ *
+          (lagrangeBasis x).get ⟨2 * i.val + 1, by omega⟩) := by
+    convert (Fin.sum_univ_pow_two_even_add_odd (n := n)
+        (f := fun i ↦ if h : i < 2 ^ (n + 1) then
+          p.get ⟨i, h⟩ * (lagrangeBasis x).get ⟨i, h⟩ else 0)).symm using 1
+    · apply Finset.sum_congr rfl
+      intro i _
+      simp only [Fin.is_lt, dif_pos]
+    · congr 1
+      · apply Finset.sum_congr rfl
+        intro i _
+        rw [dif_pos (by omega)]
+      · apply Finset.sum_congr rfl
+        intro i _
+        rw [dif_pos (by omega)]
+  rw [hsplit]
+  unfold evalMleStep
+  simp only [Vector.get_ofFn]
+  simp only [lagrange_basis_even, lagrange_basis_odd]
+  rw [← Finset.sum_add_distrib]
+  apply Finset.sum_congr rfl
+  intro j _
+  rw [add_mul]
+  congr 1
+  · rw [mul_comm (1 - x.head) (p.get ⟨2 * j.val, by omega⟩), mul_assoc]
+    rfl
+  · rw [mul_comm x.head (p.get ⟨2 * j.val + 1, by omega⟩), mul_assoc]
+    rfl
+
+/-- Multilinear-extension interpolation agrees with the dot-product evaluator. -/
+theorem eval_mle_eq_eval (p : CMlPolynomialEval R n) (x : Vector R n) :
+    evalMle p x = eval p x := by
+  induction n with
+  | zero =>
+      rw [eval, Vector.dotProduct_eq_root_dotProduct]
+      simp [evalMle, evalMleValues, lagrangeBasis, _root_.dotProduct]
+  | succ n ih =>
+      simp only [evalMle, evalMleValues]
+      trans Vector.dotProduct (evalMleStep p x.head) (lagrangeBasis x.tail)
+      · exact ih _ _
+      · simp only [eval]
+        exact eval_mle_step_dot_product p x
+
+/-- Multilinear-extension interpolation through a ring homomorphism agrees with the
+dot-product evaluator. -/
+theorem eval₂_mle_eq_eval₂ (p : CMlPolynomialEval R n) (f : R →+* S) (x : Vector S n) :
+    eval₂Mle p f x = eval₂ p f x := by
+  simpa [eval₂Mle, eval₂] using
+    (eval_mle_eq_eval (p := map f p) (x := x))
+
 end CMlPolynomialLagrangeBasisAndEvaluations
 
 end CMlPolynomialEval
@@ -334,14 +568,19 @@ variable {R : Type*} [AddCommGroup R]
 
 /-- **One level** of the zeta‑transform (coefficient to evaluation).
 
-This function performs the transformation for the `j`-th variable (corresponding to the `j`-th bit).
-It iterates over all indices `i` in the boolean hypercube. If the `j`-th bit of `i` is 1,
-it adds the value at the corresponding index with the `j`-th bit 0 (`i - stride`)
-to the current value.
-This effectively computes the partial sum along the `j`-th dimension, which corresponds to
-evaluating the polynomial at $X_j = 1$ given its values at $X_j = 0$ (coefficients) and difference.
+Processes the `j`-th variable by folding the "partner" index (with bit `j` cleared) into
+every index that has bit `j` set. At output index `i`:
+$$ (\text{monoToLagrangeLevel}\ j\ v)[i] \ =\ \begin{cases}
+  v[i] + v[i - 2^j] & \text{if bit } j \text{ of } i \text{ is } 1 \\
+  v[i] & \text{otherwise}
+\end{cases} $$
 
-The `stride` is $2^j$, representing the distance between indices that differ only in the `j`-th bit.
+After applying every level `0, 1, …, n-1` the resulting entry at `i` is
+$\sum_{j \subseteq i} p[j]$ (bitwise subset), which is the hypercube evaluation at the
+Boolean point encoded by `i`. Cost per level: $O(2^n)$ additions, so the full transform
+is $O(n \cdot 2^n)$.
+
+The `stride` is $2^j$, the distance between indices that differ only in bit `j`.
 -/
 @[inline] def monoToLagrangeLevel {n : ℕ} (j : Fin n) : Vector R (2 ^ n) → Vector R (2 ^ n) :=
   fun v =>
@@ -352,16 +591,29 @@ The `stride` is $2^j$, representing the distance between indices that differ onl
       else
         v[i])
 
-/-- **Full transform**: coefficients → evaluations. -/
+/-- **Full zeta transform**: coefficients → evaluations.
+
+Applies `monoToLagrangeLevel 0, 1, …, n-1` in that order via `foldl`. The resulting entry
+at each index `i : Fin (2 ^ n)` is $\sum_{j \subseteq i} p[j]$ (the classical zeta
+transform on the Boolean lattice).
+
+**Complexity:** $O(n \cdot 2^n)$ additions — this is the butterfly form. Contrast with
+the naive `monoToLagrangeSpec` which is $O(4^n)$. -/
 @[inline] def monoToLagrange (n : ℕ) : CMlPolynomial R n → CMlPolynomialEval R n :=
   (List.finRange n).foldl (fun acc level => monoToLagrangeLevel level acc)
 
-/-- **One level** of the inverse zeta‑transform (evaluation to coefficient).
+/-- **One level** of the inverse zeta‑transform / Möbius transform (evaluation to
+coefficient).
 
-This function performs the inverse transformation for the `j`-th variable.
-It iterates over all indices `i`. If the `j`-th bit of `i` is 1, it subtracts the value
-at the corresponding index with the `j`-th bit 0 (`i - stride`) from the current value.
-This recovers the coefficient for the term involving $X_j$ from the evaluations.
+Processes the `j`-th variable by subtracting the partner entry (bit `j` cleared) from
+every index that has bit `j` set. At output index `i`:
+$$ (\text{lagrangeToMonoLevel}\ j\ v)[i] \ =\ \begin{cases}
+  v[i] - v[i - 2^j] & \text{if bit } j \text{ of } i \text{ is } 1 \\
+  v[i] & \text{otherwise}
+\end{cases} $$
+
+Each level is the exact inverse of `monoToLagrangeLevel j` (see
+`lagrangeToMonoLevel_monoToLagrangeLevel_id`).
 
 The `stride` is $2^j$.
 -/
@@ -374,15 +626,30 @@ The `stride` is $2^j$.
       else
         v[i])
 
-/-- **Full inverse transform**: evaluations → coefficients. -/
+/-- **Full inverse / Möbius transform**: evaluations → coefficients.
+
+Applies `lagrangeToMonoLevel (n-1), (n-2), …, 0` via `foldr`. The resulting entry at
+each index `i : Fin (2 ^ n)` is the inclusion-exclusion sum
+$\sum_{j \subseteq i} (-1)^{\mathrm{popCount}(i) - \mathrm{popCount}(j)} \cdot p[j]$ —
+see `lagrangeToMono_eq_lagrangeToMonoSpec`.
+
+**Complexity:** $O(n \cdot 2^n)$ additions/subtractions. Contrast with the naive
+`lagrangeToMonoSpec` which is $O(4^n)$. -/
 @[inline]
 def lagrangeToMono (n : ℕ) :
     Vector R (2 ^ n) → Vector R (2 ^ n) :=
   (List.finRange n).foldr (fun h acc => lagrangeToMonoLevel h acc)
 
-/-- The O(n^3) computable version of the Mobius Transform, serving as the spec.
+/-- The $O(4^n)$ inclusion-exclusion specification for the Möbius transform.
 
-TODO: prove equivalence between `lagrangeToMono` and `lagrangeToMonoSpec` -/
+For each output index `i`, this sums over all indices `j` that are bitwise subsets of `i`
+(`i &&& j = j`), with sign
+$(-1)^{\mathrm{popCount}(i) - \mathrm{popCount}(j)}$:
+$$ (\text{lagrangeToMonoSpec}\ p)[i]
+  = \sum_{j \subseteq i} (-1)^{\mathrm{popCount}(i) - \mathrm{popCount}(j)} \cdot p[j]. $$
+
+Provable equivalent to the fast `lagrangeToMono` — see `lagrangeToMono_eq_lagrangeToMonoSpec`.
+-/
 def lagrangeToMonoSpec (p : CMlPolynomialEval R n) : CMlPolynomialEval R n :=
   -- We define the output vector by specifying the value for each entry `i`.
   Vector.ofFn (fun i =>
@@ -400,6 +667,20 @@ def lagrangeToMonoSpec (p : CMlPolynomialEval R n) : CMlPolynomialEval R n :=
         0 -- If j is not a subset of i, the term is zero.
     )
   )
+
+/-- The $O(4^n)$ specification for the zeta transform (the mirror of
+`lagrangeToMonoSpec`).
+
+For each output index `i`, this sums `p[j]` over every index `j` that is a bitwise subset
+of `i` (`i &&& j = j`):
+$$ (\text{monoToLagrangeSpec}\ p)[i]\ =\ \sum_{j \subseteq i} p[j]. $$
+
+Provable equivalent to the fast `monoToLagrange` — see `monoToLagrange_eq_monoToLagrangeSpec`.
+-/
+def monoToLagrangeSpec (p : CMlPolynomial R n) : CMlPolynomialEval R n :=
+  Vector.ofFn (fun i ↦
+    Finset.sum Finset.univ (fun j ↦
+      if (i.val &&& j.val = j.val) then p.get j else 0))
 
 -- #eval lagrangeToMono 2 #v[(78 : ℤ), 3, 4, 100]
 -- #eval lagrangeToMonoSpec (n:=2) #v[(78 : ℤ), 3, 4, 100]
@@ -600,7 +881,7 @@ theorem mobius_apply_zeta_apply_eq_id (n : ℕ) [NeZero n] (r : Fin n) (l : Fin 
     rw [lagrangeToMonoSegment, monoToLagrangeSegment, forwardRange]
     simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, Fin.val_eq_zero, tsub_self, zero_add,
       List.ofFn_succ, Fin.isValue, Fin.cast_zero, Nat.mod_succ, add_zero, Fin.mk_zero',
-      Fin.cast_succ_eq, Fin.val_succ, Fin.val_cast, List.ofFn_zero, List.foldl_cons, List.foldl_nil,
+      Fin.val_cast, List.ofFn_zero, List.foldl_cons, List.foldl_nil,
       List.foldr_cons, List.foldr_nil]
     exact lagrangeToMonoLevel_monoToLagrangeLevel_id v 0
   | succ r1 r1_lt_n h_r1 =>
@@ -645,7 +926,7 @@ lemma zeta_apply_mobius_apply_eq_id (n : ℕ) (r : Fin n) (l : Fin (r.val + 1))
     rw [lagrangeToMonoSegment, monoToLagrangeSegment, forwardRange]
     simp only [add_tsub_cancel_right, tsub_self, zero_add, List.ofFn_succ, Nat.add_one_sub_one,
       Fin.isValue, Fin.cast_zero, Fin.coe_ofNat_eq_mod, Nat.mod_succ, add_zero, Fin.eta,
-      Fin.cast_succ_eq, Fin.val_succ, Fin.val_cast, List.ofFn_zero, List.foldr_cons, List.foldr_nil,
+      Fin.val_cast, List.ofFn_zero, List.foldr_cons, List.foldr_nil,
       List.foldl_cons, List.foldl_nil]
     exact monoToLagrangeLevel_lagrangeToMonoLevel_id v r
   | succ l1 l1_gt_0 h_l1 =>

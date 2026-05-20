@@ -1,9 +1,10 @@
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles
+Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles,
+  Natalie Klaus, Dimitris Mitsios, Valerii Huhnin
 -/
-import CompPoly.Univariate.Raw.Ops
+import CompPoly.Univariate.Raw.Division
 
 /-!
 # Raw Univariate Polynomial Proofs
@@ -322,7 +323,8 @@ theorem double_sum_eq [LawfulBEq R] (p q r : CPolynomial.Raw R) (n : ℕ) :
                   = ∑ i ∈ Finset.range (n + 1),
                       ∑ j ∈ Finset.Ico i (n + 1),
                           p.coeff i * q.coeff (j - i) * r.coeff (n - j) := by
-            rw [ Finset.range_eq_Ico, Finset.sum_Ico_Ico_comm ]
+            simp_rw [Finset.range_eq_Ico]
+            rw [Finset.sum_Ico_Ico_comm]
           convert h_interchange using 2
           rw [ Finset.sum_Ico_eq_sum_range ]
           simp +decide [ Nat.sub_add_comm ( Finset.mem_range_succ_iff.mp ‹_› ) ]
@@ -544,7 +546,7 @@ lemma equiv_mul_one [LawfulBEq R] (p : CPolynomial.Raw R) : Trim.equiv (p * 1) p
       · simp +decide
         conv => rw [ ← Array.toList_zipIdx ]
         conv => rw [ ← Array.toList_map ]
-        exact Eq.symm Array.sum_eq_sum_toList)
+        exact Eq.symm Array.sum_toList)
     exact (by exact mul_one_unwrap p ▸ coeff_sum p i ▸ rfl)
   exact congrFun (h_mul_one p)
 
@@ -712,6 +714,77 @@ lemma mul_coeff_range_size [LawfulBEq R] (p q : CPolynomial.Raw R) (k : ℕ) :
 lemma mul_coeff [LawfulBEq R] (p q : CPolynomial.Raw R) (k : ℕ) :
     (p * q).coeff k = (Finset.range (k + 1)).sum (fun i => p.coeff i * q.coeff (k - i)) := by
   rw [mul_coeff_range_size, sum_range_extend]
+
+namespace MulLowContext
+
+/-- Low-product backend using the coefficient convolution formula. -/
+def convolution [LawfulBEq R] : MulLowContext R where
+  mulLow := mulLowConvolution
+  size_le := by
+    intro k p q
+    simp [mulLowConvolution]
+  coeff_of_lt := by
+    intro k p q i hi
+    rw [mulLowConvolution, CPolynomial.Raw.coeff]
+    have hsize : i < (Array.ofFn fun j : Fin k ↦
+        (Finset.range (j.val + 1)).sum fun l ↦ p.coeff l * q.coeff (j.val - l)).size := by
+      simpa using hi
+    rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hsize]
+    simp only [Option.getD_some]
+    simpa using (mul_coeff p q i).symm
+
+end MulLowContext
+
+omit [BEq R] in
+lemma truncate_coeff (k : Nat) (p : CPolynomial.Raw R) (i : Nat) :
+    (truncate k p).coeff i = if i < k then p.coeff i else 0 := by
+  unfold truncate coeff
+  simp [Array.getElem?_extract]
+  by_cases hik : i < k
+  · by_cases hip : i < p.size
+    · simp [hik, hip]
+    · simp [hik, hip]
+  · simp [hik]
+
+namespace MulLowContext
+
+/-- Low-product backend using ordinary multiplication followed by truncation. -/
+def naive [LawfulBEq R] : MulLowContext R where
+  mulLow k p q := truncate k (p * q)
+  size_le := by
+    intro k p q
+    simp [truncate]
+  coeff_of_lt := by
+    intro k p q i hi
+    rw [truncate_coeff]
+    simp [hi]
+
+end MulLowContext
+
+omit [BEq R] in
+lemma reverse_coeff (n : Nat) (p : CPolynomial.Raw R) (i : Nat) :
+    (reverse n p).coeff i = if i < n then p.coeff (n - 1 - i) else 0 := by
+  unfold reverse coeff
+  by_cases hi : i < n
+  · simp only [Array.getD_eq_getD_getElem?]
+    have hsize : i < (Array.ofFn fun i : Fin n ↦ p[n - 1 - ↑i]?.getD 0).size := by
+      simpa using hi
+    rw [Array.getElem?_eq_getElem hsize]
+    simp [hi]
+  · simp only [Array.getD_eq_getD_getElem?]
+    have hsize : (Array.ofFn fun i : Fin n ↦ p[n - 1 - ↑i]?.getD 0).size ≤ i := by
+      simpa using Nat.le_of_not_lt hi
+    rw [Array.getElem?_eq_none hsize]
+    simp [hi]
+
+lemma mulLow_coeff [LawfulBEq R] (M : MulLowContext R) (k : Nat)
+    (p q : CPolynomial.Raw R) (i : Nat) :
+    (M.mulLow k p q).coeff i = if i < k then (p * q).coeff i else 0 := by
+  by_cases hi : i < k
+  · simp [hi, M.coeff_of_lt k p q i hi]
+  · have hsize : (M.mulLow k p q).size ≤ i := by
+      exact le_trans (M.size_le k p q) (Nat.le_of_not_lt hi)
+    simp [hi, coeff, Array.getElem?_eq_none hsize]
 
 lemma mul_assoc_coeff_rhs [LawfulBEq R] (p q r : CPolynomial.Raw R) (n : ℕ) :
     (p * (q * r)).coeff n =
@@ -905,6 +978,34 @@ protected theorem mul_assoc [LawfulBEq R] (p q r : CPolynomial.Raw R) :
 
 end MulTheorems
 
+section EvalTheorems
+
+variable [Semiring S]
+
+omit [BEq R] in
+private lemma foldl_zipIdx_eq_foldr_pow_k
+    (f : R →+* S) (x : S) (init : S) (k : Nat) (l : List R) :
+    List.foldl (fun acc a => acc + (f a.1) * x ^ a.2) init (l.zipIdx k) =
+      List.foldr (fun a acc => acc * x + f a) 0 l * x ^ k + init := by
+    induction l generalizing init k with
+    | nil => simp
+    | cons head tail tail_ih =>
+           simp only [List.foldr_cons, List.zipIdx_cons, List.foldl_cons]
+           rw [tail_ih]
+           rw [add_mul, mul_assoc, ← pow_succ', _root_.add_comm init, _root_.add_assoc]
+
+omit [BEq R] in
+/-- Horner evaluation agrees with the sum-of-powers evaluation. -/
+theorem eval₂Horner_eq_eval₂
+    (f : R →+* S) (x : S) (p : CPolynomial.Raw R) :
+    eval₂Horner f x p = eval₂ f x p := by
+    unfold eval₂ eval₂Horner
+    rw [← Array.foldl_toList, ← Array.foldr_toList, Array.toList_zipIdx]
+    have := foldl_zipIdx_eq_foldr_pow_k f x 0 0 p.toList
+    simpa using this.symm
+
+end EvalTheorems
+
 end Semiring
 
 section CommutativeSemiring
@@ -968,6 +1069,102 @@ lemma sub_coeff [LawfulBEq R] (p q : CPolynomial.Raw R) (i : ℕ) :
 
 end Ring
 
+section DivisionTheorems
+
+variable [Field R] [BEq R]
+
+lemma coeff_mul_X_pow [LawfulBEq R] (p : CPolynomial.Raw R) (n i : ℕ) :
+    (p * X ^ n).coeff i =
+      if n ≤ i ∧ i - n < p.size then p.coeff (i - n) else 0 := by
+  classical
+  rw [X_pow_eq_monomial_one, mul_coeff]
+  by_cases hn : n ≤ i
+  · have hmem : i - n ∈ Finset.range (i + 1) := by
+      simp only [Finset.mem_range]
+      omega
+    rw [Finset.sum_eq_single (i - n)]
+    · rw [coeff_monomial]
+      have hidx : n = i - (i - n) := by omega
+      by_cases hp : i - n < p.size
+      · rw [if_pos hidx, if_pos ⟨hn, hp⟩, mul_one]
+      · have hp' : p.size ≤ i - n := by omega
+        have hcoeff : p.coeff (i - n) = 0 := by
+          simp [coeff, Array.getElem?_eq_none hp']
+        rw [if_pos hidx, if_neg (by intro h; exact hp h.2), mul_one]
+        exact hcoeff
+    · intro b hbmem hb
+      rw [coeff_monomial]
+      have hidx : n ≠ i - b := by
+        intro h
+        have hb_le : b ≤ i := Nat.lt_succ_iff.mp (Finset.mem_range.mp hbmem)
+        have : b = i - n := by omega
+        exact hb this
+      simp [hidx]
+    · intro h
+      exact (h hmem).elim
+  · have hsum :
+        (∑ x ∈ Finset.range (i + 1), p.coeff x * (monomial n (1 : R)).coeff (i - x)) =
+          0 := by
+      apply Finset.sum_eq_zero
+      intro b _
+      rw [coeff_monomial]
+      have hidx : n ≠ i - b := by
+        intro h
+        have : n ≤ i := by omega
+        exact hn this
+      simp [hidx]
+    rw [hsum]
+    simp [hn]
+
+lemma coeff_C_mul_X_pow [LawfulBEq R] (scale : R) (p : CPolynomial.Raw R) (n i : ℕ) :
+    (C scale * (p * X ^ n)).coeff i =
+      if n ≤ i ∧ i - n < p.size then scale * p.coeff (i - n) else 0 := by
+  rw [C_mul_eq_smul_trim, Trim.coeff_eq_coeff, smul_coeff, coeff_mul_X_pow]
+  split_ifs <;> simp
+
+lemma subScaledShift_eq_sub_C_mul_X_pow [LawfulBEq R]
+    (p q : CPolynomial.Raw R) (scale : R) (shift : ℕ)
+    (hsize : shift + q.size ≤ p.size) :
+    subScaledShift p q scale shift = (p - C scale * (q * X ^ shift)).trim := by
+  apply Trim.eq_of_equiv
+  intro i
+  change (CPolynomial.Raw.mk (Array.ofFn fun j : Fin p.size ↦
+      let i := j.val - shift
+      let subtractCoeff := if shift ≤ j.val ∧ i < q.size then scale * q.coeff i else 0
+      p.coeff j.val - subtractCoeff)).coeff i =
+    (p - C scale * (q * X ^ shift)).coeff i
+  rw [sub_coeff, coeff_C_mul_X_pow]
+  by_cases hi : i < p.size
+  · simp [coeff, hi]
+  · have hnot : ¬(shift ≤ i ∧ i - shift < q.size) := by omega
+    simp [coeff, hi, hnot]
+
+lemma modByMonicRemainderOnly_go_eq_divModByMonicAux_go_snd [LawfulBEq R] :
+    ∀ (n : ℕ) (p q : CPolynomial.Raw R),
+      modByMonicRemainderOnly.go n p q = (divModByMonicAux.go n p q).2 := by
+  intro n
+  induction n with
+  | zero =>
+      intro p q
+      rfl
+  | succ n ih =>
+      intro p q
+      unfold modByMonicRemainderOnly.go divModByMonicAux.go
+      by_cases hsize : p.size < q.size
+      · simp [hsize]
+      · simp [hsize]
+        have hle : p.size - q.size + q.size ≤ p.size := by omega
+        rw [subScaledShift_eq_sub_C_mul_X_pow p q p.leadingCoeff (p.size - q.size) hle]
+        exact ih _ _
+
+/-- The remainder-only raw monic remainder agrees with the canonical raw monic remainder. -/
+theorem modByMonicRemainderOnly_eq_modByMonic [LawfulBEq R]
+    (p q : CPolynomial.Raw R) :
+    modByMonicRemainderOnly p q = modByMonic p q := by
+  exact modByMonicRemainderOnly_go_eq_divModByMonicAux_go_snd p.size p q
+
+end DivisionTheorems
+
 end Operations
 
 section AddCommSemigroup
@@ -979,6 +1176,49 @@ instance [LawfulBEq R] : AddCommSemigroup (CPolynomial.Raw R) where
   add_comm := add_comm
 
 end AddCommSemigroup
+
+section RepeatedSquaring
+
+variable [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+
+/-- `pow` preserves trimming (Raw-level version). -/
+lemma pow_is_trimmed (p : CPolynomial.Raw R) (n : ℕ) :
+    (p ^ n).trim = p ^ n := by
+  induction n with
+  | zero => exact Trim.push_trim #[] 1 one_ne_zero
+  | succ n ih => rw [pow_succ]; exact mul_is_trimmed p (p ^ n)
+
+/-- Additive law for exponentiation: $ p ^ {a + b} = p ^ a \cdot p ^ b $. -/
+theorem pow_add (p : CPolynomial.Raw R) (a b : ℕ) :
+    p ^ (a + b) = p ^ a * p ^ b := by
+  induction a with
+  | zero =>
+    simp only [Nat.zero_add, pow_zero]
+    show p ^ b = C 1 * p ^ b
+    rw [show (C 1 : CPolynomial.Raw R) = 1 from rfl, one_mul_trim, pow_is_trimmed]
+  | succ n ih =>
+    rw [Nat.succ_add, pow_succ, ih, pow_succ, Raw.mul_assoc]
+
+omit [LawfulBEq R] [Nontrivial R] in
+private theorem mul_eq_hmul (a b : CPolynomial.Raw R) : a.mul b = a * b := rfl
+
+/-- `powBySq` agrees with `pow` (repeated squaring = repeated multiplication). -/
+theorem powBySq_eq_pow (p : CPolynomial.Raw R) : ∀ n : ℕ, powBySq p n = p ^ n
+  | 0 => by unfold powBySq; exact (pow_zero p).symm
+  | n + 1 => by
+    unfold powBySq
+    have ih : powBySq p ((n + 1) / 2) = p ^ ((n + 1) / 2) :=
+      powBySq_eq_pow p ((n + 1) / 2)
+    simp only [ih, mul_eq_hmul, ← pow_add]
+    by_cases heven : (n + 1) % 2 = 0
+    · simp only [heven, ↓reduceIte]
+      congr 1; omega
+    · simp only [heven, ↓reduceIte, ← pow_succ]
+      congr 1; omega
+termination_by n => n
+decreasing_by omega
+
+end RepeatedSquaring
 
 end CPolynomial.Raw
 

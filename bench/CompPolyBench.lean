@@ -1,0 +1,1348 @@
+/-
+Copyright (c) 2026 CompPoly Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Valerii Huhnin
+-/
+
+import Init.Data.Random
+import Lean.Data.Json.Parser
+import Std.Time
+import CompPoly.Bivariate.Basic
+import CompPoly.Fields.BabyBear
+import CompPoly.Fields.Binary.AdditiveNTT.Impl
+import CompPoly.Fields.BN254
+import CompPoly.Fields.Goldilocks
+import CompPoly.Multilinear.Basic
+import CompPoly.Multivariate.CMvPolynomial
+import CompPoly.Univariate.BatchEval
+import CompPoly.Univariate.NTT.BabyBear
+import CompPoly.Univariate.NTT.KoalaBear
+import CompPoly.Univariate.NTT.FastMul
+import CompPoly.Univariate.NTT.FastMulLow
+import CompPoly.Univariate.NTTFast.FastMul
+import CompPoly.Univariate.NTTFast.FastMulLow
+import CompPoly.Univariate.NTTFast.Plan
+
+/-!
+# Evaluation Benchmarks
+
+Compiled benchmark executable for polynomial evaluation methods.
+-/
+
+open CompPoly
+open ConcreteBinaryTower
+
+namespace CompPolyBench
+
+/-- Fixed seed used to make benchmark inputs deterministic across runs. -/
+private def seed : Nat := 20260504
+
+/-- Number of warmup iterations for ordinary evaluation benchmarks. -/
+private def warmupIterations : Nat := 100
+
+/-- Number of measured iterations for ordinary evaluation benchmarks. -/
+private def measuredIterations : Nat := 5000
+
+/-- Number of warmup iterations for full-array batch-evaluation benchmarks. -/
+private def batchWarmupIterations : Nat := 1
+
+/-- Number of measured iterations for full-array batch-evaluation benchmarks. -/
+private def batchMeasuredIterations : Nat := 5
+
+/-- Number of warmup iterations for medium full-array batch-evaluation benchmarks. -/
+private def mediumBatchWarmupIterations : Nat := 1
+
+/-- Number of measured iterations for medium full-array batch-evaluation benchmarks. -/
+private def mediumBatchMeasuredIterations : Nat := 10
+
+/-- Number of warmup iterations for large full-array batch-evaluation benchmarks. -/
+private def largeBatchWarmupIterations : Nat := 1
+
+/-- Number of measured iterations for large full-array batch-evaluation benchmarks. -/
+private def largeBatchMeasuredIterations : Nat := 10
+
+/-- Number of warmup iterations for direct monic-remainder benchmarks. -/
+private def modWarmupIterations : Nat := 1
+
+/-- Number of measured iterations for direct monic-remainder benchmarks. -/
+private def modMeasuredIterations : Nat := 20
+
+/-- Number of warmup iterations for medium direct monic-remainder benchmarks. -/
+private def mediumModWarmupIterations : Nat := 1
+
+/-- Number of measured iterations for medium direct monic-remainder benchmarks. -/
+private def mediumModMeasuredIterations : Nat := 5
+
+/-- Number of warmup iterations for direct univariate multiplication benchmarks. -/
+private def mulWarmupIterations : Nat := 1
+
+/-- Number of measured iterations for direct univariate multiplication benchmarks. -/
+private def mulMeasuredIterations : Nat := 20
+
+/-- Number of coefficient slots used by univariate batch-evaluation benchmarks. -/
+private def univariateBatchCoeffSlots : Nat := 128
+
+/-- Number of points used by univariate batch-evaluation benchmarks. -/
+private def univariateBatchPointCount : Nat := 16
+
+/-- Number of coefficient slots used by medium univariate batch-evaluation benchmarks. -/
+private def mediumUnivariateBatchCoeffSlots : Nat := 8192
+
+/-- Number of points used by medium univariate batch-evaluation benchmarks. -/
+private def mediumUnivariateBatchPointCount : Nat := 1024
+
+/-- Number of coefficient slots used by large univariate batch-evaluation benchmarks. -/
+private def largeUnivariateBatchCoeffSlots : Nat := 65536
+
+/-- Number of points used by large univariate batch-evaluation benchmarks. -/
+private def largeUnivariateBatchPointCount : Nat := 8192
+
+/-- Number of linear factors in the direct monic-remainder benchmark divisor. -/
+private def univariateModDivisorPointCount : Nat := 16
+
+/-- Number of coefficient slots used by direct univariate multiplication benchmarks. -/
+private def univariateMulCoeffSlots : Nat := 1024
+
+/-- Number of coefficient slots used by low-product benchmarks. -/
+private def univariateMulLowCoeffSlots : Nat := 512
+
+/-- Number of low coefficients kept by low-product benchmarks. -/
+private def univariateMulLowOutputCoeffSlots : Nat := 512
+
+/-- Radix-2 domain exponent used by direct univariate multiplication benchmarks. -/
+private def univariateMulLogN : Nat := 11
+
+/-- Domain size used by direct univariate multiplication benchmarks. -/
+private def univariateMulDomainSize : Nat := 2 ^ univariateMulLogN
+
+/-- Input-shape label for univariate batch-evaluation benchmarks. -/
+private def univariateBatchShape : String :=
+  s!"degree<{univariateBatchCoeffSlots}, dense, {univariateBatchPointCount} points"
+
+/-- Input-shape label for medium univariate batch-evaluation benchmarks. -/
+private def mediumUnivariateBatchShape : String :=
+  s!"degree<{mediumUnivariateBatchCoeffSlots}, dense, " ++
+    s!"{mediumUnivariateBatchPointCount} points"
+
+/-- Input-shape label for large univariate batch-evaluation benchmarks. -/
+private def largeUnivariateBatchShape : String :=
+  s!"degree<{largeUnivariateBatchCoeffSlots}, dense, " ++
+    s!"{largeUnivariateBatchPointCount} points"
+
+/-- Input-shape label for direct univariate monic-remainder benchmarks. -/
+private def univariateModShape : String :=
+  s!"degree<{univariateBatchCoeffSlots} dividend, degree={univariateModDivisorPointCount} " ++
+    "monic divisor"
+
+/-- Input-shape label for medium direct univariate monic-remainder benchmarks. -/
+private def mediumUnivariateModShape : String :=
+  s!"degree<{mediumUnivariateBatchCoeffSlots} dividend, " ++
+    s!"degree={mediumUnivariateBatchPointCount} monic divisor"
+
+/-- Input-shape label for direct univariate multiplication benchmarks. -/
+private def univariateMulShape : String :=
+  s!"degree<{univariateMulCoeffSlots} dense lhs/rhs"
+
+/-- Input-shape label for direct univariate low-product benchmarks. -/
+private def univariateMulLowShape : String :=
+  s!"degree<{univariateMulLowCoeffSlots} dense lhs/rhs, low<{univariateMulLowOutputCoeffSlots}"
+
+/-- Method label for direct univariate multiplication NTT benchmarks. -/
+private def univariateMulNttMethod (name : String) : String :=
+  s!"{name}, domain n={univariateMulDomainSize}"
+
+/-- Number of warmup iterations for the slower additive NTT benchmark. -/
+private def additiveNttWarmupIterations : Nat := 10
+
+/-- Number of measured iterations for the smaller additive NTT benchmark. -/
+private def additiveNttMeasuredIterations : Nat := 1000
+
+/-- Number of variables used by multivariate evaluation benchmarks. -/
+private def multivariateVars : Nat := 5
+
+/-- Exponents generated by multivariate benchmarks are reduced modulo this value. -/
+private def multivariateExponentMod : Nat := 16
+
+/-- Number of generated coefficient slots for multivariate evaluation benchmarks. -/
+private def multivariateTermSlots : Nat := 512
+
+/-- Number of evaluation points used by multivariate evaluation benchmarks. -/
+private def multivariatePointCount : Nat := 32
+
+/-- Input-shape label for dense multivariate benchmarks. -/
+private def multivariateDenseShape : String :=
+  s!"{multivariateVars} vars, {multivariateTermSlots} generated terms, exponent<" ++
+    s!"{multivariateExponentMod}, dense coeffs, {multivariatePointCount} points"
+
+/-- Input-shape label for sparse multivariate benchmarks. -/
+private def multivariateSparseShape : String :=
+  s!"{multivariateVars} vars, {multivariateTermSlots} generated terms, exponent<" ++
+    s!"{multivariateExponentMod}, one nonzero per 16 coeffs, {multivariatePointCount} points"
+
+/-- Primality witness used for generic `ZMod` benchmarks over `BabyBear`. -/
+instance : Fact (Nat.Prime BabyBear.fieldSize) where
+  out := BabyBear.is_prime
+
+/-- Primality witness used for generic `ZMod` benchmarks over `Goldilocks`. -/
+instance : Fact (Nat.Prime Goldilocks.fieldSize) where
+  out := Goldilocks.is_prime
+
+/-- NTT domain large enough for direct univariate BabyBear multiplication benchmarks. -/
+private def babyBearMulNttDomain : CPolynomial.NTT.Domain BabyBear.Field :=
+  CPolynomial.NTT.BabyBear.domainOfLogN univariateMulLogN (by decide)
+
+/-- Best-fitting BabyBear NTT domain lookup for dynamic multiplication contexts. -/
+private def babyBearBestDomainForLength? (requiredLen : Nat) :
+    Option (CPolynomial.NTT.FittingDomain BabyBear.Field requiredLen) :=
+  CPolynomial.NTT.bestDomainForLength? BabyBear.twoAdicity
+    CPolynomial.NTT.BabyBear.domainOfLogN (by intro _ _; rfl) requiredLen
+
+/-- NTT domain large enough for direct univariate KoalaBear multiplication benchmarks. -/
+private def koalaBearMulNttDomain : CPolynomial.NTT.Domain KoalaBear.Field :=
+  CPolynomial.NTT.KoalaBear.domainOfLogN univariateMulLogN (by decide)
+
+/-- Result row emitted by one timed benchmark case. -/
+structure BenchRecord where
+  name : String
+  representation : String
+  method : String
+  field : String
+  inputShape : String
+  warmupIterations : Nat
+  measuredIterations : Nat
+  totalNanos : Nat
+  averageNanos : Nat
+  checksum : Nat
+
+/-- Hardware metadata included in benchmark reports when available. -/
+structure RunnerHardware where
+  runnerOs : Option String
+  runnerArch : Option String
+  cpuModel : Option String
+  logicalCpus : Option String
+  coresPerSocket : Option String
+  threadsPerCore : Option String
+  sockets : Option String
+  ramTotal : Option String
+  rootDisk : Option String
+  hypervisor : Option String
+
+/-- Build a compact timestamp identifier for generated report filenames. -/
+private def makeRunId : IO String := do
+  let started ← Std.Time.ZonedDateTime.now
+  pure <| started.format "yyMMdd-HHmmss"
+
+/-- Path for the generated JSONL benchmark results. -/
+private def resultsPath (runId : String) : System.FilePath :=
+  "bench" / ("evaluation-bench-results-" ++ runId ++ ".jsonl")
+
+/-- Path for the generated Markdown benchmark report. -/
+private def reportPath (runId : String) : System.FilePath :=
+  "bench" / ("evaluation-bench-report-" ++ runId ++ ".md")
+
+/-- Trim command output and normalize empty output to the empty string. -/
+private def trimCommandOutput (s : String) : String :=
+  let trimmed := s.trimAscii.toString
+  if trimmed.isEmpty then "" else trimmed
+
+/-- Run an optional host-info command, returning `none` if it fails or prints nothing. -/
+private def runInfoCommand (cmd : String) (args : Array String) : IO (Option String) := do
+  try
+    let output ← IO.Process.output { cmd := cmd, args := args }
+    if output.exitCode = 0 then
+      let text := trimCommandOutput output.stdout
+      pure <| if text.isEmpty then none else some text
+    else
+      pure none
+  catch _ =>
+    pure none
+
+/-- Read a string field from a JSON object. -/
+private def jsonObjString? (json : Lean.Json) (key : String) : Option String :=
+  (json.getObjVal? key >>= Lean.Json.getStr?).toOption
+
+/-- Extract a named field from `lscpu --json` output. -/
+private def lscpuJsonField (output key : String) : Option String := do
+  let json ← (Lean.Json.parse output).toOption
+  let fields ← (json.getObjVal? "lscpu" >>= Lean.Json.getArr?).toOption
+  let rec go : List Lean.Json → Option String
+    | [] => none
+    | field :: fields =>
+        match jsonObjString? field "field", jsonObjString? field "data" with
+        | some name, some value => if name = key then some value else go fields
+        | _, _ => go fields
+  go fields.toList
+
+/-- Split a command-output row on ASCII spaces and tabs. -/
+private def whitespaceFields (s : String) : List String :=
+  (s.replace "\t" " ").splitOn " " |>.filter fun field ↦ !field.isEmpty
+
+/-- Parse the root filesystem size from `df` output. -/
+private def dfRootSize (output : String) : Option String :=
+  let lines := output.splitOn "\n"
+  match lines with
+  | _header :: row :: _ =>
+      match whitespaceFields row with
+      | size :: _ => some size
+      | _ => none
+  | _ => none
+
+/-- Parse total memory from `/proc/meminfo` and report whole GiB. -/
+private def memTotalGib (output : String) : Option String :=
+  let rec go : List String → Option String
+    | [] => none
+    | line :: lines =>
+        match whitespaceFields line with
+        | "MemTotal:" :: kib :: _ =>
+            match kib.toNat? with
+            | some kib =>
+                let gib := kib / (1024 * 1024)
+                some <| toString gib ++ " GiB"
+            | none => go lines
+        | _ => go lines
+  go (output.splitOn "\n")
+
+/-- Collect best-effort GitHub runner or local machine metadata. -/
+private def collectRunnerHardware : IO RunnerHardware := do
+  let runnerOs ← IO.getEnv "RUNNER_OS"
+  let runnerArch ← IO.getEnv "RUNNER_ARCH"
+  let nproc ← runInfoCommand "nproc" #[]
+  let lscpu ← runInfoCommand "lscpu" #["--json"]
+  let meminfo ←
+    try
+      let text ← IO.FS.readFile "/proc/meminfo"
+      pure (some text)
+    catch _ =>
+      pure none
+  let dfRoot ← runInfoCommand "df" #["--output=size", "-h", "/"]
+  pure {
+    runnerOs := runnerOs
+    runnerArch := runnerArch
+    cpuModel := lscpu.bind fun output ↦ lscpuJsonField output "Model name:"
+    logicalCpus := nproc.orElse fun _ ↦ lscpu.bind fun output ↦ lscpuJsonField output "CPU(s):"
+    coresPerSocket := lscpu.bind fun output ↦ lscpuJsonField output "Core(s) per socket:"
+    threadsPerCore := lscpu.bind fun output ↦ lscpuJsonField output "Thread(s) per core:"
+    sockets := lscpu.bind fun output ↦ lscpuJsonField output "Socket(s):"
+    ramTotal := meminfo.bind memTotalGib
+    rootDisk := dfRoot.bind dfRootSize
+    hypervisor := lscpu.bind fun output ↦ lscpuJsonField output "Hypervisor vendor:"
+  }
+
+/-- Generate one pseudo-random natural number and advance the generator. -/
+private def nextNat (lo hi : Nat) : StateM StdGen Nat := do
+  let g ← get
+  let (n, g') := randNat g lo hi
+  set g'
+  pure n
+
+/-- Generate an array of pseudo-random natural numbers in the given range. -/
+private def randomNatArray (size : Nat) (hi : Nat) : StateM StdGen (Array Nat) := do
+  let mut values := #[]
+  for _ in [0:size] do
+    values := values.push (← nextNat 0 hi)
+  pure values
+
+/-- Generate dense or patterned-sparse coefficients over `ZMod modulus`. -/
+private def zmodArrayWithStride (modulus : Nat) (size sparseStride : Nat) :
+    StateM StdGen (Array (ZMod modulus)) := do
+  let values ← randomNatArray size (modulus - 1)
+  let mut coeffs := #[]
+  for i in [0:size] do
+    let value : ZMod modulus :=
+      if 0 < sparseStride && i % sparseStride != 0 then
+        0
+      else
+        (values.getD i 0 : ZMod modulus)
+    coeffs := coeffs.push value
+  pure coeffs
+
+/-- Generate dense or patterned-sparse coefficients over `ZMod modulus`. -/
+private def zmodArray (modulus : Nat) (size : Nat) (sparse : Bool) :
+    StateM StdGen (Array (ZMod modulus)) :=
+  zmodArrayWithStride modulus size (if sparse then 4 else 0)
+
+/-- Generate BabyBear coefficients with the same shape controls as `zmodArray`. -/
+private def babyBearArray (size : Nat) (sparse : Bool) : StateM StdGen (Array BabyBear.Field) := do
+  zmodArray BabyBear.fieldSize size sparse
+
+/-- Generate BabyBear coefficients with a nonzero every `sparseStride` entries. -/
+private def babyBearArrayWithStride (size sparseStride : Nat) :
+    StateM StdGen (Array BabyBear.Field) := do
+  zmodArrayWithStride BabyBear.fieldSize size sparseStride
+
+/-- Generate BabyBear vectors for multilinear benchmark inputs. -/
+private def babyBearVector (size : Nat) (sparse : Bool) : StateM StdGen (Array BabyBear.Field) :=
+  babyBearArray size sparse
+
+/-- Generate dense BabyBear evaluation points. -/
+private def babyBearPoints (size : Nat) : StateM StdGen (Array BabyBear.Field) :=
+  babyBearArray size false
+
+/-- Generate KoalaBear coefficients with the same shape controls as `zmodArray`. -/
+private def koalaBearArray (size : Nat) (sparse : Bool) :
+    StateM StdGen (Array KoalaBear.Field) := do
+  zmodArray KoalaBear.fieldSize size sparse
+
+/-- Build a canonical computable polynomial from generated coefficients. -/
+private def cpolyOfArray {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
+    (coeffs : Array R) : CPolynomial R :=
+  let p : CPolynomial.Raw R := coeffs
+  ⟨p.trim, CPolynomial.Raw.Trim.isCanonical_trim p⟩
+
+/-- Build a monic divisor as a product of linear factors `X - C x`. -/
+private def monicDivisorFromPoints {R : Type*} [Field R] [BEq R] [LawfulBEq R]
+    (xs : Array R) : CPolynomial R :=
+  xs.foldl (fun acc x ↦ acc * CPolynomial.linearFactor x) (CPolynomial.C 1)
+
+/-- Mix one benchmark output value into a stable checksum accumulator. -/
+private def mixChecksum (acc value : Nat) : Nat :=
+  (acc * 16777619 + value + 97) % 18446744073709551557
+
+/-- Convert a BabyBear field element to a checksum word. -/
+private def checksumBabyBear (x : BabyBear.Field) : Nat :=
+  ZMod.val x
+
+/-- Convert a KoalaBear field element to a checksum word. -/
+private def checksumKoalaBear (x : KoalaBear.Field) : Nat :=
+  ZMod.val x
+
+/-- Convert a `ZMod` element to a checksum word. -/
+private def checksumZMod {modulus : Nat} (x : ZMod modulus) : Nat :=
+  ZMod.val x
+
+/-- Convert a concrete `BTF₃` element to a checksum word. -/
+private def checksumBtf3 (x : AdditiveNTT.BTF₃) : Nat :=
+  BitVec.toNat x
+
+/-- Convert a concrete binary-tower field element to a checksum word. -/
+private def checksumConcreteBtf {k : Nat} (x : ConcreteBTField k) : Nat :=
+  BitVec.toNat x
+
+/-- Checksum an array-like benchmark result. -/
+private def checksumArray (checksum : α → Nat) (xs : Array α) : Nat :=
+  xs.foldl (fun acc x ↦ mixChecksum acc (checksum x)) 0
+
+/-- Checksum a canonical univariate polynomial by its coefficient array. -/
+private def checksumCPolynomial [Zero α] (checksum : α → Nat) (p : CPolynomial α) : Nat :=
+  checksumArray checksum p.val
+
+/-- Checksum a raw univariate polynomial by its stored coefficient array. -/
+private def checksumRawPolynomial (checksum : α → Nat) (p : CPolynomial.Raw α) : Nat :=
+  checksumArray checksum p
+
+/-- Time one benchmark closure and package its metadata and checksum. -/
+private def runTimed (name representation method field inputShape : String)
+    (warmup measured : Nat) (run : Nat → α) (checksum : α → Nat) : IO BenchRecord := do
+  for i in [0:warmup] do
+    let _ := run i
+    pure ()
+  let start ← IO.monoNanosNow
+  let mut acc := 0
+  for i in [0:measured] do
+    acc := mixChecksum acc (checksum (run i))
+  let stop ← IO.monoNanosNow
+  let total := stop - start
+  pure {
+    name := name
+    representation := representation
+    method := method
+    field := field
+    inputShape := inputShape
+    warmupIterations := warmup
+    measuredIterations := measured
+    totalNanos := total
+    averageNanos := if measured = 0 then 0 else total / measured
+    checksum := acc
+  }
+
+/-- Render a benchmark string field as a JSON string. -/
+private def jsonString (s : String) : String :=
+  "\"" ++ s ++ "\""
+
+/-- Render one benchmark record as a JSONL row. -/
+private def BenchRecord.toJsonLine (record : BenchRecord) : String :=
+  "{" ++ String.intercalate "," [
+    "\"name\":" ++ jsonString record.name,
+    "\"representation\":" ++ jsonString record.representation,
+    "\"method\":" ++ jsonString record.method,
+    "\"field\":" ++ jsonString record.field,
+    "\"input_shape\":" ++ jsonString record.inputShape,
+    "\"warmup_iterations\":" ++ toString record.warmupIterations,
+    "\"measured_iterations\":" ++ toString record.measuredIterations,
+    "\"total_nanos\":" ++ toString record.totalNanos,
+    "\"average_nanos\":" ++ toString record.averageNanos,
+    "\"checksum\":" ++ toString record.checksum
+  ] ++ "}"
+
+/-- Render all benchmark records as JSONL. -/
+private def renderJsonl (records : Array BenchRecord) : String :=
+  String.intercalate "\n" (records.toList.map BenchRecord.toJsonLine) ++ "\n"
+
+/-- Produce a string of spaces for Markdown table padding. -/
+private def spaces (n : Nat) : String :=
+  String.ofList (List.replicate n ' ')
+
+/-- Produce a string of dashes for Markdown table separators. -/
+private def dashes (n : Nat) : String :=
+  String.ofList (List.replicate n '-')
+
+/-- Right-pad a string to a target display width. -/
+private def padRight (s : String) (width : Nat) : String :=
+  s ++ spaces (width - s.length)
+
+/-- Left-pad a string to a target display width. -/
+private def padLeft (s : String) (width : Nat) : String :=
+  spaces (width - s.length) ++ s
+
+/-- Columns rendered in the benchmark result table. -/
+private def resultColumns : List (String × Bool × (BenchRecord → String)) := [
+  ("Name", false, fun r ↦ r.name),
+  ("Iterations", true, fun r ↦ toString r.measuredIterations),
+  ("Total ns", true, fun r ↦ toString r.totalNanos),
+  ("Avg ns", true, fun r ↦ toString r.averageNanos),
+  ("Checksum", true, fun r ↦ toString r.checksum)
+]
+
+/-- Compute the Markdown width required for a result table column. -/
+private def columnWidth (records : List BenchRecord)
+    (column : String × Bool × (BenchRecord → String)) : Nat :=
+  records.foldl (fun width record ↦ max width (column.2.2 record).length) column.1.length
+
+/-- Pad one Markdown table cell according to its alignment. -/
+private def formatCell (alignRight : Bool) (width : Nat) (s : String) : String :=
+  if alignRight then padLeft s width else padRight s width
+
+/-- Pad a list of Markdown table cells. -/
+private def formatCells : List String → List Nat → List Bool → List String
+  | cell :: cells, width :: widths, alignRight :: alignRights =>
+      formatCell alignRight width cell :: formatCells cells widths alignRights
+  | _, _, _ => []
+
+/-- Render one Markdown table row. -/
+private def markdownRow (cells : List String) (widths : List Nat)
+    (alignRights : List Bool) : String :=
+  "| " ++ String.intercalate " | " (formatCells cells widths alignRights) ++ " |"
+
+/-- Render one Markdown table separator cell. -/
+private def markdownSeparatorCell (alignRight : Bool) (width : Nat) : String :=
+  if alignRight then dashes ((max width 4) - 1) ++ ":" else dashes (max width 3)
+
+/-- Render a Markdown table for benchmark results. -/
+private def renderMarkdownTable (columns : List (String × Bool × (BenchRecord → String)))
+    (records : List BenchRecord) : List String :=
+  let widths := columns.map (columnWidth records)
+  let headers := columns.map (fun column ↦ column.1)
+  let alignRights := columns.map (fun column ↦ column.2.1)
+  let separator := columns.mapIdx
+    (fun i column ↦ markdownSeparatorCell column.2.1 (widths.getD i 3))
+  let rows := records.map fun record ↦
+    markdownRow (columns.map (fun column ↦ column.2.2 record)) widths alignRights
+  markdownRow headers widths (columns.map (fun _ ↦ false)) :: markdownRow separator widths
+    (columns.map (fun _ ↦ false)) :: rows
+
+/-- Render detailed configuration lines for one benchmark record. -/
+private def renderConfigSection (record : BenchRecord) : List String := [
+  "### " ++ record.name,
+  "",
+  "- Representation: `" ++ record.representation ++ "`",
+  "- Method: `" ++ record.method ++ "`",
+  "- Field / configuration: `" ++ record.field ++ "`",
+  "- Input shape: " ++ record.inputShape,
+  "- Warmup iterations: `" ++ toString record.warmupIterations ++ "`",
+  ""
+]
+
+/-- Render the runner OS and architecture line. -/
+private def renderRunnerLine (hardware : RunnerHardware) : String :=
+  match hardware.runnerOs, hardware.runnerArch with
+  | some os, some arch => "- Runner: `" ++ os ++ " " ++ arch ++ "`"
+  | some os, none => "- Runner OS: `" ++ os ++ "`"
+  | none, some arch => "- Runner architecture: `" ++ arch ++ "`"
+  | none, none => "- Runner: unavailable outside GitHub Actions"
+
+/-- Render an optional hardware metadata line. -/
+private def renderOptionalLine (label : String) (value : Option String) : Option String :=
+  value.map fun value ↦ "- " ++ label ++ ": `" ++ value ++ "`"
+
+/-- Render CPU topology metadata when enough fields are available. -/
+private def renderTopologyLine (hardware : RunnerHardware) : Option String :=
+  match hardware.coresPerSocket, hardware.threadsPerCore, hardware.sockets with
+  | some cores, some threads, some sockets =>
+      some <| "- Topology: `" ++ cores ++ " cores per socket, " ++ threads ++
+        " threads per core, " ++ sockets ++ " socket(s)`"
+  | some cores, some threads, none =>
+      some <| "- Topology: `" ++ cores ++ " cores per socket, " ++ threads ++
+        " threads per core`"
+  | some cores, none, _ => some <| "- Cores per socket: `" ++ cores ++ "`"
+  | none, some threads, _ => some <| "- Threads per core: `" ++ threads ++ "`"
+  | none, none, some sockets => some <| "- Sockets: `" ++ sockets ++ "`"
+  | none, none, none => none
+
+/-- Drop missing optional lines while preserving present ones. -/
+private def keepSome : List (Option String) → List String
+  | [] => []
+  | some line :: lines => line :: keepSome lines
+  | none :: lines => keepSome lines
+
+/-- Render the hardware section of the Markdown report. -/
+private def renderHardwareSection (hardware : RunnerHardware) : List String :=
+  [
+    "## Runner Hardware",
+    "",
+    renderRunnerLine hardware,
+  ] ++ keepSome [
+    renderOptionalLine "CPU" hardware.cpuModel,
+    renderOptionalLine "Exposed CPUs"
+      (hardware.logicalCpus.map fun cpus ↦ cpus ++ " logical CPUs"),
+    renderTopologyLine hardware,
+    renderOptionalLine "RAM" hardware.ramTotal,
+    renderOptionalLine "Root disk" hardware.rootDisk,
+    renderOptionalLine "Hypervisor" hardware.hypervisor
+  ] ++ [
+    ""
+  ]
+
+/-- Render the complete Markdown benchmark report. -/
+private def renderMarkdown (hardware : RunnerHardware) (records : Array BenchRecord) : String :=
+  String.intercalate "\n" ([
+    "# Evaluation Benchmark Report",
+    "",
+    "- Seed: `" ++ toString seed ++ "`",
+    "- Early CI performance comparisons are informational only.",
+    "",
+  ] ++ renderHardwareSection hardware ++ [
+    "## Results",
+    ""
+  ] ++ renderMarkdownTable resultColumns records.toList ++ [
+    "",
+    "## Benchmark Configuration",
+    ""
+  ] ++ (records.toList.map renderConfigSection).foldr List.append []) ++ "\n"
+
+/-- Append benchmark records without relying on array append notation. -/
+private def appendRecords (xs ys : Array BenchRecord) : Array BenchRecord :=
+  ys.foldl (init := xs) fun acc record ↦ acc.push record
+
+/-- Build a computable multivariate polynomial from generated coefficients. -/
+private def buildCMvPolynomial {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+    (terms : Array R) : CPoly.CMvPolynomial multivariateVars R :=
+  Id.run do
+    let mut p : CPoly.CMvPolynomial multivariateVars R := 0
+    for i in [0:terms.size] do
+      let m : CPoly.CMvMonomial multivariateVars := Vector.ofFn fun j ↦
+        (i / (j.val + 1)) % multivariateExponentMod
+      p := p + CPoly.CMvPolynomial.monomial m (terms.getD i 0)
+    pure p
+
+/-- Build a bivariate polynomial from generated coefficients. -/
+private def buildCBivariate {R : Type*}
+    [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (terms : Array R) : CBivariate R :=
+  Id.run do
+    let mut p : CBivariate R := 0
+    for i in [0:terms.size] do
+      let xDegree := i % 8
+      let yDegree := i / 8
+      p := p + CBivariate.monomialXY xDegree yDegree (terms.getD i 0)
+    pure p
+
+/-- Benchmark dense univariate evaluation over a generic prime `ZMod` field. -/
+private def runDenseUnivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
+    (nameSuffix fieldName : String) (gen : StdGen) : IO (Array BenchRecord × StdGen) := do
+  let (denseCoeffs, gen) := (zmodArray modulus 512 false).run gen
+  let (points, gen) := (zmodArray modulus 32 false).run gen
+  let densePoly := cpolyOfArray denseCoeffs
+  let mut records := #[]
+  records := records.push (← runTimed
+    ("univariate-dense-sum-" ++ nameSuffix) "CPolynomial" "eval sum-of-powers" fieldName
+    "degree<512, dense, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CPolynomial.eval (points.getD (i % points.size) 0) densePoly)
+    checksumZMod)
+  records := records.push (← runTimed
+    ("univariate-dense-horner-" ++ nameSuffix) "CPolynomial" "evalHorner" fieldName
+    "degree<512, dense, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CPolynomial.evalHorner (points.getD (i % points.size) 0) densePoly)
+    checksumZMod)
+  pure (records, gen)
+
+/-- Benchmark dense and sparse multivariate evaluation over a generic prime `ZMod` field. -/
+private def runMultivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
+    (nameSuffix fieldName : String) (gen : StdGen) : IO (Array BenchRecord × StdGen) := do
+  let (denseTerms, gen) := (zmodArray modulus multivariateTermSlots false).run gen
+  let (sparseTerms, gen) := (zmodArrayWithStride modulus multivariateTermSlots 16).run gen
+  let (points, gen) := (zmodArray modulus (multivariateVars * multivariatePointCount) false).run gen
+  let densePoly := buildCMvPolynomial denseTerms
+  let sparsePoly := buildCMvPolynomial sparseTerms
+  let evalPoint (offset : Nat) : Fin multivariateVars → ZMod modulus :=
+    fun j ↦ points.getD ((offset + j.val) % points.size) 0
+  let mut records := #[]
+  records := records.push (← runTimed
+    ("multivariate-dense-eval-" ++ nameSuffix) "CMvPolynomial" "eval" fieldName
+    multivariateDenseShape warmupIterations measuredIterations
+    (fun i ↦ CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) densePoly)
+    checksumZMod)
+  records := records.push (← runTimed
+    ("multivariate-dense-horner-" ++ nameSuffix) "CMvPolynomial" "evalHorner" fieldName
+    multivariateDenseShape warmupIterations measuredIterations
+    (fun i ↦ CPoly.CMvPolynomial.evalHorner (evalPoint (i % multivariatePointCount)) densePoly)
+    checksumZMod)
+  records := records.push (← runTimed
+    ("multivariate-sparse-eval-" ++ nameSuffix) "CMvPolynomial" "eval" fieldName
+    multivariateSparseShape warmupIterations measuredIterations
+    (fun i ↦ CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) sparsePoly)
+    checksumZMod)
+  records := records.push (← runTimed
+    ("multivariate-sparse-horner-" ++ nameSuffix) "CMvPolynomial" "evalHorner" fieldName
+    multivariateSparseShape warmupIterations measuredIterations
+    (fun i ↦ CPoly.CMvPolynomial.evalHorner (evalPoint (i % multivariatePointCount)) sparsePoly)
+    checksumZMod)
+  pure (records, gen)
+
+/-- Run all univariate evaluation benchmarks. -/
+private def runUnivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := do
+  let (denseCoeffs, gen) := (babyBearArray 512 false).run gen
+  let (sparseCoeffs, gen) := (babyBearArray 512 true).run gen
+  let (mulLhsCoeffs, gen) := (babyBearArray univariateMulCoeffSlots false).run gen
+  let (mulRhsCoeffs, gen) := (babyBearArray univariateMulCoeffSlots false).run gen
+  let (mulLowLhsCoeffs, gen) := (babyBearArray univariateMulLowCoeffSlots false).run gen
+  let (mulLowRhsCoeffs, gen) := (babyBearArray univariateMulLowCoeffSlots false).run gen
+  let (koalaMulLhsCoeffs, gen) := (koalaBearArray univariateMulCoeffSlots false).run gen
+  let (koalaMulRhsCoeffs, gen) := (koalaBearArray univariateMulCoeffSlots false).run gen
+  let (points, gen) := (babyBearPoints 32).run gen
+  let (batchCoeffs, gen) := (babyBearArray univariateBatchCoeffSlots false).run gen
+  let (batchPoints, gen) := (babyBearPoints univariateBatchPointCount).run gen
+  let (mediumBatchCoeffs, gen) := (babyBearArray mediumUnivariateBatchCoeffSlots false).run gen
+  let (mediumBatchPoints, gen) := (babyBearPoints mediumUnivariateBatchPointCount).run gen
+  let (largeBatchCoeffs, gen) := (babyBearArray largeUnivariateBatchCoeffSlots false).run gen
+  let (largeBatchPoints, gen) := (babyBearPoints largeUnivariateBatchPointCount).run gen
+  let densePoly := cpolyOfArray denseCoeffs
+  let sparsePoly := cpolyOfArray sparseCoeffs
+  let mulLowLhsRaw : CPolynomial.Raw BabyBear.Field := mulLowLhsCoeffs
+  let mulLowRhsRaw : CPolynomial.Raw BabyBear.Field := mulLowRhsCoeffs
+  let mulLhsPoly := cpolyOfArray mulLhsCoeffs
+  let mulRhsPoly := cpolyOfArray mulRhsCoeffs
+  let koalaMulLhsPoly := cpolyOfArray koalaMulLhsCoeffs
+  let koalaMulRhsPoly := cpolyOfArray koalaMulRhsCoeffs
+  let batchPoly := cpolyOfArray batchCoeffs
+  let mediumBatchPoly := cpolyOfArray mediumBatchCoeffs
+  let largeBatchPoly := cpolyOfArray largeBatchCoeffs
+  let modDivisor := monicDivisorFromPoints batchPoints
+  let mediumModDivisor := monicDivisorFromPoints mediumBatchPoints
+  let naiveMul : CPolynomial.MulContext BabyBear.Field := CPolynomial.MulContext.naive
+  let nttMul : CPolynomial.MulContext BabyBear.Field :=
+    CPolynomial.MulContext.ntt babyBearBestDomainForLength?
+  let nttFastMul : CPolynomial.MulContext BabyBear.Field :=
+    CPolynomial.MulContext.nttFast babyBearBestDomainForLength?
+  let naiveMod : CPolynomial.ModContext BabyBear.Field := CPolynomial.ModContext.naive
+  let remainderOnlyMod : CPolynomial.ModContext BabyBear.Field :=
+    CPolynomial.ModContext.remainderOnly
+  let naiveLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
+    CPolynomial.Raw.MulLowContext.naive
+  let convolutionLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
+    CPolynomial.Raw.MulLowContext.convolution
+  let nttWithFallbackLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
+    CPolynomial.NTT.FastMulLow.withFallback babyBearBestDomainForLength?
+  let nttFastWithFallbackLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
+    CPolynomial.NTTFast.FastMulLow.withFallback babyBearBestDomainForLength?
+  let reversalConvolutionLowMod : CPolynomial.ModContext BabyBear.Field :=
+    CPolynomial.ModContext.reversal convolutionLowMul
+  let reversalNttLowMod : CPolynomial.ModContext BabyBear.Field :=
+    CPolynomial.ModContext.reversal nttWithFallbackLowMul
+  let reversalNttFastLowMod : CPolynomial.ModContext BabyBear.Field :=
+    CPolynomial.ModContext.reversal nttFastWithFallbackLowMul
+  let babyBearMulNttFastPlan := CPolynomial.NTTFast.Plan.ofDomain babyBearMulNttDomain
+  let koalaBearMulNttFastPlan := CPolynomial.NTTFast.Plan.ofDomain koalaBearMulNttDomain
+  let nextGen := gen
+  let mut records := #[]
+  records := records.push (← runTimed
+    "univariate-dense-sum" "CPolynomial" "eval sum-of-powers" "BabyBear.Field"
+    "degree<512, dense, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CPolynomial.eval (points.getD (i % points.size) 0) densePoly)
+    checksumBabyBear)
+  records := records.push (← runTimed
+    "univariate-dense-horner" "CPolynomial" "evalHorner" "BabyBear.Field"
+    "degree<512, dense, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CPolynomial.evalHorner (points.getD (i % points.size) 0) densePoly)
+    checksumBabyBear)
+  records := records.push (← runTimed
+    "univariate-sparse-sum" "CPolynomial" "eval sum-of-powers" "BabyBear.Field"
+    "degree<512, one nonzero per 4 coeffs, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CPolynomial.eval (points.getD (i % points.size) 0) sparsePoly)
+    checksumBabyBear)
+  records := records.push (← runTimed
+    "univariate-sparse-horner" "CPolynomial" "evalHorner" "BabyBear.Field"
+    "degree<512, one nonzero per 4 coeffs, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CPolynomial.evalHorner (points.getD (i % points.size) 0) sparsePoly)
+    checksumBabyBear)
+  records := records.push (← runTimed
+    "univariate-mul-naive" "CPolynomial" "mul" "BabyBear.Field"
+    univariateMulShape mulWarmupIterations mulMeasuredIterations
+    (fun _ ↦ mulLhsPoly * mulRhsPoly)
+    (checksumCPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-mul-ntt" "CPolynomial" (univariateMulNttMethod "FastMul.fastMulImpl")
+    "BabyBear.Field"
+    univariateMulShape mulWarmupIterations mulMeasuredIterations
+    (fun _ ↦ CPolynomial.NTT.FastMul.fastMulImpl babyBearMulNttDomain mulLhsPoly mulRhsPoly)
+    (checksumCPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-mul-ntt-fast" "CPolynomial" (univariateMulNttMethod "NTTFast.fastMulImpl")
+    "BabyBear.Field"
+    univariateMulShape mulWarmupIterations mulMeasuredIterations
+    (fun _ ↦ CPolynomial.NTTFast.fastMulImpl babyBearMulNttDomain mulLhsPoly mulRhsPoly)
+    (checksumCPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-mul-ntt-fast-plan" "CPolynomial"
+    (univariateMulNttMethod
+      "NTTFast.Plan.fastMulImpl, cached twiddles, mixed radix-4 DIF/DIT, dual forward")
+    "BabyBear.Field"
+    univariateMulShape mulWarmupIterations mulMeasuredIterations
+    (fun _ ↦ CPolynomial.NTTFast.Plan.fastMulImpl babyBearMulNttFastPlan mulLhsPoly
+      mulRhsPoly)
+    (checksumCPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-mul-naive-koalabear" "CPolynomial" "mul" "KoalaBear.Field"
+    univariateMulShape mulWarmupIterations mulMeasuredIterations
+    (fun _ ↦ koalaMulLhsPoly * koalaMulRhsPoly)
+    (checksumCPolynomial checksumKoalaBear))
+  records := records.push (← runTimed
+    "univariate-mul-ntt-koalabear" "CPolynomial"
+    (univariateMulNttMethod "FastMul.fastMulImpl")
+    "KoalaBear.Field"
+    univariateMulShape mulWarmupIterations mulMeasuredIterations
+    (fun _ ↦ CPolynomial.NTT.FastMul.fastMulImpl koalaBearMulNttDomain koalaMulLhsPoly
+      koalaMulRhsPoly)
+    (checksumCPolynomial checksumKoalaBear))
+  records := records.push (← runTimed
+    "univariate-mul-ntt-fast-koalabear" "CPolynomial"
+    (univariateMulNttMethod "NTTFast.fastMulImpl")
+    "KoalaBear.Field"
+    univariateMulShape mulWarmupIterations mulMeasuredIterations
+    (fun _ ↦ CPolynomial.NTTFast.fastMulImpl koalaBearMulNttDomain koalaMulLhsPoly
+      koalaMulRhsPoly)
+    (checksumCPolynomial checksumKoalaBear))
+  records := records.push (← runTimed
+    "univariate-mul-ntt-fast-plan-koalabear" "CPolynomial"
+    (univariateMulNttMethod
+      "NTTFast.Plan.fastMulImpl, cached twiddles, mixed radix-4 DIF/DIT, dual forward")
+    "KoalaBear.Field"
+    univariateMulShape mulWarmupIterations mulMeasuredIterations
+    (fun _ ↦ CPolynomial.NTTFast.Plan.fastMulImpl koalaBearMulNttFastPlan koalaMulLhsPoly
+      koalaMulRhsPoly)
+    (checksumCPolynomial checksumKoalaBear))
+  records := records.push (← runTimed
+    "univariate-mul-low-naive" "CPolynomial.Raw" "MulLowContext.naive" "BabyBear.Field"
+    univariateMulLowShape mulWarmupIterations mulMeasuredIterations
+    (fun _ ↦ naiveLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw mulLowRhsRaw)
+    (checksumRawPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-mul-low-convolution" "CPolynomial.Raw" "MulLowContext.convolution"
+    "BabyBear.Field"
+    univariateMulLowShape mulWarmupIterations mulMeasuredIterations
+    (fun _ ↦ convolutionLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
+      mulLowRhsRaw)
+    (checksumRawPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-mul-low-ntt-with-fallback" "CPolynomial.Raw" "FastMulLow.withFallback"
+    "BabyBear.Field"
+    univariateMulLowShape mulWarmupIterations mulMeasuredIterations
+    (fun _ ↦ nttWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
+      mulLowRhsRaw)
+    (checksumRawPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-mul-low-ntt-fast-with-fallback" "CPolynomial.Raw"
+    "NTTFast.FastMulLow.withFallback" "BabyBear.Field"
+    univariateMulLowShape mulWarmupIterations mulMeasuredIterations
+    (fun _ ↦ nttFastWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
+      mulLowRhsRaw)
+    (checksumRawPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-mod-by-monic-naive" "CPolynomial" "modByMonic" "BabyBear.Field"
+    univariateModShape modWarmupIterations modMeasuredIterations
+    (fun _ ↦ CPolynomial.modByMonic batchPoly modDivisor)
+    (checksumCPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-mod-by-monic-remainder-only" "CPolynomial" "modByMonicRemainderOnly"
+    "BabyBear.Field"
+    univariateModShape modWarmupIterations modMeasuredIterations
+    (fun _ ↦ CPolynomial.modByMonicRemainderOnly batchPoly modDivisor)
+    (checksumCPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-mod-by-monic-reversal-convolution-low-mul" "CPolynomial"
+    "modByMonicByReversal, MulLowContext.convolution" "BabyBear.Field"
+    univariateModShape modWarmupIterations modMeasuredIterations
+    (fun _ ↦ reversalConvolutionLowMod.modByMonic batchPoly modDivisor)
+    (checksumCPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-mod-by-monic-reversal-ntt-low-mul" "CPolynomial"
+    "modByMonicByReversal, FastMulLow.withFallback" "BabyBear.Field"
+    univariateModShape modWarmupIterations modMeasuredIterations
+    (fun _ ↦ reversalNttLowMod.modByMonic batchPoly modDivisor)
+    (checksumCPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-mod-by-monic-reversal-ntt-fast-low-mul" "CPolynomial"
+    "modByMonicByReversal, NTTFast.FastMulLow.withFallback" "BabyBear.Field"
+    univariateModShape modWarmupIterations modMeasuredIterations
+    (fun _ ↦ reversalNttFastLowMod.modByMonic batchPoly modDivisor)
+    (checksumCPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-mod-by-monic-medium-remainder-only" "CPolynomial"
+    "modByMonicRemainderOnly" "BabyBear.Field"
+    mediumUnivariateModShape mediumModWarmupIterations mediumModMeasuredIterations
+    (fun _ ↦ CPolynomial.modByMonicRemainderOnly mediumBatchPoly mediumModDivisor)
+    (checksumCPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-mod-by-monic-medium-reversal-convolution-low-mul" "CPolynomial"
+    "modByMonicByReversal, MulLowContext.convolution" "BabyBear.Field"
+    mediumUnivariateModShape mediumModWarmupIterations mediumModMeasuredIterations
+    (fun _ ↦ reversalConvolutionLowMod.modByMonic mediumBatchPoly mediumModDivisor)
+    (checksumCPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-mod-by-monic-medium-reversal-ntt-low-mul" "CPolynomial"
+    "modByMonicByReversal, FastMulLow.withFallback" "BabyBear.Field"
+    mediumUnivariateModShape mediumModWarmupIterations mediumModMeasuredIterations
+    (fun _ ↦ reversalNttLowMod.modByMonic mediumBatchPoly mediumModDivisor)
+    (checksumCPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-mod-by-monic-medium-reversal-ntt-fast-low-mul" "CPolynomial"
+    "modByMonicByReversal, NTTFast.FastMulLow.withFallback" "BabyBear.Field"
+    mediumUnivariateModShape mediumModWarmupIterations mediumModMeasuredIterations
+    (fun _ ↦ reversalNttFastLowMod.modByMonic mediumBatchPoly mediumModDivisor)
+    (checksumCPolynomial checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-naive-sum" "CPolynomial" "evalBatch" "BabyBear.Field"
+    univariateBatchShape batchWarmupIterations batchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatch batchPoly batchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-naive-horner" "CPolynomial" "evalBatchHorner" "BabyBear.Field"
+    univariateBatchShape batchWarmupIterations batchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchHorner batchPoly batchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-subproduct-naive-mul-naive-mod" "CPolynomial"
+    "evalBatchSubproduct naive mul/mod" "BabyBear.Field"
+    univariateBatchShape batchWarmupIterations batchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct naiveMul naiveMod batchPoly batchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-subproduct-naive-mul-remainder-only-mod" "CPolynomial"
+    "evalBatchSubproduct naive mul/remainder-only mod" "BabyBear.Field"
+    univariateBatchShape batchWarmupIterations batchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct naiveMul remainderOnlyMod batchPoly batchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-subproduct-ntt-mul-remainder-only-mod" "CPolynomial"
+    "evalBatchSubproduct ntt mul/remainder-only mod" "BabyBear.Field"
+    univariateBatchShape batchWarmupIterations batchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct nttMul remainderOnlyMod batchPoly batchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-subproduct-ntt-fast-mul-remainder-only-mod" "CPolynomial"
+    "evalBatchSubproduct ntt-fast mul/remainder-only mod" "BabyBear.Field"
+    univariateBatchShape batchWarmupIterations batchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct nttFastMul remainderOnlyMod batchPoly batchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-subproduct-naive-mul-reversal-convolution-low-mod" "CPolynomial"
+    "evalBatchSubproduct naive mul/reversal-convolution-low mod" "BabyBear.Field"
+    univariateBatchShape batchWarmupIterations batchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct naiveMul reversalConvolutionLowMod batchPoly
+      batchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-subproduct-ntt-mul-reversal-ntt-low-mod" "CPolynomial"
+    "evalBatchSubproduct ntt mul/reversal-ntt-low mod" "BabyBear.Field"
+    univariateBatchShape batchWarmupIterations batchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct nttMul reversalNttLowMod batchPoly batchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-subproduct-ntt-fast-mul-reversal-ntt-fast-low-mod" "CPolynomial"
+    "evalBatchSubproduct ntt-fast mul/reversal-ntt-fast-low mod" "BabyBear.Field"
+    univariateBatchShape batchWarmupIterations batchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct nttFastMul reversalNttFastLowMod batchPoly
+      batchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-medium-naive-sum" "CPolynomial" "evalBatch" "BabyBear.Field"
+    mediumUnivariateBatchShape mediumBatchWarmupIterations mediumBatchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatch mediumBatchPoly mediumBatchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-medium-naive-horner" "CPolynomial" "evalBatchHorner" "BabyBear.Field"
+    mediumUnivariateBatchShape mediumBatchWarmupIterations mediumBatchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchHorner mediumBatchPoly mediumBatchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-medium-subproduct-naive-mul-remainder-only-mod" "CPolynomial"
+    "evalBatchSubproduct naive mul/remainder-only mod" "BabyBear.Field"
+    mediumUnivariateBatchShape mediumBatchWarmupIterations mediumBatchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct naiveMul remainderOnlyMod mediumBatchPoly
+      mediumBatchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-medium-subproduct-ntt-mul-remainder-only-mod" "CPolynomial"
+    "evalBatchSubproduct ntt mul/remainder-only mod" "BabyBear.Field"
+    mediumUnivariateBatchShape mediumBatchWarmupIterations mediumBatchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct nttMul remainderOnlyMod mediumBatchPoly
+      mediumBatchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-medium-subproduct-ntt-fast-mul-remainder-only-mod" "CPolynomial"
+    "evalBatchSubproduct ntt-fast mul/remainder-only mod" "BabyBear.Field"
+    mediumUnivariateBatchShape mediumBatchWarmupIterations mediumBatchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct nttFastMul remainderOnlyMod mediumBatchPoly
+      mediumBatchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-medium-subproduct-ntt-mul-reversal-ntt-low-mod" "CPolynomial"
+    "evalBatchSubproduct ntt mul/reversal-ntt-low mod" "BabyBear.Field"
+    mediumUnivariateBatchShape mediumBatchWarmupIterations mediumBatchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct nttMul reversalNttLowMod mediumBatchPoly
+      mediumBatchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-medium-subproduct-ntt-fast-mul-reversal-ntt-fast-low-mod"
+    "CPolynomial" "evalBatchSubproduct ntt-fast mul/reversal-ntt-fast-low mod"
+    "BabyBear.Field"
+    mediumUnivariateBatchShape mediumBatchWarmupIterations mediumBatchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct nttFastMul reversalNttFastLowMod
+      mediumBatchPoly mediumBatchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-large-naive-horner" "CPolynomial" "evalBatchHorner" "BabyBear.Field"
+    largeUnivariateBatchShape largeBatchWarmupIterations largeBatchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchHorner largeBatchPoly largeBatchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-large-subproduct-ntt-mul-reversal-ntt-low-mod" "CPolynomial"
+    "evalBatchSubproduct ntt mul/reversal-ntt-low mod" "BabyBear.Field"
+    largeUnivariateBatchShape largeBatchWarmupIterations largeBatchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct nttMul reversalNttLowMod largeBatchPoly
+      largeBatchPoints)
+    (checksumArray checksumBabyBear))
+  records := records.push (← runTimed
+    "univariate-batch-large-subproduct-ntt-fast-mul-reversal-ntt-fast-low-mod"
+    "CPolynomial" "evalBatchSubproduct ntt-fast mul/reversal-ntt-fast-low mod"
+    "BabyBear.Field"
+    largeUnivariateBatchShape largeBatchWarmupIterations largeBatchMeasuredIterations
+    (fun _ ↦ CPolynomial.evalBatchSubproduct nttFastMul reversalNttFastLowMod largeBatchPoly
+      largeBatchPoints)
+    (checksumArray checksumBabyBear))
+  let (goldilocksRecords, extraGen) ← runDenseUnivariateZMod
+    Goldilocks.fieldSize "goldilocks" "Goldilocks.Field" nextGen
+  records := appendRecords records goldilocksRecords
+  let (bn254Records, _) ← runDenseUnivariateZMod
+    BN254.scalarFieldSize "bn254" "BN254.ScalarField" extraGen
+  records := appendRecords records bn254Records
+  pure (records, nextGen)
+
+/-- Run sparse and dense multivariate evaluation benchmarks. -/
+private def runMultivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := do
+  let (sparseTerms, gen) := (babyBearArrayWithStride multivariateTermSlots 16).run gen
+  let (denseTerms, gen) := (babyBearArray multivariateTermSlots false).run gen
+  let (points, gen) := (babyBearPoints (multivariateVars * multivariatePointCount)).run gen
+  let sparsePoly := buildCMvPolynomial sparseTerms
+  let densePoly := buildCMvPolynomial denseTerms
+  let evalPoint (offset : Nat) : Fin multivariateVars → BabyBear.Field :=
+    fun j ↦ points.getD ((offset + j.val) % points.size) 0
+  let mut records := #[]
+  records := records.push (← runTimed
+    "multivariate-dense-eval" "CMvPolynomial" "eval" "BabyBear.Field"
+    multivariateDenseShape warmupIterations measuredIterations
+    (fun i ↦ CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) densePoly)
+    checksumBabyBear)
+  records := records.push (← runTimed
+    "multivariate-dense-horner" "CMvPolynomial" "evalHorner" "BabyBear.Field"
+    multivariateDenseShape warmupIterations measuredIterations
+    (fun i ↦ CPoly.CMvPolynomial.evalHorner (evalPoint (i % multivariatePointCount)) densePoly)
+    checksumBabyBear)
+  records := records.push (← runTimed
+    "multivariate-sparse-eval" "CMvPolynomial" "eval" "BabyBear.Field"
+    multivariateSparseShape warmupIterations measuredIterations
+    (fun i ↦ CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) sparsePoly)
+    checksumBabyBear)
+  records := records.push (← runTimed
+    "multivariate-sparse-horner" "CMvPolynomial" "evalHorner" "BabyBear.Field"
+    multivariateSparseShape warmupIterations measuredIterations
+    (fun i ↦ CPoly.CMvPolynomial.evalHorner (evalPoint (i % multivariatePointCount)) sparsePoly)
+    checksumBabyBear)
+  let (goldilocksRecords, gen) ← runMultivariateZMod
+    Goldilocks.fieldSize "goldilocks" "Goldilocks.Field" gen
+  records := appendRecords records goldilocksRecords
+  pure (records, gen)
+
+/-- Run coefficient-form and hypercube-form multilinear evaluation benchmarks. -/
+private def runMultilinear (gen : StdGen) : IO (Array BenchRecord × StdGen) := do
+  let (coeffs, gen) := (babyBearVector 256 false).run gen
+  let (evals, gen) := (babyBearVector 256 false).run gen
+  let (points, gen) := (babyBearPoints 256).run gen
+  let coeffPoly : CMlPolynomial BabyBear.Field 8 := CMlPolynomial.ofArray coeffs 8
+  let evalPoly : CMlPolynomialEval BabyBear.Field 8 := CMlPolynomialEval.ofArray evals 8
+  let evalPoint (offset : Nat) : Vector BabyBear.Field 8 :=
+    Vector.ofFn fun j ↦ points.getD ((offset + j.val) % points.size) 0
+  let mut records := #[]
+  records := records.push (← runTimed
+    "multilinear-coeff-eval" "CMlPolynomial" "eval" "BabyBear.Field"
+    "8 vars, 256 coefficients, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CMlPolynomial.eval coeffPoly (evalPoint (i % 32)))
+    checksumBabyBear)
+  records := records.push (← runTimed
+    "multilinear-coeff-horner" "CMlPolynomial" "evalHorner" "BabyBear.Field"
+    "8 vars, 256 coefficients, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CMlPolynomial.evalHorner coeffPoly (evalPoint (i % 32)))
+    checksumBabyBear)
+  records := records.push (← runTimed
+    "multilinear-hypercube-eval" "CMlPolynomialEval" "eval" "BabyBear.Field"
+    "8 vars, 256 hypercube values, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CMlPolynomialEval.eval evalPoly (evalPoint (i % 32)))
+    checksumBabyBear)
+  records := records.push (← runTimed
+    "multilinear-hypercube-mle" "CMlPolynomialEval" "evalMle" "BabyBear.Field"
+    "8 vars, 256 hypercube values, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CMlPolynomialEval.evalMle evalPoly (evalPoint (i % 32)))
+    checksumBabyBear)
+  let (goldilocksCoeffs, gen) := (zmodArray Goldilocks.fieldSize 256 false).run gen
+  let (goldilocksPoints, gen) := (zmodArray Goldilocks.fieldSize 256 false).run gen
+  let goldilocksCoeffPoly : CMlPolynomial Goldilocks.Field 8 :=
+    CMlPolynomial.ofArray goldilocksCoeffs 8
+  let goldilocksEvalPoly : CMlPolynomialEval Goldilocks.Field 8 :=
+    CMlPolynomialEval.ofArray goldilocksCoeffs 8
+  let goldilocksEvalPoint (offset : Nat) : Vector Goldilocks.Field 8 :=
+    Vector.ofFn fun j ↦ goldilocksPoints.getD ((offset + j.val) % goldilocksPoints.size) 0
+  records := records.push (← runTimed
+    "multilinear-coeff-eval-goldilocks" "CMlPolynomial" "eval" "Goldilocks.Field"
+    "8 vars, 256 coefficients, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CMlPolynomial.eval goldilocksCoeffPoly (goldilocksEvalPoint (i % 32)))
+    checksumZMod)
+  records := records.push (← runTimed
+    "multilinear-coeff-horner-goldilocks" "CMlPolynomial" "evalHorner" "Goldilocks.Field"
+    "8 vars, 256 coefficients, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CMlPolynomial.evalHorner goldilocksCoeffPoly (goldilocksEvalPoint (i % 32)))
+    checksumZMod)
+  records := records.push (← runTimed
+    "multilinear-hypercube-eval-goldilocks" "CMlPolynomialEval" "eval" "Goldilocks.Field"
+    "8 vars, 256 hypercube values, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CMlPolynomialEval.eval goldilocksEvalPoly (goldilocksEvalPoint (i % 32)))
+    checksumZMod)
+  records := records.push (← runTimed
+    "multilinear-hypercube-mle-goldilocks" "CMlPolynomialEval" "evalMle" "Goldilocks.Field"
+    "8 vars, 256 hypercube values, 32 points" warmupIterations measuredIterations
+    (fun i ↦ CMlPolynomialEval.evalMle goldilocksEvalPoly (goldilocksEvalPoint (i % 32)))
+    checksumZMod)
+  pure (records, gen)
+
+/-- Shared input-shape label for bivariate evaluation benchmarks. -/
+private def bivariateInputShape : String :=
+  "xDegree<8, yDegree<64, one nonzero per 4 coeffs, 32 points"
+
+/-- Run bivariate full-evaluation benchmarks over a generic prime `ZMod` field. -/
+private def runBivariateZMod (p : Nat) [Fact (Nat.Prime p)]
+    (nameSuffix fieldName : String) (gen : StdGen) : IO (Array BenchRecord × StdGen) := do
+  let (terms, gen) := (zmodArray p 512 true).run gen
+  let (points, gen) := (zmodArray p 64 false).run gen
+  let poly := buildCBivariate terms
+  let evalPoint (i : Nat) : ZMod p × ZMod p :=
+    let offset := 2 * (i % 32)
+    (points.getD (offset % points.size) 0, points.getD ((offset + 1) % points.size) 0)
+  let mut records := #[]
+  records := records.push (← runTimed
+    ("bivariate-full-eval-naive" ++ nameSuffix) "CBivariate" "evalEval" fieldName
+    bivariateInputShape warmupIterations measuredIterations
+    (fun i ↦
+      let point := evalPoint i
+      CBivariate.evalEval point.1 point.2 poly)
+    checksumZMod)
+  records := records.push (← runTimed
+    ("bivariate-full-eval-horner-yx" ++ nameSuffix) "CBivariate" "evalEvalHornerYThenX"
+    fieldName bivariateInputShape warmupIterations measuredIterations
+    (fun i ↦
+      let point := evalPoint i
+      CBivariate.evalEvalHornerYThenX point.1 point.2 poly)
+    checksumZMod)
+  records := records.push (← runTimed
+    ("bivariate-full-eval-horner-xy" ++ nameSuffix) "CBivariate" "evalEvalHornerXThenY"
+    fieldName bivariateInputShape warmupIterations measuredIterations
+    (fun i ↦
+      let point := evalPoint i
+      CBivariate.evalEvalHornerXThenY point.1 point.2 poly)
+    checksumZMod)
+  pure (records, gen)
+
+/-- Run the bivariate full-evaluation benchmark. -/
+private def runBivariate (gen : StdGen) : IO (Array BenchRecord × StdGen) := do
+  let (terms, gen) := (babyBearArray 512 true).run gen
+  let (points, gen) := (babyBearPoints 64).run gen
+  let p := buildCBivariate terms
+  let evalPoint (i : Nat) : BabyBear.Field × BabyBear.Field :=
+    let offset := 2 * (i % 32)
+    (points.getD (offset % points.size) 0, points.getD ((offset + 1) % points.size) 0)
+  let mut records := #[]
+  records := records.push (← runTimed
+    "bivariate-full-eval-naive" "CBivariate" "evalEval" "BabyBear.Field"
+    bivariateInputShape warmupIterations measuredIterations
+    (fun i ↦
+      let point := evalPoint i
+      CBivariate.evalEval point.1 point.2 p)
+    checksumBabyBear)
+  records := records.push (← runTimed
+    "bivariate-full-eval-horner-yx" "CBivariate" "evalEvalHornerYThenX" "BabyBear.Field"
+    bivariateInputShape warmupIterations measuredIterations
+    (fun i ↦
+      let point := evalPoint i
+      CBivariate.evalEvalHornerYThenX point.1 point.2 p)
+    checksumBabyBear)
+  records := records.push (← runTimed
+    "bivariate-full-eval-horner-xy" "CBivariate" "evalEvalHornerXThenY" "BabyBear.Field"
+    bivariateInputShape warmupIterations measuredIterations
+    (fun i ↦
+      let point := evalPoint i
+      CBivariate.evalEvalHornerXThenY point.1 point.2 p)
+    checksumBabyBear)
+  let (goldilocksRecords, extraGen) ← runBivariateZMod
+    Goldilocks.fieldSize "-goldilocks" "Goldilocks.Field" gen
+  records := appendRecords records goldilocksRecords
+  let (bn254Records, finalGen) ← runBivariateZMod
+    BN254.scalarFieldSize "-bn254" "BN254.ScalarField" extraGen
+  records := appendRecords records bn254Records
+  pure (records, finalGen)
+
+/-- Checksum all output values from a `BTF₃` additive NTT benchmark. -/
+private def checksumBtf3Output {n : Nat} (output : Fin (2 ^ n) → AdditiveNTT.BTF₃) : Nat :=
+  (List.finRange (2 ^ n)).foldl
+    (fun acc i ↦ mixChecksum acc (checksumBtf3 (output i))) 0
+
+/-- Checksum a `BTF₃` additive NTT output array. -/
+private def checksumBtf3OutputArray {n : Nat} (output : Array AdditiveNTT.BTF₃) : Nat :=
+  checksumBtf3Output (AdditiveNTT.arrayToFinFunction (2 ^ n) output)
+
+/-- Checksum a concrete binary-tower additive NTT output array. -/
+private def checksumConcreteBtfOutputArray {k n : Nat} (output : Array (ConcreteBTField k)) :
+    Nat :=
+  (List.finRange (2 ^ n)).foldl
+    (fun acc i ↦
+      mixChecksum acc
+        (checksumConcreteBtf ((AdditiveNTT.arrayToFinFunction (2 ^ n) output) i))) 0
+
+/-- Run an additive NTT over `BTF₃`. -/
+private def runBtf3Ntt (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ 3)
+    (input : Fin (2 ^ ℓ) → AdditiveNTT.BTF₃) :
+    Fin (2 ^ (ℓ + R_rate)) → AdditiveNTT.BTF₃ := by
+  letI : Algebra (ConcreteBTField 0) AdditiveNTT.BTF₃ :=
+    ConcreteBTFieldAlgebra (l := 0) (r := 3) (h_le := by omega)
+  haveI : Fact (LinearIndependent (ConcreteBTField 0) (AdditiveNTT.computableBasisExplicit 3)) :=
+    { out := AdditiveNTT.hβ_lin_indep_concrete 3 }
+  exact AdditiveNTT.computableAdditiveNTT
+    (𝔽q := ConcreteBTField 0) (L := AdditiveNTT.BTF₃) (r := 2 ^ 3)
+    (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (β := AdditiveNTT.computableBasisExplicit (k := 3)) (a := input)
+
+/-- Run the fast additive NTT implementation over `BTF₃`. -/
+private def runBtf3NttFast (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ 3)
+    (input : Fin (2 ^ ℓ) → AdditiveNTT.BTF₃) :
+    Array AdditiveNTT.BTF₃ := by
+  letI : Algebra (ConcreteBTField 0) AdditiveNTT.BTF₃ :=
+    ConcreteBTFieldAlgebra (l := 0) (r := 3) (h_le := by omega)
+  exact AdditiveNTT.computableAdditiveNTTFast
+    (L := AdditiveNTT.BTF₃) (r := 2 ^ 3)
+    (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (β := AdditiveNTT.computableBasisExplicit (k := 3)) (a := input)
+
+/-- Run the fast additive NTT implementation over a concrete binary-tower field. -/
+private def runConcreteBtfNttFast (k ℓ R_rate : Nat)
+    (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ k)
+    (input : Fin (2 ^ ℓ) → ConcreteBTField k) :
+    Array (ConcreteBTField k) := by
+  letI : Fintype (ConcreteBTField k) :=
+    Fintype.ofEquiv (Fin (2 ^ (2 ^ k))) (BitVec.equivFin (m := 2 ^ k)).symm.toEquiv
+  letI : Algebra (ConcreteBTField 0) (ConcreteBTField k) :=
+    ConcreteBTFieldAlgebra (l := 0) (r := k) (h_le := by omega)
+  exact AdditiveNTT.computableAdditiveNTTFast
+    (L := ConcreteBTField k) (r := 2 ^ k)
+    (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (β := AdditiveNTT.computableBasisExplicit (k := k)) (a := input)
+
+/-- Run one additive NTT benchmark case over `BTF₃`. -/
+private def runAdditiveNttCase (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ 3)
+    (currentName fastName : String) (warmup measured : Nat) (gen : StdGen) :
+    IO (Array BenchRecord × StdGen) := do
+  let inputSize := 2 ^ ℓ
+  let outputSize := 2 ^ (ℓ + R_rate)
+  let (values, gen) := (randomNatArray inputSize 255).run gen
+  let input : Fin (2 ^ ℓ) → AdditiveNTT.BTF₃ :=
+    fun i ↦ ConcreteBinaryTower.fromNat (k := 3) (values.getD i.val 0)
+  let fieldLabel := s!"ConcreteBTField 0 -> BTF3, l={ℓ}, R_rate={R_rate}"
+  let inputShape := s!"{inputSize} input coeffs, {outputSize} output evals"
+  let currentRecord ← runTimed
+    currentName "computableAdditiveNTT" "computableAdditiveNTT"
+    fieldLabel inputShape warmup measured
+    (fun _ ↦ runBtf3Ntt ℓ R_rate h_ℓ_add_R_rate input)
+    (checksumBtf3Output (n := ℓ + R_rate))
+  let fastRecord ← runTimed
+    fastName "computableAdditiveNTTFast" "computableAdditiveNTTFast"
+    fieldLabel inputShape warmup measured
+    (fun _ ↦ runBtf3NttFast ℓ R_rate h_ℓ_add_R_rate input)
+    (checksumBtf3OutputArray (n := ℓ + R_rate))
+  pure (#[currentRecord, fastRecord], gen)
+
+/-- Run one larger fast-only additive NTT benchmark over a concrete binary-tower field. -/
+private def runAdditiveNttFastLargeCase (k ℓ R_rate : Nat)
+    (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ k) (fastName : String)
+    (warmup measured : Nat) (gen : StdGen) : IO (BenchRecord × StdGen) := do
+  let inputSize := 2 ^ ℓ
+  let outputSize := 2 ^ (ℓ + R_rate)
+  let (values, gen) := (randomNatArray inputSize (2 ^ (2 ^ k) - 1)).run gen
+  let input : Fin (2 ^ ℓ) → ConcreteBTField k :=
+    fun i ↦ ConcreteBinaryTower.fromNat (k := k) (values.getD i.val 0)
+  let fieldLabel := s!"ConcreteBTField 0 -> BTF{k}, l={ℓ}, R_rate={R_rate}"
+  let inputShape := s!"{inputSize} input coeffs, {outputSize} output evals"
+  let fastRecord ← runTimed
+    fastName "computableAdditiveNTTFast" "computableAdditiveNTTFast"
+    fieldLabel inputShape warmup measured
+    (fun _ ↦ runConcreteBtfNttFast k ℓ R_rate h_ℓ_add_R_rate input)
+    (checksumConcreteBtfOutputArray (k := k) (n := ℓ + R_rate))
+  pure (fastRecord, gen)
+
+/-- Run the additive NTT benchmark. -/
+private def runAdditiveNtt (gen : StdGen) : IO (Array BenchRecord × StdGen) := do
+  let (smallRecords, gen) ← runAdditiveNttCase 2 2 (by omega)
+    "additive-ntt-btf3" "additive-ntt-btf3-fast"
+    additiveNttWarmupIterations additiveNttMeasuredIterations gen
+  let (widerRecords, gen) ← runAdditiveNttCase 4 2 (by omega)
+    "additive-ntt-btf3-l4-r2" "additive-ntt-btf3-l4-r2-fast" 2 10 gen
+  let (largerFastRecord, gen) ← runAdditiveNttFastLargeCase 4 7 2 (by omega)
+    "additive-ntt-btf4-l7-r2-fast" 1 10 gen
+  pure ((appendRecords smallRecords widerRecords).push largerFastRecord, gen)
+
+/-- Run the complete benchmark suite and write reports. -/
+def run : IO UInt32 := do
+  let runId ← makeRunId
+  let hardware ← collectRunnerHardware
+  let mut gen := mkStdGen seed
+  let mut records := #[]
+  let (univariateRecords, gen') ← runUnivariate gen
+  gen := gen'
+  records := appendRecords records univariateRecords
+  let (multivariateRecords, gen') ← runMultivariate gen
+  gen := gen'
+  records := appendRecords records multivariateRecords
+  let (multilinearRecords, gen') ← runMultilinear gen
+  gen := gen'
+  records := appendRecords records multilinearRecords
+  let (bivariateRecords, gen') ← runBivariate gen
+  gen := gen'
+  records := appendRecords records bivariateRecords
+  let (nttRecords, _) ← runAdditiveNtt gen
+  records := appendRecords records nttRecords
+  let results := resultsPath runId
+  let report := reportPath runId
+  IO.FS.writeFile results (renderJsonl records)
+  IO.FS.writeFile report (renderMarkdown hardware records)
+  IO.println s!"wrote `{records.size}` benchmark records for run `{runId}`"
+  pure 0
+
+end CompPolyBench
+
+/-- Executable entry point for `lake exe CompPolyBench`. -/
+def main : IO UInt32 :=
+  CompPolyBench.run
