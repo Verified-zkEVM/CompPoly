@@ -594,6 +594,11 @@ theorem mul_is_trimmed [LawfulBEq R] (p q : CPolynomial.Raw R) : (p * q).trim = 
   show ((mulRaw p q).trim).trim = (mulRaw p q).trim
   exact Trim.trim_twice (mulRaw p q)
 
+/-- `Raw.add` trims at the end of its accumulation, so its output is canonical. -/
+theorem add_is_trimmed [LawfulBEq R] (p q : CPolynomial.Raw R) : (p + q).trim = p + q := by
+  show ((addRaw p q).trim).trim = (addRaw p q).trim
+  exact Trim.trim_twice (addRaw p q)
+
 lemma coeff_mul_eq_sum_range [LawfulBEq R] (p q : CPolynomial.Raw R) (k : ℕ) (n : ℕ)
     (h : p.size ≤ n) : (p * q).coeff k =
         List.sum ((List.range n).map (fun i => ((smul (p.coeff i) q).mulPowX i).coeff k)) := by
@@ -1096,6 +1101,11 @@ lemma sub_coeff [LawfulBEq R] (p q : CPolynomial.Raw R) (i : ℕ) :
   convert h_add.trans ( congr_arg₂ ( · + · ) rfl h_neg ) using 1
   exact sub_eq_add_neg (p.coeff i) (q.coeff i)
 
+/-- `Raw.sub` reduces to `p + -q`, whose final `add` step trims, so the result is canonical. -/
+theorem sub_is_trimmed [LawfulBEq R] (p q : CPolynomial.Raw R) : (p - q).trim = p - q := by
+  show (p + -q).trim = p + -q
+  exact add_is_trimmed p (-q)
+
 end Ring
 
 section DivisionTheorems
@@ -1191,6 +1201,108 @@ theorem modByMonicRemainderOnly_eq_modByMonic [LawfulBEq R]
     (p q : CPolynomial.Raw R) :
     modByMonicRemainderOnly p q = modByMonic p q := by
   exact modByMonicRemainderOnly_go_eq_divModByMonicAux_go_snd p.size p q
+
+/-- The quotient produced by the monic long-division recursion is canonical regardless of input:
+each non-base step accumulates via `Raw.add` (which trims), and the base case returns `0`. -/
+lemma divModByMonicAux_go_fst_canonical [LawfulBEq R] :
+    ∀ (n : ℕ) (p q : CPolynomial.Raw R),
+      (divModByMonicAux.go n p q).1.trim = (divModByMonicAux.go n p q).1 := by
+  intro n
+  induction n with
+  | zero =>
+      intro p q
+      exact Trim.canonical_empty
+  | succ n _ih =>
+      intro p q
+      unfold divModByMonicAux.go
+      by_cases hsize : p.size < q.size
+      · simp [hsize]; exact Trim.canonical_empty
+      · simp only [hsize, ↓reduceIte]
+        exact add_is_trimmed _ _
+
+/-- The remainder produced by the monic long-division recursion is canonical when the input is.
+Each recursive step feeds the next call a trimmed `(p - q').trim`, and the base case returns the
+input unchanged. -/
+lemma divModByMonicAux_go_snd_canonical [LawfulBEq R] :
+    ∀ (n : ℕ) (p q : CPolynomial.Raw R), p.trim = p →
+      (divModByMonicAux.go n p q).2.trim = (divModByMonicAux.go n p q).2 := by
+  intro n
+  induction n with
+  | zero =>
+      intro p _q hp
+      exact hp
+  | succ n ih =>
+      intro p q hp
+      unfold divModByMonicAux.go
+      by_cases hsize : p.size < q.size
+      · simp [hsize]; exact hp
+      · simp only [hsize, ↓reduceIte]
+        exact ih _ q (Trim.trim_twice _)
+
+/-- `Raw.divByMonic` returns a canonical polynomial regardless of whether `p` is canonical. -/
+theorem divByMonic_canonical [LawfulBEq R] (p q : CPolynomial.Raw R) :
+    (divByMonic p q).trim = divByMonic p q :=
+  divModByMonicAux_go_fst_canonical p.size p q
+
+/-- `Raw.modByMonic` returns a canonical polynomial when `p` is canonical. -/
+theorem modByMonic_canonical [LawfulBEq R] {p : CPolynomial.Raw R} (hp : p.trim = p)
+    (q : CPolynomial.Raw R) : (modByMonic p q).trim = modByMonic p q :=
+  divModByMonicAux_go_snd_canonical p.size p q hp
+
+/-- `subScaledShift` ends with `.trim`, so its result is canonical. -/
+theorem subScaledShift_is_trimmed [LawfulBEq R]
+    (p q : CPolynomial.Raw R) (scale : R) (shift : ℕ) :
+    (subScaledShift p q scale shift).trim = subScaledShift p q scale shift := by
+  unfold subScaledShift
+  exact Trim.trim_twice _
+
+/-- The remainder-only long-division recursion preserves canonicality of `p`. -/
+lemma modByMonicRemainderOnly_go_canonical [LawfulBEq R] :
+    ∀ (n : ℕ) (p q : CPolynomial.Raw R), p.trim = p →
+      (modByMonicRemainderOnly.go n p q).trim = modByMonicRemainderOnly.go n p q := by
+  intro n
+  induction n with
+  | zero =>
+      intro p _q hp
+      exact hp
+  | succ n ih =>
+      intro p q hp
+      unfold modByMonicRemainderOnly.go
+      by_cases hsize : p.size < q.size
+      · simp [hsize]; exact hp
+      · simp only [hsize, ↓reduceIte]
+        exact ih _ q (subScaledShift_is_trimmed _ _ _ _)
+
+/-- `Raw.modByMonicRemainderOnly` returns a canonical polynomial when `p` is canonical. -/
+theorem modByMonicRemainderOnly_canonical [LawfulBEq R]
+    {p : CPolynomial.Raw R} (hp : p.trim = p) (q : CPolynomial.Raw R) :
+    (modByMonicRemainderOnly p q).trim = modByMonicRemainderOnly p q :=
+  modByMonicRemainderOnly_go_canonical p.size p q hp
+
+/-- `Raw.modByMonicByReversal` returns a canonical polynomial when `p` is canonical.
+Either branch ends in a result whose trim is itself: the reversal branch ends with `Raw.sub`
+(which trims), and the fallback uses `modByMonicRemainderOnly`. -/
+theorem modByMonicByReversal_canonical [LawfulBEq R]
+    (M : MulLowContext R) {p : CPolynomial.Raw R} (hp : p.trim = p) (q : CPolynomial.Raw R) :
+    (modByMonicByReversal M p q).trim = modByMonicByReversal M p q := by
+  unfold modByMonicByReversal
+  split_ifs with hcanon hsize
+  · exact hp
+  · exact sub_is_trimmed _ _
+  · exact modByMonicRemainderOnly_canonical hp q
+
+/-- `Raw.div` returns a canonical polynomial (no condition on inputs). -/
+theorem div_canonical [LawfulBEq R] (p q : CPolynomial.Raw R) :
+    (div p q).trim = div p q :=
+  divByMonic_canonical _ _
+
+/-- `Raw.mod` returns a canonical polynomial (no condition on inputs).
+The intermediate `C (q.leadingCoeff)⁻¹ • p` is `C _ * p` via `Mul.toSMul`, which trims. -/
+theorem mod_canonical [LawfulBEq R] (p q : CPolynomial.Raw R) :
+    (mod p q).trim = mod p q := by
+  unfold mod
+  apply modByMonic_canonical
+  exact mul_is_trimmed _ _
 
 end DivisionTheorems
 
