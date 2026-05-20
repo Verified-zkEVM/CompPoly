@@ -163,12 +163,14 @@ lemma bivariateEquiv_CC (r : R) :
 lemma bivariateEquiv_X :
     bivariateEquiv (CBivariate.X : CBivariate R) =
       CMvPolynomial.X 1 := by
+  -- `finSuccEquiv_symm_X` is applied here by `simp`
   simp [bivariateEquiv, ringEquiv, X_toPoly]
 
 /-- `bivariateEquiv` maps `CBivariate.Y` to the first variable. -/
 lemma bivariateEquiv_Y :
     bivariateEquiv (CBivariate.Y : CBivariate R) =
       CMvPolynomial.X 0 := by
+  -- `finSuccEquiv_symm_X` is applied here by `simp`
   simp [bivariateEquiv, ringEquiv, Y_toPoly]
 
 /-- `bivariateEquiv.symm` maps multivariate constants to bivariate constants. -/
