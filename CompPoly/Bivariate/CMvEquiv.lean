@@ -46,12 +46,9 @@ The equivalence chain is:
   `finSuccEquiv.symm Polynomial.X = CMvPolynomial.X 0`
 -/
 
-open CompPoly CPoly CBivariate
-
-variable {R : Type*}
-variable [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
-
 namespace CMvPolynomial
+
+open CPoly
 
 /-- `isEmptyRingEquiv.symm` maps scalars to constants. -/
 @[simp]
@@ -115,6 +112,14 @@ lemma finSuccEquiv_symm_X
   exact (fromCMvPolynomial_X (R := R) 0).symm
 
 end CMvPolynomial
+
+namespace CompPoly.CBivariate
+
+open CPoly CompPoly.CBivariate
+
+variable {R : Type*}
+variable [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R]
+  [DecidableEq R]
 
 /-- Ring equivalence between `CBivariate R` and `CMvPolynomial 2 R`. -/
 noncomputable def bivariateEquiv :
@@ -186,3 +191,5 @@ lemma bivariateEquiv_symm_X1 :
       CBivariate.X := by
   apply bivariateEquiv.injective
   simp [bivariateEquiv_X]
+
+end CompPoly.CBivariate
