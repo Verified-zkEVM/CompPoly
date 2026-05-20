@@ -47,27 +47,27 @@ private def runBabyBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGen
   let lowNaive ← runTimed
     "univariate-mul-low-naive" "CPolynomial.Raw" "MulLowContext.naive" "BabyBear.Field"
     univariateMulLowShape preset warmup measured
-    (fun _ => naiveLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw mulLowRhsRaw)
+    (fun _ ↦ naiveLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw mulLowRhsRaw)
     (checksumRawPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   let lowConvolution ← runTimed
     "univariate-mul-low-convolution" "CPolynomial.Raw" "MulLowContext.convolution"
     "BabyBear.Field"
     univariateMulLowShape preset warmup convolutionMeasured
-    (fun _ => convolutionLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
+    (fun _ ↦ convolutionLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
       mulLowRhsRaw)
     (checksumRawPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   let lowNtt ← runTimed
     "univariate-mul-low-ntt-with-fallback" "CPolynomial.Raw" "FastMulLow.withFallback"
     "BabyBear.Field"
     univariateMulLowShape preset warmup nttMeasured
-    (fun _ => nttWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
+    (fun _ ↦ nttWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
       mulLowRhsRaw)
     (checksumRawPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   let lowNttFast ← runTimed
     "univariate-mul-low-ntt-fast-with-fallback" "CPolynomial.Raw"
     "NTTFast.FastMulLow.withFallback" "BabyBear.Field"
     univariateMulLowShape preset warmup nttFastMeasured
-    (fun _ => nttFastWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
+    (fun _ ↦ nttFastWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
       mulLowRhsRaw)
     (checksumRawPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   pure ({

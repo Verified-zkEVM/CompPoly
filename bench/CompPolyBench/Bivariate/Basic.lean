@@ -40,16 +40,16 @@ private def buildCBivariate {R : Type*}
     pure p
 
 /-- Run bivariate full-evaluation benchmarks over a generic prime `ZMod` field. -/
-private def runBivariateZMod (p : Nat) [Fact (Nat.Prime p)]
+private def runBivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
     (key nameSuffix fieldName fieldTitle : String)
     (largeHornerYxMeasured mediumHornerYxMeasured smallHornerYxMeasured : Nat)
     (largeHornerXyMeasured mediumHornerXyMeasured smallHornerXyMeasured : Nat)
     (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
-  let (terms, gen) := (zmodArray p 512 true).run gen
-  let (points, gen) := (zmodArray p 64 false).run gen
+  let (terms, gen) := (zmodArray modulus 512 true).run gen
+  let (points, gen) := (zmodArray modulus 64 false).run gen
   let poly := buildCBivariate terms
-  let evalPoint (i : Nat) : ZMod p × ZMod p :=
+  let evalPoint (i : Nat) : ZMod modulus × ZMod modulus :=
     let offset := 2 * (i % 32)
     (points.getD (offset % points.size) 0, points.getD ((offset + 1) % points.size) 0)
   let warmup := warmupIterations preset
@@ -64,21 +64,21 @@ private def runBivariateZMod (p : Nat) [Fact (Nat.Prime p)]
   let naive ← runTimed
     ("bivariate-full-eval-naive" ++ nameSuffix) "CBivariate" "evalEval" fieldName
     bivariateInputShape preset warmup measured
-    (fun i =>
+    (fun i ↦
       let point := evalPoint i
       CBivariate.evalEval point.1 point.2 poly)
     checksumZMod (checksumIterations := checksumIterations)
   let hornerYx ← runTimed
     ("bivariate-full-eval-horner-yx" ++ nameSuffix) "CBivariate" "evalEvalHornerYThenX"
     fieldName bivariateInputShape preset warmup hornerYxMeasured
-    (fun i =>
+    (fun i ↦
       let point := evalPoint i
       CBivariate.evalEvalHornerYThenX point.1 point.2 poly)
     checksumZMod (checksumIterations := checksumIterations)
   let hornerXy ← runTimed
     ("bivariate-full-eval-horner-xy" ++ nameSuffix) "CBivariate" "evalEvalHornerXThenY"
     fieldName bivariateInputShape preset warmup hornerXyMeasured
-    (fun i =>
+    (fun i ↦
       let point := evalPoint i
       CBivariate.evalEvalHornerXThenY point.1 point.2 poly)
     checksumZMod (checksumIterations := checksumIterations)
@@ -106,21 +106,21 @@ private def runBabyBearBivariate (preset : BenchPreset) (gen : StdGen) :
   let naive ← runTimed
     "bivariate-full-eval-naive" "CBivariate" "evalEval" "BabyBear.Field"
     bivariateInputShape preset warmup measured
-    (fun i =>
+    (fun i ↦
       let point := evalPoint i
       CBivariate.evalEval point.1 point.2 p)
     checksumBabyBear (checksumIterations := checksumIterations)
   let hornerYx ← runTimed
     "bivariate-full-eval-horner-yx" "CBivariate" "evalEvalHornerYThenX" "BabyBear.Field"
     bivariateInputShape preset warmup hornerYxMeasured
-    (fun i =>
+    (fun i ↦
       let point := evalPoint i
       CBivariate.evalEvalHornerYThenX point.1 point.2 p)
     checksumBabyBear (checksumIterations := checksumIterations)
   let hornerXy ← runTimed
     "bivariate-full-eval-horner-xy" "CBivariate" "evalEvalHornerXThenY" "BabyBear.Field"
     bivariateInputShape preset warmup hornerXyMeasured
-    (fun i =>
+    (fun i ↦
       let point := evalPoint i
       CBivariate.evalEvalHornerXThenY point.1 point.2 p)
     checksumBabyBear (checksumIterations := checksumIterations)

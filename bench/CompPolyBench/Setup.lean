@@ -24,7 +24,7 @@ def allTasks : List BenchTask :=
 
 /-- Metadata for every benchmark group accepted by the command-line selector. -/
 def allGroupInfos : List BenchGroupInfo :=
-  (allTasks.map fun task => task.infos).flatten
+  (allTasks.map fun task ↦ task.infos).flatten
 
 /-- Output artifact set requested by the command line. -/
 inductive BenchOutput where
@@ -87,11 +87,11 @@ def usage : String :=
 
 /-- Split a comma-separated CLI argument into nonempty group keys. -/
 def splitGroupKeys (s : String) : List String :=
-  (s.splitOn ",").filter fun key => !key.isEmpty
+  (s.splitOn ",").filter fun key ↦ !key.isEmpty
 
 /-- Check whether a key is present in the known group list. -/
 def knownGroupKey (key : String) : Bool :=
-  allGroupInfos.any fun info => info.groupKey == key
+  allGroupInfos.any fun info ↦ info.groupKey == key
 
 /-- Parse benchmark CLI arguments. -/
 partial def parseArgs : List String → Except String BenchCommand
@@ -101,7 +101,7 @@ partial def parseArgs : List String → Except String BenchCommand
           (preset : Option BenchPreset) : Except String BenchCommand :=
         match args with
         | [] =>
-            let unknown := keys.filter fun key => !knownGroupKey key
+            let unknown := keys.filter fun key ↦ !knownGroupKey key
             match unknown with
             | [] =>
                 let selection :=
@@ -120,10 +120,10 @@ partial def parseArgs : List String → Except String BenchCommand
         | "--large" :: rest =>
             setPresetMode preset BenchPreset.large >>= go rest keys output
         | "--markdown-only" :: rest =>
-            setOutputMode output BenchOutput.markdownOnly >>= fun output =>
+            setOutputMode output BenchOutput.markdownOnly >>= fun output ↦
               go rest keys output preset
         | "--json-only" :: rest =>
-            setOutputMode output BenchOutput.jsonOnly >>= fun output =>
+            setOutputMode output BenchOutput.jsonOnly >>= fun output ↦
               go rest keys output preset
         | "--group" :: key :: rest => go rest (key :: keys) output preset
         | "--group" :: [] => Except.error "missing value after `--group`"

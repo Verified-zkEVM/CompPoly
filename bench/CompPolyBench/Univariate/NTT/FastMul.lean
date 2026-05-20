@@ -42,19 +42,19 @@ private def runBabyBearUnivariateMul (preset : BenchPreset) (gen : StdGen) :
   let babyBearMulNaive ← runTimed
     "univariate-mul-naive" "CPolynomial" "mul" "BabyBear.Field"
     univariateMulShape preset warmup measured
-    (fun _ => mulLhsPoly * mulRhsPoly)
+    (fun _ ↦ mulLhsPoly * mulRhsPoly)
     (checksumCPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   let babyBearMulNtt ← runTimed
     "univariate-mul-ntt" "CPolynomial" (univariateMulNttMethod "FastMul.fastMulImpl")
     "BabyBear.Field"
     univariateMulShape preset warmup nttMeasured
-    (fun _ => CPolynomial.NTT.FastMul.fastMulImpl babyBearMulNttDomain mulLhsPoly mulRhsPoly)
+    (fun _ ↦ CPolynomial.NTT.FastMul.fastMulImpl babyBearMulNttDomain mulLhsPoly mulRhsPoly)
     (checksumCPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   let babyBearMulNttFast ← runTimed
     "univariate-mul-ntt-fast" "CPolynomial" (univariateMulNttMethod "NTTFast.fastMulImpl")
     "BabyBear.Field"
     univariateMulShape preset warmup nttFastMeasured
-    (fun _ => CPolynomial.NTTFast.fastMulImpl babyBearMulNttDomain mulLhsPoly mulRhsPoly)
+    (fun _ ↦ CPolynomial.NTTFast.fastMulImpl babyBearMulNttDomain mulLhsPoly mulRhsPoly)
     (checksumCPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   let babyBearMulNttFastPlanRecord ← runTimed
     "univariate-mul-ntt-fast-plan" "CPolynomial"
@@ -62,7 +62,7 @@ private def runBabyBearUnivariateMul (preset : BenchPreset) (gen : StdGen) :
       "NTTFast.Plan.fastMulImpl, cached twiddles, mixed radix-4 DIF/DIT, dual forward")
     "BabyBear.Field"
     univariateMulShape preset warmup nttFastPlanMeasured
-    (fun _ => CPolynomial.NTTFast.Plan.fastMulImpl babyBearMulNttFastPlan mulLhsPoly
+    (fun _ ↦ CPolynomial.NTTFast.Plan.fastMulImpl babyBearMulNttFastPlan mulLhsPoly
       mulRhsPoly)
     (checksumCPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
   pure ({
@@ -91,14 +91,14 @@ private def runKoalaBearUnivariateMul (preset : BenchPreset) (gen : StdGen) :
   let koalaMulNaive ← runTimed
     "univariate-mul-naive-koalabear" "CPolynomial" "mul" "KoalaBear.Field"
     univariateMulShape preset warmup measured
-    (fun _ => koalaMulLhsPoly * koalaMulRhsPoly)
+    (fun _ ↦ koalaMulLhsPoly * koalaMulRhsPoly)
     (checksumCPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
   let koalaMulNtt ← runTimed
     "univariate-mul-ntt-koalabear" "CPolynomial"
     (univariateMulNttMethod "FastMul.fastMulImpl")
     "KoalaBear.Field"
     univariateMulShape preset warmup nttMeasured
-    (fun _ => CPolynomial.NTT.FastMul.fastMulImpl koalaBearMulNttDomain koalaMulLhsPoly
+    (fun _ ↦ CPolynomial.NTT.FastMul.fastMulImpl koalaBearMulNttDomain koalaMulLhsPoly
       koalaMulRhsPoly)
     (checksumCPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
   let koalaMulNttFast ← runTimed
@@ -106,7 +106,7 @@ private def runKoalaBearUnivariateMul (preset : BenchPreset) (gen : StdGen) :
     (univariateMulNttMethod "NTTFast.fastMulImpl")
     "KoalaBear.Field"
     univariateMulShape preset warmup nttFastMeasured
-    (fun _ => CPolynomial.NTTFast.fastMulImpl koalaBearMulNttDomain koalaMulLhsPoly
+    (fun _ ↦ CPolynomial.NTTFast.fastMulImpl koalaBearMulNttDomain koalaMulLhsPoly
       koalaMulRhsPoly)
     (checksumCPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
   let koalaMulNttFastPlanRecord ← runTimed
@@ -115,7 +115,7 @@ private def runKoalaBearUnivariateMul (preset : BenchPreset) (gen : StdGen) :
       "NTTFast.Plan.fastMulImpl, cached twiddles, mixed radix-4 DIF/DIT, dual forward")
     "KoalaBear.Field"
     univariateMulShape preset warmup nttFastPlanMeasured
-    (fun _ => CPolynomial.NTTFast.Plan.fastMulImpl koalaBearMulNttFastPlan koalaMulLhsPoly
+    (fun _ ↦ CPolynomial.NTTFast.Plan.fastMulImpl koalaBearMulNttFastPlan koalaMulLhsPoly
       koalaMulRhsPoly)
     (checksumCPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
   pure ({

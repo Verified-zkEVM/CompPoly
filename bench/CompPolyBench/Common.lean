@@ -160,7 +160,7 @@ structure BenchTask where
 /-- Decide whether a group key should run under a selection. -/
 def BenchSelection.selects : BenchSelection → String → Bool
   | BenchSelection.all, _ => true
-  | BenchSelection.only keys, key => keys.any fun selected => selected == key
+  | BenchSelection.only keys, key => keys.any fun selected ↦ selected == key
 
 /-- Decide whether any key in a collection should run under a selection. -/
 def BenchSelection.selectsAny (selection : BenchSelection) (keys : List String) : Bool :=
@@ -174,20 +174,20 @@ def BenchSelection.filterTasks (selection : BenchSelection)
   match selection with
   | BenchSelection.all => tasks
   | BenchSelection.only _ =>
-      tasks.filter fun task =>
-        selection.selectsAny (task.infos.map fun info => info.groupKey)
+      tasks.filter fun task ↦
+        selection.selectsAny (task.infos.map fun info ↦ info.groupKey)
 
 /-- Build one registry task from metadata and a single-group runner. -/
 def BenchTask.fromGroupRunner (info : BenchGroupInfo)
     (runGroup : BenchPreset → StdGen → IO (BenchGroup × StdGen)) : BenchTask where
   infos := [info]
-  runTask := fun preset _ gen => do
+  runTask := fun preset _ gen ↦ do
     let (group, gen) ← runGroup preset gen
     pure (#[group], gen)
 
 /-- Total measured runtime across all benchmark records in a group. -/
 def totalGroupNanos (records : List BenchRecord) : Nat :=
-  records.foldl (fun acc record => acc + record.totalNanos) 0
+  records.foldl (fun acc record ↦ acc + record.totalNanos) 0
 
 /-- Human-readable time units for benchmark reports. -/
 inductive TimeUnit where
@@ -327,7 +327,7 @@ def lscpuJsonField (output key : String) : Option String := do
 
 /-- Split a command-output row on ASCII spaces and tabs. -/
 def whitespaceFields (s : String) : List String :=
-  (s.replace "\t" " ").splitOn " " |>.filter fun field => !field.isEmpty
+  (s.replace "\t" " ").splitOn " " |>.filter fun field ↦ !field.isEmpty
 
 /-- Parse the root filesystem size from `df` output. -/
 def dfRootSize (output : String) : Option String :=
@@ -370,14 +370,14 @@ def collectRunnerHardware : IO RunnerHardware := do
   pure {
     runnerOs := runnerOs
     runnerArch := runnerArch
-    cpuModel := lscpu.bind fun output => lscpuJsonField output "Model name:"
-    logicalCpus := nproc.orElse fun _ => lscpu.bind fun output => lscpuJsonField output "CPU(s):"
-    coresPerSocket := lscpu.bind fun output => lscpuJsonField output "Core(s) per socket:"
-    threadsPerCore := lscpu.bind fun output => lscpuJsonField output "Thread(s) per core:"
-    sockets := lscpu.bind fun output => lscpuJsonField output "Socket(s):"
+    cpuModel := lscpu.bind fun output ↦ lscpuJsonField output "Model name:"
+    logicalCpus := nproc.orElse fun _ ↦ lscpu.bind fun output ↦ lscpuJsonField output "CPU(s):"
+    coresPerSocket := lscpu.bind fun output ↦ lscpuJsonField output "Core(s) per socket:"
+    threadsPerCore := lscpu.bind fun output ↦ lscpuJsonField output "Thread(s) per core:"
+    sockets := lscpu.bind fun output ↦ lscpuJsonField output "Socket(s):"
     ramTotal := meminfo.bind memTotalGib
     rootDisk := dfRoot.bind dfRootSize
-    hypervisor := lscpu.bind fun output => lscpuJsonField output "Hypervisor vendor:"
+    hypervisor := lscpu.bind fun output ↦ lscpuJsonField output "Hypervisor vendor:"
   }
 
 /-- Generate one pseudo-random natural number and advance the generator. -/
@@ -444,7 +444,7 @@ def cpolyOfArray {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
 /-- Build a monic divisor as a product of linear factors `X - C x`. -/
 def monicDivisorFromPoints {R : Type*} [Field R] [BEq R] [LawfulBEq R]
     (xs : Array R) : CPolynomial R :=
-  xs.foldl (fun acc x => acc * CPolynomial.linearFactor x) (CPolynomial.C 1)
+  xs.foldl (fun acc x ↦ acc * CPolynomial.linearFactor x) (CPolynomial.C 1)
 
 /-- Mix one benchmark output value into a stable checksum accumulator. -/
 def mixChecksum (acc value : Nat) : Nat :=
@@ -472,7 +472,7 @@ def checksumConcreteBtf {k : Nat} (x : ConcreteBTField k) : Nat :=
 
 /-- Checksum an array-like benchmark result. -/
 def checksumArray (checksum : α → Nat) (xs : Array α) : Nat :=
-  xs.foldl (fun acc x => mixChecksum acc (checksum x)) 0
+  xs.foldl (fun acc x ↦ mixChecksum acc (checksum x)) 0
 
 /-- Checksum a canonical univariate polynomial by its coefficient array. -/
 def checksumCPolynomial [Zero α] (checksum : α → Nat) (p : CPolynomial α) : Nat :=
@@ -527,15 +527,15 @@ def runTimed (name representation method field inputShape : String) (preset : Be
 
 /-- Append benchmark records from `ys` onto `xs`. -/
 def appendRecords (xs ys : Array BenchRecord) : Array BenchRecord :=
-  ys.foldl (init := xs) fun acc record => acc.push record
+  ys.foldl (init := xs) fun acc record ↦ acc.push record
 
 /-- Append benchmark groups from `ys` onto `xs`. -/
 def appendGroups (xs ys : Array BenchGroup) : Array BenchGroup :=
-  ys.foldl (init := xs) fun acc group => acc.push group
+  ys.foldl (init := xs) fun acc group ↦ acc.push group
 
 /-- Flatten grouped benchmark records for JSONL output. -/
 def flattenGroups (groups : Array BenchGroup) : Array BenchRecord :=
-  groups.foldl (init := #[]) fun acc group => appendRecords acc group.records
+  groups.foldl (init := #[]) fun acc group ↦ appendRecords acc group.records
 
 /-- Render a benchmark string field as a JSON string. -/
 def jsonString (s : String) : String :=
@@ -587,7 +587,7 @@ def keepSome : List (Option String) → List String
 /-- Compute the Markdown width required for a result table column. -/
 def columnWidth (records : List BenchRecord)
     (column : String × Bool × (BenchRecord → String)) : Nat :=
-  records.foldl (fun width record => max width (column.2.2 record).length) column.1.length
+  records.foldl (fun width record ↦ max width (column.2.2 record).length) column.1.length
 
 /-- Pad one Markdown table cell according to its alignment. -/
 def formatCell (alignRight : Bool) (width : Nat) (s : String) : String :=
@@ -612,21 +612,21 @@ def markdownSeparatorCell (alignRight : Bool) (width : Nat) : String :=
 def renderMarkdownTable (columns : List (String × Bool × (BenchRecord → String)))
     (records : List BenchRecord) : List String :=
   let widths := columns.map (columnWidth records)
-  let headers := columns.map (fun column => column.1)
-  let alignRights := columns.map (fun column => column.2.1)
+  let headers := columns.map (fun column ↦ column.1)
+  let alignRights := columns.map (fun column ↦ column.2.1)
   let separator := columns.mapIdx
-    (fun i column => markdownSeparatorCell column.2.1 (widths.getD i 3))
-  let rows := records.map fun record =>
-    markdownRow (columns.map (fun column => column.2.2 record)) widths alignRights
-  markdownRow headers widths (columns.map (fun _ => false)) :: markdownRow separator widths
-    (columns.map (fun _ => false)) :: rows
+    (fun i column ↦ markdownSeparatorCell column.2.1 (widths.getD i 3))
+  let rows := records.map fun record ↦
+    markdownRow (columns.map (fun column ↦ column.2.2 record)) widths alignRights
+  markdownRow headers widths (columns.map (fun _ ↦ false)) :: markdownRow separator widths
+    (columns.map (fun _ ↦ false)) :: rows
 
 /-- Return the shared checksum for a group if all rows have the same checksum. -/
 def matchingChecksum? (records : List BenchRecord) : Option Nat :=
   match records with
   | [] => none
   | record :: records =>
-      if records.all (fun other =>
+      if records.all (fun other ↦
           other.checksumIterations == record.checksumIterations &&
             other.checksum == record.checksum) then
         some record.checksum
@@ -639,7 +639,7 @@ def matchingString? (records : List BenchRecord) (field : BenchRecord → String
   | [] => none
   | record :: records =>
       let value := field record
-      if records.all (fun other => field other == value) then
+      if records.all (fun other ↦ field other == value) then
         some value
       else
         none
@@ -650,7 +650,7 @@ def matchingNat? (records : List BenchRecord) (field : BenchRecord → Nat) : Op
   | [] => none
   | record :: records =>
       let value := field record
-      if records.all (fun other => field other == value) then
+      if records.all (fun other ↦ field other == value) then
         some value
       else
         none
@@ -658,12 +658,12 @@ def matchingNat? (records : List BenchRecord) (field : BenchRecord → Nat) : Op
 /-- Render a shared string metadata line for a benchmark group. -/
 def renderSharedStringLine (label : String) (records : List BenchRecord)
     (field : BenchRecord → String) : Option String :=
-  (matchingString? records field).map fun value => "- " ++ label ++ ": `" ++ value ++ "`"
+  (matchingString? records field).map fun value ↦ "- " ++ label ++ ": `" ++ value ++ "`"
 
 /-- Render a shared natural-number metadata line for a benchmark group. -/
 def renderSharedNatLine (label : String) (records : List BenchRecord)
     (field : BenchRecord → Nat) : Option String :=
-  (matchingNat? records field).map fun value => "- " ++ label ++ ": `" ++ toString value ++ "`"
+  (matchingNat? records field).map fun value ↦ "- " ++ label ++ ": `" ++ toString value ++ "`"
 
 /-- Render a short checksum status line for a benchmark group. -/
 def renderChecksumStatus (records : List BenchRecord) : String :=
@@ -673,7 +673,7 @@ def renderChecksumStatus (records : List BenchRecord) : String :=
 
 /-- Return benchmark groups whose rows do not have a shared checksum. -/
 def checksumMismatchGroups (groups : Array BenchGroup) : List BenchGroup :=
-  groups.toList.filter fun group => (matchingChecksum? group.records.toList).isNone
+  groups.toList.filter fun group ↦ (matchingChecksum? group.records.toList).isNone
 
 /-- Lookup a rendered implementation label by exact benchmark metadata. -/
 def lookupImplementationLabel? : String → List (String × String) → Option String
@@ -753,21 +753,21 @@ def groupResultColumns (totalUnit avgUnit : TimeUnit) :
     List (String × Bool × (BenchRecord → String)) :=
   [
     ("Implementation", false, implementationLabel),
-    ("Iterations", true, fun r => toString r.measuredIterations),
-    ("Total (" ++ totalUnit.label ++ ")", true, fun r =>
+    ("Iterations", true, fun r ↦ toString r.measuredIterations),
+    ("Total (" ++ totalUnit.label ++ ")", true, fun r ↦
       formatNanosInUnit totalUnit r.totalNanos),
-    ("Avg (" ++ avgUnit.label ++ ")", true, fun r =>
+    ("Avg (" ++ avgUnit.label ++ ")", true, fun r ↦
       formatNanosInUnit avgUnit r.averageNanos)
   ]
 
 /-- Shared metadata rendered before each benchmark group result table. -/
 def renderGroupMetadata (records : List BenchRecord) (totalUnit : TimeUnit) : List String :=
   keepSome [
-    renderSharedStringLine "Representation" records (fun r => r.representation),
-    renderSharedStringLine "Field / configuration" records (fun r => r.field),
-    renderSharedStringLine "Input shape" records (fun r => r.inputShape),
-    renderSharedNatLine "Warmup iterations" records (fun r => r.warmupIterations),
-    renderSharedNatLine "Checksum iterations" records (fun r => r.checksumIterations)
+    renderSharedStringLine "Representation" records (fun r ↦ r.representation),
+    renderSharedStringLine "Field / configuration" records (fun r ↦ r.field),
+    renderSharedStringLine "Input shape" records (fun r ↦ r.inputShape),
+    renderSharedNatLine "Warmup iterations" records (fun r ↦ r.warmupIterations),
+    renderSharedNatLine "Checksum iterations" records (fun r ↦ r.checksumIterations)
   ] ++ [
     "- Total group time: `" ++ formatNanosWithUnit totalUnit (totalGroupNanos records) ++
       "`",
@@ -778,8 +778,8 @@ def renderGroupMetadata (records : List BenchRecord) (totalUnit : TimeUnit) : Li
 def renderGroupResults (group : BenchGroup) : List String :=
   let records := group.records.toList
   let groupTotal := totalGroupNanos records
-  let totalUnit := chooseTimeUnit (groupTotal :: records.map fun r => r.totalNanos)
-  let avgUnit := chooseTimeUnit (records.map fun r => r.averageNanos)
+  let totalUnit := chooseTimeUnit (groupTotal :: records.map fun r ↦ r.totalNanos)
+  let avgUnit := chooseTimeUnit (records.map fun r ↦ r.averageNanos)
   [
     "### " ++ group.title,
     "",
@@ -797,7 +797,7 @@ def renderRunnerLine (hardware : RunnerHardware) : String :=
 
 /-- Render an optional hardware metadata line. -/
 def renderOptionalLine (label : String) (value : Option String) : Option String :=
-  value.map fun value => "- " ++ label ++ ": `" ++ value ++ "`"
+  value.map fun value ↦ "- " ++ label ++ ": `" ++ value ++ "`"
 
 /-- Render CPU topology metadata when enough fields are available. -/
 def renderTopologyLine (hardware : RunnerHardware) : Option String :=
@@ -822,7 +822,7 @@ def renderHardwareSection (hardware : RunnerHardware) : List String :=
   ] ++ keepSome [
     renderOptionalLine "CPU" hardware.cpuModel,
     renderOptionalLine "Exposed CPUs"
-      (hardware.logicalCpus.map fun cpus => cpus ++ " logical CPUs"),
+      (hardware.logicalCpus.map fun cpus ↦ cpus ++ " logical CPUs"),
     renderTopologyLine hardware,
     renderOptionalLine "RAM" hardware.ramTotal,
     renderOptionalLine "Root disk" hardware.rootDisk,

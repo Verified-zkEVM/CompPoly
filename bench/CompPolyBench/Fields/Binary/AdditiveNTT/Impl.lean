@@ -24,7 +24,7 @@ def additiveNttGroupInfos : List BenchGroupInfo := [
 /-- Checksum all output values from a `BTF₃` additive NTT benchmark. -/
 private def checksumBtf3Output {n : Nat} (output : Fin (2 ^ n) → AdditiveNTT.BTF₃) : Nat :=
   (List.finRange (2 ^ n)).foldl
-    (fun acc i => mixChecksum acc (checksumBtf3 (output i))) 0
+    (fun acc i ↦ mixChecksum acc (checksumBtf3 (output i))) 0
 
 /-- Checksum a `BTF₃` additive NTT output array. -/
 private def checksumBtf3OutputArray {n : Nat} (output : Array AdditiveNTT.BTF₃) : Nat :=
@@ -34,7 +34,7 @@ private def checksumBtf3OutputArray {n : Nat} (output : Array AdditiveNTT.BTF₃
 private def checksumConcreteBtfOutputArray {k n : Nat} (output : Array (ConcreteBTField k)) :
     Nat :=
   (List.finRange (2 ^ n)).foldl
-    (fun acc i =>
+    (fun acc i ↦
       mixChecksum acc
         (checksumConcreteBtf ((AdditiveNTT.arrayToFinFunction (2 ^ n) output) i))) 0
 
@@ -85,19 +85,19 @@ private def runAdditiveNttCase (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_ra
   let outputSize := 2 ^ (ℓ + R_rate)
   let (values, gen) := (randomNatArray inputSize 255).run gen
   let input : Fin (2 ^ ℓ) → AdditiveNTT.BTF₃ :=
-    fun i => ConcreteBinaryTower.fromNat (k := 3) (values.getD i.val 0)
+    fun i ↦ ConcreteBinaryTower.fromNat (k := 3) (values.getD i.val 0)
   let fieldLabel := s!"ConcreteBTField 0 -> BTF3, l={ℓ}, R_rate={R_rate}"
   let inputShape := s!"{inputSize} input coeffs, {outputSize} output evals"
   let checksumIterations := groupChecksumIterations measured [fastMeasured]
   let currentRecord ← runTimed
     currentName "computableAdditiveNTT" "computableAdditiveNTT"
     fieldLabel inputShape preset warmup measured
-    (fun _ => runBtf3Ntt ℓ R_rate h_ℓ_add_R_rate input)
+    (fun _ ↦ runBtf3Ntt ℓ R_rate h_ℓ_add_R_rate input)
     (checksumBtf3Output (n := ℓ + R_rate)) (checksumIterations := checksumIterations)
   let fastRecord ← runTimed
     fastName "computableAdditiveNTTFast" "computableAdditiveNTTFast"
     fieldLabel inputShape preset warmup fastMeasured
-    (fun _ => runBtf3NttFast ℓ R_rate h_ℓ_add_R_rate input)
+    (fun _ ↦ runBtf3NttFast ℓ R_rate h_ℓ_add_R_rate input)
     (checksumBtf3OutputArray (n := ℓ + R_rate)) (checksumIterations := checksumIterations)
   pure ({
       groupKey := key,
@@ -113,13 +113,13 @@ private def runAdditiveNttFastLargeCase (k ℓ R_rate : Nat)
   let outputSize := 2 ^ (ℓ + R_rate)
   let (values, gen) := (randomNatArray inputSize (2 ^ (2 ^ k) - 1)).run gen
   let input : Fin (2 ^ ℓ) → ConcreteBTField k :=
-    fun i => ConcreteBinaryTower.fromNat (k := k) (values.getD i.val 0)
+    fun i ↦ ConcreteBinaryTower.fromNat (k := k) (values.getD i.val 0)
   let fieldLabel := s!"ConcreteBTField 0 -> BTF{k}, l={ℓ}, R_rate={R_rate}"
   let inputShape := s!"{inputSize} input coeffs, {outputSize} output evals"
   let fastRecord ← runTimed
     fastName "computableAdditiveNTTFast" "computableAdditiveNTTFast"
     fieldLabel inputShape preset warmup measured
-    (fun _ => runConcreteBtfNttFast k ℓ R_rate h_ℓ_add_R_rate input)
+    (fun _ ↦ runConcreteBtfNttFast k ℓ R_rate h_ℓ_add_R_rate input)
     (checksumConcreteBtfOutputArray (k := k) (n := ℓ + R_rate))
   pure ({
       groupKey := key,
