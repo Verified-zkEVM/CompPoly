@@ -97,7 +97,7 @@ CompPoly aims to be the premier formally verified library for computable polynom
 7. **Bivariate polynomial operations**
    - Optimize the existing bivariate polynomial type `CPolynomial (CPolynomial R)` and evaluate whether a more specialized representation is beneficial
    - Efficient factorization algorithms for bivariate polynomials
-   - Integration with existing `CMvPolynomial 2 R` with equivalence proofs
+   - ✅ Integration with existing `CMvPolynomial 2 R` with equivalence proofs
 
 7. **Error-correcting interpolation algorithms**
    - Implement Berlekamp-Welch algorithm for Reed-Solomon decoding
