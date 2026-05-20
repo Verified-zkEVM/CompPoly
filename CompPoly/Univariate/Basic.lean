@@ -31,11 +31,14 @@ variable {R : Type*}
   whenever the underlying array is nonempty. This gives an instance-stable carrier while keeping
   the raw normalization algorithms available separately.
 
-  `Raw.mul` already defers trimming to the end of its convolution fold (it accumulates
-  with the untrimmed `Raw.mulRaw` and trims once). Remaining opportunities to trim only
-  at the end of an iterative computation: `Raw.powBySq` (currently trims after every
-  squaring) and the fold-sums in `Univariate/Lagrange.lean` and the NTT
-  `butterflyStage` (`Univariate/NTT/Transform.lean`).
+  `Raw.mul` defers trimming to the end of its convolution fold (it accumulates with the
+  untrimmed `Raw.mulRaw` and trims once). `CPolynomial.divX` skips trimming entirely:
+  the input is canonical and `extract 1 size` only strips from the front, so the leading
+  coefficient (when present) is preserved and the result is already canonical.
+  Remaining opportunities to trim only at the end of an iterative computation:
+  `Raw.powBySq` (currently trims after every squaring) and the fold-sums in
+  `Univariate/Lagrange.lean` and the NTT `butterflyStage`
+  (`Univariate/NTT/Transform.lean`).
 -/
 def CPolynomial (R : Type*) [Zero R] := { p : CPolynomial.Raw R // IsCanonical p }
 
@@ -249,10 +252,27 @@ def natDegreeBound [Zero R] (p : CPolynomial R) : Nat := p.natDegree
 /-- Check if a `CPolynomial` is monic, i.e. its leading coefficient is 1. -/
 def monic [Zero R] [One R] [BEq R] (p : CPolynomial R) : Bool := p.leadingCoeff == 1
 
-/-- The polynomial with the constant term removed; `coeff (divX p) i = coeff p (i + 1)`. -/
-def divX [Zero R] [BEq R] [LawfulBEq R] (p : CPolynomial R) : CPolynomial R :=
-  let q : CPolynomial.Raw R := p.val.extract 1 p.val.size
-  ⟨q.trim, Trim.isCanonical_trim q⟩
+/-- The polynomial with the constant term removed; `coeff (divX p) i = coeff p (i + 1)`.
+
+  No post-extract trim is needed: since `p` is canonical, its last entry is nonzero, and
+  `extract 1 p.val.size` strips only from the front, so the result is already canonical
+  (vacuously when `p.val.size ≤ 1`). -/
+def divX [Zero R] (p : CPolynomial R) : CPolynomial R :=
+  ⟨p.val.extract 1 p.val.size, by
+    intro hq
+    have hsize_eq : (p.val.extract 1 p.val.size).size = p.val.size - 1 := by
+      simp [Array.size_extract]
+    have hp_pos : 0 < p.val.size := by
+      rw [hsize_eq] at hq; omega
+    have h_last_eq :
+        (p.val.extract 1 p.val.size).getLast hq = p.val.getLast hp_pos := by
+      show (p.val.extract 1 p.val.size)[(p.val.extract 1 p.val.size).size - 1]
+        = p.val[p.val.size - 1]
+      rw [Array.getElem_extract]
+      congr 1
+      rw [hsize_eq]; omega
+    rw [h_last_eq]
+    exact p.property hp_pos⟩
 
 /-- Coefficient of the constant polynomial `C r`. -/
 lemma coeff_C [Zero R] [BEq R] [LawfulBEq R] (r : R) (i : ℕ) :
@@ -467,18 +487,9 @@ lemma coeff_extract_succ [Zero R] (a : CPolynomial.Raw R) (i : ℕ) :
   · have hge : a.size ≤ i + 1 := by omega
     simp [h, Array.getElem?_eq_none (xs := a) (i := i + 1) hge]
 
-lemma coeff_divX [Zero R] [BEq R] [LawfulBEq R] (p : CPolynomial R) (i : ℕ) :
-    coeff (divX p) i = coeff p (i + 1) := by
-  -- LHS: coeff of divX = coeff of trimmed extract
-  unfold divX
-  -- turn coefficients of CPolynomial into raw coefficients
-  simp only [CPolynomial.coeff]
-  -- remove the trim on coefficients
-  have htrim :=
-    (Trim.coeff_eq_coeff
-      (p := ((↑p : CPolynomial.Raw R).extract 1 (↑p : CPolynomial.Raw R).size)) (i := i))
-  -- shift the extract
-  exact htrim.trans (coeff_extract_succ (a := (↑p : CPolynomial.Raw R)) (i := i))
+lemma coeff_divX [Zero R] (p : CPolynomial R) (i : ℕ) :
+    coeff (divX p) i = coeff p (i + 1) :=
+  coeff_extract_succ (a := (↑p : CPolynomial.Raw R)) (i := i)
 
 lemma X_mul_divX_add [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (p : CPolynomial R) : p = X * divX p + C (coeff p 0) := by
@@ -533,17 +544,12 @@ theorem divX_mul_X_add [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
       rw [_root_.add_zero]
       simpa using (coeff_divX (p := p) (i := n))
 
-lemma divX_size_lt [Zero R] [BEq R] [LawfulBEq R] (p : CPolynomial R) (hp : p.val.size > 0) :
+lemma divX_size_lt [Zero R] (p : CPolynomial R) (hp : p.val.size > 0) :
     (divX p).val.size < p.val.size := by
-  unfold divX
-  have hle : (Raw.trim (p.val.extract 1 p.val.size)).size
-      ≤ (p.val.extract 1 p.val.size).size := by
-    simpa using (Trim.size_le_size (p := p.val.extract 1 p.val.size))
-  have hextract : (p.val.extract 1 p.val.size).size = p.val.size - 1 := by
-    simp only [Array.size_extract, min_self]
-  have hle' : (Raw.trim (p.val.extract 1 p.val.size)).size ≤ p.val.size - 1 := by
-    simpa [hextract] using hle
-  exact lt_of_le_of_lt hle' (Nat.pred_lt_self hp)
+  show (p.val.extract 1 p.val.size).size < p.val.size
+  rw [show (p.val.extract 1 p.val.size).size = p.val.size - 1 by
+    simp only [Array.size_extract, min_self]]
+  exact Nat.pred_lt_self hp
 
 /-- Induction principle for polynomials (mirrors mathlib's `Polynomial.induction_on`). -/
 theorem induction_on [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
