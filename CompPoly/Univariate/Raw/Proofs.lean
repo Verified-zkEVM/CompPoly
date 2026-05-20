@@ -300,6 +300,46 @@ lemma coeff_foldl_add {α : Type*} [LawfulBEq R]
           · exact Eq.symm Array.getD_eq_getD_getElem?
         · module
 
+/-- Coefficient of an untrimmed `addRaw` accumulator fold: the same statement as
+  `coeff_foldl_add`, but the partial sums are combined with `addRaw` (no per-step
+  trim). This is what `mulRaw` folds with. -/
+lemma coeff_foldl_addRaw {α : Type*} [LawfulBEq R]
+    (l : List α)
+    (f : α → CPolynomial.Raw R)
+    (z : CPolynomial.Raw R) (k : ℕ) :
+    (l.foldl (fun acc x => acc.addRaw (f x)) z).coeff k
+      = z.coeff k + (l.map (fun x => (f x).coeff k)).sum := by
+  induction l generalizing z with
+  | nil => simp
+  | cons a l ih =>
+    simp only [List.foldl_cons, List.map_cons, List.sum_cons]
+    rw [ih, add_coeff?, _root_.add_assoc]
+
+/-- The trimmed-add convolution fold is already canonical: trimming after every
+  partial sum leaves a polynomial that is trim-stable. This is the old
+  `mul_is_trimmed` argument, kept as a bridge for `mul_eq_foldl`. -/
+private lemma foldl_trimAdd_canonical [LawfulBEq R] (p q : CPolynomial.Raw R) :
+    (p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + (smul a q).mulPowX i) (mk #[])).trim
+      = p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + (smul a q).mulPowX i) (mk #[]) := by
+  apply foldl_preserves_canonical
+  · exact Trim.canonical_empty
+  · intro acc x
+    exact Trim.trim_twice (addRaw acc ((smul x.1 q).mulPowX x.2))
+
+/-- `mul` agrees with the trimmed-add convolution fold (the previous definition of
+  `mul`). `mul` now folds with the untrimmed `addRaw` and trims once at the end;
+  this lemma is the bridge that lets the existing coefficient and equivalence
+  proofs go through unchanged. -/
+lemma mul_eq_foldl [LawfulBEq R] (p q : CPolynomial.Raw R) :
+    p * q = p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + (smul a q).mulPowX i) (mk #[]) := by
+  have hcoeff : Trim.equiv (mulRaw p q)
+      (p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + (smul a q).mulPowX i) (mk #[])) := by
+    intro k
+    unfold mulRaw
+    rw [← Array.foldl_toList, coeff_foldl_addRaw, ← Array.foldl_toList, coeff_foldl_add]
+  show (mulRaw p q).trim = _
+  rw [Trim.eq_of_equiv hcoeff, foldl_trimAdd_canonical]
+
 end MulOneTrimHelpers
 
 section MulAssocSumHelpers
@@ -483,8 +523,8 @@ lemma coeff_mul [LawfulBEq R] (p q : CPolynomial.Raw R) (k : ℕ) :
       · congr
         simp only [Array.toList_zipIdx]
         have h_mul_def : ∀ (p q : CPolynomial.Raw R), p * q
-            = (p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + (smul a q).mulPowX i) (mk #[])) := by
-          exact fun p q => rfl
+            = (p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + (smul a q).mulPowX i) (mk #[])) :=
+          fun p q => mul_eq_foldl p q
         convert h_mul_def p q using 1
         conv => rw [ ← Array.toList_zipIdx ]
         rw [Array.foldl_toList]
@@ -540,8 +580,8 @@ lemma equiv_mul_one [LawfulBEq R] (p : CPolynomial.Raw R) : Trim.equiv (p * 1) p
       convert coeff_foldl_add
           ( p.zipIdx.toList ) ( fun ⟨ a, i ⟩ => ( smul a 1 ).mulPowX i ) ( mk #[] ) k using 1
       · have h_mul_def : ∀ (p : CPolynomial.Raw R), p * 1 =
-            (p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + (smul a 1).mulPowX i) (mk #[])) := by
-          exact fun p => rfl
+            (p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + (smul a 1).mulPowX i) (mk #[])) :=
+          fun p => mul_eq_foldl p 1
         rw [h_mul_def, Array.foldl_toList]
       · simp +decide
         conv => rw [ ← Array.toList_zipIdx ]
@@ -551,15 +591,8 @@ lemma equiv_mul_one [LawfulBEq R] (p : CPolynomial.Raw R) : Trim.equiv (p * 1) p
   exact congrFun (h_mul_one p)
 
 theorem mul_is_trimmed [LawfulBEq R] (p q : CPolynomial.Raw R) : (p * q).trim = p * q := by
-  convert foldl_preserves_canonical _ _ _ _ _
-  · exact Trim.canonical_empty
-  · intros acc x
-    simp [add, addRaw]
-    exact Trim.trim_twice
-      (mk (Array.zipWith (fun x1 x2 => x1 + x2)
-        (acc ++ Array.replicate (Array.size (mulPowX x.2 (smul x.1 q)) - Array.size acc) 0)
-          (mulPowX x.2 (smul x.1 q) ++
-            Array.replicate (Array.size acc - Array.size (mulPowX x.2 (smul x.1 q))) 0)))
+  show ((mulRaw p q).trim).trim = (mulRaw p q).trim
+  exact Trim.trim_twice (mulRaw p q)
 
 lemma coeff_mul_eq_sum_range [LawfulBEq R] (p q : CPolynomial.Raw R) (k : ℕ) (n : ℕ)
     (h : p.size ≤ n) : (p * q).coeff k =
@@ -593,10 +626,6 @@ lemma coeff_mul_eq_sum_range [LawfulBEq R] (p q : CPolynomial.Raw R) (k : ℕ) (
       simp_all +decide
       congr! 1
       refine' List.ext_get _ _ <;> aesop
-
-lemma mul_eq_foldl (p q : CPolynomial.Raw R) :
-    p * q = p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + (smul a q).mulPowX i) (mk #[]) := by
-  rfl
 
 lemma C_mul_eq_smul_trim [LawfulBEq R] (r : R)
     (q : CPolynomial.Raw R) :
@@ -861,7 +890,7 @@ theorem mul_one_trim [LawfulBEq R] (p : CPolynomial.Raw R) : p * 1 = p.trim := b
 theorem one_mul_trim [LawfulBEq R] (p : CPolynomial.Raw R) : 1 * p = p.trim := by
   have h_mul_def : ∀ (a b : CPolynomial.Raw R),
       a.mul b = (a.zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b).mulPowX i)) (mk #[])) :=
-        by exact fun a b => rfl
+        fun a b => mul_eq_foldl a b
   have : 1 * p = (mk #[1] : CPolynomial.Raw R).mul p := by rfl
   rw [this, h_mul_def]
   show (mk #[1]).zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' p).mulPowX i)) (mk #[])

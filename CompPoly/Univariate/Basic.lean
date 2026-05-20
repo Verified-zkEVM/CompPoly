@@ -31,7 +31,11 @@ variable {R : Type*}
   whenever the underlying array is nonempty. This gives an instance-stable carrier while keeping
   the raw normalization algorithms available separately.
 
-  TODO optimizations may be had by trimming only at the end of iterative operations
+  `Raw.mul` already defers trimming to the end of its convolution fold (it accumulates
+  with the untrimmed `Raw.mulRaw` and trims once). Remaining opportunities to trim only
+  at the end of an iterative computation: `Raw.powBySq` (currently trims after every
+  squaring) and the fold-sums in `Univariate/Lagrange.lean` and the NTT
+  `butterflyStage` (`Univariate/NTT/Transform.lean`).
 -/
 def CPolynomial (R : Type*) [Zero R] := { p : CPolynomial.Raw R // IsCanonical p }
 

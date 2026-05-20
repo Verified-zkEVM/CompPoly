@@ -197,12 +197,10 @@ lemma mul_trim_equiv [Semiring R] [BEq R] [LawfulBEq R] (a b : CPolynomial.Raw R
   obtain ⟨l, hl⟩ := h_zipIdx_split
   have h_foldl_split : ∃ acc, (a.mul b) = (l.foldl (mulStep b) acc) ∧ (a.trim.mul b) = acc := by
     -- By definition of `mul`, we can rewrite `a.mul b` using `mulStep` and the foldl operation.
-    have h_mul_def : a.mul b = (a.zipIdx.toList.foldl (mulStep b) (mk #[])) := by
-      unfold mul
-      exact Eq.symm (Array.foldl_toList (mulStep b))
-    have h_mul_def_trim : a.trim.mul b = (a.trim.zipIdx.toList.foldl (mulStep b) (mk #[])) := by
-      unfold mul
-      exact Eq.symm (Array.foldl_toList (mulStep b))
+    have h_mul_def : a.mul b = (a.zipIdx.toList.foldl (mulStep b) (mk #[])) :=
+      (mul_eq_foldl a b).trans (Array.foldl_toList (mulStep b)).symm
+    have h_mul_def_trim : a.trim.mul b = (a.trim.zipIdx.toList.foldl (mulStep b) (mk #[])) :=
+      (mul_eq_foldl a.trim b).trans (Array.foldl_toList (mulStep b)).symm
     aesop
   obtain ⟨ acc, h₁, h₂ ⟩ := h_foldl_split
   exact h₁.symm ▸ h₂.symm ▸ foldl_mulStep_zeros b acc l hl.2
@@ -223,7 +221,7 @@ lemma mul_equiv₂ [Semiring R] [BEq R] [LawfulBEq R] (a b₁ b₂ : CPolynomial
   -- their sums of products of coefficients.
   have h_mul_def : ∀ (a b : CompPoly.CPolynomial.Raw R),
     a.mul b = (a.zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b).mulPowX i)) (mk #[])) :=
-      by exact fun a b => rfl
+      fun a b => mul_eq_foldl a b
   intro h
   have h_foldl_equiv : ∀ (l : List (R × ℕ)) (acc : CompPoly.CPolynomial.Raw R),
     List.foldl (fun acc (a', i) => acc.add ((smul a' b₁).mulPowX i)) acc l ≈

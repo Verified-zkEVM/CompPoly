@@ -88,10 +88,22 @@ def mulX [Zero R] (p : CPolynomial.Raw R) : CPolynomial.Raw R := p.mulPowX 1
 
 end MulPowXDefs
 
-/-- Multiplication using the naive `O(n²)` algorithm: `Σᵢ (aᵢ * q) * X^i`. -/
+/-- Multiplication accumulator using the naive `O(n²)` algorithm: `Σᵢ (aᵢ * q) * X^i`.
+
+  The partial sums are combined with the untrimmed `addRaw`, so the result may carry
+  trailing zeros and should be trimmed for canonical form. Deferring the trim to the
+  end (see `mul`) avoids an `O(size)` scan after every partial sum. -/
+@[inline, specialize]
+def mulRaw [Semiring R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
+  p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc.addRaw <| (smul a q).mulPowX i) (mk #[])
+
+/-- Multiplication using the naive `O(n²)` algorithm: `Σᵢ (aᵢ * q) * X^i`.
+
+  Trims only once, at the end of the convolution fold, rather than after every
+  partial sum (`mulRaw` does the untrimmed accumulation). -/
 @[inline, specialize]
 def mul [Semiring R] [BEq R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
-  p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc.add <| (smul a q).mulPowX i) (mk #[])
+  (mulRaw p q).trim
 
 /-- Exponentiation of a `CPolynomial.Raw` by a natural number `n` via repeated multiplication.
 This is the specification; `powBySq` is the efficient O(log n) implementation. -/
