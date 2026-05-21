@@ -18,14 +18,17 @@ import Mathlib.FieldTheory.Finite.Basic
 
 namespace KoalaBear
 
+/-- The KoalaBear field modulus, `2^31 - 2^24 + 1`. -/
 @[reducible]
 def fieldSize : Nat := 2 ^ 31 - 2 ^ 24 + 1
 
 -- 2130706433
 -- #eval fieldSize
 
+/-- The KoalaBear prime field as a `ZMod`. -/
 abbrev Field := ZMod fieldSize
 
+/-- The KoalaBear modulus is prime. -/
 theorem is_prime : Nat.Prime fieldSize := by
   unfold fieldSize
   pratt
@@ -38,9 +41,11 @@ theorem is_prime : Nat.Prime fieldSize := by
   - `twoAdicity = 24` with `fieldSize - 1 = 2^24 * 127`
 -/
 
+/-- Bit width of the KoalaBear modulus. -/
 @[reducible]
 def pBits : Nat := 31
 
+/-- The largest supported power-of-two root-of-unity exponent for KoalaBear. -/
 @[reducible]
 def twoAdicity : Nat := 24
 
@@ -66,6 +71,7 @@ instance : NonBinaryField Field where
   of `2^n`-th roots of unity for `0 ≤ n ≤ twoAdicity`.
 -/
 
+/-- The factorization `fieldSize - 1 = 2^twoAdicity * 127`. -/
 lemma fieldSize_sub_one_factorization : fieldSize - 1 = 2 ^ twoAdicity * 127 := by
   unfold fieldSize twoAdicity
   decide
@@ -76,6 +82,7 @@ lemma fieldSize_sub_one_factorization : fieldSize - 1 = 2 ^ twoAdicity * 127 := 
 
   The first entry n = 0 is 1.
 -/
+/-- Precomputed generators for the KoalaBear two-adic subgroups. -/
 def twoAdicGenerators : List Field :=
   [
     (0x1 : Field),

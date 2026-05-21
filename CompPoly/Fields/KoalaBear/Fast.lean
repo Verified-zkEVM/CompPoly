@@ -135,6 +135,7 @@ private theorem montgomery_sum_dvd (x : Nat) :
       rw [Nat.modEq_zero_iff_dvd]
       exact ⟨x % UInt32.size, by rw [mul_comm]⟩
 
+/-- Nat-level Montgomery reduction used to specify and prove the native-word reducer. -/
 private def montgomeryReduceNat (x : Nat) : Nat :=
   let m := (x % UInt32.size * montgomeryNegInv.toNat) % UInt32.size
   let u := (x + m * KoalaBear.fieldSize) / UInt32.size
