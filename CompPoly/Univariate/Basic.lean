@@ -32,16 +32,21 @@ variable {R : Type*}
   the raw normalization algorithms available separately.
 
   `Raw.mul` defers trimming to the end of its convolution fold (it accumulates with the
-  untrimmed `Raw.mulRaw` and trims once). `CPolynomial.divX` skips trimming entirely:
-  the input is canonical and `extract 1 size` only strips from the front, so the leading
-  coefficient (when present) is preserved and the result is already canonical. The division
-  wrappers (`divByMonic`, `modByMonic`, `modByMonicRemainderOnly`, `modByMonicByReversal`,
-  `div`, `mod`) likewise skip the redundant post-trim: each underlying `Raw` algorithm
-  bottoms out in operations (`Raw.add`, `Raw.sub`, `subScaledShift`) that already trim.
+  untrimmed `Raw.mulRaw` and trims once). `Raw.powBySq` likewise routes through an
+  untrimmed `powBySqUntrimmed` and trims once at the top of the repeated-squaring
+  recursion. `CPolynomial.divX` skips trimming entirely: the input is canonical and
+  `extract 1 size` only strips from the front, so the leading coefficient (when present)
+  is preserved and the result is already canonical. The division wrappers (`divByMonic`,
+  `modByMonic`, `modByMonicRemainderOnly`, `modByMonicByReversal`, `div`, `mod`) likewise
+  skip the redundant post-trim: each underlying `Raw` algorithm bottoms out in operations
+  (`Raw.add`, `Raw.sub`, `subScaledShift`) that already trim.
   Remaining opportunities to trim only at the end of an iterative computation:
-  `Raw.powBySq` (currently trims after every squaring) and the fold-sums in
-  `Univariate/Lagrange.lean` and the NTT `butterflyStage`
-  (`Univariate/NTT/Transform.lean`).
+  the `Finset.prod`/`Finset.sum` folds in `Univariate/Lagrange.lean` (the `basis`
+  product and the `interpolate` sum each pay one `Raw.mul`/`Raw.add` trim per term),
+  the `Array.foldl` accumulator in `Bivariate/ToPoly.lean` (`toPoly_foldl_zipIdx_eq_sum`),
+  and the two `ExtTreeMap.foldl` monomial accumulators in `Multivariate/Operations.lean`.
+  The NTT `butterflyStage` in `Univariate/NTT/Transform.lean` is not on this list: it
+  operates on a scalar coefficient `Array R` and never calls `trim`.
 -/
 def CPolynomial (R : Type*) [Zero R] := { p : CPolynomial.Raw R // IsCanonical p }
 

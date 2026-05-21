@@ -111,21 +111,30 @@ This is the specification; `powBySq` is the efficient O(log n) implementation. -
 def pow [Semiring R] [BEq R] (p : CPolynomial.Raw R) (n : Nat) : CPolynomial.Raw R :=
   (mul p)^[n] (C 1)
 
-/-- Exponentiation via repeated squaring: $ O(\log n) $ multiplications
-instead of $ O(n) $.
+/-- Repeated-squaring core that accumulates with the untrimmed `mulRaw`, deferring
+the canonicalization trim to the outer `powBySq` wrapper. The output may carry
+trailing zeros and is not in canonical form.
 
 For $ n > 0 $, computes $ p ^ n $ by recursing on $ n / 2 $:
 * If $ n $ is even: $ (p ^ {n/2})^2 $
 * If $ n $ is odd:  $ p \cdot (p ^ {n/2})^2 $
 -/
 @[inline, specialize]
-def powBySq [Semiring R] [BEq R] (p : CPolynomial.Raw R) : Nat → CPolynomial.Raw R
+def powBySqUntrimmed [Semiring R] (p : CPolynomial.Raw R) : Nat → CPolynomial.Raw R
   | 0 => C 1
   | n + 1 =>
-    let half := powBySq p ((n + 1) / 2)
-    let sq := mul half half
-    if (n + 1) % 2 = 0 then sq else mul p sq
+    let half := powBySqUntrimmed p ((n + 1) / 2)
+    let sq := mulRaw half half
+    if (n + 1) % 2 = 0 then sq else mulRaw p sq
   decreasing_by omega
+
+/-- Exponentiation via repeated squaring: $ O(\log n) $ multiplications
+instead of $ O(n) $. Delegates to `powBySqUntrimmed` and trims only once
+at the end, rather than after every squaring step.
+-/
+@[inline, specialize]
+def powBySq [Semiring R] [BEq R] (p : CPolynomial.Raw R) (n : Nat) : CPolynomial.Raw R :=
+  (powBySqUntrimmed p n).trim
 
 instance : Zero (CPolynomial.Raw R) := ⟨#[]⟩
 instance [One R] : One (CPolynomial.Raw R) := ⟨C 1⟩
