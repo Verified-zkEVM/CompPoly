@@ -99,7 +99,7 @@ lemma finSuccEquiv_symm_X
       CMvPolynomial.X 0 := by
   rw [finSuccEquiv, polyRingEquiv.symm_trans_apply,
     polyRingEquiv.symm_apply_eq, RingEquiv.symm_trans_apply]
-  simp only [AlgEquiv.toRingEquiv_eq_coe, RingEquiv.symm_symm]
+  simp only [RingEquiv.symm_symm]
   rw [polynomialCMvPolyEquiv, Polynomial.mapEquiv_apply,
     Polynomial.map_X]
   have h : (MvPolynomial.finSuccEquiv R n).symm
@@ -115,7 +115,7 @@ end CMvPolynomial
 
 namespace CompPoly.CBivariate
 
-open CPoly CompPoly.CBivariate
+open CPoly
 
 variable {R : Type*}
 variable [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R]
