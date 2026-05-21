@@ -1,4 +1,5 @@
 import CompPoly.Bivariate.Basic
+import CompPoly.Bivariate.CMvEquiv
 import CompPoly.Bivariate.ToPoly
 import CompPoly.Data.Array.Lemmas
 import CompPoly.Data.Classes.DCast
@@ -18,8 +19,6 @@ import CompPoly.Fields.BLS12_377
 import CompPoly.Fields.BLS12_381
 import CompPoly.Fields.BN254
 import CompPoly.Fields.BabyBear
-import CompPoly.Fields.BabyBear.Basic
-import CompPoly.Fields.BabyBear.Fast
 import CompPoly.Fields.Basic
 import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
 import CompPoly.Fields.Binary.AdditiveNTT.Algorithm
