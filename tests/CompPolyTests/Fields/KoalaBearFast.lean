@@ -20,11 +20,18 @@ namespace KoalaBear.Fast
 #guard toNat (ofNat KoalaBear.fieldSize) = 0
 #guard toNat (ofNat (KoalaBear.fieldSize + 37)) = 37
 #guard toNat ((ofNat (KoalaBear.fieldSize - 1)) + (2 : Element)) = 1
+#guard toNat ((ofNat (KoalaBear.fieldSize - 1)) + (ofNat (KoalaBear.fieldSize - 1))) =
+  KoalaBear.fieldSize - 2
+#guard toNat ((9 : Element) - (5 : Element)) = 4
 #guard toNat ((5 : Element) - (9 : Element)) = KoalaBear.fieldSize - 4
+#guard toNat (-(0 : Element)) = 0
 #guard toNat (-(1 : Element)) = KoalaBear.fieldSize - 1
 #guard toNat ((ofNat (KoalaBear.fieldSize - 1)) * (ofNat (KoalaBear.fieldSize - 1))) = 1
 #guard toNat (square (12345 : Element)) = 152399025
+#guard toNat ((37 : Element) ^ 0) = 1
+#guard toNat ((37 : Element) ^ 1) = 37
 #guard toField ((123456789 : Element) ^ 17) = ((123456789 : KoalaBear.Field) ^ 17)
+#guard toField ((123456789 : Element) ^ 255) = ((123456789 : KoalaBear.Field) ^ 255)
 #guard toNat ((0 : Element)⁻¹) = 0
 #guard toNat ((37 : Element)⁻¹ * (37 : Element)) = 1
 #guard toNat ((37 : Element) / (37 : Element)) = 1

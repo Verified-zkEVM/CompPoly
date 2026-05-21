@@ -20,11 +20,18 @@ namespace BabyBear.Fast
 #guard toNat (ofNat BabyBear.fieldSize) = 0
 #guard toNat (ofNat (BabyBear.fieldSize + 37)) = 37
 #guard toNat ((ofNat (BabyBear.fieldSize - 1)) + (2 : Element)) = 1
+#guard toNat ((ofNat (BabyBear.fieldSize - 1)) + (ofNat (BabyBear.fieldSize - 1))) =
+  BabyBear.fieldSize - 2
+#guard toNat ((9 : Element) - (5 : Element)) = 4
 #guard toNat ((5 : Element) - (9 : Element)) = BabyBear.fieldSize - 4
+#guard toNat (-(0 : Element)) = 0
 #guard toNat (-(1 : Element)) = BabyBear.fieldSize - 1
 #guard toNat ((ofNat (BabyBear.fieldSize - 1)) * (ofNat (BabyBear.fieldSize - 1))) = 1
 #guard toNat (square (12345 : Element)) = 152399025
+#guard toNat ((37 : Element) ^ 0) = 1
+#guard toNat ((37 : Element) ^ 1) = 37
 #guard toField ((123456789 : Element) ^ 17) = ((123456789 : BabyBear.Field) ^ 17)
+#guard toField ((123456789 : Element) ^ 255) = ((123456789 : BabyBear.Field) ^ 255)
 #guard toNat ((0 : Element)⁻¹) = 0
 #guard toNat ((37 : Element)⁻¹ * (37 : Element)) = 1
 #guard toNat ((37 : Element) / (37 : Element)) = 1

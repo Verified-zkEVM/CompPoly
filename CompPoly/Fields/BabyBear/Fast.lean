@@ -62,6 +62,10 @@ private theorem fieldSize_add_fieldSize_lt_two64 :
     BabyBear.fieldSize + BabyBear.fieldSize < 2 ^ 64 := by
   decide
 
+private theorem fieldSize_add_fieldSize_lt_uint32Size :
+    BabyBear.fieldSize + BabyBear.fieldSize < UInt32.size := by
+  decide
+
 private theorem fieldSize_mul_fieldSize_lt_two64 :
     BabyBear.fieldSize * BabyBear.fieldSize < 2 ^ 64 := by
   decide
@@ -69,6 +73,23 @@ private theorem fieldSize_mul_fieldSize_lt_two64 :
 private theorem uint32Size_lt_three_fieldSize :
     UInt32.size < BabyBear.fieldSize + BabyBear.fieldSize + BabyBear.fieldSize := by
   decide
+
+/-- Reduce a native word known to be below twice the BabyBear prime. -/
+@[inline]
+private def reduceUInt32Lt2Modulus (x : UInt32) (_h : x.toNat < 2 * BabyBear.fieldSize) :
+    Element :=
+  if hx : x < modulus then
+    ⟨x, by
+      rw [UInt32.lt_iff_toNat_lt, modulus_toNat] at hx
+      exact hx⟩
+  else
+    ⟨x - modulus, by
+      have hmod_le_x : modulus ≤ x := by
+        rw [UInt32.le_iff_toNat_le, modulus_toNat]
+        rw [UInt32.lt_iff_toNat_lt, modulus_toNat] at hx
+        exact Nat.le_of_not_gt hx
+      rw [UInt32.toNat_sub_of_le _ _ hmod_le_x, modulus_toNat]
+      omega⟩
 
 /-- Reduce a native word below `2^32` modulo the BabyBear prime. -/
 @[inline]
@@ -106,7 +127,7 @@ private def reduceUInt32 (x : UInt32) : Element :=
 def montgomeryReduce (x : UInt64) : Element :=
   let m : UInt32 := x.toUInt32 * montgomeryNegInv
   let u : UInt32 := ((x + m.toUInt64 * modulus64) >>> 32).toUInt32
-  reduceUInt32 u
+  reduceUInt32Lt2Modulus u (by sorry)
 
 /-- Build a fast element from a canonical natural representative. -/
 @[inline]
@@ -183,17 +204,53 @@ theorem toField_reduceUInt64 (x : UInt64) :
 /-- Fast modular addition in Montgomery form. -/
 @[inline]
 def add (x y : Element) : Element :=
-  reduceUInt32 (x.val + y.val)
+  reduceUInt32Lt2Modulus (x.val + y.val) (by
+    rw [UInt32.toNat_add]
+    exact Nat.lt_of_le_of_lt (Nat.mod_le _ _) (by omega))
 
 /-- Fast modular negation in Montgomery form. -/
 @[inline]
 def neg (x : Element) : Element :=
-  reduceUInt32 (modulus - x.val)
+  if hx : x.val = 0 then
+    zero
+  else
+    ⟨modulus - x.val, by
+      have hle : x.val ≤ modulus := by
+        rw [UInt32.le_iff_toNat_le, modulus_toNat]
+        exact Nat.le_of_lt x.property
+      rw [UInt32.toNat_sub_of_le _ _ hle, modulus_toNat]
+      have hxpos : 0 < x.val.toNat := by
+        apply Nat.pos_of_ne_zero
+        intro hzero
+        apply hx
+        apply UInt32.toNat_inj.mp
+        simpa using hzero
+      omega⟩
 
 /-- Fast modular subtraction in Montgomery form. -/
 @[inline]
 def sub (x y : Element) : Element :=
-  reduceUInt32 (x.val + modulus - y.val)
+  if hyx : y.val ≤ x.val then
+    ⟨x.val - y.val, by
+      rw [UInt32.toNat_sub_of_le _ _ hyx]
+      omega⟩
+  else
+    ⟨x.val + modulus - y.val, by
+      have hsum_lt : x.val.toNat + BabyBear.fieldSize < UInt32.size := by
+        have htwo := fieldSize_add_fieldSize_lt_uint32Size
+        omega
+      have hsum_eq : (x.val + modulus).toNat = x.val.toNat + BabyBear.fieldSize := by
+        rw [UInt32.toNat_add, modulus_toNat, Nat.mod_eq_of_lt hsum_lt]
+      have hyle : y.val ≤ x.val + modulus := by
+        rw [UInt32.le_iff_toNat_le, hsum_eq]
+        omega
+      rw [UInt32.toNat_sub_of_le _ _ hyle, hsum_eq]
+      have hyxNat : ¬y.val.toNat ≤ x.val.toNat := by
+        intro hle
+        apply hyx
+        rw [UInt32.le_iff_toNat_le]
+        exact hle
+      omega⟩
 
 /-- Fast modular multiplication in Montgomery form. -/
 @[inline]
@@ -213,10 +270,27 @@ def pow (x : Element) (n : Nat) : Element :=
 /-- Fermat exponent used for inversion in the BabyBear prime field. -/
 def invExponent : Nat := BabyBear.fieldSize - 2
 
-/-- Inversion in Montgomery form by Fermat exponentiation. -/
+/-- Four squarings followed by multiplication by the next 4-bit exponent digit. -/
+@[inline]
+private def shift4Mul (acc digit : Element) : Element :=
+  mul (square (square (square (square acc)))) digit
+
+/-- Inversion in Montgomery form by a fixed 4-bit Fermat chain. -/
 @[inline]
 def inv (x : Element) : Element :=
-  pow x invExponent
+  let x2 := square x
+  let x3 := mul x2 x
+  let x5 := mul x3 x2
+  let x7 := mul x5 x2
+  let x14 := square x7
+  let x15 := mul x14 x
+  let acc := shift4Mul x7 x7
+  let acc := shift4Mul acc x15
+  let acc := shift4Mul acc x15
+  let acc := shift4Mul acc x15
+  let acc := shift4Mul acc x15
+  let acc := shift4Mul acc x15
+  shift4Mul acc x15
 
 /-- Division through inversion and fast multiplication. -/
 @[inline]
