@@ -31,17 +31,17 @@ lake exe CompPolyBench --list
 Run selected groups:
 
 ```bash
-lake exe CompPolyBench univariate-low-product-babybear
-lake exe CompPolyBench --group univariate-low-product-babybear --group additive-ntt-btf3-l2-r2
-lake exe CompPolyBench --groups univariate-low-product-babybear,additive-ntt-btf3-l2-r2
-lake exe CompPolyBench --small univariate-low-product-babybear
+lake exe CompPolyBench univariate-low-product-koalabear
+lake exe CompPolyBench --group univariate-low-product-koalabear --group additive-ntt-btf3-l2-r2
+lake exe CompPolyBench --groups univariate-low-product-koalabear,additive-ntt-btf3-l2-r2
+lake exe CompPolyBench --small univariate-low-product-koalabear
 ```
 
 Output modes:
 
 ```bash
-lake exe CompPolyBench --json-only univariate-low-product-babybear
-lake exe CompPolyBench --markdown-only --groups univariate-low-product-babybear,additive-ntt-btf3-l2-r2
+lake exe CompPolyBench --json-only univariate-low-product-koalabear
+lake exe CompPolyBench --markdown-only --groups univariate-low-product-koalabear,additive-ntt-btf3-l2-r2
 ```
 
 ## Output

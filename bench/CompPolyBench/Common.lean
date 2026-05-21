@@ -7,10 +7,9 @@ Authors: Valerii Huhnin
 import Init.Data.Random
 import Lean.Data.Json.Parser
 import Std.Time
-import CompPoly.Fields.BabyBear
+import CompPoly.Fields.KoalaBear
 import CompPoly.Fields.Binary.AdditiveNTT.Impl
 import CompPoly.Fields.Goldilocks
-import CompPoly.Fields.KoalaBear
 import CompPoly.Univariate.BatchEval
 import CompPoly.Univariate.Basic
 
@@ -113,9 +112,9 @@ def additiveNttWarmupIterations (preset : BenchPreset) : Nat :=
 def additiveNttMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 1000 150 30
 
-/-- Primality witness used for generic `ZMod` benchmarks over `BabyBear`. -/
-instance : Fact (Nat.Prime BabyBear.fieldSize) where
-  out := BabyBear.is_prime
+/-- Primality witness used for generic `ZMod` benchmarks over `KoalaBear`. -/
+instance : Fact (Nat.Prime KoalaBear.fieldSize) where
+  out := KoalaBear.is_prime
 
 /-- Primality witness used for generic `ZMod` benchmarks over `Goldilocks`. -/
 instance : Fact (Nat.Prime Goldilocks.fieldSize) where
@@ -413,31 +412,26 @@ def zmodArray (modulus : Nat) (size : Nat) (sparse : Bool) :
     StateM StdGen (Array (ZMod modulus)) :=
   zmodArrayWithStride modulus size (if sparse then 4 else 0)
 
-/-- Generate BabyBear coefficients with the same shape controls as `zmodArray`. -/
-def babyBearArray (size : Nat) (sparse : Bool) : StateM StdGen (Array BabyBear.Field) := do
-  zmodArray BabyBear.fieldSize size sparse
-
-/-- Convert BabyBear field inputs to the native-word BabyBear representation. -/
-def babyBearFastArray (xs : Array BabyBear.Field) : Array BabyBear.Fast.Element :=
-  xs.map BabyBear.Fast.ofField
-
-/-- Generate BabyBear coefficients with a nonzero every `sparseStride` entries. -/
-def babyBearArrayWithStride (size sparseStride : Nat) :
-    StateM StdGen (Array BabyBear.Field) := do
-  zmodArrayWithStride BabyBear.fieldSize size sparseStride
-
-/-- Generate BabyBear vectors for multilinear benchmark inputs. -/
-def babyBearVector (size : Nat) (sparse : Bool) : StateM StdGen (Array BabyBear.Field) :=
-  babyBearArray size sparse
-
-/-- Generate dense BabyBear evaluation points. -/
-def babyBearPoints (size : Nat) : StateM StdGen (Array BabyBear.Field) :=
-  babyBearArray size false
-
 /-- Generate KoalaBear coefficients with the same shape controls as `zmodArray`. -/
-def koalaBearArray (size : Nat) (sparse : Bool) :
-    StateM StdGen (Array KoalaBear.Field) := do
+def koalaBearArray (size : Nat) (sparse : Bool) : StateM StdGen (Array KoalaBear.Field) := do
   zmodArray KoalaBear.fieldSize size sparse
+
+/-- Convert KoalaBear field inputs to the native-word KoalaBear representation. -/
+def koalaBearFastArray (xs : Array KoalaBear.Field) : Array KoalaBear.Fast.Element :=
+  xs.map KoalaBear.Fast.ofField
+
+/-- Generate KoalaBear coefficients with a nonzero every `sparseStride` entries. -/
+def koalaBearArrayWithStride (size sparseStride : Nat) :
+    StateM StdGen (Array KoalaBear.Field) := do
+  zmodArrayWithStride KoalaBear.fieldSize size sparseStride
+
+/-- Generate KoalaBear vectors for multilinear benchmark inputs. -/
+def koalaBearVector (size : Nat) (sparse : Bool) : StateM StdGen (Array KoalaBear.Field) :=
+  koalaBearArray size sparse
+
+/-- Generate dense KoalaBear evaluation points. -/
+def koalaBearPoints (size : Nat) : StateM StdGen (Array KoalaBear.Field) :=
+  koalaBearArray size false
 
 /-- Build a canonical computable polynomial from generated coefficients. -/
 def cpolyOfArray {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
@@ -454,17 +448,13 @@ def monicDivisorFromPoints {R : Type*} [Field R] [BEq R] [LawfulBEq R]
 def mixChecksum (acc value : Nat) : Nat :=
   (acc * 16777619 + value + 97) % 18446744073709551557
 
-/-- Convert a BabyBear field element to a checksum word. -/
-def checksumBabyBear (x : BabyBear.Field) : Nat :=
-  ZMod.val x
-
-/-- Convert a fast BabyBear element to a checksum word. -/
-def checksumBabyBearFast (x : BabyBear.Fast.Element) : Nat :=
-  BabyBear.Fast.toNat x
-
 /-- Convert a KoalaBear field element to a checksum word. -/
 def checksumKoalaBear (x : KoalaBear.Field) : Nat :=
   ZMod.val x
+
+/-- Convert a fast KoalaBear element to a checksum word. -/
+def checksumKoalaBearFast (x : KoalaBear.Fast.Element) : Nat :=
+  KoalaBear.Fast.toNat x
 
 /-- Convert a `ZMod` element to a checksum word. -/
 def checksumZMod {modulus : Nat} (x : ZMod modulus) : Nat :=
@@ -696,8 +686,8 @@ def implementationNameLabels : List (String × String) := [
   ("univariate-mul-ntt-fast", "Fast NTT"),
   ("univariate-mul-ntt-fast-plan", "Fast NTT with cached plan"),
   ("univariate-mul-naive-fast", "Naive"),
-  ("univariate-mul-ntt-babybear-fast", "NTT"),
-  ("univariate-mul-ntt-fast-babybear-fast", "Fast NTT"),
+  ("univariate-mul-ntt-koalabear-fast", "NTT"),
+  ("univariate-mul-ntt-fast-koalabear-fast", "Fast NTT"),
   ("univariate-mul-ntt-fast-plan-fast", "Fast NTT with cached plan"),
   ("univariate-mul-naive-koalabear", "Naive"),
   ("univariate-mul-ntt-koalabear", "NTT"),
@@ -765,10 +755,10 @@ def implementationLabelInGroup (records : List BenchRecord) (record : BenchRecor
   let label := implementationLabel record
   if (matchingString? records fun r ↦ r.field).isSome then
     label
-  else if record.field == "BabyBear.Field" then
+  else if record.field == "KoalaBear.Field" then
     label
-  else if record.field == "BabyBear.Fast.Element" then
-    label ++ " (fast BabyBear)"
+  else if record.field == "KoalaBear.Fast.Element" then
+    label ++ " (fast KoalaBear)"
   else
     label ++ " (" ++ record.field ++ ")"
 

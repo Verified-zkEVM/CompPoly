@@ -18,7 +18,7 @@ namespace CompPolyBench
 
 /-- Benchmark group metadata for `CompPoly.Bivariate.Basic`. -/
 def bivariateGroupInfos : List BenchGroupInfo := [
-  ⟨"bivariate-full-babybear", "Bivariate full evaluation (BabyBear)"⟩,
+  ⟨"bivariate-full-koalabear", "Bivariate full evaluation (KoalaBear)"⟩,
   ⟨"bivariate-full-goldilocks", "Bivariate full evaluation (Goldilocks)"⟩,
   ⟨"bivariate-full-bn254", "Bivariate full evaluation (BN254)"⟩
 ]
@@ -87,19 +87,19 @@ private def runBivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
       title := "Bivariate full evaluation (" ++ fieldTitle ++ ")",
       records := #[naive, hornerYx, hornerXy] }, gen)
 
-/-- Run the BabyBear bivariate full-evaluation benchmark. -/
-private def runBabyBearBivariate (preset : BenchPreset) (gen : StdGen) :
+/-- Run the KoalaBear bivariate full-evaluation benchmark. -/
+private def runKoalaBearBivariate (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
-  let (terms, gen) := (babyBearArray 512 true).run gen
-  let (points, gen) := (babyBearPoints 64).run gen
+  let (terms, gen) := (koalaBearArray 512 true).run gen
+  let (points, gen) := (koalaBearPoints 64).run gen
   let p := buildCBivariate terms
-  let evalPoint (i : Nat) : BabyBear.Field × BabyBear.Field :=
+  let evalPoint (i : Nat) : KoalaBear.Field × KoalaBear.Field :=
     let offset := 2 * (i % 32)
     (points.getD (offset % points.size) 0, points.getD ((offset + 1) % points.size) 0)
-  let fastTerms := babyBearFastArray terms
-  let fastPoints := babyBearFastArray points
+  let fastTerms := koalaBearFastArray terms
+  let fastPoints := koalaBearFastArray points
   let fastP := buildCBivariate fastTerms
-  let fastEvalPoint (i : Nat) : BabyBear.Fast.Element × BabyBear.Fast.Element :=
+  let fastEvalPoint (i : Nat) : KoalaBear.Fast.Element × KoalaBear.Fast.Element :=
     let offset := 2 * (i % 32)
     (fastPoints.getD (offset % fastPoints.size) 0,
       fastPoints.getD ((offset + 1) % fastPoints.size) 0)
@@ -111,52 +111,52 @@ private def runBabyBearBivariate (preset : BenchPreset) (gen : StdGen) :
     hornerYxMeasured, hornerXyMeasured
   ]
   let naive ← runTimed
-    "bivariate-full-eval-naive" "CBivariate" "evalEval" "BabyBear.Field"
+    "bivariate-full-eval-naive" "CBivariate" "evalEval" "KoalaBear.Field"
     bivariateInputShape preset warmup measured
     (fun i ↦
       let point := evalPoint i
       CBivariate.evalEval point.1 point.2 p)
-    checksumBabyBear (checksumIterations := checksumIterations)
+    checksumKoalaBear (checksumIterations := checksumIterations)
   let fastNaive ← runTimed
-    "bivariate-full-eval-naive-fast" "CBivariate" "evalEval" "BabyBear.Fast.Element"
+    "bivariate-full-eval-naive-fast" "CBivariate" "evalEval" "KoalaBear.Fast.Element"
     bivariateInputShape preset warmup measured
     (fun i ↦
       let point := fastEvalPoint i
       CBivariate.evalEval point.1 point.2 fastP)
-    checksumBabyBearFast (checksumIterations := checksumIterations)
+    checksumKoalaBearFast (checksumIterations := checksumIterations)
   let hornerYx ← runTimed
-    "bivariate-full-eval-horner-yx" "CBivariate" "evalEvalHornerYThenX" "BabyBear.Field"
+    "bivariate-full-eval-horner-yx" "CBivariate" "evalEvalHornerYThenX" "KoalaBear.Field"
     bivariateInputShape preset warmup hornerYxMeasured
     (fun i ↦
       let point := evalPoint i
       CBivariate.evalEvalHornerYThenX point.1 point.2 p)
-    checksumBabyBear (checksumIterations := checksumIterations)
+    checksumKoalaBear (checksumIterations := checksumIterations)
   let fastHornerYx ← runTimed
     "bivariate-full-eval-horner-yx-fast" "CBivariate" "evalEvalHornerYThenX"
-    "BabyBear.Fast.Element"
+    "KoalaBear.Fast.Element"
     bivariateInputShape preset warmup hornerYxMeasured
     (fun i ↦
       let point := fastEvalPoint i
       CBivariate.evalEvalHornerYThenX point.1 point.2 fastP)
-    checksumBabyBearFast (checksumIterations := checksumIterations)
+    checksumKoalaBearFast (checksumIterations := checksumIterations)
   let hornerXy ← runTimed
-    "bivariate-full-eval-horner-xy" "CBivariate" "evalEvalHornerXThenY" "BabyBear.Field"
+    "bivariate-full-eval-horner-xy" "CBivariate" "evalEvalHornerXThenY" "KoalaBear.Field"
     bivariateInputShape preset warmup hornerXyMeasured
     (fun i ↦
       let point := evalPoint i
       CBivariate.evalEvalHornerXThenY point.1 point.2 p)
-    checksumBabyBear (checksumIterations := checksumIterations)
+    checksumKoalaBear (checksumIterations := checksumIterations)
   let fastHornerXy ← runTimed
     "bivariate-full-eval-horner-xy-fast" "CBivariate" "evalEvalHornerXThenY"
-    "BabyBear.Fast.Element"
+    "KoalaBear.Fast.Element"
     bivariateInputShape preset warmup hornerXyMeasured
     (fun i ↦
       let point := fastEvalPoint i
       CBivariate.evalEvalHornerXThenY point.1 point.2 fastP)
-    checksumBabyBearFast (checksumIterations := checksumIterations)
+    checksumKoalaBearFast (checksumIterations := checksumIterations)
   pure ({
-    groupKey := "bivariate-full-babybear",
-    title := "Bivariate full evaluation (BabyBear)",
+    groupKey := "bivariate-full-koalabear",
+    title := "Bivariate full evaluation (KoalaBear)",
     records := #[naive, hornerYx, hornerXy, fastNaive, fastHornerYx, fastHornerXy]
   }, gen)
 
@@ -177,8 +177,8 @@ private def runBn254Bivariate (preset : BenchPreset) (gen : StdGen) :
 /-- Runnable bivariate benchmark tasks. -/
 def bivariateTasks : List BenchTask := [
   BenchTask.fromGroupRunner
-    ⟨"bivariate-full-babybear", "Bivariate full evaluation (BabyBear)"⟩
-    runBabyBearBivariate,
+    ⟨"bivariate-full-koalabear", "Bivariate full evaluation (KoalaBear)"⟩
+    runKoalaBearBivariate,
   BenchTask.fromGroupRunner
     ⟨"bivariate-full-goldilocks", "Bivariate full evaluation (Goldilocks)"⟩
     runGoldilocksBivariate,
