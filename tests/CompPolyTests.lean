@@ -11,7 +11,7 @@ import CompPolyTests.Bivariate.WeightedDegree
 import CompPolyTests.Data.MvPolynomial.Notation
 import CompPolyTests.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
 import CompPolyTests.Fields.Binary.BF128Ghash.Prelude
-import CompPolyTests.Fields.KoalaBearFast
+import CompPolyTests.Fields.KoalaBear.Fast
 import CompPolyTests.Fields.PrattCertificate
 import CompPolyTests.Multilinear.Equiv
 import CompPolyTests.Multivariate.CMvMonomial
