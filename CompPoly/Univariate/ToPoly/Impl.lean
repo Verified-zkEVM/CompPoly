@@ -269,8 +269,7 @@ theorem eval_modByMonic_eq_self_of_eval_eq_zero
     (CPolynomial.modByMonic p q).eval x = p.eval x := by
   have hq_raw : q.val.eval x = 0 := by
     simpa [CPolynomial.eval, Raw.eval, Raw.eval₂] using hq
-  change ((Raw.modByMonic p.val q.val).trim).eval x = p.val.eval x
-  rw [Raw.eval_trim_eq_eval]
+  change (Raw.modByMonic p.val q.val).eval x = p.val.eval x
   exact Raw.eval_modByMonic_eq_self_of_eval_eq_zero p.val q.val hq_raw
 
 end EvaluationDivision
