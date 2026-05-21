@@ -666,8 +666,8 @@ theorem modByMonicByReversal_eq_modByMonic
               (q.val : Raw R).leadingCoeff == 1) = true := by
         simp [hptrim, hqtrim, h_raw_monic]
       unfold modByMonicByReversal CPolynomial.modByMonic
-      change (Raw.modByMonicByReversal M (p.val : Raw R) q.val).trim =
-        ((p.val : Raw R).modByMonic q.val).trim
+      change Raw.modByMonicByReversal M (p.val : Raw R) q.val =
+        (p.val : Raw R).modByMonic q.val
       unfold Raw.modByMonicByReversal
       rw [if_pos hguard, if_pos hsize]
       cases hp : (p.val : Raw R).size with
@@ -678,7 +678,7 @@ theorem modByMonicByReversal_eq_modByMonic
       | succ n =>
           unfold Raw.modByMonic Raw.divModByMonicAux
           rw [hp]
-          simp [Raw.divModByMonicAux.go, hsize, hptrim]
+          simp [Raw.divModByMonicAux.go, hsize]
     · apply CPolynomial.ext
       have hptrim : (p.val : Raw R).trim = p.val := Trim.trim_eq_of_isCanonical p.property
       have hqtrim : (q.val : Raw R).trim = q.val := Trim.trim_eq_of_isCanonical q.property
@@ -689,8 +689,8 @@ theorem modByMonicByReversal_eq_modByMonic
               (q.val : Raw R).leadingCoeff == 1) = true := by
         simp [hptrim, hqtrim, h_raw_monic]
       unfold modByMonicByReversal CPolynomial.modByMonic
-      change (Raw.modByMonicByReversal M (p.val : Raw R) q.val).trim =
-        ((p.val : Raw R).modByMonic q.val).trim
+      change Raw.modByMonicByReversal M (p.val : Raw R) q.val =
+        (p.val : Raw R).modByMonic q.val
       unfold Raw.modByMonicByReversal
       rw [if_pos hguard, if_neg hsize]
       let rem : Raw R :=
@@ -703,7 +703,13 @@ theorem modByMonicByReversal_eq_modByMonic
         let quotient := reverse k quotientRev
         let productLow := M.mulLow remainderLen q.val quotient
         truncate remainderLen p.val - productLow
-      change rem.trim = ((p.val : Raw R).modByMonic q.val).trim
+      change rem = (p.val : Raw R).modByMonic q.val
+      have h_rem_canon : rem.trim = rem := by
+        dsimp only [rem]; exact Raw.sub_is_trimmed _ _
+      have h_mbm_canon : ((p.val : Raw R).modByMonic q.val).trim =
+          (p.val : Raw R).modByMonic q.val :=
+        Raw.modByMonic_canonical hptrim q.val
+      rw [← h_rem_canon, ← h_mbm_canon]
       rw [← Raw.toImpl_toPoly rem,
         ← Raw.toImpl_toPoly ((p.val : Raw R).modByMonic q.val)]
       congr 1
@@ -728,7 +734,7 @@ theorem modByMonicByReversal_eq_modByMonic
         simpa [hptrim, hqtrim] using hguard
       exact h_raw_not_monic hraw
     unfold modByMonicByReversal
-    change (Raw.modByMonicByReversal M (p.val : Raw R) q.val).trim =
+    change Raw.modByMonicByReversal M (p.val : Raw R) q.val =
       (CPolynomial.modByMonic p q).val
     unfold Raw.modByMonicByReversal
     rw [if_neg hguard]
