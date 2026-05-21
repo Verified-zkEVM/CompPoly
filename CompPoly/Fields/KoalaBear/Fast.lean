@@ -47,9 +47,11 @@ instance : DecidableEq Field := inferInstance
 @[inline]
 def raw (x : Field) : UInt32 := x.val
 
+/-- The native `UInt32` modulus agrees with the mathematical KoalaBear modulus. -/
 @[simp] theorem modulus_toNat : modulus.toNat = KoalaBear.fieldSize := by
   decide
 
+/-- The native `UInt64` modulus agrees with the mathematical KoalaBear modulus. -/
 @[simp] theorem modulus64_toNat : modulus64.toNat = KoalaBear.fieldSize := by
   decide
 
@@ -637,16 +639,19 @@ private theorem reduceUInt64_raw_cast (x : UInt64) :
   rw [mul_inv_cancel₀ uint32Size_ne_zero_in_field]
   rw [mul_one]
 
+/-- Converting a canonical natural representative to fast form preserves its value. -/
 @[simp]
 theorem toNat_ofCanonicalNat (n : Nat) (h : n < KoalaBear.fieldSize) :
     toNat (ofCanonicalNat n h) = n := by
   exact nat_eq_of_field_eq (toNat_lt_fieldSize _) h (toField_ofCanonicalNat_aux n h)
 
+/-- `ofCanonicalNat` embeds a canonical representative into the canonical field. -/
 @[simp]
 theorem toField_ofCanonicalNat (n : Nat) (h : n < KoalaBear.fieldSize) :
     toField (ofCanonicalNat n h) = (n : KoalaBear.Field) := by
   exact toField_ofCanonicalNat_aux n h
 
+/-- Reducing a `UInt64` gives the canonical natural residue modulo KoalaBear. -/
 @[simp]
 theorem toNat_reduceUInt64 (x : UInt64) :
     toNat (reduceUInt64 x) = x.toNat % KoalaBear.fieldSize := by
@@ -659,6 +664,7 @@ theorem toNat_reduceUInt64 (x : UInt64) :
   rw [ZMod.natCast_eq_natCast_iff]
   exact (Nat.mod_modEq _ _).symm
 
+/-- Reducing a `UInt64` agrees with casting that word into the canonical field. -/
 @[simp]
 theorem toField_reduceUInt64 (x : UInt64) :
     toField (reduceUInt64 x) = (x.toNat : KoalaBear.Field) := by
@@ -825,12 +831,14 @@ instance instNNRatSMulField : SMul ℚ≥0 Field where
 instance instRatSMulField : SMul ℚ Field where
   smul q x := ofField (q • toField x)
 
+/-- Converting from the canonical field to fast form and back is the identity. -/
 @[simp]
 theorem toField_ofField (x : KoalaBear.Field) : toField (ofField x) = x := by
   unfold ofField
   rw [toField_ofCanonicalNat]
   exact ZMod.natCast_zmod_val x
 
+/-- Converting from fast form to the canonical field and back is the identity. -/
 @[simp]
 theorem ofField_toField (x : Field) : ofField (toField x) = x := by
   apply Subtype.ext
@@ -842,15 +850,18 @@ theorem ofField_toField (x : Field) : ofField (toField x) = x := by
     rw [toField_ofField]
     rw [raw_cast_eq_toField_mul]
 
+/-- The canonical-field interpretation distinguishes fast KoalaBear values. -/
 theorem toField_injective : Function.Injective toField :=
   Function.LeftInverse.injective ofField_toField
 
+/-- `toField` maps fast zero to canonical zero. -/
 @[simp]
 theorem toField_zero : toField (0 : Field) = 0 := by
   rw [toField_eq_raw_mul_inv]
   change ((0 : Nat) : KoalaBear.Field) * (UInt32.size : KoalaBear.Field)⁻¹ = 0
   exact zero_mul _
 
+/-- `toField` maps fast one to canonical one. -/
 @[simp]
 theorem toField_one : toField (1 : Field) = 1 := by
   rw [toField_eq_raw_mul_inv]
@@ -859,6 +870,7 @@ theorem toField_one : toField (1 : Field) = 1 := by
   rw [rModModulus_cast]
   exact mul_inv_cancel₀ uint32Size_ne_zero_in_field
 
+/-- Fast addition agrees with addition in the canonical KoalaBear field. -/
 @[simp]
 theorem toField_add (x y : Field) : toField (x + y) = toField x + toField y := by
   rw [toField_eq_raw_mul_inv, toField_eq_raw_mul_inv x, toField_eq_raw_mul_inv y]
@@ -880,6 +892,7 @@ theorem toField_add (x y : Field) : toField (x + y) = toField x + toField y := b
   rw [Nat.cast_add]
   ring
 
+/-- Fast subtraction agrees with subtraction in the canonical KoalaBear field. -/
 @[simp]
 theorem toField_sub (x y : Field) : toField (x - y) = toField x - toField y := by
   rw [toField_eq_raw_mul_inv, toField_eq_raw_mul_inv x, toField_eq_raw_mul_inv y]
@@ -922,6 +935,7 @@ theorem toField_sub (x y : Field) : toField (x - y) = toField x - toField y := b
     rw [Nat.cast_add, ZMod.natCast_self]
     ring
 
+/-- Fast negation agrees with negation in the canonical KoalaBear field. -/
 @[simp]
 theorem toField_neg (x : Field) : toField (-x) = -toField x := by
   rw [toField_eq_raw_mul_inv, toField_eq_raw_mul_inv x]
@@ -958,6 +972,7 @@ theorem toField_neg (x : Field) : toField (-x) = -toField x := by
     rw [ZMod.natCast_self]
     ring
 
+/-- Fast multiplication agrees with multiplication in the canonical KoalaBear field. -/
 @[simp]
 theorem toField_mul (x y : Field) : toField (x * y) = toField x * toField y := by
   rw [toField_eq_raw_mul_inv, toField_eq_raw_mul_inv x, toField_eq_raw_mul_inv y]
@@ -993,9 +1008,11 @@ def ringEquiv : Field ≃+* KoalaBear.Field where
   map_add' := toField_add
   map_mul' := toField_mul
 
+/-- Applying `ringEquiv` is the same as interpreting a fast value canonically. -/
 @[simp]
 theorem ringEquiv_apply (x : Field) : ringEquiv x = toField x := rfl
 
+/-- Applying the inverse `ringEquiv` is conversion into fast Montgomery form. -/
 @[simp]
 theorem ringEquiv_symm_apply (x : KoalaBear.Field) : ringEquiv.symm x = ofField x := rfl
 
@@ -1012,11 +1029,13 @@ private theorem pow_succ (x : Field) (n : Nat) : pow x (n + 1) = pow x n * x := 
   }
   exact npowBinRec_succ n x
 
+/-- Fast squaring agrees with multiplication by itself in the canonical field. -/
 @[simp]
 theorem toField_square (x : Field) : toField (square x) = toField x * toField x := by
   change toField (x * x) = toField x * toField x
   rw [toField_mul]
 
+/-- Fast natural-power computation agrees with powers in the canonical field. -/
 @[simp]
 theorem toField_pow (x : Field) (n : Nat) : toField (pow x n) = toField x ^ n := by
   induction n with
@@ -1113,6 +1132,7 @@ private theorem toField_inv_raw (x : Field) : toField (inv x) = (toField x)⁻¹
     simp [invExponent, KoalaBear.fieldSize]
   · simpa [invExponent] using (KoalaBear.inv_eq_pow (toField x) hx).symm
 
+/-- Fast inversion agrees with inversion in the canonical KoalaBear field. -/
 @[simp]
 theorem toField_inv (x : Field) : toField x⁻¹ = (toField x)⁻¹ := by
   change toField (inv x) = (toField x)⁻¹
@@ -1127,6 +1147,7 @@ private theorem toField_div_mul_inv (x y : Field) :
   unfold div
   exact toField_mul_raw x (inv y)
 
+/-- Fast division agrees with division in the canonical KoalaBear field. -/
 @[simp]
 theorem toField_div (x y : Field) : toField (x / y) = toField x / toField y := by
   change toField (div x y) = toField x / toField y
@@ -1137,6 +1158,7 @@ theorem toField_div (x y : Field) : toField (x / y) = toField x / toField y := b
   exact (toField_div_mul_inv x y).trans
     (h (toField x) (toField y) (toField (inv y)) (toField_inv_raw y))
 
+/-- Natural casts into fast form agree with natural casts into the canonical field. -/
 @[simp]
 theorem toField_natCast (n : Nat) : toField (n : Field) = (n : KoalaBear.Field) := by
   change toField (ofNat n) = (n : KoalaBear.Field)
@@ -1145,29 +1167,34 @@ theorem toField_natCast (n : Nat) : toField (n : Field) = (n : KoalaBear.Field) 
   rw [ZMod.natCast_eq_natCast_iff]
   exact Nat.mod_modEq _ _
 
+/-- Integer casts into fast form agree with integer casts into the canonical field. -/
 @[simp]
 theorem toField_intCast (n : Int) : toField (n : Field) = (n : KoalaBear.Field) := by
   change toField (ofInt n) = (n : KoalaBear.Field)
   unfold ofInt
   rw [toField_ofField]
 
+/-- Natural scalar multiplication is preserved by `toField`. -/
 @[simp]
 theorem toField_nsmul (n : Nat) (x : Field) : toField (n • x) = n • toField x := by
   change toField ((n : Field) * x) = n • toField x
   rw [toField_mul, toField_natCast]
   rw [nsmul_eq_mul]
 
+/-- Integer scalar multiplication is preserved by `toField`. -/
 @[simp]
 theorem toField_zsmul (n : Int) (x : Field) : toField (n • x) = n • toField x := by
   change toField ((n : Field) * x) = n • toField x
   rw [toField_mul, toField_intCast]
   rw [zsmul_eq_mul]
 
+/-- Natural powers through the `Pow` instance are preserved by `toField`. -/
 @[simp]
 theorem toField_npow (x : Field) (n : Nat) : toField (x ^ n) = toField x ^ n := by
   change toField (pow x n) = toField x ^ n
   rw [toField_pow]
 
+/-- Integer powers through the `Pow` instance are preserved by `toField`. -/
 @[simp]
 theorem toField_zpow (x : Field) (n : Int) : toField (x ^ n) = toField x ^ n := by
   cases n with
@@ -1182,26 +1209,31 @@ theorem toField_zpow (x : Field) (n : Int) : toField (x ^ n) = toField x ^ n := 
         rw [toField_inv]
       rw [toField_pow, hinv, zpow_negSucc, inv_pow]
 
+/-- Nonnegative rational casts into fast form agree with canonical-field casts. -/
 @[simp]
 theorem toField_nnratCast (q : ℚ≥0) : toField (q : Field) = (q : KoalaBear.Field) := by
   change toField (ofField (q : KoalaBear.Field)) = (q : KoalaBear.Field)
   rw [toField_ofField]
 
+/-- Rational casts into fast form agree with canonical-field casts. -/
 @[simp]
 theorem toField_ratCast (q : ℚ) : toField (q : Field) = (q : KoalaBear.Field) := by
   change toField (ofField (q : KoalaBear.Field)) = (q : KoalaBear.Field)
   rw [toField_ofField]
 
+/-- Nonnegative rational scalar multiplication is preserved by `toField`. -/
 @[simp]
 theorem toField_nnqsmul (q : ℚ≥0) (x : Field) : toField (q • x) = q • toField x := by
   change toField (ofField (q • toField x)) = q • toField x
   rw [toField_ofField]
 
+/-- Rational scalar multiplication is preserved by `toField`. -/
 @[simp]
 theorem toField_qsmul (q : ℚ) (x : Field) : toField (q • x) = q • toField x := by
   change toField (ofField (q • toField x)) = q • toField x
   rw [toField_ofField]
 
+/-- Field instance transferred from canonical KoalaBear through `toField`. -/
 instance (priority := low) instField : _root_.Field Field :=
   toField_injective.field toField
     toField_zero
@@ -1223,9 +1255,11 @@ instance (priority := low) instField : _root_.Field Field :=
     toField_nnratCast
     toField_ratCast
 
+/-- Commutative-ring instance inherited from the transferred field structure. -/
 instance (priority := low) instCommRing : CommRing Field := by
   infer_instance
 
+/-- Fast KoalaBear is a non-binary field. -/
 instance (priority := low) instNonBinaryField : NonBinaryField Field where
   char_neq_2 := by
     change ((2 : Nat) : Field) ≠ 0
