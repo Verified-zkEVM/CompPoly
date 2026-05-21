@@ -98,6 +98,63 @@ def babyBearBestDomainForLength? (requiredLen : Nat) :
   CPolynomial.NTT.bestDomainForLength? BabyBear.twoAdicity
     CPolynomial.NTT.BabyBear.domainOfLogN (by intro _ _; rfl) requiredLen
 
+/-- Ring equivalence from fast BabyBear elements to the canonical `ZMod` model. -/
+noncomputable def babyBearFastRingEquiv : BabyBear.Fast.Element ≃+* BabyBear.Field where
+  toFun := BabyBear.Fast.toField
+  invFun := BabyBear.Fast.ofField
+  left_inv := BabyBear.Fast.ofField_toField
+  right_inv := BabyBear.Fast.toField_ofField
+  map_mul' := BabyBear.Fast.toField_mul
+  map_add' := BabyBear.Fast.toField_add
+
+/-- Fast BabyBear two-adic generators are primitive roots of the same orders. -/
+theorem babyBearFast_isPrimitiveRoot_twoAdicGenerator
+    (bits : Fin (BabyBear.twoAdicity + 1)) :
+    IsPrimitiveRoot (BabyBear.Fast.ofField BabyBear.twoAdicGenerators[bits])
+      (2 ^ (bits : Nat)) := by
+  have hbasic : IsPrimitiveRoot BabyBear.twoAdicGenerators[bits] (2 ^ (bits : Nat)) :=
+    BabyBear.isPrimitiveRoot_twoAdicGenerator bits
+  have hfast :
+      IsPrimitiveRoot (babyBearFastRingEquiv.symm BabyBear.twoAdicGenerators[bits])
+        (2 ^ (bits : Nat)) := by
+    exact hbasic.map_of_injective babyBearFastRingEquiv.symm.injective
+  simpa [babyBearFastRingEquiv] using hfast
+
+/-- The fast BabyBear NTT domain size is nonzero for supported two-adic sizes. -/
+theorem babyBearFast_twoPowNatCast_ne_zero
+    (logN : Nat) (hlogN : logN ≤ BabyBear.twoAdicity) :
+    (((2 ^ logN : Nat) : BabyBear.Fast.Element) ≠ 0) := by
+  intro hzero
+  exact CPolynomial.NTT.BabyBear.twoPowNatCast_ne_zero logN hlogN (by
+    calc
+      (((2 ^ logN : Nat) : BabyBear.Field)) =
+          BabyBear.Fast.toField (((2 ^ logN : Nat) : BabyBear.Fast.Element)) := by
+        rw [BabyBear.Fast.toField_natCast]
+      _ = BabyBear.Fast.toField 0 := congrArg BabyBear.Fast.toField hzero
+      _ = 0 := BabyBear.Fast.toField_zero)
+
+/-- Fast BabyBear radix-2 NTT domain for a supported two-adic size. -/
+def babyBearFastDomainOfLogN (logN : Nat) (hlogN : logN ≤ BabyBear.twoAdicity) :
+    CPolynomial.NTT.Domain BabyBear.Fast.Element where
+  logN := logN
+  omega := BabyBear.Fast.ofField
+    BabyBear.twoAdicGenerators[(⟨logN, Nat.lt_succ_of_le hlogN⟩ :
+      Fin (BabyBear.twoAdicity + 1))]
+  primitive := by
+    simpa using babyBearFast_isPrimitiveRoot_twoAdicGenerator
+      (⟨logN, Nat.lt_succ_of_le hlogN⟩ : Fin (BabyBear.twoAdicity + 1))
+  natCast_ne_zero := babyBearFast_twoPowNatCast_ne_zero logN hlogN
+
+/-- NTT domain for direct univariate fast BabyBear multiplication benchmarks. -/
+def babyBearFastMulNttDomain : CPolynomial.NTT.Domain BabyBear.Fast.Element :=
+  babyBearFastDomainOfLogN univariateMulLogN (by decide)
+
+/-- Fast BabyBear NTT domain lookup for dynamic multiplication contexts. -/
+def babyBearFastBestDomainForLength? (requiredLen : Nat) :
+    Option (CPolynomial.NTT.FittingDomain BabyBear.Fast.Element requiredLen) :=
+  CPolynomial.NTT.bestDomainForLength? BabyBear.twoAdicity
+    babyBearFastDomainOfLogN (by intro _ _; rfl) requiredLen
+
 /-- NTT domain for direct univariate KoalaBear multiplication benchmarks. -/
 def koalaBearMulNttDomain : CPolynomial.NTT.Domain KoalaBear.Field :=
   CPolynomial.NTT.KoalaBear.domainOfLogN univariateMulLogN (by decide)

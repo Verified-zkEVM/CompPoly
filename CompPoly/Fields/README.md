@@ -8,7 +8,9 @@ This directory contains formally verified field infrastructure used in zero-know
 |--------|-------------|
 | **Basic.lean** | `NonBinaryField` type class (char ≠ 2), polynomial composition lemmas (`coeffs_of_comp_minus_x`, `comp_x_square_coeff`). |
 | **PrattCertificate.lean** | Lucas test for primality and Pratt certificate infrastructure (`PrattCertificate`, `PrattCertificate'`) for proving concrete primality goals. |
-| **BabyBear.lean** | \(2^{31} - 2^{27} + 1\) — Risc Zero. |
+| **BabyBear.lean** | Facade for BabyBear modules, re-exporting the canonical field and fast native-word implementation. |
+| **BabyBear/Basic.lean** | \(2^{31} - 2^{27} + 1\) — Risc Zero. |
+| **BabyBear/Fast.lean** | Native `UInt32` canonical-residue operations for BabyBear, with proved conversion and operation equivalence against `BabyBear.Field`. |
 | **BLS12_377.lean** | Scalar field of BLS12-377 (253-bit, 2-adicity 47) — Zexe. |
 | **BLS12_381.lean** | Scalar field of BLS12-381 (253-bit, 2-adicity 47). |
 | **BN254.lean** | Scalar field of BN254 curve. |

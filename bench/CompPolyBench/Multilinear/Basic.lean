@@ -32,6 +32,11 @@ private def runBabyBearMultilinearCoeff (preset : BenchPreset) (gen : StdGen) :
   let coeffPoly : CMlPolynomial BabyBear.Field 8 := CMlPolynomial.ofArray coeffs 8
   let evalPoint (offset : Nat) : Vector BabyBear.Field 8 :=
     Vector.ofFn fun j ↦ points.getD ((offset + j.val) % points.size) 0
+  let fastCoeffs := babyBearFastArray coeffs
+  let fastPoints := babyBearFastArray points
+  let fastCoeffPoly : CMlPolynomial BabyBear.Fast.Element 8 := CMlPolynomial.ofArray fastCoeffs 8
+  let fastEvalPoint (offset : Nat) : Vector BabyBear.Fast.Element 8 :=
+    Vector.ofFn fun j ↦ fastPoints.getD ((offset + j.val) % fastPoints.size) 0
   let warmup := warmupIterations preset
   let measured := measuredIterations preset
   let hornerMeasured := preset.selectNat 120000 17000 3500
@@ -41,15 +46,26 @@ private def runBabyBearMultilinearCoeff (preset : BenchPreset) (gen : StdGen) :
     "8 vars, 256 coefficients, 32 points" preset warmup measured
     (fun i ↦ CMlPolynomial.eval coeffPoly (evalPoint (i % 32)))
     checksumBabyBear (checksumIterations := checksumIterations)
+  let fastCoeffEval ← runTimed
+    "multilinear-coeff-eval-fast" "CMlPolynomial" "eval" "BabyBear.Fast.Element"
+    "8 vars, 256 coefficients, 32 points" preset warmup measured
+    (fun i ↦ CMlPolynomial.eval fastCoeffPoly (fastEvalPoint (i % 32)))
+    checksumBabyBearFast (checksumIterations := checksumIterations)
   let coeffHorner ← runTimed
     "multilinear-coeff-horner" "CMlPolynomial" "evalHorner" "BabyBear.Field"
     "8 vars, 256 coefficients, 32 points" preset warmup hornerMeasured
     (fun i ↦ CMlPolynomial.evalHorner coeffPoly (evalPoint (i % 32)))
     checksumBabyBear (checksumIterations := checksumIterations)
+  let fastCoeffHorner ← runTimed
+    "multilinear-coeff-horner-fast" "CMlPolynomial" "evalHorner"
+    "BabyBear.Fast.Element"
+    "8 vars, 256 coefficients, 32 points" preset warmup hornerMeasured
+    (fun i ↦ CMlPolynomial.evalHorner fastCoeffPoly (fastEvalPoint (i % 32)))
+    checksumBabyBearFast (checksumIterations := checksumIterations)
   pure ({
     groupKey := "multilinear-coeff-babybear",
     title := "Multilinear coefficient-form evaluation (BabyBear)",
-    records := #[coeffEval, coeffHorner]
+    records := #[coeffEval, coeffHorner, fastCoeffEval, fastCoeffHorner]
   }, gen)
 
 /-- Run BabyBear hypercube-form multilinear evaluation benchmarks. -/
@@ -60,6 +76,12 @@ private def runBabyBearMultilinearHypercube (preset : BenchPreset) (gen : StdGen
   let evalPoly : CMlPolynomialEval BabyBear.Field 8 := CMlPolynomialEval.ofArray evals 8
   let evalPoint (offset : Nat) : Vector BabyBear.Field 8 :=
     Vector.ofFn fun j ↦ points.getD ((offset + j.val) % points.size) 0
+  let fastEvals := babyBearFastArray evals
+  let fastPoints := babyBearFastArray points
+  let fastEvalPoly : CMlPolynomialEval BabyBear.Fast.Element 8 :=
+    CMlPolynomialEval.ofArray fastEvals 8
+  let fastEvalPoint (offset : Nat) : Vector BabyBear.Fast.Element 8 :=
+    Vector.ofFn fun j ↦ fastPoints.getD ((offset + j.val) % fastPoints.size) 0
   let warmup := warmupIterations preset
   let measured := measuredIterations preset
   let mleMeasured := preset.selectNat 90000 13000 2500
@@ -69,15 +91,27 @@ private def runBabyBearMultilinearHypercube (preset : BenchPreset) (gen : StdGen
     "8 vars, 256 hypercube values, 32 points" preset warmup measured
     (fun i ↦ CMlPolynomialEval.eval evalPoly (evalPoint (i % 32)))
     checksumBabyBear (checksumIterations := checksumIterations)
+  let fastHypercubeEval ← runTimed
+    "multilinear-hypercube-eval-fast" "CMlPolynomialEval" "eval"
+    "BabyBear.Fast.Element"
+    "8 vars, 256 hypercube values, 32 points" preset warmup measured
+    (fun i ↦ CMlPolynomialEval.eval fastEvalPoly (fastEvalPoint (i % 32)))
+    checksumBabyBearFast (checksumIterations := checksumIterations)
   let hypercubeMle ← runTimed
     "multilinear-hypercube-mle" "CMlPolynomialEval" "evalMle" "BabyBear.Field"
     "8 vars, 256 hypercube values, 32 points" preset warmup mleMeasured
     (fun i ↦ CMlPolynomialEval.evalMle evalPoly (evalPoint (i % 32)))
     checksumBabyBear (checksumIterations := checksumIterations)
+  let fastHypercubeMle ← runTimed
+    "multilinear-hypercube-mle-fast" "CMlPolynomialEval" "evalMle"
+    "BabyBear.Fast.Element"
+    "8 vars, 256 hypercube values, 32 points" preset warmup mleMeasured
+    (fun i ↦ CMlPolynomialEval.evalMle fastEvalPoly (fastEvalPoint (i % 32)))
+    checksumBabyBearFast (checksumIterations := checksumIterations)
   pure ({
     groupKey := "multilinear-hypercube-babybear",
     title := "Multilinear hypercube-form evaluation (BabyBear)",
-    records := #[hypercubeEval, hypercubeMle]
+    records := #[hypercubeEval, hypercubeMle, fastHypercubeEval, fastHypercubeMle]
   }, gen)
 
 /-- Run Goldilocks coefficient-form multilinear evaluation benchmarks. -/

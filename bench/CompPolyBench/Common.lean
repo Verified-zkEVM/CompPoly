@@ -417,6 +417,10 @@ def zmodArray (modulus : Nat) (size : Nat) (sparse : Bool) :
 def babyBearArray (size : Nat) (sparse : Bool) : StateM StdGen (Array BabyBear.Field) := do
   zmodArray BabyBear.fieldSize size sparse
 
+/-- Convert BabyBear field inputs to the native-word BabyBear representation. -/
+def babyBearFastArray (xs : Array BabyBear.Field) : Array BabyBear.Fast.Element :=
+  xs.map BabyBear.Fast.ofField
+
 /-- Generate BabyBear coefficients with a nonzero every `sparseStride` entries. -/
 def babyBearArrayWithStride (size sparseStride : Nat) :
     StateM StdGen (Array BabyBear.Field) := do
@@ -453,6 +457,10 @@ def mixChecksum (acc value : Nat) : Nat :=
 /-- Convert a BabyBear field element to a checksum word. -/
 def checksumBabyBear (x : BabyBear.Field) : Nat :=
   ZMod.val x
+
+/-- Convert a fast BabyBear element to a checksum word. -/
+def checksumBabyBearFast (x : BabyBear.Fast.Element) : Nat :=
+  BabyBear.Fast.toNat x
 
 /-- Convert a KoalaBear field element to a checksum word. -/
 def checksumKoalaBear (x : KoalaBear.Field) : Nat :=
@@ -687,6 +695,10 @@ def implementationNameLabels : List (String × String) := [
   ("univariate-mul-ntt", "NTT"),
   ("univariate-mul-ntt-fast", "Fast NTT"),
   ("univariate-mul-ntt-fast-plan", "Fast NTT with cached plan"),
+  ("univariate-mul-naive-fast", "Naive"),
+  ("univariate-mul-ntt-babybear-fast", "NTT"),
+  ("univariate-mul-ntt-fast-babybear-fast", "Fast NTT"),
+  ("univariate-mul-ntt-fast-plan-fast", "Fast NTT with cached plan"),
   ("univariate-mul-naive-koalabear", "Naive"),
   ("univariate-mul-ntt-koalabear", "NTT"),
   ("univariate-mul-ntt-fast-koalabear", "Fast NTT"),
@@ -748,11 +760,23 @@ def implementationLabel (record : BenchRecord) : String :=
       | some label => label
       | none => record.method
 
+/-- Implementation label that includes the field only when rows mix field representations. -/
+def implementationLabelInGroup (records : List BenchRecord) (record : BenchRecord) : String :=
+  let label := implementationLabel record
+  if (matchingString? records fun r ↦ r.field).isSome then
+    label
+  else if record.field == "BabyBear.Field" then
+    label
+  else if record.field == "BabyBear.Fast.Element" then
+    label ++ " (fast BabyBear)"
+  else
+    label ++ " (" ++ record.field ++ ")"
+
 /-- Columns rendered in a group result table after shared metadata is lifted out. -/
-def groupResultColumns (totalUnit avgUnit : TimeUnit) :
+def groupResultColumns (records : List BenchRecord) (totalUnit avgUnit : TimeUnit) :
     List (String × Bool × (BenchRecord → String)) :=
   [
-    ("Implementation", false, implementationLabel),
+    ("Implementation", false, implementationLabelInGroup records),
     ("Iterations", true, fun r ↦ toString r.measuredIterations),
     ("Total (" ++ totalUnit.label ++ ")", true, fun r ↦
       formatNanosInUnit totalUnit r.totalNanos),
@@ -785,7 +809,7 @@ def renderGroupResults (group : BenchGroup) : List String :=
     "",
     "- Group key: `" ++ group.groupKey ++ "`",
   ] ++ renderGroupMetadata records totalUnit ++ [""] ++
-    renderMarkdownTable (groupResultColumns totalUnit avgUnit) records ++ [""]
+    renderMarkdownTable (groupResultColumns records totalUnit avgUnit) records ++ [""]
 
 /-- Render the runner OS and architecture line. -/
 def renderRunnerLine (hardware : RunnerHardware) : String :=

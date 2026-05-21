@@ -28,6 +28,10 @@ private def runBabyBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGen
   let (mulLowRhsCoeffs, gen) := (babyBearArray univariateMulLowCoeffSlots false).run gen
   let mulLowLhsRaw : CPolynomial.Raw BabyBear.Field := mulLowLhsCoeffs
   let mulLowRhsRaw : CPolynomial.Raw BabyBear.Field := mulLowRhsCoeffs
+  let fastMulLowLhsRaw : CPolynomial.Raw BabyBear.Fast.Element :=
+    babyBearFastArray mulLowLhsCoeffs
+  let fastMulLowRhsRaw : CPolynomial.Raw BabyBear.Fast.Element :=
+    babyBearFastArray mulLowRhsCoeffs
   let naiveLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
     CPolynomial.Raw.MulLowContext.naive
   let convolutionLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
@@ -36,6 +40,15 @@ private def runBabyBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGen
     CPolynomial.NTT.FastMulLow.withFallback babyBearBestDomainForLength?
   let nttFastWithFallbackLowMul : CPolynomial.Raw.MulLowContext BabyBear.Field :=
     CPolynomial.NTTFast.FastMulLow.withFallback babyBearBestDomainForLength?
+  let fastNaiveLowMul : CPolynomial.Raw.MulLowContext BabyBear.Fast.Element :=
+    CPolynomial.Raw.MulLowContext.naive
+  let fastConvolutionLowMul : CPolynomial.Raw.MulLowContext BabyBear.Fast.Element :=
+    CPolynomial.Raw.MulLowContext.convolution
+  let fastNttWithFallbackLowMul : CPolynomial.Raw.MulLowContext BabyBear.Fast.Element :=
+    CPolynomial.NTT.FastMulLow.withFallback babyBearFastBestDomainForLength?
+  let fastNttFastWithFallbackLowMul :
+      CPolynomial.Raw.MulLowContext BabyBear.Fast.Element :=
+    CPolynomial.NTTFast.FastMulLow.withFallback babyBearFastBestDomainForLength?
   let warmup := mulWarmupIterations preset
   let measured := mulMeasuredIterations preset
   let convolutionMeasured := preset.selectNat 30 5 1
@@ -49,6 +62,13 @@ private def runBabyBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGen
     univariateMulLowShape preset warmup measured
     (fun _ ↦ naiveLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw mulLowRhsRaw)
     (checksumRawPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
+  let fastLowNaive ← runTimed
+    "univariate-mul-low-naive-fast" "CPolynomial.Raw" "MulLowContext.naive"
+    "BabyBear.Fast.Element"
+    univariateMulLowShape preset warmup measured
+    (fun _ ↦ fastNaiveLowMul.mulLow univariateMulLowOutputCoeffSlots fastMulLowLhsRaw
+      fastMulLowRhsRaw)
+    (checksumRawPolynomial checksumBabyBearFast) (checksumIterations := checksumIterations)
   let lowConvolution ← runTimed
     "univariate-mul-low-convolution" "CPolynomial.Raw" "MulLowContext.convolution"
     "BabyBear.Field"
@@ -56,6 +76,13 @@ private def runBabyBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGen
     (fun _ ↦ convolutionLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
       mulLowRhsRaw)
     (checksumRawPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
+  let fastLowConvolution ← runTimed
+    "univariate-mul-low-convolution-fast" "CPolynomial.Raw" "MulLowContext.convolution"
+    "BabyBear.Fast.Element"
+    univariateMulLowShape preset warmup convolutionMeasured
+    (fun _ ↦ fastConvolutionLowMul.mulLow univariateMulLowOutputCoeffSlots
+      fastMulLowLhsRaw fastMulLowRhsRaw)
+    (checksumRawPolynomial checksumBabyBearFast) (checksumIterations := checksumIterations)
   let lowNtt ← runTimed
     "univariate-mul-low-ntt-with-fallback" "CPolynomial.Raw" "FastMulLow.withFallback"
     "BabyBear.Field"
@@ -63,6 +90,13 @@ private def runBabyBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGen
     (fun _ ↦ nttWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
       mulLowRhsRaw)
     (checksumRawPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
+  let fastLowNtt ← runTimed
+    "univariate-mul-low-ntt-with-fallback-fast" "CPolynomial.Raw"
+    "FastMulLow.withFallback" "BabyBear.Fast.Element"
+    univariateMulLowShape preset warmup nttMeasured
+    (fun _ ↦ fastNttWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots
+      fastMulLowLhsRaw fastMulLowRhsRaw)
+    (checksumRawPolynomial checksumBabyBearFast) (checksumIterations := checksumIterations)
   let lowNttFast ← runTimed
     "univariate-mul-low-ntt-fast-with-fallback" "CPolynomial.Raw"
     "NTTFast.FastMulLow.withFallback" "BabyBear.Field"
@@ -70,10 +104,18 @@ private def runBabyBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGen
     (fun _ ↦ nttFastWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
       mulLowRhsRaw)
     (checksumRawPolynomial checksumBabyBear) (checksumIterations := checksumIterations)
+  let fastLowNttFast ← runTimed
+    "univariate-mul-low-ntt-fast-with-fallback-fast" "CPolynomial.Raw"
+    "NTTFast.FastMulLow.withFallback" "BabyBear.Fast.Element"
+    univariateMulLowShape preset warmup nttFastMeasured
+    (fun _ ↦ fastNttFastWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots
+      fastMulLowLhsRaw fastMulLowRhsRaw)
+    (checksumRawPolynomial checksumBabyBearFast) (checksumIterations := checksumIterations)
   pure ({
     groupKey := "univariate-low-product-babybear",
     title := "Univariate low product (BabyBear)",
-    records := #[lowNaive, lowConvolution, lowNtt, lowNttFast]
+    records := #[lowNaive, lowConvolution, lowNtt, lowNttFast, fastLowNaive,
+      fastLowConvolution, fastLowNtt, fastLowNttFast]
   }, gen)
 
 /-- Runnable `CompPoly.Univariate.NTT.FastMulLow` benchmark tasks. -/

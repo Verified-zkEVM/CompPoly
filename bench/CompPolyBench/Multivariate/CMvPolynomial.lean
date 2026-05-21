@@ -128,6 +128,11 @@ private def runBabyBearMultivariateDense (preset : BenchPreset) (gen : StdGen) :
   let poly := buildCMvPolynomial terms
   let evalPoint (offset : Nat) : Fin multivariateVars → BabyBear.Field :=
     fun j ↦ points.getD ((offset + j.val) % points.size) 0
+  let fastTerms := babyBearFastArray terms
+  let fastPoints := babyBearFastArray points
+  let fastPoly := buildCMvPolynomial fastTerms
+  let fastEvalPoint (offset : Nat) : Fin multivariateVars → BabyBear.Fast.Element :=
+    fun j ↦ fastPoints.getD ((offset + j.val) % fastPoints.size) 0
   let warmup := warmupIterations preset
   let measured := measuredIterations preset
   let hornerMeasured := preset.selectNat 10000 1500 300
@@ -137,15 +142,28 @@ private def runBabyBearMultivariateDense (preset : BenchPreset) (gen : StdGen) :
     multivariateDenseShape preset warmup measured
     (fun i ↦ CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) poly)
     checksumBabyBear (checksumIterations := checksumIterations)
+  let fastDenseEval ← runTimed
+    "multivariate-dense-eval-fast" "CMvPolynomial" "eval" "BabyBear.Fast.Element"
+    multivariateDenseShape preset warmup measured
+    (fun i ↦ CPoly.CMvPolynomial.eval (fastEvalPoint (i % multivariatePointCount))
+      fastPoly)
+    checksumBabyBearFast (checksumIterations := checksumIterations)
   let denseHorner ← runTimed
     "multivariate-dense-horner" "CMvPolynomial" "evalHorner" "BabyBear.Field"
     multivariateDenseShape preset warmup hornerMeasured
     (fun i ↦ CPoly.CMvPolynomial.evalHorner (evalPoint (i % multivariatePointCount)) poly)
     checksumBabyBear (checksumIterations := checksumIterations)
+  let fastDenseHorner ← runTimed
+    "multivariate-dense-horner-fast" "CMvPolynomial" "evalHorner"
+    "BabyBear.Fast.Element"
+    multivariateDenseShape preset warmup hornerMeasured
+    (fun i ↦ CPoly.CMvPolynomial.evalHorner (fastEvalPoint (i % multivariatePointCount))
+      fastPoly)
+    checksumBabyBearFast (checksumIterations := checksumIterations)
   pure ({
     groupKey := "multivariate-dense-babybear",
     title := "Multivariate dense evaluation (BabyBear)",
-    records := #[denseEval, denseHorner]
+    records := #[denseEval, denseHorner, fastDenseEval, fastDenseHorner]
   }, gen)
 
 /-- Run BabyBear sparse multivariate evaluation benchmarks. -/
@@ -156,6 +174,11 @@ private def runBabyBearMultivariateSparse (preset : BenchPreset) (gen : StdGen) 
   let poly := buildCMvPolynomial terms
   let evalPoint (offset : Nat) : Fin multivariateVars → BabyBear.Field :=
     fun j ↦ points.getD ((offset + j.val) % points.size) 0
+  let fastTerms := babyBearFastArray terms
+  let fastPoints := babyBearFastArray points
+  let fastPoly := buildCMvPolynomial fastTerms
+  let fastEvalPoint (offset : Nat) : Fin multivariateVars → BabyBear.Fast.Element :=
+    fun j ↦ fastPoints.getD ((offset + j.val) % fastPoints.size) 0
   let warmup := warmupIterations preset
   let measured := measuredIterations preset
   let hornerMeasured := preset.selectNat 10000 1500 300
@@ -165,15 +188,28 @@ private def runBabyBearMultivariateSparse (preset : BenchPreset) (gen : StdGen) 
     multivariateSparseShape preset warmup measured
     (fun i ↦ CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) poly)
     checksumBabyBear (checksumIterations := checksumIterations)
+  let fastSparseEval ← runTimed
+    "multivariate-sparse-eval-fast" "CMvPolynomial" "eval" "BabyBear.Fast.Element"
+    multivariateSparseShape preset warmup measured
+    (fun i ↦ CPoly.CMvPolynomial.eval (fastEvalPoint (i % multivariatePointCount))
+      fastPoly)
+    checksumBabyBearFast (checksumIterations := checksumIterations)
   let sparseHorner ← runTimed
     "multivariate-sparse-horner" "CMvPolynomial" "evalHorner" "BabyBear.Field"
     multivariateSparseShape preset warmup hornerMeasured
     (fun i ↦ CPoly.CMvPolynomial.evalHorner (evalPoint (i % multivariatePointCount)) poly)
     checksumBabyBear (checksumIterations := checksumIterations)
+  let fastSparseHorner ← runTimed
+    "multivariate-sparse-horner-fast" "CMvPolynomial" "evalHorner"
+    "BabyBear.Fast.Element"
+    multivariateSparseShape preset warmup hornerMeasured
+    (fun i ↦ CPoly.CMvPolynomial.evalHorner (fastEvalPoint (i % multivariatePointCount))
+      fastPoly)
+    checksumBabyBearFast (checksumIterations := checksumIterations)
   pure ({
     groupKey := "multivariate-sparse-babybear",
     title := "Multivariate sparse evaluation (BabyBear)",
-    records := #[sparseEval, sparseHorner]
+    records := #[sparseEval, sparseHorner, fastSparseEval, fastSparseHorner]
   }, gen)
 
 /-- Run Goldilocks dense multivariate evaluation benchmarks. -/

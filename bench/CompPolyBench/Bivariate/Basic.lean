@@ -96,6 +96,13 @@ private def runBabyBearBivariate (preset : BenchPreset) (gen : StdGen) :
   let evalPoint (i : Nat) : BabyBear.Field × BabyBear.Field :=
     let offset := 2 * (i % 32)
     (points.getD (offset % points.size) 0, points.getD ((offset + 1) % points.size) 0)
+  let fastTerms := babyBearFastArray terms
+  let fastPoints := babyBearFastArray points
+  let fastP := buildCBivariate fastTerms
+  let fastEvalPoint (i : Nat) : BabyBear.Fast.Element × BabyBear.Fast.Element :=
+    let offset := 2 * (i % 32)
+    (fastPoints.getD (offset % fastPoints.size) 0,
+      fastPoints.getD ((offset + 1) % fastPoints.size) 0)
   let warmup := warmupIterations preset
   let measured := measuredIterations preset
   let hornerYxMeasured := preset.selectNat 11000 1600 300
@@ -110,6 +117,13 @@ private def runBabyBearBivariate (preset : BenchPreset) (gen : StdGen) :
       let point := evalPoint i
       CBivariate.evalEval point.1 point.2 p)
     checksumBabyBear (checksumIterations := checksumIterations)
+  let fastNaive ← runTimed
+    "bivariate-full-eval-naive-fast" "CBivariate" "evalEval" "BabyBear.Fast.Element"
+    bivariateInputShape preset warmup measured
+    (fun i ↦
+      let point := fastEvalPoint i
+      CBivariate.evalEval point.1 point.2 fastP)
+    checksumBabyBearFast (checksumIterations := checksumIterations)
   let hornerYx ← runTimed
     "bivariate-full-eval-horner-yx" "CBivariate" "evalEvalHornerYThenX" "BabyBear.Field"
     bivariateInputShape preset warmup hornerYxMeasured
@@ -117,6 +131,14 @@ private def runBabyBearBivariate (preset : BenchPreset) (gen : StdGen) :
       let point := evalPoint i
       CBivariate.evalEvalHornerYThenX point.1 point.2 p)
     checksumBabyBear (checksumIterations := checksumIterations)
+  let fastHornerYx ← runTimed
+    "bivariate-full-eval-horner-yx-fast" "CBivariate" "evalEvalHornerYThenX"
+    "BabyBear.Fast.Element"
+    bivariateInputShape preset warmup hornerYxMeasured
+    (fun i ↦
+      let point := fastEvalPoint i
+      CBivariate.evalEvalHornerYThenX point.1 point.2 fastP)
+    checksumBabyBearFast (checksumIterations := checksumIterations)
   let hornerXy ← runTimed
     "bivariate-full-eval-horner-xy" "CBivariate" "evalEvalHornerXThenY" "BabyBear.Field"
     bivariateInputShape preset warmup hornerXyMeasured
@@ -124,10 +146,18 @@ private def runBabyBearBivariate (preset : BenchPreset) (gen : StdGen) :
       let point := evalPoint i
       CBivariate.evalEvalHornerXThenY point.1 point.2 p)
     checksumBabyBear (checksumIterations := checksumIterations)
+  let fastHornerXy ← runTimed
+    "bivariate-full-eval-horner-xy-fast" "CBivariate" "evalEvalHornerXThenY"
+    "BabyBear.Fast.Element"
+    bivariateInputShape preset warmup hornerXyMeasured
+    (fun i ↦
+      let point := fastEvalPoint i
+      CBivariate.evalEvalHornerXThenY point.1 point.2 fastP)
+    checksumBabyBearFast (checksumIterations := checksumIterations)
   pure ({
     groupKey := "bivariate-full-babybear",
     title := "Bivariate full evaluation (BabyBear)",
-    records := #[naive, hornerYx, hornerXy]
+    records := #[naive, hornerYx, hornerXy, fastNaive, fastHornerYx, fastHornerXy]
   }, gen)
 
 /-- Run the Goldilocks bivariate full-evaluation benchmark. -/
