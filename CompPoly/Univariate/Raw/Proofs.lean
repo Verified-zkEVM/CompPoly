@@ -1343,18 +1343,61 @@ theorem pow_add (p : CPolynomial.Raw R) (a b : ℕ) :
 omit [LawfulBEq R] [Nontrivial R] in
 private theorem mul_eq_hmul (a b : CPolynomial.Raw R) : a.mul b = a * b := rfl
 
-/-- `powBySq` agrees with `pow` (repeated squaring = repeated multiplication). -/
+omit [Nontrivial R] in
+/-- Multiplication depends only on the coefficient sequences of its inputs,
+so trimming either side preserves the product. -/
+lemma mul_trim_eq_mul (a b : CPolynomial.Raw R) : a.trim * b.trim = a * b := by
+  have hequiv : Trim.equiv (a.trim * b.trim) (a * b) := by
+    intro k
+    rw [mul_coeff, mul_coeff]
+    apply Finset.sum_congr rfl
+    intro i _
+    rw [Trim.coeff_eq_coeff, Trim.coeff_eq_coeff]
+  have h := Trim.eq_of_equiv hequiv
+  rw [mul_is_trimmed, mul_is_trimmed] at h
+  exact h
+
+/-- `powBySq` agrees with `pow` (repeated squaring = repeated multiplication).
+
+`powBySq` accumulates intermediate squarings with the untrimmed `mulRaw` and trims
+once at the end, so the proof bridges through `mul_trim_eq_mul` to relate each
+`mulRaw` step back to the spec `pow`. -/
 theorem powBySq_eq_pow (p : CPolynomial.Raw R) : ∀ n : ℕ, powBySq p n = p ^ n
-  | 0 => by unfold powBySq; exact (pow_zero p).symm
+  | 0 => by
+    show (powBySqUntrimmed p 0).trim = p ^ 0
+    unfold powBySqUntrimmed
+    rw [pow_zero]
+    exact Trim.push_trim #[] 1 one_ne_zero
   | n + 1 => by
-    unfold powBySq
-    have ih : powBySq p ((n + 1) / 2) = p ^ ((n + 1) / 2) :=
+    show (powBySqUntrimmed p (n + 1)).trim = p ^ (n + 1)
+    have ih : (powBySqUntrimmed p ((n + 1) / 2)).trim = p ^ ((n + 1) / 2) :=
       powBySq_eq_pow p ((n + 1) / 2)
-    simp only [ih, mul_eq_hmul, ← pow_add]
+    unfold powBySqUntrimmed
+    -- The recursive call also gets unfolded to a `match`; refold it via `ih`
+    -- before resolving the if-branch. We use that `(mulRaw a b).trim = a * b`
+    -- definitionally, then `mul_trim_eq_mul` to swap inputs for their trims.
     by_cases heven : (n + 1) % 2 = 0
     · simp only [heven, ↓reduceIte]
+      -- Goal: (mulRaw (powBySqUntrimmed p ((n+1)/2)) (powBySqUntrimmed p ((n+1)/2))).trim = p^(n+1)
+      -- (mulRaw a b).trim is definitionally `a * b` (def of `mul`).
+      show (powBySqUntrimmed p ((n + 1) / 2)) *
+        (powBySqUntrimmed p ((n + 1) / 2)) = p ^ (n + 1)
+      rw [← mul_trim_eq_mul, ih, ← pow_add]
       congr 1; omega
-    · simp only [heven, ↓reduceIte, ← pow_succ]
+    · simp only [heven, ↓reduceIte]
+      show p * (mulRaw (powBySqUntrimmed p ((n + 1) / 2))
+        (powBySqUntrimmed p ((n + 1) / 2))) = p ^ (n + 1)
+      rw [← mul_trim_eq_mul p (mulRaw _ _)]
+      show p.trim * ((powBySqUntrimmed p ((n + 1) / 2)) *
+        (powBySqUntrimmed p ((n + 1) / 2))) = p ^ (n + 1)
+      rw [← mul_trim_eq_mul (powBySqUntrimmed p ((n + 1) / 2))
+        (powBySqUntrimmed p ((n + 1) / 2)), ih, ← pow_add]
+      -- p.trim * p ^ k = p ^ (k + 1) for the odd case
+      rw [show p.trim * p ^ ((n + 1) / 2 + (n + 1) / 2) =
+            p * p ^ ((n + 1) / 2 + (n + 1) / 2) by
+        conv_lhs => rw [← pow_is_trimmed p ((n + 1) / 2 + (n + 1) / 2)]
+        exact mul_trim_eq_mul _ _]
+      rw [← pow_succ]
       congr 1; omega
 termination_by n => n
 decreasing_by omega
