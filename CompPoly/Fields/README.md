@@ -10,14 +10,14 @@ This directory contains formally verified field infrastructure used in zero-know
 | **PrattCertificate.lean** | Lucas test for primality and Pratt certificate infrastructure (`PrattCertificate`, `PrattCertificate'`) for proving concrete primality goals. |
 | **BabyBear.lean** | Facade for BabyBear modules, re-exporting the canonical field and fast native-word implementation. |
 | **BabyBear/Basic.lean** | \(2^{31} - 2^{27} + 1\) — Risc Zero. |
-| **BabyBear/Fast.lean** | Native `UInt32` canonical-residue operations for BabyBear, with proved conversion and operation equivalence against `BabyBear.Field`. |
+| **BabyBear/Fast.lean** | Native `UInt32` Montgomery-residue operations for BabyBear, with conversion and operation equivalence statements against `BabyBear.Field`. |
 | **BLS12_377.lean** | Scalar field of BLS12-377 (253-bit, 2-adicity 47) — Zexe. |
 | **BLS12_381.lean** | Scalar field of BLS12-381 (253-bit, 2-adicity 47). |
 | **BN254.lean** | Scalar field of BN254 curve. |
 | **Goldilocks.lean** | \(2^{64} - 2^{32} + 1\) — Plonky2/3. |
 | **KoalaBear.lean** | Facade for KoalaBear modules, re-exporting the canonical field and fast native-word implementation. |
 | **KoalaBear/Basic.lean** | \(2^{31} - 2^{24} + 1\) — lean Ethereum spec. |
-| **KoalaBear/Fast.lean** | Native `UInt32` canonical-residue operations for KoalaBear, with proved conversion and operation equivalence against `KoalaBear.Field`. |
+| **KoalaBear/Fast.lean** | Native `UInt32` Montgomery-residue operations for KoalaBear, with conversion and operation equivalence statements against `KoalaBear.Field`. |
 | **Mersenne.lean** | \(2^{31} - 1\) — Circle STARKs. |
 | **Secp256k1.lean** | Base and scalar fields for the Secp256k1 curve (used in Bitcoin/Ethereum). |
 
