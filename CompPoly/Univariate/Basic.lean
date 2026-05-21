@@ -45,8 +45,6 @@ variable {R : Type*}
   product and the `interpolate` sum each pay one `Raw.mul`/`Raw.add` trim per term),
   the `Array.foldl` accumulator in `Bivariate/ToPoly.lean` (`toPoly_foldl_zipIdx_eq_sum`),
   and the two `ExtTreeMap.foldl` monomial accumulators in `Multivariate/Operations.lean`.
-  The NTT `butterflyStage` in `Univariate/NTT/Transform.lean` is not on this list: it
-  operates on a scalar coefficient `Array R` and never calls `trim`.
 -/
 def CPolynomial (R : Type*) [Zero R] := { p : CPolynomial.Raw R // IsCanonical p }
 
