@@ -98,7 +98,7 @@ def koalaBearBestDomainForLength? (requiredLen : Nat) :
     CPolynomial.NTT.KoalaBear.domainOfLogN (by intro _ _; rfl) requiredLen
 
 /-- Ring equivalence from fast KoalaBear elements to the canonical `ZMod` model. -/
-noncomputable def koalaBearFastRingEquiv : KoalaBear.Fast.Element ≃+* KoalaBear.Field where
+noncomputable def koalaBearFastRingEquiv : KoalaBear.Fast.Field ≃+* KoalaBear.Field where
   toFun := KoalaBear.Fast.toField
   invFun := KoalaBear.Fast.ofField
   left_inv := KoalaBear.Fast.ofField_toField
@@ -122,19 +122,19 @@ theorem koalaBearFast_isPrimitiveRoot_twoAdicGenerator
 /-- The fast KoalaBear NTT domain size is nonzero for supported two-adic sizes. -/
 theorem koalaBearFast_twoPowNatCast_ne_zero
     (logN : Nat) (hlogN : logN ≤ KoalaBear.twoAdicity) :
-    (((2 ^ logN : Nat) : KoalaBear.Fast.Element) ≠ 0) := by
+    (((2 ^ logN : Nat) : KoalaBear.Fast.Field) ≠ 0) := by
   intro hzero
   exact CPolynomial.NTT.KoalaBear.twoPowNatCast_ne_zero logN hlogN (by
     calc
       (((2 ^ logN : Nat) : KoalaBear.Field)) =
-          KoalaBear.Fast.toField (((2 ^ logN : Nat) : KoalaBear.Fast.Element)) := by
+          KoalaBear.Fast.toField (((2 ^ logN : Nat) : KoalaBear.Fast.Field)) := by
         rw [KoalaBear.Fast.toField_natCast]
       _ = KoalaBear.Fast.toField 0 := congrArg KoalaBear.Fast.toField hzero
       _ = 0 := KoalaBear.Fast.toField_zero)
 
 /-- Fast KoalaBear radix-2 NTT domain for a supported two-adic size. -/
 def koalaBearFastDomainOfLogN (logN : Nat) (hlogN : logN ≤ KoalaBear.twoAdicity) :
-    CPolynomial.NTT.Domain KoalaBear.Fast.Element where
+    CPolynomial.NTT.Domain KoalaBear.Fast.Field where
   logN := logN
   omega := KoalaBear.Fast.ofField
     KoalaBear.twoAdicGenerators[(⟨logN, Nat.lt_succ_of_le hlogN⟩ :
@@ -145,12 +145,12 @@ def koalaBearFastDomainOfLogN (logN : Nat) (hlogN : logN ≤ KoalaBear.twoAdicit
   natCast_ne_zero := koalaBearFast_twoPowNatCast_ne_zero logN hlogN
 
 /-- NTT domain for direct univariate fast KoalaBear multiplication benchmarks. -/
-def koalaBearFastMulNttDomain : CPolynomial.NTT.Domain KoalaBear.Fast.Element :=
+def koalaBearFastMulNttDomain : CPolynomial.NTT.Domain KoalaBear.Fast.Field :=
   koalaBearFastDomainOfLogN univariateMulLogN (by decide)
 
 /-- Fast KoalaBear NTT domain lookup for dynamic multiplication contexts. -/
 def koalaBearFastBestDomainForLength? (requiredLen : Nat) :
-    Option (CPolynomial.NTT.FittingDomain KoalaBear.Fast.Element requiredLen) :=
+    Option (CPolynomial.NTT.FittingDomain KoalaBear.Fast.Field requiredLen) :=
   CPolynomial.NTT.bestDomainForLength? KoalaBear.twoAdicity
     koalaBearFastDomainOfLogN (by intro _ _; rfl) requiredLen
 

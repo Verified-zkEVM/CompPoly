@@ -99,7 +99,7 @@ private def runKoalaBearBivariate (preset : BenchPreset) (gen : StdGen) :
   let fastTerms := koalaBearFastArray terms
   let fastPoints := koalaBearFastArray points
   let fastP := buildCBivariate fastTerms
-  let fastEvalPoint (i : Nat) : KoalaBear.Fast.Element × KoalaBear.Fast.Element :=
+  let fastEvalPoint (i : Nat) : KoalaBear.Fast.Field × KoalaBear.Fast.Field :=
     let offset := 2 * (i % 32)
     (fastPoints.getD (offset % fastPoints.size) 0,
       fastPoints.getD ((offset + 1) % fastPoints.size) 0)
@@ -122,7 +122,7 @@ private def runKoalaBearBivariate (preset : BenchPreset) (gen : StdGen) :
       CBivariate.evalEval point.1 point.2 p)
     checksumKoalaBear (checksumIterations := checksumIterations)
   let fastNaive ← runTimed
-    "bivariate-full-eval-naive-fast" "CBivariate" "evalEval" "KoalaBear.Fast.Element"
+    "bivariate-full-eval-naive-fast" "CBivariate" "evalEval" "KoalaBear.Fast.Field"
     bivariateInputShape preset warmup fastMeasured
     (fun i ↦
       let point := fastEvalPoint i
@@ -137,7 +137,7 @@ private def runKoalaBearBivariate (preset : BenchPreset) (gen : StdGen) :
     checksumKoalaBear (checksumIterations := checksumIterations)
   let fastHornerYx ← runTimed
     "bivariate-full-eval-horner-yx-fast" "CBivariate" "evalEvalHornerYThenX"
-    "KoalaBear.Fast.Element"
+    "KoalaBear.Fast.Field"
     bivariateInputShape preset warmup fastHornerYxMeasured
     (fun i ↦
       let point := fastEvalPoint i
@@ -152,7 +152,7 @@ private def runKoalaBearBivariate (preset : BenchPreset) (gen : StdGen) :
     checksumKoalaBear (checksumIterations := checksumIterations)
   let fastHornerXy ← runTimed
     "bivariate-full-eval-horner-xy-fast" "CBivariate" "evalEvalHornerXThenY"
-    "KoalaBear.Fast.Element"
+    "KoalaBear.Fast.Field"
     bivariateInputShape preset warmup fastHornerXyMeasured
     (fun i ↦
       let point := fastEvalPoint i

@@ -28,9 +28,9 @@ private def runKoalaBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGe
   let (mulLowRhsCoeffs, gen) := (koalaBearArray univariateMulLowCoeffSlots false).run gen
   let mulLowLhsRaw : CPolynomial.Raw KoalaBear.Field := mulLowLhsCoeffs
   let mulLowRhsRaw : CPolynomial.Raw KoalaBear.Field := mulLowRhsCoeffs
-  let fastMulLowLhsRaw : CPolynomial.Raw KoalaBear.Fast.Element :=
+  let fastMulLowLhsRaw : CPolynomial.Raw KoalaBear.Fast.Field :=
     koalaBearFastArray mulLowLhsCoeffs
-  let fastMulLowRhsRaw : CPolynomial.Raw KoalaBear.Fast.Element :=
+  let fastMulLowRhsRaw : CPolynomial.Raw KoalaBear.Fast.Field :=
     koalaBearFastArray mulLowRhsCoeffs
   let naiveLowMul : CPolynomial.Raw.MulLowContext KoalaBear.Field :=
     CPolynomial.Raw.MulLowContext.naive
@@ -40,14 +40,14 @@ private def runKoalaBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGe
     CPolynomial.NTT.FastMulLow.withFallback koalaBearBestDomainForLength?
   let nttFastWithFallbackLowMul : CPolynomial.Raw.MulLowContext KoalaBear.Field :=
     CPolynomial.NTTFast.FastMulLow.withFallback koalaBearBestDomainForLength?
-  let fastNaiveLowMul : CPolynomial.Raw.MulLowContext KoalaBear.Fast.Element :=
+  let fastNaiveLowMul : CPolynomial.Raw.MulLowContext KoalaBear.Fast.Field :=
     CPolynomial.Raw.MulLowContext.naive
-  let fastConvolutionLowMul : CPolynomial.Raw.MulLowContext KoalaBear.Fast.Element :=
+  let fastConvolutionLowMul : CPolynomial.Raw.MulLowContext KoalaBear.Fast.Field :=
     CPolynomial.Raw.MulLowContext.convolution
-  let fastNttWithFallbackLowMul : CPolynomial.Raw.MulLowContext KoalaBear.Fast.Element :=
+  let fastNttWithFallbackLowMul : CPolynomial.Raw.MulLowContext KoalaBear.Fast.Field :=
     CPolynomial.NTT.FastMulLow.withFallback koalaBearFastBestDomainForLength?
   let fastNttFastWithFallbackLowMul :
-      CPolynomial.Raw.MulLowContext KoalaBear.Fast.Element :=
+      CPolynomial.Raw.MulLowContext KoalaBear.Fast.Field :=
     CPolynomial.NTTFast.FastMulLow.withFallback koalaBearFastBestDomainForLength?
   let warmup := mulWarmupIterations preset
   let measured := mulMeasuredIterations preset
@@ -69,7 +69,7 @@ private def runKoalaBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGe
     (checksumRawPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
   let fastLowNaive ← runTimed
     "univariate-mul-low-naive-fast" "CPolynomial.Raw" "MulLowContext.naive"
-    "KoalaBear.Fast.Element"
+    "KoalaBear.Fast.Field"
     univariateMulLowShape preset warmup fastMeasured
     (fun _ ↦ fastNaiveLowMul.mulLow univariateMulLowOutputCoeffSlots fastMulLowLhsRaw
       fastMulLowRhsRaw)
@@ -83,7 +83,7 @@ private def runKoalaBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGe
     (checksumRawPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
   let fastLowConvolution ← runTimed
     "univariate-mul-low-convolution-fast" "CPolynomial.Raw" "MulLowContext.convolution"
-    "KoalaBear.Fast.Element"
+    "KoalaBear.Fast.Field"
     univariateMulLowShape preset warmup fastConvolutionMeasured
     (fun _ ↦ fastConvolutionLowMul.mulLow univariateMulLowOutputCoeffSlots
       fastMulLowLhsRaw fastMulLowRhsRaw)
@@ -97,7 +97,7 @@ private def runKoalaBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGe
     (checksumRawPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
   let fastLowNtt ← runTimed
     "univariate-mul-low-ntt-with-fallback-fast" "CPolynomial.Raw"
-    "FastMulLow.withFallback" "KoalaBear.Fast.Element"
+    "FastMulLow.withFallback" "KoalaBear.Fast.Field"
     univariateMulLowShape preset warmup fastNttMeasured
     (fun _ ↦ fastNttWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots
       fastMulLowLhsRaw fastMulLowRhsRaw)
@@ -111,7 +111,7 @@ private def runKoalaBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGe
     (checksumRawPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
   let fastLowNttFast ← runTimed
     "univariate-mul-low-ntt-fast-with-fallback-fast" "CPolynomial.Raw"
-    "NTTFast.FastMulLow.withFallback" "KoalaBear.Fast.Element"
+    "NTTFast.FastMulLow.withFallback" "KoalaBear.Fast.Field"
     univariateMulLowShape preset warmup fastNttFastMeasured
     (fun _ ↦ fastNttFastWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots
       fastMulLowLhsRaw fastMulLowRhsRaw)

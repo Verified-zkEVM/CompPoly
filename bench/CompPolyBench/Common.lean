@@ -417,7 +417,7 @@ def koalaBearArray (size : Nat) (sparse : Bool) : StateM StdGen (Array KoalaBear
   zmodArray KoalaBear.fieldSize size sparse
 
 /-- Convert KoalaBear field inputs to the native-word KoalaBear representation. -/
-def koalaBearFastArray (xs : Array KoalaBear.Field) : Array KoalaBear.Fast.Element :=
+def koalaBearFastArray (xs : Array KoalaBear.Field) : Array KoalaBear.Fast.Field :=
   xs.map KoalaBear.Fast.ofField
 
 /-- Generate KoalaBear coefficients with a nonzero every `sparseStride` entries. -/
@@ -453,7 +453,7 @@ def checksumKoalaBear (x : KoalaBear.Field) : Nat :=
   ZMod.val x
 
 /-- Convert a fast KoalaBear element to a checksum word. -/
-def checksumKoalaBearFast (x : KoalaBear.Fast.Element) : Nat :=
+def checksumKoalaBearFast (x : KoalaBear.Fast.Field) : Nat :=
   KoalaBear.Fast.toNat x
 
 /-- Convert a `ZMod` element to a checksum word. -/
@@ -757,7 +757,7 @@ def implementationLabelInGroup (records : List BenchRecord) (record : BenchRecor
     label
   else if record.field == "KoalaBear.Field" then
     label
-  else if record.field == "KoalaBear.Fast.Element" then
+  else if record.field == "KoalaBear.Fast.Field" then
     label ++ " (fast KoalaBear)"
   else
     label ++ " (" ++ record.field ++ ")"

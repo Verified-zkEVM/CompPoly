@@ -55,7 +55,7 @@ private def runKoalaBearUnivariateMul (preset : BenchPreset) (gen : StdGen) :
     (fun _ ↦ mulLhsPoly * mulRhsPoly)
     (checksumCPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
   let koalaBearFastMulNaive ← runTimed
-    "univariate-mul-naive-fast" "CPolynomial" "mul" "KoalaBear.Fast.Element"
+    "univariate-mul-naive-fast" "CPolynomial" "mul" "KoalaBear.Fast.Field"
     univariateMulShape preset warmup fastMeasured
     (fun _ ↦ fastMulLhsPoly * fastMulRhsPoly)
     (checksumCPolynomial checksumKoalaBearFast) (checksumIterations := checksumIterations)
@@ -67,7 +67,7 @@ private def runKoalaBearUnivariateMul (preset : BenchPreset) (gen : StdGen) :
     (checksumCPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
   let koalaBearFastMulNtt ← runTimed
     "univariate-mul-ntt-koalabear-fast" "CPolynomial"
-    (univariateMulNttMethod "FastMul.fastMulImpl") "KoalaBear.Fast.Element"
+    (univariateMulNttMethod "FastMul.fastMulImpl") "KoalaBear.Fast.Field"
     univariateMulShape preset warmup fastNttMeasured
     (fun _ ↦ CPolynomial.NTT.FastMul.fastMulImpl koalaBearFastMulNttDomain fastMulLhsPoly
       fastMulRhsPoly)
@@ -80,7 +80,7 @@ private def runKoalaBearUnivariateMul (preset : BenchPreset) (gen : StdGen) :
     (checksumCPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
   let koalaBearFastMulNttFast ← runTimed
     "univariate-mul-ntt-fast-koalabear-fast" "CPolynomial"
-    (univariateMulNttMethod "NTTFast.fastMulImpl") "KoalaBear.Fast.Element"
+    (univariateMulNttMethod "NTTFast.fastMulImpl") "KoalaBear.Fast.Field"
     univariateMulShape preset warmup fastNttFastMeasured
     (fun _ ↦ CPolynomial.NTTFast.fastMulImpl koalaBearFastMulNttDomain fastMulLhsPoly
       fastMulRhsPoly)
@@ -98,7 +98,7 @@ private def runKoalaBearUnivariateMul (preset : BenchPreset) (gen : StdGen) :
     "univariate-mul-ntt-fast-plan-fast" "CPolynomial"
     (univariateMulNttMethod
       "NTTFast.Plan.fastMulImpl, cached twiddles, mixed radix-4 DIF/DIT, dual forward")
-    "KoalaBear.Fast.Element"
+    "KoalaBear.Fast.Field"
     univariateMulShape preset warmup fastNttFastPlanMeasured
     (fun _ ↦ CPolynomial.NTTFast.Plan.fastMulImpl koalaBearFastMulNttFastPlan
       fastMulLhsPoly fastMulRhsPoly)

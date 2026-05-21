@@ -14,7 +14,7 @@ import Mathlib.Data.Nat.ModEq
 This module provides a native-word implementation of KoalaBear arithmetic as a sidecar
 to the canonical `KoalaBear.Field := ZMod KoalaBear.fieldSize` model.
 
-Elements are stored as Montgomery `UInt32` residues below `KoalaBear.fieldSize`,
+Fast field values are stored as Montgomery `UInt32` residues below `KoalaBear.fieldSize`,
 representing `x * 2^32` modulo the KoalaBear prime. Addition, subtraction, and
 negation operate directly on Montgomery words; multiplication uses Montgomery
 reduction on a native `UInt64` product.
@@ -38,14 +38,14 @@ def r2ModModulus : UInt32 := 0x17F7EFE4
 /-- `-KoalaBear.fieldSize⁻¹ mod 2^32`, used by Montgomery reduction. -/
 def montgomeryNegInv : UInt32 := 0x7EFFFFFF
 
-/-- A native-word KoalaBear element stored as a Montgomery residue. -/
-abbrev Element : Type := { x : UInt32 // x.toNat < KoalaBear.fieldSize }
+/-- The fast native-word KoalaBear field carrier, stored as a Montgomery residue. -/
+abbrev Field : Type := { x : UInt32 // x.toNat < KoalaBear.fieldSize }
 
-instance : DecidableEq Element := inferInstance
+instance : DecidableEq Field := inferInstance
 
 /-- The raw Montgomery word backing a fast KoalaBear element. -/
 @[inline]
-def raw (x : Element) : UInt32 := x.val
+def raw (x : Field) : UInt32 := x.val
 
 @[simp] theorem modulus_toNat : modulus.toNat = KoalaBear.fieldSize := by
   decide
@@ -300,7 +300,7 @@ private theorem reduceUInt32Lt2ModulusRaw_lt (x : UInt32)
 /-- Reduce a native word known to be below twice the KoalaBear prime. -/
 @[inline]
 private def reduceUInt32Lt2Modulus (x : UInt32) (h : x.toNat < 2 * KoalaBear.fieldSize) :
-    Element :=
+    Field :=
   ⟨reduceUInt32Lt2ModulusRaw x, reduceUInt32Lt2ModulusRaw_lt x h⟩
 
 private theorem reduceUInt32Lt2Modulus_cast (x : UInt32)
@@ -363,7 +363,7 @@ private theorem reduceUInt32Lt2Modulus_val_eq_nat (x : UInt32)
 
 /-- Reduce a native word below `2^32` modulo the KoalaBear prime. -/
 @[inline]
-private def reduceUInt32 (x : UInt32) : Element :=
+private def reduceUInt32 (x : UInt32) : Field :=
   if hx : x < modulus then
     ⟨x, by
       rw [UInt32.lt_iff_toNat_lt, modulus_toNat] at hx
@@ -409,7 +409,7 @@ private theorem montgomeryReduceBoundedRaw_lt (x : UInt64)
 /-- Montgomery reduction for inputs known to be below `p * 2^32`. -/
 @[inline]
 private def montgomeryReduceBounded (x : UInt64)
-    (h : x.toNat < KoalaBear.fieldSize * UInt32.size) : Element :=
+    (h : x.toNat < KoalaBear.fieldSize * UInt32.size) : Field :=
   ⟨montgomeryReduceBoundedRaw x, montgomeryReduceBoundedRaw_lt x h⟩
 
 private theorem montgomeryReduceBounded_cast (x : UInt64)
@@ -437,14 +437,14 @@ private theorem montgomeryReduceBounded_cast (x : UInt64)
 
 /-- Montgomery reduction of a 64-bit word. Hot bounded callers use `montgomeryReduceBounded`. -/
 @[inline]
-def montgomeryReduce (x : UInt64) : Element :=
+def montgomeryReduce (x : UInt64) : Field :=
   let m : UInt32 := x.toUInt32 * montgomeryNegInv
   let u : UInt32 := ((x + m.toUInt64 * modulus64) >>> 32).toUInt32
   reduceUInt32 u
 
 /-- Build a fast element from a canonical natural representative. -/
 @[inline]
-def ofCanonicalNat (n : Nat) (_h : n < KoalaBear.fieldSize) : Element :=
+def ofCanonicalNat (n : Nat) (_h : n < KoalaBear.fieldSize) : Field :=
   montgomeryReduceBounded (UInt64.ofNat n * r2ModModulus.toUInt64) (by
     rw [UInt64.toNat_mul, UInt64.toNat_ofNat', UInt32.toNat_toUInt64]
     have hnmod : n % 2 ^ 64 = n := by
@@ -458,7 +458,7 @@ def ofCanonicalNat (n : Nat) (_h : n < KoalaBear.fieldSize) : Element :=
 
 /-- Reduce a `UInt64` modulo the KoalaBear prime and return a Montgomery fast element. -/
 @[inline]
-def reduceUInt64 (x : UInt64) : Element :=
+def reduceUInt64 (x : UInt64) : Field :=
   let y := x % modulus64
   montgomeryReduceBounded (y * r2ModModulus.toUInt64) (by
     rw [UInt64.toNat_mul, UInt32.toNat_toUInt64]
@@ -471,56 +471,56 @@ def reduceUInt64 (x : UInt64) : Element :=
     nlinarith [r2ModModulus_lt_fieldSize])
 
 /-- The zero fast KoalaBear element. -/
-def zero : Element := ⟨0, by decide⟩
+def zero : Field := ⟨0, by decide⟩
 
 /-- The one fast KoalaBear element. -/
-def one : Element := ⟨rModModulus, by decide⟩
+def one : Field := ⟨rModModulus, by decide⟩
 
 /-- Convert a natural number into fast Montgomery representation. -/
 @[inline]
-def ofNat (n : Nat) : Element :=
+def ofNat (n : Nat) : Field :=
   ofCanonicalNat (n % KoalaBear.fieldSize) (Nat.mod_lt _ fieldSize_pos)
 
 /-- Convert a 32-bit word into fast Montgomery representation. -/
 @[inline]
-def ofUInt32 (x : UInt32) : Element :=
+def ofUInt32 (x : UInt32) : Field :=
   reduceUInt64 x.toUInt64
 
 /-- Convert from the canonical `ZMod` KoalaBear field into fast Montgomery form. -/
 @[inline]
-def ofField (x : KoalaBear.Field) : Element :=
+def ofField (x : KoalaBear.Field) : Field :=
   ofCanonicalNat x.val (ZMod.val_lt x)
 
 /-- Convert an integer into fast Montgomery representation. -/
 @[inline]
-def ofInt (n : Int) : Element :=
+def ofInt (n : Int) : Field :=
   ofField (n : KoalaBear.Field)
 
 /-- Convert a fast element to its canonical native-word representative. -/
 @[inline]
-def toCanonicalUInt32 (x : Element) : UInt32 :=
+def toCanonicalUInt32 (x : Field) : UInt32 :=
   raw (montgomeryReduceBounded x.val.toUInt64 (by
     rw [UInt32.toNat_toUInt64]
     nlinarith [x.property, fieldSize_pos]))
 
 /-- Convert a fast KoalaBear element to its canonical natural representative. -/
 @[inline]
-def toNat (x : Element) : Nat :=
+def toNat (x : Field) : Nat :=
   (toCanonicalUInt32 x).toNat
 
 /-- Convert a fast KoalaBear element to the canonical `ZMod` KoalaBear field. -/
 @[inline]
-def toField (x : Element) : KoalaBear.Field :=
+def toField (x : Field) : KoalaBear.Field :=
   (toNat x : KoalaBear.Field)
 
-private theorem toNat_lt_fieldSize (x : Element) : toNat x < KoalaBear.fieldSize := by
+private theorem toNat_lt_fieldSize (x : Field) : toNat x < KoalaBear.fieldSize := by
   unfold toNat toCanonicalUInt32 raw
   change (montgomeryReduceBoundedRaw x.val.toUInt64).toNat < KoalaBear.fieldSize
   exact montgomeryReduceBoundedRaw_lt x.val.toUInt64 (by
     rw [UInt32.toNat_toUInt64]
     nlinarith [x.property, fieldSize_pos])
 
-private theorem toField_eq_raw_mul_inv (x : Element) :
+private theorem toField_eq_raw_mul_inv (x : Field) :
     toField x =
       (x.val.toNat : KoalaBear.Field) * (UInt32.size : KoalaBear.Field)⁻¹ := by
   unfold toField toNat toCanonicalUInt32 raw
@@ -534,7 +534,7 @@ private theorem toField_eq_raw_mul_inv (x : Element) :
   rw [hred]
   rw [UInt32.toNat_toUInt64]
 
-private theorem raw_cast_eq_toField_mul (x : Element) :
+private theorem raw_cast_eq_toField_mul (x : Field) :
     (x.val.toNat : KoalaBear.Field) =
       toField x * (UInt32.size : KoalaBear.Field) := by
   rw [toField_eq_raw_mul_inv]
@@ -669,14 +669,14 @@ theorem toField_reduceUInt64 (x : UInt64) :
 
 /-- Fast modular addition in Montgomery form. -/
 @[inline]
-def add (x y : Element) : Element :=
+def add (x y : Field) : Field :=
   reduceUInt32Lt2Modulus (x.val + y.val) (by
     rw [UInt32.toNat_add]
     exact Nat.lt_of_le_of_lt (Nat.mod_le _ _) (by omega))
 
 /-- Fast modular negation in Montgomery form. -/
 @[inline]
-def neg (x : Element) : Element :=
+def neg (x : Field) : Field :=
   if hx : x.val = 0 then
     zero
   else
@@ -695,7 +695,7 @@ def neg (x : Element) : Element :=
 
 /-- Fast modular subtraction in Montgomery form. -/
 @[inline]
-def sub (x y : Element) : Element :=
+def sub (x y : Field) : Field :=
   if hyx : y.val ≤ x.val then
     ⟨x.val - y.val, by
       rw [UInt32.toNat_sub_of_le _ _ hyx]
@@ -720,7 +720,7 @@ def sub (x y : Element) : Element :=
 
 /-- Fast modular multiplication in Montgomery form. -/
 @[inline]
-def mul (x y : Element) : Element :=
+def mul (x y : Field) : Field :=
   montgomeryReduceBounded (x.val.toUInt64 * y.val.toUInt64) (by
     simp only [UInt64.toNat_mul, UInt32.toNat_toUInt64]
     have hprod : x.val.toNat * y.val.toNat < 2 ^ 64 := by
@@ -730,25 +730,25 @@ def mul (x y : Element) : Element :=
 
 /-- Fast squaring. -/
 @[inline]
-def square (x : Element) : Element :=
+def square (x : Field) : Field :=
   mul x x
 
 /-- Exponentiation over the fast representation using repeated squaring. -/
 @[inline]
-def pow (x : Element) (n : Nat) : Element :=
-  @npowBinRec Element ⟨one⟩ ⟨mul⟩ n x
+def pow (x : Field) (n : Nat) : Field :=
+  @npowBinRec Field ⟨one⟩ ⟨mul⟩ n x
 
 /-- Fermat exponent used for inversion in the KoalaBear prime field. -/
 def invExponent : Nat := KoalaBear.fieldSize - 2
 
 /-- Four squarings followed by multiplication by the next 4-bit exponent digit. -/
 @[inline]
-private def shift4Mul (acc digit : Element) : Element :=
+private def shift4Mul (acc digit : Field) : Field :=
   mul (square (square (square (square acc)))) digit
 
 /-- Inversion in Montgomery form by a fixed 4-bit Fermat chain. -/
 @[inline]
-def inv (x : Element) : Element :=
+def inv (x : Field) : Field :=
   let x2 := square x
   let x3 := mul x2 x
   let x5 := mul x3 x2
@@ -765,64 +765,64 @@ def inv (x : Element) : Element :=
 
 /-- Division through inversion and fast multiplication. -/
 @[inline]
-def div (x y : Element) : Element :=
+def div (x y : Field) : Field :=
   mul x (inv y)
 
-instance instZeroElement : Zero Element where
+instance instZeroField : Zero Field where
   zero := zero
 
-instance instOneElement : One Element where
+instance instOneField : One Field where
   one := one
 
-instance instAddElement : Add Element where
+instance instAddField : Add Field where
   add := add
 
-instance instNegElement : Neg Element where
+instance instNegField : Neg Field where
   neg := neg
 
-instance instSubElement : Sub Element where
+instance instSubField : Sub Field where
   sub := sub
 
-instance instMulElement : Mul Element where
+instance instMulField : Mul Field where
   mul := mul
 
-instance instInvElement : Inv Element where
+instance instInvField : Inv Field where
   inv := inv
 
-instance instDivElement : Div Element where
+instance instDivField : Div Field where
   div := div
 
-instance instNatCastElement : NatCast Element where
+instance instNatCastField : NatCast Field where
   natCast := ofNat
 
-instance instIntCastElement : IntCast Element where
+instance instIntCastField : IntCast Field where
   intCast := ofInt
 
-instance instNatSMulElement : SMul Nat Element where
+instance instNatSMulField : SMul Nat Field where
   smul n x := ofNat n * x
 
-instance instIntSMulElement : SMul Int Element where
+instance instIntSMulField : SMul Int Field where
   smul n x := ofInt n * x
 
-instance instPowElementNat : Pow Element Nat where
+instance instPowFieldNat : Pow Field Nat where
   pow := pow
 
-instance instPowElementInt : Pow Element Int where
+instance instPowFieldInt : Pow Field Int where
   pow x n :=
     match n with
     | Int.ofNat k => pow x k
     | Int.negSucc k => pow (inv x) (k + 1)
 
-instance instNNRatCastElement : NNRatCast Element where
+instance instNNRatCastField : NNRatCast Field where
   nnratCast q := ofField (q : KoalaBear.Field)
 
-instance instRatCastElement : RatCast Element where
+instance instRatCastField : RatCast Field where
   ratCast q := ofField (q : KoalaBear.Field)
 
-instance instNNRatSMulElement : SMul ℚ≥0 Element where
+instance instNNRatSMulField : SMul ℚ≥0 Field where
   smul q x := ofField (q • toField x)
 
-instance instRatSMulElement : SMul ℚ Element where
+instance instRatSMulField : SMul ℚ Field where
   smul q x := ofField (q • toField x)
 
 @[simp]
@@ -832,7 +832,7 @@ theorem toField_ofField (x : KoalaBear.Field) : toField (ofField x) = x := by
   exact ZMod.natCast_zmod_val x
 
 @[simp]
-theorem ofField_toField (x : Element) : ofField (toField x) = x := by
+theorem ofField_toField (x : Field) : ofField (toField x) = x := by
   apply Subtype.ext
   apply UInt32.toNat_inj.mp
   apply nat_eq_of_field_eq
@@ -846,13 +846,13 @@ theorem toField_injective : Function.Injective toField :=
   Function.LeftInverse.injective ofField_toField
 
 @[simp]
-theorem toField_zero : toField (0 : Element) = 0 := by
+theorem toField_zero : toField (0 : Field) = 0 := by
   rw [toField_eq_raw_mul_inv]
   change ((0 : Nat) : KoalaBear.Field) * (UInt32.size : KoalaBear.Field)⁻¹ = 0
   exact zero_mul _
 
 @[simp]
-theorem toField_one : toField (1 : Element) = 1 := by
+theorem toField_one : toField (1 : Field) = 1 := by
   rw [toField_eq_raw_mul_inv]
   change (rModModulus.toNat : KoalaBear.Field) *
       (UInt32.size : KoalaBear.Field)⁻¹ = 1
@@ -860,9 +860,9 @@ theorem toField_one : toField (1 : Element) = 1 := by
   exact mul_inv_cancel₀ uint32Size_ne_zero_in_field
 
 @[simp]
-theorem toField_add (x y : Element) : toField (x + y) = toField x + toField y := by
+theorem toField_add (x y : Field) : toField (x + y) = toField x + toField y := by
   rw [toField_eq_raw_mul_inv, toField_eq_raw_mul_inv x, toField_eq_raw_mul_inv y]
-  unfold instAddElement add
+  unfold instAddField add
   have hred := reduceUInt32Lt2Modulus_cast (x.val + y.val) (by
     rw [UInt32.toNat_add]
     exact Nat.lt_of_le_of_lt (Nat.mod_le _ _) (by omega))
@@ -881,10 +881,10 @@ theorem toField_add (x y : Element) : toField (x + y) = toField x + toField y :=
   ring
 
 @[simp]
-theorem toField_sub (x y : Element) : toField (x - y) = toField x - toField y := by
+theorem toField_sub (x y : Field) : toField (x - y) = toField x - toField y := by
   rw [toField_eq_raw_mul_inv, toField_eq_raw_mul_inv x, toField_eq_raw_mul_inv y]
   by_cases hyx : y.val ≤ x.val
-  · have hsubval : (x - y : Element).val = x.val - y.val := by
+  · have hsubval : (x - y : Field).val = x.val - y.val := by
       change (sub x y).val = x.val - y.val
       unfold sub
       rw [dif_pos hyx]
@@ -906,7 +906,7 @@ theorem toField_sub (x y : Element) : toField (x - y) = toField x - toField y :=
     have hyle : y.val ≤ x.val + modulus := by
       rw [UInt32.le_iff_toNat_le, hsum_eq]
       omega
-    have hsubval : (x - y : Element).val = x.val + modulus - y.val := by
+    have hsubval : (x - y : Field).val = x.val + modulus - y.val := by
       change (sub x y).val = x.val + modulus - y.val
       unfold sub
       rw [dif_neg hyx]
@@ -923,10 +923,10 @@ theorem toField_sub (x y : Element) : toField (x - y) = toField x - toField y :=
     ring
 
 @[simp]
-theorem toField_neg (x : Element) : toField (-x) = -toField x := by
+theorem toField_neg (x : Field) : toField (-x) = -toField x := by
   rw [toField_eq_raw_mul_inv, toField_eq_raw_mul_inv x]
   by_cases hx : x.val = 0
-  · have hnegval : (-x : Element).val = zero.val := by
+  · have hnegval : (-x : Field).val = zero.val := by
       change (neg x).val = zero.val
       unfold neg
       rw [dif_pos hx]
@@ -943,7 +943,7 @@ theorem toField_neg (x : Element) : toField (-x) = -toField x := by
   · have hle : x.val ≤ modulus := by
       rw [UInt32.le_iff_toNat_le, modulus_toNat]
       exact Nat.le_of_lt x.property
-    have hnegval : (-x : Element).val = modulus - x.val := by
+    have hnegval : (-x : Field).val = modulus - x.val := by
       change (neg x).val = modulus - x.val
       unfold neg
       rw [dif_neg hx]
@@ -959,9 +959,9 @@ theorem toField_neg (x : Element) : toField (-x) = -toField x := by
     ring
 
 @[simp]
-theorem toField_mul (x y : Element) : toField (x * y) = toField x * toField y := by
+theorem toField_mul (x y : Field) : toField (x * y) = toField x * toField y := by
   rw [toField_eq_raw_mul_inv, toField_eq_raw_mul_inv x, toField_eq_raw_mul_inv y]
-  unfold instMulElement mul
+  unfold instMulField mul
   have hred := montgomeryReduceBounded_cast (x.val.toUInt64 * y.val.toUInt64) (by
     simp only [UInt64.toNat_mul, UInt32.toNat_toUInt64]
     have hprod : x.val.toNat * y.val.toNat < 2 ^ 64 := by
@@ -985,7 +985,7 @@ theorem toField_mul (x y : Element) : toField (x * y) = toField x * toField y :=
   ring
 
 /-- Ring equivalence between the fast Montgomery representation and canonical `KoalaBear.Field`. -/
-def ringEquiv : Element ≃+* KoalaBear.Field where
+def ringEquiv : Field ≃+* KoalaBear.Field where
   toFun := toField
   invFun := ofField
   left_inv := ofField_toField
@@ -994,31 +994,31 @@ def ringEquiv : Element ≃+* KoalaBear.Field where
   map_mul' := toField_mul
 
 @[simp]
-theorem ringEquiv_apply (x : Element) : ringEquiv x = toField x := rfl
+theorem ringEquiv_apply (x : Field) : ringEquiv x = toField x := rfl
 
 @[simp]
 theorem ringEquiv_symm_apply (x : KoalaBear.Field) : ringEquiv.symm x = ofField x := rfl
 
-private theorem mul_assoc_element (x y z : Element) : (x * y) * z = x * (y * z) := by
+private theorem mul_assoc_field (x y z : Field) : (x * y) * z = x * (y * z) := by
   apply toField_injective
   rw [toField_mul, toField_mul, toField_mul, toField_mul]
   ring
 
-private theorem pow_succ (x : Element) (n : Nat) : pow x (n + 1) = pow x n * x := by
+private theorem pow_succ (x : Field) (n : Nat) : pow x (n + 1) = pow x n * x := by
   unfold pow
-  letI : Semigroup Element := {
+  letI : Semigroup Field := {
     mul := (· * ·)
-    mul_assoc := mul_assoc_element
+    mul_assoc := mul_assoc_field
   }
   exact npowBinRec_succ n x
 
 @[simp]
-theorem toField_square (x : Element) : toField (square x) = toField x * toField x := by
+theorem toField_square (x : Field) : toField (square x) = toField x * toField x := by
   change toField (x * x) = toField x * toField x
   rw [toField_mul]
 
 @[simp]
-theorem toField_pow (x : Element) (n : Nat) : toField (pow x n) = toField x ^ n := by
+theorem toField_pow (x : Field) (n : Nat) : toField (pow x n) = toField x ^ n := by
   induction n with
   | zero =>
       unfold pow
@@ -1028,13 +1028,13 @@ theorem toField_pow (x : Element) (n : Nat) : toField (pow x n) = toField x ^ n 
   | succ n ih =>
       rw [pow_succ, toField_mul, ih, _root_.pow_succ]
 
-private theorem toField_mul_pow (base x y : Element) (m n : Nat)
+private theorem toField_mul_pow (base x y : Field) (m n : Nat)
     (hx : toField x = toField base ^ m) (hy : toField y = toField base ^ n) :
     toField (mul x y) = toField base ^ (m + n) := by
   change toField (x * y) = toField base ^ (m + n)
   rw [toField_mul, hx, hy, ← pow_add]
 
-private theorem toField_shift4Mul (acc digit : Element) :
+private theorem toField_shift4Mul (acc digit : Field) :
     toField (shift4Mul acc digit) = toField acc ^ 16 * toField digit := by
   unfold shift4Mul
   change toField (square (square (square (square acc))) * digit) =
@@ -1043,7 +1043,7 @@ private theorem toField_shift4Mul (acc digit : Element) :
   repeat rw [toField_square]
   ring
 
-private theorem toField_shift4Mul_pow (base acc digit : Element) (e d : Nat)
+private theorem toField_shift4Mul_pow (base acc digit : Field) (e d : Nat)
     (hacc : toField acc = toField base ^ e) (hdigit : toField digit = toField base ^ d) :
     toField (shift4Mul acc digit) = toField base ^ (16 * e + d) := by
   rw [toField_shift4Mul, hacc, hdigit]
@@ -1051,7 +1051,7 @@ private theorem toField_shift4Mul_pow (base acc digit : Element) (e d : Nat)
   congr 1
   omega
 
-private theorem toField_inv_pow (x : Element) :
+private theorem toField_inv_pow (x : Field) :
     toField (inv x) = toField x ^ invExponent := by
   unfold inv
   let x2 := square x
@@ -1106,7 +1106,7 @@ private theorem toField_inv_pow (x : Element) :
   have hfinal := toField_shift4Mul_pow x acc6 x15 133169151 15 hacc6 hx15
   simpa [invExponent, KoalaBear.fieldSize] using hfinal
 
-private theorem toField_inv_raw (x : Element) : toField (inv x) = (toField x)⁻¹ := by
+private theorem toField_inv_raw (x : Field) : toField (inv x) = (toField x)⁻¹ := by
   rw [toField_inv_pow]
   by_cases hx : toField x = 0
   · rw [hx]
@@ -1114,21 +1114,21 @@ private theorem toField_inv_raw (x : Element) : toField (inv x) = (toField x)⁻
   · simpa [invExponent] using (KoalaBear.inv_eq_pow (toField x) hx).symm
 
 @[simp]
-theorem toField_inv (x : Element) : toField x⁻¹ = (toField x)⁻¹ := by
+theorem toField_inv (x : Field) : toField x⁻¹ = (toField x)⁻¹ := by
   change toField (inv x) = (toField x)⁻¹
   exact toField_inv_raw x
 
-private theorem toField_mul_raw (x y : Element) : toField (mul x y) = toField x * toField y := by
+private theorem toField_mul_raw (x y : Field) : toField (mul x y) = toField x * toField y := by
   change toField (x * y) = toField x * toField y
   exact toField_mul x y
 
-private theorem toField_div_mul_inv (x y : Element) :
+private theorem toField_div_mul_inv (x y : Field) :
     toField (div x y) = toField x * toField (inv y) := by
   unfold div
   exact toField_mul_raw x (inv y)
 
 @[simp]
-theorem toField_div (x y : Element) : toField (x / y) = toField x / toField y := by
+theorem toField_div (x y : Field) : toField (x / y) = toField x / toField y := by
   change toField (div x y) = toField x / toField y
   have h : ∀ a b c : KoalaBear.Field, c = b⁻¹ → a * c = a / b := by
     intro a b c hc
@@ -1138,7 +1138,7 @@ theorem toField_div (x y : Element) : toField (x / y) = toField x / toField y :=
     (h (toField x) (toField y) (toField (inv y)) (toField_inv_raw y))
 
 @[simp]
-theorem toField_natCast (n : Nat) : toField (n : Element) = (n : KoalaBear.Field) := by
+theorem toField_natCast (n : Nat) : toField (n : Field) = (n : KoalaBear.Field) := by
   change toField (ofNat n) = (n : KoalaBear.Field)
   unfold ofNat
   rw [toField_ofCanonicalNat]
@@ -1146,30 +1146,30 @@ theorem toField_natCast (n : Nat) : toField (n : Element) = (n : KoalaBear.Field
   exact Nat.mod_modEq _ _
 
 @[simp]
-theorem toField_intCast (n : Int) : toField (n : Element) = (n : KoalaBear.Field) := by
+theorem toField_intCast (n : Int) : toField (n : Field) = (n : KoalaBear.Field) := by
   change toField (ofInt n) = (n : KoalaBear.Field)
   unfold ofInt
   rw [toField_ofField]
 
 @[simp]
-theorem toField_nsmul (n : Nat) (x : Element) : toField (n • x) = n • toField x := by
-  change toField ((n : Element) * x) = n • toField x
+theorem toField_nsmul (n : Nat) (x : Field) : toField (n • x) = n • toField x := by
+  change toField ((n : Field) * x) = n • toField x
   rw [toField_mul, toField_natCast]
   rw [nsmul_eq_mul]
 
 @[simp]
-theorem toField_zsmul (n : Int) (x : Element) : toField (n • x) = n • toField x := by
-  change toField ((n : Element) * x) = n • toField x
+theorem toField_zsmul (n : Int) (x : Field) : toField (n • x) = n • toField x := by
+  change toField ((n : Field) * x) = n • toField x
   rw [toField_mul, toField_intCast]
   rw [zsmul_eq_mul]
 
 @[simp]
-theorem toField_npow (x : Element) (n : Nat) : toField (x ^ n) = toField x ^ n := by
+theorem toField_npow (x : Field) (n : Nat) : toField (x ^ n) = toField x ^ n := by
   change toField (pow x n) = toField x ^ n
   rw [toField_pow]
 
 @[simp]
-theorem toField_zpow (x : Element) (n : Int) : toField (x ^ n) = toField x ^ n := by
+theorem toField_zpow (x : Field) (n : Int) : toField (x ^ n) = toField x ^ n := by
   cases n with
   | ofNat n =>
       change toField (pow x n) = toField x ^ (Int.ofNat n)
@@ -1183,26 +1183,26 @@ theorem toField_zpow (x : Element) (n : Int) : toField (x ^ n) = toField x ^ n :
       rw [toField_pow, hinv, zpow_negSucc, inv_pow]
 
 @[simp]
-theorem toField_nnratCast (q : ℚ≥0) : toField (q : Element) = (q : KoalaBear.Field) := by
+theorem toField_nnratCast (q : ℚ≥0) : toField (q : Field) = (q : KoalaBear.Field) := by
   change toField (ofField (q : KoalaBear.Field)) = (q : KoalaBear.Field)
   rw [toField_ofField]
 
 @[simp]
-theorem toField_ratCast (q : ℚ) : toField (q : Element) = (q : KoalaBear.Field) := by
+theorem toField_ratCast (q : ℚ) : toField (q : Field) = (q : KoalaBear.Field) := by
   change toField (ofField (q : KoalaBear.Field)) = (q : KoalaBear.Field)
   rw [toField_ofField]
 
 @[simp]
-theorem toField_nnqsmul (q : ℚ≥0) (x : Element) : toField (q • x) = q • toField x := by
+theorem toField_nnqsmul (q : ℚ≥0) (x : Field) : toField (q • x) = q • toField x := by
   change toField (ofField (q • toField x)) = q • toField x
   rw [toField_ofField]
 
 @[simp]
-theorem toField_qsmul (q : ℚ) (x : Element) : toField (q • x) = q • toField x := by
+theorem toField_qsmul (q : ℚ) (x : Field) : toField (q • x) = q • toField x := by
   change toField (ofField (q • toField x)) = q • toField x
   rw [toField_ofField]
 
-instance (priority := low) instFieldElement : _root_.Field Element :=
+instance (priority := low) instField : _root_.Field Field :=
   toField_injective.field toField
     toField_zero
     toField_one
@@ -1223,17 +1223,17 @@ instance (priority := low) instFieldElement : _root_.Field Element :=
     toField_nnratCast
     toField_ratCast
 
-instance (priority := low) instCommRingElement : CommRing Element := by
+instance (priority := low) instCommRing : CommRing Field := by
   infer_instance
 
-instance (priority := low) instNonBinaryFieldElement : NonBinaryField Element where
+instance (priority := low) instNonBinaryField : NonBinaryField Field where
   char_neq_2 := by
-    change ((2 : Nat) : Element) ≠ 0
+    change ((2 : Nat) : Field) ≠ 0
     intro h
     exact NonBinaryField.char_neq_2 (F := KoalaBear.Field) (by
       calc
-        (2 : KoalaBear.Field) = toField ((2 : Nat) : Element) := (toField_natCast 2).symm
-        _ = toField (0 : Element) := congrArg toField h
+        (2 : KoalaBear.Field) = toField ((2 : Nat) : Field) := (toField_natCast 2).symm
+        _ = toField (0 : Field) := congrArg toField h
         _ = 0 := toField_zero)
 
 end Fast

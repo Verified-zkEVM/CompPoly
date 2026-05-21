@@ -14,28 +14,28 @@ Regression checks for the executable Montgomery representation.
 
 namespace KoalaBear.Fast
 
-#guard raw (0 : Element) = 0
-#guard raw (1 : Element) = rModModulus
+#guard raw (0 : Field) = 0
+#guard raw (1 : Field) = rModModulus
 #guard toCanonicalUInt32 (ofNat 37) = (37 : UInt32)
 #guard toNat (ofNat KoalaBear.fieldSize) = 0
 #guard toNat (ofNat (KoalaBear.fieldSize + 37)) = 37
-#guard toNat ((ofNat (KoalaBear.fieldSize - 1)) + (2 : Element)) = 1
+#guard toNat ((ofNat (KoalaBear.fieldSize - 1)) + (2 : Field)) = 1
 #guard toNat ((ofNat (KoalaBear.fieldSize - 1)) + (ofNat (KoalaBear.fieldSize - 1))) =
   KoalaBear.fieldSize - 2
-#guard toNat ((9 : Element) - (5 : Element)) = 4
-#guard toNat ((5 : Element) - (9 : Element)) = KoalaBear.fieldSize - 4
-#guard toNat (-(0 : Element)) = 0
-#guard toNat (-(1 : Element)) = KoalaBear.fieldSize - 1
+#guard toNat ((9 : Field) - (5 : Field)) = 4
+#guard toNat ((5 : Field) - (9 : Field)) = KoalaBear.fieldSize - 4
+#guard toNat (-(0 : Field)) = 0
+#guard toNat (-(1 : Field)) = KoalaBear.fieldSize - 1
 #guard toNat ((ofNat (KoalaBear.fieldSize - 1)) * (ofNat (KoalaBear.fieldSize - 1))) = 1
-#guard toNat (square (12345 : Element)) = 152399025
-#guard toNat ((37 : Element) ^ 0) = 1
-#guard toNat ((37 : Element) ^ 1) = 37
-#guard toField ((123456789 : Element) ^ 17) = ((123456789 : KoalaBear.Field) ^ 17)
-#guard toField ((123456789 : Element) ^ 255) = ((123456789 : KoalaBear.Field) ^ 255)
-#guard toNat ((0 : Element)⁻¹) = 0
-#guard toNat ((37 : Element)⁻¹ * (37 : Element)) = 1
-#guard toNat ((37 : Element) / (37 : Element)) = 1
-#guard toField ((37 : Element)⁻¹) = ((37 : KoalaBear.Field)⁻¹)
-#guard toField ((37 : Element) ^ (-3 : Int)) = ((37 : KoalaBear.Field) ^ (-3 : Int))
+#guard toNat (square (12345 : Field)) = 152399025
+#guard toNat ((37 : Field) ^ 0) = 1
+#guard toNat ((37 : Field) ^ 1) = 37
+#guard toField ((123456789 : Field) ^ 17) = ((123456789 : KoalaBear.Field) ^ 17)
+#guard toField ((123456789 : Field) ^ 255) = ((123456789 : KoalaBear.Field) ^ 255)
+#guard toNat ((0 : Field)⁻¹) = 0
+#guard toNat ((37 : Field)⁻¹ * (37 : Field)) = 1
+#guard toNat ((37 : Field) / (37 : Field)) = 1
+#guard toField ((37 : Field)⁻¹) = ((37 : KoalaBear.Field)⁻¹)
+#guard toField ((37 : Field) ^ (-3 : Int)) = ((37 : KoalaBear.Field) ^ (-3 : Int))
 
 end KoalaBear.Fast
