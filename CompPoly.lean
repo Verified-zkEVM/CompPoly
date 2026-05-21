@@ -54,6 +54,8 @@ import CompPoly.Fields.Binary.Tower.Support.Preliminaries
 import CompPoly.Fields.Binary.Tower.TensorAlgebra
 import CompPoly.Fields.Goldilocks
 import CompPoly.Fields.KoalaBear
+import CompPoly.Fields.KoalaBear.Basic
+import CompPoly.Fields.KoalaBear.Fast
 import CompPoly.Fields.Mersenne
 import CompPoly.Fields.PrattCertificate
 import CompPoly.Fields.Secp256k1

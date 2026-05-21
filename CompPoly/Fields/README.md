@@ -15,7 +15,9 @@ This directory contains formally verified field infrastructure used in zero-know
 | **BLS12_381.lean** | Scalar field of BLS12-381 (253-bit, 2-adicity 47). |
 | **BN254.lean** | Scalar field of BN254 curve. |
 | **Goldilocks.lean** | \(2^{64} - 2^{32} + 1\) — Plonky2/3. |
-| **KoalaBear.lean** | \(2^{31} - 2^{24} + 1\) — lean Ethereum spec; includes `NonBinaryField` instance and roots-of-unity tables. |
+| **KoalaBear.lean** | Facade for KoalaBear modules, re-exporting the canonical field and fast native-word implementation. |
+| **KoalaBear/Basic.lean** | \(2^{31} - 2^{24} + 1\) — lean Ethereum spec. |
+| **KoalaBear/Fast.lean** | Native `UInt32` canonical-residue operations for KoalaBear, with proved conversion and operation equivalence against `KoalaBear.Field`. |
 | **Mersenne.lean** | \(2^{31} - 1\) — Circle STARKs. |
 | **Secp256k1.lean** | Base and scalar fields for the Secp256k1 curve (used in Bitcoin/Ethereum). |
 
