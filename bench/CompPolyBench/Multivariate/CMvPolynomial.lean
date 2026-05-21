@@ -136,7 +136,11 @@ private def runKoalaBearMultivariateDense (preset : BenchPreset) (gen : StdGen) 
   let warmup := warmupIterations preset
   let measured := measuredIterations preset
   let hornerMeasured := preset.selectNat 10000 1500 300
-  let checksumIterations := groupChecksumIterations measured [hornerMeasured]
+  let fastMeasured := preset.selectNat 14000 2000 400
+  let fastHornerMeasured := preset.selectNat 31500 4500 900
+  let checksumIterations := groupChecksumIterations measured [
+    hornerMeasured, fastMeasured, fastHornerMeasured
+  ]
   let denseEval ← runTimed
     "multivariate-dense-eval" "CMvPolynomial" "eval" "KoalaBear.Field"
     multivariateDenseShape preset warmup measured
@@ -144,7 +148,7 @@ private def runKoalaBearMultivariateDense (preset : BenchPreset) (gen : StdGen) 
     checksumKoalaBear (checksumIterations := checksumIterations)
   let fastDenseEval ← runTimed
     "multivariate-dense-eval-fast" "CMvPolynomial" "eval" "KoalaBear.Fast.Element"
-    multivariateDenseShape preset warmup measured
+    multivariateDenseShape preset warmup fastMeasured
     (fun i ↦ CPoly.CMvPolynomial.eval (fastEvalPoint (i % multivariatePointCount))
       fastPoly)
     checksumKoalaBearFast (checksumIterations := checksumIterations)
@@ -156,7 +160,7 @@ private def runKoalaBearMultivariateDense (preset : BenchPreset) (gen : StdGen) 
   let fastDenseHorner ← runTimed
     "multivariate-dense-horner-fast" "CMvPolynomial" "evalHorner"
     "KoalaBear.Fast.Element"
-    multivariateDenseShape preset warmup hornerMeasured
+    multivariateDenseShape preset warmup fastHornerMeasured
     (fun i ↦ CPoly.CMvPolynomial.evalHorner (fastEvalPoint (i % multivariatePointCount))
       fastPoly)
     checksumKoalaBearFast (checksumIterations := checksumIterations)
@@ -182,7 +186,11 @@ private def runKoalaBearMultivariateSparse (preset : BenchPreset) (gen : StdGen)
   let warmup := warmupIterations preset
   let measured := measuredIterations preset
   let hornerMeasured := preset.selectNat 10000 1500 300
-  let checksumIterations := groupChecksumIterations measured [hornerMeasured]
+  let fastMeasured := preset.selectNat 14000 2000 400
+  let fastHornerMeasured := preset.selectNat 31500 4500 900
+  let checksumIterations := groupChecksumIterations measured [
+    hornerMeasured, fastMeasured, fastHornerMeasured
+  ]
   let sparseEval ← runTimed
     "multivariate-sparse-eval" "CMvPolynomial" "eval" "KoalaBear.Field"
     multivariateSparseShape preset warmup measured
@@ -190,7 +198,7 @@ private def runKoalaBearMultivariateSparse (preset : BenchPreset) (gen : StdGen)
     checksumKoalaBear (checksumIterations := checksumIterations)
   let fastSparseEval ← runTimed
     "multivariate-sparse-eval-fast" "CMvPolynomial" "eval" "KoalaBear.Fast.Element"
-    multivariateSparseShape preset warmup measured
+    multivariateSparseShape preset warmup fastMeasured
     (fun i ↦ CPoly.CMvPolynomial.eval (fastEvalPoint (i % multivariatePointCount))
       fastPoly)
     checksumKoalaBearFast (checksumIterations := checksumIterations)
@@ -202,7 +210,7 @@ private def runKoalaBearMultivariateSparse (preset : BenchPreset) (gen : StdGen)
   let fastSparseHorner ← runTimed
     "multivariate-sparse-horner-fast" "CMvPolynomial" "evalHorner"
     "KoalaBear.Fast.Element"
-    multivariateSparseShape preset warmup hornerMeasured
+    multivariateSparseShape preset warmup fastHornerMeasured
     (fun i ↦ CPoly.CMvPolynomial.evalHorner (fastEvalPoint (i % multivariatePointCount))
       fastPoly)
     checksumKoalaBearFast (checksumIterations := checksumIterations)

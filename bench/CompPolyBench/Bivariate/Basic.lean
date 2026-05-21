@@ -107,8 +107,12 @@ private def runKoalaBearBivariate (preset : BenchPreset) (gen : StdGen) :
   let measured := measuredIterations preset
   let hornerYxMeasured := preset.selectNat 11000 1600 300
   let hornerXyMeasured := preset.selectNat 100000 14000 3000
+  let fastMeasured := preset.selectNat 14000 2000 400
+  let fastHornerYxMeasured := preset.selectNat 35000 5000 1000
+  let fastHornerXyMeasured := preset.selectNat 1680000 240000 48000
   let checksumIterations := groupChecksumIterations measured [
-    hornerYxMeasured, hornerXyMeasured
+    hornerYxMeasured, hornerXyMeasured, fastMeasured, fastHornerYxMeasured,
+    fastHornerXyMeasured
   ]
   let naive ← runTimed
     "bivariate-full-eval-naive" "CBivariate" "evalEval" "KoalaBear.Field"
@@ -119,7 +123,7 @@ private def runKoalaBearBivariate (preset : BenchPreset) (gen : StdGen) :
     checksumKoalaBear (checksumIterations := checksumIterations)
   let fastNaive ← runTimed
     "bivariate-full-eval-naive-fast" "CBivariate" "evalEval" "KoalaBear.Fast.Element"
-    bivariateInputShape preset warmup measured
+    bivariateInputShape preset warmup fastMeasured
     (fun i ↦
       let point := fastEvalPoint i
       CBivariate.evalEval point.1 point.2 fastP)
@@ -134,7 +138,7 @@ private def runKoalaBearBivariate (preset : BenchPreset) (gen : StdGen) :
   let fastHornerYx ← runTimed
     "bivariate-full-eval-horner-yx-fast" "CBivariate" "evalEvalHornerYThenX"
     "KoalaBear.Fast.Element"
-    bivariateInputShape preset warmup hornerYxMeasured
+    bivariateInputShape preset warmup fastHornerYxMeasured
     (fun i ↦
       let point := fastEvalPoint i
       CBivariate.evalEvalHornerYThenX point.1 point.2 fastP)
@@ -149,7 +153,7 @@ private def runKoalaBearBivariate (preset : BenchPreset) (gen : StdGen) :
   let fastHornerXy ← runTimed
     "bivariate-full-eval-horner-xy-fast" "CBivariate" "evalEvalHornerXThenY"
     "KoalaBear.Fast.Element"
-    bivariateInputShape preset warmup hornerXyMeasured
+    bivariateInputShape preset warmup fastHornerXyMeasured
     (fun i ↦
       let point := fastEvalPoint i
       CBivariate.evalEvalHornerXThenY point.1 point.2 fastP)

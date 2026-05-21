@@ -86,9 +86,21 @@ private def runKoalaBearUnivariateBatchSmall (preset : BenchPreset) (gen : StdGe
   let reversalConvolutionMeasured := preset.selectNat 150 20 5
   let reversalNttMeasured := preset.selectNat 150 20 5
   let reversalNttFastMeasured := preset.selectNat 450 60 15
+  let fastSumMeasured := preset.selectNat 19600 2800 560
+  let fastHornerMeasured := preset.selectNat 84000 12000 2400
+  let fastMeasured := preset.selectNat 35 5 1
+  let fastRemainderMeasured := preset.selectNat 3850 550 110
+  let fastNttMeasured := preset.selectNat 2800 400 80
+  let fastNttFastMeasured := preset.selectNat 3150 450 90
+  let fastReversalConvolutionMeasured := preset.selectNat 280 40 8
+  let fastReversalNttMeasured := preset.selectNat 420 60 12
+  let fastReversalNttFastMeasured := preset.selectNat 1750 250 50
   let checksumIterations := groupChecksumIterations measured [
     sumMeasured, hornerMeasured, remainderMeasured, nttMeasured, nttFastMeasured,
-    reversalConvolutionMeasured, reversalNttMeasured, reversalNttFastMeasured
+    reversalConvolutionMeasured, reversalNttMeasured, reversalNttFastMeasured,
+    fastSumMeasured, fastHornerMeasured, fastMeasured, fastRemainderMeasured,
+    fastNttMeasured, fastNttFastMeasured, fastReversalConvolutionMeasured,
+    fastReversalNttMeasured, fastReversalNttFastMeasured
   ]
   let smallBatchSum ← runTimed
     "univariate-batch-naive-sum" "CPolynomial" "evalBatch" "KoalaBear.Field"
@@ -97,7 +109,7 @@ private def runKoalaBearUnivariateBatchSmall (preset : BenchPreset) (gen : StdGe
     (checksumArray checksumKoalaBear) (checksumIterations := checksumIterations)
   let fastSmallBatchSum ← runTimed
     "univariate-batch-naive-sum-fast" "CPolynomial" "evalBatch" "KoalaBear.Fast.Element"
-    univariateBatchShape preset warmup sumMeasured
+    univariateBatchShape preset warmup fastSumMeasured
     (fun _ ↦ CPolynomial.evalBatch fastBatchPoly fastBatchPoints)
     (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
   let smallBatchHorner ← runTimed
@@ -107,7 +119,7 @@ private def runKoalaBearUnivariateBatchSmall (preset : BenchPreset) (gen : StdGe
     (checksumArray checksumKoalaBear) (checksumIterations := checksumIterations)
   let fastSmallBatchHorner ← runTimed
     "univariate-batch-naive-horner-fast" "CPolynomial" "evalBatchHorner"
-    "KoalaBear.Fast.Element" univariateBatchShape preset warmup hornerMeasured
+    "KoalaBear.Fast.Element" univariateBatchShape preset warmup fastHornerMeasured
     (fun _ ↦ CPolynomial.evalBatchHorner fastBatchPoly fastBatchPoints)
     (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
   let smallBatchSubproductNaive ← runTimed
@@ -119,7 +131,7 @@ private def runKoalaBearUnivariateBatchSmall (preset : BenchPreset) (gen : StdGe
   let fastSmallBatchSubproductNaive ← runTimed
     "univariate-batch-subproduct-naive-mul-naive-mod-fast" "CPolynomial"
     "evalBatchSubproduct naive mul/mod" "KoalaBear.Fast.Element"
-    univariateBatchShape preset warmup measured
+    univariateBatchShape preset warmup fastMeasured
     (fun _ ↦ CPolynomial.evalBatchSubproduct fastNaiveMul fastNaiveMod fastBatchPoly
       fastBatchPoints)
     (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
@@ -132,7 +144,7 @@ private def runKoalaBearUnivariateBatchSmall (preset : BenchPreset) (gen : StdGe
   let fastSmallBatchSubproductRemainder ← runTimed
     "univariate-batch-subproduct-naive-mul-remainder-only-mod-fast" "CPolynomial"
     "evalBatchSubproduct naive mul/remainder-only mod" "KoalaBear.Fast.Element"
-    univariateBatchShape preset warmup remainderMeasured
+    univariateBatchShape preset warmup fastRemainderMeasured
     (fun _ ↦ CPolynomial.evalBatchSubproduct fastNaiveMul fastRemainderOnlyMod fastBatchPoly
       fastBatchPoints)
     (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
@@ -145,7 +157,7 @@ private def runKoalaBearUnivariateBatchSmall (preset : BenchPreset) (gen : StdGe
   let fastSmallBatchSubproductNtt ← runTimed
     "univariate-batch-subproduct-ntt-mul-remainder-only-mod-fast" "CPolynomial"
     "evalBatchSubproduct ntt mul/remainder-only mod" "KoalaBear.Fast.Element"
-    univariateBatchShape preset warmup nttMeasured
+    univariateBatchShape preset warmup fastNttMeasured
     (fun _ ↦ CPolynomial.evalBatchSubproduct fastNttMul fastRemainderOnlyMod fastBatchPoly
       fastBatchPoints)
     (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
@@ -158,7 +170,7 @@ private def runKoalaBearUnivariateBatchSmall (preset : BenchPreset) (gen : StdGe
   let fastSmallBatchSubproductNttFast ← runTimed
     "univariate-batch-subproduct-ntt-fast-mul-remainder-only-mod-fast" "CPolynomial"
     "evalBatchSubproduct ntt-fast mul/remainder-only mod" "KoalaBear.Fast.Element"
-    univariateBatchShape preset warmup nttFastMeasured
+    univariateBatchShape preset warmup fastNttFastMeasured
     (fun _ ↦ CPolynomial.evalBatchSubproduct fastNttFastMul fastRemainderOnlyMod
       fastBatchPoly fastBatchPoints)
     (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
@@ -172,7 +184,7 @@ private def runKoalaBearUnivariateBatchSmall (preset : BenchPreset) (gen : StdGe
   let fastSmallBatchSubproductReversalConvolution ← runTimed
     "univariate-batch-subproduct-naive-mul-reversal-convolution-low-mod-fast"
     "CPolynomial" "evalBatchSubproduct naive mul/reversal-convolution-low mod"
-    "KoalaBear.Fast.Element" univariateBatchShape preset warmup reversalConvolutionMeasured
+    "KoalaBear.Fast.Element" univariateBatchShape preset warmup fastReversalConvolutionMeasured
     (fun _ ↦ CPolynomial.evalBatchSubproduct fastNaiveMul fastReversalConvolutionLowMod
       fastBatchPoly fastBatchPoints)
     (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
@@ -185,7 +197,7 @@ private def runKoalaBearUnivariateBatchSmall (preset : BenchPreset) (gen : StdGe
   let fastSmallBatchSubproductReversalNtt ← runTimed
     "univariate-batch-subproduct-ntt-mul-reversal-ntt-low-mod-fast" "CPolynomial"
     "evalBatchSubproduct ntt mul/reversal-ntt-low mod" "KoalaBear.Fast.Element"
-    univariateBatchShape preset warmup reversalNttMeasured
+    univariateBatchShape preset warmup fastReversalNttMeasured
     (fun _ ↦ CPolynomial.evalBatchSubproduct fastNttMul fastReversalNttLowMod fastBatchPoly
       fastBatchPoints)
     (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
@@ -199,7 +211,7 @@ private def runKoalaBearUnivariateBatchSmall (preset : BenchPreset) (gen : StdGe
   let fastSmallBatchSubproductReversalNttFast ← runTimed
     "univariate-batch-subproduct-ntt-fast-mul-reversal-ntt-fast-low-mod-fast"
     "CPolynomial" "evalBatchSubproduct ntt-fast mul/reversal-ntt-fast-low mod"
-    "KoalaBear.Fast.Element" univariateBatchShape preset warmup reversalNttFastMeasured
+    "KoalaBear.Fast.Element" univariateBatchShape preset warmup fastReversalNttFastMeasured
     (fun _ ↦ CPolynomial.evalBatchSubproduct fastNttFastMul fastReversalNttFastLowMod
       fastBatchPoly fastBatchPoints)
     (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
@@ -262,8 +274,17 @@ private def runKoalaBearUnivariateBatchMedium (preset : BenchPreset) (gen : StdG
   let hornerMeasured := preset.selectNat 150 20 5
   let reversalNttMeasured := preset.selectNat 50 10 1
   let reversalNttFastMeasured := preset.selectNat 170 25 5
+  let fastMeasured := preset.selectNat 70 10 2
+  let fastHornerMeasured := preset.selectNat 1400 200 40
+  let fastRemainderMeasured := preset.selectNat 28 4 1
+  let fastNttMeasured := preset.selectNat 28 4 1
+  let fastNttFastMeasured := preset.selectNat 28 4 1
+  let fastReversalNttMeasured := preset.selectNat 210 30 6
+  let fastReversalNttFastMeasured := preset.selectNat 910 130 26
   let checksumIterations := groupChecksumIterations measured [
-    hornerMeasured, reversalNttMeasured, reversalNttFastMeasured
+    hornerMeasured, reversalNttMeasured, reversalNttFastMeasured, fastMeasured,
+    fastHornerMeasured, fastRemainderMeasured, fastNttMeasured, fastNttFastMeasured,
+    fastReversalNttMeasured, fastReversalNttFastMeasured
   ]
   let mediumBatchSum ← runTimed
     "univariate-batch-medium-naive-sum" "CPolynomial" "evalBatch" "KoalaBear.Field"
@@ -273,7 +294,7 @@ private def runKoalaBearUnivariateBatchMedium (preset : BenchPreset) (gen : StdG
   let fastMediumBatchSum ← runTimed
     "univariate-batch-medium-naive-sum-fast" "CPolynomial" "evalBatch"
     "KoalaBear.Fast.Element"
-    mediumUnivariateBatchShape preset warmup measured
+    mediumUnivariateBatchShape preset warmup fastMeasured
     (fun _ ↦ CPolynomial.evalBatch fastMediumBatchPoly fastMediumBatchPoints)
     (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
   let mediumBatchHorner ← runTimed
@@ -284,7 +305,7 @@ private def runKoalaBearUnivariateBatchMedium (preset : BenchPreset) (gen : StdG
   let fastMediumBatchHorner ← runTimed
     "univariate-batch-medium-naive-horner-fast" "CPolynomial" "evalBatchHorner"
     "KoalaBear.Fast.Element"
-    mediumUnivariateBatchShape preset warmup hornerMeasured
+    mediumUnivariateBatchShape preset warmup fastHornerMeasured
     (fun _ ↦ CPolynomial.evalBatchHorner fastMediumBatchPoly fastMediumBatchPoints)
     (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
   let mediumBatchSubproductRemainder ← runTimed
@@ -297,7 +318,7 @@ private def runKoalaBearUnivariateBatchMedium (preset : BenchPreset) (gen : StdG
   let fastMediumBatchSubproductRemainder ← runTimed
     "univariate-batch-medium-subproduct-naive-mul-remainder-only-mod-fast" "CPolynomial"
     "evalBatchSubproduct naive mul/remainder-only mod" "KoalaBear.Fast.Element"
-    mediumUnivariateBatchShape preset warmup measured
+    mediumUnivariateBatchShape preset warmup fastRemainderMeasured
     (fun _ ↦ CPolynomial.evalBatchSubproduct fastNaiveMul fastRemainderOnlyMod
       fastMediumBatchPoly fastMediumBatchPoints)
     (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
@@ -311,7 +332,7 @@ private def runKoalaBearUnivariateBatchMedium (preset : BenchPreset) (gen : StdG
   let fastMediumBatchSubproductNtt ← runTimed
     "univariate-batch-medium-subproduct-ntt-mul-remainder-only-mod-fast" "CPolynomial"
     "evalBatchSubproduct ntt mul/remainder-only mod" "KoalaBear.Fast.Element"
-    mediumUnivariateBatchShape preset warmup measured
+    mediumUnivariateBatchShape preset warmup fastNttMeasured
     (fun _ ↦ CPolynomial.evalBatchSubproduct fastNttMul fastRemainderOnlyMod
       fastMediumBatchPoly fastMediumBatchPoints)
     (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
@@ -326,7 +347,7 @@ private def runKoalaBearUnivariateBatchMedium (preset : BenchPreset) (gen : StdG
     "univariate-batch-medium-subproduct-ntt-fast-mul-remainder-only-mod-fast"
     "CPolynomial" "evalBatchSubproduct ntt-fast mul/remainder-only mod"
     "KoalaBear.Fast.Element"
-    mediumUnivariateBatchShape preset warmup measured
+    mediumUnivariateBatchShape preset warmup fastNttFastMeasured
     (fun _ ↦ CPolynomial.evalBatchSubproduct fastNttFastMul fastRemainderOnlyMod
       fastMediumBatchPoly fastMediumBatchPoints)
     (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
@@ -341,7 +362,7 @@ private def runKoalaBearUnivariateBatchMedium (preset : BenchPreset) (gen : StdG
     "univariate-batch-medium-subproduct-ntt-mul-reversal-ntt-low-mod-fast"
     "CPolynomial" "evalBatchSubproduct ntt mul/reversal-ntt-low mod"
     "KoalaBear.Fast.Element"
-    mediumUnivariateBatchShape preset warmup reversalNttMeasured
+    mediumUnivariateBatchShape preset warmup fastReversalNttMeasured
     (fun _ ↦ CPolynomial.evalBatchSubproduct fastNttMul fastReversalNttLowMod
       fastMediumBatchPoly fastMediumBatchPoints)
     (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
@@ -357,7 +378,7 @@ private def runKoalaBearUnivariateBatchMedium (preset : BenchPreset) (gen : StdG
     "univariate-batch-medium-subproduct-ntt-fast-mul-reversal-ntt-fast-low-mod-fast"
     "CPolynomial" "evalBatchSubproduct ntt-fast mul/reversal-ntt-fast-low mod"
     "KoalaBear.Fast.Element"
-    mediumUnivariateBatchShape preset warmup reversalNttFastMeasured
+    mediumUnivariateBatchShape preset warmup fastReversalNttFastMeasured
     (fun _ ↦ CPolynomial.evalBatchSubproduct fastNttFastMul fastReversalNttFastLowMod
       fastMediumBatchPoly fastMediumBatchPoints)
     (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
@@ -410,8 +431,12 @@ private def runKoalaBearUnivariateBatchLarge (preset : BenchPreset) (gen : StdGe
   let measured := largeBatchMeasuredIterations preset
   let reversalNttMeasured := preset.selectNat 20 3 1
   let reversalNttFastMeasured := preset.selectNat 80 10 2
+  let fastMeasured := preset.selectNat 70 10 2
+  let fastReversalNttMeasured := preset.selectNat 63 9 2
+  let fastReversalNttFastMeasured := preset.selectNat 420 60 12
   let checksumIterations := groupChecksumIterations measured [
-    reversalNttMeasured, reversalNttFastMeasured
+    reversalNttMeasured, reversalNttFastMeasured, fastMeasured, fastReversalNttMeasured,
+    fastReversalNttFastMeasured
   ]
   let largeBatchHorner ← runTimed
     "univariate-batch-large-naive-horner" "CPolynomial" "evalBatchHorner" "KoalaBear.Field"
@@ -421,7 +446,7 @@ private def runKoalaBearUnivariateBatchLarge (preset : BenchPreset) (gen : StdGe
   let fastLargeBatchHorner ← runTimed
     "univariate-batch-large-naive-horner-fast" "CPolynomial" "evalBatchHorner"
     "KoalaBear.Fast.Element"
-    largeUnivariateBatchShape preset warmup measured
+    largeUnivariateBatchShape preset warmup fastMeasured
     (fun _ ↦ CPolynomial.evalBatchHorner fastLargeBatchPoly fastLargeBatchPoints)
     (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
   let largeBatchSubproductReversalNtt ← runTimed
@@ -434,7 +459,7 @@ private def runKoalaBearUnivariateBatchLarge (preset : BenchPreset) (gen : StdGe
   let fastLargeBatchSubproductReversalNtt ← runTimed
     "univariate-batch-large-subproduct-ntt-mul-reversal-ntt-low-mod-fast" "CPolynomial"
     "evalBatchSubproduct ntt mul/reversal-ntt-low mod" "KoalaBear.Fast.Element"
-    largeUnivariateBatchShape preset warmup reversalNttMeasured
+    largeUnivariateBatchShape preset warmup fastReversalNttMeasured
     (fun _ ↦ CPolynomial.evalBatchSubproduct fastNttMul fastReversalNttLowMod
       fastLargeBatchPoly fastLargeBatchPoints)
     (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
@@ -450,7 +475,7 @@ private def runKoalaBearUnivariateBatchLarge (preset : BenchPreset) (gen : StdGe
     "univariate-batch-large-subproduct-ntt-fast-mul-reversal-ntt-fast-low-mod-fast"
     "CPolynomial" "evalBatchSubproduct ntt-fast mul/reversal-ntt-fast-low mod"
     "KoalaBear.Fast.Element"
-    largeUnivariateBatchShape preset warmup reversalNttFastMeasured
+    largeUnivariateBatchShape preset warmup fastReversalNttFastMeasured
     (fun _ ↦ CPolynomial.evalBatchSubproduct fastNttFastMul fastReversalNttFastLowMod
       fastLargeBatchPoly fastLargeBatchPoints)
     (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
