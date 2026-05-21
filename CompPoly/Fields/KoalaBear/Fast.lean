@@ -983,6 +983,21 @@ theorem toField_mul (x y : Element) : toField (x * y) = toField x * toField y :=
   rw [Nat.cast_mul]
   ring
 
+/-- Ring equivalence between the fast Montgomery representation and canonical `KoalaBear.Field`. -/
+def ringEquiv : Element ≃+* KoalaBear.Field where
+  toFun := toField
+  invFun := ofField
+  left_inv := ofField_toField
+  right_inv := toField_ofField
+  map_add' := toField_add
+  map_mul' := toField_mul
+
+@[simp]
+theorem ringEquiv_apply (x : Element) : ringEquiv x = toField x := rfl
+
+@[simp]
+theorem ringEquiv_symm_apply (x : KoalaBear.Field) : ringEquiv.symm x = ofField x := rfl
+
 private theorem mul_assoc_element (x y z : Element) : (x * y) * z = x * (y * z) := by
   apply toField_injective
   rw [toField_mul, toField_mul, toField_mul, toField_mul]
