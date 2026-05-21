@@ -34,7 +34,10 @@ variable {R : Type*}
   `Raw.mul` defers trimming to the end of its convolution fold (it accumulates with the
   untrimmed `Raw.mulRaw` and trims once). `CPolynomial.divX` skips trimming entirely:
   the input is canonical and `extract 1 size` only strips from the front, so the leading
-  coefficient (when present) is preserved and the result is already canonical.
+  coefficient (when present) is preserved and the result is already canonical. The division
+  wrappers (`divByMonic`, `modByMonic`, `modByMonicRemainderOnly`, `modByMonicByReversal`,
+  `div`, `mod`) likewise skip the redundant post-trim: each underlying `Raw` algorithm
+  bottoms out in operations (`Raw.add`, `Raw.sub`, `subScaledShift`) that already trim.
   Remaining opportunities to trim only at the end of an iterative computation:
   `Raw.powBySq` (currently trims after every squaring) and the fold-sums in
   `Univariate/Lagrange.lean` and the NTT `butterflyStage`
@@ -707,23 +710,28 @@ section Division
 
 /-- Quotient of `p` by a monic polynomial `q`. Matches Mathlib's `Polynomial.divByMonic`. -/
 def divByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
-  ⟨(Raw.divByMonic p.val q.val).trim, Trim.isCanonical_trim (Raw.divByMonic p.val q.val)⟩
+  ⟨Raw.divByMonic p.val q.val,
+   Trim.isCanonical_of_trim_eq (Raw.divByMonic_canonical p.val q.val)⟩
 
 /-- Remainder of `p` modulo a monic polynomial `q`. Matches Mathlib's `Polynomial.modByMonic`. -/
 def modByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
-  ⟨(Raw.modByMonic p.val q.val).trim, Trim.isCanonical_trim (Raw.modByMonic p.val q.val)⟩
+  ⟨Raw.modByMonic p.val q.val,
+   Trim.isCanonical_of_trim_eq
+     (Raw.modByMonic_canonical (Trim.trim_eq_of_isCanonical p.property) q.val)⟩
 
 /-- Remainder of `p` modulo a monic polynomial `q`, using a remainder-only implementation. -/
 def modByMonicRemainderOnly [Field R] [BEq R] [LawfulBEq R]
     (p q : CPolynomial R) : CPolynomial R :=
-  ⟨(Raw.modByMonicRemainderOnly p.val q.val).trim,
-    Trim.isCanonical_trim (Raw.modByMonicRemainderOnly p.val q.val)⟩
+  ⟨Raw.modByMonicRemainderOnly p.val q.val,
+   Trim.isCanonical_of_trim_eq
+     (Raw.modByMonicRemainderOnly_canonical (Trim.trim_eq_of_isCanonical p.property) q.val)⟩
 
 /-- Remainder of `p` modulo a monic polynomial `q`, using reversal and low products. -/
 def modByMonicByReversal [Field R] [BEq R] [LawfulBEq R]
     (M : Raw.MulLowContext R) (p q : CPolynomial R) : CPolynomial R :=
-  ⟨(Raw.modByMonicByReversal M p.val q.val).trim,
-    Trim.isCanonical_trim (Raw.modByMonicByReversal M p.val q.val)⟩
+  ⟨Raw.modByMonicByReversal M p.val q.val,
+   Trim.isCanonical_of_trim_eq
+     (Raw.modByMonicByReversal_canonical M (Trim.trim_eq_of_isCanonical p.property) q.val)⟩
 
 /-- The remainder-only monic remainder agrees with the canonical monic remainder. -/
 theorem modByMonicRemainderOnly_eq_modByMonic [Field R] [BEq R] [LawfulBEq R]
@@ -733,11 +741,11 @@ theorem modByMonicRemainderOnly_eq_modByMonic [Field R] [BEq R] [LawfulBEq R]
 
 /-- Quotient of `p` by `q` (when `R` is a field). -/
 def div [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
-  ⟨(Raw.div p.val q.val).trim, Trim.isCanonical_trim (Raw.div p.val q.val)⟩
+  ⟨Raw.div p.val q.val, Trim.isCanonical_of_trim_eq (Raw.div_canonical p.val q.val)⟩
 
 /-- Remainder of `p` modulo `q` (when `R` is a field). -/
 def mod [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
-  ⟨(Raw.mod p.val q.val).trim, Trim.isCanonical_trim (Raw.mod p.val q.val)⟩
+  ⟨Raw.mod p.val q.val, Trim.isCanonical_of_trim_eq (Raw.mod_canonical p.val q.val)⟩
 
 instance [Field R] [BEq R] [LawfulBEq R] : Div (CPolynomial R) := ⟨div⟩
 instance [Field R] [BEq R] [LawfulBEq R] : Mod (CPolynomial R) := ⟨mod⟩
