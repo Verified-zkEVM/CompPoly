@@ -17,67 +17,109 @@ namespace CompPolyBench
 
 /-- Benchmark group metadata for `CompPoly.Multilinear.Basic`. -/
 def multilinearGroupInfos : List BenchGroupInfo := [
-  ⟨"multilinear-coeff-babybear", "Multilinear coefficient-form evaluation (BabyBear)"⟩,
-  ⟨"multilinear-hypercube-babybear", "Multilinear hypercube-form evaluation (BabyBear)"⟩,
+  ⟨"multilinear-coeff-koalabear", "Multilinear coefficient-form evaluation (KoalaBear)"⟩,
+  ⟨"multilinear-hypercube-koalabear", "Multilinear hypercube-form evaluation (KoalaBear)"⟩,
   ⟨"multilinear-coeff-goldilocks", "Multilinear coefficient-form evaluation (Goldilocks)"⟩,
   ⟨"multilinear-hypercube-goldilocks",
     "Multilinear hypercube-form evaluation (Goldilocks)"⟩
 ]
 
-/-- Run BabyBear coefficient-form multilinear evaluation benchmarks. -/
-private def runBabyBearMultilinearCoeff (preset : BenchPreset) (gen : StdGen) :
+/-- Run KoalaBear coefficient-form multilinear evaluation benchmarks. -/
+private def runKoalaBearMultilinearCoeff (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
-  let (coeffs, gen) := (babyBearVector 256 false).run gen
-  let (points, gen) := (babyBearPoints 256).run gen
-  let coeffPoly : CMlPolynomial BabyBear.Field 8 := CMlPolynomial.ofArray coeffs 8
-  let evalPoint (offset : Nat) : Vector BabyBear.Field 8 :=
+  let (coeffs, gen) := (koalaBearVector 256 false).run gen
+  let (points, gen) := (koalaBearPoints 256).run gen
+  let coeffPoly : CMlPolynomial KoalaBear.Field 8 := CMlPolynomial.ofArray coeffs 8
+  let evalPoint (offset : Nat) : Vector KoalaBear.Field 8 :=
     Vector.ofFn fun j ↦ points.getD ((offset + j.val) % points.size) 0
+  let fastCoeffs := koalaBearFastArray coeffs
+  let fastPoints := koalaBearFastArray points
+  let fastCoeffPoly : CMlPolynomial KoalaBear.Fast.Field 8 := CMlPolynomial.ofArray fastCoeffs 8
+  let fastEvalPoint (offset : Nat) : Vector KoalaBear.Fast.Field 8 :=
+    Vector.ofFn fun j ↦ fastPoints.getD ((offset + j.val) % fastPoints.size) 0
   let warmup := warmupIterations preset
   let measured := measuredIterations preset
   let hornerMeasured := preset.selectNat 120000 17000 3500
-  let checksumIterations := groupChecksumIterations measured [hornerMeasured]
+  let fastMeasured := preset.selectNat 7000 1000 200
+  let fastHornerMeasured := preset.selectNat 245000 35000 7000
+  let checksumIterations := groupChecksumIterations measured [
+    hornerMeasured, fastMeasured, fastHornerMeasured
+  ]
   let coeffEval ← runTimed
-    "multilinear-coeff-eval" "CMlPolynomial" "eval" "BabyBear.Field"
+    "multilinear-coeff-eval" "CMlPolynomial" "eval" "KoalaBear.Field"
     "8 vars, 256 coefficients, 32 points" preset warmup measured
     (fun i ↦ CMlPolynomial.eval coeffPoly (evalPoint (i % 32)))
-    checksumBabyBear (checksumIterations := checksumIterations)
+    checksumKoalaBear (checksumIterations := checksumIterations)
+  let fastCoeffEval ← runTimed
+    "multilinear-coeff-eval-fast" "CMlPolynomial" "eval" "KoalaBear.Fast.Field"
+    "8 vars, 256 coefficients, 32 points" preset warmup fastMeasured
+    (fun i ↦ CMlPolynomial.eval fastCoeffPoly (fastEvalPoint (i % 32)))
+    checksumKoalaBearFast (checksumIterations := checksumIterations)
   let coeffHorner ← runTimed
-    "multilinear-coeff-horner" "CMlPolynomial" "evalHorner" "BabyBear.Field"
+    "multilinear-coeff-horner" "CMlPolynomial" "evalHorner" "KoalaBear.Field"
     "8 vars, 256 coefficients, 32 points" preset warmup hornerMeasured
     (fun i ↦ CMlPolynomial.evalHorner coeffPoly (evalPoint (i % 32)))
-    checksumBabyBear (checksumIterations := checksumIterations)
+    checksumKoalaBear (checksumIterations := checksumIterations)
+  let fastCoeffHorner ← runTimed
+    "multilinear-coeff-horner-fast" "CMlPolynomial" "evalHorner"
+    "KoalaBear.Fast.Field"
+    "8 vars, 256 coefficients, 32 points" preset warmup fastHornerMeasured
+    (fun i ↦ CMlPolynomial.evalHorner fastCoeffPoly (fastEvalPoint (i % 32)))
+    checksumKoalaBearFast (checksumIterations := checksumIterations)
   pure ({
-    groupKey := "multilinear-coeff-babybear",
-    title := "Multilinear coefficient-form evaluation (BabyBear)",
-    records := #[coeffEval, coeffHorner]
+    groupKey := "multilinear-coeff-koalabear",
+    title := "Multilinear coefficient-form evaluation (KoalaBear)",
+    records := #[coeffEval, coeffHorner, fastCoeffEval, fastCoeffHorner]
   }, gen)
 
-/-- Run BabyBear hypercube-form multilinear evaluation benchmarks. -/
-private def runBabyBearMultilinearHypercube (preset : BenchPreset) (gen : StdGen) :
+/-- Run KoalaBear hypercube-form multilinear evaluation benchmarks. -/
+private def runKoalaBearMultilinearHypercube (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
-  let (evals, gen) := (babyBearVector 256 false).run gen
-  let (points, gen) := (babyBearPoints 256).run gen
-  let evalPoly : CMlPolynomialEval BabyBear.Field 8 := CMlPolynomialEval.ofArray evals 8
-  let evalPoint (offset : Nat) : Vector BabyBear.Field 8 :=
+  let (evals, gen) := (koalaBearVector 256 false).run gen
+  let (points, gen) := (koalaBearPoints 256).run gen
+  let evalPoly : CMlPolynomialEval KoalaBear.Field 8 := CMlPolynomialEval.ofArray evals 8
+  let evalPoint (offset : Nat) : Vector KoalaBear.Field 8 :=
     Vector.ofFn fun j ↦ points.getD ((offset + j.val) % points.size) 0
+  let fastEvals := koalaBearFastArray evals
+  let fastPoints := koalaBearFastArray points
+  let fastEvalPoly : CMlPolynomialEval KoalaBear.Fast.Field 8 :=
+    CMlPolynomialEval.ofArray fastEvals 8
+  let fastEvalPoint (offset : Nat) : Vector KoalaBear.Fast.Field 8 :=
+    Vector.ofFn fun j ↦ fastPoints.getD ((offset + j.val) % fastPoints.size) 0
   let warmup := warmupIterations preset
   let measured := measuredIterations preset
   let mleMeasured := preset.selectNat 90000 13000 2500
-  let checksumIterations := groupChecksumIterations measured [mleMeasured]
+  let fastMeasured := preset.selectNat 8400 1200 240
+  let fastMleMeasured := preset.selectNat 280000 40000 8000
+  let checksumIterations := groupChecksumIterations measured [
+    mleMeasured, fastMeasured, fastMleMeasured
+  ]
   let hypercubeEval ← runTimed
-    "multilinear-hypercube-eval" "CMlPolynomialEval" "eval" "BabyBear.Field"
+    "multilinear-hypercube-eval" "CMlPolynomialEval" "eval" "KoalaBear.Field"
     "8 vars, 256 hypercube values, 32 points" preset warmup measured
     (fun i ↦ CMlPolynomialEval.eval evalPoly (evalPoint (i % 32)))
-    checksumBabyBear (checksumIterations := checksumIterations)
+    checksumKoalaBear (checksumIterations := checksumIterations)
+  let fastHypercubeEval ← runTimed
+    "multilinear-hypercube-eval-fast" "CMlPolynomialEval" "eval"
+    "KoalaBear.Fast.Field"
+    "8 vars, 256 hypercube values, 32 points" preset warmup fastMeasured
+    (fun i ↦ CMlPolynomialEval.eval fastEvalPoly (fastEvalPoint (i % 32)))
+    checksumKoalaBearFast (checksumIterations := checksumIterations)
   let hypercubeMle ← runTimed
-    "multilinear-hypercube-mle" "CMlPolynomialEval" "evalMle" "BabyBear.Field"
+    "multilinear-hypercube-mle" "CMlPolynomialEval" "evalMle" "KoalaBear.Field"
     "8 vars, 256 hypercube values, 32 points" preset warmup mleMeasured
     (fun i ↦ CMlPolynomialEval.evalMle evalPoly (evalPoint (i % 32)))
-    checksumBabyBear (checksumIterations := checksumIterations)
+    checksumKoalaBear (checksumIterations := checksumIterations)
+  let fastHypercubeMle ← runTimed
+    "multilinear-hypercube-mle-fast" "CMlPolynomialEval" "evalMle"
+    "KoalaBear.Fast.Field"
+    "8 vars, 256 hypercube values, 32 points" preset warmup fastMleMeasured
+    (fun i ↦ CMlPolynomialEval.evalMle fastEvalPoly (fastEvalPoint (i % 32)))
+    checksumKoalaBearFast (checksumIterations := checksumIterations)
   pure ({
-    groupKey := "multilinear-hypercube-babybear",
-    title := "Multilinear hypercube-form evaluation (BabyBear)",
-    records := #[hypercubeEval, hypercubeMle]
+    groupKey := "multilinear-hypercube-koalabear",
+    title := "Multilinear hypercube-form evaluation (KoalaBear)",
+    records := #[hypercubeEval, hypercubeMle, fastHypercubeEval, fastHypercubeMle]
   }, gen)
 
 /-- Run Goldilocks coefficient-form multilinear evaluation benchmarks. -/
@@ -141,11 +183,11 @@ private def runGoldilocksMultilinearHypercube (preset : BenchPreset) (gen : StdG
 /-- Runnable multilinear benchmark tasks. -/
 def multilinearTasks : List BenchTask := [
   BenchTask.fromGroupRunner
-    ⟨"multilinear-coeff-babybear", "Multilinear coefficient-form evaluation (BabyBear)"⟩
-    runBabyBearMultilinearCoeff,
+    ⟨"multilinear-coeff-koalabear", "Multilinear coefficient-form evaluation (KoalaBear)"⟩
+    runKoalaBearMultilinearCoeff,
   BenchTask.fromGroupRunner
-    ⟨"multilinear-hypercube-babybear", "Multilinear hypercube-form evaluation (BabyBear)"⟩
-    runBabyBearMultilinearHypercube,
+    ⟨"multilinear-hypercube-koalabear", "Multilinear hypercube-form evaluation (KoalaBear)"⟩
+    runKoalaBearMultilinearHypercube,
   BenchTask.fromGroupRunner
     ⟨"multilinear-coeff-goldilocks", "Multilinear coefficient-form evaluation (Goldilocks)"⟩
     runGoldilocksMultilinearCoeff,

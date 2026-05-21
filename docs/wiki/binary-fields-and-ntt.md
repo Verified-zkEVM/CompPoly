@@ -8,7 +8,13 @@ specialized characteristic-2 stack used for GHASH and additive-NTT work.
 ```text
 CompPoly/Fields/
   Basic.lean
-  BabyBear.lean, Goldilocks.lean, BN254.lean, ...
+  BabyBear.lean, KoalaBear.lean, Goldilocks.lean, BN254.lean, ...
+  BabyBear/
+    Basic.lean
+    Fast.lean
+  KoalaBear/
+    Basic.lean
+    Fast.lean
   Binary/
     Common.lean
     BF128Ghash/
