@@ -38,7 +38,7 @@ theorem evalOnDomain_eq_evalBatch (D : Domain R) (p : CPolynomial R) :
 namespace Forward
 
 /-- Pointwise form: the forward NTT specification evaluates a raw polynomial at a domain node. -/
-theorem forwardSpec_eval_node (D : Domain R) (p : CPolynomial.Raw R)
+theorem forwardSpec_eval_node_eq (D : Domain R) (p : CPolynomial.Raw R)
     (hdeg : p.toPoly.natDegree < D.n) (k : D.Idx) :
     (forwardSpec D p)[k.1] = p.eval (D.node k) := by
   calc
@@ -60,29 +60,29 @@ theorem forwardSpec_eval_node (D : Domain R) (p : CPolynomial.Raw R)
             exact CPolynomial.Raw.eval_toPoly_eq_eval (D.node k) p
 
 /-- The forward NTT specification evaluates a raw polynomial on all domain nodes. -/
-theorem forwardSpec_evalOnDomain (D : Domain R) (p : CPolynomial.Raw R)
+theorem forwardSpec_eq_evalOnDomain (D : Domain R) (p : CPolynomial.Raw R)
     (hdeg : p.toPoly.natDegree < D.n) :
     forwardSpec D p = evalOnDomain D p := by
   apply Array.ext
   · simp [forwardSpec, evalOnDomain]
   · intro i hi₁ hi₂
     let k : D.Idx := ⟨i, by simpa [forwardSpec] using hi₁⟩
-    simpa [evalOnDomain, k] using forwardSpec_eval_node D p hdeg k
+    simpa [evalOnDomain, k] using forwardSpec_eval_node_eq D p hdeg k
 
 /-- Pointwise form: the forward NTT implementation evaluates a raw polynomial at a domain node. -/
-theorem forwardImpl_eval_node (D : Domain R) (p : CPolynomial.Raw R)
+theorem forwardImpl_eval_node_eq (D : Domain R) (p : CPolynomial.Raw R)
     (hdeg : p.toPoly.natDegree < D.n) (k : D.Idx) :
     (forwardImpl D p).getD k.1 0 = p.eval (D.node k) := by
   rw [forwardImpl_correct]
   rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem]
-  exact forwardSpec_eval_node D p hdeg k
+  exact forwardSpec_eval_node_eq D p hdeg k
 
 /-- The forward NTT implementation evaluates a raw polynomial on all domain nodes. -/
-theorem forwardImpl_evalOnDomain (D : Domain R) (p : CPolynomial.Raw R)
+theorem forwardImpl_eq_evalOnDomain (D : Domain R) (p : CPolynomial.Raw R)
     (hdeg : p.toPoly.natDegree < D.n) :
     forwardImpl D p = evalOnDomain D p := by
   rw [forwardImpl_correct]
-  exact forwardSpec_evalOnDomain D p hdeg
+  exact forwardSpec_eq_evalOnDomain D p hdeg
 
 end Forward
 end NTT

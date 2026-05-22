@@ -201,29 +201,29 @@ private theorem forwardSpec_inverseSpec_get_eq (D : Domain R) (values : Array R)
           · intro hii
             exact (hii (Finset.mem_univ i)).elim
 
-/-- Pointwise form of `inverseSpec_interpolatePow`. -/
-theorem inverseSpec_eval_node (D : Domain R) (values : Array R) (k : D.Idx) :
+/-- Pointwise form of `inverseSpec_interpolatePow_eq`. -/
+theorem inverseSpec_eval_node_eq (D : Domain R) (values : Array R) (k : D.Idx) :
     CPolynomial.Raw.eval (D.node k) (inverseSpec D values) = values.getD k.1 0 := by
   have hdeg : (CPolynomial.Raw.toPoly (inverseSpec D values)).natDegree < D.n := by
     simpa [inverseSpec] using
       raw_toPoly_natDegree_lt_size_of_size_pos (R := R) (inverseSpec D values) (by
         simp [inverseSpec])
-  have hforward := Forward.forwardSpec_eval_node D (inverseSpec D values) hdeg k
+  have hforward := Forward.forwardSpec_eval_node_eq D (inverseSpec D values) hdeg k
   have hvalues := forwardSpec_inverseSpec_get_eq D values k
   rw [hforward] at hvalues
   exact hvalues
 
 /-- The inverse NTT specification evaluates back to the input values on the NTT domain. -/
-theorem inverseSpec_evalOnDomain (D : Domain R) (values : Array R) :
+theorem inverseSpec_evalOnDomain_eq (D : Domain R) (values : Array R) :
     evalOnDomain D (inverseSpec D values) = loadNaturalArray D values := by
   apply Array.ext
   · simp [evalOnDomain, loadNaturalArray]
   · intro i hi₁ hi₂
     let k : D.Idx := ⟨i, by simpa [evalOnDomain] using hi₁⟩
-    simpa [evalOnDomain, loadNaturalArray, k] using inverseSpec_eval_node D values k
+    simpa [evalOnDomain, loadNaturalArray, k] using inverseSpec_eval_node_eq D values k
 
 /-- The inverse NTT specification interpolates the input values on the NTT domain. -/
-theorem inverseSpec_interpolatePow [BEq R] [LawfulBEq R]
+theorem inverseSpec_interpolatePow_eq [BEq R] [LawfulBEq R]
     (D : Domain R) (values : Array R) :
     CPolynomial.Raw.trim (inverseSpec D values) =
       (CLagrange.interpolatePow D.omega (loadNaturalVector D values)).val := by
@@ -267,7 +267,7 @@ theorem inverseSpec_interpolatePow [BEq R] [LawfulBEq R]
     intro k _hk
     rw [CPolynomial.Raw.eval_toPoly_eq_eval (D.node k) (inverseSpec D values)]
     rw [← CPolynomial.eval_toPoly (D.node k) q]
-    rw [inverseSpec_eval_node D values k, hinterpEval k]
+    rw [inverseSpec_eval_node_eq D values k, hinterpEval k]
   calc
     CPolynomial.Raw.trim (inverseSpec D values)
         = (CPolynomial.Raw.toPoly (inverseSpec D values)).toImpl := by
@@ -280,24 +280,24 @@ theorem inverseSpec_interpolatePow [BEq R] [LawfulBEq R]
             exact CPolynomial.Raw.Trim.trim_eq_of_isCanonical q.property
 
 /-- The inverse NTT implementation interpolates the input values on the NTT domain. -/
-theorem inverseImpl_interpolatePow [BEq R] [LawfulBEq R]
+theorem inverseImpl_interpolatePow_eq [BEq R] [LawfulBEq R]
     (D : Domain R) (values : Array R) :
     CPolynomial.Raw.trim (inverseImpl D values) =
       (CLagrange.interpolatePow D.omega (loadNaturalVector D values)).val := by
   rw [inverseImpl_correct]
-  exact inverseSpec_interpolatePow D values
+  exact inverseSpec_interpolatePow_eq D values
 
-/-- Pointwise form of `inverseImpl_interpolatePow`. -/
-theorem inverseImpl_eval_node (D : Domain R) (values : Array R) (k : D.Idx) :
+/-- Pointwise form of `inverseImpl_interpolatePow_eq`. -/
+theorem inverseImpl_eval_node_eq (D : Domain R) (values : Array R) (k : D.Idx) :
     CPolynomial.Raw.eval (D.node k) (inverseImpl D values) = values.getD k.1 0 := by
   rw [inverseImpl_correct]
-  exact inverseSpec_eval_node D values k
+  exact inverseSpec_eval_node_eq D values k
 
 /-- The inverse NTT implementation evaluates back to the input values on the NTT domain. -/
-theorem inverseImpl_evalOnDomain (D : Domain R) (values : Array R) :
+theorem inverseImpl_evalOnDomain_eq (D : Domain R) (values : Array R) :
     evalOnDomain D (inverseImpl D values) = loadNaturalArray D values := by
   rw [inverseImpl_correct]
-  exact inverseSpec_evalOnDomain D values
+  exact inverseSpec_evalOnDomain_eq D values
 
 end Inverse
 end NTT
