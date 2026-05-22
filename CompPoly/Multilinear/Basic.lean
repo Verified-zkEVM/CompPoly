@@ -470,6 +470,7 @@ def evalMleLayer [CommRing R] {n : ℕ}
   evalMleStep values x0
 
 omit [CommRing R] in
+/-- The `j`-th entry after one MLE layer is the affine interpolation of its input pair. -/
 @[simp]
 theorem evalMleLayer_get [CommRing R] {n : ℕ}
     (values : CMlPolynomialEval R (n + 1)) (x0 : R) (j : Fin (2 ^ n)) :
@@ -492,12 +493,14 @@ def evalMle (p : CMlPolynomialEval R n) (x : Vector R n) : R :=
   evalMleValues p x
 
 omit [CommRing R] in
+/-- Evaluating a zero-variable hypercube table returns its only value. -/
 @[simp]
 theorem evalMle_zero [CommRing R] (p : CMlPolynomialEval R 0) (x : Vector R 0) :
     evalMle p x = p.get ⟨0, by norm_num⟩ := by
   rfl
 
 omit [CommRing R] in
+/-- Recursive MLE evaluation first folds the head variable, then evaluates the tail. -/
 @[simp]
 theorem evalMle_succ [CommRing R] {n : ℕ}
     (p : CMlPolynomialEval R (n + 1)) (x : Vector R (n + 1)) :

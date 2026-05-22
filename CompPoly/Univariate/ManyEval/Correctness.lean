@@ -17,7 +17,7 @@ namespace CPolynomial
 variable {R : Type*}
 
 private lemma le_foldl_max_size [Zero R] (polys : List (CPolynomial R)) (acc : Nat) :
-    acc ≤ polys.foldl (fun acc p => Nat.max acc p.size) acc := by
+    acc ≤ polys.foldl (fun acc p ↦ Nat.max acc p.size) acc := by
   induction polys generalizing acc with
   | nil => simp
   | cons p polys ih =>
@@ -25,7 +25,7 @@ private lemma le_foldl_max_size [Zero R] (polys : List (CPolynomial R)) (acc : N
 
 private lemma size_le_foldl_max_size_of_mem [Zero R]
     (polys : List (CPolynomial R)) (acc : Nat) {p : CPolynomial R} (hp : p ∈ polys) :
-    p.size ≤ polys.foldl (fun acc p => Nat.max acc p.size) acc := by
+    p.size ≤ polys.foldl (fun acc p ↦ Nat.max acc p.size) acc := by
   induction polys generalizing acc with
   | nil => simp at hp
   | cons q polys ih =>
@@ -47,7 +47,7 @@ private lemma size_le_maxCoeffSize_of_mem [Zero R]
 
 private theorem foldl_push_size [Mul R] (x : R) :
     ∀ xs : List Nat, ∀ (powers : Array R) (pow : R),
-      (List.foldl (fun (b : Array R × R) (_ : Nat) => (b.1.push b.2, b.2 * x))
+      (List.foldl (fun (b : Array R × R) (_ : Nat) ↦ (b.1.push b.2, b.2 * x))
         (powers, pow) xs).1.size = powers.size + xs.length
   | [], powers, _ => by simp
   | _ :: xs, powers, pow => by
@@ -60,7 +60,7 @@ private theorem foldl_push_getD [Semiring R] (x : R) :
       (∀ i, i < offset → powers.getD i 0 = base * x ^ i) →
       pow = base * x ^ offset →
       ∀ i, i < offset + xs.length →
-        (List.foldl (fun (b : Array R × R) (_ : Nat) => (b.1.push b.2, b.2 * x))
+        (List.foldl (fun (b : Array R × R) (_ : Nat) ↦ (b.1.push b.2, b.2 * x))
           (powers, pow) xs).1.getD i 0 = base * x ^ i
   | [], powers, _pow, _base, _offset, _hsize, hvals, _hpow, i, hi => by
       exact hvals i (by simpa using hi)
@@ -86,7 +86,7 @@ private theorem foldl_push_getD [Semiring R] (x : R) :
 private lemma powerTableLoop_eq_foldl [Mul R] (x : R) (limit i : Nat) (pow : R)
     (acc : Array R) :
     ManyEval.powerTableLoop x limit i pow acc =
-      (List.foldl (fun (b : Array R × R) (_ : Nat) => (b.1.push b.2, b.2 * x))
+      (List.foldl (fun (b : Array R × R) (_ : Nat) ↦ (b.1.push b.2, b.2 * x))
         (acc, pow) (List.range' i (limit - i))).1 := by
   fun_induction ManyEval.powerTableLoop x limit i pow acc with
   | case1 i pow acc h ih =>
@@ -128,7 +128,7 @@ private lemma evalWithPowersLoop_eq_foldl_range [Semiring R]
     (coeffs powers : Array R) (limit : Nat) (hcoeffs : limit ≤ coeffs.size)
     (hpowers : limit ≤ powers.size) (i : Nat) (acc : R) :
     ManyEval.evalWithPowersLoop coeffs powers limit hcoeffs hpowers i acc =
-      List.foldl (fun acc j => acc + coeffs.getD j 0 * powers.getD j 0) acc
+      List.foldl (fun acc j ↦ acc + coeffs.getD j 0 * powers.getD j 0) acc
         (List.range' i (limit - i)) := by
   fun_induction ManyEval.evalWithPowersLoop coeffs powers limit hcoeffs hpowers i acc with
   | case1 i acc h coeff pow ih =>
@@ -150,8 +150,8 @@ private lemma evalWithPowersLoop_eq_foldl_range [Semiring R]
 
 private lemma foldl_zipIdx_eq_range'_getD_aux [Semiring R]
     (xs : List R) (x acc : R) (offset : Nat) :
-    List.foldl (fun acc ai => acc + ai.1 * x ^ ai.2) acc (xs.zipIdx offset) =
-      List.foldl (fun acc i => acc + xs.getD (i - offset) 0 * x ^ i) acc
+    List.foldl (fun acc ai ↦ acc + ai.1 * x ^ ai.2) acc (xs.zipIdx offset) =
+      List.foldl (fun acc i ↦ acc + xs.getD (i - offset) 0 * x ^ i) acc
         (List.range' offset xs.length) := by
   induction xs generalizing offset acc with
   | nil => simp
@@ -173,8 +173,8 @@ private lemma array_getD_toList {α : Type*} (a : Array α) (i : Nat) (d : α) :
   simp
 
 private lemma array_foldl_zipIdx_eq_list [Semiring R] (coeffs : Array R) (x acc : R) :
-    Array.foldl (fun acc ai => acc + ai.1 * x ^ ai.2) acc coeffs.zipIdx 0 coeffs.size =
-      List.foldl (fun acc ai => acc + ai.1 * x ^ ai.2) acc coeffs.toList.zipIdx := by
+    Array.foldl (fun acc ai ↦ acc + ai.1 * x ^ ai.2) acc coeffs.zipIdx 0 coeffs.size =
+      List.foldl (fun acc ai ↦ acc + ai.1 * x ^ ai.2) acc coeffs.toList.zipIdx := by
   cases coeffs
   simp
 
@@ -182,7 +182,7 @@ private lemma evalWithPowers_eq_eval [Semiring R] (coeffs powers : Array R) (x :
     (hsize : coeffs.size ≤ powers.size)
     (hpowers : ∀ i, i < coeffs.size → powers.getD i 0 = x ^ i) :
     ManyEval.evalWithPowers coeffs powers =
-      coeffs.zipIdx.foldl (fun acc ai => acc + ai.1 * x ^ ai.2) 0 := by
+      coeffs.zipIdx.foldl (fun acc ai ↦ acc + ai.1 * x ^ ai.2) 0 := by
   simp [ManyEval.evalWithPowers, Nat.min_eq_left hsize]
   rw [evalWithPowersLoop_eq_foldl_range]
   rw [array_foldl_zipIdx_eq_list]
@@ -199,15 +199,15 @@ private lemma evalManyWithPowersLoop_toList [Semiring R]
     (polys : Array (CPolynomial R)) (powers : Array R) (i : Nat) (acc : Array R) :
     (ManyEval.evalManyWithPowersLoop polys powers i acc).toList =
       acc.toList ++ (polys.toList.drop i).map
-        (fun p => ManyEval.evalWithPowers p.val powers) := by
+        (fun p ↦ ManyEval.evalWithPowers p.val powers) := by
   fun_induction ManyEval.evalManyWithPowersLoop polys powers i acc with
   | case1 i acc h p ih =>
       rw [ih]
       have hdrop :
-          (polys.toList.drop i).map (fun p => ManyEval.evalWithPowers p.val powers) =
+          (polys.toList.drop i).map (fun p ↦ ManyEval.evalWithPowers p.val powers) =
             ManyEval.evalWithPowers p.val powers ::
               (polys.toList.drop (i + 1)).map
-                (fun p => ManyEval.evalWithPowers p.val powers) := by
+                (fun p ↦ ManyEval.evalWithPowers p.val powers) := by
         have hiList : i < polys.toList.length := by
           simpa using h
         rw [List.drop_eq_getElem_cons hiList]
@@ -224,13 +224,13 @@ private lemma evalManyWithPowersLoop_toList [Semiring R]
 /-- Many-polynomial Horner evaluation agrees with scalar evaluation. -/
 theorem evalManyHorner_eq_map_eval [Semiring R]
     (polys : Array (CPolynomial R)) (x : R) :
-    evalManyHorner polys x = polys.map (fun p => p.eval x) := by
+    evalManyHorner polys x = polys.map (fun p ↦ p.eval x) := by
   simp [evalManyHorner, eval_horner_eq_eval]
 
 /-- Shared-powers evaluation agrees with scalar evaluation. -/
 theorem evalManySharedPowers_eq_map_eval [Semiring R]
     (polys : Array (CPolynomial R)) (x : R) :
-    evalManySharedPowers polys x = polys.map (fun p => p.eval x) := by
+    evalManySharedPowers polys x = polys.map (fun p ↦ p.eval x) := by
   apply Array.toList_inj.mp
   simp only [evalManySharedPowers, evalManyWithPowersLoop_toList, Array.toList_map,
     List.drop_zero, List.nil_append]

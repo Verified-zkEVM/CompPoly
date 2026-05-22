@@ -70,6 +70,7 @@ def foldLayeredLayerLoop [CommRing R] (current : Array R)
 termination_by polyCount - polyIdx
 decreasing_by omega
 
+/-- Fold all MLE layers over a flattened polynomial-major batch. -/
 @[inline, specialize]
 def evalManyMleByLayersLoop [CommRing R] :
     {m : Nat} → Vector R m → Nat → Nat → Array R → Array R

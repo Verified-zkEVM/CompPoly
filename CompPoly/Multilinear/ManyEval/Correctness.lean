@@ -17,7 +17,7 @@ namespace CMlPolynomialEval
 variable {R : Type*} {n : Nat}
 
 private lemma array_foldl_push_toList {α : Type*} (xs acc : Array α) :
-    (Array.foldl (fun acc x => acc.push x) acc xs 0 xs.size).toList =
+    (Array.foldl (fun acc x ↦ acc.push x) acc xs 0 xs.size).toList =
       acc.toList ++ xs.toList := by
   cases xs with
   | mk xs =>
@@ -26,7 +26,7 @@ private lemma array_foldl_push_toList {α : Type*} (xs acc : Array α) :
       | cons _ _ _ => simp
 
 private lemma vector_array_foldl_push_toList (p : CMlPolynomialEval R n) (acc : Array R) :
-    (Array.foldl (fun acc x => acc.push x) acc p.toArray 0 (2 ^ n)).toList =
+    (Array.foldl (fun acc x ↦ acc.push x) acc p.toArray 0 (2 ^ n)).toList =
       acc.toList ++ p.toArray.toList := by
   convert array_foldl_push_toList p.toArray acc using 1
   simp
@@ -34,10 +34,10 @@ private lemma vector_array_foldl_push_toList (p : CMlPolynomialEval R n) (acc : 
 private lemma valuesByPolynomialListLoop_toList
     (polys : List (CMlPolynomialEval R n)) (acc : Array R) :
     (polys.foldl
-        (fun values p => Array.foldl (fun values value => values.push value)
+        (fun values p ↦ Array.foldl (fun values value ↦ values.push value)
           values p.toArray 0 (2 ^ n))
         acc).toList =
-      acc.toList ++ polys.flatMap (fun p => p.toArray.toList) := by
+      acc.toList ++ polys.flatMap (fun p ↦ p.toArray.toList) := by
   induction polys generalizing acc with
   | nil => simp
   | cons p polys ih =>
@@ -48,7 +48,7 @@ private lemma valuesByPolynomialListLoop_toList
 
 private lemma valuesByPolynomial_toList (polys : Array (CMlPolynomialEval R n)) :
     (valuesByPolynomial polys).toList =
-      polys.toList.flatMap (fun p => p.toArray.toList) := by
+      polys.toList.flatMap (fun p ↦ p.toArray.toList) := by
   cases polys with
   | mk polys =>
       simpa [valuesByPolynomial] using
@@ -103,7 +103,7 @@ private lemma valuesByPolynomial_getD [Zero R]
   have hpolyList : polyIdx < polys.toList.length := by
     simpa using hpoly
   rw [List.getD_flatMap_fixed_length (xs := polys.toList)
-    (f := fun p => p.toArray.toList) (width := 2 ^ n) (d := (0 : R))
+    (f := fun p ↦ p.toArray.toList) (width := 2 ^ n) (d := (0 : R))
     (hwidth := hwidth) hpolyList hj]
   have hget : polys.toList[polyIdx] = polys[polyIdx] := by
     cases polys
@@ -111,14 +111,14 @@ private lemma valuesByPolynomial_getD [Zero R]
   rw [hget]
 
 private lemma List.flatMap_singleton {α β : Type*} (xs : List α) (f : α → β) :
-    xs.flatMap (fun x => [f x]) = xs.map f := by
+    xs.flatMap (fun x ↦ [f x]) = xs.map f := by
   induction xs with
   | nil => simp
   | cons _ _ ih => simp [ih]
 
 private lemma List.flatMap_map {α β γ : Type*} (xs : List α) (f : α → β)
     (g : β → List γ) :
-    (xs.map f).flatMap g = xs.flatMap (fun x => g (f x)) := by
+    (xs.map f).flatMap g = xs.flatMap (fun x ↦ g (f x)) := by
   induction xs with
   | nil => simp
   | cons _ _ ih => simp [ih]
@@ -192,7 +192,7 @@ private lemma foldLayeredLayerLoop_valuesByPolynomial_toList [CommRing R]
     (foldLayeredLayerLoop (valuesByPolynomial polys) (2 ^ (n + 1)) (2 ^ n) polys.size
       (1 - r) r polyIdx acc).toList =
       acc.toList ++ (polys.toList.drop polyIdx).flatMap
-        (fun p => (evalMleLayer p r).toArray.toList) := by
+        (fun p ↦ (evalMleLayer p r).toArray.toList) := by
   fun_induction foldLayeredLayerLoop (valuesByPolynomial polys) (2 ^ (n + 1)) (2 ^ n)
       polys.size (1 - r) r polyIdx acc with
   | case1 polyIdx acc h next ih =>
@@ -201,17 +201,17 @@ private lemma foldLayeredLayerLoop_valuesByPolynomial_toList [CommRing R]
         (foldLayeredPolyLoop (valuesByPolynomial polys) (2 ^ (n + 1)) (2 ^ n)
             (1 - r) r polyIdx 0 acc).toList ++
             (polys.toList.drop (polyIdx + 1)).flatMap
-              (fun p => (evalMleLayer p r).toArray.toList) =
+              (fun p ↦ (evalMleLayer p r).toArray.toList) =
           acc.toList ++ (polys.toList.drop polyIdx).flatMap
-            (fun p => (evalMleLayer p r).toArray.toList)
+            (fun p ↦ (evalMleLayer p r).toArray.toList)
       rw [foldLayeredPolyLoop_valuesByPolynomial_toList (polys := polys) (r := r)
         (polyIdx := polyIdx) (pairIdx := 0) (acc := acc) h]
       have hdrop :
           (polys.toList.drop polyIdx).flatMap
-              (fun p => (evalMleLayer p r).toArray.toList) =
+              (fun p ↦ (evalMleLayer p r).toArray.toList) =
             (evalMleLayer polys[polyIdx] r).toArray.toList ++
               (polys.toList.drop (polyIdx + 1)).flatMap
-                (fun p => (evalMleLayer p r).toArray.toList) := by
+                (fun p ↦ (evalMleLayer p r).toArray.toList) := by
         have hiList : polyIdx < polys.toList.length := by
           simpa using h
         rw [List.drop_eq_getElem_cons hiList]
@@ -228,13 +228,13 @@ private lemma foldLayeredLayerLoop_valuesByPolynomial_toList [CommRing R]
 private lemma evalManyMleLoop_toList [CommRing R]
     (polys : Array (CMlPolynomialEval R n)) (x : Vector R n) (i : Nat) (acc : Array R) :
     (evalManyMleLoop polys x i acc).toList =
-      acc.toList ++ (polys.toList.drop i).map (fun p => evalMle p x) := by
+      acc.toList ++ (polys.toList.drop i).map (fun p ↦ evalMle p x) := by
   fun_induction evalManyMleLoop polys x i acc with
   | case1 i acc h p ih =>
       rw [ih]
       have hdrop :
-          (polys.toList.drop i).map (fun p => evalMle p x) =
-            p.evalMle x :: (polys.toList.drop (i + 1)).map (fun p => evalMle p x) := by
+          (polys.toList.drop i).map (fun p ↦ evalMle p x) =
+            p.evalMle x :: (polys.toList.drop (i + 1)).map (fun p ↦ evalMle p x) := by
         have hiList : i < polys.toList.length := by
           simpa using h
         rw [List.drop_eq_getElem_cons hiList]
@@ -251,14 +251,14 @@ private lemma evalManyMleLoop_toList [CommRing R]
 /-- Iterated many-MLE evaluation agrees with scalar `evalMle` on each table. -/
 theorem evalManyMle_eq_map_evalMle [CommRing R]
     (polys : Array (CMlPolynomialEval R n)) (x : Vector R n) :
-    evalManyMle polys x = polys.map (fun p => evalMle p x) := by
+    evalManyMle polys x = polys.map (fun p ↦ evalMle p x) := by
   apply Array.toList_inj.mp
   simp [evalManyMle, evalManyMleLoop_toList]
 
 /-- Layer-by-layer many-MLE evaluation agrees with scalar `evalMle` on each table. -/
 theorem evalManyMleByLayers_eq_map_evalMle [CommRing R]
     (polys : Array (CMlPolynomialEval R n)) (x : Vector R n) :
-    evalManyMleByLayers polys x = polys.map (fun p => evalMle p x) := by
+    evalManyMleByLayers polys x = polys.map (fun p ↦ evalMle p x) := by
   induction n with
   | zero =>
       apply Array.toList_inj.mp
@@ -274,13 +274,13 @@ theorem evalManyMleByLayers_eq_map_evalMle [CommRing R]
       have hfirst :
           foldLayeredLayerLoop (valuesByPolynomial polys) (2 ^ (n + 1)) (2 ^ n)
               polys.size (1 - x.head) x.head 0 #[] =
-            valuesByPolynomial (polys.map (fun p => evalMleLayer p x.head)) := by
+            valuesByPolynomial (polys.map (fun p ↦ evalMleLayer p x.head)) := by
         apply Array.toList_inj.mp
         rw [foldLayeredLayerLoop_valuesByPolynomial_toList]
         simp [valuesByPolynomial_toList, List.flatMap_map]
       rw [hfirst]
       simpa [evalManyMleByLayers, List.flatMap_map] using
-        ih (polys.map (fun p => evalMleLayer p x.head)) x.tail
+        ih (polys.map (fun p ↦ evalMleLayer p x.head)) x.tail
 
 /-- Layer-by-layer many-MLE evaluation agrees with iterated many-MLE evaluation. -/
 theorem evalManyMleByLayers_eq_evalManyMle [CommRing R]

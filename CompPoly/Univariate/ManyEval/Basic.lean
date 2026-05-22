@@ -20,7 +20,7 @@ variable {R : Type*}
 
 /-- Maximum stored coefficient-array size across a polynomial batch. -/
 def maxCoeffSize [Zero R] (polys : Array (CPolynomial R)) : Nat :=
-  polys.foldl (fun acc p => Nat.max acc p.size) 0
+  polys.foldl (fun acc p ↦ Nat.max acc p.size) 0
 
 /-- Build powers `1, x, ..., x^(limit-1)` by recurrence. -/
 @[inline, specialize]
@@ -63,7 +63,7 @@ end ManyEval
 /-- Evaluate each polynomial at the shared point using independent Horner passes. -/
 @[inline, specialize]
 def evalManyHorner [Semiring R] (polys : Array (CPolynomial R)) (x : R) : Array R :=
-  polys.map fun p => p.evalHorner x
+  polys.map fun p ↦ p.evalHorner x
 
 /-- Evaluate a polynomial batch against a precomputed power table. -/
 @[inline, specialize]
