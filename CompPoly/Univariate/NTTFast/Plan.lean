@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
 import CompPoly.Univariate.Basic
-import CompPoly.Univariate.NTTFast.FastMulImpl
+import CompPoly.Univariate.NTT.FastMul
 
 /-!
 # Planned NTTFast multiplication
@@ -52,10 +52,6 @@ def ofDomain (D : NTT.Domain R) : Plan R :=
     nInv := D.nInv
     twiddles := twiddleTable D
     inverseTwiddles := twiddleTable D.inverse }
-
-/-- Load coefficients in natural order and pad to the domain size. -/
-@[inline] def loadNatural (D : NTT.Domain R) (a : Array R) : Array R :=
-  Array.ofFn (fun i : D.Idx ↦ a.getD i.1 0)
 
 /-- Inner DIT butterfly loop for one block. -/
 def butterflyDITInner
@@ -415,7 +411,7 @@ namespace Raw
 @[inline] def fastMulImpl [BEq R]
     (P : Plan R) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
   let (pHat, qHat) := forwardPairImpl P p q
-  let cHat := pointwiseMul P.domain pHat qHat
+  let cHat := NTT.FastMul.pointwiseMul P.domain pHat qHat
   let c := inverseImpl P cHat
   NTT.Domain.truncate (NTT.Domain.requiredLength p q) c
 

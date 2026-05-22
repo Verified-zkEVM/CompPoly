@@ -118,13 +118,9 @@ import CompPoly.Univariate.NTTFast.Correctness.Radix4DIF
 import CompPoly.Univariate.NTTFast.Correctness.Radix4DIT
 import CompPoly.Univariate.NTTFast.Evaluation
 import CompPoly.Univariate.NTTFast.FastMul
-import CompPoly.Univariate.NTTFast.FastMulImpl
 import CompPoly.Univariate.NTTFast.FastMulLow
-import CompPoly.Univariate.NTTFast.Forward
 import CompPoly.Univariate.NTTFast.Interpolation
-import CompPoly.Univariate.NTTFast.Inverse
 import CompPoly.Univariate.NTTFast.Plan
-import CompPoly.Univariate.NTTFast.Transform
 import CompPoly.Univariate.Quotient.Core
 import CompPoly.Univariate.Quotient.Equiv
 import CompPoly.Univariate.Raw
