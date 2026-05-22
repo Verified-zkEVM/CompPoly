@@ -39,10 +39,11 @@ variable {R : Type*}
   is preserved and the result is already canonical. The division wrappers (`divByMonic`,
   `modByMonic`, `modByMonicRemainderOnly`, `modByMonicByReversal`, `div`, `mod`) likewise
   skip the redundant post-trim: each underlying `Raw` algorithm bottoms out in operations
-  (`Raw.add`, `Raw.sub`, `subScaledShift`) that already trim.
+  (`Raw.add`, `Raw.sub`, `subScaledShift`) that already trim. `CLagrange.basis` folds the
+  `s.erase i` factors with the untrimmed `Raw.mulRaw` via `Quotient.liftOn` on the
+  underlying multiset and trims once at the end, and `CLagrange.interpolate` does the
+  analogous deferred-trim sum via `Raw.addRaw`/`Raw.mulRaw`.
   Remaining opportunities to trim only at the end of an iterative computation:
-  the `Finset.prod`/`Finset.sum` folds in `Univariate/Lagrange.lean` (the `basis`
-  product and the `interpolate` sum each pay one `Raw.mul`/`Raw.add` trim per term),
   the `Array.foldl` accumulator in `Bivariate/ToPoly.lean` (`toPoly_foldl_zipIdx_eq_sum`),
   and the two `ExtTreeMap.foldl` monomial accumulators in `Multivariate/Operations.lean`.
 -/
