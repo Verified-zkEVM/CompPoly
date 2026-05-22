@@ -181,8 +181,8 @@ theorem ofDomain_wellFormed (D : NTT.Domain R) :
   simp [WellFormed, ofDomain]
 
 /-- Loading raw coefficients into a domain-sized array is `Array.ofFn` with zero padding. -/
-theorem loadNatural_eq (D : NTT.Domain R) (a : Array R) :
-    loadNatural D a = Array.ofFn (fun i : D.Idx ↦ a.getD i.1 0) := by
+theorem loadNaturalArray_eq (D : NTT.Domain R) (a : Array R) :
+    NTT.loadNaturalArray D a = Array.ofFn (fun i : D.Idx ↦ a.getD i.1 0) := by
   rfl
 
 /-- Folding over `List.range` is equivalent to the corresponding natural recursion. -/

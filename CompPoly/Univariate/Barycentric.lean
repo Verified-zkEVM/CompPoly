@@ -29,7 +29,7 @@ for univariate computable polynomials.
 * `eval_eq_cinterpolate_eval` – the evaluator equals
   `(CLagrange.interpolate Finset.univ nodes y).eval z`.
 * `eval_eq_interpolate_eval` – variant in terms of `Lagrange.interpolate`.
-* `ofPow_eval_eq_interpolatePow_eval` – specialisation to `CLagrange.interpolatePow`.
+* `ofPow_eval_eq_interpolatePow_eval` – specialization to `CLagrange.interpolatePow`.
 -/
 
 open Finset
@@ -146,22 +146,22 @@ theorem BarycentricDomain.eval_eq_cinterpolate_eval [BEq R] [LawfulBEq R]
     dom.eval y z = (CLagrange.interpolate Finset.univ dom.nodes y).eval z := by
   rw [dom.eval_eq_interpolate_eval, eval_toPoly, cinterpolate_eq_interpolate]
 
-/-! ### Specialisation to `interpolatePow` -/
+/-! ### Specialization to `interpolatePow` -/
 
 /-- Build a barycentric domain from a primitive root of unity `ω` with
-`n < orderOf ω`, so nodes are `ω^0, ω^1, …, ω^{n-1}`. -/
-def BarycentricDomain.ofPow (ω : Rˣ) (hord : n < orderOf ω) :
+`n ≤ orderOf ω`, so nodes are `ω^0, ω^1, …, ω^{n-1}`. -/
+def BarycentricDomain.ofPow (ω : Rˣ) (hord : n ≤ orderOf ω) :
     BarycentricDomain R n :=
   BarycentricDomain.mk' (fun i => ω.1 ^ i.val) <| by
     intro a b h
     simp only at h
-    exact eq_of_pow_eq_pow_of_lt_orderOf (le_of_lt hord) a b
+    exact eq_of_pow_eq_pow_of_lt_orderOf hord a b
       (by rw [← Units.val_inj]; simpa using h)
 
 /-- The barycentric evaluator on power-of-ω nodes agrees with
 `(CLagrange.interpolatePow ω r).eval z`. -/
 theorem BarycentricDomain.ofPow_eval_eq_interpolatePow_eval [BEq R] [LawfulBEq R]
-    (ω : Rˣ) (hord : n < orderOf ω) (r : Vector R n) (z : R) :
+    (ω : Rˣ) (hord : n ≤ orderOf ω) (r : Vector R n) (z : R) :
     (BarycentricDomain.ofPow ω hord).eval r.get z =
     (CLagrange.interpolatePow ω.1 r).eval z := by
   rw [BarycentricDomain.eval_eq_cinterpolate_eval]

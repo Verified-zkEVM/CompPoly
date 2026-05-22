@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Salih Erdem Koçak, Doran Pamukçu
 -/
 import CompPoly.Univariate.NTT.Domain
+import CompPoly.Univariate.NTT.Evaluation
 import CompPoly.Univariate.NTT.Forward
 import CompPoly.Univariate.NTT.Inverse
 import CompPoly.Univariate.Raw
@@ -241,29 +242,6 @@ private theorem mul_coeff_eq_zero_of_right_trim_size_zero
   have hq0 : q.coeff (i - x) = 0 := coeff_zero_of_trim_size_le q (by omega)
   simp [hq0]
 
-omit [BEq R] [LawfulBEq R] in
-private theorem forwardSpec_get_eq_eval_of_natDegree_lt
-    (D : Domain R) (a : CPolynomial.Raw R) (hdeg : a.toPoly.natDegree < D.n)
-    (k : D.Idx) :
-    (Forward.forwardSpec D a)[k.1] = a.eval (D.node k) := by
-  calc
-    (Forward.forwardSpec D a)[k.1]
-        = ∑ j : D.Idx, a.coeff j.1 * (D.node k) ^ (j : Nat) := by
-            simp [Forward.forwardSpec, Forward.nttAt, Domain.node, CPolynomial.Raw.coeff, pow_mul]
-    _ = ∑ j ∈ Finset.range D.n, a.toPoly.coeff j * (D.node k) ^ j := by
-            change (∑ j : Fin D.n,
-                (fun j : Nat => a.coeff j * (D.node k) ^ j) j) =
-              ∑ j ∈ Finset.range D.n, a.toPoly.coeff j * (D.node k) ^ j
-            rw [Fin.sum_univ_eq_sum_range
-              (f := fun j : Nat => a.coeff j * (D.node k) ^ j) (n := D.n)]
-            apply Finset.sum_congr rfl
-            intro j _
-            rw [CPolynomial.Raw.coeff_toPoly]
-    _ = a.toPoly.eval (D.node k) := by
-            rw [Polynomial.eval_eq_sum_range' hdeg]
-    _ = a.eval (D.node k) := by
-            exact CPolynomial.Raw.eval_toPoly_eq_eval (D.node k) a
-
 private theorem raw_eval_mul (x : R) (p q : CPolynomial.Raw R) :
     (p * q).eval x = p.eval x * q.eval x := by
   rw [← CPolynomial.Raw.eval_toPoly_eq_eval x (p * q)]
@@ -272,29 +250,16 @@ private theorem raw_eval_mul (x : R) (p q : CPolynomial.Raw R) :
   rw [CPolynomial.Raw.toPoly_mul p q]
   simp
 
-private theorem pointwise_forwardSpec_eq_forwardSpec_mul_of_natDegree_lt
-    (D : Domain R) (p q : CPolynomial.Raw R)
-    (hpdeg : p.toPoly.natDegree < D.n) (hqdeg : q.toPoly.natDegree < D.n)
-    (hpqdeg : (p * q).toPoly.natDegree < D.n) :
-    pointwiseMul D (Forward.forwardSpec D p) (Forward.forwardSpec D q) =
-      Forward.forwardSpec D (p * q) := by
+private theorem pointwise_evalOnDomain_eq_evalOnDomain_mul
+    (D : Domain R) (p q : CPolynomial.Raw R) :
+    pointwiseMul D (evalOnDomain D p) (evalOnDomain D q) = evalOnDomain D (p * q) := by
   apply Array.ext
-  · simp [pointwiseMul, Forward.forwardSpec]
+  · simp [pointwiseMul, evalOnDomain]
   · intro i hi₁ hi₂
     have hiD : i < D.n := by simpa [pointwiseMul] using hi₁
     let k : D.Idx := ⟨i, hiD⟩
-    have hpsize : i < (Forward.forwardSpec D p).size := by simpa [Forward.forwardSpec] using hiD
-    have hqsize : i < (Forward.forwardSpec D q).size := by simpa [Forward.forwardSpec] using hiD
-    have hpqsize : i < (Forward.forwardSpec D (p * q)).size := by
-      simpa [Forward.forwardSpec] using hiD
-    have hpget : (Forward.forwardSpec D p)[i]'hpsize = p.eval (D.node k) := by
-      simpa [k] using forwardSpec_get_eq_eval_of_natDegree_lt D p hpdeg k
-    have hqget : (Forward.forwardSpec D q)[i]'hqsize = q.eval (D.node k) := by
-      simpa [k] using forwardSpec_get_eq_eval_of_natDegree_lt D q hqdeg k
-    have hpqget : (Forward.forwardSpec D (p * q))[i]'hpqsize = (p * q).eval (D.node k) := by
-      simpa [k] using forwardSpec_get_eq_eval_of_natDegree_lt D (p * q) hpqdeg k
-    simp [pointwiseMul]
-    rw [hpget, hqget, hpqget, raw_eval_mul]
+    simp [pointwiseMul, evalOnDomain]
+    rw [← raw_eval_mul]
 
 namespace Raw
 
@@ -381,9 +346,10 @@ theorem fastMulSpec_coeff (D : Domain R) (p q : CPolynomial.Raw R)
       · rw [if_pos hi]
         have hiD : i < D.n := Nat.lt_of_lt_of_le hi hfit'
         rw [CPolynomial.Raw.coeff]
-        have hpoint :=
-          pointwise_forwardSpec_eq_forwardSpec_mul_of_natDegree_lt D p q hpdeg hqdeg hpqdeg
-        rw [hpoint]
+        rw [Forward.forwardSpec_evalOnDomain D p hpdeg]
+        rw [Forward.forwardSpec_evalOnDomain D q hqdeg]
+        rw [pointwise_evalOnDomain_eq_evalOnDomain_mul D p q]
+        rw [← Forward.forwardSpec_evalOnDomain D (p * q) hpqdeg]
         exact inverse_forwardSpec_coeff_of_lt D (p * q) hiD
       · rw [if_neg hi]
         exact (mul_coeff_eq_zero_of_requiredLength_le p q hppos hqpos

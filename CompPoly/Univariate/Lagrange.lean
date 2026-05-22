@@ -247,9 +247,9 @@ theorem eq_of_pow_eq_pow_of_lt_orderOf {G : Type*} [Group G] {ω : G} {n : ℕ}
 /--
   Key correctness theorem for `interpolatePow`.
 -/
-lemma eval_interpolatePow_at_node {n : ℕ} {ω : Rˣ} {r : Vector R n} : n < orderOf ω →
+lemma eval_interpolatePow_at_node {n : ℕ} {ω : Rˣ} {r : Vector R n} : n ≤ orderOf ω →
     ∀ i : Fin n, (interpolatePow ω.1 r).eval (ω.1 ^ i.1) = r.get i := by
-  intros order_ω_lt_n i
+  intros order_ω_le_n i
   unfold interpolatePow
   rw [
     eval_toPoly,
@@ -267,8 +267,7 @@ lemma eval_interpolatePow_at_node {n : ℕ} {ω : Rˣ} {r : Vector R n} : n < or
     have h₃ : ω ^ a.1 = ω ^ b.1 := by
       rw [←Units.val_inj]
       simpa using h
-    have h_le : n ≤ orderOf ω := le_of_lt order_ω_lt_n
-    have h_eq : a = b := eq_of_pow_eq_pow_of_lt_orderOf h_le a b h₃
+    have h_eq : a = b := eq_of_pow_eq_pow_of_lt_orderOf order_ω_le_n a b h₃
     exact congr_arg Fin.val h_eq
   · exact Finset.mem_univ _
 

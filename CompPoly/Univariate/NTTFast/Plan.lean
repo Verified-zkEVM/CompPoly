@@ -394,12 +394,12 @@ def runStagesDIFRadix4PairWithTwiddles
 
 /-- Forward transform through a reusable plan. -/
 @[inline] def forwardImpl (P : Plan R) (p : CPolynomial.Raw R) : Array R :=
-  runStagesDIFRadix4WithTwiddles P.domain P.twiddles (loadNatural P.domain p)
+  runStagesDIFRadix4WithTwiddles P.domain P.twiddles (NTT.loadNaturalArray P.domain p)
 
 /-- Forward-transform two multiplication inputs through the same stage loops. -/
 @[inline] def forwardPairImpl (P : Plan R) (p q : CPolynomial.Raw R) : Array R × Array R :=
-  runStagesDIFRadix4PairWithTwiddles P.domain P.twiddles (loadNatural P.domain p)
-    (loadNatural P.domain q)
+  runStagesDIFRadix4PairWithTwiddles P.domain P.twiddles (NTT.loadNaturalArray P.domain p)
+    (NTT.loadNaturalArray P.domain q)
 
 /-- Apply the cached inverse-domain normalization factor. -/
 @[inline] def normalize (P : Plan R) (a : Array R) : Array R :=
