@@ -6,6 +6,7 @@ Authors: Valerii Huhnin
 
 import CompPolyBench.Common
 import CompPoly.Multilinear.Basic
+import CompPoly.Multilinear.ManyEval
 
 /-!
 # Multilinear Benchmarks
@@ -15,10 +16,45 @@ open CompPoly
 
 namespace CompPolyBench
 
+/-- Number of multilinear polynomials used by many-MLE benchmarks. -/
+private def manyMlePolyCount : Nat := 256
+
+/-- Number of variables used by many-MLE benchmarks. -/
+private def manyMleVarCount : Nat := 12
+
+/-- Number of hypercube values per polynomial in many-MLE benchmarks. -/
+private def manyMleHypercubeSize : Nat := 2 ^ manyMleVarCount
+
+/-- Input-shape label for many multilinear evaluations at one shared point. -/
+private def manyMleShape : String :=
+  s!"{manyMlePolyCount} hypercube tables, {manyMleVarCount} vars, " ++
+    s!"{manyMleHypercubeSize} values each, one shared point"
+
+/-- Group key for the KoalaBear many-MLE benchmark configuration. -/
+private def manyMleKoalaBearGroupKey : String :=
+  "multilinear-many-mle-koalabear"
+
+/-- Report title for the KoalaBear many-MLE benchmark configuration. -/
+private def manyMleKoalaBearTitle : String :=
+  "Multilinear many-polynomial one-point evaluation (KoalaBear)"
+
+/-- Build hypercube-form multilinear polynomials from one flat value array. -/
+private def mlePolysOfFlatArray {R : Type*} [Zero R] (polyCount n : Nat) (values : Array R) :
+    Array (CMlPolynomialEval R n) := Id.run do
+  let cubeCount := 2 ^ n
+  let mut polys := #[]
+  for polyIdx in [0:polyCount] do
+    let mut polyValues := #[]
+    for cubeIdx in [0:cubeCount] do
+      polyValues := polyValues.push (values.getD (polyIdx * cubeCount + cubeIdx) 0)
+    polys := polys.push (CMlPolynomialEval.ofArray polyValues n)
+  return polys
+
 /-- Benchmark group metadata for `CompPoly.Multilinear.Basic`. -/
 def multilinearGroupInfos : List BenchGroupInfo := [
   ⟨"multilinear-coeff-koalabear", "Multilinear coefficient-form evaluation (KoalaBear)"⟩,
   ⟨"multilinear-hypercube-koalabear", "Multilinear hypercube-form evaluation (KoalaBear)"⟩,
+  ⟨manyMleKoalaBearGroupKey, manyMleKoalaBearTitle⟩,
   ⟨"multilinear-coeff-goldilocks", "Multilinear coefficient-form evaluation (Goldilocks)"⟩,
   ⟨"multilinear-hypercube-goldilocks",
     "Multilinear hypercube-form evaluation (Goldilocks)"⟩
@@ -122,6 +158,57 @@ private def runKoalaBearMultilinearHypercube (preset : BenchPreset) (gen : StdGe
     records := #[hypercubeEval, hypercubeMle, fastHypercubeEval, fastHypercubeMle]
   }, gen)
 
+/-- Benchmark runner for KoalaBear many-polynomial MLE evaluation. -/
+private def runKoalaBearMultilinearManyMle (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  let valueCount := manyMlePolyCount * manyMleHypercubeSize
+  let (values, gen) := (koalaBearVector valueCount false).run gen
+  let (points, gen) := (koalaBearPoints manyMleVarCount).run gen
+  let polys : Array (CMlPolynomialEval KoalaBear.Field manyMleVarCount) :=
+    mlePolysOfFlatArray manyMlePolyCount manyMleVarCount values
+  let x : Vector KoalaBear.Field manyMleVarCount :=
+    Vector.ofFn fun j ↦ points.getD j.val 0
+  let fastValues := koalaBearFastArray values
+  let fastPoints := koalaBearFastArray points
+  let fastPolys : Array (CMlPolynomialEval KoalaBear.Fast.Field manyMleVarCount) :=
+    mlePolysOfFlatArray manyMlePolyCount manyMleVarCount fastValues
+  let fastX : Vector KoalaBear.Fast.Field manyMleVarCount :=
+    Vector.ofFn fun j ↦ fastPoints.getD j.val 0
+  let warmup := preset.selectNat 1 1 0
+  let scalarMeasured := preset.selectNat 140 20 4
+  let byLayersMeasured := preset.selectNat 200 30 6
+  let fastScalarMeasured := preset.selectNat 525 75 15
+  let fastByLayersMeasured := preset.selectNat 800 115 25
+  let checksumIterations := groupChecksumIterations scalarMeasured [
+    byLayersMeasured, fastScalarMeasured, fastByLayersMeasured
+  ]
+  let scalar ← runTimed
+    "multilinear-many-mle-scalar-loop" "Array CMlPolynomialEval" "evalManyMle"
+    "KoalaBear.Field" manyMleShape preset warmup scalarMeasured
+    (fun _ ↦ CMlPolynomialEval.evalManyMle polys x)
+    (checksumArray checksumKoalaBear) (checksumIterations := checksumIterations)
+  let byLayers ← runTimed
+    "multilinear-many-mle-by-layers" "Array CMlPolynomialEval"
+    "evalManyMleByLayers" "KoalaBear.Field" manyMleShape preset warmup byLayersMeasured
+    (fun _ ↦ CMlPolynomialEval.evalManyMleByLayers polys x)
+    (checksumArray checksumKoalaBear) (checksumIterations := checksumIterations)
+  let fastScalar ← runTimed
+    "multilinear-many-mle-scalar-loop-fast" "Array CMlPolynomialEval" "evalManyMle"
+    "KoalaBear.Fast.Field" manyMleShape preset warmup fastScalarMeasured
+    (fun _ ↦ CMlPolynomialEval.evalManyMle fastPolys fastX)
+    (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
+  let fastByLayers ← runTimed
+    "multilinear-many-mle-by-layers-fast" "Array CMlPolynomialEval"
+    "evalManyMleByLayers" "KoalaBear.Fast.Field" manyMleShape preset warmup
+    fastByLayersMeasured
+    (fun _ ↦ CMlPolynomialEval.evalManyMleByLayers fastPolys fastX)
+    (checksumArray checksumKoalaBearFast) (checksumIterations := checksumIterations)
+  pure ({
+    groupKey := manyMleKoalaBearGroupKey,
+    title := manyMleKoalaBearTitle,
+    records := #[scalar, byLayers, fastScalar, fastByLayers]
+  }, gen)
+
 /-- Run Goldilocks coefficient-form multilinear evaluation benchmarks. -/
 private def runGoldilocksMultilinearCoeff (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
@@ -180,7 +267,7 @@ private def runGoldilocksMultilinearHypercube (preset : BenchPreset) (gen : StdG
     records := #[goldilocksHypercubeEval, goldilocksHypercubeMle]
   }, gen)
 
-/-- Runnable multilinear benchmark tasks. -/
+/-- Multilinear benchmark suite entries. -/
 def multilinearTasks : List BenchTask := [
   BenchTask.fromGroupRunner
     ⟨"multilinear-coeff-koalabear", "Multilinear coefficient-form evaluation (KoalaBear)"⟩
@@ -188,6 +275,9 @@ def multilinearTasks : List BenchTask := [
   BenchTask.fromGroupRunner
     ⟨"multilinear-hypercube-koalabear", "Multilinear hypercube-form evaluation (KoalaBear)"⟩
     runKoalaBearMultilinearHypercube,
+  BenchTask.fromGroupRunner
+    ⟨manyMleKoalaBearGroupKey, manyMleKoalaBearTitle⟩
+    runKoalaBearMultilinearManyMle,
   BenchTask.fromGroupRunner
     ⟨"multilinear-coeff-goldilocks", "Multilinear coefficient-form evaluation (Goldilocks)"⟩
     runGoldilocksMultilinearCoeff,

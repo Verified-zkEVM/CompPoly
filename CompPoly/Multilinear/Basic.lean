@@ -463,6 +463,21 @@ private def evalMleStep [CommRing R] {n : ℕ}
     (1 - x0) * values.get ⟨2 * j.val, by omega⟩ +
       x0 * values.get ⟨2 * j.val + 1, by omega⟩
 
+/-- Public multilinear-extension interpolation layer. -/
+@[inline, specialize]
+def evalMleLayer [CommRing R] {n : ℕ}
+    (values : CMlPolynomialEval R (n + 1)) (x0 : R) : CMlPolynomialEval R n :=
+  evalMleStep values x0
+
+omit [CommRing R] in
+@[simp]
+theorem evalMleLayer_get [CommRing R] {n : ℕ}
+    (values : CMlPolynomialEval R (n + 1)) (x0 : R) (j : Fin (2 ^ n)) :
+    (evalMleLayer values x0).get j =
+      (1 - x0) * values.get ⟨2 * j.val, by omega⟩ +
+        x0 * values.get ⟨2 * j.val + 1, by omega⟩ := by
+  simp [evalMleLayer, evalMleStep]
+
 /-- Evaluate hypercube values by recursively interpolating the multilinear extension. -/
 @[inline, specialize]
 private def evalMleValues [CommRing R] :
@@ -475,6 +490,19 @@ private def evalMleValues [CommRing R] :
 @[inline, specialize]
 def evalMle (p : CMlPolynomialEval R n) (x : Vector R n) : R :=
   evalMleValues p x
+
+omit [CommRing R] in
+@[simp]
+theorem evalMle_zero [CommRing R] (p : CMlPolynomialEval R 0) (x : Vector R 0) :
+    evalMle p x = p.get ⟨0, by norm_num⟩ := by
+  rfl
+
+omit [CommRing R] in
+@[simp]
+theorem evalMle_succ [CommRing R] {n : ℕ}
+    (p : CMlPolynomialEval R (n + 1)) (x : Vector R (n + 1)) :
+    evalMle p x = evalMle (evalMleLayer p x.head) x.tail := by
+  rfl
 
 /-- Evaluate a `CMlPolynomialEval` through a ring homomorphism using multilinear-extension
 interpolation. -/
