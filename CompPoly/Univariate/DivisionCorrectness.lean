@@ -475,7 +475,7 @@ private theorem raw_divModByMonicAux_toPoly_eq (p q : CPolynomial R)
 
 theorem divByMonic_toPoly_eq_divByMonic (p q : CPolynomial R)
     (hmonic : q.monic) :
-    (p.val.divByMonic q.val).toPoly = p.toPoly /ₘ q.toPoly := by
+    (p.divByMonic q).toPoly = p.toPoly /ₘ q.toPoly := by
   have hq_monic : q.toPoly.Monic := (monic_toPoly q).mp hmonic
   have h := congrArg Prod.fst (raw_divModByMonicAux_toPoly_eq p q hq_monic)
   simpa [Polynomial.divByMonic, dif_pos hq_monic]
