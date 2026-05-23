@@ -473,6 +473,20 @@ private theorem raw_divModByMonicAux_toPoly_eq (p q : CPolynomial R)
   · refine hunique.2.symm.trans ?_
     simp [Polynomial.modByMonic, dif_pos hq_monic]; rfl
 
+theorem divByMonic_toPoly_eq_divByMonic (p q : CPolynomial R)
+    (hmonic : q.monic) :
+    (p.val.divByMonic q.val).toPoly = p.toPoly /ₘ q.toPoly := by
+  have hq_monic : q.toPoly.Monic := (monic_toPoly q).mp hmonic
+  have h := congrArg Prod.fst (raw_divModByMonicAux_toPoly_eq p q hq_monic)
+  simpa [Polynomial.divByMonic, dif_pos hq_monic]
+
+theorem modByMonic_toPoly_eq_modByMonic (p q : CPolynomial R)
+    (hmonic : q.monic) :
+    (p.modByMonic q).toPoly = p.toPoly %ₘ q.toPoly := by
+  have hq_monic : q.toPoly.Monic := (monic_toPoly q).mp hmonic
+  have h := congrArg Prod.snd (raw_divModByMonicAux_toPoly_eq p q hq_monic)
+  simpa [Polynomial.modByMonic, dif_pos hq_monic]
+
 private theorem reversal_remainder_toPoly_eq_modByMonic
     (M : Raw.MulLowContext R) (p q : CPolynomial R)
     (hmonic : (q.leadingCoeff == 1) = true)
