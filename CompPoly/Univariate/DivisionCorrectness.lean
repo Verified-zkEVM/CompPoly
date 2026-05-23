@@ -525,17 +525,12 @@ private theorem reversal_remainder_toPoly_eq_modByMonic
     exact one_ne_zero this
   have hppos : 0 < (p.val : Raw R).size := by omega
   have hkpos : 0 < k := by omega
-  have hq_monic_poly : q.toPoly.Monic := by
-    rw [Polynomial.Monic.def, ← leadingCoeff_toPoly]
-    exact hq_lc
+  have hq_monic_poly : q.toPoly.Monic :=
+    (monic_toPoly q).mp (by simpa [monic])
   have hqdegree : q.toPoly.degree = ((n : Nat) : WithBot Nat) := by
-    have hdeg := degree_toPoly q
-    cases hs : (q.val : Raw R).size with
-    | zero =>
-        omega
-    | succ d =>
-        simp [CPolynomial.degree, n, hs] at hdeg ⊢
-        exact hdeg.symm
+    rw [← degree_toPoly]
+    obtain ⟨d, hd⟩ := Nat.exists_eq_succ_of_ne_zero hqpos.ne'
+    simp [CPolynomial.degree, n, hd]
   have hqnat : q.toPoly.natDegree ≤ n := by
     rw [Polynomial.natDegree_le_iff_degree_le, hqdegree]
   have hpdeg_lt : (p.val : Raw R).toPoly.natDegree < p.val.size :=
@@ -718,7 +713,7 @@ theorem modByMonicByReversal_eq_modByMonic
         simpa [rem] using reversal_remainder_toPoly_eq_modByMonic M p q hmonic hsize
       have h_raw_math :
           ((p.val : Raw R).modByMonic q.val).toPoly = p.toPoly %ₘ q.toPoly :=
-        raw_modByMonic_toPoly_eq_modByMonic p q hmonic
+        modByMonic_toPoly_eq_modByMonic p q hmonic
       exact h_remMath.trans h_raw_math.symm
   · apply CPolynomial.ext
     have hptrim : (p.val : Raw R).trim = p.val := Trim.trim_eq_of_isCanonical p.property
