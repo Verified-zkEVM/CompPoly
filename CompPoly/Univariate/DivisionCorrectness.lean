@@ -450,41 +450,28 @@ private theorem raw_divModByMonicAux_go_spec (q : Raw R)
           ring
         · exact hdeg
 
-private theorem raw_modByMonic_toPoly_eq_modByMonic (p q : CPolynomial R)
-    (hmonic : (q.leadingCoeff == 1) = true) :
-    ((p.val : Raw R).modByMonic q.val).toPoly = p.toPoly %ₘ q.toPoly := by
-  have hqtrim : (q.val : Raw R).trim = q.val := Trim.trim_eq_of_isCanonical q.property
-  have hq_lc : q.leadingCoeff = 1 := by
-    simpa using (LawfulBEq.eq_of_beq hmonic)
-  have hq_raw_monic : (q.val : Raw R).leadingCoeff = 1 := by
-    simpa [Raw.leadingCoeff, CPolynomial.leadingCoeff, hqtrim] using hq_lc
-  have hqpos : 0 < (q.val : Raw R).size := by
-    by_contra hpos
-    have hsize : (q.val : Raw R).size = 0 := Nat.eq_zero_of_not_pos hpos
-    have hzero : q.leadingCoeff = 0 := by
-      simp [CPolynomial.leadingCoeff, Array.getLastD, hsize]
-    have : (1 : R) = 0 := by simpa [hq_lc] using hzero.symm
-    exact one_ne_zero this
-  have hqdegree : q.toPoly.degree = (((q.val : Raw R).size - 1 : Nat) : WithBot Nat) := by
-    have hdeg := degree_toPoly q
-    cases hs : (q.val : Raw R).size with
-    | zero =>
-        omega
-    | succ n =>
-        simp [CPolynomial.degree, hs] at hdeg ⊢
-        exact hdeg.symm
-  have hspec := raw_divModByMonicAux_go_spec (R := R) q.val hqtrim hq_raw_monic hqpos
-    hqdegree p.val.size p.val (Trim.trim_eq_of_isCanonical p.property) (Nat.le_refl p.val.size)
-  rcases hspec with ⟨hrel, hdeg⟩
-  have hq_monic_poly : q.toPoly.Monic := by
-    rw [Polynomial.Monic.def, ← leadingCoeff_toPoly]
-    exact hq_lc
-  have hunique :=
-    Polynomial.div_modByMonic_unique
-      ((Raw.divModByMonicAux p.val q.val).1.toPoly)
-      ((Raw.divModByMonicAux p.val q.val).2.toPoly)
-      hq_monic_poly ⟨hrel, hdeg⟩
-  exact hunique.2.symm
+private theorem raw_divModByMonicAux_toPoly_eq (p q : CPolynomial R)
+    (hq_monic : q.toPoly.Monic) :
+    (p.val.divModByMonicAux q.val).map Raw.toPoly Raw.toPoly =
+    p.toPoly.divModByMonicAux hq_monic := by
+  have hq_lc : q.leadingCoeff = 1 := by simpa[leadingCoeff_toPoly]
+  have hq_raw_monic : q.val.leadingCoeff = 1 := by simpa [Raw.leadingCoeff]
+  have hqpos : 0 < q.val.size := Nat.pos_of_ne_zero fun h => by
+    simp [CPolynomial.leadingCoeff, Array.getLastD, h] at hq_lc
+  have hqdegree : q.toPoly.degree = ((q.val.size - 1 : Nat) : WithBot Nat) := by
+    rw [←degree_toPoly]
+    obtain ⟨_, hn⟩ := Nat.exists_eq_succ_of_ne_zero hqpos.ne'
+    simp [CPolynomial.degree, hn]
+  have gospec := raw_divModByMonicAux_go_spec q.val
+    (Trim.trim_eq_of_isCanonical q.property)
+    hq_raw_monic hqpos hqdegree p.val.size p.val
+    (Trim.trim_eq_of_isCanonical p.property) (Nat.le_refl p.val.size)
+  have hunique := Polynomial.div_modByMonic_unique _ _ hq_monic gospec
+  refine Prod.ext ?_ ?_ <;> simp [Prod.map_fst, Prod.map_snd]
+  · refine hunique.1.symm.trans ?_
+    simp [Polynomial.divByMonic, dif_pos hq_monic]; rfl
+  · refine hunique.2.symm.trans ?_
+    simp [Polynomial.modByMonic, dif_pos hq_monic]; rfl
 
 private theorem reversal_remainder_toPoly_eq_modByMonic
     (M : Raw.MulLowContext R) (p q : CPolynomial R)
