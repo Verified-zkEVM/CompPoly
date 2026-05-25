@@ -319,6 +319,19 @@ theorem natWeightedDegree_le_iff_coeff (f : CBivariate R) (u v d : ℕ) :
      rw [CPolynomial.leadingCoeff_eq_coeff_natDegree] at hlc
      exact h _ j hlc
 
+omit [Nontrivial R] in
+/-- The natWeightedDegree of a constant bivariate polynomial `CBivariate.CC` is zero. -/
+theorem natWeightedDegree_CC {r : R} (u v : ℕ) :
+    CBivariate.natWeightedDegree (CBivariate.CC r) u v = 0 := by
+  simp only [CBivariate.natWeightedDegree, CBivariate.CC]
+  by_cases hr : (CPolynomial.C r : CPolynomial R) = 0
+  · rw [hr, CPolynomial.C_zero, (CPolynomial.support_empty_iff _).mpr rfl,
+      Finset.sup_empty, bot_eq_zero]
+  · rw [CPolynomial.support_C hr, Finset.sup_singleton]
+    show u * (CPolynomial.coeff
+      (CPolynomial.C (CPolynomial.C r)) 0).natDegree + v * 0 = 0
+    rw [CPolynomial.coeff_C, if_pos rfl, CPolynomial.natDegree_C]
+    ring
 end WeightedDegreeLemmas
 
 end CBivariate

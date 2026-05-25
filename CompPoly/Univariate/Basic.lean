@@ -368,13 +368,16 @@ theorem support_empty_iff [Zero R] [BEq R] [LawfulBEq R] (p : CPolynomial R) :
   · intro h i; by_contra hne; exact h i ((mem_support_iff p i).mpr hne)
   · intro h i; rw [mem_support_iff, h]; simp
 
+/-- The constant polynomial `C 0` is zero. -/
+@[simp] lemma C_zero [Zero R] [BEq R] [LawfulBEq R] :
+    (C (0 : R) : CPolynomial R) = 0 := by
+  rw [eq_zero_iff_coeff_zero]; intro i; rw [coeff_C]; simp
+
 /-- The natDegree of a constant polynomial `C r` is zero. -/
 theorem natDegree_C [Zero R] [BEq R] [LawfulBEq R] (r : R) :
     (C r).natDegree = 0 := by
     by_cases hr : r = 0
-    · subst hr
-      suffices C (0 : R) = 0 by rw [this]; rfl
-      simp only [eq_zero_iff_coeff_zero]; intro i; rw [coeff_C] ; simp
+    · subst hr; rw [C_zero]; rfl
     · simp [C, natDegree, Raw.C]
       conv_lhs => rw [show #[r] = (#[] : Array R).push r from rfl]
       rw [Trim.push_trim #[] r hr]
