@@ -744,6 +744,11 @@ theorem natDegree_eq_support_sup [Zero R] [BEq R] [LawfulBEq R] (p : CPolynomial
       · simpa using (Finset.le_sup (f := fun m => m) hn_mem)
       · exact Finset.sup_le fun m hm => hle m hm
 
+/-- If `coeff p i ≠ 0` then `i ≤ p.natDegee`. -/
+theorem le_natDegree_of_ne_zero [Zero R] [BEq R] [LawfulBEq R] {p : CPolynomial R} {i : ℕ} (h : coeff p i ≠ 0) : i ≤ p.natDegree := by
+  rw [natDegree_eq_support_sup]
+  exact Finset.le_sup (f := fun n => n) ((mem_support_iff p i).mpr h)
+
 section Division
 
 /-- Quotient of `p` by a monic polynomial `q`. Matches Mathlib's `Polynomial.divByMonic`. -/
