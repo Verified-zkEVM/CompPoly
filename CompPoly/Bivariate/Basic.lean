@@ -294,6 +294,31 @@ theorem natWeightedDegree_le_iff (f : CBivariate R) (u v d : ℕ) :
   ∀ j ∈ f.supportY , u * (f.val.coeff j).natDegree + v * j ≤ d := by
     simp [CBivariate.natWeightedDegree, CBivariate.supportY]
 
+omit [Nontrivial R] in
+/-- The weighted degree is at most `d` iff every monomial index
+    satisfies the weighted bound. -/
+theorem natWeightedDegree_le_iff_coeff (f : CBivariate R) (u v d : ℕ) :
+   f.natWeightedDegree u v ≤ d ↔ ∀ i j, CBivariate.coeff f i j ≠ 0 → u * i + v * j ≤ d := by
+   rw [natWeightedDegree_le_iff]
+   constructor
+   · intro h i j hij
+     have hj : j ∈ f.supportY := by
+       rw [CBivariate.supportY, CPolynomial.mem_support_iff]
+       intro heq
+       apply hij
+       show (CPolynomial.coeff f j).coeff i = 0
+       rw [heq]
+       exact CPolynomial.coeff_zero i
+     have hi := CPolynomial.le_natDegree_of_ne_zero hij
+     exact le_trans
+       (Nat.add_le_add_right (Nat.mul_le_mul_left u hi) _)
+       (h j hj)
+   · intro h j hj
+     have hne := (CPolynomial.mem_support_iff f j).mp hj
+     have hlc := CPolynomial.leadingCoeff_ne_zero hne
+     rw [CPolynomial.leadingCoeff_eq_coeff_natDegree] at hlc
+     exact h _ j hlc
+
 end WeightedDegreeLemmas
 
 end CBivariate

@@ -749,6 +749,15 @@ theorem le_natDegree_of_ne_zero [Zero R] [BEq R] [LawfulBEq R] {p : CPolynomial 
   rw [natDegree_eq_support_sup]
   exact Finset.le_sup (f := fun n => n) ((mem_support_iff p i).mpr h)
 
+/-- The leading coefficient of a nonzero polynomial is nonzero. -/
+lemma leadingCoeff_ne_zero [Zero R] [BEq R] [LawfulBEq R] {p : CPolynomial R} (h : p ≠ 0) :
+  p.leadingCoeff ≠ 0 := by
+  unfold leadingCoeff
+  apply Or.resolve_left
+   (Trim.isCanonical_iff_size_eq_zero_or_getLastD_ne_zero.mp p.property)
+  intro hsize
+  exact h (ext (Array.eq_empty_of_size_eq_zero hsize))
+
 section Division
 
 /-- Quotient of `p` by a monic polynomial `q`. Matches Mathlib's `Polynomial.divByMonic`. -/
