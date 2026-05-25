@@ -261,10 +261,9 @@ theorem natDegreeY_as_weightedDegree (f : CBivariate R) :
   simp [CBivariate.natDegreeY, CBivariate.natWeightedDegree]
 
 /-- The weighted degree of a nonzero monomial `c * X^n * Y^m`
-    is `u * n + v * m`. -/
+    is `u * n + v * m` where `u` is the weight of `X` and `v` the weight of `Y`. -/
 theorem natWeightedDegree_monomialXY
-    {R : Type*} [Semiring R] [BEq R] [LawfulBEq R]
-    [Nontrivial R] [DecidableEq R]
+    [DecidableEq R]
     {n m : ℕ} {c : R} (hc : c ≠ 0) (u v : ℕ) :
     CBivariate.natWeightedDegree
       (CBivariate.monomialXY n m c) u v = u * n + v * m := by
@@ -278,6 +277,13 @@ theorem natWeightedDegree_monomialXY
     CPolynomial.support_monomial hmon, Finset.sup_singleton,
     CPolynomial.coeff_monomial, if_pos,
     CPolynomial.natDegree_monomial hc]
+
+/-- Zero polynomial has degree 0 -/
+theorem natWeightedDegree_zero (u v : ℕ) : CBivariate.natWeightedDegree (0 : CBivariate R) u v = 0 := by
+  simp only [CBivariate.natWeightedDegree, show CPolynomial.support (0 : CBivariate R) = ∅ from (CPolynomial.support_empty_iff _).mpr rfl, Finset.sup_empty, bot_eq_zero]
+#check (CPolynomial.support_empty_iff _).mpr rfl
+
+
 
 end WeightedDegreeLemmas
 
