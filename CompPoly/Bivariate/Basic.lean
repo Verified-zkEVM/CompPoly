@@ -147,8 +147,8 @@ def supportX {R : Type*} [Zero R] [BEq R] (f : CBivariate R) : Finset ℕ :=
 
 /-- The `Y`-degree (degree when viewed as a polynomial in `Y`).
     ArkLib: `Polynomial.Bivariate.natDegreeY`. -/
-def natDegreeY {R : Type*} [Zero R] (f : CBivariate R) : ℕ :=
-  f.natDegree
+def natDegreeY {R : Type*} [Zero R] [BEq R] (f : CBivariate R) : ℕ :=
+  (CPolynomial.support f).sup (fun n ↦ n)
 
 /-- The `X`-degree: maximum over all Y-coefficients of their degree in X.
     ArkLib: `Polynomial.Bivariate.natDegreeX`. -/
@@ -253,6 +253,31 @@ omit [LawfulBEq R] [Nontrivial R] in
 theorem natDegreeX_as_weightedDegree (f : CBivariate R) :
     CBivariate.natDegreeX (R := R) f = CBivariate.natWeightedDegree (R := R) f 1 0 := by
   simp [CBivariate.natDegreeX, CBivariate.natWeightedDegree]
+
+omit [LawfulBEq R] [Nontrivial R] in
+/-- The Y-degree is the `(0, 1)`-weighted degree. -/
+theorem natDegreeY_as_weightedDegree (f : CBivariate R) :
+    CBivariate.natDegreeY (R := R) f = CBivariate.natWeightedDegree (R := R) f 0 1 := by
+  simp [CBivariate.natDegreeY, CBivariate.natWeightedDegree]
+
+/-- The weighted degree of a nonzero monomial `c * X^n * Y^m`
+    is `u * n + v * m`. -/
+theorem natWeightedDegree_monomialXY
+    {R : Type*} [Semiring R] [BEq R] [LawfulBEq R]
+    [Nontrivial R] [DecidableEq R]
+    {n m : ℕ} {c : R} (hc : c ≠ 0) (u v : ℕ) :
+    CBivariate.natWeightedDegree
+      (CBivariate.monomialXY n m c) u v = u * n + v * m := by
+  have hmon : CPolynomial.monomial n c ≠ 0 := by
+    rw [Ne, CPolynomial.eq_zero_iff_coeff_zero, not_forall]
+    use n
+    rw [CPolynomial.coeff_monomial]
+    simp [hc]
+  simp only [
+    CBivariate.natWeightedDegree, CBivariate.monomialXY,
+    CPolynomial.support_monomial hmon, Finset.sup_singleton,
+    CPolynomial.coeff_monomial, if_pos,
+    CPolynomial.natDegree_monomial hc]
 
 end WeightedDegreeLemmas
 

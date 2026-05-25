@@ -368,6 +368,16 @@ theorem support_empty_iff [Zero R] [BEq R] [LawfulBEq R] (p : CPolynomial R) :
   · intro h i; by_contra hne; exact h i ((mem_support_iff p i).mpr hne)
   · intro h i; rw [mem_support_iff, h]; simp
 
+/-- The support of a nonzero monomial `c * X^n` is `{n}`. -/
+theorem support_monomial [Semiring R] [DecidableEq R] [BEq R] [LawfulBEq R] {n : ℕ} {c : R} (hc : c ≠ 0) : (monomial n c).support = {n} := by
+  ext i
+  rw [mem_support_iff, coeff_monomial, Finset.mem_singleton]
+  simp [hc]
+
+/-- The natDegree of a nonzero monomial `c * X^n` is `n`. -/
+theorem natDegree_monomial [Semiring R] [DecidableEq R] [BEq R] [LawfulBEq R] {n : ℕ} {c : R} (hc : c ≠ 0) : (monomial n c).natDegree = n := by
+  simp [monomial, Raw.monomial, hc, natDegree]
+
 /-- Evaluation equals the sum over support of coefficients times powers. -/
 theorem eval_eq_sum_support [Semiring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) (x : R) :
     p.eval x = p.support.sum (fun i => p.coeff i * x ^ i) := by
