@@ -281,9 +281,14 @@ theorem natWeightedDegree_monomialXY
 /-- Zero polynomial has degree 0 -/
 theorem natWeightedDegree_zero (u v : ℕ) : CBivariate.natWeightedDegree (0 : CBivariate R) u v = 0 := by
   simp only [CBivariate.natWeightedDegree, show CPolynomial.support (0 : CBivariate R) = ∅ from (CPolynomial.support_empty_iff _).mpr rfl, Finset.sup_empty, bot_eq_zero]
-#check (CPolynomial.support_empty_iff _).mpr rfl
 
-
+omit [Nontrivial R] [LawfulBEq R] in
+/-- The weighted degree is at most `d` iff every Y-support index
+    satisfies the weighted bound. -/
+theorem natWeightedDegree_le_iff (f : CBivariate R) (u v d : ℕ) :
+  natWeightedDegree f u v ≤ d ↔
+  ∀ j ∈ f.supportY , u * (f.val.coeff j).natDegree + v * j ≤ d := by
+    simp [CBivariate.natWeightedDegree, CBivariate.supportY]
 
 end WeightedDegreeLemmas
 
