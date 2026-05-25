@@ -404,6 +404,14 @@ theorem natDegree_monomial [Semiring R] [DecidableEq R]
     (monomial n c).natDegree = n := by
   simp [monomial, Raw.monomial, hc, natDegree]
 
+/-- The support of the sum of two polynomial is a subset of the union of the supports of each polynomial. -/
+theorem support_add_subset [Semiring R] [DecidableEq R]
+    [BEq R] [LawfulBEq R] (p q : CPolynomial R) : (p + q).support ⊆ p.support ∪ q.support := by
+    intro i hi
+    rw [mem_support_iff, coeff_add] at hi
+    rw [Finset.mem_union, mem_support_iff, mem_support_iff]
+    exact not_and_or.mp fun ⟨h1, h2⟩ => hi (by rw [h1, h2]; simp)
+
 /-- Evaluation equals the sum over support of coefficients times powers. -/
 theorem eval_eq_sum_support [Semiring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) (x : R) :
     p.eval x = p.support.sum (fun i => p.coeff i * x ^ i) := by
