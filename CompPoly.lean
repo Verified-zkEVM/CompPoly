@@ -107,6 +107,7 @@ import CompPoly.Univariate.NTT.FastMulLow
 import CompPoly.Univariate.NTT.Forward
 import CompPoly.Univariate.NTT.Interpolation
 import CompPoly.Univariate.NTT.Inverse
+import CompPoly.Univariate.NTT.Kernel
 import CompPoly.Univariate.NTT.KoalaBear
 import CompPoly.Univariate.NTT.Transform
 import CompPoly.Univariate.NTTFast.Correctness
