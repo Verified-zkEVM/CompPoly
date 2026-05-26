@@ -339,60 +339,97 @@ theorem ofPoly_mul
 
 end RingEquiv
 
-/-! ### Shared helper: foldl-to-Finset.sum equivalence -/
+/-! ### Shared helper: deferred-trim Horner foldr commutes with `toPoly`
 
-/-- Converting a `foldl` over `Array.zipIdx` of `CPolynomial` coefficients to a
-    `Finset.sum` of their `toPoly` images commutes with the `toPoly` map. -/
-private theorem toPoly_foldl_zipIdx_eq_sum {R : Type*} [BEq R] [LawfulBEq R]
-    [Nontrivial R] [Semiring R] (arr : Array (CPolynomial R)) (y : R) :
-    (Array.foldl (fun (acc : CPolynomial R) (x : CPolynomial R × ℕ) ↦
-      acc + x.1 * CPolynomial.C y ^ x.2) 0 (Array.zipIdx arr) 0 arr.size).toPoly =
-    ∑ i ∈ Finset.range arr.size, (arr[i]?.getD 0).toPoly * (Polynomial.C y) ^ i := by
-  induction' arr using Array.recOn with arr ih
-  induction' arr using List.reverseRecOn with arr ih
-  · rfl
-  · simp_all +decide [ Finset.sum_range_succ, Array.zipIdx ]
-    rw [ Finset.sum_congr rfl fun i hi ↦ by rw [ List.getElem?_append ] ]
-    rw [ Finset.sum_congr rfl fun i hi ↦ by rw [ if_pos (Finset.mem_range.mp hi) ] ]
-    convert congr_arg₂ ( · + · ) ‹_› rfl using 1
-    convert CPolynomial.Raw.toPoly_add _ _ using 1
-    · congr! 1
-      have h_toPoly_mul : ∀ (p q : CPolynomial R),
-          (p * q).toPoly = p.toPoly * q.toPoly :=
-        fun p q => CPolynomial.toPoly_mul p q
-      convert h_toPoly_mul ih (CPolynomial.C y ^ arr.length) |> Eq.symm using 1
-      congr! 1
-      induction' arr.length with n ih <;> simp_all +decide [ pow_succ ]
-      · exact Eq.symm ( CPolynomial.Raw.toPoly_one )
-      · congr! 1
-        exact Eq.symm (CPolynomial.C_toPoly y)
-    · infer_instance
+`evalY` and (transitively) `evalEval` fold the Y-coefficients of `f : CBivariate R`
+with a raw Horner pattern (`smulRight a` then `addRaw`) and trim once at the end.
+The helper below bridges that raw fold's `toPoly` image with the `Finset.sum` form
+of the polynomial evaluation. -/
+
+/-- The deferred-trim raw Horner foldr commutes with `toPoly`: trimming the foldr
+and taking its `toPoly` image gives the sum-of-powers polynomial. -/
+private theorem toPoly_foldr_evalY_eq_sum {R : Type*} [BEq R] [LawfulBEq R]
+    [Semiring R] (l : List (CPolynomial R)) (y : R) :
+    (l.foldr (fun (c : CPolynomial R) (acc : CPolynomial.Raw R) =>
+        (acc.smulRight y).addRaw c.val)
+      (CPolynomial.Raw.mk #[])).toPoly =
+    ∑ i ∈ Finset.range l.length, (l[i]?.getD 0).toPoly * (Polynomial.C y) ^ i := by
+  induction l with
+  | nil => simpa using CPolynomial.Raw.toPoly_zero
+  | cons head tail ih =>
+      show ((tail.foldr _ (CPolynomial.Raw.mk #[])).smulRight y |>.addRaw head.val).toPoly = _
+      rw [CPolynomial.Raw.toPoly_addRaw, CPolynomial.Raw.toPoly_smulRight, ih,
+          List.length_cons, Finset.sum_range_succ' _ tail.length]
+      simp only [List.getElem?_cons_succ, List.getElem?_cons_zero, Option.getD_some,
+                 pow_zero, mul_one, pow_succ, ← mul_assoc, ← Finset.sum_mul]
+      rfl
 
 /-! Correctness lemmas for evaluation, coefficients, support, and degrees. -/
 section ImplementationCorrectness
+
+/--
+`evalY a` corresponds to outer evaluation at `Polynomial.C a`.
+-/
+theorem evalY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
+    (a : R) (f : CBivariate R) :
+    (evalY (R := R) a f).toPoly = (toPoly f).eval (Polynomial.C a) := by
+  show ((Array.foldr _ (CPolynomial.Raw.mk #[]) f.val).trim).toPoly = _
+  rw [CPolynomial.Raw.toPoly_trim, ← Array.foldr_toList, toPoly_foldr_evalY_eq_sum]
+  simp only [Array.length_toList, Array.getElem?_toList]
+  symm
+  unfold CBivariate.toPoly
+  simp +decide [ Polynomial.eval_finset_sum ]
+  rw [ Finset.sum_subset ]
+  · exact fun i hi ↦ Finset.mem_range.mpr
+      (Nat.lt_of_lt_of_le (Finset.mem_range.mp (Finset.mem_filter.mp hi |>.1)) (by simp))
+  · simp +contextual [ CPolynomial.support ]
+    simp +decide [ CPolynomial.toPoly, CPolynomial.Raw.toPoly ]
+    unfold CPolynomial.Raw.eval₂
+    erw [ Array.foldl_empty ]
+    simp
+
+/-- Horner evaluation in Y agrees with the deferred-trim sum-of-powers evaluator.
+
+Both `evalYHorner` and the new `evalY` reduce to the same `Polynomial` under
+`toPoly`, and `toPoly` is injective on canonical polynomials, so the two
+canonical results coincide. -/
+theorem eval_y_horner_eq_eval_y {R : Type*}
+    [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] (a : R) (p : CBivariate R) :
+    evalYHorner a p = evalY a p := by
+  have h_inj : Function.Injective (CPolynomial.toPoly (R := R)) := by
+    intro p₁ p₂ h
+    apply Subtype.ext
+    rw [← CPolynomial.toImpl_toPoly_of_canonical p₁, h,
+        CPolynomial.toImpl_toPoly_of_canonical p₂]
+  apply h_inj
+  show (evalYHorner a p).toPoly = (evalY a p).toPoly
+  rw [evalY_toPoly]
+  show (CPolynomial.evalHorner (CPolynomial.C a) p).toPoly = (toPoly p).eval (Polynomial.C a)
+  rw [CPolynomial.eval_horner_eq_eval, CPolynomial.eval_toPoly, toPoly_eq_map,
+      Polynomial.eval_map]
+  -- Goal: ((CPolynomial.toPoly p).eval (CPolynomial.C a)).toPoly
+  --     = (CPolynomial.toPoly p).eval₂ ↑CPolynomial.ringEquiv (Polynomial.C a)
+  have hC : (↑(CPolynomial.ringEquiv (R := R)) : CPolynomial R →+* Polynomial R)
+                (CPolynomial.C a)
+      = (Polynomial.C a : Polynomial R) :=
+    CPolynomial.C_toPoly a
+  rw [← hC, Polynomial.eval₂_at_apply]
+  rfl
+
+/-- `Y`-then-`X` Horner full evaluation agrees with the existing evaluator. -/
+theorem eval_eval_horner_y_then_x_eq_eval_eval {R : Type*}
+    [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (x y : R) (p : CBivariate R) :
+    evalEvalHornerYThenX x y p = evalEval x y p := by
+  simp only [evalEvalHornerYThenX, evalEval]
+  rw [CPolynomial.eval_horner_eq_eval, eval_y_horner_eq_eval_y]
 
 /-- `toPoly` preserves full evaluation: `evalEval x y f = (toPoly f).evalEval x y`. -/
 theorem evalEval_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
     (x y : R) (f : CBivariate R) :
     @CBivariate.evalEval R _ _ _ _ x y f = (toPoly f).evalEval x y := by
-      unfold CBivariate.evalEval Polynomial.evalEval
-      -- `toPoly f` has coefficients `f.val.coeff i`.
-      have h_toPoly : (toPoly f).eval (Polynomial.C y) = (f.val.eval (CPolynomial.C y)).toPoly := by
-        unfold CBivariate.toPoly
-        simp +decide [ Polynomial.eval_finset_sum, CPolynomial.Raw.eval ]
-        unfold CPolynomial.Raw.eval₂
-        simp +decide
-        rw [ toPoly_foldl_zipIdx_eq_sum, Finset.sum_subset ]
-        · exact fun i hi ↦ Finset.mem_range.mpr
-            (Nat.lt_of_lt_of_le (Finset.mem_range.mp (Finset.mem_filter.mp hi |>.1)) (by simp))
-        · simp +contextual [ CPolynomial.support ]
-          simp +decide [ CPolynomial.toPoly, CPolynomial.Raw.toPoly ]
-          unfold CPolynomial.Raw.eval₂
-          erw [ Array.foldl_empty ]
-          simp
-      -- `toPoly (f.val.eval (C y))` equals the polynomial with coefficients `f.val.coeff i`.
-      rw [h_toPoly]
-      exact CPolynomial.eval_toPoly x (CPolynomial.Raw.eval (CPolynomial.C y) ↑f)
+  show CPolynomial.eval x (evalY (R := R) y f) = (toPoly f).evalEval x y
+  rw [CPolynomial.eval_toPoly, evalY_toPoly]
 
 /-- `toPoly` preserves coefficients: coefficient of `X^i Y^j` matches. -/
 theorem coeff_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
@@ -671,28 +708,6 @@ theorem evalX_toPoly_eval_commute_converse
     rw [monomialXY_toPoly]
     simp [Polynomial.evalEval, Polynomial.eval_monomial]
   exact lhs.symm.trans key |>.trans rhs
-
-/--
-`evalY a` corresponds to outer evaluation at `Polynomial.C a`.
--/
-theorem evalY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
-    (a : R) (f : CBivariate R) :
-    (evalY (R := R) a f).toPoly = (toPoly f).eval (Polynomial.C a) := by
-  unfold CBivariate.evalY
-  have h_toPoly : (toPoly f).eval (Polynomial.C a) = (f.val.eval (CPolynomial.C a)).toPoly := by
-    unfold CBivariate.toPoly
-    simp +decide [ Polynomial.eval_finset_sum, CPolynomial.Raw.eval ]
-    unfold CPolynomial.Raw.eval₂
-    simp +decide
-    rw [ toPoly_foldl_zipIdx_eq_sum, Finset.sum_subset ]
-    · exact fun i hi ↦ Finset.mem_range.mpr
-        (Nat.lt_of_lt_of_le (Finset.mem_range.mp (Finset.mem_filter.mp hi |>.1)) (by simp))
-    · simp +contextual [ CPolynomial.support ]
-      simp +decide [ CPolynomial.toPoly, CPolynomial.Raw.toPoly ]
-      unfold CPolynomial.Raw.eval₂
-      erw [ Array.foldl_empty ]
-      simp
-  exact h_toPoly.symm
 
 /--
 Computable analogue of `Polynomial.Bivariate.eval_comm`:
