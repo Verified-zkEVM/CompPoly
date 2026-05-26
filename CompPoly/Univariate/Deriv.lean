@@ -26,7 +26,6 @@ def derivative [Semiring R] [BEq R] [LawfulBEq R]
       fun i c => c * (Nat.cast (i + 1) : R)
   ⟨(Raw.mk arr).trim, Raw.Trim.isCanonical_trim _⟩
 
-
 /-- Coefficient formula for the derivative. -/
 theorem coeff_derivative [Semiring R] [BEq R] [LawfulBEq R]
     (p : CPolynomial R) (n : ℕ) :
@@ -49,26 +48,41 @@ theorem coeff_derivative [Semiring R] [BEq R] [LawfulBEq R]
 
 /-- The derivative of the zero polynomial is zero. -/
 theorem derivative_zero [Semiring R] [BEq R] [LawfulBEq R] :
-    derivative (0 : CPolynomial R) = 0 :=
-  sorry
+    derivative (0 : CPolynomial R) = 0 := by
+  rw [eq_zero_iff_coeff_zero]
+  intro i
+  rw [coeff_derivative, CPolynomial.coeff_zero]
+  simp
 
 /-- The derivative of a constant is zero. -/
 theorem derivative_C [Semiring R] [BEq R] [LawfulBEq R] (r : R) :
-    derivative (C r) = 0 :=
-  sorry
+    derivative (C r) = 0 := by
+  rw [eq_zero_iff_coeff_zero]
+  intro i
+  rw [coeff_derivative, CPolynomial.coeff_C]
+  simp
 
 /-- The derivative of a monomial. -/
 theorem derivative_monomial [Semiring R] [BEq R] [LawfulBEq R]
     [DecidableEq R] (n : ℕ) (r : R) :
     derivative (monomial n r) =
-      monomial (n - 1) (r * (↑n : R)) :=
-  sorry
+      monomial (n - 1) (r * (↑n : R)) := by
+  rw [eq_iff_coeff]
+  intro i
+  rw [coeff_derivative, coeff_monomial, coeff_monomial]
+  split_ifs <;> simp_all
+  · omega
+  · have : n = 0 := by omega
+    simp [this]
 
 /-- The derivative distributes over addition. -/
-theorem derivative_add [Semiring R] [DecidableEq R]
-    [BEq R] [LawfulBEq R] (p q : CPolynomial R) :
-    derivative (p + q) = derivative p + derivative q :=
-  sorry
+theorem derivative_add [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R]
+    (p q : CPolynomial R) :
+    derivative (p + q) = derivative p + derivative q := by
+  rw [eq_iff_coeff]
+  intro i
+  simp only [coeff_derivative, coeff_add]
+  exact right_distrib _ _ _
 
 end CPolynomial
 

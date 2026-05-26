@@ -96,6 +96,7 @@ import CompPoly.Univariate.BatchEval.Context
 import CompPoly.Univariate.BatchEval.Correctness
 import CompPoly.Univariate.BatchEval.Naive
 import CompPoly.Univariate.BatchEval.SubproductTree
+import CompPoly.Univariate.Deriv
 import CompPoly.Univariate.DivisionCorrectness
 import CompPoly.Univariate.EuclideanAlgorithm
 import CompPoly.Univariate.Lagrange
