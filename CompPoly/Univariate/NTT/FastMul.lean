@@ -256,8 +256,6 @@ private theorem pointwise_evalOnDomain_eq_evalOnDomain_mul
   apply Array.ext
   · simp [pointwiseMul, evalOnDomain]
   · intro i hi₁ hi₂
-    have hiD : i < D.n := by simpa [pointwiseMul] using hi₁
-    let k : D.Idx := ⟨i, hiD⟩
     simp [pointwiseMul, evalOnDomain]
     rw [← raw_eval_mul]
 
