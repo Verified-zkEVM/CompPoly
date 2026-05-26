@@ -60,6 +60,9 @@ import CompPoly.Fields.PrattCertificate
 import CompPoly.Fields.Secp256k1
 import CompPoly.Multilinear.Basic
 import CompPoly.Multilinear.Equiv
+import CompPoly.Multilinear.ManyEval
+import CompPoly.Multilinear.ManyEval.Basic
+import CompPoly.Multilinear.ManyEval.Correctness
 import CompPoly.Multilinear.TransformEquiv
 import CompPoly.Multivariate.CMvMonomial
 import CompPoly.Multivariate.CMvPolynomial
@@ -93,6 +96,9 @@ import CompPoly.Univariate.BatchEval.SubproductTree
 import CompPoly.Univariate.DivisionCorrectness
 import CompPoly.Univariate.Lagrange
 import CompPoly.Univariate.Linear
+import CompPoly.Univariate.ManyEval
+import CompPoly.Univariate.ManyEval.Basic
+import CompPoly.Univariate.ManyEval.Correctness
 import CompPoly.Univariate.NTT.BabyBear
 import CompPoly.Univariate.NTT.Domain
 import CompPoly.Univariate.NTT.FastMul
