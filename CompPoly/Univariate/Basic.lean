@@ -961,6 +961,24 @@ instance [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] : Semiring (CPolynomi
   natCast_zero := by rfl
   natCast_succ := by intro n; rfl
 
+@[simp]
+lemma natCast_eq_C [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (n : ℕ) : (↑n : CPolynomial R) = C (↑n : R) := by
+  induction n with
+  | zero =>
+    rw [Nat.cast_zero, Nat.cast_zero]
+    rw [eq_iff_coeff]
+    intro i; rw [coeff_zero, coeff_C]
+    split_ifs <;> simp
+  | succ n ih =>
+    rw [Nat.cast_add (R := CPolynomial R) n 1,
+      Nat.cast_one (R := CPolynomial R),
+      Nat.cast_add (R := R) n 1,
+      Nat.cast_one (R := R), ih, eq_iff_coeff]
+    intro i
+    simp only [coeff_add, coeff_C, coeff_one]
+    split_ifs <;> simp_all
+
 /-- The underlying `Raw` value of `p ^ n` equals `p.val ^ n`
 (using the Raw `Pow` instance). This bridges the optimized
 `powBySq` used in the `Semiring` instance with the spec
