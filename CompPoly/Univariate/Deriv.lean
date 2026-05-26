@@ -17,29 +17,35 @@ namespace CompPoly
 
 namespace CPolynomial
 
-variable {R : Type*}
-
-section Definition
-
 /-- The formal derivative of a computable polynomial.
     Coefficient `n` of the result is `coeff p (n+1) * (n+1)`. -/
 def derivative [Semiring R] [BEq R] [LawfulBEq R]
     (p : CPolynomial R) : CPolynomial R :=
-  sorry
+  let arr : Array R :=
+    (p.val.extract 1 p.val.size).mapIdx
+      fun i c => c * (Nat.cast (i + 1) : R)
+  ⟨(Raw.mk arr).trim, Raw.Trim.isCanonical_trim _⟩
 
-end Definition
-
-section Coefficients
 
 /-- Coefficient formula for the derivative. -/
 theorem coeff_derivative [Semiring R] [BEq R] [LawfulBEq R]
     (p : CPolynomial R) (n : ℕ) :
-    coeff (derivative p) n = coeff p (n + 1) * (↑(n + 1) : R) :=
-  sorry
+    coeff (derivative p) n = coeff p (n + 1) * (↑(n + 1) : R) := by
+  simp only [derivative, coeff, Raw.Trim.coeff_eq_coeff, Raw.coeff, Raw.mk]
+  by_cases hn : n + 1 < Array.size p.val
+  · unfold Array.getD
+    simp only [Array.size_mapIdx, Array.size_extract, Nat.min_self,
+          hn, dite_true]
+    split
+    · simp [Array.getElem_mapIdx, Array.getElem_extract, Nat.add_comm 1 n]
+    · omega
+  · unfold Array.getD
+    simp only [Array.size_mapIdx, Array.size_extract, Nat.min_self,
+          hn, dite_false]
+    split
+    · omega
+    · simp
 
-end Coefficients
-
-section BasicLemmas
 
 /-- The derivative of the zero polynomial is zero. -/
 theorem derivative_zero [Semiring R] [BEq R] [LawfulBEq R] :
@@ -52,8 +58,8 @@ theorem derivative_C [Semiring R] [BEq R] [LawfulBEq R] (r : R) :
   sorry
 
 /-- The derivative of a monomial. -/
-theorem derivative_monomial [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R]
-    (n : ℕ) (r : R) :
+theorem derivative_monomial [Semiring R] [BEq R] [LawfulBEq R]
+    [DecidableEq R] (n : ℕ) (r : R) :
     derivative (monomial n r) =
       monomial (n - 1) (r * (↑n : R)) :=
   sorry
@@ -63,8 +69,6 @@ theorem derivative_add [Semiring R] [DecidableEq R]
     [BEq R] [LawfulBEq R] (p q : CPolynomial R) :
     derivative (p + q) = derivative p + derivative q :=
   sorry
-
-end BasicLemmas
 
 end CPolynomial
 
