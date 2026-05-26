@@ -290,34 +290,35 @@ omit [Nontrivial R] [LawfulBEq R] in
 /-- The weighted degree is at most `d` iff every Y-support index
     satisfies the weighted bound. -/
 theorem natWeightedDegree_le_iff (f : CBivariate R) (u v d : ℕ) :
-  natWeightedDegree f u v ≤ d ↔
-  ∀ j ∈ f.supportY , u * (f.val.coeff j).natDegree + v * j ≤ d := by
-    simp [CBivariate.natWeightedDegree, CBivariate.supportY]
+    natWeightedDegree f u v ≤ d ↔
+    ∀ j ∈ f.supportY , u * (f.val.coeff j).natDegree + v * j ≤ d := by
+  simp [CBivariate.natWeightedDegree, CBivariate.supportY]
 
 omit [Nontrivial R] in
 /-- The weighted degree is at most `d` iff every monomial index
     satisfies the weighted bound. -/
 theorem natWeightedDegree_le_iff_coeff (f : CBivariate R) (u v d : ℕ) :
-   f.natWeightedDegree u v ≤ d ↔ ∀ i j, CBivariate.coeff f i j ≠ 0 → u * i + v * j ≤ d := by
-   rw [natWeightedDegree_le_iff]
-   constructor
-   · intro h i j hij
-     have hj : j ∈ f.supportY := by
-       rw [CBivariate.supportY, CPolynomial.mem_support_iff]
-       intro heq
-       apply hij
-       show (CPolynomial.coeff f j).coeff i = 0
-       rw [heq]
-       exact CPolynomial.coeff_zero i
-     have hi := CPolynomial.le_natDegree_of_ne_zero hij
-     exact le_trans
-       (Nat.add_le_add_right (Nat.mul_le_mul_left u hi) _)
-       (h j hj)
-   · intro h j hj
-     have hne := (CPolynomial.mem_support_iff f j).mp hj
-     have hlc := CPolynomial.leadingCoeff_ne_zero hne
-     rw [CPolynomial.leadingCoeff_eq_coeff_natDegree] at hlc
-     exact h _ j hlc
+    f.natWeightedDegree u v ≤ d ↔
+    ∀ i j, CBivariate.coeff f i j ≠ 0 → u * i + v * j ≤ d := by
+  rw [natWeightedDegree_le_iff]
+  constructor
+  · intro h i j hij
+    have hj : j ∈ f.supportY := by
+      rw [CBivariate.supportY, CPolynomial.mem_support_iff]
+      intro heq
+      apply hij
+      show (CPolynomial.coeff f j).coeff i = 0
+      rw [heq]
+      exact CPolynomial.coeff_zero i
+    have hi := CPolynomial.le_natDegree_of_ne_zero hij
+    exact le_trans
+      (Nat.add_le_add_right (Nat.mul_le_mul_left u hi) _)
+      (h j hj)
+  · intro h j hj
+    have hne := (CPolynomial.mem_support_iff f j).mp hj
+    have hlc := CPolynomial.leadingCoeff_ne_zero hne
+    rw [CPolynomial.leadingCoeff_eq_coeff_natDegree] at hlc
+    exact h _ j hlc
 
 omit [Nontrivial R] in
 /-- The natWeightedDegree of a constant bivariate polynomial `CBivariate.CC` is zero. -/
@@ -332,6 +333,29 @@ theorem natWeightedDegree_CC {r : R} (u v : ℕ) :
       (CPolynomial.C (CPolynomial.C r)) 0).natDegree + v * 0 = 0
     rw [CPolynomial.coeff_C, if_pos rfl, CPolynomial.natDegree_C]
     ring
+
+/-- The weighted degree of a sum is at most the max of the weighted degrees. -/
+theorem natWeightedDegree_add_le [DecidableEq R] (p q : CBivariate R) (u v : ℕ) :
+    CBivariate.natWeightedDegree (p + q) u v ≤
+      max (CBivariate.natWeightedDegree p u v) (CBivariate.natWeightedDegree q u v) := by
+  rw [natWeightedDegree_le_iff_coeff]
+  intro i j hij
+  have hcoeff : CBivariate.coeff (p + q) i j =
+      CBivariate.coeff p i j + CBivariate.coeff q i j := by
+      show ((p + q).val.coeff j).coeff i =
+        (p.val.coeff j).coeff i + (q.val.coeff j).coeff i
+      rw [show (p + q).val.coeff j = p.val.coeff j + q.val.coeff j from
+        CPolynomial.coeff_add p q j]
+      exact CPolynomial.coeff_add _ _ i
+  rw [hcoeff] at hij
+  rcases Decidable.em (CBivariate.coeff p i j = 0) with h0 | hp
+  · have hq : CBivariate.coeff q i j ≠ 0 := by
+        intro hq; exact hij (by rw [h0, hq, add_zero])
+    exact le_trans ((natWeightedDegree_le_iff_coeff q u v _).mp le_rfl i j hq)
+        (le_max_right _ _)
+  · exact le_trans ((natWeightedDegree_le_iff_coeff p u v _).mp le_rfl i j hp)
+      (le_max_left _ _)
+
 end WeightedDegreeLemmas
 
 end CBivariate

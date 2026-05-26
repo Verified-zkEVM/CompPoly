@@ -404,7 +404,7 @@ theorem natDegree_monomial [Semiring R] [DecidableEq R]
     (monomial n c).natDegree = n := by
   simp [monomial, Raw.monomial, hc, natDegree]
 
-/-- The support of the sum of two polynomial is a subset of the union of the supports of each polynomial. -/
+/-- The support of the sum of two polynomials is a subset of the union of their supports. -/
 theorem support_add_subset [Semiring R] [DecidableEq R]
     [BEq R] [LawfulBEq R] (p q : CPolynomial R) : (p + q).support ⊆ p.support ∪ q.support := by
     intro i hi
@@ -755,14 +755,24 @@ theorem natDegree_eq_support_sup [Zero R] [BEq R] [LawfulBEq R] (p : CPolynomial
       · simpa using (Finset.le_sup (f := fun m => m) hn_mem)
       · exact Finset.sup_le fun m hm => hle m hm
 
-/-- If `coeff p i ≠ 0` then `i ≤ p.natDegee`. -/
-theorem le_natDegree_of_ne_zero [Zero R] [BEq R] [LawfulBEq R] {p : CPolynomial R} {i : ℕ} (h : coeff p i ≠ 0) : i ≤ p.natDegree := by
+/-- If `coeff p i ≠ 0` then `i ≤ p.natDegree`. -/
+theorem le_natDegree_of_ne_zero [Zero R] [BEq R] [LawfulBEq R]
+    {p : CPolynomial R} {i : ℕ} (h : coeff p i ≠ 0) :
+    i ≤ p.natDegree := by
   rw [natDegree_eq_support_sup]
   exact Finset.le_sup (f := fun n => n) ((mem_support_iff p i).mpr h)
 
+/-- The natDegree of a sum is at most the max of the natDegrees. -/
+theorem natDegree_add_le [Semiring R] [DecidableEq R]
+    [BEq R] [LawfulBEq R] (p q : CPolynomial R) :
+    (p + q).natDegree ≤ max p.natDegree q.natDegree := by
+  rw [natDegree_eq_support_sup (p + q), natDegree_eq_support_sup p,
+    natDegree_eq_support_sup q, ← Finset.sup_union]
+  exact Finset.sup_mono (support_add_subset p q)
+
 /-- The leading coefficient of a nonzero polynomial is nonzero. -/
 lemma leadingCoeff_ne_zero [Zero R] [BEq R] [LawfulBEq R] {p : CPolynomial R} (h : p ≠ 0) :
-  p.leadingCoeff ≠ 0 := by
+    p.leadingCoeff ≠ 0 := by
   unfold leadingCoeff
   apply Or.resolve_left
    (Trim.isCanonical_iff_size_eq_zero_or_getLastD_ne_zero.mp p.property)
