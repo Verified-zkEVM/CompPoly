@@ -13,6 +13,8 @@ are too specific or too changeable to keep at the repo root.
   truth.
 - [`representations-and-bridges.md`](representations-and-bridges.md) - the main
   polynomial representations and Mathlib bridge layers.
+- [`arklib-sumcheck-bridge.md`](arklib-sumcheck-bridge.md) - upstream API needed
+  by ArkLib's interaction-native Sumcheck bridge.
 - [`typeclass-minimization.md`](typeclass-minimization.md) - declaration-level
   typeclass discipline and minimal-assumption examples.
 - [`binary-fields-and-ntt.md`](binary-fields-and-ntt.md) - the binary-field stack,
@@ -27,6 +29,7 @@ are too specific or too changeable to keep at the repo root.
   - `repo-map.md` for repo structure and work-area routing.
   - `generated-files.md` for derived outputs and source-of-truth rules.
   - `representations-and-bridges.md` for representation choice and Mathlib bridges.
+  - `arklib-sumcheck-bridge.md` for the ArkLib Sumcheck dependency surface.
   - `typeclass-minimization.md` for minimal typeclass assumptions and avoiding
     blanket instance scopes.
   - `binary-fields-and-ntt.md` for the specialized field and NTT stack.
