@@ -80,6 +80,60 @@ def divByLinearY [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     let quotArr : CPolynomial.Raw (CPolynomial R) := coeffs.reverse
     (⟨quotArr.trim, CPolynomial.Raw.Trim.isCanonical_trim quotArr⟩, rem)
 
+/-
+Proof strategy for divByLinearY_spec (approach A — via Mathlib division theorem):
+
+Step 1: Prove `divByLinearY_rem_eq_eval`: the remainder of synthetic division
+equals `evalYPoly f Q`. Both compute Σ aⱼ fʲ (Horner's method = synthetic
+division remainder). This is an induction on the fold, showing the running
+accumulator `b` satisfies `b = Σ_{j≥k} a_j * f^{j-k}` after processing
+coefficient k.
+
+Step 2: Combine `divByLinearY_rem_eq_eval` with `evalYPoly_toPoly` to get
+  `rem.toPoly = (toPoly Q).eval (f.toPoly)`
+which is also
+  `rem.toPoly = ((toPoly Q) %ₘ (X - C f.toPoly)).coeff 0`  (by modByMonic_X_sub_C_eq_C_eval)
+
+Step 3: Use Mathlib's `modByMonic_add_div` to get
+  `toPoly Q = (X - C f.toPoly) * ((toPoly Q) /ₘ (X - C f.toPoly)) + C ((toPoly Q).eval f.toPoly)`
+
+Step 4: Subtract our decomposition from the Mathlib decomposition. This gives
+  `(toPoly quot - (toPoly Q) /ₘ (X - C f.toPoly)) * (X - C f.toPoly) = 0`
+Since `X - C f.toPoly` is monic (hence nonzero), and `R[X]` is an integral
+domain (assuming `IsDomain R`), the other factor is zero, proving
+  `toPoly quot = (toPoly Q) /ₘ (X - C f.toPoly)`
+and thus the spec.
+
+Note: Step 4 uses `IsDomain R` (or `IsDomain R[X]`). If we want to avoid that,
+the alternative is to show `degree (toPoly quot) < degree (X - C f.toPoly)` is
+impossible, so the factor must be zero by Mathlib's uniqueness of divByMonic.
+Alternatively, use `Polynomial.eq_of_dvd_of_degree_le_of_leadingCoeff` or
+`divByMonic_eq_of_lt_and_lt` if available.
+-/
+
+-- Step 1: remainder of synthetic division = evaluation at f
+theorem divByLinearY_rem_eq_eval [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (Q : CBivariate R) (f : CPolynomial R) :
+    (divByLinearY Q f).2 = evalYPoly f Q := by
+  sorry
+
+-- Step 2–4: main correctness theorem
+theorem divByLinearY_spec [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (Q : CBivariate R) (f : CPolynomial R) :
+    let quot := (divByLinearY Q f).1
+    let rem := (divByLinearY Q f).2
+    toPoly Q = toPoly quot * (Polynomial.X - Polynomial.C (f.toPoly)) +
+        Polynomial.C (rem.toPoly) := by
+  sorry
+
+-- Follows from divByLinearY_rem_eq_eval + isLinearYFactor_iff:
+-- isLinearYFactor Q f = true ↔ evalYPoly f Q = 0, and rem = evalYPoly f Q
+theorem divByLinearY_exact [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (Q : CBivariate R) (f : CPolynomial R) (h : isLinearYFactor Q f = true) :
+    (divByLinearY Q f).2 = 0 := by
+  rw [divByLinearY_rem_eq_eval]
+  exact (isLinearYFactor_iff Q f).mp h
+
 end CBivariate
 
 end CompPoly
