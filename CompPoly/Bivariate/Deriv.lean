@@ -105,6 +105,13 @@ theorem partialDerivY_add [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [Dec
   unfold partialDerivY
   exact CPolynomial.derivative_add f g
 
+/-- The Y-partial derivative satisfies the Leibniz product rule. -/
+theorem partialDerivY_mul [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (f g : CBivariate R) :
+    partialDerivY (f * g) = partialDerivY f * g + f * partialDerivY g := by
+  unfold partialDerivY
+  exact CPolynomial.derivative_mul f g
+
 /-- Outer coefficient of the X-partial derivative: differentiate the j-th Y-coefficient. -/
 theorem outerCoeff_partialDerivX [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (f : CBivariate R) (j : ℕ) :
@@ -138,6 +145,20 @@ theorem partialDerivY_toPoly [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [
   unfold partialDerivY
   rw [CPolynomial.derivative_toPoly]
   rw [Polynomial.derivative_map]
+
+/-- The X-partial derivative satisfies the Leibniz product rule. -/
+theorem partialDerivX_mul [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (f g : CBivariate R) :
+    partialDerivX (f * g) = partialDerivX f * g + f * partialDerivX g := by
+  apply CBivariate.ringEquiv.injective
+  show toPoly (partialDerivX (f * g)) = toPoly (partialDerivX f * g + f * partialDerivX g)
+  apply Polynomial.ext; intro j
+  rw [partialDerivX_toPoly, toPoly_mul, Polynomial.coeff_mul,
+    toPoly_add, Polynomial.coeff_add, toPoly_mul, toPoly_mul,
+    Polynomial.coeff_mul, Polynomial.coeff_mul]
+  simp_rw [partialDerivX_toPoly]
+  rw [map_sum, ← Finset.sum_add_distrib]
+  exact Finset.sum_congr rfl fun x _ => Polynomial.derivative_mul
 
 /-- Iterated partial derivative with respect to X. -/
 def iterPartialDerivX [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
