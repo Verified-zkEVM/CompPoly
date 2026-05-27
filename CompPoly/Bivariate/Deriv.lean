@@ -222,6 +222,34 @@ theorem hasMultiplicity_succ [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial 
   intro h i j hij
   exact h i j (by omega)
 
+/-- Multiplicity at least 1 is equivalent to vanishing at the point. -/
+theorem hasMultiplicity_one_iff [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    [DecidableEq R] (Q : CBivariate R) (a b : R) :
+    hasMultiplicity Q 1 a b ↔ evalEval a b Q = 0 := by
+  constructor
+  · intro h
+    have := h 0 0 (by omega)
+    simpa [mixedPartialDeriv, iterPartialDerivX, iterPartialDerivY] using this
+  · intro h i j hij
+    have hi : i = 0 := by omega
+    have hj : j = 0 := by omega
+    subst hi; subst hj
+    simpa [mixedPartialDeriv, iterPartialDerivX, iterPartialDerivY] using h
+
+/-- The decidable check agrees with the propositional multiplicity. -/
+theorem hasMultiplicity_iff_check [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    [DecidableEq R] (Q : CBivariate R) (r : ℕ) (a b : R) :
+    hasMultiplicity Q r a b ↔ checkMultiplicity Q r a b = true := by
+  unfold hasMultiplicity checkMultiplicity
+  simp only [List.all_eq_true, List.mem_range, beq_iff_eq]
+  constructor
+  · intro h k hk i hi
+    exact h i (k - i) (by omega)
+  · intro h i j hij
+    have := h (i + j) (by omega) i (by omega)
+    simp only [Nat.add_sub_cancel_left] at this
+    exact this
+
 end CBivariate
 
 end CompPoly
