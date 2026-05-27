@@ -19,6 +19,11 @@ namespace CompPoly
 
 namespace CBivariate
 
+/-- `CBivariate.coeff` as two composed `CPolynomial.coeff`. -/
+@[simp]
+lemma coeff_eq_coeff_coeff [Zero R] (f : CBivariate R) (i j : ℕ) :
+  CBivariate.coeff f i j = CPolynomial.coeff (CPolynomial.coeff f j) i := rfl
+
 /-- Partial derivative with respect to X: differentiate each Y-coefficient in X. -/
 def partialDerivX [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (f : CBivariate R) : CBivariate R :=
@@ -35,7 +40,17 @@ theorem coeff_partialDerivX [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [D
     (f : CBivariate R) (i j : ℕ) :
     CBivariate.coeff (partialDerivX f) i j =
       CBivariate.coeff f (i + 1) j * (↑(i + 1) : R) := by
-  sorry
+  unfold partialDerivX
+  simp only [coeff_eq_coeff_coeff]
+  erw [CPolynomial.coeff_finset_sum]
+  simp only [CPolynomial.coeff_monomial]
+  rw [Finset.sum_eq_single j]
+  · simp only [ite_true]; erw [CPolynomial.coeff_derivative]
+  · intro b _ hbj; simp [Ne.symm hbj]
+  · intro hj; simp only [ite_true]
+    rw [CPolynomial.mem_support_iff, not_not] at hj
+    change (CPolynomial.coeff f j).derivative = 0
+    rw [hj]; exact CPolynomial.derivative_zero
 
 /-- Coefficient formula for the Y-partial derivative. -/
 theorem coeff_partialDerivY [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]

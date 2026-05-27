@@ -1008,6 +1008,14 @@ lemma C_mul_X_pow_eq_monomial [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R]
         Raw.C_mul_eq_smul_trim, Raw.X_pow_eq_monomial_one]
     exact Raw.smul_monomial_one_trim n r
 
+/-- Distribute `CPolynomial.coeff` over a `Finset.sum`. -/
+lemma coeff_finset_sum [Semiring R] [BEq R] [LawfulBEq R]
+    {ι : Type*} [DecidableEq ι] (s : Finset ι) (f : ι → CPolynomial R) (n : ℕ) :
+    coeff (s.sum f) n = s.sum (fun i => coeff (f i) n) := by
+  induction s using Finset.induction with
+  | empty => simp only [Finset.sum_empty, coeff_zero]
+  | insert _ _ hna ih => rw [Finset.sum_insert hna, coeff_add, ih, Finset.sum_insert hna]
+
 end Semiring
 
 section CommSemiring
