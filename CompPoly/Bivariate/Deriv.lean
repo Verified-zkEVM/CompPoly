@@ -24,6 +24,13 @@ namespace CBivariate
 lemma coeff_eq_coeff_coeff [Zero R] (f : CBivariate R) (i j : ℕ) :
   CBivariate.coeff f i j = CPolynomial.coeff (CPolynomial.coeff f j) i := rfl
 
+/-- Bivariate coefficient distributes over addition. -/
+lemma coeff_add [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (f g : CBivariate R) (i j : ℕ) :
+    CBivariate.coeff (f + g) i j = CBivariate.coeff f i j + CBivariate.coeff g i j := by
+  simp only [coeff_eq_coeff_coeff]
+  erw [CPolynomial.coeff_add, CPolynomial.coeff_add]
+
 /-- Partial derivative with respect to X: differentiate each Y-coefficient in X. -/
 def partialDerivX [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (f : CBivariate R) : CBivariate R :=
@@ -79,7 +86,15 @@ theorem partialDerivY_zero [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] :
 theorem partialDerivX_add [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (f g : CBivariate R) :
     partialDerivX (f + g) = partialDerivX f + partialDerivX g := by
-  sorry
+  unfold CBivariate
+  rw [CPolynomial.eq_iff_coeff]
+  intro j
+  rw [CPolynomial.eq_iff_coeff]
+  intro i
+  simp only [← coeff_eq_coeff_coeff, coeff_partialDerivX]
+  erw [coeff_add, coeff_add]
+  simp only [coeff_partialDerivX]
+  exact add_mul _ _ _
 
 /-- The Y-partial derivative distributes over addition. -/
 theorem partialDerivY_add [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
@@ -103,10 +118,17 @@ def mixedPartialDeriv [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [Decidab
     (i j : ℕ) (f : CBivariate R) : CBivariate R :=
   iterPartialDerivX i (iterPartialDerivY j f)
 
-/-- Mixed partial derivatives commute. -/
+/-- X and Y partial derivatives commute at the single-step level. -/
+theorem partialDerivX_partialDerivY_comm [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    [DecidableEq R] (f : CBivariate R) :
+    partialDerivX (partialDerivY f) = partialDerivY (partialDerivX f) := by
+  sorry
+
+/-- Mixed partial derivatives commute: the order of application doesn't matter. -/
 theorem mixedPartials_comm [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (i j : ℕ) (f : CBivariate R) :
-    mixedPartialDeriv i j f = mixedPartialDeriv j i f := by
+    iterPartialDerivX i (iterPartialDerivY j f) =
+      iterPartialDerivY j (iterPartialDerivX i f) := by
   sorry
 
 /-- A bivariate polynomial `Q` has multiplicity at least `r` at `(a, b)` if all
