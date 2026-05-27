@@ -597,7 +597,7 @@ private theorem butterflyRadix4StageDIFWithTwiddles_eq_two_stages
 
 private theorem runStagesDIFRadix4WithTwiddles_eq_difMathStageSpec
     (D : NTT.Domain R) (a : Array R) :
-    runStagesDIFRadix4WithTwiddles D (twiddleTable D) (loadNatural D a) =
+    runStagesDIFRadix4WithTwiddles D (twiddleTable D) (NTT.loadNaturalArray D a) =
       difMathStageSpec D D.logN a := by
   let radixStep : Nat → Array R → Array R :=
     fun pass acc ↦
@@ -607,7 +607,7 @@ private theorem runStagesDIFRadix4WithTwiddles_eq_difMathStageSpec
         ((twiddleTable D).getD highStage #[]) ((twiddleTable D).getD lowStage #[]) acc
   have hloop :
       ∀ n, n ≤ D.logN / 2 →
-        List.foldl (fun acc pass ↦ radixStep pass acc) (loadNatural D a) (List.range n) =
+        List.foldl (fun acc pass ↦ radixStep pass acc) (NTT.loadNaturalArray D a) (List.range n) =
           difMathStageSpec D (2 * n) a := by
     intro n hn
     induction n with
@@ -683,12 +683,12 @@ private theorem runStagesDIFRadix4WithTwiddles_eq_difMathStageSpec
   let stageZero : Array R → Array R :=
     fun acc ↦ butterflyStageDIFWithTwiddles D 0 ((twiddleTable D).getD 0 #[]) acc
   calc
-    runStagesDIFRadix4WithTwiddles D (twiddleTable D) (loadNatural D a) =
+    runStagesDIFRadix4WithTwiddles D (twiddleTable D) (NTT.loadNaturalArray D a) =
         (if D.logN % 2 = 1 then
-          stageZero (List.foldl (fun acc pass ↦ radixStep pass acc) (loadNatural D a)
+          stageZero (List.foldl (fun acc pass ↦ radixStep pass acc) (NTT.loadNaturalArray D a)
             (List.range (D.logN / 2)))
         else
-          List.foldl (fun acc pass ↦ radixStep pass acc) (loadNatural D a)
+          List.foldl (fun acc pass ↦ radixStep pass acc) (NTT.loadNaturalArray D a)
             (List.range (D.logN / 2))) := by
           by_cases hodd : D.logN % 2 = 1
           · simp [runStagesDIFRadix4WithTwiddles, radixStep, stageZero, List.range_eq_range',
@@ -717,7 +717,7 @@ private theorem runStagesDIFRadix4WithTwiddles_eq_difMathStageSpec
 
 /-- The mixed radix-4 DIF stage loop computes the bit-reversed forward NTT output. -/
 theorem runStagesDIFRadix4WithTwiddles_correct (D : NTT.Domain R) (a : Array R) :
-    runStagesDIFRadix4WithTwiddles D (twiddleTable D) (loadNatural D a) =
+    runStagesDIFRadix4WithTwiddles D (twiddleTable D) (NTT.loadNaturalArray D a) =
       NTT.Transform.bitRevPermute D (NTT.Forward.forwardSpec D a) := by
   rw [runStagesDIFRadix4WithTwiddles_eq_difMathStageSpec, difMathStageSpec_final]
 

@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
 import CompPoly.Univariate.Basic
-import CompPoly.Univariate.NTTFast.FastMulImpl
+import CompPoly.Univariate.NTT.FastMul
 
 /-!
 # Planned NTTFast multiplication
@@ -52,10 +52,6 @@ def ofDomain (D : NTT.Domain R) : Plan R :=
     nInv := D.nInv
     twiddles := twiddleTable D
     inverseTwiddles := twiddleTable D.inverse }
-
-/-- Load coefficients in natural order and pad to the domain size. -/
-@[inline] def loadNatural (D : NTT.Domain R) (a : Array R) : Array R :=
-  Array.ofFn (fun i : D.Idx ↦ a.getD i.1 0)
 
 /-- Inner DIT butterfly loop for one block. -/
 def butterflyDITInner
@@ -394,12 +390,12 @@ def runStagesDIFRadix4PairWithTwiddles
 
 /-- Forward transform through a reusable plan. -/
 @[inline] def forwardImpl (P : Plan R) (p : CPolynomial.Raw R) : Array R :=
-  runStagesDIFRadix4WithTwiddles P.domain P.twiddles (loadNatural P.domain p)
+  runStagesDIFRadix4WithTwiddles P.domain P.twiddles (NTT.loadNaturalArray P.domain p)
 
 /-- Forward-transform two multiplication inputs through the same stage loops. -/
 @[inline] def forwardPairImpl (P : Plan R) (p q : CPolynomial.Raw R) : Array R × Array R :=
-  runStagesDIFRadix4PairWithTwiddles P.domain P.twiddles (loadNatural P.domain p)
-    (loadNatural P.domain q)
+  runStagesDIFRadix4PairWithTwiddles P.domain P.twiddles (NTT.loadNaturalArray P.domain p)
+    (NTT.loadNaturalArray P.domain q)
 
 /-- Apply the cached inverse-domain normalization factor. -/
 @[inline] def normalize (P : Plan R) (a : Array R) : Array R :=
@@ -415,7 +411,7 @@ namespace Raw
 @[inline] def fastMulImpl [BEq R]
     (P : Plan R) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
   let (pHat, qHat) := forwardPairImpl P p q
-  let cHat := pointwiseMul P.domain pHat qHat
+  let cHat := NTT.FastMul.pointwiseMul P.domain pHat qHat
   let c := inverseImpl P cHat
   NTT.Domain.truncate (NTT.Domain.requiredLength p q) c
 

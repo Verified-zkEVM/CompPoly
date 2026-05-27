@@ -79,20 +79,20 @@ theorem inverseImpl_correct (P : Plan R) (hP : WellFormed P) (v : Array R) :
 /-- Pointwise multiplication commutes with applying the bit-reversal permutation. -/
 theorem pointwiseMul_bitRevPermute_forwardSpec_eq
     (D : NTT.Domain R) (p q : CPolynomial.Raw R) :
-    pointwiseMul D
+    NTT.FastMul.pointwiseMul D
         (NTT.Transform.bitRevPermute D (NTT.Forward.forwardSpec D p))
         (NTT.Transform.bitRevPermute D (NTT.Forward.forwardSpec D q)) =
       NTT.Transform.bitRevPermute D
         (NTT.FastMul.pointwiseMul D
           (NTT.Forward.forwardSpec D p) (NTT.Forward.forwardSpec D q)) := by
   apply Array.ext
-  · simp [pointwiseMul, NTT.FastMul.pointwiseMul, NTT.Transform.bitRevPermute]
+  · simp [NTT.FastMul.pointwiseMul, NTT.Transform.bitRevPermute]
   · intro i hiLeft hiRight
     have hrev : NTT.Transform.bitRevNat D.logN i < D.n := by
       simpa [NTT.Domain.n] using NTT.Transform.bitRevNat_lt D.logN i
     have hrevPow : NTT.Transform.bitRevNat D.logN i < 2 ^ D.logN := by
       simpa [NTT.Domain.n] using hrev
-    simp [pointwiseMul, NTT.FastMul.pointwiseMul, NTT.Transform.bitRevPermute,
+    simp [NTT.FastMul.pointwiseMul, NTT.Transform.bitRevPermute,
       Array.getD_eq_getD_getElem?, Array.getElem?_ofFn, hrevPow]
 
 namespace Raw
