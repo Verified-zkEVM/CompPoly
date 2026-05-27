@@ -3,6 +3,7 @@ import CompPoly.Bivariate.CMvEquiv
 import CompPoly.Bivariate.ToPoly
 import CompPoly.Data.Array.Lemmas
 import CompPoly.Data.Classes.DCast
+import CompPoly.Data.Classes.LawfulBEq
 import CompPoly.Data.ExtTreeMap.DTreeMap
 import CompPoly.Data.ExtTreeMap.ExtDTreeMap
 import CompPoly.Data.ExtTreeMap.ExtTreeMap
