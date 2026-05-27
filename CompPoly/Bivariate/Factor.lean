@@ -115,7 +115,25 @@ Alternatively, use `Polynomial.eq_of_dvd_of_degree_le_of_leadingCoeff` or
 theorem divByLinearY_rem_eq_eval [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (Q : CBivariate R) (f : CPolynomial R) :
     (divByLinearY Q f).2 = evalYPoly f Q := by
-  sorry
+  show (divByLinearY Q f).2 = Q.val.eval f
+  unfold divByLinearY natDegreeY
+  simp only []
+  split
+  · -- n = 0: Q has degree 0, so rem = coeff Q 0 = eval f Q
+    rename_i h
+    change CPolynomial.coeff Q 0 = CPolynomial.Raw.eval f Q.val
+    change CPolynomial.coeff Q 0 = CPolynomial.eval f Q
+    rw [CPolynomial.eval_toPoly]
+    have hnd : (CPolynomial.toPoly Q).natDegree = 0 := CPolynomial.natDegree_toPoly Q ▸ h
+    rw [Polynomial.eq_C_of_natDegree_eq_zero hnd, Polynomial.eval_C]
+    exact CPolynomial.coeff_toPoly Q 0
+  · -- n > 0: the fold computes Horner evaluation
+    -- Goal: a_0 + f * b_last = Q.val.eval f
+    -- where b_last is the result of folding from a_n down to a_1
+    -- Both sides compute Σ aⱼ fʲ; the fold does it top-down (Horner),
+    -- eval does it bottom-up (sum of powers).
+    rename_i h
+    sorry
 
 -- Step 2–4: main correctness theorem
 theorem divByLinearY_spec [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
