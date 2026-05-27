@@ -5,7 +5,9 @@ Authors: Dimitris Mitsios
 -/
 
 import CompPoly.Bivariate.Basic
+import CompPoly.Bivariate.ToPoly
 import CompPoly.Univariate.Deriv
+import Mathlib.Algebra.Polynomial.Derivative
 
 /-!
 # Partial Derivatives of Computable Bivariate Polynomials
@@ -103,6 +105,40 @@ theorem partialDerivY_add [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [Dec
   unfold partialDerivY
   exact CPolynomial.derivative_add f g
 
+/-- Outer coefficient of the X-partial derivative: differentiate the j-th Y-coefficient. -/
+theorem outerCoeff_partialDerivX [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (f : CBivariate R) (j : ℕ) :
+    CPolynomial.coeff (partialDerivX f) j =
+      CPolynomial.derivative (CPolynomial.coeff f j) := by
+  unfold partialDerivX
+  erw [CPolynomial.coeff_finset_sum]
+  simp only [CPolynomial.coeff_monomial]
+  rw [Finset.sum_eq_single j]
+  · simp only [ite_true]
+  · intro b _ hbj; simp [Ne.symm hbj]
+  · intro hj
+    simp only [ite_true]
+    rw [CPolynomial.mem_support_iff, not_not] at hj
+    change (CPolynomial.coeff f j).derivative = 0
+    rw [hj]; exact CPolynomial.derivative_zero
+
+/-- The X-partial derivative differentiates each Y-coefficient under `toPoly`. -/
+theorem partialDerivX_toPoly [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (f : CBivariate R) (j : ℕ) :
+    (toPoly (partialDerivX f)).coeff j =
+      Polynomial.derivative ((toPoly f).coeff j) := by
+  rw [toPoly_coeff, toPoly_coeff, outerCoeff_partialDerivX]
+  exact CPolynomial.derivative_toPoly _
+
+/-- The Y-partial derivative corresponds to `Polynomial.derivative` under `toPoly`. -/
+theorem partialDerivY_toPoly [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (f : CBivariate R) :
+    toPoly (partialDerivY f) = Polynomial.derivative (toPoly f) := by
+  rw [toPoly_eq_map, toPoly_eq_map]
+  unfold partialDerivY
+  rw [CPolynomial.derivative_toPoly]
+  rw [Polynomial.derivative_map]
+
 /-- Iterated partial derivative with respect to X. -/
 def iterPartialDerivX [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (n : ℕ) (f : CBivariate R) : CBivariate R :=
@@ -113,23 +149,52 @@ def iterPartialDerivY [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (n : ℕ) (f : CBivariate R) : CBivariate R :=
   n.iterate partialDerivY f
 
+/-- Iterated X-partial derivative differentiates each Y-coefficient under `toPoly`. -/
+theorem iterPartialDerivX_toPoly [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (n : ℕ) (f : CBivariate R) (j : ℕ) :
+    (toPoly (iterPartialDerivX n f)).coeff j =
+      Polynomial.derivative^[n] ((toPoly f).coeff j) := by
+  induction n generalizing f with
+  | zero => rfl
+  | succ n ih =>
+    show (toPoly (iterPartialDerivX n (partialDerivX f))).coeff j = _
+    rw [ih, partialDerivX_toPoly, Function.iterate_succ, Function.comp]
+
+/-- Iterated Y-partial derivative corresponds to `Polynomial.derivative^[n]` under `toPoly`. -/
+theorem iterPartialDerivY_toPoly [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (n : ℕ) (f : CBivariate R) :
+    toPoly (iterPartialDerivY n f) = Polynomial.derivative^[n] (toPoly f) := by
+  induction n generalizing f with
+  | zero => rfl
+  | succ n ih =>
+    show toPoly (iterPartialDerivY n (partialDerivY f)) = _
+    rw [ih, partialDerivY_toPoly, Function.iterate_succ, Function.comp]
+
 /-- Mixed partial derivative: i-fold in X, then j-fold in Y. -/
 def mixedPartialDeriv [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (i j : ℕ) (f : CBivariate R) : CBivariate R :=
   iterPartialDerivX i (iterPartialDerivY j f)
 
-/-- X and Y partial derivatives commute at the single-step level. -/
+/-- X and Y partial derivatives commute. -/
 theorem partialDerivX_partialDerivY_comm [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     [DecidableEq R] (f : CBivariate R) :
     partialDerivX (partialDerivY f) = partialDerivY (partialDerivX f) := by
-  sorry
+    apply CPolynomial.eq_iff_coeff.mpr
+    intro j
+    apply CPolynomial.eq_iff_coeff.mpr
+    intro i
+    simp only [← coeff_eq_coeff_coeff, coeff_partialDerivX, coeff_partialDerivY]
+    rw [mul_assoc, mul_assoc]
+    congr 1
+    exact (Nat.cast_commute (j + 1) _).eq
 
-/-- Mixed partial derivatives commute: the order of application doesn't matter. -/
+/-- Mixed partial derivatives commute. -/
 theorem mixedPartials_comm [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (i j : ℕ) (f : CBivariate R) :
     iterPartialDerivX i (iterPartialDerivY j f) =
       iterPartialDerivY j (iterPartialDerivX i f) := by
-  sorry
+  exact Function.Commute.iterate_iterate
+      (fun f => partialDerivX_partialDerivY_comm f) i j f
 
 /-- A bivariate polynomial `Q` has multiplicity at least `r` at `(a, b)` if all
     mixed partial derivatives of total order less than `r` vanish at `(a, b)`. -/
