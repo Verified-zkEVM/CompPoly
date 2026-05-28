@@ -455,10 +455,9 @@ private theorem raw_divModByMonicAux_go_spec (q : Raw R)
 
 private theorem raw_divModByMonicAux_toPoly_eq (p q : CPolynomial R)
     (hq_monic : q.toPoly.Monic) :
-    (p.val.divModByMonicAux q.val).map Raw.toPoly Raw.toPoly =
-    p.toPoly.divModByMonicAux hq_monic := by
-  have hq_lc : q.leadingCoeff = 1 := by simpa[leadingCoeff_toPoly]
-  have hq_raw_monic : q.val.leadingCoeff = 1 := by simpa [Raw.leadingCoeff]
+    (p.val.divByMonic q.val).toPoly = p.toPoly /ₘ q.toPoly ∧
+    (p.val.modByMonic q.val).toPoly = p.toPoly %ₘ q.toPoly := by
+  have hq_lc : q.leadingCoeff = 1 := by simpa [leadingCoeff_toPoly]
   have hqpos : 0 < q.val.size := Nat.pos_of_ne_zero fun h => by
     simp [CPolynomial.leadingCoeff, Array.getLastD, h] at hq_lc
   have hqdegree : q.toPoly.degree = ((q.val.size - 1 : Nat) : WithBot Nat) := by
