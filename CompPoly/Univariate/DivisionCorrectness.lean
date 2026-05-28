@@ -466,14 +466,10 @@ private theorem raw_divModByMonicAux_toPoly_eq (p q : CPolynomial R)
     simp [CPolynomial.degree, hn]
   have gospec := raw_divModByMonicAux_go_spec q.val
     (Trim.trim_eq_of_isCanonical q.property)
-    hq_raw_monic hqpos hqdegree p.val.size p.val
+    (by simpa [Raw.leadingCoeff]) hqpos hqdegree p.val.size p.val
     (Trim.trim_eq_of_isCanonical p.property) (Nat.le_refl p.val.size)
   have hunique := Polynomial.div_modByMonic_unique _ _ hq_monic gospec
-  refine Prod.ext ?_ ?_ <;> simp [Prod.map_fst, Prod.map_snd]
-  · refine hunique.1.symm.trans ?_
-    simp [Polynomial.divByMonic, dif_pos hq_monic]; rfl
-  · refine hunique.2.symm.trans ?_
-    simp [Polynomial.modByMonic, dif_pos hq_monic]; rfl
+  exact ⟨hunique.1.symm, hunique.2.symm⟩
 
 theorem divByMonic_toPoly_eq_divByMonic (p q : CPolynomial R)
     (hmonic : q.monic) :
