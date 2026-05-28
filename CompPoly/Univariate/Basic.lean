@@ -1145,6 +1145,26 @@ instance [Semiring R] [BEq R] [LawfulBEq R] : Module R (CPolynomial R) where
   add_smul := add_smul
   zero_smul := zero_smul
 
+/-- Equality between `div` and `divByMonic` for `CPolynomial R` -/
+theorem div_eq_divByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) :
+    p.div q =
+      (q.leadingCoeff⁻¹ • p).divByMonic (q.leadingCoeff⁻¹ • q) := by
+  apply Subtype.ext; show Raw.div p.val q.val = _
+  have hq_lc : Raw.leadingCoeff q.val = q.leadingCoeff :=
+    show q.val.trim.getLastD 0 = q.val.getLastD 0 by rw [trim_eq q]
+  rw [Raw.div, hq_lc, smul_eq_mul, Raw.C_mul_eq_smul_trim, Raw.C_mul_eq_smul_trim]
+  rfl
+
+/-- Equality between `mod` and `modByMonic` for `CPolynomial R` -/
+theorem mod_eq_modByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) :
+    p.mod q =
+      (q.leadingCoeff⁻¹ • p).modByMonic (q.leadingCoeff⁻¹ • q) := by
+  apply Subtype.ext; show Raw.mod p.val q.val = _
+  have hq_lc : Raw.leadingCoeff q.val = q.leadingCoeff := by
+    show q.val.trim.getLastD 0 = q.val.getLastD 0; rw [trim_eq q]
+  rw [Raw.mod, hq_lc, smul_eq_mul]
+  rw [Raw.C_mul_eq_smul_trim, Raw.C_mul_eq_smul_trim]; rfl
+
 end Module
 
 end CPolynomial
