@@ -506,6 +506,23 @@ theorem mod_toPoly_monic_eq (p q : CPolynomial R) (hq : q ≠ 0) :
   rw [modByMonic_toPoly_eq_modByMonic _ _ (leadingCoeff_inv_smul_monic _ hq)]
   rw [toPoly_smul, toPoly_smul]
 
+/-- CompPoly's `div` is correct w.r.t. Mathlib's `div`. -/
+theorem div_toPoly_eq_div (p q : CPolynomial R) :
+    (p.div q).toPoly = p.toPoly / q.toPoly := by
+  by_cases hq : q = 0; simp [hq, toPoly_zero]
+  rw [Polynomial.div_def, ←leadingCoeff_toPoly, _root_.mul_comm q.toPoly]
+  rw [←Polynomial.smul_eq_C_mul, ←Polynomial.smul_divByMonic]
+  rw [←Polynomial.smul_eq_C_mul, div_toPoly_eq_monic p q hq]
+
+/-- CompPoly's `mod` is Mathlib's `%` scaled by `q.leadingCoeff⁻¹`. -/
+theorem mod_toPoly_eq_smul_mod (p q : CPolynomial R) :
+    (p.mod q).toPoly = q.leadingCoeff⁻¹ • (p.toPoly % q.toPoly) := by
+  by_cases hq : q = 0
+  · simp [hq, toPoly_zero, show (0 : CPolynomial R).leadingCoeff = 0 from rfl]
+  rw [Polynomial.mod_def, ←leadingCoeff_toPoly, _root_.mul_comm q.toPoly,
+    ←Polynomial.smul_modByMonic, ← Polynomial.smul_eq_C_mul,
+    mod_toPoly_monic_eq p q hq]
+
 private theorem reversal_remainder_toPoly_eq_modByMonic
     (M : Raw.MulLowContext R) (p q : CPolynomial R)
     (hmonic : (q.leadingCoeff == 1) = true)
