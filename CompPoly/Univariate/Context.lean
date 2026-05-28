@@ -5,12 +5,16 @@ Authors: Valerii Huhnin
 -/
 import CompPoly.Univariate.DivisionCorrectness
 import CompPoly.Univariate.NTT.FastMul
+import CompPoly.Univariate.NTT.FastMulLow
 import CompPoly.Univariate.NTTFast.Correctness.Pipeline
+import CompPoly.Univariate.NTTFast.FastMulLow
+import CompPoly.Univariate.Raw.Context
 
 /-!
-# Batch Evaluation Contexts
+# Univariate Algorithm Contexts
 
-Algorithm dictionaries for univariate batch-evaluation implementations.
+Algorithm dictionaries for reusable univariate polynomial operations, including
+canonical, NTT, and NTTFast-backed implementations.
 -/
 
 namespace CompPoly
@@ -18,7 +22,7 @@ namespace CPolynomial
 
 variable {R : Type*}
 
-/-- Explicit multiplication backend for batch-evaluation algorithms. -/
+/-- Explicit multiplication backend for univariate polynomial algorithms. -/
 structure MulContext (R : Type*) [Semiring R] [BEq R] [LawfulBEq R] where
   /-- Multiply two canonical polynomials. -/
   mul : CPolynomial R → CPolynomial R → CPolynomial R
@@ -86,6 +90,20 @@ def reversal [Field R] [BEq R] [LawfulBEq R]
     (M : Raw.MulLowContext R) : ModContext R where
   modByMonic p q := CPolynomial.modByMonicByReversal M p q
   modByMonic_eq_modByMonic p q := CPolynomial.modByMonicByReversal_eq_modByMonic M p q
+
+/-- Monic remainders by reversal, using an NTT low-product backend. -/
+def reversalNtt [Field R] [BEq R] [LawfulBEq R]
+    (bestDomainForLength? : (requiredLen : Nat) →
+      Option (NTT.FittingDomain R requiredLen)) :
+    ModContext R :=
+  reversal (NTT.FastMulLow.withFallback bestDomainForLength?)
+
+/-- Monic remainders by reversal, using an NTTFast low-product backend. -/
+def reversalNttFast [Field R] [BEq R] [LawfulBEq R]
+    (bestDomainForLength? : (requiredLen : Nat) →
+      Option (NTT.FittingDomain R requiredLen)) :
+    ModContext R :=
+  reversal (NTTFast.FastMulLow.withFallback bestDomainForLength?)
 
 end ModContext
 

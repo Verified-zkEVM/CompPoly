@@ -49,6 +49,55 @@ def domainOfLogN (logN : Nat) (hlogN : logN ≤ KoalaBear.twoAdicity) :
       KoalaBear.isPrimitiveRoot_twoAdicGenerator (bitsOfLogN logN hlogN)
   natCast_ne_zero := twoPowNatCast_ne_zero logN hlogN
 
+/-- KoalaBear NTT domain lookup for dynamic multiplication contexts. -/
+def bestDomainForLength? (requiredLen : Nat) :
+    Option (FittingDomain KoalaBear.Field requiredLen) :=
+  CPolynomial.NTT.bestDomainForLength? KoalaBear.twoAdicity
+    domainOfLogN (by intro _ _; rfl) requiredLen
+
+/-- Fast KoalaBear two-adic generators are primitive roots of the same orders. -/
+theorem fast_isPrimitiveRoot_twoAdicGenerator
+    (bits : Fin (KoalaBear.twoAdicity + 1)) :
+    IsPrimitiveRoot (KoalaBear.Fast.ofField KoalaBear.twoAdicGenerators[bits])
+      (2 ^ (bits : Nat)) := by
+  have hbasic : IsPrimitiveRoot KoalaBear.twoAdicGenerators[bits] (2 ^ (bits : Nat)) :=
+    KoalaBear.isPrimitiveRoot_twoAdicGenerator bits
+  have hfast :
+      IsPrimitiveRoot (KoalaBear.Fast.ringEquiv.symm KoalaBear.twoAdicGenerators[bits])
+        (2 ^ (bits : Nat)) := by
+    exact hbasic.map_of_injective KoalaBear.Fast.ringEquiv.symm.injective
+  simpa using hfast
+
+/-- The fast KoalaBear NTT domain size is nonzero for supported two-adic sizes. -/
+theorem fast_twoPowNatCast_ne_zero
+    (logN : Nat) (hlogN : logN ≤ KoalaBear.twoAdicity) :
+    (((2 ^ logN : Nat) : KoalaBear.Fast.Field) ≠ 0) := by
+  intro hzero
+  exact twoPowNatCast_ne_zero logN hlogN (by
+    calc
+      (((2 ^ logN : Nat) : KoalaBear.Field)) =
+          KoalaBear.Fast.toField (((2 ^ logN : Nat) : KoalaBear.Fast.Field)) := by
+        rw [KoalaBear.Fast.toField_natCast]
+      _ = KoalaBear.Fast.toField 0 := congrArg KoalaBear.Fast.toField hzero
+      _ = 0 := KoalaBear.Fast.toField_zero)
+
+/-- Fast KoalaBear radix-2 NTT domain for a supported two-adic size. -/
+def fastDomainOfLogN (logN : Nat) (hlogN : logN ≤ KoalaBear.twoAdicity) :
+    Domain KoalaBear.Fast.Field where
+  logN := logN
+  omega := KoalaBear.Fast.ofField
+    KoalaBear.twoAdicGenerators[bitsOfLogN logN hlogN]
+  primitive := by
+    simpa [bitsOfLogN] using
+      fast_isPrimitiveRoot_twoAdicGenerator (bitsOfLogN logN hlogN)
+  natCast_ne_zero := fast_twoPowNatCast_ne_zero logN hlogN
+
+/-- Fast KoalaBear NTT domain lookup for dynamic multiplication contexts. -/
+def fastBestDomainForLength? (requiredLen : Nat) :
+    Option (FittingDomain KoalaBear.Fast.Field requiredLen) :=
+  CPolynomial.NTT.bestDomainForLength? KoalaBear.twoAdicity
+    fastDomainOfLogN (by intro _ _; rfl) requiredLen
+
 end KoalaBear
 end NTT
 end CPolynomial

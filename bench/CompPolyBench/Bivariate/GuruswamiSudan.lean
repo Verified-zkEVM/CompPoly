@@ -6,6 +6,7 @@ Authors: Valerii Huhnin
 
 import CompPolyBench.Common
 import CompPoly.Bivariate.GuruswamiSudan
+import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 
 /-!
 # Guruswami-Sudan Benchmarks
@@ -19,9 +20,9 @@ open CompPoly.GuruswamiSudan
 
 namespace CompPolyBench
 
-private def gsPointCount : Nat := 32
+private def gsPointCount : Nat := 96
 
-private def gsMessageDegree : Nat := 32
+private def gsMessageDegree : Nat := 96
 
 private def gsWeightedDegreeBound : Nat := gsMessageDegree - 1
 
@@ -39,6 +40,9 @@ private def gsInputShape : String :=
 
 private def gsMultiplicityShape : String :=
   s!"n={gsPointCount},k={gsMessageDegree},m={gsCheckMultiplicity},Q=(Y-p)^2"
+
+private def gsRootShape : String :=
+  s!"k={gsMessageDegree},Q=(Y-p)(Y-(p+7))"
 
 private def codewordPoints {F : Type*} [Semiring F] [BEq F] [LawfulBEq F]
     (p : CPolynomial F) : Array (Prod F F) :=
@@ -59,10 +63,21 @@ private def multiplicityBenchmarkQ {F : Type*}
   Q * Q
 
 private def koalaFieldRoots : FieldRootBackend KoalaBear.Field :=
-  linearFieldRootBackend KoalaBear.Field
+  koalaBearFieldRootBackend
+
+private def koalaFieldRootsFast : FieldRootBackend KoalaBear.Field :=
+  koalaBearNttFastFieldRootBackend
 
 private def koalaFastFieldRoots : FieldRootBackend KoalaBear.Fast.Field :=
-  linearFieldRootBackend KoalaBear.Fast.Field
+  fastKoalaBearFieldRootBackend
+
+private def koalaFastFieldRootsFast : FieldRootBackend KoalaBear.Fast.Field :=
+  fastKoalaBearNttFastFieldRootBackend
+
+private def nonlinearRootBenchmarkQ {F : Type*}
+    [Ring F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    (p : CPolynomial F) : CBivariate F :=
+  CBivariate.linearYFactor p * CBivariate.linearYFactor (p + CPolynomial.C 7)
 
 private def checksumDenseMatrix {F : Type*} [Zero F]
     (checksum : F -> Nat) (M : DenseMatrix F) : Nat :=
@@ -111,8 +126,8 @@ private def runGsInterpolationSystemKoala (preset : BenchPreset) (gen : StdGen) 
   let points := codewordPoints message
   let fastPoints := codewordPoints fastMessage
   let warmup := gsWarmupIterations preset
-  let measured := preset.selectNat 70 10 2
-  let fastMeasured := preset.selectNat 350 50 10
+  let measured := preset.selectNat 30 3 1
+  let fastMeasured := preset.selectNat 150 15 5
   let checksumIterations := groupChecksumIterations measured [fastMeasured]
   let row <- runTimed
     "guruswami-sudan-interp-system" "DenseMatrix"
@@ -142,8 +157,8 @@ private def runGsInterpolationSolveKoala (preset : BenchPreset) (gen : StdGen) :
   let kernelBackend := denseLinearKernelBackend KoalaBear.Field
   let fastKernelBackend := denseLinearKernelBackend KoalaBear.Fast.Field
   let warmup := gsWarmupIterations preset
-  let measured := preset.selectNat 20 3 1
-  let fastMeasured := preset.selectNat 140 20 4
+  let measured := preset.selectNat 10 1 1
+  let fastMeasured := preset.selectNat 50 5 2
   let checksumIterations := groupChecksumIterations measured [fastMeasured]
   let row <- runTimed
     "guruswami-sudan-interp-solve" "DenseMatrix" "Homogeneous interpolation solve"
@@ -172,8 +187,8 @@ private def runGsHasseKoala (preset : BenchPreset) (gen : StdGen) :
   let points := codewordPoints message
   let fastPoints := codewordPoints fastMessage
   let warmup := gsWarmupIterations preset
-  let measured := preset.selectNat 200 30 5
-  let fastMeasured := preset.selectNat 1400 200 40
+  let measured := preset.selectNat 80 10 2
+  let fastMeasured := preset.selectNat 500 50 10
   let checksumIterations := groupChecksumIterations measured [fastMeasured]
   let row <- runTimed
     "guruswami-sudan-hasse-check" "CBivariate" "Hasse multiplicity check"
@@ -200,8 +215,8 @@ private def runGsComposeKoala (preset : BenchPreset) (gen : StdGen) :
   let Q := multiplicityBenchmarkQ message
   let fastQ := multiplicityBenchmarkQ fastMessage
   let warmup := gsWarmupIterations preset
-  let measured := preset.selectNat 200 30 5
-  let fastMeasured := preset.selectNat 1400 200 40
+  let measured := preset.selectNat 80 10 2
+  let fastMeasured := preset.selectNat 500 50 10
   let checksumIterations := groupChecksumIterations measured [fastMeasured]
   let row <- runTimed
     "guruswami-sudan-compose-y" "CPolynomial" "Composition in Y"
@@ -224,26 +239,45 @@ private def runGsRootKoala (preset : BenchPreset) (gen : StdGen) :
   let (coeffs, gen) := (koalaBearArray gsMessageDegree false).run gen
   let message := cpolyOfArray coeffs
   let fastMessage := cpolyOfArray (koalaBearFastArray coeffs)
-  let Q := rootBenchmarkQ message
-  let fastQ := rootBenchmarkQ fastMessage
+  let Q := nonlinearRootBenchmarkQ message
+  let fastQ := nonlinearRootBenchmarkQ fastMessage
   let warmup := gsWarmupIterations preset
-  let measured := preset.selectNat 70 10 2
-  let fastMeasured := preset.selectNat 490 70 14
-  let checksumIterations := groupChecksumIterations measured [fastMeasured]
+  let measured := preset.selectNat 20 3 1
+  let nttFastMeasured := preset.selectNat 20 3 1
+  let fastMeasured := preset.selectNat 120 20 5
+  let fastNttFastMeasured := preset.selectNat 120 20 5
+  let checksumIterations := groupChecksumIterations measured [
+    nttFastMeasured, fastMeasured, fastNttFastMeasured
+  ]
   let row <- runTimed
-    "guruswami-sudan-root-roth" "CBivariate" "Roth-Ruckenstein root finding"
-    "KoalaBear.Field" gsInputShape preset warmup measured
+    "guruswami-sudan-root-roth" "CBivariate"
+    "Roth-Ruckenstein root finding with nonlinear field-root equations"
+    "KoalaBear.Field" gsRootShape preset warmup measured
     (fun _ => rothRuckensteinRootsYDegreeLt koalaFieldRoots Q gsMessageDegree)
     checksumPolynomialArrayKoala checksumIterations
+  let nttFastRow <- runTimed
+    "guruswami-sudan-root-roth-nttfast" "CBivariate"
+    "Roth-Ruckenstein root finding with NTTFast field-root equations"
+    "KoalaBear.Field" gsRootShape preset warmup nttFastMeasured
+    (fun _ => rothRuckensteinRootsYDegreeLt koalaFieldRootsFast Q gsMessageDegree)
+    checksumPolynomialArrayKoala checksumIterations
   let fastRow <- runTimed
-    "guruswami-sudan-root-roth-fast" "CBivariate" "Roth-Ruckenstein root finding"
-    "KoalaBear.Fast.Field" gsInputShape preset warmup fastMeasured
+    "guruswami-sudan-root-roth-fast" "CBivariate"
+    "Roth-Ruckenstein root finding with nonlinear field-root equations"
+    "KoalaBear.Fast.Field" gsRootShape preset warmup fastMeasured
     (fun _ => rothRuckensteinRootsYDegreeLt koalaFastFieldRoots fastQ gsMessageDegree)
+    checksumPolynomialArrayKoalaFast checksumIterations
+  let fastNttFastRow <- runTimed
+    "guruswami-sudan-root-roth-fast-nttfast" "CBivariate"
+    "Roth-Ruckenstein root finding with NTTFast field-root equations"
+    "KoalaBear.Fast.Field" gsRootShape preset warmup fastNttFastMeasured
+    (fun _ => rothRuckensteinRootsYDegreeLt koalaFastFieldRootsFast fastQ
+      gsMessageDegree)
     checksumPolynomialArrayKoalaFast checksumIterations
   pure ({
     groupKey := "guruswami-sudan-root-roth-koalabear",
     title := "Guruswami-Sudan Roth-Ruckenstein roots (KoalaBear)",
-    records := #[row, fastRow]
+    records := #[row, nttFastRow, fastRow, fastNttFastRow]
   }, gen)
 
 private def runGsCoreKoala (preset : BenchPreset) (gen : StdGen) :
@@ -254,15 +288,29 @@ private def runGsCoreKoala (preset : BenchPreset) (gen : StdGen) :
   let points := codewordPoints message
   let fastPoints := codewordPoints fastMessage
   let rootBackend := rothRuckensteinRootBackend KoalaBear.Field koalaFieldRoots
+  let rootBackendFast := rothRuckensteinRootBackend KoalaBear.Field koalaFieldRootsFast
   let fastRootBackend := rothRuckensteinRootBackend KoalaBear.Fast.Field koalaFastFieldRoots
+  let fastRootBackendFast :=
+    rothRuckensteinRootBackend KoalaBear.Fast.Field koalaFastFieldRootsFast
   let warmup := gsWarmupIterations preset
-  let measured := preset.selectNat 20 3 1
-  let fastMeasured := preset.selectNat 140 20 4
-  let checksumIterations := groupChecksumIterations measured [fastMeasured]
+  let measured := preset.selectNat 8 1 1
+  let nttFastMeasured := preset.selectNat 8 1 1
+  let fastMeasured := preset.selectNat 40 5 2
+  let fastNttFastMeasured := preset.selectNat 40 5 2
+  let checksumIterations := groupChecksumIterations measured [
+    nttFastMeasured, fastMeasured, fastNttFastMeasured
+  ]
   let row <- runTimed
     "guruswami-sudan-core-dense-roth" "CBivariate" "Dense interpolation plus root finding"
     "KoalaBear.Field" gsInputShape preset warmup measured
     (fun _ => gsCore points (denseInterpBackend KoalaBear.Field) rootBackend gsKoalaParams)
+    checksumPolynomialArrayKoala checksumIterations
+  let nttFastRow <- runTimed
+    "guruswami-sudan-core-dense-roth-nttfast" "CBivariate"
+    "Dense interpolation plus NTTFast field-root finding"
+    "KoalaBear.Field" gsInputShape preset warmup nttFastMeasured
+    (fun _ =>
+      gsCore points (denseInterpBackend KoalaBear.Field) rootBackendFast gsKoalaParams)
     checksumPolynomialArrayKoala checksumIterations
   let fastRow <- runTimed
     "guruswami-sudan-core-dense-roth-fast" "CBivariate"
@@ -271,10 +319,18 @@ private def runGsCoreKoala (preset : BenchPreset) (gen : StdGen) :
     (fun _ => gsCore fastPoints (denseInterpBackend KoalaBear.Fast.Field) fastRootBackend
       gsKoalaParams)
     checksumPolynomialArrayKoalaFast checksumIterations
+  let fastNttFastRow <- runTimed
+    "guruswami-sudan-core-dense-roth-fast-nttfast" "CBivariate"
+    "Dense interpolation plus NTTFast field-root finding"
+    "KoalaBear.Fast.Field" gsInputShape preset warmup fastNttFastMeasured
+    (fun _ =>
+      gsCore fastPoints (denseInterpBackend KoalaBear.Fast.Field) fastRootBackendFast
+        gsKoalaParams)
+    checksumPolynomialArrayKoalaFast checksumIterations
   pure ({
     groupKey := "guruswami-sudan-core-koalabear",
     title := "Guruswami-Sudan full core (KoalaBear)",
-    records := #[row, fastRow]
+    records := #[row, nttFastRow, fastRow, fastNttFastRow]
   }, gen)
 
 /-- Runnable GS benchmark tasks. -/

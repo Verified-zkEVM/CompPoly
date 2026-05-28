@@ -9,6 +9,7 @@ import CompPolyBench.Univariate.BatchEval
 import CompPolyBench.Univariate.ManyEval
 import CompPolyBench.Univariate.NTT.FastMul
 import CompPolyBench.Univariate.NTT.FastMulLow
+import CompPolyBench.Univariate.Roots.FiniteField
 
 /-!
 # Univariate Benchmarks
@@ -20,13 +21,13 @@ namespace CompPolyBench
 def univariateGroupInfos : List BenchGroupInfo :=
   univariateBasicGroupInfos ++ univariateBatchEvalGroupInfos ++
     univariateManyEvalGroupInfos ++ univariateNttFastMulGroupInfos ++
-    univariateNttFastMulLowGroupInfos
+    univariateNttFastMulLowGroupInfos ++ univariateFiniteFieldRootGroupInfos
 
 /-- Runnable univariate benchmark tasks. -/
 def univariateTasks : List BenchTask :=
   univariateBasicTasks ++ univariateBatchEvalTasks ++
     univariateManyEvalTasks ++ univariateNttFastMulTasks ++
-    univariateNttFastMulLowTasks
+    univariateNttFastMulLowTasks ++ univariateFiniteFieldRootTasks
 
 /-- Run selected univariate benchmarks. -/
 def runUnivariate (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :

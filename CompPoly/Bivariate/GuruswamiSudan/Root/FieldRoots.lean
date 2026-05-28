@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 
 import CompPoly.Bivariate.GuruswamiSudan.Context
+import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.FiniteField
 
 /-!
 # Guruswami-Sudan Field Roots
@@ -113,9 +114,10 @@ def linearOrEnumeratingFieldRootBackend (F : Type*) [Field F] [BEq F] [LawfulBEq
 
 /-- Linear-only executable field-root backend.
 
-This is useful for workloads known to generate only linear field equations. Its
-contract fields are placeholders until a complete non-enumerating finite-field
-backend replaces it for large fields.
+This remains available for tests and legacy workloads known to generate only
+linear field equations. Nonlinear users should prefer the finite-field backends
+under `GuruswamiSudan.Root.FieldRoots.FiniteField` or concrete wrappers such as
+the KoalaBear backends.
 -/
 def linearFieldRootBackend (F : Type*) [Field F] [BEq F] [LawfulBEq F] :
     FieldRootBackend F where

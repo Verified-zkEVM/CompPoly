@@ -17,6 +17,16 @@ namespace Array
 
 variable {α : Type*} {unit : α}
 
+/-- Remove duplicates from an array while preserving first occurrences. -/
+def eraseDups [BEq α] (xs : Array α) : Array α :=
+  xs.foldl
+    (fun out x =>
+      if out.contains x then
+        out
+      else
+        out.push x)
+    #[]
+
 /-- Checks if an array of elements from a type `R` is a boolean array, i.e., if every element is
   either `0` or `1`. -/
 def isBoolean {R : Type _} [Zero R] [One R] (a : Array R) : Prop :=

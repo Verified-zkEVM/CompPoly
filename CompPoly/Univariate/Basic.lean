@@ -173,6 +173,12 @@ instance [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] : Nontrivial (CPolyno
 @[reducible]
 def coeff [Zero R] (p : CPolynomial R) (i : ℕ) : R := p.val.coeff i
 
+/-- Build a canonical polynomial from a dense coefficient array. -/
+def ofArray [Zero R] [BEq R] [LawfulBEq R]
+    (coeffs : Array R) : CPolynomial R :=
+  let raw : CPolynomial.Raw R := coeffs
+  ⟨raw.trim, Trim.isCanonical_trim raw⟩
+
 /-- The constant polynomial `C r`. -/
 def C [Zero R] [BEq R] [LawfulBEq R] (r : R) : CPolynomial R :=
   ⟨(Raw.C r).trim, Trim.isCanonical_trim (Raw.C r)⟩
@@ -180,6 +186,10 @@ def C [Zero R] [BEq R] [LawfulBEq R] (r : R) : CPolynomial R :=
 /-- The variable `X`. -/
 def X [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] : CPolynomial R :=
   ⟨Raw.X, Trim.isCanonical_of_trim_eq X_canonical⟩
+
+/-- The monic linear factor `X - C x`. -/
+def linearFactor [Field R] [BEq R] [LawfulBEq R] (x : R) : CPolynomial R :=
+  (C (-x) : CPolynomial R) + (X : CPolynomial R)
 
 /-- Construct a canonical monomial `c * X^n` as a `CPolynomial R`.
 
@@ -841,6 +851,21 @@ theorem mod_zero [Field R] [BEq R] [LawfulBEq R] (p : CPolynomial R) : p.mod 0 =
 
 instance [Field R] [BEq R] [LawfulBEq R] : Div (CPolynomial R) := ⟨div⟩
 instance [Field R] [BEq R] [LawfulBEq R] : Mod (CPolynomial R) := ⟨mod⟩
+
+/-- Normalize a nonzero polynomial to monic form. The zero polynomial stays zero. -/
+def monicNormalize [Field R] [BEq R] [LawfulBEq R]
+    (p : CPolynomial R) : CPolynomial R :=
+  CPolynomial.ofArray (Raw.monicNormalize p.val)
+
+/-- Euclidean gcd with explicit fuel, normalized to a monic result. -/
+def gcdMonicWithFuel [Field R] [BEq R] [LawfulBEq R] :
+    Nat → CPolynomial R → CPolynomial R → CPolynomial R
+  | fuel, p, q => CPolynomial.ofArray (Raw.gcdMonicWithFuel fuel p.val q.val)
+
+/-- Monic Euclidean gcd for canonical univariate polynomials. -/
+def gcdMonic [Field R] [BEq R] [LawfulBEq R]
+    (p q : CPolynomial R) : CPolynomial R :=
+  CPolynomial.ofArray (Raw.gcdMonic p.val q.val)
 
 end Division
 

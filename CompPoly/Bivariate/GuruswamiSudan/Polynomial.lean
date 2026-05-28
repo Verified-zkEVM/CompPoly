@@ -17,12 +17,6 @@ namespace CompPoly
 
 namespace CPolynomial
 
-/-- Build a canonical polynomial from a dense coefficient array. -/
-def ofArray {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
-    (coeffs : Array R) : CPolynomial R :=
-  let raw : CPolynomial.Raw R := coeffs
-  ⟨raw.trim, CPolynomial.Raw.Trim.isCanonical_trim raw⟩
-
 /-- Formal derivative of a canonical univariate polynomial. -/
 def derivative {R : Type*} [Semiring R] [BEq R] [LawfulBEq R]
     (p : CPolynomial R) : CPolynomial R :=

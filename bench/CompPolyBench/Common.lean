@@ -436,8 +436,7 @@ def koalaBearPoints (size : Nat) : StateM StdGen (Array KoalaBear.Field) :=
 /-- Build a canonical computable polynomial from generated coefficients. -/
 def cpolyOfArray {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
     (coeffs : Array R) : CPolynomial R :=
-  let p : CPolynomial.Raw R := coeffs
-  ⟨p.trim, CPolynomial.Raw.Trim.isCanonical_trim p⟩
+  CPolynomial.ofArray coeffs
 
 /-- Build a monic divisor as a product of linear factors `X - C x`. -/
 def monicDivisorFromPoints {R : Type*} [Field R] [BEq R] [LawfulBEq R]
@@ -693,6 +692,20 @@ def implementationNameLabels : List (String × String) := [
   ("univariate-mul-ntt-koalabear", "NTT"),
   ("univariate-mul-ntt-fast-koalabear", "Fast NTT"),
   ("univariate-mul-ntt-fast-plan-koalabear", "Fast NTT with cached plan"),
+  ("guruswami-sudan-root-roth", "Roth-Ruckenstein root finding"),
+  ("guruswami-sudan-root-roth-nttfast",
+    "Roth-Ruckenstein root finding (fast mul/mod)"),
+  ("guruswami-sudan-root-roth-fast",
+    "Roth-Ruckenstein root finding (fast KoalaBear)"),
+  ("guruswami-sudan-root-roth-fast-nttfast",
+    "Roth-Ruckenstein root finding (fast mul/mod, fast KoalaBear)"),
+  ("guruswami-sudan-core-dense-roth", "Dense interpolation plus root finding"),
+  ("guruswami-sudan-core-dense-roth-nttfast",
+    "Dense interpolation plus root finding (fast mul/mod)"),
+  ("guruswami-sudan-core-dense-roth-fast",
+    "Dense interpolation plus root finding (fast KoalaBear)"),
+  ("guruswami-sudan-core-dense-roth-fast-nttfast",
+    "Dense interpolation plus root finding (fast mul/mod, fast KoalaBear)"),
   ("additive-ntt-btf3", "Reference implementation"),
   ("additive-ntt-btf3-fast", "Fast implementation"),
   ("additive-ntt-btf3-l4-r2", "Reference implementation"),
@@ -754,12 +767,21 @@ def implementationLabel (record : BenchRecord) : String :=
       | some label => label
       | none => record.method
 
+/-- Whether a record-specific implementation label already includes the field variant. -/
+def implementationLabelIncludesField (record : BenchRecord) : Bool :=
+  record.name == "guruswami-sudan-root-roth-fast" ||
+    record.name == "guruswami-sudan-root-roth-fast-nttfast" ||
+      record.name == "guruswami-sudan-core-dense-roth-fast" ||
+        record.name == "guruswami-sudan-core-dense-roth-fast-nttfast"
+
 /-- Implementation label that includes the field only when rows mix field representations. -/
 def implementationLabelInGroup (records : List BenchRecord) (record : BenchRecord) : String :=
   let label := implementationLabel record
   if (matchingString? records fun r ↦ r.field).isSome then
     label
   else if record.field == "KoalaBear.Field" then
+    label
+  else if implementationLabelIncludesField record then
     label
   else if record.field == "KoalaBear.Fast.Field" then
     label ++ " (fast KoalaBear)"
