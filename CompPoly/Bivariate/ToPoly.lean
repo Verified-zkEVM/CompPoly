@@ -423,7 +423,8 @@ theorem natDegreeY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semi
         · refine' le_antisymm _ _
           · exact Finset.le_sup (f := id) (Polynomial.natDegree_mem_support_of_nonzero hp)
           · exact Finset.sup_le fun i hi ↦ Polynomial.le_natDegree_of_mem_supp _ hi
-      rw [ h_deg, support_toPoly_outer ]
+      rw [ h_deg, support_toPoly_outer, CBivariate.natDegreeY,
+           CPolynomial.natDegree_eq_support_sup ]
       rfl
 
 /-- The outer `Y`-coefficient formula used for X-degree transport. -/
@@ -715,7 +716,7 @@ theorem leadingCoeffY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [S
       congrArg CPolynomial.toPoly
         (CompPoly.CPolynomial.leadingCoeff_eq_coeff_natDegree (p := f))
   rw [← Polynomial.coeff_natDegree, CompPoly.CBivariate.natDegreeY_toPoly,
-      CBivariate.natDegreeY, ← CPolynomial.natDegree_eq_support_sup]
+      CBivariate.natDegreeY]
   simpa [CBivariate.leadingCoeffY] using h_leadingCoeffY
 
 /--
