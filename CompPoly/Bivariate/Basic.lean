@@ -244,19 +244,19 @@ variable {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
 
 omit [LawfulBEq R] [Nontrivial R] in
 /-- The total degree is the `(1, 1)`-weighted degree. -/
-theorem totalDegree_as_weightedDegree (f : CBivariate R) :
+theorem totalDegree_eq_natWeightedDegree (f : CBivariate R) :
     CBivariate.totalDegree (R := R) f = CBivariate.natWeightedDegree (R := R) f 1 1 := by
   simp [CBivariate.totalDegree, CBivariate.natWeightedDegree]
 
 omit [LawfulBEq R] [Nontrivial R] in
 /-- The X-degree is the `(1, 0)`-weighted degree. -/
-theorem natDegreeX_as_weightedDegree (f : CBivariate R) :
+theorem natDegreeX_eq_natWeightedDegree (f : CBivariate R) :
     CBivariate.natDegreeX (R := R) f = CBivariate.natWeightedDegree (R := R) f 1 0 := by
   simp [CBivariate.natDegreeX, CBivariate.natWeightedDegree]
 
 omit [Nontrivial R] in
 /-- The Y-degree is the `(0, 1)`-weighted degree. -/
-theorem natDegreeY_as_weightedDegree (f : CBivariate R) :
+theorem natDegreeY_eq_natWeightedDegree (f : CBivariate R) :
     CBivariate.natDegreeY (R := R) f = CBivariate.natWeightedDegree (R := R) f 0 1 := by
   simp [CBivariate.natDegreeY, CBivariate.natWeightedDegree]
   exact CPolynomial.natDegree_eq_support_sup f
