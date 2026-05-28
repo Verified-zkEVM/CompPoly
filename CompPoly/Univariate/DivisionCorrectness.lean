@@ -526,7 +526,7 @@ private theorem reversal_remainder_toPoly_eq_modByMonic
   have hppos : 0 < (p.val : Raw R).size := by omega
   have hkpos : 0 < k := by omega
   have hq_monic_poly : q.toPoly.Monic :=
-    (monic_toPoly q).mp (by simpa [monic])
+    (monic_toPoly_iff q).mp (by simpa [monic])
   have hqdegree : q.toPoly.degree = ((n : Nat) : WithBot Nat) := by
     rw [← degree_toPoly]
     obtain ⟨d, hd⟩ := Nat.exists_eq_succ_of_ne_zero hqpos.ne'

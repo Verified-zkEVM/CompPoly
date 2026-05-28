@@ -177,7 +177,7 @@ theorem leadingCoeff_toPoly [BEq R] [LawfulBEq R] (p : CPolynomial R) :
     simpa [CPolynomial.leadingCoeff, Array.getLastD, hpos] using hlast
 
 /-- CPolynomial.monic is correct wrt the Mathlib spec -/
-theorem monic_toPoly [BEq R] [LawfulBEq R] (p : CPolynomial R) :
+theorem monic_toPoly_iff [BEq R] [LawfulBEq R] (p : CPolynomial R) :
     p.monic ↔ p.toPoly.Monic := by
   rw [monic, Polynomial.Monic.def, beq_iff_eq, leadingCoeff_toPoly]
 
