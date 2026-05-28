@@ -4,9 +4,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
 import Mathlib.Algebra.Polynomial.Div
+import Mathlib.Algebra.Polynomial.FieldDivision
 import Mathlib.Algebra.Polynomial.Reverse
 import Mathlib.Tactic.Ring
 import CompPoly.Univariate.ToPoly.Impl
+import CompPoly.Univariate.ToPoly.Degree
+import CompPoly.ToMathlib.Polynomial.Div
 
 /-!
 # Univariate Division Correctness
