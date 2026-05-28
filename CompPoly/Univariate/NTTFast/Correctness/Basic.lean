@@ -5,14 +5,12 @@ Authors: Valerii Huhnin
 -/
 import CompPoly.Univariate.NTT.FastMul
 import CompPoly.Univariate.NTTFast.FastMul
-import CompPoly.Univariate.NTTFast.Forward
-import CompPoly.Univariate.NTTFast.Inverse
 
 /-!
 # Basic NTTFast correctness facts
 
-Basic equivalences, cached-plan well-formedness, twiddle-table facts, and shared
-proof helpers for `NTTFast` correctness.
+Cached-plan well-formedness, twiddle-table facts, and shared proof helpers for
+`NTTFast` correctness.
 -/
 namespace CompPoly
 namespace CPolynomial
@@ -21,81 +19,6 @@ namespace NTTFast
 open scoped BigOperators
 
 variable {R : Type*} [Field R]
-
-namespace Transform
-
-/-- `NTTFast` bit reversal agrees with the `NTT` bit-reversal function. -/
-theorem bitRevNat_eq_ntt (bits i : Nat) :
-    bitRevNat bits i = NTT.Transform.bitRevNat bits i := by
-  induction bits generalizing i with
-  | zero =>
-      rfl
-  | succ bits ih =>
-      simp [bitRevNat, NTT.Transform.bitRevNat, ih]
-
-/-- `NTTFast` bit-reversal permutation agrees with `NTT.Transform.bitRevPermute`. -/
-theorem bitRevPermute_eq_ntt (D : NTT.Domain R) (a : Array R) :
-    bitRevPermute D a = NTT.Transform.bitRevPermute D a := by
-  simp [bitRevPermute, NTT.Transform.bitRevPermute, bitRevNat_eq_ntt]
-
-/-- One `NTTFast` radix-2 butterfly step agrees with the `NTT` implementation. -/
-theorem butterflyInnerStep_eq_ntt
-    (blockSize half : Nat) (wm : R) (block j : Nat) (st : Array R × R) :
-    butterflyInnerStep blockSize half wm block j st =
-      NTT.Transform.butterflyInnerStep blockSize half wm block j st := by
-  rfl
-
-/-- One `NTTFast` radix-2 butterfly stage agrees with the `NTT` implementation. -/
-theorem butterflyStage_eq_ntt (D : NTT.Domain R) (stage : Nat) (a : Array R) :
-    butterflyStage D stage a = NTT.Transform.butterflyStage D stage a := by
-  simp [butterflyStage, NTT.Transform.butterflyStage, butterflyInnerStep_eq_ntt]
-
-/-- The full `NTTFast` radix-2 stage loop agrees with `NTT.Transform.runStages`. -/
-theorem runStages_eq_ntt (D : NTT.Domain R) (a : Array R) :
-    runStages D a = NTT.Transform.runStages D a := by
-  simp [runStages, NTT.Transform.runStages, butterflyStage_eq_ntt]
-
-end Transform
-
-/-- `NTTFast` pointwise multiplication agrees with `NTT.FastMul.pointwiseMul`. -/
-theorem pointwiseMul_eq_ntt (D : NTT.Domain R) (a b : Array R) :
-    pointwiseMul D a b = NTT.FastMul.pointwiseMul D a b := by
-  rfl
-
-/-- Pointwise multiplication over a domain returns an array of the domain size. -/
-@[simp] theorem size_pointwiseMul (D : NTT.Domain R) (a b : Array R) :
-    (pointwiseMul D a b).size = D.n := by
-  simp [pointwiseMul]
-
-namespace Forward
-
-/-- The standalone `NTTFast` forward implementation agrees with `NTT.Forward.forwardImpl`. -/
-theorem forwardImpl_eq_ntt (D : NTT.Domain R) (p : CPolynomial.Raw R) :
-    forwardImpl D p = NTT.Forward.forwardImpl D p := by
-  simp [forwardImpl, NTT.Forward.forwardImpl, Transform.runStages_eq_ntt,
-    Transform.bitRevPermute_eq_ntt]
-
-/-- The standalone `NTTFast` forward implementation computes the forward NTT spec. -/
-theorem forwardImpl_correct (D : NTT.Domain R) (p : CPolynomial.Raw R) :
-    forwardImpl D p = NTT.Forward.forwardSpec D p := by
-  rw [forwardImpl_eq_ntt, NTT.Forward.forwardImpl_correct]
-
-end Forward
-
-namespace Inverse
-
-/-- The standalone `NTTFast` inverse implementation agrees with `NTT.Inverse.inverseImpl`. -/
-theorem inverseImpl_eq_ntt (D : NTT.Domain R) (v : Array R) :
-    inverseImpl D v = NTT.Inverse.inverseImpl D v := by
-  simp [inverseImpl, NTT.Inverse.inverseImpl, Transform.runStages_eq_ntt,
-    Transform.bitRevPermute_eq_ntt]
-
-/-- The standalone `NTTFast` inverse implementation computes the inverse NTT spec. -/
-theorem inverseImpl_correct (D : NTT.Domain R) (v : Array R) :
-    inverseImpl D v = NTT.Inverse.inverseSpec D v := by
-  rw [inverseImpl_eq_ntt, NTT.Inverse.inverseImpl_correct]
-
-end Inverse
 
 namespace Plan
 
@@ -181,8 +104,8 @@ theorem ofDomain_wellFormed (D : NTT.Domain R) :
   simp [WellFormed, ofDomain]
 
 /-- Loading raw coefficients into a domain-sized array is `Array.ofFn` with zero padding. -/
-theorem loadNatural_eq (D : NTT.Domain R) (a : Array R) :
-    loadNatural D a = Array.ofFn (fun i : D.Idx ↦ a.getD i.1 0) := by
+theorem loadNaturalArray_eq (D : NTT.Domain R) (a : Array R) :
+    NTT.loadNaturalArray D a = Array.ofFn (fun i : D.Idx ↦ a.getD i.1 0) := by
   rfl
 
 /-- Folding over `List.range` is equivalent to the corresponding natural recursion. -/
