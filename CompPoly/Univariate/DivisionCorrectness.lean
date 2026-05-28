@@ -490,6 +490,22 @@ theorem leadingCoeff_inv_smul_monic (p : CPolynomial R) (hp : p ≠ 0) :
   rw [monic_toPoly_iff, toPoly_smul, Polynomial.smul_eq_C_mul, _root_.mul_comm, leadingCoeff_toPoly]
   exact Polynomial.monic_mul_leadingCoeff_inv ((toPoly_eq_zero_iff p).not.mpr hp)
 
+/-- Equality between CompPoly's `div` and Mathlib's `divByMonic` -/
+theorem div_toPoly_eq_monic (p q : CPolynomial R) (hq : q ≠ 0) :
+    (p.div q).toPoly =
+      q.leadingCoeff⁻¹ • p.toPoly /ₘ (q.leadingCoeff⁻¹ • q.toPoly) := by
+  rw [div_eq_divByMonic]
+  rw [divByMonic_toPoly_eq_divByMonic _ _ (leadingCoeff_inv_smul_monic _ hq)]
+  rw [toPoly_smul, toPoly_smul]
+
+/-- Equality between CompPoly's `mod` and Mathlib's `modByMonic` -/
+theorem mod_toPoly_monic_eq (p q : CPolynomial R) (hq : q ≠ 0) :
+    (p.mod q).toPoly =
+      q.leadingCoeff⁻¹ • p.toPoly %ₘ (q.leadingCoeff⁻¹ • q.toPoly) := by
+  rw [mod_eq_modByMonic]
+  rw [modByMonic_toPoly_eq_modByMonic _ _ (leadingCoeff_inv_smul_monic _ hq)]
+  rw [toPoly_smul, toPoly_smul]
+
 private theorem reversal_remainder_toPoly_eq_modByMonic
     (M : Raw.MulLowContext R) (p q : CPolynomial R)
     (hmonic : (q.leadingCoeff == 1) = true)
