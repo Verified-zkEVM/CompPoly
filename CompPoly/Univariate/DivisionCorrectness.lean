@@ -483,6 +483,13 @@ theorem modByMonic_toPoly_eq_modByMonic (p q : CPolynomial R)
     (p.modByMonic q).toPoly = p.toPoly %ₘ q.toPoly :=
   (raw_divModByMonicAux_toPoly_eq p q ((monic_toPoly_iff q).mp hmonic)).2
 
+/-- Any nonzero polynomial scaled by the inverse of its leading
+coefficient is monic. -/
+theorem leadingCoeff_inv_smul_monic (p : CPolynomial R) (hp : p ≠ 0) :
+    (p.leadingCoeff⁻¹ • p).monic := by
+  rw [monic_toPoly_iff, toPoly_smul, Polynomial.smul_eq_C_mul, _root_.mul_comm, leadingCoeff_toPoly]
+  exact Polynomial.monic_mul_leadingCoeff_inv ((toPoly_eq_zero_iff p).not.mpr hp)
+
 private theorem reversal_remainder_toPoly_eq_modByMonic
     (M : Raw.MulLowContext R) (p q : CPolynomial R)
     (hmonic : (q.leadingCoeff == 1) = true)
