@@ -471,19 +471,17 @@ private theorem raw_divModByMonicAux_toPoly_eq (p q : CPolynomial R)
   have hunique := Polynomial.div_modByMonic_unique _ _ hq_monic gospec
   exact ⟨hunique.1.symm, hunique.2.symm⟩
 
+/-- CompPoly's `divByMonic` is correct w.r.t. Mathlib's `divByMonic`  -/
 theorem divByMonic_toPoly_eq_divByMonic (p q : CPolynomial R)
     (hmonic : q.monic) :
-    (p.divByMonic q).toPoly = p.toPoly /ₘ q.toPoly := by
-  have hq_monic : q.toPoly.Monic := (monic_toPoly q).mp hmonic
-  have h := congrArg Prod.fst (raw_divModByMonicAux_toPoly_eq p q hq_monic)
-  simpa [Polynomial.divByMonic, dif_pos hq_monic]
+    (p.divByMonic q).toPoly = p.toPoly /ₘ q.toPoly :=
+  (raw_divModByMonicAux_toPoly_eq p q ((monic_toPoly_iff q).mp hmonic)).1
 
+/-- CompPoly's `modByMonic` is correct w.r.t. Mathlib's `modByMonic`  -/
 theorem modByMonic_toPoly_eq_modByMonic (p q : CPolynomial R)
     (hmonic : q.monic) :
-    (p.modByMonic q).toPoly = p.toPoly %ₘ q.toPoly := by
-  have hq_monic : q.toPoly.Monic := (monic_toPoly q).mp hmonic
-  have h := congrArg Prod.snd (raw_divModByMonicAux_toPoly_eq p q hq_monic)
-  simpa [Polynomial.modByMonic, dif_pos hq_monic]
+    (p.modByMonic q).toPoly = p.toPoly %ₘ q.toPoly :=
+  (raw_divModByMonicAux_toPoly_eq p q ((monic_toPoly_iff q).mp hmonic)).2
 
 private theorem reversal_remainder_toPoly_eq_modByMonic
     (M : Raw.MulLowContext R) (p q : CPolynomial R)
