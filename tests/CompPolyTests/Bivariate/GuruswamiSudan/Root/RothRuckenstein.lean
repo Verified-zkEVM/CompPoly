@@ -32,8 +32,13 @@ instance : Fact (Nat.Prime 5) :=
 private def f3Elements : Array F3 :=
   #[0, 1, 2]
 
+private theorem f3Elements_complete : ContainsAllFieldElements f3Elements := by
+  unfold ContainsAllFieldElements
+  intro a
+  fin_cases a <;> decide
+
 private def fieldRoots : FieldRootBackend F3 :=
-  linearOrEnumeratingFieldRootBackend F3 f3Elements
+  enumeratingFieldRootBackend F3 f3Elements f3Elements_complete
 
 private def f5Ctx : CPolynomial.Roots.FiniteField.OddFiniteFieldContext F5 where
   q := 5
