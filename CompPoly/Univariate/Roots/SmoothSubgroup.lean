@@ -218,11 +218,12 @@ def smoothCyclicRootContextOf {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     (complete :
       ∀ M D p a,
         validInput p →
-          p ≠ 0 →
+              p ≠ 0 →
             CPolynomial.eval a p = 0 →
               ∃ factor,
                 factor ∈
-                    (smoothLinearFactorsAlgorithmWith M D leafEvaluator q generator schedule p).toList ∧
+                    (smoothLinearFactorsAlgorithmWith M D leafEvaluator q generator schedule
+                      p).toList ∧
                   IsLinearRootFactorCandidate factor a) :
     SmoothCyclicRootContext F where
   q := q

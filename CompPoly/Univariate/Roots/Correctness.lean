@@ -679,90 +679,6 @@ theorem finiteFieldRootProduct_complete {F : Type*}
         CPolynomial.Raw.ModContext.naive ctx.q (CPolynomial.Raw.monicNormalize p.val))
       hmonicRoot (raw_eval_xPowSubXMod_naive ctx hmonicRoot)
 
-private theorem raw_monicNormalize_ne_zero {F : Type*} [Field F] [BEq F] [LawfulBEq F]
-    {p : CPolynomial.Raw F} (hp : p.trim ≠ (0 : CPolynomial.Raw F)) :
-    CPolynomial.Raw.monicNormalize p ≠ 0 := by
-  unfold CPolynomial.Raw.monicNormalize
-  by_cases hzero : p.trim == (0 : CPolynomial.Raw F)
-  · have hzeroEq : p.trim = 0 := by
-      simpa using hzero
-    exact (hp hzeroEq).elim
-  · have hpzeroNe : ¬p.trim = (#[] : CPolynomial.Raw F) := by
-      intro hpzero
-      exact hzero (by simp [hpzero])
-    rw [if_neg hzero]
-    intro hsmul
-    have hsize_smul :
-        (CPolynomial.Raw.smul (p.trim.leadingCoeff)⁻¹ p.trim).size = p.trim.size := by
-      simp [CPolynomial.Raw.smul]
-    change CPolynomial.Raw.smul (p.trim.leadingCoeff)⁻¹ p.trim = 0 at hsmul
-    rw [hsmul] at hsize_smul
-    have hsize : p.trim.size = 0 := by
-      simpa using hsize_smul.symm
-    have hpempty : p.trim = (#[] : CPolynomial.Raw F) := by
-      apply Array.eq_empty_of_size_eq_zero
-      exact hsize
-    exact hp (by simpa using hpempty)
-
-private theorem raw_gcdMonicWithFuel_trim_ne_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] :
-    ∀ fuel (p q : CPolynomial.Raw F), p.trim ≠ (0 : CPolynomial.Raw F) →
-      (CPolynomial.Raw.gcdMonicWithFuel fuel p q).trim ≠ 0 := by
-  intro fuel
-  induction fuel with
-  | zero =>
-      intro p q hp
-      unfold CPolynomial.Raw.gcdMonicWithFuel
-      rw [raw_monicNormalize_trim]
-      exact raw_monicNormalize_ne_zero hp
-  | succ fuel ih =>
-      intro p q hp
-      rw [CPolynomial.Raw.gcdMonicWithFuel]
-      by_cases hqzero : q.trim == (0 : CPolynomial.Raw F)
-      · have hqzeroEq : q.trim = (0 : CPolynomial.Raw F) := by
-          simpa using hqzero
-        rw [if_pos hqzero]
-        rw [raw_monicNormalize_trim]
-        apply raw_monicNormalize_ne_zero
-        simpa [CPolynomial.Raw.Trim.trim_twice] using hp
-      · have hqzeroNe : ¬q.trim = (0 : CPolynomial.Raw F) := by
-          intro hqtrim0
-          exact hqzero (by simp [hqtrim0])
-        rw [if_neg hqzero]
-        apply ih
-        intro hqtrim0
-        rw [CPolynomial.Raw.Trim.trim_twice q] at hqtrim0
-        exact hqzeroNe hqtrim0
-
-private theorem finiteFieldRootProductWith_ne_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F]
-    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
-    (ctx : OddFiniteFieldContext F) {p : CPolynomial F}
-    (hp : p ≠ 0) :
-    finiteFieldRootProductWith M D ctx p ≠ 0 := by
-  intro hzeroProduct
-  unfold finiteFieldRootProductWith at hzeroProduct
-  have hval := congrArg Subtype.val hzeroProduct
-  simp [CPolynomial.ofArray] at hval
-  have hpraw : p.val.trim ≠ (0 : CPolynomial.Raw F) := by
-    intro hpraw0
-    apply hp
-    apply CPolynomial.ext
-    rw [CPolynomial.trim_eq] at hpraw0
-    simpa using hpraw0
-  unfold CPolynomial.Raw.Roots.FiniteField.finiteFieldRootProductWith at hval
-  by_cases hpempty : p.val = (#[] : CPolynomial.Raw F)
-  · apply hp
-    apply CPolynomial.ext
-    simpa using hpempty
-  · simp [hpempty, CPolynomial.trim_eq] at hval
-    unfold CPolynomial.Raw.gcdMonic at hval
-    exact raw_gcdMonicWithFuel_trim_ne_zero _ (CPolynomial.Raw.monicNormalize p.val)
-      (CPolynomial.Raw.xPowSubXModWith M D ctx.q (CPolynomial.Raw.monicNormalize p.val))
-      (by
-        rw [raw_monicNormalize_trim]
-        exact raw_monicNormalize_ne_zero hpraw) hval
-
 /-- Every validated root extracted from the root product is a root of `p`. -/
 theorem finiteFieldRootProduct_validated_sound {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
@@ -842,6 +758,286 @@ private theorem linear_candidate_self_of_size_two_root {F : Type*}
           | cons _ _ =>
               simp at hsize
 
+/-- Evaluation of a modular `X^n` at a root of the modulus agrees with `a^n`. -/
+theorem eval_xPowModWith_eq_pow {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    {p : CPolynomial F} {a : F} (hroot : CPolynomial.eval a p = 0) (n : Nat) :
+    CPolynomial.eval a (xPowModWith M D p n) = a ^ n := by
+  unfold xPowModWith
+  change CPolynomial.Raw.eval a
+      (CPolynomial.Raw.powModWith M D p.val CPolynomial.Raw.X n).trim = a ^ n
+  rw [CPolynomial.Raw.eval_trim_eq_eval]
+  exact raw_eval_powModWith_X M D hroot n
+
+/-- Path completeness for the schedule-driven smooth coset recursion. -/
+theorem smoothCosetLinearFactorsWithSchedule_complete {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (E : BatchEvalContext F) :
+    ∀ (schedule : List Nat) (order : Nat) (alpha gamma : F) (p : CPolynomial F) (a : F),
+      SmoothScheduleDivides schedule order →
+        gamma ^ order = 1 →
+          p ≠ 0 →
+            CPolynomial.eval a p = 0 →
+              (∃ k : Nat, k < order ∧ a = alpha * gamma ^ k) →
+                ∃ factor,
+                  factor ∈
+                      (smoothCosetLinearFactorsWithSchedule M D E schedule order alpha gamma
+                        p).toList ∧
+                    IsLinearRootFactorCandidate factor a := by
+  intro schedule
+  induction schedule with
+  | nil =>
+      intro order alpha gamma p a _hsched _hgamma hp hroot hcoset
+      unfold smoothCosetLinearFactorsWithSchedule
+      let p' := CPolynomial.monicNormalize p
+      have hp' : p' ≠ 0 := monicNormalize_ne_zero_of_ne_zero hp
+      have hroot' : CPolynomial.eval a p' = 0 := (monicNormalize_root_iff hp).2 hroot
+      by_cases hzero : (p' == 0 || p' == 1) = true
+      · have hcases : p' = 0 ∨ p' = 1 := by
+          simpa [p'] using hzero
+        rcases hcases with h0 | h1
+        · exact (hp' h0).elim
+        · rw [h1] at hroot'
+          rw [eval_one a] at hroot'
+          exact (one_ne_zero hroot').elim
+      · rw [if_neg hzero]
+        by_cases hlin : isRepresentedLinearFactor p' = true
+        · rw [if_pos hlin]
+          refine ⟨p', ?_, representedLinearFactor_candidate_of_root hlin hroot'⟩
+          simp [p']
+        · rw [if_neg hlin]
+          exact smoothLeafLinearFactors_complete E hcoset hroot'
+  | cons ell rest ih =>
+      intro order alpha gamma p a hsched hgamma hp hroot hcoset
+      unfold smoothCosetLinearFactorsWithSchedule
+      let p' := CPolynomial.monicNormalize p
+      have hp' : p' ≠ 0 := monicNormalize_ne_zero_of_ne_zero hp
+      have hroot' : CPolynomial.eval a p' = 0 := (monicNormalize_root_iff hp).2 hroot
+      by_cases hzero : (p' == 0 || p' == 1) = true
+      · have hcases : p' = 0 ∨ p' = 1 := by
+          simpa [p'] using hzero
+        rcases hcases with h0 | h1
+        · exact (hp' h0).elim
+        · rw [h1] at hroot'
+          rw [eval_one a] at hroot'
+          exact (one_ne_zero hroot').elim
+      · rw [if_neg hzero]
+        by_cases hlin : isRepresentedLinearFactor p' = true
+        · rw [if_pos hlin]
+          refine ⟨p', ?_, representedLinearFactor_candidate_of_root hlin hroot'⟩
+          simp [p']
+        · rw [if_neg hlin]
+          by_cases hellsmall : ell ≤ 1
+          · rw [if_pos hellsmall]
+            have hschedRest : SmoothScheduleDivides rest order := by
+              simpa [SmoothScheduleDivides, hellsmall] using hsched
+            exact ih order alpha gamma p' a hschedRest hgamma hp' hroot' hcoset
+          · rw [if_neg hellsmall]
+            by_cases helleq : ell = order
+            · rw [if_pos helleq]
+              exact smoothLeafLinearFactors_complete E hcoset hroot'
+            · rw [if_neg helleq]
+              have hschedRest : ell ∣ order ∧ SmoothScheduleDivides rest (order / ell) := by
+                simpa [SmoothScheduleDivides, hellsmall, helleq] using hsched
+              rcases hschedRest with ⟨hell_dvd, hschedChild⟩
+              rcases hcoset with ⟨k, hk, haeq⟩
+              have hell_gt_one : 1 < ell := by omega
+              have hell_pos : 0 < ell := by omega
+              let childOrder := order / ell
+              let tau := gamma ^ childOrder
+              let xPow := xPowModWith M D p' childOrder
+              let j := k % ell
+              have hjlt : j < ell := Nat.mod_lt k hell_pos
+              have hjmem : j ∈ List.range ell := by
+                simpa [j] using hjlt
+              have hellmul : ell * childOrder = order := by
+                dsimp [childOrder]
+                rw [Nat.mul_comm]
+                exact Nat.div_mul_cancel hell_dvd
+              have hchildGamma : (gamma ^ ell) ^ childOrder = 1 := by
+                rw [← pow_mul, hellmul, hgamma]
+              have hchildCoset : ∃ t : Nat, t < childOrder ∧
+                  a = (alpha * gamma ^ j) * (gamma ^ ell) ^ t := by
+                refine ⟨k / ell, ?_, ?_⟩
+                · dsimp [childOrder]
+                  rw [Nat.div_lt_iff_lt_mul hell_pos]
+                  rw [Nat.mul_comm]
+                  exact lt_of_lt_of_eq hk hellmul.symm
+                · rw [haeq]
+                  dsimp [j]
+                  have hkdecomp : k % ell + ell * (k / ell) = k :=
+                    Nat.mod_add_div k ell
+                  calc
+                    alpha * gamma ^ k =
+                        alpha * gamma ^ (k % ell + ell * (k / ell)) := by
+                          rw [hkdecomp]
+                    _ = alpha * (gamma ^ (k % ell) * gamma ^ (ell * (k / ell))) := by
+                          rw [pow_add]
+                    _ = alpha * gamma ^ (k % ell) * (gamma ^ ell) ^ (k / ell) := by
+                          rw [pow_mul]
+                          ring
+              let beta := alpha ^ childOrder * tau ^ j
+              let witness := xPow - CPolynomial.C beta
+              let child := CPolynomial.monicNormalize (CPolynomial.gcdMonic p' witness)
+              have hpoweq : a ^ childOrder = beta := by
+                rw [haeq]
+                dsimp [beta, tau, j, childOrder]
+                exact smooth_coset_split_root_partition_mod hgamma hell_dvd
+              have hwitnessRoot : CPolynomial.eval a witness = 0 := by
+                dsimp [witness, xPow, beta]
+                rw [eval_sub, eval_xPowModWith_eq_pow M D hroot' childOrder, eval_C, hpoweq]
+                ring
+              have hgcdRoot : CPolynomial.eval a (CPolynomial.gcdMonic p' witness) = 0 :=
+                gcdMonic_root_of_left_right hroot' hwitnessRoot
+              have hgcdNe : CPolynomial.gcdMonic p' witness ≠ 0 :=
+                gcdMonic_ne_zero_of_left hp'
+              have hchildNe : child ≠ 0 := monicNormalize_ne_zero_of_ne_zero hgcdNe
+              have hchildRoot : CPolynomial.eval a child = 0 :=
+                (monicNormalize_root_iff hgcdNe).2 hgcdRoot
+              have hchildNotOne : child ≠ 1 := by
+                intro h1
+                rw [h1] at hchildRoot
+                rw [eval_one a] at hchildRoot
+                exact (one_ne_zero hchildRoot).elim
+              have hskip : ¬ (child == 0 || child == 1) = true := by
+                intro hskipTrue
+                have hcases : child = 0 ∨ child = 1 := by
+                  simpa [child] using hskipTrue
+                rcases hcases with h0 | h1
+                · exact hchildNe h0
+                · exact hchildNotOne h1
+              have hrec := ih childOrder (alpha * gamma ^ j) (gamma ^ ell) child a
+                hschedChild hchildGamma hchildNe hchildRoot hchildCoset
+              have hfold : ∀ (js : List Nat) (acc : Array (CPolynomial F)),
+                  (∃ factor, factor ∈ acc.toList ∧ IsLinearRootFactorCandidate factor a) ∨
+                    j ∈ js →
+                    ∃ factor,
+                      factor ∈ (js.foldl
+                        (fun factors y =>
+                          let beta := alpha ^ childOrder * tau ^ y
+                          let witness := xPow - CPolynomial.C beta
+                          let child := CPolynomial.monicNormalize (CPolynomial.gcdMonic p' witness)
+                          if child == 0 || child == 1 then
+                            factors
+                          else
+                            factors ++ smoothCosetLinearFactorsWithSchedule M D E rest childOrder
+                              (alpha * gamma ^ y) (gamma ^ ell) child) acc).toList ∧
+                        IsLinearRootFactorCandidate factor a := by
+                intro js
+                induction js with
+                | nil =>
+                    intro acc h
+                    rcases h with hacc | hjnil
+                    · exact hacc
+                    · simp at hjnil
+                | cons y ys ihys =>
+                    intro acc h
+                    simp only [List.foldl_cons]
+                    apply ihys
+                    rcases h with hacc | hy
+                    · left
+                      rcases hacc with ⟨factor, hmem, hcand⟩
+                      refine ⟨factor, ?_, hcand⟩
+                      by_cases hskipY : (CPolynomial.monicNormalize
+                          (CPolynomial.gcdMonic p'
+                            (xPow - CPolynomial.C (alpha ^ childOrder * tau ^ y))) == 0 ||
+                          CPolynomial.monicNormalize
+                            (CPolynomial.gcdMonic p'
+                              (xPow - CPolynomial.C (alpha ^ childOrder * tau ^ y))) == 1) = true
+                      · rw [if_pos hskipY]
+                        exact hmem
+                      · rw [if_neg hskipY]
+                        let childY := CPolynomial.monicNormalize
+                          (CPolynomial.gcdMonic p'
+                            (xPow - CPolynomial.C (alpha ^ childOrder * tau ^ y)))
+                        let tail := smoothCosetLinearFactorsWithSchedule M D E rest childOrder
+                          (alpha * gamma ^ y) (gamma ^ ell) childY
+                        simpa [childY, tail] using Array.mem_append_left tail
+                          (by simpa using hmem)
+                    · simp at hy
+                      rcases hy with hyj | hyrest
+                      · subst y
+                        left
+                        rcases hrec with ⟨factor, hmem, hcand⟩
+                        refine ⟨factor, ?_, hcand⟩
+                        rw [if_neg hskip]
+                        simpa [child, witness, beta] using
+                          Array.mem_append_right acc (by simpa using hmem)
+                      · right
+                        exact hyrest
+              exact hfold (List.range ell) #[] (Or.inr hjmem)
+
+/-- Completeness of the top-level smooth linear-factor splitter. -/
+theorem smoothLinearFactorsAlgorithmWith_complete {F : Type*}
+    [Field F] [Finite F] [DecidableEq F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (E : BatchEvalContext F) (q : Nat) (generator : F) (schedule : Array Nat)
+    (hcard : Nat.card F = q)
+    (hgenerator : orderOf generator = q - 1)
+    (hschedule : SmoothScheduleDivides schedule.toList (q - 1))
+    {p : CPolynomial F} {a : F}
+    (hp : p ≠ 0) (hroot : CPolynomial.eval a p = 0) :
+    ∃ factor,
+      factor ∈ (smoothLinearFactorsAlgorithmWith M D E q generator schedule p).toList ∧
+        IsLinearRootFactorCandidate factor a := by
+  unfold smoothLinearFactorsAlgorithmWith
+  let p' := CPolynomial.monicNormalize p
+  have hp' : p' ≠ 0 := monicNormalize_ne_zero_of_ne_zero hp
+  have hroot' : CPolynomial.eval a p' = 0 := (monicNormalize_root_iff hp).2 hroot
+  by_cases hzero : (p' == 0 || p' == 1) = true
+  · have hcases : p' = 0 ∨ p' = 1 := by
+      simpa [p'] using hzero
+    rcases hcases with h0 | h1
+    · exact (hp' h0).elim
+    · rw [h1] at hroot'
+      rw [eval_one a] at hroot'
+      exact (one_ne_zero hroot').elim
+  · rw [if_neg hzero]
+    by_cases ha0 : a = 0
+    · subst a
+      have hcoeff : p'.coeff 0 = 0 := by
+        simpa [eval_zero_eq_coeff_zero] using hroot'
+      have hconst : ((p'.coeff 0 == 0) = true) := by
+        simp [hcoeff]
+      rw [if_pos hconst]
+      refine ⟨CPolynomial.linearFactor (0 : F), ?_, linearFactor_isRootFactorCandidate 0⟩
+      unfold smoothNonzeroLinearFactorsWith
+      simp
+    · have hgenPow : generator ^ (q - 1) = 1 := by
+        rw [← hgenerator]
+        exact pow_orderOf_eq_one generator
+      have hcoset : ∃ k : Nat, k < q - 1 ∧ a = (1 : F) * generator ^ k := by
+        rcases exists_generator_pow_of_order_eq_card_sub_one hcard hgenerator ha0 with
+          ⟨k, hk, ha⟩
+        exact ⟨k, hk, by simp [ha]⟩
+      by_cases hconst : ((p'.coeff 0 == 0) = true)
+      · rw [if_pos hconst]
+        have hcoeff : p'.coeff 0 = 0 := by simpa using hconst
+        have hdivRoot : CPolynomial.eval a (CPolynomial.divX p') = 0 :=
+          eval_divX_eq_zero_of_ne_zero_root ha0 hcoeff hroot'
+        have hdivNe : CPolynomial.divX p' ≠ 0 :=
+          divX_ne_zero_of_ne_zero_coeff_zero hp' hcoeff
+        have hchildRoot :
+            CPolynomial.eval a (CPolynomial.monicNormalize (CPolynomial.divX p')) = 0 :=
+          (monicNormalize_root_iff hdivNe).2 hdivRoot
+        have hchildNe : CPolynomial.monicNormalize (CPolynomial.divX p') ≠ 0 :=
+          monicNormalize_ne_zero_of_ne_zero hdivNe
+        rcases smoothCosetLinearFactorsWithSchedule_complete M D E schedule.toList (q - 1)
+            (1 : F) generator (CPolynomial.monicNormalize (CPolynomial.divX p')) a
+            hschedule hgenPow hchildNe hchildRoot hcoset with ⟨factor, hmem, hcand⟩
+        refine ⟨factor, ?_, hcand⟩
+        unfold smoothNonzeroLinearFactorsWith
+        simpa [p'] using Array.mem_append_right (#[CPolynomial.linearFactor (0 : F)])
+          (by simpa using hmem)
+      · rw [if_neg hconst]
+        rcases smoothCosetLinearFactorsWithSchedule_complete M D E schedule.toList (q - 1)
+            (1 : F) generator p' a hschedule hgenPow hp' hroot' hcoset with
+          ⟨factor, hmem, hcand⟩
+        refine ⟨factor, ?_, hcand⟩
+        unfold smoothNonzeroLinearFactorsWith
+        simpa using hmem
+
 /-- Every root of a nonzero polynomial is returned by the finite-field backend. -/
 theorem rootsInOddFiniteFieldWith_complete {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
@@ -873,7 +1069,7 @@ theorem rootsInOddFiniteFieldWith_complete {F : Type*}
       · have hprodRoot : CPolynomial.eval a (finiteFieldRootProductWith M D ctx p) = 0 :=
           finiteFieldRootProductWith_complete M D ctx hp hroot
         have hprodNe : finiteFieldRootProductWith M D ctx p ≠ 0 :=
-          finiteFieldRootProductWith_ne_zero M D ctx hp
+          finiteFieldRootProductWith_ne_zero_of_ne_zero M D ctx hp
         have hprodValid :
             splitter.validInput ctx.q (finiteFieldRootProductWith M D ctx p) := by
           exact splitterValid hp

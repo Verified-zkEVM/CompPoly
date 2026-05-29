@@ -289,9 +289,56 @@ lemma twoAdicGenerators_order (bits : Fin (twoAdicity + 1)) :
 /-- Primitive generator used by the smooth field-root splitter. -/
 def primitiveRoot : Field := (3 : Field)
 
+set_option maxRecDepth 100000 in
+/-- `primitiveRoot ^ 127` is the maximal two-adic generator. -/
+private lemma primitiveRoot_pow_127_eq_twoAdicGenerator :
+    primitiveRoot ^ 127 =
+      twoAdicGenerators[(⟨twoAdicity, by omega⟩ : Fin (twoAdicity + 1))] := by
+  unfold primitiveRoot twoAdicity
+  decide
+
+/-- `primitiveRoot ^ 2^twoAdicity` is nontrivial. -/
+private lemma primitiveRoot_pow_twoAdicity_ne_one :
+    primitiveRoot ^ (2 ^ twoAdicity) ≠ (1 : Field) := by
+  rw [← sqChain_eq_pow_two_pow]
+  unfold primitiveRoot twoAdicity
+  decide
+
+/-- Prime divisors of `fieldSize - 1` are exactly `2` and `127`. -/
+private lemma prime_dvd_fieldSize_sub_one_cases {p : Nat}
+    (hp : p.Prime) (hdvd : p ∣ fieldSize - 1) :
+    p = 2 ∨ p = 127 := by
+  have hpdvd : p ∣ 2 ^ twoAdicity * 127 := by
+    rw [← fieldSize_sub_one_factorization]
+    exact hdvd
+  rcases hp.dvd_mul.mp hpdvd with h2pow | h127
+  · left
+    exact (Nat.prime_dvd_prime_iff_eq hp Nat.prime_two).mp
+      (hp.dvd_of_dvd_pow h2pow)
+  · right
+    exact (Nat.prime_dvd_prime_iff_eq hp (by decide : Nat.Prime 127)).mp h127
+
 /-- The smooth field-root splitter generator has full multiplicative order. -/
 lemma primitiveRoot_order : orderOf primitiveRoot = fieldSize - 1 := by
-  sorry
+  refine orderOf_eq_of_pow_and_pow_div_prime (n := fieldSize - 1) ?_ ?_ ?_
+  · unfold fieldSize
+    omega
+  · exact ZMod.pow_card_sub_one_eq_one (a := primitiveRoot) (by
+      unfold primitiveRoot
+      decide)
+  · intro p hp hdvd
+    rcases prime_dvd_fieldSize_sub_one_cases hp hdvd with rfl | rfl
+    · rw [fieldSize_sub_one_factorization, twoAdicity]
+      have hdiv : (2 ^ 24 * 127) / 2 = 127 * 2 ^ 23 := by decide
+      rw [hdiv, pow_mul, primitiveRoot_pow_127_eq_twoAdicGenerator]
+      exact twoAdicGenerators_pow_twoPow_ne_one_of_lt
+        (bits := (⟨twoAdicity, by omega⟩ : Fin (twoAdicity + 1))) (m := 23)
+        (by simp [twoAdicity])
+    · rw [fieldSize_sub_one_factorization]
+      have hdiv : (2 ^ twoAdicity * 127) / 127 = 2 ^ twoAdicity :=
+        by decide
+      rw [hdiv]
+      exact primitiveRoot_pow_twoAdicity_ne_one
 
 /-- Smooth subgroup refinement schedule for `fieldSize - 1 = 2^24 * 127`. -/
 def smoothRootSchedule : Array Nat :=

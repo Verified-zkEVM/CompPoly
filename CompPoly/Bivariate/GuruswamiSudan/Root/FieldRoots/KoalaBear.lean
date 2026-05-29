@@ -7,6 +7,7 @@ Authors: Valerii Huhnin
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.FiniteField
 import CompPoly.Fields.KoalaBear
 import CompPoly.Univariate.NTT.KoalaBear
+import CompPoly.Univariate.Roots.SmoothSubgroupCorrectness
 
 /-!
 # KoalaBear Guruswami-Sudan Field-Root Backends
@@ -50,10 +51,19 @@ def koalaBearSmoothCyclicRootContext :
     KoalaBear.smoothRootSchedule_fold_eq_one
     (by
       intro M D p factor h
-      sorry)
+      exact CPolynomial.Roots.FiniteField.smoothLinearFactorsAlgorithmWith_sound
+        M D (CPolynomial.Roots.FiniteField.BatchEvalContext.horner KoalaBear.Field)
+        KoalaBear.fieldSize KoalaBear.primitiveRoot KoalaBear.smoothRootSchedule h)
     (by
-      intro M D p a hvalid hp hroot
-      sorry)
+      intro M D p a _hvalid hp hroot
+      exact CPolynomial.Roots.FiniteField.smoothLinearFactorsAlgorithmWith_complete
+        M D (CPolynomial.Roots.FiniteField.BatchEvalContext.horner KoalaBear.Field)
+        KoalaBear.fieldSize KoalaBear.primitiveRoot KoalaBear.smoothRootSchedule
+        (by
+          simp [KoalaBear.Field, KoalaBear.fieldSize, Nat.card_eq_fintype_card, ZMod.card])
+        KoalaBear.primitiveRoot_order
+        (by decide)
+        hp hroot)
 
 /-- The KoalaBear smooth splitter accepts finite-field root products. -/
 private theorem koalaBearSmoothRootProduct_valid
@@ -131,7 +141,12 @@ def fastKoalaBearPrimitiveRoot : KoalaBear.Fast.Field :=
 /-- The transported fast KoalaBear generator has full multiplicative order. -/
 lemma fastKoalaBearPrimitiveRoot_order :
     orderOf fastKoalaBearPrimitiveRoot = KoalaBear.fieldSize - 1 := by
-  sorry
+  unfold fastKoalaBearPrimitiveRoot
+  have h := MulEquiv.orderOf_eq KoalaBear.Fast.ringEquiv.toMulEquiv
+    (KoalaBear.Fast.ofField KoalaBear.primitiveRoot)
+  rw [← h]
+  simpa [KoalaBear.Fast.ringEquiv_apply, KoalaBear.Fast.toField_ofField] using
+    KoalaBear.primitiveRoot_order
 
 /-- Smooth cyclic splitter context for native-word fast KoalaBear. -/
 def fastKoalaBearSmoothCyclicRootContext :
@@ -152,10 +167,25 @@ def fastKoalaBearSmoothCyclicRootContext :
     KoalaBear.smoothRootSchedule_fold_eq_one
     (by
       intro M D p factor h
-      sorry)
+      exact CPolynomial.Roots.FiniteField.smoothLinearFactorsAlgorithmWith_sound
+        M D (CPolynomial.Roots.FiniteField.BatchEvalContext.horner KoalaBear.Fast.Field)
+        KoalaBear.fieldSize fastKoalaBearPrimitiveRoot KoalaBear.smoothRootSchedule h)
     (by
-      intro M D p a hvalid hp hroot
-      sorry)
+      intro M D p a _hvalid hp hroot
+      letI : Finite KoalaBear.Fast.Field :=
+        Finite.of_equiv KoalaBear.Field KoalaBear.Fast.ringEquiv.toEquiv.symm
+      exact CPolynomial.Roots.FiniteField.smoothLinearFactorsAlgorithmWith_complete
+        M D (CPolynomial.Roots.FiniteField.BatchEvalContext.horner KoalaBear.Fast.Field)
+        KoalaBear.fieldSize fastKoalaBearPrimitiveRoot KoalaBear.smoothRootSchedule
+        (by
+          have hcard : Nat.card KoalaBear.Fast.Field = Nat.card KoalaBear.Field :=
+            Nat.card_congr KoalaBear.Fast.ringEquiv.toEquiv
+          rw [hcard]
+          simp [KoalaBear.Field, Nat.card_eq_fintype_card, ZMod.card])
+        fastKoalaBearPrimitiveRoot_order
+        (by
+          decide)
+        hp hroot)
 
 /-- The fast KoalaBear smooth splitter accepts finite-field root products. -/
 private theorem fastKoalaBearSmoothRootProduct_valid
@@ -208,7 +238,8 @@ def fastKoalaBearNttFastFieldRootBackend : FieldRootBackend KoalaBear.Fast.Field
       intro p hp
       exact fastKoalaBearSmoothRootProduct_valid
         (CPolynomial.Raw.MulContext.nttFast CPolynomial.NTT.KoalaBear.fastBestDomainForLength?)
-        (CPolynomial.Raw.ModContext.reversalNttFast CPolynomial.NTT.KoalaBear.fastBestDomainForLength?)
+        (CPolynomial.Raw.ModContext.reversalNttFast
+          CPolynomial.NTT.KoalaBear.fastBestDomainForLength?)
         hp)
 
 end GuruswamiSudan

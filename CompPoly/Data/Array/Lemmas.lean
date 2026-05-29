@@ -75,6 +75,13 @@ lemma getElem?_eq_toList {a : Array α} {i : ℕ} : a.toList[i]? = a[i]? := by
   rw (occs := .pos [2]) [← Array.toArray_toList (xs := a)]
   rw [List.getElem?_toArray]
 
+/-- `Array.map` and `getD` agree with indexed access on in-bounds indices. -/
+theorem getD_map_of_lt {β : Type*} (xs : Array α) (f : α → β)
+    (d : β) {i : Nat} (hi : i < xs.size) :
+    (xs.map f).getD i d = f xs[i] := by
+  rw [Array.getD_eq_getD_getElem?, Array.getElem?_map, Array.getElem?_eq_getElem hi]
+  simp
+
 theorem foldl_zipIdx_eq_foldl_toList_zipIdx {β : Type*}
     (f : β → α × Nat → β) (init : β) (a : Array α) :
     a.zipIdx.foldl f init = a.toList.zipIdx.foldl f init := by
