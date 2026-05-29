@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 
 import CompPoly.Bivariate.GuruswamiSudan.Polynomial
+import CompPoly.Data.List.Lemmas
 import CompPoly.LinearAlgebra.Dense
 import Mathlib.Tactic.Ring
 
@@ -124,27 +125,6 @@ theorem foldl_range_eq_zero_of_zero {F : Type*} [AddMonoid F] {n : Nat} {f : Nat
 end DenseMatrix
 
 namespace CBivariate
-
-private theorem list_foldl_add_congr {α F : Type*} [Add F] (xs : List α) (acc : F)
-    {f g : α → F} (h : ∀ x, f x = g x) :
-    xs.foldl (fun acc x => acc + f x) acc =
-      xs.foldl (fun acc x => acc + g x) acc := by
-  induction xs generalizing acc with
-  | nil => rfl
-  | cons x xs ih =>
-      simp only [List.foldl_cons]
-      rw [h x]
-      exact ih _
-
-private theorem list_foldl_step_congr {α β : Type*} (xs : List α) (acc : β)
-    {f g : β → α → β} (h : ∀ acc x, f acc x = g acc x) :
-    xs.foldl f acc = xs.foldl g acc := by
-  induction xs generalizing acc with
-  | nil => rfl
-  | cons x xs ih =>
-      simp only [List.foldl_cons]
-      rw [h acc x]
-      exact ih _
 
 /-- Bivariate coefficients are additive. -/
 theorem coeff_add {R : Type*}
@@ -629,7 +609,7 @@ theorem hasseDerivativeTermList_coeff_inner_fold {R : Type*} [Semiring R]
                 else 0
               else 0)
           acc := by
-    apply list_foldl_step_congr
+    apply List.foldl_congr_of_mem
     intro acc xDeg
     by_cases hx : a ≤ xDeg <;> simp [hx]
   rw [hstep]
@@ -659,7 +639,9 @@ theorem hasseDerivativeTermList_coeff_inner_fold {R : Type*} [Semiring R]
             exact hxEq this
           simp [ha, hxEq, hi_ne]
         · simp [ha, hxEq]
-    rw [list_foldl_add_congr (List.range' 0 coeffY.val.size) acc hcontrib]
+    rw [List.foldl_congr_of_mem
+      (List.range' 0 coeffY.val.size) acc
+      (fun _acc' xDeg _hxDeg => by rw [hcontrib xDeg])]
     rw [DenseMatrix.foldl_range_one_special
       (F := R) (pivot := i + a)
       ((Nat.choose (i + a) a : R) * (Nat.choose (j + b) b : R) *
@@ -679,7 +661,9 @@ theorem hasseDerivativeTermList_coeff_inner_fold {R : Type*} [Semiring R]
           exact hyTarget this
         simp [ha, hnot]
       · simp [ha]
-    rw [list_foldl_add_congr (List.range' 0 coeffY.val.size) acc hcontrib]
+    rw [List.foldl_congr_of_mem
+      (List.range' 0 coeffY.val.size) acc
+      (fun _acc' xDeg _hxDeg => by rw [hcontrib xDeg])]
     simp [hyTarget]
 
 /-- The fixed coefficient of the executable Hasse term list has the closed
@@ -716,7 +700,7 @@ theorem hasseDerivativeTermList_coeff_value {R : Type*} [Semiring R]
         (List.range' 0 Q.val.size).foldl
           (fun acc yDeg => acc + if yDeg = j + b then source else 0)
           0 := by
-    apply list_foldl_step_congr
+    apply List.foldl_congr_of_mem
     intro acc yDeg
     by_cases hy : b ≤ yDeg
     · rw [if_pos hy]

@@ -75,6 +75,61 @@ lemma getElem?_eq_toList {a : Array α} {i : ℕ} : a.toList[i]? = a[i]? := by
   rw (occs := .pos [2]) [← Array.toArray_toList (xs := a)]
   rw [List.getElem?_toArray]
 
+theorem foldl_zipIdx_eq_foldl_toList_zipIdx {β : Type*}
+    (f : β → α × Nat → β) (init : β) (a : Array α) :
+    a.zipIdx.foldl f init = a.toList.zipIdx.foldl f init := by
+  cases a
+  simp
+
+theorem foldl_zipIdx_eq_foldl_toList_zipIdx_size {β : Type*}
+    (f : β → α × Nat → β) (init : β) (a : Array α) :
+    Array.foldl f init a.zipIdx 0 a.size = a.toList.zipIdx.foldl f init := by
+  cases a
+  simp
+
+theorem mem_foldl_append_of_mem {β : Type*}
+    (xs : Array α) (f : α → Array β) {x : α} {y : β}
+    (hx : x ∈ xs.toList) (hy : y ∈ (f x).toList) :
+    y ∈ (xs.foldl (fun out x => out ++ f x) #[]).toList := by
+  cases xs with
+  | mk data =>
+      simp at hx ⊢
+      have haux : ∀ (data : List α) (acc : Array β),
+          y ∈ acc.toList ∨ (∃ x, x ∈ data ∧ y ∈ (f x).toList) →
+            y ∈ (data.foldl (fun out x => out ++ f x) acc).toList := by
+        intro data
+        induction data with
+        | nil =>
+            intro acc h
+            simp at h ⊢
+            exact h
+        | cons z zs ih =>
+            intro acc h
+            simp only [List.foldl_cons]
+            apply ih
+            rcases h with hacc | ⟨x, hx, hyx⟩
+            · left
+              simp [hacc]
+            · simp only [List.mem_cons] at hx
+              cases hx with
+              | inl hxz =>
+                  subst x
+                  left
+                  simp [hyx]
+              | inr hxzs =>
+                  right
+                  exact ⟨x, hxzs, hyx⟩
+      simpa using haux data #[] (Or.inr ⟨x, hx, hy⟩)
+
+theorem mem_flatten_map_of_mem {β : Type*}
+    (xs : Array α) (f : α → Array β) {x : α} {y : β}
+    (hx : x ∈ xs.toList) (hy : y ∈ (f x).toList) :
+    y ∈ (xs.map f).flatten := by
+  cases xs with
+  | mk data =>
+      simp at hx hy ⊢
+      exact ⟨x, hx, hy⟩
+
 attribute [simp] Array.getElem?_eq_getElem
 
 -- @[simp] theorem matchSize_comm (a : Array α) (b : Array α) (unit : α) :

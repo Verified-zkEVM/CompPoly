@@ -15,6 +15,7 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Algorithm
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Monomials
 import CompPoly.Bivariate.GuruswamiSudan.Polynomial
+import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
 import CompPoly.Bivariate.GuruswamiSudan.Root
 import CompPoly.Bivariate.GuruswamiSudan.Root.Basic
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots
@@ -23,6 +24,7 @@ import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.FiniteField.NTT
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Algorithm
 import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Correctness
+import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Lemmas
 import CompPoly.Bivariate.GuruswamiSudan.Util
 import CompPoly.Bivariate.ToPoly
 import CompPoly.Data.Array.Lemmas
@@ -88,6 +90,9 @@ import CompPoly.LinearAlgebra.Dense.Basic
 import CompPoly.LinearAlgebra.Dense.Kernel
 import CompPoly.LinearAlgebra.Dense.KernelCorrectness
 import CompPoly.LinearAlgebra.Dense.RowOps
+import CompPoly.LinearAlgebra.Dense.RowOpsCorrectness
+import CompPoly.LinearAlgebra.Dense.RrefSemantics
+import CompPoly.LinearAlgebra.Dense.RrefShape
 import CompPoly.Multilinear.Basic
 import CompPoly.Multilinear.Equiv
 import CompPoly.Multilinear.ManyEval

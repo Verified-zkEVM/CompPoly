@@ -10,8 +10,8 @@ import Mathlib.Algebra.Field.ZMod
 /-!
 # Dense Guruswami-Sudan Interpolation Tests
 
-Regression coverage for dense interpolation matrix construction and witness
-selection.
+Regression coverage for dense interpolation matrix construction, witness
+selection, and the low-message fallback.
 -/
 
 namespace CompPolyTests
@@ -32,9 +32,20 @@ private def params : GSInterpParams :=
 private def points : Array (Prod F3 F3) :=
   #[(0, 0), (1, 1)]
 
+private def lowParams : GSInterpParams :=
+  { messageDegree := 1, multiplicity := 1, weightedDegreeBound := 0 }
+
+private def lowPoints : Array (Prod F3 F3) :=
+  #[(0, 0)]
+
 #guard (interpolationMatrix points params).rows == 2
 #guard (interpolationMonomials params).size == 6
 #guard (denseInterpolate points params).isSome
+
+#guard (interpolationMonomials lowParams).size == 1
+#guard (denseInterpolateWithBasisAndKernel (denseLinearKernelBackend F3)
+  (interpolationMonomials lowParams) lowPoints lowParams).isNone
+#guard (denseInterpolate lowPoints lowParams).isSome
 
 end GuruswamiSudan.Interpolation.Dense
 

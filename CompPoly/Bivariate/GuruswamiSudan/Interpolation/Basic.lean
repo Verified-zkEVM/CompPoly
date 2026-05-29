@@ -55,34 +55,56 @@ def hasseMonomialEval {F : Type*} [Semiring F]
   else
     0
 
+/-- Dense Hasse-constraint matrix over an explicitly supplied monomial basis. -/
+def interpolationConstraintMatrixOnBasis {F : Type*} [Semiring F]
+    (basis : Array CBivariate.Monomial) (constraints : Array (InterpolationConstraint F)) :
+    DenseMatrix F :=
+  DenseMatrix.ofFn constraints.size basis.size fun row col =>
+    let constraint := constraints.getD row
+      { x := 0, y := 0, xOrder := 0, yOrder := 0 }
+    let monomial := basis.getD col { xDegree := 0, yDegree := 0 }
+    hasseMonomialEval monomial constraint
+
 /-- Dense Hasse-constraint matrix for the interpolation problem. -/
 def interpolationConstraintMatrix {F : Type*} [Semiring F]
     (params : GSInterpParams) (constraints : Array (InterpolationConstraint F)) :
     DenseMatrix F :=
-  let monomials := interpolationMonomials params
-  DenseMatrix.ofFn constraints.size monomials.size fun row col =>
-    let constraint := constraints.getD row
-      { x := 0, y := 0, xOrder := 0, yOrder := 0 }
-    let monomial := monomials.getD col { xDegree := 0, yDegree := 0 }
-    hasseMonomialEval monomial constraint
+  interpolationConstraintMatrixOnBasis (interpolationMonomials params) constraints
+
+/-- Dense interpolation matrix for packed point pairs over an explicit basis. -/
+def interpolationMatrixOnBasis {F : Type*} [Semiring F]
+    (basis : Array CBivariate.Monomial)
+    (points : Array (Prod F F)) (params : GSInterpParams) : DenseMatrix F :=
+  interpolationConstraintMatrixOnBasis basis
+    (interpolationConstraints points params.multiplicity)
 
 /-- Dense interpolation matrix for packed point pairs. -/
 def interpolationMatrix {F : Type*} [Semiring F]
     (points : Array (Prod F F)) (params : GSInterpParams) : DenseMatrix F :=
-  interpolationConstraintMatrix params
-    (interpolationConstraints points params.multiplicity)
+  interpolationMatrixOnBasis (interpolationMonomials params) points params
+
+/-- Rebuild a bivariate polynomial from a dense coefficient vector over a supplied basis. -/
+def interpolationPolynomialOnBasis {F : Type*}
+    [Semiring F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    (basis : Array CBivariate.Monomial) (coeffs : Array F) : CBivariate F :=
+  CBivariate.ofMonomialCoeffs basis coeffs
 
 /-- Rebuild a bivariate polynomial from its dense interpolation coefficient vector. -/
 def interpolationPolynomial {F : Type*}
     [Semiring F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (params : GSInterpParams) (coeffs : Array F) : CBivariate F :=
-  CBivariate.ofMonomialCoeffs (interpolationMonomials params) coeffs
+  interpolationPolynomialOnBasis (interpolationMonomials params) coeffs
+
+/-- Coefficients of a bivariate polynomial in a supplied monomial order. -/
+def interpolationCoefficientVectorOnBasis {F : Type*} [Zero F]
+    (basis : Array CBivariate.Monomial) (Q : CBivariate F) : Array F :=
+  basis.map fun monomial =>
+    CBivariate.coeff Q monomial.xDegree monomial.yDegree
 
 /-- Coefficients of a bivariate polynomial in the interpolation monomial order. -/
 def interpolationCoefficientVector {F : Type*} [Zero F]
     (params : GSInterpParams) (Q : CBivariate F) : Array F :=
-  (interpolationMonomials params).map fun monomial =>
-    CBivariate.coeff Q monomial.xDegree monomial.yDegree
+  interpolationCoefficientVectorOnBasis (interpolationMonomials params) Q
 
 /-- The first nonzero vector coordinate, if one exists. -/
 def firstNonzeroIndex? {F : Type*} [Zero F] [BEq F] (v : Array F) : Option Nat :=
@@ -107,20 +129,32 @@ def IsNormalizedInterpolationWitness {F : Type*} [Zero F] [One F] [BEq F]
     coeffs.getD i 0 = 1 ∧
       ∀ j, j < i → coeffs.getD j 0 = 0
 
+/-- Convert a homogeneous-kernel vector into a normalized basis polynomial. -/
+def normalizeInterpolationPolynomialOnBasis? {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    (basis : Array CBivariate.Monomial) (coeffs : Array F) :
+    Option (CBivariate F) :=
+  match normalizeVector? coeffs with
+  | none => none
+  | some normalized => some (interpolationPolynomialOnBasis basis normalized)
+
 /-- Convert a homogeneous-kernel vector into a normalized interpolation polynomial. -/
 def normalizeInterpolationPolynomial? {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (params : GSInterpParams) (coeffs : Array F) :
     Option (CBivariate F) :=
-  match normalizeVector? coeffs with
-  | none => none
-  | some normalized => some (interpolationPolynomial params normalized)
+  normalizeInterpolationPolynomialOnBasis? (interpolationMonomials params) coeffs
+
+/-- Dimension slack for a supplied interpolation basis. -/
+def HasInterpolationDimensionSlackOnBasis {F : Type*}
+    (basis : Array CBivariate.Monomial)
+    (points : Array (Prod F F)) (params : GSInterpParams) : Prop :=
+  (interpolationConstraints points params.multiplicity).size < basis.size
 
 /-- Dimension slack condition that guarantees a nontrivial homogeneous kernel. -/
 def HasInterpolationDimensionSlack {F : Type*}
     (points : Array (Prod F F)) (params : GSInterpParams) : Prop :=
-  (interpolationConstraints points params.multiplicity).size <
-    (interpolationMonomials params).size
+  HasInterpolationDimensionSlackOnBasis (interpolationMonomials params) points params
 
 end GuruswamiSudan
 
