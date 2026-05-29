@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Salih Erdem Koçak, Doran Pamukçu, Valerii Huhnin
 -/
 import CompPoly.Univariate.Raw
+import Init.Data.Vector.OfFn
 import Mathlib.Data.Nat.Log
 import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
 
@@ -100,6 +101,23 @@ end Domain
 /-- The smallest radix-2 exponent that can cover a requested convolution length. -/
 def bestLogN (requiredLen : Nat) : Nat :=
   Nat.clog 2 requiredLen
+
+/-- Load an array in natural order and pad it to a domain-sized array. -/
+@[inline] def loadNaturalArray (D : Domain R) (a : Array R) : Array R :=
+  Array.ofFn (fun i : D.Idx => a.getD i.1 0)
+
+@[simp] theorem size_loadNaturalArray (D : Domain R) (a : Array R) :
+    (loadNaturalArray D a).size = D.n := by
+  simp [loadNaturalArray]
+
+@[simp] theorem getElem_loadNaturalArray (D : Domain R) (a : Array R) (i : Nat)
+    (hi : i < (loadNaturalArray D a).size) :
+    (loadNaturalArray D a)[i] = a.getD i 0 := by
+  simp [loadNaturalArray]
+
+/-- Load an array in natural order and pad it to a domain-sized vector. -/
+@[inline] def loadNaturalVector (D : Domain R) (a : Array R) : Vector R D.n :=
+  Vector.ofFn (fun i : D.Idx => a.getD i.1 0)
 
 /-- An NTT domain bundled with proof that it covers the requested convolution length. -/
 abbrev FittingDomain (R : Type*) [Field R] (requiredLen : Nat) :=

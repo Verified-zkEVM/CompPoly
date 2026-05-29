@@ -65,14 +65,14 @@ private def difMathPairsSpec
 
 /-- The initial DIF mathematical state is the naturally ordered input. -/
 theorem difMathStageSpec_zero (D : NTT.Domain R) (a : Array R) :
-    difMathStageSpec D 0 a = loadNatural D a := by
+    difMathStageSpec D 0 a = NTT.loadNaturalArray D a := by
   apply Array.ext
-  · simp [difMathStageSpec, loadNatural]
+  · simp [difMathStageSpec, NTT.loadNaturalArray]
   · intro i hi₁ hi₂
     have hi : i < 2 ^ D.logN := by
       simpa [difMathStageSpec, NTT.Domain.n] using hi₁
     have himod : i % 2 ^ D.logN = i := Nat.mod_eq_of_lt hi
-    simp [difMathStageSpec, difMathValueAt, loadNatural, NTT.Domain.n, himod,
+    simp [difMathStageSpec, difMathValueAt, NTT.loadNaturalArray, NTT.Domain.n, himod,
       NTT.Transform.bitRevNat]
 
 /-- The final DIF mathematical state is the bit-reversed forward NTT output. -/
@@ -704,7 +704,7 @@ theorem butterflyStageDIFWithTwiddles_difMathStageSpec_succ
 
 private theorem runStagesDIFWithTwiddles_eq_difMathStageSpec
     (D : NTT.Domain R) (a : Array R) :
-    runStagesDIFWithTwiddles D (twiddleTable D) (loadNatural D a) =
+    runStagesDIFWithTwiddles D (twiddleTable D) (NTT.loadNaturalArray D a) =
       difMathStageSpec D D.logN a := by
   have hloop :
       ∀ n, n ≤ D.logN →
@@ -712,7 +712,7 @@ private theorem runStagesDIFWithTwiddles_eq_difMathStageSpec
           (fun acc pass ↦
             butterflyStageDIFWithTwiddles D (D.logN - pass - 1)
               ((twiddleTable D).getD (D.logN - pass - 1) #[]) acc)
-          (loadNatural D a) (List.range n) =
+          (NTT.loadNaturalArray D a) (List.range n) =
             difMathStageSpec D n a := by
     intro n hn
     induction n with
@@ -738,7 +738,7 @@ private theorem runStagesDIFWithTwiddles_eq_difMathStageSpec
 
 /-- The DIF stage loop computes the bit-reversed forward NTT output. -/
 theorem runStagesDIFWithTwiddles_correct (D : NTT.Domain R) (a : Array R) :
-    runStagesDIFWithTwiddles D (twiddleTable D) (loadNatural D a) =
+    runStagesDIFWithTwiddles D (twiddleTable D) (NTT.loadNaturalArray D a) =
       NTT.Transform.bitRevPermute D (NTT.Forward.forwardSpec D a) := by
   rw [runStagesDIFWithTwiddles_eq_difMathStageSpec, difMathStageSpec_final]
 

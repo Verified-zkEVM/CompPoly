@@ -189,9 +189,9 @@ private theorem butterflyRadix4StageDIFPairWithTwiddles_eq_pair
 theorem runStagesDIFRadix4PairWithTwiddles_eq_pair
     (D : NTT.Domain R) (a b : Array R) :
     runStagesDIFRadix4PairWithTwiddles D (twiddleTable D)
-        (loadNatural D a) (loadNatural D b) =
-      (runStagesDIFRadix4WithTwiddles D (twiddleTable D) (loadNatural D a),
-        runStagesDIFRadix4WithTwiddles D (twiddleTable D) (loadNatural D b)) := by
+        (NTT.loadNaturalArray D a) (NTT.loadNaturalArray D b) =
+      (runStagesDIFRadix4WithTwiddles D (twiddleTable D) (NTT.loadNaturalArray D a),
+        runStagesDIFRadix4WithTwiddles D (twiddleTable D) (NTT.loadNaturalArray D b)) := by
   have hfoldFst :
       ∀ xs (accA accB : Array R),
         (List.foldl
@@ -304,20 +304,20 @@ theorem runStagesDIFRadix4PairWithTwiddles_eq_pair
     constructor
     · congr 1
       simpa only [Prod.fst, Prod.snd] using
-        hfoldFst (List.range' 0 (D.logN / 2)) (loadNatural D a)
-        (loadNatural D b)
+        hfoldFst (List.range' 0 (D.logN / 2)) (NTT.loadNaturalArray D a)
+        (NTT.loadNaturalArray D b)
     · congr 1
       simpa only [Prod.fst, Prod.snd] using
-        hfoldSnd (List.range' 0 (D.logN / 2)) (loadNatural D a)
-        (loadNatural D b)
+        hfoldSnd (List.range' 0 (D.logN / 2)) (NTT.loadNaturalArray D a)
+        (NTT.loadNaturalArray D b)
   · simp [runStagesDIFRadix4PairWithTwiddles, runStagesDIFRadix4WithTwiddles, hodd]
     constructor
     · simpa only [Prod.fst, Prod.snd] using
-        hfoldFst (List.range' 0 (D.logN / 2)) (loadNatural D a)
-        (loadNatural D b)
+        hfoldFst (List.range' 0 (D.logN / 2)) (NTT.loadNaturalArray D a)
+        (NTT.loadNaturalArray D b)
     · simpa only [Prod.fst, Prod.snd] using
-        hfoldSnd (List.range' 0 (D.logN / 2)) (loadNatural D a)
-        (loadNatural D b)
+        hfoldSnd (List.range' 0 (D.logN / 2)) (NTT.loadNaturalArray D a)
+        (NTT.loadNaturalArray D b)
 
 end Plan
 
