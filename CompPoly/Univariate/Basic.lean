@@ -369,6 +369,50 @@ theorem support_empty_iff [Zero R] [BEq R] [LawfulBEq R] (p : CPolynomial R) :
   · intro h i; by_contra hne; exact h i ((mem_support_iff p i).mpr hne)
   · intro h i; rw [mem_support_iff, h]; simp
 
+/-- The constant polynomial `C 0` is zero. -/
+@[simp] lemma C_zero [Zero R] [BEq R] [LawfulBEq R] :
+    (C (0 : R) : CPolynomial R) = 0 := by
+  rw [eq_zero_iff_coeff_zero]; intro i; rw [coeff_C]; simp
+
+/-- The natDegree of a constant polynomial `C r` is zero. -/
+theorem natDegree_C [Zero R] [BEq R] [LawfulBEq R] (r : R) :
+    (C r).natDegree = 0 := by
+    by_cases hr : r = 0
+    · subst hr; rw [C_zero]; rfl
+    · simp [C, natDegree, Raw.C]
+      conv_lhs => rw [show #[r] = (#[] : Array R).push r from rfl]
+      rw [Trim.push_trim #[] r hr]
+      simp
+
+/-- The support of a constant polynomial `C r` is `{0}`. -/
+theorem support_C [Zero R] [BEq R] [LawfulBEq R] {r : R} (hr : r ≠ 0) :
+    (C r).support = {0} := by
+    ext i
+    rw [mem_support_iff, coeff_C, Finset.mem_singleton]
+    simp [hr]
+
+/-- The support of a nonzero monomial `c * X^n` is `{n}`. -/
+theorem support_monomial [Semiring R] [DecidableEq R]
+    [BEq R] [LawfulBEq R] {n : ℕ} {c : R} (hc : c ≠ 0) :
+    (monomial n c).support = {n} := by
+  ext i
+  rw [mem_support_iff, coeff_monomial, Finset.mem_singleton]
+  simp [hc]
+
+/-- The natDegree of a nonzero monomial `c * X^n` is `n`. -/
+theorem natDegree_monomial [Semiring R] [DecidableEq R]
+    [BEq R] [LawfulBEq R] {n : ℕ} {c : R} (hc : c ≠ 0) :
+    (monomial n c).natDegree = n := by
+  simp [monomial, Raw.monomial, hc, natDegree]
+
+/-- The support of the sum of two polynomials is a subset of the union of their supports. -/
+theorem support_add_subset [Semiring R] [DecidableEq R]
+    [BEq R] [LawfulBEq R] (p q : CPolynomial R) : (p + q).support ⊆ p.support ∪ q.support := by
+    intro i hi
+    rw [mem_support_iff, coeff_add] at hi
+    rw [Finset.mem_union, mem_support_iff, mem_support_iff]
+    exact not_and_or.mp fun ⟨h1, h2⟩ => hi (by rw [h1, h2]; simp)
+
 /-- Evaluation equals the sum over support of coefficients times powers. -/
 theorem eval_eq_sum_support [Semiring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) (x : R) :
     p.eval x = p.support.sum (fun i => p.coeff i * x ^ i) := by
@@ -711,6 +755,30 @@ theorem natDegree_eq_support_sup [Zero R] [BEq R] [LawfulBEq R] (p : CPolynomial
       apply le_antisymm
       · simpa using (Finset.le_sup (f := fun m => m) hn_mem)
       · exact Finset.sup_le fun m hm => hle m hm
+
+/-- If `coeff p i ≠ 0` then `i ≤ p.natDegree`. -/
+theorem le_natDegree_of_ne_zero [Zero R] [BEq R] [LawfulBEq R]
+    {p : CPolynomial R} {i : ℕ} (h : coeff p i ≠ 0) :
+    i ≤ p.natDegree := by
+  rw [natDegree_eq_support_sup]
+  exact Finset.le_sup (f := fun n => n) ((mem_support_iff p i).mpr h)
+
+/-- The natDegree of a sum is at most the max of the natDegrees. -/
+theorem natDegree_add_le [Semiring R] [DecidableEq R]
+    [BEq R] [LawfulBEq R] (p q : CPolynomial R) :
+    (p + q).natDegree ≤ max p.natDegree q.natDegree := by
+  rw [natDegree_eq_support_sup (p + q), natDegree_eq_support_sup p,
+    natDegree_eq_support_sup q, ← Finset.sup_union]
+  exact Finset.sup_mono (support_add_subset p q)
+
+/-- The leading coefficient of a nonzero polynomial is nonzero. -/
+lemma leadingCoeff_ne_zero [Zero R] [BEq R] [LawfulBEq R] {p : CPolynomial R} (h : p ≠ 0) :
+    p.leadingCoeff ≠ 0 := by
+  unfold leadingCoeff
+  apply Or.resolve_left
+   (Trim.isCanonical_iff_size_eq_zero_or_getLastD_ne_zero.mp p.property)
+  intro hsize
+  exact h (ext (Array.eq_empty_of_size_eq_zero hsize))
 
 section Division
 

@@ -36,6 +36,9 @@ scripts/              repo utilities and validation helpers
 
 - Extending `CPolynomial`, quotient polynomials, or interpolation:
   start in `CompPoly/Univariate/`.
+- Working on root-of-unity NTT evaluation, interpolation, or multiplication:
+  start in `CompPoly/Univariate/NTT/` for shared domains/specifications and
+  `CompPoly/Univariate/NTTFast/` for planned optimized transforms.
 - Extending sparse monomial-based polynomial operations or `MvPolynomial`
   interoperability: start in `CompPoly/Multivariate/`.
 - Working on Boolean-hypercube evaluation form, basis conversion, or multilinear

@@ -40,6 +40,22 @@ For interpolation work, also read:
   for repeated-query barycentric evaluation over a fixed node set with precomputed
   barycentric weights.
 
+For root-of-unity NTT work:
+
+- [`../../CompPoly/Univariate/NTT/Domain.lean`](../../CompPoly/Univariate/NTT/Domain.lean)
+  contains the shared domain type, fitting-domain helpers, and natural-order input
+  loaders.
+- [`../../CompPoly/Univariate/NTT/Evaluation.lean`](../../CompPoly/Univariate/NTT/Evaluation.lean)
+  and [`../../CompPoly/Univariate/NTT/Interpolation.lean`](../../CompPoly/Univariate/NTT/Interpolation.lean)
+  state the bridge theorems connecting forward/inverse NTTs to evaluation and
+  Lagrange interpolation.
+- [`../../CompPoly/Univariate/NTT/FastMul.lean`](../../CompPoly/Univariate/NTT/FastMul.lean)
+  exposes the shared specification and baseline multiplication surface.
+- [`../../CompPoly/Univariate/NTTFast/Plan.lean`](../../CompPoly/Univariate/NTTFast/Plan.lean)
+  is the optimized planned implementation surface. The `NTTFast/Evaluation.lean`
+  and `NTTFast/Interpolation.lean` bridge files prove the planned transforms agree
+  with the shared `NTT` evaluation and interpolation specifications.
+
 ## Multivariate Family
 
 `CMvPolynomial n R` is the sparse computable multivariate surface highlighted in the
