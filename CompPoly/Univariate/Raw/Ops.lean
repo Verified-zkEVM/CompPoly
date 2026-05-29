@@ -63,6 +63,14 @@ section SMulDefs
 def smul [Mul R] (r : R) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
   .mk (Array.map (fun a => r * a) p)
 
+/-- Right scalar multiplication: multiplies each coefficient by `r` on the right.
+
+  Corresponds to `p.toPoly * Polynomial.C r`, in contrast to `smul` which corresponds
+  to `Polynomial.C r * p.toPoly`. The distinction matters in non-commutative semirings. -/
+@[inline, specialize]
+def smulRight [Mul R] (r : R) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
+  .mk (Array.map (fun a => a * r) p)
+
 /-- Raw scalar multiplication by a natural number (may have trailing zeros). -/
 @[inline, specialize]
 def nsmulRaw [Semiring R] (n : ℕ) (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
