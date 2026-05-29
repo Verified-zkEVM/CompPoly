@@ -26,13 +26,13 @@ def koalaBearOddFiniteFieldContext :
   q := KoalaBear.fieldSize
   finite := by infer_instance
   card_eq := by
-    sorry
+    simp [KoalaBear.Field, KoalaBear.fieldSize, Nat.card_eq_fintype_card, ZMod.card]
   q_odd := by
     unfold KoalaBear.fieldSize
     decide
   frobenius_fixed := by
     intro a
-    sorry
+    simpa [KoalaBear.Field, KoalaBear.fieldSize] using ZMod.pow_card a
 
 /-- Complete GS-facing finite-field root backend for canonical KoalaBear. -/
 def koalaBearFieldRootBackend : FieldRootBackend KoalaBear.Field :=
@@ -53,15 +53,21 @@ def fastKoalaBearOddFiniteFieldContext :
     CPolynomial.Roots.FiniteField.OddFiniteFieldContext KoalaBear.Fast.Field where
   q := KoalaBear.fieldSize
   finite := by
-    sorry
+    exact Finite.of_equiv KoalaBear.Field KoalaBear.Fast.ringEquiv.toEquiv.symm
   card_eq := by
-    sorry
+    have hcard : Nat.card KoalaBear.Fast.Field = Nat.card KoalaBear.Field :=
+      Nat.card_congr KoalaBear.Fast.ringEquiv.toEquiv
+    rw [hcard]
+    simp [KoalaBear.Field, Nat.card_eq_fintype_card, ZMod.card]
   q_odd := by
     unfold KoalaBear.fieldSize
     decide
   frobenius_fixed := by
     intro a
-    sorry
+    apply KoalaBear.Fast.toField_injective
+    rw [KoalaBear.Fast.toField_npow]
+    simpa [KoalaBear.Field, KoalaBear.fieldSize] using
+      ZMod.pow_card (KoalaBear.Fast.toField a)
 
 /-- Complete GS-facing finite-field root backend for native-word fast KoalaBear. -/
 def fastKoalaBearFieldRootBackend : FieldRootBackend KoalaBear.Fast.Field :=

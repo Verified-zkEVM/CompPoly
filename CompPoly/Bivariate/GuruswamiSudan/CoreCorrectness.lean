@@ -33,7 +33,14 @@ theorem gsCore_sound {F : Type*}
             CBivariate.SatisfiesMultiplicityConstraints Q points params.multiplicity ∧
               degreeLt p params.messageDegree ∧
                 CBivariate.composeY Q p = 0 := by
-  sorry
+  rw [gsCore] at hp
+  split at hp
+  · simp at hp
+  · rename_i Q hQ
+    refine ⟨Q, hQ, ?_⟩
+    have hs := interpBackend.sound points params Q hQ
+    have hr := rootBackend.sound Q params.messageDegree p hp
+    exact ⟨hs.1, hs.2.1, hs.2.2, hr.1, hr.2⟩
 
 end GuruswamiSudan
 
