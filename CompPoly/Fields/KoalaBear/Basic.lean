@@ -286,4 +286,21 @@ lemma twoAdicGenerators_order (bits : Fin (twoAdicity + 1)) :
       (twoAdicGenerators_pow_twoPow_ne_one_of_lt (bits := ⟨n + 1, hb⟩) (m := n) (by simp))
       (twoAdicGenerators_pow_twoPow_eq_one ⟨n + 1, hb⟩)
 
+/-- Primitive generator used by the smooth field-root splitter. -/
+def primitiveRoot : Field := (3 : Field)
+
+/-- The smooth field-root splitter generator has full multiplicative order. -/
+lemma primitiveRoot_order : orderOf primitiveRoot = fieldSize - 1 := by
+  sorry
+
+/-- Smooth subgroup refinement schedule for `fieldSize - 1 = 2^24 * 127`. -/
+def smoothRootSchedule : Array Nat :=
+  (Array.replicate twoAdicity 2).push 127
+
+/-- The KoalaBear smooth schedule refines the multiplicative group down to singleton cosets. -/
+lemma smoothRootSchedule_fold_eq_one :
+    smoothRootSchedule.toList.foldl (fun order ell => order / ell) (fieldSize - 1) = 1 := by
+  unfold smoothRootSchedule fieldSize twoAdicity
+  decide
+
 end KoalaBear

@@ -20,7 +20,6 @@ import CompPoly.Bivariate.GuruswamiSudan.Root
 import CompPoly.Bivariate.GuruswamiSudan.Root.Basic
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.FiniteField
-import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.FiniteField.NTT
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Algorithm
 import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Correctness
@@ -173,11 +172,12 @@ import CompPoly.Univariate.Raw.Ops
 import CompPoly.Univariate.Raw.Proofs
 import CompPoly.Univariate.Roots
 import CompPoly.Univariate.Roots.Backend
-import CompPoly.Univariate.Roots.CantorZassenhaus
 import CompPoly.Univariate.Roots.Context
 import CompPoly.Univariate.Roots.Correctness
 import CompPoly.Univariate.Roots.Extraction
 import CompPoly.Univariate.Roots.RootProduct
+import CompPoly.Univariate.Roots.SmoothSubgroup
+import CompPoly.Univariate.Roots.SmoothSubgroupCorrectness
 import CompPoly.Univariate.ToPoly
 import CompPoly.Univariate.ToPoly.Core
 import CompPoly.Univariate.ToPoly.Degree

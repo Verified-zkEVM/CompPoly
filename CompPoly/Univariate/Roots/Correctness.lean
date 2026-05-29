@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 
 import CompPoly.Univariate.Roots.Backend
+import CompPoly.Univariate.Roots.SmoothSubgroupCorrectness
 import CompPoly.Univariate.ToPoly.Impl
 
 /-!
@@ -321,108 +322,6 @@ private theorem mem_rootsFromLinearFactors_of_candidate {F : Type*}
     exact ⟨factor, by simpa using hmem, linearRootOfFactor?_eq_some_of_candidate hcand⟩
   have herase := mem_eraseDups_of_mem hvalid
   simpa using herase
-
-private lemma raw_cantorZassenhausLinearFactorsWithFuelWith_sound {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F]
-    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
-    (q : Nat) (probes : Array (CPolynomial.Raw F)) :
-    ∀ fuel p factor,
-      factor ∈ (CPolynomial.Raw.Roots.FiniteField.cantorZassenhausLinearFactorsWithFuelWith
-        M D q probes fuel p) →
-        factor.size ≤ 2 ∧ factor.coeff 1 ≠ 0 := by
-  intro fuel
-  induction fuel with
-  | zero =>
-      intro p factor h
-      rw [CPolynomial.Raw.Roots.FiniteField.cantorZassenhausLinearFactorsWithFuelWith] at h
-      split at h
-      · simp at h
-        subst factor
-        rename_i hlin
-        simp [CPolynomial.Raw.coeff]
-        simp at hlin
-        exact hlin
-      · simp at h
-  | succ fuel ih =>
-      intro p factor h
-      rw [CPolynomial.Raw.Roots.FiniteField.cantorZassenhausLinearFactorsWithFuelWith] at h
-      split at h
-      · simp at h
-      · split at h
-        · split at h
-          · simp at h
-            subst factor
-            rename_i hlin hnon
-            simp [CPolynomial.Raw.coeff]
-            simp at hlin hnon
-            exact ⟨hlin, hnon⟩
-          · simp at h
-        · split at h
-          · simp at h
-          · rename_i split hsplit
-            simp at h
-            rcases h with h | h
-            · exact ih split.1 factor h
-            · exact ih split.2 factor h
-
-private lemma isLinearFactor_ofArray_of_raw {F : Type*} [Field F] [BEq F] [LawfulBEq F]
-    {raw : CPolynomial.Raw F} (hsize : raw.size ≤ 2) (hcoeff : raw.coeff 1 ≠ 0) :
-    IsLinearFactor (CPolynomial.ofArray raw) := by
-  constructor
-  · exact le_trans (CPolynomial.Raw.Trim.size_le_size raw) hsize
-  · have hlt : 1 < raw.size := by
-      rcases raw with ⟨xs⟩
-      cases xs with
-      | nil => simp [CPolynomial.Raw.coeff] at hcoeff
-      | cons x xs =>
-          cases xs with
-          | nil => simp [CPolynomial.Raw.coeff] at hcoeff
-          | cons y xs => simp
-    have hcoeff_trim : (raw.trim).coeff 1 = raw.coeff 1 := by
-      simpa [CPolynomial.Raw.coeff, hlt] using
-        (CPolynomial.Raw.Trim.coeff_eq_getElem_of_lt (p := raw) (i := 1) hlt)
-    simpa [CPolynomial.ofArray, CPolynomial.coeff, hcoeff_trim] using hcoeff
-
-private theorem cantorZassenhausLinearFactorsWithFuelWith_sound {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F]
-    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
-    {q fuel : Nat} {probes : Array (CPolynomial F)} {p factor : CPolynomial F}
-    (h : factor ∈ (cantorZassenhausLinearFactorsWithFuelWith M D q probes fuel p).toList) :
-    IsLinearFactor factor := by
-  unfold cantorZassenhausLinearFactorsWithFuelWith at h
-  simp at h
-  rcases h with ⟨raw, hraw, rfl⟩
-  exact isLinearFactor_ofArray_of_raw
-    (raw_cantorZassenhausLinearFactorsWithFuelWith_sound M D q
-      (probes.map fun probe => probe.val) fuel p.val raw hraw).1
-    (raw_cantorZassenhausLinearFactorsWithFuelWith_sound M D q
-      (probes.map fun probe => probe.val) fuel p.val raw hraw).2
-
-private theorem deterministicLinearFactorsWith_sound {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F]
-    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
-    {q : Nat} {p factor : CPolynomial F}
-    (h : factor ∈ (deterministicLinearFactorsWith M D q p).toList) :
-    IsLinearFactor factor := by
-  unfold deterministicLinearFactorsWith
-    CPolynomial.Raw.Roots.FiniteField.deterministicLinearFactorsWith at h
-  simp at h
-  rcases h with ⟨raw, hraw, rfl⟩
-  exact isLinearFactor_ofArray_of_raw
-    (raw_cantorZassenhausLinearFactorsWithFuelWith_sound M D q
-      (CPolynomial.Raw.Roots.FiniteField.cantorZassenhausProbePolynomials
-        (CPolynomial.Raw.Roots.FiniteField.defaultProbeBudget
-          (CPolynomial.Raw.monicNormalize p.val)))
-      (CPolynomial.Raw.Roots.FiniteField.defaultProbeBudget
-        (CPolynomial.Raw.monicNormalize p.val))
-      (CPolynomial.Raw.monicNormalize p.val) raw hraw).1
-    (raw_cantorZassenhausLinearFactorsWithFuelWith_sound M D q
-      (CPolynomial.Raw.Roots.FiniteField.cantorZassenhausProbePolynomials
-        (CPolynomial.Raw.Roots.FiniteField.defaultProbeBudget
-          (CPolynomial.Raw.monicNormalize p.val)))
-      (CPolynomial.Raw.Roots.FiniteField.defaultProbeBudget
-        (CPolynomial.Raw.monicNormalize p.val))
-      (CPolynomial.Raw.monicNormalize p.val) raw hraw).2
 
 private theorem raw_eval_mulMod_naive_eq_mul {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
@@ -873,44 +772,6 @@ theorem finiteFieldRootProduct_validated_sound {F : Type*}
     CPolynomial.eval a p = 0 := by
   exact CPolynomial.mem_validateRootCandidates_eval_eq_zero h
 
-/-- Soundness of factors returned by the fuel-bounded splitter. -/
-theorem cantorZassenhausLinearFactorsWithFuel_sound {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F]
-    {q fuel : Nat} {probes : Array (CPolynomial F)} {p factor : CPolynomial F}
-    (h : factor ∈ (cantorZassenhausLinearFactorsWithFuel q probes fuel p).toList) :
-    IsLinearFactor factor := by
-  exact cantorZassenhausLinearFactorsWithFuelWith_sound
-    CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive h
-
-/-- Completeness statement for a probe stream that splits every reached product. -/
-theorem deterministicLinearFactors_complete {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F]
-    {q : Nat} {p : CPolynomial F} {a : F}
-    (hp : p ≠ 0) (hroot : CPolynomial.eval a p = 0) :
-    ∃ factor,
-      factor ∈ (deterministicLinearFactors q p).toList ∧
-        IsLinearRootFactorCandidate factor a := by
-  sorry
-
-/-- Default deterministic splitter for odd finite fields. -/
-def deterministicLinearFactorProductSplitterWith (F : Type*)
-    [Field F] [BEq F] [LawfulBEq F]
-    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F) :
-    LinearFactorProductSplitter F where
-  splitLinearFactors := deterministicLinearFactorsWith M D
-  sound := by
-    intro q p factor h
-    exact deterministicLinearFactorsWith_sound M D h
-  complete := by
-    intro q p a hp hroot
-    sorry
-
-/-- Default deterministic splitter for odd finite fields with the default raw backends. -/
-def deterministicLinearFactorProductSplitter (F : Type*)
-    [Field F] [BEq F] [LawfulBEq F] : LinearFactorProductSplitter F :=
-  deterministicLinearFactorProductSplitterWith F CPolynomial.Raw.MulContext.naive
-    CPolynomial.Raw.ModContext.naive
-
 /-- Returned finite-field roots are roots of the original polynomial. -/
 theorem rootsInOddFiniteFieldWith_sound {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
@@ -986,6 +847,9 @@ theorem rootsInOddFiniteFieldWith_complete {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
     (ctx : OddFiniteFieldContext F) (splitter : LinearFactorProductSplitter F)
+    (splitterValid :
+      ∀ {p : CPolynomial F}, p ≠ 0 →
+        splitter.validInput ctx.q (finiteFieldRootProductWith M D ctx p))
     {p : CPolynomial F} {a : F}
     (hp : p ≠ 0) (hroot : CPolynomial.eval a p = 0) :
     a ∈ (rootsInOddFiniteFieldWith M D ctx splitter p).toList := by
@@ -1010,8 +874,11 @@ theorem rootsInOddFiniteFieldWith_complete {F : Type*}
           finiteFieldRootProductWith_complete M D ctx hp hroot
         have hprodNe : finiteFieldRootProductWith M D ctx p ≠ 0 :=
           finiteFieldRootProductWith_ne_zero M D ctx hp
+        have hprodValid :
+            splitter.validInput ctx.q (finiteFieldRootProductWith M D ctx p) := by
+          exact splitterValid hp
         rcases splitter.complete ctx.q (finiteFieldRootProductWith M D ctx p) a
-            hprodNe hprodRoot with
+            hprodValid hprodNe hprodRoot with
           ⟨factor, hmem, hcand⟩
         exact mem_rootsFromLinearFactors_of_candidate (p := p)
           (factors := splitter.splitLinearFactors ctx.q (finiteFieldRootProductWith M D ctx p))
@@ -1021,18 +888,26 @@ theorem rootsInOddFiniteFieldWith_complete {F : Type*}
 theorem rootsInOddFiniteField_complete {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (ctx : OddFiniteFieldContext F) (splitter : LinearFactorProductSplitter F)
+    (splitterValid :
+      ∀ {p : CPolynomial F}, p ≠ 0 →
+        splitter.validInput ctx.q (finiteFieldRootProduct ctx p))
     {p : CPolynomial F} {a : F}
     (hp : p ≠ 0) (hroot : CPolynomial.eval a p = 0) :
     a ∈ (rootsInOddFiniteField ctx splitter p).toList := by
   exact rootsInOddFiniteFieldWith_complete
     (M := CPolynomial.Raw.MulContext.naive) (D := CPolynomial.Raw.ModContext.naive)
-    ctx splitter hp hroot
+    ctx splitter (by
+      intro p hp
+      exact splitterValid hp) hp hroot
 
 /-- The complete executable finite-field root pipeline is sound and complete
 for nonzero inputs under the odd finite-field and splitter contracts. -/
 theorem rootsInOddFiniteField_spec {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (ctx : OddFiniteFieldContext F) (splitter : LinearFactorProductSplitter F)
+    (splitterValid :
+      ∀ {p : CPolynomial F}, p ≠ 0 →
+        splitter.validInput ctx.q (finiteFieldRootProduct ctx p))
     {p : CPolynomial F} {a : F} (hp : p ≠ 0) :
     a ∈ (rootsInOddFiniteField ctx splitter p).toList ↔
       CPolynomial.eval a p = 0 := by
@@ -1040,7 +915,7 @@ theorem rootsInOddFiniteField_spec {F : Type*}
   · intro h
     exact rootsInOddFiniteField_sound ctx splitter h
   · intro h
-    exact rootsInOddFiniteField_complete ctx splitter hp h
+    exact rootsInOddFiniteField_complete ctx splitter splitterValid hp h
 
 end FiniteField
 

@@ -40,17 +40,16 @@ private theorem f3Elements_complete : ContainsAllFieldElements f3Elements := by
 private def fieldRoots : FieldRootBackend F3 :=
   enumeratingFieldRootBackend F3 f3Elements f3Elements_complete
 
-private def f5Ctx : CPolynomial.Roots.FiniteField.OddFiniteFieldContext F5 where
-  q := 5
-  finite := by infer_instance
-  card_eq := by
-    simp [F5, Nat.card_eq_fintype_card, ZMod.card]
-  q_odd := by decide
-  frobenius_fixed := by decide
+private def f5Elements : Array F5 :=
+  #[0, 1, 2, 3, 4]
+
+private theorem f5Elements_complete : ContainsAllFieldElements f5Elements := by
+  unfold ContainsAllFieldElements
+  intro a
+  fin_cases a <;> decide
 
 private def f5FieldRoots : FieldRootBackend F5 :=
-  oddFiniteFieldRootBackend F5 f5Ctx
-    (CPolynomial.Roots.FiniteField.deterministicLinearFactorProductSplitter F5)
+  enumeratingFieldRootBackend F5 f5Elements f5Elements_complete
 
 private def qYMinusX : CBivariate F3 :=
   CBivariate.Y + CBivariate.monomialXY 1 0 2

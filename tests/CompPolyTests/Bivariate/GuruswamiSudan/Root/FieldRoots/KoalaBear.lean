@@ -38,6 +38,57 @@ private def koalaNttFastRoots : Array _root_.KoalaBear.Field :=
 #guard koalaNttRoots == koalaRoots
 #guard koalaNttFastRoots == koalaRoots
 
+private def koalaCounterexampleA : _root_.KoalaBear.Field := (3446241 : Nat)
+
+private def koalaCounterexampleB : _root_.KoalaBear.Field := (3750964 : Nat)
+
+private def koalaCounterexamplePoly : CPolynomial _root_.KoalaBear.Field :=
+  CPolynomial.linearFactor koalaCounterexampleA *
+    CPolynomial.linearFactor koalaCounterexampleB
+
+private def koalaCounterexampleRoots : Array _root_.KoalaBear.Field :=
+  koalaBearFieldRootBackend.rootsInField koalaCounterexamplePoly
+
+private def koalaCounterexampleNttRoots : Array _root_.KoalaBear.Field :=
+  koalaBearNttFieldRootBackend.rootsInField koalaCounterexamplePoly
+
+private def koalaCounterexampleNttFastRoots : Array _root_.KoalaBear.Field :=
+  koalaBearNttFastFieldRootBackend.rootsInField koalaCounterexamplePoly
+
+#guard koalaCounterexampleA ∈ koalaCounterexampleRoots.toList
+#guard koalaCounterexampleB ∈ koalaCounterexampleRoots.toList
+#guard koalaCounterexampleRoots.size = 2
+#guard koalaCounterexampleNttRoots == koalaCounterexampleRoots
+#guard koalaCounterexampleNttFastRoots == koalaCounterexampleRoots
+
+private def koalaZeroRootPoly : CPolynomial _root_.KoalaBear.Field :=
+  CPolynomial.linearFactor (0 : _root_.KoalaBear.Field) *
+    CPolynomial.linearFactor (7 : _root_.KoalaBear.Field)
+
+private def koalaZeroRoots : Array _root_.KoalaBear.Field :=
+  koalaBearFieldRootBackend.rootsInField koalaZeroRootPoly
+
+#guard (0 : _root_.KoalaBear.Field) ∈ koalaZeroRoots.toList
+#guard (7 : _root_.KoalaBear.Field) ∈ koalaZeroRoots.toList
+#guard koalaZeroRoots.size = 2
+
+private def koalaRepeatedRootPoly : CPolynomial _root_.KoalaBear.Field :=
+  CPolynomial.linearFactor (11 : _root_.KoalaBear.Field) *
+    CPolynomial.linearFactor (11 : _root_.KoalaBear.Field) *
+      CPolynomial.linearFactor (13 : _root_.KoalaBear.Field)
+
+private def koalaRepeatedRoots : Array _root_.KoalaBear.Field :=
+  koalaBearFieldRootBackend.rootsInField koalaRepeatedRootPoly
+
+#guard (11 : _root_.KoalaBear.Field) ∈ koalaRepeatedRoots.toList
+#guard (13 : _root_.KoalaBear.Field) ∈ koalaRepeatedRoots.toList
+#guard koalaRepeatedRoots.size = 2
+
+private def koalaNoRootPoly : CPolynomial _root_.KoalaBear.Field :=
+  CPolynomial.ofArray #[-_root_.KoalaBear.primitiveRoot, 0, 1]
+
+#guard (koalaBearFieldRootBackend.rootsInField koalaNoRootPoly).isEmpty
+
 private def fastKoalaPoly : CPolynomial _root_.KoalaBear.Fast.Field :=
   CPolynomial.linearFactor (3 : _root_.KoalaBear.Fast.Field) *
     CPolynomial.linearFactor (5 : _root_.KoalaBear.Fast.Field)

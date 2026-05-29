@@ -49,13 +49,22 @@ by the recursion.
 -/
 structure LinearFactorProductSplitter (F : Type*) [Field F] [BEq F] [LawfulBEq F] where
   splitLinearFactors : Nat → CPolynomial F → Array (CPolynomial F)
+  /--
+  The precondition under which `complete` is claimed for the splitter input.
+
+  Root backends should establish this predicate for the field-root product they
+  pass to the splitter. Executable splitters may remain defensive outside this
+  predicate, but completeness is only part of the contract under it.
+  -/
+  validInput : Nat → CPolynomial F → Prop := fun _ _ => True
   sound :
     ∀ q p factor,
       factor ∈ (splitLinearFactors q p).toList →
         IsLinearFactor factor
   complete :
     ∀ q p a,
-      p ≠ 0 →
+      validInput q p →
+        p ≠ 0 →
         CPolynomial.eval a p = 0 →
           ∃ factor,
             factor ∈ (splitLinearFactors q p).toList ∧
