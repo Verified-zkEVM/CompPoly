@@ -491,7 +491,7 @@ theorem leadingCoeff_inv_smul_monic (p : CPolynomial R) (hp : p ≠ 0) :
   exact Polynomial.monic_mul_leadingCoeff_inv ((toPoly_eq_zero_iff p).not.mpr hp)
 
 /-- Equality between CompPoly's `div` and Mathlib's `divByMonic` -/
-theorem div_toPoly_eq_monic (p q : CPolynomial R) (hq : q ≠ 0) :
+theorem div_toPoly_eq_divByMonic (p q : CPolynomial R) (hq : q ≠ 0) :
     (p.div q).toPoly =
       q.leadingCoeff⁻¹ • p.toPoly /ₘ (q.leadingCoeff⁻¹ • q.toPoly) := by
   rw [div_eq_divByMonic]
@@ -499,7 +499,7 @@ theorem div_toPoly_eq_monic (p q : CPolynomial R) (hq : q ≠ 0) :
   rw [toPoly_smul, toPoly_smul]
 
 /-- Equality between CompPoly's `mod` and Mathlib's `modByMonic` -/
-theorem mod_toPoly_monic_eq (p q : CPolynomial R) (hq : q ≠ 0) :
+theorem mod_toPoly_eq_modByMonic (p q : CPolynomial R) (hq : q ≠ 0) :
     (p.mod q).toPoly =
       q.leadingCoeff⁻¹ • p.toPoly %ₘ (q.leadingCoeff⁻¹ • q.toPoly) := by
   rw [mod_eq_modByMonic]
@@ -512,7 +512,7 @@ theorem div_toPoly_eq_div (p q : CPolynomial R) :
   by_cases hq : q = 0; simp [hq, toPoly_zero]
   rw [Polynomial.div_def, ←leadingCoeff_toPoly, _root_.mul_comm q.toPoly]
   rw [←Polynomial.smul_eq_C_mul, ←Polynomial.smul_divByMonic]
-  rw [←Polynomial.smul_eq_C_mul, div_toPoly_eq_monic p q hq]
+  rw [←Polynomial.smul_eq_C_mul, div_toPoly_eq_divByMonic p q hq]
 
 /-- CompPoly's `mod` is Mathlib's `%` scaled by `q.leadingCoeff⁻¹`. -/
 theorem mod_toPoly_eq_smul_mod (p q : CPolynomial R) :
@@ -521,7 +521,7 @@ theorem mod_toPoly_eq_smul_mod (p q : CPolynomial R) :
   · simp [hq, toPoly_zero, show (0 : CPolynomial R).leadingCoeff = 0 from rfl]
   rw [Polynomial.mod_def, ←leadingCoeff_toPoly, _root_.mul_comm q.toPoly,
     ←Polynomial.smul_modByMonic, ← Polynomial.smul_eq_C_mul,
-    mod_toPoly_monic_eq p q hq]
+    mod_toPoly_eq_modByMonic p q hq]
 
 private theorem reversal_remainder_toPoly_eq_modByMonic
     (M : Raw.MulLowContext R) (p q : CPolynomial R)
