@@ -817,9 +817,25 @@ theorem modByMonicRemainderOnly_eq_modByMonic [Field R] [BEq R] [LawfulBEq R]
 def div [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
   ⟨Raw.div p.val q.val, Trim.isCanonical_of_trim_eq (Raw.div_canonical p.val q.val)⟩
 
+/-- Any `CPolynomial` divided by the zero polynomial gives the zero
+polynomial. -/
+@[simp]
+theorem div_zero [Field R] [BEq R] [LawfulBEq R] (p : CPolynomial R) : p.div 0 = 0 := by
+  apply Subtype.ext; show Raw.div p.val 0 = 0; unfold Raw.div
+  rw [Raw.mul_zero, Raw.leadingCoeff_zero, inv_zero]
+  rw [smul_eq_mul, Raw.C_mul_eq_smul_trim, Raw.smul_zero_trim]; rfl
+
 /-- Remainder of `p` modulo `q` (when `R` is a field). -/
 def mod [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
   ⟨Raw.mod p.val q.val, Trim.isCanonical_of_trim_eq (Raw.mod_canonical p.val q.val)⟩
+
+/-- Any `CPolynomial` modulo the zero polynomial gives the zero
+polynomial. -/
+@[simp]
+theorem mod_zero [Field R] [BEq R] [LawfulBEq R] (p : CPolynomial R) : p.mod 0 = 0 := by
+  apply Subtype.ext; show Raw.mod p.val 0 = 0; unfold Raw.mod
+  rw [Raw.mul_zero, Raw.leadingCoeff_zero, inv_zero]
+  rw [smul_eq_mul, Raw.C_mul_eq_smul_trim, Raw.smul_zero_trim]; rfl
 
 instance [Field R] [BEq R] [LawfulBEq R] : Div (CPolynomial R) := ⟨div⟩
 instance [Field R] [BEq R] [LawfulBEq R] : Mod (CPolynomial R) := ⟨mod⟩
@@ -1197,6 +1213,26 @@ instance [Semiring R] [BEq R] [LawfulBEq R] : Module R (CPolynomial R) where
   smul_add := smul_add
   add_smul := add_smul
   zero_smul := zero_smul
+
+/-- Equality between `div` and `divByMonic` for `CPolynomial R` -/
+theorem div_eq_divByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) :
+    p.div q =
+      (q.leadingCoeff⁻¹ • p).divByMonic (q.leadingCoeff⁻¹ • q) := by
+  apply Subtype.ext; show Raw.div p.val q.val = _
+  have hq_lc : Raw.leadingCoeff q.val = q.leadingCoeff :=
+    show q.val.trim.getLastD 0 = q.val.getLastD 0 by rw [trim_eq q]
+  rw [Raw.div, hq_lc, smul_eq_mul, Raw.C_mul_eq_smul_trim, Raw.C_mul_eq_smul_trim]
+  rfl
+
+/-- Equality between `mod` and `modByMonic` for `CPolynomial R` -/
+theorem mod_eq_modByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) :
+    p.mod q =
+      (q.leadingCoeff⁻¹ • p).modByMonic (q.leadingCoeff⁻¹ • q) := by
+  apply Subtype.ext; show Raw.mod p.val q.val = _
+  have hq_lc : Raw.leadingCoeff q.val = q.leadingCoeff := by
+    show q.val.trim.getLastD 0 = q.val.getLastD 0; rw [trim_eq q]
+  rw [Raw.mod, hq_lc, smul_eq_mul]
+  rw [Raw.C_mul_eq_smul_trim, Raw.C_mul_eq_smul_trim]; rfl
 
 end Module
 

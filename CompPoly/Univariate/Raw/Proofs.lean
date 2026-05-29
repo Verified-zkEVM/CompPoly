@@ -162,6 +162,10 @@ theorem add_comm : p + q = q + p := by
 
 theorem zero_canonical : (0 : CPolynomial.Raw R).trim = 0 := Trim.canonical_empty
 
+@[simp]
+theorem leadingCoeff_zero : leadingCoeff (0 : CPolynomial.Raw R) = (0 : R) := by
+  rw [leadingCoeff, zero_canonical]; rfl
+
 theorem monomial_canonical [LawfulBEq R] [DecidableEq R] (n : ℕ) (c : R) :
     (monomial n c).trim = monomial n c := by
   by_cases h : c = 0
