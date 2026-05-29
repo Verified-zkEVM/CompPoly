@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Derek Sorensen
+Authors: Derek Sorensen, Dimitris Mitsios
 -/
 
 import CompPoly.Univariate.Basic
@@ -244,15 +244,118 @@ variable {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
 
 omit [LawfulBEq R] [Nontrivial R] in
 /-- The total degree is the `(1, 1)`-weighted degree. -/
-theorem totalDegree_as_weightedDegree (f : CBivariate R) :
+theorem totalDegree_eq_natWeightedDegree (f : CBivariate R) :
     CBivariate.totalDegree (R := R) f = CBivariate.natWeightedDegree (R := R) f 1 1 := by
   simp [CBivariate.totalDegree, CBivariate.natWeightedDegree]
 
 omit [LawfulBEq R] [Nontrivial R] in
 /-- The X-degree is the `(1, 0)`-weighted degree. -/
-theorem natDegreeX_as_weightedDegree (f : CBivariate R) :
+theorem natDegreeX_eq_natWeightedDegree (f : CBivariate R) :
     CBivariate.natDegreeX (R := R) f = CBivariate.natWeightedDegree (R := R) f 1 0 := by
   simp [CBivariate.natDegreeX, CBivariate.natWeightedDegree]
+
+omit [Nontrivial R] in
+/-- The Y-degree is the `(0, 1)`-weighted degree. -/
+theorem natDegreeY_eq_natWeightedDegree (f : CBivariate R) :
+    CBivariate.natDegreeY (R := R) f = CBivariate.natWeightedDegree (R := R) f 0 1 := by
+  simp [CBivariate.natDegreeY, CBivariate.natWeightedDegree]
+  exact CPolynomial.natDegree_eq_support_sup f
+
+/-- The weighted degree of a nonzero monomial `c * X^n * Y^m`
+    is `u * n + v * m` where `u` is the weight of `X` and `v` the weight of `Y`. -/
+theorem natWeightedDegree_monomialXY [DecidableEq R]
+    {n m : ℕ} {c : R} (hc : c ≠ 0) (u v : ℕ) :
+    CBivariate.natWeightedDegree
+      (CBivariate.monomialXY n m c) u v
+      = u * n + v * m := by
+  have hmon : CPolynomial.monomial n c ≠ 0 := by
+    rw [Ne, CPolynomial.eq_zero_iff_coeff_zero, not_forall]
+    use n
+    rw [CPolynomial.coeff_monomial]
+    simp [hc]
+  simp only [
+    CBivariate.natWeightedDegree, CBivariate.monomialXY,
+    CPolynomial.support_monomial hmon, Finset.sup_singleton,
+    CPolynomial.coeff_monomial, if_pos,
+    CPolynomial.natDegree_monomial hc]
+
+/-- The weighted degree of the zero polynomial is zero. -/
+theorem natWeightedDegree_zero (u v : ℕ) :
+    CBivariate.natWeightedDegree (0 : CBivariate R) u v = 0 := by
+  simp only [CBivariate.natWeightedDegree,
+    show CPolynomial.support (0 : CBivariate R) = ∅ from
+      (CPolynomial.support_empty_iff _).mpr rfl,
+    Finset.sup_empty, bot_eq_zero]
+
+omit [Nontrivial R] [LawfulBEq R] in
+/-- The weighted degree is at most `d` iff every Y-support index
+    satisfies the weighted bound. -/
+theorem natWeightedDegree_le_iff (f : CBivariate R) (u v d : ℕ) :
+    natWeightedDegree f u v ≤ d ↔
+    ∀ j ∈ f.supportY , u * (f.val.coeff j).natDegree + v * j ≤ d := by
+  simp [CBivariate.natWeightedDegree, CBivariate.supportY]
+
+omit [Nontrivial R] in
+/-- The weighted degree is at most `d` iff every monomial index
+    satisfies the weighted bound. -/
+theorem natWeightedDegree_le_iff_coeff (f : CBivariate R) (u v d : ℕ) :
+    f.natWeightedDegree u v ≤ d ↔
+    ∀ i j, CBivariate.coeff f i j ≠ 0 → u * i + v * j ≤ d := by
+  rw [natWeightedDegree_le_iff]
+  constructor
+  · intro h i j hij
+    have hj : j ∈ f.supportY := by
+      rw [CBivariate.supportY, CPolynomial.mem_support_iff]
+      intro heq
+      apply hij
+      show (CPolynomial.coeff f j).coeff i = 0
+      rw [heq]
+      exact CPolynomial.coeff_zero i
+    have hi := CPolynomial.le_natDegree_of_ne_zero hij
+    exact le_trans
+      (Nat.add_le_add_right (Nat.mul_le_mul_left u hi) _)
+      (h j hj)
+  · intro h j hj
+    have hne := (CPolynomial.mem_support_iff f j).mp hj
+    have hlc := CPolynomial.leadingCoeff_ne_zero hne
+    rw [CPolynomial.leadingCoeff_eq_coeff_natDegree] at hlc
+    exact h _ j hlc
+
+omit [Nontrivial R] in
+/-- The natWeightedDegree of a constant bivariate polynomial `CBivariate.CC` is zero. -/
+theorem natWeightedDegree_CC {r : R} (u v : ℕ) :
+    CBivariate.natWeightedDegree (CBivariate.CC r) u v = 0 := by
+  simp only [CBivariate.natWeightedDegree, CBivariate.CC]
+  by_cases hr : (CPolynomial.C r : CPolynomial R) = 0
+  · rw [hr, CPolynomial.C_zero, (CPolynomial.support_empty_iff _).mpr rfl,
+      Finset.sup_empty, bot_eq_zero]
+  · rw [CPolynomial.support_C hr, Finset.sup_singleton]
+    show u * (CPolynomial.coeff
+      (CPolynomial.C (CPolynomial.C r)) 0).natDegree + v * 0 = 0
+    rw [CPolynomial.coeff_C, if_pos rfl, CPolynomial.natDegree_C]
+    ring
+
+/-- The weighted degree of a sum is at most the max of the weighted degrees. -/
+theorem natWeightedDegree_add_le [DecidableEq R] (p q : CBivariate R) (u v : ℕ) :
+    CBivariate.natWeightedDegree (p + q) u v ≤
+      max (CBivariate.natWeightedDegree p u v) (CBivariate.natWeightedDegree q u v) := by
+  rw [natWeightedDegree_le_iff_coeff]
+  intro i j hij
+  have hcoeff : CBivariate.coeff (p + q) i j =
+      CBivariate.coeff p i j + CBivariate.coeff q i j := by
+      show ((p + q).val.coeff j).coeff i =
+        (p.val.coeff j).coeff i + (q.val.coeff j).coeff i
+      rw [show (p + q).val.coeff j = p.val.coeff j + q.val.coeff j from
+        CPolynomial.coeff_add p q j]
+      exact CPolynomial.coeff_add _ _ i
+  rw [hcoeff] at hij
+  rcases Decidable.em (CBivariate.coeff p i j = 0) with h0 | hp
+  · have hq : CBivariate.coeff q i j ≠ 0 := by
+        intro hq; exact hij (by rw [h0, hq, add_zero])
+    exact le_trans ((natWeightedDegree_le_iff_coeff q u v _).mp le_rfl i j hq)
+        (le_max_right _ _)
+  · exact le_trans ((natWeightedDegree_le_iff_coeff p u v _).mp le_rfl i j hp)
+      (le_max_left _ _)
 
 end WeightedDegreeLemmas
 
