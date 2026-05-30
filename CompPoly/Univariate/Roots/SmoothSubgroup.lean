@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
 
-import CompPoly.Univariate.BatchEval.Correctness
+import CompPoly.Univariate.BatchEval.Context
 import CompPoly.Univariate.Raw.Modular
 import CompPoly.Univariate.Roots.Context
 import Mathlib.GroupTheory.OrderOfElement
@@ -27,31 +27,6 @@ namespace CPolynomial
 namespace Roots
 
 namespace FiniteField
-
-/-- Contract wrapper for batch evaluation backends used at smooth-splitter leaves. -/
-structure BatchEvalContext (F : Type*) [Semiring F] where
-  evalBatchWith : CPolynomial F → Array F → Array F
-  correct : ∀ p xs, evalBatchWith p xs = CPolynomial.evalBatch p xs
-
-namespace BatchEvalContext
-
-/-- Horner-backed batch evaluation context. -/
-def horner (F : Type*) [Semiring F] : BatchEvalContext F where
-  evalBatchWith := CPolynomial.evalBatchHorner
-  correct := by
-    intro p xs
-    exact CPolynomial.evalBatchHorner_eq_evalBatch p xs
-
-/-- Subproduct-tree-backed batch evaluation context. -/
-def subproduct (F : Type*) [Field F] [BEq F] [LawfulBEq F]
-    (M : CPolynomial.MulContext F) (D : CPolynomial.ModContext F) :
-    BatchEvalContext F where
-  evalBatchWith := CPolynomial.evalBatchSubproduct M D
-  correct := by
-    intro p xs
-    exact CPolynomial.evalBatchSubproduct_eq_evalBatch M D p xs
-
-end BatchEvalContext
 
 /--
 Splitter-input predicate for a smooth cyclic splitter.

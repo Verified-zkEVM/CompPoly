@@ -42,7 +42,7 @@ def koalaBearSmoothCyclicRootContext :
     KoalaBear.fieldSize
     KoalaBear.primitiveRoot
     KoalaBear.smoothRootSchedule
-    (CPolynomial.Roots.FiniteField.BatchEvalContext.horner KoalaBear.Field)
+    (CPolynomial.BatchEvalContext.horner KoalaBear.Field)
     (CPolynomial.Roots.FiniteField.smoothSplitterInput
       KoalaBear.fieldSize KoalaBear.primitiveRoot KoalaBear.smoothRootSchedule)
     (by
@@ -52,12 +52,12 @@ def koalaBearSmoothCyclicRootContext :
     (by
       intro M D p factor h
       exact CPolynomial.Roots.FiniteField.smoothLinearFactorsAlgorithmWith_sound
-        M D (CPolynomial.Roots.FiniteField.BatchEvalContext.horner KoalaBear.Field)
+        M D (CPolynomial.BatchEvalContext.horner KoalaBear.Field)
         KoalaBear.fieldSize KoalaBear.primitiveRoot KoalaBear.smoothRootSchedule h)
     (by
       intro M D p a _hvalid hp hroot
       exact CPolynomial.Roots.FiniteField.smoothLinearFactorsAlgorithmWith_complete
-        M D (CPolynomial.Roots.FiniteField.BatchEvalContext.horner KoalaBear.Field)
+        M D (CPolynomial.BatchEvalContext.horner KoalaBear.Field)
         KoalaBear.fieldSize KoalaBear.primitiveRoot KoalaBear.smoothRootSchedule
         (by
           simp [KoalaBear.Field, KoalaBear.fieldSize, Nat.card_eq_fintype_card, ZMod.card])
@@ -155,7 +155,7 @@ def fastKoalaBearSmoothCyclicRootContext :
     KoalaBear.fieldSize
     fastKoalaBearPrimitiveRoot
     KoalaBear.smoothRootSchedule
-    (CPolynomial.Roots.FiniteField.BatchEvalContext.horner KoalaBear.Fast.Field)
+    (CPolynomial.BatchEvalContext.horner KoalaBear.Fast.Field)
     (CPolynomial.Roots.FiniteField.smoothSplitterInput
       KoalaBear.fieldSize fastKoalaBearPrimitiveRoot KoalaBear.smoothRootSchedule)
     (by
@@ -168,14 +168,14 @@ def fastKoalaBearSmoothCyclicRootContext :
     (by
       intro M D p factor h
       exact CPolynomial.Roots.FiniteField.smoothLinearFactorsAlgorithmWith_sound
-        M D (CPolynomial.Roots.FiniteField.BatchEvalContext.horner KoalaBear.Fast.Field)
+        M D (CPolynomial.BatchEvalContext.horner KoalaBear.Fast.Field)
         KoalaBear.fieldSize fastKoalaBearPrimitiveRoot KoalaBear.smoothRootSchedule h)
     (by
       intro M D p a _hvalid hp hroot
       letI : Finite KoalaBear.Fast.Field :=
         Finite.of_equiv KoalaBear.Field KoalaBear.Fast.ringEquiv.toEquiv.symm
       exact CPolynomial.Roots.FiniteField.smoothLinearFactorsAlgorithmWith_complete
-        M D (CPolynomial.Roots.FiniteField.BatchEvalContext.horner KoalaBear.Fast.Field)
+        M D (CPolynomial.BatchEvalContext.horner KoalaBear.Fast.Field)
         KoalaBear.fieldSize fastKoalaBearPrimitiveRoot KoalaBear.smoothRootSchedule
         (by
           have hcard : Nat.card KoalaBear.Fast.Field = Nat.card KoalaBear.Field :=
