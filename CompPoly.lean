@@ -8,6 +8,8 @@ import CompPoly.Bivariate.GuruswamiSudan.Compose
 import CompPoly.Bivariate.GuruswamiSudan.Context
 import CompPoly.Bivariate.GuruswamiSudan.Core
 import CompPoly.Bivariate.GuruswamiSudan.CoreCorrectness
+import CompPoly.Bivariate.GuruswamiSudan.Filter
+import CompPoly.Bivariate.GuruswamiSudan.FilterCorrectness
 import CompPoly.Bivariate.GuruswamiSudan.Hasse
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Basic

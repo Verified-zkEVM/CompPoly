@@ -10,6 +10,7 @@ import CompPolyTests.Bivariate.Factor
 import CompPolyTests.Bivariate.Deriv
 import CompPolyTests.Bivariate.GuruswamiSudan.Compose
 import CompPolyTests.Bivariate.GuruswamiSudan.Core
+import CompPolyTests.Bivariate.GuruswamiSudan.Filter
 import CompPolyTests.Bivariate.GuruswamiSudan.Hasse
 import CompPolyTests.Bivariate.GuruswamiSudan.Interpolation.Dense
 import CompPolyTests.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear

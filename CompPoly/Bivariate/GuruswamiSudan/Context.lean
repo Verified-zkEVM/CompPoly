@@ -34,6 +34,15 @@ def yWeight (params : GSInterpParams) : Nat :=
 def degreeLt {F : Type*} [Zero F] (p : CPolynomial F) (k : Nat) : Prop :=
   p.degree < (k : WithBot Nat)
 
+/-- Semantic interpolation witness used by backend contracts and core
+completeness statements. -/
+def ValidInterpolationWitness {F : Type*}
+    [Semiring F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    (points : Array (Prod F F)) (params : GSInterpParams) (Q : CBivariate F) : Prop :=
+  Q ≠ 0 ∧
+    CBivariate.natWeightedDegree Q 1 (yWeight params) ≤ params.weightedDegreeBound ∧
+      CBivariate.SatisfiesMultiplicityConstraints Q points params.multiplicity
+
 /-- A dense homogeneous linear-kernel backend.
 
 The operation returns one normalized-by-the-backend nonzero kernel witness when
@@ -94,15 +103,10 @@ structure GSInterpBackend (F : Type*) [Field F] [BEq F] [LawfulBEq F]
   sound :
     ∀ points params Q,
       interpolate points params = some Q →
-        Q ≠ 0 ∧
-          CBivariate.natWeightedDegree Q 1 (yWeight params) ≤ params.weightedDegreeBound ∧
-            CBivariate.SatisfiesMultiplicityConstraints Q points params.multiplicity
+        ValidInterpolationWitness points params Q
   complete :
     ∀ points params,
-      (exists Q,
-        Q ≠ 0 ∧
-          CBivariate.natWeightedDegree Q 1 (yWeight params) ≤ params.weightedDegreeBound ∧
-            CBivariate.SatisfiesMultiplicityConstraints Q points params.multiplicity) →
+      (exists Q, ValidInterpolationWitness points params Q) →
         exists Q, interpolate points params = some Q
 
 /-- Executable root finder for univariate field polynomials.

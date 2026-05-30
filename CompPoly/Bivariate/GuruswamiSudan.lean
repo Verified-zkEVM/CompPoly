@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
 
-import CompPoly.Bivariate.GuruswamiSudan.CoreCorrectness
+import CompPoly.Bivariate.GuruswamiSudan.FilterCorrectness
 
 /-!
 # Guruswami-Sudan Polynomial Kernels
@@ -12,4 +12,3 @@ import CompPoly.Bivariate.GuruswamiSudan.CoreCorrectness
 Facade module re-exporting the executable CompPoly Guruswami-Sudan polynomial
 core and Milestone 1 backend contracts.
 -/
-

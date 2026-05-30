@@ -839,9 +839,7 @@ theorem denseInterpolateWithBasisAndKernel_sound_of_bounded_basis {F : Type*}
       1 * monomial.xDegree + yWeight params * monomial.yDegree ≤
         params.weightedDegreeBound)
     (h : denseInterpolateWithBasisAndKernel kernelBackend basis points params = some Q) :
-    Q ≠ 0 ∧
-      CBivariate.natWeightedDegree Q 1 (yWeight params) ≤ params.weightedDegreeBound ∧
-        CBivariate.SatisfiesMultiplicityConstraints Q points params.multiplicity := by
+    ValidInterpolationWitness points params Q := by
   rcases denseInterpolateWithBasis_sound (kernelBackend := kernelBackend)
       (basis := basis) (points := points) (params := params) hbasis h with
     ⟨hQne, ⟨coeffs, hQcoeffs⟩, hconstraints⟩
@@ -856,9 +854,7 @@ theorem denseInterpolateWithWeightedDegreeBasis_sound {F : Type*}
     {points : Array (Prod F F)} {params : GSInterpParams} {Q : CBivariate F}
     (h : denseInterpolateWithBasisAndKernel kernelBackend
       (interpolationMonomials params) points params = some Q) :
-    Q ≠ 0 ∧
-      CBivariate.natWeightedDegree Q 1 (yWeight params) ≤ params.weightedDegreeBound ∧
-        CBivariate.SatisfiesMultiplicityConstraints Q points params.multiplicity := by
+    ValidInterpolationWitness points params Q := by
   exact denseInterpolateWithBasisAndKernel_sound_of_bounded_basis
     (kernelBackend := kernelBackend) (basis := interpolationMonomials params)
     (points := points) (params := params)
@@ -1130,10 +1126,7 @@ theorem lowMessageDegreeInterpolation_sound {F : Type*}
     {points : Array (Prod F F)} {params : GSInterpParams}
     (hLow : params.messageDegree ≤ 1) :
     let Q := lowMessageDegreeInterpolation points params.multiplicity
-    Q ≠ 0 ∧
-      CBivariate.natWeightedDegree Q 1 (yWeight params) ≤
-          params.weightedDegreeBound ∧
-        CBivariate.SatisfiesMultiplicityConstraints Q points params.multiplicity := by
+    ValidInterpolationWitness points params Q := by
   dsimp
   refine ⟨lowMessageDegreeInterpolation_ne_zero points params.multiplicity, ?_, ?_⟩
   · have hy : yWeight params = 0 := by
@@ -1151,9 +1144,7 @@ theorem denseInterpolate_sound {F : Type*}
     {kernelBackend : LinearKernelBackend F}
     {points : Array (Prod F F)} {params : GSInterpParams} {Q : CBivariate F}
     (h : denseInterpolateWithKernel kernelBackend points params = some Q) :
-    Q ≠ 0 ∧
-      CBivariate.natWeightedDegree Q 1 (yWeight params) ≤ params.weightedDegreeBound ∧
-        CBivariate.SatisfiesMultiplicityConstraints Q points params.multiplicity := by
+    ValidInterpolationWitness points params Q := by
   unfold denseInterpolateWithKernel at h
   by_cases hLow : params.messageDegree ≤ 1
   · simp [hLow] at h
@@ -1263,10 +1254,7 @@ theorem denseInterpolate_complete_of_messageDegree_gt_one {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     {points : Array (F × F)} {params : GSInterpParams}
     (hHigh : ¬ params.messageDegree ≤ 1) :
-    (exists Q,
-      Q ≠ 0 ∧
-        CBivariate.natWeightedDegree Q 1 (yWeight params) ≤ params.weightedDegreeBound ∧
-          CBivariate.SatisfiesMultiplicityConstraints Q points params.multiplicity) →
+    (exists Q, ValidInterpolationWitness points params Q) →
       exists Q, denseInterpolate points params = some Q := by
   intro hExists
   rcases hExists with ⟨Q, hQne, hdeg, hconstraints⟩
@@ -1321,19 +1309,14 @@ theorem denseInterpBackend_correct (F : Type*) [Field F] [BEq F] [LawfulBEq F]
     [Nontrivial F] [DecidableEq F] :
     ∀ points params Q,
       (denseInterpBackend F).interpolate points params = some Q →
-        Q ≠ 0 ∧
-          CBivariate.natWeightedDegree Q 1 (yWeight params) ≤ params.weightedDegreeBound ∧
-            CBivariate.SatisfiesMultiplicityConstraints Q points params.multiplicity :=
+        ValidInterpolationWitness points params Q :=
   (denseInterpBackend F).sound
 
 /-- Executable interpolation backend completeness. -/
 theorem denseInterpBackend_complete (F : Type*) [Field F] [BEq F] [LawfulBEq F]
     [Nontrivial F] [DecidableEq F] :
     ∀ points params,
-      (exists Q,
-        Q ≠ 0 ∧
-          CBivariate.natWeightedDegree Q 1 (yWeight params) ≤ params.weightedDegreeBound ∧
-            CBivariate.SatisfiesMultiplicityConstraints Q points params.multiplicity) →
+      (exists Q, ValidInterpolationWitness points params Q) →
         exists Q, (denseInterpBackend F).interpolate points params = some Q :=
   (denseInterpBackend F).complete
 

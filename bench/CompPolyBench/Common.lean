@@ -772,7 +772,9 @@ def implementationLabelIncludesField (record : BenchRecord) : Bool :=
   record.name == "guruswami-sudan-root-roth-fast" ||
     record.name == "guruswami-sudan-root-roth-fast-nttfast" ||
       record.name == "guruswami-sudan-core-dense-roth-fast" ||
-        record.name == "guruswami-sudan-core-dense-roth-fast-nttfast"
+        record.name == "guruswami-sudan-core-dense-roth-fast-nttfast" ||
+          record.name == "guruswami-sudan-filtered-core-fast" ||
+            record.name == "guruswami-sudan-filtered-core-fast-nttfast"
 
 /-- Implementation label that includes the field only when rows mix field representations. -/
 def implementationLabelInGroup (records : List BenchRecord) (record : BenchRecord) : String :=
