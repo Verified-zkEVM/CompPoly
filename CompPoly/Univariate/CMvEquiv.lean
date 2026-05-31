@@ -126,15 +126,6 @@ private theorem cmvEquiv_symm_toPoly
   ext n
   simp [RingEquiv.trans_apply, Polynomial.coeff_map, CPoly.polyRingEquiv, CPoly.polyEquiv]
 
-/-- The inverse of `cmvEquiv` preserves the univariate degree of a
-single-variable `CMvPolynomial`. -/
-theorem natDegree_cmvEquiv_symm
-    [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
-    (p : CMvPolynomial 1 R) :
-    ((cmvEquiv (R := R)).symm p).natDegree =
-      (fromCMvPolynomial p).degreeOf 0 := by
-  rw [natDegree_toPoly, cmvEquiv_symm_toPoly, natDegree_mvToUnivariate]
-
 /-- Evaluation after converting a single-variable `CMvPolynomial` back to
 `CPolynomial` agrees with multivariate evaluation at the constant assignment. -/
 theorem eval_cmvEquiv_symm
