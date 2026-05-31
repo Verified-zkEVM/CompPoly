@@ -5,10 +5,10 @@ Authors: Natalia Klaus, Frantisek Silvasi, Derek Sorensen, Andrew Zitek-Estrada
 -/
 import CompPoly.Multivariate.MvPolyEquiv.Eval
 import CompPoly.Multivariate.MvPolyEquiv.Instances
+import CompPoly.Univariate.ToPoly.Impl
 import Mathlib.Algebra.MvPolynomial.Equiv
 import Mathlib.Algebra.MvPolynomial.Polynomial
 import Mathlib.Algebra.Polynomial.Degree.Lemmas
-import Mathlib.Algebra.Polynomial.Roots
 
 /-!
 # simp/grind lemmas for `CPoly.CMvPolynomial.eval`
@@ -99,7 +99,7 @@ private lemma toUnivariate_eq_map_finSuccEquiv [CommSemiring R]
   -- Both sides are ring-homomorphism evaluations of `p`; equate the ring homs
   -- by `MvPolynomial.ringHom_ext` and then evaluate on generators.
   have :
-      (MvPolynomial.eval₂Hom Polynomial.C (fun _ : Fin 1 => Polynomial.X) :
+      (MvPolynomial.eval₂Hom Polynomial.C (fun _ : Fin 1 ↦ Polynomial.X) :
           MvPolynomial (Fin 1) R →+* Polynomial R)
         = (Polynomial.mapRingHom
             (MvPolynomial.isEmptyRingEquiv R (Fin 0)).toRingHom).comp
@@ -112,7 +112,16 @@ private lemma toUnivariate_eq_map_finSuccEquiv [CommSemiring R]
       have hi : i = 0 := Subsingleton.elim _ _
       subst hi
       simp [MvPolynomial.finSuccEquiv_X_zero]
-  exact congrArg (fun f : MvPolynomial (Fin 1) R →+* Polynomial R => f p) this
+  exact congrArg (fun f : MvPolynomial (Fin 1) R →+* Polynomial R ↦ f p) this
+
+private lemma toUnivariate_sub [CommRing R]
+    (p q : MvPolynomial (Fin 1) R) :
+    toUnivariate (p - q) = toUnivariate p - toUnivariate q := by
+  change
+    (MvPolynomial.eval₂Hom Polynomial.C (fun _ : Fin 1 ↦ Polynomial.X)) (p - q) =
+      (MvPolynomial.eval₂Hom Polynomial.C (fun _ : Fin 1 ↦ Polynomial.X)) p -
+        (MvPolynomial.eval₂Hom Polynomial.C (fun _ : Fin 1 ↦ Polynomial.X)) q
+  exact RingHom.map_sub _ _ _
 
 /-- `toUnivariate` preserves the (univariate) degree: its `natDegree` matches
 the `degreeOf 0` of the original `MvPolynomial (Fin 1) R`. -/
@@ -131,10 +140,10 @@ private lemma natDegree_toUnivariate [CommSemiring R]
 original `MvPolynomial (Fin 1) R` at the constant assignment `fun _ ↦ x`. -/
 private lemma eval_toUnivariate [CommSemiring R]
     (p : MvPolynomial (Fin 1) R) (x : R) :
-    (toUnivariate p).eval x = MvPolynomial.eval (fun _ => x) p := by
+    (toUnivariate p).eval x = MvPolynomial.eval (fun _ ↦ x) p := by
   -- `Polynomial.eval x (eval₂ Polynomial.C (fun _ => X) p) = eval (fun _ => x) p`.
   show Polynomial.eval x
-      (MvPolynomial.eval₂ Polynomial.C (fun _ : Fin 1 => Polynomial.X) p) = _
+      (MvPolynomial.eval₂ Polynomial.C (fun _ : Fin 1 ↦ Polynomial.X) p) = _
   rw [MvPolynomial.polynomial_eval_eval₂]
   congr 1
   · ext r; simp
@@ -152,13 +161,32 @@ private lemma toUnivariate_ne_zero [CommSemiring R]
       (MvPolynomial.isEmptyRingEquiv R (Fin 0)).injective).mp h
   exact (MvPolynomial.finSuccEquiv R 0).injective (by simpa using h2)
 
-/-- **Univariate eval-extensionality (degree-bounded).** Two single-variable
-`CMvPolynomial`s over an integral domain that agree on more than `d` points
-of a `Finset S` are equal, when `d` bounds the `degreeOf 0` of their
-difference (viewed through the `MvPolynomial` bridge).
+private noncomputable def toUnivariateCPolynomial
+  [CommSemiring R] [BEq R] [LawfulBEq R]
+    (p : CMvPolynomial 1 R) : CompPoly.CPolynomial R :=
+  ⟨(toUnivariate (fromCMvPolynomial p)).toImpl,
+    CompPoly.CPolynomial.Raw.isCanonical_toImpl _⟩
+
+private lemma toUnivariateCPolynomial_toPoly
+    [CommSemiring R] [BEq R] [LawfulBEq R]
+    (p : CMvPolynomial 1 R) :
+    (toUnivariateCPolynomial p).toPoly = toUnivariate (fromCMvPolynomial p) :=
+  CompPoly.CPolynomial.Raw.toPoly_toImpl
+
+private lemma eval_toUnivariateCPolynomial
+    [CommSemiring R] [BEq R] [LawfulBEq R]
+    (p : CMvPolynomial 1 R) (x : R) :
+    (toUnivariateCPolynomial p).eval x = p.eval (fun _ ↦ x) := by
+  rw [CompPoly.CPolynomial.eval_toPoly, toUnivariateCPolynomial_toPoly,
+    eval_toUnivariate, ← eval_equiv]
+
+/-- **Bridge from univariate eval-extensionality.** Two single-variable
+`CMvPolynomial`s over an integral domain that agree on more than $d$ points
+of a `Finset S` are equal, when $d$ bounds the `degreeOf 0` of their
+difference through the `MvPolynomial` bridge.
 
 The hypothesis form matches Schwartz–Zippel usage at call sites: callers
-typically have a degree bound on the *difference* polynomial, not on `p` and
+typically have a degree bound on the difference polynomial, not on `p` and
 `q` individually. -/
 theorem CMvPolynomial.eval_ext_univariate
     [CommRing R] [DecidableEq R] [BEq R] [LawfulBEq R] [IsDomain R]
@@ -166,43 +194,37 @@ theorem CMvPolynomial.eval_ext_univariate
     (hdeg : (fromCMvPolynomial p - fromCMvPolynomial q).degreeOf 0 ≤ d)
     (hagree :
       d < (S.filter
-              (fun r => p.eval (fun _ => r) = q.eval (fun _ => r))).card) :
+              (fun r ↦ p.eval (fun _ ↦ r) = q.eval (fun _ ↦ r))).card) :
     p = q := by
+  let pUni := toUnivariateCPolynomial p
+  let qUni := toUnivariateCPolynomial q
+  have hdegUni : (pUni - qUni).natDegree ≤ d := by
+    rw [CompPoly.CPolynomial.natDegree_toPoly, CompPoly.CPolynomial.toPoly_sub,
+      toUnivariateCPolynomial_toPoly, toUnivariateCPolynomial_toPoly,
+      ← toUnivariate_sub, natDegree_toUnivariate]
+    exact hdeg
+  have hagreeUni :
+      d < (S.filter (fun r ↦ pUni.eval r = qUni.eval r)).card := by
+    convert hagree using 3
+    · ext r
+      rw [show pUni = toUnivariateCPolynomial p from rfl,
+        show qUni = toUnivariateCPolynomial q from rfl,
+        eval_toUnivariateCPolynomial, eval_toUnivariateCPolynomial]
+  have hUni : pUni = qUni :=
+    CompPoly.CPolynomial.eval_ext (p := pUni) (q := qUni) hdegUni hagreeUni
   rw [eq_iff_fromCMvPolynomial]
   by_contra hne
   set r : MvPolynomial (Fin 1) R :=
     fromCMvPolynomial p - fromCMvPolynomial q with hr
   have hrne : r ≠ 0 := sub_ne_zero.mpr hne
-  -- Bridge to `Polynomial R` and collect facts about the univariate image.
-  let rPoly : Polynomial R := toUnivariate r
-  have hrPolyNe : rPoly ≠ 0 := toUnivariate_ne_zero hrne
-  have hrPolyDeg : rPoly.natDegree ≤ d := by
-    show (toUnivariate r).natDegree ≤ d
-    rw [natDegree_toUnivariate]; exact hdeg
-  -- Build the witnessing `Finset` of zeros of `rPoly` from the agreement set.
-  let T : Finset R :=
-    S.filter (fun x => p.eval (fun _ => x) = q.eval (fun _ => x))
-  have hTcard : d < T.card := hagree
-  have heval_zero : ∀ x ∈ T, rPoly.eval x = 0 := by
-    intro x hx
-    have hxeq : p.eval (fun _ => x) = q.eval (fun _ => x) :=
-      (Finset.mem_filter.mp hx).2
-    show (toUnivariate r).eval x = 0
-    rw [eval_toUnivariate]
-    have hbridge : MvPolynomial.eval (fun _ => x) (fromCMvPolynomial p) =
-           MvPolynomial.eval (fun _ => x) (fromCMvPolynomial q) := by
-      rw [← eval_equiv, ← eval_equiv]; exact hxeq
-    show MvPolynomial.eval (fun _ => x) r = 0
-    have hsub : MvPolynomial.eval (fun _ => x)
-        (fromCMvPolynomial p - fromCMvPolynomial q) =
-        MvPolynomial.eval (fun _ => x) (fromCMvPolynomial p) -
-          MvPolynomial.eval (fun _ => x) (fromCMvPolynomial q) :=
-      RingHom.map_sub _ _ _
-    rw [hr, hsub, hbridge, sub_self]
-  -- Apply the univariate Schwartz–Zippel-style root bound.
-  exact hrPolyNe <|
-    Polynomial.eq_zero_of_natDegree_lt_card_of_eval_eq_zero' rPoly T
-      heval_zero (lt_of_le_of_lt hrPolyDeg hTcard)
+  have hto_ne : toUnivariate r ≠ 0 := toUnivariate_ne_zero hrne
+  have hto_zero : toUnivariate r = 0 := by
+    have hpoly := congrArg CompPoly.CPolynomial.toPoly hUni
+    rw [toUnivariateCPolynomial_toPoly, toUnivariateCPolynomial_toPoly] at hpoly
+    have hsub : toUnivariate (fromCMvPolynomial p) -
+        toUnivariate (fromCMvPolynomial q) = 0 := sub_eq_zero.mpr hpoly
+    rwa [← toUnivariate_sub, ← hr] at hsub
+  exact hto_ne hto_zero
 
 end EvalExtUnivariate
 

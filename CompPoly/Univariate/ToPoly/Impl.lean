@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
 -/
 import CompPoly.Univariate.ToPoly.Equiv
+import Mathlib.Algebra.Polynomial.Roots
 
 /-!
 # Proofs of Correctness for CPolynomial Operations, wrt Mathlib Specs
@@ -219,6 +220,42 @@ theorem eval_mul [CommSemiring R] [BEq R] [LawfulBEq R]
     (p q : CPolynomial R) (x : R) :
     (p * q).eval x = p.eval x * q.eval x := by
   rw [eval_toPoly, toPoly_mul, Polynomial.eval_mul, ← eval_toPoly, ← eval_toPoly]
+
+/-- **Univariate eval-extensionality (degree-bounded).** Two `CPolynomial`s
+over an integral domain that agree on more than $d$ points of a `Finset S` are
+equal, when $d$ bounds the natural degree of their difference.
+
+The degree bound is needed over finite fields, where two distinct polynomials
+may agree on every field element. -/
+theorem eval_ext
+    [CommRing R] [DecidableEq R] [BEq R] [LawfulBEq R] [IsDomain R]
+    {p q : CPolynomial R} {d : ℕ} {S : Finset R}
+    (hdeg : (p - q).natDegree ≤ d)
+    (hagree :
+      d < (S.filter
+              (fun r ↦ p.eval r = q.eval r)).card) :
+    p = q := by
+  by_contra hne
+  let r : CPolynomial R := p - q
+  have hrne : r ≠ 0 := sub_ne_zero.mpr hne
+  have hrPolyNe : r.toPoly ≠ 0 := by
+    intro h
+    exact hrne ((toPoly_eq_zero_iff r).mp h)
+  have hrPolyDeg : r.toPoly.natDegree ≤ d := by
+    rwa [← natDegree_toPoly]
+  let T : Finset R :=
+    S.filter (fun x ↦ p.eval x = q.eval x)
+  have hTcard : d < T.card := hagree
+  have heval_zero : ∀ x ∈ T, r.toPoly.eval x = 0 := by
+    intro x hx
+    have hxeq : p.eval x = q.eval x := (Finset.mem_filter.mp hx).2
+    rw [← eval_toPoly]
+    show r.eval x = 0
+    rw [show r = p - q from rfl, eval_toPoly, toPoly_sub, Polynomial.eval_sub,
+      ← eval_toPoly, ← eval_toPoly, hxeq, sub_self]
+  exact hrPolyNe <|
+    Polynomial.eq_zero_of_natDegree_lt_card_of_eval_eq_zero' r.toPoly T
+      heval_zero (lt_of_le_of_lt hrPolyDeg hTcard)
 
 namespace Raw
 
