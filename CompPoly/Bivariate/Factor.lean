@@ -24,14 +24,20 @@ namespace CompPoly
 
 namespace CBivariate
 
+/-- Substitute `Y ↦ f(X)` into a bivariate polynomial `Q`, i.e. evaluate `Q` at
+`f` in the `Y` variable. The result is the univariate polynomial `Q(X, f(X))`. -/
 def evalYPoly [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (f : CPolynomial R) (Q : CBivariate R) : CPolynomial R :=
   Q.val.eval f
 
+/-- Decide whether `Y - f(X)` divides `Q`, i.e. whether `Q(X, f(X)) = 0`. By the
+factor theorem this is exactly the divisibility test used in the Roth–Ruckenstein
+root-finding step. -/
 def isLinearYFactor [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (Q : CBivariate R) (f : CPolynomial R) : Bool :=
   evalYPoly f Q == 0
 
+/-- `evalYPoly` sends the zero polynomial to `0`. -/
 theorem evalYPoly_zero [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (f : CPolynomial R) :
     evalYPoly f (0 : CBivariate R) = 0 := by
@@ -40,6 +46,7 @@ theorem evalYPoly_zero [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
   rw [h, ← CPolynomial.Raw.eval_toPoly_eq_eval f (0 : CPolynomial.Raw (CPolynomial R)),
     CPolynomial.Raw.toPoly_zero, Polynomial.eval_zero]
 
+/-- `evalYPoly` is additive in the polynomial being evaluated. -/
 theorem evalYPoly_add [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (f : CPolynomial R) (P Q : CBivariate R) :
     evalYPoly f (P + Q) = evalYPoly f P + evalYPoly f Q := by
@@ -50,11 +57,14 @@ theorem evalYPoly_add [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     ← CPolynomial.Raw.eval_toPoly_eq_eval f Q.val,
     CPolynomial.Raw.toPoly_add, Polynomial.eval_add]
 
+/-- The `isLinearYFactor` boolean test agrees with the proposition `Q(X, f(X)) = 0`. -/
 theorem isLinearYFactor_iff [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (Q : CBivariate R) (f : CPolynomial R) :
     isLinearYFactor Q f = true ↔ evalYPoly f Q = 0 := by
   simp [isLinearYFactor, beq_iff_eq]
 
+/-- Bridge to Mathlib: evaluating `Q` at `f` and mapping to `Polynomial R` agrees
+with evaluating the mapped `toPoly Q : R[X][Y]` at `f.toPoly`. -/
 theorem evalYPoly_toPoly [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (f : CPolynomial R) (Q : CBivariate R) :
     (evalYPoly f Q).toPoly = (toPoly Q).eval (f.toPoly) := by
@@ -68,6 +78,14 @@ theorem evalYPoly_toPoly [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [Deci
   rw [Polynomial.hom_eval₂, RingHom.comp_id]
   rfl
 
+/-- Synthetic (Horner) division of a bivariate polynomial `Q` by the linear factor
+`Y - f(X)`, performed in the `Y` variable. Returns the pair `(quotient, remainder)`
+where the quotient is a `CBivariate R` and the remainder is a `CPolynomial R`.
+
+Writing `Q = Σ_{j=0}^n aⱼ Yʲ` with `aⱼ = coeff Q j`, the quotient coefficients
+`bⱼ` and the remainder `r` satisfy the synthetic-division recurrence
+`b_{n-1} = aₙ`, `b_{j-1} = aⱼ + f · bⱼ`, `r = a₀ + f · b₀`, so that
+`Q = quotient · (Y - f) + r`. See `divByLinearY_spec`. -/
 def divByLinearY [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (Q : CBivariate R) (f : CPolynomial R) : CBivariate R × CPolynomial R :=
   let n := natDegreeY Q
@@ -498,6 +516,10 @@ theorem divByLinearY_quot_recurrence [CommRing R] [BEq R] [LawfulBEq R]
         CPolynomial.coeff_divX] at h
       simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using h
 
+/-- Correctness of `divByLinearY`: over `R[X][Y]` the computed quotient and
+remainder satisfy the Euclidean division identity
+`Q = quotient · (Y - f) + remainder`. Proved coefficient-wise; no integral-domain
+assumption on `R` is needed. -/
 theorem divByLinearY_spec [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (Q : CBivariate R) (f : CPolynomial R) :
     let quot := (divByLinearY Q f).1
@@ -542,9 +564,10 @@ theorem divByLinearY_spec [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] [Dec
       simpa using hcoeffS
 
 
--- The remainder of synthetic division equals the evaluation `evalYPoly f Q`.
--- This is the Horner-remainder identity; it falls out of `divByLinearY_spec` by
--- evaluating the division identity at `Y = f.toPoly`.
+/-- The remainder of dividing `Q` by `Y - f` equals the evaluation `Q(X, f(X))`
+(`evalYPoly f Q`) — the Horner-remainder identity. It falls out of
+`divByLinearY_spec` by evaluating the division identity at `Y = f.toPoly`, where
+the `Y - f` factor vanishes. -/
 theorem divByLinearY_rem_eq_eval [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (Q : CBivariate R) (f : CPolynomial R) :
     (divByLinearY Q f).2 = evalYPoly f Q := by
@@ -559,8 +582,9 @@ theorem divByLinearY_rem_eq_eval [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial 
   intro i
   rw [CPolynomial.coeff_toPoly, CPolynomial.coeff_toPoly, evalYPoly_toPoly, hev]
 
--- Follows from divByLinearY_rem_eq_eval + isLinearYFactor_iff:
--- isLinearYFactor Q f = true ↔ evalYPoly f Q = 0, and rem = evalYPoly f Q
+/-- When `Y - f` actually divides `Q` (i.e. `isLinearYFactor Q f`), the synthetic
+division is exact: the remainder is `0`. Combines `divByLinearY_rem_eq_eval` with
+`isLinearYFactor_iff`. -/
 theorem divByLinearY_exact [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (Q : CBivariate R) (f : CPolynomial R) (h : isLinearYFactor Q f = true) :
     (divByLinearY Q f).2 = 0 := by
