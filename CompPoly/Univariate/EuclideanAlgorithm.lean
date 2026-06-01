@@ -81,3 +81,81 @@ theorem xgcd_bezout [Field R] [BEq R] [LawfulBEq R]
   apply xgcdAux_bezout p q threshold p.val.size
   all_goals (simp only [Bezout]; ring)
 
+/-! # `xgcd` correctness (threshold 0)
+
+Correctness theorems for `xgcd` with the default threshold 0.
+-/
+
+private lemma toPoly_sub_div_mul [Field R] [BEq R] [LawfulBEq R]
+    (r r' a b : CPolynomial R) :
+    (a - (r' / r) * b).toPoly = a.toPoly - (r'.toPoly / r.toPoly) * b.toPoly := by
+  rw [show r' / r = r'.div r from rfl, toPoly_sub, toPoly_mul, div_toPoly_eq_div]
+
+/-- The gcd component of CompPoly's `xgcdAux` at threshold `0` coincides with
+Mathlib's `EuclideanDomain.gcd`. -/
+lemma xgcdAux_toPoly_eq_gcd
+    [Field R] [BEq R] [LawfulBEq R] [DecidableEq R]
+    (n : ℕ) (r r' s t s' t' : CPolynomial R)
+    (hn : r.toPoly.degree < n) :
+    (xgcdAux 0 n r s t r' s' t').1.toPoly =
+      EuclideanDomain.gcd r.toPoly r'.toPoly := by
+  induction n generalizing r r' s t s' t' with
+  | zero =>
+    have hr : r = 0 := (toPoly_eq_zero_iff r).mp
+      (Polynomial.degree_eq_bot.mp (Nat.WithBot.lt_zero_iff.mp hn))
+    rw [xgcdAux, hr, toPoly_zero, EuclideanDomain.gcd_zero_left]
+  | succ k ih =>
+    rw [xgcdAux, if_neg (Nat.not_lt_zero _)]
+    by_cases hr : r = 0; simp [hr, toPoly_zero, EuclideanDomain.gcd_zero_left]
+    rw [if_neg (by simpa), ih] <;>
+    rw [toPoly_sub_div_mul, _root_.mul_comm, ←EuclideanDomain.mod_eq_sub_mul_div]
+    · rw [EuclideanDomain.gcd_val r.toPoly r'.toPoly]
+    · have hrtp : r.toPoly ≠ 0 := (toPoly_eq_zero_iff r).not.mpr hr
+      exact lt_of_lt_of_le (Polynomial.degree_mod_lt _ hrtp) (Order.le_of_lt_succ hn)
+
+/-- The gcd component of CompPoly's `xgcd` at threshold `0`
+coincides with Mathlib's `EuclideanDomain.gcd`. -/
+theorem xgcd_toPoly_eq_gcd [Field R] [BEq R] [LawfulBEq R] [DecidableEq R] (p q : CPolynomial R) :
+    (xgcd p q).1.toPoly = EuclideanDomain.gcd p.toPoly q.toPoly := by
+  unfold xgcd; apply xgcdAux_toPoly_eq_gcd
+  rw [←degree_toPoly]; exact mem_degreeLT_iff_size_le.mpr le_rfl
+
+/-- CompPoly's `xgcdAux` at threshold `0` coincides with
+Mathlib's `EuclideanDomain.xgcdAux`. -/
+lemma xgcdAux_toPoly_eq_xgcdAux
+    [Field R] [BEq R] [LawfulBEq R] [DecidableEq R]
+    (n : ℕ) (r s t r' s' t' : CPolynomial R)
+    (hn : r.toPoly.degree < n) :
+    Prod.map (·.toPoly) (·.map (·.toPoly) (·.toPoly))
+      (xgcdAux 0 n r s t r' s' t') =
+      EuclideanDomain.xgcdAux r.toPoly s.toPoly t.toPoly r'.toPoly s'.toPoly t'.toPoly := by
+  induction n generalizing r s t r' s' t' with
+  | zero =>
+    have hr : r.toPoly = 0 := Polynomial.degree_eq_bot.mp (Nat.WithBot.lt_zero_iff.mp hn)
+    rw [xgcdAux, hr, EuclideanDomain.xgcd_zero_left]
+    rfl
+  | succ k ih =>
+    rw [xgcdAux, if_neg (Nat.not_lt_zero _)]
+    by_cases hr : r = 0
+    · rw [if_pos (by simpa), hr, toPoly_zero, EuclideanDomain.xgcd_zero_left]
+      rfl
+    · rw [if_neg (by simpa)]
+      have hrtp : r.toPoly ≠ 0 := (toPoly_eq_zero_iff r).not.mpr hr
+      rw [ih, EuclideanDomain.xgcdAux_rec hrtp] <;>
+      rw [toPoly_sub_div_mul, _root_.mul_comm, ←EuclideanDomain.mod_eq_sub_mul_div] <;>
+      try exact lt_of_lt_of_le (Polynomial.degree_mod_lt _ hrtp) (Order.le_of_lt_succ hn)
+      rw [toPoly_sub_div_mul, toPoly_sub_div_mul]
+
+/-- The Bezout component of CompPoly's `xgcd` coincides with
+Mathlib's `EuclideanDomain.xgcd`. -/
+theorem xgcd_toPoly_eq_xgcd
+    [Field R] [BEq R] [LawfulBEq R] [DecidableEq R]
+    (p q : CPolynomial R) :
+    (xgcd p q).2.map (·.toPoly) (·.toPoly) =
+      EuclideanDomain.xgcd p.toPoly q.toPoly := by
+  unfold xgcd EuclideanDomain.xgcd
+  have h := xgcdAux_toPoly_eq_xgcdAux p.val.size p 1 0 q 0 1
+    (by rw [←degree_toPoly]; exact mem_degreeLT_iff_size_le.mpr le_rfl)
+  rw [toPoly_one, toPoly_zero] at h
+  exact congrArg Prod.snd h
+
