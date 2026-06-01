@@ -28,8 +28,8 @@ Potential optimization: the raw long division behind `r' / r` already computes
 `r' - (r' / r) * r` but it's not exposed through `CPolynomial R`.
 -/
 def xgcdAux [Field R] [BEq R] [LawfulBEq R]
-  (threshold n : ℕ) (r s t r' s' t' : CPolynomial R) :
-  CPolynomial R × CPolynomial R × CPolynomial R :=
+    (threshold n : ℕ) (r s t r' s' t' : CPolynomial R) :
+    CPolynomial R × CPolynomial R × CPolynomial R :=
   match n with
   | 0 => (r', s', t')
   | k + 1 =>
@@ -49,15 +49,15 @@ Returns `(r, s, t)` with `r = s * p + t * q`.
 With the default `threshold = 0` returns the gcd of `p` and `q`.
 With `threshold > 0` stops when `r.natDegree < threshold`. -/
 def xgcd [Field R] [BEq R] [LawfulBEq R]
-  (p q : CPolynomial R) (threshold : ℕ := 0) :
-  CPolynomial R × CPolynomial R × CPolynomial R :=
+    (p q : CPolynomial R) (threshold : ℕ := 0) :
+    CPolynomial R × CPolynomial R × CPolynomial R :=
   xgcdAux threshold p.val.size p 1 0 q 0 1
 
 /-! ### Bezout-identity correctness -/
 
 /-- Bezout predicate on a triple `(r, s, t)`: `r = s * p + t * q`. -/
 def Bezout [Semiring R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) :
-  CPolynomial R × CPolynomial R × CPolynomial R → Prop
+    CPolynomial R × CPolynomial R × CPolynomial R → Prop
   | (r, s, t) => r = s * p + t * q
 
 /-- `xgcdAux` preserves the Bezout identity. -/
