@@ -14,18 +14,22 @@ import Mathlib.Algebra.Polynomial.Derivative
 # Partial Derivatives and Multiplicity of Computable Bivariate Polynomials
 
 This file defines partial derivatives (`partialDerivX`, `partialDerivY`, iterated
-and mixed partials) and the multiplicity predicate `hasMultiplicity` used in the
+and mixed partials) and the multiplicity condition `hasMultiplicity` used in the
 Guruswami–Sudan interpolation step.
 
 Multiplicity of a root at `(a, b)` is defined through the Taylor shift
-`shiftC a b Q = Q(X + a, Y + b)`: `Q` has multiplicity at least `r` at `(a, b)`
+`shiftC a b Q = Q(X + a, Y + b)`. `Q` has multiplicity at least `r` at `(a, b)`
 when every coefficient of the shifted polynomial of total degree less than `r`
-vanishes. This shifted-coefficient formulation matches the Hasse derivatives of
-`Q` and is correct in every characteristic, unlike a definition through ordinary
-partial derivatives, whose factorial factors vanish in small characteristic.
+is zero. This is the Hasse-derivative criterion for root multiplicity over a field
+of any characteristic: the coefficient of `Xⁱ Yʲ` in `shiftC a b Q` is the
+order-`(i, j)` Hasse derivative of `Q` evaluated at `(a, b)`. The zero polynomial
+has infinite multiplicity. As an aside, ordinary partial derivatives fail to capture
+this in positive characteristic. The integer factor introduced by differentiation can
+vanish, so its product with a nonzero coefficient may become zero.
+
 `shiftC_toPoly` identifies the computable shift with Mathlib's
 `Polynomial.Bivariate.shift`, and `hasMultiplicity_iff_rootMultiplicity` proves
-the predicate agrees with the reference `Polynomial.Bivariate.rootMultiplicity`.
+that `hasMultiplicity` agrees with the reference `Polynomial.Bivariate.rootMultiplicity`.
 -/
 
 open scoped Polynomial.Bivariate
@@ -320,6 +324,16 @@ theorem shiftC_toPoly [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [Dec
   rw [shiftX_toPoly, shiftY_toPoly]
   rfl
 
+/-- Evaluating the outer variable at the constant `C b` agrees with the Horner evaluator `evalY`. -/
+theorem eval_C_eq_evalY [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (b : R) (Q : CBivariate R) :
+    CPolynomial.eval (CPolynomial.C b) Q = evalY b Q := by
+  apply CPolynomial.ringEquiv.injective
+  show (CPolynomial.eval (CPolynomial.C b) Q).toPoly = (evalY b Q).toPoly
+  rw [evalY_toPoly, CPolynomial.eval_toPoly, toPoly_eq_map, ← CPolynomial.C_toPoly b]
+  exact (Polynomial.eval_map_apply (p := CPolynomial.toPoly Q)
+          (CPolynomial.ringEquiv (R := R)).toRingHom (CPolynomial.C b)).symm
+
 /-- The (0,0) coefficient of the shift is evaluation at the point. -/
 theorem coeff_shiftC_zero_zero [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (a b : R) (Q : CBivariate R) :
@@ -329,7 +343,8 @@ theorem coeff_shiftC_zero_zero [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivia
   rw [outerCoeff_shiftX, CPolynomial.taylor_coeff_zero]
   unfold shiftY
   rw [CPolynomial.taylor_coeff_zero]
-  rfl
+  unfold evalEval
+  rw [eval_C_eq_evalY]
 
 /-- Multiplicity at least 1 is equivalent to vanishing at the point. -/
 theorem hasMultiplicity_one_iff [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
