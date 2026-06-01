@@ -7,10 +7,10 @@ Authors: Dimitris Mitsios
 import CompPoly.Univariate.Basic
 
 /-!
-# Formal Derivative of Computable Univariate Polynomials
+# Formal Derivative and Taylor Shift of Computable Univariate Polynomials
 
-Defines the formal derivative `CPolynomial.derivative` and proves its
-core properties.
+Defines the formal derivative `CPolynomial.derivative` and the Taylor shift
+`CPolynomial.taylor`, with proofs of their core properties.
 -/
 
 namespace CompPoly
