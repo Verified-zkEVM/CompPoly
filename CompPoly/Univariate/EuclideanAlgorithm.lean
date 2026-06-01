@@ -52,3 +52,32 @@ def xgcd [Field R] [BEq R] [LawfulBEq R]
   (p q : CPolynomial R) (threshold : ℕ := 0) :
   CPolynomial R × CPolynomial R × CPolynomial R :=
   xgcdAux threshold p.val.size p 1 0 q 0 1
+
+/-! ### Bezout-identity correctness -/
+
+/-- Bezout predicate on a triple `(r, s, t)`: `r = s * p + t * q`. -/
+def Bezout [Semiring R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) :
+  CPolynomial R × CPolynomial R × CPolynomial R → Prop
+  | (r, s, t) => r = s * p + t * q
+
+/-- `xgcdAux` preserves the Bezout identity. -/
+theorem xgcdAux_bezout [Field R] [BEq R] [LawfulBEq R]
+    (p q : CPolynomial R) (threshold n : ℕ)
+    {r r' : CPolynomial R} {s t s' t'}
+    (h : Bezout p q (r, s, t)) (h' : Bezout p q (r', s', t')) :
+    Bezout p q (xgcdAux threshold n r s t r' s' t') := by
+  induction n generalizing r s t r' s' t' with
+  | zero => exact h'
+  | succ k ih =>
+    unfold xgcdAux; split_ifs <;> try assumption
+    apply ih ?_ h; simp only [Bezout] at *
+    rw [h, h']; ring
+
+/-- The output of `xgcd` is a Bezout triple for `(p, q)`. -/
+theorem xgcd_bezout [Field R] [BEq R] [LawfulBEq R]
+    (p q : CPolynomial R) (threshold : ℕ) :
+    Bezout p q (xgcd p q threshold) := by
+  unfold xgcd
+  apply xgcdAux_bezout p q threshold p.val.size
+  all_goals (simp only [Bezout]; ring)
+
