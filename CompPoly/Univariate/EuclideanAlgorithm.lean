@@ -11,7 +11,7 @@ import CompPoly.Univariate.DivisionCorrectness
 
 `xgcd p q` returns a triple `(r, s, t)` with `r = s * p + t * q`.
 Early stop when `r.natDegree < threshold`.
-The default `threshold = 0` makes `r` the Greatest Common Divisior of `p` and `q`.
+The default `threshold = 0` makes `r` the Greatest Common Divisor of `p` and `q`.
 -/
 
 namespace CompPoly
