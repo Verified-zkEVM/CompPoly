@@ -13,11 +13,21 @@ import Mathlib.Algebra.Polynomial.Derivative
 open scoped Polynomial.Bivariate
 
 /-!
-# Partial Derivatives of Computable Bivariate Polynomials
+# Partial Derivatives and Multiplicity of Computable Bivariate Polynomials
 
-Defines `partialDerivX`, `partialDerivY`, iterated and mixed partial
-derivatives, and the `hasMultiplicity` predicate used in Guruswami–Sudan
-interpolation.
+This file defines partial derivatives (`partialDerivX`, `partialDerivY`, iterated
+and mixed partials) and the multiplicity predicate `hasMultiplicity` used in the
+Guruswami–Sudan interpolation step.
+
+Multiplicity of a root at `(a, b)` is defined through the Taylor shift
+`shiftC a b Q = Q(X + a, Y + b)`: `Q` has multiplicity at least `r` at `(a, b)`
+when every coefficient of the shifted polynomial of total degree less than `r`
+vanishes. This shifted-coefficient formulation matches the Hasse derivatives of
+`Q` and is correct in every characteristic, unlike a definition through ordinary
+partial derivatives, whose factorial factors vanish in small characteristic.
+`shiftC_toPoly` identifies the computable shift with Mathlib's
+`Polynomial.Bivariate.shift`, and `hasMultiplicity_iff_rootMultiplicity` proves
+the predicate agrees with the reference `Polynomial.Bivariate.rootMultiplicity`.
 -/
 
 namespace CompPoly
@@ -315,8 +325,7 @@ theorem shiftX_toPoly [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [Dec
   rw [toPoly_coeff, outerCoeff_shiftX, CPolynomial.taylor_toPoly, Polynomial.coeff_map,
     Polynomial.coe_compRingHom_apply, ← Polynomial.taylor_apply, toPoly_coeff]
 
-/-- **Linchpin.** The computable shift matches Mathlib's `Polynomial.Bivariate.shift`,
-    on which `rootMultiplicity` is built. -/
+/-- The computable shift agrees with `Polynomial.Bivariate.shift` under `toPoly`. -/
 theorem shiftC_toPoly [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (a b : R) (Q : CBivariate R) :
     (shiftC a b Q).toPoly = Polynomial.Bivariate.shift Q.toPoly a b := by
@@ -346,6 +355,19 @@ theorem hasMultiplicity_one_iff [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivi
     have hi : i = 0 := by omega
     have hj : j = 0 := by omega
     subst hi; subst hj; rwa [coeff_shiftC_zero_zero]
+
+/-- `hasMultiplicity` agrees with the reference `Polynomial.Bivariate.rootMultiplicity`,
+where `none` denotes infinite multiplicity (the zero polynomial). -/
+theorem hasMultiplicity_iff_rootMultiplicity [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    [DecidableEq R] (Q : CBivariate R) (r : ℕ) (a b : R) :
+    hasMultiplicity Q r a b ↔
+      ∀ m ∈ Polynomial.Bivariate.rootMultiplicity Q.toPoly a b, r ≤ m := by
+  have key : ∀ i j, CBivariate.coeff (shiftC a b Q) i j
+      = Polynomial.Bivariate.coeff (Polynomial.Bivariate.shift Q.toPoly a b) i j := by
+    intro i j; rw [← coeff_toPoly, shiftC_toPoly]; rfl
+  unfold hasMultiplicity
+  simp only [key]
+  exact Polynomial.Bivariate.rootMultiplicity₀_ge_iff (Polynomial.Bivariate.shift Q.toPoly a b) r
 
 /-- Every polynomial has multiplicity at least 0 at any point. -/
 theorem hasMultiplicity_zero [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]

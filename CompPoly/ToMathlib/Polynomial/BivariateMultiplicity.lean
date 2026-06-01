@@ -54,6 +54,56 @@ variable [DecidableEq F]
 def rootMultiplicity (f : F[X][Y]) (x y : F) : Option ℕ :=
   rootMultiplicity₀ (shift f x y)
 
+/-- `rootMultiplicity₀ g` is at least `r` (vacuously so when `g = 0`, where it is `none`)
+iff every coefficient of total degree `< r` vanishes. -/
+theorem rootMultiplicity₀_ge_iff (g : F[X][Y]) (r : ℕ) :
+    (∀ i j, i + j < r → coeff g i j = 0) ↔ ∀ m ∈ rootMultiplicity₀ g, r ≤ m := by
+  obtain ⟨deg, hdeg⟩ : ∃ d, weightedDegree g 1 1 = some d :=
+    ⟨natWeightedDegree g 1 1, weightedDegree_eq_natWeightedDegree⟩
+  have hdegval : deg = natWeightedDegree g 1 1 := by
+    have h := weightedDegree_eq_natWeightedDegree (f := g) (u := 1) (v := 1)
+    rw [hdeg] at h; exact Option.some.inj h
+  have hroot : rootMultiplicity₀ g =
+      (List.filterMap (fun p : ℕ × ℕ ↦ if coeff g p.1 p.2 = 0 then none else some (p.1 + p.2))
+        (List.range (deg + 1) ×ˢ List.range (deg + 1))).min? := by
+    simp only [rootMultiplicity₀, hdeg]; rfl
+  have grid_mem : ∀ i j, coeff g i j ≠ 0 →
+      (i, j) ∈ List.range (deg + 1) ×ˢ List.range (deg + 1) := by
+    intro i j hne
+    have hcj : g.coeff j ≠ 0 := fun h => hne (by simp [coeff, h])
+    have hi : i ≤ (g.coeff j).natDegree := le_natDegree_of_ne_zero (by simpa [coeff] using hne)
+    have hj_supp : j ∈ g.support := Polynomial.mem_support_iff.mpr hcj
+    have hbound : (g.coeff j).natDegree + j ≤ deg := by
+      rw [hdegval]
+      simpa [natWeightedDegree] using
+        (Finset.le_sup (f := fun m => 1 * (g.coeff m).natDegree + 1 * m) hj_supp)
+    have hij : i + j ≤ deg := le_trans (Nat.add_le_add_right hi j) hbound
+    simp only [List.mem_product, List.mem_range]; omega
+  rw [hroot]
+  set L := List.filterMap (fun p : ℕ × ℕ ↦ if coeff g p.1 p.2 = 0 then none else some (p.1 + p.2))
+      (List.range (deg + 1) ×ˢ List.range (deg + 1)) with hL
+  constructor
+  · intro H m hm
+    rw [Option.mem_def] at hm
+    have hmem := List.min?_mem hm
+    rw [hL, List.mem_filterMap] at hmem
+    obtain ⟨⟨i, j⟩, _, hsome⟩ := hmem
+    by_cases hz : coeff g i j = 0
+    · simp [hz] at hsome
+    · simp only [hz, if_false, Option.some.injEq] at hsome
+      subst hsome; by_contra hlt; exact hz (H i j (by omega))
+  · intro H i j hij
+    by_contra hne
+    have hmem : i + j ∈ L := by
+      rw [hL, List.mem_filterMap]; exact ⟨(i, j), grid_mem i j hne, by simp [hne]⟩
+    obtain ⟨m₀, hm₀⟩ : ∃ m₀, L.min? = some m₀ := by
+      cases hc : L.min? with
+      | none => rw [List.min?_eq_none_iff] at hc; rw [hc] at hmem; simp at hmem
+      | some m₀ => exact ⟨m₀, rfl⟩
+    have hm₀le : m₀ ≤ i + j := by rw [List.min?_eq_some_iff] at hm₀; exact hm₀.2 _ hmem
+    have := H m₀ (by rw [Option.mem_def]; exact hm₀)
+    omega
+
 end CommSemiring
 
 section CommRing
