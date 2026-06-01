@@ -7,7 +7,10 @@ Authors: Dimitris Mitsios
 import CompPoly.Bivariate.Basic
 import CompPoly.Bivariate.ToPoly
 import CompPoly.Univariate.Deriv
+import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
 import Mathlib.Algebra.Polynomial.Derivative
+
+open scoped Polynomial.Bivariate
 
 /-!
 # Partial Derivatives of Computable Bivariate Polynomials
@@ -18,6 +21,32 @@ interpolation.
 -/
 
 namespace CompPoly
+
+namespace CPolynomial
+
+/-- The computable Taylor shift matches `Polynomial.taylor` under `toPoly`. -/
+theorem taylor_toPoly [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (a : R) (p : CPolynomial R) :
+    (taylor a p).toPoly = Polynomial.taylor a p.toPoly := by
+  unfold taylor
+  rw [toPoly_sum, Polynomial.taylor_apply, Polynomial.comp, Polynomial.eval₂_eq_sum,
+    Polynomial.sum, ← support_toPoly]
+  apply Finset.sum_congr rfl
+  intro m _
+  rw [toPoly_mul, toPoly_pow, toPoly_add, C_toPoly, X_toPoly, C_toPoly, coeff_toPoly]
+
+/-- The Taylor shift of zero is zero. -/
+theorem taylor_zero [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (a : R) : taylor a (0 : CPolynomial R) = 0 := by
+  unfold taylor
+  rw [(support_empty_iff 0).mpr rfl, Finset.sum_empty]
+
+/-- The constant coefficient of the Taylor shift is evaluation at the shift point. -/
+theorem taylor_coeff_zero [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (a : R) (p : CPolynomial R) : coeff (taylor a p) 0 = eval a p := by
+  rw [coeff_toPoly, taylor_toPoly, Polynomial.taylor_coeff_zero, eval_toPoly]
+
+end CPolynomial
 
 namespace CBivariate
 
@@ -233,6 +262,7 @@ def shiftC [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (a b : R) (Q : CBivariate R) : CBivariate R :=
   shiftX a (shiftY b Q)
 
+
 /-- `Q` has multiplicity at least `r` at `(a, b)`: every coefficient of the shifted
     polynomial `Q(X + a, Y + b)` of total degree `< r` vanishes. -/
 def hasMultiplicity [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
@@ -245,6 +275,77 @@ def checkMultiplicity [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [Dec
   List.all (List.range r) fun k ↦
     List.all (List.range (k + 1)) fun i ↦
       CBivariate.coeff (shiftC a b Q) i (k - i) == 0
+
+/-- The outer (Y) shift corresponds to `Y ↦ Y + b` under `toPoly`. -/
+theorem shiftY_toPoly [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (b : R) (Q : CBivariate R) :
+    (shiftY b Q).toPoly = (Q.toPoly).comp (Polynomial.X + Polynomial.C (Polynomial.C b)) := by
+  unfold shiftY
+  rw [toPoly_eq_map, CPolynomial.taylor_toPoly, Polynomial.taylor_apply, Polynomial.map_comp,
+    ← toPoly_eq_map]
+  congr 1
+  rw [Polynomial.map_add, Polynomial.map_X, Polynomial.map_C]
+  congr 2
+  show (CPolynomial.C b).toPoly = _
+  rw [CPolynomial.C_toPoly]
+
+/-- Outer coefficient of the X-shift: Taylor-shift the j-th Y-coefficient. -/
+theorem outerCoeff_shiftX [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (a : R) (P : CBivariate R) (j : ℕ) :
+    CPolynomial.coeff (shiftX a P) j = CPolynomial.taylor a (CPolynomial.coeff P j) := by
+  unfold shiftX
+  erw [CPolynomial.coeff_finset_sum]
+  simp only [CPolynomial.coeff_monomial]
+  rw [Finset.sum_eq_single j]
+  · simp only [ite_true]
+  · intro b _ hbj; simp [Ne.symm hbj]
+  · intro hj
+    simp only [ite_true]
+    rw [CPolynomial.mem_support_iff, not_not] at hj
+    change CPolynomial.taylor a (CPolynomial.coeff P j) = 0
+    rw [hj, CPolynomial.taylor_zero]
+
+/-- The inner (X) shift corresponds to `X ↦ X + a` under `toPoly`. -/
+theorem shiftX_toPoly [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (a : R) (P : CBivariate R) :
+    (shiftX a P).toPoly
+      = (P.toPoly).map (Polynomial.compRingHom (Polynomial.X + Polynomial.C a)) := by
+  apply Polynomial.ext
+  intro j
+  rw [toPoly_coeff, outerCoeff_shiftX, CPolynomial.taylor_toPoly, Polynomial.coeff_map,
+    Polynomial.coe_compRingHom_apply, ← Polynomial.taylor_apply, toPoly_coeff]
+
+/-- **Linchpin.** The computable shift matches Mathlib's `Polynomial.Bivariate.shift`,
+    on which `rootMultiplicity` is built. -/
+theorem shiftC_toPoly [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (a b : R) (Q : CBivariate R) :
+    (shiftC a b Q).toPoly = Polynomial.Bivariate.shift Q.toPoly a b := by
+  unfold shiftC
+  rw [shiftX_toPoly, shiftY_toPoly]
+  rfl
+
+/-- The (0,0) coefficient of the shift is evaluation at the point. -/
+theorem coeff_shiftC_zero_zero [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (a b : R) (Q : CBivariate R) :
+    CBivariate.coeff (shiftC a b Q) 0 0 = evalEval a b Q := by
+  rw [coeff_eq_coeff_coeff]
+  unfold shiftC
+  rw [outerCoeff_shiftX, CPolynomial.taylor_coeff_zero]
+  unfold shiftY
+  rw [CPolynomial.taylor_coeff_zero]
+  rfl
+
+/-- Multiplicity at least 1 is equivalent to vanishing at the point. -/
+theorem hasMultiplicity_one_iff [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (Q : CBivariate R) (a b : R) :
+    hasMultiplicity Q 1 a b ↔ evalEval a b Q = 0 := by
+  unfold hasMultiplicity
+  constructor
+  · intro h; have := h 0 0 (by omega); rwa [coeff_shiftC_zero_zero] at this
+  · intro h i j hij
+    have hi : i = 0 := by omega
+    have hj : j = 0 := by omega
+    subst hi; subst hj; rwa [coeff_shiftC_zero_zero]
 
 /-- Every polynomial has multiplicity at least 0 at any point. -/
 theorem hasMultiplicity_zero [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
