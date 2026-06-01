@@ -6,6 +6,7 @@ Authors: Valerii Huhnin
 
 import CompPolyBench.Common
 import CompPoly.Bivariate.GuruswamiSudan
+import CompPoly.Bivariate.GuruswamiSudan.Implementations
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 
 /-!
@@ -295,11 +296,10 @@ private def runGsCoreKoala (preset : BenchPreset) (gen : StdGen) :
   let fastMessage := cpolyOfArray (koalaBearFastArray coeffs)
   let points := codewordPoints message
   let fastPoints := codewordPoints fastMessage
-  let rootBackend := rothRuckensteinRootBackend KoalaBear.Field koalaFieldRoots
-  let rootBackendFast := rothRuckensteinRootBackend KoalaBear.Field koalaFieldRootsFast
-  let fastRootBackend := rothRuckensteinRootBackend KoalaBear.Fast.Field koalaFastFieldRoots
-  let fastRootBackendFast :=
-    rothRuckensteinRootBackend KoalaBear.Fast.Field koalaFastFieldRootsFast
+  let rootBackend := koalaBearRothRootBackend
+  let rootBackendFast := koalaBearRothNttFastRootBackend
+  let fastRootBackend := fastKoalaBearRothRootBackend
+  let fastRootBackendFast := fastKoalaBearRothNttFastRootBackend
   let warmup := gsWarmupIterations preset
   let measured := preset.selectNat 8 1 1
   let nttFastMeasured := preset.selectNat 8 1 1
@@ -348,11 +348,10 @@ private def runGsFilteredCoreKoala (preset : BenchPreset) (gen : StdGen) :
   let fastMessage := cpolyOfArray (koalaBearFastArray coeffs)
   let points := codewordPoints message
   let fastPoints := codewordPoints fastMessage
-  let rootBackend := rothRuckensteinRootBackend KoalaBear.Field koalaFieldRoots
-  let rootBackendFast := rothRuckensteinRootBackend KoalaBear.Field koalaFieldRootsFast
-  let fastRootBackend := rothRuckensteinRootBackend KoalaBear.Fast.Field koalaFastFieldRoots
-  let fastRootBackendFast :=
-    rothRuckensteinRootBackend KoalaBear.Fast.Field koalaFastFieldRootsFast
+  let rootBackend := koalaBearRothRootBackend
+  let rootBackendFast := koalaBearRothNttFastRootBackend
+  let fastRootBackend := fastKoalaBearRothRootBackend
+  let fastRootBackendFast := fastKoalaBearRothNttFastRootBackend
   let warmup := gsWarmupIterations preset
   let measured := preset.selectNat 8 1 1
   let nttFastMeasured := preset.selectNat 8 1 1
