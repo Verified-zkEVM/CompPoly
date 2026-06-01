@@ -84,6 +84,11 @@ theorem derivative_add [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R]
   simp only [coeff_derivative, coeff_add]
   exact right_distrib _ _ _
 
+/-- The Taylor shift `taylor a p = p(X + a)`. -/
+def taylor [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (a : R) (p : CPolynomial R) : CPolynomial R :=
+  (support p).sum fun m => C (p.coeff m) * (X + C a) ^ m
+
 end CPolynomial
 
 end CompPoly

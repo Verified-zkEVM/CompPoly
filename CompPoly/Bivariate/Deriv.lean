@@ -217,18 +217,34 @@ theorem mixedPartials_comm [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [De
   exact Function.Commute.iterate_iterate
       (fun f => partialDerivX_partialDerivY_comm f) i j f
 
-/-- A bivariate polynomial `Q` has multiplicity at least `r` at `(a, b)` if all
-    mixed partial derivatives of total order less than `r` vanish at `(a, b)`. -/
+/-- Shift the outer `Y` variable: `Q(X, Y + b)`. -/
+def shiftY [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (b : R) (Q : CBivariate R) : CBivariate R :=
+  CPolynomial.taylor (CPolynomial.C b) Q
+
+/-- Shift the inner `X` variable: `Q(X + a, Y)`, Taylor-shifting each `Y`-coefficient. -/
+def shiftX [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (a : R) (Q : CBivariate R) : CBivariate R :=
+  (CPolynomial.support Q).sum fun j =>
+    CPolynomial.monomial j (CPolynomial.taylor a (Q.val.coeff j))
+
+/-- The full shift `Q(X + a, Y + b)`. -/
+def shiftC [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (a b : R) (Q : CBivariate R) : CBivariate R :=
+  shiftX a (shiftY b Q)
+
+/-- `Q` has multiplicity at least `r` at `(a, b)`: every coefficient of the shifted
+    polynomial `Q(X + a, Y + b)` of total degree `< r` vanishes. -/
 def hasMultiplicity [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (Q : CBivariate R) (r : ℕ) (a b : R) : Prop :=
-  ∀ i j, i + j < r → evalEval a b (mixedPartialDeriv i j Q) = 0
+  ∀ i j, i + j < r → CBivariate.coeff (shiftC a b Q) i j = 0
 
 /-- Decidable check for multiplicity. -/
 def checkMultiplicity [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (Q : CBivariate R) (r : ℕ) (a b : R) : Bool :=
   List.all (List.range r) fun k ↦
     List.all (List.range (k + 1)) fun i ↦
-      CBivariate.evalEval a b (mixedPartialDeriv i (k - i) Q) == 0
+      CBivariate.coeff (shiftC a b Q) i (k - i) == 0
 
 /-- Every polynomial has multiplicity at least 0 at any point. -/
 theorem hasMultiplicity_zero [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
@@ -242,20 +258,6 @@ theorem hasMultiplicity_succ [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial 
     hasMultiplicity Q (r + 1) a b → hasMultiplicity Q r a b := by
   intro h i j hij
   exact h i j (by omega)
-
-/-- Multiplicity at least 1 is equivalent to vanishing at the point. -/
-theorem hasMultiplicity_one_iff [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
-    [DecidableEq R] (Q : CBivariate R) (a b : R) :
-    hasMultiplicity Q 1 a b ↔ evalEval a b Q = 0 := by
-  constructor
-  · intro h
-    have := h 0 0 (by omega)
-    simpa [mixedPartialDeriv, iterPartialDerivX, iterPartialDerivY] using this
-  · intro h i j hij
-    have hi : i = 0 := by omega
-    have hj : j = 0 := by omega
-    subst hi; subst hj
-    simpa [mixedPartialDeriv, iterPartialDerivX, iterPartialDerivY] using h
 
 /-- The decidable check agrees with the propositional multiplicity. -/
 theorem hasMultiplicity_iff_check [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
