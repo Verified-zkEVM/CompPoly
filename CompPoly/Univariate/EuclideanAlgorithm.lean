@@ -159,3 +159,55 @@ theorem xgcd_toPoly_eq_xgcd
   rw [toPoly_one, toPoly_zero] at h
   exact congrArg Prod.snd h
 
+/-! ### Normalized `xgcd` -/
+
+/-- CompPoly's `xgcd p q` scaled by the inverse leading coefficient
+of the gcd component, normalizing it to monic. -/
+def normXgcd [Field R] [BEq R] [LawfulBEq R]
+    (p q : CPolynomial R) (threshold : ℕ := 0) :
+    CPolynomial R × CPolynomial R × CPolynomial R :=
+  let res := xgcd p q threshold
+  let c := res.1.leadingCoeff⁻¹
+  (c • res.1, c • res.2.1, c • res.2.2)
+
+/-- The gcd component of CompPoly's `normXgcd` is the normalization
+of Mathlib's `EuclideanDomain.gcd` -/
+theorem normXgcd_fst_toPoly
+    [Field R] [BEq R] [LawfulBEq R] [DecidableEq R]
+    (p q : CPolynomial R) :
+    (normXgcd p q).1.toPoly = normalize (EuclideanDomain.gcd p.toPoly q.toPoly) := by
+  simp only [normXgcd, toPoly_smul, leadingCoeff_toPoly, xgcd_toPoly_eq_gcd]
+  set G := EuclideanDomain.gcd p.toPoly q.toPoly
+  by_cases h : G = 0; simp [h]
+  rw [Polynomial.smul_eq_C_mul, normalize_apply,
+    Polynomial.coe_normUnit_of_ne_zero h, _root_.mul_comm]
+
+/-- The Bezout component of `normXgcd` under `toPoly` is Mathlib's
+`EuclideanDomain.xgcd` scaled by the inverse leading coefficient
+of the gcd -/
+theorem normXgcd_snd_toPoly
+    [Field R] [BEq R] [LawfulBEq R] [DecidableEq R]
+    (p q : CPolynomial R) :
+    (normXgcd p q).2.map (·.toPoly) (·.toPoly) =
+      (EuclideanDomain.gcd p.toPoly q.toPoly).leadingCoeff⁻¹ •
+        EuclideanDomain.xgcd p.toPoly q.toPoly := by
+  rw [←xgcd_toPoly_eq_xgcd, ←xgcd_toPoly_eq_gcd, ←leadingCoeff_toPoly]
+  refine Prod.ext ?_ ?_ <;>
+    simp only [normXgcd, Prod.map_fst, Prod.map_snd, Prod.smul_fst, Prod.smul_snd, toPoly_smul]
+
+/-- `normXgcd` is commutative for the gcd component -/
+theorem normXgcd_fst_comm
+    [Field R] [BEq R] [LawfulBEq R] [DecidableEq R]
+    (p q : CPolynomial R) :
+    (normXgcd p q).1 = (normXgcd q p).1 := by
+  apply toPolyLinearEquiv.injective
+  show (normXgcd p q).1.toPoly = (normXgcd q p).1.toPoly
+  rw [normXgcd_fst_toPoly, normXgcd_fst_toPoly]
+  open EuclideanDomain in
+  refine normalize_eq_normalize_iff_associated.mpr
+    (associated_of_dvd_dvd ?_ ?_) <;>
+  exact dvd_gcd (gcd_dvd_right ..) (gcd_dvd_left ..)
+
+end CPolynomial
+
+end CompPoly
