@@ -156,6 +156,46 @@ def filteredCoreContextOfBackends
     · exact hmatches
     · exact hpass
 
+/-- Packed received word accepted by the executable decoder. -/
+structure GSReceivedWord (F : Type*) where
+  points : Array (F × F)
+deriving Repr
+
+/-- Runtime length of a packed received word. -/
+def GSReceivedWord.length {F : Type*} (w : GSReceivedWord F) : Nat :=
+  w.points.size
+
+/-- Explicit executable parameters for the parameterized decoder. -/
+structure GSExecParams where
+  interp : GSInterpParams
+  radius : Nat
+deriving Repr, BEq, DecidableEq
+
+/-- Computable executable decoder with caller-supplied parameters. -/
+def decodeWithParams
+    {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
+    (ctx : GSFilteredCoreContext F)
+    (params : GSExecParams)
+    (w : GSReceivedWord F) :
+    Array (CPolynomial F) :=
+  ctx.run w.points params.interp params.radius
+
+/-- Parameter selector for the selector-backed executable decoder. -/
+structure GSParamSelector where
+  choose : Nat → Nat → Nat → Option GSExecParams
+
+/-- Selector-backed executable decoder with parameters selected from `(k, w.length, e)`. -/
+def decode
+    {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
+    (ctx : GSFilteredCoreContext F)
+    (selector : GSParamSelector)
+    (k e : Nat)
+    (w : GSReceivedWord F) :
+    Array (CPolynomial F) :=
+  match selector.choose k w.length e with
+  | none => #[]
+  | some params => decodeWithParams ctx params w
+
 end GuruswamiSudan
 
 end CompPoly
