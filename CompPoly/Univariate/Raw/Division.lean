@@ -22,7 +22,7 @@ section Division
 variable [BEq R]
 
 /-- Division with remainder by a monic polynomial using polynomial long division. -/
-def divModByMonicAux [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
+def divModByMonicAux [CommRing R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
     CPolynomial.Raw R × CPolynomial.Raw R :=
   go p.size p q
 where
@@ -39,12 +39,12 @@ where
         ⟨e + C p.leadingCoeff * X^k, f⟩
 
 /-- Division of `p : CPolynomial.Raw R` by a monic `q : CPolynomial.Raw R`. -/
-def divByMonic [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
+def divByMonic [CommRing R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
     CPolynomial.Raw R :=
   (divModByMonicAux p q).1
 
 /-- Modulus of `p : CPolynomial.Raw R` by a monic `q : CPolynomial.Raw R`. -/
-def modByMonic [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
+def modByMonic [CommRing R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
     CPolynomial.Raw R :=
   (divModByMonicAux p q).2
 

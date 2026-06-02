@@ -783,12 +783,14 @@ lemma leadingCoeff_ne_zero [Zero R] [BEq R] [LawfulBEq R] {p : CPolynomial R} (h
 section Division
 
 /-- Quotient of `p` by a monic polynomial `q`. Matches Mathlib's `Polynomial.divByMonic`. -/
-def divByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
+def divByMonic [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] (p q : CPolynomial R) :
+    CPolynomial R :=
   ⟨Raw.divByMonic p.val q.val,
    Trim.isCanonical_of_trim_eq (Raw.divByMonic_canonical p.val q.val)⟩
 
 /-- Remainder of `p` modulo a monic polynomial `q`. Matches Mathlib's `Polynomial.modByMonic`. -/
-def modByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
+def modByMonic [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] (p q : CPolynomial R) :
+    CPolynomial R :=
   ⟨Raw.modByMonic p.val q.val,
    Trim.isCanonical_of_trim_eq
      (Raw.modByMonic_canonical (Trim.trim_eq_of_isCanonical p.property) q.val)⟩

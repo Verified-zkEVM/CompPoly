@@ -14,10 +14,19 @@ import Mathlib.Algebra.Polynomial.Degree.Operations
 /-!
 # Factorisation of Computable Bivariate Polynomials
 
-Defines `evalYPoly` (substitute Y ↦ f(X)), `isLinearYFactor` (check
-divisibility by Y - f(X)), and `divByLinearY` (synthetic division in Y).
-These operations support the Roth-Ruckenstein root-finding step in
-Guruswami–Sudan interpolation.
+Defines `evalYPoly` (substitute `Y ↦ f(X)`), `isLinearYFactor` (test
+divisibility by `Y - f(X)`), and `divByLinearY` (synthetic division of a
+bivariate polynomial by the monic linear factor `Y - f(X)`).
+
+`divByLinearY` is the computable factor theorem for the nested representation
+`CBivariate R = CPolynomial (CPolynomial R)`: given a root `f(X)`, it deflates
+`Q` by `Y - f(X)` over an arbitrary commutative ring (no field required). It is
+the degree-one special case of monic Euclidean division; division by an
+arbitrary monic divisor in `Y` is available generically through
+`CPolynomial.divByMonic` / `CPolynomial.modByMonic` over the coefficient ring
+`CPolynomial R` (see `CPolynomial.modByMonic_add_mul_divByMonic`). These are
+general-purpose primitives — root deflation, multiplicity, and Euclidean
+reduction all build on them, independently of any particular decoding algorithm.
 -/
 
 namespace CompPoly
@@ -31,8 +40,7 @@ def evalYPoly [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
   Q.val.eval f
 
 /-- Decide whether `Y - f(X)` divides `Q`, i.e. whether `Q(X, f(X)) = 0`. By the
-factor theorem this is exactly the divisibility test used in the Roth–Ruckenstein
-root-finding step. -/
+factor theorem this is exactly the test for `f(X)` being a `Y`-root of `Q`. -/
 def isLinearYFactor [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (Q : CBivariate R) (f : CPolynomial R) : Bool :=
   evalYPoly f Q == 0
