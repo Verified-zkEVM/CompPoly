@@ -12,9 +12,8 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Basic
 
 Executable direct-`CBivariate` Koetter interpolation. This is an additional
 interpolation implementation alongside dense linear-system interpolation. The
-public `koetterInterpolate` operation tries the direct Koetter pass first and
-falls back to the dense backend only when the direct pass cannot produce a
-checked witness.
+public `koetterInterpolate` operation uses the existing low-message-degree
+constructive branch, and otherwise returns the checked direct Koetter result.
 -/
 
 namespace CompPoly
@@ -157,12 +156,8 @@ def koetterCheckedRawInterpolate {F : Type*}
   | some Q =>
       if koetterWitnessIsValidBool points params Q then some Q else none
 
-/-- Koetter interpolation with the existing low-message fallback, direct
-positive-message Koetter pass, and certified dense fallback.
-
-The dense fallback is used only to supply the public total correctness contract
-while the raw Koetter minimal-basis completeness proof remains separate proof
-work. -/
+/-- Koetter interpolation with the existing low-message branch and checked
+direct positive-message Koetter pass. -/
 def koetterInterpolate {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (points : Array (Prod F F)) (params : GSInterpParams) :
@@ -170,9 +165,7 @@ def koetterInterpolate {F : Type*}
   if params.messageDegree ≤ 1 then
     some (lowMessageDegreeInterpolation points params.multiplicity)
   else
-    match koetterCheckedRawInterpolate points params with
-    | some Q => some Q
-    | none => denseInterpolate points params
+    koetterCheckedRawInterpolate points params
 
 end GuruswamiSudan
 
