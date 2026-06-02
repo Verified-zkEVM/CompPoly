@@ -11,8 +11,8 @@ import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 # Guruswami-Sudan Concrete Implementations
 
 Named concrete dense-interpolation/Roth-Ruckenstein implementations and
-correctness theorem aliases for the implementations exercised by the benchmark
-suite.
+correctness theorem specializations for the implementations exercised by the
+benchmark suite.
 -/
 
 namespace CompPoly

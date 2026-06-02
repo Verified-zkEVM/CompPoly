@@ -9,9 +9,9 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Basic
 /-!
 # Dense Guruswami-Sudan Interpolation
 
-Executable interpolation backend. In the ordinary positive-`Y`-weight case it
-builds a Hasse-constraint matrix, computes one homogeneous-kernel witness, and
-normalizes it. In the low-message case it returns an explicit product witness.
+Executable interpolation backend. For positive `Y` weight, it builds a
+Hasse-constraint matrix, computes one homogeneous-kernel witness, and normalizes
+it. For low message degree, it returns an explicit product witness.
 -/
 
 namespace CompPoly
@@ -42,8 +42,8 @@ def denseInterpolateWithBasisAndKernel {F : Type*}
 constructive low-message fallback.
 
 When `messageDegree ≤ 1`, `yWeight params = 0`, so weighted degree alone does
-not bound the `Y`-degree. The fallback returns an explicit product witness
-instead of searching the finite dense basis. -/
+not bound the `Y`-degree. The fallback returns an explicit product witness for
+the low-message-degree branch. -/
 def denseInterpolateWithKernel {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (kernelBackend : LinearKernelBackend F)

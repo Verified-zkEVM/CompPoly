@@ -10,7 +10,7 @@ import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
 /-!
 # Guruswami-Sudan Core Correctness
 
-Public correctness theorem for the backend-parametric CompPoly
+Public correctness theorems for the backend-parametric CompPoly
 Guruswami-Sudan core.
 -/
 

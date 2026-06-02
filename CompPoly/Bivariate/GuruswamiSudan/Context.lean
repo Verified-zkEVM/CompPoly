@@ -94,7 +94,7 @@ def denseLinearKernelBackend (F : Type*) [Field F] [BEq F] [LawfulBEq F] :
 /-- Guruswami-Sudan-facing interpolation backend.
 
 The backend packages the executable interpolation operation together with the
-contract fields used by callers, following the explicit context style used by
+contract fields used by callers, using the explicit context style used by
 univariate multiplication and remainder backends.
 -/
 structure GSInterpBackend (F : Type*) [Field F] [BEq F] [LawfulBEq F]

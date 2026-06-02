@@ -11,7 +11,7 @@ import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.FiniteField
 # Guruswami-Sudan Field Roots
 
 Executable univariate field-root helpers used by Roth-Ruckenstein recursion.
-The explicit `FieldRootBackend` context keeps this dependency replaceable for
+The explicit `FieldRootBackend` context makes this dependency replaceable for
 large concrete fields.
 -/
 

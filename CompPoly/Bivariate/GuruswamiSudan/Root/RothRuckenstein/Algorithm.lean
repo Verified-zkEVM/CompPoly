@@ -88,10 +88,10 @@ def extendPrefix {F : Type*}
 
 /-- Query a field-root backend only for nonzero equations.
 
-A zero equation imposes no restriction on the next coefficient. Expanding all
-field elements is not a usable operation for large fields, so the serious RR
-backend uses `X`-adic residual normalization to avoid zero equations for
-nonzero bivariate inputs.
+A zero equation imposes no restriction on the next coefficient. Enumerating all
+field elements is unsuitable for large fields, so the residual-transform RR
+backend uses `X`-adic residual normalization to avoid zero equations for nonzero
+bivariate inputs.
 -/
 def rootsInFieldForNonzeroEquation {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     (fieldRoots : FieldRootBackend F) (p : CPolynomial F) : Array F :=
@@ -99,8 +99,8 @@ def rootsInFieldForNonzeroEquation {F : Type*} [Field F] [BEq F] [LawfulBEq F]
 
 /-- Ordered recursive candidate extensions using a field-root backend.
 
-This direct coefficient-equation helper is useful as a small reference path, but
-zero equations are not expanded. The public RR backend below uses residual
+This direct coefficient-equation helper is a small reference path and does not
+expand zero equations. The residual-transform RR backend uses residual
 normalization before field-root queries.
 -/
 def rootPrefixExtensionsWithFieldRootBackend {F : Type*}
@@ -160,8 +160,8 @@ def transformedRothRuckensteinRootsYDegreeLt {F : Type*}
 /-- Roth-Ruckenstein-style bounded-degree roots.
 
 The public backend uses the residual-transform recursion, which strips common
-`X`-adic factors before each field-root query. That keeps zero univariate
-equations out of the field-root dependency for nonzero bivariate inputs.
+`X`-adic factors before each field-root query. Zero univariate equations are
+excluded from the field-root dependency for nonzero bivariate inputs.
 -/
 def rothRuckensteinRootsYDegreeLt {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]

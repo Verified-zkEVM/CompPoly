@@ -12,7 +12,7 @@ import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 /-!
 # Guruswami-Sudan Benchmarks
 
-KoalaBear cost-center benchmarks for the dense interpolation baseline,
+KoalaBear cost-center benchmarks for the dense interpolation path,
 Roth-Ruckenstein root finding, and full backend-parametric `gsCore` and
 `gsFilteredCore`.
 -/

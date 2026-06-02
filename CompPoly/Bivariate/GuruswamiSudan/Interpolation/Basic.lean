@@ -19,7 +19,7 @@ namespace GuruswamiSudan
 
 open CBivariate
 
-/-- Monomial basis used by the dense interpolation baseline. -/
+/-- Weighted-degree monomial basis used by dense interpolation. -/
 def interpolationMonomials (params : GSInterpParams) : Array CBivariate.Monomial :=
   CBivariate.monomialsWeightedDegreeLE 1 (yWeight params) params.weightedDegreeBound
 

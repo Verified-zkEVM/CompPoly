@@ -9,8 +9,8 @@ import CompPoly.Bivariate.GuruswamiSudan.CoreCorrectness
 /-!
 # Guruswami-Sudan Candidate Filter Correctness
 
-Correctness and completeness lemmas for the generic packed filtering layer above
-the algebraic `gsCore`.
+Correctness and completeness lemmas for generic packed filtering over algebraic
+`gsCore` outputs.
 -/
 
 namespace CompPoly

@@ -349,7 +349,7 @@ def linearYDivModLoop {R : Type*}
 The first component is the dense outer-`Y` coefficient list of the quotient; the
 second component is the univariate remainder. This helper is structurally
 recursive over the coefficient list, which makes the division identities easier
-to prove than the array-update loop above. -/
+to prove than the array-indexed update form. -/
 def linearYDivModCoeffList {R : Type*}
     [Semiring R] [BEq R] [LawfulBEq R]
     (p : CPolynomial R) : List (CPolynomial R) → List (CPolynomial R) × CPolynomial R

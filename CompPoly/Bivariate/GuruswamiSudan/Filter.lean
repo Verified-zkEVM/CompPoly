@@ -9,7 +9,7 @@ import CompPoly.Bivariate.GuruswamiSudan.Core
 /-!
 # Guruswami-Sudan Candidate Filtering
 
-Generic packed-point filtering layer above the algebraic `gsCore`.
+Generic packed-point filtering for algebraic `gsCore` outputs.
 -/
 
 namespace CompPoly

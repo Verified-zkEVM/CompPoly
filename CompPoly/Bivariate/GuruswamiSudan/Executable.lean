@@ -18,8 +18,8 @@ namespace GuruswamiSudan
 
 /-- Backend-parametric filtered core exposed as a reusable executable context.
 
-The context packages an executable filtered decoder together with the CompPoly
-soundness and completeness contracts expected by downstream users. -/
+The context packages an executable filtered decoder together with its CompPoly
+soundness and completeness contracts. -/
 structure GSFilteredCoreContext
     (F : Type*) [Field F] [BEq F] [LawfulBEq F] [DecidableEq F] where
   run :
