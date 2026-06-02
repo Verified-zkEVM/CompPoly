@@ -30,11 +30,11 @@ distance predicate. -/
 theorem mem_gsFilteredCore_iff {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {points : Array (Prod F F)}
-    {interpBackend : GSInterpBackend F} {rootBackend : GSRootBackend F}
+    {interpContext : GSInterpContext F} {rootContext : GSRootContext F}
     {params : GSInterpParams} {radius : Nat}
     {p : CPolynomial F} :
-    p ∈ (gsFilteredCore points interpBackend rootBackend params radius).toList ↔
-      p ∈ (gsCore points interpBackend rootBackend params).toList ∧
+    p ∈ (gsFilteredCore points interpContext rootContext params radius).toList ↔
+      p ∈ (gsCore points interpContext rootContext params).toList ∧
         passesCandidateDistance points radius p = true := by
   unfold gsFilteredCore
   simp
@@ -44,22 +44,22 @@ packed mismatch radius. -/
 theorem gsFilteredCore_sound {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     {points : Array (Prod F F)}
-    {interpBackend : GSInterpBackend F} {rootBackend : GSRootBackend F}
+    {interpContext : GSInterpContext F} {rootContext : GSRootContext F}
     {params : GSInterpParams} {radius : Nat}
     {p : CPolynomial F}
-    (hp : p ∈ (gsFilteredCore points interpBackend rootBackend params radius).toList) :
+    (hp : p ∈ (gsFilteredCore points interpContext rootContext params radius).toList) :
     exists Q,
-      interpBackend.interpolate points params = some Q ∧
+      interpContext.interpolate points params = some Q ∧
         ValidInterpolationWitness points params Q ∧
           degreeLt p params.messageDegree ∧
             CBivariate.composeY Q p = 0 ∧
               candidateMismatchCount points p ≤ radius := by
   rcases (mem_gsFilteredCore_iff
-      (interpBackend := interpBackend) (rootBackend := rootBackend)
+      (interpContext := interpContext) (rootContext := rootContext)
       (params := params) (radius := radius) (p := p)).1 hp with
     ⟨hcore, hpass⟩
-  rcases gsCore_sound (interpBackend := interpBackend)
-      (rootBackend := rootBackend) (params := params) hcore with
+  rcases gsCore_sound (interpContext := interpContext)
+      (rootContext := rootContext) (params := params) hcore with
     ⟨Q, hQ, hvalid, hdeg, hroot⟩
   exact ⟨Q, hQ, hvalid, hdeg, hroot, passesCandidateDistance_iff.mp hpass⟩
 
@@ -68,7 +68,7 @@ interpolation witness and pass the packed distance filter. -/
 theorem gsFilteredCore_complete_of_roots_all_valid_witnesses {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     {points : Array (Prod F F)}
-    {interpBackend : GSInterpBackend F} {rootBackend : GSRootBackend F}
+    {interpContext : GSInterpContext F} {rootContext : GSRootContext F}
     {params : GSInterpParams} {radius : Nat}
     {p : CPolynomial F}
     (hInterpExists : exists Q, ValidInterpolationWitness points params Q)
@@ -78,16 +78,16 @@ theorem gsFilteredCore_complete_of_roots_all_valid_witnesses {F : Type*}
         ValidInterpolationWitness points params Q →
           CBivariate.composeY Q p = 0)
     (hpass : passesCandidateDistance points radius p = true) :
-    p ∈ (gsFilteredCore points interpBackend rootBackend params radius).toList := by
+    p ∈ (gsFilteredCore points interpContext rootContext params radius).toList := by
   rw [mem_gsFilteredCore_iff]
   exact ⟨gsCore_complete_of_roots_all_valid_witnesses
-    (rootBackend := rootBackend) hInterpExists hpdeg hrootAll, hpass⟩
+    (rootContext := rootContext) hInterpExists hpdeg hrootAll, hpass⟩
 
 /-- Packed-point semantic completeness for the filtered GS core. -/
 theorem gsFilteredCore_complete_of_enough_matches {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     {points : Array (Prod F F)}
-    {interpBackend : GSInterpBackend F} {rootBackend : GSRootBackend F}
+    {interpContext : GSInterpContext F} {rootContext : GSRootContext F}
     {params : GSInterpParams} {radius : Nat}
     {p : CPolynomial F}
     (hInterpExists : exists Q, ValidInterpolationWitness points params Q)
@@ -97,9 +97,9 @@ theorem gsFilteredCore_complete_of_enough_matches {F : Type*}
       params.weightedDegreeBound <
         params.multiplicity * matchingPointCount points p)
     (hpass : passesCandidateDistance points radius p = true) :
-    p ∈ (gsFilteredCore points interpBackend rootBackend params radius).toList := by
+    p ∈ (gsFilteredCore points interpContext rootContext params radius).toList := by
   rw [mem_gsFilteredCore_iff]
-  exact ⟨gsCore_complete_of_enough_matches (rootBackend := rootBackend)
+  exact ⟨gsCore_complete_of_enough_matches (rootContext := rootContext)
     hInterpExists hpdeg hdistinct hmatches, hpass⟩
 
 end GuruswamiSudan

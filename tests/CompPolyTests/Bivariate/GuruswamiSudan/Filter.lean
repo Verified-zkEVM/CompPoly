@@ -53,14 +53,14 @@ private theorem f3Elements_complete : ContainsAllFieldElements f3Elements := by
   intro a
   fin_cases a <;> decide
 
-private def fieldRoots : FieldRootBackend F3 :=
-  enumeratingFieldRootBackend F3 f3Elements f3Elements_complete
+private def fieldRoots : FieldRootContext F3 :=
+  enumeratingFieldRootContext F3 f3Elements f3Elements_complete
 
-private def rootBackend : GSRootBackend F3 :=
-  rothRuckensteinRootBackend F3 fieldRoots
+private def rootContext : GSRootContext F3 :=
+  rothRuckensteinRootContext F3 fieldRoots
 
-#guard gsFilteredCore corePoints (denseInterpBackend F3) rootBackend params 0 ==
-  (gsCore corePoints (denseInterpBackend F3) rootBackend params).filter
+#guard gsFilteredCore corePoints (denseInterpContext F3) rootContext params 0 ==
+  (gsCore corePoints (denseInterpContext F3) rootContext params).filter
     (passesCandidateDistance corePoints 0)
 
 end GuruswamiSudan.Filter

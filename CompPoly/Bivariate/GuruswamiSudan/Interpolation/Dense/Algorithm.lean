@@ -30,13 +30,13 @@ def lowMessageDegreeInterpolation {F : Type*}
 /-- Dense interpolation over an explicitly supplied finite monomial basis. -/
 def denseInterpolateWithBasisAndKernel {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    (kernelBackend : LinearKernelBackend F)
+    (kernelContext : LinearKernelContext F)
     (basis : Array CBivariate.Monomial)
     (points : Array (Prod F F)) (params : GSInterpParams) :
     Option (CBivariate F) :=
   let matrix := interpolationMatrixOnBasis basis points params
   normalizeInterpolationPolynomialOnBasis? basis
-    =<< kernelBackend.homogeneousWitness matrix
+    =<< kernelContext.homogeneousWitness matrix
 
 /-- Interpolation through an explicit homogeneous-kernel backend, with a
 constructive low-message fallback.
@@ -46,13 +46,13 @@ not bound the `Y`-degree. The fallback returns an explicit product witness for
 the low-message-degree branch. -/
 def denseInterpolateWithKernel {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    (kernelBackend : LinearKernelBackend F)
+    (kernelContext : LinearKernelContext F)
     (points : Array (Prod F F)) (params : GSInterpParams) :
     Option (CBivariate F) :=
   if params.messageDegree ≤ 1 then
     some (lowMessageDegreeInterpolation points params.multiplicity)
   else
-    denseInterpolateWithBasisAndKernel kernelBackend
+    denseInterpolateWithBasisAndKernel kernelContext
       (interpolationMonomials params) points params
 
 /-- Dense interpolation using the built-in Gaussian-elimination kernel backend. -/
@@ -60,7 +60,7 @@ def denseInterpolate {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (points : Array (Prod F F)) (params : GSInterpParams) :
     Option (CBivariate F) :=
-  denseInterpolateWithKernel (denseLinearKernelBackend F) points params
+  denseInterpolateWithKernel (denseLinearKernelContext F) points params
 
 end GuruswamiSudan
 

@@ -11,7 +11,7 @@ import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.FiniteField
 # Guruswami-Sudan Field Roots
 
 Executable univariate field-root helpers used by Roth-Ruckenstein recursion.
-The explicit `FieldRootBackend` context makes this dependency replaceable for
+The explicit `FieldRootContext` context makes this dependency replaceable for
 large concrete fields.
 -/
 
@@ -42,9 +42,9 @@ private theorem rootsInFieldByEnumeration_sound {F : Type*}
   simpa [CPolynomial.eval_horner_eq_eval] using h.2
 
 /-- Field roots by explicit enumeration over a supplied field-element list. -/
-def enumeratingFieldRootBackend (F : Type*) [Field F] [BEq F] [LawfulBEq F]
+def enumeratingFieldRootContext (F : Type*) [Field F] [BEq F] [LawfulBEq F]
     (elements : Array F) (hElements : ContainsAllFieldElements elements) :
-    FieldRootBackend F where
+    FieldRootContext F where
   rootsInField := rootsInFieldByEnumeration elements
   sound := by
     intro p a h

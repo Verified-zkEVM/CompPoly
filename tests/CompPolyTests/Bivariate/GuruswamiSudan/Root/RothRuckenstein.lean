@@ -37,8 +37,8 @@ private theorem f3Elements_complete : ContainsAllFieldElements f3Elements := by
   intro a
   fin_cases a <;> decide
 
-private def fieldRoots : FieldRootBackend F3 :=
-  enumeratingFieldRootBackend F3 f3Elements f3Elements_complete
+private def fieldRoots : FieldRootContext F3 :=
+  enumeratingFieldRootContext F3 f3Elements f3Elements_complete
 
 private def f5Elements : Array F5 :=
   #[0, 1, 2, 3, 4]
@@ -48,8 +48,8 @@ private theorem f5Elements_complete : ContainsAllFieldElements f5Elements := by
   intro a
   fin_cases a <;> decide
 
-private def f5FieldRoots : FieldRootBackend F5 :=
-  enumeratingFieldRootBackend F5 f5Elements f5Elements_complete
+private def f5FieldRoots : FieldRootContext F5 :=
+  enumeratingFieldRootContext F5 f5Elements f5Elements_complete
 
 private def qYMinusX : CBivariate F3 :=
   CBivariate.Y + CBivariate.monomialXY 1 0 2
@@ -65,7 +65,7 @@ private def pOne : CPolynomial F3 :=
 
 #guard pX ∈ (rothRuckensteinRootsYDegreeLt fieldRoots qYMinusX 2).toList
 #guard pX ∈
-  ((rothRuckensteinRootBackend F3 fieldRoots).rootsYDegreeLt qYMinusX 2).toList
+  ((rothRuckensteinRootContext F3 fieldRoots).rootsYDegreeLt qYMinusX 2).toList
 #guard pOne ∈ (rothRuckensteinRootsYDegreeLt fieldRoots qXTimesYMinusOne 2).toList
 #guard (rothRuckensteinRootsYDegreeLt fieldRoots (0 : CBivariate F3) 2).isEmpty
 

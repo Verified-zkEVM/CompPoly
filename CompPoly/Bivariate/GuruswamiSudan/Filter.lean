@@ -46,11 +46,11 @@ mismatch radius. -/
 def gsFilteredCore {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (points : Array (Prod F F))
-    (interpBackend : GSInterpBackend F)
-    (rootBackend : GSRootBackend F)
+    (interpContext : GSInterpContext F)
+    (rootContext : GSRootContext F)
     (params : GSInterpParams)
     (radius : Nat) : Array (CPolynomial F) :=
-  (gsCore points interpBackend rootBackend params).filter
+  (gsCore points interpContext rootContext params).filter
     (passesCandidateDistance points radius)
 
 end GuruswamiSudan

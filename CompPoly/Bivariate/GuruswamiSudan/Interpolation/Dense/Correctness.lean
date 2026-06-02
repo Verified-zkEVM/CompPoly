@@ -743,19 +743,19 @@ theorem weightedDegreeBasis_sound (params : GSInterpParams) :
 /-- Soundness for one returned basis-parametric dense witness. -/
 theorem denseInterpolateWithBasis_sound {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    {kernelBackend : LinearKernelBackend F}
+    {kernelContext : LinearKernelContext F}
     {basis : Array CBivariate.Monomial}
     {points : Array (Prod F F)} {params : GSInterpParams} {Q : CBivariate F}
     (hbasis : basis.toList.Nodup)
-    (h : denseInterpolateWithBasisAndKernel kernelBackend basis points params = some Q) :
+    (h : denseInterpolateWithBasisAndKernel kernelContext basis points params = some Q) :
     Q ≠ 0 ∧
       (∃ coeffs, Q = interpolationPolynomialOnBasis basis coeffs) ∧
         CBivariate.SatisfiesMultiplicityConstraints Q points params.multiplicity := by
   unfold denseInterpolateWithBasisAndKernel at h
   set matrix := interpolationMatrixOnBasis basis points params
   change (normalizeInterpolationPolynomialOnBasis? basis =<<
-    kernelBackend.homogeneousWitness matrix) = some Q at h
-  cases hw : kernelBackend.homogeneousWitness matrix with
+    kernelContext.homogeneousWitness matrix) = some Q at h
+  cases hw : kernelContext.homogeneousWitness matrix with
   | none =>
       rw [hw] at h
       contradiction
@@ -771,9 +771,9 @@ theorem denseInterpolateWithBasis_sound {F : Type*}
           rw [hn] at h
           cases h
           have hwidth : DenseMatrix.VectorWidth matrix coeffs :=
-            kernelBackend.witness_width hw
+            kernelContext.witness_width hw
           have hsol : DenseMatrix.IsHomogeneousSolution matrix coeffs :=
-            kernelBackend.witness_sound
+            kernelContext.witness_sound
               (by simpa [matrix] using interpolationMatrixOnBasis_wf basis points params) hw
           rcases normalizeVector?_some_data hn with
             ⟨pivot, hpivot, _hpivot_ne, hnorm, _hnorm_width, hnorm_one⟩
@@ -796,7 +796,7 @@ theorem denseInterpolateWithBasis_sound {F : Type*}
 /-- Basis-parametric dense completeness for finite homogeneous systems. -/
 theorem denseInterpolateWithBasis_complete {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    {kernelBackend : LinearKernelBackend F}
+    {kernelContext : LinearKernelContext F}
     {basis : Array CBivariate.Monomial}
     {points : Array (Prod F F)} {params : GSInterpParams}
     (hExists : ∃ coeffs,
@@ -804,23 +804,23 @@ theorem denseInterpolateWithBasis_complete {F : Type*}
         DenseMatrix.IsHomogeneousSolution (interpolationMatrixOnBasis basis points params)
           coeffs ∧
           DenseMatrix.NonzeroVector coeffs) :
-    ∃ Q, denseInterpolateWithBasisAndKernel kernelBackend basis points params = some Q := by
+    ∃ Q, denseInterpolateWithBasisAndKernel kernelContext basis points params = some Q := by
   unfold denseInterpolateWithBasisAndKernel
   set matrix := interpolationMatrixOnBasis basis points params
-  cases hw : kernelBackend.homogeneousWitness matrix with
+  cases hw : kernelContext.homogeneousWitness matrix with
   | none =>
       exfalso
       rcases hExists with ⟨coeffs, hwidth, hsolution, hnonzero⟩
-      exact kernelBackend.witness_complete
+      exact kernelContext.witness_complete
         (by simpa [matrix] using interpolationMatrixOnBasis_wf basis points params)
         hw coeffs (by simpa [matrix] using hwidth)
         (by simpa [matrix] using hsolution) hnonzero
   | some coeffs =>
-      have hnz := kernelBackend.witness_nonzero hw
+      have hnz := kernelContext.witness_nonzero hw
       rcases normalizeVector?_some_of_nonzero hnz with ⟨norm, hnorm⟩
       refine ⟨interpolationPolynomialOnBasis basis norm, ?_⟩
       change (normalizeInterpolationPolynomialOnBasis? basis =<<
-        kernelBackend.homogeneousWitness matrix) =
+        kernelContext.homogeneousWitness matrix) =
           some (interpolationPolynomialOnBasis basis norm)
       rw [hw]
       change normalizeInterpolationPolynomialOnBasis? basis coeffs =
@@ -831,16 +831,16 @@ theorem denseInterpolateWithBasis_complete {F : Type*}
 /-- Basis-parametric dense soundness specialized to a bounded basis. -/
 theorem denseInterpolateWithBasisAndKernel_sound_of_bounded_basis {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    {kernelBackend : LinearKernelBackend F}
+    {kernelContext : LinearKernelContext F}
     {basis : Array CBivariate.Monomial}
     {points : Array (Prod F F)} {params : GSInterpParams} {Q : CBivariate F}
     (hbasis : basis.toList.Nodup)
     (hbound : ∀ monomial, monomial ∈ basis.toList →
       1 * monomial.xDegree + yWeight params * monomial.yDegree ≤
         params.weightedDegreeBound)
-    (h : denseInterpolateWithBasisAndKernel kernelBackend basis points params = some Q) :
+    (h : denseInterpolateWithBasisAndKernel kernelContext basis points params = some Q) :
     ValidInterpolationWitness points params Q := by
-  rcases denseInterpolateWithBasis_sound (kernelBackend := kernelBackend)
+  rcases denseInterpolateWithBasis_sound (kernelContext := kernelContext)
       (basis := basis) (points := points) (params := params) hbasis h with
     ⟨hQne, ⟨coeffs, hQcoeffs⟩, hconstraints⟩
   refine ⟨hQne, ?_, hconstraints⟩
@@ -850,13 +850,13 @@ theorem denseInterpolateWithBasisAndKernel_sound_of_bounded_basis {F : Type*}
 /-- Dense weighted-degree-basis soundness for the positive-message branch. -/
 theorem denseInterpolateWithWeightedDegreeBasis_sound {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    {kernelBackend : LinearKernelBackend F}
+    {kernelContext : LinearKernelContext F}
     {points : Array (Prod F F)} {params : GSInterpParams} {Q : CBivariate F}
-    (h : denseInterpolateWithBasisAndKernel kernelBackend
+    (h : denseInterpolateWithBasisAndKernel kernelContext
       (interpolationMonomials params) points params = some Q) :
     ValidInterpolationWitness points params Q := by
   exact denseInterpolateWithBasisAndKernel_sound_of_bounded_basis
-    (kernelBackend := kernelBackend) (basis := interpolationMonomials params)
+    (kernelContext := kernelContext) (basis := interpolationMonomials params)
     (points := points) (params := params)
     (CBivariate.monomialsWeightedDegreeLE_nodup 1 (yWeight params)
       params.weightedDegreeBound)
@@ -1141,9 +1141,9 @@ theorem lowMessageDegreeInterpolation_sound {F : Type*}
 /-- Soundness for one returned public interpolation witness. -/
 theorem denseInterpolate_sound {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    {kernelBackend : LinearKernelBackend F}
+    {kernelContext : LinearKernelContext F}
     {points : Array (Prod F F)} {params : GSInterpParams} {Q : CBivariate F}
-    (h : denseInterpolateWithKernel kernelBackend points params = some Q) :
+    (h : denseInterpolateWithKernel kernelContext points params = some Q) :
     ValidInterpolationWitness points params Q := by
   unfold denseInterpolateWithKernel at h
   by_cases hLow : params.messageDegree ≤ 1
@@ -1153,7 +1153,7 @@ theorem denseInterpolate_sound {F : Type*}
       (params := params) hLow
   · simp [hLow] at h
     exact denseInterpolateWithWeightedDegreeBasis_sound
-      (kernelBackend := kernelBackend) h
+      (kernelContext := kernelContext) h
 
 /-- If a basis-parametric dense interpolation matrix has more columns than rows,
 the dense solver finds a nonzero homogeneous witness. -/
@@ -1162,7 +1162,7 @@ theorem denseInterpolateWithBasis_exists_of_dimension_slack {F : Type*}
     (basis : Array CBivariate.Monomial)
     (points : Array (F × F)) (params : GSInterpParams)
     (hSlack : HasInterpolationDimensionSlackOnBasis basis points params) :
-    ∃ Q, denseInterpolateWithBasisAndKernel (denseLinearKernelBackend F)
+    ∃ Q, denseInterpolateWithBasisAndKernel (denseLinearKernelContext F)
       basis points params = some Q := by
   unfold denseInterpolateWithBasisAndKernel
   rcases DenseMatrix.homogeneousWitness_exists_of_rows_lt_cols
@@ -1174,7 +1174,7 @@ theorem denseInterpolateWithBasis_exists_of_dimension_slack {F : Type*}
   have hnz := DenseMatrix.homogeneousWitness_nonzero hw
   rcases normalizeVector?_some_of_nonzero hnz with ⟨norm, hn⟩
   refine ⟨interpolationPolynomialOnBasis basis norm, ?_⟩
-  simp [denseLinearKernelBackend, hw]
+  simp [denseLinearKernelContext, hw]
   change normalizeInterpolationPolynomialOnBasis? basis coeffs =
     some (interpolationPolynomialOnBasis basis norm)
   unfold normalizeInterpolationPolynomialOnBasis?
@@ -1281,7 +1281,7 @@ theorem denseInterpolate_complete_of_messageDegree_gt_one {F : Type*}
     exact interpolationCoefficientVectorOnBasis_nonzero_of_complete
       (basis := interpolationMonomials params) (Q := Q) hQne hcomplete
   rcases denseInterpolateWithBasis_complete
-      (kernelBackend := denseLinearKernelBackend F)
+      (kernelContext := denseLinearKernelContext F)
       (basis := interpolationMonomials params)
       (points := points) (params := params)
       ⟨coeffs, hwidth, hsol, hnz⟩ with ⟨Qout, hQout⟩
@@ -1290,12 +1290,12 @@ theorem denseInterpolate_complete_of_messageDegree_gt_one {F : Type*}
   simp [hHigh, hQout]
 
 /-- The executable interpolation path packaged as a certified GS interpolation backend. -/
-def denseInterpBackend (F : Type*) [Field F] [BEq F] [LawfulBEq F]
-    [Nontrivial F] [DecidableEq F] : GSInterpBackend F where
+def denseInterpContext (F : Type*) [Field F] [BEq F] [LawfulBEq F]
+    [Nontrivial F] [DecidableEq F] : GSInterpContext F where
   interpolate := denseInterpolate
   sound := by
     intro points params Q h
-    exact denseInterpolate_sound (kernelBackend := denseLinearKernelBackend F) h
+    exact denseInterpolate_sound (kernelContext := denseLinearKernelContext F) h
   complete := by
     intro points params hExists
     by_cases hLow : params.messageDegree ≤ 1
@@ -1305,20 +1305,20 @@ def denseInterpBackend (F : Type*) [Field F] [BEq F] [LawfulBEq F]
         (F := F) (points := points) (params := params) hLow hExists
 
 /-- Executable interpolation backend soundness. -/
-theorem denseInterpBackend_correct (F : Type*) [Field F] [BEq F] [LawfulBEq F]
+theorem denseInterpContext_correct (F : Type*) [Field F] [BEq F] [LawfulBEq F]
     [Nontrivial F] [DecidableEq F] :
     ∀ points params Q,
-      (denseInterpBackend F).interpolate points params = some Q →
+      (denseInterpContext F).interpolate points params = some Q →
         ValidInterpolationWitness points params Q :=
-  (denseInterpBackend F).sound
+  (denseInterpContext F).sound
 
 /-- Executable interpolation backend completeness. -/
-theorem denseInterpBackend_complete (F : Type*) [Field F] [BEq F] [LawfulBEq F]
+theorem denseInterpContext_complete (F : Type*) [Field F] [BEq F] [LawfulBEq F]
     [Nontrivial F] [DecidableEq F] :
     ∀ points params,
       (exists Q, ValidInterpolationWitness points params Q) →
-        exists Q, (denseInterpBackend F).interpolate points params = some Q :=
-  (denseInterpBackend F).complete
+        exists Q, (denseInterpContext F).interpolate points params = some Q :=
+  (denseInterpContext F).complete
 
 end GuruswamiSudan
 

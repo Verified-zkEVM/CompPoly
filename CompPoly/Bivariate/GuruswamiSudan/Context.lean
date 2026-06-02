@@ -50,7 +50,7 @@ it can find one. Completeness is stated in the negative form needed by dense
 interpolation systems: if no witness is returned, no nonzero homogeneous
 solution exists.
 -/
-structure LinearKernelBackend (F : Type*) [Field F] [BEq F] [LawfulBEq F] where
+structure LinearKernelContext (F : Type*) [Field F] [BEq F] [LawfulBEq F] where
   homogeneousWitness : DenseMatrix F → Option (Array F)
   witness_width :
     ∀ {M : DenseMatrix F} {v : Array F},
@@ -75,8 +75,8 @@ structure LinearKernelBackend (F : Type*) [Field F] [BEq F] [LawfulBEq F] where
                 ¬ (DenseMatrix.NonzeroVector v)
 
 /-- The dense Gaussian-elimination homogeneous-kernel backend. -/
-def denseLinearKernelBackend (F : Type*) [Field F] [BEq F] [LawfulBEq F] :
-    LinearKernelBackend F where
+def denseLinearKernelContext (F : Type*) [Field F] [BEq F] [LawfulBEq F] :
+    LinearKernelContext F where
   homogeneousWitness := DenseMatrix.homogeneousWitness
   witness_width := by
     intro M v h
@@ -97,7 +97,7 @@ The backend packages the executable interpolation operation together with the
 contract fields used by callers, using the explicit context style used by
 univariate multiplication and remainder backends.
 -/
-structure GSInterpBackend (F : Type*) [Field F] [BEq F] [LawfulBEq F]
+structure GSInterpContext (F : Type*) [Field F] [BEq F] [LawfulBEq F]
     [DecidableEq F] where
   interpolate : Array (Prod F F) → GSInterpParams → Option (CBivariate F)
   sound :
@@ -115,7 +115,7 @@ Completeness is only required for nonzero polynomials. A zero univariate
 polynomial vanishes on every field element, so an unconditional array-valued
 complete root finder would have to enumerate the whole field.
 -/
-structure FieldRootBackend (F : Type*) [Field F] [BEq F] [LawfulBEq F] where
+structure FieldRootContext (F : Type*) [Field F] [BEq F] [LawfulBEq F] where
   rootsInField : CPolynomial F → Array F
   sound :
     ∀ p a,
@@ -133,7 +133,7 @@ Completeness is only required for nonzero bivariate input. The zero bivariate
 polynomial has every degree-bounded univariate polynomial as a root, which is not
 a finite output contract for large fields.
 -/
-structure GSRootBackend (F : Type*) [Field F] [BEq F] [LawfulBEq F]
+structure GSRootContext (F : Type*) [Field F] [BEq F] [LawfulBEq F]
     [DecidableEq F] where
   rootsYDegreeLt : CBivariate F → Nat → Array (CPolynomial F)
   sound :

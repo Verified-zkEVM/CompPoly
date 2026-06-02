@@ -67,17 +67,17 @@ private def multiplicityBenchmarkQ {F : Type*}
   let Q := rootBenchmarkQ p
   Q * Q
 
-private def koalaFieldRoots : FieldRootBackend KoalaBear.Field :=
-  koalaBearFieldRootBackend
+private def koalaFieldRoots : FieldRootContext KoalaBear.Field :=
+  koalaBearFieldRootContext
 
-private def koalaFieldRootsFast : FieldRootBackend KoalaBear.Field :=
-  koalaBearNttFastFieldRootBackend
+private def koalaFieldRootsFast : FieldRootContext KoalaBear.Field :=
+  koalaBearNttFastFieldRootContext
 
-private def koalaFastFieldRoots : FieldRootBackend KoalaBear.Fast.Field :=
-  fastKoalaBearFieldRootBackend
+private def koalaFastFieldRoots : FieldRootContext KoalaBear.Fast.Field :=
+  fastKoalaBearFieldRootContext
 
-private def koalaFastFieldRootsFast : FieldRootBackend KoalaBear.Fast.Field :=
-  fastKoalaBearNttFastFieldRootBackend
+private def koalaFastFieldRootsFast : FieldRootContext KoalaBear.Fast.Field :=
+  fastKoalaBearNttFastFieldRootContext
 
 private def nonlinearRootBenchmarkQ {F : Type*}
     [Ring F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
@@ -163,8 +163,8 @@ private def runGsInterpolationSolveKoala (preset : BenchPreset) (gen : StdGen) :
   let fastMessage := cpolyOfArray (koalaBearFastArray coeffs)
   let matrix := interpolationMatrix (codewordPoints message) gsKoalaParams
   let fastMatrix := interpolationMatrix (codewordPoints fastMessage) gsKoalaParams
-  let kernelBackend := denseLinearKernelBackend KoalaBear.Field
-  let fastKernelBackend := denseLinearKernelBackend KoalaBear.Fast.Field
+  let kernelContext := denseLinearKernelContext KoalaBear.Field
+  let fastKernelContext := denseLinearKernelContext KoalaBear.Fast.Field
   let warmup := gsWarmupIterations preset
   let measured := preset.selectNat 10 1 1
   let fastMeasured := preset.selectNat 50 5 2
@@ -172,13 +172,13 @@ private def runGsInterpolationSolveKoala (preset : BenchPreset) (gen : StdGen) :
   let row <- runTimed
     "guruswami-sudan-interp-solve" "DenseMatrix" "Homogeneous interpolation solve"
     "KoalaBear.Field" gsInputShape preset warmup measured
-    (fun _ => kernelBackend.homogeneousWitness matrix)
+    (fun _ => kernelContext.homogeneousWitness matrix)
     (checksumOptionArray checksumKoalaBear) checksumIterations
   let fastRow <- runTimed
     "guruswami-sudan-interp-solve-fast" "DenseMatrix"
     "Homogeneous interpolation solve"
     "KoalaBear.Fast.Field" gsInputShape preset warmup fastMeasured
-    (fun _ => fastKernelBackend.homogeneousWitness fastMatrix)
+    (fun _ => fastKernelContext.homogeneousWitness fastMatrix)
     (checksumOptionArray checksumKoalaBearFast) checksumIterations
   pure ({
     groupKey := "guruswami-sudan-interp-solve-koalabear",
@@ -296,10 +296,10 @@ private def runGsCoreKoala (preset : BenchPreset) (gen : StdGen) :
   let fastMessage := cpolyOfArray (koalaBearFastArray coeffs)
   let points := codewordPoints message
   let fastPoints := codewordPoints fastMessage
-  let rootBackend := koalaBearRothRootBackend
-  let rootBackendFast := koalaBearRothNttFastRootBackend
-  let fastRootBackend := fastKoalaBearRothRootBackend
-  let fastRootBackendFast := fastKoalaBearRothNttFastRootBackend
+  let rootContext := koalaBearRothRootContext
+  let rootContextFast := koalaBearRothNttFastRootContext
+  let fastRootContext := fastKoalaBearRothRootContext
+  let fastRootContextFast := fastKoalaBearRothNttFastRootContext
   let warmup := gsWarmupIterations preset
   let measured := preset.selectNat 8 1 1
   let nttFastMeasured := preset.selectNat 8 1 1
@@ -311,20 +311,20 @@ private def runGsCoreKoala (preset : BenchPreset) (gen : StdGen) :
   let row <- runTimed
     "guruswami-sudan-core-dense-roth" "CBivariate" "Dense interpolation plus root finding"
     "KoalaBear.Field" gsInputShape preset warmup measured
-    (fun _ => gsCore points (denseInterpBackend KoalaBear.Field) rootBackend gsKoalaParams)
+    (fun _ => gsCore points (denseInterpContext KoalaBear.Field) rootContext gsKoalaParams)
     checksumPolynomialArrayKoala checksumIterations
   let nttFastRow <- runTimed
     "guruswami-sudan-core-dense-roth-nttfast" "CBivariate"
     "Dense interpolation plus NTTFast field-root finding"
     "KoalaBear.Field" gsInputShape preset warmup nttFastMeasured
     (fun _ =>
-      gsCore points (denseInterpBackend KoalaBear.Field) rootBackendFast gsKoalaParams)
+      gsCore points (denseInterpContext KoalaBear.Field) rootContextFast gsKoalaParams)
     checksumPolynomialArrayKoala checksumIterations
   let fastRow <- runTimed
     "guruswami-sudan-core-dense-roth-fast" "CBivariate"
     "Dense interpolation plus root finding"
     "KoalaBear.Fast.Field" gsInputShape preset warmup fastMeasured
-    (fun _ => gsCore fastPoints (denseInterpBackend KoalaBear.Fast.Field) fastRootBackend
+    (fun _ => gsCore fastPoints (denseInterpContext KoalaBear.Fast.Field) fastRootContext
       gsKoalaParams)
     checksumPolynomialArrayKoalaFast checksumIterations
   let fastNttFastRow <- runTimed
@@ -332,7 +332,7 @@ private def runGsCoreKoala (preset : BenchPreset) (gen : StdGen) :
     "Dense interpolation plus root finding (fast mul/mod, fast KoalaBear)"
     "KoalaBear.Fast.Field" gsInputShape preset warmup fastNttFastMeasured
     (fun _ =>
-      gsCore fastPoints (denseInterpBackend KoalaBear.Fast.Field) fastRootBackendFast
+      gsCore fastPoints (denseInterpContext KoalaBear.Fast.Field) fastRootContextFast
         gsKoalaParams)
     checksumPolynomialArrayKoalaFast checksumIterations
   pure ({
@@ -348,10 +348,10 @@ private def runGsFilteredCoreKoala (preset : BenchPreset) (gen : StdGen) :
   let fastMessage := cpolyOfArray (koalaBearFastArray coeffs)
   let points := codewordPoints message
   let fastPoints := codewordPoints fastMessage
-  let rootBackend := koalaBearRothRootBackend
-  let rootBackendFast := koalaBearRothNttFastRootBackend
-  let fastRootBackend := fastKoalaBearRothRootBackend
-  let fastRootBackendFast := fastKoalaBearRothNttFastRootBackend
+  let rootContext := koalaBearRothRootContext
+  let rootContextFast := koalaBearRothNttFastRootContext
+  let fastRootContext := fastKoalaBearRothRootContext
+  let fastRootContextFast := fastKoalaBearRothNttFastRootContext
   let warmup := gsWarmupIterations preset
   let measured := preset.selectNat 8 1 1
   let nttFastMeasured := preset.selectNat 8 1 1
@@ -365,14 +365,14 @@ private def runGsFilteredCoreKoala (preset : BenchPreset) (gen : StdGen) :
     "Packed filtered core"
     "KoalaBear.Field" gsFilteredShape preset warmup measured
     (fun _ =>
-      gsFilteredCore points (denseInterpBackend KoalaBear.Field) rootBackend gsKoalaParams 0)
+      gsFilteredCore points (denseInterpContext KoalaBear.Field) rootContext gsKoalaParams 0)
     checksumPolynomialArrayKoala checksumIterations
   let nttFastRow <- runTimed
     "guruswami-sudan-filtered-core-nttfast" "CBivariate"
     "Packed filtered core (fast mul/mod)"
     "KoalaBear.Field" gsFilteredShape preset warmup nttFastMeasured
     (fun _ =>
-      gsFilteredCore points (denseInterpBackend KoalaBear.Field) rootBackendFast
+      gsFilteredCore points (denseInterpContext KoalaBear.Field) rootContextFast
         gsKoalaParams 0)
     checksumPolynomialArrayKoala checksumIterations
   let fastRow <- runTimed
@@ -380,7 +380,7 @@ private def runGsFilteredCoreKoala (preset : BenchPreset) (gen : StdGen) :
     "Packed filtered core"
     "KoalaBear.Fast.Field" gsFilteredShape preset warmup fastMeasured
     (fun _ =>
-      gsFilteredCore fastPoints (denseInterpBackend KoalaBear.Fast.Field) fastRootBackend
+      gsFilteredCore fastPoints (denseInterpContext KoalaBear.Fast.Field) fastRootContext
         gsKoalaParams 0)
     checksumPolynomialArrayKoalaFast checksumIterations
   let fastNttFastRow <- runTimed
@@ -388,8 +388,8 @@ private def runGsFilteredCoreKoala (preset : BenchPreset) (gen : StdGen) :
     "Packed filtered core (fast mul/mod, fast KoalaBear)"
     "KoalaBear.Fast.Field" gsFilteredShape preset warmup fastNttFastMeasured
     (fun _ =>
-      gsFilteredCore fastPoints (denseInterpBackend KoalaBear.Fast.Field)
-        fastRootBackendFast gsKoalaParams 0)
+      gsFilteredCore fastPoints (denseInterpContext KoalaBear.Fast.Field)
+        fastRootContextFast gsKoalaParams 0)
     checksumPolynomialArrayKoalaFast checksumIterations
   pure ({
     groupKey := "guruswami-sudan-filtered-core-koalabear",

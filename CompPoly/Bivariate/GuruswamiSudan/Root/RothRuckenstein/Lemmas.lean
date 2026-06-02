@@ -1016,7 +1016,7 @@ theorem initialCoefficientPolynomial_eval_eq_composeY_coeff_zero {F : Type*}
 
 theorem rootsInFieldForNonzeroEquation_complete {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
-    (fieldRoots : FieldRootBackend F) {p : CPolynomial F} {a : F}
+    (fieldRoots : FieldRootContext F) {p : CPolynomial F} {a : F}
     (hp : p ≠ 0) (ha : CPolynomial.eval a p = 0) :
     a ∈ (rootsInFieldForNonzeroEquation fieldRoots p).toList := by
   unfold rootsInFieldForNonzeroEquation

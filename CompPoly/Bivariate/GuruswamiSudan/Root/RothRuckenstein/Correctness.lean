@@ -19,7 +19,7 @@ namespace GuruswamiSudan
 /-- Soundness of Roth-Ruckenstein root filtering. -/
 theorem rothRuckensteinRootsYDegreeLt_sound {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    {fieldRoots : FieldRootBackend F} {Q : CBivariate F} {k : Nat}
+    {fieldRoots : FieldRootContext F} {Q : CBivariate F} {k : Nat}
     {p : CPolynomial F}
     (h : p ∈ (rothRuckensteinRootsYDegreeLt fieldRoots Q k).toList) :
     degreeLt p k ∧ CBivariate.composeY Q p = 0 := by
@@ -790,7 +790,7 @@ private theorem polynomialPrefix_eq_self_of_dropXPower_degreeLt_zero {F : Type*}
 
 private theorem transformedRothRuckensteinRootPrefixesWithFuel_complete_aux {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    (fieldRoots : FieldRootBackend F) :
+    (fieldRoots : FieldRootContext F) :
     ∀ (fuel : Nat) (Q : CBivariate F) (depth : Nat) (pref p : CPolynomial F),
       Q ≠ 0 →
       pref = polynomialPrefix p depth →
@@ -878,7 +878,7 @@ only promises finite output for nonzero bivariate equations.
 -/
 theorem rothRuckensteinRootsYDegreeLt_complete {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    {fieldRoots : FieldRootBackend F}
+    {fieldRoots : FieldRootContext F}
     {Q : CBivariate F} {k : Nat} {p : CPolynomial F}
     (hQ : Q ≠ 0) (hdegree : degreeLt p k) (hroot : CBivariate.composeY Q p = 0) :
     p ∈ (rothRuckensteinRootsYDegreeLt fieldRoots Q k).toList := by
@@ -894,9 +894,9 @@ theorem rothRuckensteinRootsYDegreeLt_complete {F : Type*}
   simp [hprefix, isRootYDegreeLtBool_of_root hdegree hroot]
 
 /-- Roth-Ruckenstein roots packaged with an explicit univariate field-root backend. -/
-def rothRuckensteinRootBackend (F : Type*)
+def rothRuckensteinRootContext (F : Type*)
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    (fieldRoots : FieldRootBackend F) : GSRootBackend F where
+    (fieldRoots : FieldRootContext F) : GSRootContext F where
   rootsYDegreeLt := rothRuckensteinRootsYDegreeLt fieldRoots
   sound := by
     intro Q k p h
@@ -907,9 +907,9 @@ def rothRuckensteinRootBackend (F : Type*)
       (fieldRoots := fieldRoots) hQ hdegree hroot
 
 /-- Residual-transform Roth-Ruckenstein roots packaged as a backend. -/
-def transformedRothRuckensteinRootBackend (F : Type*)
+def transformedRothRuckensteinRootContext (F : Type*)
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    (fieldRoots : FieldRootBackend F) : GSRootBackend F where
+    (fieldRoots : FieldRootContext F) : GSRootContext F where
   rootsYDegreeLt := transformedRothRuckensteinRootsYDegreeLt fieldRoots
   sound := by
     intro Q k p h

@@ -46,24 +46,24 @@ structure GSFilteredCoreContext
         p ∈ (run points params radius).toList
 
 /-- Filtered-core context assembled from CompPoly interpolation and root backends. -/
-def filteredCoreContextOfBackends
+def filteredCoreContextOfInterpRootContexts
     {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
-    (interp : GSInterpBackend F)
-    (roots : GSRootBackend F) :
+    (interp : GSInterpContext F)
+    (roots : GSRootContext F) :
     GSFilteredCoreContext F where
   run := fun points params radius =>
     gsFilteredCore points interp roots params radius
   sound := by
     intro points params radius p hp
     rcases gsFilteredCore_sound
-        (interpBackend := interp) (rootBackend := roots)
+        (interpContext := interp) (rootContext := roots)
         (params := params) (radius := radius) hp with
       ⟨Q, _hQ, hvalid, hdeg, hroot, hdist⟩
     exact ⟨Q, hvalid, hdeg, hroot, hdist⟩
   complete := by
     intro points params radius p hInterpExists hdistinct hpdeg hmatches hpass
     apply gsFilteredCore_complete_of_enough_matches
-        (interpBackend := interp) (rootBackend := roots)
+        (interpContext := interp) (rootContext := roots)
     · exact hInterpExists
     · exact hpdeg
     · exact hdistinct

@@ -43,7 +43,7 @@ private def lowPoints : Array (Prod F3 F3) :=
 #guard (denseInterpolate points params).isSome
 
 #guard (interpolationMonomials lowParams).size == 1
-#guard (denseInterpolateWithBasisAndKernel (denseLinearKernelBackend F3)
+#guard (denseInterpolateWithBasisAndKernel (denseLinearKernelContext F3)
   (interpolationMonomials lowParams) lowPoints lowParams).isNone
 #guard (denseInterpolate lowPoints lowParams).isSome
 

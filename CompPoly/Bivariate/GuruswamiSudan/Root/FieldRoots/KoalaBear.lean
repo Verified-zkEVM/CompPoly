@@ -79,8 +79,8 @@ private theorem koalaBearSmoothRootProduct_valid
       KoalaBear.smoothRootSchedule hp)
 
 /-- Complete GS-facing finite-field root backend for canonical KoalaBear. -/
-def koalaBearFieldRootBackend : FieldRootBackend KoalaBear.Field :=
-  smoothOddFiniteFieldRootBackend KoalaBear.Field
+def koalaBearFieldRootContext : FieldRootContext KoalaBear.Field :=
+  smoothOddFiniteFieldRootContext KoalaBear.Field
     koalaBearOddFiniteFieldContext koalaBearSmoothCyclicRootContext
     (by
       intro p hp
@@ -88,8 +88,8 @@ def koalaBearFieldRootBackend : FieldRootBackend KoalaBear.Field :=
         CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive hp)
 
 /-- Complete GS-facing finite-field root backend for canonical KoalaBear with NTT arithmetic. -/
-def koalaBearNttFieldRootBackend : FieldRootBackend KoalaBear.Field :=
-  smoothOddFiniteFieldRootBackendWith KoalaBear.Field
+def koalaBearNttFieldRootContext : FieldRootContext KoalaBear.Field :=
+  smoothOddFiniteFieldRootContextWith KoalaBear.Field
     (CPolynomial.Raw.MulContext.ntt CPolynomial.NTT.KoalaBear.bestDomainForLength?)
     (CPolynomial.Raw.ModContext.reversalNtt CPolynomial.NTT.KoalaBear.bestDomainForLength?)
     koalaBearOddFiniteFieldContext koalaBearSmoothCyclicRootContext
@@ -101,8 +101,8 @@ def koalaBearNttFieldRootBackend : FieldRootBackend KoalaBear.Field :=
         hp)
 
 /-- Complete GS-facing finite-field root backend for canonical KoalaBear with NTTFast arithmetic. -/
-def koalaBearNttFastFieldRootBackend : FieldRootBackend KoalaBear.Field :=
-  smoothOddFiniteFieldRootBackendWith KoalaBear.Field
+def koalaBearNttFastFieldRootContext : FieldRootContext KoalaBear.Field :=
+  smoothOddFiniteFieldRootContextWith KoalaBear.Field
     (CPolynomial.Raw.MulContext.nttFast CPolynomial.NTT.KoalaBear.bestDomainForLength?)
     (CPolynomial.Raw.ModContext.reversalNttFast CPolynomial.NTT.KoalaBear.bestDomainForLength?)
     koalaBearOddFiniteFieldContext koalaBearSmoothCyclicRootContext
@@ -201,8 +201,8 @@ private theorem fastKoalaBearSmoothRootProduct_valid
       KoalaBear.smoothRootSchedule hp)
 
 /-- Complete GS-facing finite-field root backend for native-word fast KoalaBear. -/
-def fastKoalaBearFieldRootBackend : FieldRootBackend KoalaBear.Fast.Field :=
-  smoothOddFiniteFieldRootBackend KoalaBear.Fast.Field
+def fastKoalaBearFieldRootContext : FieldRootContext KoalaBear.Fast.Field :=
+  smoothOddFiniteFieldRootContext KoalaBear.Fast.Field
     fastKoalaBearOddFiniteFieldContext fastKoalaBearSmoothCyclicRootContext
     (by
       intro p hp
@@ -213,8 +213,8 @@ def fastKoalaBearFieldRootBackend : FieldRootBackend KoalaBear.Fast.Field :=
 Complete GS-facing finite-field root backend for native-word fast KoalaBear with
 NTT arithmetic.
 -/
-def fastKoalaBearNttFieldRootBackend : FieldRootBackend KoalaBear.Fast.Field :=
-  smoothOddFiniteFieldRootBackendWith KoalaBear.Fast.Field
+def fastKoalaBearNttFieldRootContext : FieldRootContext KoalaBear.Fast.Field :=
+  smoothOddFiniteFieldRootContextWith KoalaBear.Fast.Field
     (CPolynomial.Raw.MulContext.ntt CPolynomial.NTT.KoalaBear.fastBestDomainForLength?)
     (CPolynomial.Raw.ModContext.reversalNtt CPolynomial.NTT.KoalaBear.fastBestDomainForLength?)
     fastKoalaBearOddFiniteFieldContext fastKoalaBearSmoothCyclicRootContext
@@ -229,8 +229,8 @@ def fastKoalaBearNttFieldRootBackend : FieldRootBackend KoalaBear.Fast.Field :=
 Complete GS-facing finite-field root backend for native-word fast KoalaBear with
 NTTFast arithmetic.
 -/
-def fastKoalaBearNttFastFieldRootBackend : FieldRootBackend KoalaBear.Fast.Field :=
-  smoothOddFiniteFieldRootBackendWith KoalaBear.Fast.Field
+def fastKoalaBearNttFastFieldRootContext : FieldRootContext KoalaBear.Fast.Field :=
+  smoothOddFiniteFieldRootContextWith KoalaBear.Fast.Field
     (CPolynomial.Raw.MulContext.nttFast CPolynomial.NTT.KoalaBear.fastBestDomainForLength?)
     (CPolynomial.Raw.ModContext.reversalNttFast CPolynomial.NTT.KoalaBear.fastBestDomainForLength?)
     fastKoalaBearOddFiniteFieldContext fastKoalaBearSmoothCyclicRootContext

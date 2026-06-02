@@ -39,11 +39,11 @@ private theorem f3Elements_complete : ContainsAllFieldElements f3Elements := by
   intro a
   fin_cases a <;> decide
 
-private def fieldRoots : FieldRootBackend F3 :=
-  enumeratingFieldRootBackend F3 f3Elements f3Elements_complete
+private def fieldRoots : FieldRootContext F3 :=
+  enumeratingFieldRootContext F3 f3Elements f3Elements_complete
 
-#guard (gsCore points (denseInterpBackend F3)
-  (rothRuckensteinRootBackend F3 fieldRoots) params).size <= 3
+#guard (gsCore points (denseInterpContext F3)
+  (rothRuckensteinRootContext F3 fieldRoots) params).size <= 3
 
 end GuruswamiSudan.Core
 

@@ -23,12 +23,12 @@ interpolation polynomial produced by the interpolation backend. -/
 theorem gsCore_sound {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     {points : Array (Prod F F)}
-    {interpBackend : GSInterpBackend F} {rootBackend : GSRootBackend F}
+    {interpContext : GSInterpContext F} {rootContext : GSRootContext F}
     {params : GSInterpParams}
     {p : CPolynomial F}
-    (hp : p ∈ (gsCore points interpBackend rootBackend params).toList) :
+    (hp : p ∈ (gsCore points interpContext rootContext params).toList) :
     exists Q,
-      interpBackend.interpolate points params = some Q ∧
+      interpContext.interpolate points params = some Q ∧
         ValidInterpolationWitness points params Q ∧
           degreeLt p params.messageDegree ∧
             CBivariate.composeY Q p = 0 := by
@@ -37,8 +37,8 @@ theorem gsCore_sound {F : Type*}
   · simp at hp
   · rename_i Q hQ
     refine ⟨Q, hQ, ?_⟩
-    have hs := interpBackend.sound points params Q hQ
-    have hr := rootBackend.sound Q params.messageDegree p hp
+    have hs := interpContext.sound points params Q hQ
+    have hr := rootContext.sound Q params.messageDegree p hp
     exact ⟨hs, hr.1, hr.2⟩
 
 /-- Completeness for the concrete interpolation polynomial returned by the
@@ -46,24 +46,24 @@ interpolation backend. -/
 theorem gsCore_complete_of_interpolate {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     {points : Array (Prod F F)}
-    {interpBackend : GSInterpBackend F} {rootBackend : GSRootBackend F}
+    {interpContext : GSInterpContext F} {rootContext : GSRootContext F}
     {params : GSInterpParams}
     {Q : CBivariate F} {p : CPolynomial F}
-    (hQ : interpBackend.interpolate points params = some Q)
+    (hQ : interpContext.interpolate points params = some Q)
     (hpdeg : degreeLt p params.messageDegree)
     (hroot : CBivariate.composeY Q p = 0) :
-    p ∈ (gsCore points interpBackend rootBackend params).toList := by
+    p ∈ (gsCore points interpContext rootContext params).toList := by
   unfold gsCore
   rw [hQ]
-  exact rootBackend.complete Q params.messageDegree p
-    (interpBackend.sound points params Q hQ).1 hpdeg hroot
+  exact rootContext.complete Q params.messageDegree p
+    (interpContext.sound points params Q hQ).1 hpdeg hroot
 
 /-- Backend-parametric completeness for candidates that root every valid
 interpolation witness. -/
 theorem gsCore_complete_of_roots_all_valid_witnesses {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     {points : Array (Prod F F)}
-    {interpBackend : GSInterpBackend F} {rootBackend : GSRootBackend F}
+    {interpContext : GSInterpContext F} {rootContext : GSRootContext F}
     {params : GSInterpParams}
     {p : CPolynomial F}
     (hInterpExists : exists Q, ValidInterpolationWitness points params Q)
@@ -72,10 +72,10 @@ theorem gsCore_complete_of_roots_all_valid_witnesses {F : Type*}
       ∀ Q,
         ValidInterpolationWitness points params Q →
           CBivariate.composeY Q p = 0) :
-    p ∈ (gsCore points interpBackend rootBackend params).toList := by
-  rcases interpBackend.complete points params hInterpExists with ⟨Q, hQ⟩
-  exact gsCore_complete_of_interpolate (rootBackend := rootBackend) hQ hpdeg
-    (hrootAll Q (interpBackend.sound points params Q hQ))
+    p ∈ (gsCore points interpContext rootContext params).toList := by
+  rcases interpContext.complete points params hInterpExists with ⟨Q, hQ⟩
+  exact gsCore_complete_of_interpolate (rootContext := rootContext) hQ hpdeg
+    (hrootAll Q (interpContext.sound points params Q hQ))
 
 /-- The executable `(0, 0)` Hasse derivative is ordinary full evaluation. -/
 private theorem hasseDerivativeEval_zero_zero {F : Type*}
@@ -557,7 +557,7 @@ theorem composeY_eq_zero_of_enough_matching_multiplicity_points {F : Type*}
 theorem gsCore_complete_of_enough_matches {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     {points : Array (Prod F F)}
-    {interpBackend : GSInterpBackend F} {rootBackend : GSRootBackend F}
+    {interpContext : GSInterpContext F} {rootContext : GSRootContext F}
     {params : GSInterpParams}
     {p : CPolynomial F}
     (hInterpExists : exists Q, ValidInterpolationWitness points params Q)
@@ -566,9 +566,9 @@ theorem gsCore_complete_of_enough_matches {F : Type*}
     (hmatches :
       params.weightedDegreeBound <
         params.multiplicity * matchingPointCount points p) :
-    p ∈ (gsCore points interpBackend rootBackend params).toList := by
+    p ∈ (gsCore points interpContext rootContext params).toList := by
   apply gsCore_complete_of_roots_all_valid_witnesses
-      (rootBackend := rootBackend) hInterpExists hpdeg
+      (rootContext := rootContext) hInterpExists hpdeg
   intro Q hQ
   exact composeY_eq_zero_of_enough_matching_multiplicity_points hQ hpdeg hdistinct hmatches
 

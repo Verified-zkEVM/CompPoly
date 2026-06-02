@@ -20,12 +20,12 @@ namespace GuruswamiSudan
 /-- Run interpolation, then bounded-degree root finding, using explicit backends. -/
 def gsCore {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (points : Array (Prod F F))
-    (interpBackend : GSInterpBackend F)
-    (rootBackend : GSRootBackend F)
+    (interpContext : GSInterpContext F)
+    (rootContext : GSRootContext F)
     (params : GSInterpParams) : Array (CPolynomial F) :=
-  match interpBackend.interpolate points params with
+  match interpContext.interpolate points params with
   | none => #[]
-  | some Q => rootBackend.rootsYDegreeLt Q params.messageDegree
+  | some Q => rootContext.rootsYDegreeLt Q params.messageDegree
 
 end GuruswamiSudan
 

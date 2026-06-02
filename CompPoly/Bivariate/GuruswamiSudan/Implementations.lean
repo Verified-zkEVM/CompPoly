@@ -20,56 +20,59 @@ namespace CompPoly
 namespace GuruswamiSudan
 
 /-- Dense interpolation backend over canonical KoalaBear. -/
-def koalaBearDenseInterpBackend : GSInterpBackend KoalaBear.Field :=
-  denseInterpBackend KoalaBear.Field
+def koalaBearDenseInterpContext : GSInterpContext KoalaBear.Field :=
+  denseInterpContext KoalaBear.Field
 
 /-- Dense interpolation backend over native-word fast KoalaBear. -/
-def fastKoalaBearDenseInterpBackend : GSInterpBackend KoalaBear.Fast.Field :=
-  denseInterpBackend KoalaBear.Fast.Field
+def fastKoalaBearDenseInterpContext : GSInterpContext KoalaBear.Fast.Field :=
+  denseInterpContext KoalaBear.Fast.Field
 
 /-- Roth-Ruckenstein root backend over canonical KoalaBear. -/
-def koalaBearRothRootBackend : GSRootBackend KoalaBear.Field :=
-  rothRuckensteinRootBackend KoalaBear.Field koalaBearFieldRootBackend
+def koalaBearRothRootContext : GSRootContext KoalaBear.Field :=
+  rothRuckensteinRootContext KoalaBear.Field koalaBearFieldRootContext
 
 /-- Roth-Ruckenstein root backend over canonical KoalaBear with NTTFast field roots. -/
-def koalaBearRothNttFastRootBackend : GSRootBackend KoalaBear.Field :=
-  rothRuckensteinRootBackend KoalaBear.Field koalaBearNttFastFieldRootBackend
+def koalaBearRothNttFastRootContext : GSRootContext KoalaBear.Field :=
+  rothRuckensteinRootContext KoalaBear.Field koalaBearNttFastFieldRootContext
 
 /-- Roth-Ruckenstein root backend over native-word fast KoalaBear. -/
-def fastKoalaBearRothRootBackend : GSRootBackend KoalaBear.Fast.Field :=
-  rothRuckensteinRootBackend KoalaBear.Fast.Field fastKoalaBearFieldRootBackend
+def fastKoalaBearRothRootContext : GSRootContext KoalaBear.Fast.Field :=
+  rothRuckensteinRootContext KoalaBear.Fast.Field fastKoalaBearFieldRootContext
 
 /-- Roth-Ruckenstein root backend over native-word fast KoalaBear with NTTFast field roots. -/
-def fastKoalaBearRothNttFastRootBackend : GSRootBackend KoalaBear.Fast.Field :=
-  rothRuckensteinRootBackend KoalaBear.Fast.Field fastKoalaBearNttFastFieldRootBackend
+def fastKoalaBearRothNttFastRootContext : GSRootContext KoalaBear.Fast.Field :=
+  rothRuckensteinRootContext KoalaBear.Fast.Field fastKoalaBearNttFastFieldRootContext
 
 /-- Filtered dense/Roth context over canonical KoalaBear. -/
 def koalaBearDenseRothContext : GSFilteredCoreContext KoalaBear.Field :=
-  filteredCoreContextOfBackends koalaBearDenseInterpBackend koalaBearRothRootBackend
+  filteredCoreContextOfInterpRootContexts koalaBearDenseInterpContext koalaBearRothRootContext
 
 /-- Filtered dense/Roth context over canonical KoalaBear with NTTFast field roots. -/
 def koalaBearDenseRothNttFastContext : GSFilteredCoreContext KoalaBear.Field :=
-  filteredCoreContextOfBackends koalaBearDenseInterpBackend koalaBearRothNttFastRootBackend
+  filteredCoreContextOfInterpRootContexts koalaBearDenseInterpContext
+    koalaBearRothNttFastRootContext
 
 /-- Filtered dense/Roth context over native-word fast KoalaBear. -/
 def fastKoalaBearDenseRothContext : GSFilteredCoreContext KoalaBear.Fast.Field :=
-  filteredCoreContextOfBackends fastKoalaBearDenseInterpBackend fastKoalaBearRothRootBackend
+  filteredCoreContextOfInterpRootContexts fastKoalaBearDenseInterpContext
+    fastKoalaBearRothRootContext
 
 /-- Filtered dense/Roth context over native-word fast KoalaBear with NTTFast field roots. -/
 def fastKoalaBearDenseRothNttFastContext : GSFilteredCoreContext KoalaBear.Fast.Field :=
-  filteredCoreContextOfBackends fastKoalaBearDenseInterpBackend fastKoalaBearRothNttFastRootBackend
+  filteredCoreContextOfInterpRootContexts fastKoalaBearDenseInterpContext
+    fastKoalaBearRothNttFastRootContext
 
 /-- Concrete soundness for the canonical KoalaBear dense/Roth core. -/
 theorem koalaBearDenseRothGsCore_sound {points : Array (KoalaBear.Field × KoalaBear.Field)}
     {params : GSInterpParams} {p : CPolynomial KoalaBear.Field}
-    (hp : p ∈ (gsCore points koalaBearDenseInterpBackend koalaBearRothRootBackend params).toList) :
+    (hp : p ∈ (gsCore points koalaBearDenseInterpContext koalaBearRothRootContext params).toList) :
     ∃ Q,
-      koalaBearDenseInterpBackend.interpolate points params = some Q ∧
+      koalaBearDenseInterpContext.interpolate points params = some Q ∧
         ValidInterpolationWitness points params Q ∧
           degreeLt p params.messageDegree ∧
             CBivariate.composeY Q p = 0 :=
-  gsCore_sound (interpBackend := koalaBearDenseInterpBackend)
-    (rootBackend := koalaBearRothRootBackend) hp
+  gsCore_sound (interpContext := koalaBearDenseInterpContext)
+    (rootContext := koalaBearRothRootContext) hp
 
 /-- Concrete completeness for the canonical KoalaBear dense/Roth core. -/
 theorem koalaBearDenseRothGsCore_complete_of_enough_matches
@@ -79,25 +82,25 @@ theorem koalaBearDenseRothGsCore_complete_of_enough_matches
     (hpdeg : degreeLt p params.messageDegree)
     (hdistinct : DistinctXCoordinates points)
     (hmatches : params.weightedDegreeBound < params.multiplicity * matchingPointCount points p) :
-    p ∈ (gsCore points koalaBearDenseInterpBackend koalaBearRothRootBackend params).toList :=
-  gsCore_complete_of_enough_matches (interpBackend := koalaBearDenseInterpBackend)
-    (rootBackend := koalaBearRothRootBackend) hInterpExists hpdeg hdistinct hmatches
+    p ∈ (gsCore points koalaBearDenseInterpContext koalaBearRothRootContext params).toList :=
+  gsCore_complete_of_enough_matches (interpContext := koalaBearDenseInterpContext)
+    (rootContext := koalaBearRothRootContext) hInterpExists hpdeg hdistinct hmatches
 
 /-- Concrete soundness for the canonical KoalaBear dense/Roth filtered core. -/
 theorem koalaBearDenseRothGsFilteredCore_sound
     {points : Array (KoalaBear.Field × KoalaBear.Field)}
     {params : GSInterpParams} {radius : Nat} {p : CPolynomial KoalaBear.Field}
     (hp :
-      p ∈ (gsFilteredCore points koalaBearDenseInterpBackend koalaBearRothRootBackend
+      p ∈ (gsFilteredCore points koalaBearDenseInterpContext koalaBearRothRootContext
         params radius).toList) :
     ∃ Q,
-      koalaBearDenseInterpBackend.interpolate points params = some Q ∧
+      koalaBearDenseInterpContext.interpolate points params = some Q ∧
         ValidInterpolationWitness points params Q ∧
           degreeLt p params.messageDegree ∧
             CBivariate.composeY Q p = 0 ∧
               candidateMismatchCount points p ≤ radius :=
-  gsFilteredCore_sound (interpBackend := koalaBearDenseInterpBackend)
-    (rootBackend := koalaBearRothRootBackend) hp
+  gsFilteredCore_sound (interpContext := koalaBearDenseInterpContext)
+    (rootContext := koalaBearRothRootContext) hp
 
 /-- Concrete completeness for the canonical KoalaBear dense/Roth filtered core. -/
 theorem koalaBearDenseRothGsFilteredCore_complete_of_enough_matches
@@ -108,25 +111,25 @@ theorem koalaBearDenseRothGsFilteredCore_complete_of_enough_matches
     (hdistinct : DistinctXCoordinates points)
     (hmatches : params.weightedDegreeBound < params.multiplicity * matchingPointCount points p)
     (hpass : passesCandidateDistance points radius p = true) :
-    p ∈ (gsFilteredCore points koalaBearDenseInterpBackend koalaBearRothRootBackend
+    p ∈ (gsFilteredCore points koalaBearDenseInterpContext koalaBearRothRootContext
       params radius).toList :=
-  gsFilteredCore_complete_of_enough_matches (interpBackend := koalaBearDenseInterpBackend)
-    (rootBackend := koalaBearRothRootBackend) hInterpExists hpdeg hdistinct hmatches hpass
+  gsFilteredCore_complete_of_enough_matches (interpContext := koalaBearDenseInterpContext)
+    (rootContext := koalaBearRothRootContext) hInterpExists hpdeg hdistinct hmatches hpass
 
 /-- Concrete soundness for the canonical KoalaBear dense/Roth-NTTFast core. -/
 theorem koalaBearDenseRothNttFastGsCore_sound
     {points : Array (KoalaBear.Field × KoalaBear.Field)}
     {params : GSInterpParams} {p : CPolynomial KoalaBear.Field}
     (hp :
-      p ∈ (gsCore points koalaBearDenseInterpBackend koalaBearRothNttFastRootBackend
+      p ∈ (gsCore points koalaBearDenseInterpContext koalaBearRothNttFastRootContext
         params).toList) :
     ∃ Q,
-      koalaBearDenseInterpBackend.interpolate points params = some Q ∧
+      koalaBearDenseInterpContext.interpolate points params = some Q ∧
         ValidInterpolationWitness points params Q ∧
           degreeLt p params.messageDegree ∧
             CBivariate.composeY Q p = 0 :=
-  gsCore_sound (interpBackend := koalaBearDenseInterpBackend)
-    (rootBackend := koalaBearRothNttFastRootBackend) hp
+  gsCore_sound (interpContext := koalaBearDenseInterpContext)
+    (rootContext := koalaBearRothNttFastRootContext) hp
 
 /-- Concrete completeness for the canonical KoalaBear dense/Roth-NTTFast core. -/
 theorem koalaBearDenseRothNttFastGsCore_complete_of_enough_matches
@@ -136,25 +139,25 @@ theorem koalaBearDenseRothNttFastGsCore_complete_of_enough_matches
     (hpdeg : degreeLt p params.messageDegree)
     (hdistinct : DistinctXCoordinates points)
     (hmatches : params.weightedDegreeBound < params.multiplicity * matchingPointCount points p) :
-    p ∈ (gsCore points koalaBearDenseInterpBackend koalaBearRothNttFastRootBackend params).toList :=
-  gsCore_complete_of_enough_matches (interpBackend := koalaBearDenseInterpBackend)
-    (rootBackend := koalaBearRothNttFastRootBackend) hInterpExists hpdeg hdistinct hmatches
+    p ∈ (gsCore points koalaBearDenseInterpContext koalaBearRothNttFastRootContext params).toList :=
+  gsCore_complete_of_enough_matches (interpContext := koalaBearDenseInterpContext)
+    (rootContext := koalaBearRothNttFastRootContext) hInterpExists hpdeg hdistinct hmatches
 
 /-- Concrete soundness for the canonical KoalaBear dense/Roth-NTTFast filtered core. -/
 theorem koalaBearDenseRothNttFastGsFilteredCore_sound
     {points : Array (KoalaBear.Field × KoalaBear.Field)}
     {params : GSInterpParams} {radius : Nat} {p : CPolynomial KoalaBear.Field}
     (hp :
-      p ∈ (gsFilteredCore points koalaBearDenseInterpBackend koalaBearRothNttFastRootBackend
+      p ∈ (gsFilteredCore points koalaBearDenseInterpContext koalaBearRothNttFastRootContext
         params radius).toList) :
     ∃ Q,
-      koalaBearDenseInterpBackend.interpolate points params = some Q ∧
+      koalaBearDenseInterpContext.interpolate points params = some Q ∧
         ValidInterpolationWitness points params Q ∧
           degreeLt p params.messageDegree ∧
             CBivariate.composeY Q p = 0 ∧
               candidateMismatchCount points p ≤ radius :=
-  gsFilteredCore_sound (interpBackend := koalaBearDenseInterpBackend)
-    (rootBackend := koalaBearRothNttFastRootBackend) hp
+  gsFilteredCore_sound (interpContext := koalaBearDenseInterpContext)
+    (rootContext := koalaBearRothNttFastRootContext) hp
 
 /-- Concrete completeness for the canonical KoalaBear dense/Roth-NTTFast filtered core. -/
 theorem koalaBearDenseRothNttFastGsFilteredCore_complete_of_enough_matches
@@ -165,25 +168,25 @@ theorem koalaBearDenseRothNttFastGsFilteredCore_complete_of_enough_matches
     (hdistinct : DistinctXCoordinates points)
     (hmatches : params.weightedDegreeBound < params.multiplicity * matchingPointCount points p)
     (hpass : passesCandidateDistance points radius p = true) :
-    p ∈ (gsFilteredCore points koalaBearDenseInterpBackend koalaBearRothNttFastRootBackend
+    p ∈ (gsFilteredCore points koalaBearDenseInterpContext koalaBearRothNttFastRootContext
       params radius).toList :=
-  gsFilteredCore_complete_of_enough_matches (interpBackend := koalaBearDenseInterpBackend)
-    (rootBackend := koalaBearRothNttFastRootBackend) hInterpExists hpdeg hdistinct hmatches hpass
+  gsFilteredCore_complete_of_enough_matches (interpContext := koalaBearDenseInterpContext)
+    (rootContext := koalaBearRothNttFastRootContext) hInterpExists hpdeg hdistinct hmatches hpass
 
 /-- Concrete soundness for the fast KoalaBear dense/Roth core. -/
 theorem fastKoalaBearDenseRothGsCore_sound
     {points : Array (KoalaBear.Fast.Field × KoalaBear.Fast.Field)}
     {params : GSInterpParams} {p : CPolynomial KoalaBear.Fast.Field}
     (hp :
-      p ∈ (gsCore points fastKoalaBearDenseInterpBackend fastKoalaBearRothRootBackend
+      p ∈ (gsCore points fastKoalaBearDenseInterpContext fastKoalaBearRothRootContext
         params).toList) :
     ∃ Q,
-      fastKoalaBearDenseInterpBackend.interpolate points params = some Q ∧
+      fastKoalaBearDenseInterpContext.interpolate points params = some Q ∧
         ValidInterpolationWitness points params Q ∧
           degreeLt p params.messageDegree ∧
             CBivariate.composeY Q p = 0 :=
-  gsCore_sound (interpBackend := fastKoalaBearDenseInterpBackend)
-    (rootBackend := fastKoalaBearRothRootBackend) hp
+  gsCore_sound (interpContext := fastKoalaBearDenseInterpContext)
+    (rootContext := fastKoalaBearRothRootContext) hp
 
 /-- Concrete completeness for the fast KoalaBear dense/Roth core. -/
 theorem fastKoalaBearDenseRothGsCore_complete_of_enough_matches
@@ -193,26 +196,26 @@ theorem fastKoalaBearDenseRothGsCore_complete_of_enough_matches
     (hpdeg : degreeLt p params.messageDegree)
     (hdistinct : DistinctXCoordinates points)
     (hmatches : params.weightedDegreeBound < params.multiplicity * matchingPointCount points p) :
-    p ∈ (gsCore points fastKoalaBearDenseInterpBackend fastKoalaBearRothRootBackend
+    p ∈ (gsCore points fastKoalaBearDenseInterpContext fastKoalaBearRothRootContext
       params).toList :=
-  gsCore_complete_of_enough_matches (interpBackend := fastKoalaBearDenseInterpBackend)
-    (rootBackend := fastKoalaBearRothRootBackend) hInterpExists hpdeg hdistinct hmatches
+  gsCore_complete_of_enough_matches (interpContext := fastKoalaBearDenseInterpContext)
+    (rootContext := fastKoalaBearRothRootContext) hInterpExists hpdeg hdistinct hmatches
 
 /-- Concrete soundness for the fast KoalaBear dense/Roth filtered core. -/
 theorem fastKoalaBearDenseRothGsFilteredCore_sound
     {points : Array (KoalaBear.Fast.Field × KoalaBear.Fast.Field)}
     {params : GSInterpParams} {radius : Nat} {p : CPolynomial KoalaBear.Fast.Field}
     (hp :
-      p ∈ (gsFilteredCore points fastKoalaBearDenseInterpBackend fastKoalaBearRothRootBackend
+      p ∈ (gsFilteredCore points fastKoalaBearDenseInterpContext fastKoalaBearRothRootContext
         params radius).toList) :
     ∃ Q,
-      fastKoalaBearDenseInterpBackend.interpolate points params = some Q ∧
+      fastKoalaBearDenseInterpContext.interpolate points params = some Q ∧
         ValidInterpolationWitness points params Q ∧
           degreeLt p params.messageDegree ∧
             CBivariate.composeY Q p = 0 ∧
               candidateMismatchCount points p ≤ radius :=
-  gsFilteredCore_sound (interpBackend := fastKoalaBearDenseInterpBackend)
-    (rootBackend := fastKoalaBearRothRootBackend) hp
+  gsFilteredCore_sound (interpContext := fastKoalaBearDenseInterpContext)
+    (rootContext := fastKoalaBearRothRootContext) hp
 
 /-- Concrete completeness for the fast KoalaBear dense/Roth filtered core. -/
 theorem fastKoalaBearDenseRothGsFilteredCore_complete_of_enough_matches
@@ -223,25 +226,25 @@ theorem fastKoalaBearDenseRothGsFilteredCore_complete_of_enough_matches
     (hdistinct : DistinctXCoordinates points)
     (hmatches : params.weightedDegreeBound < params.multiplicity * matchingPointCount points p)
     (hpass : passesCandidateDistance points radius p = true) :
-    p ∈ (gsFilteredCore points fastKoalaBearDenseInterpBackend fastKoalaBearRothRootBackend
+    p ∈ (gsFilteredCore points fastKoalaBearDenseInterpContext fastKoalaBearRothRootContext
       params radius).toList :=
-  gsFilteredCore_complete_of_enough_matches (interpBackend := fastKoalaBearDenseInterpBackend)
-    (rootBackend := fastKoalaBearRothRootBackend) hInterpExists hpdeg hdistinct hmatches hpass
+  gsFilteredCore_complete_of_enough_matches (interpContext := fastKoalaBearDenseInterpContext)
+    (rootContext := fastKoalaBearRothRootContext) hInterpExists hpdeg hdistinct hmatches hpass
 
 /-- Concrete soundness for the fast KoalaBear dense/Roth-NTTFast core. -/
 theorem fastKoalaBearDenseRothNttFastGsCore_sound
     {points : Array (KoalaBear.Fast.Field × KoalaBear.Fast.Field)}
     {params : GSInterpParams} {p : CPolynomial KoalaBear.Fast.Field}
     (hp :
-      p ∈ (gsCore points fastKoalaBearDenseInterpBackend fastKoalaBearRothNttFastRootBackend
+      p ∈ (gsCore points fastKoalaBearDenseInterpContext fastKoalaBearRothNttFastRootContext
         params).toList) :
     ∃ Q,
-      fastKoalaBearDenseInterpBackend.interpolate points params = some Q ∧
+      fastKoalaBearDenseInterpContext.interpolate points params = some Q ∧
         ValidInterpolationWitness points params Q ∧
           degreeLt p params.messageDegree ∧
             CBivariate.composeY Q p = 0 :=
-  gsCore_sound (interpBackend := fastKoalaBearDenseInterpBackend)
-    (rootBackend := fastKoalaBearRothNttFastRootBackend) hp
+  gsCore_sound (interpContext := fastKoalaBearDenseInterpContext)
+    (rootContext := fastKoalaBearRothNttFastRootContext) hp
 
 /-- Concrete completeness for the fast KoalaBear dense/Roth-NTTFast core. -/
 theorem fastKoalaBearDenseRothNttFastGsCore_complete_of_enough_matches
@@ -251,26 +254,26 @@ theorem fastKoalaBearDenseRothNttFastGsCore_complete_of_enough_matches
     (hpdeg : degreeLt p params.messageDegree)
     (hdistinct : DistinctXCoordinates points)
     (hmatches : params.weightedDegreeBound < params.multiplicity * matchingPointCount points p) :
-    p ∈ (gsCore points fastKoalaBearDenseInterpBackend fastKoalaBearRothNttFastRootBackend
+    p ∈ (gsCore points fastKoalaBearDenseInterpContext fastKoalaBearRothNttFastRootContext
       params).toList :=
-  gsCore_complete_of_enough_matches (interpBackend := fastKoalaBearDenseInterpBackend)
-    (rootBackend := fastKoalaBearRothNttFastRootBackend) hInterpExists hpdeg hdistinct hmatches
+  gsCore_complete_of_enough_matches (interpContext := fastKoalaBearDenseInterpContext)
+    (rootContext := fastKoalaBearRothNttFastRootContext) hInterpExists hpdeg hdistinct hmatches
 
 /-- Concrete soundness for the fast KoalaBear dense/Roth-NTTFast filtered core. -/
 theorem fastKoalaBearDenseRothNttFastGsFilteredCore_sound
     {points : Array (KoalaBear.Fast.Field × KoalaBear.Fast.Field)}
     {params : GSInterpParams} {radius : Nat} {p : CPolynomial KoalaBear.Fast.Field}
     (hp :
-      p ∈ (gsFilteredCore points fastKoalaBearDenseInterpBackend
-        fastKoalaBearRothNttFastRootBackend params radius).toList) :
+      p ∈ (gsFilteredCore points fastKoalaBearDenseInterpContext
+        fastKoalaBearRothNttFastRootContext params radius).toList) :
     ∃ Q,
-      fastKoalaBearDenseInterpBackend.interpolate points params = some Q ∧
+      fastKoalaBearDenseInterpContext.interpolate points params = some Q ∧
         ValidInterpolationWitness points params Q ∧
           degreeLt p params.messageDegree ∧
             CBivariate.composeY Q p = 0 ∧
               candidateMismatchCount points p ≤ radius :=
-  gsFilteredCore_sound (interpBackend := fastKoalaBearDenseInterpBackend)
-    (rootBackend := fastKoalaBearRothNttFastRootBackend) hp
+  gsFilteredCore_sound (interpContext := fastKoalaBearDenseInterpContext)
+    (rootContext := fastKoalaBearRothNttFastRootContext) hp
 
 /-- Concrete completeness for the fast KoalaBear dense/Roth-NTTFast filtered core. -/
 theorem fastKoalaBearDenseRothNttFastGsFilteredCore_complete_of_enough_matches
@@ -281,10 +284,10 @@ theorem fastKoalaBearDenseRothNttFastGsFilteredCore_complete_of_enough_matches
     (hdistinct : DistinctXCoordinates points)
     (hmatches : params.weightedDegreeBound < params.multiplicity * matchingPointCount points p)
     (hpass : passesCandidateDistance points radius p = true) :
-    p ∈ (gsFilteredCore points fastKoalaBearDenseInterpBackend
-      fastKoalaBearRothNttFastRootBackend params radius).toList :=
-  gsFilteredCore_complete_of_enough_matches (interpBackend := fastKoalaBearDenseInterpBackend)
-    (rootBackend := fastKoalaBearRothNttFastRootBackend)
+    p ∈ (gsFilteredCore points fastKoalaBearDenseInterpContext
+      fastKoalaBearRothNttFastRootContext params radius).toList :=
+  gsFilteredCore_complete_of_enough_matches (interpContext := fastKoalaBearDenseInterpContext)
+    (rootContext := fastKoalaBearRothNttFastRootContext)
     hInterpExists hpdeg hdistinct hmatches hpass
 
 end GuruswamiSudan
