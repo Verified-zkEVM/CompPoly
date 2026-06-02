@@ -22,7 +22,9 @@ variable {R : Type*}
 
 /-- Extended euclidean algorithm on `p, q`.
 
-Stops when `r = 0`, `r.natDegree < threshold`, or fuel `n` exhausted.
+Stops when `r.natDegree < threshold`, `r = 0`, or fuel `n` exhausted.
+
+If `threshold > 0` then `xgcdAux` will not compute the greatest commmon divisor.
 
 Potential optimization: the raw long division behind `r' / r` already computes
 `r' - (r' / r) * r` but it's not exposed through `CPolynomial R`.
@@ -33,10 +35,10 @@ def xgcdAux [Field R] [BEq R] [LawfulBEq R]
   match n with
   | 0 => (r', s', t')
   | k + 1 =>
-    if r == 0 then
-      (r', s', t')
-    else if r.natDegree < threshold then
+    if r.natDegree < threshold then
       (r, s, t)
+    else if r == 0 then
+      (r', s', t')
     else
       let q := r' / r
       xgcdAux threshold k
@@ -47,7 +49,10 @@ def xgcdAux [Field R] [BEq R] [LawfulBEq R]
 Returns `(r, s, t)` with `r = s * p + t * q`.
 
 With the default `threshold = 0` returns the gcd of `p` and `q`.
-With `threshold > 0` stops when `r.natDegree < threshold`. -/
+With `threshold > 0` stops when `r.natDegree < threshold`.
+
+If `threshold > 0` then `xgcdAux` will not compute the greatest commmon divisor.
+-/
 def xgcd [Field R] [BEq R] [LawfulBEq R]
     (p q : CPolynomial R) (threshold : ℕ := 0) :
     CPolynomial R × CPolynomial R × CPolynomial R :=
