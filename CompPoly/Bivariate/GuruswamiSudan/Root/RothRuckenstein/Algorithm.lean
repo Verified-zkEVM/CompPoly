@@ -10,7 +10,13 @@ import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots
 # Roth-Ruckenstein-Style Root Finding
 
 Executable bounded-degree roots for `CBivariate F` using recursive coefficient
-reconstruction and an explicit univariate field-root backend.
+reconstruction and an explicit univariate field-root backend, following the
+Roth-Ruckenstein root-search step [RR00].
+
+## References
+
+* [Roth, R. M., and Ruckenstein, G., *Efficient decoding of Reed-Solomon codes
+    beyond half the minimum distance*][RR00]
 -/
 
 namespace CompPoly

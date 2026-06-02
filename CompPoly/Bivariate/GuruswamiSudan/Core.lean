@@ -10,7 +10,13 @@ import CompPoly.Bivariate.GuruswamiSudan.Root
 /-!
 # Guruswami-Sudan Core
 
-End-to-end executable CompPoly Guruswami-Sudan polynomial core.
+End-to-end executable CompPoly Guruswami-Sudan polynomial core, following the
+interpolation-and-root-finding decomposition of [GS99].
+
+## References
+
+* [Guruswami, V., and Sudan, M., *Improved decoding of Reed-Solomon and
+    algebraic-geometry codes*][GS99]
 -/
 
 namespace CompPoly

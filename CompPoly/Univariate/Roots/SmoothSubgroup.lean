@@ -13,11 +13,17 @@ import Mathlib.GroupTheory.OrderOfElement
 # Smooth Multiplicative-Subgroup Linear-Factor Splitting
 
 Executable splitter for field-root products over finite fields whose
-multiplicative group admits a smooth cyclic refinement schedule.
+multiplicative group admits a smooth cyclic refinement schedule, following the
+subgroup-refinement root-finding method of [MOV92].
 
 The generic root pipeline still sees only a `LinearFactorProductSplitter`. This
 module provides a contract-bearing smooth context plus an adapter from that
 context to the shared splitter interface.
+
+## References
+
+* [Menezes, A. J., van Oorschot, P. C., and Vanstone, S. A., *Subgroup
+    Refinement Algorithms for Root Finding in GF(q)*][MOV92]
 -/
 
 namespace CompPoly

@@ -9,9 +9,15 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Basic
 /-!
 # Dense Guruswami-Sudan Interpolation
 
-Executable interpolation backend. For positive `Y` weight, it builds a
-Hasse-constraint matrix, computes one homogeneous-kernel witness, and normalizes
-it. For low message degree, it returns an explicit product witness.
+Executable interpolation backend for the Guruswami-Sudan decoder [GS99]. For
+positive `Y` weight, it builds a Hasse-constraint matrix, computes one
+homogeneous-kernel witness, and normalizes it. For low message degree, it returns
+an explicit product witness.
+
+## References
+
+* [Guruswami, V., and Sudan, M., *Improved decoding of Reed-Solomon and
+    algebraic-geometry codes*][GS99]
 -/
 
 namespace CompPoly
