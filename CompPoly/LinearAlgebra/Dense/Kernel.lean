@@ -21,20 +21,20 @@ variable {F : Type*}
 
 /-- Boolean membership test for natural-number arrays. -/
 def containsNat (xs : Array Nat) (x : Nat) : Bool :=
-  xs.any fun y => y == x
+  xs.any fun y ↦ y == x
 
 /-- Free columns of a row-reduced matrix. -/
 def freeColumns (cols : Nat) (pivots : Array Nat) : Array Nat :=
-  ((List.range cols).filter fun col => !(containsNat pivots col)).toArray
+  ((List.range cols).filter fun col ↦ !(containsNat pivots col)).toArray
 
 /-- Pivot row for a pivot column, if the column is a pivot. -/
 def pivotRowOfColumn? (pivots : Array Nat) (col : Nat) : Option Nat :=
-  (List.range pivots.size).find? fun row => pivots.getD row 0 == col
+  (List.range pivots.size).find? fun row ↦ pivots.getD row 0 == col
 
 /-- Kernel basis vector corresponding to one free column of an RREF matrix. -/
 def basisVectorForFreeColumn [Field F] [BEq F] (A : DenseMatrix F)
     (pivots : Array Nat) (free : Nat) : Array F :=
-  Array.ofFn fun i : Fin A.cols =>
+  Array.ofFn fun i : Fin A.cols ↦
     if i.val == free then
       1
     else

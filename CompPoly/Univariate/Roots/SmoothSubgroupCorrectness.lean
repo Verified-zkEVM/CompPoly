@@ -154,7 +154,7 @@ private theorem linearFactorsFromLeafValues_sound {F : Type*}
   have haux : ∀ (xs : List (F × Nat)) (acc : Array (CPolynomial F)),
       (∀ factor, factor ∈ acc.toList → IsLinearFactor factor) →
         factor ∈ (xs.foldl
-          (fun factors x =>
+          (fun factors x ↦
             if values.getD x.2 1 == 0 then
               factors.push (CPolynomial.linearFactor x.1)
             else
@@ -204,7 +204,7 @@ private theorem mem_linearFactorsFromLeafValues_of_get_eq_zero {F : Type*}
   have haux : ∀ (xs : List (F × Nat)) (acc : Array (CPolynomial F)),
       CPolynomial.linearFactor points[idx] ∈ acc.toList ∨ (points[idx], idx) ∈ xs →
         CPolynomial.linearFactor points[idx] ∈ (xs.foldl
-          (fun factors x =>
+          (fun factors x ↦
             if values.getD x.2 1 == 0 then
               factors.push (CPolynomial.linearFactor x.1)
             else
@@ -268,7 +268,7 @@ theorem smoothLeafLinearFactors_complete {F : Type*}
   have hval : (E.evalBatchWith p points).getD k 1 = 0 := by
     rw [E.correct]
     unfold CPolynomial.evalBatch
-    rw [Array.getD_map_of_lt points (fun x => CPolynomial.eval x p) 1 hsize]
+    rw [Array.getD_map_of_lt points (fun x ↦ CPolynomial.eval x p) 1 hsize]
     rw [hpoint]
     exact hroot
   have hmem := mem_linearFactorsFromLeafValues_of_get_eq_zero points (E.evalBatchWith p points)
@@ -330,7 +330,7 @@ theorem smoothCosetLinearFactorsWithSchedule_sound {F : Type*}
               have hfold : ∀ (js : List Nat) (acc : Array (CPolynomial F)),
                   (∀ factor, factor ∈ acc.toList → IsLinearFactor factor) →
                     factor ∈ (js.foldl
-                      (fun factors j =>
+                      (fun factors j ↦
                         let beta := alpha ^ childOrder * tau ^ j
                         let witness := xPow - CPolynomial.C beta
                         let child := CPolynomial.monicNormalize
@@ -491,7 +491,7 @@ theorem exists_generator_pow_of_order_eq_card_sub_one {F : Type*}
   · have hklt : k < orderOf (gu : Fˣ) := by
       simpa using Finset.mem_range.mp hk
     rwa [hgu_order, Nat.card_units, hcard] at hklt
-  · have hval := congrArg (fun u : Fˣ => (u : F)) hkpow
+  · have hval := congrArg (fun u : Fˣ ↦ (u : F)) hkpow
     simpa [gu, au] using hval.symm
 
 /-- Roots of `p` are contained in the explicit coset `alpha * <gamma>` of order `order`. -/
@@ -564,7 +564,7 @@ instance instDecidableSmoothScheduleDivides (schedule : List Nat) (order : Nat) 
 theorem smooth_schedule_reaches_singleton {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (ctx : SmoothCyclicRootContext F) :
-    ctx.schedule.toList.foldl (fun order ell => order / ell) (ctx.q - 1) = 1 :=
+    ctx.schedule.toList.foldl (fun order ell ↦ order / ell) (ctx.q - 1) = 1 :=
   ctx.schedule_complete
 
 end FiniteField

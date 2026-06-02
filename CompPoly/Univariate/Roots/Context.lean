@@ -56,7 +56,7 @@ structure LinearFactorProductSplitter (F : Type*) [Field F] [BEq F] [LawfulBEq F
   pass to the splitter. Executable splitters may remain defensive outside this
   predicate, but completeness is only part of the contract under it.
   -/
-  validInput : Nat → CPolynomial F → Prop := fun _ _ => True
+  validInput : Nat → CPolynomial F → Prop := fun _ _ ↦ True
   sound :
     ∀ q p factor,
       factor ∈ (splitLinearFactors q p).toList →

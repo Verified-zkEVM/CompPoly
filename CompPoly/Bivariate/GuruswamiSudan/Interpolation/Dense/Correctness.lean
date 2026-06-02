@@ -73,13 +73,13 @@ private theorem firstNonzeroIndex?_some_lt_ne {F : Type*} [Zero F] [BEq F] [Lawf
 
 private theorem map_div_getD_of_lt {F : Type*} [Div F] [Zero F]
     (a : F) {v : Array F} {i : Nat} (hi : i < v.size) :
-    (v.map fun x => x / a).getD i 0 = v.getD i 0 / a := by
+    (v.map fun x ↦ x / a).getD i 0 = v.getD i 0 / a := by
   simp [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hi]
 
 private theorem normalizeVector?_some_data {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     {v w : Array F} (h : normalizeVector? v = some w) :
     ∃ pivot, pivot < v.size ∧ v.getD pivot 0 ≠ 0 ∧
-      w = v.map (fun x => x / v.getD pivot 0) ∧
+      w = v.map (fun x ↦ x / v.getD pivot 0) ∧
       w.size = v.size ∧ w.getD pivot 0 = 1 := by
   unfold normalizeVector? at h
   cases hpivot : firstNonzeroIndex? v with
@@ -106,11 +106,11 @@ private def interpolationConstraintsFold {F : Type*}
     (points : Array (Prod F F)) (multiplicity : Nat) :
     Array (InterpolationConstraint F) :=
   points.toList.foldl
-    (fun constraints point =>
+    (fun constraints point ↦
       (List.range' 0 multiplicity).foldl
-        (fun constraints a =>
+        (fun constraints a ↦
           (List.range' 0 (multiplicity - a)).foldl
-            (fun constraints b =>
+            (fun constraints b ↦
               constraints.push
                 ({ x := point.1, y := point.2, xOrder := a, yOrder := b } :
                   InterpolationConstraint F))
@@ -170,17 +170,17 @@ private theorem interpolationConstraint_mem_point_step {F : Type*}
     ({ x := point.1, y := point.2, xOrder := a, yOrder := b } :
       InterpolationConstraint F) ∈
       List.foldl
-        (fun out a' =>
+        (fun out a' ↦
           (List.range' 0 (multiplicity - a')).foldl
-            (fun out b' =>
+            (fun out b' ↦
               out.push ({ x := point.1, y := point.2, xOrder := a', yOrder := b' } :
                 InterpolationConstraint F))
             out)
         out (List.range' 0 multiplicity) := by
   refine foldl_array_mem_of_mem_step
-    (step := fun out a' =>
+    (step := fun out a' ↦
       (List.range' 0 (multiplicity - a')).foldl
-        (fun out b' =>
+        (fun out b' ↦
           out.push ({ x := point.1, y := point.2, xOrder := a', yOrder := b' } :
             InterpolationConstraint F))
         out)
@@ -194,7 +194,7 @@ private theorem interpolationConstraint_mem_point_step {F : Type*}
       exact Array.mem_push_of_mem _ hy) _ acc hy
   · intro acc
     refine foldl_array_mem_of_mem_step
-      (step := fun out b' =>
+      (step := fun out b' ↦
         out.push ({ x := point.1, y := point.2, xOrder := a, yOrder := b' } :
           InterpolationConstraint F))
       (target := b)
@@ -219,11 +219,11 @@ private theorem interpolationConstraints_mem {F : Type*} {points : Array (F × F
   unfold interpolationConstraintsFold
   apply Array.mem_toList_iff.mpr
   refine foldl_array_mem_of_mem_step
-    (step := fun constraints point =>
+    (step := fun constraints point ↦
       (List.range' 0 multiplicity).foldl
-        (fun constraints a =>
+        (fun constraints a ↦
           (List.range' 0 (multiplicity - a)).foldl
-            (fun constraints b =>
+            (fun constraints b ↦
               constraints.push ({ x := point.1, y := point.2, xOrder := a, yOrder := b } :
                 InterpolationConstraint F))
             constraints)
@@ -251,42 +251,42 @@ private theorem interpolationConstraints_mem_valid {F : Type*} [DecidableEq F]
       constraint.xOrder + constraint.yOrder < multiplicity := by
   rw [interpolationConstraints_eq_fold] at hmem
   unfold interpolationConstraintsFold at hmem
-  let valid : InterpolationConstraint F → Prop := fun constraint =>
+  let valid : InterpolationConstraint F → Prop := fun constraint ↦
     (constraint.x, constraint.y) ∈ points.toList ∧
       constraint.xOrder + constraint.yOrder < multiplicity
   change valid constraint
   refine foldl_array_mem_valid
-    (step := fun constraints point =>
+    (step := fun constraints point ↦
       (List.range' 0 multiplicity).foldl
-        (fun constraints a =>
+        (fun constraints a ↦
           (List.range' 0 (multiplicity - a)).foldl
-            (fun constraints b =>
+            (fun constraints b ↦
               constraints.push ({ x := point.1, y := point.2, xOrder := a, yOrder := b } :
                 InterpolationConstraint F))
             constraints)
         constraints)
     (valid := valid)
-    (prop := fun point => point ∈ points.toList)
+    (prop := fun point ↦ point ∈ points.toList)
     ?hstepPoint points.toList #[] ?hpropPoints ?hvalidEmpty hmem
   · intro constraints point candidate hpoint hconstraints hcandidate
     refine foldl_array_mem_valid
-      (step := fun constraints a =>
+      (step := fun constraints a ↦
         (List.range' 0 (multiplicity - a)).foldl
-          (fun constraints b =>
+          (fun constraints b ↦
             constraints.push ({ x := point.1, y := point.2, xOrder := a, yOrder := b } :
               InterpolationConstraint F))
           constraints)
       (valid := valid)
-      (prop := fun a => a < multiplicity)
+      (prop := fun a ↦ a < multiplicity)
       ?hstepA (List.range' 0 multiplicity) constraints ?hpropA hconstraints
       hcandidate
     · intro constraints a candidate ha hconstraints hcandidate
       refine foldl_array_mem_valid
-        (step := fun constraints b =>
+        (step := fun constraints b ↦
           constraints.push ({ x := point.1, y := point.2, xOrder := a, yOrder := b } :
             InterpolationConstraint F))
         (valid := valid)
-        (prop := fun b => b < multiplicity - a)
+        (prop := fun b ↦ b < multiplicity - a)
         ?hstepB (List.range' 0 (multiplicity - a)) constraints ?hpropB
         hconstraints hcandidate
       · intro constraints b candidate hb hconstraints hcandidate
@@ -351,7 +351,7 @@ private theorem interpolationMatrixOnBasis_dotRow {F : Type*} [Semiring F]
     {row : Nat} (hrow : row < (interpolationMatrixOnBasis basis points params).rows) :
     (interpolationMatrixOnBasis basis points params).dotRow row coeffs =
       (List.range' 0 basis.size).foldl
-        (fun acc col =>
+        (fun acc col ↦
           acc +
             hasseMonomialEval (basis.getD col ⟨0, 0⟩)
               ((interpolationConstraints points params.multiplicity).getD row
@@ -364,12 +364,12 @@ private theorem interpolationMatrixOnBasis_dotRow {F : Type*} [Semiring F]
   have hfold : ∀ (xs : List Nat) (acc : F),
       (∀ col, col ∈ xs → col < basis.size) →
       xs.foldl
-          (fun acc col =>
+          (fun acc col ↦
             acc + (interpolationMatrixOnBasis basis points params).get row col *
               coeffs.getD col 0)
           acc =
         xs.foldl
-          (fun acc col =>
+          (fun acc col ↦
             acc +
               hasseMonomialEval (basis.getD col ⟨0, 0⟩)
                 ((interpolationConstraints points params.multiplicity).getD row
@@ -398,7 +398,7 @@ private theorem interpolationMatrix_dotRow {F : Type*} [Semiring F]
     {row : Nat} (hrow : row < (interpolationMatrix points params).rows) :
     (interpolationMatrix points params).dotRow row coeffs =
       (List.range' 0 (interpolationMonomials params).size).foldl
-        (fun acc col =>
+        (fun acc col ↦
           acc +
             hasseMonomialEval ((interpolationMonomials params).getD col ⟨0, 0⟩)
               ((interpolationConstraints points params.multiplicity).getD row
@@ -443,7 +443,7 @@ private theorem hasseDerivativeEval_ofMonomialCoeffs {F : Type*}
     CBivariate.hasseDerivativeEval constraint.xOrder constraint.yOrder constraint.x constraint.y
         (CBivariate.ofMonomialCoeffs monomials coeffs) =
       (List.range' 0 monomials.size).foldl
-        (fun acc col =>
+        (fun acc col ↦
           acc + hasseMonomialEval (monomials.getD col ⟨0, 0⟩) constraint *
             coeffs.getD col 0)
         0 := by
@@ -454,13 +454,13 @@ private theorem hasseDerivativeEval_ofMonomialCoeffs {F : Type*}
       CBivariate.hasseDerivativeEval constraint.xOrder constraint.yOrder constraint.x
           constraint.y
           (xs.foldl
-            (fun out col =>
+            (fun out col ↦
               let monomial := monomials.getD col ⟨0, 0⟩
               out + CBivariate.monomialXY monomial.xDegree monomial.yDegree
                 (coeffs.getD col 0))
             out) =
         xs.foldl
-          (fun acc col =>
+          (fun acc col ↦
             acc + hasseMonomialEval (monomials.getD col ⟨0, 0⟩) constraint *
               coeffs.getD col 0)
           acc := by
@@ -504,15 +504,15 @@ private theorem interpolationPolynomial_weightedDegree_le {F : Type*}
 
 private theorem dotRow_map_div {F : Type*} [Field F]
     (M : DenseMatrix F) (row : Nat) (v : Array F) (a : F) :
-    DenseMatrix.dotRow M row (v.map fun x => x / a) =
+    DenseMatrix.dotRow M row (v.map fun x ↦ x / a) =
       DenseMatrix.dotRow M row v / a := by
   unfold DenseMatrix.dotRow
   have hfold : ∀ (xs : List Nat) (accL accR : F),
       accL = accR / a →
       xs.foldl
-          (fun acc col => acc + M.get row col * (v.map fun x => x / a).getD col 0)
+          (fun acc col ↦ acc + M.get row col * (v.map fun x ↦ x / a).getD col 0)
           accL =
-        xs.foldl (fun acc col => acc + M.get row col * v.getD col 0) accR / a := by
+        xs.foldl (fun acc col ↦ acc + M.get row col * v.getD col 0) accR / a := by
     intro xs
     induction xs with
     | nil =>
@@ -533,7 +533,7 @@ private theorem dotRow_map_div {F : Type*} [Field F]
 private theorem isHomogeneousSolution_map_div {F : Type*} [Field F]
     {M : DenseMatrix F} {v : Array F} (a : F)
     (hsol : DenseMatrix.IsHomogeneousSolution M v) :
-    DenseMatrix.IsHomogeneousSolution M (v.map fun x => x / a) := by
+    DenseMatrix.IsHomogeneousSolution M (v.map fun x ↦ x / a) := by
   intro row hrow
   rw [dotRow_map_div]
   rw [hsol row hrow]
@@ -712,7 +712,7 @@ private theorem normalizeVector?_some_of_nonzero {F : Type*} [Field F] [BEq F] [
   cases hfirst : firstNonzeroIndex? v with
   | some pivot =>
       have hpivot := firstNonzeroIndex?_some_lt_ne (v := v) hfirst
-      refine ⟨v.map (fun c => c / v.getD pivot 0), ?_⟩
+      refine ⟨v.map (fun c ↦ c / v.getD pivot 0), ?_⟩
       have hbeq : (v.getD pivot 0 == 0) = false :=
         beq_eq_false_iff_ne.mpr hpivot.2
       simp only
@@ -865,7 +865,7 @@ theorem denseInterpolateWithWeightedDegreeBasis_sound {F : Type*}
 private noncomputable def lowMessageYPolynomial {F : Type*} [Field F]
     (points : Array (F × F)) (multiplicity : Nat) : Polynomial F :=
   points.toList.foldl
-    (fun P point => P * ((Polynomial.X - Polynomial.C point.2) ^ multiplicity)) 1
+    (fun P point ↦ P * ((Polynomial.X - Polynomial.C point.2) ^ multiplicity)) 1
 
 private theorem cbivariate_toPoly_pow {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
@@ -880,7 +880,7 @@ private theorem cbivariate_toPoly_pow {F : Type*}
 private theorem list_foldl_mul_eq_mul_prod {α R : Type*} [CommMonoid R]
     (f : α → R) :
     ∀ (xs : List α) (init : R),
-      xs.foldl (fun acc x => acc * f x) init = init * (xs.map f).prod
+      xs.foldl (fun acc x ↦ acc * f x) init = init * (xs.map f).prod
   | [], init => by simp
   | x :: xs, init => by
       rw [List.foldl_cons, list_foldl_mul_eq_mul_prod f xs (init * f x)]
@@ -897,11 +897,11 @@ private theorem lowMessageYPolynomial_toPoly {F : Type*}
       CBivariate.toPoly Q = P.map (Polynomial.C : F →+* Polynomial F) →
         CBivariate.toPoly
             (xs.foldl
-              (fun Q point => Q *
+              (fun Q point ↦ Q *
                 CBivariate.linearYFactor (CPolynomial.C point.2) ^ multiplicity)
               Q) =
           (xs.foldl
-              (fun P point => P * (Polynomial.X - Polynomial.C point.2) ^ multiplicity)
+              (fun P point ↦ P * (Polynomial.X - Polynomial.C point.2) ^ multiplicity)
               P).map (Polynomial.C : F →+* Polynomial F) := by
     intro xs
     induction xs with
@@ -943,7 +943,7 @@ private theorem lowMessageYPolynomial_ne_zero {F : Type*} [Field F]
   have hfold : ∀ (xs : List (F × F)) (acc : Polynomial F),
       acc ≠ 0 →
         xs.foldl
-            (fun P point => P * (Polynomial.X - Polynomial.C point.2) ^ multiplicity)
+            (fun P point ↦ P * (Polynomial.X - Polynomial.C point.2) ^ multiplicity)
             acc ≠ 0 := by
     intro xs
     induction xs with
@@ -970,9 +970,9 @@ private theorem lowMessageYPolynomial_factor {F : Type*} [Field F]
   simp only [List.map_cons, List.prod_cons]
   rw [list_foldl_mul_eq_mul_prod]
   simp only [one_mul]
-  refine ⟨(as.map fun p : F × F =>
+  refine ⟨(as.map fun p : F × F ↦
         (Polynomial.X - Polynomial.C p.2) ^ multiplicity).prod *
-      (bs.map fun p : F × F =>
+      (bs.map fun p : F × F ↦
         (Polynomial.X - Polynomial.C p.2) ^ multiplicity).prod, ?_⟩
   ring
 
@@ -985,7 +985,7 @@ private theorem eval_hasseDeriv_X_sub_C_pow_eq_zero_of_lt {F : Type*} [Field F]
         (Polynomial.X : Polynomial F) ^ m := by
     rw [Polynomial.taylor_apply]
     simp
-  have hcoeff := congrArg (fun P : Polynomial F => P.coeff b) htaylor
+  have hcoeff := congrArg (fun P : Polynomial F ↦ P.coeff b) htaylor
   change ((Polynomial.taylor y ((Polynomial.X - Polynomial.C y : Polynomial F) ^ m)).coeff b) =
       ((Polynomial.X : Polynomial F) ^ m).coeff b at hcoeff
   rw [Polynomial.taylor_coeff, Polynomial.coeff_X_pow] at hcoeff
@@ -1015,7 +1015,7 @@ private theorem cbivariate_coeff_of_toPoly_map_C {F : Type*}
     (i j : Nat) :
     CBivariate.coeff Q i j = if i = 0 then P.coeff j else 0 := by
   have hcoeff := congrArg
-    (fun R : Polynomial (Polynomial F) => (R.coeff j).coeff i) hQ
+    (fun R : Polynomial (Polynomial F) ↦ (R.coeff j).coeff i) hQ
   change ((CBivariate.toPoly Q).coeff j).coeff i =
       ((P.map (Polynomial.C : F →+* Polynomial F)).coeff j).coeff i at hcoeff
   rw [CBivariate.coeff_toPoly] at hcoeff
@@ -1202,7 +1202,7 @@ private theorem cpoly_index_le_natDegree_of_coeff_ne_zero {F : Type*}
     i ≤ p.natDegree := by
   have hmem : i ∈ p.support := (CPolynomial.mem_support_iff p i).mpr hcoeff
   rw [CPolynomial.natDegree_eq_support_sup]
-  exact Finset.le_sup (f := fun n => n) hmem
+  exact Finset.le_sup (f := fun n ↦ n) hmem
 
 /-- When `messageDegree > 1`, the weighted-degree basis is complete for the
 semantic weighted-degree predicate. -/
@@ -1231,7 +1231,7 @@ theorem weightedDegreeBasis_complete_of_messageDegree_gt_one {F : Type*}
         CBivariate.natWeightedDegree Q 1 (yWeight params) := by
     unfold CBivariate.natWeightedDegree
     exact Finset.le_sup
-      (f := fun m => 1 * (Q.val.coeff m).natDegree + yWeight params * m) hjmem
+      (f := fun m ↦ 1 * (Q.val.coeff m).natDegree + yWeight params * m) hjmem
   have hile : i ≤ (Q.val.coeff j).natDegree :=
     cpoly_index_le_natDegree_of_coeff_ne_zero (p := Q.val.coeff j) hcoeff
   have hweight :

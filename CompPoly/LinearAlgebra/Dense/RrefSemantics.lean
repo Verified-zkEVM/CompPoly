@@ -25,7 +25,7 @@ def findPivotRowStep [Zero F] [BEq F] (M : DenseMatrix F) (col : Nat)
 
 theorem list_forIn_yield_eq_foldl {α β : Type*}
     (xs : List α) (init : β) (f : β → α → β) :
-    (Id.run (forIn xs init fun x acc => pure (ForInStep.yield (f acc x))) : β) =
+    (Id.run (forIn xs init fun x acc ↦ pure (ForInStep.yield (f acc x))) : β) =
       xs.foldl f init := by
   induction xs generalizing init with
   | nil =>
@@ -43,7 +43,7 @@ theorem findPivotRowStep_fold_some [Zero F] [BEq F]
 
 theorem list_forIn_findPivotRowStep_eq_foldl [Zero F] [BEq F]
     (M : DenseMatrix F) (col : Nat) (xs : List Nat) (out : Option Nat) :
-    (Id.run (forIn xs out fun row out =>
+    (Id.run (forIn xs out fun row out ↦
       if out = none ∧ (M.get row col == 0) = false then
         pure (ForInStep.yield (some row))
       else
@@ -189,7 +189,7 @@ theorem list_forIn_addScaledRow_wf [Field F]
     (rows : List Nat) {out : DenseMatrix F} (pivotRow pivotCol : Nat)
     (hout : WellFormed out) :
     WellFormed
-      (Id.run (forIn rows out fun row r =>
+      (Id.run (forIn rows out fun row r ↦
         if row = pivotRow then
           pure (ForInStep.yield r)
         else
@@ -230,7 +230,7 @@ theorem list_forIn_addScaledRow_solution_of_solution [Field F]
     (pivotRow pivotCol : Nat) (hpivot : pivotRow < out.rows)
     (hout : WellFormed out) (hsol : IsHomogeneousSolution out v) :
     IsHomogeneousSolution
-      (Id.run (forIn rows out fun row r =>
+      (Id.run (forIn rows out fun row r ↦
         if row = pivotRow then
           pure (ForInStep.yield r)
         else
@@ -276,7 +276,7 @@ theorem list_forIn_addScaledRow_solution_reflect [Field F]
     (hout : WellFormed out)
     (hsol :
       IsHomogeneousSolution
-        (Id.run (forIn rows out fun row r =>
+        (Id.run (forIn rows out fun row r ↦
           if row = pivotRow then
             pure (ForInStep.yield r)
           else

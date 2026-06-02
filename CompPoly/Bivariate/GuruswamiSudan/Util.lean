@@ -17,7 +17,7 @@ namespace GuruswamiSudan
 
 /-- Count nonzero entries in a dense coefficient vector. -/
 def nonzeroEntryCount {F : Type _} [Zero F] [BEq F] (v : Array F) : Nat :=
-  v.foldl (fun count x => if x == 0 then count else count + 1) 0
+  v.foldl (fun count x ↦ if x == 0 then count else count + 1) 0
 
 end GuruswamiSudan
 

@@ -28,7 +28,7 @@ def linearRootOfFactor? {F : Type*} [Field F] [BEq F]
 /-- Keep only candidates that are actual roots of the original polynomial. -/
 def validateRootCandidates {F : Type*} [Field F] [BEq F]
     (p : CPolynomial F) (candidates : Array F) : Array F :=
-  candidates.filter fun a => CPolynomial.evalHorner a p == 0
+  candidates.filter fun a ↦ CPolynomial.evalHorner a p == 0
 
 /-- Extract, validate, and deduplicate roots from a list of linear factors. -/
 def rootsFromLinearFactors {F : Type*} [Field F] [BEq F]

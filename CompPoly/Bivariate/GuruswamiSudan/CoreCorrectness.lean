@@ -128,13 +128,13 @@ private theorem matchingPointCount_eq_filter_length {F : Type*} [Semiring F] [BE
     (points : Array (F × F)) (p : CPolynomial F) :
     matchingPointCount points p =
       (points.toList.filter
-        (fun point => CPolynomial.eval point.1 p == point.2)).length := by
+        (fun point ↦ CPolynomial.eval point.1 p == point.2)).length := by
   cases points with
   | mk data =>
       unfold matchingPointCount
-      let pred : F × F → Bool := fun point => CPolynomial.eval point.1 p == point.2
+      let pred : F × F → Bool := fun point ↦ CPolynomial.eval point.1 p == point.2
       let step : Nat → F × F → Nat :=
-        fun count point => if pred point then count + 1 else count
+        fun count point ↦ if pred point then count + 1 else count
       have hfold : ∀ (xs : List (F × F)) acc,
           xs.foldl step acc = acc + (xs.filter pred).length := by
         intro xs
@@ -158,7 +158,7 @@ private theorem matchedX_nodup {F : Type*} [Semiring F] [BEq F]
     {points : Array (F × F)} {p : CPolynomial F}
     (hdistinct : DistinctXCoordinates points) :
     ((points.toList.filter
-      (fun point => CPolynomial.eval point.1 p == point.2)).map fun point => point.1).Nodup := by
+      (fun point ↦ CPolynomial.eval point.1 p == point.2)).map fun point ↦ point.1).Nodup := by
   unfold DistinctXCoordinates at hdistinct
   exact hdistinct.sublist (List.Sublist.map _ List.filter_sublist)
 
@@ -174,8 +174,8 @@ private theorem matchingPointCount_le_natDegree_composeY_of_ne_zero {F : Type*}
     (hmpos : 0 < params.multiplicity)
     (hcomp : CBivariate.composeY Q p ≠ 0) :
     matchingPointCount points p ≤ (CBivariate.composeY Q p).toPoly.natDegree := by
-  let matched := points.toList.filter fun point => CPolynomial.eval point.1 p == point.2
-  let xs : Finset F := (matched.map fun point => point.1).toFinset
+  let matched := points.toList.filter fun point ↦ CPolynomial.eval point.1 p == point.2
+  let xs : Finset F := (matched.map fun point ↦ point.1).toFinset
   have hxs_card : xs.card = matchingPointCount points p := by
     rw [matchingPointCount_eq_filter_length]
     dsimp [xs, matched]
@@ -283,7 +283,7 @@ private theorem hasseDeriv_eval_C_eq_eval_coeffwise_hasseDeriv {F : Type*}
     [Field F] (P : Polynomial (Polynomial F)) (y : F) (a : Nat) :
     Polynomial.hasseDeriv a (Polynomial.eval (Polynomial.C y) P) =
       Polynomial.eval (Polynomial.C y)
-        (P.sum fun j coeff => Polynomial.monomial j (Polynomial.hasseDeriv a coeff)) := by
+        (P.sum fun j coeff ↦ Polynomial.monomial j (Polynomial.hasseDeriv a coeff)) := by
   rw [Polynomial.eval_eq_sum]
   induction P using Polynomial.induction_on' with
   | add P Q hP hQ =>
@@ -307,7 +307,7 @@ private theorem hasseDeriv_eval_C_eq_eval_coeffwise_hasseDeriv {F : Type*}
 the Hasse derivative of the `j`-th coefficient. -/
 private theorem coeff_coeffwise_hasseDeriv_sum {F : Type*} [Field F]
     (P : Polynomial (Polynomial F)) (a j : Nat) :
-    ((P.sum fun k coeff => Polynomial.monomial k (Polynomial.hasseDeriv a coeff)).coeff j) =
+    ((P.sum fun k coeff ↦ Polynomial.monomial k (Polynomial.hasseDeriv a coeff)).coeff j) =
       Polynomial.hasseDeriv a (P.coeff j) := by
   rw [Polynomial.coeff_sum]
   rw [Polynomial.sum_def]
@@ -333,7 +333,7 @@ private theorem toPoly_hasseDerivative_eq_coeffwise_hasseDeriv_hasseDeriv {F : T
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (Q : CBivariate F) (a b : Nat) :
     (CBivariate.hasseDerivative a b Q).toPoly =
-      (Polynomial.hasseDeriv b Q.toPoly).sum fun j coeff =>
+      (Polynomial.hasseDeriv b Q.toPoly).sum fun j coeff ↦
         Polynomial.monomial j (Polynomial.hasseDeriv a coeff) := by
   ext j n
   rw [coeff_coeffwise_hasseDeriv_sum]
@@ -436,7 +436,7 @@ private theorem X_pow_dvd_eval_of_total_coeff_zero {F : Type*} [Field F]
   apply Finset.dvd_sum
   intro b _hb
   exact X_pow_dvd_mul_pow_of_total_coeff_zero (m := m) (b := b) hU
-    (fun a ha => hzero a b ha)
+    (fun a ha ↦ hzero a b ha)
 
 /-- Bivariate Hasse multiplicity at a matched point transfers to univariate root
 multiplicity of `Q(X, p(X))` at the matching `x`-coordinate. -/
@@ -480,7 +480,7 @@ private theorem finset_mul_card_le_natDegree_of_rootMultiplicity_ge {F : Type*}
   have hsum_le_roots : ∑ x ∈ xs, m ≤ R.roots.card := by
     calc
       ∑ x ∈ xs, m ≤ ∑ x ∈ xs, Multiset.count x R.roots := by
-        exact Finset.sum_le_sum fun x hx => by
+        exact Finset.sum_le_sum fun x hx ↦ by
           simpa [Polynomial.count_roots] using hmult x hx
       _ ≤ ∑ x ∈ xs ∪ R.roots.toFinset, Multiset.count x R.roots := by
         apply Finset.sum_le_sum_of_subset_of_nonneg
@@ -525,8 +525,8 @@ theorem composeY_eq_zero_of_enough_matching_multiplicity_points {F : Type*}
   · have hmone : params.multiplicity = 1 := by omega
     rw [hmone, one_mul] at hmatches
     omega
-  · let matched := points.toList.filter fun point => CPolynomial.eval point.1 p == point.2
-    let xs : Finset F := (matched.map fun point => point.1).toFinset
+  · let matched := points.toList.filter fun point ↦ CPolynomial.eval point.1 p == point.2
+    let xs : Finset F := (matched.map fun point ↦ point.1).toFinset
     have hxs_card : xs.card = matchingPointCount points p := by
       rw [matchingPointCount_eq_filter_length]
       dsimp [xs, matched]

@@ -346,7 +346,7 @@ def smoothRootSchedule : Array Nat :=
 
 /-- The KoalaBear smooth schedule refines the multiplicative group down to singleton cosets. -/
 lemma smoothRootSchedule_fold_eq_one :
-    smoothRootSchedule.toList.foldl (fun order ell => order / ell) (fieldSize - 1) = 1 := by
+    smoothRootSchedule.toList.foldl (fun order ell ↦ order / ell) (fieldSize - 1) = 1 := by
   unfold smoothRootSchedule fieldSize twoAdicity
   decide
 

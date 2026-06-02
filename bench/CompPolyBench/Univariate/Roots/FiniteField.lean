@@ -26,7 +26,7 @@ private def rootWorkloadDegree : Nat := rootWorkloadRootCount + 2
 private def rootWorkloadDistinctRoots : Nat := rootWorkloadRootCount + 1
 
 private def rootWorkloadRootSeeds : List Nat :=
-  [3, 3] ++ (List.range rootWorkloadRootCount).map (fun i => i + 5)
+  [3, 3] ++ (List.range rootWorkloadRootCount).map (fun i ↦ i + 5)
 
 private def rootWorkloadShape : String :=
   s!"degree={rootWorkloadDegree}, {rootWorkloadDistinctRoots} distinct roots, " ++
@@ -35,7 +35,7 @@ private def rootWorkloadShape : String :=
 private def productOfLinearRootSeeds {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] (seeds : List Nat) : CPolynomial F :=
   seeds.foldl
-    (fun p (seed : Nat) => p * CPolynomial.linearFactor (seed : F))
+    (fun p (seed : Nat) ↦ p * CPolynomial.linearFactor (seed : F))
     1
 
 private def nonlinearRootPolynomial {F : Type*}
@@ -66,37 +66,37 @@ private def runKoalaBearFiniteFieldRoots (preset : BenchPreset) (gen : StdGen) :
     "univariate-roots-finite-field-naive" "CPolynomial"
     "Finite-field roots, canonical multiplication and remainder"
     "KoalaBear.Field" rootWorkloadShape preset warmup measured
-    (fun _ => koalaBearFieldRootContext.rootsInField p)
+    (fun _ ↦ koalaBearFieldRootContext.rootsInField p)
     (checksumArray checksumKoalaBear) checksumIterations
   let nttRow <- runTimed
     "univariate-roots-finite-field-ntt" "CPolynomial"
     "Finite-field roots, NTT multiplication and reversal remainder"
     "KoalaBear.Field" rootWorkloadShape preset warmup nttMeasured
-    (fun _ => koalaBearNttFieldRootContext.rootsInField p)
+    (fun _ ↦ koalaBearNttFieldRootContext.rootsInField p)
     (checksumArray checksumKoalaBear) checksumIterations
   let nttFastRow <- runTimed
     "univariate-roots-finite-field-nttfast" "CPolynomial"
     "Finite-field roots, NTTFast multiplication and reversal remainder"
     "KoalaBear.Field" rootWorkloadShape preset warmup nttFastMeasured
-    (fun _ => koalaBearNttFastFieldRootContext.rootsInField p)
+    (fun _ ↦ koalaBearNttFastFieldRootContext.rootsInField p)
     (checksumArray checksumKoalaBear) checksumIterations
   let fastRow <- runTimed
     "univariate-roots-finite-field-fast-naive" "CPolynomial"
     "Finite-field roots, canonical multiplication and remainder"
     "KoalaBear.Fast.Field" rootWorkloadShape preset warmup fastMeasured
-    (fun _ => fastKoalaBearFieldRootContext.rootsInField fastP)
+    (fun _ ↦ fastKoalaBearFieldRootContext.rootsInField fastP)
     (checksumArray checksumKoalaBearFast) checksumIterations
   let fastNttRow <- runTimed
     "univariate-roots-finite-field-fast-ntt" "CPolynomial"
     "Finite-field roots, NTT multiplication and reversal remainder"
     "KoalaBear.Fast.Field" rootWorkloadShape preset warmup fastNttMeasured
-    (fun _ => fastKoalaBearNttFieldRootContext.rootsInField fastP)
+    (fun _ ↦ fastKoalaBearNttFieldRootContext.rootsInField fastP)
     (checksumArray checksumKoalaBearFast) checksumIterations
   let fastNttFastRow <- runTimed
     "univariate-roots-finite-field-fast-nttfast" "CPolynomial"
     "Finite-field roots, NTTFast multiplication and reversal remainder"
     "KoalaBear.Fast.Field" rootWorkloadShape preset warmup fastNttFastMeasured
-    (fun _ => fastKoalaBearNttFastFieldRootContext.rootsInField fastP)
+    (fun _ ↦ fastKoalaBearNttFastFieldRootContext.rootsInField fastP)
     (checksumArray checksumKoalaBearFast) checksumIterations
   pure ({
     groupKey := "univariate-roots-finite-field-koalabear",

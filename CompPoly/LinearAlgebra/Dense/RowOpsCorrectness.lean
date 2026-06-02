@@ -48,7 +48,7 @@ theorem get_setD_index_ne [Zero F] (M : DenseMatrix F) (data : Array F)
       unfold index at hidx
       have hcols : 0 < M.cols := Nat.lt_of_le_of_lt (Nat.zero_le col') hcol'
       have hrow : row = row' := by
-        have hdiv := congrArg (fun n => n / M.cols) hidx
+        have hdiv := congrArg (fun n ↦ n / M.cols) hidx
         rw [Nat.mul_comm row M.cols, Nat.mul_comm row' M.cols,
           Nat.add_comm (M.cols * row) col, Nat.add_comm (M.cols * row') col'] at hdiv
         change (col + M.cols * row) / M.cols =
@@ -59,7 +59,7 @@ theorem get_setD_index_ne [Zero F] (M : DenseMatrix F) (data : Array F)
           Nat.zero_add, Nat.zero_add] at hdiv
         exact hdiv
       have hcolEq : col = col' := by
-        have hmod := congrArg (fun n => n % M.cols) hidx
+        have hmod := congrArg (fun n ↦ n % M.cols) hidx
         rw [Nat.mul_comm row M.cols, Nat.mul_comm row' M.cols,
           Nat.add_comm (M.cols * row) col, Nat.add_comm (M.cols * row') col'] at hmod
         change (col + M.cols * row) % M.cols =
@@ -132,7 +132,7 @@ theorem swapRows_get_of_row_ne [Zero F] {M : DenseMatrix F}
       (∀ c, c ∈ xs → c < M.cols) →
       data.getD (M.index row col) 0 = M.data.getD (M.index row col) 0 →
       (List.foldl
-          (fun data c =>
+          (fun data c ↦
             setD (setD data (M.index rowA c) (M.get rowB c))
               (M.index rowB c) (M.get rowA c))
           data xs).getD (M.index row col) 0 =
@@ -171,7 +171,7 @@ theorem swapRows_get_left [Zero F] {M : DenseMatrix F}
       (∀ c, c ∈ xs → c < M.cols) → col ∉ xs →
       data.getD (M.index rowA col) 0 =
         (List.foldl
-          (fun data c =>
+          (fun data c ↦
             setD (setD data (M.index rowA c) (M.get rowB c))
               (M.index rowB c) (M.get rowA c))
           data xs).getD (M.index rowA col) 0 := by
@@ -203,7 +203,7 @@ theorem swapRows_get_left [Zero F] {M : DenseMatrix F}
         data.size = M.data.size →
         (∀ c, c ∈ xs → c < M.cols) → xs.Nodup → col ∈ xs →
         (List.foldl
-            (fun data c =>
+            (fun data c ↦
               setD (setD data (M.index rowA c) (M.get rowB c))
                 (M.index rowB c) (M.get rowA c))
             data xs).getD (M.index rowA col) 0 =
@@ -269,7 +269,7 @@ theorem swapRows_get_right [Zero F] {M : DenseMatrix F}
       (∀ c, c ∈ xs → c < M.cols) → col ∉ xs →
       data.getD (M.index rowB col) 0 =
         (List.foldl
-          (fun data c =>
+          (fun data c ↦
             setD (setD data (M.index rowA c) (M.get rowB c))
               (M.index rowB c) (M.get rowA c))
           data xs).getD (M.index rowB col) 0 := by
@@ -301,7 +301,7 @@ theorem swapRows_get_right [Zero F] {M : DenseMatrix F}
         data.size = M.data.size →
         (∀ c, c ∈ xs → c < M.cols) → xs.Nodup → col ∈ xs →
         (List.foldl
-            (fun data c =>
+            (fun data c ↦
               setD (setD data (M.index rowA c) (M.get rowB c))
                 (M.index rowB c) (M.get rowA c))
             data xs).getD (M.index rowB col) 0 =
@@ -356,7 +356,7 @@ theorem swapRows_get_right [Zero F] {M : DenseMatrix F}
 
 theorem list_forIn_addScaledRow_rows [Field F]
     (rows : List Nat) (pivotRow pivotCol : Nat) (out : DenseMatrix F) :
-    (Id.run (forIn rows out fun row r =>
+    (Id.run (forIn rows out fun row r ↦
       if row = pivotRow then
         pure (ForInStep.yield r)
       else
@@ -373,7 +373,7 @@ theorem list_forIn_addScaledRow_rows [Field F]
 
 theorem list_forIn_addScaledRow_cols [Field F]
     (rows : List Nat) (pivotRow pivotCol : Nat) (out : DenseMatrix F) :
-    (Id.run (forIn rows out fun row r =>
+    (Id.run (forIn rows out fun row r ↦
       if row = pivotRow then
         pure (ForInStep.yield r)
       else
@@ -424,7 +424,7 @@ theorem scaleRow_get_of_row_ne [Field F] {M : DenseMatrix F}
   have hfold : ∀ (xs : List Nat) (data : Array F),
       (∀ c, c ∈ xs → c < M.cols) →
       data.getD (M.index row col) 0 = M.data.getD (M.index row col) 0 →
-      (List.foldl (fun data c => setD data (M.index r c) (factor * M.get r c))
+      (List.foldl (fun data c ↦ setD data (M.index r c) (factor * M.get r c))
           data xs).getD (M.index row col) 0 =
         M.data.getD (M.index row col) 0 := by
     intro xs
@@ -460,7 +460,7 @@ theorem scaleRow_get_same [Field F] {M : DenseMatrix F}
   have hfold_not : ∀ (xs : List Nat) (data : Array F),
       (∀ c, c ∈ xs → c < M.cols) → col ∉ xs →
       data.getD (M.index r col) 0 =
-        (List.foldl (fun data c => setD data (M.index r c) (factor * M.get r c))
+        (List.foldl (fun data c ↦ setD data (M.index r c) (factor * M.get r c))
           data xs).getD (M.index r col) 0 := by
     intro xs
     induction xs with
@@ -486,7 +486,7 @@ theorem scaleRow_get_same [Field F] {M : DenseMatrix F}
   have hfold_mem : ∀ (xs : List Nat) (data : Array F),
       data.size = M.data.size →
       (∀ c, c ∈ xs → c < M.cols) → xs.Nodup → col ∈ xs →
-      (List.foldl (fun data c => setD data (M.index r c) (factor * M.get r c))
+      (List.foldl (fun data c ↦ setD data (M.index r c) (factor * M.get r c))
           data xs).getD (M.index r col) 0 =
         factor * M.data.getD (M.index r col) 0 := by
     intro xs
@@ -543,7 +543,7 @@ theorem addScaledRow_get_of_row_ne [Field F] {M : DenseMatrix F}
       (∀ c, c ∈ xs → c < M.cols) →
       data.getD (M.index row col) 0 = M.data.getD (M.index row col) 0 →
       (List.foldl
-          (fun data c =>
+          (fun data c ↦
             setD data (M.index target c) (M.get target c + factor * M.get source c))
           data xs).getD (M.index row col) 0 =
         M.data.getD (M.index row col) 0 := by
@@ -582,7 +582,7 @@ theorem addScaledRow_get_same [Field F] {M : DenseMatrix F}
       (∀ c, c ∈ xs → c < M.cols) → col ∉ xs →
       data.getD (M.index target col) 0 =
         (List.foldl
-          (fun data c =>
+          (fun data c ↦
             setD data (M.index target c) (M.get target c + factor * M.get source c))
           data xs).getD (M.index target col) 0 := by
     intro xs
@@ -610,7 +610,7 @@ theorem addScaledRow_get_same [Field F] {M : DenseMatrix F}
       data.size = M.data.size →
       (∀ c, c ∈ xs → c < M.cols) → xs.Nodup → col ∈ xs →
       (List.foldl
-          (fun data c =>
+          (fun data c ↦
             setD data (M.index target c) (M.get target c + factor * M.get source c))
           data xs).getD (M.index target col) 0 =
         M.data.getD (M.index target col) 0 + factor * M.data.getD (M.index source col) 0 := by
@@ -672,8 +672,8 @@ theorem dotRow_ext_rows [Semiring F] {M N : DenseMatrix F}
   rw [hcols]
   have hfold : ∀ (xs : List Nat) (acc : F),
       (∀ col, col ∈ xs → col < M.cols) →
-      xs.foldl (fun acc col => acc + N.get rowN col * v.getD col 0) acc =
-        xs.foldl (fun acc col => acc + M.get rowM col * v.getD col 0) acc := by
+      xs.foldl (fun acc col ↦ acc + N.get rowN col * v.getD col 0) acc =
+        xs.foldl (fun acc col ↦ acc + M.get rowM col * v.getD col 0) acc := by
     intro xs
     induction xs with
     | nil =>
@@ -697,18 +697,18 @@ theorem dotRow_scaleRow_same [Field F] {M : DenseMatrix F}
   unfold dotRow
   change
     (List.range M.cols).foldl
-        (fun acc col => acc + (scaleRow M row factor).get row col * v.getD col 0) 0 =
+        (fun acc col ↦ acc + (scaleRow M row factor).get row col * v.getD col 0) 0 =
       factor *
         (List.range M.cols).foldl
-          (fun acc col => acc + M.get row col * v.getD col 0) 0
+          (fun acc col ↦ acc + M.get row col * v.getD col 0) 0
   have hfold : ∀ (xs : List Nat) (accScaled accBase : F),
       (∀ c, c ∈ xs → c < M.cols) →
       accScaled = factor * accBase →
       xs.foldl
-          (fun acc col => acc + (scaleRow M row factor).get row col * v.getD col 0)
+          (fun acc col ↦ acc + (scaleRow M row factor).get row col * v.getD col 0)
           accScaled =
         factor *
-          xs.foldl (fun acc col => acc + M.get row col * v.getD col 0) accBase := by
+          xs.foldl (fun acc col ↦ acc + M.get row col * v.getD col 0) accBase := by
     intro xs
     induction xs with
     | nil =>
@@ -737,23 +737,23 @@ theorem dotRow_addScaledRow_same [Field F] {M : DenseMatrix F}
   unfold dotRow
   change
     (List.range M.cols).foldl
-        (fun acc col =>
+        (fun acc col ↦
           acc + (addScaledRow M target source factor).get target col * v.getD col 0) 0 =
       (List.range M.cols).foldl
-          (fun acc col => acc + M.get target col * v.getD col 0) 0 +
+          (fun acc col ↦ acc + M.get target col * v.getD col 0) 0 +
         factor *
           (List.range M.cols).foldl
-            (fun acc col => acc + M.get source col * v.getD col 0) 0
+            (fun acc col ↦ acc + M.get source col * v.getD col 0) 0
   have hfold : ∀ (xs : List Nat) (accNew accTarget accSource : F),
       (∀ c, c ∈ xs → c < M.cols) →
       accNew = accTarget + factor * accSource →
       xs.foldl
-          (fun acc col =>
+          (fun acc col ↦
             acc + (addScaledRow M target source factor).get target col * v.getD col 0)
           accNew =
-        xs.foldl (fun acc col => acc + M.get target col * v.getD col 0) accTarget +
+        xs.foldl (fun acc col ↦ acc + M.get target col * v.getD col 0) accTarget +
           factor *
-            xs.foldl (fun acc col => acc + M.get source col * v.getD col 0) accSource := by
+            xs.foldl (fun acc col ↦ acc + M.get source col * v.getD col 0) accSource := by
     intro xs
     induction xs with
     | nil =>
@@ -780,7 +780,7 @@ theorem dotRow_swapRows_left [Semiring F] {M : DenseMatrix F}
   exact dotRow_ext_rows (M := M) (N := swapRows M rowA rowB)
     (rowN := rowA) (rowM := rowB)
     (by exact swapRows_cols M rowA rowB)
-    (fun col hcol => swapRows_get_left hM hrowA hcol)
+    (fun col hcol ↦ swapRows_get_left hM hrowA hcol)
 
 theorem dotRow_swapRows_right [Semiring F] {M : DenseMatrix F}
     (hM : WellFormed M) {rowA rowB : Nat} (hrowB : rowB < M.rows) (v : Array F) :
@@ -788,7 +788,7 @@ theorem dotRow_swapRows_right [Semiring F] {M : DenseMatrix F}
   exact dotRow_ext_rows (M := M) (N := swapRows M rowA rowB)
     (rowN := rowB) (rowM := rowA)
     (by exact swapRows_cols M rowA rowB)
-    (fun col hcol => swapRows_get_right hM hrowB hcol)
+    (fun col hcol ↦ swapRows_get_right hM hrowB hcol)
 
 theorem dotRow_swapRows_of_ne [Semiring F] {M : DenseMatrix F}
     {rowA rowB row : Nat} (hrowA : rowA ≠ row) (hrowB : rowB ≠ row)
@@ -797,7 +797,7 @@ theorem dotRow_swapRows_of_ne [Semiring F] {M : DenseMatrix F}
   exact dotRow_ext_rows (M := M) (N := swapRows M rowA rowB)
     (rowN := row) (rowM := row)
     (by exact swapRows_cols M rowA rowB)
-    (fun col hcol => swapRows_get_of_row_ne hcol hrowA hrowB)
+    (fun col hcol ↦ swapRows_get_of_row_ne hcol hrowA hrowB)
 
 theorem dotRow_scaleRow_of_ne [Field F] {M : DenseMatrix F}
     {scale row : Nat} (factor : F) (hneq : scale ≠ row) (v : Array F) :
@@ -805,7 +805,7 @@ theorem dotRow_scaleRow_of_ne [Field F] {M : DenseMatrix F}
   exact dotRow_ext_rows (M := M) (N := scaleRow M scale factor)
     (rowN := row) (rowM := row)
     (by simp [scaleRow])
-    (fun col hcol => scaleRow_get_of_row_ne factor hcol hneq)
+    (fun col hcol ↦ scaleRow_get_of_row_ne factor hcol hneq)
 
 theorem dotRow_addScaledRow_of_ne [Field F] {M : DenseMatrix F}
     {target source row : Nat} (factor : F) (hneq : target ≠ row) (v : Array F) :
@@ -813,7 +813,7 @@ theorem dotRow_addScaledRow_of_ne [Field F] {M : DenseMatrix F}
   exact dotRow_ext_rows (M := M) (N := addScaledRow M target source factor)
     (rowN := row) (rowM := row)
     (by simp [addScaledRow])
-    (fun col hcol => addScaledRow_get_of_row_ne factor hcol hneq)
+    (fun col hcol ↦ addScaledRow_get_of_row_ne factor hcol hneq)
 
 theorem isHomogeneousSolution_swapRows_of_solution [Field F]
     {M : DenseMatrix F} {v : Array F} {rowA rowB : Nat}

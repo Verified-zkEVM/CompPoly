@@ -20,7 +20,7 @@ namespace GuruswamiSudan
 def candidateMismatchCount {F : Type*} [Semiring F] [BEq F]
     (points : Array (Prod F F)) (p : CPolynomial F) : Nat :=
   points.foldl
-    (fun count point =>
+    (fun count point ↦
       if CPolynomial.eval point.1 p == point.2 then count else count + 1)
     0
 
@@ -28,7 +28,7 @@ def candidateMismatchCount {F : Type*} [Semiring F] [BEq F]
 def matchingPointCount {F : Type*} [Semiring F] [BEq F]
     (points : Array (Prod F F)) (p : CPolynomial F) : Nat :=
   points.foldl
-    (fun count point =>
+    (fun count point ↦
       if CPolynomial.eval point.1 p == point.2 then count + 1 else count)
     0
 
@@ -39,7 +39,7 @@ def passesCandidateDistance {F : Type*} [Semiring F] [BEq F]
 
 /-- Packed input points have no duplicate `x`-coordinates. -/
 def DistinctXCoordinates {F : Type*} (points : Array (Prod F F)) : Prop :=
-  (points.toList.map fun point => point.1).Nodup
+  (points.toList.map fun point ↦ point.1).Nodup
 
 /-- Run the algebraic GS core and keep only candidates within the packed
 mismatch radius. -/

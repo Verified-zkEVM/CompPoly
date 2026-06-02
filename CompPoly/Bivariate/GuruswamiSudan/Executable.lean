@@ -51,7 +51,7 @@ def filteredCoreContextOfInterpRootContexts
     (interp : GSInterpContext F)
     (roots : GSRootContext F) :
     GSFilteredCoreContext F where
-  run := fun points params radius =>
+  run := fun points params radius ↦
     gsFilteredCore points interp roots params radius
   sound := by
     intro points params radius p hp

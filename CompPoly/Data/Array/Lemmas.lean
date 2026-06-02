@@ -20,7 +20,7 @@ variable {α : Type*} {unit : α}
 /-- Remove duplicates from an array while preserving first occurrences. -/
 def eraseDups [BEq α] (xs : Array α) : Array α :=
   xs.foldl
-    (fun out x =>
+    (fun out x ↦
       if out.contains x then
         out
       else
@@ -97,13 +97,13 @@ theorem foldl_zipIdx_eq_foldl_toList_zipIdx_size {β : Type*}
 theorem mem_foldl_append_of_mem {β : Type*}
     (xs : Array α) (f : α → Array β) {x : α} {y : β}
     (hx : x ∈ xs.toList) (hy : y ∈ (f x).toList) :
-    y ∈ (xs.foldl (fun out x => out ++ f x) #[]).toList := by
+    y ∈ (xs.foldl (fun out x ↦ out ++ f x) #[]).toList := by
   cases xs with
   | mk data =>
       simp at hx ⊢
       have haux : ∀ (data : List α) (acc : Array β),
           y ∈ acc.toList ∨ (∃ x, x ∈ data ∧ y ∈ (f x).toList) →
-            y ∈ (data.foldl (fun out x => out ++ f x) acc).toList := by
+            y ∈ (data.foldl (fun out x ↦ out ++ f x) acc).toList := by
         intro data
         induction data with
         | nil =>

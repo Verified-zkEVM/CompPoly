@@ -26,7 +26,7 @@ instance : Fact (Nat.Prime 3) :=
   ⟨by decide⟩
 
 private def dependentSystem : DenseMatrix F3 :=
-  DenseMatrix.ofFn 1 2 fun _ col =>
+  DenseMatrix.ofFn 1 2 fun _ col ↦
     if col = 0 then 1 else 2
 
 #guard (DenseMatrix.homogeneousWitness dependentSystem).isSome

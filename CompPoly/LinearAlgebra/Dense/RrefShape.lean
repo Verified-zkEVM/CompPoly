@@ -57,7 +57,7 @@ theorem swapRows_preserves_column_shape_of_ne [Zero F] [One F]
 theorem list_forIn_addScaledRow_get_of_not_mem [Field F]
     (rows : List Nat) {out : DenseMatrix F} {row col pivotRow pivotCol : Nat}
     (hcol : col < out.cols) (hnot : row ∉ rows) :
-    (Id.run (forIn rows out fun r M =>
+    (Id.run (forIn rows out fun r M ↦
       if r = pivotRow then
         pure (ForInStep.yield M)
       else
@@ -87,7 +87,7 @@ theorem list_forIn_addScaledRow_get_of_not_mem [Field F]
           rw [addScaledRow_get_of_row_ne (M := out) (target := r) (source := pivotRow)
             (row := row) (col := col) (-(out.get r pivotCol)) hcol hr_ne]
         calc
-          (Id.run (forIn (r :: rows) out fun r M =>
+          (Id.run (forIn (r :: rows) out fun r M ↦
               if r = pivotRow then
                 pure (ForInStep.yield M)
               else
@@ -95,7 +95,7 @@ theorem list_forIn_addScaledRow_get_of_not_mem [Field F]
                   (addScaledRow M r pivotRow (-(M.get r pivotCol)))) :
               Id (DenseMatrix F))).get row col
               = (Id.run (forIn rows
-                  (addScaledRow out r pivotRow (-(out.get r pivotCol))) fun r M =>
+                  (addScaledRow out r pivotRow (-(out.get r pivotCol))) fun r M ↦
                   if r = pivotRow then
                     pure (ForInStep.yield M)
                   else
@@ -111,7 +111,7 @@ theorem list_forIn_addScaledRow_get_of_not_mem [Field F]
 theorem list_forIn_addScaledRow_get_pivotRow [Field F]
     (rows : List Nat) {out : DenseMatrix F} {pivotRow pivotCol : Nat}
     (hcol : pivotCol < out.cols) (hpivot : out.get pivotRow pivotCol = 1) :
-    (Id.run (forIn rows out fun row M =>
+    (Id.run (forIn rows out fun row M ↦
       if row = pivotRow then
         pure (ForInStep.yield M)
       else
@@ -143,7 +143,7 @@ theorem list_forIn_addScaledRow_get_row_mem [Field F]
     (hcol : pivotCol < out.cols) (hpivot : out.get pivotRow pivotCol = 1)
     (hrows : ∀ r, r ∈ rows → r < out.rows) (hnodup : rows.Nodup)
     (hmem : row ∈ rows) (hne : row ≠ pivotRow) :
-    (Id.run (forIn rows out fun r M =>
+    (Id.run (forIn rows out fun r M ↦
       if r = pivotRow then
         pure (ForInStep.yield M)
       else
@@ -187,7 +187,7 @@ theorem list_forIn_addScaledRow_get_row_mem [Field F]
             ring
           have hnotTail : row ∉ rows := (List.nodup_cons.mp hnodup).1
           calc
-            (Id.run (forIn (row :: rows) out fun r M =>
+            (Id.run (forIn (row :: rows) out fun r M ↦
               if r = pivotRow then
                 pure (ForInStep.yield M)
               else
@@ -195,7 +195,7 @@ theorem list_forIn_addScaledRow_get_row_mem [Field F]
                   (addScaledRow M r pivotRow (-(M.get r pivotCol)))) :
               Id (DenseMatrix F))).get row pivotCol
                 = (Id.run (forIn rows
-                    (addScaledRow out row pivotRow (-(out.get row pivotCol))) fun r M =>
+                    (addScaledRow out row pivotRow (-(out.get row pivotCol))) fun r M ↦
                     if r = pivotRow then
                       pure (ForInStep.yield M)
                     else
@@ -241,7 +241,7 @@ theorem list_forIn_addScaledRow_get_of_source_zero [Field F]
     (hout : WellFormed out) (hcol : oldCol < out.cols)
     (hrows : ∀ r, r ∈ rows → r < out.rows)
     (hsource : out.get pivotRow oldCol = 0) :
-    (Id.run (forIn rows out fun r M =>
+    (Id.run (forIn rows out fun r M ↦
       if r = pivotRow then
         pure (ForInStep.yield M)
       else
@@ -282,7 +282,7 @@ theorem list_forIn_addScaledRow_get_of_source_zero [Field F]
           · rw [addScaledRow_get_of_row_ne (M := out) (target := r) (source := pivotRow)
               (row := row) (col := oldCol) (-(out.get r pivotCol)) hcol hrr]
         calc
-          (Id.run (forIn (r :: rows) out fun r M =>
+          (Id.run (forIn (r :: rows) out fun r M ↦
             if r = pivotRow then
               pure (ForInStep.yield M)
             else
@@ -290,7 +290,7 @@ theorem list_forIn_addScaledRow_get_of_source_zero [Field F]
                 (addScaledRow M r pivotRow (-(M.get r pivotCol)))) :
             Id (DenseMatrix F))).get row oldCol
               = (Id.run (forIn rows
-                  (addScaledRow out r pivotRow (-(out.get r pivotCol))) fun r M =>
+                  (addScaledRow out r pivotRow (-(out.get r pivotCol))) fun r M ↦
                   if r = pivotRow then
                     pure (ForInStep.yield M)
                   else
@@ -412,7 +412,7 @@ theorem normalizeAndEliminate_get_of_pivotRow_zero [Field F] [BEq F] [LawfulBEq 
           (List.range' 0
             (Std.Legacy.Range.size
               [:(scaleRow M pivotRow (M.get pivotRow pivotCol)⁻¹).rows]) 1)
-          (scaleRow M pivotRow (M.get pivotRow pivotCol)⁻¹) fun r M =>
+          (scaleRow M pivotRow (M.get pivotRow pivotCol)⁻¹) fun r M ↦
           if r = pivotRow then
             pure (ForInStep.yield M)
           else

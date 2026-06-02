@@ -52,14 +52,14 @@ def initialCoefficientPolynomial {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (Q : CBivariate F) : CPolynomial F :=
   (List.range Q.val.size).foldl
-    (fun out y => out + CPolynomial.monomial y (CBivariate.coeff Q 0 y))
+    (fun out y ↦ out + CPolynomial.monomial y (CBivariate.coeff Q 0 y))
     0
 
 /-- The linear coefficient of the next recursive root equation after depth zero. -/
 def nextCoefficientSlope {F : Type*} [Field F]
     (Q : CBivariate F) (pref : CPolynomial F) : F :=
   (List.range' 1 Q.val.size).foldl
-    (fun acc (y : Nat) =>
+    (fun acc (y : Nat) ↦
       acc + (y : F) * CBivariate.coeff Q 0 y * pref.coeff 0 ^ (y - 1))
     0
 
@@ -84,7 +84,7 @@ def rootsYDegreeLtFromCandidates {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
     (candidates : Array (CPolynomial F)) (Q : CBivariate F) (k : Nat) :
     Array (CPolynomial F) :=
-  candidates.filter fun p => isRootYDegreeLtBool Q k p
+  candidates.filter fun p ↦ isRootYDegreeLtBool Q k p
 
 /-- Extend one candidate prefix by one coefficient at `X^depth`. -/
 def extendPrefix {F : Type*}
@@ -113,10 +113,10 @@ def rootPrefixExtensionsWithFieldRootContext {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (fieldRoots : FieldRootContext F) (Q : CBivariate F) (depth : Nat)
     (prefixes : Array (CPolynomial F)) : List (CPolynomial F) :=
-  prefixes.toList.flatMap fun pref =>
+  prefixes.toList.flatMap fun pref ↦
     (rootsInFieldForNonzeroEquation fieldRoots
       (nextCoefficientPolynomial Q pref depth)).toList.map
-      fun coeff => extendPrefix pref depth coeff
+      fun coeff ↦ extendPrefix pref depth coeff
 
 /-- Candidate prefixes after choosing coefficients through depth `< k` in the
 direct coefficient-equation recursion. Zero equations are not expanded. -/
@@ -141,7 +141,7 @@ def transformedRothRuckensteinRootPrefixesWithFuel {F : Type*}
       else
         (rootsInFieldForNonzeroEquation fieldRoots
             (initialCoefficientPolynomial Qnorm)).foldl
-          (fun out coeff =>
+          (fun out coeff ↦
             out ++
               transformedRothRuckensteinRootPrefixesWithFuel fieldRoots fuel
                 (transformedRothRuckensteinResidual Qnorm coeff)
@@ -160,7 +160,7 @@ def transformedRothRuckensteinRootsYDegreeLt {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (fieldRoots : FieldRootContext F) (Q : CBivariate F) (k : Nat) :
     Array (CPolynomial F) :=
-  (transformedRothRuckensteinRootPrefixes fieldRoots Q k).filter fun p =>
+  (transformedRothRuckensteinRootPrefixes fieldRoots Q k).filter fun p ↦
     isRootYDegreeLtBool Q k p
 
 /-- Roth-Ruckenstein-style bounded-degree roots.

@@ -26,7 +26,7 @@ def degreeLtBool {F : Type*} [Zero F] (p : CPolynomial F) (k : Nat) : Bool :=
 /-- Roots by exhaustive evaluation over an explicit field-element list. -/
 def rootsInFieldByEnumeration {F : Type*} [Semiring F] [BEq F]
     (elements : Array F) (p : CPolynomial F) : Array F :=
-  elements.filter fun a => CPolynomial.eval a p == 0
+  elements.filter fun a ↦ CPolynomial.eval a p == 0
 
 /-- An array contains every field element. Duplicate entries are allowed. -/
 def ContainsAllFieldElements {F : Type*} (elements : Array F) : Prop :=

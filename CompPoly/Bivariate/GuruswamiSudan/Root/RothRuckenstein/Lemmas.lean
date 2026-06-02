@@ -101,7 +101,7 @@ theorem cbivar_coeff_divXPower {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
     rw [hqcoeff]
     exact cpoly_coeff_dropXPower Q.val[j] n i
   · have hjle : Q.val.size ≤ j := Nat.le_of_not_lt hj
-    have hmaple : (Q.val.map fun coeff => CPolynomial.dropXPower coeff n).size ≤ j := by
+    have hmaple : (Q.val.map fun coeff ↦ CPolynomial.dropXPower coeff n).size ≤ j := by
       simpa using hjle
     rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hmaple]
     have hqcoeff : Q.val.coeff j = (0 : CPolynomial R) := by
@@ -139,7 +139,7 @@ theorem initialCoefficientPolynomial_coeff_fold {F : Type*}
     ∀ (ys : List Nat) (out : CPolynomial F),
       ys.Nodup →
         (List.foldl
-          (fun out y => out + CPolynomial.monomial y (CBivariate.coeff Q 0 y))
+          (fun out y ↦ out + CPolynomial.monomial y (CBivariate.coeff Q 0 y))
           out ys).coeff j =
           out.coeff j + if j ∈ ys then CBivariate.coeff Q 0 j else 0 := by
   intro ys
@@ -446,9 +446,9 @@ theorem cbivar_toPoly_eq_C_X_pow_mul_divXPower_of_xAdicOrder {F : Type*}
   rw [Polynomial.coeff_C_mul]
   rw [CBivariate.coeff_toPoly_Y]
   rw [cbivar_coeffY_divXPower]
-  exact congrArg (fun P : Polynomial F => P.coeff n)
+  exact congrArg (fun P : Polynomial F ↦ P.coeff n)
     (cpoly_toPoly_eq_X_pow_mul_dropXPower_of_coeff_eq_zero_lt
-      (Q.val.coeff j) order (fun i hi =>
+      (Q.val.coeff j) order (fun i hi ↦
         cbivar_xAdicOrder?_some_coeff_eq_zero_of_lt (Q := Q) (y := j) horder hi))
 
 theorem cbivar_xAdicOrder?_fold_none {R : Type*}
@@ -626,7 +626,7 @@ theorem dropXPower_eq_C_add_X_mul_dropXPower_succ {F : Type*}
 
 theorem list_foldl_add_eq_sum {R : Type*} [AddMonoid R]
     (f : Nat → R) : ∀ (xs : List Nat) (acc : R),
-    List.foldl (fun acc i => acc + f i) acc xs = acc + (xs.map f).sum
+    List.foldl (fun acc i ↦ acc + f i) acc xs = acc + (xs.map f).sum
   | [], acc => by simp
   | x :: xs, acc => by
       rw [List.foldl_cons, list_foldl_add_eq_sum f xs (acc + f x)]
@@ -732,9 +732,9 @@ theorem composeY_coeff_zero_zipIdx_eq_range_aux {F : Type*}
     (xs : List (CPolynomial F)) (p accPoly : CPolynomial F) (accCoeff : F)
     (offset : Nat) (hacc : accPoly.coeff 0 = accCoeff) :
     List.foldl
-        (fun acc y => acc + (xs.getD (y - offset) 0).coeff 0 * p.coeff 0 ^ y)
+        (fun acc y ↦ acc + (xs.getD (y - offset) 0).coeff 0 * p.coeff 0 ^ y)
         accCoeff (List.range' offset xs.length) =
-      (List.foldl (fun acc x => acc + x.1 * p ^ x.2) accPoly
+      (List.foldl (fun acc x ↦ acc + x.1 * p ^ x.2) accPoly
         (xs.zipIdx offset)).coeff 0 := by
   induction xs generalizing accPoly accCoeff offset with
   | nil =>
@@ -745,13 +745,13 @@ theorem composeY_coeff_zero_zipIdx_eq_range_aux {F : Type*}
       rw [show offset - offset = 0 by omega]
       simp only [List.getD_cons_zero]
       rw [List.foldl_congr_of_mem
-        (f := fun acc y =>
+        (f := fun acc y ↦
           acc + ((x :: xs).getD (y - offset) 0).coeff 0 * p.coeff 0 ^ y)
-        (g := fun acc y =>
+        (g := fun acc y ↦
           acc + (xs.getD (y - (offset + 1)) 0).coeff 0 * p.coeff 0 ^ y)
         (List.range' (offset + 1) xs.length)
         (accCoeff + x.coeff 0 * p.coeff 0 ^ offset)
-        (fun acc' y hy => by
+        (fun acc' y hy ↦ by
           have hsub : y - offset = (y - (offset + 1)) + 1 := by
             have hymem := List.mem_range'.mp hy
             omega
@@ -762,9 +762,9 @@ theorem composeY_coeff_zero_zipIdx_eq_range_aux {F : Type*}
 theorem composeY_coeff_zero_fold_eq {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
     (coeffs : Array (CPolynomial F)) (p : CPolynomial F) :
-    List.foldl (fun acc y => acc + (coeffs.getD y 0).coeff 0 * p.coeff 0 ^ y) 0
+    List.foldl (fun acc y ↦ acc + (coeffs.getD y 0).coeff 0 * p.coeff 0 ^ y) 0
         (List.range' 0 coeffs.size) =
-      (Array.foldl (fun acc x => acc + x.1 * p ^ x.2) 0 coeffs.zipIdx).coeff 0 := by
+      (Array.foldl (fun acc x ↦ acc + x.1 * p ^ x.2) 0 coeffs.zipIdx).coeff 0 := by
   rw [Array.foldl_zipIdx_eq_foldl_toList_zipIdx]
   simpa using
     (composeY_coeff_zero_zipIdx_eq_range_aux coeffs.toList p (0 : CPolynomial F) 0 0
@@ -775,9 +775,9 @@ theorem composeY_coeff_zipIdx_eq_range_aux {R : Type*}
     (xs : List (CPolynomial R)) (p accPoly : CPolynomial R) (accCoeff : R)
     (offset n : Nat) (hacc : accPoly.coeff n = accCoeff) :
     List.foldl
-        (fun acc y => acc + ((xs.getD (y - offset) 0) * p ^ y).coeff n)
+        (fun acc y ↦ acc + ((xs.getD (y - offset) 0) * p ^ y).coeff n)
         accCoeff (List.range' offset xs.length) =
-      (List.foldl (fun acc x => acc + x.1 * p ^ x.2) accPoly
+      (List.foldl (fun acc x ↦ acc + x.1 * p ^ x.2) accPoly
         (xs.zipIdx offset)).coeff n := by
   induction xs generalizing accPoly accCoeff offset with
   | nil =>
@@ -788,13 +788,13 @@ theorem composeY_coeff_zipIdx_eq_range_aux {R : Type*}
       rw [show offset - offset = 0 by omega]
       simp only [List.getD_cons_zero]
       rw [List.foldl_congr_of_mem
-        (f := fun acc y =>
+        (f := fun acc y ↦
           acc + (((x :: xs).getD (y - offset) 0) * p ^ y).coeff n)
-        (g := fun acc y =>
+        (g := fun acc y ↦
           acc + ((xs.getD (y - (offset + 1)) 0) * p ^ y).coeff n)
         (List.range' (offset + 1) xs.length)
         (accCoeff + (x * p ^ offset).coeff n)
-        (fun acc' y hy => by
+        (fun acc' y hy ↦ by
           have hsub : y - offset = (y - (offset + 1)) + 1 := by
             have hymem := List.mem_range'.mp hy
             omega
@@ -805,9 +805,9 @@ theorem composeY_coeff_zipIdx_eq_range_aux {R : Type*}
 theorem composeY_coeff_fold_eq {R : Type*}
     [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (coeffs : Array (CPolynomial R)) (p : CPolynomial R) (n : Nat) :
-    List.foldl (fun acc y => acc + ((coeffs.getD y 0) * p ^ y).coeff n) 0
+    List.foldl (fun acc y ↦ acc + ((coeffs.getD y 0) * p ^ y).coeff n) 0
         (List.range' 0 coeffs.size) =
-      (Array.foldl (fun acc x => acc + x.1 * p ^ x.2) 0 coeffs.zipIdx).coeff n := by
+      (Array.foldl (fun acc x ↦ acc + x.1 * p ^ x.2) 0 coeffs.zipIdx).coeff n := by
   rw [Array.foldl_zipIdx_eq_foldl_toList_zipIdx]
   simpa using
     (composeY_coeff_zipIdx_eq_range_aux coeffs.toList p (0 : CPolynomial R) 0 0 n
@@ -826,9 +826,9 @@ theorem fold_range_coeff_add_mul_pow {R : Type*}
     (coeffs : Array (CPolynomial R)) (p : CPolynomial R) :
     ∀ (ys : List Nat) (acc : CPolynomial R) (accCoeff : R) (n : Nat),
       acc.coeff n = accCoeff →
-        (List.foldl (fun acc y => acc + coeffs.getD y 0 * p ^ y) acc ys).coeff n =
+        (List.foldl (fun acc y ↦ acc + coeffs.getD y 0 * p ^ y) acc ys).coeff n =
           List.foldl
-            (fun acc y => acc + ((coeffs.getD y 0) * p ^ y).coeff n)
+            (fun acc y ↦ acc + ((coeffs.getD y 0) * p ^ y).coeff n)
             accCoeff ys := by
   intro ys
   induction ys with
@@ -846,7 +846,7 @@ theorem composeY_eq_range_fold {R : Type*}
     (Q : CBivariate R) (p : CPolynomial R) :
     CBivariate.composeY Q p =
       (List.range' 0 Q.val.size).foldl
-        (fun acc y => acc + Q.val.coeff y * p ^ y) 0 := by
+        (fun acc y ↦ acc + Q.val.coeff y * p ^ y) 0 := by
   rw [CPolynomial.eq_iff_coeff]
   intro n
   rw [fold_range_coeff_add_mul_pow Q.val p (List.range' 0 Q.val.size) 0 0 n
@@ -889,8 +889,8 @@ theorem foldl_cpoly_toPoly_add {F : Type*}
     (f : Nat → CPolynomial F) :
     ∀ (xs : List Nat) (acc : CPolynomial F) (accPoly : Polynomial F),
       acc.toPoly = accPoly →
-        (xs.foldl (fun acc x => acc + f x) acc).toPoly =
-          xs.foldl (fun acc x => acc + (f x).toPoly) accPoly := by
+        (xs.foldl (fun acc x ↦ acc + f x) acc).toPoly =
+          xs.foldl (fun acc x ↦ acc + (f x).toPoly) accPoly := by
   intro xs
   induction xs with
   | nil =>
@@ -906,7 +906,7 @@ theorem cpoly_monomial_substitution_sum {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (a coeff : F) (p : CPolynomial F) (x y : Nat) :
     (List.range' 0 (y + 1)).foldl
-        (fun acc t =>
+        (fun acc t ↦
           acc + CPolynomial.monomial (x + t)
             (coeff * (Nat.choose y t : F) * a ^ (y - t)) * p ^ t)
         0 =
@@ -914,13 +914,13 @@ theorem cpoly_monomial_substitution_sum {F : Type*}
   apply (CPolynomial.ringEquiv (R := F)).injective
   change
     ((List.range' 0 (y + 1)).foldl
-        (fun acc t =>
+        (fun acc t ↦
           acc + CPolynomial.monomial (x + t)
             (coeff * (Nat.choose y t : F) * a ^ (y - t)) * p ^ t)
         0).toPoly =
       (CPolynomial.monomial x coeff * (CPolynomial.C a + CPolynomial.X * p) ^ y).toPoly
   rw [foldl_cpoly_toPoly_add
-    (fun t =>
+    (fun t ↦
       CPolynomial.monomial (x + t) (coeff * (Nat.choose y t : F) * a ^ (y - t)) *
         p ^ t)
     (List.range' 0 (y + 1)) 0 0 (CPolynomial.toPoly_zero (R := F))]
@@ -939,7 +939,7 @@ theorem cpoly_monomial_substitution_sum {F : Type*}
                 p.toPoly ^ x_1 := by
           apply Finset.sum_congr rfl
           intro i _hi
-          exact congrArg (fun q : Polynomial F => q * p.toPoly ^ i)
+          exact congrArg (fun q : Polynomial F ↦ q * p.toPoly ^ i)
             (CPolynomial.monomial_toPoly (R := F) (x + i)
               (coeff * (Nat.choose y i : F) * a ^ (y - i)))
     _ = Polynomial.monomial x coeff * (Polynomial.C a + Polynomial.X * p.toPoly) ^ y := by
@@ -971,9 +971,9 @@ theorem initialCoefficientPolynomial_evalHorner_eq_composeYCoeff_monomial_zero
   unfold initialCoefficientPolynomial CBivariate.composeYCoeff
   rw [List.range_eq_range']
   let polyStep : CPolynomial F → Nat → CPolynomial F :=
-    fun out y => out + CPolynomial.monomial y (CBivariate.coeff Q 0 y)
+    fun out y ↦ out + CPolynomial.monomial y (CBivariate.coeff Q 0 y)
   let coeffStep : F → Nat → F :=
-    fun acc y => acc + CPolynomial.mulPowCoeff (Q.val.coeff y)
+    fun acc y ↦ acc + CPolynomial.mulPowCoeff (Q.val.coeff y)
       (CPolynomial.monomial 0 c) y 0
   change CPolynomial.eval c (List.foldl polyStep 0 (List.range' 0 Q.val.size)) =
     List.foldl coeffStep 0 (List.range' 0 Q.val.size)

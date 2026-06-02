@@ -110,9 +110,9 @@ private theorem raw_monicNormalize_trim {F : Type*} [Field F] [BEq F] [LawfulBEq
       exact hzeroNe (by simpa [q] using hp)
     simp [hpzeroNe]
     change (CPolynomial.Raw.mk
-        (Array.map (fun r => (p.trim).leadingCoeff⁻¹ * r) p.trim)).trim =
-      CPolynomial.Raw.mk (Array.map (fun r => (p.trim).leadingCoeff⁻¹ * r) p.trim)
-    apply CPolynomial.Raw.Trim.non_zero_map (fun r => q.leadingCoeff⁻¹ * r)
+        (Array.map (fun r ↦ (p.trim).leadingCoeff⁻¹ * r) p.trim)).trim =
+      CPolynomial.Raw.mk (Array.map (fun r ↦ (p.trim).leadingCoeff⁻¹ * r) p.trim)
+    apply CPolynomial.Raw.Trim.non_zero_map (fun r ↦ q.leadingCoeff⁻¹ * r)
     · intro r hr
       apply mul_eq_zero.mp at hr
       rcases hr with hinv | hr

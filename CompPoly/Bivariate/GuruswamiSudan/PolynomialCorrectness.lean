@@ -63,7 +63,7 @@ theorem get_ofFn [Zero F] (rows cols : Nat) (f : Nat → Nat → F)
 /-- Fold over a range with one distinguished nonzero entry. -/
 theorem foldl_range_one_special {F : Type*} [AddCommMonoid F] {pivot : Nat} (x : F) :
     ∀ start len (init : F),
-    (List.range' start len).foldl (fun acc j => acc + if j = pivot then x else 0) init =
+    (List.range' start len).foldl (fun acc j ↦ acc + if j = pivot then x else 0) init =
       init + if start ≤ pivot ∧ pivot < start + len then x else 0 := by
   intro start len init
   revert start init
@@ -93,7 +93,7 @@ theorem foldl_range_one_special {F : Type*} [AddCommMonoid F] {pivot : Nat} (x :
 /-- A range fold with a single distinguished index. -/
 theorem foldl_range_single_index {F : Type*} [AddCommMonoid F] {n k : Nat}
     (hk : k < n) (x : F) :
-    (List.range' 0 n).foldl (fun acc j => acc + if j = k then x else 0) 0 = x := by
+    (List.range' 0 n).foldl (fun acc j ↦ acc + if j = k then x else 0) 0 = x := by
   rw [foldl_range_one_special (F := F) (pivot := k) x 0 n 0]
   have hin : 0 ≤ k ∧ k < 0 + n := by omega
   simp [hin, hk]
@@ -101,10 +101,10 @@ theorem foldl_range_single_index {F : Type*} [AddCommMonoid F] {n k : Nat}
 /-- A range fold with identically zero contributions is zero. -/
 theorem foldl_range_eq_zero_of_zero {F : Type*} [AddMonoid F] {n : Nat} {f : Nat → F}
     (hzero : ∀ c, c < n → f c = 0) :
-    (List.range' 0 n).foldl (fun acc c => acc + f c) 0 = 0 := by
+    (List.range' 0 n).foldl (fun acc c ↦ acc + f c) 0 = 0 := by
   have hfold : ∀ (xs : List Nat) (acc : F),
       acc = 0 → (∀ c, c ∈ xs → f c = 0) →
-        xs.foldl (fun acc c => acc + f c) acc = 0 := by
+        xs.foldl (fun acc c ↦ acc + f c) acc = 0 := by
     intro xs
     induction xs with
     | nil =>
@@ -197,7 +197,7 @@ theorem ofMonomialCoeffs_coeff {R : Type*}
     (monomials : Array Monomial) (coeffs : Array R) (i j : Nat) :
     coeff (ofMonomialCoeffs monomials coeffs) i j =
       (List.range' 0 monomials.size).foldl
-        (fun acc col =>
+        (fun acc col ↦
           let monomial := monomials.getD col ⟨0, 0⟩
           acc + if i = monomial.xDegree ∧ j = monomial.yDegree then coeffs.getD col 0
             else 0)
@@ -207,12 +207,12 @@ theorem ofMonomialCoeffs_coeff {R : Type*}
       coeff out i j = acc →
       coeff
         (xs.foldl
-          (fun out col =>
+          (fun out col ↦
             let monomial := monomials.getD col ⟨0, 0⟩
             out + monomialXY monomial.xDegree monomial.yDegree (coeffs.getD col 0))
           out) i j =
         xs.foldl
-          (fun acc col =>
+          (fun acc col ↦
             let monomial := monomials.getD col ⟨0, 0⟩
             acc + if i = monomial.xDegree ∧ j = monomial.yDegree then coeffs.getD col 0
               else 0)
@@ -252,7 +252,7 @@ theorem monomialsWeightedDegreeLE_nodup (xWeight yWeight bound : Nat) :
     (monomialsWeightedDegreeLE xWeight yWeight bound).toList.Nodup := by
   simpa [monomialsWeightedDegreeLE] using
     (monomialGrid_nodup bound).filter
-      (fun m => xWeight * m.xDegree + yWeight * m.yDegree ≤ bound)
+      (fun m ↦ xWeight * m.xDegree + yWeight * m.yDegree ≤ bound)
 
 /-- All returned weighted-degree monomials satisfy the requested bound. -/
 theorem monomialsWeightedDegreeLE_sound
@@ -285,7 +285,7 @@ theorem ofMonomialCoeffs_coeff_getD {R : Type*}
   have hfold : ∀ (xs : List Nat) (acc : R),
       (∀ col, col ∈ xs → col < monomials.size) →
       xs.foldl
-          (fun acc col =>
+          (fun acc col ↦
             let monomial := monomials.getD col ⟨0, 0⟩
             acc +
               if (monomials.getD k ⟨0, 0⟩).xDegree = monomial.xDegree ∧
@@ -293,7 +293,7 @@ theorem ofMonomialCoeffs_coeff_getD {R : Type*}
                 coeffs.getD col 0
               else 0)
           acc =
-        xs.foldl (fun acc col => acc + if col = k then coeffs.getD k 0 else 0)
+        xs.foldl (fun acc col ↦ acc + if col = k then coeffs.getD k 0 else 0)
           acc := by
     intro xs
     induction xs with
@@ -353,7 +353,7 @@ theorem ofMonomialCoeffs_ne_zero_of_coeff_getD_ne_zero {R : Type*}
   intro hzero
   let monomial := monomials.getD k ⟨0, 0⟩
   have hcoeffEq := congrArg
-    (fun Q : CBivariate R => coeff Q monomial.xDegree monomial.yDegree) hzero
+    (fun Q : CBivariate R ↦ coeff Q monomial.xDegree monomial.yDegree) hzero
   have hget := ofMonomialCoeffs_coeff_getD (R := R) (monomials := monomials)
     (coeffs := coeffs) hnodup hk
   dsimp [monomial] at hget hcoeffEq
@@ -418,7 +418,7 @@ theorem ofMonomialCoeffs_natWeightedDegree_le {R : Type*}
     (hall : ∀ monomial, monomial ∈ monomials.toList →
       u * monomial.xDegree + v * monomial.yDegree ≤ bound) :
     natWeightedDegree (ofMonomialCoeffs monomials coeffs) u v ≤ bound :=
-  natWeightedDegree_le_of_coeff_zero _ u v bound fun _ _ hgt =>
+  natWeightedDegree_le_of_coeff_zero _ u v bound fun _ _ hgt ↦
     ofMonomialCoeffs_coeff_eq_zero_of_weight_gt (monomials := monomials)
       (coeffs := coeffs) hall hgt
 
@@ -429,15 +429,15 @@ theorem hasseDerivativeFromTerms_coeff {R : Type*}
     (terms : List (HasseTerm R)) (i j : Nat) :
     coeff (hasseDerivativeFromTerms terms) i j =
       terms.foldl
-        (fun acc term => acc + if i = term.xDegree ∧ j = term.yDegree then term.coeff else 0)
+        (fun acc term ↦ acc + if i = term.xDegree ∧ j = term.yDegree then term.coeff else 0)
         0 := by
   unfold hasseDerivativeFromTerms
   have hfold : ∀ (xs : List (HasseTerm R)) (out : CBivariate R) (acc : R),
       coeff out i j = acc →
-      coeff (xs.foldl (fun out term =>
+      coeff (xs.foldl (fun out term ↦
           out + monomialXY term.xDegree term.yDegree term.coeff) out) i j =
         xs.foldl
-          (fun acc term => acc + if i = term.xDegree ∧ j = term.yDegree then term.coeff else 0)
+          (fun acc term ↦ acc + if i = term.xDegree ∧ j = term.yDegree then term.coeff else 0)
           acc := by
     intro xs
     induction xs with
@@ -465,14 +465,14 @@ coefficient fold over the same degree ranges. -/
 theorem hasseDerivativeTermList_coeff_fold {R : Type*} [Semiring R]
     (a b i j : Nat) (Q : CBivariate R) :
     (hasseDerivativeTermList a b Q).foldl
-        (fun acc term => acc + if i = term.xDegree ∧ j = term.yDegree then term.coeff else 0)
+        (fun acc term ↦ acc + if i = term.xDegree ∧ j = term.yDegree then term.coeff else 0)
         0 =
       (List.range' 0 Q.val.size).foldl
-        (fun acc yDeg =>
+        (fun acc yDeg ↦
           let coeffY := Q.val.coeff yDeg
           if b ≤ yDeg then
             (List.range' 0 coeffY.val.size).foldl
-              (fun acc xDeg =>
+              (fun acc xDeg ↦
                 if a ≤ xDeg then
                   acc +
                     if i = xDeg - a ∧ j = yDeg - b then
@@ -485,14 +485,14 @@ theorem hasseDerivativeTermList_coeff_fold {R : Type*} [Semiring R]
   unfold hasseDerivativeTermList
   have houter : ∀ (ys : List Nat) (terms : List (HasseTerm R)) (acc : R),
       terms.foldl
-          (fun acc term => acc + if i = term.xDegree ∧ j = term.yDegree then term.coeff else 0)
+          (fun acc term ↦ acc + if i = term.xDegree ∧ j = term.yDegree then term.coeff else 0)
           0 = acc →
       (ys.foldl
-          (fun out yDeg =>
+          (fun out yDeg ↦
             let coeffY := Q.val.coeff yDeg
             if b ≤ yDeg then
               (List.range' 0 coeffY.val.size).foldl
-                (fun out xDeg =>
+                (fun out xDeg ↦
                   if a ≤ xDeg then
                     let coeff := (Nat.choose xDeg a : R) * (Nat.choose yDeg b : R) *
                       coeffY.coeff xDeg
@@ -501,14 +501,14 @@ theorem hasseDerivativeTermList_coeff_fold {R : Type*} [Semiring R]
                 out
             else out)
           terms).foldl
-          (fun acc term => acc + if i = term.xDegree ∧ j = term.yDegree then term.coeff else 0)
+          (fun acc term ↦ acc + if i = term.xDegree ∧ j = term.yDegree then term.coeff else 0)
           0 =
         ys.foldl
-          (fun acc yDeg =>
+          (fun acc yDeg ↦
             let coeffY := Q.val.coeff yDeg
             if b ≤ yDeg then
               (List.range' 0 coeffY.val.size).foldl
-                (fun acc xDeg =>
+                (fun acc xDeg ↦
                   if a ≤ xDeg then
                     acc +
                       if i = xDeg - a ∧ j = yDeg - b then
@@ -530,22 +530,22 @@ theorem hasseDerivativeTermList_coeff_fold {R : Type*} [Semiring R]
         · simp only [hy, if_true]
           have hinner : ∀ (xs : List Nat) (terms : List (HasseTerm R)) (acc : R),
               terms.foldl
-                  (fun acc term =>
+                  (fun acc term ↦
                     acc + if i = term.xDegree ∧ j = term.yDegree then term.coeff else 0)
                   0 = acc →
               (xs.foldl
-                  (fun out xDeg =>
+                  (fun out xDeg ↦
                     if a ≤ xDeg then
                       let coeff := (Nat.choose xDeg a : R) * (Nat.choose yDeg b : R) *
                         (Q.val.coeff yDeg).coeff xDeg
                       out ++ [⟨xDeg - a, yDeg - b, coeff⟩]
                     else out)
                   terms).foldl
-                  (fun acc term =>
+                  (fun acc term ↦
                     acc + if i = term.xDegree ∧ j = term.yDegree then term.coeff else 0)
                   0 =
                 xs.foldl
-                  (fun acc xDeg =>
+                  (fun acc xDeg ↦
                     if a ≤ xDeg then
                       acc +
                         if i = xDeg - a ∧ j = yDeg - b then
@@ -578,7 +578,7 @@ theorem hasseDerivativeTermList_coeff_fold {R : Type*} [Semiring R]
 theorem hasseDerivativeTermList_coeff_inner_fold {R : Type*} [Semiring R]
     (a b i j yDeg : Nat) (coeffY : CPolynomial R) (acc : R) (hy : b ≤ yDeg) :
     (List.range' 0 coeffY.val.size).foldl
-        (fun acc xDeg =>
+        (fun acc xDeg ↦
           if a ≤ xDeg then
             acc +
               if i = xDeg - a ∧ j = yDeg - b then
@@ -592,7 +592,7 @@ theorem hasseDerivativeTermList_coeff_inner_fold {R : Type*} [Semiring R]
         else 0 := by
   have hstep :
       (List.range' 0 coeffY.val.size).foldl
-          (fun acc xDeg =>
+          (fun acc xDeg ↦
             if a ≤ xDeg then
               acc +
                 if i = xDeg - a ∧ j = yDeg - b then
@@ -601,7 +601,7 @@ theorem hasseDerivativeTermList_coeff_inner_fold {R : Type*} [Semiring R]
             else acc)
           acc =
         (List.range' 0 coeffY.val.size).foldl
-          (fun acc xDeg =>
+          (fun acc xDeg ↦
             acc +
               if a ≤ xDeg then
                 if i = xDeg - a ∧ j = yDeg - b then
@@ -641,7 +641,7 @@ theorem hasseDerivativeTermList_coeff_inner_fold {R : Type*} [Semiring R]
         · simp [ha, hxEq]
     rw [List.foldl_congr_of_mem
       (List.range' 0 coeffY.val.size) acc
-      (fun _acc' xDeg _hxDeg => by rw [hcontrib xDeg])]
+      (fun _acc' xDeg _hxDeg ↦ by rw [hcontrib xDeg])]
     rw [DenseMatrix.foldl_range_one_special
       (F := R) (pivot := i + a)
       ((Nat.choose (i + a) a : R) * (Nat.choose (j + b) b : R) *
@@ -663,7 +663,7 @@ theorem hasseDerivativeTermList_coeff_inner_fold {R : Type*} [Semiring R]
       · simp [ha]
     rw [List.foldl_congr_of_mem
       (List.range' 0 coeffY.val.size) acc
-      (fun _acc' xDeg _hxDeg => by rw [hcontrib xDeg])]
+      (fun _acc' xDeg _hxDeg ↦ by rw [hcontrib xDeg])]
     simp [hyTarget]
 
 /-- The fixed coefficient of the executable Hasse term list has the closed
@@ -671,7 +671,7 @@ coefficient-shift formula. -/
 theorem hasseDerivativeTermList_coeff_value {R : Type*} [Semiring R]
     (a b i j : Nat) (Q : CBivariate R) :
     (hasseDerivativeTermList a b Q).foldl
-        (fun acc term => acc + if i = term.xDegree ∧ j = term.yDegree then term.coeff else 0)
+        (fun acc term ↦ acc + if i = term.xDegree ∧ j = term.yDegree then term.coeff else 0)
         0 =
       (Nat.choose (i + a) a : R) * (Nat.choose (j + b) b : R) *
         coeff Q (i + a) (j + b) := by
@@ -683,11 +683,11 @@ theorem hasseDerivativeTermList_coeff_value {R : Type*} [Semiring R]
     else 0
   have houterStep :
       (List.range' 0 Q.val.size).foldl
-          (fun acc yDeg =>
+          (fun acc yDeg ↦
             let coeffY := Q.val.coeff yDeg
             if b ≤ yDeg then
               (List.range' 0 coeffY.val.size).foldl
-                (fun acc xDeg =>
+                (fun acc xDeg ↦
                   if a ≤ xDeg then
                     acc +
                       if i = xDeg - a ∧ j = yDeg - b then
@@ -698,7 +698,7 @@ theorem hasseDerivativeTermList_coeff_value {R : Type*} [Semiring R]
             else acc)
           0 =
         (List.range' 0 Q.val.size).foldl
-          (fun acc yDeg => acc + if yDeg = j + b then source else 0)
+          (fun acc yDeg ↦ acc + if yDeg = j + b then source else 0)
           0 := by
     apply List.foldl_congr_of_mem
     intro acc yDeg
@@ -834,9 +834,9 @@ theorem hasseDerivativeTerms_eval_aux {R : Type*}
     [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (x y : R) (terms : List (HasseTerm R)) (acc : CBivariate R) :
     evalEval x y (terms.foldl
-      (fun out term => out + monomialXY term.xDegree term.yDegree term.coeff) acc) =
+      (fun out term ↦ out + monomialXY term.xDegree term.yDegree term.coeff) acc) =
     terms.foldl
-      (fun z term => z + term.coeff * x ^ term.xDegree * y ^ term.yDegree)
+      (fun z term ↦ z + term.coeff * x ^ term.xDegree * y ^ term.yDegree)
       (evalEval x y acc) := by
   induction terms generalizing acc with
   | nil => rfl

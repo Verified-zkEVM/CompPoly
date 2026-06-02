@@ -53,18 +53,18 @@ def set [Zero F] (M : DenseMatrix F) (row col : Nat) (value : F) : DenseMatrix F
 def ofFn [Zero F] (rows cols : Nat) (f : Nat -> Nat -> F) : DenseMatrix F :=
   { rows := rows
     cols := cols
-    data := Array.ofFn fun i : Fin (rows * cols) =>
+    data := Array.ofFn fun i : Fin (rows * cols) ↦
       f (i.val / cols) (i.val % cols) }
 
 /-- Dot product of one matrix row with a vector. -/
 def dotRow [Semiring F] (M : DenseMatrix F) (row : Nat) (v : Array F) : F :=
   (List.range M.cols).foldl
-    (fun acc col => acc + M.get row col * v.getD col 0)
+    (fun acc col ↦ acc + M.get row col * v.getD col 0)
     0
 
 /-- Matrix-vector product. -/
 def mulVec [Semiring F] (M : DenseMatrix F) (v : Array F) : Array F :=
-  ((List.range M.rows).map fun row => dotRow M row v).toArray
+  ((List.range M.rows).map fun row ↦ dotRow M row v).toArray
 
 /-- A vector has the same width as the matrix column count. -/
 def VectorWidth [Zero F] (M : DenseMatrix F) (v : Array F) : Prop :=

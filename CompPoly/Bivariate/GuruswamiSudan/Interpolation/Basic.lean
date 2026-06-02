@@ -59,7 +59,7 @@ def hasseMonomialEval {F : Type*} [Semiring F]
 def interpolationConstraintMatrixOnBasis {F : Type*} [Semiring F]
     (basis : Array CBivariate.Monomial) (constraints : Array (InterpolationConstraint F)) :
     DenseMatrix F :=
-  DenseMatrix.ofFn constraints.size basis.size fun row col =>
+  DenseMatrix.ofFn constraints.size basis.size fun row col ↦
     let constraint := constraints.getD row
       { x := 0, y := 0, xOrder := 0, yOrder := 0 }
     let monomial := basis.getD col { xDegree := 0, yDegree := 0 }
@@ -98,7 +98,7 @@ def interpolationPolynomial {F : Type*}
 /-- Coefficients of a bivariate polynomial in a supplied monomial order. -/
 def interpolationCoefficientVectorOnBasis {F : Type*} [Zero F]
     (basis : Array CBivariate.Monomial) (Q : CBivariate F) : Array F :=
-  basis.map fun monomial =>
+  basis.map fun monomial ↦
     CBivariate.coeff Q monomial.xDegree monomial.yDegree
 
 /-- Coefficients of a bivariate polynomial in the interpolation monomial order. -/
@@ -108,7 +108,7 @@ def interpolationCoefficientVector {F : Type*} [Zero F]
 
 /-- The first nonzero vector coordinate, if one exists. -/
 def firstNonzeroIndex? {F : Type*} [Zero F] [BEq F] (v : Array F) : Option Nat :=
-  (List.range v.size).find? fun i => !(v.getD i 0 == 0)
+  (List.range v.size).find? fun i ↦ !(v.getD i 0 == 0)
 
 /-- Normalize a nonzero vector by making its first nonzero coordinate equal to `1`. -/
 def normalizeVector? {F : Type*} [Field F] [BEq F] (v : Array F) :
@@ -120,7 +120,7 @@ def normalizeVector? {F : Type*} [Field F] [BEq F] (v : Array F) :
       if pivot == 0 then
         none
       else
-        some (v.map fun c => c / pivot)
+        some (v.map fun c ↦ c / pivot)
 
 /-- Predicate for the normalized interpolation-witness API. -/
 def IsNormalizedInterpolationWitness {F : Type*} [Zero F] [One F] [BEq F]

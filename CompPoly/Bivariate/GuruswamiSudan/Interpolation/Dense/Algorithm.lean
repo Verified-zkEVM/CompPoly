@@ -29,7 +29,7 @@ def lowMessageDegreeInterpolation {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (points : Array (Prod F F)) (multiplicity : Nat) : CBivariate F :=
   points.toList.foldl
-    (fun Q point =>
+    (fun Q point ↦
       Q * (CBivariate.linearYFactor (CPolynomial.C point.2)) ^ multiplicity)
     1
 

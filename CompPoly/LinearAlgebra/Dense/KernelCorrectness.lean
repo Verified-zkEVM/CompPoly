@@ -64,7 +64,7 @@ private theorem all_columns_pivot_of_no_free_columns {pivots : Array Nat} {cols 
   · exfalso
     have hfalse : containsNat pivots c = false := by
       cases hv : containsNat pivots c <;> simp [hv] at hcontains ⊢
-    have hmem : c ∈ (List.range cols).filter fun col => !(containsNat pivots col) := by
+    have hmem : c ∈ (List.range cols).filter fun col ↦ !(containsNat pivots col) := by
       rw [List.mem_filter]
       constructor
       · exact List.mem_range.mpr hc
@@ -160,12 +160,12 @@ private theorem pivotRowOfColumn?_eq_some_of_getD {pivots : Array Nat}
     pivotRowOfColumn? pivots (pivots.getD row 0) = some row := by
   unfold pivotRowOfColumn?
   have hexists : ((List.range pivots.size).find?
-      (fun r => pivots.getD r 0 == pivots.getD row 0)).isSome = true := by
+      (fun r ↦ pivots.getD r 0 == pivots.getD row 0)).isSome = true := by
     rw [List.find?_isSome]
     refine ⟨row, List.mem_range.mpr hrow, ?_⟩
     exact beq_iff_eq.mpr rfl
   cases hfind : (List.range pivots.size).find?
-      (fun r => pivots.getD r 0 == pivots.getD row 0) with
+      (fun r ↦ pivots.getD r 0 == pivots.getD row 0) with
   | none =>
       have hnone := List.find?_eq_none.mp hfind row (List.mem_range.mpr hrow)
       have hpred : (pivots.getD row 0 == pivots.getD row 0) = true :=
@@ -265,7 +265,7 @@ private theorem foldl_range_two_special [AddCommGroup F] {free pivot : Nat}
     (hne : free ≠ pivot) (x : F) :
     ∀ start len (init : F),
       (List.range' start len).foldl
-          (fun acc c => acc + if c = free then x else if c = pivot then -x else 0) init =
+          (fun acc c ↦ acc + if c = free then x else if c = pivot then -x else 0) init =
         init + (if start ≤ free ∧ free < start + len then x else 0) +
           (if start ≤ pivot ∧ pivot < start + len then -x else 0) := by
   intro start len init
@@ -337,11 +337,11 @@ private theorem dotRow_basisVectorForFreeColumn_pivot [Field F] [BEq F]
   have hfold : ∀ (xs : List Nat) (acc : F),
       (∀ c, c ∈ xs → c < A.cols) →
       xs.foldl
-          (fun acc col =>
+          (fun acc col ↦
             acc + A.get row col * (basisVectorForFreeColumn A pivots free).getD col 0)
           acc =
         xs.foldl
-          (fun acc col => acc + if col = free then x else if col = pivot then -x else 0)
+          (fun acc col ↦ acc + if col = free then x else if col = pivot then -x else 0)
           acc := by
     intro xs
     induction xs with
@@ -370,7 +370,7 @@ private theorem dotRow_basisVectorForFreeColumn_pivot [Field F] [BEq F]
 private theorem foldl_range_one_special [AddCommMonoid F] {pivot : Nat} (x : F) :
     ∀ start len (init : F),
       (List.range' start len).foldl
-          (fun acc c => acc + if c = pivot then x else 0) init =
+          (fun acc c ↦ acc + if c = pivot then x else 0) init =
         init + if start ≤ pivot ∧ pivot < start + len then x else 0 := by
   intro start len init
   revert start init
@@ -410,8 +410,8 @@ private theorem dotRow_eq_getD_of_all_pivots [Field F] [BEq F]
     exact (hshape row hrow).2.1
   have hfold : ∀ (xs : List Nat) (acc : F),
       (∀ c, c ∈ xs → c < A.cols) →
-      xs.foldl (fun acc c => acc + A.get row c * v.getD c 0) acc =
-        xs.foldl (fun acc c => acc + if c = pivot then x else 0) acc := by
+      xs.foldl (fun acc c ↦ acc + A.get row c * v.getD c 0) acc =
+        xs.foldl (fun acc c ↦ acc + if c = pivot then x else 0) acc := by
     intro xs
     induction xs with
     | nil =>
@@ -468,7 +468,7 @@ private theorem dotRow_eq_zero_of_row_zero [Semiring F]
   unfold dotRow
   have hfold : ∀ (xs : List Nat) (acc : F),
       (∀ col, col ∈ xs → col < A.cols) →
-      xs.foldl (fun acc col => acc + A.get row col * v.getD col 0) acc = acc := by
+      xs.foldl (fun acc col ↦ acc + A.get row col * v.getD col 0) acc = acc := by
     intro xs
     induction xs with
     | nil =>

@@ -21,7 +21,7 @@ namespace CPolynomial
 
 private lemma mem_eraseDups_fold {α : Type*} [BEq α] [LawfulBEq α]
     (a : α) : ∀ (xs : List α) (out : Array α),
-      a ∈ List.foldl (fun out x => if x ∈ out then out else out.push x) out xs →
+      a ∈ List.foldl (fun out x ↦ if x ∈ out then out else out.push x) out xs →
         a ∈ out ∨ a ∈ xs := by
   intro xs
   induction xs with
@@ -56,7 +56,7 @@ private lemma mem_eraseDups {α : Type*} [BEq α] [LawfulBEq α]
 private lemma mem_eraseDups_fold_of_mem {α : Type*} [BEq α] [LawfulBEq α]
     (a : α) : ∀ (xs : List α) (out : Array α),
       a ∈ out ∨ a ∈ xs →
-        a ∈ List.foldl (fun out x => if x ∈ out then out else out.push x) out xs := by
+        a ∈ List.foldl (fun out x ↦ if x ∈ out then out else out.push x) out xs := by
   intro xs
   induction xs with
   | nil =>
@@ -473,9 +473,9 @@ private theorem raw_monicNormalize_trim {F : Type*} [Field F] [BEq F] [LawfulBEq
       exact hzeroNe (by simpa [q] using hp)
     simp [hpzeroNe]
     change (CPolynomial.Raw.mk
-        (Array.map (fun r => (p.trim).leadingCoeff⁻¹ * r) p.trim)).trim =
-      CPolynomial.Raw.mk (Array.map (fun r => (p.trim).leadingCoeff⁻¹ * r) p.trim)
-    apply CPolynomial.Raw.Trim.non_zero_map (fun r => q.leadingCoeff⁻¹ * r)
+        (Array.map (fun r ↦ (p.trim).leadingCoeff⁻¹ * r) p.trim)).trim =
+      CPolynomial.Raw.mk (Array.map (fun r ↦ (p.trim).leadingCoeff⁻¹ * r) p.trim)
+    apply CPolynomial.Raw.Trim.non_zero_map (fun r ↦ q.leadingCoeff⁻¹ * r)
     · intro r hr
       apply mul_eq_zero.mp at hr
       rcases hr with hinv | hr
@@ -914,7 +914,7 @@ theorem smoothCosetLinearFactorsWithSchedule_complete {F : Type*}
                     j ∈ js →
                     ∃ factor,
                       factor ∈ (js.foldl
-                        (fun factors y =>
+                        (fun factors y ↦
                           let beta := alpha ^ childOrder * tau ^ y
                           let witness := xPow - CPolynomial.C beta
                           let child := CPolynomial.monicNormalize (CPolynomial.gcdMonic p' witness)

@@ -55,7 +55,7 @@ structure SmoothCyclicRootContext (F : Type*) [Field F] [BEq F] [LawfulBEq F] wh
   card_eq : Nat.card F = q
   generator_order : orderOf generator = q - 1
   schedule_complete :
-    schedule.toList.foldl (fun order ell => order / ell) (q - 1) = 1
+    schedule.toList.foldl (fun order ell ↦ order / ell) (q - 1) = 1
   splitLinearFactorsWith :
     CPolynomial.Raw.MulContext F →
       CPolynomial.Raw.ModContext F →
@@ -94,13 +94,13 @@ def xPowModWith {F : Type*} [Field F] [BEq F] [LawfulBEq F]
 /-- Ordered elements of the coset `alpha * <gamma>` with the supplied order. -/
 def smoothCosetPoints {F : Type*} [Field F]
     (alpha gamma : F) (order : Nat) : Array F :=
-  Array.ofFn fun j : Fin order => alpha * gamma ^ j.val
+  Array.ofFn fun j : Fin order ↦ alpha * gamma ^ j.val
 
 /-- Emit linear factors for the points whose evaluated value is zero. -/
 def linearFactorsFromLeafValues {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     (points values : Array F) : Array (CPolynomial F) :=
   points.zipIdx.foldl
-    (fun factors ⟨point, idx⟩ =>
+    (fun factors ⟨point, idx⟩ ↦
       if values.getD idx 1 == 0 then
         factors.push (CPolynomial.linearFactor point)
       else
@@ -143,7 +143,7 @@ def smoothCosetLinearFactorsWithSchedule {F : Type*}
         let tau := gamma ^ childOrder
         let xPow := xPowModWith M D p childOrder
         (List.range ell).foldl
-          (fun factors j =>
+          (fun factors j ↦
             let beta := alpha ^ childOrder * tau ^ j
             let witness := xPow - CPolynomial.C beta
             let child := CPolynomial.monicNormalize (CPolynomial.gcdMonic p witness)
@@ -190,7 +190,7 @@ def smoothCyclicRootContextOf {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     (card_eq : Nat.card F = q)
     (generator_order : orderOf generator = q - 1)
     (schedule_complete :
-      schedule.toList.foldl (fun order ell => order / ell) (q - 1) = 1)
+      schedule.toList.foldl (fun order ell ↦ order / ell) (q - 1) = 1)
     (sound :
       ∀ M D p factor,
         factor ∈
@@ -215,7 +215,7 @@ def smoothCyclicRootContextOf {F : Type*} [Field F] [BEq F] [LawfulBEq F]
   card_eq := card_eq
   generator_order := generator_order
   schedule_complete := schedule_complete
-  splitLinearFactorsWith := fun M D =>
+  splitLinearFactorsWith := fun M D ↦
     smoothLinearFactorsAlgorithmWith M D leafEvaluator q generator schedule
   sound := sound
   complete := complete
@@ -226,8 +226,8 @@ def smoothLinearFactorProductSplitterWith {F : Type*}
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
     (ctx : SmoothCyclicRootContext F) :
     LinearFactorProductSplitter F where
-  splitLinearFactors := fun _qArg p => ctx.splitLinearFactorsWith M D p
-  validInput := fun _qArg p => ctx.validInput p
+  splitLinearFactors := fun _qArg p ↦ ctx.splitLinearFactorsWith M D p
+  validInput := fun _qArg p ↦ ctx.validInput p
   sound := by
     intro _qArg p factor h
     exact ctx.sound M D p factor h

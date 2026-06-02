@@ -108,13 +108,13 @@ private theorem substituteYRootPlusXY_eq_fold {F : Type*}
     (Q : CBivariate F) (a : F) :
     substituteYRootPlusXY Q a =
       (List.range' 0 Q.val.size).foldl
-        (fun out y =>
+        (fun out y ↦
           let coeffY := Q.val.coeff y
           (List.range' 0 coeffY.val.size).foldl
-            (fun out x =>
+            (fun out x ↦
               let coeff := coeffY.coeff x
               (List.range' 0 (y + 1)).foldl
-                (fun out t =>
+                (fun out t ↦
                   out +
                     CBivariate.monomialXY (x + t) t
                       (coeff * (Nat.choose y t : F) * a ^ (y - t)))
@@ -129,13 +129,13 @@ private theorem substituteYRootPlusXY_coeff_fold {F : Type*}
     (Q : CBivariate F) (a : F) (i j : Nat) :
     CBivariate.coeff (substituteYRootPlusXY Q a) i j =
       (List.range' 0 Q.val.size).foldl
-        (fun acc y =>
+        (fun acc y ↦
           let coeffY := Q.val.coeff y
           (List.range' 0 coeffY.val.size).foldl
-            (fun acc x =>
+            (fun acc x ↦
               let coeff := coeffY.coeff x
               (List.range' 0 (y + 1)).foldl
-                (fun acc t =>
+                (fun acc t ↦
                   acc +
                     if i = x + t ∧ j = t then
                       coeff * (Nat.choose y t : F) * a ^ (y - t)
@@ -145,26 +145,26 @@ private theorem substituteYRootPlusXY_coeff_fold {F : Type*}
         0 := by
   rw [substituteYRootPlusXY_eq_fold]
   let outerStep : CBivariate F → Nat → CBivariate F :=
-    fun out y =>
+    fun out y ↦
       let coeffY := Q.val.coeff y
       (List.range' 0 coeffY.val.size).foldl
-        (fun out x =>
+        (fun out x ↦
           let coeff := coeffY.coeff x
           (List.range' 0 (y + 1)).foldl
-            (fun out t =>
+            (fun out t ↦
               out +
                 CBivariate.monomialXY (x + t) t
                   (coeff * (Nat.choose y t : F) * a ^ (y - t)))
             out)
         out
   let coeffOuterStep : F → Nat → F :=
-    fun acc y =>
+    fun acc y ↦
       let coeffY := Q.val.coeff y
       (List.range' 0 coeffY.val.size).foldl
-        (fun acc x =>
+        (fun acc x ↦
           let coeff := coeffY.coeff x
           (List.range' 0 (y + 1)).foldl
-            (fun acc t =>
+            (fun acc t ↦
               acc +
                 if i = x + t ∧ j = t then
                   coeff * (Nat.choose y t : F) * a ^ (y - t)
@@ -190,19 +190,19 @@ private theorem substituteYRootPlusXY_coeff_fold {F : Type*}
         dsimp [outerStep, coeffOuterStep]
         let coeffY := Q.val.coeff y
         let innerStep : CBivariate F → Nat → CBivariate F :=
-          fun out x =>
+          fun out x ↦
             let coeff := coeffY.coeff x
             (List.range' 0 (y + 1)).foldl
-              (fun out t =>
+              (fun out t ↦
                 out +
                   CBivariate.monomialXY (x + t) t
                     (coeff * (Nat.choose y t : F) * a ^ (y - t)))
               out
         let coeffInnerStep : F → Nat → F :=
-          fun acc x =>
+          fun acc x ↦
             let coeff := coeffY.coeff x
             (List.range' 0 (y + 1)).foldl
-              (fun acc t =>
+              (fun acc t ↦
                 acc +
                   if i = x + t ∧ j = t then
                     coeff * (Nat.choose y t : F) * a ^ (y - t)
@@ -227,12 +227,12 @@ private theorem substituteYRootPlusXY_coeff_fold {F : Type*}
               dsimp [innerStep, coeffInnerStep]
               let coeff := coeffY.coeff x
               let termStep : CBivariate F → Nat → CBivariate F :=
-                fun out t =>
+                fun out t ↦
                   out +
                     CBivariate.monomialXY (x + t) t
                       (coeff * (Nat.choose y t : F) * a ^ (y - t))
               let coeffTermStep : F → Nat → F :=
-                fun acc t =>
+                fun acc t ↦
                   acc +
                     if i = x + t ∧ j = t then
                       coeff * (Nat.choose y t : F) * a ^ (y - t)
@@ -262,7 +262,7 @@ private theorem substituteYRootPlusXY_coeff_fold {F : Type*}
 private theorem substituteYRootPlusXY_term_fold_target {F : Type*}
     [Field F] (a coeff : F) (x y x₀ : Nat) (acc : F) :
     (List.range' 0 (y + 1)).foldl
-        (fun acc t =>
+        (fun acc t ↦
           acc +
             if x + y = x₀ + t ∧ y = t then
               coeff * (Nat.choose y t : F) * a ^ (y - t)
@@ -270,12 +270,12 @@ private theorem substituteYRootPlusXY_term_fold_target {F : Type*}
         acc =
       acc + if x₀ = x then coeff else 0 := by
   rw [List.foldl_congr_of_mem
-    (f := fun acc t =>
+    (f := fun acc t ↦
       acc +
         if x + y = x₀ + t ∧ y = t then
           coeff * (Nat.choose y t : F) * a ^ (y - t)
         else 0)
-    (g := fun acc t => acc + if t = y then (if x₀ = x then coeff else 0) else 0)
+    (g := fun acc t ↦ acc + if t = y then (if x₀ = x then coeff else 0) else 0)
     (List.range' 0 (y + 1)) acc]
   · rw [DenseMatrix.foldl_range_one_special
       (F := F) (pivot := y) (if x₀ = x then coeff else 0) 0 (y + 1) acc]
@@ -291,16 +291,16 @@ private theorem substituteYRootPlusXY_term_fold_target {F : Type*}
           rintro ⟨hxy, _⟩
           apply hx
           omega
-        have hx' : x ≠ x₀ := fun h => hx h.symm
+        have hx' : x ≠ x₀ := fun h ↦ hx h.symm
         simp [hx, hx']
     · have hnot : ¬(x + y = x₀ + t ∧ y = t) := by
-        exact fun h => hty h.2.symm
+        exact fun h ↦ hty h.2.symm
       simp [hnot, hty]
 
 private theorem substituteYRootPlusXY_term_fold_zero_of_y_lt {F : Type*}
     [Field F] (a coeff : F) (x y y₀ x₀ : Nat) (acc : F) (hy₀ : y₀ < y) :
     (List.range' 0 (y₀ + 1)).foldl
-        (fun acc t =>
+        (fun acc t ↦
           acc +
             if x + y = x₀ + t ∧ y = t then
               coeff * (Nat.choose y₀ t : F) * a ^ (y₀ - t)
@@ -308,12 +308,12 @@ private theorem substituteYRootPlusXY_term_fold_zero_of_y_lt {F : Type*}
         acc =
       acc := by
   rw [List.foldl_congr_of_mem
-    (f := fun acc t =>
+    (f := fun acc t ↦
       acc +
         if x + y = x₀ + t ∧ y = t then
           coeff * (Nat.choose y₀ t : F) * a ^ (y₀ - t)
         else 0)
-    (g := fun acc _t => acc)
+    (g := fun acc _t ↦ acc)
     (List.range' 0 (y₀ + 1)) acc]
   · induction (List.range' 0 (y₀ + 1)) generalizing acc with
     | nil => rfl
@@ -325,17 +325,17 @@ private theorem substituteYRootPlusXY_term_fold_zero_of_y_lt {F : Type*}
       have ht' := (List.mem_range'_1.mp ht).2
       omega
     have hty : y ≠ t := by omega
-    have hnot : ¬(x + y = x₀ + t ∧ y = t) := fun h => hty h.2
+    have hnot : ¬(x + y = x₀ + t ∧ y = t) := fun h ↦ hty h.2
     simp [hnot]
 
 private theorem substituteYRootPlusXY_inner_fold_target {F : Type*}
     [Field F] (a : F) (coeffY : CPolynomial F) (x y : Nat) (acc : F)
     (hsize : coeffY.val.size = x + 1) :
     (List.range' 0 coeffY.val.size).foldl
-        (fun acc x₀ =>
+        (fun acc x₀ ↦
           let coeff := coeffY.coeff x₀
           (List.range' 0 (y + 1)).foldl
-            (fun acc t =>
+            (fun acc t ↦
               acc +
                 if x + y = x₀ + t ∧ y = t then
                   coeff * (Nat.choose y t : F) * a ^ (y - t)
@@ -344,16 +344,16 @@ private theorem substituteYRootPlusXY_inner_fold_target {F : Type*}
         acc =
       acc + coeffY.coeff x := by
   rw [List.foldl_congr_of_mem
-    (f := fun acc x₀ =>
+    (f := fun acc x₀ ↦
       let coeff := coeffY.coeff x₀
       (List.range' 0 (y + 1)).foldl
-        (fun acc t =>
+        (fun acc t ↦
           acc +
             if x + y = x₀ + t ∧ y = t then
               coeff * (Nat.choose y t : F) * a ^ (y - t)
             else 0)
         acc)
-    (g := fun acc x₀ => acc + if x₀ = x then coeffY.coeff x else 0)
+    (g := fun acc x₀ ↦ acc + if x₀ = x then coeffY.coeff x else 0)
     (List.range' 0 coeffY.val.size) acc]
   · rw [hsize]
     rw [DenseMatrix.foldl_range_one_special
@@ -368,10 +368,10 @@ private theorem substituteYRootPlusXY_inner_fold_zero_of_y_lt {F : Type*}
     [Field F] (a : F) (coeffY : CPolynomial F) (x y y₀ : Nat) (acc : F)
     (hy₀ : y₀ < y) :
     (List.range' 0 coeffY.val.size).foldl
-        (fun acc x₀ =>
+        (fun acc x₀ ↦
           let coeff := coeffY.coeff x₀
           (List.range' 0 (y₀ + 1)).foldl
-            (fun acc t =>
+            (fun acc t ↦
               acc +
                 if x + y = x₀ + t ∧ y = t then
                   coeff * (Nat.choose y₀ t : F) * a ^ (y₀ - t)
@@ -380,16 +380,16 @@ private theorem substituteYRootPlusXY_inner_fold_zero_of_y_lt {F : Type*}
         acc =
       acc := by
   rw [List.foldl_congr_of_mem
-    (f := fun acc x₀ =>
+    (f := fun acc x₀ ↦
       let coeff := coeffY.coeff x₀
       (List.range' 0 (y₀ + 1)).foldl
-        (fun acc t =>
+        (fun acc t ↦
           acc +
             if x + y = x₀ + t ∧ y = t then
               coeff * (Nat.choose y₀ t : F) * a ^ (y₀ - t)
             else 0)
         acc)
-    (g := fun acc _x₀ => acc)
+    (g := fun acc _x₀ ↦ acc)
     (List.range' 0 coeffY.val.size) acc]
   · induction (List.range' 0 coeffY.val.size) generalizing acc with
     | nil => rfl
@@ -407,20 +407,20 @@ private theorem substituteYRootPlusXY_coeff_top {F : Type*}
   rw [substituteYRootPlusXY_coeff_fold]
   rw [hQsize]
   rw [List.foldl_congr_of_mem
-    (f := fun acc y₀ =>
+    (f := fun acc y₀ ↦
       let coeffY := Q.val.coeff y₀
       (List.range' 0 coeffY.val.size).foldl
-        (fun acc x₀ =>
+        (fun acc x₀ ↦
           let coeff := coeffY.coeff x₀
           (List.range' 0 (y₀ + 1)).foldl
-            (fun acc t =>
+            (fun acc t ↦
               acc +
                 if x + y = x₀ + t ∧ y = t then
                   coeff * (Nat.choose y₀ t : F) * a ^ (y₀ - t)
                 else 0)
             acc)
         acc)
-    (g := fun acc y₀ => acc + if y₀ = y then (Q.val.coeff y).coeff x else 0)
+    (g := fun acc y₀ ↦ acc + if y₀ = y then (Q.val.coeff y).coeff x else 0)
     (List.range' 0 (y + 1)) 0]
   · rw [DenseMatrix.foldl_range_one_special
       (F := F) (pivot := y) ((Q.val.coeff y).coeff x) 0 (y + 1) 0]
@@ -467,7 +467,7 @@ private theorem substituteYRootPlusXY_ne_zero {F : Type*}
 
 private theorem list_sum_map_mul_right {R : Type*} [Semiring R]
     (xs : List Nat) (f : Nat → R) (q : R) :
-    (xs.map (fun x => f x * q)).sum = (xs.map f).sum * q := by
+    (xs.map (fun x ↦ f x * q)).sum = (xs.map f).sum * q := by
   induction xs with
   | nil =>
       simp
@@ -480,7 +480,7 @@ private theorem polynomialPrefix_eq_range_fold {F : Type*}
     ∀ n : Nat,
       polynomialPrefix p n =
         (List.range n).foldl
-          (fun acc i => acc + CPolynomial.monomial i (p.coeff i)) 0
+          (fun acc i ↦ acc + CPolynomial.monomial i (p.coeff i)) 0
   | 0 => by
       rw [polynomialPrefix_zero]
       rfl
@@ -495,7 +495,7 @@ private theorem cpoly_eq_range_fold {F : Type*}
     (p : CPolynomial F) :
     p =
       (List.range' 0 p.val.size).foldl
-        (fun acc i => acc + CPolynomial.monomial i (p.coeff i)) 0 := by
+        (fun acc i ↦ acc + CPolynomial.monomial i (p.coeff i)) 0 := by
   have hprefix := polynomialPrefix_eq_range_fold p p.val.size
   have hdegree : degreeLt p p.val.size := by
     unfold degreeLt CPolynomial.degree
@@ -514,14 +514,14 @@ private theorem cpoly_range_fold_monomial_mul_pow {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (coeffY q : CPolynomial F) (y : Nat) (acc : CPolynomial F) :
     (List.range' 0 coeffY.val.size).foldl
-        (fun acc x => acc + CPolynomial.monomial x (coeffY.coeff x) * q ^ y)
+        (fun acc x ↦ acc + CPolynomial.monomial x (coeffY.coeff x) * q ^ y)
         acc =
       acc + coeffY * q ^ y := by
   rw [list_foldl_add_eq_sum]
   rw [list_sum_map_mul_right]
   have hrow := cpoly_eq_range_fold coeffY
   rw [list_foldl_add_eq_sum
-    (fun x => CPolynomial.monomial x (coeffY.coeff x))
+    (fun x ↦ CPolynomial.monomial x (coeffY.coeff x))
     (List.range' 0 coeffY.val.size) 0] at hrow
   simp only [zero_add] at hrow
   rw [← hrow]
@@ -566,8 +566,8 @@ private theorem composeY_foldl_add {F : Type*}
     (f : Nat → CBivariate F) (p : CPolynomial F) :
     ∀ (xs : List Nat) (out : CBivariate F) (acc : CPolynomial F),
       CBivariate.composeY out p = acc →
-        CBivariate.composeY (xs.foldl (fun out x => out + f x) out) p =
-          List.foldl (fun acc x => acc + CBivariate.composeY (f x) p) acc xs := by
+        CBivariate.composeY (xs.foldl (fun out x ↦ out + f x) out) p =
+          List.foldl (fun acc x ↦ acc + CBivariate.composeY (f x) p) acc xs := by
   intro xs
   induction xs with
   | nil =>
@@ -584,7 +584,7 @@ private theorem composeY_substituteYRootPlusXY_term_fold {F : Type*}
     (a coeff : F) (p : CPolynomial F) (x y : Nat) (out : CBivariate F) :
     CBivariate.composeY
         ((List.range' 0 (y + 1)).foldl
-          (fun out t =>
+          (fun out t ↦
             out +
               CBivariate.monomialXY (x + t) t
                 (coeff * (Nat.choose y t : F) * a ^ (y - t)))
@@ -593,26 +593,26 @@ private theorem composeY_substituteYRootPlusXY_term_fold {F : Type*}
       CBivariate.composeY out p +
         CPolynomial.monomial x coeff * (CPolynomial.C a + CPolynomial.X * p) ^ y := by
   rw [composeY_foldl_add
-    (fun t =>
+    (fun t ↦
       CBivariate.monomialXY (x + t) t
         (coeff * (Nat.choose y t : F) * a ^ (y - t)))
     p (List.range' 0 (y + 1)) out (CBivariate.composeY out p) rfl]
   rw [List.foldl_congr_of_mem
-    (f := fun acc t =>
+    (f := fun acc t ↦
       acc + CBivariate.composeY
         (CBivariate.monomialXY (x + t) t
           (coeff * (Nat.choose y t : F) * a ^ (y - t))) p)
-    (g := fun acc t =>
+    (g := fun acc t ↦
       acc + CPolynomial.monomial (x + t)
         (coeff * (Nat.choose y t : F) * a ^ (y - t)) * p ^ t)
     (List.range' 0 (y + 1)) (CBivariate.composeY out p)]
   · rw [list_foldl_add_eq_sum
-      (fun t =>
+      (fun t ↦
         CPolynomial.monomial (x + t)
           (coeff * (Nat.choose y t : F) * a ^ (y - t)) * p ^ t)]
     have hsum := cpoly_monomial_substitution_sum a coeff p x y
     rw [list_foldl_add_eq_sum
-      (fun t =>
+      (fun t ↦
         CPolynomial.monomial (x + t)
           (coeff * (Nat.choose y t : F) * a ^ (y - t)) * p ^ t)
       (List.range' 0 (y + 1)) 0] at hsum
@@ -627,10 +627,10 @@ private theorem composeY_substituteYRootPlusXY_inner_fold {F : Type*}
     (out : CBivariate F) :
     CBivariate.composeY
         ((List.range' 0 coeffY.val.size).foldl
-          (fun out x =>
+          (fun out x ↦
             let coeff := coeffY.coeff x
             (List.range' 0 (y + 1)).foldl
-              (fun out t =>
+              (fun out t ↦
                 out +
                   CBivariate.monomialXY (x + t) t
                     (coeff * (Nat.choose y t : F) * a ^ (y - t)))
@@ -641,16 +641,16 @@ private theorem composeY_substituteYRootPlusXY_inner_fold {F : Type*}
         coeffY * (CPolynomial.C a + CPolynomial.X * p) ^ y := by
   let q := CPolynomial.C a + CPolynomial.X * p
   let innerStep : CBivariate F → Nat → CBivariate F :=
-    fun out x =>
+    fun out x ↦
       let coeff := coeffY.coeff x
       (List.range' 0 (y + 1)).foldl
-        (fun out t =>
+        (fun out t ↦
           out +
             CBivariate.monomialXY (x + t) t
               (coeff * (Nat.choose y t : F) * a ^ (y - t)))
         out
   let coeffStep : CPolynomial F → Nat → CPolynomial F :=
-    fun acc x => acc + CPolynomial.monomial x (coeffY.coeff x) * q ^ y
+    fun acc x ↦ acc + CPolynomial.monomial x (coeffY.coeff x) * q ^ y
   change CBivariate.composeY
       (List.foldl innerStep out (List.range' 0 coeffY.val.size)) p =
     CBivariate.composeY out p + coeffY * q ^ y
@@ -680,20 +680,20 @@ private theorem composeY_substituteYRootPlusXY_eq {F : Type*}
   rw [substituteYRootPlusXY_eq_fold]
   let q := CPolynomial.C a + CPolynomial.X * p
   let outerStep : CBivariate F → Nat → CBivariate F :=
-    fun out y =>
+    fun out y ↦
       let coeffY := Q.val.coeff y
       (List.range' 0 coeffY.val.size).foldl
-        (fun out x =>
+        (fun out x ↦
           let coeff := coeffY.coeff x
           (List.range' 0 (y + 1)).foldl
-            (fun out t =>
+            (fun out t ↦
               out +
                 CBivariate.monomialXY (x + t) t
                   (coeff * (Nat.choose y t : F) * a ^ (y - t)))
             out)
         out
   let coeffStep : CPolynomial F → Nat → CPolynomial F :=
-    fun acc y => acc + Q.val.coeff y * q ^ y
+    fun acc y ↦ acc + Q.val.coeff y * q ^ y
   change CBivariate.composeY
       (List.foldl outerStep 0 (List.range' 0 Q.val.size)) p =
     CBivariate.composeY Q q
@@ -865,7 +865,7 @@ private theorem transformedRothRuckensteinRootPrefixesWithFuel_complete_aux {F :
           (Array.mem_flatten_map_of_mem
             (rootsInFieldForNonzeroEquation fieldRoots
               (initialCoefficientPolynomial Qnorm))
-            (fun coeff =>
+            (fun coeff ↦
               transformedRothRuckensteinRootPrefixesWithFuel fieldRoots fuel
                 (transformedRothRuckensteinResidual Qnorm coeff)
                 (depth + 1) (extendPrefix pref depth coeff))
