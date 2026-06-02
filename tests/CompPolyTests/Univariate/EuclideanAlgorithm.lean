@@ -72,19 +72,17 @@ private def gcd₃ : CPolynomial F := 1
 
 /-! ### Threshold behavior (`threshold > 0`) -/
 
-/-! #### Test 4: overshoot to `r = 0` returns the gcd, not `(0, s, t)`.
+/-! #### Test 4: positive `threshold` gives non-gcd output.
 
-`gcd(X², X) = X` has degree `1`, not `< threshold = 1`, so the run reaches
-`r = 0` and the `r == 0` branch returns the previous triple, the gcd `X`.
-Regression guard: the old `r.natDegree < threshold`-first ordering returned
-`(0, …)` here, since `natDegree 0 = 0 < 1`. -/
+`gcd(X², X) = X` has degree `1`, not `< threshold = 1`. This means that with
+`threshold = 0` it returns the actual gcd `X`, but with `threshold = 1` it
+returns `0`. -/
 
 private def p₄ : CPolynomial F := CPolynomial.X ^ 2
 private def q₄ : CPolynomial F := CPolynomial.X
 
-#guard (CPolynomial.xgcd p₄ q₄ 1).1 == CPolynomial.X
--- Overshoot at `threshold = 1` agrees with the full `threshold = 0` gcd.
-#guard (CPolynomial.xgcd p₄ q₄ 1).1 == (CPolynomial.xgcd p₄ q₄ 0).1
+#guard (CPolynomial.xgcd p₄ q₄ 1).1 == 0
+#guard (CPolynomial.xgcd p₄ q₄ 0).1 == CPolynomial.X
 #guard
   let t := CPolynomial.xgcd p₄ q₄ 1
   t.2.1 * p₄ + t.2.2 * q₄ == t.1
