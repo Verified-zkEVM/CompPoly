@@ -15,20 +15,14 @@ import CompPoly.Fields.BN254
 Compares two ways to divide a bivariate polynomial `Q` by the linear factor
 `Y - f` in the `Y` variable:
 
-* `divByLinearY`: the bespoke synthetic (Horner) division specialised to a monic
-  linear divisor; and
-* `CPolynomial.divByMonic`: general monic long division (now `CommRing`-general)
-  applied to the divisor `Y - f`.
+* `divByLinearY`: synthetic (Horner) division specialised to a monic linear
+  divisor;
+* `CPolynomial.divByMonic`: general monic long division applied to `Y - f`.
 
-Measured across three fields of different word sizes (KoalaBear 31-bit,
-Goldilocks 64-bit, BN254 254-bit) and three `Y`-degree sizes (`< 8`, `< 16`,
-`< 32`), to show both that the Horner speedup is field-independent and that it
-*grows* with the `Y`-degree (the generic divider does a full polynomial multiply
-per step, whose cost balloons as the quotient's `X`-degree grows).
-
-Both methods produce the same quotient, verified by an identical checksum within
-each (field, size) group. The divisor's constant term is perturbed per iteration
-so the division is genuinely recomputed (not hoisted) each measured call.
+Measured over KoalaBear, Goldilocks, and BN254, at `Y`-degrees `< 8`, `< 16`,
+and `< 32`. Both methods produce the same quotient, verified by an identical
+checksum within each (field, size) group. The divisor's constant term is
+perturbed per iteration so each measured call recomputes the division.
 -/
 
 open CompPoly
