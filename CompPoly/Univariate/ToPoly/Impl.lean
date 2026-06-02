@@ -315,7 +315,7 @@ theorem divX_ne_zero_of_ne_zero_coeff_zero [Field R] [BEq R] [LawfulBEq R]
   have hC0 : CPolynomial.C (0 : R) = 0 := by
     apply (CPolynomial.eq_iff_coeff).2
     intro i
-    simpa [CPolynomial.coeff_C] using (CPolynomial.coeff_C (R := R) (0 : R) i)
+    simp
   rw [CPolynomial.X_mul_divX_add (p := p), hdiv, hcoeff]
   rw [hC0]
   simp

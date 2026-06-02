@@ -67,7 +67,7 @@ theorem smooth_zero_root_factor_sound {F : Type*} [Field F] [BEq F] [LawfulBEq F
   have hC0 : CPolynomial.C (0 : F) = 0 := by
     apply (CPolynomial.eq_iff_coeff).2
     intro i
-    simpa [CPolynomial.coeff_C] using (CPolynomial.coeff_C (R := F) (0 : F) i)
+    simp
   rw [CPolynomial.linearFactor, neg_zero, hC0, CPolynomial.zero_add]
   simp [IsLinearRootFactorCandidate, IsLinearFactor, CPolynomial.X, CPolynomial.Raw.X,
     CPolynomial.coeff, CPolynomial.Raw.coeff]
