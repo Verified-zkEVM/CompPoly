@@ -7,14 +7,15 @@ Authors: Valerii Huhnin
 import CompPolyBench.Common
 import CompPoly.Bivariate.GuruswamiSudan
 import CompPoly.Bivariate.GuruswamiSudan.Implementations
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Algorithm
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 
 /-!
 # Guruswami-Sudan Benchmarks
 
 KoalaBear cost-center benchmarks for the dense interpolation path,
-Roth-Ruckenstein root finding, and full backend-parametric `gsCore` and
-`gsFilteredCore`.
+Koetter interpolation path, Roth-Ruckenstein root finding, and full
+backend-parametric `gsCore` and `gsFilteredCore`.
 -/
 
 open CompPoly
@@ -94,6 +95,18 @@ private def checksumOptionArray {F : Type*} (checksum : F -> Nat)
   | none => 0
   | some v => mixChecksum 1 (checksumArray checksum v)
 
+private def checksumInterpolationWitnessOption {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    (checksum : F -> Nat) (points : Array (F × F)) (params : GSInterpParams)
+    (Q? : Option (CBivariate F)) : Nat :=
+  match Q? with
+  | none => 0
+  | some Q =>
+      let validity := if koetterWitnessIsValidBool points params Q then 1 else 0
+      match normalizeVector? (interpolationCoefficientVector params Q) with
+      | none => validity
+      | some coeffs => mixChecksum validity (checksumArray checksum coeffs)
+
 private def checksumPolynomialArrayKoala (ps : Array (CPolynomial KoalaBear.Field)) : Nat :=
   checksumArray (checksumCPolynomial checksumKoalaBear) ps
 
@@ -110,9 +123,11 @@ private def gsWarmupIterations (preset : BenchPreset) : Nat :=
 /-- Benchmark group metadata for Guruswami-Sudan cost-center rows. -/
 def guruswamiSudanGroupInfos : List BenchGroupInfo := [
   ⟨"guruswami-sudan-interp-system-koalabear",
-    "Guruswami-Sudan interpolation system construction (KoalaBear)"⟩,
+    "Guruswami-Sudan dense interpolation system construction (KoalaBear)"⟩,
   ⟨"guruswami-sudan-interp-solve-koalabear",
-    "Guruswami-Sudan interpolation solving (KoalaBear)"⟩,
+    "Guruswami-Sudan dense interpolation solving (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-interp-backend-koalabear",
+    "Guruswami-Sudan interpolation backend (KoalaBear)"⟩,
   ⟨"guruswami-sudan-hasse-koalabear",
     "Guruswami-Sudan Hasse multiplicity checking (KoalaBear)"⟩,
   ⟨"guruswami-sudan-compose-koalabear",
@@ -152,7 +167,7 @@ private def runGsInterpolationSystemKoala (preset : BenchPreset) (gen : StdGen) 
     (checksumDenseMatrix checksumKoalaBearFast) checksumIterations
   pure ({
     groupKey := "guruswami-sudan-interp-system-koalabear",
-    title := "Guruswami-Sudan interpolation system construction (KoalaBear)",
+    title := "Guruswami-Sudan dense interpolation system construction (KoalaBear)",
     records := #[row, fastRow]
   }, gen)
 
@@ -182,8 +197,55 @@ private def runGsInterpolationSolveKoala (preset : BenchPreset) (gen : StdGen) :
     (checksumOptionArray checksumKoalaBearFast) checksumIterations
   pure ({
     groupKey := "guruswami-sudan-interp-solve-koalabear",
-    title := "Guruswami-Sudan interpolation solving (KoalaBear)",
+    title := "Guruswami-Sudan dense interpolation solving (KoalaBear)",
     records := #[row, fastRow]
+  }, gen)
+
+private def runGsInterpolationBackendKoala (preset : BenchPreset) (gen : StdGen) :
+    IO (Prod BenchGroup StdGen) := do
+  let (coeffs, gen) := (koalaBearArray gsMessageDegree false).run gen
+  let message := cpolyOfArray coeffs
+  let fastMessage := cpolyOfArray (koalaBearFastArray coeffs)
+  let points := codewordPoints message
+  let fastPoints := codewordPoints fastMessage
+  let warmup := gsWarmupIterations preset
+  let measured := preset.selectNat 8 1 1
+  let fastMeasured := preset.selectNat 40 5 2
+  let checksumIterations := groupChecksumIterations measured [
+    measured, fastMeasured, fastMeasured
+  ]
+  let denseRow <- runTimed
+    "guruswami-sudan-interp-dense-full" "CBivariate"
+    "Dense interpolation backend"
+    "KoalaBear.Field" gsInputShape preset warmup measured
+    (fun _ ↦ denseInterpolate points gsKoalaParams)
+    (checksumInterpolationWitnessOption checksumKoalaBear points gsKoalaParams)
+    checksumIterations
+  let koetterRow <- runTimed
+    "guruswami-sudan-interp-koetter" "CBivariate"
+    "Koetter interpolation backend"
+    "KoalaBear.Field" gsInputShape preset warmup measured
+    (fun _ ↦ koetterInterpolate points gsKoalaParams)
+    (checksumInterpolationWitnessOption checksumKoalaBear points gsKoalaParams)
+    checksumIterations
+  let fastDenseRow <- runTimed
+    "guruswami-sudan-interp-dense-full-fast" "CBivariate"
+    "Dense interpolation backend"
+    "KoalaBear.Fast.Field" gsInputShape preset warmup fastMeasured
+    (fun _ ↦ denseInterpolate fastPoints gsKoalaParams)
+    (checksumInterpolationWitnessOption checksumKoalaBearFast fastPoints gsKoalaParams)
+    checksumIterations
+  let fastKoetterRow <- runTimed
+    "guruswami-sudan-interp-koetter-fast" "CBivariate"
+    "Koetter interpolation backend"
+    "KoalaBear.Fast.Field" gsInputShape preset warmup fastMeasured
+    (fun _ ↦ koetterInterpolate fastPoints gsKoalaParams)
+    (checksumInterpolationWitnessOption checksumKoalaBearFast fastPoints gsKoalaParams)
+    checksumIterations
+  pure ({
+    groupKey := "guruswami-sudan-interp-backend-koalabear",
+    title := "Guruswami-Sudan interpolation backend (KoalaBear)",
+    records := #[denseRow, koetterRow, fastDenseRow, fastKoetterRow]
   }, gen)
 
 private def runGsHasseKoala (preset : BenchPreset) (gen : StdGen) :
@@ -306,7 +368,7 @@ private def runGsCoreKoala (preset : BenchPreset) (gen : StdGen) :
   let fastMeasured := preset.selectNat 40 5 2
   let fastNttFastMeasured := preset.selectNat 40 5 2
   let checksumIterations := groupChecksumIterations measured [
-    nttFastMeasured, fastMeasured, fastNttFastMeasured
+    nttFastMeasured, measured, fastMeasured, fastNttFastMeasured, fastMeasured
   ]
   let row <- runTimed
     "guruswami-sudan-core-dense-roth" "CBivariate" "Dense interpolation plus root finding"
@@ -319,6 +381,12 @@ private def runGsCoreKoala (preset : BenchPreset) (gen : StdGen) :
     "KoalaBear.Field" gsInputShape preset warmup nttFastMeasured
     (fun _ ↦
       gsCore points (denseInterpContext KoalaBear.Field) rootContextFast gsKoalaParams)
+    checksumPolynomialArrayKoala checksumIterations
+  let koetterRow <- runTimed
+    "guruswami-sudan-core-koetter-roth" "CBivariate"
+    "Koetter interpolation plus root finding"
+    "KoalaBear.Field" gsInputShape preset warmup measured
+    (fun _ ↦ gsCore points koalaBearKoetterInterpContext rootContext gsKoalaParams)
     checksumPolynomialArrayKoala checksumIterations
   let fastRow <- runTimed
     "guruswami-sudan-core-dense-roth-fast" "CBivariate"
@@ -335,10 +403,18 @@ private def runGsCoreKoala (preset : BenchPreset) (gen : StdGen) :
       gsCore fastPoints (denseInterpContext KoalaBear.Fast.Field) fastRootContextFast
         gsKoalaParams)
     checksumPolynomialArrayKoalaFast checksumIterations
+  let fastKoetterRow <- runTimed
+    "guruswami-sudan-core-koetter-roth-fast" "CBivariate"
+    "Koetter interpolation plus root finding"
+    "KoalaBear.Fast.Field" gsInputShape preset warmup fastMeasured
+    (fun _ ↦
+      gsCore fastPoints fastKoalaBearKoetterInterpContext fastRootContext
+        gsKoalaParams)
+    checksumPolynomialArrayKoalaFast checksumIterations
   pure ({
     groupKey := "guruswami-sudan-core-koalabear",
     title := "Guruswami-Sudan full core (KoalaBear)",
-    records := #[row, nttFastRow, fastRow, fastNttFastRow]
+    records := #[row, nttFastRow, koetterRow, fastRow, fastNttFastRow, fastKoetterRow]
   }, gen)
 
 private def runGsFilteredCoreKoala (preset : BenchPreset) (gen : StdGen) :
@@ -358,7 +434,7 @@ private def runGsFilteredCoreKoala (preset : BenchPreset) (gen : StdGen) :
   let fastMeasured := preset.selectNat 40 5 2
   let fastNttFastMeasured := preset.selectNat 40 5 2
   let checksumIterations := groupChecksumIterations measured [
-    nttFastMeasured, fastMeasured, fastNttFastMeasured
+    nttFastMeasured, measured, fastMeasured, fastNttFastMeasured, fastMeasured
   ]
   let row <- runTimed
     "guruswami-sudan-filtered-core" "CBivariate"
@@ -375,9 +451,16 @@ private def runGsFilteredCoreKoala (preset : BenchPreset) (gen : StdGen) :
       gsFilteredCore points (denseInterpContext KoalaBear.Field) rootContextFast
         gsKoalaParams 0)
     checksumPolynomialArrayKoala checksumIterations
+  let koetterRow <- runTimed
+    "guruswami-sudan-filtered-core-koetter" "CBivariate"
+    "Packed filtered core with Koetter interpolation"
+    "KoalaBear.Field" gsFilteredShape preset warmup measured
+    (fun _ ↦
+      gsFilteredCore points koalaBearKoetterInterpContext rootContext gsKoalaParams 0)
+    checksumPolynomialArrayKoala checksumIterations
   let fastRow <- runTimed
     "guruswami-sudan-filtered-core-fast" "CBivariate"
-    "Packed filtered core"
+    "Packed filtered core (fast KoalaBear)"
     "KoalaBear.Fast.Field" gsFilteredShape preset warmup fastMeasured
     (fun _ ↦
       gsFilteredCore fastPoints (denseInterpContext KoalaBear.Fast.Field) fastRootContext
@@ -391,10 +474,18 @@ private def runGsFilteredCoreKoala (preset : BenchPreset) (gen : StdGen) :
       gsFilteredCore fastPoints (denseInterpContext KoalaBear.Fast.Field)
         fastRootContextFast gsKoalaParams 0)
     checksumPolynomialArrayKoalaFast checksumIterations
+  let fastKoetterRow <- runTimed
+    "guruswami-sudan-filtered-core-koetter-fast" "CBivariate"
+    "Packed filtered core with Koetter interpolation"
+    "KoalaBear.Fast.Field" gsFilteredShape preset warmup fastMeasured
+    (fun _ ↦
+      gsFilteredCore fastPoints fastKoalaBearKoetterInterpContext fastRootContext
+        gsKoalaParams 0)
+    checksumPolynomialArrayKoalaFast checksumIterations
   pure ({
     groupKey := "guruswami-sudan-filtered-core-koalabear",
     title := "Guruswami-Sudan filtered core (KoalaBear)",
-    records := #[row, nttFastRow, fastRow, fastNttFastRow]
+    records := #[row, nttFastRow, koetterRow, fastRow, fastNttFastRow, fastKoetterRow]
   }, gen)
 
 private def runGsPackedFilterKoala (preset : BenchPreset) (gen : StdGen) :
@@ -442,16 +533,18 @@ def guruswamiSudanTasks : List BenchTask := [
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 1
     ⟨"guruswami-sudan-interp-solve-koalabear", ""⟩) runGsInterpolationSolveKoala,
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 2
-    ⟨"guruswami-sudan-hasse-koalabear", ""⟩) runGsHasseKoala,
+    ⟨"guruswami-sudan-interp-backend-koalabear", ""⟩) runGsInterpolationBackendKoala,
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 3
-    ⟨"guruswami-sudan-compose-koalabear", ""⟩) runGsComposeKoala,
+    ⟨"guruswami-sudan-hasse-koalabear", ""⟩) runGsHasseKoala,
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 4
-    ⟨"guruswami-sudan-root-roth-koalabear", ""⟩) runGsRootKoala,
+    ⟨"guruswami-sudan-compose-koalabear", ""⟩) runGsComposeKoala,
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 5
-    ⟨"guruswami-sudan-core-koalabear", ""⟩) runGsCoreKoala,
+    ⟨"guruswami-sudan-root-roth-koalabear", ""⟩) runGsRootKoala,
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 6
-    ⟨"guruswami-sudan-packed-filter-koalabear", ""⟩) runGsPackedFilterKoala,
+    ⟨"guruswami-sudan-core-koalabear", ""⟩) runGsCoreKoala,
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 7
+    ⟨"guruswami-sudan-packed-filter-koalabear", ""⟩) runGsPackedFilterKoala,
+  BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 8
     ⟨"guruswami-sudan-filtered-core-koalabear", ""⟩) runGsFilteredCoreKoala
 ]
 

@@ -17,6 +17,9 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Basic
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Algorithm
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Algorithm
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Basic
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Monomials
 import CompPoly.Bivariate.GuruswamiSudan.Polynomial
 import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness

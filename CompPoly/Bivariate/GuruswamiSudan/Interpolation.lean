@@ -5,9 +5,11 @@ Authors: Valerii Huhnin
 -/
 
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness
 
 /-!
 # Guruswami-Sudan Interpolation
 
-Public interpolation surface for the dense backend.
+Public interpolation surface for certified Guruswami-Sudan interpolation
+backends.
 -/
