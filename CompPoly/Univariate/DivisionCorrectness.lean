@@ -321,13 +321,14 @@ end Division
 section
 variable [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R]
 
+omit [Nontrivial R] in
 private lemma raw_toPoly_natDegree_lt_size_of_trim_eq (p : Raw R)
     (htrim : p.trim = p) (hpos : 0 < p.size) :
     p.toPoly.natDegree < p.size := by
   simpa [htrim] using Raw.toPoly_natDegree_lt_trim_size_of_pos (R := R) p (by
     simpa [htrim] using hpos)
 
-omit [BEq R] [LawfulBEq R] in
+omit [BEq R] [LawfulBEq R] [Nontrivial R] in
 private lemma toImpl_size_le_of_degree_lt (f : R[X]) (n : Nat)
     (hdeg : f.degree < (n : WithBot Nat)) : f.toImpl.size ≤ n := by
   rcases Raw.toImpl_elim f with ⟨_hzero, himpl⟩ | ⟨hnz, himpl⟩
@@ -339,7 +340,7 @@ private lemma toImpl_size_le_of_degree_lt (f : R[X]) (n : Nat)
     simp [himpl]
     omega
 
-omit [LawfulBEq R] in
+omit [LawfulBEq R] [Nontrivial R] in
 private lemma raw_coeff_last_eq_leadingCoeff_of_trim_eq (q : Raw R)
     (htrim : q.trim = q) (hpos : 0 < q.size) :
     q.coeff (q.size - 1) = q.leadingCoeff := by
@@ -395,7 +396,7 @@ private lemma div_step_size_lt (p q : Raw R)
   change p'.size < p.size
   omega
 
-omit [BEq R] [LawfulBEq R] in
+omit [BEq R] [LawfulBEq R] [Nontrivial R] in
 private lemma raw_toPoly_degree_lt_of_size_lt (p q : Raw R)
     (hsize : p.size < q.size)
     (hqdegree : q.toPoly.degree = ((q.size - 1 : Nat) : WithBot Nat)) :
