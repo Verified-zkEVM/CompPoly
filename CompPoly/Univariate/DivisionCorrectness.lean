@@ -492,7 +492,7 @@ theorem modByMonic_toPoly_eq_modByMonic (p q : CPolynomial R)
 /-- Euclidean division identity for a monic divisor, stated directly on
 `CPolynomial`: `p.modByMonic q + q * p.divByMonic q = p` whenever `q` is monic.
 
-This holds over an arbitrary commutative ring — no field is required — so it
+This holds over an arbitrary commutative ring, so it
 instantiates at nested coefficient rings, e.g. `CBivariate R =
 CPolynomial (CPolynomial R)`, giving Euclidean division by any monic divisor in
 the outer variable. -/

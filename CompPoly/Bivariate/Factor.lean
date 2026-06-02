@@ -20,13 +20,11 @@ bivariate polynomial by the monic linear factor `Y - f(X)`).
 
 `divByLinearY` is the computable factor theorem for the nested representation
 `CBivariate R = CPolynomial (CPolynomial R)`: given a root `f(X)`, it deflates
-`Q` by `Y - f(X)` over an arbitrary commutative ring (no field required). It is
+`Q` by `Y - f(X)` over an arbitrary commutative ring. It is
 the degree-one special case of monic Euclidean division; division by an
 arbitrary monic divisor in `Y` is available generically through
 `CPolynomial.divByMonic` / `CPolynomial.modByMonic` over the coefficient ring
-`CPolynomial R` (see `CPolynomial.modByMonic_add_mul_divByMonic`). These are
-general-purpose primitives — root deflation, multiplicity, and Euclidean
-reduction all build on them, independently of any particular decoding algorithm.
+`CPolynomial R` (see `CPolynomial.modByMonic_add_mul_divByMonic`).
 -/
 
 namespace CompPoly
@@ -110,21 +108,6 @@ def divByLinearY [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     let quotArr : CPolynomial.Raw (CPolynomial R) := coeffs.reverse
     (⟨quotArr.trim, CPolynomial.Raw.Trim.isCanonical_trim quotArr⟩, rem)
 
-/-
-`divByLinearY_spec` is proved coefficient-wise: the remainder formula and the
-quotient recurrence give the value of every coefficient of `toPoly Q` in terms of
-the computed quotient and remainder, and `Polynomial.ext` assembles them (checking
-coefficient `0` and `j + 1` separately). No integral-domain hypothesis is needed.
-
-`divByLinearY_rem_eq_eval` then follows from the spec by evaluating the identity
-`toPoly Q = toPoly quot * (X - C f.toPoly) + C rem.toPoly` at `Y = f.toPoly`: the
-`X - C f.toPoly` factor vanishes, leaving `rem.toPoly = (toPoly Q).eval f.toPoly`.
--/
-
--- `divByLinearY_rem_eq_eval` (the remainder of synthetic division equals evaluation
--- at `f`) is proved further below, directly from `divByLinearY_spec`.
-
--- Step 2–4: main correctness theorem
 theorem divByLinearY_const [CommRing R] [BEq R] [LawfulBEq R]
     [Nontrivial R] [DecidableEq R] (a f : CPolynomial R) :
   divByLinearY (CPolynomial.C a : CBivariate R) f = (0, a) := by
@@ -524,10 +507,9 @@ theorem divByLinearY_quot_recurrence [CommRing R] [BEq R] [LawfulBEq R]
         CPolynomial.coeff_divX] at h
       simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using h
 
-/-- Correctness of `divByLinearY`: over `R[X][Y]` the computed quotient and
+/-- Correctness of `divByLinearY`: in `R[X][Y]` the computed quotient and
 remainder satisfy the Euclidean division identity
-`Q = quotient · (Y - f) + remainder`. Proved coefficient-wise; no integral-domain
-assumption on `R` is needed. -/
+`Q = quotient · (Y - f) + remainder`, over any commutative ring. -/
 theorem divByLinearY_spec [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (Q : CBivariate R) (f : CPolynomial R) :
     let quot := (divByLinearY Q f).1
@@ -572,10 +554,8 @@ theorem divByLinearY_spec [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] [Dec
       simpa using hcoeffS
 
 
-/-- The remainder of dividing `Q` by `Y - f` equals the evaluation `Q(X, f(X))`
-(`evalYPoly f Q`) — the Horner-remainder identity. It falls out of
-`divByLinearY_spec` by evaluating the division identity at `Y = f.toPoly`, where
-the `Y - f` factor vanishes. -/
+/-- The remainder of dividing `Q` by `Y - f` is the substitution `Q(X, f(X))`
+(`evalYPoly f Q`), by the factor/remainder theorem. -/
 theorem divByLinearY_rem_eq_eval [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (Q : CBivariate R) (f : CPolynomial R) :
     (divByLinearY Q f).2 = evalYPoly f Q := by
@@ -590,9 +570,8 @@ theorem divByLinearY_rem_eq_eval [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial 
   intro i
   rw [CPolynomial.coeff_toPoly, CPolynomial.coeff_toPoly, evalYPoly_toPoly, hev]
 
-/-- When `Y - f` actually divides `Q` (i.e. `isLinearYFactor Q f`), the synthetic
-division is exact: the remainder is `0`. Combines `divByLinearY_rem_eq_eval` with
-`isLinearYFactor_iff`. -/
+/-- If `Y - f` divides `Q` (`isLinearYFactor Q f`), the division is exact:
+the remainder is `0`. -/
 theorem divByLinearY_exact [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (Q : CBivariate R) (f : CPolynomial R) (h : isLinearYFactor Q f = true) :
     (divByLinearY Q f).2 = 0 := by
