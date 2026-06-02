@@ -121,7 +121,7 @@ theorem divByLinearY_const [CommRing R] [BEq R] [LawfulBEq R]
   simp [hdeg]
   simpa [CPolynomial.coeff] using (CPolynomial.coeff_C (R := CPolynomial R) (r := a) (i := 0))
 
-theorem divByLinearY_fold_split [CommRing R] [BEq R] [LawfulBEq R]
+private theorem divByLinearY_fold_split [CommRing R] [BEq R] [LawfulBEq R]
     [Nontrivial R] [DecidableEq R] (Q : CBivariate R) (f : CPolynomial R) (h : 1 < natDegreeY Q) :
   let n := natDegreeY Q
   let a : ℕ → CPolynomial R := fun j => CPolynomial.coeff Q j
@@ -140,7 +140,7 @@ theorem divByLinearY_fold_split [CommRing R] [BEq R] [LawfulBEq R]
   simp only [List.foldl_cons, List.foldl_nil]
   congr <;> omega
 
-theorem divByLinearY_pair_of_one_lt [CommRing R] [BEq R] [LawfulBEq R]
+private theorem divByLinearY_pair_of_one_lt [CommRing R] [BEq R] [LawfulBEq R]
     [Nontrivial R] [DecidableEq R]
   (Q : CBivariate R) (f : CPolynomial R) (h : 1 < natDegreeY Q) :
   let n := natDegreeY Q
@@ -172,18 +172,18 @@ theorem divByLinearY_pair_of_one_lt [CommRing R] [BEq R] [LawfulBEq R]
   dsimp [n, a, step, res1, r1]
   rw [hsplit]
 
-theorem divByLinearY_quot_of_natDegreeY_one [CommRing R] [BEq R] [LawfulBEq R]
+private theorem divByLinearY_quot_of_natDegreeY_one [CommRing R] [BEq R] [LawfulBEq R]
     [Nontrivial R] [DecidableEq R] (Q : CBivariate R) (f : CPolynomial R) (h : natDegreeY Q = 1) :
   (divByLinearY Q f).1 = CPolynomial.C (CPolynomial.coeff Q 1) := by
   simp [divByLinearY, h, CPolynomial.C]
   rfl
 
-theorem divByLinearY_quot_of_natDegreeY_zero [CommRing R] [BEq R] [LawfulBEq R]
+private theorem divByLinearY_quot_of_natDegreeY_zero [CommRing R] [BEq R] [LawfulBEq R]
     [Nontrivial R] [DecidableEq R] (Q : CBivariate R) (f : CPolynomial R) (h : natDegreeY Q = 0) :
   (divByLinearY Q f).1 = 0 := by
   simp [divByLinearY, h]
 
-theorem divByLinearY_rem_formula [CommRing R] [BEq R] [LawfulBEq R]
+private theorem divByLinearY_rem_formula [CommRing R] [BEq R] [LawfulBEq R]
     [Nontrivial R] [DecidableEq R] (Q : CBivariate R) (f : CPolynomial R) :
   let quot := (divByLinearY Q f).1
   let rem := (divByLinearY Q f).2
@@ -226,7 +226,7 @@ theorem divByLinearY_zero [CommRing R] [BEq R] [LawfulBEq R]
   change divByLinearY (⟨#[], CPolynomial.Raw.Trim.isCanonical_empty⟩ : CBivariate R) f = (0, 0)
   simp [divByLinearY, CBivariate.natDegreeY, CPolynomial.natDegree, CPolynomial.coeff]
 
-theorem divX_eq_C_coeff_one_of_natDegreeY_one [CommRing R] [BEq R] [LawfulBEq R]
+private theorem divX_eq_C_coeff_one_of_natDegreeY_one [CommRing R] [BEq R] [LawfulBEq R]
     [Nontrivial R] [DecidableEq R] (Q : CBivariate R) (h : natDegreeY Q = 1) :
   CPolynomial.divX Q = CPolynomial.C (CPolynomial.coeff Q 1) := by
   apply CPolynomial.eq_iff_coeff.mpr
@@ -248,7 +248,7 @@ theorem divX_eq_C_coeff_one_of_natDegreeY_one [CommRing R] [BEq R] [LawfulBEq R]
         exact (CPolynomial.toPoly_eq_zero_iff (CPolynomial.coeff Q (k + 2))).mp hzero_toPoly
       simpa using hzero
 
-theorem divX_zero_of_natDegreeY_zero [CommRing R] [BEq R] [LawfulBEq R]
+private theorem divX_zero_of_natDegreeY_zero [CommRing R] [BEq R] [LawfulBEq R]
     [Nontrivial R] [DecidableEq R] (Q : CBivariate R) (h : natDegreeY Q = 0) :
   CPolynomial.divX Q = 0 := by
   rw [CPolynomial.eq_zero_iff_coeff_zero]
@@ -260,7 +260,7 @@ theorem divX_zero_of_natDegreeY_zero [CommRing R] [BEq R] [LawfulBEq R]
     rw [CBivariate.natDegreeY_toPoly, h]
   exact Polynomial.coeff_eq_zero_of_natDegree_lt (by rw [hdeg]; omega)
 
-theorem natDegreeY_divX_of_one_lt [CommRing R] [BEq R] [LawfulBEq R]
+private theorem natDegreeY_divX_of_one_lt [CommRing R] [BEq R] [LawfulBEq R]
     [Nontrivial R] [DecidableEq R] (Q : CBivariate R) (h : 1 < natDegreeY Q) :
   natDegreeY (CPolynomial.divX Q) = natDegreeY Q - 1 := by
   unfold CBivariate.natDegreeY CPolynomial.natDegree at h ⊢
@@ -274,7 +274,7 @@ theorem natDegreeY_divX_of_one_lt [CommRing R] [BEq R] [LawfulBEq R]
       | succ k =>
           simp [CPolynomial.divX, hs, Array.size_extract]
 
-theorem divByLinearY_divX_pair_of_one_lt [CommRing R] [BEq R] [LawfulBEq R]
+private theorem divByLinearY_divX_pair_of_one_lt [CommRing R] [BEq R] [LawfulBEq R]
     [Nontrivial R] [DecidableEq R]
   (Q : CBivariate R) (f : CPolynomial R) (h : 1 < natDegreeY Q) :
   let n := natDegreeY Q
@@ -356,7 +356,7 @@ theorem divByLinearY_divX_pair_of_one_lt [CommRing R] [BEq R] [LawfulBEq R]
     exact congrArg g hfold
   simpa [g, n, a, step, step1, res1, r1] using hpair
 
-theorem raw_trim_reverse_push_coeff_succ [Zero R] [BEq R] [LawfulBEq R]
+private theorem raw_trim_reverse_push_coeff_succ [Zero R] [BEq R] [LawfulBEq R]
     (arr : Array R) (a : R) (j : ℕ) :
   CPolynomial.Raw.coeff (CPolynomial.Raw.trim ((arr.push a).reverse)) (j + 1) =
     CPolynomial.Raw.coeff (CPolynomial.Raw.trim (arr.reverse)) j := by
@@ -368,7 +368,7 @@ theorem raw_trim_reverse_push_coeff_succ [Zero R] [BEq R] [LawfulBEq R]
   rw [Array.getElem?_append_right (xs := #[a]) (ys := arr.reverse) (i := j + 1) h1]
   simp
 
-theorem divByLinearY_divX_quot_coeff [CommRing R] [BEq R] [LawfulBEq R]
+private theorem divByLinearY_divX_quot_coeff [CommRing R] [BEq R] [LawfulBEq R]
     [Nontrivial R] [DecidableEq R] (Q : CBivariate R) (f : CPolynomial R) (j : ℕ) :
   let quot := (divByLinearY Q f).1
   CPolynomial.coeff ((divByLinearY (CPolynomial.divX Q) f).1) j
@@ -434,14 +434,14 @@ theorem divByLinearY_divX_quot_coeff [CommRing R] [BEq R] [LawfulBEq R]
         (raw_trim_reverse_push_coeff_succ (R := CPolynomial R)
           (arr := res1.2) (a := r1) (j := j)).symm
 
-theorem raw_trim_reverse_push_coeff_zero [Zero R] [BEq R] [LawfulBEq R]
+private theorem raw_trim_reverse_push_coeff_zero [Zero R] [BEq R] [LawfulBEq R]
     (arr : Array R) (a : R) :
   CPolynomial.Raw.coeff (CPolynomial.Raw.trim ((arr.push a).reverse)) 0 = a := by
   rw [CPolynomial.Raw.Trim.coeff_eq_coeff]
   rw [Array.reverse_push]
   simp [CPolynomial.Raw.coeff, Array.getD_eq_getD_getElem?]
 
-theorem divByLinearY_divX_rem [CommRing R] [BEq R] [LawfulBEq R]
+private theorem divByLinearY_divX_rem [CommRing R] [BEq R] [LawfulBEq R]
     [Nontrivial R] [DecidableEq R] (Q : CBivariate R) (f : CPolynomial R) :
   let quot := (divByLinearY Q f).1
   (divByLinearY (CPolynomial.divX Q) f).2 = CPolynomial.coeff quot 0 := by
@@ -487,7 +487,7 @@ theorem divByLinearY_divX_rem [CommRing R] [BEq R] [LawfulBEq R]
       simpa [CPolynomial.coeff] using
         (raw_trim_reverse_push_coeff_zero (arr := res1.2) (a := r1)).symm
 
-theorem divByLinearY_quot_recurrence [CommRing R] [BEq R] [LawfulBEq R]
+private theorem divByLinearY_quot_recurrence [CommRing R] [BEq R] [LawfulBEq R]
     [Nontrivial R] [DecidableEq R] (Q : CBivariate R) (f : CPolynomial R) (j : ℕ) :
   let quot := (divByLinearY Q f).1
   CPolynomial.coeff quot j = CPolynomial.coeff Q (j + 1) + f * CPolynomial.coeff quot (j + 1) := by
