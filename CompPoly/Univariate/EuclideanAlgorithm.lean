@@ -24,7 +24,7 @@ variable {R : Type*}
 
 Stops when `r.natDegree < threshold`, `r = 0`, or fuel `n` exhausted.
 
-If `threshold > 0` then `xgcdAux` will not compute the greatest commmon divisor.
+If `threshold > 0` then `xgcdAux` need not compute the greatest commmon divisor.
 
 Potential optimization: the raw long division behind `r' / r` already computes
 `r' - (r' / r) * r` but it's not exposed through `CPolynomial R`.
@@ -51,7 +51,7 @@ Returns `(r, s, t)` with `r = s * p + t * q`.
 With the default `threshold = 0` returns the gcd of `p` and `q`.
 With `threshold > 0` stops when `r.natDegree < threshold`.
 
-If `threshold > 0` then `xgcdAux` will not compute the greatest commmon divisor.
+If `threshold > 0` then `xgcdAux` need not compute the greatest commmon divisor.
 -/
 def xgcd [Field R] [BEq R] [LawfulBEq R]
     (p q : CPolynomial R) (threshold : ℕ := 0) :
