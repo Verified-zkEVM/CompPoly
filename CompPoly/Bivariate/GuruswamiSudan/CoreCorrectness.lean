@@ -67,13 +67,14 @@ theorem gsCore_complete_of_roots_all_valid_witnesses {F : Type*}
     {params : GSInterpParams}
     {p : CPolynomial F}
     (hInterpExists : exists Q, ValidInterpolationWitness points params Q)
+    (hdistinct : DistinctXCoordinates points)
     (hpdeg : degreeLt p params.messageDegree)
     (hrootAll :
       ∀ Q,
         ValidInterpolationWitness points params Q →
           CBivariate.composeY Q p = 0) :
     p ∈ (gsCore points interpContext rootContext params).toList := by
-  rcases interpContext.complete points params hInterpExists with ⟨Q, hQ⟩
+  rcases interpContext.complete points params hdistinct hInterpExists with ⟨Q, hQ⟩
   exact gsCore_complete_of_interpolate (rootContext := rootContext) hQ hpdeg
     (hrootAll Q (interpContext.sound points params Q hQ))
 
@@ -568,7 +569,7 @@ theorem gsCore_complete_of_enough_matches {F : Type*}
         params.multiplicity * matchingPointCount points p) :
     p ∈ (gsCore points interpContext rootContext params).toList := by
   apply gsCore_complete_of_roots_all_valid_witnesses
-      (rootContext := rootContext) hInterpExists hpdeg
+      (rootContext := rootContext) hInterpExists hdistinct hpdeg
   intro Q hQ
   exact composeY_eq_zero_of_enough_matching_multiplicity_points hQ hpdeg hdistinct hmatches
 

@@ -34,6 +34,10 @@ def yWeight (params : GSInterpParams) : Nat :=
 def degreeLt {F : Type*} [Zero F] (p : CPolynomial F) (k : Nat) : Prop :=
   p.degree < (k : WithBot Nat)
 
+/-- Packed input points have no duplicate `x`-coordinates. -/
+def DistinctXCoordinates {F : Type*} (points : Array (Prod F F)) : Prop :=
+  (points.toList.map fun point ↦ point.1).Nodup
+
 /-- Semantic interpolation witness used by backend contracts and core
 completeness statements. -/
 def ValidInterpolationWitness {F : Type*}
@@ -106,6 +110,7 @@ structure GSInterpContext (F : Type*) [Field F] [BEq F] [LawfulBEq F]
         ValidInterpolationWitness points params Q
   complete :
     ∀ points params,
+      DistinctXCoordinates points →
       (exists Q, ValidInterpolationWitness points params Q) →
         exists Q, interpolate points params = some Q
 

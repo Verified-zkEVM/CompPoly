@@ -24,15 +24,6 @@ namespace CompPoly
 
 namespace GuruswamiSudan
 
-/-- Constructive interpolation witness for the `messageDegree ≤ 1` GS range. -/
-def lowMessageDegreeInterpolation {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    (points : Array (Prod F F)) (multiplicity : Nat) : CBivariate F :=
-  points.toList.foldl
-    (fun Q point ↦
-      Q * (CBivariate.linearYFactor (CPolynomial.C point.2)) ^ multiplicity)
-    1
-
 /-- Dense interpolation over an explicitly supplied finite monomial basis. -/
 def denseInterpolateWithBasisAndKernel {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]

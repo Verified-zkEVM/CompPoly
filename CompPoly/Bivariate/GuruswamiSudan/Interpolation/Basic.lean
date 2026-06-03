@@ -95,6 +95,15 @@ def interpolationPolynomial {F : Type*}
     (params : GSInterpParams) (coeffs : Array F) : CBivariate F :=
   interpolationPolynomialOnBasis (interpolationMonomials params) coeffs
 
+/-- Constructive interpolation witness for the `messageDegree ≤ 1` GS range. -/
+def lowMessageDegreeInterpolation {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    (points : Array (Prod F F)) (multiplicity : Nat) : CBivariate F :=
+  points.toList.foldl
+    (fun Q point ↦
+      Q * (CBivariate.linearYFactor (CPolynomial.C point.2)) ^ multiplicity)
+    1
+
 /-- Coefficients of a bivariate polynomial in a supplied monomial order. -/
 def interpolationCoefficientVectorOnBasis {F : Type*} [Zero F]
     (basis : Array CBivariate.Monomial) (Q : CBivariate F) : Array F :=

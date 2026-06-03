@@ -171,7 +171,7 @@ def koetterInterpContext (F : Type*) [Field F] [BEq F] [LawfulBEq F]
     intro points params Q h
     exact koetterInterpolate_sound h
   complete := by
-    intro points params hExists
+    intro points params _hdistinct hExists
     exact koetterInterpolate_complete hExists
 
 /-- Public Koetter interpolation backend soundness. -/
@@ -186,6 +186,7 @@ theorem koetterInterpContext_correct (F : Type*) [Field F] [BEq F] [LawfulBEq F]
 theorem koetterInterpContext_complete (F : Type*) [Field F] [BEq F] [LawfulBEq F]
     [Nontrivial F] [DecidableEq F] :
     ∀ points params,
+      DistinctXCoordinates points →
       (exists Q, ValidInterpolationWitness points params Q) →
         exists Q, (koetterInterpContext F).interpolate points params = some Q :=
   (koetterInterpContext F).complete

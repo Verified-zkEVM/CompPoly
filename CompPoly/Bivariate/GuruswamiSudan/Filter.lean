@@ -37,10 +37,6 @@ def passesCandidateDistance {F : Type*} [Semiring F] [BEq F]
     (points : Array (Prod F F)) (radius : Nat) (p : CPolynomial F) : Bool :=
   decide (candidateMismatchCount points p ≤ radius)
 
-/-- Packed input points have no duplicate `x`-coordinates. -/
-def DistinctXCoordinates {F : Type*} (points : Array (Prod F F)) : Prop :=
-  (points.toList.map fun point ↦ point.1).Nodup
-
 /-- Run the algebraic GS core and keep only candidates within the packed
 mismatch radius. -/
 def gsFilteredCore {F : Type*}

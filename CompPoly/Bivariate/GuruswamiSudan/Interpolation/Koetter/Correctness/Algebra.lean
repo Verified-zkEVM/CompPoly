@@ -5,7 +5,7 @@ Authors: Valerii Huhnin
 -/
 
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Algorithm
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Correctness
 import CompPoly.Univariate.DivisionCorrectness
 import Mathlib.Data.List.Range
 

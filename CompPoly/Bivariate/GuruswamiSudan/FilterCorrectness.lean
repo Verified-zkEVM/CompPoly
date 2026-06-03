@@ -72,6 +72,7 @@ theorem gsFilteredCore_complete_of_roots_all_valid_witnesses {F : Type*}
     {params : GSInterpParams} {radius : Nat}
     {p : CPolynomial F}
     (hInterpExists : exists Q, ValidInterpolationWitness points params Q)
+    (hdistinct : DistinctXCoordinates points)
     (hpdeg : degreeLt p params.messageDegree)
     (hrootAll :
       ∀ Q,
@@ -81,7 +82,7 @@ theorem gsFilteredCore_complete_of_roots_all_valid_witnesses {F : Type*}
     p ∈ (gsFilteredCore points interpContext rootContext params radius).toList := by
   rw [mem_gsFilteredCore_iff]
   exact ⟨gsCore_complete_of_roots_all_valid_witnesses
-    (rootContext := rootContext) hInterpExists hpdeg hrootAll, hpass⟩
+    (rootContext := rootContext) hInterpExists hdistinct hpdeg hrootAll, hpass⟩
 
 /-- Packed-point semantic completeness for the filtered GS core. -/
 theorem gsFilteredCore_complete_of_enough_matches {F : Type*}

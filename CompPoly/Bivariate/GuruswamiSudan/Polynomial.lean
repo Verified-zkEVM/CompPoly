@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 
 import CompPoly.Bivariate.ToPoly
+import CompPoly.Univariate.Derivative
 
 /-!
 # Guruswami-Sudan Polynomial Helpers
@@ -16,13 +17,6 @@ Guruswami-Sudan interpolation and root-finding kernels.
 namespace CompPoly
 
 namespace CPolynomial
-
-/-- Formal derivative of a canonical univariate polynomial. -/
-def derivative {R : Type*} [Semiring R] [BEq R] [LawfulBEq R]
-    (p : CPolynomial R) : CPolynomial R :=
-  ofArray
-    ((List.range (p.val.size - 1)).map fun i ↦
-      ((i + 1 : Nat) : R) * p.coeff (i + 1)).toArray
 
 /-- Drop the first `n` powers of `X`, i.e. divide by `X^n` when possible and
 truncate toward zero otherwise. -/

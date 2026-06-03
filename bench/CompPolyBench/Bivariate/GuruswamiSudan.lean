@@ -23,13 +23,13 @@ open CompPoly.GuruswamiSudan
 
 namespace CompPolyBench
 
-private def gsPointCount : Nat := 96
+private def gsPointCount : Nat := 128
 
-private def gsMessageDegree : Nat := 96
+private def gsMessageDegree : Nat := 32
 
-private def gsWeightedDegreeBound : Nat := gsMessageDegree - 1
+private def gsWeightedDegreeBound : Nat := 4 * (gsMessageDegree - 1)
 
-private def gsMultiplicity : Nat := 1
+private def gsMultiplicity : Nat := 4
 
 private def gsCheckMultiplicity : Nat := 2
 
@@ -38,8 +38,26 @@ private def gsKoalaParams : GSInterpParams :=
     multiplicity := gsMultiplicity
     weightedDegreeBound := gsWeightedDegreeBound }
 
+private def gsSmallPointCount : Nat := 64
+
+private def gsSmallMessageDegree : Nat := 16
+
+private def gsSmallWeightedDegreeBound : Nat :=
+  5 * (gsSmallMessageDegree - 1)
+
+private def gsSmallMultiplicity : Nat := 2
+
+private def gsSmallParams : GSInterpParams :=
+  { messageDegree := gsSmallMessageDegree
+    multiplicity := gsSmallMultiplicity
+    weightedDegreeBound := gsSmallWeightedDegreeBound }
+
 private def gsInputShape : String :=
   s!"n={gsPointCount},k={gsMessageDegree},m={gsMultiplicity},D={gsWeightedDegreeBound}"
+
+private def gsSmallInputShape : String :=
+  s!"n={gsSmallPointCount},k={gsSmallMessageDegree}," ++
+    s!"m={gsSmallMultiplicity},D={gsSmallWeightedDegreeBound}"
 
 private def gsMultiplicityShape : String :=
   s!"n={gsPointCount},k={gsMessageDegree},m={gsCheckMultiplicity},Q=(Y-p)^2"
@@ -50,12 +68,19 @@ private def gsRootShape : String :=
 private def gsFilteredShape : String :=
   s!"n={gsPointCount},k={gsMessageDegree},m={gsMultiplicity},r=0"
 
-private def codewordPoints {F : Type*} [Semiring F] [BEq F] [LawfulBEq F]
-    (p : CPolynomial F) : Array (Prod F F) :=
-  (List.range gsPointCount).map
+private def gsSmallFilteredShape : String :=
+  s!"n={gsSmallPointCount},k={gsSmallMessageDegree},m={gsSmallMultiplicity},r=0"
+
+private def codewordPointsWithCount {F : Type*} [Semiring F] [BEq F] [LawfulBEq F]
+    (pointCount : Nat) (p : CPolynomial F) : Array (Prod F F) :=
+  (List.range pointCount).map
     (fun i ↦
       let x : F := (i + 1 : Nat)
       (x, CPolynomial.eval x p)) |>.toArray
+
+private def codewordPoints {F : Type*} [Semiring F] [BEq F] [LawfulBEq F]
+    (p : CPolynomial F) : Array (Prod F F) :=
+  codewordPointsWithCount gsPointCount p
 
 private def rootBenchmarkQ {F : Type*}
     [Ring F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
@@ -107,6 +132,10 @@ private def checksumInterpolationWitnessOption {F : Type*}
       | none => validity
       | some coeffs => mixChecksum validity (checksumArray checksum coeffs)
 
+private def checksumPolynomialMatrix {F : Type*} [Zero F]
+    (checksum : F -> Nat) (M : PolynomialMatrix F) : Nat :=
+  checksumArray (fun row ↦ checksumArray (checksumCPolynomial checksum) row) M
+
 private def checksumPolynomialArrayKoala (ps : Array (CPolynomial KoalaBear.Field)) : Nat :=
   checksumArray (checksumCPolynomial checksumKoalaBear) ps
 
@@ -118,90 +147,192 @@ private def checksumBool (b : Bool) : Nat :=
   if b then 1 else 0
 
 private def gsWarmupIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 10 1 0
+  preset.selectNat 1 0 0
 
+/-
+Measured iteration triples in the GS groups are chosen per row: large counts
+balance total row runtime within the group, medium counts are about `large / 7`,
+and small counts are about `max (large / 35) 1`, with nearby nice values.
+-/
 /-- Benchmark group metadata for Guruswami-Sudan cost-center rows. -/
 def guruswamiSudanGroupInfos : List BenchGroupInfo := [
-  ⟨"guruswami-sudan-interp-system-koalabear",
-    "Guruswami-Sudan dense interpolation system construction (KoalaBear)"⟩,
-  ⟨"guruswami-sudan-interp-solve-koalabear",
-    "Guruswami-Sudan dense interpolation solving (KoalaBear)"⟩,
-  ⟨"guruswami-sudan-interp-backend-koalabear",
-    "Guruswami-Sudan interpolation backend (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-interp-system-small-koalabear",
+    "Guruswami-Sudan dense interpolation system construction, small (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-interp-solve-small-koalabear",
+    "Guruswami-Sudan dense interpolation solving, small (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-interp-small-koalabear",
+    "Guruswami-Sudan interpolation, small (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-interp-large-koalabear",
+    "Guruswami-Sudan interpolation, large (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-lee-setup-large-koalabear",
+    "Guruswami-Sudan Lee-O'Sullivan setup, large (KoalaBear)"⟩,
   ⟨"guruswami-sudan-hasse-koalabear",
     "Guruswami-Sudan Hasse multiplicity checking (KoalaBear)"⟩,
   ⟨"guruswami-sudan-compose-koalabear",
     "Guruswami-Sudan composition in Y (KoalaBear)"⟩,
   ⟨"guruswami-sudan-root-roth-koalabear",
     "Guruswami-Sudan Roth-Ruckenstein roots (KoalaBear)"⟩,
-  ⟨"guruswami-sudan-core-koalabear",
-    "Guruswami-Sudan full core (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-core-small-koalabear",
+    "Guruswami-Sudan full core, small (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-core-large-koalabear",
+    "Guruswami-Sudan full core, large (KoalaBear)"⟩,
   ⟨"guruswami-sudan-packed-filter-koalabear",
     "Guruswami-Sudan packed distance filtering (KoalaBear)"⟩,
-  ⟨"guruswami-sudan-filtered-core-koalabear",
-    "Guruswami-Sudan filtered core (KoalaBear)"⟩
+  ⟨"guruswami-sudan-filtered-core-small-koalabear",
+    "Guruswami-Sudan filtered core, small (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-filtered-core-large-koalabear",
+    "Guruswami-Sudan filtered core, large (KoalaBear)"⟩
 ]
 
 private def runGsInterpolationSystemKoala (preset : BenchPreset) (gen : StdGen) :
     IO (Prod BenchGroup StdGen) := do
-  let (coeffs, gen) := (koalaBearArray gsMessageDegree false).run gen
+  let (coeffs, gen) := (koalaBearArray gsSmallMessageDegree false).run gen
   let message := cpolyOfArray coeffs
   let fastMessage := cpolyOfArray (koalaBearFastArray coeffs)
-  let points := codewordPoints message
-  let fastPoints := codewordPoints fastMessage
+  let points := codewordPointsWithCount gsSmallPointCount message
+  let fastPoints := codewordPointsWithCount gsSmallPointCount fastMessage
   let warmup := gsWarmupIterations preset
-  let measured := preset.selectNat 30 3 1
-  let fastMeasured := preset.selectNat 150 15 5
+  let measured := preset.selectNat 3 1 1
+  let fastMeasured := preset.selectNat 10 2 1
   let checksumIterations := groupChecksumIterations measured [fastMeasured]
   let row <- runTimed
     "guruswami-sudan-interp-system" "DenseMatrix"
     "Interpolation system construction"
-    "KoalaBear.Field" gsInputShape preset warmup measured
-    (fun _ ↦ interpolationMatrix points gsKoalaParams)
+    "KoalaBear.Field" gsSmallInputShape preset warmup measured
+    (fun _ ↦ interpolationMatrix points gsSmallParams)
     (checksumDenseMatrix checksumKoalaBear) checksumIterations
   let fastRow <- runTimed
     "guruswami-sudan-interp-system-fast" "DenseMatrix"
     "Interpolation system construction"
-    "KoalaBear.Fast.Field" gsInputShape preset warmup fastMeasured
-    (fun _ ↦ interpolationMatrix fastPoints gsKoalaParams)
+    "KoalaBear.Fast.Field" gsSmallInputShape preset warmup fastMeasured
+    (fun _ ↦ interpolationMatrix fastPoints gsSmallParams)
     (checksumDenseMatrix checksumKoalaBearFast) checksumIterations
   pure ({
-    groupKey := "guruswami-sudan-interp-system-koalabear",
-    title := "Guruswami-Sudan dense interpolation system construction (KoalaBear)",
+    groupKey := "guruswami-sudan-interp-system-small-koalabear",
+    title := "Guruswami-Sudan dense interpolation system construction, small (KoalaBear)",
     records := #[row, fastRow]
   }, gen)
 
 private def runGsInterpolationSolveKoala (preset : BenchPreset) (gen : StdGen) :
     IO (Prod BenchGroup StdGen) := do
-  let (coeffs, gen) := (koalaBearArray gsMessageDegree false).run gen
+  let (coeffs, gen) := (koalaBearArray gsSmallMessageDegree false).run gen
   let message := cpolyOfArray coeffs
   let fastMessage := cpolyOfArray (koalaBearFastArray coeffs)
-  let matrix := interpolationMatrix (codewordPoints message) gsKoalaParams
-  let fastMatrix := interpolationMatrix (codewordPoints fastMessage) gsKoalaParams
+  let points := codewordPointsWithCount gsSmallPointCount message
+  let fastPoints := codewordPointsWithCount gsSmallPointCount fastMessage
+  let matrix := interpolationMatrix points gsSmallParams
+  let fastMatrix := interpolationMatrix fastPoints gsSmallParams
   let kernelContext := denseLinearKernelContext KoalaBear.Field
   let fastKernelContext := denseLinearKernelContext KoalaBear.Fast.Field
   let warmup := gsWarmupIterations preset
-  let measured := preset.selectNat 10 1 1
-  let fastMeasured := preset.selectNat 50 5 2
+  let measured := preset.selectNat 1 1 1
+  let fastMeasured := preset.selectNat 2 1 1
   let checksumIterations := groupChecksumIterations measured [fastMeasured]
   let row <- runTimed
     "guruswami-sudan-interp-solve" "DenseMatrix" "Homogeneous interpolation solve"
-    "KoalaBear.Field" gsInputShape preset warmup measured
+    "KoalaBear.Field" gsSmallInputShape preset warmup measured
     (fun _ ↦ kernelContext.homogeneousWitness matrix)
     (checksumOptionArray checksumKoalaBear) checksumIterations
   let fastRow <- runTimed
     "guruswami-sudan-interp-solve-fast" "DenseMatrix"
     "Homogeneous interpolation solve"
-    "KoalaBear.Fast.Field" gsInputShape preset warmup fastMeasured
+    "KoalaBear.Fast.Field" gsSmallInputShape preset warmup fastMeasured
     (fun _ ↦ fastKernelContext.homogeneousWitness fastMatrix)
     (checksumOptionArray checksumKoalaBearFast) checksumIterations
   pure ({
-    groupKey := "guruswami-sudan-interp-solve-koalabear",
-    title := "Guruswami-Sudan dense interpolation solving (KoalaBear)",
+    groupKey := "guruswami-sudan-interp-solve-small-koalabear",
+    title := "Guruswami-Sudan dense interpolation solving, small (KoalaBear)",
     records := #[row, fastRow]
   }, gen)
 
-private def runGsInterpolationBackendKoala (preset : BenchPreset) (gen : StdGen) :
+private def runGsInterpolationSmallKoala (preset : BenchPreset) (gen : StdGen) :
+    IO (Prod BenchGroup StdGen) := do
+  let (coeffs, gen) := (koalaBearArray gsSmallMessageDegree false).run gen
+  let message := cpolyOfArray coeffs
+  let fastMessage := cpolyOfArray (koalaBearFastArray coeffs)
+  let points := codewordPointsWithCount gsSmallPointCount message
+  let fastPoints := codewordPointsWithCount gsSmallPointCount fastMessage
+  let warmup := gsWarmupIterations preset
+  let denseMeasured := preset.selectNat 1 1 1
+  let koetterMeasured := preset.selectNat 10 2 1
+  let leeDirectMeasured := preset.selectNat 60 8 2
+  let leeSubproductMeasured := preset.selectNat 50 7 1
+  let fastDenseMeasured := preset.selectNat 2 1 1
+  let fastKoetterMeasured := preset.selectNat 70 10 2
+  let fastLeeDirectMeasured := preset.selectNat 400 60 10
+  let fastLeeSubproductMeasured := preset.selectNat 300 40 10
+  let checksumIterations := groupChecksumIterations denseMeasured [
+    koetterMeasured, leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
+    fastKoetterMeasured, fastLeeDirectMeasured, fastLeeSubproductMeasured
+  ]
+  let denseRow <- runTimed
+    "guruswami-sudan-interp-dense-small" "CBivariate"
+    "Dense linear"
+    "KoalaBear.Field" gsSmallInputShape preset warmup denseMeasured
+    (fun _ ↦ denseInterpolate points gsSmallParams)
+    (checksumInterpolationWitnessOption checksumKoalaBear points gsSmallParams)
+    checksumIterations
+  let koetterRow <- runTimed
+    "guruswami-sudan-interp-koetter-small" "CBivariate"
+    "Koetter"
+    "KoalaBear.Field" gsSmallInputShape preset warmup koetterMeasured
+    (fun _ ↦ koetterInterpolate points gsSmallParams)
+    (checksumInterpolationWitnessOption checksumKoalaBear points gsSmallParams)
+    checksumIterations
+  let leeDirectRow <- runTimed
+    "guruswami-sudan-interp-lee-direct-small" "CBivariate"
+    "Lee-O'Sullivan direct"
+    "KoalaBear.Field" gsSmallInputShape preset warmup leeDirectMeasured
+    (fun _ ↦ koalaBearLeeDirectInterpContext.interpolate points gsSmallParams)
+    (checksumInterpolationWitnessOption checksumKoalaBear points gsSmallParams)
+    checksumIterations
+  let leeSubproductRow <- runTimed
+    "guruswami-sudan-interp-lee-subproduct-small" "CBivariate"
+    "Lee-O'Sullivan subproduct"
+    "KoalaBear.Field" gsSmallInputShape preset warmup leeSubproductMeasured
+    (fun _ ↦ koalaBearLeeSubproductInterpContext.interpolate points gsSmallParams)
+    (checksumInterpolationWitnessOption checksumKoalaBear points gsSmallParams)
+    checksumIterations
+  let fastDenseRow <- runTimed
+    "guruswami-sudan-interp-dense-small-fast" "CBivariate"
+    "Dense linear"
+    "KoalaBear.Fast.Field" gsSmallInputShape preset warmup fastDenseMeasured
+    (fun _ ↦ denseInterpolate fastPoints gsSmallParams)
+    (checksumInterpolationWitnessOption checksumKoalaBearFast fastPoints gsSmallParams)
+    checksumIterations
+  let fastKoetterRow <- runTimed
+    "guruswami-sudan-interp-koetter-small-fast" "CBivariate"
+    "Koetter"
+    "KoalaBear.Fast.Field" gsSmallInputShape preset warmup fastKoetterMeasured
+    (fun _ ↦ koetterInterpolate fastPoints gsSmallParams)
+    (checksumInterpolationWitnessOption checksumKoalaBearFast fastPoints gsSmallParams)
+    checksumIterations
+  let fastLeeDirectRow <- runTimed
+    "guruswami-sudan-interp-lee-direct-small-fast" "CBivariate"
+    "Lee-O'Sullivan direct"
+    "KoalaBear.Fast.Field" gsSmallInputShape preset warmup fastLeeDirectMeasured
+    (fun _ ↦ fastKoalaBearLeeDirectInterpContext.interpolate fastPoints
+      gsSmallParams)
+    (checksumInterpolationWitnessOption checksumKoalaBearFast fastPoints gsSmallParams)
+    checksumIterations
+  let fastLeeSubproductRow <- runTimed
+    "guruswami-sudan-interp-lee-subproduct-small-fast" "CBivariate"
+    "Lee-O'Sullivan subproduct"
+    "KoalaBear.Fast.Field" gsSmallInputShape preset warmup fastLeeSubproductMeasured
+    (fun _ ↦ fastKoalaBearLeeSubproductInterpContext.interpolate fastPoints
+      gsSmallParams)
+    (checksumInterpolationWitnessOption checksumKoalaBearFast fastPoints gsSmallParams)
+    checksumIterations
+  pure ({
+    groupKey := "guruswami-sudan-interp-small-koalabear",
+    title := "Guruswami-Sudan interpolation, small (KoalaBear)",
+    records := #[
+      denseRow, koetterRow, leeDirectRow, leeSubproductRow,
+      fastDenseRow, fastKoetterRow, fastLeeDirectRow, fastLeeSubproductRow
+    ]
+  }, gen)
+
+private def runGsInterpolationLargeKoala (preset : BenchPreset) (gen : StdGen) :
     IO (Prod BenchGroup StdGen) := do
   let (coeffs, gen) := (koalaBearArray gsMessageDegree false).run gen
   let message := cpolyOfArray coeffs
@@ -209,43 +340,121 @@ private def runGsInterpolationBackendKoala (preset : BenchPreset) (gen : StdGen)
   let points := codewordPoints message
   let fastPoints := codewordPoints fastMessage
   let warmup := gsWarmupIterations preset
-  let measured := preset.selectNat 8 1 1
-  let fastMeasured := preset.selectNat 40 5 2
-  let checksumIterations := groupChecksumIterations measured [
-    measured, fastMeasured, fastMeasured
+  let koetterMeasured := preset.selectNat 1 1 1
+  let leeMeasured := preset.selectNat 6 1 1
+  let fastKoetterMeasured := preset.selectNat 3 1 1
+  let fastLeeMeasured := preset.selectNat 25 4 1
+  let checksumIterations := groupChecksumIterations koetterMeasured [
+    leeMeasured, leeMeasured, fastKoetterMeasured, fastLeeMeasured, fastLeeMeasured
   ]
-  let denseRow <- runTimed
-    "guruswami-sudan-interp-dense-full" "CBivariate"
-    "Dense interpolation backend"
-    "KoalaBear.Field" gsInputShape preset warmup measured
-    (fun _ ↦ denseInterpolate points gsKoalaParams)
-    (checksumInterpolationWitnessOption checksumKoalaBear points gsKoalaParams)
-    checksumIterations
   let koetterRow <- runTimed
     "guruswami-sudan-interp-koetter" "CBivariate"
-    "Koetter interpolation backend"
-    "KoalaBear.Field" gsInputShape preset warmup measured
+    "Koetter"
+    "KoalaBear.Field" gsInputShape preset warmup koetterMeasured
     (fun _ ↦ koetterInterpolate points gsKoalaParams)
     (checksumInterpolationWitnessOption checksumKoalaBear points gsKoalaParams)
     checksumIterations
-  let fastDenseRow <- runTimed
-    "guruswami-sudan-interp-dense-full-fast" "CBivariate"
-    "Dense interpolation backend"
-    "KoalaBear.Fast.Field" gsInputShape preset warmup fastMeasured
-    (fun _ ↦ denseInterpolate fastPoints gsKoalaParams)
-    (checksumInterpolationWitnessOption checksumKoalaBearFast fastPoints gsKoalaParams)
+  let leeDirectRow <- runTimed
+    "guruswami-sudan-interp-lee-direct" "CBivariate"
+    "Lee-O'Sullivan direct"
+    "KoalaBear.Field" gsInputShape preset warmup leeMeasured
+    (fun _ ↦ koalaBearLeeDirectInterpContext.interpolate points gsKoalaParams)
+    (checksumInterpolationWitnessOption checksumKoalaBear points gsKoalaParams)
+    checksumIterations
+  let leeSubproductRow <- runTimed
+    "guruswami-sudan-interp-lee-subproduct" "CBivariate"
+    "Lee-O'Sullivan subproduct"
+    "KoalaBear.Field" gsInputShape preset warmup leeMeasured
+    (fun _ ↦ koalaBearLeeSubproductInterpContext.interpolate points gsKoalaParams)
+    (checksumInterpolationWitnessOption checksumKoalaBear points gsKoalaParams)
     checksumIterations
   let fastKoetterRow <- runTimed
     "guruswami-sudan-interp-koetter-fast" "CBivariate"
-    "Koetter interpolation backend"
-    "KoalaBear.Fast.Field" gsInputShape preset warmup fastMeasured
+    "Koetter"
+    "KoalaBear.Fast.Field" gsInputShape preset warmup fastKoetterMeasured
     (fun _ ↦ koetterInterpolate fastPoints gsKoalaParams)
     (checksumInterpolationWitnessOption checksumKoalaBearFast fastPoints gsKoalaParams)
     checksumIterations
+  let fastLeeDirectRow <- runTimed
+    "guruswami-sudan-interp-lee-direct-fast" "CBivariate"
+    "Lee-O'Sullivan direct"
+    "KoalaBear.Fast.Field" gsInputShape preset warmup fastLeeMeasured
+    (fun _ ↦ fastKoalaBearLeeDirectInterpContext.interpolate fastPoints gsKoalaParams)
+    (checksumInterpolationWitnessOption checksumKoalaBearFast fastPoints gsKoalaParams)
+    checksumIterations
+  let fastLeeSubproductRow <- runTimed
+    "guruswami-sudan-interp-lee-subproduct-fast" "CBivariate"
+    "Lee-O'Sullivan subproduct"
+    "KoalaBear.Fast.Field" gsInputShape preset warmup fastLeeMeasured
+    (fun _ ↦ fastKoalaBearLeeSubproductInterpContext.interpolate fastPoints gsKoalaParams)
+    (checksumInterpolationWitnessOption checksumKoalaBearFast fastPoints gsKoalaParams)
+    checksumIterations
   pure ({
-    groupKey := "guruswami-sudan-interp-backend-koalabear",
-    title := "Guruswami-Sudan interpolation backend (KoalaBear)",
-    records := #[denseRow, koetterRow, fastDenseRow, fastKoetterRow]
+    groupKey := "guruswami-sudan-interp-large-koalabear",
+    title := "Guruswami-Sudan interpolation, large (KoalaBear)",
+    records := #[
+      koetterRow, leeDirectRow, leeSubproductRow,
+      fastKoetterRow, fastLeeDirectRow, fastLeeSubproductRow
+    ]
+  }, gen)
+
+private def runGsLeeSetupLargeKoala (preset : BenchPreset) (gen : StdGen) :
+    IO (Prod BenchGroup StdGen) := do
+  let (coeffs, gen) := (koalaBearArray gsMessageDegree false).run gen
+  let message := cpolyOfArray coeffs
+  let fastMessage := cpolyOfArray (koalaBearFastArray coeffs)
+  let points := codewordPoints message
+  let fastPoints := codewordPoints fastMessage
+  let directV : CPolynomial.VanishingPolynomialContext KoalaBear.Field :=
+    CPolynomial.VanishingPolynomialContext.direct
+  let subproductV : CPolynomial.VanishingPolynomialContext KoalaBear.Field :=
+    CPolynomial.VanishingPolynomialContext.subproduct koalaBearNttFastMulContext
+  let hornerE : CPolynomial.BatchEvalContext KoalaBear.Field :=
+    CPolynomial.BatchEvalContext.horner KoalaBear.Field
+  let subproductE : CPolynomial.BatchEvalContext KoalaBear.Field :=
+    koalaBearNttFastBatchEvalContext
+  let fastDirectV : CPolynomial.VanishingPolynomialContext KoalaBear.Fast.Field :=
+    CPolynomial.VanishingPolynomialContext.direct
+  let fastSubproductV : CPolynomial.VanishingPolynomialContext KoalaBear.Fast.Field :=
+    CPolynomial.VanishingPolynomialContext.subproduct fastKoalaBearNttFastMulContext
+  let fastHornerE : CPolynomial.BatchEvalContext KoalaBear.Fast.Field :=
+    CPolynomial.BatchEvalContext.horner KoalaBear.Fast.Field
+  let fastSubproductE : CPolynomial.BatchEvalContext KoalaBear.Fast.Field :=
+    fastKoalaBearNttFastBatchEvalContext
+  let warmup := gsWarmupIterations preset
+  let measured := preset.selectNat 5 1 1
+  let fastMeasured := preset.selectNat 25 4 1
+  let checksumIterations := groupChecksumIterations measured [
+    measured, fastMeasured, fastMeasured
+  ]
+  let directRow <- runTimed
+    "guruswami-sudan-lee-setup-direct" "PolynomialMatrix"
+    "Lee-O'Sullivan basis setup (direct vanishing)"
+    "KoalaBear.Field" gsInputShape preset warmup measured
+    (fun _ ↦ leeOSullivanBasisRows directV hornerE points gsKoalaParams)
+    (checksumPolynomialMatrix checksumKoalaBear) checksumIterations
+  let subproductRow <- runTimed
+    "guruswami-sudan-lee-setup-subproduct" "PolynomialMatrix"
+    "Lee-O'Sullivan basis setup (subproduct vanishing)"
+    "KoalaBear.Field" gsInputShape preset warmup measured
+    (fun _ ↦ leeOSullivanBasisRows subproductV subproductE points gsKoalaParams)
+    (checksumPolynomialMatrix checksumKoalaBear) checksumIterations
+  let fastDirectRow <- runTimed
+    "guruswami-sudan-lee-setup-direct-fast" "PolynomialMatrix"
+    "Lee-O'Sullivan basis setup (direct vanishing)"
+    "KoalaBear.Fast.Field" gsInputShape preset warmup fastMeasured
+    (fun _ ↦ leeOSullivanBasisRows fastDirectV fastHornerE fastPoints gsKoalaParams)
+    (checksumPolynomialMatrix checksumKoalaBearFast) checksumIterations
+  let fastSubproductRow <- runTimed
+    "guruswami-sudan-lee-setup-subproduct-fast" "PolynomialMatrix"
+    "Lee-O'Sullivan basis setup (subproduct vanishing)"
+    "KoalaBear.Fast.Field" gsInputShape preset warmup fastMeasured
+    (fun _ ↦ leeOSullivanBasisRows fastSubproductV fastSubproductE fastPoints gsKoalaParams)
+    (checksumPolynomialMatrix checksumKoalaBearFast) checksumIterations
+  pure ({
+    groupKey := "guruswami-sudan-lee-setup-large-koalabear",
+    title := "Guruswami-Sudan Lee-O'Sullivan setup, large (KoalaBear)",
+    records := #[directRow, subproductRow, fastDirectRow, fastSubproductRow]
   }, gen)
 
 private def runGsHasseKoala (preset : BenchPreset) (gen : StdGen) :
@@ -259,7 +468,7 @@ private def runGsHasseKoala (preset : BenchPreset) (gen : StdGen) :
   let fastPoints := codewordPoints fastMessage
   let warmup := gsWarmupIterations preset
   let measured := preset.selectNat 80 10 2
-  let fastMeasured := preset.selectNat 500 50 10
+  let fastMeasured := preset.selectNat 500 70 15
   let checksumIterations := groupChecksumIterations measured [fastMeasured]
   let row <- runTimed
     "guruswami-sudan-hasse-check" "CBivariate" "Hasse multiplicity check"
@@ -287,7 +496,7 @@ private def runGsComposeKoala (preset : BenchPreset) (gen : StdGen) :
   let fastQ := multiplicityBenchmarkQ fastMessage
   let warmup := gsWarmupIterations preset
   let measured := preset.selectNat 80 10 2
-  let fastMeasured := preset.selectNat 500 50 10
+  let fastMeasured := preset.selectNat 500 70 15
   let checksumIterations := groupChecksumIterations measured [fastMeasured]
   let row <- runTimed
     "guruswami-sudan-compose-y" "CPolynomial" "Composition in Y"
@@ -315,8 +524,8 @@ private def runGsRootKoala (preset : BenchPreset) (gen : StdGen) :
   let warmup := gsWarmupIterations preset
   let measured := preset.selectNat 20 3 1
   let nttFastMeasured := preset.selectNat 20 3 1
-  let fastMeasured := preset.selectNat 120 20 5
-  let fastNttFastMeasured := preset.selectNat 120 20 5
+  let fastMeasured := preset.selectNat 80 10 2
+  let fastNttFastMeasured := preset.selectNat 80 10 2
   let checksumIterations := groupChecksumIterations measured [
     nttFastMeasured, fastMeasured, fastNttFastMeasured
   ]
@@ -351,7 +560,91 @@ private def runGsRootKoala (preset : BenchPreset) (gen : StdGen) :
     records := #[row, nttFastRow, fastRow, fastNttFastRow]
   }, gen)
 
-private def runGsCoreKoala (preset : BenchPreset) (gen : StdGen) :
+private def runGsCoreSmallKoala (preset : BenchPreset) (gen : StdGen) :
+    IO (Prod BenchGroup StdGen) := do
+  let (coeffs, gen) := (koalaBearArray gsSmallMessageDegree false).run gen
+  let message := cpolyOfArray coeffs
+  let fastMessage := cpolyOfArray (koalaBearFastArray coeffs)
+  let points := codewordPointsWithCount gsSmallPointCount message
+  let fastPoints := codewordPointsWithCount gsSmallPointCount fastMessage
+  let rootContext := koalaBearRothRootContext
+  let fastRootContext := fastKoalaBearRothRootContext
+  let warmup := gsWarmupIterations preset
+  let denseMeasured := preset.selectNat 1 1 1
+  let koetterMeasured := preset.selectNat 10 2 1
+  let leeDirectMeasured := preset.selectNat 60 8 2
+  let leeSubproductMeasured := preset.selectNat 50 7 1
+  let fastDenseMeasured := preset.selectNat 2 1 1
+  let fastKoetterMeasured := preset.selectNat 70 10 2
+  let fastLeeDirectMeasured := preset.selectNat 400 60 10
+  let fastLeeSubproductMeasured := preset.selectNat 300 40 10
+  let checksumIterations := groupChecksumIterations denseMeasured [
+    koetterMeasured, leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
+    fastKoetterMeasured, fastLeeDirectMeasured, fastLeeSubproductMeasured
+  ]
+  let denseRow <- runTimed
+    "guruswami-sudan-core-dense-small" "CBivariate"
+    "Dense linear + roots"
+    "KoalaBear.Field" gsSmallInputShape preset warmup denseMeasured
+    (fun _ ↦ gsCore points (denseInterpContext KoalaBear.Field) rootContext gsSmallParams)
+    checksumPolynomialArrayKoala checksumIterations
+  let koetterRow <- runTimed
+    "guruswami-sudan-core-koetter-small" "CBivariate"
+    "Koetter + roots"
+    "KoalaBear.Field" gsSmallInputShape preset warmup koetterMeasured
+    (fun _ ↦ gsCore points koalaBearKoetterInterpContext rootContext gsSmallParams)
+    checksumPolynomialArrayKoala checksumIterations
+  let leeDirectRow <- runTimed
+    "guruswami-sudan-core-lee-direct-small" "CBivariate"
+    "Lee-O'Sullivan direct + roots"
+    "KoalaBear.Field" gsSmallInputShape preset warmup leeDirectMeasured
+    (fun _ ↦ gsCore points koalaBearLeeDirectInterpContext rootContext gsSmallParams)
+    checksumPolynomialArrayKoala checksumIterations
+  let leeSubproductRow <- runTimed
+    "guruswami-sudan-core-lee-subproduct-small" "CBivariate"
+    "Lee-O'Sullivan subproduct + roots"
+    "KoalaBear.Field" gsSmallInputShape preset warmup leeSubproductMeasured
+    (fun _ ↦ gsCore points koalaBearLeeSubproductInterpContext rootContext gsSmallParams)
+    checksumPolynomialArrayKoala checksumIterations
+  let fastDenseRow <- runTimed
+    "guruswami-sudan-core-dense-small-fast" "CBivariate"
+    "Dense linear + roots"
+    "KoalaBear.Fast.Field" gsSmallInputShape preset warmup fastDenseMeasured
+    (fun _ ↦
+      gsCore fastPoints (denseInterpContext KoalaBear.Fast.Field) fastRootContext
+        gsSmallParams)
+    checksumPolynomialArrayKoalaFast checksumIterations
+  let fastKoetterRow <- runTimed
+    "guruswami-sudan-core-koetter-small-fast" "CBivariate"
+    "Koetter + roots"
+    "KoalaBear.Fast.Field" gsSmallInputShape preset warmup fastKoetterMeasured
+    (fun _ ↦ gsCore fastPoints fastKoalaBearKoetterInterpContext fastRootContext
+      gsSmallParams)
+    checksumPolynomialArrayKoalaFast checksumIterations
+  let fastLeeDirectRow <- runTimed
+    "guruswami-sudan-core-lee-direct-small-fast" "CBivariate"
+    "Lee-O'Sullivan direct + roots"
+    "KoalaBear.Fast.Field" gsSmallInputShape preset warmup fastLeeDirectMeasured
+    (fun _ ↦ gsCore fastPoints fastKoalaBearLeeDirectInterpContext fastRootContext
+      gsSmallParams)
+    checksumPolynomialArrayKoalaFast checksumIterations
+  let fastLeeSubproductRow <- runTimed
+    "guruswami-sudan-core-lee-subproduct-small-fast" "CBivariate"
+    "Lee-O'Sullivan subproduct + roots"
+    "KoalaBear.Fast.Field" gsSmallInputShape preset warmup fastLeeSubproductMeasured
+    (fun _ ↦ gsCore fastPoints fastKoalaBearLeeSubproductInterpContext fastRootContext
+      gsSmallParams)
+    checksumPolynomialArrayKoalaFast checksumIterations
+  pure ({
+    groupKey := "guruswami-sudan-core-small-koalabear",
+    title := "Guruswami-Sudan full core, small (KoalaBear)",
+    records := #[
+      denseRow, koetterRow, leeDirectRow, leeSubproductRow,
+      fastDenseRow, fastKoetterRow, fastLeeDirectRow, fastLeeSubproductRow
+    ]
+  }, gen)
+
+private def runGsCoreLargeKoala (preset : BenchPreset) (gen : StdGen) :
     IO (Prod BenchGroup StdGen) := do
   let (coeffs, gen) := (koalaBearArray gsMessageDegree false).run gen
   let message := cpolyOfArray coeffs
@@ -359,65 +652,159 @@ private def runGsCoreKoala (preset : BenchPreset) (gen : StdGen) :
   let points := codewordPoints message
   let fastPoints := codewordPoints fastMessage
   let rootContext := koalaBearRothRootContext
-  let rootContextFast := koalaBearRothNttFastRootContext
   let fastRootContext := fastKoalaBearRothRootContext
-  let fastRootContextFast := fastKoalaBearRothNttFastRootContext
   let warmup := gsWarmupIterations preset
-  let measured := preset.selectNat 8 1 1
-  let nttFastMeasured := preset.selectNat 8 1 1
-  let fastMeasured := preset.selectNat 40 5 2
-  let fastNttFastMeasured := preset.selectNat 40 5 2
-  let checksumIterations := groupChecksumIterations measured [
-    nttFastMeasured, measured, fastMeasured, fastNttFastMeasured, fastMeasured
+  let koetterMeasured := preset.selectNat 1 1 1
+  let leeMeasured := preset.selectNat 8 1 1
+  let fastKoetterMeasured := preset.selectNat 3 1 1
+  let fastLeeMeasured := preset.selectNat 40 5 1
+  let checksumIterations := groupChecksumIterations koetterMeasured [
+    leeMeasured, leeMeasured, fastKoetterMeasured, fastLeeMeasured, fastLeeMeasured
   ]
-  let row <- runTimed
-    "guruswami-sudan-core-dense-roth" "CBivariate" "Dense interpolation plus root finding"
-    "KoalaBear.Field" gsInputShape preset warmup measured
-    (fun _ ↦ gsCore points (denseInterpContext KoalaBear.Field) rootContext gsKoalaParams)
-    checksumPolynomialArrayKoala checksumIterations
-  let nttFastRow <- runTimed
-    "guruswami-sudan-core-dense-roth-nttfast" "CBivariate"
-    "Dense interpolation plus NTTFast field-root finding"
-    "KoalaBear.Field" gsInputShape preset warmup nttFastMeasured
-    (fun _ ↦
-      gsCore points (denseInterpContext KoalaBear.Field) rootContextFast gsKoalaParams)
-    checksumPolynomialArrayKoala checksumIterations
   let koetterRow <- runTimed
     "guruswami-sudan-core-koetter-roth" "CBivariate"
-    "Koetter interpolation plus root finding"
-    "KoalaBear.Field" gsInputShape preset warmup measured
+    "Koetter + roots"
+    "KoalaBear.Field" gsInputShape preset warmup koetterMeasured
     (fun _ ↦ gsCore points koalaBearKoetterInterpContext rootContext gsKoalaParams)
     checksumPolynomialArrayKoala checksumIterations
-  let fastRow <- runTimed
-    "guruswami-sudan-core-dense-roth-fast" "CBivariate"
-    "Dense interpolation plus root finding"
-    "KoalaBear.Fast.Field" gsInputShape preset warmup fastMeasured
-    (fun _ ↦ gsCore fastPoints (denseInterpContext KoalaBear.Fast.Field) fastRootContext
-      gsKoalaParams)
-    checksumPolynomialArrayKoalaFast checksumIterations
-  let fastNttFastRow <- runTimed
-    "guruswami-sudan-core-dense-roth-fast-nttfast" "CBivariate"
-    "Dense interpolation plus root finding (fast mul/mod, fast KoalaBear)"
-    "KoalaBear.Fast.Field" gsInputShape preset warmup fastNttFastMeasured
-    (fun _ ↦
-      gsCore fastPoints (denseInterpContext KoalaBear.Fast.Field) fastRootContextFast
-        gsKoalaParams)
-    checksumPolynomialArrayKoalaFast checksumIterations
+  let leeDirectRow <- runTimed
+    "guruswami-sudan-core-lee-direct-roth" "CBivariate"
+    "Lee-O'Sullivan direct + roots"
+    "KoalaBear.Field" gsInputShape preset warmup leeMeasured
+    (fun _ ↦ gsCore points koalaBearLeeDirectInterpContext rootContext gsKoalaParams)
+    checksumPolynomialArrayKoala checksumIterations
+  let leeSubproductRow <- runTimed
+    "guruswami-sudan-core-lee-subproduct-roth" "CBivariate"
+    "Lee-O'Sullivan subproduct + roots"
+    "KoalaBear.Field" gsInputShape preset warmup leeMeasured
+    (fun _ ↦ gsCore points koalaBearLeeSubproductInterpContext rootContext gsKoalaParams)
+    checksumPolynomialArrayKoala checksumIterations
   let fastKoetterRow <- runTimed
     "guruswami-sudan-core-koetter-roth-fast" "CBivariate"
-    "Koetter interpolation plus root finding"
-    "KoalaBear.Fast.Field" gsInputShape preset warmup fastMeasured
+    "Koetter + roots"
+    "KoalaBear.Fast.Field" gsInputShape preset warmup fastKoetterMeasured
     (fun _ ↦
       gsCore fastPoints fastKoalaBearKoetterInterpContext fastRootContext
         gsKoalaParams)
     checksumPolynomialArrayKoalaFast checksumIterations
+  let fastLeeDirectRow <- runTimed
+    "guruswami-sudan-core-lee-direct-roth-fast" "CBivariate"
+    "Lee-O'Sullivan direct + roots"
+    "KoalaBear.Fast.Field" gsInputShape preset warmup fastLeeMeasured
+    (fun _ ↦
+      gsCore fastPoints fastKoalaBearLeeDirectInterpContext fastRootContext
+        gsKoalaParams)
+    checksumPolynomialArrayKoalaFast checksumIterations
+  let fastLeeSubproductRow <- runTimed
+    "guruswami-sudan-core-lee-subproduct-roth-fast" "CBivariate"
+    "Lee-O'Sullivan subproduct + roots"
+    "KoalaBear.Fast.Field" gsInputShape preset warmup fastLeeMeasured
+    (fun _ ↦
+      gsCore fastPoints fastKoalaBearLeeSubproductInterpContext fastRootContext
+        gsKoalaParams)
+    checksumPolynomialArrayKoalaFast checksumIterations
   pure ({
-    groupKey := "guruswami-sudan-core-koalabear",
-    title := "Guruswami-Sudan full core (KoalaBear)",
-    records := #[row, nttFastRow, koetterRow, fastRow, fastNttFastRow, fastKoetterRow]
+    groupKey := "guruswami-sudan-core-large-koalabear",
+    title := "Guruswami-Sudan full core, large (KoalaBear)",
+    records := #[
+      koetterRow, leeDirectRow, leeSubproductRow,
+      fastKoetterRow, fastLeeDirectRow, fastLeeSubproductRow
+    ]
   }, gen)
 
-private def runGsFilteredCoreKoala (preset : BenchPreset) (gen : StdGen) :
+private def runGsFilteredCoreSmallKoala (preset : BenchPreset) (gen : StdGen) :
+    IO (Prod BenchGroup StdGen) := do
+  let (coeffs, gen) := (koalaBearArray gsSmallMessageDegree false).run gen
+  let message := cpolyOfArray coeffs
+  let fastMessage := cpolyOfArray (koalaBearFastArray coeffs)
+  let points := codewordPointsWithCount gsSmallPointCount message
+  let fastPoints := codewordPointsWithCount gsSmallPointCount fastMessage
+  let rootContext := koalaBearRothRootContext
+  let fastRootContext := fastKoalaBearRothRootContext
+  let warmup := gsWarmupIterations preset
+  let denseMeasured := preset.selectNat 1 1 1
+  let koetterMeasured := preset.selectNat 10 2 1
+  let leeDirectMeasured := preset.selectNat 60 8 2
+  let leeSubproductMeasured := preset.selectNat 50 7 1
+  let fastDenseMeasured := preset.selectNat 2 1 1
+  let fastKoetterMeasured := preset.selectNat 70 10 2
+  let fastLeeDirectMeasured := preset.selectNat 400 60 10
+  let fastLeeSubproductMeasured := preset.selectNat 300 40 10
+  let checksumIterations := groupChecksumIterations denseMeasured [
+    koetterMeasured, leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
+    fastKoetterMeasured, fastLeeDirectMeasured, fastLeeSubproductMeasured
+  ]
+  let denseRow <- runTimed
+    "guruswami-sudan-filtered-core-dense-small" "CBivariate"
+    "Dense linear + filter"
+    "KoalaBear.Field" gsSmallFilteredShape preset warmup denseMeasured
+    (fun _ ↦
+      gsFilteredCore points (denseInterpContext KoalaBear.Field) rootContext
+        gsSmallParams 0)
+    checksumPolynomialArrayKoala checksumIterations
+  let koetterRow <- runTimed
+    "guruswami-sudan-filtered-core-koetter-small" "CBivariate"
+    "Koetter + filter"
+    "KoalaBear.Field" gsSmallFilteredShape preset warmup koetterMeasured
+    (fun _ ↦ gsFilteredCore points koalaBearKoetterInterpContext rootContext
+      gsSmallParams 0)
+    checksumPolynomialArrayKoala checksumIterations
+  let leeDirectRow <- runTimed
+    "guruswami-sudan-filtered-core-lee-direct-small" "CBivariate"
+    "Lee-O'Sullivan direct + filter"
+    "KoalaBear.Field" gsSmallFilteredShape preset warmup leeDirectMeasured
+    (fun _ ↦ gsFilteredCore points koalaBearLeeDirectInterpContext rootContext
+      gsSmallParams 0)
+    checksumPolynomialArrayKoala checksumIterations
+  let leeSubproductRow <- runTimed
+    "guruswami-sudan-filtered-core-lee-subproduct-small" "CBivariate"
+    "Lee-O'Sullivan subproduct + filter"
+    "KoalaBear.Field" gsSmallFilteredShape preset warmup leeSubproductMeasured
+    (fun _ ↦ gsFilteredCore points koalaBearLeeSubproductInterpContext rootContext
+      gsSmallParams 0)
+    checksumPolynomialArrayKoala checksumIterations
+  let fastDenseRow <- runTimed
+    "guruswami-sudan-filtered-core-dense-small-fast" "CBivariate"
+    "Dense linear + filter"
+    "KoalaBear.Fast.Field" gsSmallFilteredShape preset warmup fastDenseMeasured
+    (fun _ ↦
+      gsFilteredCore fastPoints (denseInterpContext KoalaBear.Fast.Field) fastRootContext
+        gsSmallParams 0)
+    checksumPolynomialArrayKoalaFast checksumIterations
+  let fastKoetterRow <- runTimed
+    "guruswami-sudan-filtered-core-koetter-small-fast" "CBivariate"
+    "Koetter + filter"
+    "KoalaBear.Fast.Field" gsSmallFilteredShape preset warmup fastKoetterMeasured
+    (fun _ ↦
+      gsFilteredCore fastPoints fastKoalaBearKoetterInterpContext fastRootContext
+        gsSmallParams 0)
+    checksumPolynomialArrayKoalaFast checksumIterations
+  let fastLeeDirectRow <- runTimed
+    "guruswami-sudan-filtered-core-lee-direct-small-fast" "CBivariate"
+    "Lee-O'Sullivan direct + filter"
+    "KoalaBear.Fast.Field" gsSmallFilteredShape preset warmup fastLeeDirectMeasured
+    (fun _ ↦
+      gsFilteredCore fastPoints fastKoalaBearLeeDirectInterpContext fastRootContext
+        gsSmallParams 0)
+    checksumPolynomialArrayKoalaFast checksumIterations
+  let fastLeeSubproductRow <- runTimed
+    "guruswami-sudan-filtered-core-lee-subproduct-small-fast" "CBivariate"
+    "Lee-O'Sullivan subproduct + filter"
+    "KoalaBear.Fast.Field" gsSmallFilteredShape preset warmup fastLeeSubproductMeasured
+    (fun _ ↦
+      gsFilteredCore fastPoints fastKoalaBearLeeSubproductInterpContext fastRootContext
+        gsSmallParams 0)
+    checksumPolynomialArrayKoalaFast checksumIterations
+  pure ({
+    groupKey := "guruswami-sudan-filtered-core-small-koalabear",
+    title := "Guruswami-Sudan filtered core, small (KoalaBear)",
+    records := #[
+      denseRow, koetterRow, leeDirectRow, leeSubproductRow,
+      fastDenseRow, fastKoetterRow, fastLeeDirectRow, fastLeeSubproductRow
+    ]
+  }, gen)
+
+private def runGsFilteredCoreLargeKoala (preset : BenchPreset) (gen : StdGen) :
     IO (Prod BenchGroup StdGen) := do
   let (coeffs, gen) := (koalaBearArray gsMessageDegree false).run gen
   let message := cpolyOfArray coeffs
@@ -425,67 +812,68 @@ private def runGsFilteredCoreKoala (preset : BenchPreset) (gen : StdGen) :
   let points := codewordPoints message
   let fastPoints := codewordPoints fastMessage
   let rootContext := koalaBearRothRootContext
-  let rootContextFast := koalaBearRothNttFastRootContext
   let fastRootContext := fastKoalaBearRothRootContext
-  let fastRootContextFast := fastKoalaBearRothNttFastRootContext
   let warmup := gsWarmupIterations preset
-  let measured := preset.selectNat 8 1 1
-  let nttFastMeasured := preset.selectNat 8 1 1
-  let fastMeasured := preset.selectNat 40 5 2
-  let fastNttFastMeasured := preset.selectNat 40 5 2
-  let checksumIterations := groupChecksumIterations measured [
-    nttFastMeasured, measured, fastMeasured, fastNttFastMeasured, fastMeasured
+  let koetterMeasured := preset.selectNat 1 1 1
+  let leeMeasured := preset.selectNat 8 1 1
+  let fastKoetterMeasured := preset.selectNat 3 1 1
+  let fastLeeMeasured := preset.selectNat 40 5 1
+  let checksumIterations := groupChecksumIterations koetterMeasured [
+    leeMeasured, leeMeasured, fastKoetterMeasured, fastLeeMeasured, fastLeeMeasured
   ]
-  let row <- runTimed
-    "guruswami-sudan-filtered-core" "CBivariate"
-    "Packed filtered core"
-    "KoalaBear.Field" gsFilteredShape preset warmup measured
-    (fun _ ↦
-      gsFilteredCore points (denseInterpContext KoalaBear.Field) rootContext gsKoalaParams 0)
-    checksumPolynomialArrayKoala checksumIterations
-  let nttFastRow <- runTimed
-    "guruswami-sudan-filtered-core-nttfast" "CBivariate"
-    "Packed filtered core (fast mul/mod)"
-    "KoalaBear.Field" gsFilteredShape preset warmup nttFastMeasured
-    (fun _ ↦
-      gsFilteredCore points (denseInterpContext KoalaBear.Field) rootContextFast
-        gsKoalaParams 0)
-    checksumPolynomialArrayKoala checksumIterations
   let koetterRow <- runTimed
     "guruswami-sudan-filtered-core-koetter" "CBivariate"
-    "Packed filtered core with Koetter interpolation"
-    "KoalaBear.Field" gsFilteredShape preset warmup measured
+    "Koetter + filter"
+    "KoalaBear.Field" gsFilteredShape preset warmup koetterMeasured
     (fun _ ↦
       gsFilteredCore points koalaBearKoetterInterpContext rootContext gsKoalaParams 0)
     checksumPolynomialArrayKoala checksumIterations
-  let fastRow <- runTimed
-    "guruswami-sudan-filtered-core-fast" "CBivariate"
-    "Packed filtered core (fast KoalaBear)"
-    "KoalaBear.Fast.Field" gsFilteredShape preset warmup fastMeasured
+  let leeDirectRow <- runTimed
+    "guruswami-sudan-filtered-core-lee-direct" "CBivariate"
+    "Lee-O'Sullivan direct + filter"
+    "KoalaBear.Field" gsFilteredShape preset warmup leeMeasured
     (fun _ ↦
-      gsFilteredCore fastPoints (denseInterpContext KoalaBear.Fast.Field) fastRootContext
+      gsFilteredCore points koalaBearLeeDirectInterpContext rootContext gsKoalaParams 0)
+    checksumPolynomialArrayKoala checksumIterations
+  let leeSubproductRow <- runTimed
+    "guruswami-sudan-filtered-core-lee-subproduct" "CBivariate"
+    "Lee-O'Sullivan subproduct + filter"
+    "KoalaBear.Field" gsFilteredShape preset warmup leeMeasured
+    (fun _ ↦
+      gsFilteredCore points koalaBearLeeSubproductInterpContext rootContext
         gsKoalaParams 0)
-    checksumPolynomialArrayKoalaFast checksumIterations
-  let fastNttFastRow <- runTimed
-    "guruswami-sudan-filtered-core-fast-nttfast" "CBivariate"
-    "Packed filtered core (fast mul/mod, fast KoalaBear)"
-    "KoalaBear.Fast.Field" gsFilteredShape preset warmup fastNttFastMeasured
-    (fun _ ↦
-      gsFilteredCore fastPoints (denseInterpContext KoalaBear.Fast.Field)
-        fastRootContextFast gsKoalaParams 0)
-    checksumPolynomialArrayKoalaFast checksumIterations
+    checksumPolynomialArrayKoala checksumIterations
   let fastKoetterRow <- runTimed
     "guruswami-sudan-filtered-core-koetter-fast" "CBivariate"
-    "Packed filtered core with Koetter interpolation"
-    "KoalaBear.Fast.Field" gsFilteredShape preset warmup fastMeasured
+    "Koetter + filter"
+    "KoalaBear.Fast.Field" gsFilteredShape preset warmup fastKoetterMeasured
     (fun _ ↦
       gsFilteredCore fastPoints fastKoalaBearKoetterInterpContext fastRootContext
         gsKoalaParams 0)
     checksumPolynomialArrayKoalaFast checksumIterations
+  let fastLeeDirectRow <- runTimed
+    "guruswami-sudan-filtered-core-lee-direct-fast" "CBivariate"
+    "Lee-O'Sullivan direct + filter"
+    "KoalaBear.Fast.Field" gsFilteredShape preset warmup fastLeeMeasured
+    (fun _ ↦
+      gsFilteredCore fastPoints fastKoalaBearLeeDirectInterpContext fastRootContext
+        gsKoalaParams 0)
+    checksumPolynomialArrayKoalaFast checksumIterations
+  let fastLeeSubproductRow <- runTimed
+    "guruswami-sudan-filtered-core-lee-subproduct-fast" "CBivariate"
+    "Lee-O'Sullivan subproduct + filter"
+    "KoalaBear.Fast.Field" gsFilteredShape preset warmup fastLeeMeasured
+    (fun _ ↦
+      gsFilteredCore fastPoints fastKoalaBearLeeSubproductInterpContext fastRootContext
+        gsKoalaParams 0)
+    checksumPolynomialArrayKoalaFast checksumIterations
   pure ({
-    groupKey := "guruswami-sudan-filtered-core-koalabear",
-    title := "Guruswami-Sudan filtered core (KoalaBear)",
-    records := #[row, nttFastRow, koetterRow, fastRow, fastNttFastRow, fastKoetterRow]
+    groupKey := "guruswami-sudan-filtered-core-large-koalabear",
+    title := "Guruswami-Sudan filtered core, large (KoalaBear)",
+    records := #[
+      koetterRow, leeDirectRow, leeSubproductRow,
+      fastKoetterRow, fastLeeDirectRow, fastLeeSubproductRow
+    ]
   }, gen)
 
 private def runGsPackedFilterKoala (preset : BenchPreset) (gen : StdGen) :
@@ -505,8 +893,8 @@ private def runGsPackedFilterKoala (preset : BenchPreset) (gen : StdGen) :
     (List.range candidateCount).map (fun i ↦
       fastMessage + CPolynomial.C ((i + 1 : Nat) : KoalaBear.Fast.Field)) |>.toArray
   let warmup := gsWarmupIterations preset
-  let measured := preset.selectNat 80 20 5
-  let fastMeasured := preset.selectNat 200 50 10
+  let measured := preset.selectNat 20 3 1
+  let fastMeasured := preset.selectNat 200 30 5
   let checksumIterations := groupChecksumIterations measured [fastMeasured]
   let row <- runTimed
     "guruswami-sudan-packed-filter" "CPolynomial"
@@ -529,23 +917,31 @@ private def runGsPackedFilterKoala (preset : BenchPreset) (gen : StdGen) :
 /-- Runnable GS benchmark tasks. -/
 def guruswamiSudanTasks : List BenchTask := [
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 0
-    ⟨"guruswami-sudan-interp-system-koalabear", ""⟩) runGsInterpolationSystemKoala,
+    ⟨"guruswami-sudan-interp-system-small-koalabear", ""⟩) runGsInterpolationSystemKoala,
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 1
-    ⟨"guruswami-sudan-interp-solve-koalabear", ""⟩) runGsInterpolationSolveKoala,
+    ⟨"guruswami-sudan-interp-solve-small-koalabear", ""⟩) runGsInterpolationSolveKoala,
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 2
-    ⟨"guruswami-sudan-interp-backend-koalabear", ""⟩) runGsInterpolationBackendKoala,
+    ⟨"guruswami-sudan-interp-small-koalabear", ""⟩) runGsInterpolationSmallKoala,
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 3
-    ⟨"guruswami-sudan-hasse-koalabear", ""⟩) runGsHasseKoala,
+    ⟨"guruswami-sudan-interp-large-koalabear", ""⟩) runGsInterpolationLargeKoala,
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 4
-    ⟨"guruswami-sudan-compose-koalabear", ""⟩) runGsComposeKoala,
+    ⟨"guruswami-sudan-lee-setup-large-koalabear", ""⟩) runGsLeeSetupLargeKoala,
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 5
-    ⟨"guruswami-sudan-root-roth-koalabear", ""⟩) runGsRootKoala,
+    ⟨"guruswami-sudan-hasse-koalabear", ""⟩) runGsHasseKoala,
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 6
-    ⟨"guruswami-sudan-core-koalabear", ""⟩) runGsCoreKoala,
+    ⟨"guruswami-sudan-compose-koalabear", ""⟩) runGsComposeKoala,
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 7
-    ⟨"guruswami-sudan-packed-filter-koalabear", ""⟩) runGsPackedFilterKoala,
+    ⟨"guruswami-sudan-root-roth-koalabear", ""⟩) runGsRootKoala,
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 8
-    ⟨"guruswami-sudan-filtered-core-koalabear", ""⟩) runGsFilteredCoreKoala
+    ⟨"guruswami-sudan-core-small-koalabear", ""⟩) runGsCoreSmallKoala,
+  BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 9
+    ⟨"guruswami-sudan-core-large-koalabear", ""⟩) runGsCoreLargeKoala,
+  BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 10
+    ⟨"guruswami-sudan-packed-filter-koalabear", ""⟩) runGsPackedFilterKoala,
+  BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 11
+    ⟨"guruswami-sudan-filtered-core-small-koalabear", ""⟩) runGsFilteredCoreSmallKoala,
+  BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 12
+    ⟨"guruswami-sudan-filtered-core-large-koalabear", ""⟩) runGsFilteredCoreLargeKoala
 ]
 
 end CompPolyBench

@@ -1,5 +1,6 @@
 import CompPoly.Bivariate.Basic
 import CompPoly.Bivariate.CMvEquiv
+import CompPoly.Bivariate.CoeffRows
 import CompPoly.Bivariate.Deriv
 import CompPoly.Bivariate.Factor
 import CompPoly.Bivariate.FactorMonic
@@ -15,6 +16,7 @@ import CompPoly.Bivariate.GuruswamiSudan.Hasse
 import CompPoly.Bivariate.GuruswamiSudan.Implementations
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Basic
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Algorithm
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Algorithm
@@ -27,6 +29,10 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness.Selec
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness.Soundness
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness.Transport
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness.Update
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Algorithm
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Basic
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Monomials
 import CompPoly.Bivariate.GuruswamiSudan.Polynomial
 import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
@@ -106,6 +112,14 @@ import CompPoly.LinearAlgebra.Dense.RowOps
 import CompPoly.LinearAlgebra.Dense.RowOpsCorrectness
 import CompPoly.LinearAlgebra.Dense.RrefSemantics
 import CompPoly.LinearAlgebra.Dense.RrefShape
+import CompPoly.LinearAlgebra.PolynomialMatrix
+import CompPoly.LinearAlgebra.PolynomialMatrix.Basic
+import CompPoly.LinearAlgebra.PolynomialMatrix.Degree
+import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohann
+import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness
+import CompPoly.LinearAlgebra.PolynomialMatrix.RowSpan
+import CompPoly.LinearAlgebra.PolynomialMatrix.Shifted
+import CompPoly.LinearAlgebra.PolynomialMatrix.ShiftedReduction
 import CompPoly.Multilinear.Basic
 import CompPoly.Multilinear.Equiv
 import CompPoly.Multilinear.ManyEval
@@ -143,11 +157,14 @@ import CompPoly.Univariate.BatchEval.Correctness
 import CompPoly.Univariate.BatchEval.Naive
 import CompPoly.Univariate.BatchEval.SubproductTree
 import CompPoly.Univariate.CMvEquiv
-import CompPoly.Univariate.Deriv
+import CompPoly.Univariate.CoefficientInterpolation
 import CompPoly.Univariate.Context
+import CompPoly.Univariate.Deriv
+import CompPoly.Univariate.Derivative
 import CompPoly.Univariate.DivisionCorrectness
 import CompPoly.Univariate.EuclideanAlgorithm
 import CompPoly.Univariate.Lagrange
+import CompPoly.Univariate.LagrangeArray
 import CompPoly.Univariate.Linear
 import CompPoly.Univariate.ManyEval
 import CompPoly.Univariate.ManyEval.Basic
@@ -198,3 +215,4 @@ import CompPoly.Univariate.ToPoly.Core
 import CompPoly.Univariate.ToPoly.Degree
 import CompPoly.Univariate.ToPoly.Equiv
 import CompPoly.Univariate.ToPoly.Impl
+import CompPoly.Univariate.Vanishing
