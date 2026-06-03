@@ -9,7 +9,7 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness.Algeb
 /-!
 # Koetter Selection Correctness Helpers
 
-Final-candidate and pivot-selection helper lemmas for the Koetter correctness proof.
+Final-candidate and pivot-selection lemmas used by Koetter correctness.
 -/
 
 namespace CompPoly

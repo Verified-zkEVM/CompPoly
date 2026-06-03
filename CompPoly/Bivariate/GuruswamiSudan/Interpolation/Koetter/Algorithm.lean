@@ -12,8 +12,8 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Basic
 
 Executable direct-`CBivariate` Koetter interpolation. This is an additional
 interpolation implementation alongside dense linear-system interpolation. The
-public `koetterInterpolate` operation uses the existing low-message-degree
-constructive branch, and otherwise returns the raw direct Koetter result.
+public `koetterInterpolate` operation uses a constructive low-message-degree
+branch, and otherwise runs the direct Koetter interpolation pass.
 -/
 
 namespace CompPoly
@@ -128,7 +128,7 @@ def koetterSelectFinal? {F : Type*}
       else
         none
 
-/-- Raw positive-message Koetter interpolation. -/
+/-- Direct Koetter interpolation before the public low-message case split. -/
 def koetterRawInterpolate {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (points : Array (Prod F F)) (params : GSInterpParams) :
@@ -138,8 +138,8 @@ def koetterRawInterpolate {F : Type*}
     (koetterInitialState params)
   koetterSelectFinal? params finalState.basis
 
-/-- Koetter interpolation with the existing low-message branch and raw direct
-positive-message Koetter pass. -/
+/-- Koetter interpolation with the constructive low-message branch and the
+direct Koetter pass for `messageDegree > 1`. -/
 def koetterInterpolate {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (points : Array (Prod F F)) (params : GSInterpParams) :

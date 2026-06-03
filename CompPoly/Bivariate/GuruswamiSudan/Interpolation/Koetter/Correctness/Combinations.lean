@@ -9,7 +9,8 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness.Sound
 /-!
 # Koetter Basis Combination Helpers
 
-Finite-Y expansion, basis-combination, and weak-leading minimality lemmas used by Koetter completeness.
+Finite-`Y` expansion, basis-combination, and weak-leading minimality lemmas used
+by Koetter completeness.
 -/
 
 namespace CompPoly

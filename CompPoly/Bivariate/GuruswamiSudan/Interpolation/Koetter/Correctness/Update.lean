@@ -9,7 +9,8 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness.Selec
 /-!
 # Koetter Update Correctness Helpers
 
-Degree, weak-leading, discrepancy, and size invariants for one-step and folded Koetter updates.
+Degree, weak-leading, discrepancy, and size invariants for one-step and folded
+Koetter updates.
 -/
 
 namespace CompPoly

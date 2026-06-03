@@ -9,7 +9,8 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness.Combi
 /-!
 # Koetter Span Transport Helpers
 
-Pivot-correction, span-transport, generated-basis, y-boundedness, and final-basis invariant lemmas.
+Pivot-correction, span-transport, generated-basis, `Y`-boundedness, and
+final-basis invariant lemmas.
 -/
 
 namespace CompPoly

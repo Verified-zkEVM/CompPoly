@@ -12,7 +12,8 @@ import Mathlib.Data.List.Range
 /-!
 # Koetter Correctness Algebra Helpers
 
-Polynomial, Hasse-derivative, weighted-degree, and initial-basis helper lemmas for the Koetter correctness proof.
+Polynomial, Hasse-derivative, weighted-degree, and initial-basis lemmas used by
+Koetter correctness.
 -/
 
 namespace CompPoly
@@ -330,7 +331,7 @@ theorem hasseDerivativeEval_linearXFactor_mul_succ_xOrder {F : Type*}
 
 end CBivariate
 
-/-- The initial direct Koetter basis has one entry for each `Y` exponent up to the cap. -/
+/-- The initial Koetter basis has one entry for each `Y` exponent up to the cap. -/
 theorem koetterInitialBasis_size {F : Type*}
     [Semiring F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (params : GSInterpParams) :

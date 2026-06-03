@@ -11,5 +11,5 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness.Compl
 
 Public correctness surface for the direct `CBivariate` Koetter interpolation
 implementation. The proof internals are split across `Koetter.Correctness.*`
-modules; this file preserves the original public import path.
+modules; this file collects the public declarations through those imports.
 -/

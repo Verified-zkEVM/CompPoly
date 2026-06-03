@@ -46,10 +46,10 @@ theorem koetterFinalBasis_entry_moduleFacts {F : Type*}
   · intro constraint hmem
     exact koetterFinalBasis_satisfies_constraints points params constraint hmem idx hidx
 
-/-- Raw positive-message Koetter completeness proof obligation.
+/-- Completeness for raw Koetter interpolation when `messageDegree > 1`.
 
-This is the minimal-basis statement: if any valid witness exists in the finite
-positive-`Y`-weight search space, the raw Koetter final selection returns one. -/
+If any valid witness exists in the finite `Y`-bounded search space, the raw
+Koetter final selection returns one. -/
 theorem koetterRawInterpolate_complete_of_messageDegree_gt_one {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     {points : Array (F × F)} {params : GSInterpParams}
@@ -143,7 +143,7 @@ theorem koetterRawInterpolate_complete_of_messageDegree_gt_one {F : Type*}
 
 /-- Completeness for the public Koetter interpolation operation.
 
-For positive message degree this is the direct Koetter completeness statement,
+For `messageDegree > 1` this uses the direct Koetter completeness theorem,
 not a dense-backend fallback. -/
 theorem koetterInterpolate_complete {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
@@ -161,8 +161,9 @@ theorem koetterInterpolate_complete {F : Type*}
 
 /-- Public Koetter interpolation context.
 
-The executable operation has no dense interpolation fallback. The positive-message
-completeness field depends on the direct Koetter proof obligations above. -/
+The executable operation has no dense interpolation fallback. Its completeness
+field uses the raw Koetter theorem for `messageDegree > 1` and the constructive
+low-message branch for `messageDegree ≤ 1`. -/
 def koetterInterpContext (F : Type*) [Field F] [BEq F] [LawfulBEq F]
     [Nontrivial F] [DecidableEq F] : GSInterpContext F where
   interpolate := koetterInterpolate

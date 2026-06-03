@@ -17,7 +17,7 @@ namespace CompPoly
 
 namespace GuruswamiSudan
 
-/-- Internal finite `Y` cap used by the positive-`Y`-weight Koetter branch. -/
+/-- Finite `Y` cap used by the positive-`Y`-weight Koetter branch. -/
 def koetterYCap (params : GSInterpParams) : Nat :=
   params.weightedDegreeBound / yWeight params
 

@@ -408,11 +408,10 @@ theorem koetterRawInterpolate_sound_of_lowerBefore {F : Type*}
   exact hSatFinal ({ x := point.1, y := point.2, xOrder := a, yOrder := b })
     hconstraintMem idx hidx
 
-/-- Raw positive-message Koetter soundness proof obligation.
+/-- Soundness for raw Koetter interpolation when `messageDegree > 1`.
 
-This is the direct module-invariant statement: after all Hasse constraints are
-processed, any selected raw Koetter polynomial is already a valid interpolation
-witness. -/
+After all Hasse constraints are processed, any selected raw Koetter polynomial
+is already a valid interpolation witness. -/
 theorem koetterRawInterpolate_sound_of_messageDegree_gt_one {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     {points : Array (F × F)} {params : GSInterpParams} {Q : CBivariate F}
