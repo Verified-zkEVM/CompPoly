@@ -14,6 +14,11 @@ Executable direct-`CBivariate` Koetter interpolation. This is an additional
 interpolation implementation alongside dense linear-system interpolation. The
 public `koetterInterpolate` operation uses a constructive low-message-degree
 branch, and otherwise runs the direct Koetter interpolation pass.
+
+## References
+
+* [Koetter, R., *Fast generalized minimum-distance decoding of
+    algebraic-geometry and Reed-Solomon codes*][Koetter96]
 -/
 
 namespace CompPoly
