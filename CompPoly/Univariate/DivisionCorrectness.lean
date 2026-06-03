@@ -316,13 +316,19 @@ private lemma toPoly_mulLow_natDegree_le (M : MulLowContext R) (k : Nat)
   have hnot : ¬i < k := by omega
   simp [hnot]
 
+end Division
+
+section
+variable [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R]
+
+omit [Nontrivial R] in
 private lemma raw_toPoly_natDegree_lt_size_of_trim_eq (p : Raw R)
     (htrim : p.trim = p) (hpos : 0 < p.size) :
     p.toPoly.natDegree < p.size := by
   simpa [htrim] using Raw.toPoly_natDegree_lt_trim_size_of_pos (R := R) p (by
     simpa [htrim] using hpos)
 
-omit [BEq R] [LawfulBEq R] in
+omit [BEq R] [LawfulBEq R] [Nontrivial R] in
 private lemma toImpl_size_le_of_degree_lt (f : R[X]) (n : Nat)
     (hdeg : f.degree < (n : WithBot Nat)) : f.toImpl.size ≤ n := by
   rcases Raw.toImpl_elim f with ⟨_hzero, himpl⟩ | ⟨hnz, himpl⟩
@@ -334,7 +340,7 @@ private lemma toImpl_size_le_of_degree_lt (f : R[X]) (n : Nat)
     simp [himpl]
     omega
 
-omit [LawfulBEq R] in
+omit [LawfulBEq R] [Nontrivial R] in
 private lemma raw_coeff_last_eq_leadingCoeff_of_trim_eq (q : Raw R)
     (htrim : q.trim = q) (hpos : 0 < q.size) :
     q.coeff (q.size - 1) = q.leadingCoeff := by
@@ -390,7 +396,7 @@ private lemma div_step_size_lt (p q : Raw R)
   change p'.size < p.size
   omega
 
-omit [BEq R] [LawfulBEq R] in
+omit [BEq R] [LawfulBEq R] [Nontrivial R] in
 private lemma raw_toPoly_degree_lt_of_size_lt (p q : Raw R)
     (hsize : p.size < q.size)
     (hqdegree : q.toPoly.degree = ((q.size - 1 : Nat) : WithBot Nat)) :
@@ -482,6 +488,29 @@ theorem modByMonic_toPoly_eq_modByMonic (p q : CPolynomial R)
     (hmonic : q.monic) :
     (p.modByMonic q).toPoly = p.toPoly %ₘ q.toPoly :=
   (raw_divModByMonicAux_toPoly_eq p q ((monic_toPoly_iff q).mp hmonic)).2
+
+/-- Euclidean division identity for a monic divisor, stated directly on
+`CPolynomial`: `p.modByMonic q + q * p.divByMonic q = p` whenever `q` is monic.
+
+This holds over an arbitrary commutative ring, so it
+instantiates at nested coefficient rings, e.g. `CBivariate R =
+CPolynomial (CPolynomial R)`, giving Euclidean division by any monic divisor in
+the outer variable. -/
+theorem modByMonic_add_mul_divByMonic (p q : CPolynomial R) (hmonic : q.monic) :
+    p.modByMonic q + q * p.divByMonic q = p := by
+  have hpoly : (p.modByMonic q + q * p.divByMonic q).toPoly = p.toPoly := by
+    rw [toPoly_add, toPoly_mul, divByMonic_toPoly_eq_divByMonic p q hmonic,
+      modByMonic_toPoly_eq_modByMonic p q hmonic]
+    exact Polynomial.modByMonic_add_div p.toPoly q.toPoly
+  apply CPolynomial.eq_iff_coeff.2
+  intro i
+  rw [CPolynomial.coeff_toPoly, CPolynomial.coeff_toPoly]
+  exact congrArg (fun r : R[X] => r.coeff i) hpoly
+
+end
+
+section Division
+variable [Field R] [BEq R] [LawfulBEq R]
 
 /-- Any nonzero polynomial scaled by the inverse of its leading
 coefficient is monic. -/

@@ -1,5 +1,7 @@
 import CompPoly.Bivariate.Basic
 import CompPoly.Bivariate.CMvEquiv
+import CompPoly.Bivariate.Factor
+import CompPoly.Bivariate.FactorMonic
 import CompPoly.Bivariate.ToPoly
 import CompPoly.Data.Array.Lemmas
 import CompPoly.Data.Classes.DCast
