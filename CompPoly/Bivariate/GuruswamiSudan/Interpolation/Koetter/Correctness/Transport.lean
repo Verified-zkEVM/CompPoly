@@ -513,7 +513,8 @@ theorem koetterProcessConstraint_span_contains_of_discrepancy_zero {F : Type*}
   | none =>
       simpa using hspan
   | some pivot =>
-      simp
+      change koetterBasisSpanContains
+        (koetterUpdateBasis constraint state.basis pivot) Q
       rcases koetterSelectPivot_some_discrepancy hpivot with ⟨hpivotDisc, hpivotNe⟩
       exact koetterUpdateBasis_span_contains_of_discrepancy_zero
         constraint state.basis pivot (koetterSelectPivot_some_index_lt hpivot)
@@ -860,7 +861,7 @@ theorem koetterProcessConstraint_yBounded {F : Type*}
   | none =>
       simpa using hBasis
   | some pivot =>
-      simp
+      change koetterBasisYBounded cap (koetterUpdateBasis constraint state.basis pivot)
       exact koetterUpdateBasis_yBounded constraint state.basis pivot hBasis
         (koetterSelectPivot_some_index_lt hpivot)
 

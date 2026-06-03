@@ -1010,7 +1010,9 @@ theorem koetterSelectPivot_some_weightedDegree_le {F : Type*}
         have hnext := hstep best seen idx hbest
         have htail := ih (seen ++ [idx]) (step best idx) hnext
         simpa [List.append_assoc] using htail
-  have hbestLe : bestLe ((List.range basis.size).foldl step none) ([] ++ List.range basis.size) := by
+  have hbestLe :
+      bestLe ((List.range basis.size).foldl step none)
+        ([] ++ List.range basis.size) := by
     exact hfold (List.range basis.size) [] none (by simp [bestLe, nonzero])
   intro idx hidx hdisc
   have hpivotLe := by
@@ -1208,7 +1210,9 @@ theorem koetterSelectPivot_some_not_better {F : Type*}
         have hnext := hstep best seen idx hbest
         have htail := ih (seen ++ [idx]) (step best idx) hnext
         simpa [List.append_assoc] using htail
-  have hbestLe : bestLe ((List.range basis.size).foldl step none) ([] ++ List.range basis.size) := by
+  have hbestLe :
+      bestLe ((List.range basis.size).foldl step none)
+        ([] ++ List.range basis.size) := by
     exact hfold (List.range basis.size) [] none (by simp [bestLe, nonzero])
   intro idx hidx hdisc
   have hpivotNot := by

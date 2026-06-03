@@ -465,7 +465,7 @@ theorem koetterProcessConstraint_weakLeading {F : Type*}
   | none =>
       simpa using hBasis
   | some pivot =>
-      simp
+      change koetterBasisWeakLeading params (koetterUpdateBasis constraint state.basis pivot)
       exact koetterUpdateBasis_weakLeading hBasis hpivot
 
 theorem koetterProcessConstraints_weakLeading {F : Type*}
