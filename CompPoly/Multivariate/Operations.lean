@@ -454,6 +454,44 @@ attribute [grind =]
   aeval_C aeval_X aeval_add aeval_mul
   aeval_zero aeval_one aeval_pow aeval_neg aeval_sub
 
+
+/-- The computable substitution `bind₁` agrees with Mathlib substitution after
+transporting through `fromCMvPolynomial`. -/
+theorem fromCMvPolynomial_bind₁ {n m : ℕ} {R : Type*} [CommSemiring R] [BEq R]
+    [LawfulBEq R] (f : Fin n → CMvPolynomial m R) (p : CMvPolynomial n R) :
+    fromCMvPolynomial (bind₁ f p) =
+      MvPolynomial.eval₂ MvPolynomial.C (fun i => fromCMvPolynomial (f i))
+        (fromCMvPolynomial p) := by
+  rw [bind₁_eq_aeval]
+  unfold aeval
+  have h := MvPolynomial.map_eval₂Hom
+    (f := algebraMap R (CMvPolynomial m R))
+    (g := f)
+    (φ := (CPoly.polyRingEquiv (n := m) (R := R)).toRingHom)
+    (p := fromCMvPolynomial p)
+  have hcomp :
+      ((CPoly.polyRingEquiv (n := m) (R := R)).toRingHom).comp
+        (algebraMap R (CMvPolynomial m R)) = MvPolynomial.C := by
+    ext r μ
+    rw [RingHom.comp_apply]
+    change MvPolynomial.coeff μ
+        (fromCMvPolynomial (algebraMap R (CMvPolynomial m R) r)) =
+      MvPolynomial.coeff μ (MvPolynomial.C r)
+    rw [show (algebraMap R (CMvPolynomial m R)) r = CMvPolynomial.C (n := m) r from rfl]
+    rw [fromCMvPolynomial_C]
+  rw [eval₂_equiv (p := p) (f := algebraMap R (CMvPolynomial m R)) (vals := f)]
+  have h' :
+      fromCMvPolynomial
+          (MvPolynomial.eval₂ (algebraMap R (CMvPolynomial m R)) f
+            (fromCMvPolynomial p)) =
+        MvPolynomial.eval₂
+          (((CPoly.polyRingEquiv (n := m) (R := R)).toRingHom).comp
+            (algebraMap R (CMvPolynomial m R)))
+          (fun i => fromCMvPolynomial (f i))
+          (fromCMvPolynomial p) := by
+    simpa [CPoly.polyRingEquiv, CPoly.polyEquiv] using h
+  rw [hcomp] at h'
+  exact h'
 end CMvPolynomial
 
 namespace Lawful
