@@ -20,6 +20,7 @@ import CompPolyTests.Multivariate.TypeclassMinimization
 import CompPolyTests.Multivariate.VarsDegrees
 import CompPolyTests.Univariate.Barycentric
 import CompPolyTests.Univariate.Basic
+import CompPolyTests.Univariate.EuclideanAlgorithm
 import CompPolyTests.Univariate.Linear
 import CompPolyTests.Univariate.NTT.FastMul
 import CompPolyTests.Univariate.NTT.Forward
