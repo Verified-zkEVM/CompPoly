@@ -6,6 +6,7 @@ Authors: Valerii Huhnin
 
 import CompPolyBench.Univariate.Basic
 import CompPolyBench.Univariate.BatchEval
+import CompPolyBench.Univariate.EuclideanAlgorithm
 import CompPolyBench.Univariate.ManyEval
 import CompPolyBench.Univariate.NTT.FastMul
 import CompPolyBench.Univariate.NTT.FastMulLow
@@ -22,6 +23,7 @@ def univariateGroupInfos : List BenchGroupInfo :=
   [
     univariateBasicGroupInfos,
     univariateBatchEvalGroupInfos,
+    univariateEuclideanAlgorithmGroupInfos,
     univariateManyEvalGroupInfos,
     univariateNttFastMulGroupInfos,
     univariateNttFastMulLowGroupInfos,
@@ -33,6 +35,7 @@ def univariateTasks : List BenchTask :=
   [
     univariateBasicTasks,
     univariateBatchEvalTasks,
+    univariateEuclideanAlgorithmTasks,
     univariateManyEvalTasks,
     univariateNttFastMulTasks,
     univariateNttFastMulLowTasks,

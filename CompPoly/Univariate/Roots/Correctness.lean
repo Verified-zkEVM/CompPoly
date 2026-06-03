@@ -6,6 +6,7 @@ Authors: Valerii Huhnin
 
 import CompPoly.Univariate.Roots.Backend
 import CompPoly.Univariate.Roots.SmoothSubgroupCorrectness
+import CompPoly.Univariate.EuclideanAlgorithm
 import CompPoly.Univariate.ToPoly.Impl
 
 /-!
@@ -238,6 +239,20 @@ theorem gcdMonic_root_of_left_right {F : Type*} [Field F] [BEq F] [LawfulBEq F]
   rw [CPolynomial.Raw.eval_trim_eq_eval]
   unfold CPolynomial.Raw.gcdMonic
   exact Raw.eval_gcdMonicWithFuel_eq_zero_of_left_right _ p.val q.val hp hq
+
+/-- The normalized extended gcd contains every common root. -/
+theorem normXgcd_root_of_left_right {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+    {p q : CPolynomial F} {a : F}
+    (hp : CPolynomial.eval a p = 0) (hq : CPolynomial.eval a q = 0) :
+    CPolynomial.eval a (normXgcd p q).1 = 0 := by
+  have hbez := normXgcd_bezout p q 0
+  simp only [Bezout] at hbez
+  rw [hbez]
+  rw [CPolynomial.eval_toPoly, CPolynomial.toPoly_add, CPolynomial.toPoly_mul,
+    CPolynomial.toPoly_mul, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_mul,
+    ← CPolynomial.eval_toPoly, ← CPolynomial.eval_toPoly,
+    ← CPolynomial.eval_toPoly, ← CPolynomial.eval_toPoly]
+  simp [hp, hq]
 
 /-- Roots extracted from a linear factor satisfy that factor. -/
 theorem linearRootOfFactor?_sound {F : Type*} [Field F] [BEq F] [LawfulBEq F]

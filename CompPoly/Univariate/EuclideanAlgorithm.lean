@@ -175,6 +175,24 @@ def normXgcd [Field R] [BEq R] [LawfulBEq R]
   let c := res.1.leadingCoeff⁻¹
   (c • res.1, c • res.2.1, c • res.2.2)
 
+/-- The normalized extended-gcd output still satisfies the Bezout identity. -/
+theorem normXgcd_bezout [Field R] [BEq R] [LawfulBEq R]
+    (p q : CPolynomial R) (threshold : ℕ) :
+    Bezout p q (normXgcd p q threshold) := by
+  unfold normXgcd
+  have h := xgcd_bezout p q threshold
+  simp only [Bezout] at h ⊢
+  rw [h]
+  apply toPolyLinearEquiv.injective
+  change (((p.xgcd q threshold).2.1 * p + (p.xgcd q threshold).2.2 * q).leadingCoeff⁻¹ •
+      ((p.xgcd q threshold).2.1 * p + (p.xgcd q threshold).2.2 * q)).toPoly =
+    (((p.xgcd q threshold).2.1 * p + (p.xgcd q threshold).2.2 * q).leadingCoeff⁻¹ •
+        (p.xgcd q threshold).2.1 * p +
+      ((p.xgcd q threshold).2.1 * p + (p.xgcd q threshold).2.2 * q).leadingCoeff⁻¹ •
+        (p.xgcd q threshold).2.2 * q).toPoly
+  simp only [toPoly_smul, toPoly_add, toPoly_mul, Polynomial.smul_eq_C_mul]
+  ring
+
 /-- The gcd component of CompPoly's `normXgcd` is the normalization
 of Mathlib's `EuclideanDomain.gcd` -/
 theorem normXgcd_fst_toPoly
