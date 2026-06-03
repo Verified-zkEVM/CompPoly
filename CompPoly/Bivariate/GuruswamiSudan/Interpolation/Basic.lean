@@ -156,6 +156,16 @@ def HasInterpolationDimensionSlack {F : Type*}
     (points : Array (Prod F F)) (params : GSInterpParams) : Prop :=
   HasInterpolationDimensionSlackOnBasis (interpolationMonomials params) points params
 
+/-- Executable recognizer for the semantic interpolation witness contract. -/
+def interpolationWitnessIsValidBool {F : Type*}
+    [Semiring F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    (points : Array (F × F)) (params : GSInterpParams) (Q : CBivariate F) : Bool :=
+  !(Q == 0) &&
+    decide
+      (CBivariate.natWeightedDegree Q 1 (yWeight params) ≤
+        params.weightedDegreeBound) &&
+      CBivariate.satisfiesMultiplicityConstraintsBool Q points params.multiplicity
+
 end GuruswamiSudan
 
 end CompPoly

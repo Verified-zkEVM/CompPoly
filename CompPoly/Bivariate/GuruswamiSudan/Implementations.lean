@@ -27,11 +27,11 @@ def koalaBearDenseInterpContext : GSInterpContext KoalaBear.Field :=
 def fastKoalaBearDenseInterpContext : GSInterpContext KoalaBear.Fast.Field :=
   denseInterpContext KoalaBear.Fast.Field
 
-/-- Koetter-first interpolation backend over canonical KoalaBear, with dense fallback. -/
+/-- Direct Koetter interpolation backend over canonical KoalaBear. -/
 def koalaBearKoetterInterpContext : GSInterpContext KoalaBear.Field :=
   koetterInterpContext KoalaBear.Field
 
-/-- Koetter-first interpolation backend over native-word fast KoalaBear, with dense fallback. -/
+/-- Direct Koetter interpolation backend over native-word fast KoalaBear. -/
 def fastKoalaBearKoetterInterpContext : GSInterpContext KoalaBear.Fast.Field :=
   koetterInterpContext KoalaBear.Fast.Field
 

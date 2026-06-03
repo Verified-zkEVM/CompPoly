@@ -102,7 +102,7 @@ private def checksumInterpolationWitnessOption {F : Type*}
   match Q? with
   | none => 0
   | some Q =>
-      let validity := if koetterWitnessIsValidBool points params Q then 1 else 0
+      let validity := if interpolationWitnessIsValidBool points params Q then 1 else 0
       match normalizeVector? (interpolationCoefficientVector params Q) with
       | none => validity
       | some coeffs => mixChecksum validity (checksumArray checksum coeffs)

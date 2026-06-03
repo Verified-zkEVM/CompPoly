@@ -77,19 +77,19 @@ private def oneStepState : KoetterState F3 :=
 #guard (koetterInterpolate lowPoints lowParams).isSome
 #guard match koetterInterpolate lowPoints lowParams with
   | none => false
-  | some Q => koetterWitnessIsValidBool lowPoints lowParams Q
+  | some Q => interpolationWitnessIsValidBool lowPoints lowParams Q
 
 #guard (koetterInterpolate points params).isSome
 #guard match koetterInterpolate points params with
   | none => false
-  | some Q => koetterWitnessIsValidBool points params Q
+  | some Q => interpolationWitnessIsValidBool points params Q
 
 #guard ((koetterInterpContext F3).interpolate points params).isSome
 
 #guard match denseInterpolate points params, koetterInterpolate points params with
   | some denseQ, some koetterQ =>
-      koetterWitnessIsValidBool points params denseQ &&
-        koetterWitnessIsValidBool points params koetterQ
+      interpolationWitnessIsValidBool points params denseQ &&
+        interpolationWitnessIsValidBool points params koetterQ
   | _, _ => false
 
 #guard (gsCore points (koetterInterpContext F3) rootContext params).size <= 3

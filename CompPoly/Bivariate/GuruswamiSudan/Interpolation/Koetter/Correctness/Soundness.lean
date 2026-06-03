@@ -9,133 +9,13 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness.Updat
 /-!
 # Koetter Interpolation Soundness
 
-Semantic witness checking, constraint-order invariants, and soundness theorems for direct Koetter interpolation.
+Constraint-order invariants and soundness theorems for direct Koetter
+interpolation.
 -/
 
 namespace CompPoly
 
 namespace GuruswamiSudan
-
-theorem derivativeOrders_mem_of_lt {a b m : Nat} (h : a + b < m) :
-    (a, b) ∈ (CBivariate.derivativeOrders m).toList := by
-  unfold CBivariate.derivativeOrders CBivariate.derivativeOrderGrid
-  simp [h]
-  constructor <;> omega
-
-theorem multiplicityAtLeast_of_bool {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    {Q : CBivariate F} {x y : F} {m : Nat}
-    (h : CBivariate.multiplicityAtLeastBool Q x y m = true) :
-    CBivariate.HasMultiplicityAtLeast Q x y m := by
-  intro a b hab
-  unfold CBivariate.multiplicityAtLeastBool at h
-  have hmemList : (a, b) ∈ (CBivariate.derivativeOrders m).toList :=
-    derivativeOrders_mem_of_lt hab
-  have hmem : (a, b) ∈ CBivariate.derivativeOrders m := Array.mem_def.mpr hmemList
-  simpa using (Array.all_eq_true'.mp h (a, b) hmem)
-
-theorem satisfiesMultiplicityConstraints_of_bool {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    {Q : CBivariate F} {points : Array (F × F)} {m : Nat}
-    (h : CBivariate.satisfiesMultiplicityConstraintsBool Q points m = true) :
-    CBivariate.SatisfiesMultiplicityConstraints Q points m := by
-  intro point hpointList
-  unfold CBivariate.satisfiesMultiplicityConstraintsBool at h
-  have hpoint : point ∈ points := Array.mem_def.mpr hpointList
-  have hpointAll := Array.all_eq_true'.mp h point hpoint
-  exact multiplicityAtLeast_of_bool hpointAll
-
-theorem derivativeOrders_lt_of_mem {m : Nat} {order : Nat × Nat}
-    (h : order ∈ CBivariate.derivativeOrders m) :
-    order.1 + order.2 < m := by
-  have hList : order ∈ (CBivariate.derivativeOrders m).toList := Array.mem_def.mp h
-  unfold CBivariate.derivativeOrders CBivariate.derivativeOrderGrid at hList
-  simp at hList
-  omega
-
-theorem multiplicityAtLeastBool_of_prop {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    {Q : CBivariate F} {x y : F} {m : Nat}
-    (h : CBivariate.HasMultiplicityAtLeast Q x y m) :
-    CBivariate.multiplicityAtLeastBool Q x y m = true := by
-  unfold CBivariate.multiplicityAtLeastBool
-  apply Array.all_eq_true'.mpr
-  intro order horder
-  rcases order with ⟨a, b⟩
-  have hab : a + b < m := derivativeOrders_lt_of_mem horder
-  simp [h a b hab]
-
-theorem satisfiesMultiplicityConstraintsBool_of_prop {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    {Q : CBivariate F} {points : Array (F × F)} {m : Nat}
-    (h : CBivariate.SatisfiesMultiplicityConstraints Q points m) :
-    CBivariate.satisfiesMultiplicityConstraintsBool Q points m = true := by
-  unfold CBivariate.satisfiesMultiplicityConstraintsBool
-  apply Array.all_eq_true'.mpr
-  intro point hpoint
-  exact multiplicityAtLeastBool_of_prop (h point (Array.mem_def.mp hpoint))
-
-/-- The executable Koetter witness recognizer implies the semantic witness contract. -/
-theorem koetterWitnessIsValidBool_sound {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    {points : Array (F × F)} {params : GSInterpParams} {Q : CBivariate F}
-    (h : koetterWitnessIsValidBool points params Q = true) :
-    ValidInterpolationWitness points params Q := by
-  unfold koetterWitnessIsValidBool at h
-  rw [Bool.and_eq_true] at h
-  rcases h with ⟨hhead, hmultBool⟩
-  rw [Bool.and_eq_true] at hhead
-  rcases hhead with ⟨hneBool, hdegBool⟩
-  refine ⟨?_, ?_, ?_⟩
-  · intro hzero
-    subst Q
-    simp at hneBool
-  · exact of_decide_eq_true hdegBool
-  · exact satisfiesMultiplicityConstraints_of_bool hmultBool
-
-theorem koetterWitnessIsValidBool_complete {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    {points : Array (F × F)} {params : GSInterpParams} {Q : CBivariate F}
-    (h : ValidInterpolationWitness points params Q) :
-    koetterWitnessIsValidBool points params Q = true := by
-  rcases h with ⟨hne, hdeg, hmult⟩
-  unfold koetterWitnessIsValidBool
-  have hneBool : (Q == 0) = false := by
-    rw [beq_eq_false_iff_ne]
-    exact hne
-  simp [hneBool, hdeg, satisfiesMultiplicityConstraintsBool_of_prop hmult]
-
-/-- Soundness for a checked raw direct Koetter interpolation result. -/
-theorem koetterCheckedRawInterpolate_sound {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    {points : Array (F × F)} {params : GSInterpParams} {Q : CBivariate F}
-    (h : koetterCheckedRawInterpolate points params = some Q) :
-    ValidInterpolationWitness points params Q := by
-  unfold koetterCheckedRawInterpolate at h
-  cases hraw : koetterRawInterpolate points params with
-  | none =>
-      simp [hraw] at h
-  | some rawQ =>
-      by_cases hvalid : koetterWitnessIsValidBool points params rawQ = true
-      · simp [hraw, hvalid] at h
-        cases h
-        exact koetterWitnessIsValidBool_sound hvalid
-      · simp [hraw, hvalid] at h
-
-/-- Soundness for any polynomial returned by direct Koetter interpolation. -/
-theorem koetterInterpolate_sound {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    {points : Array (F × F)} {params : GSInterpParams} {Q : CBivariate F}
-    (h : koetterInterpolate points params = some Q) :
-    ValidInterpolationWitness points params Q := by
-  unfold koetterInterpolate at h
-  by_cases hLow : params.messageDegree ≤ 1
-  · simp [hLow] at h
-    cases h
-    simpa using lowMessageDegreeInterpolation_sound (points := points)
-      (params := params) hLow
-  · simp [hLow] at h
-    exact koetterCheckedRawInterpolate_sound h
 
 def lowerXConstraint {F : Type*} (constraint : InterpolationConstraint F) (a : Nat) :
     InterpolationConstraint F :=
@@ -290,7 +170,10 @@ theorem interpolationConstraints_toList_eq_list {F : Type*}
     (interpolationConstraints points multiplicity).toList =
       interpolationConstraintsList points multiplicity := by
   unfold interpolationConstraints interpolationConstraintsList
-  simp
+  simp only [bind_pure_comp, map_pure, Std.Legacy.Range.forIn_eq_forIn_range',
+    Std.Legacy.Range.size, tsub_zero, add_tsub_cancel_right, Nat.div_one,
+    List.forIn_pure_yield_eq_foldl, List.foldl_push_eq_append,
+    Array.forIn_pure_yield_eq_foldl, bind_pure, Id.run_pure]
   have hrange : ∀ n, List.range' 0 n = List.range n := by
     intro n
     exact (List.range_eq_range' (n := n)).symm
@@ -310,7 +193,7 @@ theorem interpolationConstraints_toList_eq_list {F : Type*}
     funext b point
     exact interpolationConstraintsPointStep_eq_append point multiplicity b]
   rw [array_foldl_append_toArray_toList]
-  simp
+  simp only [List.nil_append]
 
 theorem interpolationConstraintsList_lowerBefore {F : Type*}
     (points : Array (F × F)) (multiplicity : Nat) :
@@ -542,6 +425,21 @@ theorem koetterRawInterpolate_sound_of_messageDegree_gt_one {F : Type*}
     rw [interpolationConstraints_toList_eq_list]
     exact interpolationConstraintsList_lowerBefore points params.multiplicity
   exact koetterRawInterpolate_sound_of_lowerBefore hbefore h
+
+/-- Soundness for any polynomial returned by direct Koetter interpolation. -/
+theorem koetterInterpolate_sound {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    {points : Array (F × F)} {params : GSInterpParams} {Q : CBivariate F}
+    (h : koetterInterpolate points params = some Q) :
+    ValidInterpolationWitness points params Q := by
+  unfold koetterInterpolate at h
+  by_cases hLow : params.messageDegree ≤ 1
+  · simp [hLow] at h
+    cases h
+    simpa using lowMessageDegreeInterpolation_sound (points := points)
+      (params := params) hLow
+  · simp [hLow] at h
+    exact koetterRawInterpolate_sound_of_messageDegree_gt_one hLow h
 
 end GuruswamiSudan
 

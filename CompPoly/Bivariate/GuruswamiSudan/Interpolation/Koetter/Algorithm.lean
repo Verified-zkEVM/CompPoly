@@ -13,7 +13,7 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Basic
 Executable direct-`CBivariate` Koetter interpolation. This is an additional
 interpolation implementation alongside dense linear-system interpolation. The
 public `koetterInterpolate` operation uses the existing low-message-degree
-constructive branch, and otherwise returns the checked direct Koetter result.
+constructive branch, and otherwise returns the raw direct Koetter result.
 -/
 
 namespace CompPoly
@@ -128,7 +128,7 @@ def koetterSelectFinal? {F : Type*}
       else
         none
 
-/-- Raw positive-message Koetter interpolation, before semantic witness checking. -/
+/-- Raw positive-message Koetter interpolation. -/
 def koetterRawInterpolate {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (points : Array (Prod F F)) (params : GSInterpParams) :
@@ -138,26 +138,8 @@ def koetterRawInterpolate {F : Type*}
     (koetterInitialState params)
   koetterSelectFinal? params finalState.basis
 
-/-- Executable semantic witness recognizer used to keep the public output certified. -/
-def koetterWitnessIsValidBool {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    (points : Array (F × F)) (params : GSInterpParams) (Q : CBivariate F) : Bool :=
-  !(Q == 0) &&
-    decide (CBivariate.natWeightedDegree Q 1 (yWeight params) ≤ params.weightedDegreeBound) &&
-      CBivariate.satisfiesMultiplicityConstraintsBool Q points params.multiplicity
-
-/-- Direct positive-message Koetter interpolation with a semantic output guard. -/
-def koetterCheckedRawInterpolate {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    (points : Array (Prod F F)) (params : GSInterpParams) :
-    Option (CBivariate F) :=
-  match koetterRawInterpolate points params with
-  | none => none
-  | some Q =>
-      if koetterWitnessIsValidBool points params Q then some Q else none
-
-/-- Koetter interpolation with the existing low-message branch and checked
-direct positive-message Koetter pass. -/
+/-- Koetter interpolation with the existing low-message branch and raw direct
+positive-message Koetter pass. -/
 def koetterInterpolate {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (points : Array (Prod F F)) (params : GSInterpParams) :
@@ -165,7 +147,7 @@ def koetterInterpolate {F : Type*}
   if params.messageDegree ≤ 1 then
     some (lowMessageDegreeInterpolation points params.multiplicity)
   else
-    koetterCheckedRawInterpolate points params
+    koetterRawInterpolate points params
 
 end GuruswamiSudan
 

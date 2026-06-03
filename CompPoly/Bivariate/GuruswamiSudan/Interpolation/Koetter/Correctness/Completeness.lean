@@ -141,24 +141,6 @@ theorem koetterRawInterpolate_complete_of_messageDegree_gt_one {F : Type*}
   refine ⟨idx, hi, hne, ?_⟩
   exact le_trans hdegLeQ hQ.2.1
 
-/-- Checked direct Koetter completeness proof obligation for the public
-positive-message branch. -/
-theorem koetterCheckedRawInterpolate_complete_of_messageDegree_gt_one {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    {points : Array (F × F)} {params : GSInterpParams}
-    (hMessage : ¬ params.messageDegree ≤ 1) :
-    (exists Q, ValidInterpolationWitness points params Q) →
-      exists Q, koetterCheckedRawInterpolate points params = some Q := by
-  intro hExists
-  rcases koetterRawInterpolate_complete_of_messageDegree_gt_one
-      (F := F) (points := points) (params := params) hMessage hExists with
-    ⟨Q, hQ⟩
-  have hWitness := koetterRawInterpolate_sound_of_messageDegree_gt_one
-    (F := F) (points := points) (params := params) hMessage hQ
-  refine ⟨Q, ?_⟩
-  unfold koetterCheckedRawInterpolate
-  simp [hQ, koetterWitnessIsValidBool_complete hWitness]
-
 /-- Completeness for the public Koetter interpolation operation.
 
 For positive message degree this is the direct Koetter completeness statement,
@@ -174,7 +156,7 @@ theorem koetterInterpolate_complete {F : Type*}
   · refine ⟨lowMessageDegreeInterpolation points params.multiplicity, ?_⟩
     simp [hLow]
   · simp [hLow]
-    exact koetterCheckedRawInterpolate_complete_of_messageDegree_gt_one
+    exact koetterRawInterpolate_complete_of_messageDegree_gt_one
       (F := F) (points := points) (params := params) hLow hExists
 
 /-- Public Koetter interpolation context.
