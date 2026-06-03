@@ -417,29 +417,11 @@ theorem koetterSelectFinal?_some_of_exists_entry {F : Type*}
                 ({ index := idx
                    discrepancy := 0
                    weightedDegree :=
-                    CBivariate.natWeightedDegree (basis.getD idx 0) 1 (yWeight params) } :
+                    CBivariate.natWeightedDegree (basis[idx]?.getD 0) 1 (yWeight params) } :
                   KoetterPivot F)
                 current = true
-          · have hbetter' :
-                koetterPivotBetter
-                  ({ index := idx
-                     discrepancy := 0
-                     weightedDegree :=
-                      CBivariate.natWeightedDegree (basis[idx]?.getD 0) 1 (yWeight params) } :
-                    KoetterPivot F)
-                  current = true := by
-              simpa [Array.getD_eq_getD_getElem?] using hbetter
-            simp [hzero', hbetter', Array.getD_eq_getD_getElem?]
-          · have hbetter' :
-                ¬koetterPivotBetter
-                  ({ index := idx
-                     discrepancy := 0
-                     weightedDegree :=
-                      CBivariate.natWeightedDegree (basis[idx]?.getD 0) 1 (yWeight params) } :
-                    KoetterPivot F)
-                  current = true := by
-              simpa [Array.getD_eq_getD_getElem?] using hbetter
-            simpa [hzero', hbetter'] using hbest
+          · simp [hzero', hbetter, Array.getD_eq_getD_getElem?]
+          · simpa [hzero', hbetter] using hbest
   have hstep_bounded_preserve : ∀ best idx, boundedBest best → boundedBest (step best idx) := by
     intro best idx hbest
     unfold boundedBest step degree at *
@@ -456,39 +438,17 @@ theorem koetterSelectFinal?_some_of_exists_entry {F : Type*}
                 ({ index := idx
                    discrepancy := 0
                    weightedDegree :=
-                    CBivariate.natWeightedDegree (basis.getD idx 0) 1 (yWeight params) } :
+                    CBivariate.natWeightedDegree (basis[idx]?.getD 0) 1 (yWeight params) } :
                   KoetterPivot F)
                 current = true
-          · have hbetter' :
-                koetterPivotBetter
-                  ({ index := idx
-                     discrepancy := 0
-                     weightedDegree :=
-                      CBivariate.natWeightedDegree (basis[idx]?.getD 0) 1 (yWeight params) } :
-                    KoetterPivot F)
-                  current = true := by
-              simpa [Array.getD_eq_getD_getElem?] using hbetter
-            have hle := koetterPivotBetter_weightedDegree_le hbetter
+          · have hle := koetterPivotBetter_weightedDegree_le hbetter
             have hbound :
                 CBivariate.natWeightedDegree (basis[idx]?.getD 0) 1 (yWeight params) ≤
-                  params.weightedDegreeBound := by
-              have hboundGetD :
-                  CBivariate.natWeightedDegree (basis.getD idx 0) 1 (yWeight params) ≤
-                    params.weightedDegreeBound :=
-                le_trans hle hbest.2
-              simpa [Array.getD_eq_getD_getElem?] using hboundGetD
-            simp [hzero', hbetter', Array.getD_eq_getD_getElem?]
+                  params.weightedDegreeBound :=
+              le_trans hle hbest.2
+            simp [hzero', hbetter, Array.getD_eq_getD_getElem?]
             exact hbound
-          · have hbetter' :
-                ¬koetterPivotBetter
-                  ({ index := idx
-                     discrepancy := 0
-                     weightedDegree :=
-                      CBivariate.natWeightedDegree (basis[idx]?.getD 0) 1 (yWeight params) } :
-                    KoetterPivot F)
-                  current = true := by
-              simpa [Array.getD_eq_getD_getElem?] using hbetter
-            simpa [hzero', hbetter'] using hbest
+          · simpa [hzero', hbetter] using hbest
   have hstep_of_entry : ∀ best idx, wellBest best → boundedEntry idx →
       boundedBest (step best idx) := by
     intro best idx hwell hentry
@@ -509,33 +469,15 @@ theorem koetterSelectFinal?_some_of_exists_entry {F : Type*}
               ({ index := idx
                  discrepancy := 0
                  weightedDegree :=
-                  CBivariate.natWeightedDegree (basis.getD idx 0) 1 (yWeight params) } :
+                  CBivariate.natWeightedDegree (basis[idx]?.getD 0) 1 (yWeight params) } :
                 KoetterPivot F)
               current = true
-        · have hbetter' :
-              koetterPivotBetter
-                ({ index := idx
-                   discrepancy := 0
-                   weightedDegree :=
-                    CBivariate.natWeightedDegree (basis[idx]?.getD 0) 1 (yWeight params) } :
-                  KoetterPivot F)
-                current = true := by
-            simpa [Array.getD_eq_getD_getElem?] using hbetter
-          simp [hzero', hbetter', Array.getD_eq_getD_getElem?]
+        · simp [hzero', hbetter, Array.getD_eq_getD_getElem?]
           exact hbound'
-        · have hbetter' :
-              ¬koetterPivotBetter
-                ({ index := idx
-                   discrepancy := 0
-                   weightedDegree :=
-                    CBivariate.natWeightedDegree (basis[idx]?.getD 0) 1 (yWeight params) } :
-                  KoetterPivot F)
-                current = true := by
-            simpa [Array.getD_eq_getD_getElem?] using hbetter
-          have hcurrentLe := koetterPivotBetter_not_weightedDegree_le hbetter
+        · have hcurrentLe := koetterPivotBetter_not_weightedDegree_le hbetter
           have hcurrentBound : current.weightedDegree ≤ params.weightedDegreeBound :=
-            le_trans hcurrentLe hbound
-          simpa [hzero', hbetter'] using (And.intro hwell hcurrentBound)
+            le_trans hcurrentLe hbound'
+          simpa [hzero', hbetter] using (And.intro hwell hcurrentBound)
   have hfold : ∀ (xs : List Nat) best,
       wellBest best →
       boundedBest best ∨ (∃ idx, idx ∈ xs ∧ boundedEntry idx) →

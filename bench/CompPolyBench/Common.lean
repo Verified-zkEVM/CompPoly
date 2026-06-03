@@ -767,14 +767,19 @@ def implementationLabel (record : BenchRecord) : String :=
       | some label => label
       | none => record.method
 
+/-- Record-specific implementation names whose labels already include the field variant. -/
+def implementationNamesWithField : List String := [
+  "guruswami-sudan-root-roth-fast",
+  "guruswami-sudan-root-roth-fast-nttfast",
+  "guruswami-sudan-core-dense-roth-fast",
+  "guruswami-sudan-core-dense-roth-fast-nttfast",
+  "guruswami-sudan-filtered-core-fast",
+  "guruswami-sudan-filtered-core-fast-nttfast"
+]
+
 /-- Whether a record-specific implementation label already includes the field variant. -/
 def implementationLabelIncludesField (record : BenchRecord) : Bool :=
-  record.name == "guruswami-sudan-root-roth-fast" ||
-    record.name == "guruswami-sudan-root-roth-fast-nttfast" ||
-      record.name == "guruswami-sudan-core-dense-roth-fast" ||
-        record.name == "guruswami-sudan-core-dense-roth-fast-nttfast" ||
-          record.name == "guruswami-sudan-filtered-core-fast" ||
-            record.name == "guruswami-sudan-filtered-core-fast-nttfast"
+  implementationNamesWithField.contains record.name
 
 /-- Implementation label that includes the field only when rows mix field representations. -/
 def implementationLabelInGroup (records : List BenchRecord) (record : BenchRecord) : String :=

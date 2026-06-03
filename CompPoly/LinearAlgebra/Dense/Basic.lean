@@ -81,4 +81,3 @@ def IsHomogeneousSolution [Semiring F] (M : DenseMatrix F) (v : Array F) : Prop 
 end DenseMatrix
 
 end CompPoly
-

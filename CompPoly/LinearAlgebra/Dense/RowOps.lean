@@ -103,4 +103,3 @@ def rref [Field F] [BEq F] (M : DenseMatrix F) : RrefResult F :=
 end DenseMatrix
 
 end CompPoly
-

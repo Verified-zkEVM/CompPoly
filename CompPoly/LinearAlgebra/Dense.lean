@@ -12,4 +12,3 @@ import CompPoly.LinearAlgebra.Dense.KernelCorrectness
 Facade module for dense row-major matrices, row operations, homogeneous-kernel
 extraction, and their correctness contracts.
 -/
-

@@ -57,4 +57,3 @@ def homogeneousWitness [Field F] [BEq F] (M : DenseMatrix F) : Option (Array F) 
 end DenseMatrix
 
 end CompPoly
-
