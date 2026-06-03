@@ -961,6 +961,24 @@ instance [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] : Semiring (CPolynomi
   natCast_zero := by rfl
   natCast_succ := by intro n; rfl
 
+@[simp]
+lemma natCast_eq_C [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (n : ℕ) : (↑n : CPolynomial R) = C (↑n : R) := by
+  induction n with
+  | zero =>
+    rw [Nat.cast_zero, Nat.cast_zero]
+    rw [eq_iff_coeff]
+    intro i; rw [coeff_zero, coeff_C]
+    split_ifs <;> simp
+  | succ n ih =>
+    rw [Nat.cast_add (R := CPolynomial R) n 1,
+      Nat.cast_one (R := CPolynomial R),
+      Nat.cast_add (R := R) n 1,
+      Nat.cast_one (R := R), ih, eq_iff_coeff]
+    intro i
+    simp only [coeff_add, coeff_C, coeff_one]
+    split_ifs <;> simp_all
+
 /-- The underlying `Raw` value of `p ^ n` equals `p.val ^ n`
 (using the Raw `Pow` instance). This bridges the optimized
 `powBySq` used in the `Semiring` instance with the spec
@@ -989,6 +1007,14 @@ lemma C_mul_X_pow_eq_monomial [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R]
   · rw [show (Raw.C r).trim = Raw.C r from Trim.canonical_iff.mpr fun hp ↦ hr,
         Raw.C_mul_eq_smul_trim, Raw.X_pow_eq_monomial_one]
     exact Raw.smul_monomial_one_trim n r
+
+/-- Distribute `CPolynomial.coeff` over a `Finset.sum`. -/
+lemma coeff_finset_sum [Semiring R] [BEq R] [LawfulBEq R]
+    {ι : Type*} [DecidableEq ι] (s : Finset ι) (f : ι → CPolynomial R) (n : ℕ) :
+    coeff (s.sum f) n = s.sum (fun i => coeff (f i) n) := by
+  induction s using Finset.induction with
+  | empty => simp only [Finset.sum_empty, coeff_zero]
+  | insert _ _ hna ih => rw [Finset.sum_insert hna, coeff_add, ih, Finset.sum_insert hna]
 
 end Semiring
 
