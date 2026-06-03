@@ -254,6 +254,24 @@ theorem normXgcd_root_of_left_right {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     ← CPolynomial.eval_toPoly, ← CPolynomial.eval_toPoly]
   simp [hp, hq]
 
+/-- The specialized monic gcd and normalized extended gcd have the same root
+predicate. -/
+theorem eval_gcdMonic_eq_zero_iff_normXgcd_fst_eq_zero
+    {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
+    (a : F) (p q : CPolynomial F) :
+    CPolynomial.eval a (CPolynomial.gcdMonic p q) = 0 ↔
+      CPolynomial.eval a ((CPolynomial.normXgcd p q).1) = 0 := by
+  rw [CPolynomial.gcdMonic_eq_normXgcd_fst]
+
+/-- The normalized extended-gcd first component contains every common root. -/
+theorem normXgcd_fst_root_of_left_right
+    {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
+    {a : F} {p q : CPolynomial F}
+    (hp : CPolynomial.eval a p = 0)
+    (hq : CPolynomial.eval a q = 0) :
+    CPolynomial.eval a ((CPolynomial.normXgcd p q).1) = 0 := by
+  exact normXgcd_root_of_left_right hp hq
+
 /-- Roots extracted from a linear factor satisfy that factor. -/
 theorem linearRootOfFactor?_sound {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     {factor : CPolynomial F} {a : F}

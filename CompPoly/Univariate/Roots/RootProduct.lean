@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 
 import CompPoly.Univariate.Raw.Modular
+import CompPoly.Univariate.EuclideanAlgorithm
 import CompPoly.Univariate.Roots.Context
 
 /-!
@@ -132,6 +133,56 @@ private theorem raw_monicNormalize_trim {F : Type*} [Field F] [BEq F] [LawfulBEq
           exact (hlast hlead0).elim
       · exact hr
     · simpa [q] using CPolynomial.Raw.Trim.trim_twice p
+
+private theorem raw_xPowSubXModWith_trim {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (q : Nat) (modulus : CPolynomial.Raw F) :
+    (CPolynomial.Raw.xPowSubXModWith M D q modulus).trim =
+      CPolynomial.Raw.xPowSubXModWith M D q modulus := by
+  unfold CPolynomial.Raw.xPowSubXModWith
+  exact CPolynomial.Raw.Trim.trim_twice _
+
+/-- The finite-field root product agrees with the normalized Mathlib gcd of the
+monic input and its represented Frobenius witness. -/
+theorem finiteFieldRootProductWith_toPoly_eq_normalize_gcd {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (ctx : OddFiniteFieldContext F) {p : CPolynomial F}
+    (hp : p ≠ 0) :
+    let pMonic := CPolynomial.monicNormalize p
+    (finiteFieldRootProductWith M D ctx p).toPoly =
+      normalize (EuclideanDomain.gcd pMonic.toPoly
+        (CPolynomial.ofArray
+          (CPolynomial.Raw.xPowSubXModWith M D ctx.q pMonic.val)).toPoly) := by
+  dsimp
+  unfold finiteFieldRootProductWith
+  unfold CPolynomial.Raw.Roots.FiniteField.finiteFieldRootProductWith
+  have hpraw : p.val.trim ≠ (0 : CPolynomial.Raw F) := by
+    intro hpraw0
+    apply hp
+    apply CPolynomial.ext
+    rw [CPolynomial.trim_eq] at hpraw0
+    simpa using hpraw0
+  have hpzero : ¬(p.val.trim == (0 : CPolynomial.Raw F)) := by
+    intro hzero
+    exact hpraw (LawfulBEq.eq_of_beq hzero)
+  rw [if_neg hpzero]
+  have hpMonicVal :
+      (CPolynomial.monicNormalize p).val = CPolynomial.Raw.monicNormalize p.val := by
+    unfold CPolynomial.monicNormalize CPolynomial.ofArray
+    change (CPolynomial.Raw.monicNormalize p.val).trim =
+      CPolynomial.Raw.monicNormalize p.val
+    exact raw_monicNormalize_trim p.val
+  rw [← hpMonicVal]
+  let witnessRaw :=
+    CPolynomial.Raw.xPowSubXModWith M D ctx.q (CPolynomial.monicNormalize p).val
+  have hwitnessTrim : witnessRaw.trim = witnessRaw := by
+    dsimp [witnessRaw]
+    exact raw_xPowSubXModWith_trim M D ctx.q (CPolynomial.monicNormalize p).val
+  simpa [CPolynomial.gcdMonic, CPolynomial.ofArray, witnessRaw, hwitnessTrim] using
+    CPolynomial.gcdMonic_toPoly_eq_normalize_gcd
+      (CPolynomial.monicNormalize p) (CPolynomial.ofArray witnessRaw)
 
 private theorem raw_gcdMonicWithFuel_trim_ne_zero_of_left {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] :
