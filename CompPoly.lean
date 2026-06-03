@@ -20,6 +20,13 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Algorithm
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Basic
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness.Algebra
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness.Combinations
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness.Completeness
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness.Selection
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness.Soundness
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness.Transport
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness.Update
 import CompPoly.Bivariate.GuruswamiSudan.Monomials
 import CompPoly.Bivariate.GuruswamiSudan.Polynomial
 import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
