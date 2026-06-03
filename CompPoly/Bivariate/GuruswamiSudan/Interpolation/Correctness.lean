@@ -25,7 +25,50 @@ theorem interpolationWitnessIsValidBool_iff {F : Type*}
     {points : Array (F × F)} {params : GSInterpParams} {Q : CBivariate F} :
     interpolationWitnessIsValidBool points params Q = true ↔
       ValidInterpolationWitness points params Q := by
-  sorry
+  have horders_mem : ∀ m a b,
+      a + b < m → (a, b) ∈ (CBivariate.derivativeOrders m).toList := by
+    intro m a b hlt
+    simp [CBivariate.derivativeOrders, CBivariate.derivativeOrderGrid]
+    omega
+  have horders_sound : ∀ m order,
+      order ∈ (CBivariate.derivativeOrders m).toList → order.1 + order.2 < m := by
+    intro m order h
+    simp [CBivariate.derivativeOrders] at h
+    exact h.2
+  have hpoint : ∀ x y m,
+      CBivariate.multiplicityAtLeastBool Q x y m = true ↔
+        CBivariate.HasMultiplicityAtLeast Q x y m := by
+    intro x y m
+    simp [CBivariate.multiplicityAtLeastBool, CBivariate.HasMultiplicityAtLeast]
+    constructor
+    · intro h a b hab
+      rcases List.getElem_of_mem (horders_mem m a b hab) with ⟨i, hi, hget⟩
+      have horder : (CBivariate.derivativeOrders m)[i] = (a, b) := by
+        simpa [Array.getElem_toList] using hget
+      have hzero := h i (by simpa using hi)
+      simpa [horder] using hzero
+    · intro h i hi
+      exact h _ _ (horders_sound m _ (Array.getElem_mem_toList hi))
+  have hbatch :
+      CBivariate.satisfiesMultiplicityConstraintsBool Q points params.multiplicity = true ↔
+        CBivariate.SatisfiesMultiplicityConstraints Q points params.multiplicity := by
+    simp [CBivariate.satisfiesMultiplicityConstraintsBool,
+      CBivariate.SatisfiesMultiplicityConstraints]
+    constructor
+    · intro h x y hmem
+      have hmemList : (x, y) ∈ points.toList := by
+        simpa only [Array.mem_def] using hmem
+      rcases List.getElem_of_mem hmemList with ⟨i, hi, hget⟩
+      have hpt : points[i] = (x, y) := by
+        simpa [Array.getElem_toList] using hget
+      have hthis := h i (by simpa using hi)
+      exact (hpoint x y params.multiplicity).1 (by simpa [hpt] using hthis)
+    · intro h i hi
+      apply (hpoint points[i].1 points[i].2 params.multiplicity).2
+      apply h points[i].1 points[i].2
+      simpa only [Array.mem_def] using (Array.getElem_mem_toList hi)
+  simp [interpolationWitnessIsValidBool, ValidInterpolationWitness, hbatch]
+  tauto
 
 private noncomputable def lowMessageYPolynomial {F : Type*} [Field F]
     (points : Array (F × F)) (multiplicity : Nat) : Polynomial F :=

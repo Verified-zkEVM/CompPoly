@@ -179,6 +179,13 @@ def ofArray [Zero R] [BEq R] [LawfulBEq R]
   let raw : CPolynomial.Raw R := coeffs
   ⟨raw.trim, Trim.isCanonical_trim raw⟩
 
+/-- Coefficients of `ofArray` are exactly the source array entries, with zero default. -/
+theorem coeff_ofArray [Zero R] [BEq R] [LawfulBEq R]
+    (coeffs : Array R) (i : Nat) :
+    (CPolynomial.ofArray coeffs).coeff i = coeffs.getD i 0 := by
+  unfold CPolynomial.coeff CPolynomial.ofArray
+  rw [CPolynomial.Raw.Trim.coeff_eq_coeff]
+
 /-- The constant polynomial `C r`. -/
 def C [Zero R] [BEq R] [LawfulBEq R] (r : R) : CPolynomial R :=
   ⟨(Raw.C r).trim, Trim.isCanonical_trim (Raw.C r)⟩

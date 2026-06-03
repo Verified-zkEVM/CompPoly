@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 
 import CompPoly.LinearAlgebra.PolynomialMatrix.Shifted
+import CompPoly.Univariate.ToPoly
 
 /-!
 # Row Span for Polynomial Matrices
@@ -32,13 +33,212 @@ def RowSpan [Semiring F] [BEq F] [LawfulBEq F]
   { row | ∃ coeffs : Array (CPolynomial F),
       coeffs.size = M.size ∧ row = rowLinearCombination coeffs M }
 
+private theorem C_one_mul [Semiring F] [BEq F] [LawfulBEq F]
+    (p : CPolynomial F) :
+    CPolynomial.C (1 : F) * p = p := by
+  apply (CPolynomial.eq_iff_coeff).2
+  intro i
+  have hpoly := congrArg (fun P : Polynomial F ↦ P.coeff i)
+    (CPolynomial.toPoly_mul (CPolynomial.C (1 : F)) p)
+  rw [CPolynomial.C_toPoly] at hpoly
+  rw [CPolynomial.coeff_toPoly, CPolynomial.coeff_toPoly]
+  simpa using hpoly
+
+private theorem C_zero_mul [Semiring F] [BEq F] [LawfulBEq F]
+    (p : CPolynomial F) :
+    CPolynomial.C (0 : F) * p = 0 := by
+  apply (CPolynomial.eq_iff_coeff).2
+  intro i
+  have hpoly := congrArg (fun P : Polynomial F ↦ P.coeff i)
+    (CPolynomial.toPoly_mul (CPolynomial.C (0 : F)) p)
+  rw [CPolynomial.C_toPoly] at hpoly
+  rw [CPolynomial.coeff_toPoly, CPolynomial.coeff_toPoly]
+  simpa using hpoly
+
+private theorem rowGet_zeroRow [Semiring F] [BEq F] [LawfulBEq F]
+    (width j : Nat) :
+    rowGet (zeroRow (F := F) width) j = 0 := by
+  unfold rowGet zeroRow
+  by_cases hj : j < (Array.replicate width (0 : CPolynomial F)).size
+  · rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hj]
+    simp
+  · have hle : (Array.replicate width (0 : CPolynomial F)).size ≤ j :=
+      Nat.le_of_not_gt hj
+    rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hle]
+    simp
+
+private theorem rowAdd_zeroRow_right [Semiring F] [BEq F] [LawfulBEq F]
+    {width : Nat} (row : PolynomialRow F) (hsize : row.size = width) :
+    rowAdd row (zeroRow (F := F) width) = row := by
+  apply Array.ext
+  · simp [rowAdd, zeroRow, hsize]
+  · intro j hj _hjRow
+    have hjrow : j < row.size := by
+      simpa [rowAdd, zeroRow, hsize] using hj
+    have hzero := rowGet_zeroRow (F := F) width j
+    unfold rowGet at hzero
+    simp [rowAdd, rowGet, hjrow]
+    rw [Array.getD_eq_getD_getElem?] at hzero
+    rw [hzero]
+    simp
+
+private theorem rowAdd_zeroRow_left [Semiring F] [BEq F] [LawfulBEq F]
+    {width : Nat} (row : PolynomialRow F) (hsize : row.size = width) :
+    rowAdd (zeroRow (F := F) width) row = row := by
+  apply Array.ext
+  · simp [rowAdd, zeroRow, hsize]
+  · intro j hj _hjRow
+    have hjrow : j < row.size := by
+      simpa [rowAdd, zeroRow, hsize] using hj
+    have hzero := rowGet_zeroRow (F := F) width j
+    unfold rowGet at hzero
+    simp [rowAdd, rowGet, hjrow]
+    rw [Array.getD_eq_getD_getElem?] at hzero
+    rw [hzero]
+    simp
+
+private theorem rowScalePolynomial_C_one [Semiring F] [BEq F] [LawfulBEq F]
+    (row : PolynomialRow F) :
+    rowScalePolynomial (CPolynomial.C (1 : F)) row = row := by
+  apply Array.ext
+  · simp [rowScalePolynomial]
+  · intro j _hj hjRow
+    simp [rowScalePolynomial, C_one_mul]
+
+private theorem rowScalePolynomial_C_zero [Semiring F] [BEq F] [LawfulBEq F]
+    (row : PolynomialRow F) :
+    rowScalePolynomial (CPolynomial.C (0 : F)) row = zeroRow row.size := by
+  apply Array.ext
+  · simp [rowScalePolynomial, zeroRow]
+  · intro j hj _hjZero
+    have hjRow : j < row.size := by
+      simpa [rowScalePolynomial] using hj
+    have hzero := C_zero_mul (F := F) (row[j])
+    simpa [rowScalePolynomial, zeroRow] using hzero
+
+private theorem matrix_getD_size_of_wellFormed [Zero F]
+    {M : PolynomialMatrix F} (hM : WellFormed M) {i : Nat} (hi : i < M.size) :
+    (M.getD i #[]).size = MatrixWidth M := by
+  have hget : M.getD i #[] = M[i] := by
+    simp [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hi]
+  rw [hget]
+  exact hM M[i] (by simp [MatrixRows, Array.getElem_mem_toList hi])
+
+private theorem rowScalePolynomial_C_zero_of_wellFormed
+    [Semiring F] [BEq F] [LawfulBEq F]
+    {M : PolynomialMatrix F} (hM : WellFormed M) {i : Nat} (hi : i < M.size) :
+    rowScalePolynomial (CPolynomial.C (0 : F)) (M.getD i #[]) =
+      zeroRow (MatrixWidth M) := by
+  rw [rowScalePolynomial_C_zero]
+  rw [matrix_getD_size_of_wellFormed hM hi]
+
+private def unitRowCoeffs [Semiring F] [BEq F] [LawfulBEq F]
+    (height i : Nat) : Array (CPolynomial F) :=
+  Array.ofFn (fun j : Fin height ↦
+    if j.val = i then CPolynomial.C (1 : F) else CPolynomial.C (0 : F))
+
+private theorem unitRowCoeffs_size [Semiring F] [BEq F] [LawfulBEq F]
+    (height i : Nat) :
+    (unitRowCoeffs (F := F) height i).size = height := by
+  simp [unitRowCoeffs]
+
+private theorem unitRowCoeffs_getD [Semiring F] [BEq F] [LawfulBEq F]
+    (height i k : Nat) :
+    (unitRowCoeffs (F := F) height i).getD k 0 =
+      if k < height ∧ k = i then CPolynomial.C (1 : F) else CPolynomial.C (0 : F) := by
+  by_cases hk : k < height
+  · have hksize : k < (unitRowCoeffs (F := F) height i).size := by
+      simpa [unitRowCoeffs_size] using hk
+    rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hksize]
+    by_cases hki : k = i
+    · subst i
+      simp [unitRowCoeffs, hk]
+    · simp [unitRowCoeffs, hki, hk]
+  · have hksize : (unitRowCoeffs (F := F) height i).size ≤ k := by
+      simpa [unitRowCoeffs_size] using (Nat.le_of_not_gt hk)
+    rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hksize]
+    simp [hk]
+
+private theorem unitRowCoeffs_getD_self [Semiring F] [BEq F] [LawfulBEq F]
+    {height i : Nat} (hi : i < height) :
+    (unitRowCoeffs (F := F) height i).getD i 0 = CPolynomial.C (1 : F) := by
+  rw [unitRowCoeffs_getD]
+  simp [hi]
+
+private theorem unitRowCoeffs_getD_ne [Semiring F] [BEq F] [LawfulBEq F]
+    {height i k : Nat} (hne : k ≠ i) :
+    (unitRowCoeffs (F := F) height i).getD k 0 = CPolynomial.C (0 : F) := by
+  rw [unitRowCoeffs_getD]
+  simp [hne]
+
+private theorem rowLinearCombination_unit_range
+    [Semiring F] [BEq F] [LawfulBEq F]
+    {M : PolynomialMatrix F} (hM : WellFormed M)
+    {row : PolynomialRow F} {i : Nat} (hi : i < M.size)
+    (hrow : M.getD i #[] = row) :
+    ∀ n, n ≤ M.size →
+      (List.range n).foldl
+          (fun acc k ↦
+            rowAdd acc
+              (rowScalePolynomial ((unitRowCoeffs (F := F) M.size i).getD k 0)
+                (M.getD k #[])))
+          (zeroRow (MatrixWidth M)) =
+        if i < n then row else zeroRow (MatrixWidth M) := by
+  have hrowWidth : row.size = MatrixWidth M := by
+    rw [← hrow]
+    exact matrix_getD_size_of_wellFormed hM hi
+  intro n
+  induction n with
+  | zero =>
+      intro _
+      simp
+  | succ n ih =>
+      intro hn
+      have hnM : n < M.size := by omega
+      rw [List.range_succ, List.foldl_append]
+      simp only [List.foldl_cons, List.foldl_nil]
+      rw [ih (by omega)]
+      by_cases hin : i < n
+      · have hne : n ≠ i := by omega
+        rw [if_pos hin]
+        rw [unitRowCoeffs_getD_ne (F := F) hne]
+        rw [rowScalePolynomial_C_zero_of_wellFormed hM hnM]
+        rw [if_pos (by omega)]
+        exact rowAdd_zeroRow_right row hrowWidth
+      · rw [if_neg hin]
+        by_cases hni : n = i
+        · subst n
+          rw [unitRowCoeffs_getD_self (F := F) hi]
+          rw [hrow, rowScalePolynomial_C_one]
+          rw [if_pos (by omega)]
+          exact rowAdd_zeroRow_left row hrowWidth
+        · have hne : n ≠ i := hni
+          rw [unitRowCoeffs_getD_ne (F := F) hne]
+          rw [rowScalePolynomial_C_zero_of_wellFormed hM hnM]
+          have hzeroWidth : (zeroRow (F := F) (MatrixWidth M)).size = MatrixWidth M := by
+            simp [zeroRow]
+          rw [if_neg (by omega)]
+          exact rowAdd_zeroRow_right (zeroRow (F := F) (MatrixWidth M)) hzeroWidth
+
 /-- Every stored row belongs to its matrix row span. -/
 theorem matrix_row_mem_rowSpan [Semiring F] [BEq F] [LawfulBEq F]
     [DecidableEq F]
     {M : PolynomialMatrix F} {row : PolynomialRow F}
+    (hM : WellFormed M)
     (hrow : row ∈ MatrixRows M) :
     row ∈ RowSpan M := by
-  sorry
+  rcases List.getElem_of_mem hrow with ⟨i, hi, hget⟩
+  refine ⟨unitRowCoeffs (F := F) M.size i, unitRowCoeffs_size M.size i, ?_⟩
+  have hiM : i < M.size := by
+    simpa [MatrixRows] using hi
+  have hrowGet : M.getD i #[] = row := by
+    have harray : M[i] = row := by
+      simpa [MatrixRows, Array.getElem_toList] using hget
+    rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hiM]
+    simpa using harray
+  rw [rowLinearCombination]
+  rw [rowLinearCombination_unit_range hM hiM hrowGet M.size (Nat.le_refl M.size)]
+  simp [hiM]
 
 /-- Row span extensional equality. -/
 def RowSpanEq [Semiring F] [BEq F] [LawfulBEq F]

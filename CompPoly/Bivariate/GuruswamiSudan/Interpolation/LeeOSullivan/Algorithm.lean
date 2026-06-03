@@ -77,11 +77,7 @@ def leeOSullivanPositiveInterpolate
               let rawQ := CBivariate.ofCoeffRow row
               match normalizeLeeCandidate? params rawQ with
               | none => none
-              | some Q =>
-                  if interpolationWitnessIsValidBool points params Q then
-                    some Q
-                  else
-                    none
+              | some Q => some Q
             else
               none
   else

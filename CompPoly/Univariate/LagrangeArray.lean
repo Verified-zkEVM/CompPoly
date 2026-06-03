@@ -50,20 +50,57 @@ def interpolateArray (points : Array (F × F)) : CPolynomial F :=
 def DistinctPointNodes (points : Array (F × F)) : Prop :=
   (points.toList.map fun point ↦ point.1).Nodup
 
+omit [Field F] [BEq F] [LawfulBEq F] in
+private theorem pointNode_injOn_of_distinct
+    (points : Array (F × F)) (hdistinct : DistinctPointNodes points) :
+    Set.InjOn (pointNode points) ↑(Finset.univ : Finset (Fin points.size)) := by
+  intro i _ j _ h
+  apply Fin.ext
+  have hdistinct' :
+      (points.toList.map (fun point : F × F ↦ point.1)).Nodup := hdistinct
+  have hi :
+      (i : Nat) < (points.toList.map (fun point : F × F ↦ point.1)).length := by
+    simp
+  have hj :
+      (j : Nat) < (points.toList.map (fun point : F × F ↦ point.1)).length := by
+    simp
+  have hnodes :
+      (points.toList.map (fun point : F × F ↦ point.1))[i.val] =
+        (points.toList.map (fun point : F × F ↦ point.1))[j.val] := by
+    simpa [pointNode, Array.getElem_toList] using h
+  exact
+    (@List.getElem_inj F i.val j.val
+      (points.toList.map (fun point : F × F ↦ point.1)) hi hj hdistinct').mp hnodes
+
 /-- Evaluating the packed-array interpolant at one indexed node returns the indexed value. -/
 theorem eval_interpolateArray_at_index
     (points : Array (F × F)) (hdistinct : DistinctPointNodes points)
     (i : Fin points.size) :
     CPolynomial.eval (pointNode points i) (interpolateArray points) =
       pointValue points i := by
-  sorry
+  rw [CPolynomial.eval_toPoly]
+  change Polynomial.eval (pointNode points i)
+    ((interpolate (Finset.univ : Finset (Fin points.size))
+      (pointNode points) (pointValue points)).toPoly) = pointValue points i
+  rw [cinterpolate_eq_interpolate]
+  exact Lagrange.eval_interpolate_at_node
+    (pointValue points) (pointNode_injOn_of_distinct points hdistinct) (Finset.mem_univ i)
 
 /-- Evaluating the packed-array interpolant at a listed point returns that point's value. -/
 theorem eval_interpolateArray_at_mem
     (points : Array (F × F)) (hdistinct : DistinctPointNodes points)
     {point : F × F} (hpoint : point ∈ points.toList) :
     CPolynomial.eval point.1 (interpolateArray points) = point.2 := by
-  sorry
+  rcases List.getElem_of_mem hpoint with ⟨idx, hidx, hget⟩
+  let i : Fin points.size := ⟨idx, by simpa using hidx⟩
+  have harray : points[i] = point := by
+    simpa [i, Array.getElem_toList] using hget
+  have hindex := eval_interpolateArray_at_index points hdistinct i
+  have hnode : pointNode points i = point.1 := by
+    simpa [pointNode] using congrArg Prod.fst harray
+  have hvalue : pointValue points i = point.2 := by
+    simpa [pointValue] using congrArg Prod.snd harray
+  simpa [hnode, hvalue] using hindex
 
 end CLagrange
 

@@ -19,9 +19,13 @@ structure ShiftedRowReducerContext
     (F : Type*) [Field F] [BEq F] [LawfulBEq F] [DecidableEq F] where
   reduce : PolynomialMatrix F → Array Nat → PolynomialMatrix F
   shape_preserved :
-    ∀ M shift, MatrixShape (reduce M shift) = MatrixShape M
+    ∀ M shift,
+      WellFormed M →
+        MatrixShape (reduce M shift) = MatrixShape M
   rowSpan_eq :
-    ∀ M shift, RowSpan (reduce M shift) = RowSpan M
+    ∀ M shift,
+      WellFormed M →
+        RowSpan (reduce M shift) = RowSpan M
   weakPopov :
     ∀ M shift,
       WellFormed M →

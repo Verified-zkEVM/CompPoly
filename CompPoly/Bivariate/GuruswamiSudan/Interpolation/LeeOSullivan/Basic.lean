@@ -33,13 +33,15 @@ def leeOSullivanShifts (params : GSInterpParams) : Array Nat :=
 def leeOSullivanT (params : GSInterpParams) (i : Nat) : Nat :=
   min i params.multiplicity
 
+/-- Executable duplicate-`x` detector for packed point lists. -/
+def distinctXCoordinatesListBool {F : Type*} [BEq F] : List (F × F) → Bool
+  | [] => true
+  | point :: rest =>
+      !(rest.any fun other ↦ other.1 == point.1) && distinctXCoordinatesListBool rest
+
 /-- Executable duplicate-`x` detector for packed points. -/
 def distinctXCoordinatesBool {F : Type*} [BEq F] (points : Array (F × F)) : Bool :=
-  let rec go : List (F × F) → Bool
-    | [] => true
-    | point :: rest =>
-        !(rest.any fun other ↦ other.1 == point.1) && go rest
-  go points.toList
+  distinctXCoordinatesListBool points.toList
 
 /-- The Lee-O'Sullivan basis polynomial `P_i`. -/
 def leeOSullivanBasisPolynomial {F : Type*}

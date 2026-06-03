@@ -17,12 +17,12 @@ namespace PolynomialMatrix
 variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
 
 theorem muldersStorjohannReduce_shape_preserved
-    (M : PolynomialMatrix F) (shift : Array Nat) :
+    (M : PolynomialMatrix F) (shift : Array Nat) (hM : WellFormed M) :
     MatrixShape (muldersStorjohannReduce M shift) = MatrixShape M := by
   sorry
 
 theorem muldersStorjohannReduce_rowSpan_eq
-    (M : PolynomialMatrix F) (shift : Array Nat) :
+    (M : PolynomialMatrix F) (shift : Array Nat) (hM : WellFormed M) :
     RowSpan (muldersStorjohannReduce M shift) = RowSpan M := by
   sorry
 
@@ -49,11 +49,11 @@ def muldersStorjohannReducerContext (F : Type*) [Field F] [BEq F] [LawfulBEq F]
     [DecidableEq F] : ShiftedRowReducerContext F where
   reduce := muldersStorjohannReduce
   shape_preserved := by
-    intro M shift
-    exact muldersStorjohannReduce_shape_preserved M shift
+    intro M shift hM
+    exact muldersStorjohannReduce_shape_preserved M shift hM
   rowSpan_eq := by
-    intro M shift
-    exact muldersStorjohannReduce_rowSpan_eq M shift
+    intro M shift hM
+    exact muldersStorjohannReduce_rowSpan_eq M shift hM
   weakPopov := by
     intro M shift hM hshift
     exact muldersStorjohannReduce_weakPopov M shift hM hshift
