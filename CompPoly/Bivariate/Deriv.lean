@@ -10,8 +10,6 @@ import CompPoly.Univariate.Deriv
 import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
 import Mathlib.Algebra.Polynomial.Derivative
 
-open scoped Polynomial.Bivariate
-
 /-!
 # Partial Derivatives and Multiplicity of Computable Bivariate Polynomials
 
@@ -29,6 +27,8 @@ partial derivatives, whose factorial factors vanish in small characteristic.
 `Polynomial.Bivariate.shift`, and `hasMultiplicity_iff_rootMultiplicity` proves
 the predicate agrees with the reference `Polynomial.Bivariate.rootMultiplicity`.
 -/
+
+open scoped Polynomial.Bivariate
 
 namespace CompPoly
 
@@ -83,22 +83,36 @@ def partialDerivY [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (f : CBivariate R) : CBivariate R :=
   CPolynomial.derivative f
 
+/-- Outer coefficient of a `support`-sum of monomials whose `Y`-coefficients are mapped by a
+zero-preserving `g`: the `j`-th coefficient is `g` applied to the `j`-th `Y`-coefficient. -/
+theorem outerCoeff_support_monomial [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    [DecidableEq R] (f : CBivariate R) (g : CPolynomial R → CPolynomial R) (hg : g 0 = 0) (j : ℕ) :
+    CPolynomial.coeff ((CPolynomial.support f).sum fun k =>
+      CPolynomial.monomial k (g (f.val.coeff k))) j = g (CPolynomial.coeff f j) := by
+  erw [CPolynomial.coeff_finset_sum]
+  simp only [CPolynomial.coeff_monomial]
+  rw [Finset.sum_eq_single j]
+  · simp only [ite_true]
+  · intro b _ hbj; simp [Ne.symm hbj]
+  · intro hj
+    simp only [ite_true]
+    rw [CPolynomial.mem_support_iff, not_not] at hj
+    change g (CPolynomial.coeff f j) = 0
+    rw [hj]; exact hg
+
+/-- Outer coefficient of the X-partial derivative: differentiate the j-th Y-coefficient. -/
+theorem outerCoeff_partialDerivX [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (f : CBivariate R) (j : ℕ) :
+    CPolynomial.coeff (partialDerivX f) j =
+      CPolynomial.derivative (CPolynomial.coeff f j) :=
+  outerCoeff_support_monomial f CPolynomial.derivative CPolynomial.derivative_zero j
+
 /-- Coefficient formula for the X-partial derivative. -/
 theorem coeff_partialDerivX [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (f : CBivariate R) (i j : ℕ) :
     CBivariate.coeff (partialDerivX f) i j =
       CBivariate.coeff f (i + 1) j * (↑(i + 1) : R) := by
-  unfold partialDerivX
-  simp only [coeff_eq_coeff_coeff]
-  erw [CPolynomial.coeff_finset_sum]
-  simp only [CPolynomial.coeff_monomial]
-  rw [Finset.sum_eq_single j]
-  · simp only [ite_true]; erw [CPolynomial.coeff_derivative]
-  · intro b _ hbj; simp [Ne.symm hbj]
-  · intro hj; simp only [ite_true]
-    rw [CPolynomial.mem_support_iff, not_not] at hj
-    change (CPolynomial.coeff f j).derivative = 0
-    rw [hj]; exact CPolynomial.derivative_zero
+  simp only [coeff_eq_coeff_coeff, outerCoeff_partialDerivX, CPolynomial.coeff_derivative]
 
 /-- Coefficient formula for the Y-partial derivative. -/
 theorem coeff_partialDerivY [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
@@ -143,23 +157,6 @@ theorem partialDerivY_add [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [Dec
     partialDerivY (f + g) = partialDerivY f + partialDerivY g := by
   unfold partialDerivY
   exact CPolynomial.derivative_add f g
-
-/-- Outer coefficient of the X-partial derivative: differentiate the j-th Y-coefficient. -/
-theorem outerCoeff_partialDerivX [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
-    (f : CBivariate R) (j : ℕ) :
-    CPolynomial.coeff (partialDerivX f) j =
-      CPolynomial.derivative (CPolynomial.coeff f j) := by
-  unfold partialDerivX
-  erw [CPolynomial.coeff_finset_sum]
-  simp only [CPolynomial.coeff_monomial]
-  rw [Finset.sum_eq_single j]
-  · simp only [ite_true]
-  · intro b _ hbj; simp [Ne.symm hbj]
-  · intro hj
-    simp only [ite_true]
-    rw [CPolynomial.mem_support_iff, not_not] at hj
-    change (CPolynomial.coeff f j).derivative = 0
-    rw [hj]; exact CPolynomial.derivative_zero
 
 /-- The X-partial derivative differentiates each Y-coefficient under `toPoly`. -/
 theorem partialDerivX_toPoly [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
@@ -302,18 +299,8 @@ theorem shiftY_toPoly [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [Dec
 /-- Outer coefficient of the X-shift: Taylor-shift the j-th Y-coefficient. -/
 theorem outerCoeff_shiftX [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (a : R) (P : CBivariate R) (j : ℕ) :
-    CPolynomial.coeff (shiftX a P) j = CPolynomial.taylor a (CPolynomial.coeff P j) := by
-  unfold shiftX
-  erw [CPolynomial.coeff_finset_sum]
-  simp only [CPolynomial.coeff_monomial]
-  rw [Finset.sum_eq_single j]
-  · simp only [ite_true]
-  · intro b _ hbj; simp [Ne.symm hbj]
-  · intro hj
-    simp only [ite_true]
-    rw [CPolynomial.mem_support_iff, not_not] at hj
-    change CPolynomial.taylor a (CPolynomial.coeff P j) = 0
-    rw [hj, CPolynomial.taylor_zero]
+    CPolynomial.coeff (shiftX a P) j = CPolynomial.taylor a (CPolynomial.coeff P j) :=
+  outerCoeff_support_monomial P (CPolynomial.taylor a) (CPolynomial.taylor_zero a) j
 
 /-- The inner (X) shift corresponds to `X ↦ X + a` under `toPoly`. -/
 theorem shiftX_toPoly [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
@@ -345,16 +332,15 @@ theorem coeff_shiftC_zero_zero [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivia
   rfl
 
 /-- Multiplicity at least 1 is equivalent to vanishing at the point. -/
-theorem hasMultiplicity_one_iff [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
-    (Q : CBivariate R) (a b : R) :
+theorem hasMultiplicity_one_iff [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    [DecidableEq R] (Q : CBivariate R) (a b : R) :
     hasMultiplicity Q 1 a b ↔ evalEval a b Q = 0 := by
   unfold hasMultiplicity
   constructor
   · intro h; have := h 0 0 (by omega); rwa [coeff_shiftC_zero_zero] at this
   · intro h i j hij
-    have hi : i = 0 := by omega
-    have hj : j = 0 := by omega
-    subst hi; subst hj; rwa [coeff_shiftC_zero_zero]
+    obtain ⟨rfl, rfl⟩ : i = 0 ∧ j = 0 := ⟨by omega, by omega⟩
+    rwa [coeff_shiftC_zero_zero]
 
 /-- `hasMultiplicity` agrees with the reference `Polynomial.Bivariate.rootMultiplicity`,
 where `none` denotes infinite multiplicity (the zero polynomial). -/

@@ -70,14 +70,12 @@ theorem rootMultiplicity₀_ge_iff (g : F[X][Y]) (r : ℕ) :
   have grid_mem : ∀ i j, coeff g i j ≠ 0 →
       (i, j) ∈ List.range (deg + 1) ×ˢ List.range (deg + 1) := by
     intro i j hne
-    have hcj : g.coeff j ≠ 0 := fun h => hne (by simp [coeff, h])
     have hi : i ≤ (g.coeff j).natDegree := le_natDegree_of_ne_zero (by simpa [coeff] using hne)
-    have hj_supp : j ∈ g.support := Polynomial.mem_support_iff.mpr hcj
     have hbound : (g.coeff j).natDegree + j ≤ deg := by
       rw [hdegval]
       simpa [natWeightedDegree] using
-        (Finset.le_sup (f := fun m => 1 * (g.coeff m).natDegree + 1 * m) hj_supp)
-    have hij : i + j ≤ deg := le_trans (Nat.add_le_add_right hi j) hbound
+        Finset.le_sup (f := fun m => 1 * (g.coeff m).natDegree + 1 * m)
+          (Polynomial.mem_support_iff.mpr fun h => hne (by simp [coeff, h]))
     simp only [List.mem_product, List.mem_range]; omega
   rw [hroot]
   set L := List.filterMap (fun p : ℕ × ℕ ↦ if coeff g p.1 p.2 = 0 then none else some (p.1 + p.2))
@@ -98,10 +96,10 @@ theorem rootMultiplicity₀_ge_iff (g : F[X][Y]) (r : ℕ) :
       rw [hL, List.mem_filterMap]; exact ⟨(i, j), grid_mem i j hne, by simp [hne]⟩
     obtain ⟨m₀, hm₀⟩ : ∃ m₀, L.min? = some m₀ := by
       cases hc : L.min? with
-      | none => rw [List.min?_eq_none_iff] at hc; rw [hc] at hmem; simp at hmem
+      | none => simp [List.min?_eq_none_iff.mp hc] at hmem
       | some m₀ => exact ⟨m₀, rfl⟩
-    have hm₀le : m₀ ≤ i + j := by rw [List.min?_eq_some_iff] at hm₀; exact hm₀.2 _ hmem
-    have := H m₀ (by rw [Option.mem_def]; exact hm₀)
+    have hr := H m₀ (Option.mem_def.mpr hm₀)
+    have hle := (List.min?_eq_some_iff.mp hm₀).2 _ hmem
     omega
 
 end CommSemiring
