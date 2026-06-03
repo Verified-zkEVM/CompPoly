@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
 
+import CompPoly.Bivariate.FactorMonic
 import CompPoly.Bivariate.GuruswamiSudan.Context
 
 /-!
@@ -101,7 +102,7 @@ def lowMessageDegreeInterpolation {F : Type*}
     (points : Array (Prod F F)) (multiplicity : Nat) : CBivariate F :=
   points.toList.foldl
     (fun Q point ↦
-      Q * (CBivariate.linearYFactor (CPolynomial.C point.2)) ^ multiplicity)
+      Q * (CBivariate.linearYDivisor (CPolynomial.C point.2)) ^ multiplicity)
     1
 
 /-- Coefficients of a bivariate polynomial in a supplied monomial order. -/

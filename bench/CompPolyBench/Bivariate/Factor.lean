@@ -6,6 +6,7 @@ Authors: Dimitris Mitsios
 
 import CompPolyBench.Common
 import CompPoly.Bivariate.Factor
+import CompPoly.Bivariate.FactorMonic
 import CompPoly.Univariate.DivisionCorrectness
 import CompPoly.Fields.BN254
 
@@ -71,7 +72,7 @@ private def buildCPolynomial {R : Type*}
 private def linearDivisor {R : Type*}
     [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (f : CPolynomial R) : CBivariate R :=
-  (CPolynomial.X : CPolynomial (CPolynomial R)) - CPolynomial.C f
+  CBivariate.linearYDivisor f
 
 /-- Run the `divByLinearY` vs `divByMonic` comparison over a prime `ZMod` field at
 one `Y`-degree size (`terms` coefficients, `yDegree < terms / 8`). -/

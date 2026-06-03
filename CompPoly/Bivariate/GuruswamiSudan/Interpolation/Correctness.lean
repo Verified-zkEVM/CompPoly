@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
 
+import CompPoly.Bivariate.FactorMonic
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Basic
 import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
 import Mathlib.Algebra.Polynomial.Taylor
@@ -50,6 +51,14 @@ private theorem list_foldl_mul_eq_mul_prod {α R : Type*} [CommMonoid R]
       rw [List.foldl_cons, list_foldl_mul_eq_mul_prod f xs (init * f x)]
       simp [mul_assoc]
 
+private theorem linearYDivisor_C_toPoly {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F] (y : F) :
+    CBivariate.toPoly (CBivariate.linearYDivisor (CPolynomial.C y)) =
+      (Polynomial.X - Polynomial.C y).map (Polynomial.C : F →+* Polynomial F) := by
+  rw [CBivariate.toPoly_eq_map]
+  rw [CBivariate.linearYDivisor_toPoly]
+  simp [CPolynomial.C_toPoly, CPolynomial.ringEquiv]
+
 private theorem lowMessageYPolynomial_toPoly {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (points : Array (F × F)) (multiplicity : Nat) :
@@ -62,7 +71,7 @@ private theorem lowMessageYPolynomial_toPoly {F : Type*}
         CBivariate.toPoly
             (xs.foldl
               (fun Q point ↦ Q *
-                CBivariate.linearYFactor (CPolynomial.C point.2) ^ multiplicity)
+                CBivariate.linearYDivisor (CPolynomial.C point.2) ^ multiplicity)
               Q) =
           (xs.foldl
               (fun P point ↦ P * (Polynomial.X - Polynomial.C point.2) ^ multiplicity)
@@ -80,24 +89,11 @@ private theorem lowMessageYPolynomial_toPoly {F : Type*}
         rw [hQP, Polynomial.map_mul]
         congr 1
         change CBivariate.toPoly
-            (CBivariate.linearYFactor (CPolynomial.C point.2) ^ multiplicity) =
+            (CBivariate.linearYDivisor (CPolynomial.C point.2) ^ multiplicity) =
           ((Polynomial.X - Polynomial.C point.2) ^ multiplicity).map
             (Polynomial.C : F →+* Polynomial F)
         rw [cbivariate_toPoly_pow, Polynomial.map_pow]
-        unfold CBivariate.linearYFactor
-        congr 1
-        change CBivariate.toPolyRingHom
-            (CBivariate.Y - CBivariate.ofYConstant (CPolynomial.C point.2)) =
-          Polynomial.map Polynomial.C (Polynomial.X - Polynomial.C point.2)
-        rw [map_sub, Polynomial.map_sub]
-        change CBivariate.toPoly CBivariate.Y -
-            CBivariate.toPoly (CBivariate.ofYConstant (CPolynomial.C point.2)) =
-          Polynomial.map Polynomial.C Polynomial.X -
-            Polynomial.map Polynomial.C (Polynomial.C point.2)
-        rw [CBivariate.Y_toPoly]
-        unfold CBivariate.ofYConstant
-        rw [CBivariate.toPoly_eq_map]
-        simp [CPolynomial.C_toPoly, CPolynomial.ringEquiv]
+        rw [linearYDivisor_C_toPoly]
   exact hfold points.toList 1 1 (by simp [CBivariate.toPoly_one])
 
 private theorem lowMessageYPolynomial_ne_zero {F : Type*} [Field F]

@@ -83,12 +83,12 @@ private def codewordPoints {F : Type*} [Semiring F] [BEq F] [LawfulBEq F]
   codewordPointsWithCount gsPointCount p
 
 private def rootBenchmarkQ {F : Type*}
-    [Ring F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [CommRing F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (p : CPolynomial F) : CBivariate F :=
-  CBivariate.linearYFactor p
+  CBivariate.linearYDivisor p
 
 private def multiplicityBenchmarkQ {F : Type*}
-    [Ring F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [CommRing F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (p : CPolynomial F) : CBivariate F :=
   let Q := rootBenchmarkQ p
   Q * Q
@@ -106,9 +106,9 @@ private def koalaFastFieldRootsFast : FieldRootContext KoalaBear.Fast.Field :=
   fastKoalaBearNttFastFieldRootContext
 
 private def nonlinearRootBenchmarkQ {F : Type*}
-    [Ring F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [CommRing F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (p : CPolynomial F) : CBivariate F :=
-  CBivariate.linearYFactor p * CBivariate.linearYFactor (p + CPolynomial.C 7)
+  CBivariate.linearYDivisor p * CBivariate.linearYDivisor (p + CPolynomial.C 7)
 
 private def checksumDenseMatrix {F : Type*} [Zero F]
     (checksum : F -> Nat) (M : DenseMatrix F) : Nat :=

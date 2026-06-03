@@ -47,7 +47,7 @@ def leeOSullivanBasisPolynomial {F : Type*}
     (R G : CPolynomial F) (params : GSInterpParams) (i : Nat) : CBivariate F :=
   let t := leeOSullivanT params i
   (CBivariate.Y : CBivariate F) ^ (i - t) *
-    (CBivariate.linearYFactor R) ^ t *
+    (CBivariate.linearYDivisor R) ^ t *
       (CBivariate.ofYConstant G) ^ (params.multiplicity - t)
 
 /-- Lee-O'Sullivan basis rows from already-built `R` and `G`. -/

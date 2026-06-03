@@ -37,6 +37,11 @@ def divByLinearFactor (p : CPolynomial F) (x : F) : CPolynomial F :=
       (0, ([] : List F))).2
   CPolynomial.ofArray coeffs.toArray
 
+/-- Synthetic division by `X - x` agrees with generic monic division. -/
+theorem divByLinearFactor_eq_divByMonic (p : CPolynomial F) (x : F) :
+    divByLinearFactor p x = p.divByMonic (linearFactor x) := by
+  sorry
+
 /-- One coefficient-form interpolation term from a packed point and `G'(xᵢ)`. -/
 def interpolationTermWithVanishing
     (G : CPolynomial F) (point : F × F) (derivativeValue : F) : CPolynomial F :=

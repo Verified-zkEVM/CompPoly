@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
 
+import CompPoly.Bivariate.FactorMonic
 import CompPoly.Bivariate.ToPoly
 import CompPoly.Univariate.Derivative
 
@@ -318,67 +319,6 @@ def ofYCoefficient {R : Type*}
     [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (y : Nat) (p : CPolynomial R) : CBivariate R :=
   CPolynomial.monomial y p
-
-/-- The monic linear factor `Y - p(X)` as a bivariate polynomial. -/
-def linearYFactor {R : Type*}
-    [Ring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
-    (p : CPolynomial R) : CBivariate R :=
-  (Y : CBivariate R) - ofYConstant p
-
-/-- Shared loop for synthetic division by `Y - p(X)`.
-
-The first component is the carry used to form the remainder and the second
-component is the dense outer-`Y` coefficient array of the quotient. -/
-def linearYDivModLoop {R : Type*}
-    [Semiring R] [BEq R] [LawfulBEq R]
-    (Q : CBivariate R) (p : CPolynomial R) : CPolynomial R × Array (CPolynomial R) :=
-  (List.range (Q.val.size - 1)).foldr
-    (fun idx state ↦
-      let carry := Q.val.coeff (idx + 1) + p * state.1
-      (carry, state.2.setIfInBounds idx carry))
-    (0, Array.replicate (Q.val.size - 1) 0)
-
-/-- Coefficient-list synthetic division by `Y - p(X)`.
-
-The first component is the dense outer-`Y` coefficient list of the quotient; the
-second component is the univariate remainder. This helper is structurally
-recursive over the coefficient list, which makes the division identities easier
-to prove than the array-indexed update form. -/
-def linearYDivModCoeffList {R : Type*}
-    [Semiring R] [BEq R] [LawfulBEq R]
-    (p : CPolynomial R) : List (CPolynomial R) → List (CPolynomial R) × CPolynomial R
-  | [] => ([], 0)
-  | coeff :: coeffs =>
-      let tail := linearYDivModCoeffList p coeffs
-      (tail.2 :: tail.1, coeff + p * tail.2)
-
-/-- Synthetic division of `Q(X, Y)` by the monic linear factor `Y - p(X)`.
-
-The quotient is represented in the same outer-`Y` coefficient layout as
-`CBivariate`; the remainder is a univariate polynomial in `X`. -/
-def linearYDivMod {R : Type*}
-    [Semiring R] [BEq R] [LawfulBEq R]
-    (Q : CBivariate R) (p : CPolynomial R) : CBivariate R × CPolynomial R :=
-  let state := linearYDivModCoeffList p Q.val.toList
-  (CPolynomial.ofArray state.1.toArray, state.2)
-
-/-- Quotient in the synthetic division of `Q(X, Y)` by `Y - p(X)`. -/
-def linearYFactorQuotient {R : Type*}
-    [Semiring R] [BEq R] [LawfulBEq R]
-    (Q : CBivariate R) (p : CPolynomial R) : CBivariate R :=
-  (linearYDivMod Q p).1
-
-/-- Remainder in the synthetic division of `Q(X, Y)` by `Y - p(X)`. -/
-def linearYFactorRemainder {R : Type*}
-    [Semiring R] [BEq R] [LawfulBEq R]
-    (Q : CBivariate R) (p : CPolynomial R) : CPolynomial R :=
-  (linearYDivMod Q p).2
-
-/-- Executable check that `Y - p(X)` divides `Q(X, Y)`. -/
-def hasLinearYFactorBool {R : Type*}
-    [Semiring R] [BEq R] [LawfulBEq R]
-    (Q : CBivariate R) (p : CPolynomial R) : Bool :=
-  linearYFactorRemainder Q p == 0
 
 end CBivariate
 

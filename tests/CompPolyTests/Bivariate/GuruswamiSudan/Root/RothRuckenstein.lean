@@ -76,7 +76,7 @@ private def pTwoXPlusTwo : CPolynomial F5 :=
   CPolynomial.ofArray #[(2 : F5), 2]
 
 private def qTwoLinearYFactors : CBivariate F5 :=
-  CBivariate.linearYFactor pXPlusOne * CBivariate.linearYFactor pTwoXPlusTwo
+  CBivariate.linearYDivisor pXPlusOne * CBivariate.linearYDivisor pTwoXPlusTwo
 
 private def nonlinearInitialEquationRoots : Array (CPolynomial F5) :=
   rothRuckensteinRootsYDegreeLt f5FieldRoots qTwoLinearYFactors 2
