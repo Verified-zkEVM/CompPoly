@@ -10,7 +10,6 @@ import Mathlib.Algebra.Tropical.Basic
 import Mathlib.RingTheory.Polynomial.Basic
 import CompPoly.Data.Array.Lemmas
 import CompPoly.Univariate.Basic
-import CompPoly.Univariate.Deriv
 import CompPoly.Univariate.Linear
 
 /-!
@@ -274,21 +273,6 @@ lemma Raw.eval_trim_eq_eval [LawfulBEq R] (x : R) (p : CPolynomial.Raw R) :
   rw [← toImpl_toPoly, eval_toImpl_eq_eval, eval_toPoly_eq_eval]
 
 end ToPoly
-
-section DerivBridge
-
-variable [Semiring R] [BEq R] [LawfulBEq R]
-
-/-- The computable derivative matches Mathlib's `Polynomial.derivative` under `toPoly`. -/
-theorem derivative_toPoly (p : CPolynomial R) :
-    (derivative p).toPoly = Polynomial.derivative (R := R) p.toPoly := by
-  apply Polynomial.ext
-  intro n
-  simp only [Polynomial.coeff_derivative, CPolynomial.toPoly,
-    Raw.coeff_toPoly, CPolynomial.coeff_derivative]
-  push_cast; ring_nf
-
-end DerivBridge
 
 end CPolynomial
 

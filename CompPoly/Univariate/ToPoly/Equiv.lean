@@ -178,14 +178,6 @@ noncomputable def ringEquiv [LawfulBEq R] [Nontrivial R] :
 
 end RingEquiv
 
-/-- The derivative satisfies the Leibniz product rule. -/
-theorem derivative_mul [LawfulBEq R] [Nontrivial R] (p q : CPolynomial R) :
-    derivative (p * q) = derivative p * q + p * derivative q := by
-  apply ringEquiv.injective
-  change (derivative (p * q)).toPoly = (derivative p * q + p * derivative q).toPoly
-  rw [derivative_toPoly, toPoly_mul, toPoly_add, toPoly_mul, toPoly_mul,
-    derivative_toPoly, derivative_toPoly, Polynomial.derivative_mul]
-
 end CPolynomial
 
 end CompPoly
