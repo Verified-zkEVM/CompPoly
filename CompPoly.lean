@@ -1,5 +1,6 @@
 import CompPoly.Bivariate.Basic
 import CompPoly.Bivariate.CMvEquiv
+import CompPoly.Bivariate.Deriv
 import CompPoly.Bivariate.Factor
 import CompPoly.Bivariate.FactorMonic
 import CompPoly.Bivariate.ToPoly
