@@ -9,6 +9,14 @@ import CompPoly.LinearAlgebra.PolynomialMatrix.ShiftedReduction
 
 /-!
 # Executable Lee-O'Sullivan Interpolation
+
+Executable Lee-O'Sullivan interpolation via an explicit `F[X]` module basis and
+shifted polynomial-row reduction.
+
+## References
+
+* [Lee, K., and O'Sullivan, M. E., *List decoding of Reed-Solomon codes from a
+    Groebner basis perspective*][LOS08]
 -/
 
 namespace CompPoly

@@ -10,6 +10,11 @@ import CompPoly.LinearAlgebra.PolynomialMatrix.ShiftedReduction
 # Mulders-Storjohann Shifted Row Reduction
 
 Direct executable shifted row reduction over polynomial rows.
+
+## References
+
+* [Mulders, T., and Storjohann, A., *On lattice reduction for polynomial
+    matrices*][MS03]
 -/
 
 namespace CompPoly
