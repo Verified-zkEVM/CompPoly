@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
 
+import CompPoly.Bivariate.Deriv
 import CompPoly.Bivariate.GuruswamiSudan.Polynomial
 import CompPoly.Data.List.Lemmas
 import CompPoly.LinearAlgebra.Dense
@@ -125,20 +126,6 @@ theorem foldl_range_eq_zero_of_zero {F : Type*} [AddMonoid F] {n : Nat} {f : Nat
 end DenseMatrix
 
 namespace CBivariate
-
-/-- Bivariate coefficients are additive. -/
-theorem coeff_add {R : Type*}
-    [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
-    (P Q : CBivariate R) (i j : Nat) :
-    coeff (P + Q) i j = coeff P i j + coeff Q i j := by
-  change CPolynomial.coeff (CPolynomial.coeff (P + Q : CBivariate R) j) i =
-    CPolynomial.coeff (CPolynomial.coeff P j) i +
-      CPolynomial.coeff (CPolynomial.coeff Q j) i
-  have houter : CPolynomial.coeff (P + Q : CBivariate R) j =
-      CPolynomial.coeff P j + CPolynomial.coeff Q j := by
-    exact CPolynomial.coeff_add (p := P) (q := Q) (i := j)
-  rw [houter]
-  rw [CPolynomial.coeff_add]
 
 /-- All bivariate coefficients of zero are zero. -/
 theorem coeff_zero {R : Type*}
@@ -352,14 +339,16 @@ theorem ofMonomialCoeffs_ne_zero_of_coeff_getD_ne_zero {R : Type*}
     ofMonomialCoeffs monomials coeffs ≠ 0 := by
   intro hzero
   let monomial := monomials.getD k ⟨0, 0⟩
-  have hcoeffEq := congrArg
-    (fun Q : CBivariate R ↦ coeff Q monomial.xDegree monomial.yDegree) hzero
   have hget := ofMonomialCoeffs_coeff_getD (R := R) (monomials := monomials)
     (coeffs := coeffs) hnodup hk
-  dsimp [monomial] at hget hcoeffEq
-  rw [hget] at hcoeffEq
-  rw [coeff_zero] at hcoeffEq
-  exact hcoeff hcoeffEq
+  dsimp [monomial] at hget
+  have hzeroCoeff :
+      coeff (ofMonomialCoeffs monomials coeffs) monomial.xDegree monomial.yDegree = 0 := by
+    rw [hzero]
+    exact coeff_zero monomial.xDegree monomial.yDegree
+  dsimp [monomial] at hzeroCoeff
+  rw [hget] at hzeroCoeff
+  exact hcoeff hzeroCoeff
 
 /-- If all coefficients above a weighted-degree bound are zero, the executable
 weighted degree is below that bound. -/
@@ -720,16 +709,18 @@ theorem hasseDerivativeTermList_coeff_value {R : Type*} [Semiring R]
   by_cases hyIn : j + b < Q.val.size
   · have hin : 0 ≤ j + b ∧ j + b < 0 + Q.val.size := by omega
     simp [hin, hyIn]
-    change source =
-      (Nat.choose (i + a) a : R) * (Nat.choose (j + b) b : R) *
-        (Q.val.coeff (j + b)).coeff (i + a)
     by_cases hxIn : i + a < (Q.val.coeff (j + b)).val.size
     · dsimp only [source]
       rw [if_pos hxIn]
+      simp [CPolynomial.coeff, CPolynomial.Raw.coeff, Array.getD_eq_getD_getElem?,
+        Array.getElem?_eq_getElem hyIn]
     · have hxLe : (Q.val.coeff (j + b)).val.size ≤ i + a := Nat.le_of_not_gt hxIn
+      have hxLe' : (Q.val[j + b]).val.size ≤ i + a := by
+        simpa [CPolynomial.Raw.coeff, Array.getD_eq_getD_getElem?,
+          Array.getElem?_eq_getElem hyIn] using hxLe
       dsimp only [source]
       rw [if_neg hxIn]
-      rw [CPolynomial.coeff_eq_zero_of_size_le (Q.val.coeff (j + b)) hxLe]
+      rw [Array.getElem?_eq_none hxLe']
       simp
   · have hyLe : Q.val.size ≤ j + b := Nat.le_of_not_gt hyIn
     rw [coeff_eq_zero_of_y_size_le Q hyLe]
@@ -863,6 +854,252 @@ theorem hasseDerivative_eval_eq_eval {R : Type*}
     evalEval x y (hasseDerivative a b Q) = hasseDerivativeEval a b x y Q := by
   unfold hasseDerivative hasseDerivativeEval
   exact hasseDerivativeFromTerms_eval x y (hasseDerivativeTerms a b Q).toList
+
+/-- Hasse derivatives in the outer variable commute with Taylor shifting the
+inner coefficients. -/
+private theorem hasseDeriv_map_taylorAlgHom {F : Type*} [Field F]
+    (P : Polynomial (Polynomial F)) (x : F) (b : Nat) :
+  Polynomial.hasseDeriv b (P.map (Polynomial.taylorAlgHom x).toRingHom) =
+      (Polynomial.hasseDeriv b P).map (Polynomial.taylorAlgHom x).toRingHom := by
+  ext n
+  simp [Polynomial.hasseDeriv_coeff, Polynomial.taylorAlgHom, Polynomial.taylor_apply]
+
+/-- Evaluating after Taylor-shifting all inner coefficients is the Taylor shift
+of the evaluated coefficient polynomial. -/
+private theorem eval_map_taylorAlgHom {F : Type*} [Field F]
+    (P : Polynomial (Polynomial F)) (x y : F) :
+    Polynomial.eval (Polynomial.C y) (P.map (Polynomial.taylorAlgHom x).toRingHom) =
+      Polynomial.taylor x (Polynomial.eval (Polynomial.C y) P) := by
+  rw [Polynomial.eval_map]
+  change P.eval₂ (Polynomial.taylorAlgHom x).toRingHom (Polynomial.C y) =
+    (Polynomial.taylorAlgHom x).toRingHom
+      (P.eval₂ (RingHom.id (Polynomial F)) (Polynomial.C y))
+  rw [Polynomial.hom_eval₂]
+  simp [Polynomial.taylorAlgHom]
+
+/-- Hasse derivatives in `X` commute with multiplication by an `X`-constant
+polynomial. -/
+private theorem hasseDeriv_mul_C_pow {F : Type*} [Field F]
+    (P : Polynomial F) (c : F) (n a : Nat) :
+    Polynomial.hasseDeriv a (P * Polynomial.C c ^ n) =
+      Polynomial.hasseDeriv a P * Polynomial.C c ^ n := by
+  rw [show Polynomial.C c ^ n = Polynomial.C (c ^ n) by rw [Polynomial.C_pow]]
+  ext d
+  rw [Polynomial.hasseDeriv_coeff]
+  rw [Polynomial.coeff_mul_C]
+  rw [Polynomial.coeff_mul_C]
+  rw [Polynomial.hasseDeriv_coeff]
+  ring
+
+/-- Hasse differentiating the inner-variable polynomial after evaluating the
+outer variable at a constant equals evaluating the coefficientwise Hasse
+derivative. -/
+private theorem hasseDeriv_eval_C_eq_eval_coeffwise_hasseDeriv {F : Type*}
+    [Field F] (P : Polynomial (Polynomial F)) (y : F) (a : Nat) :
+    Polynomial.hasseDeriv a (Polynomial.eval (Polynomial.C y) P) =
+      Polynomial.eval (Polynomial.C y)
+        (P.sum fun j coeff ↦ Polynomial.monomial j (Polynomial.hasseDeriv a coeff)) := by
+  rw [Polynomial.eval_eq_sum]
+  induction P using Polynomial.induction_on' with
+  | add P Q hP hQ =>
+      rw [Polynomial.sum_add_index]
+      rw [map_add]
+      rw [hP, hQ]
+      rw [Polynomial.sum_add_index]
+      · simp
+      · intro i
+        simp
+      · intro i p q
+        simp
+      · intro i
+        simp
+      · intro i p q
+        simp [add_mul]
+  | monomial _n _coeff =>
+      simp [Polynomial.sum_monomial_index, hasseDeriv_mul_C_pow]
+
+/-- The `j`-th coefficient of the coefficientwise Hasse-derivative outer sum is
+the Hasse derivative of the `j`-th coefficient. -/
+private theorem coeff_coeffwise_hasseDeriv_sum {F : Type*} [Field F]
+    (P : Polynomial (Polynomial F)) (a j : Nat) :
+    ((P.sum fun k coeff ↦ Polynomial.monomial k (Polynomial.hasseDeriv a coeff)).coeff j) =
+      Polynomial.hasseDeriv a (P.coeff j) := by
+  rw [Polynomial.coeff_sum]
+  rw [Polynomial.sum_def]
+  by_cases hj : j ∈ P.support
+  · rw [Finset.sum_eq_single j]
+    · rw [Polynomial.coeff_monomial, if_pos rfl]
+    · intro k _hk hkj
+      rw [Polynomial.coeff_monomial, if_neg hkj]
+    · intro hjnot
+      contradiction
+  · rw [Finset.sum_eq_zero]
+    · rw [Polynomial.notMem_support_iff.mp hj]
+      simp
+    · intro k hk
+      have hkj : k ≠ j := by
+        intro h
+        exact hj (h ▸ hk)
+      rw [Polynomial.coeff_monomial, if_neg hkj]
+
+/-- The executable bivariate Hasse derivative matches the Mathlib-side
+coefficientwise inner Hasse derivative of the outer Hasse derivative. -/
+private theorem toPoly_hasseDerivative_eq_coeffwise_hasseDeriv_hasseDeriv {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    (Q : CBivariate F) (a b : Nat) :
+    (CBivariate.hasseDerivative a b Q).toPoly =
+      (Polynomial.hasseDeriv b Q.toPoly).sum fun j coeff ↦
+        Polynomial.monomial j (Polynomial.hasseDeriv a coeff) := by
+  ext j n
+  rw [coeff_coeffwise_hasseDeriv_sum]
+  rw [Polynomial.hasseDeriv_coeff]
+  rw [CBivariate.coeff_toPoly]
+  rw [CBivariate.hasseDerivative_coeff]
+  rw [Polynomial.hasseDeriv_coeff]
+  simp [CBivariate.coeff_toPoly]
+  ring
+
+/-- Evaluating the univariate `X`-Hasse derivative of the evaluated `Y`-Hasse
+derivative matches the executable bivariate Hasse derivative. -/
+private theorem eval_hasseDeriv_eval_hasseDeriv_toPoly {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    (Q : CBivariate F) (x y : F) (a b : Nat) :
+    Polynomial.eval x (Polynomial.hasseDeriv a
+        (Polynomial.eval (Polynomial.C y) (Polynomial.hasseDeriv b Q.toPoly))) =
+      CBivariate.hasseDerivativeEval a b x y Q := by
+  rw [← CBivariate.hasseDerivative_eval_eq_eval]
+  rw [CBivariate.evalEval_toPoly]
+  rw [Polynomial.evalEval]
+  rw [hasseDeriv_eval_C_eq_eval_coeffwise_hasseDeriv]
+  rw [← toPoly_hasseDerivative_eq_coeffwise_hasseDeriv_hasseDeriv]
+
+/-- The coefficient of the generic Taylor shift is the direct Hasse derivative
+evaluation at the shift point. -/
+theorem coeff_shiftC_eq_hasseDerivativeEval {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    (Q : CBivariate F) (x y : F) (a b : Nat) :
+    CBivariate.coeff (CBivariate.shiftC x y Q) a b =
+      CBivariate.hasseDerivativeEval a b x y Q := by
+  rw [← CBivariate.coeff_toPoly]
+  rw [CBivariate.shiftC_toPoly]
+  unfold Polynomial.Bivariate.shift
+  rw [Polynomial.coeff_map]
+  rw [Polynomial.coe_compRingHom_apply]
+  rw [← Polynomial.taylor_apply]
+  rw [← Polynomial.taylor_apply]
+  rw [Polynomial.taylor_coeff]
+  rw [Polynomial.taylor_coeff]
+  exact eval_hasseDeriv_eval_hasseDeriv_toPoly Q x y a b
+
+/-- The generic PR 238 multiplicity predicate agrees with the direct GS Hasse
+multiplicity predicate. -/
+theorem hasMultiplicity_iff_hasMultiplicityAtLeast {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    (Q : CBivariate F) (r : Nat) (x y : F) :
+    CBivariate.hasMultiplicity Q r x y ↔
+      CBivariate.HasMultiplicityAtLeast Q x y r := by
+  unfold CBivariate.hasMultiplicity CBivariate.HasMultiplicityAtLeast
+  constructor
+  · intro h a b hab
+    rw [← coeff_shiftC_eq_hasseDerivativeEval Q x y a b]
+    exact h a b hab
+  · intro h a b hab
+    rw [coeff_shiftC_eq_hasseDerivativeEval Q x y a b]
+    exact h a b hab
+
+/-- The GS batch Hasse predicate agrees with the generic PR 238 multiplicity
+predicate over every packed point. -/
+theorem satisfiesMultiplicityConstraints_iff_hasMultiplicity {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    (Q : CBivariate F) (points : Array (F × F)) (r : Nat) :
+    CBivariate.SatisfiesMultiplicityConstraints Q points r ↔
+      ∀ point, point ∈ points.toList →
+        CBivariate.hasMultiplicity Q r point.1 point.2 := by
+  unfold CBivariate.SatisfiesMultiplicityConstraints
+  constructor
+  · intro h point hmem
+    exact (hasMultiplicity_iff_hasMultiplicityAtLeast Q r point.1 point.2).2
+      (h point hmem)
+  · intro h point hmem
+    exact (hasMultiplicity_iff_hasMultiplicityAtLeast Q r point.1 point.2).1
+      (h point hmem)
+
+/-- The executable GS point checker agrees with the generic PR 238 multiplicity
+predicate. -/
+theorem multiplicityAtLeastBool_iff_hasMultiplicity {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    (Q : CBivariate F) (x y : F) (r : Nat) :
+    CBivariate.multiplicityAtLeastBool Q x y r = true ↔
+      CBivariate.hasMultiplicity Q r x y := by
+  have horders_mem : ∀ a b,
+      a + b < r → (a, b) ∈ (CBivariate.derivativeOrders r).toList := by
+    intro a b hlt
+    simp [CBivariate.derivativeOrders, CBivariate.derivativeOrderGrid]
+    omega
+  have horders_sound : ∀ order,
+      order ∈ (CBivariate.derivativeOrders r).toList → order.1 + order.2 < r := by
+    intro order h
+    simp [CBivariate.derivativeOrders] at h
+    exact h.2
+  rw [CBivariate.hasMultiplicity_iff_hasMultiplicityAtLeast]
+  simp [CBivariate.multiplicityAtLeastBool, CBivariate.HasMultiplicityAtLeast]
+  constructor
+  · intro h a b hab
+    rcases List.getElem_of_mem (horders_mem a b hab) with ⟨i, hi, hget⟩
+    have horder : (CBivariate.derivativeOrders r)[i] = (a, b) := by
+      simpa [Array.getElem_toList] using hget
+    have hzero := h i (by simpa using hi)
+    simpa [horder] using hzero
+  · intro h i hi
+    exact h _ _ (horders_sound _ (Array.getElem_mem_toList hi))
+
+/-- The executable GS batch checker agrees with the generic PR 238 multiplicity
+predicate over every packed point. -/
+theorem satisfiesMultiplicityConstraintsBool_iff_hasMultiplicity {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    (Q : CBivariate F) (points : Array (F × F)) (r : Nat) :
+    CBivariate.satisfiesMultiplicityConstraintsBool Q points r = true ↔
+      ∀ point, point ∈ points.toList →
+        CBivariate.hasMultiplicity Q r point.1 point.2 := by
+  simp [CBivariate.satisfiesMultiplicityConstraintsBool]
+  constructor
+  · intro h x y hmem
+    have hmemList : (x, y) ∈ points.toList := by
+      simpa only [Array.mem_def] using hmem
+    rcases List.getElem_of_mem hmemList with ⟨i, hi, hget⟩
+    have hpoint : points[i] = (x, y) := by
+      simpa [Array.getElem_toList] using hget
+    exact (multiplicityAtLeastBool_iff_hasMultiplicity Q x y r).1
+      (by simpa [hpoint] using h i (by simpa using hi))
+  · intro h i hi
+    have hmem : (points[i].1, points[i].2) ∈ points := by
+      simpa only [Array.mem_def, Prod.eta] using (Array.getElem_mem_toList hi)
+    exact (multiplicityAtLeastBool_iff_hasMultiplicity Q points[i].1 points[i].2 r).2
+      (h points[i].1 points[i].2 hmem)
+
+/-- The executable GS point checker agrees with the generic PR 238 boolean
+checker. -/
+theorem multiplicityAtLeastBool_iff_checkMultiplicity {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    (Q : CBivariate F) (x y : F) (r : Nat) :
+    CBivariate.multiplicityAtLeastBool Q x y r = true ↔
+      CBivariate.checkMultiplicity Q r x y = true := by
+  rw [multiplicityAtLeastBool_iff_hasMultiplicity, CBivariate.hasMultiplicity_iff_check]
+
+/-- The executable GS batch checker agrees pointwise with the generic PR 238
+boolean checker over the packed point array. -/
+theorem satisfiesMultiplicityConstraintsBool_iff_checkMultiplicity {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    (Q : CBivariate F) (points : Array (F × F)) (r : Nat) :
+    CBivariate.satisfiesMultiplicityConstraintsBool Q points r = true ↔
+      ∀ point, point ∈ points.toList →
+        CBivariate.checkMultiplicity Q r point.1 point.2 = true := by
+  rw [satisfiesMultiplicityConstraintsBool_iff_hasMultiplicity]
+  constructor
+  · intro h point hmem
+    exact (CBivariate.hasMultiplicity_iff_check Q r point.1 point.2).1 (h point hmem)
+  · intro h point hmem
+    exact (CBivariate.hasMultiplicity_iff_check Q r point.1 point.2).2 (h point hmem)
 
 /-- Direct Hasse evaluation is additive in the input polynomial. -/
 theorem hasseDerivativeEval_add {R : Type*}

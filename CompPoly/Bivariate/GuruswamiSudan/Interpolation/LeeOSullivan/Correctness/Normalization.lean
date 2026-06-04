@@ -82,11 +82,16 @@ theorem normalizeLeeCandidate?_sound_of_raw
         · exact hnormPivotNe
       · exact interpolationPolynomialOnBasis_weightedDegree_le
           basis params norm (weightedDegreeBasis_sound params)
-      · apply interpolationPolynomialOnBasis_satisfies_of_solution
-        rw [hnormEq]
-        exact isHomogeneousSolution_map_div
-          ((interpolationCoefficientVectorOnBasis basis rawQ).getD pivot 0)
-          hsol
+      · have hmultQ :
+            CBivariate.SatisfiesMultiplicityConstraints
+              (interpolationPolynomialOnBasis basis norm) points params.multiplicity := by
+          apply interpolationPolynomialOnBasis_satisfies_of_solution
+          rw [hnormEq]
+          exact isHomogeneousSolution_map_div
+            ((interpolationCoefficientVectorOnBasis basis rawQ).getD pivot 0)
+            hsol
+        exact (CBivariate.satisfiesMultiplicityConstraints_iff_hasMultiplicity
+          (interpolationPolynomialOnBasis basis norm) points params.multiplicity).1 hmultQ
 
 /-- A nonzero bounded raw Lee candidate can be normalized by the shared
 coefficient-vector policy. -/

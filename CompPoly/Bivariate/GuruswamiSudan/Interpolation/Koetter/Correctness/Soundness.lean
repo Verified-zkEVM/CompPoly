@@ -385,7 +385,10 @@ theorem koetterRawInterpolate_sound_of_lowerBefore {F : Type*}
   have hdeg := koetterSelectFinal?_some_weightedDegree_le hselect
   rcases koetterSelectFinal?_some_entry_lt hselect with ⟨idx, hidx, hQidx⟩
   refine ⟨hne, hdeg, ?_⟩
-  intro point hpoint a b hab
+  intro point hpoint
+  apply (CBivariate.hasMultiplicity_iff_hasMultiplicityAtLeast Q params.multiplicity
+    point.1 point.2).2
+  intro a b hab
   have hconstraintMem :
       ({ x := point.1, y := point.2, xOrder := a, yOrder := b } :
         InterpolationConstraint F) ∈ constraints.toList := by

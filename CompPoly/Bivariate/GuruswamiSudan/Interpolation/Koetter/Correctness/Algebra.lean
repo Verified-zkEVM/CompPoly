@@ -227,7 +227,12 @@ theorem hasseDerivative_X_mul_succ_xOrder {F : Type*}
   intro i j
   cases i with
   | zero =>
-      simp [hasseDerivative_coeff, coeff_add, coeff_X_mul_zero, coeff_X_mul_succ]
+      rw [hasseDerivative_coeff, coeff_add, coeff_X_mul_zero, hasseDerivative_coeff]
+      rw [show 0 + (a + 1) = a.succ by omega]
+      rw [coeff_X_mul_succ]
+      rw [show a + 1 = a.succ by omega, Nat.choose_self]
+      rw [show 0 + a = a by omega, Nat.choose_self]
+      ring
   | succ i =>
       rw [hasseDerivative_coeff, coeff_add, coeff_X_mul_succ,
         hasseDerivative_coeff, hasseDerivative_coeff]
@@ -387,7 +392,7 @@ theorem natWeightedDegree_neg_le {F : Type*}
   rw [CBivariate.coeff_neg] at hcoeff
   have hP : CBivariate.coeff P i j ≠ 0 := by
     intro hzero
-    exact hcoeff (by simp [hzero])
+    exact hcoeff (by rw [hzero]; simp)
   exact (CBivariate.natWeightedDegree_le_iff_coeff P u v
     (CBivariate.natWeightedDegree P u v)).mp le_rfl i j hP
 
@@ -411,7 +416,7 @@ theorem natWeightedDegree_CC_mul_le {F : Type*}
   rw [CBivariate.coeff_CC_mul] at hcoeff
   have hP : CBivariate.coeff P i j ≠ 0 := by
     intro hzero
-    exact hcoeff (by simp [hzero])
+    exact hcoeff (by rw [hzero]; simp)
   exact (CBivariate.natWeightedDegree_le_iff_coeff P u v
     (CBivariate.natWeightedDegree P u v)).mp le_rfl i j hP
 

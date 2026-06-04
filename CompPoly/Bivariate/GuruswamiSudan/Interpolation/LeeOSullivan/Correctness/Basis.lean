@@ -134,8 +134,13 @@ private theorem hasseDerivative_Y_mul_succ_yOrder
   intro i j
   cases j with
   | zero =>
-      simp [CBivariate.hasseDerivative_coeff, CBivariate.coeff_add,
-        coeff_Y_mul_zero, coeff_Y_mul_succ]
+      rw [CBivariate.hasseDerivative_coeff, CBivariate.coeff_add,
+        coeff_Y_mul_zero, CBivariate.hasseDerivative_coeff]
+      rw [show 0 + (b + 1) = b.succ by omega]
+      rw [coeff_Y_mul_succ]
+      rw [show b + 1 = b.succ by omega, Nat.choose_self]
+      rw [show 0 + b = b by omega, Nat.choose_self]
+      ring
   | succ j =>
       rw [CBivariate.hasseDerivative_coeff, CBivariate.coeff_add]
       rw [show j + 1 + (b + 1) = (j + b + 1) + 1 by omega]

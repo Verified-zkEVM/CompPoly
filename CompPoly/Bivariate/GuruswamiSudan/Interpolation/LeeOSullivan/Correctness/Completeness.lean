@@ -402,12 +402,16 @@ theorem leeOSullivanInterpolate_complete
       simpa using hzero
     have hcapWidth : interpolationYCap params < leeOSullivanWidth params := by
       simp [leeOSullivanWidth]
+    have hmultGS :
+        CBivariate.SatisfiesMultiplicityConstraints Q points params.multiplicity :=
+      (CBivariate.satisfiesMultiplicityConstraints_iff_hasMultiplicity Q points
+        params.multiplicity).2 hQ.2.2
     have hspan :
         koetterBasisSpanContains
           (leeOSullivanBasisPolynomials (F := F) R G params) Q := by
       simpa [G] using
         (leeOSullivanBasisSpanContains_of_multiplicity_yDegree_le
-          V R params hdistinct hRPoints hcapWidth hYBound hQ.2.2)
+          V R params hdistinct hRPoints hcapWidth hYBound hmultGS)
     exact leeOSullivanPositiveInterpolate_complete_of_span
       V E reducer hdistinct hLow hQ (by simpa [R, G] using hspan)
 

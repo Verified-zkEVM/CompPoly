@@ -844,9 +844,11 @@ theorem denseInterpolateWithBasisAndKernel_sound_of_bounded_basis {F : Type*}
   rcases denseInterpolateWithBasis_sound (kernelContext := kernelContext)
       (basis := basis) (points := points) (params := params) hbasis h with
     ⟨hQne, ⟨coeffs, hQcoeffs⟩, hconstraints⟩
-  refine ⟨hQne, ?_, hconstraints⟩
-  rw [hQcoeffs]
-  exact interpolationPolynomialOnBasis_weightedDegree_le basis params coeffs hbound
+  refine ⟨hQne, ?_, ?_⟩
+  · rw [hQcoeffs]
+    exact interpolationPolynomialOnBasis_weightedDegree_le basis params coeffs hbound
+  · exact (CBivariate.satisfiesMultiplicityConstraints_iff_hasMultiplicity Q points
+      params.multiplicity).1 hconstraints
 
 /-- Dense weighted-degree-basis soundness for the positive-message branch. -/
 theorem denseInterpolateWithWeightedDegreeBasis_sound {F : Type*}
@@ -983,6 +985,10 @@ theorem denseInterpolate_complete_of_messageDegree_gt_one {F : Type*}
       exists Q, denseInterpolate points params = some Q := by
   intro hExists
   rcases hExists with ⟨Q, hQne, hdeg, hconstraints⟩
+  have hconstraintsGS :
+      CBivariate.SatisfiesMultiplicityConstraints Q points params.multiplicity :=
+    (CBivariate.satisfiesMultiplicityConstraints_iff_hasMultiplicity Q points
+      params.multiplicity).2 hconstraints
   let coeffs := interpolationCoefficientVector params Q
   have hcomplete := weightedDegreeBasis_complete_of_messageDegree_gt_one
     (params := params) hHigh (Q := Q) hdeg
@@ -1001,7 +1007,7 @@ theorem denseInterpolate_complete_of_messageDegree_gt_one {F : Type*}
   have hsol : DenseMatrix.IsHomogeneousSolution (interpolationMatrix points params) coeffs := by
     exact interpolationCoefficientVectorOnBasis_solution_of_satisfies
       (basis := interpolationMonomials params)
-      (Q := Q) hpoly hconstraints
+      (Q := Q) hpoly hconstraintsGS
   have hnz : DenseMatrix.NonzeroVector coeffs := by
     exact interpolationCoefficientVectorOnBasis_nonzero_of_complete
       (basis := interpolationMonomials params) (Q := Q) hQne hcomplete

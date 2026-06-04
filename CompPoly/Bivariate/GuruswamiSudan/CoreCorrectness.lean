@@ -119,7 +119,7 @@ private theorem eval_composeY_eq_zero_of_matched_point {F : Type*}
     CPolynomial.eval point.1 (CBivariate.composeY Q p) = 0 := by
   rcases hQ with ⟨_hQne, _hQdeg, hQmult⟩
   have hderiv := hQmult point hpoint 0 0 (by omega)
-  rw [hasseDerivativeEval_zero_zero] at hderiv
+  rw [CBivariate.coeff_shiftC_zero_zero] at hderiv
   rw [eval_composeY_eq_evalEval, hmatch]
   exact hderiv
 
@@ -338,8 +338,11 @@ private theorem toPoly_hasseDerivative_eq_coeffwise_hasseDeriv_hasseDeriv {F : T
         Polynomial.monomial j (Polynomial.hasseDeriv a coeff) := by
   ext j n
   rw [coeff_coeffwise_hasseDeriv_sum]
-  simp [Polynomial.hasseDeriv_coeff, CBivariate.hasseDerivative_coeff,
-    CBivariate.coeff_toPoly]
+  rw [Polynomial.hasseDeriv_coeff]
+  rw [CBivariate.coeff_toPoly]
+  rw [CBivariate.hasseDerivative_coeff]
+  rw [Polynomial.hasseDeriv_coeff]
+  simp [CBivariate.coeff_toPoly]
   ring
 
 /-- Evaluating the univariate `X`-Hasse derivative of the evaluated `Y`-Hasse
@@ -543,8 +546,12 @@ theorem composeY_eq_zero_of_enough_matching_multiplicity_points {F : Type*}
       have hmatchBool : (CPolynomial.eval point.1 p == point.2) = true :=
         (List.mem_filter.mp hpointMatched).2
       have hmatch : CPolynomial.eval point.1 p = point.2 := LawfulBEq.eq_of_beq hmatchBool
+      have hmultPoint :
+          CBivariate.HasMultiplicityAtLeast Q point.1 point.2 params.multiplicity :=
+        (CBivariate.hasMultiplicity_iff_hasMultiplicityAtLeast Q params.multiplicity
+          point.1 point.2).1 (hQ.2.2 point hpoint)
       exact rootMultiplicity_composeY_toPoly_of_matched_point
-        (hQ.2.2 point hpoint) hmatch hcomp
+        hmultPoint hmatch hcomp
     have hmul_degree :
         params.multiplicity * matchingPointCount points p ≤
           (CBivariate.composeY Q p).toPoly.natDegree := by

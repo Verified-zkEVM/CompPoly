@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
 
+import CompPoly.Bivariate.Deriv
 import CompPoly.Bivariate.GuruswamiSudan.Compose
 import CompPoly.LinearAlgebra.Dense
 
@@ -41,11 +42,12 @@ def DistinctXCoordinates {F : Type*} (points : Array (Prod F F)) : Prop :=
 /-- Semantic interpolation witness used by backend contracts and core
 completeness statements. -/
 def ValidInterpolationWitness {F : Type*}
-    [Semiring F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [CommSemiring F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (points : Array (Prod F F)) (params : GSInterpParams) (Q : CBivariate F) : Prop :=
   Q ≠ 0 ∧
     CBivariate.natWeightedDegree Q 1 (yWeight params) ≤ params.weightedDegreeBound ∧
-      CBivariate.SatisfiesMultiplicityConstraints Q points params.multiplicity
+      ∀ point, point ∈ points.toList →
+        CBivariate.hasMultiplicity Q params.multiplicity point.1 point.2
 
 /-- A dense homogeneous linear-kernel backend.
 

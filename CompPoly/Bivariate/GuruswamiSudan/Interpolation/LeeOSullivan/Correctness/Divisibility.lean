@@ -90,8 +90,11 @@ private theorem lee_toPoly_hasseDerivative_eq_coeffwise_hasseDeriv_hasseDeriv
         Polynomial.monomial j (Polynomial.hasseDeriv a coeff) := by
   ext j n
   rw [lee_coeff_coeffwise_hasseDeriv_sum]
-  simp [Polynomial.hasseDeriv_coeff, CBivariate.hasseDerivative_coeff,
-    CBivariate.coeff_toPoly]
+  rw [Polynomial.hasseDeriv_coeff]
+  rw [CBivariate.coeff_toPoly]
+  rw [CBivariate.hasseDerivative_coeff]
+  rw [Polynomial.hasseDeriv_coeff]
+  simp [CBivariate.coeff_toPoly]
   ring
 
 private theorem lee_eval_hasseDeriv_eval_hasseDeriv_toPoly

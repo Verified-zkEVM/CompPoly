@@ -254,6 +254,11 @@ private theorem substituteYRootPlusXY_coeff_fold {F : Type*}
                     simp only [List.foldl_cons]
                     apply iht
                     dsimp [termStep, coeffTermStep]
+                    change CBivariate.coeff
+                        (out + CBivariate.monomialXY (x + t) t
+                          (coeff * ↑(y.choose t) * a ^ (y - t))) i j =
+                      acc + if i = x + t ∧ j = t then
+                        coeff * ↑(y.choose t) * a ^ (y - t) else 0
                     rw [CBivariate.coeff_add, CBivariate.coeff_monomialXY, hacc]
               exact hterm (List.range' 0 (y + 1)) out acc hacc
         exact hinner (List.range' 0 coeffY.val.size) out acc hacc

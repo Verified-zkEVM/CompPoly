@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 
 import CompPolyBench.Common
+import CompPoly.Bivariate.Deriv
 import CompPoly.Bivariate.GuruswamiSudan
 import CompPoly.Bivariate.GuruswamiSudan.Implementations
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Algorithm
@@ -145,6 +146,14 @@ private def checksumPolynomialArrayKoalaFast
 
 private def checksumBool (b : Bool) : Nat :=
   if b then 1 else 0
+
+private def checkMultiplicityShiftOnce {F : Type*}
+    [CommSemiring F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    (Q : CBivariate F) (r : Nat) (x y : F) : Bool :=
+  let shifted := CBivariate.shiftC x y Q
+  List.all (List.range r) fun k ↦
+    List.all (List.range (k + 1)) fun i ↦
+      CBivariate.coeff shifted i (k - i) == 0
 
 private def gsWarmupIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 1 0 0
@@ -468,11 +477,31 @@ private def runGsHasseKoala (preset : BenchPreset) (gen : StdGen) :
   let warmup := gsWarmupIterations preset
   let measured := preset.selectNat 80 10 2
   let fastMeasured := preset.selectNat 500 70 15
-  let checksumIterations := groupChecksumIterations measured [fastMeasured]
+  let checksumIterations := groupChecksumIterations measured [
+    measured,
+    measured,
+    fastMeasured,
+    fastMeasured,
+    fastMeasured
+  ]
   let row <- runTimed
     "guruswami-sudan-hasse-check" "CBivariate" "Hasse multiplicity check"
     "KoalaBear.Field" gsMultiplicityShape preset warmup measured
     (fun _ ↦ CBivariate.satisfiesMultiplicityConstraintsBool Q points gsCheckMultiplicity)
+    checksumBool checksumIterations
+  let genericRow <- runTimed
+    "guruswami-sudan-hasse-check-generic" "CBivariate"
+    "Generic PR 238 multiplicity check"
+    "KoalaBear.Field" gsMultiplicityShape preset warmup measured
+    (fun _ ↦ points.all fun point ↦
+      CBivariate.checkMultiplicity Q gsCheckMultiplicity point.1 point.2)
+    checksumBool checksumIterations
+  let shiftOnceRow <- runTimed
+    "guruswami-sudan-hasse-check-shift-once" "CBivariate"
+    "Shift-once multiplicity check"
+    "KoalaBear.Field" gsMultiplicityShape preset warmup measured
+    (fun _ ↦ points.all fun point ↦
+      checkMultiplicityShiftOnce Q gsCheckMultiplicity point.1 point.2)
     checksumBool checksumIterations
   let fastRow <- runTimed
     "guruswami-sudan-hasse-check-fast" "CBivariate" "Hasse multiplicity check"
@@ -480,10 +509,24 @@ private def runGsHasseKoala (preset : BenchPreset) (gen : StdGen) :
     (fun _ ↦ CBivariate.satisfiesMultiplicityConstraintsBool fastQ fastPoints
       gsCheckMultiplicity)
     checksumBool checksumIterations
+  let fastGenericRow <- runTimed
+    "guruswami-sudan-hasse-check-generic-fast" "CBivariate"
+    "Generic PR 238 multiplicity check"
+    "KoalaBear.Fast.Field" gsMultiplicityShape preset warmup fastMeasured
+    (fun _ ↦ fastPoints.all fun point ↦
+      CBivariate.checkMultiplicity fastQ gsCheckMultiplicity point.1 point.2)
+    checksumBool checksumIterations
+  let fastShiftOnceRow <- runTimed
+    "guruswami-sudan-hasse-check-shift-once-fast" "CBivariate"
+    "Shift-once multiplicity check"
+    "KoalaBear.Fast.Field" gsMultiplicityShape preset warmup fastMeasured
+    (fun _ ↦ fastPoints.all fun point ↦
+      checkMultiplicityShiftOnce fastQ gsCheckMultiplicity point.1 point.2)
+    checksumBool checksumIterations
   pure ({
     groupKey := "guruswami-sudan-hasse-koalabear",
     title := "Guruswami-Sudan Hasse multiplicity checking (KoalaBear)",
-    records := #[row, fastRow]
+    records := #[row, genericRow, shiftOnceRow, fastRow, fastGenericRow, fastShiftOnceRow]
   }, gen)
 
 private def runGsComposeKoala (preset : BenchPreset) (gen : StdGen) :

@@ -154,7 +154,8 @@ theorem validWitness_discrepancy_eq_zero_of_constraint_mem {F : Type*}
     simpa using ha
   have hbLt : b < params.multiplicity - a := by
     simpa using hb
-  exact hmult point hpoint a b (by omega)
+  exact ((CBivariate.hasMultiplicity_iff_hasMultiplicityAtLeast Q params.multiplicity
+    point.1 point.2).1 (hmult point hpoint)) a b (by omega)
 
 def koetterBasisYBounded {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]

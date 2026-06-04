@@ -764,10 +764,14 @@ theorem coeff_linearXFactor_mul_eq_zero_of_yCoeff_zero {F : Type*}
   cases i with
   | zero =>
       rw [CompPoly.CBivariate.coeff_X_mul_zero, CompPoly.CBivariate.coeff_CC_mul]
-      simp [hP 0]
+      rw [hP 0]
+      simp
   | succ i =>
       rw [CompPoly.CBivariate.coeff_X_mul_succ, CompPoly.CBivariate.coeff_CC_mul]
-      simp [hP i, hP (i + 1)]
+      change CompPoly.CBivariate.coeff P i j -
+        x * CompPoly.CBivariate.coeff P (i + 1) j = 0
+      rw [hP i, hP (i + 1)]
+      simp
 
 theorem koetterBasisGeneratedBy_yBounded {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
