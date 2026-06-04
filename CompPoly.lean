@@ -176,7 +176,6 @@ import CompPoly.Univariate.CMvEquiv
 import CompPoly.Univariate.CoefficientInterpolation
 import CompPoly.Univariate.Context
 import CompPoly.Univariate.Deriv
-import CompPoly.Univariate.Derivative
 import CompPoly.Univariate.DivisionCorrectness
 import CompPoly.Univariate.EuclideanAlgorithm
 import CompPoly.Univariate.Lagrange

@@ -5,7 +5,7 @@ Authors: Valerii Huhnin
 -/
 
 import CompPoly.Univariate.BatchEval.Context
-import CompPoly.Univariate.Derivative
+import CompPoly.Univariate.Deriv
 import CompPoly.Univariate.Vanishing
 
 /-!

@@ -6,7 +6,7 @@ Authors: Valerii Huhnin
 
 import CompPoly.Bivariate.FactorMonic
 import CompPoly.Bivariate.ToPoly
-import CompPoly.Univariate.Derivative
+import CompPoly.Univariate.Deriv
 
 /-!
 # Guruswami-Sudan Polynomial Helpers
