@@ -9,8 +9,5 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.
 /-!
 # Lee-O'Sullivan Interpolation Correctness
 
-Public correctness surface for the executable Lee-O'Sullivan interpolation
-implementation. The proof internals are split across
-`LeeOSullivan.Correctness.*` modules; this file collects the public
-declarations through those imports.
+Correctness theorems for executable Lee-O'Sullivan interpolation.
 -/

@@ -150,9 +150,8 @@ private def gsWarmupIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 1 0 0
 
 /-
-Measured iteration triples in the GS groups are chosen per row: large counts
-balance total row runtime within the group, medium counts are about `large / 7`,
-and small counts are about `max (large / 35) 1`, with nearby nice values.
+Preset iteration counts are fixed per benchmark row to keep total runtimes
+comparable within each group across `small`, `medium`, and `large` runs.
 -/
 /-- Benchmark group metadata for Guruswami-Sudan cost-center rows. -/
 def guruswamiSudanGroupInfos : List BenchGroupInfo := [

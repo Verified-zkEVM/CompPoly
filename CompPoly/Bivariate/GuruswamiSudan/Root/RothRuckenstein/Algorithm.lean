@@ -105,9 +105,9 @@ def rootsInFieldForNonzeroEquation {F : Type*} [Field F] [BEq F] [LawfulBEq F]
 
 /-- Ordered recursive candidate extensions using a field-root backend.
 
-This direct coefficient-equation helper is a small reference path and does not
-expand zero equations. The residual-transform RR backend uses residual
-normalization before field-root queries.
+This direct coefficient-equation helper does not expand zero equations. The
+residual-transform Roth-Ruckenstein backend uses residual normalization before
+field-root queries.
 -/
 def rootPrefixExtensionsWithFieldRootContext {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
@@ -163,7 +163,7 @@ def transformedRothRuckensteinRootsYDegreeLt {F : Type*}
   (transformedRothRuckensteinRootPrefixes fieldRoots Q k).filter fun p ↦
     isRootYDegreeLtBool Q k p
 
-/-- Roth-Ruckenstein-style bounded-degree roots.
+/-- Roth-Ruckenstein bounded-degree roots.
 
 The public backend uses the residual-transform recursion, which strips common
 `X`-adic factors before each field-root query. Zero univariate equations are

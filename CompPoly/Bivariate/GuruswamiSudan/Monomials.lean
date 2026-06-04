@@ -9,6 +9,6 @@ import CompPoly.Bivariate.GuruswamiSudan.Polynomial
 /-!
 # Guruswami-Sudan Bivariate Monomials
 
-Component-facing import surface for the dense coefficient-grid and weighted
-monomial helpers used by the Guruswami-Sudan interpolation matrix.
+Re-exports dense coefficient-grid and weighted-monomial helpers used by the
+Guruswami-Sudan interpolation matrix.
 -/

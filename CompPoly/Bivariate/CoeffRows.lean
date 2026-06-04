@@ -141,7 +141,7 @@ theorem rowShiftedDegree?_eq_natWeightedDegree_ofCoeffRow
       _ = CBivariate.natWeightedDegree (ofCoeffRow row) 1 w := by
         rfl
 
-/-- Weighted-degree bounded rows convert to weighted-degree bounded bivariates. -/
+/-- Weighted-degree bounded rows convert to weighted-degree bounded bivariate polynomials. -/
 theorem natWeightedDegree_ofCoeffRow_le_of_rowShiftedDegree?_le
     [Field F] [BEq F] [LawfulBEq F]
     (row : PolynomialRow F) (w bound d : Nat)

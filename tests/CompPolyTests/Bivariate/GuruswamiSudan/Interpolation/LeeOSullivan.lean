@@ -13,7 +13,8 @@ import Mathlib.Algebra.Field.ZMod
 /-!
 # Lee-O'Sullivan Guruswami-Sudan Interpolation Tests
 
-Focused executable coverage for Lee setup, shifted rows, and context wiring.
+Focused executable coverage for Lee-O'Sullivan setup, shifted-row construction,
+and backend context assembly.
 -/
 
 namespace CompPolyTests

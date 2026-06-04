@@ -11,7 +11,7 @@ import Mathlib.Algebra.Field.ZMod
 # Dense Guruswami-Sudan Interpolation Tests
 
 Regression coverage for dense interpolation matrix construction, witness
-selection, and the low-message fallback.
+selection, and the low-message branch.
 -/
 
 namespace CompPolyTests

@@ -10,10 +10,10 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Basic
 /-!
 # Direct Koetter Guruswami-Sudan Interpolation
 
-Executable direct-`CBivariate` Koetter interpolation. This is an additional
-interpolation implementation alongside dense linear-system interpolation. The
-public `koetterInterpolate` operation uses a constructive low-message-degree
-branch, and otherwise runs the direct Koetter interpolation pass.
+Executable direct-`CBivariate` Koetter interpolation for the Guruswami-Sudan
+decoder. The public `koetterInterpolate` operation uses a constructive
+low-message-degree branch, and otherwise runs the direct Koetter interpolation
+pass.
 
 ## References
 

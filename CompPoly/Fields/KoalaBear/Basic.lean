@@ -164,7 +164,7 @@ lemma twoAdicity_maximal : ¬ (2 ^ (twoAdicity + 1)) ∣ (fieldSize - 1) := by
   decide
 
 /-- Repeated squaring: `sqChain g n = g ^ (2^n)`.
-    Does `n` multiplications instead of `2^n`, making it kernel-friendly. -/
+    Uses `n` multiplications and avoids expanding the exponent into `2^n` steps. -/
 private def sqChain (g : Field) : Nat → Field
   | 0 => g
   | n + 1 => let h := sqChain g n; h * h

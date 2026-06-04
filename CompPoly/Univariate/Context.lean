@@ -44,11 +44,10 @@ def naive [Semiring R] [BEq R] [LawfulBEq R] : MulContext R where
   mul_eq_mul _ _ := rfl
 
 /--
-NTT-backed multiplication context with canonical multiplication as a fallback.
+NTT-backed multiplication context with canonical multiplication for unsupported lengths.
 
 The context asks the selector for a domain that fits the current operands. If no
-supported domain is available, it falls back to ordinary `CPolynomial`
-multiplication.
+supported domain is available, it uses ordinary `CPolynomial` multiplication.
 -/
 def ntt [Field R] [BEq R] [LawfulBEq R]
     (bestDomainForLength? : (requiredLen : Nat) →
@@ -58,11 +57,10 @@ def ntt [Field R] [BEq R] [LawfulBEq R]
   mul_eq_mul := NTT.FastMul.withFallback_eq_mul bestDomainForLength?
 
 /--
-NTTFast-backed multiplication context with canonical multiplication as a fallback.
+NTTFast-backed multiplication context with canonical multiplication for unsupported lengths.
 
 The context asks the selector for a domain that fits the current operands. If no
-supported domain is available, it falls back to ordinary `CPolynomial`
-multiplication.
+supported domain is available, it uses ordinary `CPolynomial` multiplication.
 -/
 def nttFast [Field R] [BEq R] [LawfulBEq R]
     (bestDomainForLength? : (requiredLen : Nat) →

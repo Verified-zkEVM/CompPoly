@@ -36,10 +36,10 @@ def denseInterpolateWithBasisAndKernel {F : Type*}
     =<< kernelContext.homogeneousWitness matrix
 
 /-- Interpolation through an explicit homogeneous-kernel backend, with a
-constructive low-message fallback.
+constructive low-message branch.
 
 When `messageDegree ≤ 1`, `yWeight params = 0`, so weighted degree alone does
-not bound the `Y`-degree. The fallback returns an explicit product witness for
+not bound the `Y`-degree. This branch returns an explicit product witness for
 the low-message-degree branch. -/
 def denseInterpolateWithKernel {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]

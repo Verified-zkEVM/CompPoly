@@ -49,10 +49,10 @@ def ValidInterpolationWitness {F : Type*}
 
 /-- A dense homogeneous linear-kernel backend.
 
-The operation returns one normalized-by-the-backend nonzero kernel witness when
-it can find one. Completeness is stated in the negative form needed by dense
-interpolation systems: if no witness is returned, no nonzero homogeneous
-solution exists.
+The operation returns a nonzero kernel witness in the backend's chosen
+normalization when it can find one. Completeness is stated in the negative form
+needed by dense interpolation systems: if no witness is returned, no nonzero
+homogeneous solution exists.
 -/
 structure LinearKernelContext (F : Type*) [Field F] [BEq F] [LawfulBEq F] where
   homogeneousWitness : DenseMatrix F → Option (Array F)

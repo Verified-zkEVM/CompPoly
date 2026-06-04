@@ -11,9 +11,8 @@ import Mathlib.Algebra.Group.Subgroup.Finite
 /-!
 # Smooth Multiplicative-Subgroup Splitter Correctness
 
-Proof surface for the smooth cyclic splitter. The executable refactor lands the
-contracts now; the detailed coset-partition and field-specific proofs can be
-filled in incrementally.
+Correctness theorems for the smooth cyclic splitter, including executable
+contracts and adapter theorems.
 -/
 
 namespace CompPoly

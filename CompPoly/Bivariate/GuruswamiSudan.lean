@@ -10,5 +10,5 @@ import CompPoly.Bivariate.GuruswamiSudan.Executable
 # Guruswami-Sudan Polynomial Kernels
 
 Facade module re-exporting the executable CompPoly Guruswami-Sudan polynomial
-core and Milestone 1 backend contracts.
+core and backend contexts.
 -/

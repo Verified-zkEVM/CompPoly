@@ -141,10 +141,7 @@ theorem koetterRawInterpolate_complete_of_messageDegree_gt_one {F : Type*}
   refine ⟨idx, hi, hne, ?_⟩
   exact le_trans hdegLeQ hQ.2.1
 
-/-- Completeness for the public Koetter interpolation operation.
-
-For `messageDegree > 1` this uses the direct Koetter completeness theorem,
-not a dense-backend fallback. -/
+/-- Completeness for `koetterInterpolate` across the low-message and direct-Koetter branches. -/
 theorem koetterInterpolate_complete {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     {points : Array (F × F)} {params : GSInterpParams} :
@@ -159,11 +156,7 @@ theorem koetterInterpolate_complete {F : Type*}
     exact koetterRawInterpolate_complete_of_messageDegree_gt_one
       (F := F) (points := points) (params := params) hLow hExists
 
-/-- Public Koetter interpolation context.
-
-The executable operation has no dense interpolation fallback. Its completeness
-field uses the raw Koetter theorem for `messageDegree > 1` and the constructive
-low-message branch for `messageDegree ≤ 1`. -/
+/-- Certified interpolation backend for `koetterInterpolate`. -/
 def koetterInterpContext (F : Type*) [Field F] [BEq F] [LawfulBEq F]
     [Nontrivial F] [DecidableEq F] : GSInterpContext F where
   interpolate := koetterInterpolate

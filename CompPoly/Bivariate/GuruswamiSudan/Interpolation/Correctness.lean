@@ -140,13 +140,13 @@ private theorem lowMessageYPolynomial_toPoly {F : Type*}
   exact hfold points.toList 1 1 (by simp [CBivariate.toPoly_one])
 
 private theorem lowMessageYPolynomial_ne_zero {F : Type*} [Field F]
-    (points : Array (F × F)) (multipity : Nat) :
-    lowMessageYPolynomial points multipity ≠ 0 := by
+    (points : Array (F × F)) (multiplicity : Nat) :
+    lowMessageYPolynomial points multiplicity ≠ 0 := by
   unfold lowMessageYPolynomial
   have hfold : ∀ (xs : List (F × F)) (acc : Polynomial F),
       acc ≠ 0 →
         xs.foldl
-            (fun P point ↦ P * (Polynomial.X - Polynomial.C point.2) ^ multipity)
+            (fun P point ↦ P * (Polynomial.X - Polynomial.C point.2) ^ multiplicity)
             acc ≠ 0 := by
     intro xs
     induction xs with
@@ -158,7 +158,7 @@ private theorem lowMessageYPolynomial_ne_zero {F : Type*} [Field F]
         simp only [List.foldl_cons]
         apply ih
         exact mul_ne_zero hacc
-          (pow_ne_zero multipity (Polynomial.X_sub_C_ne_zero point.2))
+          (pow_ne_zero multiplicity (Polynomial.X_sub_C_ne_zero point.2))
   exact hfold points.toList 1 one_ne_zero
 
 private theorem lowMessageYPolynomial_factor {F : Type*} [Field F]

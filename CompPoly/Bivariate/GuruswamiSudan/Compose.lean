@@ -9,6 +9,5 @@ import CompPoly.Bivariate.GuruswamiSudan.Hasse
 /-!
 # Guruswami-Sudan Bivariate Composition
 
-Component-facing import surface for `CBivariate.composeY` and related
-coefficient/truncated evaluators.
+Re-exports `CBivariate.composeY` and related coefficient/truncated evaluators.
 -/

@@ -107,7 +107,7 @@ def maxOption : Option Nat → Nat → Option Nat
   | none, n => some n
   | some m, n => some (max m n)
 
-/-- Maximum shifted row degree currently visible in a matrix. -/
+/-- Maximum shifted row degree among the rows of a matrix. -/
 def matrixShiftedDegree? (M : PolynomialMatrix F) (shift : Array Nat) : Option Nat :=
   (List.range M.size).foldl
     (fun acc i ↦

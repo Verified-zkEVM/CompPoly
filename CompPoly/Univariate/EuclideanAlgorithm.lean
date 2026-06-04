@@ -175,7 +175,7 @@ def normXgcd [Field R] [BEq R] [LawfulBEq R]
   let c := res.1.leadingCoeff⁻¹
   (c • res.1, c • res.2.1, c • res.2.2)
 
-/-- The normalized extended-gcd output still satisfies the Bezout identity. -/
+/-- The normalized extended-gcd output satisfies the Bezout identity. -/
 theorem normXgcd_bezout [Field R] [BEq R] [LawfulBEq R]
     (p q : CPolynomial R) (threshold : ℕ) :
     Bezout p q (normXgcd p q threshold) := by

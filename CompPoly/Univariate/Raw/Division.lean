@@ -105,8 +105,8 @@ Remainder by a monic polynomial through reversal and truncated products.
 
 For canonical monic inputs this computes the quotient from the reversed divisor
 inverse modulo `X^k`, then subtracts only the low coefficients needed for the
-remainder. Inputs outside the fast-path guard fall back to the simple
-monic-remainder implementation.
+remainder. Inputs outside the fast-path guard use the simple monic-remainder
+implementation.
 -/
 @[inline, specialize]
 def modByMonicByReversal [Field R] [LawfulBEq R] (M : MulLowContext R)

@@ -43,9 +43,8 @@ def IsLinearRootFactorCandidate {F : Type*} [Field F]
 /-- A deterministic splitter for squarefree products of linear factors.
 
 The executable function consumes the field cardinality and the current factor.
-The contract is intentionally explicit: completeness of the public root backend
-depends on this splitter being complete for every linear-factor product reached
-by the recursion.
+Completeness of the public root backend depends on splitter completeness for
+every linear-factor product reached by the recursion.
 -/
 structure LinearFactorProductSplitter (F : Type*) [Field F] [BEq F] [LawfulBEq F] where
   splitLinearFactors : Nat → CPolynomial F → Array (CPolynomial F)

@@ -9,8 +9,5 @@ import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Mini
 /-!
 # Correctness Contract for Mulders-Storjohann Reduction
 
-Public correctness surface for the executable Mulders-Storjohann shifted row
-reducer. The proof internals are split across
-`MuldersStorjohannCorrectness.*` modules; this file collects the public
-declarations through those imports.
+Correctness theorems for the executable Mulders-Storjohann shifted row reducer.
 -/

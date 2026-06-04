@@ -46,7 +46,7 @@ def naive [Semiring R] [BEq R] [LawfulBEq R] : MulContext R where
   mul p q := p * q
   mul_eq_mul _ _ := rfl
 
-/-- NTT-backed raw multiplication context with raw multiplication as a fallback. -/
+/-- NTT-backed raw multiplication context with raw multiplication for unsupported lengths. -/
 def ntt [Field R] [BEq R] [LawfulBEq R]
     (bestDomainForLength? : (requiredLen : Nat) →
       Option (NTT.FittingDomain R requiredLen)) :
@@ -66,7 +66,7 @@ def ntt [Field R] [BEq R] [LawfulBEq R]
         simp [hdomain, requiredLen, NTT.FastMul.Raw.fastMulImpl_trim_eq_mul D p q (by
           simpa [NTT.Domain.fits] using hfit)]
 
-/-- NTTFast-backed raw multiplication context with raw multiplication as a fallback. -/
+/-- NTTFast-backed raw multiplication context with raw multiplication for unsupported lengths. -/
 def nttFast [Field R] [BEq R] [LawfulBEq R]
     (bestDomainForLength? : (requiredLen : Nat) →
       Option (NTT.FittingDomain R requiredLen)) :

@@ -16,9 +16,9 @@ Executable splitter for field-root products over finite fields whose
 multiplicative group admits a smooth cyclic refinement schedule, following the
 subgroup-refinement root-finding method of [MOV92].
 
-The generic root pipeline still sees only a `LinearFactorProductSplitter`. This
-module provides a contract-bearing smooth context plus an adapter from that
-context to the shared splitter interface.
+The generic root pipeline consumes a `LinearFactorProductSplitter`. This module
+provides a contract-bearing smooth context plus an adapter from that context to
+the shared splitter interface.
 
 ## References
 
@@ -37,9 +37,9 @@ namespace FiniteField
 /--
 Splitter-input predicate for a smooth cyclic splitter.
 
-This is intentionally a mathematical contract, not an executable guard. The
-field-root pipeline is expected to prove it for `gcd(p, X^q - X)` values before
-using the splitter completeness theorem.
+This predicate records the mathematical input contract for the splitter. The
+field-root pipeline proves it for `gcd(p, X^q - X)` values before using the
+splitter completeness theorem.
 -/
 def smoothSplitterInput {F : Type*} [Field F]
     (q : Nat) (_generator : F) (_schedule : Array Nat) (p : CPolynomial F) : Prop :=

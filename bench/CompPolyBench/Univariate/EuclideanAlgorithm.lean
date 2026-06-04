@@ -10,7 +10,7 @@ import CompPoly.Univariate.EuclideanAlgorithm
 /-!
 # Univariate Euclidean-Algorithm Benchmarks
 
-Benchmarks comparing the specialized monic gcd path with PR 239's normalized
+Benchmarks comparing the specialized monic gcd path with the normalized
 extended-gcd implementation over deterministic KoalaBear workloads.
 -/
 

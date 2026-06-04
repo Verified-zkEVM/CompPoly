@@ -1079,8 +1079,8 @@ instance [Ring R] [BEq R] [LawfulBEq R] : Sub (CPolynomial R) where
 
 /-- Erase the coefficient at index `n` (same as `p` except `coeff n = 0`, then trimmed).
 
-  Uses an in-place `Array.setIfInBounds` rather than subtracting a monomial, avoiding
-  the allocation of a length-`n` monomial array plus the padding/zip passes of `sub`. -/
+  Uses an in-place `Array.setIfInBounds` and avoids allocating a length-`n` monomial
+  array plus the padding/zip passes of `sub`. -/
 def erase [Zero R] [BEq R] [LawfulBEq R] (n : ℕ) (p : CPolynomial R) : CPolynomial R :=
   let arr : CPolynomial.Raw R := p.val.setIfInBounds n 0
   ⟨arr.trim, Trim.isCanonical_trim arr⟩

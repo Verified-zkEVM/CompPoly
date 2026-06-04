@@ -13,7 +13,7 @@ import Mathlib.Algebra.Polynomial.Taylor
 # Dense Guruswami-Sudan Interpolation Correctness
 
 Correctness contracts for the dense interpolation path and its constructive
-low-message fallback.
+low-message branch.
 -/
 
 namespace CompPoly

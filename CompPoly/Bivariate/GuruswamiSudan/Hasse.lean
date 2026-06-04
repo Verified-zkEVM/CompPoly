@@ -9,6 +9,5 @@ import CompPoly.Bivariate.GuruswamiSudan.Monomials
 /-!
 # Guruswami-Sudan Hasse Derivatives
 
-Component-facing import surface for executable Hasse derivatives and
-multiplicity checks on `CBivariate`.
+Re-exports executable Hasse derivatives and multiplicity checks on `CBivariate`.
 -/
