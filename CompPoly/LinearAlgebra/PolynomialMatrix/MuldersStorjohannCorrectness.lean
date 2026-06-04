@@ -2358,7 +2358,7 @@ private theorem muldersStorjohannStep_shape_preserved
       | none =>
           simp
       | some degJ =>
-          simp
+          simp only
           have hi : i < M.size := index_lt_of_rowShiftedDegree?_getElem?_eq_some hI
           have hj : j < M.size := index_lt_of_rowShiftedDegree?_getElem?_eq_some hJ
           split
@@ -2420,7 +2420,7 @@ private theorem muldersStorjohannStep_rowSpan_superset
         | none =>
             simpa [hI, hJ] using hM
         | some degJ =>
-            simp
+            simp only
             split
             · apply replaceRow_wellFormed hM
               simpa [Array.getD_eq_getD_getElem?] using
@@ -2538,7 +2538,7 @@ private theorem muldersStorjohannStep_wellFormed
       | none =>
           simpa [hI, hJ] using hM
       | some degJ =>
-          simp
+          simp only
           have hi : i < M.size := index_lt_of_rowShiftedDegree?_getElem?_eq_some hI
           have hj : j < M.size := index_lt_of_rowShiftedDegree?_getElem?_eq_some hJ
           split

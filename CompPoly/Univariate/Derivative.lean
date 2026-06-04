@@ -45,18 +45,15 @@ theorem derivative_toPoly {R : Type*} [Semiring R] [BEq R] [LawfulBEq R]
         (List.range (p.val.size - 1))).toArray.size := by
       simp [hn]
     rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hArray]
-    simp
-    have hcoeff : p.val[n + 1]?.getD 0 = p.toPoly.coeff (n + 1) := by
-      simpa [CPolynomial.coeff, CPolynomial.Raw.coeff] using
-        CPolynomial.coeff_toPoly p (n + 1)
-    rw [hcoeff]
+    simp only [Option.getD_some, List.getElem_toArray, List.getElem_map, List.getElem_range]
+    rw [CPolynomial.coeff_toPoly]
     simpa [Nat.cast_add, Nat.cast_one] using
       (Nat.cast_commute (n + 1) (p.toPoly.coeff (n + 1))).eq
   · have hlen : (List.map (fun i ↦ ((i + 1 : Nat) : R) * p.coeff (i + 1))
         (List.range (p.val.size - 1))).toArray.size ≤ n := by
       simp [Nat.le_of_not_gt hn]
     rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hlen]
-    simp
+    simp only [Option.getD_none]
     rw [← CPolynomial.coeff_toPoly p (n + 1)]
     unfold CPolynomial.coeff CPolynomial.Raw.coeff
     rw [Array.getD_eq_getD_getElem?]
