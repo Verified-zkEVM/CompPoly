@@ -991,7 +991,7 @@ theorem coeff_shiftC_eq_hasseDerivativeEval {F : Type*}
   rw [Polynomial.taylor_coeff]
   exact eval_hasseDeriv_eval_hasseDeriv_toPoly Q x y a b
 
-/-- The generic PR 238 multiplicity predicate agrees with the direct GS Hasse
+/-- The generic multiplicity predicate agrees with the direct GS Hasse
 multiplicity predicate. -/
 theorem hasMultiplicity_iff_hasMultiplicityAtLeast {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
@@ -1007,7 +1007,7 @@ theorem hasMultiplicity_iff_hasMultiplicityAtLeast {F : Type*}
     rw [coeff_shiftC_eq_hasseDerivativeEval Q x y a b]
     exact h a b hab
 
-/-- The GS batch Hasse predicate agrees with the generic PR 238 multiplicity
+/-- The GS batch Hasse predicate agrees with the generic multiplicity
 predicate over every packed point. -/
 theorem satisfiesMultiplicityConstraints_iff_hasMultiplicity {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
@@ -1024,7 +1024,7 @@ theorem satisfiesMultiplicityConstraints_iff_hasMultiplicity {F : Type*}
     exact (hasMultiplicity_iff_hasMultiplicityAtLeast Q r point.1 point.2).1
       (h point hmem)
 
-/-- The executable GS point checker agrees with the generic PR 238 multiplicity
+/-- The executable GS point checker agrees with the generic multiplicity
 predicate. -/
 theorem multiplicityAtLeastBool_iff_hasMultiplicity {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
@@ -1053,7 +1053,7 @@ theorem multiplicityAtLeastBool_iff_hasMultiplicity {F : Type*}
   · intro h i hi
     exact h _ _ (horders_sound _ (Array.getElem_mem_toList hi))
 
-/-- The executable GS batch checker agrees with the generic PR 238 multiplicity
+/-- The executable GS batch checker agrees with the generic multiplicity
 predicate over every packed point. -/
 theorem satisfiesMultiplicityConstraintsBool_iff_hasMultiplicity {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
@@ -1077,7 +1077,7 @@ theorem satisfiesMultiplicityConstraintsBool_iff_hasMultiplicity {F : Type*}
     exact (multiplicityAtLeastBool_iff_hasMultiplicity Q points[i].1 points[i].2 r).2
       (h points[i].1 points[i].2 hmem)
 
-/-- The executable GS point checker agrees with the generic PR 238 boolean
+/-- The executable GS point checker agrees with the generic boolean
 checker. -/
 theorem multiplicityAtLeastBool_iff_checkMultiplicity {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
@@ -1086,7 +1086,7 @@ theorem multiplicityAtLeastBool_iff_checkMultiplicity {F : Type*}
       CBivariate.checkMultiplicity Q r x y = true := by
   rw [multiplicityAtLeastBool_iff_hasMultiplicity, CBivariate.hasMultiplicity_iff_check]
 
-/-- The executable GS batch checker agrees pointwise with the generic PR 238
+/-- The executable GS batch checker agrees pointwise with the generic
 boolean checker over the packed point array. -/
 theorem satisfiesMultiplicityConstraintsBool_iff_checkMultiplicity {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]

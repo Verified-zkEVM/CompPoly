@@ -491,7 +491,7 @@ private def runGsHasseKoala (preset : BenchPreset) (gen : StdGen) :
     checksumBool checksumIterations
   let genericRow <- runTimed
     "guruswami-sudan-hasse-check-generic" "CBivariate"
-    "Generic PR 238 multiplicity check"
+    "Generic multiplicity check"
     "KoalaBear.Field" gsMultiplicityShape preset warmup measured
     (fun _ ↦ points.all fun point ↦
       CBivariate.checkMultiplicity Q gsCheckMultiplicity point.1 point.2)
@@ -511,7 +511,7 @@ private def runGsHasseKoala (preset : BenchPreset) (gen : StdGen) :
     checksumBool checksumIterations
   let fastGenericRow <- runTimed
     "guruswami-sudan-hasse-check-generic-fast" "CBivariate"
-    "Generic PR 238 multiplicity check"
+    "Generic multiplicity check"
     "KoalaBear.Fast.Field" gsMultiplicityShape preset warmup fastMeasured
     (fun _ ↦ fastPoints.all fun point ↦
       CBivariate.checkMultiplicity fastQ gsCheckMultiplicity point.1 point.2)
