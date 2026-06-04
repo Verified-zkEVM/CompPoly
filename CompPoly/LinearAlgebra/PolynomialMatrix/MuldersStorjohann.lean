@@ -18,23 +18,45 @@ namespace PolynomialMatrix
 
 variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
 
+/-- One inner-loop update for shifted-leading-position conflict search. -/
+def shiftedLeadingConflictInRowStep?
+    (M : PolynomialMatrix F) (shift : Array Nat) (i : Nat)
+    (found : Option (Nat × Nat)) (j : Nat) : Option (Nat × Nat) :=
+  match found with
+  | some _ => found
+  | none =>
+      match rowShiftedLeadingPosition? (M.getD i #[]) shift,
+          rowShiftedLeadingPosition? (M.getD j #[]) shift with
+      | some pi, some pj =>
+          if pi == pj then some (i, j) else none
+      | _, _ => none
+
+/-- Scan one row index `i` for a shifted-leading-position conflict. -/
+def shiftedLeadingConflictInRow?
+    (M : PolynomialMatrix F) (shift : Array Nat) (i : Nat)
+    (found : Option (Nat × Nat)) : Option (Nat × Nat) :=
+  (List.range' (i + 1) (M.size - (i + 1))).foldl
+    (shiftedLeadingConflictInRowStep? M shift i)
+    found
+
+/-- One outer-loop update for shifted-leading-position conflict search. -/
+def shiftedLeadingConflictFromStep?
+    (M : PolynomialMatrix F) (shift : Array Nat)
+    (found : Option (Nat × Nat)) (i : Nat) : Option (Nat × Nat) :=
+  shiftedLeadingConflictInRow? M shift i found
+
+/-- Scan all row pairs for the first shifted-leading-position conflict. -/
+def shiftedLeadingConflictFrom?
+    (M : PolynomialMatrix F) (shift : Array Nat)
+    (found : Option (Nat × Nat)) : Option (Nat × Nat) :=
+  (List.range' 0 M.size).foldl
+    (shiftedLeadingConflictFromStep? M shift)
+    found
+
 /-- First pair of nonzero rows with the same shifted leading position. -/
 def shiftedLeadingConflict? (M : PolynomialMatrix F) (shift : Array Nat) :
     Option (Nat × Nat) :=
-  Id.run do
-    let mut found : Option (Nat × Nat) := none
-    for i in [0:M.size] do
-      for j in [i + 1:M.size] do
-        match found with
-        | some _ => pure ()
-        | none =>
-            match rowShiftedLeadingPosition? (M.getD i #[]) shift,
-                rowShiftedLeadingPosition? (M.getD j #[]) shift with
-            | some pi, some pj =>
-                if pi == pj then
-                  found := some (i, j)
-            | _, _ => pure ()
-    pure found
+  shiftedLeadingConflictFrom? M shift none
 
 /-- Cancel the shifted leading term of `target` using `reducer`, when possible. -/
 def cancelShiftedLeadingTerm
@@ -75,7 +97,8 @@ def muldersStorjohannReduceWithFuel :
           muldersStorjohannReduceWithFuel fuel
             (muldersStorjohannStep M shift i j) shift
 
-private def maxOption : Option Nat → Nat → Option Nat
+/-- Insert a natural number into an optional running maximum. -/
+def maxOption : Option Nat → Nat → Option Nat
   | none, n => some n
   | some m, n => some (max m n)
 

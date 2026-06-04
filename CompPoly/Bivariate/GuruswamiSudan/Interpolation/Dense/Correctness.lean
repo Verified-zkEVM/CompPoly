@@ -77,7 +77,7 @@ private theorem map_div_getD_of_lt {F : Type*} [Div F] [Zero F]
     (v.map fun x ↦ x / a).getD i 0 = v.getD i 0 / a := by
   simp [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hi]
 
-private theorem normalizeVector?_some_data {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+theorem normalizeVector?_some_data {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     {v w : Array F} (h : normalizeVector? v = some w) :
     ∃ pivot, pivot < v.size ∧ v.getD pivot 0 ≠ 0 ∧
       w = v.map (fun x ↦ x / v.getD pivot 0) ∧
@@ -480,7 +480,7 @@ private theorem hasseDerivativeEval_ofMonomialCoeffs {F : Type*}
     (CBivariate.hasseDerivativeEval_zero constraint.xOrder constraint.yOrder constraint.x
       constraint.y)
 
-private theorem interpolationPolynomialOnBasis_weightedDegree_le {F : Type*}
+theorem interpolationPolynomialOnBasis_weightedDegree_le {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (basis : Array CBivariate.Monomial) (params : GSInterpParams) (coeffs : Array F)
     (hbound : ∀ monomial, monomial ∈ basis.toList →
@@ -492,7 +492,7 @@ private theorem interpolationPolynomialOnBasis_weightedDegree_le {F : Type*}
   apply CBivariate.ofMonomialCoeffs_natWeightedDegree_le
   exact hbound
 
-private theorem interpolationPolynomial_weightedDegree_le {F : Type*}
+theorem interpolationPolynomial_weightedDegree_le {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (params : GSInterpParams) (coeffs : Array F) :
     CBivariate.natWeightedDegree (interpolationPolynomial params coeffs)
@@ -531,7 +531,7 @@ private theorem dotRow_map_div {F : Type*} [Field F]
           simp [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hle]
   simpa using hfold (List.range M.cols) 0 0 (by simp)
 
-private theorem isHomogeneousSolution_map_div {F : Type*} [Field F]
+theorem isHomogeneousSolution_map_div {F : Type*} [Field F]
     {M : DenseMatrix F} {v : Array F} (a : F)
     (hsol : DenseMatrix.IsHomogeneousSolution M v) :
     DenseMatrix.IsHomogeneousSolution M (v.map fun x ↦ x / a) := by
@@ -540,7 +540,7 @@ private theorem isHomogeneousSolution_map_div {F : Type*} [Field F]
   rw [hsol row hrow]
   simp
 
-private theorem interpolationPolynomialOnBasis_satisfies_of_solution {F : Type*}
+theorem interpolationPolynomialOnBasis_satisfies_of_solution {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     {basis : Array CBivariate.Monomial}
     {points : Array (F × F)} {params : GSInterpParams} {coeffs : Array F}
@@ -565,7 +565,7 @@ private theorem interpolationPolynomialOnBasis_satisfies_of_solution {F : Type*}
   rw [hasseDerivativeEval_ofMonomialCoeffs basis coeffs constraint]
   simpa [constraint, hget] using hdot
 
-private theorem interpolationPolynomial_satisfies_of_solution {F : Type*}
+theorem interpolationPolynomial_satisfies_of_solution {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     {points : Array (F × F)} {params : GSInterpParams} {coeffs : Array F}
     (hsol : DenseMatrix.IsHomogeneousSolution (interpolationMatrix points params) coeffs) :
@@ -574,7 +574,7 @@ private theorem interpolationPolynomial_satisfies_of_solution {F : Type*}
   exact interpolationPolynomialOnBasis_satisfies_of_solution
     (basis := interpolationMonomials params) hsol
 
-private theorem interpolationCoefficientVectorOnBasis_getD_of_lt {F : Type*} [Zero F]
+theorem interpolationCoefficientVectorOnBasis_getD_of_lt {F : Type*} [Zero F]
     (basis : Array CBivariate.Monomial) (Q : CBivariate F) {k : Nat}
     (hk : k < basis.size) :
     (interpolationCoefficientVectorOnBasis basis Q).getD k 0 =
@@ -583,13 +583,13 @@ private theorem interpolationCoefficientVectorOnBasis_getD_of_lt {F : Type*} [Ze
   unfold interpolationCoefficientVectorOnBasis
   simp [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hk]
 
-private theorem interpolationCoefficientVectorOnBasis_size {F : Type*} [Zero F]
+theorem interpolationCoefficientVectorOnBasis_size {F : Type*} [Zero F]
     (basis : Array CBivariate.Monomial) (Q : CBivariate F) :
     (interpolationCoefficientVectorOnBasis basis Q).size = basis.size := by
   unfold interpolationCoefficientVectorOnBasis
   simp
 
-private theorem cbivariate_ne_zero_exists_coeff_ne_zero {F : Type*}
+theorem cbivariate_ne_zero_exists_coeff_ne_zero {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     {Q : CBivariate F} (hQ : Q ≠ 0) :
     ∃ i j, CBivariate.coeff Q i j ≠ 0 := by
@@ -601,7 +601,7 @@ private theorem cbivariate_ne_zero_exists_coeff_ne_zero {F : Type*}
   by_contra hcoeff
   exact hnot ⟨i, j, hcoeff⟩
 
-private theorem interpolationCoefficientVectorOnBasis_nonzero_of_complete {F : Type*}
+theorem interpolationCoefficientVectorOnBasis_nonzero_of_complete {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     {basis : Array CBivariate.Monomial} {Q : CBivariate F}
     (hQ : Q ≠ 0)
@@ -619,7 +619,7 @@ private theorem interpolationCoefficientVectorOnBasis_nonzero_of_complete {F : T
   · rw [interpolationCoefficientVectorOnBasis_getD_of_lt basis Q hk, hget]
     exact hcoeff
 
-private theorem interpolationPolynomialOnBasis_eq_of_complete {F : Type*}
+theorem interpolationPolynomialOnBasis_eq_of_complete {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     {basis : Array CBivariate.Monomial} {Q : CBivariate F}
     (hnodup : basis.toList.Nodup)
@@ -663,7 +663,7 @@ private theorem interpolationPolynomialOnBasis_eq_of_complete {F : Type*}
     rw [hgetCoeff]
     rw [interpolationCoefficientVectorOnBasis_getD_of_lt basis Q hk, hget]
 
-private theorem interpolationCoefficientVectorOnBasis_solution_of_satisfies {F : Type*}
+theorem interpolationCoefficientVectorOnBasis_solution_of_satisfies {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     {basis : Array CBivariate.Monomial}
     {points : Array (F × F)} {params : GSInterpParams} {Q : CBivariate F}
@@ -706,7 +706,7 @@ private theorem interpolationCoefficientVectorOnBasis_solution_of_satisfies {F :
       (interpolationCoefficientVectorOnBasis basis Q) constraint] at hderiv
   simpa [constraint] using hderiv
 
-private theorem normalizeVector?_some_of_nonzero {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+theorem normalizeVector?_some_of_nonzero {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     {v : Array F} (hnz : DenseMatrix.NonzeroVector v) :
     ∃ norm, normalizeVector? v = some norm := by
   unfold normalizeVector?
