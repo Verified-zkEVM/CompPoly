@@ -154,6 +154,19 @@ theorem toPoly_addRaw {p q : CPolynomial.Raw Q} : (addRaw p q).toPoly = p.toPoly
   ext n
   rw [Polynomial.coeff_add, coeff_toPoly, coeff_toPoly, coeff_toPoly, add_coeff?]
 
+/-- `toPoly` of a right-scalar multiplication is multiplication by `Polynomial.C r`
+on the right. -/
+@[grind =]
+theorem toPoly_smulRight {p : CPolynomial.Raw Q} {r : Q} :
+    (smulRight r p).toPoly = p.toPoly * Polynomial.C r := by
+  ext n
+  rw [Polynomial.coeff_mul_C, coeff_toPoly, coeff_toPoly]
+  show (Array.map (fun a => a * r) p).getD n 0 = p.getD n 0 * r
+  rw [Array.getD_eq_getD_getElem?, Array.getD_eq_getD_getElem?, Array.getElem?_map]
+  cases h : p[n]? with
+  | none => simp
+  | some a => simp
+
 @[grind =]
 lemma toPoly_add [LawfulBEq R] (p q : CPolynomial.Raw R) :
     (p + q).toPoly = p.toPoly + q.toPoly := by

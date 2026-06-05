@@ -162,6 +162,10 @@ theorem add_comm : p + q = q + p := by
 
 theorem zero_canonical : (0 : CPolynomial.Raw R).trim = 0 := Trim.canonical_empty
 
+@[simp]
+theorem leadingCoeff_zero : leadingCoeff (0 : CPolynomial.Raw R) = (0 : R) := by
+  rw [leadingCoeff, zero_canonical]; rfl
+
 theorem monomial_canonical [LawfulBEq R] [DecidableEq R] (n : ℕ) (c : R) :
     (monomial n c).trim = monomial n c := by
   by_cases h : c = 0
@@ -1110,7 +1114,10 @@ end Ring
 
 section DivisionTheorems
 
-variable [Field R] [BEq R]
+variable [BEq R]
+
+section
+variable [CommRing R] [Nontrivial R]
 
 lemma coeff_mul_X_pow [LawfulBEq R] (p : CPolynomial.Raw R) (n i : ℕ) :
     (p * X ^ n).coeff i =
@@ -1161,6 +1168,11 @@ lemma coeff_C_mul_X_pow [LawfulBEq R] (scale : R) (p : CPolynomial.Raw R) (n i :
   rw [C_mul_eq_smul_trim, Trim.coeff_eq_coeff, smul_coeff, coeff_mul_X_pow]
   split_ifs <;> simp
 
+end
+
+section
+variable [Field R]
+
 lemma subScaledShift_eq_sub_C_mul_X_pow [LawfulBEq R]
     (p q : CPolynomial.Raw R) (scale : R) (shift : ℕ)
     (hsize : shift + q.size ≤ p.size) :
@@ -1201,6 +1213,11 @@ theorem modByMonicRemainderOnly_eq_modByMonic [LawfulBEq R]
     (p q : CPolynomial.Raw R) :
     modByMonicRemainderOnly p q = modByMonic p q := by
   exact modByMonicRemainderOnly_go_eq_divModByMonicAux_go_snd p.size p q
+
+end
+
+section
+variable [CommRing R]
 
 /-- The quotient produced by the monic long-division recursion is canonical regardless of input:
 each non-base step accumulates via `Raw.add` (which trims), and the base case returns `0`. -/
@@ -1248,6 +1265,11 @@ theorem divByMonic_canonical [LawfulBEq R] (p q : CPolynomial.Raw R) :
 theorem modByMonic_canonical [LawfulBEq R] {p : CPolynomial.Raw R} (hp : p.trim = p)
     (q : CPolynomial.Raw R) : (modByMonic p q).trim = modByMonic p q :=
   divModByMonicAux_go_snd_canonical p.size p q hp
+
+end
+
+section
+variable [Field R]
 
 /-- `subScaledShift` ends with `.trim`, so its result is canonical. -/
 theorem subScaledShift_is_trimmed [LawfulBEq R]
@@ -1303,6 +1325,8 @@ theorem mod_canonical [LawfulBEq R] (p q : CPolynomial.Raw R) :
   unfold mod
   apply modByMonic_canonical
   exact mul_is_trimmed _ _
+
+end
 
 end DivisionTheorems
 

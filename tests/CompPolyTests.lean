@@ -6,6 +6,8 @@ Authors: Valerii Huhnin
 
 import CompPolyTests.Bivariate.Basic
 import CompPolyTests.Bivariate.Degree
+import CompPolyTests.Bivariate.Factor
+import CompPolyTests.Bivariate.Deriv
 import CompPolyTests.Bivariate.Multiplicity
 import CompPolyTests.Bivariate.WeightedDegree
 import CompPolyTests.Data.MvPolynomial.Notation
@@ -20,6 +22,7 @@ import CompPolyTests.Multivariate.TypeclassMinimization
 import CompPolyTests.Multivariate.VarsDegrees
 import CompPolyTests.Univariate.Barycentric
 import CompPolyTests.Univariate.Basic
+import CompPolyTests.Univariate.EuclideanAlgorithm
 import CompPolyTests.Univariate.Linear
 import CompPolyTests.Univariate.NTT.FastMul
 import CompPolyTests.Univariate.NTT.Forward

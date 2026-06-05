@@ -369,6 +369,50 @@ theorem support_empty_iff [Zero R] [BEq R] [LawfulBEq R] (p : CPolynomial R) :
   · intro h i; by_contra hne; exact h i ((mem_support_iff p i).mpr hne)
   · intro h i; rw [mem_support_iff, h]; simp
 
+/-- The constant polynomial `C 0` is zero. -/
+@[simp] lemma C_zero [Zero R] [BEq R] [LawfulBEq R] :
+    (C (0 : R) : CPolynomial R) = 0 := by
+  rw [eq_zero_iff_coeff_zero]; intro i; rw [coeff_C]; simp
+
+/-- The natDegree of a constant polynomial `C r` is zero. -/
+theorem natDegree_C [Zero R] [BEq R] [LawfulBEq R] (r : R) :
+    (C r).natDegree = 0 := by
+    by_cases hr : r = 0
+    · subst hr; rw [C_zero]; rfl
+    · simp [C, natDegree, Raw.C]
+      conv_lhs => rw [show #[r] = (#[] : Array R).push r from rfl]
+      rw [Trim.push_trim #[] r hr]
+      simp
+
+/-- The support of a constant polynomial `C r` is `{0}`. -/
+theorem support_C [Zero R] [BEq R] [LawfulBEq R] {r : R} (hr : r ≠ 0) :
+    (C r).support = {0} := by
+    ext i
+    rw [mem_support_iff, coeff_C, Finset.mem_singleton]
+    simp [hr]
+
+/-- The support of a nonzero monomial `c * X^n` is `{n}`. -/
+theorem support_monomial [Semiring R] [DecidableEq R]
+    [BEq R] [LawfulBEq R] {n : ℕ} {c : R} (hc : c ≠ 0) :
+    (monomial n c).support = {n} := by
+  ext i
+  rw [mem_support_iff, coeff_monomial, Finset.mem_singleton]
+  simp [hc]
+
+/-- The natDegree of a nonzero monomial `c * X^n` is `n`. -/
+theorem natDegree_monomial [Semiring R] [DecidableEq R]
+    [BEq R] [LawfulBEq R] {n : ℕ} {c : R} (hc : c ≠ 0) :
+    (monomial n c).natDegree = n := by
+  simp [monomial, Raw.monomial, hc, natDegree]
+
+/-- The support of the sum of two polynomials is a subset of the union of their supports. -/
+theorem support_add_subset [Semiring R] [DecidableEq R]
+    [BEq R] [LawfulBEq R] (p q : CPolynomial R) : (p + q).support ⊆ p.support ∪ q.support := by
+    intro i hi
+    rw [mem_support_iff, coeff_add] at hi
+    rw [Finset.mem_union, mem_support_iff, mem_support_iff]
+    exact not_and_or.mp fun ⟨h1, h2⟩ => hi (by rw [h1, h2]; simp)
+
 /-- Evaluation equals the sum over support of coefficients times powers. -/
 theorem eval_eq_sum_support [Semiring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) (x : R) :
     p.eval x = p.support.sum (fun i => p.coeff i * x ^ i) := by
@@ -712,15 +756,41 @@ theorem natDegree_eq_support_sup [Zero R] [BEq R] [LawfulBEq R] (p : CPolynomial
       · simpa using (Finset.le_sup (f := fun m => m) hn_mem)
       · exact Finset.sup_le fun m hm => hle m hm
 
+/-- If `coeff p i ≠ 0` then `i ≤ p.natDegree`. -/
+theorem le_natDegree_of_ne_zero [Zero R] [BEq R] [LawfulBEq R]
+    {p : CPolynomial R} {i : ℕ} (h : coeff p i ≠ 0) :
+    i ≤ p.natDegree := by
+  rw [natDegree_eq_support_sup]
+  exact Finset.le_sup (f := fun n => n) ((mem_support_iff p i).mpr h)
+
+/-- The natDegree of a sum is at most the max of the natDegrees. -/
+theorem natDegree_add_le [Semiring R] [DecidableEq R]
+    [BEq R] [LawfulBEq R] (p q : CPolynomial R) :
+    (p + q).natDegree ≤ max p.natDegree q.natDegree := by
+  rw [natDegree_eq_support_sup (p + q), natDegree_eq_support_sup p,
+    natDegree_eq_support_sup q, ← Finset.sup_union]
+  exact Finset.sup_mono (support_add_subset p q)
+
+/-- The leading coefficient of a nonzero polynomial is nonzero. -/
+lemma leadingCoeff_ne_zero [Zero R] [BEq R] [LawfulBEq R] {p : CPolynomial R} (h : p ≠ 0) :
+    p.leadingCoeff ≠ 0 := by
+  unfold leadingCoeff
+  apply Or.resolve_left
+   (Trim.isCanonical_iff_size_eq_zero_or_getLastD_ne_zero.mp p.property)
+  intro hsize
+  exact h (ext (Array.eq_empty_of_size_eq_zero hsize))
+
 section Division
 
 /-- Quotient of `p` by a monic polynomial `q`. Matches Mathlib's `Polynomial.divByMonic`. -/
-def divByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
+def divByMonic [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] (p q : CPolynomial R) :
+    CPolynomial R :=
   ⟨Raw.divByMonic p.val q.val,
    Trim.isCanonical_of_trim_eq (Raw.divByMonic_canonical p.val q.val)⟩
 
 /-- Remainder of `p` modulo a monic polynomial `q`. Matches Mathlib's `Polynomial.modByMonic`. -/
-def modByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
+def modByMonic [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] (p q : CPolynomial R) :
+    CPolynomial R :=
   ⟨Raw.modByMonic p.val q.val,
    Trim.isCanonical_of_trim_eq
      (Raw.modByMonic_canonical (Trim.trim_eq_of_isCanonical p.property) q.val)⟩
@@ -749,9 +819,25 @@ theorem modByMonicRemainderOnly_eq_modByMonic [Field R] [BEq R] [LawfulBEq R]
 def div [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
   ⟨Raw.div p.val q.val, Trim.isCanonical_of_trim_eq (Raw.div_canonical p.val q.val)⟩
 
+/-- Any `CPolynomial` divided by the zero polynomial gives the zero
+polynomial. -/
+@[simp]
+theorem div_zero [Field R] [BEq R] [LawfulBEq R] (p : CPolynomial R) : p.div 0 = 0 := by
+  apply Subtype.ext; show Raw.div p.val 0 = 0; unfold Raw.div
+  rw [Raw.mul_zero, Raw.leadingCoeff_zero, inv_zero]
+  rw [smul_eq_mul, Raw.C_mul_eq_smul_trim, Raw.smul_zero_trim]; rfl
+
 /-- Remainder of `p` modulo `q` (when `R` is a field). -/
 def mod [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : CPolynomial R :=
   ⟨Raw.mod p.val q.val, Trim.isCanonical_of_trim_eq (Raw.mod_canonical p.val q.val)⟩
+
+/-- Any `CPolynomial` modulo the zero polynomial gives the zero
+polynomial. -/
+@[simp]
+theorem mod_zero [Field R] [BEq R] [LawfulBEq R] (p : CPolynomial R) : p.mod 0 = 0 := by
+  apply Subtype.ext; show Raw.mod p.val 0 = 0; unfold Raw.mod
+  rw [Raw.mul_zero, Raw.leadingCoeff_zero, inv_zero]
+  rw [smul_eq_mul, Raw.C_mul_eq_smul_trim, Raw.smul_zero_trim]; rfl
 
 instance [Field R] [BEq R] [LawfulBEq R] : Div (CPolynomial R) := ⟨div⟩
 instance [Field R] [BEq R] [LawfulBEq R] : Mod (CPolynomial R) := ⟨mod⟩
@@ -875,6 +961,24 @@ instance [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] : Semiring (CPolynomi
   natCast_zero := by rfl
   natCast_succ := by intro n; rfl
 
+@[simp]
+lemma natCast_eq_C [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (n : ℕ) : (↑n : CPolynomial R) = C (↑n : R) := by
+  induction n with
+  | zero =>
+    rw [Nat.cast_zero, Nat.cast_zero]
+    rw [eq_iff_coeff]
+    intro i; rw [coeff_zero, coeff_C]
+    split_ifs <;> simp
+  | succ n ih =>
+    rw [Nat.cast_add (R := CPolynomial R) n 1,
+      Nat.cast_one (R := CPolynomial R),
+      Nat.cast_add (R := R) n 1,
+      Nat.cast_one (R := R), ih, eq_iff_coeff]
+    intro i
+    simp only [coeff_add, coeff_C, coeff_one]
+    split_ifs <;> simp_all
+
 /-- The underlying `Raw` value of `p ^ n` equals `p.val ^ n`
 (using the Raw `Pow` instance). This bridges the optimized
 `powBySq` used in the `Semiring` instance with the spec
@@ -903,6 +1007,14 @@ lemma C_mul_X_pow_eq_monomial [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R]
   · rw [show (Raw.C r).trim = Raw.C r from Trim.canonical_iff.mpr fun hp ↦ hr,
         Raw.C_mul_eq_smul_trim, Raw.X_pow_eq_monomial_one]
     exact Raw.smul_monomial_one_trim n r
+
+/-- Distribute `CPolynomial.coeff` over a `Finset.sum`. -/
+lemma coeff_finset_sum [Semiring R] [BEq R] [LawfulBEq R]
+    {ι : Type*} [DecidableEq ι] (s : Finset ι) (f : ι → CPolynomial R) (n : ℕ) :
+    coeff (s.sum f) n = s.sum (fun i => coeff (f i) n) := by
+  induction s using Finset.induction with
+  | empty => simp only [Finset.sum_empty, coeff_zero]
+  | insert _ _ hna ih => rw [Finset.sum_insert hna, coeff_add, ih, Finset.sum_insert hna]
 
 end Semiring
 
@@ -1129,6 +1241,26 @@ instance [Semiring R] [BEq R] [LawfulBEq R] : Module R (CPolynomial R) where
   smul_add := smul_add
   add_smul := add_smul
   zero_smul := zero_smul
+
+/-- Equality between `div` and `divByMonic` for `CPolynomial R` -/
+theorem div_eq_divByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) :
+    p.div q =
+      (q.leadingCoeff⁻¹ • p).divByMonic (q.leadingCoeff⁻¹ • q) := by
+  apply Subtype.ext; show Raw.div p.val q.val = _
+  have hq_lc : Raw.leadingCoeff q.val = q.leadingCoeff :=
+    show q.val.trim.getLastD 0 = q.val.getLastD 0 by rw [trim_eq q]
+  rw [Raw.div, hq_lc, smul_eq_mul, Raw.C_mul_eq_smul_trim, Raw.C_mul_eq_smul_trim]
+  rfl
+
+/-- Equality between `mod` and `modByMonic` for `CPolynomial R` -/
+theorem mod_eq_modByMonic [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) :
+    p.mod q =
+      (q.leadingCoeff⁻¹ • p).modByMonic (q.leadingCoeff⁻¹ • q) := by
+  apply Subtype.ext; show Raw.mod p.val q.val = _
+  have hq_lc : Raw.leadingCoeff q.val = q.leadingCoeff := by
+    show q.val.trim.getLastD 0 = q.val.getLastD 0; rw [trim_eq q]
+  rw [Raw.mod, hq_lc, smul_eq_mul]
+  rw [Raw.C_mul_eq_smul_trim, Raw.C_mul_eq_smul_trim]; rfl
 
 end Module
 
