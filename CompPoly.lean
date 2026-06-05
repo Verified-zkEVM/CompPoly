@@ -6,6 +6,7 @@ import CompPoly.Bivariate.FactorMonic
 import CompPoly.Bivariate.ToPoly
 import CompPoly.Data.Array.Lemmas
 import CompPoly.Data.Classes.DCast
+import CompPoly.Data.Classes.LawfulBEq
 import CompPoly.Data.ExtTreeMap.DTreeMap
 import CompPoly.Data.ExtTreeMap.ExtDTreeMap
 import CompPoly.Data.ExtTreeMap.ExtTreeMap
@@ -97,6 +98,7 @@ import CompPoly.Univariate.BatchEval.Context
 import CompPoly.Univariate.BatchEval.Correctness
 import CompPoly.Univariate.BatchEval.Naive
 import CompPoly.Univariate.BatchEval.SubproductTree
+import CompPoly.Univariate.CMvEquiv
 import CompPoly.Univariate.Deriv
 import CompPoly.Univariate.DivisionCorrectness
 import CompPoly.Univariate.EuclideanAlgorithm
