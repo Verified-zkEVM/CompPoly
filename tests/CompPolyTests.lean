@@ -15,6 +15,7 @@ import CompPolyTests.Bivariate.GuruswamiSudan.Hasse
 import CompPolyTests.Bivariate.GuruswamiSudan.Interpolation.Dense
 import CompPolyTests.Bivariate.GuruswamiSudan.Interpolation.Koetter
 import CompPolyTests.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan
+import CompPolyTests.Bivariate.GuruswamiSudan.Root.Alekhnovich
 import CompPolyTests.Bivariate.GuruswamiSudan.Root.FieldRoots.Binary
 import CompPolyTests.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 import CompPolyTests.Bivariate.GuruswamiSudan.Root.RothRuckenstein

@@ -178,8 +178,8 @@ def guruswamiSudanGroupInfos : List BenchGroupInfo := [
     "Guruswami-Sudan Hasse multiplicity checking (KoalaBear)"⟩,
   ⟨"guruswami-sudan-compose-koalabear",
     "Guruswami-Sudan composition in Y (KoalaBear)"⟩,
-  ⟨"guruswami-sudan-root-roth-koalabear",
-    "Guruswami-Sudan Roth-Ruckenstein roots (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-root-koalabear",
+    "Guruswami-Sudan root finding (KoalaBear)"⟩,
   ⟨"guruswami-sudan-core-small-koalabear",
     "Guruswami-Sudan full core, small (KoalaBear)"⟩,
   ⟨"guruswami-sudan-core-large-koalabear",
@@ -568,8 +568,13 @@ private def runGsRootKoala (preset : BenchPreset) (gen : StdGen) :
   let nttFastMeasured := preset.selectNat 20 3 1
   let fastMeasured := preset.selectNat 80 10 2
   let fastNttFastMeasured := preset.selectNat 80 10 2
+  let alekhnovichMeasured := preset.selectNat 10 2 1
+  let alekhnovichNttFastMeasured := preset.selectNat 10 2 1
+  let alekhnovichFastMeasured := preset.selectNat 30 5 1
+  let alekhnovichFastNttFastMeasured := preset.selectNat 30 5 1
   let checksumIterations := groupChecksumIterations measured [
-    nttFastMeasured, fastMeasured, fastNttFastMeasured
+    nttFastMeasured, fastMeasured, fastNttFastMeasured, alekhnovichMeasured,
+    alekhnovichNttFastMeasured, alekhnovichFastMeasured, alekhnovichFastNttFastMeasured
   ]
   let row <- runTimed
     "guruswami-sudan-root-roth" "CBivariate"
@@ -596,10 +601,36 @@ private def runGsRootKoala (preset : BenchPreset) (gen : StdGen) :
     (fun _ ↦ rothRuckensteinRootsYDegreeLt koalaFastFieldRootsFast fastQ
       gsMessageDegree)
     checksumPolynomialArrayKoalaFast checksumIterations
+  let alekhnovichRow <- runTimed
+    "guruswami-sudan-root-alekhnovich" "CBivariate"
+    "Alekhnovich root finding with nonlinear field-root equations"
+    "KoalaBear.Field" gsRootShape preset warmup alekhnovichMeasured
+    (fun _ ↦ alekhnovichRootsYDegreeLt koalaFieldRoots Q gsMessageDegree)
+    checksumPolynomialArrayKoala checksumIterations
+  let alekhnovichNttFastRow <- runTimed
+    "guruswami-sudan-root-alekhnovich-nttfast" "CBivariate"
+    "Alekhnovich root finding with NTTFast field-root equations"
+    "KoalaBear.Field" gsRootShape preset warmup alekhnovichNttFastMeasured
+    (fun _ ↦ alekhnovichRootsYDegreeLt koalaFieldRootsFast Q gsMessageDegree)
+    checksumPolynomialArrayKoala checksumIterations
+  let alekhnovichFastRow <- runTimed
+    "guruswami-sudan-root-alekhnovich-fast" "CBivariate"
+    "Alekhnovich root finding with nonlinear field-root equations"
+    "KoalaBear.Fast.Field" gsRootShape preset warmup alekhnovichFastMeasured
+    (fun _ ↦ alekhnovichRootsYDegreeLt koalaFastFieldRoots fastQ gsMessageDegree)
+    checksumPolynomialArrayKoalaFast checksumIterations
+  let alekhnovichFastNttFastRow <- runTimed
+    "guruswami-sudan-root-alekhnovich-fast-nttfast" "CBivariate"
+    "Alekhnovich root finding with NTTFast field-root equations"
+    "KoalaBear.Fast.Field" gsRootShape preset warmup alekhnovichFastNttFastMeasured
+    (fun _ ↦ alekhnovichRootsYDegreeLt koalaFastFieldRootsFast fastQ
+      gsMessageDegree)
+    checksumPolynomialArrayKoalaFast checksumIterations
   pure ({
-    groupKey := "guruswami-sudan-root-roth-koalabear",
-    title := "Guruswami-Sudan Roth-Ruckenstein roots (KoalaBear)",
-    records := #[row, nttFastRow, fastRow, fastNttFastRow]
+    groupKey := "guruswami-sudan-root-koalabear",
+    title := "Guruswami-Sudan root finding (KoalaBear)",
+    records := #[row, nttFastRow, fastRow, fastNttFastRow, alekhnovichRow,
+      alekhnovichNttFastRow, alekhnovichFastRow, alekhnovichFastNttFastRow]
   }, gen)
 
 private def runGsCoreSmallKoala (preset : BenchPreset) (gen : StdGen) :
@@ -973,7 +1004,7 @@ def guruswamiSudanTasks : List BenchTask := [
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 6
     ⟨"guruswami-sudan-compose-koalabear", ""⟩) runGsComposeKoala,
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 7
-    ⟨"guruswami-sudan-root-roth-koalabear", ""⟩) runGsRootKoala,
+    ⟨"guruswami-sudan-root-koalabear", ""⟩) runGsRootKoala,
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 8
     ⟨"guruswami-sudan-core-small-koalabear", ""⟩) runGsCoreSmallKoala,
   BenchTask.fromGroupRunner (guruswamiSudanGroupInfos.getD 9

@@ -111,6 +111,22 @@ def fastKoalaBearRothRootContext : GSRootContext KoalaBear.Fast.Field :=
 def fastKoalaBearRothNttFastRootContext : GSRootContext KoalaBear.Fast.Field :=
   rothRuckensteinRootContext KoalaBear.Fast.Field fastKoalaBearNttFastFieldRootContext
 
+/-- Alekhnovich root backend over canonical KoalaBear. -/
+def koalaBearAlekhnovichRootContext : GSRootContext KoalaBear.Field :=
+  alekhnovichRootContext KoalaBear.Field koalaBearFieldRootContext
+
+/-- Alekhnovich root backend over canonical KoalaBear with NTTFast field roots. -/
+def koalaBearAlekhnovichNttFastRootContext : GSRootContext KoalaBear.Field :=
+  alekhnovichRootContext KoalaBear.Field koalaBearNttFastFieldRootContext
+
+/-- Alekhnovich root backend over native-word fast KoalaBear. -/
+def fastKoalaBearAlekhnovichRootContext : GSRootContext KoalaBear.Fast.Field :=
+  alekhnovichRootContext KoalaBear.Fast.Field fastKoalaBearFieldRootContext
+
+/-- Alekhnovich root backend over native-word fast KoalaBear with NTTFast field roots. -/
+def fastKoalaBearAlekhnovichNttFastRootContext : GSRootContext KoalaBear.Fast.Field :=
+  alekhnovichRootContext KoalaBear.Fast.Field fastKoalaBearNttFastFieldRootContext
+
 /-- Filtered dense/Roth context over canonical KoalaBear. -/
 def koalaBearDenseRothContext : GSFilteredCoreContext KoalaBear.Field :=
   filteredCoreContextOfInterpRootContexts koalaBearDenseInterpContext koalaBearRothRootContext

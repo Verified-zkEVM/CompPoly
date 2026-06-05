@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
 
-import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots
+import CompPoly.Bivariate.GuruswamiSudan.Root.Common
 
 /-!
 # Roth-Ruckenstein-Style Root Finding
@@ -47,14 +47,6 @@ def transformedRothRuckensteinResidual {F : Type*}
     (Q : CBivariate F) (a : F) : CBivariate F :=
   CBivariate.stripXAdicFactor (substituteYRootPlusXY Q a)
 
-/-- The coefficient of `Y^j` in `Q(0, Y)`, as a polynomial in the next coefficient. -/
-def initialCoefficientPolynomial {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    (Q : CBivariate F) : CPolynomial F :=
-  (List.range Q.val.size).foldl
-    (fun out y ↦ out + CPolynomial.monomial y (CBivariate.coeff Q 0 y))
-    0
-
 /-- The linear coefficient of the next recursive root equation after depth zero. -/
 def nextCoefficientSlope {F : Type*} [Field F]
     (Q : CBivariate F) (pref : CPolynomial F) : F :=
@@ -72,36 +64,6 @@ def nextCoefficientPolynomial {F : Type*}
   else
     CPolynomial.ofArray
       #[CBivariate.composeYCoeff Q pref depth, nextCoefficientSlope Q pref]
-
-/-- Executable final check for the GS root condition. -/
-def isRootYDegreeLtBool {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
-    (Q : CBivariate F) (k : Nat) (p : CPolynomial F) : Bool :=
-  degreeLtBool p k && CBivariate.composeYHorner Q p == 0
-
-/-- Filter a candidate family to exact bounded-degree roots. -/
-def rootsYDegreeLtFromCandidates {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
-    (candidates : Array (CPolynomial F)) (Q : CBivariate F) (k : Nat) :
-    Array (CPolynomial F) :=
-  candidates.filter fun p ↦ isRootYDegreeLtBool Q k p
-
-/-- Extend one candidate prefix by one coefficient at `X^depth`. -/
-def extendPrefix {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
-    (pref : CPolynomial F) (depth : Nat) (coeff : F) : CPolynomial F :=
-  pref + CPolynomial.monomial depth coeff
-
-/-- Query a field-root backend only for nonzero equations.
-
-A zero equation imposes no restriction on the next coefficient. Enumerating all
-field elements is unsuitable for large fields, so the residual-transform RR
-backend uses `X`-adic residual normalization to avoid zero equations for nonzero
-bivariate inputs.
--/
-def rootsInFieldForNonzeroEquation {F : Type*} [Field F] [BEq F] [LawfulBEq F]
-    (fieldRoots : FieldRootContext F) (p : CPolynomial F) : Array F :=
-  if p == 0 then #[] else fieldRoots.rootsInField p
 
 /-- Ordered recursive candidate extensions using a field-root backend.
 

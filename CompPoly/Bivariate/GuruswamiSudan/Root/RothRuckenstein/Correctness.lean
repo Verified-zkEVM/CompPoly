@@ -531,25 +531,6 @@ private theorem cpoly_range_fold_monomial_mul_pow {F : Type*}
   simp only [zero_add] at hrow
   rw [← hrow]
 
-private theorem composeY_add {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    (Q R : CBivariate F) (p : CPolynomial F) :
-    CBivariate.composeY (Q + R) p = CBivariate.composeY Q p + CBivariate.composeY R p := by
-  apply (CPolynomial.ringEquiv (R := F)).injective
-  rw [show CPolynomial.ringEquiv (CBivariate.composeY (Q + R) p) =
-      (CBivariate.composeY (Q + R) p).toPoly by rfl]
-  rw [show CPolynomial.ringEquiv (CBivariate.composeY Q p + CBivariate.composeY R p) =
-      (CBivariate.composeY Q p + CBivariate.composeY R p).toPoly by rfl]
-  rw [CPolynomial.toPoly_add, composeY_toPoly, composeY_toPoly, composeY_toPoly,
-    CBivariate.toPoly_add, Polynomial.eval_add]
-
-private theorem composeY_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
-    (p : CPolynomial F) :
-    CBivariate.composeY (0 : CBivariate F) p = 0 := by
-  rw [composeY_eq_range_fold]
-  rfl
-
 private theorem composeY_monomialXY {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (p : CPolynomial F) (x y : Nat) (c : F) :

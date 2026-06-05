@@ -45,7 +45,12 @@ import CompPoly.Bivariate.GuruswamiSudan.Monomials
 import CompPoly.Bivariate.GuruswamiSudan.Polynomial
 import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
 import CompPoly.Bivariate.GuruswamiSudan.Root
+import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Algorithm
+import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Correctness
+import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Lemmas
 import CompPoly.Bivariate.GuruswamiSudan.Root.Basic
+import CompPoly.Bivariate.GuruswamiSudan.Root.Common
+import CompPoly.Bivariate.GuruswamiSudan.Root.Common.Lemmas
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.Binary
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.FiniteField
@@ -53,6 +58,8 @@ import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Algorithm
 import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Lemmas
+import CompPoly.Bivariate.GuruswamiSudan.Root.ShiftedSubstitution
+import CompPoly.Bivariate.GuruswamiSudan.Root.ShiftedSubstitution.Lemmas
 import CompPoly.Bivariate.GuruswamiSudan.Util
 import CompPoly.Bivariate.ToPoly
 import CompPoly.Data.Array.Lemmas

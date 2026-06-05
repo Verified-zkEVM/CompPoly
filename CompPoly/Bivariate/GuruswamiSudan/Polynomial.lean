@@ -300,6 +300,11 @@ def divXPower {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
     (Q : CBivariate R) (n : Nat) : CBivariate R :=
   CPolynomial.ofArray (Q.val.map fun coeff ↦ CPolynomial.dropXPower coeff n)
 
+/-- Keep only coefficients of `X`-degree `< n` in every `Y`-coefficient. -/
+def truncateX {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
+    (Q : CBivariate R) (n : Nat) : CBivariate R :=
+  CPolynomial.ofArray (Q.val.map fun coeff ↦ CPolynomial.truncate coeff n)
+
 /-- Strip the common `X`-adic factor from a bivariate polynomial. -/
 def stripXAdicFactor {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
     (Q : CBivariate R) : CBivariate R :=
