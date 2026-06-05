@@ -78,6 +78,15 @@ def isRepresentedLinearFactor {F : Type*} [Field F] [BEq F]
     (p : CPolynomial F) : Bool :=
   decide (p.val.size ≤ 2) && !(p.coeff 1 == 0)
 
+/-- The represented-linear Boolean recognizer is sound. -/
+theorem isRepresentedLinearFactor_sound {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    {p : CPolynomial F} (h : isRepresentedLinearFactor p = true) :
+    IsLinearFactor p := by
+  unfold isRepresentedLinearFactor at h
+  simp at h
+  simpa [IsLinearFactor, CPolynomial.coeff, CPolynomial.Raw.coeff] using h
+
 /-- Return `p` as a singleton array if it is represented as a nonconstant linear factor. -/
 def representedLinearFactorArray {F : Type*} [Field F] [BEq F]
     (p : CPolynomial F) : Array (CPolynomial F) :=

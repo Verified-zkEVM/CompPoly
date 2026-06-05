@@ -29,7 +29,7 @@ namespace FiniteField
 /-- Raw squarefree product of the linear factors of `p` whose roots lie in the field. -/
 def finiteFieldRootProductWith {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
-    (ctx : CPolynomial.Roots.FiniteField.OddFiniteFieldContext F)
+    (ctx : CPolynomial.Roots.FiniteField.FiniteFieldContext F)
     (p : CPolynomial.Raw F) : CPolynomial.Raw F :=
   if p.trim == 0 then
     0
@@ -39,7 +39,7 @@ def finiteFieldRootProductWith {F : Type*} [Field F] [BEq F] [LawfulBEq F]
 
 /-- Raw squarefree product using the default raw backends. -/
 def finiteFieldRootProduct {F : Type*} [Field F] [BEq F] [LawfulBEq F]
-    (ctx : CPolynomial.Roots.FiniteField.OddFiniteFieldContext F)
+    (ctx : CPolynomial.Roots.FiniteField.FiniteFieldContext F)
     (p : CPolynomial.Raw F) : CPolynomial.Raw F :=
   finiteFieldRootProductWith CPolynomial.Raw.MulContext.naive
     CPolynomial.Raw.ModContext.naive ctx p
@@ -57,12 +57,12 @@ namespace FiniteField
 /-- The squarefree product of the linear factors of `p` whose roots lie in the field. -/
 def finiteFieldRootProductWith {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
-    (ctx : OddFiniteFieldContext F) (p : CPolynomial F) : CPolynomial F :=
+    (ctx : FiniteFieldContext F) (p : CPolynomial F) : CPolynomial F :=
   CPolynomial.ofArray (CPolynomial.Raw.Roots.FiniteField.finiteFieldRootProductWith M D ctx p.val)
 
 /-- The squarefree product of the linear factors of `p` using the default raw backends. -/
 def finiteFieldRootProduct {F : Type*} [Field F] [BEq F] [LawfulBEq F]
-    (ctx : OddFiniteFieldContext F) (p : CPolynomial F) : CPolynomial F :=
+    (ctx : FiniteFieldContext F) (p : CPolynomial F) : CPolynomial F :=
   finiteFieldRootProductWith CPolynomial.Raw.MulContext.naive
     CPolynomial.Raw.ModContext.naive ctx p
 
@@ -148,7 +148,7 @@ monic input and its represented Frobenius witness. -/
 theorem finiteFieldRootProductWith_toPoly_eq_normalize_gcd {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
-    (ctx : OddFiniteFieldContext F) {p : CPolynomial F}
+    (ctx : FiniteFieldContext F) {p : CPolynomial F}
     (hp : p ≠ 0) :
     let pMonic := CPolynomial.monicNormalize p
     (finiteFieldRootProductWith M D ctx p).toPoly =
@@ -251,7 +251,7 @@ theorem gcdMonic_ne_zero_of_left {F : Type*} [Field F] [BEq F] [LawfulBEq F]
 theorem finiteFieldRootProductWith_ne_zero_of_ne_zero {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
-    (ctx : OddFiniteFieldContext F) {p : CPolynomial F}
+    (ctx : FiniteFieldContext F) {p : CPolynomial F}
     (hp : p ≠ 0) :
     finiteFieldRootProductWith M D ctx p ≠ 0 := by
   intro hzeroProduct

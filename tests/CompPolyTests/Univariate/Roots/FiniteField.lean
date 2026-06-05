@@ -10,7 +10,7 @@ import Mathlib.Algebra.Field.ZMod
 /-!
 # Finite-Field Univariate Root Tests
 
-Focused executable coverage for the generic odd finite-field root backend.
+Focused executable coverage for the generic finite-field root backend.
 -/
 
 namespace CompPolyTests
@@ -29,20 +29,18 @@ instance : Fact (Nat.Prime 3) :=
 instance : Fact (Nat.Prime 5) :=
   ⟨by decide⟩
 
-private def f3Ctx : OddFiniteFieldContext F3 where
+private def f3Ctx : FiniteFieldContext F3 where
   q := 3
   finite := by infer_instance
   card_eq := by
     simp [F3, Nat.card_eq_fintype_card, ZMod.card]
-  q_odd := by decide
   frobenius_fixed := by decide
 
-private def f5Ctx : OddFiniteFieldContext F5 where
+private def f5Ctx : FiniteFieldContext F5 where
   q := 5
   finite := by infer_instance
   card_eq := by
     simp [F5, Nat.card_eq_fintype_card, ZMod.card]
-  q_odd := by decide
   frobenius_fixed := by decide
 
 private def f3Repeated : CPolynomial F3 :=

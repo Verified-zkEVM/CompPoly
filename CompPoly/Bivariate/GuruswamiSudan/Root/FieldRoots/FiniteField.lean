@@ -6,79 +6,99 @@ Authors: Valerii Huhnin
 
 import CompPoly.Bivariate.GuruswamiSudan.Context
 import CompPoly.Univariate.Roots.Correctness
+import CompPoly.Univariate.Roots.ShoupCorrectness
 
 /-!
 # Guruswami-Sudan Finite-Field Root Adapter
 
-Adapter from the reusable odd finite-field univariate root operation to the
-certified `FieldRootContext` context consumed by Roth-Ruckenstein root finding.
+Adapter from the reusable finite-field univariate root operation to the certified
+`FieldRootContext` context consumed by Roth-Ruckenstein root finding.
 -/
 
 namespace CompPoly
 
 namespace GuruswamiSudan
 
-/-- Package the generic odd finite-field root finder as a GS field-root backend. -/
-def oddFiniteFieldRootContextWith (F : Type*) [Field F] [BEq F] [LawfulBEq F]
+/-- Package the generic finite-field root finder as a GS field-root backend. -/
+def finiteFieldRootContextWith (F : Type*) [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
-    (ctx : CPolynomial.Roots.FiniteField.OddFiniteFieldContext F)
+    (ctx : CPolynomial.Roots.FiniteField.FiniteFieldContext F)
     (splitter : CPolynomial.Roots.FiniteField.LinearFactorProductSplitter F)
     (splitterValid :
       ∀ {p : CPolynomial F}, p ≠ 0 →
         splitter.validInput ctx.q
           (CPolynomial.Roots.FiniteField.finiteFieldRootProductWith M D ctx p)) :
     FieldRootContext F where
-  rootsInField := CPolynomial.Roots.FiniteField.rootsInOddFiniteFieldWith M D ctx splitter
+  rootsInField := CPolynomial.Roots.FiniteField.rootsInFiniteFieldWith M D ctx splitter
   sound := by
     intro p a h
-    exact CPolynomial.Roots.FiniteField.rootsInOddFiniteFieldWith_sound M D ctx splitter h
+    exact CPolynomial.Roots.FiniteField.rootsInFiniteFieldWith_sound M D ctx splitter h
   complete := by
     intro p a hp hroot
-    exact CPolynomial.Roots.FiniteField.rootsInOddFiniteFieldWith_complete
+    exact CPolynomial.Roots.FiniteField.rootsInFiniteFieldWith_complete
       M D ctx splitter splitterValid hp hroot
 
-/-- Package the generic odd finite-field root finder with the default raw arithmetic backends. -/
-def oddFiniteFieldRootContext (F : Type*) [Field F] [BEq F] [LawfulBEq F]
-    (ctx : CPolynomial.Roots.FiniteField.OddFiniteFieldContext F)
+/-- Package the generic finite-field root finder with the default raw arithmetic backends. -/
+def finiteFieldRootContext (F : Type*) [Field F] [BEq F] [LawfulBEq F]
+    (ctx : CPolynomial.Roots.FiniteField.FiniteFieldContext F)
     (splitter : CPolynomial.Roots.FiniteField.LinearFactorProductSplitter F)
     (splitterValid :
       ∀ {p : CPolynomial F}, p ≠ 0 →
         splitter.validInput ctx.q (CPolynomial.Roots.FiniteField.finiteFieldRootProduct ctx p)) :
     FieldRootContext F :=
-  oddFiniteFieldRootContextWith F CPolynomial.Raw.MulContext.naive
+  finiteFieldRootContextWith F CPolynomial.Raw.MulContext.naive
     CPolynomial.Raw.ModContext.naive ctx splitter (by
       intro p hp
       exact splitterValid hp)
 
 /-- Package a smooth cyclic splitter as a GS field-root backend. -/
-def smoothOddFiniteFieldRootContextWith (F : Type*) [Field F] [BEq F] [LawfulBEq F]
+def smoothFiniteFieldRootContextWith (F : Type*) [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
-    (oddCtx : CPolynomial.Roots.FiniteField.OddFiniteFieldContext F)
+    (ctx : CPolynomial.Roots.FiniteField.FiniteFieldContext F)
     (smoothCtx : CPolynomial.Roots.FiniteField.SmoothCyclicRootContext F)
     (smoothValid :
       ∀ {p : CPolynomial F}, p ≠ 0 →
         smoothCtx.validInput
-          (CPolynomial.Roots.FiniteField.finiteFieldRootProductWith M D oddCtx p)) :
+          (CPolynomial.Roots.FiniteField.finiteFieldRootProductWith M D ctx p)) :
     FieldRootContext F :=
-  oddFiniteFieldRootContextWith F M D oddCtx
+  finiteFieldRootContextWith F M D ctx
     (CPolynomial.Roots.FiniteField.smoothLinearFactorProductSplitterWith M D smoothCtx)
     (by
       intro p hp
       exact smoothValid hp)
 
 /-- Package a smooth cyclic splitter with default raw arithmetic as a GS field-root backend. -/
-def smoothOddFiniteFieldRootContext (F : Type*) [Field F] [BEq F] [LawfulBEq F]
-    (oddCtx : CPolynomial.Roots.FiniteField.OddFiniteFieldContext F)
+def smoothFiniteFieldRootContext (F : Type*) [Field F] [BEq F] [LawfulBEq F]
+    (ctx : CPolynomial.Roots.FiniteField.FiniteFieldContext F)
     (smoothCtx : CPolynomial.Roots.FiniteField.SmoothCyclicRootContext F)
     (smoothValid :
       ∀ {p : CPolynomial F}, p ≠ 0 →
         smoothCtx.validInput
-          (CPolynomial.Roots.FiniteField.finiteFieldRootProduct oddCtx p)) :
+          (CPolynomial.Roots.FiniteField.finiteFieldRootProduct ctx p)) :
     FieldRootContext F :=
-  smoothOddFiniteFieldRootContextWith F CPolynomial.Raw.MulContext.naive
-    CPolynomial.Raw.ModContext.naive oddCtx smoothCtx (by
+  smoothFiniteFieldRootContextWith F CPolynomial.Raw.MulContext.naive
+    CPolynomial.Raw.ModContext.naive ctx smoothCtx (by
       intro p hp
       exact smoothValid hp)
+
+/-- Package a Shoup trace splitter as a GS field-root backend. -/
+def shoupFiniteFieldRootContextWith (F : Type*) [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (ctx : CPolynomial.Roots.FiniteField.SmallPrimeTraceContext F) :
+    FieldRootContext F :=
+  finiteFieldRootContextWith F M D ctx.toFiniteFieldContext
+    (CPolynomial.Roots.FiniteField.shoupLinearFactorProductSplitterWith M D ctx)
+    (by
+      intro p hp
+      exact CPolynomial.Roots.FiniteField.rootProduct_satisfies_shoupSplitterInput
+        M D ctx hp)
+
+/-- Package a Shoup trace splitter with default raw arithmetic as a GS field-root backend. -/
+def shoupFiniteFieldRootContext (F : Type*) [Field F] [BEq F] [LawfulBEq F]
+    (ctx : CPolynomial.Roots.FiniteField.SmallPrimeTraceContext F) :
+    FieldRootContext F :=
+  shoupFiniteFieldRootContextWith F CPolynomial.Raw.MulContext.naive
+    CPolynomial.Raw.ModContext.naive ctx
 
 end GuruswamiSudan
 

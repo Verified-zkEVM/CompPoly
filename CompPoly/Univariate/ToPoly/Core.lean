@@ -206,6 +206,12 @@ theorem trim_toImpl [LawfulBEq R] (p : R[X]) : p.toImpl.trim = p.toImpl := by
 
 end Raw
 
+/-- `ofArray` preserves the raw polynomial's `toPoly` image. -/
+theorem ofArray_toPoly [LawfulBEq R] (p : CPolynomial.Raw R) :
+    (CPolynomial.ofArray p).toPoly = p.toPoly := by
+  unfold CPolynomial.ofArray
+  exact Raw.toPoly_trim
+
 /-- On canonical polynomials, `toImpl` is a left-inverse of `toPoly`.
 
   This shows `toPoly` is a bijection from `CPolynomial R` to `Polynomial R`. -/

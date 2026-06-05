@@ -8,9 +8,9 @@ import CompPoly.Univariate.Roots.Extraction
 import CompPoly.Univariate.Roots.RootProduct
 
 /-!
-# Odd Finite-Field Root Backend
+# Finite-Field Root Backend
 
-Executable field-root extraction over odd finite fields. The public operation
+Executable field-root extraction over finite fields. The public operation
 handles zero, constant, and linear cases explicitly, computes the finite-field
 root product modulo the input polynomial, splits the product into linear
 factors, then validates and deduplicates candidates against the original input.
@@ -24,10 +24,10 @@ namespace Roots
 
 namespace FiniteField
 
-/-- Executable roots of a univariate polynomial over an odd finite field. -/
-def rootsInOddFiniteFieldWith {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+/-- Executable roots of a univariate polynomial over a finite field. -/
+def rootsInFiniteFieldWith {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
-    (ctx : OddFiniteFieldContext F) (splitter : LinearFactorProductSplitter F)
+    (ctx : FiniteFieldContext F) (splitter : LinearFactorProductSplitter F)
     (p : CPolynomial F) : Array F :=
   if p == 0 then
     #[]
@@ -41,10 +41,10 @@ def rootsInOddFiniteFieldWith {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     CPolynomial.rootsFromLinearFactors p factors
 
 /-- Executable roots using the default raw multiplication and monic-remainder backends. -/
-def rootsInOddFiniteField {F : Type*} [Field F] [BEq F] [LawfulBEq F]
-    (ctx : OddFiniteFieldContext F) (splitter : LinearFactorProductSplitter F)
+def rootsInFiniteField {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+    (ctx : FiniteFieldContext F) (splitter : LinearFactorProductSplitter F)
     (p : CPolynomial F) : Array F :=
-  rootsInOddFiniteFieldWith CPolynomial.Raw.MulContext.naive
+  rootsInFiniteFieldWith CPolynomial.Raw.MulContext.naive
     CPolynomial.Raw.ModContext.naive ctx splitter p
 
 end FiniteField

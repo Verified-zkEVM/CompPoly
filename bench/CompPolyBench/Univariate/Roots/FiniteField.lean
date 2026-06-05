@@ -45,7 +45,7 @@ private def nonlinearRootPolynomial {F : Type*}
 
 private def rootProductGcdMonicWith {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
-    (ctx : CPolynomial.Roots.FiniteField.OddFiniteFieldContext F)
+    (ctx : CPolynomial.Roots.FiniteField.FiniteFieldContext F)
     (p : CPolynomial F) : CPolynomial F :=
   let pMonic := CPolynomial.monicNormalize p
   let witness := CPolynomial.ofArray (CPolynomial.Raw.xPowSubXModWith M D ctx.q pMonic.val)
@@ -53,7 +53,7 @@ private def rootProductGcdMonicWith {F : Type*} [Field F] [BEq F] [LawfulBEq F]
 
 private def rootProductNormXgcdWith {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
-    (ctx : CPolynomial.Roots.FiniteField.OddFiniteFieldContext F)
+    (ctx : CPolynomial.Roots.FiniteField.FiniteFieldContext F)
     (p : CPolynomial F) : CPolynomial F :=
   let pMonic := CPolynomial.monicNormalize p
   let witness := CPolynomial.ofArray (CPolynomial.Raw.xPowSubXModWith M D ctx.q pMonic.val)
@@ -139,7 +139,7 @@ private def runKoalaBearRootProductGcd (preset : BenchPreset) (gen : StdGen) :
     "KoalaBear.Field" rootWorkloadShape preset warmup measured
     (fun _ ↦ CPolynomial.Raw.Roots.FiniteField.finiteFieldRootProductWith
       CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive
-      koalaBearOddFiniteFieldContext p.val)
+      koalaBearFiniteFieldContext p.val)
     (checksumRawPolynomial checksumKoalaBear) checksumIterations
   let gcdRow <- runTimed
     "univariate-roots-root-product-gcd-monic" "CPolynomial"
@@ -147,7 +147,7 @@ private def runKoalaBearRootProductGcd (preset : BenchPreset) (gen : StdGen) :
     "KoalaBear.Field" rootWorkloadShape preset warmup measured
     (fun _ ↦ rootProductGcdMonicWith
       CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive
-      koalaBearOddFiniteFieldContext p)
+      koalaBearFiniteFieldContext p)
     (checksumCPolynomial checksumKoalaBear) checksumIterations
   let normRow <- runTimed
     "univariate-roots-root-product-norm-xgcd" "CPolynomial"
@@ -155,7 +155,7 @@ private def runKoalaBearRootProductGcd (preset : BenchPreset) (gen : StdGen) :
     "KoalaBear.Field" rootWorkloadShape preset warmup measured
     (fun _ ↦ rootProductNormXgcdWith
       CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive
-      koalaBearOddFiniteFieldContext p)
+      koalaBearFiniteFieldContext p)
     (checksumCPolynomial checksumKoalaBear) checksumIterations
   let fastRawRow <- runTimed
     "univariate-roots-root-product-fast-raw-gcd-monic" "CPolynomial.Raw"
@@ -163,7 +163,7 @@ private def runKoalaBearRootProductGcd (preset : BenchPreset) (gen : StdGen) :
     "KoalaBear.Fast.Field" rootWorkloadShape preset warmup fastMeasured
     (fun _ ↦ CPolynomial.Raw.Roots.FiniteField.finiteFieldRootProductWith
       CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive
-      fastKoalaBearOddFiniteFieldContext fastP.val)
+      fastKoalaBearFiniteFieldContext fastP.val)
     (checksumRawPolynomial checksumKoalaBearFast) checksumIterations
   let fastGcdRow <- runTimed
     "univariate-roots-root-product-fast-gcd-monic" "CPolynomial"
@@ -171,7 +171,7 @@ private def runKoalaBearRootProductGcd (preset : BenchPreset) (gen : StdGen) :
     "KoalaBear.Fast.Field" rootWorkloadShape preset warmup fastMeasured
     (fun _ ↦ rootProductGcdMonicWith
       CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive
-      fastKoalaBearOddFiniteFieldContext fastP)
+      fastKoalaBearFiniteFieldContext fastP)
     (checksumCPolynomial checksumKoalaBearFast) checksumIterations
   let fastNormRow <- runTimed
     "univariate-roots-root-product-fast-norm-xgcd" "CPolynomial"
@@ -179,7 +179,7 @@ private def runKoalaBearRootProductGcd (preset : BenchPreset) (gen : StdGen) :
     "KoalaBear.Fast.Field" rootWorkloadShape preset warmup fastMeasured
     (fun _ ↦ rootProductNormXgcdWith
       CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive
-      fastKoalaBearOddFiniteFieldContext fastP)
+      fastKoalaBearFiniteFieldContext fastP)
     (checksumCPolynomial checksumKoalaBearFast) checksumIterations
   pure ({
     groupKey := "univariate-roots-root-product-gcd-koalabear",

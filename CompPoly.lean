@@ -223,6 +223,9 @@ import CompPoly.Univariate.Roots.Context
 import CompPoly.Univariate.Roots.Correctness
 import CompPoly.Univariate.Roots.Extraction
 import CompPoly.Univariate.Roots.RootProduct
+import CompPoly.Univariate.Roots.Shoup
+import CompPoly.Univariate.Roots.ShoupCorrectness
+import CompPoly.Univariate.Roots.ShoupFrobeniusLinear
 import CompPoly.Univariate.Roots.SmoothSubgroup
 import CompPoly.Univariate.Roots.SmoothSubgroupCorrectness
 import CompPoly.Univariate.ToPoly

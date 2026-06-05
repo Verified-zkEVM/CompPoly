@@ -213,13 +213,8 @@ private theorem Raw.toPoly_smul [Semiring R] [BEq R] [LawfulBEq R]
   rw [CPolynomial.Raw.coeff_toPoly, CPolynomial.Raw.coeff_toPoly]
   exact CPolynomial.Raw.smul_coeff c p i
 
-private theorem ofArray_toPoly [Semiring R] [BEq R] [LawfulBEq R]
-    (p : CPolynomial.Raw R) :
-    (CPolynomial.ofArray p).toPoly = p.toPoly := by
-  unfold CPolynomial.ofArray
-  exact CPolynomial.Raw.toPoly_trim
-
-private theorem monicNormalize_toPoly_eq_normalize
+/-- Monic normalization of computable polynomials agrees with Mathlib normalization. -/
+theorem monicNormalize_toPoly_eq_normalize
     [Field R] [BEq R] [LawfulBEq R] [DecidableEq R]
     (p : CPolynomial R) :
     (CPolynomial.monicNormalize p).toPoly = normalize p.toPoly := by

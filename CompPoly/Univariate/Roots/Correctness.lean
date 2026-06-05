@@ -229,6 +229,15 @@ theorem monicNormalize_root_iff {F : Type*} [Field F] [BEq F] [LawfulBEq F]
   · intro h
     simp [h]
 
+/-- Monic normalization preserves roots, including the zero polynomial case. -/
+theorem monicNormalize_root_of_root {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+    {p : CPolynomial F} {a : F} (hp : CPolynomial.eval a p = 0) :
+    CPolynomial.eval a (monicNormalize p) = 0 := by
+  unfold monicNormalize
+  change CPolynomial.Raw.eval a (CPolynomial.Raw.monicNormalize p.val).trim = 0
+  rw [CPolynomial.Raw.eval_trim_eq_eval]
+  exact Raw.eval_monicNormalize_eq_zero_of_eval_eq_zero hp
+
 /-- The monic gcd contains every common root. -/
 theorem gcdMonic_root_of_left_right {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     {p q : CPolynomial F} {a : F}
@@ -239,6 +248,36 @@ theorem gcdMonic_root_of_left_right {F : Type*} [Field F] [BEq F] [LawfulBEq F]
   rw [CPolynomial.Raw.eval_trim_eq_eval]
   unfold CPolynomial.Raw.gcdMonic
   exact Raw.eval_gcdMonicWithFuel_eq_zero_of_left_right _ p.val q.val hp hq
+
+/-- The monic gcd vanishes exactly at common roots. -/
+theorem gcdMonic_root_iff_left_right {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
+    {p q : CPolynomial F} {a : F} :
+    CPolynomial.eval a (gcdMonic p q) = 0 ↔
+      CPolynomial.eval a p = 0 ∧ CPolynomial.eval a q = 0 := by
+  rw [CPolynomial.eval_toPoly, CPolynomial.gcdMonic_toPoly_eq_normalize_gcd]
+  rw [← Polynomial.IsRoot.def]
+  rw [normalize_apply]
+  by_cases h : EuclideanDomain.gcd p.toPoly q.toPoly = 0
+  · rw [h]
+    rw [Polynomial.IsRoot.def]
+    rw [Polynomial.eval_mul, Polynomial.eval_zero]
+    ring_nf
+    have hleft : p.toPoly = 0 := (EuclideanDomain.gcd_eq_zero_iff.mp h).1
+    have hright : q.toPoly = 0 := (EuclideanDomain.gcd_eq_zero_iff.mp h).2
+    simp only [CPolynomial.eval_toPoly, hleft, hright, Polynomial.eval_zero, and_self]
+  · rw [Polynomial.coe_normUnit_of_ne_zero h]
+    rw [Polynomial.IsRoot.def]
+    rw [Polynomial.eval_mul, Polynomial.eval_C, mul_eq_zero]
+    have hlead : (EuclideanDomain.gcd p.toPoly q.toPoly).leadingCoeff ≠ 0 :=
+      Polynomial.leadingCoeff_ne_zero.mpr h
+    have hinv : (EuclideanDomain.gcd p.toPoly q.toPoly).leadingCoeff⁻¹ ≠ 0 :=
+      inv_ne_zero hlead
+    rw [or_iff_left hinv]
+    rw [← Polynomial.IsRoot.def]
+    have hiff := Polynomial.isRoot_gcd_iff_isRoot_left_right
+      (f := p.toPoly) (g := q.toPoly) (α := a)
+    simpa [Polynomial.IsRoot, CPolynomial.eval_toPoly] using hiff
 
 /-- The normalized extended gcd contains every common root. -/
 theorem normXgcd_root_of_left_right {F : Type*} [Field F] [BEq F] [LawfulBEq F]
@@ -478,7 +517,7 @@ private theorem raw_eval_sub {F : Type*} [Field F] [BEq F] [LawfulBEq F]
 
 private theorem raw_eval_xPowSubXMod_naive {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
-    (ctx : OddFiniteFieldContext F) {modulus : CPolynomial.Raw F} {a : F}
+    (ctx : FiniteFieldContext F) {modulus : CPolynomial.Raw F} {a : F}
     (hmod : modulus.eval a = 0) :
     (CPolynomial.Raw.xPowSubXModWith CPolynomial.Raw.MulContext.naive
       CPolynomial.Raw.ModContext.naive ctx.q modulus).eval a = 0 := by
@@ -645,7 +684,7 @@ private theorem raw_eval_xModWith {F : Type*}
 private theorem raw_eval_xPowSubXModWith {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
-    (ctx : OddFiniteFieldContext F) {modulus : CPolynomial.Raw F} {a : F}
+    (ctx : FiniteFieldContext F) {modulus : CPolynomial.Raw F} {a : F}
     (hmod : modulus.eval a = 0) :
     (CPolynomial.Raw.xPowSubXModWith M D ctx.q modulus).eval a = 0 := by
   unfold CPolynomial.Raw.xPowSubXModWith
@@ -657,7 +696,7 @@ private theorem raw_eval_xPowSubXModWith {F : Type*}
 theorem finiteFieldRootProductWith_complete {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
-    (ctx : OddFiniteFieldContext F) {p : CPolynomial F} {a : F}
+    (ctx : FiniteFieldContext F) {p : CPolynomial F} {a : F}
     (hp : p ≠ 0) (hroot : CPolynomial.eval a p = 0) :
     CPolynomial.eval a (finiteFieldRootProductWith M D ctx p) = 0 := by
   unfold finiteFieldRootProductWith
@@ -685,7 +724,7 @@ theorem finiteFieldRootProductWith_complete {F : Type*}
 /-- Every root of `p` is a root of the finite-field root product. -/
 theorem finiteFieldRootProduct_complete {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
-    (ctx : OddFiniteFieldContext F) {p : CPolynomial F} {a : F}
+    (ctx : FiniteFieldContext F) {p : CPolynomial F} {a : F}
     (hp : p ≠ 0) (hroot : CPolynomial.eval a p = 0) :
     CPolynomial.eval a (finiteFieldRootProduct ctx p) = 0 := by
   unfold finiteFieldRootProduct finiteFieldRootProductWith
@@ -715,21 +754,21 @@ theorem finiteFieldRootProduct_complete {F : Type*}
 /-- Every validated root extracted from the root product is a root of `p`. -/
 theorem finiteFieldRootProduct_validated_sound {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
-    (_ctx : OddFiniteFieldContext F) {p : CPolynomial F}
+    (_ctx : FiniteFieldContext F) {p : CPolynomial F}
     {candidates : Array F} {a : F}
     (h : a ∈ (CPolynomial.validateRootCandidates p candidates).toList) :
     CPolynomial.eval a p = 0 := by
   exact CPolynomial.mem_validateRootCandidates_eval_eq_zero h
 
 /-- Returned finite-field roots are roots of the original polynomial. -/
-theorem rootsInOddFiniteFieldWith_sound {F : Type*}
+theorem rootsInFiniteFieldWith_sound {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
-    (ctx : OddFiniteFieldContext F) (splitter : LinearFactorProductSplitter F)
+    (ctx : FiniteFieldContext F) (splitter : LinearFactorProductSplitter F)
     {p : CPolynomial F} {a : F}
-    (h : a ∈ (rootsInOddFiniteFieldWith M D ctx splitter p).toList) :
+    (h : a ∈ (rootsInFiniteFieldWith M D ctx splitter p).toList) :
     CPolynomial.eval a p = 0 := by
-  rw [rootsInOddFiniteFieldWith] at h
+  rw [rootsInFiniteFieldWith] at h
   split at h
   · simp at h
   · split at h
@@ -739,13 +778,13 @@ theorem rootsInOddFiniteFieldWith_sound {F : Type*}
       · exact mem_rootsFromLinearFactors_eval_eq_zero h
 
 /-- Returned finite-field roots are roots of the original polynomial. -/
-theorem rootsInOddFiniteField_sound {F : Type*}
+theorem rootsInFiniteField_sound {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
-    (ctx : OddFiniteFieldContext F) (splitter : LinearFactorProductSplitter F)
+    (ctx : FiniteFieldContext F) (splitter : LinearFactorProductSplitter F)
     {p : CPolynomial F} {a : F}
-    (h : a ∈ (rootsInOddFiniteField ctx splitter p).toList) :
+    (h : a ∈ (rootsInFiniteField ctx splitter p).toList) :
     CPolynomial.eval a p = 0 := by
-  exact rootsInOddFiniteFieldWith_sound
+  exact rootsInFiniteFieldWith_sound
     (M := CPolynomial.Raw.MulContext.naive) (D := CPolynomial.Raw.ModContext.naive)
     ctx splitter h
 
@@ -1072,17 +1111,17 @@ theorem smoothLinearFactorsAlgorithmWith_complete {F : Type*}
         simpa using hmem
 
 /-- Every root of a nonzero polynomial is returned by the finite-field backend. -/
-theorem rootsInOddFiniteFieldWith_complete {F : Type*}
+theorem rootsInFiniteFieldWith_complete {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
-    (ctx : OddFiniteFieldContext F) (splitter : LinearFactorProductSplitter F)
+    (ctx : FiniteFieldContext F) (splitter : LinearFactorProductSplitter F)
     (splitterValid :
       ∀ {p : CPolynomial F}, p ≠ 0 →
         splitter.validInput ctx.q (finiteFieldRootProductWith M D ctx p))
     {p : CPolynomial F} {a : F}
     (hp : p ≠ 0) (hroot : CPolynomial.eval a p = 0) :
-    a ∈ (rootsInOddFiniteFieldWith M D ctx splitter p).toList := by
-  rw [rootsInOddFiniteFieldWith]
+    a ∈ (rootsInFiniteFieldWith M D ctx splitter p).toList := by
+  rw [rootsInFiniteFieldWith]
   split
   · rename_i hzero
     have hp0 : p = 0 := by
@@ -1114,37 +1153,37 @@ theorem rootsInOddFiniteFieldWith_complete {F : Type*}
           (factor := factor) hmem hcand hroot
 
 /-- Every root of a nonzero polynomial is returned by the finite-field backend. -/
-theorem rootsInOddFiniteField_complete {F : Type*}
+theorem rootsInFiniteField_complete {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
-    (ctx : OddFiniteFieldContext F) (splitter : LinearFactorProductSplitter F)
+    (ctx : FiniteFieldContext F) (splitter : LinearFactorProductSplitter F)
     (splitterValid :
       ∀ {p : CPolynomial F}, p ≠ 0 →
         splitter.validInput ctx.q (finiteFieldRootProduct ctx p))
     {p : CPolynomial F} {a : F}
     (hp : p ≠ 0) (hroot : CPolynomial.eval a p = 0) :
-    a ∈ (rootsInOddFiniteField ctx splitter p).toList := by
-  exact rootsInOddFiniteFieldWith_complete
+    a ∈ (rootsInFiniteField ctx splitter p).toList := by
+  exact rootsInFiniteFieldWith_complete
     (M := CPolynomial.Raw.MulContext.naive) (D := CPolynomial.Raw.ModContext.naive)
     ctx splitter (by
       intro p hp
       exact splitterValid hp) hp hroot
 
 /-- The complete executable finite-field root pipeline is sound and complete
-for nonzero inputs under the odd finite-field and splitter contracts. -/
-theorem rootsInOddFiniteField_spec {F : Type*}
+for nonzero inputs under the finite-field and splitter contracts. -/
+theorem rootsInFiniteField_spec {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
-    (ctx : OddFiniteFieldContext F) (splitter : LinearFactorProductSplitter F)
+    (ctx : FiniteFieldContext F) (splitter : LinearFactorProductSplitter F)
     (splitterValid :
       ∀ {p : CPolynomial F}, p ≠ 0 →
         splitter.validInput ctx.q (finiteFieldRootProduct ctx p))
     {p : CPolynomial F} {a : F} (hp : p ≠ 0) :
-    a ∈ (rootsInOddFiniteField ctx splitter p).toList ↔
+    a ∈ (rootsInFiniteField ctx splitter p).toList ↔
       CPolynomial.eval a p = 0 := by
   constructor
   · intro h
-    exact rootsInOddFiniteField_sound ctx splitter h
+    exact rootsInFiniteField_sound ctx splitter h
   · intro h
-    exact rootsInOddFiniteField_complete ctx splitter splitterValid hp h
+    exact rootsInFiniteField_complete ctx splitter splitterValid hp h
 
 end FiniteField
 

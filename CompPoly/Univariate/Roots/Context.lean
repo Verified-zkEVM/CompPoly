@@ -10,7 +10,7 @@ import Mathlib.FieldTheory.Finite.Basic
 /-!
 # Finite-Field Root Contexts
 
-Explicit contexts for executable univariate root finding over odd finite fields.
+Explicit contexts for executable univariate root finding over finite fields.
 The algorithms use the cardinality carried here; downstream proofs use the
 finite-field and splitter contracts without unfolding concrete implementations.
 -/
@@ -23,12 +23,11 @@ namespace Roots
 
 namespace FiniteField
 
-/-- Finite-field facts needed by executable root extraction over odd fields. -/
-structure OddFiniteFieldContext (F : Type*) [Field F] where
+/-- Finite-field facts needed by executable root extraction. -/
+structure FiniteFieldContext (F : Type*) [Field F] where
   q : Nat
   finite : Finite F
   card_eq : Nat.card F = q
-  q_odd : q % 2 = 1
   frobenius_fixed : ∀ a : F, a ^ q = a
 
 /-- A polynomial represented as a nonconstant linear factor. -/

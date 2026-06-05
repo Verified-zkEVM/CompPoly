@@ -13,24 +13,21 @@ import CompPoly.Univariate.Roots.SmoothSubgroupCorrectness
 # KoalaBear Guruswami-Sudan Field-Root Backends
 
 Concrete finite-field root backends for canonical KoalaBear and native-word fast
-KoalaBear. Both use the generic odd finite-field algorithm directly over their
-field carriers.
+KoalaBear. Both use the generic finite-field algorithm directly over their field
+carriers.
 -/
 
 namespace CompPoly
 
 namespace GuruswamiSudan
 
-/-- Odd finite-field context for canonical KoalaBear. -/
-def koalaBearOddFiniteFieldContext :
-    CPolynomial.Roots.FiniteField.OddFiniteFieldContext KoalaBear.Field where
+/-- Finite-field context for canonical KoalaBear. -/
+def koalaBearFiniteFieldContext :
+    CPolynomial.Roots.FiniteField.FiniteFieldContext KoalaBear.Field where
   q := KoalaBear.fieldSize
   finite := by infer_instance
   card_eq := by
     simp [KoalaBear.Field, KoalaBear.fieldSize, Nat.card_eq_fintype_card, ZMod.card]
-  q_odd := by
-    unfold KoalaBear.fieldSize
-    decide
   frobenius_fixed := by
     intro a
     simpa [KoalaBear.Field, KoalaBear.fieldSize] using ZMod.pow_card a
@@ -72,16 +69,16 @@ private theorem koalaBearSmoothRootProduct_valid
     {p : CPolynomial KoalaBear.Field} (hp : p ≠ 0) :
     koalaBearSmoothCyclicRootContext.validInput
       (CPolynomial.Roots.FiniteField.finiteFieldRootProductWith M D
-        koalaBearOddFiniteFieldContext p) := by
-  simpa [koalaBearSmoothCyclicRootContext, koalaBearOddFiniteFieldContext] using
+        koalaBearFiniteFieldContext p) := by
+  simpa [koalaBearSmoothCyclicRootContext, koalaBearFiniteFieldContext] using
     (CPolynomial.Roots.FiniteField.finiteFieldRootProductWith_smoothSplitterInput
-      M D koalaBearOddFiniteFieldContext KoalaBear.primitiveRoot
+      M D koalaBearFiniteFieldContext KoalaBear.primitiveRoot
       KoalaBear.smoothRootSchedule hp)
 
 /-- Complete GS-facing finite-field root backend for canonical KoalaBear. -/
 def koalaBearFieldRootContext : FieldRootContext KoalaBear.Field :=
-  smoothOddFiniteFieldRootContext KoalaBear.Field
-    koalaBearOddFiniteFieldContext koalaBearSmoothCyclicRootContext
+  smoothFiniteFieldRootContext KoalaBear.Field
+    koalaBearFiniteFieldContext koalaBearSmoothCyclicRootContext
     (by
       intro p hp
       exact koalaBearSmoothRootProduct_valid
@@ -89,10 +86,10 @@ def koalaBearFieldRootContext : FieldRootContext KoalaBear.Field :=
 
 /-- Complete GS-facing finite-field root backend for canonical KoalaBear with NTT arithmetic. -/
 def koalaBearNttFieldRootContext : FieldRootContext KoalaBear.Field :=
-  smoothOddFiniteFieldRootContextWith KoalaBear.Field
+  smoothFiniteFieldRootContextWith KoalaBear.Field
     (CPolynomial.Raw.MulContext.ntt CPolynomial.NTT.KoalaBear.bestDomainForLength?)
     (CPolynomial.Raw.ModContext.reversalNtt CPolynomial.NTT.KoalaBear.bestDomainForLength?)
-    koalaBearOddFiniteFieldContext koalaBearSmoothCyclicRootContext
+    koalaBearFiniteFieldContext koalaBearSmoothCyclicRootContext
     (by
       intro p hp
       exact koalaBearSmoothRootProduct_valid
@@ -102,10 +99,10 @@ def koalaBearNttFieldRootContext : FieldRootContext KoalaBear.Field :=
 
 /-- Complete GS-facing finite-field root backend for canonical KoalaBear with NTTFast arithmetic. -/
 def koalaBearNttFastFieldRootContext : FieldRootContext KoalaBear.Field :=
-  smoothOddFiniteFieldRootContextWith KoalaBear.Field
+  smoothFiniteFieldRootContextWith KoalaBear.Field
     (CPolynomial.Raw.MulContext.nttFast CPolynomial.NTT.KoalaBear.bestDomainForLength?)
     (CPolynomial.Raw.ModContext.reversalNttFast CPolynomial.NTT.KoalaBear.bestDomainForLength?)
-    koalaBearOddFiniteFieldContext koalaBearSmoothCyclicRootContext
+    koalaBearFiniteFieldContext koalaBearSmoothCyclicRootContext
     (by
       intro p hp
       exact koalaBearSmoothRootProduct_valid
@@ -113,9 +110,9 @@ def koalaBearNttFastFieldRootContext : FieldRootContext KoalaBear.Field :=
         (CPolynomial.Raw.ModContext.reversalNttFast CPolynomial.NTT.KoalaBear.bestDomainForLength?)
         hp)
 
-/-- Odd finite-field context for native-word fast KoalaBear. -/
-def fastKoalaBearOddFiniteFieldContext :
-    CPolynomial.Roots.FiniteField.OddFiniteFieldContext KoalaBear.Fast.Field where
+/-- Finite-field context for native-word fast KoalaBear. -/
+def fastKoalaBearFiniteFieldContext :
+    CPolynomial.Roots.FiniteField.FiniteFieldContext KoalaBear.Fast.Field where
   q := KoalaBear.fieldSize
   finite := by
     exact Finite.of_equiv KoalaBear.Field KoalaBear.Fast.ringEquiv.toEquiv.symm
@@ -124,9 +121,6 @@ def fastKoalaBearOddFiniteFieldContext :
       Nat.card_congr KoalaBear.Fast.ringEquiv.toEquiv
     rw [hcard]
     simp [KoalaBear.Field, Nat.card_eq_fintype_card, ZMod.card]
-  q_odd := by
-    unfold KoalaBear.fieldSize
-    decide
   frobenius_fixed := by
     intro a
     apply KoalaBear.Fast.toField_injective
@@ -194,16 +188,16 @@ private theorem fastKoalaBearSmoothRootProduct_valid
     {p : CPolynomial KoalaBear.Fast.Field} (hp : p ≠ 0) :
     fastKoalaBearSmoothCyclicRootContext.validInput
       (CPolynomial.Roots.FiniteField.finiteFieldRootProductWith M D
-        fastKoalaBearOddFiniteFieldContext p) := by
-  simpa [fastKoalaBearSmoothCyclicRootContext, fastKoalaBearOddFiniteFieldContext] using
+        fastKoalaBearFiniteFieldContext p) := by
+  simpa [fastKoalaBearSmoothCyclicRootContext, fastKoalaBearFiniteFieldContext] using
     (CPolynomial.Roots.FiniteField.finiteFieldRootProductWith_smoothSplitterInput
-      M D fastKoalaBearOddFiniteFieldContext fastKoalaBearPrimitiveRoot
+      M D fastKoalaBearFiniteFieldContext fastKoalaBearPrimitiveRoot
       KoalaBear.smoothRootSchedule hp)
 
 /-- Complete GS-facing finite-field root backend for native-word fast KoalaBear. -/
 def fastKoalaBearFieldRootContext : FieldRootContext KoalaBear.Fast.Field :=
-  smoothOddFiniteFieldRootContext KoalaBear.Fast.Field
-    fastKoalaBearOddFiniteFieldContext fastKoalaBearSmoothCyclicRootContext
+  smoothFiniteFieldRootContext KoalaBear.Fast.Field
+    fastKoalaBearFiniteFieldContext fastKoalaBearSmoothCyclicRootContext
     (by
       intro p hp
       exact fastKoalaBearSmoothRootProduct_valid
@@ -214,10 +208,10 @@ Complete GS-facing finite-field root backend for native-word fast KoalaBear with
 NTT arithmetic.
 -/
 def fastKoalaBearNttFieldRootContext : FieldRootContext KoalaBear.Fast.Field :=
-  smoothOddFiniteFieldRootContextWith KoalaBear.Fast.Field
+  smoothFiniteFieldRootContextWith KoalaBear.Fast.Field
     (CPolynomial.Raw.MulContext.ntt CPolynomial.NTT.KoalaBear.fastBestDomainForLength?)
     (CPolynomial.Raw.ModContext.reversalNtt CPolynomial.NTT.KoalaBear.fastBestDomainForLength?)
-    fastKoalaBearOddFiniteFieldContext fastKoalaBearSmoothCyclicRootContext
+    fastKoalaBearFiniteFieldContext fastKoalaBearSmoothCyclicRootContext
     (by
       intro p hp
       exact fastKoalaBearSmoothRootProduct_valid
@@ -230,10 +224,10 @@ Complete GS-facing finite-field root backend for native-word fast KoalaBear with
 NTTFast arithmetic.
 -/
 def fastKoalaBearNttFastFieldRootContext : FieldRootContext KoalaBear.Fast.Field :=
-  smoothOddFiniteFieldRootContextWith KoalaBear.Fast.Field
+  smoothFiniteFieldRootContextWith KoalaBear.Fast.Field
     (CPolynomial.Raw.MulContext.nttFast CPolynomial.NTT.KoalaBear.fastBestDomainForLength?)
     (CPolynomial.Raw.ModContext.reversalNttFast CPolynomial.NTT.KoalaBear.fastBestDomainForLength?)
-    fastKoalaBearOddFiniteFieldContext fastKoalaBearSmoothCyclicRootContext
+    fastKoalaBearFiniteFieldContext fastKoalaBearSmoothCyclicRootContext
     (by
       intro p hp
       exact fastKoalaBearSmoothRootProduct_valid

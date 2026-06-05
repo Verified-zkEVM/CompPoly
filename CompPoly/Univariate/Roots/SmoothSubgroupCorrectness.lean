@@ -27,7 +27,7 @@ namespace FiniteField
 theorem finiteFieldRootProductWith_smoothSplitterInput {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
-    (ctx : OddFiniteFieldContext F) (generator : F) (schedule : Array Nat)
+    (ctx : FiniteFieldContext F) (generator : F) (schedule : Array Nat)
     {p : CPolynomial F} (hp : p ≠ 0) :
     smoothSplitterInput ctx.q generator schedule
       (finiteFieldRootProductWith M D ctx p) := by
@@ -108,15 +108,6 @@ theorem linearFactor_isRootFactorCandidate {F : Type*}
       simp [CPolynomial.X, CPolynomial.Raw.X, CPolynomial.coeff, CPolynomial.Raw.coeff]
     rw [h0, h1]
     simp
-
-/-- The Boolean represented-linear recognizer is sound. -/
-private theorem isRepresentedLinearFactor_sound {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F]
-    {p : CPolynomial F} (h : isRepresentedLinearFactor p = true) :
-    IsLinearFactor p := by
-  unfold isRepresentedLinearFactor at h
-  simp at h
-  simpa [IsLinearFactor, CPolynomial.coeff, CPolynomial.Raw.coeff] using h
 
 /-- If the represented-linear recognizer accepts `p`, then any root of `p` is its root candidate. -/
 theorem representedLinearFactor_candidate_of_root {F : Type*}
