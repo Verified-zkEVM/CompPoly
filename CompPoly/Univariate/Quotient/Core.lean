@@ -665,8 +665,7 @@ lemma npow_succ : ∀ (n : ℕ) (x : QuotientCPolynomial R), x.pow (n + 1) = x.p
   -- By definition of exponentiation, we have `p.pow (n + 1) = p * p.pow n` for any `p`.
   rw [show p.pow (n + 1) = p.mul (p.pow n) from by
         exact Function.iterate_succ_apply' _ _ _]
-  convert commute_pow_self n ( Quotient.mk ( Raw.instSetoidCPolynomial ) p ) using 1
-  erw [ Quotient.eq ]
+  exact Quotient.exact (commute_pow_self n (Quotient.mk Raw.instSetoidCPolynomial p))
 
 /-- `QuotientCPolynomial R` forms a semiring when `R` is a semiring.
 
@@ -727,13 +726,10 @@ variable [Ring R] [BEq R] [LawfulBEq R]
 instance : Ring (QuotientCPolynomial R) where
   intCast_ofNat := by intro n; simp [IntCast.intCast]; rfl
   intCast_negSucc := by
-    -- By definition of `Int.negSucc`, we have `Int.negSucc n = - (n + 1)`.
-    have h_neg_succ : ∀ n : ℕ, Int.negSucc n = - (n + 1 : ℤ) := by grind
-    convert h_neg_succ
-    convert Quotient.eq using 1
-    simp +decide
-    simp +decide [ Raw.C, Raw.neg ]
-    grind
+    intro n
+    apply Quotient.sound
+    intro i
+    cases i <;> simp [Raw.C, Raw.neg, Int.cast_negSucc]
 end Ring
 
 section CommRing

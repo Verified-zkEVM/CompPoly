@@ -95,7 +95,7 @@ lemma towerAlgebraMap_succ (l r : ℕ) (h_le : l ≤ r) :
   have h_l_ne_eq_r_add_1 : l ≠ r + 1 := by omega
   simp only [h_l_ne_eq_r_add_1, ↓reduceDIte, Nat.add_one_sub_one,
     eq_mp_eq_cast, RingHom.coe_comp, Function.comp_apply]
-  erw [cast_eq, towerAlgebraMap_succ_1]; congr 1
+  erw [cast_eq, towerAlgebraMap_succ_1]
 
 /-! Left associativity of the Tower Map -/
 theorem towerAlgebraMap_succ_last (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) →

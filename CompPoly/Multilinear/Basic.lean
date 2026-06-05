@@ -270,7 +270,6 @@ private lemma eval_horner_step_dot_product {n : ℕ}
   rw [add_mul]
   congr 1
   rw [mul_comm x.head, mul_assoc]
-  rfl
 
 /-- Horner evaluation agrees with the dot-product evaluator. -/
 theorem eval_horner_eq_eval (p : CMlPolynomial R n) (x : Vector R n) :
@@ -561,9 +560,7 @@ private lemma eval_mle_step_dot_product {n : ℕ}
   rw [add_mul]
   congr 1
   · rw [mul_comm (1 - x.head) (p.get ⟨2 * j.val, by omega⟩), mul_assoc]
-    rfl
   · rw [mul_comm x.head (p.get ⟨2 * j.val + 1, by omega⟩), mul_assoc]
-    rfl
 
 /-- Multilinear-extension interpolation agrees with the dot-product evaluator. -/
 theorem eval_mle_eq_eval (p : CMlPolynomialEval R n) (x : Vector R n) :

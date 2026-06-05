@@ -313,8 +313,6 @@ lemma ofPoly_zero {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R] 
     ofPoly (0 : R[X][Y]) = 0 := by
       unfold CBivariate.ofPoly
       simp +decide [ Polynomial.support ]
-      erw [Finsupp.support_zero]
-      exact Finset.sum_empty
 
 /-- Ring hom from computable bivariates to Mathlib bivariates. -/
 noncomputable def toPolyRingHom

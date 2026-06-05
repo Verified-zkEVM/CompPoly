@@ -12,7 +12,6 @@ import CompPoly.Fields.Binary.Tower.Concrete.Core
 Field-structure lemmas for successive levels of the concrete binary tower.
 -/
 
-set_option backward.isDefEq.respectTransparency false
 namespace ConcreteBinaryTower
 
 open Polynomial

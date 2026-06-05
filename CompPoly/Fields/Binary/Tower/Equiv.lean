@@ -12,7 +12,6 @@ import CompPoly.Fields.Binary.Tower.Concrete.Basis
 Equivalences between the abstract and concrete binary tower constructions.
 -/
 
-set_option backward.isDefEq.respectTransparency false
 namespace ConcreteBinaryTower
 
 open Polynomial

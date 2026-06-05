@@ -24,7 +24,7 @@ theorem smul_divByMonic {R : Type*} [CommRing R]
   · rcases subsingleton_or_nontrivial R with hR | hR
     · exact Subsingleton.elim _ _
     · exact (div_modByMonic_unique (c • (p /ₘ q)) (c • (p %ₘ q)) hq
-        ⟨by rw [mul_smul_comm, ← smul_add, modByMonic_add_div],
+        ⟨by rw [mul_smul_comm, ← smul_add, modByMonic_add_div p hq],
          (degree_smul_le _ _).trans_lt (degree_modByMonic_lt _ hq)⟩).1
   · simp [divByMonic_eq_of_not_monic _ hq]
 

@@ -5,6 +5,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 -/
 
 import CompPoly.Fields.Binary.Tower.Support.FinHelpers
+import Mathlib.Data.Fin.Rev
 
 /-!
 # Binary Tower `Fin 2` Linear Independence
@@ -26,10 +27,7 @@ variable {v : ι → V} {s t : Set ι} {x y : V}
 
 theorem linearIndependent_fin2' {f : Fin 2 → V} :
     LinearIndependent K f ↔ f 0 ≠ 0 ∧ ∀ a : K, a • f 0 ≠ f 1 := by
-  rw [linearIndependent_finSucc', linearIndependent_unique_iff, Set.range_unique,
-    Submodule.mem_span_singleton,
-    not_exists]
-  rw [show Fin.init f default = f 0 by rfl]
+  rw [← linearIndependent_equiv Fin.revPerm, linearIndependent_fin2]
   rfl
 
 end LinearIndependentFin2

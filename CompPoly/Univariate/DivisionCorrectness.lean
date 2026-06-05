@@ -501,7 +501,7 @@ theorem modByMonic_add_mul_divByMonic (p q : CPolynomial R) (hmonic : q.monic) :
   have hpoly : (p.modByMonic q + q * p.divByMonic q).toPoly = p.toPoly := by
     rw [toPoly_add, toPoly_mul, divByMonic_toPoly_eq_divByMonic p q hmonic,
       modByMonic_toPoly_eq_modByMonic p q hmonic]
-    exact Polynomial.modByMonic_add_div p.toPoly q.toPoly
+    exact Polynomial.modByMonic_add_div p.toPoly ((monic_toPoly_iff q).mp hmonic)
   apply CPolynomial.eq_iff_coeff.2
   intro i
   rw [CPolynomial.coeff_toPoly, CPolynomial.coeff_toPoly]

@@ -471,33 +471,16 @@ lemma degreeX_swap (f : F[X][Y]) :
     intro g i j
     induction g using Polynomial.induction_on' with
     | add p q hp hq =>
-        have hp' : ((Polynomial.Bivariate.swap p).coeff j).coeff i = (p.coeff i).coeff j := by
-          exact hp
-        have hq' : ((Polynomial.Bivariate.swap q).coeff j).coeff i = (q.coeff i).coeff j := by
-          exact hq
-        simp [Polynomial.Bivariate.coeff, hp', hq']
+        simpa [Polynomial.Bivariate.coeff, map_add] using congrArg₂ (fun a b => a + b) hp hq
     | monomial n a =>
         induction a using Polynomial.induction_on' with
         | add p q hp hq =>
-            have hp' : ((Polynomial.Bivariate.swap ((monomial n) p)).coeff j).coeff i =
-                (((monomial n) p).coeff i).coeff j := by exact hp
-            have hq' : ((Polynomial.Bivariate.swap ((monomial n) q)).coeff j).coeff i =
-                (((monomial n) q).coeff i).coeff j := by exact hq
-            simp [Polynomial.Bivariate.coeff, map_add, hp', hq']
+            simpa [Polynomial.Bivariate.coeff, map_add] using
+              congrArg₂ (fun a b => a + b) hp hq
         | monomial m r =>
-            by_cases hi : n = i
-            · subst hi
-              by_cases hj : m = j
-              · subst hj
-                simp [Polynomial.Bivariate.coeff, Polynomial.Bivariate.swap_monomial_monomial]
-              · simp [Polynomial.Bivariate.coeff, Polynomial.Bivariate.swap_monomial_monomial,
-                  Polynomial.coeff_monomial, hj]
-            · by_cases hj : m = j
-              · subst hj
-                simp [Polynomial.Bivariate.coeff, Polynomial.Bivariate.swap_monomial_monomial,
-                  Polynomial.coeff_monomial, hi]
-              · simp [Polynomial.Bivariate.coeff, Polynomial.Bivariate.swap_monomial_monomial,
-                  Polynomial.coeff_monomial, hi, hj]
+            rw [Polynomial.Bivariate.swap_monomial_monomial]
+            by_cases hm : m = j <;> by_cases hn : n = i <;>
+              simp [Polynomial.Bivariate.coeff, Polynomial.coeff_monomial, hm, hn]
 
   unfold Polynomial.Bivariate.degreeX Polynomial.Bivariate.natDegreeY
   by_cases hf : f = 0
@@ -526,7 +509,8 @@ lemma degreeX_swap (f : F[X][Y]) :
           (f.coeff (natDegree f)).coeff n := by
         exact hcoeff f f.natDegree n
       have hswapCoeff : ((Polynomial.Bivariate.swap f).coeff n).coeff (natDegree f) ≠ 0 := by
-        simpa [hEq] using hcoeffn
+        rw [hEq]
+        exact hcoeffn
       have hNle_natDeg : natDegree f ≤ ((Polynomial.Bivariate.swap f).coeff n).natDegree := by
         exact le_natDegree_of_ne_zero hswapCoeff
       have hcoeff_nonzero : (Polynomial.Bivariate.swap f).coeff n ≠ 0 := by

@@ -12,8 +12,6 @@ import CompPoly.Fields.Binary.Tower.Concrete.Field
 Algebra maps and embeddings for the concrete bitvector binary tower.
 -/
 
-set_option backward.isDefEq.respectTransparency false
-
 namespace ConcreteBinaryTower
 
 open Polynomial

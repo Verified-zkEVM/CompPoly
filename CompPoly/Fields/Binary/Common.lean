@@ -589,7 +589,6 @@ lemma toPoly_128_extend_256 (a : B128) :
   have h_testBit_false : (BitVec.toNat a).testBit (↑i + 128) = false :=
     Nat.testBit_lt_two_pow h_toNat_lt
   simp only [h_testBit_false, Bool.false_eq_true, ↓reduceIte, add_zero]
-  rfl
 
 -- Lemma: Left Shift corresponds to Multiplication by X^k
 theorem BitVec_getLsb_eq_false_of_toNat_lt_two_pow {w d : ℕ} (a : BitVec w) (ha : a.toNat < 2 ^ d)

@@ -575,24 +575,11 @@ section MulInfrastructure
 section MulCoeffHelpers
 
 lemma equiv_mul_one [LawfulBEq R] (p : CPolynomial.Raw R) : Trim.equiv (p * 1) p := by
-  have h_mul_one : ∀ (p : CPolynomial.Raw R), (p * 1).coeff = p.coeff := by
-    intro p; funext i
-    rw [ show p * 1 = p * 1 from rfl ]
-    have mul_one_unwrap : ∀ (p : CPolynomial.Raw R), (p * 1).coeff = fun k =>
-      (p.zipIdx.map (fun ⟨a, i⟩ => ((smul a 1).mulPowX i).coeff k)).sum := by
-      intro p; funext k; exact (by
-      convert coeff_foldl_add
-          ( p.zipIdx.toList ) ( fun ⟨ a, i ⟩ => ( smul a 1 ).mulPowX i ) ( mk #[] ) k using 1
-      · have h_mul_def : ∀ (p : CPolynomial.Raw R), p * 1 =
-            (p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + (smul a 1).mulPowX i) (mk #[])) :=
-          fun p => mul_eq_foldl p 1
-        rw [h_mul_def, Array.foldl_toList]
-      · simp +decide
-        conv => rw [ ← Array.toList_zipIdx ]
-        conv => rw [ ← Array.toList_map ]
-        exact Eq.symm Array.sum_toList)
-    exact (by exact mul_one_unwrap p ▸ coeff_sum p i ▸ rfl)
-  exact congrFun (h_mul_one p)
+  intro k
+  rw [coeff_mul]
+  rw [← Array.toList_map]
+  rw [Array.sum_eq_sum_toList]
+  exact coeff_sum p k
 
 theorem mul_is_trimmed [LawfulBEq R] (p q : CPolynomial.Raw R) : (p * q).trim = p * q := by
   show ((mulRaw p q).trim).trim = (mulRaw p q).trim

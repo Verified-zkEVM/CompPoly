@@ -25,7 +25,7 @@ theorem append_getLast_dropLast {α : Type u} (l : List α) (h : l ≠ []) :
     | nil =>
       simp [dropLast, getLast]
     | cons hd' tl' =>
-      simp only [dropLast_cons_cons, getLast]
+      simp only [dropLast_cons₂, getLast]
       simp only [cons_append, cons.injEq, true_and]
       apply ih
 

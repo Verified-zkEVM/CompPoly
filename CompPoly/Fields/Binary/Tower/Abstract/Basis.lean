@@ -126,7 +126,6 @@ theorem BTField.PowerBasis.dim_of_eq_rec
   subst h_r
   rfl
 
-set_option backward.isDefEq.respectTransparency false in
 @[simp]
 theorem PowerBasis.cast_basis_succ_of_eq_rec_apply
     (r1 r : ℕ) (h_r : r = r1 + 1)
@@ -183,7 +182,6 @@ The basis element at index `j` is the product of the tower generators at
 the ON bits in binary representation of `j`.
 -/
 set_option maxHeartbeats 800000
-set_option backward.isDefEq.respectTransparency false in
 theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀ (j : Fin (2  ^ (r - l))),
     multilinearBasis (l:=l) (r:=r) (h_le:=h_le) j =
     (Finset.univ : Finset (Fin (r - l))).prod (fun i =>
