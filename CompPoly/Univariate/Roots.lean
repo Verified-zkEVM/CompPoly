@@ -5,6 +5,8 @@ Authors: Valerii Huhnin
 -/
 
 import CompPoly.Univariate.Roots.Correctness
+import CompPoly.Univariate.Roots.Shoup
+import CompPoly.Univariate.Roots.SmoothSubgroup
 
 /-!
 # Univariate Root Finding

@@ -6,7 +6,8 @@ Authors: Valerii Huhnin
 
 import CompPoly.Bivariate.GuruswamiSudan.Context
 import CompPoly.Univariate.Roots.Correctness
-import CompPoly.Univariate.Roots.ShoupCorrectness
+import CompPoly.Univariate.Roots.Shoup
+import CompPoly.Univariate.Roots.SmoothSubgroup
 
 /-!
 # Guruswami-Sudan Finite-Field Root Adapter

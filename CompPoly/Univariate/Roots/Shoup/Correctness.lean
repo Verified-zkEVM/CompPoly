@@ -5,8 +5,8 @@ Authors: Valerii Huhnin
 -/
 
 import CompPoly.Univariate.Roots.Correctness
-import CompPoly.Univariate.Roots.Shoup
-import CompPoly.Univariate.Roots.ShoupFrobeniusLinear
+import CompPoly.Univariate.Roots.Shoup.Basic
+import CompPoly.Univariate.Roots.Shoup.FrobeniusLinear
 import Mathlib.Algebra.CharP.CharAndCard
 
 /-!

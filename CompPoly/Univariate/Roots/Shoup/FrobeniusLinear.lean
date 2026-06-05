@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
 
-import CompPoly.Univariate.Roots.Shoup
+import CompPoly.Univariate.Roots.Shoup.Basic
 import Mathlib.Algebra.CharP.CharAndCard
 
 /-!

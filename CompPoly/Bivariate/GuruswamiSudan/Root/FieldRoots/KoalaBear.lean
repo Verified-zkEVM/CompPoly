@@ -7,7 +7,7 @@ Authors: Valerii Huhnin
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.FiniteField
 import CompPoly.Fields.KoalaBear
 import CompPoly.Univariate.NTT.KoalaBear
-import CompPoly.Univariate.Roots.SmoothSubgroupCorrectness
+import CompPoly.Univariate.Roots.SmoothSubgroup
 
 /-!
 # KoalaBear Guruswami-Sudan Field-Root Backends

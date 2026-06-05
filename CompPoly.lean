@@ -224,10 +224,13 @@ import CompPoly.Univariate.Roots.Correctness
 import CompPoly.Univariate.Roots.Extraction
 import CompPoly.Univariate.Roots.RootProduct
 import CompPoly.Univariate.Roots.Shoup
-import CompPoly.Univariate.Roots.ShoupCorrectness
-import CompPoly.Univariate.Roots.ShoupFrobeniusLinear
+import CompPoly.Univariate.Roots.Shoup.Basic
+import CompPoly.Univariate.Roots.Shoup.Correctness
+import CompPoly.Univariate.Roots.Shoup.FrobeniusLinear
 import CompPoly.Univariate.Roots.SmoothSubgroup
-import CompPoly.Univariate.Roots.SmoothSubgroupCorrectness
+import CompPoly.Univariate.Roots.SmoothSubgroup.Basic
+import CompPoly.Univariate.Roots.SmoothSubgroup.Correctness
+import CompPoly.Univariate.Roots.Splitter
 import CompPoly.Univariate.ToPoly
 import CompPoly.Univariate.ToPoly.Core
 import CompPoly.Univariate.ToPoly.Degree
