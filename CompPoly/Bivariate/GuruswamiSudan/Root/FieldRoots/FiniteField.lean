@@ -6,6 +6,7 @@ Authors: Valerii Huhnin
 
 import CompPoly.Bivariate.GuruswamiSudan.Context
 import CompPoly.Univariate.Roots.Correctness
+import CompPoly.Univariate.Roots.LasVegas
 import CompPoly.Univariate.Roots.Shoup
 import CompPoly.Univariate.Roots.SmoothSubgroup
 
@@ -81,6 +82,22 @@ def smoothFiniteFieldRootContext (F : Type*) [Field F] [BEq F] [LawfulBEq F]
     CPolynomial.Raw.ModContext.naive ctx smoothCtx (by
       intro p hp
       exact smoothValid hp)
+
+/-- Package a Las Vegas splitter as a GS field-root backend. -/
+def lasVegasFiniteFieldRootContextWith (F : Type*) [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (ctx : CPolynomial.Roots.FiniteField.FiniteFieldContext F)
+    (enumeration : CPolynomial.Roots.FiniteField.FieldEnumeration F)
+    (cfg : CPolynomial.Roots.FiniteField.LasVegasConfig)
+    (probes : CPolynomial.Roots.FiniteField.ProbeFamily F) :
+    FieldRootContext F :=
+  finiteFieldRootContextWith F M D ctx
+    (CPolynomial.Roots.FiniteField.lasVegasLinearFactorProductSplitterWith
+      M D ctx enumeration cfg probes)
+    (by
+      intro p hp
+      exact CPolynomial.Roots.FiniteField.rootProduct_satisfies_lasVegasSplitterInput
+        M D ctx enumeration cfg probes hp)
 
 /-- Package a Shoup trace splitter as a GS field-root backend. -/
 def shoupFiniteFieldRootContextWith (F : Type*) [Field F] [BEq F] [LawfulBEq F]

@@ -6,6 +6,7 @@ Authors: Valerii Huhnin
 
 import CompPoly.Bivariate.GuruswamiSudan.Context
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.FiniteField
+import CompPoly.Univariate.Roots.Enumeration
 
 /-!
 # Guruswami-Sudan Field Roots
@@ -23,37 +24,30 @@ namespace GuruswamiSudan
 def degreeLtBool {F : Type*} [Zero F] (p : CPolynomial F) (k : Nat) : Bool :=
   p.val.size ≤ k
 
-/-- Roots by exhaustive evaluation over an explicit field-element list. -/
-def rootsInFieldByEnumeration {F : Type*} [Semiring F] [BEq F]
-    (elements : Array F) (p : CPolynomial F) : Array F :=
-  elements.filter fun a ↦ CPolynomial.eval a p == 0
+/-- Compatibility alias for the univariate exhaustive-enumeration predicate. -/
+abbrev ContainsAllFieldElements {F : Type*} (elements : Array F) : Prop :=
+  CPolynomial.Roots.FiniteField.ContainsAllFieldElements elements
 
-/-- An array contains every field element. Duplicate entries are allowed. -/
-def ContainsAllFieldElements {F : Type*} (elements : Array F) : Prop :=
-  forall a : F, a ∈ elements.toList
-
-private theorem rootsInFieldByEnumeration_sound {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F]
-    {elements : Array F} {p : CPolynomial F} {a : F}
-    (h : a ∈ (rootsInFieldByEnumeration elements p).toList) :
-    CPolynomial.eval a p = 0 := by
-  rw [rootsInFieldByEnumeration] at h
-  simp at h
-  simpa [CPolynomial.eval_horner_eq_eval] using h.2
+/-- Compatibility wrapper for roots by exhaustive evaluation over an explicit field list. -/
+def rootsInFieldByEnumeration {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+    (elements : Array F) (hElements : ContainsAllFieldElements elements)
+    (p : CPolynomial F) : Array F :=
+  let enumeration :=
+    CPolynomial.Roots.FiniteField.fieldEnumerationOfArray elements hElements
+  CPolynomial.Roots.FiniteField.rootsInFieldByEnumeration enumeration p
 
 /-- Field roots by explicit enumeration over a supplied field-element list. -/
 def enumeratingFieldRootContext (F : Type*) [Field F] [BEq F] [LawfulBEq F]
     (elements : Array F) (hElements : ContainsAllFieldElements elements) :
     FieldRootContext F where
-  rootsInField := rootsInFieldByEnumeration elements
+  rootsInField := rootsInFieldByEnumeration elements hElements
   sound := by
     intro p a h
-    exact rootsInFieldByEnumeration_sound h
+    exact CPolynomial.Roots.FiniteField.rootsInFieldByEnumeration_sound h
   complete := by
     intro p a hp h
-    rw [rootsInFieldByEnumeration]
-    simp [h]
-    simpa using hElements a
+    exact CPolynomial.Roots.FiniteField.rootsInFieldByEnumeration_complete
+      (CPolynomial.Roots.FiniteField.fieldEnumerationOfArray elements hElements) h
 
 end GuruswamiSudan
 

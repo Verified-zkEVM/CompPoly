@@ -32,6 +32,26 @@ def koalaBearFiniteFieldContext :
     intro a
     simpa [KoalaBear.Field, KoalaBear.fieldSize] using ZMod.pow_card a
 
+/-- Lazy complete enumeration for canonical KoalaBear. -/
+def koalaBearFieldEnumeration :
+    CPolynomial.Roots.FiniteField.FieldEnumeration KoalaBear.Field where
+  size := KoalaBear.fieldSize
+  elem i := (i.val : KoalaBear.Field)
+  complete := by
+    intro a
+    refine ⟨⟨a.val, ZMod.val_lt a⟩, ?_⟩
+    exact ZMod.natCast_zmod_val a
+
+/-- Default phase-1 Las Vegas configuration for KoalaBear root splitting. -/
+def koalaBearLasVegasConfig : CPolynomial.Roots.FiniteField.LasVegasConfig where
+  cutoff := 32
+  tryOddRandomizedSplitting := true
+
+/-- Default deterministic probe family for canonical KoalaBear Las Vegas splitting. -/
+def koalaBearLasVegasProbeFamily :
+    CPolynomial.Roots.FiniteField.ProbeFamily KoalaBear.Field :=
+  CPolynomial.Roots.FiniteField.seededLinearProbeFamily 20260606
+
 /-- Smooth cyclic splitter context for canonical KoalaBear. -/
 def koalaBearSmoothCyclicRootContext :
     CPolynomial.Roots.FiniteField.SmoothCyclicRootContext KoalaBear.Field :=
@@ -110,6 +130,32 @@ def koalaBearNttFastFieldRootContext : FieldRootContext KoalaBear.Field :=
         (CPolynomial.Raw.ModContext.reversalNttFast CPolynomial.NTT.KoalaBear.bestDomainForLength?)
         hp)
 
+/-- GS-facing Las Vegas finite-field root backend for canonical KoalaBear. -/
+def koalaBearLasVegasFieldRootContext : FieldRootContext KoalaBear.Field :=
+  lasVegasFiniteFieldRootContextWith KoalaBear.Field
+    CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive
+    koalaBearFiniteFieldContext koalaBearFieldEnumeration
+    koalaBearLasVegasConfig koalaBearLasVegasProbeFamily
+
+/-- GS-facing Las Vegas finite-field root backend for canonical KoalaBear with NTT arithmetic. -/
+def koalaBearLasVegasNttFieldRootContext : FieldRootContext KoalaBear.Field :=
+  lasVegasFiniteFieldRootContextWith KoalaBear.Field
+    (CPolynomial.Raw.MulContext.ntt CPolynomial.NTT.KoalaBear.bestDomainForLength?)
+    (CPolynomial.Raw.ModContext.reversalNtt CPolynomial.NTT.KoalaBear.bestDomainForLength?)
+    koalaBearFiniteFieldContext koalaBearFieldEnumeration
+    koalaBearLasVegasConfig koalaBearLasVegasProbeFamily
+
+/--
+GS-facing Las Vegas finite-field root backend for canonical KoalaBear with
+NTTFast arithmetic.
+-/
+def koalaBearLasVegasNttFastFieldRootContext : FieldRootContext KoalaBear.Field :=
+  lasVegasFiniteFieldRootContextWith KoalaBear.Field
+    (CPolynomial.Raw.MulContext.nttFast CPolynomial.NTT.KoalaBear.bestDomainForLength?)
+    (CPolynomial.Raw.ModContext.reversalNttFast CPolynomial.NTT.KoalaBear.bestDomainForLength?)
+    koalaBearFiniteFieldContext koalaBearFieldEnumeration
+    koalaBearLasVegasConfig koalaBearLasVegasProbeFamily
+
 /-- Finite-field context for native-word fast KoalaBear. -/
 def fastKoalaBearFiniteFieldContext :
     CPolynomial.Roots.FiniteField.FiniteFieldContext KoalaBear.Fast.Field where
@@ -127,6 +173,26 @@ def fastKoalaBearFiniteFieldContext :
     rw [KoalaBear.Fast.toField_npow]
     simpa [KoalaBear.Field, KoalaBear.fieldSize] using
       ZMod.pow_card (KoalaBear.Fast.toField a)
+
+/-- Lazy complete enumeration for native-word fast KoalaBear. -/
+def fastKoalaBearFieldEnumeration :
+    CPolynomial.Roots.FiniteField.FieldEnumeration KoalaBear.Fast.Field where
+  size := KoalaBear.fieldSize
+  elem i := KoalaBear.Fast.ofField (i.val : KoalaBear.Field)
+  complete := by
+    intro a
+    refine ⟨⟨(KoalaBear.Fast.toField a).val, ZMod.val_lt _⟩, ?_⟩
+    have hval :
+        (((KoalaBear.Fast.toField a).val : Nat) : KoalaBear.Field) =
+          KoalaBear.Fast.toField a :=
+      ZMod.natCast_zmod_val (KoalaBear.Fast.toField a)
+    apply KoalaBear.Fast.toField_injective
+    rw [KoalaBear.Fast.toField_ofField, hval]
+
+/-- Default deterministic probe family for native-word fast KoalaBear Las Vegas splitting. -/
+def fastKoalaBearLasVegasProbeFamily :
+    CPolynomial.Roots.FiniteField.ProbeFamily KoalaBear.Fast.Field :=
+  CPolynomial.Roots.FiniteField.seededLinearProbeFamily 20260606
 
 /-- Primitive generator transported to native-word fast KoalaBear. -/
 def fastKoalaBearPrimitiveRoot : KoalaBear.Fast.Field :=
@@ -235,6 +301,36 @@ def fastKoalaBearNttFastFieldRootContext : FieldRootContext KoalaBear.Fast.Field
         (CPolynomial.Raw.ModContext.reversalNttFast
           CPolynomial.NTT.KoalaBear.fastBestDomainForLength?)
         hp)
+
+/-- GS-facing Las Vegas finite-field root backend for native-word fast KoalaBear. -/
+def fastKoalaBearLasVegasFieldRootContext : FieldRootContext KoalaBear.Fast.Field :=
+  lasVegasFiniteFieldRootContextWith KoalaBear.Fast.Field
+    CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive
+    fastKoalaBearFiniteFieldContext fastKoalaBearFieldEnumeration
+    koalaBearLasVegasConfig fastKoalaBearLasVegasProbeFamily
+
+/--
+GS-facing Las Vegas finite-field root backend for native-word fast KoalaBear
+with NTT arithmetic.
+-/
+def fastKoalaBearLasVegasNttFieldRootContext : FieldRootContext KoalaBear.Fast.Field :=
+  lasVegasFiniteFieldRootContextWith KoalaBear.Fast.Field
+    (CPolynomial.Raw.MulContext.ntt CPolynomial.NTT.KoalaBear.fastBestDomainForLength?)
+    (CPolynomial.Raw.ModContext.reversalNtt CPolynomial.NTT.KoalaBear.fastBestDomainForLength?)
+    fastKoalaBearFiniteFieldContext fastKoalaBearFieldEnumeration
+    koalaBearLasVegasConfig fastKoalaBearLasVegasProbeFamily
+
+/--
+GS-facing Las Vegas finite-field root backend for native-word fast KoalaBear
+with NTTFast arithmetic.
+-/
+def fastKoalaBearLasVegasNttFastFieldRootContext : FieldRootContext KoalaBear.Fast.Field :=
+  lasVegasFiniteFieldRootContextWith KoalaBear.Fast.Field
+    (CPolynomial.Raw.MulContext.nttFast CPolynomial.NTT.KoalaBear.fastBestDomainForLength?)
+    (CPolynomial.Raw.ModContext.reversalNttFast
+      CPolynomial.NTT.KoalaBear.fastBestDomainForLength?)
+    fastKoalaBearFiniteFieldContext fastKoalaBearFieldEnumeration
+    koalaBearLasVegasConfig fastKoalaBearLasVegasProbeFamily
 
 end GuruswamiSudan
 

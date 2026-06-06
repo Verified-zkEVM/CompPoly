@@ -269,7 +269,11 @@ import CompPoly.Univariate.Roots
 import CompPoly.Univariate.Roots.Backend
 import CompPoly.Univariate.Roots.Context
 import CompPoly.Univariate.Roots.Correctness
+import CompPoly.Univariate.Roots.Enumeration
 import CompPoly.Univariate.Roots.Extraction
+import CompPoly.Univariate.Roots.LasVegas
+import CompPoly.Univariate.Roots.LasVegas.Basic
+import CompPoly.Univariate.Roots.LasVegas.Correctness
 import CompPoly.Univariate.Roots.RootProduct
 import CompPoly.Univariate.Roots.Shoup
 import CompPoly.Univariate.Roots.Shoup.Basic
