@@ -11,6 +11,7 @@ import CompPolyBench.Univariate.LinearFactor
 import CompPolyBench.Univariate.ManyEval
 import CompPolyBench.Univariate.NTT.FastMul
 import CompPolyBench.Univariate.NTT.FastMulLow
+import CompPolyBench.Univariate.Roots.Binary
 import CompPolyBench.Univariate.Roots.FiniteField
 
 /-!
@@ -29,6 +30,7 @@ def univariateGroupInfos : List BenchGroupInfo :=
     univariateManyEvalGroupInfos,
     univariateNttFastMulGroupInfos,
     univariateNttFastMulLowGroupInfos,
+    univariateBinaryRootGroupInfos,
     univariateFiniteFieldRootGroupInfos
   ].flatten
 
@@ -42,6 +44,7 @@ def univariateTasks : List BenchTask :=
     univariateManyEvalTasks,
     univariateNttFastMulTasks,
     univariateNttFastMulLowTasks,
+    univariateBinaryRootTasks,
     univariateFiniteFieldRootTasks
   ].flatten
 

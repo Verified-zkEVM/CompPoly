@@ -29,6 +29,17 @@ namespace FiniteField
 def tracePowerSum {F : Type*} [Field F] (p k : Nat) (z : F) : F :=
   (List.range k).foldl (fun acc i ↦ acc + z ^ (p ^ i)) 0
 
+/-- The list-fold trace power sum is the corresponding finite range sum. -/
+theorem tracePowerSum_eq_sum_range {F : Type*} [Field F] (p k : Nat) (z : F) :
+    tracePowerSum p k z = ∑ i ∈ Finset.range k, z ^ (p ^ i) := by
+  unfold tracePowerSum
+  induction k with
+  | zero =>
+      simp
+  | succ k ih =>
+      rw [List.range_succ, List.foldl_append]
+      simp [ih, Finset.sum_range_succ]
+
 /--
 Executable and proof data for a Shoup-style small-characteristic trace splitter.
 
@@ -71,6 +82,17 @@ def modularXPowersWith {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     (modulus : CPolynomial F) (p k : Nat) : Array (CPolynomial F) :=
   Array.ofFn fun i : Fin k ↦ xPowModWith M D modulus (p ^ i.val)
 
+/-- `Trace(beta * X) mod modulus`, using precomputed modular Frobenius powers. -/
+def traceCoordinatePolynomialFromPowers {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    (ctx : SmallPrimeTraceContext F) (beta : F)
+    (powers : Array (CPolynomial F)) :
+    CPolynomial F :=
+  (List.range ctx.k).foldl
+    (fun acc i ↦
+      acc + CPolynomial.C (beta ^ (ctx.p ^ i)) * powers.getD i 0)
+    0
+
 /-- `Trace(beta * X) mod modulus`, built from the modular Frobenius powers. -/
 def traceCoordinatePolynomialWith {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
@@ -82,6 +104,53 @@ def traceCoordinatePolynomialWith {F : Type*}
       acc + CPolynomial.C (beta ^ (ctx.p ^ i)) *
         xPowModWith M D modulus (ctx.p ^ i))
     0
+
+private theorem traceCoordinatePolynomialFromPowers_modularXPowersWith {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (ctx : SmallPrimeTraceContext F) (modulus : CPolynomial F) (beta : F) :
+    traceCoordinatePolynomialFromPowers ctx beta
+        (modularXPowersWith M D modulus ctx.p ctx.k) =
+      traceCoordinatePolynomialWith M D ctx modulus beta := by
+  unfold traceCoordinatePolynomialFromPowers traceCoordinatePolynomialWith modularXPowersWith
+  have hget : ∀ i, i ∈ List.range ctx.k →
+      Array.getD
+          (Array.ofFn fun i : Fin ctx.k ↦ xPowModWith M D modulus (ctx.p ^ i.val))
+          i 0 =
+        xPowModWith M D modulus (ctx.p ^ i) := by
+    intro i hi
+    have hi' : i < ctx.k := List.mem_range.mp hi
+    unfold Array.getD
+    simp [hi']
+  have hfold : ∀ (xs : List Nat) (acc : CPolynomial F),
+      (∀ i, i ∈ xs →
+        Array.getD
+            (Array.ofFn fun i : Fin ctx.k ↦ xPowModWith M D modulus (ctx.p ^ i.val))
+            i 0 =
+          xPowModWith M D modulus (ctx.p ^ i)) →
+      List.foldl
+          (fun acc i ↦ acc + CPolynomial.C (beta ^ ctx.p ^ i) *
+            Array.getD
+              (Array.ofFn fun i : Fin ctx.k ↦ xPowModWith M D modulus (ctx.p ^ i.val))
+              i 0)
+          acc xs =
+        List.foldl
+          (fun acc i ↦ acc + CPolynomial.C (beta ^ ctx.p ^ i) *
+            xPowModWith M D modulus (ctx.p ^ i))
+          acc xs := by
+    intro xs
+    induction xs with
+    | nil =>
+        intro acc _hxs
+        simp
+    | cons i xs ih =>
+        intro acc hxs
+        simp only [List.foldl_cons]
+        rw [hxs i (by simp)]
+        apply ih
+        intro j hj
+        exact hxs j (by simp [hj])
+  exact hfold (List.range ctx.k) 0 hget
 
 /-- Drop zero/unit children and keep the remaining monic gcd child. -/
 def pushNontrivialChild {F : Type*} [Field F] [BEq F] [LawfulBEq F]
@@ -118,6 +187,91 @@ def shoupRefineFactorsWith {F : Type*}
   factors.foldl
     (fun out factor ↦ out ++ shoupRefineFactorWith M D ctx beta factor)
     #[]
+
+abbrev ShoupTracePowerCache (F : Type*) [Field F] [BEq F] [LawfulBEq F] :=
+  List (CPolynomial F × Array (CPolynomial F))
+
+private def lookupTracePowers {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+    (u : CPolynomial F) :
+    ShoupTracePowerCache F → Option (Array (CPolynomial F))
+  | [] => none
+  | (v, powers) :: rest =>
+      if u == v then
+        some powers
+      else
+        lookupTracePowers u rest
+
+private def tracePowersWithCache {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (ctx : SmallPrimeTraceContext F) (u : CPolynomial F)
+    (cache : ShoupTracePowerCache F) :
+    Array (CPolynomial F) × ShoupTracePowerCache F :=
+  match lookupTracePowers u cache with
+  | some powers => (powers, cache)
+  | none =>
+      let powers := modularXPowersWith M D u ctx.p ctx.k
+      (powers, (u, powers) :: cache)
+
+private def shoupRefineFactorCachedWith {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (ctx : SmallPrimeTraceContext F) (beta : F)
+    (cache : ShoupTracePowerCache F) (u : CPolynomial F) :
+    ShoupTracePowerCache F × Array (CPolynomial F) :=
+  let u := CPolynomial.monicNormalize u
+  if u == 0 || u == 1 then
+    (cache, #[])
+  else if isRepresentedLinearFactor u then
+    (cache, #[u])
+  else
+    let (powers, cache) := tracePowersWithCache M D ctx u cache
+    let tracePoly := traceCoordinatePolynomialFromPowers ctx beta powers
+    let children :=
+      ctx.baseConstants.foldl
+        (fun children c ↦
+          let child := CPolynomial.monicNormalize
+            (CPolynomial.gcdMonic u (tracePoly - CPolynomial.C c))
+          pushNontrivialChild children child)
+        #[]
+    (cache, children)
+
+private def shoupRefineFactorsCachedWith {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (ctx : SmallPrimeTraceContext F) (beta : F)
+    (cache : ShoupTracePowerCache F) (factors : Array (CPolynomial F)) :
+    ShoupTracePowerCache F × Array (CPolynomial F) :=
+  factors.foldl
+    (fun state factor ↦
+      let (cache, out) := state
+      let (cache, children) := shoupRefineFactorCachedWith M D ctx beta cache factor
+      (cache, out ++ children))
+    (cache, #[])
+
+private def shoupRefineBasisCachedWith {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (ctx : SmallPrimeTraceContext F) (basis : List F)
+    (cache : ShoupTracePowerCache F) (factors : Array (CPolynomial F)) :
+    Array (CPolynomial F) :=
+  (basis.foldl
+    (fun state beta ↦
+      let (cache, factors) := state
+      shoupRefineFactorsCachedWith M D ctx beta cache factors)
+    (cache, factors)).2
+
+private def shoupSplitCandidatesCachedWith {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (ctx : SmallPrimeTraceContext F) (p : CPolynomial F) :
+    Array (CPolynomial F) :=
+  let p := CPolynomial.monicNormalize p
+  if p == 0 || p == 1 then
+    #[]
+  else if isRepresentedLinearFactor p then
+    #[p]
+  else
+    shoupRefineBasisCachedWith M D ctx ctx.basis.toList [] #[p]
 
 /-- Final linear-only filter for the splitter interface's unconditional soundness field. -/
 def representedLinearFactorsOnly {F : Type*} [Field F] [BEq F]
@@ -172,6 +326,7 @@ theorem representedLinearFactorsOnly_sound {F : Type*}
       simpa using h)
 
 /-- Trace-coordinate refinement candidates before the final linear-only filter. -/
+@[implemented_by shoupSplitCandidatesCachedWith]
 def shoupSplitCandidatesWith {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)

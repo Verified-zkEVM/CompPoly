@@ -15,6 +15,7 @@ import CompPolyTests.Bivariate.GuruswamiSudan.Hasse
 import CompPolyTests.Bivariate.GuruswamiSudan.Interpolation.Dense
 import CompPolyTests.Bivariate.GuruswamiSudan.Interpolation.Koetter
 import CompPolyTests.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan
+import CompPolyTests.Bivariate.GuruswamiSudan.Root.FieldRoots.Binary
 import CompPolyTests.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 import CompPolyTests.Bivariate.GuruswamiSudan.Root.RothRuckenstein
 import CompPolyTests.Bivariate.Multiplicity
@@ -22,6 +23,18 @@ import CompPolyTests.Bivariate.WeightedDegree
 import CompPolyTests.Data.MvPolynomial.Notation
 import CompPolyTests.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
 import CompPolyTests.Fields.Binary.BF128Ghash.Prelude
+import CompPolyTests.Fields.Binary.GF2_32.Basic
+import CompPolyTests.Fields.Binary.GF2_32.Impl
+import CompPolyTests.Fields.Binary.GF2_32.RootContexts
+import CompPolyTests.Fields.Binary.GF2_48.Basic
+import CompPolyTests.Fields.Binary.GF2_48.Impl
+import CompPolyTests.Fields.Binary.GF2_48.RootContexts
+import CompPolyTests.Fields.Binary.GF2_64.Basic
+import CompPolyTests.Fields.Binary.GF2_64.Impl
+import CompPolyTests.Fields.Binary.GF2_64.RootContexts
+import CompPolyTests.Fields.Binary.GF2_72.Basic
+import CompPolyTests.Fields.Binary.GF2_72.Impl
+import CompPolyTests.Fields.Binary.GF2_72.RootContexts
 import CompPolyTests.Fields.KoalaBear.Fast
 import CompPolyTests.Fields.PrattCertificate
 import CompPolyTests.LinearAlgebra.Dense
@@ -38,6 +51,7 @@ import CompPolyTests.Univariate.NTT.FastMul
 import CompPolyTests.Univariate.NTT.Forward
 import CompPolyTests.Univariate.NTT.Inverse
 import CompPolyTests.Univariate.Raw
+import CompPolyTests.Univariate.Roots.Binary
 import CompPolyTests.Univariate.Roots.FiniteField
 import CompPolyTests.Univariate.Roots.Shoup
 import CompPolyTests.Univariate.ToPoly
