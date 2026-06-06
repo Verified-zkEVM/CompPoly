@@ -544,10 +544,43 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
         rw [Fin.prod_univ_castSucc]
         simp only [Fin.val_cast, Fin.val_castSucc, Fin.val_last]
 
-      simp_rw [algebraMap.coe_pow]
       simp_rw [algebraMap.coe_prod]
-      sorry -- TODO(v4.30 final): rc2->final entangled `algebraMap`/`Algebra.cast`
-            -- unfold + cast collection in this conv; needs manual rebuild.
+      have h_cast_j : 2 ^ (prevDiff + 1) = 2 ^ (r - l) := by
+        rw [h_r_sub_l]
+      have h_low_bits (x : Fin prevDiff) :
+          Nat.getBit x.val (leftModNat (m:=2 ^ prevDiff) (n:=2)
+            (by exact Nat.two_pow_pos prevDiff) (i:=Fin.cast h2.symm j)).val =
+            Nat.getBit x.val j.val := by
+        have hbits := bit_revFinProdFinEquiv_symm_2_pow_succ
+          (n:=prevDiff) (j:=Fin.cast h_cast_j.symm j) (i:=Fin.castSucc x)
+        simpa only [Fin.val_castSucc, Fin.val_cast, Fin.is_lt, ↓reduceIte,
+          revFinProdFinEquiv_symm_apply] using hbits.symm
+      have h_top_bit :
+          j.val / 2 ^ (r - l - 1) = Nat.getBit prevDiff j.val := by
+        have hbits := bit_revFinProdFinEquiv_symm_2_pow_succ
+          (n:=prevDiff) (j:=Fin.cast h_cast_j.symm j) (i:=Fin.last prevDiff)
+        simpa only [Fin.val_last, Fin.val_cast, lt_self_iff_false, ↓reduceIte,
+          revFinProdFinEquiv_symm_apply, leftDivNat, h_prevDiff]
+          using hbits.symm
+      rw! (castMode:=.all) [h_r1_eq_l_plus_prevDiff, h_top_bit]
+      rw! (castMode:=.all) [show l + prevDiff - l = prevDiff by omega]
+      congr 1
+      apply congrArg (fun f : Fin prevDiff → ConcreteBTField r =>
+        (Finset.univ : Finset (Fin prevDiff)).prod f)
+      funext x
+      rw [h_low_bits x]
+      convert (ConcreteBTFieldAlgebra_apply_assoc (l:=l + x.val + 1) (mid:=r1) (r:=r)
+        (h_l_le_mid:=by omega) (h_mid_le_r:=by omega)
+        ((𝕏 (l + x.val)) ^ Nat.getBit x.val j.val)).symm using 1
+      rw! (castMode:=.all) [show r = r1 + 1 by omega]
+      rw! (castMode:=.all) [←h_r1_eq_l_plus_prevDiff]
+      change (algebraMap (ConcreteBTField r1) (ConcreteBTField (r1 + 1)))
+          (((@ConcreteBTFieldAlgebra (l:=l + x.val + 1) (r:=r1) (h_le:=by omega)).algebraMap)
+            (𝕏 (l + x.val) ^ Nat.getBit x.val j.val)) =
+        (algebraMap (ConcreteBTField r1) (ConcreteBTField (r1 + 1)))
+          (((@ConcreteBTFieldAlgebra (l:=l + x.val + 1) (r:=r1) (h_le:=by omega)).algebraMap)
+            (𝕏 (l + x.val) ^ Nat.getBit x.val j.val))
+      rfl
 
 end ConcreteMultilinearBasis
 
