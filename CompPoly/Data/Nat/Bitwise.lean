@@ -551,9 +551,9 @@ lemma sum_eq_xor_plus_twice_and (n : Nat) : ∀ m : ℕ, n + m = (n ^^^ m) + 2 *
     let bm := resDiv2M.fst
     let m2 := resDiv2M.snd
     have h_m2 : m2 = Nat.div2 m := by
-      rfl
+      show (Nat.boddDiv2 m).snd = Nat.div2 m; rw [Nat.boddDiv2_eq]
     have h_bm : bm = Nat.bodd m := by
-      rfl
+      show (Nat.boddDiv2 m).fst = Nat.bodd m; rw [Nat.boddDiv2_eq]
     let mVal := Nat.bit bm m2
     set nVal := Nat.bit bn n2
     set getBitN := bn.toNat
