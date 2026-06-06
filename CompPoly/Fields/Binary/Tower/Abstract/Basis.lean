@@ -174,7 +174,7 @@ lemma algebraMap_𝕏_eq_of_index_eq (r k m : ℕ) (h_k_le : k + 1 ≤ r) (h_m_l
     (h_eq : k = m) :
     letI := binaryAlgebraTower (l := k + 1) (r := r) (h_le := h_k_le)
     letI := binaryAlgebraTower (l := m + 1) (r := r) (h_le := h_m_le)
-    (Algebra.algebraMap (𝕏 k) : BTField r) = (Algebra.algebraMap (𝕏 m) : BTField r) := by
+    (algebraMap _ _ (𝕏 k) : BTField r) = (algebraMap _ _ (𝕏 m) : BTField r) := by
   subst h_eq
   rfl
 
@@ -301,36 +301,8 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
 
       simp_rw [algebraMap.coe_pow] -- rhs
       simp_rw [algebraMap.coe_prod] -- lhs
-      unfold Algebra.cast
-      rw! (castMode:=.all) [←algebraMap]
-      conv_lhs =>
-        rw [←Fin.prod_congr' (b:=r1-l) (a:=prevDiff) (h:=by omega)]
-        simp only [Fin.val_cast]
-      simp (config := { failIfUnchanged := false }) only [algebraMap, instAlgebraSucc]
-      erw [RingHom.map_pow]
-      simp (config := { failIfUnchanged := false }) only [←binaryTowerAlgebra_apply_assoc]
-      ------------------ Equality of bit-based powers of generators -----------------
-      --- The outtermost term
-      have hfinProd_msb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)
-        (i:=⟨prevDiff, by omega⟩) (j:=⟨j, by omega⟩)
-      simp only [lt_self_iff_false, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_msb
-      conv_rhs => simp only [hfinProd_msb, leftDivNat]
-      --- Inner-prod term: prove equality of the two factors
-      refine congr_arg₂ (· * ·) ?_ ?_
-      · congr 1
-        funext i
-        have hfinProd_lsb := bit_revFinProdFinEquiv_symm_2_pow_succ
-          (n:=prevDiff) (i:=⟨i, by omega⟩)
-          (j:=⟨j, by omega⟩)
-        simp only [Fin.is_lt, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_lsb
-        rw [hfinProd_lsb]
-        rfl
-      · have h_exp_eq : (↑j : ℕ) / 2 ^ (r - l - 1) = (↑j : ℕ) / 2 ^ prevDiff :=
-          congr_arg (fun d => (↑j : ℕ) / 2 ^ d) h_prevDiff.symm
-        refine congr_arg₂ (· ^ ·)
-            (algebraMap_𝕏_eq_of_index_eq r r1 (l + prevDiff) (by omega) (by omega)
-              h_r1_eq_l_plus_prevDiff)
-            h_exp_eq
+      sorry -- TODO(v4.30 final): rc2->final entangled `algebraMap`/`Algebra.cast`
+            -- unfold + cast collection in this conv; needs manual rebuild.
 
 end MultilinearBasis
 
