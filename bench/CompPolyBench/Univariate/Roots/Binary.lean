@@ -63,28 +63,42 @@ private def binaryRootStrideCollisionWorkloadShape (powerCount stride : Nat) : S
 /-
 Each binary-root workload uses a field-specific default input shape for every
 preset. Presets only scale measured iteration counts. Counts are row-specific
-where needed so total row runtimes stay closer within each field group.
+where needed so total row runtimes stay closer within each field group. Large
+counts target balanced row totals; medium is roughly large / 7, and small is
+roughly max (large / 35) 1, rounded to nice values.
 -/
-private def binaryRootShoupMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 1 1 1
+private def binaryRootGF48ShoupMeasuredIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 21 3 1
 
-private def binaryRootLasVegasMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 1 1 1
+private def binaryRootGF48LasVegasMeasuredIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 250 35 7
 
 private def binaryRootGF48SmoothMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 500 70 1
+  preset.selectNat 500 70 15
+
+private def binaryRootGF72ShoupMeasuredIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 21 3 1
+
+private def binaryRootGF72LasVegasMeasuredIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 210 30 6
 
 private def binaryRootGF72SmoothMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 600 90 1
+  preset.selectNat 600 90 20
 
 private def binaryRootGF32HardShoupMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 420 60 12
+
+private def binaryRootGF32HardLasVegasMeasuredIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 2100 300 60
 
 private def binaryRootGF32HardSmoothMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 315 45 9
 
 private def binaryRootGF64HardShoupMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 35 5 1
+
+private def binaryRootGF64HardLasVegasMeasuredIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 420 60 12
 
 private def binaryRootGF64HardSmoothMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 21 3 1
@@ -221,13 +235,14 @@ private def runBinaryRootGroup {F : Type} [Field F] [BEq F] [LawfulBEq F]
     (lasVegasCfg : CPolynomial.Roots.FiniteField.LasVegasConfig)
     (smoothHornerCtx smoothSubproductCtx :
       CPolynomial.Roots.FiniteField.SmoothCyclicRootContext F)
-    (smoothMeasuredIterations : BenchPreset → Nat)
+    (shoupMeasuredIterations smoothMeasuredIterations lasVegasMeasuredIterations :
+      BenchPreset → Nat)
     (generator : F) (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let p := workloadPolynomial generator
   let warmup := preset.selectNat 1 0 0
-  let shoupMeasured := binaryRootShoupMeasuredIterations preset
-  let lasVegasMeasured := binaryRootLasVegasMeasuredIterations preset
+  let shoupMeasured := shoupMeasuredIterations preset
+  let lasVegasMeasured := lasVegasMeasuredIterations preset
   let probeSeed := binaryRootLasVegasProbeSeed fieldBits
   let probeCoeffCount := p.val.size - 1
   let (probeTable, _) :=
@@ -282,13 +297,14 @@ private def runBinaryRootSubproductComparisonGroup {F : Type}
     (lasVegasCfg : CPolynomial.Roots.FiniteField.LasVegasConfig)
     (smoothSubproductCtx :
       CPolynomial.Roots.FiniteField.SmoothCyclicRootContext F)
-    (shoupMeasuredIterations smoothMeasuredIterations : BenchPreset → Nat)
+    (shoupMeasuredIterations smoothMeasuredIterations lasVegasMeasuredIterations :
+      BenchPreset → Nat)
     (generator : F) (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let p := workloadPolynomial generator
   let warmup := preset.selectNat 1 0 0
   let shoupMeasured := shoupMeasuredIterations preset
-  let lasVegasMeasured := binaryRootLasVegasMeasuredIterations preset
+  let lasVegasMeasured := lasVegasMeasuredIterations preset
   let probeSeed := binaryRootLasVegasProbeSeed fieldBits
   let probeCoeffCount := p.val.size - 1
   let (probeTable, _) :=
@@ -353,6 +369,7 @@ private def runGF32BinaryRoots (preset : BenchPreset) (gen : StdGen) :
     GF2_32.smoothSubproductRootContext
     binaryRootGF32HardShoupMeasuredIterations
     binaryRootGF32HardSmoothMeasuredIterations
+    binaryRootGF32HardLasVegasMeasuredIterations
     GF2_32.primitiveRoot preset gen
 
 private def runGF48BinaryRoots (preset : BenchPreset) (gen : StdGen) :
@@ -366,7 +383,10 @@ private def runGF48BinaryRoots (preset : BenchPreset) (gen : StdGen) :
     GF2_48.fieldEnumeration
     GF2_48.lasVegasConfig
     GF2_48.smoothHornerRootContext GF2_48.smoothSubproductRootContext
-    binaryRootGF48SmoothMeasuredIterations GF2_48.primitiveRoot preset gen
+    binaryRootGF48ShoupMeasuredIterations
+    binaryRootGF48SmoothMeasuredIterations
+    binaryRootGF48LasVegasMeasuredIterations
+    GF2_48.primitiveRoot preset gen
 
 private def runGF72BinaryRoots (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) :=
@@ -379,7 +399,10 @@ private def runGF72BinaryRoots (preset : BenchPreset) (gen : StdGen) :
     GF2_72.fieldEnumeration
     GF2_72.lasVegasConfig
     GF2_72.smoothHornerRootContext GF2_72.smoothSubproductRootContext
-    binaryRootGF72SmoothMeasuredIterations GF2_72.primitiveRoot preset gen
+    binaryRootGF72ShoupMeasuredIterations
+    binaryRootGF72SmoothMeasuredIterations
+    binaryRootGF72LasVegasMeasuredIterations
+    GF2_72.primitiveRoot preset gen
 
 private def runGF64BinaryRoots (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) :=
@@ -396,6 +419,7 @@ private def runGF64BinaryRoots (preset : BenchPreset) (gen : StdGen) :
     GF2_64.smoothSubproductRootContext
     binaryRootGF64HardShoupMeasuredIterations
     binaryRootGF64HardSmoothMeasuredIterations
+    binaryRootGF64HardLasVegasMeasuredIterations
     GF2_64.primitiveRoot preset gen
 
 /-- Runnable binary-field root benchmark tasks. -/

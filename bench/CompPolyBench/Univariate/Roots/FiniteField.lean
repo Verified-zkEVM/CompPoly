@@ -11,7 +11,7 @@ import CompPoly.Univariate.EuclideanAlgorithm
 /-!
 # Finite-Field Root Benchmarks
 
-Standalone nonlinear univariate root-finding benchmarks over canonical and fast
+Standalone nonlinear univariate root-search benchmarks over canonical and fast
 KoalaBear.
 -/
 
@@ -117,18 +117,20 @@ private def runKoalaBearFiniteFieldRoots (preset : BenchPreset) (gen : StdGen) :
   let p : CPolynomial KoalaBear.Field := nonlinearRootPolynomial
   let fastP : CPolynomial KoalaBear.Fast.Field := nonlinearRootPolynomial
   let warmup := preset.selectNat 1 0 0
+  -- Large counts balance row totals; medium is about large / 7, small about
+  -- max (large / 35) 1, with rounded nice values.
   let measured := preset.selectNat 10 1 1
-  let nttMeasured := preset.selectNat 10 1 1
-  let nttFastMeasured := preset.selectNat 10 1 1
-  let fastMeasured := preset.selectNat 30 3 1
-  let fastNttMeasured := preset.selectNat 30 3 1
-  let fastNttFastMeasured := preset.selectNat 30 3 1
+  let nttMeasured := preset.selectNat 40 6 1
+  let nttFastMeasured := preset.selectNat 120 17 3
+  let fastMeasured := preset.selectNat 60 9 2
+  let fastNttMeasured := preset.selectNat 120 17 3
+  let fastNttFastMeasured := preset.selectNat 400 60 12
   let lvMeasured := preset.selectNat 10 1 1
-  let lvNttMeasured := preset.selectNat 10 1 1
-  let lvNttFastMeasured := preset.selectNat 10 1 1
-  let fastLvMeasured := preset.selectNat 30 3 1
-  let fastLvNttMeasured := preset.selectNat 30 3 1
-  let fastLvNttFastMeasured := preset.selectNat 30 3 1
+  let lvNttMeasured := preset.selectNat 15 2 1
+  let lvNttFastMeasured := preset.selectNat 40 6 1
+  let fastLvMeasured := preset.selectNat 40 6 1
+  let fastLvNttMeasured := preset.selectNat 45 6 1
+  let fastLvNttFastMeasured := preset.selectNat 120 17 3
   let checksumIterations := groupChecksumIterations measured [
     nttMeasured, nttFastMeasured, fastMeasured, fastNttMeasured, fastNttFastMeasured,
     lvMeasured, lvNttMeasured, lvNttFastMeasured,
@@ -246,8 +248,10 @@ private def runKoalaBearRootProductGcd (preset : BenchPreset) (gen : StdGen) :
   let p : CPolynomial KoalaBear.Field := nonlinearRootPolynomial
   let fastP : CPolynomial KoalaBear.Fast.Field := nonlinearRootPolynomial
   let warmup := preset.selectNat 1 0 0
+  -- Large counts balance row totals; medium is about large / 7, small about
+  -- max (large / 35) 1, with rounded nice values.
   let measured := preset.selectNat 10 1 1
-  let fastMeasured := preset.selectNat 30 3 1
+  let fastMeasured := preset.selectNat 50 7 1
   let checksumIterations := groupChecksumIterations measured [
     measured, measured, fastMeasured, fastMeasured, fastMeasured
   ]
