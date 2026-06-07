@@ -104,10 +104,10 @@ private def rootProductNormXgcdWith {F : Type*} [Field F] [BEq F] [LawfulBEq F]
   let witness := CPolynomial.ofArray (CPolynomial.Raw.xPowSubXModWith M D ctx.q pMonic.val)
   (CPolynomial.normXgcd pMonic witness).1
 
-/-- Benchmark group metadata for finite-field root finding. -/
+/-- Benchmark group metadata for finite-field root search. -/
 def univariateFiniteFieldRootGroupInfos : List BenchGroupInfo := [
   ⟨"univariate-roots-finite-field-koalabear",
-    "Univariate finite-field root finding (KoalaBear)"⟩,
+    "Univariate finite-field root search (KoalaBear)"⟩,
   ⟨"univariate-roots-root-product-gcd-koalabear",
     "Univariate finite-field root product gcd (KoalaBear)"⟩,
 ]
@@ -139,26 +139,25 @@ private def runKoalaBearFiniteFieldRoots (preset : BenchPreset) (gen : StdGen) :
   let fastLvProbes := seededLinearFactorProbeFamily (F := KoalaBear.Fast.Field) 3
   let row <- runTimed
     "univariate-roots-finite-field-naive" "CPolynomial"
-    "Finite-field roots, canonical multiplication and remainder"
+    "smooth cyclic, canonical"
     "KoalaBear.Field" rootWorkloadShape preset warmup measured
     (fun _ ↦ koalaBearFieldRootContext.rootsInField p)
     (checksumNormalizedRoots checksumKoalaBear) checksumIterations
   let nttRow <- runTimed
     "univariate-roots-finite-field-ntt" "CPolynomial"
-    "Finite-field roots, NTT multiplication and reversal remainder"
+    "smooth cyclic, NTT"
     "KoalaBear.Field" rootWorkloadShape preset warmup nttMeasured
     (fun _ ↦ koalaBearNttFieldRootContext.rootsInField p)
     (checksumNormalizedRoots checksumKoalaBear) checksumIterations
   let nttFastRow <- runTimed
     "univariate-roots-finite-field-nttfast" "CPolynomial"
-    "Finite-field roots, NTTFast multiplication and reversal remainder"
+    "smooth cyclic, NTTFast"
     "KoalaBear.Field" rootWorkloadShape preset warmup nttFastMeasured
     (fun _ ↦ koalaBearNttFastFieldRootContext.rootsInField p)
     (checksumNormalizedRoots checksumKoalaBear) checksumIterations
   let lvRow <- runTimed
     "univariate-roots-finite-field-las-vegas-naive" "CPolynomial"
-    (s!"Finite-field roots, Las Vegas hybrid, cutoff={rootWorkloadLasVegasCutoff}, " ++
-      "seeded linear-factor probes, canonical multiplication and remainder")
+    "Las Vegas, canonical"
     "KoalaBear.Field" rootWorkloadLasVegasShape preset warmup lvMeasured
     (fun _ ↦ lasVegasRootsWith CPolynomial.Raw.MulContext.naive
       CPolynomial.Raw.ModContext.naive koalaBearFiniteFieldContext
@@ -166,8 +165,7 @@ private def runKoalaBearFiniteFieldRoots (preset : BenchPreset) (gen : StdGen) :
     (checksumNormalizedRoots checksumKoalaBear) checksumIterations
   let lvNttRow <- runTimed
     "univariate-roots-finite-field-las-vegas-ntt" "CPolynomial"
-    (s!"Finite-field roots, Las Vegas hybrid, cutoff={rootWorkloadLasVegasCutoff}, " ++
-      "seeded linear-factor probes, NTT multiplication and reversal remainder")
+    "Las Vegas, NTT"
     "KoalaBear.Field" rootWorkloadLasVegasShape preset warmup lvNttMeasured
     (fun _ ↦ lasVegasRootsWith
       (CPolynomial.Raw.MulContext.ntt CPolynomial.NTT.KoalaBear.bestDomainForLength?)
@@ -176,8 +174,7 @@ private def runKoalaBearFiniteFieldRoots (preset : BenchPreset) (gen : StdGen) :
     (checksumNormalizedRoots checksumKoalaBear) checksumIterations
   let lvNttFastRow <- runTimed
     "univariate-roots-finite-field-las-vegas-nttfast" "CPolynomial"
-    (s!"Finite-field roots, Las Vegas hybrid, cutoff={rootWorkloadLasVegasCutoff}, " ++
-      "seeded linear-factor probes, NTTFast multiplication and reversal remainder")
+    "Las Vegas, NTTFast"
     "KoalaBear.Field" rootWorkloadLasVegasShape preset warmup lvNttFastMeasured
     (fun _ ↦ lasVegasRootsWith
       (CPolynomial.Raw.MulContext.nttFast CPolynomial.NTT.KoalaBear.bestDomainForLength?)
@@ -187,26 +184,25 @@ private def runKoalaBearFiniteFieldRoots (preset : BenchPreset) (gen : StdGen) :
     (checksumNormalizedRoots checksumKoalaBear) checksumIterations
   let fastRow <- runTimed
     "univariate-roots-finite-field-fast-naive" "CPolynomial"
-    "Finite-field roots, canonical multiplication and remainder"
+    "smooth cyclic, canonical"
     "KoalaBear.Fast.Field" rootWorkloadShape preset warmup fastMeasured
     (fun _ ↦ fastKoalaBearFieldRootContext.rootsInField fastP)
     (checksumNormalizedRoots checksumKoalaBearFast) checksumIterations
   let fastNttRow <- runTimed
     "univariate-roots-finite-field-fast-ntt" "CPolynomial"
-    "Finite-field roots, NTT multiplication and reversal remainder"
+    "smooth cyclic, NTT"
     "KoalaBear.Fast.Field" rootWorkloadShape preset warmup fastNttMeasured
     (fun _ ↦ fastKoalaBearNttFieldRootContext.rootsInField fastP)
     (checksumNormalizedRoots checksumKoalaBearFast) checksumIterations
   let fastNttFastRow <- runTimed
     "univariate-roots-finite-field-fast-nttfast" "CPolynomial"
-    "Finite-field roots, NTTFast multiplication and reversal remainder"
+    "smooth cyclic, NTTFast"
     "KoalaBear.Fast.Field" rootWorkloadShape preset warmup fastNttFastMeasured
     (fun _ ↦ fastKoalaBearNttFastFieldRootContext.rootsInField fastP)
     (checksumNormalizedRoots checksumKoalaBearFast) checksumIterations
   let fastLvRow <- runTimed
     "univariate-roots-finite-field-fast-las-vegas-naive" "CPolynomial"
-    (s!"Finite-field roots, Las Vegas hybrid, cutoff={rootWorkloadLasVegasCutoff}, " ++
-      "seeded linear-factor probes, canonical multiplication and remainder")
+    "Las Vegas, canonical"
     "KoalaBear.Fast.Field" rootWorkloadLasVegasShape preset warmup fastLvMeasured
     (fun _ ↦ lasVegasRootsWith CPolynomial.Raw.MulContext.naive
       CPolynomial.Raw.ModContext.naive fastKoalaBearFiniteFieldContext
@@ -214,8 +210,7 @@ private def runKoalaBearFiniteFieldRoots (preset : BenchPreset) (gen : StdGen) :
     (checksumNormalizedRoots checksumKoalaBearFast) checksumIterations
   let fastLvNttRow <- runTimed
     "univariate-roots-finite-field-fast-las-vegas-ntt" "CPolynomial"
-    (s!"Finite-field roots, Las Vegas hybrid, cutoff={rootWorkloadLasVegasCutoff}, " ++
-      "seeded linear-factor probes, NTT multiplication and reversal remainder")
+    "Las Vegas, NTT"
     "KoalaBear.Fast.Field" rootWorkloadLasVegasShape preset warmup fastLvNttMeasured
     (fun _ ↦ lasVegasRootsWith
       (CPolynomial.Raw.MulContext.ntt CPolynomial.NTT.KoalaBear.fastBestDomainForLength?)
@@ -226,8 +221,7 @@ private def runKoalaBearFiniteFieldRoots (preset : BenchPreset) (gen : StdGen) :
     (checksumNormalizedRoots checksumKoalaBearFast) checksumIterations
   let fastLvNttFastRow <- runTimed
     "univariate-roots-finite-field-fast-las-vegas-nttfast" "CPolynomial"
-    (s!"Finite-field roots, Las Vegas hybrid, cutoff={rootWorkloadLasVegasCutoff}, " ++
-      "seeded linear-factor probes, NTTFast multiplication and reversal remainder")
+    "Las Vegas, NTTFast"
     "KoalaBear.Fast.Field" rootWorkloadLasVegasShape preset warmup fastLvNttFastMeasured
     (fun _ ↦ lasVegasRootsWith
       (CPolynomial.Raw.MulContext.nttFast
@@ -239,7 +233,7 @@ private def runKoalaBearFiniteFieldRoots (preset : BenchPreset) (gen : StdGen) :
     (checksumNormalizedRoots checksumKoalaBearFast) checksumIterations
   pure ({
     groupKey := "univariate-roots-finite-field-koalabear",
-    title := "Univariate finite-field root finding (KoalaBear)",
+    title := "Univariate finite-field root search (KoalaBear)",
     records := #[
       row, nttRow, nttFastRow, lvRow, lvNttRow, lvNttFastRow,
       fastRow, fastNttRow, fastNttFastRow, fastLvRow, fastLvNttRow,

@@ -241,26 +241,25 @@ private def runBinaryRootGroup {F : Type} [Field F] [BEq F] [LawfulBEq F]
   ]
   let shoupRow ← runTimed
     (groupKey ++ "-shoup") "CPolynomial"
-    "binary roots, Shoup trace splitter"
+    "Shoup trace"
     fieldLabel inputShape preset warmup shoupMeasured
     (fun _ ↦ rootsWith finiteCtx (shoupSplitter traceCtx) p)
     (checksumNormalizedRoots toNat) checksumIterations
   let smoothHornerRow ← runTimed
     (groupKey ++ "-smooth-horner") "CPolynomial"
-    "binary roots, smooth cyclic splitter, Horner leaf evaluation"
+    "smooth cyclic, Horner"
     fieldLabel inputShape preset warmup smoothHornerMeasured
     (fun _ ↦ rootsWith finiteCtx (smoothSplitter smoothHornerCtx) p)
     (checksumNormalizedRoots toNat) checksumIterations
   let smoothSubproductRow ← runTimed
     (groupKey ++ "-smooth-subproduct") "CPolynomial"
-    "binary roots, smooth cyclic splitter, subproduct leaf evaluation"
+    "smooth cyclic, subproduct"
     fieldLabel inputShape preset warmup smoothSubproductMeasured
     (fun _ ↦ rootsWith finiteCtx (smoothSplitter smoothSubproductCtx) p)
     (checksumNormalizedRoots toNat) checksumIterations
   let lasVegasTraceRow ← runTimed
     (groupKey ++ "-las-vegas-trace") "CPolynomial"
-    (s!"binary roots, Las Vegas trace splitter, cutoff={lasVegasCfg.cutoff}, " ++
-      s!"precomputed full-residue probes, seed={probeSeed}")
+    s!"Las Vegas trace, c={lasVegasCfg.cutoff}, seed={probeSeed}"
     fieldLabel (binaryRootLasVegasInputShape inputShape lasVegasCfg probeSeed probeCoeffCount)
     preset warmup lasVegasMeasured
     (fun _ ↦
@@ -302,20 +301,19 @@ private def runBinaryRootSubproductComparisonGroup {F : Type}
   ]
   let shoupRow ← runTimed
     (groupKey ++ "-shoup") "CPolynomial"
-    "binary roots, Shoup trace splitter"
+    "Shoup trace"
     fieldLabel inputShape preset warmup shoupMeasured
     (fun _ ↦ rootsWith finiteCtx (shoupSplitter traceCtx) p)
     (checksumNormalizedRoots toNat) checksumIterations
   let smoothSubproductRow ← runTimed
     (groupKey ++ "-smooth-subproduct") "CPolynomial"
-    "binary roots, smooth cyclic splitter, subproduct leaf evaluation"
+    "smooth cyclic, subproduct"
     fieldLabel inputShape preset warmup smoothSubproductMeasured
     (fun _ ↦ rootsWith finiteCtx (smoothSplitter smoothSubproductCtx) p)
     (checksumNormalizedRoots toNat) checksumIterations
   let lasVegasTraceRow ← runTimed
     (groupKey ++ "-las-vegas-trace") "CPolynomial"
-    (s!"binary roots, Las Vegas trace splitter, cutoff={lasVegasCfg.cutoff}, " ++
-      s!"precomputed full-residue probes, seed={probeSeed}")
+    s!"Las Vegas trace, c={lasVegasCfg.cutoff}, seed={probeSeed}"
     fieldLabel (binaryRootLasVegasInputShape inputShape lasVegasCfg probeSeed probeCoeffCount)
     preset warmup lasVegasMeasured
     (fun _ ↦
@@ -328,22 +326,22 @@ private def runBinaryRootSubproductComparisonGroup {F : Type}
     records := #[shoupRow, smoothSubproductRow, lasVegasTraceRow]
   }, gen)
 
-/-- Benchmark group metadata for binary-field root finding. -/
+/-- Benchmark group metadata for binary-field root search. -/
 def univariateBinaryRootGroupInfos : List BenchGroupInfo := [
   ⟨"univariate-roots-binary-gf2-48",
-    "Univariate binary-field root finding (GF(2^48))"⟩,
+    "Univariate binary-field root search (GF(2^48))"⟩,
   ⟨"univariate-roots-binary-gf2-72",
-    "Univariate binary-field root finding (GF(2^72))"⟩,
+    "Univariate binary-field root search (GF(2^72))"⟩,
   ⟨"univariate-roots-binary-gf2-32",
-    "Univariate binary-field root finding (GF(2^32))"⟩,
+    "Univariate binary-field root search (GF(2^32))"⟩,
   ⟨"univariate-roots-binary-gf2-64",
-    "Univariate binary-field root finding (GF(2^64))"⟩
+    "Univariate binary-field root search (GF(2^64))"⟩
 ]
 
 private def runGF32BinaryRoots (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) :=
   runBinaryRootSubproductComparisonGroup "univariate-roots-binary-gf2-32"
-    "Univariate binary-field root finding (GF(2^32))"
+    "Univariate binary-field root search (GF(2^32))"
     "GF(2^32)" 32 GF2_32.ConcreteField.toNat
     (binaryRootStrideCollisionWorkloadPolynomial
       binaryRootGF32PowerCount binaryRootGF32DeepCollisionStride)
@@ -360,7 +358,7 @@ private def runGF32BinaryRoots (preset : BenchPreset) (gen : StdGen) :
 private def runGF48BinaryRoots (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) :=
   runBinaryRootGroup "univariate-roots-binary-gf2-48"
-    "Univariate binary-field root finding (GF(2^48))"
+    "Univariate binary-field root search (GF(2^48))"
     "GF(2^48)" 48 GF2_48.ConcreteField.toNat
     (binaryRootConsecutiveWorkloadPolynomial binaryRootGF48PowerCount)
     (binaryRootConsecutiveWorkloadShape binaryRootGF48PowerCount)
@@ -373,7 +371,7 @@ private def runGF48BinaryRoots (preset : BenchPreset) (gen : StdGen) :
 private def runGF72BinaryRoots (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) :=
   runBinaryRootGroup "univariate-roots-binary-gf2-72"
-    "Univariate binary-field root finding (GF(2^72))"
+    "Univariate binary-field root search (GF(2^72))"
     "GF(2^72)" 72 GF2_72.ConcreteField.toNat
     (binaryRootConsecutiveWorkloadPolynomial binaryRootGF72PowerCount)
     (binaryRootConsecutiveWorkloadShape binaryRootGF72PowerCount)
@@ -386,7 +384,7 @@ private def runGF72BinaryRoots (preset : BenchPreset) (gen : StdGen) :
 private def runGF64BinaryRoots (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) :=
   runBinaryRootSubproductComparisonGroup "univariate-roots-binary-gf2-64"
-    "Univariate binary-field root finding (GF(2^64))"
+    "Univariate binary-field root search (GF(2^64))"
     "GF(2^64)" 64 GF2_64.ConcreteField.toNat
     (binaryRootStrideCollisionWorkloadPolynomial
       binaryRootGF64PowerCount binaryRootGF64DeepCollisionStride)
