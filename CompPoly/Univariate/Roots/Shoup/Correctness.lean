@@ -849,50 +849,6 @@ theorem shoupSplitCandidatesWith_dvd_input {F : Type*}
           exact monicNormalize_toPoly_dvd_self p)
         hmem
 
-private theorem representedLinearFactorsOnly_mem_of_mem {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F]
-    {factors : Array (CPolynomial F)} {factor : CPolynomial F}
-    (hmem : factor ∈ factors.toList)
-    (hlin : isRepresentedLinearFactor factor = true) :
-    factor ∈ (representedLinearFactorsOnly factors).toList := by
-  unfold representedLinearFactorsOnly
-  rcases factors with ⟨factorList⟩
-  rw [← Array.foldl_toList]
-  have hgo : ∀ (xs : List (CPolynomial F)) (out : Array (CPolynomial F)),
-      factor ∈ out.toList ∨ factor ∈ xs →
-        factor ∈
-          (xs.foldl
-            (fun out factor ↦
-              if isRepresentedLinearFactor factor then out.push factor else out)
-            out).toList := by
-    intro xs
-    induction xs with
-    | nil =>
-        intro out h
-        rcases h with hout | hxs
-        · exact hout
-        · simp at hxs
-    | cons x xs ih =>
-        intro out h
-        simp only [List.foldl_cons]
-        apply ih
-        rcases h with hout | hxs
-        · left
-          by_cases hxlin : isRepresentedLinearFactor x = true
-          · rw [if_pos hxlin]
-            simp [hout]
-          · rw [if_neg hxlin]
-            exact hout
-        · simp at hxs
-          rcases hxs with hx | htail
-          · subst x
-            left
-            rw [if_pos hlin]
-            simp
-          · right
-            exact htail
-  exact hgo factorList #[] (Or.inr (by simpa using hmem))
-
 /- The remaining algorithmic invariant: two field roots of the same final Shoup
 candidate have equal trace coordinates for every basis element, hence are equal. -/
 private theorem shoupSplitCandidatesWith_root_unique {F : Type*}

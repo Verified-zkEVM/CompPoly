@@ -325,6 +325,71 @@ theorem representedLinearFactorsOnly_sound {F : Type*}
     simp at hmem) (by
       simpa using h)
 
+private theorem mem_representedLinearFactorsOnly_foldl_of_mem_out {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] :
+    ∀ (factors : List (CPolynomial F)) (out : Array (CPolynomial F))
+      {factor : CPolynomial F},
+      factor ∈ out →
+        factor ∈
+          (factors.foldl
+            (fun out factor ↦
+              if isRepresentedLinearFactor factor then out.push factor else out)
+            out) := by
+  intro factors
+  induction factors with
+  | nil =>
+      intro out factor hmem
+      exact hmem
+  | cons x xs ih =>
+      intro out factor hmem
+      simp only [List.foldl_cons]
+      by_cases hxlin : isRepresentedLinearFactor x = true
+      · simp [hxlin]
+        exact ih (out.push x) (by simp [hmem])
+      · simp [hxlin]
+        exact ih out hmem
+
+private theorem mem_representedLinearFactorsOnly_foldl_of_mem_input {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] :
+    ∀ (factors : List (CPolynomial F)) (out : Array (CPolynomial F))
+      {factor : CPolynomial F},
+      factor ∈ factors →
+        isRepresentedLinearFactor factor = true →
+          factor ∈
+            (factors.foldl
+              (fun out factor ↦
+                if isRepresentedLinearFactor factor then out.push factor else out)
+              out) := by
+  intro factors
+  induction factors with
+  | nil =>
+      intro out factor hmem _hlin
+      simp at hmem
+  | cons x xs ih =>
+      intro out factor hmem hlin
+      simp only [List.foldl_cons]
+      simp at hmem
+      rcases hmem with hhead | htail
+      · subst factor
+        simp [hlin]
+        exact mem_representedLinearFactorsOnly_foldl_of_mem_out xs (out.push x) (by simp)
+      · by_cases hxlin : isRepresentedLinearFactor x = true
+        · simp [hxlin]
+          exact ih (out.push x) htail hlin
+        · simp [hxlin]
+          exact ih out htail hlin
+
+/-- The final linear-factor filter keeps represented factors that were already present. -/
+theorem representedLinearFactorsOnly_mem_of_mem {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    {factors : Array (CPolynomial F)} {factor : CPolynomial F}
+    (hmem : factor ∈ factors.toList)
+    (hlin : isRepresentedLinearFactor factor = true) :
+    factor ∈ (representedLinearFactorsOnly factors).toList := by
+  unfold representedLinearFactorsOnly
+  rcases factors with ⟨factors⟩
+  simpa using mem_representedLinearFactorsOnly_foldl_of_mem_input factors #[] hmem hlin
+
 /-- Trace-coordinate refinement candidates before the final linear-only filter. -/
 @[implemented_by shoupSplitCandidatesCachedWith]
 def shoupSplitCandidatesWith {F : Type*}

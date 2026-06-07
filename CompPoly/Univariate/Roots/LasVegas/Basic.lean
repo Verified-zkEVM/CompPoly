@@ -65,7 +65,7 @@ def powModWith {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     CPolynomial F :=
   CPolynomial.ofArray (CPolynomial.Raw.powModWith M D modulus.val base.val exponent)
 
-private def tracePowerSumPolynomialLoopWith {F : Type*}
+def tracePowerSumPolynomialLoopWith {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
     (modulus : CPolynomial F) (p : Nat) :
@@ -109,7 +109,7 @@ def nontrivialProperChildren {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     Array (CPolynomial F) :=
   children.filter fun child ↦ isNontrivialProperChild parent child
 
-private def quotientAfterChild {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+def quotientAfterChild {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     (parent child : CPolynomial F) : CPolynomial F :=
   if isNontrivialProperChild parent child then
     CPolynomial.monicNormalize (parent / child)
@@ -122,7 +122,7 @@ One odd-field Cantor-Zassenhaus degree-one split attempt.
 The probe is reduced modulo `g`, then the split candidates are
 `gcd(g, h)`, `gcd(g / zeroPart, h^((q - 1) / 2) - 1)`, and the remaining
 quotient. The attempt succeeds only when at least two nonconstant proper
-children are produced.
+distinct children are produced.
 -/
 def cantorZassenhausOddAttemptWith {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
@@ -137,7 +137,7 @@ def cantorZassenhausOddAttemptWith {F : Type*}
   let squarePart := CPolynomial.monicNormalize
     (CPolynomial.gcdMonic afterZero (s - (1 : CPolynomial F)))
   let afterSquare := quotientAfterChild afterZero squarePart
-  let children := nontrivialProperChildren g #[zeroPart, squarePart, afterSquare]
+  let children := (nontrivialProperChildren g #[zeroPart, squarePart, afterSquare]).eraseDups
   if children.size >= 2 then some children else none
 
 /--
@@ -162,7 +162,7 @@ def cantorZassenhausEvenTraceAttemptWith {F : Type*}
   let children := nontrivialProperChildren g #[tracePart, complement]
   if children.size >= 2 then some children else none
 
-private def tryOddSplitAttemptsWith {F : Type*}
+def tryOddSplitAttemptsWith {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
     (q : Nat) (probes : ProbeFamily F) (g : CPolynomial F) :
@@ -173,7 +173,7 @@ private def tryOddSplitAttemptsWith {F : Type*}
       | some children => some children
       | none => tryOddSplitAttemptsWith M D q probes g attempts (offset + 1)
 
-private def tryEvenTraceSplitAttemptsWith {F : Type*}
+def tryEvenTraceSplitAttemptsWith {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
     (traceCtx : SmallPrimeTraceContext F)
@@ -185,11 +185,11 @@ private def tryEvenTraceSplitAttemptsWith {F : Type*}
       | some children => some children
       | none => tryEvenTraceSplitAttemptsWith M D traceCtx q probes g attempts (offset + 1)
 
-private def traceContextMatchesQ {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+def traceContextMatchesQ {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     (traceCtx : SmallPrimeTraceContext F) (q : Nat) : Bool :=
   traceCtx.p == 2 && traceCtx.q == q
 
-private def lasVegasSplitLoopWith {F : Type*}
+def lasVegasSplitLoopWith {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
     (enumeration : FieldEnumeration F) (traceCtx? : Option (SmallPrimeTraceContext F))

@@ -25,10 +25,15 @@ abbrev F2 := ZMod 2
 
 abbrev F5 := ZMod 5
 
+abbrev F11 := ZMod 11
+
 instance : Fact (Nat.Prime 2) :=
   ⟨by decide⟩
 
 instance : Fact (Nat.Prime 5) :=
+  ⟨by decide⟩
+
+instance : Fact (Nat.Prime 11) :=
   ⟨by decide⟩
 
 private def f5Ctx : FiniteFieldContext F5 where
@@ -115,6 +120,103 @@ private def noRootPolynomial : CPolynomial F5 :=
   CPolynomial.ofArray #[(2 : F5), 0, 1]
 
 #guard publicRoots noRootPolynomial == #[]
+
+private def f11Enumeration : FieldEnumeration F11 where
+  size := 11
+  elem i := (i.val : F11)
+  complete := by
+    intro a
+    refine ⟨⟨a.val, ZMod.val_lt a⟩, ?_⟩
+    exact ZMod.natCast_zmod_val a
+
+private def f11RootsFrom (start len : Nat) : List Nat :=
+  (List.range len).map fun i ↦ start + i
+
+private def f11RootProduct (roots : List Nat) : CPolynomial F11 :=
+  roots.foldl (fun p a ↦ p * CPolynomial.linearFactor (a : F11)) 1
+
+private def f11LagrangeBasis (domain : List Nat) (x : Nat) : CPolynomial F11 :=
+  let denom : F11 :=
+    domain.foldl
+      (fun acc y ↦ if y == x then acc else acc * ((x : F11) - (y : F11))) 1
+  CPolynomial.C denom⁻¹ *
+    domain.foldl
+      (fun p y ↦ if y == x then p else p * CPolynomial.linearFactor (y : F11)) 1
+
+private def f11IndicatorOneOffZeros (domain zeros : List Nat) : CPolynomial F11 :=
+  domain.foldl
+    (fun acc x ↦ if x ∈ zeros then acc else acc + f11LagrangeBasis domain x) 0
+
+private def f11FullRootProduct : CPolynomial F11 :=
+  f11RootProduct (f11RootsFrom 0 11)
+
+private def f11PrefixRootProduct (start len : Nat) : CPolynomial F11 :=
+  f11RootProduct (f11RootsFrom start len)
+
+private def duplicateQuotientProbe : ProbeFamily F11 where
+  probe _q factor _attempt :=
+    if factor == f11FullRootProduct then
+      f11IndicatorOneOffZeros (f11RootsFrom 0 11) (f11RootsFrom 0 5)
+    else if factor == f11PrefixRootProduct 0 5 then
+      f11IndicatorOneOffZeros (f11RootsFrom 0 5) [0]
+    else if factor == f11PrefixRootProduct 1 4 then
+      f11IndicatorOneOffZeros (f11RootsFrom 1 4) [1]
+    else if factor == f11PrefixRootProduct 2 3 then
+      f11IndicatorOneOffZeros (f11RootsFrom 2 3) [2]
+    else if factor == f11PrefixRootProduct 3 2 then
+      f11IndicatorOneOffZeros (f11RootsFrom 3 2) [3]
+    else
+      CPolynomial.C (1 : F11)
+
+private def duplicateQuotientConfig : LasVegasConfig where
+  cutoff := 1
+  tryOddRandomizedSplitting := true
+  tryEvenTraceSplitting := false
+
+private def duplicateQuotientFactors : Array (CPolynomial F11) :=
+  lasVegasSplitLinearFactorsWith
+    CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive
+    f11Enumeration duplicateQuotientConfig duplicateQuotientProbe 11
+    f11FullRootProduct
+
+#guard duplicateQuotientFactors.contains (CPolynomial.linearFactor (5 : F11))
+
+private def f11Elements : Array F11 :=
+  #[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+private def f11TraceCtx : SmallPrimeTraceContext F11 where
+  q := 11
+  finite := by infer_instance
+  card_eq := by
+    simp [F11, Nat.card_eq_fintype_card, ZMod.card]
+  frobenius_fixed := by decide
+  p := 11
+  k := 1
+  p_prime := by decide
+  q_eq := by decide
+  baseConstants := f11Elements
+  baseConstants_size := by rfl
+  basis := #[(1 : F11)]
+  basis_size := by rfl
+  traceValue := id
+  traceValue_eq_powerSum := by
+    intro z
+    simp [tracePowerSum]
+  traceValue_mem_base := by
+    intro z
+    fin_cases z <;> decide
+  trace_separates := by
+    intro a b hne
+    refine ⟨(1 : F11), by simp, ?_⟩
+    simpa only [one_mul, id_eq] using (sub_ne_zero.mpr hne)
+
+private def duplicateQuotientTraceFactors : Array (CPolynomial F11) :=
+  lasVegasSplitLinearFactorsWithTrace
+    CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive
+    f11Enumeration f11TraceCtx duplicateQuotientConfig duplicateQuotientProbe 11
+    f11FullRootProduct
+
+#guard duplicateQuotientTraceFactors.contains (CPolynomial.linearFactor (5 : F11))
 
 private def f2TraceCtx : SmallPrimeTraceContext F2 where
   q := 2
