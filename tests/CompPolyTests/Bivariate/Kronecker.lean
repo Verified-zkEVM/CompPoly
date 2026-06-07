@@ -4,12 +4,15 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dimitris Mitsios
 -/
 import CompPoly.Bivariate.Kronecker
+import CompPolyTests.Bivariate.KroneckerCommon
 
 /-!
   # Kronecker substitution tests
 
   Regressions for `kroneckerPack` / `kroneckerUnpack` packing coefficients and the
-  round-trip recovery under the X-degree bound.
+  round-trip recovery under the X-degree bound, plus a small runtime smoke test that the
+  efficient and NTT-backed pipelines agree with schoolbook multiplication on compiled
+  KoalaBear data. The full timing sweep lives in `KroneckerBenchmark.lean`.
 -/
 
 namespace CompPoly
@@ -34,6 +37,24 @@ example :
     kroneckerUnpack 2 (kroneckerPack 2 (monomialXY 1 2 (1 : ℚ))) = monomialXY 1 2 (1 : ℚ) := by
   apply kroneckerUnpack_kroneckerPack (by norm_num)
   rw [natDegreeX_XY2]; omega
+
+/- Runtime smoke test: on small compiled KoalaBear operands, the Kronecker pipeline with
+each univariate backend (schoolbook, classic NTT, recursive NTTFast) agrees with direct
+schoolbook bivariate multiplication. Guards the compiled execution paths (array packing,
+`withFallback` domain selection) that the kernel-checked proofs do not exercise. -/
+#eval show IO Unit from do
+  let n := 4
+  let D := 2 * n
+  let p := TestCommon.mkBiv n n 41
+  let q := TestCommon.mkBiv n n 73
+  let expected := p * q
+  let kron := TestCommon.kronWith (· * ·) D p q
+  let ntt := TestCommon.kronWith
+    (CPolynomial.NTT.FastMul.withFallback TestCommon.bestDomainForLength?) D p q
+  let fast := TestCommon.kronWith
+    (CPolynomial.NTTFast.withFallback TestCommon.bestDomainForLength?) D p q
+  unless (kron == expected) && (ntt == expected) && (fast == expected) do
+    throw <| IO.userError "Kronecker smoke test: a backend disagreed with schoolbook"
 
 end CBivariate
 end CompPoly
