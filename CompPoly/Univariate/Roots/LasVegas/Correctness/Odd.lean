@@ -174,7 +174,7 @@ private theorem cantorZassenhausOddAttemptWith_root {F : Type*}
   next _hsize =>
     simp at htry
 
-private theorem cantorZassenhausOddAttemptWith_child_proper {F : Type*}
+theorem cantorZassenhausOddAttemptWith_child_proper {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
     (q : Nat) (probes : ProbeFamily F) {g child : CPolynomial F}
@@ -190,6 +190,105 @@ private theorem cantorZassenhausOddAttemptWith_child_proper {F : Type*}
     subst children
     have hraw := mem_of_mem_eraseDups (by simpa using hmem)
     exact proper_of_mem_nontrivialProperChildren (by simpa using hraw)
+  next _hsize =>
+    simp at htry
+
+theorem cantorZassenhausOddAttemptWith_size_ge_two {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (q : Nat) (probes : ProbeFamily F) {g : CPolynomial F}
+    {attempt : Nat} {children : Array (CPolynomial F)}
+    (htry : cantorZassenhausOddAttemptWith M D q probes g attempt = some children) :
+    2 ≤ children.size := by
+  unfold cantorZassenhausOddAttemptWith at htry
+  simp only at htry
+  split at htry
+  next hsize =>
+    injection htry with hchildren
+    subst children
+    simpa using hsize
+  next _hsize =>
+    simp at htry
+
+theorem cantorZassenhausOddAttemptWith_ne_zero {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (q : Nat) (probes : ProbeFamily F) {g : CPolynomial F}
+    {attempt : Nat} {children : Array (CPolynomial F)}
+    (htry : cantorZassenhausOddAttemptWith M D q probes g attempt = some children) :
+    g ≠ 0 := by
+  intro hg
+  have hsize := cantorZassenhausOddAttemptWith_size_ge_two M D q probes htry
+  have hpos : 0 < children.size := by omega
+  let child : CPolynomial F := children[0]
+  have hmem : child ∈ children.toList := by
+    exact Array.getElem_mem_toList hpos
+  have hproper :=
+    cantorZassenhausOddAttemptWith_child_proper M D q probes htry hmem
+  unfold isNontrivialProperChild at hproper
+  simp [hg, monicNormalize_zero] at hproper
+  exact Nat.not_lt_zero _ hproper.2
+
+theorem cantorZassenhausOddAttemptWith_root_preserved {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (q : Nat) (probes : ProbeFamily F) {g : CPolynomial F} {a : F}
+    {attempt : Nat} {children : Array (CPolynomial F)}
+    (htry : cantorZassenhausOddAttemptWith M D q probes g attempt = some children)
+    (hroot : CPolynomial.eval a g = 0) :
+    ∃ child, child ∈ children.toList ∧ CPolynomial.eval a child = 0 := by
+  exact cantorZassenhausOddAttemptWith_root M D q probes htry
+    (cantorZassenhausOddAttemptWith_ne_zero M D q probes htry) hroot
+
+theorem cantorZassenhausOddAttemptWith_child_dvd_input {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (q : Nat) (probes : ProbeFamily F) {g child : CPolynomial F}
+    {attempt : Nat} {children : Array (CPolynomial F)}
+    (htry : cantorZassenhausOddAttemptWith M D q probes g attempt = some children)
+    (hmem : child ∈ children.toList) :
+    child.toPoly ∣ g.toPoly := by
+  unfold cantorZassenhausOddAttemptWith at htry
+  simp only at htry
+  split at htry
+  next _hsize =>
+    injection htry with hchildren
+    subst children
+    let g' := CPolynomial.monicNormalize g
+    let h := reduceModWith D g' (probes.probe q g' attempt)
+    let s := powModWith M D g' h ((q - 1) / 2)
+    let zeroPart := CPolynomial.monicNormalize (CPolynomial.gcdMonic g' h)
+    let afterZero := quotientAfterChild g' zeroPart
+    let squarePart := CPolynomial.monicNormalize
+      (CPolynomial.gcdMonic afterZero (s - (1 : CPolynomial F)))
+    let afterSquare := quotientAfterChild afterZero squarePart
+    have hdivZero : zeroPart.toPoly ∣ g'.toPoly := by
+      dsimp [zeroPart]
+      exact (toPoly_monicNormalize_dvd_self _).trans
+        (toPoly_gcdMonic_dvd_left g' h)
+    have hafterZeroDvd : afterZero.toPoly ∣ g'.toPoly := by
+      dsimp [afterZero]
+      exact quotientAfterChild_toPoly_dvd_parent hdivZero
+    have hdivSquare : squarePart.toPoly ∣ afterZero.toPoly := by
+      dsimp [squarePart]
+      exact (toPoly_monicNormalize_dvd_self _).trans
+        (toPoly_gcdMonic_dvd_left afterZero (s - (1 : CPolynomial F)))
+    have hafterSquareDvd : afterSquare.toPoly ∣ g'.toPoly := by
+      dsimp [afterSquare]
+      exact (quotientAfterChild_toPoly_dvd_parent hdivSquare).trans hafterZeroDvd
+    have hraw := mem_of_mem_eraseDups (by simpa using hmem)
+    unfold nontrivialProperChildren at hraw
+    simp at hraw
+    rcases hraw with ⟨hrawMem, _hproper⟩
+    have hchildDvdNorm : child.toPoly ∣ g'.toPoly := by
+      rcases hrawMem with hchild | hchild | hchild
+      · subst child
+        exact hdivZero
+      · subst child
+        exact hdivSquare.trans hafterZeroDvd
+      · subst child
+        exact hafterSquareDvd
+    exact hchildDvdNorm.trans (by simpa [g'] using toPoly_monicNormalize_dvd_self g)
   next _hsize =>
     simp at htry
 

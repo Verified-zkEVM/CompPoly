@@ -477,6 +477,34 @@ theorem quotientAfterChild_ne_zero_of_dvd {F : Type*}
   · rw [if_neg hproper]
     exact hparent
 
+theorem quotientAfterChild_toPoly_dvd_parent {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    {parent child : CPolynomial F}
+    (hdiv : child.toPoly ∣ parent.toPoly) :
+    (quotientAfterChild parent child).toPoly ∣ parent.toPoly := by
+  unfold quotientAfterChild
+  by_cases hproper : isNontrivialProperChild parent child = true
+  · rw [if_pos hproper]
+    have hchild : child ≠ 0 := by
+      unfold isNontrivialProperChild at hproper
+      simp at hproper
+      exact hproper.1.1
+    have hchildPoly : child.toPoly ≠ 0 :=
+      (CPolynomial.toPoly_eq_zero_iff child).not.mpr hchild
+    rcases hdiv with ⟨r, hr⟩
+    have hquotPoly : parent.toPoly / child.toPoly = r := by
+      exact (EuclideanDomain.eq_div_of_mul_eq_right hchildPoly hr.symm).symm
+    have hquot_dvd_parent : parent.toPoly / child.toPoly ∣ parent.toPoly := by
+      rw [hquotPoly]
+      exact ⟨child.toPoly, by
+        rw [hr]
+        exact _root_.mul_comm child.toPoly r⟩
+    have hdivC : (CPolynomial.div parent child).toPoly ∣ parent.toPoly := by
+      rw [CPolynomial.div_toPoly_eq_div]
+      exact hquot_dvd_parent
+    exact (toPoly_monicNormalize_dvd_self (CPolynomial.div parent child)).trans hdivC
+  · rw [if_neg hproper]
+
 theorem child_quotient_natDegree_le_parent {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     {parent child : CPolynomial F}
