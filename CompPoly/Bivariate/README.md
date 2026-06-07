@@ -12,6 +12,7 @@ Formally verified computable bivariate polynomials for [CompPoly](../../README.m
 
 - **Basic.lean** — Type definition, constructors (`CC`, `C_X`, `Y`, `monomialXY`), operations (`coeff`, `evalX`, `evalY`, `evalEval`, `natDegreeX`, `natDegreeY`, `totalDegree`, `natWeightedDegree`, `leadingCoeffY`, `leadingCoeffX`, `swap`, `support`).
 - **ToPoly.lean** — Conversion to/from Mathlib's `R[X][Y]` via `toPoly` and `ofPoly`, with round-trip theorems, ring equivalence, and correctness lemmas for coefficients, evaluation, support, and degree APIs.
+- **Kronecker.lean** — Kronecker substitution (`kroneckerPack`, `kroneckerUnpack`) reducing bivariate multiplication to one univariate multiplication, with multiplicativity of packing and round-trip correctness under an X-degree bound (`kroneckerUnpack_mul`).
 
 Mathlib-facing helper files for `R[X][Y]` live under `CompPoly/ToMathlib/Polynomial/`:
 - [`../ToMathlib/Polynomial/BivariateDegree.lean`](../ToMathlib/Polynomial/BivariateDegree.lean)
