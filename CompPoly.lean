@@ -279,6 +279,7 @@ import CompPoly.Univariate.Roots.LasVegas.Correctness.Common
 import CompPoly.Univariate.Roots.LasVegas.Correctness.EvenTrace
 import CompPoly.Univariate.Roots.LasVegas.Correctness.Loop
 import CompPoly.Univariate.Roots.LasVegas.Correctness.Odd
+import CompPoly.Univariate.Roots.LasVegas.Probability
 import CompPoly.Univariate.Roots.RootProduct
 import CompPoly.Univariate.Roots.Shoup
 import CompPoly.Univariate.Roots.Shoup.Basic
