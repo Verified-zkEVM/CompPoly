@@ -6,6 +6,8 @@ Authors: Dimitris Mitsios
 
 import CompPoly.Bivariate.Basic
 import CompPoly.Univariate.ToPoly
+import CompPoly.Univariate.NTT.FastMul
+import CompPoly.Univariate.NTTFast.Correctness
 
 /-!
 # Kronecker substitution for bivariate polynomials
@@ -274,6 +276,44 @@ theorem kroneckerUnpack_mul [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R
     kroneckerUnpack D (kroneckerPack D p * kroneckerPack D q) = p * q := by
   rw [← kroneckerPack_mul]
   exact kroneckerUnpack_kroneckerPack hD (p * q) hpq
+
+/-- **Kronecker substitution backed by NTT multiplication.** Combines `kroneckerPack` /
+`kroneckerUnpack` with the NTT-accelerated `withFallback` univariate multiplication: when
+the product fits the stride (`natDegreeX (p * q) < D`), bivariate multiplication reduces to
+a single fast univariate multiplication.
+
+No domain-fit hypothesis is needed: `withFallback` selects a fitting NTT domain when one
+exists and otherwise falls back to schoolbook multiplication, so it is unconditionally equal
+to `*`. The only remaining hypothesis, `natDegreeX (p * q) < D`, is intrinsic to Kronecker
+packing, not to the multiplication backend. -/
+theorem kroneckerUnpack_withFallback [Field R] [BEq R] [LawfulBEq R] [DecidableEq R]
+    (bestDomainForLength? : (requiredLen : Nat) →
+      Option (CPolynomial.NTT.FittingDomain R requiredLen))
+    {D : ℕ} (hD : 0 < D) (p q : CBivariate R) (hpq : natDegreeX (p * q) < D) :
+    kroneckerUnpack D
+        (CPolynomial.NTT.FastMul.withFallback bestDomainForLength?
+          (kroneckerPack D p) (kroneckerPack D q))
+      = p * q := by
+  rw [CPolynomial.NTT.FastMul.withFallback_eq_mul]
+  exact kroneckerUnpack_mul hD p q hpq
+
+/-- **Kronecker substitution backed by the recursive (NTTFast) multiplication.** As
+`kroneckerUnpack_withFallback`, but using the recursive radix-2/radix-4 NTT pipeline
+(`CPolynomial.NTTFast.withFallback`) as the univariate multiplication backend.
+
+No domain-fit hypothesis is needed: `withFallback` falls back to schoolbook multiplication
+when no NTT domain fits, so it is unconditionally equal to `*`. The only remaining
+hypothesis, `natDegreeX (p * q) < D`, is intrinsic to Kronecker packing. -/
+theorem kroneckerUnpack_withFallbackFast [Field R] [BEq R] [LawfulBEq R] [DecidableEq R]
+    (bestDomainForLength? : (requiredLen : Nat) →
+      Option (CPolynomial.NTT.FittingDomain R requiredLen))
+    {D : ℕ} (hD : 0 < D) (p q : CBivariate R) (hpq : natDegreeX (p * q) < D) :
+    kroneckerUnpack D
+        (CPolynomial.NTTFast.withFallback bestDomainForLength?
+          (kroneckerPack D p) (kroneckerPack D q))
+      = p * q := by
+  rw [CPolynomial.NTTFast.withFallback_eq_mul]
+  exact kroneckerUnpack_mul hD p q hpq
 
 end Correctness
 
