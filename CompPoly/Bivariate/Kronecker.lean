@@ -12,22 +12,51 @@ import CompPoly.Univariate.NTTFast.Correctness
 /-!
 # Kronecker substitution for bivariate polynomials
 
-Kronecker substitution (linearization) reduces a bivariate multiplication to a single
-univariate multiplication. With a stride `D` we substitute `X ↦ t`, `Y ↦ t^D`, packing
-`p : CBivariate R` into `kroneckerPack D p : CPolynomial R`. The coefficient of `X^i Y^j`
-lands at position `D * j + i`, so the packing is faithful whenever each monomial has
-X-degree `< D`.
+Kronecker substitution turns one bivariate multiplication into one univariate
+multiplication. Fix a stride `D` and substitute `X ↦ t`, `Y ↦ t ^ D`. This sends a
+bivariate polynomial `p : CBivariate R` to a univariate polynomial
+`kroneckerPack D p : CPolynomial R` in which the coefficient of `X ^ i Y ^ j` is placed at
+position `D * j + i`.
 
-`kroneckerPack` is the evaluation of the ring homomorphism that fixes the X-coefficients
-and sends `Y` to `X^D`, hence it is multiplicative unconditionally. `kroneckerUnpack`
-recovers the bivariate coefficients via Euclidean division by `D`. The main result
-`kroneckerUnpack_mul` states that
+To multiply `p` and `q`: pack both, multiply the two univariate polynomials once, then
+unpack the result. The middle step is an ordinary univariate multiplication, so any fast
+univariate multiplication gives a fast bivariate multiplication. The NTT versions are
+`kroneckerUnpack_withFallback` and `kroneckerUnpack_withFallbackFast`.
 
-  `kroneckerUnpack D (kroneckerPack D p * kroneckerPack D q) = p * q`
+## Why it is correct
 
-whenever `natDegreeX (p * q) < D`, i.e. the product fits in the stride. Once an NTT-based
-univariate multiplication lands, this turns bivariate multiplication into a single fast
-univariate multiplication.
+Two separate facts are involved, and the proofs keep them apart.
+
+Packing keeps each `X`-coefficient and sends `Y` to `X ^ D`. This is a ring homomorphism,
+so `kroneckerPack D (p * q) = kroneckerPack D p * kroneckerPack D q` holds for every `p`
+and `q` with no extra condition (`kroneckerPack_mul`): multiplying in the packed form is
+always the same as packing the product.
+
+Recovering a bivariate polynomial from a packed one is where a condition appears. Packing
+is not injective in general, because the position `D * j + i` determines `i` and `j` only
+when `i < D`. If some `X`-exponent reaches `D`, two different monomials can be placed on
+the same position and can no longer be told apart. Unpacking inverts packing exactly when
+every `X`-exponent stays below `D`, that is when `natDegreeX p < D`
+(`kroneckerUnpack_kroneckerPack`).
+
+For a product the stride must therefore exceed the `X`-degree of `p * q`. The main result
+`kroneckerUnpack_mul` assumes `natDegreeX (p * q) < D`. Since
+`natDegreeX (p * q) ≤ natDegreeX p + natDegreeX q`, it is enough in practice to choose `D`
+greater than `natDegreeX p + natDegreeX q`.
+
+## Two versions of pack and unpack
+
+`kroneckerPack` and `kroneckerUnpack` are written so the proofs above stay short: packing
+is one evaluation and unpacking is one sum over coefficients. Run directly they are slow,
+because the evaluation recomputes powers of `X ^ D`. `kroneckerPackFast` and
+`kroneckerUnpackFast` compute the same polynomials in time linear in the output by shifting
+and slicing coefficient arrays, and are proved equal to the plain versions
+(`kroneckerPackFast_eq`, `kroneckerUnpackFast_eq`), so every correctness result carries
+over to them (`kroneckerUnpackFast_mul`).
+
+The NTT versions multiply through `withFallback`, which uses an NTT domain when one fits
+and otherwise multiplies the ordinary way. It is always equal to `*`, so those results need
+no extra assumption about the domain beyond the stride condition above.
 -/
 
 namespace CompPoly
@@ -36,14 +65,13 @@ namespace CPolynomial
 
 variable {R : Type*}
 
-/-- A coefficient above the `natDegree` vanishes. -/
+/-- A coefficient past the degree is zero. -/
 theorem coeff_eq_zero_of_natDegree_lt [Zero R] [BEq R] [LawfulBEq R]
     {p : CPolynomial R} {i : ℕ} (h : p.natDegree < i) : coeff p i = 0 := by
   by_contra hc
   exact absurd (le_natDegree_of_ne_zero hc) (Nat.not_le.2 h)
 
-/-- Coefficients of a polynomial shifted by `X ^ m`: a clean stride lemma used by
-Kronecker packing. -/
+/-- Coefficient of `c * X ^ m`. -/
 theorem coeff_mul_X_pow [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (c : CPolynomial R) (m n : ℕ) :
     coeff (c * X ^ m) n = if m ≤ n then coeff c (n - m) else 0 := by
@@ -59,12 +87,11 @@ theorem coeff_mul_X_pow [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
       · rw [if_pos h, if_pos (Nat.succ_le_succ h), Nat.succ_sub_succ]
       · rw [if_neg h, if_neg (fun hc => h (Nat.le_of_succ_le_succ hc))]
 
-/-- Efficient multiplication by `X ^ m`: prepends `m` zero coefficients (a true shift,
-`O(size)`), unlike the generic convolution `p * X ^ m`. -/
+/-- Multiplication by `X ^ m`, implemented as a coefficient shift. -/
 def shiftPow [Zero R] [BEq R] [LawfulBEq R] (m : ℕ) (p : CPolynomial R) : CPolynomial R :=
   ⟨(p.val.mulPowX m).trim, CPolynomial.Raw.Trim.isCanonical_trim _⟩
 
-/-- Coefficient of an efficient shift: `X ^ m` shifts coefficients up by `m`. -/
+/-- Coefficient of `shiftPow m p`. -/
 theorem coeff_shiftPow [Zero R] [BEq R] [LawfulBEq R] (m : ℕ) (p : CPolynomial R) (n : ℕ) :
     coeff (shiftPow m p) n = if m ≤ n then coeff p (n - m) else 0 := by
   show ((p.val.mulPowX m).trim).coeff n = _
@@ -77,7 +104,7 @@ theorem coeff_shiftPow [Zero R] [BEq R] [LawfulBEq R] (m : ℕ) (p : CPolynomial
   · rw [if_neg h, Array.getElem?_append_left (by simpa using Nat.lt_of_not_le h)]
     simp [Nat.lt_of_not_le h]
 
-/-- The efficient shift agrees with multiplication by `X ^ m`. -/
+/-- `shiftPow m p = p * X ^ m`. -/
 theorem shiftPow_eq_mul_X_pow [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (m : ℕ) (p : CPolynomial R) : shiftPow m p = p * X ^ m := by
   rw [eq_iff_coeff]
@@ -92,11 +119,11 @@ section Stride
 
 variable {D i j : ℕ}
 
-/-- For `i < D`, the packed position `D * j + i` has remainder `i`. -/
+/-- The remainder of the packed position `D * j + i` is `i`. -/
 private theorem stride_mod (hi : i < D) : (D * j + i) % D = i := by
   rw [Nat.add_comm, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hi]
 
-/-- For `i < D`, the packed position `D * j + i` has quotient `j`. -/
+/-- The quotient of the packed position `D * j + i` is `j`. -/
 private theorem stride_div (hD : 0 < D) (hi : i < D) : (D * j + i) / D = j := by
   rw [Nat.add_comm, Nat.add_mul_div_left i j hD, Nat.div_eq_of_lt hi, Nat.zero_add]
 
@@ -106,20 +133,18 @@ section Pack
 
 variable {R : Type*}
 
-/-- Pack a bivariate polynomial into a univariate one by substituting `X ↦ t`, `Y ↦ t^D`.
-The coefficient of `X^i Y^j` (with `i < D`) lands at position `D * j + i`. -/
+/-- Pack a bivariate polynomial into a univariate one with stride `D`. -/
 def kroneckerPack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (D : ℕ) (p : CBivariate R) : CPolynomial R :=
   CPolynomial.eval₂ (RingHom.id (CPolynomial R)) (CPolynomial.X ^ D) p
 
-/-- Unpack a univariate polynomial into a bivariate one: position `k` becomes the
-monomial `X^(k % D) Y^(k / D)`. -/
+/-- Unpack a univariate polynomial into a bivariate one with stride `D`. -/
 def kroneckerUnpack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (D : ℕ) (P : CPolynomial R) : CBivariate R :=
   (CPolynomial.support P).sum
     (fun k => monomialXY (k % D) (k / D) (CPolynomial.coeff P k))
 
-/-- Packing is multiplicative: it is the evaluation of a ring homomorphism. -/
+/-- Packing is multiplicative. -/
 theorem kroneckerPack_mul [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (D : ℕ) (p q : CBivariate R) :
     kroneckerPack D (p * q) = kroneckerPack D p * kroneckerPack D q := by
@@ -128,7 +153,7 @@ theorem kroneckerPack_mul [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
   rw [show CPolynomial.toPoly (p * q) = CPolynomial.toPoly p * CPolynomial.toPoly q from
     CPolynomial.toPoly_mul p q, Polynomial.eval₂_mul]
 
-/-- Packing as an explicit sum of shifted Y-coefficients: `p = Σ_j c_j(X) · X^(D·j)`. -/
+/-- Packing written as a sum of shifted `Y`-coefficients. -/
 theorem kroneckerPack_eq_sum [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (D : ℕ) (p : CBivariate R) :
     kroneckerPack D p
@@ -140,8 +165,7 @@ theorem kroneckerPack_eq_sum [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
   intro i _
   rw [RingHom.id_apply, ← pow_mul]
 
-/-- Packing coefficient lemma: when every X-degree is `< D`, the coefficient at position
-`n` of the packed polynomial is the bivariate coefficient at `(n % D, n / D)`. -/
+/-- Coefficient of the packed polynomial, when the `X`-degree is below the stride. -/
 theorem coeff_kroneckerPack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     {D : ℕ} (hD : 0 < D) (p : CBivariate R) (hp : natDegreeX p < D) (n : ℕ) :
     CPolynomial.coeff (kroneckerPack D p) n = coeff p (n % D) (n / D) := by
@@ -149,8 +173,7 @@ theorem coeff_kroneckerPack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
   · rw [CPolynomial.coeff_mul_X_pow, if_pos (Nat.mul_div_le n D)]
     have hsub : n - D * (n / D) = n % D := by have := Nat.mod_add_div n D; omega
     rw [hsub]; rfl
-  · -- every other column contributes nothing: its only reachable position exceeds its degree
-    intro i hi hine
+  · intro i hi hine
     rw [CPolynomial.coeff_mul_X_pow]
     split_ifs with hle
     · refine CPolynomial.coeff_eq_zero_of_natDegree_lt (lt_of_le_of_lt (b := natDegreeX p) ?_ ?_)
@@ -167,14 +190,13 @@ theorem coeff_kroneckerPack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
       by_contra hc; exact hns ((CPolynomial.mem_support_iff p (n / D)).2 hc)
     rw [h0, zero_mul, CPolynomial.coeff_zero]
 
-/-- Efficient packing: sum of the Y-coefficients shifted by `X^(D·j)` using the cheap
-`CPolynomial.shiftPow` rather than the power-recomputing `eval₂` of `kroneckerPack`. -/
+/-- Efficient packing, linear in the output. -/
 def kroneckerPackFast [Semiring R] [BEq R] [LawfulBEq R]
     (D : ℕ) (p : CBivariate R) : CPolynomial R :=
   (CPolynomial.support p).sum
     (fun j => CPolynomial.shiftPow (D * j) (CPolynomial.coeff p j))
 
-/-- The efficient packing equals the verified `kroneckerPack` (unconditionally). -/
+/-- `kroneckerPackFast` equals `kroneckerPack`. -/
 theorem kroneckerPackFast_eq [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (D : ℕ) (p : CBivariate R) : kroneckerPackFast D p = kroneckerPack D p := by
   rw [kroneckerPackFast, kroneckerPack_eq_sum]
@@ -188,8 +210,7 @@ section Unpack
 
 variable {R : Type*}
 
-/-- Unpacking coefficient lemma (above the stride): a bivariate coefficient with
-X-exponent `≥ D` is zero. -/
+/-- Unpacked coefficients with `X`-exponent at least `D` are zero. -/
 theorem coeff_kroneckerUnpack_of_le [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     [DecidableEq R] {D : ℕ} (hD : 0 < D) (P : CPolynomial R) (i j : ℕ) (hi : D ≤ i) :
     coeff (kroneckerUnpack D P) i j = 0 := by
@@ -202,8 +223,7 @@ theorem coeff_kroneckerUnpack_of_le [Semiring R] [BEq R] [LawfulBEq R] [Nontrivi
   have : k % D < D := Nat.mod_lt _ hD
   omega
 
-/-- Unpacking coefficient lemma (within the stride): for `i < D`, the bivariate coefficient
-at `(i, j)` of the unpacked polynomial is the univariate coefficient at `D * j + i`. -/
+/-- Unpacked coefficient at `(i, j)` with `i < D`. -/
 theorem coeff_kroneckerUnpack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     [DecidableEq R] {D : ℕ} (hD : 0 < D) (P : CPolynomial R) (i j : ℕ) (hi : i < D) :
     coeff (kroneckerUnpack D P) i j = CPolynomial.coeff P (D * j + i) := by
@@ -224,13 +244,12 @@ theorem coeff_kroneckerUnpack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     by_contra hc
     exact hns ((CPolynomial.mem_support_iff P (D * j + i)).2 hc)
 
-/-- The `j`-th X-column of a packed polynomial: the length-`D` window
-`P[D*j .. D*j+D)` as a univariate polynomial in `X`. -/
+/-- The length-`D` slice of `P` holding column `j`. -/
 def window [Zero R] [BEq R] [LawfulBEq R] (D j : ℕ) (P : CPolynomial R) : CPolynomial R :=
   ⟨CPolynomial.Raw.trim (P.val.extract (D * j) (D * j + D)),
     CPolynomial.Raw.Trim.isCanonical_trim _⟩
 
-/-- Coefficient of a column window: position `i < D` reads off `P` at `D * j + i`. -/
+/-- Coefficient of a column slice. -/
 theorem coeff_window [Zero R] [BEq R] [LawfulBEq R] (D j : ℕ) (P : CPolynomial R) (i : ℕ) :
     CPolynomial.coeff (window D j P) i =
       if i < D then CPolynomial.coeff P (D * j + i) else 0 := by
@@ -250,14 +269,13 @@ theorem coeff_window [Zero R] [BEq R] [LawfulBEq R] (D j : ℕ) (P : CPolynomial
     rw [if_neg (by omega : ¬ i < min (D * j + D) P.val.size - D * j)]
     rfl
 
-/-- Efficient unpacking: assemble the X-columns `Y^j * window j` directly, avoiding the
-per-coefficient monomial sum of `kroneckerUnpack`. -/
+/-- Efficient unpacking, assembling columns directly. -/
 def kroneckerUnpackFast [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (D : ℕ) (P : CPolynomial R) : CBivariate R :=
   (Finset.range (P.natDegree / D + 1)).sum
     (fun j => CPolynomial.monomial j (window D j P))
 
-/-- The efficient unpacking equals the verified `kroneckerUnpack`. -/
+/-- `kroneckerUnpackFast` equals `kroneckerUnpack`. -/
 theorem kroneckerUnpackFast_eq [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     {D : ℕ} (hD : 0 < D) (P : CPolynomial R) :
     kroneckerUnpackFast D P = kroneckerUnpack D P := by
@@ -286,7 +304,7 @@ section Correctness
 
 variable {R : Type*}
 
-/-- Round-trip: under the X-degree bound, unpacking recovers the packed polynomial. -/
+/-- Unpacking recovers a packed polynomial when its `X`-degree is below the stride. -/
 theorem kroneckerUnpack_kroneckerPack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     [DecidableEq R] {D : ℕ} (hD : 0 < D) (p : CBivariate R) (hp : natDegreeX p < D) :
     kroneckerUnpack D (kroneckerPack D p) = p := by
@@ -295,8 +313,7 @@ theorem kroneckerUnpack_kroneckerPack [Semiring R] [BEq R] [LawfulBEq R] [Nontri
   by_cases hi : i < D
   · rw [coeff_kroneckerUnpack hD _ i j hi, coeff_kroneckerPack hD p hp,
       stride_mod hi, stride_div hD hi]
-  · -- the bivariate coefficient at X-exponent `i ≥ D > natDegreeX p` vanishes
-    rw [coeff_kroneckerUnpack_of_le hD _ i j (Nat.le_of_not_lt hi)]
+  · rw [coeff_kroneckerUnpack_of_le hD _ i j (Nat.le_of_not_lt hi)]
     have hdeg : (CPolynomial.coeff p j).natDegree < i := by
       by_cases hj : j ∈ CPolynomial.support p
       · exact lt_of_le_of_lt (Finset.le_sup (f := fun n => (p.val.coeff n).natDegree) hj)
@@ -306,9 +323,8 @@ theorem kroneckerUnpack_kroneckerPack [Semiring R] [BEq R] [LawfulBEq R] [Nontri
         rw [h0]; show 0 < i; omega
     exact (CPolynomial.coeff_eq_zero_of_natDegree_lt hdeg).symm
 
-/-- **Kronecker substitution correctness.** When the product fits within the stride
-(`natDegreeX (p * q) < D`), bivariate multiplication equals one univariate multiplication
-followed by unpacking. -/
+/-- Bivariate multiplication as pack, univariate multiply, unpack, when the product fits
+the stride. -/
 theorem kroneckerUnpack_mul [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     [DecidableEq R] {D : ℕ} (hD : 0 < D) (p q : CBivariate R)
     (hpq : natDegreeX (p * q) < D) :
@@ -316,9 +332,7 @@ theorem kroneckerUnpack_mul [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R
   rw [← kroneckerPack_mul]
   exact kroneckerUnpack_kroneckerPack hD (p * q) hpq
 
-/-- **Correctness of the efficient pipeline.** The fast `kroneckerPackFast` /
-`kroneckerUnpackFast` (used by the benchmark) compute the same bivariate product as the
-verified spec, under the same stride condition `natDegreeX (p * q) < D`. -/
+/-- `kroneckerUnpack_mul` for the efficient `kroneckerPackFast` / `kroneckerUnpackFast`. -/
 theorem kroneckerUnpackFast_mul [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     [DecidableEq R] {D : ℕ} (hD : 0 < D) (p q : CBivariate R)
     (hpq : natDegreeX (p * q) < D) :
@@ -326,15 +340,7 @@ theorem kroneckerUnpackFast_mul [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivi
   rw [kroneckerPackFast_eq, kroneckerPackFast_eq, kroneckerUnpackFast_eq hD]
   exact kroneckerUnpack_mul hD p q hpq
 
-/-- **Kronecker substitution backed by NTT multiplication.** Combines `kroneckerPack` /
-`kroneckerUnpack` with the NTT-accelerated `withFallback` univariate multiplication: when
-the product fits the stride (`natDegreeX (p * q) < D`), bivariate multiplication reduces to
-a single fast univariate multiplication.
-
-No domain-fit hypothesis is needed: `withFallback` selects a fitting NTT domain when one
-exists and otherwise falls back to schoolbook multiplication, so it is unconditionally equal
-to `*`. The only remaining hypothesis, `natDegreeX (p * q) < D`, is intrinsic to Kronecker
-packing, not to the multiplication backend. -/
+/-- Bivariate multiplication using the NTT (`withFallback`) as the univariate backend. -/
 theorem kroneckerUnpack_withFallback [Field R] [BEq R] [LawfulBEq R] [DecidableEq R]
     (bestDomainForLength? : (requiredLen : Nat) →
       Option (CPolynomial.NTT.FittingDomain R requiredLen))
@@ -346,13 +352,8 @@ theorem kroneckerUnpack_withFallback [Field R] [BEq R] [LawfulBEq R] [DecidableE
   rw [CPolynomial.NTT.FastMul.withFallback_eq_mul]
   exact kroneckerUnpack_mul hD p q hpq
 
-/-- **Kronecker substitution backed by the recursive (NTTFast) multiplication.** As
-`kroneckerUnpack_withFallback`, but using the recursive radix-2/radix-4 NTT pipeline
-(`CPolynomial.NTTFast.withFallback`) as the univariate multiplication backend.
-
-No domain-fit hypothesis is needed: `withFallback` falls back to schoolbook multiplication
-when no NTT domain fits, so it is unconditionally equal to `*`. The only remaining
-hypothesis, `natDegreeX (p * q) < D`, is intrinsic to Kronecker packing. -/
+/-- Bivariate multiplication using the recursive NTT (`NTTFast.withFallback`) as the
+univariate backend. -/
 theorem kroneckerUnpack_withFallbackFast [Field R] [BEq R] [LawfulBEq R] [DecidableEq R]
     (bestDomainForLength? : (requiredLen : Nat) →
       Option (CPolynomial.NTT.FittingDomain R requiredLen))
