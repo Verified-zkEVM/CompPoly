@@ -136,7 +136,7 @@ def basisSucc (k : ℕ) : Basis (Fin 2) (ConcreteBTField k) (ConcreteBTField (k 
       rw [←h_add_smul]
       unfold join_via_add_smul
       simp only [Nat.add_one_sub_one]
-      simp only [ConcreteBTFieldAlgebra_def, RingHom.algebraMap_toAlgebra]
+      simp only [RingHom.algebraMap_toAlgebra]
       simp only [generator]
       rw [add_comm]
       congr -- .Q.E.D

@@ -439,7 +439,7 @@ lemma aeval_definingPoly_at_Z_succ (k : ℕ) :
   -- Z_square_mul_form uses instAlgebraLiftConcreteBTField internally
   rw [Z_square_mul_form (k:=k) (prev:=(getBTFResult (k:=k)))]
   rw [add_assoc]
-  simp only [instAlgebraLiftConcreteBTField, RingHom.algebraMap_toAlgebra]
+  simp only [RingHom.algebraMap_toAlgebra]
   -- f uses ConcreteBTFieldAlgebra, it's same as instAlgebraLiftConcreteBTField at step = 1
   rw [h_f_is_canonical_embedding, concreteTowerAlgebraMap_succ_1]
   simp only [canonicalAlgMap]; rw [mul_comm]
