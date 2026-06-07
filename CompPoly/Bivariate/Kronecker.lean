@@ -169,7 +169,7 @@ theorem coeff_kroneckerPack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
 
 /-- Efficient packing: sum of the Y-coefficients shifted by `X^(D·j)` using the cheap
 `CPolynomial.shiftPow` rather than the power-recomputing `eval₂` of `kroneckerPack`. -/
-def kroneckerPackFast [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+def kroneckerPackFast [Semiring R] [BEq R] [LawfulBEq R]
     (D : ℕ) (p : CBivariate R) : CPolynomial R :=
   (CPolynomial.support p).sum
     (fun j => CPolynomial.shiftPow (D * j) (CPolynomial.coeff p j))
