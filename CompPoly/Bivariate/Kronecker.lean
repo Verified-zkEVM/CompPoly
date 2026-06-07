@@ -59,6 +59,31 @@ theorem coeff_mul_X_pow [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
       · rw [if_pos h, if_pos (Nat.succ_le_succ h), Nat.succ_sub_succ]
       · rw [if_neg h, if_neg (fun hc => h (Nat.le_of_succ_le_succ hc))]
 
+/-- Efficient multiplication by `X ^ m`: prepends `m` zero coefficients (a true shift,
+`O(size)`), unlike the generic convolution `p * X ^ m`. -/
+def shiftPow [Zero R] [BEq R] [LawfulBEq R] (m : ℕ) (p : CPolynomial R) : CPolynomial R :=
+  ⟨(p.val.mulPowX m).trim, CPolynomial.Raw.Trim.isCanonical_trim _⟩
+
+/-- Coefficient of an efficient shift: `X ^ m` shifts coefficients up by `m`. -/
+theorem coeff_shiftPow [Zero R] [BEq R] [LawfulBEq R] (m : ℕ) (p : CPolynomial R) (n : ℕ) :
+    coeff (shiftPow m p) n = if m ≤ n then coeff p (n - m) else 0 := by
+  show ((p.val.mulPowX m).trim).coeff n = _
+  rw [CPolynomial.Raw.Trim.coeff_eq_coeff]
+  simp only [CPolynomial.Raw.mulPowX, CPolynomial.Raw.coeff, CPolynomial.Raw.mk,
+    Array.getD_eq_getD_getElem?]
+  by_cases h : m ≤ n
+  · rw [if_pos h, Array.getElem?_append_right (by simpa using h)]
+    simp
+  · rw [if_neg h, Array.getElem?_append_left (by simpa using Nat.lt_of_not_le h)]
+    simp [Nat.lt_of_not_le h]
+
+/-- The efficient shift agrees with multiplication by `X ^ m`. -/
+theorem shiftPow_eq_mul_X_pow [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (m : ℕ) (p : CPolynomial R) : shiftPow m p = p * X ^ m := by
+  rw [eq_iff_coeff]
+  intro n
+  rw [coeff_shiftPow, coeff_mul_X_pow]
+
 end CPolynomial
 
 namespace CBivariate
@@ -142,20 +167,24 @@ theorem kroneckerPack_mul [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
   rw [show CPolynomial.toPoly (p * q) = CPolynomial.toPoly p * CPolynomial.toPoly q from
     CPolynomial.toPoly_mul p q, Polynomial.eval₂_mul]
 
+/-- Packing as an explicit sum of shifted Y-coefficients: `p = Σ_j c_j(X) · X^(D·j)`. -/
+theorem kroneckerPack_eq_sum [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (D : ℕ) (p : CBivariate R) :
+    kroneckerPack D p
+      = (CPolynomial.support p).sum
+          (fun i => CPolynomial.coeff p i * CPolynomial.X ^ (D * i)) := by
+  unfold kroneckerPack
+  rw [CPolynomial.eval₂_eq_sum_support]
+  apply Finset.sum_congr rfl
+  intro i _
+  rw [RingHom.id_apply, ← pow_mul]
+
 /-- Packing coefficient lemma: when every X-degree is `< D`, the coefficient at position
 `n` of the packed polynomial is the bivariate coefficient at `(n % D, n / D)`. -/
 theorem coeff_kroneckerPack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     {D : ℕ} (hD : 0 < D) (p : CBivariate R) (hp : natDegreeX p < D) (n : ℕ) :
     CPolynomial.coeff (kroneckerPack D p) n = coeff p (n % D) (n / D) := by
-  have hsum : kroneckerPack D p
-      = (CPolynomial.support p).sum
-          (fun i => CPolynomial.coeff p i * CPolynomial.X ^ (D * i)) := by
-    unfold kroneckerPack
-    rw [CPolynomial.eval₂_eq_sum_support]
-    apply Finset.sum_congr rfl
-    intro i _
-    rw [RingHom.id_apply, ← pow_mul]
-  rw [hsum, CPolynomial.coeff_finset_sum]
+  rw [kroneckerPack_eq_sum, CPolynomial.coeff_finset_sum]
   rw [Finset.sum_eq_single (n / D)]
   · rw [CPolynomial.coeff_mul_X_pow]
     have hle : D * (n / D) ≤ n := Nat.mul_div_le n D
@@ -185,6 +214,21 @@ theorem coeff_kroneckerPack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
       by_contra hc
       exact hns ((CPolynomial.mem_support_iff p (n / D)).2 hc)
     rw [h0, zero_mul, CPolynomial.coeff_zero]
+
+/-- Efficient packing: sum of the Y-coefficients shifted by `X^(D·j)` using the cheap
+`CPolynomial.shiftPow` rather than the power-recomputing `eval₂` of `kroneckerPack`. -/
+def kroneckerPackFast [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (D : ℕ) (p : CBivariate R) : CPolynomial R :=
+  (CPolynomial.support p).sum
+    (fun j => CPolynomial.shiftPow (D * j) (CPolynomial.coeff p j))
+
+/-- The efficient packing equals the verified `kroneckerPack` (unconditionally). -/
+theorem kroneckerPackFast_eq [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (D : ℕ) (p : CBivariate R) : kroneckerPackFast D p = kroneckerPack D p := by
+  rw [kroneckerPackFast, kroneckerPack_eq_sum]
+  apply Finset.sum_congr rfl
+  intro j _
+  rw [CPolynomial.shiftPow_eq_mul_X_pow]
 
 end Pack
 
@@ -232,6 +276,74 @@ theorem coeff_kroneckerUnpack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     by_contra hc
     exact hns ((CPolynomial.mem_support_iff P (D * j + i)).2 hc)
 
+/-- The `j`-th X-column of a packed polynomial: the length-`D` window
+`P[D*j .. D*j+D)` as a univariate polynomial in `X`. -/
+def window [Zero R] [BEq R] [LawfulBEq R] (D j : ℕ) (P : CPolynomial R) : CPolynomial R :=
+  ⟨CPolynomial.Raw.trim (P.val.extract (D * j) (D * j + D)),
+    CPolynomial.Raw.Trim.isCanonical_trim _⟩
+
+/-- Coefficient of a column window: position `i < D` reads off `P` at `D * j + i`. -/
+theorem coeff_window [Zero R] [BEq R] [LawfulBEq R] (D j : ℕ) (P : CPolynomial R) (i : ℕ) :
+    CPolynomial.coeff (window D j P) i =
+      if i < D then CPolynomial.coeff P (D * j + i) else 0 := by
+  have hcoe : CPolynomial.coeff P (D * j + i) = (P.val[D * j + i]?).getD 0 := by
+    rw [CPolynomial.coeff, CPolynomial.Raw.coeff, Array.getD_eq_getD_getElem?]
+  show CPolynomial.Raw.coeff (CPolynomial.Raw.trim (P.val.extract (D * j) (D * j + D))) i = _
+  rw [CPolynomial.Raw.Trim.coeff_eq_coeff, CPolynomial.Raw.coeff,
+    Array.getD_eq_getD_getElem?, Array.getElem?_extract]
+  by_cases hiD : i < D
+  · rw [if_pos hiD, hcoe]
+    by_cases hb : i < min (D * j + D) P.val.size - D * j
+    · rw [if_pos hb]
+    · rw [if_neg hb, Nat.not_lt] at *
+      have hsz : P.val.size ≤ D * j + i := by omega
+      rw [Array.getElem?_eq_none hsz]
+  · rw [if_neg hiD, Nat.not_lt] at *
+    rw [if_neg (by omega : ¬ i < min (D * j + D) P.val.size - D * j)]
+    rfl
+
+/-- Coefficient of a `Y`-monomial `Y^m * c(X)` viewed bivariately. -/
+theorem coeff_monomialY [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (m : ℕ) (c : CPolynomial R) (i j : ℕ) :
+    coeff (CPolynomial.monomial m c) i j = if j = m then CPolynomial.coeff c i else 0 := by
+  show (CPolynomial.coeff (CPolynomial.monomial m c) j).coeff i = _
+  rw [CPolynomial.coeff_monomial]
+  by_cases hj : j = m
+  · rw [if_pos hj, if_pos hj]
+  · rw [if_neg hj, if_neg hj, CPolynomial.coeff_zero]
+
+/-- Efficient unpacking: assemble the X-columns `Y^j * window j` directly, avoiding the
+per-coefficient monomial sum of `kroneckerUnpack`. -/
+def kroneckerUnpackFast [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (D : ℕ) (P : CPolynomial R) : CBivariate R :=
+  (Finset.range (P.natDegree / D + 1)).sum
+    (fun j => CPolynomial.monomial j (window D j P))
+
+/-- The efficient unpacking equals the verified `kroneckerUnpack`. -/
+theorem kroneckerUnpackFast_eq [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    {D : ℕ} (hD : 0 < D) (P : CPolynomial R) :
+    kroneckerUnpackFast D P = kroneckerUnpack D P := by
+  rw [eq_iff_coeff]
+  intro i j
+  rw [kroneckerUnpackFast, coeff_finset_sum]
+  simp only [coeff_monomialY]
+  rw [Finset.sum_ite_eq (Finset.range (P.natDegree / D + 1)) j
+    (fun j' => CPolynomial.coeff (window D j' P) i), coeff_window]
+  by_cases hiD : i < D
+  · rw [if_pos hiD, coeff_kroneckerUnpack hD _ i j hiD]
+    by_cases hjr : j ∈ Finset.range (P.natDegree / D + 1)
+    · rw [if_pos hjr]
+    · rw [if_neg hjr]
+      rw [Finset.mem_range, Nat.not_lt] at hjr
+      refine (CPolynomial.coeff_eq_zero_of_natDegree_lt ?_).symm
+      have hdm := Nat.div_add_mod P.natDegree D
+      have hmd := Nat.mod_lt P.natDegree hD
+      have hmul : D * (P.natDegree / D + 1) ≤ D * j := Nat.mul_le_mul_left D hjr
+      have : D * (P.natDegree / D + 1) = D * (P.natDegree / D) + D := by ring
+      omega
+  · rw [if_neg hiD, coeff_kroneckerUnpack_of_le hD _ i j (Nat.le_of_not_lt hiD)]
+    by_cases hjr : j ∈ Finset.range (P.natDegree / D + 1) <;> simp [hjr]
+
 end Unpack
 
 section Correctness
@@ -276,6 +388,16 @@ theorem kroneckerUnpack_mul [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R
     kroneckerUnpack D (kroneckerPack D p * kroneckerPack D q) = p * q := by
   rw [← kroneckerPack_mul]
   exact kroneckerUnpack_kroneckerPack hD (p * q) hpq
+
+/-- **Correctness of the efficient pipeline.** The fast `kroneckerPackFast` /
+`kroneckerUnpackFast` (used by the benchmark) compute the same bivariate product as the
+verified spec, under the same stride condition `natDegreeX (p * q) < D`. -/
+theorem kroneckerUnpackFast_mul [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    [DecidableEq R] {D : ℕ} (hD : 0 < D) (p q : CBivariate R)
+    (hpq : natDegreeX (p * q) < D) :
+    kroneckerUnpackFast D (kroneckerPackFast D p * kroneckerPackFast D q) = p * q := by
+  rw [kroneckerPackFast_eq, kroneckerPackFast_eq, kroneckerUnpackFast_eq hD]
+  exact kroneckerUnpack_mul hD p q hpq
 
 /-- **Kronecker substitution backed by NTT multiplication.** Combines `kroneckerPack` /
 `kroneckerUnpack` with the NTT-accelerated `withFallback` univariate multiplication: when

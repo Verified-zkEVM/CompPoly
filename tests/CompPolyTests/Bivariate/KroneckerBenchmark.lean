@@ -55,41 +55,15 @@ def mkCol (degX seed : Nat) : CPolynomial F :=
 def mkBiv (degY degX seed : Nat) : CBivariate F :=
   canon (Array.ofFn (fun j : Fin degY ↦ mkCol degX (seed + 7 * j.1 + 1)))
 
-/-!
-  ## Efficient packing for the benchmark
+/-- Kronecker pipeline parameterised by the univariate multiplication backend.
 
-  The verified `CBivariate.kroneckerPack` / `kroneckerUnpack` are defined for provability
-  (`eval₂` / sums of monomials) and are *not* efficient: `eval₂` recomputes powers and the
-  monomial products are not specialised to shifts, so packing alone is super-quadratic in
-  the degree. To benchmark the *multiplication* strategies we use these O(size) array-based
-  equivalents (coefficient `X^i Y^j` ↔ position `D * j + i`). An efficient *verified* pack
-  proven equal to the spec versions is future work.
--/
-
-/-- Efficient packing: place coefficient of `X^i Y^j` at position `D * j + i`.
-Assumes each X-degree is `< D` (true here, with `D = 2 * degX`). -/
-def packFast (D : Nat) (p : CBivariate F) : CPolynomial F := Id.run do
-  let cols := p.val
-  let mut arr : Array F := Array.replicate (D * cols.size + D) 0
-  for j in [0:cols.size] do
-    let col := cols[j]!.val
-    for i in [0:col.size] do
-      arr := arr.set! (D * j + i) col[i]!
-  return canon arr
-
-/-- Efficient unpacking: position `k` becomes coefficient of `X^(k % D) Y^(k / D)`. -/
-def unpackFast (D : Nat) (P : CPolynomial F) : CBivariate F := Id.run do
-  let arr := P.val
-  let numCols := (arr.size + D - 1) / D
-  let mut cols : Array (CPolynomial F) := #[]
-  for j in [0:numCols] do
-    cols := cols.push (canon (arr.extract (D * j) (min (D * j + D) arr.size)))
-  return canon cols
-
-/-- Kronecker pipeline parameterised by the univariate multiplication backend. -/
+Uses the verified efficient `kroneckerPackFast` / `kroneckerUnpackFast` from the library
+(both proven equal to the `kroneckerPack` / `kroneckerUnpack` spec; see
+`kroneckerUnpackFast_mul`). The slow spec versions, defined via `eval₂` for provability,
+recompute powers and are unsuitable for benchmarking. -/
 @[inline] def kronWith (mulU : CPolynomial F → CPolynomial F → CPolynomial F)
     (D : Nat) (p q : CBivariate F) : CBivariate F :=
-  unpackFast D (mulU (packFast D p) (packFast D q))
+  kroneckerUnpackFast D (mulU (kroneckerPackFast D p) (kroneckerPackFast D q))
 
 /-- Sweep of square sizes (`degX = degY = n`).
 
