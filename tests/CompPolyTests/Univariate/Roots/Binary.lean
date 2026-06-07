@@ -57,10 +57,10 @@ noncomputable example (p : CPolynomial F48) :
     (CPolynomial.Roots.FiniteField.lasVegasLinearFactorProductSplitterWithTrace
       CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive
       GF2_48.finiteFieldContext
-      CompPoly.GuruswamiSudan.Binary.gf2_48FieldEnumeration
+      GF2_48.fieldEnumeration
       GF2_48.shoupTraceContext
-      CompPoly.GuruswamiSudan.Binary.gf2_48LasVegasConfig
-      CompPoly.GuruswamiSudan.Binary.gf2_48LasVegasProbeFamily)
+      GF2_48.lasVegasConfig
+      GF2_48.lasVegasProbeFamily)
     p
 
 noncomputable example (p : CPolynomial F72) :
@@ -92,10 +92,10 @@ noncomputable example (p : CPolynomial F72) :
     (CPolynomial.Roots.FiniteField.lasVegasLinearFactorProductSplitterWithTrace
       CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive
       GF2_72.finiteFieldContext
-      CompPoly.GuruswamiSudan.Binary.gf2_72FieldEnumeration
+      GF2_72.fieldEnumeration
       GF2_72.shoupTraceContext
-      CompPoly.GuruswamiSudan.Binary.gf2_72LasVegasConfig
-      CompPoly.GuruswamiSudan.Binary.gf2_72LasVegasProbeFamily)
+      GF2_72.lasVegasConfig
+      GF2_72.lasVegasProbeFamily)
     p
 
 end CompPolyTests.Univariate.Roots.Binary

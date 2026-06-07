@@ -5,7 +5,9 @@ Authors: Valerii Huhnin
 -/
 
 import CompPoly.Fields.Binary.GF2_64.Primitive
+import CompPoly.Fields.Binary.Extension.Enumeration
 import CompPoly.Univariate.Roots.Context
+import CompPoly.Univariate.Roots.LasVegas.Basic
 import CompPoly.Univariate.Roots.Shoup.Basic
 import CompPoly.Univariate.Roots.SmoothSubgroup
 import Mathlib.FieldTheory.Finite.Trace
@@ -51,6 +53,11 @@ def finiteFieldContext :
     have hcard : Fintype.card ConcreteField = fieldSize := by
       exact ConcreteField.card
     simpa [hcard] using FiniteField.pow_card a
+
+/-- Lazy complete enumeration for `GF(2^64)`. -/
+def fieldEnumeration :
+    CompPoly.CPolynomial.Roots.FiniteField.FieldEnumeration ConcreteField :=
+  BinaryField.Extension.Concrete.fieldEnumeration Concrete.params
 
 namespace ConcreteField
 
@@ -195,6 +202,17 @@ def shoupTraceContext :
     rcases ConcreteField.algebraicTraceValue_separates hne with ⟨beta, hbeta, htrace⟩
     refine ⟨beta, hbeta, ?_⟩
     rwa [← ConcreteField.algebraicTraceValue_eq_powerSum]
+
+/-- Default Las Vegas trace configuration for `GF(2^64)`. -/
+def lasVegasConfig : CPolynomial.Roots.FiniteField.LasVegasConfig where
+  cutoff := extensionDegree
+  tryOddRandomizedSplitting := true
+  tryEvenTraceSplitting := true
+
+/-- Deterministic basis-cycle Las Vegas probes for `GF(2^64)`. -/
+def lasVegasProbeFamily :
+    CPolynomial.Roots.FiniteField.ProbeFamily ConcreteField :=
+  CPolynomial.Roots.FiniteField.traceBasisProbeFamily shoupTraceContext
 
 /-- Smooth cyclic splitter context for `GF(2^64)` with the supplied leaf evaluator. -/
 def smoothCyclicRootContextWith

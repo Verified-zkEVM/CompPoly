@@ -96,6 +96,7 @@ import CompPoly.Fields.Binary.BF128Ghash.XPowTwoPowGcdCertificate
 import CompPoly.Fields.Binary.BF128Ghash.XPowTwoPowModCertificate
 import CompPoly.Fields.Binary.Common
 import CompPoly.Fields.Binary.Extension.Basic
+import CompPoly.Fields.Binary.Extension.Enumeration
 import CompPoly.Fields.Binary.Extension.Impl
 import CompPoly.Fields.Binary.Extension.Prelude
 import CompPoly.Fields.Binary.Extension.Primitive
