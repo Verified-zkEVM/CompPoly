@@ -88,6 +88,20 @@ end CPolynomial
 
 namespace CBivariate
 
+section Stride
+
+variable {D i j : ℕ}
+
+/-- For `i < D`, the packed position `D * j + i` has remainder `i`. -/
+private theorem stride_mod (hi : i < D) : (D * j + i) % D = i := by
+  rw [Nat.add_comm, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hi]
+
+/-- For `i < D`, the packed position `D * j + i` has quotient `j`. -/
+private theorem stride_div (hD : 0 < D) (hi : i < D) : (D * j + i) / D = j := by
+  rw [Nat.add_comm, Nat.add_mul_div_left i j hD, Nat.div_eq_of_lt hi, Nat.zero_add]
+
+end Stride
+
 section Pack
 
 variable {R : Type*}
@@ -131,35 +145,26 @@ theorem kroneckerPack_eq_sum [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
 theorem coeff_kroneckerPack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     {D : ℕ} (hD : 0 < D) (p : CBivariate R) (hp : natDegreeX p < D) (n : ℕ) :
     CPolynomial.coeff (kroneckerPack D p) n = coeff p (n % D) (n / D) := by
-  rw [kroneckerPack_eq_sum, CPolynomial.coeff_finset_sum]
-  rw [Finset.sum_eq_single (n / D)]
-  · rw [CPolynomial.coeff_mul_X_pow]
-    have hle : D * (n / D) ≤ n := Nat.mul_div_le n D
-    rw [if_pos hle]
-    have hsub : n - D * (n / D) = n % D := by
-      have := Nat.mod_add_div n D; omega
-    rw [hsub]
-    rfl
-  · intro i hi hine
+  rw [kroneckerPack_eq_sum, CPolynomial.coeff_finset_sum, Finset.sum_eq_single (n / D)]
+  · rw [CPolynomial.coeff_mul_X_pow, if_pos (Nat.mul_div_le n D)]
+    have hsub : n - D * (n / D) = n % D := by have := Nat.mod_add_div n D; omega
+    rw [hsub]; rfl
+  · -- every other column contributes nothing: its only reachable position exceeds its degree
+    intro i hi hine
     rw [CPolynomial.coeff_mul_X_pow]
     split_ifs with hle
-    · by_contra hc
-      have hdeg : n - D * i ≤ (CPolynomial.coeff p i).natDegree :=
-        CPolynomial.le_natDegree_of_ne_zero hc
-      have hsup : (CPolynomial.coeff p i).natDegree ≤ natDegreeX p := by
-        unfold natDegreeX
-        exact Finset.le_sup (f := fun n => (p.val.coeff n).natDegree) hi
-      have hlt : n - D * i < D := lt_of_le_of_lt (le_trans hdeg hsup) hp
-      apply hine
-      have h1 : i ≤ n / D := (Nat.le_div_iff_mul_le hD).2 (by rw [Nat.mul_comm]; exact hle)
-      have h2 : n / D < i + 1 :=
-        (Nat.div_lt_iff_lt_mul hD).2 (by rw [Nat.mul_comm, Nat.mul_succ]; omega)
-      omega
+    · refine CPolynomial.coeff_eq_zero_of_natDegree_lt (lt_of_le_of_lt (b := natDegreeX p) ?_ ?_)
+      · exact Finset.le_sup (f := fun m => (p.val.coeff m).natDegree) hi
+      · have hilt : i < n / D :=
+          lt_of_le_of_ne ((Nat.le_div_iff_mul_le hD).2 (by rw [Nat.mul_comm]; exact hle)) hine
+        have : D * i + D ≤ n := by
+          have := Nat.mul_le_mul_left D hilt; rw [Nat.mul_succ] at this
+          exact this.trans (Nat.mul_div_le n D)
+        omega
     · rfl
   · intro hns
     have h0 : CPolynomial.coeff p (n / D) = 0 := by
-      by_contra hc
-      exact hns ((CPolynomial.mem_support_iff p (n / D)).2 hc)
+      by_contra hc; exact hns ((CPolynomial.mem_support_iff p (n / D)).2 hc)
     rw [h0, zero_mul, CPolynomial.coeff_zero]
 
 /-- Efficient packing: sum of the Y-coefficients shifted by `X^(D·j)` using the cheap
@@ -202,15 +207,11 @@ at `(i, j)` of the unpacked polynomial is the univariate coefficient at `D * j +
 theorem coeff_kroneckerUnpack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     [DecidableEq R] {D : ℕ} (hD : 0 < D) (P : CPolynomial R) (i j : ℕ) (hi : i < D) :
     coeff (kroneckerUnpack D P) i j = CPolynomial.coeff P (D * j + i) := by
-  have hmod : (D * j + i) % D = i := by
-    rw [Nat.add_comm, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hi]
-  have hdiv : (D * j + i) / D = j := by
-    rw [Nat.add_comm, Nat.add_mul_div_left i j hD, Nat.div_eq_of_lt hi, Nat.zero_add]
+  have hkey : i = (D * j + i) % D ∧ j = (D * j + i) / D :=
+    ⟨(stride_mod hi).symm, (stride_div hD hi).symm⟩
   unfold kroneckerUnpack
-  rw [coeff_finset_sum]
-  rw [Finset.sum_eq_single (D * j + i)]
-  · rw [coeff_monomialXY, if_pos]
-    exact ⟨hmod.symm, hdiv.symm⟩
+  rw [coeff_finset_sum, Finset.sum_eq_single (D * j + i)]
+  · rw [coeff_monomialXY, if_pos hkey]
   · intro k _ hkne
     rw [coeff_monomialXY, if_neg]
     rintro ⟨hik, hjk⟩
@@ -219,7 +220,7 @@ theorem coeff_kroneckerUnpack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     have := Nat.mod_add_div k D
     omega
   · intro hns
-    rw [coeff_monomialXY, if_pos ⟨hmod.symm, hdiv.symm⟩]
+    rw [coeff_monomialXY, if_pos hkey]
     by_contra hc
     exact hns ((CPolynomial.mem_support_iff P (D * j + i)).2 hc)
 
@@ -273,10 +274,8 @@ theorem kroneckerUnpackFast_eq [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     · rw [if_neg hjr]
       rw [Finset.mem_range, Nat.not_lt] at hjr
       refine (CPolynomial.coeff_eq_zero_of_natDegree_lt ?_).symm
-      have hdm := Nat.div_add_mod P.natDegree D
-      have hmd := Nat.mod_lt P.natDegree hD
-      have hmul : D * (P.natDegree / D + 1) ≤ D * j := Nat.mul_le_mul_left D hjr
-      have : D * (P.natDegree / D + 1) = D * (P.natDegree / D) + D := by ring
+      have : P.natDegree < D * j := by
+        rw [Nat.mul_comm]; exact (Nat.div_lt_iff_lt_mul hD).1 hjr
       omega
   · rw [if_neg hiD, coeff_kroneckerUnpack_of_le hD _ i j (Nat.le_of_not_lt hiD)]
     by_cases hjr : j ∈ Finset.range (P.natDegree / D + 1) <;> simp [hjr]
@@ -294,26 +293,17 @@ theorem kroneckerUnpack_kroneckerPack [Semiring R] [BEq R] [LawfulBEq R] [Nontri
   rw [eq_iff_coeff]
   intro i j
   by_cases hi : i < D
-  · rw [coeff_kroneckerUnpack hD _ i j hi, coeff_kroneckerPack hD p hp]
-    have hmod : (D * j + i) % D = i := by
-      rw [Nat.add_comm, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hi]
-    have hdiv : (D * j + i) / D = j := by
-      rw [Nat.add_comm, Nat.add_mul_div_left i j hD, Nat.div_eq_of_lt hi, Nat.zero_add]
-    rw [hmod, hdiv]
-  · rw [coeff_kroneckerUnpack_of_le hD _ i j (Nat.le_of_not_lt hi)]
-    -- the bivariate coefficient at X-exponent `i ≥ D > natDegreeX p` vanishes
+  · rw [coeff_kroneckerUnpack hD _ i j hi, coeff_kroneckerPack hD p hp,
+      stride_mod hi, stride_div hD hi]
+  · -- the bivariate coefficient at X-exponent `i ≥ D > natDegreeX p` vanishes
+    rw [coeff_kroneckerUnpack_of_le hD _ i j (Nat.le_of_not_lt hi)]
     have hdeg : (CPolynomial.coeff p j).natDegree < i := by
       by_cases hj : j ∈ CPolynomial.support p
-      · have : (CPolynomial.coeff p j).natDegree ≤ natDegreeX p := by
-          unfold natDegreeX
-          exact Finset.le_sup (f := fun n => (p.val.coeff n).natDegree) hj
-        omega
+      · exact lt_of_le_of_lt (Finset.le_sup (f := fun n => (p.val.coeff n).natDegree) hj)
+          (lt_of_lt_of_le hp (Nat.le_of_not_lt hi))
       · have h0 : CPolynomial.coeff p j = 0 := by
-          by_contra hc
-          exact hj ((CPolynomial.mem_support_iff p j).2 hc)
-        rw [h0]
-        have hz : (0 : CPolynomial R).natDegree = 0 := rfl
-        omega
+          by_contra hc; exact hj ((CPolynomial.mem_support_iff p j).2 hc)
+        rw [h0]; show 0 < i; omega
     exact (CPolynomial.coeff_eq_zero_of_natDegree_lt hdeg).symm
 
 /-- **Kronecker substitution correctness.** When the product fits within the stride
