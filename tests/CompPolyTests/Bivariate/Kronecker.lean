@@ -9,10 +9,10 @@ import CompPolyTests.Bivariate.KroneckerCommon
 /-!
   # Kronecker substitution tests
 
-  Regressions for `kroneckerPack` / `kroneckerUnpack` packing coefficients and the
-  round-trip recovery under the X-degree bound, plus a small runtime smoke test that the
-  efficient and NTT-backed pipelines agree with schoolbook multiplication on compiled
-  KoalaBear data. The full timing sweep lives in `KroneckerBenchmark.lean`.
+  Packing coefficients and round-trip recovery for `kroneckerPack` / `kroneckerUnpack`,
+  followed by a runtime check that, on small KoalaBear data, each pipeline (schoolbook,
+  classic NTT, recursive NTT) returns the same product as direct multiplication. The full
+  timing comparison lives in `KroneckerBenchmark.lean`.
 -/
 
 namespace CompPoly
@@ -38,10 +38,7 @@ example :
   apply kroneckerUnpack_kroneckerPack (by norm_num)
   rw [natDegreeX_XY2]; omega
 
-/- Runtime smoke test: on small compiled KoalaBear operands, the Kronecker pipeline with
-each univariate backend (schoolbook, classic NTT, recursive NTTFast) agrees with direct
-schoolbook bivariate multiplication. Guards the compiled execution paths (array packing,
-`withFallback` domain selection) that the kernel-checked proofs do not exercise. -/
+/- Each pipeline must return the same product as direct multiplication on small data. -/
 #eval show IO Unit from do
   let n := 4
   let D := 2 * n
@@ -54,7 +51,7 @@ schoolbook bivariate multiplication. Guards the compiled execution paths (array 
   let fast := TestCommon.kronWith
     (CPolynomial.NTTFast.withFallback TestCommon.bestDomainForLength?) D p q
   unless (kron == expected) && (ntt == expected) && (fast == expected) do
-    throw <| IO.userError "Kronecker smoke test: a backend disagreed with schoolbook"
+    throw <| IO.userError "a Kronecker pipeline disagreed with direct multiplication"
 
 end CBivariate
 end CompPoly

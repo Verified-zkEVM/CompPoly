@@ -19,9 +19,9 @@ import CompPolyTests.Bivariate.KroneckerCommon
 
   All four results are checked for agreement at every size. Operands are square
   (`degX = degY = n`) and the Kronecker stride is `D = 2 * n`, which always satisfies
-  `natDegreeX (p * q) < D`, so unpacking is faithful. Shared fixtures (`mkBiv`,
-  `bestDomainForLength?`, `kronWith`) live in `KroneckerCommon.lean`; the agreement
-  smoke test lives in `Kronecker.lean`.
+  `natDegreeX (p * q) < D`, so unpacking is faithful. Shared data (`mkBiv`,
+  `bestDomainForLength?`, `kronWith`) lives in `KroneckerCommon.lean`; the agreement
+  check lives in `Kronecker.lean`.
 
   Not part of the aggregate `CompPolyTests` build; run manually, e.g.
   `lake build CompPolyTests.Bivariate.KroneckerBenchmark`.

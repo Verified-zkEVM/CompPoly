@@ -277,7 +277,7 @@ theorem coeff_monomialXY [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [Deci
     · rw [if_neg hi, if_neg (fun h => hi h.1)]
   · rw [if_neg hj, CPolynomial.coeff_zero, if_neg (fun h => hj h.2)]
 
-/-- Coefficient of a `Y`-monomial `Y^m * c(X)` viewed bivariately. -/
+/-- Coefficient of `Y^m * c(X)` as a bivariate polynomial. -/
 theorem coeff_monomialY [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (m : ℕ) (c : CPolynomial R) (i j : ℕ) :
     coeff (CPolynomial.monomial m c) i j = if j = m then CPolynomial.coeff c i else 0 := by

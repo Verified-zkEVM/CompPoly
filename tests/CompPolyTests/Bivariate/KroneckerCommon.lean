@@ -9,10 +9,10 @@ import CompPoly.Univariate.NTT.KoalaBear
 /-!
   # Kronecker test helpers
 
-  Shared KoalaBear fixtures for the Kronecker smoke test and benchmark: deterministic
-  operand builders, the NTT domain selector, and the `kronWith` pipeline parameterised by
-  the univariate multiplication backend. Uses the verified efficient
-  `kroneckerPackFast` / `kroneckerUnpackFast`.
+  Shared KoalaBear data used by both the Kronecker test and the benchmark: deterministic
+  operand builders, the NTT domain selector, and the `kronWith` pipeline taking the
+  univariate multiplication as a parameter. Built on the efficient `kroneckerPackFast` /
+  `kroneckerUnpackFast`.
 -/
 
 namespace CompPoly
