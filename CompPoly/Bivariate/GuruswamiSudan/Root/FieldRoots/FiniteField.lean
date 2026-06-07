@@ -99,6 +99,23 @@ def lasVegasFiniteFieldRootContextWith (F : Type*) [Field F] [BEq F] [LawfulBEq 
       exact CPolynomial.Roots.FiniteField.rootProduct_satisfies_lasVegasSplitterInput
         M D ctx enumeration cfg probes hp)
 
+/-- Package a trace-aware Las Vegas splitter as a GS field-root backend. -/
+def lasVegasFiniteFieldRootContextWithTrace (F : Type*) [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (ctx : CPolynomial.Roots.FiniteField.FiniteFieldContext F)
+    (enumeration : CPolynomial.Roots.FiniteField.FieldEnumeration F)
+    (traceCtx : CPolynomial.Roots.FiniteField.SmallPrimeTraceContext F)
+    (cfg : CPolynomial.Roots.FiniteField.LasVegasConfig)
+    (probes : CPolynomial.Roots.FiniteField.ProbeFamily F) :
+    FieldRootContext F :=
+  finiteFieldRootContextWith F M D ctx
+    (CPolynomial.Roots.FiniteField.lasVegasLinearFactorProductSplitterWithTrace
+      M D ctx enumeration traceCtx cfg probes)
+    (by
+      intro p hp
+      exact CPolynomial.Roots.FiniteField.rootProduct_satisfies_lasVegasSplitterInput
+        M D ctx enumeration cfg probes hp)
+
 /-- Package a Shoup trace splitter as a GS field-root backend. -/
 def shoupFiniteFieldRootContextWith (F : Type*) [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)

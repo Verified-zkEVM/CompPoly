@@ -54,6 +54,21 @@ theorem lasVegasSplitLinearFactorsWith_complete {F : Type*}
         IsLinearRootFactorCandidate factor a := by
   sorry
 
+/-- Completeness surface for bounded Las Vegas splitting with characteristic-two trace metadata. -/
+theorem lasVegasSplitLinearFactorsWithTrace_complete {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (enumeration : FieldEnumeration F) (traceCtx : SmallPrimeTraceContext F)
+    (cfg : LasVegasConfig) (probes : ProbeFamily F) (q : Nat)
+    {p : CPolynomial F} {a : F}
+    (hvalid : lasVegasSplitterInput q p) (hp : p ≠ 0)
+    (hroot : CPolynomial.eval a p = 0) :
+    ∃ factor,
+      factor ∈
+          (lasVegasSplitLinearFactorsWithTrace M D enumeration traceCtx cfg probes q p).toList ∧
+        IsLinearRootFactorCandidate factor a := by
+  sorry
+
 /-- Package bounded Las Vegas splitting as a finite-field linear-factor splitter. -/
 def lasVegasLinearFactorProductSplitterWith {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
@@ -71,6 +86,25 @@ def lasVegasLinearFactorProductSplitterWith {F : Type*}
     intro q p a hvalid hp hroot
     exact lasVegasSplitLinearFactorsWith_complete
       M D enumeration cfg probes q hvalid hp hroot
+
+/-- Package bounded Las Vegas trace splitting as a finite-field linear-factor splitter. -/
+def lasVegasLinearFactorProductSplitterWithTrace {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (_ctx : FiniteFieldContext F) (enumeration : FieldEnumeration F)
+    (traceCtx : SmallPrimeTraceContext F)
+    (cfg : LasVegasConfig) (probes : ProbeFamily F) :
+    LinearFactorProductSplitter F where
+  splitLinearFactors := fun q p ↦
+    lasVegasSplitLinearFactorsWithTrace M D enumeration traceCtx cfg probes q p
+  validInput := fun q p ↦ lasVegasSplitterInput q p
+  sound := by
+    intro q p factor h
+    exact lasVegasSplitLinearFactorsWithTrace_sound M D enumeration traceCtx cfg probes q h
+  complete := by
+    intro q p a hvalid hp hroot
+    exact lasVegasSplitLinearFactorsWithTrace_complete
+      M D enumeration traceCtx cfg probes q hvalid hp hroot
 
 /-- Alias emphasizing the root-product precondition used by Las Vegas completeness. -/
 theorem rootProduct_satisfies_lasVegasSplitterInput {F : Type*}

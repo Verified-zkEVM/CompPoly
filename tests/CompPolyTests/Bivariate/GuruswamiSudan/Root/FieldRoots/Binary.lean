@@ -38,6 +38,9 @@ noncomputable example : FieldRootContext F32 :=
 noncomputable example : FieldRootContext F32 :=
   gf2_32ShoupFieldRootContext
 
+noncomputable example : FieldRootContext F32 :=
+  gf2_32LasVegasFieldRootContext
+
 noncomputable example : FieldRootContext F48 :=
   gf2_48SmoothFieldRootContext
 
@@ -46,6 +49,9 @@ noncomputable example : FieldRootContext F48 :=
 
 noncomputable example : FieldRootContext F48 :=
   gf2_48ShoupFieldRootContext
+
+noncomputable example : FieldRootContext F48 :=
+  gf2_48LasVegasFieldRootContext
 
 noncomputable example : FieldRootContext F64 :=
   gf2_64SmoothFieldRootContext
@@ -56,6 +62,9 @@ noncomputable example : FieldRootContext F64 :=
 noncomputable example : FieldRootContext F64 :=
   gf2_64ShoupFieldRootContext
 
+noncomputable example : FieldRootContext F64 :=
+  gf2_64LasVegasFieldRootContext
+
 noncomputable example : FieldRootContext F72 :=
   gf2_72SmoothFieldRootContext
 
@@ -64,6 +73,9 @@ noncomputable example : FieldRootContext F72 :=
 
 noncomputable example : FieldRootContext F72 :=
   gf2_72ShoupFieldRootContext
+
+noncomputable example : FieldRootContext F72 :=
+  gf2_72LasVegasFieldRootContext
 
 noncomputable example (p : CPolynomial F32) (a : F32)
     (hmem : a ∈ (gf2_32SmoothFieldRootContext.rootsInField p).toList) :
