@@ -110,12 +110,12 @@ theorem eval_eq_eval_mv_eval_finSuccEquivNth (s : Fin n → R) (y : R)
       ((Polynomial.mapAlgHom (aeval s)).comp (finSuccEquivNth R p).toAlgHom) f
   congr 2
   apply MvPolynomial.algHom_ext
-  simp [Fin.forall_iff_succAbove p, aeval_X, Fin.insertNth_apply_same, Polynomial.mapAlgHom,
+  simp only [Fin.forall_iff_succAbove p, aeval_X, Fin.insertNth_apply_same, Polynomial.mapAlgHom,
     AlgHom.toRingHom_eq_coe, coe_aeval_eq_eval, AlgHom.coe_comp,
     Polynomial.coe_aeval_eq_eval, AlgHom.coe_mk, coe_mapRingHom, comp_apply,
-    finSuccEquivNth_apply, eval₂Hom_X', Polynomial.map_X, Polynomial.eval_X,
-    Fin.insertNth_apply_succAbove, Polynomial.map_C, eval_X, Polynomial.eval_C, implies_true,
-    and_self]
+    AlgEquiv.toAlgHom_apply, finSuccEquivNth_apply, eval₂Hom_X', Polynomial.map_X,
+    Polynomial.eval_X, Fin.insertNth_apply_succAbove, Polynomial.map_C, eval_X,
+    Polynomial.eval_C, implies_true, and_self]
 
 /-- A monomial index `m` is in the support of the `i`-th coefficient of `finSuccEquivNth R p f` if
 and only if `m.insertNth p i` is in the support of `f`. -/
