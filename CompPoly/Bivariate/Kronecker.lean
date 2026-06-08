@@ -17,10 +17,11 @@ fixing a gap `D` and substituting `X ↦ t`, `Y ↦ t ^ D`. This sends a bivaria
 polynomial `p : CBivariate R` to a univariate polynomial `kroneckerPack D p : CPolynomial R`
 in which the coefficient of `X ^ i Y ^ j` is placed at position `D * j + i`.
 
-Packing is a ring homomorphism, so the packed product equals the product of the packed
-operands for any `p` and `q`; the only condition is recovering the answer afterwards. The
-position `D * j + i` determines `i` and `j` only when `i < D`, so packing can be reversed
-exactly on polynomials with `natDegreeX < D`. Recovering a product `p * q` therefore needs
+Packing is a ring homomorphism, so for any `p` and `q` the packed product equals the
+product of the packed operands, with no condition on degrees. A condition is needed only to
+unpack the result. The position `D * j + i` determines `i` and `j` only when `i < D`, so
+packing can be reversed exactly on polynomials with `natDegreeX < D`. Recovering a product
+`p * q` therefore needs
 `natDegreeX (p * q) < D`, and since `natDegreeX (p * q) ≤ natDegreeX p + natDegreeX q`, it is
 enough to choose `D` greater than `natDegreeX p + natDegreeX q`.
 
