@@ -123,8 +123,7 @@ def AlgebraTowerEquiv.toAlgEquivOverLeft (e : AlgebraTowerEquiv A B) (i j : ι) 
     commutes' := fun r => by
       simp only [RingEquiv.toEquiv_eq_coe, Equiv.toFun_as_coe, EquivLike.coe_coe]
       unfold instAij instAiBij
-      simp only [AlgebraTower.toAlgebra, AlgebraTowerEquiv.toAlgebraOverLeft,
-        AlgebraTowerEquiv.algebraMapRightUp, RingHom.algebraMap_toAlgebra]
+      simp only [AlgebraTowerEquiv.algebraMapRightUp, RingHom.algebraMap_toAlgebra]
       simp only [RingEquiv.toRingHom_eq_coe, RingHom.coe_comp, RingHom.coe_coe, Function.comp_apply]
       exact Eq.symm (e.commutesLeft' i j h r)
     map_mul' := fun x y => by

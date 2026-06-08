@@ -111,8 +111,8 @@ theorem eval_eq_eval_mv_eval_finSuccEquivNth (s : Fin n → R) (y : R)
   congr 2
   apply MvPolynomial.algHom_ext
   simp [Fin.forall_iff_succAbove p, aeval_X, Fin.insertNth_apply_same, Polynomial.mapAlgHom,
-    AlgHom.toRingHom_eq_coe, coe_aeval_eq_eval, AlgEquiv.toAlgHom_eq_coe, AlgHom.coe_comp,
-    Polynomial.coe_aeval_eq_eval, AlgHom.coe_mk, coe_mapRingHom, AlgHom.coe_coe, comp_apply,
+    AlgHom.toRingHom_eq_coe, coe_aeval_eq_eval, AlgHom.coe_comp,
+    Polynomial.coe_aeval_eq_eval, AlgHom.coe_mk, coe_mapRingHom, comp_apply,
     finSuccEquivNth_apply, eval₂Hom_X', Polynomial.map_X, Polynomial.eval_X,
     Fin.insertNth_apply_succAbove, Polynomial.map_C, eval_X, Polynomial.eval_C, implies_true,
     and_self]
