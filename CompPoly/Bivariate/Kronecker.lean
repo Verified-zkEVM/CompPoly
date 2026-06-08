@@ -12,51 +12,31 @@ import CompPoly.Univariate.NTTFast.Correctness
 /-!
 # Kronecker substitution for bivariate polynomials
 
-Kronecker substitution turns one bivariate multiplication into one univariate
-multiplication. Fix a stride `D` and substitute `X ↦ t`, `Y ↦ t ^ D`. This sends a
-bivariate polynomial `p : CBivariate R` to a univariate polynomial
-`kroneckerPack D p : CPolynomial R` in which the coefficient of `X ^ i Y ^ j` is placed at
-position `D * j + i`.
+Kronecker substitution turns a bivariate multiplication into a univariate multiplication by
+fixing a gap `D` and substituting `X ↦ t`, `Y ↦ t ^ D`. This sends a bivariate
+polynomial `p : CBivariate R` to a univariate polynomial `kroneckerPack D p : CPolynomial R`
+in which the coefficient of `X ^ i Y ^ j` is placed at position `D * j + i`.
 
-To multiply `p` and `q`: pack both, multiply the two univariate polynomials once, then
-unpack the result. The middle step is an ordinary univariate multiplication, so any fast
-univariate multiplication gives a fast bivariate multiplication. The NTT versions are
-`kroneckerUnpack_withFallback` and `kroneckerUnpack_withFallbackFast`.
+Packing is a ring homomorphism, so the packed product equals the product of the packed
+operands for any `p` and `q`; the only condition is recovering the answer afterwards. The
+position `D * j + i` determines `i` and `j` only when `i < D`, so packing can be reversed
+exactly on polynomials with `natDegreeX < D`. Recovering a product `p * q` therefore needs
+`natDegreeX (p * q) < D`, and since `natDegreeX (p * q) ≤ natDegreeX p + natDegreeX q`, it is
+enough to choose `D` greater than `natDegreeX p + natDegreeX q`.
 
-## Why it is correct
+Kronecker substitution is not itself an optimisation; it lets a fast univariate
+multiplication carry out the bivariate one. The NTT versions multiply through `withFallback`,
+which uses an NTT domain when one fits and otherwise multiplies the ordinary way, so it is
+always equal to `*` and adds no assumption about the domain beyond the gap condition above.
 
-Two separate facts are involved, and the proofs keep them apart.
+## Main results
 
-Packing keeps each `X`-coefficient and sends `Y` to `X ^ D`. This is a ring homomorphism,
-so `kroneckerPack D (p * q) = kroneckerPack D p * kroneckerPack D q` holds for every `p`
-and `q` with no extra condition (`kroneckerPack_mul`): multiplying in the packed form is
-always the same as packing the product.
-
-Recovering a bivariate polynomial from a packed one is where a condition appears. Packing
-is not injective in general, because the position `D * j + i` determines `i` and `j` only
-when `i < D`. If some `X`-exponent reaches `D`, two different monomials can be placed on
-the same position and can no longer be told apart. Unpacking inverts packing exactly when
-every `X`-exponent stays below `D`, that is when `natDegreeX p < D`
-(`kroneckerUnpack_kroneckerPack`).
-
-For a product the stride must therefore exceed the `X`-degree of `p * q`. The main result
-`kroneckerUnpack_mul` assumes `natDegreeX (p * q) < D`. Since
-`natDegreeX (p * q) ≤ natDegreeX p + natDegreeX q`, it is enough in practice to choose `D`
-greater than `natDegreeX p + natDegreeX q`.
-
-## Two versions of pack and unpack
-
-`kroneckerPack` and `kroneckerUnpack` are written so the proofs above stay short: packing
-is one evaluation and unpacking is one sum over coefficients. Run directly they are slow,
-because the evaluation recomputes powers of `X ^ D`. `kroneckerPackFast` and
-`kroneckerUnpackFast` compute the same polynomials in time linear in the output by shifting
-and slicing coefficient arrays, and are proved equal to the plain versions
-(`kroneckerPackFast_eq`, `kroneckerUnpackFast_eq`), so every correctness result carries
-over to them (`kroneckerUnpackFast_mul`).
-
-The NTT versions multiply through `withFallback`, which uses an NTT domain when one fits
-and otherwise multiplies the ordinary way. It is always equal to `*`, so those results need
-no extra assumption about the domain beyond the stride condition above.
+* `kroneckerPack` / `kroneckerUnpack` — the substitution and its inverse.
+* `kroneckerPack_mul` — packing is multiplicative.
+* `kroneckerUnpack_mul` — bivariate multiplication as pack, multiply, unpack.
+* `kroneckerPackFast` / `kroneckerUnpackFast` — linear-time versions, proved equal to the above.
+* `kroneckerUnpack_withFallback` / `kroneckerUnpack_withFallbackFast` — multiplication backed by
+  the classic and recursive NTT.
 -/
 
 namespace CompPoly
@@ -115,30 +95,30 @@ end CPolynomial
 
 namespace CBivariate
 
-section Stride
+section Gap
 
 variable {D i j : ℕ}
 
 /-- The remainder of the packed position `D * j + i` is `i`. -/
-private theorem stride_mod (hi : i < D) : (D * j + i) % D = i := by
+private theorem gap_mod (hi : i < D) : (D * j + i) % D = i := by
   rw [Nat.add_comm, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hi]
 
 /-- The quotient of the packed position `D * j + i` is `j`. -/
-private theorem stride_div (hD : 0 < D) (hi : i < D) : (D * j + i) / D = j := by
+private theorem gap_div (hD : 0 < D) (hi : i < D) : (D * j + i) / D = j := by
   rw [Nat.add_comm, Nat.add_mul_div_left i j hD, Nat.div_eq_of_lt hi, Nat.zero_add]
 
-end Stride
+end Gap
 
 section Pack
 
 variable {R : Type*}
 
-/-- Pack a bivariate polynomial into a univariate one with stride `D`. -/
+/-- Pack a bivariate polynomial into a univariate one with gap `D`. -/
 def kroneckerPack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (D : ℕ) (p : CBivariate R) : CPolynomial R :=
   CPolynomial.eval₂ (RingHom.id (CPolynomial R)) (CPolynomial.X ^ D) p
 
-/-- Unpack a univariate polynomial into a bivariate one with stride `D`. -/
+/-- Unpack a univariate polynomial into a bivariate one with gap `D`. -/
 def kroneckerUnpack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (D : ℕ) (P : CPolynomial R) : CBivariate R :=
   (CPolynomial.support P).sum
@@ -165,7 +145,7 @@ theorem kroneckerPack_eq_sum [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
   intro i _
   rw [RingHom.id_apply, ← pow_mul]
 
-/-- Coefficient of the packed polynomial, when the `X`-degree is below the stride. -/
+/-- Coefficient of the packed polynomial, when the `X`-degree is below the gap. -/
 theorem coeff_kroneckerPack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     {D : ℕ} (hD : 0 < D) (p : CBivariate R) (hp : natDegreeX p < D) (n : ℕ) :
     CPolynomial.coeff (kroneckerPack D p) n = coeff p (n % D) (n / D) := by
@@ -228,7 +208,7 @@ theorem coeff_kroneckerUnpack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     [DecidableEq R] {D : ℕ} (hD : 0 < D) (P : CPolynomial R) (i j : ℕ) (hi : i < D) :
     coeff (kroneckerUnpack D P) i j = CPolynomial.coeff P (D * j + i) := by
   have hkey : i = (D * j + i) % D ∧ j = (D * j + i) / D :=
-    ⟨(stride_mod hi).symm, (stride_div hD hi).symm⟩
+    ⟨(gap_mod hi).symm, (gap_div hD hi).symm⟩
   unfold kroneckerUnpack
   rw [coeff_finset_sum, Finset.sum_eq_single (D * j + i)]
   · rw [coeff_monomialXY, if_pos hkey]
@@ -304,7 +284,7 @@ section Correctness
 
 variable {R : Type*}
 
-/-- Unpacking recovers a packed polynomial when its `X`-degree is below the stride. -/
+/-- Unpacking recovers a packed polynomial when its `X`-degree is below the gap. -/
 theorem kroneckerUnpack_kroneckerPack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     [DecidableEq R] {D : ℕ} (hD : 0 < D) (p : CBivariate R) (hp : natDegreeX p < D) :
     kroneckerUnpack D (kroneckerPack D p) = p := by
@@ -312,7 +292,7 @@ theorem kroneckerUnpack_kroneckerPack [Semiring R] [BEq R] [LawfulBEq R] [Nontri
   intro i j
   by_cases hi : i < D
   · rw [coeff_kroneckerUnpack hD _ i j hi, coeff_kroneckerPack hD p hp,
-      stride_mod hi, stride_div hD hi]
+      gap_mod hi, gap_div hD hi]
   · rw [coeff_kroneckerUnpack_of_le hD _ i j (Nat.le_of_not_lt hi)]
     have hdeg : (CPolynomial.coeff p j).natDegree < i := by
       by_cases hj : j ∈ CPolynomial.support p
@@ -324,7 +304,7 @@ theorem kroneckerUnpack_kroneckerPack [Semiring R] [BEq R] [LawfulBEq R] [Nontri
     exact (CPolynomial.coeff_eq_zero_of_natDegree_lt hdeg).symm
 
 /-- Bivariate multiplication as pack, univariate multiply, unpack, when the product fits
-the stride. -/
+the gap. -/
 theorem kroneckerUnpack_mul [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     [DecidableEq R] {D : ℕ} (hD : 0 < D) (p q : CBivariate R)
     (hpq : natDegreeX (p * q) < D) :

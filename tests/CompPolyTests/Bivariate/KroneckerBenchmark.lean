@@ -18,7 +18,7 @@ import CompPolyTests.Bivariate.KroneckerCommon
   4. **kron+FastNTT** — Kronecker with the recursive NTT (`NTTFast.withFallback`).
 
   All four results are checked for agreement at every size. Operands are square
-  (`degX = degY = n`) and the Kronecker stride is `D = 2 * n`, which always satisfies
+  (`degX = degY = n`) and the Kronecker gap is `D = 2 * n`, which always satisfies
   `natDegreeX (p * q) < D`, so unpacking is faithful. Shared data (`mkBiv`,
   `bestDomainForLength?`, `kronWith`) lives in `KroneckerCommon.lean`; the agreement
   check lives in `Kronecker.lean`.
@@ -61,7 +61,7 @@ def timeRepeated {α : Type} (reps : Nat) (f : Unit → α) : IO (Nat × α) := 
   pure (stop - start, last)
 
 #eval show IO Unit from do
-  IO.println s!"sizes tested = {benchSizes.size}  (degX = degY = n, stride D = 2n)"
+  IO.println s!"sizes tested = {benchSizes.size}  (degX = degY = n, gap D = 2n)"
   IO.println "n | reps | normal ms | kron ms | kron+NTT ms | kron+FastNTT ms"
   IO.println "------------------------------------------------------------------"
   for i in [0:benchSizes.size] do

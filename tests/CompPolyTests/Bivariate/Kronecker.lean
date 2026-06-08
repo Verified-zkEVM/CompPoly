@@ -22,7 +22,7 @@ namespace CBivariate
 private theorem natDegreeX_XY2 : natDegreeX (monomialXY 1 2 (1 : ℚ)) = 1 := by
   rw [natDegreeX_eq_natWeightedDegree, natWeightedDegree_monomialXY (by norm_num) 1 0]
 
-/-- Packing `X Y^2` with stride `3` puts its coefficient at position `3 * 2 + 1 = 7`. -/
+/-- Packing `X Y^2` with gap `3` puts its coefficient at position `3 * 2 + 1 = 7`. -/
 example : CPolynomial.coeff (kroneckerPack 3 (monomialXY 1 2 (1 : ℚ))) 7 = 1 := by
   rw [coeff_kroneckerPack (by norm_num) _ (by rw [natDegreeX_XY2]; omega)]
   rw [coeff_monomialXY, if_pos (by decide)]
@@ -32,7 +32,7 @@ example : CPolynomial.coeff (kroneckerPack 3 (monomialXY 1 2 (1 : ℚ))) 5 = 0 :
   rw [coeff_kroneckerPack (by norm_num) _ (by rw [natDegreeX_XY2]; omega)]
   rw [coeff_monomialXY, if_neg (by decide)]
 
-/-- Round-trip: unpacking the packed monomial recovers it (stride `2 > natDegreeX = 1`). -/
+/-- Round-trip: unpacking the packed monomial recovers it (gap `2 > natDegreeX = 1`). -/
 example :
     kroneckerUnpack 2 (kroneckerPack 2 (monomialXY 1 2 (1 : ℚ))) = monomialXY 1 2 (1 : ℚ) := by
   apply kroneckerUnpack_kroneckerPack (by norm_num)
