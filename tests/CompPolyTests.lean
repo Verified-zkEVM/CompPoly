@@ -28,4 +28,6 @@ import CompPolyTests.Univariate.NTT.FastMul
 import CompPolyTests.Univariate.NTT.Forward
 import CompPolyTests.Univariate.NTT.Inverse
 import CompPolyTests.Univariate.Raw
+import CompPolyTests.Univariate.Roots.Enumeration
+import CompPolyTests.Univariate.Roots.FiniteField
 import CompPolyTests.Univariate.ToPoly

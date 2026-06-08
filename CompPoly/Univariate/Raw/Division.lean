@@ -105,8 +105,8 @@ Remainder by a monic polynomial through reversal and truncated products.
 
 For canonical monic inputs this computes the quotient from the reversed divisor
 inverse modulo `X^k`, then subtracts only the low coefficients needed for the
-remainder. Inputs outside that executable contract fall back to the
-remainder-only implementation.
+remainder. Inputs outside the fast-path guard use the simple monic-remainder
+implementation.
 -/
 @[inline, specialize]
 def modByMonicByReversal [Field R] [LawfulBEq R] (M : MulLowContext R)
@@ -137,6 +137,30 @@ def mod [Field R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
 
 instance [Field R] : Div (CPolynomial.Raw R) := ⟨div⟩
 instance [Field R] : Mod (CPolynomial.Raw R) := ⟨mod⟩
+
+/-- Normalize a nonzero raw polynomial to monic form. The zero polynomial stays zero. -/
+def monicNormalize [Field R] (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
+  let p := p.trim
+  if p == 0 then
+    0
+  else
+    p.leadingCoeff⁻¹ • p
+
+/-- Raw Euclidean gcd with explicit fuel, normalized to a monic result. -/
+def gcdMonicWithFuel [Field R] :
+    Nat → CPolynomial.Raw R → CPolynomial.Raw R → CPolynomial.Raw R
+  | 0, p, _ => monicNormalize p
+  | fuel + 1, p, q =>
+      let p := p.trim
+      let q := q.trim
+      if q == 0 then
+        monicNormalize p
+      else
+        gcdMonicWithFuel fuel q (p % q)
+
+/-- Raw monic Euclidean gcd. -/
+def gcdMonic [Field R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
+  gcdMonicWithFuel (p.size + q.size + 1) p q
 
 end Division
 
