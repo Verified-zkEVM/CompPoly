@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
 import CompPoly.Univariate.ManyEval.Basic
+import CompPoly.Data.Array.Lemmas
 
 /-!
 # Many-Polynomial Evaluation Correctness
@@ -112,18 +113,6 @@ private lemma powerTable_getD_eq_pow [Semiring R] (x : R) {limit i : Nat}
     (by simp) (by intro i hi; omega) (by simp) i (by simpa using hi)
   simpa using h
 
-private lemma list_foldl_congr {α β : Type*} {f g : α → β → α}
-    (xs : List β) (acc : α) (h : ∀ acc' x, x ∈ xs → f acc' x = g acc' x) :
-    xs.foldl f acc = xs.foldl g acc := by
-  induction xs generalizing acc with
-  | nil => simp
-  | cons x xs ih =>
-      simp only [List.foldl_cons]
-      rw [h acc x (by simp)]
-      apply ih
-      intro acc' y hy
-      exact h acc' y (by simp [hy])
-
 private lemma evalWithPowersLoop_eq_foldl_range [Semiring R]
     (coeffs powers : Array R) (limit : Nat) (hcoeffs : limit ≤ coeffs.size)
     (hpowers : limit ≤ powers.size) (i : Nat) (acc : R) :
@@ -160,7 +149,7 @@ private lemma foldl_zipIdx_eq_range'_getD_aux [Semiring R]
       rw [List.range'_succ, List.foldl_cons]
       simp only [Nat.sub_self, List.getD_cons_zero]
       rw [ih]
-      apply list_foldl_congr
+      apply List.foldl_congr_of_mem
       intro _acc' j hj
       have hsub : j - offset = (j - (offset + 1)) + 1 := by
         have hjmem := List.mem_range'.mp hj
@@ -172,12 +161,6 @@ private lemma array_getD_toList {α : Type*} (a : Array α) (i : Nat) (d : α) :
   cases a
   simp
 
-private lemma array_foldl_zipIdx_eq_list [Semiring R] (coeffs : Array R) (x acc : R) :
-    Array.foldl (fun acc ai ↦ acc + ai.1 * x ^ ai.2) acc coeffs.zipIdx 0 coeffs.size =
-      List.foldl (fun acc ai ↦ acc + ai.1 * x ^ ai.2) acc coeffs.toList.zipIdx := by
-  cases coeffs
-  simp
-
 private lemma evalWithPowers_eq_eval [Semiring R] (coeffs powers : Array R) (x : R)
     (hsize : coeffs.size ≤ powers.size)
     (hpowers : ∀ i, i < coeffs.size → powers.getD i 0 = x ^ i) :
@@ -185,9 +168,9 @@ private lemma evalWithPowers_eq_eval [Semiring R] (coeffs powers : Array R) (x :
       coeffs.zipIdx.foldl (fun acc ai ↦ acc + ai.1 * x ^ ai.2) 0 := by
   simp [ManyEval.evalWithPowers, Nat.min_eq_left hsize]
   rw [evalWithPowersLoop_eq_foldl_range]
-  rw [array_foldl_zipIdx_eq_list]
+  rw [Array.foldl_zipIdx_eq_foldl_toList_zipIdx_size]
   rw [foldl_zipIdx_eq_range'_getD_aux]
-  apply list_foldl_congr
+  apply List.foldl_congr_of_mem
   intro _acc' i hi
   rw [← array_getD_toList]
   rw [hpowers i]

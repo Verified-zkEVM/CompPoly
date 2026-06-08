@@ -29,6 +29,19 @@ theorem append_getLast_dropLast {α : Type u} (l : List α) (h : l ≠ []) :
       simp only [cons_append, cons.injEq, true_and]
       apply ih
 
+theorem foldl_congr_of_mem {α : Type u} {β : Type v} {f g : α → β → α}
+    (xs : List β) (acc : α) (h : ∀ acc' x, x ∈ xs → f acc' x = g acc' x) :
+    xs.foldl f acc = xs.foldl g acc := by
+  induction xs generalizing acc with
+  | nil =>
+      simp
+  | cons x xs ih =>
+      simp only [foldl_cons]
+      rw [h acc x (by simp)]
+      apply ih
+      intro acc' y hy
+      exact h acc' y (by simp [hy])
+
 theorem foldl_split_outer {α : Type u} {β : Type v} (f : α → β → α) (init : α)
     (l : List β) (h : l ≠ []): foldl (f:=f) (init:=init) (l)
     = f (foldl (f:=f) (init:=init) (l.dropLast)) (l.getLast (by omega)) := by

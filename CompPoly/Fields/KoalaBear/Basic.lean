@@ -164,7 +164,7 @@ lemma twoAdicity_maximal : ¬ (2 ^ (twoAdicity + 1)) ∣ (fieldSize - 1) := by
   decide
 
 /-- Repeated squaring: `sqChain g n = g ^ (2^n)`.
-    Does `n` multiplications instead of `2^n`, making it kernel-friendly. -/
+    Uses `n` multiplications and avoids expanding the exponent into `2^n` steps. -/
 private def sqChain (g : Field) : Nat → Field
   | 0 => g
   | n + 1 => let h := sqChain g n; h * h
@@ -285,5 +285,69 @@ lemma twoAdicGenerators_order (bits : Fin (twoAdicity + 1)) :
     exact orderOf_eq_prime_pow
       (twoAdicGenerators_pow_twoPow_ne_one_of_lt (bits := ⟨n + 1, hb⟩) (m := n) (by simp))
       (twoAdicGenerators_pow_twoPow_eq_one ⟨n + 1, hb⟩)
+
+/-- Primitive generator used by the smooth field-root splitter. -/
+def primitiveRoot : Field := (3 : Field)
+
+set_option maxRecDepth 100000 in
+/-- `primitiveRoot ^ 127` is the maximal two-adic generator. -/
+private lemma primitiveRoot_pow_127_eq_twoAdicGenerator :
+    primitiveRoot ^ 127 =
+      twoAdicGenerators[(⟨twoAdicity, by omega⟩ : Fin (twoAdicity + 1))] := by
+  unfold primitiveRoot twoAdicity
+  decide
+
+/-- `primitiveRoot ^ 2^twoAdicity` is nontrivial. -/
+private lemma primitiveRoot_pow_twoAdicity_ne_one :
+    primitiveRoot ^ (2 ^ twoAdicity) ≠ (1 : Field) := by
+  rw [← sqChain_eq_pow_two_pow]
+  unfold primitiveRoot twoAdicity
+  decide
+
+/-- Prime divisors of `fieldSize - 1` are exactly `2` and `127`. -/
+private lemma prime_dvd_fieldSize_sub_one_cases {p : Nat}
+    (hp : p.Prime) (hdvd : p ∣ fieldSize - 1) :
+    p = 2 ∨ p = 127 := by
+  have hpdvd : p ∣ 2 ^ twoAdicity * 127 := by
+    rw [← fieldSize_sub_one_factorization]
+    exact hdvd
+  rcases hp.dvd_mul.mp hpdvd with h2pow | h127
+  · left
+    exact (Nat.prime_dvd_prime_iff_eq hp Nat.prime_two).mp
+      (hp.dvd_of_dvd_pow h2pow)
+  · right
+    exact (Nat.prime_dvd_prime_iff_eq hp (by decide : Nat.Prime 127)).mp h127
+
+/-- The smooth field-root splitter generator has full multiplicative order. -/
+lemma primitiveRoot_order : orderOf primitiveRoot = fieldSize - 1 := by
+  refine orderOf_eq_of_pow_and_pow_div_prime (n := fieldSize - 1) ?_ ?_ ?_
+  · unfold fieldSize
+    omega
+  · exact ZMod.pow_card_sub_one_eq_one (a := primitiveRoot) (by
+      unfold primitiveRoot
+      decide)
+  · intro p hp hdvd
+    rcases prime_dvd_fieldSize_sub_one_cases hp hdvd with rfl | rfl
+    · rw [fieldSize_sub_one_factorization, twoAdicity]
+      have hdiv : (2 ^ 24 * 127) / 2 = 127 * 2 ^ 23 := by decide
+      rw [hdiv, pow_mul, primitiveRoot_pow_127_eq_twoAdicGenerator]
+      exact twoAdicGenerators_pow_twoPow_ne_one_of_lt
+        (bits := (⟨twoAdicity, by omega⟩ : Fin (twoAdicity + 1))) (m := 23)
+        (by simp [twoAdicity])
+    · rw [fieldSize_sub_one_factorization]
+      have hdiv : (2 ^ twoAdicity * 127) / 127 = 2 ^ twoAdicity :=
+        by decide
+      rw [hdiv]
+      exact primitiveRoot_pow_twoAdicity_ne_one
+
+/-- Smooth subgroup refinement schedule for `fieldSize - 1 = 2^24 * 127`. -/
+def smoothRootSchedule : Array Nat :=
+  (Array.replicate twoAdicity 2).push 127
+
+/-- The KoalaBear smooth schedule refines the multiplicative group down to singleton cosets. -/
+lemma smoothRootSchedule_fold_eq_one :
+    smoothRootSchedule.toList.foldl (fun order ell ↦ order / ell) (fieldSize - 1) = 1 := by
+  unfold smoothRootSchedule fieldSize twoAdicity
+  decide
 
 end KoalaBear
