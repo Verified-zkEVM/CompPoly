@@ -1294,7 +1294,7 @@ lemma getBit_of_binaryFinMapToNat {n : ℕ} (m : Fin n → ℕ) (h_binary: ∀ j
   induction n with
   | zero =>
     intro k;
-    simp only [Nat.pow_zero, Fin.val_eq_zero, _root_.not_lt_zero, ↓reduceDIte]
+    simp only [Nat.pow_zero, Fin.val_eq_zero, Nat.not_lt_zero, ↓reduceDIte]
     exact getBit_zero_eq_zero
   | succ n ih =>
     -- Inductive step: Assume the property holds for `n`, prove it for `n+1`.
