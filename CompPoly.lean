@@ -3,9 +3,16 @@ import CompPoly.Bivariate.CMvEquiv
 import CompPoly.Bivariate.Deriv
 import CompPoly.Bivariate.Factor
 import CompPoly.Bivariate.FactorMonic
+import CompPoly.Bivariate.GuruswamiSudan.Compose
 import CompPoly.Bivariate.GuruswamiSudan.Context
+import CompPoly.Bivariate.GuruswamiSudan.Context
+import CompPoly.Bivariate.GuruswamiSudan.Hasse
+import CompPoly.Bivariate.GuruswamiSudan.Monomials
 import CompPoly.Bivariate.GuruswamiSudan.Polynomial
 import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
+import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
+import CompPoly.Bivariate.GuruswamiSudan.Root
+import CompPoly.Bivariate.GuruswamiSudan.Root.Basic
 import CompPoly.Bivariate.GuruswamiSudan.Root.Common
 import CompPoly.Bivariate.GuruswamiSudan.Root.Common.Lemmas
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots
