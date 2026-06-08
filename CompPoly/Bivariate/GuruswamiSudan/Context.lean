@@ -6,6 +6,7 @@ Authors: Valerii Huhnin
 
 import CompPoly.Bivariate.Deriv
 import CompPoly.Bivariate.GuruswamiSudan.Compose
+import CompPoly.LinearAlgebra.Dense
 
 /-!
 # Guruswami-Sudan Backend Contexts
@@ -47,6 +48,54 @@ def ValidInterpolationWitness {F : Type*}
     CBivariate.natWeightedDegree Q 1 (yWeight params) ≤ params.weightedDegreeBound ∧
       ∀ point, point ∈ points.toList →
         CBivariate.hasMultiplicity Q params.multiplicity point.1 point.2
+
+/-- A dense homogeneous linear-kernel backend.
+
+The operation returns a nonzero kernel witness in the backend's chosen
+normalization when it can find one. Completeness is stated in the negative form
+needed by dense interpolation systems: if no witness is returned, no nonzero
+homogeneous solution exists.
+-/
+structure LinearKernelContext (F : Type*) [Field F] [BEq F] [LawfulBEq F] where
+  homogeneousWitness : DenseMatrix F → Option (Array F)
+  witness_width :
+    ∀ {M : DenseMatrix F} {v : Array F},
+      homogeneousWitness M = some v →
+        DenseMatrix.VectorWidth M v
+  witness_sound :
+    ∀ {M : DenseMatrix F} {v : Array F},
+      DenseMatrix.WellFormed M →
+        homogeneousWitness M = some v →
+          DenseMatrix.IsHomogeneousSolution M v
+  witness_nonzero :
+    ∀ {M : DenseMatrix F} {v : Array F},
+      homogeneousWitness M = some v →
+        DenseMatrix.NonzeroVector v
+  witness_complete :
+    ∀ {M : DenseMatrix F},
+      DenseMatrix.WellFormed M →
+        homogeneousWitness M = none →
+          ∀ v,
+            DenseMatrix.VectorWidth M v →
+              DenseMatrix.IsHomogeneousSolution M v →
+                ¬ (DenseMatrix.NonzeroVector v)
+
+/-- The dense Gaussian-elimination homogeneous-kernel backend. -/
+def denseLinearKernelContext (F : Type*) [Field F] [BEq F] [LawfulBEq F] :
+    LinearKernelContext F where
+  homogeneousWitness := DenseMatrix.homogeneousWitness
+  witness_width := by
+    intro M v h
+    exact DenseMatrix.homogeneousWitness_width h
+  witness_sound := by
+    intro M v hM h
+    exact (DenseMatrix.homogeneousWitness_sound hM h).2.1
+  witness_nonzero := by
+    intro M v h
+    exact DenseMatrix.homogeneousWitness_nonzero h
+  witness_complete := by
+    intro M hM h v hvw hv
+    exact DenseMatrix.homogeneousWitness_none_complete hM h v hvw hv
 
 /-- Guruswami-Sudan-facing interpolation backend.
 
