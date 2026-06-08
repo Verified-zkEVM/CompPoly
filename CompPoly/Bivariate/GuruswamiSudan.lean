@@ -17,6 +17,9 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Algorithm
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Polynomial
 import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
+import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Algorithm
+import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Correctness
+import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Lemmas
 import CompPoly.Bivariate.GuruswamiSudan.Root.Common
 import CompPoly.Bivariate.GuruswamiSudan.Root.Common.Lemmas
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots
