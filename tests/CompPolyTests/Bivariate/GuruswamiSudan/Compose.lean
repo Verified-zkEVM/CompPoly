@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
 
-import CompPoly.Bivariate.GuruswamiSudan.Polynomial
+import CompPoly.Bivariate.GuruswamiSudan.Compose
 import Mathlib.Algebra.Field.ZMod
 
 /-!
