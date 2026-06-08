@@ -327,22 +327,9 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       convert (binaryTowerAlgebra_apply_assoc (l:=l + x.val + 1) (mid:=r1) (r:=r)
         (h_l_le_mid:=by omega) (h_mid_le_r:=by omega)
         ((𝕏 (l + x.val)) ^ Nat.getBit x.val j.val)).symm using 1
-      rw! (castMode:=.all) [show r = r1 + 1 by omega]
-      convert (coe_eq_algebraMap_adjacent_tower r1
-        (((@binaryAlgebraTower (l:=l + x.val + 1) (r:=r1) (h_le:=by omega)).algebraMap)
-          (𝕏 (l + x.val) ^ Nat.getBit x.val j.val))) using 1
+      subst r
       rw! (castMode:=.all) [←h_r1_eq_l_plus_prevDiff]
-      rw! (castMode:=.all) [hr]
-      simp only [eq_mp_eq_cast]
-      erw [cast_eq]
-      change (algebraMap (BTField r1) (BTField (r1 + 1)))
-          (((@binaryAlgebraTower (l:=l + x.val + 1) (r:=r1) (h_le:=by omega)).algebraMap)
-            (𝕏 (l + x.val) ^ Nat.getBit x.val j.val)) =
-        (AdjoinRoot.of (poly r1))
-          (((@binaryAlgebraTower (l:=l + x.val + 1) (r:=r1) (h_le:=by omega)).algebraMap)
-            (𝕏 (l + x.val) ^ Nat.getBit x.val j.val))
-      rw [algebraMap_adjacent_tower_succ_eq_Adjoin_of]
-      rfl
+      simp only
 
 end MultilinearBasis
 

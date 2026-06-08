@@ -224,14 +224,6 @@ lemma algebraMap_adjacent_tower_def (l : ℕ) :
   rw [binaryTowerAlgebra_def]
   exact towerAlgebraMap_succ_1 l
 
-lemma coe_eq_algebraMap_adjacent_tower (l : ℕ) (x : BTField l) :
-    (x : BTField (l + 1)) = (algebraMap (BTField l) (BTField (l + 1))) x := by
-  rw [algebraMap_adjacent_tower_def]
-  unfold canonicalEmbedding
-  simp only [BTField.eq_1, poly.eq_1, Z.eq_1, eq_mp_eq_cast]
-  erw [cast_eq]
-  rfl
-
 lemma algebraMap_adjacent_tower_succ_eq_Adjoin_of (k : ℕ) :
     (algebraMap (BTField k) (BTField (k + 1))) = of (poly k) := by
   rw [algebraMap_adjacent_tower_def]
