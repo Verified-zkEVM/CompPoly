@@ -6,14 +6,16 @@ import CompPoly.Bivariate.FactorMonic
 import CompPoly.Bivariate.GuruswamiSudan.Compose
 import CompPoly.Bivariate.GuruswamiSudan.Context
 import CompPoly.Bivariate.GuruswamiSudan.Context
+import CompPoly.Bivariate.GuruswamiSudan.Context
 import CompPoly.Bivariate.GuruswamiSudan.Hasse
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Basic
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Algorithm
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Monomials
 import CompPoly.Bivariate.GuruswamiSudan.Polynomial
-import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
 import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
 import CompPoly.Bivariate.GuruswamiSudan.Root
 import CompPoly.Bivariate.GuruswamiSudan.Root.Basic
@@ -88,6 +90,7 @@ import CompPoly.Fields.KoalaBear.Fast
 import CompPoly.Fields.Mersenne
 import CompPoly.Fields.PrattCertificate
 import CompPoly.Fields.Secp256k1
+import CompPoly.LinearAlgebra.Dense
 import CompPoly.LinearAlgebra.Dense
 import CompPoly.LinearAlgebra.Dense.Basic
 import CompPoly.LinearAlgebra.Dense.Kernel
