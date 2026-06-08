@@ -52,6 +52,18 @@ noncomputable example (p : CPolynomial F48) :
       GF2_48.smoothSubproductRootContext)
     p
 
+noncomputable example (p : CPolynomial F48) :
+    Array F48 :=
+  rootsWith GF2_48.finiteFieldContext
+    (CPolynomial.Roots.FiniteField.lasVegasLinearFactorProductSplitterWithTrace
+      CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive
+      GF2_48.finiteFieldContext
+      GF2_48.fieldEnumeration
+      GF2_48.shoupTraceContext
+      GF2_48.lasVegasConfig
+      GF2_48.lasVegasProbeFamily)
+    p
+
 noncomputable example (p : CPolynomial F72) :
     Array F72 :=
   rootsWith GF2_72.finiteFieldContext
@@ -73,6 +85,18 @@ noncomputable example (p : CPolynomial F72) :
     (CPolynomial.Roots.FiniteField.smoothLinearFactorProductSplitterWith
       CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive
       GF2_72.smoothSubproductRootContext)
+    p
+
+noncomputable example (p : CPolynomial F72) :
+    Array F72 :=
+  rootsWith GF2_72.finiteFieldContext
+    (CPolynomial.Roots.FiniteField.lasVegasLinearFactorProductSplitterWithTrace
+      CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive
+      GF2_72.finiteFieldContext
+      GF2_72.fieldEnumeration
+      GF2_72.shoupTraceContext
+      GF2_72.lasVegasConfig
+      GF2_72.lasVegasProbeFamily)
     p
 
 end CompPolyTests.Univariate.Roots.Binary

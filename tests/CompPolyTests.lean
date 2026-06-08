@@ -54,5 +54,6 @@ import CompPolyTests.Univariate.Raw
 import CompPolyTests.Univariate.Roots.Enumeration
 import CompPolyTests.Univariate.Roots.FiniteField
 import CompPolyTests.Univariate.Roots.Binary
+import CompPolyTests.Univariate.Roots.LasVegas
 import CompPolyTests.Univariate.Roots.Shoup
 import CompPolyTests.Univariate.ToPoly
