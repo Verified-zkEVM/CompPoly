@@ -196,6 +196,18 @@ theorem gcdMonic_linearFactor_of_root {p : CPolynomial F} {a : F}
   intro i
   rw [CPolynomial.coeff_toPoly, CPolynomial.coeff_toPoly, htoPoly]
 
+/-- `monicNormalize` fixes the already-monic linear factor `X - a`. -/
+theorem monicNormalize_linearFactor (a : F) :
+    CPolynomial.monicNormalize (CPolynomial.linearFactor a) = CPolynomial.linearFactor a := by
+  classical
+  have htoPoly : (CPolynomial.monicNormalize (CPolynomial.linearFactor a)).toPoly =
+      (CPolynomial.linearFactor a).toPoly := by
+    rw [CPolynomial.monicNormalize_toPoly_eq_normalize, linearFactor_toPoly,
+      (Polynomial.monic_X_sub_C a).normalize_eq_self]
+  apply CPolynomial.eq_iff_coeff.mpr
+  intro i
+  rw [CPolynomial.coeff_toPoly, CPolynomial.coeff_toPoly, htoPoly]
+
 /-- Cantor–Zassenhaus separation driven by an explicit shift schedule
 (structural recursion on the schedule).
 
