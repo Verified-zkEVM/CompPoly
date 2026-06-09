@@ -272,6 +272,38 @@ theorem czSound (q : Nat) (shifts : List F) (p factor : CPolynomial F)
           · exact ih _ h
           · exact ih _ h
 
+/-- A represented linear factor has nonzero degree-one coefficient. -/
+theorem represented_coeff_one_ne_zero {q : CPolynomial F}
+    (hq : isRepresentedLinearFactor q = true) : CPolynomial.coeff q 1 ≠ 0 := by
+  intro h
+  rw [isRepresentedLinearFactor, h] at hq
+  simp at hq
+
+/-- A represented linear factor is neither `0` nor `1`. -/
+theorem represented_zero_one_eq_false {q : CPolynomial F}
+    (hq : isRepresentedLinearFactor q = true) : (q == 0 || q == 1) = false := by
+  have hc := represented_coeff_one_ne_zero hq
+  have h0 : q ≠ 0 := by intro h; exact hc (by rw [h]; exact CPolynomial.coeff_zero 1)
+  have h1 : q ≠ 1 := by intro h; apply hc; rw [h]; rfl
+  simp [h0, h1]
+
+/-- Base case of completeness: if the (normalized) input is already a represented
+linear factor with root `a`, the schedule emits it as a root factor candidate. -/
+theorem czSplit_emits (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (q : Nat) (a : F) (shifts : List F) (p : CPolynomial F)
+    (hlin : isRepresentedLinearFactor (CPolynomial.monicNormalize p) = true)
+    (hroot : CPolynomial.eval a p = 0) :
+    ∃ factor, factor ∈ (czSplitWithShifts M D q shifts p).toList ∧
+      IsLinearRootFactorCandidate factor a := by
+  refine ⟨CPolynomial.monicNormalize p, ?_, ?_⟩
+  · cases shifts with
+    | nil => rw [czSplitWithShifts, if_pos hlin]; simp
+    | cons s rest =>
+        rw [czSplitWithShifts,
+          if_neg (by rw [represented_zero_one_eq_false hlin]; simp), if_pos hlin]
+        simp
+  · exact representedLinearFactor_candidate_of_root hlin (monicNormalize_root_of_root hroot)
+
 /-- Build a `LinearFactorProductSplitter` from the Cantor–Zassenhaus algorithm.
 
 `sound` is discharged by `czSound`. `complete` is left as a parameter: it is the
