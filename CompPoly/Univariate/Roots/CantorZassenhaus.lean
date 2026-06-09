@@ -101,6 +101,70 @@ theorem eval_shiftedPowModWith (M : CPolynomial.Raw.MulContext F)
   change CPolynomial.eval a (CPolynomial.X + CPolynomial.C s) ^ k = (a + s) ^ k
   rw [eval_X_add_C]
 
+/-- Evaluation is additive (the library provides `eval_sub` but not `eval_add`). -/
+theorem eval_add (a : F) (p₁ p₂ : CPolynomial F) :
+    CPolynomial.eval a (p₁ + p₂) = CPolynomial.eval a p₁ + CPolynomial.eval a p₂ := by
+  rw [CPolynomial.eval_toPoly, CPolynomial.toPoly_add, Polynomial.eval_add,
+    ← CPolynomial.eval_toPoly, ← CPolynomial.eval_toPoly]
+
+/-- The quotient bucket of `czRefine` is `gcd(p, X + s)`, normalized. -/
+theorem czRefine_fst (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (q : Nat) (s : F) (p : CPolynomial F) :
+    (czRefine M D q s p).1 =
+      CPolynomial.monicNormalize (CPolynomial.gcdMonic p (CPolynomial.X + CPolynomial.C s)) :=
+  rfl
+
+/-- The quadratic-residue bucket of `czRefine` is `gcd(p, w - 1)`, normalized. -/
+theorem czRefine_snd_fst (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (q : Nat) (s : F) (p : CPolynomial F) :
+    (czRefine M D q s p).2.1 =
+      CPolynomial.monicNormalize
+        (CPolynomial.gcdMonic p (shiftedPowModWith M D p s ((q - 1) / 2) - 1)) :=
+  rfl
+
+/-- The non-residue bucket of `czRefine` is `gcd(p, w + 1)`, normalized. -/
+theorem czRefine_snd_snd (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (q : Nat) (s : F) (p : CPolynomial F) :
+    (czRefine M D q s p).2.2 =
+      CPolynomial.monicNormalize
+        (CPolynomial.gcdMonic p (shiftedPowModWith M D p s ((q - 1) / 2) + 1)) :=
+  rfl
+
+/-- Quadratic-residue routing: for `q` odd and `a + s ≠ 0`, a root `a` of `p` is a
+root of one of the two residue buckets `gRes`/`gNon`. Uses Fermat (`a^q = a`) so
+that `((a+s)^((q-1)/2))² = 1`, hence the discriminating power is `±1` at `a`. -/
+theorem czRefine_root_in_residue_bucket
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (q : Nat) (hodd : Odd q) (hfrob : ∀ x : F, x ^ q = x)
+    (s a : F) (p : CPolynomial F)
+    (hp : CPolynomial.eval a p = 0) (hsa : a + s ≠ 0) :
+    CPolynomial.eval a (czRefine M D q s p).2.1 = 0 ∨
+      CPolynomial.eval a (czRefine M D q s p).2.2 = 0 := by
+  obtain ⟨m, hm⟩ := hodd
+  have hwa : CPolynomial.eval a (shiftedPowModWith M D p s ((q - 1) / 2))
+      = (a + s) ^ ((q - 1) / 2) :=
+    eval_shiftedPowModWith M D p s a ((q - 1) / 2) hp
+  have hpow : (a + s) ^ (q - 1) = 1 := by
+    have h := hfrob (a + s)
+    have hq : q = (q - 1) + 1 := by omega
+    rw [hq, pow_succ] at h
+    have hcancel : (a + s) ^ (q - 1) * (a + s) = 1 * (a + s) := by simpa using h
+    exact mul_right_cancel₀ hsa hcancel
+  have ht2 : CPolynomial.eval a (shiftedPowModWith M D p s ((q - 1) / 2))
+      * CPolynomial.eval a (shiftedPowModWith M D p s ((q - 1) / 2)) = 1 := by
+    rw [hwa, ← pow_add]
+    have hsum : (q - 1) / 2 + (q - 1) / 2 = q - 1 := by omega
+    rw [hsum, hpow]
+  rcases mul_self_eq_one_iff.mp ht2 with ht | ht
+  · left
+    rw [czRefine_snd_fst]
+    refine monicNormalize_root_of_root (gcdMonic_root_of_left_right hp ?_)
+    rw [eval_sub, eval_one, ht]; ring
+  · right
+    rw [czRefine_snd_snd]
+    refine monicNormalize_root_of_root (gcdMonic_root_of_left_right hp ?_)
+    rw [eval_add, eval_one, ht]; ring
+
 /-- Cantor–Zassenhaus separation driven by an explicit shift schedule
 (structural recursion on the schedule).
 
