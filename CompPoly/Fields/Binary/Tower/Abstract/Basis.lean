@@ -305,8 +305,8 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       conv_lhs =>
         rw [←Fin.prod_congr' (b:=r1-l) (a:=prevDiff) (h:=by omega)]
         simp only [Fin.val_cast]
-      simp (config := { failIfUnchanged := false }) only [algebraMap, instAlgebraSucc]
-      simp only [map_pow]
+      simp only [RingHom.map_pow]
+      simp only [←binaryTowerAlgebra_apply_assoc]
       ------------------ Equality of bit-based powers of generators -----------------
       --- The outtermost term
       have hfinProd_msb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)
@@ -322,11 +322,7 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
           (j:=⟨j, by omega⟩)
         simp only [Fin.is_lt, ↓reduceIte, revFinProdFinEquiv_symm_apply] at hfinProd_lsb
         rw [hfinProd_lsb]
-        congr 1
-        rw [←RingHom.comp_apply]
-        rw [←AlgebraTower.coherence']
-        rw! (castMode:=.all) [h_r]
-        simp only [Fin.val_cast, Fin.val_castSucc]
+        rfl
       · have h_exp_eq : (↑j : ℕ) / 2 ^ (r - l - 1) = (↑j : ℕ) / 2 ^ prevDiff :=
           congr_arg (fun d => (↑j : ℕ) / 2 ^ d) h_prevDiff.symm
         refine congr_arg₂ (· ^ ·)
