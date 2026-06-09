@@ -422,6 +422,18 @@ def czLinearFactorProductSplitterOf
     exact czSound q (czDefaultShifts q) p factor h
   complete := complete
 
+/-- The Cantor–Zassenhaus splitter packaged as a `LinearFactorProductSplitter`.
+`validInput q p` records the facts the completeness proof needs: `q` odd, the
+Frobenius identity `x^q = x`, and that the shift schedule `0..q-1` reaches every
+element of `F` (all three hold for a prime field `F = ZMod q` of odd order). -/
+def czLinearFactorProductSplitter : LinearFactorProductSplitter F :=
+  czLinearFactorProductSplitterOf
+    (fun q _ => Odd q ∧ (∀ x : F, x ^ q = x) ∧ (∀ x : F, x ∈ czDefaultShifts q))
+    (by
+      intro q p a hvalid hpne hroot
+      obtain ⟨hodd, hfrob, hcover⟩ := hvalid
+      exact czComplete q hodd hfrob hcover p a hpne hroot)
+
 end FiniteField
 
 end Roots
