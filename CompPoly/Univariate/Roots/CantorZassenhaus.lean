@@ -6,6 +6,7 @@ Authors: Dimitrios Mitsios
 
 import CompPoly.Univariate.Roots.Splitter
 import CompPoly.Univariate.Roots.Correctness
+import Mathlib.FieldTheory.Finite.Basic
 
 /-!
 # Cantor–Zassenhaus Linear-Factor Splitting
@@ -421,6 +422,26 @@ def czLinearFactorProductSplitterOf
     intro q p factor h
     exact czSound q (czDefaultShifts q) p factor h
   complete := complete
+
+/-- Over the prime field `ZMod q` the schedule `0..q-1` reaches every element,
+since every `x` equals `↑x.val` with `x.val < q`. -/
+theorem zmod_mem_czDefaultShifts (q : Nat) [Fact (Nat.Prime q)] (x : ZMod q) :
+    x ∈ czDefaultShifts q := by
+  haveI : NeZero q := ⟨(Fact.out : Nat.Prime q).pos.ne'⟩
+  rw [czDefaultShifts, List.mem_map]
+  exact ⟨x.val, List.mem_range.mpr (ZMod.val_lt x), ZMod.natCast_zmod_val x⟩
+
+/-- Completeness over a prime field `ZMod q` of odd order: every root of a nonzero
+polynomial is found by `czSplitLinearFactors`. Discharges the `validInput` facts
+of `czComplete` from `ZMod.pow_card` (Frobenius) and `zmod_mem_czDefaultShifts`
+(coverage). Applies to KoalaBear and BabyBear. -/
+theorem czComplete_zmod (q : Nat) [Fact (Nat.Prime q)] (hodd : Odd q)
+    (p : CPolynomial (ZMod q)) (a : ZMod q) (hpne : p ≠ 0)
+    (hroot : CPolynomial.eval a p = 0) :
+    ∃ factor, factor ∈ (czSplitLinearFactors q p).toList ∧
+      IsLinearRootFactorCandidate factor a :=
+  czComplete q hodd (fun x => ZMod.pow_card x) (fun x => zmod_mem_czDefaultShifts q x)
+    p a hpne hroot
 
 /-- The Cantor–Zassenhaus splitter packaged as a `LinearFactorProductSplitter`.
 `validInput q p` records the facts the completeness proof needs: `q` odd, the
