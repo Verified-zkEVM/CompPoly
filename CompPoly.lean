@@ -3,6 +3,7 @@ import CompPoly.Bivariate.CMvEquiv
 import CompPoly.Bivariate.Deriv
 import CompPoly.Bivariate.Factor
 import CompPoly.Bivariate.FactorMonic
+import CompPoly.Bivariate.Kronecker
 import CompPoly.Bivariate.ToPoly
 import CompPoly.Data.Array.Lemmas
 import CompPoly.Data.Classes.DCast
@@ -99,6 +100,7 @@ import CompPoly.Univariate.BatchEval.Correctness
 import CompPoly.Univariate.BatchEval.Naive
 import CompPoly.Univariate.BatchEval.SubproductTree
 import CompPoly.Univariate.CMvEquiv
+import CompPoly.Univariate.Context
 import CompPoly.Univariate.Deriv
 import CompPoly.Univariate.DivisionCorrectness
 import CompPoly.Univariate.EuclideanAlgorithm
@@ -107,6 +109,7 @@ import CompPoly.Univariate.Linear
 import CompPoly.Univariate.ManyEval
 import CompPoly.Univariate.ManyEval.Basic
 import CompPoly.Univariate.ManyEval.Correctness
+import CompPoly.Univariate.Modular
 import CompPoly.Univariate.NTT.BabyBear
 import CompPoly.Univariate.NTT.Domain
 import CompPoly.Univariate.NTT.Evaluation
@@ -133,10 +136,23 @@ import CompPoly.Univariate.NTTFast.Plan
 import CompPoly.Univariate.Quotient.Core
 import CompPoly.Univariate.Quotient.Equiv
 import CompPoly.Univariate.Raw
+import CompPoly.Univariate.Raw.Context
 import CompPoly.Univariate.Raw.Core
 import CompPoly.Univariate.Raw.Division
+import CompPoly.Univariate.Raw.Modular
 import CompPoly.Univariate.Raw.Ops
 import CompPoly.Univariate.Raw.Proofs
+import CompPoly.Univariate.Roots
+import CompPoly.Univariate.Roots.Backend
+import CompPoly.Univariate.Roots.Context
+import CompPoly.Univariate.Roots.Correctness
+import CompPoly.Univariate.Roots.Enumeration
+import CompPoly.Univariate.Roots.Extraction
+import CompPoly.Univariate.Roots.RootProduct
+import CompPoly.Univariate.Roots.SmoothSubgroup
+import CompPoly.Univariate.Roots.SmoothSubgroup.Basic
+import CompPoly.Univariate.Roots.SmoothSubgroup.Correctness
+import CompPoly.Univariate.Roots.Splitter
 import CompPoly.Univariate.ToPoly
 import CompPoly.Univariate.ToPoly.Core
 import CompPoly.Univariate.ToPoly.Degree

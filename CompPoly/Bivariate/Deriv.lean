@@ -38,18 +38,6 @@ namespace CompPoly
 
 namespace CBivariate
 
-/-- `CBivariate.coeff` as two composed `CPolynomial.coeff`. -/
-@[simp]
-lemma coeff_eq_coeff_coeff [Zero R] (f : CBivariate R) (i j : ℕ) :
-    CBivariate.coeff f i j = CPolynomial.coeff (CPolynomial.coeff f j) i := rfl
-
-/-- Bivariate coefficient distributes over addition. -/
-lemma coeff_add [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
-    (f g : CBivariate R) (i j : ℕ) :
-    CBivariate.coeff (f + g) i j = CBivariate.coeff f i j + CBivariate.coeff g i j := by
-  simp only [coeff_eq_coeff_coeff]
-  erw [CPolynomial.coeff_add, CPolynomial.coeff_add]
-
 /-- Partial derivative with respect to X: differentiate each Y-coefficient in X. -/
 def partialDerivX [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (f : CBivariate R) : CBivariate R :=
