@@ -28,11 +28,15 @@ For a shift `s : F`, with `w = (X + s)^((q-1)/2) mod p`:
 * `gcd(p, w - 1)` collects roots `r` with `r + s` a nonzero square;
 * `gcd(p, w + 1)` collects roots `r` with `r + s` a non-square.
 
-Iterating over a sequence of shifts separates all roots: for any two distinct
-roots, some shift sends them to different quadratic-residue classes. The split
-is correct for *every* shift; the shift sequence only governs termination, so no
-probabilistic reasoning enters correctness. See `czSound` (proved here) and the
-`complete` obligation, supplied to `czLinearFactorProductSplitterOf`.
+The split is correct for every shift, so no probabilistic reasoning enters
+correctness; the schedule only governs termination. Over a prime field the
+default schedule `0..q-1` reaches every element, and the root `a` is isolated at
+shift `s = -a` by the `gcd(p, X + s)` bucket. Soundness (`czSound`) and
+completeness over odd prime fields (`czComplete`, `czComplete_zmod`) are proved.
+
+The default schedule has length `q`, suitable for small fields. Efficient use on
+large fields needs a short schedule, whose completeness relies on quadratic-residue
+separation of distinct roots.
 
 ## References
 
@@ -71,11 +75,8 @@ def czRefine (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext 
   let gNon := CPolynomial.monicNormalize (CPolynomial.gcdMonic p (w + 1))
   (gZero, gRes, gNon)
 
-/-- The shift bucket `X + s` is exactly the monic linear factor with root `-s`.
-First step of the completeness argument: at shift `s = -a` the `gcd(p, X + s)`
-bucket isolates the root `a` directly, with no quadratic-residue reasoning. The
-residue buckets `w ± 1` are needed only for fields whose elements are not all
-reached by the prime-subfield shift schedule (extension fields). -/
+/-- The shift bucket `X + s` is the monic linear factor with root `-s`. At shift
+`s = -a` this isolates the root `a` directly, without quadratic-residue reasoning. -/
 theorem czShift_eq_linearFactor (s : F) :
     (CPolynomial.X + CPolynomial.C s : CPolynomial F) = CPolynomial.linearFactor (-s) := by
   rw [CPolynomial.linearFactor, neg_neg, add_comm]
@@ -87,8 +88,7 @@ theorem eval_X_add_C (a s : F) :
     CPolynomial.C_toPoly, Polynomial.eval_add, Polynomial.eval_X, Polynomial.eval_C]
 
 /-- At a root `a` of `p`, the shifted discriminating power evaluates as
-`(a + s)^k`. This is the analytic core of the quadratic-residue routing:
-`w(a) = (a + s)^((q-1)/2)`. Wraps `raw_eval_powModWith_eq_pow`. -/
+`(a + s)^k`. With `k = (q-1)/2` this is the value routed on by the residue buckets. -/
 theorem eval_shiftedPowModWith (M : CPolynomial.Raw.MulContext F)
     (D : CPolynomial.Raw.ModContext F) (p : CPolynomial F) (s a : F) (k : Nat)
     (hp : CPolynomial.eval a p = 0) :
@@ -398,13 +398,9 @@ theorem czComplete (q : Nat) (hodd : Odd q) (hfrob : ∀ x : F, x ^ q = x)
   exact czComplete_core CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive q
     hodd hfrob a (czDefaultShifts q) p hroot hpne (hcover (-a))
 
-/-- Build a `LinearFactorProductSplitter` from the Cantor–Zassenhaus algorithm.
-
-`sound` is discharged by `czSound`. `complete` is left as a parameter: it is the
-statement that, under `validInput`, the supplied shift schedule (here the default
-of length `q`) separates every root into its own linear factor. The proof rests
-on the quadratic-residue separation lemma (for distinct roots some shift splits
-them) and termination of the schedule — no probabilistic argument. -/
+/-- Build a `LinearFactorProductSplitter` from the algorithm, taking `validInput`
+and `complete` as parameters. `sound` is discharged by `czSound`. The packaged
+`czLinearFactorProductSplitter` supplies `complete` from `czComplete`. -/
 def czLinearFactorProductSplitterOf
     (validInput : Nat → CPolynomial F → Prop)
     (complete :
