@@ -165,6 +165,37 @@ theorem czRefine_root_in_residue_bucket
     refine monicNormalize_root_of_root (gcdMonic_root_of_left_right hp ?_)
     rw [eval_add, eval_one, ht]; ring
 
+/-- `linearFactor a` maps to the Mathlib monic linear polynomial `X - C a`. -/
+theorem linearFactor_toPoly (a : F) :
+    (CPolynomial.linearFactor a).toPoly = (Polynomial.X - Polynomial.C a) := by
+  rw [CPolynomial.linearFactor, CPolynomial.toPoly_add, CPolynomial.C_toPoly,
+    CPolynomial.X_toPoly, Polynomial.C_neg]
+  ring
+
+/-- Isolation: at a root `a` of `p`, the monic gcd of `p` with the linear factor
+`X - a` is exactly that linear factor. This makes the `s = -a` quotient bucket of
+`czRefine` equal to `linearFactor a`, isolating the root. -/
+theorem gcdMonic_linearFactor_of_root {p : CPolynomial F} {a : F}
+    (hroot : CPolynomial.eval a p = 0) :
+    CPolynomial.gcdMonic p (CPolynomial.linearFactor a) = CPolynomial.linearFactor a := by
+  classical
+  have hisroot : p.toPoly.IsRoot a := by
+    rw [Polynomial.IsRoot.def, ← CPolynomial.eval_toPoly]; exact hroot
+  have hdvd : (Polynomial.X - Polynomial.C a) ∣ p.toPoly :=
+    Polynomial.dvd_iff_isRoot.mpr hisroot
+  have hg1 : EuclideanDomain.gcd p.toPoly (Polynomial.X - Polynomial.C a) ∣
+      (Polynomial.X - Polynomial.C a) := EuclideanDomain.gcd_dvd_right _ _
+  have hg2 : (Polynomial.X - Polynomial.C a) ∣
+      EuclideanDomain.gcd p.toPoly (Polynomial.X - Polynomial.C a) :=
+    EuclideanDomain.dvd_gcd hdvd dvd_rfl
+  have htoPoly : (CPolynomial.gcdMonic p (CPolynomial.linearFactor a)).toPoly =
+      (CPolynomial.linearFactor a).toPoly := by
+    rw [CPolynomial.gcdMonic_toPoly_eq_normalize_gcd, linearFactor_toPoly,
+      normalize_eq_normalize hg1 hg2, (Polynomial.monic_X_sub_C a).normalize_eq_self]
+  apply CPolynomial.eq_iff_coeff.mpr
+  intro i
+  rw [CPolynomial.coeff_toPoly, CPolynomial.coeff_toPoly, htoPoly]
+
 /-- Cantor–Zassenhaus separation driven by an explicit shift schedule
 (structural recursion on the schedule).
 
