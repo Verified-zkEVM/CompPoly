@@ -210,7 +210,7 @@ theorem ofPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring 
 /-- The outer coefficient of `toPoly p` is `CPolynomial.coeff p n` converted to `R[X]`. -/
 theorem toPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Semiring R]
     (p : CBivariate R) (n : ℕ) : (toPoly p).coeff n = (CPolynomial.coeff p n).toPoly := by
-      rw [ CBivariate.toPoly, Polynomial.finset_sum_coeff ]
+      rw [ CBivariate.toPoly, Polynomial.finsetSum_coeff ]
       rw [ Finset.sum_eq_single n ] <;> simp +contextual [ Polynomial.coeff_monomial ]
       simp_all +decide [ CPolynomial.mem_support_iff ]
       aesop
@@ -378,7 +378,7 @@ theorem evalY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring 
   simp only [Array.length_toList, Array.getElem?_toList]
   symm
   unfold CBivariate.toPoly
-  simp +decide [ Polynomial.eval_finset_sum ]
+  simp +decide [ Polynomial.eval_finsetSum ]
   rw [ Finset.sum_subset ]
   · exact fun i hi ↦ Finset.mem_range.mpr
       (Nat.lt_of_lt_of_le (Finset.mem_range.mp (Finset.mem_filter.mp hi |>.1)) (by simp))
@@ -468,7 +468,7 @@ theorem natDegreeY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semi
 theorem coeff_toPoly_Y {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
     (f : CBivariate R) (j : ℕ) :
     (toPoly f).coeff j = CPolynomial.toPoly (f.val.coeff j) := by
-      erw [ Polynomial.finset_sum_coeff ]
+      erw [ Polynomial.finsetSum_coeff ]
       rw [ Finset.sum_eq_single j ] <;> simp +contextual [ Polynomial.coeff_monomial ]
       intro hj
       rw [ CPolynomial.support ] at hj
@@ -628,7 +628,7 @@ theorem evalX_toPoly_eval_commute {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial 
             Polynomial.eval a (∑ j ∈ s, g j * Polynomial.C (y ^ j)) =
               ∑ j ∈ s, Polynomial.eval a (g j) * y ^ j := by
       exact fun s g hg => by
-        rw [Polynomial.eval_finset_sum,
+        rw [Polynomial.eval_finsetSum,
           Finset.sum_congr rfl (fun j hj => h_eval_mul_C _ _ (hg j hj))]
     convert h_sum _ _ _
     · simp +decide [Polynomial.eval_eq_sum, Polynomial.sum_def]

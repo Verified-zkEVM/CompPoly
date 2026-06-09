@@ -106,11 +106,10 @@ theorem CMvPolynomial.eval_ext_univariate
   have hagreeUni :
       d < (S.filter (fun r ↦ pUni.eval r = qUni.eval r)).card := by
     convert hagree using 3
-    · ext r
-      rw [show pUni = (CompPoly.CPolynomial.cmvEquiv (R := R)).symm p from rfl,
-        show qUni = (CompPoly.CPolynomial.cmvEquiv (R := R)).symm q from rfl,
-        CompPoly.CPolynomial.eval_cmvEquiv_symm,
-        CompPoly.CPolynomial.eval_cmvEquiv_symm]
+    rw [show pUni = (CompPoly.CPolynomial.cmvEquiv (R := R)).symm p from rfl,
+      show qUni = (CompPoly.CPolynomial.cmvEquiv (R := R)).symm q from rfl,
+      CompPoly.CPolynomial.eval_cmvEquiv_symm,
+      CompPoly.CPolynomial.eval_cmvEquiv_symm]
   have hUni : pUni = qUni :=
     CompPoly.CPolynomial.eval_ext (p := pUni) (q := qUni) hdegUni hagreeUni
   exact (CompPoly.CPolynomial.cmvEquiv (R := R)).symm.injective hUni

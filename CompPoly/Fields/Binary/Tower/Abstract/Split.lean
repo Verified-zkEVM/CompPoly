@@ -149,10 +149,10 @@ theorem mul_join_via_add_smul (k : ℕ) (h_pos : k > 0) (a₁ a₀ b₁ b₀ : B
 
   have h_a₁_b₀_Z_k : (algebraMap (BTField (k - 1)) (BTField k)) b₀ * a₁ • Z k
     = (a₁ * b₀) • Z k := by
-    rw [Algebra.smul_def', ←algebraMap, ←mul_assoc, ←map_mul, ←Algebra.smul_def, mul_comm]
+    rw [Algebra.smul_def', ←mul_assoc, ←map_mul, ←Algebra.smul_def, mul_comm]
   have h_a₀_b₁_Z_k :  (algebraMap (BTField (k - 1)) (BTField k)) a₀ * b₁ • Z k
     = (a₀ * b₁) • Z k := by
-    rw [Algebra.smul_def', ←algebraMap, ←mul_assoc, ←map_mul, ←Algebra.smul_def, mul_comm]
+    rw [Algebra.smul_def', ←mul_assoc, ←map_mul, ←Algebra.smul_def, mul_comm]
   have h_Z_k_pow_2 : (Z k) ^ 2 = Z (k - 1) • Z k + 1 := by
     rw [sumZeroIffEq (x:=(Z k)^2) (y:=Z (k - 1) • Z k + 1).mp]
     rw [←add_assoc]
@@ -161,7 +161,6 @@ theorem mul_join_via_add_smul (k : ℕ) (h_pos : k > 0) (a₁ a₀ b₁ b₀ : B
     rw! (castMode:=.all) [Nat.sub_one_add_one (by omega)] at h
     simp only [eq_mp_eq_cast] at h
     convert h
-    rw [Algebra.algebraMap]
     conv_lhs =>
       simp only [instAlgebra];
       change (towerAlgebraMap (l:=k-1) (r:=k) (h_le:=by omega)) (Z (k - 1))
@@ -307,9 +306,9 @@ lemma split_algebraMap_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : BTField (k - 1))
   apply h.mp
   -- ⊢ mappedVal = join_via_add_smul h_pos 0 x
   unfold mappedVal
-  rw [algebraMap, Algebra.algebraMap]
-  unfold instAlgebra binaryAlgebraTower
-  rw [AlgebraTower.toAlgebra, AlgebraTower.algebraMap, instAlgebraTowerNatBTField]
+  unfold instAlgebra binaryAlgebraTower AlgebraTower.toAlgebra
+  simp only [RingHom.algebraMap_toAlgebra]
+  rw [AlgebraTower.algebraMap, instAlgebraTowerNatBTField]
   simp only
   have h_concrete_embedding_succ_1 := towerAlgebraMap_succ_1 (k:=k-1)
   rw! (castMode:=.all) [Nat.sub_one_add_one (by omega)] at h_concrete_embedding_succ_1
@@ -327,12 +326,11 @@ lemma split_algebraMap_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : BTField (k - 1))
   have h := algebraMap_adjacent_tower_def (l:=k-1)
   rw! (castMode:=.all) [Nat.sub_one_add_one (by omega)] at h
   simp only [eqRec_eq_cast] at h
-  rw [algebraMap, Algebra.algebraMap] at ⊢ h
   rw! (castMode:=.all) [Nat.sub_one_add_one (by omega)] at h
   simp only [cast_eq] at h
   unfold binaryAlgebraTower AlgebraTower.toAlgebra AlgebraTower.algebraMap
     instAlgebraTowerNatBTField
-  simp only [] -- normalize eqRec before rewrite
+  simp only [RingHom.algebraMap_toAlgebra] -- unfold algebraMap (v4.30: no longer rw-unfoldable)
   -- Both sides reduce to (cast ⋯ (canonicalEmbedding (k-1))) x through different paths
   erw [h_concrete_embedding_succ_1]; simp only [eqRec_eq_cast]
 

@@ -136,8 +136,7 @@ def basisSucc (k : ℕ) : Basis (Fin 2) (ConcreteBTField k) (ConcreteBTField (k 
       rw [←h_add_smul]
       unfold join_via_add_smul
       simp only [Nat.add_one_sub_one]
-      rw [algebraMap, Algebra.algebraMap, ConcreteBTFieldAlgebra_def]
-      simp only
+      simp only [RingHom.algebraMap_toAlgebra]
       simp only [generator]
       rw [add_comm]
       congr -- .Q.E.D
@@ -422,8 +421,8 @@ lemma algebraMap_𝕏_eq_of_index_eq (r k m : ℕ) (h_k_le : k + 1 ≤ r) (h_m_l
     (h_eq : k = m) :
     letI := ConcreteBTFieldAlgebra (l := k + 1) (r := r) (h_le := h_k_le)
     letI := ConcreteBTFieldAlgebra (l := m + 1) (r := r) (h_le := h_m_le)
-    (Algebra.algebraMap (𝕏 k) : ConcreteBTField r) =
-      (Algebra.algebraMap (𝕏 m) : ConcreteBTField r) := by
+    (algebraMap _ _ (𝕏 k) : ConcreteBTField r) =
+      (algebraMap _ _ (𝕏 m) : ConcreteBTField r) := by
   subst h_eq
   rfl
 
@@ -548,13 +547,11 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       simp_rw [algebraMap.coe_pow]
       simp_rw [algebraMap.coe_prod]
       unfold Algebra.cast
-      rw! (castMode:=.all) [←algebraMap]
       conv_lhs =>
         rw [←Fin.prod_congr' (b:=r1 - l) (a:=prevDiff) (h:=by omega)]
         simp only [Fin.val_cast]
-      simp (config := { failIfUnchanged := false }) only [algebraMap, instAlgebraSucc]
-      erw [RingHom.map_pow]
-      simp (config := { failIfUnchanged := false }) only [←ConcreteBTFieldAlgebra_apply_assoc]
+      simp only [RingHom.map_pow]
+      simp only [←ConcreteBTFieldAlgebra_apply_assoc]
       ------------------ Equality of bit-based powers of generators -----------------
       have hfinProd_msb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)
         (i:=⟨prevDiff, by omega⟩) (j:=⟨j, by omega⟩)

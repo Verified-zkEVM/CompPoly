@@ -277,7 +277,7 @@ lemma getSDomainBasisCoeff_of_sum_repr [NeZero R_rate] (i : Fin (ℓ + 1))
       simp only [Basis.repr_self]
     have hx_at_j_simplified :
         (∑ j_x, x_coeffs j_x • (b.repr (b j_x))) j = x_coeffs j := by
-      simp only [h_repr_basis, Finsupp.smul_single, smul_eq_mul, mul_one, Finsupp.coe_finset_sum,
+      simp only [h_repr_basis, Finsupp.smul_single, smul_eq_mul, mul_one, Finsupp.coe_finsetSum,
         Finset.sum_apply, Finsupp.single_apply, Finset.sum_ite_eq', Finset.mem_univ, ↓reduceIte]
     let x_coeffs_fs := Finsupp.equivFunOnFinite.symm x_coeffs
     let rhs_sum := ∑ j_x, (x_coeffs_fs j_x) • (b j_x)

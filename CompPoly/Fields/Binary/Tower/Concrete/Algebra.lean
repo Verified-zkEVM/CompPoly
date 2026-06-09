@@ -234,9 +234,9 @@ lemma split_algebraMap_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField 
   apply h
   -- ⊢ mappedVal = join h_pos zero x
   unfold mappedVal
-  rw [algebraMap, Algebra.algebraMap]
-  unfold instAlgebra ConcreteBTFieldAlgebra
-  rw [AlgebraTower.toAlgebra, AlgebraTower.algebraMap, instAlgebraTowerConcreteBTF]
+  unfold instAlgebra ConcreteBTFieldAlgebra AlgebraTower.toAlgebra
+  simp only [RingHom.algebraMap_toAlgebra]
+  rw [AlgebraTower.algebraMap, instAlgebraTowerConcreteBTF]
   simp only
   have h_concrete_embedding_succ_1 := concreteTowerAlgebraMap_succ_1 (k:=k-1)
   rw! (castMode:=.all) [Nat.sub_one_add_one (by omega)] at h_concrete_embedding_succ_1
@@ -439,8 +439,7 @@ lemma aeval_definingPoly_at_Z_succ (k : ℕ) :
   -- Z_square_mul_form uses instAlgebraLiftConcreteBTField internally
   rw [Z_square_mul_form (k:=k) (prev:=(getBTFResult (k:=k)))]
   rw [add_assoc]
-  rw [algebraMap, Algebra.algebraMap, instAlgebraLiftConcreteBTField]
-  simp only
+  simp only [RingHom.algebraMap_toAlgebra]
   -- f uses ConcreteBTFieldAlgebra, it's same as instAlgebraLiftConcreteBTField at step = 1
   rw [h_f_is_canonical_embedding, concreteTowerAlgebraMap_succ_1]
   simp only [canonicalAlgMap]; rw [mul_comm]

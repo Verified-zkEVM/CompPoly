@@ -360,7 +360,7 @@ lemma toPoly_ne_zero_iff_ne_zero {w : Nat} (v : BitVec w) :
     have h_coeff_formula : ∀ i : Fin w, (toPoly v).coeff i.val = if v.getLsb i then 1 else 0 := by
       intro i
       unfold toPoly
-      rw [finset_sum_coeff]
+      rw [finsetSum_coeff]
       have h_ite: ∀ b : Fin w, (if v.getLsb b then (X : (ZMod 2)[X])^b.val else 0).coeff i.val =
           if v.getLsb b then (if b = i then 1 else 0) else 0 := by
         intro b
@@ -470,7 +470,7 @@ lemma BitVec_lt_two_pow_of_toPoly_degree_lt {w d : ℕ} (v : BitVec w)
     have h_i_lt_w : i < w := by omega
     have h_coeff_one : (toPoly v).coeff i = 1 := by
       unfold toPoly
-      rw [finset_sum_coeff]
+      rw [finsetSum_coeff]
       rw [Finset.sum_eq_single ⟨i, h_i_lt_w⟩]
       · have h_getLsb_eq_testBit : v.getLsb ⟨i, h_i_lt_w⟩ = v.toNat.testBit i := by
           rfl
@@ -627,7 +627,7 @@ theorem toPoly_coeff {w : ℕ} (v : BitVec w) (n : ℕ) :
       (if h : n < w then (if v.getLsb ⟨n, h⟩ = true then (1 : ZMod 2) else 0) else 0) := by
   classical
   unfold toPoly
-  rw [Polynomial.finset_sum_coeff]
+  rw [Polynomial.finsetSum_coeff]
   by_cases h : n < w
   · -- case n < w
     simp only [dif_pos h]
@@ -667,7 +667,7 @@ theorem toPoly_coeff {w : ℕ} (v : BitVec w) (n : ℕ) :
         intro hi0_not
         simp [Finset.mem_univ] at hi0_not
     -- conclude
-    simpa [Polynomial.finset_sum_coeff, i0] using hmain
+    simpa [Polynomial.finsetSum_coeff, i0] using hmain
   · -- case ¬ n < w
     simp only [dif_neg h]
     -- show every summand has coefficient 0
