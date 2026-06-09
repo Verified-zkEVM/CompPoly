@@ -304,6 +304,99 @@ theorem czSplit_emits (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.Mo
         simp
   · exact representedLinearFactor_candidate_of_root hlin (monicNormalize_root_of_root hroot)
 
+/-- A linear factor vanishes at its own root. -/
+theorem eval_linearFactor_self (a : F) :
+    CPolynomial.eval a (CPolynomial.linearFactor a) = 0 := by
+  rw [CPolynomial.eval_toPoly, linearFactor_toPoly]; simp
+
+/-- Unfolding the non-leaf cons step into its three bucket recursions. -/
+theorem czSplitWithShifts_cons_else (M : CPolynomial.Raw.MulContext F)
+    (D : CPolynomial.Raw.ModContext F) (q : Nat) (s : F) (rest : List F) (p : CPolynomial F)
+    (h01 : (CPolynomial.monicNormalize p == 0 || CPolynomial.monicNormalize p == 1) = false)
+    (hlin : isRepresentedLinearFactor (CPolynomial.monicNormalize p) = false) :
+    czSplitWithShifts M D q (s :: rest) p =
+      czSplitWithShifts M D q rest (czRefine M D q s (CPolynomial.monicNormalize p)).1 ++
+        czSplitWithShifts M D q rest (czRefine M D q s (CPolynomial.monicNormalize p)).2.1 ++
+        czSplitWithShifts M D q rest (czRefine M D q s (CPolynomial.monicNormalize p)).2.2 := by
+  rw [czSplitWithShifts, if_neg (by rw [h01]; simp), if_neg (by rw [hlin]; simp)]
+
+/-- Completeness core: for `q` odd over a field where the schedule reaches `-a`,
+the Cantor–Zassenhaus recursion finds a root factor candidate for every root `a`.
+The recursion preserves the root into a residue bucket at each non-isolating
+shift, and isolates it at shift `s = -a` via the `X + s` quotient bucket. -/
+theorem czComplete_core (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (q : Nat) (hodd : Odd q) (hfrob : ∀ x : F, x ^ q = x) (a : F) :
+    ∀ (shifts : List F) (p : CPolynomial F),
+      CPolynomial.eval a p = 0 → p ≠ 0 → (-a) ∈ shifts →
+      ∃ factor, factor ∈ (czSplitWithShifts M D q shifts p).toList ∧
+        IsLinearRootFactorCandidate factor a := by
+  intro shifts
+  induction shifts with
+  | nil => intro p _ _ hmem; simp at hmem
+  | cons s rest ih =>
+      intro p hroot hpne hmem
+      by_cases hlin : isRepresentedLinearFactor (CPolynomial.monicNormalize p) = true
+      · exact czSplit_emits M D q a (s :: rest) p hlin hroot
+      · have hlinf : isRepresentedLinearFactor (CPolynomial.monicNormalize p) = false := by
+          simpa using hlin
+        have hp' : CPolynomial.eval a (CPolynomial.monicNormalize p) = 0 :=
+          monicNormalize_root_of_root hroot
+        have hp'ne : CPolynomial.monicNormalize p ≠ 0 := monicNormalize_ne_zero_of_ne_zero hpne
+        have hne1 : CPolynomial.monicNormalize p ≠ 1 := by
+          intro h; rw [h, eval_one] at hp'; exact one_ne_zero hp'
+        have h01 : (CPolynomial.monicNormalize p == 0 || CPolynomial.monicNormalize p == 1)
+            = false := by simp [hp'ne, hne1]
+        rw [czSplitWithShifts_cons_else M D q s rest p h01 hlinf]
+        by_cases hsa : a + s = 0
+        · have hgz : (czRefine M D q s (CPolynomial.monicNormalize p)).1 =
+              CPolynomial.linearFactor a := by
+            rw [czRefine_fst]
+            have hxs : (CPolynomial.X + CPolynomial.C s) = CPolynomial.linearFactor a := by
+              rw [czShift_eq_linearFactor]; congr 1; linear_combination -hsa
+            rw [hxs, gcdMonic_linearFactor_of_root hp', monicNormalize_linearFactor]
+          obtain ⟨factor, hfmem, hfcand⟩ :=
+            czSplit_emits M D q a rest (CPolynomial.linearFactor a)
+              (by rw [monicNormalize_linearFactor]; exact linearFactor_isRepresentedLinearFactor a)
+              (eval_linearFactor_self a)
+          refine ⟨factor, ?_, hfcand⟩
+          rw [hgz]
+          simp only [Array.toList_append, List.mem_append]
+          exact Or.inl (Or.inl hfmem)
+        · have hmemrest : (-a) ∈ rest := by
+            rcases List.mem_cons.mp hmem with h | h
+            · exact absurd (by linear_combination -h : a + s = 0) hsa
+            · exact h
+          rcases czRefine_root_in_residue_bucket M D q hodd hfrob s a
+            (CPolynomial.monicNormalize p) hp' hsa with hr | hr
+          · obtain ⟨factor, hfmem, hfcand⟩ :=
+              ih (czRefine M D q s (CPolynomial.monicNormalize p)).2.1 hr
+                (by rw [czRefine_snd_fst]
+                    exact monicNormalize_ne_zero_of_ne_zero (gcdMonic_ne_zero_of_left hp'ne))
+                hmemrest
+            refine ⟨factor, ?_, hfcand⟩
+            simp only [Array.toList_append, List.mem_append]
+            exact Or.inl (Or.inr hfmem)
+          · obtain ⟨factor, hfmem, hfcand⟩ :=
+              ih (czRefine M D q s (CPolynomial.monicNormalize p)).2.2 hr
+                (by rw [czRefine_snd_snd]
+                    exact monicNormalize_ne_zero_of_ne_zero (gcdMonic_ne_zero_of_left hp'ne))
+                hmemrest
+            refine ⟨factor, ?_, hfcand⟩
+            simp only [Array.toList_append, List.mem_append]
+            exact Or.inr hfmem
+
+/-- Completeness of the Cantor–Zassenhaus splitter over a prime field of odd
+cardinality `q`: the hypothesis `hcover` (the shift schedule `0..q-1` reaches
+every field element) holds for `F = ZMod q`. -/
+theorem czComplete (q : Nat) (hodd : Odd q) (hfrob : ∀ x : F, x ^ q = x)
+    (hcover : ∀ x : F, x ∈ czDefaultShifts q)
+    (p : CPolynomial F) (a : F) (hpne : p ≠ 0) (hroot : CPolynomial.eval a p = 0) :
+    ∃ factor, factor ∈ (czSplitLinearFactors q p).toList ∧
+      IsLinearRootFactorCandidate factor a := by
+  rw [czSplitLinearFactors]
+  exact czComplete_core CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive q
+    hodd hfrob a (czDefaultShifts q) p hroot hpne (hcover (-a))
+
 /-- Build a `LinearFactorProductSplitter` from the Cantor–Zassenhaus algorithm.
 
 `sound` is discharged by `czSound`. `complete` is left as a parameter: it is the
