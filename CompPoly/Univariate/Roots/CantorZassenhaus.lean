@@ -5,6 +5,7 @@ Authors: Dimitrios Mitsios
 -/
 
 import CompPoly.Univariate.Roots.Splitter
+import CompPoly.Univariate.Roots.Correctness
 
 /-!
 # Cantor–Zassenhaus Linear-Factor Splitting
@@ -77,6 +78,28 @@ reached by the prime-subfield shift schedule (extension fields). -/
 theorem czShift_eq_linearFactor (s : F) :
     (CPolynomial.X + CPolynomial.C s : CPolynomial F) = CPolynomial.linearFactor (-s) := by
   rw [CPolynomial.linearFactor, neg_neg, add_comm]
+
+/-- Evaluating the shift base `X + s` at `a` gives `a + s`. -/
+theorem eval_X_add_C (a s : F) :
+    CPolynomial.eval a (CPolynomial.X + CPolynomial.C s) = a + s := by
+  rw [CPolynomial.eval_toPoly, CPolynomial.toPoly_add, CPolynomial.X_toPoly,
+    CPolynomial.C_toPoly, Polynomial.eval_add, Polynomial.eval_X, Polynomial.eval_C]
+
+/-- At a root `a` of `p`, the shifted discriminating power evaluates as
+`(a + s)^k`. This is the analytic core of the quadratic-residue routing:
+`w(a) = (a + s)^((q-1)/2)`. Wraps `raw_eval_powModWith_eq_pow`. -/
+theorem eval_shiftedPowModWith (M : CPolynomial.Raw.MulContext F)
+    (D : CPolynomial.Raw.ModContext F) (p : CPolynomial F) (s a : F) (k : Nat)
+    (hp : CPolynomial.eval a p = 0) :
+    CPolynomial.eval a (shiftedPowModWith M D p s k) = (a + s) ^ k := by
+  have hmod : (p.val : CPolynomial.Raw F).eval a = 0 := hp
+  unfold shiftedPowModWith
+  show CPolynomial.Raw.eval a
+      (CPolynomial.Raw.powModWith M D p.val (CPolynomial.X + CPolynomial.C s).val k).trim =
+      (a + s) ^ k
+  rw [CPolynomial.Raw.eval_trim_eq_eval, raw_eval_powModWith_eq_pow M D hmod k]
+  change CPolynomial.eval a (CPolynomial.X + CPolynomial.C s) ^ k = (a + s) ^ k
+  rw [eval_X_add_C]
 
 /-- Cantor–Zassenhaus separation driven by an explicit shift schedule
 (structural recursion on the schedule).
