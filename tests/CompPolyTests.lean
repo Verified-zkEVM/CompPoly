@@ -7,6 +7,7 @@ Authors: Valerii Huhnin
 import CompPolyTests.Bivariate.Basic
 import CompPolyTests.Bivariate.Degree
 import CompPolyTests.Bivariate.Factor
+import CompPolyTests.Bivariate.Kronecker
 import CompPolyTests.Bivariate.Deriv
 import CompPolyTests.Bivariate.Multiplicity
 import CompPolyTests.Bivariate.WeightedDegree

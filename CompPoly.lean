@@ -3,6 +3,7 @@ import CompPoly.Bivariate.CMvEquiv
 import CompPoly.Bivariate.Deriv
 import CompPoly.Bivariate.Factor
 import CompPoly.Bivariate.FactorMonic
+import CompPoly.Bivariate.Kronecker
 import CompPoly.Bivariate.ToPoly
 import CompPoly.Data.Array.Lemmas
 import CompPoly.Data.Classes.DCast
