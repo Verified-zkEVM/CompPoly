@@ -233,6 +233,72 @@ def leadingCoeffX {R : Type*} [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] 
 
 end Operations
 
+section CoeffLemmas
+
+variable {R : Type*}
+
+/-- `CBivariate.coeff` as two composed `CPolynomial.coeff`. -/
+@[simp]
+theorem coeff_eq_coeff_coeff [Zero R] (f : CBivariate R) (i j : ℕ) :
+    coeff f i j = CPolynomial.coeff (CPolynomial.coeff f j) i := rfl
+
+/-- Bivariate coefficients are additive. -/
+theorem coeff_add [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (p q : CBivariate R) (i j : ℕ) :
+    coeff (p + q) i j = coeff p i j + coeff q i j := by
+  simp only [coeff_eq_coeff_coeff]
+  rw [show CPolynomial.coeff (p + q) j = CPolynomial.coeff p j + CPolynomial.coeff q j from
+    CPolynomial.coeff_add p q j, CPolynomial.coeff_add]
+
+/-- Bivariate coefficients distribute over finite sums. -/
+theorem coeff_finset_sum [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    {ι : Type*} [DecidableEq ι] (s : Finset ι) (f : ι → CBivariate R) (i j : ℕ) :
+    coeff (s.sum f) i j = s.sum (fun t => coeff (f t) i j) := by
+  induction s using Finset.induction with
+  | empty =>
+    rw [Finset.sum_empty, Finset.sum_empty, coeff_eq_coeff_coeff,
+      show CPolynomial.coeff (0 : CBivariate R) j = 0 from CPolynomial.coeff_zero j,
+      CPolynomial.coeff_zero]
+  | insert a s ha ih =>
+    simp only [Finset.sum_insert ha]
+    rw [coeff_add, ih]
+
+/-- Coefficient of a bivariate monomial `c * X^a * Y^b`. -/
+theorem coeff_monomialXY [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (a b : ℕ) (c : R) (i j : ℕ) :
+    coeff (monomialXY a b c) i j = if i = a ∧ j = b then c else 0 := by
+  rw [coeff_eq_coeff_coeff]
+  unfold monomialXY
+  rw [CPolynomial.coeff_monomial]
+  by_cases hj : j = b
+  · rw [if_pos hj, CPolynomial.coeff_monomial]
+    by_cases hi : i = a
+    · rw [if_pos hi, if_pos ⟨hi, hj⟩]
+    · rw [if_neg hi, if_neg (fun h => hi h.1)]
+  · rw [if_neg hj, CPolynomial.coeff_zero, if_neg (fun h => hj h.2)]
+
+/-- Coefficient of `Y^m * c(X)` as a bivariate polynomial. -/
+theorem coeff_monomialY [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (m : ℕ) (c : CPolynomial R) (i j : ℕ) :
+    coeff (CPolynomial.monomial m c) i j = if j = m then CPolynomial.coeff c i else 0 := by
+  rw [coeff_eq_coeff_coeff, CPolynomial.coeff_monomial]
+  by_cases hj : j = m
+  · rw [if_pos hj, if_pos hj]
+  · rw [if_neg hj, if_neg hj, CPolynomial.coeff_zero]
+
+/-- Two bivariate polynomials are equal iff all their coefficients agree. -/
+theorem eq_iff_coeff [Zero R] [BEq R] [LawfulBEq R] {p q : CBivariate R} :
+    p = q ↔ ∀ i j, coeff p i j = coeff q i j := by
+  constructor
+  · intro h i j; rw [h]
+  · intro h
+    refine CPolynomial.eq_iff_coeff.2 (fun j => ?_)
+    rw [CPolynomial.eq_iff_coeff]
+    intro i
+    exact h i j
+
+end CoeffLemmas
+
 section WeightedDegreeLemmas
 
 variable {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
