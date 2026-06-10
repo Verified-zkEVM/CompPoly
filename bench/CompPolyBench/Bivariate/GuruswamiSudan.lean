@@ -91,16 +91,16 @@ private def runGsInterpolationSmallKoala (preset : BenchPreset) (gen : StdGen) :
   let warmup := gsWarmupIterations preset
   let denseMeasured := preset.selectNat 1 1 1
   let koetterMeasured := preset.selectNat 10 2 1
-  let leeDirectMeasured := preset.selectNat 60 8 2
-  let leeSubproductMeasured := preset.selectNat 50 7 1
-  let approximantDirectMeasured := preset.selectNat 30 5 1
-  let approximantSubproductMeasured := preset.selectNat 1 1 1
+  let leeDirectMeasured := preset.selectNat 100 15 3
+  let leeSubproductMeasured := preset.selectNat 90 13 3
+  let approximantDirectMeasured := preset.selectNat 7 1 1
+  let approximantSubproductMeasured := preset.selectNat 7 1 1
   let fastDenseMeasured := preset.selectNat 2 1 1
   let fastKoetterMeasured := preset.selectNat 70 10 2
-  let fastLeeDirectMeasured := preset.selectNat 400 60 10
-  let fastLeeSubproductMeasured := preset.selectNat 300 40 10
-  let fastApproximantDirectMeasured := preset.selectNat 200 30 5
-  let fastApproximantSubproductMeasured := preset.selectNat 1 1 1
+  let fastLeeDirectMeasured := preset.selectNat 600 90 20
+  let fastLeeSubproductMeasured := preset.selectNat 400 60 10
+  let fastApproximantDirectMeasured := preset.selectNat 20 3 1
+  let fastApproximantSubproductMeasured := preset.selectNat 20 3 1
   let checksumIterations := groupChecksumIterations denseMeasured [
     koetterMeasured, leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
     approximantDirectMeasured, approximantSubproductMeasured, fastKoetterMeasured,
@@ -219,13 +219,13 @@ private def runGsInterpolationLargeKoala (preset : BenchPreset) (gen : StdGen) :
   let fastPoints := gsLargeBenchmarkPoints fastMessage
   let warmup := gsWarmupIterations preset
   let koetterMeasured := preset.selectNat 1 1 1
-  let leeMeasured := preset.selectNat 1 1 1
-  let approximantDirectMeasured := preset.selectNat 1 1 1
-  let approximantSubproductMeasured := preset.selectNat 1 1 1
-  let fastKoetterMeasured := preset.selectNat 1 1 1
-  let fastLeeMeasured := preset.selectNat 1 1 1
-  let fastApproximantDirectMeasured := preset.selectNat 1 1 1
-  let fastApproximantSubproductMeasured := preset.selectNat 1 1 1
+  let leeMeasured := preset.selectNat 10 1 1
+  let approximantDirectMeasured := preset.selectNat 2 1 1
+  let approximantSubproductMeasured := preset.selectNat 2 1 1
+  let fastKoetterMeasured := preset.selectNat 4 1 1
+  let fastLeeMeasured := preset.selectNat 50 7 1
+  let fastApproximantDirectMeasured := preset.selectNat 7 1 1
+  let fastApproximantSubproductMeasured := preset.selectNat 7 1 1
   let checksumIterations := groupChecksumIterations koetterMeasured [
     leeMeasured, leeMeasured, approximantDirectMeasured, approximantSubproductMeasured,
     fastKoetterMeasured, fastLeeMeasured, fastLeeMeasured,

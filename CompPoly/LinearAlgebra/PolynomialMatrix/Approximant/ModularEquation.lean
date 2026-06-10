@@ -21,6 +21,19 @@ within a constant factor of the true pivot-degree mass, which is at most the
 modulus degree mass `sigma`.  Every round is therefore an X-adic problem with
 `O(m)` chunk rows and total order `O(sigma)`, and the number of rounds is
 logarithmic, preserving the `~O(m^(omega-1) * sigma)` solver target.
+
+The chunked X-adic problems are relaxations: their orders certify exactness
+only for rows whose chunk coefficients stay below the chunk size, and the
+relaxed kernel module also contains uncertified rows.  When such rows have
+lower shifted degrees than every exact solution, the minimal basis consists
+entirely of uncertified rows, no round discovers a pivot, and escalation can
+never make progress.  The solver detects this regime (one round with no
+filtered row and an empty profile) and switches to the certified full-window
+fallback `fullWindowSolutionBasisViaPMBasis`: an unchunked exact-nullspace
+problem on `m + s` rows whose orders cover the whole pivot window, so no
+uncertified row can sit below an in-window solution.  Its order mass is larger
+by a factor of the module width, but on the original `m + s` rows this stays
+far below an escalated chunked round.
 -/
 
 namespace CompPoly
@@ -150,6 +163,10 @@ def PivotDegreeProfile.insert (profile : PivotDegreeProfile)
 def PivotDegreeProfile.coversAll (profile : PivotDegreeProfile) : Bool :=
   profile.degrees.all fun degree ↦ degree.isSome
 
+/-- Whether the profile has discovered a pivot degree for any coordinate. -/
+def PivotDegreeProfile.discoveredAny (profile : PivotDegreeProfile) : Bool :=
+  profile.degrees.any fun degree ↦ degree.isSome
+
 /-- Merge the principal pivot degrees observed in `rows` into a profile. -/
 def pivotDegreeProfileMergeRows (profile : PivotDegreeProfile)
     (solutionWidth : Nat) (rows : PolynomialMatrix F) (shift : Array Nat) :
@@ -247,6 +264,55 @@ degree is within this window. -/
 def pivotWindowCap [Zero F] (equation : ModularEquation F) : Nat :=
   modulusDegreeMass equation.moduli
 
+/-- Coefficient-degree bound for the full-window fallback problem.  Any row of
+the lifted module whose shifted degree does not exceed the shifted degree of an
+in-window solution has plain coefficient degrees at most
+`pivotWindowCap + maxShiftDegree shift`: comparing two principal coordinates
+costs at most the shift spread, and `pivotWindowCap` bounds every minimal
+pivot degree. -/
+def fullWindowDegreeBound [Zero F] (equation : ModularEquation F)
+    (shift : Array Nat) : Nat :=
+  pivotWindowCap equation + maxShiftDegree shift
+
+/-- Exact-nullspace lift with the relation entries reduced columnwise by the
+moduli, so every principal entry of column `b` has degree below `deg M_b` and
+the quotient coefficients of exact solutions stay below the solution degree. -/
+def reducedExactNullspaceLift (modCtx : CPolynomial.ModContext F)
+    (equation : ModularEquation F) : PolynomialMatrix F :=
+  ofFn equation.solutionWidth equation.modularWidth
+    (fun i j ↦
+      modByMonicWith modCtx (rowGet (equation.matrix.getD i #[]) j)
+        (equation.moduli.getD j 0)) ++
+    negativeDiagonalRows equation.moduli
+
+/-- Unchunked exact-nullspace problem with orders certifying exactness across
+the whole pivot window: a lifted row with principal coefficient degrees at most
+`bound` and quotient coefficient degrees at most `bound + 1` produces column-`b`
+products of degree below `deg M_b + bound + 2`, so vanishing to that X-adic
+order forces the product to vanish exactly.  Unlike the chunked relaxation,
+this problem admits no uncertified rows below the in-window solution degrees,
+at the cost of an order mass larger by a factor of the module width. -/
+def fullWindowExactNullspaceProblem (modCtx : CPolynomial.ModContext F)
+    (equation : ModularEquation F) (bound : Nat) : XAdicProblem F :=
+  { orders := equation.moduli.map fun modulus ↦ modulus.natDegree + bound + 2
+    matrix := reducedExactNullspaceLift modCtx equation }
+
+/-- Certified full-window solve: compute a minimal basis of the unchunked
+exact-nullspace problem whose orders cover the entire pivot window, and keep
+the principal columns.  Every returned row that pivots at or below an in-window
+solution degree is an exact modular solution, so this entry point cannot lose
+the solution basis to uncertified low-degree rows.  It is used as the fallback
+when the chunked adaptive solver discovers nothing. -/
+def fullWindowSolutionBasisViaPMBasis (modCtx : CPolynomial.ModContext F)
+    (pmCtx : PMBasisContext F) (equation : ModularEquation F)
+    (shift : Array Nat) : PolynomialMatrix F :=
+  let bound := fullWindowDegreeBound equation shift
+  let problem := fullWindowExactNullspaceProblem modCtx equation bound
+  let expandedShift := exactNullspaceShift shift equation.modularWidth bound
+  compactNonzeroRows
+    (principalSolutionRows equation.solutionWidth
+      (pmCtx.basis problem expandedShift))
+
 /-- Pivot-degree assignment for one adaptive round: discovered coordinates use
 their observed pivot degrees, undiscovered coordinates use the current
 escalation window above their shift entry. -/
@@ -339,7 +405,14 @@ def adaptiveSolutionLoop
   | fuel + 1, state =>
       let next := adaptiveSolutionRound mulCtx modCtx pmCtx equation shift state
       let bestDegree? := leastSolutionRowDegree? next.filtered shift
-      if allCoordinatesSettled next.profile next.budgets cap bestDegree? shift
+      if next.filtered.size == 0 && !next.profile.discoveredAny then
+        -- Zero discovery means the chunked relaxation is dominated by
+        -- uncertified rows below the solution degrees; growing the windows
+        -- multiplies the round cost without producing new pivot information,
+        -- so stop here and let the caller run the certified full-window
+        -- fallback instead.
+        next
+      else if allCoordinatesSettled next.profile next.budgets cap bestDegree? shift
           equation.solutionWidth then
         next
       else
@@ -378,18 +451,25 @@ def discoverPivotDegreeProfileViaPMBasis
 /-- One residual reconstruction pass.  If compressed rows `B` are not themselves
 exact modular solutions, solve for polynomial combinations `C` such that
 `C * (B * F mod M) = 0 mod M`, then return `C * B`.  The residual equation is
-solved with the same adaptive solver, without a further repair recursion. -/
+solved with the same adaptive solver, without a further repair recursion.
+
+The candidate rows are first reduced to one representative per shifted leading
+position.  The reduction steps are unimodular, so the generated row module is
+unchanged, while the residual equation's solution width stays bounded by the
+principal width instead of the raw candidate count; without this bound the
+repair solve can be quadratically wider than the original equation. -/
 def repairSolutionRowsViaPMBasis
     (mulCtx : CPolynomial.MulContext F) (modCtx : CPolynomial.ModContext F)
     (pmCtx : PMBasisContext F) (equation : ModularEquation F)
     (shift : Array Nat) (rows : PolynomialMatrix F) : PolynomialMatrix F :=
+  let reduced := compactNonzeroRows (reduceKernelLeafRowsByPivots rows shift)
   let residualEquation : ModularEquation F :=
     { moduli := equation.moduli
-      matrix := modularResidualRows mulCtx modCtx equation rows }
+      matrix := modularResidualRows mulCtx modCtx equation reduced }
   let repairState := adaptiveSolutionBasis mulCtx modCtx pmCtx residualEquation
-    (candidateRowShift rows shift)
+    (candidateRowShift reduced shift)
   PolynomialMatrix.mulStrassenWith pmCtx.runtime.lowMulContext
-    pmCtx.runtime.leafCutoff repairState.filtered rows
+    pmCtx.runtime.leafCutoff repairState.filtered reduced
 
 /-- Debug helper for tiny problems that intentionally disables
 principal-coordinate chunking.  This keeps the old unchunked behavior available
@@ -421,17 +501,25 @@ def knownDegreeFilteredSolutionBasisViaPMBasis
 /-- Solver exposed through the modular-equation context: run the adaptive
 degree-first window-escalation loop, whose final round is the known-degree
 reconstruction for every discovered coordinate, and discard any row that fails
-the original diagonal congruences.  The filter and repair pass are semantic
-guards around the exact-nullspace bridge; they do not call any alternate
-interpolation backend. -/
+the original diagonal congruences.  When the chunked loop produces no exact
+row — the regime where uncertified low-degree rows of the relaxed X-adic
+module crowd out every solution — fall back to the certified full-window
+unchunked solve, and only then to the residual repair pass.  The filter,
+fallback, and repair are semantic guards around the exact-nullspace bridge;
+they do not call any alternate interpolation backend. -/
 def filteredSolutionBasisViaPMBasis
     (mulCtx : CPolynomial.MulContext F) (modCtx : CPolynomial.ModContext F)
     (pmCtx : PMBasisContext F) (equation : ModularEquation F)
     (shift : Array Nat) : PolynomialMatrix F :=
   let final := adaptiveSolutionBasis mulCtx modCtx pmCtx equation shift
   if final.filtered.size == 0 then
-    filterModularSolutionRows mulCtx modCtx equation
-      (repairSolutionRowsViaPMBasis mulCtx modCtx pmCtx equation shift final.raw)
+    let fallback := filterModularSolutionRows mulCtx modCtx equation
+      (fullWindowSolutionBasisViaPMBasis modCtx pmCtx equation shift)
+    if fallback.size == 0 then
+      filterModularSolutionRows mulCtx modCtx equation
+        (repairSolutionRowsViaPMBasis mulCtx modCtx pmCtx equation shift final.raw)
+    else
+      fallback
   else
     final.filtered
 
