@@ -54,6 +54,24 @@ namespace FiniteField
 
 variable {F : Type*} [Field F] [BEq F] [LawfulBEq F]
 
+/-- The splitter output contains a linear root factor candidate for `a`. -/
+abbrev HasRootFactor (out : Array (CPolynomial F)) (a : F) : Prop :=
+  ∃ factor, factor ∈ out.toList ∧ IsLinearRootFactorCandidate factor a
+
+omit [BEq F] [LawfulBEq F] in
+/-- A candidate in the left part survives appending on the right. -/
+theorem HasRootFactor.append_left {A B : Array (CPolynomial F)} {a : F}
+    (h : HasRootFactor A a) : HasRootFactor (A ++ B) a := by
+  obtain ⟨f, hf, hc⟩ := h
+  exact ⟨f, by simp only [Array.toList_append, List.mem_append]; exact Or.inl hf, hc⟩
+
+omit [BEq F] [LawfulBEq F] in
+/-- A candidate in the right part survives appending on the left. -/
+theorem HasRootFactor.append_right {A B : Array (CPolynomial F)} {a : F}
+    (h : HasRootFactor B a) : HasRootFactor (A ++ B) a := by
+  obtain ⟨f, hf, hc⟩ := h
+  exact ⟨f, by simp only [Array.toList_append, List.mem_append]; exact Or.inr hf, hc⟩
+
 /-- `(X + s)^exponent mod modulus`, lifted back to canonical polynomials.
 The Cantor–Zassenhaus discriminating power, generalising `xPowModWith` to the
 shifted base `X + s`. -/
@@ -294,8 +312,7 @@ theorem czSplit_emits (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.Mo
     (q : Nat) (a : F) (shifts : List F) (p : CPolynomial F)
     (hlin : isRepresentedLinearFactor (CPolynomial.monicNormalize p) = true)
     (hroot : CPolynomial.eval a p = 0) :
-    ∃ factor, factor ∈ (czSplitWithShifts M D q shifts p).toList ∧
-      IsLinearRootFactorCandidate factor a := by
+    HasRootFactor (czSplitWithShifts M D q shifts p) a := by
   refine ⟨CPolynomial.monicNormalize p, ?_, ?_⟩
   · cases shifts with
     | nil => rw [czSplitWithShifts, if_pos hlin]; simp
@@ -329,8 +346,7 @@ theorem czComplete_core (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.
     (q : Nat) (hodd : Odd q) (hfrob : ∀ x : F, x ^ q = x) (a : F) :
     ∀ (shifts : List F) (p : CPolynomial F),
       CPolynomial.eval a p = 0 → p ≠ 0 → (-a) ∈ shifts →
-      ∃ factor, factor ∈ (czSplitWithShifts M D q shifts p).toList ∧
-        IsLinearRootFactorCandidate factor a := by
+      HasRootFactor (czSplitWithShifts M D q shifts p) a := by
   intro shifts
   induction shifts with
   | nil => intro p _ _ hmem; simp at hmem
@@ -355,36 +371,26 @@ theorem czComplete_core (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.
             have hxs : (CPolynomial.X + CPolynomial.C s) = CPolynomial.linearFactor a := by
               rw [czShift_eq_linearFactor]; congr 1; linear_combination -hsa
             rw [hxs, gcdMonic_linearFactor_of_root hp', monicNormalize_linearFactor]
-          obtain ⟨factor, hfmem, hfcand⟩ :=
-            czSplit_emits M D q a rest (CPolynomial.linearFactor a)
-              (by rw [monicNormalize_linearFactor]; exact linearFactor_isRepresentedLinearFactor a)
-              (eval_linearFactor_self a)
-          refine ⟨factor, ?_, hfcand⟩
           rw [hgz]
-          simp only [Array.toList_append, List.mem_append]
-          exact Or.inl (Or.inl hfmem)
+          exact HasRootFactor.append_left (HasRootFactor.append_left
+            (czSplit_emits M D q a rest (CPolynomial.linearFactor a)
+              (by rw [monicNormalize_linearFactor]; exact linearFactor_isRepresentedLinearFactor a)
+              (eval_linearFactor_self a)))
         · have hmemrest : (-a) ∈ rest := by
             rcases List.mem_cons.mp hmem with h | h
             · exact absurd (by linear_combination -h : a + s = 0) hsa
             · exact h
+          have hbucket : ∀ b : CPolynomial F, CPolynomial.monicNormalize
+              (CPolynomial.gcdMonic (CPolynomial.monicNormalize p) b) ≠ 0 := fun b =>
+            monicNormalize_ne_zero_of_ne_zero (gcdMonic_ne_zero_of_left hp'ne)
           rcases czRefine_root_in_residue_bucket M D q hodd hfrob s a
             (CPolynomial.monicNormalize p) hp' hsa with hr | hr
-          · obtain ⟨factor, hfmem, hfcand⟩ :=
-              ih (czRefine M D q s (CPolynomial.monicNormalize p)).2.1 hr
-                (by rw [czRefine_snd_fst]
-                    exact monicNormalize_ne_zero_of_ne_zero (gcdMonic_ne_zero_of_left hp'ne))
-                hmemrest
-            refine ⟨factor, ?_, hfcand⟩
-            simp only [Array.toList_append, List.mem_append]
-            exact Or.inl (Or.inr hfmem)
-          · obtain ⟨factor, hfmem, hfcand⟩ :=
-              ih (czRefine M D q s (CPolynomial.monicNormalize p)).2.2 hr
-                (by rw [czRefine_snd_snd]
-                    exact monicNormalize_ne_zero_of_ne_zero (gcdMonic_ne_zero_of_left hp'ne))
-                hmemrest
-            refine ⟨factor, ?_, hfcand⟩
-            simp only [Array.toList_append, List.mem_append]
-            exact Or.inr hfmem
+          · exact HasRootFactor.append_left (HasRootFactor.append_right
+              (ih (czRefine M D q s (CPolynomial.monicNormalize p)).2.1 hr
+                (by rw [czRefine_snd_fst]; exact hbucket _) hmemrest))
+          · exact HasRootFactor.append_right
+              (ih (czRefine M D q s (CPolynomial.monicNormalize p)).2.2 hr
+                (by rw [czRefine_snd_snd]; exact hbucket _) hmemrest)
 
 /-- Completeness of the Cantor–Zassenhaus splitter over a prime field of odd
 cardinality `q`: the hypothesis `hcover` (the shift schedule `0..q-1` reaches
@@ -392,8 +398,7 @@ every field element) holds for `F = ZMod q`. -/
 theorem czComplete (q : Nat) (hodd : Odd q) (hfrob : ∀ x : F, x ^ q = x)
     (hcover : ∀ x : F, x ∈ czDefaultShifts q)
     (p : CPolynomial F) (a : F) (hpne : p ≠ 0) (hroot : CPolynomial.eval a p = 0) :
-    ∃ factor, factor ∈ (czSplitLinearFactors q p).toList ∧
-      IsLinearRootFactorCandidate factor a := by
+    HasRootFactor (czSplitLinearFactors q p) a := by
   rw [czSplitLinearFactors]
   exact czComplete_core CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive q
     hodd hfrob a (czDefaultShifts q) p hroot hpne (hcover (-a))
@@ -404,13 +409,8 @@ and `complete` as parameters. `sound` is discharged by `czSound`. The packaged
 def czLinearFactorProductSplitterOf
     (validInput : Nat → CPolynomial F → Prop)
     (complete :
-      ∀ q p a,
-        validInput q p →
-          p ≠ 0 →
-            CPolynomial.eval a p = 0 →
-              ∃ factor,
-                factor ∈ (czSplitLinearFactors q p).toList ∧
-                  IsLinearRootFactorCandidate factor a) :
+      ∀ q p a, validInput q p → p ≠ 0 → CPolynomial.eval a p = 0 →
+        HasRootFactor (czSplitLinearFactors q p) a) :
     LinearFactorProductSplitter F where
   splitLinearFactors := czSplitLinearFactors
   validInput := validInput
@@ -434,8 +434,7 @@ of `czComplete` from `ZMod.pow_card` (Frobenius) and `zmod_mem_czDefaultShifts`
 theorem czComplete_zmod (q : Nat) [Fact (Nat.Prime q)] (hodd : Odd q)
     (p : CPolynomial (ZMod q)) (a : ZMod q) (hpne : p ≠ 0)
     (hroot : CPolynomial.eval a p = 0) :
-    ∃ factor, factor ∈ (czSplitLinearFactors q p).toList ∧
-      IsLinearRootFactorCandidate factor a :=
+    HasRootFactor (czSplitLinearFactors q p) a :=
   czComplete q hodd (fun x => ZMod.pow_card x) (fun x => zmod_mem_czDefaultShifts q x)
     p a hpne hroot
 
