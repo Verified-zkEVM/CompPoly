@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Dimitrios Mitsios
+Authors: Dimitris Mitsios
 -/
 import CompPoly.Univariate.Roots.CantorZassenhaus
 import Mathlib.Data.ZMod.Basic
