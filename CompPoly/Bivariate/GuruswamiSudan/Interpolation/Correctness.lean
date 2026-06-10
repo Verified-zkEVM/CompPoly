@@ -160,7 +160,7 @@ private theorem eval_hasseDeriv_eq_zero_of_X_sub_C_pow_dvd {F : Type*} [Field F]
     (hb : b < m) :
     (Polynomial.hasseDeriv b P).eval y = 0 := by
   rcases hdiv with ⟨R, rfl⟩
-  rw [Polynomial.hasseDeriv_mul, Polynomial.eval_finset_sum]
+  rw [Polynomial.hasseDeriv_mul, Polynomial.eval_finsetSum]
   apply Finset.sum_eq_zero
   intro ij hij
   rw [Polynomial.eval_mul]
