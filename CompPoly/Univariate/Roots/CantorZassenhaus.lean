@@ -450,6 +450,33 @@ def czLinearFactorProductSplitter : LinearFactorProductSplitter F :=
       obtain ⟨hodd, hfrob, hcover⟩ := hvalid
       exact czComplete q hodd hfrob hcover p a hpne hroot)
 
+/-- Finite-field context for the prime field `ZMod q` of odd order. -/
+def czFiniteFieldContext (q : Nat) [Fact (Nat.Prime q)] : FiniteFieldContext (ZMod q) :=
+  haveI : NeZero q := ⟨(Fact.out : Nat.Prime q).pos.ne'⟩
+  { q := q
+    finite := inferInstance
+    card_eq := by rw [Nat.card_eq_fintype_card, ZMod.card]
+    frobenius_fixed := fun a => ZMod.pow_card a }
+
+/-- End-to-end root finder over `ZMod q`: stage 1 extracts the distinct field
+roots as `gcd(f, X^q - X)`, then the Cantor–Zassenhaus splitter separates them.
+Returns the set of roots in `ZMod q` of an arbitrary univariate `f`. -/
+def czRoots (q : Nat) [Fact (Nat.Prime q)] (f : CPolynomial (ZMod q)) : Array (ZMod q) :=
+  rootsInFiniteField (czFiniteFieldContext q) czLinearFactorProductSplitter f
+
+/-- Soundness: every element of `czRoots` is a root of `f`. -/
+theorem czRoots_sound (q : Nat) [Fact (Nat.Prime q)] {f : CPolynomial (ZMod q)} {a : ZMod q}
+    (h : a ∈ (czRoots q f).toList) : CPolynomial.eval a f = 0 :=
+  rootsInFiniteField_sound (czFiniteFieldContext q) czLinearFactorProductSplitter h
+
+/-- Completeness: for odd `q`, every root of a nonzero `f` is found by `czRoots`. -/
+theorem czRoots_complete (q : Nat) [Fact (Nat.Prime q)] (hodd : Odd q)
+    {f : CPolynomial (ZMod q)} {a : ZMod q} (hf : f ≠ 0) (hroot : CPolynomial.eval a f = 0) :
+    a ∈ (czRoots q f).toList :=
+  rootsInFiniteField_complete (czFiniteFieldContext q) czLinearFactorProductSplitter
+    (by intro p _; exact ⟨hodd, fun x => ZMod.pow_card x, fun x => zmod_mem_czDefaultShifts q x⟩)
+    hf hroot
+
 end FiniteField
 
 end Roots

@@ -57,5 +57,27 @@ example (a : F) (hpne : p₂₃ ≠ 0) (h : CPolynomial.eval a p₂₃ = 0) :
       IsLinearRootFactorCandidate factor a :=
   czComplete_zmod 7 (by decide) p₂₃ a hpne h
 
+/-! ### End-to-end root finding on a general `f` (`czRoots`).
+
+`czRoots` runs stage 1 (`gcd(f, X^7 - X)`) then the CZ splitter, returning the
+distinct field roots of an arbitrary `f`. Multiplicities collapse and factors with
+no `ZMod 7` root are filtered. -/
+
+-- `(X - 2)² (X - 3)`: roots `{2, 3}`, the double root counted once.
+private def fMult : CPolynomial F :=
+  (CPolynomial.X - CPolynomial.C 2) ^ 2 * (CPolynomial.X - CPolynomial.C 3)
+
+#guard (czRoots 7 fMult).size == 2
+#guard (czRoots 7 fMult).contains 2
+#guard (czRoots 7 fMult).contains 3
+
+-- `X² + 1` is irreducible over `ZMod 7` (`-1` is a non-residue), so no roots.
+#guard (czRoots 7 (CPolynomial.X ^ 2 + 1)).size == 0
+
+-- Completeness of the end-to-end finder.
+example (a : F) (hf : fMult ≠ 0) (h : CPolynomial.eval a fMult = 0) :
+    a ∈ (czRoots 7 fMult).toList :=
+  czRoots_complete 7 (by decide) hf h
+
 end CantorZassenhausTest
 end CompPolyTests
