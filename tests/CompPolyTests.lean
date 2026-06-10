@@ -9,6 +9,10 @@ import CompPolyTests.Bivariate.Degree
 import CompPolyTests.Bivariate.Factor
 import CompPolyTests.Bivariate.Kronecker
 import CompPolyTests.Bivariate.Deriv
+import CompPolyTests.Bivariate.GuruswamiSudan.Compose
+import CompPolyTests.Bivariate.GuruswamiSudan.Hasse
+import CompPolyTests.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
+import CompPolyTests.Bivariate.GuruswamiSudan.Root.RothRuckenstein
 import CompPolyTests.Bivariate.Multiplicity
 import CompPolyTests.Bivariate.WeightedDegree
 import CompPolyTests.Data.MvPolynomial.Notation
