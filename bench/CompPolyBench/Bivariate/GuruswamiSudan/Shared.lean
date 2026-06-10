@@ -5,16 +5,18 @@ Authors: Valerii Huhnin
 -/
 
 import CompPolyBench.Common
+import CompPoly.Bivariate.Deriv
 import CompPoly.Bivariate.GuruswamiSudan
 import CompPoly.Bivariate.GuruswamiSudan.Implementations
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Algorithm
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 
 /-!
-# Guruswami-Sudan Benchmark Helpers
+# Guruswami-Sudan Benchmarks
 
-Shared KoalaBear input shapes, checksum helpers, and group metadata for the
-dense and Lee-O'Sullivan interpolation/root-search Guruswami-Sudan benchmark
-subset.
+KoalaBear cost-center benchmarks for the dense interpolation path,
+Koetter interpolation path, Roth-Ruckenstein and Alekhnovich root finding, and
+full backend-parametric `gsCore` and `gsFilteredCore`.
 -/
 
 open CompPoly
@@ -26,6 +28,22 @@ def gsPointCount : Nat := 128
 def gsMessageDegree : Nat := 32
 def gsWeightedDegreeBound : Nat := 4 * (gsMessageDegree - 1)
 def gsMultiplicity : Nat := 4
+def gsCheckMultiplicity : Nat := 2
+
+def gsKoalaParams : GSInterpParams :=
+  { messageDegree := gsMessageDegree
+    multiplicity := gsMultiplicity
+    weightedDegreeBound := gsWeightedDegreeBound }
+
+def gsLargeInterpPointCount : Nat := 192
+def gsLargeInterpMessageDegree : Nat := 49
+def gsLargeInterpWeightedDegreeBound : Nat :=
+  5 * (gsLargeInterpMessageDegree - 1)
+def gsLargeInterpMultiplicity : Nat := 2
+def gsLargeInterpParams : GSInterpParams :=
+  { messageDegree := gsLargeInterpMessageDegree
+    multiplicity := gsLargeInterpMultiplicity
+    weightedDegreeBound := gsLargeInterpWeightedDegreeBound }
 
 def gsSmallPointCount : Nat := 64
 def gsSmallMessageDegree : Nat := 16
@@ -47,8 +65,18 @@ def gsSmallInputShape : String :=
 def gsSmallInterpInputShape : String :=
   gsSmallInputShape
 
+def gsLargeInterpInputShape : String :=
+  s!"n={gsLargeInterpPointCount},k={gsLargeInterpMessageDegree}," ++
+    s!"m={gsLargeInterpMultiplicity},D={gsLargeInterpWeightedDegreeBound}"
+
+def gsMultiplicityShape : String :=
+  s!"n={gsPointCount},k={gsMessageDegree},m={gsCheckMultiplicity},Q=(Y-p)^2"
+
 def gsRootShape : String :=
   s!"k={gsMessageDegree},Q=(Y-p)(Y-(p+7))"
+
+def gsFilteredShape : String :=
+  gsLargeInterpInputShape ++ ",r=0"
 
 def gsSmallFilteredShape : String :=
   gsSmallInterpInputShape ++ ",r=0"
@@ -68,10 +96,20 @@ def gsSmallBenchmarkPoints {F : Type*} [Semiring F] [BEq F] [LawfulBEq F]
     (p : CPolynomial F) : Array (Prod F F) :=
   codewordPointsWithCount gsSmallPointCount p
 
-def nonlinearRootBenchmarkQ {F : Type*}
+def gsLargeBenchmarkPoints {F : Type*} [Semiring F] [BEq F] [LawfulBEq F]
+    (p : CPolynomial F) : Array (Prod F F) :=
+  codewordPointsWithCount gsLargeInterpPointCount p
+
+def rootBenchmarkQ {F : Type*}
     [CommRing F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (p : CPolynomial F) : CBivariate F :=
-  CBivariate.linearYDivisor p * CBivariate.linearYDivisor (p + CPolynomial.C 7)
+  CBivariate.linearYDivisor p
+
+def multiplicityBenchmarkQ {F : Type*}
+    [CommRing F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    (p : CPolynomial F) : CBivariate F :=
+  let Q := rootBenchmarkQ p
+  Q * Q
 
 def koalaFieldRoots : FieldRootContext KoalaBear.Field := koalaBearFieldRootContext
 def koalaFieldRootsFast : FieldRootContext KoalaBear.Field :=
@@ -81,11 +119,16 @@ def koalaFastFieldRoots : FieldRootContext KoalaBear.Fast.Field :=
 def koalaFastFieldRootsFast : FieldRootContext KoalaBear.Fast.Field :=
   fastKoalaBearNttFastFieldRootContext
 
+def nonlinearRootBenchmarkQ {F : Type*}
+    [CommRing F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    (p : CPolynomial F) : CBivariate F :=
+  CBivariate.linearYDivisor p * CBivariate.linearYDivisor (p + CPolynomial.C 7)
+
 def checksumDenseMatrix {F : Type*} [Zero F]
-    (checksum : F → Nat) (M : DenseMatrix F) : Nat :=
+    (checksum : F -> Nat) (M : DenseMatrix F) : Nat :=
   mixChecksum (mixChecksum M.rows M.cols) (checksumArray checksum M.data)
 
-def checksumOptionArray {F : Type*} (checksum : F → Nat)
+def checksumOptionArray {F : Type*} (checksum : F -> Nat)
     (v? : Option (Array F)) : Nat :=
   match v? with
   | none => 0
@@ -99,12 +142,27 @@ def checksumInterpolationValidityOption {F : Type*}
   | none => 0
   | some Q => if interpolationWitnessIsValidBool points params Q then 2 else 1
 
+def checksumPolynomialMatrix {F : Type*} [Zero F]
+    (checksum : F -> Nat) (M : PolynomialMatrix F) : Nat :=
+  checksumArray (fun row ↦ checksumArray (checksumCPolynomial checksum) row) M
+
 def checksumPolynomialArrayKoala (ps : Array (CPolynomial KoalaBear.Field)) : Nat :=
   checksumArray (checksumCPolynomial checksumKoalaBear) ps
 
 def checksumPolynomialArrayKoalaFast
     (ps : Array (CPolynomial KoalaBear.Fast.Field)) : Nat :=
   checksumArray (checksumCPolynomial checksumKoalaBearFast) ps
+
+def checksumBool (b : Bool) : Nat :=
+  if b then 1 else 0
+
+def checkMultiplicityShiftOnce {F : Type*}
+    [CommSemiring F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    (Q : CBivariate F) (r : Nat) (x y : F) : Bool :=
+  let shifted := CBivariate.shiftC x y Q
+  List.all (List.range r) fun k ↦
+    List.all (List.range (k + 1)) fun i ↦
+      CBivariate.coeff shifted i (k - i) == 0
 
 def gsWarmupIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 1 0 0
@@ -121,14 +179,25 @@ def guruswamiSudanGroupInfos : List BenchGroupInfo := [
     "Guruswami-Sudan dense interpolation solving, small (KoalaBear)"⟩,
   ⟨"guruswami-sudan-interp-small-koalabear",
     "Guruswami-Sudan interpolation, small (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-interp-large-koalabear",
+    "Guruswami-Sudan interpolation, large (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-lee-setup-large-koalabear",
+    "Guruswami-Sudan Lee-O'Sullivan setup, large (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-hasse-koalabear",
+    "Guruswami-Sudan Hasse multiplicity checking (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-compose-koalabear",
+    "Guruswami-Sudan composition in Y (KoalaBear)"⟩,
   ⟨"guruswami-sudan-root-koalabear",
     "Guruswami-Sudan root finding (KoalaBear)"⟩,
   ⟨"guruswami-sudan-core-small-koalabear",
     "Guruswami-Sudan full core, small (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-core-large-koalabear",
+    "Guruswami-Sudan full core, large (KoalaBear)"⟩,
   ⟨"guruswami-sudan-packed-filter-koalabear",
     "Guruswami-Sudan packed distance filtering (KoalaBear)"⟩,
   ⟨"guruswami-sudan-filtered-core-small-koalabear",
-    "Guruswami-Sudan filtered core, small (KoalaBear)"⟩
+    "Guruswami-Sudan filtered core, small (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-filtered-core-large-koalabear",
+    "Guruswami-Sudan filtered core, large (KoalaBear)"⟩
 ]
 
-end CompPolyBench

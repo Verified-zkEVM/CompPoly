@@ -15,6 +15,7 @@ import CompPolyTests.Bivariate.GuruswamiSudan.Filter
 import CompPolyTests.Bivariate.GuruswamiSudan.Hasse
 import CompPolyTests.Bivariate.GuruswamiSudan.Interpolation.Dense
 import CompPolyTests.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan
+import CompPolyTests.Bivariate.GuruswamiSudan.Interpolation.ApproximantBasis
 import CompPolyTests.Bivariate.GuruswamiSudan.Root.Alekhnovich
 import CompPolyTests.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 import CompPolyTests.Bivariate.GuruswamiSudan.Root.RothRuckenstein
@@ -26,6 +27,7 @@ import CompPolyTests.Fields.Binary.BF128Ghash.Prelude
 import CompPolyTests.Fields.KoalaBear.Fast
 import CompPolyTests.Fields.PrattCertificate
 import CompPolyTests.LinearAlgebra.Dense
+import CompPolyTests.LinearAlgebra.PolynomialMatrix.Approximant
 import CompPolyTests.Multilinear.Equiv
 import CompPolyTests.Multivariate.CMvMonomial
 import CompPolyTests.Multivariate.Restrict

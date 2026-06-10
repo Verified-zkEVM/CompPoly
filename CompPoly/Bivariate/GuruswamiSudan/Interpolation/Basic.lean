@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
 
+import CompPoly.Bivariate.CoeffRows
 import CompPoly.Bivariate.FactorMonic
 import CompPoly.Bivariate.GuruswamiSudan.Context
 
@@ -23,6 +24,28 @@ open CBivariate
 /-- Weighted-degree monomial basis used by dense interpolation. -/
 def interpolationMonomials (params : GSInterpParams) : Array CBivariate.Monomial :=
   CBivariate.monomialsWeightedDegreeLE 1 (yWeight params) params.weightedDegreeBound
+
+/-- Finite `Y` cap used by positive-`Y`-weight interpolation backends. -/
+def interpolationYCap (params : GSInterpParams) : Nat :=
+  params.weightedDegreeBound / yWeight params
+
+/-- Number of coefficient columns used by bounded-`Y` interpolation backends. -/
+def interpolationWidth (params : GSInterpParams) : Nat :=
+  interpolationYCap params + 1
+
+/-- Guruswami-Sudan shifted-degree shifts, `shift[j] = j * yWeight params`. -/
+def interpolationShifts (params : GSInterpParams) : Array Nat :=
+  CBivariate.weightedDegreeShift (yWeight params) (interpolationWidth params)
+
+/-- Executable duplicate-`x` detector for packed point lists. -/
+def distinctXCoordinatesListBool {F : Type*} [BEq F] : List (F × F) → Bool
+  | [] => true
+  | point :: rest =>
+      !(rest.any fun other ↦ other.1 == point.1) && distinctXCoordinatesListBool rest
+
+/-- Executable duplicate-`x` detector for packed points. -/
+def distinctXCoordinatesBool {F : Type*} [BEq F] (points : Array (F × F)) : Bool :=
+  distinctXCoordinatesListBool points.toList
 
 /-- Packed interpolation constraint `(x, y, a, b)`. -/
 structure InterpolationConstraint (F : Type*) where
