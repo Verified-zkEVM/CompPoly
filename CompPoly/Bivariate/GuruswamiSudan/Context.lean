@@ -5,7 +5,7 @@ Authors: Valerii Huhnin
 -/
 
 import CompPoly.Bivariate.Deriv
-import CompPoly.Bivariate.GuruswamiSudan.Compose
+import CompPoly.Bivariate.GuruswamiSudan.Polynomial
 
 /-!
 # Guruswami-Sudan Backend Contexts
