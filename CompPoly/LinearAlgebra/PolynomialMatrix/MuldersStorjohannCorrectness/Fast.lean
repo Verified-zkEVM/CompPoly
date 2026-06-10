@@ -9,10 +9,11 @@ import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Mini
 /-!
 # Fast Mulders-Storjohann Reduction Agrees With the Direct Definition
 
-The fast reducer caches shifted leading positions once per scan and cancels
-leading terms through the fused `rowSubScaledShift` update. This file proves it
-extensionally equal to `muldersStorjohannReduce`, so every correctness result
-transfers, and packages it as a certified `ShiftedRowReducerContext`.
+The fast reducer caches shifted leading positions once per conflict scan and
+cancels leading terms through the fused `rowSubScaledShift` update. This file
+proves it extensionally equal to `muldersStorjohannReduce`, so every
+correctness result transfers, and packages it as a certified
+`ShiftedRowReducerContext`.
 -/
 
 namespace CompPoly
@@ -153,7 +154,7 @@ theorem muldersStorjohannReduceWithFuelFast_eq :
       rw [cachedLeadingConflict?_eq]
       cases shiftedLeadingConflict? M shift with
       | none => rfl
-      | some _ =>
+      | some pair =>
           simp only [muldersStorjohannStepFast_eq, ih]
 
 theorem muldersStorjohannReduceFast_eq (M : PolynomialMatrix F)

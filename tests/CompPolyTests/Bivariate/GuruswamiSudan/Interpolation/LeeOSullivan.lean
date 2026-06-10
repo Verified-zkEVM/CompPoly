@@ -5,6 +5,8 @@ Authors: Valerii Huhnin
 -/
 
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness
+import CompPoly.Bivariate.GuruswamiSudan.Core
+import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Correctness
 import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Fast
 import CompPoly.Univariate.LagrangeArray
 import Mathlib.Algebra.Field.ZMod
@@ -71,6 +73,20 @@ private def fastReducer : PolynomialMatrix.ShiftedRowReducerContext F3 :=
 
 private def leeContext : GSInterpContext F3 :=
   leeOSullivanInterpContext directV hornerE reducer
+
+private def f3Elements : Array F3 :=
+  #[0, 1, 2]
+
+private theorem f3Elements_complete : ContainsAllFieldElements f3Elements := by
+  unfold ContainsAllFieldElements
+  intro a
+  fin_cases a <;> decide
+
+private def fieldRoots : FieldRootContext F3 :=
+  enumeratingFieldRootContext F3 f3Elements f3Elements_complete
+
+private def rootContext : GSRootContext F3 :=
+  rothRuckensteinRootContext F3 fieldRoots
 
 private def R : CPolynomial F3 :=
   CPolynomial.CLagrange.interpolateArray points
@@ -151,6 +167,9 @@ private def weakPopovMatrix : PolynomialMatrix F3 :=
   leeOSullivanInterpolate directV hornerE reducer points3 params
 #guard leeOSullivanPositiveInterpolate directV hornerE fastReducer duplicateXPoints params
   == none
+
+#guard (gsCore points leeContext rootContext params).size <= 3
+#guard (gsCore lowPoints leeContext rootContext lowParams).size <= 3
 
 end GuruswamiSudan.Interpolation.LeeOSullivan
 

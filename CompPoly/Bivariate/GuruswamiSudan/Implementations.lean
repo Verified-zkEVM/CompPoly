@@ -5,10 +5,7 @@ Authors: Valerii Huhnin
 -/
 
 import CompPoly.Bivariate.GuruswamiSudan.Executable
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
-import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Correctness
 import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Fast
 import CompPoly.Univariate.BatchEval.Context
 import CompPoly.Univariate.NTT.KoalaBear
@@ -16,8 +13,9 @@ import CompPoly.Univariate.NTT.KoalaBear
 /-!
 # Guruswami-Sudan Concrete Implementations
 
-Named concrete dense and Lee-O'Sullivan interpolation/Roth-Ruckenstein
-implementations and correctness theorem specializations for the decoder surface.
+Named concrete dense-interpolation/Roth-Ruckenstein implementations and
+correctness theorem specializations for the implementations exercised by the
+benchmark suite.
 -/
 
 namespace CompPoly
@@ -31,6 +29,14 @@ def koalaBearDenseInterpContext : GSInterpContext KoalaBear.Field :=
 /-- Dense interpolation backend over native-word fast KoalaBear. -/
 def fastKoalaBearDenseInterpContext : GSInterpContext KoalaBear.Fast.Field :=
   denseInterpContext KoalaBear.Fast.Field
+
+/-- Direct Koetter interpolation backend over canonical KoalaBear. -/
+def koalaBearKoetterInterpContext : GSInterpContext KoalaBear.Field :=
+  koetterInterpContext KoalaBear.Field
+
+/-- Direct Koetter interpolation backend over native-word fast KoalaBear. -/
+def fastKoalaBearKoetterInterpContext : GSInterpContext KoalaBear.Fast.Field :=
+  koetterInterpContext KoalaBear.Fast.Field
 
 /-- NTTFast-backed univariate multiplication over canonical KoalaBear. -/
 def koalaBearNttFastMulContext : CPolynomial.MulContext KoalaBear.Field :=
@@ -203,6 +209,22 @@ def fastKoalaBearRothRootContext : GSRootContext KoalaBear.Fast.Field :=
 def fastKoalaBearRothNttFastRootContext : GSRootContext KoalaBear.Fast.Field :=
   rothRuckensteinRootContext KoalaBear.Fast.Field fastKoalaBearNttFastFieldRootContext
 
+/-- Alekhnovich root backend over canonical KoalaBear. -/
+def koalaBearAlekhnovichRootContext : GSRootContext KoalaBear.Field :=
+  alekhnovichRootContext KoalaBear.Field koalaBearFieldRootContext
+
+/-- Alekhnovich root backend over canonical KoalaBear with NTTFast field roots. -/
+def koalaBearAlekhnovichNttFastRootContext : GSRootContext KoalaBear.Field :=
+  alekhnovichRootContext KoalaBear.Field koalaBearNttFastFieldRootContext
+
+/-- Alekhnovich root backend over native-word fast KoalaBear. -/
+def fastKoalaBearAlekhnovichRootContext : GSRootContext KoalaBear.Fast.Field :=
+  alekhnovichRootContext KoalaBear.Fast.Field fastKoalaBearFieldRootContext
+
+/-- Alekhnovich root backend over native-word fast KoalaBear with NTTFast field roots. -/
+def fastKoalaBearAlekhnovichNttFastRootContext : GSRootContext KoalaBear.Fast.Field :=
+  alekhnovichRootContext KoalaBear.Fast.Field fastKoalaBearNttFastFieldRootContext
+
 /-- Filtered dense/Roth context over canonical KoalaBear. -/
 def koalaBearDenseRothContext : GSFilteredCoreContext KoalaBear.Field :=
   filteredCoreContextOfInterpRootContexts koalaBearDenseInterpContext koalaBearRothRootContext
@@ -220,6 +242,25 @@ def fastKoalaBearDenseRothContext : GSFilteredCoreContext KoalaBear.Fast.Field :
 /-- Filtered dense/Roth context over native-word fast KoalaBear with NTTFast field roots. -/
 def fastKoalaBearDenseRothNttFastContext : GSFilteredCoreContext KoalaBear.Fast.Field :=
   filteredCoreContextOfInterpRootContexts fastKoalaBearDenseInterpContext
+    fastKoalaBearRothNttFastRootContext
+
+/-- Filtered Koetter/Roth context over canonical KoalaBear. -/
+def koalaBearKoetterRothContext : GSFilteredCoreContext KoalaBear.Field :=
+  filteredCoreContextOfInterpRootContexts koalaBearKoetterInterpContext koalaBearRothRootContext
+
+/-- Filtered Koetter/Roth context over canonical KoalaBear with NTTFast field roots. -/
+def koalaBearKoetterRothNttFastContext : GSFilteredCoreContext KoalaBear.Field :=
+  filteredCoreContextOfInterpRootContexts koalaBearKoetterInterpContext
+    koalaBearRothNttFastRootContext
+
+/-- Filtered Koetter/Roth context over native-word fast KoalaBear. -/
+def fastKoalaBearKoetterRothContext : GSFilteredCoreContext KoalaBear.Fast.Field :=
+  filteredCoreContextOfInterpRootContexts fastKoalaBearKoetterInterpContext
+    fastKoalaBearRothRootContext
+
+/-- Filtered Koetter/Roth context over native-word fast KoalaBear with NTTFast field roots. -/
+def fastKoalaBearKoetterRothNttFastContext : GSFilteredCoreContext KoalaBear.Fast.Field :=
+  filteredCoreContextOfInterpRootContexts fastKoalaBearKoetterInterpContext
     fastKoalaBearRothNttFastRootContext
 
 /-- Concrete soundness for the canonical KoalaBear dense/Roth core. -/
