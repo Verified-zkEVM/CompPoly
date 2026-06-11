@@ -20,7 +20,7 @@ variable {R : Type*}
 private theorem eval_linearFactor [Field R] [BEq R] [LawfulBEq R] (x : R) :
     (linearFactor x).eval x = 0 := by
   rw [eval_toPoly]
-  simp [linearFactor, toPoly_sub, X_toPoly, C_toPoly]
+  simp [linearFactor, toPoly_add, X_toPoly, C_toPoly]
 
 private theorem eval_modContext_eq_self_of_eval_eq_zero
     [Field R] [BEq R] [LawfulBEq R] (D : ModContext R) (p q : CPolynomial R)

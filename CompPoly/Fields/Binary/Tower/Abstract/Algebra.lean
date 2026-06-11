@@ -240,7 +240,6 @@ lemma algebra_adjacent_tower_eq_AdjoinRoot_algebra (k : ℕ) :
   rw [algebra_adjacent_tower_def]
   unfold canonicalEmbedding
   rw [←AdjoinRoot.algebraMap_eq]
-  rw [algebraMap, Algebra.algebraMap]
   exact
     Algebra.algebra_ext (AdjoinRoot.instAlgebra (poly k)).2.toAlgebra
       (AdjoinRoot.instAlgebra (poly k)) (congrFun rfl)

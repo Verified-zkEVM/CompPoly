@@ -321,7 +321,7 @@ theorem natDegree_sum_eq_of_unique {α : Type*} {s : Finset α} {f : α → F[X]
       intro y hy hym
       exact hcoeff_others y hy hym
     have hcoeff_eq : (∑ x ∈ s, f x).coeff deg = (f mx).coeff deg := by
-      rw [Polynomial.finset_sum_coeff (s := s) (f := f) (n := deg)]
+      rw [Polynomial.finsetSum_coeff (s := s) (f := f) (n := deg)]
       exact hsum_coeff
     have hcoeff_ne0 : (∑ x ∈ s, f x).coeff deg ≠ 0 := by
       simpa [hcoeff_eq] using hmx_coeff_ne0

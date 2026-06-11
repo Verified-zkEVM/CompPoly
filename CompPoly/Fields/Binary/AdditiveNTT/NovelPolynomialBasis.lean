@@ -189,7 +189,7 @@ lemma βᵢ_not_in_Uᵢ (i : Fin r) :
       omega
     else
       push Not at h_i
-      have h_i_eq_0: i = 0 := by exact Fin.le_zero_iff'.mp h_i
+      have h_i_eq_0: i = 0 := by exact nonpos_iff_eq_zero.mp h_i
       have set_empty: Set.Ico 0 i = ∅ := by
         rw [h_i_eq_0]
         simp only [Set.Ico_eq_empty_iff]
