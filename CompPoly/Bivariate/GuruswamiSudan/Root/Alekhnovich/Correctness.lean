@@ -10,7 +10,14 @@ import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Lemmas
 /-!
 # Alekhnovich Root Search Correctness
 
-Public correctness surface for the Alekhnovich bounded bivariate root backend.
+Public correctness surface for the Alekhnovich bounded bivariate root backend
+[Ale05].
+
+## References
+
+* [M. Alekhnovich, *Linear Diophantine Equations Over Polynomials and Soft
+    Decoding of Reed-Solomon Codes*, IEEE Transactions on Information Theory
+    51(7), 2257-2265, 2005][Ale05]
 -/
 
 namespace CompPoly

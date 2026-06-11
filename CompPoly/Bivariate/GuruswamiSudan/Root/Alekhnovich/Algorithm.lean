@@ -13,7 +13,14 @@ import CompPoly.Data.Array.Lemmas
 
 Executable batched `X`-adic root lifting for the Guruswami-Sudan bivariate root
 phase. The public output is exactly filtered against `Q(X, p(X)) = 0` and
-`degree p < k`.
+`degree p < k`, following Alekhnovich's lattice-based root-search approach
+[Ale05].
+
+## References
+
+* [M. Alekhnovich, *Linear Diophantine Equations Over Polynomials and Soft
+    Decoding of Reed-Solomon Codes*, IEEE Transactions on Information Theory
+    51(7), 2257-2265, 2005][Ale05]
 -/
 
 namespace CompPoly
