@@ -104,34 +104,13 @@ lemma hammingDist_le_errorLocator_natDegree [CommRing F] [IsDomain F]
 
 /-! ## Decoder components meet their specifications
 
-Transports the abstract `Polynomial` results to the implementation, along the codec
-pipeline: `messagePoly` and `encode` on the encoder side; on the decoder side the
-received interpolant interpolates `r`, `nodalPoly = ∏ (X - aᵢ)` is monic of degree `D.n`,
-and `partialGcd` meets the Bézout stop spec. -/
+Transports the abstract `Polynomial` results to the implementation along the decoder
+pipeline:
+the received interpolant interpolates `r`, `nodalPoly = ∏ (X - aᵢ)` is monic of degree
+`D.n`, and `partialGcd` meets the Bézout stop spec. -/
 
 section Decoder
 variable [BEq F] [LawfulBEq F]
-
-/-- `(messagePoly msg).degree < k`. -/
-lemma messagePoly_degree_lt [Zero F] {k : ℕ} (msg : Vector F k) :
-    (messagePoly msg).degree < k :=
-  mem_degreeLT_iff_size_le.mpr
-    ((Raw.Trim.size_le_size msg.toArray).trans_eq msg.size_toArray)
-
-/-- `messagePoly` recovers a `CPolynomial` of degree `< k` from its bounded coefficient vector. -/
-lemma messagePoly_ofFn_coeff [Semiring F] (k : ℕ) (f : CPolynomial F) (hf : f.degree < k) :
-    messagePoly (Vector.ofFn fun i : Fin k => f.coeff i) = f := by
-  rw [eq_iff_coeff]; intro j
-  rw [messagePoly, CPolynomial.coeff, Raw.Trim.coeff_eq_coeff, Raw.coeff,
-    Raw.mk, Vector.toArray_ofFn, Array.getD_eq_getD_getElem?, Array.getElem?_ofFn]
-  split; rfl
-  rename_i hjk
-  rw [Option.getD_none, coeff_toPoly, Polynomial.coeff_eq_zero_of_degree_lt
-    ((degree_toPoly f ▸ hf).trans_le (Nat.cast_le.mpr (not_lt.mp hjk)))]
-
-/-- The codeword entry at node `i` is `messagePoly msg` evaluated at `D.val[i]`. -/
-lemma encode_get [Semiring F] (D : Domain F) {k : ℕ} (msg : Vector F k) (i : Fin D.n) :
-    (encode D msg).get i = (messagePoly msg).eval (D.val[i]) := Array.getElem_map ..
 
 /-- The received interpolant evaluates to `r i` at each domain node. -/
 lemma receivedInterpolant_eval_node [Field F] (D : Domain F) (r : Vector F D.n) (i : Fin D.n) :
