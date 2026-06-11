@@ -72,9 +72,7 @@ theorem HasRootFactor.append_right {A B : Array (CPolynomial F)} {a : F}
   obtain ⟨f, hf, hc⟩ := h
   exact ⟨f, by simp only [Array.toList_append, List.mem_append]; exact Or.inr hf, hc⟩
 
-/-- `(X + s)^exponent mod modulus`, lifted back to canonical polynomials.
-The Cantor–Zassenhaus discriminating power, generalising `xPowModWith` to the
-shifted base `X + s`. -/
+/-- `(X + s)^exponent mod modulus`, the shifted discriminating power of the method. -/
 def shiftedPowModWith (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
     (modulus : CPolynomial F) (s : F) (exponent : Nat) : CPolynomial F :=
   CPolynomial.ofArray
@@ -93,8 +91,7 @@ def czRefine (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext 
   let gNon := CPolynomial.monicNormalize (CPolynomial.gcdMonic p (w + 1))
   (gZero, gRes, gNon)
 
-/-- The shift bucket `X + s` is the monic linear factor with root `-s`. At shift
-`s = -a` this isolates the root `a` directly, without quadratic-residue reasoning. -/
+/-- The shift base `X + s` equals the monic linear factor with root `-s`. -/
 theorem czShift_eq_linearFactor (s : F) :
     (CPolynomial.X + CPolynomial.C s : CPolynomial F) = CPolynomial.linearFactor (-s) := by
   rw [CPolynomial.linearFactor, neg_neg, add_comm]
@@ -105,8 +102,7 @@ theorem eval_X_add_C (a s : F) :
   rw [CPolynomial.eval_toPoly, CPolynomial.toPoly_add, CPolynomial.X_toPoly,
     CPolynomial.C_toPoly, Polynomial.eval_add, Polynomial.eval_X, Polynomial.eval_C]
 
-/-- At a root `a` of `p`, the shifted discriminating power evaluates as
-`(a + s)^k`. With `k = (q-1)/2` this is the value routed on by the residue buckets. -/
+/-- At a root `a` of `p`, the shifted discriminating power evaluates to `(a + s)^k`. -/
 theorem eval_shiftedPowModWith (M : CPolynomial.Raw.MulContext F)
     (D : CPolynomial.Raw.ModContext F) (p : CPolynomial F) (s a : F) (k : Nat)
     (hp : CPolynomial.eval a p = 0) :
@@ -120,7 +116,7 @@ theorem eval_shiftedPowModWith (M : CPolynomial.Raw.MulContext F)
   change CPolynomial.eval a (CPolynomial.X + CPolynomial.C s) ^ k = (a + s) ^ k
   rw [eval_X_add_C]
 
-/-- Evaluation is additive (the library provides `eval_sub` but not `eval_add`). -/
+/-- Evaluation is additive. -/
 theorem eval_add (a : F) (p₁ p₂ : CPolynomial F) :
     CPolynomial.eval a (p₁ + p₂) = CPolynomial.eval a p₁ + CPolynomial.eval a p₂ := by
   rw [CPolynomial.eval_toPoly, CPolynomial.toPoly_add, Polynomial.eval_add,
@@ -149,9 +145,8 @@ theorem czRefine_snd_snd (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw
         (CPolynomial.gcdMonic p (shiftedPowModWith M D p s ((q - 1) / 2) + 1)) :=
   rfl
 
-/-- Quadratic-residue routing: for `q` odd and `a + s ≠ 0`, a root `a` of `p` is a
-root of one of the two residue buckets `gRes`/`gNon`. Uses Fermat (`a^q = a`) so
-that `((a+s)^((q-1)/2))² = 1`, hence the discriminating power is `±1` at `a`. -/
+/-- Quadratic-residue routing: for odd `q` and `a + s ≠ 0`, a root `a` of `p` is a
+root of one of the two residue buckets `gRes`/`gNon`. -/
 theorem czRefine_root_in_residue_bucket
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
     (q : Nat) (hodd : Odd q) (hfrob : ∀ x : F, x ^ q = x)
@@ -191,9 +186,8 @@ theorem linearFactor_toPoly (a : F) :
     CPolynomial.X_toPoly, Polynomial.C_neg]
   ring
 
-/-- Isolation: at a root `a` of `p`, the monic gcd of `p` with the linear factor
-`X - a` is exactly that linear factor. This makes the `s = -a` quotient bucket of
-`czRefine` equal to `linearFactor a`, isolating the root. -/
+/-- At a root `a` of `p`, the monic gcd of `p` with `linearFactor a` equals
+`linearFactor a`. -/
 theorem gcdMonic_linearFactor_of_root {p : CPolynomial F} {a : F}
     (hroot : CPolynomial.eval a p = 0) :
     CPolynomial.gcdMonic p (CPolynomial.linearFactor a) = CPolynomial.linearFactor a := by
@@ -227,14 +221,10 @@ theorem monicNormalize_linearFactor (a : F) :
   intro i
   rw [CPolynomial.coeff_toPoly, CPolynomial.coeff_toPoly, htoPoly]
 
-/-- Cantor–Zassenhaus separation driven by an explicit shift schedule
-(structural recursion on the schedule).
-
-Emits a factor only when it is recognised as a represented linear factor, so the
-output is linear by construction (`czSound`). When the schedule is exhausted on a
-still-composite factor, that factor is dropped (defensive): completeness is
-therefore conditional on the schedule separating all roots, which is the content
-of the `complete` obligation. -/
+/-- Cantor–Zassenhaus separation along a shift schedule. A factor is emitted once
+it is a represented linear factor; a still-composite factor with the schedule
+exhausted is dropped, so completeness is conditional on the schedule separating
+all roots. -/
 def czSplitWithShifts (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
     (q : Nat) : List F → CPolynomial F → Array (CPolynomial F)
   | [], p =>
@@ -338,10 +328,8 @@ theorem czSplitWithShifts_cons_else (M : CPolynomial.Raw.MulContext F)
         czSplitWithShifts M D q rest (czRefine M D q s (CPolynomial.monicNormalize p)).2.2 := by
   rw [czSplitWithShifts, if_neg (by rw [h01]; simp), if_neg (by rw [hlin]; simp)]
 
-/-- Completeness core: for `q` odd over a field where the schedule reaches `-a`,
-the Cantor–Zassenhaus recursion finds a root factor candidate for every root `a`.
-The recursion preserves the root into a residue bucket at each non-isolating
-shift, and isolates it at shift `s = -a` via the `X + s` quotient bucket. -/
+/-- Completeness core: for odd `q` over a field whose schedule reaches `-a`, the
+recursion finds a root factor candidate for every root `a`. -/
 theorem czComplete_core (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
     (q : Nat) (hodd : Odd q) (hfrob : ∀ x : F, x ^ q = x) (a : F) :
     ∀ (shifts : List F) (p : CPolynomial F),
@@ -419,8 +407,7 @@ def czLinearFactorProductSplitterOf
     exact czSound q (czDefaultShifts q) p factor h
   complete := complete
 
-/-- Over the prime field `ZMod q` the schedule `0..q-1` reaches every element,
-since every `x` equals `↑x.val` with `x.val < q`. -/
+/-- Over the prime field `ZMod q` the schedule `0..q-1` reaches every element. -/
 theorem zmod_mem_czDefaultShifts (q : Nat) [Fact (Nat.Prime q)] (x : ZMod q) :
     x ∈ czDefaultShifts q := by
   haveI : NeZero q := ⟨(Fact.out : Nat.Prime q).pos.ne'⟩
@@ -428,9 +415,7 @@ theorem zmod_mem_czDefaultShifts (q : Nat) [Fact (Nat.Prime q)] (x : ZMod q) :
   exact ⟨x.val, List.mem_range.mpr (ZMod.val_lt x), ZMod.natCast_zmod_val x⟩
 
 /-- Completeness over a prime field `ZMod q` of odd order: every root of a nonzero
-polynomial is found by `czSplitLinearFactors`. Discharges the `validInput` facts
-of `czComplete` from `ZMod.pow_card` (Frobenius) and `zmod_mem_czDefaultShifts`
-(coverage). Applies to KoalaBear and BabyBear. -/
+`f` is found by `czSplitLinearFactors`. Applies to KoalaBear and BabyBear. -/
 theorem czComplete_zmod (q : Nat) [Fact (Nat.Prime q)] (hodd : Odd q)
     (p : CPolynomial (ZMod q)) (a : ZMod q) (hpne : p ≠ 0)
     (hroot : CPolynomial.eval a p = 0) :
@@ -450,7 +435,7 @@ def czLinearFactorProductSplitter : LinearFactorProductSplitter F :=
       obtain ⟨hodd, hfrob, hcover⟩ := hvalid
       exact czComplete q hodd hfrob hcover p a hpne hroot)
 
-/-- Finite-field context for the prime field `ZMod q` of odd order. -/
+/-- Finite-field context for the prime field `ZMod q`. -/
 def czFiniteFieldContext (q : Nat) [Fact (Nat.Prime q)] : FiniteFieldContext (ZMod q) :=
   haveI : NeZero q := ⟨(Fact.out : Nat.Prime q).pos.ne'⟩
   { q := q
