@@ -4,6 +4,10 @@ import CompPoly.Bivariate.Deriv
 import CompPoly.Bivariate.Factor
 import CompPoly.Bivariate.FactorMonic
 import CompPoly.Bivariate.GuruswamiSudan.Context
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Basic
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Correctness
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Algorithm
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Polynomial
 import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
 import CompPoly.Bivariate.GuruswamiSudan.Root.Common
@@ -77,6 +81,14 @@ import CompPoly.Fields.KoalaBear.Fast
 import CompPoly.Fields.Mersenne
 import CompPoly.Fields.PrattCertificate
 import CompPoly.Fields.Secp256k1
+import CompPoly.LinearAlgebra.Dense
+import CompPoly.LinearAlgebra.Dense.Basic
+import CompPoly.LinearAlgebra.Dense.Kernel
+import CompPoly.LinearAlgebra.Dense.KernelCorrectness
+import CompPoly.LinearAlgebra.Dense.RowOps
+import CompPoly.LinearAlgebra.Dense.RowOpsCorrectness
+import CompPoly.LinearAlgebra.Dense.RrefSemantics
+import CompPoly.LinearAlgebra.Dense.RrefShape
 import CompPoly.Multilinear.Basic
 import CompPoly.Multilinear.Equiv
 import CompPoly.Multilinear.ManyEval
