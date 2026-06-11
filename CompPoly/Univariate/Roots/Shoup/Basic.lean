@@ -14,7 +14,13 @@ import CompPoly.Univariate.ToPoly.Core
 Executable trace-coordinate splitter for finite-field root products over fields
 presented as `GF(p^k)` with small base characteristic `p`. The splitter refines a
 valid root product by `k` trace coordinates and the `p` embedded base constants;
-it does not enumerate all `p^k` field elements.
+it does not enumerate all `p^k` field elements, following the small-characteristic
+Frobenius-map factoring method of von zur Gathen and Shoup [vzGS92].
+
+## References
+
+* [J. von zur Gathen and Victor Shoup, *Computing Frobenius maps and factoring
+    polynomials*, Computational Complexity 2, 187-224, 1992][vzGS92]
 -/
 
 namespace CompPoly
