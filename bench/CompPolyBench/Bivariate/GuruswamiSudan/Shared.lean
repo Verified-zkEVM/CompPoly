@@ -13,7 +13,8 @@ import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 # Guruswami-Sudan Benchmark Helpers
 
 Shared KoalaBear input shapes, checksum helpers, and group metadata for the
-dense-interpolation/root-search Guruswami-Sudan benchmark subset.
+dense and Lee-O'Sullivan interpolation/root-search Guruswami-Sudan benchmark
+subset.
 -/
 
 open CompPoly
