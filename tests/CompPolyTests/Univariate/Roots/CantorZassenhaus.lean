@@ -46,11 +46,10 @@ private def p₀₁ : CPolynomial F := CPolynomial.X ^ 2 - CPolynomial.X
 
 #guard (czSplitLinearFactors 7 p₂₃).all (fun f => isRepresentedLinearFactor f)
 
-/-! ### Completeness is provable for any root (theorem-level check).
+/-! ### Completeness is provable for any root.
 
-The polynomial-level hypotheses are kept abstract: `decide` does not kernel-reduce
-`CPolynomial`/`ZMod` equalities, so `p ≠ 0` and `eval a p = 0` are taken as
-arguments. The point is that `czComplete_zmod` composes for `ZMod 7`. -/
+`decide` does not kernel-reduce `CPolynomial`/`ZMod` equalities, so `p ≠ 0` and
+`eval a p = 0` are passed as hypotheses. -/
 
 example (a : F) (hpne : p₂₃ ≠ 0) (h : CPolynomial.eval a p₂₃ = 0) :
     ∃ factor, factor ∈ (czSplitLinearFactors 7 p₂₃).toList ∧
@@ -59,9 +58,8 @@ example (a : F) (hpne : p₂₃ ≠ 0) (h : CPolynomial.eval a p₂₃ = 0) :
 
 /-! ### End-to-end root finding on a general `f` (`czRoots`).
 
-`czRoots` runs stage 1 (`gcd(f, X^7 - X)`) then the CZ splitter, returning the
-distinct field roots of an arbitrary `f`. Multiplicities collapse and factors with
-no `ZMod 7` root are filtered. -/
+Returns the distinct `ZMod 7` roots of an arbitrary `f`: multiplicities collapse
+and factors with no `ZMod 7` root are dropped. -/
 
 -- `(X - 2)² (X - 3)`: roots `{2, 3}`, the double root counted once.
 private def fMult : CPolynomial F :=
