@@ -22,12 +22,40 @@ namespace PolynomialMatrix
 
 variable {F : Type*}
 
+/-- Keep the coefficients of degree `< order`. -/
+def truncateX [Zero F] [BEq F] [LawfulBEq F] (order : Nat)
+    (p : CPolynomial F) : CPolynomial F :=
+  CPolynomial.ofArray
+    ((List.range order).map (fun i ↦ CPolynomial.coeff p i) |>.toArray)
+
+/-- Coefficients of an `X`-adic truncation. -/
+theorem truncateX_coeff [Semiring F] [BEq F] [LawfulBEq F] (order : Nat)
+    (p : CPolynomial F) (i : Nat) :
+    CPolynomial.coeff (truncateX order p) i =
+      if i < order then CPolynomial.coeff p i else 0 := by
+  rw [truncateX]
+  rw [show CPolynomial.coeff (CPolynomial.ofArray
+      ((List.range order).map (fun i ↦ CPolynomial.coeff p i) |>.toArray)) i =
+      CPolynomial.Raw.coeff
+        ((List.range order).map (fun i ↦ CPolynomial.coeff p i) |>.toArray) i from by
+    rw [CPolynomial.ofArray, CPolynomial.coeff]
+    rw [CPolynomial.Raw.Trim.coeff_eq_coeff]]
+  rw [CPolynomial.Raw.coeff, Array.getD_eq_getD_getElem?, List.getElem?_toArray,
+    List.getElem?_map]
+  by_cases hi : i < order
+  · rw [List.getElem?_range hi]
+    simp [hi]
+  · rw [List.getElem?_eq_none (by simpa using Nat.le_of_not_lt hi)]
+    simp [hi]
+
 /-- Polynomial-matrix low-product backend.  The full multiplication context is
 kept beside the low-product operation because recursive PM-basis still needs
 ordinary basis composition. -/
 structure MulLowContext (F : Type*) [Semiring F] [BEq F] [LawfulBEq F] where
   mulContext : CPolynomial.MulContext F
   mulLow : Nat → CPolynomial F → CPolynomial F → CPolynomial F
+  /-- The backend returns exactly the truncated canonical product. -/
+  mulLow_eq : ∀ order p q, mulLow order p q = truncateX order (p * q)
 
 namespace MulLowContext
 
@@ -38,6 +66,10 @@ def fromMulContext [Semiring F] [BEq F] [LawfulBEq F]
   mulLow order p q :=
     CPolynomial.ofArray
       ((List.range order).map (fun i ↦ CPolynomial.coeff (mulCtx.mul p q) i) |>.toArray)
+  mulLow_eq := by
+    intro order p q
+    rw [mulCtx.mul_eq_mul]
+    rfl
 
 /-- Low-product backend backed directly by a raw low-product implementation. -/
 def raw [Semiring F] [BEq F] [LawfulBEq F]
@@ -45,6 +77,20 @@ def raw [Semiring F] [BEq F] [LawfulBEq F]
     (rawCtx : CPolynomial.Raw.MulLowContext F) : MulLowContext F where
   mulContext := mulCtx
   mulLow order p q := CPolynomial.ofArray (rawCtx.mulLow order p.val q.val)
+  mulLow_eq := by
+    intro order p q
+    apply CPolynomial.eq_iff_coeff.2
+    intro i
+    rw [truncateX_coeff]
+    rw [show CPolynomial.coeff (CPolynomial.ofArray (rawCtx.mulLow order p.val q.val)) i =
+        CPolynomial.Raw.coeff (rawCtx.mulLow order p.val q.val) i from by
+      rw [CPolynomial.ofArray, CPolynomial.coeff]
+      rw [CPolynomial.Raw.Trim.coeff_eq_coeff]]
+    rw [CPolynomial.Raw.mulLow_coeff]
+    by_cases hi : i < order
+    · simp only [hi, if_true]
+      rw [CPolynomial.coeff_mul, CPolynomial.Raw.mul_coeff]
+    · simp [hi]
 
 end MulLowContext
 
@@ -179,12 +225,6 @@ def rowMulMatrixEntryCoeffCap [Zero F] [BEq F]
   (List.range row.size).foldl
     (fun acc k ↦ max acc
       (productCoeffCap (rowGet row k) (rowGet (M.getD k #[]) j))) 0
-
-/-- Keep the coefficients of degree `< order`. -/
-def truncateX [Zero F] [BEq F] [LawfulBEq F] (order : Nat)
-    (p : CPolynomial F) : CPolynomial F :=
-  CPolynomial.ofArray
-    ((List.range order).map (fun i ↦ CPolynomial.coeff p i) |>.toArray)
 
 /-- Truncate one row with independent output-column orders. -/
 def rowTruncateColumns [Zero F] [BEq F] [LawfulBEq F]

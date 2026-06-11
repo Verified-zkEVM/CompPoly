@@ -37,12 +37,23 @@ developed. -/
 theorem modularSolutionBasis_complete_minimal
     (ctx : ModularSolutionBasisContext F) (equation : ModularEquation F)
     (shift : Array Nat) {row : PolynomialRow F}
+    (hmonic : ∀ b, b < equation.moduli.size → (equation.moduli.getD b 0).monic)
+    (hcols : equation.moduli.size ≤ MatrixWidth equation.matrix)
+    (hshift : shift.size = equation.solutionWidth)
     (hrow :
       rowSatisfiesModularBool ctx.mulContext ctx.modContext row
-        equation.matrix equation.moduli = true) :
-    ∃ basisRow,
-      basisRow ∈ MatrixRows (ctx.solutionBasis equation shift) :=
-  ctx.complete_minimal equation shift row hrow
+        equation.matrix equation.moduli = true)
+    (hnonzero : rowIsZero row = false)
+    (hwidth : row.size ≤ equation.solutionWidth) :
+    (∀ basisRow,
+      basisRow ∈ MatrixRows (ctx.solutionBasis equation shift) →
+        basisRow.size ≤ equation.solutionWidth) ∧
+    ∃ basisRow degree,
+      basisRow ∈ MatrixRows (ctx.solutionBasis equation shift) ∧
+      rowShiftedDegree? basisRow shift = some degree ∧
+      ∀ rowDegree, rowShiftedDegree? row shift = some rowDegree →
+        degree ≤ rowDegree :=
+  ctx.complete_minimal equation shift row hmonic hcols hshift hrow hnonzero hwidth
 
 end Approximant
 

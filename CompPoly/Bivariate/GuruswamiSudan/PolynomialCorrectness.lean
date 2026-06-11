@@ -920,7 +920,7 @@ private theorem toPoly_hasseDerivative_eq_coeffwise_hasseDeriv_hasseDeriv {F : T
 
 /-- Evaluating the univariate `X`-Hasse derivative of the evaluated `Y`-Hasse
 derivative matches the executable bivariate Hasse derivative. -/
-private theorem eval_hasseDeriv_eval_hasseDeriv_toPoly {F : Type*}
+theorem eval_hasseDeriv_eval_hasseDeriv_toPoly {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (Q : CBivariate F) (x y : F) (a b : Nat) :
     Polynomial.eval x (Polynomial.hasseDeriv a
