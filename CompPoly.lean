@@ -3,7 +3,14 @@ import CompPoly.Bivariate.CMvEquiv
 import CompPoly.Bivariate.Deriv
 import CompPoly.Bivariate.Factor
 import CompPoly.Bivariate.FactorMonic
+import CompPoly.Bivariate.GuruswamiSudan
 import CompPoly.Bivariate.GuruswamiSudan.Context
+import CompPoly.Bivariate.GuruswamiSudan.Core
+import CompPoly.Bivariate.GuruswamiSudan.CoreCorrectness
+import CompPoly.Bivariate.GuruswamiSudan.Executable
+import CompPoly.Bivariate.GuruswamiSudan.Filter
+import CompPoly.Bivariate.GuruswamiSudan.FilterCorrectness
+import CompPoly.Bivariate.GuruswamiSudan.Implementations
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Basic
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Algorithm
