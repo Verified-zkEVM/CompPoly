@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness
+import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Fast
 import CompPoly.Univariate.LagrangeArray
 import Mathlib.Algebra.Field.ZMod
 
@@ -65,6 +66,9 @@ private def subproductE : CPolynomial.BatchEvalContext F3 :=
 private def reducer : PolynomialMatrix.ShiftedRowReducerContext F3 :=
   PolynomialMatrix.muldersStorjohannReducerContext F3
 
+private def fastReducer : PolynomialMatrix.ShiftedRowReducerContext F3 :=
+  PolynomialMatrix.muldersStorjohannFastReducerContext F3
+
 private def leeContext : GSInterpContext F3 :=
   leeOSullivanInterpContext directV hornerE reducer
 
@@ -121,6 +125,9 @@ private def weakPopovMatrix : PolynomialMatrix F3 :=
 #guard PolynomialMatrix.rowShiftedDegree? zeroRow #[0, 1] |>.isNone
 #guard PolynomialMatrix.shiftedLeadingConflict? weakPopovMatrix #[0, 0] |>.isNone
 #guard PolynomialMatrix.muldersStorjohannReduce weakPopovMatrix #[0, 0] == weakPopovMatrix
+#guard PolynomialMatrix.cachedLeadingConflict?
+  (PolynomialMatrix.rowLeadingPositions weakPopovMatrix #[0, 0]) |>.isNone
+#guard PolynomialMatrix.muldersStorjohannReduceFast weakPopovMatrix #[0, 0] == weakPopovMatrix
 
 #guard (leeOSullivanBasisRows directV hornerE points params).size == leeOSullivanWidth params
 #guard (leeOSullivanBasisRows directV hornerE points params).all
@@ -137,6 +144,13 @@ private def weakPopovMatrix : PolynomialMatrix F3 :=
 #guard match leeOSullivanInterpolate directV hornerE reducer lowPoints lowParams with
   | none => false
   | some Q => interpolationWitnessIsValidBool lowPoints lowParams Q
+
+#guard leeOSullivanInterpolate directV hornerE fastReducer points params ==
+  leeOSullivanInterpolate directV hornerE reducer points params
+#guard leeOSullivanInterpolate directV hornerE fastReducer points3 params ==
+  leeOSullivanInterpolate directV hornerE reducer points3 params
+#guard leeOSullivanPositiveInterpolate directV hornerE fastReducer duplicateXPoints params
+  == none
 
 end GuruswamiSudan.Interpolation.LeeOSullivan
 

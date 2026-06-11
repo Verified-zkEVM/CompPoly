@@ -119,15 +119,15 @@ def guruswamiSudanGroupInfos : List BenchGroupInfo := [
   ⟨"guruswami-sudan-interp-solve-small-koalabear",
     "Guruswami-Sudan dense interpolation solving, small (KoalaBear)"⟩,
   ⟨"guruswami-sudan-interp-small-koalabear",
-    "Guruswami-Sudan dense interpolation, small (KoalaBear)"⟩,
+    "Guruswami-Sudan interpolation, small (KoalaBear)"⟩,
   ⟨"guruswami-sudan-root-koalabear",
     "Guruswami-Sudan root finding (KoalaBear)"⟩,
   ⟨"guruswami-sudan-core-small-koalabear",
-    "Guruswami-Sudan dense full core, small (KoalaBear)"⟩,
+    "Guruswami-Sudan full core, small (KoalaBear)"⟩,
   ⟨"guruswami-sudan-packed-filter-koalabear",
     "Guruswami-Sudan packed distance filtering (KoalaBear)"⟩,
   ⟨"guruswami-sudan-filtered-core-small-koalabear",
-    "Guruswami-Sudan dense filtered core, small (KoalaBear)"⟩
+    "Guruswami-Sudan filtered core, small (KoalaBear)"⟩
 ]
 
 end CompPolyBench

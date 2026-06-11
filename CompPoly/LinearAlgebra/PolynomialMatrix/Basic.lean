@@ -86,6 +86,15 @@ def rowScaleMonomial [Semiring F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (c : F) (d : Nat) (row : PolynomialRow F) : PolynomialRow F :=
   rowScalePolynomial (CPolynomial.monomial d c) row
 
+/-- Fused `a - c * X^d * b` over the maximum input width, entrywise via
+`CPolynomial.subMulMonomial`. One call costs `O(deg + d)` per entry instead of
+the `O(d * deg)` convolution behind `rowSub a (rowScaleMonomial c d b)`. -/
+def rowSubScaledShift [Ring F] [BEq F] [LawfulBEq F]
+    (a : PolynomialRow F) (c : F) (d : Nat) (b : PolynomialRow F) :
+    PolynomialRow F :=
+  (List.range (max a.size b.size)).map
+    (fun j ↦ CPolynomial.subMulMonomial (rowGet a j) c d (rowGet b j)) |>.toArray
+
 /-- Replace a row if the index is in bounds. -/
 def replaceRow [Zero F] (M : PolynomialMatrix F) (idx : Nat) (row : PolynomialRow F) :
     PolynomialMatrix F :=

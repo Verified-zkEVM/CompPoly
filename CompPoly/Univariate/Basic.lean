@@ -363,6 +363,27 @@ theorem eq_zero_iff_coeff_zero [Zero R] [BEq R] [LawfulBEq R] {p : CPolynomial R
     p = 0 ↔ ∀ i, coeff p i = 0 := by
   rw [eq_iff_coeff]; simp only [coeff_zero]
 
+/-- Coefficients past the stored canonical array are zero. -/
+theorem coeff_eq_zero_of_size_le [Zero R] (p : CPolynomial R) {i : ℕ}
+    (hi : p.val.size ≤ i) : coeff p i = 0 := by
+  rw [coeff, Raw.coeff, Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hi,
+    Option.getD_none]
+
+/-- Coefficient of a monomial multiple: shift by `n` and scale by `c`. -/
+lemma coeff_monomial_mul [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R]
+    (n : ℕ) (c : R) (p : CPolynomial R) (i : ℕ) :
+    coeff (monomial n c * p) i = if n ≤ i then c * coeff p (i - n) else 0 := by
+  rw [coeff_mul]
+  have hsummand : ∀ j ∈ Finset.range (i + 1),
+      coeff (monomial n c) j * coeff p (i - j) =
+        if j = n then c * coeff p (i - j) else 0 := by
+    intro j _
+    rw [coeff_monomial]
+    split_ifs <;> simp
+  rw [Finset.sum_congr rfl hsummand,
+    Finset.sum_ite_eq' (Finset.range (i + 1)) n (fun j ↦ c * coeff p (i - j))]
+  simp
+
 /-- An index is in the support iff the coefficient there is nonzero. -/
 lemma mem_support_iff [Zero R] [BEq R] [LawfulBEq R] (p : CPolynomial R) (i : ℕ) :
     i ∈ p.support ↔ coeff p i ≠ 0 := by
@@ -1135,6 +1156,58 @@ lemma coeff_neg [Ring R] [BEq R] [LawfulBEq R]
 lemma coeff_sub [Ring R] [BEq R] [LawfulBEq R]
     (p q : CPolynomial R) (i : ℕ) : coeff (p - q) i = coeff p i - coeff q i := by
   unfold coeff; exact Raw.sub_coeff p.val q.val i
+
+/-- Fused `a - c * X^d * b` on canonical coefficient arrays.
+
+Each output coefficient is computed directly, so one call costs
+`O(max (deg a) (d + deg b))` field operations instead of the `O(d * deg b)`
+convolution behind `monomial d c * b` followed by a subtraction pass.
+The guards skip the array construction entirely when either factor is zero. -/
+def subMulMonomial [Ring R] [BEq R] [LawfulBEq R]
+    (a : CPolynomial R) (c : R) (d : Nat) (b : CPolynomial R) : CPolynomial R :=
+  if c == 0 || b == 0 then
+    a
+  else
+    CPolynomial.ofArray <|
+      Array.ofFn (n := max a.val.size (d + b.val.size)) fun j ↦
+        a.coeff j.val - if d ≤ j.val then c * b.coeff (j.val - d) else 0
+
+/-- `subMulMonomial` agrees with the generic `a - monomial d c * b`. -/
+theorem subMulMonomial_eq [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
+    (a : CPolynomial R) (c : R) (d : Nat) (b : CPolynomial R) :
+    subMulMonomial a c d b = a - monomial d c * b := by
+  have hcoeff : ∀ i, coeff (a - monomial d c * b) i =
+      a.coeff i - if d ≤ i then c * b.coeff (i - d) else 0 := by
+    intro i
+    rw [coeff_sub, coeff_monomial_mul]
+  rw [subMulMonomial]
+  by_cases hguard : c == 0 || b == 0
+  · rw [if_pos hguard, eq_iff_coeff]
+    intro i
+    rw [hcoeff i]
+    rcases Bool.or_eq_true_iff.mp hguard with hc | hb
+    · rw [eq_of_beq hc]
+      simp
+    · rw [eq_of_beq hb]
+      simp only [coeff_zero]
+      simp
+  · rw [if_neg hguard, eq_iff_coeff]
+    intro i
+    rw [coeff_ofArray, hcoeff i]
+    by_cases hi : i < max a.val.size (d + b.val.size)
+    · rw [Array.getD_eq_getD_getElem?,
+        Array.getElem?_eq_getElem (by simpa using hi)]
+      simp
+    · have hbound : (Array.ofFn (n := max a.val.size (d + b.val.size)) fun j ↦
+          a.coeff j.val - if d ≤ j.val then c * b.coeff (j.val - d) else 0).size ≤ i := by
+        simpa using Nat.le_of_not_lt hi
+      rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hbound, Option.getD_none]
+      have ha : a.coeff i = 0 :=
+        coeff_eq_zero_of_size_le a (by omega)
+      have hb : b.coeff (i - d) = 0 :=
+        coeff_eq_zero_of_size_le b (by omega)
+      rw [ha, hb]
+      simp
 
 /-- The in-place `erase` agrees with the subtraction-based characterization:
   `erase n p` equals `p - monomial n (p.coeff n)`. -/

@@ -21,13 +21,6 @@ namespace CompPoly
 
 namespace CPolynomial
 
-/-- Coefficients past the stored canonical array are zero. -/
-theorem coeff_eq_zero_of_size_le {R : Type*} [Zero R] (p : CPolynomial R)
-    {i : Nat} (hi : p.val.size ≤ i) : p.coeff i = 0 := by
-  unfold CPolynomial.coeff CPolynomial.Raw.coeff
-  rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hi]
-  rfl
-
 /-- The natural degree of a nonzero computable polynomial lies in its support. -/
 theorem natDegree_mem_support_of_nonzero {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
     {p : CPolynomial R} (hp : p ≠ 0) : p.natDegree ∈ p.support := by

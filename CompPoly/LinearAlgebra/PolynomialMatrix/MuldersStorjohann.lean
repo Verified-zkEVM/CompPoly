@@ -126,6 +126,93 @@ def muldersStorjohannReduce (M : PolynomialMatrix F) (shift : Array Nat) :
     PolynomialMatrix F :=
   muldersStorjohannReduceWithFuel (muldersStorjohannFuel M shift) M shift
 
+/-!
+### Fast variants
+
+The loop above recomputes every row's shifted leading position for every
+scanned row pair, and cancels leading terms through a generic
+monomial-times-row multiplication. The variants below compute each row's
+leading position once per scan and use the fused `rowSubScaledShift` update.
+They are proved extensionally equal to the direct definitions in
+`MuldersStorjohannCorrectness/Fast.lean`, so all correctness results transfer.
+-/
+
+/-- Shifted leading positions of all rows, computed once per conflict scan. -/
+def rowLeadingPositions [Zero F] [BEq F]
+    (M : PolynomialMatrix F) (shift : Array Nat) : Array (Option Nat) :=
+  M.map fun row ↦ rowShiftedLeadingPosition? row shift
+
+/-- One inner-loop update for cached shifted-leading-position conflict search. -/
+def cachedLeadingConflictInRowStep?
+    (positions : Array (Option Nat)) (i : Nat)
+    (found : Option (Nat × Nat)) (j : Nat) : Option (Nat × Nat) :=
+  match found with
+  | some _ => found
+  | none =>
+      match positions.getD i none, positions.getD j none with
+      | some pi, some pj =>
+          if pi == pj then some (i, j) else none
+      | _, _ => none
+
+/-- Scan one row index `i` for a cached shifted-leading-position conflict. -/
+def cachedLeadingConflictInRow?
+    (positions : Array (Option Nat)) (i : Nat)
+    (found : Option (Nat × Nat)) : Option (Nat × Nat) :=
+  (List.range' (i + 1) (positions.size - (i + 1))).foldl
+    (cachedLeadingConflictInRowStep? positions i)
+    found
+
+/-- First pair of rows with the same cached shifted leading position. -/
+def cachedLeadingConflict? (positions : Array (Option Nat)) :
+    Option (Nat × Nat) :=
+  (List.range' 0 positions.size).foldl
+    (fun found i ↦ cachedLeadingConflictInRow? positions i found)
+    none
+
+/-- `cancelShiftedLeadingTerm` with the fused row update. -/
+def cancelShiftedLeadingTermFast
+    (target reducer : PolynomialRow F) (shift : Array Nat) : PolynomialRow F :=
+  match rowShiftedLeadingTerm? target shift, rowShiftedLeadingTerm? reducer shift with
+  | some t, some r =>
+      if t.position == r.position then
+        if r.coeff == 0 then
+          target
+        else
+          rowSubScaledShift target (t.coeff / r.coeff) (t.degree - r.degree) reducer
+      else
+        target
+  | _, _ => target
+
+/-- One fast Mulders-Storjohann cancellation step. -/
+def muldersStorjohannStepFast
+    (M : PolynomialMatrix F) (shift : Array Nat) (i j : Nat) : PolynomialMatrix F :=
+  let rowI := M.getD i #[]
+  let rowJ := M.getD j #[]
+  match rowShiftedDegree? rowI shift, rowShiftedDegree? rowJ shift with
+  | some degI, some degJ =>
+      if degI ≤ degJ then
+        replaceRow M j (cancelShiftedLeadingTermFast rowJ rowI shift)
+      else
+        replaceRow M i (cancelShiftedLeadingTermFast rowI rowJ shift)
+  | _, _ => M
+
+/-- Fuel-bounded fast Mulders-Storjohann reduction loop. -/
+def muldersStorjohannReduceWithFuelFast :
+    Nat → PolynomialMatrix F → Array Nat → PolynomialMatrix F
+  | 0, M, _shift => M
+  | fuel + 1, M, shift =>
+      match cachedLeadingConflict? (rowLeadingPositions M shift) with
+      | none => M
+      | some (i, j) =>
+          muldersStorjohannReduceWithFuelFast fuel
+            (muldersStorjohannStepFast M shift i j) shift
+
+/-- Fast executable Mulders-Storjohann shifted row reducer. Agrees with
+`muldersStorjohannReduce`; see `muldersStorjohannReduceFast_eq`. -/
+def muldersStorjohannReduceFast (M : PolynomialMatrix F) (shift : Array Nat) :
+    PolynomialMatrix F :=
+  muldersStorjohannReduceWithFuelFast (muldersStorjohannFuel M shift) M shift
+
 end PolynomialMatrix
 
 end CompPoly
