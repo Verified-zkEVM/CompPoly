@@ -34,9 +34,10 @@ default schedule `0..q-1` reaches every element, and the root `a` is isolated at
 shift `s = -a` by the `gcd(p, X + s)` bucket. Soundness (`czSound`) and
 completeness over odd prime fields (`czComplete`, `czComplete_zmod`) are proved.
 
-The default schedule has length `q`, suitable for small fields. Efficient use on
-large fields needs a short schedule, whose completeness relies on quadratic-residue
-separation of distinct roots.
+The default schedule has length `q`, so it is practical only on small fields. A
+fast large-field variant would use a short (e.g. random) schedule; proving its
+completeness needs the quadratic-residue separation argument and is left as future
+work.
 
 ## References
 
