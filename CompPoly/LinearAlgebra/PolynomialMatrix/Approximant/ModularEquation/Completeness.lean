@@ -495,12 +495,12 @@ private theorem me_adaptiveRound_width
 private theorem me_adaptiveLoop_width
     {mulCtx : CPolynomial.MulContext F} {modCtx : CPolynomial.ModContext F}
     {pmCtx : PMBasisContext F} {equation : ModularEquation F}
-    {shift : Array Nat} {cap : Nat} :
+    {shift : Array Nat} {degreeBound? : Option Nat} {cap : Nat} :
     ∀ (fuel : Nat) (state : AdaptiveSolveState F),
       (∀ r ∈ MatrixRows state.filtered, r.size = equation.solutionWidth) →
       ∀ r ∈ MatrixRows
-          (adaptiveSolutionLoop mulCtx modCtx pmCtx equation shift cap fuel
-            state).filtered,
+          (adaptiveSolutionLoop mulCtx modCtx pmCtx equation shift degreeBound?
+            cap fuel state).filtered,
         r.size = equation.solutionWidth := by
   intro fuel
   induction fuel with
@@ -516,20 +516,23 @@ private theorem me_adaptiveLoop_width
       · exact hnext r hr
       · split at hr
         · exact hnext r hr
-        · dsimp only [] at hr
-          split at hr
+        · split at hr
           · exact hnext r hr
-          · refine ih _ ?_ r hr
-            intro r' hr'
-            exact hnext r' hr'
+          · dsimp only [] at hr
+            split at hr
+            · exact hnext r hr
+            · refine ih _ ?_ r hr
+              intro r' hr'
+              exact hnext r' hr'
 
 /-- Every adaptive solution-basis row has the linearized width. -/
 theorem me_adaptiveBasis_width
     {mulCtx : CPolynomial.MulContext F} {modCtx : CPolynomial.ModContext F}
     {pmCtx : PMBasisContext F} {equation : ModularEquation F}
-    {shift : Array Nat} :
+    {shift : Array Nat} {degreeBound? : Option Nat} :
     ∀ r ∈ MatrixRows
-        (adaptiveSolutionBasis mulCtx modCtx pmCtx equation shift).filtered,
+        (adaptiveSolutionBasis mulCtx modCtx pmCtx equation shift
+          degreeBound?).filtered,
       r.size = equation.solutionWidth := by
   rw [adaptiveSolutionBasis]
   exact me_adaptiveLoop_width _ _ (by intro r hr; simp [MatrixRows] at hr)

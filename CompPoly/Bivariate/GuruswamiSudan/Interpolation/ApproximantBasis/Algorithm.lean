@@ -44,6 +44,7 @@ def approximantBasisPositiveInterpolate
     let R := CPolynomial.interpolateCoefficientFormWithVanishing E G points
     let data := buildGSModularDataWithRG solver.mulContext solver.modContext R G params
     let basis := solver.solutionBasis (modularEquation data) data.shift
+      (some params.weightedDegreeBound)
     match leastShiftedDegreeChoice? basis data.shift with
     | none => none
     | some choice =>

@@ -25,18 +25,20 @@ variable {F : Type*} [Field F] [BEq F] [LawfulBEq F]
 equation. -/
 theorem modularSolutionBasis_sound
     (ctx : ModularSolutionBasisContext F) (equation : ModularEquation F)
-    (shift : Array Nat) {row : PolynomialRow F}
-    (hrow : row ∈ MatrixRows (ctx.solutionBasis equation shift)) :
+    (shift : Array Nat) (degreeBound? : Option Nat) {row : PolynomialRow F}
+    (hrow : row ∈ MatrixRows (ctx.solutionBasis equation shift degreeBound?)) :
     rowSatisfiesModularBool ctx.mulContext ctx.modContext row
       equation.matrix equation.moduli = true :=
-  ctx.sound equation shift row hrow
+  ctx.sound equation shift degreeBound? row hrow
 
-/-- Solution-basis completeness/minimality contract.  The final Popov-strength
-minimality facts are represented by the context field while proofs are
-developed. -/
+/-- Solution-basis completeness/minimality contract, relative to the
+caller-supplied degree bound: a solution row within the bound (vacuous for
+`none`) is matched by a returned basis row whose shifted degree does not
+exceed the bound — the solution's own degree when no bound is supplied. -/
 theorem modularSolutionBasis_complete_minimal
     (ctx : ModularSolutionBasisContext F) (equation : ModularEquation F)
-    (shift : Array Nat) {row : PolynomialRow F}
+    (shift : Array Nat) (degreeBound? : Option Nat) {row : PolynomialRow F}
+    {rowDegree : Nat}
     (hmonic : ∀ b, b < equation.moduli.size → (equation.moduli.getD b 0).monic)
     (hcols : equation.moduli.size ≤ MatrixWidth equation.matrix)
     (hshift : shift.size = equation.solutionWidth)
@@ -44,16 +46,18 @@ theorem modularSolutionBasis_complete_minimal
       rowSatisfiesModularBool ctx.mulContext ctx.modContext row
         equation.matrix equation.moduli = true)
     (hnonzero : rowIsZero row = false)
-    (hwidth : row.size ≤ equation.solutionWidth) :
+    (hwidth : row.size ≤ equation.solutionWidth)
+    (hdegree : rowShiftedDegree? row shift = some rowDegree)
+    (hbound : ∀ bound, degreeBound? = some bound → rowDegree ≤ bound) :
     (∀ basisRow,
-      basisRow ∈ MatrixRows (ctx.solutionBasis equation shift) →
+      basisRow ∈ MatrixRows (ctx.solutionBasis equation shift degreeBound?) →
         basisRow.size ≤ equation.solutionWidth) ∧
     ∃ basisRow degree,
-      basisRow ∈ MatrixRows (ctx.solutionBasis equation shift) ∧
+      basisRow ∈ MatrixRows (ctx.solutionBasis equation shift degreeBound?) ∧
       rowShiftedDegree? basisRow shift = some degree ∧
-      ∀ rowDegree, rowShiftedDegree? row shift = some rowDegree →
-        degree ≤ rowDegree :=
-  ctx.complete_minimal equation shift row hmonic hcols hshift hrow hnonzero hwidth
+      degree ≤ degreeBound?.getD rowDegree :=
+  ctx.complete_minimal equation shift degreeBound? row rowDegree hmonic hcols
+    hshift hrow hnonzero hwidth hdegree hbound
 
 end Approximant
 

@@ -26,12 +26,17 @@ logarithmic, preserving the `~O(m^(omega-1) * sigma)` solver target.
 The chunked X-adic problems are relaxations: their orders certify exactness
 only for rows whose chunk coefficients stay below the chunk size, and the
 relaxed kernel module also contains uncertified rows that can crowd exact
-solutions out of the adaptive rounds.  The solver therefore always runs a
-certified verification solve over the window shrunk to the best exact degree
-already found (`verificationSolutionBasisViaPMBasis`) and returns the union:
+solutions out of the adaptive rounds.  The solver therefore backs the adaptive
+loop with a certified verification solve (`windowedSolutionBasisViaPMBasis`):
 solutions at or above the adaptive best are dominated by the adaptive rows,
 and solutions below it lie inside the certified window, whose orders rule out
 uncertified rows.
+
+Callers that only need a witness under a known degree bound pass it as
+`degreeBound?`; when the adaptive best already meets the bound the certified
+solve is skipped entirely, and when it does not the certified window is shrunk
+to the bound.  Passing `none` requests a degree-minimal answer and always runs
+the verification solve over the best-degree-shrunk window.
 -/
 
 namespace CompPoly
@@ -322,21 +327,58 @@ def verificationWindowBound [Zero F] (equation : ModularEquation F)
   | none => fullWindowDegreeBound equation shift
   | some best => min best (pivotWindowCap equation) + maxShiftDegree shift
 
-/-- Certified verification solve over the best-degree-shrunk window: an
-unchunked exact-nullspace problem whose orders certify exactness for every
-row dominated by an in-window solution, with the window sized by
-`verificationWindowBound`.  Its order mass is `sigma + s * bound` instead of
-the full window's `(s + 1) * sigma`, so when the adaptive loop already found a
-near-minimal row this costs about one extra cheap round. -/
+/-- Certified solve over an explicit coefficient-degree window: an unchunked
+exact-nullspace problem whose orders certify exactness for every row dominated
+by an in-window solution.  Its order mass is `sigma + s * bound` instead of
+the full window's `(s + 1) * sigma`, so when the window is shrunk to a
+near-minimal degree this costs about one extra cheap round. -/
+def windowedSolutionBasisViaPMBasis (modCtx : CPolynomial.ModContext F)
+    (pmCtx : PMBasisContext F) (equation : ModularEquation F)
+    (shift : Array Nat) (bound : Nat) : PolynomialMatrix F :=
+  compactNonzeroRows
+    (principalSolutionRows equation.solutionWidth
+      (pmCtx.basis (fullWindowExactNullspaceProblem modCtx equation bound)
+        (exactNullspaceShift shift equation.modularWidth bound)))
+
+/-- Certified verification solve over the best-degree-shrunk window sized by
+`verificationWindowBound`. -/
 def verificationSolutionBasisViaPMBasis (modCtx : CPolynomial.ModContext F)
     (pmCtx : PMBasisContext F) (equation : ModularEquation F)
     (shift : Array Nat) (bestDegree? : Option Nat) : PolynomialMatrix F :=
-  let bound := verificationWindowBound equation shift bestDegree?
-  let problem := fullWindowExactNullspaceProblem modCtx equation bound
-  let expandedShift := exactNullspaceShift shift equation.modularWidth bound
-  compactNonzeroRows
-    (principalSolutionRows equation.solutionWidth
-      (pmCtx.basis problem expandedShift))
+  windowedSolutionBasisViaPMBasis modCtx pmCtx equation shift
+    (verificationWindowBound equation shift bestDegree?)
+
+/-- Whether a caller-supplied degree bound certifies the adaptive result: the
+gate passes when the best exact degree already found does not exceed the
+bound, in which case any solution within the bound is dominated by the
+adaptive rows up to the bound itself and the certified verification solve is
+unnecessary. -/
+def degreeGatePassed (degreeBound? bestDegree? : Option Nat) : Bool :=
+  match degreeBound?, bestDegree? with
+  | some bound, some best => best ≤ bound
+  | _, _ => false
+
+/-- Verification window for a gated solve.  With a caller-supplied degree
+bound the window only has to cover solutions within the bound, so it is
+`min(bound, cap) + maxShift`; without one it falls back to the best-degree
+window of `verificationWindowBound`. -/
+def gatedWindowBound [Zero F] (equation : ModularEquation F)
+    (shift : Array Nat) (degreeBound? bestDegree? : Option Nat) : Nat :=
+  match degreeBound? with
+  | some bound => min bound (pivotWindowCap equation) + maxShiftDegree shift
+  | none => verificationWindowBound equation shift bestDegree?
+
+/-- The degree gate passes exactly for a bound certified by an adaptive best. -/
+theorem degreeGatePassed_eq_true_iff {degreeBound? bestDegree? : Option Nat} :
+    degreeGatePassed degreeBound? bestDegree? = true ↔
+      ∃ bound best, degreeBound? = some bound ∧ bestDegree? = some best ∧
+        best ≤ bound := by
+  cases degreeBound? with
+  | none => simp [degreeGatePassed]
+  | some bound =>
+      cases bestDegree? with
+      | none => simp [degreeGatePassed]
+      | some best => simp [degreeGatePassed]
 
 /-- Pivot-degree assignment for one adaptive round: discovered coordinates use
 their observed pivot degrees, undiscovered coordinates use the current
@@ -418,13 +460,14 @@ def adaptiveSolutionRound
     filtered := state.filtered ++ filtered
     raw := rows }
 
-/-- Fuel-bounded adaptive window-escalation loop.  Rounds stop as soon as every
+/-- Fuel-bounded adaptive window-escalation loop.  Rounds stop as soon as the
+caller's degree bound is already met by the best exact row found, or every
 principal coordinate is settled: discovered, saturated, or unable to beat the
 best solution row already in hand. -/
 def adaptiveSolutionLoop
     (mulCtx : CPolynomial.MulContext F) (modCtx : CPolynomial.ModContext F)
     (pmCtx : PMBasisContext F) (equation : ModularEquation F)
-    (shift : Array Nat) (cap : Nat) :
+    (shift : Array Nat) (degreeBound? : Option Nat) (cap : Nat) :
     Nat → AdaptiveSolveState F → AdaptiveSolveState F
   | 0, state => state
   | fuel + 1, state =>
@@ -437,6 +480,11 @@ def adaptiveSolutionLoop
         -- so stop here and let the caller run the certified full-window
         -- fallback instead.
         next
+      else if degreeGatePassed degreeBound? bestDegree? then
+        -- The best exact row already meets the caller's degree bound, so the
+        -- gated solver returns the accumulated candidate set as-is; further
+        -- escalation rounds cannot change anything the caller observes.
+        next
       else if allCoordinatesSettled next.profile next.budgets cap bestDegree? shift
           equation.solutionWidth then
         next
@@ -446,21 +494,22 @@ def adaptiveSolutionLoop
         if escalated == next.budgets then
           next
         else
-          adaptiveSolutionLoop mulCtx modCtx pmCtx equation shift cap fuel
-            { next with budgets := escalated }
+          adaptiveSolutionLoop mulCtx modCtx pmCtx equation shift degreeBound? cap
+            fuel { next with budgets := escalated }
 
 /-- Run the adaptive degree-first solver: discover the shifted pivot-degree
 profile with geometrically growing per-coordinate windows, where the final
 round doubles as the known-degree reconstruction for all discovered
-coordinates.  The initial window is one chunk per coordinate. -/
+coordinates.  The initial window is one chunk per coordinate.  A caller with
+a degree bound stops the escalation as soon as the bound is met. -/
 def adaptiveSolutionBasis
     (mulCtx : CPolynomial.MulContext F) (modCtx : CPolynomial.ModContext F)
     (pmCtx : PMBasisContext F) (equation : ModularEquation F)
-    (shift : Array Nat) : AdaptiveSolveState F :=
+    (shift : Array Nat) (degreeBound? : Option Nat) : AdaptiveSolveState F :=
   let delta := chunkDelta equation.solutionWidth equation.moduli
   let cap := max delta (pivotWindowCap equation)
   let fuel := Nat.log2 (max 1 cap) + 2
-  adaptiveSolutionLoop mulCtx modCtx pmCtx equation shift cap fuel
+  adaptiveSolutionLoop mulCtx modCtx pmCtx equation shift degreeBound? cap fuel
     { profile := emptyPivotDegreeProfile equation.solutionWidth
       budgets := Array.replicate equation.solutionWidth (max 1 (delta - 1))
       filtered := #[]
@@ -471,7 +520,7 @@ def discoverPivotDegreeProfileViaPMBasis
     (mulCtx : CPolynomial.MulContext F) (modCtx : CPolynomial.ModContext F)
     (pmCtx : PMBasisContext F) (equation : ModularEquation F)
     (shift : Array Nat) : PivotDegreeProfile :=
-  (adaptiveSolutionBasis mulCtx modCtx pmCtx equation shift).profile
+  (adaptiveSolutionBasis mulCtx modCtx pmCtx equation shift none).profile
 
 /-- One residual reconstruction pass.  If compressed rows `B` are not themselves
 exact modular solutions, solve for polynomial combinations `C` such that
@@ -492,7 +541,7 @@ def repairSolutionRowsViaPMBasis
     { moduli := equation.moduli
       matrix := modularResidualRows mulCtx modCtx equation reduced }
   let repairState := adaptiveSolutionBasis mulCtx modCtx pmCtx residualEquation
-    (candidateRowShift reduced shift)
+    (candidateRowShift reduced shift) none
   PolynomialMatrix.mulStrassenWith pmCtx.runtime.lowMulContext
     pmCtx.runtime.leafCutoff repairState.filtered reduced
 
@@ -525,33 +574,42 @@ def knownDegreeFilteredSolutionBasisViaPMBasis
 
 /-- Solver exposed through the modular-equation context: run the adaptive
 degree-first window-escalation loop, whose final round is the known-degree
-reconstruction for every discovered coordinate, then always run a certified
-verification solve over the window shrunk to the best exact degree found (the
-full pivot window when the chunked loop found nothing), and return the union
-of both filtered candidate sets.  Solutions at or above the adaptive best are
-dominated by the adaptive rows; solutions strictly below it lie inside the
-certified verification window, whose orders rule out uncertified relaxed
-rows — so the union always contains an exact row of minimal shifted degree,
-including in the partial-masking regime where uncertified chunked-kernel rows
-crowd lower exact solutions out of every adaptive round.  The adaptive rows
-come first, so ties keep the adaptive choice.  The residual repair pass
-remains as a guard when both candidate sets are empty.  The filter,
-verification, and repair are semantic guards around the exact-nullspace
-bridge; they do not call any alternate interpolation backend. -/
+reconstruction for every discovered coordinate, then back it with a certified
+verification solve.  When the caller supplies a degree bound and the best
+exact degree already found meets it, the adaptive candidate set is returned
+as-is: any solution within the bound is then matched by an adaptive row up to
+the bound, so the certified solve adds nothing the caller can observe.
+Otherwise a certified verification solve runs over the gated window —
+`min(bound, cap) + maxShift` with a bound, the best-degree-shrunk window
+without one — and the union of both filtered candidate sets is returned:
+solutions at or above the adaptive best are dominated by the adaptive rows;
+solutions strictly below it lie inside the certified window, whose orders rule
+out uncertified relaxed rows — so the union always contains an exact row of
+minimal shifted degree, including in the partial-masking regime where
+uncertified chunked-kernel rows crowd lower exact solutions out of every
+adaptive round.  The adaptive rows come first, so ties keep the adaptive
+choice.  The residual repair pass remains as a guard when both candidate sets
+are empty.  The filter, verification, and repair are semantic guards around
+the exact-nullspace bridge; they do not call any alternate interpolation
+backend. -/
 def filteredSolutionBasisViaPMBasis
     (mulCtx : CPolynomial.MulContext F) (modCtx : CPolynomial.ModContext F)
     (pmCtx : PMBasisContext F) (equation : ModularEquation F)
-    (shift : Array Nat) : PolynomialMatrix F :=
-  let final := adaptiveSolutionBasis mulCtx modCtx pmCtx equation shift
-  let verification := filterModularSolutionRows mulCtx modCtx equation
-    (verificationSolutionBasisViaPMBasis modCtx pmCtx equation shift
-      (leastSolutionRowDegree? final.filtered shift))
-  let combined := final.filtered ++ verification
-  if combined.size == 0 then
-    filterModularSolutionRows mulCtx modCtx equation
-      (repairSolutionRowsViaPMBasis mulCtx modCtx pmCtx equation shift final.raw)
+    (shift : Array Nat) (degreeBound? : Option Nat) : PolynomialMatrix F :=
+  let final := adaptiveSolutionBasis mulCtx modCtx pmCtx equation shift degreeBound?
+  let best? := leastSolutionRowDegree? final.filtered shift
+  if degreeGatePassed degreeBound? best? then
+    final.filtered
   else
-    combined
+    let verification := filterModularSolutionRows mulCtx modCtx equation
+      (windowedSolutionBasisViaPMBasis modCtx pmCtx equation shift
+        (gatedWindowBound equation shift degreeBound? best?))
+    let combined := final.filtered ++ verification
+    if combined.size == 0 then
+      filterModularSolutionRows mulCtx modCtx equation
+        (repairSolutionRowsViaPMBasis mulCtx modCtx pmCtx equation shift final.raw)
+    else
+      combined
 
 /-- Rows kept by the modular solution filter satisfy the modular predicate. -/
 theorem rowSatisfiesModularBool_of_mem_filterModularSolutionRows
@@ -589,12 +647,13 @@ filtered rows. -/
 theorem adaptiveSolutionLoop_filtered_sound
     {mulCtx : CPolynomial.MulContext F} {modCtx : CPolynomial.ModContext F}
     {pmCtx : PMBasisContext F} {equation : ModularEquation F}
-    {shift : Array Nat} {cap : Nat} :
+    {shift : Array Nat} {degreeBound? : Option Nat} {cap : Nat} :
     ∀ (fuel : Nat) (state : AdaptiveSolveState F),
       (∀ row ∈ MatrixRows state.filtered,
         rowSatisfiesModularBool mulCtx modCtx row equation.matrix equation.moduli = true) →
       ∀ row ∈ MatrixRows
-          (adaptiveSolutionLoop mulCtx modCtx pmCtx equation shift cap fuel state).filtered,
+          (adaptiveSolutionLoop mulCtx modCtx pmCtx equation shift degreeBound? cap
+            fuel state).filtered,
         rowSatisfiesModularBool mulCtx modCtx row equation.matrix equation.moduli = true := by
   intro fuel
   induction fuel with
@@ -610,20 +669,23 @@ theorem adaptiveSolutionLoop_filtered_sound
       · exact hnext row hrow
       · split at hrow
         · exact hnext row hrow
-        · dsimp only [] at hrow
-          split at hrow
+        · split at hrow
           · exact hnext row hrow
-          · refine ih _ ?_ row hrow
-            intro r hr
-            exact hnext r hr
+          · dsimp only [] at hrow
+            split at hrow
+            · exact hnext row hrow
+            · refine ih _ ?_ row hrow
+              intro r hr
+              exact hnext r hr
 
 /-- Rows accumulated by the adaptive solver satisfy the modular predicate. -/
 theorem adaptiveSolutionBasis_filtered_sound
     {mulCtx : CPolynomial.MulContext F} {modCtx : CPolynomial.ModContext F}
     {pmCtx : PMBasisContext F} {equation : ModularEquation F}
-    {shift : Array Nat} :
+    {shift : Array Nat} {degreeBound? : Option Nat} :
     ∀ row ∈ MatrixRows
-        (adaptiveSolutionBasis mulCtx modCtx pmCtx equation shift).filtered,
+        (adaptiveSolutionBasis mulCtx modCtx pmCtx equation shift
+          degreeBound?).filtered,
       rowSatisfiesModularBool mulCtx modCtx row equation.matrix equation.moduli = true := by
   rw [adaptiveSolutionBasis]
   exact adaptiveSolutionLoop_filtered_sound _ _
@@ -634,36 +696,42 @@ original diagonal modular equation. -/
 theorem filteredSolutionBasisViaPMBasis_sound
     {mulCtx : CPolynomial.MulContext F} {modCtx : CPolynomial.ModContext F}
     {pmCtx : PMBasisContext F} {equation : ModularEquation F}
-    {shift : Array Nat} {row : PolynomialRow F}
+    {shift : Array Nat} {degreeBound? : Option Nat} {row : PolynomialRow F}
     (hrow : row ∈ MatrixRows
-      (filteredSolutionBasisViaPMBasis mulCtx modCtx pmCtx equation shift)) :
+      (filteredSolutionBasisViaPMBasis mulCtx modCtx pmCtx equation shift
+        degreeBound?)) :
     rowSatisfiesModularBool mulCtx modCtx row equation.matrix equation.moduli = true := by
   simp only [filteredSolutionBasisViaPMBasis] at hrow
   split at hrow
-  · exact rowSatisfiesModularBool_of_mem_filterModularSolutionRows hrow
-  · rw [MatrixRows, Array.toList_append, List.mem_append] at hrow
-    rcases hrow with hmem | hmem
-    · exact adaptiveSolutionBasis_filtered_sound row hmem
-    · exact rowSatisfiesModularBool_of_mem_filterModularSolutionRows hmem
+  · exact adaptiveSolutionBasis_filtered_sound row hrow
+  · split at hrow
+    · exact rowSatisfiesModularBool_of_mem_filterModularSolutionRows hrow
+    · rw [MatrixRows, Array.toList_append, List.mem_append] at hrow
+      rcases hrow with hmem | hmem
+      · exact adaptiveSolutionBasis_filtered_sound row hmem
+      · exact rowSatisfiesModularBool_of_mem_filterModularSolutionRows hmem
 
 /-- Modular-equation solution-basis context with theorem fields.
 
-The completeness/minimality contract states that, for any nonzero in-width
-solution row of the diagonal modular equation, the returned basis stays inside
-the principal width and contains a row whose shifted degree does not exceed
-the given solution's.  The contract assumes monic moduli, a relation matrix
-wide enough to expose every modular column to the executable row predicate,
-and a shift aligned with the principal solution width. -/
+The solver takes an optional caller-supplied degree bound.  The
+completeness/minimality contract is bound-relative: for any nonzero in-width
+solution row of the diagonal modular equation whose shifted degree fits the
+bound (vacuous for `none`), the returned basis stays inside the principal
+width and contains a row whose shifted degree does not exceed the bound — the
+given solution's own degree when no bound is supplied.  The contract assumes
+monic moduli, a relation matrix wide enough to expose every modular column to
+the executable row predicate, and a shift aligned with the principal solution
+width. -/
 structure ModularSolutionBasisContext (F : Type*) [Field F] [BEq F] [LawfulBEq F] where
   mulContext : CPolynomial.MulContext F
   modContext : CPolynomial.ModContext F
-  solutionBasis : ModularEquation F → Array Nat → PolynomialMatrix F
+  solutionBasis : ModularEquation F → Array Nat → Option Nat → PolynomialMatrix F
   sound :
-    ∀ equation shift row,
-      row ∈ MatrixRows (solutionBasis equation shift) →
+    ∀ equation shift degreeBound? row,
+      row ∈ MatrixRows (solutionBasis equation shift degreeBound?) →
         rowSatisfiesModularBool mulContext modContext row equation.matrix equation.moduli = true
   complete_minimal :
-    ∀ equation shift row,
+    ∀ equation shift degreeBound? row rowDegree,
       (∀ b, b < equation.moduli.size → (equation.moduli.getD b 0).monic) →
       equation.moduli.size ≤ MatrixWidth equation.matrix →
       shift.size = equation.solutionWidth →
@@ -671,14 +739,15 @@ structure ModularSolutionBasisContext (F : Type*) [Field F] [BEq F] [LawfulBEq F
           equation.moduli = true →
       rowIsZero row = false →
       row.size ≤ equation.solutionWidth →
+      rowShiftedDegree? row shift = some rowDegree →
+      (∀ bound, degreeBound? = some bound → rowDegree ≤ bound) →
         (∀ basisRow,
-          basisRow ∈ MatrixRows (solutionBasis equation shift) →
+          basisRow ∈ MatrixRows (solutionBasis equation shift degreeBound?) →
             basisRow.size ≤ equation.solutionWidth) ∧
         ∃ basisRow degree,
-          basisRow ∈ MatrixRows (solutionBasis equation shift) ∧
+          basisRow ∈ MatrixRows (solutionBasis equation shift degreeBound?) ∧
           rowShiftedDegree? basisRow shift = some degree ∧
-          ∀ rowDegree, rowShiftedDegree? row shift = some rowDegree →
-            degree ≤ rowDegree
+          degree ≤ degreeBound?.getD rowDegree
 
 end Approximant
 

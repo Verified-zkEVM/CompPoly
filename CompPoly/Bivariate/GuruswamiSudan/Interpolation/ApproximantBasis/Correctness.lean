@@ -244,7 +244,7 @@ theorem approximantBasisInterpolate_sound
       set data := buildGSModularDataWithRG solver.mulContext solver.modContext
         R G params with hdata
       set basis := solver.solutionBasis (modularEquation data) data.shift
-        with hbasis
+        (some params.weightedDegreeBound) with hbasis
       change (match leastShiftedDegreeChoice? basis data.shift with
         | none => none
         | some choice =>
@@ -271,7 +271,7 @@ theorem approximantBasisInterpolate_sound
                 Array.getElem?_eq_getElem hindex, Option.getD_some]
               exact Array.getElem_mem_toList hindex
             have hsat := solver.sound (modularEquation data) data.shift
-              choice.row hmem
+              (some params.weightedDegreeBound) choice.row hmem
             -- Truncate the chosen row to the interpolation width.
             set width := interpolationWidth params with hwidthdef
             set row' := CBivariate.toCoeffRow width
@@ -465,7 +465,7 @@ theorem approximantBasisInterpolate_complete
     set data := buildGSModularDataWithRG solver.mulContext solver.modContext
       R G params with hdata
     set basis := solver.solutionBasis (modularEquation data) data.shift
-      with hbasis
+      (some params.weightedDegreeBound) with hbasis
     set width := interpolationWidth params with hwidthdef
     -- The witness coefficient row.
     set row₀ := CBivariate.toCoeffRow width Q₀ with hrow₀
@@ -543,12 +543,19 @@ theorem approximantBasisInterpolate_complete
           CBivariate.weightedDegreeShift (yWeight params) width := rfl
       rw [hdatashift, hsolwidth, CBivariate.weightedDegreeShift]
       simp
-    -- Apply the solver completeness/minimality contract.
-    rcases solver.complete_minimal (modularEquation data) data.shift row₀ hmonic hcols
-        hshiftsize hsat₀ hnz₀ (by omega) with
-      ⟨hbasisWidth, basisRow, bDeg, hbMem, hbDeg, hbMin⟩
-    have hbDegLe : bDeg ≤ params.weightedDegreeBound :=
-      le_trans (hbMin d₀ hd₀) hd₀le
+    -- Apply the solver completeness/minimality contract with the GS
+    -- weighted-degree bound: the witness row is within the bound, so the
+    -- returned basis contains a row whose shifted degree meets it.
+    rcases solver.complete_minimal (modularEquation data) data.shift
+        (some params.weightedDegreeBound) row₀ d₀ hmonic hcols
+        hshiftsize hsat₀ hnz₀ (by omega) hd₀
+        (fun bound hbound ↦ by
+          obtain rfl : params.weightedDegreeBound = bound :=
+            Option.some.inj hbound
+          exact hd₀le) with
+      ⟨hbasisWidth, basisRow, bDeg, hbMem, hbDeg, hbLe⟩
+    have hbDegLe : bDeg ≤ params.weightedDegreeBound := by
+      rwa [Option.getD_some] at hbLe
     -- Select the least shifted-degree basis row.
     rcases List.getElem_of_mem hbMem with ⟨bIdx, hbIdxList, hbGet⟩
     have hbIdx : bIdx < basis.size := by

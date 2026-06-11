@@ -161,7 +161,7 @@ private def knownDegreeFilteredRows : PolynomialMatrix F3 :=
 
 private def productionRows : PolynomialMatrix F3 :=
   filteredSolutionBasisViaPMBasis CPolynomial.MulContext.naive
-    CPolynomial.ModContext.remainderOnly productionPMCtx equation #[0, 5]
+    CPolynomial.ModContext.remainderOnly productionPMCtx equation #[0, 5] none
 
 private def debugUnchunkedRows : PolynomialMatrix F3 :=
   debugUnchunkedFilteredSolutionBasisViaPMBasis CPolynomial.MulContext.naive
