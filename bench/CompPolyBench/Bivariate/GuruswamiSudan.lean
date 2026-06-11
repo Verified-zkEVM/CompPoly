@@ -10,8 +10,9 @@ import CompPolyBench.Bivariate.GuruswamiSudan.ReceivedWord
 /-!
 # Guruswami-Sudan Benchmarks
 
-KoalaBear cost-center benchmarks for dense interpolation, Roth-Ruckenstein root
-finding, packed distance filtering, and dense/RR `gsCore` and `gsFilteredCore`.
+KoalaBear cost-center benchmarks for dense interpolation, Roth-Ruckenstein and
+Alekhnovich root finding, packed distance filtering, and dense/RR `gsCore` and
+`gsFilteredCore`.
 -/
 
 open CompPoly
@@ -123,8 +124,13 @@ private def runGsRootKoala (preset : BenchPreset) (gen : StdGen) :
   let nttFastMeasured := preset.selectNat 20 3 1
   let fastMeasured := preset.selectNat 80 10 2
   let fastNttFastMeasured := preset.selectNat 80 10 2
+  let alekhnovichMeasured := preset.selectNat 10 2 1
+  let alekhnovichNttFastMeasured := preset.selectNat 10 2 1
+  let alekhnovichFastMeasured := preset.selectNat 30 5 1
+  let alekhnovichFastNttFastMeasured := preset.selectNat 30 5 1
   let checksumIterations := groupChecksumIterations measured [
-    nttFastMeasured, fastMeasured, fastNttFastMeasured
+    nttFastMeasured, fastMeasured, fastNttFastMeasured, alekhnovichMeasured,
+    alekhnovichNttFastMeasured, alekhnovichFastMeasured, alekhnovichFastNttFastMeasured
   ]
   let row <- runTimed
     "guruswami-sudan-root-roth" "CBivariate"
@@ -151,10 +157,36 @@ private def runGsRootKoala (preset : BenchPreset) (gen : StdGen) :
     (fun _ ↦ rothRuckensteinRootsYDegreeLt koalaFastFieldRootsFast fastQ
       gsMessageDegree)
     checksumPolynomialArrayKoalaFast checksumIterations
+  let alekhnovichRow <- runTimed
+    "guruswami-sudan-root-alekhnovich" "CBivariate"
+    "Alekhnovich root finding with nonlinear field-root equations"
+    "KoalaBear.Field" gsRootShape preset warmup alekhnovichMeasured
+    (fun _ ↦ alekhnovichRootsYDegreeLt koalaFieldRoots Q gsMessageDegree)
+    checksumPolynomialArrayKoala checksumIterations
+  let alekhnovichNttFastRow <- runTimed
+    "guruswami-sudan-root-alekhnovich-nttfast" "CBivariate"
+    "Alekhnovich root finding with NTTFast field-root equations"
+    "KoalaBear.Field" gsRootShape preset warmup alekhnovichNttFastMeasured
+    (fun _ ↦ alekhnovichRootsYDegreeLt koalaFieldRootsFast Q gsMessageDegree)
+    checksumPolynomialArrayKoala checksumIterations
+  let alekhnovichFastRow <- runTimed
+    "guruswami-sudan-root-alekhnovich-fast" "CBivariate"
+    "Alekhnovich root finding with nonlinear field-root equations"
+    "KoalaBear.Fast.Field" gsRootShape preset warmup alekhnovichFastMeasured
+    (fun _ ↦ alekhnovichRootsYDegreeLt koalaFastFieldRoots fastQ gsMessageDegree)
+    checksumPolynomialArrayKoalaFast checksumIterations
+  let alekhnovichFastNttFastRow <- runTimed
+    "guruswami-sudan-root-alekhnovich-fast-nttfast" "CBivariate"
+    "Alekhnovich root finding with NTTFast field-root equations"
+    "KoalaBear.Fast.Field" gsRootShape preset warmup alekhnovichFastNttFastMeasured
+    (fun _ ↦ alekhnovichRootsYDegreeLt koalaFastFieldRootsFast fastQ
+      gsMessageDegree)
+    checksumPolynomialArrayKoalaFast checksumIterations
   pure ({
     groupKey := "guruswami-sudan-root-koalabear",
-    title := "Guruswami-Sudan Roth-Ruckenstein root finding (KoalaBear)",
-    records := #[row, nttFastRow, fastRow, fastNttFastRow]
+    title := "Guruswami-Sudan root finding (KoalaBear)",
+    records := #[row, nttFastRow, alekhnovichRow, alekhnovichNttFastRow,
+      fastRow, fastNttFastRow, alekhnovichFastRow, alekhnovichFastNttFastRow]
   }, gen)
 
 private def runGsPackedFilterKoala (preset : BenchPreset) (gen : StdGen) :

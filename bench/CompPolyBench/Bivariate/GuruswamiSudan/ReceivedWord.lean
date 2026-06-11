@@ -9,7 +9,7 @@ import CompPolyBench.Bivariate.GuruswamiSudan.Shared
 /-!
 # Guruswami-Sudan Perturbed Received-Word Benchmarks
 
-Perturbed (non-codeword) counterparts of the dense-interpolation/Roth-Ruckenstein
+Perturbed (non-codeword) counterparts of the dense-interpolation root-backend
 small interpolation, core, and filtered-core benchmark groups.
 -/
 
@@ -67,9 +67,9 @@ def guruswamiSudanReceivedWordGroupInfos : List BenchGroupInfo := [
   ⟨"guruswami-sudan-interp-noncodeword-small-koalabear",
     "Guruswami-Sudan dense interpolation on perturbed received word, small (KoalaBear)"⟩,
   ⟨"guruswami-sudan-core-noncodeword-small-koalabear",
-    "Guruswami-Sudan dense/RR full core on perturbed received word, small (KoalaBear)"⟩,
+    "Guruswami-Sudan dense full core on perturbed received word, small (KoalaBear)"⟩,
   ⟨"guruswami-sudan-filtered-core-noncodeword-small-koalabear",
-    "Guruswami-Sudan dense/RR filtered core on perturbed received word, small (KoalaBear)"⟩
+    "Guruswami-Sudan dense filtered core on perturbed received word, small (KoalaBear)"⟩
 ]
 
 /-! ### Group runners -/
@@ -104,16 +104,30 @@ private def runGsInterpolationNonCodewordSmallKoala (preset : BenchPreset)
 private def runGsCoreNonCodewordSmallKoala (preset : BenchPreset)
     (gen : StdGen) : IO (Prod BenchGroup StdGen) := do
   let (inputs, gen) := perturbedSmallInputs gen
+  let alekRootContext :=
+    alekhnovichRootContext KoalaBear.Field koalaBearFieldRootContext
+  let fastAlekRootContext :=
+    alekhnovichRootContext KoalaBear.Fast.Field fastKoalaBearFieldRootContext
   let warmup := gsWarmupIterations preset
   let measured := preset.selectNat 1 1 1
   let fastMeasured := preset.selectNat 2 1 1
-  let checksumIterations := groupChecksumIterations measured [fastMeasured]
+  let checksumIterations := groupChecksumIterations measured [
+    measured, fastMeasured, fastMeasured
+  ]
   let denseRow <- runTimed
     "guruswami-sudan-core-dense-noncodeword-small" "CBivariate"
     "Dense linear + RR roots"
     "KoalaBear.Field" gsNonCodewordSmallInputShape preset warmup measured
     (fun _ ↦
       (gsCore inputs.points koalaBearDenseInterpContext koalaBearRothRootContext
+        gsSmallParams).filter (passesCandidateDistance inputs.points gsNonCodewordSmallErrors))
+    checksumPolynomialArrayKoala checksumIterations
+  let denseAlekRow <- runTimed
+    "guruswami-sudan-core-dense-noncodeword-small-alekhnovich" "CBivariate"
+    "Dense linear + Alekhnovich roots"
+    "KoalaBear.Field" gsNonCodewordSmallInputShape preset warmup measured
+    (fun _ ↦
+      (gsCore inputs.points koalaBearDenseInterpContext alekRootContext
         gsSmallParams).filter (passesCandidateDistance inputs.points gsNonCodewordSmallErrors))
     checksumPolynomialArrayKoala checksumIterations
   let fastDenseRow <- runTimed
@@ -125,25 +139,48 @@ private def runGsCoreNonCodewordSmallKoala (preset : BenchPreset)
         fastKoalaBearRothRootContext gsSmallParams).filter
           (passesCandidateDistance inputs.fastPoints gsNonCodewordSmallErrors))
     checksumPolynomialArrayKoalaFast checksumIterations
+  let fastDenseAlekRow <- runTimed
+    "guruswami-sudan-core-dense-noncodeword-small-alekhnovich-fast" "CBivariate"
+    "Dense linear + Alekhnovich roots"
+    "KoalaBear.Fast.Field" gsNonCodewordSmallInputShape preset warmup fastMeasured
+    (fun _ ↦
+      (gsCore inputs.fastPoints fastKoalaBearDenseInterpContext
+        fastAlekRootContext gsSmallParams).filter
+          (passesCandidateDistance inputs.fastPoints gsNonCodewordSmallErrors))
+    checksumPolynomialArrayKoalaFast checksumIterations
   pure ({
     groupKey := "guruswami-sudan-core-noncodeword-small-koalabear",
-    title := "Guruswami-Sudan dense/RR full core on perturbed received word, small (KoalaBear)",
-    records := #[denseRow, fastDenseRow]
+    title := "Guruswami-Sudan dense full core on perturbed received word, small (KoalaBear)",
+    records := #[denseRow, denseAlekRow, fastDenseRow, fastDenseAlekRow]
   }, gen)
 
 private def runGsFilteredCoreNonCodewordSmallKoala (preset : BenchPreset)
     (gen : StdGen) : IO (Prod BenchGroup StdGen) := do
   let (inputs, gen) := perturbedSmallInputs gen
+  let alekRootContext :=
+    alekhnovichRootContext KoalaBear.Field koalaBearFieldRootContext
+  let fastAlekRootContext :=
+    alekhnovichRootContext KoalaBear.Fast.Field fastKoalaBearFieldRootContext
   let warmup := gsWarmupIterations preset
   let measured := preset.selectNat 1 1 1
   let fastMeasured := preset.selectNat 2 1 1
-  let checksumIterations := groupChecksumIterations measured [fastMeasured]
+  let checksumIterations := groupChecksumIterations measured [
+    measured, fastMeasured, fastMeasured
+  ]
   let denseRow <- runTimed
     "guruswami-sudan-filtered-core-dense-noncodeword-small" "CBivariate"
     "Dense linear + RR roots + filter"
     "KoalaBear.Field" gsNonCodewordSmallFilteredShape preset warmup measured
     (fun _ ↦
       gsFilteredCore inputs.points koalaBearDenseInterpContext koalaBearRothRootContext
+        gsSmallParams gsNonCodewordSmallErrors)
+    checksumPolynomialArrayKoala checksumIterations
+  let denseAlekRow <- runTimed
+    "guruswami-sudan-filtered-core-dense-noncodeword-small-alekhnovich" "CBivariate"
+    "Dense linear + Alekhnovich roots + filter"
+    "KoalaBear.Field" gsNonCodewordSmallFilteredShape preset warmup measured
+    (fun _ ↦
+      gsFilteredCore inputs.points koalaBearDenseInterpContext alekRootContext
         gsSmallParams gsNonCodewordSmallErrors)
     checksumPolynomialArrayKoala checksumIterations
   let fastDenseRow <- runTimed
@@ -154,10 +191,18 @@ private def runGsFilteredCoreNonCodewordSmallKoala (preset : BenchPreset)
       gsFilteredCore inputs.fastPoints fastKoalaBearDenseInterpContext
         fastKoalaBearRothRootContext gsSmallParams gsNonCodewordSmallErrors)
     checksumPolynomialArrayKoalaFast checksumIterations
+  let fastDenseAlekRow <- runTimed
+    "guruswami-sudan-filtered-core-dense-noncodeword-small-alekhnovich-fast" "CBivariate"
+    "Dense linear + Alekhnovich roots + filter"
+    "KoalaBear.Fast.Field" gsNonCodewordSmallFilteredShape preset warmup fastMeasured
+    (fun _ ↦
+      gsFilteredCore inputs.fastPoints fastKoalaBearDenseInterpContext
+        fastAlekRootContext gsSmallParams gsNonCodewordSmallErrors)
+    checksumPolynomialArrayKoalaFast checksumIterations
   pure ({
     groupKey := "guruswami-sudan-filtered-core-noncodeword-small-koalabear",
-    title := "Guruswami-Sudan dense/RR filtered core on perturbed received word, small (KoalaBear)",
-    records := #[denseRow, fastDenseRow]
+    title := "Guruswami-Sudan dense filtered core on perturbed received word, small (KoalaBear)",
+    records := #[denseRow, denseAlekRow, fastDenseRow, fastDenseAlekRow]
   }, gen)
 
 /-- Runnable received-word GS benchmark tasks. -/

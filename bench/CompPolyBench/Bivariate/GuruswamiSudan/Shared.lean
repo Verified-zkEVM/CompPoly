@@ -13,7 +13,7 @@ import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 # Guruswami-Sudan Benchmark Helpers
 
 Shared KoalaBear input shapes, checksum helpers, and group metadata for the
-dense-interpolation/Roth-Ruckenstein Guruswami-Sudan benchmark subset.
+dense-interpolation/root-search Guruswami-Sudan benchmark subset.
 -/
 
 open CompPoly
@@ -121,13 +121,13 @@ def guruswamiSudanGroupInfos : List BenchGroupInfo := [
   ⟨"guruswami-sudan-interp-small-koalabear",
     "Guruswami-Sudan dense interpolation, small (KoalaBear)"⟩,
   ⟨"guruswami-sudan-root-koalabear",
-    "Guruswami-Sudan Roth-Ruckenstein root finding (KoalaBear)"⟩,
+    "Guruswami-Sudan root finding (KoalaBear)"⟩,
   ⟨"guruswami-sudan-core-small-koalabear",
-    "Guruswami-Sudan dense/RR full core, small (KoalaBear)"⟩,
+    "Guruswami-Sudan dense full core, small (KoalaBear)"⟩,
   ⟨"guruswami-sudan-packed-filter-koalabear",
     "Guruswami-Sudan packed distance filtering (KoalaBear)"⟩,
   ⟨"guruswami-sudan-filtered-core-small-koalabear",
-    "Guruswami-Sudan dense/RR filtered core, small (KoalaBear)"⟩
+    "Guruswami-Sudan dense filtered core, small (KoalaBear)"⟩
 ]
 
 end CompPolyBench
