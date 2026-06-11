@@ -126,7 +126,7 @@ family.
   quotient/specification surfaces, executable bit-vector operations,
   primitive-power certificates, smooth root-search schedules,
   Horner/subproduct smooth root contexts, and Shoup trace contexts.
-- [`../../CompPoly/Bivariate/GuruswamiSudan/Root/FieldRoots/Binary.lean`](../../CompPoly/Bivariate/GuruswamiSudan/Root/FieldRoots/Binary.lean)
+- [`../../CompPoly/Bivariate/GuruswamiSudan/Root/FieldRoots/FiniteField.lean`](../../CompPoly/Bivariate/GuruswamiSudan/Root/FieldRoots/FiniteField.lean)
   adapts the certified smooth and Shoup root contexts to the GS-facing
   `FieldRootContext` API.
 
