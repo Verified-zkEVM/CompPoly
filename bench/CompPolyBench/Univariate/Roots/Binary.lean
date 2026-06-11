@@ -15,7 +15,8 @@ import CompPoly.Univariate.Roots
 # Binary-Field Root Benchmarks
 
 Univariate root-search benchmarks over selected executable binary-extension
-fields, comparing Shoup trace splitting and smooth cyclic splitting.
+fields, comparing Shoup trace splitting, smooth cyclic splitting, and
+trace-aware Las Vegas splitting.
 -/
 
 open CompPoly
@@ -68,11 +69,17 @@ roughly max (large / 35) 1, rounded to nice values.
 private def binaryRootGF48ShoupMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 21 3 1
 
+private def binaryRootGF48LasVegasMeasuredIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 250 35 7
+
 private def binaryRootGF48SmoothMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 500 70 15
 
 private def binaryRootGF72ShoupMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 21 3 1
+
+private def binaryRootGF72LasVegasMeasuredIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 210 30 6
 
 private def binaryRootGF72SmoothMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 600 90 20
@@ -80,11 +87,17 @@ private def binaryRootGF72SmoothMeasuredIterations (preset : BenchPreset) : Nat 
 private def binaryRootGF32HardShoupMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 420 60 12
 
+private def binaryRootGF32HardLasVegasMeasuredIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 2100 300 60
+
 private def binaryRootGF32HardSmoothMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 315 45 9
 
 private def binaryRootGF64HardShoupMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 35 5 1
+
+private def binaryRootGF64HardLasVegasMeasuredIterations (preset : BenchPreset) : Nat :=
+  preset.selectNat 420 60 12
 
 private def binaryRootGF64HardSmoothMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 21 3 1
@@ -135,6 +148,53 @@ private def checksumNatList (xs : List Nat) : Nat :=
 private def checksumNormalizedRoots {F : Type*} (toNat : F → Nat) (roots : Array F) : Nat :=
   checksumNatList (sortNatList (roots.toList.map toNat))
 
+private theorem fieldEnumeration_size_pos {F : Type} [Zero F]
+    (enumeration : CPolynomial.Roots.FiniteField.FieldEnumeration F) :
+    0 < enumeration.size := by
+  rcases enumeration.complete 0 with ⟨i, _hi⟩
+  exact Nat.zero_lt_of_lt i.isLt
+
+private def randomFieldElement {F : Type} [Zero F]
+    (enumeration : CPolynomial.Roots.FiniteField.FieldEnumeration F) :
+    StateM StdGen F := do
+  let n ← nextNat 0 (enumeration.size - 1)
+  let idx : Fin enumeration.size :=
+    ⟨n % enumeration.size, Nat.mod_lt n (fieldEnumeration_size_pos enumeration)⟩
+  pure (enumeration.elem idx)
+
+private def randomFieldCoefficients {F : Type} [Zero F]
+    (enumeration : CPolynomial.Roots.FiniteField.FieldEnumeration F) (size : Nat) :
+    StateM StdGen (Array F) := do
+  let mut coeffs := #[]
+  for _ in [0:size] do
+    coeffs := coeffs.push (← randomFieldElement enumeration)
+  pure coeffs
+
+private def randomResidueProbeTable {F : Type} [Zero F]
+    (enumeration : CPolynomial.Roots.FiniteField.FieldEnumeration F)
+    (attempts maxCoeffCount : Nat) :
+    StateM StdGen (Array (Array F)) := do
+  let mut probes := #[]
+  for _ in [0:attempts] do
+    probes := probes.push (← randomFieldCoefficients enumeration maxCoeffCount)
+  pure probes
+
+private def precomputedResidueProbeFamily {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] (table : Array (Array F)) :
+    CPolynomial.Roots.FiniteField.ProbeFamily F where
+  probe _q factor attempt :=
+    let coeffs := (table.getD attempt #[]).extract 0 (factor.val.size - 1)
+    CPolynomial.ofArray coeffs
+
+private def binaryRootLasVegasProbeSeed (fieldBits : Nat) : Nat :=
+  seed + 1009 * fieldBits + 7919
+
+private def binaryRootLasVegasInputShape (inputShape : String)
+    (cfg : CPolynomial.Roots.FiniteField.LasVegasConfig)
+    (probeSeed probeCoeffCount : Nat) : String :=
+  inputShape ++ s!", cutoff={cfg.cutoff}, precomputed full-residue probes, " ++
+    s!"seed={probeSeed}, max probe coeffs={probeCoeffCount}"
+
 private def rootsWith {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     (ctx : CPolynomial.Roots.FiniteField.FiniteFieldContext F)
     (splitter : CPolynomial.Roots.FiniteField.LinearFactorProductSplitter F)
@@ -154,24 +214,44 @@ private def smoothSplitter {F : Type*} [Field F] [BEq F] [LawfulBEq F]
   CPolynomial.Roots.FiniteField.smoothLinearFactorProductSplitterWith
     CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive ctx
 
+private def lasVegasTraceSplitter {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+    (finiteCtx : CPolynomial.Roots.FiniteField.FiniteFieldContext F)
+    (enumeration : CPolynomial.Roots.FiniteField.FieldEnumeration F)
+    (traceCtx : CPolynomial.Roots.FiniteField.SmallPrimeTraceContext F)
+    (cfg : CPolynomial.Roots.FiniteField.LasVegasConfig)
+    (probes : CPolynomial.Roots.FiniteField.ProbeFamily F) :
+    CPolynomial.Roots.FiniteField.LinearFactorProductSplitter F :=
+  CPolynomial.Roots.FiniteField.lasVegasLinearFactorProductSplitterWithTrace
+    CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive
+    finiteCtx enumeration traceCtx cfg probes
+
 private def runBinaryRootGroup {F : Type} [Field F] [BEq F] [LawfulBEq F]
-    (groupKey title fieldLabel : String) (toNat : F → Nat)
+    (groupKey title fieldLabel : String) (fieldBits : Nat) (toNat : F → Nat)
     (workloadPolynomial : F → CPolynomial F) (inputShape : String)
     (finiteCtx : CPolynomial.Roots.FiniteField.FiniteFieldContext F)
     (traceCtx : CPolynomial.Roots.FiniteField.SmallPrimeTraceContext F)
+    (enumeration : CPolynomial.Roots.FiniteField.FieldEnumeration F)
+    (lasVegasCfg : CPolynomial.Roots.FiniteField.LasVegasConfig)
     (smoothHornerCtx smoothSubproductCtx :
       CPolynomial.Roots.FiniteField.SmoothCyclicRootContext F)
-    (shoupMeasuredIterations smoothMeasuredIterations :
+    (shoupMeasuredIterations smoothMeasuredIterations lasVegasMeasuredIterations :
       BenchPreset → Nat)
     (generator : F) (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let p := workloadPolynomial generator
   let warmup := preset.selectNat 1 0 0
   let shoupMeasured := shoupMeasuredIterations preset
+  let lasVegasMeasured := lasVegasMeasuredIterations preset
+  let probeSeed := binaryRootLasVegasProbeSeed fieldBits
+  let probeCoeffCount := p.val.size - 1
+  let (probeTable, _) :=
+    (randomResidueProbeTable enumeration lasVegasCfg.cutoff probeCoeffCount).run
+      (mkStdGen probeSeed)
+  let lasVegasProbes := precomputedResidueProbeFamily probeTable
   let smoothHornerMeasured := smoothMeasuredIterations preset
   let smoothSubproductMeasured := smoothMeasuredIterations preset
   let checksumIterations := groupChecksumIterations shoupMeasured [
-    smoothHornerMeasured, smoothSubproductMeasured
+    smoothHornerMeasured, smoothSubproductMeasured, lasVegasMeasured
   ]
   let shoupRow ← runTimed
     (groupKey ++ "-shoup") "CPolynomial"
@@ -191,30 +271,48 @@ private def runBinaryRootGroup {F : Type} [Field F] [BEq F] [LawfulBEq F]
     fieldLabel inputShape preset warmup smoothSubproductMeasured
     (fun _ ↦ rootsWith finiteCtx (smoothSplitter smoothSubproductCtx) p)
     (checksumNormalizedRoots toNat) checksumIterations
+  let lasVegasTraceRow ← runTimed
+    (groupKey ++ "-las-vegas-trace") "CPolynomial"
+    s!"Las Vegas trace, c={lasVegasCfg.cutoff}, seed={probeSeed}"
+    fieldLabel (binaryRootLasVegasInputShape inputShape lasVegasCfg probeSeed probeCoeffCount)
+    preset warmup lasVegasMeasured
+    (fun _ ↦
+      rootsWith finiteCtx
+        (lasVegasTraceSplitter finiteCtx enumeration traceCtx lasVegasCfg lasVegasProbes) p)
+    (checksumNormalizedRoots toNat) checksumIterations
   pure ({
     groupKey := groupKey
     title := title
-    records := #[shoupRow, smoothHornerRow, smoothSubproductRow]
+    records := #[shoupRow, smoothHornerRow, smoothSubproductRow, lasVegasTraceRow]
   }, gen)
 
 private def runBinaryRootSubproductComparisonGroup {F : Type}
     [Field F] [BEq F] [LawfulBEq F]
-    (groupKey title fieldLabel : String) (toNat : F → Nat)
+    (groupKey title fieldLabel : String) (fieldBits : Nat) (toNat : F → Nat)
     (workloadPolynomial : F → CPolynomial F) (inputShape : String)
     (finiteCtx : CPolynomial.Roots.FiniteField.FiniteFieldContext F)
     (traceCtx : CPolynomial.Roots.FiniteField.SmallPrimeTraceContext F)
+    (enumeration : CPolynomial.Roots.FiniteField.FieldEnumeration F)
+    (lasVegasCfg : CPolynomial.Roots.FiniteField.LasVegasConfig)
     (smoothSubproductCtx :
       CPolynomial.Roots.FiniteField.SmoothCyclicRootContext F)
-    (shoupMeasuredIterations smoothMeasuredIterations :
+    (shoupMeasuredIterations smoothMeasuredIterations lasVegasMeasuredIterations :
       BenchPreset → Nat)
     (generator : F) (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let p := workloadPolynomial generator
   let warmup := preset.selectNat 1 0 0
   let shoupMeasured := shoupMeasuredIterations preset
+  let lasVegasMeasured := lasVegasMeasuredIterations preset
+  let probeSeed := binaryRootLasVegasProbeSeed fieldBits
+  let probeCoeffCount := p.val.size - 1
+  let (probeTable, _) :=
+    (randomResidueProbeTable enumeration lasVegasCfg.cutoff probeCoeffCount).run
+      (mkStdGen probeSeed)
+  let lasVegasProbes := precomputedResidueProbeFamily probeTable
   let smoothSubproductMeasured := smoothMeasuredIterations preset
   let checksumIterations := groupChecksumIterations shoupMeasured [
-    smoothSubproductMeasured
+    smoothSubproductMeasured, lasVegasMeasured
   ]
   let shoupRow ← runTimed
     (groupKey ++ "-shoup") "CPolynomial"
@@ -228,10 +326,19 @@ private def runBinaryRootSubproductComparisonGroup {F : Type}
     fieldLabel inputShape preset warmup smoothSubproductMeasured
     (fun _ ↦ rootsWith finiteCtx (smoothSplitter smoothSubproductCtx) p)
     (checksumNormalizedRoots toNat) checksumIterations
+  let lasVegasTraceRow ← runTimed
+    (groupKey ++ "-las-vegas-trace") "CPolynomial"
+    s!"Las Vegas trace, c={lasVegasCfg.cutoff}, seed={probeSeed}"
+    fieldLabel (binaryRootLasVegasInputShape inputShape lasVegasCfg probeSeed probeCoeffCount)
+    preset warmup lasVegasMeasured
+    (fun _ ↦
+      rootsWith finiteCtx
+        (lasVegasTraceSplitter finiteCtx enumeration traceCtx lasVegasCfg lasVegasProbes) p)
+    (checksumNormalizedRoots toNat) checksumIterations
   pure ({
     groupKey := groupKey
     title := title
-    records := #[shoupRow, smoothSubproductRow]
+    records := #[shoupRow, smoothSubproductRow, lasVegasTraceRow]
   }, gen)
 
 /-- Benchmark group metadata for binary-field root search. -/
@@ -250,56 +357,68 @@ private def runGF32BinaryRoots (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) :=
   runBinaryRootSubproductComparisonGroup "univariate-roots-binary-gf2-32"
     "Univariate binary-field root search (GF(2^32))"
-    "GF(2^32)" GF2_32.ConcreteField.toNat
+    "GF(2^32)" 32 GF2_32.ConcreteField.toNat
     (binaryRootStrideCollisionWorkloadPolynomial
       binaryRootGF32PowerCount binaryRootGF32DeepCollisionStride)
     (binaryRootStrideCollisionWorkloadShape
       binaryRootGF32PowerCount binaryRootGF32DeepCollisionStride)
     GF2_32.finiteFieldContext GF2_32.shoupTraceContext
+    GF2_32.fieldEnumeration
+    GF2_32.lasVegasConfig
     GF2_32.smoothSubproductRootContext
     binaryRootGF32HardShoupMeasuredIterations
     binaryRootGF32HardSmoothMeasuredIterations
+    binaryRootGF32HardLasVegasMeasuredIterations
     GF2_32.primitiveRoot preset gen
 
 private def runGF48BinaryRoots (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) :=
   runBinaryRootGroup "univariate-roots-binary-gf2-48"
     "Univariate binary-field root search (GF(2^48))"
-    "GF(2^48)" GF2_48.ConcreteField.toNat
+    "GF(2^48)" 48 GF2_48.ConcreteField.toNat
     (binaryRootConsecutiveWorkloadPolynomial binaryRootGF48PowerCount)
     (binaryRootConsecutiveWorkloadShape binaryRootGF48PowerCount)
     GF2_48.finiteFieldContext GF2_48.shoupTraceContext
+    GF2_48.fieldEnumeration
+    GF2_48.lasVegasConfig
     GF2_48.smoothHornerRootContext GF2_48.smoothSubproductRootContext
     binaryRootGF48ShoupMeasuredIterations
     binaryRootGF48SmoothMeasuredIterations
+    binaryRootGF48LasVegasMeasuredIterations
     GF2_48.primitiveRoot preset gen
 
 private def runGF72BinaryRoots (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) :=
   runBinaryRootGroup "univariate-roots-binary-gf2-72"
     "Univariate binary-field root search (GF(2^72))"
-    "GF(2^72)" GF2_72.ConcreteField.toNat
+    "GF(2^72)" 72 GF2_72.ConcreteField.toNat
     (binaryRootConsecutiveWorkloadPolynomial binaryRootGF72PowerCount)
     (binaryRootConsecutiveWorkloadShape binaryRootGF72PowerCount)
     GF2_72.finiteFieldContext GF2_72.shoupTraceContext
+    GF2_72.fieldEnumeration
+    GF2_72.lasVegasConfig
     GF2_72.smoothHornerRootContext GF2_72.smoothSubproductRootContext
     binaryRootGF72ShoupMeasuredIterations
     binaryRootGF72SmoothMeasuredIterations
+    binaryRootGF72LasVegasMeasuredIterations
     GF2_72.primitiveRoot preset gen
 
 private def runGF64BinaryRoots (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) :=
   runBinaryRootSubproductComparisonGroup "univariate-roots-binary-gf2-64"
     "Univariate binary-field root search (GF(2^64))"
-    "GF(2^64)" GF2_64.ConcreteField.toNat
+    "GF(2^64)" 64 GF2_64.ConcreteField.toNat
     (binaryRootStrideCollisionWorkloadPolynomial
       binaryRootGF64PowerCount binaryRootGF64DeepCollisionStride)
     (binaryRootStrideCollisionWorkloadShape
       binaryRootGF64PowerCount binaryRootGF64DeepCollisionStride)
     GF2_64.finiteFieldContext GF2_64.shoupTraceContext
+    GF2_64.fieldEnumeration
+    GF2_64.lasVegasConfig
     GF2_64.smoothSubproductRootContext
     binaryRootGF64HardShoupMeasuredIterations
     binaryRootGF64HardSmoothMeasuredIterations
+    binaryRootGF64HardLasVegasMeasuredIterations
     GF2_64.primitiveRoot preset gen
 
 /-- Runnable binary-field root benchmark tasks. -/
