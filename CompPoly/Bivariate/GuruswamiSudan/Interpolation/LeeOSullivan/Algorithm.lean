@@ -16,7 +16,7 @@ shifted polynomial-row reduction.
 ## References
 
 * [Lee, K., and O'Sullivan, M. E., *List decoding of Reed-Solomon codes from a
-    Groebner basis perspective*][LOS08]
+    Groebner basis perspective*][LOS06]
 -/
 
 namespace CompPoly
