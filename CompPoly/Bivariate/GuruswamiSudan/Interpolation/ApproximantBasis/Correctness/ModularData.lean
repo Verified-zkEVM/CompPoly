@@ -494,7 +494,7 @@ private theorem toPoly_ofCoeffRow_eq_sum (row : PolynomialRow F) :
       ∑ k ∈ Finset.range row.size,
         Polynomial.monomial k ((row.getD k 0).toPoly) := by
   ext n
-  rw [CBivariate.toPoly_coeff, Polynomial.finset_sum_coeff]
+  rw [CBivariate.toPoly_coeff, Polynomial.finsetSum_coeff]
   by_cases hn : n < row.size
   · rw [Finset.sum_eq_single n
       (fun k _hk hkn ↦ by rw [Polynomial.coeff_monomial, if_neg hkn])
@@ -517,7 +517,7 @@ theorem hasseDeriv_toPoly_ofCoeffRow_eval (row : PolynomialRow F)
     (Polynomial.hasseDeriv b (CBivariate.ofCoeffRow row).toPoly).eval R =
       ∑ k ∈ Finset.range row.size,
         Polynomial.C ((k.choose b : F)) * (row.getD k 0).toPoly * R ^ (k - b) := by
-  rw [toPoly_ofCoeffRow_eq_sum, map_sum, Polynomial.eval_finset_sum]
+  rw [toPoly_ofCoeffRow_eq_sum, map_sum, Polynomial.eval_finsetSum]
   refine Finset.sum_congr rfl fun k _hk ↦ ?_
   rw [Polynomial.hasseDeriv_monomial, Polynomial.eval_monomial,
     Polynomial.C_eq_natCast]

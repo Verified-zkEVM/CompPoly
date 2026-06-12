@@ -207,7 +207,6 @@ private def perturbedCoreRows {F : Type*} [Field F] [BEq F] [LawfulBEq F]
 private def gsNonCodewordSmallSlowBackends :
     Array (PerturbedBackend KoalaBear.Field) := #[
   ⟨"dense", "Dense linear", koalaBearDenseInterpContext, 1, 1, 1⟩,
-  ⟨"koetter", "Koetter", koalaBearKoetterInterpContext, 6, 1, 1⟩,
   ⟨"lee-direct", "Lee-O'Sullivan direct", koalaBearLeeDirectInterpContext,
     15, 2, 1⟩,
   ⟨"lee-subproduct", "Lee-O'Sullivan subproduct",
@@ -222,7 +221,6 @@ private def gsNonCodewordSmallSlowBackends :
 private def gsNonCodewordSmallFastBackends :
     Array (PerturbedBackend KoalaBear.Fast.Field) := #[
   ⟨"dense", "Dense linear", fastKoalaBearDenseInterpContext, 1, 1, 1⟩,
-  ⟨"koetter", "Koetter", fastKoalaBearKoetterInterpContext, 30, 4, 1⟩,
   ⟨"lee-direct", "Lee-O'Sullivan direct", fastKoalaBearLeeDirectInterpContext,
     80, 11, 2⟩,
   ⟨"lee-subproduct", "Lee-O'Sullivan subproduct",
@@ -236,7 +234,6 @@ private def gsNonCodewordSmallFastBackends :
 
 private def gsNonCodewordMediumSlowBackends :
     Array (PerturbedBackend KoalaBear.Field) := #[
-  ⟨"koetter", "Koetter", koalaBearKoetterInterpContext, 1, 1, 1⟩,
   ⟨"lee-direct", "Lee-O'Sullivan direct", koalaBearLeeDirectInterpContext,
     2, 1, 1⟩,
   ⟨"lee-subproduct", "Lee-O'Sullivan subproduct",
@@ -250,7 +247,6 @@ private def gsNonCodewordMediumSlowBackends :
 
 private def gsNonCodewordMediumFastBackends :
     Array (PerturbedBackend KoalaBear.Fast.Field) := #[
-  ⟨"koetter", "Koetter", fastKoalaBearKoetterInterpContext, 2, 1, 1⟩,
   ⟨"lee-direct", "Lee-O'Sullivan direct", fastKoalaBearLeeDirectInterpContext,
     10, 1, 1⟩,
   ⟨"lee-subproduct", "Lee-O'Sullivan subproduct",

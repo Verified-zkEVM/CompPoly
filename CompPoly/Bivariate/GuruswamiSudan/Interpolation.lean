@@ -6,7 +6,6 @@ Authors: Valerii Huhnin
 
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.ApproximantBasis.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Hybrid.Correctness

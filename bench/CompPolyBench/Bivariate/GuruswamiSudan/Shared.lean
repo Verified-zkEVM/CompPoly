@@ -8,7 +8,6 @@ import CompPolyBench.Common
 import CompPoly.Bivariate.Deriv
 import CompPoly.Bivariate.GuruswamiSudan
 import CompPoly.Bivariate.GuruswamiSudan.Implementations
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Algorithm
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.WitnessDivisibility
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 
@@ -16,7 +15,7 @@ import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 # Guruswami-Sudan Benchmarks
 
 KoalaBear cost-center benchmarks for the dense interpolation path,
-Koetter interpolation path, Roth-Ruckenstein and Alekhnovich root finding, and
+Roth-Ruckenstein and Alekhnovich root finding, and
 full backend-parametric `gsCore` and `gsFilteredCore`.
 -/
 

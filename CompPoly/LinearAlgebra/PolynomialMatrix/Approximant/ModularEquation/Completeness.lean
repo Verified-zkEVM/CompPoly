@@ -778,8 +778,7 @@ theorem me_verification_dominates
   have hquotExact : ∀ {b : Nat}, b < mW →
       (quot b).toPoly * (equation.moduli.getD b 0).toPoly = (prodE b).toPoly := by
     intro b hb
-    rw [hquot b]
-    exact me_divByMonic_mul_eq (hmonic b hb) (hdvdRed hb)
+    rw [hquot b, me_divByMonic_mul_eq (hmonic b hb) (hdvdRed hb)]
   -- Degree bounds on the witness entries and quotients.
   have hrowStarEntry : ∀ {k : Nat}, rowGet rowStar k ≠ 0 →
       (rowGet rowStar k).toPoly.natDegree + shift.getD k 0 ≤ e := by

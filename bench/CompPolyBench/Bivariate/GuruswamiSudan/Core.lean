@@ -30,37 +30,33 @@ def runGsCoreSmallKoala (preset : BenchPreset) (gen : StdGen) :
   let fastAlekRootContext := fastKoalaBearAlekhnovichRootContext
   let warmup := gsWarmupIterations preset
   let denseMeasured := preset.selectNat 1 1 1
-  let koetterMeasured := preset.selectNat 10 2 1
   let leeDirectMeasured := preset.selectNat 100 15 3
   let leeSubproductMeasured := preset.selectNat 90 13 3
   let approximantDirectMeasured := preset.selectNat 7 1 1
   let approximantSubproductMeasured := preset.selectNat 7 1 1
   let fastDenseMeasured := preset.selectNat 2 1 1
-  let fastKoetterMeasured := preset.selectNat 70 10 2
   let fastLeeDirectMeasured := preset.selectNat 600 90 20
   let fastLeeSubproductMeasured := preset.selectNat 400 60 10
   let fastApproximantDirectMeasured := preset.selectNat 20 3 1
   let fastApproximantSubproductMeasured := preset.selectNat 20 3 1
   let alekDenseMeasured := denseMeasured
-  let alekKoetterMeasured := koetterMeasured
   let alekLeeDirectMeasured := leeDirectMeasured
   let alekLeeSubproductMeasured := leeSubproductMeasured
   let alekApproximantDirectMeasured := approximantDirectMeasured
   let alekApproximantSubproductMeasured := approximantSubproductMeasured
   let fastAlekDenseMeasured := fastDenseMeasured
-  let fastAlekKoetterMeasured := fastKoetterMeasured
   let fastAlekLeeDirectMeasured := fastLeeDirectMeasured
   let fastAlekLeeSubproductMeasured := fastLeeSubproductMeasured
   let fastAlekApproximantDirectMeasured := fastApproximantDirectMeasured
   let fastAlekApproximantSubproductMeasured := fastApproximantSubproductMeasured
   let checksumIterations := groupChecksumIterations denseMeasured [
-    koetterMeasured, leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
-    approximantDirectMeasured, approximantSubproductMeasured, fastKoetterMeasured,
-    fastLeeDirectMeasured, fastLeeSubproductMeasured, fastApproximantDirectMeasured,
-    fastApproximantSubproductMeasured, alekDenseMeasured, alekKoetterMeasured,
-    alekLeeDirectMeasured, alekLeeSubproductMeasured, alekApproximantDirectMeasured,
-    alekApproximantSubproductMeasured, fastAlekDenseMeasured, fastAlekKoetterMeasured,
-    fastAlekLeeDirectMeasured, fastAlekLeeSubproductMeasured,
+    leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
+    approximantDirectMeasured, approximantSubproductMeasured, fastLeeDirectMeasured,
+    fastLeeSubproductMeasured, fastApproximantDirectMeasured,
+    fastApproximantSubproductMeasured, alekDenseMeasured, alekLeeDirectMeasured,
+    alekLeeSubproductMeasured, alekApproximantDirectMeasured,
+    alekApproximantSubproductMeasured, fastAlekDenseMeasured, fastAlekLeeDirectMeasured,
+    fastAlekLeeSubproductMeasured,
     fastAlekApproximantDirectMeasured, fastAlekApproximantSubproductMeasured
   ]
   let denseRow <- runTimed
@@ -76,18 +72,6 @@ def runGsCoreSmallKoala (preset : BenchPreset) (gen : StdGen) :
     "KoalaBear.Field" gsSmallInterpInputShape preset warmup alekDenseMeasured
     (fun _ ↦ gsCore points (denseInterpContext KoalaBear.Field) alekRootContext
       gsSmallParams)
-    checksumPolynomialArrayKoala checksumIterations
-  let koetterRow <- runTimed
-    "guruswami-sudan-core-koetter-small" "CBivariate"
-    "Koetter + RR roots"
-    "KoalaBear.Field" gsSmallInterpInputShape preset warmup koetterMeasured
-    (fun _ ↦ gsCore points koalaBearKoetterInterpContext rothRootContext gsSmallParams)
-    checksumPolynomialArrayKoala checksumIterations
-  let koetterAlekRow <- runTimed
-    "guruswami-sudan-core-koetter-small-alekhnovich" "CBivariate"
-    "Koetter + Alekhnovich roots"
-    "KoalaBear.Field" gsSmallInterpInputShape preset warmup alekKoetterMeasured
-    (fun _ ↦ gsCore points koalaBearKoetterInterpContext alekRootContext gsSmallParams)
     checksumPolynomialArrayKoala checksumIterations
   let leeDirectRow <- runTimed
     "guruswami-sudan-core-lee-direct-small" "CBivariate"
@@ -161,20 +145,6 @@ def runGsCoreSmallKoala (preset : BenchPreset) (gen : StdGen) :
       gsCore fastPoints (denseInterpContext KoalaBear.Fast.Field) fastAlekRootContext
         gsSmallParams)
     checksumPolynomialArrayKoalaFast checksumIterations
-  let fastKoetterRow <- runTimed
-    "guruswami-sudan-core-koetter-small-fast" "CBivariate"
-    "Koetter + RR roots"
-    "KoalaBear.Fast.Field" gsSmallInterpInputShape preset warmup fastKoetterMeasured
-    (fun _ ↦ gsCore fastPoints fastKoalaBearKoetterInterpContext fastRothRootContext
-      gsSmallParams)
-    checksumPolynomialArrayKoalaFast checksumIterations
-  let fastKoetterAlekRow <- runTimed
-    "guruswami-sudan-core-koetter-small-alekhnovich-fast" "CBivariate"
-    "Koetter + Alekhnovich roots"
-    "KoalaBear.Fast.Field" gsSmallInterpInputShape preset warmup fastAlekKoetterMeasured
-    (fun _ ↦ gsCore fastPoints fastKoalaBearKoetterInterpContext fastAlekRootContext
-      gsSmallParams)
-    checksumPolynomialArrayKoalaFast checksumIterations
   let fastLeeDirectRow <- runTimed
     "guruswami-sudan-core-lee-direct-small-fast" "CBivariate"
     "Lee-O'Sullivan direct + RR roots"
@@ -239,11 +209,10 @@ def runGsCoreSmallKoala (preset : BenchPreset) (gen : StdGen) :
     groupKey := "guruswami-sudan-core-small-koalabear",
     title := "Guruswami-Sudan full core, small (KoalaBear)",
     records := #[
-      denseRow, denseAlekRow, koetterRow, koetterAlekRow, leeDirectRow,
+      denseRow, denseAlekRow, leeDirectRow,
       leeDirectAlekRow, leeSubproductRow, leeSubproductAlekRow, approximantDirectRow,
       approximantDirectAlekRow, approximantSubproductRow, approximantSubproductAlekRow,
-      fastDenseRow, fastDenseAlekRow, fastKoetterRow, fastKoetterAlekRow,
-      fastLeeDirectRow, fastLeeDirectAlekRow, fastLeeSubproductRow,
+      fastDenseRow, fastDenseAlekRow, fastLeeDirectRow, fastLeeDirectAlekRow, fastLeeSubproductRow,
       fastLeeSubproductAlekRow, fastApproximantDirectRow, fastApproximantDirectAlekRow,
       fastApproximantSubproductRow, fastApproximantSubproductAlekRow
     ]
@@ -261,45 +230,27 @@ def runGsCoreMediumKoala (preset : BenchPreset) (gen : StdGen) :
   let alekRootContext := koalaBearAlekhnovichRootContext
   let fastAlekRootContext := fastKoalaBearAlekhnovichRootContext
   let warmup := gsWarmupIterations preset
-  let koetterMeasured := preset.selectNat 1 1 1
   let leeMeasured := preset.selectNat 10 1 1
   let approximantDirectMeasured := preset.selectNat 2 1 1
   let approximantSubproductMeasured := preset.selectNat 2 1 1
-  let fastKoetterMeasured := preset.selectNat 4 1 1
   let fastLeeMeasured := preset.selectNat 50 7 1
   let fastApproximantDirectMeasured := preset.selectNat 7 1 1
   let fastApproximantSubproductMeasured := preset.selectNat 7 1 1
-  let alekKoetterMeasured := koetterMeasured
   let alekLeeMeasured := leeMeasured
   let alekApproximantDirectMeasured := approximantDirectMeasured
   let alekApproximantSubproductMeasured := approximantSubproductMeasured
-  let fastAlekKoetterMeasured := fastKoetterMeasured
   let fastAlekLeeMeasured := fastLeeMeasured
   let fastAlekApproximantDirectMeasured := fastApproximantDirectMeasured
   let fastAlekApproximantSubproductMeasured := fastApproximantSubproductMeasured
-  let checksumIterations := groupChecksumIterations koetterMeasured [
+  let checksumIterations := groupChecksumIterations leeMeasured [
     leeMeasured, leeMeasured, approximantDirectMeasured, approximantSubproductMeasured,
-    fastKoetterMeasured, fastLeeMeasured, fastLeeMeasured,
+    fastLeeMeasured, fastLeeMeasured,
     fastApproximantDirectMeasured, fastApproximantSubproductMeasured,
-    alekKoetterMeasured, alekLeeMeasured, alekLeeMeasured, alekApproximantDirectMeasured,
-    alekApproximantSubproductMeasured, fastAlekKoetterMeasured, fastAlekLeeMeasured,
+    alekLeeMeasured, alekLeeMeasured, alekApproximantDirectMeasured,
+    alekApproximantSubproductMeasured, fastAlekLeeMeasured,
     fastAlekLeeMeasured, fastAlekApproximantDirectMeasured,
     fastAlekApproximantSubproductMeasured
   ]
-  let koetterRow <- runTimed
-    "guruswami-sudan-core-koetter-roth" "CBivariate"
-    "Koetter + RR roots"
-    "KoalaBear.Field" gsMediumInterpInputShape preset warmup koetterMeasured
-    (fun _ ↦ gsCore points koalaBearKoetterInterpContext rothRootContext
-      gsMediumInterpParams)
-    checksumPolynomialArrayKoala checksumIterations
-  let koetterAlekRow <- runTimed
-    "guruswami-sudan-core-koetter-alekhnovich" "CBivariate"
-    "Koetter + Alekhnovich roots"
-    "KoalaBear.Field" gsMediumInterpInputShape preset warmup alekKoetterMeasured
-    (fun _ ↦ gsCore points koalaBearKoetterInterpContext alekRootContext
-      gsMediumInterpParams)
-    checksumPolynomialArrayKoala checksumIterations
   let leeDirectRow <- runTimed
     "guruswami-sudan-core-lee-direct-roth" "CBivariate"
     "Lee-O'Sullivan direct + RR roots"
@@ -358,23 +309,6 @@ def runGsCoreMediumKoala (preset : BenchPreset) (gen : StdGen) :
     (fun _ ↦ gsCore points koalaBearApproximantBasisSubproductInterpContext
       alekRootContext gsMediumInterpParams)
     checksumPolynomialArrayKoala checksumIterations
-  let fastKoetterRow <- runTimed
-    "guruswami-sudan-core-koetter-roth-fast" "CBivariate"
-    "Koetter + RR roots"
-    "KoalaBear.Fast.Field" gsMediumInterpInputShape preset warmup fastKoetterMeasured
-    (fun _ ↦
-      gsCore fastPoints fastKoalaBearKoetterInterpContext fastRothRootContext
-        gsMediumInterpParams)
-    checksumPolynomialArrayKoalaFast checksumIterations
-  let fastKoetterAlekRow <- runTimed
-    "guruswami-sudan-core-koetter-alekhnovich-fast" "CBivariate"
-    "Koetter + Alekhnovich roots"
-    "KoalaBear.Fast.Field" gsMediumInterpInputShape preset warmup
-    fastAlekKoetterMeasured
-    (fun _ ↦
-      gsCore fastPoints fastKoalaBearKoetterInterpContext fastAlekRootContext
-        gsMediumInterpParams)
-    checksumPolynomialArrayKoalaFast checksumIterations
   let fastLeeDirectRow <- runTimed
     "guruswami-sudan-core-lee-direct-roth-fast" "CBivariate"
     "Lee-O'Sullivan direct + RR roots"
@@ -443,10 +377,10 @@ def runGsCoreMediumKoala (preset : BenchPreset) (gen : StdGen) :
     groupKey := "guruswami-sudan-core-medium-koalabear",
     title := "Guruswami-Sudan full core, medium (KoalaBear)",
     records := #[
-      koetterRow, koetterAlekRow, leeDirectRow, leeDirectAlekRow, leeSubproductRow,
+      leeDirectRow, leeDirectAlekRow, leeSubproductRow,
       leeSubproductAlekRow, approximantDirectRow, approximantDirectAlekRow,
-      approximantSubproductRow, approximantSubproductAlekRow, fastKoetterRow,
-      fastKoetterAlekRow, fastLeeDirectRow, fastLeeDirectAlekRow, fastLeeSubproductRow,
+      approximantSubproductRow, approximantSubproductAlekRow, fastLeeDirectRow,
+      fastLeeDirectAlekRow, fastLeeSubproductRow,
       fastLeeSubproductAlekRow, fastApproximantDirectRow, fastApproximantDirectAlekRow,
       fastApproximantSubproductRow, fastApproximantSubproductAlekRow
     ]
@@ -465,37 +399,33 @@ def runGsFilteredCoreSmallKoala (preset : BenchPreset) (gen : StdGen) :
   let fastAlekRootContext := fastKoalaBearAlekhnovichRootContext
   let warmup := gsWarmupIterations preset
   let denseMeasured := preset.selectNat 1 1 1
-  let koetterMeasured := preset.selectNat 10 2 1
   let leeDirectMeasured := preset.selectNat 100 15 3
   let leeSubproductMeasured := preset.selectNat 90 13 3
   let approximantDirectMeasured := preset.selectNat 7 1 1
   let approximantSubproductMeasured := preset.selectNat 7 1 1
   let fastDenseMeasured := preset.selectNat 2 1 1
-  let fastKoetterMeasured := preset.selectNat 70 10 2
   let fastLeeDirectMeasured := preset.selectNat 600 90 20
   let fastLeeSubproductMeasured := preset.selectNat 400 60 10
   let fastApproximantDirectMeasured := preset.selectNat 20 3 1
   let fastApproximantSubproductMeasured := preset.selectNat 20 3 1
   let alekDenseMeasured := denseMeasured
-  let alekKoetterMeasured := koetterMeasured
   let alekLeeDirectMeasured := leeDirectMeasured
   let alekLeeSubproductMeasured := leeSubproductMeasured
   let alekApproximantDirectMeasured := approximantDirectMeasured
   let alekApproximantSubproductMeasured := approximantSubproductMeasured
   let fastAlekDenseMeasured := fastDenseMeasured
-  let fastAlekKoetterMeasured := fastKoetterMeasured
   let fastAlekLeeDirectMeasured := fastLeeDirectMeasured
   let fastAlekLeeSubproductMeasured := fastLeeSubproductMeasured
   let fastAlekApproximantDirectMeasured := fastApproximantDirectMeasured
   let fastAlekApproximantSubproductMeasured := fastApproximantSubproductMeasured
   let checksumIterations := groupChecksumIterations denseMeasured [
-    koetterMeasured, leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
-    approximantDirectMeasured, approximantSubproductMeasured, fastKoetterMeasured,
-    fastLeeDirectMeasured, fastLeeSubproductMeasured, fastApproximantDirectMeasured,
-    fastApproximantSubproductMeasured, alekDenseMeasured, alekKoetterMeasured,
-    alekLeeDirectMeasured, alekLeeSubproductMeasured, alekApproximantDirectMeasured,
-    alekApproximantSubproductMeasured, fastAlekDenseMeasured, fastAlekKoetterMeasured,
-    fastAlekLeeDirectMeasured, fastAlekLeeSubproductMeasured,
+    leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
+    approximantDirectMeasured, approximantSubproductMeasured, fastLeeDirectMeasured,
+    fastLeeSubproductMeasured, fastApproximantDirectMeasured,
+    fastApproximantSubproductMeasured, alekDenseMeasured, alekLeeDirectMeasured,
+    alekLeeSubproductMeasured, alekApproximantDirectMeasured,
+    alekApproximantSubproductMeasured, fastAlekDenseMeasured, fastAlekLeeDirectMeasured,
+    fastAlekLeeSubproductMeasured,
     fastAlekApproximantDirectMeasured, fastAlekApproximantSubproductMeasured
   ]
   let denseRow <- runTimed
@@ -513,20 +443,6 @@ def runGsFilteredCoreSmallKoala (preset : BenchPreset) (gen : StdGen) :
     (fun _ ↦
       gsFilteredCore points (denseInterpContext KoalaBear.Field) alekRootContext
         gsSmallParams 0)
-    checksumPolynomialArrayKoala checksumIterations
-  let koetterRow <- runTimed
-    "guruswami-sudan-filtered-core-koetter-small" "CBivariate"
-    "Koetter + RR roots + filter"
-    "KoalaBear.Field" gsSmallFilteredShape preset warmup koetterMeasured
-    (fun _ ↦ gsFilteredCore points koalaBearKoetterInterpContext rothRootContext
-      gsSmallParams 0)
-    checksumPolynomialArrayKoala checksumIterations
-  let koetterAlekRow <- runTimed
-    "guruswami-sudan-filtered-core-koetter-small-alekhnovich" "CBivariate"
-    "Koetter + Alekhnovich roots + filter"
-    "KoalaBear.Field" gsSmallFilteredShape preset warmup alekKoetterMeasured
-    (fun _ ↦ gsFilteredCore points koalaBearKoetterInterpContext alekRootContext
-      gsSmallParams 0)
     checksumPolynomialArrayKoala checksumIterations
   let leeDirectRow <- runTimed
     "guruswami-sudan-filtered-core-lee-direct-small" "CBivariate"
@@ -600,22 +516,6 @@ def runGsFilteredCoreSmallKoala (preset : BenchPreset) (gen : StdGen) :
     "KoalaBear.Fast.Field" gsSmallFilteredShape preset warmup fastAlekDenseMeasured
     (fun _ ↦
       gsFilteredCore fastPoints (denseInterpContext KoalaBear.Fast.Field) fastAlekRootContext
-        gsSmallParams 0)
-    checksumPolynomialArrayKoalaFast checksumIterations
-  let fastKoetterRow <- runTimed
-    "guruswami-sudan-filtered-core-koetter-small-fast" "CBivariate"
-    "Koetter + RR roots + filter"
-    "KoalaBear.Fast.Field" gsSmallFilteredShape preset warmup fastKoetterMeasured
-    (fun _ ↦
-      gsFilteredCore fastPoints fastKoalaBearKoetterInterpContext fastRothRootContext
-        gsSmallParams 0)
-    checksumPolynomialArrayKoalaFast checksumIterations
-  let fastKoetterAlekRow <- runTimed
-    "guruswami-sudan-filtered-core-koetter-small-alekhnovich-fast" "CBivariate"
-    "Koetter + Alekhnovich roots + filter"
-    "KoalaBear.Fast.Field" gsSmallFilteredShape preset warmup fastAlekKoetterMeasured
-    (fun _ ↦
-      gsFilteredCore fastPoints fastKoalaBearKoetterInterpContext fastAlekRootContext
         gsSmallParams 0)
     checksumPolynomialArrayKoalaFast checksumIterations
   let fastLeeDirectRow <- runTimed
@@ -692,11 +592,10 @@ def runGsFilteredCoreSmallKoala (preset : BenchPreset) (gen : StdGen) :
     groupKey := "guruswami-sudan-filtered-core-small-koalabear",
     title := "Guruswami-Sudan filtered core, small (KoalaBear)",
     records := #[
-      denseRow, denseAlekRow, koetterRow, koetterAlekRow, leeDirectRow,
+      denseRow, denseAlekRow, leeDirectRow,
       leeDirectAlekRow, leeSubproductRow, leeSubproductAlekRow, approximantDirectRow,
       approximantDirectAlekRow, approximantSubproductRow, approximantSubproductAlekRow,
-      fastDenseRow, fastDenseAlekRow, fastKoetterRow, fastKoetterAlekRow,
-      fastLeeDirectRow, fastLeeDirectAlekRow, fastLeeSubproductRow,
+      fastDenseRow, fastDenseAlekRow, fastLeeDirectRow, fastLeeDirectAlekRow, fastLeeSubproductRow,
       fastLeeSubproductAlekRow, fastApproximantDirectRow, fastApproximantDirectAlekRow,
       fastApproximantSubproductRow, fastApproximantSubproductAlekRow
     ]
@@ -714,47 +613,27 @@ def runGsFilteredCoreMediumKoala (preset : BenchPreset) (gen : StdGen) :
   let alekRootContext := koalaBearAlekhnovichRootContext
   let fastAlekRootContext := fastKoalaBearAlekhnovichRootContext
   let warmup := gsWarmupIterations preset
-  let koetterMeasured := preset.selectNat 1 1 1
   let leeMeasured := preset.selectNat 10 1 1
   let approximantDirectMeasured := preset.selectNat 2 1 1
   let approximantSubproductMeasured := preset.selectNat 2 1 1
-  let fastKoetterMeasured := preset.selectNat 4 1 1
   let fastLeeMeasured := preset.selectNat 50 7 1
   let fastApproximantDirectMeasured := preset.selectNat 7 1 1
   let fastApproximantSubproductMeasured := preset.selectNat 7 1 1
-  let alekKoetterMeasured := koetterMeasured
   let alekLeeMeasured := leeMeasured
   let alekApproximantDirectMeasured := approximantDirectMeasured
   let alekApproximantSubproductMeasured := approximantSubproductMeasured
-  let fastAlekKoetterMeasured := fastKoetterMeasured
   let fastAlekLeeMeasured := fastLeeMeasured
   let fastAlekApproximantDirectMeasured := fastApproximantDirectMeasured
   let fastAlekApproximantSubproductMeasured := fastApproximantSubproductMeasured
-  let checksumIterations := groupChecksumIterations koetterMeasured [
+  let checksumIterations := groupChecksumIterations leeMeasured [
     leeMeasured, leeMeasured, approximantDirectMeasured, approximantSubproductMeasured,
-    fastKoetterMeasured, fastLeeMeasured, fastLeeMeasured,
+    fastLeeMeasured, fastLeeMeasured,
     fastApproximantDirectMeasured, fastApproximantSubproductMeasured,
-    alekKoetterMeasured, alekLeeMeasured, alekLeeMeasured, alekApproximantDirectMeasured,
-    alekApproximantSubproductMeasured, fastAlekKoetterMeasured, fastAlekLeeMeasured,
+    alekLeeMeasured, alekLeeMeasured, alekApproximantDirectMeasured,
+    alekApproximantSubproductMeasured, fastAlekLeeMeasured,
     fastAlekLeeMeasured, fastAlekApproximantDirectMeasured,
     fastAlekApproximantSubproductMeasured
   ]
-  let koetterRow <- runTimed
-    "guruswami-sudan-filtered-core-koetter" "CBivariate"
-    "Koetter + RR roots + filter"
-    "KoalaBear.Field" gsFilteredShape preset warmup koetterMeasured
-    (fun _ ↦
-      gsFilteredCore points koalaBearKoetterInterpContext rothRootContext
-        gsMediumInterpParams 0)
-    checksumPolynomialArrayKoala checksumIterations
-  let koetterAlekRow <- runTimed
-    "guruswami-sudan-filtered-core-koetter-alekhnovich" "CBivariate"
-    "Koetter + Alekhnovich roots + filter"
-    "KoalaBear.Field" gsFilteredShape preset warmup alekKoetterMeasured
-    (fun _ ↦
-      gsFilteredCore points koalaBearKoetterInterpContext alekRootContext
-        gsMediumInterpParams 0)
-    checksumPolynomialArrayKoala checksumIterations
   let leeDirectRow <- runTimed
     "guruswami-sudan-filtered-core-lee-direct" "CBivariate"
     "Lee-O'Sullivan direct + RR roots + filter"
@@ -815,22 +694,6 @@ def runGsFilteredCoreMediumKoala (preset : BenchPreset) (gen : StdGen) :
     (fun _ ↦ gsFilteredCore points koalaBearApproximantBasisSubproductInterpContext
       alekRootContext gsMediumInterpParams 0)
     checksumPolynomialArrayKoala checksumIterations
-  let fastKoetterRow <- runTimed
-    "guruswami-sudan-filtered-core-koetter-fast" "CBivariate"
-    "Koetter + RR roots + filter"
-    "KoalaBear.Fast.Field" gsFilteredShape preset warmup fastKoetterMeasured
-    (fun _ ↦
-      gsFilteredCore fastPoints fastKoalaBearKoetterInterpContext fastRothRootContext
-        gsMediumInterpParams 0)
-    checksumPolynomialArrayKoalaFast checksumIterations
-  let fastKoetterAlekRow <- runTimed
-    "guruswami-sudan-filtered-core-koetter-alekhnovich-fast" "CBivariate"
-    "Koetter + Alekhnovich roots + filter"
-    "KoalaBear.Fast.Field" gsFilteredShape preset warmup fastAlekKoetterMeasured
-    (fun _ ↦
-      gsFilteredCore fastPoints fastKoalaBearKoetterInterpContext fastAlekRootContext
-        gsMediumInterpParams 0)
-    checksumPolynomialArrayKoalaFast checksumIterations
   let fastLeeDirectRow <- runTimed
     "guruswami-sudan-filtered-core-lee-direct-fast" "CBivariate"
     "Lee-O'Sullivan direct + RR roots + filter"
@@ -903,10 +766,10 @@ def runGsFilteredCoreMediumKoala (preset : BenchPreset) (gen : StdGen) :
     groupKey := "guruswami-sudan-filtered-core-medium-koalabear",
     title := "Guruswami-Sudan filtered core, medium (KoalaBear)",
     records := #[
-      koetterRow, koetterAlekRow, leeDirectRow, leeDirectAlekRow, leeSubproductRow,
+      leeDirectRow, leeDirectAlekRow, leeSubproductRow,
       leeSubproductAlekRow, approximantDirectRow, approximantDirectAlekRow,
-      approximantSubproductRow, approximantSubproductAlekRow, fastKoetterRow,
-      fastKoetterAlekRow, fastLeeDirectRow, fastLeeDirectAlekRow, fastLeeSubproductRow,
+      approximantSubproductRow, approximantSubproductAlekRow, fastLeeDirectRow,
+      fastLeeDirectAlekRow, fastLeeSubproductRow,
       fastLeeSubproductAlekRow, fastApproximantDirectRow, fastApproximantDirectAlekRow,
       fastApproximantSubproductRow, fastApproximantSubproductAlekRow
     ]

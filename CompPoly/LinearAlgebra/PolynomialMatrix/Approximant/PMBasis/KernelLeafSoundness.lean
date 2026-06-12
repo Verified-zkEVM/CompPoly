@@ -321,7 +321,7 @@ theorem vectorToPolynomialRow_approximates (mulCtx : CPolynomial.MulContext F)
     rw [coefficientMatrixRows, Array.toList_map]
     exact List.mem_map.mpr ⟨(j, t), mem_coefficientEquationIndices hj ht, rfl⟩
   have hdot := homogeneousKernelBasisRows_dot_eq_zero hv hr
-  rw [Polynomial.finset_sum_coeff]
+  rw [Polynomial.finsetSum_coeff]
   refine Eq.trans ?_ hdot
   rw [pm_sum_range_mul]
   refine Finset.sum_congr rfl fun k hk ↦ ?_
@@ -551,7 +551,7 @@ theorem coefficientMatrixRows_dot_eq_zero_of_approximates
       rw [hentry k hk a ha1, if_neg (by omega), zero_mul]
   rw [pm_sum_range_mul,
     Finset.sum_congr rfl fun k hk ↦ hinner k (Finset.mem_range.mp hk),
-    ← Polynomial.finset_sum_coeff]
+    ← Polynomial.finsetSum_coeff]
   exact hcoeff
 
 /-- Every kernel-leaf basis row approximates the problem and has the principal

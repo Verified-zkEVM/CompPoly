@@ -71,7 +71,7 @@ private theorem pm_coeff_C_mul (c : F) (p : CPolynomial F) (t : Nat) :
 private theorem pm_coeff_finset_sum (f : Nat → CPolynomial F) (m t : Nat) :
     CPolynomial.coeff (∑ i ∈ Finset.range m, f i) t =
       ∑ i ∈ Finset.range m, CPolynomial.coeff (f i) t := by
-  rw [CPolynomial.coeff_toPoly, pm_toPoly_finset_sum, Polynomial.finset_sum_coeff]
+  rw [CPolynomial.coeff_toPoly, pm_toPoly_finset_sum, Polynomial.finsetSum_coeff]
   exact Finset.sum_congr rfl fun i _hi ↦ (CPolynomial.coeff_toPoly (f i) t).symm
 
 /-- Coefficients of a product with the monomial `X^d`. -/

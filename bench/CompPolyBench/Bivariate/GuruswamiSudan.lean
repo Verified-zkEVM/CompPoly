@@ -11,7 +11,7 @@ import CompPolyBench.Bivariate.GuruswamiSudan.ReceivedWord
 # Guruswami-Sudan Benchmarks
 
 KoalaBear cost-center benchmarks for the dense interpolation path,
-Koetter interpolation path, Roth-Ruckenstein and Alekhnovich root finding, and
+Roth-Ruckenstein and Alekhnovich root finding, and
 full backend-parametric `gsCore` and `gsFilteredCore`.
 -/
 
@@ -90,20 +90,18 @@ private def runGsInterpolationSmallKoala (preset : BenchPreset) (gen : StdGen) :
   let fastPoints := gsSmallBenchmarkPoints fastMessage
   let warmup := gsWarmupIterations preset
   let denseMeasured := preset.selectNat 1 1 1
-  let koetterMeasured := preset.selectNat 10 2 1
   let leeDirectMeasured := preset.selectNat 100 15 3
   let leeSubproductMeasured := preset.selectNat 90 13 3
   let approximantDirectMeasured := preset.selectNat 7 1 1
   let approximantSubproductMeasured := preset.selectNat 7 1 1
   let fastDenseMeasured := preset.selectNat 2 1 1
-  let fastKoetterMeasured := preset.selectNat 70 10 2
   let fastLeeDirectMeasured := preset.selectNat 600 90 20
   let fastLeeSubproductMeasured := preset.selectNat 400 60 10
   let fastApproximantDirectMeasured := preset.selectNat 20 3 1
   let fastApproximantSubproductMeasured := preset.selectNat 20 3 1
   let checksumIterations := groupChecksumIterations denseMeasured [
-    koetterMeasured, leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
-    approximantDirectMeasured, approximantSubproductMeasured, fastKoetterMeasured,
+    leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
+    approximantDirectMeasured, approximantSubproductMeasured,
     fastLeeDirectMeasured, fastLeeSubproductMeasured, fastApproximantDirectMeasured,
     fastApproximantSubproductMeasured
   ]
@@ -112,13 +110,6 @@ private def runGsInterpolationSmallKoala (preset : BenchPreset) (gen : StdGen) :
     "Dense linear"
     "KoalaBear.Field" gsSmallInterpInputShape preset warmup denseMeasured
     (fun _ ↦ denseInterpolate points gsSmallParams)
-    (checksumInterpolationValidityOption points gsSmallParams)
-    checksumIterations
-  let koetterRow <- runTimed
-    "guruswami-sudan-interp-koetter-small" "CBivariate"
-    "Koetter"
-    "KoalaBear.Field" gsSmallInterpInputShape preset warmup koetterMeasured
-    (fun _ ↦ koetterInterpolate points gsSmallParams)
     (checksumInterpolationValidityOption points gsSmallParams)
     checksumIterations
   let leeDirectRow <- runTimed
@@ -156,13 +147,6 @@ private def runGsInterpolationSmallKoala (preset : BenchPreset) (gen : StdGen) :
     "Dense linear"
     "KoalaBear.Fast.Field" gsSmallInterpInputShape preset warmup fastDenseMeasured
     (fun _ ↦ denseInterpolate fastPoints gsSmallParams)
-    (checksumInterpolationValidityOption fastPoints gsSmallParams)
-    checksumIterations
-  let fastKoetterRow <- runTimed
-    "guruswami-sudan-interp-koetter-small-fast" "CBivariate"
-    "Koetter"
-    "KoalaBear.Fast.Field" gsSmallInterpInputShape preset warmup fastKoetterMeasured
-    (fun _ ↦ koetterInterpolate fastPoints gsSmallParams)
     (checksumInterpolationValidityOption fastPoints gsSmallParams)
     checksumIterations
   let fastLeeDirectRow <- runTimed
@@ -203,9 +187,9 @@ private def runGsInterpolationSmallKoala (preset : BenchPreset) (gen : StdGen) :
     groupKey := "guruswami-sudan-interp-small-koalabear",
     title := "Guruswami-Sudan interpolation, small (KoalaBear)",
     records := #[
-      denseRow, koetterRow, leeDirectRow, leeSubproductRow,
+      denseRow, leeDirectRow, leeSubproductRow,
       approximantDirectRow, approximantSubproductRow,
-      fastDenseRow, fastKoetterRow, fastLeeDirectRow, fastLeeSubproductRow,
+      fastDenseRow, fastLeeDirectRow, fastLeeSubproductRow,
       fastApproximantDirectRow, fastApproximantSubproductRow
     ]
   }, gen)
@@ -218,30 +202,21 @@ private def runGsInterpolationMediumKoala (preset : BenchPreset) (gen : StdGen) 
   let points := gsMediumBenchmarkPoints message
   let fastPoints := gsMediumBenchmarkPoints fastMessage
   let warmup := gsWarmupIterations preset
-  let koetterMeasured := preset.selectNat 1 1 1
   let leeMeasured := preset.selectNat 10 1 1
   let approximantDirectMeasured := preset.selectNat 2 1 1
   let approximantSubproductMeasured := preset.selectNat 2 1 1
-  let fastKoetterMeasured := preset.selectNat 4 1 1
   let fastLeeMeasured := preset.selectNat 50 7 1
   let fastApproximantDirectMeasured := preset.selectNat 7 1 1
   let fastApproximantSubproductMeasured := preset.selectNat 7 1 1
   let hybridMeasured := preset.selectNat 5 1 1
   let fastHybridMeasured := preset.selectNat 25 4 1
-  let checksumIterations := groupChecksumIterations koetterMeasured [
-    leeMeasured, leeMeasured, approximantDirectMeasured, approximantSubproductMeasured,
+  let checksumIterations := groupChecksumIterations leeMeasured [
+    leeMeasured, approximantDirectMeasured, approximantSubproductMeasured,
     hybridMeasured,
-    fastKoetterMeasured, fastLeeMeasured, fastLeeMeasured,
+    fastLeeMeasured, fastLeeMeasured,
     fastApproximantDirectMeasured, fastApproximantSubproductMeasured,
     fastHybridMeasured
   ]
-  let koetterRow <- runTimed
-    "guruswami-sudan-interp-koetter" "CBivariate"
-    "Koetter"
-    "KoalaBear.Field" gsMediumInterpInputShape preset warmup koetterMeasured
-    (fun _ ↦ koetterInterpolate points gsMediumInterpParams)
-    (checksumInterpolationValidityOption points gsMediumInterpParams)
-    checksumIterations
   let leeDirectRow <- runTimed
     "guruswami-sudan-interp-lee-direct" "CBivariate"
     "Lee-O'Sullivan direct"
@@ -278,13 +253,6 @@ private def runGsInterpolationMediumKoala (preset : BenchPreset) (gen : StdGen) 
     "KoalaBear.Field" gsMediumInterpInputShape preset warmup hybridMeasured
     (fun _ ↦ koalaBearHybridInterpContext.interpolate points gsMediumInterpParams)
     (checksumInterpolationValidityOption points gsMediumInterpParams)
-    checksumIterations
-  let fastKoetterRow <- runTimed
-    "guruswami-sudan-interp-koetter-fast" "CBivariate"
-    "Koetter"
-    "KoalaBear.Fast.Field" gsMediumInterpInputShape preset warmup fastKoetterMeasured
-    (fun _ ↦ koetterInterpolate fastPoints gsMediumInterpParams)
-    (checksumInterpolationValidityOption fastPoints gsMediumInterpParams)
     checksumIterations
   let fastLeeDirectRow <- runTimed
     "guruswami-sudan-interp-lee-direct-fast" "CBivariate"
@@ -332,9 +300,9 @@ private def runGsInterpolationMediumKoala (preset : BenchPreset) (gen : StdGen) 
     groupKey := "guruswami-sudan-interp-medium-koalabear",
     title := "Guruswami-Sudan interpolation, medium (KoalaBear)",
     records := #[
-      koetterRow, leeDirectRow, leeSubproductRow,
+      leeDirectRow, leeSubproductRow,
       approximantDirectRow, approximantSubproductRow, hybridRow,
-      fastKoetterRow, fastLeeDirectRow, fastLeeSubproductRow,
+      fastLeeDirectRow, fastLeeSubproductRow,
       fastApproximantDirectRow, fastApproximantSubproductRow, fastHybridRow
     ]
   }, gen)
