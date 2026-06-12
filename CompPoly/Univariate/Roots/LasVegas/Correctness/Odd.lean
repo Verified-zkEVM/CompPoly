@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 
 import CompPoly.Univariate.Roots.LasVegas.Correctness.Common
+import CompPoly.Univariate.Roots.LasVegas.OddBucket
 
 /-!
 # Odd Split Correctness for Las Vegas Splitting
@@ -713,6 +714,37 @@ theorem tryOddSplitAttemptsWith_stackWork_le {F : Type*}
           simp [hsplit] at htry
           subst children
           exact cantorZassenhausOddAttemptWith_stackWork_le M D q probes hsplit hg
+
+/--
+A fixed probe whose Euler buckets separate two distinct roots of `g` forces the
+odd Cantor-Zassenhaus split attempt to succeed.
+
+The split candidates of `cantorZassenhausOddAttemptWith` are the zero part
+`gcd(g, h)`, the square part `gcd(g / zeroPart, h ^ ((q - 1) / 2) - 1)`, and
+the remaining quotient. Roots in the `zero`, `square`, and `nonsquare` Euler
+buckets of the probe land in these three candidates respectively, so two roots
+in different buckets witness two distinct nontrivial proper children.
+
+The hypothesis `hg : g ≠ 0` is essential: for `g = 0` both root hypotheses hold
+vacuously while the attempt always fails, because no candidate child can have
+representation size strictly below the parent size `0`.
+-/
+theorem cantorZassenhausOddAttemptWith_success_of_bucket_separated {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (q : Nat) {g h : CPolynomial F} {a b : F} (attempt : Nat)
+    (hg : g ≠ 0)
+    (hrootA : CPolynomial.eval a g = 0)
+    (hrootB : CPolynomial.eval b g = 0)
+    (hab : a ≠ b)
+    (hsep :
+      oddCZBucket q (CPolynomial.eval a h) ≠
+        oddCZBucket q (CPolynomial.eval b h)) :
+    ∃ children,
+      cantorZassenhausOddAttemptWith M D q
+        ({ probe := fun _q _factor _attempt ↦ h } : ProbeFamily F)
+        g attempt = some children := by
+  sorry
 
 end FiniteField
 
