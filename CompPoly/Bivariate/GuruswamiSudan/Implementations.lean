@@ -6,9 +6,11 @@ Authors: Valerii Huhnin
 
 import CompPoly.Bivariate.GuruswamiSudan.Executable
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Hybrid.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness
-import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
+import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Correctness
+import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Fast
 import CompPoly.Univariate.BatchEval.Context
 import CompPoly.Univariate.NTT.KoalaBear
@@ -16,8 +18,9 @@ import CompPoly.Univariate.NTT.KoalaBear
 /-!
 # Guruswami-Sudan Concrete Implementations
 
-Named concrete dense and Lee-O'Sullivan interpolation/Roth-Ruckenstein
-implementations and correctness theorem specializations for the decoder surface.
+Named concrete dense-interpolation/Roth-Ruckenstein implementations and
+correctness theorem specializations for the implementations exercised by the
+benchmark suite.
 -/
 
 namespace CompPoly
@@ -36,6 +39,13 @@ def fastKoalaBearDenseInterpContext : GSInterpContext KoalaBear.Fast.Field :=
 def koalaBearNttFastMulContext : CPolynomial.MulContext KoalaBear.Field :=
   CPolynomial.MulContext.nttFast CPolynomial.NTT.KoalaBear.bestDomainForLength?
 
+/-- NTTFast-backed low univariate multiplication over canonical KoalaBear. -/
+def koalaBearNttFastLowMulContext :
+    PolynomialMatrix.MulLowContext KoalaBear.Field :=
+  PolynomialMatrix.MulLowContext.raw koalaBearNttFastMulContext
+    (CPolynomial.NTTFast.FastMulLow.withFallback
+      CPolynomial.NTT.KoalaBear.bestDomainForLength?)
+
 /-- NTTFast-backed univariate monic remainders over canonical KoalaBear. -/
 def koalaBearNttFastModContext : CPolynomial.ModContext KoalaBear.Field :=
   CPolynomial.ModContext.reversalNttFast CPolynomial.NTT.KoalaBear.bestDomainForLength?
@@ -48,6 +58,13 @@ def koalaBearNttFastBatchEvalContext : CPolynomial.BatchEvalContext KoalaBear.Fi
 /-- NTTFast-backed univariate multiplication over native-word fast KoalaBear. -/
 def fastKoalaBearNttFastMulContext : CPolynomial.MulContext KoalaBear.Fast.Field :=
   CPolynomial.MulContext.nttFast CPolynomial.NTT.KoalaBear.fastBestDomainForLength?
+
+/-- NTTFast-backed low univariate multiplication over native-word fast KoalaBear. -/
+def fastKoalaBearNttFastLowMulContext :
+    PolynomialMatrix.MulLowContext KoalaBear.Fast.Field :=
+  PolynomialMatrix.MulLowContext.raw fastKoalaBearNttFastMulContext
+    (CPolynomial.NTTFast.FastMulLow.withFallback
+      CPolynomial.NTT.KoalaBear.fastBestDomainForLength?)
 
 /-- NTTFast-backed univariate monic remainders over native-word fast KoalaBear. -/
 def fastKoalaBearNttFastModContext : CPolynomial.ModContext KoalaBear.Fast.Field :=
@@ -90,6 +107,117 @@ def fastKoalaBearLeeSubproductInterpContext : GSInterpContext KoalaBear.Fast.Fie
     fastKoalaBearNttFastBatchEvalContext
     (PolynomialMatrix.muldersStorjohannFastReducerContext KoalaBear.Fast.Field)
 
+/-- PM-basis scalar-kernel cutoff for the approximant-basis interpolation backend.
+
+The recursive solver handles all larger orders with low-product residuals and
+block matrix composition; dense scalar linear algebra is reserved for
+small bounded leaves. -/
+def approximantPMBasisLeafCutoff : Nat := 8
+
+/-- Polynomial-matrix basis-composition cutoff for the approximant backend.
+The current GS interpolation shapes are narrow enough that direct bounded
+composition is faster than recursing Strassen down to unit blocks. -/
+def approximantPMBasisComposeLeafCutoff : Nat := 8
+
+/-- Recursive approximant-basis PM-basis context over canonical KoalaBear. -/
+def koalaBearApproximantPMBasisContext :
+    PolynomialMatrix.Approximant.PMBasisContext KoalaBear.Field :=
+  PolynomialMatrix.Approximant.kernelLeafPMBasisContextWithLowAndCompose
+    koalaBearNttFastMulContext koalaBearNttFastLowMulContext
+    approximantPMBasisLeafCutoff approximantPMBasisComposeLeafCutoff
+
+/-- Diagonal modular-equation solution context over canonical KoalaBear. -/
+def koalaBearApproximantSolutionContext :
+    PolynomialMatrix.Approximant.ModularSolutionBasisContext KoalaBear.Field :=
+  PolynomialMatrix.Approximant.modularSolutionBasisContextViaPMBasis
+    koalaBearNttFastMulContext koalaBearNttFastModContext
+    koalaBearApproximantPMBasisContext
+
+/-- Approximant-basis interpolation over canonical KoalaBear. -/
+def koalaBearApproximantBasisDirectInterpContext : GSInterpContext KoalaBear.Field :=
+  ApproximantBasis.approximantBasisInterpContext
+    (CPolynomial.VanishingPolynomialContext.direct (F := KoalaBear.Field))
+    (CPolynomial.BatchEvalContext.horner KoalaBear.Field)
+    koalaBearApproximantSolutionContext
+
+/-- Approximant-basis interpolation over canonical KoalaBear with
+subproduct-tree vanishing setup. -/
+def koalaBearApproximantBasisSubproductInterpContext : GSInterpContext KoalaBear.Field :=
+  ApproximantBasis.approximantBasisInterpContext
+    (CPolynomial.VanishingPolynomialContext.subproduct
+      koalaBearNttFastMulContext)
+    koalaBearNttFastBatchEvalContext
+    koalaBearApproximantSolutionContext
+
+/-- Default approximant-basis interpolation over canonical KoalaBear. -/
+def koalaBearApproximantBasisInterpContext : GSInterpContext KoalaBear.Field :=
+  koalaBearApproximantBasisSubproductInterpContext
+
+/-- Recursive approximant-basis PM-basis context over native-word fast KoalaBear. -/
+def fastKoalaBearApproximantPMBasisContext :
+    PolynomialMatrix.Approximant.PMBasisContext KoalaBear.Fast.Field :=
+  PolynomialMatrix.Approximant.kernelLeafPMBasisContextWithLowAndCompose
+    fastKoalaBearNttFastMulContext fastKoalaBearNttFastLowMulContext
+    approximantPMBasisLeafCutoff approximantPMBasisComposeLeafCutoff
+
+/-- Diagonal modular-equation solution context over native-word fast KoalaBear. -/
+def fastKoalaBearApproximantSolutionContext :
+    PolynomialMatrix.Approximant.ModularSolutionBasisContext KoalaBear.Fast.Field :=
+  PolynomialMatrix.Approximant.modularSolutionBasisContextViaPMBasis
+    fastKoalaBearNttFastMulContext fastKoalaBearNttFastModContext
+    fastKoalaBearApproximantPMBasisContext
+
+/-- Approximant-basis interpolation over native-word fast KoalaBear. -/
+def fastKoalaBearApproximantBasisDirectInterpContext :
+    GSInterpContext KoalaBear.Fast.Field :=
+  ApproximantBasis.approximantBasisInterpContext
+    (CPolynomial.VanishingPolynomialContext.direct (F := KoalaBear.Fast.Field))
+    (CPolynomial.BatchEvalContext.horner KoalaBear.Fast.Field)
+    fastKoalaBearApproximantSolutionContext
+
+/-- Approximant-basis interpolation over native-word fast KoalaBear with
+subproduct-tree vanishing setup. -/
+def fastKoalaBearApproximantBasisSubproductInterpContext :
+    GSInterpContext KoalaBear.Fast.Field :=
+  ApproximantBasis.approximantBasisInterpContext
+    (CPolynomial.VanishingPolynomialContext.subproduct
+      fastKoalaBearNttFastMulContext)
+    fastKoalaBearNttFastBatchEvalContext
+    fastKoalaBearApproximantSolutionContext
+
+/-- Default approximant-basis interpolation over native-word fast KoalaBear. -/
+def fastKoalaBearApproximantBasisInterpContext :
+    GSInterpContext KoalaBear.Fast.Field :=
+  fastKoalaBearApproximantBasisSubproductInterpContext
+
+/-- Mulders-Storjohann step budget for the hybrid interpolation backend: the
+ski-rental rent/buy break-even, set near the cost ratio between one
+approximant-fallback solve and one reduction step. Both scale with the input
+mass, so the ratio is proportional to `ℓ^(ω−1)` (with `ℓ + 1` the module
+width) and independent of `n` and `m` under softly-linear multiplication;
+the constant is calibrated from the `n = 5040` long-code benchmark shape. -/
+def hybridReductionStepBudget (params : GSInterpParams) : Nat :=
+  500 * leeOSullivanWidth params * leeOSullivanWidth params
+
+/-- Hybrid interpolation (budgeted Lee-O'Sullivan reduction with approximant
+fallback) over canonical KoalaBear. -/
+def koalaBearHybridInterpContext : GSInterpContext KoalaBear.Field :=
+  Hybrid.hybridInterpContext
+    (CPolynomial.VanishingPolynomialContext.subproduct koalaBearNttFastMulContext)
+    koalaBearNttFastBatchEvalContext
+    koalaBearApproximantSolutionContext
+    hybridReductionStepBudget
+
+/-- Hybrid interpolation (budgeted Lee-O'Sullivan reduction with approximant
+fallback) over native-word fast KoalaBear. -/
+def fastKoalaBearHybridInterpContext : GSInterpContext KoalaBear.Fast.Field :=
+  Hybrid.hybridInterpContext
+    (CPolynomial.VanishingPolynomialContext.subproduct
+      fastKoalaBearNttFastMulContext)
+    fastKoalaBearNttFastBatchEvalContext
+    fastKoalaBearApproximantSolutionContext
+    hybridReductionStepBudget
+
 /-- Roth-Ruckenstein root backend over canonical KoalaBear. -/
 def koalaBearRothRootContext : GSRootContext KoalaBear.Field :=
   rothRuckensteinRootContext KoalaBear.Field koalaBearFieldRootContext
@@ -105,6 +233,22 @@ def fastKoalaBearRothRootContext : GSRootContext KoalaBear.Fast.Field :=
 /-- Roth-Ruckenstein root backend over native-word fast KoalaBear with NTTFast field roots. -/
 def fastKoalaBearRothNttFastRootContext : GSRootContext KoalaBear.Fast.Field :=
   rothRuckensteinRootContext KoalaBear.Fast.Field fastKoalaBearNttFastFieldRootContext
+
+/-- Alekhnovich root backend over canonical KoalaBear. -/
+def koalaBearAlekhnovichRootContext : GSRootContext KoalaBear.Field :=
+  alekhnovichRootContext KoalaBear.Field koalaBearFieldRootContext
+
+/-- Alekhnovich root backend over canonical KoalaBear with NTTFast field roots. -/
+def koalaBearAlekhnovichNttFastRootContext : GSRootContext KoalaBear.Field :=
+  alekhnovichRootContext KoalaBear.Field koalaBearNttFastFieldRootContext
+
+/-- Alekhnovich root backend over native-word fast KoalaBear. -/
+def fastKoalaBearAlekhnovichRootContext : GSRootContext KoalaBear.Fast.Field :=
+  alekhnovichRootContext KoalaBear.Fast.Field fastKoalaBearFieldRootContext
+
+/-- Alekhnovich root backend over native-word fast KoalaBear with NTTFast field roots. -/
+def fastKoalaBearAlekhnovichNttFastRootContext : GSRootContext KoalaBear.Fast.Field :=
+  alekhnovichRootContext KoalaBear.Fast.Field fastKoalaBearNttFastFieldRootContext
 
 /-- Filtered dense/Roth context over canonical KoalaBear. -/
 def koalaBearDenseRothContext : GSFilteredCoreContext KoalaBear.Field :=

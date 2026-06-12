@@ -345,6 +345,29 @@ theorem hasMultiplicity_succ [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial 
   intro h i j hij
   exact h i j (by omega)
 
+/-- `toPoly` is injective on canonical bivariate polynomials. -/
+theorem toPoly_injective [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    [DecidableEq R] {P Q : CBivariate R} (h : toPoly P = toPoly Q) : P = Q := by
+  rw [← toPoly_ofPoly P, ← toPoly_ofPoly Q, h]
+
+/-- The generic Taylor shift is additive. -/
+theorem shiftC_add [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
+    (a b : R) (P Q : CBivariate R) :
+    shiftC a b (P + Q) = shiftC a b P + shiftC a b Q := by
+  apply toPoly_injective
+  rw [toPoly_add, shiftC_toPoly, shiftC_toPoly, shiftC_toPoly, toPoly_add]
+  unfold Polynomial.Bivariate.shift
+  rw [Polynomial.add_comp, Polynomial.map_add]
+
+/-- The generic Taylor shift is multiplicative. -/
+theorem shiftC_mul [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    [DecidableEq R] (a b : R) (P Q : CBivariate R) :
+    shiftC a b (P * Q) = shiftC a b P * shiftC a b Q := by
+  apply toPoly_injective
+  rw [toPoly_mul, shiftC_toPoly, shiftC_toPoly, shiftC_toPoly, toPoly_mul]
+  unfold Polynomial.Bivariate.shift
+  rw [Polynomial.mul_comp, Polynomial.map_mul]
+
 /-- The decidable check agrees with the propositional multiplicity. -/
 theorem hasMultiplicity_iff_check [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     [DecidableEq R] (Q : CBivariate R) (r : ℕ) (a b : R) :
