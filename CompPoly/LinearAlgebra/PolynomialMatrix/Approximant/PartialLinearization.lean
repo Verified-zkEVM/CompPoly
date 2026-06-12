@@ -11,6 +11,10 @@ import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis
 
 Small executable helpers used by diagonal modular-equation solvers to size the
 expanded X-adic problem without using one global oversized order.
+
+## References
+
+* [Storjohann, A., *Notes on computing minimal approximant bases*][Sto06]
 -/
 
 namespace CompPoly

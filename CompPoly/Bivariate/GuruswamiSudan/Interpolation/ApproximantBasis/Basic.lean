@@ -15,6 +15,12 @@ import CompPoly.Univariate.Vanishing
 
 Construction of the diagonal modular equations used by the approximant-basis
 interpolation backend.
+
+## References
+
+* [Chowdhury, M. F. I., Jeannerod, C.-P., Neiger, V., Schost, E., and
+    Villard, G., *Faster algorithms for multivariate interpolation with
+    multiplicities and simultaneous polynomial approximations*][CJNSV15]
 -/
 
 namespace CompPoly

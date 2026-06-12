@@ -37,6 +37,15 @@ Callers that only need a witness under a known degree bound pass it as
 solve is skipped entirely, and when it does not the certified window is shrunk
 to the bound.  Passing `none` requests a degree-minimal answer and always runs
 the verification solve over the best-degree-shrunk window.
+
+## References
+
+* [Giorgi, P., Jeannerod, C.-P., and Villard, G., *On the complexity of
+    polynomial matrix computations*][GJV03]
+* [Storjohann, A., *Notes on computing minimal approximant bases*][Sto06]
+* [Chowdhury, M. F. I., Jeannerod, C.-P., Neiger, V., Schost, E., and
+    Villard, G., *Faster algorithms for multivariate interpolation with
+    multiplicities and simultaneous polynomial approximations*][CJNSV15]
 -/
 
 namespace CompPoly

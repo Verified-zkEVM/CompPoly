@@ -12,6 +12,12 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.ApproximantBasis.Basic
 This backend constructs the GS diagonal modular equations, calls an explicit
 solution-basis context, selects a least shifted-degree solution row, and
 normalizes the resulting bivariate polynomial.
+
+## References
+
+* [Chowdhury, M. F. I., Jeannerod, C.-P., Neiger, V., Schost, E., and
+    Villard, G., *Faster algorithms for multivariate interpolation with
+    multiplicities and simultaneous polynomial approximations*][CJNSV15]
 -/
 
 namespace CompPoly

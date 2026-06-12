@@ -12,6 +12,13 @@ import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis.KernelLeaf
 Runtime data for recursive PM-basis computation, the fuel-bounded
 divide-and-conquer driver, root normalization, the `pmBasis` entry point, and
 the `PMBasisContext` contract structure.
+
+## References
+
+* [Beckermann, B., and Labahn, G., *A uniform approach for the fast
+    computation of matrix-type Pade approximants*][BL94]
+* [Giorgi, P., Jeannerod, C.-P., and Villard, G., *On the complexity of
+    polynomial matrix computations*][GJV03]
 -/
 
 namespace CompPoly

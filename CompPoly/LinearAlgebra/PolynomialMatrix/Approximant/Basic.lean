@@ -11,6 +11,13 @@ import CompPoly.LinearAlgebra.PolynomialMatrix.Operations
 
 Basic data structures for approximant-basis computations over polynomial
 matrices.
+
+## References
+
+* [Beckermann, B., and Labahn, G., *A uniform approach for the fast
+    computation of matrix-type Pade approximants*][BL94]
+* [Giorgi, P., Jeannerod, C.-P., and Villard, G., *On the complexity of
+    polynomial matrix computations*][GJV03]
 -/
 
 namespace CompPoly

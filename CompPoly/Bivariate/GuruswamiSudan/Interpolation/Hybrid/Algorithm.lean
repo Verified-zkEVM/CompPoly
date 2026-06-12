@@ -32,6 +32,11 @@ sum unchanged, so reductions routinely need more steps than that excess.)
 The dispatch affects performance only: both branches are complete verified
 interpolators, and `Interpolation/Hybrid/Correctness.lean` shows the hybrid
 result always coincides with one of them.
+
+## References
+
+* [Karlin, A. R., Manasse, M. S., Rudolph, L., and Sleator, D. D.,
+    *Competitive snoopy caching*][KMRS88]
 -/
 
 namespace CompPoly
