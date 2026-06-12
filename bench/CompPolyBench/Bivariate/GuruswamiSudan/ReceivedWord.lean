@@ -10,9 +10,11 @@ import CompPolyBench.Bivariate.GuruswamiSudan.Shared
 # Guruswami-Sudan Perturbed Received-Word Benchmarks
 
 Perturbed (non-codeword) counterparts of the codeword interpolation, core, and
-filtered-core benchmark groups, over the same small and large input shapes and
-the same backend rows. Perturbations stay within the Guruswami-Sudan decoding
-radius, so the full pipeline still recovers the original message.
+filtered-core benchmark groups, over the same small and medium input shapes and
+the same backend rows, plus a long-code large interpolation group comparing
+only the Lee-O'Sullivan and approximant backends. Perturbations stay within
+the Guruswami-Sudan decoding radius, so the full pipeline still recovers the
+original message.
 
 Different interpolation backends may return different valid witnesses on the
 same perturbed word, so interpolation rows checksum the witness validity class
@@ -27,24 +29,30 @@ namespace CompPolyBench
 /-! ### Perturbation shapes
 
 The small shape perturbs every 3rd symbol (22 errors at `n=64`, inside the
-`m=2, D=75` decoding radius of 26), the large shape every 7th symbol
-(28 errors at `n=192`, inside the radius of 71). Filtered groups use the
+`m=2, D=75` decoding radius of 26), the medium and large shapes every 7th
+symbol (28 errors at `n=192`, inside the radius of 71; 720 errors at
+`n=5040`, inside the `m=2, D=6300` radius of 1890). Filtered groups use the
 exact error count as the distance radius.
 -/
 
 private def gsNonCodewordSmallPeriod : Nat := 3
+
+private def gsNonCodewordMediumPeriod : Nat := 7
 
 private def gsNonCodewordLargePeriod : Nat := 7
 
 private def gsNonCodewordSmallErrors : Nat :=
   (gsSmallPointCount + gsNonCodewordSmallPeriod - 1) / gsNonCodewordSmallPeriod
 
-private def gsNonCodewordLargeErrors : Nat :=
-  (gsLargeInterpPointCount + gsNonCodewordLargePeriod - 1) /
-    gsNonCodewordLargePeriod
+private def gsNonCodewordMediumErrors : Nat :=
+  (gsMediumInterpPointCount + gsNonCodewordMediumPeriod - 1) /
+    gsNonCodewordMediumPeriod
 
 private def gsNonCodewordSmallInputShape : String :=
   gsSmallInterpInputShape ++ s!",errors=every{gsNonCodewordSmallPeriod}"
+
+private def gsNonCodewordMediumInputShape : String :=
+  gsMediumInterpInputShape ++ s!",errors=every{gsNonCodewordMediumPeriod}"
 
 private def gsNonCodewordLargeInputShape : String :=
   gsLargeInterpInputShape ++ s!",errors=every{gsNonCodewordLargePeriod}"
@@ -52,8 +60,8 @@ private def gsNonCodewordLargeInputShape : String :=
 private def gsNonCodewordSmallFilteredShape : String :=
   gsNonCodewordSmallInputShape ++ s!",r={gsNonCodewordSmallErrors}"
 
-private def gsNonCodewordLargeFilteredShape : String :=
-  gsNonCodewordLargeInputShape ++ s!",r={gsNonCodewordLargeErrors}"
+private def gsNonCodewordMediumFilteredShape : String :=
+  gsNonCodewordMediumInputShape ++ s!",r={gsNonCodewordMediumErrors}"
 
 private def perturbEveryNthY {F : Type*} [Add F] [OfNat F 1]
     (period : Nat) (points : Array (Prod F F)) : Array (Prod F F) :=
@@ -113,11 +121,14 @@ private def runPerturbedGroup (info : BenchGroupInfo) (inputShape : String)
     records := records.push record
   pure { groupKey := info.groupKey, title := info.title, records := records }
 
-/-- Interpolation rows for one field implementation. -/
+/-- Interpolation rows for one field implementation.  `checksumQ` maps the
+returned witness option to its checksum class. -/
 private def perturbedInterpRows {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     [DecidableEq F]
     (fieldName fieldSuffix sizeKey : String) (preset : BenchPreset)
     (points : Array (Prod F F)) (params : GSInterpParams)
+    (checksumQ :
+      Array (Prod F F) → GSInterpParams → Option (CBivariate F) → Nat)
     (backends : Array (PerturbedBackend F)) : Array PerturbedRowSpec :=
   backends.map fun backend ↦
     { key :=
@@ -126,8 +137,29 @@ private def perturbedInterpRows {F : Type*} [Field F] [BEq F] [LawfulBEq F]
       field := fieldName
       measured := backend.measured preset
       run := fun _ ↦
-        checksumInterpolationValidityOption points params
-          (backend.ctx.interpolate points params) }
+        checksumQ points params (backend.ctx.interpolate points params) }
+
+/-- Witness validity class through the divisibility-based full check: the
+per-point Hasse check costs `O(n * m^2 * l * D)` term evaluations — minutes
+per row at `n ≈ 5000`, dominating every backend inside the timed closure — so
+the large group validates witnesses through the base-`(Y - R)` digit
+divisibility characterization, which checks the multiplicity constraints at
+every point in seconds with NTT-backed contexts. -/
+private def checksumDivisibilityInterpolationValidityOption {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    (V : CPolynomial.VanishingPolynomialContext F)
+    (E : CPolynomial.BatchEvalContext F)
+    (Mul : CPolynomial.MulContext F) (Mod : CPolynomial.ModContext F)
+    (points : Array (F × F)) (params : GSInterpParams)
+    (Q? : Option (CBivariate F)) : Nat :=
+  match Q? with
+  | none => 0
+  | some Q =>
+      if interpolationWitnessIsValidViaDivisibilityBool V E Mul Mod
+          points params Q then
+        2
+      else
+        1
 
 /-- Core or filtered-core rows for one field implementation: one RR-roots row
 and one Alekhnovich-roots row per backend. `filtered` selects `gsFilteredCore`.
@@ -200,7 +232,7 @@ private def gsNonCodewordSmallFastBackends :
     fastKoalaBearApproximantBasisSubproductInterpContext, 6, 1, 1⟩
 ]
 
-private def gsNonCodewordLargeSlowBackends :
+private def gsNonCodewordMediumSlowBackends :
     Array (PerturbedBackend KoalaBear.Field) := #[
   ⟨"koetter", "Koetter", koalaBearKoetterInterpContext, 1, 1, 1⟩,
   ⟨"lee-direct", "Lee-O'Sullivan direct", koalaBearLeeDirectInterpContext,
@@ -213,7 +245,7 @@ private def gsNonCodewordLargeSlowBackends :
     koalaBearApproximantBasisSubproductInterpContext, 1, 1, 1⟩
 ]
 
-private def gsNonCodewordLargeFastBackends :
+private def gsNonCodewordMediumFastBackends :
     Array (PerturbedBackend KoalaBear.Fast.Field) := #[
   ⟨"koetter", "Koetter", fastKoalaBearKoetterInterpContext, 2, 1, 1⟩,
   ⟨"lee-direct", "Lee-O'Sullivan direct", fastKoalaBearLeeDirectInterpContext,
@@ -226,22 +258,41 @@ private def gsNonCodewordLargeFastBackends :
     fastKoalaBearApproximantBasisSubproductInterpContext, 1, 1, 1⟩
 ]
 
+/-- Long-code interpolation backends: only the two reduction-based backends
+stay tractable at `n ≈ 5000` (Koetter grows like `~n^3.4` and the dense
+solver far faster), so the large group benchmarks Lee-O'Sullivan against the
+approximant basis, and only over the native-word fast field — canonical
+KoalaBear multiplies every row by another ~3-5x without changing the
+comparison. Only the subproduct variants run: the direct variants differ
+just in the quadratic-in-`n` setup (vanishing polynomial, interpolant, and
+modular products without a subproduct tree), which dominates their rows at
+this size and adds minutes without informing the solver comparison. -/
+private def gsNonCodewordLargeFastBackends :
+    Array (PerturbedBackend KoalaBear.Fast.Field) := #[
+  ⟨"lee-subproduct", "Lee-O'Sullivan subproduct",
+    fastKoalaBearLeeSubproductInterpContext, 2, 1, 1⟩,
+  ⟨"approximant-subproduct", "Approximant basis subproduct",
+    fastKoalaBearApproximantBasisSubproductInterpContext, 4, 2, 1⟩
+]
+
 /-! ### Group metadata -/
 
 /-- Benchmark group metadata for perturbed received-word rows. -/
 def guruswamiSudanReceivedWordGroupInfos : List BenchGroupInfo := [
   ⟨"guruswami-sudan-interp-noncodeword-small-koalabear",
     "Guruswami-Sudan interpolation on perturbed received word, small (KoalaBear)"⟩,
-  ⟨"guruswami-sudan-interp-noncodeword-large-koalabear",
-    "Guruswami-Sudan interpolation on perturbed received word, large (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-interp-noncodeword-medium-koalabear",
+    "Guruswami-Sudan interpolation on perturbed received word, medium (KoalaBear)"⟩,
   ⟨"guruswami-sudan-core-noncodeword-small-koalabear",
     "Guruswami-Sudan full core on perturbed received word, small (KoalaBear)"⟩,
-  ⟨"guruswami-sudan-core-noncodeword-large-koalabear",
-    "Guruswami-Sudan full core on perturbed received word, large (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-core-noncodeword-medium-koalabear",
+    "Guruswami-Sudan full core on perturbed received word, medium (KoalaBear)"⟩,
   ⟨"guruswami-sudan-filtered-core-noncodeword-small-koalabear",
     "Guruswami-Sudan filtered core on perturbed received word, small (KoalaBear)"⟩,
-  ⟨"guruswami-sudan-filtered-core-noncodeword-large-koalabear",
-    "Guruswami-Sudan filtered core on perturbed received word, large (KoalaBear)"⟩
+  ⟨"guruswami-sudan-filtered-core-noncodeword-medium-koalabear",
+    "Guruswami-Sudan filtered core on perturbed received word, medium (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-interp-noncodeword-large-koalabear",
+    "Guruswami-Sudan interpolation on perturbed received word, large (KoalaBear)"⟩
 ]
 
 /-! ### Shared per-shape inputs -/
@@ -258,6 +309,16 @@ private def perturbedSmallInputs (gen : StdGen) : PerturbedInputs × StdGen :=
     (codewordPointsWithCount gsSmallPointCount message)
   let fastPoints := perturbEveryNthY gsNonCodewordSmallPeriod
     (codewordPointsWithCount gsSmallPointCount fastMessage)
+  ({ points := points, fastPoints := fastPoints }, gen)
+
+private def perturbedMediumInputs (gen : StdGen) : PerturbedInputs × StdGen :=
+  let (coeffs, gen) := (koalaBearArray gsMediumInterpMessageDegree false).run gen
+  let message := cpolyOfArray coeffs
+  let fastMessage := cpolyOfArray (koalaBearFastArray coeffs)
+  let points := perturbEveryNthY gsNonCodewordMediumPeriod
+    (codewordPointsWithCount gsMediumInterpPointCount message)
+  let fastPoints := perturbEveryNthY gsNonCodewordMediumPeriod
+    (codewordPointsWithCount gsMediumInterpPointCount fastMessage)
   ({ points := points, fastPoints := fastPoints }, gen)
 
 private def perturbedLargeInputs (gen : StdGen) : PerturbedInputs × StdGen :=
@@ -277,27 +338,31 @@ private def runGsInterpolationNonCodewordSmallKoala (preset : BenchPreset)
   let (inputs, gen) := perturbedSmallInputs gen
   let rows :=
     perturbedInterpRows "KoalaBear.Field" "" "small" preset
-      inputs.points gsSmallParams gsNonCodewordSmallSlowBackends ++
+      inputs.points gsSmallParams checksumInterpolationValidityOption
+      gsNonCodewordSmallSlowBackends ++
     perturbedInterpRows "KoalaBear.Fast.Field" "-fast" "small" preset
-      inputs.fastPoints gsSmallParams gsNonCodewordSmallFastBackends
+      inputs.fastPoints gsSmallParams checksumInterpolationValidityOption
+      gsNonCodewordSmallFastBackends
   let group ← runPerturbedGroup
     (guruswamiSudanReceivedWordGroupInfos.getD 0
       ⟨"guruswami-sudan-interp-noncodeword-small-koalabear", ""⟩)
     gsNonCodewordSmallInputShape preset rows
   pure (group, gen)
 
-private def runGsInterpolationNonCodewordLargeKoala (preset : BenchPreset)
+private def runGsInterpolationNonCodewordMediumKoala (preset : BenchPreset)
     (gen : StdGen) : IO (Prod BenchGroup StdGen) := do
-  let (inputs, gen) := perturbedLargeInputs gen
+  let (inputs, gen) := perturbedMediumInputs gen
   let rows :=
-    perturbedInterpRows "KoalaBear.Field" "" "large" preset
-      inputs.points gsLargeInterpParams gsNonCodewordLargeSlowBackends ++
-    perturbedInterpRows "KoalaBear.Fast.Field" "-fast" "large" preset
-      inputs.fastPoints gsLargeInterpParams gsNonCodewordLargeFastBackends
+    perturbedInterpRows "KoalaBear.Field" "" "medium" preset
+      inputs.points gsMediumInterpParams checksumInterpolationValidityOption
+      gsNonCodewordMediumSlowBackends ++
+    perturbedInterpRows "KoalaBear.Fast.Field" "-fast" "medium" preset
+      inputs.fastPoints gsMediumInterpParams checksumInterpolationValidityOption
+      gsNonCodewordMediumFastBackends
   let group ← runPerturbedGroup
     (guruswamiSudanReceivedWordGroupInfos.getD 1
-      ⟨"guruswami-sudan-interp-noncodeword-large-koalabear", ""⟩)
-    gsNonCodewordLargeInputShape preset rows
+      ⟨"guruswami-sudan-interp-noncodeword-medium-koalabear", ""⟩)
+    gsNonCodewordMediumInputShape preset rows
   pure (group, gen)
 
 private def runGsCoreNonCodewordSmallKoala (preset : BenchPreset)
@@ -320,24 +385,24 @@ private def runGsCoreNonCodewordSmallKoala (preset : BenchPreset)
     gsNonCodewordSmallInputShape preset rows
   pure (group, gen)
 
-private def runGsCoreNonCodewordLargeKoala (preset : BenchPreset)
+private def runGsCoreNonCodewordMediumKoala (preset : BenchPreset)
     (gen : StdGen) : IO (Prod BenchGroup StdGen) := do
-  let (inputs, gen) := perturbedLargeInputs gen
+  let (inputs, gen) := perturbedMediumInputs gen
   let rows :=
-    perturbedCoreRows "core" "KoalaBear.Field" "" "large" "" false
-      gsNonCodewordLargeErrors preset
-      inputs.points gsLargeInterpParams checksumPolynomialArrayKoala
+    perturbedCoreRows "core" "KoalaBear.Field" "" "medium" "" false
+      gsNonCodewordMediumErrors preset
+      inputs.points gsMediumInterpParams checksumPolynomialArrayKoala
       koalaBearRothRootContext koalaBearAlekhnovichRootContext
-      gsNonCodewordLargeSlowBackends ++
-    perturbedCoreRows "core" "KoalaBear.Fast.Field" "-fast" "large" "" false
-      gsNonCodewordLargeErrors preset
-      inputs.fastPoints gsLargeInterpParams checksumPolynomialArrayKoalaFast
+      gsNonCodewordMediumSlowBackends ++
+    perturbedCoreRows "core" "KoalaBear.Fast.Field" "-fast" "medium" "" false
+      gsNonCodewordMediumErrors preset
+      inputs.fastPoints gsMediumInterpParams checksumPolynomialArrayKoalaFast
       fastKoalaBearRothRootContext fastKoalaBearAlekhnovichRootContext
-      gsNonCodewordLargeFastBackends
+      gsNonCodewordMediumFastBackends
   let group ← runPerturbedGroup
     (guruswamiSudanReceivedWordGroupInfos.getD 3
-      ⟨"guruswami-sudan-core-noncodeword-large-koalabear", ""⟩)
-    gsNonCodewordLargeInputShape preset rows
+      ⟨"guruswami-sudan-core-noncodeword-medium-koalabear", ""⟩)
+    gsNonCodewordMediumInputShape preset rows
   pure (group, gen)
 
 private def runGsFilteredCoreNonCodewordSmallKoala (preset : BenchPreset)
@@ -360,24 +425,42 @@ private def runGsFilteredCoreNonCodewordSmallKoala (preset : BenchPreset)
     gsNonCodewordSmallFilteredShape preset rows
   pure (group, gen)
 
-private def runGsFilteredCoreNonCodewordLargeKoala (preset : BenchPreset)
+private def runGsFilteredCoreNonCodewordMediumKoala (preset : BenchPreset)
+    (gen : StdGen) : IO (Prod BenchGroup StdGen) := do
+  let (inputs, gen) := perturbedMediumInputs gen
+  let rows :=
+    perturbedCoreRows "filtered-core" "KoalaBear.Field" "" "medium" " + filter"
+      true gsNonCodewordMediumErrors preset
+      inputs.points gsMediumInterpParams checksumPolynomialArrayKoala
+      koalaBearRothRootContext koalaBearAlekhnovichRootContext
+      gsNonCodewordMediumSlowBackends ++
+    perturbedCoreRows "filtered-core" "KoalaBear.Fast.Field" "-fast" "medium"
+      " + filter" true gsNonCodewordMediumErrors preset
+      inputs.fastPoints gsMediumInterpParams checksumPolynomialArrayKoalaFast
+      fastKoalaBearRothRootContext fastKoalaBearAlekhnovichRootContext
+      gsNonCodewordMediumFastBackends
+  let group ← runPerturbedGroup
+    (guruswamiSudanReceivedWordGroupInfos.getD 5
+      ⟨"guruswami-sudan-filtered-core-noncodeword-medium-koalabear", ""⟩)
+    gsNonCodewordMediumFilteredShape preset rows
+  pure (group, gen)
+
+private def runGsInterpolationNonCodewordLargeKoala (preset : BenchPreset)
     (gen : StdGen) : IO (Prod BenchGroup StdGen) := do
   let (inputs, gen) := perturbedLargeInputs gen
   let rows :=
-    perturbedCoreRows "filtered-core" "KoalaBear.Field" "" "large" " + filter"
-      true gsNonCodewordLargeErrors preset
-      inputs.points gsLargeInterpParams checksumPolynomialArrayKoala
-      koalaBearRothRootContext koalaBearAlekhnovichRootContext
-      gsNonCodewordLargeSlowBackends ++
-    perturbedCoreRows "filtered-core" "KoalaBear.Fast.Field" "-fast" "large"
-      " + filter" true gsNonCodewordLargeErrors preset
-      inputs.fastPoints gsLargeInterpParams checksumPolynomialArrayKoalaFast
-      fastKoalaBearRothRootContext fastKoalaBearAlekhnovichRootContext
+    perturbedInterpRows "KoalaBear.Fast.Field" "-fast" "large" preset
+      inputs.fastPoints gsLargeInterpParams
+      (checksumDivisibilityInterpolationValidityOption
+        (CPolynomial.VanishingPolynomialContext.subproduct
+          fastKoalaBearNttFastMulContext)
+        fastKoalaBearNttFastBatchEvalContext
+        fastKoalaBearNttFastMulContext fastKoalaBearNttFastModContext)
       gsNonCodewordLargeFastBackends
   let group ← runPerturbedGroup
-    (guruswamiSudanReceivedWordGroupInfos.getD 5
-      ⟨"guruswami-sudan-filtered-core-noncodeword-large-koalabear", ""⟩)
-    gsNonCodewordLargeFilteredShape preset rows
+    (guruswamiSudanReceivedWordGroupInfos.getD 6
+      ⟨"guruswami-sudan-interp-noncodeword-large-koalabear", ""⟩)
+    gsNonCodewordLargeInputShape preset rows
   pure (group, gen)
 
 /-- Runnable received-word GS benchmark tasks. -/
@@ -386,20 +469,23 @@ def guruswamiSudanReceivedWordTasks : List BenchTask := [
     ⟨"guruswami-sudan-interp-noncodeword-small-koalabear", ""⟩)
     runGsInterpolationNonCodewordSmallKoala,
   BenchTask.fromGroupRunner (guruswamiSudanReceivedWordGroupInfos.getD 1
-    ⟨"guruswami-sudan-interp-noncodeword-large-koalabear", ""⟩)
-    runGsInterpolationNonCodewordLargeKoala,
+    ⟨"guruswami-sudan-interp-noncodeword-medium-koalabear", ""⟩)
+    runGsInterpolationNonCodewordMediumKoala,
   BenchTask.fromGroupRunner (guruswamiSudanReceivedWordGroupInfos.getD 2
     ⟨"guruswami-sudan-core-noncodeword-small-koalabear", ""⟩)
     runGsCoreNonCodewordSmallKoala,
   BenchTask.fromGroupRunner (guruswamiSudanReceivedWordGroupInfos.getD 3
-    ⟨"guruswami-sudan-core-noncodeword-large-koalabear", ""⟩)
-    runGsCoreNonCodewordLargeKoala,
+    ⟨"guruswami-sudan-core-noncodeword-medium-koalabear", ""⟩)
+    runGsCoreNonCodewordMediumKoala,
   BenchTask.fromGroupRunner (guruswamiSudanReceivedWordGroupInfos.getD 4
     ⟨"guruswami-sudan-filtered-core-noncodeword-small-koalabear", ""⟩)
     runGsFilteredCoreNonCodewordSmallKoala,
   BenchTask.fromGroupRunner (guruswamiSudanReceivedWordGroupInfos.getD 5
-    ⟨"guruswami-sudan-filtered-core-noncodeword-large-koalabear", ""⟩)
-    runGsFilteredCoreNonCodewordLargeKoala
+    ⟨"guruswami-sudan-filtered-core-noncodeword-medium-koalabear", ""⟩)
+    runGsFilteredCoreNonCodewordMediumKoala,
+  BenchTask.fromGroupRunner (guruswamiSudanReceivedWordGroupInfos.getD 6
+    ⟨"guruswami-sudan-interp-noncodeword-large-koalabear", ""⟩)
+    runGsInterpolationNonCodewordLargeKoala
 ]
 
 end CompPolyBench

@@ -47,6 +47,8 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Rows
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Selection
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Soundness
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.WitnessDivisibility
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.WitnessDivisibilityCorrectness
 import CompPoly.Bivariate.GuruswamiSudan.Monomials
 import CompPoly.Bivariate.GuruswamiSudan.Polynomial
 import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness

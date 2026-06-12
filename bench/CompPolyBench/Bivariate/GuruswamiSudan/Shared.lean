@@ -9,6 +9,7 @@ import CompPoly.Bivariate.Deriv
 import CompPoly.Bivariate.GuruswamiSudan
 import CompPoly.Bivariate.GuruswamiSudan.Implementations
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Koetter.Algorithm
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.WitnessDivisibility
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 
 /-!
@@ -35,15 +36,38 @@ def gsKoalaParams : GSInterpParams :=
     multiplicity := gsMultiplicity
     weightedDegreeBound := gsWeightedDegreeBound }
 
-def gsLargeInterpPointCount : Nat := 192
-def gsLargeInterpMessageDegree : Nat := 49
-def gsLargeInterpWeightedDegreeBound : Nat :=
-  5 * (gsLargeInterpMessageDegree - 1)
+def gsMediumInterpPointCount : Nat := 192
+def gsMediumInterpMessageDegree : Nat := 49
+def gsMediumInterpMultiplicity : Nat := 2
+/-- Weighted-degree bound scaled with the multiplicity (`D/m = 2.5 * (k - 1)`),
+so the agreement margin `m * t > D` is kept for both the codeword and the
+`every7`-perturbed received words at any multiplicity. -/
+def gsMediumInterpWeightedDegreeBound : Nat :=
+  5 * gsMediumInterpMultiplicity * (gsMediumInterpMessageDegree - 1) / 2
+def gsMediumInterpParams : GSInterpParams :=
+  { messageDegree := gsMediumInterpMessageDegree
+    multiplicity := gsMediumInterpMultiplicity
+    weightedDegreeBound := gsMediumInterpWeightedDegreeBound }
+
+/-- Long-code shape for the asymptotic interpolation comparison: at
+`n ≈ 5000` the defect-driven Mulders-Storjohann reduction (quadratic in `n`
+on error-bearing words) crosses over against the quasi-linear approximant
+PM-basis solver, so the large group compares only those two backends.
+Koetter grows like `~n^3.4` here (extrapolated ~13 h per call) and the dense
+solver is far beyond that, so neither is benchmarked at this size. -/
+def gsLargeInterpPointCount : Nat := 5040
+def gsLargeInterpMessageDegree : Nat := 1261
 def gsLargeInterpMultiplicity : Nat := 2
+def gsLargeInterpWeightedDegreeBound : Nat :=
+  5 * gsLargeInterpMultiplicity * (gsLargeInterpMessageDegree - 1) / 2
 def gsLargeInterpParams : GSInterpParams :=
   { messageDegree := gsLargeInterpMessageDegree
     multiplicity := gsLargeInterpMultiplicity
     weightedDegreeBound := gsLargeInterpWeightedDegreeBound }
+
+def gsLargeInterpInputShape : String :=
+  s!"n={gsLargeInterpPointCount},k={gsLargeInterpMessageDegree}," ++
+    s!"m={gsLargeInterpMultiplicity},D={gsLargeInterpWeightedDegreeBound}"
 
 def gsSmallPointCount : Nat := 64
 def gsSmallMessageDegree : Nat := 16
@@ -65,9 +89,9 @@ def gsSmallInputShape : String :=
 def gsSmallInterpInputShape : String :=
   gsSmallInputShape
 
-def gsLargeInterpInputShape : String :=
-  s!"n={gsLargeInterpPointCount},k={gsLargeInterpMessageDegree}," ++
-    s!"m={gsLargeInterpMultiplicity},D={gsLargeInterpWeightedDegreeBound}"
+def gsMediumInterpInputShape : String :=
+  s!"n={gsMediumInterpPointCount},k={gsMediumInterpMessageDegree}," ++
+    s!"m={gsMediumInterpMultiplicity},D={gsMediumInterpWeightedDegreeBound}"
 
 def gsMultiplicityShape : String :=
   s!"n={gsPointCount},k={gsMessageDegree},m={gsCheckMultiplicity},Q=(Y-p)^2"
@@ -76,7 +100,7 @@ def gsRootShape : String :=
   s!"k={gsMessageDegree},Q=(Y-p)(Y-(p+7))"
 
 def gsFilteredShape : String :=
-  gsLargeInterpInputShape ++ ",r=0"
+  gsMediumInterpInputShape ++ ",r=0"
 
 def gsSmallFilteredShape : String :=
   gsSmallInterpInputShape ++ ",r=0"
@@ -96,9 +120,9 @@ def gsSmallBenchmarkPoints {F : Type*} [Semiring F] [BEq F] [LawfulBEq F]
     (p : CPolynomial F) : Array (Prod F F) :=
   codewordPointsWithCount gsSmallPointCount p
 
-def gsLargeBenchmarkPoints {F : Type*} [Semiring F] [BEq F] [LawfulBEq F]
+def gsMediumBenchmarkPoints {F : Type*} [Semiring F] [BEq F] [LawfulBEq F]
     (p : CPolynomial F) : Array (Prod F F) :=
-  codewordPointsWithCount gsLargeInterpPointCount p
+  codewordPointsWithCount gsMediumInterpPointCount p
 
 def rootBenchmarkQ {F : Type*}
     [CommRing F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
@@ -179,10 +203,10 @@ def guruswamiSudanGroupInfos : List BenchGroupInfo := [
     "Guruswami-Sudan dense interpolation solving, small (KoalaBear)"⟩,
   ⟨"guruswami-sudan-interp-small-koalabear",
     "Guruswami-Sudan interpolation, small (KoalaBear)"⟩,
-  ⟨"guruswami-sudan-interp-large-koalabear",
-    "Guruswami-Sudan interpolation, large (KoalaBear)"⟩,
-  ⟨"guruswami-sudan-lee-setup-large-koalabear",
-    "Guruswami-Sudan Lee-O'Sullivan setup, large (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-interp-medium-koalabear",
+    "Guruswami-Sudan interpolation, medium (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-lee-setup-medium-koalabear",
+    "Guruswami-Sudan Lee-O'Sullivan setup, medium (KoalaBear)"⟩,
   ⟨"guruswami-sudan-hasse-koalabear",
     "Guruswami-Sudan Hasse multiplicity checking (KoalaBear)"⟩,
   ⟨"guruswami-sudan-compose-koalabear",
@@ -191,13 +215,13 @@ def guruswamiSudanGroupInfos : List BenchGroupInfo := [
     "Guruswami-Sudan root finding (KoalaBear)"⟩,
   ⟨"guruswami-sudan-core-small-koalabear",
     "Guruswami-Sudan full core, small (KoalaBear)"⟩,
-  ⟨"guruswami-sudan-core-large-koalabear",
-    "Guruswami-Sudan full core, large (KoalaBear)"⟩,
+  ⟨"guruswami-sudan-core-medium-koalabear",
+    "Guruswami-Sudan full core, medium (KoalaBear)"⟩,
   ⟨"guruswami-sudan-packed-filter-koalabear",
     "Guruswami-Sudan packed distance filtering (KoalaBear)"⟩,
   ⟨"guruswami-sudan-filtered-core-small-koalabear",
     "Guruswami-Sudan filtered core, small (KoalaBear)"⟩,
-  ⟨"guruswami-sudan-filtered-core-large-koalabear",
-    "Guruswami-Sudan filtered core, large (KoalaBear)"⟩
+  ⟨"guruswami-sudan-filtered-core-medium-koalabear",
+    "Guruswami-Sudan filtered core, medium (KoalaBear)"⟩
 ]
 
