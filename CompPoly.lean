@@ -50,6 +50,9 @@ import CompPoly.Bivariate.ToPoly
 import CompPoly.Data.Array.Lemmas
 import CompPoly.Data.Classes.DCast
 import CompPoly.Data.Classes.LawfulBEq
+import CompPoly.Data.CodingTheory.GaoCorrectness
+import CompPoly.Data.CodingTheory.GaoDecoder
+import CompPoly.Data.CodingTheory.ReedSolomon
 import CompPoly.Data.ExtTreeMap.DTreeMap
 import CompPoly.Data.ExtTreeMap.ExtDTreeMap
 import CompPoly.Data.ExtTreeMap.ExtTreeMap
@@ -154,11 +157,13 @@ import CompPoly.Multivariate.VarsDegrees
 import CompPoly.Multivariate.Wheels
 import CompPoly.ToMathlib.Finsupp.Fin
 import CompPoly.ToMathlib.MvPolynomial.Equiv
+import CompPoly.ToMathlib.Order.WithBot
 import CompPoly.ToMathlib.Polynomial.BivariateDegree
 import CompPoly.ToMathlib.Polynomial.BivariateEvaluation
 import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
 import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
 import CompPoly.ToMathlib.Polynomial.Div
+import CompPoly.ToMathlib.Polynomial.Roots
 import CompPoly.Univariate.Barycentric
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.BatchEval
