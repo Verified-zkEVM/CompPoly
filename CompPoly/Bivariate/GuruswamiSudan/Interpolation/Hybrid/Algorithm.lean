@@ -11,8 +11,8 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Algorithm
 # Hybrid Guruswami-Sudan Interpolation
 
 Output-sensitive interpolation backend combining the adaptive Lee-O'Sullivan
-route with the order-driven approximant-basis route, following the ski-rental
-analysis in `gs-interpolation-complexity-analysis.md`.
+route with the order-driven approximant-basis route through a ski-rental
+budget policy.
 
 The Mulders-Storjohann reduction of the Lee-O'Sullivan basis terminates after
 a number of steps that vanishes on codewords and scales with the distance of
@@ -24,11 +24,10 @@ within a constant factor of the cheaper route on every input.
 
 The budget is the entire fuel policy: the reduction loop stops by itself as
 soon as the basis is conflict-free, so unused fuel is free and any cap below
-`B` could only trigger premature fallback. (In particular the degree excess
-`Δ` of `gs-interpolation-complexity-analysis.md` is *not* a usable cap: the
-implementation's step count includes leading-position moves that leave the
-shifted-degree sum unchanged, so reductions routinely need more than `Δ`
-steps.)
+`B` could only trigger premature fallback. (In particular the excess of the
+initial shifted-degree sum over the weak-Popov floor is *not* a usable cap:
+the step count includes leading-position moves that leave the shifted-degree
+sum unchanged, so reductions routinely need more steps than that excess.)
 
 The dispatch affects performance only: both branches are complete verified
 interpolators, and `Interpolation/Hybrid/Correctness.lean` shows the hybrid

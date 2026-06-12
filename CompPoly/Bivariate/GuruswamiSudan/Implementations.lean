@@ -190,12 +190,12 @@ def fastKoalaBearApproximantBasisInterpContext :
     GSInterpContext KoalaBear.Fast.Field :=
   fastKoalaBearApproximantBasisSubproductInterpContext
 
-/-- Mulders-Storjohann step budget for the hybrid interpolation backend — the
-ski-rental `B` of `gs-interpolation-complexity-analysis.md`, Section 6:
-proportional to `ℓ^(ω−1)` (with `ℓ + 1` the module width) and independent of
-`n` and `m` under softly-linear multiplication. The constant is calibrated
-from the `n = 5040` long-code benchmark shape, where the approximant fallback
-costs ≈ 11.4 s against ≈ 0.65 ms per reduction step. -/
+/-- Mulders-Storjohann step budget for the hybrid interpolation backend: the
+ski-rental rent/buy break-even, set near the cost ratio between one
+approximant-fallback solve and one reduction step. Both scale with the input
+mass, so the ratio is proportional to `ℓ^(ω−1)` (with `ℓ + 1` the module
+width) and independent of `n` and `m` under softly-linear multiplication;
+the constant is calibrated from the `n = 5040` long-code benchmark shape. -/
 def hybridReductionStepBudget (params : GSInterpParams) : Nat :=
   500 * leeOSullivanWidth params * leeOSullivanWidth params
 

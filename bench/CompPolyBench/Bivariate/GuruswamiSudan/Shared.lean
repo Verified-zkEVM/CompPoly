@@ -51,9 +51,10 @@ def gsMediumInterpParams : GSInterpParams :=
 /-- Long-code shape for the asymptotic interpolation comparison: at
 `n ≈ 5000` the defect-driven Mulders-Storjohann reduction (quadratic in `n`
 on error-bearing words) crosses over against the quasi-linear approximant
-PM-basis solver, so the large group compares only those two backends.
-Koetter grows like `~n^3.4` here (extrapolated ~13 h per call) and the dense
-solver is far beyond that, so neither is benchmarked at this size. -/
+PM-basis solver, so the large group compares the reduction-based backends
+(Lee-O'Sullivan, approximant basis, and their hybrid). Koetter-style
+constraint-by-constraint interpolation grows like `~n^3.4` here and the dense
+solver is far beyond that, so neither is tractable at this size. -/
 def gsLargeInterpPointCount : Nat := 5040
 def gsLargeInterpMessageDegree : Nat := 1261
 def gsLargeInterpMultiplicity : Nat := 2
@@ -191,8 +192,9 @@ def gsWarmupIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 1 0 0
 
 /-
-Preset iteration counts are fixed per benchmark row to keep total runtimes
-comparable within each group across `small`, `medium`, and `large` runs.
+Within a group, each row's measured-iteration count is sized so the rows
+spend approximately the same total wall-clock time; presets only scale the
+counts.
 -/
 /-- Benchmark group metadata for Guruswami-Sudan cost-center rows. -/
 def guruswamiSudanGroupInfos : List BenchGroupInfo := [

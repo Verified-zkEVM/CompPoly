@@ -11,8 +11,8 @@ import CompPolyBench.Bivariate.GuruswamiSudan.Shared
 
 Perturbed (non-codeword) counterparts of the codeword interpolation, core, and
 filtered-core benchmark groups, over the same small and medium input shapes and
-the same backend rows, plus a long-code large interpolation group comparing
-only the Lee-O'Sullivan and approximant backends. Perturbations stay within
+the same backend rows, plus a long-code large interpolation group for the
+reduction-based backends. Perturbations stay within
 the Guruswami-Sudan decoding radius, so the full pipeline still recovers the
 original message.
 
@@ -144,7 +144,7 @@ per-point Hasse check costs `O(n * m^2 * l * D)` term evaluations — minutes
 per row at `n ≈ 5000`, dominating every backend inside the timed closure — so
 the large group validates witnesses through the base-`(Y - R)` digit
 divisibility characterization, which checks the multiplicity constraints at
-every point in seconds with NTT-backed contexts. -/
+every point in a negligible fraction of any row's solve time. -/
 private def checksumDivisibilityInterpolationValidityOption {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
     (V : CPolynomial.VanishingPolynomialContext F)
@@ -258,10 +258,10 @@ private def gsNonCodewordMediumFastBackends :
   ⟨"hybrid", "Hybrid", fastKoalaBearHybridInterpContext, 5, 1, 1⟩
 ]
 
-/-- Long-code interpolation backends: only the two reduction-based backends
-stay tractable at `n ≈ 5000` (Koetter grows like `~n^3.4` and the dense
-solver far faster), so the large group benchmarks Lee-O'Sullivan against the
-approximant basis, and only over the native-word fast field — canonical
+/-- Long-code interpolation backends: only the reduction-based backends
+(Lee-O'Sullivan, approximant basis, and their hybrid) stay tractable at
+`n ≈ 5000` — Koetter-style interpolation grows like `~n^3.4` and the dense
+solver far faster — and only the native-word fast field runs: canonical
 KoalaBear multiplies every row by another ~3-5x without changing the
 comparison. Only the subproduct variants run: the direct variants differ
 just in the quadratic-in-`n` setup (vanishing polynomial, interpolant, and

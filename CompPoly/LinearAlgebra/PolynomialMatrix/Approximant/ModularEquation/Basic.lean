@@ -546,8 +546,8 @@ def repairSolutionRowsViaPMBasis
     pmCtx.runtime.leafCutoff repairState.filtered reduced
 
 /-- Debug helper for tiny problems that intentionally disables
-principal-coordinate chunking.  This keeps the old unchunked behavior available
-for inspection without letting the production context bypass partial
+principal-coordinate chunking, keeping an unchunked solve available for
+inspection without letting the production context bypass partial
 linearization. -/
 def debugUnchunkedFilteredSolutionBasisViaPMBasis
     (mulCtx : CPolynomial.MulContext F) (modCtx : CPolynomial.ModContext F)
