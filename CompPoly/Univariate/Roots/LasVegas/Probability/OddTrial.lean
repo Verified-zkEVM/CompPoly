@@ -55,7 +55,84 @@ theorem RootProductProbabilityInput.hasTwoDistinctRoots {F : Type*}
     (hinput : RootProductProbabilityInput q g)
     (hdegree : 2 ≤ CPolynomial.natDegree g) :
     HasTwoDistinctRoots g := by
-  sorry
+  have hcard2 : 2 ≤ g.toPoly.roots.card := by
+    rw [hinput.roots_card_eq_degree, ← CPolynomial.natDegree_toPoly]
+    exact hdegree
+  have hnodup : g.toPoly.roots.Nodup := by
+    rw [Multiset.nodup_iff_count_le_one]
+    intro z
+    rw [Polynomial.count_roots]
+    by_contra hgt
+    have hsq : (Polynomial.X - Polynomial.C z) * (Polynomial.X - Polynomial.C z) ∣
+        g.toPoly := by
+      have hpow : (Polynomial.X - Polynomial.C z) ^ 2 ∣ g.toPoly :=
+        (pow_dvd_pow _ (by omega)).trans (Polynomial.pow_rootMultiplicity_dvd g.toPoly z)
+      rwa [_root_.pow_two] at hpow
+    exact Polynomial.not_isUnit_X_sub_C z (hinput.squarefree _ hsq)
+  have hfin : 1 < g.toPoly.roots.toFinset.card := by
+    rw [Multiset.toFinset_card_of_nodup hnodup]
+    omega
+  obtain ⟨a, ha, b, hb, hab⟩ := Finset.one_lt_card.mp hfin
+  have hroot : ∀ z ∈ g.toPoly.roots.toFinset, CPolynomial.eval z g = 0 := by
+    intro z hz
+    rw [CPolynomial.eval_toPoly]
+    exact (Polynomial.mem_roots'.mp (Multiset.mem_toFinset.mp hz)).2
+  exact ⟨a, b, hab, hroot a ha, hroot b hb⟩
+
+/--
+Over a field of cardinality `q`, the runtime splitter contract already implies
+the full probability-facing root-product model: every divisor of the Frobenius
+polynomial `X ^ q - X` is squarefree and splits with as many roots as its
+degree.
+-/
+theorem rootProductProbabilityInput_of_lasVegasSplitterInput {F : Type*}
+    [Field F] [Fintype F] [BEq F] [LawfulBEq F] {q : Nat} {g : CPolynomial F}
+    (hvalid : lasVegasSplitterInput q g) (hcard : Fintype.card F = q) :
+    RootProductProbabilityInput q g := by
+  obtain ⟨hne, hdvd⟩ := hvalid
+  have hq2 : 2 ≤ q := by
+    have hlt := Fintype.one_lt_card (α := F)
+    omega
+  have hXne : ((Polynomial.X : Polynomial F) ^ q - Polynomial.X) ≠ 0 :=
+    FiniteField.X_pow_card_sub_X_ne_zero F (by omega)
+  have hXdeg : ((Polynomial.X : Polynomial F) ^ q - Polynomial.X).natDegree = q :=
+    FiniteField.X_pow_card_sub_X_natDegree_eq F (by omega)
+  have hXroots : ((Polynomial.X : Polynomial F) ^ q - Polynomial.X).roots =
+      (Finset.univ : Finset F).val := by
+    rw [← hcard]
+    exact FiniteField.roots_X_pow_card_sub_X (K := F)
+  have hXsplits : ((Polynomial.X : Polynomial F) ^ q - Polynomial.X).Splits := by
+    rw [Polynomial.splits_iff_card_roots, hXroots, hXdeg]
+    simpa using hcard
+  have hXsf : Squarefree ((Polynomial.X : Polynomial F) ^ q - Polynomial.X) := by
+    apply Polynomial.Separable.squarefree
+    rw [← Polynomial.nodup_roots_iff_of_splits hXne hXsplits, hXroots]
+    exact (Finset.univ : Finset F).nodup
+  refine ⟨hne, hdvd, hXsf.squarefree_of_dvd hdvd, ?_⟩
+  exact Polynomial.splits_iff_card_roots.mp (hXsplits.of_dvd hXne hdvd)
+
+/--
+Finite-field root products satisfy the probability-facing root-product model.
+This is the adapter from the concrete `finiteFieldRootProductWith` construction
+to the hypotheses of the half-success and recursive fallback theorems.
+-/
+theorem finiteFieldRootProductWith_rootProductProbabilityInput {F : Type*}
+    [Field F] [Fintype F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (ctx : FiniteFieldContext F) {p : CPolynomial F} (hp : p ≠ 0) :
+    RootProductProbabilityInput ctx.q (finiteFieldRootProductWith M D ctx p) := by
+  apply rootProductProbabilityInput_of_lasVegasSplitterInput
+    (finiteFieldRootProductWith_lasVegasSplitterInput M D ctx hp)
+  rw [← Nat.card_eq_fintype_card]
+  exact ctx.card_eq
+
+/-- Default-backend root products satisfy the probability-facing model. -/
+theorem finiteFieldRootProduct_rootProductProbabilityInput {F : Type*}
+    [Field F] [Fintype F] [BEq F] [LawfulBEq F]
+    (ctx : FiniteFieldContext F) {p : CPolynomial F} (hp : p ≠ 0) :
+    RootProductProbabilityInput ctx.q (finiteFieldRootProduct ctx p) :=
+  finiteFieldRootProductWith_rootProductProbabilityInput
+    CPolynomial.Raw.MulContext.naive CPolynomial.Raw.ModContext.naive ctx hp
 
 /--
 The algebraic validity expected from a successful randomized split: nontrivial
@@ -140,6 +217,80 @@ The hypothesis `hdegree` is essential and not implied by `hroots`: for `g = 0`
 every pair of points consists of roots, yet the trial samples zero-coefficient
 probes and always fails.
 -/
+theorem oddSplitTrial_success_probability_ge_half_of_two_le {F : Type*}
+    [Field F] [Fintype F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    {q : Nat} (enumeration : UniformFieldEnumeration F q)
+    (g : CPolynomial F) (coefficientCount attempt : Nat)
+    (hcount : 2 ≤ coefficientCount)
+    (hfield : OddUniformFieldModel F q enumeration)
+    (hroots : HasTwoDistinctRoots g)
+    (hg : g ≠ 0) :
+    (2 : ℝ≥0∞)⁻¹ ≤
+      trialSuccessProbability
+        (oddSplitTrialPMF M D enumeration.toFieldEnumeration q coefficientCount
+          g attempt) := by
+  obtain ⟨a, b, hab, hra, hrb⟩ := hroots
+  have hpush_eq := uniformProbePMF_map_eval_pair enumeration coefficientCount hab hcount
+  -- Bucket-separated probes force the executable attempt to succeed.
+  rw [trialSuccessProbability, eventProbability, oddSplitTrialPMF,
+    PMF.toOuterMeasure_map_apply]
+  have hsubset : {h : CPolynomial F |
+      oddCZBucket q (CPolynomial.eval a h) ≠ oddCZBucket q (CPolynomial.eval b h)} ⊆
+      (fun h : CPolynomial F ↦
+        match cantorZassenhausOddAttemptWith M D q
+            ({ probe := fun _q _factor _attempt ↦ h } : ProbeFamily F) g attempt with
+        | some children => TrialResult.split children
+        | none => TrialResult.failed) ⁻¹' {trial | trial.IsSuccess} := by
+    intro h hsep
+    obtain ⟨children, hchildren⟩ :=
+      cantorZassenhausOddAttemptWith_success_of_bucket_separated M D q attempt hg
+        hra hrb hsep
+    simp only [Set.mem_preimage, Set.mem_setOf_eq, hchildren]
+    exact trivial
+  have hpre : ((fun h : CPolynomial F ↦
+      (CPolynomial.eval a h, CPolynomial.eval b h)) ⁻¹'
+        {xy : F × F | oddCZBucket q xy.1 ≠ oddCZBucket q xy.2}) =
+      {h : CPolynomial F |
+        oddCZBucket q (CPolynomial.eval a h) ≠ oddCZBucket q (CPolynomial.eval b h)} := rfl
+  have hge : (2 : ℝ≥0∞)⁻¹ ≤
+      (uniformProbePMF enumeration.toFieldEnumeration
+        coefficientCount).toOuterMeasure
+        {h : CPolynomial F |
+          oddCZBucket q (CPolynomial.eval a h) ≠ oddCZBucket q (CPolynomial.eval b h)} := by
+    rw [← hpre, ← PMF.toOuterMeasure_map_apply, hpush_eq]
+    exact oddCZBucket_pair_separated_probability_ge_half enumeration
+      hfield.q_odd hfield.card_eq
+  exact le_trans hge ((uniformProbePMF enumeration.toFieldEnumeration
+    coefficientCount).toOuterMeasure.mono hsubset)
+
+/--
+Random affine probes with both coefficients drawn uniformly and independently
+already achieve the half-success bound: the evaluation pair at two distinct
+roots covers all of `F × F`, so no higher-degree probes are needed.
+-/
+theorem oddSplitTrial_success_probability_ge_half_linear {F : Type*}
+    [Field F] [Fintype F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    {q : Nat} (enumeration : UniformFieldEnumeration F q)
+    (g : CPolynomial F) (attempt : Nat)
+    (hfield : OddUniformFieldModel F q enumeration)
+    (hroots : HasTwoDistinctRoots g)
+    (hg : g ≠ 0) :
+    (2 : ℝ≥0∞)⁻¹ ≤
+      trialSuccessProbability
+        (oddSplitTrialPMF M D enumeration.toFieldEnumeration q 2 g attempt) :=
+  oddSplitTrial_success_probability_ge_half_of_two_le M D enumeration g 2 attempt
+    le_rfl hfield hroots hg
+
+/--
+Uniform probe polynomials really make one odd Cantor-Zassenhaus attempt succeed
+with probability at least `1 / 2`.
+
+The hypothesis `hdegree` is essential and not implied by `hroots`: for `g = 0`
+every pair of points consists of roots, yet the trial samples zero-coefficient
+probes and always fails.
+-/
 theorem oddSplitTrialHalfSuccessModel_of_uniformProbe {F : Type*}
     [Field F] [Fintype F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
@@ -149,7 +300,14 @@ theorem oddSplitTrialHalfSuccessModel_of_uniformProbe {F : Type*}
     (hroots : HasTwoDistinctRoots g)
     (hdegree : 2 ≤ CPolynomial.natDegree g) :
     OddSplitTrialHalfSuccessModel M D enumeration g attempt := by
-  sorry
+  have hg : g ≠ 0 := by
+    intro hzero
+    rw [hzero] at hdegree
+    have hnat : CPolynomial.natDegree (0 : CPolynomial F) = 0 := rfl
+    omega
+  unfold OddSplitTrialHalfSuccessModel
+  exact oddSplitTrial_success_probability_ge_half_of_two_le M D enumeration g
+    (CPolynomial.natDegree g) attempt hdegree hfield hroots hg
 
 /--
 For a squarefree finite-field root product over an odd field, one uniform

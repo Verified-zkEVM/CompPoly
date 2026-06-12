@@ -265,7 +265,15 @@ import CompPoly.Univariate.Roots.LasVegas.Correctness.Common
 import CompPoly.Univariate.Roots.LasVegas.Correctness.EvenTrace
 import CompPoly.Univariate.Roots.LasVegas.Correctness.Loop
 import CompPoly.Univariate.Roots.LasVegas.Correctness.Odd
+import CompPoly.Univariate.Roots.LasVegas.OddBucket
 import CompPoly.Univariate.Roots.LasVegas.Probability
+import CompPoly.Univariate.Roots.LasVegas.Probability.Basic
+import CompPoly.Univariate.Roots.LasVegas.Probability.EvenTrace
+import CompPoly.Univariate.Roots.LasVegas.Probability.OddBuckets
+import CompPoly.Univariate.Roots.LasVegas.Probability.OddTrial
+import CompPoly.Univariate.Roots.LasVegas.Probability.Recursive
+import CompPoly.Univariate.Roots.LasVegas.Probability.Repeated
+import CompPoly.Univariate.Roots.LasVegas.Probability.Uniform
 import CompPoly.Univariate.Roots.RootProduct
 import CompPoly.Univariate.Roots.Shoup
 import CompPoly.Univariate.Roots.Shoup.Basic

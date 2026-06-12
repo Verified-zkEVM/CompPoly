@@ -8,6 +8,7 @@ import CompPoly.Univariate.Roots.LasVegas.Probability.Basic
 import CompPoly.Univariate.Roots.LasVegas.Probability.Uniform
 import CompPoly.Univariate.Roots.LasVegas.Probability.OddBuckets
 import CompPoly.Univariate.Roots.LasVegas.Probability.OddTrial
+import CompPoly.Univariate.Roots.LasVegas.Probability.EvenTrace
 import CompPoly.Univariate.Roots.LasVegas.Probability.Repeated
 import CompPoly.Univariate.Roots.LasVegas.Probability.Recursive
 
@@ -26,10 +27,13 @@ modules model idealized uniform probes.
   distributions, plus pair-evaluation uniformity.
 - `Probability.OddBuckets`: Euler criterion bridge and bucket counting for the
   deterministic classifier in `LasVegas.OddBucket`.
-- `Probability.OddTrial`: the single odd Cantor-Zassenhaus trial PMF and the
-  half-success theorem for uniform probes.
+- `Probability.OddTrial`: the single odd Cantor-Zassenhaus trial PMF, the
+  half-success theorem for uniform probes, and the root-product adapters.
+- `Probability.EvenTrace`: trace-fiber counting and the half-success and
+  geometric fallback theorems for the characteristic-two trace branch.
 - `Probability.Repeated`: repeated one-factor trials and geometric fallback
   bounds.
-- `Probability.Recursive`: the abstract recursive fallback model and its
-  binomial-tail bound.
+- `Probability.Recursive`: the abstract recursive fallback model, the
+  multi-factor splitting process that witnesses it, and the binomial-tail
+  bound on full recursive fallback.
 -/

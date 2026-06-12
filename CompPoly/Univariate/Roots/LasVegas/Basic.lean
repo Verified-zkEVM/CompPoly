@@ -38,6 +38,11 @@ def seededLinearProbeFamily {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     let constant : F := (seed + 97 * attempt + 13 * factor.val.size + 3 * q + 1 : Nat)
     CPolynomial.C slope * (CPolynomial.X : CPolynomial F) + CPolynomial.C constant
 
+/-- Probe family reading a finite table of probe polynomials by attempt index. -/
+def tableProbeFamily {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+    (table : List (CPolynomial F)) : ProbeFamily F where
+  probe _q _factor attempt := table.getD attempt 0
+
 /-- Configuration for bounded Las Vegas splitting. -/
 structure LasVegasConfig where
   cutoff : Nat

@@ -1003,6 +1003,41 @@ theorem split_child_or_quotient_root {F : Type*}
   · right
     exact quotientAfterChild_root_of_not_child_root hdiv hparent hchild
 
+/-- The monic gcd with a nonzero left argument is nonzero. -/
+theorem gcdMonic_ne_zero_left {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    {p : CPolynomial F} (r : CPolynomial F) (hp : p ≠ 0) :
+    CPolynomial.gcdMonic p r ≠ 0 := by
+  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  intro hzero
+  have hpoly := congrArg CPolynomial.toPoly hzero
+  rw [CPolynomial.gcdMonic_toPoly_eq_normalize_gcd, CPolynomial.toPoly_zero,
+    normalize_eq_zero, EuclideanDomain.gcd_eq_zero_iff] at hpoly
+  exact (CPolynomial.toPoly_eq_zero_iff p).not.mpr hp hpoly.1
+
+/-- A root of the monic gcd is exactly a common root of both arguments. -/
+theorem eval_monicNormalize_gcdMonic_eq_zero_iff {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    (p r : CPolynomial F) (z : F) :
+    CPolynomial.eval z (CPolynomial.monicNormalize (CPolynomial.gcdMonic p r)) = 0 ↔
+      CPolynomial.eval z p = 0 ∧ CPolynomial.eval z r = 0 := by
+  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  simp only [CPolynomial.eval_toPoly]
+  rw [CPolynomial.monicNormalize_toPoly_eq_normalize,
+    CPolynomial.gcdMonic_toPoly_eq_normalize_gcd, normalize_idem]
+  constructor
+  · intro hroot
+    have hdvd : Polynomial.X - Polynomial.C z ∣
+        EuclideanDomain.gcd p.toPoly r.toPoly :=
+      dvd_normalize_iff.mp (Polynomial.dvd_iff_isRoot.mpr hroot)
+    exact ⟨Polynomial.dvd_iff_isRoot.mp (hdvd.trans (EuclideanDomain.gcd_dvd_left _ _)),
+      Polynomial.dvd_iff_isRoot.mp (hdvd.trans (EuclideanDomain.gcd_dvd_right _ _))⟩
+  · rintro ⟨hp, hr⟩
+    exact Polynomial.dvd_iff_isRoot.mp
+      (dvd_normalize_iff.mpr
+        (EuclideanDomain.dvd_gcd (Polynomial.dvd_iff_isRoot.mpr hp)
+          (Polynomial.dvd_iff_isRoot.mpr hr)))
+
 end FiniteField
 
 end Roots
