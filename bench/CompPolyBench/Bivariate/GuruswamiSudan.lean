@@ -226,10 +226,14 @@ private def runGsInterpolationMediumKoala (preset : BenchPreset) (gen : StdGen) 
   let fastLeeMeasured := preset.selectNat 50 7 1
   let fastApproximantDirectMeasured := preset.selectNat 7 1 1
   let fastApproximantSubproductMeasured := preset.selectNat 7 1 1
+  let hybridMeasured := preset.selectNat 5 1 1
+  let fastHybridMeasured := preset.selectNat 25 4 1
   let checksumIterations := groupChecksumIterations koetterMeasured [
     leeMeasured, leeMeasured, approximantDirectMeasured, approximantSubproductMeasured,
+    hybridMeasured,
     fastKoetterMeasured, fastLeeMeasured, fastLeeMeasured,
-    fastApproximantDirectMeasured, fastApproximantSubproductMeasured
+    fastApproximantDirectMeasured, fastApproximantSubproductMeasured,
+    fastHybridMeasured
   ]
   let koetterRow <- runTimed
     "guruswami-sudan-interp-koetter" "CBivariate"
@@ -266,6 +270,13 @@ private def runGsInterpolationMediumKoala (preset : BenchPreset) (gen : StdGen) 
     "KoalaBear.Field" gsMediumInterpInputShape preset warmup approximantSubproductMeasured
     (fun _ ↦ koalaBearApproximantBasisSubproductInterpContext.interpolate points
       gsMediumInterpParams)
+    (checksumInterpolationValidityOption points gsMediumInterpParams)
+    checksumIterations
+  let hybridRow <- runTimed
+    "guruswami-sudan-interp-hybrid" "CBivariate"
+    "Hybrid"
+    "KoalaBear.Field" gsMediumInterpInputShape preset warmup hybridMeasured
+    (fun _ ↦ koalaBearHybridInterpContext.interpolate points gsMediumInterpParams)
     (checksumInterpolationValidityOption points gsMediumInterpParams)
     checksumIterations
   let fastKoetterRow <- runTimed
@@ -309,14 +320,22 @@ private def runGsInterpolationMediumKoala (preset : BenchPreset) (gen : StdGen) 
       gsMediumInterpParams)
     (checksumInterpolationValidityOption fastPoints gsMediumInterpParams)
     checksumIterations
+  let fastHybridRow <- runTimed
+    "guruswami-sudan-interp-hybrid-fast" "CBivariate"
+    "Hybrid"
+    "KoalaBear.Fast.Field" gsMediumInterpInputShape preset warmup fastHybridMeasured
+    (fun _ ↦ fastKoalaBearHybridInterpContext.interpolate fastPoints
+      gsMediumInterpParams)
+    (checksumInterpolationValidityOption fastPoints gsMediumInterpParams)
+    checksumIterations
   pure ({
     groupKey := "guruswami-sudan-interp-medium-koalabear",
     title := "Guruswami-Sudan interpolation, medium (KoalaBear)",
     records := #[
       koetterRow, leeDirectRow, leeSubproductRow,
-      approximantDirectRow, approximantSubproductRow,
+      approximantDirectRow, approximantSubproductRow, hybridRow,
       fastKoetterRow, fastLeeDirectRow, fastLeeSubproductRow,
-      fastApproximantDirectRow, fastApproximantSubproductRow
+      fastApproximantDirectRow, fastApproximantSubproductRow, fastHybridRow
     ]
   }, gen)
 

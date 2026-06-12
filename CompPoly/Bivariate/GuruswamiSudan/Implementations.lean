@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 
 import CompPoly.Bivariate.GuruswamiSudan.Executable
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Hybrid.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Fast
 import CompPoly.Univariate.BatchEval.Context
@@ -192,6 +193,34 @@ def fastKoalaBearApproximantBasisSubproductInterpContext :
 def fastKoalaBearApproximantBasisInterpContext :
     GSInterpContext KoalaBear.Fast.Field :=
   fastKoalaBearApproximantBasisSubproductInterpContext
+
+/-- Mulders-Storjohann step budget for the hybrid interpolation backend — the
+ski-rental `B` of `gs-interpolation-complexity-analysis.md`, Section 6:
+proportional to `ℓ^(ω−1)` (with `ℓ + 1` the module width) and independent of
+`n` and `m` under softly-linear multiplication. The constant is calibrated
+from the `n = 5040` long-code benchmark shape, where the approximant fallback
+costs ≈ 11.4 s against ≈ 0.65 ms per reduction step. -/
+def hybridReductionStepBudget (params : GSInterpParams) : Nat :=
+  500 * leeOSullivanWidth params * leeOSullivanWidth params
+
+/-- Hybrid interpolation (budgeted Lee-O'Sullivan reduction with approximant
+fallback) over canonical KoalaBear. -/
+def koalaBearHybridInterpContext : GSInterpContext KoalaBear.Field :=
+  Hybrid.hybridInterpContext
+    (CPolynomial.VanishingPolynomialContext.subproduct koalaBearNttFastMulContext)
+    koalaBearNttFastBatchEvalContext
+    koalaBearApproximantSolutionContext
+    hybridReductionStepBudget
+
+/-- Hybrid interpolation (budgeted Lee-O'Sullivan reduction with approximant
+fallback) over native-word fast KoalaBear. -/
+def fastKoalaBearHybridInterpContext : GSInterpContext KoalaBear.Fast.Field :=
+  Hybrid.hybridInterpContext
+    (CPolynomial.VanishingPolynomialContext.subproduct
+      fastKoalaBearNttFastMulContext)
+    fastKoalaBearNttFastBatchEvalContext
+    fastKoalaBearApproximantSolutionContext
+    hybridReductionStepBudget
 
 /-- Roth-Ruckenstein root backend over canonical KoalaBear. -/
 def koalaBearRothRootContext : GSRootContext KoalaBear.Field :=

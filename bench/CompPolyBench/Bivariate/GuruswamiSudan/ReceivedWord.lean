@@ -215,7 +215,8 @@ private def gsNonCodewordSmallSlowBackends :
   ⟨"approximant-direct", "Approximant basis direct",
     koalaBearApproximantBasisDirectInterpContext, 2, 1, 1⟩,
   ⟨"approximant-subproduct", "Approximant basis subproduct",
-    koalaBearApproximantBasisSubproductInterpContext, 2, 1, 1⟩
+    koalaBearApproximantBasisSubproductInterpContext, 2, 1, 1⟩,
+  ⟨"hybrid", "Hybrid", koalaBearHybridInterpContext, 8, 1, 1⟩
 ]
 
 private def gsNonCodewordSmallFastBackends :
@@ -229,7 +230,8 @@ private def gsNonCodewordSmallFastBackends :
   ⟨"approximant-direct", "Approximant basis direct",
     fastKoalaBearApproximantBasisDirectInterpContext, 6, 1, 1⟩,
   ⟨"approximant-subproduct", "Approximant basis subproduct",
-    fastKoalaBearApproximantBasisSubproductInterpContext, 6, 1, 1⟩
+    fastKoalaBearApproximantBasisSubproductInterpContext, 6, 1, 1⟩,
+  ⟨"hybrid", "Hybrid", fastKoalaBearHybridInterpContext, 35, 5, 1⟩
 ]
 
 private def gsNonCodewordMediumSlowBackends :
@@ -242,7 +244,8 @@ private def gsNonCodewordMediumSlowBackends :
   ⟨"approximant-direct", "Approximant basis direct",
     koalaBearApproximantBasisDirectInterpContext, 1, 1, 1⟩,
   ⟨"approximant-subproduct", "Approximant basis subproduct",
-    koalaBearApproximantBasisSubproductInterpContext, 1, 1, 1⟩
+    koalaBearApproximantBasisSubproductInterpContext, 1, 1, 1⟩,
+  ⟨"hybrid", "Hybrid", koalaBearHybridInterpContext, 1, 1, 1⟩
 ]
 
 private def gsNonCodewordMediumFastBackends :
@@ -255,7 +258,8 @@ private def gsNonCodewordMediumFastBackends :
   ⟨"approximant-direct", "Approximant basis direct",
     fastKoalaBearApproximantBasisDirectInterpContext, 1, 1, 1⟩,
   ⟨"approximant-subproduct", "Approximant basis subproduct",
-    fastKoalaBearApproximantBasisSubproductInterpContext, 1, 1, 1⟩
+    fastKoalaBearApproximantBasisSubproductInterpContext, 1, 1, 1⟩,
+  ⟨"hybrid", "Hybrid", fastKoalaBearHybridInterpContext, 5, 1, 1⟩
 ]
 
 /-- Long-code interpolation backends: only the two reduction-based backends
@@ -272,7 +276,8 @@ private def gsNonCodewordLargeFastBackends :
   ⟨"lee-subproduct", "Lee-O'Sullivan subproduct",
     fastKoalaBearLeeSubproductInterpContext, 2, 1, 1⟩,
   ⟨"approximant-subproduct", "Approximant basis subproduct",
-    fastKoalaBearApproximantBasisSubproductInterpContext, 4, 2, 1⟩
+    fastKoalaBearApproximantBasisSubproductInterpContext, 4, 2, 1⟩,
+  ⟨"hybrid", "Hybrid", fastKoalaBearHybridInterpContext, 2, 1, 1⟩
 ]
 
 /-! ### Group metadata -/
