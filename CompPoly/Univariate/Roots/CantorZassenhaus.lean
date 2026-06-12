@@ -245,7 +245,7 @@ def czSplitWithShifts (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.Mo
 
 /-- Default shift schedule: `0, 1, …, (count - 1)` cast into `F`. -/
 def czDefaultShifts (count : Nat) : List F :=
-  (List.range count).map (fun i => (Nat.cast i : F))
+  (List.range count).map (fun i ↦ (Nat.cast i : F))
 
 /-- Cantor–Zassenhaus linear-factor splitting with naive polynomial arithmetic
 contexts and the default shift schedule of length `q`. -/
@@ -370,7 +370,7 @@ theorem czComplete_core (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.
             · exact absurd (by linear_combination -h : a + s = 0) hsa
             · exact h
           have hbucket : ∀ b : CPolynomial F, CPolynomial.monicNormalize
-              (CPolynomial.gcdMonic (CPolynomial.monicNormalize p) b) ≠ 0 := fun b =>
+              (CPolynomial.gcdMonic (CPolynomial.monicNormalize p) b) ≠ 0 := fun b ↦
             monicNormalize_ne_zero_of_ne_zero (gcdMonic_ne_zero_of_left hp'ne)
           rcases czRefine_root_in_residue_bucket M D q hodd hfrob s a
             (CPolynomial.monicNormalize p) hp' hsa with hr | hr
@@ -421,7 +421,7 @@ theorem czComplete_zmod (q : Nat) [Fact (Nat.Prime q)] (hodd : Odd q)
     (p : CPolynomial (ZMod q)) (a : ZMod q) (hpne : p ≠ 0)
     (hroot : CPolynomial.eval a p = 0) :
     HasRootFactor (czSplitLinearFactors q p) a :=
-  czComplete q hodd (fun x => ZMod.pow_card x) (fun x => zmod_mem_czDefaultShifts q x)
+  czComplete q hodd (fun x ↦ ZMod.pow_card x) (fun x ↦ zmod_mem_czDefaultShifts q x)
     p a hpne hroot
 
 /-- The Cantor–Zassenhaus splitter packaged as a `LinearFactorProductSplitter`.
@@ -430,7 +430,7 @@ Frobenius identity `x^q = x`, and that the shift schedule `0..q-1` reaches every
 element of `F` (all three hold for a prime field `F = ZMod q` of odd order). -/
 def czLinearFactorProductSplitter : LinearFactorProductSplitter F :=
   czLinearFactorProductSplitterOf
-    (fun q _ => Odd q ∧ (∀ x : F, x ^ q = x) ∧ (∀ x : F, x ∈ czDefaultShifts q))
+    (fun q _ ↦ Odd q ∧ (∀ x : F, x ^ q = x) ∧ (∀ x : F, x ∈ czDefaultShifts q))
     (by
       intro q p a hvalid hpne hroot
       obtain ⟨hodd, hfrob, hcover⟩ := hvalid
@@ -442,7 +442,7 @@ def czFiniteFieldContext (q : Nat) [Fact (Nat.Prime q)] : FiniteFieldContext (ZM
   { q := q
     finite := inferInstance
     card_eq := by rw [Nat.card_eq_fintype_card, ZMod.card]
-    frobenius_fixed := fun a => ZMod.pow_card a }
+    frobenius_fixed := fun a ↦ ZMod.pow_card a }
 
 /-- End-to-end root finder over `ZMod q`: stage 1 extracts the distinct field
 roots as `gcd(f, X^q - X)`, then the Cantor–Zassenhaus splitter separates them.
@@ -460,7 +460,7 @@ theorem czRoots_complete (q : Nat) [Fact (Nat.Prime q)] (hodd : Odd q)
     {f : CPolynomial (ZMod q)} {a : ZMod q} (hf : f ≠ 0) (hroot : CPolynomial.eval a f = 0) :
     a ∈ (czRoots q f).toList :=
   rootsInFiniteField_complete (czFiniteFieldContext q) czLinearFactorProductSplitter
-    (by intro p _; exact ⟨hodd, fun x => ZMod.pow_card x, fun x => zmod_mem_czDefaultShifts q x⟩)
+    (by intro p _; exact ⟨hodd, fun x ↦ ZMod.pow_card x, fun x ↦ zmod_mem_czDefaultShifts q x⟩)
     hf hroot
 
 end FiniteField
