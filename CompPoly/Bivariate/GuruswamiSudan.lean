@@ -15,6 +15,10 @@ import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Basic
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Algorithm
 import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Algorithm
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Basic
+import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness
 import CompPoly.Bivariate.GuruswamiSudan.Polynomial
 import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
 import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Algorithm

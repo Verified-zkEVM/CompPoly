@@ -10,9 +10,9 @@ import CompPolyBench.Bivariate.GuruswamiSudan.ReceivedWord
 /-!
 # Guruswami-Sudan Benchmarks
 
-KoalaBear cost-center benchmarks for dense interpolation, Roth-Ruckenstein and
-Alekhnovich root finding, packed distance filtering, and dense/RR `gsCore` and
-`gsFilteredCore`.
+KoalaBear cost-center benchmarks for dense and Lee-O'Sullivan interpolation,
+Roth-Ruckenstein and Alekhnovich root finding, packed distance filtering, and
+backend-parametric `gsCore` and `gsFilteredCore`.
 -/
 
 open CompPoly
@@ -89,27 +89,68 @@ private def runGsInterpolationSmallKoala (preset : BenchPreset) (gen : StdGen) :
   let points := gsSmallBenchmarkPoints message
   let fastPoints := gsSmallBenchmarkPoints fastMessage
   let warmup := gsWarmupIterations preset
-  let measured := preset.selectNat 1 1 1
-  let fastMeasured := preset.selectNat 2 1 1
-  let checksumIterations := groupChecksumIterations measured [fastMeasured]
+  let denseMeasured := preset.selectNat 1 1 1
+  let leeDirectMeasured := preset.selectNat 100 15 3
+  let leeSubproductMeasured := preset.selectNat 90 13 3
+  let fastDenseMeasured := preset.selectNat 2 1 1
+  let fastLeeDirectMeasured := preset.selectNat 600 90 20
+  let fastLeeSubproductMeasured := preset.selectNat 400 60 10
+  let checksumIterations := groupChecksumIterations denseMeasured [
+    leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
+    fastLeeDirectMeasured, fastLeeSubproductMeasured
+  ]
   let denseRow <- runTimed
     "guruswami-sudan-interp-dense-small" "CBivariate"
     "Dense linear"
-    "KoalaBear.Field" gsSmallInterpInputShape preset warmup measured
+    "KoalaBear.Field" gsSmallInterpInputShape preset warmup denseMeasured
     (fun _ ↦ koalaBearDenseInterpContext.interpolate points gsSmallParams)
+    (checksumInterpolationValidityOption points gsSmallParams)
+    checksumIterations
+  let leeDirectRow <- runTimed
+    "guruswami-sudan-interp-lee-direct-small" "CBivariate"
+    "Lee-O'Sullivan direct"
+    "KoalaBear.Field" gsSmallInterpInputShape preset warmup leeDirectMeasured
+    (fun _ ↦ koalaBearLeeDirectInterpContext.interpolate points gsSmallParams)
+    (checksumInterpolationValidityOption points gsSmallParams)
+    checksumIterations
+  let leeSubproductRow <- runTimed
+    "guruswami-sudan-interp-lee-subproduct-small" "CBivariate"
+    "Lee-O'Sullivan subproduct"
+    "KoalaBear.Field" gsSmallInterpInputShape preset warmup leeSubproductMeasured
+    (fun _ ↦ koalaBearLeeSubproductInterpContext.interpolate points gsSmallParams)
     (checksumInterpolationValidityOption points gsSmallParams)
     checksumIterations
   let fastDenseRow <- runTimed
     "guruswami-sudan-interp-dense-small-fast" "CBivariate"
     "Dense linear"
-    "KoalaBear.Fast.Field" gsSmallInterpInputShape preset warmup fastMeasured
+    "KoalaBear.Fast.Field" gsSmallInterpInputShape preset warmup fastDenseMeasured
     (fun _ ↦ fastKoalaBearDenseInterpContext.interpolate fastPoints gsSmallParams)
+    (checksumInterpolationValidityOption fastPoints gsSmallParams)
+    checksumIterations
+  let fastLeeDirectRow <- runTimed
+    "guruswami-sudan-interp-lee-direct-small-fast" "CBivariate"
+    "Lee-O'Sullivan direct"
+    "KoalaBear.Fast.Field" gsSmallInterpInputShape preset warmup fastLeeDirectMeasured
+    (fun _ ↦ fastKoalaBearLeeDirectInterpContext.interpolate fastPoints
+      gsSmallParams)
+    (checksumInterpolationValidityOption fastPoints gsSmallParams)
+    checksumIterations
+  let fastLeeSubproductRow <- runTimed
+    "guruswami-sudan-interp-lee-subproduct-small-fast" "CBivariate"
+    "Lee-O'Sullivan subproduct"
+    "KoalaBear.Fast.Field" gsSmallInterpInputShape preset warmup
+    fastLeeSubproductMeasured
+    (fun _ ↦ fastKoalaBearLeeSubproductInterpContext.interpolate fastPoints
+      gsSmallParams)
     (checksumInterpolationValidityOption fastPoints gsSmallParams)
     checksumIterations
   pure ({
     groupKey := "guruswami-sudan-interp-small-koalabear",
-    title := "Guruswami-Sudan dense interpolation, small (KoalaBear)",
-    records := #[denseRow, fastDenseRow]
+    title := "Guruswami-Sudan interpolation, small (KoalaBear)",
+    records := #[
+      denseRow, leeDirectRow, leeSubproductRow,
+      fastDenseRow, fastLeeDirectRow, fastLeeSubproductRow
+    ]
   }, gen)
 
 private def runGsRootKoala (preset : BenchPreset) (gen : StdGen) :
