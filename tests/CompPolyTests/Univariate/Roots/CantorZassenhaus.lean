@@ -1,0 +1,81 @@
+/-
+Copyright (c) 2026 CompPoly. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Dimitris Mitsios
+-/
+import CompPoly.Univariate.Roots.CantorZassenhaus
+import Mathlib.Data.ZMod.Basic
+import Mathlib.Algebra.Field.ZMod
+
+/-!
+# Tests: Cantor–Zassenhaus linear-factor splitter
+
+Executable `#guard` checks over the small prime field `ZMod 7`, where the default
+shift schedule `0..6` is cheap. The splitter takes a squarefree product of linear
+factors and returns its individual linear factors.
+-/
+
+open CompPoly
+open CompPoly.CPolynomial.Roots.FiniteField
+
+namespace CompPolyTests
+namespace CantorZassenhausTest
+
+instance : Fact (Nat.Prime 7) := ⟨by decide⟩
+
+abbrev F : Type := ZMod 7
+
+/-! ### Splitting `(X - 2)(X - 3)` into its two linear factors. -/
+
+private def p₂₃ : CPolynomial F :=
+  (CPolynomial.X - CPolynomial.C 2) * (CPolynomial.X - CPolynomial.C 3)
+
+#guard (czSplitLinearFactors 7 p₂₃).size == 2
+#guard (czSplitLinearFactors 7 p₂₃).contains (CPolynomial.linearFactor (2 : F))
+#guard (czSplitLinearFactors 7 p₂₃).contains (CPolynomial.linearFactor (3 : F))
+
+/-! ### A factor with root `0` is also found (`X(X - 1) = X² - X`). -/
+
+private def p₀₁ : CPolynomial F := CPolynomial.X ^ 2 - CPolynomial.X
+
+#guard (czSplitLinearFactors 7 p₀₁).size == 2
+#guard (czSplitLinearFactors 7 p₀₁).contains (CPolynomial.linearFactor (0 : F))
+#guard (czSplitLinearFactors 7 p₀₁).contains (CPolynomial.linearFactor (1 : F))
+
+/-! ### Every emitted factor is linear (soundness, on a concrete input). -/
+
+#guard (czSplitLinearFactors 7 p₂₃).all (fun f => isRepresentedLinearFactor f)
+
+/-! ### Completeness is provable for any root.
+
+`decide` does not kernel-reduce `CPolynomial`/`ZMod` equalities, so `p ≠ 0` and
+`eval a p = 0` are passed as hypotheses. -/
+
+example (a : F) (hpne : p₂₃ ≠ 0) (h : CPolynomial.eval a p₂₃ = 0) :
+    ∃ factor, factor ∈ (czSplitLinearFactors 7 p₂₃).toList ∧
+      IsLinearRootFactorCandidate factor a :=
+  czComplete_zmod 7 (by decide) p₂₃ a hpne h
+
+/-! ### End-to-end root finding on a general `f` (`czRoots`).
+
+Returns the distinct `ZMod 7` roots of an arbitrary `f`: multiplicities collapse
+and factors with no `ZMod 7` root are dropped. -/
+
+-- `(X - 2)² (X - 3)`: roots `{2, 3}`, the double root counted once.
+private def fMult : CPolynomial F :=
+  (CPolynomial.X - CPolynomial.C 2) ^ 2 * (CPolynomial.X - CPolynomial.C 3)
+
+#guard (czRoots 7 fMult).size == 2
+#guard (czRoots 7 fMult).contains 2
+#guard (czRoots 7 fMult).contains 3
+
+-- `X² + 1` is irreducible over `ZMod 7` (`-1` is a non-residue), so no roots.
+#guard (czRoots 7 (CPolynomial.X ^ 2 + 1)).size == 0
+
+-- Completeness of the end-to-end finder.
+example (a : F) (hf : fMult ≠ 0) (h : CPolynomial.eval a fMult = 0) :
+    a ∈ (czRoots 7 fMult).toList :=
+  czRoots_complete 7 (by decide) hf h
+
+end CantorZassenhausTest
+end CompPolyTests
