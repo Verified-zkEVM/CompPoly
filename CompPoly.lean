@@ -102,7 +102,9 @@ import CompPoly.Fields.Goldilocks
 import CompPoly.Fields.KoalaBear
 import CompPoly.Fields.KoalaBear.Basic
 import CompPoly.Fields.KoalaBear.Fast
-import CompPoly.Fields.Mersenne
+import CompPoly.Fields.Mersenne31
+import CompPoly.Fields.Mersenne31.Basic
+import CompPoly.Fields.Mersenne31.Fast
 import CompPoly.Fields.PrattCertificate
 import CompPoly.Fields.Secp256k1
 import CompPoly.LinearAlgebra.Dense
