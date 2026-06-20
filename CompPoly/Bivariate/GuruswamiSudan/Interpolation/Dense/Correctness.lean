@@ -901,7 +901,7 @@ theorem denseInterpolateWithBasis_exists_of_dimension_slack {F : Type*}
   have hnz := DenseMatrix.homogeneousWitness_nonzero hw
   rcases normalizeVector?_some_of_nonzero hnz with ⟨norm, hn⟩
   refine ⟨interpolationPolynomialOnBasis basis norm, ?_⟩
-  simp [denseLinearKernelContext, hw]
+  simp [denseLinearKernelContext, DenseMatrix.homogeneousWitnessInPlace_eq, hw]
   change normalizeInterpolationPolynomialOnBasis? basis coeffs =
     some (interpolationPolynomialOnBasis basis norm)
   unfold normalizeInterpolationPolynomialOnBasis?
