@@ -120,9 +120,8 @@ theorem raw_cast_eq_toField_mul (x : Field) :
 
 theorem nat_eq_of_field_eq {a b : Nat} (ha : a < BabyBear.fieldSize)
     (hb : b < BabyBear.fieldSize) (h : (a : BabyBear.Field) = (b : BabyBear.Field)) :
-    a = b := by
-  rw [ZMod.natCast_eq_natCast_iff] at h
-  exact Nat.ModEq.eq_of_lt_of_lt h ha hb
+    a = b :=
+  Montgomery.natCast_inj ha hb h
 
 theorem ofCanonicalNat_raw_cast (n : Nat) (h : n < BabyBear.fieldSize) :
     ((ofCanonicalNat n h).val.toNat : BabyBear.Field) =

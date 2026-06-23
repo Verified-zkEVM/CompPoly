@@ -111,6 +111,8 @@ import CompPoly.Fields.KoalaBear.Fast.Convert
 import CompPoly.Fields.KoalaBear.Fast.Montgomery
 import CompPoly.Fields.KoalaBear.Fast.Prelude
 import CompPoly.Fields.Mersenne
+import CompPoly.Fields.Montgomery.Basic
+import CompPoly.Fields.Montgomery.Native32
 import CompPoly.Fields.PrattCertificate
 import CompPoly.Fields.Secp256k1
 import CompPoly.LinearAlgebra.Dense
