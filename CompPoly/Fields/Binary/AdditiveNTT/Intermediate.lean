@@ -277,7 +277,7 @@ lemma getSDomainBasisCoeff_of_sum_repr [NeZero R_rate] (i : Fin (ℓ + 1))
       simp only [Basis.repr_self]
     have hx_at_j_simplified :
         (∑ j_x, x_coeffs j_x • (b.repr (b j_x))) j = x_coeffs j := by
-      simp only [h_repr_basis, Finsupp.smul_single, smul_eq_mul, mul_one, Finsupp.coe_finset_sum,
+      simp only [h_repr_basis, Finsupp.smul_single, smul_eq_mul, mul_one, Finsupp.coe_finsetSum,
         Finset.sum_apply, Finsupp.single_apply, Finset.sum_ite_eq', Finset.mem_univ, ↓reduceIte]
     let x_coeffs_fs := Finsupp.equivFunOnFinite.symm x_coeffs
     let rhs_sum := ∑ j_x, (x_coeffs_fs j_x) • (b j_x)
@@ -380,7 +380,7 @@ lemma getSDomainBasisCoeff_of_iteratedQuotientMap
           simp only [zero_add]
           omega⟩)
       simp only [Fin.zero_eta, Fin.coe_ofNat_eq_mod, Nat.sub_zero] at h_interW_comp
-      rw [h_interW_comp]
+      erw [h_interW_comp]
       have h_index : 0 + i.val = i.val := by omega
       rw! (castMode := .all) [h_index]
       rfl
@@ -480,7 +480,7 @@ theorem base_intermediateNovelBasisX (j : Fin (2 ^ ℓ)) :
   simp only [Fin.mk_zero'] at h_res
   conv_lhs =>
     enter [2, x, 1]
-    rw [h_res ⟨x, by omega⟩]
+    erw [h_res ⟨x, by omega⟩]
   congr
 
 omit [DecidableEq L] [DecidableEq 𝔽q] h_Fq_char_prime hF₂ hβ_lin_indep h_β₀_eq_1 in
@@ -690,7 +690,7 @@ theorem evaluation_poly_split_identity (i : Fin ℓ)
         ∑ i ∈ Finset.range (2 ^ (ℓ - ↑i - 1 + 1)), f1 i := by
       congr
       omega
-    have res := Fin.sum_univ_odd_even (f := f1) (n := (ℓ - ↑i - 1))
+    have res := Fin.sum_univ_pow_two_even_add_odd (f := f1) (n := (ℓ - ↑i - 1))
     conv_rhs at res =>
       rw [Fin.sum_univ_eq_sum_range]
       rw [← h_1]

@@ -42,7 +42,7 @@ variable {ι : Type*} [Preorder ι]
   {C : ι → Type*} [∀ i, CommSemiring (C i)] [AlgebraTower C]
 
 @[simp]
-def AlgebraTower.toAlgebra {i j : ι} (h : i ≤ j) : Algebra (A i) (A j) :=
+abbrev AlgebraTower.toAlgebra {i j : ι} (h : i ≤ j) : Algebra (A i) (A j) :=
   (AlgebraTower.algebraMap (i:=i) (j:=j) (h:=h)).toAlgebra
 
 @[simp]
@@ -61,7 +61,7 @@ instance AlgebraTower.toIsScalarTower (a : AlgebraTower C) {i j k : ι}
       simp only [map_mul]
       rw [←RingHom.comp_apply]
       unfold instIJ instJK instIK AlgebraTower.toAlgebra
-      simp_rw [algebraMap, Algebra.algebraMap]
+      simp_rw [RingHom.algebraMap_toAlgebra]
       have h_assoc := a.coherence' (i:=i) (j:=j) (k:=k) (h1:=h1) (h2:=h2)
       rw [h_assoc]
       rw [mul_assoc]
@@ -102,11 +102,11 @@ def AlgebraTowerEquiv.algebraMapLeftUp (e : AlgebraTowerEquiv A B) (i j : ι)
   have hjRingEquiv: RingEquiv (B i) (A i) := (e.toRingEquiv i).symm
   exact hAij.comp hjRingEquiv.toRingHom
 
-def AlgebraTowerEquiv.toAlgebraOverLeft (e : AlgebraTowerEquiv A B) (i j : ι)
+abbrev AlgebraTowerEquiv.toAlgebraOverLeft (e : AlgebraTowerEquiv A B) (i j : ι)
     (h : i ≤ j) : Algebra (A i) (B j) := by
   exact (e.algebraMapRightUp i j h).toAlgebra
 
-def AlgebraTowerEquiv.toAlgebraOverRight (e : AlgebraTowerEquiv A B) (i j : ι)
+abbrev AlgebraTowerEquiv.toAlgebraOverRight (e : AlgebraTowerEquiv A B) (i j : ι)
     (h : i ≤ j) : Algebra (B i) (A j) := by
   exact (e.algebraMapLeftUp i j h).toAlgebra
 
@@ -123,8 +123,7 @@ def AlgebraTowerEquiv.toAlgEquivOverLeft (e : AlgebraTowerEquiv A B) (i j : ι) 
     commutes' := fun r => by
       simp only [RingEquiv.toEquiv_eq_coe, Equiv.toFun_as_coe, EquivLike.coe_coe]
       unfold instAij instAiBij
-      rw [algebraMap, algebraMap, Algebra.algebraMap, Algebra.algebraMap,AlgebraTower.toAlgebra,
-        AlgebraTowerEquiv.toAlgebraOverLeft, AlgebraTowerEquiv.algebraMapRightUp]
+      simp only [AlgebraTowerEquiv.algebraMapRightUp, RingHom.algebraMap_toAlgebra]
       simp only [RingEquiv.toRingHom_eq_coe, RingHom.coe_comp, RingHom.coe_coe, Function.comp_apply]
       exact Eq.symm (e.commutesLeft' i j h r)
     map_mul' := fun x y => by

@@ -8,8 +8,8 @@ CompPoly aims to be the premier formally verified library for computable polynom
 
 1. Zero `sorry`s in all shipped modules.
 1. Complete core API for `CPolynomial`, `CMvPolynomial`, `CMlPolynomial`, including evaluation + interpolation + conversions.
-1. At least one "fast path" implemented + proven correct (FFT/NTT multiplication OR fast multilinear transforms).
-<!-- 1. Benchmarks exist for core ops and are reproducible (CI integration optional for v1.0). -->
+1. ✅ At least one "fast path" implemented + proven correct (FFT/NTT multiplication OR fast multilinear transforms). *(radix-2 NTT / `NTTFast` univariate multiplication)*
+1. Benchmarks exist for core ops and are reproducible (`lake exe CompPolyBench`; CI runs benchmarks and uploads reports).
 <!-- 1. Property tests exist for core ops (eval, mul, interpolation). -->
 1. Proof ergonomics baseline: common operations (add, mul, eval) mostly simp/grind-driven, documented.
 1. At least one real integration example (ArkLib or RT extraction exemplar) demonstrating use as a dependency.
@@ -42,7 +42,7 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - ✅ `aeval`, `bind₁`: Algebra evaluation and substitution
    - ✅ `algebra`, `module`: Algebra and module structures
    - ✅ `degrees`; ✅ `eval₂Hom`: Degree utilities and evaluation homomorphisms
-   - ✅ `finSuccEquiv`, `optionEquivLeft`: Variable manipulation equivalences (for `CMvPolynomial`)
+   - ✅ `finSuccEquiv`: Variable manipulation equivalences (for `CMvPolynomial`)
    - ✅ `isEmptyRingEquiv` for `CMvPolynomial 0 R`
    - ✅ `smulZeroClass`: Scalar multiplication with zero behavior
    - ✅ `sumToIter`: Iteration utility with reconstruction/API lemmas
@@ -66,31 +66,38 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - Optimized implementations of off-the-shelf available Field instances to enable performance, including for prime and other finite fields
 
 2. **Polynomial multiplication**
-   - Implement FFT/NTT-based multiplication (O(n log n) vs current O(n²))
-   - Focus on NTT for finite field arithmetic
-   - Maintain correctness proofs alongside optimizations
-   
-**Note**: [erdkocak](https://github.com/erdkocak) and [doran2728](https://github.com/doran2728) have communicated they will be working on this.
+   - ✅ Radix-2 NTT domain, forward/inverse transforms, and reference fast multiply (`Univariate/NTT/`)
+   - ✅ NTT-based `fastMulImpl` / `safeFastMul` / `withFallback` with full correctness proofs (`NTT/FastMul`)
+   - ✅ Concrete NTT domains for BabyBear and KoalaBear (`NTT/BabyBear`, `NTT/KoalaBear`)
+   - ✅ Low-product multiplication via NTT (`NTT/FastMulLow`)
+   - ✅ Optimized `NTTFast` path: cached twiddle plans, DIF/radix-4 stages, paired forward transforms, refinement proofs vs `NTT` (`Univariate/NTTFast/`)
+   - ✅ Pluggable multiply backends for batch algorithms (`BatchEval/Context`: `MulContext.ntt`, `MulContext.nttFast`)
+   - 🔄 Additional concrete domains and field-specific tuning beyond BabyBear/KoalaBear
 
 3. **Exponentiation optimization**
-   - Replace repeated multiplication with repeated squaring
-   - Reduce complexity from O(n) to O(log n) multiplications
+   - ✅ Replace repeated multiplication with repeated squaring
+   - ✅ Reduce complexity from O(n) to O(log n) multiplications
 
 4. **Evaluation optimizations**
-   - Implement batch evaluation at multiple points
-   - Add Horner's method where beneficial
+   - ✅ Batch evaluation at multiple points: naive, Horner, and subproduct-tree algorithms (`Univariate/BatchEval/`)
+   - ✅ Subproduct-tree batch eval with configurable multiply/remainder backends (naive, NTT, NTTFast)
+   - ✅ Add Horner's method where beneficial
    - Optimize for common ZK evaluation patterns
 
 5. **Complete multilinear transform functions**
-   - Complete documentation of zeta/Möbius transform formulas
-   - Prove equivalence between fast and spec implementations
-   - Add performance guarantees and complexity proofs
+   - ✅ Complete documentation of zeta/Möbius transform formulas
+   - ✅ Prove equivalence between fast and spec implementations
+   - 🔄 Add performance guarantees and complexity proofs (done in comments, formal benchmarking still TODO)
 
-6. **Bivariate polynomial operations**
+6. **Benchmarking**
+   - ✅ Basic, reproducible evaluation benchmark executable (`lake exe CompPolyBench`; see `bench/README.md`)
+   - ✅ CI build/run with artifact upload (GitHub Actions `lean_action_ci.yml`)
+   - 🔄 Expand regression coverage and published performance baselines
+
+7. **Bivariate polynomial operations**
    - Optimize the existing bivariate polynomial type `CPolynomial (CPolynomial R)` and evaluate whether a more specialized representation is beneficial
    - Efficient factorization algorithms for bivariate polynomials
-   - Integration with existing `CMvPolynomial 2 R` with equivalence proofs
-   - Critical for sum-check protocols, FRI commitments, and zkVM constraint systems
+   - ✅ Integration with existing `CMvPolynomial 2 R` with equivalence proofs
 
 7. **Error-correcting interpolation algorithms**
    - Implement Berlekamp-Welch algorithm for Reed-Solomon decoding
@@ -106,7 +113,7 @@ CompPoly aims to be the premier formally verified library for computable polynom
 
 **Goal**: Turn CompPoly into an integration-ready, downstream-friendly library by adding interoperability layers, serialization, proof automation, and extraction compatibility.
 
-#### Priorities 
+#### Priorities
 
 1. **Lowering / interop with LLZK / PrimeIR polynomial dialects**
 	- Explore representing CompPoly structures in the MLIR pipeline
@@ -127,7 +134,7 @@ CompPoly aims to be the premier formally verified library for computable polynom
 	- Build simp sets and grind sets for common operations
 	- Goal: “one-liner conversions” (or near) between spec polynomials and computable polynomials
 
-6.	**Integration with ArkLib / Hax + Rust libraries (e.g. plonky3)**
+5.	**Integration with ArkLib / Hax + Rust libraries (e.g. plonky3)**
 	- Make CompPoly the canonical polynomial backend for ArkLib specs where applicable
 	- Add bridging lemmas and conversion utilities across representations (CompPoly ↔ Mathlib ↔ extracted Rust ↔ downstream libs)
 	- Document and implement invariants required for robust interop (canonical ordering, normalization, domain metadata)
@@ -181,4 +188,4 @@ CompPoly aims to be the premier formally verified library for computable polynom
 
 ---
 
-*Last updated: March 2026*
+*Last updated: May 2026*

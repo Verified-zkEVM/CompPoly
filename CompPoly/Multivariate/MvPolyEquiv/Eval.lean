@@ -19,10 +19,10 @@ open CMvPolynomial
 
 section
 
-variable {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 omit [BEq R] [LawfulBEq R] in
-lemma eval₂_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] {f : (R →+* S)}
+lemma eval₂_equiv {S : Type*} {p : CMvPolynomial n R} [CommSemiring S] {f : (R →+* S)}
     {vals : Fin n → S} : p.eval₂ f vals = (fromCMvPolynomial p).eval₂ f vals := by
   unfold CMvPolynomial.eval₂ MvPolynomial.eval₂
   rw [foldl_eq_sum]
@@ -53,40 +53,35 @@ lemma eval_equiv {p : CMvPolynomial n R} {vals : Fin n → R} :
   exact eval₂_equiv
 
 omit [BEq R] [LawfulBEq R] in
-lemma totalDegree_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] :
+lemma totalDegree_equiv {S : Type*} {p : CMvPolynomial n R} [CommSemiring S] :
     p.totalDegree = (fromCMvPolynomial p).totalDegree := by rfl
 
 omit [BEq R] [LawfulBEq R] in
-lemma degreeOf_equiv {S : Type} {p : CMvPolynomial n R} [CommSemiring S] :
+lemma degreeOf_equiv {S : Type*} {p : CMvPolynomial n R} [CommSemiring S] :
     p.degreeOf = (fromCMvPolynomial p).degreeOf := by
   ext i
-  unfold MvPolynomial.degreeOf MvPolynomial.degrees
-  unfold MvPolynomial.support fromCMvPolynomial
-  simp only
-  unfold degreeOf
-  congr
-  unfold instDecidableEqFin Classical.decEq inferInstance
-  unfold Classical.propDecidable
-  ext a b
-  next h heq =>
-    by_contra! h
-    generalize h' : Classical.choice _ = out at h
-    match h'' : out with
-    | isTrue g => grind
-    | isFalse g =>
-      apply g
-      split at h
-      · next g' g'' g''' => grind
-      · simp at h
+  rw [MvPolynomial.degreeOf_eq_sup]
+  unfold CMvPolynomial.degreeOf fromCMvPolynomial
+  change ((Lawful.monomials p).toFinset.sup fun m => m.degreeOf i) =
+    ((List.map CMvMonomial.toFinsupp (Lawful.monomials p)).toFinset).sup fun m => m i
+  have hsupp :
+      (List.map CMvMonomial.toFinsupp (Lawful.monomials p)).toFinset =
+        (Lawful.monomials p).toFinset.image CMvMonomial.toFinsupp := by
+    ext s
+    simp [Finset.mem_image]
+  rw [hsupp, Finset.sup_image]
+  refine Finset.sup_congr rfl ?_
+  intro m hm
+  rfl
 
 end
 
 namespace CMvPolynomial
 
-variable {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 /-- `eval₂` as a ring homomorphism. -/
-def eval₂Hom {S : Type} [CommSemiring S]
+def eval₂Hom {S : Type*} [CommSemiring S]
     (f : R →+* S) (vs : Fin n → S) : CMvPolynomial n R →+* S where
   toFun := eval₂ f vs
   map_zero' := by simp [eval₂_equiv]
@@ -95,7 +90,7 @@ def eval₂Hom {S : Type} [CommSemiring S]
   map_mul' _ _ := by simp [eval₂_equiv, MvPolynomial.eval₂_mul]
 
 @[simp]
-lemma eval₂Hom_apply {S : Type} [CommSemiring S]
+lemma eval₂Hom_apply {S : Type*} [CommSemiring S]
     (f : R →+* S) (vs : Fin n → S) (p : CMvPolynomial n R) :
     eval₂Hom f vs p = eval₂ f vs p := rfl
 

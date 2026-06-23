@@ -12,6 +12,8 @@ import CompPoly.Fields.Binary.Tower.Concrete.Field
 Algebra maps and embeddings for the concrete bitvector binary tower.
 -/
 
+set_option backward.isDefEq.respectTransparency false
+
 namespace ConcreteBinaryTower
 
 open Polynomial
@@ -83,7 +85,6 @@ theorem ConcreteBTField.RingHom_cast_source_apply (k n m : ℕ) (h_eq : k = n)
 /--
 Auxiliary definition for `concreteTowerAlgebraMap` using structural recursion.
 This is easier to reason about in proofs than the `Nat.rec` version.
-TODO : migrate to Fin.dfoldl
 -/
 def concreteTowerAlgebraMap (l r : ℕ) (h_le : l ≤ r) :
     ConcreteBTField l →+* ConcreteBTField r := by
@@ -207,7 +208,7 @@ instance instAlgebraTowerConcreteBTF : AlgebraTower (ConcreteBTField) where
     intro i j k h1 h2
     exact concreteTowerAlgebraMap_assoc k j i h1 h2
 
-def ConcreteBTFieldAlgebra {l r : ℕ} (h_le : l ≤ r) :
+abbrev ConcreteBTFieldAlgebra {l r : ℕ} (h_le : l ≤ r) :
     Algebra (ConcreteBTField l) (ConcreteBTField r) := instAlgebraTowerConcreteBTF.toAlgebra h_le
 
 -- Since `join_via_add_smul` is equal `join`, it is also inverse of `split`
@@ -233,9 +234,9 @@ lemma split_algebraMap_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField 
   apply h
   -- ⊢ mappedVal = join h_pos zero x
   unfold mappedVal
-  rw [algebraMap, Algebra.algebraMap]
-  unfold instAlgebra ConcreteBTFieldAlgebra
-  rw [AlgebraTower.toAlgebra, AlgebraTower.algebraMap, instAlgebraTowerConcreteBTF]
+  unfold instAlgebra ConcreteBTFieldAlgebra AlgebraTower.toAlgebra
+  simp only [RingHom.algebraMap_toAlgebra]
+  rw [AlgebraTower.algebraMap, instAlgebraTowerConcreteBTF]
   simp only
   have h_concrete_embedding_succ_1 := concreteTowerAlgebraMap_succ_1 (k:=k-1)
   rw! (castMode:=.all) [Nat.sub_one_add_one (by omega)] at h_concrete_embedding_succ_1
@@ -409,7 +410,7 @@ theorem ConcreteBTFieldAlgebra_apply_assoc (l mid r : ℕ)
     (h_l_le_mid:=h_l_le_mid) (h_mid_le_r:=h_mid_le_r)]
 
 /-- This also provides the corresponding Module instance. -/
-def binaryTowerModule {l r : ℕ} (h_le : l ≤ r) :
+abbrev binaryTowerModule {l r : ℕ} (h_le : l ≤ r) :
     Module (ConcreteBTField l) (ConcreteBTField r) :=
   (ConcreteBTFieldAlgebra (h_le:=h_le)).toModule
 
@@ -438,8 +439,7 @@ lemma aeval_definingPoly_at_Z_succ (k : ℕ) :
   -- Z_square_mul_form uses instAlgebraLiftConcreteBTField internally
   rw [Z_square_mul_form (k:=k) (prev:=(getBTFResult (k:=k)))]
   rw [add_assoc]
-  rw [algebraMap, Algebra.algebraMap, instAlgebraLiftConcreteBTField]
-  simp only
+  simp only [RingHom.algebraMap_toAlgebra]
   -- f uses ConcreteBTFieldAlgebra, it's same as instAlgebraLiftConcreteBTField at step = 1
   rw [h_f_is_canonical_embedding, concreteTowerAlgebraMap_succ_1]
   simp only [canonicalAlgMap]; rw [mul_comm]

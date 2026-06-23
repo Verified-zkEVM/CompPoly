@@ -197,12 +197,10 @@ lemma mul_trim_equiv [Semiring R] [BEq R] [LawfulBEq R] (a b : CPolynomial.Raw R
   obtain ⟨l, hl⟩ := h_zipIdx_split
   have h_foldl_split : ∃ acc, (a.mul b) = (l.foldl (mulStep b) acc) ∧ (a.trim.mul b) = acc := by
     -- By definition of `mul`, we can rewrite `a.mul b` using `mulStep` and the foldl operation.
-    have h_mul_def : a.mul b = (a.zipIdx.toList.foldl (mulStep b) (mk #[])) := by
-      unfold mul
-      exact Eq.symm (Array.foldl_toList (mulStep b))
-    have h_mul_def_trim : a.trim.mul b = (a.trim.zipIdx.toList.foldl (mulStep b) (mk #[])) := by
-      unfold mul
-      exact Eq.symm (Array.foldl_toList (mulStep b))
+    have h_mul_def : a.mul b = (a.zipIdx.toList.foldl (mulStep b) (mk #[])) :=
+      (mul_eq_foldl a b).trans (Array.foldl_toList (mulStep b)).symm
+    have h_mul_def_trim : a.trim.mul b = (a.trim.zipIdx.toList.foldl (mulStep b) (mk #[])) :=
+      (mul_eq_foldl a.trim b).trans (Array.foldl_toList (mulStep b)).symm
     aesop
   obtain ⟨ acc, h₁, h₂ ⟩ := h_foldl_split
   exact h₁.symm ▸ h₂.symm ▸ foldl_mulStep_zeros b acc l hl.2
@@ -223,7 +221,7 @@ lemma mul_equiv₂ [Semiring R] [BEq R] [LawfulBEq R] (a b₁ b₂ : CPolynomial
   -- their sums of products of coefficients.
   have h_mul_def : ∀ (a b : CompPoly.CPolynomial.Raw R),
     a.mul b = (a.zipIdx.foldl (fun acc ⟨a', i⟩ => acc.add ((smul a' b).mulPowX i)) (mk #[])) :=
-      by exact fun a b => rfl
+      fun a b => mul_eq_foldl a b
   intro h
   have h_foldl_equiv : ∀ (l : List (R × ℕ)) (acc : CompPoly.CPolynomial.Raw R),
     List.foldl (fun acc (a', i) => acc.add ((smul a' b₁).mulPowX i)) acc l ≈
@@ -250,8 +248,7 @@ lemma add_descends [Semiring R] [BEq R] [LawfulBEq R] (a₁ b₁ a₂ b₂ : CPo
     equiv a₁ a₂ → equiv b₁ b₂ → addDescending a₁ b₁ = addDescending a₂ b₂ := by
   intros heq_a heq_b
   unfold addDescending
-  rw [Quotient.eq]
-  simp [Raw.instSetoidCPolynomial]
+  apply Quotient.sound
   calc
     add a₁ b₁ ≈ addRaw a₁ b₁ := add_equiv_raw a₁ b₁
     _ ≈ addRaw a₂ b₂ := by
@@ -273,8 +270,7 @@ lemma smul_descends [Semiring R] (r : R) (p₁ p₂ : CPolynomial.Raw R) :
     equiv p₁ p₂ → smulDescending r p₁ = smulDescending r p₂ := by
   unfold equiv smulDescending
   intro heq
-  rw [Quotient.eq]
-  simp [Raw.instSetoidCPolynomial]
+  apply Quotient.sound
   intro i
   rw [smul_equiv, smul_equiv, heq i]
 
@@ -294,9 +290,9 @@ lemma nsmul_descends [Semiring R] [BEq R] [LawfulBEq R] (n : ℕ)
   unfold equiv
   intro heq
   unfold nsmulDescending
-  rw [Quotient.eq]
-  simp [Raw.instSetoidCPolynomial]
-  unfold nsmul equiv
+  apply Quotient.sound
+  unfold nsmul
+  show equiv _ _
   intro i
   repeat rw [nsmulRaw_equiv, coeff_eq_coeff]
   rw [heq i]
@@ -316,9 +312,8 @@ lemma neg_descends [NegZeroClass R] (a b : CPolynomial.Raw R) :
     equiv a b → negDescending a = negDescending b := by
   unfold equiv negDescending
   intros heq
-  rw [Quotient.eq]
-  simp [Raw.instSetoidCPolynomial]
-  unfold equiv
+  apply Quotient.sound
+  show equiv _ _
   intro i
   rw [neg_coeff a i, neg_coeff b i, heq i]
 
@@ -336,9 +331,8 @@ lemma sub_descends [Ring R] [BEq R] [LawfulBEq R] (a₁ b₁ a₂ b₂ : CPolyno
     equiv a₁ a₂ → equiv b₁ b₂ → subDescending a₁ b₁ = subDescending a₂ b₂ := by
   unfold equiv subDescending
   intros heq_a heq_b
-  rw [Quotient.eq]
-  simp [Raw.instSetoidCPolynomial]
-  unfold sub equiv
+  apply Quotient.sound
+  unfold sub
   calc
     a₁.add b₁.neg ≈ a₁.addRaw b₁.neg := add_equiv_raw a₁ b₁.neg
     _ ≈ a₂.addRaw b₂.neg := by
@@ -361,9 +355,8 @@ lemma mulPowX_descends [Zero R] (i : ℕ) (p₁ p₂ : CPolynomial.Raw R) :
     equiv p₁ p₂ → mulPowXDescending i p₁ = mulPowXDescending i p₂ := by
   unfold mulPowXDescending
   intro heq
-  rw [Quotient.eq]
-  simp [Raw.instSetoidCPolynomial]
-  apply mulPowX_equiv; exact heq
+  apply Quotient.sound
+  exact mulPowX_equiv i p₁ p₂ heq
 
 /-- Multiplication by `X^i` on the quotient. -/
 @[inline, specialize]
@@ -384,8 +377,7 @@ lemma mul_descends [Semiring R] [BEq R] [LawfulBEq R] (a₁ b₁ a₂ b₂ : CPo
     equiv a₁ a₂ → equiv b₁ b₂ → mulDescending a₁ b₁ = mulDescending a₂ b₂ := by
   unfold mulDescending
   intros heq_a heq_b
-  rw [Quotient.eq]
-  simp [Raw.instSetoidCPolynomial]
+  apply Quotient.sound
   calc
     a₁.mul b₁ ≈ a₂.mul b₁ := mul_equiv a₁ a₂ b₁ heq_a
     _ ≈ a₂.mul b₂ := mul_equiv₂ a₂ b₁ b₂ heq_b
@@ -405,8 +397,7 @@ lemma pow_descends [Semiring R] [BEq R] [LawfulBEq R] (n : ℕ) (p₁ p₂ : CPo
     equiv p₁ p₂ → powDescending p₁ n = powDescending p₂ n := by
   intro heq
   unfold powDescending
-  rw [Quotient.eq]
-  simp [Raw.instSetoidCPolynomial]
+  apply Quotient.sound
   unfold pow
   have mul_pow_succ_equiv (p : CPolynomial.Raw R) (n : ℕ):
     p.mul^[n + 1] (C 1) ≈ p.mul (p.mul^[n] (C 1)) := by
@@ -676,7 +667,6 @@ lemma npow_succ : ∀ (n : ℕ) (x : QuotientCPolynomial R), x.pow (n + 1) = x.p
         exact Function.iterate_succ_apply' _ _ _]
   convert commute_pow_self n ( Quotient.mk ( Raw.instSetoidCPolynomial ) p ) using 1
   erw [ Quotient.eq ]
-  rfl
 
 /-- `QuotientCPolynomial R` forms a semiring when `R` is a semiring.
 
@@ -741,7 +731,7 @@ instance : Ring (QuotientCPolynomial R) where
     have h_neg_succ : ∀ n : ℕ, Int.negSucc n = - (n + 1 : ℤ) := by grind
     convert h_neg_succ
     convert Quotient.eq using 1
-    simp +decide [ Raw.instSetoidCPolynomial ]
+    simp +decide
     simp +decide [ Raw.C, Raw.neg ]
     grind
 end Ring

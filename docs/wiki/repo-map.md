@@ -15,6 +15,7 @@ CompPoly/
   Bivariate/          specialized `CPolynomial (CPolynomial R)` layer
   Fields/             concrete fields plus binary-field and additive-NTT stack
 tests/                regression modules under `CompPolyTests`
+bench/                benchmark executable, runner docs, and local reports
 scripts/              repo utilities and validation helpers
 .github/workflows/    CI entrypoints and automation
 ```
@@ -29,11 +30,15 @@ scripts/              repo utilities and validation helpers
   binary-field, GHASH, tower, and additive-NTT developments.
 - `tests/` mirrors the source tree when possible, but also contains cross-cutting
   regression modules for specialized subsystems.
+- `bench/` contains the compiled benchmark entrypoint and benchmark-specific docs.
 
 ## Where To Start By Task
 
 - Extending `CPolynomial`, quotient polynomials, or interpolation:
   start in `CompPoly/Univariate/`.
+- Working on root-of-unity NTT evaluation, interpolation, or multiplication:
+  start in `CompPoly/Univariate/NTT/` for shared domains/specifications and
+  `CompPoly/Univariate/NTTFast/` for planned optimized transforms.
 - Extending sparse monomial-based polynomial operations or `MvPolynomial`
   interoperability: start in `CompPoly/Multivariate/`.
 - Working on Boolean-hypercube evaluation form, basis conversion, or multilinear
@@ -46,6 +51,7 @@ scripts/              repo utilities and validation helpers
   start in `CompPoly/Data/` or `CompPoly/ToMathlib/`.
 - Adding regression coverage: start in `tests/` and mirror the source namespace when
   possible.
+- Updating benchmark coverage or reports: start in `bench/`.
 
 ## Navigation Notes
 

@@ -154,6 +154,19 @@ theorem toPoly_addRaw {p q : CPolynomial.Raw Q} : (addRaw p q).toPoly = p.toPoly
   ext n
   rw [Polynomial.coeff_add, coeff_toPoly, coeff_toPoly, coeff_toPoly, add_coeff?]
 
+/-- `toPoly` of a right-scalar multiplication is multiplication by `Polynomial.C r`
+on the right. -/
+@[grind =]
+theorem toPoly_smulRight {p : CPolynomial.Raw Q} {r : Q} :
+    (smulRight r p).toPoly = p.toPoly * Polynomial.C r := by
+  ext n
+  rw [Polynomial.coeff_mul_C, coeff_toPoly, coeff_toPoly]
+  show (Array.map (fun a => a * r) p).getD n 0 = p.getD n 0 * r
+  rw [Array.getD_eq_getD_getElem?, Array.getD_eq_getD_getElem?, Array.getElem?_map]
+  cases h : p[n]? with
+  | none => simp
+  | some a => simp
+
 @[grind =]
 lemma toPoly_add [LawfulBEq R] (p q : CPolynomial.Raw R) :
     (p + q).toPoly = p.toPoly + q.toPoly := by
@@ -193,6 +206,12 @@ theorem trim_toImpl [LawfulBEq R] (p : R[X]) : p.toImpl.trim = p.toImpl := by
 
 end Raw
 
+/-- `ofArray` preserves the raw polynomial's `toPoly` image. -/
+theorem ofArray_toPoly [LawfulBEq R] (p : CPolynomial.Raw R) :
+    (CPolynomial.ofArray p).toPoly = p.toPoly := by
+  unfold CPolynomial.ofArray
+  exact Raw.toPoly_trim
+
 /-- On canonical polynomials, `toImpl` is a left-inverse of `toPoly`.
 
   This shows `toPoly` is a bijection from `CPolynomial R` to `Polynomial R`. -/
@@ -216,6 +235,21 @@ lemma toImpl_toPoly_of_canonical [LawfulBEq R] (p : CPolynomial R) : p.toPoly.to
 theorem Raw.toImpl_toPoly [LawfulBEq R] (p : CPolynomial.Raw R) : p.toPoly.toImpl = p.trim := by
   rw [← toPoly_trim]
   exact toImpl_toPoly_of_canonical ⟨ p.trim, Trim.isCanonical_trim p⟩
+
+/-- A nonempty trimmed raw polynomial bounds the degree of its `toPoly` image. -/
+theorem Raw.toPoly_natDegree_lt_trim_size_of_pos [LawfulBEq R]
+    (p : CPolynomial.Raw R) (hp : 0 < p.trim.size) :
+    p.toPoly.natDegree < p.trim.size := by
+  have hround := Raw.toImpl_toPoly (R := R) p
+  have hsize : p.toPoly.toImpl.size = p.trim.size := congrArg Array.size hround
+  rcases Raw.toImpl_elim p.toPoly with ⟨_hzero, himpl⟩ | ⟨_hnz, himpl⟩
+  · have : p.trim.size = 0 := by
+      rw [← hsize, himpl]
+      simp
+    omega
+  · have himpl_size : p.toPoly.toImpl.size = p.toPoly.natDegree + 1 := by
+      simp [himpl]
+    omega
 
 /-- `toPoly` maps a canonical polynomial to `0` iff the polynomial is `0`. -/
 theorem toPoly_eq_zero_iff [LawfulBEq R] (p : CPolynomial R) :

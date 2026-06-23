@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
 -/
 import CompPoly.Univariate.ToPoly.Equiv
+import Mathlib.Algebra.Polynomial.Roots
 
 /-!
 # Proofs of Correctness for CPolynomial Operations, wrt Mathlib Specs
@@ -50,6 +51,11 @@ theorem eval_toPoly [BEq R] [LawfulBEq R] (x : R) (p : CPolynomial R) :
   · rw [ Raw.eval_toPoly_eq_eval ]; rfl
   · convert Raw.eval_toPoly_eq_eval x p.val
 
+/-- Evaluation of a constant computable polynomial. -/
+theorem eval_C [BEq R] [LawfulBEq R] (a c : R) :
+    CPolynomial.eval a (CPolynomial.C c) = c := by
+  rw [CPolynomial.eval_toPoly, CPolynomial.C_toPoly, Polynomial.eval_C]
+
 /-- Raw.eval₂ is correct wrt the Mathlib spec. -/
 theorem Raw.eval₂_toPoly {S : Type*} [Semiring S]
     (f : R →+* S) (x : S) (p : CPolynomial.Raw R) :
@@ -76,6 +82,13 @@ theorem coeff_toPoly [BEq R] [LawfulBEq R] (p : CPolynomial R) (i : ℕ) :
     p.coeff i = p.toPoly.coeff i := by
   unfold toPoly coeff
   simp [Raw.coeff_toPoly]
+
+/-- Evaluation at zero returns the constant coefficient. -/
+theorem eval_zero_eq_coeff_zero [BEq R] [LawfulBEq R]
+    (p : CPolynomial R) : CPolynomial.eval 0 p = p.coeff 0 := by
+  rw [CPolynomial.eval_toPoly]
+  rw [← Polynomial.coeff_zero_eq_eval_zero p.toPoly]
+  exact (CPolynomial.coeff_toPoly p 0).symm
 
 /-- CPolynomial.divX is correct wrt the Mathlib spec. -/
 theorem divX_toPoly [BEq R] [LawfulBEq R] (p : CPolynomial R) :
@@ -176,36 +189,17 @@ theorem leadingCoeff_toPoly [BEq R] [LawfulBEq R] (p : CPolynomial R) :
       simpa [hround] using hlastImpl
     simpa [CPolynomial.leadingCoeff, Array.getLastD, hpos] using hlast
 
+/-- CPolynomial.monic is correct wrt the Mathlib spec -/
+theorem monic_toPoly_iff [BEq R] [LawfulBEq R] (p : CPolynomial R) :
+    p.monic ↔ p.toPoly.Monic := by
+  rw [monic, Polynomial.Monic.def, beq_iff_eq, leadingCoeff_toPoly]
+
 /-- CPolynomial.erase is correct wrt the Mathlib spec. -/
 theorem erase_toPoly {R : Type*} [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
     (n : ℕ) (p : CPolynomial R) :
     (erase n p).toPoly = p.toPoly.erase n := by
-  have h_erase_def : (CPolynomial.erase n p).toPoly
-      = p.toPoly - Polynomial.monomial n (p.val.coeff n) := by
-    have h_erase_toPoly : ∀ (p q : CPolynomial.Raw R),
-        (p - q).toPoly = p.toPoly - q.toPoly := by
-      intros p q;
-      have h_erase_toPoly : ∀ (p q : CPolynomial.Raw R),
-          (p + -q).toPoly = p.toPoly + (-q).toPoly := by
-        exact fun p q => Raw.toPoly_add p (-q)
-      convert h_erase_toPoly p q using 1
-      simp +decide [ Raw.toPoly ]
-      rw [ show ( -q : CompPoly.CPolynomial.Raw R ) = q.map ( fun x => -x ) from ?_ ]
-      · simp +decide [ Raw.eval₂ ]
-        induction' q using Array.recOn with q ih; simp +decide [ *, Array.zipIdx ]
-        induction' q using List.reverseRecOn with q ih <;>
-          simp +decide [ *, List.mapIdx_append ]
-        grind
-      · rfl
-    convert h_erase_toPoly _ _
-    convert monomial_toPoly n ( p.val.coeff n ) |> Eq.symm
-  convert h_erase_def using 1
-  ext m; simp +decide [ Polynomial.coeff_monomial ]
-  by_cases h : n = m <;> simp +decide [ h ]
-  · rw [ eq_comm, sub_eq_zero ]
-    convert Raw.coeff_toPoly using 1
-    exact Eq.symm Array.getD_eq_getD_getElem?
-  · rw [ Polynomial.coeff_erase ]; aesop
+  ext i
+  rw [← coeff_toPoly, Polynomial.coeff_erase, coeff_erase, ← coeff_toPoly]
 
 /-- CPolynomial.C r mul CPolynomial.X ^ n is correct wrt the Mathlib spec. -/
 theorem C_mul_X_pow_toPoly [BEq R] [LawfulBEq R] [DecidableEq R] [Nontrivial R] (r : R) (n : ℕ) :
@@ -233,6 +227,152 @@ theorem degreeLT_toPoly {n : ℕ} [BEq R] [LawfulBEq R] {p : CPolynomial R} :
   convert (show p.degree < n ↔ p.toPoly.degree < n by rw [degree_toPoly]) using 1
 
 end ImplementationCorrectness
+
+section EvaluationDivision
+
+variable {R : Type*}
+
+/-- Evaluation preserves multiplication. -/
+theorem eval_mul [CommSemiring R] [BEq R] [LawfulBEq R]
+    (p q : CPolynomial R) (x : R) :
+    (p * q).eval x = p.eval x * q.eval x := by
+  rw [eval_toPoly, toPoly_mul, Polynomial.eval_mul, ← eval_toPoly, ← eval_toPoly]
+
+/-- **Univariate eval-extensionality (degree-bounded).** Two `CPolynomial`s
+over an integral domain that agree on more than $d$ points of a `Finset S` are
+equal, when $d$ bounds the natural degree of their difference.
+
+The degree bound is needed over finite fields, where two distinct polynomials
+may agree on every field element. -/
+theorem eval_ext
+    [CommRing R] [DecidableEq R] [BEq R] [LawfulBEq R] [IsDomain R]
+    {p q : CPolynomial R} {d : ℕ} {S : Finset R}
+    (hdeg : (p - q).natDegree ≤ d)
+    (hagree :
+      d < (S.filter
+              (fun r ↦ p.eval r = q.eval r)).card) :
+    p = q := by
+  by_contra hne
+  let r : CPolynomial R := p - q
+  have hrne : r ≠ 0 := sub_ne_zero.mpr hne
+  have hrPolyNe : r.toPoly ≠ 0 := by
+    intro h
+    exact hrne ((toPoly_eq_zero_iff r).mp h)
+  have hrPolyDeg : r.toPoly.natDegree ≤ d := by
+    rwa [← natDegree_toPoly]
+  let T : Finset R :=
+    S.filter (fun x ↦ p.eval x = q.eval x)
+  have hTcard : d < T.card := hagree
+  have heval_zero : ∀ x ∈ T, r.toPoly.eval x = 0 := by
+    intro x hx
+    have hxeq : p.eval x = q.eval x := (Finset.mem_filter.mp hx).2
+    rw [← eval_toPoly]
+    show r.eval x = 0
+    rw [show r = p - q from rfl, eval_toPoly, toPoly_sub, Polynomial.eval_sub,
+      ← eval_toPoly, ← eval_toPoly, hxeq, sub_self]
+  exact hrPolyNe <|
+    Polynomial.eq_zero_of_natDegree_lt_card_of_eval_eq_zero' r.toPoly T
+      heval_zero (lt_of_le_of_lt hrPolyDeg hTcard)
+
+/-- Evaluation preserves subtraction. -/
+theorem eval_sub [Ring R] [BEq R] [LawfulBEq R]
+    (a : R) (p q : CPolynomial R) :
+    CPolynomial.eval a (p - q) = CPolynomial.eval a p - CPolynomial.eval a q := by
+  rw [CPolynomial.eval_toPoly, CPolynomial.toPoly_sub, Polynomial.eval_sub,
+    ← CPolynomial.eval_toPoly, ← CPolynomial.eval_toPoly]
+
+/-- Evaluation of the constant one computable polynomial. -/
+theorem eval_one [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+    (a : R) : CPolynomial.eval a (1 : CPolynomial R) = 1 := by
+  rw [CPolynomial.eval_toPoly, CPolynomial.toPoly_one, Polynomial.eval_one]
+
+/-- Dividing by `X` preserves a nonzero root when the constant coefficient vanishes. -/
+theorem eval_divX_eq_zero_of_ne_zero_root [Field R] [BEq R] [LawfulBEq R]
+    {p : CPolynomial R} {a : R} (ha : a ≠ 0)
+    (hcoeff : p.coeff 0 = 0) (hroot : CPolynomial.eval a p = 0) :
+    CPolynomial.eval a (CPolynomial.divX p) = 0 := by
+  have hdecomp := CPolynomial.X_mul_divX_add (p := p)
+  have hroot' :
+      CPolynomial.eval a (CPolynomial.X * CPolynomial.divX p + CPolynomial.C (p.coeff 0)) =
+        0 := by
+    rw [← hdecomp]
+    exact hroot
+  rw [CPolynomial.eval_toPoly, CPolynomial.toPoly_add, CPolynomial.toPoly_mul,
+    CPolynomial.X_toPoly, CPolynomial.C_toPoly, Polynomial.eval_add, Polynomial.eval_mul,
+    Polynomial.eval_X, Polynomial.eval_C, ← CPolynomial.eval_toPoly] at hroot'
+  rw [hcoeff] at hroot'
+  simp at hroot'
+  rcases hroot' with hzero | hdivRoot
+  · exact (ha hzero).elim
+  · exact hdivRoot
+
+/-- If a nonzero polynomial has zero constant coefficient, its quotient by `X` is nonzero. -/
+theorem divX_ne_zero_of_ne_zero_coeff_zero [Field R] [BEq R] [LawfulBEq R]
+    {p : CPolynomial R} (hp : p ≠ 0) (hcoeff : p.coeff 0 = 0) :
+    CPolynomial.divX p ≠ 0 := by
+  intro hdiv
+  apply hp
+  have hC0 : CPolynomial.C (0 : R) = 0 := by
+    apply (CPolynomial.eq_iff_coeff).2
+    intro i
+    simp
+  rw [CPolynomial.X_mul_divX_add (p := p), hdiv, hcoeff]
+  rw [hC0]
+  simp
+
+namespace Raw
+
+theorem eval_sub_C_mul_X_pow_trim_eq_self_of_eval_eq_zero
+    [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial.Raw R) (scale : R)
+    (shift : ℕ) {x : R} (hq : q.eval x = 0) :
+    ((p - C scale * (q * X ^ shift)).trim).eval x = p.eval x := by
+  rw [eval_trim_eq_eval]
+  rw [← eval_toPoly_eq_eval x]
+  rw [toPoly_sub, toPoly_mul, toPoly_C, toPoly_mul, toPoly_pow, toPoly_X]
+  rw [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_mul,
+    Polynomial.eval_pow, Polynomial.eval_X]
+  simp [eval_toPoly_eq_eval, hq]
+
+theorem eval_divModByMonicAux_go_snd_eq_self_of_eval_eq_zero
+    [Field R] [BEq R] [LawfulBEq R] :
+    ∀ (fuel : ℕ) (p q : CPolynomial.Raw R) {x : R}, q.eval x = 0 →
+      (divModByMonicAux.go fuel p q).2.eval x = p.eval x := by
+  intro fuel
+  induction fuel with
+  | zero =>
+      intro p q x hq
+      rfl
+  | succ fuel ih =>
+      intro p q x hq
+      unfold divModByMonicAux.go
+      by_cases hsize : p.size < q.size
+      · simp [hsize]
+      · simp [hsize]
+        trans ((p - C p.leadingCoeff * (q * X ^ (p.size - q.size))).trim).eval x
+        · exact ih _ _ hq
+        · exact eval_sub_C_mul_X_pow_trim_eq_self_of_eval_eq_zero p q p.leadingCoeff
+            (p.size - q.size) hq
+
+/-- Reducing by a polynomial that vanishes at `x` preserves evaluation at `x`. -/
+theorem eval_modByMonic_eq_self_of_eval_eq_zero
+    [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial.Raw R) {x : R}
+    (hq : q.eval x = 0) :
+    (modByMonic p q).eval x = p.eval x :=
+  eval_divModByMonicAux_go_snd_eq_self_of_eval_eq_zero p.size p q hq
+
+end Raw
+
+/-- Reducing by a polynomial that vanishes at `x` preserves evaluation at `x`. -/
+theorem eval_modByMonic_eq_self_of_eval_eq_zero
+    [Field R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) {x : R}
+    (hq : q.eval x = 0) :
+    (CPolynomial.modByMonic p q).eval x = p.eval x := by
+  have hq_raw : q.val.eval x = 0 := by
+    simpa [CPolynomial.eval, Raw.eval, Raw.eval₂] using hq
+  change (Raw.modByMonic p.val q.val).eval x = p.val.eval x
+  exact Raw.eval_modByMonic_eq_self_of_eval_eq_zero p.val q.val hq_raw
+
+end EvaluationDivision
 
 end CPolynomial
 

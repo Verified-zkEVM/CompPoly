@@ -12,6 +12,7 @@ import CompPoly.Fields.Binary.Tower.Concrete.Algebra
 Basis constructions for the concrete bitvector binary tower.
 -/
 
+set_option backward.isDefEq.respectTransparency false
 namespace ConcreteBinaryTower
 
 open Polynomial
@@ -135,8 +136,7 @@ def basisSucc (k : ℕ) : Basis (Fin 2) (ConcreteBTField k) (ConcreteBTField (k 
       rw [←h_add_smul]
       unfold join_via_add_smul
       simp only [Nat.add_one_sub_one]
-      rw [algebraMap, Algebra.algebraMap, ConcreteBTFieldAlgebra_def]
-      simp only
+      simp only [RingHom.algebraMap_toAlgebra]
       simp only [generator]
       rw [add_comm]
       congr -- .Q.E.D
@@ -299,7 +299,7 @@ def hli_level_diff_0 (l : ℕ) :
     rw [Ideal.submodule_span_eq]
     rw [Ideal.span_singleton_one]
 
-def isScalarTower_succ_right (l r : ℕ) (h_le : l ≤ r) :=
+@[reducible] def isScalarTower_succ_right (l r : ℕ) (h_le : l ≤ r) :=
     instAlgebraTowerConcreteBTF.toIsScalarTower (i:=l) (j:=r) (k:=r+1)
     (h1:=by omega) (h2:=by omega)
 /--
@@ -407,12 +407,9 @@ theorem PowerBasis.cast_basis_succ_of_eq_rec_apply
       (b.basis (Fin.cast h_pb_dim.symm k))
     left k = right := by
   -- The proof of the theorem itself remains simple.
-  subst h_r
-  simp only [ConcreteBTFieldAlgebra_id,
-    Algebra.algebraMap_self, PowerBasis.coe_basis, Fin.val_cast, RingHom.id_apply]
-  rw [Basis_cast_index_apply (h_eq:=by
-    exact powerBasisSucc_dim r1) (h_le:=by omega)]
-  simp only [PowerBasis.coe_basis, Fin.val_cast]
+  subst h_r; dsimp only
+  convert rfl using 2
+  rw [ConcreteBTFieldAlgebra_id rfl]; rfl
 
 @[simp]
 theorem coe_basis_apply {R S : Type*} [CommRing R] [Ring S] [Algebra R S]
@@ -424,8 +421,8 @@ lemma algebraMap_𝕏_eq_of_index_eq (r k m : ℕ) (h_k_le : k + 1 ≤ r) (h_m_l
     (h_eq : k = m) :
     letI := ConcreteBTFieldAlgebra (l := k + 1) (r := r) (h_le := h_k_le)
     letI := ConcreteBTFieldAlgebra (l := m + 1) (r := r) (h_le := h_m_le)
-    (Algebra.algebraMap (𝕏 k) : ConcreteBTField r) =
-      (Algebra.algebraMap (𝕏 m) : ConcreteBTField r) := by
+    (algebraMap _ _ (𝕏 k) : ConcreteBTField r) =
+      (algebraMap _ _ (𝕏 m) : ConcreteBTField r) := by
   subst h_eq
   rfl
 
@@ -550,13 +547,11 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       simp_rw [algebraMap.coe_pow]
       simp_rw [algebraMap.coe_prod]
       unfold Algebra.cast
-      rw! (castMode:=.all) [←algebraMap]
       conv_lhs =>
         rw [←Fin.prod_congr' (b:=r1 - l) (a:=prevDiff) (h:=by omega)]
         simp only [Fin.val_cast]
-      simp_rw [algebraMap, instAlgebraSucc, algebra_adjacent_tower]
-      rw [RingHom.map_pow]
-      simp_rw [←ConcreteBTFieldAlgebra_apply_assoc]
+      simp only [RingHom.map_pow]
+      simp only [←ConcreteBTFieldAlgebra_apply_assoc]
       ------------------ Equality of bit-based powers of generators -----------------
       have hfinProd_msb := bit_revFinProdFinEquiv_symm_2_pow_succ (n:=prevDiff)
         (i:=⟨prevDiff, by omega⟩) (j:=⟨j, by omega⟩)

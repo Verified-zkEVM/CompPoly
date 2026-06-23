@@ -20,7 +20,7 @@ namespace CPoly
 
 open CMvPolynomial
 
-variable {n : ℕ} {R : Type} [Zero R] [BEq R] [LawfulBEq R]
+variable {n : ℕ} {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
 
 /-- Coefficient of `restrictBy keep p` at `m`: `p.coeff m` if `keep m`, else `0`. -/
 lemma coeff_restrictBy (keep : CMvMonomial n → Prop) [DecidablePred keep]
@@ -152,7 +152,7 @@ private lemma vector_ofFn_sum_eq_finSum {n : ℕ} (s : Fin n → ℕ) :
     (Vector.ofFn s).sum = (Array.ofFn s).sum := by
       simp [Vector.sum, Vector.toArray_ofFn]
     _ = (Array.ofFn s).toList.sum := by
-      exact (Array.sum_eq_sum_toList (as := Array.ofFn s)).symm
+      exact (Array.sum_toList (as := Array.ofFn s)).symm
     _ = (List.ofFn s).sum := by
       exact congrArg List.sum (Array.toList_ofFn (f := s))
     _ = ∑ i : Fin n, s i := list_ofFn_sum_eq_finSum s
@@ -171,7 +171,7 @@ private lemma totalDegree_eq_finsupp_sum {n : ℕ} (m : CMvMonomial n) :
 
 /-- `restrictTotalDegree d p` has `totalDegree ≤ d`. -/
 lemma totalDegree_restrictTotalDegree_le
-    {R' : Type} [CommSemiring R'] [BEq R'] [LawfulBEq R']
+    {R' : Type*} [CommSemiring R'] [BEq R'] [LawfulBEq R']
     (d : ℕ) (p : CMvPolynomial n R') :
     (CMvPolynomial.restrictTotalDegree d p).totalDegree ≤ d := by
   classical

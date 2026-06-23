@@ -111,11 +111,11 @@ theorem eval_eq_eval_mv_eval_finSuccEquivNth (s : Fin n → R) (y : R)
   congr 2
   apply MvPolynomial.algHom_ext
   simp only [Fin.forall_iff_succAbove p, aeval_X, Fin.insertNth_apply_same, Polynomial.mapAlgHom,
-    AlgHom.toRingHom_eq_coe, coe_aeval_eq_eval, AlgEquiv.toAlgHom_eq_coe, AlgHom.coe_comp,
-    Polynomial.coe_aeval_eq_eval, AlgHom.coe_mk, coe_mapRingHom, AlgHom.coe_coe, comp_apply,
-    finSuccEquivNth_apply, eval₂Hom_X', Polynomial.map_X, Polynomial.eval_X,
-    Fin.insertNth_apply_succAbove, Polynomial.map_C, eval_X, Polynomial.eval_C, implies_true,
-    and_self]
+    AlgHom.toRingHom_eq_coe, coe_aeval_eq_eval, AlgHom.coe_comp,
+    Polynomial.coe_aeval_eq_eval, AlgHom.coe_mk, coe_mapRingHom, comp_apply,
+    AlgEquiv.toAlgHom_apply, finSuccEquivNth_apply, eval₂Hom_X', Polynomial.map_X,
+    Polynomial.eval_X, Fin.insertNth_apply_succAbove, Polynomial.map_C, eval_X,
+    Polynomial.eval_C, implies_true, and_self]
 
 /-- A monomial index `m` is in the support of the `i`-th coefficient of `finSuccEquivNth R p f` if
 and only if `m.insertNth p i` is in the support of `f`. -/
@@ -143,6 +143,7 @@ theorem totalDegree_coeff_finSuccEquivNth_add_le (f : MvPolynomial (Fin (n + 1))
   · rw [totalDegree, hσ2, sum_insertNth _ _ p, add_comm]
   · rwa [← support_coeff_finSuccEquivNth]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The support of `finSuccEquivNth R p f` equals the support of `f` projected onto the `p`-th
 variable. -/
 theorem support_finSuccEquivNth (f : MvPolynomial (Fin (n + 1)) R) :

@@ -32,8 +32,29 @@ The main bridge to Mathlib lives in:
 - [`../../CompPoly/Univariate/ToPoly/Equiv.lean`](../../CompPoly/Univariate/ToPoly/Equiv.lean)
 - [`../../CompPoly/Univariate/ToPoly/Degree.lean`](../../CompPoly/Univariate/ToPoly/Degree.lean)
 
-For interpolation work, also read
-[`../../CompPoly/Univariate/Lagrange.lean`](../../CompPoly/Univariate/Lagrange.lean).
+For interpolation work, also read:
+
+- [`../../CompPoly/Univariate/Lagrange.lean`](../../CompPoly/Univariate/Lagrange.lean)
+  for the baseline interpolation surface and correctness statements.
+- [`../../CompPoly/Univariate/Barycentric.lean`](../../CompPoly/Univariate/Barycentric.lean)
+  for repeated-query barycentric evaluation over a fixed node set with precomputed
+  barycentric weights.
+
+For root-of-unity NTT work:
+
+- [`../../CompPoly/Univariate/NTT/Domain.lean`](../../CompPoly/Univariate/NTT/Domain.lean)
+  contains the shared domain type, fitting-domain helpers, and natural-order input
+  loaders.
+- [`../../CompPoly/Univariate/NTT/Evaluation.lean`](../../CompPoly/Univariate/NTT/Evaluation.lean)
+  and [`../../CompPoly/Univariate/NTT/Interpolation.lean`](../../CompPoly/Univariate/NTT/Interpolation.lean)
+  state the bridge theorems connecting forward/inverse NTTs to evaluation and
+  Lagrange interpolation.
+- [`../../CompPoly/Univariate/NTT/FastMul.lean`](../../CompPoly/Univariate/NTT/FastMul.lean)
+  exposes the shared specification and baseline multiplication surface.
+- [`../../CompPoly/Univariate/NTTFast/Plan.lean`](../../CompPoly/Univariate/NTTFast/Plan.lean)
+  is the optimized planned implementation surface. The `NTTFast/Evaluation.lean`
+  and `NTTFast/Interpolation.lean` bridge files prove the planned transforms agree
+  with the shared `NTT` evaluation and interpolation specifications.
 
 ## Multivariate Family
 
@@ -107,7 +128,8 @@ specific polynomial representation.
 ## Choosing A Surface
 
 - If you need canonical coefficient arrays and interpolation, start with
-  `CPolynomial`.
+  `CPolynomial`; for repeated interpolation queries over a fixed domain, also
+  inspect `Univariate/Barycentric.lean`.
 - If you need sparse multivariate monomials or `MvPolynomial` equivalence, start
   with `CMvPolynomial`.
 - If you need Boolean-cube evaluation data or multilinear transforms, start with
