@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Valerii Huhnin
+Authors: Valerii Huhnin, Georgios Raikos
 -/
 
 import CompPoly.Fields.BabyBear.Basic
@@ -21,10 +21,10 @@ namespace BabyBear
 namespace Fast
 
 /-- BabyBear modulus as a native word. -/
-def modulus : UInt32 := 2013265921
+def modulus : UInt32 := 0x78000001
 
 /-- BabyBear modulus as a 64-bit word for modular reduction. -/
-def modulus64 : UInt64 := 2013265921
+def modulus64 : UInt64 := 0x78000001
 
 /-- The fast native-word BabyBear field carrier, stored as a Montgomery residue. -/
 abbrev Field : Type := { x : UInt32 // x.toNat < BabyBear.fieldSize }

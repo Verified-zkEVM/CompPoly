@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Valerii Huhnin
+Authors: Valerii Huhnin, Georgios Raikos
 -/
 
 import CompPoly.Fields.BabyBear.Fast.Prelude
@@ -20,10 +20,10 @@ namespace BabyBear
 namespace Fast
 
 /-- `2^32 mod BabyBear.fieldSize`. This is the Montgomery representation of one. -/
-def rModModulus : UInt32 := 268435454
+def rModModulus : UInt32 := 0x0FFFFFFE
 
 /-- `(2^32)^2 mod BabyBear.fieldSize`, used to enter Montgomery representation. -/
-def r2ModModulus : UInt32 := 1172168163
+def r2ModModulus : UInt32 := 0x45DDDDE3
 
 /-- `-BabyBear.fieldSize⁻¹ mod 2^32`, used by Montgomery reduction. -/
 def montgomeryNegInv : UInt32 := 0x77FFFFFF
