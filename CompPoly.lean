@@ -66,6 +66,11 @@ import CompPoly.Fields.BLS12_377
 import CompPoly.Fields.BLS12_381
 import CompPoly.Fields.BN254
 import CompPoly.Fields.BabyBear
+import CompPoly.Fields.BabyBear.Basic
+import CompPoly.Fields.BabyBear.Fast
+import CompPoly.Fields.BabyBear.Fast.Convert
+import CompPoly.Fields.BabyBear.Fast.Montgomery
+import CompPoly.Fields.BabyBear.Fast.Prelude
 import CompPoly.Fields.Basic
 import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
 import CompPoly.Fields.Binary.AdditiveNTT.Algorithm
