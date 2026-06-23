@@ -107,6 +107,9 @@ import CompPoly.Fields.Goldilocks
 import CompPoly.Fields.KoalaBear
 import CompPoly.Fields.KoalaBear.Basic
 import CompPoly.Fields.KoalaBear.Fast
+import CompPoly.Fields.KoalaBear.Fast.Convert
+import CompPoly.Fields.KoalaBear.Fast.Montgomery
+import CompPoly.Fields.KoalaBear.Fast.Prelude
 import CompPoly.Fields.Mersenne
 import CompPoly.Fields.PrattCertificate
 import CompPoly.Fields.Secp256k1
