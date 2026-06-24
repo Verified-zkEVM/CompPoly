@@ -8,7 +8,9 @@ This directory contains formally verified field infrastructure used in zero-know
 |--------|-------------|
 | **Basic.lean** | `NonBinaryField` type class (char ≠ 2), polynomial composition lemmas (`coeffs_of_comp_minus_x`, `comp_x_square_coeff`). |
 | **PrattCertificate.lean** | Lucas test for primality and Pratt certificate infrastructure (`PrattCertificate`, `PrattCertificate'`) for proving concrete primality goals. |
-| **BabyBear.lean** | \(2^{31} - 2^{27} + 1\) — Risc Zero. |
+| **BabyBear.lean** | Facade for BabyBear modules, re-exporting the canonical field and fast native-word implementation. |
+| **BabyBear/Basic.lean** | \(2^{31} - 2^{27} + 1\) — Risc Zero. |
+| **BabyBear/Fast.lean** | Native `UInt32` Montgomery-residue operations for BabyBear, with conversion and operation equivalence statements against `BabyBear.Field`. |
 | **BLS12_377.lean** | Scalar field of BLS12-377 (253-bit, 2-adicity 47) — Zexe. |
 | **BLS12_381.lean** | Scalar field of BLS12-381 (253-bit, 2-adicity 47). |
 | **BN254.lean** | Scalar field of BN254 curve. |
@@ -17,6 +19,8 @@ This directory contains formally verified field infrastructure used in zero-know
 | **KoalaBear/Basic.lean** | \(2^{31} - 2^{24} + 1\) — lean Ethereum spec. |
 | **KoalaBear/Fast.lean** | Native `UInt32` Montgomery-residue operations for KoalaBear, with conversion and operation equivalence statements against `KoalaBear.Field`. |
 | **Mersenne.lean** | \(2^{31} - 1\) — Circle STARKs. |
+| **Montgomery/Basic.lean** | Radix-generic Montgomery reduction, field-agnostic number theory shared by the fast prime fields. |
+| **Montgomery/Native32.lean** | `UInt32 × UInt64`, radix `R = 2^32` word-level Montgomery bridge over the generic core. |
 | **Secp256k1.lean** | Base and scalar fields for the Secp256k1 curve (used in Bitcoin/Ethereum). |
 
 ## Binary-field modules

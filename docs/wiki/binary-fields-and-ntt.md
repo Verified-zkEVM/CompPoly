@@ -12,9 +12,14 @@ CompPoly/Fields/
   BabyBear/
     Basic.lean
     Fast.lean
+    Fast/ (Prelude.lean, Montgomery.lean, Convert.lean)
   KoalaBear/
     Basic.lean
     Fast.lean
+    Fast/ (Prelude.lean, Montgomery.lean, Convert.lean)
+  Montgomery/
+    Basic.lean
+    Native32.lean
   Binary/
     Common.lean
     BF128Ghash/
