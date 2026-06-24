@@ -7,6 +7,7 @@ Authors: Valerii Huhnin
 import CompPoly.Bivariate.Deriv
 import CompPoly.Bivariate.GuruswamiSudan.Polynomial
 import CompPoly.Data.List.Lemmas
+import CompPoly.LinearAlgebra.Dense
 import Mathlib.Tactic.Ring
 
 /-!
@@ -20,13 +21,6 @@ namespace CompPoly
 
 namespace CPolynomial
 
-/-- Coefficients past the stored canonical array are zero. -/
-theorem coeff_eq_zero_of_size_le {R : Type*} [Zero R] (p : CPolynomial R)
-    {i : Nat} (hi : p.val.size ≤ i) : p.coeff i = 0 := by
-  unfold CPolynomial.coeff CPolynomial.Raw.coeff
-  rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hi]
-  rfl
-
 /-- The natural degree of a nonzero computable polynomial lies in its support. -/
 theorem natDegree_mem_support_of_nonzero {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
     {p : CPolynomial R} (hp : p ≠ 0) : p.natDegree ∈ p.support := by
@@ -39,6 +33,26 @@ theorem natDegree_mem_support_of_nonzero {R : Type*} [Zero R] [BEq R] [LawfulBEq
 end CPolynomial
 
 namespace DenseMatrix
+
+/-- Reading an in-bounds entry from a matrix constructed by `ofFn` returns that entry. -/
+theorem get_ofFn [Zero F] (rows cols : Nat) (f : Nat → Nat → F)
+    {row col : Nat} (hrow : row < rows) (hcol : col < cols) :
+    (ofFn rows cols f).get row col = f row col := by
+  unfold get index
+  have hidx : row * cols + col < rows * cols := by
+    calc
+      row * cols + col < row * cols + cols := Nat.add_lt_add_left hcol _
+      _ = (row + 1) * cols := by rw [Nat.succ_mul]
+      _ ≤ rows * cols := Nat.mul_le_mul_right cols hrow
+  have hidx' : row * (ofFn rows cols f).cols + col < (ofFn rows cols f).data.size := by
+    simpa [ofFn] using hidx
+  rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hidx']
+  simp [ofFn]
+  have hcols : 0 < cols := Nat.lt_of_le_of_lt (Nat.zero_le col) hcol
+  congr
+  · rw [Nat.mul_comm row cols, Nat.add_comm (cols * row) col,
+      Nat.add_mul_div_left col row hcols, Nat.div_eq_of_lt hcol, Nat.zero_add]
+  · rw [Nat.mod_eq_of_lt hcol]
 
 /-- Fold over a range with one distinguished nonzero entry. -/
 theorem foldl_range_one_special {F : Type*} [AddCommMonoid F] {pivot : Nat} (x : F) :

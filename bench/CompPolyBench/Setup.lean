@@ -6,6 +6,7 @@ Authors: Valerii Huhnin
 
 import CompPolyBench.Bivariate.Basic
 import CompPolyBench.Bivariate.Factor
+import CompPolyBench.Bivariate.GuruswamiSudan
 import CompPolyBench.Fields.Binary.AdditiveNTT.Impl
 import CompPolyBench.Multilinear.Basic
 import CompPolyBench.Multivariate.CMvPolynomial
@@ -22,7 +23,7 @@ namespace CompPolyBench
 /-- Runnable benchmark registry. -/
 def allTasks : List BenchTask :=
   univariateTasks ++ multivariateTasks ++ multilinearTasks ++ bivariateTasks ++ factorTasks ++
-    additiveNttTasks
+    guruswamiSudanTasks ++ additiveNttTasks
 
 /-- Metadata for every benchmark group accepted by the command-line selector. -/
 def allGroupInfos : List BenchGroupInfo :=
