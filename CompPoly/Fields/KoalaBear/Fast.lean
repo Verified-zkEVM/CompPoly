@@ -102,27 +102,11 @@ def pow (x : Field) (n : Nat) : Field :=
 /-- Fermat exponent used for inversion in the KoalaBear prime field. -/
 def invExponent : Nat := KoalaBear.fieldSize - 2
 
-/-- Four squarings followed by multiplication by the next 4-bit exponent digit. -/
-@[inline]
-private def shift4Mul (acc digit : Field) : Field :=
-  mul (square (square (square (square acc)))) digit
-
-/-- Inversion in Montgomery form by a fixed 4-bit Fermat chain. -/
+/-- Inversion in Montgomery form via Fermat's little theorem (`x⁻¹ = x^(p-2)`),
+by binary exponentiation (`pow`). -/
 @[inline]
 def inv (x : Field) : Field :=
-  let x2 := square x
-  let x3 := mul x2 x
-  let x5 := mul x3 x2
-  let x7 := mul x5 x2
-  let x14 := square x7
-  let x15 := mul x14 x
-  let acc := shift4Mul x7 x14
-  let acc := shift4Mul acc x15
-  let acc := shift4Mul acc x15
-  let acc := shift4Mul acc x15
-  let acc := shift4Mul acc x15
-  let acc := shift4Mul acc x15
-  shift4Mul acc x15
+  pow x invExponent
 
 /-- Division through inversion and fast multiplication. -/
 @[inline]
@@ -402,83 +386,10 @@ theorem toField_pow (x : Field) (n : Nat) : toField (pow x n) = toField x ^ n :=
   | succ n ih =>
       rw [pow_succ, toField_mul, ih, _root_.pow_succ]
 
-private theorem toField_mul_pow (base x y : Field) (m n : Nat)
-    (hx : toField x = toField base ^ m) (hy : toField y = toField base ^ n) :
-    toField (mul x y) = toField base ^ (m + n) := by
-  change toField (x * y) = toField base ^ (m + n)
-  rw [toField_mul, hx, hy, ← pow_add]
-
-private theorem toField_shift4Mul (acc digit : Field) :
-    toField (shift4Mul acc digit) = toField acc ^ 16 * toField digit := by
-  unfold shift4Mul
-  change toField (square (square (square (square acc))) * digit) =
-    toField acc ^ 16 * toField digit
-  rw [toField_mul]
-  repeat rw [toField_square]
-  ring
-
-private theorem toField_shift4Mul_pow (base acc digit : Field) (e d : Nat)
-    (hacc : toField acc = toField base ^ e) (hdigit : toField digit = toField base ^ d) :
-    toField (shift4Mul acc digit) = toField base ^ (16 * e + d) := by
-  rw [toField_shift4Mul, hacc, hdigit]
-  rw [← pow_mul, ← pow_add]
-  congr 1
-  omega
-
 private theorem toField_inv_pow (x : Field) :
     toField (inv x) = toField x ^ invExponent := by
   unfold inv
-  let x2 := square x
-  let x3 := mul x2 x
-  let x5 := mul x3 x2
-  let x7 := mul x5 x2
-  let x14 := square x7
-  let x15 := mul x14 x
-  let acc1 := shift4Mul x7 x14
-  let acc2 := shift4Mul acc1 x15
-  let acc3 := shift4Mul acc2 x15
-  let acc4 := shift4Mul acc3 x15
-  let acc5 := shift4Mul acc4 x15
-  let acc6 := shift4Mul acc5 x15
-  have hx1 : toField x = toField x ^ 1 := by simp
-  have hx2 : toField x2 = toField x ^ 2 := by
-    dsimp [x2]
-    rw [toField_square, pow_two]
-  have hx3 : toField x3 = toField x ^ 3 := by
-    dsimp [x3]
-    simpa using toField_mul_pow x x2 x 2 1 hx2 hx1
-  have hx5 : toField x5 = toField x ^ 5 := by
-    dsimp [x5]
-    simpa using toField_mul_pow x x3 x2 3 2 hx3 hx2
-  have hx7 : toField x7 = toField x ^ 7 := by
-    dsimp [x7]
-    simpa using toField_mul_pow x x5 x2 5 2 hx5 hx2
-  have hx14 : toField x14 = toField x ^ 14 := by
-    dsimp [x14]
-    rw [toField_square, hx7, ← pow_add]
-  have hx15 : toField x15 = toField x ^ 15 := by
-    dsimp [x15]
-    simpa using toField_mul_pow x x14 x 14 1 hx14 hx1
-  have hacc1 : toField acc1 = toField x ^ 126 := by
-    dsimp [acc1]
-    simpa using toField_shift4Mul_pow x x7 x14 7 14 hx7 hx14
-  have hacc2 : toField acc2 = toField x ^ 2031 := by
-    dsimp [acc2]
-    simpa using toField_shift4Mul_pow x acc1 x15 126 15 hacc1 hx15
-  have hacc3 : toField acc3 = toField x ^ 32511 := by
-    dsimp [acc3]
-    simpa using toField_shift4Mul_pow x acc2 x15 2031 15 hacc2 hx15
-  have hacc4 : toField acc4 = toField x ^ 520191 := by
-    dsimp [acc4]
-    simpa using toField_shift4Mul_pow x acc3 x15 32511 15 hacc3 hx15
-  have hacc5 : toField acc5 = toField x ^ 8323071 := by
-    dsimp [acc5]
-    simpa using toField_shift4Mul_pow x acc4 x15 520191 15 hacc4 hx15
-  have hacc6 : toField acc6 = toField x ^ 133169151 := by
-    dsimp [acc6]
-    simpa using toField_shift4Mul_pow x acc5 x15 8323071 15 hacc5 hx15
-  have hfinal := toField_shift4Mul_pow x acc6 x15 133169151 15 hacc6 hx15
-  simpa [invExponent, KoalaBear.fieldSize] using hfinal
+  exact toField_pow x invExponent
 
 private theorem toField_inv_raw (x : Field) : toField (inv x) = (toField x)⁻¹ := by
   rw [toField_inv_pow]
