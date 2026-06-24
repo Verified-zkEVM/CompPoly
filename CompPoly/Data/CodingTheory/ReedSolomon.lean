@@ -71,7 +71,7 @@ lemma messagePoly_ofFn_coeff [Semiring F] [BEq F] [LawfulBEq F] (k : ℕ) (f : C
 /-- Encode: the message polynomial `messagePoly msg` evaluated at the domain `D`. -/
 def encode [Semiring F] [BEq F] [LawfulBEq F]
     (D : Domain F) {k : ℕ} (msg : Vector F k) : Vector F D.n :=
-  ⟨D.val.map (messagePoly msg).eval, by simp [Domain.n]⟩
+  ⟨D.val.map (messagePoly msg).eval, by simp only [Array.size_map, Domain.n]⟩
 
 /-- The codeword entry at node `i` is `messagePoly msg` evaluated at `D.val[i]`. -/
 lemma encode_get [Semiring F] [BEq F] [LawfulBEq F] (D : Domain F) {k : ℕ}

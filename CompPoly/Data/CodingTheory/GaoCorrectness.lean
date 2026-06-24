@@ -44,8 +44,12 @@ private lemma degree_mul_lt_of_bounds [Semiring F] [NoZeroDivisors F]
     {A B g₀ : F[X]} (hg₀ : g₀ ≠ 0) (d₀ : ℕ)
     (hA : A.degree + d₀ ≤ g₀.degree) (hB : B.degree < d₀) :
     (A * B).degree < g₀.degree := by
-  rw [degree_mul]; obtain rfl | hA0 := eq_or_ne A 0; simp [hg₀, bot_lt_iff_ne_bot]
-  exact (WithBot.add_lt_add_left (by simp [hA0]) hB).trans_le hA
+  rw [degree_mul]
+  obtain rfl | hA0 := eq_or_ne A 0
+  · simp only [Polynomial.degree_zero, WithBot.bot_add, bot_lt_iff_ne_bot, ne_eq, degree_eq_bot,
+      hg₀, not_false_eq_true]
+  · exact (WithBot.add_lt_add_left
+      (by simp only [ne_eq, degree_eq_bot, hA0, not_false_eq_true]) hB).trans_le hA
 
 /-- Two degree-bounded Bézout solutions `(U,V,G)`, `(U',V',G')` of `U g₀ + V g₁ = ·`
 (with `deg G, deg G' < d₀` and `deg V + d₀, deg V' + d₀ ≤ deg g₀`) cross-multiply:
@@ -69,29 +73,31 @@ Hamming distance between the received word and a candidate codeword. -/
 
 /-- If `V * (f₁ - g₁) = U * g₀` and `g₀` vanishes on aᵢ, then `V` vanishes at every
 aᵢ where `f₁` and `g₁` disagree. -/
-lemma disagreement_subset_errorLocator_zeros [CommRing F] [NoZeroDivisors F]
+lemma disagreement_subset_error_locator_zeros [CommRing F] [NoZeroDivisors F]
     {ι : Type*} [DecidableEq F] (s : Finset ι) (a : ι → F) (g₀ g₁ U V f₁ : F[X])
     (hroot : ∀ i ∈ s, g₀.eval (a i) = 0) (hlocator : V * (f₁ - g₁) = U * g₀) :
     {i ∈ s | f₁.eval (a i) ≠ g₁.eval (a i)} ⊆ {i ∈ s | V.eval (a i) = 0} :=
   Finset.monotone_filter_right _ fun i hi hne => by
-    have hev := congrArg (Polynomial.eval (a i)) hlocator; simp [hroot i hi, sub_eq_zero] at hev
+    have hev := congrArg (Polynomial.eval (a i)) hlocator
+    simp only [Polynomial.eval_mul, Polynomial.eval_sub, hroot i hi, mul_zero, mul_eq_zero,
+      sub_eq_zero] at hev
     exact hev.resolve_right hne
 
 /-- From the Bézout identity `G = U g₀ + V g₁` and `G = f₁ V` (with `V ≠ 0`,
 `g₀` rooted on the aᵢ), `f₁` disagrees with `g₁` at at most `V.natDegree` nodes. -/
-lemma disagreement_card_le_errorLocator_natDegree [CommRing F] [IsDomain F]
+lemma disagreement_card_le_error_locator_natDegree [CommRing F] [IsDomain F]
     {ι : Type*} [DecidableEq F] (s : Finset ι) (a : ι → F) (hinj : Set.InjOn a s)
     (g₀ g₁ G U V f₁ : F[X]) (hroot : ∀ i ∈ s, g₀.eval (a i) = 0)
     (hbez : G = U * g₀ + V * g₁) (hsucc : G = f₁ * V) (hV : V ≠ 0) :
     {i ∈ s | f₁.eval (a i) ≠ g₁.eval (a i)}.card ≤ V.natDegree :=
-  (Finset.card_le_card (disagreement_subset_errorLocator_zeros s a _ _ U _ _ hroot
+  (Finset.card_le_card (disagreement_subset_error_locator_zeros s a _ _ U _ _ hroot
     (by rw [mul_sub, mul_comm V f₁, ← hsucc, hbez]; ring))).trans
     (card_eval_zero_le_natDegree s a hinj _ hV)
 
 /-- From the Bézout identity `G = U g₀ + V g₁` and `G = f₁ V`
 (with `V ≠ 0`, `g₀` rooted on the aᵢ), a word `b` with `g₁(aᵢ) = b i` satisfies
 `hammingDist b (f₁ ∘ a) ≤ V.natDegree`. -/
-lemma hammingDist_le_errorLocator_natDegree [CommRing F] [IsDomain F]
+lemma hammingDist_le_error_locator_natDegree [CommRing F] [IsDomain F]
     {ι : Type*} [Fintype ι] [DecidableEq F] (a : ι → F)
     (hinj : Function.Injective a)
     (g₀ g₁ G U V f₁ : F[X]) (b : ι → F)
@@ -99,7 +105,7 @@ lemma hammingDist_le_errorLocator_natDegree [CommRing F] [IsDomain F]
     (hbez : G = U * g₀ + V * g₁) (hsucc : G = f₁ * V) (hV : V ≠ 0) :
     hammingDist b (fun i => f₁.eval (a i)) ≤ V.natDegree := by
   obtain rfl : b = fun i => g₁.eval (a i) := funext fun i => (hb i).symm; rw [hammingDist_comm]
-  exact disagreement_card_le_errorLocator_natDegree Finset.univ a hinj.injOn _ _ _ _ _ _
+  exact disagreement_card_le_error_locator_natDegree Finset.univ a hinj.injOn _ _ _ _ _ _
     (fun i _ => hroot i) hbez hsucc hV
 
 /-! ## Decoder components meet their specifications
@@ -136,7 +142,9 @@ lemma toPoly_nodalPoly [CommRing F] [Nontrivial F] (D : Domain F) :
 /-- `(nodalPoly D).toPoly.natDegree = D.n`. -/
 lemma natDegree_nodalPoly [CommRing F] [NoZeroDivisors F] [Nontrivial F] (D : Domain F) :
     (nodalPoly D).toPoly.natDegree = D.n := by
-  rw [toPoly_nodalPoly, Polynomial.natDegree_prod _ _ (fun i _ => X_sub_C_ne_zero _)]; simp
+  rw [toPoly_nodalPoly, Polynomial.natDegree_prod _ _ (fun i _ => X_sub_C_ne_zero _)]
+  simp only [Fin.getElem_fin, natDegree_sub_C, natDegree_X, Finset.sum_const, Finset.card_univ,
+    Fintype.card_fin, smul_eq_mul, mul_one]
 
 /-- `(nodalPoly D).toPoly ≠ 0` (it is monic, a product of distinct linear factors). -/
 lemma toPoly_nodalPoly_ne_zero [CommRing F] [Nontrivial F] (D : Domain F) :
@@ -152,7 +160,8 @@ lemma degree_nodalPoly [CommRing F] [NoZeroDivisors F] [Nontrivial F] (D : Domai
 lemma nodalPoly_eval_node_eq_zero [CommRing F] [Nontrivial F] (D : Domain F) (i : Fin D.n) :
     (nodalPoly D).toPoly.eval (D.val[i]) = 0 := by
   rw [toPoly_nodalPoly, Polynomial.eval_prod]
-  exact Finset.prod_eq_zero (Finset.mem_univ i) (by simp)
+  exact Finset.prod_eq_zero (Finset.mem_univ i)
+    (by simp only [Fin.getElem_fin, Polynomial.eval_sub, eval_X, Polynomial.eval_C, sub_self])
 
 /-- `partialGcd`'s output satisfies the stop spec for `(nodalPoly D, receivedInterpolant D r)` at
 threshold `(D.n + k + 1) / 2`. -/
@@ -196,7 +205,7 @@ private lemma decode_sound_aux [Field F]
   have hbezP : G.toPoly
       = U.toPoly * (nodalPoly D).toPoly + V.toPoly * (receivedInterpolant D r).toPoly := by
     simp only [hbez, toPoly_add, toPoly_mul]
-  exact (hammingDist_le_errorLocator_natDegree _ D.node_injective _ _ _ _ _ _ _
+  exact (hammingDist_le_error_locator_natDegree _ D.node_injective _ _ _ _ _ _ _
     (nodalPoly_eval_node_eq_zero D) (receivedInterpolant_eval_node D r) hbezP hGV hVtp).trans hVnd
 
 /-- Soundness: any success of `Gao.decode` returns `messagePoly msg` for
@@ -273,7 +282,7 @@ theorem decode_eq_some [Field F]
     Polynomial.degree_le_natDegree.trans_lt (mod_cast hstop)
   have hG'deg : (w * (messagePoly msg).toPoly).degree < ((D.n + k + 1) / 2 : ℕ) := by
     rw [degree_mul, hwdeg]
-    exact (WithBot.add_lt_add_left (by simp)
+    exact (WithBot.add_lt_add_left (by simp only [ne_eq, WithBot.natCast_ne_bot, not_false_eq_true])
       (degree_toPoly (messagePoly msg) ▸ messagePoly_degree_lt msg)).trans_le (mod_cast by omega)
   have hV'deg : w.degree + ((D.n + k + 1) / 2 : ℕ) ≤ (nodalPoly D).toPoly.degree := by
     rw [hwdeg, degree_nodalPoly]; exact mod_cast by omega
