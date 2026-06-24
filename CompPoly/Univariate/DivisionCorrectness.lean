@@ -552,6 +552,20 @@ theorem mod_toPoly_eq_smul_mod (p q : CPolynomial R) :
     ←Polynomial.smul_modByMonic, ← Polynomial.smul_eq_C_mul,
     mod_toPoly_eq_modByMonic p q hq]
 
+/-- Exact-division bridge: `G.toPoly` factors as `f.toPoly * V.toPoly` iff the computable
+`mod` vanishes and the computable division recovers `f`. -/
+theorem exactDiv_toPoly_iff (G V f : CPolynomial R) (hV : V.toPoly ≠ 0) :
+    G.toPoly = f.toPoly * V.toPoly ↔ G.mod V = 0 ∧ (G / V).toPoly = f.toPoly := by
+  have hdivP : (G / V).toPoly = G.toPoly / V.toPoly := div_toPoly_eq_div _ _
+  have hmod : G.mod V = 0 ↔ G.toPoly % V.toPoly = 0 := by
+    rw [← toPoly_eq_zero_iff, mod_toPoly_eq_smul_mod, smul_eq_zero_iff_right
+      (inv_ne_zero (leadingCoeff_ne_zero ((toPoly_eq_zero_iff V).not.mp hV)))]
+  refine ⟨fun hGV => ?_, fun ⟨hmod0, hdiv⟩ => ?_⟩
+  · exact ⟨hmod.mpr (EuclideanDomain.mod_eq_zero.mpr (Dvd.intro_left _ hGV.symm)),
+      by rw [hdivP, hGV, mul_div_cancel_right₀ _ hV]⟩
+  · rw [← hdiv, hdivP, _root_.mul_comm,
+      EuclideanDomain.mul_div_cancel' hV (EuclideanDomain.mod_eq_zero.mp (hmod.mp hmod0))]
+
 private theorem reversal_remainder_toPoly_eq_modByMonic
     (M : Raw.MulLowContext R) (p q : CPolynomial R)
     (hmonic : (q.leadingCoeff == 1) = true)
