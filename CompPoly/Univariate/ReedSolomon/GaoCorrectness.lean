@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Juan Conejero
 -/
 import Mathlib.InformationTheory.Hamming
-import CompPoly.Data.CodingTheory.GaoDecoder
+import CompPoly.Univariate.ReedSolomon.GaoDecoder
 import CompPoly.ToMathlib.Polynomial.Roots
 
 /-!

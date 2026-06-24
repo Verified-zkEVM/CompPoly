@@ -3,7 +3,7 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Juan Conejero
 -/
-import CompPoly.Data.CodingTheory.ReedSolomon
+import CompPoly.Univariate.ReedSolomon
 import CompPoly.Univariate.EuclideanAlgorithm
 import CompPoly.Univariate.Lagrange
 

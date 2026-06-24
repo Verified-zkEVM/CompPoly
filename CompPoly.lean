@@ -22,9 +22,6 @@ import CompPoly.Bivariate.ToPoly
 import CompPoly.Data.Array.Lemmas
 import CompPoly.Data.Classes.DCast
 import CompPoly.Data.Classes.LawfulBEq
-import CompPoly.Data.CodingTheory.GaoCorrectness
-import CompPoly.Data.CodingTheory.GaoDecoder
-import CompPoly.Data.CodingTheory.ReedSolomon
 import CompPoly.Data.ExtTreeMap.DTreeMap
 import CompPoly.Data.ExtTreeMap.ExtDTreeMap
 import CompPoly.Data.ExtTreeMap.ExtTreeMap
@@ -161,6 +158,9 @@ import CompPoly.Univariate.Raw.Division
 import CompPoly.Univariate.Raw.Modular
 import CompPoly.Univariate.Raw.Ops
 import CompPoly.Univariate.Raw.Proofs
+import CompPoly.Univariate.ReedSolomon
+import CompPoly.Univariate.ReedSolomon.GaoCorrectness
+import CompPoly.Univariate.ReedSolomon.GaoDecoder
 import CompPoly.Univariate.Roots
 import CompPoly.Univariate.Roots.Backend
 import CompPoly.Univariate.Roots.Context
