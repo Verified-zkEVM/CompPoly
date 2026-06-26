@@ -6,6 +6,8 @@ Authors: Valerii Huhnin
 
 import CompPoly.LinearAlgebra.PolynomialMatrix.Basic
 import CompPoly.LinearAlgebra.PolynomialMatrix.Degree
+import CompPoly.LinearAlgebra.PolynomialMatrix.Operations
+import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant
 import CompPoly.LinearAlgebra.PolynomialMatrix.Shifted
 import CompPoly.LinearAlgebra.PolynomialMatrix.RowSpan
 import CompPoly.LinearAlgebra.PolynomialMatrix.ShiftedReduction

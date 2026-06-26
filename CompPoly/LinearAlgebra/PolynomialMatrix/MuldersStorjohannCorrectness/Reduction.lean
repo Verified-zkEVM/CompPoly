@@ -286,6 +286,43 @@ theorem muldersStorjohannReduce_no_conflict
     (muldersStorjohannFuel M shift) M shift hM
     (shiftedMatrixMeasure_lt_muldersStorjohannFuel hM)
 
+/-- The fueled reducer is deterministic: two runs that both end without a
+shifted leading conflict stopped at the same (first conflict-free) matrix of
+the common step orbit, regardless of their fuel. -/
+theorem muldersStorjohannReduceWithFuel_eq_of_no_conflict :
+    ∀ (f g : Nat) (M : PolynomialMatrix F) (shift : Array Nat),
+      shiftedLeadingConflict? (muldersStorjohannReduceWithFuel f M shift) shift =
+        none →
+      shiftedLeadingConflict? (muldersStorjohannReduceWithFuel g M shift) shift =
+        none →
+      muldersStorjohannReduceWithFuel f M shift =
+        muldersStorjohannReduceWithFuel g M shift := by
+  intro f
+  induction f with
+  | zero =>
+      intro g M shift hf hg
+      simp only [muldersStorjohannReduceWithFuel] at hf
+      cases g with
+      | zero => rfl
+      | succ g => simp only [muldersStorjohannReduceWithFuel, hf]
+  | succ f ih =>
+      intro g M shift hf hg
+      cases hconf : shiftedLeadingConflict? M shift with
+      | none =>
+          cases g with
+          | zero => simp only [muldersStorjohannReduceWithFuel, hconf]
+          | succ g => simp only [muldersStorjohannReduceWithFuel, hconf]
+      | some pair =>
+          rcases pair with ⟨i, j⟩
+          simp only [muldersStorjohannReduceWithFuel, hconf] at hf ⊢
+          cases g with
+          | zero =>
+              simp only [muldersStorjohannReduceWithFuel, hconf] at hg
+              cases hg
+          | succ g =>
+              simp only [muldersStorjohannReduceWithFuel, hconf] at hg ⊢
+              exact ih g (muldersStorjohannStep M shift i j) shift hf hg
+
 theorem muldersStorjohannReduceWithFuel_rowSpan_subset
     (fuel : Nat) (M : PolynomialMatrix F) (shift : Array Nat) (hM : WellFormed M) :
     RowSpan (muldersStorjohannReduceWithFuel fuel M shift) ⊆ RowSpan M := by
