@@ -24,6 +24,7 @@ import CompPolyTests.Data.MvPolynomial.Notation
 import CompPolyTests.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
 import CompPolyTests.Fields.Binary.BF128Ghash.Prelude
 import CompPolyTests.Fields.KoalaBear.Fast
+import CompPolyTests.Fields.Mersenne31
 import CompPolyTests.Fields.PrattCertificate
 import CompPolyTests.LinearAlgebra.Dense
 import CompPolyTests.Multilinear.Equiv
