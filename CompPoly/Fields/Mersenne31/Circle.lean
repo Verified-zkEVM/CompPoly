@@ -15,6 +15,10 @@ This module mirrors the structural circle-domain layer used by STWO over the
 Mersenne31 field. It records the circle equation, the STWO M31 circle generator,
 index arithmetic modulo the circle order, and the coset/domain shapes used by
 canonical circle domains.
+
+`CirclePointIndex.toPoint` currently interprets an index via `Point.nsmul` on the
+canonical natural representative `i.val`. A follow-on PR should prove generator
+order `2^31` and that `toPoint` is a group homomorphism on `CirclePointIndex`.
 -/
 
 @[expose] public section
@@ -57,7 +61,7 @@ def conjugate (p : Point) : Point where
   onCircle := by
     simpa [OnCircle, pow_two] using p.onCircle
 
-/-- The antipodal point. -/
+/-- The antipodal point. Reserved for follow-on circle-group lemmas. -/
 def antipode (p : Point) : Point where
   x := -p.x
   y := -p.y
@@ -101,6 +105,15 @@ theorem conjugate_x (p : Point) : (-p).x = p.x := rfl
 @[simp]
 theorem conjugate_y (p : Point) : (-p).y = -p.y := rfl
 
+@[simp]
+theorem add_zero (p : Point) : (0 : Point) + p = p := by
+  obtain ⟨px, py, hp⟩ := p
+  apply Point.ext
+  · change (1 : Field) * px - (0 : Field) * py = px
+    ring
+  · change (1 : Field) * py + (0 : Field) * px = py
+    ring
+
 end Point
 
 /-- STWO's Mersenne31 circle generator x-coordinate. -/
@@ -136,21 +149,36 @@ namespace CirclePointIndex
 /-- The distinguished generator index. -/
 def generator : CirclePointIndex := 1
 
-/-- Subgroup generator index for a subgroup of order `2^logSize`. -/
-def subgroupGen (logSize : Nat) : CirclePointIndex :=
+/-- Subgroup generator index for a subgroup of order `2^logSize`. Requires
+`logSize ≤ logOrder` so the exponent is well-defined. -/
+def subgroupGen (logSize : Nat) (_ : logSize ≤ logOrder) : CirclePointIndex :=
   (2 ^ (logOrder - logSize) : Nat)
 
-/-- Interpret an index as a repeated multiple of the STWO circle generator. -/
+/-- Interpret an index as a repeated multiple of the STWO circle generator.
+
+Uses the canonical natural representative of `i`; see the module docstring for
+the planned homomorphism proof. -/
 def toPoint (i : CirclePointIndex) : Point :=
   Point.nsmul Circle.generator i.val
 
 @[simp]
-theorem subgroupGen_zero : subgroupGen 0 = 0 := by
+theorem toPoint_zero : toPoint 0 = 0 := by
+  unfold toPoint
+  simp [Point.nsmul]
+
+@[simp]
+theorem toPoint_generator : toPoint CirclePointIndex.generator = Circle.generator := by
+  unfold toPoint CirclePointIndex.generator Circle.generator
+  change Point.nsmul Circle.generator (0 + 1) = Circle.generator
+  simp [Point.nsmul, Point.add_zero]
+
+@[simp]
+theorem subgroupGen_zero : subgroupGen 0 (by decide) = 0 := by
   change ((2 ^ (logOrder - 0) : Nat) : ZMod order) = 0
   simp [order]
 
 @[simp]
-theorem subgroupGen_logOrder : subgroupGen logOrder = generator := by
+theorem subgroupGen_logOrder : subgroupGen logOrder (by decide) = generator := by
   simp [subgroupGen, generator]
 
 end CirclePointIndex
@@ -168,7 +196,7 @@ namespace Coset
 def new (initialIndex : CirclePointIndex) (logSize : Nat) (hlogSize : logSize ≤ logOrder) :
     Coset where
   initialIndex := initialIndex
-  stepSize := CirclePointIndex.subgroupGen logSize
+  stepSize := CirclePointIndex.subgroupGen logSize hlogSize
   logSize := logSize
   logSize_le_logOrder := hlogSize
 
@@ -178,12 +206,12 @@ def subgroup (logSize : Nat) (hlogSize : logSize ≤ logOrder) : Coset :=
 
 /-- The STWO coset `G_{2n} + <G_n>`. -/
 def odds (logSize : Nat) (hlogSize : logSize + 1 ≤ logOrder) : Coset :=
-  new (CirclePointIndex.subgroupGen (logSize + 1)) logSize
+  new (CirclePointIndex.subgroupGen (logSize + 1) hlogSize) logSize
     (Nat.le_trans (Nat.le_succ logSize) hlogSize)
 
 /-- The STWO coset `G_{4n} + <G_n>`, whose conjugate completes `odds (logSize + 1)`. -/
 def halfOdds (logSize : Nat) (hlogSize : logSize + 2 ≤ logOrder) : Coset :=
-  new (CirclePointIndex.subgroupGen (logSize + 2)) logSize
+  new (CirclePointIndex.subgroupGen (logSize + 2) hlogSize) logSize
     (Nat.le_trans (Nat.le_add_right logSize 2) hlogSize)
 
 /-- Number of indices in the coset. -/

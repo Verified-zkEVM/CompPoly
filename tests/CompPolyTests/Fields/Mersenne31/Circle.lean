@@ -23,13 +23,25 @@ example : generator.x = 2 := rfl
 
 example : generator.y = 1268011823 := rfl
 
+example : OnCircle (generator + generator).x (generator + generator).y :=
+  (generator + generator).onCircle
+
+example : OnCircle (Point.antipode generator).x (Point.antipode generator).y :=
+  (Point.antipode generator).onCircle
+
 #guard logOrder = 31
 #guard order = 2147483648
 
-example : CirclePointIndex.subgroupGen 0 = 0 := by
+example : CirclePointIndex.toPoint 0 = 0 := by
   simp
 
-example : CirclePointIndex.subgroupGen logOrder = CirclePointIndex.generator := by
+example : CirclePointIndex.toPoint CirclePointIndex.generator = generator := by
+  simp
+
+example : CirclePointIndex.subgroupGen 0 (by decide) = 0 := by
+  simp
+
+example : CirclePointIndex.subgroupGen logOrder (by decide) = CirclePointIndex.generator := by
   simp
 
 def smallHalfCoset : Coset :=
@@ -59,6 +71,8 @@ def smallCanonicCoset : CanonicCoset where
   one_le_logSize := by decide
   logSize_succ_le_logOrder := by decide
 
+#guard smallCanonicCoset.coset.logSize = 4
+#guard smallCanonicCoset.halfCoset.logSize = 3
 #guard smallCanonicCoset.circleDomain.logSize = 4
 #guard smallCanonicCoset.circleDomain.size = 16
 
