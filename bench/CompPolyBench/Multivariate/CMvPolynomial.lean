@@ -47,11 +47,11 @@ private def multivariateSparseShape : String :=
 
 /-- Build a computable multivariate polynomial from generated coefficients. -/
 private def buildCMvPolynomial {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
-    (terms : Array R) : CPoly.CMvPolynomial multivariateVars R :=
+    (terms : Array R) : CPoly.CMvPolynomial (Fin multivariateVars) R :=
   Id.run do
-    let mut p : CPoly.CMvPolynomial multivariateVars R := 0
+    let mut p : CPoly.CMvPolynomial (Fin multivariateVars) R := 0
     for i in [0:terms.size] do
-      let monomial : CPoly.CMvMonomial multivariateVars := Vector.ofFn fun j ↦
+      let monomial : CPoly.CMvMonomial (Fin multivariateVars) := Vector.ofFn fun j ↦
         (i / (j.val + 1)) % multivariateExponentMod
       p := p + CPoly.CMvPolynomial.monomial monomial (terms.getD i 0)
     pure p

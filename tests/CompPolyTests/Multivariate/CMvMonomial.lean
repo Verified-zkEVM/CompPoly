@@ -16,19 +16,21 @@ namespace CMvMonomial
 
 -- TODO: add more arithmetic compatibility checks with `MonoR.evalMonomial`.
 
-example {n : ℕ} (m : CMvMonomial n) : ofFinsupp m.toFinsupp = m := by
+example {σ : Type*} [FinEnum σ] (m : CMvMonomial σ) : ofFinsupp m.toFinsupp = m := by
   simp
 
-example {n : ℕ} (m : Fin n →₀ ℕ) : (ofFinsupp m).toFinsupp = m := by
+example {σ : Type*} [FinEnum σ] (m : σ →₀ ℕ) : (ofFinsupp m).toFinsupp = m := by
   simp
 
-example {n : ℕ} (m : CMvMonomial n) : m + 0 = m := by
+example {σ : Type*} [FinEnum σ] (m : CMvMonomial σ) : m + 0 = m := by
   simp [add_zero]
 
-example : CMvMonomial.totalDegree (#m[1, 2] : CMvMonomial 2) = 3 := by
+example : let v : Vector ℕ 2 := #m[1, 2]; CMvMonomial.totalDegree (σ := Fin 2) v = 3 := by
   decide
 
-example : CMvMonomial.degreeOf (#m[3, 4] : CMvMonomial 2) ⟨1, by decide⟩ = 4 := by
+example :
+    let v : Vector ℕ 2 := #m[3, 4]
+    CMvMonomial.degreeOf (σ := Fin 2) v ⟨1, by decide⟩ = 4 := by
   decide
 
 end CMvMonomial

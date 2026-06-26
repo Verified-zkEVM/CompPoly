@@ -19,11 +19,11 @@ open CMvPolynomial
 
 section
 
-variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+variable {σ : Type*} [FinEnum σ] {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 omit [BEq R] [LawfulBEq R] in
-lemma eval₂_equiv {S : Type*} {p : CMvPolynomial n R} [CommSemiring S] {f : (R →+* S)}
-    {vals : Fin n → S} : p.eval₂ f vals = (fromCMvPolynomial p).eval₂ f vals := by
+lemma eval₂_equiv {S : Type*} {p : CMvPolynomial σ R} [CommSemiring S] {f : (R →+* S)}
+    {vals : σ → S} : p.eval₂ f vals = (fromCMvPolynomial p).eval₂ f vals := by
   unfold CMvPolynomial.eval₂ MvPolynomial.eval₂
   rw [foldl_eq_sum]
   congr 1
@@ -39,25 +39,26 @@ lemma eval₂_equiv {S : Type*} {p : CMvPolynomial n R} [CommSemiring S] {f : (R
     simp only [Finset.mem_sdiff, Finset.mem_univ, Finsupp.mem_support_iff, ne_eq, Decidable.not_not,
       true_and] at h
     unfold CMvMonomial.ofFinsupp
+    rw [Vector.get_ofFn, Equiv.symm_apply_apply]
     simp [h]
   · intros x _
     congr 1
     unfold CMvMonomial.ofFinsupp
-    simp
+    rw [Vector.get_ofFn, Equiv.symm_apply_apply]
 
 omit [BEq R] [LawfulBEq R] in
-lemma eval_equiv {p : CMvPolynomial n R} {vals : Fin n → R} :
+lemma eval_equiv {p : CMvPolynomial σ R} {vals : σ → R} :
     p.eval vals = (fromCMvPolynomial p).eval vals := by
   unfold CMvPolynomial.eval MvPolynomial.eval MvPolynomial.eval₂Hom
   simp only [RingHom.coe_mk, MonoidHom.coe_mk, OneHom.coe_mk]
   exact eval₂_equiv
 
 omit [BEq R] [LawfulBEq R] in
-lemma totalDegree_equiv {S : Type*} {p : CMvPolynomial n R} [CommSemiring S] :
+lemma totalDegree_equiv {S : Type*} {p : CMvPolynomial σ R} [CommSemiring S] :
     p.totalDegree = (fromCMvPolynomial p).totalDegree := by rfl
 
 omit [BEq R] [LawfulBEq R] in
-lemma degreeOf_equiv {S : Type*} {p : CMvPolynomial n R} [CommSemiring S] :
+lemma degreeOf_equiv {S : Type*} {p : CMvPolynomial σ R} [CommSemiring S] :
     p.degreeOf = (fromCMvPolynomial p).degreeOf := by
   ext i
   rw [MvPolynomial.degreeOf_eq_sup]
@@ -78,11 +79,11 @@ end
 
 namespace CMvPolynomial
 
-variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+variable {σ : Type*} [FinEnum σ] {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 /-- `eval₂` as a ring homomorphism. -/
 def eval₂Hom {S : Type*} [CommSemiring S]
-    (f : R →+* S) (vs : Fin n → S) : CMvPolynomial n R →+* S where
+    (f : R →+* S) (vs : σ → S) : CMvPolynomial σ R →+* S where
   toFun := eval₂ f vs
   map_zero' := by simp [eval₂_equiv]
   map_one' := by simp [eval₂_equiv]
@@ -91,7 +92,7 @@ def eval₂Hom {S : Type*} [CommSemiring S]
 
 @[simp]
 lemma eval₂Hom_apply {S : Type*} [CommSemiring S]
-    (f : R →+* S) (vs : Fin n → S) (p : CMvPolynomial n R) :
+    (f : R →+* S) (vs : σ → S) (p : CMvPolynomial σ R) :
     eval₂Hom f vs p = eval₂ f vs p := rfl
 
 end CMvPolynomial

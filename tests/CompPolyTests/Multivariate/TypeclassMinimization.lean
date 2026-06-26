@@ -65,37 +65,32 @@ private def x1 : Fin 2 := ⟨1, by decide⟩
 
 private def collapse : Fin 2 → Fin 1 := fun _ => ⟨0, by decide⟩
 
-example : CMvPolynomial 2 MinimalCoeff :=
+example : CMvPolynomial (Fin 2) MinimalCoeff :=
   X (R := MinimalCoeff) x0
 
 example : ℕ :=
   totalDegree <| X (R := MinimalCoeff) x0
 
-example : CMvPolynomial 1 MinimalCoeff :=
+example : CMvPolynomial (Fin 1) MinimalCoeff :=
   rename (R := MinimalCoeff) collapse (X (R := MinimalCoeff) x0)
 
-example : CMvPolynomial 2 MinimalCoeff :=
+example : CMvPolynomial (Fin 2) MinimalCoeff :=
   sumToIter <|
     X (R := MinimalCoeff) x0 +
     X (R := MinimalCoeff) x1
 
-example (p : CMvPolynomial 2 MinimalCoeff) : CMvPolynomial 2 MinimalCoeff :=
+example (p : CMvPolynomial (Fin 2) MinimalCoeff) : CMvPolynomial (Fin 2) MinimalCoeff :=
   -p
 
-example (p q : CMvPolynomial 2 MinimalCoeff) : CMvPolynomial 2 MinimalCoeff :=
+example (p q : CMvPolynomial (Fin 2) MinimalCoeff) : CMvPolynomial (Fin 2) MinimalCoeff :=
   p - q
 
-example (p : CMvPolynomial 1 MinimalCoeff) (q : CMvPolynomial 2 MinimalCoeff) :
-    CMvPolynomial 2 MinimalCoeff :=
-  p + q
-
-example (p : CMvPolynomial 1 MinimalCoeff) (q : CMvPolynomial 2 MinimalCoeff) :
-    CMvPolynomial 2 MinimalCoeff :=
-  p - q
-
-example (p : CMvPolynomial 1 MinimalCoeff) (q : CMvPolynomial 2 MinimalCoeff) :
-    CMvPolynomial 2 MinimalCoeff :=
-  p * q
+-- Combining polynomials over different variable types is done explicitly via
+-- `embedDomain`/`rename` (the caller chooses the embedding); there are intentionally no
+-- mixed-arity `+`/`*`/`-` instances. `embedDomain` holds under the weakened assumptions.
+example (p : CMvPolynomial (Fin 1) MinimalCoeff) :
+    CMvPolynomial (Fin 1 ⊕ Fin 2) MinimalCoeff :=
+  embedDomain ⟨Sum.inl, Sum.inl_injective⟩ p
 
 end CMvPolynomial
 

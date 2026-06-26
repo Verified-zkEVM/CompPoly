@@ -18,18 +18,18 @@ namespace CPoly
 
 open CMvPolynomial
 
-variable {n : ℕ} {R : Type*}
+variable {σ : Type*} [FinEnum σ] {R : Type*}
 
 /-- `i ∈ p.vars` iff `0 < p.degreeOf i`. -/
 @[simp]
 lemma mem_vars_iff_degreeOf_pos [Zero R]
-    (i : Fin n) (p : CMvPolynomial n R) :
+    (i : σ) (p : CMvPolynomial σ R) :
     i ∈ p.vars ↔ 0 < p.degreeOf i := by
   simp [CMvPolynomial.vars]
 
 /-- `degrees` agrees with `MvPolynomial.degrees` via `fromCMvPolynomial`. -/
 lemma degrees_equiv [CommSemiring R] [BEq R] [LawfulBEq R]
-    (p : CMvPolynomial n R) :
+    (p : CMvPolynomial σ R) :
     p.degrees = (fromCMvPolynomial p).degrees := by
   ext i
   have hdeg : p.degreeOf i = (fromCMvPolynomial p).degreeOf i :=
@@ -38,7 +38,7 @@ lemma degrees_equiv [CommSemiring R] [BEq R] [LawfulBEq R]
 
 /-- `vars` agrees with `MvPolynomial.vars` via `fromCMvPolynomial`. -/
 lemma vars_equiv [CommSemiring R] [BEq R] [LawfulBEq R]
-    (p : CMvPolynomial n R) :
+    (p : CMvPolynomial σ R) :
     p.vars = (fromCMvPolynomial p).vars := by
   ext i
   rw [mem_vars_iff_degreeOf_pos]
@@ -48,38 +48,38 @@ lemma vars_equiv [CommSemiring R] [BEq R] [LawfulBEq R]
   simpa [Multiset.mem_toFinset] using
     (Multiset.count_pos (a := i) (s := (fromCMvPolynomial p).degrees))
 
-/-- `(0 : CMvPolynomial n R).degreeOf i = 0`. -/
+/-- `(0 : CMvPolynomial σ R).degreeOf i = 0`. -/
 @[simp]
 lemma degreeOf_zero [Zero R] [BEq R] [LawfulBEq R]
-    (i : Fin n) :
-    (0 : CMvPolynomial n R).degreeOf i = 0 := by
-  have hmonomials_zero : Lawful.monomials (0 : CMvPolynomial n R) = [] := by
+    (i : σ) :
+    (0 : CMvPolynomial σ R).degreeOf i = 0 := by
+  have hmonomials_zero : Lawful.monomials (0 : CMvPolynomial σ R) = [] := by
     apply List.eq_nil_iff_forall_not_mem.mpr
     intro m hm
     exact Lawful.not_mem_zero (x := m) ((Lawful.mem_monomials_iff).1 hm)
   simp [CMvPolynomial.degreeOf, hmonomials_zero]
 
-/-- `(0 : CMvPolynomial n R).degrees = 0`. -/
+/-- `(0 : CMvPolynomial σ R).degrees = 0`. -/
 @[simp]
 lemma degrees_zero [Zero R] [BEq R] [LawfulBEq R] :
-    (0 : CMvPolynomial n R).degrees = 0 := by
+    (0 : CMvPolynomial σ R).degrees = 0 := by
   simp [CMvPolynomial.degrees, degreeOf_zero]
 
-/-- `(0 : CMvPolynomial n R).vars = ∅`. -/
+/-- `(0 : CMvPolynomial σ R).vars = ∅`. -/
 @[simp]
 lemma vars_zero [Zero R] [BEq R] [LawfulBEq R] :
-    (0 : CMvPolynomial n R).vars = ∅ := by
+    (0 : CMvPolynomial σ R).vars = ∅ := by
   simp [CMvPolynomial.vars, degreeOf_zero]
 
-/-- `(1 : CMvPolynomial n R).degrees = 0`. -/
+/-- `(1 : CMvPolynomial σ R).degrees = 0`. -/
 @[simp]
 lemma degrees_one [CommSemiring R] [BEq R] [LawfulBEq R] :
-    (1 : CMvPolynomial n R).degrees = 0 := by
+    (1 : CMvPolynomial σ R).degrees = 0 := by
   simp [degrees_equiv, map_one]
 
 /-- `(p + q).vars ⊆ p.vars ∪ q.vars`. -/
 lemma vars_add_subset [CommSemiring R] [BEq R] [LawfulBEq R]
-    (p q : CMvPolynomial n R) :
+    (p q : CMvPolynomial σ R) :
     (p + q).vars ⊆ p.vars ∪ q.vars := by
   rw [vars_equiv (p := p + q), vars_equiv (p := p), vars_equiv (p := q)]
   simpa [map_add] using

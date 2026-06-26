@@ -16,7 +16,7 @@ computable multivariate polynomials.
 
 ## Main definitions
 
-* `CPoly.Lawful n R`: The subtype of `Unlawful n R` with no zero coefficients.
+* `CPoly.Lawful σ R`: The subtype of `Unlawful σ R` with no zero coefficients.
 -/
 set_option allowUnsafeReducibility true in
 attribute [local reducible] instDecidableEqOfLawfulBEq
@@ -27,26 +27,26 @@ namespace CPoly
 open Std
 
 /-- The subtype of polynomials with no zero coefficients. -/
-def Lawful (n : ℕ) (R : Type*) [Zero R] : Type _ :=
-  {p : Unlawful n R // p.isNoZeroCoef}
+def Lawful (σ : Type*) [FinEnum σ] (R : Type*) [Zero R] : Type _ :=
+  {p : Unlawful σ R // p.isNoZeroCoef}
 
-variable {n : ℕ} {R : Type*} [Zero R]
+variable {σ : Type*} [FinEnum σ] {R : Type*} [Zero R]
 
 section Instances
 
 @[grind=]
-instance instEmptyCol : EmptyCollection (Lawful n R) := ⟨∅, by grind⟩
+instance instEmptyCol : EmptyCollection (Lawful σ R) := ⟨∅, by grind⟩
 
-instance : GetElem (Lawful n R) (CMvMonomial n) R (fun lp m ↦ m ∈ lp.1) :=
+instance : GetElem (Lawful σ R) (CMvMonomial σ) R (fun lp m ↦ m ∈ lp.1) :=
   ⟨fun lp m h ↦ lp.1[m]'h⟩
 
-instance : GetElem? (Lawful n R) (CMvMonomial n) R (fun lp m ↦ m ∈ lp.1) :=
+instance : GetElem? (Lawful σ R) (CMvMonomial σ) R (fun lp m ↦ m ∈ lp.1) :=
   ⟨fun lp m ↦ lp.1[m]?, fun lp m ↦ lp.1[m]!⟩
 
-instance : Membership (CMvMonomial n) (Lawful n R) :=
+instance : Membership (CMvMonomial σ) (Lawful σ R) :=
   ⟨fun lp m ↦ m ∈ lp.1⟩
 
-instance : LawfulGetElem (Lawful n R) (CMvMonomial n) R (fun lp m ↦ m ∈ lp) :=
+instance : LawfulGetElem (Lawful σ R) (CMvMonomial σ) R (fun lp m ↦ m ∈ lp) :=
   ⟨
     fun ⟨c, hc⟩ i _ ↦ by have := getElem?_def c i; aesop,
     fun ⟨c, hc⟩ i ↦ by have := getElem!_def c i; aesop
@@ -56,7 +56,7 @@ end Instances
 
 namespace Lawful
 
-variable {p : Lawful n R} {m x : CMvMonomial n}
+variable {p : Lawful σ R} {m x : CMvMonomial σ}
 
 @[simp, grind _=_]
 lemma getElem?_eq_val_getElem? : p[m]? = p.1[m]? := rfl
@@ -85,35 +85,35 @@ lemma getElem_eq_getElem (h : m ∈ p) : p[m] = p.1[m] := by rfl
 variable [BEq R] [LawfulBEq R]
 
 /-- Convert an `Unlawful` polynomial to a `Lawful` one by filtering out zero coefficients. -/
-def fromUnlawful (p : Unlawful n R) : Lawful n R :=
+def fromUnlawful (p : Unlawful σ R) : Lawful σ R :=
   {
     val := p.filter fun _ c ↦ c != 0
     property _ := by aesop (add simp ExtTreeMap.getElem?_filter) (add safe (by grind))
   }
 
 @[grind←]
-protected lemma grind_fromUnlawful_congr {p₁ p₂ : Unlawful n R}
+protected lemma grind_fromUnlawful_congr {p₁ p₂ : Unlawful σ R}
     (h : p₁ = p₂) : Lawful.fromUnlawful p₁ = Lawful.fromUnlawful p₂ := by grind
 
 /-- Construct a constant polynomial. -/
-def C (c : R) : Lawful n R :=
+def C (c : R) : Lawful σ R :=
   ⟨Unlawful.C c, by grind⟩
 
-instance instOfNat_zero : OfNat (Lawful n R) 0 := ⟨C 0⟩
+instance instOfNat_zero : OfNat (Lawful σ R) 0 := ⟨C 0⟩
 
-lemma zero_def : Zero.zero (α := Lawful n R) = C 0 := rfl
+lemma zero_def : Zero.zero (α := Lawful σ R) = C 0 := rfl
 
-instance instOfNat {m : ℕ} [NeZero m] [NatCast R] : OfNat (Lawful n R) m := ⟨C m⟩
-
-@[simp, grind =]
-lemma C_zero : C (n := n) (0 : R) = 0 := rfl
+instance instOfNat {m : ℕ} [NeZero m] [NatCast R] : OfNat (Lawful σ R) m := ⟨C m⟩
 
 @[simp, grind =]
-lemma C_zero' : C (n := n) (0 : ℕ) = 0 := rfl
+lemma C_zero : C (σ := σ) (0 : R) = 0 := rfl
 
-lemma zero_eq_zero : (0 : Lawful n R) = ⟨0, by grind⟩ := rfl
+@[simp, grind =]
+lemma C_zero' : C (σ := σ) (0 : ℕ) = 0 := rfl
 
-lemma zero_eq_empty : (0 : Lawful n R) = ∅ := by
+lemma zero_eq_zero : (0 : Lawful σ R) = ⟨0, by grind⟩ := rfl
+
+lemma zero_eq_empty : (0 : Lawful σ R) = ∅ := by
   unfold_projs
   simp [C, Unlawful.zero_eq_empty]
 
@@ -121,7 +121,7 @@ lemma zero_eq_empty : (0 : Lawful n R) = ∅ := by
 lemma not_mem_C_zero : x ∉ C 0 := by simp [zero_eq_empty]; unfold_projs; grind
 
 @[simp, grind .]
-lemma not_mem_zero : x ∉ (0 : Lawful n R) := by rw [zero_eq_zero]; exact Unlawful.not_mem_zero
+lemma not_mem_zero : x ∉ (0 : Lawful σ R) := by rw [zero_eq_zero]; exact Unlawful.not_mem_zero
 
 @[simp]
 lemma cast_fromUnlawful : (fromUnlawful p.1).1 = p.1 := by
@@ -132,39 +132,35 @@ lemma cast_fromUnlawful : (fromUnlawful p.1).1 = p.1 := by
 
 section
 
-/-- Extend the number of variables in a polynomial. -/
-def extend (n' : ℕ) (p : Lawful n R) : Lawful (max n n') R :=
-  fromUnlawful <| p.val.extend n'
-
 /-- Addition of polynomials (results in a lawful polynomial). -/
-def add [Add R] (p₁ p₂ : Lawful n R) : Lawful n R :=
+def add [Add R] (p₁ p₂ : Lawful σ R) : Lawful σ R :=
   fromUnlawful <| p₁.val + p₂.val
 
-instance [Add R] : Add (Lawful n R) := ⟨add⟩
+instance [Add R] : Add (Lawful σ R) := ⟨add⟩
 
 @[grind=]
-protected lemma grind_add_skip [Add R] {p₁ p₂ : Lawful n R} :
+protected lemma grind_add_skip [Add R] {p₁ p₂ : Lawful σ R} :
     p₁ + p₂ = Lawful.fromUnlawful (p₁.1.add p₂.1) := rfl
 
 /--
   Note to self: This goes too far.
 -/
 @[grind=]
-protected lemma grind_add_skip_aggressive [Add R] {p₁ p₂ : Lawful n R} :
+protected lemma grind_add_skip_aggressive [Add R] {p₁ p₂ : Lawful σ R} :
     p₁ + p₂ = fromUnlawful (ExtTreeMap.mergeWith (fun _ c₁ c₂ => c₁ + c₂) p₁.1 p₂.1) := rfl
 
 /-- Multiplication of polynomials (results in a lawful polynomial). -/
-def mul [Mul R] [Add R] (p₁ p₂ : Lawful n R) : Lawful n R :=
+def mul [Mul R] [Add R] (p₁ p₂ : Lawful σ R) : Lawful σ R :=
   fromUnlawful <| p₁.val * p₂.val
 
-instance [Mul R] [Add R] [Zero R] : Mul (Lawful n R) := ⟨mul⟩
+instance [Mul R] [Add R] [Zero R] : Mul (Lawful σ R) := ⟨mul⟩
 
 /-- Polynomial exponentiation via repeated multiplication. `O(k)` multiplications.
 
 This is the specification; `npowBySq` is the efficient `O(log k)` implementation
 used by the `NatPow` instance once the equivalence with this naive form has been
 proven. -/
-def npow [NatCast R] [Add R] [Mul R] : ℕ → Lawful n R → Lawful n R
+def npow [NatCast R] [Add R] [Mul R] : ℕ → Lawful σ R → Lawful σ R
   | .zero  , _ => 1
   | .succ n, p => (npow n p) * p
 
@@ -177,7 +173,7 @@ For `k > 0`, computes `p ^ k` by recursing on `k / 2`:
 
 Equivalent to `npow` (see `npowBySq_eq_npow`). -/
 @[inline, specialize]
-def npowBySq [NatCast R] [Add R] [Mul R] (p : Lawful n R) : ℕ → Lawful n R
+def npowBySq [NatCast R] [Add R] [Mul R] (p : Lawful σ R) : ℕ → Lawful σ R
   | 0 => 1
   | k + 1 =>
     let half := npowBySq p ((k + 1) / 2)
@@ -185,29 +181,29 @@ def npowBySq [NatCast R] [Add R] [Mul R] (p : Lawful n R) : ℕ → Lawful n R
     if (k + 1) % 2 = 0 then sq else p * sq
   decreasing_by omega
 
-instance [NatCast R] [Add R] [Mul R] : NatPow (Lawful n R) := ⟨fun e b ↦ npow b e⟩
+instance [NatCast R] [Add R] [Mul R] : NatPow (Lawful σ R) := ⟨fun e b ↦ npow b e⟩
 
 /-- The list of monomials in a polynomial. -/
-abbrev monomials (p : Lawful n R) : List (CMvMonomial n) :=
+abbrev monomials (p : Lawful σ R) : List (CMvMonomial σ) :=
   p.1.monomials
 
 /-- Check if a polynomial is a non-zero constant. -/
-def NzConst {n : ℕ} {R : Type*} [Zero R] (p : Lawful n R) : Prop :=
+def NzConst {σ : Type*} [FinEnum σ] {R : Type*} [Zero R] (p : Lawful σ R) : Prop :=
   p.val.size = 1 ∧ p.val.contains CMvMonomial.zero
 
 omit [BEq R] [LawfulBEq R] in
 @[simp, grind _=_]
-lemma mem_monomials_iff {w : CMvMonomial n} : w ∈ Lawful.monomials p ↔ w ∈ p := by
+lemma mem_monomials_iff {w : CMvMonomial σ} : w ∈ Lawful.monomials p ↔ w ∈ p := by
   grind
 
-instance {p : Lawful n R} : Decidable (NzConst p) := by
+instance {p : Lawful σ R} : Decidable (NzConst p) := by
   dsimp [NzConst]
   infer_instance
 
 end
 
 @[simp, grind=]
-lemma fromUnlawful_cast {p : Lawful n R} : fromUnlawful p.1 = p := by
+lemma fromUnlawful_cast {p : Lawful σ R} : fromUnlawful p.1 = p := by
   unfold fromUnlawful
   congr
   rcases p with ⟨p, hp⟩
@@ -219,76 +215,23 @@ section
 variable [BEq R] [LawfulBEq R]
 
 /-- Negation of a polynomial. -/
-def neg [Neg R] (p : Lawful n R) : Lawful n R :=
+def neg [Neg R] (p : Lawful σ R) : Lawful σ R :=
   fromUnlawful p.1.neg
 
-instance [Neg R] : Neg (Lawful n R) := ⟨neg⟩
+instance [Neg R] : Neg (Lawful σ R) := ⟨neg⟩
 
 /-- Subtraction of polynomials. -/
-def sub [Add R] [Neg R] (p₁ p₂ : Lawful n R) : Lawful n R :=
+def sub [Add R] [Neg R] (p₁ p₂ : Lawful σ R) : Lawful σ R :=
   p₁ + (-p₂)
 
-instance [Add R] [Neg R] : Sub (Lawful n R) := ⟨sub⟩
+instance [Add R] [Neg R] : Sub (Lawful σ R) := ⟨sub⟩
 
-instance instDecidableEq [DecidableEq R] : DecidableEq (Lawful n R) := fun x y ↦
+instance instDecidableEq [DecidableEq R] : DecidableEq (Lawful σ R) := fun x y ↦
   if h : x.1.toList = y.1.toList
   then Decidable.isTrue (by have := ExtTreeMap.ext_toList (t₁ := x.1) (t₂ := y.1)
                             simp_rw [Subtype.val_inj] at this
                             grind)
   else Decidable.isFalse (by grind)
-
-/-- The $i$-th variable as a polynomial. -/
-def X (i : ℕ) : Lawful (i + 1) ℤ :=
-  let monomial : CMvMonomial (i + 1) := Vector.replicate i 0 |>.push 1
-  Lawful.fromUnlawful <| .ofList [(monomial, (1 : ℤ))]
-
-section
-
-variable {n₁ n₂ : ℕ}
-
-/-- Align two polynomials by extending them to have the same number of variables. -/
-def align
-    (p₁ : Lawful n₁ R) (p₂ : Lawful n₂ R) :
-    Lawful (n₁ ⊔ n₂) R × Lawful (n₁ ⊔ n₂) R :=
-  letI sup := n₁ ⊔ n₂
-  (
-    cast (by congr 1; grind) (p₁.extend sup),
-    cast (by congr 1; grind) (p₂.extend sup)
-  )
-
-/-- Lift a binary polynomial operation to handle polynomials with different numbers of variables. -/
-def liftPoly
-    (f : Lawful (n₁ ⊔ n₂) R →
-  Lawful (n₁ ⊔ n₂) R →
-  Lawful (n₁ ⊔ n₂) R)
-  (p₁ : Lawful n₁ R) (p₂ : Lawful n₂ R) : Lawful (n₁ ⊔ n₂) R :=
-  Function.uncurry f (align p₁ p₂)
-
-def polyCoe (p : Lawful n R) : Lawful (n + 1) R := cast (by simp) (p.extend n.succ)
-
-instance : Coe (Lawful n R) (Lawful (n + 1) R) := ⟨polyCoe⟩
-
-section
-
--- Mixed-arity fallbacks: keep these low-priority so same-arity `Add`/`Sub`/`Mul`
--- instances win when both operands already live in `Lawful n R`.
--- We intentionally do not add an `HPow` fallback here: exponentiation is unary, preserves
--- arity, and is already handled above by the same-arity `NatPow (Lawful n R)` instance.
-instance (priority := low) [Add R] :
-    HAdd (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
-  ⟨fun p₁ p₂ ↦ liftPoly (·+·) p₁ p₂⟩
-
-instance (priority := low) [Add R] [Neg R] :
-    HSub (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
-  ⟨fun p₁ p₂ ↦ liftPoly (·-·) p₁ p₂⟩
-
-instance (priority := low) [Add R] [Mul R] :
-    HMul (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
-  ⟨fun p₁ p₂ ↦ liftPoly (·*·) p₁ p₂⟩
-
-end
-
-end
 
 end
 

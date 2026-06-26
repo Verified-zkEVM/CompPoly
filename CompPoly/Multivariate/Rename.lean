@@ -11,7 +11,7 @@ import Mathlib.Algebra.MvPolynomial.Rename
 
 This file proves properties of the `rename` function defined in `CMvPolynomial.lean`,
 by transferring results from Mathlib's `MvPolynomial.rename` through the
-`polyRingEquiv : CMvPolynomial n R ≃+* MvPolynomial (Fin n) R` equivalence.
+`polyRingEquiv : CMvPolynomial σ R ≃+* MvPolynomial σ R` equivalence.
 
 ## Main results
 
@@ -27,7 +27,7 @@ namespace CPoly
 
 open Std CMvPolynomial
 
-variable {n m : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+variable {σ τ : Type*} [FinEnum σ] [FinEnum τ] {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 /-! ### Helper lemmas for `fromCMvPolynomial_rename` -/
 
@@ -45,28 +45,29 @@ lemma list_foldl_add_comm {β K V : Type*} [AddCommMonoid β]
     exact ih _
 
 /-- Swapping addition order in `ExtTreeMap.foldl` does not change the result. -/
-lemma foldl_add_comm' {β : Type*} [AddCommMonoid β] {k : ℕ}
-    {R' : Type*} (g : CMvMonomial k → R' → β)
-    (t : Std.ExtTreeMap (CMvMonomial k) R') :
+lemma foldl_add_comm' {β : Type*} [AddCommMonoid β] {υ : Type*} [FinEnum υ]
+    {R' : Type*} (g : CMvMonomial υ → R' → β)
+    (t : Std.ExtTreeMap (CMvMonomial υ) R') :
     Std.ExtTreeMap.foldl (fun acc m c => acc + g m c) (0 : β) t =
     Std.ExtTreeMap.foldl (fun acc m c => g m c + acc) (0 : β) t := by
   simp only [Std.ExtTreeMap.foldl_eq_foldl_toList]
   exact list_foldl_add_comm g t.toList 0
 
-/-- Applying `CMvMonomial.toFinsupp` at index `i` equals `Vector.get`. -/
-lemma toFinsupp_apply (mono : CMvMonomial n) (i : Fin n) :
-    (CMvMonomial.toFinsupp mono) i = mono.get i := rfl
+/-- Applying `CMvMonomial.toFinsupp` at index `i` equals `Vector.get` through
+the enumeration. -/
+lemma toFinsupp_apply (mono : CMvMonomial σ) (i : σ) :
+    (CMvMonomial.toFinsupp mono) i = mono.get (FinEnum.equiv i) := rfl
 
 /-- Monomial renaming via `Vector.ofFn` corresponds to `Finsupp.mapDomain`
 on the `Finsupp` side. -/
-lemma renameMonomial_eq (f : Fin n → Fin m) (mono : CMvMonomial n) :
-    (Vector.ofFn (fun j => (Finset.univ.filter (fun i => f i = j)).sum
-      (fun i => mono.get i)) : CMvMonomial m) =
+lemma renameMonomial_eq (f : σ → τ) (mono : CMvMonomial σ) :
+    (Vector.ofFn (fun k => (Finset.univ.filter (fun i => FinEnum.equiv (f i) = k)).sum
+      (fun i => mono.get (FinEnum.equiv i))) : CMvMonomial τ) =
     CMvMonomial.ofFinsupp
       (Finsupp.mapDomain f (CMvMonomial.toFinsupp mono)) := by
   unfold CMvMonomial.ofFinsupp
-  congr 1; funext j
-  simp only [Finsupp.mapDomain, Finsupp.sum_apply, Finsupp.single_apply]
+  congr 1; funext k
+  simp only [Finsupp.mapDomain, Finsupp.sum_apply, Finsupp.single_apply, Equiv.eq_symm_apply]
   rw [Finset.sum_filter]
   rw [Finsupp.sum]
   -- Extend the sum from `support` to `Finset.univ`
@@ -78,7 +79,7 @@ lemma renameMonomial_eq (f : Fin n → Fin m) (mono : CMvMonomial n) :
 
 /-- `fromCMvPolynomial` maps `CMvPolynomial.monomial` to
 `MvPolynomial.monomial`. -/
-lemma fromCMvPolynomial_monomial {k : ℕ} (mono : CMvMonomial k) (c : R) :
+lemma fromCMvPolynomial_monomial {υ : Type*} [FinEnum υ] (mono : CMvMonomial υ) (c : R) :
     fromCMvPolynomial (CMvPolynomial.monomial mono c) =
     MvPolynomial.monomial (CMvMonomial.toFinsupp mono) c := by
   by_cases hc : c = 0
@@ -105,9 +106,9 @@ lemma fromCMvPolynomial_monomial {k : ℕ} (mono : CMvMonomial k) (c : R) :
       rfl
 
 /-- `fromCMvPolynomial` distributes over `Finsupp.sum`. -/
-lemma fromCMvPolynomial_finsupp_sum {k : ℕ}
-    (g : (Fin n →₀ ℕ) → R → CMvPolynomial k R)
-    (a : CMvPolynomial n R) :
+lemma fromCMvPolynomial_finsupp_sum {υ : Type*} [FinEnum υ]
+    (g : (σ →₀ ℕ) → R → CMvPolynomial υ R)
+    (a : CMvPolynomial σ R) :
     fromCMvPolynomial (Finsupp.sum (fromCMvPolynomial a) g) =
     Finsupp.sum (fromCMvPolynomial a)
       (fun μ c => fromCMvPolynomial (g μ c)) := by
@@ -118,8 +119,8 @@ lemma fromCMvPolynomial_finsupp_sum {k : ℕ}
 
 /-- `CMvPolynomial.rename` agrees with `MvPolynomial.rename` under the
 `fromCMvPolynomial` equivalence. -/
-lemma fromCMvPolynomial_rename (f : Fin n → Fin m)
-    (p : CMvPolynomial n R) :
+lemma fromCMvPolynomial_rename (f : σ → τ)
+    (p : CMvPolynomial σ R) :
     fromCMvPolynomial (CMvPolynomial.rename f p) =
     MvPolynomial.rename f (fromCMvPolynomial p) := by
   -- Express rename as a `Finsupp.sum` via `foldl_eq_sum`
@@ -129,9 +130,9 @@ lemma fromCMvPolynomial_rename (f : Fin n → Fin m)
           (CMvMonomial.ofFinsupp (Finsupp.mapDomain f μ)) c) := by
     show Std.ExtTreeMap.foldl
         (fun acc mono c => acc + CMvPolynomial.monomial
-          (Vector.ofFn fun j =>
-            (Finset.univ.filter fun i => f i = j).sum
-              fun i => mono.get i) c)
+          (Vector.ofFn fun k =>
+            (Finset.univ.filter fun i => FinEnum.equiv (f i) = k).sum
+              fun i => mono.get (FinEnum.equiv i)) c)
         0 p.1 = _
     simp_rw [renameMonomial_eq f]
     rw [foldl_add_comm' (fun mono c =>
@@ -155,8 +156,8 @@ lemma fromCMvPolynomial_rename (f : Fin n → Fin m)
 /-! ### Bridging lemmas for `C` and `X` -/
 
 /-- `CMvPolynomial.C c` equals `CMvPolynomial.monomial 0 c`. -/
-lemma C_eq_monomial {k : ℕ} (c : R) :
-    CMvPolynomial.C (n := k) c = CMvPolynomial.monomial 0 c := by
+lemma C_eq_monomial {υ : Type*} [FinEnum υ] (c : R) :
+    CMvPolynomial.C (σ := υ) c = CMvPolynomial.monomial 0 c := by
   by_cases hc : c = 0
   · subst hc; ext m
     unfold CMvPolynomial.coeff CMvPolynomial.C CMvPolynomial.monomial
@@ -164,7 +165,7 @@ lemma C_eq_monomial {k : ℕ} (c : R) :
     grind
   · ext m
     show (CMvPolynomial.C c).coeff m =
-      (CMvPolynomial.monomial (0 : CMvMonomial k) c).coeff m
+      (CMvPolynomial.monomial (0 : CMvMonomial υ) c).coeff m
     unfold CMvPolynomial.coeff CMvPolynomial.C Lawful.C
       CMvPolynomial.monomial Unlawful.C
     simp only [show (c == (0 : R)) = false from by simp [hc],
@@ -176,15 +177,16 @@ lemma C_eq_monomial {k : ℕ} (c : R) :
     erw [Unlawful.filter_get]
 
 /-- The `Finsupp` of the zero monomial is zero. -/
-lemma toFinsupp_zero {k : ℕ} :
-    CMvMonomial.toFinsupp (0 : CMvMonomial k) = 0 := by
+lemma toFinsupp_zero {υ : Type*} [FinEnum υ] :
+    CMvMonomial.toFinsupp (0 : CMvMonomial υ) = 0 := by
   ext i
-  simp [CMvMonomial.toFinsupp, Vector.get]
-  exact Vector.getElem_zero i.val i.isLt
+  simp only [CMvMonomial.toFinsupp, Finsupp.coe_mk, Finsupp.coe_zero, Pi.zero_apply]
+  simp only [show (0 : CMvMonomial υ) = Vector.replicate (FinEnum.card υ) 0 from rfl,
+    Vector.get_replicate]
 
 /-- `fromCMvPolynomial` maps `CMvPolynomial.C` to `MvPolynomial.C`. -/
-lemma fromCMvPolynomial_C {k : ℕ} (c : R) :
-    fromCMvPolynomial (CMvPolynomial.C (n := k) c) =
+lemma fromCMvPolynomial_C {υ : Type*} [FinEnum υ] (c : R) :
+    fromCMvPolynomial (CMvPolynomial.C (σ := υ) c) =
     MvPolynomial.C c := by
   rw [C_eq_monomial, fromCMvPolynomial_monomial, toFinsupp_zero,
       ← MvPolynomial.C_apply]
@@ -193,9 +195,9 @@ lemma fromCMvPolynomial_C {k : ℕ} (c : R) :
 
 /-- Constants are unchanged under renaming. -/
 @[simp]
-lemma rename_C (f : Fin n → Fin m) (c : R) :
+lemma rename_C (f : σ → τ) (c : R) :
     CMvPolynomial.rename f (CMvPolynomial.C c) =
-    CMvPolynomial.C (n := m) c := by
+    CMvPolynomial.C (σ := τ) c := by
   apply fromCMvPolynomial_injective
   rw [fromCMvPolynomial_rename, fromCMvPolynomial_C,
     fromCMvPolynomial_C]
@@ -203,9 +205,9 @@ lemma rename_C (f : Fin n → Fin m) (c : R) :
 
 /-- `CMvPolynomial.X i` equals `CMvPolynomial.monomial eᵢ 1`
 where `eᵢ` is the `i`-th standard basis vector. -/
-lemma X_eq_monomial {k : ℕ} (i : Fin k) :
+lemma X_eq_monomial {υ : Type*} [FinEnum υ] (i : υ) :
     CMvPolynomial.X (R := R) i = CMvPolynomial.monomial
-      (Vector.ofFn (fun j => if j = i then 1 else 0))
+      (Vector.ofFn (fun j => if j = FinEnum.equiv i then 1 else 0))
       (1 : R) := by
   unfold CMvPolynomial.X CMvPolynomial.monomial
   by_cases h : (1 : R) = 0
@@ -216,18 +218,19 @@ lemma X_eq_monomial {k : ℕ} (i : Fin k) :
 
 /-- The `Finsupp` of the `i`-th standard basis monomial is
 `Finsupp.single i 1`. -/
-lemma toFinsupp_unitMono {k : ℕ} (i : Fin k) :
+lemma toFinsupp_unitMono {υ : Type*} [FinEnum υ] (i : υ) :
     CMvMonomial.toFinsupp
-      (Vector.ofFn (fun j : Fin k =>
-        if j = i then 1 else 0)) =
+      (Vector.ofFn (fun j : Fin (FinEnum.card υ) =>
+        if j = FinEnum.equiv i then 1 else 0)) =
     Finsupp.single i 1 := by
   ext j
-  simp [CMvMonomial.toFinsupp, Vector.get,
-    Finsupp.single_apply, eq_comm]
+  simp only [CMvMonomial.toFinsupp, Finsupp.coe_mk, Finsupp.single_apply]
+  rw [Vector.get_ofFn]
+  simp only [EmbeddingLike.apply_eq_iff_eq, eq_comm]
 
 /-- `fromCMvPolynomial` maps `CMvPolynomial.X i` to
 `MvPolynomial.X i`. -/
-lemma fromCMvPolynomial_X {k : ℕ} (i : Fin k) :
+lemma fromCMvPolynomial_X {υ : Type*} [FinEnum υ] (i : υ) :
     fromCMvPolynomial (CMvPolynomial.X (R := R) i) =
     MvPolynomial.X i := by
   rw [X_eq_monomial, fromCMvPolynomial_monomial,
@@ -236,7 +239,7 @@ lemma fromCMvPolynomial_X {k : ℕ} (i : Fin k) :
 
 /-- Renaming maps variable `X i` to `X (f i)`. -/
 @[simp]
-lemma rename_X (f : Fin n → Fin m) (i : Fin n) :
+lemma rename_X (f : σ → τ) (i : σ) :
     CMvPolynomial.rename f (CMvPolynomial.X (R := R) i) =
     CMvPolynomial.X (f i) := by
   apply fromCMvPolynomial_injective
@@ -246,8 +249,8 @@ lemma rename_X (f : Fin n → Fin m) (i : Fin n) :
 
 /-- Renaming preserves addition. -/
 @[simp]
-lemma rename_add (f : Fin n → Fin m)
-    (p q : CMvPolynomial n R) :
+lemma rename_add (f : σ → τ)
+    (p q : CMvPolynomial σ R) :
     CMvPolynomial.rename f (p + q) =
     CMvPolynomial.rename f p +
     CMvPolynomial.rename f q := by
@@ -258,8 +261,8 @@ lemma rename_add (f : Fin n → Fin m)
 
 /-- Renaming preserves multiplication. -/
 @[simp]
-lemma rename_mul (f : Fin n → Fin m)
-    (p q : CMvPolynomial n R) :
+lemma rename_mul (f : σ → τ)
+    (p q : CMvPolynomial σ R) :
     CMvPolynomial.rename f (p * q) =
     CMvPolynomial.rename f p *
     CMvPolynomial.rename f q := by
@@ -270,7 +273,7 @@ lemma rename_mul (f : Fin n → Fin m)
 
 /-- Renaming by the identity function is the identity. -/
 @[simp]
-lemma rename_id (p : CMvPolynomial n R) :
+lemma rename_id (p : CMvPolynomial σ R) :
     CMvPolynomial.rename id p = p := by
   apply fromCMvPolynomial_injective
   rw [fromCMvPolynomial_rename]
@@ -278,8 +281,8 @@ lemma rename_id (p : CMvPolynomial n R) :
 
 /-- Composing two renamings equals renaming by the composition. -/
 @[simp]
-lemma rename_rename {k : ℕ} (f : Fin n → Fin m)
-    (g : Fin m → Fin k) (p : CMvPolynomial n R) :
+lemma rename_rename {υ : Type*} [FinEnum υ] (f : σ → τ)
+    (g : τ → υ) (p : CMvPolynomial σ R) :
     CMvPolynomial.rename g (CMvPolynomial.rename f p) =
     CMvPolynomial.rename (g ∘ f) p := by
   apply fromCMvPolynomial_injective
@@ -293,13 +296,13 @@ namespace CMvPolynomial
 
 open CPoly
 
-variable {n m : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+variable {σ τ : Type*} [FinEnum σ] [FinEnum τ] {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 /-- Ring equivalence for variable renaming when the function is
 a bijection. -/
 noncomputable def renameEquiv
-    (f : Fin n ≃ Fin m) :
-    CMvPolynomial n R ≃+* CMvPolynomial m R where
+    (f : σ ≃ τ) :
+    CMvPolynomial σ R ≃+* CMvPolynomial τ R where
   toFun := CMvPolynomial.rename f
   invFun := CMvPolynomial.rename f.symm
   left_inv p := by

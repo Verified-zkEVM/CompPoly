@@ -21,7 +21,7 @@ are in `CMvPolynomial.lean`. The `CommSemiring` and `CommRing` instances are in
 * `MonomialOrder`: Typeclass for comparing monomials.
 * `leadingMonomial`, `leadingCoeff`, `leadingTerm`: Leading term operations
   according to a monomial order.
-* `rename`: Rename variables using a function `Fin n → Fin m`.
+* `rename`: Rename variables using a function `σ → τ`.
 * `aeval`: Algebra evaluation.
 * `bind₁`: Substitution of polynomials for variables.
 -/
@@ -35,12 +35,12 @@ namespace CMvPolynomial
 
 /-! ## Leading-term operations -/
 
-/-- Monomial ordering typeclass for `n` variables.
+/-- Monomial ordering typeclass for variables `σ`.
 
   Provides a way to compare monomials for determining leading terms.
 -/
-class MonomialOrder (n : ℕ) where
-  compare : CMvMonomial n → CMvMonomial n → Ordering
+class MonomialOrder (σ : Type*) [FinEnum σ] where
+  compare : CMvMonomial σ → CMvMonomial σ → Ordering
   -- TODO: Add ordering axioms (transitivity, etc.)
 
 /-- Baseline degree of a monomial.
@@ -48,15 +48,15 @@ class MonomialOrder (n : ℕ) where
   Currently this is the ordinary total degree and is independent of
   `MonomialOrder.compare`.
 -/
-def MonomialOrder.degree {n : ℕ} (m : CMvMonomial n) : ℕ :=
+def MonomialOrder.degree {σ : Type*} [FinEnum σ] (m : CMvMonomial σ) : ℕ :=
   m.totalDegree
 
 /-- Leading monomial of a polynomial according to a monomial order.
 
   Returns `none` for the zero polynomial.
 -/
-def leadingMonomial {n : ℕ} {R : Type*} [Zero R] [MonomialOrder n]
-    (p : CMvPolynomial n R) : Option (CMvMonomial n) :=
+def leadingMonomial {σ : Type*} [FinEnum σ] {R : Type*} [Zero R] [MonomialOrder σ]
+    (p : CMvPolynomial σ R) : Option (CMvMonomial σ) :=
   ExtTreeMap.foldl
     (fun acc m _ =>
       match acc with
@@ -72,8 +72,8 @@ def leadingMonomial {n : ℕ} {R : Type*} [Zero R] [MonomialOrder n]
   Returns `0` for the zero polynomial, and otherwise returns the monomial with
   leading monomial and leading coefficient.
 -/
-def leadingTerm {n : ℕ} {R : Type*} [Zero R] [BEq R] [LawfulBEq R] [MonomialOrder n]
-    (p : CMvPolynomial n R) : CMvPolynomial n R :=
+def leadingTerm {σ : Type*} [FinEnum σ] {R : Type*} [Zero R] [BEq R] [LawfulBEq R] [MonomialOrder σ]
+    (p : CMvPolynomial σ R) : CMvPolynomial σ R :=
   match leadingMonomial p with
   | none => 0
   | some m => monomial m (coeff m p)
@@ -82,38 +82,38 @@ def leadingTerm {n : ℕ} {R : Type*} [Zero R] [BEq R] [LawfulBEq R] [MonomialOr
 
   Returns `0` for the zero polynomial.
 -/
-def leadingCoeff {n : ℕ} {R : Type*} [Zero R] [MonomialOrder n]
-    (p : CMvPolynomial n R) : R :=
+def leadingCoeff {σ : Type*} [FinEnum σ] {R : Type*} [Zero R] [MonomialOrder σ]
+    (p : CMvPolynomial σ R) : R :=
   match leadingMonomial p with
   | none => 0
   | some m => coeff m p
 
 @[simp] lemma leadingCoeff_eq_zero_of_leadingMonomial_eq_none
-    {n : ℕ} {R : Type*} [Zero R] [MonomialOrder n] {p : CMvPolynomial n R}
+    {σ : Type*} [FinEnum σ] {R : Type*} [Zero R] [MonomialOrder σ] {p : CMvPolynomial σ R}
     (h : leadingMonomial p = none) : leadingCoeff p = 0 := by
   simp [leadingCoeff, h]
 
 lemma leadingCoeff_eq_coeff_of_leadingMonomial_eq_some
-    {n : ℕ} {R : Type*} [Zero R] [MonomialOrder n] {p : CMvPolynomial n R}
-    {m : CMvMonomial n} (h : leadingMonomial p = some m) : leadingCoeff p = coeff m p := by
+    {σ : Type*} [FinEnum σ] {R : Type*} [Zero R] [MonomialOrder σ] {p : CMvPolynomial σ R}
+    {m : CMvMonomial σ} (h : leadingMonomial p = some m) : leadingCoeff p = coeff m p := by
   simp [leadingCoeff, h]
 
 /-- Packaged form of `leadingCoeff`: it is the coefficient at the optional leading monomial,
 defaulting to `0` when no leading monomial exists. -/
 lemma leadingCoeff_eq_coeff_leadingMonomial
-    {n : ℕ} {R : Type*} [Zero R] [MonomialOrder n] (p : CMvPolynomial n R) :
+    {σ : Type*} [FinEnum σ] {R : Type*} [Zero R] [MonomialOrder σ] (p : CMvPolynomial σ R) :
     leadingCoeff p = (leadingMonomial p).elim 0 (fun m => coeff m p) := by
   grind [leadingCoeff]
 
 @[simp] lemma leadingTerm_eq_zero_of_leadingMonomial_eq_none
-    {n : ℕ} {R : Type*} [Zero R] [BEq R] [LawfulBEq R] [MonomialOrder n]
-    {p : CMvPolynomial n R} (h : leadingMonomial p = none) :
+    {σ : Type*} [FinEnum σ] {R : Type*} [Zero R] [BEq R] [LawfulBEq R] [MonomialOrder σ]
+    {p : CMvPolynomial σ R} (h : leadingMonomial p = none) :
     leadingTerm p = 0 := by
   grind [leadingTerm]
 
 @[simp] lemma leadingTerm_eq_monomial_of_leadingMonomial_eq_some
-    {n : ℕ} {R : Type*} [Zero R] [BEq R] [LawfulBEq R] [MonomialOrder n]
-    {p : CMvPolynomial n R} {m : CMvMonomial n} (h : leadingMonomial p = some m) :
+    {σ : Type*} [FinEnum σ] {R : Type*} [Zero R] [BEq R] [LawfulBEq R] [MonomialOrder σ]
+    {p : CMvPolynomial σ R} {m : CMvMonomial σ} (h : leadingMonomial p = some m) :
     leadingTerm p = monomial m (coeff m p) := by
   grind [leadingTerm]
 
@@ -121,153 +121,173 @@ lemma leadingCoeff_eq_coeff_leadingMonomial
 
 /-- Algebra evaluation: evaluates polynomial in an algebra.
 
-  Given an algebra `σ` over `R` and a function `f : Fin n → σ`, evaluates the polynomial.
+  Given an algebra `S` over `R` and a function `f : σ → S`, evaluates the polynomial.
 -/
-def aeval {n : ℕ} {R σ : Type*} [CommSemiring R] [CommSemiring σ] [Algebra R σ]
-    (f : Fin n → σ) (p : CMvPolynomial n R) : σ :=
-  eval₂ (algebraMap R σ) f p
+def aeval {σ : Type*} [FinEnum σ] {R S : Type*} [CommSemiring R] [CommSemiring S] [Algebra R S]
+    (f : σ → S) (p : CMvPolynomial σ R) : S :=
+  eval₂ (algebraMap R S) f p
 
-@[simp] lemma aeval_eq_eval₂ {n : ℕ} {R σ : Type*}
-    [CommSemiring R] [CommSemiring σ] [Algebra R σ]
-    (f : Fin n → σ) (p : CMvPolynomial n R) :
-    aeval f p = eval₂ (algebraMap R σ) f p := rfl
+@[simp] lemma aeval_eq_eval₂ {σ : Type*} [FinEnum σ] {R S : Type*}
+    [CommSemiring R] [CommSemiring S] [Algebra R S]
+    (f : σ → S) (p : CMvPolynomial σ R) :
+    aeval f p = eval₂ (algebraMap R S) f p := rfl
 
-@[simp] lemma aeval_C {n : ℕ} {R σ : Type*}
+@[simp] lemma aeval_C {σ : Type*} [FinEnum σ] {R S : Type*}
     [CommSemiring R] [BEq R] [LawfulBEq R]
-    [CommSemiring σ] [Algebra R σ]
-    (f : Fin n → σ) (c : R) :
-    aeval f (CMvPolynomial.C (n := n) c) = algebraMap R σ c := by
+    [CommSemiring S] [Algebra R S]
+    (f : σ → S) (c : R) :
+    aeval f (CMvPolynomial.C (σ := σ) c) = algebraMap R S c := by
   unfold aeval
-  rw [eval₂_equiv (p := CMvPolynomial.C (n := n) c) (f := algebraMap R σ) (vals := f)]
+  rw [eval₂_equiv (p := CMvPolynomial.C (σ := σ) c) (f := algebraMap R S) (vals := f)]
   simp [CMvPolynomial.fromCMvPolynomial_C]
 
-@[simp] lemma aeval_add {n : ℕ} {R σ : Type*}
+@[simp] lemma aeval_add {σ : Type*} [FinEnum σ] {R S : Type*}
     [CommSemiring R] [BEq R] [LawfulBEq R]
-    [CommSemiring σ] [Algebra R σ]
-    (f : Fin n → σ) (p q : CMvPolynomial n R) :
+    [CommSemiring S] [Algebra R S]
+    (f : σ → S) (p q : CMvPolynomial σ R) :
     aeval f (p + q) = aeval f p + aeval f q := by
   unfold aeval
   simpa [CMvPolynomial.eval₂Hom_apply] using
-    (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_add p q
+    (CMvPolynomial.eval₂Hom (S := S) (algebraMap R S) f).map_add p q
 
-@[simp] lemma aeval_mul {n : ℕ} {R σ : Type*}
+@[simp] lemma aeval_mul {σ : Type*} [FinEnum σ] {R S : Type*}
     [CommSemiring R] [BEq R] [LawfulBEq R]
-    [CommSemiring σ] [Algebra R σ]
-    (f : Fin n → σ) (p q : CMvPolynomial n R) :
+    [CommSemiring S] [Algebra R S]
+    (f : σ → S) (p q : CMvPolynomial σ R) :
     aeval f (p * q) = aeval f p * aeval f q := by
   unfold aeval
   simpa [CMvPolynomial.eval₂Hom_apply] using
-    (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_mul p q
+    (CMvPolynomial.eval₂Hom (S := S) (algebraMap R S) f).map_mul p q
 
-@[simp] lemma aeval_zero {n : ℕ} {R σ : Type*}
+@[simp] lemma aeval_zero {σ : Type*} [FinEnum σ] {R S : Type*}
     [CommSemiring R] [BEq R] [LawfulBEq R]
-    [CommSemiring σ] [Algebra R σ]
-    (f : Fin n → σ) :
-    aeval f (0 : CMvPolynomial n R) = 0 := by
+    [CommSemiring S] [Algebra R S]
+    (f : σ → S) :
+    aeval f (0 : CMvPolynomial σ R) = 0 := by
   unfold aeval
   simpa [CMvPolynomial.eval₂Hom_apply] using
-    (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_zero
+    (CMvPolynomial.eval₂Hom (S := S) (algebraMap R S) f).map_zero
 
-@[simp] lemma aeval_one {n : ℕ} {R σ : Type*}
+@[simp] lemma aeval_one {σ : Type*} [FinEnum σ] {R S : Type*}
     [CommSemiring R] [BEq R] [LawfulBEq R]
-    [CommSemiring σ] [Algebra R σ]
-    (f : Fin n → σ) :
-    aeval f (1 : CMvPolynomial n R) = 1 := by
+    [CommSemiring S] [Algebra R S]
+    (f : σ → S) :
+    aeval f (1 : CMvPolynomial σ R) = 1 := by
   unfold aeval
   simpa [CMvPolynomial.eval₂Hom_apply] using
-    (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_one
+    (CMvPolynomial.eval₂Hom (S := S) (algebraMap R S) f).map_one
 
-@[simp] lemma aeval_pow {n : ℕ} {R σ : Type*}
+@[simp] lemma aeval_pow {σ : Type*} [FinEnum σ] {R S : Type*}
     [CommSemiring R] [BEq R] [LawfulBEq R]
-    [CommSemiring σ] [Algebra R σ]
-    (f : Fin n → σ) (p : CMvPolynomial n R) (k : ℕ) :
+    [CommSemiring S] [Algebra R S]
+    (f : σ → S) (p : CMvPolynomial σ R) (k : ℕ) :
     aeval f (p ^ k) = (aeval f p) ^ k := by
   unfold aeval
   simpa [CMvPolynomial.eval₂Hom_apply] using
-    (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_pow p k
+    (CMvPolynomial.eval₂Hom (S := S) (algebraMap R S) f).map_pow p k
 
-@[simp] lemma aeval_neg {n : ℕ} {R σ : Type*}
+@[simp] lemma aeval_neg {σ : Type*} [FinEnum σ] {R S : Type*}
     [CommRing R] [BEq R] [LawfulBEq R]
-    [CommRing σ] [Algebra R σ]
-    (f : Fin n → σ) (p : CMvPolynomial n R) :
+    [CommRing S] [Algebra R S]
+    (f : σ → S) (p : CMvPolynomial σ R) :
     aeval f (-p) = -(aeval f p) := by
   unfold aeval
   simpa [CMvPolynomial.eval₂Hom_apply] using
-    (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_neg p
+    (CMvPolynomial.eval₂Hom (S := S) (algebraMap R S) f).map_neg p
 
-@[simp] lemma aeval_sub {n : ℕ} {R σ : Type*}
+@[simp] lemma aeval_sub {σ : Type*} [FinEnum σ] {R S : Type*}
     [CommRing R] [BEq R] [LawfulBEq R]
-    [CommRing σ] [Algebra R σ]
-    (f : Fin n → σ) (p q : CMvPolynomial n R) :
+    [CommRing S] [Algebra R S]
+    (f : σ → S) (p q : CMvPolynomial σ R) :
     aeval f (p - q) = aeval f p - aeval f q := by
   unfold aeval
   simpa [CMvPolynomial.eval₂Hom_apply] using
-    (CMvPolynomial.eval₂Hom (S := σ) (algebraMap R σ) f).map_sub p q
+    (CMvPolynomial.eval₂Hom (S := S) (algebraMap R S) f).map_sub p q
 
 /-- Substitution: substitutes polynomials for variables.
 
-  Given `f : Fin n → CMvPolynomial m R`, substitutes `f i` for variable `X i`.
+  Given `f : σ → CMvPolynomial τ R`, substitutes `f i` for variable `X i`.
 -/
-def bind₁ {n m : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
-    (f : Fin n → CMvPolynomial m R) (p : CMvPolynomial n R) : CMvPolynomial m R :=
+def bind₁ {σ τ : Type*} [FinEnum σ] [FinEnum τ] {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+    (f : σ → CMvPolynomial τ R) (p : CMvPolynomial σ R) : CMvPolynomial τ R :=
   ExtTreeMap.foldl
-    (fun acc mono c => CMvPolynomial.C (n := m) c * MonoR.evalMonomial f mono + acc)
+    (fun acc mono c => CMvPolynomial.C (σ := τ) c * MonoR.evalMonomial f mono + acc)
     0 p.1
 
 /-- The computable substitution `bind₁` agrees with algebraic evaluation. -/
-lemma bind₁_eq_aeval {n m : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
-    (f : Fin n → CMvPolynomial m R) (p : CMvPolynomial n R) :
-    bind₁ f p = aeval (σ := CMvPolynomial m R) f p := by
+lemma bind₁_eq_aeval {σ τ : Type*} [FinEnum σ] [FinEnum τ] {R : Type*}
+    [CommSemiring R] [BEq R] [LawfulBEq R]
+    (f : σ → CMvPolynomial τ R) (p : CMvPolynomial σ R) :
+    bind₁ f p = aeval (S := CMvPolynomial τ R) f p := by
   have hmap : ∀ c : R,
-      (algebraMap R (CMvPolynomial m R)) c = CMvPolynomial.C (n := m) c := by
+      (algebraMap R (CMvPolynomial τ R)) c = CMvPolynomial.C (σ := τ) c := by
     intro c
     rfl
   unfold bind₁ aeval CMvPolynomial.eval₂
   simp [hmap]
 
-@[simp] lemma bind₁_C {n m : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
-    (f : Fin n → CMvPolynomial m R) (c : R) :
-    bind₁ f (CMvPolynomial.C (n := n) c) = CMvPolynomial.C (n := m) c := by
+@[simp] lemma bind₁_C {σ τ : Type*} [FinEnum σ] [FinEnum τ] {R : Type*}
+    [CommSemiring R] [BEq R] [LawfulBEq R]
+    (f : σ → CMvPolynomial τ R) (c : R) :
+    bind₁ f (CMvPolynomial.C (σ := σ) c) = CMvPolynomial.C (σ := τ) c := by
   rw [bind₁_eq_aeval]
-  simpa using (aeval_C (n := n) (R := R) (σ := CMvPolynomial m R) f c)
+  simpa using (aeval_C (σ := σ) (R := R) (S := CMvPolynomial τ R) f c)
 
-@[simp] lemma bind₁_add {n m : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
-    (f : Fin n → CMvPolynomial m R) (p q : CMvPolynomial n R) :
+@[simp] lemma bind₁_add {σ τ : Type*} [FinEnum σ] [FinEnum τ] {R : Type*}
+    [CommSemiring R] [BEq R] [LawfulBEq R]
+    (f : σ → CMvPolynomial τ R) (p q : CMvPolynomial σ R) :
     bind₁ f (p + q) = bind₁ f p + bind₁ f q := by
   repeat rw [bind₁_eq_aeval]
-  simpa using (aeval_add (n := n) (R := R) (σ := CMvPolynomial m R) f p q)
+  simpa using (aeval_add (σ := σ) (R := R) (S := CMvPolynomial τ R) f p q)
 
-@[simp] lemma bind₁_mul {n m : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
-    (f : Fin n → CMvPolynomial m R) (p q : CMvPolynomial n R) :
+@[simp] lemma bind₁_mul {σ τ : Type*} [FinEnum σ] [FinEnum τ] {R : Type*}
+    [CommSemiring R] [BEq R] [LawfulBEq R]
+    (f : σ → CMvPolynomial τ R) (p q : CMvPolynomial σ R) :
     bind₁ f (p * q) = bind₁ f p * bind₁ f q := by
   repeat rw [bind₁_eq_aeval]
-  simpa using (aeval_mul (n := n) (R := R) (σ := CMvPolynomial m R) f p q)
+  simpa using (aeval_mul (σ := σ) (R := R) (S := CMvPolynomial τ R) f p q)
 
 /-! ## Core operations -/
 
 /-- Rename variables using a function.
 
-  Given `f : Fin n → Fin m`, renames variable `X i` to `X (f i)`.
+  Given `f : σ → τ`, renames variable `X i` to `X (f i)`.
 -/
-def rename {n m : ℕ} {R : Type*} [Zero R] [Add R] [BEq R] [LawfulBEq R]
-    (f : Fin n → Fin m) (p : CMvPolynomial n R) : CMvPolynomial m R :=
-  let renameMonomial (mono : CMvMonomial n) : CMvMonomial m :=
-    Vector.ofFn (fun j => (Finset.univ.filter (fun i => f i = j)).sum (fun i => mono.get i))
+def rename {σ τ : Type*} [FinEnum σ] [FinEnum τ] {R : Type*} [Zero R] [Add R] [BEq R] [LawfulBEq R]
+    (f : σ → τ) (p : CMvPolynomial σ R) : CMvPolynomial τ R :=
+  let renameMonomial (mono : CMvMonomial σ) : CMvMonomial τ :=
+    Vector.ofFn (fun k => (Finset.univ.filter (fun i : σ => FinEnum.equiv (f i) = k)).sum
+      (fun i => mono.get (FinEnum.equiv i)))
   ExtTreeMap.foldl (fun acc mono c => acc + monomial (renameMonomial mono) c) 0 p.1
 
 -- `renameEquiv` is defined in `CompPoly.Multivariate.Rename`
 
+/-- Embed the variables of a polynomial into a larger variable type along an
+injection `f : σ ↪ τ`. This is the disjoint-sum-friendly replacement for the old
+numeric `extend`/`polyCoe` machinery. The caller supplies the embedding explicitly,
+so there is no hidden assumption about how the variable sets are combined.
+
+We deliberately do *not* provide mixed-arity `HAdd`/`HMul`/`HSub` instances that
+silently combine `CMvPolynomial σ R` and `CMvPolynomial τ R` into
+`CMvPolynomial (σ ⊕ τ) R`: the order in which the two variable sets are joined is a
+convention the caller should make explicit (e.g. via `rename`/`embedDomain`) rather
+than have baked into instance resolution. -/
+def embedDomain {σ τ : Type*} [FinEnum σ] [FinEnum τ] {R : Type*}
+    [Zero R] [Add R] [BEq R] [LawfulBEq R]
+    (f : σ ↪ τ) (p : CMvPolynomial σ R) : CMvPolynomial τ R :=
+  rename f p
+
 /-- Iterative reconstruction of a polynomial by folding over terms. -/
-def sumToIter {n : ℕ} {R : Type*} [Zero R] [Add R] [BEq R] [LawfulBEq R]
-    (p : CMvPolynomial n R) : CMvPolynomial n R :=
+def sumToIter {σ : Type*} [FinEnum σ] {R : Type*} [Zero R] [Add R] [BEq R] [LawfulBEq R]
+    (p : CMvPolynomial σ R) : CMvPolynomial σ R :=
   ExtTreeMap.foldl (fun acc m c => acc + monomial m c) 0 p.1
 
 /-! ## Bridge and transport lemmas (technical) -/
 
-lemma X_eq_monomial {k : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
-    (i : Fin k) :
+lemma X_eq_monomial {σ : Type*} [FinEnum σ] {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+    (i : σ) :
     CMvPolynomial.X (R := R) i = CMvPolynomial.monomial
-      (Vector.ofFn (fun j => if j = i then 1 else 0))
+      (Vector.ofFn (fun j => if j = FinEnum.equiv i then 1 else 0))
       (1 : R) := by
   unfold CMvPolynomial.X CMvPolynomial.monomial
   by_cases h : (1 : R) = 0
@@ -276,18 +296,20 @@ lemma X_eq_monomial {k : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
   · simp only [show ((1 : R) == 0) = false from by simp [h]]
     exact (if_neg (by decide)).symm
 
-lemma toFinsupp_unitMono {k : ℕ}
-    (i : Fin k) :
+lemma toFinsupp_unitMono {σ : Type*} [FinEnum σ]
+    (i : σ) :
     CMvMonomial.toFinsupp
-      (Vector.ofFn (fun j : Fin k =>
-        if j = i then 1 else 0)) =
+      (Vector.ofFn (fun j : Fin (FinEnum.card σ) =>
+        if j = FinEnum.equiv i then 1 else 0)) =
     Finsupp.single i 1 := by
   ext j
-  simp [CMvMonomial.toFinsupp, Vector.get,
-    Finsupp.single_apply, eq_comm]
+  simp only [CMvMonomial.toFinsupp, Finsupp.coe_mk, Finsupp.single_apply]
+  rw [Vector.get_ofFn]
+  simp only [EmbeddingLike.apply_eq_iff_eq, eq_comm]
 
-lemma fromCMvPolynomial_monomial {k : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
-    (mono : CMvMonomial k) (c : R) :
+lemma fromCMvPolynomial_monomial {σ : Type*} [FinEnum σ] {R : Type*}
+    [CommSemiring R] [BEq R] [LawfulBEq R]
+    (mono : CMvMonomial σ) (c : R) :
     fromCMvPolynomial (CMvPolynomial.monomial mono c) =
     MvPolynomial.monomial (CMvMonomial.toFinsupp mono) c := by
   by_cases hc : c = 0
@@ -313,82 +335,84 @@ lemma fromCMvPolynomial_monomial {k : ℕ} {R : Type*} [CommSemiring R] [BEq R] 
         (by simp [hne])]
       rfl
 
-lemma fromCMvPolynomial_X {k : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
-    (i : Fin k) :
+lemma fromCMvPolynomial_X {σ : Type*} [FinEnum σ] {R : Type*}
+    [CommSemiring R] [BEq R] [LawfulBEq R]
+    (i : σ) :
     fromCMvPolynomial (CMvPolynomial.X (R := R) i) =
     MvPolynomial.X i := by
   rw [X_eq_monomial, fromCMvPolynomial_monomial, toFinsupp_unitMono]
   rfl
 
-@[simp] lemma aeval_X {n : ℕ} {R σ : Type*}
+@[simp] lemma aeval_X {σ : Type*} [FinEnum σ] {R S : Type*}
     [CommSemiring R] [BEq R] [LawfulBEq R]
-    [CommSemiring σ] [Algebra R σ]
-    (f : Fin n → σ) (i : Fin n) :
+    [CommSemiring S] [Algebra R S]
+    (f : σ → S) (i : σ) :
     aeval f (CMvPolynomial.X (R := R) i) = f i := by
   unfold aeval
-  rw [eval₂_equiv (p := CMvPolynomial.X (R := R) i) (f := algebraMap R σ) (vals := f)]
+  rw [eval₂_equiv (p := CMvPolynomial.X (R := R) i) (f := algebraMap R S) (vals := f)]
   simp [fromCMvPolynomial_X]
 
-@[simp] lemma bind₁_X {n m : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
-    (f : Fin n → CMvPolynomial m R) (i : Fin n) :
+@[simp] lemma bind₁_X {σ τ : Type*} [FinEnum σ] [FinEnum τ] {R : Type*}
+    [CommSemiring R] [BEq R] [LawfulBEq R]
+    (f : σ → CMvPolynomial τ R) (i : σ) :
     bind₁ f (CMvPolynomial.X (R := R) i) = f i := by
   rw [bind₁_eq_aeval]
-  simpa using (aeval_X (n := n) (R := R) (σ := CMvPolynomial m R) f i)
+  simpa using (aeval_X (σ := σ) (R := R) (S := CMvPolynomial τ R) f i)
 
-@[simp] lemma bind₁_id {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
-    (p : CMvPolynomial n R) :
+@[simp] lemma bind₁_id {σ : Type*} [FinEnum σ] {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+    (p : CMvPolynomial σ R) :
     bind₁ (fun i => CMvPolynomial.X (R := R) i) p = p := by
   rw [bind₁_eq_aeval]
   unfold aeval
-  apply (CPoly.polyRingEquiv (n := n) (R := R)).injective
-  rw [eval₂_equiv (p := p) (f := algebraMap R (CMvPolynomial n R))
+  apply (CPoly.polyRingEquiv (σ := σ) (R := R)).injective
+  rw [eval₂_equiv (p := p) (f := algebraMap R (CMvPolynomial σ R))
     (vals := fun i => CMvPolynomial.X (R := R) i)]
   have hmap := MvPolynomial.map_eval₂Hom
-    (f := algebraMap R (CMvPolynomial n R))
+    (f := algebraMap R (CMvPolynomial σ R))
     (g := fun i => CMvPolynomial.X (R := R) i)
-    (φ := (CPoly.polyRingEquiv (n := n) (R := R)).toRingHom)
+    (φ := (CPoly.polyRingEquiv (σ := σ) (R := R)).toRingHom)
     (p := fromCMvPolynomial p)
   have hcomp :
-      ((CPoly.polyRingEquiv (n := n) (R := R)).toRingHom).comp
-        (algebraMap R (CMvPolynomial n R)) = MvPolynomial.C := by
+      ((CPoly.polyRingEquiv (σ := σ) (R := R)).toRingHom).comp
+        (algebraMap R (CMvPolynomial σ R)) = MvPolynomial.C := by
     ext r m
     rw [RingHom.comp_apply]
-    rw [show (algebraMap R (CMvPolynomial n R)) r = CMvPolynomial.C (n := n) r from rfl]
+    rw [show (algebraMap R (CMvPolynomial σ R)) r = CMvPolynomial.C (σ := σ) r from rfl]
     simpa using congrArg (fun q => MvPolynomial.coeff m q)
-      (CMvPolynomial.fromCMvPolynomial_C (n := n) (R := R) r)
+      (CMvPolynomial.fromCMvPolynomial_C (σ := σ) (R := R) r)
   have hcomp' :
-      ((CPoly.polyRingEquiv (n := n) (R := R) : CMvPolynomial n R →+* MvPolynomial (Fin n) R).comp
-        (algebraMap R (CMvPolynomial n R))) = MvPolynomial.C := by
+      ((CPoly.polyRingEquiv (σ := σ) (R := R) : CMvPolynomial σ R →+* MvPolynomial σ R).comp
+        (algebraMap R (CMvPolynomial σ R))) = MvPolynomial.C := by
     simpa using hcomp
   have hvars :
-      (fun i => CPoly.polyRingEquiv (n := n) (R := R) (CMvPolynomial.X (R := R) i)) =
+      (fun i => CPoly.polyRingEquiv (σ := σ) (R := R) (CMvPolynomial.X (R := R) i)) =
       (fun i => MvPolynomial.X i) := by
     funext i
     exact fromCMvPolynomial_X (R := R) i
   have hmap' :
-      CPoly.polyRingEquiv (n := n) (R := R)
-          (MvPolynomial.eval₂ (algebraMap R (CMvPolynomial n R))
+      CPoly.polyRingEquiv (σ := σ) (R := R)
+          (MvPolynomial.eval₂ (algebraMap R (CMvPolynomial σ R))
             (fun i => CMvPolynomial.X (R := R) i) (fromCMvPolynomial p))
         = MvPolynomial.eval₂
-            (((CPoly.polyRingEquiv (n := n) (R := R)).toRingHom).comp
-              (algebraMap R (CMvPolynomial n R)))
+            (((CPoly.polyRingEquiv (σ := σ) (R := R)).toRingHom).comp
+              (algebraMap R (CMvPolynomial σ R)))
             (fun i => MvPolynomial.X i)
             (fromCMvPolynomial p) := by
     simpa [MvPolynomial.eval₂Hom, hvars] using hmap
   have hmap'' :
-      CPoly.polyRingEquiv (n := n) (R := R)
-          (MvPolynomial.eval₂ (algebraMap R (CMvPolynomial n R))
+      CPoly.polyRingEquiv (σ := σ) (R := R)
+          (MvPolynomial.eval₂ (algebraMap R (CMvPolynomial σ R))
             (fun i => CMvPolynomial.X (R := R) i) (fromCMvPolynomial p))
         = MvPolynomial.eval₂ MvPolynomial.C MvPolynomial.X (fromCMvPolynomial p) := by
     simpa [hcomp'] using hmap'
   calc
-    CPoly.polyRingEquiv (n := n) (R := R)
-        (MvPolynomial.eval₂ (algebraMap R (CMvPolynomial n R))
+    CPoly.polyRingEquiv (σ := σ) (R := R)
+        (MvPolynomial.eval₂ (algebraMap R (CMvPolynomial σ R))
           (fun i => CMvPolynomial.X (R := R) i) (fromCMvPolynomial p))
       = MvPolynomial.eval₂ MvPolynomial.C MvPolynomial.X (fromCMvPolynomial p) := hmap''
     _ = fromCMvPolynomial p := by
           simp [MvPolynomial.eval₂_eta (p := fromCMvPolynomial p)]
-    _ = CPoly.polyRingEquiv (n := n) (R := R) p := rfl
+    _ = CPoly.polyRingEquiv (σ := σ) (R := R) p := rfl
 
 lemma list_foldl_add_comm {β K V : Type*} [AddCommMonoid β]
     (g : K → V → β) (l : List (K × V)) (init : β) :
@@ -401,17 +425,18 @@ lemma list_foldl_add_comm {β K V : Type*} [AddCommMonoid β]
     rw [show init + g h.1 h.2 = g h.1 h.2 + init from add_comm _ _]
     exact ih _
 
-lemma foldl_add_comm {β : Type*} [AddCommMonoid β] {k : ℕ}
-    {R' : Type*} (g : CMvMonomial k → R' → β)
-    (t : Std.ExtTreeMap (CMvMonomial k) R') :
+lemma foldl_add_comm {β : Type*} [AddCommMonoid β] {σ : Type*} [FinEnum σ]
+    {R' : Type*} (g : CMvMonomial σ → R' → β)
+    (t : Std.ExtTreeMap (CMvMonomial σ) R') :
     Std.ExtTreeMap.foldl (fun acc m c => acc + g m c) (0 : β) t =
     Std.ExtTreeMap.foldl (fun acc m c => g m c + acc) (0 : β) t := by
   simp only [Std.ExtTreeMap.foldl_eq_foldl_toList]
   exact list_foldl_add_comm g t.toList 0
 
-lemma fromCMvPolynomial_finsupp_sum {n k : ℕ} [CommSemiring R] [BEq R] [LawfulBEq R]
-    (g : (Fin n →₀ ℕ) → R → CMvPolynomial k R)
-    (a : CMvPolynomial n R) :
+lemma fromCMvPolynomial_finsupp_sum {σ τ : Type*} [FinEnum σ] [FinEnum τ]
+    [CommSemiring R] [BEq R] [LawfulBEq R]
+    (g : (σ →₀ ℕ) → R → CMvPolynomial τ R)
+    (a : CMvPolynomial σ R) :
     fromCMvPolynomial (Finsupp.sum (fromCMvPolynomial a) g) =
     Finsupp.sum (fromCMvPolynomial a)
       (fun μ c => fromCMvPolynomial (g μ c)) := by
@@ -420,8 +445,8 @@ lemma fromCMvPolynomial_finsupp_sum {n k : ℕ} [CommSemiring R] [BEq R] [Lawful
 
 /-! ## API lemmas for `sumToIter` -/
 
-lemma sumToIter_eq {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
-    (p : CMvPolynomial n R) : sumToIter p = p := by
+lemma sumToIter_eq {σ : Type*} [FinEnum σ] {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+    (p : CMvPolynomial σ R) : sumToIter p = p := by
   rw [eq_iff_fromCMvPolynomial]
   unfold sumToIter
   rw [foldl_add_comm (g := fun m c => monomial m c) (t := p.1)]
@@ -431,22 +456,24 @@ lemma sumToIter_eq {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
   rw [Finsupp.sum]
   exact MvPolynomial.support_sum_monomial_coeff (fromCMvPolynomial p)
 
-lemma coeff_sumToIter {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
-    (m : CMvMonomial n) (p : CMvPolynomial n R) :
+lemma coeff_sumToIter {σ : Type*} [FinEnum σ] {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+    (m : CMvMonomial σ) (p : CMvPolynomial σ R) :
     coeff m (sumToIter p) = coeff m p := by
   simp [sumToIter_eq (p := p)]
 
-@[simp] lemma sumToIter_zero {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R] :
-    sumToIter (0 : CMvPolynomial n R) = 0 := by
-  simpa using sumToIter_eq (p := (0 : CMvPolynomial n R))
+@[simp] lemma sumToIter_zero {σ : Type*} [FinEnum σ] {R : Type*}
+    [CommSemiring R] [BEq R] [LawfulBEq R] :
+    sumToIter (0 : CMvPolynomial σ R) = 0 := by
+  simpa using sumToIter_eq (p := (0 : CMvPolynomial σ R))
 
-lemma sumToIter_add {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
-    (p q : CMvPolynomial n R) :
+lemma sumToIter_add {σ : Type*} [FinEnum σ] {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+    (p q : CMvPolynomial σ R) :
     sumToIter (p + q) = sumToIter p + sumToIter q := by
   simp [sumToIter_eq]
 
-@[simp] lemma sumToIter_idempotent {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
-    (p : CMvPolynomial n R) :
+@[simp] lemma sumToIter_idempotent {σ : Type*} [FinEnum σ] {R : Type*}
+    [CommSemiring R] [BEq R] [LawfulBEq R]
+    (p : CMvPolynomial σ R) :
     sumToIter (sumToIter p) = sumToIter p := by
   simp [sumToIter_eq]
 
@@ -466,13 +493,13 @@ implementation. We prove pointwise equality here so that the `NatPow` instance
 can be safely routed through the fast version.
 
 The proofs need `mul_assoc` / `mul_one` / `mul_comm`, which are only available
-once the `CommSemiring (CMvPolynomial n R)` instance has been built — that is
+once the `CommSemiring (CMvPolynomial σ R)` instance has been built — that is
 why these lemmas live in `Operations.lean` rather than in `Lawful.lean`. -/
 
-variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+variable {σ : Type*} [FinEnum σ] {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 /-- Additive law for the naive `npow`: $p^{a+b} = p^a \cdot p^b$. -/
-lemma npow_add (p : Lawful n R) (a b : ℕ) :
+lemma npow_add (p : Lawful σ R) (a b : ℕ) :
     npow (a + b) p = npow a p * npow b p := by
   induction b with
   | zero => simp [npow, mul_one]
@@ -482,9 +509,9 @@ lemma npow_add (p : Lawful n R) (a b : ℕ) :
     rw [ih, mul_assoc]
 
 /-- The fast repeated-squaring `npowBySq` agrees pointwise with the naive
-`npow`. This is the equivalence that lets the `NatPow (Lawful n R)` instance
+`npow`. This is the equivalence that lets the `NatPow (Lawful σ R)` instance
 be routed through `npowBySq` without changing observable behavior. -/
-theorem npowBySq_eq_npow (p : Lawful n R) : ∀ k : ℕ, npowBySq p k = npow k p
+theorem npowBySq_eq_npow (p : Lawful σ R) : ∀ k : ℕ, npowBySq p k = npow k p
   | 0 => by unfold npowBySq; rfl
   | k + 1 => by
     unfold npowBySq

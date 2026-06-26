@@ -24,31 +24,31 @@ open CMvPolynomial
 
 section
 
-variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
-variable (vals : Fin n → R)
+variable {σ : Type*} [FinEnum σ] {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+variable (vals : σ → R)
 
 @[simp]
-lemma eval_zero : (0 : CMvPolynomial n R).eval vals = 0 := by
+lemma eval_zero : (0 : CMvPolynomial σ R).eval vals = 0 := by
   simpa [eval₂Hom_apply] using (eval₂Hom (RingHom.id R) vals).map_zero
 
 @[simp]
-lemma eval_one : (1 : CMvPolynomial n R).eval vals = 1 := by
+lemma eval_one : (1 : CMvPolynomial σ R).eval vals = 1 := by
   simpa [eval₂Hom_apply] using (eval₂Hom (RingHom.id R) vals).map_one
 
 @[simp]
-lemma eval_C (c : R) : (CMvPolynomial.C c : CMvPolynomial n R).eval vals = c := by
+lemma eval_C (c : R) : (CMvPolynomial.C c : CMvPolynomial σ R).eval vals = c := by
   simp [eval_equiv, fromCMvPolynomial_C]
 
 @[simp]
-lemma eval_add (p q : CMvPolynomial n R) :
+lemma eval_add (p q : CMvPolynomial σ R) :
     (p + q).eval vals = p.eval vals + q.eval vals := by simp [eval_equiv]
 
 @[simp]
-lemma eval_mul (p q : CMvPolynomial n R) :
+lemma eval_mul (p q : CMvPolynomial σ R) :
     (p * q).eval vals = p.eval vals * q.eval vals := by simp [eval_equiv]
 
 @[simp]
-lemma eval_pow (p : CMvPolynomial n R) (k : ℕ) :
+lemma eval_pow (p : CMvPolynomial σ R) (k : ℕ) :
     (p ^ k).eval vals = (p.eval vals) ^ k := by
   simpa [eval₂Hom_apply] using (eval₂Hom (RingHom.id R) vals).map_pow p k
 
@@ -56,16 +56,16 @@ end
 
 section
 
-variable {n : ℕ} {R : Type} [CommRing R] [BEq R] [LawfulBEq R]
-variable (vals : Fin n → R)
+variable {σ : Type*} [FinEnum σ] {R : Type} [CommRing R] [BEq R] [LawfulBEq R]
+variable (vals : σ → R)
 
 @[simp]
-lemma eval_neg (p : CMvPolynomial n R) :
+lemma eval_neg (p : CMvPolynomial σ R) :
     (-p).eval vals = -(p.eval vals) := by
   simpa [eval₂Hom_apply] using (eval₂Hom (RingHom.id R) vals).map_neg p
 
 @[simp]
-lemma eval_sub (p q : CMvPolynomial n R) :
+lemma eval_sub (p q : CMvPolynomial σ R) :
     (p - q).eval vals = p.eval vals - q.eval vals := by
   simpa [eval₂Hom_apply] using (eval₂Hom (RingHom.id R) vals).map_sub p q
 
@@ -90,7 +90,7 @@ typically have a degree bound on the difference polynomial, not on `p` and
 `q` individually. -/
 theorem CMvPolynomial.eval_ext_univariate
     [CommRing R] [DecidableEq R] [BEq R] [LawfulBEq R] [IsDomain R]
-    {p q : CMvPolynomial 1 R} {d : ℕ} {S : Finset R}
+    {p q : CMvPolynomial (Fin 1) R} {d : ℕ} {S : Finset R}
     (hdeg : (fromCMvPolynomial p - fromCMvPolynomial q).degreeOf 0 ≤ d)
     (hagree :
       d < (S.filter
