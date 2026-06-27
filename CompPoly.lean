@@ -219,6 +219,7 @@ import CompPoly.Univariate.ReedSolomon.GaoCorrectness
 import CompPoly.Univariate.ReedSolomon.GaoDecoder
 import CompPoly.Univariate.Roots
 import CompPoly.Univariate.Roots.Backend
+import CompPoly.Univariate.Roots.CantorZassenhaus
 import CompPoly.Univariate.Roots.Context
 import CompPoly.Univariate.Roots.Correctness
 import CompPoly.Univariate.Roots.Enumeration
