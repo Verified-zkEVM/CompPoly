@@ -38,10 +38,10 @@ example : CirclePointIndex.toPoint 0 = 0 := by
 example : CirclePointIndex.toPoint CirclePointIndex.generator = generator := by
   simp
 
-example : CirclePointIndex.subgroupGen 0 (by decide) = 0 := by
+example : CirclePointIndex.subgroupGen 0 = 0 := by
   simp
 
-example : CirclePointIndex.subgroupGen logOrder (by decide) = CirclePointIndex.generator := by
+example : CirclePointIndex.subgroupGen logOrder = CirclePointIndex.generator := by
   simp
 
 def smallHalfCoset : Coset :=

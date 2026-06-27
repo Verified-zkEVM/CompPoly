@@ -106,7 +106,7 @@ theorem conjugate_x (p : Point) : (-p).x = p.x := rfl
 theorem conjugate_y (p : Point) : (-p).y = -p.y := rfl
 
 @[simp]
-theorem add_zero (p : Point) : (0 : Point) + p = p := by
+theorem zero_add (p : Point) : (0 : Point) + p = p := by
   obtain ⟨px, py, hp⟩ := p
   apply Point.ext
   · change (1 : Field) * px - (0 : Field) * py = px
@@ -149,9 +149,10 @@ namespace CirclePointIndex
 /-- The distinguished generator index. -/
 def generator : CirclePointIndex := 1
 
-/-- Subgroup generator index for a subgroup of order `2^logSize`. Requires
-`logSize ≤ logOrder` so the exponent is well-defined. -/
-def subgroupGen (logSize : Nat) (_ : logSize ≤ logOrder) : CirclePointIndex :=
+/-- Subgroup generator index for the subgroup of order `2^logSize`. For
+`logSize ≤ logOrder` this is the canonical generator of that subgroup; callers
+that rely on the bound (`Coset.new`, `odds`, `halfOdds`) carry it themselves. -/
+def subgroupGen (logSize : Nat) : CirclePointIndex :=
   (2 ^ (logOrder - logSize) : Nat)
 
 /-- Interpret an index as a repeated multiple of the STWO circle generator.
@@ -170,15 +171,15 @@ theorem toPoint_zero : toPoint 0 = 0 := by
 theorem toPoint_generator : toPoint CirclePointIndex.generator = Circle.generator := by
   unfold toPoint CirclePointIndex.generator Circle.generator
   change Point.nsmul Circle.generator (0 + 1) = Circle.generator
-  simp [Point.nsmul, Point.add_zero]
+  simp [Point.nsmul, Point.zero_add]
 
 @[simp]
-theorem subgroupGen_zero : subgroupGen 0 (by decide) = 0 := by
+theorem subgroupGen_zero : subgroupGen 0 = 0 := by
   change ((2 ^ (logOrder - 0) : Nat) : ZMod order) = 0
   simp [order]
 
 @[simp]
-theorem subgroupGen_logOrder : subgroupGen logOrder (by decide) = generator := by
+theorem subgroupGen_logOrder : subgroupGen logOrder = generator := by
   simp [subgroupGen, generator]
 
 end CirclePointIndex
@@ -196,7 +197,7 @@ namespace Coset
 def new (initialIndex : CirclePointIndex) (logSize : Nat) (hlogSize : logSize ≤ logOrder) :
     Coset where
   initialIndex := initialIndex
-  stepSize := CirclePointIndex.subgroupGen logSize hlogSize
+  stepSize := CirclePointIndex.subgroupGen logSize
   logSize := logSize
   logSize_le_logOrder := hlogSize
 
@@ -206,12 +207,12 @@ def subgroup (logSize : Nat) (hlogSize : logSize ≤ logOrder) : Coset :=
 
 /-- The STWO coset `G_{2n} + <G_n>`. -/
 def odds (logSize : Nat) (hlogSize : logSize + 1 ≤ logOrder) : Coset :=
-  new (CirclePointIndex.subgroupGen (logSize + 1) hlogSize) logSize
+  new (CirclePointIndex.subgroupGen (logSize + 1)) logSize
     (Nat.le_trans (Nat.le_succ logSize) hlogSize)
 
 /-- The STWO coset `G_{4n} + <G_n>`, whose conjugate completes `odds (logSize + 1)`. -/
 def halfOdds (logSize : Nat) (hlogSize : logSize + 2 ≤ logOrder) : Coset :=
-  new (CirclePointIndex.subgroupGen (logSize + 2) hlogSize) logSize
+  new (CirclePointIndex.subgroupGen (logSize + 2)) logSize
     (Nat.le_trans (Nat.le_add_right logSize 2) hlogSize)
 
 /-- Number of indices in the coset. -/
