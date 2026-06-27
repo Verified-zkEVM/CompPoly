@@ -109,6 +109,7 @@ import CompPoly.LinearAlgebra.Dense
 import CompPoly.LinearAlgebra.Dense.Basic
 import CompPoly.LinearAlgebra.Dense.Kernel
 import CompPoly.LinearAlgebra.Dense.KernelCorrectness
+import CompPoly.LinearAlgebra.Dense.KernelInPlaceCorrectness
 import CompPoly.LinearAlgebra.Dense.RowOps
 import CompPoly.LinearAlgebra.Dense.RowOpsCorrectness
 import CompPoly.LinearAlgebra.Dense.RrefSemantics
@@ -154,11 +155,13 @@ import CompPoly.Multivariate.VarsDegrees
 import CompPoly.Multivariate.Wheels
 import CompPoly.ToMathlib.Finsupp.Fin
 import CompPoly.ToMathlib.MvPolynomial.Equiv
+import CompPoly.ToMathlib.Order.WithBot
 import CompPoly.ToMathlib.Polynomial.BivariateDegree
 import CompPoly.ToMathlib.Polynomial.BivariateEvaluation
 import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
 import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
 import CompPoly.ToMathlib.Polynomial.Div
+import CompPoly.ToMathlib.Polynomial.Roots
 import CompPoly.Univariate.Barycentric
 import CompPoly.Univariate.Basic
 import CompPoly.Univariate.BatchEval
@@ -211,6 +214,9 @@ import CompPoly.Univariate.Raw.Division
 import CompPoly.Univariate.Raw.Modular
 import CompPoly.Univariate.Raw.Ops
 import CompPoly.Univariate.Raw.Proofs
+import CompPoly.Univariate.ReedSolomon
+import CompPoly.Univariate.ReedSolomon.GaoCorrectness
+import CompPoly.Univariate.ReedSolomon.GaoDecoder
 import CompPoly.Univariate.Roots
 import CompPoly.Univariate.Roots.Backend
 import CompPoly.Univariate.Roots.CantorZassenhaus
