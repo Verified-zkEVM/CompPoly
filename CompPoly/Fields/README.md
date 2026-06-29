@@ -10,17 +10,18 @@ This directory contains formally verified field infrastructure used in zero-know
 | **PrattCertificate.lean** | Lucas test for primality and Pratt certificate infrastructure (`PrattCertificate`, `PrattCertificate'`) for proving concrete primality goals. |
 | **BabyBear.lean** | Facade for BabyBear modules, re-exporting the canonical field and fast native-word implementation. |
 | **BabyBear/Basic.lean** | \(2^{31} - 2^{27} + 1\) — Risc Zero. |
-| **BabyBear/Fast.lean** | Native `UInt32` Montgomery-residue operations for BabyBear, with conversion and operation equivalence statements against `BabyBear.Field`. |
+| **BabyBear/Fast.lean** | BabyBear-namespaced API over the shared fast-field implementation (`Montgomery/Native32Field.lean`): thin wrappers forwarding the native `UInt32` Montgomery-residue operations and their `BabyBear.Field` equivalence (`@[simp]`) lemmas. |
 | **BLS12_377.lean** | Scalar field of BLS12-377 (253-bit, 2-adicity 47) — Zexe. |
 | **BLS12_381.lean** | Scalar field of BLS12-381 (253-bit, 2-adicity 47). |
 | **BN254.lean** | Scalar field of BN254 curve. |
 | **Goldilocks.lean** | \(2^{64} - 2^{32} + 1\) — Plonky2/3. |
 | **KoalaBear.lean** | Facade for KoalaBear modules, re-exporting the canonical field and fast native-word implementation. |
 | **KoalaBear/Basic.lean** | \(2^{31} - 2^{24} + 1\) — lean Ethereum spec. |
-| **KoalaBear/Fast.lean** | Native `UInt32` Montgomery-residue operations for KoalaBear, with conversion and operation equivalence statements against `KoalaBear.Field`. |
+| **KoalaBear/Fast.lean** | KoalaBear-namespaced API over the shared fast-field implementation (`Montgomery/Native32Field.lean`): thin wrappers forwarding the native `UInt32` Montgomery-residue operations and their `KoalaBear.Field` equivalence (`@[simp]`) lemmas. |
 | **Mersenne.lean** | \(2^{31} - 1\) — Circle STARKs. |
 | **Montgomery/Basic.lean** | Radix-generic Montgomery reduction, field-agnostic number theory shared by the fast prime fields. |
 | **Montgomery/Native32.lean** | `UInt32 × UInt64`, radix `R = 2^32` word-level Montgomery bridge over the generic core. |
+| **Montgomery/Native32Field.lean** | Shared 32-bit-word fast-field implementation over the word bridge: the `Mont32Field` per-field data class, the `FastField` carrier, every field operation, the algebraic instances, and the `toField`/`ofField` correctness bridge — written once and instantiated by both BabyBear and KoalaBear. |
 | **Secp256k1.lean** | Base and scalar fields for the Secp256k1 curve (used in Bitcoin/Ethereum). |
 
 ## Binary-field modules

@@ -20,6 +20,7 @@ CompPoly/Fields/
   Montgomery/
     Basic.lean
     Native32.lean
+    Native32Field.lean
   Binary/
     Common.lean
     BF128Ghash/
