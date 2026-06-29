@@ -1,26 +1,16 @@
 /-
 Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao
+Authors: Quang Dao, Varun Thakore
 -/
 
-import CompPoly.Fields.PrattCertificate
+import CompPoly.Fields.Goldilocks.Basic
+import CompPoly.Fields.Goldilocks.Fast
 
 /-!
-  # Goldilocks prime field `2^{64} - 2^{32} + 1`
+# Goldilocks Field
 
-  This is the field used in Plonky2/3.
+Facade module for the Goldilocks field. It re-exports the canonical `ZMod` model
+from `CompPoly.Fields.Goldilocks.Basic` and the native-word implementation from
+`CompPoly.Fields.Goldilocks.Fast`.
 -/
-
-namespace Goldilocks
-
-@[reducible]
-def fieldSize : Nat := 2 ^ 64 - 2 ^ 32 + 1
-
-abbrev Field := ZMod fieldSize
-
-theorem is_prime : Nat.Prime fieldSize := by
-  unfold fieldSize
-  pratt
-
-end Goldilocks
