@@ -3,9 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Georgios Raikos
 -/
+import CompPoly.Fields.BN254.Fast.Limb
+import CompPoly.Fields.BN254.Fast.UInt128L
 
 namespace BN254.Fast
-
 structure UInt256L where
   l0 : UInt64
   l1 : UInt64
@@ -16,20 +17,21 @@ deriving DecidableEq
 def UInt256L.toNat (x : UInt256L) : Nat :=
   x.l0.toNat + (x.l1.toNat <<< 64) + (x.l2.toNat <<< 128) + (x.l3.toNat <<< 192)
 
-/-- One limb of add-with-carry: `(dᵢ, carry')`, with `carry' ∈ {0,1}` when `c ∈ {0,1}`. -/
-@[inline] def addc (a b c : UInt64) : UInt64 × UInt64 :=
-  let s1 := a + b
-  let c1 := if s1 < a then 1 else 0
-  let s2 := s1 + c
-  let c2 := if s2 < s1 then 1 else 0
-  (s2, c1 + c2)
-
-@[inline] def UInt256L.add (a b : UInt256L) : UInt256L :=
-  let (l0, c0) := addc a.l0 b.l0 0
+@[inline] def UInt256L.addCarry (a b : UInt256L) (cin : UInt64) : UInt256L :=
+  let (l0, c0) := addc a.l0 b.l0 cin
   let (l1, c1) := addc a.l1 b.l1 c0
   let (l2, c2) := addc a.l2 b.l2 c1
-  let (l3, _) := addc a.l3 b.l3 c2
-  { l0 := l0, l1 := l1, l2 := l2, l3 := l3 }
+  let (l3, _ ) := addc a.l3 b.l3 c2
+  ⟨l0, l1, l2, l3⟩
+
+def UInt256L.add a b := UInt256L.addCarry a b 0
+
+-- @[inline] def UInt256L.add (a b : UInt256L) : UInt256L :=
+--   let (l0, c0) := addc a.l0 b.l0 0
+--   let (l1, c1) := addc a.l1 b.l1 c0
+--   let (l2, c2) := addc a.l2 b.l2 c1
+--   let (l3, _) := addc a.l3 b.l3 c2
+--   ⟨ l0, l1, l2, l3 ⟩
 
 /-- One limb of subtract-with-borrow: `(dᵢ, borrow')`, with `borrow' ∈ {0,1}` when `borrow ∈ {0,1}`. -/
 @[inline] def subb (a b borrow : UInt64) : UInt64 × UInt64 :=
@@ -44,7 +46,49 @@ def UInt256L.toNat (x : UInt256L) : Nat :=
   let (l1, brw1) := subb a.l1 b.l1 brw0
   let (l2, brw2) := subb a.l2 b.l2 brw1
   let (l3, _) := subb a.l3 b.l3 brw2
-  { l0 := l0, l1 := l1, l2 := l2, l3 := l3 }
+  ⟨ l0, l1, l2, l3 ⟩
+
+
+/-- Full 64×64→128 product as UInt128L. -/
+@[inline] def mulLimb (a b : UInt64) : UInt128L :=
+  let mask : UInt64 := 0xFFFFFFFF
+  let aL := a &&& mask
+  let aH := a >>> 32
+  let bL := b &&& mask
+  let bH := b >>> 32
+  let ll := aL * bL
+  let lh := aL * bH
+  let hl := aH * bL
+  let hh := aH * bH
+  let cross := (ll >>> 32) + (lh &&& mask) + (hl &&& mask)
+  let lo := (ll &&& mask) ||| (cross <<< 32)
+  let hi := hh + (lh >>> 32) + (hl >>> 32) + (cross >>> 32)
+  ⟨ lo, hi ⟩
+
+/-- `lhs · rhs` with `lhs < 2^256`, `rhs < 2^64`. Returns the lowest limb and the
+remaining four limbs of the 5-limb product. -/
+@[inline] def mulSmall (lhs : UInt256L) (rhs : UInt64) : UInt64 × UInt256L :=
+  let p0 : UInt128L := mulLimb lhs.l0 rhs
+  let c0 : UInt128L := ⟨ p0.hi, 0 ⟩
+  let p1 : UInt128L := c0 + (mulLimb lhs.l1 rhs)
+  let c1 : UInt128L := ⟨p1.hi, 0 ⟩
+  let p2 : UInt128L := c1 + (mulLimb lhs.l2 rhs)
+  let c2 : UInt128L := ⟨ p2.hi, 0 ⟩
+  let p3 : UInt128L := c2 + (mulLimb lhs.l3 rhs)
+  (p0.lo, ⟨ p1.lo, p2.lo, p3.lo, p3.hi ⟩)
+
+
+@[inline] def mulSmallAndAcc (lhs : UInt256L) (rhs: UInt64) (add : UInt256L) : UInt64 × UInt256L :=
+  let p0 : UInt128L := ⟨add.l0, 0 ⟩  +  (mulLimb lhs.l0 rhs)
+  let c0 : UInt128L := ⟨ p0.hi, 0 ⟩
+  let p1 : UInt128L := c0 + (mulLimb lhs.l1 rhs) + ⟨ add.l1, 0 ⟩
+  let c1 : UInt128L := ⟨p1.hi, 0 ⟩
+  let p2 : UInt128L := c1 + (mulLimb lhs.l2 rhs) + ⟨ add.l2, 0 ⟩
+  let c2 : UInt128L := ⟨ p2.hi, 0 ⟩
+  let p3 : UInt128L := c2 + (mulLimb lhs.l3 rhs) + ⟨ add.l3, 0 ⟩
+  (p0.lo, ⟨ p1.lo, p2.lo, p3.lo, p3.hi ⟩)
+
+
 
 
 @[inline] def UInt256L.cmp (a b : UInt256L) : Ordering :=
@@ -132,36 +176,22 @@ theorem UInt256L.toNat_inj {a b : UInt256L} : a.toNat = b.toNat ↔ a = b := by
     refine ⟨?_, ?_, ?_, ?_⟩ <;> (apply UInt64.toNat_inj.mp; omega)
   · intro h; rw [h]
 
-/-- One limb of add-with-carry is correct: the low word plus the carry-out times the base
-recovers the sum of the inputs and the carry-in; the carry-out is a single bit (given a
-single-bit carry-in) and the result fits in a word. -/
-theorem addc_spec (a b c : UInt64) (hc : c.toNat ≤ 1) :
-    (addc a b c).1.toNat + (addc a b c).2.toNat * 2 ^ 64 = a.toNat + b.toNat + c.toNat
-    ∧ (addc a b c).2.toNat ≤ 1
-    ∧ (addc a b c).1.toNat < 2 ^ 64 := by
-  have ha := UInt64.toNat_lt a
-  have hb := UInt64.toNat_lt b
-  have l11 : ((1 : UInt64) + 1).toNat = 2 := by decide
-  have l10 : ((1 : UInt64) + 0).toNat = 1 := by decide
-  have l01 : ((0 : UInt64) + 1).toNat = 1 := by decide
-  have l00 : ((0 : UInt64) + 0).toNat = 0 := by decide
-  unfold addc
+
+/-- The ripple-carry add-with-carry agrees with `Nat` addition modulo `2 ^ 256`, given a
+single-bit carry-in. The numeric contract for `UInt256L.addCarry`. -/
+theorem UInt256L.toNat_addCarry (a b : UInt256L) (cin : UInt64) (hcin : cin.toNat ≤ 1) :
+    (UInt256L.addCarry a b cin).toNat = (a.toNat + b.toNat + cin.toNat) % 2 ^ 256 := by
+  unfold UInt256L.addCarry
   dsimp only
-  by_cases h1 : a + b < a
-  · by_cases h2 : a + b + c < a + b
-    · simp only [if_pos h1, if_pos h2, l11]
-      rw [UInt64.lt_iff_toNat_lt] at h1 h2
-      simp only [UInt64.toNat_add] at h1 h2 ⊢; omega
-    · simp only [if_pos h1, if_neg h2, l10]
-      rw [UInt64.lt_iff_toNat_lt] at h1 h2
-      simp only [UInt64.toNat_add] at h1 h2 ⊢; omega
-  · by_cases h2 : a + b + c < a + b
-    · simp only [if_neg h1, if_pos h2, l01]
-      rw [UInt64.lt_iff_toNat_lt] at h1 h2
-      simp only [UInt64.toNat_add] at h1 h2 ⊢; omega
-    · simp only [if_neg h1, if_neg h2, l00]
-      rw [UInt64.lt_iff_toNat_lt] at h1 h2
-      simp only [UInt64.toNat_add] at h1 h2 ⊢; omega
+  -- Each limb's carry-out (`c·`) feeds the next limb's carry-in; `addc_spec` also
+  -- supplies the result-limb bound (`hb·`), so the chain closes by `omega`.
+  obtain ⟨e0, c0, hb0⟩ := addc_spec a.l0 b.l0 cin hcin
+  obtain ⟨e1, c1, hb1⟩ := addc_spec a.l1 b.l1 (addc a.l0 b.l0 cin).2 c0
+  obtain ⟨e2, c2, hb2⟩ := addc_spec a.l2 b.l2 (addc a.l1 b.l1 (addc a.l0 b.l0 cin).2).2 c1
+  obtain ⟨e3, c3, hb3⟩ := addc_spec a.l3 b.l3
+    (addc a.l2 b.l2 (addc a.l1 b.l1 (addc a.l0 b.l0 cin).2).2).2 c2
+  simp only [UInt256L.toNat, Nat.shiftLeft_eq]
+  omega
 
 /-- The ripple-carry addition agrees with `Nat` addition modulo `2 ^ 256` (the numeric
 analogue of `UInt64.toNat_add` for the 256-bit limb type). -/
@@ -169,17 +199,8 @@ theorem UInt256L.toNat_add (a b : UInt256L) :
     (a + b).toNat = (a.toNat + b.toNat) % 2 ^ 256 := by
   show (UInt256L.add a b).toNat = _
   unfold UInt256L.add
-  dsimp only
-  -- Each limb's carry-out (`c·`) feeds the next limb's carry-in; `addc_spec` also
-  -- supplies the result-limb bound (`hb·`), so the chain closes by `omega`.
-  obtain ⟨e0, c0, hb0⟩ := addc_spec a.l0 b.l0 0 (by decide)
-  obtain ⟨e1, c1, hb1⟩ := addc_spec a.l1 b.l1 (addc a.l0 b.l0 0).2 c0
-  obtain ⟨e2, c2, hb2⟩ := addc_spec a.l2 b.l2 (addc a.l1 b.l1 (addc a.l0 b.l0 0).2).2 c1
-  obtain ⟨e3, c3, hb3⟩ := addc_spec a.l3 b.l3
-    (addc a.l2 b.l2 (addc a.l1 b.l1 (addc a.l0 b.l0 0).2).2).2 c2
-  have hz : (0 : UInt64).toNat = 0 := rfl
-  simp only [UInt256L.toNat, Nat.shiftLeft_eq]
-  omega
+  rw [UInt256L.toNat_addCarry a b 0 (by decide), show (0 : UInt64).toNat = 0 from rfl,
+      Nat.add_zero]
 
 /-- Wrapping subtraction on `UInt64`, as a `Nat` formula. -/
 theorem u64_toNat_sub (a b : UInt64) :
@@ -237,5 +258,6 @@ theorem UInt256L.toNat_sub_of_le {a b : UInt256L} (h : b.toNat ≤ a.toNat) :
   have hz : (0 : UInt64).toNat = 0 := rfl
   simp only [UInt256L.toNat, Nat.shiftLeft_eq] at h ⊢
   omega
+
 
 end BN254.Fast
