@@ -32,6 +32,7 @@ public import CompPolyTests.Fields.Binary.BF128Ghash.Prelude
 public import CompPolyTests.Fields.Binary.Tower.Fast
 public import CompPolyTests.Fields.Extension.Arithmetic
 public import CompPolyTests.Fields.Extension.Binomial
+public import CompPolyTests.Fields.Goldilocks.Fast
 public import CompPolyTests.Fields.KoalaBear.Fast
 public import CompPolyTests.Fields.Mersenne31.Fast
 public import CompPolyTests.Fields.PrattCertificate
