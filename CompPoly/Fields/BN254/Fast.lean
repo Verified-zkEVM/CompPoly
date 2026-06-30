@@ -99,12 +99,47 @@ def square (x : ScalarField) : ScalarField := mul x x
 def pow (x : ScalarField) (n : Nat) : ScalarField :=
   @npowBinRec ScalarField ⟨one⟩ ⟨mul⟩ n x
 
+/-- Shared 4-bit window table builder: `tableAux x n s = [s, s*x, ..., s*x^(n-1)]` (`n` entries,
+each one multiply, threaded through the running power `s`). -/
+def tableAux (x : ScalarField) : Nat → ScalarField → List ScalarField
+  | 0, _ => []
+  | n + 1, cur => cur :: tableAux x n (mul cur x)
+
+/-- The 4-bit window table `[x^0, x^1, ..., x^15]`, precomputed once with 15 multiplications. -/
+def windowTable (x : ScalarField) : List ScalarField := tableAux x 16 one
+
 /-- Fermat exponent used for inversion in the prime field (`x⁻¹ = x^(p-2)`). -/
 def invExponent : Nat := scalarFieldSize - 2
 
-/-- Inversion in Montgomery form via Fermat's little theorem. -/
+/-- The base-16 digits of the inversion exponent `p-2`, most significant first (64 nibbles).
+A `List` CAF, built once at initialization, so inversion never decomposes the 254-bit exponent
+nor materializes a list at runtime (`.tail`/`.headD` are O(1) on the cached list). -/
+def p2HexDigits : List Nat :=
+  (List.range 64).map (fun i => (invExponent >>> ((63 - i) * 4)) &&& 0xF)
+
+/-- `x^16` by four explicit squarings (no exponentiation-by-squaring dispatch). -/
 @[inline]
-def inv (x : ScalarField) : ScalarField := pow x invExponent
+def sq4 (acc : ScalarField) : ScalarField := square (square (square (square acc)))
+
+/-- The window table as an `Array`, for O(1) digit lookup during inversion. -/
+@[inline]
+def windowTableArr (x : ScalarField) : Array ScalarField := (windowTable x).toArray
+
+/-- One window step: four squarings, then a table multiply unless the digit is `0`. -/
+@[inline]
+def windowStep (tbl : Array ScalarField) (acc : ScalarField) (d : Nat) : ScalarField :=
+  if d = 0 then sq4 acc else mul (sq4 acc) (tbl.getD d one)
+
+/-- Base-16 Horner exponentiation to the fixed exponent `p-2` against a precomputed window
+table: four squarings and (for nonzero digits) one table multiply per digit, most significant
+first. The leading digit seeds the accumulator directly, sparing a wasted initial squaring. -/
+def invFold (tbl : Array ScalarField) : ScalarField :=
+  p2HexDigits.tail.foldl (windowStep tbl) (tbl.getD (p2HexDigits.headD 0) one)
+
+/-- Inversion in Montgomery form via Fermat's little theorem (`x⁻¹ = x^(p-2)`), evaluated by
+fixed 4-bit window exponentiation over the precomputed digits of `p-2`. -/
+@[inline]
+def inv (x : ScalarField) : ScalarField := invFold (windowTableArr x)
 
 /-- Division through inversion and fast multiplication. -/
 @[inline]
@@ -253,9 +288,91 @@ theorem toField_pow (x : ScalarField) (n : Nat) : toField (pow x n) = toField x 
   | zero => unfold pow; rw [npowBinRec_zero, toField_one]; simp
   | succ n ih => rw [pow_succ_field, toField_mul, ih, _root_.pow_succ]
 
+private theorem toField_mul_raw (x y : ScalarField) :
+    toField (mul x y) = toField x * toField y := by
+  change toField (x * y) = toField x * toField y
+  exact toField_mul x y
+
+/-- Each window-table entry `d` casts to `x ^ d` (offset by the threaded `s`). -/
+private theorem tableAux_toField (x : ScalarField) (n : Nat) :
+    ∀ (s : ScalarField) (d : Nat), d < n →
+      toField ((tableAux x n s).getD d one) = toField s * toField x ^ d := by
+  induction n with
+  | zero => intro s d hd; omega
+  | succ n ih =>
+    intro s d hd
+    cases d with
+    | zero => simp only [tableAux, List.getD_cons_zero, pow_zero, mul_one]
+    | succ d =>
+      simp only [tableAux, List.getD_cons_succ]
+      rw [ih (mul s x) d (by omega), toField_mul_raw, pow_succ]
+      ring
+
+/-- The window table entry `d` is `x ^ d` in the canonical field. -/
+private theorem windowTable_toField (x : ScalarField) :
+    ∀ d, d < 16 → toField ((windowTable x).getD d one) = toField x ^ d := by
+  intro d hd
+  have h1 : toField one = 1 := toField_one
+  rw [windowTable, tableAux_toField x 16 one d hd, h1, one_mul]
+
+/-- `sq4` is the 16th power in the canonical field. -/
+private theorem toField_sq4 (acc : ScalarField) : toField (sq4 acc) = toField acc ^ 16 := by
+  unfold sq4; simp only [toField_square]; ring
+
+/-- The `Array` window table casts entrywise to powers of `toField x` (via the `List` table). -/
+private theorem windowTableArr_toField (x : ScalarField) :
+    ∀ d, d < 16 → toField ((windowTableArr x).getD d one) = toField x ^ d := by
+  intro d hd
+  rw [windowTableArr]
+  simp only [Array.getD_eq_getD_getElem?, List.getElem?_toArray]
+  exact windowTable_toField x d hd
+
+/-- Folding the window step over any list of base-16 digits computes the Horner value of those
+digits as an exponent of `toField x` (a zero digit contributes only the four squarings). -/
+private theorem windowFold_toField (x : ScalarField) (tbl : Array ScalarField)
+    (htbl : ∀ d, d < 16 → toField (tbl.getD d one) = toField x ^ d) :
+    ∀ (ds : List Nat), (∀ d ∈ ds, d < 16) → ∀ (acc : ScalarField) (E : Nat),
+      toField acc = toField x ^ E →
+        toField (ds.foldl (windowStep tbl) acc)
+          = toField x ^ (ds.foldl (fun n d => n * 16 + d) E) := by
+  intro ds
+  induction ds with
+  | nil => intro _ acc E hacc; simpa using hacc
+  | cons d ds ih =>
+    intro hds acc E hacc
+    simp only [List.foldl_cons]
+    apply ih (fun d' hd' => hds d' (List.mem_cons_of_mem _ hd'))
+    have hd : d < 16 := hds d (List.mem_cons_self ..)
+    unfold windowStep
+    by_cases h0 : d = 0
+    · rw [if_pos h0, toField_sq4, hacc, ← pow_mul]; congr 1; omega
+    · rw [if_neg h0, toField_mul_raw, toField_sq4, hacc, htbl d hd, ← pow_mul, ← pow_add]
+
+/-- Every precomputed tail digit is a base-16 digit. -/
+private theorem p2HexDigits_tail_lt : ∀ d ∈ p2HexDigits.tail, d < 16 := by decide
+
+/-- The leading precomputed digit is a base-16 digit. -/
+private theorem p2HexDigits_head_lt : p2HexDigits.headD 0 < 16 := by decide
+
+/-- The precomputed digits reconstruct the inversion exponent `p-2` via base-16 Horner, the
+leading digit seeding the accumulator. -/
+private theorem p2HexDigits_reconstruct :
+    p2HexDigits.tail.foldl (fun n d => n * 16 + d) (p2HexDigits.headD 0) = invExponent := by
+  decide
+
+/-- `invFold` against a correct table computes `x ^ (p-2)` in the canonical field. -/
+private theorem toField_invFold (x : ScalarField) (tbl : Array ScalarField)
+    (htbl : ∀ d, d < 16 → toField (tbl.getD d one) = toField x ^ d) :
+    toField (invFold tbl) = toField x ^ invExponent := by
+  unfold invFold
+  rw [windowFold_toField x tbl htbl p2HexDigits.tail p2HexDigits_tail_lt
+        (tbl.getD (p2HexDigits.headD 0) one) (p2HexDigits.headD 0)
+        (htbl _ p2HexDigits_head_lt),
+      p2HexDigits_reconstruct]
+
 private theorem toField_inv_pow (x : ScalarField) :
     toField (inv x) = toField x ^ invExponent := by
-  unfold inv; exact toField_pow x invExponent
+  unfold inv; exact toField_invFold x (windowTableArr x) (windowTableArr_toField x)
 
 private theorem toField_inv_raw (x : ScalarField) : toField (inv x) = (toField x)⁻¹ := by
   rw [toField_inv_pow]
@@ -271,11 +388,6 @@ private theorem toField_inv_raw (x : ScalarField) : toField (inv x) = (toField x
 theorem toField_inv (x : ScalarField) : toField x⁻¹ = (toField x)⁻¹ := by
   change toField (inv x) = (toField x)⁻¹
   exact toField_inv_raw x
-
-private theorem toField_mul_raw (x y : ScalarField) :
-    toField (mul x y) = toField x * toField y := by
-  change toField (x * y) = toField x * toField y
-  exact toField_mul x y
 
 private theorem toField_div_mul_inv (x y : ScalarField) :
     toField (div x y) = toField x * toField (inv y) := by

@@ -58,4 +58,7 @@ set_option maxRecDepth 4000
 #guard toField ((37 : ScalarField)⁻¹) = ((37 : BN254.ScalarField)⁻¹)
 #guard toField ((37 : ScalarField) ^ (-3 : Int)) = ((37 : BN254.ScalarField) ^ (-3 : Int))
 
+-- The precomputed-digit window inversion agrees with the canonical inverse on another value.
+#guard toField ((987654321 : ScalarField)⁻¹) = ((987654321 : BN254.ScalarField)⁻¹)
+
 end BN254.Fast
