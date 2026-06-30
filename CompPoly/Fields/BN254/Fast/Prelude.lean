@@ -29,6 +29,10 @@ abbrev ScalarField : Type := {x : UInt256L // x.toNat < modulus.toNat}
 
 instance : DecidableEq ScalarField := inferInstance
 
+/-- The raw Montgomery word backing a fast BN254 scalar-field element. -/
+@[inline]
+def raw (x : ScalarField) : UInt256L := x.val
+
 @[simp] theorem modulus_toNat : modulus.toNat = BN254.scalarFieldSize := by
   decide
 

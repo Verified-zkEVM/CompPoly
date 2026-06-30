@@ -191,6 +191,17 @@ theorem UInt256L.toNat_inj {a b : UInt256L} : a.toNat = b.toNat ↔ a = b := by
     refine ⟨?_, ?_, ?_, ?_⟩ <;> (apply UInt64.toNat_inj.mp; omega)
   · intro h; rw [h]
 
+/-- Build a `UInt256L` from a natural number by splitting it into four 64-bit limbs (the low
+256 bits of `n`); the inverse of `toNat` on `[0, 2 ^ 256)`. -/
+def UInt256L.ofNat (n : Nat) : UInt256L :=
+  ⟨UInt64.ofNat n, UInt64.ofNat (n >>> 64), UInt64.ofNat (n >>> 128), UInt64.ofNat (n >>> 192)⟩
+
+/-- `ofNat` then `toNat` is the identity on values that already fit in 256 bits. -/
+theorem UInt256L.toNat_ofNat (n : Nat) (hn : n < 2 ^ 256) : (UInt256L.ofNat n).toNat = n := by
+  unfold UInt256L.ofNat UInt256L.toNat
+  simp only [UInt64.toNat_ofNat', Nat.shiftLeft_eq, Nat.shiftRight_eq_div_pow]
+  omega
+
 
 /-- The ripple-carry add-with-carry agrees with `Nat` addition modulo `2 ^ 256`, given a
 single-bit carry-in. The numeric contract for `UInt256L.addCarry`. -/

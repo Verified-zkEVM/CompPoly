@@ -39,6 +39,21 @@ def r2ModModulus : UInt256L :=
     l2 := 0x8c49833d53bb8085,
     l3 := 0x0216d0b17f4e44a5 }
 
+/-- `r2ModModulus` is `R² = (2²⁵⁶)²` in `ZMod p`. Verified as a `Nat` congruence (kernel
+`decide`), then cast — the value half of "multiply by `R²` enters Montgomery form". -/
+theorem r2ModModulus_cast :
+    (r2ModModulus.toNat : ZMod scalarFieldSize)
+      = ((2 ^ 256 : Nat) : ZMod scalarFieldSize) ^ 2 := by
+  have h : r2ModModulus.toNat ≡ (2 ^ 256) ^ 2 [MOD scalarFieldSize] := by decide
+  rw [(ZMod.natCast_eq_natCast_iff _ _ _).mpr h, Nat.cast_pow]
+
+/-- `rModModulus` is `R = 2²⁵⁶` in `ZMod p` (the Montgomery image of one). Verified as a `Nat`
+congruence (kernel `decide`), then cast. -/
+theorem rModModulus_cast :
+    (rModModulus.toNat : ZMod scalarFieldSize) = ((2 ^ 256 : Nat) : ZMod scalarFieldSize) := by
+  have h : rModModulus.toNat ≡ 2 ^ 256 [MOD scalarFieldSize] := by decide
+  exact (ZMod.natCast_eq_natCast_iff _ _ _).mpr h
+
 /-- `-modulus⁻¹ mod 2^64`, the per-limb multiplier for **additive** interleaved
 Montgomery reduction. -/
 def montgomeryNegInv : UInt64 := 0xc2e1f593efffffff

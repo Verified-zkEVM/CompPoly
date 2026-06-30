@@ -71,5 +71,73 @@ theorem nat_eq_of_field_eq {a b : Nat} (ha : a < scalarFieldSize) (hb : b < scal
     (h : (a : BN254.ScalarField) = (b : BN254.ScalarField)) : a = b :=
   Montgomery.natCast_inj ha hb h
 
+/-! ## Entering Montgomery form (`ofField`) and the round trips -/
+
+/-- Build a fast element from a canonical natural representative `n < p`: materialise `n` as a
+256-bit word and `montgomeryMul` it by `R²`, landing on the Montgomery residue `n · R`. -/
+@[inline]
+def ofCanonicalNat (n : Nat) (h : n < scalarFieldSize) : ScalarField :=
+  ⟨montgomeryMul (UInt256L.ofNat n) r2ModModulus, by
+    have hlt : (UInt256L.ofNat n).toNat < scalarFieldSize := by
+      rw [UInt256L.toNat_ofNat n (by have := two_mul_scalarFieldSize_lt_two256; omega)]
+      exact h
+    have hb := (montgomeryMul_spec (UInt256L.ofNat n) r2ModModulus hlt).1
+    rwa [modulus_toNat]⟩
+
+/-- The stored word of `ofCanonicalNat n` is the Montgomery residue `n · 2²⁵⁶` in `ZMod p`:
+`montgomeryMul` contributes `R⁻¹`, `r2ModModulus` contributes `R²`, leaving one factor of `R`. -/
+theorem ofCanonicalNat_raw_cast (n : Nat) (h : n < scalarFieldSize) :
+    ((ofCanonicalNat n h).val.toNat : BN254.ScalarField)
+      = (n : BN254.ScalarField) * ((2 ^ 256 : Nat) : BN254.ScalarField) := by
+  have hn : n < 2 ^ 256 := by have := two_mul_scalarFieldSize_lt_two256; omega
+  have hlt : (UInt256L.ofNat n).toNat < scalarFieldSize := by
+    rw [UInt256L.toNat_ofNat n hn]; exact h
+  have hspec := (montgomeryMul_spec (UInt256L.ofNat n) r2ModModulus hlt).2
+  change ((montgomeryMul (UInt256L.ofNat n) r2ModModulus).toNat : BN254.ScalarField) = _
+  rw [hspec, UInt256L.toNat_ofNat n hn, r2ModModulus_cast, mul_assoc, pow_two,
+    mul_assoc ((2 ^ 256 : Nat) : BN254.ScalarField), mul_inv_cancel₀ r256_ne_zero, mul_one]
+
+/-- `toField` recovers the canonical representative fed to `ofCanonicalNat`. -/
+@[simp]
+theorem toField_ofCanonicalNat (n : Nat) (h : n < scalarFieldSize) :
+    toField (ofCanonicalNat n h) = (n : BN254.ScalarField) := by
+  rw [toField_eq_raw_mul_inv, ofCanonicalNat_raw_cast, mul_assoc,
+    mul_inv_cancel₀ r256_ne_zero, mul_one]
+
+/-- Convert from the canonical `ZMod p` field into fast Montgomery form. -/
+@[inline]
+def ofField (x : BN254.ScalarField) : ScalarField := ofCanonicalNat x.val (ZMod.val_lt x)
+
+/-- Convert a natural number into fast Montgomery form (reducing modulo `p` first). -/
+@[inline]
+def ofNat (n : Nat) : ScalarField :=
+  ofCanonicalNat (n % scalarFieldSize) (Nat.mod_lt _ BN254.ScalarField_is_prime.pos)
+
+/-- Convert an integer into fast Montgomery form. -/
+@[inline]
+def ofInt (n : Int) : ScalarField := ofField (n : BN254.ScalarField)
+
+/-- Canonical field → fast form → canonical field is the identity. -/
+@[simp]
+theorem toField_ofField (x : BN254.ScalarField) : toField (ofField x) = x := by
+  unfold ofField
+  rw [toField_ofCanonicalNat]
+  exact ZMod.natCast_zmod_val x
+
+/-- Fast form → canonical field → fast form is the identity. -/
+@[simp]
+theorem ofField_toField (x : ScalarField) : ofField (toField x) = x := by
+  apply Subtype.ext
+  apply UInt256L.toNat_inj.mp
+  apply nat_eq_of_field_eq (property_lt (ofField (toField x))) (property_lt x)
+  rw [raw_cast_eq_toField_mul, toField_ofField, raw_cast_eq_toField_mul]
+
+/-- `toField` is injective: distinct fast elements denote distinct elements of the canonical
+field. Derived from the `ofField`/`toField` round trip; this is the gateway lemma for
+transporting the `ZMod p` `Field` structure onto the fast representation via
+`Function.Injective.field` (operation-preservation lemmas supply the rest). -/
+theorem toField_injective : Function.Injective toField :=
+  Function.LeftInverse.injective ofField_toField
+
 end Fast
 end BN254
