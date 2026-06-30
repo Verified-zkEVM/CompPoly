@@ -67,12 +67,7 @@ import CompPoly.Fields.BLS12_381
 import CompPoly.Fields.BN254
 import CompPoly.Fields.BN254.Basic
 import CompPoly.Fields.BN254.Fast
-import CompPoly.Fields.BN254.Fast.Convert
-import CompPoly.Fields.BN254.Fast.Limb
-import CompPoly.Fields.BN254.Fast.Montgomery
 import CompPoly.Fields.BN254.Fast.Prelude
-import CompPoly.Fields.BN254.Fast.UInt128L
-import CompPoly.Fields.BN254.Fast.UInt256L
 import CompPoly.Fields.BabyBear
 import CompPoly.Fields.BabyBear.Basic
 import CompPoly.Fields.BabyBear.Fast
@@ -114,6 +109,11 @@ import CompPoly.Fields.KoalaBear.Basic
 import CompPoly.Fields.KoalaBear.Fast
 import CompPoly.Fields.Mersenne
 import CompPoly.Fields.Montgomery.Basic
+import CompPoly.Fields.Montgomery.Native256
+import CompPoly.Fields.Montgomery.Native256.Limb
+import CompPoly.Fields.Montgomery.Native256.UInt128L
+import CompPoly.Fields.Montgomery.Native256.UInt256L
+import CompPoly.Fields.Montgomery.Native256Field
 import CompPoly.Fields.Montgomery.Native32
 import CompPoly.Fields.Montgomery.Native32Field
 import CompPoly.Fields.PrattCertificate

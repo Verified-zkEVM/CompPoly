@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Georgios Raikos
 -/
 
-import CompPoly.Fields.BN254.Fast.Limb
+import CompPoly.Fields.Montgomery.Native256.Limb
 import Mathlib.Tactic.Ring
 
 /-!
@@ -14,7 +14,7 @@ A two-`UInt64`-limb word used to hold the 64×64→128 partial products of the B
 field's schoolbook multiplication, with ripple-carry addition and its `Nat` contract.
 -/
 
-namespace BN254.Fast
+namespace Montgomery.Native256
 
 structure UInt128L where
   lo : UInt64
@@ -54,4 +54,4 @@ theorem UInt128L.toNat_add (a b : UInt128L) :
         = a.lo.toNat + b.lo.toNat + (a.hi.toNat + b.hi.toNat) * 2 ^ 64 from by ring,
       ← key, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hbnd]
 
-end BN254.Fast
+end Montgomery.Native256

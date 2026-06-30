@@ -3,8 +3,8 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Georgios Raikos
 -/
-import CompPoly.Fields.BN254.Fast.Limb
-import CompPoly.Fields.BN254.Fast.UInt128L
+import CompPoly.Fields.Montgomery.Native256.Limb
+import CompPoly.Fields.Montgomery.Native256.UInt128L
 import Mathlib.Tactic.Ring
 import Mathlib.Tactic.Linarith
 
@@ -20,7 +20,7 @@ and `mulSmallAndAcc`, and their exact `Nat` correctness contracts.
 -- elaborator recursion limit is too low for them.
 set_option maxRecDepth 4000
 
-namespace BN254.Fast
+namespace Montgomery.Native256
 structure UInt256L where
   l0 : UInt64
   l1 : UInt64
@@ -39,13 +39,6 @@ def UInt256L.toNat (x : UInt256L) : Nat :=
   ⟨l0, l1, l2, l3⟩
 
 def UInt256L.add a b := UInt256L.addCarry a b 0
-
--- @[inline] def UInt256L.add (a b : UInt256L) : UInt256L :=
---   let (l0, c0) := addc a.l0 b.l0 0
---   let (l1, c1) := addc a.l1 b.l1 c0
---   let (l2, c2) := addc a.l2 b.l2 c1
---   let (l3, _) := addc a.l3 b.l3 c2
---   ⟨ l0, l1, l2, l3 ⟩
 
 /-- One limb of subtract-with-borrow: `(dᵢ, borrow')`, single-bit `borrow'` given single-bit
 `borrow`. -/
@@ -491,4 +484,4 @@ theorem mulSmallAndAcc_toNat (lhs : UInt256L) (rhs : UInt64) (add : UInt256L) :
   simp only [UInt256L.toNat, Nat.shiftLeft_eq]
   linarith [hQ0, hQ1, hQ2, hQ3]
 
-end BN254.Fast
+end Montgomery.Native256

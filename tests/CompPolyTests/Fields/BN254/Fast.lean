@@ -17,6 +17,7 @@ the `ofNat`/`toNat` round trip, the field operations, and agreement with the can
 namespace BN254.Fast
 
 open BN254 (scalarFieldSize)
+open Montgomery.Native256
 
 set_option maxRecDepth 4000
 

@@ -11,7 +11,7 @@ The 64-bit add-with-carry primitive and its `Nat` contract, the building block f
 ripple-carry arithmetic of the BN254 fast scalar field.
 -/
 
-namespace BN254.Fast
+namespace Montgomery.Native256
 
 /-- One limb of add-with-carry: `(dᵢ, carry')`, with `carry' ∈ {0,1}` when `c ∈ {0,1}`. -/
 @[inline] def addc (a b c : UInt64) : UInt64 × UInt64 :=
@@ -55,4 +55,4 @@ theorem addc_spec (a b c : UInt64) (hc : c.toNat ≤ 1) :
 
 
 
-end BN254.Fast
+end Montgomery.Native256
