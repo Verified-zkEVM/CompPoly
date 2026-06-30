@@ -63,7 +63,13 @@ import CompPoly.Data.RingTheory.AlgebraTower
 import CompPoly.Data.RingTheory.CanonicalEuclideanDomain
 import CompPoly.Data.Vector.Basic
 import CompPoly.Fields.BLS12_377
+import CompPoly.Fields.BLS12_377.Basic
+import CompPoly.Fields.BLS12_377.Fast
+import CompPoly.Fields.BLS12_377.Fast.Prelude
 import CompPoly.Fields.BLS12_381
+import CompPoly.Fields.BLS12_381.Basic
+import CompPoly.Fields.BLS12_381.Fast
+import CompPoly.Fields.BLS12_381.Fast.Prelude
 import CompPoly.Fields.BN254
 import CompPoly.Fields.BN254.Basic
 import CompPoly.Fields.BN254.Fast
