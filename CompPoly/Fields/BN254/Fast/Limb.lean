@@ -1,8 +1,14 @@
-
 /-
 Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Georgios Raikos
+-/
+
+/-!
+# Single-limb add-with-carry (`addc`)
+
+The 64-bit add-with-carry primitive and its `Nat` contract, the building block for the
+ripple-carry arithmetic of the BN254 fast scalar field.
 -/
 
 namespace BN254.Fast

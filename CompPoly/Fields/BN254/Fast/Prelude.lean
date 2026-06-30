@@ -7,6 +7,14 @@ Authors: Georgios Raikos
 import CompPoly.Fields.BN254.Basic
 import CompPoly.Fields.BN254.Fast.UInt256L
 
+/-!
+# Fast BN254 Scalar Field — Basics
+
+The native-word modulus constant and the `ScalarField` carrier type (a `UInt256L` below the
+prime) for the fast BN254 scalar field, plus the `decide`-checked numeric facts that the
+Montgomery layer builds on.
+-/
+
 namespace BN254
 namespace Fast
 
