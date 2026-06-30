@@ -117,6 +117,7 @@ import CompPoly.LinearAlgebra.Dense
 import CompPoly.LinearAlgebra.Dense.Basic
 import CompPoly.LinearAlgebra.Dense.Kernel
 import CompPoly.LinearAlgebra.Dense.KernelCorrectness
+import CompPoly.LinearAlgebra.Dense.KernelInPlaceCorrectness
 import CompPoly.LinearAlgebra.Dense.RowOps
 import CompPoly.LinearAlgebra.Dense.RowOpsCorrectness
 import CompPoly.LinearAlgebra.Dense.RrefSemantics
