@@ -14,10 +14,10 @@ import Mathlib.Algebra.Polynomial.Degree.Lemmas
 # Equivalence between `CPolynomial` and `CMvPolynomial 1`
 
 This file establishes the ring equivalence
-`CPolynomial.cmvEquiv : CPolynomial R ≃+* CMvPolynomial 1 R`.
+`CPolynomial.cmvEquiv : CPolynomial R ≃+* CMvPolynomial (Fin 1) R`.
 
 The equivalence chain is:
-  `CPolynomial R ≃ R[X] ≃ (CMvPolynomial 0 R)[X] ≃ CMvPolynomial 1 R`
+  `CPolynomial R ≃ R[X] ≃ (CMvPolynomial 0 R)[X] ≃ CMvPolynomial (Fin 1) R`
 
 The bridge lemmas expose how the inverse equivalence interacts with evaluation
 and degree, so one-variable results proved for `CPolynomial` can be transported
@@ -35,7 +35,7 @@ variable {R : Type*}
 single-variable computable multivariate polynomials. -/
 noncomputable def cmvEquiv
     [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] :
-    CPolynomial R ≃+* CMvPolynomial 1 R :=
+    CPolynomial R ≃+* CMvPolynomial (Fin 1) R :=
   (ringEquiv (R := R)).trans <|
     (Polynomial.mapEquiv (CMvPolynomial.isEmptyRingEquiv (R := R))).symm.trans
       (CMvPolynomial.finSuccEquiv (n := 0) (R := R)).symm
@@ -106,7 +106,7 @@ private lemma eval_mvToUnivariate [CommSemiring R]
 
 private theorem cmvEquiv_symm_toPoly
     [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
-    (p : CMvPolynomial 1 R) :
+    (p : CMvPolynomial (Fin 1) R) :
     ((cmvEquiv (R := R)).symm p).toPoly =
       mvToUnivariate (fromCMvPolynomial p) := by
   rw [mvToUnivariate_eq_map_finSuccEquiv]
@@ -130,14 +130,14 @@ private theorem cmvEquiv_symm_toPoly
 `CPolynomial` agrees with multivariate evaluation at the constant assignment. -/
 theorem eval_cmvEquiv_symm
     [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
-    (p : CMvPolynomial 1 R) (x : R) :
+    (p : CMvPolynomial (Fin 1) R) (x : R) :
     ((cmvEquiv (R := R)).symm p).eval x = p.eval (fun _ ↦ x) := by
   rw [eval_toPoly, cmvEquiv_symm_toPoly, eval_mvToUnivariate, ← eval_equiv]
 
 /-- Degree transport for differences through the inverse of `cmvEquiv`. -/
 theorem natDegree_cmvEquiv_symm_sub
     [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R]
-    (p q : CMvPolynomial 1 R) :
+    (p q : CMvPolynomial (Fin 1) R) :
     (((cmvEquiv (R := R)).symm p - (cmvEquiv (R := R)).symm q).natDegree) =
       (fromCMvPolynomial p - fromCMvPolynomial q).degreeOf 0 := by
   rw [natDegree_toPoly, toPoly_sub, cmvEquiv_symm_toPoly, cmvEquiv_symm_toPoly,

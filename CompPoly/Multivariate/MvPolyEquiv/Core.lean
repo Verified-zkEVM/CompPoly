@@ -25,15 +25,15 @@ open CMvPolynomial
 
 section
 
-variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+variable {σ : Type*} [FinEnum σ] {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 
-def fromCMvPolynomial  (p : CMvPolynomial n R) : MvPolynomial (Fin n) R :=
-  let support : List (Fin n →₀ ℕ) := p.monomials.map CMvMonomial.toFinsupp
-  let toFun (f : Fin n →₀ ℕ) : R := p[CMvMonomial.ofFinsupp f]?.getD 0
-  let mem_support_fun {a : Fin n →₀ ℕ} : a ∈ support ↔ toFun a ≠ 0 := by grind
+def fromCMvPolynomial  (p : CMvPolynomial σ R) : MvPolynomial σ R :=
+  let support : List (σ →₀ ℕ) := p.monomials.map CMvMonomial.toFinsupp
+  let toFun (f : σ →₀ ℕ) : R := p[CMvMonomial.ofFinsupp f]?.getD 0
+  let mem_support_fun {a : σ →₀ ℕ} : a ∈ support ↔ toFun a ≠ 0 := by grind
   Finsupp.mk support.toFinset toFun (by simp [mem_support_fun])
 
-noncomputable def toCMvPolynomial (p : MvPolynomial (Fin n) R) : CMvPolynomial n R :=
+noncomputable def toCMvPolynomial (p : MvPolynomial σ R) : CMvPolynomial σ R :=
   let ⟨s, f, _⟩ := p
   let unlawful := .ofList <| s.toList.map fun m ↦ (CMvMonomial.ofFinsupp m, f m)
   ⟨
@@ -61,11 +61,12 @@ noncomputable def toCMvPolynomial (p : MvPolynomial (Fin n) R) : CMvPolynomial n
       grind
   ⟩
 
-instance {n : ℕ} {R : Type*} : Membership (Vector ℕ n) (Unlawful n R) := inferInstance
+instance {σ : Type*} [FinEnum σ] {R : Type*} :
+    Membership (Vector ℕ (FinEnum.card σ)) (Unlawful σ R) := inferInstance
 
 omit [BEq R] [LawfulBEq R] in
 @[grind =, simp]
-theorem toCMvPolynomial_fromCMvPolynomial {p : CMvPolynomial n R} :
+theorem toCMvPolynomial_fromCMvPolynomial {p : CMvPolynomial σ R} :
     toCMvPolynomial (fromCMvPolynomial p) = p := by
   unfold fromCMvPolynomial toCMvPolynomial
   dsimp
@@ -83,7 +84,7 @@ theorem toCMvPolynomial_fromCMvPolynomial {p : CMvPolynomial n R} :
 
 omit [BEq R] [LawfulBEq R] in
 @[grind =, simp]
-theorem fromCMvPolynomial_toCMvPolynomial {p : MvPolynomial (Fin n) R} :
+theorem fromCMvPolynomial_toCMvPolynomial {p : MvPolynomial σ R} :
     fromCMvPolynomial (toCMvPolynomial p) = p := by
   dsimp [fromCMvPolynomial, toCMvPolynomial, toCMvPolynomial, fromCMvPolynomial]
   ext m; simp [MvPolynomial.coeff]
@@ -107,26 +108,27 @@ theorem fromCMvPolynomial_toCMvPolynomial {p : MvPolynomial (Fin n) R} :
   · have : ∀ x ∈ s, CMvMonomial.ofFinsupp x ≠ CMvMonomial.ofFinsupp m := by aesop
     grind
 
-lemma fromCMvPolynomial_injective : Function.Injective (@fromCMvPolynomial n R _) := by
+lemma fromCMvPolynomial_injective :
+    Function.Injective (fromCMvPolynomial (σ := σ) (R := R)) := by
   rw [Function.injective_iff_hasLeftInverse]
   exists toCMvPolynomial
   apply toCMvPolynomial_fromCMvPolynomial
 
 omit [BEq R] [LawfulBEq R] in
-lemma coeff_eq {m} (a : CMvPolynomial n R) :
+lemma coeff_eq {m} (a : CMvPolynomial σ R) :
     MvPolynomial.coeff m (fromCMvPolynomial a) = a.coeff (CMvMonomial.ofFinsupp m) := rfl
 
 @[aesop simp]
-lemma eq_iff_fromCMvPolynomial {u v: CMvPolynomial n R} :
+lemma eq_iff_fromCMvPolynomial {u v: CMvPolynomial σ R} :
     u = v ↔ fromCMvPolynomial u = fromCMvPolynomial v := by
   constructor
   · intro h
     exact congrArg fromCMvPolynomial h
   · intro h
-    exact (fromCMvPolynomial_injective (n := n) (R := R)) h
+    exact (fromCMvPolynomial_injective (σ := σ) (R := R)) h
 
 noncomputable def polyEquiv :
-    Equiv (CMvPolynomial n R) (MvPolynomial (Fin n) R) where
+    Equiv (CMvPolynomial σ R) (MvPolynomial σ R) where
   toFun := fromCMvPolynomial
   invFun := toCMvPolynomial
   left_inv := fun _ ↦ toCMvPolynomial_fromCMvPolynomial

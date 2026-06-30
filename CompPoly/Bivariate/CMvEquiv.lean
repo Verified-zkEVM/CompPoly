@@ -63,7 +63,7 @@ lemma isEmptyRingEquiv_symm_apply
 @[simp]
 lemma finSuccEquiv_symm_C
     {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
-    {n : ℕ} (x : CMvPolynomial n R) :
+    {n : ℕ} (x : CMvPolynomial (Fin n) R) :
     CMvPolynomial.finSuccEquiv.symm (Polynomial.C x) =
       CMvPolynomial.rename Fin.succ x := by
   apply fromCMvPolynomial_injective
@@ -95,8 +95,8 @@ lemma finSuccEquiv_symm_X
     {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
     {n : ℕ} :
     CMvPolynomial.finSuccEquiv.symm
-      (Polynomial.X : Polynomial (CMvPolynomial n R)) =
-      CMvPolynomial.X 0 := by
+      (Polynomial.X : Polynomial (CMvPolynomial (Fin n) R)) =
+      CMvPolynomial.X (0 : Fin (n + 1)) := by
   rw [finSuccEquiv, polyRingEquiv.symm_trans_apply,
     polyRingEquiv.symm_apply_eq, RingEquiv.symm_trans_apply]
   simp only [RingEquiv.symm_symm]
@@ -123,7 +123,7 @@ variable [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R]
 
 /-- Ring equivalence between `CBivariate R` and `CMvPolynomial 2 R`. -/
 noncomputable def bivariateEquiv :
-    CBivariate R ≃+* CMvPolynomial 2 R :=
+    CBivariate R ≃+* CMvPolynomial (Fin 2) R :=
   let toPolyEquiv := CBivariate.ringEquiv
   let embedCoeffs := Polynomial.mapEquiv
     (Polynomial.mapEquiv CMvPolynomial.isEmptyRingEquiv.symm)
@@ -162,14 +162,14 @@ lemma bivariateEquiv_CC (r : R) :
 /-- `bivariateEquiv` maps `CBivariate.X` to the second variable. -/
 lemma bivariateEquiv_X :
     bivariateEquiv (CBivariate.X : CBivariate R) =
-      CMvPolynomial.X 1 := by
+      CMvPolynomial.X (1 : Fin 2) := by
   -- `finSuccEquiv_symm_X` is applied here by `simp`
   simp [bivariateEquiv, ringEquiv, X_toPoly]
 
 /-- `bivariateEquiv` maps `CBivariate.Y` to the first variable. -/
 lemma bivariateEquiv_Y :
     bivariateEquiv (CBivariate.Y : CBivariate R) =
-      CMvPolynomial.X 0 := by
+      CMvPolynomial.X (0 : Fin 2) := by
   -- `finSuccEquiv_symm_X` is applied here by `simp`
   simp [bivariateEquiv, ringEquiv, Y_toPoly]
 
@@ -182,14 +182,14 @@ lemma bivariateEquiv_symm_C (r : R) :
 
 /-- `bivariateEquiv.symm` maps the first variable to `CBivariate.Y`. -/
 lemma bivariateEquiv_symm_X0 :
-    bivariateEquiv.symm (CMvPolynomial.X 0 : CMvPolynomial 2 R) =
+    bivariateEquiv.symm (CMvPolynomial.X (0 : Fin 2) : CMvPolynomial (Fin 2) R) =
       CBivariate.Y := by
   apply bivariateEquiv.injective
   simp [bivariateEquiv_Y]
 
 /-- `bivariateEquiv.symm` maps the second variable to `CBivariate.X`. -/
 lemma bivariateEquiv_symm_X1 :
-    bivariateEquiv.symm (CMvPolynomial.X 1 : CMvPolynomial 2 R) =
+    bivariateEquiv.symm (CMvPolynomial.X (1 : Fin 2) : CMvPolynomial (Fin 2) R) =
       CBivariate.X := by
   apply bivariateEquiv.injective
   simp [bivariateEquiv_X]

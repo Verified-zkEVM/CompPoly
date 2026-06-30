@@ -23,7 +23,7 @@ that depend on ring instances (monomial orders, `rename`, `aeval`, etc.) are in
 
 ## Main definitions
 
-* `CPoly.CMvPolynomial n R`: The type of multivariate polynomials in `n` variables
+* `CPoly.CMvPolynomial σ R`: The type of multivariate polynomials in variables `σ`
   with coefficients in `R`.
 * `CPoly.CMvPolynomial.C`: Constant polynomial constructor.
 * `CPoly.CMvPolynomial.X`: Variable polynomial constructor.
@@ -40,32 +40,34 @@ namespace CPoly
 
 open Std
 
-/-- A computable multivariate polynomial in `n` variables with coefficients in `R`. -/
-abbrev CMvPolynomial (n : ℕ) (R : Type*) [Zero R] : Type _ := Lawful n R
+/-- A computable multivariate polynomial in variables `σ` with coefficients in `R`. -/
+abbrev CMvPolynomial (σ : Type*) [FinEnum σ] (R : Type*) [Zero R] : Type _ := Lawful σ R
 
 variable {R : Type*}
 
 namespace CMvPolynomial
 
 /-- Construct a constant polynomial. -/
-def C {n : ℕ} {R : Type*} [BEq R] [LawfulBEq R] [Zero R] (c : R) : CMvPolynomial n R :=
-  Lawful.C (n := n) (R := R) c
+def C {σ : Type*} [FinEnum σ] {R : Type*} [BEq R] [LawfulBEq R] [Zero R] (c : R) :
+    CMvPolynomial σ R :=
+  Lawful.C (σ := σ) (R := R) c
 
 /-- Construct the polynomial $X_i$. -/
-def X {n : ℕ} {R : Type*} [Zero R] [One R] [BEq R] [LawfulBEq R]
-    (i : Fin n) : CMvPolynomial n R :=
-  let monomial : CMvMonomial n := Vector.ofFn (fun j => if j = i then 1 else 0)
+def X {σ : Type*} [FinEnum σ] {R : Type*} [Zero R] [One R] [BEq R] [LawfulBEq R]
+    (i : σ) : CMvPolynomial σ R :=
+  let monomial : CMvMonomial σ := Vector.ofFn (fun j => if j = FinEnum.equiv i then 1 else 0)
   Lawful.fromUnlawful <| .ofList [(monomial, (1 : R))]
 
 /-- Extract the coefficient of a monomial. -/
-def coeff {R : Type*} {n : ℕ} [Zero R] (m : CMvMonomial n) (p : CMvPolynomial n R) : R :=
+def coeff {R : Type*} {σ : Type*} [FinEnum σ] [Zero R] (m : CMvMonomial σ) (p : CMvPolynomial σ R) :
+    R :=
   p.1[m]?.getD 0
 
 attribute [grind =] coeff.eq_def
 
 /-- Extensionality: two polynomials are equal if all their coefficients are equal. -/
 @[ext, grind ext]
-theorem ext {n : ℕ} [Zero R] (p q : CMvPolynomial n R)
+theorem ext {σ : Type*} [FinEnum σ] [Zero R] (p q : CMvPolynomial σ R)
     (h : ∀ m, coeff m p = coeff m q) : p = q := by
   unfold coeff at h
   rcases p with ⟨p, hp⟩; rcases q with ⟨q, hq⟩
@@ -81,11 +83,12 @@ section
 variable [BEq R] [LawfulBEq R]
 
 @[simp, grind =]
-lemma fromUnlawful_zero {n : ℕ} [Zero R] : Lawful.fromUnlawful 0 = (0 : Lawful n R) := by
+lemma fromUnlawful_zero {σ : Type*} [FinEnum σ] [Zero R] :
+    Lawful.fromUnlawful 0 = (0 : Lawful σ R) := by
   unfold Lawful.fromUnlawful
   grind
 
-variable {n : ℕ} [CommSemiring R] {m : CMvMonomial n} {p q : CMvPolynomial n R}
+variable {σ : Type*} [FinEnum σ] [CommSemiring R] {m : CMvMonomial σ} {p q : CMvPolynomial σ R}
 
 @[simp, grind =]
 lemma add_getD? : (p + q).val[m]?.getD 0 = p.val[m]?.getD 0 + q.val[m]?.getD 0 := by
@@ -97,8 +100,8 @@ lemma coeff_add : coeff m (p + q) = coeff m p + coeff m q := by simp only [coeff
 
 /-- Auxiliary lemma showing that conversion from unlawful polynomials respects the sum fold. -/
 lemma fromUnlawful_fold_eq_fold_fromUnlawful₀
-    {t : List (CMvMonomial n × R)} {f : CMvMonomial n → R → Unlawful n R} :
-    ∀ init : Unlawful n R,
+    {t : List (CMvMonomial σ × R)} {f : CMvMonomial σ → R → Unlawful σ R} :
+    ∀ init : Unlawful σ R,
     Lawful.fromUnlawful (List.foldl (fun u term => (f term.1 term.2) + u) init t) =
     List.foldl (fun l term => (Lawful.fromUnlawful (f term.1 term.2)) + l)
                (Lawful.fromUnlawful init) t := by
@@ -114,8 +117,8 @@ lemma fromUnlawful_fold_eq_fold_fromUnlawful₀
 
 /-- Auxiliary lemma showing that conversion from unlawful polynomials respects
     the fold over terms. -/
-lemma fromUnlawful_fold_eq_fold_fromUnlawful {t : Unlawful n R}
-    {f : CMvMonomial n → R → Unlawful n R} :
+lemma fromUnlawful_fold_eq_fold_fromUnlawful {t : Unlawful σ R}
+    {f : CMvMonomial σ → R → Unlawful σ R} :
   Lawful.fromUnlawful (ExtTreeMap.foldl (fun u m c => (f m c) + u) 0 t) =
   ExtTreeMap.foldl (fun l m c => (Lawful.fromUnlawful (f m c)) + l) 0 t := by
   simp only [CMvMonomial.eq_1, ExtTreeMap.foldl_eq_foldl_toList]
@@ -127,24 +130,24 @@ end
 
 /-- Evaluate a polynomial at a point given by a ring homomorphism `f`
     and variable assignments `vs`. -/
-def eval₂ {R S : Type*} {n : ℕ} [Semiring R] [CommSemiring S] :
-    (R →+* S) → (Fin n → S) → CMvPolynomial n R → S :=
+def eval₂ {R S : Type*} {σ : Type*} [FinEnum σ] [Semiring R] [CommSemiring S] :
+    (R →+* S) → (σ → S) → CMvPolynomial σ R → S :=
   fun f vs p => ExtTreeMap.foldl (fun s m c => (f c * MonoR.evalMonomial vs m) + s) 0 p.1
 
 /-- Term representation used by the fixed-order multivariate Horner evaluator. -/
-abbrev HornerTerm (n : ℕ) (S : Type*) := CMvMonomial n × S
+abbrev HornerTerm (σ : Type*) [FinEnum σ] (S : Type*) := CMvMonomial σ × S
 
 /-- Terms grouped by one variable exponent. -/
-abbrev HornerGroup (n : ℕ) (S : Type*) := ℕ × List (HornerTerm n S)
+abbrev HornerGroup (σ : Type*) [FinEnum σ] (S : Type*) := ℕ × List (HornerTerm σ S)
 
 /-- Read the exponent for a variable index represented as a natural number. -/
-def hornerExponent {n : ℕ} (k : ℕ) (m : CMvMonomial n) : ℕ :=
+def hornerExponent {σ : Type*} [FinEnum σ] (k : ℕ) (m : CMvMonomial σ) : ℕ :=
   m[k]?.getD 0
 
 /-- Add a term to an association list keyed by the current variable exponent. -/
-def insertHornerTerm {n : ℕ} {S : Type*}
-    (exponent : ℕ) (term : HornerTerm n S) :
-    List (HornerGroup n S) → List (HornerGroup n S)
+def insertHornerTerm {σ : Type*} [FinEnum σ] {S : Type*}
+    (exponent : ℕ) (term : HornerTerm σ S) :
+    List (HornerGroup σ S) → List (HornerGroup σ S)
   | [] => [(exponent, [term])]
   | group :: groups =>
       if group.1 = exponent then
@@ -153,8 +156,8 @@ def insertHornerTerm {n : ℕ} {S : Type*}
         group :: insertHornerTerm exponent term groups
 
 /-- Insert an exponent group into descending exponent order. -/
-def insertHornerGroupDesc {n : ℕ} {S : Type*}
-    (group : HornerGroup n S) : List (HornerGroup n S) → List (HornerGroup n S)
+def insertHornerGroupDesc {σ : Type*} [FinEnum σ] {S : Type*}
+    (group : HornerGroup σ S) : List (HornerGroup σ S) → List (HornerGroup σ S)
   | [] => [group]
   | group' :: groups =>
       if group'.1 < group.1 then
@@ -163,19 +166,19 @@ def insertHornerGroupDesc {n : ℕ} {S : Type*}
         group' :: insertHornerGroupDesc group groups
 
 /-- Collect terms into association-list groups keyed by the current variable exponent. -/
-def collectHornerGroups {n : ℕ} {S : Type*}
-    (k : ℕ) (terms : List (HornerTerm n S)) : List (HornerGroup n S) :=
+def collectHornerGroups {σ : Type*} [FinEnum σ] {S : Type*}
+    (k : ℕ) (terms : List (HornerTerm σ S)) : List (HornerGroup σ S) :=
   terms.foldl
     (fun groups term ↦ insertHornerTerm (hornerExponent k term.1) term groups) []
 
 /-- Sort exponent groups from high exponent to low exponent. -/
-def sortHornerGroups {n : ℕ} {S : Type*}
-    (groups : List (HornerGroup n S)) : List (HornerGroup n S) :=
+def sortHornerGroups {σ : Type*} [FinEnum σ] {S : Type*}
+    (groups : List (HornerGroup σ S)) : List (HornerGroup σ S) :=
   groups.foldl (fun sorted group ↦ insertHornerGroupDesc group sorted) []
 
 /-- Group terms by the current variable exponent, sorted from high to low exponent. -/
-def hornerGroups {n : ℕ} {S : Type*}
-    (k : ℕ) (terms : List (HornerTerm n S)) : List (HornerGroup n S) :=
+def hornerGroups {σ : Type*} [FinEnum σ] {S : Type*}
+    (k : ℕ) (terms : List (HornerTerm σ S)) : List (HornerGroup σ S) :=
   sortHornerGroups (collectHornerGroups k terms)
 
 /-- Sparse Horner fold for already-evaluated coefficient groups. -/
@@ -192,9 +195,9 @@ def evalSparseHornerGroups {S : Type*} [CommSemiring S]
         group
       state.2 * x ^ state.1
 
-/-- Evaluate sparse multivariate terms by fixed-order Horner in variables `0, 1, ..., n-1`. -/
-def eval₂HornerTerms {n : ℕ} {S : Type*} [CommSemiring S]
-    (xs : ℕ → S) : ℕ → ℕ → List (HornerTerm n S) → S
+/-- Evaluate sparse multivariate terms by fixed-order Horner in variables `0, 1, ..., card σ-1`. -/
+def eval₂HornerTerms {σ : Type*} [FinEnum σ] {S : Type*} [CommSemiring S]
+    (xs : ℕ → S) : ℕ → ℕ → List (HornerTerm σ S) → S
   | 0, _, terms => terms.foldl (fun acc term ↦ acc + term.2) 0
   | fuel + 1, k, terms =>
       let groups := hornerGroups k terms
@@ -203,97 +206,91 @@ def eval₂HornerTerms {n : ℕ} {S : Type*} [CommSemiring S]
       evalSparseHornerGroups (xs k) evaluatedGroups
 
 /-- Evaluate a polynomial using fixed-order multivariate Horner evaluation. -/
-def eval₂Horner {R S : Type*} {n : ℕ} [Semiring R] [CommSemiring S] :
-    (R →+* S) → (Fin n → S) → CMvPolynomial n R → S :=
+def eval₂Horner {R S : Type*} {σ : Type*} [FinEnum σ] [Semiring R] [CommSemiring S] :
+    (R →+* S) → (σ → S) → CMvPolynomial σ R → S :=
   fun f vs p ↦
-    let xs : ℕ → S := fun k ↦ if h : k < n then vs ⟨k, h⟩ else 0
+    let xs : ℕ → S := fun k ↦ if h : k < FinEnum.card σ then vs (FinEnum.equiv.symm ⟨k, h⟩) else 0
     let terms := p.1.toList.map fun term ↦ (term.1, f term.2)
-    eval₂HornerTerms xs n 0 terms
+    eval₂HornerTerms xs (FinEnum.card σ) 0 terms
 
 /-- Evaluate a polynomial at a given point. -/
-def eval {R : Type*} {n : ℕ} [CommSemiring R] : (Fin n → R) → CMvPolynomial n R → R :=
+def eval {R : Type*} {σ : Type*} [FinEnum σ] [CommSemiring R] : (σ → R) → CMvPolynomial σ R → R :=
   eval₂ (RingHom.id _)
 
 /-- Evaluate a polynomial at a given point using fixed-order multivariate Horner evaluation. -/
-def evalHorner {R : Type*} {n : ℕ} [CommSemiring R] :
-    (Fin n → R) → CMvPolynomial n R → R :=
+def evalHorner {R : Type*} {σ : Type*} [FinEnum σ] [CommSemiring R] :
+    (σ → R) → CMvPolynomial σ R → R :=
   eval₂Horner (RingHom.id _)
 
 /-- The support of a polynomial (set of monomials with non-zero coefficients),
     represented as Finsupps. -/
-def support {R : Type*} {n : ℕ} [Zero R] (p : CMvPolynomial n R) : Finset (Fin n →₀ ℕ) :=
+def support {R : Type*} {σ : Type*} [FinEnum σ] [Zero R] (p : CMvPolynomial σ R) :
+    Finset (σ →₀ ℕ) :=
   (Lawful.monomials p).map CMvMonomial.toFinsupp |>.toFinset
 
 /-- The total degree of a polynomial (maximum total degree of its monomials). -/
-def totalDegree {R : Type*} {n : ℕ} [Zero R] : CMvPolynomial n R → ℕ :=
+def totalDegree {R : Type*} {σ : Type*} [FinEnum σ] [Zero R] : CMvPolynomial σ R → ℕ :=
   fun p => Finset.sup (List.toFinset (List.map CMvMonomial.toFinsupp (Lawful.monomials p)))
     (fun s => Finsupp.sum s (fun _ e => e))
 
 /-- The degree of a polynomial in a specific variable. -/
-def degreeOf {R : Type*} {n : ℕ} [Zero R] (i : Fin n) : CMvPolynomial n R → ℕ :=
+def degreeOf {R : Type*} {σ : Type*} [FinEnum σ] [Zero R] (i : σ) : CMvPolynomial σ R → ℕ :=
   fun p => Finset.sup (Lawful.monomials p).toFinset (fun m => m.degreeOf i)
 
-/-- Construct a monomial `c * m` as a `CMvPolynomial n R`.
+/-- Construct a monomial `c * m` as a `CMvPolynomial σ R`.
 
   Creates a polynomial with a single monomial term. If `c = 0`, returns the zero polynomial.
 -/
-def monomial {n : ℕ} {R : Type*} [BEq R] [LawfulBEq R] [Zero R]
-    (m : CMvMonomial n) (c : R) : CMvPolynomial n R :=
+def monomial {σ : Type*} [FinEnum σ] {R : Type*} [BEq R] [LawfulBEq R] [Zero R]
+    (m : CMvMonomial σ) (c : R) : CMvPolynomial σ R :=
   if c == 0 then 0 else Lawful.fromUnlawful <| Unlawful.ofList [(m, c)]
 
 /-- Multiset of all variable degrees appearing in the polynomial.
 
   Each variable `i` appears `degreeOf i p` times in the multiset.
 -/
-def degrees {n : ℕ} {R : Type*} [Zero R] (p : CMvPolynomial n R) : Multiset (Fin n) :=
+def degrees {σ : Type*} [FinEnum σ] {R : Type*} [Zero R] (p : CMvPolynomial σ R) : Multiset σ :=
   Finset.univ.sum fun i => Multiset.replicate (p.degreeOf i) i
 
 /-- `degreeOf` is the multiplicity of a variable in `degrees`. -/
-lemma degreeOf_eq_count_degrees {n : ℕ} {R : Type*} [Zero R]
-    (i : Fin n) (p : CMvPolynomial n R) :
+lemma degreeOf_eq_count_degrees {σ : Type*} [FinEnum σ] {R : Type*} [Zero R]
+    (i : σ) (p : CMvPolynomial σ R) :
     p.degreeOf i = Multiset.count i p.degrees := by
   classical
   unfold CMvPolynomial.degrees
-  symm
-  calc
-    Multiset.count i (∑ j, Multiset.replicate (p.degreeOf j) j)
-        = ∑ j ∈ Finset.univ, Multiset.count i (Multiset.replicate (p.degreeOf j) j) := by
-          simpa [Finset.sum] using
-            (Multiset.count_sum' (s := Finset.univ)
-              (a := i) (f := fun j => Multiset.replicate (p.degreeOf j) j))
-    _ = ∑ j ∈ Finset.univ, if j = i then p.degreeOf j else 0 := by
-          simp [Multiset.count_replicate, eq_comm]
-    _ = p.degreeOf i := by
-          simp
+  rw [Multiset.count_sum']
+  simp only [Multiset.count_replicate]
+  rw [Finset.sum_ite_eq' Finset.univ i (fun j => p.degreeOf j)]
+  simp
 
 /-- Extract the set of variables that appear in a polynomial.
 
-  Returns the set of variable indices `i : Fin n` such that `degreeOf i p > 0`.
+  Returns the set of variable indices `i : σ` such that `degreeOf i p > 0`.
 -/
-def vars {n : ℕ} {R : Type*} [Zero R] (p : CMvPolynomial n R) : Finset (Fin n) :=
+def vars {σ : Type*} [FinEnum σ] {R : Type*} [Zero R] (p : CMvPolynomial σ R) : Finset σ :=
   Finset.univ.filter fun i => 0 < p.degreeOf i
 
 /-- Filter a polynomial, keeping only monomials for which `keep m` is true. -/
-def restrictBy {n : ℕ} {R : Type*} [BEq R] [LawfulBEq R] [Zero R]
-    (keep : CMvMonomial n → Prop) [DecidablePred keep]
-    (p : CMvPolynomial n R) : CMvPolynomial n R :=
+def restrictBy {σ : Type*} [FinEnum σ] {R : Type*} [BEq R] [LawfulBEq R] [Zero R]
+    (keep : CMvMonomial σ → Prop) [DecidablePred keep]
+    (p : CMvPolynomial σ R) : CMvPolynomial σ R :=
   Lawful.fromUnlawful <| p.1.filter (fun m _ => decide (keep m))
 
 /-- Restrict polynomial to monomials with total degree ≤ d.
 
   Filters out all monomials where `m.totalDegree > d`.
 -/
-def restrictTotalDegree {n : ℕ} {R : Type*} [BEq R] [LawfulBEq R] [Zero R]
-    (d : ℕ) (p : CMvPolynomial n R) : CMvPolynomial n R :=
+def restrictTotalDegree {σ : Type*} [FinEnum σ] {R : Type*} [BEq R] [LawfulBEq R] [Zero R]
+    (d : ℕ) (p : CMvPolynomial σ R) : CMvPolynomial σ R :=
   restrictBy (fun m => m.totalDegree ≤ d) p
 
 /-- Restrict polynomial to monomials whose degree in each variable is ≤ d.
 
   Filters out all monomials where `m.degreeOf i > d` for some variable `i`.
 -/
-def restrictDegree {n : ℕ} {R : Type*} [BEq R] [LawfulBEq R] [Zero R]
-    (d : ℕ) (p : CMvPolynomial n R) : CMvPolynomial n R :=
-  restrictBy (fun m => ∀ i : Fin n, m.degreeOf i ≤ d) p
+def restrictDegree {σ : Type*} [FinEnum σ] {R : Type*} [BEq R] [LawfulBEq R] [Zero R]
+    (d : ℕ) (p : CMvPolynomial σ R) : CMvPolynomial σ R :=
+  restrictBy (fun m => ∀ i : σ, m.degreeOf i ≤ d) p
 
 end CMvPolynomial
 
