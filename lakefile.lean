@@ -37,6 +37,7 @@ lean_lib CompPoly where
 
 lean_lib CompPolyTests where
   srcDir := "tests"
+  moreLinkArgs := nativeLinkArgs "goldilocks_native"
 
 lean_lib CompPolyBenchLib where
   srcDir := "bench"
@@ -44,3 +45,8 @@ lean_lib CompPolyBenchLib where
 
 lean_exe CompPolyBench where
   srcDir := "bench"
+
+lean_exe CompPolyGoldilocksFastExtTests where
+  srcDir := "tests"
+  root := `CompPolyTests.Fields.Goldilocks.FastExt
+  moreLinkArgs := nativeLinkArgs "goldilocks_native"
