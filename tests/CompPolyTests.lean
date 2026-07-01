@@ -30,6 +30,8 @@ import CompPolyTests.Fields.BLS12_381.Fast
 import CompPolyTests.Fields.BN254.Fast
 import CompPolyTests.Fields.KoalaBear.Fast
 import CompPolyTests.Fields.PrattCertificate
+import CompPolyTests.Fields.Secp256k1.Fq.Fast
+import CompPolyTests.Fields.Secp256k1.Fr.Fast
 import CompPolyTests.LinearAlgebra.Dense
 import CompPolyTests.Multilinear.Equiv
 import CompPolyTests.Multivariate.CMvMonomial

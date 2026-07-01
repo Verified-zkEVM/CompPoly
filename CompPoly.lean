@@ -124,6 +124,12 @@ import CompPoly.Fields.Montgomery.Native32
 import CompPoly.Fields.Montgomery.Native32Field
 import CompPoly.Fields.PrattCertificate
 import CompPoly.Fields.Secp256k1
+import CompPoly.Fields.Secp256k1.Fq
+import CompPoly.Fields.Secp256k1.Fq.Fast
+import CompPoly.Fields.Secp256k1.Fq.Fast.Prelude
+import CompPoly.Fields.Secp256k1.Fr
+import CompPoly.Fields.Secp256k1.Fr.Fast
+import CompPoly.Fields.Secp256k1.Fr.Fast.Prelude
 import CompPoly.LinearAlgebra.Dense
 import CompPoly.LinearAlgebra.Dense.Basic
 import CompPoly.LinearAlgebra.Dense.Kernel

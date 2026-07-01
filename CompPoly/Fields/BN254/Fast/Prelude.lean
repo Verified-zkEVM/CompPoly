@@ -47,8 +47,6 @@ def r2ModModulus : UInt256L :=
 
 theorem modulus_toNat : modulus.toNat = BN254.scalarFieldSize := by decide
 
-theorem two_mul_scalarFieldSize_lt_two256 : 2 * BN254.scalarFieldSize < 2 ^ 256 := by decide
-
 theorem rModModulus_lt_scalarFieldSize : rModModulus.toNat < BN254.scalarFieldSize := by decide
 
 theorem rModModulus_cast :
@@ -89,7 +87,6 @@ instance instMont256Field : Mont256Field BN254.ScalarField where
   rModModulus := rModModulus
   r2ModModulus := r2ModModulus
   modulus_toNat := modulus_toNat
-  two_mul_fieldSize_lt_two256 := two_mul_scalarFieldSize_lt_two256
   rModModulus_lt_fieldSize := rModModulus_lt_scalarFieldSize
   rModModulus_cast := rModModulus_cast
   r2ModModulus_cast := r2ModModulus_cast

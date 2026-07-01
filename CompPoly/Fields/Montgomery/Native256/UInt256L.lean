@@ -40,6 +40,16 @@ def UInt256L.toNat (x : UInt256L) : Nat :=
 
 def UInt256L.add a b := UInt256L.addCarry a b 0
 
+/-- Ripple-carry add returning the low 256 bits together with the final carry-out word.
+Unlike `addCarry`, which discards the top carry, this keeps it so callers can reduce a value
+that may reach `2 ^ 256` (needed for moduli with the top bit set, where `2·p ≥ 2 ^ 256`). -/
+@[inline] def UInt256L.addCarryOut (a b : UInt256L) (cin : UInt64) : UInt256L × UInt64 :=
+  let (l0, c0) := addc a.l0 b.l0 cin
+  let (l1, c1) := addc a.l1 b.l1 c0
+  let (l2, c2) := addc a.l2 b.l2 c1
+  let (l3, c3) := addc a.l3 b.l3 c2
+  (⟨l0, l1, l2, l3⟩, c3)
+
 /-- One limb of subtract-with-borrow: `(dᵢ, borrow')`, single-bit `borrow'` given single-bit
 `borrow`. -/
 @[inline] def subb (a b borrow : UInt64) : UInt64 × UInt64 :=
@@ -184,6 +194,13 @@ theorem UInt256L.toNat_inj {a b : UInt256L} : a.toNat = b.toNat ↔ a = b := by
     refine ⟨?_, ?_, ?_, ?_⟩ <;> (apply UInt64.toNat_inj.mp; omega)
   · intro h; rw [h]
 
+/-- Every limb word is below `2 ^ 256` (the four 64-bit limbs pack into 256 bits). -/
+theorem UInt256L.toNat_lt (x : UInt256L) : x.toNat < 2 ^ 256 := by
+  have h0 := x.l0.toNat_lt; have h1 := x.l1.toNat_lt
+  have h2 := x.l2.toNat_lt; have h3 := x.l3.toNat_lt
+  simp only [UInt256L.toNat, Nat.shiftLeft_eq]
+  omega
+
 /-- Build a `UInt256L` from a natural number by splitting it into four 64-bit limbs (the low
 256 bits of `n`); the inverse of `toNat` on `[0, 2 ^ 256)`. -/
 def UInt256L.ofNat (n : Nat) : UInt256L :=
@@ -211,6 +228,23 @@ theorem UInt256L.toNat_addCarry (a b : UInt256L) (cin : UInt64) (hcin : cin.toNa
     (addc a.l2 b.l2 (addc a.l1 b.l1 (addc a.l0 b.l0 cin).2).2).2 c2
   simp only [UInt256L.toNat, Nat.shiftLeft_eq]
   omega
+
+/-- `addCarryOut` returns the exact sum split into its low 256 bits and a single carry bit:
+`low + carry·2²⁵⁶ = a + b + cin`, with `carry ∈ {0,1}` given a single-bit carry-in. -/
+theorem UInt256L.toNat_addCarryOut (a b : UInt256L) (cin : UInt64) (hcin : cin.toNat ≤ 1) :
+    (UInt256L.addCarryOut a b cin).1.toNat
+        + (UInt256L.addCarryOut a b cin).2.toNat * 2 ^ 256
+      = a.toNat + b.toNat + cin.toNat
+    ∧ (UInt256L.addCarryOut a b cin).2.toNat ≤ 1 := by
+  unfold UInt256L.addCarryOut
+  dsimp only
+  obtain ⟨e0, c0, hb0⟩ := addc_spec a.l0 b.l0 cin hcin
+  obtain ⟨e1, c1, hb1⟩ := addc_spec a.l1 b.l1 (addc a.l0 b.l0 cin).2 c0
+  obtain ⟨e2, c2, hb2⟩ := addc_spec a.l2 b.l2 (addc a.l1 b.l1 (addc a.l0 b.l0 cin).2).2 c1
+  obtain ⟨e3, c3, hb3⟩ := addc_spec a.l3 b.l3
+    (addc a.l2 b.l2 (addc a.l1 b.l1 (addc a.l0 b.l0 cin).2).2).2 c2
+  simp only [UInt256L.toNat, Nat.shiftLeft_eq]
+  exact ⟨by omega, c3⟩
 
 /-- The ripple-carry addition agrees with `Nat` addition modulo `2 ^ 256` (the numeric
 analogue of `UInt64.toNat_add` for the 256-bit limb type). -/
@@ -269,6 +303,22 @@ theorem UInt256L.toNat_sub_of_le {a b : UInt256L} (h : b.toNat ≤ a.toNat) :
   dsimp only
   -- Each limb's borrow-out (`c·`) feeds the next limb's borrow-in; `subb_spec` also
   -- supplies the result-limb bound (`hb·`), so the chain closes by `omega`.
+  obtain ⟨e0, c0, hb0⟩ := subb_spec a.l0 b.l0 0 (by decide)
+  obtain ⟨e1, c1, hb1⟩ := subb_spec a.l1 b.l1 (subb a.l0 b.l0 0).2 c0
+  obtain ⟨e2, c2, hb2⟩ := subb_spec a.l2 b.l2 (subb a.l1 b.l1 (subb a.l0 b.l0 0).2).2 c1
+  obtain ⟨e3, c3, hb3⟩ := subb_spec a.l3 b.l3
+    (subb a.l2 b.l2 (subb a.l1 b.l1 (subb a.l0 b.l0 0).2).2).2 c2
+  have hz : (0 : UInt64).toNat = 0 := rfl
+  simp only [UInt256L.toNat, Nat.shiftLeft_eq] at h ⊢
+  omega
+
+/-- On underflow (`a < b`) the ripple-borrow subtraction wraps by `2 ^ 256`:
+`(a - b).toNat = 2²⁵⁶ + a.toNat - b.toNat`. Complements `toNat_sub_of_le`. -/
+theorem UInt256L.toNat_sub_of_lt {a b : UInt256L} (h : a.toNat < b.toNat) :
+    (a - b).toNat = 2 ^ 256 + a.toNat - b.toNat := by
+  show (sub a b).toNat = _
+  unfold sub
+  dsimp only
   obtain ⟨e0, c0, hb0⟩ := subb_spec a.l0 b.l0 0 (by decide)
   obtain ⟨e1, c1, hb1⟩ := subb_spec a.l1 b.l1 (subb a.l0 b.l0 0).2 c0
   obtain ⟨e2, c2, hb2⟩ := subb_spec a.l2 b.l2 (subb a.l1 b.l1 (subb a.l0 b.l0 0).2).2 c1

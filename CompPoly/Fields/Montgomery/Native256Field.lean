@@ -95,7 +95,7 @@ theorem nat_eq_of_field_eq {a b : Nat} (ha : a < Mont256Field.fieldSize F)
 def ofCanonicalNat (n : Nat) (h : n < Mont256Field.fieldSize F) : FastField F :=
   ⟨montgomeryMul (F := F) (UInt256L.ofNat n) P.r2ModModulus, by
     have hlt : (UInt256L.ofNat n).toNat < Mont256Field.fieldSize F := by
-      rw [UInt256L.toNat_ofNat n (by have := P.two_mul_fieldSize_lt_two256; omega)]
+      rw [UInt256L.toNat_ofNat n (by have := fieldSize_lt_two256 (F := F); omega)]
       exact h
     exact (montgomeryMul_spec (F := F) (UInt256L.ofNat n) P.r2ModModulus hlt).1⟩
 
@@ -104,7 +104,7 @@ theorem ofCanonicalNat_raw_cast (n : Nat) (h : n < Mont256Field.fieldSize F) :
     ((ofCanonicalNat n h).val.toNat : ZMod (Mont256Field.fieldSize F))
       = (n : ZMod (Mont256Field.fieldSize F))
         * ((2 ^ 256 : Nat) : ZMod (Mont256Field.fieldSize F)) := by
-  have hn : n < 2 ^ 256 := by have := P.two_mul_fieldSize_lt_two256; omega
+  have hn : n < 2 ^ 256 := by have := fieldSize_lt_two256 (F := F); omega
   have hlt : (UInt256L.ofNat n).toNat < Mont256Field.fieldSize F := by
     rw [UInt256L.toNat_ofNat n hn]; exact h
   have hspec := (montgomeryMul_spec (F := F) (UInt256L.ofNat n) P.r2ModModulus hlt).2
@@ -156,14 +156,18 @@ theorem toField_injective : Function.Injective (toField (F := F)) :=
 
 /-! ## Field operations -/
 
-/-- Fast modular addition in Montgomery form. -/
+/-- Fast modular addition in Montgomery form. The sum `x + y < 2·p` may reach `2²⁵⁶` (when
+`2·p ≥ 2²⁵⁶`), so the carry-out is captured and reduced by `reduceWide`. -/
 @[inline]
 def add (x y : FastField F) : FastField F :=
-  reduceUInt256Lt2Modulus (x.val + y.val) (by
-    rw [UInt256L.toNat_add]
-    have hx := x.property; have hy := y.property
-    have hm := P.two_mul_fieldSize_lt_two256
-    omega)
+  reduceWide (F := F) (UInt256L.addCarryOut x.val y.val 0).1
+    (UInt256L.addCarryOut x.val y.val 0).2
+    (UInt256L.toNat_addCarryOut x.val y.val 0 (by decide)).2
+    (by
+      rw [(UInt256L.toNat_addCarryOut x.val y.val 0 (by decide)).1,
+        show (0 : UInt64).toNat = 0 from rfl]
+      have hx := x.property; have hy := y.property
+      omega)
 
 /-- Fast zero in Montgomery form. -/
 def zero : FastField F := ⟨0, by
@@ -197,15 +201,12 @@ def sub (x y : FastField F) : FastField F :=
       rw [UInt256L.toNat_sub_of_le hyx]
       have := x.property; omega⟩
   else
-    ⟨x.val + P.modulus - y.val, by
+    ⟨x.val + (P.modulus - y.val), by
       have hb := x.property; have hyb := y.property
-      have hm := P.modulus_toNat; have h2 := P.two_mul_fieldSize_lt_two256
+      have hm := P.modulus_toNat; have hp := fieldSize_lt_two256 (F := F)
       rw [UInt256L.le_iff_toNat_le] at hyx
-      have hbound : x.val.toNat + P.modulus.toNat < 2 ^ 256 := by omega
-      have hsum_eq : (x.val + P.modulus).toNat = x.val.toNat + P.modulus.toNat := by
-        rw [UInt256L.toNat_add, Nat.mod_eq_of_lt hbound]
-      have hyle : y.val.toNat ≤ (x.val + P.modulus).toNat := by rw [hsum_eq]; omega
-      rw [UInt256L.toNat_sub_of_le hyle, hsum_eq]
+      have hyle : y.val.toNat ≤ P.modulus.toNat := by rw [hm]; omega
+      rw [UInt256L.toNat_add, UInt256L.toNat_sub_of_le hyle, hm, Nat.mod_eq_of_lt (by omega)]
       omega⟩
 
 /-- Fast one in Montgomery form (the residue `R mod p`). -/
@@ -322,13 +323,17 @@ theorem toField_one : toField (1 : FastField F) = 1 := by
 @[simp]
 theorem toField_add (x y : FastField F) : toField (x + y) = toField x + toField y := by
   rw [toField_eq_raw_mul_inv (x + y), toField_eq_raw_mul_inv x, toField_eq_raw_mul_inv y]
-  show ((reduceUInt256Lt2ModulusRaw (F := F) (x.val + y.val)).toNat :
-        ZMod (Mont256Field.fieldSize F))
+  obtain ⟨hsc, hscb⟩ := UInt256L.toNat_addCarryOut x.val y.val 0 (by decide)
+  have hbnd : (UInt256L.addCarryOut x.val y.val 0).1.toNat
+      + (UInt256L.addCarryOut x.val y.val 0).2.toNat * 2 ^ 256
+      < 2 * Mont256Field.fieldSize F := by
+    rw [hsc, show (0 : UInt64).toNat = 0 from rfl]
+    have := x.property; have := y.property; omega
+  show ((reduceWideRaw (F := F) (UInt256L.addCarryOut x.val y.val 0).1
+        (UInt256L.addCarryOut x.val y.val 0).2).toNat : ZMod (Mont256Field.fieldSize F))
       * ((2 ^ 256 : Nat) : ZMod (Mont256Field.fieldSize F))⁻¹ = _
-  rw [reduceUInt256Lt2ModulusRaw_cast, UInt256L.toNat_add]
-  have hsum_lt : x.val.toNat + y.val.toNat < 2 ^ 256 := by
-    have := P.two_mul_fieldSize_lt_two256; have := x.property; have := y.property; omega
-  rw [Nat.mod_eq_of_lt hsum_lt, Nat.cast_add]
+  rw [reduceWideRaw_cast _ _ hscb hbnd, hsc, show (0 : UInt64).toNat = 0 from rfl,
+    Nat.add_zero, Nat.cast_add]
   ring
 
 private theorem modulus_cast_zero : (P.modulus.toNat : ZMod (Mont256Field.fieldSize F)) = 0 := by
@@ -359,16 +364,16 @@ theorem toField_sub (x y : FastField F) : toField (x - y) = toField x - toField 
       show (sub x y).val = _; unfold sub; rw [dif_pos hyx]
     rw [hsubval, UInt256L.toNat_sub_of_le hyxN, Nat.cast_sub hyxN]
     ring
-  · have hb := x.property; have hm := P.modulus_toNat
-    have h2 := P.two_mul_fieldSize_lt_two256
-    have hbound : x.val.toNat + P.modulus.toNat < 2 ^ 256 := by omega
-    have hsum_eq : (x.val + P.modulus).toNat = x.val.toNat + P.modulus.toNat := by
-      rw [UInt256L.toNat_add, Nat.mod_eq_of_lt hbound]
-    have hyle : y.val.toNat ≤ x.val.toNat + P.modulus.toNat := by have := y.property; omega
-    have hsubval : (x - y : FastField F).val = x.val + P.modulus - y.val := by
+  · have hb := x.property; have hyb := y.property
+    have hm := P.modulus_toNat; have hp := fieldSize_lt_two256 (F := F)
+    have hxy : x.val.toNat < y.val.toNat := by rw [UInt256L.le_iff_toNat_le] at hyx; omega
+    have hyle : y.val.toNat ≤ P.modulus.toNat := by rw [hm]; omega
+    have htval : (P.modulus - y.val).toNat = P.modulus.toNat - y.val.toNat :=
+      UInt256L.toNat_sub_of_le hyle
+    have hsubval : (x - y : FastField F).val = x.val + (P.modulus - y.val) := by
       show (sub x y).val = _; unfold sub; rw [dif_neg hyx]
-    rw [hsubval, UInt256L.toNat_sub_of_le (by rw [hsum_eq]; exact hyle), hsum_eq,
-        Nat.cast_sub hyle, Nat.cast_add, modulus_cast_zero]
+    rw [hsubval, UInt256L.toNat_add, htval, hm, Nat.mod_eq_of_lt (by omega),
+      Nat.cast_add, Nat.cast_sub (Nat.le_of_lt hyb), ZMod.natCast_self]
     ring
 
 @[simp]

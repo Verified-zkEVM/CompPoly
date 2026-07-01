@@ -50,7 +50,6 @@ class Mont256Field (F : Type) where
   /-- `(2^256)^2 mod fieldSize`, used to enter Montgomery form. -/
   r2ModModulus : UInt256L
   modulus_toNat : modulus.toNat = fieldSize
-  two_mul_fieldSize_lt_two256 : 2 * fieldSize < 2 ^ 256
   rModModulus_lt_fieldSize : rModModulus.toNat < fieldSize
   rModModulus_cast : (rModModulus.toNat : ZMod fieldSize) = ((2 ^ 256 : Nat) : ZMod fieldSize)
   r2ModModulus_cast :
@@ -84,6 +83,11 @@ theorem r64_ne_zero : ((2 ^ 64 : Nat) : ZMod (Mont256Field.fieldSize F)) ≠ 0 :
   intro hdvd
   exact Mont256Field.two_ne_zero_in_field (F := F)
     ((ZMod.natCast_eq_zero_iff _ _).mpr (P.prime.out.dvd_of_dvd_pow hdvd))
+
+/-- The prime is below `2 ^ 256`: it is the numeric value of the four-limb `modulus` word.
+(Note we do *not* assume `2·p < 2 ^ 256`, so this stack also serves top-bit-set moduli.) -/
+theorem fieldSize_lt_two256 : Mont256Field.fieldSize F < 2 ^ 256 := by
+  rw [← P.modulus_toNat]; exact P.modulus.toNat_lt
 
 /-- Reduce a word known to be `< 2·modulus` to canonical range by one conditional subtract. -/
 @[inline]
@@ -126,15 +130,74 @@ def reduceUInt256Lt2Modulus (x : UInt256L) (h : x.toNat < 2 * Mont256Field.field
     FastField F :=
   ⟨reduceUInt256Lt2ModulusRaw (F := F) x, reduceUInt256Lt2ModulusRaw_lt x h⟩
 
+/-- Reduce a value `lo + carry·2²⁵⁶` (with `carry ∈ {0,1}`) known to be `< 2·modulus` to
+canonical range. With no carry this is the plain conditional subtract. A set carry means the
+value is `≥ 2²⁵⁶ > p`, so one subtraction — which wraps back below `2²⁵⁶` — lands in range;
+this is the branch that lets top-bit-set moduli (`2·p ≥ 2²⁵⁶`) reuse the same reducer. -/
+@[inline]
+def reduceWideRaw (lo : UInt256L) (carry : UInt64) : UInt256L :=
+  if carry = 0 then reduceUInt256Lt2ModulusRaw (F := F) lo else lo - P.modulus
+
+/-- `reduceWideRaw` lands in `[0, fieldSize)` for a wide input `< 2·fieldSize`. -/
+theorem reduceWideRaw_lt (lo : UInt256L) (carry : UInt64) (hc : carry.toNat ≤ 1)
+    (h : lo.toNat + carry.toNat * 2 ^ 256 < 2 * Mont256Field.fieldSize F) :
+    (reduceWideRaw (F := F) lo carry).toNat < Mont256Field.fieldSize F := by
+  unfold reduceWideRaw
+  have hp := fieldSize_lt_two256 (F := F)
+  have hmod := P.modulus_toNat
+  by_cases hcarry : carry = 0
+  · rw [if_pos hcarry]
+    have hc0 : carry.toNat = 0 := by rw [hcarry]; rfl
+    exact reduceUInt256Lt2ModulusRaw_lt lo
+      (by rw [hc0] at h; simp only [Nat.zero_mul, Nat.add_zero] at h; exact h)
+  · rw [if_neg hcarry]
+    have hne : carry.toNat ≠ 0 := fun h0 => hcarry (UInt64.toNat_inj.mp (by rw [h0]; rfl))
+    have hc1 : carry.toNat = 1 := by omega
+    rw [hc1] at h
+    have hlo_lt : lo.toNat < P.modulus.toNat := by omega
+    rw [UInt256L.toNat_sub_of_lt hlo_lt]
+    omega
+
+/-- `reduceWideRaw` preserves the value modulo the prime. -/
+theorem reduceWideRaw_cast (lo : UInt256L) (carry : UInt64) (hc : carry.toNat ≤ 1)
+    (h : lo.toNat + carry.toNat * 2 ^ 256 < 2 * Mont256Field.fieldSize F) :
+    ((reduceWideRaw (F := F) lo carry).toNat : ZMod (Mont256Field.fieldSize F))
+      = ((lo.toNat + carry.toNat * 2 ^ 256 : Nat) : ZMod (Mont256Field.fieldSize F)) := by
+  unfold reduceWideRaw
+  have hp := fieldSize_lt_two256 (F := F)
+  have hmod := P.modulus_toNat
+  have hmz : (P.modulus.toNat : ZMod (Mont256Field.fieldSize F)) = 0 := by
+    rw [P.modulus_toNat]; exact ZMod.natCast_self _
+  by_cases hcarry : carry = 0
+  · rw [if_pos hcarry]
+    have hc0 : carry.toNat = 0 := by rw [hcarry]; rfl
+    rw [reduceUInt256Lt2ModulusRaw_cast, hc0, Nat.zero_mul, Nat.add_zero]
+  · rw [if_neg hcarry]
+    have hne : carry.toNat ≠ 0 := fun h0 => hcarry (UInt64.toNat_inj.mp (by rw [h0]; rfl))
+    have hc1 : carry.toNat = 1 := by omega
+    rw [hc1] at h
+    have hlo_lt : lo.toNat < P.modulus.toNat := by omega
+    have hge : P.modulus.toNat ≤ 2 ^ 256 + lo.toNat := by omega
+    have hnat : 2 ^ 256 + lo.toNat = lo.toNat + carry.toNat * 2 ^ 256 := by omega
+    rw [UInt256L.toNat_sub_of_lt hlo_lt, Nat.cast_sub hge, hmz, sub_zero, hnat]
+
+/-- `reduceWideRaw` packaged as a `FastField` (input `lo + carry·2²⁵⁶ < 2·fieldSize`). -/
+@[inline]
+def reduceWide (lo : UInt256L) (carry : UInt64) (hc : carry.toNat ≤ 1)
+    (h : lo.toNat + carry.toNat * 2 ^ 256 < 2 * Mont256Field.fieldSize F) : FastField F :=
+  ⟨reduceWideRaw (F := F) lo carry, reduceWideRaw_lt lo carry hc h⟩
+
 /-- One additive CIOS step: given the low limb `acc0` and high four limbs `acc` of a 5-limb
-accumulator, returns `(acc0 + acc·2⁶⁴)·2⁻⁶⁴ mod p`. Assumes the accumulator is `< p·2⁶⁴`. -/
+accumulator, returns `(acc0 + acc·2⁶⁴)·2⁻⁶⁴ mod p`. Assumes the accumulator is `< p·2⁶⁴`.
+The 5→4 limb fold may reach `2²⁵⁶` (when `2·p ≥ 2²⁵⁶`), so the carry-out is captured and fed to
+`reduceWideRaw` rather than dropped. -/
 @[inline]
 def interleavedMontgomeryReduction (acc0 : UInt64) (acc : UInt256L) : UInt256L :=
   let t := P.montgomeryNegInv * acc0
   let prod := mulSmall P.modulus t
   let cin := (addc acc0 prod.1 0).2
-  let s := UInt256L.addCarry acc prod.2 cin
-  reduceUInt256Lt2ModulusRaw (F := F) s
+  let sc := UInt256L.addCarryOut acc prod.2 cin
+  reduceWideRaw (F := F) sc.1 sc.2
 
 /-- One CIOS step is correct: given the 5-limb accumulator `(acc0, acc)` bounded by `p·2⁶⁴`,
 `interleavedMontgomeryReduction` returns a canonical residue equal to
@@ -147,13 +210,12 @@ theorem interleavedMontgomeryReduction_spec (acc0 : UInt64) (acc : UInt256L)
         * ((2 ^ 64 : Nat) : ZMod (Mont256Field.fieldSize F))⁻¹ := by
   have hcong := P.negInv_congr
   have hRne := r64_ne_zero (F := F)
-  have h2p := P.two_mul_fieldSize_lt_two256
   have hppos : 0 < Mont256Field.fieldSize F := P.prime.out.pos
   unfold interleavedMontgomeryReduction
   set t := P.montgomeryNegInv * acc0 with htdef
   set prod := mulSmall P.modulus t with hproddef
   set cin := (addc acc0 prod.1 0).2 with hcindef
-  set s := UInt256L.addCarry acc prod.2 cin with hsdef
+  set sc := UInt256L.addCarryOut acc prod.2 cin with hsdef
   have ht_lt : t.toNat < 2 ^ 64 := t.toNat_lt
   have ha0 : acc0.toNat < 2 ^ 64 := acc0.toNat_lt
   have hp1 : prod.1.toNat < 2 ^ 64 := prod.1.toNat_lt
@@ -181,11 +243,13 @@ theorem interleavedMontgomeryReduction_spec (acc0 : UInt64) (acc : UInt256L)
     rw [hprodval]; nlinarith [ht_lt, hppos]
   have hSlt : acc.toNat + prod.2.toNat + cin.toNat < 2 * Mont256Field.fieldSize F := by
     rw [hu]; omega
-  have hsval : s.toNat = acc.toNat + prod.2.toNat + cin.toNat := by
-    rw [hsdef, UInt256L.toNat_addCarry acc prod.2 cin hcin1, Nat.mod_eq_of_lt (by omega)]
+  obtain ⟨hsc, hscbound⟩ := UInt256L.toNat_addCarryOut acc prod.2 cin hcin1
+  rw [← hsdef] at hsc hscbound
+  have hbnd : sc.1.toNat + sc.2.toNat * 2 ^ 256 < 2 * Mont256Field.fieldSize F := by
+    rw [hsc]; exact hSlt
   refine ⟨?_, ?_⟩
-  · exact reduceUInt256Lt2ModulusRaw_lt s (by rw [hsval]; exact hSlt)
-  · rw [reduceUInt256Lt2ModulusRaw_cast, hsval, hu]
+  · exact reduceWideRaw_lt sc.1 sc.2 hscbound hbnd
+  · rw [reduceWideRaw_cast sc.1 sc.2 hscbound hbnd, hsc, hu]
     rw [show (acc0.toNat + acc.toNat * 2 ^ 64) + (prod.1.toNat + prod.2.toNat * 2 ^ 64)
           = (acc0.toNat + acc.toNat * 2 ^ 64)
             + ((acc0.toNat + acc.toNat * 2 ^ 64) % 2 ^ 64 * P.montgomeryNegInv.toNat % 2 ^ 64)
