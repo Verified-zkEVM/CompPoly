@@ -99,6 +99,14 @@ import CompPoly.Fields.Binary.Tower.Support.LinearIndependentFin2
 import CompPoly.Fields.Binary.Tower.Support.Preliminaries
 import CompPoly.Fields.Binary.Tower.TensorAlgebra
 import CompPoly.Fields.Goldilocks
+import CompPoly.Fields.Goldilocks.Basic
+import CompPoly.Fields.Goldilocks.Fast
+import CompPoly.Fields.Goldilocks.Fast.Arithmetic
+import CompPoly.Fields.Goldilocks.Fast.Field
+import CompPoly.Fields.Goldilocks.Fast.Internal
+import CompPoly.Fields.Goldilocks.Fast.Reduction
+import CompPoly.Fields.Goldilocks.Fast.Theorems
+import CompPoly.Fields.Goldilocks.FastExt
 import CompPoly.Fields.KoalaBear
 import CompPoly.Fields.KoalaBear.Basic
 import CompPoly.Fields.KoalaBear.Fast
