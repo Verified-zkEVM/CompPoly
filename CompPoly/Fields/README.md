@@ -31,6 +31,9 @@ This directory contains formally verified field infrastructure used in zero-know
 | **Montgomery/Basic.lean** | Radix-generic Montgomery reduction, field-agnostic number theory shared by the fast prime fields. |
 | **Montgomery/Native32.lean** | Raw `UInt32`/`UInt64` Montgomery reduction over explicit word constants, including bounds and correctness. |
 | **Montgomery/Native32Field.lean** | Per-field parameters, the shared `FastField` carrier, arithmetic, instances, and canonical-field bridge. |
+| **Montgomery/Native256.lean** | Four-`UInt64`-limb, radix `R = 2^256` Montgomery bridge: the `Mont256Field` per-field data class, CIOS reduction (`interleavedMontgomeryReduction`), and the proven `montgomeryMul`. |
+| **Montgomery/Native256Gcd.lean** | Pornin optimized binary GCD over limbs ([eprint 2020/972](https://eprint.iacr.org/2020/972), following plonky3): the proof-free fast inverse candidate `gcdInvCandidate`, verified at its use site in `inv`. |
+| **Montgomery/Native256Field.lean** | Shared 256-bit fast-field implementation: every field operation (inversion = runtime-verified binary GCD with a proven windowed-Fermat fallback), the algebraic instances, and the `toField`/`ofField` correctness bridge — instantiated by BN254, BLS12-381/377 and secp256k1. |
 | **Secp256k1.lean** | Base and scalar fields for the Secp256k1 curve (used in Bitcoin/Ethereum). |
 
 ## Binary-field modules

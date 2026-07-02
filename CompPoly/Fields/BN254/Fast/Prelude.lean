@@ -45,6 +45,18 @@ def r2ModModulus : UInt256L :=
     l2 := 0x8c49833d53bb8085,
     l3 := 0x0216d0b17f4e44a5 }
 
+/-- Final word-sized divstep count of the Pornin binary-GCD inversion: the 254-bit prime
+needs `2·254 − 2 = 506` divsteps in total, `15·31` of which run in the outer rounds. -/
+def gcdFinalRounds : Nat := 41
+
+/-- `2^1030 mod modulus` (exponent `1071 − gcdFinalRounds`), the initial `u` of the Pornin
+binary-GCD inversion. -/
+def gcdInitU : UInt256L :=
+  { l0 := 0x1f7ca21e7fcb111b,
+    l1 := 0x61a09399fcfe8a6c,
+    l2 := 0x1438cc5aab55aedb,
+    l3 := 0x020c9ba0aeb6b6c7 }
+
 theorem modulus_toNat : modulus.toNat = BN254.scalarFieldSize := by decide
 
 theorem rModModulus_lt_scalarFieldSize : rModModulus.toNat < BN254.scalarFieldSize := by decide
@@ -64,6 +76,10 @@ theorem r2ModModulus_cast :
 theorem negInv_congr :
     montgomeryNegInv.toNat * BN254.scalarFieldSize ≡ 2 ^ 64 - 1 [MOD 2 ^ 64] := by decide
 
+set_option exponentiation.threshold 1100 in
+theorem gcdInitU_cast :
+    gcdInitU.toNat = 2 ^ (1071 - gcdFinalRounds) % BN254.scalarFieldSize := by decide
+
 theorem two_ne_zero_in_field : ((2 : Nat) : ZMod BN254.scalarFieldSize) ≠ 0 := by
   rw [Ne, ZMod.natCast_eq_zero_iff]
   intro hd
@@ -77,8 +93,9 @@ theorem p2HexDigits_reconstruct :
           (fun i => ((BN254.scalarFieldSize - 2) >>> ((63 - i) * 4)) &&& 0xF)).headD 0)
       = BN254.scalarFieldSize - 2 := by decide
 
-/-- The per-field data realizing BN254's scalar field as a fast 256-bit Montgomery field. The
-four word constants are the only runtime data; everything else is a `decide`-checked fact. -/
+/-- The per-field data realizing BN254's scalar field as a fast 256-bit Montgomery field.
+The five word constants and the GCD round count are the only runtime data; everything else
+is a `decide`-checked fact. -/
 instance instMont256Field : Mont256Field BN254.ScalarField where
   fieldSize := BN254.scalarFieldSize
   prime := inferInstance
@@ -86,11 +103,14 @@ instance instMont256Field : Mont256Field BN254.ScalarField where
   montgomeryNegInv := montgomeryNegInv
   rModModulus := rModModulus
   r2ModModulus := r2ModModulus
+  gcdFinalRounds := gcdFinalRounds
+  gcdInitU := gcdInitU
   modulus_toNat := modulus_toNat
   rModModulus_lt_fieldSize := rModModulus_lt_scalarFieldSize
   rModModulus_cast := rModModulus_cast
   r2ModModulus_cast := r2ModModulus_cast
   negInv_congr := negInv_congr
+  gcdInitU_cast := gcdInitU_cast
   two_ne_zero_in_field := two_ne_zero_in_field
   p2HexDigits_reconstruct := p2HexDigits_reconstruct
 

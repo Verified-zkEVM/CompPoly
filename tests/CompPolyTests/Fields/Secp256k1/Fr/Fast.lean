@@ -56,6 +56,17 @@ set_option maxRecDepth 4000
 -- Inversion and division (`0⁻¹ = 0`, `x⁻¹ * x = 1`, `x / x = 1`).
 #guard toNat ((0 : ScalarField)⁻¹) = 0
 #guard toNat ((37 : ScalarField)⁻¹ * (37 : ScalarField)) = 1
+
+-- The Pornin binary-GCD fast path is exact: the raw candidate equals what `inv` returns,
+-- i.e. the runtime check passed and the window fallback was not needed.
+#guard gcdInvCandidate (F := Secp256k1.ScalarField) (raw (37 : ScalarField))
+         = raw ((37 : ScalarField)⁻¹)
+#guard gcdInvCandidate (F := Secp256k1.ScalarField) (raw (ofNat (SCALAR_FIELD_CARD - 1)))
+         = raw ((ofNat (SCALAR_FIELD_CARD - 1) : ScalarField)⁻¹)
+#guard gcdInvCandidate (F := Secp256k1.ScalarField) (raw (ofNat (SCALAR_FIELD_CARD - 2)))
+         = raw ((ofNat (SCALAR_FIELD_CARD - 2) : ScalarField)⁻¹)
+#guard gcdInvCandidate (F := Secp256k1.ScalarField) (raw (ofNat (2 ^ 200 + 12345)))
+         = raw ((ofNat (2 ^ 200 + 12345) : ScalarField)⁻¹)
 #guard toNat ((37 : ScalarField) / (37 : ScalarField)) = 1
 #guard toField ((37 : ScalarField)⁻¹) = ((37 : Secp256k1.ScalarField)⁻¹)
 #guard toField ((37 : ScalarField) ^ (-3 : Int)) = ((37 : Secp256k1.ScalarField) ^ (-3 : Int))

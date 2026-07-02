@@ -6,6 +6,7 @@ Authors: Georgios Raikos
 
 import CompPoly.Fields.Basic
 import CompPoly.Fields.Montgomery.Native256
+import CompPoly.Fields.Montgomery.Native256Gcd
 import Mathlib.Algebra.Field.TransferInstance
 import Mathlib.FieldTheory.Finite.Basic
 
@@ -14,9 +15,16 @@ import Mathlib.FieldTheory.Finite.Basic
 
 The field layer over `Montgomery.Native256` (the analogue of `Montgomery.Native32Field` for
 four-`UInt64`-limb fields): the `toField`/`ofField` bridge to the canonical `ZMod p` model, the
-native-word operations (`add`/`neg`/`sub`/`mul`/`square`/`pow`/the 4-bit window `inv`/`div`),
-their `Zero`/`One`/`Add`/`Mul`/… instances, the `toField_*` preservation lemmas, the transferred
+native-word operations (`add`/`neg`/`sub`/`mul`/`square`/`pow`/`inv`/`div`), their
+`Zero`/`One`/`Add`/`Mul`/… instances, the `toField_*` preservation lemmas, the transferred
 `Field`/`CommRing`/`NonBinaryField` instances, and `ringEquiv : FastField F ≃+* ZMod p`.
+
+Inversion runs the Pornin binary GCD over limbs (`gcdInvCandidate`, ~4–5× faster than
+exponentiation) and *verifies* the candidate with one proven Montgomery multiplication —
+`z · x = 1` and canonicity — falling back to the proven 4-bit-window Fermat exponentiation
+(`invWindow`) when the check fails (`x = 0`, or never in practice). Correctness of `inv` is
+therefore unconditional and independent of the GCD internals: every result is certified either
+by the runtime check or by the window proof.
 -/
 
 set_option maxRecDepth 4000
@@ -261,10 +269,26 @@ def invFold (tbl : Array (FastField F)) : FastField F :=
   (p2HexDigits (F := F)).tail.foldl (windowStep tbl)
     (tbl.getD ((p2HexDigits (F := F)).headD 0) one)
 
-/-- Inversion in Montgomery form via Fermat's little theorem, evaluated by fixed 4-bit window
-exponentiation over the precomputed digits of `p-2`. -/
+/-- Inversion via Fermat's little theorem (`x⁻¹ = x^(p-2)`), evaluated by fixed 4-bit window
+exponentiation over the precomputed digits of `p-2`: the proven fallback path of `inv`. -/
 @[inline]
-def inv (x : FastField F) : FastField F := invFold (windowTableArr x)
+def invWindow (x : FastField F) : FastField F := invFold (windowTableArr x)
+
+/-- Accept a raw candidate `z` for `x⁻¹` if it verifies — canonical range and `z · x = 1`
+under the proven Montgomery multiplier — else fall back to the proven `invWindow`. The check
+makes the candidate's provenance irrelevant to correctness. -/
+@[inline]
+def invWithCandidate (x : FastField F) (z : UInt256L) : FastField F :=
+  if h : z < P.modulus ∧ montgomeryMul (F := F) z x.val = P.rModModulus then
+    ⟨z, by rw [← P.modulus_toNat]; exact UInt256L.lt_iff_toNat_lt.mp h.1⟩
+  else invWindow x
+
+/-- Inversion in Montgomery form: the Pornin binary-GCD candidate (`gcdInvCandidate`),
+verified by one Montgomery multiplication, with the windowed Fermat exponentiation as proven
+fallback (taken only for `x = 0` — where it correctly yields `0` — or a candidate miss). -/
+@[inline]
+def inv (x : FastField F) : FastField F :=
+  invWithCandidate x (gcdInvCandidate (F := F) x.val)
 
 /-- Division through inversion and fast multiplication. -/
 @[inline]
@@ -499,18 +523,50 @@ private theorem toField_invFold (x : FastField F) (tbl : Array (FastField F))
         (htbl _ p2HexDigits_head_lt),
       p2HexDigits_reconstruct]
 
-private theorem toField_inv_pow (x : FastField F) :
-    toField (inv x) = toField x ^ invExponent (F := F) := by
-  unfold inv; exact toField_invFold x (windowTableArr x) (windowTableArr_toField x)
+private theorem toField_invWindow_pow (x : FastField F) :
+    toField (invWindow x) = toField x ^ invExponent (F := F) := by
+  unfold invWindow; exact toField_invFold x (windowTableArr x) (windowTableArr_toField x)
 
-private theorem toField_inv_raw (x : FastField F) : toField (inv x) = (toField x)⁻¹ := by
-  rw [toField_inv_pow]
+private theorem toField_invWindow_raw (x : FastField F) :
+    toField (invWindow x) = (toField x)⁻¹ := by
+  rw [toField_invWindow_pow]
   by_cases hx : toField x = 0
   · rw [hx, inv_zero]
     refine zero_pow ?_
     show Mont256Field.fieldSize F - 2 ≠ 0
     have := two_lt_fieldSize (F := F); omega
   · simpa [invExponent] using (inv_eq_pow_field (toField x) hx).symm
+
+/-- The certificate lemma behind `inv`: a canonical element `w` whose Montgomery product with
+`x` is the Montgomery one (`R mod p`) interprets to the field inverse of `x`. This is all the
+binary-GCD fast path needs — one proven multiplication certifies the candidate. -/
+private theorem toField_eq_inv_of_montMul_eq_one (x w : FastField F)
+    (heq : montgomeryMul (F := F) w.val x.val = P.rModModulus) :
+    toField w = (toField x)⁻¹ := by
+  have hspec := (montgomeryMul_spec (F := F) w.val x.val w.property).2
+  rw [heq, P.rModModulus_cast] at hspec
+  apply eq_inv_of_mul_eq_one_left
+  rw [toField_eq_raw_mul_inv, toField_eq_raw_mul_inv]
+  set R := ((2 ^ 256 : Nat) : ZMod (Mont256Field.fieldSize F)) with hR
+  calc (w.val.toNat : ZMod (Mont256Field.fieldSize F)) * R⁻¹
+        * ((x.val.toNat : ZMod (Mont256Field.fieldSize F)) * R⁻¹)
+      = (w.val.toNat : ZMod (Mont256Field.fieldSize F))
+        * (x.val.toNat : ZMod (Mont256Field.fieldSize F)) * R⁻¹ * R⁻¹ := by ring
+    _ = R * R⁻¹ := by rw [← hspec]
+    _ = 1 := mul_inv_cancel₀ (r256_ne_zero (F := F))
+
+private theorem toField_invWithCandidate (x : FastField F) (z : UInt256L) :
+    toField (invWithCandidate x z) = (toField x)⁻¹ := by
+  unfold invWithCandidate
+  by_cases h : z < P.modulus ∧ montgomeryMul (F := F) z x.val = P.rModModulus
+  · rw [dif_pos h]
+    exact toField_eq_inv_of_montMul_eq_one x
+      ⟨z, by rw [← P.modulus_toNat]; exact UInt256L.lt_iff_toNat_lt.mp h.1⟩ h.2
+  · rw [dif_neg h]
+    exact toField_invWindow_raw x
+
+private theorem toField_inv_raw (x : FastField F) : toField (inv x) = (toField x)⁻¹ :=
+  toField_invWithCandidate x (gcdInvCandidate (F := F) x.val)
 
 @[simp]
 theorem toField_inv (x : FastField F) : toField x⁻¹ = (toField x)⁻¹ := by

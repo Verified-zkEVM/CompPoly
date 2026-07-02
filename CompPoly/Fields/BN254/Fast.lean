@@ -53,8 +53,8 @@ def pow (x : ScalarField) (n : Nat) : ScalarField := Montgomery.Native256.pow x 
 /-- Fermat exponent used for inversion in the BN254 scalar field. -/
 def invExponent : Nat := Montgomery.Native256.invExponent (F := BN254.ScalarField)
 
-/-- Inversion in Montgomery form via Fermat's little theorem, by fixed 4-bit window
-exponentiation. -/
+/-- Inversion in Montgomery form: Pornin binary GCD over limbs, runtime-verified, with the
+proven 4-bit-window Fermat exponentiation as fallback. -/
 @[inline]
 def inv (x : ScalarField) : ScalarField := Montgomery.Native256.inv x
 

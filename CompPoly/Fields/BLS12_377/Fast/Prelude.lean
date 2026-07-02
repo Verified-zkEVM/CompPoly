@@ -46,6 +46,18 @@ def r2ModModulus : UInt256L :=
     l2 := 0xa7cc008fe5dc8593,
     l3 := 0x011fdae7eff1c939 }
 
+/-- Final word-sized divstep count of the Pornin binary-GCD inversion: the 253-bit prime
+needs `2·253 − 2 = 504` divsteps in total, `15·31` of which run in the outer rounds. -/
+def gcdFinalRounds : Nat := 39
+
+/-- `2^1032 mod modulus` (exponent `1071 − gcdFinalRounds`), the initial `u` of the Pornin
+binary-GCD inversion. -/
+def gcdInitU : UInt256L :=
+  { l0 := 0xf40f5e9a5a6ba1a2,
+    l1 := 0xa5b1631855d84c9b,
+    l2 := 0x091b4dd66483d66f,
+    l3 := 0x03a25ffc01b45852 }
+
 theorem modulus_toNat : modulus.toNat = BLS12_377.scalarFieldSize := by decide
 
 theorem rModModulus_lt_scalarFieldSize : rModModulus.toNat < BLS12_377.scalarFieldSize := by decide
@@ -65,6 +77,10 @@ theorem r2ModModulus_cast :
 theorem negInv_congr :
     montgomeryNegInv.toNat * BLS12_377.scalarFieldSize ≡ 2 ^ 64 - 1 [MOD 2 ^ 64] := by decide
 
+set_option exponentiation.threshold 1100 in
+theorem gcdInitU_cast :
+    gcdInitU.toNat = 2 ^ (1071 - gcdFinalRounds) % BLS12_377.scalarFieldSize := by decide
+
 theorem two_ne_zero_in_field : ((2 : Nat) : ZMod BLS12_377.scalarFieldSize) ≠ 0 := by
   rw [Ne, ZMod.natCast_eq_zero_iff]
   intro hd
@@ -79,7 +95,8 @@ theorem p2HexDigits_reconstruct :
       = BLS12_377.scalarFieldSize - 2 := by decide
 
 /-- The per-field data realizing BLS12-377's scalar field as a fast 256-bit Montgomery field.
-The four word constants are the only runtime data; everything else is a `decide`-checked fact. -/
+The five word constants and the GCD round count are the only runtime data; everything else
+is a `decide`-checked fact. -/
 instance instMont256Field : Mont256Field BLS12_377.ScalarField where
   fieldSize := BLS12_377.scalarFieldSize
   prime := inferInstance
@@ -87,11 +104,14 @@ instance instMont256Field : Mont256Field BLS12_377.ScalarField where
   montgomeryNegInv := montgomeryNegInv
   rModModulus := rModModulus
   r2ModModulus := r2ModModulus
+  gcdFinalRounds := gcdFinalRounds
+  gcdInitU := gcdInitU
   modulus_toNat := modulus_toNat
   rModModulus_lt_fieldSize := rModModulus_lt_scalarFieldSize
   rModModulus_cast := rModModulus_cast
   r2ModModulus_cast := r2ModModulus_cast
   negInv_congr := negInv_congr
+  gcdInitU_cast := gcdInitU_cast
   two_ne_zero_in_field := two_ne_zero_in_field
   p2HexDigits_reconstruct := p2HexDigits_reconstruct
 

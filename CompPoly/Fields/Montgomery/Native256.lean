@@ -35,7 +35,8 @@ namespace Montgomery
 namespace Native256
 
 /-- Per-field data and spec-level facts realizing a 256-bit prime field as a fast Montgomery
-field with `R = 2^256` (four 64-bit limbs). Only the four word constants survive to runtime. -/
+field with `R = 2^256` (four 64-bit limbs). Only the five word constants and the small round
+count survive to runtime. -/
 class Mont256Field (F : Type) where
   /-- The field size / prime `p`. -/
   fieldSize : Nat
@@ -49,6 +50,17 @@ class Mont256Field (F : Type) where
   rModModulus : UInt256L
   /-- `(2^256)^2 mod fieldSize`, used to enter Montgomery form. -/
   r2ModModulus : UInt256L
+  /-- Divsteps in the final word-sized round of the Pornin binary-GCD inversion:
+  `2·bits(p) − 2 − 15·31`, so the total divstep count is the worst-case bound `2·bits(p) − 2`
+  (each divstep shrinks `len(a) + len(b) ≤ 2·bits(p)` by at least one). Must stay `≤ 62` so the
+  final transition-matrix entries fit in a signed word. -/
+  gcdFinalRounds : Nat
+  /-- Initial `u` for the Pornin binary-GCD inversion: `2^(1071 − gcdFinalRounds) mod fieldSize`.
+  The exponent is `512 − T + 16·64` for `T = 15·31 + gcdFinalRounds` total divsteps: `2^512`
+  turns the Montgomery input `x·R` into the Montgomery output `x⁻¹·R`, `2^(−T)` cancels the
+  per-divstep doubling of the transition factors, and `2^(16·64)` cancels the sixteen
+  one-word Montgomery reductions applied to `u`/`v`. -/
+  gcdInitU : UInt256L
   modulus_toNat : modulus.toNat = fieldSize
   rModModulus_lt_fieldSize : rModModulus.toNat < fieldSize
   rModModulus_cast : (rModModulus.toNat : ZMod fieldSize) = ((2 ^ 256 : Nat) : ZMod fieldSize)
@@ -56,6 +68,10 @@ class Mont256Field (F : Type) where
     (r2ModModulus.toNat : ZMod fieldSize) = ((2 ^ 256 : Nat) : ZMod fieldSize) ^ 2
   /-- The Montgomery inverse congruence `negInv * p ≡ 2^64 - 1 [MOD 2^64]`. -/
   negInv_congr : montgomeryNegInv.toNat * fieldSize ≡ 2 ^ 64 - 1 [MOD 2 ^ 64]
+  /-- The binary-GCD initial `u` is the documented power of two; `decide`-checked per field.
+  Guards the constant against typos — inversion *correctness* never relies on it (the GCD
+  result is verified at runtime and falls back to the proven Fermat path). -/
+  gcdInitU_cast : gcdInitU.toNat = 2 ^ (1071 - gcdFinalRounds) % fieldSize
   /-- Characteristic `≠ 2`, used to build the `NonBinaryField` instance. -/
   two_ne_zero_in_field : ((2 : Nat) : ZMod fieldSize) ≠ 0
   /-- The 64 base-16 nibbles of the inversion exponent `p - 2` (most significant first)

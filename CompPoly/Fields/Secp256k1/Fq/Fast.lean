@@ -53,8 +53,8 @@ def pow (x : BaseField) (n : Nat) : BaseField := Montgomery.Native256.pow x n
 /-- Fermat exponent used for inversion in the Secp256k1.Fq scalar field. -/
 def invExponent : Nat := Montgomery.Native256.invExponent (F := Secp256k1.BaseField)
 
-/-- Inversion in Montgomery form via Fermat's little theorem, by fixed 4-bit window
-exponentiation. -/
+/-- Inversion in Montgomery form: Pornin binary GCD over limbs, runtime-verified, with the
+proven 4-bit-window Fermat exponentiation as fallback. -/
 @[inline]
 def inv (x : BaseField) : BaseField := Montgomery.Native256.inv x
 
