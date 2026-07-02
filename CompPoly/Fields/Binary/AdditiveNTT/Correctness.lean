@@ -511,8 +511,24 @@ lemma computableAdditiveNTTFastAction_run_eq_fold (a : Fin (2 ^ ℓ) → L) :
         (i := stage) (twiddles := twiddles) current)
       (init := tileCoeffsArray (L := L) (ℓ := ℓ) R_rate a) := by
   unfold computableAdditiveNTTFastAction computableAdditiveNTTFastStages
-  simp only [bind_assoc, StateT.run, MonadStateOf.set, getThe]
-  simpa using run_foldlM_modify_eq_foldl (σ := Array L) (n := ℓ)
+  simp only [bind_assoc, MonadStateOf.set, getThe]
+  change ((Fin.foldlM (m := StateM (Array L)) (n := ℓ)
+      (f := fun (_ : Unit) i => do
+        let stage : Fin ℓ := ⟨ℓ - 1 - i, by omega⟩
+        let twiddles := computableTwiddleTableArray (β := β) (ℓ := ℓ)
+          (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := stage)
+        modifyThe (Array L) fun current =>
+          computableNTTStageArray (ℓ := ℓ) (R_rate := R_rate)
+            (i := stage) (twiddles := twiddles) current
+        pure ()) (init := ())).run (tileCoeffsArray (L := L) (ℓ := ℓ) R_rate a)).2 =
+    Fin.foldl (n := ℓ) (f := fun current i =>
+      let stage : Fin ℓ := ⟨ℓ - 1 - i, by omega⟩
+      let twiddles := computableTwiddleTableArray (β := β) (ℓ := ℓ)
+        (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := stage)
+      computableNTTStageArray (ℓ := ℓ) (R_rate := R_rate)
+        (i := stage) (twiddles := twiddles) current)
+      (init := tileCoeffsArray (L := L) (ℓ := ℓ) R_rate a)
+  exact run_foldlM_modify_eq_foldl (σ := Array L) (n := ℓ)
     (f := fun current i =>
       let stage : Fin ℓ := ⟨ℓ - 1 - i, by omega⟩
       let twiddles := computableTwiddleTableArray (β := β) (ℓ := ℓ)
@@ -721,7 +737,6 @@ lemma NTTStage_correctness (i : Fin (ℓ))
     rw [Nat.getHighBits, Nat.getHighBits_no_shl, Nat.shiftLeft_eq, Nat.shiftRight_eq_div_pow]
   by_cases h_b_bit_eq_0 : (j.val / (2 ^ i.val)) % 2 = 0
   · simp only [h_b_bit_eq_0, ↓reduceDIte]
-    simp only at h_b_bit_eq_0
     have bit_i_j_eq_0 : Nat.getBit i.val j.val = 0 := by omega
     set x0 := twiddleFactor 𝔽q β h_ℓ_add_R_rate i ⟨j.val / 2 ^ i.val / 2, by
       rw [h_j_div_2_pow_left.symm]
@@ -822,8 +837,6 @@ lemma NTTStage_correctness (i : Fin (ℓ))
             Nat.getLowBits i.val (j.val + 2^i.val) = Nat.getLowBits i.val j.val := by
           apply Nat.eq_iff_eq_all_getBits.mpr
           intro k
-          change Nat.getBit k (Nat.getLowBits i.val (j.val + 2^i.val)) =
-            Nat.getBit k (Nat.getLowBits i.val j.val)
           rw [Nat.getBit_of_lowBits, Nat.getBit_of_lowBits]
           if h_k : k < i.val then
             simp only [h_k, ↓reduceIte]
@@ -936,8 +949,6 @@ lemma NTTStage_correctness (i : Fin (ℓ))
         rw [h_bit0, Nat.zero_shiftLeft, Nat.add_zero]
         apply Nat.eq_iff_eq_all_getBits.mpr
         intro k
-        change Nat.getBit k (Nat.getLowBits i.val (j.val ^^^ 2^i.val)) =
-          Nat.getBit k (Nat.getLowBits i.val j.val)
         rw [Nat.getBit_of_lowBits, Nat.getBit_of_lowBits]
         if h_k : k < i.val then
           simp only [h_k, ↓reduceIte]

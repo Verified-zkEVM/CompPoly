@@ -181,9 +181,10 @@ noncomputable def iteratedQuotientMap (i : Fin ℓ) (k : ℕ)
           simp only [zero_add]
           omega⟩)
       simp only [Fin.zero_eta, Fin.coe_ofNat_eq_mod, Nat.sub_zero] at h_comp
-      convert h_comp.symm
-      omega
-      omega
+      convert h_comp.symm using 1
+      · unfold intermediateNormVpoly
+        simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]
+      · simp
     unfold sDomain
     simp only [Submodule.mem_map]
     use u
@@ -268,7 +269,8 @@ lemma getSDomainBasisCoeff_of_sum_repr [NeZero R_rate] (i : Fin (ℓ + 1))
     rw [← h_sum_repr]
     exact hx
   have h_li : LinearIndependent 𝔽q (fun j' => (b j').val) := by
-    simpa using (b.linearIndependent.map' (Submodule.subtype _) (Submodule.ker_subtype _))
+    simpa [Function.comp_def] using
+      (b.linearIndependent.map' (Submodule.subtype _) (Submodule.ker_subtype _))
   have h_coeffs_eq : b.repr x = Finsupp.equivFunOnFinite.symm x_coeffs := by
     classical
     have h_repr_basis :

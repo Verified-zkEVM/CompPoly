@@ -138,7 +138,7 @@ They are proved extensionally equal to the direct definitions in
 -/
 
 /-- Shifted leading positions of all rows, computed once per conflict scan. -/
-def rowLeadingPositions [Zero F] [BEq F]
+def rowLeadingPositions
     (M : PolynomialMatrix F) (shift : Array Nat) : Array (Option Nat) :=
   M.map fun row ↦ rowShiftedLeadingPosition? row shift
 

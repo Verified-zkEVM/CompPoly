@@ -209,11 +209,13 @@ theorem normalizeAndEliminateData_eq [Field F] [BEq F] (M : DenseMatrix F)
       scaleRowData_eq M pivotRow _
     have hcols : (scaleRow M pivotRow (M.get pivotRow pivotCol)⁻¹).cols = M.cols := by
       rw [scaleRow]
+    have hrows : (scaleRow M pivotRow (M.get pivotRow pivotCol)⁻¹).rows = M.rows := by
+      rw [scaleRow]
     have heli := forIn_eliminate_eq M.cols pivotRow pivotCol
       (List.range' 0 (Std.Legacy.Range.size [:M.rows]))
       (scaleRow M pivotRow (M.get pivotRow pivotCol)⁻¹) hcols
     rw [hstart]
-    simpa [Std.Legacy.Range.forIn_eq_forIn_range'] using heli
+    simpa [Std.Legacy.Range.forIn_eq_forIn_range', hrows] using heli
 
 /-- The in-place reduction loop tracks the copying reduction loop, returning the
 same reduced backing array and the same pivot columns. -/

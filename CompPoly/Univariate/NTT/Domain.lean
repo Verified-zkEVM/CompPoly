@@ -129,7 +129,7 @@ Generic adapter from field-specific radix-2 domain tables to a best-fitting doma
 The adapter chooses `logN = Nat.clog 2 requiredLen`, then returns `none` if that exponent
 is outside the supported table.
 -/
-def bestDomainForLength? [Field R]
+def bestDomainForLength?
     (maxLogN : Nat) (domainOfLogN : (logN : Nat) → logN ≤ maxLogN → Domain R)
     (domainOfLogN_logN : ∀ logN hlogN, (domainOfLogN logN hlogN).logN = logN)
     (requiredLen : Nat) : Option (FittingDomain R requiredLen) :=

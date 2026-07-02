@@ -715,16 +715,25 @@ theorem join_eq_iff_dcast_extractLsb {k : ℕ} (h_pos : k > 0) (x : ConcreteBTFi
       (h_hi_gt_0 := hpow)
       (h_lo_gt_0 := hpow)
       (x := dcast sum.symm x))
-    have h1 :
-        dcast sum.symm x = BitVec.append (msbs := hi_btf) (lsbs := lo_btf) ↔
-          (hi_btf = dcast (by omega)
+    -- now rewrite the extractLsb of dcast sum.symm x into extractLsb of x
+    constructor
+    · intro hx
+      have hx' : dcast sum.symm x =
+          dcast (by rfl) (BitVec.append (msbs := hi_btf) (lsbs := lo_btf)) := by
+        simpa [dcast_eq] using hx
+      have hparts := h.mp hx'
+      simp_rw [BitVec.extractLsb_dcast_eq (x := x) (h := sum.symm)] at hparts
+      exact hparts
+    · intro hparts
+      have hparts' :
+          hi_btf = dcast (by omega)
               (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1))
                 (dcast sum.symm x)) ∧
             lo_btf = dcast (by omega)
-              (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) (dcast sum.symm x))) := by
-      simpa using h
-    -- now rewrite the extractLsb of dcast sum.symm x into extractLsb of x
-    simpa [BitVec.extractLsb_dcast_eq (x := x) (h := sum.symm)] using h1
+              (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) (dcast sum.symm x)) := by
+        simpa [BitVec.extractLsb_dcast_eq (x := x) (h := sum.symm)] using hparts
+      have hx' := h.mpr hparts'
+      simpa [dcast_eq] using hx'
 
   have h_final :
       (hi_btf = dcast (by omega)

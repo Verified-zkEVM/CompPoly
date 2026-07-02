@@ -22,11 +22,11 @@ Generic irreducibility theorem for binary tower polynomials.
 Proves that X² + s·X + 1 is irreducible when s satisfies the required properties.
 This is the most general form that can be reused across different tower constructions.
 -/
-instance irreducible_quadratic_defining_poly_of_traceMap_eq_1
-  {F : Type*} [Field F] [Fintype F] [CharP F 2] (s : F) [NeZero s] (k : ℕ)
-  (trace_map_prop : TraceMapProperty F s k)
-  (fintypeCard : Fintype.card F = 2 ^ (2 ^ k)) :
-  Irreducible (definingPoly s) := by
+theorem irreducible_quadratic_defining_poly_of_traceMap_eq_1
+    {F : Type*} [Field F] [Fintype F] [CharP F 2] (s : F) [NeZero s] (k : ℕ)
+    (trace_map_prop : TraceMapProperty F s k)
+    (fintypeCard : Fintype.card F = 2 ^ (2 ^ k)) :
+    Irreducible (definingPoly s) := by
   set p := definingPoly s
   have nat_deg_poly_is_2 : p.natDegree = 2 := natDegree_definingPoly s
   have coeffOfX_0 : p.coeff 0 = 1 := definingPoly_coeffOf0 s

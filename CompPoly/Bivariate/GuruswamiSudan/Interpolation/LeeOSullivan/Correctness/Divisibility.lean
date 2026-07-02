@@ -20,9 +20,9 @@ namespace LeeOSullivan
 
 open PolynomialMatrix
 
-variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
 
-omit [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F] in
+omit [BEq F] [LawfulBEq F] [DecidableEq F] in
 private theorem lee_hasseDeriv_mul_C_pow
     (P : Polynomial F) (c : F) (n a : Nat) :
     Polynomial.hasseDeriv a (P * Polynomial.C c ^ n) =
@@ -35,7 +35,7 @@ private theorem lee_hasseDeriv_mul_C_pow
   rw [Polynomial.hasseDeriv_coeff]
   ring
 
-omit [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F] in
+omit [BEq F] [LawfulBEq F] [DecidableEq F] in
 private theorem lee_hasseDeriv_eval_C_eq_eval_coeffwise_hasseDeriv
     (P : Polynomial (Polynomial F)) (y : F) (a : Nat) :
     Polynomial.hasseDeriv a (Polynomial.eval (Polynomial.C y) P) =
@@ -60,7 +60,7 @@ private theorem lee_hasseDeriv_eval_C_eq_eval_coeffwise_hasseDeriv
   | monomial n coeff =>
       simp [Polynomial.sum_monomial_index, lee_hasseDeriv_mul_C_pow]
 
-omit [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F] in
+omit [BEq F] [LawfulBEq F] [DecidableEq F] in
 private theorem lee_coeff_coeffwise_hasseDeriv_sum
     (P : Polynomial (Polynomial F)) (a j : Nat) :
     ((P.sum fun k coeff ↦ Polynomial.monomial k (Polynomial.hasseDeriv a coeff)).coeff j) =
@@ -128,7 +128,7 @@ private theorem coeffY_hasseDeriv_eval_eq_hasseDerivativeEval_of_forall_gt
   rw [← lee_eval_hasseDeriv_eval_hasseDeriv_toPoly P x y a n]
   rw [houter, Polynomial.eval_C]
 
-omit [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F] in
+omit [BEq F] [LawfulBEq F] [DecidableEq F] in
 private theorem X_sub_C_pow_dvd_of_hasseDeriv_eval_eq_zero
     {A : Polynomial F} {x : F} {k : Nat}
     (hzero : ∀ a, a < k → Polynomial.eval x (Polynomial.hasseDeriv a A) = 0) :
@@ -139,7 +139,7 @@ private theorem X_sub_C_pow_dvd_of_hasseDeriv_eval_eq_zero
   rw [Polynomial.taylor_coeff]
   exact hzero d hd
 
-omit [BEq F] [LawfulBEq F] [Nontrivial F] in
+omit [BEq F] [LawfulBEq F] in
 private theorem multiset_prod_X_sub_C_pow_dvd_of_nodup
     {A : Polynomial F} {xs : List F} {k : Nat}
     (hA : A ≠ 0) (hnodup : xs.Nodup)
@@ -170,7 +170,7 @@ private theorem multiset_prod_X_sub_C_pow_dvd_of_nodup
   rw [Multiset.map_nsmul, Multiset.prod_nsmul] at hprod
   simpa [ms] using hprod
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 private theorem lee_linearFactor_toPoly (x : F) :
     (CPolynomial.linearFactor x).toPoly =
       (Polynomial.X - Polynomial.C x : Polynomial F) := by
@@ -178,7 +178,7 @@ private theorem lee_linearFactor_toPoly (x : F) :
     CPolynomial.C_toPoly]
   simp [sub_eq_add_neg, add_comm]
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 private theorem lee_vanishingPolynomialArray_toPoly_list
     (xs : List F) (acc : CPolynomial F) :
     (xs.foldl (fun acc x ↦ acc * CPolynomial.linearFactor x) acc).toPoly =

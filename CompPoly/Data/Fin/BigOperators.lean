@@ -127,9 +127,10 @@ It's similar to `Fin.inductionOn`, but formulated with an explicit upper bound c
       rw [h_i_succ_eq]
       exact res
     else
-      by_contra h_i_add_1
-      simp only at h_i_add_1
-      contradiction
+      exfalso
+      apply h_i_add_1
+      simp [i]
+      omega
 
 /--
 Recursion principle for `Fin r` that iterates downwards from `r - 1`.
@@ -163,6 +164,7 @@ This is useful for definitions that process elements in reverse order, like `fol
     have motive_next := Fin.predRecOnSameFinType last succ ⟨i_next, by omega⟩
     have motive_next_ind := succ (i := ⟨i_next, by omega⟩) (by omega) (motive_next)
     convert motive_next_ind
+    · simp [i_next]
 termination_by (r - 1 - i.val)
 
 /--

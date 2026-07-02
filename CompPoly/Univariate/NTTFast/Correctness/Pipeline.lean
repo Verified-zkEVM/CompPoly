@@ -32,7 +32,7 @@ theorem forwardImpl_correct (P : Plan R) (hP : WellFormed P) (p : CPolynomial.Ra
 theorem forwardImpl_ofDomain_correct (D : NTT.Domain R) (p : CPolynomial.Raw R) :
     forwardImpl (ofDomain D) p =
       NTT.Transform.bitRevPermute D (NTT.Forward.forwardSpec D p) := by
-  simpa using forwardImpl_correct (P := ofDomain D) (ofDomain_wellFormed D) p
+  simpa [ofDomain] using forwardImpl_correct (P := ofDomain D) (ofDomain_wellFormed D) p
 
 /-- The paired forward transform equals the pair of individual forward transforms. -/
 theorem forwardPairImpl_eq_pair
@@ -140,7 +140,7 @@ namespace Raw
 theorem fastMulImpl_correct [BEq R] [LawfulBEq R]
     (D : NTT.Domain R) (p q : CPolynomial.Raw R) :
     fastMulImpl D p q = NTT.FastMul.Raw.fastMulSpec D p q := by
-  simpa [fastMulImpl] using
+  simpa [fastMulImpl, Plan.ofDomain] using
     Plan.Raw.fastMulImpl_correct (P := Plan.ofDomain D) (Plan.ofDomain_wellFormed D) p q
 
 /-- The one-shot raw multiplication implementation trims to ordinary multiplication. -/
@@ -157,7 +157,7 @@ end Raw
 theorem fastMulImpl_correct [BEq R] [LawfulBEq R]
     (D : NTT.Domain R) (p q : CPolynomial R) :
     fastMulImpl D p q = NTT.FastMul.fastMulSpec D p q := by
-  simpa [fastMulImpl] using
+  simpa [fastMulImpl, Plan.ofDomain] using
     Plan.fastMulImpl_correct (P := Plan.ofDomain D) (Plan.ofDomain_wellFormed D) p q
 
 /-- The one-shot multiplication implementation agrees with ordinary multiplication. -/
