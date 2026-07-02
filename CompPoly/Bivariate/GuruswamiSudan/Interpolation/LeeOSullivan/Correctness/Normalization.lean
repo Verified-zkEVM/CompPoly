@@ -21,7 +21,7 @@ namespace LeeOSullivan
 
 open PolynomialMatrix
 
-variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
 
 /-- Normalizing a bounded raw Lee candidate preserves the interpolation witness
 contract when the raw candidate already satisfies the multiplicity constraints. -/

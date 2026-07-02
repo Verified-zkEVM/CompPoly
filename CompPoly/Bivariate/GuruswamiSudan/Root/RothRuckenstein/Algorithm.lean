@@ -27,7 +27,7 @@ open CBivariate
 
 /-- Substitute `Y = a + X * Y` into a bivariate polynomial. -/
 def substituteYRootPlusXY {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (Q : CBivariate F) (a : F) : CBivariate F :=
   Id.run do
     let mut out : CBivariate F := default
@@ -43,7 +43,7 @@ def substituteYRootPlusXY {F : Type*}
 
 /-- One residual step in the transformed Roth-Ruckenstein recursion. -/
 def transformedRothRuckensteinResidual {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (Q : CBivariate F) (a : F) : CBivariate F :=
   CBivariate.stripXAdicFactor (substituteYRootPlusXY Q a)
 
@@ -57,7 +57,7 @@ def nextCoefficientSlope {F : Type*} [Field F]
 
 /-- Polynomial equation for the next coefficient in the prefix recursion. -/
 def nextCoefficientPolynomial {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (Q : CBivariate F) (pref : CPolynomial F) (depth : Nat) : CPolynomial F :=
   if depth = 0 then
     initialCoefficientPolynomial Q
@@ -72,7 +72,7 @@ residual-transform Roth-Ruckenstein backend uses residual normalization before
 field-root queries.
 -/
 def rootPrefixExtensionsWithFieldRootContext {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (fieldRoots : FieldRootContext F) (Q : CBivariate F) (depth : Nat)
     (prefixes : Array (CPolynomial F)) : List (CPolynomial F) :=
   prefixes.toList.flatMap fun pref ↦
@@ -83,7 +83,7 @@ def rootPrefixExtensionsWithFieldRootContext {F : Type*}
 /-- Candidate prefixes after choosing coefficients through depth `< k` in the
 direct coefficient-equation recursion. Zero equations are not expanded. -/
 def rothRuckensteinRootPrefixes {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (fieldRoots : FieldRootContext F) (Q : CBivariate F) : Nat → Array (CPolynomial F)
   | 0 => #[0]
   | depth + 1 =>
@@ -92,7 +92,7 @@ def rothRuckensteinRootPrefixes {F : Type*}
 
 /-- Residual-transform Roth-Ruckenstein prefixes with explicit recursion fuel. -/
 def transformedRothRuckensteinRootPrefixesWithFuel {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (fieldRoots : FieldRootContext F) :
     Nat → CBivariate F → Nat → CPolynomial F → Array (CPolynomial F)
   | 0, _Q, _depth, pref => #[pref]
@@ -112,14 +112,14 @@ def transformedRothRuckensteinRootPrefixesWithFuel {F : Type*}
 
 /-- Candidate prefixes from the residual-transform recursion through precision `X^k`. -/
 def transformedRothRuckensteinRootPrefixes {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (fieldRoots : FieldRootContext F) (Q : CBivariate F) (k : Nat) :
     Array (CPolynomial F) :=
   transformedRothRuckensteinRootPrefixesWithFuel fieldRoots k Q 0 default
 
 /-- Residual-transform Roth-Ruckenstein bounded-degree roots. -/
 def transformedRothRuckensteinRootsYDegreeLt {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (fieldRoots : FieldRootContext F) (Q : CBivariate F) (k : Nat) :
     Array (CPolynomial F) :=
   (transformedRothRuckensteinRootPrefixes fieldRoots Q k).filter fun p ↦
@@ -132,7 +132,7 @@ The public backend uses the residual-transform recursion, which strips common
 excluded from the field-root dependency for nonzero bivariate inputs.
 -/
 def rothRuckensteinRootsYDegreeLt {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (fieldRoots : FieldRootContext F) (Q : CBivariate F) (k : Nat) :
     Array (CPolynomial F) :=
   transformedRothRuckensteinRootsYDegreeLt fieldRoots Q k

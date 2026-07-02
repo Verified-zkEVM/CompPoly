@@ -1316,7 +1316,6 @@ lemma exist_bit_diff_if_diff {n: ℕ} (a: Fin (2^n)) (b: Fin (2^n)) (h_a_ne_b: a
     apply Fin.eq_of_val_eq
     apply eq_iff_eq_all_getBits.mpr
     intro k
-    change getBit k a = getBit k b
     rw [getBit_of_lt_two_pow, getBit_of_lt_two_pow]
     if h_k: k < n then
       simp only [h_k, ↓reduceIte]
@@ -1415,7 +1414,6 @@ lemma getBit_of_binaryFinMapToNat {n : ℕ} (m : Fin n → ℕ) (h_binary: ∀ j
         simp only [BEq.rfl, ↓reduceIte]
     else
       have hBitLhs := h_getBit_prevSum (k:=k)
-      simp only at hBitLhs
       rw [h_prevSum_eq.symm] at hBitLhs
       rw [hBitLhs]
       if h_k_lt_n: k < n then

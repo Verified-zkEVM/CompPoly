@@ -252,8 +252,8 @@ def getLast (a : Array α) (h : a.size > 0) : α := a[a.size - 1]
 /-- Get the last element of an array, or `v₀` if the array is empty. -/
 def getLastD (a : Array α) (v₀ : α) : α := a.getD (a.size - 1) v₀
 
-@[simp] lemma popWhile_nil_or_last_false (p : α → Bool) (as : Array α)
-  (h : (as.popWhile p).size > 0) : ¬ (p <| (as.popWhile p).getLast h) := by
+lemma popWhile_nil_or_last_false (p : α → Bool) (as : Array α)
+    (h : (as.popWhile p).size > 0) : ¬ (p <| (as.popWhile p).getLast h) := by
   -- By definition of `popWhile`, if the array is empty, then `popWhile` returns an empty array.
   induction' as using Array.recOn with as ih
   induction' as using List.reverseRecOn with as ih

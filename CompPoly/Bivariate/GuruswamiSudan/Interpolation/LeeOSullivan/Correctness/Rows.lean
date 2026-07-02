@@ -22,7 +22,7 @@ namespace LeeOSullivan
 
 open PolynomialMatrix
 
-variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
 
 /-- Within the Lee row width, a row-linear combination of executable Lee rows
 has the same coefficients as the corresponding bivariate basis combination. -/
@@ -91,15 +91,24 @@ theorem leeOSullivanBasisPolynomial_coeff_eq_zero_of_width_le
     rw [CPolynomial.natDegree_toPoly]
     simp [CBivariate.ofYConstant, CPolynomial.C_toPoly]
   have hYpow : Ypow.natDegree ≤ idx - t := by
-    simpa [Ypow] using
-      cpoly_natDegree_pow_le (P := (CBivariate.Y : CBivariate F)) hY (idx - t)
+    have h := cpoly_natDegree_pow_le
+      (P := (CBivariate.Y : CBivariate F)) hY (idx - t)
+    change CPolynomial.natDegree ((CBivariate.Y : CBivariate F) ^ (idx - t)) ≤
+      (idx - t) * 1 at h
+    simpa [Ypow] using h
   have hLpow : Lpow.natDegree ≤ t := by
-    simpa [Lpow] using
-      cpoly_natDegree_pow_le (P := (CBivariate.linearYDivisor R : CBivariate F)) hL t
+    have h := cpoly_natDegree_pow_le
+      (P := (CBivariate.linearYDivisor R : CBivariate F)) hL t
+    change CPolynomial.natDegree ((CBivariate.linearYDivisor R : CBivariate F) ^ t) ≤
+      t * 1 at h
+    simpa [Lpow] using h
   have hGpow : Gpow.natDegree ≤ 0 := by
     have hpow := cpoly_natDegree_pow_le
       (P := (CBivariate.ofYConstant G : CBivariate F)) hG
       (params.multiplicity - t)
+    change CPolynomial.natDegree
+        ((CBivariate.ofYConstant G : CBivariate F) ^ (params.multiplicity - t)) ≤
+      (params.multiplicity - t) * 0 at hpow
     simpa [Gpow] using hpow
   have hprod :
       (Ypow * Lpow * Gpow).natDegree ≤ idx := by
@@ -313,7 +322,7 @@ theorem koetterBasisCombination_congr_weights
   intro idx hidx
   rw [hweights idx (List.mem_range.mp hidx)]
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 theorem ofCoeffRow_toCoeffRow_eq_of_width_le
     {width : Nat} {Q : CBivariate F}
     (hY : ∀ i j, width ≤ j → CBivariate.coeff Q i j = 0) :
@@ -352,7 +361,7 @@ theorem ofCoeffRow_lee_rowSpan_of_spanContains
       simpa [leeOSullivanBasisPolynomials_size] using hidx
     simp [coeffs, Array.getD_eq_getD_getElem?, hidxWidth]
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 private theorem cpoly_C_one_mul
     (P : CPolynomial F) :
     CPolynomial.C (1 : F) * P = P := by
@@ -363,7 +372,7 @@ private theorem cpoly_C_one_mul
   rw [CPolynomial.toPoly_mul, CPolynomial.C_toPoly]
   simp
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 private theorem cpoly_C_zero_mul
     (P : CPolynomial F) :
     CPolynomial.C (0 : F) * P = 0 := by
@@ -379,13 +388,13 @@ private def semanticUnitRowCoeffs
   Array.ofFn (fun j : Fin height ↦
     if j.val = i then CPolynomial.C (1 : F) else CPolynomial.C (0 : F))
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 private theorem semanticUnitRowCoeffs_size
     (height i : Nat) :
     (semanticUnitRowCoeffs (F := F) height i).size = height := by
   simp [semanticUnitRowCoeffs]
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 private theorem semanticUnitRowCoeffs_getD_self
     {height i : Nat} (hi : i < height) :
     (semanticUnitRowCoeffs (F := F) height i).getD i 0 =
@@ -395,7 +404,7 @@ private theorem semanticUnitRowCoeffs_getD_self
   · simp [semanticUnitRowCoeffs]
   · simpa [semanticUnitRowCoeffs_size] using hi
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 private theorem semanticUnitRowCoeffs_getD_ne
     {height i k : Nat} (hne : k ≠ i) :
     (semanticUnitRowCoeffs (F := F) height i).getD k 0 =
@@ -410,7 +419,7 @@ private theorem semanticUnitRowCoeffs_getD_ne
     rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hle]
     simp
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 theorem coeff_ofCoeffRow_rowGet
     (row : PolynomialRow F) (i j : Nat) :
     CBivariate.coeff (CBivariate.ofCoeffRow row) i j =
@@ -419,7 +428,7 @@ theorem coeff_ofCoeffRow_rowGet
   unfold CPolynomial.ofArray CPolynomial.coeff rowGet
   rw [CPolynomial.Raw.Trim.coeff_eq_coeff]
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 theorem ofCoeffRow_rowLinearCombination_unit
     (M : PolynomialMatrix F) {i : Nat} (hi : i < M.size) :
     CBivariate.ofCoeffRow
@@ -446,7 +455,7 @@ theorem ofCoeffRow_rowLinearCombination_unit
   · rw [semanticUnitRowCoeffs_getD_self (F := F) hi]
     rw [cpoly_C_one_mul]
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 theorem ofCoeffRow_matrix_getD_semantic_rowSpan
     (M : PolynomialMatrix F) {i : Nat} (hi : i < M.size) :
     ∃ spanRow,
@@ -497,7 +506,7 @@ theorem ofCoeffRow_rowSpan_lee_coeff_eq_zero_of_width_le
   exact CBivariate.coeff_ofCoeffRow_of_size_le row
     (i := i) (j := j) (by simpa [hsize] using hj)
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 theorem natWeightedDegree_ofCoeffRow_le_of_lee_rowShiftedDegree?_le
     (params : GSInterpParams) (row : PolynomialRow F) {degree : Nat}
     (hdeg : rowShiftedDegree? row (leeOSullivanShifts params) = some degree)

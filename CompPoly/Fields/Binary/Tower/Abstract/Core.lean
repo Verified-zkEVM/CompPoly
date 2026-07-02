@@ -525,11 +525,11 @@ theorem list_nonempty (k : ℕ) : (list k).1 ≠ [] := by
   have : k + 1 ≠ 0 := Nat.succ_ne_zero k
   contradiction
 
-instance polyIrreducible (n : ℕ) : Irreducible (poly n) := (BinaryTowerAux n).2.instIrreduciblePoly
+theorem polyIrreducible (n : ℕ) : Irreducible (poly n) := (BinaryTowerAux n).2.instIrreduciblePoly
 
 instance polyIrreducibleFact (n : ℕ) : Fact (Irreducible (poly n)) := ⟨polyIrreducible n⟩
 
-instance polyMonic (n : ℕ) : Monic (poly n) := definingPoly_is_monic (Z n)
+theorem polyMonic (n : ℕ) : Monic (poly n) := definingPoly_is_monic (Z n)
 
 lemma poly_ne_zero (n : ℕ) : poly n ≠ 0 := (polyMonic n).ne_zero
 

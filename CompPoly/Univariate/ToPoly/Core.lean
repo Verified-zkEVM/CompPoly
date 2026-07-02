@@ -52,7 +52,7 @@ noncomputable def Raw.toPoly' [Semiring R] (p : CPolynomial.Raw R) : Polynomial 
   ))
 
 /-- Convert a canonical polynomial to a (mathlib) `Polynomial`. -/
-noncomputable def toPoly [Zero R] [Semiring R] (p : CPolynomial R) : Polynomial R := p.val.toPoly
+noncomputable def toPoly [Semiring R] (p : CPolynomial R) : Polynomial R := p.val.toPoly
 
 end ToPolyDefs
 
@@ -92,8 +92,7 @@ lemma coeff_toPoly {p : CPolynomial.Raw Q} {n : ℕ} : p.toPoly.coeff n = p.coef
     rw [Raw.coeff, Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hn, Option.getD_none]
 
   apply Array.foldl_induction motive
-  · change motive 0 0
-    simp [motive]
+  · simp [motive]
 
   change ∀ (i : Fin p.zipIdx.size) acc, motive i acc → motive (i + 1) (f acc p.zipIdx[i])
   unfold motive f
@@ -195,7 +194,7 @@ theorem isCanonical_toImpl (p : R[X]) : IsCanonical p.toImpl := by
   · simpa [h] using (Trim.isCanonical_empty (R := R))
   · intro hp
     have hlast : p.toImpl.getLast hp = p.leadingCoeff := by
-      simpa using (getLast_toImpl (Q := R) (p := p) h_nz)
+      simpa [Array.getLast] using (getLast_toImpl (Q := R) (p := p) h_nz)
     rw [hlast]
     exact Polynomial.leadingCoeff_ne_zero.mpr h_nz
 

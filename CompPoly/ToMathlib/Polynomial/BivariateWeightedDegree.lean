@@ -110,9 +110,10 @@ lemma natWeightedDegree_monomial (i j u v : ℕ) :
     natWeightedDegree (monomial (F := F) i j) u v = u * i + v * j := by
   classical
   simp only [natWeightedDegree, monomial]
-  refine le_antisymm ?_ ?_ <;> norm_num
-  · intros b hb
-    simp [coeff_monomial] at hb
+  refine le_antisymm ?_ ?_
+  · refine Finset.sup_le ?_
+    intro b hb
+    simp at hb
     simp [← hb]
   · refine le_trans ?_ (Finset.le_sup
       (f := fun m ↦ u * (Polynomial.monomial j (Polynomial.monomial i 1) |>.coeff m |>.natDegree)

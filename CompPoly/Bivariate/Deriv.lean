@@ -94,8 +94,15 @@ theorem coeff_partialDerivY [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
 /-- The X-partial derivative of zero is zero. -/
 theorem partialDerivX_zero [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R] :
     partialDerivX (0 : CBivariate R) = 0 := by
-  unfold partialDerivX
-  convert Finset.sum_empty
+  have hsupport : CPolynomial.support (0 : CBivariate R) = ∅ := by
+    ext j
+    constructor
+    · intro hj
+      exact False.elim (((CPolynomial.mem_support_iff (0 : CBivariate R) j).1 hj)
+        (CPolynomial.coeff_zero (R := CPolynomial R) j))
+    · intro hj
+      cases hj
+  simp [partialDerivX, hsupport]
 
 /-- The Y-partial derivative of zero is zero. -/
 theorem partialDerivY_zero [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] :
