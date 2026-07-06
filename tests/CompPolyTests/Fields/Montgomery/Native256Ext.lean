@@ -62,14 +62,20 @@ private def edgeCases (F : Type) [Mont256Field F] : List (FastField F) :=
   [ofNat (F := F) 0, ofNat (F := F) 1, ofNat (F := F) 2, ofNat (F := F) (p - 1),
     ofNat (F := F) (p - 2), one, ofNat (F := F) (2 ^ 255), ofNat (F := F) (2 ^ 256 - 1)]
 
-/-- Per-element checks: both squaring granularities, inversion, repeated squaring. -/
-private def checkOne (F : Type) [Mont256Field F] (label : String) (x : FastField F) :
+/-- Per-element checks: both squaring granularities, inversion, repeated squaring, and
+the raw GCD candidate. The candidate is compared directly because `invNative = inv`
+alone cannot detect a broken native candidate — a miss silently takes the fallback. -/
+private def checkOne (F : Type) [P : Mont256Field F] (label : String) (x : FastField F) :
     IO Bool := do
   let ok1 ← check s!"{label}: squareNative" (Ext.squareNative x = square x)
   let ok2 ← check s!"{label}: squareWithMulHi" (Ext.squareWithMulHi x = square x)
   let ok3 ← check s!"{label}: invNative" (Ext.invNative x = inv x)
   let ok4 ← check s!"{label}: squareNNative" (Ext.squareNNative x 8 = pow x (2 ^ 8))
-  return ok1 && ok2 && ok3 && ok4
+  let ok5 ← check s!"{label}: gcdInvCandidateNative"
+    (Ext.gcdInvCandidateNative P.modulus P.montgomeryNegInv P.gcdInitU P.gcdFinalRounds
+        x.val
+      = gcdInvCandidate (F := F) x.val)
+  return ok1 && ok2 && ok3 && ok4 && ok5
 
 /-- Per-pair checks: both multiplication granularities and division. -/
 private def checkPair (F : Type) [Mont256Field F] (label : String)

@@ -190,6 +190,88 @@ theorem montgomeryMulNative_eq {F : Type} [P : Mont256Field F] (lhs rhs : UInt25
 /- As for `montgomeryMulHi`: downstream facts flow through `montgomeryMulNative_eq`. -/
 attribute [irreducible] montgomeryMulNative
 
+/-! ## Native Pornin GCD inverse candidate
+
+Explicit-constant copies of the `Native256Gcd` chain feeding one extern symbol. The
+candidate is runtime-verified at every use site, so this extern adds no correctness
+trust beyond the verifying multiplication: a wrong native candidate only costs the
+fallback. -/
+
+/-- `gcdLinearCombMontyRed` with explicit modulus and multiplier words. -/
+@[inline] def gcdLinearCombMontyRedWith (m : UInt256L) (ni : UInt64) (a b : UInt256L)
+    (f g : Int) : UInt256L :=
+  let absF := UInt64.ofNat f.natAbs
+  let absG := UInt64.ofNat g.natAbs
+  let aSigned := if f < 0 then m - a else a
+  let bSigned := if g < 0 then m - b else b
+  let (plo, phi) := gcdLinearCombUnsigned aSigned bSigned absF absG
+  interleavedMontgomeryReductionWith m ni plo.l0 ⟨plo.l1, plo.l2, plo.l3, phi⟩
+
+/-- At a field's own constants, the explicit-constant fold is the verified
+`gcdLinearCombMontyRed`. -/
+theorem gcdLinearCombMontyRedWith_eq {F : Type} [P : Mont256Field F] (a b : UInt256L)
+    (f g : Int) :
+    gcdLinearCombMontyRedWith P.modulus P.montgomeryNegInv a b f g
+      = gcdLinearCombMontyRed (F := F) a b f g := by
+  simp only [gcdLinearCombMontyRedWith, gcdLinearCombMontyRed,
+    interleavedMontgomeryReductionWith_eq]
+
+/-- `gcdMainLoop` with explicit modulus and multiplier words. -/
+def gcdMainLoopWith (m : UInt256L) (ni : UInt64) (rounds : Nat) (a u b v : UInt256L) :
+    UInt256L × UInt256L × UInt256L × UInt256L :=
+  match rounds with
+  | 0 => (a, u, b, v)
+  | n + 1 =>
+    let (limb, bits) := gcdNumBits (a.l1 ||| b.l1) (a.l2 ||| b.l2) (a.l3 ||| b.l3)
+    let aTilde := gcdApprox a limb bits
+    let bTilde := gcdApprox b limb bits
+    let (_, _, f0, g0, f1, g1) := gcdInner 31 aTilde bTilde 1 0 0 1
+    let (newA, signA) := gcdLinearCombDiv a b f0 g0 31
+    let f0 := if signA < 0 then -f0 else f0
+    let g0 := if signA < 0 then -g0 else g0
+    let (newB, signB) := gcdLinearCombDiv a b f1 g1 31
+    let f1 := if signB < 0 then -f1 else f1
+    let g1 := if signB < 0 then -g1 else g1
+    let newU := gcdLinearCombMontyRedWith m ni u v f0 g0
+    let newV := gcdLinearCombMontyRedWith m ni u v f1 g1
+    gcdMainLoopWith m ni n newA newU newB newV
+
+/-- At a field's own constants, the explicit-constant loop is the verified
+`gcdMainLoop`. -/
+theorem gcdMainLoopWith_eq {F : Type} [P : Mont256Field F] (rounds : Nat) :
+    ∀ a u b v : UInt256L,
+      gcdMainLoopWith P.modulus P.montgomeryNegInv rounds a u b v
+        = gcdMainLoop (F := F) rounds a u b v := by
+  induction rounds with
+  | zero => intro a u b v; rfl
+  | succ n ih =>
+    intro a u b v
+    simp only [gcdMainLoopWith, gcdMainLoop, gcdLinearCombMontyRedWith_eq, ih]
+
+/-- Pornin binary-GCD inverse candidate with explicit per-field constants. The body is
+the verified word-level algorithm (`gcdInvCandidateNative_eq`); compiled code calls the
+trusted native `comppoly_mont256_gcd_inv`. Like `gcdInvCandidate`, the result is a
+*candidate*: callers verify it and fall back, so its provenance never affects
+correctness. -/
+@[extern "comppoly_mont256_gcd_inv"]
+def gcdInvCandidateNative (m : @& UInt256L) (ni : UInt64) (initU : @& UInt256L)
+    (finalRounds : @& Nat) (input : @& UInt256L) : UInt256L :=
+  let (a, u, b, v) := gcdMainLoopWith m ni 15 input initU m ⟨0, 0, 0, 0⟩
+  let (_, _, _, _, f1, g1) := gcdInner finalRounds a.l0 b.l0 1 0 0 1
+  gcdLinearCombMontyRedWith m ni u v f1 g1
+
+/-- At a field's own constants, the explicit-constant native model is the verified
+`gcdInvCandidate`. -/
+theorem gcdInvCandidateNative_eq {F : Type} [P : Mont256Field F] (input : UInt256L) :
+    gcdInvCandidateNative P.modulus P.montgomeryNegInv P.gcdInitU P.gcdFinalRounds input
+      = gcdInvCandidate (F := F) input := by
+  unfold gcdInvCandidateNative gcdInvCandidate
+  rw [gcdMainLoopWith_eq]
+  simp only [gcdLinearCombMontyRedWith_eq]
+
+/- As for the multipliers: downstream facts flow through `gcdInvCandidateNative_eq`. -/
+attribute [irreducible] gcdInvCandidateNative
+
 /-! ## Field-level operations
 
 The subtype bound of each result is discharged through the equalities above, so no
@@ -250,11 +332,12 @@ fallback (taken only for `x = 0` or a candidate miss) stays on the verified path
     ⟨z, by rw [← P.modulus_toNat]; exact UInt256L.lt_iff_toNat_lt.mp h.1⟩
   else invWindow x
 
-/-- Inversion in Montgomery form: the Pornin binary-GCD candidate, checked by one
-native Montgomery multiplication, with the verified windowed Fermat fallback. -/
+/-- Inversion in Montgomery form: the native Pornin binary-GCD candidate, checked by
+one native Montgomery multiplication, with the verified windowed Fermat fallback. -/
 @[inline] def invNative {F : Type} [P : Mont256Field F] (x : FastField F) :
     FastField F :=
-  invWithCandidateNative x (gcdInvCandidate (F := F) x.val)
+  invWithCandidateNative x
+    (gcdInvCandidateNative P.modulus P.montgomeryNegInv P.gcdInitU P.gcdFinalRounds x.val)
 
 /-- `invWithCandidateNative` agrees with the verified `invWithCandidate`. -/
 theorem invWithCandidateNative_eq {F : Type} [P : Mont256Field F] (x : FastField F)
@@ -264,8 +347,8 @@ theorem invWithCandidateNative_eq {F : Type} [P : Mont256Field F] (x : FastField
 
 /-- `invNative` agrees with the verified `inv`. -/
 theorem invNative_eq_inv {F : Type} [P : Mont256Field F] (x : FastField F) :
-    invNative x = inv x :=
-  invWithCandidateNative_eq x (gcdInvCandidate (F := F) x.val)
+    invNative x = inv x := by
+  simp only [invNative, inv, gcdInvCandidateNative_eq, invWithCandidateNative_eq]
 
 /-- Division through native inversion and native multiplication. -/
 @[inline] def divNative {F : Type} [P : Mont256Field F] (x y : FastField F) :
