@@ -14,6 +14,7 @@ CompPoly/
   Multilinear/        multilinear coefficient and evaluation representations
   Bivariate/          specialized `CPolynomial (CPolynomial R)` layer
   Fields/             concrete fields plus binary-field and additive-NTT stack
+native/               C sources for opt-in extern-backed operations
 tests/                regression modules under `CompPolyTests`
 bench/                benchmark executable, runner docs, and local reports
 scripts/              repo utilities and validation helpers
