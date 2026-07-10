@@ -217,6 +217,7 @@ import CompPoly.Univariate.Raw.Proofs
 import CompPoly.Univariate.ReedSolomon
 import CompPoly.Univariate.ReedSolomon.GaoCorrectness
 import CompPoly.Univariate.ReedSolomon.GaoDecoder
+import CompPoly.Univariate.ReedSolomon.NTTEncode
 import CompPoly.Univariate.Roots
 import CompPoly.Univariate.Roots.Backend
 import CompPoly.Univariate.Roots.Context
