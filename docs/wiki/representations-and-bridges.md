@@ -9,7 +9,7 @@ usually the first architectural decision in a change.
 |---|---|---|---|
 | Univariate | `CPolynomial.Raw R`, `CPolynomial R`, `QuotientCPolynomial R` | Canonical coefficient-sequence arithmetic, quotient reasoning, interpolation | `CompPoly/Univariate/README.md`, `CompPoly/Univariate/Basic.lean`, `CompPoly/Univariate/ToPoly.lean` |
 | Multivariate | `CMvPolynomial n R` | Sparse computable multivariate operations and `MvPolynomial` interop | `CompPoly/Multivariate/CMvPolynomial.lean`, `CompPoly/Multivariate/Operations.lean`, `CompPoly/Multivariate/MvPolyEquiv.lean` |
-| Multilinear | `CMlPolynomial R n`, `CMlPolynomialEval R n` | Boolean-hypercube evaluation form, basis conversion, multilinear extensions | `CompPoly/Multilinear/Basic.lean`, `CompPoly/Multilinear/Equiv.lean` |
+| Multilinear | `CMlPolynomial R n`, `CMlPolynomialEval R n` | Boolean-hypercube evaluation form, basis conversion, multilinear extensions | `CompPoly/Multilinear/Basic.lean`, `CompPoly/Multilinear/Equiv.lean`, `CompPoly/Multilinear/Semantics.lean` |
 | Bivariate | `CBivariate R` | Specialized two-variable APIs and `R[X][Y]` transport | `CompPoly/Bivariate/README.md`, `CompPoly/Bivariate/Basic.lean`, `CompPoly/Bivariate/ToPoly.lean`, `CompPoly/ToMathlib/Polynomial/BivariateDegree.lean`, `CompPoly/ToMathlib/Polynomial/BivariateWeightedDegree.lean`, `CompPoly/ToMathlib/Polynomial/BivariateMultiplicity.lean` |
 
 ## Univariate Family
@@ -87,6 +87,15 @@ It already has two distinct computable forms:
 These are both represented as vectors of length `2 ^ n`, with little-endian indexing.
 That design is described directly in
 [`../../CompPoly/Multilinear/Basic.lean`](../../CompPoly/Multilinear/Basic.lean).
+
+[`../../CompPoly/Multilinear/Semantics.lean`](../../CompPoly/Multilinear/Semantics.lean)
+defines explicit little-endian and big-endian Boolean-cube points and proves the reversal theorem
+between CompPoly evaluation and big-endian multilinear evaluation. Consumers must choose a
+coordinate convention explicitly; the two orders are never identified definitionally.
+
+[`../../CompPoly/Multilinear/Next.lean`](../../CompPoly/Multilinear/Next.lean) defines the
+terminal-successor relation, its closed carry-chain form, shifted evaluation tables, and the shift
+identity in the documented big-endian coordinates.
 
 Use this area for:
 

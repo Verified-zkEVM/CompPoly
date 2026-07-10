@@ -1,9 +1,9 @@
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Chung Thai Nguyen
+Authors: Quang Dao, Chung Thai Nguyen, Aristotle (Harmonic), Elias Judin
 -/
-import CompPoly.Multilinear.Basic
+import CompPoly.Multilinear.TransformEquiv
 
 /-!
   # Equivalence between `CMlPolynomial` and multilinear polynomials in `MvPolynomial`
@@ -82,6 +82,21 @@ and coefficients `p[i]`.
 -/
 def toMvPolynomial (p : CMlPolynomial R n) : MvPolynomial (Fin n) R :=
   ∑ i : Fin (2 ^ n), MvPolynomial.monomial (monomialOfNat i) (a:=p[i])
+
+/-- Evaluating the associated multivariate polynomial agrees with coefficient evaluation. -/
+theorem eval_toMvPolynomial (p : CMlPolynomial R n) (x : Vector R n) :
+    MvPolynomial.eval (fun i ↦ x[i]) (toMvPolynomial p) = p.eval x := by
+  unfold toMvPolynomial eval
+  simp +decide [MvPolynomial.eval_monomial, Vector.dotProduct_eq_root_dotProduct]
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  congr! 2
+  unfold monomialOfNat monomialBasis
+  simp +decide [Finset.prod_ite]
+  rw [Finset.prod_filter]
+  congr
+  ext j
+  simp +decide [Nat.getBit]
+  cases Nat.mod_two_eq_zero_or_one (i.val >>> j.val) <;> simp +decide [*, Nat.testBit]
 
 -- #check (toMvPolynomial (CMlPolynomial.mk 2 #v[(1: ℤ), 2, 3, 4]))
 
@@ -335,6 +350,154 @@ variable [CommRing R]
 recovering the monomial-basis representation. -/
 def toMvPolynomial (p : CMlPolynomialEval R n) : MvPolynomial (Fin n) R :=
   CMlPolynomial.toMvPolynomial (CMlPolynomial.lagrangeToMono n p)
+
+/-- The inverse of the finite-function encoder reads the corresponding
+little-endian bit. -/
+private theorem finFunctionFinEquiv_symm_apply_two (i : Fin (2 ^ n)) (j : Fin n) :
+    ((finFunctionFinEquiv.symm i) j).val = Nat.getBit j.val i.val := by
+  simp [finFunctionFinEquiv, Equiv.ofRightInverseOfCardLE, Nat.getBit,
+    Nat.shiftRight_eq_div_pow, Nat.and_one_is_mod]
+
+/-- The local factor used to expand a Boolean-lattice zeta transform against
+the multilinear Lagrange basis. -/
+private def basisChangeFactor (x : Vector R n) (j : Fin (2 ^ n))
+    (k : Fin n) (b : Fin 2) : R :=
+  if j.val.testBit k.val then
+    (b.val : R) * x[k]
+  else
+    (b.val : R) * x[k] + (1 - (b.val : R)) * (1 - x[k])
+
+private theorem sum_basisChangeFactor (x : Vector R n) (j : Fin (2 ^ n))
+    (k : Fin n) :
+    (∑ b : Fin 2, basisChangeFactor x j k b) =
+      if j.val.testBit k.val then x[k] else 1 := by
+  rw [Fin.sum_univ_two]
+  by_cases hj : j.val.testBit k.val <;> simp [basisChangeFactor, hj]
+
+private theorem submask_lagrange_eq_factor_prod
+    (x : Vector R n) (i j : Fin (2 ^ n)) :
+    (if i.val &&& j.val = j.val then (lagrangeBasis x).get i else 0) =
+      ∏ k : Fin n, basisChangeFactor x j k ((finFunctionFinEquiv.symm i) k) := by
+  by_cases hsub : i.val &&& j.val = j.val
+  · rw [if_pos hsub]
+    unfold lagrangeBasis
+    simp only [Vector.get_ofFn, BitVec.getLsb_eq_getElem, Fin.getElem_fin,
+      BitVec.getElem_ofFin]
+    apply Finset.prod_congr rfl
+    intro k _
+    have hdecode := finFunctionFinEquiv_symm_apply_two i k
+    by_cases hj : j.val.testBit k.val = true
+    · have hi : i.val.testBit k.val = true := by
+        have hbits := congrArg (fun m : ℕ ↦ m.testBit k.val) hsub
+        simpa [Nat.testBit_and, hj] using hbits
+      simp [Nat.getBit_eq_testBit, hi] at hdecode
+      simp [basisChangeFactor, hj, hi, hdecode]
+    · cases hi : i.val.testBit k.val <;>
+        simp [Nat.getBit_eq_testBit, hi] at hdecode <;>
+        simp [basisChangeFactor, hj, hdecode]
+  · rw [if_neg hsub]
+    obtain ⟨k, hj, hi⟩ :
+        ∃ k : Fin n, j.val.testBit k.val = true ∧ i.val.testBit k.val = false := by
+      by_contra h
+      apply hsub
+      apply Nat.eq_of_testBit_eq
+      intro k
+      rw [Nat.testBit_and]
+      by_cases hk : k < n
+      · let k' : Fin n := ⟨k, hk⟩
+        by_cases hj' : j.val.testBit k = true
+        · have hi' : i.val.testBit k ≠ false := by
+            intro hi'
+            exact h ⟨k', hj', hi'⟩
+          cases hibit : i.val.testBit k <;> simp_all
+        · cases hjbit : j.val.testBit k <;> simp_all
+      · have hnk : n ≤ k := Nat.le_of_not_gt hk
+        have hi' : i.val.testBit k = false :=
+          Nat.testBit_eq_false_of_lt
+            (lt_of_lt_of_le i.isLt (Nat.pow_le_pow_right two_pos hnk))
+        have hj' : j.val.testBit k = false :=
+          Nat.testBit_eq_false_of_lt
+            (lt_of_lt_of_le j.isLt (Nat.pow_le_pow_right two_pos hnk))
+        simp [hi', hj']
+    symm
+    apply Finset.prod_eq_zero (Finset.mem_univ k)
+    have hdecode := finFunctionFinEquiv_symm_apply_two i k
+    simp [Nat.getBit_eq_testBit, hi] at hdecode
+    simp [basisChangeFactor, hj, hdecode]
+
+private theorem submask_lagrange_sum (x : Vector R n) (j : Fin (2 ^ n)) :
+    (∑ i : Fin (2 ^ n),
+        if i.val &&& j.val = j.val then (lagrangeBasis x).get i else 0) =
+      (CMlPolynomial.monomialBasis x).get j := by
+  calc
+    _ = ∑ i : Fin (2 ^ n),
+        ∏ k : Fin n, basisChangeFactor x j k ((finFunctionFinEquiv.symm i) k) := by
+      exact Finset.sum_congr rfl fun i _ ↦ submask_lagrange_eq_factor_prod x i j
+    _ = ∑ y : Fin n → Fin 2, ∏ k : Fin n, basisChangeFactor x j k (y k) := by
+      symm
+      exact Fintype.sum_equiv finFunctionFinEquiv _ _ fun y ↦ by simp
+    _ = ∏ k : Fin n, ∑ b : Fin 2, basisChangeFactor x j k b := by
+      rw [Fintype.prod_sum]
+    _ = ∏ k : Fin n, if j.val.testBit k.val then x[k] else 1 := by
+      exact Finset.prod_congr rfl fun k _ ↦ sum_basisChangeFactor x j k
+    _ = (CMlPolynomial.monomialBasis x).get j := by
+      unfold CMlPolynomial.monomialBasis
+      simp only [Vector.get_ofFn, BitVec.getLsb_eq_getElem, Fin.getElem_fin,
+        BitVec.getElem_ofFin]
+
+/-- Changing monomial coefficients to Boolean-hypercube evaluations preserves
+evaluation at every point. -/
+theorem eval_monoToLagrange (p : CMlPolynomial R n) (x : Vector R n) :
+    (CMlPolynomial.monoToLagrange n p : CMlPolynomialEval R n).eval x = p.eval x := by
+  rw [CMlPolynomial.monoToLagrange_eq_monoToLagrangeSpec]
+  rw [eval, CMlPolynomial.eval, Vector.dotProduct_eq_root_dotProduct,
+    Vector.dotProduct_eq_root_dotProduct]
+  unfold _root_.dotProduct CMlPolynomial.monoToLagrangeSpec
+  simp only [Vector.get_ofFn]
+  calc
+    (∑ i : Fin (2 ^ n),
+        (∑ j : Fin (2 ^ n), if i.val &&& j.val = j.val then p.get j else 0) *
+          (lagrangeBasis x).get i) =
+        ∑ i : Fin (2 ^ n), ∑ j : Fin (2 ^ n),
+          p.get j *
+            (if i.val &&& j.val = j.val then (lagrangeBasis x).get i else 0) := by
+      apply Finset.sum_congr rfl
+      intro i _
+      rw [Finset.sum_mul]
+      apply Finset.sum_congr rfl
+      intro j _
+      by_cases hsub : i.val &&& j.val = j.val <;> simp [hsub]
+    _ = ∑ j : Fin (2 ^ n), ∑ i : Fin (2 ^ n),
+          p.get j *
+            (if i.val &&& j.val = j.val then (lagrangeBasis x).get i else 0) := by
+      rw [Finset.sum_comm]
+    _ = ∑ j : Fin (2 ^ n), p.get j *
+          (∑ i : Fin (2 ^ n),
+            if i.val &&& j.val = j.val then (lagrangeBasis x).get i else 0) := by
+      exact Finset.sum_congr rfl fun j _ ↦ (Finset.mul_sum _ _ _).symm
+    _ = ∑ j : Fin (2 ^ n), p.get j * (CMlPolynomial.monomialBasis x).get j := by
+      exact Finset.sum_congr rfl fun j _ ↦ by rw [submask_lagrange_sum]
+
+/-- Recovering monomial coefficients from a hypercube table preserves its
+multilinear-extension evaluation. -/
+theorem eval_lagrangeToMono (p : CMlPolynomialEval R n) (x : Vector R n) :
+    CMlPolynomial.eval (CMlPolynomial.lagrangeToMono n p) x =
+      CMlPolynomialEval.eval p x := by
+  have h := eval_monoToLagrange (CMlPolynomial.lagrangeToMono n p) x
+  have hinv :=
+    (CMlPolynomial.equivMonomialLagrangeRepr (R := R) (n := n)).apply_symm_apply p
+  have hinv' :
+      CMlPolynomial.monoToLagrange n (CMlPolynomial.lagrangeToMono n p) = p := by
+    simpa [CMlPolynomial.equivMonomialLagrangeRepr] using hinv
+  rw [hinv'] at h
+  exact h.symm
+
+/-- Evaluating the multivariate polynomial recovered from a hypercube table
+agrees with multilinear-extension evaluation. -/
+theorem eval_toMvPolynomial (p : CMlPolynomialEval R n) (x : Vector R n) :
+    MvPolynomial.eval (fun i ↦ x[i]) (toMvPolynomial p) = p.eval x := by
+  rw [toMvPolynomial, CMlPolynomial.eval_toMvPolynomial]
+  exact eval_lagrangeToMono p x
 
 /-- Converts a hypercube-evaluation representation to a Mathlib restricted-degree multivariate
 polynomial. -/

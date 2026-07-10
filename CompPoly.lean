@@ -101,6 +101,7 @@ import CompPoly.Fields.Binary.Tower.TensorAlgebra
 import CompPoly.Fields.Goldilocks
 import CompPoly.Fields.KoalaBear
 import CompPoly.Fields.KoalaBear.Basic
+import CompPoly.Fields.KoalaBear.Ext5
 import CompPoly.Fields.KoalaBear.Fast
 import CompPoly.Fields.Mersenne
 import CompPoly.Fields.PrattCertificate
@@ -136,6 +137,8 @@ import CompPoly.Multilinear.Equiv
 import CompPoly.Multilinear.ManyEval
 import CompPoly.Multilinear.ManyEval.Basic
 import CompPoly.Multilinear.ManyEval.Correctness
+import CompPoly.Multilinear.Next
+import CompPoly.Multilinear.Semantics
 import CompPoly.Multilinear.TransformEquiv
 import CompPoly.Multivariate.CMvMonomial
 import CompPoly.Multivariate.CMvPolynomial

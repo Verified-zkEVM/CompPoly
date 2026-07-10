@@ -42,10 +42,11 @@ scripts/              repo utilities and validation helpers
 - Extending sparse monomial-based polynomial operations or `MvPolynomial`
   interoperability: start in `CompPoly/Multivariate/`.
 - Working on Boolean-hypercube evaluation form, basis conversion, or multilinear
-  equivalences: start in `CompPoly/Multilinear/`.
+  equivalences: start in `CompPoly/Multilinear/`. Coordinate semantics live in
+  `Semantics.lean`; the terminal-successor kernel and shifted tables live in `Next.lean`.
 - Working on the specialized two-variable API or the `R[X][Y]` bridge:
   start in `CompPoly/Bivariate/`.
-- Adding concrete fields, GHASH lemmas, tower-field infrastructure, or additive NTT:
+- Adding concrete fields, field extensions, GHASH lemmas, tower-field infrastructure, or additive NTT:
   start in `CompPoly/Fields/`.
 - Moving a reusable support lemma that should not live next to one specific feature:
   start in `CompPoly/Data/` or `CompPoly/ToMathlib/`.

@@ -1,10 +1,11 @@
 /-
 Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Valerii Huhnin
+Authors: Quang Dao, Valerii Huhnin, Aristotle (Harmonic), Elias Judin
 -/
 
 import CompPoly.Fields.KoalaBear.Basic
+import CompPoly.Fields.KoalaBear.Ext5
 import CompPoly.Fields.KoalaBear.Fast
 
 /-!

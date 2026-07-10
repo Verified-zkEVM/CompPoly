@@ -15,6 +15,7 @@ This directory contains formally verified field infrastructure used in zero-know
 | **Goldilocks.lean** | \(2^{64} - 2^{32} + 1\) — Plonky2/3. |
 | **KoalaBear.lean** | Facade for KoalaBear modules, re-exporting the canonical field and fast native-word implementation. |
 | **KoalaBear/Basic.lean** | \(2^{31} - 2^{24} + 1\) — lean Ethereum spec. |
+| **KoalaBear/Ext5.lean** | Degree-five extension by \(X^5 + X^2 - 1\), with canonical coordinates and executable multiplication. |
 | **KoalaBear/Fast.lean** | Native `UInt32` Montgomery-residue operations for KoalaBear, with conversion and operation equivalence statements against `KoalaBear.Field`. |
 | **Mersenne.lean** | \(2^{31} - 1\) — Circle STARKs. |
 | **Secp256k1.lean** | Base and scalar fields for the Secp256k1 curve (used in Bitcoin/Ethereum). |
