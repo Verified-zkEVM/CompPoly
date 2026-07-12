@@ -310,6 +310,16 @@ theorem decode_none_farness [Field F]
   rw [Gao.decode_eq_some k D r hkn msg (Nat.le_of_not_lt hle)] at hnone
   exact Option.some_ne_none _ hnone
 
+/-- Outcome characterization: `Gao.decode` returns `none` iff the received word is beyond
+the guaranteed radius `⌊(n-k)/2⌋` of every codeword (combines `decode_eq_none` and
+`decode_none_farness`). -/
+theorem decode_eq_none_iff [Field F]
+    (k : ℕ) (D : Domain F) (r : Vector F D.n) (hkn : k < D.n) :
+    Gao.decode k D r = none ↔
+      ∀ msg : Vector F k, D.n - k < 2 * hammingDist r.get (encode D msg).get :=
+  ⟨decode_none_farness k D r hkn,
+    fun h => decode_eq_none k D r hkn fun msg => by have := h msg; omega⟩
+
 /-- Uniqueness: within the guaranteed-decoding radius `⌊(D.n-k)/2⌋`, two messages
 whose codewords lie within that radius of `r` decode to the same polynomial. -/
 theorem decode_unique [Field F] (k : ℕ) (D : Domain F) (r : Vector F D.n)
