@@ -181,17 +181,25 @@ def reduceUInt32 (x : UInt32) : FastField F :=
 /-- Montgomery reduction for inputs known to be below `p * 2^32`. -/
 @[inline]
 def montgomeryReduceBoundedRaw (x : UInt64) : UInt32 :=
-  let m : UInt32 := x.toUInt32 * P.montgomeryNegInv
-  let u : UInt32 := ((x + m.toUInt64 * P.modulus64) >>> 32).toUInt32
-  reduceUInt32Lt2ModulusRaw (F := F) u
+  reduceUInt32Lt2ModulusRaw (F := F)
+    (Montgomery.Native32.reduceQuotient P.montgomeryNegInv P.modulus64 x)
 
 theorem montgomeryReduceBoundedRaw_lt (x : UInt64)
     (h : x.toNat < P.fieldSize * UInt32.size) :
     (montgomeryReduceBoundedRaw (F := F) x).toNat < P.fieldSize := by
+  have hmodulus_bound : P.modulus64.toNat < 2 ^ 31 := by
+    rw [P.modulus64_toNat]
+    have hp := P.fieldSize_add_fieldSize_lt_uint32Size
+    change P.fieldSize + P.fieldSize < 2 ^ 32 at hp
+    omega
   unfold montgomeryReduceBoundedRaw
   exact reduceUInt32Lt2ModulusRaw_lt _
-    (Montgomery.Native32.u_lt_two_mul P.montgomeryNegInv P.modulus64 P.fieldSize
-      P.modulus64_toNat P.fieldSize_pos P.two_fieldSize_mul_uint32Size_lt_two64 x h)
+    (by
+      simpa only [P.modulus64_toNat] using
+        Montgomery.Native32.reduceQuotient_toNat_lt_two_mul P.montgomeryNegInv P.modulus64
+          (by simpa only [P.modulus64_toNat] using P.fieldSize_pos)
+          hmodulus_bound
+          x (by simpa only [P.modulus64_toNat] using h))
 
 /-- Montgomery reduction for inputs known to be below `p * 2^32`. -/
 @[inline]
@@ -203,34 +211,42 @@ theorem montgomeryReduceBounded_cast (x : UInt64)
     (h : x.toNat < P.fieldSize * UInt32.size) :
     ((montgomeryReduceBounded (F := F) x h).val.toNat : ZMod P.fieldSize) =
       (x.toNat : ZMod P.fieldSize) * (UInt32.size : ZMod P.fieldSize)⁻¹ := by
+  have hmodulus_bound : P.modulus64.toNat < 2 ^ 31 := by
+    rw [P.modulus64_toNat]
+    have hp := P.fieldSize_add_fieldSize_lt_uint32Size
+    change P.fieldSize + P.fieldSize < 2 ^ 32 at hp
+    omega
   change ((montgomeryReduceBoundedRaw (F := F) x).toNat : ZMod P.fieldSize) =
       (x.toNat : ZMod P.fieldSize) * (UInt32.size : ZMod P.fieldSize)⁻¹
   unfold montgomeryReduceBoundedRaw
-  let m : UInt32 := x.toUInt32 * P.montgomeryNegInv
-  let u : UInt32 := ((x + m.toUInt64 * P.modulus64) >>> 32).toUInt32
+  let u := Montgomery.Native32.reduceQuotient P.montgomeryNegInv P.modulus64 x
   change ((reduceUInt32Lt2ModulusRaw (F := F) u).toNat : ZMod P.fieldSize) =
     (x.toNat : ZMod P.fieldSize) * (UInt32.size : ZMod P.fieldSize)⁻¹
   have hred := reduceUInt32Lt2Modulus_cast (F := F) u
-    (Montgomery.Native32.u_lt_two_mul P.montgomeryNegInv P.modulus64 P.fieldSize
-      P.modulus64_toNat P.fieldSize_pos P.two_fieldSize_mul_uint32Size_lt_two64 x h)
+    (by
+      simpa only [P.modulus64_toNat] using
+        Montgomery.Native32.reduceQuotient_toNat_lt_two_mul P.montgomeryNegInv P.modulus64
+          (by simpa only [P.modulus64_toNat] using P.fieldSize_pos)
+          hmodulus_bound
+          x (by simpa only [P.modulus64_toNat] using h))
   change ((reduceUInt32Lt2ModulusRaw (F := F) u).toNat : ZMod P.fieldSize) =
     (u.toNat : ZMod P.fieldSize) at hred
   rw [hred]
   change (u.toNat : ZMod P.fieldSize) =
     (x.toNat : ZMod P.fieldSize) * (UInt32.size : ZMod P.fieldSize)⁻¹
-  rw [show u.toNat =
-      (x.toNat + ((x.toNat % UInt32.size * P.montgomeryNegInv.toNat) % UInt32.size) *
-        P.fieldSize) / UInt32.size by
-    exact Montgomery.Native32.u_eq_nat P.montgomeryNegInv P.modulus64 P.fieldSize
-      P.modulus64_toNat P.fieldSize_pos P.two_fieldSize_mul_uint32Size_lt_two64 x h]
-  exact Montgomery.reduceNatQuotient_cast UInt32.size P.fieldSize P.montgomeryNegInv.toNat
+  rw [show u.toNat = reduceNatQuotient (2 ^ 32) P.fieldSize P.montgomeryNegInv.toNat x.toNat by
+    simpa only [u, P.modulus64_toNat] using
+      Montgomery.Native32.reduceQuotient_toNat P.montgomeryNegInv P.modulus64
+        (by simpa only [P.modulus64_toNat] using P.fieldSize_pos)
+        hmodulus_bound
+        x (by simpa only [P.modulus64_toNat] using h)]
+  exact Montgomery.reduceNatQuotient_cast (2 ^ 32) P.fieldSize P.montgomeryNegInv.toNat
     (by decide) P.negInv_congr P.uint32Size_ne_zero_in_field x.toNat
 
 /-- Montgomery reduction of a 64-bit word. Hot bounded callers use `montgomeryReduceBounded`. -/
 @[inline]
 def montgomeryReduce (x : UInt64) : FastField F :=
-  let m : UInt32 := x.toUInt32 * P.montgomeryNegInv
-  let u : UInt32 := ((x + m.toUInt64 * P.modulus64) >>> 32).toUInt32
+  let u := Montgomery.Native32.reduceQuotient P.montgomeryNegInv P.modulus64 x
   reduceUInt32 (F := F) u
 
 /-! ## Conversions -/

@@ -57,11 +57,26 @@ def reduceNat (R p negInv x : ℕ) : ℕ :=
   let u := (x + m * p) / R
   if u < p then u else u - p
 
+/-- The pre-subtraction quotient is below twice the modulus. -/
+theorem reduceNatQuotient_lt_two_mul (R p negInv x : ℕ)
+    (hR : 0 < R) (hp : 0 < p) (hx : x < p * R) :
+    reduceNatQuotient R p negInv x < 2 * p := by
+  let m := x % R * negInv % R
+  have hm_lt : m < R := Nat.mod_lt _ hR
+  change (x + m * p) / R < 2 * p
+  rw [Nat.div_lt_iff_lt_mul]
+  · have hprod_lt : m * p < R * p := Nat.mul_lt_mul_of_pos_right hm_lt hp
+    have hprod_lt' : m * p < p * R := by
+      simpa only [Nat.mul_comm] using hprod_lt
+    calc
+      x + m * p < p * R + p * R := Nat.add_lt_add hx hprod_lt'
+      _ = 2 * p * R := by ring
+  · exact hR
+
 /-- The pre-subtraction quotient represents multiplication by `R⁻¹` in `ZMod p`. -/
 theorem reduceNatQuotient_cast (R p negInv : ℕ) [Fact (Nat.Prime p)] (hR : 0 < R)
     (hnegInv : negInv * p ≡ R - 1 [MOD R]) (hRne : (R : ZMod p) ≠ 0) (x : ℕ) :
-    (reduceNatQuotient R p negInv x : ZMod p) =
-      (x : ZMod p) * (R : ZMod p)⁻¹ := by
+    (reduceNatQuotient R p negInv x : ZMod p) = (x : ZMod p) * (R : ZMod p)⁻¹ := by
   let m := x % R * negInv % R
   let u := (x + m * p) / R
   change (u : ZMod p) = (x : ZMod p) * (R : ZMod p)⁻¹
