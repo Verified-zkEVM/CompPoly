@@ -59,7 +59,7 @@ theorem r2ModModulus_toNat :
 /-- The per-field data realizing BabyBear as a fast 32-bit-word Montgomery field. The five
 word constants are the only runtime data; every other field is a `decide`-checked fact. -/
 instance instMont32Field : Mont32Field BabyBear.fieldSize where
-  prime := inferInstance
+  prime := BabyBear.is_prime
   modulus32 := modulus32
   modulus64 := modulus64
   rModModulus := rModModulus

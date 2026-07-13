@@ -41,7 +41,7 @@ The five word constants (`modulus32`, `modulus64`, `rModModulus`, `r2ModModulus`
 erased at codegen. -/
 class Mont32Field (modulus : ℕ) where
   /-- `modulus` is prime. -/
-  prime : Fact (Nat.Prime modulus)
+  prime : modulus.Prime
   /-- `modulus` as a 32-bit word. -/
   modulus32 : UInt32
   /-- `modulus` as a 64-bit word. -/
@@ -61,9 +61,10 @@ class Mont32Field (modulus : ℕ) where
   montgomeryNegInv_mul_modulus_mod_two_pow_32 :
     (montgomeryNegInv.toNat * modulus) % 2 ^ 32 = 2 ^ 32 - 1
 
-attribute [instance] Mont32Field.prime
-
 namespace Mont32Field
+instance factPrime (modulus : ℕ) [P : Mont32Field modulus] : Fact (Nat.Prime modulus) :=
+  ⟨P.prime⟩
+
 theorem two_lt_modulus {modulus : ℕ} [P : Mont32Field modulus] : 2 < modulus := by
   have h := P.two_pow_32_lt_three_mul_modulus
   omega
