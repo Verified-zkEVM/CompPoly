@@ -35,47 +35,34 @@ theorem reduceUInt32Lt2ModulusRaw_lt (x : UInt32)
 
 /-- Reduce a native word known to be below twice the KoalaBear prime. -/
 @[inline]
-def reduceUInt32Lt2Modulus (x : UInt32) (h : x.toNat < 2 * KoalaBear.fieldSize) :
-    Field :=
+def reduceUInt32Lt2Modulus (x : UInt32) (h : x.toNat < 2 * KoalaBear.fieldSize) : Field :=
   Montgomery.Native32.reduceUInt32Lt2Modulus x h
 
 theorem reduceUInt32Lt2Modulus_cast (x : UInt32)
     (h : x.toNat < 2 * KoalaBear.fieldSize) :
-    ((reduceUInt32Lt2Modulus x h).val.toNat : KoalaBear.Field) =
-      (x.toNat : KoalaBear.Field) :=
+    ((reduceUInt32Lt2Modulus x h).val.toNat : KoalaBear.Field) = (x.toNat : KoalaBear.Field) :=
   Montgomery.Native32.reduceUInt32Lt2Modulus_cast x h
 
-/-- Reduce a native word below `2^32` modulo the KoalaBear prime. -/
+/-- Montgomery reduction for inputs known to be below `p * 2^32`. -/
 @[inline]
-def reduceUInt32 (x : UInt32) : Field :=
-  Montgomery.Native32.reduceUInt32 KoalaBear.fieldSize x
+def montgomeryReduceRaw (x : UInt64) : UInt32 :=
+  Montgomery.Native32.montgomeryReduceRaw KoalaBear.fieldSize x
+
+theorem montgomeryReduceRaw_lt (x : UInt64)
+    (h : x.toNat < KoalaBear.fieldSize * UInt32.size) :
+    (montgomeryReduceRaw x).toNat < KoalaBear.fieldSize :=
+  Montgomery.Native32.montgomeryReduceRaw_lt x h
 
 /-- Montgomery reduction for inputs known to be below `p * 2^32`. -/
 @[inline]
-def montgomeryReduceBoundedRaw (x : UInt64) : UInt32 :=
-  Montgomery.Native32.montgomeryReduceBoundedRaw KoalaBear.fieldSize x
+def montgomeryReduce (x : UInt64) (h : x.toNat < KoalaBear.fieldSize * UInt32.size) : Field :=
+  Montgomery.Native32.montgomeryReduce x h
 
-theorem montgomeryReduceBoundedRaw_lt (x : UInt64)
+theorem montgomeryReduce_cast (x : UInt64)
     (h : x.toNat < KoalaBear.fieldSize * UInt32.size) :
-    (montgomeryReduceBoundedRaw x).toNat < KoalaBear.fieldSize :=
-  Montgomery.Native32.montgomeryReduceBoundedRaw_lt x h
-
-/-- Montgomery reduction for inputs known to be below `p * 2^32`. -/
-@[inline]
-def montgomeryReduceBounded (x : UInt64)
-    (h : x.toNat < KoalaBear.fieldSize * UInt32.size) : Field :=
-  Montgomery.Native32.montgomeryReduceBounded x h
-
-theorem montgomeryReduceBounded_cast (x : UInt64)
-    (h : x.toNat < KoalaBear.fieldSize * UInt32.size) :
-    ((montgomeryReduceBounded x h).val.toNat : KoalaBear.Field) =
+    ((montgomeryReduce x h).val.toNat : KoalaBear.Field) =
       (x.toNat : KoalaBear.Field) * (UInt32.size : KoalaBear.Field)⁻¹ :=
-  Montgomery.Native32.montgomeryReduceBounded_cast x h
-
-/-- Montgomery reduction of a 64-bit word. Hot bounded callers use `montgomeryReduceBounded`. -/
-@[inline]
-def montgomeryReduce (x : UInt64) : Field :=
-  Montgomery.Native32.montgomeryReduce KoalaBear.fieldSize x
+  Montgomery.Native32.montgomeryReduce_cast x h
 
 end Fast
 end KoalaBear

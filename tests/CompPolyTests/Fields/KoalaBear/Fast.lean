@@ -14,8 +14,9 @@ Regression checks for the executable Montgomery representation.
 
 namespace KoalaBear.Fast
 
-#guard raw (0 : Field) = 0
-#guard raw (1 : Field) = rModModulus
+#guard (0 : Field).val = 0
+#guard (1 : Field).val =
+  Montgomery.Native32.Mont32Field.rModModulus (modulus := KoalaBear.fieldSize)
 #guard toCanonicalUInt32 (ofNat 37) = (37 : UInt32)
 #guard toNat (ofNat KoalaBear.fieldSize) = 0
 #guard toNat (ofNat (KoalaBear.fieldSize + 37)) = 37
