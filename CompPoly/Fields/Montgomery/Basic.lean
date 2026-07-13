@@ -18,33 +18,16 @@ Word-specific implementations refine these results in sibling modules.
 
 namespace Montgomery
 
-/-- The Montgomery divisibility identity: if `negInv * p ≡ R - 1 [MOD R]` (i.e.
+/-- The Montgomery divisibility identity: if `(negInv * p) % R = R - 1` (i.e.
 `negInv = -p⁻¹ mod R`), then `R ∣ x + ((x mod R)·negInv mod R)·p` for every `x`. This is
 what makes Montgomery reduction integer-valued. -/
 theorem dvd_add (R p negInv : ℕ) (hR : 0 < R)
-    (hnegInv : negInv * p ≡ R - 1 [MOD R]) (x : ℕ) :
+    (hnegInv : negInv * p % R = R - 1) (x : ℕ) :
     R ∣ x + ((x % R * negInv) % R) * p := by
-  rw [← Nat.modEq_zero_iff_dvd]
-  have hx : x ≡ x % R [MOD R] := (Nat.mod_modEq x R).symm
-  have hm :
-      ((x % R * negInv) % R) * p ≡ (x % R) * (R - 1) [MOD R] := by
-    have hmi :
-        (x % R * negInv) % R ≡ x % R * negInv [MOD R] := Nat.mod_modEq _ _
-    calc
-      ((x % R * negInv) % R) * p
-          ≡ (x % R * negInv) * p [MOD R] := hmi.mul_right _
-      _ = x % R * (negInv * p) := by ring
-      _ ≡ x % R * (R - 1) [MOD R] := hnegInv.mul_left _
-  calc
-    x + ((x % R * negInv) % R) * p
-        ≡ x % R + x % R * (R - 1) [MOD R] := hx.add hm
-    _ = x % R * R := by
-      rw [add_comm, ← Nat.mul_succ]
-      have hsucc : (R - 1).succ = R := by omega
-      rw [hsucc]
-    _ ≡ 0 [MOD R] := by
-      rw [Nat.modEq_zero_iff_dvd]
-      exact ⟨x % R, by rw [mul_comm]⟩
+  rw [Nat.dvd_iff_mod_eq_zero]
+  rw [Nat.add_mod, Nat.mod_mul_mod (x % R * negInv) p R, Nat.mul_assoc]
+  rw [← Nat.mul_mod_mod, hnegInv, Nat.add_mod_mod, add_comm, ← Nat.mul_add_one]
+  rw [show R - 1 + 1 = R by omega, Nat.mul_mod_left]
 
 /-- The quotient before the final conditional subtraction in Montgomery reduction. -/
 def reduceNatQuotient (R p negInv x : ℕ) : ℕ :=
@@ -75,7 +58,7 @@ theorem reduceNatQuotient_lt_two_mul (R p negInv x : ℕ)
 
 /-- The pre-subtraction quotient represents multiplication by `R⁻¹` in `ZMod p`. -/
 theorem reduceNatQuotient_cast (R p negInv : ℕ) [Fact (Nat.Prime p)] (hR : 0 < R)
-    (hnegInv : negInv * p ≡ R - 1 [MOD R]) (hRne : (R : ZMod p) ≠ 0) (x : ℕ) :
+    (hnegInv : negInv * p % R = R - 1) (hRne : (R : ZMod p) ≠ 0) (x : ℕ) :
     (reduceNatQuotient R p negInv x : ZMod p) = (x : ZMod p) * (R : ZMod p)⁻¹ := by
   let m := x % R * negInv % R
   let u := (x + m * p) / R
@@ -91,7 +74,7 @@ theorem reduceNatQuotient_cast (R p negInv : ℕ) [Fact (Nat.Prime p)] (hR : 0 <
 
 /-- Montgomery reduction represents multiplication by `R⁻¹` in `ZMod p`. -/
 theorem reduceNat_cast (R p negInv : ℕ) [Fact (Nat.Prime p)] (hR : 0 < R)
-    (hnegInv : negInv * p ≡ R - 1 [MOD R]) (hRne : (R : ZMod p) ≠ 0) (x : ℕ) :
+    (hnegInv : negInv * p % R = R - 1) (hRne : (R : ZMod p) ≠ 0) (x : ℕ) :
     (reduceNat R p negInv x : ZMod p) = (x : ZMod p) * (R : ZMod p)⁻¹ := by
   let m := x % R * negInv % R
   let u := (x + m * p) / R

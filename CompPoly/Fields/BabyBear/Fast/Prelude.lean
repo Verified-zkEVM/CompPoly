@@ -72,7 +72,7 @@ instance instMont32Field : Mont32Field BabyBear.Field where
   two_pow_32_lt_three_mul_fieldSize := two_pow_32_lt_three_mul_fieldSize
   rModModulus_toNat := rModModulus_toNat
   r2ModModulus_toNat := r2ModModulus_toNat
-  negInv_congr := by decide
+  montgomeryNegInv_mul_fieldSize_mod_two_pow_32 := by decide
 
 /-- The fast native-word BabyBear field carrier, stored as a Montgomery residue. -/
 abbrev Field : Type := FastField BabyBear.Field

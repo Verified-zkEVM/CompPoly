@@ -61,9 +61,8 @@ class Mont32Field (F : Type) where
   two_pow_32_lt_three_mul_fieldSize : 2 ^ 32 < 3 * fieldSize
   rModModulus_toNat : rModModulus.toNat = 2 ^ 32 % fieldSize
   r2ModModulus_toNat : r2ModModulus.toNat = (2 ^ 32) ^ 2 % fieldSize
-  /-- The Montgomery inverse congruence `negInv * p ≡ 2^32 - 1 [MOD 2^32]`. -/
-  negInv_congr :
-    montgomeryNegInv.toNat * fieldSize ≡ 2 ^ 32 - 1 [MOD 2 ^ 32]
+  montgomeryNegInv_mul_fieldSize_mod_two_pow_32 :
+    (montgomeryNegInv.toNat * fieldSize) % 2 ^ 32 = 2 ^ 32 - 1
 
 attribute [instance] Mont32Field.prime
 
@@ -273,7 +272,8 @@ theorem montgomeryReduceBounded_cast (x : UInt64)
         hmodulus_bound
         x (by simpa only [P.modulus64_toNat] using h)]
   exact Montgomery.reduceNatQuotient_cast (2 ^ 32) P.fieldSize P.montgomeryNegInv.toNat
-    (by decide) P.negInv_congr P.two_pow_32_ne_zero_in_field x.toNat
+    (by decide) P.montgomeryNegInv_mul_fieldSize_mod_two_pow_32
+    P.two_pow_32_ne_zero_in_field x.toNat
 
 /-- Montgomery reduction of a 64-bit word. Hot bounded callers use `montgomeryReduceBounded`. -/
 @[inline]

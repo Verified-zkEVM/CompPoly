@@ -72,7 +72,7 @@ instance instMont32Field : Mont32Field KoalaBear.Field where
   two_pow_32_lt_three_mul_fieldSize := two_pow_32_lt_three_mul_fieldSize
   rModModulus_toNat := rModModulus_toNat
   r2ModModulus_toNat := r2ModModulus_toNat
-  negInv_congr := by decide
+  montgomeryNegInv_mul_fieldSize_mod_two_pow_32 := by decide
 
 /-- The fast native-word KoalaBear field carrier, stored as a Montgomery residue. -/
 abbrev Field : Type := FastField KoalaBear.Field
