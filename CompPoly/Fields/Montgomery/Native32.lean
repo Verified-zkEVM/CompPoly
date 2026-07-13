@@ -7,16 +7,10 @@ Authors: Valerii Huhnin, Georgios Raikos
 import CompPoly.Fields.Montgomery.Basic
 
 /-!
-# Montgomery Reduction — native `UInt32 × UInt64`, radix `R = 2^32`
+# Native 32-bit Montgomery Reduction
 
-The word-level bridge specialising `Montgomery.Basic` to 32-bit-word prime fields: the
-Montgomery product fits in a `UInt64`, the radix is `R = UInt32.size = 2^32`, and the
-high word is extracted with `>>> 32`. These lemmas relate the native-word computation to
-the `Nat` formula proved generically in `Montgomery.Basic`, parameterized by the prime
-`p`, the `UInt32` negated inverse `negInv`, and the `UInt64` modulus `modN`.
-
-A future 64-bit family would add a parallel `Native64` bridge (`>>> 64`,
-`UInt64 × UInt128`) over the same `Montgomery.Basic` core.
+Native `UInt32` Montgomery reduction with radix `2 ^ 32`, connected to the generic
+natural-number specification in `Montgomery.Basic`.
 -/
 
 namespace Montgomery
