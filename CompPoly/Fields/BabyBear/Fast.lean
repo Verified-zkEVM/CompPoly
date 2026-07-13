@@ -4,28 +4,66 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin, Georgios Raikos
 -/
 
-import CompPoly.Fields.BabyBear.Fast.Convert
+import CompPoly.Fields.BabyBear.Basic
+import CompPoly.Fields.Montgomery.Native32Field
 
 /-!
-# Fast BabyBear Field Operations
+# Fast BabyBear Field
 
-A native-word implementation of BabyBear arithmetic as a sidecar to the canonical
-`BabyBear.Field := ZMod BabyBear.fieldSize` model. Fast values are stored as Montgomery
-`UInt32` residues below `BabyBear.fieldSize`, representing `x * 2^32` modulo the prime.
-
-The operations, their `Field`/`CommRing`/`NonBinaryField` instances, the `toField` bridge,
-and all correctness theorems are shared across every fast 32-bit-word field; they live once
-in `CompPoly.Fields.Montgomery.Native32Field`, parameterized by the `Mont32Field` instance
-in `CompPoly.Fields.BabyBear.Fast.Defs`. Because
-`Field := Native32.FastField BabyBear.fieldSize`, the generic algebraic instances resolve
-here automatically. This module re-exports the named operations and `simp` lemmas at the
-BabyBear instance.
+A native-word Montgomery implementation of BabyBear arithmetic. The shared algorithms and
+proofs live in `CompPoly.Fields.Montgomery.Native32Field`; this module supplies the BabyBear
+constants and its concrete API.
 -/
 
-namespace BabyBear
-namespace Fast
+namespace BabyBear.Fast
 
+open Montgomery.Native32 (Mont32Field FastField)
 open Montgomery.Native32.FastField
+
+/-! ## Parameters and carrier -/
+
+/-- The per-field data realizing BabyBear as a fast 32-bit-word Montgomery field. -/
+instance instMont32Field : Mont32Field BabyBear.fieldSize where
+  prime := BabyBear.is_prime
+  modulus32 := 0x78000001
+  modulus64 := 0x78000001
+  rModModulus := 0x0FFFFFFE
+  r2ModModulus := 0x45DDDDE3
+  montgomeryNegInv := 0x77FFFFFF
+
+/-- The fast native-word BabyBear field carrier, stored as a Montgomery residue. -/
+abbrev Field : Type := FastField BabyBear.fieldSize
+
+/-! ## Conversions -/
+
+/-- Reduce a `UInt64` modulo the BabyBear prime and return a Montgomery fast element. -/
+@[inline]
+def reduceUInt64 (x : UInt64) : Field :=
+  Montgomery.Native32.reduceUInt64 BabyBear.fieldSize x
+
+/-- Convert a 32-bit word into fast Montgomery representation. -/
+@[inline]
+def ofUInt32 (x : UInt32) : Field :=
+  Montgomery.Native32.FastField.ofUInt32 BabyBear.fieldSize x
+
+/-- Convert from the canonical `ZMod` BabyBear field into fast Montgomery form. -/
+@[inline]
+def ofField (x : BabyBear.Field) : Field :=
+  Montgomery.Native32.ofField x
+
+/-- Reducing a `UInt64` gives the canonical natural residue modulo BabyBear. -/
+@[simp]
+theorem toNat_reduceUInt64 (x : UInt64) :
+    (reduceUInt64 x).toNat = x.toNat % BabyBear.fieldSize :=
+  Montgomery.Native32.toNat_reduceUInt64 x
+
+/-- Reducing a `UInt64` agrees with casting that word into the canonical field. -/
+@[simp]
+theorem toField_reduceUInt64 (x : UInt64) :
+    (reduceUInt64 x).toField = (x.toNat : BabyBear.Field) :=
+  Montgomery.Native32.toField_reduceUInt64 x
+
+/-! ## Arithmetic -/
 
 /-- Fast modular addition in Montgomery form. -/
 @[inline]
@@ -49,10 +87,10 @@ def square (x : Field) : Field := Montgomery.Native32.square x
 
 /-- Exponentiation over the fast representation using repeated squaring. -/
 @[inline]
-def pow (x : Field) (n : Nat) : Field := Montgomery.Native32.pow x n
+def pow (x : Field) (n : ℕ) : Field := Montgomery.Native32.pow x n
 
 /-- Fermat exponent used for inversion in the BabyBear prime field. -/
-def invExponent : Nat := Montgomery.Native32.invExponent BabyBear.fieldSize
+def invExponent : ℕ := Montgomery.Native32.invExponent BabyBear.fieldSize
 
 /-- Inversion in Montgomery form via Fermat's little theorem (`x⁻¹ = x^(p-2)`). -/
 @[inline]
@@ -61,6 +99,8 @@ def inv (x : Field) : Field := Montgomery.Native32.inv x
 /-- Division through inversion and fast multiplication. -/
 @[inline]
 def div (x y : Field) : Field := Montgomery.Native32.div x y
+
+/-! ## Canonical bridge -/
 
 /-- Ring equivalence between the fast Montgomery representation and canonical `BabyBear.Field`. -/
 def ringEquiv : Field ≃+* BabyBear.Field :=
@@ -133,7 +173,7 @@ theorem toField_div (x y : Field) : toField (x / y) = toField x / toField y :=
 
 /-- Natural casts into fast form agree with natural casts into the canonical field. -/
 @[simp]
-theorem toField_natCast (n : Nat) : toField (n : Field) = (n : BabyBear.Field) :=
+theorem toField_natCast (n : ℕ) : toField (n : Field) = (n : BabyBear.Field) :=
   Montgomery.Native32.toField_natCast n
 
 /-- Integer casts into fast form agree with integer casts into the canonical field. -/
@@ -143,7 +183,7 @@ theorem toField_intCast (n : Int) : toField (n : Field) = (n : BabyBear.Field) :
 
 /-- Natural scalar multiplication is preserved by `toField`. -/
 @[simp]
-theorem toField_nsmul (n : Nat) (x : Field) : toField (n • x) = n • toField x :=
+theorem toField_nsmul (n : ℕ) (x : Field) : toField (n • x) = n • toField x :=
   Montgomery.Native32.toField_nsmul n x
 
 /-- Integer scalar multiplication is preserved by `toField`. -/
@@ -153,7 +193,7 @@ theorem toField_zsmul (n : Int) (x : Field) : toField (n • x) = n • toField 
 
 /-- Natural powers through the `Pow` instance are preserved by `toField`. -/
 @[simp]
-theorem toField_npow (x : Field) (n : Nat) : toField (x ^ n) = toField x ^ n :=
+theorem toField_npow (x : Field) (n : ℕ) : toField (x ^ n) = toField x ^ n :=
   Montgomery.Native32.toField_npow x n
 
 /-- Integer powers through the `Pow` instance are preserved by `toField`. -/
@@ -181,5 +221,4 @@ theorem toField_nnqsmul (q : ℚ≥0) (x : Field) : toField (q • x) = q • to
 theorem toField_qsmul (q : ℚ) (x : Field) : toField (q • x) = q • toField x :=
   Montgomery.Native32.toField_qsmul q x
 
-end Fast
-end BabyBear
+end BabyBear.Fast
