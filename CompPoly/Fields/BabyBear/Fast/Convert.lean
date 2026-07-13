@@ -71,7 +71,7 @@ def toField (x : Field) : BabyBear.Field :=
   Montgomery.Native32.toField x
 
 theorem toNat_lt_fieldSize (x : Field) : toNat x < BabyBear.fieldSize :=
-  Montgomery.Native32.toNat_lt_fieldSize x
+  Montgomery.Native32.toNat_lt_modulus x
 
 theorem toField_eq_raw_mul_inv (x : Field) :
     toField x = (x.val.toNat : BabyBear.Field) * (UInt32.size : BabyBear.Field)⁻¹ :=

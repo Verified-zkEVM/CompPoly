@@ -27,7 +27,7 @@ namespace Fast
 open Montgomery.Native32 (Mont32Field FastField)
 
 /-- KoalaBear modulus as a native word. -/
-def modulus : UInt32 := 0x7F000001
+def modulus32 : UInt32 := 0x7F000001
 
 /-- KoalaBear modulus as a 64-bit word for modular reduction. -/
 def modulus64 : UInt64 := 0x7F000001
@@ -42,14 +42,14 @@ def r2ModModulus : UInt32 := 0x17F7EFE4
 def montgomeryNegInv : UInt32 := 0x7EFFFFFF
 
 /-- The native `UInt32` modulus agrees with the mathematical KoalaBear modulus. -/
-@[simp] theorem modulus_toNat : modulus.toNat = KoalaBear.fieldSize := by decide
+@[simp] theorem modulus32_toNat : modulus32.toNat = KoalaBear.fieldSize := by decide
 
 /-- The native `UInt64` modulus agrees with the mathematical KoalaBear modulus. -/
 @[simp] theorem modulus64_toNat : modulus64.toNat = KoalaBear.fieldSize := by decide
 
-theorem two_mul_fieldSize_lt_two_pow_32 : 2 * KoalaBear.fieldSize < 2 ^ 32 := by decide
+theorem two_mul_modulus_lt_two_pow_32 : 2 * KoalaBear.fieldSize < 2 ^ 32 := by decide
 
-theorem two_pow_32_lt_three_mul_fieldSize : 2 ^ 32 < 3 * KoalaBear.fieldSize := by decide
+theorem two_pow_32_lt_three_mul_modulus : 2 ^ 32 < 3 * KoalaBear.fieldSize := by decide
 
 theorem rModModulus_toNat : rModModulus.toNat = 2 ^ 32 % KoalaBear.fieldSize := by decide
 
@@ -59,20 +59,20 @@ theorem r2ModModulus_toNat :
 /-- The per-field data realizing KoalaBear as a fast 32-bit-word Montgomery field. The five
 word constants are the only runtime data; every other field is a `decide`-checked fact. -/
 instance instMont32Field : Mont32Field KoalaBear.Field where
-  fieldSize := KoalaBear.fieldSize
+  modulus := KoalaBear.fieldSize
   prime := inferInstance
-  modulus := modulus
+  modulus32 := modulus32
   modulus64 := modulus64
   rModModulus := rModModulus
   r2ModModulus := r2ModModulus
   montgomeryNegInv := montgomeryNegInv
-  modulus_toNat := modulus_toNat
+  modulus32_toNat := modulus32_toNat
   modulus64_toNat := modulus64_toNat
-  two_mul_fieldSize_lt_two_pow_32 := two_mul_fieldSize_lt_two_pow_32
-  two_pow_32_lt_three_mul_fieldSize := two_pow_32_lt_three_mul_fieldSize
+  two_mul_modulus_lt_two_pow_32 := two_mul_modulus_lt_two_pow_32
+  two_pow_32_lt_three_mul_modulus := two_pow_32_lt_three_mul_modulus
   rModModulus_toNat := rModModulus_toNat
   r2ModModulus_toNat := r2ModModulus_toNat
-  montgomeryNegInv_mul_fieldSize_mod_two_pow_32 := by decide
+  montgomeryNegInv_mul_modulus_mod_two_pow_32 := by decide
 
 /-- The fast native-word KoalaBear field carrier, stored as a Montgomery residue. -/
 abbrev Field : Type := FastField KoalaBear.Field
