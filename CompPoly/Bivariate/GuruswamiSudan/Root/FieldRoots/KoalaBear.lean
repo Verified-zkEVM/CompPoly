@@ -123,7 +123,7 @@ def fastKoalaBearFiniteFieldContext :
     simp [KoalaBear.Field, Nat.card_eq_fintype_card, ZMod.card]
   frobenius_fixed := by
     intro a
-    apply KoalaBear.Fast.toField_injective
+    apply Montgomery.Native32.toField_injective
     rw [KoalaBear.Fast.toField_npow]
     simp [KoalaBear.fieldSize]
 

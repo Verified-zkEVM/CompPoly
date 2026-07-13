@@ -77,10 +77,6 @@ theorem toField_ofField (x : KoalaBear.Field) : toField (ofField x) = x :=
 theorem ofField_toField (x : Field) : ofField (toField x) = x :=
   Montgomery.Native32.ofField_toField x
 
-/-- The canonical-field interpretation distinguishes fast KoalaBear values. -/
-theorem toField_injective : Function.Injective (toField : Field → KoalaBear.Field) :=
-  Montgomery.Native32.toField_injective
-
 /-- `toField` maps fast zero to canonical zero. -/
 @[simp]
 theorem toField_zero : toField (0 : Field) = 0 :=

@@ -76,10 +76,6 @@ theorem toField_ofField (x : BabyBear.Field) : toField (ofField x) = x :=
 theorem ofField_toField (x : Field) : ofField (toField x) = x :=
   Montgomery.Native32.ofField_toField x
 
-/-- The canonical-field interpretation distinguishes fast BabyBear values. -/
-theorem toField_injective : Function.Injective (toField : Field → BabyBear.Field) :=
-  Montgomery.Native32.toField_injective
-
 /-- `toField` maps fast zero to canonical zero. -/
 @[simp]
 theorem toField_zero : toField (0 : Field) = 0 :=
