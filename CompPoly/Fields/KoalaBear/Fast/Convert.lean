@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
 
-import CompPoly.Fields.KoalaBear.Fast.Montgomery
+import CompPoly.Fields.KoalaBear.Fast.Defs
 
 /-!
 # Fast KoalaBear Field — Conversions

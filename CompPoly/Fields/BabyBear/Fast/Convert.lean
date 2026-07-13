@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin, Georgios Raikos
 -/
 
-import CompPoly.Fields.BabyBear.Fast.Montgomery
+import CompPoly.Fields.BabyBear.Fast.Defs
 
 /-!
 # Fast BabyBear Field — Conversions

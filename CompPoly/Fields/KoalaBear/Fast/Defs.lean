@@ -12,8 +12,7 @@ import CompPoly.Fields.Montgomery.Native32Field
 namespace KoalaBear.Fast
 open Montgomery.Native32 (Mont32Field FastField)
 
-/-- The per-field data realizing KoalaBear as a fast 32-bit-word Montgomery field. The five
-word constants are the only runtime data; every other field is a `decide`-checked fact. -/
+/-- The per-field data realizing KoalaBear as a fast 32-bit-word Montgomery field. -/
 instance instMont32Field : Mont32Field KoalaBear.fieldSize where
   prime := KoalaBear.is_prime
   modulus32 := 0x7F000001

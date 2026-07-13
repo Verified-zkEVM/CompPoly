@@ -16,7 +16,7 @@ A native-word implementation of KoalaBear arithmetic as a sidecar to the canonic
 The operations, their `Field`/`CommRing`/`NonBinaryField` instances, the `toField` bridge,
 and all correctness theorems are shared across every fast 32-bit-word field; they live once
 in `CompPoly.Fields.Montgomery.Native32Field`, parameterized by the `Mont32Field` instance
-in `CompPoly.Fields.KoalaBear.Fast.Prelude`. Because
+in `CompPoly.Fields.KoalaBear.Fast.Defs`. Because
 `Field := Native32.FastField KoalaBear.fieldSize`, the generic algebraic instances resolve
 here automatically. This module re-exports the named operations and `simp` lemmas at the
 KoalaBear instance.

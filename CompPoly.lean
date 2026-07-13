@@ -69,8 +69,7 @@ import CompPoly.Fields.BabyBear
 import CompPoly.Fields.BabyBear.Basic
 import CompPoly.Fields.BabyBear.Fast
 import CompPoly.Fields.BabyBear.Fast.Convert
-import CompPoly.Fields.BabyBear.Fast.Montgomery
-import CompPoly.Fields.BabyBear.Fast.Prelude
+import CompPoly.Fields.BabyBear.Fast.Defs
 import CompPoly.Fields.Basic
 import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
 import CompPoly.Fields.Binary.AdditiveNTT.Algorithm
@@ -108,8 +107,7 @@ import CompPoly.Fields.KoalaBear
 import CompPoly.Fields.KoalaBear.Basic
 import CompPoly.Fields.KoalaBear.Fast
 import CompPoly.Fields.KoalaBear.Fast.Convert
-import CompPoly.Fields.KoalaBear.Fast.Montgomery
-import CompPoly.Fields.KoalaBear.Fast.Prelude
+import CompPoly.Fields.KoalaBear.Fast.Defs
 import CompPoly.Fields.Mersenne
 import CompPoly.Fields.Montgomery.Basic
 import CompPoly.Fields.Montgomery.Native32
