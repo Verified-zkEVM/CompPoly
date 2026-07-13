@@ -47,12 +47,8 @@ def twoAdicity : Nat := 27
 
 instance : Fact (Nat.Prime fieldSize) := ⟨is_prime⟩
 
-instance : _root_.Field Field := ZMod.instField fieldSize
-
 instance : NonBinaryField Field where
-  char_neq_2 := by
-    simpa [Field, fieldSize] using
-      (by decide : (2 : ZMod (2 ^ 31 - 2 ^ 27 + 1)) ≠ 0)
+  char_neq_2 := by decide
 
 /-- Fermat-style inversion in `ZMod fieldSize`. -/
 lemma inv_eq_pow (a : Field) (ha : a ≠ 0) : a⁻¹ = a ^ (fieldSize - 2) := by

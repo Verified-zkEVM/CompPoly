@@ -30,7 +30,6 @@ theorem reduceQuotient_toNat (negInv : UInt32) (p : UInt64)
   simp only [UInt64.toNat_shiftRight, UInt64.toNat_toUInt32, UInt64.toNat_add,
     UInt64.toNat_mul, UInt32.toNat_toUInt64, UInt32.toNat_mul, UInt64.toNat_ofNat,
     reduceQuotient, reduceNatQuotient, Nat.shiftRight_eq_div_pow]
-  norm_num [UInt32.size] at h hbound ⊢
   let mNat := x.toNat * negInv.toNat % 2 ^ 32
   have hm_lt : mNat < 2 ^ 32 := Nat.mod_lt _ (by decide)
   have hsum_lt : x.toNat + mNat * p.toNat < 2 ^ 64 := by
@@ -42,10 +41,10 @@ theorem reduceQuotient_toNat (negInv : UInt32) (p : UInt64)
           p.toNat * 2 ^ 32 + p.toNat * 2 ^ 32 := Nat.add_lt_add h hprod_lt
       _ = 2 * p.toNat * 2 ^ 32 := by ring
       _ < 2 ^ 64 := by omega
+  norm_num [UInt32.size]
   change ((x.toNat + mNat * p.toNat) % 2 ^ 64 / 2 ^ 32) % 2 ^ 32 =
       (x.toNat + mNat * p.toNat) / 2 ^ 32
-  rw [Nat.mod_eq_of_lt hsum_lt]
-  rw [Nat.mod_eq_of_lt]
+  rw [Nat.mod_eq_of_lt hsum_lt, Nat.mod_eq_of_lt]
   rw [Nat.div_lt_iff_lt_mul]
   · exact hsum_lt
   · decide

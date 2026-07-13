@@ -47,42 +47,14 @@ def montgomeryNegInv : UInt32 := 0x7EFFFFFF
 /-- The native `UInt64` modulus agrees with the mathematical KoalaBear modulus. -/
 @[simp] theorem modulus64_toNat : modulus64.toNat = KoalaBear.fieldSize := by decide
 
-theorem fieldSize_pos : 0 < KoalaBear.fieldSize := by decide
+theorem two_mul_fieldSize_lt_two_pow_32 : 2 * KoalaBear.fieldSize < 2 ^ 32 := by decide
 
-theorem two_lt_fieldSize : 2 < KoalaBear.fieldSize := by decide
+theorem two_pow_32_lt_three_mul_fieldSize : 2 ^ 32 < 3 * KoalaBear.fieldSize := by decide
 
-theorem fieldSize_lt_uint32Size : KoalaBear.fieldSize < UInt32.size := by decide
+theorem rModModulus_toNat : rModModulus.toNat = 2 ^ 32 % KoalaBear.fieldSize := by decide
 
-theorem fieldSize_add_fieldSize_lt_two64 :
-    KoalaBear.fieldSize + KoalaBear.fieldSize < 2 ^ 64 := by decide
-
-theorem fieldSize_add_fieldSize_lt_uint32Size :
-    KoalaBear.fieldSize + KoalaBear.fieldSize < UInt32.size := by decide
-
-theorem fieldSize_mul_fieldSize_lt_two64 :
-    KoalaBear.fieldSize * KoalaBear.fieldSize < 2 ^ 64 := by decide
-
-theorem uint32Size_lt_three_fieldSize :
-    UInt32.size < KoalaBear.fieldSize + KoalaBear.fieldSize + KoalaBear.fieldSize := by decide
-
-theorem fieldSize_mul_uint32Size_lt_two64 :
-    KoalaBear.fieldSize * UInt32.size < 2 ^ 64 := by decide
-
-theorem two_fieldSize_mul_uint32Size_lt_two64 :
-    2 * KoalaBear.fieldSize * UInt32.size < 2 ^ 64 := by decide
-
-theorem uint32Size_ne_zero_in_field :
-    (UInt32.size : KoalaBear.Field) ≠ 0 := by decide
-
-theorem rModModulus_lt_fieldSize : rModModulus.toNat < KoalaBear.fieldSize := by decide
-
-theorem r2ModModulus_lt_fieldSize : r2ModModulus.toNat < KoalaBear.fieldSize := by decide
-
-theorem rModModulus_cast :
-    (rModModulus.toNat : KoalaBear.Field) = (UInt32.size : KoalaBear.Field) := by decide
-
-theorem r2ModModulus_cast :
-    (r2ModModulus.toNat : KoalaBear.Field) = (UInt32.size : KoalaBear.Field) ^ 2 := by decide
+theorem r2ModModulus_toNat :
+    r2ModModulus.toNat = (2 ^ 32) ^ 2 % KoalaBear.fieldSize := by decide
 
 /-- The per-field data realizing KoalaBear as a fast 32-bit-word Montgomery field. The five
 word constants are the only runtime data; every other field is a `decide`-checked fact. -/
@@ -96,22 +68,11 @@ instance instMont32Field : Mont32Field KoalaBear.Field where
   montgomeryNegInv := montgomeryNegInv
   modulus_toNat := modulus_toNat
   modulus64_toNat := modulus64_toNat
-  fieldSize_pos := fieldSize_pos
-  two_lt_fieldSize := two_lt_fieldSize
-  fieldSize_lt_uint32Size := fieldSize_lt_uint32Size
-  fieldSize_add_fieldSize_lt_two64 := fieldSize_add_fieldSize_lt_two64
-  fieldSize_add_fieldSize_lt_uint32Size := fieldSize_add_fieldSize_lt_uint32Size
-  fieldSize_mul_fieldSize_lt_two64 := fieldSize_mul_fieldSize_lt_two64
-  uint32Size_lt_three_fieldSize := uint32Size_lt_three_fieldSize
-  fieldSize_mul_uint32Size_lt_two64 := fieldSize_mul_uint32Size_lt_two64
-  two_fieldSize_mul_uint32Size_lt_two64 := two_fieldSize_mul_uint32Size_lt_two64
-  uint32Size_ne_zero_in_field := uint32Size_ne_zero_in_field
-  rModModulus_lt_fieldSize := rModModulus_lt_fieldSize
-  r2ModModulus_lt_fieldSize := r2ModModulus_lt_fieldSize
-  rModModulus_cast := rModModulus_cast
-  r2ModModulus_cast := r2ModModulus_cast
+  two_mul_fieldSize_lt_two_pow_32 := two_mul_fieldSize_lt_two_pow_32
+  two_pow_32_lt_three_mul_fieldSize := two_pow_32_lt_three_mul_fieldSize
+  rModModulus_toNat := rModModulus_toNat
+  r2ModModulus_toNat := r2ModModulus_toNat
   negInv_congr := by decide
-  two_ne_zero_in_field := by decide
 
 /-- The fast native-word KoalaBear field carrier, stored as a Montgomery residue. -/
 abbrev Field : Type := FastField KoalaBear.Field
