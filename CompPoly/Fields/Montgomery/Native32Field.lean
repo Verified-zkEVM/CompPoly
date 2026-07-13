@@ -17,12 +17,11 @@ constants; their definitions, the proofs about them, and the resulting algebraic
 are otherwise identical. This module captures that common content **once**, parameterized
 by a `Mont32Field` instance that supplies the per-field data.
 
-* `Mont32Field F` bundles the prime (`modulus`), its native-word forms, the Montgomery
+* `Mont32Field modulus` bundles the native-word forms of the prime modulus, the Montgomery
   constants, and the small `decide`-checkable numeric/`ZMod` facts the proofs consume.
   Everything except the five word constants is spec-level and erased at codegen.
-* `FastField F` is the fast carrier `{ x : UInt32 // x.toNat < modulus }`, indexed by the
-  tag `F` so that the generic `Add`/`Mul`/`Field`/… instances below resolve for each
-  concrete field's `Field := FastField <tag>`. At runtime it erases to `UInt32`.
+* `FastField modulus` is the fast carrier `{ x : UInt32 // x.toNat < modulus }`.
+  At runtime it erases to `UInt32`.
 * The executable `def`s are `@[inline]`/`@[specialize]`, so once a concrete instance is
   fixed the instance projections fold to literals and the compiled code is identical to a
   hand-written monomorphic version — no `Mont32Field` dictionary survives to runtime.
@@ -40,10 +39,8 @@ namespace Native32
 The five word constants (`modulus32`, `modulus64`, `rModModulus`, `r2ModModulus`,
 `montgomeryNegInv`) are the only runtime data; the remaining fields are `Prop`s and
 erased at codegen. -/
-class Mont32Field (F : Type) where
-  /-- The prime modulus `p`. -/
-  modulus : ℕ
-  /-- `modulus` is prime — needed to reduce into `ZMod modulus` as a field. -/
+class Mont32Field (modulus : ℕ) where
+  /-- `modulus` is prime. -/
   prime : Fact (Nat.Prime modulus)
   /-- `modulus` as a 32-bit word. -/
   modulus32 : UInt32
@@ -67,79 +64,65 @@ class Mont32Field (F : Type) where
 attribute [instance] Mont32Field.prime
 
 namespace Mont32Field
-
-theorem two_lt_modulus {F : Type} [P : Mont32Field F] : 2 < P.modulus := by
+theorem two_lt_modulus {modulus : ℕ} [P : Mont32Field modulus] : 2 < modulus := by
   have h := P.two_pow_32_lt_three_mul_modulus
   omega
 
-theorem modulus_pos {F : Type} [P : Mont32Field F] : 0 < P.modulus := by
+theorem modulus_pos {modulus : ℕ} [P : Mont32Field modulus] : 0 < modulus := by
   exact Nat.zero_lt_of_lt P.two_lt_modulus
 
-theorem modulus_lt_two_pow_32 {F : Type} [P : Mont32Field F] :
-    P.modulus < 2 ^ 32 := by
+theorem modulus_lt_two_pow_32 {modulus : ℕ} [P : Mont32Field modulus] :
+    modulus < 2 ^ 32 := by
   have h := P.two_mul_modulus_lt_two_pow_32
   omega
 
-theorem modulus_sq_lt_two_pow_64 {F : Type} [P : Mont32Field F] :
-    P.modulus ^ 2 < 2 ^ 64 := by
+theorem modulus_sq_lt_two_pow_64 {modulus : ℕ} [P : Mont32Field modulus] :
+    modulus ^ 2 < 2 ^ 64 := by
   nlinarith [P.modulus_lt_two_pow_32]
 
-theorem two_pow_32_ne_zero_in_field {F : Type} [P : Mont32Field F] :
-    ((2 ^ 32 : ℕ) : ZMod P.modulus) ≠ 0 := by
-  have htwo : (2 : ZMod P.modulus) ≠ 0 := by
+theorem two_pow_32_ne_zero_in_field {modulus : ℕ} [P : Mont32Field modulus] :
+    ((2 ^ 32 : ℕ) : ZMod modulus) ≠ 0 := by
+  have htwo : (2 : ZMod modulus) ≠ 0 := by
     intro h
-    have hdvd : P.modulus ∣ 2 := (ZMod.natCast_eq_zero_iff 2 P.modulus).mp h
+    have hdvd : modulus ∣ 2 := (ZMod.natCast_eq_zero_iff 2 modulus).mp h
     exact (Nat.not_le_of_gt P.two_lt_modulus) (Nat.le_of_dvd (by decide) hdvd)
   rw [Nat.cast_pow]
   exact pow_ne_zero 32 htwo
 
-theorem rModModulus_lt_modulus {F : Type} [P : Mont32Field F] :
-    P.rModModulus.toNat < P.modulus := by
-  rw [P.rModModulus_toNat]
-  exact Nat.mod_lt _ P.modulus_pos
-
-theorem r2ModModulus_lt_modulus {F : Type} [P : Mont32Field F] :
-    P.r2ModModulus.toNat < P.modulus := by
+theorem r2ModModulus_lt_modulus {modulus : ℕ} [P : Mont32Field modulus] :
+    P.r2ModModulus.toNat < modulus := by
   rw [P.r2ModModulus_toNat]
   exact Nat.mod_lt _ P.modulus_pos
-
-theorem rModModulus_cast {F : Type} [P : Mont32Field F] :
-    (P.rModModulus.toNat : ZMod P.modulus) = ((2 ^ 32 : ℕ) : ZMod P.modulus) := by
-  rw [P.rModModulus_toNat, ZMod.natCast_mod]
-
-theorem r2ModModulus_cast {F : Type} [P : Mont32Field F] :
-    (P.r2ModModulus.toNat : ZMod P.modulus) = ((2 ^ 32 : ℕ) : ZMod P.modulus) ^ 2 := by
-  rw [P.r2ModModulus_toNat, ZMod.natCast_mod, Nat.cast_pow]
-
 end Mont32Field
 
-/-- The fast carrier for the field tagged by `F`: a native word below `modulus`,
+/-- The fast carrier for a prime modulus: a native word below `modulus`,
 interpreted as a Montgomery residue. At runtime this erases to `UInt32`. -/
-def FastField (F : Type) [Mont32Field F] : Type :=
-  { x : UInt32 // x.toNat < Mont32Field.modulus F }
+def FastField (modulus : ℕ) [Mont32Field modulus] : Type :=
+  { x : UInt32 // x.toNat < modulus }
 
-instance (F : Type) [Mont32Field F] : DecidableEq (FastField F) :=
-  inferInstanceAs (DecidableEq { x : UInt32 // x.toNat < Mont32Field.modulus F })
+instance (modulus : ℕ) [Mont32Field modulus] : DecidableEq (FastField modulus) :=
+  inferInstanceAs (DecidableEq { x : UInt32 // x.toNat < modulus })
 
 section
-variable {F : Type} [P : Mont32Field F]
+variable {modulus : ℕ} [P : Mont32Field modulus]
 
-instance : NeZero P.modulus := ⟨P.modulus_pos.ne'⟩
+instance : NeZero modulus := ⟨P.modulus_pos.ne'⟩
 
 /-- The raw Montgomery word backing a fast element. -/
 @[inline]
-def raw (x : FastField F) : UInt32 := x.val
+def raw (x : FastField modulus) : UInt32 := x.val
 
 /-! ## Montgomery reduction -/
 
 /-- Reduce a native word known to be below twice the prime. -/
 @[inline]
-def reduceUInt32Lt2ModulusRaw (x : UInt32) : UInt32 :=
+def reduceUInt32Lt2ModulusRaw (modulus : ℕ) [P : Mont32Field modulus]
+    (x : UInt32) : UInt32 :=
   if x < P.modulus32 then x else x - P.modulus32
 
 theorem reduceUInt32Lt2ModulusRaw_lt (x : UInt32)
-    (h : x.toNat < 2 * P.modulus) :
-    (reduceUInt32Lt2ModulusRaw (F := F) x).toNat < P.modulus := by
+    (h : x.toNat < 2 * modulus) :
+    (reduceUInt32Lt2ModulusRaw modulus x).toNat < modulus := by
   unfold reduceUInt32Lt2ModulusRaw
   by_cases hx : x < P.modulus32
   · rw [if_pos hx]
@@ -155,16 +138,16 @@ theorem reduceUInt32Lt2ModulusRaw_lt (x : UInt32)
 
 /-- Reduce a native word known to be below twice the prime. -/
 @[inline]
-def reduceUInt32Lt2Modulus (x : UInt32) (h : x.toNat < 2 * P.modulus) :
-    FastField F :=
-  ⟨reduceUInt32Lt2ModulusRaw (F := F) x, reduceUInt32Lt2ModulusRaw_lt x h⟩
+def reduceUInt32Lt2Modulus (x : UInt32) (h : x.toNat < 2 * modulus) :
+    FastField modulus :=
+  ⟨reduceUInt32Lt2ModulusRaw modulus x, reduceUInt32Lt2ModulusRaw_lt x h⟩
 
 theorem reduceUInt32Lt2Modulus_cast (x : UInt32)
-    (h : x.toNat < 2 * P.modulus) :
-    ((reduceUInt32Lt2Modulus (F := F) x h).val.toNat : ZMod P.modulus) =
-      (x.toNat : ZMod P.modulus) := by
-  change ((reduceUInt32Lt2ModulusRaw (F := F) x).toNat : ZMod P.modulus) =
-    (x.toNat : ZMod P.modulus)
+    (h : x.toNat < 2 * modulus) :
+    ((reduceUInt32Lt2Modulus (modulus := modulus) x h).val.toNat : ZMod modulus) =
+      (x.toNat : ZMod modulus) := by
+  change ((reduceUInt32Lt2ModulusRaw modulus x).toNat : ZMod modulus) =
+    (x.toNat : ZMod modulus)
   unfold reduceUInt32Lt2ModulusRaw
   by_cases hx : x < P.modulus32
   · rw [if_pos hx]
@@ -181,7 +164,7 @@ theorem reduceUInt32Lt2Modulus_cast (x : UInt32)
 
 /-- Reduce a native word below `2^32` modulo the prime. -/
 @[inline]
-def reduceUInt32 (x : UInt32) : FastField F :=
+def reduceUInt32 (modulus : ℕ) [P : Mont32Field modulus] (x : UInt32) : FastField modulus :=
   if hx : x < P.modulus32 then
     ⟨x, by
       rw [UInt32.lt_iff_toNat_lt, P.modulus32_toNat] at hx
@@ -198,8 +181,8 @@ def reduceUInt32 (x : UInt32) : FastField F :=
           rw [UInt32.le_iff_toNat_le, P.modulus32_toNat]
           rw [UInt32.lt_iff_toNat_lt, P.modulus32_toNat] at hx
           exact Nat.le_of_not_gt hx
-        have hy_eq : y.toNat = x.toNat - P.modulus := by
-          change (x - P.modulus32).toNat = x.toNat - P.modulus
+        have hy_eq : y.toNat = x.toNat - modulus := by
+          change (x - P.modulus32).toNat = x.toNat - modulus
           rw [UInt32.toNat_sub_of_le _ _ hmod_le_x, P.modulus32_toNat]
         have hmod_le_y : P.modulus32 ≤ y := by
           rw [UInt32.le_iff_toNat_le, P.modulus32_toNat]
@@ -213,13 +196,14 @@ def reduceUInt32 (x : UInt32) : FastField F :=
 
 /-- Montgomery reduction for inputs known to be below `p * 2^32`. -/
 @[inline]
-def montgomeryReduceBoundedRaw (x : UInt64) : UInt32 :=
-  reduceUInt32Lt2ModulusRaw (F := F)
+def montgomeryReduceBoundedRaw (modulus : ℕ) [P : Mont32Field modulus]
+    (x : UInt64) : UInt32 :=
+  reduceUInt32Lt2ModulusRaw modulus
     (Montgomery.Native32.reduceQuotient P.montgomeryNegInv P.modulus64 x)
 
 theorem montgomeryReduceBoundedRaw_lt (x : UInt64)
-    (h : x.toNat < P.modulus * 2 ^ 32) :
-    (montgomeryReduceBoundedRaw (F := F) x).toNat < P.modulus := by
+    (h : x.toNat < modulus * 2 ^ 32) :
+    (montgomeryReduceBoundedRaw modulus x).toNat < modulus := by
   have hmodulus_bound : P.modulus64.toNat < 2 ^ 31 := by
     rw [P.modulus64_toNat]
     have hp := P.two_mul_modulus_lt_two_pow_32
@@ -236,56 +220,57 @@ theorem montgomeryReduceBoundedRaw_lt (x : UInt64)
 /-- Montgomery reduction for inputs known to be below `p * 2^32`. -/
 @[inline]
 def montgomeryReduceBounded (x : UInt64)
-    (h : x.toNat < P.modulus * 2 ^ 32) : FastField F :=
-  ⟨montgomeryReduceBoundedRaw (F := F) x, montgomeryReduceBoundedRaw_lt x h⟩
+    (h : x.toNat < modulus * 2 ^ 32) : FastField modulus :=
+  ⟨montgomeryReduceBoundedRaw modulus x, montgomeryReduceBoundedRaw_lt x h⟩
 
 theorem montgomeryReduceBounded_cast (x : UInt64)
-    (h : x.toNat < P.modulus * 2 ^ 32) :
-    ((montgomeryReduceBounded (F := F) x h).val.toNat : ZMod P.modulus) =
-      (x.toNat : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹ := by
+    (h : x.toNat < modulus * 2 ^ 32) :
+    ((montgomeryReduceBounded (modulus := modulus) x h).val.toNat : ZMod modulus) =
+      (x.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ := by
   have hmodulus_bound : P.modulus64.toNat < 2 ^ 31 := by
     rw [P.modulus64_toNat]
     have hp := P.two_mul_modulus_lt_two_pow_32
     omega
-  change ((montgomeryReduceBoundedRaw (F := F) x).toNat : ZMod P.modulus) =
-      (x.toNat : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹
+  change ((montgomeryReduceBoundedRaw modulus x).toNat : ZMod modulus) =
+      (x.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹
   unfold montgomeryReduceBoundedRaw
   let u := Montgomery.Native32.reduceQuotient P.montgomeryNegInv P.modulus64 x
-  change ((reduceUInt32Lt2ModulusRaw (F := F) u).toNat : ZMod P.modulus) =
-    (x.toNat : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹
-  have hred := reduceUInt32Lt2Modulus_cast (F := F) u
+  change ((reduceUInt32Lt2ModulusRaw modulus u).toNat : ZMod modulus) =
+    (x.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹
+  have hred := reduceUInt32Lt2Modulus_cast (modulus := modulus) u
     (by
       simpa only [P.modulus64_toNat] using
         Montgomery.Native32.reduceQuotient_toNat_lt_two_mul P.montgomeryNegInv P.modulus64
           (by simpa only [P.modulus64_toNat] using P.modulus_pos)
           hmodulus_bound
           x (by simpa only [P.modulus64_toNat] using h))
-  change ((reduceUInt32Lt2ModulusRaw (F := F) u).toNat : ZMod P.modulus) =
-    (u.toNat : ZMod P.modulus) at hred
+  change ((reduceUInt32Lt2ModulusRaw modulus u).toNat : ZMod modulus) =
+    (u.toNat : ZMod modulus) at hred
   rw [hred]
-  change (u.toNat : ZMod P.modulus) =
-    (x.toNat : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹
-  rw [show u.toNat = reduceNatQuotient (2 ^ 32) P.modulus P.montgomeryNegInv.toNat x.toNat by
+  change (u.toNat : ZMod modulus) =
+    (x.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹
+  rw [show u.toNat = reduceNatQuotient (2 ^ 32) modulus P.montgomeryNegInv.toNat x.toNat by
     simpa only [u, P.modulus64_toNat] using
       Montgomery.Native32.reduceQuotient_toNat P.montgomeryNegInv P.modulus64
         (by simpa only [P.modulus64_toNat] using P.modulus_pos)
         hmodulus_bound
         x (by simpa only [P.modulus64_toNat] using h)]
-  exact Montgomery.reduceNatQuotient_cast (2 ^ 32) P.modulus P.montgomeryNegInv.toNat
+  exact Montgomery.reduceNatQuotient_cast (2 ^ 32) modulus P.montgomeryNegInv.toNat
     (by decide) P.montgomeryNegInv_mul_modulus_mod_two_pow_32
     P.two_pow_32_ne_zero_in_field x.toNat
 
 /-- Montgomery reduction of a 64-bit word. Hot bounded callers use `montgomeryReduceBounded`. -/
 @[inline]
-def montgomeryReduce (x : UInt64) : FastField F :=
+def montgomeryReduce (modulus : ℕ) [P : Mont32Field modulus]
+    (x : UInt64) : FastField modulus :=
   let u := Montgomery.Native32.reduceQuotient P.montgomeryNegInv P.modulus64 x
-  reduceUInt32 (F := F) u
+  reduceUInt32 modulus u
 
 /-! ## Conversions -/
 
 /-- Build a fast element from a canonical natural representative. -/
 @[inline]
-def ofCanonicalNat (n : ℕ) (_h : n < P.modulus) : FastField F :=
+def ofCanonicalNat (n : ℕ) (_h : n < modulus) : FastField modulus :=
   montgomeryReduceBounded (UInt64.ofNat n * P.r2ModModulus.toUInt64) (by
     rw [UInt64.toNat_mul, UInt64.toNat_ofNat', UInt32.toNat_toUInt64]
     have hnmod : n % 2 ^ 64 = n := by
@@ -299,11 +284,12 @@ def ofCanonicalNat (n : ℕ) (_h : n < P.modulus) : FastField F :=
 
 /-- Reduce a `UInt64` modulo the prime and return a Montgomery fast element. -/
 @[inline]
-def reduceUInt64 (x : UInt64) : FastField F :=
+def reduceUInt64 (modulus : ℕ) [P : Mont32Field modulus]
+    (x : UInt64) : FastField modulus :=
   let y := x % P.modulus64
   montgomeryReduceBounded (y * P.r2ModModulus.toUInt64) (by
     rw [UInt64.toNat_mul, UInt32.toNat_toUInt64]
-    have hy_lt : (x % P.modulus64).toNat < P.modulus := by
+    have hy_lt : (x % P.modulus64).toNat < modulus := by
       rw [UInt64.toNat_mod, P.modulus64_toNat]
       exact Nat.mod_lt _ P.modulus_pos
     have hprod : (x % P.modulus64).toNat * P.r2ModModulus.toNat < 2 ^ 64 := by
@@ -312,90 +298,93 @@ def reduceUInt64 (x : UInt64) : FastField F :=
     nlinarith [P.r2ModModulus_lt_modulus])
 
 /-- The zero fast element. -/
-def zero : FastField F := ⟨0, by
+def zero (modulus : ℕ) [P : Mont32Field modulus] : FastField modulus := ⟨0, by
   have h0 : (0 : UInt32).toNat = 0 := by decide
   have hp := P.modulus_pos
   omega⟩
 
 /-- The one fast element. -/
-def one : FastField F := ⟨P.rModModulus, P.rModModulus_lt_modulus⟩
+def one (modulus : ℕ) [P : Mont32Field modulus] : FastField modulus := ⟨P.rModModulus, by
+  rw [P.rModModulus_toNat]
+  exact Nat.mod_lt _ P.modulus_pos⟩
 
 /-- Convert a natural number into fast Montgomery representation. -/
 @[inline]
-def ofNat (n : ℕ) : FastField F :=
-  ofCanonicalNat (n % P.modulus) (Nat.mod_lt _ P.modulus_pos)
+def ofNat (modulus : ℕ) [P : Mont32Field modulus] (n : ℕ) : FastField modulus :=
+  ofCanonicalNat (n % modulus) (Nat.mod_lt _ P.modulus_pos)
 
 /-- Convert a 32-bit word into fast Montgomery representation. -/
 @[inline]
-def ofUInt32 (x : UInt32) : FastField F :=
-  reduceUInt64 x.toUInt64
+def ofUInt32 (modulus : ℕ) [P : Mont32Field modulus]
+    (x : UInt32) : FastField modulus :=
+  reduceUInt64 modulus x.toUInt64
 
 /-- Convert from the canonical `ZMod` field into fast Montgomery form. -/
 @[inline]
-def ofField (x : ZMod P.modulus) : FastField F :=
+def ofField (x : ZMod modulus) : FastField modulus :=
   ofCanonicalNat x.val (ZMod.val_lt x)
 
 /-- Convert an integer into fast Montgomery representation. -/
 @[inline]
-def ofInt (n : Int) : FastField F :=
-  ofField (n : ZMod P.modulus)
+def ofInt (modulus : ℕ) [P : Mont32Field modulus] (n : Int) : FastField modulus :=
+  ofField (n : ZMod modulus)
 
 /-- Convert a fast element to its canonical native-word representative. -/
 @[inline]
-def toCanonicalUInt32 (x : FastField F) : UInt32 :=
-  raw (montgomeryReduceBounded x.val.toUInt64 (by
+def toCanonicalUInt32 (x : FastField modulus) : UInt32 :=
+  raw (montgomeryReduceBounded (modulus := modulus) x.val.toUInt64 (by
     rw [UInt32.toNat_toUInt64]
     nlinarith [x.property, P.modulus_pos]))
 
 /-- Convert a fast element to its canonical natural representative. -/
 @[inline]
-def toNat (x : FastField F) : ℕ :=
+def toNat (x : FastField modulus) : ℕ :=
   (toCanonicalUInt32 x).toNat
 
 /-- Convert a fast element to the canonical `ZMod` field. -/
 @[inline]
-def toField (x : FastField F) : ZMod P.modulus :=
-  (toNat x : ZMod P.modulus)
+def toField (x : FastField modulus) : ZMod modulus :=
+  (toNat x : ZMod modulus)
 
-theorem toNat_lt_modulus (x : FastField F) : toNat x < P.modulus := by
+theorem toNat_lt_modulus (x : FastField modulus) : toNat x < modulus := by
   unfold toNat toCanonicalUInt32 raw
-  change (montgomeryReduceBoundedRaw (F := F) x.val.toUInt64).toNat < P.modulus
-  exact montgomeryReduceBoundedRaw_lt x.val.toUInt64 (by
+  change (montgomeryReduceBoundedRaw modulus x.val.toUInt64).toNat < modulus
+  exact montgomeryReduceBoundedRaw_lt (modulus := modulus) x.val.toUInt64 (by
     rw [UInt32.toNat_toUInt64]
     nlinarith [x.property, P.modulus_pos])
 
-theorem toField_eq_raw_mul_inv (x : FastField F) :
+theorem toField_eq_raw_mul_inv (x : FastField modulus) :
     toField x =
-      (x.val.toNat : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹ := by
+      (x.val.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ := by
   unfold toField toNat toCanonicalUInt32 raw
-  have hred := montgomeryReduceBounded_cast x.val.toUInt64 (by
+  have hred := montgomeryReduceBounded_cast (modulus := modulus) x.val.toUInt64 (by
     rw [UInt32.toNat_toUInt64]
     nlinarith [x.property, P.modulus_pos])
-  change ((montgomeryReduceBoundedRaw (F := F) x.val.toUInt64).toNat : ZMod P.modulus) =
-      (x.val.toUInt64.toNat : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹ at hred
-  change ((montgomeryReduceBoundedRaw (F := F) x.val.toUInt64).toNat : ZMod P.modulus) =
-      (x.val.toNat : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹
+  change ((montgomeryReduceBoundedRaw modulus x.val.toUInt64).toNat : ZMod modulus) =
+      (x.val.toUInt64.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ at hred
+  change ((montgomeryReduceBoundedRaw modulus x.val.toUInt64).toNat : ZMod modulus) =
+      (x.val.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹
   rw [hred]
   rw [UInt32.toNat_toUInt64]
 
-theorem raw_cast_eq_toField_mul (x : FastField F) :
-    (x.val.toNat : ZMod P.modulus) =
-      toField x * ((2 ^ 32 : ℕ) : ZMod P.modulus) := by
+theorem raw_cast_eq_toField_mul (x : FastField modulus) :
+    (x.val.toNat : ZMod modulus) =
+      toField x * ((2 ^ 32 : ℕ) : ZMod modulus) := by
   rw [toField_eq_raw_mul_inv]
   rw [mul_assoc]
   rw [inv_mul_cancel₀ P.two_pow_32_ne_zero_in_field]
   rw [mul_one]
 
-theorem nat_eq_of_field_eq {a b : ℕ} (ha : a < P.modulus)
-    (hb : b < P.modulus) (h : (a : ZMod P.modulus) = (b : ZMod P.modulus)) :
+theorem nat_eq_of_field_eq {a b : ℕ} (ha : a < modulus)
+    (hb : b < modulus) (h : (a : ZMod modulus) = (b : ZMod modulus)) :
     a = b :=
   Montgomery.natCast_inj_of_lt h ha hb
 
-theorem ofCanonicalNat_raw_cast (n : ℕ) (h : n < P.modulus) :
-    ((ofCanonicalNat (F := F) n h).val.toNat : ZMod P.modulus) =
-      (n : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus) := by
+theorem ofCanonicalNat_raw_cast (n : ℕ) (h : n < modulus) :
+    ((ofCanonicalNat (modulus := modulus) n h).val.toNat : ZMod modulus) =
+      (n : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus) := by
   unfold ofCanonicalNat
-  have hred := montgomeryReduceBounded_cast
+  have hred := montgomeryReduceBounded_cast (modulus := modulus)
     (UInt64.ofNat n * P.r2ModModulus.toUInt64) (by
       rw [UInt64.toNat_mul, UInt64.toNat_ofNat', UInt32.toNat_toUInt64]
       have hnmod : n % 2 ^ 64 = n := by
@@ -406,13 +395,13 @@ theorem ofCanonicalNat_raw_cast (n : ℕ) (h : n < P.modulus) :
         nlinarith [P.r2ModModulus_lt_modulus, P.modulus_sq_lt_two_pow_64]
       rw [Nat.mod_eq_of_lt hprod]
       nlinarith [P.r2ModModulus_lt_modulus])
-  change ((montgomeryReduceBoundedRaw (F := F)
-      (UInt64.ofNat n * P.r2ModModulus.toUInt64)).toNat : ZMod P.modulus) =
-        ((UInt64.ofNat n * P.r2ModModulus.toUInt64).toNat : ZMod P.modulus) *
-          ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹ at hred
-  change ((montgomeryReduceBoundedRaw (F := F)
-      (UInt64.ofNat n * P.r2ModModulus.toUInt64)).toNat : ZMod P.modulus) =
-        (n : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)
+  change ((montgomeryReduceBoundedRaw modulus
+      (UInt64.ofNat n * P.r2ModModulus.toUInt64)).toNat : ZMod modulus) =
+        ((UInt64.ofNat n * P.r2ModModulus.toUInt64).toNat : ZMod modulus) *
+          ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ at hred
+  change ((montgomeryReduceBoundedRaw modulus
+      (UInt64.ofNat n * P.r2ModModulus.toUInt64)).toNat : ZMod modulus) =
+        (n : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)
   rw [hred]
   simp only [UInt64.toNat_mul, UInt64.toNat_ofNat', UInt32.toNat_toUInt64]
   have hnmod : n % 2 ^ 64 = n := by
@@ -422,79 +411,80 @@ theorem ofCanonicalNat_raw_cast (n : ℕ) (h : n < P.modulus) :
   have hprod : n * P.r2ModModulus.toNat < 2 ^ 64 := by
     nlinarith [P.r2ModModulus_lt_modulus, P.modulus_sq_lt_two_pow_64]
   rw [Nat.mod_eq_of_lt hprod]
-  rw [Nat.cast_mul, P.r2ModModulus_cast]
+  rw [Nat.cast_mul, P.r2ModModulus_toNat, ZMod.natCast_mod, Nat.cast_pow]
   rw [pow_two]
-  rw [mul_assoc (n : ZMod P.modulus) (((2 ^ 32 : ℕ) : ZMod P.modulus) *
-    ((2 ^ 32 : ℕ) : ZMod P.modulus)) (((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹)]
-  rw [mul_assoc ((2 ^ 32 : ℕ) : ZMod P.modulus) ((2 ^ 32 : ℕ) : ZMod P.modulus)
-    (((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹)]
+  rw [mul_assoc (n : ZMod modulus) (((2 ^ 32 : ℕ) : ZMod modulus) *
+    ((2 ^ 32 : ℕ) : ZMod modulus)) (((2 ^ 32 : ℕ) : ZMod modulus)⁻¹)]
+  rw [mul_assoc ((2 ^ 32 : ℕ) : ZMod modulus) ((2 ^ 32 : ℕ) : ZMod modulus)
+    (((2 ^ 32 : ℕ) : ZMod modulus)⁻¹)]
   rw [mul_inv_cancel₀ P.two_pow_32_ne_zero_in_field]
   rw [mul_one]
 
-theorem toField_ofCanonicalNat_aux (n : ℕ) (h : n < P.modulus) :
-    toField (ofCanonicalNat (F := F) n h) = (n : ZMod P.modulus) := by
+theorem toField_ofCanonicalNat_aux (n : ℕ) (h : n < modulus) :
+    toField (ofCanonicalNat (modulus := modulus) n h) = (n : ZMod modulus) := by
   rw [toField_eq_raw_mul_inv, ofCanonicalNat_raw_cast]
   rw [mul_assoc]
   rw [mul_inv_cancel₀ P.two_pow_32_ne_zero_in_field]
   rw [mul_one]
 
 theorem reduceUInt64_raw_cast (x : UInt64) :
-    ((reduceUInt64 (F := F) x).val.toNat : ZMod P.modulus) =
-      (x.toNat : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus) := by
+    ((reduceUInt64 modulus x).val.toNat : ZMod modulus) =
+      (x.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus) := by
   unfold reduceUInt64
   let y := x % P.modulus64
-  have hred := montgomeryReduceBounded_cast (y * P.r2ModModulus.toUInt64) (by
+  have hred := montgomeryReduceBounded_cast (modulus := modulus)
+    (y * P.r2ModModulus.toUInt64) (by
     rw [UInt64.toNat_mul, UInt32.toNat_toUInt64]
-    have hy_lt : y.toNat < P.modulus := by
+    have hy_lt : y.toNat < modulus := by
       rw [show y = x % P.modulus64 by rfl, UInt64.toNat_mod, P.modulus64_toNat]
       exact Nat.mod_lt _ P.modulus_pos
     have hprod : y.toNat * P.r2ModModulus.toNat < 2 ^ 64 := by
       nlinarith [hy_lt, P.r2ModModulus_lt_modulus, P.modulus_sq_lt_two_pow_64]
     rw [Nat.mod_eq_of_lt hprod]
     nlinarith [P.r2ModModulus_lt_modulus])
-  change ((montgomeryReduceBoundedRaw (F := F) (y * P.r2ModModulus.toUInt64)).toNat :
-      ZMod P.modulus) =
-        ((y * P.r2ModModulus.toUInt64).toNat : ZMod P.modulus) *
-          ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹ at hred
-  change ((montgomeryReduceBoundedRaw (F := F) (y * P.r2ModModulus.toUInt64)).toNat :
-      ZMod P.modulus) =
-        (x.toNat : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)
+  change ((montgomeryReduceBoundedRaw modulus (y * P.r2ModModulus.toUInt64)).toNat :
+      ZMod modulus) =
+        ((y * P.r2ModModulus.toUInt64).toNat : ZMod modulus) *
+          ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ at hred
+  change ((montgomeryReduceBoundedRaw modulus (y * P.r2ModModulus.toUInt64)).toNat :
+      ZMod modulus) =
+        (x.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)
   rw [hred]
   simp only [UInt64.toNat_mul, UInt32.toNat_toUInt64]
-  have hy_lt : y.toNat < P.modulus := by
+  have hy_lt : y.toNat < modulus := by
     rw [show y = x % P.modulus64 by rfl, UInt64.toNat_mod, P.modulus64_toNat]
     exact Nat.mod_lt _ P.modulus_pos
   have hprod : y.toNat * P.r2ModModulus.toNat < 2 ^ 64 := by
     nlinarith [hy_lt, P.r2ModModulus_lt_modulus, P.modulus_sq_lt_two_pow_64]
   rw [Nat.mod_eq_of_lt hprod]
-  have hy_cast : (y.toNat : ZMod P.modulus) = (x.toNat : ZMod P.modulus) := by
+  have hy_cast : (y.toNat : ZMod modulus) = (x.toNat : ZMod modulus) := by
     rw [show y = x % P.modulus64 by rfl, UInt64.toNat_mod, P.modulus64_toNat]
     rw [ZMod.natCast_eq_natCast_iff]
     exact Nat.mod_modEq _ _
-  rw [Nat.cast_mul, P.r2ModModulus_cast, hy_cast]
+  rw [Nat.cast_mul, P.r2ModModulus_toNat, ZMod.natCast_mod, Nat.cast_pow, hy_cast]
   rw [pow_two]
-  rw [mul_assoc (x.toNat : ZMod P.modulus) (((2 ^ 32 : ℕ) : ZMod P.modulus) *
-    ((2 ^ 32 : ℕ) : ZMod P.modulus)) (((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹)]
-  rw [mul_assoc ((2 ^ 32 : ℕ) : ZMod P.modulus) ((2 ^ 32 : ℕ) : ZMod P.modulus)
-    (((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹)]
+  rw [mul_assoc (x.toNat : ZMod modulus) (((2 ^ 32 : ℕ) : ZMod modulus) *
+    ((2 ^ 32 : ℕ) : ZMod modulus)) (((2 ^ 32 : ℕ) : ZMod modulus)⁻¹)]
+  rw [mul_assoc ((2 ^ 32 : ℕ) : ZMod modulus) ((2 ^ 32 : ℕ) : ZMod modulus)
+    (((2 ^ 32 : ℕ) : ZMod modulus)⁻¹)]
   rw [mul_inv_cancel₀ P.two_pow_32_ne_zero_in_field]
   rw [mul_one]
 
 @[simp]
-theorem toNat_ofCanonicalNat (n : ℕ) (h : n < P.modulus) :
-    toNat (ofCanonicalNat (F := F) n h) = n :=
+theorem toNat_ofCanonicalNat (n : ℕ) (h : n < modulus) :
+    toNat (ofCanonicalNat (modulus := modulus) n h) = n :=
   nat_eq_of_field_eq (toNat_lt_modulus _) h (toField_ofCanonicalNat_aux n h)
 
 @[simp]
-theorem toField_ofCanonicalNat (n : ℕ) (h : n < P.modulus) :
-    toField (ofCanonicalNat (F := F) n h) = (n : ZMod P.modulus) :=
+theorem toField_ofCanonicalNat (n : ℕ) (h : n < modulus) :
+    toField (ofCanonicalNat (modulus := modulus) n h) = (n : ZMod modulus) :=
   toField_ofCanonicalNat_aux n h
 
 @[simp]
 theorem toNat_reduceUInt64 (x : UInt64) :
-    toNat (reduceUInt64 (F := F) x) = x.toNat % P.modulus := by
+    toNat (reduceUInt64 modulus x) = x.toNat % modulus := by
   apply nat_eq_of_field_eq (toNat_lt_modulus _) (Nat.mod_lt _ P.modulus_pos)
-  change toField (reduceUInt64 (F := F) x) = ((x.toNat % P.modulus : ℕ) : ZMod P.modulus)
+  change toField (reduceUInt64 modulus x) = ((x.toNat % modulus : ℕ) : ZMod modulus)
   rw [toField_eq_raw_mul_inv, reduceUInt64_raw_cast]
   rw [mul_assoc]
   rw [mul_inv_cancel₀ P.two_pow_32_ne_zero_in_field]
@@ -504,7 +494,7 @@ theorem toNat_reduceUInt64 (x : UInt64) :
 
 @[simp]
 theorem toField_reduceUInt64 (x : UInt64) :
-    toField (reduceUInt64 (F := F) x) = (x.toNat : ZMod P.modulus) := by
+    toField (reduceUInt64 modulus x) = (x.toNat : ZMod modulus) := by
   rw [toField_eq_raw_mul_inv, reduceUInt64_raw_cast]
   rw [mul_assoc]
   rw [mul_inv_cancel₀ P.two_pow_32_ne_zero_in_field]
@@ -514,7 +504,7 @@ theorem toField_reduceUInt64 (x : UInt64) :
 
 /-- Fast modular addition in Montgomery form. -/
 @[inline]
-def add (x y : FastField F) : FastField F :=
+def add (x y : FastField modulus) : FastField modulus :=
   reduceUInt32Lt2Modulus (x.val + y.val) (by
     rw [UInt32.toNat_add]
     exact Nat.lt_of_le_of_lt (Nat.mod_le _ _) (by
@@ -522,9 +512,9 @@ def add (x y : FastField F) : FastField F :=
 
 /-- Fast modular negation in Montgomery form. -/
 @[inline]
-def neg (x : FastField F) : FastField F :=
+def neg (x : FastField modulus) : FastField modulus :=
   if hx : x.val = 0 then
-    zero
+    zero modulus
   else
     ⟨P.modulus32 - x.val, by
       have hle : x.val ≤ P.modulus32 := by
@@ -542,17 +532,17 @@ def neg (x : FastField F) : FastField F :=
 
 /-- Fast modular subtraction in Montgomery form. -/
 @[inline]
-def sub (x y : FastField F) : FastField F :=
+def sub (x y : FastField modulus) : FastField modulus :=
   if hyx : y.val ≤ x.val then
     ⟨x.val - y.val, by
       rw [UInt32.toNat_sub_of_le _ _ hyx]
       have := x.property; omega⟩
   else
     ⟨x.val + P.modulus32 - y.val, by
-      have hsum_lt : x.val.toNat + P.modulus < 2 ^ 32 := by
+      have hsum_lt : x.val.toNat + modulus < 2 ^ 32 := by
         have htwo := P.two_mul_modulus_lt_two_pow_32
         have := x.property; omega
-      have hsum_eq : (x.val + P.modulus32).toNat = x.val.toNat + P.modulus := by
+      have hsum_eq : (x.val + P.modulus32).toNat = x.val.toNat + modulus := by
         rw [UInt32.toNat_add, P.modulus32_toNat, Nat.mod_eq_of_lt hsum_lt]
       have hyle : y.val ≤ x.val + P.modulus32 := by
         rw [UInt32.le_iff_toNat_le, hsum_eq]
@@ -567,7 +557,7 @@ def sub (x y : FastField F) : FastField F :=
 
 /-- Fast modular multiplication in Montgomery form. -/
 @[inline]
-def mul (x y : FastField F) : FastField F :=
+def mul (x y : FastField modulus) : FastField modulus :=
   montgomeryReduceBounded (x.val.toUInt64 * y.val.toUInt64) (by
     simp only [UInt64.toNat_mul, UInt32.toNat_toUInt64]
     have hprod : x.val.toNat * y.val.toNat < 2 ^ 64 := by
@@ -577,112 +567,112 @@ def mul (x y : FastField F) : FastField F :=
 
 /-- Fast squaring. -/
 @[inline]
-def square (x : FastField F) : FastField F :=
+def square (x : FastField modulus) : FastField modulus :=
   mul x x
 
 /-- Exponentiation over the fast representation using repeated squaring. -/
 @[specialize]
-def pow (x : FastField F) (n : ℕ) : FastField F :=
-  @npowBinRec (FastField F) ⟨one⟩ ⟨mul⟩ n x
+def pow (x : FastField modulus) (n : ℕ) : FastField modulus :=
+  @npowBinRec (FastField modulus) ⟨one modulus⟩ ⟨mul⟩ n x
 
 /-- Fermat exponent used for inversion in the prime field. -/
-def invExponent : ℕ := P.modulus - 2
+def invExponent (modulus : ℕ) : ℕ := modulus - 2
 
 /-- Inversion in Montgomery form via Fermat's little theorem (`x⁻¹ = x^(p-2)`),
 by binary exponentiation (`pow`). -/
 @[inline]
-def inv (x : FastField F) : FastField F :=
-  pow x (invExponent (F := F))
+def inv (x : FastField modulus) : FastField modulus :=
+  pow x (invExponent modulus)
 
 /-- Division through inversion and fast multiplication. -/
 @[inline]
-def div (x y : FastField F) : FastField F :=
+def div (x y : FastField modulus) : FastField modulus :=
   mul x (inv y)
 
-instance instZero : Zero (FastField F) where
-  zero := zero
+instance instZero : Zero (FastField modulus) where
+  zero := zero modulus
 
-instance instOne : One (FastField F) where
-  one := one
+instance instOne : One (FastField modulus) where
+  one := one modulus
 
-instance instAdd : Add (FastField F) where
+instance instAdd : Add (FastField modulus) where
   add := add
 
-instance instNeg : Neg (FastField F) where
+instance instNeg : Neg (FastField modulus) where
   neg := neg
 
-instance instSub : Sub (FastField F) where
+instance instSub : Sub (FastField modulus) where
   sub := sub
 
-instance instMul : Mul (FastField F) where
+instance instMul : Mul (FastField modulus) where
   mul := mul
 
-instance instInv : Inv (FastField F) where
+instance instInv : Inv (FastField modulus) where
   inv := inv
 
-instance instDiv : Div (FastField F) where
+instance instDiv : Div (FastField modulus) where
   div := div
 
-instance instNatCast : NatCast (FastField F) where
-  natCast := ofNat
+instance instNatCast : NatCast (FastField modulus) where
+  natCast := ofNat modulus
 
-instance instIntCast : IntCast (FastField F) where
-  intCast := ofInt
+instance instIntCast : IntCast (FastField modulus) where
+  intCast := ofInt modulus
 
-instance instNatSMul : SMul ℕ (FastField F) where
-  smul n x := ofNat n * x
+instance instNatSMul : SMul ℕ (FastField modulus) where
+  smul n x := ofNat modulus n * x
 
-instance instIntSMul : SMul Int (FastField F) where
-  smul n x := ofInt n * x
+instance instIntSMul : SMul Int (FastField modulus) where
+  smul n x := ofInt modulus n * x
 
-instance instPowNat : Pow (FastField F) ℕ where
+instance instPowNat : Pow (FastField modulus) ℕ where
   pow := pow
 
-instance instPowInt : Pow (FastField F) Int where
+instance instPowInt : Pow (FastField modulus) Int where
   pow x n :=
     match n with
     | Int.ofNat k => pow x k
     | Int.negSucc k => pow (inv x) (k + 1)
 
-instance instNNRatCast : NNRatCast (FastField F) where
-  nnratCast q := ofField (q : ZMod P.modulus)
+instance instNNRatCast : NNRatCast (FastField modulus) where
+  nnratCast q := ofField (q : ZMod modulus)
 
-instance instRatCast : RatCast (FastField F) where
-  ratCast q := ofField (q : ZMod P.modulus)
+instance instRatCast : RatCast (FastField modulus) where
+  ratCast q := ofField (q : ZMod modulus)
 
-instance instNNRatSMul : SMul ℚ≥0 (FastField F) where
+instance instNNRatSMul : SMul ℚ≥0 (FastField modulus) where
   smul q x := ofField (q • toField x)
 
-instance instRatSMul : SMul ℚ (FastField F) where
+instance instRatSMul : SMul ℚ (FastField modulus) where
   smul q x := ofField (q • toField x)
 
 /-- Fermat-style inversion in `ZMod modulus`. -/
-theorem inv_eq_pow_field (a : ZMod P.modulus) (ha : a ≠ 0) :
-    a⁻¹ = a ^ (P.modulus - 2) := by
-  have hcard : Fintype.card (ZMod P.modulus) = P.modulus := ZMod.card P.modulus
-  have h1 : a ^ (P.modulus - 1) = 1 := by
+theorem inv_eq_pow_field (a : ZMod modulus) (ha : a ≠ 0) :
+    a⁻¹ = a ^ (modulus - 2) := by
+  have hcard : Fintype.card (ZMod modulus) = modulus := ZMod.card modulus
+  have h1 : a ^ (modulus - 1) = 1 := by
     have h := FiniteField.pow_card_sub_one_eq_one a ha
     rw [hcard] at h; exact h
-  have hmul : a * a ^ (P.modulus - 2) = 1 := by
-    rw [← pow_succ']; show a ^ (P.modulus - 2 + 1) = 1
-    have : P.modulus - 2 + 1 = P.modulus - 1 := by
+  have hmul : a * a ^ (modulus - 2) = 1 := by
+    rw [← pow_succ']; show a ^ (modulus - 2 + 1) = 1
+    have : modulus - 2 + 1 = modulus - 1 := by
       have := P.two_lt_modulus; omega
     rw [this]; exact h1
   exact (eq_inv_of_mul_eq_one_left (by rwa [mul_comm])).symm
 
 /-- Converting from the canonical field to fast form and back is the identity. -/
 @[simp]
-theorem toField_ofField (x : ZMod P.modulus) : toField (ofField (F := F) x) = x := by
+theorem toField_ofField (x : ZMod modulus) : toField (ofField (modulus := modulus) x) = x := by
   unfold ofField
   rw [toField_ofCanonicalNat]
   exact ZMod.natCast_zmod_val x
 
 /-- Converting from fast form to the canonical field and back is the identity. -/
 @[simp]
-theorem ofField_toField (x : FastField F) : ofField (toField x) = x := by
+theorem ofField_toField (x : FastField modulus) : ofField (toField x) = x := by
   apply Subtype.ext
   apply UInt32.toNat_inj.mp
-  apply nat_eq_of_field_eq (F := F)
+  apply nat_eq_of_field_eq (modulus := modulus)
   · exact (ofField (toField x)).property
   · exact x.property
   · rw [raw_cast_eq_toField_mul]
@@ -690,40 +680,40 @@ theorem ofField_toField (x : FastField F) : ofField (toField x) = x := by
     rw [raw_cast_eq_toField_mul]
 
 /-- The canonical-field interpretation distinguishes fast values. -/
-theorem toField_injective : Function.Injective (toField (F := F)) :=
+theorem toField_injective : Function.Injective (toField (modulus := modulus)) :=
   Function.LeftInverse.injective ofField_toField
 
 /-- `toField` maps fast zero to canonical zero. -/
 @[simp]
-theorem toField_zero : toField (0 : FastField F) = 0 := by
+theorem toField_zero : toField (0 : FastField modulus) = 0 := by
   rw [toField_eq_raw_mul_inv]
-  change ((0 : ℕ) : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹ = 0
+  change ((0 : ℕ) : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ = 0
   rw [Nat.cast_zero, zero_mul]
 
 /-- `toField` maps fast one to canonical one. -/
 @[simp]
-theorem toField_one : toField (1 : FastField F) = 1 := by
+theorem toField_one : toField (1 : FastField modulus) = 1 := by
   rw [toField_eq_raw_mul_inv]
-  change (P.rModModulus.toNat : ZMod P.modulus) *
-      ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹ = 1
-  rw [P.rModModulus_cast]
+  change (P.rModModulus.toNat : ZMod modulus) *
+      ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ = 1
+  rw [P.rModModulus_toNat, ZMod.natCast_mod]
   exact mul_inv_cancel₀ P.two_pow_32_ne_zero_in_field
 
 /-- Fast addition agrees with addition in the canonical field. -/
 @[simp]
-theorem toField_add (x y : FastField F) : toField (x + y) = toField x + toField y := by
+theorem toField_add (x y : FastField modulus) : toField (x + y) = toField x + toField y := by
   rw [toField_eq_raw_mul_inv, toField_eq_raw_mul_inv x, toField_eq_raw_mul_inv y]
   unfold instAdd add
-  have hred := reduceUInt32Lt2Modulus_cast (F := F) (x.val + y.val) (by
+  have hred := reduceUInt32Lt2Modulus_cast (modulus := modulus) (x.val + y.val) (by
     rw [UInt32.toNat_add]
     exact Nat.lt_of_le_of_lt (Nat.mod_le _ _) (by
       have hx := x.property; have hy := y.property; omega))
-  change ((reduceUInt32Lt2ModulusRaw (F := F) (x.val + y.val)).toNat : ZMod P.modulus) =
-      ((x.val + y.val).toNat : ZMod P.modulus) at hred
-  change ((reduceUInt32Lt2ModulusRaw (F := F) (x.val + y.val)).toNat : ZMod P.modulus) *
-      ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹ =
-        (x.val.toNat : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹ +
-          (y.val.toNat : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹
+  change ((reduceUInt32Lt2ModulusRaw modulus (x.val + y.val)).toNat : ZMod modulus) =
+      ((x.val + y.val).toNat : ZMod modulus) at hred
+  change ((reduceUInt32Lt2ModulusRaw modulus (x.val + y.val)).toNat : ZMod modulus) *
+      ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ =
+        (x.val.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ +
+          (y.val.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹
   rw [hred]
   rw [UInt32.toNat_add]
   have hsum_lt : x.val.toNat + y.val.toNat < 2 ^ 32 := by
@@ -734,40 +724,40 @@ theorem toField_add (x y : FastField F) : toField (x + y) = toField x + toField 
 
 /-- Fast subtraction agrees with subtraction in the canonical field. -/
 @[simp]
-theorem toField_sub (x y : FastField F) : toField (x - y) = toField x - toField y := by
+theorem toField_sub (x y : FastField modulus) : toField (x - y) = toField x - toField y := by
   rw [toField_eq_raw_mul_inv, toField_eq_raw_mul_inv x, toField_eq_raw_mul_inv y]
   by_cases hyx : y.val ≤ x.val
-  · have hsubval : (x - y : FastField F).val = x.val - y.val := by
+  · have hsubval : (x - y : FastField modulus).val = x.val - y.val := by
       change (sub x y).val = x.val - y.val
       unfold sub
       rw [dif_pos hyx]
     rw [hsubval]
-    change (((x.val - y.val).toNat : ZMod P.modulus) *
-        ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹) =
-        (x.val.toNat : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹ -
-          (y.val.toNat : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹
+    change (((x.val - y.val).toNat : ZMod modulus) *
+        ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹) =
+        (x.val.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ -
+          (y.val.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹
     rw [UInt32.toNat_sub_of_le _ _ hyx]
     rw [Nat.cast_sub (by
       rw [UInt32.le_iff_toNat_le] at hyx
       exact hyx)]
     ring
-  · have hsum_lt : x.val.toNat + P.modulus < 2 ^ 32 := by
+  · have hsum_lt : x.val.toNat + modulus < 2 ^ 32 := by
       have htwo := P.two_mul_modulus_lt_two_pow_32
       have := x.property; omega
-    have hsum_eq : (x.val + P.modulus32).toNat = x.val.toNat + P.modulus := by
+    have hsum_eq : (x.val + P.modulus32).toNat = x.val.toNat + modulus := by
       rw [UInt32.toNat_add, P.modulus32_toNat, Nat.mod_eq_of_lt hsum_lt]
     have hyle : y.val ≤ x.val + P.modulus32 := by
       rw [UInt32.le_iff_toNat_le, hsum_eq]
       have := y.property; omega
-    have hsubval : (x - y : FastField F).val = x.val + P.modulus32 - y.val := by
+    have hsubval : (x - y : FastField modulus).val = x.val + P.modulus32 - y.val := by
       change (sub x y).val = x.val + P.modulus32 - y.val
       unfold sub
       rw [dif_neg hyx]
     rw [hsubval]
-    change (((x.val + P.modulus32 - y.val).toNat : ZMod P.modulus) *
-        ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹) =
-        (x.val.toNat : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹ -
-          (y.val.toNat : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹
+    change (((x.val + P.modulus32 - y.val).toNat : ZMod modulus) *
+        ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹) =
+        (x.val.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ -
+          (y.val.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹
     rw [UInt32.toNat_sub_of_le _ _ hyle, hsum_eq]
     rw [Nat.cast_sub (by
       rw [UInt32.le_iff_toNat_le, hsum_eq] at hyle
@@ -777,34 +767,34 @@ theorem toField_sub (x y : FastField F) : toField (x - y) = toField x - toField 
 
 /-- Fast negation agrees with negation in the canonical field. -/
 @[simp]
-theorem toField_neg (x : FastField F) : toField (-x) = -toField x := by
+theorem toField_neg (x : FastField modulus) : toField (-x) = -toField x := by
   rw [toField_eq_raw_mul_inv, toField_eq_raw_mul_inv x]
   by_cases hx : x.val = 0
-  · have hnegval : (-x : FastField F).val = (zero : FastField F).val := by
-      change (neg x).val = (zero : FastField F).val
+  · have hnegval : (-x : FastField modulus).val = (zero modulus).val := by
+      change (neg x).val = (zero modulus).val
       unfold neg
       rw [dif_pos hx]
     rw [hnegval]
-    change ((zero : FastField F).val.toNat : ZMod P.modulus) *
-        ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹ =
-        -((x.val.toNat : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹)
+    change ((zero modulus).val.toNat : ZMod modulus) *
+        ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ =
+        -((x.val.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹)
     have hxNat : x.val.toNat = 0 := by
       simpa using congrArg UInt32.toNat hx
     rw [hxNat]
-    change ((0 : ℕ) : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹ =
-      -(((0 : ℕ) : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹)
+    change ((0 : ℕ) : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ =
+      -(((0 : ℕ) : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹)
     simp
   · have hle : x.val ≤ P.modulus32 := by
       rw [UInt32.le_iff_toNat_le, P.modulus32_toNat]
       exact Nat.le_of_lt x.property
-    have hnegval : (-x : FastField F).val = P.modulus32 - x.val := by
+    have hnegval : (-x : FastField modulus).val = P.modulus32 - x.val := by
       change (neg x).val = P.modulus32 - x.val
       unfold neg
       rw [dif_neg hx]
     rw [hnegval]
-    change (((P.modulus32 - x.val).toNat : ZMod P.modulus) *
-        ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹) =
-        -((x.val.toNat : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹)
+    change (((P.modulus32 - x.val).toNat : ZMod modulus) *
+        ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹) =
+        -((x.val.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹)
     rw [UInt32.toNat_sub_of_le _ _ hle, P.modulus32_toNat]
     rw [Nat.cast_sub (by
       rw [UInt32.le_iff_toNat_le, P.modulus32_toNat] at hle
@@ -814,23 +804,25 @@ theorem toField_neg (x : FastField F) : toField (-x) = -toField x := by
 
 /-- Fast multiplication agrees with multiplication in the canonical field. -/
 @[simp]
-theorem toField_mul (x y : FastField F) : toField (x * y) = toField x * toField y := by
+theorem toField_mul (x y : FastField modulus) : toField (x * y) = toField x * toField y := by
   rw [toField_eq_raw_mul_inv, toField_eq_raw_mul_inv x, toField_eq_raw_mul_inv y]
   unfold instMul mul
-  have hred := montgomeryReduceBounded_cast (F := F) (x.val.toUInt64 * y.val.toUInt64) (by
-    simp only [UInt64.toNat_mul, UInt32.toNat_toUInt64]
-    have hprod : x.val.toNat * y.val.toNat < 2 ^ 64 := by
-      nlinarith [x.property, y.property, P.modulus_sq_lt_two_pow_64]
-    rw [Nat.mod_eq_of_lt hprod]
-    nlinarith [x.property, y.property, P.modulus_lt_two_pow_32, P.modulus_pos])
-  change ((montgomeryReduceBoundedRaw (F := F) (x.val.toUInt64 * y.val.toUInt64)).toNat :
-      ZMod P.modulus) =
-        ((x.val.toUInt64 * y.val.toUInt64).toNat : ZMod P.modulus) *
-          ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹ at hred
-  change ((montgomeryReduceBoundedRaw (F := F) (x.val.toUInt64 * y.val.toUInt64)).toNat :
-      ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹ =
-        (x.val.toNat : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹ *
-          ((y.val.toNat : ZMod P.modulus) * ((2 ^ 32 : ℕ) : ZMod P.modulus)⁻¹)
+  have hred := montgomeryReduceBounded_cast (modulus := modulus)
+    (x.val.toUInt64 * y.val.toUInt64) (by
+      simp only [UInt64.toNat_mul, UInt32.toNat_toUInt64]
+      have hprod : x.val.toNat * y.val.toNat < 2 ^ 64 := by
+        nlinarith [x.property, y.property, P.modulus_sq_lt_two_pow_64]
+      rw [Nat.mod_eq_of_lt hprod]
+      nlinarith [x.property, y.property, P.modulus_lt_two_pow_32, P.modulus_pos])
+  change ((montgomeryReduceBoundedRaw modulus
+      (x.val.toUInt64 * y.val.toUInt64)).toNat : ZMod modulus) =
+        ((x.val.toUInt64 * y.val.toUInt64).toNat : ZMod modulus) *
+          ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ at hred
+  change ((montgomeryReduceBoundedRaw modulus
+      (x.val.toUInt64 * y.val.toUInt64)).toNat : ZMod modulus) *
+        ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ =
+        (x.val.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ *
+          ((y.val.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹)
   rw [hred]
   simp only [UInt64.toNat_mul, UInt32.toNat_toUInt64]
   have hprod : x.val.toNat * y.val.toNat < 2 ^ 64 := by
@@ -840,7 +832,7 @@ theorem toField_mul (x y : FastField F) : toField (x * y) = toField x * toField 
   ring
 
 /-- Ring equivalence between the fast Montgomery representation and the canonical field. -/
-def ringEquiv : FastField F ≃+* ZMod P.modulus where
+def ringEquiv (modulus : ℕ) [P : Mont32Field modulus] : FastField modulus ≃+* ZMod modulus where
   toFun := toField
   invFun := ofField
   left_inv := ofField_toField
@@ -849,20 +841,20 @@ def ringEquiv : FastField F ≃+* ZMod P.modulus where
   map_mul' := toField_mul
 
 @[simp]
-theorem ringEquiv_apply (x : FastField F) : ringEquiv x = toField x := rfl
+theorem ringEquiv_apply (x : FastField modulus) : ringEquiv modulus x = toField x := rfl
 
 @[simp]
-theorem ringEquiv_symm_apply (x : ZMod P.modulus) :
-    (ringEquiv (F := F)).symm x = ofField x := rfl
+theorem ringEquiv_symm_apply (x : ZMod modulus) :
+    (ringEquiv modulus).symm x = ofField x := rfl
 
-private theorem mul_assoc_field (x y z : FastField F) : (x * y) * z = x * (y * z) := by
+private theorem mul_assoc_field (x y z : FastField modulus) : (x * y) * z = x * (y * z) := by
   apply toField_injective
   rw [toField_mul, toField_mul, toField_mul, toField_mul]
   ring
 
-private theorem pow_succ_field (x : FastField F) (n : ℕ) : pow x (n + 1) = pow x n * x := by
+private theorem pow_succ_field (x : FastField modulus) (n : ℕ) : pow x (n + 1) = pow x n * x := by
   unfold pow
-  letI : Semigroup (FastField F) := {
+  letI : Semigroup (FastField modulus) := {
     mul := (· * ·)
     mul_assoc := mul_assoc_field
   }
@@ -870,13 +862,13 @@ private theorem pow_succ_field (x : FastField F) (n : ℕ) : pow x (n + 1) = pow
 
 /-- Fast squaring agrees with multiplication by itself in the canonical field. -/
 @[simp]
-theorem toField_square (x : FastField F) : toField (square x) = toField x * toField x := by
+theorem toField_square (x : FastField modulus) : toField (square x) = toField x * toField x := by
   change toField (x * x) = toField x * toField x
   rw [toField_mul]
 
 /-- Fast natural-power computation agrees with powers in the canonical field. -/
 @[simp]
-theorem toField_pow (x : FastField F) (n : ℕ) : toField (pow x n) = toField x ^ n := by
+theorem toField_pow (x : FastField modulus) (n : ℕ) : toField (pow x n) = toField x ^ n := by
   induction n with
   | zero =>
       unfold pow
@@ -886,12 +878,12 @@ theorem toField_pow (x : FastField F) (n : ℕ) : toField (pow x n) = toField x 
   | succ n ih =>
       rw [pow_succ_field, toField_mul, ih, _root_.pow_succ]
 
-private theorem toField_inv_pow (x : FastField F) :
-    toField (inv x) = toField x ^ (invExponent (F := F)) := by
+private theorem toField_inv_pow (x : FastField modulus) :
+    toField (inv x) = toField x ^ invExponent modulus := by
   unfold inv
-  exact toField_pow x (invExponent (F := F))
+  exact toField_pow x (invExponent modulus)
 
-private theorem toField_inv_raw (x : FastField F) : toField (inv x) = (toField x)⁻¹ := by
+private theorem toField_inv_raw (x : FastField modulus) : toField (inv x) = (toField x)⁻¹ := by
   rw [toField_inv_pow]
   by_cases hx : toField x = 0
   · rw [hx, inv_zero]
@@ -900,25 +892,25 @@ private theorem toField_inv_raw (x : FastField F) : toField (inv x) = (toField x
 
 /-- Fast inversion agrees with inversion in the canonical field. -/
 @[simp]
-theorem toField_inv (x : FastField F) : toField x⁻¹ = (toField x)⁻¹ := by
+theorem toField_inv (x : FastField modulus) : toField x⁻¹ = (toField x)⁻¹ := by
   change toField (inv x) = (toField x)⁻¹
   exact toField_inv_raw x
 
-private theorem toField_mul_raw (x y : FastField F) :
+private theorem toField_mul_raw (x y : FastField modulus) :
     toField (mul x y) = toField x * toField y := by
   change toField (x * y) = toField x * toField y
   exact toField_mul x y
 
-private theorem toField_div_mul_inv (x y : FastField F) :
+private theorem toField_div_mul_inv (x y : FastField modulus) :
     toField (div x y) = toField x * toField (inv y) := by
   unfold div
   exact toField_mul_raw x (inv y)
 
 /-- Fast division agrees with division in the canonical field. -/
 @[simp]
-theorem toField_div (x y : FastField F) : toField (x / y) = toField x / toField y := by
+theorem toField_div (x y : FastField modulus) : toField (x / y) = toField x / toField y := by
   change toField (div x y) = toField x / toField y
-  have h : ∀ a b c : ZMod P.modulus, c = b⁻¹ → a * c = a / b := by
+  have h : ∀ a b c : ZMod modulus, c = b⁻¹ → a * c = a / b := by
     intro a b c hc
     rw [hc]
     rfl
@@ -927,8 +919,8 @@ theorem toField_div (x y : FastField F) : toField (x / y) = toField x / toField 
 
 /-- Natural casts into fast form agree with natural casts into the canonical field. -/
 @[simp]
-theorem toField_natCast (n : ℕ) : toField (n : FastField F) = (n : ZMod P.modulus) := by
-  change toField (ofNat n) = (n : ZMod P.modulus)
+theorem toField_natCast (n : ℕ) : toField (n : FastField modulus) = (n : ZMod modulus) := by
+  change toField (ofNat modulus n) = (n : ZMod modulus)
   unfold ofNat
   rw [toField_ofCanonicalNat]
   rw [ZMod.natCast_eq_natCast_iff]
@@ -936,34 +928,34 @@ theorem toField_natCast (n : ℕ) : toField (n : FastField F) = (n : ZMod P.modu
 
 /-- Integer casts into fast form agree with integer casts into the canonical field. -/
 @[simp]
-theorem toField_intCast (n : Int) : toField (n : FastField F) = (n : ZMod P.modulus) := by
-  change toField (ofInt n) = (n : ZMod P.modulus)
+theorem toField_intCast (n : Int) : toField (n : FastField modulus) = (n : ZMod modulus) := by
+  change toField (ofInt modulus n) = (n : ZMod modulus)
   unfold ofInt
   rw [toField_ofField]
 
 /-- Natural scalar multiplication is preserved by `toField`. -/
 @[simp]
-theorem toField_nsmul (n : ℕ) (x : FastField F) : toField (n • x) = n • toField x := by
-  change toField ((n : FastField F) * x) = n • toField x
+theorem toField_nsmul (n : ℕ) (x : FastField modulus) : toField (n • x) = n • toField x := by
+  change toField ((n : FastField modulus) * x) = n • toField x
   rw [toField_mul, toField_natCast]
   rw [nsmul_eq_mul]
 
 /-- Integer scalar multiplication is preserved by `toField`. -/
 @[simp]
-theorem toField_zsmul (n : Int) (x : FastField F) : toField (n • x) = n • toField x := by
-  change toField ((n : FastField F) * x) = n • toField x
+theorem toField_zsmul (n : Int) (x : FastField modulus) : toField (n • x) = n • toField x := by
+  change toField ((n : FastField modulus) * x) = n • toField x
   rw [toField_mul, toField_intCast]
   rw [zsmul_eq_mul]
 
 /-- Natural powers through the `Pow` instance are preserved by `toField`. -/
 @[simp]
-theorem toField_npow (x : FastField F) (n : ℕ) : toField (x ^ n) = toField x ^ n := by
+theorem toField_npow (x : FastField modulus) (n : ℕ) : toField (x ^ n) = toField x ^ n := by
   change toField (pow x n) = toField x ^ n
   rw [toField_pow]
 
 /-- Integer powers through the `Pow` instance are preserved by `toField`. -/
 @[simp]
-theorem toField_zpow (x : FastField F) (n : Int) : toField (x ^ n) = toField x ^ n := by
+theorem toField_zpow (x : FastField modulus) (n : Int) : toField (x ^ n) = toField x ^ n := by
   cases n with
   | ofNat n =>
       change toField (pow x n) = toField x ^ (Int.ofNat n)
@@ -978,30 +970,30 @@ theorem toField_zpow (x : FastField F) (n : Int) : toField (x ^ n) = toField x ^
 
 /-- Nonnegative rational casts into fast form agree with canonical-field casts. -/
 @[simp]
-theorem toField_nnratCast (q : ℚ≥0) : toField (q : FastField F) = (q : ZMod P.modulus) := by
-  change toField (ofField (q : ZMod P.modulus)) = (q : ZMod P.modulus)
+theorem toField_nnratCast (q : ℚ≥0) : toField (q : FastField modulus) = (q : ZMod modulus) := by
+  change toField (ofField (q : ZMod modulus)) = (q : ZMod modulus)
   rw [toField_ofField]
 
 /-- Rational casts into fast form agree with canonical-field casts. -/
 @[simp]
-theorem toField_ratCast (q : ℚ) : toField (q : FastField F) = (q : ZMod P.modulus) := by
-  change toField (ofField (q : ZMod P.modulus)) = (q : ZMod P.modulus)
+theorem toField_ratCast (q : ℚ) : toField (q : FastField modulus) = (q : ZMod modulus) := by
+  change toField (ofField (q : ZMod modulus)) = (q : ZMod modulus)
   rw [toField_ofField]
 
 /-- Nonnegative rational scalar multiplication is preserved by `toField`. -/
 @[simp]
-theorem toField_nnqsmul (q : ℚ≥0) (x : FastField F) : toField (q • x) = q • toField x := by
+theorem toField_nnqsmul (q : ℚ≥0) (x : FastField modulus) : toField (q • x) = q • toField x := by
   change toField (ofField (q • toField x)) = q • toField x
   rw [toField_ofField]
 
 /-- Rational scalar multiplication is preserved by `toField`. -/
 @[simp]
-theorem toField_qsmul (q : ℚ) (x : FastField F) : toField (q • x) = q • toField x := by
+theorem toField_qsmul (q : ℚ) (x : FastField modulus) : toField (q • x) = q • toField x := by
   change toField (ofField (q • toField x)) = q • toField x
   rw [toField_ofField]
 
 /-- Field instance transferred from the canonical field through `toField`. -/
-instance (priority := low) instField : _root_.Field (FastField F) :=
+instance (priority := low) instField : _root_.Field (FastField modulus) :=
   toField_injective.field toField
     toField_zero
     toField_one
@@ -1023,21 +1015,21 @@ instance (priority := low) instField : _root_.Field (FastField F) :=
     toField_ratCast
 
 /-- Commutative-ring instance inherited from the transferred field structure. -/
-instance (priority := low) instCommRing : CommRing (FastField F) := by
+instance (priority := low) instCommRing : CommRing (FastField modulus) := by
   infer_instance
 
 /-- A fast 32-bit-word field is non-binary. -/
-instance (priority := low) instNonBinaryField : NonBinaryField (FastField F) where
+instance (priority := low) instNonBinaryField : NonBinaryField (FastField modulus) where
   char_neq_2 := by
-    change ((2 : ℕ) : FastField F) ≠ 0
+    change ((2 : ℕ) : FastField modulus) ≠ 0
     intro h
-    have htwo : (2 : ZMod P.modulus) = 0 := by
+    have htwo : (2 : ZMod modulus) = 0 := by
       calc
-        (2 : ZMod P.modulus) = ((2 : ℕ) : ZMod P.modulus) := by norm_cast
-        _ = toField ((2 : ℕ) : FastField F) := (toField_natCast 2).symm
-        _ = toField (0 : FastField F) := congrArg toField h
+        (2 : ZMod modulus) = ((2 : ℕ) : ZMod modulus) := by norm_cast
+        _ = toField ((2 : ℕ) : FastField modulus) := (toField_natCast 2).symm
+        _ = toField (0 : FastField modulus) := congrArg toField h
         _ = 0 := toField_zero
-    have hdvd : P.modulus ∣ 2 := (ZMod.natCast_eq_zero_iff 2 P.modulus).mp htwo
+    have hdvd : modulus ∣ 2 := (ZMod.natCast_eq_zero_iff 2 modulus).mp htwo
     exact (Nat.not_le_of_gt P.two_lt_modulus) (Nat.le_of_dvd (by decide) hdvd)
 
 end

@@ -13,7 +13,7 @@ import CompPoly.Fields.Montgomery.Native32Field
 The native-word constants and the `Field` carrier type for the fast BabyBear field. The
 shared implementation lives in `CompPoly.Fields.Montgomery.Native32Field`; this module
 supplies the per-field `Mont32Field` instance (the five word constants plus the
-`decide`-checked numeric facts) and pins `Field := Native32.FastField BabyBear.Field`, so
+`decide`-checked numeric facts) and pins `Field := Native32.FastField BabyBear.fieldSize`, so
 the generic definitions, proofs, and algebraic instances specialize to BabyBear.
 
 The Montgomery reducers are re-exported in `CompPoly.Fields.BabyBear.Fast.Montgomery`;
@@ -58,8 +58,7 @@ theorem r2ModModulus_toNat :
 
 /-- The per-field data realizing BabyBear as a fast 32-bit-word Montgomery field. The five
 word constants are the only runtime data; every other field is a `decide`-checked fact. -/
-instance instMont32Field : Mont32Field BabyBear.Field where
-  modulus := BabyBear.fieldSize
+instance instMont32Field : Mont32Field BabyBear.fieldSize where
   prime := inferInstance
   modulus32 := modulus32
   modulus64 := modulus64
@@ -75,7 +74,7 @@ instance instMont32Field : Mont32Field BabyBear.Field where
   montgomeryNegInv_mul_modulus_mod_two_pow_32 := by decide
 
 /-- The fast native-word BabyBear field carrier, stored as a Montgomery residue. -/
-abbrev Field : Type := FastField BabyBear.Field
+abbrev Field : Type := FastField BabyBear.fieldSize
 
 /-- The raw Montgomery word backing a fast BabyBear element. -/
 @[inline]

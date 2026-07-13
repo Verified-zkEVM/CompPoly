@@ -22,38 +22,38 @@ open Montgomery.Native32
 /-- Build a fast element from a canonical natural representative. -/
 @[inline]
 def ofCanonicalNat (n : Nat) (h : n < KoalaBear.fieldSize) : Field :=
-  Montgomery.Native32.ofCanonicalNat (F := KoalaBear.Field) n h
+  Montgomery.Native32.ofCanonicalNat n h
 
 /-- Reduce a `UInt64` modulo the KoalaBear prime and return a Montgomery fast element. -/
 @[inline]
 def reduceUInt64 (x : UInt64) : Field :=
-  Montgomery.Native32.reduceUInt64 (F := KoalaBear.Field) x
+  Montgomery.Native32.reduceUInt64 KoalaBear.fieldSize x
 
 /-- The zero fast KoalaBear element. -/
-def zero : Field := Montgomery.Native32.zero (F := KoalaBear.Field)
+def zero : Field := Montgomery.Native32.zero KoalaBear.fieldSize
 
 /-- The one fast KoalaBear element. -/
-def one : Field := Montgomery.Native32.one (F := KoalaBear.Field)
+def one : Field := Montgomery.Native32.one KoalaBear.fieldSize
 
 /-- Convert a natural number into fast Montgomery representation. -/
 @[inline]
 def ofNat (n : Nat) : Field :=
-  Montgomery.Native32.ofNat (F := KoalaBear.Field) n
+  Montgomery.Native32.ofNat KoalaBear.fieldSize n
 
 /-- Convert a 32-bit word into fast Montgomery representation. -/
 @[inline]
 def ofUInt32 (x : UInt32) : Field :=
-  Montgomery.Native32.ofUInt32 (F := KoalaBear.Field) x
+  Montgomery.Native32.ofUInt32 KoalaBear.fieldSize x
 
 /-- Convert from the canonical `ZMod` KoalaBear field into fast Montgomery form. -/
 @[inline]
 def ofField (x : KoalaBear.Field) : Field :=
-  Montgomery.Native32.ofField (F := KoalaBear.Field) x
+  Montgomery.Native32.ofField x
 
 /-- Convert an integer into fast Montgomery representation. -/
 @[inline]
 def ofInt (n : Int) : Field :=
-  Montgomery.Native32.ofInt (F := KoalaBear.Field) n
+  Montgomery.Native32.ofInt KoalaBear.fieldSize n
 
 /-- Convert a fast element to its canonical native-word representative. -/
 @[inline]
@@ -84,12 +84,12 @@ theorem raw_cast_eq_toField_mul (x : Field) :
 theorem nat_eq_of_field_eq {a b : Nat} (ha : a < KoalaBear.fieldSize)
     (hb : b < KoalaBear.fieldSize) (h : (a : KoalaBear.Field) = (b : KoalaBear.Field)) :
     a = b :=
-  Montgomery.Native32.nat_eq_of_field_eq (F := KoalaBear.Field) ha hb h
+  Montgomery.Native32.nat_eq_of_field_eq ha hb h
 
 theorem ofCanonicalNat_raw_cast (n : Nat) (h : n < KoalaBear.fieldSize) :
     ((ofCanonicalNat n h).val.toNat : KoalaBear.Field) =
       (n : KoalaBear.Field) * (UInt32.size : KoalaBear.Field) :=
-  Montgomery.Native32.ofCanonicalNat_raw_cast (F := KoalaBear.Field) n h
+  Montgomery.Native32.ofCanonicalNat_raw_cast n h
 
 theorem reduceUInt64_raw_cast (x : UInt64) :
     ((reduceUInt64 x).val.toNat : KoalaBear.Field) =

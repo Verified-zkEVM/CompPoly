@@ -16,9 +16,10 @@ A native-word implementation of BabyBear arithmetic as a sidecar to the canonica
 The operations, their `Field`/`CommRing`/`NonBinaryField` instances, the `toField` bridge,
 and all correctness theorems are shared across every fast 32-bit-word field; they live once
 in `CompPoly.Fields.Montgomery.Native32Field`, parameterized by the `Mont32Field` instance
-in `CompPoly.Fields.BabyBear.Fast.Prelude`. Because `Field := Native32.FastField BabyBear.Field`,
-the generic algebraic instances resolve here automatically. This module re-exports the
-named operations and `simp` lemmas at the BabyBear instance.
+in `CompPoly.Fields.BabyBear.Fast.Prelude`. Because
+`Field := Native32.FastField BabyBear.fieldSize`, the generic algebraic instances resolve
+here automatically. This module re-exports the named operations and `simp` lemmas at the
+BabyBear instance.
 -/
 
 namespace BabyBear
@@ -51,7 +52,7 @@ def square (x : Field) : Field := Montgomery.Native32.square x
 def pow (x : Field) (n : Nat) : Field := Montgomery.Native32.pow x n
 
 /-- Fermat exponent used for inversion in the BabyBear prime field. -/
-def invExponent : Nat := Montgomery.Native32.invExponent (F := BabyBear.Field)
+def invExponent : Nat := Montgomery.Native32.invExponent BabyBear.fieldSize
 
 /-- Inversion in Montgomery form via Fermat's little theorem (`x⁻¹ = x^(p-2)`). -/
 @[inline]
@@ -63,12 +64,12 @@ def div (x y : Field) : Field := Montgomery.Native32.div x y
 
 /-- Ring equivalence between the fast Montgomery representation and canonical `BabyBear.Field`. -/
 def ringEquiv : Field ≃+* BabyBear.Field :=
-  Montgomery.Native32.ringEquiv (F := BabyBear.Field)
+  Montgomery.Native32.ringEquiv BabyBear.fieldSize
 
 /-- Converting from the canonical field to fast form and back is the identity. -/
 @[simp]
 theorem toField_ofField (x : BabyBear.Field) : toField (ofField x) = x :=
-  Montgomery.Native32.toField_ofField (F := BabyBear.Field) x
+  Montgomery.Native32.toField_ofField x
 
 /-- Converting from fast form to the canonical field and back is the identity. -/
 @[simp]
@@ -77,17 +78,17 @@ theorem ofField_toField (x : Field) : ofField (toField x) = x :=
 
 /-- The canonical-field interpretation distinguishes fast BabyBear values. -/
 theorem toField_injective : Function.Injective (toField : Field → BabyBear.Field) :=
-  Montgomery.Native32.toField_injective (F := BabyBear.Field)
+  Montgomery.Native32.toField_injective
 
 /-- `toField` maps fast zero to canonical zero. -/
 @[simp]
 theorem toField_zero : toField (0 : Field) = 0 :=
-  Montgomery.Native32.toField_zero (F := BabyBear.Field)
+  Montgomery.Native32.toField_zero
 
 /-- `toField` maps fast one to canonical one. -/
 @[simp]
 theorem toField_one : toField (1 : Field) = 1 :=
-  Montgomery.Native32.toField_one (F := BabyBear.Field)
+  Montgomery.Native32.toField_one
 
 /-- Fast addition agrees with addition in the canonical BabyBear field. -/
 @[simp]
@@ -117,7 +118,7 @@ theorem ringEquiv_apply (x : Field) : ringEquiv x = toField x :=
 /-- Applying the inverse `ringEquiv` is conversion into fast Montgomery form. -/
 @[simp]
 theorem ringEquiv_symm_apply (x : BabyBear.Field) : ringEquiv.symm x = ofField x :=
-  Montgomery.Native32.ringEquiv_symm_apply (F := BabyBear.Field) x
+  Montgomery.Native32.ringEquiv_symm_apply x
 
 /-- Fast squaring agrees with multiplication by itself in the canonical field. -/
 @[simp]
