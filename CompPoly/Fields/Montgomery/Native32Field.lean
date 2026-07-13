@@ -223,7 +223,7 @@ theorem montgomeryReduceBounded_cast (x : UInt64)
         P.fieldSize) / UInt32.size by
     exact Montgomery.Native32.u_eq_nat P.montgomeryNegInv P.modulus64 P.fieldSize
       P.modulus64_toNat P.fieldSize_pos P.two_fieldSize_mul_uint32Size_lt_two64 x h]
-  exact Montgomery.quotient_cast UInt32.size P.fieldSize P.montgomeryNegInv.toNat
+  exact Montgomery.reduceNatQuotient_cast UInt32.size P.fieldSize P.montgomeryNegInv.toNat
     (by decide) P.negInv_congr P.uint32Size_ne_zero_in_field x.toNat
 
 /-- Montgomery reduction of a 64-bit word. Hot bounded callers use `montgomeryReduceBounded`. -/
@@ -341,7 +341,7 @@ theorem raw_cast_eq_toField_mul (x : FastField F) :
 theorem nat_eq_of_field_eq {a b : Nat} (ha : a < P.fieldSize)
     (hb : b < P.fieldSize) (h : (a : ZMod P.fieldSize) = (b : ZMod P.fieldSize)) :
     a = b :=
-  Montgomery.natCast_inj ha hb h
+  Montgomery.natCast_inj_of_lt h ha hb
 
 theorem ofCanonicalNat_raw_cast (n : Nat) (h : n < P.fieldSize) :
     ((ofCanonicalNat (F := F) n h).val.toNat : ZMod P.fieldSize) =
