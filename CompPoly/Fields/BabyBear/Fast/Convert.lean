@@ -17,8 +17,6 @@ Conversions between the fast Montgomery representation and the canonical
 namespace BabyBear
 namespace Fast
 
-open Montgomery.Native32
-
 /-- Build a fast element from a canonical natural representative. -/
 @[inline]
 def ofCanonicalNat (n : Nat) (h : n < BabyBear.fieldSize) : Field :=
@@ -29,56 +27,25 @@ def ofCanonicalNat (n : Nat) (h : n < BabyBear.fieldSize) : Field :=
 def reduceUInt64 (x : UInt64) : Field :=
   Montgomery.Native32.reduceUInt64 BabyBear.fieldSize x
 
-/-- The zero fast BabyBear element. -/
-def zero : Field := Montgomery.Native32.zero BabyBear.fieldSize
-
-/-- The one fast BabyBear element. -/
-def one : Field := Montgomery.Native32.one BabyBear.fieldSize
-
-/-- Convert a natural number into fast Montgomery representation. -/
-@[inline]
-def ofNat (n : Nat) : Field :=
-  Montgomery.Native32.ofNat BabyBear.fieldSize n
-
 /-- Convert a 32-bit word into fast Montgomery representation. -/
 @[inline]
 def ofUInt32 (x : UInt32) : Field :=
-  Montgomery.Native32.ofUInt32 BabyBear.fieldSize x
+  Montgomery.Native32.FastField.ofUInt32 BabyBear.fieldSize x
 
 /-- Convert from the canonical `ZMod` BabyBear field into fast Montgomery form. -/
 @[inline]
 def ofField (x : BabyBear.Field) : Field :=
   Montgomery.Native32.ofField x
 
-/-- Convert an integer into fast Montgomery representation. -/
-@[inline]
-def ofInt (n : Int) : Field :=
-  Montgomery.Native32.ofInt BabyBear.fieldSize n
-
-/-- Convert a fast element to its canonical native-word representative. -/
-@[inline]
-def toCanonicalUInt32 (x : Field) : UInt32 :=
-  Montgomery.Native32.toCanonicalUInt32 x
-
-/-- Convert a fast BabyBear element to its canonical natural representative. -/
-@[inline]
-def toNat (x : Field) : Nat :=
-  Montgomery.Native32.toNat x
-
-/-- Convert a fast BabyBear element to the canonical `ZMod` BabyBear field. -/
-@[inline]
-def toField (x : Field) : BabyBear.Field :=
-  Montgomery.Native32.toField x
-
-theorem toNat_lt_fieldSize (x : Field) : toNat x < BabyBear.fieldSize :=
+theorem toNat_lt_fieldSize (x : Field) : x.toNat < BabyBear.fieldSize :=
   Montgomery.Native32.toNat_lt_modulus x
 
 theorem toField_eq_raw_mul_inv (x : Field) :
-    toField x = (x.val.toNat : BabyBear.Field) * (UInt32.size : BabyBear.Field)⁻¹ :=
+    x.toField = (x.val.toNat : BabyBear.Field) * (UInt32.size : BabyBear.Field)⁻¹ :=
   Montgomery.Native32.toField_eq_raw_mul_inv x
 
 theorem raw_cast_eq_toField_mul (x : Field) :
-    (x.val.toNat : BabyBear.Field) = toField x * (UInt32.size : BabyBear.Field) :=
+    (x.val.toNat : BabyBear.Field) = x.toField * (UInt32.size : BabyBear.Field) :=
   Montgomery.Native32.raw_cast_eq_toField_mul x
 
 theorem nat_eq_of_field_eq {a b : Nat} (ha : a < BabyBear.fieldSize)
@@ -99,25 +66,25 @@ theorem reduceUInt64_raw_cast (x : UInt64) :
 /-- Converting a canonical natural representative to fast form preserves its value. -/
 @[simp]
 theorem toNat_ofCanonicalNat (n : Nat) (h : n < BabyBear.fieldSize) :
-    toNat (ofCanonicalNat n h) = n :=
+    (ofCanonicalNat n h).toNat = n :=
   Montgomery.Native32.toNat_ofCanonicalNat n h
 
 /-- `ofCanonicalNat` embeds a canonical representative into the canonical field. -/
 @[simp]
 theorem toField_ofCanonicalNat (n : Nat) (h : n < BabyBear.fieldSize) :
-    toField (ofCanonicalNat n h) = (n : BabyBear.Field) :=
+    (ofCanonicalNat n h).toField = (n : BabyBear.Field) :=
   Montgomery.Native32.toField_ofCanonicalNat n h
 
 /-- Reducing a `UInt64` gives the canonical natural residue modulo BabyBear. -/
 @[simp]
 theorem toNat_reduceUInt64 (x : UInt64) :
-    toNat (reduceUInt64 x) = x.toNat % BabyBear.fieldSize :=
+    (reduceUInt64 x).toNat = x.toNat % BabyBear.fieldSize :=
   Montgomery.Native32.toNat_reduceUInt64 x
 
 /-- Reducing a `UInt64` agrees with casting that word into the canonical field. -/
 @[simp]
 theorem toField_reduceUInt64 (x : UInt64) :
-    toField (reduceUInt64 x) = (x.toNat : BabyBear.Field) :=
+    (reduceUInt64 x).toField = (x.toNat : BabyBear.Field) :=
   Montgomery.Native32.toField_reduceUInt64 x
 
 end Fast

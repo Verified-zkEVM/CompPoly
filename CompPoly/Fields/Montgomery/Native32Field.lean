@@ -249,26 +249,29 @@ def reduceUInt64 (modulus : ℕ) [P : Mont32Field modulus]
     nlinarith [P.r2ModModulus_lt_modulus])
 
 /-- The zero fast element. -/
-def zero (modulus : ℕ) [P : Mont32Field modulus] : FastField modulus := ⟨0, by
+private def zero (modulus : ℕ) [P : Mont32Field modulus] : FastField modulus := ⟨0, by
   have h0 : (0 : UInt32).toNat = 0 := by decide
   have hp := P.modulus_pos
   omega⟩
 
 /-- The one fast element. -/
-def one (modulus : ℕ) [P : Mont32Field modulus] : FastField modulus := ⟨P.rModModulus, by
+private def one (modulus : ℕ) [P : Mont32Field modulus] : FastField modulus := ⟨P.rModModulus, by
   rw [P.rModModulus_toNat]
   exact Nat.mod_lt _ P.modulus_pos⟩
 
 /-- Convert a natural number into fast Montgomery representation. -/
 @[inline]
-def ofNat (modulus : ℕ) [P : Mont32Field modulus] (n : ℕ) : FastField modulus :=
+private def ofNat (modulus : ℕ) [P : Mont32Field modulus] (n : ℕ) : FastField modulus :=
   ofCanonicalNat (n % modulus) (Nat.mod_lt _ P.modulus_pos)
+
+namespace FastField
 
 /-- Convert a 32-bit word into fast Montgomery representation. -/
 @[inline]
 def ofUInt32 (modulus : ℕ) [P : Mont32Field modulus]
     (x : UInt32) : FastField modulus :=
   reduceUInt64 modulus x.toUInt64
+end FastField
 
 /-- Convert from the canonical `ZMod` field into fast Montgomery form. -/
 @[inline]
@@ -277,28 +280,34 @@ def ofField (x : ZMod modulus) : FastField modulus :=
 
 /-- Convert an integer into fast Montgomery representation. -/
 @[inline]
-def ofInt (modulus : ℕ) [P : Mont32Field modulus] (n : Int) : FastField modulus :=
+private def ofInt (modulus : ℕ) [P : Mont32Field modulus] (n : Int) : FastField modulus :=
   ofField (n : ZMod modulus)
+
+namespace FastField
 
 /-- Convert a fast element to its canonical native-word representative. -/
 @[inline]
-def toCanonicalUInt32 (x : FastField modulus) : UInt32 :=
-  (montgomeryReduce (modulus := modulus) x.val.toUInt64 (by
+def toUInt32 (x : FastField modulus) : UInt32 :=
+  montgomeryReduce (modulus := modulus) x.val.toUInt64 (by
     rw [UInt32.toNat_toUInt64]
-    nlinarith [x.property, P.modulus_pos])).val
+    nlinarith [x.property, P.modulus_pos])
+  |>.val
 
 /-- Convert a fast element to its canonical natural representative. -/
 @[inline]
 def toNat (x : FastField modulus) : ℕ :=
-  (toCanonicalUInt32 x).toNat
+  x.toUInt32.toNat
 
 /-- Convert a fast element to the canonical `ZMod` field. -/
 @[inline]
 def toField (x : FastField modulus) : ZMod modulus :=
-  (toNat x : ZMod modulus)
+  (x.toNat : ZMod modulus)
+end FastField
+
+open FastField
 
 theorem toNat_lt_modulus (x : FastField modulus) : toNat x < modulus := by
-  unfold toNat toCanonicalUInt32
+  unfold FastField.toNat FastField.toUInt32
   change (montgomeryReduceRaw modulus x.val.toUInt64).toNat < modulus
   exact montgomeryReduceRaw_lt (modulus := modulus) x.val.toUInt64 (by
     rw [UInt32.toNat_toUInt64]
@@ -307,7 +316,7 @@ theorem toNat_lt_modulus (x : FastField modulus) : toNat x < modulus := by
 theorem toField_eq_raw_mul_inv (x : FastField modulus) :
     toField x =
       (x.val.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ := by
-  unfold toField toNat toCanonicalUInt32
+  unfold FastField.toField FastField.toNat FastField.toUInt32
   have hred := montgomeryReduce_cast (modulus := modulus) x.val.toUInt64 (by
     rw [UInt32.toNat_toUInt64]
     nlinarith [x.property, P.modulus_pos])

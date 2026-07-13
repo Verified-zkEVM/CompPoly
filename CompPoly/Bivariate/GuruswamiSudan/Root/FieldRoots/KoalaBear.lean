@@ -125,8 +125,7 @@ def fastKoalaBearFiniteFieldContext :
     intro a
     apply KoalaBear.Fast.toField_injective
     rw [KoalaBear.Fast.toField_npow]
-    simpa [KoalaBear.Field, KoalaBear.fieldSize] using
-      ZMod.pow_card (KoalaBear.Fast.toField a)
+    simp [KoalaBear.fieldSize]
 
 /-- Primitive generator transported to native-word fast KoalaBear. -/
 def fastKoalaBearPrimitiveRoot : KoalaBear.Fast.Field :=

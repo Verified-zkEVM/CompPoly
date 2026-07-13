@@ -25,7 +25,7 @@ BabyBear instance.
 namespace BabyBear
 namespace Fast
 
-open Montgomery.Native32
+open Montgomery.Native32.FastField
 
 /-- Fast modular addition in Montgomery form. -/
 @[inline]
