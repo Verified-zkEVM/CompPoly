@@ -8,37 +8,18 @@ import CompPoly.Fields.Basic
 import CompPoly.Fields.Montgomery.Native32
 import Mathlib.Algebra.Field.TransferInstance
 import Mathlib.FieldTheory.Finite.Basic
+import Mathlib.Tactic.Linarith
 
 /-!
-# Fast 32-bit-word prime fields — shared implementation
+# Fast 32-bit Montgomery Fields
 
-A `BabyBear`-style and `KoalaBear`-style fast field differ only in a handful of word
-constants; their definitions, the proofs about them, and the resulting algebraic instances
-are otherwise identical. This module captures that common content **once**, parameterized
-by a `Mont32Field` instance that supplies the per-field data.
-
-* `Mont32Field modulus` bundles the native-word forms of the prime modulus, the Montgomery
-  constants, and the small `decide`-checkable numeric/`ZMod` facts the proofs consume.
-  Everything except the five word constants is spec-level and erased at codegen.
-* `FastField modulus` is the fast carrier `{ x : UInt32 // x.toNat < modulus }`.
-  At runtime it erases to `UInt32`.
-* The executable `def`s are `@[inline]`/`@[specialize]`, so once a concrete instance is
-  fixed the instance projections fold to literals and the compiled code is identical to a
-  hand-written monomorphic version — no `Mont32Field` dictionary survives to runtime.
-
-The radix-generic number theory lives in `CompPoly.Fields.Montgomery.Basic` and the
-`R = 2^32` word bridge in `CompPoly.Fields.Montgomery.Native32`. A concrete fast field is
-then just a `Mont32Field` instance plus thin re-export shims.
+The bounded carrier, conversions, arithmetic, and field instances built on `Native32` reduction.
 -/
 
 namespace Montgomery
 namespace Native32
 
-/-- Per-field data for a fast 32-bit-word Montgomery prime field.
-
-The five word constants (`modulus32`, `modulus64`, `rModModulus`, `r2ModModulus`,
-`montgomeryNegInv`) are the only runtime data; the remaining fields are `Prop`s and
-erased at codegen. -/
+/-- Per-field data for a fast 32-bit Montgomery field. -/
 class Mont32Field (modulus : ℕ) where
   /-- `modulus` is prime. -/
   prime : modulus.Prime
@@ -62,6 +43,7 @@ class Mont32Field (modulus : ℕ) where
     (montgomeryNegInv.toNat * modulus) % 2 ^ 32 = 2 ^ 32 - 1 := by decide
 
 namespace Mont32Field
+
 instance factPrime (modulus : ℕ) [P : Mont32Field modulus] : Fact (Nat.Prime modulus) :=
   ⟨P.prime⟩
 
@@ -90,6 +72,7 @@ theorem r2ModModulus_lt_modulus {modulus : ℕ} [P : Mont32Field modulus] :
     P.r2ModModulus.toNat < modulus := by
   rw [P.r2ModModulus_toNat]
   exact Nat.mod_lt _ P.modulus_pos
+
 end Mont32Field
 
 /-- The fast carrier for a prime modulus: a native word below `modulus`,
@@ -109,113 +92,51 @@ instance : NeZero modulus := ⟨P.modulus_pos.ne'⟩
 
 /-- Reduce a native word known to be below twice the prime. -/
 @[inline]
-def reduceUInt32Lt2ModulusRaw (modulus : ℕ) [P : Mont32Field modulus]
-    (x : UInt32) : UInt32 :=
-  if x < P.modulus32 then x else x - P.modulus32
-
-theorem reduceUInt32Lt2ModulusRaw_lt (x : UInt32) (h : x.toNat < 2 * modulus) :
-    (reduceUInt32Lt2ModulusRaw modulus x).toNat < modulus := by
-  simp only [reduceUInt32Lt2ModulusRaw, UInt32.lt_iff_toNat_lt,
-    Mont32Field.modulus32_toNat]
-  by_cases hx : x.toNat < modulus
-  · rw [if_pos hx]
-    exact hx
-  · have hmod_le_x : P.modulus32 ≤ x := by
-      rw [UInt32.le_iff_toNat_le, Mont32Field.modulus32_toNat]
-      omega
-    rw [if_neg hx, UInt32.toNat_sub_of_le _ _ hmod_le_x, Mont32Field.modulus32_toNat]
-    omega
-
-/-- Reduce a native word known to be below twice the prime. -/
-@[inline]
 def reduceUInt32Lt2Modulus (x : UInt32) (h : x.toNat < 2 * modulus) :
     FastField modulus :=
-  ⟨reduceUInt32Lt2ModulusRaw modulus x, reduceUInt32Lt2ModulusRaw_lt x h⟩
+  ⟨conditionalSubtract P.modulus32 x, by
+    simpa only [P.modulus32_toNat] using
+      conditionalSubtract_lt (p32 := P.modulus32) (u := x) (by
+        simpa only [P.modulus32_toNat] using h)⟩
 
 theorem reduceUInt32Lt2Modulus_cast (x : UInt32)
     (h : x.toNat < 2 * modulus) :
     ((reduceUInt32Lt2Modulus (modulus := modulus) x h).val.toNat : ZMod modulus) =
       (x.toNat : ZMod modulus) := by
-  change ((reduceUInt32Lt2ModulusRaw modulus x).toNat : ZMod modulus) =
+  change ((conditionalSubtract P.modulus32 x).toNat : ZMod modulus) =
     (x.toNat : ZMod modulus)
-  unfold reduceUInt32Lt2ModulusRaw
-  by_cases hx : x < P.modulus32
-  · rw [if_pos hx]
-  · have hmod_le_x : P.modulus32 ≤ x := by
-      rw [UInt32.le_iff_toNat_le, P.modulus32_toNat]
-      rw [UInt32.lt_iff_toNat_lt, P.modulus32_toNat] at hx
-      exact Nat.le_of_not_gt hx
-    rw [if_neg hx]
-    rw [UInt32.toNat_sub_of_le _ _ hmod_le_x, P.modulus32_toNat]
-    rw [Nat.cast_sub (by
-      rw [UInt32.le_iff_toNat_le, P.modulus32_toNat] at hmod_le_x
-      exact hmod_le_x)]
-    simp
-
-/-- Montgomery reduction for inputs known to be below `p * 2^32`. -/
-@[inline]
-def montgomeryReduceRaw (modulus : ℕ) [P : Mont32Field modulus]
-    (x : UInt64) : UInt32 :=
-  reduceUInt32Lt2ModulusRaw modulus
-    (reduceQuotient P.montgomeryNegInv P.modulus64 x)
-
-theorem montgomeryReduceRaw_lt (x : UInt64)
-    (h : x.toNat < modulus * 2 ^ 32) :
-    (montgomeryReduceRaw modulus x).toNat < modulus := by
-  have hmodulus_bound : P.modulus64.toNat < 2 ^ 31 := by
-    rw [P.modulus64_toNat]
-    have hp := P.two_mul_modulus_lt_two_pow_32
-    omega
-  unfold montgomeryReduceRaw
-  exact reduceUInt32Lt2ModulusRaw_lt _
-    (by
-      simpa only [P.modulus64_toNat] using
-        reduceQuotient_toNat_lt_two_mul P.montgomeryNegInv P.modulus64
-          (by simpa only [P.modulus64_toNat] using P.modulus_pos)
-          hmodulus_bound
-          x (by simpa only [P.modulus64_toNat] using h))
+  have hraw := conditionalSubtract_cast (p32 := P.modulus32) (u := x)
+  rw [P.modulus32_toNat] at hraw
+  exact hraw
 
 /-- Montgomery reduction for inputs known to be below `p * 2^32`. -/
 @[inline]
 def montgomeryReduce (x : UInt64)
     (h : x.toNat < modulus * 2 ^ 32) : FastField modulus :=
-  ⟨montgomeryReduceRaw modulus x, montgomeryReduceRaw_lt x h⟩
+  ⟨reduceRaw P.modulus32 P.modulus64 P.montgomeryNegInv x, by
+    simpa only [P.modulus32_toNat] using
+      reduceRaw_lt (p32 := P.modulus32) (p64 := P.modulus64)
+        (negInv := P.montgomeryNegInv) (x := x)
+        (by rw [P.modulus32_toNat, P.modulus64_toNat])
+        (by simpa only [P.modulus64_toNat] using P.modulus_pos)
+        (by
+          rw [P.modulus64_toNat]
+          have hp := P.two_mul_modulus_lt_two_pow_32
+          omega)
+        (by simpa only [P.modulus64_toNat] using h)⟩
 
 theorem montgomeryReduce_cast (x : UInt64)
     (h : x.toNat < modulus * 2 ^ 32) :
     ((montgomeryReduce (modulus := modulus) x h).val.toNat : ZMod modulus) =
       (x.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ := by
-  have hmodulus_bound : P.modulus64.toNat < 2 ^ 31 := by
-    rw [P.modulus64_toNat]
-    have hp := P.two_mul_modulus_lt_two_pow_32
-    omega
-  change ((montgomeryReduceRaw modulus x).toNat : ZMod modulus) =
-      (x.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹
-  unfold montgomeryReduceRaw
-  let u := reduceQuotient P.montgomeryNegInv P.modulus64 x
-  change ((reduceUInt32Lt2ModulusRaw modulus u).toNat : ZMod modulus) =
-    (x.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹
-  have hred := reduceUInt32Lt2Modulus_cast (modulus := modulus) u
+  exact reduceRaw_cast (modulus := modulus) (p32 := P.modulus32)
+    (p64 := P.modulus64) (negInv := P.montgomeryNegInv) (x := x)
+    P.modulus32_toNat P.modulus64_toNat P.modulus_pos
     (by
-      simpa only [P.modulus64_toNat] using
-        reduceQuotient_toNat_lt_two_mul P.montgomeryNegInv P.modulus64
-          (by simpa only [P.modulus64_toNat] using P.modulus_pos)
-          hmodulus_bound
-          x (by simpa only [P.modulus64_toNat] using h))
-  change ((reduceUInt32Lt2ModulusRaw modulus u).toNat : ZMod modulus) =
-    (u.toNat : ZMod modulus) at hred
-  rw [hred]
-  change (u.toNat : ZMod modulus) =
-    (x.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹
-  rw [show u.toNat = reduceNatQuotient (2 ^ 32) modulus P.montgomeryNegInv.toNat x.toNat by
-    simpa only [u, P.modulus64_toNat] using
-      reduceQuotient_toNat P.montgomeryNegInv P.modulus64
-        (by simpa only [P.modulus64_toNat] using P.modulus_pos)
-        hmodulus_bound
-        x (by simpa only [P.modulus64_toNat] using h)]
-  exact reduceNatQuotient_cast (2 ^ 32) modulus P.montgomeryNegInv.toNat
-    (by decide) P.montgomeryNegInv_mul_modulus_mod_two_pow_32
-    P.two_pow_32_ne_zero_in_field x.toNat
+      have hp := P.two_mul_modulus_lt_two_pow_32
+      omega)
+    P.montgomeryNegInv_mul_modulus_mod_two_pow_32
+    P.two_pow_32_ne_zero_in_field h
 
 /-! ## Conversions -/
 
@@ -308,10 +229,11 @@ open FastField
 
 theorem toNat_lt_modulus (x : FastField modulus) : toNat x < modulus := by
   unfold FastField.toNat FastField.toUInt32
-  change (montgomeryReduceRaw modulus x.val.toUInt64).toNat < modulus
-  exact montgomeryReduceRaw_lt (modulus := modulus) x.val.toUInt64 (by
+  change (reduceRaw P.modulus32 P.modulus64 P.montgomeryNegInv
+    x.val.toUInt64).toNat < modulus
+  exact (montgomeryReduce (modulus := modulus) x.val.toUInt64 (by
     rw [UInt32.toNat_toUInt64]
-    nlinarith [x.property, P.modulus_pos])
+    nlinarith [x.property, P.modulus_pos])).property
 
 theorem toField_eq_raw_mul_inv (x : FastField modulus) :
     toField x =
@@ -320,9 +242,11 @@ theorem toField_eq_raw_mul_inv (x : FastField modulus) :
   have hred := montgomeryReduce_cast (modulus := modulus) x.val.toUInt64 (by
     rw [UInt32.toNat_toUInt64]
     nlinarith [x.property, P.modulus_pos])
-  change ((montgomeryReduceRaw modulus x.val.toUInt64).toNat : ZMod modulus) =
+  change ((reduceRaw P.modulus32 P.modulus64 P.montgomeryNegInv
+    x.val.toUInt64).toNat : ZMod modulus) =
       (x.val.toUInt64.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ at hred
-  change ((montgomeryReduceRaw modulus x.val.toUInt64).toNat : ZMod modulus) =
+  change ((reduceRaw P.modulus32 P.modulus64 P.montgomeryNegInv
+    x.val.toUInt64).toNat : ZMod modulus) =
       (x.val.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹
   rw [hred]
   rw [UInt32.toNat_toUInt64]
@@ -355,11 +279,11 @@ theorem ofCanonicalNat_raw_cast (n : ℕ) (h : n < modulus) :
         nlinarith [P.r2ModModulus_lt_modulus, P.modulus_sq_lt_two_pow_64]
       rw [Nat.mod_eq_of_lt hprod]
       nlinarith [P.r2ModModulus_lt_modulus])
-  change ((montgomeryReduceRaw modulus
+  change ((reduceRaw P.modulus32 P.modulus64 P.montgomeryNegInv
       (UInt64.ofNat n * P.r2ModModulus.toUInt64)).toNat : ZMod modulus) =
         ((UInt64.ofNat n * P.r2ModModulus.toUInt64).toNat : ZMod modulus) *
           ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ at hred
-  change ((montgomeryReduceRaw modulus
+  change ((reduceRaw P.modulus32 P.modulus64 P.montgomeryNegInv
       (UInt64.ofNat n * P.r2ModModulus.toUInt64)).toNat : ZMod modulus) =
         (n : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)
   rw [hred]
@@ -402,11 +326,13 @@ theorem reduceUInt64_raw_cast (x : UInt64) :
       nlinarith [hy_lt, P.r2ModModulus_lt_modulus, P.modulus_sq_lt_two_pow_64]
     rw [Nat.mod_eq_of_lt hprod]
     nlinarith [P.r2ModModulus_lt_modulus])
-  change ((montgomeryReduceRaw modulus (y * P.r2ModModulus.toUInt64)).toNat :
+  change ((reduceRaw P.modulus32 P.modulus64 P.montgomeryNegInv
+      (y * P.r2ModModulus.toUInt64)).toNat :
       ZMod modulus) =
         ((y * P.r2ModModulus.toUInt64).toNat : ZMod modulus) *
           ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ at hred
-  change ((montgomeryReduceRaw modulus (y * P.r2ModModulus.toUInt64)).toNat :
+  change ((reduceRaw P.modulus32 P.modulus64 P.montgomeryNegInv
+      (y * P.r2ModModulus.toUInt64)).toNat :
       ZMod modulus) =
         (x.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)
   rw [hred]
@@ -668,9 +594,9 @@ theorem toField_add (x y : FastField modulus) : toField (x + y) = toField x + to
     rw [UInt32.toNat_add]
     exact Nat.lt_of_le_of_lt (Nat.mod_le _ _) (by
       have hx := x.property; have hy := y.property; omega))
-  change ((reduceUInt32Lt2ModulusRaw modulus (x.val + y.val)).toNat : ZMod modulus) =
+  change ((conditionalSubtract P.modulus32 (x.val + y.val)).toNat : ZMod modulus) =
       ((x.val + y.val).toNat : ZMod modulus) at hred
-  change ((reduceUInt32Lt2ModulusRaw modulus (x.val + y.val)).toNat : ZMod modulus) *
+  change ((conditionalSubtract P.modulus32 (x.val + y.val)).toNat : ZMod modulus) *
       ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ =
         (x.val.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ +
           (y.val.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹
@@ -774,11 +700,11 @@ theorem toField_mul (x y : FastField modulus) : toField (x * y) = toField x * to
         nlinarith [x.property, y.property, P.modulus_sq_lt_two_pow_64]
       rw [Nat.mod_eq_of_lt hprod]
       nlinarith [x.property, y.property, P.modulus_lt_two_pow_32, P.modulus_pos])
-  change ((montgomeryReduceRaw modulus
+  change ((reduceRaw P.modulus32 P.modulus64 P.montgomeryNegInv
       (x.val.toUInt64 * y.val.toUInt64)).toNat : ZMod modulus) =
         ((x.val.toUInt64 * y.val.toUInt64).toNat : ZMod modulus) *
           ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ at hred
-  change ((montgomeryReduceRaw modulus
+  change ((reduceRaw P.modulus32 P.modulus64 P.montgomeryNegInv
       (x.val.toUInt64 * y.val.toUInt64)).toNat : ZMod modulus) *
         ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ =
         (x.val.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ *

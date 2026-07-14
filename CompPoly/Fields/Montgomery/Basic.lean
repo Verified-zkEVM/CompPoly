@@ -18,27 +18,16 @@ Word-specific implementations refine these results in sibling modules.
 
 namespace Montgomery
 
-/-- The Montgomery divisibility identity: if `(negInv * p) % R = R - 1` (i.e.
-`negInv = -p⁻¹ mod R`), then `R ∣ x + ((x mod R)·negInv mod R)·p` for every `x`. This is
-what makes Montgomery reduction integer-valued. -/
-theorem dvd_add (R p negInv : ℕ) (hR : 0 < R)
-    (hnegInv : negInv * p % R = R - 1) (x : ℕ) :
-    R ∣ x + ((x % R * negInv) % R) * p := by
-  rw [Nat.dvd_iff_mod_eq_zero]
-  rw [Nat.add_mod, Nat.mod_mul_mod (x % R * negInv) p R, Nat.mul_assoc]
-  rw [← Nat.mul_mod_mod, hnegInv, Nat.add_mod_mod, add_comm, ← Nat.mul_add_one]
-  rw [show R - 1 + 1 = R by omega, Nat.mul_mod_left]
-
-/-- The quotient before the final conditional subtraction in Montgomery reduction. -/
-def reduceNatQuotient (R p negInv x : ℕ) : ℕ :=
-  let m := (x % R * negInv) % R
-  (x + m * p) / R
-
 /-- Natural-number Montgomery reduction used to specify the native-word reducer. -/
 def reduceNat (R p negInv x : ℕ) : ℕ :=
   let m := (x % R * negInv) % R
   let u := (x + m * p) / R
   if u < p then u else u - p
+
+/-- The quotient before the final conditional subtraction in Montgomery reduction. -/
+def reduceNatQuotient (R p negInv x : ℕ) : ℕ :=
+  let m := (x % R * negInv) % R
+  (x + m * p) / R
 
 /-- The pre-subtraction quotient is below twice the modulus. -/
 theorem reduceNatQuotient_lt_two_mul (R p negInv x : ℕ)
@@ -55,6 +44,29 @@ theorem reduceNatQuotient_lt_two_mul (R p negInv x : ℕ)
       x + m * p < p * R + p * R := Nat.add_lt_add hx hprod_lt'
       _ = 2 * p * R := by ring
   · exact hR
+
+/-- Montgomery reduction returns a canonical representative. -/
+theorem reduceNat_lt (R p negInv x : ℕ)
+    (hR : 0 < R) (hp : 0 < p) (hx : x < p * R) :
+    reduceNat R p negInv x < p := by
+  change (if reduceNatQuotient R p negInv x < p then
+    reduceNatQuotient R p negInv x else reduceNatQuotient R p negInv x - p) < p
+  have hu := reduceNatQuotient_lt_two_mul R p negInv x hR hp hx
+  by_cases h : reduceNatQuotient R p negInv x < p
+  · rw [if_pos h]
+    exact h
+  · rw [if_neg h]
+    omega
+
+/-- The Montgomery divisibility identity: if `(negInv * p) % R = R - 1` (i.e.
+`negInv = -p⁻¹ mod R`), then `R ∣ x + ((x mod R)·negInv mod R)·p` for every `x`. -/
+theorem dvd_add (R p negInv : ℕ) (hR : 0 < R)
+    (hnegInv : negInv * p % R = R - 1) (x : ℕ) :
+    R ∣ x + ((x % R * negInv) % R) * p := by
+  rw [Nat.dvd_iff_mod_eq_zero]
+  rw [Nat.add_mod, Nat.mod_mul_mod (x % R * negInv) p R, Nat.mul_assoc]
+  rw [← Nat.mul_mod_mod, hnegInv, Nat.add_mod_mod, add_comm, ← Nat.mul_add_one]
+  rw [show R - 1 + 1 = R by omega, Nat.mul_mod_left]
 
 /-- The pre-subtraction quotient represents multiplication by `R⁻¹` in `ZMod p`. -/
 theorem reduceNatQuotient_cast (R p negInv : ℕ) [Fact (Nat.Prime p)] (hR : 0 < R)

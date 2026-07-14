@@ -20,8 +20,8 @@ This directory contains formally verified field infrastructure used in zero-know
 | **KoalaBear/Fast.lean** | KoalaBear-namespaced API over the shared fast-field implementation (`Montgomery/Native32Field.lean`): thin wrappers forwarding the native `UInt32` Montgomery-residue operations and their `KoalaBear.Field` equivalence (`@[simp]`) lemmas. |
 | **Mersenne.lean** | \(2^{31} - 1\) — Circle STARKs. |
 | **Montgomery/Basic.lean** | Radix-generic Montgomery reduction, field-agnostic number theory shared by the fast prime fields. |
-| **Montgomery/Native32.lean** | `UInt32 × UInt64`, radix `R = 2^32` word-level Montgomery bridge over the generic core. |
-| **Montgomery/Native32Field.lean** | Shared 32-bit-word fast-field implementation over the word bridge: the `Mont32Field` per-field data class, the `FastField` carrier, every field operation, the algebraic instances, and the `toField`/`ofField` correctness bridge — written once and instantiated by both BabyBear and KoalaBear. |
+| **Montgomery/Native32.lean** | Raw `UInt32`/`UInt64` Montgomery reduction over explicit word constants, including bounds and correctness. |
+| **Montgomery/Native32Field.lean** | Per-field parameters, the shared `FastField` carrier, arithmetic, instances, and canonical-field bridge. |
 | **Secp256k1.lean** | Base and scalar fields for the Secp256k1 curve (used in Bitcoin/Ethereum). |
 
 ## Binary-field modules
