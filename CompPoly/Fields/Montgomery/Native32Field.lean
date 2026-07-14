@@ -30,7 +30,7 @@ class Mont32Field (modulus : ℕ) where
   /-- `2^32 mod modulus`, the Montgomery representation of one. -/
   rModModulus : UInt32
   /-- `(2^32)^2 mod modulus`, used to enter Montgomery form. -/
-  r2ModModulus : UInt32
+  r2ModModulus : UInt64
   /-- `-modulus⁻¹ mod 2^32`, used by Montgomery reduction. -/
   montgomeryNegInv : UInt32
   modulus32_toNat : modulus32.toNat = modulus := by decide
@@ -108,9 +108,9 @@ namespace FastField
 /-- Build a fast element from a canonical natural representative. -/
 @[inline]
 def ofCanonicalNat (n : ℕ) (h : n < modulus) : FastField modulus :=
-  reduce (UInt64.ofNat n * P.r2ModModulus.toUInt64) <| by
-    simp only [UInt64.toNat_mul, UInt64.toNat_ofNat', UInt32.toNat_toUInt64,
-      P.r2ModModulus_toNat, Nat.mod_mul_mod]
+  reduce (UInt64.ofNat n * P.r2ModModulus) <| by
+    simp only [UInt64.toNat_mul, UInt64.toNat_ofNat', P.r2ModModulus_toNat,
+      Nat.mod_mul_mod]
     apply Nat.mod_lt_of_lt
     grw [Nat.mod_lt _ P.modulus_pos]
     apply mul_lt_mul <;> simp [h, le_of_lt]
@@ -123,7 +123,7 @@ def ofNat (modulus : ℕ) [P : Mont32Field modulus] (n : ℕ) : FastField modulu
 /-- Convert a 32-bit word into fast Montgomery representation. -/
 @[inline]
 def ofUInt32 (modulus : ℕ) [P : Mont32Field modulus] (x : UInt32) : FastField modulus :=
-  reduce (x.toUInt64 * P.r2ModModulus.toUInt64) <| by
+  reduce (x.toUInt64 * P.r2ModModulus) <| by
     simp only [UInt64.toNat_mul, UInt32.toNat_toUInt64, P.r2ModModulus_toNat]
     apply Nat.mod_lt_of_lt
     grw [Nat.mod_lt _ P.modulus_pos, mul_comm modulus]
@@ -313,7 +313,7 @@ theorem toNat_lt_modulus {x : FastField modulus} : toNat x < modulus := by
 private theorem toField_eq_val_toNat_cast_mul_inv {x : FastField modulus} :
     toField x =
       (x.val.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ := by
-  convert reduce_val_toNat_cast (modulus := modulus) ?_ using 1
+  convert reduce_val_toNat_cast ?_ using 1
 
 private theorem val_toNat_cast_eq_toField_mul {x : FastField modulus} :
     (x.val.toNat : ZMod modulus) =
@@ -322,11 +322,11 @@ private theorem val_toNat_cast_eq_toField_mul {x : FastField modulus} :
   rw [inv_mul_cancel₀ P.two_pow_32_ne_zero, mul_one]
 
 private theorem ofCanonicalNat_val_toNat_cast {n : ℕ} (h : n < modulus) :
-    ((ofCanonicalNat (modulus := modulus) n h).val.toNat : ZMod modulus) =
+    ((ofCanonicalNat n h).val.toNat : ZMod modulus) =
       (n : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus) := by
-  convert reduce_val_toNat_cast (modulus := modulus) ?_ using 1
+  convert reduce_val_toNat_cast ?_ using 1
   simp only [Nat.cast_pow, Nat.cast_ofNat, UInt64.toNat_mul, UInt64.toNat_ofNat',
-    UInt32.toNat_toUInt64, P.r2ModModulus_toNat, Nat.mod_mul_mod]
+    P.r2ModModulus_toNat, Nat.mod_mul_mod]
   have hprod : n * ((2 ^ 32) ^ 2 % modulus) < 2 ^ 64 := by
     nlinarith [P.r2ModModulus_lt_modulus, P.modulus_sq_lt_two_pow_64]
   rw [Nat.mod_eq_of_lt hprod]
@@ -334,18 +334,18 @@ private theorem ofCanonicalNat_val_toNat_cast {n : ℕ} (h : n < modulus) :
 
 @[simp]
 theorem toField_ofCanonicalNat {n : ℕ} (h : n < modulus) :
-    toField (ofCanonicalNat (modulus := modulus) n h) = (n : ZMod modulus) := by
+    toField (ofCanonicalNat n h) = (n : ZMod modulus) := by
   rw [toField_eq_val_toNat_cast_mul_inv, ofCanonicalNat_val_toNat_cast, mul_assoc]
   rw [mul_inv_cancel₀ P.two_pow_32_ne_zero, mul_one]
 
 @[simp]
 theorem toNat_ofCanonicalNat {n : ℕ} (h : n < modulus) :
-    toNat (ofCanonicalNat (modulus := modulus) n h) = n :=
+    toNat (ofCanonicalNat n h) = n :=
   natCast_inj_of_lt (toField_ofCanonicalNat h) toNat_lt_modulus h
 
 /-- Converting from the canonical field to fast form and back is the identity. -/
 @[simp]
-theorem toField_ofField (x : ZMod modulus) : toField (ofField (modulus := modulus) x) = x := by
+theorem toField_ofField (x : ZMod modulus) : toField (ofField x) = x := by
   simp [ofField, toField_ofCanonicalNat]
 
 /-- Converting from fast form to the canonical field and back is the identity. -/
