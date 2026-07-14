@@ -53,7 +53,7 @@ private theorem C_zero_mul [Semiring F] [BEq F] [LawfulBEq F]
     (CPolynomial.toPoly_mul (CPolynomial.C (0 : F)) p)
   rw [CPolynomial.C_toPoly] at hpoly
   rw [CPolynomial.coeff_toPoly, CPolynomial.coeff_toPoly]
-  simpa using hpoly
+  simpa [CPolynomial.toPoly_zero] using hpoly
 
 private theorem rowGet_zeroRow [Semiring F] [BEq F] [LawfulBEq F]
     (width j : Nat) :

@@ -41,7 +41,8 @@ theorem cpoly_size_eq_natDegree_succ_of_ne_zero {R : Type*} [Zero R]
       have hval : p.val = (#[] : CPolynomial.Raw R) := Array.eq_empty_of_size_eq_zero hs
       apply (hp ?_).elim
       apply CPolynomial.ext
-      simpa using hval
+      change p.val = (#[] : CPolynomial.Raw R)
+      exact hval
   | succ n =>
       simp
 
@@ -165,7 +166,7 @@ theorem initialCoefficientPolynomial_coeff_fold {F : Type*}
         by_cases hjmem : j ∈ ys <;> simp [hjy, hjmem]
 
 theorem initialCoefficientPolynomial_coeff_of_lt {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (Q : CBivariate F) {j : Nat} (hj : j < Q.val.size) :
     (initialCoefficientPolynomial Q).coeff j = CBivariate.coeff Q 0 j := by
   unfold initialCoefficientPolynomial
@@ -437,7 +438,7 @@ theorem cbivar_xAdicOrder?_some_coeff_eq_zero_of_lt {R : Type*}
   · exact cbivar_coeff_eq_zero_of_y_size_le Q (Nat.le_of_not_lt hy)
 
 theorem cbivar_toPoly_eq_C_X_pow_mul_divXPower_of_xAdicOrder {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} {order : Nat} (horder : CBivariate.xAdicOrder? Q = some order) :
     CBivariate.toPoly Q =
       Polynomial.C (Polynomial.X ^ order : Polynomial F) *
@@ -487,7 +488,7 @@ theorem cbivar_xAdicOrder?_fold_none {R : Type*}
                 exact htail.2 z hzTail
 
 theorem cbivar_xAdicOrder?_none_eq_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     {Q : CBivariate F} (h : CBivariate.xAdicOrder? Q = none) : Q = 0 := by
   apply (CPolynomial.eq_zero_iff_coeff_zero (p := (Q : CPolynomial (CPolynomial F)))).mpr
   intro y
@@ -517,7 +518,7 @@ theorem cpoly_dropXPower_add {R : Type*} [Zero R]
       simp [CPolynomial.dropXPower]
 
 theorem dropXPower_eq_C_add_X_mul_dropXPower_succ {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     (p : CPolynomial F) (depth : Nat) :
     CPolynomial.dropXPower p depth =
       CPolynomial.C (p.coeff depth) +
@@ -570,7 +571,7 @@ theorem polynomial_monomial_substitution_sum {F : Type*} [Field F]
   rw [← Polynomial.C_eq_natCast (R := F) (Nat.choose y t)]
 
 theorem foldl_cpoly_toPoly_add {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     (f : Nat → CPolynomial F) :
     ∀ (xs : List Nat) (acc : CPolynomial F) (accPoly : Polynomial F),
       acc.toPoly = accPoly →
@@ -588,7 +589,7 @@ theorem foldl_cpoly_toPoly_add {F : Type*}
       rw [CPolynomial.toPoly_add, hacc]
 
 theorem cpoly_monomial_substitution_sum {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (a coeff : F) (p : CPolynomial F) (x y : Nat) :
     (List.range' 0 (y + 1)).foldl
         (fun acc t ↦

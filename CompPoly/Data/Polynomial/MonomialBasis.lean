@@ -127,8 +127,8 @@ theorem finrank_degreeLT_n (n : ℕ) : Module.finrank L (L⦃< n⦄[X]) = n := b
   rw [Module.finrank_eq_card_basis monomial_basis]
   rw [Fintype.card_fin]
 
-instance finiteDimensional_degreeLT {n : ℕ} (h_n_pos : 0 < n) :
-  FiniteDimensional L L⦃< n⦄[X] := by
+theorem finiteDimensional_degreeLT {n : ℕ} (h_n_pos : 0 < n) :
+    FiniteDimensional L L⦃< n⦄[X] := by
   have h : 0 < Module.finrank L (L⦃< n⦄[X]) := by
     rw [finrank_degreeLT_n n]
     omega

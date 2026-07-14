@@ -138,6 +138,7 @@ theorem BarycentricDomain.eval_eq_interpolate_eval (dom : BarycentricDomain R n)
   · rcases n with ( _ | n ) <;> simp_all +decide [ BarycentricDomain.eval ];
     convert BarycentricDomain.eval_off_node_eq dom y z
       (fun i => Ne.symm (hz i)) (Nat.succ_pos n) using 1
+    simp [Lagrange.interpolate]
 
 /-- The barycentric evaluator equals
 `(CLagrange.interpolate Finset.univ dom.nodes y).eval z`. -/

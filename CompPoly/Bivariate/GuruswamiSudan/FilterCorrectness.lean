@@ -42,7 +42,7 @@ theorem mem_gsFilteredCore_iff {F : Type*}
 /-- Every filtered candidate is a sound algebraic core output and is within the
 packed mismatch radius. -/
 theorem gsFilteredCore_sound {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {points : Array (Prod F F)}
     {interpContext : GSInterpContext F} {rootContext : GSRootContext F}
     {params : GSInterpParams} {radius : Nat}
@@ -66,7 +66,7 @@ theorem gsFilteredCore_sound {F : Type*}
 /-- Filtered-core completeness for candidates that root every valid
 interpolation witness and pass the packed distance filter. -/
 theorem gsFilteredCore_complete_of_roots_all_valid_witnesses {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {points : Array (Prod F F)}
     {interpContext : GSInterpContext F} {rootContext : GSRootContext F}
     {params : GSInterpParams} {radius : Nat}
@@ -86,7 +86,7 @@ theorem gsFilteredCore_complete_of_roots_all_valid_witnesses {F : Type*}
 
 /-- Packed-point semantic completeness for the filtered GS core. -/
 theorem gsFilteredCore_complete_of_enough_matches {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {points : Array (Prod F F)}
     {interpContext : GSInterpContext F} {rootContext : GSRootContext F}
     {params : GSInterpParams} {radius : Nat}

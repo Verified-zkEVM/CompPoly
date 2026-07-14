@@ -47,8 +47,9 @@ identities, and divisibility conditions for irreducible polynomials.
 
 variable {Fq : Type*} [Field Fq] [Fintype Fq]
 
-instance instExpCharOfAlgebra {K : Type*} [Field K] [Algebra Fq K]
-  {h_ringChar_Fq_pos : (ringChar Fq) ≠ 0} : ExpChar K (ringChar Fq) := by
+omit [Fintype Fq] in
+theorem instExpCharOfAlgebra {K : Type*} [Field K] [Algebra Fq K]
+    {h_ringChar_Fq_pos : (ringChar Fq) ≠ 0} : ExpChar K (ringChar Fq) := by
   let p := ringChar Fq
   letI charP_Fq_p: CharP Fq p := ringChar.charP Fq
   haveI : CharP K p := by
@@ -480,7 +481,6 @@ theorem degree_dvd_of_irreducible_dvd_X_pow_card_pow_sub_X
       rw [←h_mul_right_inj, mul_comm, ←pow_succ, Nat.sub_one_add_one (h := by
         exact Ne.symm (NeZero.ne' (q ^ n)))]
       simp only [mul_one]
-      simp only at h_u_pow
       rw [←Units.val_pow_eq_pow_val] at h_u_pow
       exact Units.ext h_u_pow
     have h_exponent_dvd : Monoid.exponent Kˣ ∣ q ^ n - 1 :=

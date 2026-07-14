@@ -19,7 +19,7 @@ namespace GuruswamiSudan
 /-- The coefficient of `Y^j` in `Q(0, Y)`, as a polynomial in the next root
 coefficient. -/
 def initialCoefficientPolynomial {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (Q : CBivariate F) : CPolynomial F :=
   (List.range Q.val.size).foldl
     (fun out y ↦ out + CPolynomial.monomial y (CBivariate.coeff Q 0 y))
@@ -27,13 +27,13 @@ def initialCoefficientPolynomial {F : Type*}
 
 /-- Executable final check for the GS root condition. -/
 def isRootYDegreeLtBool {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     (Q : CBivariate F) (k : Nat) (p : CPolynomial F) : Bool :=
   degreeLtBool p k && CBivariate.composeYHorner Q p == 0
 
 /-- Filter a candidate family to exact bounded-degree roots. -/
 def rootsYDegreeLtFromCandidates {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     (candidates : Array (CPolynomial F)) (Q : CBivariate F) (k : Nat) :
     Array (CPolynomial F) :=
   candidates.filter fun p ↦ isRootYDegreeLtBool Q k p

@@ -316,8 +316,9 @@ theorem gcdMonic_toPoly_eq_normalize_gcd
     (p q : CPolynomial R) :
     (CPolynomial.gcdMonic p q).toPoly =
       normalize (EuclideanDomain.gcd p.toPoly q.toPoly) := by
-  simpa [CPolynomial.gcdMonic, CPolynomial.Raw.gcdMonic] using
-    gcdMonicWithFuel_toPoly_eq_normalize_gcd
+  change (CPolynomial.gcdMonicWithFuel (p.val.size + q.val.size + 1) p q).toPoly =
+      normalize (EuclideanDomain.gcd p.toPoly q.toPoly)
+  exact gcdMonicWithFuel_toPoly_eq_normalize_gcd
       (p.val.size + q.val.size + 1) p q (by
         have hqdeg : q.toPoly.degree < q.val.size := by
           rw [← degree_toPoly]

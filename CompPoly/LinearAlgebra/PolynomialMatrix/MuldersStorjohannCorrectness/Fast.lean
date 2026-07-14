@@ -73,8 +73,8 @@ theorem cancelShiftedLeadingTermFast_eq (target reducer : PolynomialRow F)
 
 /-! ### Cached conflict scan -/
 
-omit [Field F] [LawfulBEq F] [DecidableEq F] in
-theorem rowLeadingPositions_size [Zero F] (M : PolynomialMatrix F)
+omit [LawfulBEq F] [DecidableEq F] in
+theorem rowLeadingPositions_size (M : PolynomialMatrix F)
     (shift : Array Nat) :
     (rowLeadingPositions M shift).size = M.size := by
   simp [rowLeadingPositions]

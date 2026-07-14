@@ -29,11 +29,11 @@ variable (vals : Fin n → R)
 
 @[simp]
 lemma eval_zero : (0 : CMvPolynomial n R).eval vals = 0 := by
-  simpa [eval₂Hom_apply] using (eval₂Hom (RingHom.id R) vals).map_zero
+  simp [eval_equiv]
 
 @[simp]
 lemma eval_one : (1 : CMvPolynomial n R).eval vals = 1 := by
-  simpa [eval₂Hom_apply] using (eval₂Hom (RingHom.id R) vals).map_one
+  simp [eval_equiv]
 
 @[simp]
 lemma eval_C (c : R) : (CMvPolynomial.C c : CMvPolynomial n R).eval vals = c := by
@@ -50,7 +50,11 @@ lemma eval_mul (p q : CMvPolynomial n R) :
 @[simp]
 lemma eval_pow (p : CMvPolynomial n R) (k : ℕ) :
     (p ^ k).eval vals = (p.eval vals) ^ k := by
-  simpa [eval₂Hom_apply] using (eval₂Hom (RingHom.id R) vals).map_pow p k
+  induction k with
+  | zero =>
+      simp
+  | succ k ih =>
+      rw [pow_succ, eval_mul, ih, pow_succ]
 
 end
 
@@ -62,12 +66,12 @@ variable (vals : Fin n → R)
 @[simp]
 lemma eval_neg (p : CMvPolynomial n R) :
     (-p).eval vals = -(p.eval vals) := by
-  simpa [eval₂Hom_apply] using (eval₂Hom (RingHom.id R) vals).map_neg p
+  simp [eval_equiv]
 
 @[simp]
 lemma eval_sub (p q : CMvPolynomial n R) :
     (p - q).eval vals = p.eval vals - q.eval vals := by
-  simpa [eval₂Hom_apply] using (eval₂Hom (RingHom.id R) vals).map_sub p q
+  rw [sub_eq_add_neg, eval_add, eval_neg, sub_eq_add_neg]
 
 end
 

@@ -445,11 +445,11 @@ theorem isCanonical_iff_size_eq_zero_or_getLastD_ne_zero [Zero R]
   · intro h
     rcases Nat.eq_zero_or_pos p.size with h0 | hp
     · exact Or.inl h0
-    · exact Or.inr (by simpa [Array.getLastD, hp] using h hp)
+    · exact Or.inr (by simpa [Array.getLastD, Array.getLast, hp] using h hp)
   · intro h hp
     rcases h with h0 | hlast
     · exact (Nat.ne_of_gt hp h0).elim
-    · simpa [Array.getLastD, hp] using hlast
+    · simpa [Array.getLastD, Array.getLast, hp] using hlast
 
 /-- Computational canonicality criterion in non-dependent form. -/
 theorem trim_eq_iff_size_eq_zero_or_getLastD_ne_zero [Zero R] [BEq R] [LawfulBEq R]

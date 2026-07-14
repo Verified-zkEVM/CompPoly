@@ -143,6 +143,9 @@ theorem inverseSpec_interpolatePow_eq [BEq R] [LawfulBEq R]
   have hinterpdeg : q.toPoly.degree < D.n := by
     unfold q CLagrange.interpolatePow
     rw [CLagrange.cinterpolate_eq_interpolate]
+    change (∑ k : D.Idx,
+        Polynomial.C (r.get k) *
+          Lagrange.basis Finset.univ (fun k : D.Idx => D.node k) k).degree < D.n
     simpa [Domain.node] using
       Lagrange.degree_interpolate_lt
         (s := Finset.univ) (v := fun k : D.Idx => D.node k)
