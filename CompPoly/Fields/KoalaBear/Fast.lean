@@ -36,11 +36,6 @@ abbrev Field : Type := FastField KoalaBear.fieldSize
 
 /-! ## Conversions -/
 
-/-- Reduce a `UInt64` modulo the KoalaBear prime and return a Montgomery fast element. -/
-@[inline]
-def reduceUInt64 (x : UInt64) : Field :=
-  Montgomery.Native32.reduceUInt64 KoalaBear.fieldSize x
-
 /-- Convert a 32-bit word into fast Montgomery representation. -/
 @[inline]
 def ofUInt32 (x : UInt32) : Field :=
@@ -49,19 +44,7 @@ def ofUInt32 (x : UInt32) : Field :=
 /-- Convert from the canonical `ZMod` KoalaBear field into fast Montgomery form. -/
 @[inline]
 def ofField (x : KoalaBear.Field) : Field :=
-  Montgomery.Native32.ofField x
-
-/-- Reducing a `UInt64` gives the canonical natural residue modulo KoalaBear. -/
-@[simp]
-theorem toNat_reduceUInt64 (x : UInt64) :
-    (reduceUInt64 x).toNat = x.toNat % KoalaBear.fieldSize :=
-  Montgomery.Native32.toNat_reduceUInt64 x
-
-/-- Reducing a `UInt64` agrees with casting that word into the canonical field. -/
-@[simp]
-theorem toField_reduceUInt64 (x : UInt64) :
-    (reduceUInt64 x).toField = (x.toNat : KoalaBear.Field) :=
-  Montgomery.Native32.toField_reduceUInt64 x
+  Montgomery.Native32.FastField.ofField x
 
 /-! ## Arithmetic -/
 
@@ -88,9 +71,6 @@ def square (x : Field) : Field := Montgomery.Native32.square x
 /-- Exponentiation over the fast representation using repeated squaring. -/
 @[inline]
 def pow (x : Field) (n : ℕ) : Field := Montgomery.Native32.pow x n
-
-/-- Fermat exponent used for inversion in the KoalaBear prime field. -/
-def invExponent : ℕ := Montgomery.Native32.invExponent KoalaBear.fieldSize
 
 /-- Inversion in Montgomery form via Fermat's little theorem (`x⁻¹ = x^(p-2)`). -/
 @[inline]
@@ -149,12 +129,12 @@ theorem toField_mul (x y : Field) : toField (x * y) = toField x * toField y :=
 /-- Applying `ringEquiv` is the same as interpreting a fast value canonically. -/
 @[simp]
 theorem ringEquiv_apply (x : Field) : ringEquiv x = toField x :=
-  Montgomery.Native32.ringEquiv_apply x
+  Montgomery.Native32.ringEquiv_apply
 
 /-- Applying the inverse `ringEquiv` is conversion into fast Montgomery form. -/
 @[simp]
 theorem ringEquiv_symm_apply (x : KoalaBear.Field) : ringEquiv.symm x = ofField x :=
-  Montgomery.Native32.ringEquiv_symm_apply x
+  Montgomery.Native32.ringEquiv_symm_apply
 
 /-- Fast squaring agrees with multiplication by itself in the canonical field. -/
 @[simp]
