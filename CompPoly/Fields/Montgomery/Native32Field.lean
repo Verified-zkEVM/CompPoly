@@ -53,16 +53,15 @@ interpreted as a Montgomery residue. At runtime this erases to `UInt32`. -/
 def FastField (modulus : ℕ) [Mont32Field modulus] : Type :=
   { x : UInt32 // x.toNat < modulus }
 
-instance (modulus : ℕ) [Mont32Field modulus] : DecidableEq (FastField modulus) :=
-  inferInstanceAs (DecidableEq { x : UInt32 // x.toNat < modulus })
-
 section
 variable {modulus : ℕ} [P : Mont32Field modulus]
 
+instance : DecidableEq (FastField modulus) :=
+  inferInstanceAs (DecidableEq { x : UInt32 // x.toNat < modulus })
+
 namespace Mont32Field
 
-instance factPrime (modulus : ℕ) [P : Mont32Field modulus] : Fact (Nat.Prime modulus) :=
-  ⟨P.prime⟩
+instance : Fact (Nat.Prime modulus) := ⟨P.prime⟩
 
 @[simp]
 theorem modulus_pos : 0 < modulus := Nat.zero_lt_of_lt P.two_lt_modulus
@@ -521,30 +520,26 @@ theorem toField_div (x y : FastField modulus) : toField (x / y) = toField x / to
 @[simp]
 theorem toField_natCast (n : ℕ) : toField (n : FastField modulus) = (n : ZMod modulus) := by
   change toField (ofNat modulus n) = (n : ZMod modulus)
-  unfold ofNat
-  rw [toField_ofCanonicalNat, ZMod.natCast_eq_natCast_iff]
+  rw [ofNat, toField_ofCanonicalNat, ZMod.natCast_eq_natCast_iff]
   exact Nat.mod_modEq _ _
 
 /-- Integer casts into fast form agree with integer casts into the canonical field. -/
 @[simp]
 theorem toField_intCast (n : Int) : toField (n : FastField modulus) = (n : ZMod modulus) := by
-  change toField (ofInt modulus n) = (n : ZMod modulus)
-  unfold ofInt
+  change toField (ofField n) = (n : ZMod modulus)
   rw [toField_ofField]
 
 /-- Natural scalar multiplication is preserved by `toField`. -/
 @[simp]
 theorem toField_nsmul (n : ℕ) (x : FastField modulus) : toField (n • x) = n • toField x := by
   change toField ((n : FastField modulus) * x) = n • toField x
-  rw [toField_mul, toField_natCast]
-  rw [nsmul_eq_mul]
+  rw [toField_mul, toField_natCast, nsmul_eq_mul]
 
 /-- Integer scalar multiplication is preserved by `toField`. -/
 @[simp]
 theorem toField_zsmul (n : Int) (x : FastField modulus) : toField (n • x) = n • toField x := by
   change toField ((n : FastField modulus) * x) = n • toField x
-  rw [toField_mul, toField_intCast]
-  rw [zsmul_eq_mul]
+  rw [toField_mul, toField_intCast, zsmul_eq_mul]
 
 /-- Natural powers through the `Pow` instance are preserved by `toField`. -/
 @[simp]
@@ -610,33 +605,11 @@ theorem ringEquiv_symm_apply {x : ZMod modulus} :
     (ringEquiv modulus).symm x = ofField x := rfl
 
 /-- Field instance transferred from the canonical field through `toField`. -/
-instance (priority := low) instField : _root_.Field (FastField modulus) :=
-  toField_injective.field toField
-    toField_zero
-    toField_one
-    toField_add
-    toField_mul
-    toField_neg
-    toField_sub
-    toField_inv
-    toField_div
-    toField_nsmul
-    toField_zsmul
-    toField_nnqsmul
-    toField_qsmul
-    toField_npow
-    toField_zpow
-    toField_natCast
-    toField_intCast
-    toField_nnratCast
-    toField_ratCast
-
-/-- Commutative-ring instance inherited from the transferred field structure. -/
-instance (priority := low) instCommRing : CommRing (FastField modulus) := by
-  infer_instance
+instance instField : _root_.Field (FastField modulus) := by
+  apply toField_injective.field toField <;> simp
 
 /-- A fast 32-bit-word field is non-binary. -/
-instance (priority := low) instNonBinaryField : NonBinaryField (FastField modulus) where
+instance instNonBinaryField : NonBinaryField (FastField modulus) where
   char_neq_2 := by
     intro h
     apply P.two_ne_zero
