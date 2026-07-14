@@ -99,7 +99,7 @@ def koalaBearBestDomainForLength? (requiredLen : Nat) :
 
 /-- Ring equivalence from fast KoalaBear elements to the canonical `ZMod` model. -/
 noncomputable def koalaBearFastRingEquiv : KoalaBear.Fast.Field ≃+* KoalaBear.Field where
-  toFun := KoalaBear.Fast.toField
+  toFun := (·.toField)
   invFun := KoalaBear.Fast.ofField
   left_inv := KoalaBear.Fast.ofField_toField
   right_inv := KoalaBear.Fast.toField_ofField
@@ -127,9 +127,10 @@ theorem koalaBearFast_twoPowNatCast_ne_zero
   exact CPolynomial.NTT.KoalaBear.twoPowNatCast_ne_zero logN hlogN (by
     calc
       (((2 ^ logN : Nat) : KoalaBear.Field)) =
-          KoalaBear.Fast.toField (((2 ^ logN : Nat) : KoalaBear.Fast.Field)) := by
+          (((2 ^ logN : Nat) : KoalaBear.Fast.Field)).toField := by
         rw [KoalaBear.Fast.toField_natCast]
-      _ = KoalaBear.Fast.toField 0 := congrArg KoalaBear.Fast.toField hzero
+      _ = (0 : KoalaBear.Fast.Field).toField :=
+        congrArg (fun x : KoalaBear.Fast.Field ↦ x.toField) hzero
       _ = 0 := KoalaBear.Fast.toField_zero)
 
 /-- Fast KoalaBear radix-2 NTT domain for a supported two-adic size. -/
