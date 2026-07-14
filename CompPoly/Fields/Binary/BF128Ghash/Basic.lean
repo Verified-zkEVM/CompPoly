@@ -184,15 +184,19 @@ def ofGF2 : ZMod 2 →+* BF128Ghash := algebraMap (ZMod 2) BF128Ghash
 /-- The generator of the field (root of the GHASH polynomial). -/
 def root : BF128Ghash := AdjoinRoot.root ghashPoly
 
+set_option maxRecDepth 100000 in
 /-- The root satisfies the GHASH polynomial equation:
     root^128 + root^7 + root^2 + root + 1 = 0 -/
 theorem root_satisfies_poly : root^128 + root^7 + root^2 + root + 1 = 0 := by
-  unfold root ghashPoly
-  have h := AdjoinRoot.eval₂_root ghashPoly
-  unfold ghashPoly at h
-  simp only [eval₂_add, eval₂_X, eval₂_one] at h
-  erw [eval₂_pow, eval₂_X, eval₂_pow, eval₂_X, eval₂_pow, eval₂_X] at h
-  exact h
+  calc
+    _ = (AdjoinRoot.mk ghashPoly X)^128 + (AdjoinRoot.mk ghashPoly X)^7 +
+        (AdjoinRoot.mk ghashPoly X)^2 + AdjoinRoot.mk ghashPoly X + 1 := by
+      simp only [root, AdjoinRoot.mk_X]
+    _ = AdjoinRoot.mk ghashPoly (X^128 + X^7 + X^2 + X + 1) := by
+      rw [map_add, map_add, map_add, map_add, map_pow, map_pow, map_pow, map_one]
+    _ = 0 := by
+      change AdjoinRoot.mk ghashPoly ghashPoly = 0
+      exact AdjoinRoot.mk_self
 
 /-- BF128Ghash is a finite type. -/
 instance : Fintype BF128Ghash := by
@@ -204,6 +208,7 @@ instance : Fintype BF128Ghash := by
     exact Finite.of_equiv (Fin pb.dim →₀ ZMod 2) (pb.basis.repr.toEquiv.symm)
   exact Fintype.ofFinite BF128Ghash
 
+set_option maxRecDepth 100000 in
 /-- The cardinality of BF128Ghash is 2^128. -/
 theorem BF128Ghash_card : Fintype.card BF128Ghash = 2^128 := by
   -- Use the fact that AdjoinRoot of an irreducible polynomial of degree d

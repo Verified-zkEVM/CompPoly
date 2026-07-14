@@ -407,6 +407,7 @@ private lemma raw_toPoly_degree_lt_of_size_lt (p q : Raw R)
   have hp : p.size ≤ m := by omega
   simp [Raw.coeff, hp]
 
+set_option maxHeartbeats 10000000 in
 private theorem raw_divModByMonicAux_go_spec (q : Raw R)
     (hqtrim : q.trim = q) (hqmonic : q.leadingCoeff = 1) (hqpos : 0 < q.size)
     (hqdegree : q.toPoly.degree = ((q.size - 1 : Nat) : WithBot Nat)) :
@@ -435,7 +436,7 @@ private theorem raw_divModByMonicAux_go_spec (q : Raw R)
         · rw [Raw.toPoly_zero]
           ring
         · exact raw_toPoly_degree_lt_of_size_lt p q hsize hqdegree
-      · simp [hsize]
+      · simp only [hsize, ↓reduceIte]
         let step := (p - Raw.C p.leadingCoeff * (q * Raw.X ^ (p.size - q.size))).trim
         have hstep_size : step.size < p.size := by
           exact div_step_size_lt p q hptrim hqtrim hqmonic hsize hqpos
@@ -444,20 +445,26 @@ private theorem raw_divModByMonicAux_go_spec (q : Raw R)
         have hstep_fuel : step.size ≤ fuel := by omega
         have ihstep := ih step hstep_trim hstep_fuel
         rcases ihstep with ⟨hrel, hdeg⟩
+        have hrel' := hrel
+        dsimp only [step] at hrel'
+        change
+          (Raw.divModByMonicAux.go fuel
+              (p - Raw.C p.leadingCoeff * (q * Raw.pow Raw.X (p.size - q.size))).trim q).2.toPoly +
+            q.toPoly *
+              (Raw.divModByMonicAux.go fuel
+                (p - Raw.C p.leadingCoeff * (q * Raw.pow Raw.X (p.size - q.size))).trim q).1.toPoly =
+            (p - Raw.C p.leadingCoeff * (q * Raw.pow Raw.X (p.size - q.size))).trim.toPoly at hrel'
         constructor
-        · change
-            (Raw.divModByMonicAux.go fuel step q).2.toPoly +
-                q.toPoly *
-                  ((Raw.divModByMonicAux.go fuel step q).1 +
-                    Raw.C p.leadingCoeff * Raw.X ^ (p.size - q.size)).toPoly =
-              p.toPoly
-          rw [Raw.toPoly_add, _root_.mul_add, ← _root_.add_assoc, hrel]
-          dsimp only [step]
+        · rw [Raw.toPoly_add, _root_.mul_add, ← _root_.add_assoc, hrel']
           rw [Raw.toPoly_trim, Raw.toPoly_sub, Raw.toPoly_mul, Raw.toPoly_C,
             Raw.toPoly_mul, Raw.toPoly_pow, Raw.toPoly_X]
           rw [Raw.toPoly_mul, Raw.toPoly_C, Raw.toPoly_pow, Raw.toPoly_X]
           ring
-        · exact hdeg
+        · change
+            (Raw.divModByMonicAux.go fuel
+              (p - Raw.C p.leadingCoeff * (q * Raw.pow Raw.X (p.size - q.size))).trim q).2.toPoly.degree <
+              q.toPoly.degree at hdeg
+          exact hdeg
 
 private theorem raw_divModByMonicAux_toPoly_eq (p q : CPolynomial R)
     (hq_monic : q.toPoly.Monic) :

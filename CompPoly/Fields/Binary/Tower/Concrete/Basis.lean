@@ -235,7 +235,7 @@ theorem minPoly_of_powerBasisSucc_generator (k : ℕ) :
         let r := q.coeff 0
         have hc : c = q.leadingCoeff := by
           rw [Polynomial.leadingCoeff]
-          exact congrArg q.toFinsupp.2 (id (Eq.symm hqNatDeg))
+          exact congrArg q.toFinsupp.coeff (id (Eq.symm hqNatDeg))
         have hc_ne_zero : c ≠ 0 := by
           rw [hc]
           by_contra h_c_eq_zero

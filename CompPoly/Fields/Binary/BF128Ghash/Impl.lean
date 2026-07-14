@@ -420,10 +420,10 @@ instance : AddCommGroup ConcreteBF128Ghash where
   nsmul := fun n x => if n % 2 = 0 then 0 else x
   zsmul := fun n x => if n % 2 = 0 then 0 else x
   nsmul_zero := fun x => by
-    simp only [Nat.zero_mod, ↓reduceIte, ofNat_eq_ofNat]
+    rfl
   nsmul_succ := nsmul_succ
   zsmul_zero' := fun x => by
-    simp only [EuclideanDomain.zero_mod, ↓reduceIte, ofNat_eq_ofNat]
+    rfl
   zsmul_succ' := zsmul_succ
   zsmul_neg' := zsmul_neg
 
@@ -605,7 +605,10 @@ lemma intCast_negSucc (n : ℕ) : intCast (Int.negSucc n) = -(↑(n + 1) : Concr
       simp only [natCast_eq, natCast, h_mod]; rfl
     rw [h_nat]; rfl
 
-instance : Ring ConcreteBF128Ghash where
+instance instSemigroupConcreteBF128Ghash : Semigroup ConcreteBF128Ghash where
+  mul_assoc := mul_assoc
+
+instance instRingConcreteBF128Ghash : Ring ConcreteBF128Ghash where
   mul_assoc := mul_assoc
   one_mul := one_mul
   mul_one := mul_one
@@ -613,6 +616,9 @@ instance : Ring ConcreteBF128Ghash where
   right_distrib := right_distrib
   zero_mul := zero_mul
   mul_zero := mul_zero
+  npow := npowRecAuto
+  npow_zero := by intro x; rfl
+  npow_succ := by intro n x; rfl
   natCast := natCast
   natCast_zero := natCast_zero
   natCast_succ := natCast_succ
@@ -825,8 +831,10 @@ instance instHDivConcreteBF128Ghash : HDiv (ConcreteBF128Ghash) (ConcreteBF128Gh
 
 lemma div_eq_mul_inv (a b : ConcreteBF128Ghash) : a / b = a * b⁻¹ := by rfl
 
-instance : DivisionRing ConcreteBF128Ghash where
-  toRing := inferInstance
+set_option maxRecDepth 100000 in
+set_option maxHeartbeats 10000000 in
+instance instDivisionRingConcreteBF128Ghash : DivisionRing ConcreteBF128Ghash where
+  toRing := instRingConcreteBF128Ghash
   inv := Inv.inv
   exists_pair_ne := exists_pair_ne
   mul_inv_cancel := mul_inv_cancel
@@ -841,7 +849,7 @@ lemma mul_comm (a b : ConcreteBF128Ghash) : a * b = b * a := by
   exact _root_.mul_comm (toQuot a) (toQuot b)
 
 instance instFieldConcreteBF128Ghash : Field ConcreteBF128Ghash where
-  toDivisionRing := inferInstance
+  toDivisionRing := instDivisionRingConcreteBF128Ghash
   mul_comm := mul_comm
 
 end DivisionRing_Field_Instances
