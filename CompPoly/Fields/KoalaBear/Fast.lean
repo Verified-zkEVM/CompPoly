@@ -221,4 +221,41 @@ theorem toField_nnqsmul (q : ℚ≥0) (x : Field) : toField (q • x) = q • to
 theorem toField_qsmul (q : ℚ) (x : Field) : toField (q • x) = q • toField x :=
   Montgomery.Native32.toField_qsmul q x
 
+/-! ## Two-adic roots -/
+
+/-- Precomputed KoalaBear two-adic generators in Montgomery representation. -/
+def twoAdicGenerators : List Field :=
+  [
+    ⟨0x01FFFFFE, by decide⟩,
+    ⟨0x7D000003, by decide⟩,
+    ⟨0x7B020407, by decide⟩,
+    ⟨0x60F5EF4D, by decide⟩,
+    ⟨0x6D249C01, by decide⟩,
+    ⟨0x788529F3, by decide⟩,
+    ⟨0x07F7373E, by decide⟩,
+    ⟨0x6FE91D3C, by decide⟩,
+    ⟨0x3FD49211, by decide⟩,
+    ⟨0x1E056392, by decide⟩,
+    ⟨0x6D969BAB, by decide⟩,
+    ⟨0x439600CC, by decide⟩,
+    ⟨0x150276FC, by decide⟩,
+    ⟨0x68CACC36, by decide⟩,
+    ⟨0x42336C40, by decide⟩,
+    ⟨0x019B1972, by decide⟩,
+    ⟨0x34E52F6D, by decide⟩,
+    ⟨0x1C2EB437, by decide⟩,
+    ⟨0x7CB65829, by decide⟩,
+    ⟨0x29306FAE, by decide⟩,
+    ⟨0x351C7FA7, by decide⟩,
+    ⟨0x6E3E9A00, by decide⟩,
+    ⟨0x47C2BDF7, by decide⟩,
+    ⟨0x0C895820, by decide⟩,
+    ⟨0x13C85195, by decide⟩
+  ]
+
+/-- The Montgomery root table represents the canonical KoalaBear roots. -/
+theorem twoAdicGenerators_eq_map :
+    twoAdicGenerators = KoalaBear.twoAdicGenerators.map ofField := by
+  decide
+
 end KoalaBear.Fast
