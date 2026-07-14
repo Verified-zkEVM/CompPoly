@@ -452,7 +452,8 @@ private theorem raw_divModByMonicAux_go_spec (q : Raw R)
               (p - Raw.C p.leadingCoeff * (q * Raw.pow Raw.X (p.size - q.size))).trim q).2.toPoly +
             q.toPoly *
               (Raw.divModByMonicAux.go fuel
-                (p - Raw.C p.leadingCoeff * (q * Raw.pow Raw.X (p.size - q.size))).trim q).1.toPoly =
+                (p - Raw.C p.leadingCoeff *
+                (q * Raw.pow Raw.X (p.size - q.size))).trim q).1.toPoly =
             (p - Raw.C p.leadingCoeff * (q * Raw.pow Raw.X (p.size - q.size))).trim.toPoly at hrel'
         constructor
         · rw [Raw.toPoly_add, _root_.mul_add, ← _root_.add_assoc, hrel']
@@ -462,7 +463,8 @@ private theorem raw_divModByMonicAux_go_spec (q : Raw R)
           ring
         · change
             (Raw.divModByMonicAux.go fuel
-              (p - Raw.C p.leadingCoeff * (q * Raw.pow Raw.X (p.size - q.size))).trim q).2.toPoly.degree <
+              (p - Raw.C p.leadingCoeff *
+              (q * Raw.pow Raw.X (p.size - q.size))).trim q).2.toPoly.degree <
               q.toPoly.degree at hdeg
           exact hdeg
 
