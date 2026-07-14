@@ -28,7 +28,7 @@ namespace KoalaBear.Fast
 #guard (-(0 : Field)).toNat = 0
 #guard (-(1 : Field)).toNat = KoalaBear.fieldSize - 1
 #guard ((KoalaBear.fieldSize - 1 : Field) * (KoalaBear.fieldSize - 1 : Field)).toNat = 1
-#guard (square (12345 : Field)).toNat = 152399025
+#guard ((12345 : Field) * 12345).toNat = 152399025
 #guard ((37 : Field) ^ 0).toNat = 1
 #guard ((37 : Field) ^ 1).toNat = 37
 #guard ((123456789 : Field) ^ 17).toField = ((123456789 : KoalaBear.Field) ^ 17)

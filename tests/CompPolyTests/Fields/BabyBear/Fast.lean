@@ -28,7 +28,7 @@ namespace BabyBear.Fast
 #guard (-(0 : Field)).toNat = 0
 #guard (-(1 : Field)).toNat = BabyBear.fieldSize - 1
 #guard ((BabyBear.fieldSize - 1 : Field) * (BabyBear.fieldSize - 1 : Field)).toNat = 1
-#guard (square (12345 : Field)).toNat = 152399025
+#guard ((12345 : Field) * 12345).toNat = 152399025
 #guard ((37 : Field) ^ 0).toNat = 1
 #guard ((37 : Field) ^ 1).toNat = 37
 #guard ((123456789 : Field) ^ 17).toField = ((123456789 : BabyBear.Field) ^ 17)

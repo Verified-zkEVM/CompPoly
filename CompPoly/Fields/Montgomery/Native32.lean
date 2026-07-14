@@ -33,8 +33,8 @@ def conditionalSubtract (p32 : UInt32) (u : UInt32) : UInt32 :=
 variable {modulus : ℕ} {p32 negInv u : UInt32} {p64 x : UInt64}
 
 theorem reduceRaw_eq_conditionalSubtract :
-  reduceRaw p32 p64 negInv x =
-    conditionalSubtract p32 (reduceQuotient negInv p64 x) := rfl
+    reduceRaw p32 p64 negInv x =
+      conditionalSubtract p32 (reduceQuotient negInv p64 x) := rfl
 
 /-- The native quotient agrees with the `Nat`-level Montgomery quotient. -/
 theorem reduceQuotient_toNat (hp_pos : 0 < p64.toNat) (hbound : p64.toNat < 2 ^ 31)
