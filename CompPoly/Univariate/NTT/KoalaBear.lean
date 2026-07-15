@@ -45,7 +45,8 @@ def fastDomainOfLogN (logN : Nat) (hlogN : logN ≤ KoalaBear.twoAdicity) :
   primitive := by
     have h := (KoalaBear.isPrimitiveRoot_twoAdicGenerator (bitsOfLogN logN hlogN)).map_of_injective
       KoalaBear.Fast.ringEquiv.symm.injective
-    simpa [KoalaBear.Fast.twoAdicGenerators_eq_map] using h
+    simpa [KoalaBear.Fast.twoAdicGenerators_eq_map, bitsOfLogN, KoalaBear.Fast.ringEquiv,
+      KoalaBear.Fast.ofField] using h
 
 /-- Fast KoalaBear NTT domain lookup for dynamic multiplication contexts. -/
 def fastBestDomainForLength? (requiredLen : Nat) :

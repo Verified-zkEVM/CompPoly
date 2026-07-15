@@ -84,8 +84,9 @@ theorem finSuccEquivNth_coeff_coeff (m : Fin n →₀ ℕ) (f : MvPolynomial (Fi
       ← map_prod, ← RingHom.map_pow]
     rw [← mul_boole, mul_comm (Polynomial.X ^ u p), Polynomial.coeff_C_mul_X_pow]; congr 1
     obtain rfl | hjmi := eq_or_ne u (m.insertNth p i)
-    · simpa only [insertNth_apply_same, if_pos rfl, insertNth_apply_succAbove, monomial_eq, C_1,
-        one_mul, prod_pow] using coeff_monomial m m (1 : R)
+    · simpa only [insertNth_apply_same, if_pos rfl, if_true,
+        insertNth_apply_succAbove, monomial_eq, C_1, one_mul, prod_pow] using
+        coeff_monomial m m (1 : R)
     · simp only [hjmi, if_false]
       obtain hij | rfl := ne_or_eq i (u p)
       · simp only [hij, if_false, coeff_zero]
@@ -154,7 +155,7 @@ theorem support_finSuccEquivNth (f : MvPolynomial (Fin (n + 1)) R) :
   · rintro ⟨m, hm⟩
     refine ⟨m.insertNth p i, ?_, insertNth_apply_same _ _ _⟩
     rw [← support_coeff_finSuccEquivNth]
-    simpa using hm
+    simpa [mem_support_iff, coeff] using hm
   · rintro ⟨m, h, rfl⟩
     refine ⟨m.removeNth p, ?_⟩
     rwa [← coeff, zero_apply, ← mem_support_iff, support_coeff_finSuccEquivNth,

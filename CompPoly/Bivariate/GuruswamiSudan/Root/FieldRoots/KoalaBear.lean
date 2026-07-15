@@ -70,7 +70,11 @@ private theorem koalaBearSmoothRootProduct_valid
     koalaBearSmoothCyclicRootContext.validInput
       (CPolynomial.Roots.FiniteField.finiteFieldRootProductWith M D
         koalaBearFiniteFieldContext p) := by
-  simpa [koalaBearSmoothCyclicRootContext, koalaBearFiniteFieldContext] using
+  change CPolynomial.Roots.FiniteField.smoothSplitterInput
+    KoalaBear.fieldSize KoalaBear.primitiveRoot KoalaBear.smoothRootSchedule
+      (CPolynomial.Roots.FiniteField.finiteFieldRootProductWith M D
+        koalaBearFiniteFieldContext p)
+  simpa [koalaBearFiniteFieldContext] using
     (CPolynomial.Roots.FiniteField.finiteFieldRootProductWith_smoothSplitterInput
       M D koalaBearFiniteFieldContext KoalaBear.primitiveRoot
       KoalaBear.smoothRootSchedule hp)
@@ -188,7 +192,11 @@ private theorem fastKoalaBearSmoothRootProduct_valid
     fastKoalaBearSmoothCyclicRootContext.validInput
       (CPolynomial.Roots.FiniteField.finiteFieldRootProductWith M D
         fastKoalaBearFiniteFieldContext p) := by
-  simpa [fastKoalaBearSmoothCyclicRootContext, fastKoalaBearFiniteFieldContext] using
+  change CPolynomial.Roots.FiniteField.smoothSplitterInput
+    KoalaBear.fieldSize fastKoalaBearPrimitiveRoot KoalaBear.smoothRootSchedule
+      (CPolynomial.Roots.FiniteField.finiteFieldRootProductWith M D
+        fastKoalaBearFiniteFieldContext p)
+  simpa [fastKoalaBearFiniteFieldContext] using
     (CPolynomial.Roots.FiniteField.finiteFieldRootProductWith_smoothSplitterInput
       M D fastKoalaBearFiniteFieldContext fastKoalaBearPrimitiveRoot
       KoalaBear.smoothRootSchedule hp)

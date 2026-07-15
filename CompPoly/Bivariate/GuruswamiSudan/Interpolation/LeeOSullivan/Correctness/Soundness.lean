@@ -23,7 +23,7 @@ namespace LeeOSullivan
 
 open PolynomialMatrix
 
-variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
 
 /-- Soundness for the executable Lee-O'Sullivan interpolation operation. -/
 theorem leeOSullivanInterpolate_sound

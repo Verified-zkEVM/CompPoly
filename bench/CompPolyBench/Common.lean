@@ -747,6 +747,8 @@ def implementationMethodLabels : List (String × String) := [
   ("Dense linear", "Dense linear"),
   ("Interpolation system construction", "System construction"),
   ("Homogeneous interpolation solve", "Dense solve"),
+  ("Homogeneous interpolation solve, copying", "Dense solve (copying)"),
+  ("Homogeneous interpolation solve, in-place", "Dense solve (in-place)"),
   ("Roth-Ruckenstein root finding with nonlinear field-root equations",
     "Roth-Ruckenstein"),
   ("Roth-Ruckenstein root finding with NTTFast field-root equations",

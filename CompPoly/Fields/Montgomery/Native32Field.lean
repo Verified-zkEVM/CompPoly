@@ -313,7 +313,11 @@ theorem toNat_lt_modulus {x : FastField modulus} : toNat x < modulus := by
 private theorem toField_eq_val_toNat_cast_mul_inv {x : FastField modulus} :
     toField x =
       (x.val.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ := by
-  convert reduce_val_toNat_cast ?_ using 1
+  have hb : (x.val.toUInt64).toNat < modulus * 2 ^ 32 := by
+    rw [UInt32.toNat_toUInt64]; nlinarith [x.property, P.modulus_pos]
+  rw [show toField x
+        = (x.val.toUInt64.toNat : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ from
+      reduce_val_toNat_cast (P := P) (x := x.val.toUInt64) hb, UInt32.toNat_toUInt64]
 
 private theorem val_toNat_cast_eq_toField_mul {x : FastField modulus} :
     (x.val.toNat : ZMod modulus) =
@@ -324,7 +328,15 @@ private theorem val_toNat_cast_eq_toField_mul {x : FastField modulus} :
 private theorem ofCanonicalNat_val_toNat_cast {n : ℕ} (h : n < modulus) :
     ((ofCanonicalNat n h).val.toNat : ZMod modulus) =
       (n : ZMod modulus) * ((2 ^ 32 : ℕ) : ZMod modulus) := by
-  convert reduce_val_toNat_cast ?_ using 1
+  have hb : (UInt64.ofNat n * P.r2ModModulus).toNat < modulus * 2 ^ 32 := by
+    simp only [UInt64.toNat_mul, UInt64.toNat_ofNat', P.r2ModModulus_toNat, Nat.mod_mul_mod]
+    apply Nat.mod_lt_of_lt
+    grw [Nat.mod_lt _ P.modulus_pos]
+    apply mul_lt_mul <;> simp [h, le_of_lt]
+  rw [show ((ofCanonicalNat n h).val.toNat : ZMod modulus)
+        = ((UInt64.ofNat n * P.r2ModModulus).toNat : ZMod modulus)
+            * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ from
+      reduce_val_toNat_cast (P := P) (x := UInt64.ofNat n * P.r2ModModulus) hb]
   simp only [Nat.cast_pow, Nat.cast_ofNat, UInt64.toNat_mul, UInt64.toNat_ofNat',
     P.r2ModModulus_toNat, Nat.mod_mul_mod]
   have hprod : n * ((2 ^ 32) ^ 2 % modulus) < 2 ^ 64 := by
@@ -444,7 +456,16 @@ private theorem mul_val_toNat_cast (x y : FastField modulus) :
   ((mul x y).val.toNat : ZMod modulus) =
     (x.val.toNat : ZMod modulus) * (y.val.toNat : ZMod modulus) *
       ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ := by
-  convert reduce_val_toNat_cast ?_ using 1
+  have hb : (x.val.toUInt64 * y.val.toUInt64).toNat < modulus * 2 ^ 32 := by
+    simp only [UInt64.toNat_mul, UInt32.toNat_toUInt64]
+    have hprod : x.val.toNat * y.val.toNat < 2 ^ 64 := by
+      nlinarith [x.property, y.property, P.modulus_sq_lt_two_pow_64]
+    rw [Nat.mod_eq_of_lt hprod]
+    nlinarith [x.property, y.property, P.modulus_lt_two_pow_32, P.modulus_pos]
+  rw [show ((mul x y).val.toNat : ZMod modulus)
+        = ((x.val.toUInt64 * y.val.toUInt64).toNat : ZMod modulus)
+            * ((2 ^ 32 : ℕ) : ZMod modulus)⁻¹ from
+      reduce_val_toNat_cast (P := P) (x := x.val.toUInt64 * y.val.toUInt64) hb]
   simp only [UInt64.toNat_mul, UInt32.toNat_toUInt64]
   have hprod : x.val.toNat * y.val.toNat < 2 ^ 64 := by
     nlinarith [x.property, y.property, P.modulus_sq_lt_two_pow_64]

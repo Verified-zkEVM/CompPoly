@@ -21,7 +21,7 @@ namespace LeeOSullivan
 
 open PolynomialMatrix
 
-variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
 
 theorem leeOSullivanPositiveInterpolate_complete_of_row
     (V : CPolynomial.VanishingPolynomialContext F)

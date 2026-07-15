@@ -229,7 +229,8 @@ lemma bind₁_eq_aeval {n m : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulB
     (f : Fin n → CMvPolynomial m R) (c : R) :
     bind₁ f (CMvPolynomial.C (n := n) c) = CMvPolynomial.C (n := m) c := by
   rw [bind₁_eq_aeval]
-  simpa using (aeval_C (n := n) (R := R) (σ := CMvPolynomial m R) f c)
+  simpa [show (algebraMap R (CMvPolynomial m R)) c = CMvPolynomial.C (n := m) c from rfl]
+    using (aeval_C (n := n) (R := R) (σ := CMvPolynomial m R) f c)
 
 @[simp] lemma bind₁_add {n m : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
     (f : Fin n → CMvPolynomial m R) (p q : CMvPolynomial n R) :
@@ -354,7 +355,7 @@ lemma fromCMvPolynomial_X {k : ℕ} {R : Type*} [CommSemiring R] [BEq R] [Lawful
     ext r m
     rw [RingHom.comp_apply]
     rw [show (algebraMap R (CMvPolynomial n R)) r = CMvPolynomial.C (n := n) r from rfl]
-    simpa using congrArg (fun q => MvPolynomial.coeff m q)
+    simpa [CPoly.polyRingEquiv, CPoly.polyEquiv] using congrArg (fun q => MvPolynomial.coeff m q)
       (CMvPolynomial.fromCMvPolynomial_C (n := n) (R := R) r)
   have hcomp' :
       ((CPoly.polyRingEquiv (n := n) (R := R) : CMvPolynomial n R →+* MvPolynomial (Fin n) R).comp

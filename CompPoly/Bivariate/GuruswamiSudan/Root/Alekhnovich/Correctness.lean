@@ -84,14 +84,14 @@ private theorem cpoly_mul_coeff_congr_left_of_coeff_eq_le {F : Type*}
   rw [hcoeff i hile]
 
 private theorem cpoly_mulPowCoeff_zero_left {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     (P : CPolynomial F) (y n : Nat) :
     CPolynomial.mulPowCoeff (0 : CPolynomial F) P y n = 0 := by
   rw [cpoly_mulPowCoeff_eq_coeff_mul_pow, CPolynomial.zero_mul,
     CPolynomial.coeff_zero]
 
 private theorem cbivar_coeffY_eq_zero_of_y_size_le {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     (Q : CBivariate F) {y : Nat} (hy : Q.val.size ≤ y) :
     Q.val.coeff y = 0 := by
   rw [CPolynomial.eq_iff_coeff]
@@ -188,7 +188,7 @@ private theorem array_foldl_forall_of_forall_step_with_input {α β : Type*}
             exact hdata z (by simp [hz])
 
 private theorem composeYCoeff_eq_fold_range_of_le {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     (Q : CBivariate F) (p : CPolynomial F) (n : Nat) {M : Nat}
     (hM : Q.val.size ≤ M) :
     CBivariate.composeYCoeff Q p n =
@@ -211,7 +211,7 @@ private theorem composeYCoeff_eq_fold_range_of_le {F : Type*}
     cpoly_mulPowCoeff_zero_left]
 
 private theorem composeY_coeff_congr_of_coeff_eq_le {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     {Q R : CBivariate F} {p : CPolynomial F} {n : Nat}
     (hcoeff : ∀ i j, i ≤ n → CBivariate.coeff Q i j = CBivariate.coeff R i j) :
     (CBivariate.composeY Q p).coeff n = (CBivariate.composeY R p).coeff n := by
@@ -249,7 +249,7 @@ private theorem cbivar_coeff_truncateX_of_lt {F : Type*}
   simp [hi]
 
 private theorem cbivar_coeff_monomial_truncate_of_lt {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (r : Nat) (P : CPolynomial F) {N i j : Nat} (hi : i < N) :
     CBivariate.coeff (CPolynomial.monomial r (CPolynomial.truncate P N) : CBivariate F) i j =
       CBivariate.coeff (CPolynomial.monomial r P : CBivariate F) i j := by
@@ -265,7 +265,7 @@ private theorem cbivar_coeff_monomial_truncate_of_lt {F : Type*}
   · simp [hj]
 
 private theorem substituteYPolynomialPlusXPowerYTruncated_coeff_eq_of_lt {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (Q : CBivariate F) (f : CPolynomial F) (t N : Nat) {i j : Nat} (hi : i < N) :
     CBivariate.coeff (substituteYPolynomialPlusXPowerYTruncated Q f t N) i j =
       CBivariate.coeff (substituteYPolynomialPlusXPowerY Q f t) i j := by
@@ -358,7 +358,7 @@ private theorem substituteYPolynomialPlusXPowerYTruncated_coeff_eq_of_lt {F : Ty
   exact houter (List.range' 0 Q.val.size) 0 0 hzero i j hi
 
 private theorem cpoly_coeff_mul_X_pow {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     (q : CPolynomial F) (n x : Nat) :
     (q * CPolynomial.X ^ n).coeff (x + n) = q.coeff x := by
   rw [CPolynomial.coeff_toPoly]
@@ -368,7 +368,7 @@ private theorem cpoly_coeff_mul_X_pow {F : Type*}
   rw [← CPolynomial.coeff_toPoly]
 
 private theorem cpoly_coeff_mul_X_pow_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     (q : CPolynomial F) {n : Nat} (hn : 0 < n) :
     (q * CPolynomial.X ^ n).coeff 0 = 0 := by
   rw [CPolynomial.coeff_toPoly]
@@ -378,14 +378,14 @@ private theorem cpoly_coeff_mul_X_pow_zero {F : Type*}
   simp [hne]
 
 private theorem cpoly_C_one {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] :
+    [Field F] [BEq F] [LawfulBEq F] :
     CPolynomial.C (1 : F) = 1 := by
   apply CPolynomial.ringEquiv.injective
   change (CPolynomial.C (1 : F)).toPoly = (1 : CPolynomial F).toPoly
   rw [CPolynomial.C_toPoly, CPolynomial.toPoly_one, Polynomial.C_1]
 
 private theorem shiftedSubstitutionCoeffTerm_top_coeff {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     (coeffY f : CPolynomial F) (t y x : Nat) :
     (shiftedSubstitutionCoeffTerm coeffY f t y y).coeff (x + t * y) =
       coeffY.coeff x := by
@@ -396,7 +396,7 @@ private theorem shiftedSubstitutionCoeffTerm_top_coeff {F : Type*}
   simpa [mul_assoc] using cpoly_coeff_mul_X_pow coeffY (t * y) x
 
 private theorem shiftedSubstitutionCoeffTerm_coeff_zero_of_r_pos {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     (coeffY f : CPolynomial F) (t y r : Nat)
     (ht : 0 < t) (hr : 0 < r) :
     (shiftedSubstitutionCoeffTerm coeffY f t y r).coeff 0 = 0 := by
@@ -407,7 +407,7 @@ private theorem shiftedSubstitutionCoeffTerm_coeff_zero_of_r_pos {F : Type*}
       (coeffY * CPolynomial.C (Nat.choose y r : F) * f ^ (y - r)) hpow
 
 private theorem shiftedSubstitution_inner_coeff_target {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (coeffY f : CPolynomial F) (t y x : Nat) (out : CBivariate F) :
     CBivariate.coeff
         ((List.range (y + 1)).foldl
@@ -470,7 +470,7 @@ private theorem shiftedSubstitution_inner_coeff_target {F : Type*}
   simp [hin]
 
 private theorem shiftedSubstitution_inner_coeff_zero_of_y_lt {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (coeffY f : CPolynomial F) (t y y₀ i : Nat) (out : CBivariate F)
     (hy₀ : y₀ < y) :
     CBivariate.coeff
@@ -528,7 +528,7 @@ private theorem shiftedSubstitution_inner_coeff_zero_of_y_lt {F : Type*}
   omega
 
 private theorem shiftedSubstitution_inner_coeff_zero_of_x_zero_y_pos {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (coeffY f : CPolynomial F) (t y₀ y : Nat) (out : CBivariate F)
     (ht : 0 < t) (hy : 0 < y) :
     CBivariate.coeff
@@ -579,7 +579,7 @@ private theorem shiftedSubstitution_inner_coeff_zero_of_x_zero_y_pos {F : Type*}
   exact hfold (List.range (y₀ + 1)) out
 
 private theorem substituteYPolynomialPlusXPowerY_coeff_top {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (Q : CBivariate F) (f : CPolynomial F) (t y x : Nat)
     (hQsize : Q.val.size = y + 1) :
     CBivariate.coeff (substituteYPolynomialPlusXPowerY Q f t) (x + t * y) y =
@@ -648,7 +648,7 @@ private theorem substituteYPolynomialPlusXPowerY_coeff_top {F : Type*}
   simp [hin]
 
 private theorem substituteYPolynomialPlusXPowerY_coeff_zero_of_y_pos {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (Q : CBivariate F) (f : CPolynomial F) (t y : Nat)
     (ht : 0 < t) (hy : 0 < y) :
     CBivariate.coeff (substituteYPolynomialPlusXPowerY Q f t) 0 y = 0 := by
@@ -702,7 +702,7 @@ private theorem substituteYPolynomialPlusXPowerY_coeff_zero_of_y_pos {F : Type*}
   exact hfold (List.range' 0 Q.val.size) 0 (CBivariate.coeff_zero 0 y)
 
 private theorem substituteYPolynomialPlusXPowerYTruncated_coeff_zero_of_y_pos {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (Q : CBivariate F) (f : CPolynomial F) {t N y : Nat}
     (hN : 0 < N) (ht : 0 < t) (hy : 0 < y) :
     CBivariate.coeff (substituteYPolynomialPlusXPowerYTruncated Q f t N) 0 y = 0 := by
@@ -710,7 +710,7 @@ private theorem substituteYPolynomialPlusXPowerYTruncated_coeff_zero_of_y_pos {F
   exact substituteYPolynomialPlusXPowerY_coeff_zero_of_y_pos Q f t y ht hy
 
 private theorem substituteYPolynomialPlusXPowerY_ne_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} (f : CPolynomial F) (t : Nat) (hQ : Q ≠ 0) :
     substituteYPolynomialPlusXPowerY Q f t ≠ 0 := by
   intro hzero
@@ -735,7 +735,7 @@ private theorem substituteYPolynomialPlusXPowerY_ne_zero {F : Type*}
   exact hcoeff_ne hzeroCoeff
 
 private theorem shiftPolynomialByXPower_coeff {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     (q : CPolynomial F) (t i : Nat) :
     (shiftPolynomialByXPower q t).coeff i = if t ≤ i then q.coeff (i - t) else 0 := by
   unfold shiftPolynomialByXPower
@@ -750,7 +750,7 @@ private theorem shiftPolynomialByXPower_coeff {F : Type*}
     simp [hti]
 
 private theorem polynomialPrefix_add_shift_dropXPower {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     (p : CPolynomial F) (t : Nat) :
     polynomialPrefix p t + shiftPolynomialByXPower (CPolynomial.dropXPower p t) t = p := by
   rw [CPolynomial.eq_iff_coeff]
@@ -771,7 +771,7 @@ private theorem polynomialPrefix_add_shift_dropXPower {F : Type*}
     simp
 
 private theorem rootPrefix_add_shift_dropXPower_eq {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     {p : CPolynomial F} {rootPrefix : RootPrefix F}
     (hmatch : MatchesRootPrefix p rootPrefix) :
     rootPrefix.prefixPoly +
@@ -783,7 +783,7 @@ private theorem rootPrefix_add_shift_dropXPower_eq {F : Type*}
   exact polynomialPrefix_add_shift_dropXPower p rootPrefix.precision
 
 private theorem polynomialPrefix_one {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (p : CPolynomial F) :
     polynomialPrefix p 1 = CPolynomial.C (p.coeff 0) := by
   rw [CPolynomial.eq_iff_coeff]
@@ -815,7 +815,7 @@ private theorem dropXPower_size_le {F : Type*} [Zero F]
         omega
 
 private theorem cpoly_natDegree_dropXPower_add_le_of_ne_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     (p : CPolynomial F) (t : Nat)
     (hdrop : CPolynomial.dropXPower p t ≠ 0) :
     (CPolynomial.dropXPower p t).natDegree + t ≤ p.natDegree := by
@@ -841,7 +841,7 @@ private theorem degreeLt_dropXPower_of_degreeLt_of_le {F : Type*}
   omega
 
 private theorem polynomialPrefix_add_shift_prefix_dropXPower {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     (p : CPolynomial F) (t u : Nat) :
     polynomialPrefix p (t + u) =
       polynomialPrefix p t +
@@ -884,7 +884,7 @@ private theorem polynomialPrefix_add_shift_prefix_dropXPower {F : Type*}
       omega
 
 private theorem MatchesRootPrefix.compose {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     {p : CPolynomial F} {outer suffix : RootPrefix F}
     (houter : MatchesRootPrefix p outer)
     (hsuffix : MatchesRootPrefix (CPolynomial.dropXPower p outer.precision) suffix) :
@@ -896,7 +896,7 @@ private theorem MatchesRootPrefix.compose {F : Type*}
   rw [houter, hsuffix]
 
 private theorem polynomialPrefix_prefix_of_le {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     (p : CPolynomial F) {k t : Nat} (hkt : k ≤ t) :
     polynomialPrefix (polynomialPrefix p t) k = polynomialPrefix p k := by
   rw [CPolynomial.eq_iff_coeff]
@@ -912,7 +912,7 @@ private theorem polynomialPrefix_prefix_of_le {F : Type*}
     rw [cpoly_truncate_coeff p k i, if_neg hik]
 
 private theorem polynomialPrefix_rootPrefix_eq_of_degreeLt {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     {p : CPolynomial F} {rootPrefix : RootPrefix F} {k : Nat}
     (hmatch : MatchesRootPrefix p rootPrefix)
     (hprec : k ≤ rootPrefix.precision)
@@ -924,7 +924,7 @@ private theorem polynomialPrefix_rootPrefix_eq_of_degreeLt {F : Type*}
   exact polynomialPrefix_eq_self_of_degreeLt hdegree
 
 private theorem finishAlekhnovichPrefixWithFuel_complete_of_precision {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {fieldRoots : FieldRootContext F} {Q : CBivariate F} {k fuel : Nat}
     {p : CPolynomial F} {rootPrefix : RootPrefix F}
     (hmatch : MatchesRootPrefix p rootPrefix)
@@ -941,7 +941,7 @@ private theorem finishAlekhnovichPrefixWithFuel_complete_of_precision {F : Type*
 
 /-- Soundness of Alekhnovich root filtering. -/
 theorem alekhnovichRootsYDegreeLt_sound {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {fieldRoots : FieldRootContext F} {Q : CBivariate F} {k : Nat}
     {p : CPolynomial F}
     (h : p ∈ (alekhnovichRootsYDegreeLt fieldRoots Q k).toList) :
@@ -955,7 +955,7 @@ theorem alekhnovichRootsYDegreeLt_sound {F : Type*}
 /-- The exact final filter keeps any true bounded root that the Alekhnovich
 candidate generator has already produced. -/
 theorem alekhnovichRootsYDegreeLt_complete_of_candidate_mem {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {fieldRoots : FieldRootContext F} {Q : CBivariate F} {k : Nat}
     {p : CPolynomial F}
     (hQ : Q ≠ 0)
@@ -973,7 +973,7 @@ theorem alekhnovichRootsYDegreeLt_complete_of_candidate_mem {F : Type*}
 
 /-- Shifted substitution preserves modular roots below `N` before truncation. -/
 theorem RootMod.substituteYPolynomialPlusXPowerY {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} {f g : CPolynomial F} {t N : Nat}
     (hroot : RootMod Q (f + shiftPolynomialByXPower g t) N) :
     RootMod (substituteYPolynomialPlusXPowerY Q f t) g N := by
@@ -984,7 +984,7 @@ theorem RootMod.substituteYPolynomialPlusXPowerY {F : Type*}
 /-- Truncated shifted substitution has the same coefficients below `N` as exact
 shifted substitution, so it preserves modular roots below `N`. -/
 theorem RootMod.substituteYPolynomialPlusXPowerYTruncated {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} {f g : CPolynomial F} {t N : Nat}
     (hroot : RootMod Q (f + shiftPolynomialByXPower g t) N) :
     RootMod (substituteYPolynomialPlusXPowerYTruncated Q f t N) g N := by
@@ -1006,7 +1006,7 @@ theorem RootMod.substituteYPolynomialPlusXPowerYTruncated {F : Type*}
 /-- Stripping a visible `X`-adic valuation transports a modular root of `Q` to
 a shorter modular root of the stripped residual. -/
 theorem RootMod.stripXAdicFactor {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} {p : CPolynomial F} {s N : Nat}
     (horder : CBivariate.xAdicOrder? Q = some s)
     (hroot : RootMod Q p (s + N)) :
@@ -1032,7 +1032,7 @@ theorem RootMod.stripXAdicFactor {F : Type*}
   exact hcoeff.symm.trans hrootCoeff
 
 private theorem RootMod.of_shiftedResidualUpTo {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} {f g : CPolynomial F} {t N : Nat}
     (hroot : RootMod Q (f + shiftPolynomialByXPower g t) N)
     (hval : (shiftedResidualUpTo Q f t N).valuation < N) :
@@ -1056,7 +1056,7 @@ private theorem RootMod.of_shiftedResidualUpTo {F : Type*}
       · simp [T, horder, hs] at hval
 
 private theorem RootMod.of_composeY_eq_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     {Q : CBivariate F} {p : CPolynomial F} {N : Nat}
     (hroot : CBivariate.composeY Q p = 0) :
     RootMod Q p N := by
@@ -1081,7 +1081,7 @@ private theorem normalizeAlekhnovichInput_eq_some {F : Type*}
       · simp [horder, hs] at hnorm
 
 private theorem RootMod.normalizeAlekhnovichInput {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q Qnorm : CBivariate F} {N Nnorm : Nat} {p : CPolynomial F}
     (hnorm : normalizeAlekhnovichInput Q N = some (Qnorm, Nnorm))
     (hroot : RootMod Q p N) :
@@ -1093,7 +1093,7 @@ private theorem RootMod.normalizeAlekhnovichInput {F : Type*}
   simpa [CBivariate.stripXAdicFactor, horder] using hstrip
 
 private theorem stripXAdicFactor_ne_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     {Q : CBivariate F} (hQ : Q ≠ 0) :
     CBivariate.stripXAdicFactor Q ≠ 0 := by
   intro hzero
@@ -1109,7 +1109,7 @@ private theorem stripXAdicFactor_ne_zero {F : Type*}
       exact hcoeff (by simpa using hcoeffStrip)
 
 private theorem initialCoefficientPolynomial_stripXAdicFactor_ne_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} (hQ : Q ≠ 0) :
     initialCoefficientPolynomial (CBivariate.stripXAdicFactor Q) ≠ 0 := by
   intro hzero
@@ -1136,7 +1136,7 @@ private theorem initialCoefficientPolynomial_stripXAdicFactor_ne_zero {F : Type*
       · simpa [CBivariate.stripXAdicFactor, horder] using hyStrip
 
 private theorem initialCoefficientPolynomial_coeff_eq_zero_of_size_le {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (Q : CBivariate F) {j : Nat} (hj : Q.val.size ≤ j) :
     (initialCoefficientPolynomial Q).coeff j = 0 := by
   unfold initialCoefficientPolynomial
@@ -1146,7 +1146,7 @@ private theorem initialCoefficientPolynomial_coeff_eq_zero_of_size_le {F : Type*
   simp [hj]
 
 private theorem initialCoefficientPolynomial_exists_coeff_ne_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F}
     (hinit : initialCoefficientPolynomial Q ≠ 0) :
     ∃ y, y < Q.val.size ∧ CBivariate.coeff Q 0 y ≠ 0 := by
@@ -1168,7 +1168,7 @@ private theorem initialCoefficientPolynomial_exists_coeff_ne_zero {F : Type*}
     exact hcoeff⟩
 
 private theorem initialCoefficientPolynomial_coeff_zero_eq_cbivar_coeff_zero_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (Q : CBivariate F) :
     (initialCoefficientPolynomial Q).coeff 0 = CBivariate.coeff Q 0 0 := by
   by_cases hsize : 0 < Q.val.size
@@ -1179,7 +1179,7 @@ private theorem initialCoefficientPolynomial_coeff_zero_eq_cbivar_coeff_zero_zer
     exact cbivar_coeff_eq_zero_of_y_size_le Q hle
 
 private theorem rootPrefix_coeff_zero_eq_of_matches_pos {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     {p : CPolynomial F} {rootPrefix : RootPrefix F}
     (hmatch : MatchesRootPrefix p rootPrefix)
     (hprec : 0 < rootPrefix.precision) :
@@ -1191,7 +1191,7 @@ private theorem rootPrefix_coeff_zero_eq_of_matches_pos {F : Type*}
   simp [hprec]
 
 private theorem composeY_coeff_zero_eq_of_coeff_zero_eq {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (Q : CBivariate F) {f p : CPolynomial F}
     (hcoeff : f.coeff 0 = p.coeff 0) :
     (CBivariate.composeY Q f).coeff 0 = (CBivariate.composeY Q p).coeff 0 := by
@@ -1201,7 +1201,7 @@ private theorem composeY_coeff_zero_eq_of_coeff_zero_eq {F : Type*}
 
 private theorem substituteYPolynomialPlusXPowerYTruncated_coeff_zero_zero_of_matches_root
     {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} {p : CPolynomial F} {rootPrefix : RootPrefix F} {N : Nat}
     (hN : 0 < N)
     (hmatch : MatchesRootPrefix p rootPrefix)
@@ -1232,7 +1232,7 @@ private theorem substituteYPolynomialPlusXPowerYTruncated_coeff_zero_zero_of_mat
 
 private theorem substituteYPolynomialPlusXPowerYTruncated_coeff_zero_of_matches_root
     {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} {p : CPolynomial F} {rootPrefix : RootPrefix F} {N y : Nat}
     (hN : 0 < N)
     (hmatch : MatchesRootPrefix p rootPrefix)
@@ -1251,7 +1251,7 @@ private theorem substituteYPolynomialPlusXPowerYTruncated_coeff_zero_of_matches_
         Q rootPrefix.prefixPoly hN hprec (Nat.succ_pos y)
 
 private theorem shiftedResidualUpTo_valuation_pos_of_matches_root {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} {p : CPolynomial F} {rootPrefix : RootPrefix F} {N : Nat}
     (hN : 0 < N)
     (hmatch : MatchesRootPrefix p rootPrefix)
@@ -1279,7 +1279,7 @@ private theorem shiftedResidualUpTo_valuation_pos_of_matches_root {F : Type*}
       · simp [T, horder, hs] at hval
 
 private theorem cbivar_xAdicOrder?_eq_zero_of_initial_ne_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F}
     (hinit : initialCoefficientPolynomial Q ≠ 0) :
     CBivariate.xAdicOrder? Q = some 0 := by
@@ -1299,7 +1299,7 @@ private theorem cbivar_xAdicOrder?_eq_zero_of_initial_ne_zero {F : Type*}
       simp
 
 private theorem cbivar_divXPower_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     (Q : CBivariate F) :
     CBivariate.divXPower Q 0 = Q := by
   rw [CBivariate.eq_iff_coeff]
@@ -1308,7 +1308,7 @@ private theorem cbivar_divXPower_zero {F : Type*}
   simp
 
 private theorem alekhnovichRootPrefixesWithFuel_precision_pos_of_initial_ne_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (fieldRoots : FieldRootContext F) :
     ∀ {fuel : Nat} {Q : CBivariate F} {N : Nat} {rootPrefix : RootPrefix F},
       N < fuel →
@@ -1381,7 +1381,7 @@ private theorem alekhnovichRootPrefixesWithFuel_precision_pos_of_initial_ne_zero
           rootPrefix hmemList
 
 private theorem initialCoefficientPolynomial_normalizeAlekhnovichInput_ne_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q Qnorm : CBivariate F} {N Nnorm : Nat}
     (hnorm : normalizeAlekhnovichInput Q N = some (Qnorm, Nnorm)) :
     initialCoefficientPolynomial Qnorm ≠ 0 := by
@@ -1395,7 +1395,7 @@ private theorem initialCoefficientPolynomial_normalizeAlekhnovichInput_ne_zero {
     initialCoefficientPolynomial_stripXAdicFactor_ne_zero hQ
 
 private theorem composeY_stripXAdicFactor_eq_zero_of_composeY {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} {p : CPolynomial F}
     (hQ : Q ≠ 0) (hroot : CBivariate.composeY Q p = 0) :
     CBivariate.composeY Q.stripXAdicFactor p = 0 := by
@@ -1419,7 +1419,7 @@ private theorem composeY_stripXAdicFactor_eq_zero_of_composeY {F : Type*}
       exact (mul_eq_zero.mp hrootPoly).resolve_left hx
 
 private theorem composeY_shiftedResidual_dropXPower_eq_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} {p : CPolynomial F} {rootPrefix : RootPrefix F}
     (hQ : Q ≠ 0)
     (hmatch : MatchesRootPrefix p rootPrefix)
@@ -1439,7 +1439,7 @@ private theorem composeY_shiftedResidual_dropXPower_eq_zero {F : Type*}
 
 /-- Recursive Alekhnovich prefix coverage for modular roots. -/
 theorem alekhnovichRootPrefixesWithFuel_complete {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {fieldRoots : FieldRootContext F} {Q : CBivariate F} {N fuel : Nat}
     {p : CPolynomial F}
     (hfuel : N < fuel)
@@ -1651,7 +1651,7 @@ private theorem cbivar_divXPower_size_le {F : Type*}
       (Q.val.map fun coeff ↦ CPolynomial.dropXPower coeff n))
 
 private theorem cbivar_xAdicOrder?_some_le_of_coeff_ne_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     {Q : CBivariate F} {i y : Nat}
     (hcoeff : CBivariate.coeff Q i y ≠ 0) :
     ∃ order, CBivariate.xAdicOrder? Q = some order ∧ order ≤ i := by
@@ -1670,7 +1670,7 @@ private theorem cbivar_xAdicOrder?_some_le_of_coeff_ne_zero {F : Type*}
 
 private theorem shiftedResidualUpTo_valuation_lt_of_alekhnovichPrecisionBound_le
     {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} (f : CPolynomial F) {t k N : Nat}
     (hQ : Q ≠ 0) (ht : t < k)
     (hNbound : alekhnovichPrecisionBound Q k ≤ N) :
@@ -1728,7 +1728,7 @@ private theorem shiftedResidualUpTo_valuation_lt_of_alekhnovichPrecisionBound_le
 
 private theorem shiftedResidualUpTo_valuation_lt_alekhnovichPrecisionBound
     {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} (f : CPolynomial F) {t k : Nat}
     (hQ : Q ≠ 0) (ht : t < k) :
     (shiftedResidualUpTo Q f t (alekhnovichPrecisionBound Q k)).valuation <
@@ -1738,7 +1738,7 @@ private theorem shiftedResidualUpTo_valuation_lt_alekhnovichPrecisionBound
 
 private theorem shiftedResidualUpTo_initialCoefficientPolynomial_ne_zero_of_valuation_lt
     {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} {f : CPolynomial F} {t N : Nat}
     (hval : (shiftedResidualUpTo Q f t N).valuation < N) :
     initialCoefficientPolynomial (shiftedResidualUpTo Q f t N).residual ≠ 0 := by
@@ -1761,7 +1761,7 @@ private theorem shiftedResidualUpTo_initialCoefficientPolynomial_ne_zero_of_valu
 
 private theorem alekhnovichRootPrefixesWithFuel_precision_pos_of_initial_ne_zero_any
     {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (fieldRoots : FieldRootContext F) :
     ∀ {fuel : Nat} {Q : CBivariate F} {N : Nat} {rootPrefix : RootPrefix F},
       0 < N →
@@ -1844,7 +1844,7 @@ private theorem alekhnovichRootPrefixesWithFuel_precision_pos_of_initial_ne_zero
 
 private theorem alekhnovichRootPrefixesWithFuel_precision_gt_one_of_initial_ne_zero_bound
     {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (fieldRoots : FieldRootContext F) :
     ∀ {fuel : Nat} {Q : CBivariate F} {N k : Nat} {rootPrefix : RootPrefix F},
       initialCoefficientPolynomial Q ≠ 0 →
@@ -1961,7 +1961,7 @@ private theorem alekhnovichRootPrefixesWithFuel_precision_gt_one_of_initial_ne_z
         exact hprop rootPrefix hmemList hprec
 
 private theorem cbivar_xAdicOrder?_some_lt_alekhnovichPrecisionBound {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     {Q : CBivariate F} {k order : Nat}
     (horder : CBivariate.xAdicOrder? Q = some order) :
     order < alekhnovichPrecisionBound Q k := by
@@ -1983,7 +1983,7 @@ private theorem cbivar_xAdicOrder?_some_lt_alekhnovichPrecisionBound {F : Type*}
 
 private theorem alekhnovichPrecisionBound_divXPower_le_sub_xAdicOrder
     {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} {k order : Nat}
     (horder : CBivariate.xAdicOrder? Q = some order) :
     alekhnovichPrecisionBound (CBivariate.divXPower Q order) k ≤
@@ -2102,7 +2102,7 @@ private theorem alekhnovichPrecisionBound_divXPower_le_sub_xAdicOrder
   omega
 
 private theorem normalizeAlekhnovichInput_precisionBound_some {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} {k : Nat}
     (hQ : Q ≠ 0) :
     ∃ Qnorm Nnorm,
@@ -2130,7 +2130,7 @@ private theorem normalizeAlekhnovichInput_precisionBound_some {F : Type*}
 
 private theorem alekhnovichRootPrefixesWithFuel_precision_pos_of_ne_zero_precisionBound
     {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (fieldRoots : FieldRootContext F) {Q : CBivariate F} {k : Nat}
     {rootPrefix : RootPrefix F}
     (hQ : Q ≠ 0)
@@ -2167,7 +2167,7 @@ private theorem alekhnovichRootPrefixesWithFuel_precision_pos_of_ne_zero_precisi
 
 private theorem alekhnovichRootPrefixesWithFuel_precision_gt_one_of_ne_zero_precisionBound
     {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (fieldRoots : FieldRootContext F) {Q : CBivariate F} {k : Nat}
     {rootPrefix : RootPrefix F}
     (hQ : Q ≠ 0)
@@ -2203,7 +2203,7 @@ private theorem alekhnovichRootPrefixesWithFuel_precision_gt_one_of_ne_zero_prec
     fieldRoots hinit hNnormBound hmemNorm hprec
 
 private theorem finishAlekhnovichPrefixWithFuel_complete_of_candidate_ih {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {fieldRoots : FieldRootContext F} {fuel : Nat}
     (ih : ∀ {fuel' : Nat} {Q : CBivariate F} {k : Nat} {p : CPolynomial F},
       fuel' < fuel →
@@ -2263,7 +2263,7 @@ private theorem finishAlekhnovichPrefixWithFuel_complete_of_candidate_ih {F : Ty
 /-- Candidate generation coverage for the Alekhnovich-only recursive suffix
 completion. -/
 theorem alekhnovichRootCandidatesWithFuel_complete {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {fieldRoots : FieldRootContext F} {Q : CBivariate F} {k fuel : Nat}
     {p : CPolynomial F}
     (hfuel : k < fuel)
@@ -2346,7 +2346,7 @@ theorem alekhnovichRootCandidatesWithFuel_complete {F : Type*}
 /-- The finite modular-root predicate is exact once the substitution degree is
 bounded below the checked precision. -/
 theorem composeY_eq_zero_of_rootMod_of_substitutionDegreeBound {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     {Q : CBivariate F} {p : CPolynomial F} {k N : Nat}
     (hbound : SubstitutionDegreeBound Q k N)
     (hdegree : degreeLt p k)
@@ -2391,7 +2391,7 @@ theorem composeY_eq_zero_of_rootMod_of_substitutionDegreeBound {F : Type*}
 
 /-- Completeness of Alekhnovich candidate generation for exact bounded roots. -/
 theorem alekhnovichRootCandidates_complete {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {fieldRoots : FieldRootContext F} {Q : CBivariate F} {k : Nat}
     {p : CPolynomial F}
     (hQ : Q ≠ 0)
@@ -2406,7 +2406,7 @@ theorem alekhnovichRootCandidates_complete {F : Type*}
 /-- Completeness of Alekhnovich bounded-degree root finding from a complete
 field-root backend. -/
 theorem alekhnovichRootsYDegreeLt_complete {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {fieldRoots : FieldRootContext F}
     {Q : CBivariate F} {k : Nat} {p : CPolynomial F}
     (hQ : Q ≠ 0) (hdegree : degreeLt p k) (hroot : CBivariate.composeY Q p = 0) :
@@ -2418,7 +2418,7 @@ theorem alekhnovichRootsYDegreeLt_complete {F : Type*}
 
 /-- Alekhnovich roots packaged with an explicit univariate field-root backend. -/
 def alekhnovichRootContext (F : Type*)
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (fieldRoots : FieldRootContext F) : GSRootContext F where
   rootsYDegreeLt := alekhnovichRootsYDegreeLt fieldRoots
   sound := by
