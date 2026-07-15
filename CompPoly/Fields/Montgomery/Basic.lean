@@ -10,110 +10,104 @@ import Mathlib.Algebra.Field.ZMod
 import Mathlib.Tactic.Ring
 
 /-!
-# Montgomery Reduction — radix-generic core
+# Montgomery Reduction
 
-Field-agnostic number theory behind native-word Montgomery reduction, shared by every
-fast prime field. Everything here is parameterized by an abstract radix `R : Nat` (the
-Montgomery modulus, e.g. `2^32` for 32-bit-word fields) and the prime `p`; the proofs use
-only that `gcd(R, p) = 1` — supplied as the congruence `negInv * p ≡ R - 1 [MOD R]` — and
-that `0 < R`, so nothing here is tied to a particular word size.
-
-The concrete word-level bridges (e.g. the `UInt32 × UInt64`, `R = 2^32` reduction) live in
-sibling modules such as `CompPoly.Fields.Montgomery.Native32`, which instantiate `R` and
-call into this core. These lemmas are all `Prop`/spec level and erased at codegen, so
-sharing them carries no runtime cost.
+Radix-generic specification and correctness lemmas for single-word Montgomery reduction.
+Word-specific implementations refine these results in sibling modules.
 -/
 
 namespace Montgomery
 
-/-- The Montgomery divisibility identity: if `negInv * p ≡ R - 1 [MOD R]` (i.e.
-`negInv = -p⁻¹ mod R`), then `R ∣ x + ((x mod R)·negInv mod R)·p` for every `x`. This is
-what makes Montgomery reduction integer-valued. -/
-theorem sum_dvd (R p negInv : Nat) (hR : 0 < R)
-    (hp : negInv * p ≡ R - 1 [MOD R]) (x : Nat) :
-    R ∣ x + ((x % R * negInv) % R) * p := by
-  rw [← Nat.modEq_zero_iff_dvd]
-  have hx : x ≡ x % R [MOD R] := (Nat.mod_modEq x R).symm
-  have hm :
-      ((x % R * negInv) % R) * p ≡ (x % R) * (R - 1) [MOD R] := by
-    have hmi :
-        (x % R * negInv) % R ≡ x % R * negInv [MOD R] := Nat.mod_modEq _ _
-    calc
-      ((x % R * negInv) % R) * p
-          ≡ (x % R * negInv) * p [MOD R] := hmi.mul_right _
-      _ = x % R * (negInv * p) := by ring
-      _ ≡ x % R * (R - 1) [MOD R] := hp.mul_left _
-  calc
-    x + ((x % R * negInv) % R) * p
-        ≡ x % R + x % R * (R - 1) [MOD R] := hx.add hm
-    _ = x % R * R := by
-      rw [add_comm, ← Nat.mul_succ]
-      have hsucc : (R - 1).succ = R := by omega
-      rw [hsucc]
-    _ ≡ 0 [MOD R] := by
-      rw [Nat.modEq_zero_iff_dvd]
-      exact ⟨x % R, by rw [mul_comm]⟩
-
-/-- Nat-level Montgomery reduction: specifies and is used to prove the native-word reducer. -/
-def reduceNat (R p negInv x : Nat) : Nat :=
+/-- Natural-number Montgomery reduction used to specify the native-word reducer. -/
+def reduceNat (R p negInv x : ℕ) : ℕ :=
   let m := (x % R * negInv) % R
   let u := (x + m * p) / R
   if u < p then u else u - p
 
-/-- Montgomery reduction descends to "multiply by `R⁻¹`" in `ZMod p`. -/
-theorem reduceNat_cast (R p negInv : Nat) [Fact (Nat.Prime p)] (hR : 0 < R)
-    (hp : negInv * p ≡ R - 1 [MOD R]) (hRne : (R : ZMod p) ≠ 0) (x : Nat) :
-    (reduceNat R p negInv x : ZMod p) = (x : ZMod p) * (R : ZMod p)⁻¹ := by
+/-- The quotient before the final conditional subtraction in Montgomery reduction. -/
+def reduceNatQuotient (R p negInv x : ℕ) : ℕ :=
+  let m := (x % R * negInv) % R
+  (x + m * p) / R
+
+/-- The pre-subtraction quotient is below twice the modulus. -/
+theorem reduceNatQuotient_lt_two_mul (R p negInv x : ℕ)
+    (hR : 0 < R) (hp : 0 < p) (hx : x < p * R) :
+    reduceNatQuotient R p negInv x < 2 * p := by
+  let m := x % R * negInv % R
+  have hm_lt : m < R := Nat.mod_lt _ hR
+  change (x + m * p) / R < 2 * p
+  rw [Nat.div_lt_iff_lt_mul]
+  · have hprod_lt : m * p < R * p := Nat.mul_lt_mul_of_pos_right hm_lt hp
+    have hprod_lt' : m * p < p * R := by
+      simpa only [Nat.mul_comm] using hprod_lt
+    calc
+      x + m * p < p * R + p * R := Nat.add_lt_add hx hprod_lt'
+      _ = 2 * p * R := by ring
+  · exact hR
+
+/-- Montgomery reduction returns a canonical representative. -/
+theorem reduceNat_lt (R p negInv x : ℕ)
+    (hR : 0 < R) (hp : 0 < p) (hx : x < p * R) :
+    reduceNat R p negInv x < p := by
+  change (if reduceNatQuotient R p negInv x < p then
+    reduceNatQuotient R p negInv x else reduceNatQuotient R p negInv x - p) < p
+  have hu := reduceNatQuotient_lt_two_mul R p negInv x hR hp hx
+  by_cases h : reduceNatQuotient R p negInv x < p
+  · rw [if_pos h]
+    exact h
+  · rw [if_neg h]
+    omega
+
+/-- The Montgomery divisibility identity: if `(negInv * p) % R = R - 1` (i.e.
+`negInv = -p⁻¹ mod R`), then `R ∣ x + ((x mod R)·negInv mod R)·p` for every `x`. -/
+theorem dvd_add (R p negInv : ℕ) (hR : 0 < R)
+    (hnegInv : negInv * p % R = R - 1) (x : ℕ) :
+    R ∣ x + ((x % R * negInv) % R) * p := by
+  rw [Nat.dvd_iff_mod_eq_zero]
+  rw [Nat.add_mod, Nat.mod_mul_mod (x % R * negInv) p R, Nat.mul_assoc]
+  rw [← Nat.mul_mod_mod, hnegInv, Nat.add_mod_mod, add_comm, ← Nat.mul_add_one]
+  rw [show R - 1 + 1 = R by omega, Nat.mul_mod_left]
+
+/-- The pre-subtraction quotient represents multiplication by `R⁻¹` in `ZMod p`. -/
+theorem reduceNatQuotient_cast (R p negInv : ℕ) [Fact (Nat.Prime p)] (hR : 0 < R)
+    (hnegInv : negInv * p % R = R - 1) (hRne : (R : ZMod p) ≠ 0) (x : ℕ) :
+    (reduceNatQuotient R p negInv x : ZMod p) = (x : ZMod p) * (R : ZMod p)⁻¹ := by
   let m := x % R * negInv % R
   let u := (x + m * p) / R
+  change (u : ZMod p) = (x : ZMod p) * (R : ZMod p)⁻¹
   have hdiv : R ∣ x + m * p := by
-    simpa [m] using sum_dvd R p negInv hR hp x
+    simpa [m] using dvd_add R p negInv hR hnegInv x
   have hu_mul : u * R = x + m * p := Nat.div_mul_cancel hdiv
   have hcast_mul : (u : ZMod p) * (R : ZMod p) = (x : ZMod p) := by
     rw [← Nat.cast_mul, hu_mul, Nat.cast_add, Nat.cast_mul]
     simp
-  by_cases hu : u < p
-  · have hmain : (u : ZMod p) = (x : ZMod p) * (R : ZMod p)⁻¹ := by
-      rw [← hcast_mul]
-      refine (mul_inv_cancel_right₀ ?_ (u : ZMod p)).symm
-      exact hRne
-    dsimp only [reduceNat]
-    rw [if_pos hu]
-    exact hmain
-  · have hfield : ((u - p : Nat) : ZMod p) = (u : ZMod p) := by
-      rw [Nat.cast_sub (Nat.le_of_not_gt hu)]
-      simp
-    have hmain : ((u - p : Nat) : ZMod p) = (x : ZMod p) * (R : ZMod p)⁻¹ := by
-      rw [hfield, ← hcast_mul]
-      refine (mul_inv_cancel_right₀ ?_ (u : ZMod p)).symm
-      exact hRne
-    dsimp only [reduceNat]
-    rw [if_neg hu]
-    exact hmain
+  rw [← hcast_mul]
+  exact (mul_inv_cancel_right₀ hRne (u : ZMod p)).symm
 
-/-- The pre-conditional-subtract Montgomery quotient already casts to "multiply by `R⁻¹`"
-in `ZMod p`. -/
-theorem quotient_cast (R p negInv : Nat) [Fact (Nat.Prime p)] (hR : 0 < R)
-    (hp : negInv * p ≡ R - 1 [MOD R]) (hRne : (R : ZMod p) ≠ 0) (x : Nat) :
-    (let m := x % R * negInv % R
-     let u := (x + m * p) / R
-     (u : ZMod p)) = (x : ZMod p) * (R : ZMod p)⁻¹ := by
+/-- Montgomery reduction represents multiplication by `R⁻¹` in `ZMod p`. -/
+theorem reduceNat_cast (R p negInv : ℕ) [Fact (Nat.Prime p)] (hR : 0 < R)
+    (hnegInv : negInv * p % R = R - 1) (hRne : (R : ZMod p) ≠ 0) (x : ℕ) :
+    (reduceNat R p negInv x : ZMod p) = (x : ZMod p) * (R : ZMod p)⁻¹ := by
   let m := x % R * negInv % R
   let u := (x + m * p) / R
-  have hmr := reduceNat_cast R p negInv hR hp hRne x
-  unfold reduceNat at hmr
-  change (u : ZMod p) = (x : ZMod p) * (R : ZMod p)⁻¹
+  have hu_cast : (u : ZMod p) = (x : ZMod p) * (R : ZMod p)⁻¹ := by
+    simpa only [reduceNatQuotient, m, u] using
+      reduceNatQuotient_cast R p negInv hR hnegInv hRne x
+  change ((if u < p then u else u - p : ℕ) : ZMod p) =
+    (x : ZMod p) * (R : ZMod p)⁻¹
   by_cases hu : u < p
-  · simpa only [m, u, hu, if_true] using hmr
-  · have hfield : ((u - p : Nat) : ZMod p) = (u : ZMod p) := by
+  · rw [if_pos hu]
+    exact hu_cast
+  · have hfield : ((u - p : ℕ) : ZMod p) = (u : ZMod p) := by
       rw [Nat.cast_sub (Nat.le_of_not_gt hu)]
       simp
-    rw [← hfield]
-    simpa only [m, u, hu, if_false] using hmr
+    rw [if_neg hu]
+    rw [hfield]
+    exact hu_cast
 
 /-- Two naturals below `p` are equal once their `ZMod p` casts agree. -/
-theorem natCast_inj {p a b : Nat} (ha : a < p) (hb : b < p)
-    (h : (a : ZMod p) = (b : ZMod p)) : a = b := by
+theorem natCast_inj_of_lt {p a b : ℕ} (h : (a : ZMod p) = (b : ZMod p))
+    (ha : a < p) (hb : b < p) : a = b := by
   rw [ZMod.natCast_eq_natCast_iff] at h
   exact Nat.ModEq.eq_of_lt_of_lt h ha hb
 
