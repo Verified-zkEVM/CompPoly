@@ -94,7 +94,7 @@ theorem raw_cast_eq_toField_mul (x : FastField F) :
 theorem nat_eq_of_field_eq {a b : Nat} (ha : a < Mont256Field.fieldSize F)
     (hb : b < Mont256Field.fieldSize F)
     (h : (a : ZMod (Mont256Field.fieldSize F)) = (b : ZMod (Mont256Field.fieldSize F))) : a = b :=
-  Montgomery.natCast_inj ha hb h
+  Montgomery.natCast_inj_of_lt h ha hb
 
 /-! ## `ofField` (entering Montgomery form) and the round trips -/
 

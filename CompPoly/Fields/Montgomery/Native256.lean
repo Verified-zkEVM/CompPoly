@@ -224,7 +224,9 @@ theorem interleavedMontgomeryReduction_spec (acc0 : UInt64) (acc : UInt256L)
     ((interleavedMontgomeryReduction (F := F) acc0 acc).toNat : ZMod (Mont256Field.fieldSize F))
       = ((acc0.toNat + acc.toNat * 2 ^ 64 : Nat) : ZMod (Mont256Field.fieldSize F))
         * ((2 ^ 64 : Nat) : ZMod (Mont256Field.fieldSize F))⁻¹ := by
-  have hcong := P.negInv_congr
+  have hcong : P.montgomeryNegInv.toNat * Mont256Field.fieldSize F % 2 ^ 64 = 2 ^ 64 - 1 := by
+    rw [show (2 : ℕ) ^ 64 - 1 = (2 ^ 64 - 1) % 2 ^ 64 from (Nat.mod_eq_of_lt (by decide)).symm]
+    exact P.negInv_congr
   have hRne := r64_ne_zero (F := F)
   have hppos : 0 < Mont256Field.fieldSize F := P.prime.out.pos
   unfold interleavedMontgomeryReduction
@@ -246,7 +248,7 @@ theorem interleavedMontgomeryReduction_spec (acc0 : UInt64) (acc : UInt256L)
     rw [hVmod, htdef, UInt64.toNat_mul, Nat.mul_comm]
   have hdvd : 2 ^ 64 ∣ (acc0.toNat + acc.toNat * 2 ^ 64)
       + (prod.1.toNat + prod.2.toNat * 2 ^ 64) := by
-    have h := Montgomery.sum_dvd (2 ^ 64) (Mont256Field.fieldSize F) P.montgomeryNegInv.toNat
+    have h := Montgomery.dvd_add (2 ^ 64) (Mont256Field.fieldSize F) P.montgomeryNegInv.toNat
       (by decide) hcong (acc0.toNat + acc.toNat * 2 ^ 64)
     rw [htm] at h
     rwa [show t.toNat * Mont256Field.fieldSize F = Mont256Field.fieldSize F * t.toNat from by ring,
@@ -270,8 +272,8 @@ theorem interleavedMontgomeryReduction_spec (acc0 : UInt64) (acc : UInt256L)
           = (acc0.toNat + acc.toNat * 2 ^ 64)
             + ((acc0.toNat + acc.toNat * 2 ^ 64) % 2 ^ 64 * P.montgomeryNegInv.toNat % 2 ^ 64)
               * Mont256Field.fieldSize F from by rw [htm, hprodval]; ring]
-    exact Montgomery.quotient_cast (2 ^ 64) (Mont256Field.fieldSize F) P.montgomeryNegInv.toNat
-      (by decide) hcong hRne (acc0.toNat + acc.toNat * 2 ^ 64)
+    exact Montgomery.reduceNatQuotient_cast (2 ^ 64) (Mont256Field.fieldSize F)
+      P.montgomeryNegInv.toNat (by decide) hcong hRne (acc0.toNat + acc.toNat * 2 ^ 64)
 
 /-- Montgomery multiplication: `montgomeryMul a b = a · b · R⁻¹ mod p` (CIOS, 4 rounds).
 Requires `lhs < modulus` (the fully-scanned operand); `rhs` is unrestricted. -/
