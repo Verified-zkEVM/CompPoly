@@ -7,11 +7,11 @@ Authors: Georgios Raikos
 import CompPoly.Fields.Secp256k1.Fq.Fast
 
 /-!
-# Fast Secp256k1.Fq Base Field Tests
+# Fast secp256k1 Base Field Tests
 
 Regression checks for the executable 256-bit Montgomery representation: the stored residues,
-the `ofNat`/`toNat` round trip, the field operations, and agreement with the canonical
-`Secp256k1.BaseField := ZMod BASE_FIELD_CARD` model through `toField`.
+literal round trips, the field operations, and agreement with the canonical
+`Secp256k1.BaseField` model through `toField`.
 -/
 
 namespace Secp256k1.Fq.Fast
@@ -22,54 +22,56 @@ open Montgomery.Native256
 set_option maxRecDepth 4000
 
 -- Stored Montgomery residues.
-#guard raw (0 : BaseField) = 0
-#guard raw (1 : BaseField) = rModModulus
+#guard (0 : BaseField).val = 0
+#guard (1 : BaseField).val = Mont256Field.rModModulus BASE_FIELD_CARD
 
--- `ofNat` reduces modulo the prime; `toNat` exits Montgomery form.
-#guard toNat (ofNat 37) = 37
-#guard toNat (ofNat BASE_FIELD_CARD) = 0
-#guard toNat (ofNat (BASE_FIELD_CARD + 37)) = 37
+-- Numeric literals reduce modulo the prime; `toNat` exits Montgomery form.
+#guard (37 : BaseField).toNat = 37
+#guard (BASE_FIELD_CARD : BaseField).toNat = 0
+#guard (BASE_FIELD_CARD + 37 : BaseField).toNat = 37
 
 -- Addition (with and without wraparound).
-#guard toNat ((ofNat (BASE_FIELD_CARD - 1)) + (2 : BaseField)) = 1
-#guard toNat ((ofNat (BASE_FIELD_CARD - 1)) + (ofNat (BASE_FIELD_CARD - 1))) = BASE_FIELD_CARD - 2
+#guard ((BASE_FIELD_CARD - 1 : BaseField) + 2).toNat = 1
+#guard ((BASE_FIELD_CARD - 1 : BaseField) + (BASE_FIELD_CARD - 1 : BaseField)).toNat
+  = BASE_FIELD_CARD - 2
 
 -- Subtraction (with and without borrow).
-#guard toNat ((9 : BaseField) - (5 : BaseField)) = 4
-#guard toNat ((5 : BaseField) - (9 : BaseField)) = BASE_FIELD_CARD - 4
+#guard ((9 : BaseField) - 5).toNat = 4
+#guard ((5 : BaseField) - 9).toNat = BASE_FIELD_CARD - 4
 
 -- Negation.
-#guard toNat (-(0 : BaseField)) = 0
-#guard toNat (-(1 : BaseField)) = BASE_FIELD_CARD - 1
+#guard (-(0 : BaseField)).toNat = 0
+#guard (-(1 : BaseField)).toNat = BASE_FIELD_CARD - 1
 
 -- Multiplication and squaring (`(-1) * (-1) = 1`).
-#guard toNat ((ofNat (BASE_FIELD_CARD - 1)) * (ofNat (BASE_FIELD_CARD - 1))) = 1
-#guard toNat (square (12345 : BaseField)) = 152399025
+#guard ((BASE_FIELD_CARD - 1 : BaseField) * (BASE_FIELD_CARD - 1 : BaseField)).toNat = 1
+#guard ((12345 : BaseField) * 12345).toNat = 152399025
 
 -- Exponentiation, including agreement with the canonical field.
-#guard toNat ((37 : BaseField) ^ 0) = 1
-#guard toNat ((37 : BaseField) ^ 1) = 37
-#guard toField ((123456789 : BaseField) ^ 17) = ((123456789 : Secp256k1.BaseField) ^ 17)
-#guard toField ((123456789 : BaseField) ^ 255) = ((123456789 : Secp256k1.BaseField) ^ 255)
+#guard ((37 : BaseField) ^ 0).toNat = 1
+#guard ((37 : BaseField) ^ 1).toNat = 37
+#guard ((123456789 : BaseField) ^ 17).toField = ((123456789 : Secp256k1.BaseField) ^ 17)
+#guard ((123456789 : BaseField) ^ 255).toField = ((123456789 : Secp256k1.BaseField) ^ 255)
 
 -- Inversion and division (`0⁻¹ = 0`, `x⁻¹ * x = 1`, `x / x = 1`).
-#guard toNat ((0 : BaseField)⁻¹) = 0
-#guard toNat ((37 : BaseField)⁻¹ * (37 : BaseField)) = 1
+#guard ((0 : BaseField)⁻¹).toNat = 0
+#guard ((37 : BaseField)⁻¹ * 37).toNat = 1
 
 -- The Pornin binary-GCD fast path is exact: the raw candidate equals what `inv` returns,
 -- i.e. the runtime check passed and the window fallback was not needed.
-#guard gcdInvCandidate (F := Secp256k1.BaseField) (raw (37 : BaseField)) = raw ((37 : BaseField)⁻¹)
-#guard gcdInvCandidate (F := Secp256k1.BaseField) (raw (ofNat (BASE_FIELD_CARD - 1)))
-         = raw ((ofNat (BASE_FIELD_CARD - 1) : BaseField)⁻¹)
-#guard gcdInvCandidate (F := Secp256k1.BaseField) (raw (ofNat (BASE_FIELD_CARD - 2)))
-         = raw ((ofNat (BASE_FIELD_CARD - 2) : BaseField)⁻¹)
-#guard gcdInvCandidate (F := Secp256k1.BaseField) (raw (ofNat (2 ^ 200 + 12345)))
-         = raw ((ofNat (2 ^ 200 + 12345) : BaseField)⁻¹)
-#guard toNat ((37 : BaseField) / (37 : BaseField)) = 1
-#guard toField ((37 : BaseField)⁻¹) = ((37 : Secp256k1.BaseField)⁻¹)
-#guard toField ((37 : BaseField) ^ (-3 : Int)) = ((37 : Secp256k1.BaseField) ^ (-3 : Int))
+#guard gcdInvCandidate (modulus := BASE_FIELD_CARD) (37 : BaseField).val
+         = ((37 : BaseField)⁻¹).val
+#guard gcdInvCandidate (modulus := BASE_FIELD_CARD) (BASE_FIELD_CARD - 1 : BaseField).val
+         = ((BASE_FIELD_CARD - 1 : BaseField)⁻¹).val
+#guard gcdInvCandidate (modulus := BASE_FIELD_CARD) (BASE_FIELD_CARD - 2 : BaseField).val
+         = ((BASE_FIELD_CARD - 2 : BaseField)⁻¹).val
+#guard gcdInvCandidate (modulus := BASE_FIELD_CARD) (2 ^ 200 + 12345 : BaseField).val
+         = ((2 ^ 200 + 12345 : BaseField)⁻¹).val
+#guard ((37 : BaseField) / 37).toNat = 1
+#guard ((37 : BaseField)⁻¹).toField = ((37 : Secp256k1.BaseField)⁻¹)
+#guard ((37 : BaseField) ^ (-3 : Int)).toField = ((37 : Secp256k1.BaseField) ^ (-3 : Int))
 
 -- The precomputed-digit window inversion agrees with the canonical inverse on another value.
-#guard toField ((987654321 : BaseField)⁻¹) = ((987654321 : Secp256k1.BaseField)⁻¹)
+#guard ((987654321 : BaseField)⁻¹).toField = ((987654321 : Secp256k1.BaseField)⁻¹)
 
 end Secp256k1.Fq.Fast

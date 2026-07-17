@@ -10,8 +10,8 @@ import CompPoly.Fields.BLS12_377.Fast
 # Fast BLS12_377 Scalar Field Tests
 
 Regression checks for the executable 256-bit Montgomery representation: the stored residues,
-the `ofNat`/`toNat` round trip, the field operations, and agreement with the canonical
-`BLS12_377.ScalarField := ZMod scalarFieldSize` model through `toField`.
+literal round trips, the field operations, and agreement with the canonical
+`BLS12_377.ScalarField` model through `toField`.
 -/
 
 namespace BLS12_377.Fast
@@ -22,55 +22,56 @@ open Montgomery.Native256
 set_option maxRecDepth 4000
 
 -- Stored Montgomery residues.
-#guard raw (0 : ScalarField) = 0
-#guard raw (1 : ScalarField) = rModModulus
+#guard (0 : ScalarField).val = 0
+#guard (1 : ScalarField).val = Mont256Field.rModModulus scalarFieldSize
 
--- `ofNat` reduces modulo the prime; `toNat` exits Montgomery form.
-#guard toNat (ofNat 37) = 37
-#guard toNat (ofNat scalarFieldSize) = 0
-#guard toNat (ofNat (scalarFieldSize + 37)) = 37
+-- Numeric literals reduce modulo the prime; `toNat` exits Montgomery form.
+#guard (37 : ScalarField).toNat = 37
+#guard (scalarFieldSize : ScalarField).toNat = 0
+#guard (scalarFieldSize + 37 : ScalarField).toNat = 37
 
 -- Addition (with and without wraparound).
-#guard toNat ((ofNat (scalarFieldSize - 1)) + (2 : ScalarField)) = 1
-#guard toNat ((ofNat (scalarFieldSize - 1)) + (ofNat (scalarFieldSize - 1))) = scalarFieldSize - 2
+#guard ((scalarFieldSize - 1 : ScalarField) + 2).toNat = 1
+#guard ((scalarFieldSize - 1 : ScalarField) + (scalarFieldSize - 1 : ScalarField)).toNat
+  = scalarFieldSize - 2
 
 -- Subtraction (with and without borrow).
-#guard toNat ((9 : ScalarField) - (5 : ScalarField)) = 4
-#guard toNat ((5 : ScalarField) - (9 : ScalarField)) = scalarFieldSize - 4
+#guard ((9 : ScalarField) - 5).toNat = 4
+#guard ((5 : ScalarField) - 9).toNat = scalarFieldSize - 4
 
 -- Negation.
-#guard toNat (-(0 : ScalarField)) = 0
-#guard toNat (-(1 : ScalarField)) = scalarFieldSize - 1
+#guard (-(0 : ScalarField)).toNat = 0
+#guard (-(1 : ScalarField)).toNat = scalarFieldSize - 1
 
 -- Multiplication and squaring (`(-1) * (-1) = 1`).
-#guard toNat ((ofNat (scalarFieldSize - 1)) * (ofNat (scalarFieldSize - 1))) = 1
-#guard toNat (square (12345 : ScalarField)) = 152399025
+#guard ((scalarFieldSize - 1 : ScalarField) * (scalarFieldSize - 1 : ScalarField)).toNat = 1
+#guard ((12345 : ScalarField) * 12345).toNat = 152399025
 
 -- Exponentiation, including agreement with the canonical field.
-#guard toNat ((37 : ScalarField) ^ 0) = 1
-#guard toNat ((37 : ScalarField) ^ 1) = 37
-#guard toField ((123456789 : ScalarField) ^ 17) = ((123456789 : BLS12_377.ScalarField) ^ 17)
-#guard toField ((123456789 : ScalarField) ^ 255) = ((123456789 : BLS12_377.ScalarField) ^ 255)
+#guard ((37 : ScalarField) ^ 0).toNat = 1
+#guard ((37 : ScalarField) ^ 1).toNat = 37
+#guard ((123456789 : ScalarField) ^ 17).toField = ((123456789 : BLS12_377.ScalarField) ^ 17)
+#guard ((123456789 : ScalarField) ^ 255).toField = ((123456789 : BLS12_377.ScalarField) ^ 255)
 
 -- Inversion and division (`0⁻¹ = 0`, `x⁻¹ * x = 1`, `x / x = 1`).
-#guard toNat ((0 : ScalarField)⁻¹) = 0
-#guard toNat ((37 : ScalarField)⁻¹ * (37 : ScalarField)) = 1
+#guard ((0 : ScalarField)⁻¹).toNat = 0
+#guard ((37 : ScalarField)⁻¹ * 37).toNat = 1
 
 -- The Pornin binary-GCD fast path is exact: the raw candidate equals what `inv` returns,
 -- i.e. the runtime check passed and the window fallback was not needed.
-#guard gcdInvCandidate (F := BLS12_377.ScalarField) (raw (37 : ScalarField))
-         = raw ((37 : ScalarField)⁻¹)
-#guard gcdInvCandidate (F := BLS12_377.ScalarField) (raw (ofNat (scalarFieldSize - 1)))
-         = raw ((ofNat (scalarFieldSize - 1) : ScalarField)⁻¹)
-#guard gcdInvCandidate (F := BLS12_377.ScalarField) (raw (ofNat (scalarFieldSize - 2)))
-         = raw ((ofNat (scalarFieldSize - 2) : ScalarField)⁻¹)
-#guard gcdInvCandidate (F := BLS12_377.ScalarField) (raw (ofNat (2 ^ 200 + 12345)))
-         = raw ((ofNat (2 ^ 200 + 12345) : ScalarField)⁻¹)
-#guard toNat ((37 : ScalarField) / (37 : ScalarField)) = 1
-#guard toField ((37 : ScalarField)⁻¹) = ((37 : BLS12_377.ScalarField)⁻¹)
-#guard toField ((37 : ScalarField) ^ (-3 : Int)) = ((37 : BLS12_377.ScalarField) ^ (-3 : Int))
+#guard gcdInvCandidate (modulus := scalarFieldSize) (37 : ScalarField).val
+         = ((37 : ScalarField)⁻¹).val
+#guard gcdInvCandidate (modulus := scalarFieldSize) (scalarFieldSize - 1 : ScalarField).val
+         = ((scalarFieldSize - 1 : ScalarField)⁻¹).val
+#guard gcdInvCandidate (modulus := scalarFieldSize) (scalarFieldSize - 2 : ScalarField).val
+         = ((scalarFieldSize - 2 : ScalarField)⁻¹).val
+#guard gcdInvCandidate (modulus := scalarFieldSize) (2 ^ 200 + 12345 : ScalarField).val
+         = ((2 ^ 200 + 12345 : ScalarField)⁻¹).val
+#guard ((37 : ScalarField) / 37).toNat = 1
+#guard ((37 : ScalarField)⁻¹).toField = ((37 : BLS12_377.ScalarField)⁻¹)
+#guard ((37 : ScalarField) ^ (-3 : Int)).toField = ((37 : BLS12_377.ScalarField) ^ (-3 : Int))
 
 -- The precomputed-digit window inversion agrees with the canonical inverse on another value.
-#guard toField ((987654321 : ScalarField)⁻¹) = ((987654321 : BLS12_377.ScalarField)⁻¹)
+#guard ((987654321 : ScalarField)⁻¹).toField = ((987654321 : BLS12_377.ScalarField)⁻¹)
 
 end BLS12_377.Fast
