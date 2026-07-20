@@ -99,6 +99,9 @@ def computableTwiddleFactor (i : Fin ℓ) (u : Fin (2 ^ (ℓ + R_rate - i - 1)))
       (i := ⟨i, by omega⟩) (x := β ⟨i + 1 + k, by omega⟩))
   else 0
 
+-- The `Fact` instance is stated explicitly (matching the variable declaration) so that the
+-- basis `β` and field `𝔽q` remain named parameters for the `computableAdditiveNTT` call site.
+set_option linter.overlappingInstances false in
 /-- Performs one stage of the Additive NTT. This corresponds to `NTTStage` in the abstract
 definition: `b` is the array of coefficients. `i` is the stage index (0 to r-1). -/
 def computableNTTStage [Fact (LinearIndependent 𝔽q β)]

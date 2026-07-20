@@ -98,7 +98,7 @@ def interpolationPolynomial {F : Type*}
 
 /-- Constructive interpolation witness for the `messageDegree ≤ 1` GS range. -/
 def lowMessageDegreeInterpolation {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (points : Array (Prod F F)) (multiplicity : Nat) : CBivariate F :=
   points.toList.foldl
     (fun Q point ↦
@@ -141,7 +141,7 @@ def IsNormalizedInterpolationWitness {F : Type*} [Zero F] [One F] [BEq F]
 
 /-- Convert a homogeneous-kernel vector into a normalized basis polynomial. -/
 def normalizeInterpolationPolynomialOnBasis? {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (basis : Array CBivariate.Monomial) (coeffs : Array F) :
     Option (CBivariate F) :=
   match normalizeVector? coeffs with
@@ -150,7 +150,7 @@ def normalizeInterpolationPolynomialOnBasis? {F : Type*}
 
 /-- Convert a homogeneous-kernel vector into a normalized interpolation polynomial. -/
 def normalizeInterpolationPolynomial? {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (params : GSInterpParams) (coeffs : Array F) :
     Option (CBivariate F) :=
   normalizeInterpolationPolynomialOnBasis? (interpolationMonomials params) coeffs

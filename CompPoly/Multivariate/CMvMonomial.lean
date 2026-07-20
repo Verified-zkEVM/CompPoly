@@ -8,7 +8,7 @@ import Mathlib.Algebra.Group.Finsupp
 import Mathlib.Algebra.Group.TypeTags.Basic
 import Mathlib.Algebra.GroupWithZero.Nat
 import Mathlib.Algebra.Ring.Defs
-import Mathlib.Data.Nat.Lattice
+import Mathlib.Order.Lattice.Nat
 import Batteries.Data.Vector.Basic
 
 /-!

@@ -157,7 +157,7 @@ protected lemma grind_add_skip_aggressive [Add R] {p₁ p₂ : Lawful n R} :
 def mul [Mul R] [Add R] (p₁ p₂ : Lawful n R) : Lawful n R :=
   fromUnlawful <| p₁.val * p₂.val
 
-instance [Mul R] [Add R] [Zero R] : Mul (Lawful n R) := ⟨mul⟩
+instance [Mul R] [Add R] : Mul (Lawful n R) := ⟨mul⟩
 
 /-- Polynomial exponentiation via repeated multiplication. `O(k)` multiplications.
 
@@ -215,8 +215,6 @@ lemma fromUnlawful_cast {p : Lawful n R} : fromUnlawful p.1 = p := by
   grind
 
 section
-
-variable [BEq R] [LawfulBEq R]
 
 /-- Negation of a polynomial. -/
 def neg [Neg R] (p : Lawful n R) : Lawful n R :=

@@ -518,6 +518,10 @@ private lemma lagrangeToMono_eq_mobiusPartial_zero
     have h2 : n - m' = n - (m' + 1) + 1 := by omega
     simp only [h2] at *
     convert hstep using 2
+    · apply congrArg
+        (fun h : Fin n => lagrangeToMonoLevel h (Vector.ofFn (mobiusPartial (n - (m' + 1) + 1) p)))
+      apply Fin.ext
+      simp [h1]
 
 /-- The fast Möbius transform `lagrangeToMono` is pointwise equal to the inclusion-exclusion
 specification `lagrangeToMonoSpec`. Combines the fold lemma with the `k = 0` base case. -/

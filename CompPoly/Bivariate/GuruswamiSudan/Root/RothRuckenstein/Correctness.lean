@@ -18,7 +18,7 @@ namespace GuruswamiSudan
 
 /-- Soundness of Roth-Ruckenstein root filtering. -/
 theorem rothRuckensteinRootsYDegreeLt_sound {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {fieldRoots : FieldRootContext F} {Q : CBivariate F} {k : Nat}
     {p : CPolynomial F}
     (h : p ∈ (rothRuckensteinRootsYDegreeLt fieldRoots Q k).toList) :
@@ -30,7 +30,7 @@ theorem rothRuckensteinRootsYDegreeLt_sound {F : Type*}
 /-- Normalizing a nonzero bivariate polynomial exposes a nonzero initial
 coefficient equation for the residual-transform RR step. -/
 theorem initialCoefficientPolynomial_stripXAdicFactor_ne_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} (hQ : Q ≠ 0) :
     initialCoefficientPolynomial (CBivariate.stripXAdicFactor Q) ≠ 0 := by
   intro hzero
@@ -57,7 +57,7 @@ theorem initialCoefficientPolynomial_stripXAdicFactor_ne_zero {F : Type*}
       · simpa [CBivariate.stripXAdicFactor, horder] using hyStrip
 
 private theorem stripXAdicFactor_ne_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F]
+    [Field F] [BEq F] [LawfulBEq F]
     {Q : CBivariate F} (hQ : Q ≠ 0) :
     CBivariate.stripXAdicFactor Q ≠ 0 := by
   intro hzero
@@ -73,7 +73,7 @@ private theorem stripXAdicFactor_ne_zero {F : Type*}
       exact hcoeff (by simpa using hcoeffStrip)
 
 private theorem composeY_stripXAdicFactor_eq_zero_of_composeY {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} {p : CPolynomial F}
     (hQ : Q ≠ 0) (hroot : CBivariate.composeY Q p = 0) :
     CBivariate.composeY Q.stripXAdicFactor p = 0 := by
@@ -97,14 +97,14 @@ private theorem composeY_stripXAdicFactor_eq_zero_of_composeY {F : Type*}
       exact (mul_eq_zero.mp hrootPoly).resolve_left hx
 
 private theorem cbivariate_default_eq_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] :
+    [Field F] [BEq F] [LawfulBEq F] :
     (default : CBivariate F) = 0 := rfl
 
 private theorem cpoly_default_eq_zero {R : Type*} [Zero R] :
     (default : CPolynomial R) = 0 := rfl
 
 private theorem substituteYRootPlusXY_eq_fold {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (Q : CBivariate F) (a : F) :
     substituteYRootPlusXY Q a =
       (List.range' 0 Q.val.size).foldl
@@ -125,7 +125,7 @@ private theorem substituteYRootPlusXY_eq_fold {F : Type*}
     cbivariate_default_eq_zero]
 
 private theorem substituteYRootPlusXY_coeff_fold {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (Q : CBivariate F) (a : F) (i j : Nat) :
     CBivariate.coeff (substituteYRootPlusXY Q a) i j =
       (List.range' 0 Q.val.size).foldl
@@ -405,7 +405,7 @@ private theorem substituteYRootPlusXY_inner_fold_zero_of_y_lt {F : Type*}
     exact substituteYRootPlusXY_term_fold_zero_of_y_lt a (coeffY.coeff x₀) x y y₀ x₀ acc' hy₀
 
 private theorem substituteYRootPlusXY_coeff_top {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (Q : CBivariate F) (a : F) (y x : Nat)
     (hQsize : Q.val.size = y + 1) (hRowSize : (Q.val.coeff y).val.size = x + 1) :
     CBivariate.coeff (substituteYRootPlusXY Q a) (x + y) y = (Q.val.coeff y).coeff x := by
@@ -446,7 +446,7 @@ private theorem substituteYRootPlusXY_coeff_top {F : Type*}
       · exact hy₀_lt_y
 
 private theorem substituteYRootPlusXY_ne_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} (a : F) (hQ : Q ≠ 0) :
     substituteYRootPlusXY Q a ≠ 0 := by
   intro hzero
@@ -480,7 +480,7 @@ private theorem list_sum_map_mul_right {R : Type*} [Semiring R]
       simp [ih, add_mul]
 
 private theorem polynomialPrefix_eq_range_fold {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (p : CPolynomial F) :
     ∀ n : Nat,
       polynomialPrefix p n =
@@ -496,7 +496,7 @@ private theorem polynomialPrefix_eq_range_fold {F : Type*}
       simp
 
 private theorem cpoly_eq_range_fold {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (p : CPolynomial F) :
     p =
       (List.range' 0 p.val.size).foldl
@@ -516,7 +516,7 @@ private theorem cpoly_eq_range_fold {F : Type*}
   exact hprefix
 
 private theorem cpoly_range_fold_monomial_mul_pow {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (coeffY q : CPolynomial F) (y : Nat) (acc : CPolynomial F) :
     (List.range' 0 coeffY.val.size).foldl
         (fun acc x ↦ acc + CPolynomial.monomial x (coeffY.coeff x) * q ^ y)
@@ -532,7 +532,7 @@ private theorem cpoly_range_fold_monomial_mul_pow {F : Type*}
   rw [← hrow]
 
 private theorem composeY_monomialXY {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (p : CPolynomial F) (x y : Nat) (c : F) :
     CBivariate.composeY (CBivariate.monomialXY x y c) p =
       CPolynomial.monomial x c * p ^ y := by
@@ -548,7 +548,7 @@ private theorem composeY_monomialXY {F : Type*}
     CPolynomial.monomial_toPoly (R := F) x c]
 
 private theorem composeY_foldl_add {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (f : Nat → CBivariate F) (p : CPolynomial F) :
     ∀ (xs : List Nat) (out : CBivariate F) (acc : CPolynomial F),
       CBivariate.composeY out p = acc →
@@ -566,7 +566,7 @@ private theorem composeY_foldl_add {F : Type*}
       rw [composeY_add, hacc]
 
 private theorem composeY_substituteYRootPlusXY_term_fold {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (a coeff : F) (p : CPolynomial F) (x y : Nat) (out : CBivariate F) :
     CBivariate.composeY
         ((List.range' 0 (y + 1)).foldl
@@ -608,7 +608,7 @@ private theorem composeY_substituteYRootPlusXY_term_fold {F : Type*}
     rw [composeY_monomialXY]
 
 private theorem composeY_substituteYRootPlusXY_inner_fold {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (a : F) (p : CPolynomial F) (coeffY : CPolynomial F) (y : Nat)
     (out : CBivariate F) :
     CBivariate.composeY
@@ -659,7 +659,7 @@ private theorem composeY_substituteYRootPlusXY_inner_fold {F : Type*}
   exact cpoly_range_fold_monomial_mul_pow coeffY q y (CBivariate.composeY out p)
 
 private theorem composeY_substituteYRootPlusXY_eq {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (Q : CBivariate F) (a : F) (p : CPolynomial F) :
     CBivariate.composeY (substituteYRootPlusXY Q a) p =
       CBivariate.composeY Q (CPolynomial.C a + CPolynomial.X * p) := by
@@ -702,14 +702,14 @@ private theorem composeY_substituteYRootPlusXY_eq {F : Type*}
   rw [← composeY_eq_range_fold Q q]
 
 private theorem transformedRothRuckensteinResidual_ne_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} (a : F) (hQ : Q ≠ 0) :
     transformedRothRuckensteinResidual Q a ≠ 0 := by
   unfold transformedRothRuckensteinResidual
   exact stripXAdicFactor_ne_zero (substituteYRootPlusXY_ne_zero a hQ)
 
 private theorem composeY_transformedRothRuckensteinResidual_dropXPower_eq_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} {p : CPolynomial F} {a : F}
     (hQ : Q ≠ 0)
     (hroot : CBivariate.composeY Q (CPolynomial.C a + CPolynomial.X * p) = 0) :
@@ -775,7 +775,7 @@ private theorem polynomialPrefix_eq_self_of_dropXPower_degreeLt_zero {F : Type*}
     simp [hi, hsuffixCoeff]
 
 private theorem transformedRothRuckensteinRootPrefixesWithFuel_complete_aux {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (fieldRoots : FieldRootContext F) :
     ∀ (fuel : Nat) (Q : CBivariate F) (depth : Nat) (pref p : CPolynomial F),
       Q ≠ 0 →
@@ -863,7 +863,7 @@ The nonzero-input hypothesis matches the backend completeness contract, which
 only promises finite output for nonzero bivariate equations.
 -/
 theorem rothRuckensteinRootsYDegreeLt_complete {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {fieldRoots : FieldRootContext F}
     {Q : CBivariate F} {k : Nat} {p : CPolynomial F}
     (hQ : Q ≠ 0) (hdegree : degreeLt p k) (hroot : CBivariate.composeY Q p = 0) :
@@ -881,7 +881,7 @@ theorem rothRuckensteinRootsYDegreeLt_complete {F : Type*}
 
 /-- Roth-Ruckenstein roots packaged with an explicit univariate field-root backend. -/
 def rothRuckensteinRootContext (F : Type*)
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (fieldRoots : FieldRootContext F) : GSRootContext F where
   rootsYDegreeLt := rothRuckensteinRootsYDegreeLt fieldRoots
   sound := by
@@ -894,7 +894,7 @@ def rothRuckensteinRootContext (F : Type*)
 
 /-- Residual-transform Roth-Ruckenstein roots packaged as a backend. -/
 def transformedRothRuckensteinRootContext (F : Type*)
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (fieldRoots : FieldRootContext F) : GSRootContext F where
   rootsYDegreeLt := transformedRothRuckensteinRootsYDegreeLt fieldRoots
   sound := by
