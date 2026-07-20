@@ -110,11 +110,13 @@ instance (n : ℕ) : AddCommMonoid ↥(degreeLT (R := R) n) where
   add_assoc := by
     intro a b c
     apply Subtype.ext
-    simpa using (CPolynomial.add_assoc a.1 b.1 c.1)
+    change (a.1 + b.1) + c.1 = a.1 + (b.1 + c.1)
+    exact CPolynomial.add_assoc a.1 b.1 c.1
   add_comm := by
     intro a b
     apply Subtype.ext
-    simpa using (CPolynomial.add_comm a.1 b.1)
+    change a.1 + b.1 = b.1 + a.1
+    exact CPolynomial.add_comm a.1 b.1
   zero_add := by
     intro a
     apply Subtype.ext
@@ -131,7 +133,8 @@ instance (n : ℕ) : AddCommMonoid ↥(degreeLT (R := R) n) where
   nsmul_succ := by
     intro m p
     apply Subtype.ext
-    simpa using (CPolynomial.nsmul_succ m p.1)
+    change (m + 1) • p.1 = m • p.1 + p.1
+    exact CPolynomial.nsmul_succ m p.1
 
 instance (n : ℕ) : Module R ↥(degreeLT (R := R) n) where
   smul := (· • ·)
@@ -142,7 +145,8 @@ instance (n : ℕ) : Module R ↥(degreeLT (R := R) n) where
   mul_smul := by
     intro r s p
     apply Subtype.ext
-    simpa using (CPolynomial.mul_smul r s p.1)
+    change (r * s) • p.1 = r • s • p.1
+    exact CPolynomial.mul_smul r s p.1
   smul_zero := by
     intro r
     apply Subtype.ext
@@ -154,7 +158,8 @@ instance (n : ℕ) : Module R ↥(degreeLT (R := R) n) where
   add_smul := by
     intro r s p
     apply Subtype.ext
-    simpa using (CPolynomial.add_smul r s p.1)
+    change (r + s) • p.1 = r • p.1 + s • p.1
+    exact CPolynomial.add_smul r s p.1
   zero_smul := by
     intro p
     apply Subtype.ext

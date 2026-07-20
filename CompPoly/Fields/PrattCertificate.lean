@@ -429,10 +429,12 @@ theorem ZMod.powNeOfPowMod :
     rw [CharP.natCast_eq_natCast (ZMod n) n] at h'
     replace h := of_decide_eq_true h
     apply h
-    change a ^ ((n - 1) / q) % n = 1 % n at h'
-    convert h'
+    change (a ^ ((n - 1) / q)).mod n = (1 : ℕ).mod n at h'
     replace hn := of_decide_eq_true hn
-    exact (Nat.mod_eq_of_lt hn).symm
+    have hn' : 1 < n := by omega
+    change (a ^ ((n - 1) / q)).mod n = 1
+    rw [h']
+    exact Nat.mod_eq_of_lt hn'
 
 theorem ZMod.blub :
     ∀ {n q c : ℕ} (a : ZMod n), (decide (n ≥ 2) = true) → (decide (c < n) = true) →

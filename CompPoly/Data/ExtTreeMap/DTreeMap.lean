@@ -52,7 +52,7 @@ theorem Const.get?_foldl_no_touch
     have hstep' :
         get? (alter t hd.1 (fun | none => some hd.2 | some b₁ => some (f hd.1 b₁ hd.2))) k
         = get? t k := by
-      simpa only [hno_hd] using hstep
+      simpa only [hno_hd, if_false] using hstep
     have ih' := ih
       (alter t hd.1 (fun | none => some hd.2 | some b₁ => some (f hd.1 b₁ hd.2))) hno_tl
     simpa only [List.foldl, hstep'] using ih'
@@ -238,7 +238,7 @@ theorem Const.get?_mergeWith [TransCmp cmp] [LawfulEqCmp cmp]
                 a)
             t₁.inner (Internal.Impl.Const.toList t₂.inner)) := by
       simpa only [alter, Internal.Impl.Const.alter_eq_alter!, toList, l] using hFoldInner
-    simpa only using congrArg (fun m => Internal.Impl.Const.get? m k) hFoldInner_toList.symm
+    exact congrArg (fun m => Internal.Impl.Const.get? m k) hFoldInner_toList.symm
   -- Finish by rewriting with h₀ and identifying find? with get?
   simp only [get?, mergeWith, h₀, hFindToGetInt, hFoldInt]
 

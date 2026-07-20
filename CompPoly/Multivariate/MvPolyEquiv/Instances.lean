@@ -127,11 +127,14 @@ lemma map_one : fromCMvPolynomial (1 : CMvPolynomial n R) = 1 := by
       show (Vector.ofFn (⇑(0 : Fin n →₀ ℕ)))[i] = (Vector.replicate n 0)[i]
       simp only [Finsupp.coe_zero, Pi.zero_apply, Vector.getElem_ofFn, Vector.getElem_replicate]
     rw [finsupp_m_eq_one]
-    have one_one_get₁ :
-      ({(CMvMonomial.zero, 1)} : Unlawful n R)[(@CMvMonomial.zero n)]?.getD 0 = One.one := by
-      unfold_projs; simp only [ExtTreeMap.empty_eq_emptyc, ExtTreeMap.get?_eq_getElem?,
-        ExtTreeMap.getElem?_insert_self, Unlawful.zero_eq_zero, Option.getD_some]
-    convert one_one_get₁
+    change ((ExtTreeMap.ofList [((CMvMonomial.zero : CMvMonomial n), (1 : R))]
+      (Ord.compare (α := CMvMonomial n)))[(CMvMonomial.zero : CMvMonomial n)]?).getD 0 = 1
+    rw [ExtTreeMap.getElem?_ofList_of_mem (cmp := Ord.compare (α := CMvMonomial n))
+      (l := [((CMvMonomial.zero : CMvMonomial n), (1 : R))])
+      (k := (CMvMonomial.zero : CMvMonomial n))
+      (k' := (CMvMonomial.zero : CMvMonomial n)) (v := (1 : R))
+      (by simp) (by simp) (by simp)]
+    rfl
   · have hne : CMvMonomial.ofFinsupp m ≠ CMvMonomial.zero := by
       unfold CMvMonomial.ofFinsupp CMvMonomial.zero
       intros h

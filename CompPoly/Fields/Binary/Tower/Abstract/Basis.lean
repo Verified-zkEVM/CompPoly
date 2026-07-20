@@ -5,6 +5,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 -/
 
 import CompPoly.Fields.Binary.Tower.Abstract.Split
+import Mathlib.Algebra.Ring.Ext
 
 /-!
 # Abstract Binary Tower Basis
@@ -99,8 +100,9 @@ def multilinearBasis (l r : ℕ) (h_le : l ≤ r) :
       (b:=by
         convert prevMultilinearBasis;
       ) (c:=by
-        convert (powerBasisSucc (r1)).basis
-        rw [powerBasisSucc_dim (k:=r1)]
+        convert (powerBasisSucc (r1)).basis using 1
+        · rw [powerBasisSucc_dim (k:=r1)]
+        · exact Semiring.ext rfl rfl
       )
     convert res
     -- Basis are equal under the same @binaryAlgebraTower

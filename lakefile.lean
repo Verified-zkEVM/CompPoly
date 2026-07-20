@@ -6,7 +6,7 @@ package CompPoly where
   version := v!"0.1.0"
   testDriver := "CompPolyTests"
 
-require "leanprover-community" / mathlib @ git "v4.30.0"
+require "leanprover-community" / mathlib @ git "v4.31.0"
 
 def nativeDir : FilePath := __dir__ / "native"
 

@@ -206,14 +206,14 @@ def map {R S : Type*} [Semiring R] [Semiring S] (f : R →+* S)
 
 /-- One Horner reduction step, eliminating the next little-endian variable. -/
 @[inline, specialize]
-private def evalHornerStep [CommSemiring R] {n : ℕ}
+private def evalHornerStep {n : ℕ}
     (coeffs : Vector R (2 ^ (n + 1))) (x0 : R) : Vector R (2 ^ n) :=
   Vector.ofFn fun j : Fin (2 ^ n) ↦
     coeffs.get ⟨2 * j.val, by omega⟩ + x0 * coeffs.get ⟨2 * j.val + 1, by omega⟩
 
 /-- Evaluate dense multilinear coefficients by eliminating one variable at a time. -/
 @[inline, specialize]
-private def evalHornerCoeffs [CommSemiring R] :
+private def evalHornerCoeffs :
     {n : ℕ} → Vector R (2 ^ n) → Vector R n → R
   | 0, coeffs, _ => coeffs.get ⟨0, by norm_num⟩
   | n + 1, coeffs, x =>
@@ -457,7 +457,7 @@ def map {R S : Type*} [Semiring R] [Semiring S]
 
 /-- One multilinear-extension interpolation step, eliminating the next little-endian variable. -/
 @[inline, specialize]
-private def evalMleStep [CommRing R] {n : ℕ}
+private def evalMleStep {n : ℕ}
     (values : Vector R (2 ^ (n + 1))) (x0 : R) : Vector R (2 ^ n) :=
   Vector.ofFn fun j : Fin (2 ^ n) ↦
     (1 - x0) * values.get ⟨2 * j.val, by omega⟩ +
@@ -465,7 +465,7 @@ private def evalMleStep [CommRing R] {n : ℕ}
 
 /-- Public multilinear-extension interpolation layer. -/
 @[inline, specialize]
-def evalMleLayer [CommRing R] {n : ℕ}
+def evalMleLayer {n : ℕ}
     (values : CMlPolynomialEval R (n + 1)) (x0 : R) : CMlPolynomialEval R n :=
   evalMleStep values x0
 
@@ -481,7 +481,7 @@ theorem evalMleLayer_get [CommRing R] {n : ℕ}
 
 /-- Evaluate hypercube values by recursively interpolating the multilinear extension. -/
 @[inline, specialize]
-private def evalMleValues [CommRing R] :
+private def evalMleValues :
     {n : ℕ} → Vector R (2 ^ n) → Vector R n → R
   | 0, values, _ => values.get ⟨0, by norm_num⟩
   | n + 1, values, x =>
@@ -1003,9 +1003,7 @@ def equivMonomialLagrangeRepr : CMlPolynomial R n ≃ CMlPolynomialEval R n wher
       simp only [Fin.zero_eta]
       exact
         mobius_apply_zeta_apply_eq_id n
-          ⟨n - 1,
-            Decidable.byContradiction fun a ↦
-              monoToLagrange_eq_monoToLagrangeSegment._proof_1 n (NeZero.ne n) a⟩
+          ⟨n - 1, by have := NeZero.ne n; omega⟩
           0 v
   right_inv v := by
     if h_n_eq_0: n = 0 then
@@ -1017,12 +1015,8 @@ def equivMonomialLagrangeRepr : CMlPolynomial R n ≃ CMlPolynomialEval R n wher
       rw [monoToLagrange_eq_monoToLagrangeSegment (n:=n)]
       exact
         zeta_apply_mobius_apply_eq_id n
-          ⟨n - 1,
-            Decidable.byContradiction fun a ↦
-              monoToLagrange_eq_monoToLagrangeSegment._proof_1 n (NeZero.ne n) a⟩
-          ⟨0,
-            Decidable.byContradiction fun a ↦
-              monoToLagrange_eq_monoToLagrangeSegment._proof_2 n (NeZero.ne n) a⟩
+          ⟨n - 1, by have := NeZero.ne n; omega⟩
+          ⟨0, by have := NeZero.ne n; omega⟩
           v
 
 end CMlPolynomial
