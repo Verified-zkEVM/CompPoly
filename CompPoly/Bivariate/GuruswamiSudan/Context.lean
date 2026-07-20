@@ -80,21 +80,31 @@ structure LinearKernelContext (F : Type*) [Field F] [BEq F] [LawfulBEq F] where
               DenseMatrix.IsHomogeneousSolution M v →
                 ¬ (DenseMatrix.NonzeroVector v)
 
-/-- The dense Gaussian-elimination homogeneous-kernel backend. -/
+/-- The dense Gaussian-elimination homogeneous-kernel backend.
+
+The executable witness is computed by the in-place reduction
+`DenseMatrix.homogeneousWitnessInPlace`, which mutates the matrix array instead of
+copying it on every row operation. It returns the same witness as the copying
+`DenseMatrix.homogeneousWitness` (`DenseMatrix.homogeneousWitnessInPlace_eq`), so the
+backend contract is discharged by the copying-kernel correctness lemmas. -/
 def denseLinearKernelContext (F : Type*) [Field F] [BEq F] [LawfulBEq F] :
     LinearKernelContext F where
-  homogeneousWitness := DenseMatrix.homogeneousWitness
+  homogeneousWitness := DenseMatrix.homogeneousWitnessInPlace
   witness_width := by
     intro M v h
+    rw [DenseMatrix.homogeneousWitnessInPlace_eq] at h
     exact DenseMatrix.homogeneousWitness_width h
   witness_sound := by
     intro M v hM h
+    rw [DenseMatrix.homogeneousWitnessInPlace_eq] at h
     exact (DenseMatrix.homogeneousWitness_sound hM h).2.1
   witness_nonzero := by
     intro M v h
+    rw [DenseMatrix.homogeneousWitnessInPlace_eq] at h
     exact DenseMatrix.homogeneousWitness_nonzero h
   witness_complete := by
     intro M hM h v hvw hv
+    rw [DenseMatrix.homogeneousWitnessInPlace_eq] at h
     exact DenseMatrix.homogeneousWitness_none_complete hM h v hvw hv
 
 /-- Guruswami-Sudan-facing interpolation backend.

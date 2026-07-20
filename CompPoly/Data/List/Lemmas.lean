@@ -5,7 +5,7 @@ Authors: Quang Dao, Chung Thai Nguyen, Gregor Mitscha-Baude
 -/
 import Mathlib.Algebra.GroupWithZero.Nat
 import Mathlib.Data.List.GetD
-import Mathlib.Data.Nat.Lattice
+import Mathlib.Order.Lattice.Nat
 import Mathlib.Tactic.Cases
 
 /-!
@@ -127,7 +127,7 @@ theorem rightpad_eq_if_rightpad_eq_of_ge (l l' : List α) (m n n' : Nat) (h : n 
   simp [hLen]
   -- Substitute the expressions for the rightpads into the goal.
   have h_subst : l ++ replicate (n - l.length) unit = l' ++ replicate (n' - l'.length) unit := by
-    convert hEq using 1;
+    simpa only [rightpad] using hEq
   rw [ List.replicate_add, List.replicate_add ];
   rw [ ← List.append_assoc, ← List.append_assoc, h_subst ]
 

@@ -203,7 +203,7 @@ lemma βᵢ_not_in_Uᵢ (i : Fin r) :
   exact fun h_in_U => h_li (by
     -- ⊢ β i ∈ Submodule.span 𝔽q (β '' (Set.univ \ {i}))
     have res := Submodule.span_mono h_subset h_in_U
-    rw [Set.compl_eq_univ_diff] at res
+    rw [Set.compl_eq_univ_sdiff] at res
     exact res
   )
 
@@ -467,10 +467,12 @@ lemma rootMultiplicity_comp_X_sub_C (p : L[X]) (a x : L) :
     -- ⊢ multiplicity (X - C x) (p.comp (X - C a)) = multiplicity (X - (C x - C a)) p
     have res : multiplicity (X - (C x - C a)) p = multiplicity (X - C x) (p.comp (X - C a)):= by
       convert (multiplicity_map_eq <| algEquivAevalXSubC a).symm using 2
-      -- ⊢ X - C x = (algEquivAevalXSubC a) (X - (C x - C a))
-      simp only [algEquivAevalXSubC, algEquivOfCompEqX_apply]
-      simp only [map_sub, aeval_X, aeval_C, algebraMap_eq]
-      simp only [sub_sub_sub_cancel_right]
+      · -- ⊢ X - C x = (algEquivAevalXSubC a) (X - (C x - C a))
+        simp only [algEquivAevalXSubC, algEquivOfCompEqX_apply]
+        simp only [map_sub, aeval_X, aeval_C, algebraMap_eq]
+        ring
+      · rw [Polynomial.comp_eq_aeval]
+        simp only [algEquivAevalXSubC, algEquivOfCompEqX_apply]
     exact res.symm
 
 omit [Fintype L] in
@@ -487,7 +489,6 @@ lemma roots_comp_X_sub_C (p : L[X]) (a : L) :
   -- Use `filter_congr` to rewrite the predicate inside the filter to isolate `r`.
   rw [Multiset.filter_congr (p := fun r => s = r + a) (q := fun r => s - a = r) (by {
     intro r hr_root
-    simp only
     -- ⊢ s = r + a ↔ s - a = r
     rw [add_comm]
     have res := eq_sub_iff_add_eq (a := r) (b := s) (c := a)
@@ -1349,9 +1350,10 @@ lemma degree_Xⱼ (ℓ : ℕ) (h_ℓ : ℓ ≤ r) (j : Fin (2 ^ ℓ)) :
       simp only [Nat.cast_sum, Nat.cast_ite, Nat.cast_pow, Nat.cast_ofNat,
         Nat.cast_zero] at h2
       convert h2 using 1
-      apply Finset.sum_congr rfl
-      intro x _
-      simp only [Nat.cast_ite, Nat.cast_pow, Nat.cast_ofNat, Nat.cast_zero]
+      · apply Finset.sum_congr rfl
+        intro x _
+        simp only [Nat.cast_ite, Nat.cast_pow, Nat.cast_ofNat, Nat.cast_zero]
+      · rfl
     -- ⊢ (∑ x, f x.val) = j.val in ℕ
     rw [Fin.sum_univ_eq_sum_range (n:=ℓ)] -- switch to sum over Finset.range ℓ
     have h_range: range ℓ = Icc 0 (ℓ-1) := by

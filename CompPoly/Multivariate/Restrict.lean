@@ -125,7 +125,8 @@ lemma degreeOf_le_of_mem_monomials_restrictDegree {d : ℕ} {m : CMvMonomial n}
 private lemma list_ofFn_sum_eq_finSum {n : ℕ} (s : Fin n → ℕ) :
     (List.ofFn s).sum = ∑ i : Fin n, s i := by
   have hfin : (∑ x : Fin (List.ofFn s).length, (List.ofFn s)[x.1]) = (List.ofFn s).sum := by
-    simpa using (Fin.sum_univ_fun_getElem (l := List.ofFn s) (f := fun x : ℕ => x))
+    simpa [Function.comp_def] using
+      (Fin.sum_univ_fun_getElem (l := List.ofFn s) (f := fun x : ℕ => x))
   have hfin_get :
       (∑ x : Fin (List.ofFn s).length, s ⟨x.1, by simpa [List.length_ofFn] using x.2⟩) =
       (List.ofFn s).sum := by

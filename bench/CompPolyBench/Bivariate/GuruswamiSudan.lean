@@ -58,27 +58,41 @@ private def runGsInterpolationSolveKoala (preset : BenchPreset) (gen : StdGen) :
   let fastPoints := gsSmallBenchmarkPoints fastMessage
   let matrix := interpolationMatrix points gsSmallParams
   let fastMatrix := interpolationMatrix fastPoints gsSmallParams
-  let kernelContext := denseLinearKernelContext KoalaBear.Field
-  let fastKernelContext := denseLinearKernelContext KoalaBear.Fast.Field
   let warmup := gsWarmupIterations preset
   let measured := preset.selectNat 1 1 1
   let fastMeasured := preset.selectNat 2 1 1
-  let checksumIterations := groupChecksumIterations measured [fastMeasured]
+  let inPlaceMeasured := preset.selectNat 8 2 1
+  let fastInPlaceMeasured := preset.selectNat 16 3 1
+  let checksumIterations := groupChecksumIterations measured
+    [fastMeasured, inPlaceMeasured, fastInPlaceMeasured]
   let row <- runTimed
-    "guruswami-sudan-interp-solve" "DenseMatrix" "Homogeneous interpolation solve"
+    "guruswami-sudan-interp-solve-copying" "DenseMatrix"
+    "Homogeneous interpolation solve, copying"
     "KoalaBear.Field" gsSmallInterpInputShape preset warmup measured
-    (fun _ ↦ kernelContext.homogeneousWitness matrix)
+    (fun _ ↦ DenseMatrix.homogeneousWitness matrix)
+    (checksumOptionArray checksumKoalaBear) checksumIterations
+  let inPlaceRow <- runTimed
+    "guruswami-sudan-interp-solve" "DenseMatrix"
+    "Homogeneous interpolation solve, in-place"
+    "KoalaBear.Field" gsSmallInterpInputShape preset warmup inPlaceMeasured
+    (fun _ ↦ DenseMatrix.homogeneousWitnessInPlace matrix)
     (checksumOptionArray checksumKoalaBear) checksumIterations
   let fastRow <- runTimed
-    "guruswami-sudan-interp-solve-fast" "DenseMatrix"
-    "Homogeneous interpolation solve"
+    "guruswami-sudan-interp-solve-copying-fast" "DenseMatrix"
+    "Homogeneous interpolation solve, copying"
     "KoalaBear.Fast.Field" gsSmallInterpInputShape preset warmup fastMeasured
-    (fun _ ↦ fastKernelContext.homogeneousWitness fastMatrix)
+    (fun _ ↦ DenseMatrix.homogeneousWitness fastMatrix)
+    (checksumOptionArray checksumKoalaBearFast) checksumIterations
+  let fastInPlaceRow <- runTimed
+    "guruswami-sudan-interp-solve-inplace-fast" "DenseMatrix"
+    "Homogeneous interpolation solve, in-place"
+    "KoalaBear.Fast.Field" gsSmallInterpInputShape preset warmup fastInPlaceMeasured
+    (fun _ ↦ DenseMatrix.homogeneousWitnessInPlace fastMatrix)
     (checksumOptionArray checksumKoalaBearFast) checksumIterations
   pure ({
     groupKey := "guruswami-sudan-interp-solve-small-koalabear",
     title := "Guruswami-Sudan dense interpolation solving, small (KoalaBear)",
-    records := #[row, fastRow]
+    records := #[row, inPlaceRow, fastRow, fastInPlaceRow]
   }, gen)
 
 private def runGsInterpolationSmallKoala (preset : BenchPreset) (gen : StdGen) :

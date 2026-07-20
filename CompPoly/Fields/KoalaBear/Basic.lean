@@ -216,7 +216,11 @@ lemma twoAdicGenerators_pow_twoPow_eq_one (bits : Fin (twoAdicity + 1)) :
   have hshift :
       sqChain twoAdicGenerators[(⟨n, hn⟩ : Fin (twoAdicity + 1))] n =
         twoAdicGenerators[(⟨0, by omega⟩ : Fin (twoAdicity + 1))] := by
-    simpa using sqChain_twoAdicGenerators_shift 0 n (by omega)
+    have hidx : (⟨0 + n, by omega⟩ : Fin (twoAdicity + 1)) = ⟨n, hn⟩ := by
+      ext
+      simp
+    convert sqChain_twoAdicGenerators_shift 0 n (by omega) using 2
+    · exact (congrArg (fun i => twoAdicGenerators[i]) hidx).symm
   simpa [twoAdicGenerators] using hshift
 
 /-- Helper: Fin-indexed version for computational verification of non-triviality. -/

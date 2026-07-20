@@ -279,7 +279,7 @@ theorem evalManyMleByLayers_eq_map_evalMle [CommRing R]
         rw [foldLayeredLayerLoop_valuesByPolynomial_toList]
         simp [valuesByPolynomial_toList, List.flatMap_map]
       rw [hfirst]
-      simpa [evalManyMleByLayers, List.flatMap_map] using
+      simpa [evalManyMleByLayers, List.flatMap_map, Function.comp_def] using
         ih (polys.map (fun p ↦ evalMleLayer p x.head)) x.tail
 
 /-- Layer-by-layer many-MLE evaluation agrees with iterated many-MLE evaluation. -/

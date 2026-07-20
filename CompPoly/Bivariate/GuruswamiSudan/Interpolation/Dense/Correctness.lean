@@ -322,9 +322,9 @@ private theorem interpolationMatrixOnBasis_get {F : Type*} [Semiring F]
         ((interpolationConstraints points params.multiplicity).getD row
           ⟨0, 0, 0, 0⟩) := by
   have hrow' : row < (interpolationConstraints points params.multiplicity).size := by
-    simpa using hrow
+    simpa [interpolationMatrixOnBasis_rows] using hrow
   have hcol' : col < basis.size := by
-    simpa using hcol
+    simpa [interpolationMatrixOnBasis_cols] using hcol
   unfold interpolationMatrixOnBasis interpolationConstraintMatrixOnBasis
   rw [DenseMatrix.get_ofFn _ _ _ hrow' hcol']
 
@@ -386,7 +386,8 @@ private theorem interpolationMatrixOnBasis_dotRow {F : Type*} [Semiring F]
         intro acc hxs
         simp only [List.foldl_cons]
         have hcol : col < basis.size := hxs col (by simp)
-        rw [interpolationMatrixOnBasis_get basis points params hrow (by simpa using hcol)]
+        rw [interpolationMatrixOnBasis_get basis points params hrow
+          (by simpa [interpolationMatrixOnBasis_cols] using hcol)]
         apply ih
         intro c hc
         exact hxs c (by simp [hc])
@@ -410,7 +411,7 @@ private theorem interpolationMatrix_dotRow {F : Type*} [Semiring F]
     points params coeffs hrow
 
 private theorem hasseDerivativeEval_monomialXY_eq_hasseMonomialEval {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (monomial : CBivariate.Monomial) (constraint : InterpolationConstraint F) (c : F) :
     CBivariate.hasseDerivativeEval constraint.xOrder constraint.yOrder constraint.x constraint.y
         (CBivariate.monomialXY monomial.xDegree monomial.yDegree c) =
@@ -438,7 +439,7 @@ private theorem hasseDerivativeEval_monomialXY_eq_hasseMonomialEval {F : Type*}
     simp
 
 private theorem hasseDerivativeEval_ofMonomialCoeffs {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (monomials : Array CBivariate.Monomial) (coeffs : Array F)
     (constraint : InterpolationConstraint F) :
     CBivariate.hasseDerivativeEval constraint.xOrder constraint.yOrder constraint.x constraint.y
@@ -481,7 +482,7 @@ private theorem hasseDerivativeEval_ofMonomialCoeffs {F : Type*}
       constraint.y)
 
 theorem interpolationPolynomialOnBasis_weightedDegree_le {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (basis : Array CBivariate.Monomial) (params : GSInterpParams) (coeffs : Array F)
     (hbound : ∀ monomial, monomial ∈ basis.toList →
       1 * monomial.xDegree + yWeight params * monomial.yDegree ≤
@@ -493,7 +494,7 @@ theorem interpolationPolynomialOnBasis_weightedDegree_le {F : Type*}
   exact hbound
 
 theorem interpolationPolynomial_weightedDegree_le {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (params : GSInterpParams) (coeffs : Array F) :
     CBivariate.natWeightedDegree (interpolationPolynomial params coeffs)
       1 (yWeight params) ≤ params.weightedDegreeBound := by
@@ -541,7 +542,7 @@ theorem isHomogeneousSolution_map_div {F : Type*} [Field F]
   simp
 
 theorem interpolationPolynomialOnBasis_satisfies_of_solution {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {basis : Array CBivariate.Monomial}
     {points : Array (F × F)} {params : GSInterpParams} {coeffs : Array F}
     (hsol :
@@ -556,7 +557,7 @@ theorem interpolationPolynomialOnBasis_satisfies_of_solution {F : Type*}
   rcases array_mem_getD (xs := interpolationConstraints points params.multiplicity)
       (x := constraint) (default := ⟨0, 0, 0, 0⟩) hmem with ⟨row, hrow, hget⟩
   have hrowM : row < (interpolationMatrixOnBasis basis points params).rows := by
-    simpa using hrow
+    simpa [interpolationMatrixOnBasis_rows] using hrow
   have hdot := hsol row hrowM
   rw [interpolationMatrixOnBasis_dotRow basis points params coeffs hrowM] at hdot
   change CBivariate.hasseDerivativeEval constraint.xOrder constraint.yOrder constraint.x
@@ -566,7 +567,7 @@ theorem interpolationPolynomialOnBasis_satisfies_of_solution {F : Type*}
   simpa [constraint, hget] using hdot
 
 theorem interpolationPolynomial_satisfies_of_solution {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {points : Array (F × F)} {params : GSInterpParams} {coeffs : Array F}
     (hsol : DenseMatrix.IsHomogeneousSolution (interpolationMatrix points params) coeffs) :
     CBivariate.SatisfiesMultiplicityConstraints
@@ -590,7 +591,7 @@ theorem interpolationCoefficientVectorOnBasis_size {F : Type*} [Zero F]
   simp
 
 theorem cbivariate_ne_zero_exists_coeff_ne_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {Q : CBivariate F} (hQ : Q ≠ 0) :
     ∃ i j, CBivariate.coeff Q i j ≠ 0 := by
   by_contra hnot
@@ -602,7 +603,7 @@ theorem cbivariate_ne_zero_exists_coeff_ne_zero {F : Type*}
   exact hnot ⟨i, j, hcoeff⟩
 
 theorem interpolationCoefficientVectorOnBasis_nonzero_of_complete {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {basis : Array CBivariate.Monomial} {Q : CBivariate F}
     (hQ : Q ≠ 0)
     (hcomplete : ∀ i j, CBivariate.coeff Q i j ≠ 0 →
@@ -620,7 +621,7 @@ theorem interpolationCoefficientVectorOnBasis_nonzero_of_complete {F : Type*}
     exact hcoeff
 
 theorem interpolationPolynomialOnBasis_eq_of_complete {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {basis : Array CBivariate.Monomial} {Q : CBivariate F}
     (hnodup : basis.toList.Nodup)
     (hcomplete : ∀ i j, CBivariate.coeff Q i j ≠ 0 →
@@ -664,7 +665,7 @@ theorem interpolationPolynomialOnBasis_eq_of_complete {F : Type*}
     rw [interpolationCoefficientVectorOnBasis_getD_of_lt basis Q hk, hget]
 
 theorem interpolationCoefficientVectorOnBasis_solution_of_satisfies {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {basis : Array CBivariate.Monomial}
     {points : Array (F × F)} {params : GSInterpParams} {Q : CBivariate F}
     (hpoly :
@@ -743,7 +744,7 @@ theorem weightedDegreeBasis_sound (params : GSInterpParams) :
 
 /-- Soundness for one returned basis-parametric dense witness. -/
 theorem denseInterpolateWithBasis_sound {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {kernelContext : LinearKernelContext F}
     {basis : Array CBivariate.Monomial}
     {points : Array (Prod F F)} {params : GSInterpParams} {Q : CBivariate F}
@@ -796,7 +797,7 @@ theorem denseInterpolateWithBasis_sound {F : Type*}
 
 /-- Basis-parametric dense completeness for finite homogeneous systems. -/
 theorem denseInterpolateWithBasis_complete {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {kernelContext : LinearKernelContext F}
     {basis : Array CBivariate.Monomial}
     {points : Array (Prod F F)} {params : GSInterpParams}
@@ -831,7 +832,7 @@ theorem denseInterpolateWithBasis_complete {F : Type*}
 
 /-- Basis-parametric dense soundness specialized to a bounded basis. -/
 theorem denseInterpolateWithBasisAndKernel_sound_of_bounded_basis {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {kernelContext : LinearKernelContext F}
     {basis : Array CBivariate.Monomial}
     {points : Array (Prod F F)} {params : GSInterpParams} {Q : CBivariate F}
@@ -852,7 +853,7 @@ theorem denseInterpolateWithBasisAndKernel_sound_of_bounded_basis {F : Type*}
 
 /-- Dense weighted-degree-basis soundness for the positive-message branch. -/
 theorem denseInterpolateWithWeightedDegreeBasis_sound {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {kernelContext : LinearKernelContext F}
     {points : Array (Prod F F)} {params : GSInterpParams} {Q : CBivariate F}
     (h : denseInterpolateWithBasisAndKernel kernelContext
@@ -867,7 +868,7 @@ theorem denseInterpolateWithWeightedDegreeBasis_sound {F : Type*}
 
 /-- Soundness for one returned public interpolation witness. -/
 theorem denseInterpolate_sound {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {kernelContext : LinearKernelContext F}
     {points : Array (Prod F F)} {params : GSInterpParams} {Q : CBivariate F}
     (h : denseInterpolateWithKernel kernelContext points params = some Q) :
@@ -885,7 +886,7 @@ theorem denseInterpolate_sound {F : Type*}
 /-- If a basis-parametric dense interpolation matrix has more columns than rows,
 the dense solver finds a nonzero homogeneous witness. -/
 theorem denseInterpolateWithBasis_exists_of_dimension_slack {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (basis : Array CBivariate.Monomial)
     (points : Array (F × F)) (params : GSInterpParams)
     (hSlack : HasInterpolationDimensionSlackOnBasis basis points params) :
@@ -901,7 +902,7 @@ theorem denseInterpolateWithBasis_exists_of_dimension_slack {F : Type*}
   have hnz := DenseMatrix.homogeneousWitness_nonzero hw
   rcases normalizeVector?_some_of_nonzero hnz with ⟨norm, hn⟩
   refine ⟨interpolationPolynomialOnBasis basis norm, ?_⟩
-  simp [denseLinearKernelContext, hw]
+  simp [denseLinearKernelContext, DenseMatrix.homogeneousWitnessInPlace_eq, hw]
   change normalizeInterpolationPolynomialOnBasis? basis coeffs =
     some (interpolationPolynomialOnBasis basis norm)
   unfold normalizeInterpolationPolynomialOnBasis?
@@ -911,7 +912,7 @@ theorem denseInterpolateWithBasis_exists_of_dimension_slack {F : Type*}
 witness. The low-message branch is constructive; otherwise the witness comes
 from the dense matrix. -/
 theorem denseInterpolate_exists_of_dimension_slack {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (points : Array (F × F)) (params : GSInterpParams)
     (hSlack : HasInterpolationDimensionSlack points params) :
     ∃ Q, denseInterpolate points params = some Q := by
@@ -978,7 +979,7 @@ theorem weightedDegreeBasis_complete_of_messageDegree_gt_one {F : Type*}
 
 /-- Dense interpolation completeness in the ordinary positive-`Y`-weight range. -/
 theorem denseInterpolate_complete_of_messageDegree_gt_one {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {points : Array (F × F)} {params : GSInterpParams}
     (hHigh : ¬ params.messageDegree ≤ 1) :
     (exists Q, ValidInterpolationWitness points params Q) →
@@ -1022,7 +1023,7 @@ theorem denseInterpolate_complete_of_messageDegree_gt_one {F : Type*}
 
 /-- The executable interpolation path packaged as a certified GS interpolation backend. -/
 def denseInterpContext (F : Type*) [Field F] [BEq F] [LawfulBEq F]
-    [Nontrivial F] [DecidableEq F] : GSInterpContext F where
+    [DecidableEq F] : GSInterpContext F where
   interpolate := denseInterpolate
   sound := by
     intro points params Q h
@@ -1037,7 +1038,7 @@ def denseInterpContext (F : Type*) [Field F] [BEq F] [LawfulBEq F]
 
 /-- Executable interpolation backend soundness. -/
 theorem denseInterpContext_correct (F : Type*) [Field F] [BEq F] [LawfulBEq F]
-    [Nontrivial F] [DecidableEq F] :
+    [DecidableEq F] :
     ∀ points params Q,
       (denseInterpContext F).interpolate points params = some Q →
         ValidInterpolationWitness points params Q :=
@@ -1045,7 +1046,7 @@ theorem denseInterpContext_correct (F : Type*) [Field F] [BEq F] [LawfulBEq F]
 
 /-- Executable interpolation backend completeness. -/
 theorem denseInterpContext_complete (F : Type*) [Field F] [BEq F] [LawfulBEq F]
-    [Nontrivial F] [DecidableEq F] :
+    [DecidableEq F] :
     ∀ points params,
       DistinctXCoordinates points →
       (exists Q, ValidInterpolationWitness points params Q) →

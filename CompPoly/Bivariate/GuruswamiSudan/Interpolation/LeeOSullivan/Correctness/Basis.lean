@@ -21,7 +21,7 @@ namespace LeeOSullivan
 
 open PolynomialMatrix
 
-variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
 
 theorem foldl_range_add_eq_sum {α : Type*} [AddCommMonoid α]
     (f : Nat → α) :
@@ -74,6 +74,8 @@ private theorem cbivariate_Y_eq_outer_X :
     intro i
     rw [CPolynomial.coeff_C, CPolynomial.coeff_one]
   rw [pow_one, hC, CPolynomial.one_mul] at h
+  change (CPolynomial.monomial 1 (CPolynomial.C (1 : F)) :
+      CPolynomial (CPolynomial F)) = CPolynomial.X
   simpa [CBivariate.Y, hCinner] using h.symm
 
 private theorem coeff_Y_mul_zero
@@ -447,14 +449,18 @@ private theorem leeOSullivanBasisPolynomial_monicPart_coeffY_self
       ((CBivariate.linearYDivisor R : CBivariate F) ^ t)
     have hYpow := CPolynomial.toPoly_pow (CBivariate.Y : CBivariate F) (idx - t)
     have hLpow := CPolynomial.toPoly_pow (CBivariate.linearYDivisor R : CBivariate F) t
+    change CPolynomial.toPoly ((CBivariate.Y : CBivariate F) ^ (idx - t)) =
+      CPolynomial.toPoly (CBivariate.Y : CBivariate F) ^ (idx - t) at hYpow
+    change CPolynomial.toPoly ((CBivariate.linearYDivisor R : CBivariate F) ^ t) =
+      CPolynomial.toPoly (CBivariate.linearYDivisor R : CBivariate F) ^ t at hLpow
     have hYpow' :
         CPolynomial.toPoly ((CBivariate.Y : CBivariate F) ^ (idx - t)) =
           CPolynomial.toPoly (CBivariate.Y : CBivariate F) ^ (idx - t) := by
-      simpa using hYpow
+      exact hYpow
     have hLpow' :
         CPolynomial.toPoly ((CBivariate.linearYDivisor R : CBivariate F) ^ t) =
           CPolynomial.toPoly (CBivariate.linearYDivisor R : CBivariate F) ^ t := by
-      simpa using hLpow
+      exact hLpow
     change CPolynomial.toPoly
         ((CBivariate.Y : CBivariate F) ^ (idx - t) *
           (CBivariate.linearYDivisor R) ^ t) =
@@ -524,15 +530,24 @@ theorem leeOSullivanBasisPolynomial_coeffY_eq_zero_of_idx_lt
     rw [CPolynomial.natDegree_toPoly]
     simp [CBivariate.ofYConstant, CPolynomial.C_toPoly]
   have hYpow : Ypow.natDegree ≤ idx - t := by
-    simpa [Ypow] using
-      cpoly_natDegree_pow_le (P := (CBivariate.Y : CBivariate F)) hY (idx - t)
+    have h := cpoly_natDegree_pow_le
+      (P := (CBivariate.Y : CBivariate F)) hY (idx - t)
+    change CPolynomial.natDegree ((CBivariate.Y : CBivariate F) ^ (idx - t)) ≤
+      (idx - t) * 1 at h
+    simpa [Ypow] using h
   have hLpow : Lpow.natDegree ≤ t := by
-    simpa [Lpow] using
-      cpoly_natDegree_pow_le (P := (CBivariate.linearYDivisor R : CBivariate F)) hL t
+    have h := cpoly_natDegree_pow_le
+      (P := (CBivariate.linearYDivisor R : CBivariate F)) hL t
+    change CPolynomial.natDegree ((CBivariate.linearYDivisor R : CBivariate F) ^ t) ≤
+      t * 1 at h
+    simpa [Lpow] using h
   have hGpow : Gpow.natDegree ≤ 0 := by
     have hpow := cpoly_natDegree_pow_le
       (P := (CBivariate.ofYConstant G : CBivariate F)) hG
       (params.multiplicity - t)
+    change CPolynomial.natDegree
+        ((CBivariate.ofYConstant G : CBivariate F) ^ (params.multiplicity - t)) ≤
+      (params.multiplicity - t) * 0 at hpow
     simpa [Gpow] using hpow
   have hprod :
       (Ypow * Lpow * Gpow).natDegree ≤ idx := by

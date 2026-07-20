@@ -385,10 +385,11 @@ private theorem divByLinearY_divX_quot_coeff [CommRing R] [BEq R] [LawfulBEq R]
               rw [divX_zero_of_natDegreeY_zero (Q := Q) h0]
               rfl
       _ = 0 := by
-            simpa using congrArg (fun p : CBivariate R => CPolynomial.coeff p j) hzeroquot
+            have hcoeff := congrArg (fun p : CBivariate R => CPolynomial.coeff p j) hzeroquot
+            exact hcoeff.trans (CPolynomial.coeff_zero (R := CPolynomial R) j)
       _ = CPolynomial.coeff ((divByLinearY Q f).1) (j + 1) := by
             rw [divByLinearY_quot_of_natDegreeY_zero (Q := Q) (f := f) h0]
-            simpa using (CPolynomial.coeff_zero (R := CPolynomial R) (i := j + 1)).symm
+            exact (CPolynomial.coeff_zero (R := CPolynomial R) (i := j + 1)).symm
   · by_cases h1 : natDegreeY Q = 1
     · have hconstquot :
           (divByLinearY (CPolynomial.C (CPolynomial.coeff Q 1) : CBivariate R) f).1 = 0 := by
@@ -400,7 +401,8 @@ private theorem divByLinearY_divX_quot_coeff [CommRing R] [BEq R] [LawfulBEq R]
                 ((divByLinearY (CPolynomial.C (CPolynomial.coeff Q 1) : CBivariate R) f).1) j := by
                 rw [divX_eq_C_coeff_one_of_natDegreeY_one (Q := Q) h1]
         _ = 0 := by
-              simpa using congrArg (fun p : CBivariate R => CPolynomial.coeff p j) hconstquot
+              have hcoeff := congrArg (fun p : CBivariate R => CPolynomial.coeff p j) hconstquot
+              exact hcoeff.trans (CPolynomial.coeff_zero (R := CPolynomial R) j)
         _ = CPolynomial.coeff ((divByLinearY Q f).1) (j + 1) := by
               rw [divByLinearY_quot_of_natDegreeY_one (Q := Q) (f := f) h1]
               simpa [Nat.succ_ne_zero] using
@@ -451,7 +453,7 @@ private theorem divByLinearY_divX_rem [CommRing R] [BEq R] [LawfulBEq R]
   · rw [divX_zero_of_natDegreeY_zero Q h0, divByLinearY_quot_of_natDegreeY_zero Q f h0]
     have hrem0 : (divByLinearY (0 : CBivariate R) f).2 = (0 : CPolynomial R) := by
       exact congrArg Prod.snd (divByLinearY_zero (R := R) (f := f))
-    simpa [CPolynomial.coeff_zero] using hrem0
+    exact hrem0.trans (CPolynomial.coeff_zero (R := CPolynomial R) 0).symm
   · by_cases h1 : natDegreeY Q = 1
     · rw [divX_eq_C_coeff_one_of_natDegreeY_one Q h1]
       have hrem1 :

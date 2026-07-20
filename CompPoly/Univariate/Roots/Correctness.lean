@@ -193,7 +193,8 @@ theorem monicNormalize_root_iff {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     intro h
     apply hp
     apply CPolynomial.ext
-    simpa using h
+    change p.val = (#[] : CPolynomial.Raw F)
+    exact h
   have hsize : 0 < p.val.size := by
     cases hs : p.val.size with
     | zero =>
@@ -438,7 +439,6 @@ private theorem linearRootOfFactor?_eq_some_of_candidate {F : Type*}
   have hcond : factor.val.size ≤ 2 ∧ factor.coeff 1 ≠ 0 := h.1
   rw [if_pos]
   · congr
-    change -(factor.coeff 0) / factor.coeff 1 = a
     apply (div_eq_iff hcond.2).2
     rw [neg_eq_iff_add_eq_zero]
     rw [_root_.mul_comm a (factor.coeff 1)]
@@ -805,7 +805,8 @@ theorem finiteFieldRootProductWith_complete {F : Type*}
   by_cases hpempty : p.val = (#[] : CPolynomial.Raw F)
   · have hp0 : p = 0 := by
       apply CPolynomial.ext
-      simpa using hpempty
+      change p.val = (#[] : CPolynomial.Raw F)
+      exact hpempty
     exact (hp hp0).elim
   · simp [hpempty, CPolynomial.trim_eq]
     have hmonicRoot : (CPolynomial.Raw.monicNormalize p.val).eval a = 0 :=
@@ -834,7 +835,8 @@ theorem finiteFieldRootProduct_complete {F : Type*}
   by_cases hpempty : p.val = (#[] : CPolynomial.Raw F)
   · have hp0 : p = 0 := by
       apply CPolynomial.ext
-      simpa using hpempty
+      change p.val = (#[] : CPolynomial.Raw F)
+      exact hpempty
     exact (hp hp0).elim
   · simp [hpempty, CPolynomial.trim_eq]
     have hmonicRoot : (CPolynomial.Raw.monicNormalize p.val).eval a = 0 :=

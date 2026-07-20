@@ -28,7 +28,7 @@ theorem cpoly_eval_add {F : Type*}
     ← CPolynomial.eval_toPoly, ← CPolynomial.eval_toPoly]
 
 theorem cpoly_eval_X {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] (x : F) :
+    [Field F] [BEq F] [LawfulBEq F] (x : F) :
     CPolynomial.eval x CPolynomial.X = x := by
   rw [CPolynomial.eval_toPoly, CPolynomial.X_toPoly, Polynomial.eval_X]
 
@@ -107,21 +107,21 @@ theorem coeff_X_mul_succ {R : Type*}
   rw [houter, CPolynomial.coeff_X_mul_succ]
 
 theorem evalEval_CC_mul {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (c x y : F) (Q : CBivariate F) :
     evalEval x y (CC c * Q) = c * evalEval x y Q := by
   rw [evalEval_toPoly, evalEval_toPoly, toPoly_mul, CC_toPoly]
   simp [Polynomial.evalEval]
 
 theorem evalEval_X_mul {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (x y : F) (Q : CBivariate F) :
     evalEval x y (X * Q) = x * evalEval x y Q := by
   rw [evalEval_toPoly, evalEval_toPoly, toPoly_mul, X_toPoly]
   simp [Polynomial.evalEval]
 
 theorem evalEval_sub {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (x y : F) (P Q : CBivariate F) :
     evalEval x y (P - Q) = evalEval x y P - evalEval x y Q := by
   rw [evalEval_toPoly, evalEval_toPoly, evalEval_toPoly]
@@ -131,7 +131,7 @@ theorem evalEval_sub {F : Type*}
   simp [Polynomial.evalEval]
 
 theorem hasseDerivative_sub {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (a b : Nat) (P Q : CBivariate F) :
     hasseDerivative a b (P - Q) =
       hasseDerivative a b P - hasseDerivative a b Q := by
@@ -142,7 +142,7 @@ theorem hasseDerivative_sub {F : Type*}
   ring
 
 theorem hasseDerivative_CC_mul {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (c : F) (a b : Nat) (Q : CBivariate F) :
     hasseDerivative a b (CC c * Q) = CC c * hasseDerivative a b Q := by
   rw [eq_iff_coeff]
@@ -151,7 +151,7 @@ theorem hasseDerivative_CC_mul {F : Type*}
   ring
 
 theorem hasseDerivative_X_mul_zero_xOrder {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (b : Nat) (Q : CBivariate F) :
     hasseDerivative 0 b (X * Q) = X * hasseDerivative 0 b Q := by
   rw [eq_iff_coeff]
@@ -166,7 +166,7 @@ theorem hasseDerivative_X_mul_zero_xOrder {F : Type*}
       simp
 
 theorem hasseDerivative_X_mul_succ_xOrder {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (a b : Nat) (Q : CBivariate F) :
     hasseDerivative (a + 1) b (X * Q) =
       X * hasseDerivative (a + 1) b Q + hasseDerivative a b Q := by
@@ -187,7 +187,8 @@ theorem hasseDerivative_X_mul_succ_xOrder {F : Type*}
           coeff (X * Q) (i + 1 + (a + 1)) (j + b) =
             coeff Q (i + (a + 1)) (j + b) := by
         convert coeff_X_mul_succ (Q := Q) (i + a + 1) (j + b) using 2
-        omega
+        · omega
+        · omega
       rw [hX]
       rw [show i + 1 + (a + 1) = (i + a + 1).succ by omega]
       rw [show i + (a + 1) = i + a + 1 by omega]
@@ -197,7 +198,7 @@ theorem hasseDerivative_X_mul_succ_xOrder {F : Type*}
       ring_nf
 
 theorem hasseDerivativeEval_CC_mul {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (c : F) (a b : Nat) (x y : F) (Q : CBivariate F) :
     hasseDerivativeEval a b x y (CC c * Q) =
       c * hasseDerivativeEval a b x y Q := by
@@ -207,7 +208,7 @@ theorem hasseDerivativeEval_CC_mul {F : Type*}
   rw [hasseDerivative_eval_eq_eval]
 
 theorem hasseDerivativeEval_sub {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (a b : Nat) (x y : F) (P Q : CBivariate F) :
     hasseDerivativeEval a b x y (P - Q) =
       hasseDerivativeEval a b x y P - hasseDerivativeEval a b x y Q := by
@@ -217,7 +218,7 @@ theorem hasseDerivativeEval_sub {F : Type*}
   rw [hasseDerivative_eval_eq_eval, hasseDerivative_eval_eq_eval]
 
 theorem hasseDerivativeEval_X_mul_zero_xOrder {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (b : Nat) (x y : F) (Q : CBivariate F) :
     hasseDerivativeEval 0 b x y (X * Q) =
       x * hasseDerivativeEval 0 b x y Q := by
@@ -227,7 +228,7 @@ theorem hasseDerivativeEval_X_mul_zero_xOrder {F : Type*}
   rw [hasseDerivative_eval_eq_eval]
 
 theorem hasseDerivativeEval_X_mul_succ_xOrder {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (a b : Nat) (x y : F) (Q : CBivariate F) :
     hasseDerivativeEval (a + 1) b x y (X * Q) =
       x * hasseDerivativeEval (a + 1) b x y Q +
@@ -259,7 +260,13 @@ theorem coeff_ofYCoefficient {F : Type*}
   · subst k
     simpa using congrArg (fun P : CPolynomial F ↦ P.coeff i) houter
   · have hcoeff := congrArg (fun P : CPolynomial F ↦ P.coeff i) houter
-    simpa [hk, CPolynomial.coeff_zero] using hcoeff
+    calc
+      CPolynomial.coeff
+          (CPolynomial.coeff (CPolynomial.monomial j P : CBivariate F) k) i =
+          CPolynomial.coeff (0 : CPolynomial F) i := by
+        simpa [hk] using hcoeff
+      _ = 0 := CPolynomial.coeff_zero i
+      _ = if k = j then P.coeff i else 0 := by simp [hk]
 
 theorem coeff_ofYConstant {F : Type*}
     [Semiring F] [BEq F] [LawfulBEq F] [Nontrivial F]
@@ -275,7 +282,12 @@ theorem coeff_ofYConstant {F : Type*}
   · subst j
     simpa using congrArg (fun P : CPolynomial F ↦ P.coeff i) houter
   · have hcoeff := congrArg (fun P : CPolynomial F ↦ P.coeff i) houter
-    simpa [hj, CPolynomial.coeff_zero] using hcoeff
+    calc
+      CPolynomial.coeff (CPolynomial.coeff (CPolynomial.C P : CBivariate F) j) i =
+          CPolynomial.coeff (0 : CPolynomial F) i := by
+        simpa [hj] using hcoeff
+      _ = 0 := CPolynomial.coeff_zero i
+      _ = if j = 0 then P.coeff i else 0 := by simp [hj]
 
 theorem coeff_ofYConstant_mul {F : Type*}
     [Semiring F] [BEq F] [LawfulBEq F] [Nontrivial F]
@@ -293,7 +305,7 @@ theorem coeff_ofYConstant_mul {F : Type*}
   simpa using congrArg (fun Q : CPolynomial F ↦ Q.coeff i) houter
 
 theorem natWeightedDegree_ofYConstant_mul_le {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (A : CPolynomial F) (P : CBivariate F) (w : Nat) :
     CBivariate.natWeightedDegree (CBivariate.ofYConstant A * P) 1 w ≤
       A.natDegree + CBivariate.natWeightedDegree P 1 w := by
@@ -323,7 +335,7 @@ theorem natWeightedDegree_ofYConstant_mul_le {F : Type*}
   omega
 
 theorem validWitness_coeffY_eq_zero_of_yCap_lt {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     {points : Array (F × F)} {params : GSInterpParams} {Q : CBivariate F}
     (hMessage : ¬ params.messageDegree ≤ 1)
     (hQ : ValidInterpolationWitness points params Q) {j : Nat}
@@ -400,7 +412,11 @@ theorem ofYConstant_mul {F : Type*}
     have hleft := congrArg (fun P : CPolynomial F ↦ P.coeff i) hleftOuter
     have hright := congrArg (fun P : CPolynomial F ↦ P.coeff i) houter
     rw [CPolynomial.coeff_C] at hright
-    simpa using hleft.trans hright.symm
+    change CPolynomial.coeff (CPolynomial.coeff
+        (CPolynomial.C (P * Q) : CBivariate F) 0) i =
+      CPolynomial.coeff (CPolynomial.coeff
+        (CPolynomial.C P * CPolynomial.C Q : CBivariate F) 0) i
+    exact hleft.trans hright.symm
   · have hleft := congrArg (fun P : CPolynomial F ↦ P.coeff i) houter
     have hleftOuterCoeff := congrArg (fun P : CPolynomial F ↦ P.coeff i) hleftOuter
     rw [CPolynomial.coeff_C] at hleft
@@ -430,7 +446,11 @@ theorem ofYConstant_X_mul {F : Type*}
     have hleft := congrArg (fun P : CPolynomial F ↦ P.coeff i) hleftOuter
     have hright := congrArg (fun P : CPolynomial F ↦ P.coeff i) houter
     rw [CPolynomial.coeff_C] at hright
-    simpa using hleft.trans hright.symm
+    change CPolynomial.coeff (CPolynomial.coeff
+        (CPolynomial.C (CPolynomial.X * P) : CBivariate F) 0) i =
+      CPolynomial.coeff (CPolynomial.coeff
+        (CPolynomial.C CPolynomial.X * CPolynomial.C P : CBivariate F) 0) i
+    exact hleft.trans hright.symm
   · have hright := congrArg (fun P : CPolynomial F ↦ P.coeff i) houter
     have hleft := congrArg (fun P : CPolynomial F ↦ P.coeff i) hleftOuter
     rw [CPolynomial.coeff_C] at hright
@@ -450,7 +470,7 @@ theorem cpoly_eq_zero_of_val_size_eq_zero {F : Type*}
   simp [hnone]
 
 theorem hasseDerivativeEval_ofYConstant_mul_eq_eval_mul_of_lower {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (x y : F) (b : Nat) :
     ∀ (A : CPolynomial F) (P : CBivariate F) (order : Nat),
       (∀ a, a < order → CBivariate.hasseDerivativeEval a b x y P = 0) →
@@ -508,7 +528,7 @@ theorem hasseDerivativeEval_ofYConstant_mul_eq_eval_mul_of_lower {F : Type*}
   exact hmain A.val.size A rfl P order hLower
 
 theorem hasseDerivativeEval_ofYConstant_mul_eq_zero_of_lower {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (x y : F) (b : Nat) (A : CPolynomial F) (P : CBivariate F) (order : Nat)
     (hLower : ∀ a, a ≤ order →
       CBivariate.hasseDerivativeEval a b x y P = 0) :
@@ -596,18 +616,18 @@ theorem foldl_add_single_beq_of_nodup_mem {α : Type*} [AddCommMonoid α]
         exact ih hxsNodup hmemTail
 
 def koetterBasisCombination {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (weights : Nat → CPolynomial F) (basis : Array (CBivariate F)) : CBivariate F :=
   (List.range basis.size).foldl
     (fun out idx ↦ out + CBivariate.ofYConstant (weights idx) * basis.getD idx 0) 0
 
 def koetterBasisSpanContains {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (basis : Array (CBivariate F)) (Q : CBivariate F) : Prop :=
   ∃ weights : Nat → CPolynomial F, koetterBasisCombination weights basis = Q
 
 theorem koetterBasisCombination_eq_zero_of_weights_zero {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (weights : Nat → CPolynomial F) (basis : Array (CBivariate F))
     (hzero : ∀ idx, idx < basis.size → weights idx = 0) :
     koetterBasisCombination weights basis = 0 := by
@@ -633,7 +653,7 @@ theorem koetterBasisCombination_eq_zero_of_weights_zero {F : Type*}
     (fun idx hmem ↦ List.mem_range.mp hmem)
 
 theorem coeff_koetterBasisCombination {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (weights : Nat → CPolynomial F) (basis : Array (CBivariate F))
     (i j : Nat) :
     CBivariate.coeff (koetterBasisCombination weights basis) i j =
@@ -660,7 +680,9 @@ theorem coeff_koetterBasisCombination {F : Type*}
         simp only [List.foldl_cons]
         rw [ih]
         rw [CBivariate.coeff_add]
-  simpa [term, CBivariate.coeff_zero] using hfold (List.range basis.size) (0 : CBivariate F)
+  have h := hfold (List.range basis.size) (0 : CBivariate F)
+  rw [CBivariate.coeff_zero] at h
+  simpa [term] using h
 
 
 end GuruswamiSudan

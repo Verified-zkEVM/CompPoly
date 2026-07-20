@@ -53,7 +53,11 @@ with no cast. -/
 private def reusedDegreeLT : ↥(CPolynomial.degreeLT (R := Nat) 3) := leftDegreeLT
 
 example : reusedPoly.coeff 1 = 7 := by
-  simpa [reusedPoly, leftPoly] using CPolynomial.coeff_monomial (R := Nat) 1 1 7
+  unfold reusedPoly leftPoly
+  change CPolynomial.coeff
+    (@CPolynomial.monomial Nat inferInstance natBeqEq nat_lawful_beq_eq inferInstance 1 7) 1 = 7
+  simpa using
+    (@CPolynomial.coeff_monomial Nat inferInstance natBeqEq nat_lawful_beq_eq inferInstance 1 1 7)
 
 example : reusedDegreeLT.1 = reusedPoly := rfl
 
@@ -63,7 +67,9 @@ example : (reusedDegreeLT + reusedDegreeLT).1.coeff 1 = 14 := by
   calc
     (reusedDegreeLT + reusedDegreeLT).1.coeff 1 =
         reusedDegreeLT.1.coeff 1 + reusedDegreeLT.1.coeff 1 := by
-          simpa using CPolynomial.coeff_add reusedDegreeLT.1 reusedDegreeLT.1 1
+          change CPolynomial.coeff (reusedDegreeLT.1 + reusedDegreeLT.1) 1 =
+            CPolynomial.coeff reusedDegreeLT.1 1 + CPolynomial.coeff reusedDegreeLT.1 1
+          exact CPolynomial.coeff_add reusedDegreeLT.1 reusedDegreeLT.1 1
     _ = 7 + 7 := by
       congr
     _ = 14 := by norm_num

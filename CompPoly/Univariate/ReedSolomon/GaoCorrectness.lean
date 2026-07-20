@@ -297,6 +297,29 @@ theorem decode_eq_some [Field F]
   show (if G.mod V == 0 then if (G / V).degree < k then some (G / V) else none else none) = _
   rw [if_pos (beq_iff_eq.mpr hmod0), if_pos (hdiveq ▸ messagePoly_degree_lt msg), hdiveq]
 
+/-- **Decoder refusal is a farness certificate**: if the decoder returns `none`, the
+received word is beyond the guaranteed radius `⌊(n-k)/2⌋` of *every* codeword — positive,
+polynomial-time-checkable evidence of farness from the code (the contrapositive of
+`decode_eq_some`). -/
+theorem decode_none_farness [Field F]
+    (k : ℕ) (D : Domain F) (r : Vector F D.n) (hkn : k < D.n)
+    (hnone : Gao.decode k D r = none) :
+    ∀ msg : Vector F k, D.n - k < 2 * hammingDist r.get (encode D msg).get := by
+  intro msg
+  by_contra hle
+  rw [Gao.decode_eq_some k D r hkn msg (Nat.le_of_not_lt hle)] at hnone
+  exact Option.some_ne_none _ hnone
+
+/-- Outcome characterization: `Gao.decode` returns `none` iff the received word is beyond
+the guaranteed radius `⌊(n-k)/2⌋` of every codeword (combines `decode_eq_none` and
+`decode_none_farness`). -/
+theorem decode_eq_none_iff [Field F]
+    (k : ℕ) (D : Domain F) (r : Vector F D.n) (hkn : k < D.n) :
+    Gao.decode k D r = none ↔
+      ∀ msg : Vector F k, D.n - k < 2 * hammingDist r.get (encode D msg).get :=
+  ⟨decode_none_farness k D r hkn,
+    fun h => decode_eq_none k D r hkn fun msg => by have := h msg; omega⟩
+
 /-- Uniqueness: within the guaranteed-decoding radius `⌊(D.n-k)/2⌋`, two messages
 whose codewords lie within that radius of `r` decode to the same polynomial. -/
 theorem decode_unique [Field F] (k : ℕ) (D : Domain F) (r : Vector F D.n)

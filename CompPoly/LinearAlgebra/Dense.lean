@@ -10,7 +10,9 @@ import CompPoly.LinearAlgebra.Dense.RowOpsCorrectness
 import CompPoly.LinearAlgebra.Dense.RrefSemantics
 import CompPoly.LinearAlgebra.Dense.RrefShape
 import CompPoly.LinearAlgebra.Dense.Kernel
+import CompPoly.LinearAlgebra.Dense.KernelInPlace
 import CompPoly.LinearAlgebra.Dense.KernelCorrectness
+import CompPoly.LinearAlgebra.Dense.KernelInPlaceCorrectness
 
 /-!
 # Dense Linear Algebra

@@ -66,7 +66,7 @@ instance neZero_one_of_nontrivial_comm_monoid_zero {M₀ : Type*}
     exact h_neq (all_eq x y)
 }
 
-instance unit_of_nontrivial_comm_monoid_with_zero_is_not_zero
+theorem unit_of_nontrivial_comm_monoid_with_zero_is_not_zero
     {R : Type*} [CommMonoidWithZero R] [Nontrivial R] {a : R}
     (h_unit : IsUnit a) : NeZero a := by
   by_contra h_zero
@@ -1285,7 +1285,7 @@ theorem rsum_eq_t1_square_aux
           exact ⟨one_le_i, tmp⟩
     _ = u := by rw [trace_map_icc_t1_inv, mul_one]
 
-instance charP_eq_2_of_add_self_eq_zero {F : Type*} [Field F]
+theorem charP_eq_2_of_add_self_eq_zero {F : Type*} [Field F]
     (sumZeroIffEq : ∀ (x y : F), x + y = 0 ↔ x = y) : CharP F 2 :=
   have h_two : (2 : (F)) = 0 := by
     have h := sumZeroIffEq 1 1
