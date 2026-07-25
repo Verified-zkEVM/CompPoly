@@ -175,6 +175,16 @@ namespace Limbs8
 /-- The zero value. -/
 def zero : Limbs8 := ⟨0, 0, 0, 0, 0, 0, 0, 0⟩
 
+/-- The value one. -/
+def one : Limbs8 := ⟨1, 0, 0, 0, 0, 0, 0, 0⟩
+
+/-- Split a natural number into eight 32-bit limbs, discarding bits above `2 ^ 256`. -/
+@[inline] def ofNat (n : ℕ) : Limbs8 :=
+  ⟨UInt64.ofNat (n &&& 0xffffffff), UInt64.ofNat (n >>> 32 &&& 0xffffffff),
+    UInt64.ofNat (n >>> 64 &&& 0xffffffff), UInt64.ofNat (n >>> 96 &&& 0xffffffff),
+    UInt64.ofNat (n >>> 128 &&& 0xffffffff), UInt64.ofNat (n >>> 160 &&& 0xffffffff),
+    UInt64.ofNat (n >>> 192 &&& 0xffffffff), UInt64.ofNat (n >>> 224 &&& 0xffffffff)⟩
+
 /-- The natural number represented by the limbs: `∑ lᵢ * 2 ^ (32 * i)`. -/
 def toNat (x : Limbs8) : ℕ :=
   x.l0.toNat + 2 ^ 32 * x.l1.toNat + 2 ^ 64 * x.l2.toNat + 2 ^ 96 * x.l3.toNat +
@@ -197,6 +207,18 @@ theorem zero_toNat : zero.toNat = 0 := by
   simp only [toNat, zero, toNat_zero]
   norm_num
 
+theorem one_bounded : one.Bounded := by decide
+
+theorem one_toNat : one.toNat = 1 := by decide
+
+theorem ofNat_bounded (n : ℕ) : (ofNat n).Bounded := by
+  simp only [Bounded, ofNat, UInt64.toNat_ofNat', land_mask32]
+  omega
+
+theorem ofNat_toNat (n : ℕ) : (ofNat n).toNat = n % 2 ^ 256 := by
+  simp only [toNat, ofNat, UInt64.toNat_ofNat', land_mask32]
+  omega
+
 end Limbs8
 
 /-- A recomposed value with 32-bit limbs stays below `2 ^ 256`. -/
@@ -206,6 +228,27 @@ theorem sum8_lt {a0 a1 a2 a3 a4 a5 a6 a7 : ℕ} (h0 : a0 < 2 ^ 32) (h1 : a1 < 2 
     a0 + 2 ^ 32 * a1 + 2 ^ 64 * a2 + 2 ^ 96 * a3 + 2 ^ 128 * a4 + 2 ^ 160 * a5 + 2 ^ 192 * a6 +
       2 ^ 224 * a7 < 2 ^ 256 := by
   omega
+
+/-- Bounded limb vectors are determined by their value. -/
+theorem Limbs8.ext_of_toNat {x y : Limbs8} (hx : x.Bounded) (hy : y.Bounded)
+    (h : x.toNat = y.toNat) : x = y := by
+  obtain ⟨hx0, hx1, hx2, hx3, hx4, hx5, hx6, hx7⟩ := hx
+  obtain ⟨hy0, hy1, hy2, hy3, hy4, hy5, hy6, hy7⟩ := hy
+  simp only [Limbs8.toNat] at h
+  have e0 : x.l0.toNat = y.l0.toNat := by omega
+  have e1 : x.l1.toNat = y.l1.toNat := by omega
+  have e2 : x.l2.toNat = y.l2.toNat := by omega
+  have e3 : x.l3.toNat = y.l3.toNat := by omega
+  have e4 : x.l4.toNat = y.l4.toNat := by omega
+  have e5 : x.l5.toNat = y.l5.toNat := by omega
+  have e6 : x.l6.toNat = y.l6.toNat := by omega
+  have e7 : x.l7.toNat = y.l7.toNat := by omega
+  obtain ⟨x0, x1, x2, x3, x4, x5, x6, x7⟩ := x
+  obtain ⟨y0, y1, y2, y3, y4, y5, y6, y7⟩ := y
+  simp only [Limbs8.mk.injEq]
+  exact ⟨UInt64.toNat_inj.mp e0, UInt64.toNat_inj.mp e1, UInt64.toNat_inj.mp e2,
+    UInt64.toNat_inj.mp e3, UInt64.toNat_inj.mp e4, UInt64.toNat_inj.mp e5,
+    UInt64.toNat_inj.mp e6, UInt64.toNat_inj.mp e7⟩
 
 /-- A bounded eight-limb value is below `2 ^ 256`. -/
 theorem Limbs8.toNat_lt {x : Limbs8} (hx : x.Bounded) : x.toNat < 2 ^ 256 := by
@@ -229,8 +272,7 @@ theorem carry_chain_sum {x0 x1 x2 x3 x4 x5 x6 x7 y0 y1 y2 y3 y4 y5 y6 y7 : ℕ}
     (e4 : s4 + 2 ^ 32 * c4 = x4 + y4 + c3)
     (e5 : s5 + 2 ^ 32 * c5 = x5 + y5 + c4)
     (e6 : s6 + 2 ^ 32 * c6 = x6 + y6 + c5)
-    (e7 : s7 + 2 ^ 32 * c7 = x7 + y7 + c6)
-    :
+    (e7 : s7 + 2 ^ 32 * c7 = x7 + y7 + c6) :
     s0 + 2 ^ 32 * s1 + 2 ^ 64 * s2 + 2 ^ 96 * s3 + 2 ^ 128 * s4 + 2 ^ 160 * s5 + 2 ^ 192 * s6 +
       2 ^ 224 * s7 + 2 ^ 256 * c7 =
     (x0 + 2 ^ 32 * x1 + 2 ^ 64 * x2 + 2 ^ 96 * x3 + 2 ^ 128 * x4 + 2 ^ 160 * x5 +
@@ -249,8 +291,7 @@ theorem borrow_chain_sum {x0 x1 x2 x3 x4 x5 x6 x7 y0 y1 y2 y3 y4 y5 y6 y7 : ℕ}
     (e4 : m4 + y4 + b3 = x4 + 2 ^ 32 * b4)
     (e5 : m5 + y5 + b4 = x5 + 2 ^ 32 * b5)
     (e6 : m6 + y6 + b5 = x6 + 2 ^ 32 * b6)
-    (e7 : m7 + y7 + b6 = x7 + 2 ^ 32 * b7)
-    :
+    (e7 : m7 + y7 + b6 = x7 + 2 ^ 32 * b7) :
     (m0 + 2 ^ 32 * m1 + 2 ^ 64 * m2 + 2 ^ 96 * m3 + 2 ^ 128 * m4 + 2 ^ 160 * m5 +
       2 ^ 192 * m6 + 2 ^ 224 * m7) +
       (y0 + 2 ^ 32 * y1 + 2 ^ 64 * y2 + 2 ^ 96 * y3 + 2 ^ 128 * y4 + 2 ^ 160 * y5 +

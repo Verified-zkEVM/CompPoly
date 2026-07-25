@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Gregor Mitscha-Baude
 -/
 
-import CompPoly.Fields.Montgomery.Native64x8Mul
+import CompPoly.Fields.Montgomery.Native64x8Field
 
 /-!
 # Eight-limb Montgomery arithmetic tests
@@ -67,5 +67,21 @@ private def montAB : Limbs8 :=
 #guard mul q negInv rMod rMod = rMod
 #guard mul q negInv rMod Limbs8.zero = Limbs8.zero
 #guard square q negInv rMod = rMod
+
+-- the carrier
+private abbrev F := FastField Vesta.baseFieldSize
+
+#guard (0 : F).toNat = 0
+#guard (1 : F).toNat = 1
+#guard (37 : F).toNat = 37
+#guard ((Vesta.baseFieldSize : F)).toNat = 0
+#guard ((12345 : F) * 12345).toNat = 12345 * 12345
+#guard ((0 : F) - 1).toNat = Vesta.baseFieldSize - 1
+#guard (-(1 : F)).toNat = Vesta.baseFieldSize - 1
+#guard (((Vesta.baseFieldSize - 1 : ℕ) : F) * ((Vesta.baseFieldSize - 1 : ℕ) : F)).toNat = 1
+#guard ((123456789 : F) ^ 17).toNat = 123456789 ^ 17 % Vesta.baseFieldSize
+#guard ((37 : F)⁻¹ * 37).toNat = 1
+#guard ((37 : F) / 37).toNat = 1
+#guard ((0 : F)⁻¹).toNat = 0
 
 end CompPolyTests.Fields.Native64x8

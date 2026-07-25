@@ -24,6 +24,7 @@ This directory contains formally verified field infrastructure used in zero-know
 | **Montgomery/Native32Field.lean** | Per-field parameters, the shared `FastField` carrier, arithmetic, instances, and canonical-field bridge. |
 | **Montgomery/Native64x8.lean** | Raw eight-limb (8 x 32-bit in `UInt64`) Montgomery word operations for moduli below 2^255: limb helpers with `toNat` specifications, conditional subtraction, addition, subtraction, negation, and the CIOS multiplication definitions, plus the `Mont64x8Field` constants class instantiated for both Pasta base fields. |
 | **Montgomery/Native64x8Mul.lean** | Correctness of eight-limb CIOS multiplication: the round invariant and the folded Montgomery identity for `mul`. |
+| **Montgomery/Native64x8Field.lean** | The bounded eight-limb carrier, conversions, arithmetic, `ZMod` bridge, and field instances for moduli below 2^255. |
 | **Secp256k1.lean** | Base and scalar fields for the Secp256k1 curve (used in Bitcoin/Ethereum). |
 
 ## Binary-field modules
