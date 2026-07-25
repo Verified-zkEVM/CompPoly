@@ -84,4 +84,32 @@ private abbrev F := FastField Vesta.baseFieldSize
 #guard ((37 : F) / 37).toNat = 1
 #guard ((0 : F)⁻¹).toNat = 0
 
+-- the second instantiation: the Pallas base field
+private def pq : Limbs8 := Pallas.instMont64x8Field.modulusLimbs
+
+private def pNegInv : UInt64 := Pallas.instMont64x8Field.montgomeryNegInv
+
+private def pMontA : Limbs8 :=
+  ⟨0x73c65f1d, 0x4e0a938e, 0xd71d5fef, 0x6a1193b, 0xe42540dc, 0xcb40dac3, 0xc6cffd09,
+    0x335fa2c8⟩
+
+private def pMontB : Limbs8 :=
+  ⟨0x5153d947, 0x26211be3, 0x38e82d52, 0xcb949678, 0xb6f80c7e, 0xf369686f, 0x7c2907b8,
+    0xd91e296⟩
+
+private def pMontAB : Limbs8 :=
+  ⟨0x8d6b3f08, 0xe5c0528e, 0x22646fad, 0xaec941cc, 0xfec4a4c0, 0x4f5e09aa, 0x69b735b5,
+    0x179b8aa1⟩
+
+#guard pq.toNat = Pallas.baseFieldSize
+#guard mul pq pNegInv pMontA pMontB = pMontAB
+#guard (add pq a b).toNat = (a.toNat + b.toNat) % Pallas.baseFieldSize
+#guard condSub pq pq = Limbs8.zero
+
+private abbrev G := FastField Pallas.baseFieldSize
+
+#guard (37 : G).toNat = 37
+#guard ((12345 : G) * 12345).toNat = 12345 * 12345
+#guard ((37 : G)⁻¹ * 37).toNat = 1
+
 end CompPolyTests.Fields.Native64x8

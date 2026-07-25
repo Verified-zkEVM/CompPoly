@@ -586,10 +586,10 @@ deriving DecidableEq, Repr, Inhabited
 namespace State9
 
 /-- The zero accumulator. -/
-def zero : State9 := ⟨0, 0, 0, 0, 0, 0, 0, 0, 0⟩
+@[inline] def zero : State9 := ⟨0, 0, 0, 0, 0, 0, 0, 0, 0⟩
 
 /-- The eight low limbs of the accumulator. -/
-def toLimbs8 (t : State9) : Limbs8 := ⟨t.t0, t.t1, t.t2, t.t3, t.t4, t.t5, t.t6, t.t7⟩
+@[inline] def toLimbs8 (t : State9) : Limbs8 := ⟨t.t0, t.t1, t.t2, t.t3, t.t4, t.t5, t.t6, t.t7⟩
 
 /-- The natural number represented by the accumulator. -/
 def toNat (t : State9) : ℕ := t.toLimbs8.toNat + 2 ^ 256 * t.t8.toNat
