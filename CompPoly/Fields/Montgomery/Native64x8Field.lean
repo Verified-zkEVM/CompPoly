@@ -24,17 +24,53 @@ is transported along `toField`, which is a ring isomorphism onto `ZMod modulus`.
 
 * `FastField` — the carrier, `{ x : Limbs8 // x.Bounded ∧ x.toNat < modulus }`
 * `toField_add`, `toField_mul`, … — `@[simp]` equivalences with the canonical field
+* `Mont64x8Field` — the per-field constants class
 * `ringEquiv`, `instField` — the ring isomorphism and the transferred `Field` instance
 -/
 
 namespace Montgomery
 namespace Native64x8
 
+/-! ## Per-field constants -/
+
+/-- Per-field data for a fast eight-limb Montgomery field with radix `R = 2 ^ 256`.  All
+side conditions are concrete numeral facts, discharged by `decide` at instantiation. -/
+class Mont64x8Field (modulus : ℕ) where
+  /-- `modulus` is prime. -/
+  prime : modulus.Prime
+  /-- The modulus in eight 32-bit limbs. -/
+  modulusLimbs : Limbs8
+  /-- `2 ^ 256 mod modulus`, the Montgomery representation of one. -/
+  rModModulus : Limbs8
+  /-- `(2 ^ 256) ^ 2 mod modulus`, used to enter Montgomery form. -/
+  r2ModModulus : Limbs8
+  /-- `-modulus⁻¹ mod 2 ^ 32`, used by Montgomery reduction. -/
+  montgomeryNegInv : UInt64
+  modulusLimbs_bounded : modulusLimbs.Bounded := by decide
+  modulusLimbs_toNat : modulusLimbs.toNat = modulus := by decide
+  two_lt_modulus : 2 < modulus := by decide
+  two_mul_modulus_lt : 2 * modulus < 2 ^ 256 := by decide
+  rModModulus_bounded : rModModulus.Bounded := by decide
+  rModModulus_toNat : rModModulus.toNat = 2 ^ 256 % modulus := by decide
+  r2ModModulus_bounded : r2ModModulus.Bounded := by decide
+  r2ModModulus_toNat : r2ModModulus.toNat = (2 ^ 256) ^ 2 % modulus := by decide
+  montgomeryNegInv_lt : montgomeryNegInv.toNat < 2 ^ 32 := by decide
+  montgomeryNegInv_mul_modulus_mod_two_pow_32 :
+    montgomeryNegInv.toNat * modulus % 2 ^ 32 = 2 ^ 32 - 1 := by decide
+
 /-! ## Modulus facts -/
 
 namespace Mont64x8Field
 
 variable {modulus : ℕ} [P : Mont64x8Field modulus]
+
+instance : Fact (Nat.Prime modulus) := ⟨P.prime⟩
+
+theorem modulus_pos : 0 < modulus := Nat.zero_lt_of_lt P.two_lt_modulus
+
+theorem modulus_lt : modulus < 2 ^ 256 := by
+  have := P.two_mul_modulus_lt
+  omega
 
 theorem q_toNat : P.modulusLimbs.toNat = modulus := P.modulusLimbs_toNat
 
@@ -53,7 +89,7 @@ theorem two_ne_zero : (2 : ZMod modulus) ≠ 0 := by
   have hdvd : modulus ∣ 2 := (ZMod.natCast_eq_zero_iff 2 modulus).mp h
   exact (Nat.not_le_of_gt P.two_lt_modulus) (Nat.le_of_dvd (by decide) hdvd)
 
-theorem r_ne_zero [Fact (Nat.Prime modulus)] : ((2 ^ 256 : ℕ) : ZMod modulus) ≠ 0 := by
+theorem r_ne_zero : ((2 ^ 256 : ℕ) : ZMod modulus) ≠ 0 := by
   rw [Nat.cast_pow, Nat.cast_ofNat]
   exact pow_ne_zero _ two_ne_zero
 
@@ -227,8 +263,6 @@ theorem square_def (x : FastField modulus) : FastField.square x = x * x := rfl
 
 section Bridge
 
-variable [Fact (Nat.Prime modulus)]
-
 instance : NNRatCast (FastField modulus) where
   nnratCast q := FastField.ofField (q : ZMod modulus)
 
@@ -267,7 +301,6 @@ private theorem val_cast (x : FastField modulus) :
     (x.val.toNat : ZMod modulus) = toField x * ((2 ^ 256 : ℕ) : ZMod modulus) := by
   rw [toField_eq, mul_assoc, inv_mul_cancel₀ Mont64x8Field.r_ne_zero, mul_one]
 
-omit [Fact (Nat.Prime modulus)] in
 theorem toNat_lt (x : FastField modulus) : toNat x < modulus := by
   have := (mul_spec _ _ _ _ P.modulusLimbs_bounded x.val_bounded Limbs8.one_bounded
     P.montgomeryNegInv_lt Mont64x8Field.negInv_mul_q x.val_lt Mont64x8Field.two_mul_q_lt).2.1
@@ -479,7 +512,7 @@ theorem toField_qsmul (q : ℚ) (x : FastField modulus) : toField (q • x) = q 
 /-! ### Algebraic structure -/
 
 /-- Ring equivalence between the fast Montgomery representation and the canonical field. -/
-def ringEquiv (modulus : ℕ) [P : Mont64x8Field modulus] [Fact (Nat.Prime modulus)] :
+def ringEquiv (modulus : ℕ) [P : Mont64x8Field modulus] :
     FastField modulus ≃+* ZMod modulus where
   toFun := toField
   invFun := ofField

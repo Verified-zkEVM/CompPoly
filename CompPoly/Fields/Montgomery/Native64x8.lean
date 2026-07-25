@@ -19,7 +19,7 @@ The limb helpers (`adcLo`/`adcCo`, `sbbLo`/`sbbBo`, `macLo`/`macHi`, `montM`) ar
 the two telescoping lemmas `carry_chain_sum` and `borrow_chain_sum`, which turn an eight-step
 carry or borrow chain into a single identity between recomposed values.  Every correctness
 statement is generic in the modulus limbs; concrete fields supply their constants through
-`Mont64x8Field`.
+the `Mont64x8Field` class of `Montgomery/Native64x8Field`.
 
 Conditional subtraction, addition, subtraction and negation are proved correct here.  The
 CIOS multiplication round `mulRound` is defined here; its state invariant is proved in the
@@ -28,8 +28,8 @@ sibling module that builds the field carrier.
 ## Main results
 
 * `condSub_toNat`, `add_toNat`, `sub_toNat`, `neg_toNat` — correctness of the raw operations
-* `addLimbs_toNat`, `subLimbs_toNat` — the underlying carry/borrow chains
-* `Mont64x8Field` — per-field constants, instantiated for both Pasta base fields
+* `addLimbs_toNat`, `subLimbs_spec` — the underlying carry/borrow chains
+* `mulAccum`, `mulReduce`, `mulRound`, `mul` — the CIOS multiplication definitions
 -/
 
 namespace Montgomery
@@ -652,80 +652,6 @@ subtraction. -/
 /-- Montgomery squaring. -/
 @[inline] def square (q : Limbs8) (negInv : UInt64) (a : Limbs8) : Limbs8 :=
   mul q negInv a a
-
-/-! ## Per-field constants -/
-
-/-- Per-field data for a fast eight-limb Montgomery field with radix `R = 2 ^ 256`.  All
-side conditions are concrete numeral facts, discharged by `decide` at instantiation. -/
-class Mont64x8Field (modulus : ℕ) where
-  /-- The modulus in eight 32-bit limbs. -/
-  modulusLimbs : Limbs8
-  /-- `2 ^ 256 mod modulus`, the Montgomery representation of one. -/
-  rModModulus : Limbs8
-  /-- `(2 ^ 256) ^ 2 mod modulus`, used to enter Montgomery form. -/
-  r2ModModulus : Limbs8
-  /-- `-modulus⁻¹ mod 2 ^ 32`, used by Montgomery reduction. -/
-  montgomeryNegInv : UInt64
-  modulusLimbs_bounded : modulusLimbs.Bounded := by decide
-  modulusLimbs_toNat : modulusLimbs.toNat = modulus := by decide
-  two_lt_modulus : 2 < modulus := by decide
-  two_mul_modulus_lt : 2 * modulus < 2 ^ 256 := by decide
-  rModModulus_bounded : rModModulus.Bounded := by decide
-  rModModulus_toNat : rModModulus.toNat = 2 ^ 256 % modulus := by decide
-  r2ModModulus_bounded : r2ModModulus.Bounded := by decide
-  r2ModModulus_toNat : r2ModModulus.toNat = (2 ^ 256) ^ 2 % modulus := by decide
-  montgomeryNegInv_lt : montgomeryNegInv.toNat < 2 ^ 32 := by decide
-  montgomeryNegInv_mul_modulus_mod_two_pow_32 :
-    montgomeryNegInv.toNat * modulus % 2 ^ 32 = 2 ^ 32 - 1 := by decide
-
-namespace Mont64x8Field
-
-theorem modulus_pos {modulus : ℕ} [P : Mont64x8Field modulus] : 0 < modulus :=
-  Nat.zero_lt_of_lt P.two_lt_modulus
-
-theorem modulus_lt {modulus : ℕ} [P : Mont64x8Field modulus] : modulus < 2 ^ 256 := by
-  have := P.two_mul_modulus_lt
-  omega
-
-end Mont64x8Field
-
-/-! ### The Pasta base fields
-
-Both Pasta primes are `1 mod 2 ^ 32`, hence both have `negInv = 2 ^ 32 - 1`. -/
-
-namespace Vesta
-
-/-- The base field size of the Vesta curve, which is the scalar field size of Pallas. -/
-def baseFieldSize : ℕ :=
-  0x40000000000000000000000000000000224698fc0994a8dd8c46eb2100000001
-
-instance instMont64x8Field : Mont64x8Field baseFieldSize where
-  modulusLimbs := ⟨0x1, 0x8c46eb21, 0x994a8dd, 0x224698fc, 0x0, 0x0, 0x0, 0x40000000⟩
-  rModModulus :=
-    ⟨0xfffffffd, 0x5b2b3e9c, 0xe3420567, 0x992c350b, 0xffffffff, 0xffffffff, 0xffffffff,
-      0x3fffffff⟩
-  r2ModModulus :=
-    ⟨0xf, 0xfc9678ff, 0x891a16e3, 0x67bb433d, 0x4ccf590, 0x7fae2310, 0x7ccfdaa9, 0x96d41af⟩
-  montgomeryNegInv := 0xffffffff
-
-end Vesta
-
-namespace Pallas
-
-/-- The base field size of the Pallas curve, which is the scalar field size of Vesta. -/
-def baseFieldSize : ℕ :=
-  0x40000000000000000000000000000000224698fc094cf91b992d30ed00000001
-
-instance instMont64x8Field : Mont64x8Field baseFieldSize where
-  modulusLimbs := ⟨0x1, 0x992d30ed, 0x94cf91b, 0x224698fc, 0x0, 0x0, 0x0, 0x40000000⟩
-  rModModulus :=
-    ⟨0xfffffffd, 0x34786d38, 0xe41914ad, 0x992c350b, 0xffffffff, 0xffffffff, 0xffffffff,
-      0x3fffffff⟩
-  r2ModModulus :=
-    ⟨0xf, 0x8c78ecb3, 0x8b0de0e7, 0xd7d30dbd, 0xc3c95d18, 0x7797a99b, 0x7b9cb714, 0x96d41af⟩
-  montgomeryNegInv := 0xffffffff
-
-end Pallas
 
 end Native64x8
 end Montgomery

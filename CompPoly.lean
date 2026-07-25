@@ -111,6 +111,9 @@ import CompPoly.Fields.Montgomery.Native32Field
 import CompPoly.Fields.Montgomery.Native64x8
 import CompPoly.Fields.Montgomery.Native64x8Field
 import CompPoly.Fields.Montgomery.Native64x8Mul
+import CompPoly.Fields.Pasta
+import CompPoly.Fields.Pasta.Basic
+import CompPoly.Fields.Pasta.Fast
 import CompPoly.Fields.PrattCertificate
 import CompPoly.Fields.Secp256k1
 import CompPoly.LinearAlgebra.Dense

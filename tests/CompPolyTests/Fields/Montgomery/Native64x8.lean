@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Gregor Mitscha-Baude
 -/
 
-import CompPoly.Fields.Montgomery.Native64x8Field
+import CompPoly.Fields.Pasta
 
 /-!
 # Eight-limb Montgomery arithmetic tests
@@ -17,11 +17,11 @@ namespace CompPolyTests.Fields.Native64x8
 
 open _root_.Montgomery.Native64x8
 
-private def q : Limbs8 := Vesta.instMont64x8Field.modulusLimbs
+private def q : Limbs8 := Vesta.Fast.instMont64x8Field.modulusLimbs
 
-private def negInv : UInt64 := Vesta.instMont64x8Field.montgomeryNegInv
+private def negInv : UInt64 := Vesta.Fast.instMont64x8Field.montgomeryNegInv
 
-private def rMod : Limbs8 := Vesta.instMont64x8Field.rModModulus
+private def rMod : Limbs8 := Vesta.Fast.instMont64x8Field.rModModulus
 
 private def modulus : ℕ := Vesta.baseFieldSize
 
@@ -69,7 +69,7 @@ private def montAB : Limbs8 :=
 #guard square q negInv rMod = rMod
 
 -- the carrier
-private abbrev F := FastField Vesta.baseFieldSize
+private abbrev F := Vesta.Fast.Field
 
 #guard (0 : F).toNat = 0
 #guard (1 : F).toNat = 1
@@ -85,9 +85,9 @@ private abbrev F := FastField Vesta.baseFieldSize
 #guard ((0 : F)⁻¹).toNat = 0
 
 -- the second instantiation: the Pallas base field
-private def pq : Limbs8 := Pallas.instMont64x8Field.modulusLimbs
+private def pq : Limbs8 := Pallas.Fast.instMont64x8Field.modulusLimbs
 
-private def pNegInv : UInt64 := Pallas.instMont64x8Field.montgomeryNegInv
+private def pNegInv : UInt64 := Pallas.Fast.instMont64x8Field.montgomeryNegInv
 
 private def pMontA : Limbs8 :=
   ⟨0x73c65f1d, 0x4e0a938e, 0xd71d5fef, 0x6a1193b, 0xe42540dc, 0xcb40dac3, 0xc6cffd09,
@@ -106,10 +106,17 @@ private def pMontAB : Limbs8 :=
 #guard (add pq a b).toNat = (a.toNat + b.toNat) % Pallas.baseFieldSize
 #guard condSub pq pq = Limbs8.zero
 
-private abbrev G := FastField Pallas.baseFieldSize
+private abbrev G := Pallas.Fast.Field
 
 #guard (37 : G).toNat = 37
 #guard ((12345 : G) * 12345).toNat = 12345 * 12345
 #guard ((37 : G)⁻¹ * 37).toNat = 1
+
+-- the canonical bridge agrees with `ZMod` arithmetic
+#guard (Vesta.Fast.toField (123456789 : F) ^ 17) = ((123456789 : Vesta.BaseField) ^ 17)
+#guard Vesta.Fast.toField ((37 : F)⁻¹) = ((37 : Vesta.BaseField)⁻¹)
+#guard Vesta.Fast.ofField ((37 : Vesta.BaseField)⁻¹) = (37 : F)⁻¹
+#guard (Pallas.Fast.toField (123456789 : G) ^ 17) = ((123456789 : Pallas.BaseField) ^ 17)
+#guard Pallas.Fast.toField ((37 : G)⁻¹) = ((37 : Pallas.BaseField)⁻¹)
 
 end CompPolyTests.Fields.Native64x8
