@@ -56,6 +56,9 @@ This directory contains formally verified field infrastructure used in zero-know
 | **Montgomery/Native64x8Field.lean** | The `Mont64x8Field` class, `FastField` carrier, arithmetic, instances, and canonical-field bridge for moduli below `2^255`. |
 | **Montgomery/Native64x8InvDefs.lean** | Mathlib-free binary-GCD inversion runtime ([eprint 2020/972](https://eprint.iacr.org/2020/972)): the `GcdData` schedule, the candidate, and the checked `invGcdRaw`. |
 | **Montgomery/Native64x8Inv.lean** | Correctness of the checked inversion (`invGcdRaw`, wrapper `FastField.invGcd`), the divstep coefficient bounds, and the candidate's mac-width safety. |
+| **Pasta.lean** | Facade for the Pasta modules, re-exporting the canonical Pallas/Vesta base fields and their fast native-word implementations. |
+| **Pasta/Basic.lean** | The two 255-bit Pasta base primes (Pallas base = Vesta scalar and vice versa), with Pratt primality certificates. |
+| **Pasta/Fast.lean** | Pallas- and Vesta-namespaced API over the shared eight-limb fast-field implementation, with per-field constants and canonical-field bridges. |
 | **Secp256k1.lean** | Base and scalar fields for the Secp256k1 curve (used in Bitcoin/Ethereum). |
 
 ## Binary-field modules

@@ -157,11 +157,16 @@ public import CompPoly.Fields.Montgomery.Basic
 public import CompPoly.Fields.Montgomery.Native32
 public import CompPoly.Fields.Montgomery.Native32Field
 public import CompPoly.Fields.Montgomery.Native64x8
+public import CompPoly.Fields.Montgomery.Native64x8
+public import CompPoly.Fields.Montgomery.Native64x8
 public import CompPoly.Fields.Montgomery.Native64x8Defs
 public import CompPoly.Fields.Montgomery.Native64x8Field
 public import CompPoly.Fields.Montgomery.Native64x8Inv
 public import CompPoly.Fields.Montgomery.Native64x8InvDefs
 public import CompPoly.Fields.Montgomery.Native64x8Mul
+public import CompPoly.Fields.Pasta
+public import CompPoly.Fields.Pasta.Basic
+public import CompPoly.Fields.Pasta.Fast
 public import CompPoly.Fields.PrattCertificate
 public import CompPoly.Fields.Secp256k1
 public import CompPoly.LinearAlgebra.Dense
