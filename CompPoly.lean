@@ -109,6 +109,7 @@ import CompPoly.Fields.Montgomery.Basic
 import CompPoly.Fields.Montgomery.Native32
 import CompPoly.Fields.Montgomery.Native32Field
 import CompPoly.Fields.Montgomery.Native64x8
+import CompPoly.Fields.Montgomery.Native64x8Defs
 import CompPoly.Fields.Montgomery.Native64x8Field
 import CompPoly.Fields.Montgomery.Native64x8Mul
 import CompPoly.Fields.Pasta

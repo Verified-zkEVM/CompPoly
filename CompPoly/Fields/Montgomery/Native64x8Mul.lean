@@ -95,7 +95,6 @@ theorem State9.zero_bounded : State9.zero.Bounded := by
 
 theorem State9.zero_toNat : State9.zero.toNat = 0 := by
   simp only [State9.toNat, State9.toLimbs8, State9.zero, Limbs8.toNat, UInt64.toNat_zero]
-  norm_num
 
 /-- The value of an accumulator in terms of its limbs. -/
 theorem State9.toNat_eq (t : State9) :
