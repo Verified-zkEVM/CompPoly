@@ -88,9 +88,11 @@ support lemmas:
 - `Tower/Fast.lean` - packed `UInt64` fast arithmetic (`FastBT k` for levels `k <= 6`,
   `FastBT128` for level 7) sharing the `ConcreteBTField` bit layout; word-level
   mul/mulByZ/square/inv ladder with range bounds, and `Field` instances at each one-word
-  width. Every operation is proven against `concrete_mul`/`concrete_inv` by induction
-  over the recursive twins (`mulRec_correct`, `sqRec_correct`, `invRec_correct`) and
-  transported along `toConcrete`. The 128-bit algebra is staged.
+  width and at the two-limb GF(2^128). Every operation is proven against
+  `concrete_mul`/`concrete_inv` by induction over the recursive twins (`mulRec_correct`,
+  `sqRec_correct`, `invRec_correct`) and transported along `toConcrete`; level 7 is one
+  application of the level-6 results. Bundled `RingEquiv`s (`ringEquivBT*`,
+  `FastBT128.ringEquiv`) expose the bridge in both directions.
 - `Tower/Equiv.lean`, `Tower/Impl.lean`, and `Tower/TensorAlgebra.lean` connect the
   layers and expose useful transport lemmas.
 

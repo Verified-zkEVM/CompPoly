@@ -67,4 +67,16 @@ private def b128 : FastBT128 := ⟨0x123456789ABCDEF0, 0xFEDCBA9876543210⟩
 #guard (a128 + a128) = 0
 #guard (a128 * b128) = (b128 * a128)
 
+-- Field structure at level 7
+#guard (a128 * a128⁻¹) = 1
+#guard (a128 / b128) * b128 = a128
+#guard (a128 ^ 2) = a128 * a128
+#guard (5 : FastBT128) = 1
+#guard (2 : FastBT128) = 0
+
+-- Ring equivalence round trips
+#guard ringEquivBT8.symm (ringEquivBT8 (ofNat 3 0xAB)) = ofNat 3 0xAB
+#guard ringEquivBT64.symm (ringEquivBT64 (ofNat 6 0xDEADBEEF)) = ofNat 6 0xDEADBEEF
+#guard FastBT128.ringEquiv.symm (FastBT128.ringEquiv a128) = a128
+
 end ConcreteBinaryTower.Fast

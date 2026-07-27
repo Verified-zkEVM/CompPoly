@@ -52,7 +52,7 @@ The `Binary/` subtree provides characteristic-2 field infrastructure used by GHA
 - `Binary/BF128Ghash/*` — GF(2^128) model, implementation, and certificates.
 - `Binary/AdditiveNTT/*` — additive-NTT domain/algorithm/correctness stack.
 - `Binary/Tower/*` — abstract/concrete binary tower-field constructions and supporting lemmas.
-- `Binary/Tower/Fast.lean` — packed machine-word tower arithmetic (Karatsuba with `O(width)` multiply-by-generator); `Field` instances at each one-word width with multiplication, squaring, and inversion proven against the concrete tower via the `toConcrete` bridge. 128-bit algebraic instances staged.
+- `Binary/Tower/Fast.lean` — packed machine-word tower arithmetic (Karatsuba with `O(width)` multiply-by-generator); `Field` instances at every level (one-word widths and two-limb GF(2^128)), with multiplication, squaring, and inversion proven against the concrete tower via the `toConcrete` bridge.
 
 ## Field extensions
 
