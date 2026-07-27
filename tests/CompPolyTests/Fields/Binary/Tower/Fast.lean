@@ -9,9 +9,9 @@ import CompPoly.Fields.Binary.Tower.Fast
 /-!
 # Fast Binary Tower Tests
 
-Regression checks for the packed-word tower representation. The multiplication,
-generator, squaring, and inversion constants are cross-validated against
-`ConcreteBinaryTower.concrete_mul` / `concrete_inv` on full-width operands.
+Regression checks for the packed-word tower. Word-level constants are cross-validated
+against `ConcreteBinaryTower.concrete_mul` / `concrete_inv` on full-width operands;
+carrier guards exercise the `Field` instances.
 -/
 
 namespace ConcreteBinaryTower.Fast
@@ -39,6 +39,21 @@ namespace ConcreteBinaryTower.Fast
 #guard mul64 0xDEADBEEFCAFEBABE (inv64 0xDEADBEEFCAFEBABE) = 1
 #guard inv64 0 = 0
 #guard inv64 1 = 1
+
+-- Field structure on the carrier: inversion, division, powers, squaring
+#guard ((ofNat 6 0xDEADBEEFCAFEBABE : BT64)⁻¹).val = 0x94D7EC832FAF447F
+#guard (ofNat 6 0xDEADBEEFCAFEBABE * (ofNat 6 0xDEADBEEFCAFEBABE : BT64)⁻¹) = 1
+#guard ((0 : BT64)⁻¹) = 0
+#guard ((1 : BT32)⁻¹) = 1
+#guard (ofNat 5 0xDEADBEEF / ofNat 5 0xDEADBEEF : BT32) = 1
+#guard ((ofNat 3 0xAB : BT8) ^ 3) = ofNat 3 0xAB * ofNat 3 0xAB * ofNat 3 0xAB
+#guard (ofNat 6 0xDEADBEEFCAFEBABE).square.val = 0x8459990BA3148442
+#guard (ofNat 3 0xAB).square = ofNat 3 0xAB * ofNat 3 0xAB
+
+-- Numerals reduce mod the characteristic; raw packed values go through `ofNat`
+#guard (5 : BT16) = 1
+#guard (2 : BT64) = 0
+#guard (-3 : BT8) = 1
 
 -- Level 7, cross-checked against `concrete_mul` / `concrete_inv` at `k = 7`
 private def a128 : FastBT128 := ⟨0xDEADBEEFCAFEBABE, 0x0123456789ABCDEF⟩
