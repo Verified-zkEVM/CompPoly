@@ -17,12 +17,45 @@ CompPoly/Fields/
     Fast.lean
   Binary/
     Common.lean
+    Extension/
+      Prelude.lean
+      Basic.lean
+      Impl.lean
+      Primitive.lean
     BF128Ghash/
       Prelude.lean
       Basic.lean
       Impl.lean
       XPowTwoPowGcdCertificate.lean
       XPowTwoPowModCertificate.lean
+    GF2_32/
+      Prelude.lean
+      Basic.lean
+      Impl.lean
+      Primitive.lean
+      PrimitivePowerCertificate.lean
+      RootContexts.lean
+    GF2_48/
+      Prelude.lean
+      Basic.lean
+      Impl.lean
+      Primitive.lean
+      PrimitivePowerCertificate.lean
+      RootContexts.lean
+    GF2_64/
+      Prelude.lean
+      Basic.lean
+      Impl.lean
+      Primitive.lean
+      PrimitivePowerCertificate.lean
+      RootContexts.lean
+    GF2_72/
+      Prelude.lean
+      Basic.lean
+      Impl.lean
+      Primitive.lean
+      PrimitivePowerCertificate.lean
+      RootContexts.lean
     Tower/
       Abstract/*
       Concrete/*
@@ -70,6 +103,33 @@ The GHASH model lives under `Binary/BF128Ghash/`.
 Use this area when the task is specifically about `GF(2^128)`, GHASH, or the
 certificate-based proof strategy for binary-field arithmetic.
 
+## Direct Extension Surface
+
+The direct polynomial-basis substrate lives under `Binary/Extension/` and is used
+for binary fields whose extension degree is not covered by the power-of-two tower
+family.
+
+- [`../../CompPoly/Fields/Binary/Extension/Prelude.lean`](../../CompPoly/Fields/Binary/Extension/Prelude.lean)
+  contains defining-polynomial metadata, bitmask helpers, and Nat-level
+  carry-less certificate checkers.
+- [`../../CompPoly/Fields/Binary/Extension/Basic.lean`](../../CompPoly/Fields/Binary/Extension/Basic.lean)
+  contains the generic quotient/specification surface, with field and cardinality
+  instances conditional on irreducibility certificates.
+- [`../../CompPoly/Fields/Binary/Extension/Impl.lean`](../../CompPoly/Fields/Binary/Extension/Impl.lean)
+  contains the shared executable `BitVec` carrier and operations for direct
+  polynomial-basis fields.
+- [`../../CompPoly/Fields/Binary/Extension/Primitive.lean`](../../CompPoly/Fields/Binary/Extension/Primitive.lean)
+  contains Rabin irreducibility shells and small primitive-order helpers for the
+  concrete direct-extension fields.
+- `Binary/GF2_32/`, `Binary/GF2_48/`, `Binary/GF2_64/`, and `Binary/GF2_72/`
+  instantiate the substrate with the candidate defining polynomials,
+  quotient/specification surfaces, executable bit-vector operations,
+  primitive-power certificates, smooth root-search schedules,
+  Horner/subproduct smooth root contexts, and Shoup trace contexts.
+- [`../../CompPoly/Bivariate/GuruswamiSudan/Root/FieldRoots/FiniteField.lean`](../../CompPoly/Bivariate/GuruswamiSudan/Root/FieldRoots/FiniteField.lean)
+  adapts the certified smooth and Shoup root contexts to the GS-facing
+  `FieldRootContext` API.
+
 ## Binary Tower Surface
 
 The tower development splits into abstract theory, concrete constructions, and
@@ -109,6 +169,9 @@ Algorithm changes often cascade into `Intermediate`, `Impl`, and `Correctness`.
 ## Where To Start By Task
 
 - Shared BitVec or characteristic-2 helper lemma: `Binary/Common.lean`
+- Direct polynomial-basis extension helper or GF32/GF48/GF64/GF72 quotient
+  surface: `Binary/Extension/`, `Binary/GF2_32/`, `Binary/GF2_48/`,
+  `Binary/GF2_64/`, or `Binary/GF2_72/`
 - GHASH field model or certificate proof: `Binary/BF128Ghash/`
 - General tower-field structure or extension lemmas: `Binary/Tower/`
 - Additive-NTT basis, domain, or correctness proof: `Binary/AdditiveNTT/`
@@ -120,3 +183,6 @@ Algorithm changes often cascade into `Intermediate`, `Impl`, and `Correctness`.
   `Equiv` / `Impl`
 - For additive NTT: `Domain` -> `NovelPolynomialBasis` -> `Intermediate` ->
   `Algorithm` -> `Impl` -> `Correctness`
+- For direct extensions: `Extension/Prelude` -> `Extension/Basic` ->
+  `Extension/Impl` -> `Extension/Primitive` plus the matching concrete
+  `GF2_*` modules.
