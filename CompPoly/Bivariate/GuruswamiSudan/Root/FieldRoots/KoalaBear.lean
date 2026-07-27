@@ -127,10 +127,9 @@ def fastKoalaBearFiniteFieldContext :
     simp [KoalaBear.Field, Nat.card_eq_fintype_card, ZMod.card]
   frobenius_fixed := by
     intro a
-    apply KoalaBear.Fast.toField_injective
-    rw [KoalaBear.Fast.toField_npow]
-    simpa [KoalaBear.Field, KoalaBear.fieldSize] using
-      ZMod.pow_card (KoalaBear.Fast.toField a)
+    apply Montgomery.Native32.toField_injective
+    rw [Montgomery.Native32.toField_npow]
+    simp [KoalaBear.fieldSize]
 
 /-- Primitive generator transported to native-word fast KoalaBear. -/
 def fastKoalaBearPrimitiveRoot : KoalaBear.Fast.Field :=
@@ -143,7 +142,7 @@ lemma fastKoalaBearPrimitiveRoot_order :
   have h := MulEquiv.orderOf_eq KoalaBear.Fast.ringEquiv.toMulEquiv
     (KoalaBear.Fast.ofField KoalaBear.primitiveRoot)
   rw [← h]
-  simpa [KoalaBear.Fast.ringEquiv_apply, KoalaBear.Fast.toField_ofField] using
+  simpa [KoalaBear.Fast.ringEquiv, KoalaBear.Fast.ofField] using
     KoalaBear.primitiveRoot_order
 
 /-- Smooth cyclic splitter context for native-word fast KoalaBear. -/

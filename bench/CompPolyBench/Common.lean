@@ -454,7 +454,7 @@ def checksumKoalaBear (x : KoalaBear.Field) : Nat :=
 
 /-- Convert a fast KoalaBear element to a checksum word. -/
 def checksumKoalaBearFast (x : KoalaBear.Fast.Field) : Nat :=
-  KoalaBear.Fast.toNat x
+  x.toNat
 
 /-- Convert a `ZMod` element to a checksum word. -/
 def checksumZMod {modulus : Nat} (x : ZMod modulus) : Nat :=
