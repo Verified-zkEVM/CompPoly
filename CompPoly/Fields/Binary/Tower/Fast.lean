@@ -4,8 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Georgios Raikos
 -/
 
-import CompPoly.Fields.Binary.Tower.Concrete.Core
+import CompPoly.Fields.Binary.Tower.Concrete.Field
 import Mathlib.Algebra.Group.InjSurj
+import Mathlib.Tactic.LinearCombination
 
 /-!
 # Fast Binary Tower Arithmetic
@@ -16,9 +17,10 @@ pair of limbs at level 7. Multiplication is Karatsuba with an `O(width)`
 multiply-by-generator reduction instead of the fourth recursive product in `concrete_mul`.
 
 This module carries the runtime ladder, range bounds, the bounded carrier `FastBT` with
-its additive algebra (transported along the injective `toConcrete` bridge), and `Mul`
-instances per usable width. Multiplicative correctness against `concrete_mul`, `Ring` and
-`Field` instances, and the inversion proofs land in a follow-up.
+its additive algebra (transported along the injective `toConcrete` bridge), `Mul`
+instances per usable width, and the proof that multiplication agrees with `concrete_mul`
+(`mulRec_correct`, transported per width as `toConcrete_mul_bt*`). `Ring`/`Field`
+instance assembly and the squaring/inversion proofs land in a follow-up.
 -/
 
 namespace ConcreteBinaryTower.Fast
@@ -389,6 +391,11 @@ theorem mul32_eq_rec (a b : UInt64) : mul32 a b = mulRec 5 a b := by
   simp only [← mul16_eq_rec, ← mulByZ4_eq_rec]
   rfl
 
+theorem mul64_eq_rec (a b : UInt64) : mul64 a b = mulRec 6 a b := by
+  conv_rhs => rw [mulRec]
+  simp only [← mul32_eq_rec, ← mulByZ5_eq_rec]
+  rfl
+
 
 theorem mul8_lt {a b : UInt64} (ha : a.toNat < 2 ^ 8) (hb : b.toNat < 2 ^ 8) :
     (mul8 a b).toNat < 2 ^ 8 := by
@@ -410,6 +417,186 @@ theorem mulByZ4_lt {v : UInt64} (hv : v.toNat < 2 ^ 16) : (mulByZ4 v).toNat < 2 
 
 theorem mulByZ5_lt {v : UInt64} (hv : v.toNat < 2 ^ 32) : (mulByZ5 v).toNat < 2 ^ 32 := by
   rw [mulByZ5_eq_rec]; exact mulByZRec_lt 5 (by omega) v hv
+
+/-! ## Multiplicative correctness
+
+`mulByZRec` and `mulRec` agree with `concrete_mul` on in-range words, by induction on
+the level. Statements are phrased through `fromNat`, so the spec side reasons inside
+`ConcreteBTField` with its `Field` and `CharP 2` instances; the rung bridges then carry
+the result to the unrolled ladder and the carrier below. -/
+
+private theorem toNat_fromNat {k n : ℕ} (h : n < 2 ^ 2 ^ k) :
+    BitVec.toNat (fromNat (k := k) n) = n := by
+  show (BitVec.ofNat (2 ^ k) n).toNat = n
+  rw [BitVec.toNat_ofNat]
+  exact Nat.mod_eq_of_lt h
+
+private theorem shiftRight_toNat {k : ℕ} (hk : k ≤ 5) (a : UInt64) :
+    (a >>> UInt64.ofNat (2 ^ k)).toNat = a.toNat >>> 2 ^ k := by
+  have h32 : 2 ^ k ≤ 32 := Nat.pow_le_pow_right (by omega) hk
+  rw [UInt64.toNat_shiftRight, toNat_ofNat_two_pow hk, Nat.mod_eq_of_lt (by omega)]
+
+private theorem and_mask_toNat {k : ℕ} (hk : k ≤ 5) (a : UInt64) :
+    (a &&& ((1 : UInt64) <<< UInt64.ofNat (2 ^ k) - 1)).toNat
+      = a.toNat &&& (2 ^ 2 ^ k - 1) := by
+  rw [UInt64.toNat_and, toNat_mask_two_pow hk]
+
+private theorem join_word_toNat {k : ℕ} (hk : k + 1 ≤ 6) {hi : UInt64}
+    (hhi : hi.toNat < 2 ^ 2 ^ k) (lo : UInt64) :
+    ((hi <<< UInt64.ofNat (2 ^ k)) ||| lo).toNat = hi.toNat <<< 2 ^ k ||| lo.toNat := by
+  obtain ⟨hk5, h2s, hsplit, hpow⟩ := rec_step_bounds hk
+  rw [UInt64.toNat_or, UInt64.toNat_shiftLeft, toNat_ofNat_two_pow hk5,
+    Nat.mod_eq_of_lt (show 2 ^ k < 64 by omega),
+    Nat.mod_eq_of_lt (show hi.toNat <<< 2 ^ k < 2 ^ 64 by
+      rw [Nat.shiftLeft_eq]
+      calc hi.toNat * 2 ^ 2 ^ k
+          < 2 ^ 2 ^ k * 2 ^ 2 ^ k := (Nat.mul_lt_mul_right (Nat.two_pow_pos _)).mpr hhi
+        _ = 2 ^ (2 * 2 ^ k) := by rw [Nat.two_mul, Nat.pow_add]
+        _ ≤ 2 ^ 64 := Nat.pow_le_pow_right (by omega) h2s)]
+
+private theorem nat_join_shiftRight {H L s : ℕ} (hL : L < 2 ^ s) :
+    (H <<< s ||| L) >>> s = H := by
+  rw [← Nat.shiftLeft_add_eq_or_of_lt hL, Nat.shiftLeft_eq, Nat.shiftRight_eq_div_pow,
+    Nat.mul_comm H (2 ^ s), Nat.mul_add_div (Nat.two_pow_pos s), Nat.div_eq_of_lt hL,
+    Nat.add_zero]
+
+private theorem nat_join_and {H L s : ℕ} (hL : L < 2 ^ s) :
+    (H <<< s ||| L) &&& (2 ^ s - 1) = L := by
+  rw [← Nat.shiftLeft_add_eq_or_of_lt hL, Nat.and_two_pow_sub_one_eq_mod, Nat.shiftLeft_eq,
+    Nat.mul_comm H (2 ^ s), Nat.mul_add_mod, Nat.mod_eq_of_lt hL]
+
+private theorem fromNat_xor {k : ℕ} (x y : UInt64) :
+    fromNat (k := k) (x ^^^ y).toNat = fromNat x.toNat + fromNat y.toNat := by
+  rw [UInt64.toNat_xor]
+  exact sum_fromNat_eq_from_xor_Nat _ _
+
+private theorem fromNat_join {k : ℕ} (hk : k + 1 ≤ 6) {hi lo : UInt64}
+    (hhi : hi.toNat < 2 ^ 2 ^ k) (hlo : lo.toNat < 2 ^ 2 ^ k) :
+    fromNat (k := k + 1) ((hi <<< UInt64.ofNat (2 ^ k)) ||| lo).toNat
+      = (《 fromNat (k := k) hi.toNat, fromNat (k := k) lo.toNat 》 :
+          ConcreteBTField (k + 1)) := by
+  obtain ⟨hk5, h2s, hsplit, hpow⟩ := rec_step_bounds hk
+  have hX := join_word_toNat hk hhi lo
+  have hXlt : ((hi <<< UInt64.ofNat (2 ^ k)) ||| lo).toNat < 2 ^ 2 ^ (k + 1) := by
+    rw [hpow]
+    exact join_lt (2 ^ k) (toNat_ofNat_two_pow hk5) h2s hhi hlo
+  refine (join_eq_bitvec_iff_fromNat (Nat.succ_pos k) _ _ _).mpr ⟨?_, ?_⟩
+  · simp only [Nat.succ_sub_one]
+    congr 1
+    rw [toNat_fromNat hXlt, hX, nat_join_shiftRight hlo]
+  · simp only [Nat.succ_sub_one]
+    congr 1
+    rw [toNat_fromNat hXlt, hX, nat_join_and hlo]
+
+private theorem split_fromNat {k : ℕ} (hk : k + 1 ≤ 6) {a : UInt64}
+    (ha : a.toNat < 2 ^ 2 ^ (k + 1)) :
+    split (Nat.succ_pos k) (fromNat (k := k + 1) a.toNat)
+      = (fromNat (k := k) (a >>> UInt64.ofNat (2 ^ k)).toNat,
+         fromNat (k := k) (a &&& ((1 : UInt64) <<< UInt64.ofNat (2 ^ k) - 1)).toNat) := by
+  have hk5 : k ≤ 5 := by omega
+  refine (split_bitvec_eq_iff_fromNat (Nat.succ_pos k) _ _ _).mpr ⟨?_, ?_⟩
+  · simp only [Nat.succ_sub_one]
+    congr 1
+    rw [shiftRight_toNat hk5, toNat_fromNat ha]
+  · simp only [Nat.succ_sub_one]
+    congr 1
+    rw [and_mask_toNat hk5, toNat_fromNat ha]
+
+private theorem two_eq_zero (k : ℕ) : (2 : ConcreteBTField k) = 0 := by
+  simpa using CharP.cast_eq_zero (ConcreteBTField k) 2
+
+/-- `concrete_mul`'s one-level structure theorem, restated with all indices at the
+half level `k` (the original lives at `k + 1 - 1`, which blocks syntactic rewriting). -/
+private theorem concrete_mul_step {k : ℕ} (a b : ConcreteBTField (k + 1))
+    {a₁ a₀ b₁ b₀ : ConcreteBTField k}
+    (ha : (a₁, a₀) = split (Nat.succ_pos k) a) (hb : (b₁, b₀) = split (Nat.succ_pos k) b) :
+    concrete_mul a b
+      = (《 concrete_mul a₀ b₁ + concrete_mul b₀ a₁
+            + concrete_mul (concrete_mul a₁ b₁) (Z k),
+          concrete_mul a₀ b₀ + concrete_mul a₁ b₁ 》 : ConcreteBTField (k + 1)) :=
+  (getBTFResult (k + 1)).mul_eq a b (Nat.succ_pos k) ha hb
+
+/-- `mulByZRec` computes multiplication by the level generator on the spec side. -/
+theorem mulByZRec_correct : ∀ (k : ℕ), k ≤ 6 → ∀ (v : UInt64), v.toNat < 2 ^ 2 ^ k →
+    fromNat (k := k) (mulByZRec k v).toNat = concrete_mul (fromNat v.toNat) (Z k)
+  | 0, _, v, hv => by
+    show fromNat (k := 0) v.toNat = concrete_mul (fromNat v.toNat) (Z 0)
+    rw [show Z 0 = ConcreteBinaryTower.one from rfl, concrete_mul_one0]
+  | k + 1, hk, v, hv => by
+    obtain ⟨hk5, h2s, hsplit, hpow⟩ := rec_step_bounds hk
+    have hv' : v.toNat < 2 ^ (2 ^ k + 2 ^ k) := by rw [hsplit]; exact hv
+    have hv0 := and_mask_lt (2 ^ k) (a := v) (toNat_mask_two_pow hk5)
+    have hv1 := shiftRight_lt (2 ^ k) (toNat_ofNat_two_pow hk5) (by omega) hv'
+    have hz := mulByZRec_lt k (by omega) _ hv1
+    have hmul : ∀ (x y : ConcreteBTField k), concrete_mul x y = x * y := fun _ _ => rfl
+    have hIH := mulByZRec_correct k (by omega) (v >>> UInt64.ofNat (2 ^ k)) hv1
+    have hZsplit : ((one : ConcreteBTField k), (zero : ConcreteBTField k))
+        = split (Nat.succ_pos k) (Z (k + 1)) := (split_Z (Nat.succ_pos k)).symm
+    have hme := concrete_mul_step (fromNat v.toNat) (Z (k + 1))
+      (split_fromNat hk hv).symm hZsplit
+    simp only [mulByZRec]
+    rw [fromNat_join hk (xor_lt hv0 hz) hv1]
+    rw [fromNat_xor]
+    rw [hIH]
+    refine Eq.trans ?_ hme.symm
+    simp only [hmul, one_is_1, zero_is_0, mul_one, mul_zero, zero_mul, add_zero, zero_add]
+
+/-- `mulRec` agrees with `concrete_mul` on in-range words. -/
+theorem mulRec_correct : ∀ (k : ℕ), k ≤ 6 → ∀ (a b : UInt64),
+    a.toNat < 2 ^ 2 ^ k → b.toNat < 2 ^ 2 ^ k →
+    fromNat (k := k) (mulRec k a b).toNat = concrete_mul (fromNat a.toNat) (fromNat b.toNat)
+  | 0, _, a, b, ha, hb => by
+    have ha' : a = 0 ∨ a = 1 := by
+      rcases (by omega : a.toNat = 0 ∨ a.toNat = 1) with h | h
+      · exact Or.inl (UInt64.toNat_inj.mp h)
+      · exact Or.inr (UInt64.toNat_inj.mp h)
+    have hb' : b = 0 ∨ b = 1 := by
+      rcases (by omega : b.toNat = 0 ∨ b.toNat = 1) with h | h
+      · exact Or.inl (UInt64.toNat_inj.mp h)
+      · exact Or.inr (UInt64.toNat_inj.mp h)
+    rcases ha' with rfl | rfl <;> rcases hb' with rfl | rfl
+    · show ConcreteBinaryTower.zero = concrete_mul zero zero
+      rw [concrete_zero_mul0]
+    · show ConcreteBinaryTower.zero = concrete_mul zero one
+      rw [concrete_zero_mul0]
+    · show ConcreteBinaryTower.zero = concrete_mul one zero
+      rw [concrete_mul_zero0]
+    · show ConcreteBinaryTower.one = concrete_mul one one
+      rw [concrete_mul_one0]
+  | k + 1, hk, a, b, ha, hb => by
+    obtain ⟨hk5, h2s, hsplit, hpow⟩ := rec_step_bounds hk
+    have ha' : a.toNat < 2 ^ (2 ^ k + 2 ^ k) := by rw [hsplit]; exact ha
+    have hb' : b.toNat < 2 ^ (2 ^ k + 2 ^ k) := by rw [hsplit]; exact hb
+    have ha0 := and_mask_lt (2 ^ k) (a := a) (toNat_mask_two_pow hk5)
+    have ha1 := shiftRight_lt (2 ^ k) (toNat_ofNat_two_pow hk5) (by omega) ha'
+    have hb0 := and_mask_lt (2 ^ k) (a := b) (toNat_mask_two_pow hk5)
+    have hb1 := shiftRight_lt (2 ^ k) (toNat_ofNat_two_pow hk5) (by omega) hb'
+    have hp0 := mulRec_lt k (by omega) _ _ ha0 hb0
+    have hp2 := mulRec_lt k (by omega) _ _ ha1 hb1
+    have hp1 := mulRec_lt k (by omega) _ _ (xor_lt ha0 ha1) (xor_lt hb0 hb1)
+    have hz := mulByZRec_lt k (by omega) _ hp2
+    have hmul : ∀ (x y : ConcreteBTField k), concrete_mul x y = x * y := fun _ _ => rfl
+    have hZ := mulByZRec_correct k (by omega) _ hp2
+    have h00 := mulRec_correct k (by omega) _ _ ha0 hb0
+    have h11 := mulRec_correct k (by omega) _ _ ha1 hb1
+    have hss := mulRec_correct k (by omega) _ _ (xor_lt ha0 ha1) (xor_lt hb0 hb1)
+    have hme := concrete_mul_step (fromNat a.toNat) (fromNat b.toNat)
+      (split_fromNat hk ha).symm (split_fromNat hk hb).symm
+    simp only [mulRec]
+    rw [fromNat_join hk (xor_lt (xor_lt hp1 (xor_lt hp0 hp2)) hz) (xor_lt hp0 hp2)]
+    simp only [fromNat_xor]
+    rw [hZ]
+    rw [h00]
+    rw [h11]
+    rw [hss]
+    refine Eq.trans ?_ hme.symm
+    simp only [hmul, fromNat_xor]
+    refine congrArg₂ (fun x y : ConcreteBTField k => (《 x, y 》 : ConcreteBTField (k + 1))) ?_ ?_
+    · linear_combination (fromNat (k := k) (a &&& ((1 : UInt64) <<< UInt64.ofNat (2 ^ k) - 1)).toNat
+          * fromNat (k := k) (b &&& ((1 : UInt64) <<< UInt64.ofNat (2 ^ k) - 1)).toNat
+        + fromNat (k := k) (a >>> UInt64.ofNat (2 ^ k)).toNat
+          * fromNat (k := k) (b >>> UInt64.ofNat (2 ^ k)).toNat) * two_eq_zero k
+    · rfl
 
 /-! ## Carrier -/
 
@@ -553,6 +740,30 @@ instance : Mul BT64 := ⟨BT64.mul⟩
 @[simp] theorem val_mul_bt16 (a b : BT16) : (a * b).val = mul16 a.val b.val := rfl
 @[simp] theorem val_mul_bt32 (a b : BT32) : (a * b).val = mul32 a.val b.val := rfl
 @[simp] theorem val_mul_bt64 (a b : BT64) : (a * b).val = mul64 a.val b.val := rfl
+
+@[simp] theorem toConcrete_mul_bt8 (a b : BT8) :
+    toConcrete (a * b) = toConcrete a * toConcrete b := by
+  show fromNat (mul8 a.val b.val).toNat = _
+  rw [mul8_eq_rec]
+  exact mulRec_correct 3 (by omega) a.val b.val a.isLt b.isLt
+
+@[simp] theorem toConcrete_mul_bt16 (a b : BT16) :
+    toConcrete (a * b) = toConcrete a * toConcrete b := by
+  show fromNat (mul16 a.val b.val).toNat = _
+  rw [mul16_eq_rec]
+  exact mulRec_correct 4 (by omega) a.val b.val a.isLt b.isLt
+
+@[simp] theorem toConcrete_mul_bt32 (a b : BT32) :
+    toConcrete (a * b) = toConcrete a * toConcrete b := by
+  show fromNat (mul32 a.val b.val).toNat = _
+  rw [mul32_eq_rec]
+  exact mulRec_correct 5 (by omega) a.val b.val a.isLt b.isLt
+
+@[simp] theorem toConcrete_mul_bt64 (a b : BT64) :
+    toConcrete (a * b) = toConcrete a * toConcrete b := by
+  show fromNat (mul64 a.val b.val).toNat = _
+  rw [mul64_eq_rec]
+  exact mulRec_correct 6 (by omega) a.val b.val a.isLt b.isLt
 
 /-- Multiply by the level generator `Z k`. One-word levels only (`k ≤ 6`); the level is
 matched at compile time for literal `k`, so per-width call sites pay no dispatch. -/

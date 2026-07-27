@@ -89,7 +89,8 @@ support lemmas:
   `FastBT128` for level 7) sharing the `ConcreteBTField` bit layout; word-level
   mul/mulByZ/square/inv ladder, range bounds for the multiply/generator ladder, and
   additive algebra transported along
-  `toConcrete`. Multiplicative correctness proofs are staged as follow-up work.
+  `toConcrete`, and multiplication proven equal to `concrete_mul` by induction over the
+  recursive twins (`mulRec_correct`). `Field` transport and inversion proofs are staged.
 - `Tower/Equiv.lean`, `Tower/Impl.lean`, and `Tower/TensorAlgebra.lean` connect the
   layers and expose useful transport lemmas.
 
