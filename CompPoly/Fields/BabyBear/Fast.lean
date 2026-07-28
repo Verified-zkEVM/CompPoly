@@ -52,4 +52,44 @@ def ofField (x : BabyBear.Field) : Field :=
 def ringEquiv : Field ≃+* BabyBear.Field :=
   Montgomery.Native32.ringEquiv BabyBear.fieldSize
 
+/-! ## Two-adic roots -/
+
+/-- Precomputed BabyBear two-adic generators in Montgomery representation. -/
+def twoAdicGenerators : List Field :=
+  [
+    ⟨0x0FFFFFFE, by decide⟩,
+    ⟨0x68000003, by decide⟩,
+    ⟨0x1C38D511, by decide⟩,
+    ⟨0x3D85298F, by decide⟩,
+    ⟨0x5F06E481, by decide⟩,
+    ⟨0x3F5C39EC, by decide⟩,
+    ⟨0x5516A97A, by decide⟩,
+    ⟨0x3D6BE592, by decide⟩,
+    ⟨0x5BB04149, by decide⟩,
+    ⟨0x4907F9AB, by decide⟩,
+    ⟨0x548B8E90, by decide⟩,
+    ⟨0x1D8CA617, by decide⟩,
+    ⟨0x2CE7F0E6, by decide⟩,
+    ⟨0x621B371F, by decide⟩,
+    ⟨0x6D4D2D78, by decide⟩,
+    ⟨0x18716FCD, by decide⟩,
+    ⟨0x3B30A682, by decide⟩,
+    ⟨0x1C6F4728, by decide⟩,
+    ⟨0x59B01F7C, by decide⟩,
+    ⟨0x1A7F97AC, by decide⟩,
+    ⟨0x0732561C, by decide⟩,
+    ⟨0x2B5A1CD4, by decide⟩,
+    ⟨0x6F7D26F9, by decide⟩,
+    ⟨0x16E2F919, by decide⟩,
+    ⟨0x285AB85B, by decide⟩,
+    ⟨0x0DD5A9EC, by decide⟩,
+    ⟨0x43F13568, by decide⟩,
+    ⟨0x57FAB6EE, by decide⟩
+  ]
+
+/-- The Montgomery root table represents the canonical BabyBear roots. -/
+theorem twoAdicGenerators_eq_map :
+    twoAdicGenerators = BabyBear.twoAdicGenerators.map ofField := by
+  decide
+
 end BabyBear.Fast

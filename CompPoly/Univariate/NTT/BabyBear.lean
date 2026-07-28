@@ -31,6 +31,29 @@ def domainOfLogN (logN : Nat) (hlogN : logN ≤ BabyBear.twoAdicity) :
     simpa [bitsOfLogN] using
       BabyBear.isPrimitiveRoot_twoAdicGenerator (bitsOfLogN logN hlogN)
 
+/-- BabyBear NTT domain lookup for dynamic multiplication contexts. -/
+def bestDomainForLength? (requiredLen : Nat) :
+    Option (FittingDomain BabyBear.Field requiredLen) :=
+  CPolynomial.NTT.bestDomainForLength? BabyBear.twoAdicity
+    domainOfLogN (by intro _ _; rfl) requiredLen
+
+/-- Fast BabyBear radix-2 NTT domain for a supported two-adic size. -/
+def fastDomainOfLogN (logN : Nat) (hlogN : logN ≤ BabyBear.twoAdicity) :
+    Domain BabyBear.Fast.Field where
+  logN := logN
+  omega := BabyBear.Fast.twoAdicGenerators[bitsOfLogN logN hlogN]
+  primitive := by
+    have h := (BabyBear.isPrimitiveRoot_twoAdicGenerator (bitsOfLogN logN hlogN)).map_of_injective
+      BabyBear.Fast.ringEquiv.symm.injective
+    simpa [BabyBear.Fast.twoAdicGenerators_eq_map, bitsOfLogN, BabyBear.Fast.ringEquiv,
+      BabyBear.Fast.ofField] using h
+
+/-- Fast BabyBear NTT domain lookup for dynamic multiplication contexts. -/
+def fastBestDomainForLength? (requiredLen : Nat) :
+    Option (FittingDomain BabyBear.Fast.Field requiredLen) :=
+  CPolynomial.NTT.bestDomainForLength? BabyBear.twoAdicity
+    fastDomainOfLogN (by intro _ _; rfl) requiredLen
+
 end BabyBear
 end NTT
 end CPolynomial
