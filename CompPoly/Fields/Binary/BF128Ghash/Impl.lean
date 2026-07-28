@@ -832,15 +832,16 @@ instance instHDivConcreteBF128Ghash : HDiv (ConcreteBF128Ghash) (ConcreteBF128Gh
 lemma div_eq_mul_inv (a b : ConcreteBF128Ghash) : a / b = a * b⁻¹ := by rfl
 
 set_option maxRecDepth 100000 in
-set_option maxHeartbeats 10000000 in
+set_option maxHeartbeats 40000000 in
 instance instDivisionRingConcreteBF128Ghash : DivisionRing ConcreteBF128Ghash where
   toRing := instRingConcreteBF128Ghash
   inv := Inv.inv
   exists_pair_ne := exists_pair_ne
   mul_inv_cancel := mul_inv_cancel
   inv_zero := inv_zero
-  qsmul := (Rat.castRec · * ·)
-  nnqsmul := (NNRat.castRec · * ·)
+  -- Prefer `_` so Mathlib unifies to the default `(cast · * ·)` definitions.
+  nnqsmul := _
+  qsmul := _
   toDiv := instDivConcreteBF128Ghash
 
 lemma mul_comm (a b : ConcreteBF128Ghash) : a * b = b * a := by
