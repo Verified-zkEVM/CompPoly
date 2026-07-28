@@ -24,8 +24,10 @@ import CompPolyTests.Data.MvPolynomial.Notation
 import CompPolyTests.Fields.BabyBear.Fast
 import CompPolyTests.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
 import CompPolyTests.Fields.Binary.BF128Ghash.Prelude
+import CompPolyTests.Fields.Goldilocks.Fast
 import CompPolyTests.Fields.KoalaBear.Fast
 import CompPolyTests.Fields.PrattCertificate
+import CompPolyTests.Fields.Secp256k1.Scalar.Fast
 import CompPolyTests.LinearAlgebra.Dense
 import CompPolyTests.Multilinear.Equiv
 import CompPolyTests.Multivariate.CMvMonomial
