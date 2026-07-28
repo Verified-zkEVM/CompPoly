@@ -831,27 +831,38 @@ instance instHDivConcreteBF128Ghash : HDiv (ConcreteBF128Ghash) (ConcreteBF128Gh
 
 lemma div_eq_mul_inv (a b : ConcreteBF128Ghash) : a / b = a * b⁻¹ := by rfl
 
-set_option maxRecDepth 100000 in
-set_option maxHeartbeats 40000000 in
-instance instDivisionRingConcreteBF128Ghash : DivisionRing ConcreteBF128Ghash where
-  toRing := instRingConcreteBF128Ghash
-  inv := Inv.inv
-  exists_pair_ne := exists_pair_ne
-  mul_inv_cancel := mul_inv_cancel
-  inv_zero := inv_zero
-  -- Prefer `_` so Mathlib unifies to the default `(cast · * ·)` definitions.
-  nnqsmul := _
-  qsmul := _
-  toDiv := instDivConcreteBF128Ghash
-
 lemma mul_comm (a b : ConcreteBF128Ghash) : a * b = b * a := by
   apply toQuot_injective
   rw [toQuot_mul, toQuot_mul]
   exact _root_.mul_comm (toQuot a) (toQuot b)
 
-instance instFieldConcreteBF128Ghash : Field ConcreteBF128Ghash where
-  toDivisionRing := instDivisionRingConcreteBF128Ghash
+/-! ### Field instance via `IsField.toField`
+
+Hand-assembling `DivisionRing`/`Field` (or `Function.Injective.field`) on this
+BitVec carrier is prohibitively slow under Lean 4.32. We instead package the
+field axioms as an `IsField` proposition and apply Mathlib's `IsField.toField`,
+using a type-ascribed `Ring` so Lean does not re-elaborate the ring hierarchy
+(see the comment on `IsField.toField` in Mathlib).
+
+The resulting inverse is unique and therefore equal to `inv_itoh_tsujii` on
+nonzero elements; use `inv_itoh_tsujii` directly when a concrete algorithm is
+required.
+-/
+
+theorem isField_concrete : IsField ConcreteBF128Ghash where
+  exists_pair_ne := exists_pair_ne
   mul_comm := mul_comm
+  mul_inv_cancel := fun {_} h => ⟨Inv.inv _, mul_inv_cancel _ h⟩
+
+/-- `Field` structure on the concrete GHASH field. -/
+noncomputable instance instFieldConcreteBF128Ghash : Field ConcreteBF128Ghash := by
+  letI : Ring ConcreteBF128Ghash := (instRingConcreteBF128Ghash :)
+  exact isField_concrete.toField
+
+/-- Legacy name used by downstream modules. -/
+noncomputable instance instDivisionRingConcreteBF128Ghash :
+    DivisionRing ConcreteBF128Ghash :=
+  Field.toDivisionRing
 
 end DivisionRing_Field_Instances
 
