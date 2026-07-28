@@ -63,12 +63,31 @@ run by every implementation in that group.
 The benchmark covers evaluation paths, direct and NTT-backed univariate
 multiplication, and additive NTT implementations.
 
+Small-prime groups run each implementation over both the canonical `ZMod`
+representation and the native-word Montgomery representation, so the two appear as
+separate rows in the same group and are cross-checked against each other. KoalaBear
+and BabyBear are both covered this way:
+
+```text
+univariate-dense-koalabear    univariate-dense-babybear
+univariate-mul-koalabear      univariate-mul-babybear
+```
+
 ## Determinism
 
 Input generation uses a fixed seed. Checksums are stable for the same group
-selection and preset.
+selection and preset. They are a cross-check between implementations within one
+group, not a value to compare across runs: the generator is threaded through the
+selected groups in order, so changing the selection — or adding a group — changes
+the inputs, and therefore the checksums, of the groups that follow it.
 
 ## CI
 
-GitHub Actions runs `lake exe CompPolyBench --medium`, uploads generated
-artifacts, and appends the Markdown report to the step summary.
+GitHub Actions runs `lake exe CompPolyBench --medium` over the curated group list
+in the `BENCH_CI_GROUPS` environment variable, uploads generated artifacts, and
+appends the Markdown report to the step summary.
+
+CI does not run every registered group, so **a new group must be added to
+`BENCH_CI_GROUPS` in `.github/workflows/lean_action_ci.yml` to be covered there**.
+An unknown key in that list fails the run, so a renamed group is caught rather than
+silently dropped.
