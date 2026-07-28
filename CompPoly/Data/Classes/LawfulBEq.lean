@@ -21,7 +21,7 @@ namespace CPoly
 /-- A canonical `LawfulBEq` instance derived from `DecidableEq`. Intended for
 `letI` use at call sites that need to satisfy `BEq`/`LawfulBEq` constraints
 from a `DecidableEq`-only context. -/
-@[reducible] def lawfulBEqOfDecidableEq {α : Type*} [DecidableEq α] :
+@[reducible] theorem lawfulBEqOfDecidableEq {α : Type*} [DecidableEq α] :
     @LawfulBEq α (instBEqOfDecidableEq) where
   rfl := by intro a; simp
   eq_of_beq := by

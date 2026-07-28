@@ -316,7 +316,7 @@ instance {n : ℕ} : Semiring (CPoly.CMvPolynomial n R) where
 instance {n : ℕ} : CommSemiring (CPoly.CMvPolynomial n R) where
   natCast_zero := rfl
   natCast_succ := by intro n; simp
-  npow_zero := by intro x; simp [npowRecAuto, npowRec]
+  npow_zero := by intro x; simp
   npow_succ := by
     intro n x
     change x ^ (n + 1) = x ^ n * x
