@@ -34,7 +34,8 @@ Karatsuba half-products `p0 = a₀b₀`, `p2 = a₁b₁`, `p1 = (a₀+a₁)(b₀
 `lo = p0 + p2`, `hi = p1 + lo + Z·p2`; squaring drops the cross term; inversion is the
 quadratic descent of `concrete_inv`. Inputs are assumed in range. -/
 
-/-- GF(4) multiplication (level 1). -/
+/-- GF(4) multiplication (level 1). `Z 0 = 1` collapses the generic recombination
+`hi = p1 + lo + Z·p2` to `hi = p1 + p0`, saving a xor on the ladder's hottest rung. -/
 @[inline] def mul2 (a b : UInt64) : UInt64 :=
   let a0 := a &&& 1
   let a1 := a >>> 1
@@ -43,8 +44,7 @@ quadratic descent of `concrete_inv`. Inputs are assumed in range. -/
   let p0 := a0 &&& b0
   let p2 := a1 &&& b1
   let p1 := (a0 ^^^ a1) &&& (b0 ^^^ b1)
-  let lo := p0 ^^^ p2
-  ((p1 ^^^ lo ^^^ p2) <<< 1) ||| lo
+  ((p1 ^^^ p0) <<< 1) ||| (p0 ^^^ p2)
 
 /-- Multiplication by the level-1 generator `Z 1`. -/
 @[inline] def mulByZ1 (v : UInt64) : UInt64 :=
@@ -192,7 +192,7 @@ def mul32 (a b : UInt64) : UInt64 :=
   ((mulByZ4 s1) <<< 16) ||| (s0 ^^^ s1)
 
 /-- GF(2^32) inversion (`0 ↦ 0`). -/
-def inv32 (v : UInt64) : UInt64 :=
+@[inline] def inv32 (v : UInt64) : UInt64 :=
   let v0 := v &&& 0xFFFF
   let v1 := v >>> 16
   let next := v0 ^^^ mulByZ4 v1
@@ -219,13 +219,13 @@ def mul64 (a b : UInt64) : UInt64 :=
   ((v0 ^^^ mulByZ5 v1) <<< 32) ||| v1
 
 /-- GF(2^64) squaring. -/
-def sq64 (v : UInt64) : UInt64 :=
+@[inline] def sq64 (v : UInt64) : UInt64 :=
   let s0 := sq32 (v &&& 0xFFFFFFFF)
   let s1 := sq32 (v >>> 32)
   ((mulByZ5 s1) <<< 32) ||| (s0 ^^^ s1)
 
 /-- GF(2^64) inversion (`0 ↦ 0`). -/
-def inv64 (v : UInt64) : UInt64 :=
+@[inline] def inv64 (v : UInt64) : UInt64 :=
   let v0 := v &&& 0xFFFFFFFF
   let v1 := v >>> 32
   let next := v0 ^^^ mulByZ5 v1
@@ -475,7 +475,15 @@ theorem mulByZ6_eq_rec (v : UInt64) : mulByZ6 v = mulByZRec 6 v := by
   simp only [← mulByZ5_eq_rec]
   rfl
 
-theorem mul2_eq_rec (a b : UInt64) : mul2 a b = mulRec 1 a b := rfl
+private theorem xor_xor_cancel (x y z : UInt64) : x ^^^ (y ^^^ z) ^^^ z = x ^^^ y :=
+  UInt64.toNat_inj.mp (by
+    simp only [UInt64.toNat_xor]
+    rw [Nat.xor_assoc, Nat.xor_assoc, Nat.xor_self, Nat.xor_zero])
+
+theorem mul2_eq_rec (a b : UInt64) : mul2 a b = mulRec 1 a b := by
+  simp only [mul2, mulRec, mulByZRec]
+  rw [xor_xor_cancel]
+  rfl
 
 theorem mul4_eq_rec (a b : UInt64) : mul4 a b = mulRec 2 a b := by
   conv_rhs => rw [mulRec_succ]
