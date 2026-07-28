@@ -51,7 +51,9 @@ def hli_level_diff_0 (l : ℕ) :
     rw [Ideal.submodule_span_eq]
     rw [Ideal.span_singleton_one]
 
-@[reducible] theorem BTField.isScalarTower_succ_right (l r : ℕ) (h_le : l ≤ r) :=
+set_option linter.defProp false in
+/-- Reducible Prop-valued helper for `letI` scalar-tower instances. -/
+@[reducible] def BTField.isScalarTower_succ_right (l r : ℕ) (h_le : l ≤ r) :=
   instAlgebraTowerNatBTField.toIsScalarTower (i:=l) (j:=r) (k:=r+1)
   (h1:=by omega) (h2:=by omega)
 
