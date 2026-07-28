@@ -660,7 +660,6 @@ lemma initial_tiled_coeffs_correctness (h_ℓ : ℓ ≤ r) (a : Fin (2 ^ ℓ) �
   simp only [Nat.getLowBits_eq_mod_two_pow]
 
 omit [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 in
-set_option maxHeartbeats 10000000 in
 lemma NTTStage_correctness (i : Fin (ℓ))
     (input_buffer : Fin (2 ^ (ℓ + R_rate)) → L) (original_coeffs : Fin (2 ^ ℓ) → L) :
     additiveNTTInvariant 𝔽q β h_ℓ_add_R_rate (evaluation_buffer := input_buffer)

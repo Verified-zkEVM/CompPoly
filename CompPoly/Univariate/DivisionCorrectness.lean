@@ -407,7 +407,6 @@ private lemma raw_toPoly_degree_lt_of_size_lt (p q : Raw R)
   have hp : p.size ≤ m := by omega
   simp [Raw.coeff, hp]
 
-set_option maxHeartbeats 40000000 in
 private theorem raw_divModByMonicAux_go_spec (q : Raw R)
     (hqtrim : q.trim = q) (hqmonic : q.leadingCoeff = 1) (hqpos : 0 < q.size)
     (hqdegree : q.toPoly.degree = ((q.size - 1 : Nat) : WithBot Nat)) :

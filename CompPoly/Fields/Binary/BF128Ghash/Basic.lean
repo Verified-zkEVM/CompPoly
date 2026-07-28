@@ -184,7 +184,6 @@ def ofGF2 : ZMod 2 →+* BF128Ghash := algebraMap (ZMod 2) BF128Ghash
 /-- The generator of the field (root of the GHASH polynomial). -/
 def root : BF128Ghash := AdjoinRoot.root ghashPoly
 
-set_option maxRecDepth 100000 in
 /-- The root satisfies the GHASH polynomial equation:
     root^128 + root^7 + root^2 + root + 1 = 0 -/
 theorem root_satisfies_poly : root^128 + root^7 + root^2 + root + 1 = 0 := by
@@ -208,7 +207,7 @@ instance : Fintype BF128Ghash := by
     exact Finite.of_equiv (Fin pb.dim →₀ ZMod 2) (pb.basis.repr.toEquiv.symm)
   exact Fintype.ofFinite BF128Ghash
 
-set_option maxRecDepth 100000 in
+set_option maxRecDepth 3000 in
 /-- The cardinality of BF128Ghash is 2^128. -/
 theorem BF128Ghash_card : Fintype.card BF128Ghash = 2^128 := by
   -- Use the fact that AdjoinRoot of an irreducible polynomial of degree d
