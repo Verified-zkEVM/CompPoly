@@ -280,7 +280,8 @@ structure RunnerHardware where
 
 /-- Build a compact timestamp identifier for generated report filenames. -/
 def makeRunId : IO String := do
-  let started ← Std.Time.ZonedDateTime.now
+  -- Lean 4.32 renamed `ZonedDateTime` → local wall time lives on `PlainDateTime`.
+  let started ← Std.Time.PlainDateTime.now
   pure <| started.format "yyMMdd-HHmmss"
 
 /-- Path for the generated JSONL benchmark results. -/
