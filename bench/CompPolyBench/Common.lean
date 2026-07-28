@@ -280,7 +280,8 @@ structure RunnerHardware where
 
 /-- Build a compact timestamp identifier for generated report filenames. -/
 def makeRunId : IO String := do
-  let started ← Std.Time.ZonedDateTime.now
+  -- Lean 4.32 renamed `ZonedDateTime` → local wall time lives on `PlainDateTime`.
+  let started ← Std.Time.PlainDateTime.now
   pure <| started.format "yyMMdd-HHmmss"
 
 /-- Path for the generated JSONL benchmark results. -/
@@ -454,7 +455,7 @@ def checksumKoalaBear (x : KoalaBear.Field) : Nat :=
 
 /-- Convert a fast KoalaBear element to a checksum word. -/
 def checksumKoalaBearFast (x : KoalaBear.Fast.Field) : Nat :=
-  KoalaBear.Fast.toNat x
+  x.toNat
 
 /-- Convert a `ZMod` element to a checksum word. -/
 def checksumZMod {modulus : Nat} (x : ZMod modulus) : Nat :=

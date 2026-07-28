@@ -361,10 +361,15 @@ theorem normXgcd_fst_comm
   apply toPolyLinearEquiv.injective
   show (normXgcd p q).1.toPoly = (normXgcd q p).1.toPoly
   rw [normXgcd_fst_toPoly, normXgcd_fst_toPoly]
-  open EuclideanDomain in
-  refine normalize_eq_normalize_iff_associated.mpr
-    (associated_of_dvd_dvd ?_ ?_) <;>
-  exact dvd_gcd (gcd_dvd_right ..) (gcd_dvd_left ..)
+  -- `normalize (gcd a b) = normalize (gcd b a)` via mutual divisibility.
+  refine (normalize_eq_normalize_iff_associated).mpr ?_
+  refine associated_of_dvd_dvd ?_ ?_
+  · exact EuclideanDomain.dvd_gcd
+      (EuclideanDomain.gcd_dvd_right p.toPoly q.toPoly)
+      (EuclideanDomain.gcd_dvd_left p.toPoly q.toPoly)
+  · exact EuclideanDomain.dvd_gcd
+      (EuclideanDomain.gcd_dvd_right q.toPoly p.toPoly)
+      (EuclideanDomain.gcd_dvd_left q.toPoly p.toPoly)
 
 end CPolynomial
 

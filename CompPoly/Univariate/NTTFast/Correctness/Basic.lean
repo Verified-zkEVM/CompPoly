@@ -31,8 +31,8 @@ def WellFormed (P : Plan R) : Prop :=
 
 private theorem foldl_push_size (wm : R) :
     ∀ xs : List Nat, ∀ (powers : Array R) (w : R),
-      (List.foldl (fun (b : MProd (Array R) R) (_ : Nat) ↦
-        ⟨b.fst.push b.snd, b.snd * wm⟩) ⟨powers, w⟩ xs).fst.size =
+      (List.foldl (fun (b : Array R × R) (_ : Nat) ↦
+        (b.1.push b.2, b.2 * wm)) (powers, w) xs).1.size =
         powers.size + xs.length
   | [], powers, _ => by simp
   | _ :: xs, powers, w => by
@@ -45,8 +45,8 @@ private theorem foldl_push_getD (wm : R) :
       (∀ i, i < offset → powers.getD i 0 = base * wm ^ i) →
       w = base * wm ^ offset →
       ∀ i, i < offset + xs.length →
-        (List.foldl (fun (b : MProd (Array R) R) (_ : Nat) ↦
-          ⟨b.fst.push b.snd, b.snd * wm⟩) ⟨powers, w⟩ xs).fst.getD i 0 =
+        (List.foldl (fun (b : Array R × R) (_ : Nat) ↦
+          (b.1.push b.2, b.2 * wm)) (powers, w) xs).1.getD i 0 =
           base * wm ^ i
   | [], powers, _w, base, offset, _hsize, hvals, _hw, i, hi => by
       exact hvals i (by simpa using hi)

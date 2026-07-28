@@ -126,7 +126,6 @@ def twoAdicGenerators : List Field :=
 
 /-! Statements requested by the Python spec translation. -/
 
-set_option maxRecDepth 4096 in
 /-- Fermat-style inversion in `ZMod fieldSize`. -/
 lemma inv_eq_pow (a : Field) (ha : a ≠ 0) : a⁻¹ = a ^ (fieldSize - 2) := by
   have hcard : Fintype.card Field = fieldSize := ZMod.card fieldSize
@@ -293,13 +292,11 @@ lemma twoAdicGenerators_order (bits : Fin (twoAdicity + 1)) :
 /-- Primitive generator used by the smooth field-root splitter. -/
 def primitiveRoot : Field := (3 : Field)
 
-set_option maxRecDepth 100000 in
 /-- `primitiveRoot ^ 127` is the maximal two-adic generator. -/
 private lemma primitiveRoot_pow_127_eq_twoAdicGenerator :
-    primitiveRoot ^ 127 =
-      twoAdicGenerators[(⟨twoAdicity, by omega⟩ : Fin (twoAdicity + 1))] := by
-  unfold primitiveRoot twoAdicity
-  decide
+    primitiveRoot ^ 127 = twoAdicGenerators[twoAdicity] := by
+  norm_num [primitiveRoot, twoAdicity, twoAdicGenerators]
+  rfl
 
 /-- `primitiveRoot ^ 2^twoAdicity` is nontrivial. -/
 private lemma primitiveRoot_pow_twoAdicity_ne_one :

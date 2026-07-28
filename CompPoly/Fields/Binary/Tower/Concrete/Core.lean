@@ -1368,9 +1368,9 @@ section NumericCasting
 
 -- Natural number casting
 def natCast {k : ℕ} (n : ℕ) : ConcreteBTField k := if n % 2 = 0 then zero else one
-def natCast_zero {k : ℕ} : natCast (k:=k) 0 = zero := by rfl
+theorem natCast_zero {k : ℕ} : natCast (k:=k) 0 = zero := by rfl
 
-def natCast_succ {k : ℕ} (n : ℕ) : natCast (k:=k) (n + 1) = natCast (k:=k) n + 1 := by
+theorem natCast_succ {k : ℕ} (n : ℕ) : natCast (k:=k) (n + 1) = natCast (k:=k) n + 1 := by
   by_cases h : n % 2 = 0
   · -- If n % 2 = 0, then (n + 1) % 2 = 1
     have h_succ : (n + 1) % 2 = 1 := by omega
@@ -1399,7 +1399,7 @@ def intCast {k : ℕ} (n : ℤ) : ConcreteBTField k := if n % 2 = 0 then zero el
 instance {k : ℕ} : IntCast (ConcreteBTField k) where
   intCast n:= intCast n
 
-def intCast_ofNat {k : ℕ} (n : ℕ) : intCast (k:=k) (n : ℤ) = natCast n := by
+theorem intCast_ofNat {k : ℕ} (n : ℕ) : intCast (k:=k) (n : ℤ) = natCast n := by
   have h_mod_eq : (n : ℤ) % 2 = 0 ↔ n % 2 = 0 := by omega
   by_cases h : n % 2 = 0
   · -- Case : n % 2 = 0
@@ -1414,7 +1414,7 @@ def intCast_ofNat {k : ℕ} (n : ℕ) : intCast (k:=k) (n : ℤ) = natCast n := 
 @[simp] lemma my_neg_mod_two (m : ℤ) : ( - m) % 2 = if m % 2 = 0 then 0 else 1 := by omega
 @[simp] lemma mod_two_eq_zero (m : ℤ) : m % 2 = ( - m) % 2 := by omega
 
-def intCast_negSucc {k : ℕ} (n : ℕ) : intCast (k:=k) (Int.negSucc n)
+theorem intCast_negSucc {k : ℕ} (n : ℕ) : intCast (k:=k) (Int.negSucc n)
   = - (↑(n + 1) : ConcreteBTField k) := by
   by_cases h_mod : (n + 1) % 2 = 0
   · -- ⊢ intCast (Int.negSucc n) = - ↑(n + 1)

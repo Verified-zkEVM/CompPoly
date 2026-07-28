@@ -413,8 +413,8 @@ lemma foldl_add_comm {β : Type*} [AddCommMonoid β] {k : ℕ}
 lemma fromCMvPolynomial_finsupp_sum {n k : ℕ} [CommSemiring R] [BEq R] [LawfulBEq R]
     (g : (Fin n →₀ ℕ) → R → CMvPolynomial k R)
     (a : CMvPolynomial n R) :
-    fromCMvPolynomial (Finsupp.sum (fromCMvPolynomial a) g) =
-    Finsupp.sum (fromCMvPolynomial a)
+    fromCMvPolynomial (Finsupp.sum (AddMonoidAlgebra.coeff (fromCMvPolynomial a)) g) =
+    Finsupp.sum (AddMonoidAlgebra.coeff (fromCMvPolynomial a))
       (fun μ c => fromCMvPolynomial (g μ c)) := by
   unfold Finsupp.sum; ext
   simp [MvPolynomial.coeff_sum, coeff_eq, coeff_sum]

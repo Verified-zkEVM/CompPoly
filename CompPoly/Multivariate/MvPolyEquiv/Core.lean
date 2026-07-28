@@ -31,7 +31,7 @@ def fromCMvPolynomial  (p : CMvPolynomial n R) : MvPolynomial (Fin n) R :=
   let support : List (Fin n →₀ ℕ) := p.monomials.map CMvMonomial.toFinsupp
   let toFun (f : Fin n →₀ ℕ) : R := p[CMvMonomial.ofFinsupp f]?.getD 0
   let mem_support_fun {a : Fin n →₀ ℕ} : a ∈ support ↔ toFun a ≠ 0 := by grind
-  Finsupp.mk support.toFinset toFun (by simp [mem_support_fun])
+  AddMonoidAlgebra.ofCoeff <| Finsupp.mk support.toFinset toFun (by simp [mem_support_fun])
 
 noncomputable def toCMvPolynomial (p : MvPolynomial (Fin n) R) : CMvPolynomial n R :=
   let ⟨s, f, _⟩ := p
@@ -114,7 +114,8 @@ lemma fromCMvPolynomial_injective : Function.Injective (@fromCMvPolynomial n R _
 
 omit [BEq R] [LawfulBEq R] in
 lemma coeff_eq {m} (a : CMvPolynomial n R) :
-    MvPolynomial.coeff m (fromCMvPolynomial a) = a.coeff (CMvMonomial.ofFinsupp m) := rfl
+    MvPolynomial.coeff m (fromCMvPolynomial a) = a.coeff (CMvMonomial.ofFinsupp m) := by
+  rfl
 
 @[aesop simp]
 lemma eq_iff_fromCMvPolynomial {u v: CMvPolynomial n R} :

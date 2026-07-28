@@ -26,7 +26,6 @@ structure Domain (R : Type*) [Field R] where
   logN : Nat
   omega : R
   primitive : IsPrimitiveRoot omega (2 ^ logN)
-  natCast_ne_zero : (((2 ^ logN : Nat) : R) ≠ 0)
 
 namespace Domain
 
@@ -48,7 +47,6 @@ def inverse (D : Domain R) : Domain R where
   omega := D.omegaInv
   primitive := by
     simpa [omegaInv] using D.primitive.inv
-  natCast_ne_zero := D.natCast_ne_zero
 
 /-- Multiplicative inverse of the domain size in `R`. -/
 @[inline] def nInv (D : Domain R) : R := ((D.n : Nat) : R)⁻¹
@@ -58,6 +56,11 @@ def inverse (D : Domain R) : Domain R where
 
 @[simp] lemma n_ne_zero (D : Domain R) : D.n ≠ 0 := by
   exact Nat.ne_of_gt D.n_pos
+
+/-- The size of an NTT domain is nonzero in its coefficient field. -/
+theorem natCast_ne_zero (D : Domain R) : ((D.n : Nat) : R) ≠ 0 := by
+  letI : NeZero D.n := ⟨D.n_ne_zero⟩
+  exact D.primitive.neZero'.out
 
 section RawHelpers
 

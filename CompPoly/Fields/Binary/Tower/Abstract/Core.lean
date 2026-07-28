@@ -403,7 +403,7 @@ instance BTFieldNeZero1 (k : ℕ) : NeZero (1 : BTField k) := by
 instance BTField_Fintype (k : ℕ) : Fintype (BTField k) := (BinaryTowerAux k).2.instFintype
 
 @[simp]
-def BTFieldCard (k : ℕ) : Fintype.card (BTField k) = 2^(2^k) :=
+theorem BTFieldCard (k : ℕ) : Fintype.card (BTField k) = 2^(2^k) :=
   (BinaryTowerAux k).2.fieldFintypeCard
 
 instance BTFieldIsDomain (k : ℕ) : IsDomain (BTField k) := inferInstance
@@ -413,7 +413,7 @@ instance BTFieldNoZeroDiv (k : ℕ) : NoZeroDivisors (BTField k) := by
   infer_instance
 
 @[simp]
-def sumZeroIffEq (k : ℕ) : ∀ (x y : BTField k),
+theorem sumZeroIffEq (k : ℕ) : ∀ (x y : BTField k),
     x + y = 0 ↔ x = y := (BinaryTowerAux k).2.sumZeroIffEq
 
 instance BTFieldChar2 (k : ℕ) : CharP (BTField k) 2 :=

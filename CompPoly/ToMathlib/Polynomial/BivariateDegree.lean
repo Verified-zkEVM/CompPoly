@@ -436,7 +436,8 @@ theorem degreeX_mul [IsDomain F] (f g : F[X][Y]) (hf : f ≠ 0) (hg : g ≠ 0) :
 
 /-- The evaluation at a point of a bivariate polynomial in the first variable `X`. -/
 def evalX (a : F) (f : F[X][Y]) : Polynomial F :=
-  ⟨Finsupp.mapRange (Polynomial.eval a) eval_zero f.toFinsupp⟩
+  ⟨AddMonoidAlgebra.ofCoeff
+    (Finsupp.mapRange (Polynomial.eval a) eval_zero f.toFinsupp.coeff)⟩
 
 /-- The evaluation at a point of a bivariate polynomial in the second variable `Y`. -/
 def evalY (a : F) (f : F[X][Y]) : Polynomial F :=
