@@ -235,7 +235,7 @@ theorem minPoly_of_powerBasisSucc_generator (k : ℕ) :
         let r := q.coeff 0
         have hc : c = q.leadingCoeff := by
           rw [Polynomial.leadingCoeff]
-          exact congrArg q.toFinsupp.2 (id (Eq.symm hqNatDeg))
+          exact congrArg q.toFinsupp.coeff (id (Eq.symm hqNatDeg))
         have hc_ne_zero : c ≠ 0 := by
           rw [hc]
           by_contra h_c_eq_zero
@@ -300,6 +300,8 @@ def hli_level_diff_0 (l : ℕ) :
     rw [Ideal.submodule_span_eq]
     rw [Ideal.span_singleton_one]
 
+set_option linter.defProp false in
+/-- Reducible Prop-valued helper for `letI` scalar-tower instances. -/
 @[reducible] def isScalarTower_succ_right (l r : ℕ) (h_le : l ≤ r) :=
     instAlgebraTowerConcreteBTF.toIsScalarTower (i:=l) (j:=r) (k:=r+1)
     (h1:=by omega) (h2:=by omega)

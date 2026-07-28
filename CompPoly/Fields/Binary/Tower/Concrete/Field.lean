@@ -553,7 +553,7 @@ lemma Z_square_eq (k : ℕ) (prevBTFieldProps : ConcreteBTFieldProps (k := k))
     prevBTFieldProps.add_zero, prevBTFieldProps.one_mul]
   simp_rw [prevBTFieldProps.zero_add]
 
-def liftBTFieldProps (k : ℕ) (prevBTFResult : ConcreteBTFStepResult (k := k)) :
+theorem liftBTFieldProps (k : ℕ) (prevBTFResult : ConcreteBTFStepResult (k := k)) :
   ConcreteBTFieldProps (k + 1) := {
     zero_mul := concrete_zero_mul (prevBTFResult.toConcreteBTFieldProps),
     zero_mul' := fun a => by

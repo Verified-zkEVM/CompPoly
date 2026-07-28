@@ -43,13 +43,13 @@ noncomputable def Raw.toPoly [Semiring R] (p : CPolynomial.Raw R) : Polynomial R
 
 /-- Alternative definition of `toPoly` using `Finsupp`; currently unused. -/
 noncomputable def Raw.toPoly' [Semiring R] (p : CPolynomial.Raw R) : Polynomial R :=
-  Polynomial.ofFinsupp (Finsupp.onFinset (Finset.range p.size) p.coeff (by
+  Polynomial.ofFinsupp (AddMonoidAlgebra.ofCoeff (Finsupp.onFinset (Finset.range p.size) p.coeff (by
     intro n hn
     rw [Finset.mem_range]
     by_contra! h
     have h' : p.coeff n = 0 := by simp [h]
     contradiction
-  ))
+  )))
 
 /-- Convert a canonical polynomial to a (mathlib) `Polynomial`. -/
 noncomputable def toPoly [Semiring R] (p : CPolynomial R) : Polynomial R := p.val.toPoly

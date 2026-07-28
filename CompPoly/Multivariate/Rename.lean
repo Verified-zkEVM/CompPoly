@@ -108,8 +108,8 @@ lemma fromCMvPolynomial_monomial {k : ℕ} (mono : CMvMonomial k) (c : R) :
 lemma fromCMvPolynomial_finsupp_sum {k : ℕ}
     (g : (Fin n →₀ ℕ) → R → CMvPolynomial k R)
     (a : CMvPolynomial n R) :
-    fromCMvPolynomial (Finsupp.sum (fromCMvPolynomial a) g) =
-    Finsupp.sum (fromCMvPolynomial a)
+    fromCMvPolynomial (Finsupp.sum (AddMonoidAlgebra.coeff (fromCMvPolynomial a)) g) =
+    Finsupp.sum (AddMonoidAlgebra.coeff (fromCMvPolynomial a))
       (fun μ c => fromCMvPolynomial (g μ c)) := by
   unfold Finsupp.sum; ext
   simp [MvPolynomial.coeff_sum, coeff_eq, coeff_sum]
@@ -124,7 +124,7 @@ lemma fromCMvPolynomial_rename (f : Fin n → Fin m)
     MvPolynomial.rename f (fromCMvPolynomial p) := by
   -- Express rename as a `Finsupp.sum` via `foldl_eq_sum`
   have step1 : CMvPolynomial.rename f p =
-      Finsupp.sum (fromCMvPolynomial p) (fun μ c =>
+      Finsupp.sum (AddMonoidAlgebra.coeff (fromCMvPolynomial p)) (fun μ c =>
         CMvPolynomial.monomial
           (CMvMonomial.ofFinsupp (Finsupp.mapDomain f μ)) c) := by
     show Std.ExtTreeMap.foldl
