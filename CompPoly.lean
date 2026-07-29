@@ -68,6 +68,7 @@ import CompPoly.Fields.BLS12_381
 import CompPoly.Fields.BN254
 import CompPoly.Fields.BabyBear
 import CompPoly.Fields.BabyBear.Basic
+import CompPoly.Fields.BabyBear.Ext4
 import CompPoly.Fields.BabyBear.Fast
 import CompPoly.Fields.Basic
 import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
@@ -107,6 +108,8 @@ import CompPoly.Fields.Extension.Bridge
 import CompPoly.Fields.Extension.Defs
 import CompPoly.Fields.Extension.Field
 import CompPoly.Fields.Goldilocks
+import CompPoly.Fields.Hachi
+import CompPoly.Fields.Hachi.Ext4
 import CompPoly.Fields.KoalaBear
 import CompPoly.Fields.KoalaBear.Basic
 import CompPoly.Fields.KoalaBear.Ext4
