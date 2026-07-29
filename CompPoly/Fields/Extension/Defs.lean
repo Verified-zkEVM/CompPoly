@@ -143,6 +143,7 @@ Coefficient `k` collects the schoolbook terms `x_i * y_j` with `i + j = k`, plus
 wrap around, `i + j = k + d`, scaled by `W` because `X^d = W`. Since `i, j < d` we have
 `i + j ≤ 2d - 2 < 2d`, so each pair `(i, j)` contributes to exactly one `k`.
 -/
+@[inline, specialize]
 def mul (x y : Ext P) : Ext P :=
   ofFn fun k => ∑ i : Fin P.d, ∑ j : Fin P.d,
     if (i : ℕ) + (j : ℕ) = (k : ℕ) then coeff x i * coeff y j

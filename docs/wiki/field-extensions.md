@@ -90,18 +90,44 @@ The load-bearing correctness lemma is `Ext.toQuot_mul`: `root ^ d = W` is exactl
 wrap-around factor in `Ext.mul`, so the double sum defining the product regroups into the
 product of sums.
 
-## Known Performance Gaps
+## Performance: Measured, And Not Yet Competitive
 
-Both are correctness-complete but slower than the state of the art. Neither is hidden behind an
-abstraction that would make replacing them awkward.
+The framework is correctness-complete, and its *design* is ready for fast arithmetic — `Ext P`
+is generic over the base-field carrier precisely so a Montgomery representation can be dropped
+in. The current instantiation over `ZMod`, however, is **not** fast. Measured with
+`lake exe CompPolyBench --small` on a developer laptop:
 
-- **Inversion is Fermat** (`x ^ (q^d - 2)`), about `d · log q` extension multiplications. A
-  norm-based inverse would be roughly an order of magnitude faster: when `d ∣ q - 1` the
-  Frobenius map is a coordinate-wise scaling by powers of `W^((q-1)/d)`, so
-  `N(x) = ∏_j φ^j(x)` lands in the base field and `x⁻¹ = (∏_{j≥1} φ^j(x)) · N(x)⁻¹`.
-- **`Ext.mul` uses a nested `Finset.sum`**, which allocates. An `Array`-loop implementation
-  behind an agreement lemma — the `MulContext` idiom from
-  [`Univariate/Context.lean`](../../CompPoly/Univariate/Context.lean) — would avoid that.
+| Group | Operation | Average |
+|---|---|---|
+| `fields-extension-koalabear-ext4-mul` | `mul` | ~13.4 us |
+| `fields-extension-koalabear-ext4-inv` | `inv` | ~1.7 ms |
+
+For scale, a hand-written Rust degree-4 BabyBear multiply is a few nanoseconds. Do not quote
+this framework as performance-ready until the items below are done.
+
+The three causes, in order of size:
+
+1. **`Ext.mul` uses a nested `Finset.sum` over `Fin P.d`.** Because `P` is a runtime parameter,
+   nothing monomorphises: `Finset.univ` is rebuilt and `Fin` values are boxed on every call.
+   `@[specialize]` recovers only about 6%. The fix is an allocation-free `Array`/`Fin.foldl`
+   implementation proved equal to the current sum-based definition — either as a separate
+   backend behind an agreement lemma, following the `MulContext` idiom in
+   [`Univariate/Context.lean`](../../CompPoly/Univariate/Context.lean), or via `@[csimp]` so
+   the compiled code is swapped while every existing proof keeps referring to `Ext.mul`.
+2. **The base field is `ZMod p`**, i.e. boxed `Nat` arithmetic. Instantiating over
+   `KoalaBear.Fast.Field` (`UInt32` Montgomery,
+   [`Montgomery/Native32Field.lean`](../../CompPoly/Fields/Montgomery/Native32Field.lean))
+   needs only `Fintype` for that carrier plus irreducibility transported along
+   `Montgomery.Native32.ringEquiv` with `Polynomial.mapEquiv`. No change to the framework.
+3. **Inversion is Fermat** (`x ^ (q^d - 2)`), about `d · log q` extension multiplications — the
+   ~130x ratio to `mul` above. A norm-based inverse would be roughly an order of magnitude
+   faster: when `d ∣ q - 1` the Frobenius map is a coordinate-wise scaling by powers of
+   `W^((q-1)/d)`, so `N(x) = ∏_j φ^j(x)` lands in the base field and
+   `x⁻¹ = (∏_{j≥1} φ^j(x)) · N(x)⁻¹`.
+
+None of these is hidden behind an abstraction that makes replacing it awkward, and each is
+guarded by the `#guard` regressions in
+[`tests/CompPolyTests/Fields/Extension/Arithmetic.lean`](../../tests/CompPolyTests/Fields/Extension/Arithmetic.lean).
 
 ## Base Field Caveats
 

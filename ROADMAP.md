@@ -55,10 +55,13 @@ CompPoly aims to be the premier formally verified library for computable polynom
         equivalence to `AdjoinRoot`, and a general Rabin irreducibility criterion
         (`CompPoly/Data/Polynomial/Rabin.lean`). Concrete degree-4 instances over
         BabyBear, KoalaBear, and Hachi (`2^32 - 99`).
-         - Faster inversion: replace Fermat `x^(q^d - 2)` with a norm-based inverse using
-           the Frobenius map (a coordinate-wise scaling when `d | q - 1`)
-         - Replace the nested `Finset.sum` in `Ext.mul` with an array loop behind an
-           agreement lemma
+         - 🔄 Performance: `mul` currently measures ~13.4us and `inv` ~1.7ms on
+           KoalaBear degree 4 (`lake exe CompPolyBench`), which is far off a native
+           implementation. In priority order: replace the nested `Finset.sum` in
+           `Ext.mul` with an allocation-free array loop (behind an agreement lemma or
+           `@[csimp]`); instantiate over the `FastField` Montgomery carrier instead of
+           `ZMod`; replace Fermat inversion with a norm-based inverse using the
+           Frobenius map (a coordinate-wise scaling when `d | q - 1`)
          - Tower support (`AlgebraTower`) so `F ⊂ Ext F 2 ⊂ Ext F 4` composes, enabling the
            Mersenne31 CM31/QM31 Circle-STARK stack
          - 64-bit-radix Montgomery layer, so `Hachi` gets a `FastField` base
