@@ -177,26 +177,37 @@ private theorem primeFactors_four : (4 : ℕ).primeFactors = {2} := by
 /--
 **Irreducibility criterion for quartic binomials.**
 
-`X^4 - W` is irreducible over a finite field with `q` elements as soon as
+`X^4 - W` is irreducible over a finite field with `q` elements exactly when
 `W^((q^4 - 1)/4) = 1` and `W^((q^2 - 1)/4) ≠ 1`.
 
 This is the shape used by the BabyBear, KoalaBear and Hachi degree-4 extensions. It differs
 from `irreducible_X_pow_sub_C_iff` only in discharging `Nat.primeFactors 4 = {2}` internally,
 so callers never touch `Nat.primeFactors`.
+
+Being an `iff`, a *failed* check proves reducibility rather than merely failing to prove
+irreducibility.
 -/
+theorem irreducible_X_pow_four_sub_C_iff {W : F} (hW0 : W ≠ 0)
+    (h_top : 4 ∣ Fintype.card F ^ 4 - 1)
+    (h_mid : 4 ∣ Fintype.card F ^ 2 - 1) :
+    Irreducible ((X : F[X]) ^ 4 - C W) ↔
+      (W ^ ((Fintype.card F ^ 4 - 1) / 4) = 1 ∧
+        W ^ ((Fintype.card F ^ 2 - 1) / 4) ≠ 1) := by
+  have hmid' : ∀ ℓ ∈ (4 : ℕ).primeFactors, 4 ∣ Fintype.card F ^ (4 / ℓ) - 1 := by
+    simp only [primeFactors_four, Finset.mem_singleton]
+    rintro ℓ rfl
+    simpa using h_mid
+  rw [irreducible_X_pow_sub_C_iff (by norm_num) hW0 h_top hmid']
+  simp only [primeFactors_four, Finset.mem_singleton, forall_eq]
+
+/-- The `mpr` direction of `irreducible_X_pow_four_sub_C_iff`, as a standalone lemma. -/
 theorem irreducible_X_pow_four_sub_C {W : F} (hW0 : W ≠ 0)
     (h_top : 4 ∣ Fintype.card F ^ 4 - 1)
     (h_mid : 4 ∣ Fintype.card F ^ 2 - 1)
     (rabin_top : W ^ ((Fintype.card F ^ 4 - 1) / 4) = 1)
     (rabin_mid : W ^ ((Fintype.card F ^ 2 - 1) / 4) ≠ 1) :
-    Irreducible ((X : F[X]) ^ 4 - C W) := by
-  refine (irreducible_X_pow_sub_C_iff (by norm_num) hW0 h_top ?_).mpr ⟨rabin_top, ?_⟩
-  · simp only [primeFactors_four, Finset.mem_singleton]
-    rintro ℓ rfl
-    simpa using h_mid
-  · simp only [primeFactors_four, Finset.mem_singleton]
-    rintro ℓ rfl
-    simpa using rabin_mid
+    Irreducible ((X : F[X]) ^ 4 - C W) :=
+  (irreducible_X_pow_four_sub_C_iff hW0 h_top h_mid).mpr ⟨rabin_top, rabin_mid⟩
 
 /--
 `irreducible_X_pow_four_sub_C` with the cardinality abstracted into a numeral `q`.
@@ -218,5 +229,14 @@ theorem irreducible_X_pow_four_sub_C_of_card {q : ℕ} {W : F}
     Irreducible ((X : F[X]) ^ 4 - C W) := by
   subst hcard
   exact irreducible_X_pow_four_sub_C hW0 h_top h_mid rabin_top rabin_mid
+
+/-- `irreducible_X_pow_four_sub_C_iff` with the cardinality abstracted into a numeral `q`. -/
+theorem irreducible_X_pow_four_sub_C_iff_of_card {q : ℕ} {W : F}
+    (hcard : Fintype.card F = q) (hW0 : W ≠ 0)
+    (h_top : 4 ∣ q ^ 4 - 1) (h_mid : 4 ∣ q ^ 2 - 1) :
+    Irreducible ((X : F[X]) ^ 4 - C W) ↔
+      (W ^ ((q ^ 4 - 1) / 4) = 1 ∧ W ^ ((q ^ 2 - 1) / 4) ≠ 1) := by
+  subst hcard
+  exact irreducible_X_pow_four_sub_C_iff hW0 h_top h_mid
 
 end Polynomial
