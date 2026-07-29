@@ -102,6 +102,8 @@ import CompPoly.Fields.Binary.Tower.Support.LinearIndependentFin2
 import CompPoly.Fields.Binary.Tower.Support.Preliminaries
 import CompPoly.Fields.Binary.Tower.TensorAlgebra
 import CompPoly.Fields.Extension.Binomial
+import CompPoly.Fields.Extension.Bridge
+import CompPoly.Fields.Extension.Defs
 import CompPoly.Fields.Goldilocks
 import CompPoly.Fields.KoalaBear
 import CompPoly.Fields.KoalaBear.Basic
