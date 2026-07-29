@@ -66,13 +66,17 @@ end Nat
 
 namespace Polynomial
 
-/-- The characteristic of a finite field is prime. Supplies the `Fact` instance required by
-`Polynomial.irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd`. -/
-instance instFactPrimeRingChar (F : Type*) [Field F] [Finite F] :
-    Fact (Nat.Prime (ringChar F)) :=
-  ⟨CharP.prime_ringChar F⟩
-
 variable {F : Type*} [Field F] [Fintype F]
+
+/--
+The `Fact` instance required by `irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd`.
+
+Deliberately *not* a global instance: it would apply to every finite field, and a blanket
+`Fact` in the instance graph is easy to trip over later. The two proofs below introduce it
+locally with `haveI` instead, so it never escapes this file and appears in no statement.
+-/
+private theorem factPrimeRingChar : Fact (Nat.Prime (ringChar F)) :=
+  ⟨CharP.prime_ringChar F⟩
 
 /--
 **Rabin's irreducibility test (soundness).**
@@ -86,6 +90,7 @@ theorem irreducible_of_rabin {f : F[X]} {d : ℕ}
     (h_coprime : ∀ ℓ ∈ d.primeFactors,
       IsCoprime f (X ^ (Fintype.card F ^ (d / ℓ)) - X)) :
     Irreducible f := by
+  haveI := factPrimeRingChar (F := F)
   by_contra h_red
   -- A reducible `f` has an irreducible factor of degree at most `d / 2`.
   obtain ⟨p, hp_irr, hp_dvd_f, hp_deg⟩ :=
@@ -111,6 +116,7 @@ theorem rabin_of_irreducible {f : F[X]} {d : ℕ}
     (h_deg : f.natDegree = d) (h_pos : 0 < d) (h_irr : Irreducible f) :
     f ∣ X ^ (Fintype.card F ^ d) - X ∧
       ∀ ℓ ∈ d.primeFactors, IsCoprime f (X ^ (Fintype.card F ^ (d / ℓ)) - X) := by
+  haveI := factPrimeRingChar (F := F)
   refine ⟨(irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd d f h_irr).mpr (h_deg ▸ dvd_rfl),
     fun ℓ hℓ => ?_⟩
   -- For irreducible `f`, coprimality is exactly non-divisibility.

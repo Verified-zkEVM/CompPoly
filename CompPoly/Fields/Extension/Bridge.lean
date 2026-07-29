@@ -259,6 +259,10 @@ instance instCommRing : CommRing (Ext P) where
   one_mul a := toQuot_injective (by simp only [toQuot_mul, toQuot_one, one_mul])
   mul_one a := toQuot_injective (by simp only [toQuot_mul, toQuot_one, mul_one])
   mul_comm a b := toQuot_injective (by simp only [toQuot_mul, mul_comm])
+  -- `npow` must stay *definitionally* `Ext.instPow`. If it were left to the default `npowRec`,
+  -- `Monoid.toNatPow` and `Ext.instPow` would be two different functions, and which one `x ^ n`
+  -- elaborates to would depend on instance priority — silently switching between binary and
+  -- linear exponentiation. Setting it here keeps the two paths the same function.
   npow n x := x ^ n
   npow_zero x := toQuot_injective (by simp only [toQuot_pow, toQuot_one, pow_zero])
   npow_succ n x := toQuot_injective (by simp only [toQuot_pow, toQuot_mul, pow_succ])
@@ -271,6 +275,67 @@ instance instCommRing : CommRing (Ext P) where
     toQuot_injective (by simp only [toQuot_intCast, toQuot_natCast, Int.cast_natCast])
   intCast_negSucc n :=
     toQuot_injective (by simp only [toQuot_intCast, toQuot_neg, toQuot_natCast, Int.cast_negSucc])
+
+/-! ### The base field and the adjoined root
+
+`ofBase` is a ring homomorphism `F →+* Ext P`, which upgrades the bare `SMul F (Ext P)` from
+`Defs.lean` to a full `Algebra F (Ext P)` (and hence `Module F (Ext P)` via `Algebra.toModule`).
+That is what lets ordinary Mathlib machinery — `aeval`, scalar towers, `Subalgebra` — see the
+extension as an `F`-algebra.
+-/
+
+/-- `ofBase` lands on the constant coefficient, so it agrees with `algebraMap` into the quotient. -/
+@[simp] theorem toQuot_ofBase (c : F) :
+    toQuot (ofBase (P := P) c) = algebraMap F Quot[P] c := by
+  rw [toQuot, Finset.sum_eq_single_of_mem ⟨0, P.d_pos⟩ (Finset.mem_univ _)]
+  · simp
+  · intro k _ hk
+    have : (k : ℕ) ≠ 0 := fun h => hk (Fin.ext h)
+    simp [this]
+
+/-- `gen` is the class of `X`, i.e. the adjoined root. -/
+@[simp] theorem toQuot_gen : toQuot (gen : Ext P) = rt P := by
+  have h1 : (1 : ℕ) < P.d := P.two_le
+  rw [toQuot, Finset.sum_eq_single_of_mem ⟨1, h1⟩ (Finset.mem_univ _)]
+  · simp
+  · intro k _ hk
+    have : (k : ℕ) ≠ 1 := fun h => hk (Fin.ext h)
+    simp [this]
+
+/-- The base-field embedding, as a ring homomorphism. -/
+def ofBaseRingHom (P : BinomialParams F) : F →+* Ext P where
+  toFun := ofBase
+  map_one' := ofBase_one
+  map_mul' a b := toQuot_injective (by simp only [toQuot_ofBase, toQuot_mul, map_mul])
+  map_zero' := ofBase_zero
+  map_add' a b := toQuot_injective (by simp only [toQuot_ofBase, toQuot_add, map_add])
+
+@[simp] theorem ofBaseRingHom_apply (c : F) : ofBaseRingHom P c = ofBase c := rfl
+
+/--
+The extension is an `F`-algebra.
+
+The `SMul F (Ext P)` from `Defs.lean` is reused, so this adds no second scalar action and
+everything stays computable; `smul_def'` is exactly the statement that scaling a vector
+coefficientwise agrees with multiplying by a constant polynomial.
+-/
+instance instAlgebra : Algebra F (Ext P) where
+  algebraMap := ofBaseRingHom P
+  commutes' _ _ := mul_comm _ _
+  smul_def' c x :=
+    toQuot_injective (by simp only [toQuot_smul, toQuot_mul, ofBaseRingHom_apply, toQuot_ofBase])
+
+@[simp] theorem algebraMap_eq_ofBase (c : F) : algebraMap F (Ext P) c = ofBase c := rfl
+
+/-- **The defining relation.** The adjoined root's `d`-th power is `W`. -/
+theorem gen_pow_d : (gen : Ext P) ^ P.d = ofBase P.W :=
+  toQuot_injective (by rw [toQuot_pow, toQuot_gen, toQuot_ofBase, rt_pow_d])
+
+/-- `gen` is a root of the defining polynomial, in the form Mathlib's `aeval` expects. -/
+theorem aeval_gen_poly : aeval (gen : Ext P) P.poly = 0 := by
+  rw [BinomialParams.poly]
+  simp only [map_sub, map_pow, aeval_X, aeval_C]
+  simp only [gen_pow_d, algebraMap_eq_ofBase, sub_self]
 
 /-- `toQuot` packaged as a ring homomorphism. -/
 noncomputable def toQuotRingHom (P : BinomialParams F) : Ext P →+* Quot[P] where

@@ -27,6 +27,17 @@ namespace Hachi
 
 open CompPoly.Extension Polynomial
 
+/--
+The base-field cardinality as a bare numeral.
+
+`reduce_mod_char` reads the modulus syntactically, so the irreducibility proof below needs a
+numeral rather than the expression `fieldSize`. `qNum_eq` pins this second spelling to the first,
+so the two cannot drift apart silently.
+-/
+private abbrev qNum : ℕ := 4294967197
+
+private theorem qNum_eq : qNum = fieldSize := by norm_num
+
 /-- The parameters of the quartic extension `Hachi[X] / (X^4 - 2)`. -/
 def ext4Params : BinomialParams Field where
   d := 4
@@ -42,11 +53,11 @@ def ext4Params : BinomialParams Field where
 /-- `X^4 - 2` is irreducible over Hachi, by the collapsed Rabin criterion. -/
 theorem ext4Params_poly_irreducible : Irreducible ext4Params.poly := by
   rw [BinomialParams.poly]
-  refine irreducible_X_pow_four_sub_C_of_card (q := 4294967197) (ZMod.card _) (by decide)
+  refine irreducible_X_pow_four_sub_C_of_card (q := qNum) (ZMod.card _) (by decide)
     (by norm_num) (by norm_num) ?_ ?_
-  · show (2 : ZMod 4294967197) ^ ((4294967197 ^ 4 - 1) / 4) = 1
+  · show (2 : ZMod qNum) ^ ((qNum ^ 4 - 1) / 4) = 1
     reduce_mod_char
-  · show (2 : ZMod 4294967197) ^ ((4294967197 ^ 2 - 1) / 4) ≠ 1
+  · show (2 : ZMod qNum) ^ ((qNum ^ 2 - 1) / 4) ≠ 1
     reduce_mod_char
     decide
 
@@ -56,7 +67,13 @@ instance : Fact (Irreducible ext4Params.poly) := ⟨ext4Params_poly_irreducible�
 abbrev Ext4 : Type := CompPoly.Extension.Ext ext4Params
 
 /-- The adjoined fourth root of `2`, as an element of `Ext4`. -/
-def ext4Gen : Ext4 := Ext.ofFn fun i => if (i : ℕ) = 1 then 1 else 0
+def ext4Gen : Ext4 := Ext.gen
+
+/-- **The defining relation**, as a theorem rather than only an executable check. -/
+@[simp] theorem ext4Gen_pow_four : ext4Gen ^ 4 = Ext.ofBase (2 : Field) := Ext.gen_pow_d
+
+/-- `ext4Gen` is a root of `X^4 - 2`, in the form `aeval` expects. -/
+theorem aeval_ext4Gen : aeval ext4Gen ext4Params.poly = 0 := Ext.aeval_gen_poly
 
 @[simp] theorem card_ext4 : Fintype.card Ext4 = fieldSize ^ 4 := Ext.card_ext
 

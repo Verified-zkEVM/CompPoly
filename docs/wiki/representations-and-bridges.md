@@ -150,6 +150,8 @@ which maps into `AdjoinRoot P.poly` and proves the map bijective, and
 [`../../CompPoly/Fields/Extension/Field.lean`](../../CompPoly/Fields/Extension/Field.lean),
 which yields `Ext P ≃+* AdjoinRoot P.poly`.
 
-Degree bounds reuse the existing `CPolynomial.degreeLT` theory rather than introducing a
-new bound; see [`field-extensions.md`](field-extensions.md) for the full architecture,
-including why the ring and field instances must be built by hand rather than transported.
+Because the representation has a fixed length, the degree bound is structural and no
+degree-bound invariant is carried; this subtree is independent of the `CPolynomial` stack
+and imports none of `CompPoly/Univariate/`. See
+[`field-extensions.md`](field-extensions.md) for the full architecture, including why the
+ring and field instances must be built by hand rather than transported.

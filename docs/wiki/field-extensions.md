@@ -29,10 +29,36 @@ to binomials buys two things that matter a great deal:
 | Bridge and `CommRing` | [`../../CompPoly/Fields/Extension/Bridge.lean`](../../CompPoly/Fields/Extension/Bridge.lean) | `toQuot`, `toQuot_mul`, `instCommRing` |
 | Bijectivity and `Field` | [`../../CompPoly/Fields/Extension/Field.lean`](../../CompPoly/Fields/Extension/Field.lean) | `ringEquivQuot`, `card_ext`, `inv`, `instField` |
 
+`Data/Polynomial/Rabin.lean` generalizes the degree-128/GF(2) specialization
+`irreducible_of_rabin_128_passed_over_GF2` in `Fields/Binary/BF128Ghash/Basic.lean`, but does not
+yet replace it — `Binary/` is deliberately untouched, so there are currently **two** Rabin
+soundness proofs in the repo. Rebasing the GHASH one onto `irreducible_of_rabin` is a named
+follow-up; until then, a fix to the argument needs applying in both places.
+
 Concrete instances live next to their base field:
 [`KoalaBear/Ext4.lean`](../../CompPoly/Fields/KoalaBear/Ext4.lean) (`X^4 - 3`),
 [`BabyBear/Ext4.lean`](../../CompPoly/Fields/BabyBear/Ext4.lean) (`X^4 - 11`), and
 [`Hachi/Ext4.lean`](../../CompPoly/Fields/Hachi/Ext4.lean) (`X^4 - 2`).
+
+## What The Interface Provides
+
+Concretely, for `P : BinomialParams F`:
+
+| Surface | Declarations |
+|---|---|
+| Ring / field | `CommRing (Ext P)`, `Field (Ext P)` (the latter given `[Fact (Irreducible P.poly)]`) |
+| Base field | `Ext.ofBase : F → Ext P`, `Ext.ofBaseRingHom`, `Algebra F (Ext P)` (hence `Module F (Ext P)` via `Algebra.toModule`) |
+| Adjoined root | `Ext.gen`, `Ext.gen_pow_d : gen ^ d = ofBase W`, `Ext.aeval_gen_poly : aeval gen P.poly = 0` |
+| Specification | `Ext.toQuot`, `Ext.ringEquivQuot : Ext P ≃+* AdjoinRoot P.poly` |
+| Cardinality | `Fintype (Ext P)`, `Ext.card_ext : Fintype.card (Ext P) = q ^ d` |
+| Coefficients | `Ext.coeff`, `Ext.ofFn`, `Ext.equivFn : Ext P ≃ (Fin d → F)` |
+
+With the `Algebra` instance in place, ordinary Mathlib machinery — `aeval`, scalar towers,
+`Subalgebra`, `Module` — applies directly.
+
+**Still missing**, and the natural next step: tower support. There is no `AlgebraTower` instance
+(`CompPoly/Data/RingTheory/AlgebraTower.lean`), so `F ⊂ Ext F 2 ⊂ Ext F 4` does not compose and
+the Mersenne31 CM31/QM31 Circle-STARK stack is out of reach.
 
 ## Irreducibility: Rabin, Collapsed
 
@@ -67,11 +93,19 @@ That is about 60 lines.
 
 ## Representation And Computability
 
-`Ext P` is `Vector F P.d`: dense, little-endian, length exactly `d`. Degree bounds are **not**
-re-derived — the existing `CPolynomial.degreeLT` theory already provides
-`degreeLTEquiv : ↥(degreeLT d) ≃ₗ[F] (Fin d → F)`
-([`Univariate/Linear.lean`](../../CompPoly/Univariate/Linear.lean),
-[`Univariate/ToPoly/Degree.lean`](../../CompPoly/Univariate/ToPoly/Degree.lean)).
+`Ext P` is `Vector F P.d`: dense, little-endian, length exactly `d`. There is no degree-bound
+invariant to maintain — the bound is *structural*, a consequence of the length, not a proposition
+carried alongside the data. As a result this subtree is **independent of the `CPolynomial`
+stack**: nothing under `CompPoly/Fields/Extension/` imports `CompPoly/Univariate/`.
+
+The one place a degree bound is needed on the *polynomial* side — showing that the representative
+`Ext.toQuot` picks is the canonical degree-`< d` one — is proved directly in
+[`Extension/Bridge.lean`](../../CompPoly/Fields/Extension/Bridge.lean) as `degree_repr_lt`, from
+`Polynomial.degree_sum_le` and `Polynomial.degree_C_mul_X_pow_le`. If you want the
+`CPolynomial`-side theory instead (`degreeLT`, `degreeLTEquiv` in
+[`Univariate/Linear.lean`](../../CompPoly/Univariate/Linear.lean) and
+[`Univariate/ToPoly/Degree.lean`](../../CompPoly/Univariate/ToPoly/Degree.lean)), it exists but is
+**not** wired to this framework; connecting them would be new work.
 
 `BinomialParams` carries `d`, `W`, and the base-field cardinality `q` as a *type index*, so
 two different extensions of the same base field are different types whose instances cannot be
@@ -107,13 +141,25 @@ this framework as performance-ready until the items below are done.
 
 The three causes, in order of size:
 
-1. **`Ext.mul` uses a nested `Finset.sum` over `Fin P.d`.** Because `P` is a runtime parameter,
-   nothing monomorphises: `Finset.univ` is rebuilt and `Fin` values are boxed on every call.
-   `@[specialize]` recovers only about 6%. The fix is an allocation-free `Array`/`Fin.foldl`
-   implementation proved equal to the current sum-based definition — either as a separate
-   backend behind an agreement lemma, following the `MulContext` idiom in
-   [`Univariate/Context.lean`](../../CompPoly/Univariate/Context.lean), or via `@[csimp]` so
-   the compiled code is swapped while every existing proof keeps referring to `Ext.mul`.
+1. **`Ext.mul` is O(d³), and separately allocates.** Two distinct problems, and a rewrite must
+   fix both.
+
+   *Asymptotics.* The definition is `ofFn` over `d` output coefficients, each a `d × d` double
+   sum with `if`-tests — so `d³` term visits, nearly all of them contributing zero. Schoolbook
+   binomial reduction is **O(d²)**: for each output index, one sum of `d` products with the
+   partner index computed rather than searched. At `d = 4` that is 64 visits versus 16. A
+   rewrite that only swaps in faster containers while keeping the triple sum leaves a factor of
+   `d` on the table, so specify the target as **O(d²) *and* allocation-free**.
+
+   *Allocation.* Because `P` is a runtime parameter nothing monomorphises: `Finset.univ` is
+   rebuilt and `Fin` values boxed on every call. `@[specialize]` recovers only about 6%.
+
+   The fix is an `Array`-loop implementation proved equal to the current sum-based definition —
+   either as a separate backend behind an agreement lemma, following the `MulContext` idiom in
+   [`Univariate/Context.lean`](../../CompPoly/Univariate/Context.lean), or via `@[csimp]` so the
+   compiled code is swapped while every existing proof keeps referring to `Ext.mul`. Keep the
+   current O(d³) double sum as the *spec*: it is what `toQuot_mul` is proved against, and its
+   symmetry in `(i, j)` is why that proof is short.
 2. **The base field is `ZMod p`**, i.e. boxed `Nat` arithmetic. Instantiating over
    `KoalaBear.Fast.Field` (`UInt32` Montgomery,
    [`Montgomery/Native32Field.lean`](../../CompPoly/Fields/Montgomery/Native32Field.lean))

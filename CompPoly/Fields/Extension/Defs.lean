@@ -30,10 +30,13 @@ establishes `CommRing`; `CompPoly/Fields/Extension/Field.lean` adds inversion an
 
 ## Implementation notes
 
-Degree bounds are *not* re-derived here. `Ext P` is a fixed-length vector, and the bridge to
-degree-bounded polynomials goes through the existing `CPolynomial.degreeLT` theory
-(`CompPoly/Univariate/Linear.lean`, `CompPoly/Univariate/ToPoly/Degree.lean`), whose
-`degreeLTEquiv` already identifies `↥(degreeLT d)` with `Fin d → F`.
+There is no degree-bound invariant to maintain: `Ext P` has length exactly `P.d`, so the bound
+is *structural* rather than a proposition carried alongside the data. This subtree is therefore
+independent of the `CPolynomial` stack — it imports none of `CompPoly/Univariate/`. Where a
+degree bound is needed on the *polynomial* side (to show the representative chosen by
+`Ext.toQuot` is the canonical one), it is proved directly in
+`CompPoly/Fields/Extension/Bridge.lean` as `degree_repr_lt`, from `Polynomial.degree_sum_le` and
+`Polynomial.degree_C_mul_X_pow_le`.
 -/
 
 namespace CompPoly.Extension
@@ -127,6 +130,20 @@ variable [Fintype F] {P : BinomialParams F}
 
 theorem ofFn_coeff (x : Ext P) : ofFn (coeff x) = x := by ext i; simp
 
+/-! ### Distinguished elements
+
+`ofBase` embeds the base field as constant coefficients and `gen` is the class of `X`, i.e. the
+adjoined `d`-th root of `W`. They are the two elements a consumer of the extension needs by
+name; `CompPoly/Fields/Extension/Bridge.lean` promotes `ofBase` to an `Algebra` structure and
+proves `gen ^ d = ofBase W`.
+-/
+
+/-- The base field embedded into the extension, as the constant coefficient. -/
+@[inline] def ofBase (c : F) : Ext P := ofFn fun i => if (i : ℕ) = 0 then c else 0
+
+/-- The adjoined root: the class of `X`, whose `d`-th power is `W` (`Ext.gen_pow_d`). -/
+def gen : Ext P := ofFn fun i => if (i : ℕ) = 1 then 1 else 0
+
 /-! ### Operations -/
 
 instance : Zero (Ext P) := ⟨ofFn fun _ => 0⟩
@@ -182,6 +199,25 @@ instance : Inhabited (Ext P) := ⟨0⟩
       if (i : ℕ) + (j : ℕ) = (k : ℕ) then coeff x i * coeff y j
       else if (i : ℕ) + (j : ℕ) = (k : ℕ) + P.d then P.W * (coeff x i * coeff y j)
       else 0 := coeff_ofFn _ _
+
+@[simp] theorem coeff_ofBase (c : F) (i : Fin P.d) :
+    coeff (ofBase (P := P) c) i = if (i : ℕ) = 0 then c else 0 := coeff_ofFn _ _
+
+@[simp] theorem coeff_gen (i : Fin P.d) :
+    coeff (gen : Ext P) i = if (i : ℕ) = 1 then 1 else 0 := coeff_ofFn _ _
+
+/-- `ofBase` agrees with `1` on the multiplicative unit. -/
+@[simp] theorem ofBase_one : ofBase (P := P) (1 : F) = 1 := rfl
+
+/-- `ofBase` agrees with `0`. -/
+@[simp] theorem ofBase_zero : ofBase (P := P) (0 : F) = 0 := by
+  ext i; simp only [coeff_ofBase, coeff_zero, ite_self]
+
+/-- `ofBase` agrees with the `ℕ`-cast, so scalars and numerals do not diverge. -/
+@[simp] theorem ofBase_natCast (n : ℕ) : ofBase (P := P) (n : F) = (n : Ext P) := rfl
+
+/-- `ofBase` agrees with the `ℤ`-cast. -/
+@[simp] theorem ofBase_intCast (n : ℤ) : ofBase (P := P) (n : F) = (n : Ext P) := rfl
 
 @[simp] theorem coeff_natCast (n : ℕ) (i : Fin P.d) :
     coeff (n : Ext P) i = if (i : ℕ) = 0 then (n : F) else 0 := coeff_ofFn _ _

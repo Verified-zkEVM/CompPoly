@@ -41,7 +41,6 @@ abbrev Field := ZMod fieldSize
 
 /-- The Hachi modulus is prime. -/
 theorem is_prime : Nat.Prime fieldSize := by
-  unfold fieldSize
   pratt
 
 instance : Fact (Nat.Prime fieldSize) := ⟨is_prime⟩

@@ -51,17 +51,26 @@ CompPoly aims to be the premier formally verified library for computable polynom
 1. **Further data types**
    - ✅ Basic field definitions (currently in Arklib) ported into CompPoly (e.g. BabyBear, Goldilocks, BN254, BLS12_381, binary tower)
       - ✅ computable field extensions with interface (`CompPoly/Fields/Extension/`):
-        binomial extensions `F[X]/(X^d - W)` with `CommRing`/`Field` instances, a ring
-        equivalence to `AdjoinRoot`, and a general Rabin irreducibility criterion
+        binomial extensions `F[X]/(X^d - W)` with `CommRing`/`Field`, `Algebra F (Ext P)`
+        (hence `Module`), a base embedding `ofBase`, the adjoined root `gen` with
+        `gen ^ d = ofBase W` and `aeval gen poly = 0`, a ring equivalence to `AdjoinRoot`,
+        cardinality `q ^ d`, and a general Rabin irreducibility criterion
         (`CompPoly/Data/Polynomial/Rabin.lean`). Concrete degree-4 instances over
         BabyBear, KoalaBear, and Hachi (`2^32 - 99`).
+         - Tower support (`AlgebraTower`) is the main interface gap: `F ⊂ Ext F 2 ⊂ Ext F 4`
+           does not yet compose
          - 🔄 Performance: `mul` currently measures ~13.4us and `inv` ~1.7ms on
            KoalaBear degree 4 (`lake exe CompPolyBench`), which is far off a native
            implementation. In priority order: replace the nested `Finset.sum` in
-           `Ext.mul` with an allocation-free array loop (behind an agreement lemma or
-           `@[csimp]`); instantiate over the `FastField` Montgomery carrier instead of
-           `ZMod`; replace Fermat inversion with a norm-based inverse using the
-           Frobenius map (a coordinate-wise scaling when `d | q - 1`)
+           `Ext.mul` with an **O(d^2)** allocation-free array loop (behind an agreement lemma
+           or `@[csimp]`; the current definition visits d^3 terms, so a rewrite must drop the
+           asymptotic shape and not merely the allocations); instantiate over the `FastField`
+           Montgomery carrier instead of `ZMod`; replace Fermat inversion with a norm-based
+           inverse using the Frobenius map (a coordinate-wise scaling when `d | q - 1`)
+         - Rebase the GHASH Rabin specialization
+           (`irreducible_of_rabin_128_passed_over_GF2`) onto the general
+           `Polynomial.irreducible_of_rabin` so the two soundness proofs do not need
+           parallel maintenance
          - Tower support (`AlgebraTower`) so `F ⊂ Ext F 2 ⊂ Ext F 4` composes, enabling the
            Mersenne31 CM31/QM31 Circle-STARK stack
          - 64-bit-radix Montgomery layer, so `Hachi` gets a `FastField` base

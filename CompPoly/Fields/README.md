@@ -21,7 +21,7 @@ This directory contains formally verified field infrastructure used in zero-know
 | **Extension/Field.lean** | Bijectivity (`ringEquivQuot`), cardinality, Fermat inversion, and `Field (Ext P)`. |
 | **BabyBear/Ext4.lean** | \(\mathrm{BabyBear}[X]/(X^4 - 11)\). |
 | **KoalaBear/Ext4.lean** | \(\mathrm{KoalaBear}[X]/(X^4 - 3)\). |
-| **Hachi.lean** | \(2^{32} - 99\) — 32-bit prime field. No Montgomery fast path (needs modulus < 2^31) and two-adicity 2, so no NTT domain. |
+| **Hachi.lean** | \(2^{32} - 99\) — 32-bit prime field. **Name provisional.** Included as a 32-bit example rather than a production target: it exercises a base field with no Montgomery fast path (`Mont32Field` requires modulus < 2^31) and two-adicity 2, so no radix-2 NTT domain exists for it. |
 | **Hachi/Ext4.lean** | \(\mathrm{Hachi}[X]/(X^4 - 2)\). |
 | **Goldilocks.lean** | \(2^{64} - 2^{32} + 1\) — Plonky2/3. |
 | **KoalaBear.lean** | Facade for KoalaBear modules, re-exporting the canonical field and fast native-word implementation. |
@@ -44,7 +44,9 @@ The `Binary/` subtree provides characteristic-2 field infrastructure used by GHA
 ## Field extensions
 
 `Extension/` provides computable `F[X]/(X^d - W)` arithmetic in odd characteristic, with the
-`Field` structure proved by transport along a ring equivalence to `AdjoinRoot (X^d - W)`.
+`Field` structure proved by transport along a ring equivalence to `AdjoinRoot (X^d - W)`, plus
+`Algebra F (Ext P)`, a base embedding `ofBase`, and the adjoined root `gen` with
+`gen ^ d = ofBase W`.
 Irreducibility of the defining polynomial comes from Rabin's test, which for a binomial
 collapses to two exponentiations in the base field — no generated certificates and no
 `native_decide`. See [`../../docs/wiki/field-extensions.md`](../../docs/wiki/field-extensions.md).
