@@ -101,12 +101,15 @@ import CompPoly.Fields.Binary.Tower.Support.IrreducibilityAndTraceMapProperty
 import CompPoly.Fields.Binary.Tower.Support.LinearIndependentFin2
 import CompPoly.Fields.Binary.Tower.Support.Preliminaries
 import CompPoly.Fields.Binary.Tower.TensorAlgebra
+import CompPoly.Fields.Extension
 import CompPoly.Fields.Extension.Binomial
 import CompPoly.Fields.Extension.Bridge
 import CompPoly.Fields.Extension.Defs
+import CompPoly.Fields.Extension.Field
 import CompPoly.Fields.Goldilocks
 import CompPoly.Fields.KoalaBear
 import CompPoly.Fields.KoalaBear.Basic
+import CompPoly.Fields.KoalaBear.Ext4
 import CompPoly.Fields.KoalaBear.Fast
 import CompPoly.Fields.Mersenne
 import CompPoly.Fields.Montgomery.Basic

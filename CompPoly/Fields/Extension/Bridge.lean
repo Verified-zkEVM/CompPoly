@@ -33,7 +33,7 @@ namespace CompPoly.Extension.Ext
 
 open Polynomial AdjoinRoot
 
-variable {F : Type*} [Field F] {P : BinomialParams F}
+variable {F : Type*} [Field F] [Fintype F] {P : BinomialParams F}
 
 /-- The specification of the extension: the quotient ring `F[X] / (X^d - W)`. -/
 scoped notation "Quot[" P "]" => AdjoinRoot (BinomialParams.poly P)

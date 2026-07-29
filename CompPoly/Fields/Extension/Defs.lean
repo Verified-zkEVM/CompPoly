@@ -50,17 +50,25 @@ does not need it, and requiring it would force every consumer of the ring operat
 the proof. The `Field` instance takes `[Fact (Irreducible P.poly)]` separately, mirroring
 `AdjoinRoot`.
 -/
-structure BinomialParams (F : Type*) [Field F] where
+structure BinomialParams (F : Type*) [Field F] [Fintype F] where
   /-- The degree of the extension. -/
   d : ℕ
   /-- The extension adjoins a `d`-th root of `W`. -/
   W : F
   /-- Degree at least two; a degree-one "extension" is just `F`. -/
   two_le : 2 ≤ d
+  /-- The cardinality of the base field, as a numeral.
+
+  This is carried as *data* rather than read off `Fintype.card F` because inversion is
+  Fermat-based and must evaluate the exponent at runtime: for `F = ZMod p` with `p` around
+  `2^31`, `Fintype.card F` would enumerate all of `Fin p`. Supply `card_eq` as `ZMod.card _`. -/
+  q : ℕ
+  /-- `q` really is the cardinality of the base field. -/
+  card_eq : Fintype.card F = q
 
 namespace BinomialParams
 
-variable (P : BinomialParams F)
+variable [Fintype F] (P : BinomialParams F)
 
 /-- The defining polynomial `X^d - W`. Part of the specification only; the computable
 arithmetic on `Ext P` never evaluates it. -/
@@ -92,11 +100,11 @@ end BinomialParams
 The carrier of the extension `F[X] / (X^d - W)`: a dense coefficient vector of length `P.d`,
 little-endian (index `i` is the coefficient of `X^i`).
 -/
-def Ext {F : Type*} [Field F] (P : BinomialParams F) : Type _ := Vector F P.d
+def Ext {F : Type*} [Field F] [Fintype F] (P : BinomialParams F) : Type _ := Vector F P.d
 
 namespace Ext
 
-variable {P : BinomialParams F}
+variable [Fintype F] {P : BinomialParams F}
 
 /-- View an element as its coefficient vector. This is the identity. -/
 @[inline] def coeffs (x : Ext P) : Vector F P.d := x
