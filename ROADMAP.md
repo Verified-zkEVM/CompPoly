@@ -50,7 +50,18 @@ CompPoly aims to be the premier formally verified library for computable polynom
 
 1. **Further data types**
    - ✅ Basic field definitions (currently in Arklib) ported into CompPoly (e.g. BabyBear, Goldilocks, BN254, BLS12_381, binary tower)
-      - computable field extensions with interface
+      - ✅ computable field extensions with interface (`CompPoly/Fields/Extension/`):
+        binomial extensions `F[X]/(X^d - W)` with `CommRing`/`Field` instances, a ring
+        equivalence to `AdjoinRoot`, and a general Rabin irreducibility criterion
+        (`CompPoly/Data/Polynomial/Rabin.lean`). Concrete degree-4 instances over
+        BabyBear, KoalaBear, and Hachi (`2^32 - 99`).
+         - Faster inversion: replace Fermat `x^(q^d - 2)` with a norm-based inverse using
+           the Frobenius map (a coordinate-wise scaling when `d | q - 1`)
+         - Replace the nested `Finset.sum` in `Ext.mul` with an array loop behind an
+           agreement lemma
+         - Tower support (`AlgebraTower`) so `F ⊂ Ext F 2 ⊂ Ext F 4` composes, enabling the
+           Mersenne31 CM31/QM31 Circle-STARK stack
+         - 64-bit-radix Montgomery layer, so `Hachi` gets a `FastField` base
    - ✅ Implement a specialized Bivariate polynomial type, e.g. as `CPolynomial (CPolynomial R)` with specialized polynomial operations (that can then be optimized)
 
 **Success Criteria**: Zero `sorry`s in core operations, all ring structures complete, clean build with no warnings, reasonable proof ergonomics.

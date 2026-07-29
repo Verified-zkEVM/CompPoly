@@ -14,9 +14,8 @@ to its specification `AdjoinRoot (X^d - W)` by
 
 `toQuot x = ∑ i, algebraMap F _ (x.coeff i) * root ^ i`,
 
-which is shown to be an injective ring homomorphism. The algebraic structure on `Ext P` is then
-*transported* across `toQuot` rather than proved by hand, following
-`CompPoly/Fields/Montgomery/Native32Field.lean` (`toField_injective.field`).
+which is shown to be an injective ring homomorphism. The ring axioms on `Ext P` are then
+discharged by pushing through `toQuot` rather than proved on coordinates.
 
 The load-bearing lemma is `toQuot_mul`: the wrap-around `W` factor in `Ext.mul` is exactly
 `root ^ d = W`, so the double sum defining the product regroups into the product of sums.
@@ -26,7 +25,11 @@ The load-bearing lemma is `toQuot_mul`: the wrap-around `W` factor in `Ext.mul` 
 * `Ext.toQuot`: the map to `AdjoinRoot P.poly`.
 * `Ext.toQuot_mul`, `Ext.toQuot_add`, ...: `toQuot` is a ring homomorphism.
 * `Ext.toQuot_injective`: injective for any binomial modulus; irreducibility is not needed.
-* `Ext.instCommRing`: the transported `CommRing` structure.
+* `Ext.instCommRing`: the `CommRing` structure.
+* `Ext.toQuotRingHom`: `toQuot` packaged as a `RingHom`.
+
+Bijectivity, cardinality and the `Field` structure are in
+`CompPoly/Fields/Extension/Field.lean`.
 -/
 
 namespace CompPoly.Extension.Ext

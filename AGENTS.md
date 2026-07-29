@@ -27,8 +27,9 @@ Human contributors should usually start with [`README.md`](README.md),
   multilinear polynomials.
 - `CompPoly/Bivariate/` - specialized bivariate layer built from nested
   univariate polynomials.
-- `CompPoly/Fields/` - concrete field instances plus binary-field, GHASH, and
-  additive-NTT infrastructure.
+- `CompPoly/Fields/` - concrete field instances plus the binomial field-extension
+  framework (`Fields/Extension/`) and binary-field, GHASH, and additive-NTT
+  infrastructure.
 - `CompPoly/Data/` - reusable supporting lemmas and helper definitions.
 - `CompPoly/ToMathlib/` - local bridge lemmas and Mathlib-facing support code.
 - `tests/` - regression coverage under the `CompPolyTests` namespace.
@@ -58,6 +59,8 @@ Human contributors should usually start with [`README.md`](README.md),
   minimal typeclass assumptions and no-blanket-scope guidance.
 - [`docs/wiki/binary-fields-and-ntt.md`](docs/wiki/binary-fields-and-ntt.md) -
   binary-field stack, GHASH, and additive NTT.
+- [`docs/wiki/field-extensions.md`](docs/wiki/field-extensions.md) - computable
+  binomial field extensions and their irreducibility criterion.
 
 ## Canonical Project Docs
 

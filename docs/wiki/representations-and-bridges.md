@@ -10,6 +10,7 @@ usually the first architectural decision in a change.
 | Univariate | `CPolynomial.Raw R`, `CPolynomial R`, `QuotientCPolynomial R` | Canonical coefficient-sequence arithmetic, quotient reasoning, interpolation | `CompPoly/Univariate/README.md`, `CompPoly/Univariate/Basic.lean`, `CompPoly/Univariate/ToPoly.lean` |
 | Multivariate | `CMvPolynomial n R` | Sparse computable multivariate operations and `MvPolynomial` interop | `CompPoly/Multivariate/CMvPolynomial.lean`, `CompPoly/Multivariate/Operations.lean`, `CompPoly/Multivariate/MvPolyEquiv.lean` |
 | Multilinear | `CMlPolynomial R n`, `CMlPolynomialEval R n` | Boolean-hypercube evaluation form, basis conversion, multilinear extensions | `CompPoly/Multilinear/Basic.lean`, `CompPoly/Multilinear/Equiv.lean` |
+| Field extensions | `Extension.Ext P` | Computable `F[X]/(X^d - W)` arithmetic for challenge fields | `CompPoly/Fields/Extension.lean`, `docs/wiki/field-extensions.md` |
 | Bivariate | `CBivariate R` | Specialized two-variable APIs and `R[X][Y]` transport | `CompPoly/Bivariate/README.md`, `CompPoly/Bivariate/Basic.lean`, `CompPoly/Bivariate/ToPoly.lean`, `CompPoly/ToMathlib/Polynomial/BivariateDegree.lean`, `CompPoly/ToMathlib/Polynomial/BivariateWeightedDegree.lean`, `CompPoly/ToMathlib/Polynomial/BivariateMultiplicity.lean` |
 
 ## Univariate Family
@@ -136,3 +137,19 @@ specific polynomial representation.
   `CMlPolynomial` or `CMlPolynomialEval`.
 - If the API is naturally two-variable and you want `X` / `Y`-specific operations,
   start with `CBivariate`.
+
+## Field Extensions
+
+`CompPoly.Extension.Ext P` is a *fixed-length* dense representation, unlike the
+polynomial surfaces above: `Vector F P.d`, where `P : BinomialParams F` pins the degree
+and the constant `W` of the defining binomial `X^d - W`.
+
+The bridge is
+[`../../CompPoly/Fields/Extension/Bridge.lean`](../../CompPoly/Fields/Extension/Bridge.lean),
+which maps into `AdjoinRoot P.poly` and proves the map bijective, and
+[`../../CompPoly/Fields/Extension/Field.lean`](../../CompPoly/Fields/Extension/Field.lean),
+which yields `Ext P ≃+* AdjoinRoot P.poly`.
+
+Degree bounds reuse the existing `CPolynomial.degreeLT` theory rather than introducing a
+new bound; see [`field-extensions.md`](field-extensions.md) for the full architecture,
+including why the ring and field instances must be built by hand rather than transported.

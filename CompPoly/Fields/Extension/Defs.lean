@@ -14,17 +14,17 @@ dense coefficient vectors of length exactly `d`, so arithmetic is straight-line:
 no size branching, and multiplication reduces by folding the high half of the schoolbook
 product back with a factor of `W`.
 
-The parameters `d` and `W` are bundled into `BinomialParams` and carried as a *type index*
-(`Ext P`), so two different extensions of the same base field are different types and cannot
-have their instances confused.
+The parameters are bundled into `BinomialParams` and carried as a *type index* (`Ext P`), so
+two different extensions of the same base field are different types and cannot have their
+instances confused.
 
-This file supplies only the ring operations and the elementary `coeff` lemmas.
-`CompPoly/Fields/Extension/Bridge.lean` relates them to `AdjoinRoot P.poly` and transports the
-`Field` structure across.
+This file supplies only the operations and the elementary `coeff` lemmas — no algebraic
+structure. `CompPoly/Fields/Extension/Bridge.lean` relates them to `AdjoinRoot P.poly` and
+establishes `CommRing`; `CompPoly/Fields/Extension/Field.lean` adds inversion and `Field`.
 
 ## Main definitions
 
-* `BinomialParams`: the data `d` and `W` of a binomial `X^d - W`, with `2 ≤ d`.
+* `BinomialParams`: the degree `d`, the constant `W`, and the base-field cardinality `q`.
 * `Ext P`: the carrier, `Vector F P.d`.
 * `Ext.mul`: multiplication, with the `X^d = W` fold applied inline.
 
@@ -47,8 +47,8 @@ The data defining a binomial extension `F[X] / (X^d - W)`.
 
 Irreducibility is deliberately *not* a field here: the commutative-ring structure on `Ext P`
 does not need it, and requiring it would force every consumer of the ring operations to carry
-the proof. The `Field` instance takes `[Fact (Irreducible P.poly)]` separately, mirroring
-`AdjoinRoot`.
+the proof. `Ext.instField` takes `[Fact (Irreducible P.poly)]` separately, mirroring
+`AdjoinRoot`. Use `Polynomial.irreducible_X_pow_four_sub_C_of_card` to discharge it.
 -/
 structure BinomialParams (F : Type*) [Field F] [Fintype F] where
   /-- The degree of the extension. -/
