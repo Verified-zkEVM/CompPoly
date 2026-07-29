@@ -71,6 +71,19 @@ abbrev Ext4 : Type := CompPoly.Extension.Ext ext4Params
 /-- The adjoined fourth root of `3`, as an element of `Ext4`. -/
 def ext4Gen : Ext4 := Ext.gen
 
+/--
+`ext4Gen` is the framework's `Ext.gen`.
+
+Deliberately **not** `@[simp]`: as a rewrite it fires before `ext4Gen_pow_four` can match, which
+would knock that lemma out of the simp set. Use `simp [ext4Gen_eq_gen]` to reach the general
+`Ext.gen` lemmas (`Ext.coeff_gen`, `Ext.gen_pow_d`) when the specialized ones below are not
+enough.
+-/
+theorem ext4Gen_eq_gen : ext4Gen = Ext.gen := rfl
+
+/-- `ext4Gen` maps to the adjoined root of the specification. -/
+@[simp] theorem toQuot_ext4Gen : Ext.toQuot ext4Gen = Ext.rt ext4Params := Ext.toQuot_gen
+
 /-- **The defining relation**, as a theorem rather than only an executable check. -/
 @[simp] theorem ext4Gen_pow_four : ext4Gen ^ 4 = Ext.ofBase (3 : Field) := Ext.gen_pow_d
 
