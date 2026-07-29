@@ -59,6 +59,7 @@ import CompPoly.Data.MvPolynomial.Notation
 import CompPoly.Data.Nat.Bitwise
 import CompPoly.Data.Polynomial.Frobenius
 import CompPoly.Data.Polynomial.MonomialBasis
+import CompPoly.Data.Polynomial.Rabin
 import CompPoly.Data.RingTheory.AlgebraTower
 import CompPoly.Data.RingTheory.CanonicalEuclideanDomain
 import CompPoly.Data.Vector.Basic
@@ -167,6 +168,7 @@ import CompPoly.ToMathlib.Polynomial.BivariateEvaluation
 import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
 import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
 import CompPoly.ToMathlib.Polynomial.Div
+import CompPoly.ToMathlib.Polynomial.Irreducible
 import CompPoly.ToMathlib.Polynomial.Roots
 import CompPoly.Univariate.Barycentric
 import CompPoly.Univariate.Basic
