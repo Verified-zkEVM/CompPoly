@@ -10,6 +10,33 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Benchmark groups CI runs, keeping the benchmark step's wall-clock bounded as the
+  # suite grows. This is deliberately a subset: `lake exe CompPolyBench --list` shows
+  # every registered group, and a new group is only covered here once added below.
+  # An unknown key fails the run, so a renamed group is caught rather than dropped.
+  BENCH_CI_GROUPS: >-
+    univariate-dense-koalabear,univariate-dense-babybear,
+    univariate-sparse-koalabear,
+    univariate-monic-remainder-small-koalabear,
+    univariate-dense-goldilocks,univariate-dense-bn254,
+    univariate-batch-small-koalabear,
+    univariate-many-one-point-koalabear,
+    univariate-mul-koalabear,univariate-mul-babybear,
+    univariate-low-product-koalabear,
+    univariate-roots-finite-field-koalabear,
+    multivariate-dense-koalabear,multivariate-sparse-koalabear,
+    multilinear-coeff-koalabear,multilinear-hypercube-koalabear,
+    multilinear-many-mle-koalabear,
+    bivariate-full-koalabear,bivariate-divlinear-koalabear-y32,
+    guruswami-sudan-interp-small-koalabear,
+    guruswami-sudan-root-koalabear,
+    guruswami-sudan-core-small-koalabear,
+    guruswami-sudan-filtered-core-small-koalabear,
+    additive-ntt-btf3-l2-r2,additive-ntt-btf3-l4-r2,additive-ntt-btf4-l7-r2,
+    fields-extension-koalabear-ext4-mul,fields-extension-koalabear-ext4-inv,
+    fields-extension-babybear-ext4-mul,fields-extension-babybear-ext4-inv
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -84,7 +111,11 @@ jobs:
       - name: Build evaluation benchmark executable
         run: lake build CompPolyBench
       - name: Run evaluation benchmarks
-        run: lake exe CompPolyBench --medium
+        # BENCH_CI_GROUPS is a folded YAML scalar, so strip the line-break whitespace
+        # the folding introduces before handing it to --groups.
+        run: |
+          lake exe CompPolyBench --medium \
+            --groups "$(printf '%s' "$BENCH_CI_GROUPS" | tr -d '[:space:]')"
       - name: Prepare evaluation benchmark artifact
         if: always()
         run: |

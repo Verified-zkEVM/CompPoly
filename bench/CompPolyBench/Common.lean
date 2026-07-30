@@ -8,6 +8,7 @@ import Init.Data.Random
 import Lean.Data.Json.Parser
 import Std.Time
 import CompPoly.Fields.KoalaBear
+import CompPoly.Fields.BabyBear
 import CompPoly.Fields.Binary.AdditiveNTT.Impl
 import CompPoly.Fields.Goldilocks
 import CompPoly.Univariate.BatchEval
@@ -280,7 +281,8 @@ structure RunnerHardware where
 
 /-- Build a compact timestamp identifier for generated report filenames. -/
 def makeRunId : IO String := do
-  let started ← Std.Time.ZonedDateTime.now
+  -- Lean 4.32 renamed `ZonedDateTime` → local wall time lives on `PlainDateTime`.
+  let started ← Std.Time.PlainDateTime.now
   pure <| started.format "yyMMdd-HHmmss"
 
 /-- Path for the generated JSONL benchmark results. -/
@@ -433,6 +435,18 @@ def koalaBearVector (size : Nat) (sparse : Bool) : StateM StdGen (Array KoalaBea
 def koalaBearPoints (size : Nat) : StateM StdGen (Array KoalaBear.Field) :=
   koalaBearArray size false
 
+/-- Generate BabyBear coefficients with the same shape controls as `zmodArray`. -/
+def babyBearArray (size : Nat) (sparse : Bool) : StateM StdGen (Array BabyBear.Field) := do
+  zmodArray BabyBear.fieldSize size sparse
+
+/-- Convert BabyBear field inputs to the native-word BabyBear representation. -/
+def babyBearFastArray (xs : Array BabyBear.Field) : Array BabyBear.Fast.Field :=
+  xs.map BabyBear.Fast.ofField
+
+/-- Generate dense BabyBear evaluation points. -/
+def babyBearPoints (size : Nat) : StateM StdGen (Array BabyBear.Field) :=
+  babyBearArray size false
+
 /-- Build a canonical computable polynomial from generated coefficients. -/
 def cpolyOfArray {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
     (coeffs : Array R) : CPolynomial R :=
@@ -454,7 +468,15 @@ def checksumKoalaBear (x : KoalaBear.Field) : Nat :=
 
 /-- Convert a fast KoalaBear element to a checksum word. -/
 def checksumKoalaBearFast (x : KoalaBear.Fast.Field) : Nat :=
-  KoalaBear.Fast.toNat x
+  x.toNat
+
+/-- Convert a BabyBear field element to a checksum word. -/
+def checksumBabyBear (x : BabyBear.Field) : Nat :=
+  ZMod.val x
+
+/-- Convert a fast BabyBear element to a checksum word. -/
+def checksumBabyBearFast (x : BabyBear.Fast.Field) : Nat :=
+  x.toNat
 
 /-- Convert a `ZMod` element to a checksum word. -/
 def checksumZMod {modulus : Nat} (x : ZMod modulus) : Nat :=
@@ -693,6 +715,8 @@ def implementationNameLabels : List (String × String) := [
   ("univariate-mul-ntt-koalabear", "NTT"),
   ("univariate-mul-ntt-fast-koalabear", "Fast NTT"),
   ("univariate-mul-ntt-fast-plan-koalabear", "Fast NTT with cached plan"),
+  ("univariate-mul-ntt-babybear-fast", "NTT"),
+  ("univariate-mul-ntt-fast-babybear-fast", "Fast NTT"),
   ("additive-ntt-btf3", "Reference implementation"),
   ("additive-ntt-btf3-fast", "Fast implementation"),
   ("additive-ntt-btf3-l4-r2", "Reference implementation"),
@@ -785,6 +809,10 @@ def implementationLabelInGroup (records : List BenchRecord) (record : BenchRecor
     label
   else if record.field == "KoalaBear.Fast.Field" then
     label ++ " (fast KoalaBear)"
+  else if record.field == "BabyBear.Field" then
+    label
+  else if record.field == "BabyBear.Fast.Field" then
+    label ++ " (fast BabyBear)"
   else
     label ++ " (" ++ record.field ++ ")"
 

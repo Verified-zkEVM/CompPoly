@@ -47,6 +47,9 @@ scripts/              repo utilities and validation helpers
   start in `CompPoly/Bivariate/`.
 - Adding concrete fields, GHASH lemmas, tower-field infrastructure, or additive NTT:
   start in `CompPoly/Fields/`.
+- Adding or changing a field extension (challenge fields, `F[X]/(X^d - W)`):
+  start in `CompPoly/Fields/Extension/` and read
+  [`field-extensions.md`](field-extensions.md).
 - Moving a reusable support lemma that should not live next to one specific feature:
   start in `CompPoly/Data/` or `CompPoly/ToMathlib/`.
 - Adding regression coverage: start in `tests/` and mirror the source namespace when

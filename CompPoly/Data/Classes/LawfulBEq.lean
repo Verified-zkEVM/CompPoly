@@ -18,6 +18,8 @@ with other `BEq` paths chosen by typeclass synthesis.
 
 namespace CPoly
 
+-- Prop-valued but intentionally a reducible `def` for `letI` use.
+set_option linter.defProp false in
 /-- A canonical `LawfulBEq` instance derived from `DecidableEq`. Intended for
 `letI` use at call sites that need to satisfy `BEq`/`LawfulBEq` constraints
 from a `DecidableEq`-only context. -/

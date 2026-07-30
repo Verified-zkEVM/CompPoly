@@ -548,7 +548,8 @@ instance : AddCommGroup (QuotientCPolynomial R) where
   zsmul_zero' := nsmul_zero
   zsmul_succ' := by
     intro n a
-    simpa [zsmulRec] using nsmul_succ n a
+    change nsmul n.succ a = nsmul n a + a
+    exact nsmul_succ n a
   zsmul_neg' := by
     intro n a
     rfl

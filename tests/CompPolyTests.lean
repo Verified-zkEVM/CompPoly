@@ -21,8 +21,11 @@ import CompPolyTests.Bivariate.GuruswamiSudan.Root.RothRuckenstein
 import CompPolyTests.Bivariate.Multiplicity
 import CompPolyTests.Bivariate.WeightedDegree
 import CompPolyTests.Data.MvPolynomial.Notation
+import CompPolyTests.Fields.BabyBear.Fast
 import CompPolyTests.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
 import CompPolyTests.Fields.Binary.BF128Ghash.Prelude
+import CompPolyTests.Fields.Extension.Arithmetic
+import CompPolyTests.Fields.Extension.Binomial
 import CompPolyTests.Fields.KoalaBear.Fast
 import CompPolyTests.Fields.PrattCertificate
 import CompPolyTests.LinearAlgebra.Dense
