@@ -59,6 +59,7 @@ import CompPoly.Data.MvPolynomial.Notation
 import CompPoly.Data.Nat.Bitwise
 import CompPoly.Data.Polynomial.Frobenius
 import CompPoly.Data.Polynomial.MonomialBasis
+import CompPoly.Data.Polynomial.Rabin
 import CompPoly.Data.RingTheory.AlgebraTower
 import CompPoly.Data.RingTheory.CanonicalEuclideanDomain
 import CompPoly.Data.Vector.Basic
@@ -67,6 +68,7 @@ import CompPoly.Fields.BLS12_381
 import CompPoly.Fields.BN254
 import CompPoly.Fields.BabyBear
 import CompPoly.Fields.BabyBear.Basic
+import CompPoly.Fields.BabyBear.Ext4
 import CompPoly.Fields.BabyBear.Fast
 import CompPoly.Fields.Basic
 import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
@@ -100,9 +102,17 @@ import CompPoly.Fields.Binary.Tower.Support.IrreducibilityAndTraceMapProperty
 import CompPoly.Fields.Binary.Tower.Support.LinearIndependentFin2
 import CompPoly.Fields.Binary.Tower.Support.Preliminaries
 import CompPoly.Fields.Binary.Tower.TensorAlgebra
+import CompPoly.Fields.Extension
+import CompPoly.Fields.Extension.Binomial
+import CompPoly.Fields.Extension.Bridge
+import CompPoly.Fields.Extension.Defs
+import CompPoly.Fields.Extension.Field
 import CompPoly.Fields.Goldilocks
+import CompPoly.Fields.Hachi
+import CompPoly.Fields.Hachi.Ext4
 import CompPoly.Fields.KoalaBear
 import CompPoly.Fields.KoalaBear.Basic
+import CompPoly.Fields.KoalaBear.Ext4
 import CompPoly.Fields.KoalaBear.Fast
 import CompPoly.Fields.Mersenne
 import CompPoly.Fields.Montgomery.Basic
@@ -167,6 +177,7 @@ import CompPoly.ToMathlib.Polynomial.BivariateEvaluation
 import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
 import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
 import CompPoly.ToMathlib.Polynomial.Div
+import CompPoly.ToMathlib.Polynomial.Irreducible
 import CompPoly.ToMathlib.Polynomial.Roots
 import CompPoly.Univariate.Barycentric
 import CompPoly.Univariate.Basic

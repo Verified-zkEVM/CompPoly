@@ -8,6 +8,7 @@ import CompPolyBench.Bivariate.Basic
 import CompPolyBench.Bivariate.Factor
 import CompPolyBench.Bivariate.GuruswamiSudan
 import CompPolyBench.Fields.Binary.AdditiveNTT.Impl
+import CompPolyBench.Fields.Extension
 import CompPolyBench.Multilinear.Basic
 import CompPolyBench.Multivariate.CMvPolynomial
 import CompPolyBench.Univariate
@@ -23,7 +24,7 @@ namespace CompPolyBench
 /-- Runnable benchmark registry. -/
 def allTasks : List BenchTask :=
   univariateTasks ++ multivariateTasks ++ multilinearTasks ++ bivariateTasks ++ factorTasks ++
-    guruswamiSudanTasks ++ additiveNttTasks
+    guruswamiSudanTasks ++ additiveNttTasks ++ extensionTasks
 
 /-- Metadata for every benchmark group accepted by the command-line selector. -/
 def allGroupInfos : List BenchGroupInfo :=
