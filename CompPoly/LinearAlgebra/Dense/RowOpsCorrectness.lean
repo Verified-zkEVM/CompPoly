@@ -3,17 +3,20 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.LinearAlgebra.Dense.RowOps
-import Init.Data.List.Monadic
-import Init.Data.Range.Lemmas
-import Mathlib.Tactic.Ring
+public import CompPoly.LinearAlgebra.Dense.RowOps
+public import Init.Data.List.Monadic
+public import Init.Data.Range.Lemmas
+public import Mathlib.Tactic.Ring
 
 /-!
 # Dense Row-Operation Correctness
 
 Correctness lemmas for executable dense row operations.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

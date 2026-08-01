@@ -3,10 +3,11 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.Deriv
-import CompPoly.Bivariate.GuruswamiSudan.Polynomial
-import CompPoly.LinearAlgebra.Dense
+public import CompPoly.Bivariate.Deriv
+public import CompPoly.Bivariate.GuruswamiSudan.Polynomial
+public import CompPoly.LinearAlgebra.Dense
 
 /-!
 # Guruswami-Sudan Backend Contexts
@@ -15,6 +16,8 @@ Explicit executable contexts for the CompPoly Guruswami-Sudan core. The
 contexts package replaceable operations together with the contracts used by the
 public correctness theorems.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import CompPoly.Fields.Extension.Bridge
-import Mathlib.FieldTheory.Finite.Basic
+module
+
+public import CompPoly.Fields.Extension.Bridge
+public import Mathlib.FieldTheory.Finite.Basic
 
 /-!
 # The field structure on a binomial extension
@@ -37,6 +39,8 @@ structure `noncomputable`, which then shadows the computable `Mul` and `Pow`. Th
 Frobenius map — which on a binomial basis is a coordinate-wise scaling when `d ∣ q - 1` — would
 be roughly an order of magnitude faster. See `ROADMAP.md`.
 -/
+
+@[expose] public section
 
 namespace CompPoly.Extension.Ext
 

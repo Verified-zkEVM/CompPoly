@@ -3,6 +3,7 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
 /-!
 # Guruswami-Sudan Shared Utilities
@@ -10,6 +11,8 @@ Authors: Valerii Huhnin
 Small helpers shared by the interpolation and root-finding implementation
 modules.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

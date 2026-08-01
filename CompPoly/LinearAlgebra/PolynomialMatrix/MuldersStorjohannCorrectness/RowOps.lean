@@ -3,15 +3,18 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohann
-import CompPoly.Univariate.ToPoly.Impl
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohann
+public import CompPoly.Univariate.ToPoly.Impl
 
 /-!
 # Mulders-Storjohann Correctness Row and Row-Span Helpers
 
 Row operation and row-span lemmas used by the Mulders-Storjohann correctness proof.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

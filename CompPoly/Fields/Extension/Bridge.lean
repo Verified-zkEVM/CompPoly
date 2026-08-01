@@ -3,8 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import CompPoly.Fields.Extension.Defs
-import Mathlib.RingTheory.AdjoinRoot
+module
+
+public import CompPoly.Fields.Extension.Defs
+public import Mathlib.RingTheory.AdjoinRoot
 
 /-!
 # Bridging `Ext P` to `AdjoinRoot P.poly`
@@ -31,6 +33,8 @@ The load-bearing lemma is `toQuot_mul`: the wrap-around `W` factor in `Ext.mul` 
 Bijectivity, cardinality and the `Field` structure are in
 `CompPoly/Fields/Extension/Field.lean`.
 -/
+
+@[expose] public section
 
 namespace CompPoly.Extension.Ext
 
@@ -212,7 +216,7 @@ ring structure is transported.
 
 /-- Associativity. Kept out of the instance graph as a plain theorem to avoid a `Semigroup`
 diamond with the `CommRing` instance below. -/
-private theorem mul_assoc' (x y z : Ext P) : x * y * z = x * (y * z) :=
+theorem mul_assoc' (x y z : Ext P) : x * y * z = x * (y * z) :=
   toQuot_injective (by simp only [toQuot_mul, mul_assoc])
 
 @[simp] theorem toQuot_pow (x : Ext P) (n : ℕ) : toQuot (x ^ n) = toQuot x ^ n := by

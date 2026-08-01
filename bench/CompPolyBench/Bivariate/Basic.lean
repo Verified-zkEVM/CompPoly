@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPolyBench.Common
-import CompPoly.Bivariate.Basic
-import CompPoly.Fields.BN254
+public import CompPolyBench.Common
+public import CompPoly.Bivariate.Basic
+public import CompPoly.Fields.BN254
 
 /-!
 # Bivariate Benchmarks
 -/
+
+public section
 
 open CompPoly
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Abraxas1010 (IAOM / Apoth3osis)
 -/
-import CompPoly.Univariate.ReedSolomon
-import CompPoly.Univariate.NTT.Evaluation
+module
+
+public import CompPoly.Univariate.ReedSolomon
+public import CompPoly.Univariate.NTT.Evaluation
 
 /-!
 # NTT Encoding of Reed-Solomon Codewords
@@ -36,6 +38,8 @@ natural-order `NTT.Forward.forwardImpl`.
   `encode (nttDomainToRS D) msg`, as arrays.
 * `ReedSolomon.nttCodeword_eq_encode`: the packaged (vector-level) form.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

@@ -3,16 +3,19 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Correctness
-import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Correctness
-import Mathlib.Algebra.Field.ZMod
+public meta import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Correctness
+public meta import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Correctness
+public meta import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Alekhnovich Root Tests
 
 Regression coverage for the Alekhnovich bounded bivariate root backend.
 -/
+
+public meta section
 
 namespace CompPolyTests
 

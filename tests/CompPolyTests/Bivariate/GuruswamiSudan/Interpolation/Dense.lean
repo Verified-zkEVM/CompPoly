@@ -3,9 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
-import Mathlib.Algebra.Field.ZMod
+public meta import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
+public meta import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Dense Guruswami-Sudan Interpolation Tests
@@ -13,6 +14,8 @@ import Mathlib.Algebra.Field.ZMod
 Regression coverage for dense interpolation matrix construction, witness
 selection, and the low-message branch.
 -/
+
+public meta section
 
 namespace CompPolyTests
 

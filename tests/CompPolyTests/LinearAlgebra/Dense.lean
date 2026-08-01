@@ -3,9 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.LinearAlgebra.Dense
-import Mathlib.Algebra.Field.ZMod
+public meta import CompPoly.LinearAlgebra.Dense
+public meta import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Dense Linear-Algebra Tests
@@ -13,6 +14,8 @@ import Mathlib.Algebra.Field.ZMod
 Focused regression coverage for the dense homogeneous-kernel witness used by
 Guruswami-Sudan interpolation.
 -/
+
+public meta section
 
 namespace CompPolyTests
 

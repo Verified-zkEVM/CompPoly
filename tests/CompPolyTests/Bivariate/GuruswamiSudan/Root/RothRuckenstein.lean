@@ -3,15 +3,18 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Correctness
-import Mathlib.Algebra.Field.ZMod
+public meta import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Correctness
+public meta import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Roth-Ruckenstein Root Tests
 
 Regression coverage for the Roth-Ruckenstein root backend.
 -/
+
+public meta section
 
 namespace CompPolyTests
 

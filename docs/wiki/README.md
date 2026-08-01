@@ -11,6 +11,8 @@ are too specific or too changeable to keep at the repo root.
 - [`repo-map.md`](repo-map.md) - where to edit and how the main subtrees relate.
 - [`generated-files.md`](generated-files.md) - derived outputs and their sources of
   truth.
+- [`module-system.md`](module-system.md) - Lean module-system conventions, `meta`
+  test files, and migration fix patterns.
 - [`representations-and-bridges.md`](representations-and-bridges.md) - the main
   polynomial representations and Mathlib bridge layers.
 - [`typeclass-minimization.md`](typeclass-minimization.md) - declaration-level
@@ -28,6 +30,7 @@ are too specific or too changeable to keep at the repo root.
   - `quickstart.md` for commands, validation, and CI expectations.
   - `repo-map.md` for repo structure and work-area routing.
   - `generated-files.md` for derived outputs and source-of-truth rules.
+  - `module-system.md` for module headers, `public`/`meta` imports, and privacy.
   - `representations-and-bridges.md` for representation choice and Mathlib bridges.
   - `typeclass-minimization.md` for minimal typeclass assumptions and avoiding
     blanket instance scopes.

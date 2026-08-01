@@ -3,11 +3,12 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Algorithm
-import CompPoly.Bivariate.GuruswamiSudan.Root.Common.Lemmas
-import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
-import CompPoly.Data.Array.Lemmas
+public import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Algorithm
+public import CompPoly.Bivariate.GuruswamiSudan.Root.Common.Lemmas
+public import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
+public import CompPoly.Data.Array.Lemmas
 
 /-!
 # Roth-Ruckenstein Correctness Support
@@ -15,6 +16,8 @@ import CompPoly.Data.Array.Lemmas
 Coefficient, composition, and root-filter lemmas used by the Roth-Ruckenstein
 correctness proofs.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

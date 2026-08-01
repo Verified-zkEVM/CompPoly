@@ -3,11 +3,12 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.FiniteField
-import CompPoly.Fields.KoalaBear
-import CompPoly.Univariate.NTT.KoalaBear
-import CompPoly.Univariate.Roots.SmoothSubgroup
+public import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.FiniteField
+public import CompPoly.Fields.KoalaBear
+public import CompPoly.Univariate.NTT.KoalaBear
+public import CompPoly.Univariate.Roots.SmoothSubgroup
 
 /-!
 # KoalaBear Guruswami-Sudan Field-Root Backends
@@ -16,6 +17,8 @@ Concrete finite-field root backends for canonical KoalaBear and native-word fast
 KoalaBear. Both use the generic finite-field algorithm directly over their field
 carriers.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

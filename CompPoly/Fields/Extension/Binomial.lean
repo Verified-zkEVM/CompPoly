@@ -3,7 +3,9 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import CompPoly.Data.Polynomial.Rabin
+module
+
+public import CompPoly.Data.Polynomial.Rabin
 
 /-!
 # Irreducibility of binomials `X^d - W` over a finite field
@@ -40,6 +42,8 @@ same test costs when the defining polynomial is not a binomial.
   SIAM Journal on Computing 9(2), 1980.
 * [LN97] Rudolf Lidl and Harald Niederreiter, *Finite Fields*, 2nd ed., Theorem 3.75.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

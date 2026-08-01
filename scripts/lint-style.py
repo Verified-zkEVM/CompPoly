@@ -250,12 +250,23 @@ def long_lines_check(lines, path):
             errors += [(ERR_LIN, line_nr, path)]
     return errors, lines
 
+# Module-system header words that may precede `import`, e.g. `public meta import Foo`.
+IMPORT_MODIFIERS = ("public", "meta", "all")
+
+def import_words(words):
+    """Drop module-system import modifiers, so `public meta import Foo` reads as
+    `import Foo`. Returns the words unchanged if this is not an import line."""
+    i = 0
+    while i < len(words) and words[i] in IMPORT_MODIFIERS:
+        i += 1
+    return words[i:] if i < len(words) and words[i] == "import" else words
+
 def import_only_check(lines, path):
     for _, line, is_comment in annotate_comments(lines):
         if is_comment:
             continue
-        imports = line.split()
-        if imports[0] == "#align_import":
+        imports = import_words(line.split())
+        if imports[0] in ("#align_import", "module"):
             continue
         if imports[0] != "import":
             return False
@@ -297,8 +308,8 @@ def regular_check(lines, path):
             continue
         if copy_done and line == "\n":
             continue
-        words = line.split()
-        if words[0] != "import" and words[0] != "--" and words[0] != "/-!" and words[0] != "#align_import":
+        words = import_words(line.split())
+        if words[0] not in ("import", "module", "--", "/-!", "#align_import"):
             errors += [(ERR_MOD, line_nr, path)]
             break
         if words[0] == "/-!":
@@ -310,7 +321,9 @@ def banned_import_check(lines, path):
     for line_nr, line, is_comment in annotate_comments(lines):
         if is_comment:
             continue
-        imports = line.split()
+        imports = import_words(line.split())
+        if imports[0] == "module":
+            continue
         if imports[0] != "import":
             break
         if imports[1] in ["Mathlib.Tactic"]:

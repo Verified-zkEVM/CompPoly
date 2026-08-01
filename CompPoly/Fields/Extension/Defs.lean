@@ -3,8 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import CompPoly.Fields.Extension.Binomial
-import Mathlib.Algebra.BigOperators.Fin
+module
+
+public import CompPoly.Fields.Extension.Binomial
+public import Mathlib.Algebra.BigOperators.Fin
 
 /-!
 # Computable binomial extension fields
@@ -38,6 +40,8 @@ degree bound is needed on the *polynomial* side (to show the representative chos
 `CompPoly/Fields/Extension/Bridge.lean` as `degree_repr_lt`, from `Polynomial.degree_sum_le` and
 `Polynomial.degree_C_mul_X_pow_le`.
 -/
+
+@[expose] public section
 
 namespace CompPoly.Extension
 

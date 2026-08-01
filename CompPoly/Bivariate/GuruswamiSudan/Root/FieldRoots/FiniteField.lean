@@ -3,10 +3,11 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Context
-import CompPoly.Univariate.Roots.Correctness
-import CompPoly.Univariate.Roots.SmoothSubgroup
+public import CompPoly.Bivariate.GuruswamiSudan.Context
+public import CompPoly.Univariate.Roots.Correctness
+public import CompPoly.Univariate.Roots.SmoothSubgroup
 
 /-!
 # Guruswami-Sudan Finite-Field Root Adapter
@@ -14,6 +15,8 @@ import CompPoly.Univariate.Roots.SmoothSubgroup
 Adapter from the reusable finite-field univariate root operation to the certified
 `FieldRootContext` context consumed by Roth-Ruckenstein root finding.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import CompPoly.Fields.Binary.BF128Ghash.XPowTwoPowGcdCertificate
+public import CompPoly.Fields.Binary.BF128Ghash.XPowTwoPowGcdCertificate
 
 /-!
 # BinaryField128Ghash
@@ -40,6 +41,8 @@ Thus, we only need to check:
   SIAM Journal on Computing, 9(2):273-280, 1980. https://doi.org/10.1137/0209024
 
 -/
+
+@[expose] public section
 
 namespace BF128Ghash
 open Polynomial AdjoinRoot

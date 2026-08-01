@@ -3,10 +3,11 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dimitris Mitsios
 -/
+module
 
-import CompPoly.Univariate.Basic
-import CompPoly.Univariate.ToPoly.Impl
-import Mathlib.Algebra.Polynomial.Taylor
+public import CompPoly.Univariate.Basic
+public import CompPoly.Univariate.ToPoly.Impl
+public import Mathlib.Algebra.Polynomial.Taylor
 
 /-!
 # Formal Derivative and Taylor Shift of Computable Univariate Polynomials
@@ -14,6 +15,8 @@ import Mathlib.Algebra.Polynomial.Taylor
 Defines the formal derivative `CPolynomial.derivative` and the Taylor shift
 `CPolynomial.taylor`, with proofs of their core properties.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

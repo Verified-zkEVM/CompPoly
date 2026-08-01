@@ -3,8 +3,10 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Fawad Haider
 -/
-import CompPoly.Multivariate.MvPolyEquiv.Eval
-import Mathlib.Algebra.MvPolynomial.Variables
+module
+
+public import CompPoly.Multivariate.MvPolyEquiv.Eval
+public import Mathlib.Algebra.MvPolynomial.Variables
 
 /-!
 # Lemmas for `CMvPolynomial.vars` and `CMvPolynomial.degrees`
@@ -14,6 +16,8 @@ Correctness lemmas relating `vars`, `degrees`, and `degreeOf` to Mathlib's `MvPo
 ## TODO
 - `vars_mul_subset`: prove `(p * q).vars ⊆ p.vars ∪ q.vars`, mirroring `MvPolynomial.vars_mul`.
 -/
+
+@[expose] public section
 namespace CPoly
 
 open CMvPolynomial

@@ -3,8 +3,10 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
-import CompPoly.Univariate.BatchEval.Naive
-import CompPoly.Univariate.Context
+module
+
+public import CompPoly.Univariate.BatchEval.Naive
+public import CompPoly.Univariate.Context
 
 /-!
 # Subproduct-Tree Batch Evaluation
@@ -12,6 +14,8 @@ import CompPoly.Univariate.Context
 Executable subproduct-tree construction and descent for univariate batch
 evaluation.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial

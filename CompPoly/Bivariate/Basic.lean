@@ -3,8 +3,9 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen, Dimitris Mitsios
 -/
+module
 
-import CompPoly.Univariate.Basic
+public import CompPoly.Univariate.Basic
 
 /-!
 # Computable Bivariate Polynomials
@@ -19,6 +20,8 @@ The design is intended to be compatible with:
 - ArkLib's `Polynomial.Bivariate` interface (see ArkLib/Data/Polynomial/Bivariate.lean and
   ArkLib/Data/CodingTheory/PolishchukSpielman/Degrees.lean, BCIKS20.lean, etc.)
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

@@ -3,15 +3,18 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Univariate.Roots.Correctness
-import Mathlib.Algebra.Field.ZMod
+public meta import CompPoly.Univariate.Roots.Correctness
+public meta import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Finite-Field Univariate Root Tests
 
 Focused executable coverage for the generic finite-field root backend.
 -/
+
+public meta section
 
 namespace CompPolyTests
 

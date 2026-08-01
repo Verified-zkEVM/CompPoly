@@ -3,15 +3,16 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Executable
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness
-import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
-import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Correctness
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Fast
-import CompPoly.Univariate.BatchEval.Context
-import CompPoly.Univariate.NTT.KoalaBear
+public import CompPoly.Bivariate.GuruswamiSudan.Executable
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness
+public import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
+public import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Correctness
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Fast
+public import CompPoly.Univariate.BatchEval.Context
+public import CompPoly.Univariate.NTT.KoalaBear
 
 /-!
 # Guruswami-Sudan Concrete Implementations
@@ -19,6 +20,8 @@ import CompPoly.Univariate.NTT.KoalaBear
 Named concrete dense and Lee-O'Sullivan interpolation/Roth-Ruckenstein
 implementations and correctness theorem specializations for the decoder surface.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

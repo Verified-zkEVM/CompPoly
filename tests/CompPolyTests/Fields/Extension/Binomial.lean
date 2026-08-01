@@ -3,9 +3,11 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import CompPoly.Fields.Extension.Binomial
-import Mathlib.Tactic.NormNum.Prime
-import Mathlib.Tactic.ReduceModChar
+module
+
+public import CompPoly.Fields.Extension.Binomial
+public import Mathlib.Tactic.NormNum.Prime
+public import Mathlib.Tactic.ReduceModChar
 
 /-!
 # Binomial irreducibility criterion tests
@@ -17,6 +19,8 @@ Both directions are exercised: `X^4 - 2` is irreducible (`2` is a non-square mod
 `X^4 - 1` is not. The second case is what makes the `iff` worth having — a failed check
 *proves* reducibility rather than merely failing to prove irreducibility.
 -/
+
+@[expose] public section
 
 namespace CompPolyTests.Fields.Extension.Binomial
 

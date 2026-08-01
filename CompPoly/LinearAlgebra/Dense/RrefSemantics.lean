@@ -3,17 +3,20 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.LinearAlgebra.Dense.RowOpsCorrectness
-import Init.Data.List.Monadic
-import Init.Data.Range.Lemmas
-import Mathlib.Algebra.GroupWithZero.NeZero
+public import CompPoly.LinearAlgebra.Dense.RowOpsCorrectness
+public import Init.Data.List.Monadic
+public import Init.Data.Range.Lemmas
+public import Mathlib.Algebra.GroupWithZero.NeZero
 
 /-!
 # Dense RREF Semantic Correctness
 
 Semantic preservation and reflection lemmas for dense row reduction.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

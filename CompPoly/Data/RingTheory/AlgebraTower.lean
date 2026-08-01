@@ -3,8 +3,9 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import Mathlib.LinearAlgebra.Matrix.Reindex
+public import Mathlib.LinearAlgebra.Matrix.Reindex
 
 /-!
   # Tower of Algebras and Tower of Algebra Equivalences
@@ -17,6 +18,8 @@ import Mathlib.LinearAlgebra.Matrix.Reindex
   * `AlgebraTower` : a tower of algebras
   * `AlgebraTowerEquiv` : an equivalence of towers of algebras
 -/
+
+@[expose] public section
 
 /-- A tower of algebras is a sequence of algebras `AT i` indexed over a preorder `ι` with the
     following data:

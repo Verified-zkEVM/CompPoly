@@ -3,11 +3,12 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Algorithm
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Correctness
-import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
-import Mathlib.Algebra.Polynomial.Taylor
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Algorithm
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Correctness
+public import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
+public import Mathlib.Algebra.Polynomial.Taylor
 
 /-!
 # Dense Guruswami-Sudan Interpolation Correctness
@@ -15,6 +16,8 @@ import Mathlib.Algebra.Polynomial.Taylor
 Correctness contracts for the dense interpolation path and its constructive
 low-message branch.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

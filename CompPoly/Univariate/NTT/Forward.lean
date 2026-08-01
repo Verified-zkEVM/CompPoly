@@ -3,7 +3,9 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Salih Erdem Koçak, Doran Pamukçu
 -/
-import CompPoly.Univariate.NTT.Transform
+module
+
+public import CompPoly.Univariate.NTT.Transform
 
 /-!
 # Forward NTT
@@ -11,6 +13,8 @@ import CompPoly.Univariate.NTT.Transform
 This file provides spec-level forward NTT definitions together with an
 iterative radix-2 implementation.
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 

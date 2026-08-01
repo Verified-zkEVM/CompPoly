@@ -3,9 +3,15 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import CompPoly.Fields.BabyBear.Ext4
-import CompPoly.Fields.Hachi.Ext4
-import CompPoly.Fields.KoalaBear.Ext4
+module
+
+public meta import CompPoly.Fields.BabyBear.Ext4
+public meta import CompPoly.Fields.Hachi.Ext4
+public meta import CompPoly.Fields.KoalaBear.Ext4
+-- The `#guard`s below run at elaboration time and so need the `meta` imports above; the
+-- `example`s at the end are ordinary declarations and need this plain import as well.
+public import CompPoly.Fields.Extension.Bridge
+public import CompPoly.Fields.KoalaBear.Ext4
 
 /-!
 # Extension-field arithmetic tests
@@ -22,6 +28,8 @@ Each field is exercised for:
 * `x * x⁻¹ = 1` and `0⁻¹ = 0`, which exercise Fermat inversion;
 * agreement of binary `^` with repeated multiplication.
 -/
+
+public meta section
 
 namespace CompPolyTests.Fields.Extension
 

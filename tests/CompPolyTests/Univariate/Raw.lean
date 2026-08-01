@@ -3,7 +3,9 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen, Elias Judin
 -/
-import CompPoly.Univariate.Raw.Division
+module
+
+public meta import CompPoly.Univariate.Raw.Division
 
 /-!
   # Univariate Raw Regression Tests
@@ -14,6 +16,8 @@ import CompPoly.Univariate.Raw.Division
   or `rfl` because `ℚ` normalization is not definitionally computable. These
   regressions are checked at meta-level via `#guard`.
 -/
+
+public meta section
 
 open CompPoly CPolynomial.Raw
 

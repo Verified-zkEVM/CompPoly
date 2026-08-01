@@ -3,9 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Univariate.Basic
-import Mathlib.FieldTheory.Finite.Basic
+public import CompPoly.Univariate.Basic
+public import Mathlib.FieldTheory.Finite.Basic
 
 /-!
 # Finite-Field Root Contexts
@@ -14,6 +15,8 @@ Explicit contexts for executable univariate root finding over finite fields.
 The algorithms use the cardinality carried here; downstream proofs use the
 finite-field and splitter contracts without unfolding concrete implementations.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

@@ -3,8 +3,9 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import Mathlib.Algebra.Field.Defs
+public import Mathlib.Algebra.Field.Defs
 
 /-!
 # Dense Row-Major Matrices
@@ -12,6 +13,8 @@ import Mathlib.Algebra.Field.Defs
 Basic dense row-major matrix storage, indexing, and homogeneous-system
 predicates.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

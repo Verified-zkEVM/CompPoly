@@ -3,7 +3,9 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import CompPoly.Multivariate.Operations
+module
+
+public import CompPoly.Multivariate.Operations
 
 /-!
   # Multivariate Typeclass-Minimization Tests
@@ -13,6 +15,8 @@ import CompPoly.Multivariate.Operations
   but no semiring or ring structure, so these examples fail if stronger assumptions
   creep back into the API.
 -/
+
+@[expose] public section
 
 namespace CPoly
 

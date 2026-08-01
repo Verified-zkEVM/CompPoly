@@ -3,13 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
-import CompPoly.Univariate.NTTFast.Correctness.DIF
+module
+
+public import CompPoly.Univariate.NTTFast.Correctness.DIF
 
 /-!
 # Radix-4 DIF NTTFast correctness
 
 Correctness proofs for the mixed radix-4 decimation-in-frequency stage loop used by `NTTFast`.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial
@@ -173,7 +177,7 @@ private theorem butterflyDIFBlocks_eq_foldl_inner
       simp only [hblock, ↓reduceIte]
       simpa [List.range'_succ] using ih
 
-private def radix4DIFCell
+def radix4DIFCell
     (wHigh0 wHigh1 wLow : R) (i0 i1 i2 i3 : Nat) (acc : Array R) : Array R :=
   let x0 := acc.getD i0 0
   let x1 := acc.getD i1 0
@@ -186,7 +190,7 @@ private def radix4DIFCell
   (((acc.set! i0 (a0 + a1)).set! i1 (wLow * (a0 - a1))).set! i2 (a2 + a3)).set! i3
     (wLow * (a2 - a3))
 
-@[simp] private theorem size_radix4DIFCell
+@[simp] theorem size_radix4DIFCell
     (wHigh0 wHigh1 wLow : R) (i0 i1 i2 i3 : Nat) (acc : Array R) :
     (radix4DIFCell wHigh0 wHigh1 wLow i0 i1 i2 i3 acc).size = acc.size := by
   simp [radix4DIFCell, Array.set!, Array.size_setIfInBounds]

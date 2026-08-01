@@ -3,8 +3,10 @@ Copyright (c) 2021 Ivan Sadofschi Costa. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ivan Sadofschi Costa, Quang Dao
 -/
-import Mathlib.Data.Finsupp.Fin
-import Mathlib.Algebra.BigOperators.Finsupp.Fin
+module
+
+public import Mathlib.Data.Finsupp.Fin
+public import Mathlib.Algebra.BigOperators.Finsupp.Fin
 
 /-!
 # Tuple operations on maps `Fin n →₀ M`
@@ -21,6 +23,8 @@ operations:
 In this context, we prove some usual properties of these operations, analogous to those of
 `Data.Fin.Tuple.Basic`.
 -/
+
+@[expose] public section
 
 open Function
 

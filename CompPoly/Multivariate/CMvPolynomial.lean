@@ -3,10 +3,12 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa, Derek Sorensen, Dimitris Mitsios
 -/
-import CompPoly.Multivariate.Lawful
-import CompPoly.Univariate.Basic
-import Mathlib.Algebra.Algebra.Basic
-import Mathlib.Algebra.Ring.Hom.Defs
+module
+
+public import CompPoly.Multivariate.Lawful
+public import CompPoly.Univariate.Basic
+public import Mathlib.Algebra.Algebra.Basic
+public import Mathlib.Algebra.Ring.Hom.Defs
 
 /-!
 # Computable multivariate polynomials
@@ -36,6 +38,8 @@ that depend on ring instances (monomial orders, `rename`, `aeval`, etc.) are in
   `CPoly.CMvPolynomial.degreeOf`, `CPoly.CMvPolynomial.degrees`,
   `CPoly.CMvPolynomial.vars`: Degree and support queries.
 -/
+
+@[expose] public section
 namespace CPoly
 
 open Std

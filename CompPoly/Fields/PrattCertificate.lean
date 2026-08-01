@@ -3,8 +3,10 @@ Copyright (c) 2020 Bolton Bailey. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Bolton Bailey
 -/
-import Mathlib.Tactic.ReduceModChar
-import Mathlib.NumberTheory.LucasPrimality
+module
+
+public import Mathlib.Tactic.ReduceModChar
+public import Mathlib.NumberTheory.LucasPrimality
 
 /-!
 # The Lucas test for primes.
@@ -29,6 +31,8 @@ modulo `p`. Despite this, the theorem still holds vacuously for `p = 0` and `p =
 cases, we can take `q` to be any prime and see that `hd` does not hold, since `a^((p-1)/q)` reduces
 to `1`.
 -/
+
+@[expose] public section
 
 section New
 
@@ -203,7 +207,7 @@ theorem prime_101 : Nat.Prime 101 := by
 
 -- theorem prime_987654319 : Nat.Prime 987654319 := sorry
 
-def powMod (a b m : ℕ) : ℕ := Id.run do
+meta def powMod (a b m : ℕ) : ℕ := Id.run do
   let mut x := a
   let mut n := b
   let mut res := 1
@@ -220,7 +224,7 @@ structure PowTwoRepr where
   two_exp : ℕ
   odd_part : ℕ
 
-def factorOutTwos (n : ℕ) : PowTwoRepr := Id.run do
+meta def factorOutTwos (n : ℕ) : PowTwoRepr := Id.run do
   let mut two_exp := 0
   let mut odd_part := n
 
@@ -230,10 +234,10 @@ def factorOutTwos (n : ℕ) : PowTwoRepr := Id.run do
 
   return ⟨two_exp, odd_part⟩
 
-def millerRabinBases : List ℕ :=
+meta def millerRabinBases : List ℕ :=
   [2, 325, 9375, 28178, 450775, 9780504, 1795265022]
 
-def deterministicMillerRabin (n : ℕ) : Bool := Id.run do
+meta def deterministicMillerRabin (n : ℕ) : Bool := Id.run do
   if n ≤ 2 ∨ n % 2 = 0 then
     return n = 2
 
@@ -255,10 +259,10 @@ def deterministicMillerRabin (n : ℕ) : Bool := Id.run do
 
   return true
 
-def g (n : ℕ) (c : ℕ) (x : ℕ) := (x * x + c) % n
+meta def g (n : ℕ) (c : ℕ) (x : ℕ) := (x * x + c) % n
 
 /-- Auxiliary function for `rho` that tries to find a factor of `n` -/
-def rho' (n : ℕ) (start : ℕ) (c : ℕ) : Option ℕ := Id.run do
+meta def rho' (n : ℕ) (start : ℕ) (c : ℕ) : Option ℕ := Id.run do
   if n % 2 = 0 then
     return some 2
 
@@ -276,7 +280,7 @@ def rho' (n : ℕ) (start : ℕ) (c : ℕ) : Option ℕ := Id.run do
   else
     return some d
 
-def rho (n : ℕ) : Option ℕ := Id.run do
+meta def rho (n : ℕ) : Option ℕ := Id.run do
   for st in [2:n] do
     for c in [1:n] do
       if let some d := rho' n st c then
@@ -284,7 +288,7 @@ def rho (n : ℕ) : Option ℕ := Id.run do
 
   return none
 
-partial def factor (n : ℕ) : Option (List ℕ) :=
+meta partial def factor (n : ℕ) : Option (List ℕ) :=
   if deterministicMillerRabin n then
     [n]
   else do
@@ -299,7 +303,7 @@ structure PrimeWithMultiplicity : Type where
 deriving Repr
 
 /-- Factor `n` into a list of prime numbers with their multiplicities -/
-def factor' (n : ℕ) : Option (List PrimeWithMultiplicity) := do
+meta def factor' (n : ℕ) : Option (List PrimeWithMultiplicity) := do
   let facts := List.mergeSort (← factor n)
   let groups := List.splitBy (· = ·) facts
   return groups.map (fun g => ⟨g[0]!, g.length⟩)
@@ -324,7 +328,8 @@ instance {n : ℕ} : ToString (UnverifiedPrattCertificate n) where
 
 mutual
 
-  partial def computePrattPart (l : List PrimeWithMultiplicity) : Option UnverifiedPrattPart := do
+  meta partial def computePrattPart (l : List PrimeWithMultiplicity) :
+      Option UnverifiedPrattPart := do
     if let [⟨p, k⟩] := l then
       let cert ← computePrattCertificate p
       return .prime p k cert
@@ -334,7 +339,7 @@ mutual
     let rhs ← computePrattPart right
     return .split lhs rhs
 
-  partial def computePrattCertificate (n : ℕ) : Option (UnverifiedPrattCertificate n) :=
+  meta partial def computePrattCertificate (n : ℕ) : Option (UnverifiedPrattCertificate n) :=
     -- TODO does this shortcut?
     if n ≤ 50 ∧ deterministicMillerRabin n then
       some (.knownPrime n)
@@ -367,7 +372,7 @@ open Tactic
 open Qq
 open Mathlib.Meta.NormNum
 
-def verifySmallPrime (n' : Q(ℕ)) : MetaM Q(Nat.Prime $n') :=
+meta def verifySmallPrime (n' : Q(ℕ)) : MetaM Q(Nat.Prime $n') :=
   match n'.natLit! with
     | 2 => do haveI : $n' =Q 2 := ⟨⟩; return q(prime_2)
     | 3 => do haveI : $n' =Q 3 := ⟨⟩; return q(prime_3)
@@ -398,7 +403,7 @@ theorem ZMod.bla : ∀ {n c : ℕ} (a : ZMod n), c = 1 → IsNat (a ^ (n - 1)) c
     conv_rhs => rw [← Nat.cast_one]
     exact h.out
 
-def verifyEqOne (n a' : Q(ℕ)) (a : Q(ZMod $n)) (_ : Q(($a' : ZMod $n) = $a)) :
+meta def verifyEqOne (n a' : Q(ℕ)) (a : Q(ZMod $n)) (_ : Q(($a' : ZMod $n) = $a)) :
     MetaM Q($a ^ ($n - 1) = 1) := do
   let p : Q(ZMod $n) := q($a ^ ($n - 1))
   let .isNat _ c hc ← Tactic.ReduceModChar.normIntNumeral n p
@@ -448,7 +453,7 @@ theorem ZMod.blub :
       ← Nat.mod_eq_of_lt (show 1 < n from of_decide_eq_true hn)]
     exact h'
 
-def verifyNeOne (n a' q : Q(ℕ)) (a : Q(ZMod $n)) (_ : Q(($a' : ZMod $n) = $a)) :
+meta def verifyNeOne (n a' q : Q(ℕ)) (a : Q(ZMod $n)) (_ : Q(($a' : ZMod $n) = $a)) :
     MetaM Q($a ^ (($n - 1) / $q) ≠ 1) := do
   -- return q(sorry)
   let p : Q(ZMod $n) := q($a ^ (($n - 1) / $q))
@@ -465,7 +470,7 @@ def verifyNeOne (n a' q : Q(ℕ)) (a : Q(ZMod $n)) (_ : Q(($a' : ZMod $n) = $a))
   -- return q(ZMod.powNeOfPowMod $a $ha $hn $pc $hc)
 
 -- Invariant: n'.natLit! = n
-partial def verifyCertificate (n' : Q(ℕ)) (n : ℕ) :
+meta partial def verifyCertificate (n' : Q(ℕ)) (n : ℕ) :
     UnverifiedPrattCertificate n → MetaM Q(Nat.Prime $n')
   | .knownPrime n => verifySmallPrime n'
   | .of n a part => do

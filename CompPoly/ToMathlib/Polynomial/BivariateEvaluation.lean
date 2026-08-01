@@ -3,8 +3,9 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov, Aristotle (Harmonic)
 -/
+module
 
-import CompPoly.ToMathlib.Polynomial.BivariateDegree
+public import CompPoly.ToMathlib.Polynomial.BivariateDegree
 
 /-!
 # Mathlib-Facing Bivariate Evaluation Helpers
@@ -12,6 +13,8 @@ import CompPoly.ToMathlib.Polynomial.BivariateDegree
 This file collects evaluation-oriented helpers for Mathlib's
 bivariate polynomial surface `R[X][Y]`.
 -/
+
+@[expose] public section
 
 open Polynomial
 open scoped Polynomial.Bivariate

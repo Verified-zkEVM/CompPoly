@@ -3,8 +3,9 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.LinearAlgebra.PolynomialMatrix.ShiftedReduction
+public import CompPoly.LinearAlgebra.PolynomialMatrix.ShiftedReduction
 
 /-!
 # Mulders-Storjohann Shifted Row Reduction
@@ -16,6 +17,8 @@ Direct executable shifted row reduction over polynomial rows.
 * [Mulders, T., and Storjohann, A., *On lattice reduction for polynomial
     matrices*][MS03]
 -/
+
+@[expose] public section
 
 namespace CompPoly
 
@@ -101,11 +104,6 @@ def muldersStorjohannReduceWithFuel :
       | some (i, j) =>
           muldersStorjohannReduceWithFuel fuel
             (muldersStorjohannStep M shift i j) shift
-
-/-- Insert a natural number into an optional running maximum. -/
-def maxOption : Option Nat → Nat → Option Nat
-  | none, n => some n
-  | some m, n => some (max m n)
 
 /-- Maximum shifted row degree among the rows of a matrix. -/
 def matrixShiftedDegree? (M : PolynomialMatrix F) (shift : Array Nat) : Option Nat :=

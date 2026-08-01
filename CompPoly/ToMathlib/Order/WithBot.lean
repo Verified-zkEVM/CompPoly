@@ -3,7 +3,9 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Juan Conejero
 -/
-import Mathlib.Algebra.Order.Monoid.WithTop
+module
+
+public import Mathlib.Algebra.Order.Monoid.WithTop
 
 /-!
 # Strict additive monotonicity on `WithBot ℕ`
@@ -12,6 +14,8 @@ Mathlib's `WithBot.add_lt_add_of_le_of_lt` / `WithBot.add_lt_add_of_lt_of_le` ca
 side conditions; the fully strict version below needs none of them over `ℕ`.
 Upstreaming candidate.
 -/
+
+@[expose] public section
 
 namespace WithBot
 

@@ -3,7 +3,12 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus Himmel
 -/
-import Std.Data.DTreeMap.Lemmas
+module
+
+public import Std.Data.DTreeMap.Lemmas
+-- Needed for the `Std.DTreeMap.Internal.Impl` lemmas used below; under the module system
+-- these are no longer re-exported by `Std.Data.DTreeMap.Lemmas`.
+public import Std.Data.DTreeMap.Internal.Lemmas
 
 /-!
 # Auxiliary lemmas for `Std.DTreeMap`
@@ -16,6 +21,8 @@ Vendored from
 [`Verified-zkEVM/ExtTreeMapLemmas`](https://github.com/Verified-zkEVM/ExtTreeMapLemmas)
 (tag `v4.29.1`, commit `3fee686227f18dca03bb7fc42ca5a9275d6cfda6`).
 -/
+
+@[expose] public section
 
 universe u v
 

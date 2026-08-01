@@ -3,10 +3,11 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Univariate.Raw.Modular
-import CompPoly.Univariate.EuclideanAlgorithm
-import CompPoly.Univariate.Roots.Context
+public import CompPoly.Univariate.Raw.Modular
+public import CompPoly.Univariate.EuclideanAlgorithm
+public import CompPoly.Univariate.Roots.Context
 
 /-!
 # Finite-Field Root Products
@@ -15,6 +16,8 @@ Executable construction of `gcd(p, X^q - X)` as
 `gcd(p, (X^q mod p) - (X mod p))`, so large finite fields never materialize the
 dense polynomial `X^q - X`.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

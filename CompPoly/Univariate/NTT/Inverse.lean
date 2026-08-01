@@ -3,14 +3,18 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Salih Erdem Koçak, Doran Pamukçu
 -/
-import CompPoly.Univariate.NTT.Forward
-import CompPoly.Univariate.NTT.Transform
+module
+
+public import CompPoly.Univariate.NTT.Forward
+public import CompPoly.Univariate.NTT.Transform
 
 /-!
 # Inverse NTT
 
 This file provides inverse NTT APIs and correctness statement.
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 

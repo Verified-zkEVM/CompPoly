@@ -3,9 +3,11 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Juan Conejero
 -/
-import CompPoly.Univariate.EuclideanAlgorithm
-import Mathlib.Data.ZMod.Basic
-import Mathlib.Algebra.Field.ZMod
+module
+
+public meta import CompPoly.Univariate.EuclideanAlgorithm
+public meta import Mathlib.Data.ZMod.Basic
+public meta import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Tests: `xgcd` gcd and partial (threshold) behavior
@@ -14,6 +16,8 @@ import Mathlib.Algebra.Field.ZMod
 `noncomputable`, so we can't evaluate `EuclideanDomain.gcd` at runtime; the
 expected gcds are hardcoded as `CPolynomial` values and compared with `==`.
 -/
+
+public meta section
 
 open CompPoly
 

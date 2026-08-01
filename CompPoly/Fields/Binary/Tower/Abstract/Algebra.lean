@@ -3,14 +3,17 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen
 -/
+module
 
-import CompPoly.Fields.Binary.Tower.Abstract.Core
+public import CompPoly.Fields.Binary.Tower.Abstract.Core
 
 /-!
 # Abstract Binary Tower Algebra
 
 Algebra maps and tower embeddings for the abstract binary tower fields.
 -/
+
+@[expose] public section
 
 namespace BinaryTower
 

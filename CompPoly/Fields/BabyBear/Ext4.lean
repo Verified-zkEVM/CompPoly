@@ -3,9 +3,11 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import CompPoly.Fields.Extension
-import CompPoly.Fields.BabyBear.Basic
-import Mathlib.Tactic.ReduceModChar
+module
+
+public import CompPoly.Fields.Extension
+public import CompPoly.Fields.BabyBear.Basic
+public import Mathlib.Tactic.ReduceModChar
 
 /-!
 # The degree-4 extension of BabyBear
@@ -22,6 +24,8 @@ exponentiations in the base field: `11^((p^4-1)/4) = 1` and `11^((p^2-1)/4) ≠ 
 * `BabyBear.ext4Params`: the `BinomialParams` for `X^4 - 11`.
 * `BabyBear.Ext4`: the extension field itself.
 -/
+
+@[expose] public section
 
 namespace BabyBear
 

@@ -3,12 +3,15 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.LinearAlgebra.PolynomialMatrix.RowSpan
+public import CompPoly.LinearAlgebra.PolynomialMatrix.RowSpan
 
 /-!
 # Shifted Row Reduction Contexts
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

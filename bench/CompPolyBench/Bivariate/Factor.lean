@@ -3,11 +3,12 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dimitris Mitsios
 -/
+module
 
-import CompPolyBench.Common
-import CompPoly.Bivariate.Factor
-import CompPoly.Univariate.DivisionCorrectness
-import CompPoly.Fields.BN254
+public import CompPolyBench.Common
+public import CompPoly.Bivariate.Factor
+public import CompPoly.Univariate.DivisionCorrectness
+public import CompPoly.Fields.BN254
 
 /-!
 # Bivariate Linear-Division Benchmarks
@@ -24,6 +25,8 @@ and `< 32`. Both methods produce the same quotient, verified by an identical
 checksum within each (field, size) group. The divisor's constant term is
 perturbed per iteration so each measured call recomputes the division.
 -/
+
+public section
 
 open CompPoly
 

@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Combinations
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Combinations
 
 /-!
 # Mulders-Storjohann Correctness Reduction Invariants
 
 Shape, well-formedness, row-span, and weak-Popov correctness for the reducer.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

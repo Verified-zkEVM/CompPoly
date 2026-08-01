@@ -3,10 +3,11 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Root.Common
-import CompPoly.Bivariate.GuruswamiSudan.Root.ShiftedSubstitution
-import CompPoly.Data.Array.Lemmas
+public import CompPoly.Bivariate.GuruswamiSudan.Root.Common
+public import CompPoly.Bivariate.GuruswamiSudan.Root.ShiftedSubstitution
+public import CompPoly.Data.Array.Lemmas
 
 /-!
 # Alekhnovich Bivariate Bounded Root Search
@@ -22,6 +23,8 @@ phase. The public output is exactly filtered against `Q(X, p(X)) = 0` and
     Decoding of Reed-Solomon Codes*, IEEE Transactions on Information Theory
     51(7), 2257-2265, 2005][Ale05]
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

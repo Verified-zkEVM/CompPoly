@@ -3,16 +3,19 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Basis
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Combinations
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Basis
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Combinations
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness
 
 /-!
 # Lee-O'Sullivan Row-Span Transport Helpers
 
 Transport between executable polynomial rows and semantic bivariate span combinations.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 
@@ -383,7 +386,7 @@ private theorem cpoly_C_zero_mul
   rw [CPolynomial.toPoly_mul, CPolynomial.C_toPoly, CPolynomial.toPoly_zero]
   simp
 
-private def semanticUnitRowCoeffs
+def semanticUnitRowCoeffs
     (height i : Nat) : Array (CPolynomial F) :=
   Array.ofFn (fun j : Fin height ↦
     if j.val = i then CPolynomial.C (1 : F) else CPolynomial.C (0 : F))

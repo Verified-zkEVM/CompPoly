@@ -3,14 +3,18 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
-import CompPoly.Univariate.BatchEval.SubproductTree
-import CompPoly.Univariate.ToPoly.Impl
+module
+
+public import CompPoly.Univariate.BatchEval.SubproductTree
+public import CompPoly.Univariate.ToPoly.Impl
 
 /-!
 # Batch Evaluation Correctness
 
 Correctness theorems for univariate batch-evaluation implementations.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial

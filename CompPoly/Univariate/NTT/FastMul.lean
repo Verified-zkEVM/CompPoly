@@ -3,12 +3,14 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Salih Erdem Koçak, Doran Pamukçu
 -/
-import CompPoly.Univariate.NTT.Evaluation
-import CompPoly.Univariate.NTT.Forward
-import CompPoly.Univariate.NTT.Inverse
-import CompPoly.Univariate.NTT.Kernel
-import CompPoly.Univariate.Raw
-import CompPoly.Univariate.ToPoly.Equiv
+module
+
+public import CompPoly.Univariate.NTT.Evaluation
+public import CompPoly.Univariate.NTT.Forward
+public import CompPoly.Univariate.NTT.Inverse
+public import CompPoly.Univariate.NTT.Kernel
+public import CompPoly.Univariate.Raw
+public import CompPoly.Univariate.ToPoly.Equiv
 
 /-!
 # Fast Multiplication via NTT
@@ -16,6 +18,8 @@ import CompPoly.Univariate.ToPoly.Equiv
 This file wires forward NTT, pointwise multiplication, and inverse NTT into a
 spec/implementation pipeline.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial

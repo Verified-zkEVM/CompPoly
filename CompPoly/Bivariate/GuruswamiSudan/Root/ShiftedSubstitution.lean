@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Polynomial
+public import CompPoly.Bivariate.GuruswamiSudan.Polynomial
 
 /-!
 # Shifted Substitution for Guruswami-Sudan Root Search
 
 Executable substitution of `Y = f(X) + X^t Y` in bivariate polynomials.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

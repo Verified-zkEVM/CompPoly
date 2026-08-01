@@ -3,12 +3,15 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.LinearAlgebra.PolynomialMatrix.Degree
+public import CompPoly.LinearAlgebra.PolynomialMatrix.Degree
 
 /-!
 # Shifted Degrees for Polynomial Rows
 -/
+
+@[expose] public section
 
 namespace CompPoly
 
@@ -24,7 +27,8 @@ structure ShiftedLeadingTerm (F : Type*) where
   coeff : F
 deriving Repr
 
-private def maxOption : Option Nat → Nat → Option Nat
+/-- Insert a natural number into an optional running maximum. -/
+def maxOption : Option Nat → Nat → Option Nat
   | none, n => some n
   | some m, n => some (max m n)
 

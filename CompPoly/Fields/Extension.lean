@@ -3,10 +3,12 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import CompPoly.Fields.Extension.Binomial
-import CompPoly.Fields.Extension.Bridge
-import CompPoly.Fields.Extension.Defs
-import CompPoly.Fields.Extension.Field
+module
+
+public import CompPoly.Fields.Extension.Binomial
+public import CompPoly.Fields.Extension.Bridge
+public import CompPoly.Fields.Extension.Defs
+public import CompPoly.Fields.Extension.Field
 
 /-!
 # Computable field extensions
@@ -21,3 +23,5 @@ Facade for the binomial field-extension stack. See the individual modules for de
   `CommRing` structure.
 * `CompPoly/Fields/Extension/Field.lean` — bijectivity, cardinality, and the `Field` structure.
 -/
+
+@[expose] public section

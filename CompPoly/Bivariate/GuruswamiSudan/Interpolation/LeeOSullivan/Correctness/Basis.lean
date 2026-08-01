@@ -3,15 +3,18 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Common
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Combinations
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Common
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Combinations
 
 /-!
 # Lee-O'Sullivan Basis Correctness Helpers
 
 Multiplicity, triangularity, and algebraic closure facts for Lee-O'Sullivan basis polynomials.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import CompPoly.Fields.Extension
-import CompPoly.Fields.KoalaBear.Basic
-import Mathlib.Tactic.ReduceModChar
+module
+
+public import CompPoly.Fields.Extension
+public import CompPoly.Fields.KoalaBear.Basic
+public import Mathlib.Tactic.ReduceModChar
 
 /-!
 # The degree-4 extension of KoalaBear
@@ -24,6 +26,8 @@ certificate file.
 * `KoalaBear.ext4Params`: the `BinomialParams` for `X^4 - 3`.
 * `KoalaBear.Ext4`: the extension field itself.
 -/
+
+@[expose] public section
 
 namespace KoalaBear
 

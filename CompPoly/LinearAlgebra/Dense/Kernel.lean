@@ -3,8 +3,9 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.LinearAlgebra.Dense.RowOps
+public import CompPoly.LinearAlgebra.Dense.RowOps
 
 /-!
 # Dense Homogeneous Kernels
@@ -12,6 +13,8 @@ import CompPoly.LinearAlgebra.Dense.RowOps
 Executable homogeneous-kernel basis and witness extraction from row-reduced
 dense matrices.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

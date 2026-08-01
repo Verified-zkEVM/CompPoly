@@ -3,7 +3,9 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
-import CompPoly.Univariate.NTTFast.Plan
+module
+
+public import CompPoly.Univariate.NTTFast.Plan
 
 /-!
 # Fast multiplication via NTT
@@ -11,6 +13,8 @@ import CompPoly.Univariate.NTTFast.Plan
 This file exposes the one-shot `NTTFast` multiplication entry point. It builds an
 `NTTFast.Plan` for the given domain and runs the planned multiplication pipeline.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial

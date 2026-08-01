@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Univariate.BatchEval.Correctness
+public import CompPoly.Univariate.BatchEval.Correctness
 
 /-!
 # Batch-Evaluation Contexts
 
 Explicit context wrappers for reusable univariate batch-evaluation backends.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

@@ -3,8 +3,10 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa, Derek Sorensen, Dimitris Mitsios
 -/
-import CompPoly.Multivariate.MvPolyEquiv.Eval
-import CompPoly.Multivariate.MvPolyEquiv.Instances
+module
+
+public import CompPoly.Multivariate.MvPolyEquiv.Eval
+public import CompPoly.Multivariate.MvPolyEquiv.Instances
 
 /-!
 # Computable multivariate polynomials (extended operations)
@@ -25,6 +27,8 @@ are in `CMvPolynomial.lean`. The `CommSemiring` and `CommRing` instances are in
 * `aeval`: Algebra evaluation.
 * `bind₁`: Substitution of polynomials for variables.
 -/
+
+@[expose] public section
 namespace CPoly
 
 open Std

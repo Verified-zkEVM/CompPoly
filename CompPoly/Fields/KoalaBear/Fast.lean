@@ -3,9 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Fields.KoalaBear.Basic
-import CompPoly.Fields.Montgomery.Native32Field
+public import CompPoly.Fields.KoalaBear.Basic
+public import CompPoly.Fields.Montgomery.Native32Field
 
 /-!
 # Fast KoalaBear Field
@@ -14,6 +15,8 @@ A native-word Montgomery implementation of KoalaBear arithmetic. The shared algo
 proofs live in `CompPoly.Fields.Montgomery.Native32Field`; this module supplies the KoalaBear
 constants and its concrete API.
 -/
+
+@[expose] public section
 
 namespace KoalaBear.Fast
 

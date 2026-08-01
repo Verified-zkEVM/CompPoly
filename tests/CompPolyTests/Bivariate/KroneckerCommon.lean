@@ -3,8 +3,10 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dimitris Mitsios
 -/
-import CompPoly.Bivariate.Kronecker
-import CompPoly.Univariate.NTT.KoalaBear
+module
+
+public import CompPoly.Bivariate.Kronecker
+public import CompPoly.Univariate.NTT.KoalaBear
 
 /-!
   # Kronecker test helpers
@@ -14,6 +16,8 @@ import CompPoly.Univariate.NTT.KoalaBear
   univariate multiplication as a parameter. Built on the efficient `kroneckerPackFast` /
   `kroneckerUnpackFast`.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CBivariate

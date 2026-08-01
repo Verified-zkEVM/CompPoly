@@ -3,7 +3,9 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Juan Conejero
 -/
-import Mathlib.Algebra.Polynomial.Roots
+module
+
+public import Mathlib.Algebra.Polynomial.Roots
 
 /-!
 # Root sets of products of distinct linear factors
@@ -14,6 +16,8 @@ vanishing on the points (`prod_X_sub_C_dvd`)
 - The product divides `(∏ i ∈ E, (X - C (a i))) * (f - b)` whenever `f` and `b` agree off `E`
 (`prod_X_sub_C_dvd_prod_mul_sub`).
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

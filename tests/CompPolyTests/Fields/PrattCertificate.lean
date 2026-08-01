@@ -3,13 +3,17 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import CompPoly.Fields.PrattCertificate
+module
+
+public import CompPoly.Fields.PrattCertificate
 
 /-!
   # Pratt Certificate Tests
 
   Small regression checks for the pratt tactic
 -/
+
+@[expose] public section
 
 example : Nat.Prime 5915587277 := by pratt
 example : Nat.Prime 1500450271 := by pratt

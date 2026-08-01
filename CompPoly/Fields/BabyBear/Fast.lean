@@ -3,9 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin, Georgios Raikos
 -/
+module
 
-import CompPoly.Fields.BabyBear.Basic
-import CompPoly.Fields.Montgomery.Native32Field
+public import CompPoly.Fields.BabyBear.Basic
+public import CompPoly.Fields.Montgomery.Native32Field
 
 /-!
 # Fast BabyBear Field
@@ -14,6 +15,8 @@ A native-word Montgomery implementation of BabyBear arithmetic. The shared algor
 proofs live in `CompPoly.Fields.Montgomery.Native32Field`; this module supplies the BabyBear
 constants and its concrete API.
 -/
+
+@[expose] public section
 
 namespace BabyBear.Fast
 

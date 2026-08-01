@@ -3,9 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Univariate.Roots.Extraction
-import CompPoly.Univariate.Roots.RootProduct
+public import CompPoly.Univariate.Roots.Extraction
+public import CompPoly.Univariate.Roots.RootProduct
 
 /-!
 # Finite-Field Root Backend
@@ -15,6 +16,8 @@ handles zero, constant, and linear cases explicitly, computes the finite-field
 root product modulo the input polynomial, splits the product into linear
 factors, then validates and deduplicates candidates against the original input.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

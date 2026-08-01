@@ -3,13 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
-import CompPoly.Univariate.NTTFast.Correctness.Basic
+module
+
+public import CompPoly.Univariate.NTTFast.Correctness.Basic
 
 /-!
 # Radix-4 DIT NTTFast correctness
 
 Correctness proofs for the mixed radix-4 decimation-in-time stage loop used by `NTTFast`.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial
@@ -173,7 +177,7 @@ private theorem butterflyDITBlocks_eq_foldl_inner
       simp only [hblock, ↓reduceIte]
       simpa [List.range'_succ] using ih
 
-private def radix4Cell
+def radix4Cell
     (wLow wHigh0 wHigh1 : R) (i0 i1 i2 i3 : Nat) (acc : Array R) : Array R :=
   let x0 := acc.getD i0 0
   let x1 := acc.getD i1 0
@@ -189,7 +193,7 @@ private def radix4Cell
   let u3 := wHigh1 * a3
   (((acc.set! i0 (a0 + u2)).set! i1 (a1 + u3)).set! i2 (a0 - u2)).set! i3 (a1 - u3)
 
-@[simp] private theorem size_radix4Cell
+@[simp] theorem size_radix4Cell
     (wLow wHigh0 wHigh1 : R) (i0 i1 i2 i3 : Nat) (acc : Array R) :
     (radix4Cell wLow wHigh0 wHigh1 i0 i1 i2 i3 acc).size = acc.size := by
   simp [radix4Cell, Array.set!, Array.size_setIfInBounds]

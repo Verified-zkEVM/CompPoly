@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Measure
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Measure
 
 /-!
 # Mulders-Storjohann Correctness Row Combination Helpers
 
 Row-linear-combination size, coefficient, and support lemmas.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 
