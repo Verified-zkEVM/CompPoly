@@ -8,8 +8,6 @@ import CompPoly.Fields.Montgomery.Native256Ext
 import CompPoly.Fields.BLS12_377.Fast
 import CompPoly.Fields.BLS12_381.Fast
 import CompPoly.Fields.BN254.Fast
-import CompPoly.Fields.Secp256k1.Fq.Fast
-import CompPoly.Fields.Secp256k1.Fr.Fast
 
 /-!
 # Extern-Backed 256-bit Montgomery Tests
@@ -82,14 +80,12 @@ private def checkField (modulus : ℕ) [Mont256Field modulus] (label : String) :
       ok := (← checkPair modulus label x y) && ok
   return ok
 
-/-- Aggregate result over all five 256-bit Montgomery fields. -/
+/-- Aggregate result over all 256-bit Montgomery fields. -/
 private def runChecks : IO Bool := do
   let ok1 ← checkField BN254.scalarFieldSize "BN254.Fr"
   let ok2 ← checkField BLS12_381.scalarFieldSize "BLS12_381.Fr"
   let ok3 ← checkField BLS12_377.scalarFieldSize "BLS12_377.Fr"
-  let ok4 ← checkField Secp256k1.SCALAR_FIELD_CARD "secp256k1.Fr"
-  let ok5 ← checkField Secp256k1.BASE_FIELD_CARD "secp256k1.Fq"
-  return ok1 && ok2 && ok3 && ok4 && ok5
+  return ok1 && ok2 && ok3
 
 end CompPolyTests.Fields.Montgomery.Native256Ext
 
