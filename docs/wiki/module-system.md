@@ -3,9 +3,11 @@
 Every `.lean` file in this repo — `CompPoly.lean`, `CompPoly/**`, `tests/**`, and
 `bench/**` — uses the Lean 4 module system. `lakefile.lean` is the only exception.
 
+The reference for the module system is [here](https://lean-lang.org/doc/reference/latest/Source-Files-and-Modules/).
+
 ## File Header Shape
 
-Library and bench files look like this:
+After the migration to the module system library and bench files look like this:
 
 ```lean
 /-
@@ -27,12 +29,13 @@ public import CompPoly.Data.Array.Lemmas
 
 - `module` goes on the line after the copyright header, before the imports.
 - Imports are `public import`, so downstream modules keep seeing them.
+  - As we develop the library and reduce the export surface, 
+    we may make imports non-public.
 - `@[expose] public section` goes after the module docstring and stays open for the
   rest of the file, so definition bodies remain available to `rfl`, `decide`, `simp`,
   and kernel reduction downstream.
-
-This is exactly what lean4's `script/Modulize.lean` produces; the whole tree was
-converted with it against the toolchain pinned in `lean-toolchain`.
+  - As we develop the library and reduce the export surface, 
+    we may remove `@[expose]`.
 
 ## Test Files And `meta`
 
@@ -48,6 +51,8 @@ public meta import CompPoly.Fields.KoalaBear.Fast
 public meta section
 ```
 
+Immediately post-migration, this may be `@[expose]`d.
+
 A file may need both forms. `tests/CompPolyTests/Fields/Extension/Arithmetic.lean`
 mixes `#guard`s (which need the `meta` imports) with `example : Algebra .. :=
 inferInstance` declarations (which are ordinary declarations and need a plain
@@ -55,22 +60,11 @@ inferInstance` declarations (which are ordinary declarations and need a plain
 is legal and is the intended fix.
 
 The `pratt` tactic in [`../../CompPoly/Fields/PrattCertificate.lean`](../../CompPoly/Fields/PrattCertificate.lean)
-is the one place in the library proper with `meta` code. Meta definitions may only
+is currently the one place in the library proper with `meta` code. Meta definitions may only
 call other `meta` definitions from the same module, so the whole elaboration
 pipeline (`powMod`, `factor`, `computePrattCertificate`, `verifyCertificate`, ...)
 is `meta def`. Theorems that end up inside generated proof terms via `q(...)` must
 stay ordinary declarations.
-
-## `private` Now Means Module-Private
-
-Under the module system `private` is real privacy: the declaration is invisible
-outside its own module, and a `@[simp] private theorem` is *not* in the simp set of
-importing modules. Two consequences show up repeatedly:
-
-- A `private` helper referenced by an exposed public definition fails with
-  "unknown identifier ... would need to be public to access here". Drop `private`.
-- `@[simp] private theorem` used by proofs in other modules silently stops firing.
-  Drop `private` there too.
 
 ## Fix Patterns For Migration Fallout
 
