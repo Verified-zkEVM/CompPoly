@@ -43,15 +43,6 @@ lake build
 `CompPoly.lean` is generated from tracked `CompPoly/**/*.lean` files. If it changes,
 commit the regenerated file with the source changes.
 
-### Extern native code (`native/`, `@[extern]` declarations)
-
-```bash
-lake build
-lake exe CompPolyMont256ExtTests
-```
-
-The executable checks the extern-backed operations against the verified
-implementation; `#guard`s cannot call project-local extern symbols.
 
 ### Lean style cleanup or new Lean-heavy code
 
@@ -87,8 +78,8 @@ to be covered there. See [`../../bench/README.md`](../../bench/README.md).
 
 - [`../../.github/workflows/lean_action_ci.yml`](../../.github/workflows/lean_action_ci.yml)
   runs a clean build, warm rebuild, and `lake test`, then posts a build-timing
-  report. It also runs `CompPolyMont256ExtTests` and `CompPolyBench --medium`, then
-  uploads benchmark reports as CI artifacts.
+  report. It also runs `CompPolyBench --medium` and uploads benchmark
+  reports as CI artifacts.
 - [`../../.github/workflows/linting.yml`](../../.github/workflows/linting.yml) runs
   the style linter on changed `.lean` files in PRs and push builds.
 - [`../../.github/workflows/check_imports.yml`](../../.github/workflows/check_imports.yml)

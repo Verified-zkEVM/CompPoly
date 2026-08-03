@@ -105,8 +105,6 @@ jobs:
         run: |
           bash scripts/build_timing_report.sh run test_path "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c 'lake test'
-      - name: Run extern native regression tests
-        run: lake exe CompPolyMont256ExtTests
       - name: Fail on build warnings
         continue-on-error: true
         run: lake build --wfail

@@ -116,8 +116,6 @@ import CompPoly.Fields.Montgomery.Native256
 import CompPoly.Fields.Montgomery.Native256.Limb
 import CompPoly.Fields.Montgomery.Native256.UInt128L
 import CompPoly.Fields.Montgomery.Native256.UInt256L
-import CompPoly.Fields.Montgomery.Native256Ext
-import CompPoly.Fields.Montgomery.Native256Field
 import CompPoly.Fields.Montgomery.Native256Gcd
 import CompPoly.Fields.Montgomery.Native32
 import CompPoly.Fields.Montgomery.Native32Field

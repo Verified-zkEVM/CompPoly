@@ -29,7 +29,6 @@ import CompPolyTests.Fields.BLS12_377.Fast
 import CompPolyTests.Fields.BLS12_381.Fast
 import CompPolyTests.Fields.BN254.Fast
 import CompPolyTests.Fields.KoalaBear.Fast
-import CompPolyTests.Fields.Montgomery.Native256Ext
 import CompPolyTests.Fields.PrattCertificate
 import CompPolyTests.LinearAlgebra.Dense
 import CompPolyTests.Multilinear.Equiv

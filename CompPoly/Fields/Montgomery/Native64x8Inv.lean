@@ -11,10 +11,9 @@ import CompPoly.Fields.Montgomery.Native256Gcd
 # Fast inversion for eight-limb Montgomery fields
 
 The Pornin binary-GCD inverse for the eight-limb carrier, reusing the 64-bit-word candidate
-of `Montgomery.Native256Gcd` through limb conversion: both stacks share the radix
-`R = 2 ^ 256`, so the candidate transfers unchanged. The candidate is verified by one proven
-eight-limb multiplication and falls back to the proven Fermat inverse, so its provenance
-never affects correctness.
+of `Montgomery.Native256Gcd` through limb conversion (both stacks share `R = 2 ^ 256`). The
+candidate is verified by one proven eight-limb multiplication, with the proven Fermat
+inverse as fallback.
 -/
 
 namespace Montgomery.Native64x8
@@ -60,9 +59,8 @@ namespace FastField
 
 variable {modulus : ℕ} [P : Mont64x8Field modulus]
 
-/-- Accept a raw candidate `z` for `x⁻¹` if it verifies (bounded, canonical by the borrow
-check, and `z · x = 1` under the proven eight-limb multiplier), else fall back to the proven
-Fermat inverse `x⁻¹`. -/
+/-- Accept a raw candidate `z` for `x⁻¹` if it verifies (bounded, canonical, `z · x = 1`
+under the proven multiplier), else fall back to `x⁻¹`. -/
 @[inline] def invWithCandidate (x : FastField modulus) (z : Limbs8) : FastField modulus :=
   if h : z.Bounded ∧ subBorrow z P.modulusLimbs = 1 ∧
       Native64x8.mul P.modulusLimbs P.montgomeryNegInv z x.val = P.rModModulus then
@@ -71,8 +69,7 @@ Fermat inverse `x⁻¹`. -/
       rwa [Mont64x8Field.q_toNat] at hlt⟩
   else x⁻¹
 
-/-- A verified candidate is the field inverse: the check makes `z · x = 1` hold literally in
-the transferred `Field` structure, so no cast reasoning is needed. -/
+/-- A verified candidate is the field inverse. -/
 theorem invWithCandidate_eq_inv (x : FastField modulus) (z : Limbs8) :
     invWithCandidate x z = x⁻¹ := by
   unfold invWithCandidate
@@ -83,9 +80,8 @@ theorem invWithCandidate_eq_inv (x : FastField modulus) (z : Limbs8) :
     exact h.2.2
   case isFalse _ => rfl
 
-/-- Inversion via the shared Pornin binary-GCD candidate, run on 64-bit words and verified
-by one proven eight-limb multiplication; falls back to the proven Fermat inverse (taken only
-for `x = 0` or a candidate miss). -/
+/-- Inversion via the shared binary-GCD candidate, verified by one eight-limb
+multiplication; the fallback (`x = 0` or a candidate miss) is the proven Fermat inverse. -/
 @[inline] def invGcd [Native256.Mont256Field modulus] (x : FastField modulus) :
     FastField modulus :=
   invWithCandidate x

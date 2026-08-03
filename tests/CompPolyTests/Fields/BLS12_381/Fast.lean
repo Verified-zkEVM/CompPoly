@@ -7,23 +7,23 @@ Authors: Georgios Raikos
 import CompPoly.Fields.BLS12_381.Fast
 
 /-!
-# Fast BLS12_381 Scalar Field Tests
+# Fast BLS12-381 Scalar Field Tests
 
-Regression checks for the executable 256-bit Montgomery representation: the stored residues,
-literal round trips, the field operations, and agreement with the canonical
-`BLS12_381.ScalarField` model through `toField`.
+Regression checks for the executable eight-limb Montgomery representation: the stored
+residues, literal round trips, the field operations, the checked binary-GCD inversion, and
+agreement with the canonical `BLS12_381.ScalarField` model through `toField`.
 -/
 
 namespace BLS12_381.Fast
 
 open BLS12_381 (scalarFieldSize)
-open Montgomery.Native256
+open Montgomery.Native64x8
 
 set_option maxRecDepth 4000
 
 -- Stored Montgomery residues.
-#guard (0 : ScalarField).val = 0
-#guard (1 : ScalarField).val = Mont256Field.rModModulus scalarFieldSize
+#guard (0 : ScalarField).val = Limbs8.zero
+#guard (1 : ScalarField).val = Mont64x8Field.rModModulus scalarFieldSize
 
 -- Numeric literals reduce modulo the prime; `toNat` exits Montgomery form.
 #guard (37 : ScalarField).toNat = 37
@@ -53,25 +53,23 @@ set_option maxRecDepth 4000
 #guard ((123456789 : ScalarField) ^ 17).toField = ((123456789 : BLS12_381.ScalarField) ^ 17)
 #guard ((123456789 : ScalarField) ^ 255).toField = ((123456789 : BLS12_381.ScalarField) ^ 255)
 
--- Inversion and division (`0⁻¹ = 0`, `x⁻¹ * x = 1`, `x / x = 1`).
+-- Fermat inversion and division (`0⁻¹ = 0`, `x⁻¹ * x = 1`, `x / x = 1`).
 #guard ((0 : ScalarField)⁻¹).toNat = 0
 #guard ((37 : ScalarField)⁻¹ * 37).toNat = 1
-
--- The Pornin binary-GCD fast path is exact: the raw candidate equals what `inv` returns,
--- i.e. the runtime check passed and the window fallback was not needed.
-#guard gcdInvCandidate (modulus := scalarFieldSize) (37 : ScalarField).val
-         = ((37 : ScalarField)⁻¹).val
-#guard gcdInvCandidate (modulus := scalarFieldSize) (scalarFieldSize - 1 : ScalarField).val
-         = ((scalarFieldSize - 1 : ScalarField)⁻¹).val
-#guard gcdInvCandidate (modulus := scalarFieldSize) (scalarFieldSize - 2 : ScalarField).val
-         = ((scalarFieldSize - 2 : ScalarField)⁻¹).val
-#guard gcdInvCandidate (modulus := scalarFieldSize) (2 ^ 200 + 12345 : ScalarField).val
-         = ((2 ^ 200 + 12345 : ScalarField)⁻¹).val
 #guard ((37 : ScalarField) / 37).toNat = 1
 #guard ((37 : ScalarField)⁻¹).toField = ((37 : BLS12_381.ScalarField)⁻¹)
 #guard ((37 : ScalarField) ^ (-3 : Int)).toField = ((37 : BLS12_381.ScalarField) ^ (-3 : Int))
 
--- The precomputed-digit window inversion agrees with the canonical inverse on another value.
-#guard ((987654321 : ScalarField)⁻¹).toField = ((987654321 : BLS12_381.ScalarField)⁻¹)
+-- The checked binary-GCD inversion agrees with the Fermat inverse; the raw-candidate guard
+-- detects a silent fallback (`invGcd = ⁻¹` alone cannot: a miss just takes the slow path).
+#guard ((37 : ScalarField).invGcd * 37).toNat = 1
+#guard ((scalarFieldSize - 1 : ScalarField).invGcd).toField
+  = ((scalarFieldSize - 1 : BLS12_381.ScalarField)⁻¹)
+#guard ((2 ^ 200 + 12345 : ScalarField).invGcd).toField
+  = ((2 ^ 200 + 12345 : BLS12_381.ScalarField)⁻¹)
+#guard (987654321 : ScalarField).invGcd.toField = ((987654321 : BLS12_381.ScalarField)⁻¹)
+#guard (37 : ScalarField).invGcd.val
+  = Limbs8.ofUInt256L (Montgomery.Native256.gcdInvCandidate
+      (modulus := scalarFieldSize) (37 : ScalarField).val.toUInt256L)
 
 end BLS12_381.Fast
