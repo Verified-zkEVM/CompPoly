@@ -386,7 +386,7 @@ private theorem cpoly_C_zero_mul
   rw [CPolynomial.toPoly_mul, CPolynomial.C_toPoly, CPolynomial.toPoly_zero]
   simp
 
-def semanticUnitRowCoeffs
+private def semanticUnitRowCoeffs
     (height i : Nat) : Array (CPolynomial F) :=
   Array.ofFn (fun j : Fin height ↦
     if j.val = i then CPolynomial.C (1 : F) else CPolynomial.C (0 : F))
@@ -432,7 +432,7 @@ theorem coeff_ofCoeffRow_rowGet
   rw [CPolynomial.Raw.Trim.coeff_eq_coeff]
 
 omit [DecidableEq F] in
-theorem ofCoeffRow_rowLinearCombination_unit
+private theorem ofCoeffRow_rowLinearCombination_unit
     (M : PolynomialMatrix F) {i : Nat} (hi : i < M.size) :
     CBivariate.ofCoeffRow
         (rowLinearCombination (semanticUnitRowCoeffs (F := F) M.size i) M) =
