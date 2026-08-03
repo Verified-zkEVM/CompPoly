@@ -99,6 +99,32 @@ def divmod_monic_general(a: list[int], b: list[int], p: int) -> tuple[list[int],
     return poly_trim(q), poly_trim(r)
 
 
+def poly_bezout(a: list[int], b: list[int], p: int):
+    """Extended Euclid: return (g, u, v) with u*a + v*b = g, g the monic gcd."""
+    r0, r1 = poly_trim(a), poly_trim(b)
+    u0, u1 = [1], [0]
+    v0, v1 = [0], [1]
+    while any(r1):
+        q, r = divmod_monic_general(r0, r1, p)
+        r0, r1 = r1, r
+        qq = poly_mul(q, u1, p)
+        u0, u1 = u1, poly_trim([(x - y) % p for x, y in zip_pad(u0, qq)])
+        qq = poly_mul(q, v1, p)
+        v0, v1 = v1, poly_trim([(x - y) % p for x, y in zip_pad(v0, qq)])
+    # normalize gcd to monic
+    if any(r0):
+        inv = pow(r0[-1], p - 2, p)
+        r0 = poly_trim([(c * inv) % p for c in r0])
+        u0 = poly_trim([(c * inv) % p for c in u0])
+        v0 = poly_trim([(c * inv) % p for c in v0])
+    return r0, u0, v0
+
+
+def zip_pad(a: list[int], b: list[int]):
+    n = max(len(a), len(b))
+    return zip(a + [0] * (n - len(a)), b + [0] * (n - len(b)))
+
+
 def xpow_mod_cert(e: int, f: list[int], p: int):
     """Compute X^e mod f by MSB-first square-and-multiply, recording each step.
 
@@ -122,26 +148,59 @@ def xpow_mod_cert(e: int, f: list[int], p: int):
     return cur, steps
 
 
+def steps_to_lean(steps) -> str:
+    """Render a step list as a Lean `List CompPoly.RabinCert.Step` literal,
+    wrapping each step across two lines to respect the 100-column style limit."""
+    rows = []
+    for s in steps:
+        mulx = "true" if s["op"] == "mulX" else "false"
+        q = ", ".join(str(c) for c in s["q"])
+        r = ", ".join(str(c) for c in s["r"])
+        one_line = f"  ⟨{mulx}, [{q}], [{r}]⟩"
+        if len(one_line) <= 98:
+            rows.append(one_line)
+        else:
+            rows.append(f"  ⟨{mulx}, [{q}],\n    [{r}]⟩")
+    return "[\n" + ",\n".join(rows) + "]"
+
+
+def poly_to_lean(l: list[int]) -> str:
+    return "[" + ", ".join(str(c) for c in l) + "]"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--p", type=int, default=2**31 - 2**24 + 1)  # KoalaBear
     ap.add_argument("--f", type=str, default="-1,0,1,0,0,1",
                     help="little-endian coeffs of monic f (leading 1 included)")
-    ap.add_argument("--out", type=str, default=None)
+    ap.add_argument("--out", type=str, default=None, help="write full JSON certificate here")
+    ap.add_argument("--lean", type=str, default=None,
+                    help="write Lean data definitions (steps + Bezout) here")
+    ap.add_argument("--namespace", type=str, default="QuinticCert",
+                    help="namespace for the emitted Lean definitions")
     args = ap.parse_args()
     p = args.p
     f = [c % p for c in map(int, args.f.split(","))]
     assert f[-1] == 1, "f must be monic (leading coeff 1)"
     d = len(f) - 1
 
-    # Cond B: X^p mod f, then gcd(f, X^p - X).
-    xp, xp_steps = xpow_mod_cert(p, f, p)
-    xp_minus_x = xp[:]
-    while len(xp_minus_x) < 2:
-        xp_minus_x.append(0)
-    xp_minus_x[1] = (xp_minus_x[1] - 1) % p
-    g, gcd_steps = poly_gcd_steps(f, poly_trim(xp_minus_x), p)
-    condB = (poly_degree(g) == 0)
+    # Cond B: X^p mod f = rp; then Bezout u*f + v*w = 1 for w = rp - X.
+    rp, xp_steps = xpow_mod_cert(p, f, p)
+    rp = poly_trim(rp)
+    w = rp[:]
+    while len(w) < 2:
+        w.append(0)
+    w[1] = (w[1] - 1) % p
+    w = poly_trim(w)
+    g, u, v = poly_bezout(f, w, p)
+    condB = (g == [1])
+    # sanity: u*f + v*w == 1 (mod p)
+    lhs = poly_trim([(x + y) % p for x, y in
+                     zip_pad(poly_mul(u, f, p), poly_mul(v, w, p))])
+    assert lhs == [1], f"Bezout check failed: {lhs}"
+    # sanity: rp == w + X coefficientwise mod p
+    assert poly_trim([c % p for c in rp]) == poly_trim(
+        [(x + y) % p for x, y in zip_pad(w, [0, 1])]), "rp != w + X"
 
     # Cond A: X^(p^d) mod f == X.
     xpd, xpd_steps = xpow_mod_cert(p ** d, f, p)
@@ -152,7 +211,7 @@ def main() -> int:
         "p": p, "f": f, "degree": d,
         "condA_trace_ok": condA, "condA_steps": len(xpd_steps),
         "condB_coprime_ok": condB, "condB_xp_steps": len(xp_steps),
-        "condB_gcd_steps": len(gcd_steps), "gcd": g,
+        "condB_rp": rp, "condB_w": w, "condB_u": u, "condB_v": v,
         "IRREDUCIBLE": irreducible,
     }
     print(json.dumps(summary, indent=2))
@@ -161,8 +220,62 @@ def main() -> int:
         with open(args.out, "w") as fh:
             json.dump({"summary": summary,
                        "condA": {"steps": xpd_steps},
-                       "condB": {"xp_steps": xp_steps, "gcd_steps": gcd_steps}}, fh)
-        print(f"\nfull certificate written to {args.out}", file=sys.stderr)
+                       "condB": {"xp_steps": xp_steps}}, fh)
+        print(f"full certificate written to {args.out}", file=sys.stderr)
+
+    if args.lean:
+        ns = args.namespace
+        lines = [
+            "/-",
+            "Copyright (c) 2026 CompPoly Contributors. All rights reserved.",
+            "Released under Apache 2.0 license as described in the file LICENSE.",
+            "Authors: Derek Sorensen",
+            "-/",
+            "module",
+            "",
+            "public import CompPoly.Data.Polynomial.RabinCertificate",
+            "",
+            "/-!",
+            f"# Rabin certificate data for `p = {p}`",
+            "",
+            f"The modulus `f` has little-endian coefficients `{f}`.",
+            "",
+            f"GENERATED by `scripts/gen_rabin_certificate.py --p {p} --f {args.f!r}`.",
+            "Do not edit by hand; regenerate instead. Nothing here is trusted — the kernel",
+            "re-checks every step through `CompPoly.RabinCert.runChain`.",
+            "-/",
+            "",
+            "@[expose] public section",
+            "",
+            f"namespace {ns}",
+            "",
+            "open CompPoly.RabinCert",
+            "",
+            f"/-- Square-and-multiply chain for `X^(p^{d}) mod f` "
+            f"({len(xpd_steps)} steps). -/",
+            f"def traceSteps : List Step := {steps_to_lean(xpd_steps)}",
+            "",
+            f"/-- Square-and-multiply chain for `X^p mod f` ({len(xp_steps)} steps). -/",
+            f"def frobSteps : List Step := {steps_to_lean(xp_steps)}",
+            "",
+            "/-- The residue `X^p mod f`. -/",
+            f"def rp : List ℕ := {poly_to_lean(rp)}",
+            "",
+            "/-- `w = (X^p mod f) - X`, the reduced form of `X^p - X`. -/",
+            f"def w : List ℕ := {poly_to_lean(w)}",
+            "",
+            "/-- Bézout coefficient: `u·f + v·w = 1`. -/",
+            f"def u : List ℕ := {poly_to_lean(u)}",
+            "",
+            "/-- Bézout coefficient: `u·f + v·w = 1`. -/",
+            f"def v : List ℕ := {poly_to_lean(v)}",
+            "",
+            f"end {ns}",
+            "",
+        ]
+        with open(args.lean, "w") as fh:
+            fh.write("\n".join(lines))
+        print(f"Lean data written to {args.lean}", file=sys.stderr)
     return 0 if irreducible else 1
 
 
