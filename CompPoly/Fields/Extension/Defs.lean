@@ -9,16 +9,21 @@ public import CompPoly.Fields.Extension.Binomial
 public import Mathlib.Algebra.BigOperators.Fin
 
 /-!
-# Computable binomial extension fields
+# Computable extension fields by an arbitrary monic modulus
 
-A degree-`d` binomial extension of `F` is `F[X] / (X^d - W)`. Elements are represented as
-dense coefficient vectors of length exactly `d`, so arithmetic is straight-line: no trimming,
-no size branching, and multiplication reduces by folding the high half of the schoolbook
-product back with a factor of `W`.
+A degree-`d` extension of `F` is `F[X] / f` for a monic `f` of degree `d`. Elements are
+represented as dense coefficient vectors of length exactly `d`, so arithmetic is straight-line:
+no trimming and no size branching. Multiplication expands each product monomial `Xⁱ⁺ʲ` through
+`monomialMod (i + j)`, the reduced form of `Xⁱ⁺ʲ` modulo `f`, obtained by iterating a single
+"multiply by `X`, reduce mod `f`" linear map, `shiftReduce`.
 
-The parameters are bundled into `BinomialParams` and carried as a *type index* (`Ext P`), so
-two different extensions of the same base field are different types and cannot have their
-instances confused.
+The parameters are bundled into `GeneralParams` and carried as a *type index* (`Ext P`), so two
+different extensions of the same base field are different types and cannot have their instances
+confused.
+
+The special case `f = X^d - W` (a binomial extension) is recovered by
+`BinomialParams.toGeneral`, whose `lower` vector is `(-W, 0, …, 0)`; see `Extension/Binomial.lean`
+for the irreducibility criterion that discharges `Fact (Irreducible P.poly)` in that case.
 
 This file supplies only the operations and the elementary `coeff` lemmas — no algebraic
 structure. `CompPoly/Fields/Extension/Bridge.lean` relates them to `AdjoinRoot P.poly` and
@@ -26,9 +31,13 @@ establishes `CommRing`; `CompPoly/Fields/Extension/Field.lean` adds inversion an
 
 ## Main definitions
 
-* `BinomialParams`: the degree `d`, the constant `W`, and the base-field cardinality `q`.
+* `GeneralParams`: the degree `d`, the lower coefficients of the monic modulus, and the
+  base-field cardinality `q`.
 * `Ext P`: the carrier, `Vector F P.d`.
-* `Ext.mul`: multiplication, with the `X^d = W` fold applied inline.
+* `Ext.shiftReduce`: multiply by `X` and reduce mod `f`; iterated to build `Ext.monomialMod`.
+* `Ext.monomialMod k`: the reduced form of `X^k` modulo `f`.
+* `Ext.mul`: multiplication, expanding product monomials through `monomialMod`.
+* `BinomialParams.toGeneral`: the binomial special case `f = X^d - W`.
 
 ## Implementation notes
 
@@ -37,8 +46,7 @@ is *structural* rather than a proposition carried alongside the data. This subtr
 independent of the `CPolynomial` stack — it imports none of `CompPoly/Univariate/`. Where a
 degree bound is needed on the *polynomial* side (to show the representative chosen by
 `Ext.toQuot` is the canonical one), it is proved directly in
-`CompPoly/Fields/Extension/Bridge.lean` as `degree_repr_lt`, from `Polynomial.degree_sum_le` and
-`Polynomial.degree_C_mul_X_pow_le`.
+`CompPoly/Fields/Extension/Bridge.lean` as `degree_repr_lt`.
 -/
 
 @[expose] public section
@@ -50,20 +58,24 @@ open Polynomial
 variable {F : Type*} [Field F]
 
 /--
-The data defining a binomial extension `F[X] / (X^d - W)`.
+The data defining an extension `F[X] / f` by a monic modulus `f` of degree `d`.
+
+The modulus is stored by its `d` lower coefficients: `f = X^d + ∑_{i < d} lower[i] · X^i`. The
+leading coefficient is an implicit `1`, so `f` is monic by construction.
 
 Irreducibility is deliberately *not* a field here: the commutative-ring structure on `Ext P`
 does not need it, and requiring it would force every consumer of the ring operations to carry
 the proof. `Ext.instField` takes `[Fact (Irreducible P.poly)]` separately, mirroring
-`AdjoinRoot`. Use `Polynomial.irreducible_X_pow_four_sub_C_of_card` to discharge it.
+`AdjoinRoot`.
 -/
-structure BinomialParams (F : Type*) [Field F] [Fintype F] where
+structure GeneralParams (F : Type*) [Field F] [Fintype F] where
   /-- The degree of the extension. -/
   d : ℕ
-  /-- The extension adjoins a `d`-th root of `W`. -/
-  W : F
   /-- Degree at least two; a degree-one "extension" is just `F`. -/
   two_le : 2 ≤ d
+  /-- The lower coefficients of the monic modulus, little-endian: `lower[i]` is the coefficient
+  of `X^i` in `poly`, for `i < d`. The coefficient of `X^d` is an implicit `1`. -/
+  lower : Vector F d
   /-- The cardinality of the base field, as a numeral.
 
   This is carried as *data* rather than read off `Fintype.card F` because inversion is
@@ -73,45 +85,58 @@ structure BinomialParams (F : Type*) [Field F] [Fintype F] where
   /-- `q` really is the cardinality of the base field. -/
   card_eq : Fintype.card F = q
 
-namespace BinomialParams
+namespace GeneralParams
 
-variable [Fintype F] (P : BinomialParams F)
+variable [Fintype F] (P : GeneralParams F)
 
-/-- The defining polynomial `X^d - W`. Part of the specification only; the computable
-arithmetic on `Ext P` never evaluates it. -/
-noncomputable def poly : F[X] := X ^ P.d - C P.W
+/-- The coefficient of `X^i` in the lower part of the modulus. -/
+@[inline] def lowerCoeff (i : Fin P.d) : F := P.lower[i.val]
 
-@[simp] theorem natDegree_poly : P.poly.natDegree = P.d := natDegree_X_pow_sub_C
+/-- `lowerCoeff` extended by zero outside the valid range, for reindexing sums in
+`CompPoly/Fields/Extension/Bridge.lean`. -/
+def lowerCoeffNat (k : ℕ) : F := if h : k < P.d then P.lower[k] else 0
 
-theorem monic_poly : P.poly.Monic := monic_X_pow_sub_C _ (by have := P.two_le; omega)
+@[simp] theorem lowerCoeffNat_coe (i : Fin P.d) : P.lowerCoeffNat (i : ℕ) = P.lowerCoeff i := by
+  rw [lowerCoeffNat, dif_pos i.isLt]; rfl
+
+theorem lowerCoeffNat_of_ge {k : ℕ} (h : P.d ≤ k) : P.lowerCoeffNat k = 0 := dif_neg (by omega)
 
 theorem d_pos : 0 < P.d := by have := P.two_le; omega
 
-/-- An irreducible binomial has `W ≠ 0`: otherwise `X^d - W = X^d`, which factors as `X * X^(d-1)`
-with both factors non-units when `2 ≤ d`. -/
-theorem W_ne_zero (h : Irreducible P.poly) : P.W ≠ 0 := by
-  intro hW
-  have hpoly : P.poly = X * X ^ (P.d - 1) := by
-    rw [poly, hW, map_zero, sub_zero, ← pow_succ']
-    congr 1
-    have := P.two_le; omega
-  rw [hpoly] at h
-  rcases h.isUnit_or_isUnit rfl with hu | hu
-  · exact not_isUnit_of_natDegree_pos (X : F[X]) (by simp) hu
-  · exact not_isUnit_of_natDegree_pos ((X : F[X]) ^ (P.d - 1))
-      (by simpa using by have := P.two_le; omega) hu
+/-- The monic defining polynomial `X^d + ∑_{i < d} lower[i] · X^i`. Part of the specification
+only; the computable arithmetic on `Ext P` never evaluates it. -/
+noncomputable def poly : F[X] := X ^ P.d + ∑ i : Fin P.d, C (P.lowerCoeff i) * X ^ (i : ℕ)
 
-end BinomialParams
+/-- The lower part of the modulus has degree strictly less than `d`. -/
+theorem degree_lower_lt :
+    (∑ i : Fin P.d, C (P.lowerCoeff i) * X ^ (i : ℕ)).degree < (P.d : WithBot ℕ) := by
+  refine lt_of_le_of_lt (degree_sum_le _ _) ?_
+  rw [Finset.sup_lt_iff (by exact_mod_cast WithBot.bot_lt_coe P.d)]
+  intro i _
+  exact lt_of_le_of_lt (degree_C_mul_X_pow_le _ _) (by exact_mod_cast i.isLt)
+
+theorem degree_poly : P.poly.degree = (P.d : WithBot ℕ) := by
+  rw [poly, degree_add_eq_left_of_degree_lt (by rw [degree_X_pow]; exact P.degree_lower_lt),
+    degree_X_pow]
+
+theorem monic_poly : P.poly.Monic := by
+  rw [poly]
+  exact (monic_X_pow P.d).add_of_left (by rw [degree_X_pow]; exact P.degree_lower_lt)
+
+@[simp] theorem natDegree_poly : P.poly.natDegree = P.d :=
+  natDegree_eq_of_degree_eq_some P.degree_poly
+
+end GeneralParams
 
 /--
-The carrier of the extension `F[X] / (X^d - W)`: a dense coefficient vector of length `P.d`,
+The carrier of the extension `F[X] / f`: a dense coefficient vector of length `P.d`,
 little-endian (index `i` is the coefficient of `X^i`).
 -/
-def Ext {F : Type*} [Field F] [Fintype F] (P : BinomialParams F) : Type _ := Vector F P.d
+def Ext {F : Type*} [Field F] [Fintype F] (P : GeneralParams F) : Type _ := Vector F P.d
 
 namespace Ext
 
-variable [Fintype F] {P : BinomialParams F}
+variable [Fintype F] {P : GeneralParams F}
 
 /-- View an element as its coefficient vector. This is the identity. -/
 @[inline] def coeffs (x : Ext P) : Vector F P.d := x
@@ -134,21 +159,40 @@ variable [Fintype F] {P : BinomialParams F}
 
 theorem ofFn_coeff (x : Ext P) : ofFn (coeff x) = x := by ext i; simp
 
+/-- `coeff` extended by zero outside the valid range. Handy for reindexing sums in
+`CompPoly/Fields/Extension/Bridge.lean` without carrying `Fin` bound proofs. -/
+def coeffNat (x : Ext P) (i : ℕ) : F := if h : i < P.d then coeff x ⟨i, h⟩ else 0
+
+@[simp] theorem coeffNat_coe (x : Ext P) (i : Fin P.d) : coeffNat x (i : ℕ) = coeff x i := by
+  rw [coeffNat, dif_pos i.isLt]
+
+theorem coeffNat_of_lt (x : Ext P) {i : ℕ} (h : i < P.d) : coeffNat x i = coeff x ⟨i, h⟩ :=
+  dif_pos h
+
+theorem coeffNat_of_ge (x : Ext P) {i : ℕ} (h : P.d ≤ i) : coeffNat x i = 0 :=
+  dif_neg (by omega)
+
 /-! ### Distinguished elements
 
 `ofBase` embeds the base field as constant coefficients and `gen` is the class of `X`, i.e. the
-adjoined `d`-th root of `W`. They are the two elements a consumer of the extension needs by
-name; `CompPoly/Fields/Extension/Bridge.lean` promotes `ofBase` to an `Algebra` structure and
-proves `gen ^ d = ofBase W`.
+adjoined root of `f`. They are the two elements a consumer of the extension needs by name;
+`CompPoly/Fields/Extension/Bridge.lean` promotes `ofBase` to an `Algebra` structure and proves
+`gen ^ d = xPowD` (the reduced form of `X^d`).
 -/
 
 /-- The base field embedded into the extension, as the constant coefficient. -/
 @[inline] def ofBase (c : F) : Ext P := ofFn fun i => if (i : ℕ) = 0 then c else 0
 
-/-- The adjoined root: the class of `X`, whose `d`-th power is `W` (`Ext.gen_pow_d`). -/
+/-- The adjoined root: the class of `X`. -/
 def gen : Ext P := ofFn fun i => if (i : ℕ) = 1 then 1 else 0
 
-/-! ### Operations -/
+/-! ### Operations
+
+Multiplication is defined in terms of `shiftReduce` — the "multiply by `X`, reduce mod `f`"
+map — whose iterates `monomialMod k = shiftReduce^[k] 1` are the reduced monomials `X^k mod f`.
+Everything downstream is proved from the single homomorphism law
+`toQuot (shiftReduce e) = rt * toQuot e` in `CompPoly/Fields/Extension/Bridge.lean`.
+-/
 
 instance : Zero (Ext P) := ⟨ofFn fun _ => 0⟩
 instance : One (Ext P) := ⟨ofFn fun i => if (i : ℕ) = 0 then 1 else 0⟩
@@ -158,18 +202,32 @@ instance : Sub (Ext P) := ⟨fun x y => ofFn fun i => coeff x i - coeff y i⟩
 instance : SMul F (Ext P) := ⟨fun c x => ofFn fun i => c * coeff x i⟩
 
 /--
-Multiplication in `F[X] / (X^d - W)`.
+Multiply by `X` and reduce modulo `f`.
 
-Coefficient `k` collects the schoolbook terms `x_i * y_j` with `i + j = k`, plus the terms that
-wrap around, `i + j = k + d`, scaled by `W` because `X^d = W`. Since `i, j < d` we have
-`i + j ≤ 2d - 2 < 2d`, so each pair `(i, j)` contributes to exactly one `k`.
+`X · (∑ eᵢ Xⁱ) = ∑ eᵢ X^(i+1)`, whose top term `e_{d-1} X^d` wraps via `X^d = -∑ lowerₘ Xᵐ`.
+So coefficient `m` of the reduced result is `e_{m-1} - e_{d-1} · lowerₘ`, with `e_{-1} = 0`.
+This is the single linear map whose iterates build the reduction table `red`.
+-/
+def shiftReduce (e : Ext P) : Ext P :=
+  ofFn fun m =>
+    (if (m : ℕ) = 0 then 0 else coeffNat e ((m : ℕ) - 1))
+      - coeffNat e (P.d - 1) * P.lowerCoeff m
+
+/-- The reduced form of `X^k` modulo `f`, obtained by iterating `shiftReduce` (multiply by `X`,
+reduce) `k` times from `1 = X^0`. Its image under `toQuot` is `rt ^ k`. -/
+def monomialMod (k : ℕ) : Ext P := (shiftReduce)^[k] 1
+
+/--
+Multiplication in `F[X] / f`.
+
+Each product monomial `Xⁱ⁺ʲ` is reduced modulo `f` by `monomialMod (i + j)`, so coefficient `m`
+of the product collects `xᵢ · yⱼ · [X^(i+j) mod f]ₘ` over all pairs `(i, j)`.
 -/
 @[inline, specialize]
 def mul (x y : Ext P) : Ext P :=
-  ofFn fun k => ∑ i : Fin P.d, ∑ j : Fin P.d,
-    if (i : ℕ) + (j : ℕ) = (k : ℕ) then coeff x i * coeff y j
-    else if (i : ℕ) + (j : ℕ) = (k : ℕ) + P.d then P.W * (coeff x i * coeff y j)
-    else 0
+  ofFn fun m =>
+    ∑ i : Fin P.d, ∑ j : Fin P.d,
+      coeff x i * coeff y j * coeff (monomialMod ((i : ℕ) + (j : ℕ))) m
 
 instance : Mul (Ext P) := ⟨mul⟩
 
@@ -198,11 +256,16 @@ instance : Inhabited (Ext P) := ⟨0⟩
 @[simp] theorem coeff_smul (c : F) (x : Ext P) (i : Fin P.d) :
     coeff (c • x) i = c * coeff x i := coeff_ofFn _ _
 
-@[simp] theorem coeff_mul (x y : Ext P) (k : Fin P.d) :
-    coeff (x * y) k = ∑ i : Fin P.d, ∑ j : Fin P.d,
-      if (i : ℕ) + (j : ℕ) = (k : ℕ) then coeff x i * coeff y j
-      else if (i : ℕ) + (j : ℕ) = (k : ℕ) + P.d then P.W * (coeff x i * coeff y j)
-      else 0 := coeff_ofFn _ _
+@[simp] theorem coeff_shiftReduce (e : Ext P) (m : Fin P.d) :
+    coeff (shiftReduce e) m =
+      (if (m : ℕ) = 0 then 0 else coeffNat e ((m : ℕ) - 1))
+        - coeffNat e (P.d - 1) * P.lowerCoeff m := coeff_ofFn _ _
+
+@[simp] theorem coeff_mul (x y : Ext P) (m : Fin P.d) :
+    coeff (x * y) m =
+      ∑ i : Fin P.d, ∑ j : Fin P.d,
+        coeff x i * coeff y j * coeff (monomialMod ((i : ℕ) + (j : ℕ))) m :=
+  coeff_ofFn _ _
 
 @[simp] theorem coeff_ofBase (c : F) (i : Fin P.d) :
     coeff (ofBase (P := P) c) i = if (i : ℕ) = 0 then c else 0 := coeff_ofFn _ _
@@ -232,5 +295,70 @@ instance : Inhabited (Ext P) := ⟨0⟩
 theorem pow_def (x : Ext P) (n : ℕ) : x ^ n = npowBinRec n x := rfl
 
 end Ext
+
+/-! ### Binomial extensions as a special case
+
+A binomial extension `F[X] / (X^d - W)` is the case `lower = (-W, 0, …, 0)`. `BinomialParams`
+keeps the ergonomic `W`-only interface (and its dedicated irreducibility criterion in
+`Extension/Binomial.lean`); `toGeneral` maps it into the general framework, and `toGeneral_poly`
+identifies the two spellings of the defining polynomial.
+-/
+
+/--
+The data defining a binomial extension `F[X] / (X^d - W)`. A thin front-end for the special
+case `GeneralParams` with `lower = (-W, 0, …, 0)`; see `BinomialParams.toGeneral`.
+-/
+structure BinomialParams (F : Type*) [Field F] [Fintype F] where
+  /-- The degree of the extension. -/
+  d : ℕ
+  /-- The extension adjoins a `d`-th root of `W`. -/
+  W : F
+  /-- Degree at least two; a degree-one "extension" is just `F`. -/
+  two_le : 2 ≤ d
+  /-- The cardinality of the base field, as a numeral. Supply as `ZMod.card _`. -/
+  q : ℕ
+  /-- `q` really is the cardinality of the base field. -/
+  card_eq : Fintype.card F = q
+
+namespace BinomialParams
+
+variable [Fintype F] (P : BinomialParams F)
+
+theorem d_pos : 0 < P.d := by have := P.two_le; omega
+
+/-- The defining polynomial `X^d - W`. Part of the specification only. -/
+noncomputable def poly : F[X] := X ^ P.d - C P.W
+
+@[simp] theorem natDegree_poly : P.poly.natDegree = P.d := natDegree_X_pow_sub_C
+
+theorem monic_poly : P.poly.Monic := monic_X_pow_sub_C _ (by have := P.two_le; omega)
+
+/-- The general-framework parameters for the binomial modulus `X^d - W`: the lower coefficient
+vector is `(-W, 0, …, 0)`. -/
+def toGeneral : GeneralParams F where
+  d := P.d
+  two_le := P.two_le
+  lower := Vector.ofFn fun i => if (i : ℕ) = 0 then -P.W else 0
+  q := P.q
+  card_eq := P.card_eq
+
+@[simp] theorem toGeneral_d : P.toGeneral.d = P.d := rfl
+@[simp] theorem toGeneral_q : P.toGeneral.q = P.q := rfl
+
+@[simp] theorem toGeneral_lowerCoeff (i : Fin P.toGeneral.d) :
+    P.toGeneral.lowerCoeff i = if (i : ℕ) = 0 then -P.W else 0 := by
+  simp only [GeneralParams.lowerCoeff, toGeneral, Vector.getElem_ofFn]
+
+/-- The general-framework polynomial of a binomial agrees with `X^d - W`. -/
+theorem toGeneral_poly : P.toGeneral.poly = P.poly := by
+  have hsum : (∑ i : Fin P.toGeneral.d, C (P.toGeneral.lowerCoeff i) * X ^ (i : ℕ)) = -C P.W := by
+    rw [Finset.sum_eq_single_of_mem (⟨0, P.d_pos⟩ : Fin P.toGeneral.d) (Finset.mem_univ _)]
+    · rw [toGeneral_lowerCoeff]; simp
+    · intro i _ hi
+      have hi0 : (i : ℕ) ≠ 0 := fun h => hi (Fin.ext (by simpa using h))
+      rw [toGeneral_lowerCoeff, if_neg hi0, map_zero, zero_mul]
+  rw [GeneralParams.poly, hsum, poly, ← sub_eq_add_neg, toGeneral_d]
+
+end BinomialParams
 
 end CompPoly.Extension
