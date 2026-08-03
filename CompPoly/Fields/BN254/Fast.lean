@@ -6,13 +6,15 @@ Authors: Georgios Raikos
 
 import CompPoly.Fields.BN254.Basic
 import CompPoly.Fields.Montgomery.Native256Field
+import CompPoly.Fields.Montgomery.Native64x8Inv
 
 /-!
 # Fast BN254 Scalar Field
 
-A native 256-bit Montgomery implementation of BN254 scalar arithmetic. The shared algorithms
-and proofs live in `CompPoly.Fields.Montgomery.Native256Field`; this module supplies the
-BN254 constants and its concrete API.
+Native Montgomery implementations of BN254 scalar arithmetic at both limb radices: the
+four-limb (64-bit) carrier from `CompPoly.Fields.Montgomery.Native256Field` and the
+eight-limb (32-bit) carrier from `CompPoly.Fields.Montgomery.Native64x8Field`. This module
+supplies the BN254 constants for each.
 -/
 
 namespace BN254.Fast
@@ -50,5 +52,30 @@ def ofField (x : BN254.ScalarField) : ScalarField :=
 `BN254.ScalarField`. -/
 def ringEquiv : ScalarField ≃+* BN254.ScalarField :=
   Montgomery.Native256.ringEquiv BN254.scalarFieldSize
+
+/-! ## Eight-limb carrier -/
+
+/-- The per-field data realizing BN254's scalar field as a fast eight-limb (32-bit-limb)
+Montgomery field. -/
+instance instMont64x8Field : Montgomery.Native64x8.Mont64x8Field BN254.scalarFieldSize where
+  prime := BN254.ScalarField_is_prime
+  modulusLimbs :=
+    ⟨0xf0000001, 0x43e1f593, 0x79b97091, 0x2833e848, 0x8181585d, 0xb85045b6, 0xe131a029,
+      0x30644e72⟩
+  rModModulus :=
+    ⟨0x4ffffffb, 0xac96341c, 0x9f60cd29, 0x36fc7695, 0x7879462e, 0x666ea36f, 0x9a07df2f,
+      0xe0a77c1⟩
+  r2ModModulus :=
+    ⟨0xae216da7, 0x1bb8e645, 0xe35c59e3, 0x53fe3ab1, 0x53bb8085, 0x8c49833d, 0x7f4e44a5,
+      0x216d0b1⟩
+  montgomeryNegInv := 0xefffffff
+
+/-- The eight-limb BN254 scalar field carrier, stored as a Montgomery residue. -/
+abbrev ScalarField32 : Type := Montgomery.Native64x8.FastField BN254.scalarFieldSize
+
+/-- Ring equivalence between the eight-limb representation and the canonical
+`BN254.ScalarField`. -/
+def ringEquiv32 : ScalarField32 ≃+* BN254.ScalarField :=
+  Montgomery.Native64x8.FastField.ringEquiv BN254.scalarFieldSize
 
 end BN254.Fast

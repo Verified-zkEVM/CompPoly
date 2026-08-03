@@ -74,4 +74,30 @@ set_option maxRecDepth 4000
 -- The precomputed-digit window inversion agrees with the canonical inverse on another value.
 #guard ((987654321 : ScalarField)⁻¹).toField = ((987654321 : BN254.ScalarField)⁻¹)
 
+/-! ## Eight-limb carrier -/
+
+-- Literal round trips and arithmetic on the 32-bit-limb representation.
+#guard (37 : ScalarField32).toNat = 37
+#guard (scalarFieldSize : ScalarField32).toNat = 0
+#guard ((scalarFieldSize - 1 : ScalarField32) + 2).toNat = 1
+#guard ((9 : ScalarField32) - 5).toNat = 4
+#guard ((12345 : ScalarField32) * 12345).toNat = 152399025
+
+-- Agreement with the canonical field, including the Fermat-pow inversion.
+#guard ((123456789 : ScalarField32) ^ 17).toField = ((123456789 : BN254.ScalarField) ^ 17)
+#guard ((37 : ScalarField32)⁻¹ * 37).toNat = 1
+#guard ((37 : ScalarField32)⁻¹).toField = ((37 : BN254.ScalarField)⁻¹)
+
+-- The two radices represent the same field: canonical values agree cross-carrier.
+#guard ((123456789 : ScalarField32) * 987654321).toNat
+  = ((123456789 : ScalarField) * 987654321).toNat
+
+-- The shared GCD candidate inverts on the eight-limb carrier. The raw-candidate guard
+-- detects a silent fallback (`invGcd = ⁻¹` alone cannot: a miss just takes the slow path).
+#guard ((37 : ScalarField32).invGcd * 37).toNat = 1
+#guard (987654321 : ScalarField32).invGcd.toField = ((987654321 : BN254.ScalarField)⁻¹)
+#guard (37 : ScalarField32).invGcd.val
+  = Montgomery.Native64x8.Limbs8.ofUInt256L (Montgomery.Native256.gcdInvCandidate
+      (modulus := scalarFieldSize) (37 : ScalarField32).val.toUInt256L)
+
 end BN254.Fast

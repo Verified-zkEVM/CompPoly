@@ -34,6 +34,11 @@ This directory contains formally verified field infrastructure used in zero-know
 | **Montgomery/Native256.lean** | The `Mont256Field` data class and the proven CIOS Montgomery reduction and multiplication over four `UInt64` limbs (`R = 2^256`). |
 | **Montgomery/Native256Gcd.lean** | Pornin binary GCD over limbs ([eprint 2020/972](https://eprint.iacr.org/2020/972)): the proof-free fast inverse candidate, verified at its use site in `inv`. |
 | **Montgomery/Native256Field.lean** | Per-field parameters, the shared 256-bit `FastField` carrier, arithmetic, instances, and canonical-field bridge; inversion is a runtime-verified binary GCD with a proven windowed-Fermat fallback. |
+| **Montgomery/Native64x8Defs.lean** | Zero-import runtime definitions of the eight-limb (32-bit) Montgomery arithmetic, for `precompileModules` consumers (from CompPoly PR #274). |
+| **Montgomery/Native64x8.lean** | Word-level specifications and add/sub/negate correctness for the eight-limb arithmetic. |
+| **Montgomery/Native64x8Mul.lean** | Correctness of the eight-limb CIOS Montgomery multiplication. |
+| **Montgomery/Native64x8Field.lean** | The `Mont64x8Field` class, the eight-limb `FastField` carrier, arithmetic, instances, and canonical-field bridge, for moduli below `2^255`. |
+| **Montgomery/Native64x8Inv.lean** | Runtime-verified binary-GCD inversion for the eight-limb carrier, reusing the 64-bit-word candidate of `Native256Gcd` through limb conversion. |
 | **Secp256k1.lean** | Base and scalar fields for the Secp256k1 curve (used in Bitcoin/Ethereum). |
 
 ## Binary-field modules
