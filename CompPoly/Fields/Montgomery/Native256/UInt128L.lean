@@ -10,27 +10,35 @@ import Mathlib.Tactic.Ring
 /-!
 # 128-bit limb word (`UInt128L`)
 
-A two-`UInt64`-limb word used to hold the 64×64→128 partial products of the BN254 fast
-field's schoolbook multiplication, with ripple-carry addition and its `Nat` contract.
+A two-`UInt64`-limb word holding the 64×64→128 partial products of the 256-bit schoolbook
+multiplication, with ripple-carry addition and its `Nat` contract.
 -/
 
 namespace Montgomery.Native256
 
+/-- A 128-bit value as two 64-bit limbs. -/
 structure UInt128L where
+  /-- Limb of weight `2 ^ 0`. -/
   lo : UInt64
+  /-- Limb of weight `2 ^ 64`. -/
   hi : UInt64
 deriving DecidableEq
 
+/-- The natural number represented by the limbs. -/
 def UInt128L.toNat (x : UInt128L) : Nat :=
   x.lo.toNat + (x.hi.toNat <<< 64)
 
+/-- The value of a 128-bit word in terms of its limbs, shift-free. -/
+theorem UInt128L.toNat_eq (x : UInt128L) : x.toNat = x.lo.toNat + x.hi.toNat * 2 ^ 64 := by
+  simp only [UInt128L.toNat, Nat.shiftLeft_eq]
 
+/-- Two-limb ripple-carry addition, discarding the carry out of the top limb. -/
 @[inline] def UInt128L.add (a b : UInt128L) : UInt128L :=
   let (lo, c0) := addc a.lo b.lo 0
   let (hi, _) := addc a.hi b.hi c0
-  ⟨ lo, hi ⟩
+  ⟨lo, hi⟩
 
-instance : Add UInt128L := ⟨ UInt128L.add ⟩
+instance : Add UInt128L := ⟨UInt128L.add⟩
 
 /-- The two-limb ripple-carry addition agrees with `Nat` addition modulo `2 ^ 128`
 (the 128-bit analogue of `UInt64.toNat_add`). -/

@@ -14,13 +14,13 @@ import CompPoly.Fields.Secp256k1.Fr.Fast
 /-!
 # Extern-Backed 256-bit Montgomery Tests
 
-Runtime regression checks for `Montgomery.Native256.Ext`: the extern-backed
-operations are compared against the verified implementation over every 256-bit
-Montgomery field, on boundary values and a deterministic pseudorandom sweep. The
-Lean models are already proved equal to the verified operations; what these checks
-exercise is the trusted C in `native/comppoly_mont256.c`, which proofs cannot see.
-They live in an executable because the module interpreter cannot call project-local
-externs.
+Runtime regression checks for `Montgomery.Native256.Ext`: the operations built on the
+extern widening-mul primitive are compared against the verified implementation over
+every 256-bit Montgomery field, on boundary values and a deterministic pseudorandom
+sweep. The Lean models are already proved equal to the verified operations; what these
+checks exercise is the trusted C in `native/comppoly_mont256.c`, which proofs cannot
+see. They live in an executable because the module interpreter cannot call
+project-local externs.
 
 Run this file with: `lake exe CompPolyMont256ExtTests`
 -/
@@ -62,28 +62,15 @@ private def edgeCases (modulus : ℕ) [Mont256Field modulus] : List (FastField m
   [(0 : FastField modulus), 1, 2, (modulus - 1 : ℕ), (modulus - 2 : ℕ),
     (2 ^ 255 : ℕ), (2 ^ 256 - 1 : ℕ)]
 
-/-- Per-element checks: both squaring granularities, inversion, repeated squaring, and
-the raw GCD candidate. The candidate is compared directly because `invNative = inv`
-alone cannot detect a broken native candidate: a miss silently takes the fallback. -/
+/-- Per-element checks: squaring through the extern widening-mul primitive. -/
 private def checkOne (modulus : ℕ) [P : Mont256Field modulus] (label : String)
     (x : FastField modulus) : IO Bool := do
-  let ok1 ← check s!"{label}: squareNative" (Ext.squareNative x = square x)
-  let ok2 ← check s!"{label}: squareWithMulHi" (Ext.squareWithMulHi x = square x)
-  let ok3 ← check s!"{label}: invNative" (Ext.invNative x = inv x)
-  let ok4 ← check s!"{label}: squareNNative" (Ext.squareNNative x 8 = pow x (2 ^ 8))
-  let ok5 ← check s!"{label}: gcdInvCandidateNative"
-    (Ext.gcdInvCandidateNative P.modulus256 P.montgomeryNegInv P.gcdInitU P.gcdFinalRounds
-        x.val
-      = gcdInvCandidate (modulus := modulus) x.val)
-  return ok1 && ok2 && ok3 && ok4 && ok5
+  check s!"{label}: squareWithMulHi" (Ext.squareWithMulHi x = square x)
 
-/-- Per-pair checks: both multiplication granularities and division. -/
+/-- Per-pair checks: multiplication through the extern widening-mul primitive. -/
 private def checkPair (modulus : ℕ) [Mont256Field modulus] (label : String)
     (x y : FastField modulus) : IO Bool := do
-  let ok1 ← check s!"{label}: mulNative" (Ext.mulNative x y = mul x y)
-  let ok2 ← check s!"{label}: mulWithMulHi" (Ext.mulWithMulHi x y = mul x y)
-  let ok3 ← check s!"{label}: divNative" (Ext.divNative x y = div x y)
-  return ok1 && ok2 && ok3
+  check s!"{label}: mulWithMulHi" (Ext.mulWithMulHi x y = mul x y)
 
 /-- Run all checks for one 256-bit Montgomery field. -/
 private def checkField (modulus : ℕ) [Mont256Field modulus] (label : String) : IO Bool := do

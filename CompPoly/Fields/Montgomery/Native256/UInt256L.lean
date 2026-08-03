@@ -11,9 +11,9 @@ import Mathlib.Tactic.Linarith
 /-!
 # 256-bit limb word (`UInt256L`)
 
-The four-`UInt64`-limb word backing the BN254 fast scalar field: ripple-carry add/subtract,
-limb-wise comparison, the 64×64→128 product `mulLimb`, the scan-multiply helpers `mulSmall`
-and `mulSmallAndAcc`, and their exact `Nat` correctness contracts.
+The four-`UInt64`-limb word backing the 256-bit Montgomery fields: ripple-carry
+add/subtract, limb-wise comparison, the 64×64→128 product `mulLimb`, the scan-multiply
+helpers `mulSmall` and `mulSmallAndAcc`, and their exact `Nat` contracts.
 -/
 
 -- The schoolbook multiply proofs build deep `addc`/`mulLimb` carry chains; the default
@@ -21,16 +21,25 @@ and `mulSmallAndAcc`, and their exact `Nat` correctness contracts.
 set_option maxRecDepth 4000
 
 namespace Montgomery.Native256
+
+/-- A 256-bit value as four little-endian 64-bit limbs. -/
 structure UInt256L where
+  /-- Limb of weight `2 ^ 0`. -/
   l0 : UInt64
+  /-- Limb of weight `2 ^ 64`. -/
   l1 : UInt64
+  /-- Limb of weight `2 ^ 128`. -/
   l2 : UInt64
+  /-- Limb of weight `2 ^ 192`. -/
   l3 : UInt64
 deriving DecidableEq
 
+/-- The natural number represented by the limbs. -/
 def UInt256L.toNat (x : UInt256L) : Nat :=
   x.l0.toNat + (x.l1.toNat <<< 64) + (x.l2.toNat <<< 128) + (x.l3.toNat <<< 192)
 
+/-- Four-limb ripple-carry addition with carry-in, discarding the carry out of the top
+limb. -/
 @[inline] def UInt256L.addCarry (a b : UInt256L) (cin : UInt64) : UInt256L :=
   let (l0, c0) := addc a.l0 b.l0 cin
   let (l1, c1) := addc a.l1 b.l1 c0
@@ -38,7 +47,8 @@ def UInt256L.toNat (x : UInt256L) : Nat :=
   let (l3, _ ) := addc a.l3 b.l3 c2
   ⟨l0, l1, l2, l3⟩
 
-def UInt256L.add a b := UInt256L.addCarry a b 0
+/-- Wrapping 256-bit addition. -/
+@[inline] def UInt256L.add (a b : UInt256L) : UInt256L := addCarry a b 0
 
 /-- Ripple-carry add returning the low 256 bits together with the final carry-out word.
 Unlike `addCarry`, which discards the top carry, this keeps it so callers can reduce a value
@@ -59,15 +69,15 @@ that may reach `2 ^ 256` (needed for moduli with the top bit set, where `2·p �
   let b2 := if s1 < borrow then 1 else 0
   (s2, b1 + b2)
 
+/-- Wrapping 256-bit subtraction by ripple borrow. -/
 @[inline] def UInt256L.sub (a b : UInt256L) : UInt256L :=
   let (l0, brw0) := subb a.l0 b.l0 0
   let (l1, brw1) := subb a.l1 b.l1 brw0
   let (l2, brw2) := subb a.l2 b.l2 brw1
   let (l3, _) := subb a.l3 b.l3 brw2
-  ⟨ l0, l1, l2, l3 ⟩
+  ⟨l0, l1, l2, l3⟩
 
-
-/-- Full 64×64→128 product as UInt128L. -/
+/-- Full 64×64→128 product as `UInt128L`. -/
 @[inline] def mulLimb (a b : UInt64) : UInt128L :=
   let mask : UInt64 := 0xFFFFFFFF
   let aL := a &&& mask
@@ -87,34 +97,34 @@ that may reach `2 ^ 256` (needed for moduli with the top bit set, where `2·p �
 remaining four limbs of the 5-limb product. -/
 @[inline] def mulSmall (lhs : UInt256L) (rhs : UInt64) : UInt64 × UInt256L :=
   let p0 : UInt128L := mulLimb lhs.l0 rhs
-  let c0 : UInt128L := ⟨ p0.hi, 0 ⟩
+  let c0 : UInt128L := ⟨p0.hi, 0⟩
   let p1 : UInt128L := c0 + (mulLimb lhs.l1 rhs)
-  let c1 : UInt128L := ⟨p1.hi, 0 ⟩
+  let c1 : UInt128L := ⟨p1.hi, 0⟩
   let p2 : UInt128L := c1 + (mulLimb lhs.l2 rhs)
-  let c2 : UInt128L := ⟨ p2.hi, 0 ⟩
+  let c2 : UInt128L := ⟨p2.hi, 0⟩
   let p3 : UInt128L := c2 + (mulLimb lhs.l3 rhs)
-  (p0.lo, ⟨ p1.lo, p2.lo, p3.lo, p3.hi ⟩)
+  (p0.lo, ⟨p1.lo, p2.lo, p3.lo, p3.hi⟩)
 
+/-- `mulSmall` fused with a 256-bit addend: `lhs · rhs + add` as a 5-limb value, split the
+same way. -/
+@[inline] def mulSmallAndAcc (lhs : UInt256L) (rhs : UInt64) (add : UInt256L) :
+    UInt64 × UInt256L :=
+  let p0 : UInt128L := ⟨add.l0, 0⟩ + (mulLimb lhs.l0 rhs)
+  let c0 : UInt128L := ⟨p0.hi, 0⟩
+  let p1 : UInt128L := c0 + (mulLimb lhs.l1 rhs) + ⟨add.l1, 0⟩
+  let c1 : UInt128L := ⟨p1.hi, 0⟩
+  let p2 : UInt128L := c1 + (mulLimb lhs.l2 rhs) + ⟨add.l2, 0⟩
+  let c2 : UInt128L := ⟨p2.hi, 0⟩
+  let p3 : UInt128L := c2 + (mulLimb lhs.l3 rhs) + ⟨add.l3, 0⟩
+  (p0.lo, ⟨p1.lo, p2.lo, p3.lo, p3.hi⟩)
 
-@[inline] def mulSmallAndAcc (lhs : UInt256L) (rhs: UInt64) (add : UInt256L) : UInt64 × UInt256L :=
-  let p0 : UInt128L := ⟨add.l0, 0 ⟩  +  (mulLimb lhs.l0 rhs)
-  let c0 : UInt128L := ⟨ p0.hi, 0 ⟩
-  let p1 : UInt128L := c0 + (mulLimb lhs.l1 rhs) + ⟨ add.l1, 0 ⟩
-  let c1 : UInt128L := ⟨p1.hi, 0 ⟩
-  let p2 : UInt128L := c1 + (mulLimb lhs.l2 rhs) + ⟨ add.l2, 0 ⟩
-  let c2 : UInt128L := ⟨ p2.hi, 0 ⟩
-  let p3 : UInt128L := c2 + (mulLimb lhs.l3 rhs) + ⟨ add.l3, 0 ⟩
-  (p0.lo, ⟨ p1.lo, p2.lo, p3.lo, p3.hi ⟩)
-
-
-
-
+/-- Limb-lexicographic comparison from the top limb, which agrees with the numeric order
+(`lt_iff_toNat_lt`). -/
 @[inline] def UInt256L.cmp (a b : UInt256L) : Ordering :=
   if a.l3 ≠ b.l3 then compare a.l3 b.l3
   else if a.l2 ≠ b.l2 then compare a.l2 b.l2
   else if a.l1 ≠ b.l1 then compare a.l1 b.l1
   else compare a.l0 b.l0
-
 
 instance : Ord UInt256L where
   compare := UInt256L.cmp
@@ -301,8 +311,6 @@ theorem UInt256L.toNat_sub_of_le {a b : UInt256L} (h : b.toNat ≤ a.toNat) :
   show (sub a b).toNat = _
   unfold sub
   dsimp only
-  -- Each limb's borrow-out (`c·`) feeds the next limb's borrow-in; `subb_spec` also
-  -- supplies the result-limb bound (`hb·`), so the chain closes by `omega`.
   obtain ⟨e0, c0, hb0⟩ := subb_spec a.l0 b.l0 0 (by decide)
   obtain ⟨e1, c1, hb1⟩ := subb_spec a.l1 b.l1 (subb a.l0 b.l0 0).2 c0
   obtain ⟨e2, c2, hb2⟩ := subb_spec a.l2 b.l2 (subb a.l1 b.l1 (subb a.l0 b.l0 0).2).2 c1
@@ -327,7 +335,6 @@ theorem UInt256L.toNat_sub_of_lt {a b : UInt256L} (h : a.toNat < b.toNat) :
   have hz : (0 : UInt64).toNat = 0 := rfl
   simp only [UInt256L.toNat, Nat.shiftLeft_eq] at h ⊢
   omega
-
 
 /-- Commutativity of `Nat` bitwise-or (used to orient the `|||`→`+` rewrite in `mulLimb`). -/
 private theorem lor_comm (x y : Nat) : x ||| y = y ||| x := by
@@ -398,6 +405,32 @@ theorem mulLimb_toNat (a b : UInt64) :
   set HH := a.toNat / 2 ^ 32 * (b.toNat / 2 ^ 32)
   omega
 
+/-- One scan step of `mulSmall`: a carried partial product `⟨c, 0⟩ + mulLimb a b` is exact
+(one word plus a full 128-bit product cannot overflow 128 bits). -/
+private theorem carry_add_mulLimb_toNat (c a b : UInt64) :
+    ((⟨c, 0⟩ + mulLimb a b : UInt128L)).toNat = c.toNat + a.toNat * b.toNat := by
+  have htb : a.toNat * b.toNat ≤ (2 ^ 64 - 1) * (2 ^ 64 - 1) :=
+    Nat.mul_le_mul (by have := a.toNat_lt; omega) (by have := b.toNat_lt; omega)
+  have hc := c.toNat_lt
+  rw [UInt128L.toNat_add, mulLimb_toNat]
+  simp only [UInt128L.toNat_eq, show (0 : UInt64).toNat = 0 from rfl, Nat.zero_mul,
+    Nat.add_zero]
+  exact Nat.mod_eq_of_lt (by omega)
+
+/-- One scan step of `mulSmallAndAcc`: the carried partial product with a second word
+`⟨d, 0⟩` accumulated is still exact. -/
+private theorem carry_add_mulLimb_add_toNat (c a b d : UInt64) :
+    ((⟨c, 0⟩ + mulLimb a b + ⟨d, 0⟩ : UInt128L)).toNat
+      = c.toNat + a.toNat * b.toNat + d.toNat := by
+  have htb : a.toNat * b.toNat ≤ (2 ^ 64 - 1) * (2 ^ 64 - 1) :=
+    Nat.mul_le_mul (by have := a.toNat_lt; omega) (by have := b.toNat_lt; omega)
+  have hc := c.toNat_lt
+  have hd := d.toNat_lt
+  rw [UInt128L.toNat_add, carry_add_mulLimb_toNat]
+  simp only [UInt128L.toNat_eq, show (0 : UInt64).toNat = 0 from rfl, Nat.zero_mul,
+    Nat.add_zero]
+  exact Nat.mod_eq_of_lt (by omega)
+
 /-- `mulSmall lhs rhs` returns the low limb and the top four limbs of the exact 5-limb
 product `lhs.toNat * rhs.toNat`. -/
 theorem mulSmall_toNat (lhs : UInt256L) (rhs : UInt64) :
@@ -407,8 +440,6 @@ theorem mulSmall_toNat (lhs : UInt256L) (rhs : UInt64) :
       lhs.l0.toNat * rhs.toNat + lhs.l1.toNat * rhs.toNat * 2 ^ 64
       + lhs.l2.toNat * rhs.toNat * 2 ^ 128 + lhs.l3.toNat * rhs.toNat * 2 ^ 192 := by
     simp only [UInt256L.toNat, Nat.shiftLeft_eq]; ring
-  have tb : ∀ x : UInt64, x.toNat * rhs.toNat ≤ (2 ^ 64 - 1) * (2 ^ 64 - 1) :=
-    fun x => Nat.mul_le_mul (by have := x.toNat_lt; omega) (by have := rhs.toNat_lt; omega)
   simp only [mulSmall]
   set Q0 := mulLimb lhs.l0 rhs with hQ0def
   set Q1 := (⟨Q0.hi, 0⟩ : UInt128L) + mulLimb lhs.l1 rhs with hQ1def
@@ -416,35 +447,16 @@ theorem mulSmall_toNat (lhs : UInt256L) (rhs : UInt64) :
   set Q3 := (⟨Q2.hi, 0⟩ : UInt128L) + mulLimb lhs.l3 rhs with hQ3def
   clear_value Q3 Q2 Q1 Q0
   have hQ0 : Q0.lo.toNat + Q0.hi.toNat * 2 ^ 64 = lhs.l0.toNat * rhs.toNat := by
-    have h := mulLimb_toNat lhs.l0 rhs; rw [← hQ0def] at h
-    simpa [UInt128L.toNat, Nat.shiftLeft_eq] using h
+    rw [← UInt128L.toNat_eq, hQ0def, mulLimb_toNat]
   have hQ1 : Q1.lo.toNat + Q1.hi.toNat * 2 ^ 64
       = Q0.hi.toNat + lhs.l1.toNat * rhs.toNat := by
-    have hb : Q0.hi.toNat + lhs.l1.toNat * rhs.toNat < 2 ^ 128 := by
-      have := Q0.hi.toNat_lt; have := tb lhs.l1; omega
-    have h := UInt128L.toNat_add (⟨Q0.hi, 0⟩ : UInt128L) (mulLimb lhs.l1 rhs)
-    rw [← hQ1def, mulLimb_toNat] at h
-    simp only [UInt128L.toNat, Nat.shiftLeft_eq, show (0 : UInt64).toNat = 0 from rfl,
-      Nat.zero_mul, Nat.add_zero] at h
-    rw [Nat.mod_eq_of_lt hb] at h; exact h
+    rw [← UInt128L.toNat_eq, hQ1def, carry_add_mulLimb_toNat]
   have hQ2 : Q2.lo.toNat + Q2.hi.toNat * 2 ^ 64
       = Q1.hi.toNat + lhs.l2.toNat * rhs.toNat := by
-    have hb : Q1.hi.toNat + lhs.l2.toNat * rhs.toNat < 2 ^ 128 := by
-      have := Q1.hi.toNat_lt; have := tb lhs.l2; omega
-    have h := UInt128L.toNat_add (⟨Q1.hi, 0⟩ : UInt128L) (mulLimb lhs.l2 rhs)
-    rw [← hQ2def, mulLimb_toNat] at h
-    simp only [UInt128L.toNat, Nat.shiftLeft_eq, show (0 : UInt64).toNat = 0 from rfl,
-      Nat.zero_mul, Nat.add_zero] at h
-    rw [Nat.mod_eq_of_lt hb] at h; exact h
+    rw [← UInt128L.toNat_eq, hQ2def, carry_add_mulLimb_toNat]
   have hQ3 : Q3.lo.toNat + Q3.hi.toNat * 2 ^ 64
       = Q2.hi.toNat + lhs.l3.toNat * rhs.toNat := by
-    have hb : Q2.hi.toNat + lhs.l3.toNat * rhs.toNat < 2 ^ 128 := by
-      have := Q2.hi.toNat_lt; have := tb lhs.l3; omega
-    have h := UInt128L.toNat_add (⟨Q2.hi, 0⟩ : UInt128L) (mulLimb lhs.l3 rhs)
-    rw [← hQ3def, mulLimb_toNat] at h
-    simp only [UInt128L.toNat, Nat.shiftLeft_eq, show (0 : UInt64).toNat = 0 from rfl,
-      Nat.zero_mul, Nat.add_zero] at h
-    rw [Nat.mod_eq_of_lt hb] at h; exact h
+    rw [← UInt128L.toNat_eq, hQ3def, carry_add_mulLimb_toNat]
   rw [hexp]
   simp only [UInt256L.toNat, Nat.shiftLeft_eq]
   linarith [hQ0, hQ1, hQ2, hQ3]
@@ -460,8 +472,6 @@ theorem mulSmallAndAcc_toNat (lhs : UInt256L) (rhs : UInt64) (add : UInt256L) :
       + (add.l2.toNat + lhs.l2.toNat * rhs.toNat) * 2 ^ 128
       + (add.l3.toNat + lhs.l3.toNat * rhs.toNat) * 2 ^ 192 := by
     simp only [UInt256L.toNat, Nat.shiftLeft_eq]; ring
-  have tb : ∀ x : UInt64, x.toNat * rhs.toNat ≤ (2 ^ 64 - 1) * (2 ^ 64 - 1) :=
-    fun x => Nat.mul_le_mul (by have := x.toNat_lt; omega) (by have := rhs.toNat_lt; omega)
   simp only [mulSmallAndAcc]
   set Q0 := (⟨add.l0, 0⟩ : UInt128L) + mulLimb lhs.l0 rhs with hQ0def
   set Q1 := (⟨Q0.hi, 0⟩ : UInt128L) + mulLimb lhs.l1 rhs + ⟨add.l1, 0⟩ with hQ1def
@@ -469,67 +479,16 @@ theorem mulSmallAndAcc_toNat (lhs : UInt256L) (rhs : UInt64) (add : UInt256L) :
   set Q3 := (⟨Q2.hi, 0⟩ : UInt128L) + mulLimb lhs.l3 rhs + ⟨add.l3, 0⟩ with hQ3def
   clear_value Q3 Q2 Q1 Q0
   have hQ0 : Q0.lo.toNat + Q0.hi.toNat * 2 ^ 64 = add.l0.toNat + lhs.l0.toNat * rhs.toNat := by
-    have hb : add.l0.toNat + lhs.l0.toNat * rhs.toNat < 2 ^ 128 := by
-      have := add.l0.toNat_lt; have := tb lhs.l0; omega
-    have h := UInt128L.toNat_add (⟨add.l0, 0⟩ : UInt128L) (mulLimb lhs.l0 rhs)
-    rw [← hQ0def, mulLimb_toNat] at h
-    simp only [UInt128L.toNat, Nat.shiftLeft_eq, show (0 : UInt64).toNat = 0 from rfl,
-      Nat.zero_mul, Nat.add_zero] at h
-    rw [Nat.mod_eq_of_lt hb] at h; exact h
+    rw [← UInt128L.toNat_eq, hQ0def, carry_add_mulLimb_toNat]
   have hQ1 : Q1.lo.toNat + Q1.hi.toNat * 2 ^ 64
       = Q0.hi.toNat + lhs.l1.toNat * rhs.toNat + add.l1.toNat := by
-    have hinner : (⟨Q0.hi, 0⟩ + mulLimb lhs.l1 rhs : UInt128L).toNat
-        = Q0.hi.toNat + lhs.l1.toNat * rhs.toNat := by
-      have hb : Q0.hi.toNat + lhs.l1.toNat * rhs.toNat < 2 ^ 128 := by
-        have := Q0.hi.toNat_lt; have := tb lhs.l1; omega
-      rw [UInt128L.toNat_add, mulLimb_toNat]
-      simp only [UInt128L.toNat, Nat.shiftLeft_eq, show (0 : UInt64).toNat = 0 from rfl,
-        Nat.zero_mul, Nat.add_zero]
-      exact Nat.mod_eq_of_lt hb
-    have hb2 : Q0.hi.toNat + lhs.l1.toNat * rhs.toNat + add.l1.toNat < 2 ^ 128 := by
-      have := Q0.hi.toNat_lt; have := tb lhs.l1; have := add.l1.toNat_lt; omega
-    have h := UInt128L.toNat_add (⟨Q0.hi, 0⟩ + mulLimb lhs.l1 rhs : UInt128L)
-      (⟨add.l1, 0⟩ : UInt128L)
-    rw [← hQ1def, hinner] at h
-    simp only [UInt128L.toNat, Nat.shiftLeft_eq, show (0 : UInt64).toNat = 0 from rfl,
-      Nat.zero_mul, Nat.add_zero] at h
-    rw [Nat.mod_eq_of_lt hb2] at h; exact h
+    rw [← UInt128L.toNat_eq, hQ1def, carry_add_mulLimb_add_toNat]
   have hQ2 : Q2.lo.toNat + Q2.hi.toNat * 2 ^ 64
       = Q1.hi.toNat + lhs.l2.toNat * rhs.toNat + add.l2.toNat := by
-    have hinner : (⟨Q1.hi, 0⟩ + mulLimb lhs.l2 rhs : UInt128L).toNat
-        = Q1.hi.toNat + lhs.l2.toNat * rhs.toNat := by
-      have hb : Q1.hi.toNat + lhs.l2.toNat * rhs.toNat < 2 ^ 128 := by
-        have := Q1.hi.toNat_lt; have := tb lhs.l2; omega
-      rw [UInt128L.toNat_add, mulLimb_toNat]
-      simp only [UInt128L.toNat, Nat.shiftLeft_eq, show (0 : UInt64).toNat = 0 from rfl,
-        Nat.zero_mul, Nat.add_zero]
-      exact Nat.mod_eq_of_lt hb
-    have hb2 : Q1.hi.toNat + lhs.l2.toNat * rhs.toNat + add.l2.toNat < 2 ^ 128 := by
-      have := Q1.hi.toNat_lt; have := tb lhs.l2; have := add.l2.toNat_lt; omega
-    have h := UInt128L.toNat_add (⟨Q1.hi, 0⟩ + mulLimb lhs.l2 rhs : UInt128L)
-      (⟨add.l2, 0⟩ : UInt128L)
-    rw [← hQ2def, hinner] at h
-    simp only [UInt128L.toNat, Nat.shiftLeft_eq, show (0 : UInt64).toNat = 0 from rfl,
-      Nat.zero_mul, Nat.add_zero] at h
-    rw [Nat.mod_eq_of_lt hb2] at h; exact h
+    rw [← UInt128L.toNat_eq, hQ2def, carry_add_mulLimb_add_toNat]
   have hQ3 : Q3.lo.toNat + Q3.hi.toNat * 2 ^ 64
       = Q2.hi.toNat + lhs.l3.toNat * rhs.toNat + add.l3.toNat := by
-    have hinner : (⟨Q2.hi, 0⟩ + mulLimb lhs.l3 rhs : UInt128L).toNat
-        = Q2.hi.toNat + lhs.l3.toNat * rhs.toNat := by
-      have hb : Q2.hi.toNat + lhs.l3.toNat * rhs.toNat < 2 ^ 128 := by
-        have := Q2.hi.toNat_lt; have := tb lhs.l3; omega
-      rw [UInt128L.toNat_add, mulLimb_toNat]
-      simp only [UInt128L.toNat, Nat.shiftLeft_eq, show (0 : UInt64).toNat = 0 from rfl,
-        Nat.zero_mul, Nat.add_zero]
-      exact Nat.mod_eq_of_lt hb
-    have hb2 : Q2.hi.toNat + lhs.l3.toNat * rhs.toNat + add.l3.toNat < 2 ^ 128 := by
-      have := Q2.hi.toNat_lt; have := tb lhs.l3; have := add.l3.toNat_lt; omega
-    have h := UInt128L.toNat_add (⟨Q2.hi, 0⟩ + mulLimb lhs.l3 rhs : UInt128L)
-      (⟨add.l3, 0⟩ : UInt128L)
-    rw [← hQ3def, hinner] at h
-    simp only [UInt128L.toNat, Nat.shiftLeft_eq, show (0 : UInt64).toNat = 0 from rfl,
-      Nat.zero_mul, Nat.add_zero] at h
-    rw [Nat.mod_eq_of_lt hb2] at h; exact h
+    rw [← UInt128L.toNat_eq, hQ3def, carry_add_mulLimb_add_toNat]
   rw [hexp]
   simp only [UInt256L.toNat, Nat.shiftLeft_eq]
   linarith [hQ0, hQ1, hQ2, hQ3]

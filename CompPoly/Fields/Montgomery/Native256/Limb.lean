@@ -7,8 +7,8 @@ Authors: Georgios Raikos
 /-!
 # Single-limb add-with-carry (`addc`)
 
-The 64-bit add-with-carry primitive and its `Nat` contract, the building block for the
-ripple-carry arithmetic of the BN254 fast scalar field.
+The 64-bit add-with-carry primitive and its `Nat` contract, the building block of the
+256-bit ripple-carry arithmetic.
 -/
 
 namespace Montgomery.Native256
@@ -51,8 +51,5 @@ theorem addc_spec (a b c : UInt64) (hc : c.toNat ≤ 1) :
     · simp only [if_neg h1, if_neg h2, l00]
       rw [UInt64.lt_iff_toNat_lt] at h1 h2
       simp only [UInt64.toNat_add] at h1 h2 ⊢; omega
-
-
-
 
 end Montgomery.Native256

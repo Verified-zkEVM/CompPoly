@@ -14,10 +14,8 @@ import Mathlib.FieldTheory.Finite.Basic
 # Fast 256-bit Montgomery Fields
 
 The bounded carrier's conversions, arithmetic, and field instances built on the
-`Montgomery.Native256` CIOS core. Inversion runs the proof-free Pornin binary GCD
-(`gcdInvCandidate`) and verifies the candidate with one proven Montgomery multiplication,
-falling back to the proven 4-bit-window Fermat exponentiation, so correctness never depends
-on the GCD internals.
+`Montgomery.Native256` CIOS core. Inversion verifies the proof-free GCD candidate with one
+proven multiplication and falls back to the proven window exponentiation.
 -/
 
 set_option maxRecDepth 4000
@@ -223,10 +221,6 @@ private def tableAux (x : FastField modulus) : ℕ → FastField modulus → Lis
 /-- The 4-bit window table `[x^0, ..., x^15]`, precomputed once with 15 multiplications. -/
 private def windowTable (x : FastField modulus) : List (FastField modulus) :=
   tableAux x 16 (one modulus)
-
-/-- The base-16 digits of `modulus - 2`, most significant first (64 nibbles). -/
-private def p2HexDigits (modulus : ℕ) : List ℕ :=
-  (List.range 64).map (fun i => ((modulus - 2) >>> ((63 - i) * 4)) &&& 0xF)
 
 /-- `x^16` by four explicit squarings. -/
 @[inline]
@@ -519,12 +513,6 @@ private theorem p2HexDigits_head_lt : (p2HexDigits modulus).headD 0 < 16 := by
     rw [List.headD_cons, ← hi]
     exact Nat.lt_of_le_of_lt (Nat.and_le_right) (by decide)
 
-private theorem p2HexDigits_reconstruct :
-    (p2HexDigits modulus).tail.foldl (fun n d => n * 16 + d) ((p2HexDigits modulus).headD 0)
-      = modulus - 2 := by
-  unfold p2HexDigits
-  exact P.p2HexDigits_reconstruct
-
 private theorem toField_invFold (x : FastField modulus) (tbl : Array (FastField modulus))
     (htbl : ∀ d, d < 16 → toField (tbl.getD d (one modulus)) = toField x ^ d) :
     toField (invFold tbl) = toField x ^ (modulus - 2) := by
@@ -532,7 +520,7 @@ private theorem toField_invFold (x : FastField modulus) (tbl : Array (FastField 
   rw [windowFold_toField x tbl htbl (p2HexDigits modulus).tail p2HexDigits_tail_lt
         (tbl.getD ((p2HexDigits modulus).headD 0) (one modulus)) ((p2HexDigits modulus).headD 0)
         (htbl _ p2HexDigits_head_lt),
-      p2HexDigits_reconstruct]
+      P.p2HexDigits_reconstruct]
 
 private theorem toField_invWindow_pow (x : FastField modulus) :
     toField (invWindow x) = toField x ^ (modulus - 2) := by
@@ -591,10 +579,7 @@ private theorem toField_div_mul_inv (x y : FastField modulus) :
 @[simp]
 theorem toField_div (x y : FastField modulus) : toField (x / y) = toField x / toField y := by
   change toField (div x y) = toField x / toField y
-  have h : ∀ a b c : ZMod modulus, c = b⁻¹ → a * c = a / b := by
-    intro a b c hc; rw [hc]; rfl
-  exact (toField_div_mul_inv x y).trans
-    (h (toField x) (toField y) (toField (inv y)) (toField_inv_raw y))
+  rw [toField_div_mul_inv, toField_inv_raw, div_eq_mul_inv]
 
 @[simp]
 theorem toField_natCast (n : ℕ) :

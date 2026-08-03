@@ -21,6 +21,11 @@ set_option maxRecDepth 4000
 namespace Montgomery
 namespace Native256
 
+/-- The 64 base-16 digits of the inversion exponent `modulus - 2`, most significant first:
+the schedule of the fixed-window Fermat inversion. -/
+def p2HexDigits (modulus : ℕ) : List ℕ :=
+  (List.range 64).map (fun i => ((modulus - 2) >>> ((63 - i) * 4)) &&& 0xF)
+
 /-- Per-field data for a fast 256-bit Montgomery field. The word constants and the GCD
 divstep schedule are the only runtime data; every proof obligation defaults to `decide`. -/
 class Mont256Field (modulus : ℕ) where
@@ -35,15 +40,12 @@ class Mont256Field (modulus : ℕ) where
   /-- `(2^256)^2 mod modulus`, used to enter Montgomery form. -/
   r2ModModulus : UInt256L
   /-- Divsteps in the final word-sized round of the Pornin binary-GCD inversion:
-  `2·bits(p) - 2 - 15·31`, so the total divstep count is the worst-case bound `2·bits(p) - 2`
-  (each divstep shrinks `len(a) + len(b) ≤ 2·bits(p)` by at least one). Must stay `≤ 62` so the
-  final transition-matrix entries fit in a signed word. -/
+  `2·bits(p) - 2 - 15·31`. Must stay `≤ 62` so the final transition-matrix entries fit in a
+  signed word. -/
   gcdFinalRounds : ℕ
-  /-- Initial `u` for the Pornin binary-GCD inversion: `2^(1071 - gcdFinalRounds) mod modulus`.
-  The exponent is `512 - T + 16·64` for `T = 15·31 + gcdFinalRounds` total divsteps: `2^512`
-  turns the Montgomery input `x·R` into the Montgomery output `x⁻¹·R`, `2^(-T)` cancels the
-  per-divstep doubling of the transition factors, and `2^(16·64)` cancels the sixteen
-  one-word Montgomery reductions applied to `u`/`v`. -/
+  /-- Initial `u` for the Pornin binary-GCD inversion: `2^(1071 - gcdFinalRounds) mod modulus`
+  (the power that cancels the divstep doublings and the sixteen one-word reductions while
+  keeping the result in Montgomery form). -/
   gcdInitU : UInt256L
   modulus256_toNat : modulus256.toNat = modulus := by decide
   two_lt_modulus : 2 < modulus := by decide
@@ -52,15 +54,12 @@ class Mont256Field (modulus : ℕ) where
   montgomeryNegInv_mul_modulus_mod_two_pow_64 :
     montgomeryNegInv.toNat * modulus % 2 ^ 64 = 2 ^ 64 - 1 := by decide
   /-- The binary-GCD initial `u` is the documented power of two. Guards the constant against
-  typos; inversion correctness never relies on it (the GCD result is verified at runtime and
-  falls back to the proven Fermat path). -/
+  typos; inversion correctness never relies on it (the candidate is verified at runtime). -/
   gcdInitU_toNat : gcdInitU.toNat = 2 ^ (1071 - gcdFinalRounds) % modulus := by decide
-  /-- The 64 base-16 nibbles of the inversion exponent `p - 2` (most significant first)
-  Horner-reconstruct to `p - 2`. Drives the fixed-window inversion. -/
+  /-- The window digits of `modulus - 2` Horner-reconstruct to `modulus - 2`. -/
   p2HexDigits_reconstruct :
-    ((List.range 64).map (fun i => ((modulus - 2) >>> ((63 - i) * 4)) &&& 0xF)).tail.foldl
-        (fun n d => n * 16 + d)
-        (((List.range 64).map (fun i => ((modulus - 2) >>> ((63 - i) * 4)) &&& 0xF)).headD 0)
+    (p2HexDigits modulus).tail.foldl (fun n d => n * 16 + d)
+        ((p2HexDigits modulus).headD 0)
       = modulus - 2 := by decide
 
 attribute [simp] Mont256Field.modulus256_toNat Mont256Field.rModModulus_toNat
@@ -154,10 +153,9 @@ theorem conditionalSubtract_cast (x : UInt256L) :
         Nat.cast_sub (by rw [P.modulus256_toNat] at hle; exact hle)]
     simp only [ZMod.natCast_self, sub_zero]
 
-/-- Reduce a value `lo + carry·2²⁵⁶` (with `carry ∈ {0,1}`) known to be `< 2·modulus` to
-canonical range. With no carry this is the plain conditional subtract. A set carry means the
-value is `≥ 2²⁵⁶ > p`, so one subtraction, which wraps back below `2²⁵⁶`, lands in range;
-this is the branch that lets top-bit-set moduli (`2·p ≥ 2²⁵⁶`) reuse the same reducer. -/
+/-- Reduce a value `lo + carry·2²⁵⁶ < 2·modulus` (`carry ∈ {0,1}`) to canonical range: the
+conditional subtract with no carry, one wrapping subtraction with it. The carry branch is
+what serves top-bit-set moduli, where `2·p ≥ 2²⁵⁶`. -/
 @[inline]
 def reduceWideRaw (lo : UInt256L) (carry : UInt64) : UInt256L :=
   if carry = 0 then conditionalSubtract (modulus := modulus) lo else lo - P.modulus256
@@ -211,10 +209,9 @@ def reduceWide (lo : UInt256L) (carry : UInt64) (hc : carry.toNat ≤ 1)
     (h : lo.toNat + carry.toNat * 2 ^ 256 < 2 * modulus) : FastField modulus :=
   ⟨reduceWideRaw (modulus := modulus) lo carry, reduceWideRaw_lt lo carry hc h⟩
 
-/-- One additive CIOS step: given the low limb `acc0` and high four limbs `acc` of a 5-limb
-accumulator, returns `(acc0 + acc·2⁶⁴)·2⁻⁶⁴ mod p`. Assumes the accumulator is `< p·2⁶⁴`.
-The 5→4 limb fold may reach `2²⁵⁶` (when `2·p ≥ 2²⁵⁶`), so the carry-out is captured and fed to
-`reduceWideRaw` rather than dropped. -/
+/-- One CIOS step: for a 5-limb accumulator `(acc0, acc) < p·2⁶⁴`, returns
+`(acc0 + acc·2⁶⁴)·2⁻⁶⁴ mod p`. The 5→4 limb fold may reach `2²⁵⁶`, so the carry-out feeds
+`reduceWideRaw` rather than being dropped. -/
 @[inline]
 def interleavedMontgomeryReduction (acc0 : UInt64) (acc : UInt256L) : UInt256L :=
   let t := P.montgomeryNegInv * acc0

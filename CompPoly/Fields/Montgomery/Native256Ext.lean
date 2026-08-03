@@ -9,11 +9,13 @@ import CompPoly.Fields.Montgomery.Native256Field
 /-!
 # Extern-Backed 256-bit Montgomery Operations (opt-in)
 
-Native backends for the shared 256-bit stack; the verified pure-Lean operations remain the
-default. Each `@[extern]` declaration carries the verified Lean implementation as its body
-and is provably equal to its verified counterpart, so trust is runtime-only:
-`native/comppoly_mont256.c` must transcribe these bodies. The module interpreter cannot call
-project-local externs, so runtime checks live in `lake exe CompPolyMont256ExtTests`.
+Native backend for the shared 256-bit stack; the verified pure-Lean operations remain the
+default. The single extern primitive is the 64×64 widening-product high word `mulHi`: its
+`@[extern]` declaration carries the verified Lean implementation as its body, so trust is
+runtime-only and `native/comppoly_mont256.c` must transcribe it. Everything above the
+primitive is the verified CIOS chain, proved equal to the default operations. The module
+interpreter cannot call project-local externs, so runtime checks live in
+`lake exe CompPolyMont256ExtTests`.
 -/
 
 namespace Montgomery
@@ -118,146 +120,6 @@ theorem montgomeryMulHi_eq {modulus : ℕ} [P : Mont256Field modulus] (lhs rhs :
 /- Facts flow through `montgomeryMulHi_eq`; keep the unifier out of the CIOS unfolding. -/
 attribute [irreducible] montgomeryMulHi
 
-/-! ## Whole-operation native Montgomery multiplication
-
-Explicit-constant copies of the reduction chain, so the extern signature carries
-`modulus`/`montgomeryNegInv` directly (C cannot see the typeclass). -/
-
-/-- `conditionalSubtract` with an explicit modulus word. -/
-@[inline] def conditionalSubtractWith (m x : UInt256L) : UInt256L :=
-  if x < m then x else x - m
-
-/-- `reduceWideRaw` with an explicit modulus word. -/
-@[inline] def reduceWideRawWith (m lo : UInt256L) (carry : UInt64) : UInt256L :=
-  if carry = 0 then conditionalSubtractWith m lo else lo - m
-
-/-- `interleavedMontgomeryReduction` with explicit modulus and multiplier words. -/
-@[inline] def interleavedMontgomeryReductionWith (m : UInt256L) (ni : UInt64)
-    (acc0 : UInt64) (acc : UInt256L) : UInt256L :=
-  let t := ni * acc0
-  let prod := mulSmall m t
-  let cin := (addc acc0 prod.1 0).2
-  let sc := UInt256L.addCarryOut acc prod.2 cin
-  reduceWideRawWith m sc.1 sc.2
-
-/-- The 4-round CIOS Montgomery product `lhs · rhs · (2²⁵⁶)⁻¹ mod m` with explicit
-modulus `m` and per-limb multiplier `ni`. The body is the verified algorithm
-(`montgomeryMulNative_eq`); compiled code calls the trusted native
-`comppoly_mont256_mul`, one symbol for every `Mont256Field` instance. -/
-@[extern "comppoly_mont256_mul"]
-def montgomeryMulNative (m : @& UInt256L) (ni : UInt64) (lhs : @& UInt256L)
-    (rhs : @& UInt256L) : UInt256L :=
-  let (a0, a) := mulSmall lhs rhs.l0
-  let r0 := interleavedMontgomeryReductionWith m ni a0 a
-  let (b0, b) := mulSmallAndAcc lhs rhs.l1 r0
-  let r1 := interleavedMontgomeryReductionWith m ni b0 b
-  let (c0, c) := mulSmallAndAcc lhs rhs.l2 r1
-  let r2 := interleavedMontgomeryReductionWith m ni c0 c
-  let (d0, d) := mulSmallAndAcc lhs rhs.l3 r2
-  interleavedMontgomeryReductionWith m ni d0 d
-
-/-- At a field's own constants, the explicit-constant reduction step is the verified
-`interleavedMontgomeryReduction`. -/
-theorem interleavedMontgomeryReductionWith_eq {modulus : ℕ} [P : Mont256Field modulus]
-    (acc0 : UInt64) (acc : UInt256L) :
-    interleavedMontgomeryReductionWith P.modulus256 P.montgomeryNegInv acc0 acc
-      = interleavedMontgomeryReduction (modulus := modulus) acc0 acc := by
-  simp only [interleavedMontgomeryReductionWith, interleavedMontgomeryReduction,
-    reduceWideRawWith, reduceWideRaw, conditionalSubtractWith,
-    conditionalSubtract]
-
-/-- At a field's own constants, the explicit-constant native model is the verified
-`montgomeryMul`. -/
-theorem montgomeryMulNative_eq {modulus : ℕ} [P : Mont256Field modulus] (lhs rhs : UInt256L) :
-    montgomeryMulNative P.modulus256 P.montgomeryNegInv lhs rhs
-      = montgomeryMul (modulus := modulus) lhs rhs := by
-  simp only [montgomeryMulNative, montgomeryMul, interleavedMontgomeryReductionWith_eq]
-
-/- As for `montgomeryMulHi`: downstream facts flow through `montgomeryMulNative_eq`. -/
-attribute [irreducible] montgomeryMulNative
-
-/-! ## Native Pornin GCD inverse candidate
-
-Explicit-constant copies of the `Native256Gcd` chain feeding one extern symbol. The
-candidate is runtime-verified at every use site, so this extern adds no correctness
-trust beyond the verifying multiplication: a wrong native candidate only costs the
-fallback. -/
-
-/-- `gcdLinearCombMontyRed` with explicit modulus and multiplier words. -/
-@[inline] def gcdLinearCombMontyRedWith (m : UInt256L) (ni : UInt64) (a b : UInt256L)
-    (f g : Int) : UInt256L :=
-  let absF := UInt64.ofNat f.natAbs
-  let absG := UInt64.ofNat g.natAbs
-  let aSigned := if f < 0 then m - a else a
-  let bSigned := if g < 0 then m - b else b
-  let (plo, phi) := gcdLinearCombUnsigned aSigned bSigned absF absG
-  interleavedMontgomeryReductionWith m ni plo.l0 ⟨plo.l1, plo.l2, plo.l3, phi⟩
-
-/-- At a field's own constants, the explicit-constant fold is the verified
-`gcdLinearCombMontyRed`. -/
-theorem gcdLinearCombMontyRedWith_eq {modulus : ℕ} [P : Mont256Field modulus] (a b : UInt256L)
-    (f g : Int) :
-    gcdLinearCombMontyRedWith P.modulus256 P.montgomeryNegInv a b f g
-      = gcdLinearCombMontyRed (modulus := modulus) a b f g := by
-  simp only [gcdLinearCombMontyRedWith, gcdLinearCombMontyRed,
-    interleavedMontgomeryReductionWith_eq]
-
-/-- `gcdMainLoop` with explicit modulus and multiplier words. -/
-def gcdMainLoopWith (m : UInt256L) (ni : UInt64) (rounds : ℕ) (a u b v : UInt256L) :
-    UInt256L × UInt256L × UInt256L × UInt256L :=
-  match rounds with
-  | 0 => (a, u, b, v)
-  | n + 1 =>
-    let (limb, bits) := gcdNumBits (a.l1 ||| b.l1) (a.l2 ||| b.l2) (a.l3 ||| b.l3)
-    let aTilde := gcdApprox a limb bits
-    let bTilde := gcdApprox b limb bits
-    let (_, _, f0, g0, f1, g1) := gcdInner 31 aTilde bTilde 1 0 0 1
-    let (newA, signA) := gcdLinearCombDiv a b f0 g0 31
-    let f0 := if signA < 0 then -f0 else f0
-    let g0 := if signA < 0 then -g0 else g0
-    let (newB, signB) := gcdLinearCombDiv a b f1 g1 31
-    let f1 := if signB < 0 then -f1 else f1
-    let g1 := if signB < 0 then -g1 else g1
-    let newU := gcdLinearCombMontyRedWith m ni u v f0 g0
-    let newV := gcdLinearCombMontyRedWith m ni u v f1 g1
-    gcdMainLoopWith m ni n newA newU newB newV
-
-/-- At a field's own constants, the explicit-constant loop is the verified
-`gcdMainLoop`. -/
-theorem gcdMainLoopWith_eq {modulus : ℕ} [P : Mont256Field modulus] (rounds : ℕ) :
-    ∀ a u b v : UInt256L,
-      gcdMainLoopWith P.modulus256 P.montgomeryNegInv rounds a u b v
-        = gcdMainLoop (modulus := modulus) rounds a u b v := by
-  induction rounds with
-  | zero => intro a u b v; rfl
-  | succ n ih =>
-    intro a u b v
-    simp only [gcdMainLoopWith, gcdMainLoop, gcdLinearCombMontyRedWith_eq, ih]
-
-/-- Pornin binary-GCD inverse candidate with explicit per-field constants. The body is
-the verified word-level algorithm (`gcdInvCandidateNative_eq`); compiled code calls the
-trusted native `comppoly_mont256_gcd_inv`. Like `gcdInvCandidate`, the result is a
-*candidate*: callers verify it and fall back, so its provenance never affects
-correctness. -/
-@[extern "comppoly_mont256_gcd_inv"]
-def gcdInvCandidateNative (m : @& UInt256L) (ni : UInt64) (initU : @& UInt256L)
-    (finalRounds : @& Nat) (input : @& UInt256L) : UInt256L :=
-  let (a, u, b, v) := gcdMainLoopWith m ni 15 input initU m ⟨0, 0, 0, 0⟩
-  let (_, _, _, _, f1, g1) := gcdInner finalRounds a.l0 b.l0 1 0 0 1
-  gcdLinearCombMontyRedWith m ni u v f1 g1
-
-/-- At a field's own constants, the explicit-constant native model is the verified
-`gcdInvCandidate`. -/
-theorem gcdInvCandidateNative_eq {modulus : ℕ} [P : Mont256Field modulus] (input : UInt256L) :
-    gcdInvCandidateNative P.modulus256 P.montgomeryNegInv P.gcdInitU P.gcdFinalRounds input
-      = gcdInvCandidate (modulus := modulus) input := by
-  unfold gcdInvCandidateNative gcdInvCandidate
-  rw [gcdMainLoopWith_eq]
-  simp only [gcdLinearCombMontyRedWith_eq]
-
-/- As for the multipliers: downstream facts flow through `gcdInvCandidateNative_eq`. -/
-attribute [irreducible] gcdInvCandidateNative
-
 /-! ## Field-level operations
 
 The subtype bound of each result is discharged through the equalities above, so no
@@ -280,71 +142,6 @@ native. -/
 theorem mulWithMulHi_eq_mul {modulus : ℕ} [P : Mont256Field modulus] (x y : FastField modulus) :
     mulWithMulHi x y = mul x y :=
   Subtype.ext (montgomeryMulHi_eq (modulus := modulus) x.val y.val)
-
-/-- Multiplication in Montgomery form where the whole CIOS product is native. -/
-@[inline] def mulNative {modulus : ℕ} [P : Mont256Field modulus] (x y : FastField modulus) :
-    FastField modulus :=
-  ⟨montgomeryMulNative P.modulus256 P.montgomeryNegInv x.val y.val, by
-    rw [montgomeryMulNative_eq (modulus := modulus)]
-    exact (montgomeryMul_spec (modulus := modulus) x.val y.val x.property).1⟩
-
-/-- Squaring via `mulNative`. -/
-@[inline] def squareNative {modulus : ℕ} [P : Mont256Field modulus] (x : FastField modulus) :
-    FastField modulus :=
-  mulNative x x
-
-/-- Repeated native squaring: `squareNNative x n` computes `x^(2^n)`. -/
-def squareNNative {modulus : ℕ} [P : Mont256Field modulus] (x : FastField modulus) :
-    ℕ → FastField modulus
-  | 0 => x
-  | n + 1 => squareNNative (squareNative x) n
-
-/-- `mulNative` agrees with the verified `mul`. -/
-theorem mulNative_eq_mul {modulus : ℕ} [P : Mont256Field modulus] (x y : FastField modulus) :
-    mulNative x y = mul x y :=
-  Subtype.ext (montgomeryMulNative_eq (modulus := modulus) x.val y.val)
-
-/-- `squareNative` agrees with the verified `square`. -/
-theorem squareNative_eq_square {modulus : ℕ} [P : Mont256Field modulus] (x : FastField modulus) :
-    squareNative x = square x :=
-  mulNative_eq_mul x x
-
-/-- `invWithCandidate` with the candidate check done by native multiplication; the
-fallback (taken only for `x = 0` or a candidate miss) stays on the verified path. -/
-@[inline] def invWithCandidateNative {modulus : ℕ} [P : Mont256Field modulus]
-    (x : FastField modulus) (z : UInt256L) : FastField modulus :=
-  if h : z < P.modulus256 ∧
-      montgomeryMulNative P.modulus256 P.montgomeryNegInv z x.val = P.rModModulus then
-    ⟨z, by rw [← P.modulus256_toNat]; exact UInt256L.lt_iff_toNat_lt.mp h.1⟩
-  else invWindow x
-
-/-- Inversion in Montgomery form: the native Pornin binary-GCD candidate, checked by
-one native Montgomery multiplication, with the verified windowed Fermat fallback. -/
-@[inline] def invNative {modulus : ℕ} [P : Mont256Field modulus] (x : FastField modulus) :
-    FastField modulus :=
-  invWithCandidateNative x
-    (gcdInvCandidateNative P.modulus256 P.montgomeryNegInv P.gcdInitU P.gcdFinalRounds x.val)
-
-/-- `invWithCandidateNative` agrees with the verified `invWithCandidate`. -/
-theorem invWithCandidateNative_eq {modulus : ℕ} [P : Mont256Field modulus] (x : FastField modulus)
-    (z : UInt256L) :
-    invWithCandidateNative x z = invWithCandidate x z := by
-  simp only [invWithCandidateNative, invWithCandidate, montgomeryMulNative_eq (modulus := modulus)]
-
-/-- `invNative` agrees with the verified `inv`. -/
-theorem invNative_eq_inv {modulus : ℕ} [P : Mont256Field modulus] (x : FastField modulus) :
-    invNative x = inv x := by
-  simp only [invNative, inv, gcdInvCandidateNative_eq, invWithCandidateNative_eq]
-
-/-- Division through native inversion and native multiplication. -/
-@[inline] def divNative {modulus : ℕ} [P : Mont256Field modulus] (x y : FastField modulus) :
-    FastField modulus :=
-  mulNative x (invNative y)
-
-/-- `divNative` agrees with the verified `div`. -/
-theorem divNative_eq_div {modulus : ℕ} [P : Mont256Field modulus] (x y : FastField modulus) :
-    divNative x y = div x y := by
-  simp only [divNative, div, mulNative_eq_mul, invNative_eq_inv]
 
 end Ext
 end Native256
