@@ -45,6 +45,17 @@ line length, forbidden imports or tactics, trailing whitespace, and the local
 
 Use this directly only when you want to lint a specific subset of files.
 
+### `gen_rabin_certificate.py`
+
+TCB-external generator for kernel-checkable Rabin irreducibility certificates of a
+monic polynomial `f` over a prime field `F_p`. Computes the repeated-squaring steps
+for `X^(p^d) mod f` (the trace condition) and the Euclidean gcd chain for
+`gcd(f, X^p - X)` (the coprimality condition), and emits them as JSON. Nothing it
+produces is trusted: the Lean side re-checks every step in the kernel via `rfl`.
+
+Parameterized by `--p` and `--f` (little-endian monic coefficients); defaults to
+KoalaBear with `f = x^5 + x^2 - 1`. Used to build the degree-5 KoalaBear extension.
+
 ### `build_timing_report.sh`
 
 Helper used by CI to measure and render build timings for clean builds, warm
