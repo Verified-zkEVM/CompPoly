@@ -3,11 +3,12 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dimitris Mitsios
 -/
+module
 
-import CompPoly.Bivariate.Basic
-import CompPoly.Univariate.ToPoly
-import CompPoly.Univariate.NTT.FastMul
-import CompPoly.Univariate.NTTFast.Correctness
+public import CompPoly.Bivariate.Basic
+public import CompPoly.Univariate.ToPoly
+public import CompPoly.Univariate.NTT.FastMul
+public import CompPoly.Univariate.NTTFast.Correctness
 
 /-!
 # Kronecker substitution for bivariate polynomials
@@ -39,6 +40,8 @@ always equal to `*` and adds no assumption about the domain beyond the gap condi
 * `kroneckerUnpack_withFallback` / `kroneckerUnpack_withFallbackFast` — multiplication backed by
   the classic and recursive NTT.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

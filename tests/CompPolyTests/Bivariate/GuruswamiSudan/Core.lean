@@ -3,18 +3,21 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.CoreCorrectness
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
-import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots
-import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Correctness
-import Mathlib.Algebra.Field.ZMod
+public meta import CompPoly.Bivariate.GuruswamiSudan.CoreCorrectness
+public meta import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
+public meta import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots
+public meta import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Correctness
+public meta import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Guruswami-Sudan Core Tests
 
 End-to-end smoke tests for the backend-parametric CompPoly Guruswami-Sudan core.
 -/
+
+public meta section
 
 namespace CompPolyTests
 

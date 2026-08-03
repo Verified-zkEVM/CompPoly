@@ -3,9 +3,10 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Salih Erdem Koçak, Doran Pamukçu
 -/
+module
 
-import CompPoly.Univariate.NTT.FastMul
-import CompPoly.Univariate.NTT.KoalaBear
+public meta import CompPoly.Univariate.NTT.FastMul
+public meta import CompPoly.Univariate.NTT.KoalaBear
 
 /-!
   # Univariate Multiplication Benchmark
@@ -13,6 +14,8 @@ import CompPoly.Univariate.NTT.KoalaBear
   Manual benchmark for comparing NTT-based multiplication against the
   existing raw polynomial multiplication across a range of operand sizes.
 -/
+
+public meta section
 
 namespace CompPoly
 namespace CPolynomial

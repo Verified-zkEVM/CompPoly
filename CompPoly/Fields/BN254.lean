@@ -3,12 +3,15 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import CompPoly.Fields.PrattCertificate
+public import CompPoly.Fields.PrattCertificate
 
 /-!
   # The BN254 scalar prime field
 -/
+
+@[expose] public section
 
 namespace BN254
 

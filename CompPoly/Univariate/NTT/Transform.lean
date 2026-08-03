@@ -3,8 +3,10 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Salih Erdem Koçak, Doran Pamukçu
 -/
-import CompPoly.Univariate.NTT.Domain
-import CompPoly.Data.Nat.Bitwise
+module
+
+public import CompPoly.Univariate.NTT.Domain
+public import CompPoly.Data.Nat.Bitwise
 
 /-!
 # Shared radix-2 NTT transform
@@ -12,6 +14,8 @@ import CompPoly.Data.Nat.Bitwise
 This file provides the root-parametric bit-reversal and butterfly machinery used
 by forward and inverse radix-2 NTTs.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial

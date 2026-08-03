@@ -3,7 +3,9 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Andrew Zitek-Estrada
 -/
-import Mathlib.Init
+module
+
+public import Mathlib.Init
 
 /-!
 # `LawfulBEq` from `DecidableEq`
@@ -15,6 +17,8 @@ call sites that need to satisfy `BEq`/`LawfulBEq` constraints (for example on
 This is intentionally *not* registered as an instance: doing so would conflict
 with other `BEq` paths chosen by typeclass synthesis.
 -/
+
+@[expose] public section
 
 namespace CPoly
 

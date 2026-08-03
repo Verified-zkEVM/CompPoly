@@ -3,9 +3,11 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Natalia Klaus, Frantisek Silvasi, Derek Sorensen, Andrew Zitek-Estrada
 -/
-import CompPoly.Multivariate.MvPolyEquiv.Eval
-import CompPoly.Multivariate.MvPolyEquiv.Instances
-import CompPoly.Univariate.CMvEquiv
+module
+
+public import CompPoly.Multivariate.MvPolyEquiv.Eval
+public import CompPoly.Multivariate.MvPolyEquiv.Instances
+public import CompPoly.Univariate.CMvEquiv
 
 /-!
 # simp/grind lemmas for `CPoly.CMvPolynomial.eval`
@@ -18,6 +20,8 @@ single-variable `CMvPolynomial`s over an integral domain (a Schwartz–Zippel
 style result specialized to one variable), suitable for soundness proofs in
 protocols such as sumcheck.
 -/
+
+@[expose] public section
 namespace CPoly
 
 open CMvPolynomial

@@ -3,13 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
-import CompPoly.Univariate.NTTFast.Correctness.Basic
+module
+
+public import CompPoly.Univariate.NTTFast.Correctness.Basic
 
 /-!
 # DIF NTTFast correctness
 
 Correctness proofs for the decimation-in-frequency stage loop used by `NTTFast`.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial
@@ -20,7 +24,7 @@ open scoped BigOperators
 variable {R : Type*} [Field R]
 
 namespace Plan
-private def difMathValueAt (D : NTT.Domain R) (completed : Nat) (a : Array R)
+def difMathValueAt (D : NTT.Domain R) (completed : Nat) (a : Array R)
     (idx : Nat) : R :=
   let blockSize : Nat := 2 ^ (D.logN - completed)
   let block := idx / blockSize

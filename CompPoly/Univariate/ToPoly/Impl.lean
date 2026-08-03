@@ -3,8 +3,10 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
 -/
-import CompPoly.Univariate.ToPoly.Equiv
-import Mathlib.Algebra.Polynomial.Roots
+module
+
+public import CompPoly.Univariate.ToPoly.Equiv
+public import Mathlib.Algebra.Polynomial.Roots
 
 /-!
 # Proofs of Correctness for CPolynomial Operations, wrt Mathlib Specs
@@ -12,6 +14,8 @@ import Mathlib.Algebra.Polynomial.Roots
 Proofs that operations defined on CPolynomial and CPolynomial.Raw are correct
 wrt the mathlib specs, using the ring equivalence
 -/
+
+@[expose] public section
 
 open Polynomial
 

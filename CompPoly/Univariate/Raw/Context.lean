@@ -3,11 +3,13 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
-import CompPoly.Univariate.DivisionCorrectness
-import CompPoly.Univariate.NTT.FastMul
-import CompPoly.Univariate.NTT.FastMulLow
-import CompPoly.Univariate.NTTFast.Correctness.Pipeline
-import CompPoly.Univariate.NTTFast.FastMulLow
+module
+
+public import CompPoly.Univariate.DivisionCorrectness
+public import CompPoly.Univariate.NTT.FastMul
+public import CompPoly.Univariate.NTT.FastMulLow
+public import CompPoly.Univariate.NTTFast.Correctness.Pipeline
+public import CompPoly.Univariate.NTTFast.FastMulLow
 
 /-!
 # Raw Univariate Algorithm Contexts
@@ -15,6 +17,8 @@ import CompPoly.Univariate.NTTFast.FastMulLow
 Array-level execution dictionaries for reusable raw univariate polynomial
 kernels.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

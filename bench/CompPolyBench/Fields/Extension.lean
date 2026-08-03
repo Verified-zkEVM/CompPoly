@@ -3,10 +3,11 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
+module
 
-import CompPolyBench.Common
-import CompPoly.Fields.BabyBear.Ext4
-import CompPoly.Fields.KoalaBear.Ext4
+public import CompPolyBench.Common
+public import CompPoly.Fields.BabyBear.Ext4
+public import CompPoly.Fields.KoalaBear.Ext4
 
 /-!
 # Degree-4 extension-field benchmarks
@@ -22,6 +23,8 @@ Comparing the two reported averages is the measurement behind the "replace Ferma
 norm-based inverse" note in `docs/wiki/field-extensions.md`: inversion is currently
 `x ^ (q^d - 2)`, so it should cost on the order of `d · log q` multiplications.
 -/
+
+public section
 
 open CompPoly CompPoly.Extension
 

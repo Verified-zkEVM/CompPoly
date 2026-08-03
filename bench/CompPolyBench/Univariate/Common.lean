@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPolyBench.Common
-import CompPoly.Univariate.NTT.KoalaBear
-import CompPoly.Univariate.NTT.BabyBear
+public import CompPolyBench.Common
+public import CompPoly.Univariate.NTT.KoalaBear
+public import CompPoly.Univariate.NTT.BabyBear
 
 /-!
 # Shared Univariate Benchmark Helpers
 -/
+
+public section
 
 open CompPoly
 

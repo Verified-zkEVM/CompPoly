@@ -3,12 +3,13 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import CompPoly.Data.Nat.Bitwise
-import CompPoly.Data.Polynomial.Frobenius
-import CompPoly.Data.Polynomial.MonomialBasis
-import Mathlib.LinearAlgebra.StdBasis
-import Mathlib.Algebra.Polynomial.Degree.Defs
+public import CompPoly.Data.Nat.Bitwise
+public import CompPoly.Data.Polynomial.Frobenius
+public import CompPoly.Data.Polynomial.MonomialBasis
+public import Mathlib.LinearAlgebra.StdBasis
+public import Mathlib.Algebra.Polynomial.Degree.Defs
 
 /-!
 # Novel Polynomial Basis
@@ -36,6 +37,8 @@ algebra over its prime-characteristic subfield `𝔽q`, and an `𝔽q`-basis `β
 * [Von zur Gathen, J., and Gerhard, J., *Arithmetic and factorization of polynomial
     over F2 (extended abstract)*][GGJ96]
 -/
+
+@[expose] public section
 
 set_option linter.style.longFile 1800
 

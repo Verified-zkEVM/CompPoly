@@ -3,9 +3,11 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Juan Conejero
 -/
-import Mathlib.InformationTheory.Hamming
-import CompPoly.Univariate.ReedSolomon.GaoDecoder
-import CompPoly.ToMathlib.Polynomial.Roots
+module
+
+public import Mathlib.InformationTheory.Hamming
+public import CompPoly.Univariate.ReedSolomon.GaoDecoder
+public import CompPoly.ToMathlib.Polynomial.Roots
 
 /-!
 # Gao Decoder Correctness
@@ -26,6 +28,8 @@ radius `⌊(n − k) / 2⌋` (soundness, failure, completeness, and uniqueness).
 
 * [Gao, S., *A New Algorithm for Decoding Reed-Solomon Codes*][Gao02]
 -/
+
+@[expose] public section
 
 open Polynomial
 open CompPoly.CPolynomial hiding X C add_comm zero_add mul_comm mul_zero mul_one one_mul mul_assoc

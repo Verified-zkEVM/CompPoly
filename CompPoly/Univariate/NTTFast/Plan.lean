@@ -3,8 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
-import CompPoly.Univariate.Basic
-import CompPoly.Univariate.NTT.FastMul
+module
+
+public import CompPoly.Univariate.Basic
+public import CompPoly.Univariate.NTT.FastMul
 
 /-!
 # Planned NTTFast multiplication
@@ -12,6 +14,8 @@ import CompPoly.Univariate.NTT.FastMul
 This file adds a reusable `NTTFast` plan that caches domain-derived data for
 repeated NTT-based multiplication.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial

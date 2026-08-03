@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.MatrixRows
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.MatrixRows
 
 /-!
 # Mulders-Storjohann Correctness Shifted Leading Conflict Helpers
 
 Bounds and validity lemmas for shifted-leading-position conflict detection.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

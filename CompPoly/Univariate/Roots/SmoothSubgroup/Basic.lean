@@ -3,10 +3,11 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Univariate.BatchEval.Context
-import CompPoly.Univariate.Roots.Splitter
-import Mathlib.GroupTheory.OrderOfElement
+public import CompPoly.Univariate.BatchEval.Context
+public import CompPoly.Univariate.Roots.Splitter
+public import Mathlib.GroupTheory.OrderOfElement
 
 /-!
 # Smooth Multiplicative-Subgroup Linear-Factor Splitting
@@ -24,6 +25,8 @@ the shared splitter interface.
 * [Menezes, A. J., van Oorschot, P. C., and Vanstone, S. A., *Subgroup
     Refinement Algorithms for Root Finding in GF(q)*][MOV92]
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

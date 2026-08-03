@@ -3,14 +3,17 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen
 -/
+module
 
-import CompPoly.Fields.Binary.Tower.Support.DefiningPoly
+public import CompPoly.Fields.Binary.Tower.Support.DefiningPoly
 
 /-!
 # Binary Tower Irreducibility and Trace
 
 Irreducibility and trace-map criteria for binary tower defining polynomials.
 -/
+
+@[expose] public section
 
 open Polynomial
 open AdjoinRoot

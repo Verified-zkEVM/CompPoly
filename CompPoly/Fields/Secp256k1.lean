@@ -3,8 +3,9 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import CompPoly.Fields.PrattCertificate
+public import CompPoly.Fields.PrattCertificate
 
 /-!
   # The Secp256k1 base and scalar prime fields
@@ -20,6 +21,8 @@ import CompPoly.Fields.PrattCertificate
   `p` is the base prime, and `n` is the scalar prime in [Section 2.4.1](http://www.secg.org/sec2-v2.pdf).
 
 -/
+
+@[expose] public section
 
 namespace Secp256k1
 

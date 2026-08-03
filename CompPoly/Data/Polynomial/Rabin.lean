@@ -3,9 +3,11 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import CompPoly.Data.Polynomial.Frobenius
-import CompPoly.ToMathlib.Polynomial.Irreducible
-import Mathlib.RingTheory.PrincipalIdealDomain
+module
+
+public import CompPoly.Data.Polynomial.Frobenius
+public import CompPoly.ToMathlib.Polynomial.Irreducible
+public import Mathlib.RingTheory.PrincipalIdealDomain
 
 /-!
 # Rabin's irreducibility test
@@ -37,6 +39,8 @@ specialization, to arbitrary degree over any finite field.
 * [Rabin80] Michael O. Rabin, *Probabilistic Algorithms in Finite Fields*,
   SIAM Journal on Computing 9(2), 1980.
 -/
+
+@[expose] public section
 
 namespace Nat
 

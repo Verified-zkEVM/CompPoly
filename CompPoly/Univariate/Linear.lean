@@ -3,13 +3,17 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Desmond Coles, Derek Sorensen
 -/
-import CompPoly.Univariate.Basic
+module
+
+public import CompPoly.Univariate.Basic
 
 /-!
 # Linear Algebra API for Computable Univariate Polynomials
 
 This file contains linear maps and instance-stable bounded-degree predicates for `CPolynomial`.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

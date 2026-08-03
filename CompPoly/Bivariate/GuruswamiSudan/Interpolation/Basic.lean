@@ -3,9 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.FactorMonic
-import CompPoly.Bivariate.GuruswamiSudan.Context
+public import CompPoly.Bivariate.FactorMonic
+public import CompPoly.Bivariate.GuruswamiSudan.Context
 
 /-!
 # Guruswami-Sudan Interpolation Basics
@@ -13,6 +14,8 @@ import CompPoly.Bivariate.GuruswamiSudan.Context
 Dense interpolation constraints and normalized witness helpers shared by
 concrete interpolation backends.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

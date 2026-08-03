@@ -3,8 +3,9 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Univariate.Basic
+public import CompPoly.Univariate.Basic
 
 /-!
 # Root Extraction Helpers
@@ -12,6 +13,8 @@ import CompPoly.Univariate.Basic
 Candidate extraction, validation, and deduplication helpers for univariate root
 finding.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

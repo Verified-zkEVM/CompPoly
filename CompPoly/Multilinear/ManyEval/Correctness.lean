@@ -3,13 +3,17 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
-import CompPoly.Multilinear.ManyEval.Basic
+module
+
+public import CompPoly.Multilinear.ManyEval.Basic
 
 /-!
 # Multilinear Many-Polynomial Evaluation Correctness
 
 Correctness theorem statements for many-polynomial multilinear evaluation.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CMlPolynomialEval

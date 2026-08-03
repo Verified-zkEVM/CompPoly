@@ -3,15 +3,18 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Polynomial
-import Mathlib.Algebra.Field.ZMod
+public meta import CompPoly.Bivariate.GuruswamiSudan.Polynomial
+public meta import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Guruswami-Sudan Hasse Tests
 
 Regression coverage for executable Hasse derivative helpers.
 -/
+
+public meta section
 
 namespace CompPolyTests
 

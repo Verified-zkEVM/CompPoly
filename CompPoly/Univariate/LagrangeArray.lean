@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Univariate.Lagrange
+public import CompPoly.Univariate.Lagrange
 
 /-!
 # Array Wrappers for Computable Lagrange Interpolation
 
 Finite-index adapters for `CPolynomial.CLagrange.interpolate`.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

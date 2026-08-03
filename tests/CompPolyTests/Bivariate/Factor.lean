@@ -3,7 +3,9 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dimitris Mitsios
 -/
-import CompPoly.Bivariate.Factor
+module
+
+public import CompPoly.Bivariate.Factor
 
 /-!
   # Bivariate Factorisation Tests
@@ -12,6 +14,8 @@ import CompPoly.Bivariate.Factor
   over `ℚ`: the synthetic-division specification, the remainder/evaluation
   identity, exactness, and the degenerate `0` / constant cases.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CBivariate

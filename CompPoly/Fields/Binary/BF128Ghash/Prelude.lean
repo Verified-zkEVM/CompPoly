@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao, Dimitris Mitsios
 -/
+module
 
-import CompPoly.Fields.Binary.Common
+public import CompPoly.Fields.Binary.Common
 
 /-! # BinaryField128Ghash Prelude
 
@@ -26,6 +27,8 @@ from AES-GCM: P(X) = X^128 + X^7 + X^2 + X + 1.
 For BitVec operations (`clMul`, `clSq`, `toPoly`) and shared lemmas, see
 `ArkLib.Data.FieldTheory.BinaryField.Common`.
 -/
+
+@[expose] public section
 
 namespace BF128Ghash
 set_option maxRecDepth 550 -- for ghashPoly_eq_P_val

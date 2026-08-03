@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Lemmas
+public import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Lemmas
 
 /-!
 # Roth-Ruckenstein Root Correctness
 
 Correctness statements for the Roth-Ruckenstein root backend.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

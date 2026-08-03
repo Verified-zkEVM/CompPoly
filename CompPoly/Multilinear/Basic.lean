@@ -3,10 +3,12 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen
 -/
-import Mathlib.RingTheory.MvPolynomial.Basic
-import CompPoly.Data.List.Lemmas
-import CompPoly.Data.Vector.Basic
-import CompPoly.Data.Nat.Bitwise
+module
+
+public import Mathlib.RingTheory.MvPolynomial.Basic
+public import CompPoly.Data.List.Lemmas
+public import CompPoly.Data.Vector.Basic
+public import CompPoly.Data.Nat.Bitwise
 
 /-!
   # Multilinear Polynomials
@@ -25,6 +27,8 @@ import CompPoly.Data.Nat.Bitwise
   - A naive `O(4^n)` zeta spec `monoToLagrangeSpec` mirroring `lagrangeToMonoSpec`,
     plus equivalence `monoToLagrange = monoToLagrangeSpec`
 -/
+
+@[expose] public section
 
 namespace CompPoly
 
@@ -157,7 +161,9 @@ def monomialBasis (w : Vector R n) : Vector R (2 ^ n) :=
   Vector.ofFn (fun i => ∏ j : Fin n, if (BitVec.ofFin i).getLsb j then w[j] else 1)
 
 @[simp]
-theorem monomialBasis_zero {w : Vector R 0} : monomialBasis w = #v[1] := by rfl
+theorem monomialBasis_zero {w : Vector R 0} : monomialBasis w = #v[1] := by
+  ext i hi
+  simp [monomialBasis]
 
 -- #eval monomialBasis #v[(1 : ℤ), 2, 3] (n := 3)
 -- #eval Nat.digits 2 8
@@ -206,14 +212,14 @@ def map {R S : Type*} [Semiring R] [Semiring S] (f : R →+* S)
 
 /-- One Horner reduction step, eliminating the next little-endian variable. -/
 @[inline, specialize]
-private def evalHornerStep {n : ℕ}
+def evalHornerStep {n : ℕ}
     (coeffs : Vector R (2 ^ (n + 1))) (x0 : R) : Vector R (2 ^ n) :=
   Vector.ofFn fun j : Fin (2 ^ n) ↦
     coeffs.get ⟨2 * j.val, by omega⟩ + x0 * coeffs.get ⟨2 * j.val + 1, by omega⟩
 
 /-- Evaluate dense multilinear coefficients by eliminating one variable at a time. -/
 @[inline, specialize]
-private def evalHornerCoeffs :
+def evalHornerCoeffs :
     {n : ℕ} → Vector R (2 ^ n) → Vector R n → R
   | 0, coeffs, _ => coeffs.get ⟨0, by norm_num⟩
   | n + 1, coeffs, x =>
@@ -406,7 +412,9 @@ def lagrangeBasis (w : Vector R n) : Vector R (2 ^ n) :=
   Vector.ofFn (fun i => ∏ j : Fin n, if (BitVec.ofFin i).getLsb j then w[j] else 1 - w[j])
 
 @[simp]
-theorem lagrangeBasis_zero {w : Vector R 0} : lagrangeBasis w = #v[1] := by rfl
+theorem lagrangeBasis_zero {w : Vector R 0} : lagrangeBasis w = #v[1] := by
+  ext i hi
+  simp [lagrangeBasis]
 
 -- #eval lagrangeBasis #v[(1 : ℤ), 2, 3] (n := 3)
 -- #eval Nat.digits 2 8
@@ -457,7 +465,7 @@ def map {R S : Type*} [Semiring R] [Semiring S]
 
 /-- One multilinear-extension interpolation step, eliminating the next little-endian variable. -/
 @[inline, specialize]
-private def evalMleStep {n : ℕ}
+def evalMleStep {n : ℕ}
     (values : Vector R (2 ^ (n + 1))) (x0 : R) : Vector R (2 ^ n) :=
   Vector.ofFn fun j : Fin (2 ^ n) ↦
     (1 - x0) * values.get ⟨2 * j.val, by omega⟩ +
@@ -481,7 +489,7 @@ theorem evalMleLayer_get [CommRing R] {n : ℕ}
 
 /-- Evaluate hypercube values by recursively interpolating the multilinear extension. -/
 @[inline, specialize]
-private def evalMleValues :
+def evalMleValues :
     {n : ℕ} → Vector R (2 ^ n) → Vector R n → R
   | 0, values, _ => values.get ⟨0, by norm_num⟩
   | n + 1, values, x =>

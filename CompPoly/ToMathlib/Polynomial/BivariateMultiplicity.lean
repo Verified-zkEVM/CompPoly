@@ -3,9 +3,10 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import CompPoly.ToMathlib.Polynomial.BivariateDegree
-import Mathlib.RingTheory.Polynomial.Resultant.Basic
+public import CompPoly.ToMathlib.Polynomial.BivariateDegree
+public import Mathlib.RingTheory.Polynomial.Resultant.Basic
 
 /-!
 # Mathlib-Facing Bivariate Multiplicity Helpers
@@ -13,6 +14,8 @@ import Mathlib.RingTheory.Polynomial.Resultant.Basic
 This file collects multiplicity- and discriminant-oriented helpers for Mathlib's
 bivariate polynomial surface `R[X][Y]`.
 -/
+
+@[expose] public section
 
 open Polynomial
 open scoped Polynomial.Bivariate

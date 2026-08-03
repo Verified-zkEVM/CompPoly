@@ -3,16 +3,19 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import CompPoly.Fields.Binary.AdditiveNTT.Algorithm
-import CompPoly.Fields.Binary.Tower.Concrete.Basis
-import Mathlib.Data.BitVec
+public import CompPoly.Fields.Binary.AdditiveNTT.Algorithm
+public import CompPoly.Fields.Binary.Tower.Concrete.Basis
+public import Mathlib.Data.BitVec
 
 /-!
 # Additive NTT Implementation
 
 Concrete implementation of the Additive NTT algorithm.
 -/
+
+@[expose] public section
 
 namespace AdditiveNTT
 open ConcreteBinaryTower

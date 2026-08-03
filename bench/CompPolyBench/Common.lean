@@ -3,16 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import Init.Data.Random
-import Lean.Data.Json.Parser
-import Std.Time
-import CompPoly.Fields.KoalaBear
-import CompPoly.Fields.BabyBear
-import CompPoly.Fields.Binary.AdditiveNTT.Impl
-import CompPoly.Fields.Goldilocks
-import CompPoly.Univariate.BatchEval
-import CompPoly.Univariate.Basic
+public import Init.Data.Random
+public import Lean.Data.Json.Parser
+public import Std.Time
+public import CompPoly.Fields.KoalaBear
+public import CompPoly.Fields.BabyBear
+public import CompPoly.Fields.Binary.AdditiveNTT.Impl
+public import CompPoly.Fields.Goldilocks
+public import CompPoly.Univariate.BatchEval
+public import CompPoly.Univariate.Basic
 
 /-!
 # Shared Benchmark Helpers
@@ -20,6 +21,8 @@ import CompPoly.Univariate.Basic
 Common data structures, input generators, checksum utilities, and report rendering
 for the compiled benchmark executable.
 -/
+
+public section
 
 open CompPoly
 open ConcreteBinaryTower

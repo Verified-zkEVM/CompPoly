@@ -3,12 +3,13 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.Deriv
-import CompPoly.Bivariate.GuruswamiSudan.Polynomial
-import CompPoly.Data.List.Lemmas
-import CompPoly.LinearAlgebra.Dense
-import Mathlib.Tactic.Ring
+public import CompPoly.Bivariate.Deriv
+public import CompPoly.Bivariate.GuruswamiSudan.Polynomial
+public import CompPoly.Data.List.Lemmas
+public import CompPoly.LinearAlgebra.Dense
+public import Mathlib.Tactic.Ring
 
 /-!
 # Guruswami-Sudan Polynomial Correctness Lemmas
@@ -16,6 +17,8 @@ import Mathlib.Tactic.Ring
 Correctness lemmas for dense bivariate coefficient assembly, weighted-degree
 enumeration, and executable Hasse derivatives.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

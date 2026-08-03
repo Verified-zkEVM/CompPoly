@@ -3,9 +3,11 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import CompPoly.Fields.Extension
-import CompPoly.Fields.Hachi
-import Mathlib.Tactic.ReduceModChar
+module
+
+public import CompPoly.Fields.Extension
+public import CompPoly.Fields.Hachi
+public import Mathlib.Tactic.ReduceModChar
 
 /-!
 # The degree-4 extension of Hachi
@@ -22,6 +24,8 @@ this is discharged by `Polynomial.irreducible_X_pow_four_sub_C_of_card` from
 * `Hachi.ext4Params`: the `BinomialParams` for `X^4 - 2`.
 * `Hachi.Ext4`: the extension field itself.
 -/
+
+@[expose] public section
 
 namespace Hachi
 

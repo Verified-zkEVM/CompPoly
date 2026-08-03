@@ -3,11 +3,12 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin, Georgios Raikos
 -/
+module
 
-import Mathlib.Data.Nat.ModEq
-import Mathlib.Data.ZMod.Basic
-import Mathlib.Algebra.Field.ZMod
-import Mathlib.Tactic.Ring
+public import Mathlib.Data.Nat.ModEq
+public import Mathlib.Data.ZMod.Basic
+public import Mathlib.Algebra.Field.ZMod
+public import Mathlib.Tactic.Ring
 
 /-!
 # Montgomery Reduction
@@ -15,6 +16,8 @@ import Mathlib.Tactic.Ring
 Radix-generic specification and correctness lemmas for single-word Montgomery reduction.
 Word-specific implementations refine these results in sibling modules.
 -/
+
+@[expose] public section
 
 namespace Montgomery
 

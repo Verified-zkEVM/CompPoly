@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Conflict
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Conflict
 
 /-!
 # Mulders-Storjohann Correctness Shifted Leading Term Helpers
 
 Shifted leading-position data and cancellation degree bounds.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

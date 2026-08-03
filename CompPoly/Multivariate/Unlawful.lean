@@ -3,10 +3,12 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdusa
 -/
-import CompPoly.Multivariate.CMvMonomial
-import CompPoly.Multivariate.Wheels
-import CompPoly.Data.ExtTreeMap.ExtTreeMap
-import Mathlib.Algebra.Lie.OfAssociative
+module
+
+public import CompPoly.Multivariate.CMvMonomial
+public import CompPoly.Multivariate.Wheels
+public import CompPoly.Data.ExtTreeMap.ExtTreeMap
+public import Mathlib.Algebra.Lie.OfAssociative
 
 /-!
 # Unlawful multivariate polynomials
@@ -19,6 +21,8 @@ the absence of zero coefficients.
 
 * `CPoly.Unlawful n R`: A map from `CMvMonomial n` to `R`, implemented using `Std.ExtTreeMap`.
 -/
+
+@[expose] public section
 set_option allowUnsafeReducibility true in
 attribute [local reducible] instDecidableEqOfLawfulBEq
 attribute [local instance 5] instDecidableEqOfLawfulBEq

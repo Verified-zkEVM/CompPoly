@@ -3,9 +3,11 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
-import CompPoly.Univariate.NTT.Evaluation
-import CompPoly.Univariate.NTTFast.Correctness.Basic
-import CompPoly.Univariate.NTTFast.Correctness.Pipeline
+module
+
+public import CompPoly.Univariate.NTT.Evaluation
+public import CompPoly.Univariate.NTTFast.Correctness.Basic
+public import CompPoly.Univariate.NTTFast.Correctness.Pipeline
 
 /-!
 # NTTFast and Evaluation
@@ -13,6 +15,8 @@ import CompPoly.Univariate.NTTFast.Correctness.Pipeline
 Bridge theorem declarations deriving NTTFast evaluation facts from the shared NTT
 specification layer.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial

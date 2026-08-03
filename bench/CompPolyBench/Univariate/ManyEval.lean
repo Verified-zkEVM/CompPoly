@@ -3,13 +3,16 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPolyBench.Univariate.Common
-import CompPoly.Univariate.ManyEval
+public import CompPolyBench.Univariate.Common
+public import CompPoly.Univariate.ManyEval
 
 /-!
 # Benchmarks for `CompPoly.Univariate.ManyEval`
 -/
+
+public section
 
 open CompPoly
 

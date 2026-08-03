@@ -3,13 +3,17 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import CompPoly.Fields.Binary.BF128Ghash.Prelude
+module
+
+public meta import CompPoly.Fields.Binary.BF128Ghash.Prelude
 
 /-!
   # BF128 GHASH Prelude Tests
 
   Small regression checks for the public certificate checkers.
 -/
+
+public meta section
 
 open BF128Ghash
 

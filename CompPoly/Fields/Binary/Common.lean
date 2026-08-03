@@ -3,15 +3,16 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao, Derek Sorensen, Dimitris Mitsios
 -/
+module
 
-import Mathlib.FieldTheory.Finite.Basic
-import Mathlib.RingTheory.Polynomial.Basic
-import Mathlib.RingTheory.AdjoinRoot
-import Mathlib.Algebra.Polynomial.FieldDivision
-import CompPoly.Data.Polynomial.Frobenius
-import Mathlib.Algebra.EuclideanDomain.Basic
-import CompPoly.Data.RingTheory.CanonicalEuclideanDomain
-import Mathlib.Tactic.DepRewrite
+public import Mathlib.FieldTheory.Finite.Basic
+public import Mathlib.RingTheory.Polynomial.Basic
+public import Mathlib.RingTheory.AdjoinRoot
+public import Mathlib.Algebra.Polynomial.FieldDivision
+public import CompPoly.Data.Polynomial.Frobenius
+public import Mathlib.Algebra.EuclideanDomain.Basic
+public import CompPoly.Data.RingTheory.CanonicalEuclideanDomain
+public import Mathlib.Tactic.DepRewrite
 
 /-! # Common Utilities for Binary Fields
 
@@ -33,6 +34,8 @@ direct GF(2^128) implementation (`BF128Ghash/`).
 - `toPoly_xor`: `toPoly (a ^^^ b) = toPoly a + toPoly b`
 - `toPoly_clMul`: `toPoly (clMul a b) = toPoly a * toPoly b`
 -/
+
+@[expose] public section
 
 /-! ## Section 1: ZMod 2 Polynomial Lemmas -/
 

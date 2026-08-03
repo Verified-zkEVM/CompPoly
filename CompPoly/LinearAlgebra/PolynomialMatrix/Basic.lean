@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Univariate.Basic
+public import CompPoly.Univariate.Basic
 
 /-!
 # Polynomial Rows and Matrices
 
 Minimal row-oriented polynomial-matrix infrastructure for shifted row reduction.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

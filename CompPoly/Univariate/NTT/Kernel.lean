@@ -3,8 +3,10 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Salih Erdem Koçak, Doran Pamukçu, Valerii Huhnin
 -/
-import CompPoly.Univariate.NTT.Domain
-import Mathlib.Algebra.Field.GeomSum
+module
+
+public import CompPoly.Univariate.NTT.Domain
+public import Mathlib.Algebra.Field.GeomSum
 
 /-!
 # NTT Kernel Identities
@@ -12,6 +14,8 @@ import Mathlib.Algebra.Field.GeomSum
 Shared root-of-unity orthogonality lemmas used by NTT evaluation,
 interpolation, and multiplication proofs.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial

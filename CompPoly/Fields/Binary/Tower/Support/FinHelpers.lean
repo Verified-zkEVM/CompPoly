@@ -3,14 +3,17 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen
 -/
+module
 
-import CompPoly.Fields.Binary.Tower.Support.Preliminaries
+public import CompPoly.Fields.Binary.Tower.Support.Preliminaries
 
 /-!
 # Binary Tower Fin Helpers
 
 Finite-index helper lemmas for bit manipulations used in binary tower proofs.
 -/
+
+@[expose] public section
 
 open Polynomial
 open AdjoinRoot

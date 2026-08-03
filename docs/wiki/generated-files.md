@@ -6,7 +6,7 @@ This page records which paths are source of truth and which are derived outputs.
 
 | Path | Status | How it is maintained |
 |---|---|---|
-| `CompPoly.lean` | Generated and committed | Regenerate with `./scripts/update-lib.sh` after adding, renaming, or deleting `CompPoly/**/*.lean` files. |
+| `CompPoly.lean` | Generated and committed | Regenerate with `./scripts/update-lib.sh` after adding, renaming, or deleting `CompPoly/**/*.lean` files. Emitted in module form: `module`, blank line, one `public import` per file. |
 | `bench/report-*.md`, `bench/results-*.jsonl` | Generated, not source | Produced by `lake exe CompPolyBench`; keep reports as local or CI artifacts. |
 | `CLAUDE.md` | Compatibility symlink | Must remain a symlink to `AGENTS.md`; do not replace it with a separate copy. |
 | `.lake/` | Derived, not source | Local dependency cache and build output produced by Lake. Do not edit files here by hand. |

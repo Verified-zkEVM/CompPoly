@@ -3,8 +3,9 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dimitris Mitsios
 -/
+module
 
-import CompPolyTests.Bivariate.KroneckerCommon
+public meta import CompPolyTests.Bivariate.KroneckerCommon
 
 /-!
   # Bivariate Multiplication Benchmark
@@ -26,6 +27,8 @@ import CompPolyTests.Bivariate.KroneckerCommon
   Not part of the aggregate `CompPolyTests` build; run manually, e.g.
   `lake build CompPolyTests.Bivariate.KroneckerBenchmark`.
 -/
+
+public meta section
 
 namespace CompPoly
 namespace CBivariate

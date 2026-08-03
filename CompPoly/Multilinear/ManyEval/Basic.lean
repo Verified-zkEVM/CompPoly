@@ -3,7 +3,9 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
-import CompPoly.Multilinear.Basic
+module
+
+public import CompPoly.Multilinear.Basic
 
 /-!
 # Many Multilinear Evaluations
@@ -11,6 +13,8 @@ import CompPoly.Multilinear.Basic
 Executable evaluators for many dense hypercube-form multilinear polynomials at
 one shared point.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CMlPolynomialEval

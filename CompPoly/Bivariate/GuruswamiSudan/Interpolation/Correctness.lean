@@ -3,17 +3,20 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.FactorMonic
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Basic
-import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
-import Mathlib.Algebra.Polynomial.Taylor
+public import CompPoly.Bivariate.FactorMonic
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Basic
+public import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
+public import Mathlib.Algebra.Polynomial.Taylor
 
 /-!
 # Shared Guruswami-Sudan Interpolation Correctness
 
 Backend-neutral correctness facts for executable interpolation helpers.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

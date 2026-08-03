@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPolyBench.Univariate.Common
-import CompPoly.Univariate.NTT.FastMulLow
-import CompPoly.Univariate.NTTFast.FastMulLow
+public import CompPolyBench.Univariate.Common
+public import CompPoly.Univariate.NTT.FastMulLow
+public import CompPoly.Univariate.NTTFast.FastMulLow
 
 /-!
 # Benchmarks for `CompPoly.Univariate.NTT.FastMulLow`
 -/
+
+public section
 
 open CompPoly
 

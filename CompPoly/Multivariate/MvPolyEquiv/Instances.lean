@@ -3,13 +3,17 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa, Dimitris Mitsios
 -/
-import CompPoly.Multivariate.MvPolyEquiv.Core
+module
+
+public import CompPoly.Multivariate.MvPolyEquiv.Core
 
 /-!
 # `CMvPolynomial`/`MvPolynomial` Instances
 
 Compatibility lemmas used to transport algebraic structure across the conversion.
 -/
+
+@[expose] public section
 
 open Std
 
@@ -233,7 +237,10 @@ lemma map_mul (a b : CMvPolynomial n R) :
     fromCMvPolynomial (a * b) = fromCMvPolynomial a * fromCMvPolynomial b := by
   dsimp only [HMul.hMul, Mul.mul, Lawful.mul, Unlawful.mul]
   simp only [CMvPolynomial.fromUnlawful_fold_eq_fold_fromUnlawful]
-  unfold AddMonoidAlgebra.mul'
+  -- `AddMonoidAlgebra.mul'` is `@[no_expose]`, so go through its characterising lemma
+  -- `AddMonoidAlgebra.mul_def` instead of unfolding it.
+  rw [show AddMonoidAlgebra.mul' (fromCMvPolynomial a) (fromCMvPolynomial b) =
+      fromCMvPolynomial a * fromCMvPolynomial b from rfl, AddMonoidAlgebra.mul_def]
   rw [foldl_eq_sum]; simp_rw [foldl_eq_sum]
   let F₀ (p q) : CMvMonomial n → R → Lawful n R :=
     fun p_1 q_1 ↦ Lawful.fromUnlawful {(p + p_1 , q * q_1)}

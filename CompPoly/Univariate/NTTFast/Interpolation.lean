@@ -3,8 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
-import CompPoly.Univariate.NTT.Interpolation
-import CompPoly.Univariate.NTTFast.Correctness.Pipeline
+module
+
+public import CompPoly.Univariate.NTT.Interpolation
+public import CompPoly.Univariate.NTTFast.Correctness.Pipeline
 
 /-!
 # NTTFast and Interpolation
@@ -12,6 +14,8 @@ import CompPoly.Univariate.NTTFast.Correctness.Pipeline
 Bridge theorem declarations deriving NTTFast interpolation facts from the shared
 NTT specification layer.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial

@@ -3,13 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
-import CompPoly.Univariate.NTTFast.Correctness.Radix4DIF
+module
+
+public import CompPoly.Univariate.NTTFast.Correctness.Radix4DIF
 
 /-!
 # Paired forward NTTFast correctness
 
 Correctness proof for running the paired radix-4 DIF stage loop as two independent transforms.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial

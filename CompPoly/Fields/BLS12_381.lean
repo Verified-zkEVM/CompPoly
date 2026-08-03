@@ -3,8 +3,9 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import CompPoly.Fields.PrattCertificate
+public import CompPoly.Fields.PrattCertificate
 /-!
   # The BLS12-381 scalar prime field
 
@@ -19,6 +20,8 @@ import CompPoly.Fields.PrattCertificate
   See also (https://github.com/ProvableHQ/snarkOS/tree/c9e5f823b8493f8c3a6c43e6f4dfd16173b99957/curves).
 
 -/
+
+@[expose] public section
 
 namespace BLS12_381
 

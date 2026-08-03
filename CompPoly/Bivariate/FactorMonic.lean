@@ -3,8 +3,10 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dimitris Mitsios
 -/
-import CompPoly.Bivariate.Factor
-import CompPoly.Univariate.DivisionCorrectness
+module
+
+public import CompPoly.Bivariate.Factor
+public import CompPoly.Univariate.DivisionCorrectness
 
 /-!
 # Bridge: synthetic linear division equals general monic division
@@ -25,6 +27,8 @@ The proof works in the outer polynomial ring `(CPolynomial R)[Y]` (the image of
 (`divByLinearY_euclid_toPoly`), and concludes via
 `Polynomial.div_modByMonic_unique`.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

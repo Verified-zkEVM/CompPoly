@@ -3,8 +3,9 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Univariate.Context
+public import CompPoly.Univariate.Context
 
 /-!
 # Modular Operations on Univariate Polynomials
@@ -12,6 +13,8 @@ import CompPoly.Univariate.Context
 Reusable executable modular arithmetic for canonical `CPolynomial`s over public
 `CPolynomial.MulContext` and `CPolynomial.ModContext` backends.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

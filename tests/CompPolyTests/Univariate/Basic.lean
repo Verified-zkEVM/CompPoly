@@ -3,13 +3,17 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import CompPoly.Univariate.Basic
+module
+
+public import CompPoly.Univariate.Basic
 
 /-!
   # Univariate Basic Tests
 
   First-pass sanity checks for key API behavior in `CompPoly.Univariate.Basic`.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial

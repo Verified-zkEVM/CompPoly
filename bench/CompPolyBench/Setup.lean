@@ -3,21 +3,24 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPolyBench.Bivariate.Basic
-import CompPolyBench.Bivariate.Factor
-import CompPolyBench.Bivariate.GuruswamiSudan
-import CompPolyBench.Fields.Binary.AdditiveNTT.Impl
-import CompPolyBench.Fields.Extension
-import CompPolyBench.Multilinear.Basic
-import CompPolyBench.Multivariate.CMvPolynomial
-import CompPolyBench.Univariate
+public import CompPolyBench.Bivariate.Basic
+public import CompPolyBench.Bivariate.Factor
+public import CompPolyBench.Bivariate.GuruswamiSudan
+public import CompPolyBench.Fields.Binary.AdditiveNTT.Impl
+public import CompPolyBench.Fields.Extension
+public import CompPolyBench.Multilinear.Basic
+public import CompPolyBench.Multivariate.CMvPolynomial
+public import CompPolyBench.Univariate
 
 /-!
 # Benchmark Suite Setup
 
 Top-level orchestration for the compiled benchmark executable.
 -/
+
+public section
 
 namespace CompPolyBench
 

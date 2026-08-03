@@ -3,14 +3,17 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import CompPoly.Fields.Binary.BF128Ghash.Prelude
+public import CompPoly.Fields.Binary.BF128Ghash.Prelude
 
 /-!
 # XPowTwoPow Mod Certificate
 
 Certificates for modular arithmetic in the BF128Ghash field.
 -/
+
+@[expose] public section
 
 namespace BF128Ghash
 open Polynomial

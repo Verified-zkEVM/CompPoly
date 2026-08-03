@@ -3,13 +3,15 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa
 -/
-import Mathlib.Algebra.BigOperators.Group.Finset.Defs
-import Mathlib.Algebra.Group.Finsupp
-import Mathlib.Algebra.Group.TypeTags.Basic
-import Mathlib.Algebra.GroupWithZero.Nat
-import Mathlib.Algebra.Ring.Defs
-import Mathlib.Order.Lattice.Nat
-import Batteries.Data.Vector.Basic
+module
+
+public import Mathlib.Algebra.BigOperators.Group.Finset.Defs
+public import Mathlib.Algebra.Group.Finsupp
+public import Mathlib.Algebra.Group.TypeTags.Basic
+public import Mathlib.Algebra.GroupWithZero.Nat
+public import Mathlib.Algebra.Ring.Defs
+public import Mathlib.Order.Lattice.Nat
+public import Batteries.Data.Vector.Basic
 
 /-!
 # Computable monomials
@@ -21,6 +23,8 @@ where each element corresponds to the exponent of a variable.
 
 * `CPoly.CMvMonomial n`: The type of monomials in `n` variables, implemented as `Vector ℕ n`.
 -/
+
+@[expose] public section
 namespace CPoly
 
 /--

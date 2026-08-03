@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Reduction
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Reduction
 
 /-!
 # Mulders-Storjohann Correctness Reducer Minimality
 
 Least-row minimality and the certified reducer context.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

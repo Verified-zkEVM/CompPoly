@@ -3,14 +3,18 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen, Gregor Mitscha-Baude
 -/
-import Mathlib.Algebra.GroupWithZero.Nat
-import Mathlib.Data.List.GetD
-import Mathlib.Order.Lattice.Nat
-import Mathlib.Tactic.Cases
+module
+
+public import Mathlib.Algebra.GroupWithZero.Nat
+public import Mathlib.Data.List.GetD
+public import Mathlib.Order.Lattice.Nat
+public import Mathlib.Tactic.Cases
 
 /-!
 # Auxiliary lemmas for `List`
 -/
+
+@[expose] public section
 universe u v w
 
 namespace List

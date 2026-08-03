@@ -3,13 +3,17 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import CompPoly.Bivariate.ToPoly
+module
+
+public import CompPoly.Bivariate.ToPoly
 
 /-!
   # Bivariate Basic Tests
 
   Lightweight regressions for the canonical Y-facing API and its `toPoly` transport.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CBivariate

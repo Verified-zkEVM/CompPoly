@@ -3,8 +3,9 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.CoreCorrectness
+public import CompPoly.Bivariate.GuruswamiSudan.CoreCorrectness
 
 /-!
 # Guruswami-Sudan Candidate Filter Correctness
@@ -12,6 +13,8 @@ import CompPoly.Bivariate.GuruswamiSudan.CoreCorrectness
 Correctness and completeness lemmas for generic packed filtering over algebraic
 `gsCore` outputs.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
-import CompPoly.Univariate.NTT.FastMul
-import CompPoly.Univariate.NTTFast.FastMul
+module
+
+public import CompPoly.Univariate.NTT.FastMul
+public import CompPoly.Univariate.NTTFast.FastMul
 
 /-!
 # Basic NTTFast correctness facts
@@ -12,6 +14,8 @@ import CompPoly.Univariate.NTTFast.FastMul
 Cached-plan well-formedness, twiddle-table facts, and shared proof helpers for
 `NTTFast` correctness.
 -/
+
+@[expose] public section
 namespace CompPoly
 namespace CPolynomial
 namespace NTTFast
@@ -401,7 +405,7 @@ theorem butterflyDITBlocks_eq_foldl
         htwiddles]
       simpa [List.range'_succ] using ih
 
-@[simp] private theorem size_butterflyDITInner
+@[simp] theorem size_butterflyDITInner
     (twiddles : Array R) (limit j i0 i1 : Nat) :
     ∀ acc : Array R, (butterflyDITInner twiddles limit j i0 i1 acc).size = acc.size := by
   intro acc
@@ -418,7 +422,7 @@ theorem butterflyDITBlocks_eq_foldl
         · omega
       · simp [butterflyDITInner, hj]
 
-@[simp] private theorem size_butterflyDITBlocks
+@[simp] theorem size_butterflyDITBlocks
     (twiddles : Array R) (blockSize half blocks block : Nat) :
     ∀ acc : Array R,
       (butterflyDITBlocks twiddles blockSize half blocks block acc).size = acc.size := by
@@ -436,12 +440,12 @@ theorem butterflyDITBlocks_eq_foldl
         · omega
       · simp [butterflyDITBlocks, hblock]
 
-@[simp] private theorem size_butterflyStageWithTwiddles
+@[simp] theorem size_butterflyStageWithTwiddles
     (D : NTT.Domain R) (stage : Nat) (twiddles a : Array R) :
     (butterflyStageWithTwiddles D stage twiddles a).size = a.size := by
   simp [butterflyStageWithTwiddles]
 
-@[simp] private theorem size_butterflyDITRadix4Inner
+@[simp] theorem size_butterflyDITRadix4Inner
     (twiddlesLow twiddlesHigh : Array R) (limit j i0 i1 i2 i3 : Nat) :
     ∀ acc : Array R,
       (butterflyDITRadix4Inner twiddlesLow twiddlesHigh limit j i0 i1 i2 i3 acc).size =
@@ -460,7 +464,7 @@ theorem butterflyDITBlocks_eq_foldl
         · omega
       · simp [butterflyDITRadix4Inner, hj]
 
-@[simp] private theorem size_butterflyDITRadix4Blocks
+@[simp] theorem size_butterflyDITRadix4Blocks
     (twiddlesLow twiddlesHigh : Array R) (blockSize quarter blocks block : Nat) :
     ∀ acc : Array R,
       (butterflyDITRadix4Blocks twiddlesLow twiddlesHigh blockSize quarter blocks block acc).size =
@@ -479,13 +483,13 @@ theorem butterflyDITBlocks_eq_foldl
         · omega
       · simp [butterflyDITRadix4Blocks, hblock]
 
-@[simp] private theorem size_butterflyRadix4StageWithTwiddles
+@[simp] theorem size_butterflyRadix4StageWithTwiddles
     (D : NTT.Domain R) (lowStage : Nat) (twiddlesLow twiddlesHigh a : Array R) :
     (butterflyRadix4StageWithTwiddles D lowStage twiddlesLow twiddlesHigh a).size =
       a.size := by
   simp [butterflyRadix4StageWithTwiddles]
 
-@[simp] private theorem size_butterflyDIFInner
+@[simp] theorem size_butterflyDIFInner
     (twiddles : Array R) (limit j i0 i1 : Nat) :
     ∀ acc : Array R, (butterflyDIFInner twiddles limit j i0 i1 acc).size = acc.size := by
   intro acc
@@ -502,7 +506,7 @@ theorem butterflyDITBlocks_eq_foldl
         · omega
       · simp [butterflyDIFInner, hj]
 
-@[simp] private theorem size_butterflyDIFBlocks
+@[simp] theorem size_butterflyDIFBlocks
     (twiddles : Array R) (blockSize half blocks block : Nat) :
     ∀ acc : Array R,
       (butterflyDIFBlocks twiddles blockSize half blocks block acc).size = acc.size := by
@@ -520,12 +524,12 @@ theorem butterflyDITBlocks_eq_foldl
         · omega
       · simp [butterflyDIFBlocks, hblock]
 
-@[simp] private theorem size_butterflyStageDIFWithTwiddles
+@[simp] theorem size_butterflyStageDIFWithTwiddles
     (D : NTT.Domain R) (stage : Nat) (twiddles a : Array R) :
     (butterflyStageDIFWithTwiddles D stage twiddles a).size = a.size := by
   simp [butterflyStageDIFWithTwiddles]
 
-@[simp] private theorem size_butterflyDIFRadix4Inner
+@[simp] theorem size_butterflyDIFRadix4Inner
     (twiddlesHigh twiddlesLow : Array R) (limit j i0 i1 i2 i3 : Nat) :
     ∀ acc : Array R,
       (butterflyDIFRadix4Inner twiddlesHigh twiddlesLow limit j i0 i1 i2 i3 acc).size =
@@ -544,7 +548,7 @@ theorem butterflyDITBlocks_eq_foldl
         · omega
       · simp [butterflyDIFRadix4Inner, hj]
 
-@[simp] private theorem size_butterflyDIFRadix4Blocks
+@[simp] theorem size_butterflyDIFRadix4Blocks
     (twiddlesHigh twiddlesLow : Array R) (blockSize quarter blocks block : Nat) :
     ∀ acc : Array R,
       (butterflyDIFRadix4Blocks twiddlesHigh twiddlesLow blockSize quarter blocks block acc).size =
@@ -563,7 +567,7 @@ theorem butterflyDITBlocks_eq_foldl
         · omega
       · simp [butterflyDIFRadix4Blocks, hblock]
 
-@[simp] private theorem size_butterflyRadix4StageDIFWithTwiddles
+@[simp] theorem size_butterflyRadix4StageDIFWithTwiddles
     (D : NTT.Domain R) (lowStage : Nat) (twiddlesHigh twiddlesLow a : Array R) :
     (butterflyRadix4StageDIFWithTwiddles D lowStage twiddlesHigh twiddlesLow a).size =
       a.size := by

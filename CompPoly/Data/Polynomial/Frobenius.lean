@@ -3,11 +3,12 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import CompPoly.Data.Nat.Bitwise
-import Mathlib.Algebra.Lie.OfAssociative
-import Mathlib.FieldTheory.Finite.Basic
-import Mathlib.RingTheory.Henselian
+public import CompPoly.Data.Nat.Bitwise
+public import Mathlib.Algebra.Lie.OfAssociative
+public import Mathlib.FieldTheory.Finite.Basic
+public import Mathlib.RingTheory.Henselian
 
 /-!
 # Frobenius polynomial identities
@@ -44,6 +45,8 @@ identities, and divisibility conditions for irreducible polynomials.
 ## TODOs
 - potentially generalize the Frobenius theorems to generic algebras?
 -/
+
+@[expose] public section
 
 variable {Fq : Type*} [Field Fq] [Fintype Fq]
 

@@ -3,7 +3,9 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import CompPoly.Univariate.ToPoly.Impl
+module
+
+public import CompPoly.Univariate.ToPoly.Impl
 
 /-!
   # Univariate ToPoly Tests
@@ -11,6 +13,8 @@ import CompPoly.Univariate.ToPoly.Impl
   First-pass sanity checks for conversion and transport lemmas in
   `CompPoly.Univariate.ToPoly`.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial

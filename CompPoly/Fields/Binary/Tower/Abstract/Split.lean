@@ -3,14 +3,17 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen
 -/
+module
 
-import CompPoly.Fields.Binary.Tower.Abstract.Algebra
+public import CompPoly.Fields.Binary.Tower.Abstract.Algebra
 
 /-!
 # Abstract Binary Tower Split
 
 Splitting and recombination lemmas for abstract binary tower extensions.
 -/
+
+@[expose] public section
 
 namespace BinaryTower
 
@@ -107,7 +110,7 @@ def join_via_add_smul {k : ℕ} (h_pos : k > 0) (hi_btf lo_btf : BTField (k - 1)
 scoped[BinaryTower] notation "⋘" hi ", " lo "⋙" => join_via_add_smul (h_pos:=by omega) hi lo
 
 lemma join_via_add_smul_zero {k : ℕ} (h_pos : k > 0) :
-    ⋘ 0, 0 ⋙ = 0 := by
+    (⋘ 0, 0 ⋙ : BTField k) = 0 := by
   unfold join_via_add_smul
   simp only [map_zero, add_zero]
   letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
@@ -120,7 +123,7 @@ lemma join_via_add_smul_one_zero_eq_Z {k : ℕ} (h_pos : k > 0) :
   rw [Algebra.smul_def', map_one, map_zero, one_mul, add_zero]
 
 lemma join_via_add_smul_one {k : ℕ} (h_pos : k > 0) :
-    ⋘ 0, 1 ⋙ = 1 := by
+    (⋘ 0, 1 ⋙ : BTField k) = 1 := by
   unfold join_via_add_smul
   letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   rw [Algebra.smul_def', map_zero, map_one, zero_mul, zero_add]

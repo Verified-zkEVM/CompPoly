@@ -3,16 +3,19 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen
 -/
+module
 
-import CompPoly.Fields.Binary.Tower.Support.IrreducibilityAndTraceMapProperty
-import CompPoly.Data.RingTheory.AlgebraTower
-import Mathlib.Tactic.DepRewrite
+public import CompPoly.Fields.Binary.Tower.Support.IrreducibilityAndTraceMapProperty
+public import CompPoly.Data.RingTheory.AlgebraTower
+public import Mathlib.Tactic.DepRewrite
 
 /-!
 # Abstract Binary Tower Core
 
 Core definitions and existence data for the abstract binary tower construction.
 -/
+
+@[expose] public section
 
 namespace BinaryTower
 
@@ -445,9 +448,9 @@ lemma BTField.cast_BTField_eq (k m : ℕ) (h_eq : k = m) :
   rfl
 
 lemma BTField.cast_mul (m n : ℕ) {x y : BTField m} (h_eq : m = n) :
-    (cast (by exact BTField.cast_BTField_eq m n h_eq) (x * y)) =
-  (cast (by exact BTField.cast_BTField_eq m n h_eq) x) *
-  (cast (by exact BTField.cast_BTField_eq m n h_eq) y) := by
+    (cast (BTField.cast_BTField_eq m n h_eq) (x * y)) =
+  (cast (BTField.cast_BTField_eq m n h_eq) x) *
+  (cast (BTField.cast_BTField_eq m n h_eq) y) := by
   subst h_eq
   rfl
 

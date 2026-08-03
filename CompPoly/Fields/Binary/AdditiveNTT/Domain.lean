@@ -3,15 +3,16 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import CompPoly.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
-import Mathlib.Tactic.IntervalCases
-import Mathlib.Tactic.NormNum
-import Mathlib.Tactic.Push
-import Mathlib.Tactic.Ring
-import Mathlib.Tactic.Use
-import Mathlib.Data.Finsupp.Defs
-import Mathlib.LinearAlgebra.LinearIndependent.Defs
+public import CompPoly.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
+public import Mathlib.Tactic.IntervalCases
+public import Mathlib.Tactic.NormNum
+public import Mathlib.Tactic.Push
+public import Mathlib.Tactic.Ring
+public import Mathlib.Tactic.Use
+public import Mathlib.Data.Finsupp.Defs
+public import Mathlib.LinearAlgebra.LinearIndependent.Defs
 
 /-!
 # Additive NTT Domains
@@ -19,6 +20,8 @@ import Mathlib.LinearAlgebra.LinearIndependent.Defs
 Domain-level constructions for the Additive NTT: quotient maps, intermediate
 domains, and the finite-domain bijections used by the algorithm.
 -/
+
+@[expose] public section
 
 open Polynomial AdditiveNTT Module
 namespace AdditiveNTT

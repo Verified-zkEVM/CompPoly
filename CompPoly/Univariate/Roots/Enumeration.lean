@@ -3,8 +3,9 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Univariate.Roots.Correctness
+public import CompPoly.Univariate.Roots.Correctness
 
 /-!
 # Exhaustive Finite-Field Root Enumeration
@@ -14,6 +15,8 @@ context stores an indexing function rather than an array of all elements; array
 inputs are adapted through `fieldEnumerationOfArray` for tests and small
 callers.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

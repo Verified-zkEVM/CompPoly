@@ -3,9 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Basic
-import CompPoly.LinearAlgebra.PolynomialMatrix.ShiftedReduction
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Basic
+public import CompPoly.LinearAlgebra.PolynomialMatrix.ShiftedReduction
 
 /-!
 # Executable Lee-O'Sullivan Interpolation
@@ -18,6 +19,8 @@ shifted polynomial-row reduction.
 * [Lee, K., and O'Sullivan, M. E., *List decoding of Reed-Solomon codes from a
     Groebner basis perspective*][LOS06]
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

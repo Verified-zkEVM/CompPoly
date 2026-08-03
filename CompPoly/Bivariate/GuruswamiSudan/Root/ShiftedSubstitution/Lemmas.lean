@@ -3,9 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Root.Common.Lemmas
-import CompPoly.Bivariate.GuruswamiSudan.Root.ShiftedSubstitution
+public import CompPoly.Bivariate.GuruswamiSudan.Root.Common.Lemmas
+public import CompPoly.Bivariate.GuruswamiSudan.Root.ShiftedSubstitution
 
 /-!
 # Shifted Substitution Lemmas
@@ -13,6 +14,8 @@ import CompPoly.Bivariate.GuruswamiSudan.Root.ShiftedSubstitution
 Semantic proof surface for the generic shifted substitution. The executable
 operation is available independently of these heavier algebraic facts.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

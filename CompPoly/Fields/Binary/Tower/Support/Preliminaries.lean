@@ -3,17 +3,20 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen
 -/
+module
 
-import Mathlib.FieldTheory.Finite.GaloisField
-import CompPoly.Data.Fin.BigOperators
-import CompPoly.Data.Nat.Bitwise
-import Mathlib.LinearAlgebra.StdBasis
+public import Mathlib.FieldTheory.Finite.GaloisField
+public import CompPoly.Data.Fin.BigOperators
+public import CompPoly.Data.Nat.Bitwise
+public import Mathlib.LinearAlgebra.StdBasis
 
 /-!
 # Binary Tower Preliminaries
 
 Shared finite-field and bitwise preliminaries for the binary tower development.
 -/
+
+@[expose] public section
 
 noncomputable section Preliminaries
 

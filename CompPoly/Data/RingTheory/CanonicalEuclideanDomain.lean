@@ -3,11 +3,12 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import Mathlib.Algebra.Lie.OfAssociative
-import Mathlib.Algebra.Polynomial.FieldDivision
-import Mathlib.Algebra.EuclideanDomain.Int
-import Mathlib.NumberTheory.Zsqrtd.GaussianInt
+public import Mathlib.Algebra.Lie.OfAssociative
+public import Mathlib.Algebra.Polynomial.FieldDivision
+public import Mathlib.Algebra.EuclideanDomain.Int
+public import Mathlib.NumberTheory.Zsqrtd.GaussianInt
 
 /-!
 # Canonical Euclidean Domains
@@ -15,6 +16,8 @@ import Mathlib.NumberTheory.Zsqrtd.GaussianInt
 This module defines `CanonicalEuclideanDomain` and provides instances for ℤ, `Polynomial F`,
 and `Field`.
 -/
+
+@[expose] public section
 
 universe u
 local infixl:50 " ≺ " => EuclideanDomain.r -- the valuation function

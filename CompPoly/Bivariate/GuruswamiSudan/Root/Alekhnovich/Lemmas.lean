@@ -3,16 +3,19 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Algorithm
-import CompPoly.Bivariate.GuruswamiSudan.Root.Common.Lemmas
-import CompPoly.Bivariate.GuruswamiSudan.Root.ShiftedSubstitution.Lemmas
+public import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Algorithm
+public import CompPoly.Bivariate.GuruswamiSudan.Root.Common.Lemmas
+public import CompPoly.Bivariate.GuruswamiSudan.Root.ShiftedSubstitution.Lemmas
 
 /-!
 # Alekhnovich Root Search Lemmas
 
 Proof support for the Alekhnovich bounded bivariate root backend.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

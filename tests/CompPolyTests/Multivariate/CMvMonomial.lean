@@ -3,13 +3,17 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import CompPoly.Multivariate.CMvMonomial
+module
+
+public import CompPoly.Multivariate.CMvMonomial
 
 /-!
   # Multivariate Monomial Tests
 
   First-pass sanity checks for `CompPoly.Multivariate.CMvMonomial`.
 -/
+
+@[expose] public section
 
 namespace CPoly
 namespace CMvMonomial

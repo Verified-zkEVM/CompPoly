@@ -3,8 +3,10 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dimitris Mitsios
 -/
-import CompPoly.Bivariate.Deriv
-import Mathlib.Data.ZMod.Basic
+module
+
+public meta import CompPoly.Bivariate.Deriv
+public meta import Mathlib.Data.ZMod.Basic
 
 /-!
 # Bivariate Multiplicity Tests
@@ -22,6 +24,8 @@ definition would mis-report, so they guard against such a regression.
 These are `#guard` checks: they run under `lake test` (via the `CompPolyTests`
 driver) and are not elaborated by `lake build`.
 -/
+
+public meta section
 
 open CompPoly CompPoly.CBivariate
 

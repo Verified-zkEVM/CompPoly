@@ -3,9 +3,11 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Elias Judin, Aristotle (Harmonic), Dimitris Mitsios
 -/
-import CompPoly.Multivariate.MvPolyEquiv
-import Mathlib.Algebra.MvPolynomial.Equiv
-import Mathlib.RingTheory.Polynomial.Basic
+module
+
+public import CompPoly.Multivariate.MvPolyEquiv
+public import Mathlib.Algebra.MvPolynomial.Equiv
+public import Mathlib.RingTheory.Polynomial.Basic
 
 /-!
 # `finSuccEquiv` for `CMvPolynomial`
@@ -35,6 +37,8 @@ bridge between `CMvPolynomial` and `MvPolynomial`.
 The forward/inverse correctness is obtained structurally from the underlying
 Mathlib `AlgEquiv` via `RingEquiv.trans`.
 -/
+
+@[expose] public section
 
 open Std CPoly CMvPolynomial
 

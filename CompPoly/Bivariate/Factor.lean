@@ -3,14 +3,15 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dimitris Mitsios
 -/
+module
 
-import CompPoly.Bivariate.Basic
-import CompPoly.Bivariate.ToPoly
+public import CompPoly.Bivariate.Basic
+public import CompPoly.Bivariate.ToPoly
 
-import Mathlib.Data.List.GetD
-import Mathlib.Data.List.Range
-import Mathlib.Algebra.Polynomial.Coeff
-import Mathlib.Algebra.Polynomial.Degree.Operations
+public import Mathlib.Data.List.GetD
+public import Mathlib.Data.List.Range
+public import Mathlib.Algebra.Polynomial.Coeff
+public import Mathlib.Algebra.Polynomial.Degree.Operations
 /-!
 # Factorisation of Computable Bivariate Polynomials
 
@@ -26,6 +27,8 @@ arbitrary monic divisor in `Y` is available generically through
 `CPolynomial.divByMonic` / `CPolynomial.modByMonic` over the coefficient ring
 `CPolynomial R` (see `CPolynomial.modByMonic_add_mul_divByMonic`).
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

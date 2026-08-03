@@ -3,12 +3,13 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dimitris Mitsios
 -/
+module
 
-import CompPoly.Bivariate.Basic
-import CompPoly.Bivariate.ToPoly
-import CompPoly.Univariate.Deriv
-import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
-import Mathlib.Algebra.Polynomial.Derivative
+public import CompPoly.Bivariate.Basic
+public import CompPoly.Bivariate.ToPoly
+public import CompPoly.Univariate.Deriv
+public import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
+public import Mathlib.Algebra.Polynomial.Derivative
 
 /-!
 # Partial Derivatives and Multiplicity of Computable Bivariate Polynomials
@@ -31,6 +32,8 @@ vanish, so its product with a nonzero coefficient may become zero.
 `Polynomial.Bivariate.shift`, and `hasMultiplicity_iff_rootMultiplicity` proves
 that `hasMultiplicity` agrees with the reference `Polynomial.Bivariate.rootMultiplicity`.
 -/
+
+@[expose] public section
 
 open scoped Polynomial.Bivariate
 

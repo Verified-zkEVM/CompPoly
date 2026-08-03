@@ -3,14 +3,18 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Salih Erdem Koçak, Doran Pamukçu
 -/
-import CompPoly.Univariate.NTT.Inverse
-import CompPolyTests.Univariate.NTT.Common
+module
+
+public meta import CompPoly.Univariate.NTT.Inverse
+public meta import CompPolyTests.Univariate.NTT.Common
 
 /-!
   # Univariate NTT Inverse Tests
 
   Concrete executable checks for the iterative butterfly inverse NTT path.
 -/
+
+public meta section
 
 namespace CompPoly
 namespace CPolynomial
