@@ -68,12 +68,12 @@ theorem invWithCandidate_eq_inv (x : FastField modulus) (z : Limbs8) :
     exact h.2.2
   case isFalse _ => rfl
 
-/-- Inversion via the shared binary-GCD candidate, verified by one eight-limb
-multiplication; the fallback (`x = 0` or a candidate miss) is the proven Fermat inverse. -/
+/-- Inversion via the binary-GCD candidate, verified by one eight-limb multiplication;
+the fallback (`x = 0` or a candidate miss) is the proven Fermat inverse. -/
 @[inline] def invGcd [Native256.Mont256Field modulus] (x : FastField modulus) :
     FastField modulus :=
   invWithCandidate x
-    (Limbs8.ofUInt256L (Native256.gcdInvCandidate (modulus := modulus) x.val.toUInt256L))
+    (Native64x8.gcdInvCandidate modulus P.modulusLimbs P.montgomeryNegInv x.val)
 
 /-- `invGcd` agrees with the Fermat inverse of the `Field` instance. -/
 theorem invGcd_eq_inv [Native256.Mont256Field modulus] (x : FastField modulus) :

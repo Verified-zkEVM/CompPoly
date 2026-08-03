@@ -32,12 +32,12 @@ This directory contains formally verified field infrastructure used in zero-know
 | **Montgomery/Native32.lean** | Raw `UInt32`/`UInt64` Montgomery reduction over explicit word constants, including bounds and correctness. |
 | **Montgomery/Native32Field.lean** | Per-field parameters, the shared `FastField` carrier, arithmetic, instances, and canonical-field bridge. |
 | **Montgomery/Native256.lean** | The `Mont256Field` data class and the CIOS reduction step over four `UInt64` limbs (`R = 2^256`); proof-free runtime defs serving the binary-GCD inverse candidate. |
-| **Montgomery/Native256Gcd.lean** | Pornin binary GCD over limbs ([eprint 2020/972](https://eprint.iacr.org/2020/972)): the proof-free fast inverse candidate, verified at its use site in `FastField.invGcd`. |
+| **Montgomery/Native256Gcd.lean** | 64-bit word pieces of the Pornin binary GCD ([eprint 2020/972](https://eprint.iacr.org/2020/972)): the divstep loop and the final linear-combination fold. |
 | **Montgomery/Native64x8Defs.lean** | Zero-import runtime definitions of the eight-limb (32-bit) Montgomery arithmetic, for `precompileModules` consumers (from CompPoly PR #274). |
 | **Montgomery/Native64x8.lean** | Word-level specifications and add/sub/negate correctness for the eight-limb arithmetic. |
 | **Montgomery/Native64x8Mul.lean** | Correctness of the eight-limb CIOS Montgomery multiplication. |
 | **Montgomery/Native64x8Field.lean** | The `Mont64x8Field` class, the eight-limb `FastField` carrier, arithmetic, instances, and canonical-field bridge, for moduli below `2^255`. |
-| **Montgomery/Native64x8InvDefs.lean** | Mathlib-free checked binary-GCD inversion over raw limbs (`invGcdRaw`, `montPow`). |
+| **Montgomery/Native64x8InvDefs.lean** | Mathlib-free binary-GCD inverse candidate over eight-limb linear combinations (`gcdInvCandidate`), plus the checked raw inversion (`invGcdRaw`, `montPow`). |
 | **Montgomery/Native64x8Inv.lean** | Runtime-verified binary-GCD inversion for the eight-limb carrier (`FastField.invGcd`), reusing the 64-bit-word candidate of `Native256Gcd` through limb conversion. |
 | **Secp256k1.lean** | Base and scalar fields for the Secp256k1 curve (used in Bitcoin/Ethereum). |
 

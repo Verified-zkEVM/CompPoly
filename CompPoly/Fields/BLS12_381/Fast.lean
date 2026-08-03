@@ -30,7 +30,7 @@ instance instMont256Field : Mont256Field BLS12_381.scalarFieldSize where
   modulus256 := ⟨0xffffffff00000001, 0x53bda402fffe5bfe, 0x3339d80809a1d805, 0x73eda753299d7d48⟩
   montgomeryNegInv := 0xfffffffeffffffff
   gcdFinalRounds := 43
-  gcdInitU := ⟨0xb9c9191e0831ad2f, 0x3c16d933f8324ac2, 0x6150d8032caa9cfb, 0x1675ab15ed548587⟩
+  gcdInitU := ⟨0x408b03b2fe9ec31c, 0x49ada1d522e5e5f4, 0x0a662f5800f31bd7, 0x1f758dcc6fc84e4d⟩
 
 /-- The per-field data realizing BLS12-381's scalar field as a fast eight-limb
 (32-bit-limb) Montgomery field. -/

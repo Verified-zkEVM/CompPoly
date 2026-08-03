@@ -30,7 +30,7 @@ instance instMont256Field : Mont256Field BN254.scalarFieldSize where
   modulus256 := ⟨0x43e1f593f0000001, 0x2833e84879b97091, 0xb85045b68181585d, 0x30644e72e131a029⟩
   montgomeryNegInv := 0xc2e1f593efffffff
   gcdFinalRounds := 41
-  gcdInitU := ⟨0x1f7ca21e7fcb111b, 0x61a09399fcfe8a6c, 0x1438cc5aab55aedb, 0x020c9ba0aeb6b6c7⟩
+  gcdInitU := ⟨0xb542296a1cafd3b2, 0xec8811f19c820da9, 0x29bed6026bd1d274, 0x0fb316d8a8ab8d54⟩
 
 /-- The per-field data realizing BN254's scalar field as a fast eight-limb (32-bit-limb)
 Montgomery field. -/

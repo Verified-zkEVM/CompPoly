@@ -27,13 +27,14 @@ class Mont256Field (modulus : Nat) where
   /-- Divsteps in the final word-sized round: `2·bits(p) - 2 - 15·31`; must stay `≤ 62`
   so the transition-matrix entries fit a signed word. -/
   gcdFinalRounds : Nat
-  /-- Initial `u`: `2^(1071 - gcdFinalRounds) mod modulus`, the power that keeps the
-  candidate in Montgomery form. -/
+  /-- Initial `u`: `2^(591 - gcdFinalRounds) mod modulus`, the power that keeps the
+  candidate in Montgomery form (fifteen `2^32` round reductions plus one `2^64` final
+  fold). -/
   gcdInitU : UInt256L
   modulus256_toNat : modulus256.toNat = modulus := by decide
   montgomeryNegInv_mul_modulus_mod_two_pow_64 :
     montgomeryNegInv.toNat * modulus % 2 ^ 64 = 2 ^ 64 - 1 := by decide
-  gcdInitU_toNat : gcdInitU.toNat = 2 ^ (1071 - gcdFinalRounds) % modulus := by decide
+  gcdInitU_toNat : gcdInitU.toNat = 2 ^ (591 - gcdFinalRounds) % modulus := by decide
 
 variable {modulus : Nat} [P : Mont256Field modulus]
 

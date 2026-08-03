@@ -69,8 +69,8 @@ set_option maxRecDepth 4000
   = ((2 ^ 200 + 12345 : BLS12_377.ScalarField)⁻¹)
 #guard (987654321 : ScalarField).invGcd.toField = ((987654321 : BLS12_377.ScalarField)⁻¹)
 #guard (37 : ScalarField).invGcd.val
-  = Limbs8.ofUInt256L (Montgomery.Native256.gcdInvCandidate
-      (modulus := scalarFieldSize) (37 : ScalarField).val.toUInt256L)
+  = gcdInvCandidate scalarFieldSize (Mont64x8Field.modulusLimbs scalarFieldSize)
+      (Mont64x8Field.montgomeryNegInv scalarFieldSize) (37 : ScalarField).val
 
 -- The raw-limb defs twin agrees with the proven path; `montPow` is exercised directly
 -- (the fast path never takes it).
