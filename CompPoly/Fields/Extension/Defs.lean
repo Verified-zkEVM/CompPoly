@@ -17,12 +17,13 @@ no trimming and no size branching. Multiplication expands each product monomial 
 `monomialMod (i + j)`, the reduced form of `Xⁱ⁺ʲ` modulo `f`, obtained by iterating a single
 "multiply by `X`, reduce mod `f`" linear map, `shiftReduce`.
 
-The parameters are bundled into `GeneralParams` and carried as a *type index* (`Ext P`), so two
+The parameters are bundled into `ExtensionParams` and carried as a *type index* (`Ext P`), so two
 different extensions of the same base field are different types and cannot have their instances
 confused.
 
 The special case `f = X^d - W` (a binomial extension) is recovered by
-`BinomialParams.toGeneral`, whose `lower` vector is `(-W, 0, …, 0)`; see `Extension/Binomial.lean`
+`BinomialParams.toExtensionParams`, whose `lower` vector is `(-W, 0, …, 0)`; see
+`Extension/Binomial.lean`
 for the irreducibility criterion that discharges `Fact (Irreducible P.poly)` in that case.
 
 This file supplies only the operations and the elementary `coeff` lemmas — no algebraic
@@ -31,13 +32,13 @@ establishes `CommRing`; `CompPoly/Fields/Extension/Field.lean` adds inversion an
 
 ## Main definitions
 
-* `GeneralParams`: the degree `d`, the lower coefficients of the monic modulus, and the
+* `ExtensionParams`: the degree `d`, the lower coefficients of the monic modulus, and the
   base-field cardinality `q`.
 * `Ext P`: the carrier, `Vector F P.d`.
 * `Ext.shiftReduce`: multiply by `X` and reduce mod `f`; iterated to build `Ext.monomialMod`.
 * `Ext.monomialMod k`: the reduced form of `X^k` modulo `f`.
 * `Ext.mul`: multiplication, expanding product monomials through `monomialMod`.
-* `BinomialParams.toGeneral`: the binomial special case `f = X^d - W`.
+* `BinomialParams.toExtensionParams`: the binomial special case `f = X^d - W`.
 
 ## Implementation notes
 
@@ -68,7 +69,7 @@ does not need it, and requiring it would force every consumer of the ring operat
 the proof. `Ext.instField` takes `[Fact (Irreducible P.poly)]` separately, mirroring
 `AdjoinRoot`.
 -/
-structure GeneralParams (F : Type*) [Field F] [Fintype F] where
+structure ExtensionParams (F : Type*) [Field F] [Fintype F] where
   /-- The degree of the extension. -/
   d : ℕ
   /-- Degree at least two; a degree-one "extension" is just `F`. -/
@@ -85,9 +86,9 @@ structure GeneralParams (F : Type*) [Field F] [Fintype F] where
   /-- `q` really is the cardinality of the base field. -/
   card_eq : Fintype.card F = q
 
-namespace GeneralParams
+namespace ExtensionParams
 
-variable [Fintype F] (P : GeneralParams F)
+variable [Fintype F] (P : ExtensionParams F)
 
 /-- The coefficient of `X^i` in the lower part of the modulus. -/
 @[inline] def lowerCoeff (i : Fin P.d) : F := P.lower[i.val]
@@ -126,17 +127,17 @@ theorem monic_poly : P.poly.Monic := by
 @[simp] theorem natDegree_poly : P.poly.natDegree = P.d :=
   natDegree_eq_of_degree_eq_some P.degree_poly
 
-end GeneralParams
+end ExtensionParams
 
 /--
 The carrier of the extension `F[X] / f`: a dense coefficient vector of length `P.d`,
 little-endian (index `i` is the coefficient of `X^i`).
 -/
-def Ext {F : Type*} [Field F] [Fintype F] (P : GeneralParams F) : Type _ := Vector F P.d
+def Ext {F : Type*} [Field F] [Fintype F] (P : ExtensionParams F) : Type _ := Vector F P.d
 
 namespace Ext
 
-variable [Fintype F] {P : GeneralParams F}
+variable [Fintype F] {P : ExtensionParams F}
 
 /-- View an element as its coefficient vector. This is the identity. -/
 @[inline] def coeffs (x : Ext P) : Vector F P.d := x
@@ -300,13 +301,14 @@ end Ext
 
 A binomial extension `F[X] / (X^d - W)` is the case `lower = (-W, 0, …, 0)`. `BinomialParams`
 keeps the ergonomic `W`-only interface (and its dedicated irreducibility criterion in
-`Extension/Binomial.lean`); `toGeneral` maps it into the general framework, and `toGeneral_poly`
+`Extension/Binomial.lean`); `toExtensionParams` maps it into the general framework, and
+`toExtensionParams_poly`
 identifies the two spellings of the defining polynomial.
 -/
 
 /--
 The data defining a binomial extension `F[X] / (X^d - W)`. A thin front-end for the special
-case `GeneralParams` with `lower = (-W, 0, …, 0)`; see `BinomialParams.toGeneral`.
+case `ExtensionParams` with `lower = (-W, 0, …, 0)`; see `BinomialParams.toExtensionParams`.
 -/
 structure BinomialParams (F : Type*) [Field F] [Fintype F] where
   /-- The degree of the extension. -/
@@ -335,29 +337,30 @@ theorem monic_poly : P.poly.Monic := monic_X_pow_sub_C _ (by have := P.two_le; o
 
 /-- The general-framework parameters for the binomial modulus `X^d - W`: the lower coefficient
 vector is `(-W, 0, …, 0)`. -/
-def toGeneral : GeneralParams F where
+def toExtensionParams : ExtensionParams F where
   d := P.d
   two_le := P.two_le
   lower := Vector.ofFn fun i => if (i : ℕ) = 0 then -P.W else 0
   q := P.q
   card_eq := P.card_eq
 
-@[simp] theorem toGeneral_d : P.toGeneral.d = P.d := rfl
-@[simp] theorem toGeneral_q : P.toGeneral.q = P.q := rfl
+@[simp] theorem toExtensionParams_d : P.toExtensionParams.d = P.d := rfl
+@[simp] theorem toExtensionParams_q : P.toExtensionParams.q = P.q := rfl
 
-@[simp] theorem toGeneral_lowerCoeff (i : Fin P.toGeneral.d) :
-    P.toGeneral.lowerCoeff i = if (i : ℕ) = 0 then -P.W else 0 := by
-  simp only [GeneralParams.lowerCoeff, toGeneral, Vector.getElem_ofFn]
+@[simp] theorem toExtensionParams_lowerCoeff (i : Fin P.toExtensionParams.d) :
+    P.toExtensionParams.lowerCoeff i = if (i : ℕ) = 0 then -P.W else 0 := by
+  simp only [ExtensionParams.lowerCoeff, toExtensionParams, Vector.getElem_ofFn]
 
 /-- The general-framework polynomial of a binomial agrees with `X^d - W`. -/
-theorem toGeneral_poly : P.toGeneral.poly = P.poly := by
-  have hsum : (∑ i : Fin P.toGeneral.d, C (P.toGeneral.lowerCoeff i) * X ^ (i : ℕ)) = -C P.W := by
-    rw [Finset.sum_eq_single_of_mem (⟨0, P.d_pos⟩ : Fin P.toGeneral.d) (Finset.mem_univ _)]
-    · rw [toGeneral_lowerCoeff]; simp
+theorem toExtensionParams_poly : P.toExtensionParams.poly = P.poly := by
+  have hsum : (∑ i : Fin P.toExtensionParams.d,
+      C (P.toExtensionParams.lowerCoeff i) * X ^ (i : ℕ)) = -C P.W := by
+    rw [Finset.sum_eq_single_of_mem (⟨0, P.d_pos⟩ : Fin P.toExtensionParams.d) (Finset.mem_univ _)]
+    · rw [toExtensionParams_lowerCoeff]; simp
     · intro i _ hi
       have hi0 : (i : ℕ) ≠ 0 := fun h => hi (Fin.ext (by simpa using h))
-      rw [toGeneral_lowerCoeff, if_neg hi0, map_zero, zero_mul]
-  rw [GeneralParams.poly, hsum, poly, ← sub_eq_add_neg, toGeneral_d]
+      rw [toExtensionParams_lowerCoeff, if_neg hi0, map_zero, zero_mul]
+  rw [ExtensionParams.poly, hsum, poly, ← sub_eq_add_neg, toExtensionParams_d]
 
 end BinomialParams
 

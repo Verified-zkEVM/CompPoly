@@ -14,12 +14,12 @@ public import CompPoly.Fields.Extension.Field
 # Computable field extensions
 
 Facade for the field-extension stack. Extensions are `F[X] / f` for an arbitrary monic modulus
-`f`; the binomial case `f = X^d - W` is the special case `BinomialParams.toGeneral`. See the
+`f`; the binomial case `f = X^d - W` is the special case `BinomialParams.toExtensionParams`. See the
 individual modules for details:
 
 * `CompPoly/Fields/Extension/Binomial.lean` — irreducibility of `X^d - W` over a finite field,
   via Rabin's test collapsed to two base-field exponentiations.
-* `CompPoly/Fields/Extension/Defs.lean` — `GeneralParams` (an arbitrary monic modulus) and the
+* `CompPoly/Fields/Extension/Defs.lean` — `ExtensionParams` (an arbitrary monic modulus) and the
   binomial front-end `BinomialParams`, plus the coefficient-vector carrier `Ext P` with its ring
   operations (`shiftReduce`, `monomialMod`, `mul`).
 * `CompPoly/Fields/Extension/Bridge.lean` — `toQuot : Ext P → AdjoinRoot P.poly`, the

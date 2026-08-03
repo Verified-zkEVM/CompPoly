@@ -45,13 +45,13 @@ namespace CompPoly.Extension.Ext
 
 open Polynomial AdjoinRoot
 
-variable {F : Type*} [Field F] [Fintype F] {P : GeneralParams F}
+variable {F : Type*} [Field F] [Fintype F] {P : ExtensionParams F}
 
 /-- The specification of the extension: the quotient ring `F[X] / f`. -/
-scoped notation "Quot[" P "]" => AdjoinRoot (GeneralParams.poly P)
+scoped notation "Quot[" P "]" => AdjoinRoot (ExtensionParams.poly P)
 
 /-- The image of `X` in the quotient, i.e. the adjoined root of `f`. -/
-noncomputable def rt (P : GeneralParams F) : Quot[P] := AdjoinRoot.root P.poly
+noncomputable def rt (P : ExtensionParams F) : Quot[P] := AdjoinRoot.root P.poly
 
 /-- The degree of the defining polynomial, as a `WithBot ℕ`. -/
 theorem degree_poly : P.poly.degree = (P.d : WithBot ℕ) := P.degree_poly
@@ -165,7 +165,7 @@ theorem rt_relation :
       = (rt P) ^ P.d + ∑ i : Fin P.d, algebraMap F Quot[P] (P.lowerCoeff i) * (rt P) ^ (i : ℕ) := by
     rw [map_add, e1, map_sum]
     exact congrArg _ (Finset.sum_congr rfl fun i _ => e2 i)
-  rw [← expand, ← GeneralParams.poly]
+  rw [← expand, ← ExtensionParams.poly]
   exact AdjoinRoot.mk_self
 
 /-- In `range` form: `∑_{m < d} lowerₘ · rt ^ m = -rt ^ d`. -/
@@ -351,7 +351,7 @@ instance instCommRing : CommRing (Ext P) where
     simp [this]
 
 /-- The base-field embedding, as a ring homomorphism. -/
-def ofBaseRingHom (P : GeneralParams F) : F →+* Ext P where
+def ofBaseRingHom (P : ExtensionParams F) : F →+* Ext P where
   toFun := ofBase
   map_one' := ofBase_one
   map_mul' a b := toQuot_injective (by simp only [toQuot_ofBase, toQuot_mul, map_mul])
@@ -385,7 +385,7 @@ theorem gen_pow_d : (gen : Ext P) ^ P.d = monomialMod P.d :=
 theorem aeval_gen_poly : aeval (gen : Ext P) P.poly = 0 := by
   have hexp : aeval (gen : Ext P) P.poly
       = gen ^ P.d + ∑ i : Fin P.d, ofBase (P.lowerCoeff i) * gen ^ (i : ℕ) := by
-    rw [GeneralParams.poly, map_add, map_pow, aeval_X, map_sum]
+    rw [ExtensionParams.poly, map_add, map_pow, aeval_X, map_sum]
     refine congrArg₂ (· + ·) rfl (Finset.sum_congr rfl fun i _ => ?_)
     rw [map_mul, map_pow, aeval_X, aeval_C, algebraMap_eq_ofBase]
   rw [hexp]
@@ -398,7 +398,7 @@ theorem aeval_gen_poly : aeval (gen : Ext P) P.poly = 0 := by
   exact rt_relation
 
 /-- `toQuot` packaged as a ring homomorphism. -/
-noncomputable def toQuotRingHom (P : GeneralParams F) : Ext P →+* Quot[P] where
+noncomputable def toQuotRingHom (P : ExtensionParams F) : Ext P →+* Quot[P] where
   toFun := toQuot
   map_one' := toQuot_one
   map_mul' := toQuot_mul
@@ -414,22 +414,23 @@ collapses (the only nonzero lower coefficient is `lower₀ = -W`) to `rt ^ d = W
 
 /-- The collapsed defining relation for a binomial modulus: `rt ^ d = W`. -/
 theorem rt_pow_d_binomial (P : BinomialParams F) :
-    (rt P.toGeneral) ^ P.d = algebraMap F Quot[P.toGeneral] P.W := by
-  have hsum : (∑ i : Fin P.toGeneral.d,
-        algebraMap F Quot[P.toGeneral] (P.toGeneral.lowerCoeff i) * (rt P.toGeneral) ^ (i : ℕ))
-      = -algebraMap F Quot[P.toGeneral] P.W := by
-    rw [Finset.sum_eq_single_of_mem (⟨0, P.d_pos⟩ : Fin P.toGeneral.d) (Finset.mem_univ _)]
-    · rw [BinomialParams.toGeneral_lowerCoeff]; simp
+    (rt P.toExtensionParams) ^ P.d = algebraMap F Quot[P.toExtensionParams] P.W := by
+  have hsum : (∑ i : Fin P.toExtensionParams.d,
+        algebraMap F Quot[P.toExtensionParams] (P.toExtensionParams.lowerCoeff i)
+          * (rt P.toExtensionParams) ^ (i : ℕ))
+      = -algebraMap F Quot[P.toExtensionParams] P.W := by
+    rw [Finset.sum_eq_single_of_mem (⟨0, P.d_pos⟩ : Fin P.toExtensionParams.d) (Finset.mem_univ _)]
+    · rw [BinomialParams.toExtensionParams_lowerCoeff]; simp
     · intro i _ hi
       have hi0 : (i : ℕ) ≠ 0 := fun h => hi (Fin.ext (by simpa using h))
-      rw [BinomialParams.toGeneral_lowerCoeff, if_neg hi0, map_zero, zero_mul]
-  have h := rt_relation (P := P.toGeneral)
+      rw [BinomialParams.toExtensionParams_lowerCoeff, if_neg hi0, map_zero, zero_mul]
+  have h := rt_relation (P := P.toExtensionParams)
   rw [hsum, ← sub_eq_add_neg, sub_eq_zero] at h
   exact h
 
 /-- **The binomial defining relation** at the level of `Ext`: `gen ^ d = ofBase W`. -/
 theorem gen_pow_d_binomial (P : BinomialParams F) :
-    (gen : Ext P.toGeneral) ^ P.d = ofBase P.W :=
+    (gen : Ext P.toExtensionParams) ^ P.d = ofBase P.W :=
   toQuot_injective (by rw [toQuot_pow, toQuot_gen, toQuot_ofBase, rt_pow_d_binomial])
 
 end CompPoly.Extension.Ext

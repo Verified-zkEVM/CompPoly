@@ -70,11 +70,11 @@ theorem ext4Params_poly_irreducible : Irreducible ext4Params.poly := by
 instance : Fact (Irreducible ext4Params.poly) := ⟨ext4Params_poly_irreducible⟩
 
 /-- The irreducibility fact in the form the general framework's `Field` instance consumes. -/
-instance : Fact (Irreducible ext4Params.toGeneral.poly) :=
-  ⟨ext4Params.toGeneral_poly ▸ ext4Params_poly_irreducible⟩
+instance : Fact (Irreducible ext4Params.toExtensionParams.poly) :=
+  ⟨ext4Params.toExtensionParams_poly ▸ ext4Params_poly_irreducible⟩
 
 /-- The degree-4 extension field of KoalaBear. -/
-abbrev Ext4 : Type := CompPoly.Extension.Ext ext4Params.toGeneral
+abbrev Ext4 : Type := CompPoly.Extension.Ext ext4Params.toExtensionParams
 
 /-- The adjoined fourth root of `3`, as an element of `Ext4`. -/
 def ext4Gen : Ext4 := Ext.gen
@@ -90,7 +90,8 @@ enough.
 theorem ext4Gen_eq_gen : ext4Gen = Ext.gen := rfl
 
 /-- `ext4Gen` maps to the adjoined root of the specification. -/
-@[simp] theorem toQuot_ext4Gen : Ext.toQuot ext4Gen = Ext.rt ext4Params.toGeneral := Ext.toQuot_gen
+@[simp] theorem toQuot_ext4Gen : Ext.toQuot ext4Gen = Ext.rt ext4Params.toExtensionParams :=
+  Ext.toQuot_gen
 
 /-- **The defining relation**, as a theorem rather than only an executable check. -/
 @[simp] theorem ext4Gen_pow_four : ext4Gen ^ 4 = Ext.ofBase (3 : Field) :=
@@ -98,7 +99,7 @@ theorem ext4Gen_eq_gen : ext4Gen = Ext.gen := rfl
 
 /-- `ext4Gen` is a root of `X^4 - 3`, in the form `aeval` expects. -/
 theorem aeval_ext4Gen : aeval ext4Gen ext4Params.poly = 0 := by
-  rw [← ext4Params.toGeneral_poly]; exact Ext.aeval_gen_poly
+  rw [← ext4Params.toExtensionParams_poly]; exact Ext.aeval_gen_poly
 
 @[simp] theorem card_ext4 : Fintype.card Ext4 = fieldSize ^ 4 := Ext.card_ext
 

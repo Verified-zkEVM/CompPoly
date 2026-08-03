@@ -46,12 +46,12 @@ namespace CompPoly.Extension.Ext
 
 open Polynomial AdjoinRoot
 
-variable {F : Type*} [Field F] [Fintype F] {P : GeneralParams F}
+variable {F : Type*} [Field F] [Fintype F] {P : ExtensionParams F}
 
 /-! ### Cardinality -/
 
 /-- Coefficient vectors are exactly functions out of `Fin d`. -/
-def equivFn (P : GeneralParams F) : Ext P ≃ (Fin P.d → F) where
+def equivFn (P : ExtensionParams F) : Ext P ≃ (Fin P.d → F) where
   toFun := coeff
   invFun := ofFn
   left_inv := ofFn_coeff
@@ -100,8 +100,8 @@ theorem toQuot_surjective : Function.Surjective (toQuot (P := P)) := by
 theorem toQuot_bijective : Function.Bijective (toQuot (P := P)) :=
   ⟨toQuot_injective, toQuot_surjective⟩
 
-/-- The extension is isomorphic to its specification `F[X] / (X^d - W)`. -/
-noncomputable def ringEquivQuot (P : GeneralParams F) : Ext P ≃+* Quot[P] :=
+/-- The extension is isomorphic to its specification `F[X] / f`. -/
+noncomputable def ringEquivQuot (P : ExtensionParams F) : Ext P ≃+* Quot[P] :=
   RingEquiv.ofBijective (toQuotRingHom P) toQuot_bijective
 
 @[simp] theorem ringEquivQuot_apply (x : Ext P) : ringEquivQuot P x = toQuot x := rfl

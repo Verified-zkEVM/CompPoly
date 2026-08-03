@@ -3,9 +3,9 @@
 `CompPoly/Fields/Extension/` is the computable field-extension framework for odd
 characteristic. It models `F[X] / f` for an **arbitrary monic modulus** `f` as a dense
 coefficient vector and proves it equal to `AdjoinRoot f`, so Mathlib field theory applies to
-it. The parameters are `GeneralParams` (the modulus stored by its lower coefficients);
+it. The parameters are `ExtensionParams` (the modulus stored by its lower coefficients);
 binomials `X^d - W` keep the ergonomic front-end `BinomialParams`, mapped in by
-`BinomialParams.toGeneral`.
+`BinomialParams.toExtensionParams`.
 
 This page owns extension-field architecture. The characteristic-2 stack is a separate,
 independent development — see [`binary-fields-and-ntt.md`](binary-fields-and-ntt.md).
@@ -36,7 +36,7 @@ certificate-based irreducibility pipeline below exist to make such extensions ro
 | Factor-degree bound | [`../../CompPoly/ToMathlib/Polynomial/Irreducible.lean`](../../CompPoly/ToMathlib/Polynomial/Irreducible.lean) | `exists_factor_natDegree_le_of_reducible` |
 | Binomial criterion | [`../../CompPoly/Fields/Extension/Binomial.lean`](../../CompPoly/Fields/Extension/Binomial.lean) | the collapse to base-field exponentiations; `irreducible_X_pow_four_sub_C_iff` |
 | Rabin certificates | [`../../CompPoly/Data/Polynomial/RabinCertificate.lean`](../../CompPoly/Data/Polynomial/RabinCertificate.lean) | kernel-checked chains for non-binomial moduli; `runChain_sound`, `irreducible_of_rabin_prime_degree` |
-| Carrier and ring ops | [`../../CompPoly/Fields/Extension/Defs.lean`](../../CompPoly/Fields/Extension/Defs.lean) | `GeneralParams`, `BinomialParams` (+ `toGeneral`), `Ext P`, `Ext.shiftReduce`, `Ext.monomialMod`, `Ext.mul` |
+| Carrier and ring ops | [`../../CompPoly/Fields/Extension/Defs.lean`](../../CompPoly/Fields/Extension/Defs.lean) | `ExtensionParams`, `BinomialParams` (+ `toExtensionParams`), `Ext P`, `Ext.shiftReduce`, `Ext.monomialMod`, `Ext.mul` |
 | Bridge and `CommRing` | [`../../CompPoly/Fields/Extension/Bridge.lean`](../../CompPoly/Fields/Extension/Bridge.lean) | `toQuot`, `toQuot_shiftReduce`, `toQuot_mul`, `instCommRing` |
 | Bijectivity and `Field` | [`../../CompPoly/Fields/Extension/Field.lean`](../../CompPoly/Fields/Extension/Field.lean) | `ringEquivQuot`, `card_ext`, `inv`, `instField` |
 
@@ -58,7 +58,7 @@ and generated certificate data in
 
 ## What The Interface Provides
 
-Concretely, for `P : GeneralParams F`:
+Concretely, for `P : ExtensionParams F`:
 
 | Surface | Declarations |
 |---|---|
@@ -126,7 +126,7 @@ which predates this framework.
    modulus syntactically and `fieldSize` is an expression like `2 ^ 31 - 2 ^ 24 + 1`. Use a
    `show` — see any of the three `Ext4.lean` files.
 4. Register `instance : Fact (Irreducible ...)`, define the `abbrev` as
-   `Ext ...Params.toGeneral`, and route the `Fact` through `toGeneral_poly` — see
+   `Ext ...Params.toExtensionParams`, and route the `Fact` through `toExtensionParams_poly` — see
    `KoalaBear/Ext4.lean`.
 
 That is about 60 lines.
@@ -140,7 +140,7 @@ That is about 60 lines.
 3. Write the irreducibility wrapper: `toPoly p fL = f`, `natDegree`, `f ≠ 0`, then the
    chain/Bézout `rfl` checks and the assembly through `irreducible_of_rabin_prime_degree`
    (for prime `d`) — see `KoalaBear/QuinticIrreducible.lean` for the idiom.
-4. Write the `GeneralParams` (lower coefficients of `f`, little-endian) and prove
+4. Write the `ExtensionParams` (lower coefficients of `f`, little-endian) and prove
    `...Params.poly = f`; register the `Fact` and define the `abbrev` — see
    `KoalaBear/Ext5.lean`.
 
@@ -162,12 +162,12 @@ The one place a degree bound is needed on the *polynomial* side — showing that
 [`Univariate/ToPoly/Degree.lean`](../../CompPoly/Univariate/ToPoly/Degree.lean)), it exists but is
 **not** wired to this framework; connecting them would be new work.
 
-`GeneralParams` carries `d`, the modulus's lower coefficients, and the base-field cardinality
+`ExtensionParams` carries `d`, the modulus's lower coefficients, and the base-field cardinality
 `q` as a *type index*, so two different extensions of the same base field are different types
 whose instances cannot be confused. `q` is data rather than `Fintype.card F` because Fermat
 inversion evaluates the exponent at runtime, and `Fintype.card (ZMod p)` would enumerate all
 of `Fin p`. `BinomialParams` is the ergonomic front-end for `X^d - W`, mapped in by
-`BinomialParams.toGeneral` (lower coefficients `(-W, 0, …, 0)`), with `toGeneral_poly`
+`BinomialParams.toExtensionParams` (lower coefficients `(-W, 0, …, 0)`), with `toExtensionParams_poly`
 identifying the two spellings of the defining polynomial.
 
 **The instances are assembled field-by-field, not by `Function.Injective.commRing` /
