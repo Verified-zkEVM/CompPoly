@@ -123,6 +123,7 @@ import CompPoly.Fields.Montgomery.Native64x8
 import CompPoly.Fields.Montgomery.Native64x8Defs
 import CompPoly.Fields.Montgomery.Native64x8Field
 import CompPoly.Fields.Montgomery.Native64x8Inv
+import CompPoly.Fields.Montgomery.Native64x8InvDefs
 import CompPoly.Fields.Montgomery.Native64x8Mul
 import CompPoly.Fields.PrattCertificate
 import CompPoly.Fields.Secp256k1

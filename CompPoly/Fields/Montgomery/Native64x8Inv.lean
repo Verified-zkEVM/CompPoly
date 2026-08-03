@@ -5,30 +5,18 @@ Authors: Georgios Raikos
 -/
 
 import CompPoly.Fields.Montgomery.Native64x8Field
-import CompPoly.Fields.Montgomery.Native256Gcd
+import CompPoly.Fields.Montgomery.Native64x8InvDefs
 
 /-!
 # Fast inversion for eight-limb Montgomery fields
 
-The Pornin binary-GCD inverse for the eight-limb carrier, reusing the 64-bit-word candidate
-of `Montgomery.Native256Gcd` through limb conversion (both stacks share `R = 2 ^ 256`). The
-candidate is verified by one proven eight-limb multiplication, with the proven Fermat
-inverse as fallback.
+The Pornin binary-GCD inverse for the eight-limb carrier: the 64-bit-word candidate of
+`Montgomery.Native256Gcd`, verified by one proven eight-limb multiplication, with the
+proven Fermat inverse as fallback. The raw-limb twin lives in
+`Montgomery/Native64x8InvDefs`.
 -/
 
 namespace Montgomery.Native64x8
-
-/-! ## Limb conversions -/
-
-/-- Pack eight 32-bit limbs into four 64-bit limbs (canonical inputs: high halves zero). -/
-@[inline] def Limbs8.toUInt256L (x : Limbs8) : Native256.UInt256L :=
-  ⟨x.l0 ||| (x.l1 <<< 32), x.l2 ||| (x.l3 <<< 32),
-   x.l4 ||| (x.l5 <<< 32), x.l6 ||| (x.l7 <<< 32)⟩
-
-/-- Split four 64-bit limbs into eight 32-bit limbs. -/
-@[inline] def Limbs8.ofUInt256L (x : Native256.UInt256L) : Limbs8 :=
-  ⟨x.l0 &&& 0xffffffff, x.l0 >>> 32, x.l1 &&& 0xffffffff, x.l1 >>> 32,
-   x.l2 &&& 0xffffffff, x.l2 >>> 32, x.l3 &&& 0xffffffff, x.l3 >>> 32⟩
 
 /-- Splitting always produces 32-bit-bounded limbs. -/
 theorem Limbs8.ofUInt256L_bounded (x : Native256.UInt256L) : (ofUInt256L x).Bounded := by
