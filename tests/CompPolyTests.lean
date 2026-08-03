@@ -22,6 +22,7 @@ public import CompPolyTests.Bivariate.GuruswamiSudan.Root.RothRuckenstein
 public import CompPolyTests.Bivariate.Multiplicity
 public import CompPolyTests.Bivariate.WeightedDegree
 public import CompPolyTests.Data.MvPolynomial.Notation
+public import CompPolyTests.Data.Polynomial.RabinCertificate
 public import CompPolyTests.Fields.BabyBear.Fast
 public import CompPolyTests.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
 public import CompPolyTests.Fields.Binary.BF128Ghash.Prelude

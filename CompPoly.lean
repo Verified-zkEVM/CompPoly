@@ -62,6 +62,7 @@ public import CompPoly.Data.Nat.Bitwise
 public import CompPoly.Data.Polynomial.Frobenius
 public import CompPoly.Data.Polynomial.MonomialBasis
 public import CompPoly.Data.Polynomial.Rabin
+public import CompPoly.Data.Polynomial.RabinCertificate
 public import CompPoly.Data.RingTheory.AlgebraTower
 public import CompPoly.Data.RingTheory.CanonicalEuclideanDomain
 public import CompPoly.Data.Vector.Basic
@@ -115,7 +116,10 @@ public import CompPoly.Fields.Hachi.Ext4
 public import CompPoly.Fields.KoalaBear
 public import CompPoly.Fields.KoalaBear.Basic
 public import CompPoly.Fields.KoalaBear.Ext4
+public import CompPoly.Fields.KoalaBear.Ext5
 public import CompPoly.Fields.KoalaBear.Fast
+public import CompPoly.Fields.KoalaBear.QuinticCertData
+public import CompPoly.Fields.KoalaBear.QuinticIrreducible
 public import CompPoly.Fields.Mersenne
 public import CompPoly.Fields.Montgomery.Basic
 public import CompPoly.Fields.Montgomery.Native32
