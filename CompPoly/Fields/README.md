@@ -11,9 +11,15 @@ This directory contains formally verified field infrastructure used in zero-know
 | **BabyBear.lean** | Facade for BabyBear modules, re-exporting the canonical field and fast native-word implementation. |
 | **BabyBear/Basic.lean** | \(2^{31} - 2^{27} + 1\) — Risc Zero. |
 | **BabyBear/Fast.lean** | BabyBear-namespaced API over the shared fast-field implementation (`Montgomery/Native32Field.lean`): thin wrappers forwarding the native `UInt32` Montgomery-residue operations and their `BabyBear.Field` equivalence (`@[simp]`) lemmas. |
-| **BLS12_377.lean** | Scalar field of BLS12-377 (253-bit, 2-adicity 47) — Zexe. |
-| **BLS12_381.lean** | Scalar field of BLS12-381 (253-bit, 2-adicity 47). |
-| **BN254.lean** | Scalar field of BN254 curve. |
+| **BLS12_377.lean** | Facade for the BLS12-377 scalar-field modules, re-exporting the canonical field and the eight-limb Montgomery implementation. |
+| **BLS12_377/Basic.lean** | Scalar field of BLS12-377 (253-bit, 2-adicity 47) — Zexe. |
+| **BLS12_377/Fast.lean** | Eight-limb Montgomery instantiation of the BLS12-377 scalar field: the `GcdData` and `Mont64x8Field` constants, `ScalarField`, `ofField`, and `ringEquiv`. |
+| **BLS12_381.lean** | Facade for the BLS12-381 scalar-field modules, re-exporting the canonical field and the eight-limb Montgomery implementation. |
+| **BLS12_381/Basic.lean** | Scalar field of BLS12-381 (253-bit, 2-adicity 47). |
+| **BLS12_381/Fast.lean** | Eight-limb Montgomery instantiation of the BLS12-381 scalar field: the `GcdData` and `Mont64x8Field` constants, `ScalarField`, `ofField`, and `ringEquiv`. |
+| **BN254.lean** | Facade for the BN254 scalar-field modules, re-exporting the canonical field and the eight-limb Montgomery implementation. |
+| **BN254/Basic.lean** | Scalar field of BN254 curve. |
+| **BN254/Fast.lean** | Eight-limb Montgomery instantiation of the BN254 scalar field: the `GcdData` and `Mont64x8Field` constants, `ScalarField`, `ofField`, and `ringEquiv`. |
 | **Extension.lean** | Facade for the binomial field-extension stack. |
 | **Extension/Binomial.lean** | Irreducibility of `X^d - W` over a finite field: Rabin's test collapsed to two base-field exponentiations (`irreducible_X_pow_four_sub_C_iff`). |
 | **Extension/Defs.lean** | `BinomialParams` (degree, `W`, base cardinality) and the carrier `Ext P = Vector F d` with its ring operations. |
@@ -31,7 +37,7 @@ This directory contains formally verified field infrastructure used in zero-know
 | **Montgomery/Basic.lean** | Radix-generic Montgomery reduction, field-agnostic number theory shared by the fast prime fields. |
 | **Montgomery/Native32.lean** | Raw `UInt32`/`UInt64` Montgomery reduction over explicit word constants, including bounds and correctness. |
 | **Montgomery/Native32Field.lean** | Per-field parameters, the shared `FastField` carrier, arithmetic, instances, and canonical-field bridge. |
-| **Montgomery/Native64x8Defs.lean** | Zero-import runtime definitions of the eight-limb (32-bit) Montgomery arithmetic, for `precompileModules` consumers (from CompPoly PR #274). |
+| **Montgomery/Native64x8Defs.lean** | Zero-import runtime definitions of the eight-limb (32-bit) Montgomery arithmetic, for `precompileModules` consumers. |
 | **Montgomery/Native64x8.lean** | Word-level specifications and add/sub/negate correctness for the eight-limb arithmetic. |
 | **Montgomery/Native64x8Mul.lean** | Correctness of the eight-limb CIOS Montgomery multiplication. |
 | **Montgomery/Native64x8Field.lean** | The `Mont64x8Field` class, the eight-limb `FastField` carrier, arithmetic, instances, and canonical-field bridge, for moduli below `2^255`. |

@@ -3,8 +3,9 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Georgios Raikos
 -/
+module
 
-import CompPoly.Fields.BN254.Fast
+public meta import CompPoly.Fields.BN254.Fast
 
 /-!
 # Fast BN254 Scalar Field Tests
@@ -13,6 +14,8 @@ Regression checks for the executable eight-limb Montgomery representation: the s
 residues, literal round trips, the field operations, the checked binary-GCD inversion, and
 agreement with the canonical `BN254.ScalarField` model through `toField`.
 -/
+
+public meta section
 
 namespace BN254.Fast
 

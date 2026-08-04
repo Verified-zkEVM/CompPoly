@@ -3,9 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Gregor Mitscha-Baude
 -/
+module
 
-import CompPoly.Fields.Montgomery.Native64x8
-import Mathlib.Tactic.Linarith
+public import CompPoly.Fields.Montgomery.Native64x8
+public import Mathlib.Tactic.Linarith
 
 /-!
 # Correctness of eight-limb CIOS Montgomery multiplication
@@ -27,6 +28,8 @@ Montgomery product up to the final conditional subtraction.
 * `mulRound_spec` — the round invariant, with limb bounds and the `2 * q` bound
 * `mul_spec` — `mul` is canonical and satisfies `2 ^ 256 * ⟦mul a b⟧ ≡ ⟦a⟧ * ⟦b⟧ [MOD q]`
 -/
+
+@[expose] public section
 
 namespace Montgomery
 namespace Native64x8

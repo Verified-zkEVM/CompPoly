@@ -5,8 +5,8 @@ Authors: Quang Dao, Georgios Raikos
 -/
 module
 
-import CompPoly.Fields.BLS12_377.Basic
-import CompPoly.Fields.BLS12_377.Fast
+public import CompPoly.Fields.BLS12_377.Basic
+public import CompPoly.Fields.BLS12_377.Fast
 
 /-!
 # BLS12-377 Scalar Field

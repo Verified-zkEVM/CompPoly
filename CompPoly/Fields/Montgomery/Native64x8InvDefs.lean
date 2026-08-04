@@ -3,8 +3,9 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Georgios Raikos
 -/
+module
 
-import CompPoly.Fields.Montgomery.Native64x8Defs
+public import CompPoly.Fields.Montgomery.Native64x8Defs
 
 /-!
 # Eight-limb inversion: runtime definitions (Mathlib-free)
@@ -13,6 +14,8 @@ The Pornin binary-GCD inverse candidate over `Limbs8` and its checked wrapper
 (`invGcdRaw`), Mathlib-free for `precompileModules` consumers. The proof side is
 `Montgomery/Native64x8Inv`.
 -/
+
+@[expose] public section
 
 namespace Montgomery.Native64x8
 

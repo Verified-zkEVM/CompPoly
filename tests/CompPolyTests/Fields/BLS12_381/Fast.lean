@@ -3,8 +3,9 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Georgios Raikos
 -/
+module
 
-import CompPoly.Fields.BLS12_381.Fast
+public meta import CompPoly.Fields.BLS12_381.Fast
 
 /-!
 # Fast BLS12-381 Scalar Field Tests
@@ -13,6 +14,8 @@ Regression checks for the executable eight-limb Montgomery representation: the s
 residues, literal round trips, the field operations, the checked binary-GCD inversion, and
 agreement with the canonical `BLS12_381.ScalarField` model through `toField`.
 -/
+
+public meta section
 
 namespace BLS12_381.Fast
 

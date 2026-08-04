@@ -3,10 +3,11 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Georgios Raikos
 -/
+module
 
-import CompPoly.Fields.Montgomery.Native64x8Field
-import CompPoly.Fields.Montgomery.Native64x8InvDefs
-import Mathlib.Tactic.Ring
+public import CompPoly.Fields.Montgomery.Native64x8Field
+public import CompPoly.Fields.Montgomery.Native64x8InvDefs
+public import Mathlib.Tactic.Ring
 
 /-!
 # Fast inversion for eight-limb Montgomery fields
@@ -16,15 +17,18 @@ computes the field inverse and `FastField.invGcd` is its proof-carrying wrapper.
 proves the divstep coefficient bound and the mac-width safety of the candidate.
 -/
 
+@[expose] public section
+
 namespace Montgomery.Native64x8
 
 /-! ## Divstep coefficient bounds -/
 
+/-- Unfolding of the empty divstep run. -/
 theorem gcdInner_zero (a b : UInt64) (f0 g0 f1 g1 : Int) :
     gcdInner 0 a b f0 g0 f1 g1 = (a, b, f0, g0, f1, g1) := rfl
 
 /-- Unfolding of one divstep. -/
-theorem gcdInner_succ (rounds : Nat) (a b : UInt64) (f0 g0 f1 g1 : Int) :
+theorem gcdInner_succ (rounds : ℕ) (a b : UInt64) (f0 g0 f1 g1 : Int) :
     gcdInner (rounds + 1) a b f0 g0 f1 g1 =
       if a &&& 1 == 0 then
         gcdInner rounds (a >>> 1) b f0 g0 (f1 * 2) (g1 * 2)
@@ -41,8 +45,8 @@ theorem gcdInner_succ (rounds : Nat) (a b : UInt64) (f0 g0 f1 g1 : Int) :
     · rw [if_neg h2, if_neg h2]
 
 /-- Transition entries at most double per divstep. -/
-theorem gcdInner_natAbs_le {rounds : Nat} {a b a' b' : UInt64}
-    {f0 g0 f1 g1 f0' g0' f1' g1' : Int} {n : Nat}
+theorem gcdInner_natAbs_le {rounds : ℕ} {a b a' b' : UInt64}
+    {f0 g0 f1 g1 f0' g0' f1' g1' : Int} {n : ℕ}
     (h0 : f0.natAbs + g0.natAbs ≤ n) (h1 : f1.natAbs + g1.natAbs ≤ n)
     (heq : gcdInner rounds a b f0 g0 f1 g1 = (a', b', f0', g0', f1', g1')) :
     f0'.natAbs + g0'.natAbs ≤ 2 ^ rounds * n ∧
@@ -71,7 +75,7 @@ theorem gcdInner_natAbs_le {rounds : Nat} {a b a' b' : UInt64}
       · exact step (by omega) (by omega) heq
 
 /-- Chunks of at most 31 divsteps satisfy the linear-combination bound. -/
-theorem gcdInner_natAbs_le_31 {rounds : Nat} (h31 : rounds ≤ 31) {a b a' b' : UInt64}
+theorem gcdInner_natAbs_le_31 {rounds : ℕ} (h31 : rounds ≤ 31) {a b a' b' : UInt64}
     {f0' g0' f1' g1' : Int}
     (heq : gcdInner rounds a b 1 0 0 1 = (a', b', f0', g0', f1', g1')) :
     f0'.natAbs + g0'.natAbs ≤ 2 ^ 31 ∧ f1'.natAbs + g1'.natAbs ≤ 2 ^ 31 := by
@@ -189,7 +193,7 @@ theorem gcdLinearCombMontyRed_lt {q : Limbs8} {negInv : UInt64} {a b : Limbs8} {
     exact hfg
 
 /-- The main loop keeps both tracks at mac width and the Montgomery pair canonical. -/
-theorem gcdMainLoop_bounded {q : Limbs8} {negInv : UInt64} {rounds : Nat}
+theorem gcdMainLoop_bounded {q : Limbs8} {negInv : UInt64} {rounds : ℕ}
     {a u b v A U B V : Limbs8}
     (hq : q.Bounded) (hq0 : 0 < q.toNat) (hq2 : 2 * q.toNat < 2 ^ 256)
     (hn : negInv.toNat < 2 ^ 32) (hnq : negInv.toNat * q.toNat % 2 ^ 32 = 2 ^ 32 - 1)
@@ -249,7 +253,7 @@ private theorem exists_eq_tuple6 {α β γ δ ε ζ : Type} (p : α × β × γ 
   ⟨p.1, p.2.1, p.2.2.1, p.2.2.2.1, p.2.2.2.2.1, p.2.2.2.2.2, by simp only [Prod.mk.eta]⟩
 
 /-- The candidate stays at mac width and canonical. -/
-theorem gcdInvCandidate_lt {modulus : Nat} [P : GcdData modulus] {q x : Limbs8}
+theorem gcdInvCandidate_lt {modulus : ℕ} [P : GcdData modulus] {q x : Limbs8}
     {negInv : UInt64}
     (hq : q.Bounded) (hqm : q.toNat = modulus) (hq0 : 0 < q.toNat)
     (hq2 : 2 * q.toNat < 2 ^ 256) (hn : negInv.toNat < 2 ^ 32)

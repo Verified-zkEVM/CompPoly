@@ -3,9 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Georgios Raikos
 -/
+module
 
-import CompPoly.Fields.BLS12_377.Basic
-import CompPoly.Fields.Montgomery.Native64x8Inv
+public import CompPoly.Fields.BLS12_377.Basic
+public import CompPoly.Fields.Montgomery.Native64x8Inv
 
 /-!
 # Fast BLS12-377 Scalar Field
@@ -14,6 +15,8 @@ A native eight-limb Montgomery implementation of BLS12-377 scalar arithmetic
 (`CompPoly.Fields.Montgomery.Native64x8Field`). This module supplies the BLS12-377
 constants.
 -/
+
+@[expose] public section
 
 namespace BLS12_377.Fast
 

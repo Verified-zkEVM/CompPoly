@@ -3,9 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Gregor Mitscha-Baude
 -/
+module
 
-import CompPoly.Fields.Montgomery.Basic
-import CompPoly.Fields.Montgomery.Native64x8Defs
+public import CompPoly.Fields.Montgomery.Basic
+public import CompPoly.Fields.Montgomery.Native64x8Defs
 
 /-!
 # Native Montgomery arithmetic over eight 32-bit limbs
@@ -32,6 +33,8 @@ invariant is proved in the sibling module that builds the field carrier.
 * `condSub_toNat`, `add_toNat`, `sub_toNat`, `neg_toNat` — correctness of the raw operations
 * `addLimbs_toNat`, `subLimbs_spec` — the underlying carry/borrow chains
 -/
+
+@[expose] public section
 
 namespace Montgomery
 namespace Native64x8

@@ -3,6 +3,7 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Gregor Mitscha-Baude
 -/
+module
 
 /-!
 # Eight-limb Montgomery arithmetic: runtime definitions (zero-import)
@@ -15,6 +16,8 @@ This module deliberately has **zero imports**: downstream consumers put it into
 `precompileModules` native-compilation lanes, and `precompileModules` compiles the
 entire import closure — so the runtime definitions must not pull in mathlib.
 -/
+
+@[expose] public section
 
 namespace Montgomery
 namespace Native64x8

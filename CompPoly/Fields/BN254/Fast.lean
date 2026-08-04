@@ -3,9 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Georgios Raikos
 -/
+module
 
-import CompPoly.Fields.BN254.Basic
-import CompPoly.Fields.Montgomery.Native64x8Inv
+public import CompPoly.Fields.BN254.Basic
+public import CompPoly.Fields.Montgomery.Native64x8Inv
 
 /-!
 # Fast BN254 Scalar Field
@@ -13,6 +14,8 @@ import CompPoly.Fields.Montgomery.Native64x8Inv
 A native eight-limb Montgomery implementation of BN254 scalar arithmetic
 (`CompPoly.Fields.Montgomery.Native64x8Field`). This module supplies the BN254 constants.
 -/
+
+@[expose] public section
 
 namespace BN254.Fast
 
