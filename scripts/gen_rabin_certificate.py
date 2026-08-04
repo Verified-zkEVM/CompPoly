@@ -3,18 +3,29 @@
 polynomial `f` over a prime field `F_p`.
 
 This is a TCB-external generator: it computes the certificate data (the
-quotient/remainder of every repeated-squaring step, and the Euclidean gcd
-chain) and emits it as JSON. Nothing here is trusted — the Lean side re-checks
-every step in the kernel via `rfl`.
+quotient/remainder of every repeated-squaring step, and a Bezout identity in
+place of a Euclidean gcd chain) and emits it as JSON. Nothing here is trusted —
+the Lean side re-checks every step in the kernel via `rfl`.
 
-Rabin's test for a monic `f` of *prime* degree `d` over `F_p` reduces to:
-  (A trace)   f | X^(p^d) - X      i.e.   X^(p^d) mod f == X
-  (B coprime) gcd(f, X^p - X) == 1  i.e.  no linear factors
+Rabin's test for a monic `f` of degree `d` over `F_p` reduces to:
+  (A trace)    f | X^(p^d) - X            i.e.  X^(p^d) mod f == X
+  (B coprime)  gcd(f, X^(p^(d/l)) - X) == 1   for every prime l | d
+
+Condition B must be checked once *per prime factor* of `d`. At prime `d` there
+is a single factor and `d/l = 1`, so B collapses to `gcd(f, X^p - X) == 1` —
+"no linear factors". At composite `d` that collapsed form is **not sufficient**:
+a product of equal-degree factors satisfies both A and the `d/l = 1` check. For
+instance over KoalaBear, `(X^3 + X + 4)(X^3 + X - 4)` has no root in `F_p` and
+all its roots lie in `F_(p^6)`, so it passes A and the linear-factor check while
+being visibly reducible. Only the `d/3 = 2` and `d/2 = 3` checks reject it.
 
 Polynomials are little-endian coefficient lists over `range(p)`.
 
 Usage (default: KoalaBear, f = x^5 + x^2 - 1):
     python3 scripts/gen_rabin_certificate.py
+
+Self-test over the known-answer cases in `SELF_TESTS`:
+    python3 scripts/gen_rabin_certificate.py --self-test
 """
 from __future__ import annotations
 import argparse, json, sys
@@ -148,6 +159,107 @@ def xpow_mod_cert(e: int, f: list[int], p: int):
     return cur, steps
 
 
+def prime_factors(n: int) -> list[int]:
+    """The distinct prime factors of `n`, ascending. Mirrors `Nat.primeFactors` in Lean."""
+    out, m, q = [], n, 2
+    while q * q <= m:
+        if m % q == 0:
+            out.append(q)
+            while m % q == 0:
+                m //= q
+        q += 1
+    if m > 1:
+        out.append(m)
+    return out
+
+
+def coprime_cert(f: list[int], p: int, m: int):
+    """Certificate that `gcd(f, X^(p^m) - X) == 1`.
+
+    Computes `rp = X^(p^m) mod f`, sets `w = rp - X` (the reduced form of
+    `X^(p^m) - X`), and finds a Bezout pair with `u*f + v*w = 1`. Coprimality
+    holds exactly when the gcd is a unit. Returns a dict of the certificate
+    data plus an `ok` flag.
+    """
+    rp, steps = xpow_mod_cert(p ** m, f, p)
+    rp = poly_trim(rp)
+    w = rp[:]
+    while len(w) < 2:
+        w.append(0)
+    w[1] = (w[1] - 1) % p
+    w = poly_trim(w)
+    g, u, v = poly_bezout(f, w, p)
+    ok = (g == [1])
+    if ok:
+        # sanity: u*f + v*w == 1 (mod p)
+        lhs = poly_trim([(x + y) % p for x, y in
+                         zip_pad(poly_mul(u, f, p), poly_mul(v, w, p))])
+        assert lhs == [1], f"Bezout check failed at m={m}: {lhs}"
+    # sanity: rp == w + X coefficientwise mod p
+    assert poly_trim([c % p for c in rp]) == poly_trim(
+        [(x + y) % p for x, y in zip_pad(w, [0, 1])]), f"rp != w + X at m={m}"
+    return {"m": m, "ok": ok, "steps": steps, "rp": rp, "w": w, "u": u, "v": v}
+
+
+def build_certificate(p: int, f: list[int]) -> dict:
+    """Run Rabin's test on monic `f` over `F_p`, returning all certificate data.
+
+    Condition A is the trace check. Condition B is checked once per prime factor
+    of `d = deg f`, at exponent `p^(d/l)`. `f` is irreducible iff all hold.
+    """
+    assert f[-1] == 1, "f must be monic (leading coeff 1)"
+    d = len(f) - 1
+    # d >= 2 keeps `X` in reduced form, so the trace residue can be compared against the
+    # literal [0, 1]. This matches `ExtensionParams.two_le` on the Lean side.
+    assert d >= 2, "f must have degree at least 2"
+
+    # Cond A: X^(p^d) mod f == X.
+    xpd, xpd_steps = xpow_mod_cert(p ** d, f, p)
+    condA = (poly_trim(xpd) == [0, 1])
+
+    # Cond B: one coprimality certificate per prime factor of d, at m = d/l.
+    factors = prime_factors(d)
+    coprimes = [coprime_cert(f, p, d // ell) for ell in factors]
+    condB = all(c["ok"] for c in coprimes)
+
+    return {
+        "p": p, "f": f, "degree": d, "prime_factors": factors,
+        "condA_trace_ok": condA, "condA_steps": len(xpd_steps),
+        "condB_coprime_ok": condB,
+        "condB": [{"prime": ell, "m": c["m"], "ok": c["ok"], "steps": len(c["steps"]),
+                   "rp": c["rp"], "w": c["w"], "u": c["u"], "v": c["v"]}
+                  for ell, c in zip(factors, coprimes)],
+        "IRREDUCIBLE": condA and condB,
+        "_trace_steps": xpd_steps, "_coprimes": coprimes,
+    }
+
+
+# (p, coeff string, expected verdict, note) — known answers guarding the generator.
+SELF_TESTS = [
+    (5, "1,1,1", True, "X^2+X+1 over F_5, the RabinCertificate.lean test vector"),
+    (2130706433, "-1,0,1,0,0,1", True, "KoalaBear quintic X^5+X^2-1 (Ext5)"),
+    (2130706433, "1,0,0,1,0,0,1", True, "KoalaBear sextic X^6+X^3+1 = Phi_9 (Ext6)"),
+    (2130706433, "-16,0,1,0,2,0,1", False,
+     "(X^3+X+4)(X^3+X-4): passes trace + linear-factor check, but is reducible"),
+    (2130706433, "-3,0,0,0,0,0,1", False, "X^6-3: no sextic binomial exists over KoalaBear"),
+    (2130706433, "-3,0,0,0,1", True, "KoalaBear quartic X^4-3 (Ext4), composite degree"),
+]
+
+
+def self_test() -> int:
+    """Check the generator against known-answer cases. Returns a process exit code."""
+    failures = 0
+    for p, fstr, expected, note in SELF_TESTS:
+        f = [c % p for c in map(int, fstr.split(","))]
+        got = build_certificate(p, f)["IRREDUCIBLE"]
+        status = "ok  " if got == expected else "FAIL"
+        if got != expected:
+            failures += 1
+        print(f"[{status}] p={p} f={fstr!r} irreducible={got} (expected {expected})  {note}")
+    print(f"\n{len(SELF_TESTS) - failures}/{len(SELF_TESTS)} passed")
+    return 1 if failures else 0
+
+
 def steps_to_lean(steps) -> str:
     """Render a step list as a Lean `List CompPoly.RabinCert.Step` literal,
     wrapping each step across two lines to respect the 100-column style limit."""
@@ -178,53 +290,88 @@ def main() -> int:
                     help="write Lean data definitions (steps + Bezout) here")
     ap.add_argument("--namespace", type=str, default="QuinticCert",
                     help="namespace for the emitted Lean definitions")
+    ap.add_argument("--self-test", action="store_true",
+                    help="check the generator against known-answer cases and exit")
     args = ap.parse_args()
+    if args.self_test:
+        return self_test()
     p = args.p
     f = [c % p for c in map(int, args.f.split(","))]
-    assert f[-1] == 1, "f must be monic (leading coeff 1)"
-    d = len(f) - 1
+    cert = build_certificate(p, f)
+    d = cert["degree"]
+    xpd_steps = cert["_trace_steps"]
+    coprimes = cert["_coprimes"]
+    condA, condB = cert["condA_trace_ok"], cert["condB_coprime_ok"]
 
-    # Cond B: X^p mod f = rp; then Bezout u*f + v*w = 1 for w = rp - X.
-    rp, xp_steps = xpow_mod_cert(p, f, p)
-    rp = poly_trim(rp)
-    w = rp[:]
-    while len(w) < 2:
-        w.append(0)
-    w[1] = (w[1] - 1) % p
-    w = poly_trim(w)
-    g, u, v = poly_bezout(f, w, p)
-    condB = (g == [1])
-    # sanity: u*f + v*w == 1 (mod p)
-    lhs = poly_trim([(x + y) % p for x, y in
-                     zip_pad(poly_mul(u, f, p), poly_mul(v, w, p))])
-    assert lhs == [1], f"Bezout check failed: {lhs}"
-    # sanity: rp == w + X coefficientwise mod p
-    assert poly_trim([c % p for c in rp]) == poly_trim(
-        [(x + y) % p for x, y in zip_pad(w, [0, 1])]), "rp != w + X"
-
-    # Cond A: X^(p^d) mod f == X.
-    xpd, xpd_steps = xpow_mod_cert(p ** d, f, p)
-    condA = (poly_trim(xpd) == [0, 1])
-
-    irreducible = condA and condB
-    summary = {
-        "p": p, "f": f, "degree": d,
-        "condA_trace_ok": condA, "condA_steps": len(xpd_steps),
-        "condB_coprime_ok": condB, "condB_xp_steps": len(xp_steps),
-        "condB_rp": rp, "condB_w": w, "condB_u": u, "condB_v": v,
-        "IRREDUCIBLE": irreducible,
-    }
+    irreducible = cert["IRREDUCIBLE"]
+    summary = {k: v for k, v in cert.items() if not k.startswith("_")}
     print(json.dumps(summary, indent=2))
 
     if args.out:
         with open(args.out, "w") as fh:
             json.dump({"summary": summary,
                        "condA": {"steps": xpd_steps},
-                       "condB": {"xp_steps": xp_steps}}, fh)
+                       "condB": [{"m": c["m"], "steps": c["steps"]} for c in coprimes]}, fh)
         print(f"full certificate written to {args.out}", file=sys.stderr)
 
     if args.lean:
         ns = args.namespace
+        is_prime_degree = cert["prime_factors"] == [d]
+        # At prime degree there is exactly one coprimality certificate, at exponent `p^1`, and it
+        # keeps the historical `frobSteps`/`rp`/`w`/`u`/`v` names so existing generated modules
+        # regenerate unchanged. At composite degree the blocks are suffixed by `m = d / l`.
+        cop_lines: list[str] = []
+        for ell, c in zip(cert["prime_factors"], coprimes):
+            m = c["m"]
+            if is_prime_degree:
+                names = ("frobSteps", "rp", "w", "u", "v")
+                exp = "p"
+            else:
+                names = (f"cop{m}Steps", f"cop{m}Rp", f"cop{m}W", f"cop{m}U", f"cop{m}V")
+                exp = f"p^{m}"
+            sname, rname, wname, uname, vname = names
+            cop_lines += [
+                f"/-! ### Coprimality with `X^({exp}) - X`, for the prime factor `{ell}` of "
+                f"`d = {d}`. -/",
+                "",
+                f"/-- Square-and-multiply chain for `X^({exp}) mod f` "
+                f"({len(c['steps'])} steps). -/",
+                f"def {sname} : List Step := {steps_to_lean(c['steps'])}",
+                "",
+                f"/-- The residue `X^({exp}) mod f`. -/",
+                f"def {rname} : List ℕ := {poly_to_lean(c['rp'])}",
+                "",
+                f"/-- `{wname} = (X^({exp}) mod f) - X`, the reduced form of `X^({exp}) - X`. -/",
+                f"def {wname} : List ℕ := {poly_to_lean(c['w'])}",
+                "",
+                f"/-- Bézout coefficient: `{uname}·f + {vname}·{wname} = 1`. -/",
+                f"def {uname} : List ℕ := {poly_to_lean(c['u'])}",
+                "",
+                f"/-- Bézout coefficient: `{uname}·f + {vname}·{wname} = 1`. -/",
+                f"def {vname} : List ℕ := {poly_to_lean(c['v'])}",
+                "",
+            ]
+        if is_prime_degree:
+            # Preserve the original layout exactly: no per-factor section heading, and the
+            # coprimality chain is introduced with its historical docstring wording.
+            cop_lines = [
+                f"/-- Square-and-multiply chain for `X^p mod f` "
+                f"({len(coprimes[0]['steps'])} steps). -/",
+                f"def frobSteps : List Step := {steps_to_lean(coprimes[0]['steps'])}",
+                "",
+                "/-- The residue `X^p mod f`. -/",
+                f"def rp : List ℕ := {poly_to_lean(coprimes[0]['rp'])}",
+                "",
+                "/-- `w = (X^p mod f) - X`, the reduced form of `X^p - X`. -/",
+                f"def w : List ℕ := {poly_to_lean(coprimes[0]['w'])}",
+                "",
+                "/-- Bézout coefficient: `u·f + v·w = 1`. -/",
+                f"def u : List ℕ := {poly_to_lean(coprimes[0]['u'])}",
+                "",
+                "/-- Bézout coefficient: `u·f + v·w = 1`. -/",
+                f"def v : List ℕ := {poly_to_lean(coprimes[0]['v'])}",
+                "",
+            ]
         lines = [
             "/-",
             "Copyright (c) 2026 CompPoly Contributors. All rights reserved.",
@@ -240,6 +387,15 @@ def main() -> int:
             "",
             f"The modulus `f` has little-endian coefficients `{f}`.",
             "",
+            *([] if is_prime_degree else [
+                f"`d = {d}` is composite, so Rabin's coprimality condition needs one certificate "
+                f"per",
+                f"prime factor of `d` ({', '.join(map(str, cert['prime_factors']))}), at exponents "
+                f"{', '.join('p^' + str(c['m']) for c in coprimes)} respectively. Checking only "
+                "the",
+                "linear-factor case would admit a product of equal-degree factors.",
+                "",
+            ]),
             f"GENERATED by `scripts/gen_rabin_certificate.py --p {p} --f {args.f!r}`.",
             "Do not edit by hand; regenerate instead. Nothing here is trusted — the kernel",
             "re-checks every step through `CompPoly.RabinCert.runChain`.",
@@ -255,21 +411,7 @@ def main() -> int:
             f"({len(xpd_steps)} steps). -/",
             f"def traceSteps : List Step := {steps_to_lean(xpd_steps)}",
             "",
-            f"/-- Square-and-multiply chain for `X^p mod f` ({len(xp_steps)} steps). -/",
-            f"def frobSteps : List Step := {steps_to_lean(xp_steps)}",
-            "",
-            "/-- The residue `X^p mod f`. -/",
-            f"def rp : List ℕ := {poly_to_lean(rp)}",
-            "",
-            "/-- `w = (X^p mod f) - X`, the reduced form of `X^p - X`. -/",
-            f"def w : List ℕ := {poly_to_lean(w)}",
-            "",
-            "/-- Bézout coefficient: `u·f + v·w = 1`. -/",
-            f"def u : List ℕ := {poly_to_lean(u)}",
-            "",
-            "/-- Bézout coefficient: `u·f + v·w = 1`. -/",
-            f"def v : List ℕ := {poly_to_lean(v)}",
-            "",
+            *cop_lines,
             f"end {ns}",
             "",
         ]

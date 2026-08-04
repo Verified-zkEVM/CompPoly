@@ -311,7 +311,15 @@ theorem isCoprime_X_pow_sub_X_of_runChain {p : ℕ} [Fact p.Prime] {fL : List �
   rw [hXN]
   exact IsCoprime.add_mul_left_right ⟨toPoly p u, toPoly p v, hb⟩ c
 
-/-! ### Rabin's test at prime degree -/
+/-! ### Packaging Rabin's test at a concrete degree
+
+`Polynomial.irreducible_of_rabin` already quantifies the coprimality condition over
+`d.primeFactors`. The wrappers below discharge that quantifier for the two shapes of `d` that
+concrete extensions use, so a caller supplies one coprimality proof per prime factor and nothing
+else. Note that `irreducible_of_rabin_prime_degree` does **not** apply at composite `d`, and its
+collapsed condition is not merely inconvenient but unsound there: a product of equal-degree
+factors divides `X^(q^d) - X` and is coprime to `X^q - X`, so it would pass.
+-/
 
 /--
 **Rabin's test for prime degree.** For `f` of *prime* degree `d` over a finite field, the
@@ -328,5 +336,57 @@ theorem irreducible_of_rabin_prime_degree {F : Type*} [Field F] [Fintype F] {f :
   subst hℓ
   rw [Nat.div_self hd.pos, pow_one]
   exact h_cop
+
+/--
+**Rabin's test for a degree with exactly two prime factors**, such as `d = 6`.
+
+The caller supplies the trace condition plus one coprimality certificate per prime factor, at
+exponents `q^(d/ℓ₁)` and `q^(d/ℓ₂)`. The hypothesis `h_factors` is `by decide` at a concrete
+degree — for `d = 6` it is `(6 : ℕ).primeFactors = {2, 3}`, giving checks at `q^3` and `q^2`.
+
+Both checks are needed. Dropping the `q^3` one admits a product of two irreducible cubics;
+dropping the `q^2` one admits a product of three irreducible quadratics.
+-/
+theorem irreducible_of_rabin_two_prime_factors {F : Type*} [Field F] [Fintype F] {f : F[X]}
+    {d ℓ₁ ℓ₂ : ℕ} (h_deg : f.natDegree = d) (h_pos : 0 < d)
+    (h_factors : d.primeFactors = {ℓ₁, ℓ₂})
+    (h_trace : f ∣ X ^ (Fintype.card F ^ d) - X)
+    (h_cop₁ : IsCoprime f (X ^ (Fintype.card F ^ (d / ℓ₁)) - X))
+    (h_cop₂ : IsCoprime f (X ^ (Fintype.card F ^ (d / ℓ₂)) - X)) :
+    Irreducible f := by
+  refine Polynomial.irreducible_of_rabin h_deg h_pos h_trace fun ℓ hℓ => ?_
+  rw [h_factors] at hℓ
+  rcases Finset.mem_insert.mp hℓ with h | h
+  · subst h; exact h_cop₁
+  · rw [Finset.mem_singleton] at h; subst h; exact h_cop₂
+
+/-- The prime factors of `6`. Mirrors `primeFactors_four` in
+`CompPoly/Fields/Extension/Binomial.lean`; `decide` cannot do this because
+`Nat.primeFactorsList` is well-founded recursive and does not reduce in the kernel. -/
+private theorem primeFactors_six : (6 : ℕ).primeFactors = {2, 3} := by
+  rw [show (6 : ℕ) = 2 * 3 from by norm_num,
+    Nat.primeFactors_mul (by norm_num) (by norm_num),
+    Nat.Prime.primeFactors Nat.prime_two, Nat.Prime.primeFactors Nat.prime_three]
+  rfl
+
+/--
+**Rabin's test at degree 6.** `f` of degree 6 over a finite field with `q` elements is irreducible
+provided `f ∣ X^(q^6) - X`, `IsCoprime f (X^(q^3) - X)`, and `IsCoprime f (X^(q^2) - X)`.
+
+This is the shape used by the KoalaBear degree-6 extension. It differs from
+`irreducible_of_rabin_two_prime_factors` only in discharging `Nat.primeFactors 6 = {2, 3}`
+internally, so callers never touch `Nat.primeFactors`.
+
+The `q^3` check is what rules out a product of two irreducible cubics, and the `q^2` check a
+product of three irreducible quadratics; the trace condition alone permits both.
+-/
+theorem irreducible_of_rabin_degree_six {F : Type*} [Field F] [Fintype F] {f : F[X]}
+    (h_deg : f.natDegree = 6)
+    (h_trace : f ∣ X ^ (Fintype.card F ^ 6) - X)
+    (h_cop₃ : IsCoprime f (X ^ (Fintype.card F ^ 3) - X))
+    (h_cop₂ : IsCoprime f (X ^ (Fintype.card F ^ 2) - X)) :
+    Irreducible f :=
+  irreducible_of_rabin_two_prime_factors h_deg (by norm_num) primeFactors_six h_trace
+    (by simpa using h_cop₃) (by simpa using h_cop₂)
 
 end CompPoly.RabinCert
