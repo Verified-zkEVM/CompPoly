@@ -9,6 +9,9 @@ public import CompPoly.Fields.PrattCertificate
 
 /-!
   # The BN254 scalar prime field
+
+  `r` of the BN254 (alt_bn128) curve, 254-bit, 2-adicity 28
+  ([EIP-196](https://eips.ethereum.org/EIPS/eip-196)).
 -/
 
 @[expose] public section
@@ -17,7 +20,7 @@ namespace BN254
 
 @[reducible]
 def scalarFieldSize : Nat :=
-  21888242871839275222246405745257275088548364400416034343698204186575808495617
+  0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001
 
 abbrev ScalarField := ZMod scalarFieldSize
 

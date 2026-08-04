@@ -9,16 +9,8 @@ public import CompPoly.Fields.PrattCertificate
 /-!
   # The BLS12-381 scalar prime field
 
-  The 253-bit prime number that divides the order of the BLS12-381 curve.
-
-  This prime has 2-adicity 47.
-
-  ## References
-
-  This is `r` in [BCGMMW18].
-
-  See also (https://github.com/ProvableHQ/snarkOS/tree/c9e5f823b8493f8c3a6c43e6f4dfd16173b99957/curves).
-
+  `r` of the BLS12-381 curve, 255-bit, 2-adicity 32
+  ([IETF pairing-friendly-curves draft](https://datatracker.ietf.org/doc/draft-irtf-cfrg-pairing-friendly-curves/)).
 -/
 
 @[expose] public section
@@ -27,7 +19,7 @@ namespace BLS12_381
 
 @[reducible]
 def scalarFieldSize : Nat :=
-  52435875175126190479447740508185965837690552500527637822603658699938581184513
+  0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
 
 abbrev ScalarField := ZMod scalarFieldSize
 

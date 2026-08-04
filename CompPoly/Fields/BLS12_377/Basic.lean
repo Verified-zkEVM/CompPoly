@@ -9,18 +9,8 @@ public import CompPoly.Fields.PrattCertificate
 /-!
   # The BLS12-377 scalar prime field
 
-  The 253-bit prime number that divides the order of the BLS12-377 curve.
-
-  This prime has 2-adicity 47.
-
-  This is called `r` in [BCGMMW18].
-
-  ## References
-
-  * [Bowe, S., Chiesa, A., Green, M., Miers, I., Mishra, P., and Wu, H.,
-      *Zexe: Enabling Decentralized Private Computation*][BCGMMW18]
-  * See also [snarkos-curves](https://github.com/ProvableHQ/snarkOS/tree/c9e5f823b8493f8c3a6c43e6f4dfd16173b99957/curves), from which this is adapted.
-
+  `r` of the BLS12-377 curve, 253-bit, 2-adicity 47
+  ([Zexe, BCGMMW18](https://eprint.iacr.org/2018/962)).
 -/
 
 @[expose] public section
@@ -29,7 +19,7 @@ namespace BLS12_377
 
 @[reducible]
 def scalarFieldSize : Nat :=
-  8444461749428370424248824938781546531375899335154063827935233455917409239041
+  0x12ab655e9a2ca55660b44d1e5c37b00159aa76fed00000010a11800000000001
 
 abbrev ScalarField := ZMod scalarFieldSize
 

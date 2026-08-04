@@ -15,10 +15,10 @@ This directory contains formally verified field infrastructure used in zero-know
 | **BLS12_377/Basic.lean** | Scalar field of BLS12-377 (253-bit, 2-adicity 47) — Zexe. |
 | **BLS12_377/Fast.lean** | Eight-limb Montgomery instantiation of the BLS12-377 scalar field (`Mont64x8Field` and `GcdData` constants, `ScalarField`, `ringEquiv`). |
 | **BLS12_381.lean** | Facade for the BLS12-381 modules, re-exporting the canonical field and the fast eight-limb implementation. |
-| **BLS12_381/Basic.lean** | Scalar field of BLS12-381 (253-bit, 2-adicity 47). |
+| **BLS12_381/Basic.lean** | Scalar field of BLS12-381 (255-bit, 2-adicity 32). |
 | **BLS12_381/Fast.lean** | Eight-limb Montgomery instantiation of the BLS12-381 scalar field (`Mont64x8Field` and `GcdData` constants, `ScalarField`, `ringEquiv`). |
 | **BN254.lean** | Facade for the BN254 modules, re-exporting the canonical field and the fast eight-limb implementation. |
-| **BN254/Basic.lean** | Scalar field of BN254 curve. |
+| **BN254/Basic.lean** | Scalar field of BN254 (254-bit, 2-adicity 28). |
 | **BN254/Fast.lean** | Eight-limb Montgomery instantiation of the BN254 scalar field (`Mont64x8Field` and `GcdData` constants, `ScalarField`, `ringEquiv`). |
 | **Extension.lean** | Facade for the binomial field-extension stack. |
 | **Extension/Binomial.lean** | Irreducibility of `X^d - W` over a finite field: Rabin's test collapsed to two base-field exponentiations (`irreducible_X_pow_four_sub_C_iff`). |
