@@ -244,6 +244,7 @@ theorem gcdMainLoop_bounded {q : Limbs8} {negInv : UInt64} {rounds : ℕ}
       (g := if signB < 0 then -g1 else g1) hq hq0 hq2 hn hnq hu hv huq hvq hc1
     exact ih hA' hB' hU'.1 hU'.2 hV'.1 hV'.2 heq
 
+-- Tuple witnesses without evaluating `p`; a bare `rfl` witness would whnf-expand it.
 private theorem exists_eq_tuple4 {α β γ δ : Type} (p : α × β × γ × δ) :
     ∃ a b c d, p = (a, b, c, d) :=
   ⟨p.1, p.2.1, p.2.2.1, p.2.2.2, by simp only [Prod.mk.eta]⟩
@@ -284,6 +285,7 @@ theorem gcdInvCandidate_lt {modulus : ℕ} [P : GcdData modulus] {q x : Limbs8}
   obtain ⟨-, hrowF⟩ := gcdInner_natAbs_le_31 (by have := P.finalRounds_le; omega) hI2
   have hfinal := gcdLinearCombMontyRed_lt (f := F1) (g := G1) hq hq0 hq2 hn hnq
     hu1.1 hv1.1 hu1.2 hv1.2 hrowF
+  -- Unfold syntactically; whnf of the 15-round main loop times out.
   have hcand : gcdInvCandidate modulus q negInv x
       = gcdLinearCombMontyRed q negInv
           (gcdLinearCombMontyRed q negInv u v f0 g0)
@@ -362,6 +364,7 @@ theorem montPow_eq_inv (x : FastField modulus) :
   have h1 : (1 : FastField modulus) * x ^ (modulus - 2) = x ^ (modulus - 2) :=
     FastField.toField_injective
       (by rw [FastField.toField_mul, FastField.toField_one, one_mul])
+  -- The `rfl` holds since `x⁻¹` unfolds to `pow x (modulus - 2)`.
   exact congrArg Subtype.val (h1.trans rfl)
 
 /-- Accept a raw candidate `z` for `x⁻¹` if it verifies, else fall back to `x⁻¹`. -/
