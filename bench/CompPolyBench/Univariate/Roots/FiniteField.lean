@@ -3,9 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPolyBench.Common
-import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
+public import CompPolyBench.Common
+public import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 
 /-!
 # Finite-Field Root Benchmarks
@@ -13,6 +14,8 @@ import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 Standalone smooth-subgroup univariate root-search benchmarks over canonical and
 fast KoalaBear.
 -/
+
+public section
 
 open CompPoly
 open CompPoly.GuruswamiSudan

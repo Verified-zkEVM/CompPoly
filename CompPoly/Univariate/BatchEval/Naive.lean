@@ -3,13 +3,17 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
-import CompPoly.Univariate.Basic
+module
+
+public import CompPoly.Univariate.Basic
 
 /-!
 # Naive Batch Evaluation
 
 Specification-level batch evaluators for canonical univariate polynomials.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial

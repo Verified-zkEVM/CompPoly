@@ -3,7 +3,9 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Juan Conejero
 -/
-import Mathlib.Algebra.Polynomial.RingDivision
+module
+
+public import Mathlib.Algebra.Polynomial.RingDivision
 
 /-!
 # Bridge lemmas for `Polynomial.divByMonic`
@@ -15,6 +17,8 @@ Note, there's a PR to Mathlib that includes this result and this file
 should be deleted if/when that PR is accepted:
 https://github.com/leanprover-community/mathlib4/pull/39868
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

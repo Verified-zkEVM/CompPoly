@@ -3,12 +3,13 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import CompPoly.Bivariate.ToPoly
-import Aesop
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.Algebra.Polynomial.BigOperators
-import Mathlib.Algebra.Polynomial.Roots
+public import CompPoly.Bivariate.ToPoly
+public import Aesop
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Algebra.Polynomial.BigOperators
+public import Mathlib.Algebra.Polynomial.Roots
 
 /-!
 # Mathlib-Facing Bivariate Degree Helpers
@@ -22,6 +23,8 @@ The intended split is:
 - `CompPoly/Bivariate/*` for the native computable `CBivariate` representation;
 - `CompPoly/ToMathlib/*` for Mathlib-facing transport and helper lemmas.
 -/
+
+@[expose] public section
 
 open Polynomial
 open scoped Polynomial.Bivariate

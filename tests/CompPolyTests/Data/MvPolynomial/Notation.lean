@@ -3,13 +3,17 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import CompPoly.Data.MvPolynomial.Notation
+module
+
+public import CompPoly.Data.MvPolynomial.Notation
 
 /-!
   # Notation Tests
 
   Examples showing that the notation is correct
 -/
+
+@[expose] public section
 
 open MvPolynomial
 

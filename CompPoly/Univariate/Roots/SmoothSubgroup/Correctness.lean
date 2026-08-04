@@ -3,11 +3,13 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Univariate.Roots.Correctness
-import CompPoly.Univariate.Roots.RootProduct
-import CompPoly.Univariate.Roots.SmoothSubgroup.Basic
-import Mathlib.Algebra.Group.Subgroup.Finite
+public import CompPoly.Univariate.Roots.Correctness
+public import CompPoly.Univariate.Roots.RootProduct
+public import CompPoly.Univariate.Roots.SmoothSubgroup.Basic
+public import Mathlib.Algebra.Group.Subgroup.Finite
+public import Mathlib.Data.List.Enum
 
 /-!
 # Smooth Multiplicative-Subgroup Splitter Correctness
@@ -15,6 +17,8 @@ import Mathlib.Algebra.Group.Subgroup.Finite
 Correctness theorems for the smooth cyclic splitter, including executable
 contracts and adapter theorems.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

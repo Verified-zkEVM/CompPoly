@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Data.Fin.Basic
-import Mathlib.Tactic.DepRewrite
+public import Mathlib.Data.Fin.Basic
+public import Mathlib.Tactic.DepRewrite
 
 /-! # Dependent casts
 
@@ -13,6 +14,8 @@ This file contains type classes for dependent or custom cast operations
 
 This allows us to state theorems with more refined casts, without which we cannot make progress in
 proving them -/
+
+@[expose] public section
 
 universe u v w
 

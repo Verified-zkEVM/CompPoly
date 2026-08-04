@@ -3,10 +3,11 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Univariate.BatchEval.Context
-import CompPoly.Univariate.Deriv
-import CompPoly.Univariate.Vanishing
+public import CompPoly.Univariate.BatchEval.Context
+public import CompPoly.Univariate.Deriv
+public import CompPoly.Univariate.Vanishing
 
 /-!
 # Coefficient-Form Interpolation from a Vanishing Polynomial
@@ -15,6 +16,8 @@ Build the coefficient polynomial interpolating packed points from the node
 vanishing polynomial `G = ∏ᵢ (X - xᵢ)` using the formula
 `R = ∑ᵢ yᵢ / G'(xᵢ) * G / (X - xᵢ)`.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

@@ -3,9 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPolyBench.Bivariate.GuruswamiSudan.Core
-import CompPolyBench.Bivariate.GuruswamiSudan.ReceivedWord
+public import CompPolyBench.Bivariate.GuruswamiSudan.Core
+public import CompPolyBench.Bivariate.GuruswamiSudan.ReceivedWord
 
 /-!
 # Guruswami-Sudan Benchmarks
@@ -14,6 +15,8 @@ KoalaBear cost-center benchmarks for dense and Lee-O'Sullivan interpolation,
 Roth-Ruckenstein and Alekhnovich root finding, packed distance filtering, and
 backend-parametric `gsCore` and `gsFilteredCore`.
 -/
+
+public section
 
 open CompPoly
 open CompPoly.GuruswamiSudan

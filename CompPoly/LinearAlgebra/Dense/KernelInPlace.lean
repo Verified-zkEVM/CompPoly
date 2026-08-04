@@ -3,8 +3,9 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.LinearAlgebra.Dense.Kernel
+public import CompPoly.LinearAlgebra.Dense.Kernel
 
 /-!
 # In-Place Dense Homogeneous Kernels
@@ -30,6 +31,8 @@ extracted witnesses agree with `homogeneousWitness`.
 The free-column witness extraction (`freeColumns`, `basisVectorForFreeColumn`) is
 cheap and shared verbatim with `Kernel.lean`.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

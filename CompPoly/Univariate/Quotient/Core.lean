@@ -3,10 +3,12 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
 -/
-import Mathlib.Algebra.Tropical.Basic
-import Mathlib.RingTheory.Polynomial.Basic
-import CompPoly.Data.Array.Lemmas
-import CompPoly.Univariate.Raw.Proofs
+module
+
+public import Mathlib.Algebra.Tropical.Basic
+public import Mathlib.RingTheory.Polynomial.Basic
+public import CompPoly.Data.Array.Lemmas
+public import CompPoly.Univariate.Raw.Proofs
 
 /-!
   # Quotient of Univariate Polynomials
@@ -18,6 +20,8 @@ import CompPoly.Univariate.Raw.Proofs
   Operations on `CPolynomial.Raw` (addition, multiplication, etc.) are shown to respect the
   equivalence relation and thus descend to the quotient.
 -/
+
+@[expose] public section
 namespace CompPoly
 
 namespace CPolynomial

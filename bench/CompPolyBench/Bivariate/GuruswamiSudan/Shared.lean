@@ -3,11 +3,12 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPolyBench.Common
-import CompPoly.Bivariate.GuruswamiSudan
-import CompPoly.Bivariate.GuruswamiSudan.Implementations
-import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
+public import CompPolyBench.Common
+public import CompPoly.Bivariate.GuruswamiSudan
+public import CompPoly.Bivariate.GuruswamiSudan.Implementations
+public import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 
 /-!
 # Guruswami-Sudan Benchmark Helpers
@@ -16,6 +17,8 @@ Shared KoalaBear input shapes, checksum helpers, and group metadata for the
 dense and Lee-O'Sullivan interpolation/root-search Guruswami-Sudan benchmark
 subset.
 -/
+
+public section
 
 open CompPoly
 open CompPoly.GuruswamiSudan

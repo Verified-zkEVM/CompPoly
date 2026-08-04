@@ -3,11 +3,12 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Fast
-import CompPoly.Univariate.LagrangeArray
-import Mathlib.Algebra.Field.ZMod
+public meta import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness
+public meta import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Fast
+public meta import CompPoly.Univariate.LagrangeArray
+public meta import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Lee-O'Sullivan Guruswami-Sudan Interpolation Tests
@@ -15,6 +16,8 @@ import Mathlib.Algebra.Field.ZMod
 Focused executable coverage for Lee-O'Sullivan setup, shifted-row construction,
 and backend context assembly.
 -/
+
+public meta section
 
 namespace CompPolyTests
 

@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.LinearAlgebra.Dense.Basic
+public import CompPoly.LinearAlgebra.Dense.Basic
 
 /-!
 # Dense Row Operations
 
 Executable row operations and Gauss-Jordan reduction for row-major matrices.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

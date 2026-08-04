@@ -3,18 +3,22 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen
 -/
-import Batteries.Data.Vector.Lemmas
-import CompPoly.Data.List.Lemmas
-import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.Algebra.Order.Star.Basic
-import Mathlib.Algebra.Order.Sub.Basic
-import Mathlib.Data.List.Fold
-import Mathlib.Data.Matrix.Mul
-import Mathlib.Tactic.Ring
+module
+
+public import Batteries.Data.Vector.Lemmas
+public import CompPoly.Data.List.Lemmas
+public import Mathlib.Algebra.BigOperators.Fin
+public import Mathlib.Algebra.Order.Star.Basic
+public import Mathlib.Algebra.Order.Sub.Basic
+public import Mathlib.Data.List.Fold
+public import Mathlib.Data.Matrix.Mul
+public import Mathlib.Tactic.Ring
 
 /-!
 # Definitions and lemmas for `Vector`
 -/
+
+@[expose] public section
 universe u
 
 namespace Vector

@@ -3,8 +3,9 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Root.Common
+public import CompPoly.Bivariate.GuruswamiSudan.Root.Common
 
 /-!
 # Roth-Ruckenstein-Style Root Finding
@@ -18,6 +19,8 @@ Roth-Ruckenstein root-search step [RR00].
 * [Roth, R. M., and Ruckenstein, G., *Efficient decoding of Reed-Solomon codes
     beyond half the minimum distance*][RR00]
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

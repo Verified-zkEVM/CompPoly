@@ -3,17 +3,20 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Valerii Huhnin
 -/
+module
 
-import CompPoly.Fields.Basic
-import CompPoly.Fields.PrattCertificate
-import Mathlib.Algebra.Order.Ring.Star
-import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
-import Mathlib.FieldTheory.Finite.Basic
+public import CompPoly.Fields.Basic
+public import CompPoly.Fields.PrattCertificate
+public import Mathlib.Algebra.Order.Ring.Star
+public import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
+public import Mathlib.FieldTheory.Finite.Basic
 /-!
   # BabyBear Field `2^{31} - 2^{27} + 1`
 
   This is the field used by Risc Zero.
 -/
+
+@[expose] public section
 
 namespace BabyBear
 

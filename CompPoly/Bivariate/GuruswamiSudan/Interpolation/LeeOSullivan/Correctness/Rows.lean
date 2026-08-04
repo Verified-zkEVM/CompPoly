@@ -3,16 +3,19 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Basis
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Combinations
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Basis
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Combinations
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness
 
 /-!
 # Lee-O'Sullivan Row-Span Transport Helpers
 
 Transport between executable polynomial rows and semantic bivariate span combinations.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 
@@ -429,7 +432,7 @@ theorem coeff_ofCoeffRow_rowGet
   rw [CPolynomial.Raw.Trim.coeff_eq_coeff]
 
 omit [DecidableEq F] in
-theorem ofCoeffRow_rowLinearCombination_unit
+private theorem ofCoeffRow_rowLinearCombination_unit
     (M : PolynomialMatrix F) {i : Nat} (hi : i < M.size) :
     CBivariate.ofCoeffRow
         (rowLinearCombination (semanticUnitRowCoeffs (F := F) M.size i) M) =

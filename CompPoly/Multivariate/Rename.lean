@@ -3,8 +3,10 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dimitris Mitsios
 -/
-import CompPoly.Multivariate.Operations
-import Mathlib.Algebra.MvPolynomial.Rename
+module
+
+public import CompPoly.Multivariate.Operations
+public import Mathlib.Algebra.MvPolynomial.Rename
 
 /-!
 # Properties of variable renaming for `CMvPolynomial`
@@ -22,6 +24,8 @@ by transferring results from Mathlib's `MvPolynomial.rename` through the
 * `CMvPolynomial.renameEquiv` — ring isomorphism for bijective variable renaming
 
 -/
+
+@[expose] public section
 
 namespace CPoly
 
@@ -180,7 +184,7 @@ lemma toFinsupp_zero {k : ℕ} :
     CMvMonomial.toFinsupp (0 : CMvMonomial k) = 0 := by
   ext i
   simp [CMvMonomial.toFinsupp, Vector.get]
-  exact Vector.getElem_zero i.val i.isLt
+  unfold_projs; simp [CMvMonomial.zero]
 
 /-- `fromCMvPolynomial` maps `CMvPolynomial.C` to `MvPolynomial.C`. -/
 lemma fromCMvPolynomial_C {k : ℕ} (c : R) :

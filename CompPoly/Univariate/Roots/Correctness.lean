@@ -3,11 +3,12 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Univariate.Roots.Backend
-import CompPoly.Univariate.Roots.Splitter
-import CompPoly.Univariate.EuclideanAlgorithm
-import CompPoly.Univariate.ToPoly.Impl
+public import CompPoly.Univariate.Roots.Backend
+public import CompPoly.Univariate.Roots.Splitter
+public import CompPoly.Univariate.EuclideanAlgorithm
+public import CompPoly.Univariate.ToPoly.Impl
 
 /-!
 # Finite-Field Root Correctness
@@ -15,6 +16,8 @@ import CompPoly.Univariate.ToPoly.Impl
 Theorem statements and certified context constructors for the executable
 finite-field root backend.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

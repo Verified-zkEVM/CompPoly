@@ -3,9 +3,11 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Fawad Haider, Pablo Martin
 -/
-import CompPoly.Multivariate.Operations
-import CompPoly.Multivariate.MvPolyEquiv
-import Mathlib.RingTheory.MvPolynomial.Basic
+module
+
+public import CompPoly.Multivariate.Operations
+public import CompPoly.Multivariate.MvPolyEquiv
+public import Mathlib.RingTheory.MvPolynomial.Basic
 
 /-!
 # Lemmas for `CMvPolynomial.restrictBy`, `restrictTotalDegree`, and `restrictDegree`
@@ -16,6 +18,8 @@ or per-variable degree bounds.
 Also proves correctness against Mathlib: transporting these restrictions across
 `fromCMvPolynomial` lands in Mathlib's degree-bounded submodules.
 -/
+
+@[expose] public section
 namespace CPoly
 
 open CMvPolynomial

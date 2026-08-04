@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin, Georgios Raikos
 -/
+module
 
-import CompPoly.Fields.Montgomery.Basic
+public import CompPoly.Fields.Montgomery.Basic
 
 /-!
 # Native 32-bit Montgomery Reduction
 
 Raw word operations for Montgomery reduction with radix `2 ^ 32`.
 -/
+
+@[expose] public section
 
 namespace Montgomery
 namespace Native32

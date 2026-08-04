@@ -3,17 +3,21 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
-import Mathlib.Algebra.Order.Star.Basic
-import Mathlib.Algebra.Ring.Regular
-import Mathlib.Data.Fintype.BigOperators
-import Mathlib.Order.Interval.Finset.Nat
-import Mathlib.Tactic.IntervalCases
+module
+
+public import Mathlib.Algebra.Order.Star.Basic
+public import Mathlib.Algebra.Ring.Regular
+public import Mathlib.Data.Fintype.BigOperators
+public import Mathlib.Order.Interval.Finset.Nat
+public import Mathlib.Tactic.IntervalCases
 
 /-!
 
 # More lemmas about Fin and big operators
 
 -/
+
+@[expose] public section
 theorem mul_two_add_bit_lt_two_pow (a b c : ℕ) (i : Fin 2)
     (h_a : a < 2 ^ b) (h_b : b < c) :
     a * 2 + i.val < 2^c := by

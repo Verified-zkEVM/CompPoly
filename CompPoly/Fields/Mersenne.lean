@@ -3,14 +3,17 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import CompPoly.Fields.PrattCertificate
+public import CompPoly.Fields.PrattCertificate
 
 /-!
   # Mersenne prime field `2^{31} - 1`
 
   This is the field used in Circle STARKs.
 -/
+
+@[expose] public section
 
 namespace Mersenne31
 

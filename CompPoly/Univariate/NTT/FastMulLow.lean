@@ -3,7 +3,9 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
-import CompPoly.Univariate.NTT.FastMul
+module
+
+public import CompPoly.Univariate.NTT.FastMul
 
 /-!
 # Low Product via NTT
@@ -11,6 +13,8 @@ import CompPoly.Univariate.NTT.FastMul
 This file exposes an NTT-backed `Raw.MulLowContext` for computing the low
 coefficients of a raw polynomial product.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial
@@ -40,7 +44,7 @@ private theorem mul_truncate_inputs_coeff_of_lt (k : Nat) (p q : CPolynomial.Raw
   have hik : i - j < k := Nat.lt_of_le_of_lt (Nat.sub_le i j) hi
   rw [truncate_coeff_of_lt k p hjk, truncate_coeff_of_lt k q hik]
 
-private def run
+def run
     (bestDomainForLength? : (requiredLen : Nat) →
       Option (FittingDomain R requiredLen))
     (k : Nat) (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=

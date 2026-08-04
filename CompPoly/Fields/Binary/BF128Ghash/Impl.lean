@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao, Dimitris Mitsios
 -/
+module
 
-import CompPoly.Fields.Binary.BF128Ghash.Basic
+public import CompPoly.Fields.Binary.BF128Ghash.Basic
 
 /-! # BF128Ghash Computable Specification (GF(2^128))
 
@@ -26,6 +27,8 @@ We verify them by proving isomorphism to `GF(2)[X] / (X^128 + X^7 + X^2 + X + 1)
   https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf
 
 -/
+
+@[expose] public section
 
 namespace BF128Ghash
 

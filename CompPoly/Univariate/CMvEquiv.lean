@@ -3,12 +3,13 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Andrew Zitek-Estrada
 -/
+module
 
-import CompPoly.Multivariate.FinSuccEquiv
-import CompPoly.Multivariate.MvPolyEquiv.Eval
-import CompPoly.Univariate.ToPoly.Impl
-import Mathlib.Algebra.MvPolynomial.Polynomial
-import Mathlib.Algebra.Polynomial.Degree.Lemmas
+public import CompPoly.Multivariate.FinSuccEquiv
+public import CompPoly.Multivariate.MvPolyEquiv.Eval
+public import CompPoly.Univariate.ToPoly.Impl
+public import Mathlib.Algebra.MvPolynomial.Polynomial
+public import Mathlib.Algebra.Polynomial.Degree.Lemmas
 
 /-!
 # Equivalence between `CPolynomial` and `CMvPolynomial 1`
@@ -23,6 +24,8 @@ The bridge lemmas expose how the inverse equivalence interacts with evaluation
 and degree, so one-variable results proved for `CPolynomial` can be transported
 to callers that still use `CMvPolynomial 1`.
 -/
+
+@[expose] public section
 
 namespace CompPoly.CPolynomial
 

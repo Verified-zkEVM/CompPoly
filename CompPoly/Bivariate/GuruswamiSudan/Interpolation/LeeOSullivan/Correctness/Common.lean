@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Algorithm
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Algorithm
 
 /-!
 # Lee-O'Sullivan Correctness Common Helpers
 
 Basic facts shared by Lee-O'Sullivan soundness and completeness proofs.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

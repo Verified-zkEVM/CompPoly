@@ -3,14 +3,17 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen
 -/
+module
 
-import CompPoly.Fields.Binary.Tower.Support.FinHelpers
+public import CompPoly.Fields.Binary.Tower.Support.FinHelpers
 
 /-!
 # Binary Tower `Fin 2` Linear Independence
 
 Linear-independence lemmas specialized to functions indexed by `Fin 2`.
 -/
+
+@[expose] public section
 
 open Polynomial
 open AdjoinRoot

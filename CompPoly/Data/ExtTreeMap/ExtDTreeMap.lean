@@ -3,8 +3,10 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus Himmel
 -/
-import CompPoly.Data.ExtTreeMap.DTreeMap
-import Std.Data.ExtDTreeMap.Lemmas
+module
+
+public import CompPoly.Data.ExtTreeMap.DTreeMap
+public import Std.Data.ExtDTreeMap.Lemmas
 
 /-!
 # Auxiliary lemmas for `Std.ExtDTreeMap`
@@ -16,6 +18,8 @@ Vendored from
 [`Verified-zkEVM/ExtTreeMapLemmas`](https://github.com/Verified-zkEVM/ExtTreeMapLemmas)
 (tag `v4.29.1`, commit `3fee686227f18dca03bb7fc42ca5a9275d6cfda6`).
 -/
+
+@[expose] public section
 
 namespace Std
 

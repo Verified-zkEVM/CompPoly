@@ -1,253 +1,260 @@
-import CompPoly.Bivariate.Basic
-import CompPoly.Bivariate.CMvEquiv
-import CompPoly.Bivariate.CoeffRows
-import CompPoly.Bivariate.Deriv
-import CompPoly.Bivariate.Factor
-import CompPoly.Bivariate.FactorMonic
-import CompPoly.Bivariate.GuruswamiSudan
-import CompPoly.Bivariate.GuruswamiSudan.Context
-import CompPoly.Bivariate.GuruswamiSudan.Core
-import CompPoly.Bivariate.GuruswamiSudan.CoreCorrectness
-import CompPoly.Bivariate.GuruswamiSudan.Executable
-import CompPoly.Bivariate.GuruswamiSudan.Filter
-import CompPoly.Bivariate.GuruswamiSudan.FilterCorrectness
-import CompPoly.Bivariate.GuruswamiSudan.Implementations
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Basic
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Correctness
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Algorithm
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Algorithm
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Basic
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Basis
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Combinations
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Common
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Completeness
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Divisibility
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Normalization
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Rows
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Selection
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Soundness
-import CompPoly.Bivariate.GuruswamiSudan.Polynomial
-import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
-import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Algorithm
-import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Correctness
-import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Lemmas
-import CompPoly.Bivariate.GuruswamiSudan.Root.Common
-import CompPoly.Bivariate.GuruswamiSudan.Root.Common.Lemmas
-import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots
-import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.FiniteField
-import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
-import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Algorithm
-import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Correctness
-import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Lemmas
-import CompPoly.Bivariate.GuruswamiSudan.Root.ShiftedSubstitution
-import CompPoly.Bivariate.GuruswamiSudan.Root.ShiftedSubstitution.Lemmas
-import CompPoly.Bivariate.GuruswamiSudan.Util
-import CompPoly.Bivariate.Kronecker
-import CompPoly.Bivariate.ToPoly
-import CompPoly.Data.Array.Lemmas
-import CompPoly.Data.Classes.DCast
-import CompPoly.Data.Classes.LawfulBEq
-import CompPoly.Data.ExtTreeMap.DTreeMap
-import CompPoly.Data.ExtTreeMap.ExtDTreeMap
-import CompPoly.Data.ExtTreeMap.ExtTreeMap
-import CompPoly.Data.Fin.BigOperators
-import CompPoly.Data.List.Lemmas
-import CompPoly.Data.MvPolynomial.Notation
-import CompPoly.Data.Nat.Bitwise
-import CompPoly.Data.Polynomial.Frobenius
-import CompPoly.Data.Polynomial.MonomialBasis
-import CompPoly.Data.Polynomial.Rabin
-import CompPoly.Data.RingTheory.AlgebraTower
-import CompPoly.Data.RingTheory.CanonicalEuclideanDomain
-import CompPoly.Data.Vector.Basic
-import CompPoly.Fields.BLS12_377
-import CompPoly.Fields.BLS12_381
-import CompPoly.Fields.BN254
-import CompPoly.Fields.BabyBear
-import CompPoly.Fields.BabyBear.Basic
-import CompPoly.Fields.BabyBear.Ext4
-import CompPoly.Fields.BabyBear.Fast
-import CompPoly.Fields.Basic
-import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
-import CompPoly.Fields.Binary.AdditiveNTT.Algorithm
-import CompPoly.Fields.Binary.AdditiveNTT.Correctness
-import CompPoly.Fields.Binary.AdditiveNTT.Domain
-import CompPoly.Fields.Binary.AdditiveNTT.Impl
-import CompPoly.Fields.Binary.AdditiveNTT.Intermediate
-import CompPoly.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
-import CompPoly.Fields.Binary.BF128Ghash.Basic
-import CompPoly.Fields.Binary.BF128Ghash.Impl
-import CompPoly.Fields.Binary.BF128Ghash.Prelude
-import CompPoly.Fields.Binary.BF128Ghash.XPowTwoPowGcdCertificate
-import CompPoly.Fields.Binary.BF128Ghash.XPowTwoPowModCertificate
-import CompPoly.Fields.Binary.Common
-import CompPoly.Fields.Binary.Tower.Abstract.Algebra
-import CompPoly.Fields.Binary.Tower.Abstract.Basis
-import CompPoly.Fields.Binary.Tower.Abstract.Core
-import CompPoly.Fields.Binary.Tower.Abstract.Split
-import CompPoly.Fields.Binary.Tower.Basic
-import CompPoly.Fields.Binary.Tower.Concrete.Algebra
-import CompPoly.Fields.Binary.Tower.Concrete.Basis
-import CompPoly.Fields.Binary.Tower.Concrete.Core
-import CompPoly.Fields.Binary.Tower.Concrete.Field
-import CompPoly.Fields.Binary.Tower.Equiv
-import CompPoly.Fields.Binary.Tower.Impl
-import CompPoly.Fields.Binary.Tower.Prelude
-import CompPoly.Fields.Binary.Tower.Support.DefiningPoly
-import CompPoly.Fields.Binary.Tower.Support.FinHelpers
-import CompPoly.Fields.Binary.Tower.Support.IrreducibilityAndTraceMapProperty
-import CompPoly.Fields.Binary.Tower.Support.LinearIndependentFin2
-import CompPoly.Fields.Binary.Tower.Support.Preliminaries
-import CompPoly.Fields.Binary.Tower.TensorAlgebra
-import CompPoly.Fields.Extension
-import CompPoly.Fields.Extension.Binomial
-import CompPoly.Fields.Extension.Bridge
-import CompPoly.Fields.Extension.Defs
-import CompPoly.Fields.Extension.Field
-import CompPoly.Fields.Goldilocks
-import CompPoly.Fields.Hachi
-import CompPoly.Fields.Hachi.Ext4
-import CompPoly.Fields.KoalaBear
-import CompPoly.Fields.KoalaBear.Basic
-import CompPoly.Fields.KoalaBear.Ext4
-import CompPoly.Fields.KoalaBear.Fast
-import CompPoly.Fields.Mersenne
-import CompPoly.Fields.Montgomery.Basic
-import CompPoly.Fields.Montgomery.Native32
-import CompPoly.Fields.Montgomery.Native32Field
-import CompPoly.Fields.PrattCertificate
-import CompPoly.Fields.Secp256k1
-import CompPoly.LinearAlgebra.Dense
-import CompPoly.LinearAlgebra.Dense.Basic
-import CompPoly.LinearAlgebra.Dense.Kernel
-import CompPoly.LinearAlgebra.Dense.KernelCorrectness
-import CompPoly.LinearAlgebra.Dense.KernelInPlace
-import CompPoly.LinearAlgebra.Dense.KernelInPlaceCorrectness
-import CompPoly.LinearAlgebra.Dense.RowOps
-import CompPoly.LinearAlgebra.Dense.RowOpsCorrectness
-import CompPoly.LinearAlgebra.Dense.RrefSemantics
-import CompPoly.LinearAlgebra.Dense.RrefShape
-import CompPoly.LinearAlgebra.PolynomialMatrix
-import CompPoly.LinearAlgebra.PolynomialMatrix.Basic
-import CompPoly.LinearAlgebra.PolynomialMatrix.Degree
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohann
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Combinations
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Conflict
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Fast
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Leading
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.MatrixRows
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Measure
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Minimal
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Reduction
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.RowOps
-import CompPoly.LinearAlgebra.PolynomialMatrix.RowSpan
-import CompPoly.LinearAlgebra.PolynomialMatrix.Shifted
-import CompPoly.LinearAlgebra.PolynomialMatrix.ShiftedReduction
-import CompPoly.Multilinear.Basic
-import CompPoly.Multilinear.Equiv
-import CompPoly.Multilinear.ManyEval
-import CompPoly.Multilinear.ManyEval.Basic
-import CompPoly.Multilinear.ManyEval.Correctness
-import CompPoly.Multilinear.TransformEquiv
-import CompPoly.Multivariate.CMvMonomial
-import CompPoly.Multivariate.CMvPolynomial
-import CompPoly.Multivariate.CMvPolynomialEvalLemmas
-import CompPoly.Multivariate.FinSuccEquiv
-import CompPoly.Multivariate.HornerLemmas
-import CompPoly.Multivariate.Lawful
-import CompPoly.Multivariate.MvPolyEquiv
-import CompPoly.Multivariate.MvPolyEquiv.Core
-import CompPoly.Multivariate.MvPolyEquiv.Eval
-import CompPoly.Multivariate.MvPolyEquiv.Instances
-import CompPoly.Multivariate.Operations
-import CompPoly.Multivariate.Rename
-import CompPoly.Multivariate.Restrict
-import CompPoly.Multivariate.Unlawful
-import CompPoly.Multivariate.VarsDegrees
-import CompPoly.Multivariate.Wheels
-import CompPoly.ToMathlib.Finsupp.Fin
-import CompPoly.ToMathlib.MvPolynomial.Equiv
-import CompPoly.ToMathlib.Order.WithBot
-import CompPoly.ToMathlib.Polynomial.BivariateDegree
-import CompPoly.ToMathlib.Polynomial.BivariateEvaluation
-import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
-import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
-import CompPoly.ToMathlib.Polynomial.Div
-import CompPoly.ToMathlib.Polynomial.Irreducible
-import CompPoly.ToMathlib.Polynomial.Roots
-import CompPoly.Univariate.Barycentric
-import CompPoly.Univariate.Basic
-import CompPoly.Univariate.BatchEval
-import CompPoly.Univariate.BatchEval.Context
-import CompPoly.Univariate.BatchEval.Correctness
-import CompPoly.Univariate.BatchEval.Naive
-import CompPoly.Univariate.BatchEval.SubproductTree
-import CompPoly.Univariate.CMvEquiv
-import CompPoly.Univariate.CoefficientInterpolation
-import CompPoly.Univariate.Context
-import CompPoly.Univariate.Deriv
-import CompPoly.Univariate.DivisionCorrectness
-import CompPoly.Univariate.EuclideanAlgorithm
-import CompPoly.Univariate.Lagrange
-import CompPoly.Univariate.LagrangeArray
-import CompPoly.Univariate.Linear
-import CompPoly.Univariate.ManyEval
-import CompPoly.Univariate.ManyEval.Basic
-import CompPoly.Univariate.ManyEval.Correctness
-import CompPoly.Univariate.Modular
-import CompPoly.Univariate.NTT.BabyBear
-import CompPoly.Univariate.NTT.Domain
-import CompPoly.Univariate.NTT.Evaluation
-import CompPoly.Univariate.NTT.FastMul
-import CompPoly.Univariate.NTT.FastMulLow
-import CompPoly.Univariate.NTT.Forward
-import CompPoly.Univariate.NTT.Interpolation
-import CompPoly.Univariate.NTT.Inverse
-import CompPoly.Univariate.NTT.Kernel
-import CompPoly.Univariate.NTT.KoalaBear
-import CompPoly.Univariate.NTT.Transform
-import CompPoly.Univariate.NTTFast.Correctness
-import CompPoly.Univariate.NTTFast.Correctness.Basic
-import CompPoly.Univariate.NTTFast.Correctness.DIF
-import CompPoly.Univariate.NTTFast.Correctness.Pair
-import CompPoly.Univariate.NTTFast.Correctness.Pipeline
-import CompPoly.Univariate.NTTFast.Correctness.Radix4DIF
-import CompPoly.Univariate.NTTFast.Correctness.Radix4DIT
-import CompPoly.Univariate.NTTFast.Evaluation
-import CompPoly.Univariate.NTTFast.FastMul
-import CompPoly.Univariate.NTTFast.FastMulLow
-import CompPoly.Univariate.NTTFast.Interpolation
-import CompPoly.Univariate.NTTFast.Plan
-import CompPoly.Univariate.Quotient.Core
-import CompPoly.Univariate.Quotient.Equiv
-import CompPoly.Univariate.Raw
-import CompPoly.Univariate.Raw.Context
-import CompPoly.Univariate.Raw.Core
-import CompPoly.Univariate.Raw.Division
-import CompPoly.Univariate.Raw.Modular
-import CompPoly.Univariate.Raw.Ops
-import CompPoly.Univariate.Raw.Proofs
-import CompPoly.Univariate.ReedSolomon
-import CompPoly.Univariate.ReedSolomon.GaoCorrectness
-import CompPoly.Univariate.ReedSolomon.GaoDecoder
-import CompPoly.Univariate.Roots
-import CompPoly.Univariate.Roots.Backend
-import CompPoly.Univariate.Roots.Context
-import CompPoly.Univariate.Roots.Correctness
-import CompPoly.Univariate.Roots.Enumeration
-import CompPoly.Univariate.Roots.Extraction
-import CompPoly.Univariate.Roots.RootProduct
-import CompPoly.Univariate.Roots.SmoothSubgroup
-import CompPoly.Univariate.Roots.SmoothSubgroup.Basic
-import CompPoly.Univariate.Roots.SmoothSubgroup.Correctness
-import CompPoly.Univariate.Roots.Splitter
-import CompPoly.Univariate.ToPoly
-import CompPoly.Univariate.ToPoly.Core
-import CompPoly.Univariate.ToPoly.Degree
-import CompPoly.Univariate.ToPoly.Equiv
-import CompPoly.Univariate.ToPoly.Impl
-import CompPoly.Univariate.Vanishing
+module
+
+public import CompPoly.Bivariate.Basic
+public import CompPoly.Bivariate.CMvEquiv
+public import CompPoly.Bivariate.CoeffRows
+public import CompPoly.Bivariate.Deriv
+public import CompPoly.Bivariate.Factor
+public import CompPoly.Bivariate.FactorMonic
+public import CompPoly.Bivariate.GuruswamiSudan
+public import CompPoly.Bivariate.GuruswamiSudan.Context
+public import CompPoly.Bivariate.GuruswamiSudan.Core
+public import CompPoly.Bivariate.GuruswamiSudan.CoreCorrectness
+public import CompPoly.Bivariate.GuruswamiSudan.Executable
+public import CompPoly.Bivariate.GuruswamiSudan.Filter
+public import CompPoly.Bivariate.GuruswamiSudan.FilterCorrectness
+public import CompPoly.Bivariate.GuruswamiSudan.Implementations
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Basic
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Correctness
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Algorithm
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Algorithm
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Basic
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Basis
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Combinations
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Common
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Completeness
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Divisibility
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Normalization
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Rows
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Selection
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Soundness
+public import CompPoly.Bivariate.GuruswamiSudan.Polynomial
+public import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
+public import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Algorithm
+public import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Correctness
+public import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Lemmas
+public import CompPoly.Bivariate.GuruswamiSudan.Root.Common
+public import CompPoly.Bivariate.GuruswamiSudan.Root.Common.Lemmas
+public import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots
+public import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.FiniteField
+public import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
+public import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Algorithm
+public import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Correctness
+public import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Lemmas
+public import CompPoly.Bivariate.GuruswamiSudan.Root.ShiftedSubstitution
+public import CompPoly.Bivariate.GuruswamiSudan.Root.ShiftedSubstitution.Lemmas
+public import CompPoly.Bivariate.GuruswamiSudan.Util
+public import CompPoly.Bivariate.Kronecker
+public import CompPoly.Bivariate.ToPoly
+public import CompPoly.Data.Array.Lemmas
+public import CompPoly.Data.Classes.DCast
+public import CompPoly.Data.Classes.LawfulBEq
+public import CompPoly.Data.ExtTreeMap.DTreeMap
+public import CompPoly.Data.ExtTreeMap.ExtDTreeMap
+public import CompPoly.Data.ExtTreeMap.ExtTreeMap
+public import CompPoly.Data.Fin.BigOperators
+public import CompPoly.Data.List.Lemmas
+public import CompPoly.Data.MvPolynomial.Notation
+public import CompPoly.Data.Nat.Bitwise
+public import CompPoly.Data.Polynomial.Frobenius
+public import CompPoly.Data.Polynomial.MonomialBasis
+public import CompPoly.Data.Polynomial.Rabin
+public import CompPoly.Data.Polynomial.RabinCertificate
+public import CompPoly.Data.RingTheory.AlgebraTower
+public import CompPoly.Data.RingTheory.CanonicalEuclideanDomain
+public import CompPoly.Data.Vector.Basic
+public import CompPoly.Fields.BLS12_377
+public import CompPoly.Fields.BLS12_381
+public import CompPoly.Fields.BN254
+public import CompPoly.Fields.BabyBear
+public import CompPoly.Fields.BabyBear.Basic
+public import CompPoly.Fields.BabyBear.Ext4
+public import CompPoly.Fields.BabyBear.Fast
+public import CompPoly.Fields.Basic
+public import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
+public import CompPoly.Fields.Binary.AdditiveNTT.Algorithm
+public import CompPoly.Fields.Binary.AdditiveNTT.Correctness
+public import CompPoly.Fields.Binary.AdditiveNTT.Domain
+public import CompPoly.Fields.Binary.AdditiveNTT.Impl
+public import CompPoly.Fields.Binary.AdditiveNTT.Intermediate
+public import CompPoly.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
+public import CompPoly.Fields.Binary.BF128Ghash.Basic
+public import CompPoly.Fields.Binary.BF128Ghash.Impl
+public import CompPoly.Fields.Binary.BF128Ghash.Prelude
+public import CompPoly.Fields.Binary.BF128Ghash.XPowTwoPowGcdCertificate
+public import CompPoly.Fields.Binary.BF128Ghash.XPowTwoPowModCertificate
+public import CompPoly.Fields.Binary.Common
+public import CompPoly.Fields.Binary.Tower.Abstract.Algebra
+public import CompPoly.Fields.Binary.Tower.Abstract.Basis
+public import CompPoly.Fields.Binary.Tower.Abstract.Core
+public import CompPoly.Fields.Binary.Tower.Abstract.Split
+public import CompPoly.Fields.Binary.Tower.Basic
+public import CompPoly.Fields.Binary.Tower.Concrete.Algebra
+public import CompPoly.Fields.Binary.Tower.Concrete.Basis
+public import CompPoly.Fields.Binary.Tower.Concrete.Core
+public import CompPoly.Fields.Binary.Tower.Concrete.Field
+public import CompPoly.Fields.Binary.Tower.Equiv
+public import CompPoly.Fields.Binary.Tower.Impl
+public import CompPoly.Fields.Binary.Tower.Prelude
+public import CompPoly.Fields.Binary.Tower.Support.DefiningPoly
+public import CompPoly.Fields.Binary.Tower.Support.FinHelpers
+public import CompPoly.Fields.Binary.Tower.Support.IrreducibilityAndTraceMapProperty
+public import CompPoly.Fields.Binary.Tower.Support.LinearIndependentFin2
+public import CompPoly.Fields.Binary.Tower.Support.Preliminaries
+public import CompPoly.Fields.Binary.Tower.TensorAlgebra
+public import CompPoly.Fields.Extension
+public import CompPoly.Fields.Extension.Binomial
+public import CompPoly.Fields.Extension.Bridge
+public import CompPoly.Fields.Extension.Defs
+public import CompPoly.Fields.Extension.Field
+public import CompPoly.Fields.Goldilocks
+public import CompPoly.Fields.Hachi
+public import CompPoly.Fields.Hachi.Ext4
+public import CompPoly.Fields.KoalaBear
+public import CompPoly.Fields.KoalaBear.Basic
+public import CompPoly.Fields.KoalaBear.Ext4
+public import CompPoly.Fields.KoalaBear.Ext5
+public import CompPoly.Fields.KoalaBear.Ext5.QuinticCertData
+public import CompPoly.Fields.KoalaBear.Ext5.QuinticIrreducible
+public import CompPoly.Fields.KoalaBear.Fast
+public import CompPoly.Fields.Mersenne
+public import CompPoly.Fields.Montgomery.Basic
+public import CompPoly.Fields.Montgomery.Native32
+public import CompPoly.Fields.Montgomery.Native32Field
+public import CompPoly.Fields.PrattCertificate
+public import CompPoly.Fields.Secp256k1
+public import CompPoly.LinearAlgebra.Dense
+public import CompPoly.LinearAlgebra.Dense.Basic
+public import CompPoly.LinearAlgebra.Dense.Kernel
+public import CompPoly.LinearAlgebra.Dense.KernelCorrectness
+public import CompPoly.LinearAlgebra.Dense.KernelInPlace
+public import CompPoly.LinearAlgebra.Dense.KernelInPlaceCorrectness
+public import CompPoly.LinearAlgebra.Dense.RowOps
+public import CompPoly.LinearAlgebra.Dense.RowOpsCorrectness
+public import CompPoly.LinearAlgebra.Dense.RrefSemantics
+public import CompPoly.LinearAlgebra.Dense.RrefShape
+public import CompPoly.LinearAlgebra.PolynomialMatrix
+public import CompPoly.LinearAlgebra.PolynomialMatrix.Basic
+public import CompPoly.LinearAlgebra.PolynomialMatrix.Degree
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohann
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Combinations
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Conflict
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Fast
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Leading
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.MatrixRows
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Measure
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Minimal
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Reduction
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.RowOps
+public import CompPoly.LinearAlgebra.PolynomialMatrix.RowSpan
+public import CompPoly.LinearAlgebra.PolynomialMatrix.Shifted
+public import CompPoly.LinearAlgebra.PolynomialMatrix.ShiftedReduction
+public import CompPoly.Multilinear.Basic
+public import CompPoly.Multilinear.Equiv
+public import CompPoly.Multilinear.ManyEval
+public import CompPoly.Multilinear.ManyEval.Basic
+public import CompPoly.Multilinear.ManyEval.Correctness
+public import CompPoly.Multilinear.TransformEquiv
+public import CompPoly.Multivariate.CMvMonomial
+public import CompPoly.Multivariate.CMvPolynomial
+public import CompPoly.Multivariate.CMvPolynomialEvalLemmas
+public import CompPoly.Multivariate.FinSuccEquiv
+public import CompPoly.Multivariate.HornerLemmas
+public import CompPoly.Multivariate.Lawful
+public import CompPoly.Multivariate.MvPolyEquiv
+public import CompPoly.Multivariate.MvPolyEquiv.Core
+public import CompPoly.Multivariate.MvPolyEquiv.Eval
+public import CompPoly.Multivariate.MvPolyEquiv.Instances
+public import CompPoly.Multivariate.Operations
+public import CompPoly.Multivariate.Rename
+public import CompPoly.Multivariate.Restrict
+public import CompPoly.Multivariate.Unlawful
+public import CompPoly.Multivariate.VarsDegrees
+public import CompPoly.Multivariate.Wheels
+public import CompPoly.ToMathlib.Finsupp.Fin
+public import CompPoly.ToMathlib.MvPolynomial.Equiv
+public import CompPoly.ToMathlib.Order.WithBot
+public import CompPoly.ToMathlib.Polynomial.BivariateDegree
+public import CompPoly.ToMathlib.Polynomial.BivariateEvaluation
+public import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
+public import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
+public import CompPoly.ToMathlib.Polynomial.Div
+public import CompPoly.ToMathlib.Polynomial.Irreducible
+public import CompPoly.ToMathlib.Polynomial.Roots
+public import CompPoly.Univariate.Barycentric
+public import CompPoly.Univariate.Basic
+public import CompPoly.Univariate.BatchEval
+public import CompPoly.Univariate.BatchEval.Context
+public import CompPoly.Univariate.BatchEval.Correctness
+public import CompPoly.Univariate.BatchEval.Naive
+public import CompPoly.Univariate.BatchEval.SubproductTree
+public import CompPoly.Univariate.CMvEquiv
+public import CompPoly.Univariate.CoefficientInterpolation
+public import CompPoly.Univariate.Context
+public import CompPoly.Univariate.Deriv
+public import CompPoly.Univariate.DivisionCorrectness
+public import CompPoly.Univariate.EuclideanAlgorithm
+public import CompPoly.Univariate.Lagrange
+public import CompPoly.Univariate.LagrangeArray
+public import CompPoly.Univariate.Linear
+public import CompPoly.Univariate.ManyEval
+public import CompPoly.Univariate.ManyEval.Basic
+public import CompPoly.Univariate.ManyEval.Correctness
+public import CompPoly.Univariate.Modular
+public import CompPoly.Univariate.NTT.BabyBear
+public import CompPoly.Univariate.NTT.Domain
+public import CompPoly.Univariate.NTT.Evaluation
+public import CompPoly.Univariate.NTT.FastMul
+public import CompPoly.Univariate.NTT.FastMulLow
+public import CompPoly.Univariate.NTT.Forward
+public import CompPoly.Univariate.NTT.Interpolation
+public import CompPoly.Univariate.NTT.Inverse
+public import CompPoly.Univariate.NTT.Kernel
+public import CompPoly.Univariate.NTT.KoalaBear
+public import CompPoly.Univariate.NTT.Transform
+public import CompPoly.Univariate.NTTFast.Correctness
+public import CompPoly.Univariate.NTTFast.Correctness.Basic
+public import CompPoly.Univariate.NTTFast.Correctness.DIF
+public import CompPoly.Univariate.NTTFast.Correctness.Pair
+public import CompPoly.Univariate.NTTFast.Correctness.Pipeline
+public import CompPoly.Univariate.NTTFast.Correctness.Radix4DIF
+public import CompPoly.Univariate.NTTFast.Correctness.Radix4DIT
+public import CompPoly.Univariate.NTTFast.Evaluation
+public import CompPoly.Univariate.NTTFast.FastMul
+public import CompPoly.Univariate.NTTFast.FastMulLow
+public import CompPoly.Univariate.NTTFast.Interpolation
+public import CompPoly.Univariate.NTTFast.Plan
+public import CompPoly.Univariate.Quotient.Core
+public import CompPoly.Univariate.Quotient.Equiv
+public import CompPoly.Univariate.Raw
+public import CompPoly.Univariate.Raw.Context
+public import CompPoly.Univariate.Raw.Core
+public import CompPoly.Univariate.Raw.Division
+public import CompPoly.Univariate.Raw.Modular
+public import CompPoly.Univariate.Raw.Ops
+public import CompPoly.Univariate.Raw.Proofs
+public import CompPoly.Univariate.ReedSolomon
+public import CompPoly.Univariate.ReedSolomon.GaoCorrectness
+public import CompPoly.Univariate.ReedSolomon.GaoDecoder
+public import CompPoly.Univariate.ReedSolomon.NTTEncode
+public import CompPoly.Univariate.Roots
+public import CompPoly.Univariate.Roots.Backend
+public import CompPoly.Univariate.Roots.Context
+public import CompPoly.Univariate.Roots.Correctness
+public import CompPoly.Univariate.Roots.Enumeration
+public import CompPoly.Univariate.Roots.Extraction
+public import CompPoly.Univariate.Roots.RootProduct
+public import CompPoly.Univariate.Roots.SmoothSubgroup
+public import CompPoly.Univariate.Roots.SmoothSubgroup.Basic
+public import CompPoly.Univariate.Roots.SmoothSubgroup.Correctness
+public import CompPoly.Univariate.Roots.Splitter
+public import CompPoly.Univariate.ToPoly
+public import CompPoly.Univariate.ToPoly.Core
+public import CompPoly.Univariate.ToPoly.Degree
+public import CompPoly.Univariate.ToPoly.Equiv
+public import CompPoly.Univariate.ToPoly.Impl
+public import CompPoly.Univariate.Vanishing

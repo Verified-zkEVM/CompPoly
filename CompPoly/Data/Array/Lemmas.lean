@@ -3,14 +3,18 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gregor Mitscha-Baude
 -/
-import CompPoly.Data.List.Lemmas
-import Mathlib.Algebra.Order.Ring.Nat
-import Mathlib.Algebra.Order.Star.Basic
-import Mathlib.Data.Nat.Log
+module
+
+public import CompPoly.Data.List.Lemmas
+public import Mathlib.Algebra.Order.Ring.Nat
+public import Mathlib.Algebra.Order.Star.Basic
+public import Mathlib.Data.Nat.Log
 
 /-!
 # Auxiliary lemmas for `Array`
 -/
+
+@[expose] public section
 universe u
 
 namespace Array
@@ -39,15 +43,13 @@ def toNum {R : Type _} [Zero R] [DecidableEq R] (a : Array R) : ℕ :=
 
 lemma leftpad_toList {a : Array α} {n : Nat} {unit : α} :
     a.leftpad n unit = mk (a.toList.leftpad n unit) := by
-  induction h : a.toList with
-  | nil => simp_all
-  | cons hd tl ih => simp_all [size_eq_length_toList]
+  cases a
+  simp
 
 lemma rightpad_toList {a : Array α} {n : Nat} {unit : α} :
     a.rightpad n unit = mk (a.toList.rightpad n unit) := by
-  induction h : a.toList with
-  | nil => simp_all
-  | cons hd tl ih => simp_all [size_eq_length_toList]
+  cases a
+  simp
 
 lemma rightpad_getElem_eq_getD {a : Array α} {n : Nat} {unit : α} {i : Nat}
     (h : i < (a.rightpad n unit).size) : (a.rightpad n unit)[i] = a.getD i unit := by
@@ -69,7 +71,7 @@ lemma matchSize_toList {a b : Array α} {unit : α} :
     matchSize a b unit =
       let (a', b') := List.matchSize a.toList b.toList unit
       (mk a', mk b') := by
-  simp [matchSize, List.matchSize]
+  simp [matchSize, List.matchSize, rightpad_toList]
 
 lemma getElem?_eq_toList {a : Array α} {i : ℕ} : a.toList[i]? = a[i]? := by
   rw (occs := .pos [2]) [← Array.toArray_toList (xs := a)]
@@ -244,7 +246,8 @@ def rightpadPowerOfTwo (unit : α) (a : Array α) : Array α :=
   (a.rightpadPowerOfTwo unit).size = 2 ^ (Nat.clog 2 a.size) := by
   have h_le : a.size ≤ 2 ^ Nat.clog 2 a.size := by
     exact (Nat.clog_le_iff_le_pow (b := 2) (by decide)).1 le_rfl
-  simp [rightpadPowerOfTwo, Nat.add_sub_of_le h_le]
+  simp only [rightpadPowerOfTwo, Array.size_rightpad]
+  omega
 
 /-- Get the last element of an array, assuming the array is non-empty. -/
 def getLast (a : Array α) (h : a.size > 0) : α := a[a.size - 1]

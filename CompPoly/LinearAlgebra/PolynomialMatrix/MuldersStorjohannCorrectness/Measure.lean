@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Leading
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Leading
 
 /-!
 # Mulders-Storjohann Correctness Termination Measure Helpers
 
 Measure-decrease and fuel-bound lemmas for Mulders-Storjohann reduction.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

@@ -3,10 +3,11 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
+module
 
-import CompPolyBench.Common
-import CompPoly.Fields.BabyBear.Ext4
-import CompPoly.Fields.KoalaBear.Ext4
+public import CompPolyBench.Common
+public import CompPoly.Fields.BabyBear.Ext4
+public import CompPoly.Fields.KoalaBear.Ext4
 
 /-!
 # Degree-4 extension-field benchmarks
@@ -22,6 +23,8 @@ Comparing the two reported averages is the measurement behind the "replace Ferma
 norm-based inverse" note in `docs/wiki/field-extensions.md`: inversion is currently
 `x ^ (q^d - 2)`, so it should cost on the order of `d · log q` multiplications.
 -/
+
+public section
 
 open CompPoly CompPoly.Extension
 
@@ -61,7 +64,7 @@ private def runExt4Op {E : Type} (groupKey title name method fieldName : String)
   pure ({ groupKey := groupKey, title := title, records := #[record] }, gen)
 
 /-- Build the pairwise operand sampler for a degree-4 extension over a `ZMod` base field. -/
-private def ext4Sampler {F : Type*} [Field F] [Fintype F] {P : BinomialParams F}
+private def ext4Sampler {F : Type*} [Field F] [Fintype F] {P : ExtensionParams F}
     (values : Array F) : Nat → Ext P × Ext P :=
   let elem (i : Nat) : Ext P :=
     Ext.ofFn fun j ↦ values.getD ((i * P.d + j.val) % values.size) 0
@@ -74,7 +77,7 @@ private def runKoalaBearExt4Mul (preset : BenchPreset) (gen : StdGen) :
   let (values, gen) := (koalaBearArray 256 false).run gen
   runExt4Op "fields-extension-koalabear-ext4-mul"
     "Degree-4 extension multiplication (KoalaBear)" "extension-mul" "mul" "KoalaBear.Ext4"
-    checksumKoalaBearExt4 (ext4Sampler (P := KoalaBear.ext4Params) values) (· * ·)
+    checksumKoalaBearExt4 (ext4Sampler (P := KoalaBear.ext4Params.toExtensionParams) values) (· * ·)
     (preset.selectNat 200000 30000 6000) preset gen
 
 /-- Run the KoalaBear degree-4 inversion benchmark. -/
@@ -83,7 +86,8 @@ private def runKoalaBearExt4Inv (preset : BenchPreset) (gen : StdGen) :
   let (values, gen) := (koalaBearArray 256 false).run gen
   runExt4Op "fields-extension-koalabear-ext4-inv"
     "Degree-4 extension inversion (KoalaBear)" "extension-inv" "inv (Fermat)" "KoalaBear.Ext4"
-    checksumKoalaBearExt4 (ext4Sampler (P := KoalaBear.ext4Params) values) (fun a _ ↦ a⁻¹)
+    checksumKoalaBearExt4 (ext4Sampler (P := KoalaBear.ext4Params.toExtensionParams) values)
+      (fun a _ ↦ a⁻¹)
     (preset.selectNat 2000 300 60) preset gen
 
 /-- Run the BabyBear degree-4 multiplication benchmark. -/
@@ -92,7 +96,7 @@ private def runBabyBearExt4Mul (preset : BenchPreset) (gen : StdGen) :
   let (values, gen) := (babyBearArray 256 false).run gen
   runExt4Op "fields-extension-babybear-ext4-mul"
     "Degree-4 extension multiplication (BabyBear)" "extension-mul" "mul" "BabyBear.Ext4"
-    checksumBabyBearExt4 (ext4Sampler (P := BabyBear.ext4Params) values) (· * ·)
+    checksumBabyBearExt4 (ext4Sampler (P := BabyBear.ext4Params.toExtensionParams) values) (· * ·)
     (preset.selectNat 200000 30000 6000) preset gen
 
 /-- Run the BabyBear degree-4 inversion benchmark. -/
@@ -101,7 +105,8 @@ private def runBabyBearExt4Inv (preset : BenchPreset) (gen : StdGen) :
   let (values, gen) := (babyBearArray 256 false).run gen
   runExt4Op "fields-extension-babybear-ext4-inv"
     "Degree-4 extension inversion (BabyBear)" "extension-inv" "inv (Fermat)" "BabyBear.Ext4"
-    checksumBabyBearExt4 (ext4Sampler (P := BabyBear.ext4Params) values) (fun a _ ↦ a⁻¹)
+    checksumBabyBearExt4 (ext4Sampler (P := BabyBear.ext4Params.toExtensionParams) values)
+      (fun a _ ↦ a⁻¹)
     (preset.selectNat 2000 300 60) preset gen
 
 /-- Registry entries for the degree-4 extension benchmarks. -/

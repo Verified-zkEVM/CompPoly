@@ -3,9 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Lemmas
-import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Lemmas
+public import CompPoly.Bivariate.GuruswamiSudan.Root.Alekhnovich.Lemmas
+public import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Lemmas
 
 /-!
 # Alekhnovich Root Search Correctness
@@ -19,6 +20,8 @@ Public correctness surface for the Alekhnovich bounded bivariate root backend
     Decoding of Reed-Solomon Codes*, IEEE Transactions on Information Theory
     51(7), 2257-2265, 2005][Ale05]
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

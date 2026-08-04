@@ -3,8 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import Mathlib.Algebra.Polynomial.FieldDivision
-import Mathlib.RingTheory.UniqueFactorizationDomain.Defs
+module
+
+public import Mathlib.Algebra.Polynomial.FieldDivision
+public import Mathlib.RingTheory.UniqueFactorizationDomain.Defs
 
 /-!
 # Small-factor extraction for reducible polynomials
@@ -22,6 +24,8 @@ small factor in order to derive a contradiction.
 * `Polynomial.exists_factor_natDegree_le_of_reducible`: a reducible polynomial of degree `n`
   has an irreducible factor of degree at most `n / 2`.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

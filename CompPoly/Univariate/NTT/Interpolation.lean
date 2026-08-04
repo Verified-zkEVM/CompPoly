@@ -3,11 +3,13 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
-import CompPoly.Univariate.Lagrange
-import CompPoly.Univariate.NTT.Evaluation
-import CompPoly.Univariate.NTT.Inverse
-import CompPoly.Univariate.NTT.Kernel
-import Init.Data.Vector.OfFn
+module
+
+public import CompPoly.Univariate.Lagrange
+public import CompPoly.Univariate.NTT.Evaluation
+public import CompPoly.Univariate.NTT.Inverse
+public import CompPoly.Univariate.NTT.Kernel
+public import Init.Data.Vector.OfFn
 
 /-!
 # NTT and Interpolation
@@ -15,6 +17,8 @@ import Init.Data.Vector.OfFn
 Bridge theorem declarations connecting the NTT specification layer to power-domain
 interpolation.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial

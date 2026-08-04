@@ -3,7 +3,9 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
-import CompPoly.Univariate.Basic
+module
+
+public import CompPoly.Univariate.Basic
 
 /-!
 # Many-Polynomial Evaluation
@@ -11,6 +13,8 @@ import CompPoly.Univariate.Basic
 Executable evaluators for the workload with many dense univariate polynomials
 and one shared evaluation point.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial

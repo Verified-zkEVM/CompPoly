@@ -3,10 +3,12 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus Himmel
 -/
-import CompPoly.Data.ExtTreeMap.ExtDTreeMap
-import Std.Data.ExtTreeMap.Lemmas
-import Batteries.Tactic.GeneralizeProofs
-import Mathlib.Tactic.Lemma
+module
+
+public import CompPoly.Data.ExtTreeMap.ExtDTreeMap
+public import Std.Data.ExtTreeMap.Lemmas
+public import Batteries.Tactic.GeneralizeProofs
+public import Mathlib.Tactic.Lemma
 
 /-!
 # Auxiliary lemmas for `Std.ExtTreeMap`
@@ -20,6 +22,8 @@ Vendored from
 imported `Mathlib.Tactic` wholesale; here we narrow to the specific tactic
 modules actually needed by the proofs below.
 -/
+
+@[expose] public section
 
 namespace Std.ExtTreeMap
 

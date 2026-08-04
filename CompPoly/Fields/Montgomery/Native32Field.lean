@@ -3,18 +3,21 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin, Georgios Raikos
 -/
+module
 
-import CompPoly.Fields.Basic
-import CompPoly.Fields.Montgomery.Native32
-import Mathlib.Algebra.Field.TransferInstance
-import Mathlib.FieldTheory.Finite.Basic
-import Mathlib.Tactic.Linarith
+public import CompPoly.Fields.Basic
+public import CompPoly.Fields.Montgomery.Native32
+public import Mathlib.Algebra.Field.TransferInstance
+public import Mathlib.FieldTheory.Finite.Basic
+public import Mathlib.Tactic.Linarith
 
 /-!
 # Fast 32-bit Montgomery Fields
 
 The bounded carrier, conversions, arithmetic, and field instances built on `Native32` reduction.
 -/
+
+@[expose] public section
 
 namespace Montgomery
 namespace Native32
@@ -143,7 +146,7 @@ def ofField (x : ZMod modulus) : FastField modulus :=
 
 /-- Convert an integer into fast Montgomery representation. -/
 @[inline]
-private def ofInt (modulus : ℕ) [P : Mont32Field modulus] (n : Int) : FastField modulus :=
+def ofInt (modulus : ℕ) [P : Mont32Field modulus] (n : Int) : FastField modulus :=
   ofField (n : ZMod modulus)
 
 /-- Convert a fast element to its canonical native-word representative. -/

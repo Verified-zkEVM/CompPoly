@@ -3,10 +3,11 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.LinearAlgebra.Dense.KernelInPlace
-import CompPoly.LinearAlgebra.Dense.RowOpsCorrectness
-import CompPoly.LinearAlgebra.Dense.RrefSemantics
+public import CompPoly.LinearAlgebra.Dense.KernelInPlace
+public import CompPoly.LinearAlgebra.Dense.RowOpsCorrectness
+public import CompPoly.LinearAlgebra.Dense.RrefSemantics
 
 /-!
 # In-Place Dense Kernel Correctness
@@ -17,6 +18,8 @@ so it returns the same witness. This file proves that equivalence, culminating i
 `homogeneousWitnessInPlace_eq`, which lets the certified Guruswami-Sudan backend run
 the in-place implementation while reusing every existing correctness theorem.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

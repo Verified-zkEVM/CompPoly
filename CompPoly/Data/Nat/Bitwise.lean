@@ -3,22 +3,24 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
-import CompPoly.Data.Fin.BigOperators
-import Mathlib.Algebra.BigOperators.Ring.Finset
-import Mathlib.Algebra.Order.Ring.Star
-import Mathlib.Data.Nat.Bitwise
-import Mathlib.Data.Nat.Digits.Defs
-import Mathlib.Data.Finsupp.Basic
-import Mathlib.Algebra.Order.BigOperators.Group.Finset
-import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.Data.NNReal.Defs
-import Mathlib.Data.NNReal.Basic -- for instFloorSemiring of ℝ≥0
-import Mathlib.Algebra.CharP.Defs
-import Mathlib.Data.Nat.Cast.Order.Field
-import Mathlib.Data.ENat.Defs
-import Mathlib.Data.ENat.Basic
-import Mathlib.Data.ENNReal.Inv
-import Mathlib.Data.Nat.GCD.Basic
+module
+
+public import CompPoly.Data.Fin.BigOperators
+public import Mathlib.Algebra.BigOperators.Ring.Finset
+public import Mathlib.Algebra.Order.Ring.Star
+public import Mathlib.Data.Nat.Bitwise
+public import Mathlib.Data.Nat.Digits.Defs
+public import Mathlib.Data.Finsupp.Basic
+public import Mathlib.Algebra.Order.BigOperators.Group.Finset
+public import Mathlib.Algebra.BigOperators.Fin
+public import Mathlib.Data.NNReal.Defs
+public import Mathlib.Data.NNReal.Basic -- for instFloorSemiring of ℝ≥0
+public import Mathlib.Algebra.CharP.Defs
+public import Mathlib.Data.Nat.Cast.Order.Field
+public import Mathlib.Data.ENat.Defs
+public import Mathlib.Data.ENat.Basic
+public import Mathlib.Data.ENNReal.Inv
+public import Mathlib.Data.Nat.GCD.Basic
 
 /-!
 # Bit operations on natural numbers
@@ -27,6 +29,8 @@ Naming convention:
 - ..._getBit_1 or _eq_one : the value of getBit is 1 at the specified bit(s)
 - getBit_of_... : the value of getBit is the value of the specified bit(s), under some preconditions
 -/
+
+@[expose] public section
 
 open NNReal ENat
 

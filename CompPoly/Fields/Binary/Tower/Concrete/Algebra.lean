@@ -3,14 +3,17 @@ Copyright (c) 2024 - 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import CompPoly.Fields.Binary.Tower.Concrete.Field
+public import CompPoly.Fields.Binary.Tower.Concrete.Field
 
 /-!
 # Concrete Binary Tower Algebra
 
 Algebra maps and embeddings for the concrete bitvector binary tower.
 -/
+
+@[expose] public section
 
 set_option backward.isDefEq.respectTransparency false
 

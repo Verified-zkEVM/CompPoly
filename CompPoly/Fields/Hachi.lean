@@ -3,8 +3,10 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import CompPoly.Fields.Basic
-import CompPoly.Fields.PrattCertificate
+module
+
+public import CompPoly.Fields.Basic
+public import CompPoly.Fields.PrattCertificate
 
 /-!
 # Hachi prime field `2^32 - 99`
@@ -29,6 +31,8 @@ reduction needs `x + m * p < 2 ^ 64`; at `p ≈ 2 ^ 32` that overflows `UInt64`.
 `CompPoly/Fields/Extension/` is generic over the base-field carrier and would pick it up
 unchanged.
 -/
+
+@[expose] public section
 
 namespace Hachi
 

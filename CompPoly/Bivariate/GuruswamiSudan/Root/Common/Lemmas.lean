@@ -3,15 +3,18 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Root.Common
-import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
+public import CompPoly.Bivariate.GuruswamiSudan.Root.Common
+public import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
 
 /-!
 # Common Guruswami-Sudan Root Helper Lemmas
 
 Reusable proof facts for bounded bivariate root backends.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

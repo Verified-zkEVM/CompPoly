@@ -3,14 +3,17 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import CompPoly.Fields.PrattCertificate
+public import CompPoly.Fields.PrattCertificate
 
 /-!
   # Goldilocks prime field `2^{64} - 2^{32} + 1`
 
   This is the field used in Plonky2/3.
 -/
+
+@[expose] public section
 
 namespace Goldilocks
 

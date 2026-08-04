@@ -3,13 +3,17 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import CompPoly.ToMathlib.Polynomial.BivariateDegree
+module
+
+public import CompPoly.ToMathlib.Polynomial.BivariateDegree
 
 /-!
 # Bivariate Degree Tests
 
 Basic regression coverage for the Mathlib-facing bivariate degree and evaluation bridge.
 -/
+
+@[expose] public section
 
 open Polynomial
 open scoped Polynomial.Bivariate

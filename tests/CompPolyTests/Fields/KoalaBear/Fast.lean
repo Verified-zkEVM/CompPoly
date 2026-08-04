@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Fields.KoalaBear.Fast
+public meta import CompPoly.Fields.KoalaBear.Fast
 
 /-!
 # Fast KoalaBear Field Tests
 
 Regression checks for the executable Montgomery representation.
 -/
+
+public meta section
 
 namespace KoalaBear.Fast
 

@@ -3,45 +3,47 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPolyTests.Bivariate.Basic
-import CompPolyTests.Bivariate.Degree
-import CompPolyTests.Bivariate.Factor
-import CompPolyTests.Bivariate.Kronecker
-import CompPolyTests.Bivariate.Deriv
-import CompPolyTests.Bivariate.GuruswamiSudan.Compose
-import CompPolyTests.Bivariate.GuruswamiSudan.Core
-import CompPolyTests.Bivariate.GuruswamiSudan.Filter
-import CompPolyTests.Bivariate.GuruswamiSudan.Hasse
-import CompPolyTests.Bivariate.GuruswamiSudan.Interpolation.Dense
-import CompPolyTests.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan
-import CompPolyTests.Bivariate.GuruswamiSudan.Root.Alekhnovich
-import CompPolyTests.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
-import CompPolyTests.Bivariate.GuruswamiSudan.Root.RothRuckenstein
-import CompPolyTests.Bivariate.Multiplicity
-import CompPolyTests.Bivariate.WeightedDegree
-import CompPolyTests.Data.MvPolynomial.Notation
-import CompPolyTests.Fields.BabyBear.Fast
-import CompPolyTests.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
-import CompPolyTests.Fields.Binary.BF128Ghash.Prelude
-import CompPolyTests.Fields.Extension.Arithmetic
-import CompPolyTests.Fields.Extension.Binomial
-import CompPolyTests.Fields.KoalaBear.Fast
-import CompPolyTests.Fields.PrattCertificate
-import CompPolyTests.LinearAlgebra.Dense
-import CompPolyTests.Multilinear.Equiv
-import CompPolyTests.Multivariate.CMvMonomial
-import CompPolyTests.Multivariate.Restrict
-import CompPolyTests.Multivariate.TypeclassMinimization
-import CompPolyTests.Multivariate.VarsDegrees
-import CompPolyTests.Univariate.Barycentric
-import CompPolyTests.Univariate.Basic
-import CompPolyTests.Univariate.EuclideanAlgorithm
-import CompPolyTests.Univariate.Linear
-import CompPolyTests.Univariate.NTT.FastMul
-import CompPolyTests.Univariate.NTT.Forward
-import CompPolyTests.Univariate.NTT.Inverse
-import CompPolyTests.Univariate.Raw
-import CompPolyTests.Univariate.Roots.Enumeration
-import CompPolyTests.Univariate.Roots.FiniteField
-import CompPolyTests.Univariate.ToPoly
+public import CompPolyTests.Bivariate.Basic
+public import CompPolyTests.Bivariate.Degree
+public import CompPolyTests.Bivariate.Factor
+public import CompPolyTests.Bivariate.Kronecker
+public import CompPolyTests.Bivariate.Deriv
+public import CompPolyTests.Bivariate.GuruswamiSudan.Compose
+public import CompPolyTests.Bivariate.GuruswamiSudan.Core
+public import CompPolyTests.Bivariate.GuruswamiSudan.Filter
+public import CompPolyTests.Bivariate.GuruswamiSudan.Hasse
+public import CompPolyTests.Bivariate.GuruswamiSudan.Interpolation.Dense
+public import CompPolyTests.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan
+public import CompPolyTests.Bivariate.GuruswamiSudan.Root.Alekhnovich
+public import CompPolyTests.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
+public import CompPolyTests.Bivariate.GuruswamiSudan.Root.RothRuckenstein
+public import CompPolyTests.Bivariate.Multiplicity
+public import CompPolyTests.Bivariate.WeightedDegree
+public import CompPolyTests.Data.MvPolynomial.Notation
+public import CompPolyTests.Data.Polynomial.RabinCertificate
+public import CompPolyTests.Fields.BabyBear.Fast
+public import CompPolyTests.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
+public import CompPolyTests.Fields.Binary.BF128Ghash.Prelude
+public import CompPolyTests.Fields.Extension.Arithmetic
+public import CompPolyTests.Fields.Extension.Binomial
+public import CompPolyTests.Fields.KoalaBear.Fast
+public import CompPolyTests.Fields.PrattCertificate
+public import CompPolyTests.LinearAlgebra.Dense
+public import CompPolyTests.Multilinear.Equiv
+public import CompPolyTests.Multivariate.CMvMonomial
+public import CompPolyTests.Multivariate.Restrict
+public import CompPolyTests.Multivariate.TypeclassMinimization
+public import CompPolyTests.Multivariate.VarsDegrees
+public import CompPolyTests.Univariate.Barycentric
+public import CompPolyTests.Univariate.Basic
+public import CompPolyTests.Univariate.EuclideanAlgorithm
+public import CompPolyTests.Univariate.Linear
+public import CompPolyTests.Univariate.NTT.FastMul
+public import CompPolyTests.Univariate.NTT.Forward
+public import CompPolyTests.Univariate.NTT.Inverse
+public import CompPolyTests.Univariate.Raw
+public import CompPolyTests.Univariate.Roots.Enumeration
+public import CompPolyTests.Univariate.Roots.FiniteField
+public import CompPolyTests.Univariate.ToPoly

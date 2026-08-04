@@ -3,16 +3,19 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.LinearAlgebra.Dense.Kernel
-import CompPoly.LinearAlgebra.Dense.RrefShape
-import Mathlib.Data.Finset.Card
+public import CompPoly.LinearAlgebra.Dense.Kernel
+public import CompPoly.LinearAlgebra.Dense.RrefShape
+public import Mathlib.Data.Finset.Card
 
 /-!
 # Dense Homogeneous-Kernel Correctness
 
 Correctness contracts for executable dense homogeneous-kernel witnesses.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

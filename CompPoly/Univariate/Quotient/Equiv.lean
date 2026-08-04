@@ -3,8 +3,10 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Aristotle (Harmonic), Elias Judin
 -/
-import CompPoly.Univariate.Quotient.Core
-import CompPoly.Univariate.ToPoly.Equiv
+module
+
+public import CompPoly.Univariate.Quotient.Core
+public import CompPoly.Univariate.ToPoly.Equiv
 
 /-!
 # QuotientCPolynomial <-> Polynomial Isomorphism
@@ -22,6 +24,8 @@ mathlib's `Polynomial R`.
 * `QuotientCPolynomial.ringEquiv` - the ring equivalence `QuotientCPolynomial R ≃+* Polynomial R`
 -/
 
+@[expose] public section
+
 namespace CompPoly
 
 namespace CPolynomial
@@ -33,7 +37,7 @@ open Raw Trim
 variable {R : Type*} [Semiring R]
 
 /-- Well-definedness: equivalent raw polynomials map to the same `Polynomial`. -/
-private theorem toPoly_resp (p q : CPolynomial.Raw R) (h : p ≈ q) :
+theorem toPoly_resp (p q : CPolynomial.Raw R) (h : p ≈ q) :
     p.toPoly = q.toPoly := by
   ext n
   rw [Raw.coeff_toPoly, Raw.coeff_toPoly]

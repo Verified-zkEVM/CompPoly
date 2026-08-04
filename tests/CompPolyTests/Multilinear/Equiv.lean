@@ -3,7 +3,9 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: CompPoly Contributors
 -/
-import CompPoly.Multilinear.Equiv
+module
+
+public import CompPoly.Multilinear.Equiv
 
 /-!
   # Multilinear Equiv Tests
@@ -11,6 +13,8 @@ import CompPoly.Multilinear.Equiv
   Regression checks for the new `CMlPolynomialEval` helpers added on top of the
   multilinear-to-Mathlib bridge.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CMlPolynomialEval

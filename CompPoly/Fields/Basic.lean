@@ -3,9 +3,11 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Julian Sutherland, Ilia Vlasov
 -/
-import Mathlib.Algebra.Polynomial.FieldDivision
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.LinearCombination
+module
+
+public import Mathlib.Algebra.Polynomial.FieldDivision
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.LinearCombination
 
 /-!
 # Non-binary fields and polynomial utilities
@@ -13,6 +15,8 @@ import Mathlib.Tactic.LinearCombination
 This module defines `NonBinaryField` (fields with char ≠ 2) and provides lemmas about
 polynomial composition with `-X` and `X²`.
 -/
+
+@[expose] public section
 
 /-- A type class for fields of characteristic ≠ 2, extending `Field`. -/
 class NonBinaryField (F : Type*) extends Field F where

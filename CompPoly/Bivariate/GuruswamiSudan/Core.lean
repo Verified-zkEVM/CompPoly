@@ -3,8 +3,9 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Context
+public import CompPoly.Bivariate.GuruswamiSudan.Context
 
 /-!
 # Guruswami-Sudan Core
@@ -17,6 +18,8 @@ interpolation-and-root-finding decomposition of [GS99].
 * [Guruswami, V., and Sudan, M., *Improved decoding of Reed-Solomon and
     algebraic-geometry codes*][GS99]
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

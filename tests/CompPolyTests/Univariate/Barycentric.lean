@@ -3,7 +3,9 @@ Copyright (c) 2026 CompPoly, Elias Judin, Harmonic. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Elias Judin, Aristotle (Harmonic)
 -/
-import CompPoly.Univariate.Barycentric
+module
+
+public import CompPoly.Univariate.Barycentric
 
 /-!
 # Barycentric Interpolation Tests
@@ -12,6 +14,8 @@ Regression tests for `BarycentricDomain` and its evaluator, ensuring the
 structure is constructible, the weights match the product-inverse formula,
 and the evaluator agrees with `CLagrange.interpolate` for concrete examples.
 -/
+
+@[expose] public section
 
 namespace CompPoly.CPolynomial.CLagrange
 

@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPolyBench.Bivariate.GuruswamiSudan.Shared
+public import CompPolyBench.Bivariate.GuruswamiSudan.Shared
 
 /-!
 # Guruswami-Sudan Core Benchmarks
 
 Full backend-parametric `gsCore` and `gsFilteredCore` benchmark runners.
 -/
+
+public section
 
 open CompPoly
 open CompPoly.GuruswamiSudan

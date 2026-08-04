@@ -3,13 +3,16 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPolyBench.Common
-import CompPoly.Multivariate.CMvPolynomial
+public import CompPolyBench.Common
+public import CompPoly.Multivariate.CMvPolynomial
 
 /-!
 # Multivariate Benchmarks
 -/
+
+public section
 
 open CompPoly
 

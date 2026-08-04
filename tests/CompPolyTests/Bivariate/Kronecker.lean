@@ -3,8 +3,10 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dimitris Mitsios
 -/
-import CompPoly.Bivariate.Kronecker
-import CompPolyTests.Bivariate.KroneckerCommon
+module
+
+public meta import CompPoly.Bivariate.Kronecker
+public meta import CompPolyTests.Bivariate.KroneckerCommon
 
 /-!
   # Kronecker substitution tests
@@ -14,6 +16,8 @@ import CompPolyTests.Bivariate.KroneckerCommon
   classic NTT, recursive NTT) returns the same product as direct multiplication. The full
   timing comparison lives in `KroneckerBenchmark.lean`.
 -/
+
+public meta section
 
 namespace CompPoly
 namespace CBivariate

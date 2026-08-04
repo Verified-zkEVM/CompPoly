@@ -3,11 +3,12 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import CompPoly.Fields.Binary.AdditiveNTT.Algorithm
-import CompPoly.Fields.Binary.AdditiveNTT.Impl
-import Mathlib.Algebra.CharP.CharAndCard
-import Mathlib.Algebra.CharP.Two
+public import CompPoly.Fields.Binary.AdditiveNTT.Algorithm
+public import CompPoly.Fields.Binary.AdditiveNTT.Impl
+public import Mathlib.Algebra.CharP.CharAndCard
+public import Mathlib.Algebra.CharP.Two
 
 /-!
 # Additive NTT Correctness
@@ -15,6 +16,8 @@ import Mathlib.Algebra.CharP.Two
 The stage-wise correctness argument and the final correctness theorem for the
 Additive NTT.
 -/
+
+@[expose] public section
 
 open Polynomial AdditiveNTT Module
 namespace AdditiveNTT

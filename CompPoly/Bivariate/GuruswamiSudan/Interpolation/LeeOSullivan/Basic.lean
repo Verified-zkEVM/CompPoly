@@ -3,15 +3,18 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.CoeffRows
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Correctness
-import CompPoly.Univariate.CoefficientInterpolation
-import CompPoly.Univariate.Vanishing
+public import CompPoly.Bivariate.CoeffRows
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Correctness
+public import CompPoly.Univariate.CoefficientInterpolation
+public import CompPoly.Univariate.Vanishing
 
 /-!
 # Lee-O'Sullivan Interpolation Basics
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

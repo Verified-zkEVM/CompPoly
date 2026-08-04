@@ -3,9 +3,11 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Katerina Hristova, Julian Sutherland
 -/
-import Mathlib.LinearAlgebra.Lagrange
-import CompPoly.Univariate.Basic
-import CompPoly.Univariate.ToPoly.Impl
+module
+
+public import Mathlib.LinearAlgebra.Lagrange
+public import CompPoly.Univariate.Basic
+public import CompPoly.Univariate.ToPoly.Impl
 
 /-!
   # Lagrange Interpolation
@@ -13,6 +15,8 @@ import CompPoly.Univariate.ToPoly.Impl
   This file defines computable Lagrange interpolation
   for univariate polynomials, i.e. `CPolynomial`s.
 -/
+
+@[expose] public section
 namespace CompPoly
 
 namespace CPolynomial
@@ -43,7 +47,7 @@ proof routed through `toPoly`. -/
 
 /-- `basisDivisor`-product fold over a list, combining factors with the untrimmed
 `Raw.mulRaw`. The wrapping `basis` definition trims this once. -/
-private def basisListRaw {ι : Type*} (x : ι → R) (i : ι) (l : List ι) :
+def basisListRaw {ι : Type*} (x : ι → R) (i : ι) (l : List ι) :
     CPolynomial.Raw R :=
   l.foldr (fun j acc => Raw.mulRaw (basisDivisor (x i) (x j)).val acc) (Raw.C 1)
 
@@ -64,7 +68,7 @@ private lemma toPoly_basisListRaw {ι : Type*} (x : ι → R) (i : ι) (l : List
           = Lagrange.basisDivisor (x i) (x head) := cbasisDivisor_eq_basisDivisor
       rw [hmul, hbd, ih, List.map_cons, List.prod_cons]
 
-private lemma basisListRaw_trim_perm {ι : Type*} (x : ι → R) (i : ι)
+lemma basisListRaw_trim_perm {ι : Type*} (x : ι → R) (i : ι)
     {l₁ l₂ : List ι} (h : l₁.Perm l₂) :
     (basisListRaw x i l₁).trim = (basisListRaw x i l₂).trim := by
   apply Raw.Trim.isCanonical_ext (Raw.Trim.isCanonical_trim _) (Raw.Trim.isCanonical_trim _)
@@ -107,7 +111,7 @@ The `interpolate` sum is folded with the untrimmed `Raw.addRaw`, with each adden
 formed by `Raw.mulRaw (Raw.C (y i)) (basis s x i).val` (also untrimmed). One `trim` runs
 at the end of the entire fold. -/
 
-private def interpolateListRaw {ι : Type*} [DecidableEq ι]
+def interpolateListRaw {ι : Type*} [DecidableEq ι]
     (s : Finset ι) (x : ι → R) (y : ι → R) (l : List ι) : CPolynomial.Raw R :=
   l.foldr
     (fun i acc => Raw.addRaw (Raw.mulRaw (Raw.C (y i)) (basis s x i).val) acc)
@@ -135,7 +139,7 @@ private lemma toPoly_interpolateListRaw {ι : Type*} [DecidableEq ι]
         exact cbasis_eq_basis s x head
       rw [hmul, ih, List.map_cons, List.sum_cons]
 
-private lemma interpolateListRaw_trim_perm {ι : Type*} [DecidableEq ι]
+lemma interpolateListRaw_trim_perm {ι : Type*} [DecidableEq ι]
     (s : Finset ι) (x : ι → R) (y : ι → R) {l₁ l₂ : List ι} (h : l₁.Perm l₂) :
     (interpolateListRaw s x y l₁).trim = (interpolateListRaw s x y l₂).trim := by
   apply Raw.Trim.isCanonical_ext (Raw.Trim.isCanonical_trim _) (Raw.Trim.isCanonical_trim _)
@@ -147,7 +151,7 @@ private lemma interpolateListRaw_trim_perm {ι : Type*} [DecidableEq ι]
 
 /-- Computable raw-fold form of the interpolation polynomial: defer trimming to the
 end of the `Finset.sum`. -/
-private def interpolateRaw {ι : Type*} [DecidableEq ι]
+def interpolateRaw {ι : Type*} [DecidableEq ι]
     (s : Finset ι) (x : ι → R) (y : ι → R) : CPolynomial R :=
   Quotient.liftOn s.val
     (fun l => ⟨(interpolateListRaw s x y l).trim, Raw.Trim.isCanonical_trim _⟩)

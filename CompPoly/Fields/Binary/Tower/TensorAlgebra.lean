@@ -3,12 +3,13 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import Mathlib.Algebra.MvPolynomial.Basic
-import Mathlib.GroupTheory.MonoidLocalization.Basic
-import Mathlib.LinearAlgebra.TensorProduct.Basis
-import Mathlib.RingTheory.TensorProduct.Maps
-import Mathlib.LinearAlgebra.StdBasis
+public import Mathlib.Algebra.MvPolynomial.Basic
+public import Mathlib.GroupTheory.MonoidLocalization.Basic
+public import Mathlib.LinearAlgebra.TensorProduct.Basis
+public import Mathlib.RingTheory.TensorProduct.Maps
+public import Mathlib.LinearAlgebra.StdBasis
 
 /-!
 # Generalized Tensor Algebra and Dual View
@@ -31,6 +32,8 @@ for arbitrary field extensions `R/K` and `C/K`, upon the existing `TensorProduct
 * [Diamond, B.E. and Posen, J., *Polylogarithmic Proofs for Multilinears over Binary Towers*][DP24]
 * [Diamond, B.E. and Posen, J., *Succinct arguments over towers of binary fields*][DP23]
 -/
+
+@[expose] public section
 open TensorProduct
 
 section DualView

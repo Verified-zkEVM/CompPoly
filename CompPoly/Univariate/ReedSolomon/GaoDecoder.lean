@@ -3,9 +3,11 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Juan Conejero
 -/
-import CompPoly.Univariate.ReedSolomon
-import CompPoly.Univariate.EuclideanAlgorithm
-import CompPoly.Univariate.Lagrange
+module
+
+public import CompPoly.Univariate.ReedSolomon
+public import CompPoly.Univariate.EuclideanAlgorithm
+public import CompPoly.Univariate.Lagrange
 
 /-!
 # Gao Decoder for Reed-Solomon Codes
@@ -25,6 +27,8 @@ correctness is proved in `GaoCorrectness.lean`.
 
 * [Gao, S., *A New Algorithm for Decoding Reed-Solomon Codes*][Gao02]
 -/
+
+@[expose] public section
 
 namespace CompPoly.ReedSolomon.Gao
 

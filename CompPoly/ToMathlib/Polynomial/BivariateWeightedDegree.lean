@@ -3,10 +3,11 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import CompPoly.ToMathlib.Polynomial.BivariateDegree
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.Algebra.Polynomial.BigOperators
+public import CompPoly.ToMathlib.Polynomial.BivariateDegree
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Algebra.Polynomial.BigOperators
 
 /-!
 # Mathlib-Facing Bivariate Weighted-Degree Helpers
@@ -14,6 +15,8 @@ import Mathlib.Algebra.Polynomial.BigOperators
 This file extends `Polynomial.Bivariate` with weighted-degree algebra that is generic
 and reusable across downstream protocol developments.
 -/
+
+@[expose] public section
 
 open Polynomial
 open scoped Polynomial.Bivariate

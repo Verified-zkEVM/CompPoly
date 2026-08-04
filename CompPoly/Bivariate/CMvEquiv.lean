@@ -3,13 +3,14 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dimitris Mitsios
 -/
+module
 
-import CompPoly.Bivariate.Basic
-import CompPoly.Bivariate.ToPoly
-import CompPoly.Multivariate.CMvPolynomial
-import CompPoly.Multivariate.MvPolyEquiv.Instances
-import CompPoly.Multivariate.FinSuccEquiv
-import CompPoly.Multivariate.Rename
+public import CompPoly.Bivariate.Basic
+public import CompPoly.Bivariate.ToPoly
+public import CompPoly.Multivariate.CMvPolynomial
+public import CompPoly.Multivariate.MvPolyEquiv.Instances
+public import CompPoly.Multivariate.FinSuccEquiv
+public import CompPoly.Multivariate.Rename
 
 /-!
 # Equivalence between `CBivariate` and `CMvPolynomial 2`
@@ -45,6 +46,8 @@ The equivalence chain is:
 * `CMvPolynomial.finSuccEquiv_symm_X` —
   `finSuccEquiv.symm Polynomial.X = CMvPolynomial.X 0`
 -/
+
+@[expose] public section
 
 namespace CMvPolynomial
 

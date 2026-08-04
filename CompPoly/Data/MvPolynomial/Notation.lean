@@ -3,10 +3,11 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.RingTheory.Polynomial.Basic
-import Mathlib.RingTheory.MvPolynomial.Basic
-import CompPoly.ToMathlib.MvPolynomial.Equiv
+public import Mathlib.RingTheory.Polynomial.Basic
+public import Mathlib.RingTheory.MvPolynomial.Basic
+public import CompPoly.ToMathlib.MvPolynomial.Equiv
 
 /-!
   # Useful Notation
@@ -16,6 +17,8 @@ import CompPoly.ToMathlib.MvPolynomial.Equiv
     `Fintype.piFinset (fun (_ : Fin n) => s)`. This matches the intuition that `s ^ᶠ n`
     is the set of all tuples of length `n` with elements in `s`.
 -/
+
+@[expose] public section
 
 noncomputable section
 

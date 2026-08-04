@@ -3,14 +3,17 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
+public meta import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 
 /-!
 # KoalaBear GS Field-Root Tests
 
 Executable coverage for canonical and fast KoalaBear finite-field root backends.
 -/
+
+public meta section
 
 namespace CompPolyTests
 

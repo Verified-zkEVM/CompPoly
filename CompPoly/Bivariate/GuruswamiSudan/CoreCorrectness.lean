@@ -3,11 +3,12 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Filter
-import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
-import CompPoly.Bivariate.GuruswamiSudan.Root.Common.Lemmas
-import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
+public import CompPoly.Bivariate.GuruswamiSudan.Filter
+public import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
+public import CompPoly.Bivariate.GuruswamiSudan.Root.Common.Lemmas
+public import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
 
 /-!
 # Guruswami-Sudan Core Correctness
@@ -15,6 +16,8 @@ import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
 Public correctness theorems for the backend-parametric CompPoly
 Guruswami-Sudan core.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

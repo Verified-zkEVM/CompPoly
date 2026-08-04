@@ -3,8 +3,10 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Frantisek Silvasi
 -/
-import CompPoly.Multivariate.Unlawful
-import Mathlib.Analysis.Normed.Ring.Lemmas
+module
+
+public import CompPoly.Multivariate.Unlawful
+public import Mathlib.Analysis.Normed.Ring.Lemmas
 
 /-!
 # 'Lawful' finite supports
@@ -18,6 +20,8 @@ computable multivariate polynomials.
 
 * `CPoly.Lawful n R`: The subtype of `Unlawful n R` with no zero coefficients.
 -/
+
+@[expose] public section
 set_option allowUnsafeReducibility true in
 attribute [local reducible] instDecidableEqOfLawfulBEq
 attribute [local instance 5] instDecidableEqOfLawfulBEq

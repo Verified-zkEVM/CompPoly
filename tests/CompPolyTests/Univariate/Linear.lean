@@ -3,13 +3,17 @@ Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Derek Sorensen
 -/
-import CompPoly.Univariate.ToPoly.Degree
+module
+
+public import CompPoly.Univariate.ToPoly.Degree
 
 /-!
   # Univariate Linear Regression Tests
 
   Compile-time regressions for the instance-stable bounded-degree API.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial
@@ -22,9 +26,9 @@ private theorem nat_lawful_beq_eq : @LawfulBEq Nat natBeqEq := by
   · intro a; erw [show natBeqEq.beq a a = decide (a = a) from rfl]; simp
   · intro a b h; erw [show natBeqEq.beq a b = decide (a = b) from rfl] at h; simpa using h
 
-@[implicit_reducible] private def natBeqSucc : BEq Nat := ⟨fun a b => decide (a.succ = b.succ)⟩
+@[implicit_reducible] def natBeqSucc : BEq Nat := ⟨fun a b => decide (a.succ = b.succ)⟩
 
-private theorem nat_lawful_beq_succ : @LawfulBEq Nat natBeqSucc := by
+theorem nat_lawful_beq_succ : @LawfulBEq Nat natBeqSucc := by
   letI : BEq Nat := natBeqSucc
   refine { rfl := ?_, eq_of_beq := ?_ }
   · intro a; erw [show natBeqSucc.beq a a = decide (a.succ = a.succ) from rfl]; simp

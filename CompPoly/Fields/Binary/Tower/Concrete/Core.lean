@@ -3,15 +3,18 @@ Copyright (c) 2024 - 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import CompPoly.Data.Classes.DCast
-import CompPoly.Fields.Binary.Tower.Abstract.Basis
+public import CompPoly.Data.Classes.DCast
+public import CompPoly.Fields.Binary.Tower.Abstract.Basis
 
 /-!
 # Concrete Binary Tower Core
 
 Core definitions for the concrete bitvector model of the binary tower.
 -/
+
+@[expose] public section
 
 namespace ConcreteBinaryTower
 
@@ -1155,9 +1158,9 @@ def concrete_pow_nat {k : ℕ} (x : ConcreteBTField k) (n : ℕ) : ConcreteBTFie
   else concrete_mul x (concrete_pow_nat (concrete_mul x x) (n / 2))
 
 lemma cast_mul (m n : ℕ) {x y : ConcreteBTField m} (h_eq : m = n) :
-    (cast (by exact cast_ConcreteBTField_eq m n h_eq) (x * y)) =
-  (cast (by exact cast_ConcreteBTField_eq m n h_eq) x) *
-  (cast (by exact cast_ConcreteBTField_eq m n h_eq) y) := by
+    (cast (cast_ConcreteBTField_eq m n h_eq) (x * y)) =
+  (cast (cast_ConcreteBTField_eq m n h_eq) x) *
+  (cast (cast_ConcreteBTField_eq m n h_eq) y) := by
   subst h_eq
   rfl
 

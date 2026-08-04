@@ -4,13 +4,17 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles,
   Natalie Klaus, Dimitris Mitsios, Valerii Huhnin
 -/
-import CompPoly.Univariate.Raw.Division
+module
+
+public import CompPoly.Univariate.Raw.Division
 
 /-!
 # Raw Univariate Polynomial Proofs
 
 Proofs about operations on raw computable univariate polynomials.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 
@@ -73,7 +77,8 @@ theorem add_size {p q : CPolynomial.Raw Q} : (addRaw p q).size = max p.size q.si
 theorem add_coeff {p q : CPolynomial.Raw Q} {i : ℕ} (hi : i < (addRaw p q).size) :
     (addRaw p q)[i] = p.coeff i + q.coeff i := by
   simp [addRaw]
-  by_cases hi' : i < p.size <;> by_cases hi'' : i < q.size <;> simp_all
+  by_cases hi' : i < p.size <;> by_cases hi'' : i < q.size <;>
+    simp_all [Array.rightpad_getElem_eq_getD]
 
 theorem add_coeff? (p q : CPolynomial.Raw Q) (i : ℕ) :
     (addRaw p q).coeff i = p.coeff i + q.coeff i := by
@@ -438,11 +443,12 @@ lemma smul_addRaw_distrib [LawfulBEq R] :
           intros a' q r
           simp [smul, addRaw]
           refine' congr_arg _ ( Array.ext _ _ );
-            simp [Array.size_zipWith]
+            simp [Array.size_zipWith, Array.size_rightpad]
           · intro i hi₁ hi₂
             rw [Array.getElem_zipWith, Array.getElem_zipWith ]
             simp +decide [mul_add ]
-            by_cases hi₃ : i < q.size <;> by_cases hi₄ : i < r.size <;> simp_all +decide
+            by_cases hi₃ : i < q.size <;> by_cases hi₄ : i < r.size <;>
+              simp_all +decide [Array.rightpad_getElem_eq_getD]
 
 lemma smul_distrib_trim [LawfulBEq R] :
     ∀ (a' : R) (q r : CPolynomial.Raw R), (smul a' (q + r)).trim

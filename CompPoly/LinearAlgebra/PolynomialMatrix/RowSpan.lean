@@ -3,13 +3,16 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.LinearAlgebra.PolynomialMatrix.Shifted
-import CompPoly.Univariate.ToPoly
+public import CompPoly.LinearAlgebra.PolynomialMatrix.Shifted
+public import CompPoly.Univariate.ToPoly
 
 /-!
 # Row Span for Polynomial Matrices
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

@@ -3,10 +3,11 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Context
-import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.FiniteField
-import CompPoly.Univariate.Roots.Enumeration
+public import CompPoly.Bivariate.GuruswamiSudan.Context
+public import CompPoly.Bivariate.GuruswamiSudan.Root.FieldRoots.FiniteField
+public import CompPoly.Univariate.Roots.Enumeration
 
 /-!
 # Guruswami-Sudan Field Roots
@@ -15,6 +16,8 @@ Executable univariate field-root helpers used by Roth-Ruckenstein recursion.
 The explicit `FieldRootContext` context makes this dependency replaceable for
 large concrete fields.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

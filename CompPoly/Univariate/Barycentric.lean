@@ -3,8 +3,10 @@ Copyright (c) 2025 CompPoly, Elias Judin, Harmonic. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Elias Judin, Aristotle (Harmonic)
 -/
-import Mathlib.LinearAlgebra.Lagrange
-import CompPoly.Univariate.Lagrange
+module
+
+public import Mathlib.LinearAlgebra.Lagrange
+public import CompPoly.Univariate.Lagrange
 
 /-!
 # Barycentric Interpolation
@@ -31,6 +33,8 @@ for univariate computable polynomials.
 * `eval_eq_interpolate_eval` – variant in terms of `Lagrange.interpolate`.
 * `ofPow_eval_eq_interpolatePow_eval` – specialization to `CLagrange.interpolatePow`.
 -/
+
+@[expose] public section
 
 open Finset
 

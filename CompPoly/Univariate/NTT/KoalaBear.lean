@@ -3,14 +3,18 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
-import CompPoly.Fields.KoalaBear
-import CompPoly.Univariate.NTT.Domain
+module
+
+public import CompPoly.Fields.KoalaBear
+public import CompPoly.Univariate.NTT.Domain
 
 /-!
 # KoalaBear NTT Domains
 
 Concrete radix-2 NTT domains over the KoalaBear field.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial

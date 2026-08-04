@@ -3,7 +3,9 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Juan Conejero
 -/
-import CompPoly.Univariate.ToPoly.Impl
+module
+
+public import CompPoly.Univariate.ToPoly.Impl
 
 /-!
 # Reed-Solomon Codes
@@ -22,6 +24,8 @@ points and a message length `k`. The codeword for a message `(m₀, ..., mₖ₋
 * `messagePoly`, `encode`: the message polynomial of a coefficient vector and the encoder
   evaluating it on the domain.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 

@@ -3,10 +3,12 @@ Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Salih Erdem Koçak, Doran Pamukçu, Valerii Huhnin
 -/
-import CompPoly.Univariate.Raw
-import Init.Data.Vector.OfFn
-import Mathlib.Data.Nat.Log
-import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
+module
+
+public import CompPoly.Univariate.Raw
+public import Init.Data.Vector.OfFn
+public import Mathlib.Data.Nat.Log
+public import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
 
 /-!
 # NTT Domain
@@ -14,6 +16,8 @@ import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
 This file defines the radix-2 NTT domain parameters and basic raw-polynomial
 shape helpers used by forward/inverse NTT.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 namespace CPolynomial

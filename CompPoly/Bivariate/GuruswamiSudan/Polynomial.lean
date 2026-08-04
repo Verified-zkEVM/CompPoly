@@ -3,10 +3,11 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import CompPoly.Bivariate.FactorMonic
-import CompPoly.Bivariate.ToPoly
-import CompPoly.Univariate.Deriv
+public import CompPoly.Bivariate.FactorMonic
+public import CompPoly.Bivariate.ToPoly
+public import CompPoly.Univariate.Deriv
 
 /-!
 # Guruswami-Sudan Polynomial Helpers
@@ -14,6 +15,8 @@ import CompPoly.Univariate.Deriv
 Reusable univariate and bivariate polynomial operations used by the
 Guruswami-Sudan interpolation and root-finding kernels.
 -/
+
+@[expose] public section
 
 namespace CompPoly
 
