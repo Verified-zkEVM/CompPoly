@@ -11,26 +11,23 @@ import CompPoly.Fields.Montgomery.Native64x8Inv
 # Fast BN254 Scalar Field
 
 A native eight-limb Montgomery implementation of BN254 scalar arithmetic
-(`CompPoly.Fields.Montgomery.Native64x8Field`). This module supplies the BN254
-constants, including the 64-bit words of the shared GCD inverse candidate.
+(`CompPoly.Fields.Montgomery.Native64x8Field`). This module supplies the BN254 constants.
 -/
 
 namespace BN254.Fast
 
-open Montgomery.Native256 (Mont256Field)
-open Montgomery.Native64x8 (Mont64x8Field FastField)
+open Montgomery.Native64x8 (Mont64x8Field FastField GcdData)
 
 set_option exponentiation.threshold 1100
 
 /-! ## Parameters and carrier -/
 
-/-- The 64-bit words and divstep schedule consumed by the shared binary-GCD inverse
-candidate. -/
-instance instMont256Field : Mont256Field BN254.scalarFieldSize where
-  modulus256 := ⟨0x43e1f593f0000001, 0x2833e84879b97091, 0xb85045b68181585d, 0x30644e72e131a029⟩
-  montgomeryNegInv := 0xc2e1f593efffffff
-  gcdFinalRounds := 41
-  gcdInitU := ⟨0xb542296a1cafd3b2, 0xec8811f19c820da9, 0x29bed6026bd1d274, 0x0fb316d8a8ab8d54⟩
+/-- Divstep schedule of the binary-GCD inverse candidate. -/
+instance instGcdData : GcdData BN254.scalarFieldSize where
+  finalRounds := 41
+  initU :=
+    ⟨0x1cafd3b2, 0xb542296a, 0x9c820da9, 0xec8811f1, 0x6bd1d274, 0x29bed602, 0xa8ab8d54,
+      0x0fb316d8⟩
 
 /-- The per-field data realizing BN254's scalar field as a fast eight-limb (32-bit-limb)
 Montgomery field. -/

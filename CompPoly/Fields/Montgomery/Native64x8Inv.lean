@@ -11,13 +11,12 @@ import Mathlib.Tactic.Ring
 /-!
 # Fast inversion for eight-limb Montgomery fields
 
-The Pornin binary-GCD inverse for the eight-limb carrier: the raw candidate of
-`Montgomery/Native64x8InvDefs`, accepted after one proven eight-limb multiplication, with
-the proven Fermat inverse as fallback.  Also proves the divstep coefficient bound and that
-the raw twin `invGcdRaw` agrees with `invGcd`.
+Correctness of the checked inversion of `Montgomery/Native64x8InvDefs`: `invGcdRaw`
+computes the field inverse and `FastField.invGcd` is its proof-carrying wrapper.  Also
+proves the divstep coefficient bound.
 -/
 
-namespace Montgomery.Native256
+namespace Montgomery.Native64x8
 
 /-! ## Divstep coefficient bounds -/
 
@@ -71,42 +70,18 @@ theorem gcdInner_natAbs_le {rounds : Nat} {a b a' b' : UInt64}
       · exact step (by omega) (by omega) heq
       · exact step (by omega) (by omega) heq
 
-/-- Main-loop coefficients satisfy the linear-combination bound. -/
-theorem gcdInner_31_natAbs_le {a b a' b' : UInt64} {f0' g0' f1' g1' : Int}
-    (heq : gcdInner 31 a b 1 0 0 1 = (a', b', f0', g0', f1', g1')) :
+/-- Chunks of at most 31 divsteps satisfy the linear-combination bound. -/
+theorem gcdInner_natAbs_le_31 {rounds : Nat} (h31 : rounds ≤ 31) {a b a' b' : UInt64}
+    {f0' g0' f1' g1' : Int}
+    (heq : gcdInner rounds a b 1 0 0 1 = (a', b', f0', g0', f1', g1')) :
     f0'.natAbs + g0'.natAbs ≤ 2 ^ 31 ∧ f1'.natAbs + g1'.natAbs ≤ 2 ^ 31 := by
-  simpa using gcdInner_natAbs_le (n := 1) (by decide) (by decide) heq
-
-/-- Final-fold coefficients stay word-sized. -/
-theorem gcdInner_finalRounds_natAbs_le {modulus : Nat} [P : Mont256Field modulus]
-    {a b a' b' : UInt64} {f0' g0' f1' g1' : Int}
-    (heq : gcdInner P.gcdFinalRounds a b 1 0 0 1 = (a', b', f0', g0', f1', g1')) :
-    f0'.natAbs + g0'.natAbs ≤ 2 ^ 62 ∧ f1'.natAbs + g1'.natAbs ≤ 2 ^ 62 := by
   have h := gcdInner_natAbs_le (n := 1) (by decide) (by decide) heq
-  have hle : 2 ^ P.gcdFinalRounds ≤ 2 ^ 62 :=
-    Nat.pow_le_pow_right (by omega) P.gcdFinalRounds_le
+  have hle : 2 ^ rounds ≤ 2 ^ 31 := Nat.pow_le_pow_right (by omega) h31
   omega
-
-end Montgomery.Native256
-
-namespace Montgomery.Native64x8
-
-/-- Splitting always produces 32-bit-bounded limbs. -/
-theorem Limbs8.ofUInt256L_bounded (x : Native256.UInt256L) : (ofUInt256L x).Bounded := by
-  have hand : ∀ y : UInt64, (y &&& 0xffffffff).toNat < 2 ^ 32 := fun y => by
-    rw [UInt64.toNat_and, show ((0xffffffff : UInt64).toNat) = 2 ^ 32 - 1 from by decide,
-      Nat.and_two_pow_sub_one_eq_mod]
-    exact Nat.mod_lt _ (by decide)
-  have hshr : ∀ y : UInt64, (y >>> 32).toNat < 2 ^ 32 := fun y => by
-    rw [UInt64.toNat_shiftRight, show ((32 : UInt64).toNat % 64) = 32 from by decide,
-      Nat.shiftRight_eq_div_pow]
-    have := y.toNat_lt
-    omega
-  exact ⟨hand _, hshr _, hand _, hshr _, hand _, hshr _, hand _, hshr _⟩
 
 /-! ## Order from the borrow chain -/
 
-/-- The final borrow decides the numeric order: `subBorrow a b = 1` iff `a < b`. -/
+/-- The final borrow decides the numeric order. -/
 theorem subBorrow_eq_one_iff {a b : Limbs8} (ha : a.Bounded) (hb : b.Bounded) :
     subBorrow a b = 1 ↔ a.toNat < b.toNat := by
   obtain ⟨hbo, hchain⟩ := subLimbs_spec a b ha hb
@@ -114,50 +89,9 @@ theorem subBorrow_eq_one_iff {a b : Limbs8} (ha : a.Bounded) (hb : b.Bounded) :
   rw [← UInt64.toNat_inj, show (1 : UInt64).toNat = 1 from rfl]
   omega
 
-/-! ## Checked-candidate inversion -/
+/-! ## The Fermat fallback and the checked raw inversion -/
 
-namespace FastField
-
-variable {modulus : ℕ} [P : Mont64x8Field modulus]
-
-/-- Accept a raw candidate `z` for `x⁻¹` if it verifies (bounded, canonical, `z · x = 1`
-under the proven multiplier), else fall back to `x⁻¹`. -/
-@[inline] def invWithCandidate (x : FastField modulus) (z : Limbs8) : FastField modulus :=
-  if h : z.Bounded ∧ subBorrow z P.modulusLimbs = 1 ∧
-      Native64x8.mul P.modulusLimbs P.montgomeryNegInv z x.val = P.rModModulus then
-    ⟨z, h.1, by
-      have hlt := (subBorrow_eq_one_iff h.1 P.modulusLimbs_bounded).mp h.2.1
-      rwa [Mont64x8Field.q_toNat] at hlt⟩
-  else x⁻¹
-
-/-- A verified candidate is the field inverse. -/
-theorem invWithCandidate_eq_inv (x : FastField modulus) (z : Limbs8) :
-    invWithCandidate x z = x⁻¹ := by
-  unfold invWithCandidate
-  split
-  case isTrue h =>
-    refine eq_inv_of_mul_eq_one_left (Subtype.ext ?_)
-    show Native64x8.mul P.modulusLimbs P.montgomeryNegInv z x.val = P.rModModulus
-    exact h.2.2
-  case isFalse _ => rfl
-
-/-- Inversion via the binary-GCD candidate, verified by one eight-limb multiplication;
-the fallback (`x = 0` or a candidate miss) is the proven Fermat inverse. -/
-@[inline] def invGcd [Native256.Mont256Field modulus] (x : FastField modulus) :
-    FastField modulus :=
-  invWithCandidate x
-    (Native64x8.gcdInvCandidate modulus P.modulusLimbs P.montgomeryNegInv x.val)
-
-/-- `invGcd` agrees with the Fermat inverse of the `Field` instance. -/
-theorem invGcd_eq_inv [Native256.Mont256Field modulus] (x : FastField modulus) :
-    invGcd x = x⁻¹ :=
-  invWithCandidate_eq_inv x _
-
-end FastField
-
-/-! ## Agreement of the raw twin -/
-
-section RawTwin
+section
 
 variable {modulus : ℕ} [P : Mont64x8Field modulus]
 
@@ -210,15 +144,60 @@ theorem montPow_eq_inv (x : FastField modulus) :
       (by rw [FastField.toField_mul, FastField.toField_one, one_mul])
   exact congrArg Subtype.val (h1.trans rfl)
 
-/-- The raw twin agrees with `invGcd`. -/
-theorem invGcdRaw_eq_invGcd [Native256.Mont256Field modulus] (x : FastField modulus) :
-    invGcdRaw modulus P.modulusLimbs P.montgomeryNegInv P.rModModulus x.val
-      = (FastField.invGcd x).val := by
-  simp only [invGcdRaw, FastField.invGcd, FastField.invWithCandidate]
-  split
-  next h => rfl
-  next h => exact montPow_eq_inv x
+/-- Accept a raw candidate `z` for `x⁻¹` if it verifies, else fall back to `x⁻¹`. -/
+private def invWithCandidate (x : FastField modulus) (z : Limbs8) : FastField modulus :=
+  if h : z.Bounded ∧ subBorrow z P.modulusLimbs = 1 ∧
+      Native64x8.mul P.modulusLimbs P.montgomeryNegInv z x.val = P.rModModulus then
+    ⟨z, h.1, by
+      have hlt := (subBorrow_eq_one_iff h.1 P.modulusLimbs_bounded).mp h.2.1
+      rwa [Mont64x8Field.q_toNat] at hlt⟩
+  else x⁻¹
 
-end RawTwin
+private theorem invWithCandidate_eq_inv (x : FastField modulus) (z : Limbs8) :
+    invWithCandidate x z = x⁻¹ := by
+  unfold invWithCandidate
+  split
+  case isTrue h =>
+    refine eq_inv_of_mul_eq_one_left (Subtype.ext ?_)
+    show Native64x8.mul P.modulusLimbs P.montgomeryNegInv z x.val = P.rModModulus
+    exact h.2.2
+  case isFalse _ => rfl
+
+/-- `invGcdRaw` computes the field inverse. -/
+theorem invGcdRaw_eq_inv [GcdData modulus] (x : FastField modulus) :
+    invGcdRaw modulus P.modulusLimbs P.montgomeryNegInv P.rModModulus x.val
+      = (x⁻¹).val := by
+  have hval : invGcdRaw modulus P.modulusLimbs P.montgomeryNegInv P.rModModulus x.val
+      = (invWithCandidate x
+          (gcdInvCandidate modulus P.modulusLimbs P.montgomeryNegInv x.val)).val := by
+    simp only [invGcdRaw, invWithCandidate]
+    split
+    next h => rfl
+    next h => exact montPow_eq_inv x
+  rw [hval, invWithCandidate_eq_inv]
+
+end
+
+/-! ## The proof-carrying wrapper -/
+
+namespace FastField
+
+variable {modulus : ℕ} [P : Mont64x8Field modulus]
+
+/-- The proof-carrying wrapper of the checked inversion `invGcdRaw`. -/
+@[inline] def invGcd [GcdData modulus] (x : FastField modulus) : FastField modulus :=
+  ⟨invGcdRaw modulus P.modulusLimbs P.montgomeryNegInv P.rModModulus x.val, by
+    rw [invGcdRaw_eq_inv x]
+    exact (x⁻¹).property⟩
+
+/-- `invGcd` agrees with the `Field` inverse. -/
+theorem invGcd_eq_inv [GcdData modulus] (x : FastField modulus) :
+    invGcd x = x⁻¹ := by
+  have hval : (invGcd x).val
+      = invGcdRaw modulus P.modulusLimbs P.montgomeryNegInv P.rModModulus x.val := by
+    simp only [invGcd]
+  exact Subtype.ext (hval.trans (invGcdRaw_eq_inv x))
+
+end FastField
 
 end Montgomery.Native64x8

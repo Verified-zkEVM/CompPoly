@@ -72,11 +72,7 @@ set_option maxRecDepth 4000
   = gcdInvCandidate scalarFieldSize (Mont64x8Field.modulusLimbs scalarFieldSize)
       (Mont64x8Field.montgomeryNegInv scalarFieldSize) (37 : ScalarField).val
 
--- Smoke tests of the raw twin; the agreement is a theorem (`invGcdRaw_eq_invGcd`).
-#guard invGcdRaw scalarFieldSize (Mont64x8Field.modulusLimbs scalarFieldSize)
-    (Mont64x8Field.montgomeryNegInv scalarFieldSize) (Mont64x8Field.rModModulus scalarFieldSize)
-    (37 : ScalarField).val
-  = (37 : ScalarField).invGcd.val
+-- The Fermat fallback, exercised directly (the fast path never takes it).
 #guard montPow (Mont64x8Field.modulusLimbs scalarFieldSize)
     (Mont64x8Field.montgomeryNegInv scalarFieldSize) (Mont64x8Field.rModModulus scalarFieldSize)
     (37 : ScalarField).val (scalarFieldSize - 2)

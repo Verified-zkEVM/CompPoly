@@ -12,25 +12,23 @@ import CompPoly.Fields.Montgomery.Native64x8Inv
 
 A native eight-limb Montgomery implementation of BLS12-377 scalar arithmetic
 (`CompPoly.Fields.Montgomery.Native64x8Field`). This module supplies the BLS12-377
-constants, including the 64-bit words of the shared GCD inverse candidate.
+constants.
 -/
 
 namespace BLS12_377.Fast
 
-open Montgomery.Native256 (Mont256Field)
-open Montgomery.Native64x8 (Mont64x8Field FastField)
+open Montgomery.Native64x8 (Mont64x8Field FastField GcdData)
 
 set_option exponentiation.threshold 1100
 
 /-! ## Parameters and carrier -/
 
-/-- The 64-bit words and divstep schedule consumed by the shared binary-GCD inverse
-candidate. -/
-instance instMont256Field : Mont256Field BLS12_377.scalarFieldSize where
-  modulus256 := ⟨0x0a11800000000001, 0x59aa76fed0000001, 0x60b44d1e5c37b001, 0x12ab655e9a2ca556⟩
-  montgomeryNegInv := 0x0a117fffffffffff
-  gcdFinalRounds := 39
-  gcdInitU := ⟨0xa5707af094e01332, 0xf9af464a6f1abbfb, 0x65dbc6f77f75c179, 0x10e76cd3c9364c65⟩
+/-- Divstep schedule of the binary-GCD inverse candidate. -/
+instance instGcdData : GcdData BLS12_377.scalarFieldSize where
+  finalRounds := 39
+  initU :=
+    ⟨0x94e01332, 0xa5707af0, 0x6f1abbfb, 0xf9af464a, 0x7f75c179, 0x65dbc6f7, 0xc9364c65,
+      0x10e76cd3⟩
 
 /-- The per-field data realizing BLS12-377's scalar field as a fast eight-limb
 (32-bit-limb) Montgomery field. -/

@@ -5,34 +5,64 @@ Authors: Georgios Raikos
 -/
 
 import CompPoly.Fields.Montgomery.Native64x8Defs
-import CompPoly.Fields.Montgomery.Native256Gcd
 
 /-!
 # Eight-limb inversion: runtime definitions (Mathlib-free)
 
-The Pornin binary-GCD inverse candidate over `Limbs8` and its checked wrapper, completing
-the Mathlib-free defs surface of `Montgomery/Native64x8Defs`. Linear combinations run on
-the eight-limb macs; the one-word divstep loops and the final fold stay at 64-bit width.
-The proof-carrying path is `Montgomery.Native64x8.FastField.invGcd`.
+The Pornin binary-GCD inverse candidate over `Limbs8` and its checked wrapper
+(`invGcdRaw`), Mathlib-free for `precompileModules` consumers. The proof side is
+`Montgomery/Native64x8Inv`.
 -/
 
 namespace Montgomery.Native64x8
 
-/-! ## Limb conversions -/
+/-! ## Per-field schedule -/
 
-/-- Pack eight 32-bit limbs into four 64-bit limbs (canonical inputs: high halves zero). -/
-@[inline] def Limbs8.toUInt256L (x : Limbs8) : Native256.UInt256L :=
-  ⟨x.l0 ||| (x.l1 <<< 32), x.l2 ||| (x.l3 <<< 32),
-   x.l4 ||| (x.l5 <<< 32), x.l6 ||| (x.l7 <<< 32)⟩
+/-- Per-field schedule of the binary-GCD inverse candidate; every obligation defaults to
+`decide`. -/
+class GcdData (modulus : Nat) where
+  /-- Divsteps in the final word-sized phase: `2·bits(p) - 2 - 15·31`. -/
+  finalRounds : Nat
+  /-- Initial `u`: the power of two that keeps the candidate in Montgomery form. -/
+  initU : Limbs8
+  initU_bounded : initU.Bounded := by decide
+  initU_toNat : initU.toNat = 2 ^ (591 - finalRounds) % modulus := by decide
+  /-- Final-phase chunks stay at mac width. -/
+  finalRounds_le : finalRounds ≤ 62 := by decide
 
-/-- Split four 64-bit limbs into eight 32-bit limbs. -/
-@[inline] def Limbs8.ofUInt256L (x : Native256.UInt256L) : Limbs8 :=
-  ⟨x.l0 &&& 0xffffffff, x.l0 >>> 32, x.l1 &&& 0xffffffff, x.l1 >>> 32,
-   x.l2 &&& 0xffffffff, x.l2 >>> 32, x.l3 &&& 0xffffffff, x.l3 >>> 32⟩
+/-! ## Word-sized divstep loop -/
+
+/-- Bit length of a word. -/
+@[inline] def gcdBitLen (x : UInt64) : Nat := Id.run do
+  if x == 0 then return 0
+  let mut v := x
+  let mut r : Nat := 1
+  if v >>> (32 : UInt64) != 0 then v := v >>> (32 : UInt64); r := r + 32
+  if v >>> (16 : UInt64) != 0 then v := v >>> (16 : UInt64); r := r + 16
+  if v >>> (8 : UInt64) != 0 then v := v >>> (8 : UInt64); r := r + 8
+  if v >>> (4 : UInt64) != 0 then v := v >>> (4 : UInt64); r := r + 4
+  if v >>> (2 : UInt64) != 0 then v := v >>> (2 : UInt64); r := r + 2
+  if v >>> (1 : UInt64) != 0 then r := r + 1
+  return r
+
+/-- The word-sized divstep loop, accumulating the transition matrix; `b` must be odd. -/
+def gcdInner (rounds : Nat) (a b : UInt64) (f0 g0 f1 g1 : Int) :
+    UInt64 × UInt64 × Int × Int × Int × Int :=
+  match rounds with
+  | 0 => (a, b, f0, g0, f1, g1)
+  | n + 1 =>
+    let (a, b, f0, g0, f1, g1) :=
+      if a &&& 1 == 0 then
+        (a, b, f0, g0, f1, g1)
+      else
+        let (a, b, f0, g0, f1, g1) :=
+          if a < b then (b, a, f1, g1, f0, g0) else (a, b, f0, g0, f1, g1)
+        (a - b, b, f0 - f1, g0 - g1, f1, g1)
+    gcdInner n (a >>> 1) b f0 g0 (f1 * 2) (g1 * 2)
 
 /-! ## Approximation: 64-bit windows over 32-bit limbs -/
 
-/-- Read limb `i ∈ {0, …, 7}` of a `Limbs8` (any other index reads the top limb). -/
+/-- Read limb `i` (out-of-range indices read the top limb). -/
 @[inline] def gcdLimb (v : Limbs8) : Nat → UInt64
   | 0 => v.l0
   | 1 => v.l1
@@ -46,19 +76,19 @@ namespace Montgomery.Native64x8
 /-- Highest nonzero limb index among limbs 1-7 of `a ||| b` and its bit length; `(1, 0)`
 when all are zero. -/
 @[inline] def gcdNumBits (a b : Limbs8) : Nat × Nat :=
-  let v7 := Native256.gcdBitLen (a.l7 ||| b.l7)
+  let v7 := gcdBitLen (a.l7 ||| b.l7)
   if v7 != 0 then (7, v7) else
-  let v6 := Native256.gcdBitLen (a.l6 ||| b.l6)
+  let v6 := gcdBitLen (a.l6 ||| b.l6)
   if v6 != 0 then (6, v6) else
-  let v5 := Native256.gcdBitLen (a.l5 ||| b.l5)
+  let v5 := gcdBitLen (a.l5 ||| b.l5)
   if v5 != 0 then (5, v5) else
-  let v4 := Native256.gcdBitLen (a.l4 ||| b.l4)
+  let v4 := gcdBitLen (a.l4 ||| b.l4)
   if v4 != 0 then (4, v4) else
-  let v3 := Native256.gcdBitLen (a.l3 ||| b.l3)
+  let v3 := gcdBitLen (a.l3 ||| b.l3)
   if v3 != 0 then (3, v3) else
-  let v2 := Native256.gcdBitLen (a.l2 ||| b.l2)
+  let v2 := gcdBitLen (a.l2 ||| b.l2)
   if v2 != 0 then (2, v2) else
-  (1, Native256.gcdBitLen (a.l1 ||| b.l1))
+  (1, gcdBitLen (a.l1 ||| b.l1))
 
 /-- One-word approximation: top 33 bits (at the shared bit length) above the bottom 31;
 exact once both values fit one 64-bit word. -/
@@ -102,8 +132,7 @@ exact once both values fit one 64-bit word. -/
     sbbLo p.t8 q.t8 b7⟩,
    sbbBo p.t8 q.t8 b7)
 
-/-- `(f·a + g·b) / 2^31` via a positive − negative magnitude split; magnitude and sign.
-Requires `|f| + |g| ≤ 2^31` (the mac coefficient bound). -/
+/-- `(f·a + g·b) / 2^31` as magnitude and sign. Requires `|f| + |g| ≤ 2^31`. -/
 @[inline] def gcdLinearCombDiv (a b : Limbs8) (f g : Int) : Limbs8 × Int :=
   let fa := mulAccum a (UInt64.ofNat f.natAbs) State9.zero
   let gb := mulAccum b (UInt64.ofNat g.natAbs) State9.zero
@@ -125,8 +154,8 @@ Requires `|f| + |g| ≤ 2^31` (the mac coefficient bound). -/
   let o7 := ((d.t7 >>> 31) ||| (d.t8 <<< 1)) &&& mask
   (⟨o0, o1, o2, o3, o4, o5, o6, o7⟩, sign)
 
-/-- `f·a + g·b` folded through one `2^32` Montgomery reduction step; negatives absorbed
-via `q − a` / `q − b`. Requires `|f| + |g| ≤ 2^31`. -/
+/-- `f·a + g·b` folded through one Montgomery reduction step. Requires
+`|f| + |g| ≤ 2^31`. -/
 @[inline] def gcdLinearCombMontyRed (q : Limbs8) (negInv : UInt64) (a b : Limbs8)
     (f g : Int) : Limbs8 :=
   let aS := if f < 0 then subLimbs q a else a
@@ -137,8 +166,8 @@ via `q − a` / `q − b`. Requires `|f| + |g| ≤ 2^31`. -/
 
 /-! ## Main loop and candidate -/
 
-/-- The outer rounds: one-word approximations, 31 divsteps, then the transition matrix
-applied to `(a, b)` and to the Montgomery pair `(u, v)`. -/
+/-- The outer rounds: 31 divsteps on one-word approximations, then the transition matrix
+applied to both tracks. -/
 def gcdMainLoop (q : Limbs8) (negInv : UInt64) (rounds : Nat) (a u b v : Limbs8) :
     Limbs8 × Limbs8 × Limbs8 × Limbs8 :=
   match rounds with
@@ -147,7 +176,7 @@ def gcdMainLoop (q : Limbs8) (negInv : UInt64) (rounds : Nat) (a u b v : Limbs8)
     let (limbIdx, bits) := gcdNumBits a b
     let aT := gcdApprox a limbIdx bits
     let bT := gcdApprox b limbIdx bits
-    let (_, _, f0, g0, f1, g1) := Native256.gcdInner 31 aT bT 1 0 0 1
+    let (_, _, f0, g0, f1, g1) := gcdInner 31 aT bT 1 0 0 1
     let (newA, signA) := gcdLinearCombDiv a b f0 g0
     let f0 := if signA < 0 then -f0 else f0
     let g0 := if signA < 0 then -g0 else g0
@@ -159,17 +188,19 @@ def gcdMainLoop (q : Limbs8) (negInv : UInt64) (rounds : Nat) (a u b v : Limbs8)
     gcdMainLoop q negInv n newA newU newB newV
 
 /-- Pornin binary-GCD candidate for the Montgomery inverse, canonical nonzero `x·R mod p`
-to `x⁻¹·R mod p`; proof-free, callers verify. The final fold runs at 64-bit width (its
-coefficients reach `2^gcdFinalRounds > 2^32`). -/
-def gcdInvCandidate (modulus : Nat) [P : Native256.Mont256Field modulus] (q : Limbs8)
+to `x⁻¹·R mod p`; proof-free, callers verify. The final divsteps run as two mac-width
+chunks. -/
+def gcdInvCandidate (modulus : Nat) [P : GcdData modulus] (q : Limbs8)
     (negInv : UInt64) (x : Limbs8) : Limbs8 :=
-  let (a, u, b, v) :=
-    gcdMainLoop q negInv 15 x (Limbs8.ofUInt256L P.gcdInitU) q Limbs8.zero
+  let (a, u, b, v) := gcdMainLoop q negInv 15 x P.initU q Limbs8.zero
   let aw := (a.l1 <<< 32) ||| a.l0
   let bw := (b.l1 <<< 32) ||| b.l0
-  let (_, _, _, _, f1, g1) := Native256.gcdInner P.gcdFinalRounds aw bw 1 0 0 1
-  Limbs8.ofUInt256L
-    (Native256.gcdLinearCombMontyRed (modulus := modulus) u.toUInt256L v.toUInt256L f1 g1)
+  let c1 := (P.finalRounds + 1) / 2
+  let (aw1, bw1, f0, g0, f1, g1) := gcdInner c1 aw bw 1 0 0 1
+  let u1 := gcdLinearCombMontyRed q negInv u v f0 g0
+  let v1 := gcdLinearCombMontyRed q negInv u v f1 g1
+  let (_, _, _, _, fF, gF) := gcdInner (P.finalRounds - c1) aw1 bw1 1 0 0 1
+  gcdLinearCombMontyRed q negInv u1 v1 fF gF
 
 /-! ## Checked inversion over raw limbs -/
 
@@ -183,7 +214,7 @@ termination_by n
 decreasing_by omega
 
 /-- The GCD candidate, accepted only if it verifies (`z · x = 1`); else Fermat `montPow`. -/
-def invGcdRaw (modulus : Nat) [Native256.Mont256Field modulus] (q : Limbs8) (negInv : UInt64)
+def invGcdRaw (modulus : Nat) [GcdData modulus] (q : Limbs8) (negInv : UInt64)
     (rMod : Limbs8) (x : Limbs8) : Limbs8 :=
   let cand := gcdInvCandidate modulus q negInv x
   if cand.Bounded ∧ subBorrow cand q = 1 ∧ mul q negInv cand x = rMod then cand
