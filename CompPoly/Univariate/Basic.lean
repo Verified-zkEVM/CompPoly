@@ -107,7 +107,8 @@ instance [Semiring R] [BEq R] [LawfulBEq R] : Add (CPolynomial R) where
   add p q := ⟨p.val + q.val,
     Trim.isCanonical_of_trim_eq (Raw.add_is_trimmed p.val q.val)⟩
 
-protected theorem add_comm [Semiring R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : p + q = q + p := by
+protected theorem add_comm [Semiring R] [BEq R] [LawfulBEq R]
+    (p q : CPolynomial R) : p + q = q + p := by
   apply CPolynomial.ext
   change p.val + q.val = q.val + p.val
   exact Raw.add_comm p.val q.val
@@ -134,7 +135,8 @@ def nsmul [Semiring R] [BEq R] [LawfulBEq R] (n : ℕ) (p : CPolynomial R) : CPo
     Trim.isCanonical_of_trim_eq (by
       simpa [Raw.nsmul] using Trim.trim_twice (Raw.nsmulRaw n p.val))⟩
 
-protected theorem nsmul_zero [Semiring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) : nsmul 0 p = 0 := by
+protected theorem nsmul_zero [Semiring R] [BEq R] [LawfulBEq R]
+    (p : CPolynomial R) : nsmul 0 p = 0 := by
   apply CPolynomial.ext
   change Raw.nsmul 0 p.val = (#[] : CPolynomial.Raw R)
   exact Raw.nsmul_zero p.val
@@ -1085,7 +1087,8 @@ end Semiring
 
 section CommSemiring
 
-protected lemma mul_comm [CommSemiring R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) : p * q = q * p := by
+protected lemma mul_comm [CommSemiring R] [BEq R] [LawfulBEq R]
+    (p q : CPolynomial R) : p * q = q * p := by
   apply Subtype.ext
   have dist_lhs : (p * q : CPolynomial R) = (p.val * q.val : CPolynomial.Raw R) := rfl
   have dist_rhs : (q * p : CPolynomial R) = (q.val * p.val : CPolynomial.Raw R) := rfl
@@ -1234,7 +1237,8 @@ lemma erase_correct [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
   · subst hi; simp
   · rw [if_neg hi, if_neg hi]; simp
 
-protected theorem neg_add_cancel [Ring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) : -p + p = 0 := by
+protected theorem neg_add_cancel [Ring R] [BEq R] [LawfulBEq R]
+    (p : CPolynomial R) : -p + p = 0 := by
   apply Subtype.ext
   have dist_lhs : (-p + p).val  = ((-p).val + p.val) := rfl
   rw [dist_lhs]
@@ -1301,7 +1305,8 @@ lemma coeff_smul [Semiring R] [BEq R] [LawfulBEq R]
   rw [Trim.coeff_eq_coeff, Raw.smul_equiv]
 
 /-- Scalar multiplication on 0 gives 0. -/
-protected lemma smul_zero [Semiring R] [BEq R] [LawfulBEq R] (r : R) : r • (0 : CPolynomial R) = 0 := by
+protected lemma smul_zero [Semiring R] [BEq R] [LawfulBEq R]
+    (r : R) : r • (0 : CPolynomial R) = 0 := by
   rw [eq_iff_coeff]; intro i
   rw [coeff_smul, coeff_zero]; simp
 
@@ -1332,14 +1337,16 @@ protected lemma add_smul [Semiring R] [BEq R] [LawfulBEq R]
   rw [coeff_smul, coeff_add, coeff_smul, coeff_smul]; grind
 
 /-- Scalar multiplication by 0 gives 0. -/
-protected lemma zero_smul [Semiring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) : (0 : R) • p = 0 := by
+protected lemma zero_smul [Semiring R] [BEq R] [LawfulBEq R]
+    (p : CPolynomial R) : (0 : R) • p = 0 := by
   apply smul_eq_of_coeff_eq; intro i
   show (Raw.smul 0 p.val).trim.coeff i = (0 : Raw R).coeff i
   rw [Trim.coeff_eq_coeff, smul_equiv]
   exact MulZeroClass.zero_mul (p.val.coeff i)
 
 /-- Scalar multiplication on p by 1 gives p. -/
-protected lemma one_smul [Semiring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) : (1 : R) • p = p := by
+protected lemma one_smul [Semiring R] [BEq R] [LawfulBEq R]
+    (p : CPolynomial R) : (1 : R) • p = p := by
   rw [eq_iff_coeff]; intro i
   rw [coeff_smul, _root_.one_mul]
 
