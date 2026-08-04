@@ -190,20 +190,24 @@ def gcdMainLoop (q : Limbs8) (negInv : UInt64) (rounds : Nat) (a u b v : Limbs8)
     let newV := gcdLinearCombMontyRed q negInv u v f1 g1
     gcdMainLoop q negInv n newA newU newB newV
 
-/-- Pornin binary-GCD candidate for the Montgomery inverse, canonical nonzero `x·R mod p`
-to `x⁻¹·R mod p`; proof-free, callers verify. The final divsteps run as two mac-width
-chunks. -/
-def gcdInvCandidate (modulus : Nat) [P : GcdData modulus] (q : Limbs8)
-    (negInv : UInt64) (x : Limbs8) : Limbs8 :=
-  let (a, u, b, v) := gcdMainLoop q negInv 15 x P.initU q Limbs8.zero
+/-- The final divsteps as two mac-width chunks, folding the Montgomery pair. -/
+def gcdFinalChunks (q : Limbs8) (negInv : UInt64) (finalRounds : Nat)
+    (a u b v : Limbs8) : Limbs8 :=
   let aw := (a.l1 <<< 32) ||| a.l0
   let bw := (b.l1 <<< 32) ||| b.l0
-  let c1 := (P.finalRounds + 1) / 2
+  let c1 := (finalRounds + 1) / 2
   let (aw1, bw1, f0, g0, f1, g1) := gcdInner c1 aw bw 1 0 0 1
   let u1 := gcdLinearCombMontyRed q negInv u v f0 g0
   let v1 := gcdLinearCombMontyRed q negInv u v f1 g1
-  let (_, _, _, _, fF, gF) := gcdInner (P.finalRounds - c1) aw1 bw1 1 0 0 1
+  let (_, _, _, _, fF, gF) := gcdInner (finalRounds - c1) aw1 bw1 1 0 0 1
   gcdLinearCombMontyRed q negInv u1 v1 fF gF
+
+/-- Pornin binary-GCD candidate for the Montgomery inverse, canonical nonzero `x·R mod p`
+to `x⁻¹·R mod p`; proof-free, callers verify. -/
+def gcdInvCandidate (modulus : Nat) [P : GcdData modulus] (q : Limbs8)
+    (negInv : UInt64) (x : Limbs8) : Limbs8 :=
+  let (a, u, b, v) := gcdMainLoop q negInv 15 x P.initU q Limbs8.zero
+  gcdFinalChunks q negInv P.finalRounds a u b v
 
 /-! ## Checked inversion over raw limbs -/
 

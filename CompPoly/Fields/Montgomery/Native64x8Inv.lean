@@ -97,8 +97,6 @@ theorem subBorrow_eq_one_iff {a b : Limbs8} (ha : a.Bounded) (hb : b.Bounded) :
 
 section MacSafety
 
-set_option maxRecDepth 4000
-
 private theorem and_mask_toNat_lt (y : UInt64) : (y &&& 0xFFFFFFFF).toNat < 2 ^ 32 := by
   rw [UInt64.toNat_and, show ((0xFFFFFFFF : UInt64).toNat) = 2 ^ 32 - 1 from by decide,
     Nat.and_two_pow_sub_one_eq_mod]
@@ -123,19 +121,20 @@ private theorem lincomb_stack_lt {q aS bS : Limbs8} {negInv F G : UInt64}
         (mulAccum bS G (mulAccum aS F State9.zero))).toLimbs8).Bounded ∧
       (condSub q (mulReduce q negInv
         (mulAccum bS G (mulAccum aS F State9.zero))).toLimbs8).toNat < q.toNat := by
-  obtain ⟨h1b, h1t8, h1v⟩ :=
+  obtain ⟨h1b, -, h1v⟩ :=
     mulAccum_spec aS F State9.zero haS State9.zero_bounded (by omega)
+  set s1 := mulAccum aS F State9.zero
   rw [State9.zero_toNat, Nat.zero_add] at h1v
   have hcap : aS.toNat * F.toNat ≤ (2 ^ 256 - 1) * (2 ^ 32 - 1) :=
     Nat.mul_le_mul (by have := Limbs8.toNat_lt haS; omega) (by omega)
-  have hdec1 : (mulAccum aS F State9.zero).toNat
-      = (mulAccum aS F State9.zero).toLimbs8.toNat
-        + 2 ^ 256 * (mulAccum aS F State9.zero).t8.toNat := rfl
-  have h1t8' : (mulAccum aS F State9.zero).t8.toNat < 2 ^ 32 := by omega
-  obtain ⟨h2b, h2t8, h2v⟩ := mulAccum_spec bS G _ hbS ⟨h1b, h1t8'⟩ (by omega)
+  have hdec1 : s1.toNat = s1.toLimbs8.toNat + 2 ^ 256 * s1.t8.toNat := rfl
+  have h1t8' : s1.t8.toNat < 2 ^ 32 := by omega
+  obtain ⟨h2b, h2t8, h2v⟩ := mulAccum_spec bS G s1 hbS ⟨h1b, h1t8'⟩ (by omega)
+  set s2 := mulAccum bS G s1
   rw [h1v] at h2v
-  obtain ⟨h3b, h3v⟩ := mulReduce_spec q negInv _ hq h2b h2t8 hn hnq
-  have hs_le : (mulAccum bS G (mulAccum aS F State9.zero)).toNat ≤ q.toNat * 2 ^ 31 := by
+  obtain ⟨h3b, h3v⟩ := mulReduce_spec q negInv s2 hq h2b h2t8 hn hnq
+  set red := mulReduce q negInv s2
+  have hs_le : s2.toNat ≤ q.toNat * 2 ^ 31 := by
     rw [h2v]
     calc aS.toNat * F.toNat + bS.toNat * G.toNat
         ≤ q.toNat * F.toNat + q.toNat * G.toNat :=
@@ -143,15 +142,10 @@ private theorem lincomb_stack_lt {q aS bS : Limbs8} {negInv F G : UInt64}
             (Nat.mul_le_mul hbSq (Nat.le_refl _))
       _ = q.toNat * (F.toNat + G.toNat) := (Nat.mul_add _ _ _).symm
       _ ≤ q.toNat * 2 ^ 31 := Nat.mul_le_mul (Nat.le_refl _) hFG
-  have hmq : (montM (mulAccum bS G (mulAccum aS F State9.zero)).t0 negInv).toNat * q.toNat
-      ≤ (2 ^ 32 - 1) * q.toNat := by
-    have := montM_lt (mulAccum bS G (mulAccum aS F State9.zero)).t0 negInv
+  have hmq : (montM s2.t0 negInv).toNat * q.toNat ≤ (2 ^ 32 - 1) * q.toNat := by
+    have := montM_lt s2.t0 negInv
     exact Nat.mul_le_mul (by omega) (Nat.le_refl _)
-  have hdec2 : (mulReduce q negInv (mulAccum bS G (mulAccum aS F State9.zero))).toNat
-      = (mulReduce q negInv
-          (mulAccum bS G (mulAccum aS F State9.zero))).toLimbs8.toNat
-        + 2 ^ 256
-          * (mulReduce q negInv (mulAccum bS G (mulAccum aS F State9.zero))).t8.toNat := rfl
+  have hdec2 : red.toNat = red.toLimbs8.toNat + 2 ^ 256 * red.t8.toNat := rfl
   exact ⟨condSub_bounded q _ h3b.1, condSub_lt q _ hq h3b.1 (by omega)⟩
 
 /-- The Montgomery lincomb stays canonical for canonical inputs. -/
@@ -192,6 +186,7 @@ theorem gcdLinearCombMontyRed_lt {q : Limbs8} {negInv : UInt64} {a b : Limbs8} {
   · rw [hofF, hofG]
     exact hfg
 
+set_option maxRecDepth 4000 in
 /-- The main loop keeps both tracks at mac width and the Montgomery pair canonical. -/
 theorem gcdMainLoop_bounded {q : Limbs8} {negInv : UInt64} {rounds : ℕ}
     {a u b v A U B V : Limbs8}
@@ -253,6 +248,41 @@ private theorem exists_eq_tuple6 {α β γ δ ε ζ : Type} (p : α × β × γ 
     ∃ a b c d e f, p = (a, b, c, d, e, f) :=
   ⟨p.1, p.2.1, p.2.2.1, p.2.2.2.1, p.2.2.2.2.1, p.2.2.2.2.2, by simp only [Prod.mk.eta]⟩
 
+/-- The final chunks stay canonical for canonical inputs. -/
+theorem gcdFinalChunks_lt {q : Limbs8} {negInv : UInt64} {finalRounds : ℕ}
+    {a u b v : Limbs8} (hfr : finalRounds ≤ 62)
+    (hq : q.Bounded) (hq0 : 0 < q.toNat) (hq2 : 2 * q.toNat < 2 ^ 256)
+    (hn : negInv.toNat < 2 ^ 32) (hnq : negInv.toNat * q.toNat % 2 ^ 32 = 2 ^ 32 - 1)
+    (hu : u.Bounded) (huq : u.toNat < q.toNat) (hv : v.Bounded)
+    (hvq : v.toNat < q.toNat) :
+    (gcdFinalChunks q negInv finalRounds a u b v).Bounded ∧
+      (gcdFinalChunks q negInv finalRounds a u b v).toNat < q.toNat := by
+  obtain ⟨aw1, bw1, f0, g0, f1, g1, hI1⟩ :=
+    exists_eq_tuple6 (gcdInner ((finalRounds + 1) / 2) ((a.l1 <<< 32) ||| a.l0)
+      ((b.l1 <<< 32) ||| b.l0) 1 0 0 1)
+  obtain ⟨hrow0, hrow1⟩ := gcdInner_natAbs_le_31 (by omega) hI1
+  have hu1 := gcdLinearCombMontyRed_lt (f := f0) (g := g0) hq hq0 hq2 hn hnq hu hv huq
+    hvq hrow0
+  have hv1 := gcdLinearCombMontyRed_lt (f := f1) (g := g1) hq hq0 hq2 hn hnq hu hv huq
+    hvq hrow1
+  obtain ⟨aw2, bw2, F0, G0, F1, G1, hI2⟩ :=
+    exists_eq_tuple6 (gcdInner (finalRounds - (finalRounds + 1) / 2) aw1 bw1 1 0 0 1)
+  obtain ⟨-, hrowF⟩ := gcdInner_natAbs_le_31 (by omega) hI2
+  have hfinal := gcdLinearCombMontyRed_lt (f := F1) (g := G1) hq hq0 hq2 hn hnq
+    hu1.1 hv1.1 hu1.2 hv1.2 hrowF
+  have heq : gcdFinalChunks q negInv finalRounds a u b v
+      = gcdLinearCombMontyRed q negInv
+          (gcdLinearCombMontyRed q negInv u v f0 g0)
+          (gcdLinearCombMontyRed q negInv u v f1 g1) F1 G1 := by
+    rw [gcdFinalChunks.eq_def]
+    dsimp only
+    rw [hI1]
+    dsimp only
+    rw [hI2]
+  rw [heq]
+  exact hfinal
+
+set_option maxRecDepth 4000 in
 /-- The candidate stays at mac width and canonical. -/
 theorem gcdInvCandidate_lt {modulus : ℕ} [P : GcdData modulus] {q x : Limbs8}
     {negInv : UInt64}
@@ -269,34 +299,14 @@ theorem gcdInvCandidate_lt {modulus : ℕ} [P : GcdData modulus] {q x : Limbs8}
     omega
   obtain ⟨a, u, b, v, hML⟩ :=
     exists_eq_tuple4 (gcdMainLoop q negInv 15 x P.initU q Limbs8.zero)
-  obtain ⟨hA, hB, hU, hUq, hV, hVq⟩ := gcdMainLoop_bounded hq hq0 hq2 hn hnq hx hq
+  obtain ⟨-, -, hU, hUq, hV, hVq⟩ := gcdMainLoop_bounded hq hq0 hq2 hn hnq hx hq
     P.initU_bounded hu0 Limbs8.zero_bounded hv0 hML
-  obtain ⟨aw1, bw1, f0, g0, f1, g1, hI1⟩ :=
-    exists_eq_tuple6 (gcdInner ((P.finalRounds + 1) / 2) ((a.l1 <<< 32) ||| a.l0)
-      ((b.l1 <<< 32) ||| b.l0) 1 0 0 1)
-  obtain ⟨hrow0, hrow1⟩ :=
-    gcdInner_natAbs_le_31 (by have := P.finalRounds_le; omega) hI1
-  have hu1 := gcdLinearCombMontyRed_lt (f := f0) (g := g0) hq hq0 hq2 hn hnq hU hV hUq
-    hVq hrow0
-  have hv1 := gcdLinearCombMontyRed_lt (f := f1) (g := g1) hq hq0 hq2 hn hnq hU hV hUq
-    hVq hrow1
-  obtain ⟨aw2, bw2, F0, G0, F1, G1, hI2⟩ :=
-    exists_eq_tuple6 (gcdInner (P.finalRounds - (P.finalRounds + 1) / 2) aw1 bw1 1 0 0 1)
-  obtain ⟨-, hrowF⟩ := gcdInner_natAbs_le_31 (by have := P.finalRounds_le; omega) hI2
-  have hfinal := gcdLinearCombMontyRed_lt (f := F1) (g := G1) hq hq0 hq2 hn hnq
-    hu1.1 hv1.1 hu1.2 hv1.2 hrowF
   -- Unfold syntactically; whnf of the 15-round main loop times out.
   have hcand : gcdInvCandidate modulus q negInv x
-      = gcdLinearCombMontyRed q negInv
-          (gcdLinearCombMontyRed q negInv u v f0 g0)
-          (gcdLinearCombMontyRed q negInv u v f1 g1) F1 G1 := by
+      = gcdFinalChunks q negInv P.finalRounds a u b v := by
     rw [gcdInvCandidate.eq_def, hML]
-    dsimp only
-    rw [hI1]
-    dsimp only
-    rw [hI2]
   rw [hcand]
-  exact hfinal
+  exact gcdFinalChunks_lt P.finalRounds_le hq hq0 hq2 hn hnq hU hUq hV hVq
 
 variable {modulus : ℕ} [P : Mont64x8Field modulus]
 
@@ -414,6 +424,7 @@ variable {modulus : ℕ} [P : Mont64x8Field modulus]
     exact (x⁻¹).property⟩
 
 /-- `invGcd` agrees with the `Field` inverse. -/
+@[simp]
 theorem invGcd_eq_inv [GcdData modulus] (x : FastField modulus) :
     invGcd x = x⁻¹ := by
   have hval : (invGcd x).val
