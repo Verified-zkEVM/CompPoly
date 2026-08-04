@@ -6,7 +6,7 @@ Authors: Derek Sorensen
 module
 
 public import CompPoly.Fields.Extension
-public import CompPoly.Fields.KoalaBear.QuinticIrreducible
+public import CompPoly.Fields.KoalaBear.Ext5.QuinticIrreducible
 
 /-!
 # The degree-5 extension of KoalaBear
@@ -17,8 +17,8 @@ root and no degree-5 binomial extension exists. This is the first consumer of th
 monic-modulus side of the extension framework (`CompPoly.Extension.ExtensionParams`).
 
 Irreducibility of `X^5 + X^2 - 1` is `KoalaBear.quinticPoly_irreducible`
-(`CompPoly/Fields/KoalaBear/QuinticIrreducible.lean`), proved by Rabin's test at prime degree
-with kernel-checked certificates.
+(`CompPoly/Fields/KoalaBear/Ext5/QuinticIrreducible.lean`), proved by Rabin's test at prime
+degree with kernel-checked certificates. Supporting files live under `KoalaBear/Ext5/`.
 
 ## Main definitions
 

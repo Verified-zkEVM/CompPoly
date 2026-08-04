@@ -52,9 +52,9 @@ Concrete instances live next to their base field:
 [`Hachi/Ext4.lean`](../../CompPoly/Fields/Hachi/Ext4.lean) (`X^4 - 2`), and the non-binomial
 [`KoalaBear/Ext5.lean`](../../CompPoly/Fields/KoalaBear/Ext5.lean) (`X^5 + X^2 - 1`, with its
 irreducibility proof in
-[`KoalaBear/QuinticIrreducible.lean`](../../CompPoly/Fields/KoalaBear/QuinticIrreducible.lean)
+[`KoalaBear/Ext5/QuinticIrreducible.lean`](../../CompPoly/Fields/KoalaBear/Ext5/QuinticIrreducible.lean)
 and generated certificate data in
-[`KoalaBear/QuinticCertData.lean`](../../CompPoly/Fields/KoalaBear/QuinticCertData.lean)).
+[`KoalaBear/Ext5/QuinticCertData.lean`](../../CompPoly/Fields/KoalaBear/Ext5/QuinticCertData.lean)).
 
 ## What The Interface Provides
 
@@ -139,10 +139,10 @@ That is about 60 lines.
    `python3 scripts/gen_rabin_certificate.py --p <p> --f <coeffs> --lean <path> --namespace <NS>`.
 3. Write the irreducibility wrapper: `toPoly p fL = f`, `natDegree`, `f ≠ 0`, then the
    chain/Bézout `rfl` checks and the assembly through `irreducible_of_rabin_prime_degree`
-   (for prime `d`) — see `KoalaBear/QuinticIrreducible.lean` for the idiom.
+   (for prime `d`) — see `KoalaBear/Ext5/QuinticIrreducible.lean` for the idiom.
 4. Write the `ExtensionParams` (lower coefficients of `f`, little-endian) and prove
    `...Params.poly = f`; register the `Fact` and define the `abbrev` — see
-   `KoalaBear/Ext5.lean`.
+   `KoalaBear/Ext5.lean` (supporting cert/proof files under `KoalaBear/Ext5/`).
 
 That is the generated data plus about 200 hand-written lines.
 

@@ -117,9 +117,9 @@ public import CompPoly.Fields.KoalaBear
 public import CompPoly.Fields.KoalaBear.Basic
 public import CompPoly.Fields.KoalaBear.Ext4
 public import CompPoly.Fields.KoalaBear.Ext5
+public import CompPoly.Fields.KoalaBear.Ext5.QuinticCertData
+public import CompPoly.Fields.KoalaBear.Ext5.QuinticIrreducible
 public import CompPoly.Fields.KoalaBear.Fast
-public import CompPoly.Fields.KoalaBear.QuinticCertData
-public import CompPoly.Fields.KoalaBear.QuinticIrreducible
 public import CompPoly.Fields.Mersenne
 public import CompPoly.Fields.Montgomery.Basic
 public import CompPoly.Fields.Montgomery.Native32

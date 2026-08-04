@@ -18,7 +18,7 @@ roots: squares mod 5 are `{0, 1, 4}` and `x^2 + x + 1` hits `1, 3, 2, 3, 1`). Th
 data below is what `scripts/gen_rabin_certificate.py --p 5 --f "1,1,1"` emits.
 
 This keeps the framework honest independently of the (much larger) KoalaBear quintic
-certificate in `CompPoly/Fields/KoalaBear/QuinticCertData.lean`.
+certificate in `CompPoly/Fields/KoalaBear/Ext5/QuinticCertData.lean`.
 -/
 
 @[expose] public section
