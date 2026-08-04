@@ -72,8 +72,7 @@ set_option maxRecDepth 4000
   = gcdInvCandidate scalarFieldSize (Mont64x8Field.modulusLimbs scalarFieldSize)
       (Mont64x8Field.montgomeryNegInv scalarFieldSize) (37 : ScalarField).val
 
--- The raw-limb defs twin agrees with the proven path; `montPow` is exercised directly
--- (the fast path never takes it).
+-- Smoke tests of the raw twin; the agreement is a theorem (`invGcdRaw_eq_invGcd`).
 #guard invGcdRaw scalarFieldSize (Mont64x8Field.modulusLimbs scalarFieldSize)
     (Mont64x8Field.montgomeryNegInv scalarFieldSize) (Mont64x8Field.rModModulus scalarFieldSize)
     (37 : ScalarField).val

@@ -173,18 +173,14 @@ def gcdInvCandidate (modulus : Nat) [P : Native256.Mont256Field modulus] (q : Li
 
 /-! ## Checked inversion over raw limbs -/
 
-/-- `x^n` in Montgomery form by binary powering; `rMod` is the Montgomery one. -/
-def montPow (q : Limbs8) (negInv : UInt64) (rMod : Limbs8) (x : Limbs8) (n : Nat) :
-    Limbs8 := Id.run do
-  let mut acc := rMod
-  let mut base := x
-  let mut e := n
-  for _ in [0:256] do
-    if e == 0 then return acc
-    if e % 2 == 1 then acc := mul q negInv acc base
-    base := mul q negInv base base
-    e := e >>> 1
-  return acc
+/-- `acc · x^n` in Montgomery form by binary powering. -/
+def montPow (q : Limbs8) (negInv : UInt64) (acc x : Limbs8) (n : Nat) : Limbs8 :=
+  if h : n = 0 then acc
+  else
+    montPow q negInv (if n % 2 == 1 then mul q negInv acc x else acc)
+      (mul q negInv x x) (n / 2)
+termination_by n
+decreasing_by omega
 
 /-- The GCD candidate, accepted only if it verifies (`z · x = 1`); else Fermat `montPow`. -/
 def invGcdRaw (modulus : Nat) [Native256.Mont256Field modulus] (q : Limbs8) (negInv : UInt64)

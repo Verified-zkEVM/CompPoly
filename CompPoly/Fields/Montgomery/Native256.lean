@@ -10,41 +10,38 @@ import CompPoly.Fields.Montgomery.Native256.UInt256L
 # 64-bit-limb Montgomery reduction (GCD engine)
 
 The `Mont256Field` data class and the CIOS reduction step over four `UInt64` limbs
-(`R = 2 ^ 256`). Proof-free runtime definitions: results are verified at the call site
-(`Montgomery.Native64x8.FastField.invGcd`), so errors here only cost the fallback.
+(`R = 2 ^ 256`). Proof-free runtime definitions, verified at the call site.
 -/
 
 namespace Montgomery
 namespace Native256
 
-/-- Per-field data for the binary-GCD inverse candidate: the modulus word, the 64-bit
-Montgomery multiplier, and the divstep schedule. Every obligation defaults to `decide`. -/
+/-- Per-field data for the binary-GCD inverse candidate; every obligation defaults to
+`decide`. -/
 class Mont256Field (modulus : Nat) where
   /-- `modulus` as a 256-bit word. -/
   modulus256 : UInt256L
-  /-- `-modulus⁻¹ mod 2^64`, the per-limb multiplier for interleaved Montgomery reduction. -/
+  /-- `-modulus⁻¹ mod 2^64`. -/
   montgomeryNegInv : UInt64
-  /-- Divsteps in the final word-sized round: `2·bits(p) - 2 - 15·31`; must stay `≤ 62`
-  so the transition-matrix entries fit a signed word. -/
+  /-- Divsteps in the final word-sized round: `2·bits(p) - 2 - 15·31`. -/
   gcdFinalRounds : Nat
-  /-- Initial `u`: `2^(591 - gcdFinalRounds) mod modulus`, the power that keeps the
-  candidate in Montgomery form (fifteen `2^32` round reductions plus one `2^64` final
-  fold). -/
+  /-- Initial `u`: the power of two that keeps the candidate in Montgomery form. -/
   gcdInitU : UInt256L
   modulus256_toNat : modulus256.toNat = modulus := by decide
   montgomeryNegInv_mul_modulus_mod_two_pow_64 :
     montgomeryNegInv.toNat * modulus % 2 ^ 64 = 2 ^ 64 - 1 := by decide
   gcdInitU_toNat : gcdInitU.toNat = 2 ^ (591 - gcdFinalRounds) % modulus := by decide
+  /-- Final-round transition entries stay word-sized. -/
+  gcdFinalRounds_le : gcdFinalRounds ≤ 62 := by decide
 
 variable {modulus : Nat} [P : Mont256Field modulus]
 
-/-- Reduce a word known to be `< 2·modulus` to canonical range by one conditional subtract. -/
+/-- Reduce a value below `2·modulus` to canonical range. -/
 @[inline]
 def conditionalSubtract (x : UInt256L) : UInt256L :=
   if x < P.modulus256 then x else x - P.modulus256
 
-/-- Reduce a value `lo + carry·2²⁵⁶ < 2·modulus` (`carry ∈ {0,1}`) to canonical range;
-the carry branch serves top-bit-set moduli. -/
+/-- Reduce a value `lo + carry·2²⁵⁶` below `2·modulus` to canonical range. -/
 @[inline]
 def reduceWideRaw (lo : UInt256L) (carry : UInt64) : UInt256L :=
   if carry = 0 then conditionalSubtract (modulus := modulus) lo else lo - P.modulus256
