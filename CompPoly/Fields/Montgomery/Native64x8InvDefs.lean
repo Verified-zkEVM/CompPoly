@@ -11,11 +11,9 @@ import CompPoly.Fields.Montgomery.Native256Gcd
 # Eight-limb inversion: runtime definitions (Mathlib-free)
 
 The Pornin binary-GCD inverse candidate over `Limbs8` and its checked wrapper, completing
-the Mathlib-free defs surface of `Montgomery/Native64x8Defs`. The linear combinations run
-on eight-limb native macs; the one-word divstep loops (`Native256.gcdInner`, 64-bit
-approximants, 31 divsteps per round) and the final fold stay at 64-bit width, since the
-final coefficients reach `2^gcdFinalRounds > 2^32`. Runtime definitions only; the
-proof-carrying path is `Montgomery.Native64x8.FastField.invGcd`.
+the Mathlib-free defs surface of `Montgomery/Native64x8Defs`. Linear combinations run on
+the eight-limb macs; the one-word divstep loops and the final fold stay at 64-bit width.
+The proof-carrying path is `Montgomery.Native64x8.FastField.invGcd`.
 -/
 
 namespace Montgomery.Native64x8
@@ -160,9 +158,9 @@ def gcdMainLoop (q : Limbs8) (negInv : UInt64) (rounds : Nat) (a u b v : Limbs8)
     let newV := gcdLinearCombMontyRed q negInv u v f1 g1
     gcdMainLoop q negInv n newA newU newB newV
 
-/-- Pornin binary-GCD candidate for the Montgomery inverse: maps canonical nonzero
-`x·R mod p` to `x⁻¹·R mod p`. Proof-free; callers verify the result. The final fold runs
-at 64-bit width (its coefficients reach `2^gcdFinalRounds > 2^32`). -/
+/-- Pornin binary-GCD candidate for the Montgomery inverse, canonical nonzero `x·R mod p`
+to `x⁻¹·R mod p`; proof-free, callers verify. The final fold runs at 64-bit width (its
+coefficients reach `2^gcdFinalRounds > 2^32`). -/
 def gcdInvCandidate (modulus : Nat) [P : Native256.Mont256Field modulus] (q : Limbs8)
     (negInv : UInt64) (x : Limbs8) : Limbs8 :=
   let (a, u, b, v) :=

@@ -10,10 +10,9 @@ import CompPoly.Fields.Montgomery.Native64x8InvDefs
 /-!
 # Fast inversion for eight-limb Montgomery fields
 
-The Pornin binary-GCD inverse for the eight-limb carrier: the 64-bit-word candidate of
-`Montgomery.Native256Gcd`, verified by one proven eight-limb multiplication, with the
-proven Fermat inverse as fallback. The raw-limb twin lives in
-`Montgomery/Native64x8InvDefs`.
+The Pornin binary-GCD inverse for the eight-limb carrier: the raw candidate of
+`Montgomery/Native64x8InvDefs`, accepted after one proven eight-limb multiplication, with
+the proven Fermat inverse as fallback.
 -/
 
 namespace Montgomery.Native64x8
