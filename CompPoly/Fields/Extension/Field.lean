@@ -9,9 +9,9 @@ public import CompPoly.Fields.Extension.Bridge
 public import Mathlib.FieldTheory.Finite.Basic
 
 /-!
-# The field structure on a binomial extension
+# The field structure on an extension
 
-`toQuot` is not just injective but bijective: every class in `F[X] / (X^d - W)` has a unique
+`toQuot` is not just injective but bijective: every class in `F[X] / f` has a unique
 representative of degree `< d`. That gives `Ext.ringEquivQuot : Ext P ≃+* AdjoinRoot P.poly`,
 hence `Fintype.card (Ext P) = q ^ d`, and — when the defining polynomial is irreducible — a
 `Field` structure.
@@ -46,12 +46,12 @@ namespace CompPoly.Extension.Ext
 
 open Polynomial AdjoinRoot
 
-variable {F : Type*} [Field F] [Fintype F] {P : BinomialParams F}
+variable {F : Type*} [Field F] [Fintype F] {P : ExtensionParams F}
 
 /-! ### Cardinality -/
 
 /-- Coefficient vectors are exactly functions out of `Fin d`. -/
-def equivFn (P : BinomialParams F) : Ext P ≃ (Fin P.d → F) where
+def equivFn (P : ExtensionParams F) : Ext P ≃ (Fin P.d → F) where
   toFun := coeff
   invFun := ofFn
   left_inv := ofFn_coeff
@@ -100,8 +100,8 @@ theorem toQuot_surjective : Function.Surjective (toQuot (P := P)) := by
 theorem toQuot_bijective : Function.Bijective (toQuot (P := P)) :=
   ⟨toQuot_injective, toQuot_surjective⟩
 
-/-- The extension is isomorphic to its specification `F[X] / (X^d - W)`. -/
-noncomputable def ringEquivQuot (P : BinomialParams F) : Ext P ≃+* Quot[P] :=
+/-- The extension is isomorphic to its specification `F[X] / f`. -/
+noncomputable def ringEquivQuot (P : ExtensionParams F) : Ext P ≃+* Quot[P] :=
   RingEquiv.ofBijective (toQuotRingHom P) toQuot_bijective
 
 @[simp] theorem ringEquivQuot_apply (x : Ext P) : ringEquivQuot P x = toQuot x := rfl
