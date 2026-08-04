@@ -36,7 +36,7 @@ This directory contains formally verified field infrastructure used in zero-know
 | **Montgomery/Native64x8Mul.lean** | Correctness of the eight-limb CIOS Montgomery multiplication. |
 | **Montgomery/Native64x8Field.lean** | The `Mont64x8Field` class, the eight-limb `FastField` carrier, arithmetic, instances, and canonical-field bridge, for moduli below `2^255`. |
 | **Montgomery/Native64x8InvDefs.lean** | Mathlib-free binary-GCD inversion runtime ([eprint 2020/972](https://eprint.iacr.org/2020/972)): the `GcdData` schedule class, the divstep loop, the eight-limb candidate (`gcdInvCandidate`), and the checked raw inversion (`invGcdRaw`). |
-| **Montgomery/Native64x8Inv.lean** | Correctness of the checked inversion: `invGcdRaw` computes the field inverse, `FastField.invGcd` is its proof-carrying wrapper; also the divstep coefficient bounds. |
+| **Montgomery/Native64x8Inv.lean** | Correctness of the checked inversion: `invGcdRaw` computes the field inverse, `FastField.invGcd` is its proof-carrying wrapper; also the divstep coefficient bounds and the candidate's mac-width safety. |
 | **Secp256k1.lean** | Base and scalar fields for the Secp256k1 curve (used in Bitcoin/Ethereum). |
 
 ## Binary-field modules
