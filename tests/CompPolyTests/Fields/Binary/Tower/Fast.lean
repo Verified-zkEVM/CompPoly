@@ -3,8 +3,9 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Georgios Raikos
 -/
+module
 
-import CompPoly.Fields.Binary.Tower.Fast
+public meta import CompPoly.Fields.Binary.Tower.Fast
 
 /-!
 # Fast Binary Tower Tests
@@ -13,6 +14,8 @@ Regression checks for the packed-word tower. Word-level constants are cross-vali
 against `ConcreteBinaryTower.concrete_mul` / `concrete_inv` on full-width operands;
 carrier guards exercise the `Field` instances.
 -/
+
+public meta section
 
 namespace ConcreteBinaryTower.Fast
 

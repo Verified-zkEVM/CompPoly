@@ -3,14 +3,15 @@ Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Georgios Raikos
 -/
+module
 
-import CompPoly.Fields.Binary.Tower.Concrete.Field
-import Mathlib.Algebra.CharP.Two
-import Mathlib.Algebra.Field.Defs
-import Mathlib.Algebra.Group.InjSurj
-import Mathlib.Algebra.Ring.Equiv
-import Mathlib.Algebra.Ring.InjSurj
-import Mathlib.Tactic.LinearCombination
+public import CompPoly.Fields.Binary.Tower.Concrete.Field
+public import Mathlib.Algebra.CharP.Two
+public import Mathlib.Algebra.Field.Defs
+public import Mathlib.Algebra.Group.InjSurj
+public import Mathlib.Algebra.Ring.Equiv
+public import Mathlib.Algebra.Ring.InjSurj
+public import Mathlib.Tactic.LinearCombination
 
 /-!
 # Fast Binary Tower Arithmetic
@@ -23,6 +24,8 @@ concrete tower by induction over recursive twins, giving `Field` instances at ea
 one-word width and at the two-limb GF(2^128), with bundled ring isomorphisms onto the
 concrete tower (`ringEquivBT*`, `FastBT128.ringEquiv`).
 -/
+
+@[expose] public section
 
 namespace ConcreteBinaryTower.Fast
 
@@ -238,22 +241,22 @@ def mul64 (a b : UInt64) : UInt64 :=
 Every operation maps values below `2 ^ s` to values below `2 ^ s`; the shift/mask
 helpers cross into `ℕ` once and the per-width lemmas chain them. -/
 
-private theorem and_mask_lt (s : ℕ) {a m : UInt64} (hm : m.toNat = 2 ^ s - 1) :
+theorem and_mask_lt (s : ℕ) {a m : UInt64} (hm : m.toNat = 2 ^ s - 1) :
     (a &&& m).toNat < 2 ^ s := by
   rw [UInt64.toNat_and]
   exact Nat.and_lt_two_pow _ (by rw [hm]; exact Nat.sub_lt (Nat.two_pow_pos s) Nat.one_pos)
 
-private theorem xor_lt {x y : UInt64} {s : ℕ} (hx : x.toNat < 2 ^ s) (hy : y.toNat < 2 ^ s) :
+theorem xor_lt {x y : UInt64} {s : ℕ} (hx : x.toNat < 2 ^ s) (hy : y.toNat < 2 ^ s) :
     (x ^^^ y).toNat < 2 ^ s := by
   rw [UInt64.toNat_xor]
   exact Nat.xor_lt_two_pow hx hy
 
-private theorem shiftRight_lt (s : ℕ) {a sh : UInt64} {t : ℕ} (hsh : sh.toNat = s)
+theorem shiftRight_lt (s : ℕ) {a sh : UInt64} {t : ℕ} (hsh : sh.toNat = s)
     (hs : s < 64) (ha : a.toNat < 2 ^ (s + t)) : (a >>> sh).toNat < 2 ^ t := by
   rw [UInt64.toNat_shiftRight, hsh, Nat.mod_eq_of_lt hs, Nat.shiftRight_eq_div_pow]
   exact Nat.div_lt_of_lt_mul (by rw [← Nat.pow_add]; exact ha)
 
-private theorem join_lt (s : ℕ) {hi lo sh : UInt64} (hsh : sh.toNat = s) (hs : 2 * s ≤ 64)
+theorem join_lt (s : ℕ) {hi lo sh : UInt64} (hsh : sh.toNat = s) (hs : 2 * s ≤ 64)
     (hhi : hi.toNat < 2 ^ s) (hlo : lo.toNat < 2 ^ s) :
     ((hi <<< sh) ||| lo).toNat < 2 ^ (2 * s) := by
   rw [UInt64.toNat_or, UInt64.toNat_shiftLeft, hsh, Nat.mod_eq_of_lt (by omega : s < 64)]
@@ -321,7 +324,7 @@ def invRec : ℕ → UInt64 → UInt64
 /-! One-step unfoldings as `rfl` theorems, so proofs rewrite with these instead of
 realizing each twin's equation lemmas over and over. -/
 
-private theorem mulByZRec_succ (k : ℕ) (v : UInt64) :
+theorem mulByZRec_succ (k : ℕ) (v : UInt64) :
     mulByZRec (k + 1) v =
       let sh := UInt64.ofNat (2 ^ k)
       let m := ((1 : UInt64) <<< sh) - 1
@@ -329,7 +332,7 @@ private theorem mulByZRec_succ (k : ℕ) (v : UInt64) :
       let v1 := v >>> sh
       ((v0 ^^^ mulByZRec k v1) <<< sh) ||| v1 := rfl
 
-private theorem mulRec_succ (k : ℕ) (a b : UInt64) :
+theorem mulRec_succ (k : ℕ) (a b : UInt64) :
     mulRec (k + 1) a b =
       let sh := UInt64.ofNat (2 ^ k)
       let m := ((1 : UInt64) <<< sh) - 1
@@ -343,7 +346,7 @@ private theorem mulRec_succ (k : ℕ) (a b : UInt64) :
       let lo := p0 ^^^ p2
       ((p1 ^^^ lo ^^^ mulByZRec k p2) <<< sh) ||| lo := rfl
 
-private theorem sqRec_succ (k : ℕ) (v : UInt64) :
+theorem sqRec_succ (k : ℕ) (v : UInt64) :
     sqRec (k + 1) v =
       let sh := UInt64.ofNat (2 ^ k)
       let m := ((1 : UInt64) <<< sh) - 1
@@ -351,7 +354,7 @@ private theorem sqRec_succ (k : ℕ) (v : UInt64) :
       let s1 := sqRec k (v >>> sh)
       ((mulByZRec k s1) <<< sh) ||| (s0 ^^^ s1) := rfl
 
-private theorem invRec_succ (k : ℕ) (v : UInt64) :
+theorem invRec_succ (k : ℕ) (v : UInt64) :
     invRec (k + 1) v =
       let sh := UInt64.ofNat (2 ^ k)
       let m := ((1 : UInt64) <<< sh) - 1
@@ -362,12 +365,12 @@ private theorem invRec_succ (k : ℕ) (v : UInt64) :
       let d := invRec k delta
       ((mulRec k d v1) <<< sh) ||| (mulRec k d next) := rfl
 
-private theorem toNat_ofNat_two_pow {k : ℕ} (hk : k ≤ 5) :
+theorem toNat_ofNat_two_pow {k : ℕ} (hk : k ≤ 5) :
     (UInt64.ofNat (2 ^ k)).toNat = 2 ^ k :=
   UInt64.toNat_ofNat_of_lt'
     (Nat.lt_of_le_of_lt (Nat.pow_le_pow_right (by omega) hk) (by norm_num [UInt64.size]))
 
-private theorem toNat_mask_two_pow {k : ℕ} (hk : k ≤ 5) :
+theorem toNat_mask_two_pow {k : ℕ} (hk : k ≤ 5) :
     (((1 : UInt64) <<< UInt64.ofNat (2 ^ k)) - 1).toNat = 2 ^ 2 ^ k - 1 := by
   have h32 : 2 ^ k ≤ 32 := by
     calc 2 ^ k ≤ 2 ^ 5 := Nat.pow_le_pow_right (by omega) hk
@@ -385,7 +388,7 @@ private theorem toNat_mask_two_pow {k : ℕ} (hk : k ≤ 5) :
   rfl
 
 /-- The arithmetic facts every inductive step needs about the half-width `2 ^ k`. -/
-private theorem rec_step_bounds {k : ℕ} (hk : k + 1 ≤ 6) :
+theorem rec_step_bounds {k : ℕ} (hk : k + 1 ≤ 6) :
     k ≤ 5 ∧ 2 * 2 ^ k ≤ 64 ∧ 2 ^ k + 2 ^ k = 2 ^ (k + 1) ∧
       (2 : ℕ) ^ 2 ^ (k + 1) = 2 ^ (2 * 2 ^ k) := by
   have hk5 : k ≤ 5 := by omega
@@ -393,7 +396,7 @@ private theorem rec_step_bounds {k : ℕ} (hk : k + 1 ≤ 6) :
   exact ⟨hk5, by omega, by rw [Nat.pow_succ]; omega, by rw [Nat.pow_succ, Nat.mul_comm]⟩
 
 /-- Both halves of an in-range word are in range at the half level. -/
-private theorem half_lt {k : ℕ} (hk : k + 1 ≤ 6) {v : UInt64}
+theorem half_lt {k : ℕ} (hk : k + 1 ≤ 6) {v : UInt64}
     (hv : v.toNat < 2 ^ 2 ^ (k + 1)) :
     (v >>> UInt64.ofNat (2 ^ k)).toNat < 2 ^ 2 ^ k
       ∧ (v &&& ((1 : UInt64) <<< UInt64.ofNat (2 ^ k) - 1)).toNat < 2 ^ 2 ^ k := by
@@ -475,7 +478,7 @@ theorem mulByZ6_eq_rec (v : UInt64) : mulByZ6 v = mulByZRec 6 v := by
   simp only [← mulByZ5_eq_rec]
   rfl
 
-private theorem xor_xor_cancel (x y z : UInt64) : x ^^^ (y ^^^ z) ^^^ z = x ^^^ y :=
+theorem xor_xor_cancel (x y z : UInt64) : x ^^^ (y ^^^ z) ^^^ z = x ^^^ y :=
   UInt64.toNat_inj.mp (by
     simp only [UInt64.toNat_xor]
     rw [Nat.xor_assoc, Nat.xor_assoc, Nat.xor_self, Nat.xor_zero])
@@ -609,37 +612,37 @@ The twins agree with `concrete_mul` / `concrete_inv` on in-range words, by induc
 the level; statements go through `fromNat` so the spec side reasons inside
 `ConcreteBTField`. -/
 
-private theorem toNat_fromNat {k n : ℕ} (h : n < 2 ^ 2 ^ k) :
+theorem toNat_fromNat {k n : ℕ} (h : n < 2 ^ 2 ^ k) :
     BitVec.toNat (fromNat (k := k) n) = n := by
   show (BitVec.ofNat (2 ^ k) n).toNat = n
   rw [BitVec.toNat_ofNat]
   exact Nat.mod_eq_of_lt h
 
-private theorem fromNat_toNat {k : ℕ} (x : ConcreteBTField k) : fromNat x.toNat = x :=
+theorem fromNat_toNat {k : ℕ} (x : ConcreteBTField k) : fromNat x.toNat = x :=
   BitVec.eq_of_toNat_eq (toNat_fromNat x.isLt)
 
-private theorem eq_zero_or_one {v : UInt64} (hv : v.toNat < 2 ^ 2 ^ 0) : v = 0 ∨ v = 1 := by
+theorem eq_zero_or_one {v : UInt64} (hv : v.toNat < 2 ^ 2 ^ 0) : v = 0 ∨ v = 1 := by
   rcases (by omega : v.toNat = 0 ∨ v.toNat = 1) with h | h
   · exact Or.inl (UInt64.toNat_inj.mp h)
   · exact Or.inr (UInt64.toNat_inj.mp h)
 
-private theorem fromNat_zero {k : ℕ} :
+theorem fromNat_zero {k : ℕ} :
     fromNat (k := k) (0 : UInt64).toNat = (0 : ConcreteBTField k) := rfl
 
-private theorem fromNat_one {k : ℕ} :
+theorem fromNat_one {k : ℕ} :
     fromNat (k := k) (1 : UInt64).toNat = (1 : ConcreteBTField k) := rfl
 
-private theorem shiftRight_toNat {k : ℕ} (hk : k ≤ 5) (a : UInt64) :
+theorem shiftRight_toNat {k : ℕ} (hk : k ≤ 5) (a : UInt64) :
     (a >>> UInt64.ofNat (2 ^ k)).toNat = a.toNat >>> 2 ^ k := by
   have h32 : 2 ^ k ≤ 32 := Nat.pow_le_pow_right (by omega) hk
   rw [UInt64.toNat_shiftRight, toNat_ofNat_two_pow hk, Nat.mod_eq_of_lt (by omega)]
 
-private theorem and_mask_toNat {k : ℕ} (hk : k ≤ 5) (a : UInt64) :
+theorem and_mask_toNat {k : ℕ} (hk : k ≤ 5) (a : UInt64) :
     (a &&& ((1 : UInt64) <<< UInt64.ofNat (2 ^ k) - 1)).toNat
       = a.toNat &&& (2 ^ 2 ^ k - 1) := by
   rw [UInt64.toNat_and, toNat_mask_two_pow hk]
 
-private theorem join_word_toNat {k : ℕ} (hk : k + 1 ≤ 6) {hi : UInt64}
+theorem join_word_toNat {k : ℕ} (hk : k + 1 ≤ 6) {hi : UInt64}
     (hhi : hi.toNat < 2 ^ 2 ^ k) (lo : UInt64) :
     ((hi <<< UInt64.ofNat (2 ^ k)) ||| lo).toNat = hi.toNat <<< 2 ^ k ||| lo.toNat := by
   obtain ⟨hk5, h2s, hsplit, hpow⟩ := rec_step_bounds hk
@@ -652,23 +655,23 @@ private theorem join_word_toNat {k : ℕ} (hk : k + 1 ≤ 6) {hi : UInt64}
         _ = 2 ^ (2 * 2 ^ k) := by rw [Nat.two_mul, Nat.pow_add]
         _ ≤ 2 ^ 64 := Nat.pow_le_pow_right (by omega) h2s)]
 
-private theorem nat_join_shiftRight {H L s : ℕ} (hL : L < 2 ^ s) :
+theorem nat_join_shiftRight {H L s : ℕ} (hL : L < 2 ^ s) :
     (H <<< s ||| L) >>> s = H := by
   rw [← Nat.shiftLeft_add_eq_or_of_lt hL, Nat.shiftLeft_eq, Nat.shiftRight_eq_div_pow,
     Nat.mul_comm H (2 ^ s), Nat.mul_add_div (Nat.two_pow_pos s), Nat.div_eq_of_lt hL,
     Nat.add_zero]
 
-private theorem nat_join_and {H L s : ℕ} (hL : L < 2 ^ s) :
+theorem nat_join_and {H L s : ℕ} (hL : L < 2 ^ s) :
     (H <<< s ||| L) &&& (2 ^ s - 1) = L := by
   rw [← Nat.shiftLeft_add_eq_or_of_lt hL, Nat.and_two_pow_sub_one_eq_mod, Nat.shiftLeft_eq,
     Nat.mul_comm H (2 ^ s), Nat.mul_add_mod, Nat.mod_eq_of_lt hL]
 
-private theorem fromNat_xor {k : ℕ} (x y : UInt64) :
+theorem fromNat_xor {k : ℕ} (x y : UInt64) :
     fromNat (k := k) (x ^^^ y).toNat = fromNat x.toNat + fromNat y.toNat := by
   rw [UInt64.toNat_xor]
   exact sum_fromNat_eq_from_xor_Nat _ _
 
-private theorem fromNat_join {k : ℕ} (hk : k + 1 ≤ 6) {hi lo : UInt64}
+theorem fromNat_join {k : ℕ} (hk : k + 1 ≤ 6) {hi lo : UInt64}
     (hhi : hi.toNat < 2 ^ 2 ^ k) (hlo : lo.toNat < 2 ^ 2 ^ k) :
     fromNat (k := k + 1) ((hi <<< UInt64.ofNat (2 ^ k)) ||| lo).toNat
       = (《 fromNat (k := k) hi.toNat, fromNat (k := k) lo.toNat 》 :
@@ -686,7 +689,7 @@ private theorem fromNat_join {k : ℕ} (hk : k + 1 ≤ 6) {hi lo : UInt64}
     congr 1
     rw [toNat_fromNat hXlt, hX, nat_join_and hlo]
 
-private theorem split_fromNat {k : ℕ} (hk : k + 1 ≤ 6) {a : UInt64}
+theorem split_fromNat {k : ℕ} (hk : k + 1 ≤ 6) {a : UInt64}
     (ha : a.toNat < 2 ^ 2 ^ (k + 1)) :
     split (Nat.succ_pos k) (fromNat (k := k + 1) a.toNat)
       = (fromNat (k := k) (a >>> UInt64.ofNat (2 ^ k)).toNat,
@@ -700,12 +703,12 @@ private theorem split_fromNat {k : ℕ} (hk : k + 1 ≤ 6) {a : UInt64}
     congr 1
     rw [and_mask_toNat hk5, toNat_fromNat ha]
 
-private theorem concrete_mul_eq_mul {k : ℕ} (x y : ConcreteBTField k) :
+theorem concrete_mul_eq_mul {k : ℕ} (x y : ConcreteBTField k) :
     concrete_mul x y = x * y := rfl
 
 /-- `concrete_mul`'s one-level structure theorem, restated with all indices at the
 half level `k` (the original lives at `k + 1 - 1`, which blocks syntactic rewriting). -/
-private theorem concrete_mul_step {k : ℕ} (a b : ConcreteBTField (k + 1))
+theorem concrete_mul_step {k : ℕ} (a b : ConcreteBTField (k + 1))
     {a₁ a₀ b₁ b₀ : ConcreteBTField k}
     (ha : (a₁, a₀) = split (Nat.succ_pos k) a) (hb : (b₁, b₀) = split (Nat.succ_pos k) b) :
     concrete_mul a b
@@ -799,15 +802,15 @@ theorem sqRec_correct : ∀ (k : ℕ), k ≤ 6 → ∀ (v : UInt64), v.toNat < 2
     simp only [concrete_mul_eq_mul]
     rw [← two_mul, CharTwo.two_eq_zero (R := ConcreteBTField k), zero_mul, zero_add]
 
-private theorem split_zero' {k : ℕ} : split (Nat.succ_pos k) (0 : ConcreteBTField (k + 1))
+theorem split_zero' {k : ℕ} : split (Nat.succ_pos k) (0 : ConcreteBTField (k + 1))
     = ((0 : ConcreteBTField k), (0 : ConcreteBTField k)) := split_zero (Nat.succ_pos k)
 
-private theorem split_one' {k : ℕ} : split (Nat.succ_pos k) (1 : ConcreteBTField (k + 1))
+theorem split_one' {k : ℕ} : split (Nat.succ_pos k) (1 : ConcreteBTField (k + 1))
     = ((0 : ConcreteBTField k), (1 : ConcreteBTField k)) := split_one (Nat.succ_pos k)
 
 /-- `concrete_inv`'s one-level descent, restated at the half level `k`; the `a = 0`
 and `a = 1` branches satisfy the same formula. -/
-private theorem concrete_inv_step {k : ℕ} (a : ConcreteBTField (k + 1))
+theorem concrete_inv_step {k : ℕ} (a : ConcreteBTField (k + 1))
     {a₁ a₀ : ConcreteBTField k} (ha : (a₁, a₀) = split (Nat.succ_pos k) a) :
     concrete_inv a
       = (《 (concrete_mul
@@ -931,7 +934,7 @@ theorem toConcrete_injective : Function.Injective (toConcrete (k := k)) := by
   simp only [FastBT.mk.injEq]
   exact hval
 
-private theorem ofConcrete_val_toNat {k : ℕ} (hk : k ≤ 6) (x : ConcreteBTField k) :
+theorem ofConcrete_val_toNat {k : ℕ} (hk : k ≤ 6) (x : ConcreteBTField k) :
     (UInt64.ofNat x.toNat).toNat = x.toNat := by
   show x.toNat % 2 ^ 64 = x.toNat
   refine Nat.mod_eq_of_lt (Nat.lt_of_lt_of_le x.isLt ?_)
@@ -968,7 +971,7 @@ def ofConcrete {k : ℕ} (x : ConcreteBTField k) (hk : k ≤ 6 := by omega) : Fa
     toConcrete (a - b) = toConcrete a - toConcrete b := by
   rw [sub_def, toConcrete_add, sub_eq_add_neg, ← toConcrete_neg, neg_def]
 
-private theorem toConcrete_if_zero {p : Prop} [Decidable p] (x : FastBT k) :
+theorem toConcrete_if_zero {p : Prop} [Decidable p] (x : FastBT k) :
     toConcrete (if p then 0 else x) = if p then ConcreteBinaryTower.zero else toConcrete x := by
   by_cases h : p
   · rw [if_pos h, if_pos h, toConcrete_zero]
@@ -1089,7 +1092,7 @@ instance : Inv BT64 := ⟨fun a => .mk (inv64 a.val) (UInt64.toNat_lt _)⟩
   rw [inv64_eq_rec]
   exact invRec_correct 6 (by omega) a.val a.isLt
 
-private theorem toConcrete_npowRec {k : ℕ} [Mul (FastBT k)]
+theorem toConcrete_npowRec {k : ℕ} [Mul (FastBT k)]
     (hmul : ∀ a b : FastBT k, toConcrete (a * b) = toConcrete a * toConcrete b)
     (a : FastBT k) : ∀ (n : ℕ), toConcrete (npowRec n a) = toConcrete a ^ n
   | 0 => by rw [npowRec, pow_zero, toConcrete_one]
@@ -1097,7 +1100,7 @@ private theorem toConcrete_npowRec {k : ℕ} [Mul (FastBT k)]
 
 /-- Assemble a width's `Field` instance from its `toConcrete` multiplication and
 inversion lemmas. -/
-@[reducible] private def fieldOfHoms {k : ℕ} [Mul (FastBT k)] [Inv (FastBT k)]
+@[reducible] def fieldOfHoms {k : ℕ} [Mul (FastBT k)] [Inv (FastBT k)]
     (hmul : ∀ a b : FastBT k, toConcrete (a * b) = toConcrete a * toConcrete b)
     (hinv : ∀ a : FastBT k, toConcrete a⁻¹ = (toConcrete a)⁻¹) : Field (FastBT k) :=
   letI : Pow (FastBT k) ℕ := ⟨fun a n => npowRec n a⟩
@@ -1122,7 +1125,7 @@ instance : Field BT16 := fieldOfHoms toConcrete_mul_bt16 toConcrete_inv_bt16
 instance : Field BT32 := fieldOfHoms toConcrete_mul_bt32 toConcrete_inv_bt32
 instance : Field BT64 := fieldOfHoms toConcrete_mul_bt64 toConcrete_inv_bt64
 
-@[reducible] private def ringEquivOfHom {k : ℕ} [Mul (FastBT k)] (hk : k ≤ 6)
+@[reducible] def ringEquivOfHom {k : ℕ} [Mul (FastBT k)] (hk : k ≤ 6)
     (hmul : ∀ a b : FastBT k, toConcrete (a * b) = toConcrete a * toConcrete b) :
     FastBT k ≃+* ConcreteBTField k where
   toFun := toConcrete
@@ -1209,7 +1212,7 @@ structure FastBT128 where
   hi : UInt64
   deriving DecidableEq, Inhabited
 
-private theorem join_add_join {k : ℕ} (a b c d : ConcreteBTField k) :
+theorem join_add_join {k : ℕ} (a b c d : ConcreteBTField k) :
     (《 a, b 》 : ConcreteBTField (k + 1)) + (《 c, d 》 : ConcreteBTField (k + 1))
       = (《 a + c, b + d 》 : ConcreteBTField (k + 1)) :=
   join_of_split (Nat.succ_pos k) _ _ _
@@ -1218,22 +1221,22 @@ private theorem join_add_join {k : ℕ} (a b c d : ConcreteBTField k) :
 
 /-! Width-64 spec forms of the word operations; every `UInt64` is in range at level 6. -/
 
-private theorem fromNat_mul64 (a b : UInt64) :
+theorem fromNat_mul64 (a b : UInt64) :
     fromNat (k := 6) (mul64 a b).toNat = concrete_mul (fromNat a.toNat) (fromNat b.toNat) := by
   rw [mul64_eq_rec]
   exact mulRec_correct 6 le_rfl a b (UInt64.toNat_lt a) (UInt64.toNat_lt b)
 
-private theorem fromNat_sq64 (v : UInt64) :
+theorem fromNat_sq64 (v : UInt64) :
     fromNat (k := 6) (sq64 v).toNat = concrete_mul (fromNat v.toNat) (fromNat v.toNat) := by
   rw [sq64_eq_rec]
   exact sqRec_correct 6 le_rfl v (UInt64.toNat_lt v)
 
-private theorem fromNat_mulByZ6 (v : UInt64) :
+theorem fromNat_mulByZ6 (v : UInt64) :
     fromNat (k := 6) (mulByZ6 v).toNat = concrete_mul (fromNat v.toNat) (Z 6) := by
   rw [mulByZ6_eq_rec]
   exact mulByZRec_correct 6 le_rfl v (UInt64.toNat_lt v)
 
-private theorem fromNat_inv64 (v : UInt64) :
+theorem fromNat_inv64 (v : UInt64) :
     fromNat (k := 6) (inv64 v).toNat = concrete_inv (fromNat v.toNat) := by
   rw [inv64_eq_rec]
   exact invRec_correct 6 le_rfl v (UInt64.toNat_lt v)
@@ -1339,7 +1342,7 @@ theorem toConcrete_injective : Function.Injective toConcrete := by
     toConcrete (a - b) = toConcrete a - toConcrete b := by
   rw [sub_def, toConcrete_add, sub_eq_add_neg, ← toConcrete_neg, neg_def]
 
-private theorem toConcrete_if_zero {p : Prop} [Decidable p] (x : FastBT128) :
+theorem toConcrete_if_zero {p : Prop} [Decidable p] (x : FastBT128) :
     toConcrete (if p then 0 else x) = if p then ConcreteBinaryTower.zero else toConcrete x := by
   by_cases h : p
   · rw [if_pos h, if_pos h, toConcrete_zero]
@@ -1435,7 +1438,7 @@ theorem toConcrete_square (v : FastBT128) :
   simp only [fromNat_xor, fromNat_mul64, fromNat_sq64, fromNat_mulByZ6, fromNat_inv64]
   exact hme.symm
 
-private theorem toConcrete_npowRec (a : FastBT128) :
+theorem toConcrete_npowRec (a : FastBT128) :
     ∀ (n : ℕ), toConcrete (npowRec n a) = toConcrete a ^ n
   | 0 => by rw [npowRec, pow_zero, toConcrete_one]
   | n + 1 => by rw [npowRec, pow_succ, toConcrete_mul, toConcrete_npowRec a n]
