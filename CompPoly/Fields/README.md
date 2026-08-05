@@ -33,6 +33,7 @@ This directory contains formally verified field infrastructure used in zero-know
 | **KoalaBear/Ext6.lean** | \(\mathrm{KoalaBear}[X]/(X^6 + X^3 + 1)\) — \(\Phi_9\), a \(2^{186}\)-element field. No degree-6 binomial exists since \(3 \nmid p-1\) makes every element a cube. |
 | **KoalaBear/Ext6/SexticCertData.lean** | Generated Rabin certificate data for the sextic, including one coprimality certificate per prime factor of 6. Do not hand-edit. |
 | **KoalaBear/Ext6/SexticIrreducible.lean** | Kernel-checked irreducibility of \(X^6 + X^3 + 1\) via Rabin's test at composite degree. |
+| **KoalaBear/Ext6/GaloisField.lean** | Opt-in bridge identifying `Ext6` with Mathlib's abstract `GaloisField KoalaBear.fieldSize 6` (ArkLib's `KoalaSextic` parameter point). Separate module so the GaloisField import is not forced on `Ext6` users. |
 | **Hachi.lean** | \(2^{32} - 99\) — 32-bit prime field. **Name provisional.** Included as a 32-bit example rather than a production target: it exercises a base field with no Montgomery fast path (`Mont32Field` requires modulus < 2^31) and two-adicity 2, so no radix-2 NTT domain exists for it. |
 | **Hachi/Ext4.lean** | \(\mathrm{Hachi}[X]/(X^4 - 2)\). |
 | **Goldilocks.lean** | \(2^{64} - 2^{32} + 1\) — Plonky2/3. |
