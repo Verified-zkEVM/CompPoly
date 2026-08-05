@@ -1,0 +1,50 @@
+/-
+Copyright (c) 2024 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
+module
+
+public import CompPoly.Fields.PrattCertificate
+/-!
+  # The BLS12-381 scalar prime field
+
+  `r` of the BLS12-381 curve, 255-bit, 2-adicity 32
+  ([IETF pairing-friendly-curves draft](https://datatracker.ietf.org/doc/draft-irtf-cfrg-pairing-friendly-curves/)).
+-/
+
+@[expose] public section
+
+namespace BLS12_381
+
+@[reducible]
+def scalarFieldSize : Nat :=
+  0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+
+abbrev ScalarField := ZMod scalarFieldSize
+
+theorem ScalarField_is_prime : Nat.Prime scalarFieldSize := by
+  unfold scalarFieldSize
+  refine PrattCertificate'.out (p := scalarFieldSize) ⟨7, (by reduce_mod_char), ?_⟩
+  refine .split [2 ^ 32, 3, 11, 19, 10177, 125527, 859267, 906349 ^ 2, 2508409, 2529403, 52437899,
+    254760293 ^ 2] (fun r hr => ?_) (by norm_num)
+  simp at hr
+  rcases hr with hr | hr | hr | hr | hr | hr | hr | hr | hr | hr | hr | hr <;> rw [hr]
+  · exact .prime 2 32 _ (by pratt) (by reduce_mod_char; decide) (by norm_num)
+  · exact .prime 3 1 _ (by pratt) (by reduce_mod_char; decide) (by norm_num)
+  · exact .prime 11 1 _ (by pratt) (by reduce_mod_char; decide) (by norm_num)
+  · exact .prime 19 1 _ (by pratt) (by reduce_mod_char; decide) (by norm_num)
+  · exact .prime 10177 1 _ (by pratt) (by reduce_mod_char; decide) (by norm_num)
+  · exact .prime 125527 1 _ (by pratt) (by reduce_mod_char; decide) (by norm_num)
+  · exact .prime 859267 1 _ (by pratt) (by reduce_mod_char; decide) (by norm_num)
+  · exact .prime 906349 2 _ (by pratt) (by reduce_mod_char; decide) (by norm_num)
+  · exact .prime 2508409 1 _ (by pratt) (by reduce_mod_char; decide) (by norm_num)
+  · exact .prime 2529403 1 _ (by pratt) (by reduce_mod_char; decide) (by norm_num)
+  · exact .prime 52437899 1 _ (by pratt) (by reduce_mod_char; decide) (by norm_num)
+  · exact .prime 254760293 2 _ (by pratt) (by reduce_mod_char; decide) (by norm_num)
+
+instance : Fact (Nat.Prime scalarFieldSize) := ⟨ScalarField_is_prime⟩
+
+instance : Field ScalarField := ZMod.instField scalarFieldSize
+
+end BLS12_381

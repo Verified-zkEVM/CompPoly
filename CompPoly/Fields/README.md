@@ -11,9 +11,15 @@ This directory contains formally verified field infrastructure used in zero-know
 | **BabyBear.lean** | Facade for BabyBear modules, re-exporting the canonical field and fast native-word implementation. |
 | **BabyBear/Basic.lean** | \(2^{31} - 2^{27} + 1\) — Risc Zero. |
 | **BabyBear/Fast.lean** | BabyBear-namespaced API over the shared fast-field implementation (`Montgomery/Native32Field.lean`): thin wrappers forwarding the native `UInt32` Montgomery-residue operations and their `BabyBear.Field` equivalence (`@[simp]`) lemmas. |
-| **BLS12_377.lean** | Scalar field of BLS12-377 (253-bit, 2-adicity 47) — Zexe. |
-| **BLS12_381.lean** | Scalar field of BLS12-381 (253-bit, 2-adicity 47). |
-| **BN254.lean** | Scalar field of BN254 curve. |
+| **BLS12_377.lean** | Facade for the BLS12-377 modules, re-exporting the canonical field and the fast eight-limb implementation. |
+| **BLS12_377/Basic.lean** | Scalar field of BLS12-377 (253-bit, 2-adicity 47) — Zexe. |
+| **BLS12_377/Fast.lean** | Eight-limb Montgomery instantiation of the BLS12-377 scalar field (`Mont64x8Field` and `GcdData` constants, `ScalarField`, `ringEquiv`). |
+| **BLS12_381.lean** | Facade for the BLS12-381 modules, re-exporting the canonical field and the fast eight-limb implementation. |
+| **BLS12_381/Basic.lean** | Scalar field of BLS12-381 (255-bit, 2-adicity 32). |
+| **BLS12_381/Fast.lean** | Eight-limb Montgomery instantiation of the BLS12-381 scalar field (`Mont64x8Field` and `GcdData` constants, `ScalarField`, `ringEquiv`). |
+| **BN254.lean** | Facade for the BN254 modules, re-exporting the canonical field and the fast eight-limb implementation. |
+| **BN254/Basic.lean** | Scalar field of BN254 (254-bit, 2-adicity 28). |
+| **BN254/Fast.lean** | Eight-limb Montgomery instantiation of the BN254 scalar field (`Mont64x8Field` and `GcdData` constants, `ScalarField`, `ringEquiv`). |
 | **Extension.lean** | Facade for the field-extension stack (arbitrary monic modulus; binomial as a special case). |
 | **Extension/Binomial.lean** | Irreducibility of `X^d - W` over a finite field: Rabin's test collapsed to two base-field exponentiations (`irreducible_X_pow_four_sub_C_iff`). |
 | **Extension/Defs.lean** | `ExtensionParams` (degree, lower coefficients of the monic modulus, base cardinality), `BinomialParams` and its `toExtensionParams`, and the carrier `Ext P = Vector F d` with its ring operations — including the `red` reduction table and the `@[csimp]`-registered `mulTbl`. |
@@ -37,6 +43,12 @@ This directory contains formally verified field infrastructure used in zero-know
 | **Montgomery/Basic.lean** | Radix-generic Montgomery reduction, field-agnostic number theory shared by the fast prime fields. |
 | **Montgomery/Native32.lean** | Raw `UInt32`/`UInt64` Montgomery reduction over explicit word constants, including bounds and correctness. |
 | **Montgomery/Native32Field.lean** | Per-field parameters, the shared `FastField` carrier, arithmetic, instances, and canonical-field bridge. |
+| **Montgomery/Native64x8Defs.lean** | Zero-import runtime definitions of the eight-limb Montgomery arithmetic, for `precompileModules` consumers. |
+| **Montgomery/Native64x8.lean** | Word-level specifications and add/sub/negate correctness for the eight-limb arithmetic. |
+| **Montgomery/Native64x8Mul.lean** | Correctness of the eight-limb CIOS Montgomery multiplication. |
+| **Montgomery/Native64x8Field.lean** | The `Mont64x8Field` class, `FastField` carrier, arithmetic, instances, and canonical-field bridge for moduli below `2^255`. |
+| **Montgomery/Native64x8InvDefs.lean** | Mathlib-free binary-GCD inversion runtime ([eprint 2020/972](https://eprint.iacr.org/2020/972)): the `GcdData` schedule, the candidate, and the checked `invGcdRaw`. |
+| **Montgomery/Native64x8Inv.lean** | Correctness of the checked inversion (`invGcdRaw`, wrapper `FastField.invGcd`), the divstep coefficient bounds, and the candidate's mac-width safety. |
 | **Secp256k1.lean** | Base and scalar fields for the Secp256k1 curve (used in Bitcoin/Ethereum). |
 
 ## Binary-field modules
