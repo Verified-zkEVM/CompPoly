@@ -88,7 +88,9 @@ support lemmas:
 - `Tower/Fast.lean` - packed `UInt64` fast arithmetic (`FastBT k` for levels `k <= 6`,
   `FastBT128` for level 7) sharing the `ConcreteBTField` bit layout; word-level
   mul/mulByZ/square/inv ladder with range bounds, and `Field` instances at each one-word
-  width and at the two-limb GF(2^128). Every operation is proven against
+  width and at the two-limb GF(2^128). The recursion stops at GF(2^8): level-3
+  operations are table lookups generated from the proven ladder (`Array.ofFn`,
+  `getElem_ofFn` bridge), nothing kernel-evaluated. Every operation is proven against
   `concrete_mul`/`concrete_inv` by induction over the recursive twins (`mulRec_correct`,
   `sqRec_correct`, `invRec_correct`) and transported along `toConcrete`; level 7 is one
   application of the level-6 results. Bundled `RingEquiv`s (`ringEquivBT*`,

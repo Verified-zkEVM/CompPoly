@@ -58,6 +58,13 @@ namespace ConcreteBinaryTower.Fast
 #guard (2 : BT64) = 0
 #guard (-3 : BT8) = 1
 
+-- Table rungs agree with the ladder on full-width words
+#guard mul64T 0xDEADBEEFCAFEBABE 0x123456789ABCDEF0
+  = mul64 0xDEADBEEFCAFEBABE 0x123456789ABCDEF0
+#guard inv64T 0xDEADBEEFCAFEBABE = inv64 0xDEADBEEFCAFEBABE
+#guard sq64T 0xDEADBEEFCAFEBABE = sq64 0xDEADBEEFCAFEBABE
+#guard mulByZ6T 0xDEADBEEFCAFEBABE = mulByZ6 0xDEADBEEFCAFEBABE
+
 -- Level 7, cross-checked against `concrete_mul` / `concrete_inv` at `k = 7`
 private def a128 : FastBT128 := ⟨0xDEADBEEFCAFEBABE, 0x0123456789ABCDEF⟩
 private def b128 : FastBT128 := ⟨0x123456789ABCDEF0, 0xFEDCBA9876543210⟩

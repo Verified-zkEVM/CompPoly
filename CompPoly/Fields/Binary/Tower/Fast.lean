@@ -22,7 +22,8 @@ a pair of limbs at level 7. Multiplication is Karatsuba with an `O(width)`
 multiply-by-generator reduction; mul, square, and inverse are proven against the
 concrete tower by induction over recursive twins, giving `Field` instances at each
 one-word width and at the two-limb GF(2^128), with bundled ring isomorphisms onto the
-concrete tower (`ringEquivBT*`, `FastBT128.ringEquiv`).
+concrete tower (`ringEquivBT*`, `FastBT128.ringEquiv`). At run time the level-3 operations are
+certified table lookups.
 -/
 
 @[expose] public section
@@ -265,6 +266,12 @@ theorem join_lt (s : ℕ) {hi lo sh : UInt64} (hsh : sh.toNat = s) (hs : 2 * s �
     rw [Nat.shiftLeft_eq, Nat.two_mul, Nat.pow_add]
     exact (Nat.mul_lt_mul_right (Nat.two_pow_pos s)).mpr hhi
   exact Nat.lt_of_le_of_lt (Nat.mod_le _ _) hval
+
+/-- Both half bounds for a literal shift/mask split. -/
+theorem half_lit_lt (s : ℕ) (m sh : UInt64) {v : UInt64} (hm : m.toNat = 2 ^ s - 1)
+    (hsh : sh.toNat = s) (hs : s < 64) (hv : v.toNat < 2 ^ (s + s)) :
+    (v >>> sh).toNat < 2 ^ s ∧ (v &&& m).toNat < 2 ^ s :=
+  ⟨shiftRight_lt s hsh hs hv, and_mask_lt s hm⟩
 
 /-! ### Proof-side recursive twins
 
@@ -605,6 +612,287 @@ theorem inv16_lt {v : UInt64} (hv : v.toNat < 2 ^ 16) : (inv16 v).toNat < 2 ^ 16
 
 theorem inv32_lt {v : UInt64} (hv : v.toNat < 2 ^ 32) : (inv32 v).toNat < 2 ^ 32 := by
   rw [inv32_eq_rec]; exact invRec_lt 5 (by omega) v hv
+
+/-! ### Table base
+
+Level-3 operations as byte-table lookups, tables generated from the ladder by
+`Array.ofFn`. `getElem_ofFn` turns a lookup back into the ladder call, so each `*T`
+rung equals its ladder twin on in-range words and no table is kernel-evaluated. -/
+
+/-- `mul8` product table. -/
+def mul8Table : ByteArray :=
+  ⟨Array.ofFn (n := 65536) fun i =>
+    (mul8 (UInt64.ofNat (i / 256)) (UInt64.ofNat (i % 256))).toUInt8⟩
+
+/-- `mulByZ3` table. -/
+def mulByZ3Table : ByteArray :=
+  ⟨Array.ofFn (n := 256) fun i => (mulByZ3 (UInt64.ofNat i)).toUInt8⟩
+
+/-- `sq8` table. -/
+def sq8Table : ByteArray :=
+  ⟨Array.ofFn (n := 256) fun i => (sq8 (UInt64.ofNat i)).toUInt8⟩
+
+/-- `inv8` table (`0 ↦ 0`). -/
+def inv8Table : ByteArray :=
+  ⟨Array.ofFn (n := 256) fun i => (inv8 (UInt64.ofNat i)).toUInt8⟩
+
+/-- `mul8` by table lookup. -/
+@[inline] def mul8T (a b : UInt64) : UInt64 :=
+  (mul8Table.get! ((a <<< 8) + b).toNat).toUInt64
+
+/-- `mulByZ3` by table lookup. -/
+@[inline] def mulByZ3T (v : UInt64) : UInt64 := (mulByZ3Table.get! v.toNat).toUInt64
+
+/-- `sq8` by table lookup. -/
+@[inline] def sq8T (v : UInt64) : UInt64 := (sq8Table.get! v.toNat).toUInt64
+
+/-- `inv8` by table lookup. -/
+@[inline] def inv8T (v : UInt64) : UInt64 := (inv8Table.get! v.toNat).toUInt64
+
+/-- Lookup in a 256-entry `Array.ofFn` table is the generating function. -/
+theorem byteTable_get_eq {f : UInt64 → UInt64}
+    (hf : ∀ v : UInt64, v.toNat < 2 ^ 8 → (f v).toNat < 2 ^ 8)
+    {v : UInt64} (hv : v.toNat < 2 ^ 8) :
+    ((⟨Array.ofFn (n := 256) fun i => (f (UInt64.ofNat i)).toUInt8⟩ : ByteArray).get!
+      v.toNat).toUInt64 = f v := by
+  have hfv : (f v).toNat < 256 := by have := hf v hv; omega
+  simp only [ByteArray.get!]
+  rw [getElem!_pos _ _ (by simp; omega)]
+  simp only [Array.getElem_ofFn]
+  rw [UInt64.ofNat_toNat]
+  apply UInt64.toNat_inj.mp
+  simp [Nat.mod_eq_of_lt hfv]
+
+theorem mul8T_eq_mul8 {a b : UInt64} (ha : a.toNat < 2 ^ 8) (hb : b.toNat < 2 ^ 8) :
+    mul8T a b = mul8 a b := by
+  have hidx : ((a <<< 8) + b).toNat = a.toNat * 256 + b.toNat := by
+    have h8 : ((8 : UInt64).toNat % 64) = 8 := by decide
+    rw [UInt64.toNat_add, UInt64.toNat_shiftLeft, h8, Nat.shiftLeft_eq]
+    omega
+  have hbound : (mul8 a b).toNat < 256 := by have := mul8_lt ha hb; omega
+  rw [mul8T, hidx]
+  simp only [mul8Table, ByteArray.get!]
+  rw [getElem!_pos _ _ (by simp; omega)]
+  simp only [Array.getElem_ofFn]
+  have hdiv : (a.toNat * 256 + b.toNat) / 256 = a.toNat := by omega
+  have hmod : (a.toNat * 256 + b.toNat) % 256 = b.toNat := by omega
+  rw [hdiv, hmod, UInt64.ofNat_toNat, UInt64.ofNat_toNat]
+  apply UInt64.toNat_inj.mp
+  simp [Nat.mod_eq_of_lt hbound]
+
+theorem mulByZ3T_eq_mulByZ3 {v : UInt64} (hv : v.toNat < 2 ^ 8) :
+    mulByZ3T v = mulByZ3 v :=
+  byteTable_get_eq (fun _ h => mulByZ3_lt h) hv
+
+theorem sq8T_eq_sq8 {v : UInt64} (hv : v.toNat < 2 ^ 8) : sq8T v = sq8 v :=
+  byteTable_get_eq (fun _ h => sq8_lt h) hv
+
+theorem inv8T_eq_inv8 {v : UInt64} (hv : v.toNat < 2 ^ 8) : inv8T v = inv8 v :=
+  byteTable_get_eq (fun _ h => inv8_lt h) hv
+
+/-- Table-based twin of `mulByZ4`. -/
+@[inline] def mulByZ4T (v : UInt64) : UInt64 :=
+  let v0 := v &&& 0xFF
+  let v1 := v >>> 8
+  ((v0 ^^^ mulByZ3T v1) <<< 8) ||| v1
+
+/-- Table-based twin of `mulByZ5`. -/
+@[inline] def mulByZ5T (v : UInt64) : UInt64 :=
+  let v0 := v &&& 0xFFFF
+  let v1 := v >>> 16
+  ((v0 ^^^ mulByZ4T v1) <<< 16) ||| v1
+
+/-- Table-based twin of `mulByZ6`. -/
+@[inline] def mulByZ6T (v : UInt64) : UInt64 :=
+  let v0 := v &&& 0xFFFFFFFF
+  let v1 := v >>> 32
+  ((v0 ^^^ mulByZ5T v1) <<< 32) ||| v1
+
+/-- Table-based twin of `mul16`. -/
+@[inline] def mul16T (a b : UInt64) : UInt64 :=
+  let a0 := a &&& 0xFF
+  let a1 := a >>> 8
+  let b0 := b &&& 0xFF
+  let b1 := b >>> 8
+  let p0 := mul8T a0 b0
+  let p2 := mul8T a1 b1
+  let p1 := mul8T (a0 ^^^ a1) (b0 ^^^ b1)
+  let lo := p0 ^^^ p2
+  ((p1 ^^^ lo ^^^ mulByZ3T p2) <<< 8) ||| lo
+
+/-- Table-based twin of `mul32`. -/
+def mul32T (a b : UInt64) : UInt64 :=
+  let a0 := a &&& 0xFFFF
+  let a1 := a >>> 16
+  let b0 := b &&& 0xFFFF
+  let b1 := b >>> 16
+  let p0 := mul16T a0 b0
+  let p2 := mul16T a1 b1
+  let p1 := mul16T (a0 ^^^ a1) (b0 ^^^ b1)
+  let lo := p0 ^^^ p2
+  ((p1 ^^^ lo ^^^ mulByZ4T p2) <<< 16) ||| lo
+
+/-- Table-based twin of `mul64`. -/
+def mul64T (a b : UInt64) : UInt64 :=
+  let a0 := a &&& 0xFFFFFFFF
+  let a1 := a >>> 32
+  let b0 := b &&& 0xFFFFFFFF
+  let b1 := b >>> 32
+  let p0 := mul32T a0 b0
+  let p2 := mul32T a1 b1
+  let p1 := mul32T (a0 ^^^ a1) (b0 ^^^ b1)
+  let lo := p0 ^^^ p2
+  ((p1 ^^^ lo ^^^ mulByZ5T p2) <<< 32) ||| lo
+
+
+
+
+/-- Table-based twin of `sq16`. -/
+@[inline] def sq16T (v : UInt64) : UInt64 :=
+  let s0 := sq8T (v &&& 0xFF)
+  let s1 := sq8T (v >>> 8)
+  ((mulByZ3T s1) <<< 8) ||| (s0 ^^^ s1)
+
+/-- Table-based twin of `sq32`. -/
+@[inline] def sq32T (v : UInt64) : UInt64 :=
+  let s0 := sq16T (v &&& 0xFFFF)
+  let s1 := sq16T (v >>> 16)
+  ((mulByZ4T s1) <<< 16) ||| (s0 ^^^ s1)
+
+/-- Table-based twin of `sq64`. -/
+@[inline] def sq64T (v : UInt64) : UInt64 :=
+  let s0 := sq32T (v &&& 0xFFFFFFFF)
+  let s1 := sq32T (v >>> 32)
+  ((mulByZ5T s1) <<< 32) ||| (s0 ^^^ s1)
+
+/-- Table-based twin of `inv16`. -/
+@[inline] def inv16T (v : UInt64) : UInt64 :=
+  let v0 := v &&& 0xFF
+  let v1 := v >>> 8
+  let next := v0 ^^^ mulByZ3T v1
+  let delta := mul8T v0 next ^^^ sq8T v1
+  let d := inv8T delta
+  ((mul8T d v1) <<< 8) ||| (mul8T d next)
+
+/-- Table-based twin of `inv32`. -/
+@[inline] def inv32T (v : UInt64) : UInt64 :=
+  let v0 := v &&& 0xFFFF
+  let v1 := v >>> 16
+  let next := v0 ^^^ mulByZ4T v1
+  let delta := mul16T v0 next ^^^ sq16T v1
+  let d := inv16T delta
+  ((mul16T d v1) <<< 16) ||| (mul16T d next)
+
+/-- Table-based twin of `inv64`. -/
+@[inline] def inv64T (v : UInt64) : UInt64 :=
+  let v0 := v &&& 0xFFFFFFFF
+  let v1 := v >>> 32
+  let next := v0 ^^^ mulByZ5T v1
+  let delta := mul32T v0 next ^^^ sq32T v1
+  let d := inv32T delta
+  ((mul32T d v1) <<< 32) ||| (mul32T d next)
+
+theorem mul16T_eq_mul16 {a b : UInt64} (ha : a.toNat < 2 ^ 16) (hb : b.toNat < 2 ^ 16) :
+    mul16T a b = mul16 a b := by
+  obtain ⟨ha1, ha0⟩ := half_lit_lt 8 0xFF 8 (by decide) (by decide) (by omega) ha
+  obtain ⟨hb1, hb0⟩ := half_lit_lt 8 0xFF 8 (by decide) (by decide) (by omega) hb
+  simp only [mul16T, mul16]
+  rw [mul8T_eq_mul8 ha0 hb0, mul8T_eq_mul8 ha1 hb1,
+    mul8T_eq_mul8 (xor_lt ha0 ha1) (xor_lt hb0 hb1),
+    mulByZ3T_eq_mulByZ3 (mul8_lt ha1 hb1)]
+
+theorem mulByZ4T_eq_mulByZ4 {v : UInt64} (hv : v.toNat < 2 ^ 16) :
+    mulByZ4T v = mulByZ4 v := by
+  obtain ⟨hv1, hv0⟩ := half_lit_lt 8 0xFF 8 (by decide) (by decide) (by omega) hv
+  simp only [mulByZ4T, mulByZ4]
+  rw [mulByZ3T_eq_mulByZ3 hv1]
+
+theorem sq16T_eq_sq16 {v : UInt64} (hv : v.toNat < 2 ^ 16) :
+    sq16T v = sq16 v := by
+  obtain ⟨hv1, hv0⟩ := half_lit_lt 8 0xFF 8 (by decide) (by decide) (by omega) hv
+  simp only [sq16T, sq16]
+  rw [sq8T_eq_sq8 hv0, sq8T_eq_sq8 hv1, mulByZ3T_eq_mulByZ3 (sq8_lt hv1)]
+
+theorem inv16T_eq_inv16 {v : UInt64} (hv : v.toNat < 2 ^ 16) :
+    inv16T v = inv16 v := by
+  obtain ⟨hv1, hv0⟩ := half_lit_lt 8 0xFF 8 (by decide) (by decide) (by omega) hv
+  have hnext := xor_lt hv0 (mulByZ3_lt hv1)
+  have hdelta := xor_lt (mul8_lt hv0 hnext) (sq8_lt hv1)
+  simp only [inv16T, inv16]
+  rw [mulByZ3T_eq_mulByZ3 hv1, sq8T_eq_sq8 hv1, mul8T_eq_mul8 hv0 hnext,
+    inv8T_eq_inv8 hdelta,
+    mul8T_eq_mul8 (inv8_lt hdelta) hv1,
+    mul8T_eq_mul8 (inv8_lt hdelta) hnext]
+
+theorem mul32T_eq_mul32 {a b : UInt64} (ha : a.toNat < 2 ^ 32) (hb : b.toNat < 2 ^ 32) :
+    mul32T a b = mul32 a b := by
+  obtain ⟨ha1, ha0⟩ := half_lit_lt 16 0xFFFF 16 (by decide) (by decide) (by omega) ha
+  obtain ⟨hb1, hb0⟩ := half_lit_lt 16 0xFFFF 16 (by decide) (by decide) (by omega) hb
+  simp only [mul32T, mul32]
+  rw [mul16T_eq_mul16 ha0 hb0, mul16T_eq_mul16 ha1 hb1,
+    mul16T_eq_mul16 (xor_lt ha0 ha1) (xor_lt hb0 hb1),
+    mulByZ4T_eq_mulByZ4 (mul16_lt ha1 hb1)]
+
+theorem mulByZ5T_eq_mulByZ5 {v : UInt64} (hv : v.toNat < 2 ^ 32) :
+    mulByZ5T v = mulByZ5 v := by
+  obtain ⟨hv1, hv0⟩ := half_lit_lt 16 0xFFFF 16 (by decide) (by decide) (by omega) hv
+  simp only [mulByZ5T, mulByZ5]
+  rw [mulByZ4T_eq_mulByZ4 hv1]
+
+theorem sq32T_eq_sq32 {v : UInt64} (hv : v.toNat < 2 ^ 32) :
+    sq32T v = sq32 v := by
+  obtain ⟨hv1, hv0⟩ := half_lit_lt 16 0xFFFF 16 (by decide) (by decide) (by omega) hv
+  simp only [sq32T, sq32]
+  rw [sq16T_eq_sq16 hv0, sq16T_eq_sq16 hv1, mulByZ4T_eq_mulByZ4 (sq16_lt hv1)]
+
+theorem inv32T_eq_inv32 {v : UInt64} (hv : v.toNat < 2 ^ 32) :
+    inv32T v = inv32 v := by
+  obtain ⟨hv1, hv0⟩ := half_lit_lt 16 0xFFFF 16 (by decide) (by decide) (by omega) hv
+  have hnext := xor_lt hv0 (mulByZ4_lt hv1)
+  have hdelta := xor_lt (mul16_lt hv0 hnext) (sq16_lt hv1)
+  simp only [inv32T, inv32]
+  rw [mulByZ4T_eq_mulByZ4 hv1, sq16T_eq_sq16 hv1, mul16T_eq_mul16 hv0 hnext,
+    inv16T_eq_inv16 hdelta,
+    mul16T_eq_mul16 (inv16_lt hdelta) hv1,
+    mul16T_eq_mul16 (inv16_lt hdelta) hnext]
+
+theorem mul64T_eq_mul64 (a b : UInt64) :
+    mul64T a b = mul64 a b := by
+  obtain ⟨ha1, ha0⟩ :=
+    half_lit_lt 32 0xFFFFFFFF 32 (by decide) (by decide) (by omega) (UInt64.toNat_lt a)
+  obtain ⟨hb1, hb0⟩ :=
+    half_lit_lt 32 0xFFFFFFFF 32 (by decide) (by decide) (by omega) (UInt64.toNat_lt b)
+  simp only [mul64T, mul64]
+  rw [mul32T_eq_mul32 ha0 hb0, mul32T_eq_mul32 ha1 hb1,
+    mul32T_eq_mul32 (xor_lt ha0 ha1) (xor_lt hb0 hb1),
+    mulByZ5T_eq_mulByZ5 (mul32_lt ha1 hb1)]
+
+theorem mulByZ6T_eq_mulByZ6 (v : UInt64) :
+    mulByZ6T v = mulByZ6 v := by
+  obtain ⟨hv1, hv0⟩ :=
+    half_lit_lt 32 0xFFFFFFFF 32 (by decide) (by decide) (by omega) (UInt64.toNat_lt v)
+  simp only [mulByZ6T, mulByZ6]
+  rw [mulByZ5T_eq_mulByZ5 hv1]
+
+theorem sq64T_eq_sq64 (v : UInt64) :
+    sq64T v = sq64 v := by
+  obtain ⟨hv1, hv0⟩ :=
+    half_lit_lt 32 0xFFFFFFFF 32 (by decide) (by decide) (by omega) (UInt64.toNat_lt v)
+  simp only [sq64T, sq64]
+  rw [sq32T_eq_sq32 hv0, sq32T_eq_sq32 hv1, mulByZ5T_eq_mulByZ5 (sq32_lt hv1)]
+
+theorem inv64T_eq_inv64 (v : UInt64) :
+    inv64T v = inv64 v := by
+  obtain ⟨hv1, hv0⟩ :=
+    half_lit_lt 32 0xFFFFFFFF 32 (by decide) (by decide) (by omega) (UInt64.toNat_lt v)
+  have hnext := xor_lt hv0 (mulByZ5_lt hv1)
+  have hdelta := xor_lt (mul32_lt hv0 hnext) (sq32_lt hv1)
+  simp only [inv64T, inv64]
+  rw [mulByZ5T_eq_mulByZ5 hv1, sq32T_eq_sq32 hv1, mul32T_eq_mul32 hv0 hnext,
+    inv32T_eq_inv32 hdelta,
+    mul32T_eq_mul32 (inv32_lt hdelta) hv1,
+    mul32T_eq_mul32 (inv32_lt hdelta) hnext]
+
 
 /-! ## Correctness against the spec
 
@@ -1020,76 +1308,86 @@ abbrev BT32 := FastBT 5
 abbrev BT64 := FastBT 6
 
 /-- GF(2^8) carrier multiplication. -/
-@[inline] def BT8.mul (a b : BT8) : BT8 := .mk (mul8 a.val b.val) (mul8_lt a.isLt b.isLt)
+@[inline] def BT8.mul (a b : BT8) : BT8 :=
+  .mk (mul8T a.val b.val) (by rw [mul8T_eq_mul8 a.isLt b.isLt]; exact mul8_lt a.isLt b.isLt)
 /-- GF(2^16) carrier multiplication. -/
-@[inline] def BT16.mul (a b : BT16) : BT16 := .mk (mul16 a.val b.val) (mul16_lt a.isLt b.isLt)
+@[inline] def BT16.mul (a b : BT16) : BT16 :=
+  .mk (mul16T a.val b.val) (by rw [mul16T_eq_mul16 a.isLt b.isLt]; exact mul16_lt a.isLt b.isLt)
 /-- GF(2^32) carrier multiplication. -/
-@[inline] def BT32.mul (a b : BT32) : BT32 := .mk (mul32 a.val b.val) (mul32_lt a.isLt b.isLt)
+@[inline] def BT32.mul (a b : BT32) : BT32 :=
+  .mk (mul32T a.val b.val) (by rw [mul32T_eq_mul32 a.isLt b.isLt]; exact mul32_lt a.isLt b.isLt)
 /-- GF(2^64) carrier multiplication. -/
-@[inline] def BT64.mul (a b : BT64) : BT64 := .mk (mul64 a.val b.val) (UInt64.toNat_lt _)
+@[inline] def BT64.mul (a b : BT64) : BT64 := .mk (mul64T a.val b.val) (UInt64.toNat_lt _)
 
 instance : Mul BT8 := ⟨BT8.mul⟩
 instance : Mul BT16 := ⟨BT16.mul⟩
 instance : Mul BT32 := ⟨BT32.mul⟩
 instance : Mul BT64 := ⟨BT64.mul⟩
 
-@[simp] theorem val_mul_bt8 (a b : BT8) : (a * b).val = mul8 a.val b.val := rfl
-@[simp] theorem val_mul_bt16 (a b : BT16) : (a * b).val = mul16 a.val b.val := rfl
-@[simp] theorem val_mul_bt32 (a b : BT32) : (a * b).val = mul32 a.val b.val := rfl
-@[simp] theorem val_mul_bt64 (a b : BT64) : (a * b).val = mul64 a.val b.val := rfl
+@[simp] theorem val_mul_bt8 (a b : BT8) : (a * b).val = mul8 a.val b.val :=
+  mul8T_eq_mul8 a.isLt b.isLt
+@[simp] theorem val_mul_bt16 (a b : BT16) : (a * b).val = mul16 a.val b.val :=
+  mul16T_eq_mul16 a.isLt b.isLt
+@[simp] theorem val_mul_bt32 (a b : BT32) : (a * b).val = mul32 a.val b.val :=
+  mul32T_eq_mul32 a.isLt b.isLt
+@[simp] theorem val_mul_bt64 (a b : BT64) : (a * b).val = mul64 a.val b.val :=
+  mul64T_eq_mul64 a.val b.val
 
 @[simp] theorem toConcrete_mul_bt8 (a b : BT8) :
     toConcrete (a * b) = toConcrete a * toConcrete b := by
-  show fromNat (mul8 a.val b.val).toNat = _
-  rw [mul8_eq_rec]
+  show fromNat (mul8T a.val b.val).toNat = _
+  rw [mul8T_eq_mul8 a.isLt b.isLt, mul8_eq_rec]
   exact mulRec_correct 3 (by omega) a.val b.val a.isLt b.isLt
 
 @[simp] theorem toConcrete_mul_bt16 (a b : BT16) :
     toConcrete (a * b) = toConcrete a * toConcrete b := by
-  show fromNat (mul16 a.val b.val).toNat = _
-  rw [mul16_eq_rec]
+  show fromNat (mul16T a.val b.val).toNat = _
+  rw [mul16T_eq_mul16 a.isLt b.isLt, mul16_eq_rec]
   exact mulRec_correct 4 (by omega) a.val b.val a.isLt b.isLt
 
 @[simp] theorem toConcrete_mul_bt32 (a b : BT32) :
     toConcrete (a * b) = toConcrete a * toConcrete b := by
-  show fromNat (mul32 a.val b.val).toNat = _
-  rw [mul32_eq_rec]
+  show fromNat (mul32T a.val b.val).toNat = _
+  rw [mul32T_eq_mul32 a.isLt b.isLt, mul32_eq_rec]
   exact mulRec_correct 5 (by omega) a.val b.val a.isLt b.isLt
 
 @[simp] theorem toConcrete_mul_bt64 (a b : BT64) :
     toConcrete (a * b) = toConcrete a * toConcrete b := by
-  show fromNat (mul64 a.val b.val).toNat = _
-  rw [mul64_eq_rec]
+  show fromNat (mul64T a.val b.val).toNat = _
+  rw [mul64T_eq_mul64 a.val b.val, mul64_eq_rec]
   exact mulRec_correct 6 (by omega) a.val b.val a.isLt b.isLt
 
-instance : Inv BT8 := ⟨fun a => .mk (inv8 a.val) (inv8_lt a.isLt)⟩
-instance : Inv BT16 := ⟨fun a => .mk (inv16 a.val) (inv16_lt a.isLt)⟩
-instance : Inv BT32 := ⟨fun a => .mk (inv32 a.val) (inv32_lt a.isLt)⟩
-instance : Inv BT64 := ⟨fun a => .mk (inv64 a.val) (UInt64.toNat_lt _)⟩
+instance : Inv BT8 :=
+  ⟨fun a => .mk (inv8T a.val) (by rw [inv8T_eq_inv8 a.isLt]; exact inv8_lt a.isLt)⟩
+instance : Inv BT16 :=
+  ⟨fun a => .mk (inv16T a.val) (by rw [inv16T_eq_inv16 a.isLt]; exact inv16_lt a.isLt)⟩
+instance : Inv BT32 :=
+  ⟨fun a => .mk (inv32T a.val) (by rw [inv32T_eq_inv32 a.isLt]; exact inv32_lt a.isLt)⟩
+instance : Inv BT64 := ⟨fun a => .mk (inv64T a.val) (UInt64.toNat_lt _)⟩
 
-@[simp] theorem val_inv_bt8 (a : BT8) : (a⁻¹).val = inv8 a.val := rfl
-@[simp] theorem val_inv_bt16 (a : BT16) : (a⁻¹).val = inv16 a.val := rfl
-@[simp] theorem val_inv_bt32 (a : BT32) : (a⁻¹).val = inv32 a.val := rfl
-@[simp] theorem val_inv_bt64 (a : BT64) : (a⁻¹).val = inv64 a.val := rfl
+@[simp] theorem val_inv_bt8 (a : BT8) : (a⁻¹).val = inv8 a.val := inv8T_eq_inv8 a.isLt
+@[simp] theorem val_inv_bt16 (a : BT16) : (a⁻¹).val = inv16 a.val := inv16T_eq_inv16 a.isLt
+@[simp] theorem val_inv_bt32 (a : BT32) : (a⁻¹).val = inv32 a.val := inv32T_eq_inv32 a.isLt
+@[simp] theorem val_inv_bt64 (a : BT64) : (a⁻¹).val = inv64 a.val := inv64T_eq_inv64 a.val
 
 @[simp] theorem toConcrete_inv_bt8 (a : BT8) : toConcrete a⁻¹ = (toConcrete a)⁻¹ := by
-  show fromNat (inv8 a.val).toNat = _
-  rw [inv8_eq_rec]
+  show fromNat (inv8T a.val).toNat = _
+  rw [inv8T_eq_inv8 a.isLt, inv8_eq_rec]
   exact invRec_correct 3 (by omega) a.val a.isLt
 
 @[simp] theorem toConcrete_inv_bt16 (a : BT16) : toConcrete a⁻¹ = (toConcrete a)⁻¹ := by
-  show fromNat (inv16 a.val).toNat = _
-  rw [inv16_eq_rec]
+  show fromNat (inv16T a.val).toNat = _
+  rw [inv16T_eq_inv16 a.isLt, inv16_eq_rec]
   exact invRec_correct 4 (by omega) a.val a.isLt
 
 @[simp] theorem toConcrete_inv_bt32 (a : BT32) : toConcrete a⁻¹ = (toConcrete a)⁻¹ := by
-  show fromNat (inv32 a.val).toNat = _
-  rw [inv32_eq_rec]
+  show fromNat (inv32T a.val).toNat = _
+  rw [inv32T_eq_inv32 a.isLt, inv32_eq_rec]
   exact invRec_correct 5 (by omega) a.val a.isLt
 
 @[simp] theorem toConcrete_inv_bt64 (a : BT64) : toConcrete a⁻¹ = (toConcrete a)⁻¹ := by
-  show fromNat (inv64 a.val).toNat = _
-  rw [inv64_eq_rec]
+  show fromNat (inv64T a.val).toNat = _
+  rw [inv64T_eq_inv64 a.val, inv64_eq_rec]
   exact invRec_correct 6 (by omega) a.val a.isLt
 
 theorem toConcrete_npowRec {k : ℕ} [Mul (FastBT k)]
@@ -1150,10 +1448,13 @@ def ringEquivBT64 : BT64 ≃+* ConcreteBTField 6 := ringEquivOfHom (by omega) to
   | 0, a => a
   | 1, a => .mk (mulByZ1 a.val) (by rw [mulByZ1_eq_rec]; exact mulByZRec_lt 1 (by omega) _ a.isLt)
   | 2, a => .mk (mulByZ2 a.val) (by rw [mulByZ2_eq_rec]; exact mulByZRec_lt 2 (by omega) _ a.isLt)
-  | 3, a => .mk (mulByZ3 a.val) (mulByZ3_lt a.isLt)
-  | 4, a => .mk (mulByZ4 a.val) (mulByZ4_lt a.isLt)
-  | 5, a => .mk (mulByZ5 a.val) (mulByZ5_lt a.isLt)
-  | 6, a => .mk (mulByZ6 a.val) (UInt64.toNat_lt _)
+  | 3, a => .mk (mulByZ3T a.val)
+      (by rw [mulByZ3T_eq_mulByZ3 a.isLt]; exact mulByZ3_lt a.isLt)
+  | 4, a => .mk (mulByZ4T a.val)
+      (by rw [mulByZ4T_eq_mulByZ4 a.isLt]; exact mulByZ4_lt a.isLt)
+  | 5, a => .mk (mulByZ5T a.val)
+      (by rw [mulByZ5T_eq_mulByZ5 a.isLt]; exact mulByZ5_lt a.isLt)
+  | 6, a => .mk (mulByZ6T a.val) (UInt64.toNat_lt _)
   | _ + 7, a => a
 
 theorem FastBT.mulByZ_val : ∀ {k : ℕ} (a : FastBT k) (hk : k ≤ 6),
@@ -1161,10 +1462,10 @@ theorem FastBT.mulByZ_val : ∀ {k : ℕ} (a : FastBT k) (hk : k ≤ 6),
   | 0, _, _ => rfl
   | 1, a, _ => mulByZ1_eq_rec a.val
   | 2, a, _ => mulByZ2_eq_rec a.val
-  | 3, a, _ => mulByZ3_eq_rec a.val
-  | 4, a, _ => mulByZ4_eq_rec a.val
-  | 5, a, _ => mulByZ5_eq_rec a.val
-  | 6, a, _ => mulByZ6_eq_rec a.val
+  | 3, a, _ => (mulByZ3T_eq_mulByZ3 a.isLt).trans (mulByZ3_eq_rec a.val)
+  | 4, a, _ => (mulByZ4T_eq_mulByZ4 a.isLt).trans (mulByZ4_eq_rec a.val)
+  | 5, a, _ => (mulByZ5T_eq_mulByZ5 a.isLt).trans (mulByZ5_eq_rec a.val)
+  | 6, a, _ => (mulByZ6T_eq_mulByZ6 a.val).trans (mulByZ6_eq_rec a.val)
   | _ + 7, _, hk => absurd hk (by omega)
 
 theorem toConcrete_mulByZ {k : ℕ} (a : FastBT k) (hk : k ≤ 6) :
@@ -1179,10 +1480,10 @@ theorem toConcrete_mulByZ {k : ℕ} (a : FastBT k) (hk : k ≤ 6) :
   | 0, a => a
   | 1, a => .mk (sq2 a.val) (by rw [sq2_eq_rec]; exact sqRec_lt 1 (by omega) _ a.isLt)
   | 2, a => .mk (sq4 a.val) (by rw [sq4_eq_rec]; exact sqRec_lt 2 (by omega) _ a.isLt)
-  | 3, a => .mk (sq8 a.val) (sq8_lt a.isLt)
-  | 4, a => .mk (sq16 a.val) (sq16_lt a.isLt)
-  | 5, a => .mk (sq32 a.val) (sq32_lt a.isLt)
-  | 6, a => .mk (sq64 a.val) (UInt64.toNat_lt _)
+  | 3, a => .mk (sq8T a.val) (by rw [sq8T_eq_sq8 a.isLt]; exact sq8_lt a.isLt)
+  | 4, a => .mk (sq16T a.val) (by rw [sq16T_eq_sq16 a.isLt]; exact sq16_lt a.isLt)
+  | 5, a => .mk (sq32T a.val) (by rw [sq32T_eq_sq32 a.isLt]; exact sq32_lt a.isLt)
+  | 6, a => .mk (sq64T a.val) (UInt64.toNat_lt _)
   | _ + 7, a => a
 
 theorem FastBT.square_val : ∀ {k : ℕ} (a : FastBT k) (hk : k ≤ 6),
@@ -1190,10 +1491,10 @@ theorem FastBT.square_val : ∀ {k : ℕ} (a : FastBT k) (hk : k ≤ 6),
   | 0, _, _ => rfl
   | 1, a, _ => sq2_eq_rec a.val
   | 2, a, _ => sq4_eq_rec a.val
-  | 3, a, _ => sq8_eq_rec a.val
-  | 4, a, _ => sq16_eq_rec a.val
-  | 5, a, _ => sq32_eq_rec a.val
-  | 6, a, _ => sq64_eq_rec a.val
+  | 3, a, _ => (sq8T_eq_sq8 a.isLt).trans (sq8_eq_rec a.val)
+  | 4, a, _ => (sq16T_eq_sq16 a.isLt).trans (sq16_eq_rec a.val)
+  | 5, a, _ => (sq32T_eq_sq32 a.isLt).trans (sq32_eq_rec a.val)
+  | 6, a, _ => (sq64T_eq_sq64 a.val).trans (sq64_eq_rec a.val)
   | _ + 7, _, hk => absurd hk (by omega)
 
 theorem toConcrete_square {k : ℕ} (a : FastBT k) (hk : k ≤ 6) :
@@ -1251,11 +1552,11 @@ instance : One FastBT128 := ⟨1, 0⟩
 
 /-- Multiplication: Karatsuba over the limbs with a `Z 6` generator reduction. -/
 @[inline] def mul (a b : FastBT128) : FastBT128 :=
-  let p0 := mul64 a.lo b.lo
-  let p2 := mul64 a.hi b.hi
-  let p1 := mul64 (a.lo ^^^ a.hi) (b.lo ^^^ b.hi)
+  let p0 := mul64T a.lo b.lo
+  let p2 := mul64T a.hi b.hi
+  let p1 := mul64T (a.lo ^^^ a.hi) (b.lo ^^^ b.hi)
   let lo := p0 ^^^ p2
-  ⟨lo, p1 ^^^ lo ^^^ mulByZ6 p2⟩
+  ⟨lo, p1 ^^^ lo ^^^ mulByZ6T p2⟩
 
 instance : Add FastBT128 := ⟨add⟩
 instance : Neg FastBT128 := ⟨id⟩
@@ -1263,20 +1564,20 @@ instance : Sub FastBT128 where sub a b := a + b
 instance : Mul FastBT128 := ⟨mul⟩
 
 /-- Multiply by the level-7 generator `Z 7`: swap halves, fold `Z 6` into the new high. -/
-@[inline] def mulByZ (v : FastBT128) : FastBT128 := ⟨v.hi, v.lo ^^^ mulByZ6 v.hi⟩
+@[inline] def mulByZ (v : FastBT128) : FastBT128 := ⟨v.hi, v.lo ^^^ mulByZ6T v.hi⟩
 
 /-- Squaring: the Karatsuba cross term vanishes in characteristic 2. -/
 @[inline] def square (v : FastBT128) : FastBT128 :=
-  let s0 := sq64 v.lo
-  let s1 := sq64 v.hi
-  ⟨s0 ^^^ s1, mulByZ6 s1⟩
+  let s0 := sq64T v.lo
+  let s1 := sq64T v.hi
+  ⟨s0 ^^^ s1, mulByZ6T s1⟩
 
 /-- Inversion by quadratic descent (`0 ↦ 0`); same recursion as `concrete_inv`. -/
 @[inline] def inv (v : FastBT128) : FastBT128 :=
-  let next := v.lo ^^^ mulByZ6 v.hi
-  let delta := mul64 v.lo next ^^^ sq64 v.hi
-  let d := inv64 delta
-  ⟨mul64 d next, mul64 d v.hi⟩
+  let next := v.lo ^^^ mulByZ6T v.hi
+  let delta := mul64T v.lo next ^^^ sq64T v.hi
+  let d := inv64T delta
+  ⟨mul64T d next, mul64T d v.hi⟩
 
 /-- Truncating constructor from `ℕ`, low limb first. -/
 def ofNat (n : ℕ) : FastBT128 := ⟨UInt64.ofNat n, UInt64.ofNat (n >>> 64)⟩
@@ -1383,12 +1684,13 @@ theorem toConcrete_intCast (n : ℤ) :
       (fromNat (k := 6) a.lo.toNat) rfl)
     (split_of_join (Nat.succ_pos 6) (toConcrete b) (fromNat (k := 6) b.hi.toNat)
       (fromNat (k := 6) b.lo.toNat) rfl)
-  show (《 fromNat (k := 6) (mul64 (a.lo ^^^ a.hi) (b.lo ^^^ b.hi)
-            ^^^ (mul64 a.lo b.lo ^^^ mul64 a.hi b.hi)
-            ^^^ mulByZ6 (mul64 a.hi b.hi)).toNat,
-          fromNat (k := 6) (mul64 a.lo b.lo ^^^ mul64 a.hi b.hi).toNat 》 :
+  show (《 fromNat (k := 6) (mul64T (a.lo ^^^ a.hi) (b.lo ^^^ b.hi)
+            ^^^ (mul64T a.lo b.lo ^^^ mul64T a.hi b.hi)
+            ^^^ mulByZ6T (mul64T a.hi b.hi)).toNat,
+          fromNat (k := 6) (mul64T a.lo b.lo ^^^ mul64T a.hi b.hi).toNat 》 :
       ConcreteBTField 7) = _
-  simp only [fromNat_xor, fromNat_mul64, fromNat_mulByZ6]
+  simp only [mul64T_eq_mul64, mulByZ6T_eq_mulByZ6, fromNat_xor, fromNat_mul64,
+    fromNat_mulByZ6]
   refine Eq.trans ?_ hme.symm
   simp only [concrete_mul_eq_mul]
   refine congrArg₂ (fun x y : ConcreteBTField 6 => (《 x, y 》 : ConcreteBTField 7)) ?_ ?_
@@ -1405,9 +1707,9 @@ theorem toConcrete_mulByZ (v : FastBT128) :
   have hme := concrete_mul_step (toConcrete v) (Z 7)
     (split_of_join (Nat.succ_pos 6) (toConcrete v) (fromNat (k := 6) v.hi.toNat)
       (fromNat (k := 6) v.lo.toNat) rfl) hZsplit
-  show (《 fromNat (k := 6) (v.lo ^^^ mulByZ6 v.hi).toNat, fromNat (k := 6) v.hi.toNat 》 :
+  show (《 fromNat (k := 6) (v.lo ^^^ mulByZ6T v.hi).toNat, fromNat (k := 6) v.hi.toNat 》 :
       ConcreteBTField 7) = _
-  simp only [fromNat_xor, fromNat_mulByZ6]
+  simp only [mulByZ6T_eq_mulByZ6, fromNat_xor, fromNat_mulByZ6]
   refine Eq.trans ?_ hme.symm
   simp only [concrete_mul_eq_mul, one_is_1, zero_is_0, mul_one, mul_zero, zero_mul,
     add_zero, zero_add]
@@ -1419,9 +1721,10 @@ theorem toConcrete_square (v : FastBT128) :
       (fromNat (k := 6) v.lo.toNat) rfl)
     (split_of_join (Nat.succ_pos 6) (toConcrete v) (fromNat (k := 6) v.hi.toNat)
       (fromNat (k := 6) v.lo.toNat) rfl)
-  show (《 fromNat (k := 6) (mulByZ6 (sq64 v.hi)).toNat,
-          fromNat (k := 6) (sq64 v.lo ^^^ sq64 v.hi).toNat 》 : ConcreteBTField 7) = _
-  simp only [fromNat_xor, fromNat_sq64, fromNat_mulByZ6]
+  show (《 fromNat (k := 6) (mulByZ6T (sq64T v.hi)).toNat,
+          fromNat (k := 6) (sq64T v.lo ^^^ sq64T v.hi).toNat 》 : ConcreteBTField 7) = _
+  simp only [sq64T_eq_sq64, mulByZ6T_eq_mulByZ6, fromNat_xor, fromNat_sq64,
+    fromNat_mulByZ6]
   refine Eq.trans ?_ hme.symm
   simp only [concrete_mul_eq_mul]
   rw [← two_mul, CharTwo.two_eq_zero (R := ConcreteBTField 6), zero_mul, zero_add]
@@ -1431,11 +1734,12 @@ theorem toConcrete_square (v : FastBT128) :
     (split_of_join (Nat.succ_pos 6) (toConcrete v) (fromNat (k := 6) v.hi.toNat)
       (fromNat (k := 6) v.lo.toNat) rfl)
   show (《 fromNat (k := 6)
-            (mul64 (inv64 (mul64 v.lo (v.lo ^^^ mulByZ6 v.hi) ^^^ sq64 v.hi)) v.hi).toNat,
+            (mul64T (inv64T (mul64T v.lo (v.lo ^^^ mulByZ6T v.hi) ^^^ sq64T v.hi)) v.hi).toNat,
           fromNat (k := 6)
-            (mul64 (inv64 (mul64 v.lo (v.lo ^^^ mulByZ6 v.hi) ^^^ sq64 v.hi))
-              (v.lo ^^^ mulByZ6 v.hi)).toNat 》 : ConcreteBTField 7) = _
-  simp only [fromNat_xor, fromNat_mul64, fromNat_sq64, fromNat_mulByZ6, fromNat_inv64]
+            (mul64T (inv64T (mul64T v.lo (v.lo ^^^ mulByZ6T v.hi) ^^^ sq64T v.hi))
+              (v.lo ^^^ mulByZ6T v.hi)).toNat 》 : ConcreteBTField 7) = _
+  simp only [mul64T_eq_mul64, mulByZ6T_eq_mulByZ6, sq64T_eq_sq64, inv64T_eq_inv64,
+    fromNat_xor, fromNat_mul64, fromNat_sq64, fromNat_mulByZ6, fromNat_inv64]
   exact hme.symm
 
 theorem toConcrete_npowRec (a : FastBT128) :
