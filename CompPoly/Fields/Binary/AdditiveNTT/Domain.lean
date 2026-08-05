@@ -62,14 +62,77 @@ noncomputable def sDomain (i : Fin r) : Subspace 𝔽q L :=
   Submodule.map (polyEvalLinearMap W_i_norm h_W_i_norm_is_additive)
     (U 𝔽q β ⟨ℓ + R_rate, h_ℓ_add_R_rate⟩)
 
-noncomputable def qMap (i : Fin r) : L[X] :=
+noncomputable def sDomain_cast {i j : Fin r} (h : i = j) :
+    sDomain 𝔽q β h_ℓ_add_R_rate i ≃ₗ[𝔽q]
+      sDomain 𝔽q β h_ℓ_add_R_rate j := by
+  subst h
+  exact LinearEquiv.refl 𝔽q (sDomain 𝔽q β h_ℓ_add_R_rate i)
+
+omit [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 in
+lemma mem_sDomain_of_eq {i j : Fin r} (h : i.val = j.val)
+    {y : L} (hy : y ∈ sDomain 𝔽q β h_ℓ_add_R_rate i) :
+    y ∈ sDomain 𝔽q β h_ℓ_add_R_rate j := by
+  have h_eq : i = j := Fin.eq_of_val_eq h
+  subst h_eq
+  exact hy
+
+omit [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 in
+lemma sDomain_eq_of_eq {i j : Fin r} (h : i = j) :
+    sDomain 𝔽q β h_ℓ_add_R_rate i = sDomain 𝔽q β h_ℓ_add_R_rate j := by
+  subst h
+  rfl
+
+/- The proof parameter prevents the modular successor on `Fin r` from wrapping at `r`. -/
+noncomputable def qMap (i : Fin r) (h_i_add_1 : i.val + 1 < r) : L[X] :=
+  let i_plus_1 : Fin r := ⟨i.val + 1, h_i_add_1⟩
   let constMultiplier := ((W 𝔽q β i).eval (β i))^(Fintype.card 𝔽q)
-    / ((W 𝔽q β (i + 1)).eval (β (i + 1)))
+    / ((W 𝔽q β i_plus_1).eval (β i_plus_1))
   C constMultiplier * ∏ c : 𝔽q, (X - C (algebraMap 𝔽q L c))
 
+omit [DecidableEq L] [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
+lemma natDegree_qMap (i : Fin r) (h_i_add_1 : i.val + 1 < r) :
+    (qMap 𝔽q β i h_i_add_1).natDegree = 2 := by
+  let q := Fintype.card 𝔽q
+  let i_plus_1 : Fin r := ⟨i.val + 1, h_i_add_1⟩
+  let constMultiplier := ((W 𝔽q β i).eval (β i)) ^ q /
+    ((W 𝔽q β i_plus_1).eval (β i_plus_1))
+  have h_q_poly_form : qMap 𝔽q β i h_i_add_1 = C constMultiplier * (X ^ q - X) := by
+    rw [qMap, prod_poly_sub_C_eq_poly_pow_card_sub_poly_in_L (p := X)]
+  rw [h_q_poly_form, Polynomial.natDegree_C_mul]
+  · rw [Polynomial.natDegree_sub_eq_left_of_natDegree_lt]
+    · rw [Polynomial.natDegree_X_pow]
+      unfold q
+      exact hF₂.out
+    · rw [Polynomial.natDegree_X_pow, Polynomial.natDegree_X]
+      unfold q
+      rw [hF₂.out]
+      omega
+  · intro h_zero
+    have h_num_ne_zero : ((W 𝔽q β i).eval (β i)) ^ q ≠ 0 :=
+      pow_ne_zero q (AdditiveNTT.Wᵢ_eval_βᵢ_neq_zero 𝔽q β i)
+    rw [div_eq_zero_iff] at h_zero
+    cases h_zero with
+    | inl h => exact h_num_ne_zero h
+    | inr h =>
+      exact (AdditiveNTT.Wᵢ_eval_βᵢ_neq_zero 𝔽q β i_plus_1) h
+
+omit [DecidableEq L] [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
+lemma qMap_ne_zero (i : Fin r) (h_i_add_1 : i.val + 1 < r) :
+    (qMap 𝔽q β i h_i_add_1) ≠ 0 := by
+  apply Polynomial.ne_zero_of_natDegree_gt (n := 0)
+  rw [natDegree_qMap 𝔽q β i h_i_add_1]
+  exact Nat.zero_lt_two
+
+omit [DecidableEq L] [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
+lemma degree_qMap (i : Fin r) (h_i_add_1 : i.val + 1 < r) :
+    (qMap 𝔽q β i h_i_add_1).degree = 2 := by
+  conv_rhs => change ((2 : ℕ) : WithBot ℕ)
+  rw [← natDegree_qMap 𝔽q β i h_i_add_1]
+  rw [Polynomial.degree_eq_natDegree (hp := qMap_ne_zero 𝔽q β i h_i_add_1)]
+
 omit [DecidableEq L] [DecidableEq 𝔽q] h_Fq_char_prime hF₂ hβ_lin_indep h_β₀_eq_1 in
-theorem qMap_eval_𝔽q_eq_0 (i : Fin r) :
-    ∀ c : 𝔽q, (qMap 𝔽q β i).eval (algebraMap 𝔽q L c) = 0 := by
+theorem qMap_eval_𝔽q_eq_0 (i : Fin r) (h_i_add_1 : i.val + 1 < r) :
+    ∀ c : 𝔽q, (qMap 𝔽q β i h_i_add_1).eval (algebraMap 𝔽q L c) = 0 := by
   intro u
   rw [qMap]
   set vpoly𝔽q := ∏ c : 𝔽q, (X - C ((algebraMap 𝔽q L) c)) with h_vpoly𝔽q
@@ -85,20 +148,22 @@ theorem qMap_eval_𝔽q_eq_0 (i : Fin r) :
   simp only [eval_mul, eval_C, h_right_term_vanish, mul_zero]
 
 omit [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 in
-lemma qMap_comp_normalizedW (i : Fin r) (h_i_add_1 : i + 1 < r) :
-    (qMap 𝔽q β i).comp (normalizedW 𝔽q β i) = normalizedW 𝔽q β (i + 1) := by
+lemma qMap_comp_normalizedW (i : Fin r) (h_i_add_1 : i.val + 1 < r) :
+    (qMap 𝔽q β i h_i_add_1).comp (normalizedW 𝔽q β i) =
+      normalizedW 𝔽q β ⟨i.val + 1, h_i_add_1⟩ := by
   let q := Fintype.card 𝔽q
   set q := Fintype.card 𝔽q
   set W_i := W 𝔽q β i with h_W_i
-  set W_i_plus_1 := W 𝔽q β (i + 1) with h_W_i_plus_1
+  let i_plus_1 : Fin r := ⟨i.val + 1, h_i_add_1⟩
+  set W_i_plus_1 := W 𝔽q β i_plus_1 with h_W_i_plus_1
   set val_i := W_i.eval (β i) with h_val_i
-  set val_i_plus_1 := W_i_plus_1.eval (β (i + 1)) with h_val_i_plus_1
+  set val_i_plus_1 := W_i_plus_1.eval (β i_plus_1) with h_val_i_plus_1
   have h_val_i_ne_zero : val_i ≠ 0 :=
     AdditiveNTT.Wᵢ_eval_βᵢ_neq_zero 𝔽q β i
   have h_val_i_plus_1_ne_zero : val_i_plus_1 ≠ 0 :=
-    AdditiveNTT.Wᵢ_eval_βᵢ_neq_zero 𝔽q β (i + 1)
+    AdditiveNTT.Wᵢ_eval_βᵢ_neq_zero 𝔽q β i_plus_1
   calc
-    (qMap 𝔽q β i).comp (normalizedW 𝔽q β i)
+    (qMap 𝔽q β i h_i_add_1).comp (normalizedW 𝔽q β i)
     _ = C (val_i ^ q / val_i_plus_1)
       * (∏ c : 𝔽q, (X - C (algebraMap 𝔽q L c))).comp (normalizedW 𝔽q β i) := by
         rw [qMap, mul_comp, C_comp]
@@ -135,18 +200,25 @@ lemma qMap_comp_normalizedW (i : Fin r) (h_i_add_1 : i + 1 < r) :
           i (p := X)
         simp_rw [comp_X] at W_linear
         simp_rw [q, val_i, W_i, W_i_plus_1]
+        have h_i_plus_1_eq : i_plus_1 = i + 1 := by
+          apply Fin.ext
+          change i.val + 1 = (i + 1).val
+          rw [Fin.val_add_one' (h_a_add_1 := by omega)]
+        rw [h_i_plus_1_eq]
         rw [W_linear]
         · simp only [one_div, map_pow]
         · omega
-    _ = normalizedW 𝔽q β (i + 1) := by
+    _ = normalizedW 𝔽q β i_plus_1 := by
         rw [normalizedW]
 
 omit [DecidableEq L] [DecidableEq 𝔽q] hF₂ hβ_lin_indep h_β₀_eq_1 in
-theorem qMap_is_linear_map (i : Fin r) :
-    IsLinearMap 𝔽q (f := fun inner_p ↦ (qMap 𝔽q β i).comp inner_p) := by
+theorem qMap_is_linear_map (i : Fin r) (h_i_add_1 : i.val + 1 < r) :
+    IsLinearMap 𝔽q (f := fun inner_p ↦ (qMap 𝔽q β i h_i_add_1).comp inner_p) := by
   set q := Fintype.card 𝔽q
-  set constMultiplier := ((W 𝔽q β i).eval (β i))^q / ((W 𝔽q β (i + 1)).eval (β (i + 1)))
-  have h_q_poly_form : qMap 𝔽q β i = C constMultiplier * (X ^ q - X) := by
+  let i_plus_1 : Fin r := ⟨i.val + 1, h_i_add_1⟩
+  set constMultiplier := ((W 𝔽q β i).eval (β i))^q /
+    ((W 𝔽q β i_plus_1).eval (β i_plus_1))
+  have h_q_poly_form : qMap 𝔽q β i h_i_add_1 = C constMultiplier * (X ^ q - X) := by
     rw [qMap, prod_poly_sub_C_eq_poly_pow_card_sub_poly_in_L (p := X)]
   constructor
   · intro f g
@@ -171,7 +243,7 @@ theorem qMap_is_linear_map (i : Fin r) :
             ring
       _ = (C constMultiplier) * (((X : L[X]) ^ q - X).comp f + ((X : L[X]) ^ q - X).comp g) := by
             rw [← sub_comp, ← sub_comp]
-      _ = (qMap 𝔽q β i).comp f + (qMap 𝔽q β i).comp g := by
+      _ = (qMap 𝔽q β i h_i_add_1).comp f + (qMap 𝔽q β i h_i_add_1).comp g := by
             rw [h_q_poly_form]
             rw [mul_add]
             rw [mul_comp, mul_comp, C_comp, C_comp]
@@ -202,29 +274,29 @@ theorem qMap_is_linear_map (i : Fin r) :
               rw [← X_comp (p := f)]
             rw [← pow_comp, ← sub_comp]
             rw [C_mul_comp]
-      _ = c • (qMap 𝔽q β i).comp f := by
+      _ = c • (qMap 𝔽q β i h_i_add_1).comp f := by
             rw [h_q_poly_form]
 
 omit [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 in
-theorem qMap_maps_sDomain (i : Fin r) (h_i_add_1 : i + 1 < r) :
-    have q_comp_linear_map := qMap_is_linear_map 𝔽q β i
+theorem qMap_maps_sDomain (i : Fin r) (h_i_add_1 : i.val + 1 < r) :
+    have q_comp_linear_map := qMap_is_linear_map 𝔽q β i h_i_add_1
     have q_eval_linear_map := linear_map_of_comp_to_linear_map_of_eval
-      (f := qMap 𝔽q β i) q_comp_linear_map
-    let q_i_map := polyEvalLinearMap (qMap 𝔽q β i) q_eval_linear_map
+      (f := qMap 𝔽q β i h_i_add_1) q_comp_linear_map
+    let q_i_map := polyEvalLinearMap (qMap 𝔽q β i h_i_add_1) q_eval_linear_map
     let S_i := sDomain 𝔽q β h_ℓ_add_R_rate i
-    let S_i_plus_1 := sDomain 𝔽q β h_ℓ_add_R_rate (i + 1)
+    let S_i_plus_1 := sDomain 𝔽q β h_ℓ_add_R_rate ⟨i.val + 1, h_i_add_1⟩
     Submodule.map q_i_map S_i = S_i_plus_1 := by
-  set q_comp_linear_map := qMap_is_linear_map 𝔽q β i
+  set q_comp_linear_map := qMap_is_linear_map 𝔽q β i h_i_add_1
   set q_eval_linear_map := linear_map_of_comp_to_linear_map_of_eval
-    (f := qMap 𝔽q β i) q_comp_linear_map
+    (f := qMap 𝔽q β i h_i_add_1) q_comp_linear_map
   simp_rw [sDomain]
   rw [← Submodule.map_comp]
   congr
-  set f := polyEvalLinearMap (qMap 𝔽q β i) q_eval_linear_map
+  set f := polyEvalLinearMap (qMap 𝔽q β i h_i_add_1) q_eval_linear_map
   set g := polyEvalLinearMap (normalizedW 𝔽q β i)
     (normalizedW_is_additive 𝔽q β i)
-  set t := polyEvalLinearMap (normalizedW 𝔽q β (i + 1))
-    (normalizedW_is_additive 𝔽q β (i + 1))
+  set t := polyEvalLinearMap (normalizedW 𝔽q β ⟨i.val + 1, h_i_add_1⟩)
+    (normalizedW_is_additive 𝔽q β ⟨i.val + 1, h_i_add_1⟩)
   ext x
   rw [LinearMap.comp_apply]
   simp_rw [f, g, t, polyEvalLinearMap]
@@ -235,13 +307,15 @@ theorem qMap_maps_sDomain (i : Fin r) (h_i_add_1 : i + 1 < r) :
 noncomputable def qCompositionChain (i : Fin r) : L[X] :=
   match i with
   | ⟨0, _⟩ => X
-  | ⟨k + 1, h_k_add_1⟩ => (qMap 𝔽q β ⟨k, by omega⟩).comp (qCompositionChain ⟨k, by omega⟩)
+  | ⟨k + 1, h_k_add_1⟩ =>
+      (qMap 𝔽q β ⟨k, by omega⟩ (by simp only [Fin.val_mk]; omega)).comp
+        (qCompositionChain ⟨k, by omega⟩)
 
 omit [DecidableEq L] [DecidableEq 𝔽q] h_Fq_char_prime hF₂ hβ_lin_indep h_β₀_eq_1 in
 lemma qCompositionChain_eq_foldl (i : Fin r) :
     qCompositionChain 𝔽q β (ℓ := ℓ) (R_rate := R_rate) i =
       Fin.foldl (n := i) (fun acc j =>
-        (qMap 𝔽q β ⟨j, by omega⟩).comp acc) X := by
+        (qMap 𝔽q β ⟨j, by omega⟩ (by simp only [Fin.val_mk]; omega)).comp acc) X := by
   induction i using Fin.succRecOnSameFinType with
   | zero =>
       rw [qCompositionChain.eq_def]
@@ -275,7 +349,6 @@ lemma normalizedW_eq_qMap_composition (ℓ R_rate : ℕ) (i : Fin r) :
       have h_res := qMap_comp_normalizedW 𝔽q β k k_h
       rw [← i_h]
       rw [h_res]
-      simp only [h_eq]
 
 noncomputable def sDomainBasisVectors (i : Fin r) : Fin (ℓ + R_rate - i) → L :=
   fun k => (normalizedW 𝔽q β i).eval (β ⟨i + k.val, by omega⟩)
