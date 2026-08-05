@@ -61,16 +61,19 @@ run by every implementation in that group.
 ## What Is Measured
 
 The benchmark covers evaluation paths, direct and NTT-backed univariate
-multiplication, and additive NTT implementations.
+multiplication, additive NTT implementations, and scalar-field inversion
+(`fields-mont64x8-*-inv`: `ZMod` extended Euclid vs checked binary GCD vs Fermat).
 
-Small-prime groups run each implementation over both the canonical `ZMod`
+Some groups run each implementation over both the canonical `ZMod`
 representation and the native-word Montgomery representation, so the two appear as
-separate rows in the same group and are cross-checked against each other. KoalaBear
-and BabyBear are both covered this way:
+separate rows in the same group and are cross-checked against each other. KoalaBear,
+BabyBear, and the large scalar fields are covered this way:
 
 ```text
 univariate-dense-koalabear    univariate-dense-babybear
 univariate-mul-koalabear      univariate-mul-babybear
+univariate-dense-bn254
+univariate-dense-bls12-381    univariate-dense-bls12-377
 ```
 
 ## Determinism

@@ -67,8 +67,14 @@ public import CompPoly.Data.RingTheory.AlgebraTower
 public import CompPoly.Data.RingTheory.CanonicalEuclideanDomain
 public import CompPoly.Data.Vector.Basic
 public import CompPoly.Fields.BLS12_377
+public import CompPoly.Fields.BLS12_377.Basic
+public import CompPoly.Fields.BLS12_377.Fast
 public import CompPoly.Fields.BLS12_381
+public import CompPoly.Fields.BLS12_381.Basic
+public import CompPoly.Fields.BLS12_381.Fast
 public import CompPoly.Fields.BN254
+public import CompPoly.Fields.BN254.Basic
+public import CompPoly.Fields.BN254.Fast
 public import CompPoly.Fields.BabyBear
 public import CompPoly.Fields.BabyBear.Basic
 public import CompPoly.Fields.BabyBear.Ext4
@@ -124,6 +130,12 @@ public import CompPoly.Fields.Mersenne
 public import CompPoly.Fields.Montgomery.Basic
 public import CompPoly.Fields.Montgomery.Native32
 public import CompPoly.Fields.Montgomery.Native32Field
+public import CompPoly.Fields.Montgomery.Native64x8
+public import CompPoly.Fields.Montgomery.Native64x8Defs
+public import CompPoly.Fields.Montgomery.Native64x8Field
+public import CompPoly.Fields.Montgomery.Native64x8Inv
+public import CompPoly.Fields.Montgomery.Native64x8InvDefs
+public import CompPoly.Fields.Montgomery.Native64x8Mul
 public import CompPoly.Fields.PrattCertificate
 public import CompPoly.Fields.Secp256k1
 public import CompPoly.LinearAlgebra.Dense

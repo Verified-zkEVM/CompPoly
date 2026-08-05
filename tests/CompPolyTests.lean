@@ -7,9 +7,8 @@ module
 
 public import CompPolyTests.Bivariate.Basic
 public import CompPolyTests.Bivariate.Degree
-public import CompPolyTests.Bivariate.Factor
-public import CompPolyTests.Bivariate.Kronecker
 public import CompPolyTests.Bivariate.Deriv
+public import CompPolyTests.Bivariate.Factor
 public import CompPolyTests.Bivariate.GuruswamiSudan.Compose
 public import CompPolyTests.Bivariate.GuruswamiSudan.Core
 public import CompPolyTests.Bivariate.GuruswamiSudan.Filter
@@ -19,10 +18,14 @@ public import CompPolyTests.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan
 public import CompPolyTests.Bivariate.GuruswamiSudan.Root.Alekhnovich
 public import CompPolyTests.Bivariate.GuruswamiSudan.Root.FieldRoots.KoalaBear
 public import CompPolyTests.Bivariate.GuruswamiSudan.Root.RothRuckenstein
+public import CompPolyTests.Bivariate.Kronecker
 public import CompPolyTests.Bivariate.Multiplicity
 public import CompPolyTests.Bivariate.WeightedDegree
 public import CompPolyTests.Data.MvPolynomial.Notation
 public import CompPolyTests.Data.Polynomial.RabinCertificate
+public import CompPolyTests.Fields.BLS12_377.Fast
+public import CompPolyTests.Fields.BLS12_381.Fast
+public import CompPolyTests.Fields.BN254.Fast
 public import CompPolyTests.Fields.BabyBear.Fast
 public import CompPolyTests.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
 public import CompPolyTests.Fields.Binary.BF128Ghash.Prelude
