@@ -20,6 +20,7 @@ env:
     univariate-sparse-koalabear,
     univariate-monic-remainder-small-koalabear,
     univariate-dense-goldilocks,univariate-dense-bn254,
+    univariate-dense-bls12-381,univariate-dense-bls12-377,
     univariate-batch-small-koalabear,
     univariate-many-one-point-koalabear,
     univariate-mul-koalabear,univariate-mul-babybear,
@@ -35,7 +36,9 @@ env:
     guruswami-sudan-filtered-core-small-koalabear,
     additive-ntt-btf3-l2-r2,additive-ntt-btf3-l4-r2,additive-ntt-btf4-l7-r2,
     fields-extension-koalabear-ext4-mul,fields-extension-koalabear-ext4-inv,
-    fields-extension-babybear-ext4-mul,fields-extension-babybear-ext4-inv
+    fields-extension-babybear-ext4-mul,fields-extension-babybear-ext4-inv,
+    fields-mont64x8-bn254-inv,fields-mont64x8-bls12-381-inv,
+    fields-mont64x8-bls12-377-inv
 
 jobs:
   build:
