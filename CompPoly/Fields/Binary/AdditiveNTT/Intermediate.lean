@@ -60,7 +60,7 @@ noncomputable def intermediateNormVpoly
     (i: Fin r) {k : ℕ} (h_k : i.val + k ≤ ℓ) : L[X] :=
   Fin.foldl (n:=k) (fun acc j =>
     (qMap 𝔽q β ⟨(i : ℕ) + (j : ℕ), by omega⟩
-      (by simp only [Fin.val_mk]; omega)).comp acc) (X)
+      (by change i.val + j.val + 1 < r; omega)).comp acc) (X)
 
 omit [DecidableEq L] [DecidableEq 𝔽q] hF₂ hβ_lin_indep h_β₀_eq_1 in
 lemma intermediateNormVpoly_eval_is_linear_map (i : Fin r) {k : ℕ} (h_k : i.val + k ≤ ℓ) :
@@ -84,13 +84,13 @@ lemma intermediateNormVpoly_eval_is_linear_map (i : Fin r) {k : ℕ} (h_k : i.va
       rw [Fin.foldl_succ_last]
     simp only [Fin.val_last, Fin.val_castSucc, eval_comp]
     set q_eval_is_linear_map := linear_map_of_comp_to_linear_map_of_eval
-      (f:=qMap 𝔽q β ⟨i + k', by omega⟩ (by simp only [Fin.val_mk]; omega))
+      (f:=qMap 𝔽q β ⟨i + k', by omega⟩ (by change i.val + k' + 1 < r; omega))
       (h_f_linear := qMap_is_linear_map 𝔽q β
-      (i := ⟨i + k', by omega⟩) (by simp only [Fin.val_mk]; omega))
+      (i := ⟨i + k', by omega⟩) (by change i.val + k' + 1 < r; omega))
     set innerFold := fun x: L ↦ eval x (Fin.foldl (↑k') (fun acc j ↦ (qMap 𝔽q β
-      ⟨↑i + ↑j, by omega⟩ (by simp only [Fin.val_mk]; omega)).comp acc) X)
+      ⟨↑i + ↑j, by omega⟩ (by change i.val + j.val + 1 < r; omega)).comp acc) X)
     set qmap_eval := fun x : L =>
-      (qMap 𝔽q β ⟨i + k', by omega⟩ (by simp only [Fin.val_mk]; omega)).eval x
+      (qMap 𝔽q β ⟨i + k', by omega⟩ (by change i.val + k' + 1 < r; omega)).eval x
     set isLinearMap_innerFold : IsLinearMap 𝔽q innerFold := ih (h_k := by omega)
     set isLinearMap_qmap_eval : IsLinearMap 𝔽q qmap_eval := q_eval_is_linear_map
     change IsLinearMap 𝔽q fun x ↦ qmap_eval.comp innerFold x
@@ -139,7 +139,7 @@ lemma natDegree_intermediateNormVpoly (i : Fin r) {k : ℕ} (h_k : i.val + k ≤
     -- We match the accumulator definition to the IH term
     have h_acc_eq_prev :
       Fin.foldl (↑k') (fun acc j ↦
-        (qMap 𝔽q β ⟨↑i + ↑j, by omega⟩ (by simp only [Fin.val_mk]; omega)).comp acc) X
+        (qMap 𝔽q β ⟨↑i + ↑j, by omega⟩ (by change i.val + j.val + 1 < r; omega)).comp acc) X
       = intermediateNormVpoly 𝔽q β h_ℓ_add_R_rate i (k := k') (h_k := by omega) := rfl
     unfold intermediateNormVpoly at ih
     let ih_prev := ih (h_k := by omega)
@@ -190,7 +190,7 @@ theorem intermediateNormVpoly_comp_qmap (i : Fin r)
   rw [Fin.foldl_succ] -- convert Fin.foldl (↑k+1) ... into (Fin.foldl (↑k) ...).comp (init value)
   simp only [Fin.val_succ, Fin.coe_ofNat_eq_mod, Nat.zero_mod, add_zero, comp_X]
   conv_lhs =>
-    rw [←X_comp (p:=qMap 𝔽q β ⟨↑i, by omega⟩ (by simp only [Fin.val_mk]; omega))]
+    rw [←X_comp (p:=qMap 𝔽q β ⟨↑i, by omega⟩ (by change i.val + 1 < r; omega))]
     rw [Polynomial.foldl_comp]
   congr -- convert Fin.foldl equality into equality of accumulator functions
   -- ⊢ (fun acc j ↦ (qMap 𝔽q β ⟨↑i + (↑j + 1), ⋯⟩).comp acc)
@@ -349,10 +349,6 @@ lemma qMap_eval_mem_sDomain_succ (i : Fin r) {destIdx : Fin r}
   obtain ⟨u, hu_mem, hu_eq⟩ := h_x_mem
   -- Use the fact that qMap maps sDomain i to sDomain (i+1)
   have h_maps := qMap_maps_sDomain 𝔽q β h_ℓ_add_R_rate i (by omega)
-  have h_index: (((⟨i.val, by omega⟩: Fin r) + 1): Fin r) = ⟨i.val + 1, by omega⟩ := by
-    refine Fin.eq_mk_iff_val_eq.mpr ?_
-    rw [Fin.val_add_one' (h_a_add_1:=by simp only; omega)]
-  simp only [h_index] at h_maps
   rw! [h_destIdx.symm] at h_maps
   rw [←h_maps]
   simp only [polyEvalLinearMap, Submodule.mem_map, LinearMap.coe_mk, AddHom.coe_mk]
@@ -628,7 +624,7 @@ theorem intermediateNormVpoly_comp_qmap_helper (i : Fin r) (h_i : i < ℓ)
     (k : Fin (ℓ - (↑i + 1))) :
     (intermediateNormVpoly 𝔽q β h_ℓ_add_R_rate
       ⟨↑i + 1, by omega⟩ (k:=k) (h_k := by simp only; omega)).comp
-        (qMap 𝔽q β ⟨↑i, by omega⟩ (by simp only [Fin.val_mk]; omega)) =
+        (qMap 𝔽q β ⟨↑i, by omega⟩ (by change i.val + 1 < r; omega)) =
     intermediateNormVpoly 𝔽q β h_ℓ_add_R_rate
       ⟨↑i, by omega⟩ (k:=k + 1) (h_k := by simp only; omega):= by
     rw [intermediateNormVpoly_comp_qmap 𝔽q β h_ℓ_add_R_rate (i := i)
@@ -927,7 +923,8 @@ theorem intermediateChangeOfBasisMatrix_det_ne_zero (i : Fin r) (h_i : i ≤ ℓ
   · exact intermediateChangeOfBasisMatrix_lower_triangular 𝔽q β h_ℓ_add_R_rate i h_i
 
 /-- The intermediate change-of-basis matrix is invertible. -/
-noncomputable instance intermediateChangeOfBasisMatrix_invertible (i : Fin r) (h_i : i ≤ ℓ) :
+@[reducible] noncomputable def intermediateChangeOfBasisMatrix_invertible
+    (i : Fin r) (h_i : i ≤ ℓ) :
     Invertible (intermediateChangeOfBasisMatrix 𝔽q β h_ℓ_add_R_rate i h_i) := by
   refine Matrix.invertibleOfIsUnitDet _ ?_
   exact Ne.isUnit (intermediateChangeOfBasisMatrix_det_ne_zero 𝔽q β h_ℓ_add_R_rate i h_i)
@@ -937,6 +934,7 @@ noncomputable instance intermediateChangeOfBasisMatrix_invertible (i : Fin r) (h
 noncomputable def monomialToINovelCoeffs (i : Fin r) (h_i : i ≤ ℓ)
     (monomial_coeffs : Fin (2 ^ (ℓ - i)) → L) : Fin (2 ^ (ℓ - i)) → L :=
   let A := intermediateChangeOfBasisMatrix 𝔽q β h_ℓ_add_R_rate i h_i
+  letI : Invertible A := intermediateChangeOfBasisMatrix_invertible 𝔽q β h_ℓ_add_R_rate i h_i
   Matrix.vecMul monomial_coeffs (⅟A)
 
 /-- Convert novel coefficients to monomial coefficients at level `i`.
@@ -957,9 +955,10 @@ theorem monomialToINovel_iNovelToMonomial_inverse (i : Fin r) (h_i : i ≤ ℓ)
     (coeffs : Fin (2 ^ (ℓ - i)) → L) :
     iNovelToMonomialCoeffs 𝔽q β h_ℓ_add_R_rate i h_i
       (monomialToINovelCoeffs 𝔽q β h_ℓ_add_R_rate i h_i coeffs) = coeffs := by
+  letI : Invertible (intermediateChangeOfBasisMatrix 𝔽q β h_ℓ_add_R_rate i h_i) :=
+    intermediateChangeOfBasisMatrix_invertible 𝔽q β h_ℓ_add_R_rate i h_i
   unfold monomialToINovelCoeffs iNovelToMonomialCoeffs
   dsimp
-  let A := intermediateChangeOfBasisMatrix 𝔽q β h_ℓ_add_R_rate i
   rw [Matrix.vecMul_vecMul]
   simp only [Matrix.invOf_eq_nonsing_inv, Matrix.inv_mul_of_invertible, Matrix.vecMul_one]
 
@@ -968,9 +967,10 @@ theorem iNovelToMonomial_monomialToINovel_inverse (i : Fin r) (h_i : i ≤ ℓ)
     (coeffs : Fin (2 ^ (ℓ - i)) → L) :
     monomialToINovelCoeffs 𝔽q β h_ℓ_add_R_rate i h_i
       (iNovelToMonomialCoeffs 𝔽q β h_ℓ_add_R_rate i h_i coeffs) = coeffs := by
+  letI : Invertible (intermediateChangeOfBasisMatrix 𝔽q β h_ℓ_add_R_rate i h_i) :=
+    intermediateChangeOfBasisMatrix_invertible 𝔽q β h_ℓ_add_R_rate i h_i
   unfold monomialToINovelCoeffs iNovelToMonomialCoeffs
   dsimp
-  let A := intermediateChangeOfBasisMatrix 𝔽q β h_ℓ_add_R_rate i
   rw [Matrix.vecMul_vecMul]
   simp only [Matrix.invOf_eq_nonsing_inv, Matrix.mul_inv_of_invertible, Matrix.vecMul_one]
 
@@ -1132,7 +1132,7 @@ theorem evaluation_poly_split_identity (i : Fin r) (h_i : i < ℓ)
       -- simp only
       have h_x_lt_2_pow_i_minus_1 :=
         mul_two_add_bit_lt_two_pow x.val (ℓ-i-1) (ℓ-i) ⟨0, by omega⟩ (by omega) (by omega)
-      simp at h_x_lt_2_pow_i_minus_1
+      simp only [add_zero] at h_x_lt_2_pow_i_minus_1
       simp only [h_x_lt_2_pow_i_minus_1, ↓reduceDIte]
     conv_rhs =>
       enter [1, 2, x]

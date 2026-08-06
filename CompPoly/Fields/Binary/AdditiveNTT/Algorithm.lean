@@ -47,7 +47,9 @@ noncomputable def evaluationPointω (i : Fin r) (h_i : i ≤ ℓ)
     -- Add the linear combination of the remaining basis vectors
   ∑ (⟨k, hk⟩: Fin (ℓ + R_rate - i)),
     if Nat.getBit k x.val = 1 then
-      (normalizedW 𝔽q β ⟨i, by omega⟩).eval (β ⟨i + k, by omega⟩)
+      (normalizedW 𝔽q β ⟨i, by omega⟩).eval (β ⟨i.val + k, by
+        have h_i_le : i.val ≤ ℓ := h_i
+        omega⟩)
     else
       0
 
@@ -61,7 +63,9 @@ noncomputable def twiddleFactor (i : Fin r) (h_i : i < ℓ)
     if Nat.getBit k u.val = 1 then
       -- this branch maps to the above Nat.getBit = 1 branch
         -- (of evaluationPointω (i+1)) under (qMap i)(X)
-      (normalizedW 𝔽q β ⟨i, by omega⟩).eval (β ⟨i + 1 + k, by omega⟩)
+      (normalizedW 𝔽q β ⟨i, by omega⟩).eval (β ⟨i.val + 1 + k, by
+        have h_i_lt : i.val < ℓ := h_i
+        omega⟩)
     else 0
       -- 0 maps to the below Nat.getBit = 0 branch
         -- (of evaluationPointω (i+1)) under (qMap i)(X)
@@ -127,21 +131,21 @@ lemma eval_point_ω_eq_next_twiddleFactor_comp_qmap
   eval (twiddleFactor 𝔽q β h_ℓ_add_R_rate (i := i) (h_i := by omega) (u := ⟨x.val, by
     calc x.val < 2 ^ (ℓ + R_rate - (i.val + 1)) := by omega
       _ = 2 ^ (ℓ + R_rate - i.val - 1) := by rfl
-  ⟩)) (qMap 𝔽q β ⟨i, by omega⟩ (by simp only [Fin.val_mk]; omega)) := by
+  ⟩)) (qMap 𝔽q β ⟨i, by omega⟩ (by change i.val + 1 < r; omega)) := by
   simp [evaluationPointω, twiddleFactor]
   set q_eval_is_linear_map := linear_map_of_comp_to_linear_map_of_eval
-    (f:=qMap 𝔽q β ⟨i, by omega⟩ (by simp only [Fin.val_mk]; omega))
+    (f:=qMap 𝔽q β ⟨i, by omega⟩ (by change i.val + 1 < r; omega))
     (h_f_linear := qMap_is_linear_map 𝔽q β (i := ⟨i, by omega⟩)
-      (by simp only [Fin.val_mk]; omega))
+      (by change i.val + 1 < r; omega))
   let eval_qmap_linear := polyEvalLinearMap
-    (qMap 𝔽q β ⟨i, by omega⟩ (by simp only [Fin.val_mk]; omega)) q_eval_is_linear_map
+    (qMap 𝔽q β ⟨i, by omega⟩ (by change i.val + 1 < r; omega)) q_eval_is_linear_map
   set right_inner_func := fun x_1: Fin (ℓ + R_rate - i - 1) => if Nat.getBit ↑x_1 ↑x = 1
     then eval (β ⟨↑i + 1 + ↑x_1, by omega⟩) (normalizedW 𝔽q β ⟨↑i, by omega⟩) else 0
   have h_rhs: eval (∑ x_1: Fin (ℓ + R_rate - i - 1), right_inner_func x_1)
-      (qMap 𝔽q β ⟨↑i, by omega⟩ (by simp only [Fin.val_mk]; omega)) =
+      (qMap 𝔽q β ⟨↑i, by omega⟩ (by change i.val + 1 < r; omega)) =
         ∑ x_1: Fin (ℓ + R_rate - i - 1),
       (eval (right_inner_func x_1)
-        (qMap 𝔽q β ⟨↑i, by omega⟩ (by simp only [Fin.val_mk]; omega))) := by
+        (qMap 𝔽q β ⟨↑i, by omega⟩ (by change i.val + 1 < r; omega))) := by
     change eval_qmap_linear (∑ x_1, right_inner_func x_1) = _
     rw [map_sum (g:=eval_qmap_linear) (f:=right_inner_func)
       (s:=(Finset.univ: Finset ( Fin (ℓ + R_rate - i - 1))))]
@@ -156,8 +160,8 @@ lemma eval_point_ω_eq_next_twiddleFactor_comp_qmap
   congr
   funext x1
 --   `q⁽ⁱ⁾ ∘ Ŵᵢ = Ŵᵢ₊₁`. -/
-  have h_normalized_comp_qmap: normalizedW 𝔽q β ⟨i + 1, by omega⟩ =
-    (qMap 𝔽q β ⟨i, by omega⟩ (by simp only [Fin.val_mk]; omega)).comp
+  have h_normalized_comp_qmap: normalizedW 𝔽q β ⟨i.val + 1, by omega⟩ =
+    (qMap 𝔽q β ⟨i, by omega⟩ (by change i.val + 1 < r; omega)).comp
       (normalizedW 𝔽q β ⟨i, by omega⟩) := by
     have res := qMap_comp_normalizedW 𝔽q β
       (i := ⟨i, by omega⟩) (h_i_add_1:=by simp only; omega;)
@@ -271,7 +275,7 @@ Computes the Additive NTT on a given set of coefficients from the novel basis.
 noncomputable def additiveNTT (a : Fin (2 ^ ℓ) → L) : Fin (2^(ℓ + R_rate)) → L :=
   let b: Fin (2^(ℓ + R_rate)) → L := tileCoeffs a -- Note: can optimize on this
   Fin.foldl (n:=ℓ) (f:= fun current_b i  =>
-    NTTStage 𝔽q β h_ℓ_add_R_rate (i := ⟨ℓ - 1 - i, by omega⟩) (h_i := by simp only; omega) current_b
+    NTTStage 𝔽q β h_ℓ_add_R_rate (i := ⟨ℓ - i - 1, by omega⟩) (h_i := by simp only; omega) current_b
   ) (init:=b)
 
 /-- The coefficients of the level-`i` polynomial selected by the low-bit suffix `v`.
@@ -370,7 +374,7 @@ theorem oddRefinement_eq_novel_poly_of_1_leading_suffix (i : Fin r) (h_i : i < �
       exact Nat.pow_lt_pow_right (by omega) (by omega)
     oddRefinement 𝔽q β h_ℓ_add_R_rate i h_i (coeffsBySuffix (r:=r) (R_rate:=R_rate)
       original_coeffs (i := i) (h_i := by omega) v) =
-    intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate (i := ⟨i + 1, by omega⟩)
+    intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate (i := ⟨i.val + 1, by omega⟩)
       (h_i := by simp only; omega)
       (coeffsBySuffix (r:=r) (R_rate:=R_rate) original_coeffs
         (i := ⟨i.val+1, by omega⟩) (h_i := by simp only; omega)
@@ -468,7 +472,7 @@ then:
   b j = P⁽ⁱ⁾(ω_{u, b, i})
 -/
 def additiveNTTInvariant (evaluation_buffer : Fin (2 ^ (ℓ + R_rate)) → L)
-    (original_coeffs : Fin (2 ^ ℓ) → L) (i : Fin (ℓ + 1)) : Prop :=
+    (original_coeffs : Fin (2 ^ ℓ) → L) (i : Fin r) (h_i : i ≤ ℓ) : Prop :=
   ∀ (j : Fin (2^(ℓ + R_rate))),
     let u_b_v := j.val
     let v: Fin (2^i.val) := ⟨Nat.getLowBits i.val u_b_v, by
@@ -489,11 +493,11 @@ def additiveNTTInvariant (evaluation_buffer : Fin (2 ^ (ℓ + R_rate)) → L)
     let b_bit := Nat.getLowBits 1 u_b_v -- the LSB of the high bits, i.e. the `i`-th Nat.getBit
     let u := u_b / 2 -- the remaining high bits
     let coeffs_at_j: Fin (2 ^ (ℓ - i)) → L := coeffsBySuffix (r:=r)
-      (R_rate:=R_rate) original_coeffs (i := ⟨i, by omega⟩) (h_i := by simp only; omega) v
+      (R_rate:=R_rate) original_coeffs (i := i) (h_i := h_i) v
     let P_i: L[X] := intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate
-      (i := ⟨i, by omega⟩) (h_i := by simp only; omega) coeffs_at_j
-    let ω := evaluationPointω 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩)
-      (h_i := by simp only; omega) (Fin.mk u_b (by omega))
+      (i := i) (h_i := h_i) coeffs_at_j
+    let ω := evaluationPointω 𝔽q β h_ℓ_add_R_rate (i := i)
+      (h_i := h_i) (Fin.mk u_b (by omega))
     evaluation_buffer j = P_i.eval ω
 
 end Algorithm

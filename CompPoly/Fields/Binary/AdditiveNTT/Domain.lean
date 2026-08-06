@@ -62,26 +62,6 @@ noncomputable def sDomain (i : Fin r) : Subspace 𝔽q L :=
   Submodule.map (polyEvalLinearMap W_i_norm h_W_i_norm_is_additive)
     (U 𝔽q β ⟨ℓ + R_rate, h_ℓ_add_R_rate⟩)
 
-noncomputable def sDomain_cast {i j : Fin r} (h : i = j) :
-    sDomain 𝔽q β h_ℓ_add_R_rate i ≃ₗ[𝔽q]
-      sDomain 𝔽q β h_ℓ_add_R_rate j := by
-  subst h
-  exact LinearEquiv.refl 𝔽q (sDomain 𝔽q β h_ℓ_add_R_rate i)
-
-omit [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 in
-lemma mem_sDomain_of_eq {i j : Fin r} (h : i.val = j.val)
-    {y : L} (hy : y ∈ sDomain 𝔽q β h_ℓ_add_R_rate i) :
-    y ∈ sDomain 𝔽q β h_ℓ_add_R_rate j := by
-  have h_eq : i = j := Fin.eq_of_val_eq h
-  subst h_eq
-  exact hy
-
-omit [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 in
-lemma sDomain_eq_of_eq {i j : Fin r} (h : i = j) :
-    sDomain 𝔽q β h_ℓ_add_R_rate i = sDomain 𝔽q β h_ℓ_add_R_rate j := by
-  subst h
-  rfl
-
 /- The proof parameter prevents the modular successor on `Fin r` from wrapping at `r`. -/
 noncomputable def qMap (i : Fin r) (h_i_add_1 : i.val + 1 < r) : L[X] :=
   let i_plus_1 : Fin r := ⟨i.val + 1, h_i_add_1⟩
@@ -308,14 +288,14 @@ noncomputable def qCompositionChain (i : Fin r) : L[X] :=
   match i with
   | ⟨0, _⟩ => X
   | ⟨k + 1, h_k_add_1⟩ =>
-      (qMap 𝔽q β ⟨k, by omega⟩ (by simp only [Fin.val_mk]; omega)).comp
+      (qMap 𝔽q β ⟨k, by omega⟩ (by change k + 1 < r; omega)).comp
         (qCompositionChain ⟨k, by omega⟩)
 
 omit [DecidableEq L] [DecidableEq 𝔽q] h_Fq_char_prime hF₂ hβ_lin_indep h_β₀_eq_1 in
 lemma qCompositionChain_eq_foldl (i : Fin r) :
     qCompositionChain 𝔽q β (ℓ := ℓ) (R_rate := R_rate) i =
       Fin.foldl (n := i) (fun acc j =>
-        (qMap 𝔽q β ⟨j, by omega⟩ (by simp only [Fin.val_mk]; omega)).comp acc) X := by
+        (qMap 𝔽q β ⟨j, by omega⟩ (by change j.val + 1 < r; omega)).comp acc) X := by
   induction i using Fin.succRecOnSameFinType with
   | zero =>
       rw [qCompositionChain.eq_def]
@@ -479,8 +459,9 @@ noncomputable def sDomain_basis (i : Fin r) (h_i : i < ℓ + R_rate) :
         hβ_lin_indep.out.comp (fun (k : Fin (ℓ + R_rate - i))
           => ⟨i + k.val, by omega⟩) (by
           intro k₁ k₂ h_eq
-          simp at h_eq
           apply Fin.eq_of_val_eq
+          have h_vals := congrArg Fin.val h_eq
+          change i.val + k₁.val = i.val + k₂.val at h_vals
           omega)
       exact h_sub_li)
   set S_i := sDomain 𝔽q β h_ℓ_add_R_rate i
@@ -511,9 +492,12 @@ noncomputable def sDomain_basis (i : Fin r) (h_i : i < ℓ + R_rate) :
               Submodule.mem_inf.mpr ⟨h_mem_U, h_mem_V⟩
             rw [h_disjoint.eq_bot] at h_mem_inf
             simp only [Submodule.mem_bot] at h_mem_inf
-            simp at h_mem_inf
-            rw [sub_eq_zero] at h_mem_inf
-            exact h_mem_inf
+            have h_sub_zero : (v1 - v2 : V_i) = 0 := by
+              apply Subtype.ext
+              exact h_mem_inf
+            have h_vals_zero := congrArg Subtype.val h_sub_zero
+            change (v1 : L) - (v2 : L) = 0 at h_vals_zero
+            exact sub_eq_zero.mp h_vals_zero
           · intro y
             have h_y_in_image : y.val ∈ Submodule.map W_i_map V_i := by
               have h_y := y.property

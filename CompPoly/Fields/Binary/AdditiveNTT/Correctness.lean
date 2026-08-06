@@ -502,7 +502,7 @@ theorem computableAdditiveNTT_eq_additiveNTT (a : Fin (2 ^ ℓ) → L) :
   congr
   funext current_b i
   rw [computableNTTStage_eq_NTTStage (𝔽q := 𝔽q) (β := β) (ℓ := ℓ)
-    (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - 1 - i, by omega⟩)]
+    (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - i - 1, by omega⟩)]
 
 omit [NeZero r] [Fintype L] [DecidableEq L] [Field 𝔽q] [Fintype 𝔽q] [DecidableEq 𝔽q]
   h_Fq_char_prime hFq_card [Algebra 𝔽q L] hβ_lin_indep h_β₀_eq_1 in
@@ -510,7 +510,7 @@ lemma computableAdditiveNTTFastAction_run_eq_fold (a : Fin (2 ^ ℓ) → L) :
     ((computableAdditiveNTTFastAction (L := L) (r := r) (β := β)
       (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) a).run #[]).1 =
     Fin.foldl (n := ℓ) (f := fun current i =>
-      let stage : Fin ℓ := ⟨ℓ - 1 - i, by omega⟩
+      let stage : Fin ℓ := ⟨ℓ - i - 1, by omega⟩
       let twiddles := computableTwiddleTableArray (β := β) (ℓ := ℓ)
         (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := stage)
       computableNTTStageArray (ℓ := ℓ) (R_rate := R_rate)
@@ -520,7 +520,7 @@ lemma computableAdditiveNTTFastAction_run_eq_fold (a : Fin (2 ^ ℓ) → L) :
   simp only [bind_assoc, MonadStateOf.set, getThe]
   change ((Fin.foldlM (m := StateM (Array L)) (n := ℓ)
       (f := fun (_ : Unit) i => do
-        let stage : Fin ℓ := ⟨ℓ - 1 - i, by omega⟩
+        let stage : Fin ℓ := ⟨ℓ - i - 1, by omega⟩
         let twiddles := computableTwiddleTableArray (β := β) (ℓ := ℓ)
           (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := stage)
         modifyThe (Array L) fun current =>
@@ -528,7 +528,7 @@ lemma computableAdditiveNTTFastAction_run_eq_fold (a : Fin (2 ^ ℓ) → L) :
             (i := stage) (twiddles := twiddles) current
         pure ()) (init := ())).run (tileCoeffsArray (L := L) (ℓ := ℓ) R_rate a)).2 =
     Fin.foldl (n := ℓ) (f := fun current i =>
-      let stage : Fin ℓ := ⟨ℓ - 1 - i, by omega⟩
+      let stage : Fin ℓ := ⟨ℓ - i - 1, by omega⟩
       let twiddles := computableTwiddleTableArray (β := β) (ℓ := ℓ)
         (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := stage)
       computableNTTStageArray (ℓ := ℓ) (R_rate := R_rate)
@@ -536,7 +536,7 @@ lemma computableAdditiveNTTFastAction_run_eq_fold (a : Fin (2 ^ ℓ) → L) :
       (init := tileCoeffsArray (L := L) (ℓ := ℓ) R_rate a)
   exact run_foldlM_modify_eq_foldl (σ := Array L) (n := ℓ)
     (f := fun current i =>
-      let stage : Fin ℓ := ⟨ℓ - 1 - i, by omega⟩
+      let stage : Fin ℓ := ⟨ℓ - i - 1, by omega⟩
       let twiddles := computableTwiddleTableArray (β := β) (ℓ := ℓ)
         (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := stage)
       computableNTTStageArray (ℓ := ℓ) (R_rate := R_rate)
@@ -563,7 +563,7 @@ theorem computableAdditiveNTTFast_eq_computableAdditiveNTT (a : Fin (2 ^ ℓ) �
   have h_fold : ∀ k, (hk_le : k ≤ ℓ) →
       arrayToFinFunction (2 ^ (ℓ + R_rate))
         (Fin.foldl (n := k) (f := fun current i =>
-          let stage : Fin ℓ := ⟨ℓ - 1 - i, by omega⟩
+          let stage : Fin ℓ := ⟨ℓ - i - 1, by omega⟩
           let twiddles := computableTwiddleTableArray (β := β) (ℓ := ℓ)
             (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := stage)
           computableNTTStageArray (ℓ := ℓ) (R_rate := R_rate)
@@ -571,7 +571,7 @@ theorem computableAdditiveNTTFast_eq_computableAdditiveNTT (a : Fin (2 ^ ℓ) �
           (init := tileCoeffsArray (L := L) (ℓ := ℓ) R_rate a)) =
       Fin.foldl (n := k) (f := fun current i =>
         computableNTTStage (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - 1 - i, by omega⟩) (b := current))
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - i - 1, by omega⟩) (b := current))
         (init := tileCoeffs (L := L) (ℓ := ℓ) (R_rate := R_rate) a) := by
     intro k hk_le
     induction k with
@@ -583,10 +583,10 @@ theorem computableAdditiveNTTFast_eq_computableAdditiveNTT (a : Fin (2 ^ ℓ) �
         have hk_le' : k ≤ ℓ := by omega
         simp only [Fin.foldl_succ_last, Fin.val_last, Fin.val_castSucc]
         rw [computableNTTStageArray_eq_computableNTTStage (𝔽q := 𝔽q) (β := β)
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - 1 - k, by omega⟩)]
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - k - 1, by omega⟩)]
         exact congrArg (fun current =>
           computableNTTStage (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
-            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - 1 - k, by omega⟩)
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - k - 1, by omega⟩)
             (b := current)) (ih hk_le')
   simpa using h_fold ℓ (le_rfl)
 
@@ -620,14 +620,16 @@ variable {ℓ R_rate : ℕ} (h_ℓ_add_R_rate : ℓ + R_rate < r)
 
 section AlgorithmCorrectness
 
+omit [DecidableEq L] [DecidableEq 𝔽q] hF₂ in
 lemma initial_tiled_coeffs_correctness (h_ℓ : ℓ ≤ r) (a : Fin (2 ^ ℓ) → L) :
     let b: Fin (2^(ℓ + R_rate)) → L := tileCoeffs a
-    additiveNTTInvariant 𝔽q β h_ℓ_add_R_rate b a (i := ⟨ℓ, by omega⟩) := by
+    additiveNTTInvariant 𝔽q β h_ℓ_add_R_rate b a (i := ⟨ℓ, by omega⟩)
+      (h_i := by change ℓ ≤ ℓ; omega) := by
     unfold additiveNTTInvariant
     simp only
     intro j
     unfold coeffsBySuffix
-    simp only [tileCoeffs, evaluationPointω, intermediateEvaluationPoly, Fin.eta]
+    simp only [tileCoeffs, evaluationPointω, intermediateEvaluationPoly]
     have h_ℓ_sub_ℓ: 2^(ℓ - ℓ) = 1 := by norm_num
     set f_right: Fin (2^(ℓ - ℓ)) → L[X] :=
       fun ⟨x, hx⟩ => C (a ⟨↑x <<< ℓ ||| Nat.getLowBits ℓ (↑j), by
@@ -667,6 +669,7 @@ lemma initial_tiled_coeffs_correctness (h_ℓ : ℓ ≤ r) (a : Fin (2 ^ ℓ) �
     rw [h_eval, mul_one]
     simp only [Nat.getLowBits_eq_mod_two_pow]
 
+omit [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 in
 /--
 The correctness theorem for the `NTTStage` function. This is the inductive step
 in the main proof. It asserts that if the invariant holds for `i+1`, then after
@@ -675,10 +678,12 @@ applying `NTTStage i`, the invariant holds for `i ∈ {0, ..., ℓ-1}`.
 lemma NTTStage_correctness (i : Fin (ℓ))
     (input_buffer : Fin (2 ^ (ℓ + R_rate)) → L) (original_coeffs : Fin (2 ^ ℓ) → L) :
     additiveNTTInvariant 𝔽q β h_ℓ_add_R_rate (evaluation_buffer:=input_buffer)
-      (original_coeffs:=original_coeffs) (i := ⟨i.val+1, by omega⟩) →
+      (original_coeffs:=original_coeffs) (i := ⟨i.val + 1, by omega⟩)
+        (h_i := by change i.val + 1 ≤ ℓ; omega) →
     additiveNTTInvariant 𝔽q β h_ℓ_add_R_rate (evaluation_buffer:=NTTStage 𝔽q β h_ℓ_add_R_rate
       (i := ⟨i, by omega⟩) (h_i := by simp only; omega) input_buffer)
-      (original_coeffs:=original_coeffs) (i := ⟨i, by omega⟩) := by
+      (original_coeffs:=original_coeffs) (i := ⟨i, by omega⟩)
+        (h_i := by change i.val ≤ ℓ; omega) := by
   -- This proof is the core of the work, using the `key_polynomial_identity`.
   intro h_prev
   simp only [additiveNTTInvariant] at h_prev
@@ -702,7 +707,7 @@ lemma NTTStage_correctness (i : Fin (ℓ))
   -- identity (39): `P⁽ⁱ⁾(X) = P₀⁽ⁱ⁺¹⁾(q⁽ⁱ⁾(X)) + X ⋅ P₁⁽ⁱ⁺¹⁾(q⁽ⁱ⁾(X))`
   have h_P_i_split_even_odd := evaluation_poly_split_identity 𝔽q β h_ℓ_add_R_rate
     (i := ⟨i, by omega⟩) (h_i := by simp only; omega) cur_coeffs
-  simp at h_P_i_split_even_odd
+  simp only at h_P_i_split_even_odd
   set P_i := intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩)
     (h_i := by simp only; omega) cur_coeffs
   set even_coeffs_poly := evenRefinement 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩)
@@ -715,14 +720,14 @@ lemma NTTStage_correctness (i : Fin (ℓ))
   have h_bit: Nat.getBit i.val j.val = (j.val / (2 ^ i.val)) % 2 := by
     simp only [Nat.getBit, Nat.and_one_is_mod, Nat.shiftRight_eq_div_pow]
   have h_qmap_linear_map := qMap_is_linear_map 𝔽q β
-    (i := ⟨i, by omega⟩) (by simp only [Fin.val_mk]; omega)
+    (i := ⟨i, by omega⟩) (by change i.val + 1 < r; omega)
   have h_qmap_additive: IsLinearMap 𝔽q fun x ↦
-      eval x (qMap 𝔽q β ⟨↑i, by omega⟩ (by simp only [Fin.val_mk]; omega)) :=
+      eval x (qMap 𝔽q β ⟨↑i, by omega⟩ (by change i.val + 1 < r; omega)) :=
     linear_map_of_comp_to_linear_map_of_eval
-      (f := (qMap 𝔽q β ⟨i, by omega⟩ (by simp only [Fin.val_mk]; omega)))
+      (f := (qMap 𝔽q β ⟨i, by omega⟩ (by change i.val + 1 < r; omega)))
       (h_f_linear := h_qmap_linear_map)
   let eval_qmap_linear : L →ₗ[𝔽q] L := {
-    toFun    := fun x ↦ eval x (qMap 𝔽q β ⟨i, by omega⟩ (by simp only [Fin.val_mk]; omega)),
+    toFun    := fun x ↦ eval x (qMap 𝔽q β ⟨i, by omega⟩ (by change i.val + 1 < r; omega)),
     map_add' := h_qmap_additive.map_add,
     map_smul' := h_qmap_additive.map_smul
   }
@@ -741,11 +746,11 @@ lemma NTTStage_correctness (i : Fin (ℓ))
     rw [←h_j_div_2_pow_left]
     exact h_j_div_2_pow_i_add_1_lt
   have h_eval_qmap_at_1: eval 1
-      (qMap 𝔽q β ⟨↑i, by omega⟩ (by simp only [Fin.val_mk]; omega)) = 0 := by
+      (qMap 𝔽q β ⟨↑i, by omega⟩ (by change i.val + 1 < r; omega)) = 0 := by
     have h_1_is_algebra_map: (1: L) = algebraMap 𝔽q L 1 := by rw [map_one]
     rw [h_1_is_algebra_map]
     apply qMap_eval_𝔽q_eq_0 𝔽q β (i := ⟨i, by omega⟩)
-      (by simp only [Fin.val_mk]; omega) (c:=1)
+      (by change i.val + 1 < r; omega) (c:=1)
   have h_msb_eq_j_xor_lsb: (j.val) / (2 ^ (i.val + 1)) * (2 ^ (i.val + 1))
       = j.val ^^^ Nat.getLowBits (i.val + 1) j.val := by
     have h_xor: j.val = Nat.getHighBits (i.val + 1) j.val ^^^ Nat.getLowBits (i.val + 1) j.val :=
@@ -775,7 +780,7 @@ lemma NTTStage_correctness (i : Fin (ℓ))
     -- EVEN REFINEMENT coeffs correspondence at index j of level i--
     have h_even_split: input_buffer j =
       eval x0 (even_coeffs_poly.comp
-        (qMap 𝔽q β ⟨↑i, by omega⟩ (by simp only [Fin.val_mk]; omega))) := by
+        (qMap 𝔽q β ⟨↑i, by omega⟩ (by change i.val + 1 < r; omega))) := by
       rw [h_prev j]
       have h_twiddle_comp_qmap_eq_left := eval_point_ω_eq_next_twiddleFactor_comp_qmap
         𝔽q β h_ℓ_add_R_rate     (i := ⟨i, by omega⟩) (x:=⟨j.val / 2 ^ i.val / 2, by
@@ -806,7 +811,7 @@ lemma NTTStage_correctness (i : Fin (ℓ))
     -- ODD REFINEMENT coeffs correspondence at index j of level i--
     have h_odd_split: input_buffer ⟨↑j + 2 ^ i.val, h_j_add_2_pow_i⟩
       = eval x0 (odd_coeffs_poly.comp
-        (qMap 𝔽q β ⟨↑i, by omega⟩ (by simp only [Fin.val_mk]; omega))) := by
+        (qMap 𝔽q β ⟨↑i, by omega⟩ (by change i.val + 1 < r; omega))) := by
       rw [h_prev ⟨j.val + 2^i.val, by omega⟩]
       have h_j_div_2_pow_right: (⟨j.val + 2^i.val, by omega⟩: Fin (2^(ℓ + R_rate))).val
         / 2 ^ (i.val + 1) = (j.val / 2 ^ i.val) / 2 := by
@@ -842,7 +847,6 @@ lemma NTTStage_correctness (i : Fin (ℓ))
       have h_twiddle_comp_qmap_eq_right :=  eval_point_ω_eq_next_twiddleFactor_comp_qmap 𝔽q β
         h_ℓ_add_R_rate (i := ⟨i, by omega⟩) (x:=⟨j.val / 2 ^ i.val / 2, by
           exact h_j_div_2_pow_div_2_left_lt⟩)
-      simp only [Fin.eta] at h_twiddle_comp_qmap_eq_right
       -- relation between ω and twiddle factor at level i and at point (j.val / 2 ^ i.val / 2)
       conv_rhs =>
         rw [eval_comp]
@@ -858,7 +862,6 @@ lemma NTTStage_correctness (i : Fin (ℓ))
       have h_res := oddRefinement_eq_novel_poly_of_1_leading_suffix 𝔽q β h_ℓ_add_R_rate
         (i := ⟨i, by omega⟩) (h_i := by simp only; omega) ⟨Nat.getLowBits i.val j.val, by
           exact Nat.getLowBits_lt_two_pow (numLowBits:=i.val)⟩ original_coeffs
-      simp only [Fin.eta] at h_res
       rw [h_res]
       have h_j_and_2_pow_i_eq_0 : j.val &&& 2 ^ i.val = 0 := by
         apply Nat.and_two_pow_eq_zero_of_getBit_0
@@ -897,7 +900,7 @@ lemma NTTStage_correctness (i : Fin (ℓ))
       unfold x0 cur_evaluation_point
       simp only
       rw [evaluationPointω_eq_twiddleFactor_of_div_2 𝔽q (h_i := by simp only; omega)]
-      simp only [Fin.eta, h_b_bit_eq_0, Nat.cast_zero, zero_mul, add_zero]
+      simp only [h_b_bit_eq_0, Nat.cast_zero, zero_mul, add_zero]
     rw [h_x0_eq_cur_evaluation_point]
     simp only [eval_comp, eval_add, eval_mul, eval_X]
   · simp only [h_b_bit_eq_0, ↓reduceDIte]
@@ -925,7 +928,7 @@ lemma NTTStage_correctness (i : Fin (ℓ))
       exact Nat.getLowBits_lt_two_pow (numLowBits:=i.val) (n:=j.val)
     have h_even_split: input_buffer ⟨↑j ^^^ 2 ^ i.val, h_j_xor_2_pow_i⟩
       = eval x1 (even_coeffs_poly.comp
-        (qMap 𝔽q β ⟨↑i, by omega⟩ (by simp only [Fin.val_mk]; omega))) := by
+        (qMap 𝔽q β ⟨↑i, by omega⟩ (by change i.val + 1 < r; omega))) := by
       rw [h_prev ⟨j.val ^^^ 2 ^ i.val, by omega⟩]
       -- left (top) is the full poly of level (i+1),
       -- right (bottom) is the even refinement of current level i
@@ -962,7 +965,6 @@ lemma NTTStage_correctness (i : Fin (ℓ))
       have h_twiddle_comp_qmap_eq_left := eval_point_ω_eq_next_twiddleFactor_comp_qmap 𝔽q β
         h_ℓ_add_R_rate (i := ⟨i, by omega⟩) (x:=⟨j.val / 2 ^ i.val / 2, by
           exact h_j_div_2_pow_div_2_left_lt⟩)
-      simp only [Fin.eta] at h_twiddle_comp_qmap_eq_left
       -- relation between ω and twiddle factor at level i and at point (j.val / 2 ^ i.val / 2)
       conv_rhs =>
         rw [eval_comp]
@@ -988,7 +990,6 @@ lemma NTTStage_correctness (i : Fin (ℓ))
       have h_res := evenRefinement_eq_novel_poly_of_0_leading_suffix 𝔽q β h_ℓ_add_R_rate
         (i := ⟨i, by omega⟩) (h_i := by simp only; omega) ⟨Nat.getLowBits i.val j.val, by
           exact Nat.getLowBits_lt_two_pow (numLowBits:=i.val)⟩ original_coeffs
-      simp only [Fin.eta] at h_res
       rw [h_res]
       congr 1
       rw [h_eval_qmap_at_1, add_zero]
@@ -1016,7 +1017,7 @@ lemma NTTStage_correctness (i : Fin (ℓ))
       simp_rw [h_v_eq]
     have h_odd_split: input_buffer j = eval x1
       (odd_coeffs_poly.comp
-        (qMap 𝔽q β ⟨↑i, by omega⟩ (by simp only [Fin.val_mk]; omega))) := by
+      (qMap 𝔽q β ⟨↑i, by omega⟩ (by change i.val + 1 < r; omega))) := by
       rw [h_prev j]
       -- left (top) is the full poly of level (i+1),
       -- right (bottom) is the odd refinement of current level i
@@ -1030,7 +1031,6 @@ lemma NTTStage_correctness (i : Fin (ℓ))
         calc _ < 2 ^ (ℓ + R_rate - (i.val + 1)) := by omega
           _ = _ := by rfl
       ⟩)
-      simp only [Fin.eta] at h_twiddle_comp_qmap_eq_left
       -- relation between ω and twiddle factor at level i and at point (j.val / 2 ^ i.val / 2)
       conv_rhs =>
         rw [eval_comp]
@@ -1055,7 +1055,6 @@ lemma NTTStage_correctness (i : Fin (ℓ))
       have h_res := oddRefinement_eq_novel_poly_of_1_leading_suffix 𝔽q β h_ℓ_add_R_rate
         (i := ⟨i, by omega⟩) (h_i := by simp only; omega) ⟨Nat.getLowBits i.val j.val, by
           exact Nat.getLowBits_lt_two_pow (numLowBits:=i.val)⟩ original_coeffs
-      simp only [Fin.eta] at h_res
       rw [h_res]
       congr
       rw [h_eval_qmap_at_1, add_zero]
@@ -1072,11 +1071,12 @@ lemma NTTStage_correctness (i : Fin (ℓ))
       unfold x1 cur_evaluation_point
       simp only
       rw [evaluationPointω_eq_twiddleFactor_of_div_2 𝔽q (h_i := by simp only; omega)]
-      simp only [Fin.eta, h_b_bit_eq_0, Nat.cast_one, one_mul, add_right_inj]
+      simp only [h_b_bit_eq_0, Nat.cast_one, one_mul, add_right_inj]
       rw [normalizedWᵢ_eval_βᵢ_eq_1 𝔽q β]
     rw [h_x1_eq_cur_evaluation_point]
     simp only [eval_comp, eval_add, eval_mul, eval_X]
 
+omit [DecidableEq 𝔽q] hF₂ in
 -- foldl k times would result in the additiveNTTInvariant holding for the `ℓ - k`-th stage
 lemma foldl_NTTStage_inductive_aux (h_ℓ : ℓ ≤ r) (k : Fin (ℓ + 1))
     (original_coeffs : Fin (2 ^ ℓ) → L) :
@@ -1084,7 +1084,7 @@ lemma foldl_NTTStage_inductive_aux (h_ℓ : ℓ ≤ r) (k : Fin (ℓ + 1))
     (Fin.foldl k (fun current_b i ↦ NTTStage 𝔽q β h_ℓ_add_R_rate
       (i := ⟨ℓ - i -1, by omega⟩) (h_i := by simp only; omega) current_b)
       (tileCoeffs original_coeffs))
-    original_coeffs ⟨ℓ - k, by omega⟩ := by
+    original_coeffs ⟨ℓ - k, by omega⟩ (by change ℓ - k.val ≤ ℓ; omega) := by
   have invariant_init := initial_tiled_coeffs_correctness 𝔽q β h_ℓ_add_R_rate  h_ℓ original_coeffs
   simp only at invariant_init
   induction k using Fin.succRecOnSameFinType with
@@ -1107,6 +1107,7 @@ lemma foldl_NTTStage_inductive_aux (h_ℓ : ℓ ≤ r) (k : Fin (ℓ + 1))
     have res := correctness_transition i_h
     exact res
 
+omit [DecidableEq 𝔽q] hF₂ in
 /--
 **Main Correctness Theorem for Additive NTT**
 If `b` is the output of `additiveNTT` on input `a`, then for all `j`, `b j`
@@ -1128,11 +1129,11 @@ theorem additiveNTT_correctness (h_ℓ : ℓ ≤ r)
   set output_foldl := Fin.foldl ℓ (fun current_b i ↦ NTTStage 𝔽q β h_ℓ_add_R_rate
     (i := ⟨ℓ - i -1, by omega⟩) (h_i := by simp only; omega) current_b) (tileCoeffs original_coeffs)
   have output_foldl_correctness : additiveNTTInvariant 𝔽q β h_ℓ_add_R_rate
-    output_foldl original_coeffs ⟨0, by omega⟩ := by
+    output_foldl original_coeffs ⟨0, by omega⟩ (by change 0 ≤ ℓ; omega) := by
     have res := foldl_NTTStage_inductive_aux 𝔽q β h_ℓ_add_R_rate
       h_ℓ
       (k:=⟨ℓ, by omega⟩) original_coeffs
-    simp only [tsub_self, Fin.zero_eta] at res
+    simp only [tsub_self] at res
     exact res
   have h_nat_point_ω_eq_j: j.val / 2 * 2 + j.val % 2 = j := by
     have h_j_mod_2_eq_0: j.val % 2 < 2 := by omega
@@ -1145,7 +1146,6 @@ theorem additiveNTT_correctness (h_ℓ : ℓ ≤ r)
   simp only [Fin.mk_zero', ← intermediate_poly_P_base 𝔽q β h_ℓ_add_R_rate h_ℓ original_coeffs]
   -- the remaining discrepancies between `res` and the goal are
   -- `coeffsBySuffix original_coeffs 0 _ 0 = original_coeffs` (base case of `coeffsBySuffix`)
-  -- and the folding index `ℓ - 1 - ↑i` vs `ℓ - ↑i - 1`.
   have hbase : ∀ (h : (0 : Fin r) ≤ ℓ) (v : Fin (2 ^ (0 : Fin r).val)),
       coeffsBySuffix (R_rate := R_rate) original_coeffs 0 h v = original_coeffs := by
     intro h v
@@ -1156,8 +1156,6 @@ theorem additiveNTT_correctness (h_ℓ : ℓ ≤ r)
     exact base_coeffsBySuffix original_coeffs
   simp only [hbase] at res
   rw [← res]
-  congr! 5 with current_b i
-  omega
 
 end AlgorithmCorrectness
 

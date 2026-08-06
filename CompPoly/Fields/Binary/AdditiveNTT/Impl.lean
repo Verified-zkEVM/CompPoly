@@ -186,7 +186,7 @@ def computableAdditiveNTT (a : Fin (2 ^ ℓ) → L) : Fin (2^(ℓ + R_rate)) →
   let b: Fin (2^(ℓ + R_rate)) → L := tileCoeffs a -- Note: can optimize on this
   Fin.foldl (n:=ℓ) (f:= fun current_b i  =>
     computableNTTStage (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - 1 - i, by omega⟩) (b:=current_b)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - i - 1, by omega⟩) (b:=current_b)
   ) (init:=b)
 
 /-- Array-backed coefficient tiling for the fast additive NTT path. -/
@@ -277,7 +277,7 @@ updates that buffer using the array transition from
 `computableNTTStageArray`. -/
 def computableAdditiveNTTFastStages : StateM (Array L) Unit := do
   let _ ← Fin.foldlM (m := StateM (Array L)) (n := ℓ) (f := fun (_ : Unit) i => do
-    let stage : Fin ℓ := ⟨ℓ - 1 - i, by omega⟩
+    let stage : Fin ℓ := ⟨ℓ - i - 1, by omega⟩
     let twiddles := computableTwiddleTableArray (β := β) (ℓ := ℓ)
       (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := stage)
     modifyThe (Array L) fun current =>
