@@ -49,12 +49,24 @@ Use this directly only when you want to lint a specific subset of files.
 
 TCB-external generator for kernel-checkable Rabin irreducibility certificates of a
 monic polynomial `f` over a prime field `F_p`. Computes the repeated-squaring steps
-for `X^(p^d) mod f` (the trace condition) and the Euclidean gcd chain for
-`gcd(f, X^p - X)` (the coprimality condition), and emits them as JSON. Nothing it
-produces is trusted: the Lean side re-checks every step in the kernel via `rfl`.
+for `X^(p^d) mod f` (the trace condition) and, for each prime factor `l` of
+`d = deg f`, the steps for `X^(p^(d/l)) mod f` plus a Bezout pair witnessing
+`gcd(f, X^(p^(d/l)) - X) = 1` (the coprimality conditions). Emits them as JSON, and
+with `--lean` as a complete compilable Lean module. Nothing it produces is trusted:
+the Lean side re-checks every step in the kernel via `rfl`.
+
+The per-prime-factor loop matters at composite `d`: checking only the linear-factor
+case `gcd(f, X^p - X)` admits a product of equal-degree factors, so a product of two
+irreducible cubics would be reported irreducible at `d = 6`.
 
 Parameterized by `--p` and `--f` (little-endian monic coefficients); defaults to
-KoalaBear with `f = x^5 + x^2 - 1`. Used to build the degree-5 KoalaBear extension.
+KoalaBear with `f = x^5 + x^2 - 1`. Used to build the degree-5 and degree-6 KoalaBear
+extensions. The exit code is the verdict — non-zero means `f` is reducible — so the
+script doubles as a checker.
+
+Run `python3 scripts/gen_rabin_certificate.py --self-test` to check the generator
+against known-answer cases, including a reducible sextic that the prime-degree form of
+the test would wrongly accept.
 
 ### `build_timing_report.sh`
 

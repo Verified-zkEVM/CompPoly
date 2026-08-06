@@ -19,8 +19,8 @@ are too specific or too changeable to keep at the repo root.
   typeclass discipline and minimal-assumption examples.
 - [`binary-fields-and-ntt.md`](binary-fields-and-ntt.md) - the binary-field stack,
   GHASH model, and additive-NTT architecture.
-- [`field-extensions.md`](field-extensions.md) - the computable binomial
-  field-extension framework and its irreducibility criterion.
+- [`field-extensions.md`](field-extensions.md) - the computable field-extension
+  framework for arbitrary monic moduli and its irreducibility criteria.
 
 ## Maintenance Contract
 

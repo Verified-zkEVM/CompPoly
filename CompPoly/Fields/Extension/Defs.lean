@@ -230,6 +230,47 @@ def mul (x y : Ext P) : Ext P :=
     ∑ i : Fin P.d, ∑ j : Fin P.d,
       coeff x i * coeff y j * coeff (monomialMod ((i : ℕ) + (j : ℕ))) m
 
+/--
+The reduction table: `red P` holds `X^k mod f` for every `k ≤ 2d - 2`, i.e. every exponent a
+product of two reduced elements can reach.
+
+This is the table the `shiftReduce` docstring above refers to. It exists purely for speed: `mul`
+is the specification, and `mulTbl` below is the compiled implementation that consults this table.
+-/
+def red (P : ExtensionParams F) : Vector (Ext P) (2 * P.d - 1) :=
+  Vector.ofFn fun k => monomialMod (k : ℕ)
+
+@[simp] theorem red_getElem {k : ℕ} (hk : k < 2 * P.d - 1) :
+    (red P)[k] = monomialMod k := by
+  simp only [red, Vector.getElem_ofFn]
+
+/--
+Table-driven multiplication: the compiled implementation of `mul`.
+
+Mathematically identical to `mul`, but the reduced monomials `X^(i+j) mod f` are computed once
+into `red` instead of being re-derived by `monomialMod` for every output coefficient. That drops
+the cost from roughly `O(d^5)` to `O(d^3)`: `mul` evaluates `shiftReduce^[i+j]` once per
+`(m, i, j)` triple, so the same `d`-fold iteration is repeated `d^3` times.
+
+`mul` remains the definition everything is proved about; `mul_eq_mulTbl` below swaps this in for
+compilation via `@[csimp]`.
+-/
+@[inline, specialize]
+def mulTbl (x y : Ext P) : Ext P :=
+  let tbl := red P
+  ofFn fun m =>
+    ∑ i : Fin P.d, ∑ j : Fin P.d,
+      coeff x i * coeff y j *
+        coeff (tbl[(i : ℕ) + (j : ℕ)]'(by
+          have hi := i.isLt; have hj := j.isLt; have hd := P.two_le; omega)) m
+
+@[csimp] theorem mul_eq_mulTbl : @mul = @mulTbl := by
+  funext F _ _ P x y
+  refine Ext.ext fun m => ?_
+  simp only [mul, mulTbl, coeff_ofFn]
+  refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_
+  rw [red_getElem]
+
 instance : Mul (Ext P) := ⟨mul⟩
 
 /-- `Nat`-power by binary exponentiation, so `x ^ n` costs `O(log n)` multiplications. -/

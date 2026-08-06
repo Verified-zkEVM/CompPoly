@@ -125,6 +125,10 @@ public import CompPoly.Fields.KoalaBear.Ext4
 public import CompPoly.Fields.KoalaBear.Ext5
 public import CompPoly.Fields.KoalaBear.Ext5.QuinticCertData
 public import CompPoly.Fields.KoalaBear.Ext5.QuinticIrreducible
+public import CompPoly.Fields.KoalaBear.Ext6
+public import CompPoly.Fields.KoalaBear.Ext6.GaloisField
+public import CompPoly.Fields.KoalaBear.Ext6.SexticCertData
+public import CompPoly.Fields.KoalaBear.Ext6.SexticIrreducible
 public import CompPoly.Fields.KoalaBear.Fast
 public import CompPoly.Fields.Mersenne
 public import CompPoly.Fields.Montgomery.Basic
