@@ -57,11 +57,13 @@ def checksumConcreteBt128 (x : ConcreteBTField 7) : Nat :=
   let concreteMeasured := concreteBudget preset
   let fastMeasured := fastBudget preset
   let checksumIterations := groupChecksumIterations concreteMeasured [fastMeasured]
-  let concreteRecord ← runTimed "tower-bt128" "ConcreteBTField" method "GF(2^128)"
+  let concreteRecord ← runTimed "tower-bt128" "ConcreteBTField"
+    (method ++ " (ConcreteBTField)") "GF(2^128)"
     towerShape preset warmup concreteMeasured
     (fun i ↦ let (a, b) := concreteSample i; concreteOp a b)
     checksumConcreteBt128 (checksumIterations := checksumIterations)
-  let fastRecord ← runTimed "tower-bt128-fast" "FastBT128" method "GF(2^128)"
+  let fastRecord ← runTimed "tower-bt128-fast" "FastBT128"
+    (method ++ " (FastBT128)") "GF(2^128)"
     towerShape preset warmup fastMeasured
     (fun i ↦ let (a, b) := fastSample i; fastOp a b)
     checksumFastBT128 (checksumIterations := checksumIterations)
