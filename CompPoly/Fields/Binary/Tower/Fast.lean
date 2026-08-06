@@ -273,6 +273,21 @@ theorem half_lit_lt (s : ℕ) (m sh : UInt64) {v : UInt64} (hm : m.toNat = 2 ^ s
     (v >>> sh).toNat < 2 ^ s ∧ (v &&& m).toNat < 2 ^ s :=
   ⟨shiftRight_lt s hsh hs hv, and_mask_lt s hm⟩
 
+/-- Half bounds of a 16-bit word. -/
+theorem half16_lt {v : UInt64} (hv : v.toNat < 2 ^ 16) :
+    (v >>> 8).toNat < 2 ^ 8 ∧ (v &&& 0xFF).toNat < 2 ^ 8 :=
+  half_lit_lt 8 0xFF 8 (by decide) (by decide) (by omega) hv
+
+/-- Half bounds of a 32-bit word. -/
+theorem half32_lt {v : UInt64} (hv : v.toNat < 2 ^ 32) :
+    (v >>> 16).toNat < 2 ^ 16 ∧ (v &&& 0xFFFF).toNat < 2 ^ 16 :=
+  half_lit_lt 16 0xFFFF 16 (by decide) (by decide) (by omega) hv
+
+/-- Half bounds of a full word. -/
+theorem half64_lt (v : UInt64) :
+    (v >>> 32).toNat < 2 ^ 32 ∧ (v &&& 0xFFFFFFFF).toNat < 2 ^ 32 :=
+  half_lit_lt 32 0xFFFFFFFF 32 (by decide) (by decide) (by omega) (UInt64.toNat_lt v)
+
 /-! ### Proof-side recursive twins
 
 The runtime ladder is unrolled for code generation; proofs run over structurally
@@ -657,11 +672,11 @@ theorem byteTable_get_eq {f : UInt64 → UInt64}
       v.toNat).toUInt64 = f v := by
   have hfv : (f v).toNat < 256 := by have := hf v hv; omega
   simp only [ByteArray.get!]
-  rw [getElem!_pos _ _ (by simp; omega)]
+  rw [getElem!_pos _ _ (by simp only [Array.size_ofFn]; omega)]
   simp only [Array.getElem_ofFn]
   rw [UInt64.ofNat_toNat]
   apply UInt64.toNat_inj.mp
-  simp [Nat.mod_eq_of_lt hfv]
+  simp only [UInt8.toNat_toUInt64, UInt64.toNat_toUInt8, Nat.mod_eq_of_lt hfv]
 
 theorem mul8T_eq_mul8 {a b : UInt64} (ha : a.toNat < 2 ^ 8) (hb : b.toNat < 2 ^ 8) :
     mul8T a b = mul8 a b := by
@@ -672,13 +687,13 @@ theorem mul8T_eq_mul8 {a b : UInt64} (ha : a.toNat < 2 ^ 8) (hb : b.toNat < 2 ^ 
   have hbound : (mul8 a b).toNat < 256 := by have := mul8_lt ha hb; omega
   rw [mul8T, hidx]
   simp only [mul8Table, ByteArray.get!]
-  rw [getElem!_pos _ _ (by simp; omega)]
+  rw [getElem!_pos _ _ (by simp only [Array.size_ofFn]; omega)]
   simp only [Array.getElem_ofFn]
   have hdiv : (a.toNat * 256 + b.toNat) / 256 = a.toNat := by omega
   have hmod : (a.toNat * 256 + b.toNat) % 256 = b.toNat := by omega
   rw [hdiv, hmod, UInt64.ofNat_toNat, UInt64.ofNat_toNat]
   apply UInt64.toNat_inj.mp
-  simp [Nat.mod_eq_of_lt hbound]
+  simp only [UInt8.toNat_toUInt64, UInt64.toNat_toUInt8, Nat.mod_eq_of_lt hbound]
 
 theorem mulByZ3T_eq_mulByZ3 {v : UInt64} (hv : v.toNat < 2 ^ 8) :
     mulByZ3T v = mulByZ3 v :=
@@ -744,9 +759,6 @@ def mul64T (a b : UInt64) : UInt64 :=
   let lo := p0 ^^^ p2
   ((p1 ^^^ lo ^^^ mulByZ5T p2) <<< 32) ||| lo
 
-
-
-
 /-- Table-based twin of `sq16`. -/
 @[inline] def sq16T (v : UInt64) : UInt64 :=
   let s0 := sq8T (v &&& 0xFF)
@@ -794,8 +806,8 @@ def mul64T (a b : UInt64) : UInt64 :=
 
 theorem mul16T_eq_mul16 {a b : UInt64} (ha : a.toNat < 2 ^ 16) (hb : b.toNat < 2 ^ 16) :
     mul16T a b = mul16 a b := by
-  obtain ⟨ha1, ha0⟩ := half_lit_lt 8 0xFF 8 (by decide) (by decide) (by omega) ha
-  obtain ⟨hb1, hb0⟩ := half_lit_lt 8 0xFF 8 (by decide) (by decide) (by omega) hb
+  obtain ⟨ha1, ha0⟩ := half16_lt ha
+  obtain ⟨hb1, hb0⟩ := half16_lt hb
   simp only [mul16T, mul16]
   rw [mul8T_eq_mul8 ha0 hb0, mul8T_eq_mul8 ha1 hb1,
     mul8T_eq_mul8 (xor_lt ha0 ha1) (xor_lt hb0 hb1),
@@ -803,19 +815,19 @@ theorem mul16T_eq_mul16 {a b : UInt64} (ha : a.toNat < 2 ^ 16) (hb : b.toNat < 2
 
 theorem mulByZ4T_eq_mulByZ4 {v : UInt64} (hv : v.toNat < 2 ^ 16) :
     mulByZ4T v = mulByZ4 v := by
-  obtain ⟨hv1, hv0⟩ := half_lit_lt 8 0xFF 8 (by decide) (by decide) (by omega) hv
+  obtain ⟨hv1, -⟩ := half16_lt hv
   simp only [mulByZ4T, mulByZ4]
   rw [mulByZ3T_eq_mulByZ3 hv1]
 
 theorem sq16T_eq_sq16 {v : UInt64} (hv : v.toNat < 2 ^ 16) :
     sq16T v = sq16 v := by
-  obtain ⟨hv1, hv0⟩ := half_lit_lt 8 0xFF 8 (by decide) (by decide) (by omega) hv
+  obtain ⟨hv1, hv0⟩ := half16_lt hv
   simp only [sq16T, sq16]
   rw [sq8T_eq_sq8 hv0, sq8T_eq_sq8 hv1, mulByZ3T_eq_mulByZ3 (sq8_lt hv1)]
 
 theorem inv16T_eq_inv16 {v : UInt64} (hv : v.toNat < 2 ^ 16) :
     inv16T v = inv16 v := by
-  obtain ⟨hv1, hv0⟩ := half_lit_lt 8 0xFF 8 (by decide) (by decide) (by omega) hv
+  obtain ⟨hv1, hv0⟩ := half16_lt hv
   have hnext := xor_lt hv0 (mulByZ3_lt hv1)
   have hdelta := xor_lt (mul8_lt hv0 hnext) (sq8_lt hv1)
   simp only [inv16T, inv16]
@@ -826,8 +838,8 @@ theorem inv16T_eq_inv16 {v : UInt64} (hv : v.toNat < 2 ^ 16) :
 
 theorem mul32T_eq_mul32 {a b : UInt64} (ha : a.toNat < 2 ^ 32) (hb : b.toNat < 2 ^ 32) :
     mul32T a b = mul32 a b := by
-  obtain ⟨ha1, ha0⟩ := half_lit_lt 16 0xFFFF 16 (by decide) (by decide) (by omega) ha
-  obtain ⟨hb1, hb0⟩ := half_lit_lt 16 0xFFFF 16 (by decide) (by decide) (by omega) hb
+  obtain ⟨ha1, ha0⟩ := half32_lt ha
+  obtain ⟨hb1, hb0⟩ := half32_lt hb
   simp only [mul32T, mul32]
   rw [mul16T_eq_mul16 ha0 hb0, mul16T_eq_mul16 ha1 hb1,
     mul16T_eq_mul16 (xor_lt ha0 ha1) (xor_lt hb0 hb1),
@@ -835,19 +847,19 @@ theorem mul32T_eq_mul32 {a b : UInt64} (ha : a.toNat < 2 ^ 32) (hb : b.toNat < 2
 
 theorem mulByZ5T_eq_mulByZ5 {v : UInt64} (hv : v.toNat < 2 ^ 32) :
     mulByZ5T v = mulByZ5 v := by
-  obtain ⟨hv1, hv0⟩ := half_lit_lt 16 0xFFFF 16 (by decide) (by decide) (by omega) hv
+  obtain ⟨hv1, -⟩ := half32_lt hv
   simp only [mulByZ5T, mulByZ5]
   rw [mulByZ4T_eq_mulByZ4 hv1]
 
 theorem sq32T_eq_sq32 {v : UInt64} (hv : v.toNat < 2 ^ 32) :
     sq32T v = sq32 v := by
-  obtain ⟨hv1, hv0⟩ := half_lit_lt 16 0xFFFF 16 (by decide) (by decide) (by omega) hv
+  obtain ⟨hv1, hv0⟩ := half32_lt hv
   simp only [sq32T, sq32]
   rw [sq16T_eq_sq16 hv0, sq16T_eq_sq16 hv1, mulByZ4T_eq_mulByZ4 (sq16_lt hv1)]
 
 theorem inv32T_eq_inv32 {v : UInt64} (hv : v.toNat < 2 ^ 32) :
     inv32T v = inv32 v := by
-  obtain ⟨hv1, hv0⟩ := half_lit_lt 16 0xFFFF 16 (by decide) (by decide) (by omega) hv
+  obtain ⟨hv1, hv0⟩ := half32_lt hv
   have hnext := xor_lt hv0 (mulByZ4_lt hv1)
   have hdelta := xor_lt (mul16_lt hv0 hnext) (sq16_lt hv1)
   simp only [inv32T, inv32]
@@ -858,10 +870,8 @@ theorem inv32T_eq_inv32 {v : UInt64} (hv : v.toNat < 2 ^ 32) :
 
 theorem mul64T_eq_mul64 (a b : UInt64) :
     mul64T a b = mul64 a b := by
-  obtain ⟨ha1, ha0⟩ :=
-    half_lit_lt 32 0xFFFFFFFF 32 (by decide) (by decide) (by omega) (UInt64.toNat_lt a)
-  obtain ⟨hb1, hb0⟩ :=
-    half_lit_lt 32 0xFFFFFFFF 32 (by decide) (by decide) (by omega) (UInt64.toNat_lt b)
+  obtain ⟨ha1, ha0⟩ := half64_lt a
+  obtain ⟨hb1, hb0⟩ := half64_lt b
   simp only [mul64T, mul64]
   rw [mul32T_eq_mul32 ha0 hb0, mul32T_eq_mul32 ha1 hb1,
     mul32T_eq_mul32 (xor_lt ha0 ha1) (xor_lt hb0 hb1),
@@ -869,22 +879,19 @@ theorem mul64T_eq_mul64 (a b : UInt64) :
 
 theorem mulByZ6T_eq_mulByZ6 (v : UInt64) :
     mulByZ6T v = mulByZ6 v := by
-  obtain ⟨hv1, hv0⟩ :=
-    half_lit_lt 32 0xFFFFFFFF 32 (by decide) (by decide) (by omega) (UInt64.toNat_lt v)
+  obtain ⟨hv1, -⟩ := half64_lt v
   simp only [mulByZ6T, mulByZ6]
   rw [mulByZ5T_eq_mulByZ5 hv1]
 
 theorem sq64T_eq_sq64 (v : UInt64) :
     sq64T v = sq64 v := by
-  obtain ⟨hv1, hv0⟩ :=
-    half_lit_lt 32 0xFFFFFFFF 32 (by decide) (by decide) (by omega) (UInt64.toNat_lt v)
+  obtain ⟨hv1, hv0⟩ := half64_lt v
   simp only [sq64T, sq64]
   rw [sq32T_eq_sq32 hv0, sq32T_eq_sq32 hv1, mulByZ5T_eq_mulByZ5 (sq32_lt hv1)]
 
 theorem inv64T_eq_inv64 (v : UInt64) :
     inv64T v = inv64 v := by
-  obtain ⟨hv1, hv0⟩ :=
-    half_lit_lt 32 0xFFFFFFFF 32 (by decide) (by decide) (by omega) (UInt64.toNat_lt v)
+  obtain ⟨hv1, hv0⟩ := half64_lt v
   have hnext := xor_lt hv0 (mulByZ5_lt hv1)
   have hdelta := xor_lt (mul32_lt hv0 hnext) (sq32_lt hv1)
   simp only [inv64T, inv64]
@@ -892,7 +899,6 @@ theorem inv64T_eq_inv64 (v : UInt64) :
     inv32T_eq_inv32 hdelta,
     mul32T_eq_mul32 (inv32_lt hdelta) hv1,
     mul32T_eq_mul32 (inv32_lt hdelta) hnext]
-
 
 /-! ## Correctness against the spec
 
@@ -1207,10 +1213,7 @@ def toConcrete (x : FastBT k) : ConcreteBTField k := fromNat x.val.toNat
 
 /-- Master bridge lemma: `toConcrete` preserves the numeric value. -/
 @[simp] theorem toConcrete_toNat (x : FastBT k) :
-    BitVec.toNat (toConcrete x) = x.val.toNat := by
-  show (BitVec.ofNat (2 ^ k) x.val.toNat).toNat = x.val.toNat
-  rw [BitVec.toNat_ofNat]
-  exact Nat.mod_eq_of_lt x.isLt
+    BitVec.toNat (toConcrete x) = x.val.toNat := toNat_fromNat x.isLt
 
 theorem toConcrete_injective : Function.Injective (toConcrete (k := k)) := by
   intro a b h
@@ -1248,10 +1251,7 @@ def ofConcrete {k : ℕ} (x : ConcreteBTField k) (hk : k ≤ 6 := by omega) : Fa
 @[simp] theorem toConcrete_one : toConcrete (1 : FastBT k) = 1 := fromNat_one
 
 @[simp] theorem toConcrete_add (a b : FastBT k) :
-    toConcrete (a + b) = toConcrete a + toConcrete b := by
-  show fromNat ((a + b).val.toNat) = _
-  rw [val_add, UInt64.toNat_xor]
-  exact sum_fromNat_eq_from_xor_Nat _ _
+    toConcrete (a + b) = toConcrete a + toConcrete b := fromNat_xor a.val b.val
 
 @[simp] theorem toConcrete_neg (a : FastBT k) : toConcrete (-a) = -(toConcrete a) := rfl
 
