@@ -16,14 +16,10 @@ public import Mathlib.Tactic.LinearCombination
 /-!
 # Fast Binary Tower Arithmetic
 
-Packed machine-word implementation of `ConcreteBTField` arithmetic with the same bit
-layout: a level-`k` element is the low `2 ^ 2 ^ k` bits of one `UInt64` for `k ≤ 6`, and
-a pair of limbs at level 7. Multiplication is Karatsuba with an `O(width)`
-multiply-by-generator reduction; mul, square, and inverse are proven against the
-concrete tower by induction over recursive twins, giving `Field` instances at each
-one-word width and at the two-limb GF(2^128), with bundled ring isomorphisms onto the
-concrete tower (`ringEquivBT*`, `FastBT128.ringEquiv`). At run time the level-3 operations are
-certified table lookups.
+Packed machine-word implementation of `ConcreteBTField` arithmetic, same bit layout:
+one `UInt64` for levels `k ≤ 6`, two limbs at level 7. Karatsuba multiplication over a
+certified table-lookup base at GF(2^8), proven against the concrete tower by induction
+over recursive twins; `Field` instances and ring isomorphisms at every width.
 -/
 
 @[expose] public section

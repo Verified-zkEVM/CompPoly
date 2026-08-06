@@ -10,9 +10,8 @@ public meta import CompPoly.Fields.Binary.Tower.Fast
 /-!
 # Fast Binary Tower Tests
 
-Regression checks for the packed-word tower. Word-level constants are cross-validated
-against `ConcreteBinaryTower.concrete_mul` / `concrete_inv` on full-width operands;
-carrier guards exercise the `Field` instances.
+Regression checks for the packed-word tower: word-level guards cross-validated against
+the concrete tower, plus `Field` instance coverage at each width.
 -/
 
 public meta section

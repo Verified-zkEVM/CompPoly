@@ -85,16 +85,9 @@ support lemmas:
 - `Tower/Concrete/*` - concrete basis, core definitions, and field instances.
 - `Tower/Support/*` - supporting lemmas about defining polynomials, linear
   independence, and finite-index helpers.
-- `Tower/Fast.lean` - packed `UInt64` fast arithmetic (`FastBT k` for levels `k <= 6`,
-  `FastBT128` for level 7) sharing the `ConcreteBTField` bit layout; word-level
-  mul/mulByZ/square/inv ladder with range bounds, and `Field` instances at each one-word
-  width and at the two-limb GF(2^128). The recursion stops at GF(2^8): level-3
-  operations are table lookups generated from the proven ladder (`Array.ofFn`,
-  `getElem_ofFn` bridge), nothing kernel-evaluated. Every operation is proven against
-  `concrete_mul`/`concrete_inv` by induction over the recursive twins (`mulRec_correct`,
-  `sqRec_correct`, `invRec_correct`) and transported along `toConcrete`; level 7 is one
-  application of the level-6 results. Bundled `RingEquiv`s (`ringEquivBT*`,
-  `FastBT128.ringEquiv`) expose the bridge in both directions.
+- `Tower/Fast.lean` - packed machine-word tower arithmetic with a GF(2^8)
+  lookup-table base, proven against `ConcreteBTField`; `Field` instances and ring
+  isomorphisms at every level up to GF(2^128).
 - `Tower/Equiv.lean`, `Tower/Impl.lean`, and `Tower/TensorAlgebra.lean` connect the
   layers and expose useful transport lemmas.
 

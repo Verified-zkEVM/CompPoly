@@ -11,10 +11,10 @@ public import CompPoly.Fields.Binary.Tower.Fast
 /-!
 # Binary tower field benchmarks
 
-Times GF(2^128) multiplication and inversion. Each group runs the concrete `BitVec`
-spec and the packed-word implementation on shared inputs, cross-checked by the group
-checksum. Sub-microsecond rows carry the harness's fixed per-iteration cost (roughly
-0.4 us), so they are regression indicators rather than operation latencies.
+Times GF(2^128) multiplication and inversion, `BitVec` spec vs packed-word
+implementation, cross-checked by the group checksum. Sub-microsecond rows include the
+harness's fixed per-iteration cost (roughly 0.4 us), so they are regression
+indicators, not operation latencies.
 -/
 
 public section
