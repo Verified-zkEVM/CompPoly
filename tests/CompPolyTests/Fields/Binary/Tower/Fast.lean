@@ -53,6 +53,13 @@ namespace ConcreteBinaryTower.Fast
 #guard (ofNat 6 0xDEADBEEFCAFEBABE).square.val = 0x8459990BA3148442
 #guard (ofNat 3 0xAB).square = ofNat 3 0xAB * ofNat 3 0xAB
 
+-- Powers agree with the concrete tower through `toConcrete`
+#guard ((ofNat 6 0xDEADBEEFCAFEBABE : BT64) ^ 0) = 1
+#guard toConcrete ((ofNat 6 0xDEADBEEFCAFEBABE : BT64) ^ 17)
+  = toConcrete (ofNat 6 0xDEADBEEFCAFEBABE : BT64) ^ 17
+#guard toConcrete ((ofNat 6 0xDEADBEEFCAFEBABE : BT64) ^ 255)
+  = toConcrete (ofNat 6 0xDEADBEEFCAFEBABE : BT64) ^ 255
+
 -- Numerals reduce mod the characteristic; raw packed values go through `ofNat`
 #guard (5 : BT16) = 1
 #guard (2 : BT64) = 0
