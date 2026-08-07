@@ -7,6 +7,7 @@ This page records which paths are source of truth and which are derived outputs.
 | Path | Status | How it is maintained |
 |---|---|---|
 | `CompPoly.lean` | Generated and committed | Regenerate with `./scripts/update-lib.sh` after adding, renaming, or deleting `CompPoly/**/*.lean` files. Emitted in module form: `module`, blank line, one `public import` per file. |
+| `CompPoly/Fields/*/Ext*/`*`CertData.lean` | Generated and committed | Rabin irreducibility certificate data for non-binomial extension moduli. Regenerate with `scripts/gen_rabin_certificate.py --p <p> --f <coeffs> --lean <path> --namespace <NS>`; the exact command is recorded in each file's docstring. Do not hand-edit. Nothing in them is trusted — the kernel re-checks every step through `CompPoly.RabinCert.runChain`. |
 | `bench/report-*.md`, `bench/results-*.jsonl` | Generated, not source | Produced by `lake exe CompPolyBench`; keep reports as local or CI artifacts. |
 | `CLAUDE.md` | Compatibility symlink | Must remain a symlink to `AGENTS.md`; do not replace it with a separate copy. |
 | `.lake/` | Derived, not source | Local dependency cache and build output produced by Lake. Do not edit files here by hand. |
@@ -26,6 +27,27 @@ Use this workflow whenever the source tree changes:
 
 Do not hand-edit `CompPoly.lean`; any manual edits will be overwritten the next time
 the script runs.
+
+## Rabin Certificate Data
+
+`CompPoly/Fields/KoalaBear/Ext5/QuinticCertData.lean` and
+`CompPoly/Fields/KoalaBear/Ext6/SexticCertData.lean` are emitted verbatim by
+[`../../scripts/gen_rabin_certificate.py`](../../scripts/gen_rabin_certificate.py). The generator
+writes a complete, compilable module — header, docstring with the regenerating command, and the
+step lists — so the workflow after changing a modulus is:
+
+```bash
+python3 scripts/gen_rabin_certificate.py --p <prime> --f <little-endian coeffs> \
+    --lean <path to CertData.lean> --namespace <Field>.<Name>Cert
+./scripts/update-lib.sh
+```
+
+The generator's exit code is its verdict: non-zero means the polynomial is reducible. Run
+`python3 scripts/gen_rabin_certificate.py --self-test` to check the generator itself against
+known-answer cases before trusting a new certificate.
+
+Regenerating an unchanged modulus is byte-identical, so these files are safe to re-emit as a
+consistency check.
 
 ## Derived Build State
 

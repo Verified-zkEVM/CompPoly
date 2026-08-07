@@ -20,13 +20,20 @@ This directory contains formally verified field infrastructure used in zero-know
 | **BN254.lean** | Facade for the BN254 modules, re-exporting the canonical field and the fast eight-limb implementation. |
 | **BN254/Basic.lean** | Scalar field of BN254 (254-bit, 2-adicity 28). |
 | **BN254/Fast.lean** | Eight-limb Montgomery instantiation of the BN254 scalar field (`Mont64x8Field` and `GcdData` constants, `ScalarField`, `ringEquiv`). |
-| **Extension.lean** | Facade for the binomial field-extension stack. |
+| **Extension.lean** | Facade for the field-extension stack (arbitrary monic modulus; binomial as a special case). |
 | **Extension/Binomial.lean** | Irreducibility of `X^d - W` over a finite field: Rabin's test collapsed to two base-field exponentiations (`irreducible_X_pow_four_sub_C_iff`). |
-| **Extension/Defs.lean** | `BinomialParams` (degree, `W`, base cardinality) and the carrier `Ext P = Vector F d` with its ring operations. |
+| **Extension/Defs.lean** | `ExtensionParams` (degree, lower coefficients of the monic modulus, base cardinality), `BinomialParams` and its `toExtensionParams`, and the carrier `Ext P = Vector F d` with its ring operations — including the `red` reduction table and the `@[csimp]`-registered `mulTbl`. |
 | **Extension/Bridge.lean** | `toQuot : Ext P → AdjoinRoot P.poly`, its ring-hom and injectivity proofs, and `CommRing (Ext P)`. |
 | **Extension/Field.lean** | Bijectivity (`ringEquivQuot`), cardinality, Fermat inversion, and `Field (Ext P)`. |
 | **BabyBear/Ext4.lean** | \(\mathrm{BabyBear}[X]/(X^4 - 11)\). |
 | **KoalaBear/Ext4.lean** | \(\mathrm{KoalaBear}[X]/(X^4 - 3)\). |
+| **KoalaBear/Ext5.lean** | \(\mathrm{KoalaBear}[X]/(X^5 + X^2 - 1)\) — first non-binomial modulus; no degree-5 binomial exists since \(\gcd(5, p-1) = 1\). |
+| **KoalaBear/Ext5/QuinticCertData.lean** | Generated Rabin certificate data for the quintic. Regenerate with `scripts/gen_rabin_certificate.py`; do not hand-edit. |
+| **KoalaBear/Ext5/QuinticIrreducible.lean** | Kernel-checked irreducibility of \(X^5 + X^2 - 1\) via Rabin's test at prime degree. |
+| **KoalaBear/Ext6.lean** | \(\mathrm{KoalaBear}[X]/(X^6 + X^3 + 1)\) — \(\Phi_9\), a \(2^{186}\)-element field. No degree-6 binomial exists since \(3 \nmid p-1\) makes every element a cube. |
+| **KoalaBear/Ext6/SexticCertData.lean** | Generated Rabin certificate data for the sextic, including one coprimality certificate per prime factor of 6. Do not hand-edit. |
+| **KoalaBear/Ext6/SexticIrreducible.lean** | Kernel-checked irreducibility of \(X^6 + X^3 + 1\) via Rabin's test at composite degree. |
+| **KoalaBear/Ext6/GaloisField.lean** | Opt-in bridge identifying `Ext6` with Mathlib's abstract `GaloisField KoalaBear.fieldSize 6` (ArkLib's `KoalaSextic` parameter point). Separate module so the GaloisField import is not forced on `Ext6` users. |
 | **Hachi.lean** | \(2^{32} - 99\) — 32-bit prime field. **Name provisional.** Included as a 32-bit example rather than a production target: it exercises a base field with no Montgomery fast path (`Mont32Field` requires modulus < 2^31) and two-adicity 2, so no radix-2 NTT domain exists for it. |
 | **Hachi/Ext4.lean** | \(\mathrm{Hachi}[X]/(X^4 - 2)\). |
 | **Goldilocks.lean** | \(2^{64} - 2^{32} + 1\) — Plonky2/3. |
@@ -57,13 +64,17 @@ The `Binary/` subtree provides characteristic-2 field infrastructure used by GHA
 
 ## Field extensions
 
-`Extension/` provides computable `F[X]/(X^d - W)` arithmetic in odd characteristic, with the
-`Field` structure proved by transport along a ring equivalence to `AdjoinRoot (X^d - W)`, plus
-`Algebra F (Ext P)`, a base embedding `ofBase`, and the adjoined root `gen` with
+`Extension/` provides computable `F[X]/f` arithmetic for an arbitrary monic `f` in odd
+characteristic, with the `Field` structure proved against `AdjoinRoot f`, plus
+`Algebra F (Ext P)`, a base embedding `ofBase`, and the adjoined root `gen`. Binomial moduli
+`X^d - W` are the special case entered through `BinomialParams.toExtensionParams`, and get
 `gen ^ d = ofBase W`.
-Irreducibility of the defining polynomial comes from Rabin's test, which for a binomial
-collapses to two exponentiations in the base field — no generated certificates and no
-`native_decide`. See [`../../docs/wiki/field-extensions.md`](../../docs/wiki/field-extensions.md).
+
+Irreducibility of the defining polynomial comes from Rabin's test. For a binomial it collapses to
+two exponentiations in the base field — no generated certificates. For a general modulus it uses
+kernel-checked certificates emitted by `scripts/gen_rabin_certificate.py`, with one coprimality
+certificate per prime factor of the degree. Neither path uses `native_decide`. See
+[`../../docs/wiki/field-extensions.md`](../../docs/wiki/field-extensions.md).
 
 The characteristic-2 `Binary/Tower/` stack is a separate, independent development.
 

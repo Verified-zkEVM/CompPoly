@@ -23,10 +23,25 @@ binomial is available, prefer it — it buys two things:
 
 But a binomial is not always available. A degree-`d` binomial extension of `F_q` requires
 `d ∣ q - 1`; when `gcd(d, q - 1) = 1` the map `x ↦ x^d` is a bijection and **every** `X^d - W`
-has a root. KoalaBear at degree 5 is exactly this case (`p - 1 = 2^24 · 127`), which is why
-[`KoalaBear/Ext5.lean`](../../CompPoly/Fields/KoalaBear/Ext5.lean) adjoins a root of the
-non-binomial quintic `X^5 + X^2 - 1` instead. The general-modulus framework and the
-certificate-based irreducibility pipeline below exist to make such extensions routine.
+has a root. Over KoalaBear, `p - 1 = 2^24 · 127`, so the only binomial degrees available are the
+powers of two (up to `2^24`) and multiples of 127:
+
+| `d` | bits | binomial? |
+|---|---|---|
+| 4 | 124 | yes, `X^4 - 3` — but under `2^128` |
+| 5 | 155 | **no**: `5 ∤ p - 1`, so `x ↦ x^5` is a bijection |
+| 6 | 186 | **no**, and more strongly: `3 ∤ p - 1`, so every `W` is a cube `V^3` and `X^6 - W = (X^2 - V)(X^4 + V X^2 + V^2)` factors for *every* `W` |
+| 8 | 248 | yes, but wider than needed |
+
+Hence [`KoalaBear/Ext5.lean`](../../CompPoly/Fields/KoalaBear/Ext5.lean) adjoins a root of the
+non-binomial quintic `X^5 + X^2 - 1`, and
+[`KoalaBear/Ext6.lean`](../../CompPoly/Fields/KoalaBear/Ext6.lean) a root of the sextic
+`X^6 + X^3 + 1 = Φ₉`. The general-modulus framework and the certificate-based irreducibility
+pipeline below exist to make such extensions routine.
+
+Degree 6 is the smallest KoalaBear extension that is both comfortably above `2^128` and of
+*composite* degree, so — unlike the prime-degree quintic — it has proper subfields, which is what
+makes a cheap Frobenius and a norm-based inverse possible. See "Choosing a general modulus".
 
 ## Layering
 
@@ -35,8 +50,8 @@ certificate-based irreducibility pipeline below exist to make such extensions ro
 | Rabin's test, general | [`../../CompPoly/Data/Polynomial/Rabin.lean`](../../CompPoly/Data/Polynomial/Rabin.lean) | `irreducible_of_rabin`, `irreducible_iff_rabin` for any degree over any finite field |
 | Factor-degree bound | [`../../CompPoly/ToMathlib/Polynomial/Irreducible.lean`](../../CompPoly/ToMathlib/Polynomial/Irreducible.lean) | `exists_factor_natDegree_le_of_reducible` |
 | Binomial criterion | [`../../CompPoly/Fields/Extension/Binomial.lean`](../../CompPoly/Fields/Extension/Binomial.lean) | the collapse to base-field exponentiations; `irreducible_X_pow_four_sub_C_iff` |
-| Rabin certificates | [`../../CompPoly/Data/Polynomial/RabinCertificate.lean`](../../CompPoly/Data/Polynomial/RabinCertificate.lean) | kernel-checked chains for non-binomial moduli; `runChain_sound`, `irreducible_of_rabin_prime_degree` |
-| Carrier and ring ops | [`../../CompPoly/Fields/Extension/Defs.lean`](../../CompPoly/Fields/Extension/Defs.lean) | `ExtensionParams`, `BinomialParams` (+ `toExtensionParams`), `Ext P`, `Ext.shiftReduce`, `Ext.monomialMod`, `Ext.mul` |
+| Rabin certificates | [`../../CompPoly/Data/Polynomial/RabinCertificate.lean`](../../CompPoly/Data/Polynomial/RabinCertificate.lean) | kernel-checked chains for non-binomial moduli; `runChain_sound`, `irreducible_of_rabin_prime_degree`, `irreducible_of_rabin_two_prime_factors`, `irreducible_of_rabin_degree_six` |
+| Carrier and ring ops | [`../../CompPoly/Fields/Extension/Defs.lean`](../../CompPoly/Fields/Extension/Defs.lean) | `ExtensionParams`, `BinomialParams` (+ `toExtensionParams`), `Ext P`, `Ext.shiftReduce`, `Ext.monomialMod`, `Ext.mul` (spec), `Ext.red` + `Ext.mulTbl` (compiled, via `@[csimp]`) |
 | Bridge and `CommRing` | [`../../CompPoly/Fields/Extension/Bridge.lean`](../../CompPoly/Fields/Extension/Bridge.lean) | `toQuot`, `toQuot_shiftReduce`, `toQuot_mul`, `instCommRing` |
 | Bijectivity and `Field` | [`../../CompPoly/Fields/Extension/Field.lean`](../../CompPoly/Fields/Extension/Field.lean) | `ringEquivQuot`, `card_ext`, `inv`, `instField` |
 
@@ -54,7 +69,18 @@ Concrete instances live next to their base field:
 irreducibility proof in
 [`KoalaBear/Ext5/QuinticIrreducible.lean`](../../CompPoly/Fields/KoalaBear/Ext5/QuinticIrreducible.lean)
 and generated certificate data in
-[`KoalaBear/Ext5/QuinticCertData.lean`](../../CompPoly/Fields/KoalaBear/Ext5/QuinticCertData.lean)).
+[`KoalaBear/Ext5/QuinticCertData.lean`](../../CompPoly/Fields/KoalaBear/Ext5/QuinticCertData.lean))
+and [`KoalaBear/Ext6.lean`](../../CompPoly/Fields/KoalaBear/Ext6.lean) (`X^6 + X^3 + 1`, the first
+*composite*-degree general modulus, with
+[`Ext6/SexticIrreducible.lean`](../../CompPoly/Fields/KoalaBear/Ext6/SexticIrreducible.lean) and
+[`Ext6/SexticCertData.lean`](../../CompPoly/Fields/KoalaBear/Ext6/SexticCertData.lean)).
+
+[`Ext6/GaloisField.lean`](../../CompPoly/Fields/KoalaBear/Ext6/GaloisField.lean) is a separate
+opt-in module identifying `Ext6` with Mathlib's abstract `GaloisField KoalaBear.fieldSize 6`, so
+the computable arithmetic here can serve developments phrased over that (ArkLib's `KoalaSextic`,
+for the Proximity Prize parameter point of [ABF26], ePrint 2026/680). `GaloisField` commits to no
+modulus, so the identification follows from `card_ext6` alone and is independent of the choice of
+`Φ₉` — but it is noncanonical, so it pins down nothing about where `ext6Gen` lands.
 
 ## What The Interface Provides
 
@@ -108,6 +134,26 @@ handles this with kernel-checked certificates:
 - `irreducible_of_rabin_prime_degree` packages the test when `d` is prime (one trace, one
   coprimality check).
 
+**Composite degree needs one coprimality check per prime factor**, and the prime-degree collapse
+is *unsound* there rather than merely weak. `Polynomial.irreducible_of_rabin` already quantifies
+over `d.primeFactors`; the packaged forms are:
+
+| `d` | Wrapper | Checks |
+|---|---|---|
+| prime | `irreducible_of_rabin_prime_degree` | `f ∣ X^(q^d) - X`, `IsCoprime f (X^q - X)` |
+| `6` | `irreducible_of_rabin_degree_six` | plus `IsCoprime f (X^(q^3) - X)` and `IsCoprime f (X^(q^2) - X)` |
+| two prime factors | `irreducible_of_rabin_two_prime_factors` | as above, `Nat.primeFactors d = {ℓ₁, ℓ₂}` supplied by the caller |
+
+Concretely, over KoalaBear `(X^3 + X + 4)(X^3 + X - 4)` divides `X^(p^6) - X` and is coprime to
+`X^p - X`, so it satisfies the prime-degree conditions verbatim while being visibly reducible;
+only the `q^3` check rejects it. `Nat.primeFactors 6 = {2, 3}` cannot be closed by `decide`
+(`Nat.primeFactorsList` is well-founded recursive and does not reduce in the kernel), so it is
+proved via `Nat.primeFactors_mul`, mirroring `primeFactors_four` in `Extension/Binomial.lean`.
+
+The generator loops over the prime factors too, and the same trap applied to it: before that fix
+it reported the product above as irreducible and exited `0`. Its `--self-test` flag now checks it
+against known-answer cases including that polynomial.
+
 Certificate data is emitted by the untrusted generator
 [`scripts/gen_rabin_certificate.py`](../../scripts/gen_rabin_certificate.py)
 (`--lean`/`--namespace` produce a complete data module); the kernel re-checks every step.
@@ -115,6 +161,34 @@ The KoalaBear quintic instance costs ~290 generated lines and compiles in about 
 seconds — contrast the roughly 2100 lines of per-step `BitVec` certificates the same test
 costs the GHASH polynomial (`Fields/Binary/BF128Ghash/XPowTwoPow{Mod,Gcd}Certificate.lean`),
 which predates this framework.
+
+### Choosing a general modulus
+
+Since every irreducible `f` of degree `d` gives the same field up to isomorphism, the choice is
+purely about arithmetic cost, and it is decided by two tables: the reduction table
+`X^d … X^(2d-2) mod f` that `Ext.red` holds, and the Frobenius matrix. Entries of `±1` cost an
+add or a negation; anything else costs a base-field multiplication. Measured over the irreducible
+sextics of KoalaBear:
+
+| modulus | red-table nonzeros | needing a multiply | Frobenius nonzeros | needing a multiply |
+|---|---|---|---|---|
+| `X^6 + X^3 + 1` (`Φ₉`) | 8 | **0** | 8 | **0** |
+| `X^6 - X^3 + 1` (`Φ₁₈`) | 8 | 0 | 8 | 0 |
+| `X^6 - 2X^3 - 2` | 10 | 10 | 11 | 9 |
+| `X^6 + 4X - 3` | 10 | 10 | 31 | 30 |
+| `X^6 + 3X^2 - 3` | 11 | 11 | 16 | 15 |
+| `X^6 + X^4 + 3` | 13 | 9 | 16 | 15 |
+
+So prefer, in order: a cyclotomic `Φₙ` when one has the right degree; then a sparse trinomial with
+`±1` coefficients; then anything sparse. Two further points, both visible above:
+
+- A modulus of the form `g(X^k)` puts a subfield at `F_p(θ^k)` with a sparse coordinate
+  description, i.e. it *is* a tower in disguise. `Φ₉ = g(X^3)` with `g = Y^2 + Y + 1` gives
+  `F_p ⊂ F_p² ⊂ F_p⁶`, so the tower's arithmetic is available without any tower machinery. The
+  mirror orientation `h(X^2)` with `h` cubic is `X^6 + X^4 + 3` — the same idea, measurably worse.
+- Prefer all-nonnegative coefficients when there is a choice: the certificate encoding then needs
+  no `p - 1` literal, and no `cast_p_sub_one`-style lemma. Compare `sexticL = [1,0,0,1,0,0,1]`
+  against `quinticL = [2130706432, 0, 1, 0, 0, 1]`.
 
 ### Adding a new binomial extension
 
@@ -139,7 +213,10 @@ That is about 60 lines.
    `python3 scripts/gen_rabin_certificate.py --p <p> --f <coeffs> --lean <path> --namespace <NS>`.
 3. Write the irreducibility wrapper: `toPoly p fL = f`, `natDegree`, `f ≠ 0`, then the
    chain/Bézout `rfl` checks and the assembly through `irreducible_of_rabin_prime_degree`
-   (for prime `d`) — see `KoalaBear/Ext5/QuinticIrreducible.lean` for the idiom.
+   (prime `d`, see `KoalaBear/Ext5/QuinticIrreducible.lean`) or
+   `irreducible_of_rabin_degree_six` / `irreducible_of_rabin_two_prime_factors` (composite `d`,
+   see `KoalaBear/Ext6/SexticIrreducible.lean`). At composite `d` there is one chain plus Bézout
+   block per prime factor, named `cop<m>Steps`/`cop<m>Rp`/… for `m = d / ℓ`.
 4. Write the `ExtensionParams` (lower coefficients of `f`, little-endian) and prove
    `...Params.poly = f`; register the `Fact` and define the `abbrev` — see
    `KoalaBear/Ext5.lean` (supporting cert/proof files under `KoalaBear/Ext5/`).
@@ -193,45 +270,68 @@ in. The current instantiation over `ZMod`, however, is **not** fast. Measured wi
 
 | Group | Operation | Average |
 |---|---|---|
-| `fields-extension-koalabear-ext4-mul` | `mul` | ~73 us |
-| `fields-extension-koalabear-ext4-inv` | `inv` | ~13 ms |
+| `fields-extension-koalabear-ext4-mul` | `mul` | ~25 us |
+| `fields-extension-koalabear-ext4-inv` | `inv` | ~3.5 ms |
+| `fields-extension-koalabear-ext5-mul` | `mul` | ~41 us |
+| `fields-extension-koalabear-ext5-inv` | `inv` | ~7.6 ms |
+| `fields-extension-koalabear-ext6-mul` | `mul` | ~64 us |
+| `fields-extension-koalabear-ext6-inv` | `inv` | ~15 ms |
 
 For scale, a hand-written Rust degree-4 BabyBear multiply is a few nanoseconds. Do not quote
-this framework as performance-ready until the items below are done. (Before the
-general-modulus rewrite the binomial fold measured ~13.4 us / ~1.7 ms; the ~5x regression is
-the cost of `monomialMod` below and is the first thing the planned rewrite recovers.)
+this framework as performance-ready until the items below are done.
 
-The three causes, in order of size:
+Those numbers are with the reduction table in place. The same benchmarks with `@[csimp]` removed
+from `mul_eq_mulTbl`, i.e. running the specification directly, on the same machine:
 
-1. **`Ext.mul` recomputes the reduction per term, and separately allocates.** Two distinct
-   problems, and a rewrite must fix both.
+| Operation | Spec (`mul`) | Table (`mulTbl`) | Speedup |
+|---|---|---|---|
+| Ext4 `mul` | 78.1 us | 25.4 us | 3.1x |
+| Ext4 `inv` | 14.0 ms | 3.5 ms | 4.0x |
+| Ext5 `mul` | 195.6 us | 40.6 us | 4.8x |
+| Ext6 `mul` | 429.8 us | 63.8 us | 6.7x |
+| Ext6 `inv` | 119.6 ms | 15.1 ms | 7.9x |
 
-   *Asymptotics.* The definition expands each product monomial through
-   `monomialMod (i + j) = shiftReduce^[i+j] 1`, recomputed for every `(m, i, j)` — that is what
-   keeps the correctness proof one additive lemma, and what makes the compiled code roughly
-   O(d⁴)–O(d⁵). The fast shape is O(d²): schoolbook convolution to length `2d - 1`, then fold
-   the high half through a **precomputed** table `X^d … X^(2d-2) mod f` (the `monomialMod`
-   values, computed once per `P` rather than per multiplication).
+The speedup growing with `d` is the point: it is the `O(d^5) → O(d^3)` change becoming visible.
+The 78 us spec figure also reproduces the ~73 us recorded before the table existed, which is what
+makes this an honest A/B rather than a change of measurement conditions.
+
+The remaining causes, in order of size:
+
+1. **`Ext.mul` allocates, and its asymptotics are still not optimal.**
+
+   *Asymptotics.* `mul` — the specification — expands each product monomial through
+   `monomialMod (i + j) = shiftReduce^[i+j] 1`, recomputed for every `(m, i, j)`. That is what
+   keeps the correctness proof one additive lemma, and what made the compiled code roughly
+   O(d⁵). `Ext.red` now holds `X^0 … X^(2d-2) mod f`, and `Ext.mulTbl` consults it instead;
+   `mul_eq_mulTbl` is registered `@[csimp]`, so compilation is swapped while every proof still
+   refers to `Ext.mul`. That is O(d³). The remaining step to O(d²) is a schoolbook convolution
+   to length `2d - 1` folded through `red`, rather than the current triple sum, plus hoisting
+   `red` out of `mulTbl` so it is computed once per `P` rather than once per multiplication.
 
    *Allocation.* Because `P` is a runtime parameter nothing monomorphises: `Finset.univ` is
-   rebuilt and `Fin` values boxed on every call. `@[specialize]` recovers only about 6%.
+   rebuilt and `Fin` values boxed on every call. `@[specialize]` recovers only about 6%. The fix
+   is an `Array`-loop backend, following the `MulContext` idiom in
+   [`Univariate/Context.lean`](../../CompPoly/Univariate/Context.lean).
 
-   The fix is an `Array`-loop implementation proved equal to the current sum-based definition —
-   either as a separate backend behind an agreement lemma, following the `MulContext` idiom in
-   [`Univariate/Context.lean`](../../CompPoly/Univariate/Context.lean), or via `@[csimp]` so the
-   compiled code is swapped while every existing proof keeps referring to `Ext.mul`. Keep the
-   current `monomialMod` expansion as the *spec*: it is what `toQuot_mul` is proved against,
-   and reducing everything to `toQuot_shiftReduce` is why that proof is short.
+   Keep the `monomialMod` expansion as the *spec* whatever replaces `mulTbl`: it is what
+   `toQuot_mul` is proved against, and reducing everything to `toQuot_shiftReduce` is why that
+   proof is short.
 2. **The base field is `ZMod p`**, i.e. boxed `Nat` arithmetic. Instantiating over
    `KoalaBear.Fast.Field` (`UInt32` Montgomery,
    [`Montgomery/Native32Field.lean`](../../CompPoly/Fields/Montgomery/Native32Field.lean))
    needs only `Fintype` for that carrier plus irreducibility transported along
    `Montgomery.Native32.ringEquiv` with `Polynomial.mapEquiv`. No change to the framework.
 3. **Inversion is Fermat** (`x ^ (q^d - 2)`), about `d · log q` extension multiplications — the
-   ~130x ratio to `mul` above. A norm-based inverse would be roughly an order of magnitude
-   faster: when `d ∣ q - 1` the Frobenius map is a coordinate-wise scaling by powers of
-   `W^((q-1)/d)`, so `N(x) = ∏_j φ^j(x)` lands in the base field and
-   `x⁻¹ = (∏_{j≥1} φ^j(x)) · N(x)⁻¹`.
+   ~140x ratio to `mul` above, and it is the reason the `#guard` regressions dominate the test
+   module's build time. A norm-based inverse (Itoh–Tsujii) would be roughly two orders of
+   magnitude faster: `N(x) = ∏_j φ^j(x)` lands in the base field, so
+   `x⁻¹ = (∏_{j≥1} φ^j(x)) · N(x)⁻¹` costs `d - 1` Frobenius applications, `d - 1` extension
+   multiplications, and one base-field inverse.
+
+   The cost hinges on Frobenius being sparse, which is exactly what the modulus choice above
+   buys. For a binomial with `d ∣ q - 1` it is a coordinate-wise scaling by powers of
+   `W^((q-1)/d)`; for `Ext6` it is `θ ↦ θ^2` with all-`±1` entries, since `p ≡ 2 mod 9`. Neither
+   `Ext.frobenius` nor `Ext.norm` exists yet.
 
 None of these is hidden behind an abstraction that makes replacing it awkward, and each is
 guarded by the `#guard` regressions in

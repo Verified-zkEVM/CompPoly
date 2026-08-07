@@ -9,11 +9,13 @@ public meta import CompPoly.Fields.BabyBear.Ext4
 public meta import CompPoly.Fields.Hachi.Ext4
 public meta import CompPoly.Fields.KoalaBear.Ext4
 public meta import CompPoly.Fields.KoalaBear.Ext5
+public meta import CompPoly.Fields.KoalaBear.Ext6
 -- The `#guard`s below run at elaboration time and so need the `meta` imports above; the
 -- `example`s at the end are ordinary declarations and need this plain import as well.
 public import CompPoly.Fields.Extension.Bridge
 public import CompPoly.Fields.KoalaBear.Ext4
 public import CompPoly.Fields.KoalaBear.Ext5
+public import CompPoly.Fields.KoalaBear.Ext6
 
 /-!
 # Extension-field arithmetic tests
@@ -153,6 +155,66 @@ example : Module KoalaBear.Field Ext5 := inferInstance
 example : Algebra KoalaBear.Field Ext5 := inferInstance
 
 end KoalaBearQuintic
+
+/-! ### KoalaBear, `X^6 + X^3 + 1` (`Φ₉`)
+
+The first *composite*-degree general modulus, so this section also pins down that the degree-6
+Rabin packaging produced a genuine field: if `X^6 + X^3 + 1` were reducible, `Ext6` would not be
+a field and the inversion guards below would fail.
+-/
+
+section KoalaBearSextic
+open KoalaBear
+
+private def s6X : Ext6 := Ext.ofFn fun i => ((i : ℕ) + 1 : ℕ)
+private def s6Y : Ext6 := Ext.ofFn fun i => (2 * (i : ℕ) + 5 : ℕ)
+
+-- The defining relation `θ^6 = -θ^3 - 1`.
+#guard ext6Gen ^ 6 == -(ext6Gen ^ 3) - (1 : Ext6)
+#guard ext6Gen ^ 6 + ext6Gen ^ 3 + 1 == (0 : Ext6)
+
+-- `θ` is a primitive 9th root of unity, and `θ^3` a primitive cube root of unity.
+#guard ext6Gen ^ 9 == (1 : Ext6)
+#guard (ext6Gen ^ 3) ^ 3 == (1 : Ext6)
+#guard (ext6Gen ^ 3) ^ 2 + ext6Gen ^ 3 + 1 == (0 : Ext6)
+-- ...and `θ^3 ≠ 1`, so the order really is 9 and not 3.
+#guard ext6Gen ^ 3 != (1 : Ext6)
+
+-- Hand-computed product: with `s6X = (1,2,3,4,5,6)` and `s6Y = (5,7,9,11,13,15)`, the schoolbook
+-- convolution is `(5,17,38,70,115,175,200,206,191,153,90)`. Reducing with `X^6 = -X^3 - 1`,
+-- `X^7 = -X^4 - X`, `X^8 = -X^5 - X^2`, `X^9 = 1`, `X^10 = X` folds the top five terms down:
+--   `c0 = 5 - 200 + 153 = -42`     `c3 = 70 - 200 = -130`
+--   `c1 = 17 - 206 + 90 = -99`     `c4 = 115 - 206 = -91`
+--   `c2 = 38 - 191 = -153`         `c5 = 175 - 191 = -16`
+-- Note every fold is a plain add or subtract — no coefficient multiplications, which is the
+-- arithmetic reason `Φ₉` was chosen over the other irreducible sextics.
+#guard (s6X * s6Y).coeffs.toArray.map (·.val)
+  == #[2130706391, 2130706334, 2130706280, 2130706303, 2130706342, 2130706417]
+
+-- Ring identities.
+#guard (s6X + s6Y) * (s6X - s6Y) == s6X * s6X - s6Y * s6Y
+#guard (s6X + s6Y) ^ 2 == s6X * s6X + 2 * s6X * s6Y + s6Y * s6Y
+#guard s6X ^ 5 == s6X * s6X * s6X * s6X * s6X
+#guard (3 : Ext6) * s6X == s6X + s6X + s6X
+
+-- Inversion.
+#guard s6X * s6X⁻¹ == 1
+#guard s6Y * s6Y⁻¹ == 1
+#guard ext6Gen * ext6Gen⁻¹ == 1
+#guard (0 : Ext6)⁻¹ == 0
+#guard (s6X / s6Y) * s6Y == s6X
+
+-- `θ⁻¹ = θ^8` follows from `θ^9 = 1`, and is a cheap independent check on Fermat inversion.
+#guard ext6Gen⁻¹ == ext6Gen ^ 8
+
+-- The base field embeds as the constant coefficient.
+#guard Ext.coeff (7 : Ext6) ⟨0, by norm_num⟩ == (7 : KoalaBear.Field)
+
+-- The instances Mathlib consumers need resolve at composite degree too.
+example : Module KoalaBear.Field Ext6 := inferInstance
+example : Algebra KoalaBear.Field Ext6 := inferInstance
+
+end KoalaBearSextic
 
 /-! ### The `Algebra` surface
 
