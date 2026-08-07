@@ -61,8 +61,10 @@ run by every implementation in that group.
 ## What Is Measured
 
 The benchmark covers evaluation paths, direct and NTT-backed univariate
-multiplication, additive NTT implementations, and scalar-field inversion
-(`fields-mont64x8-*-inv`: `ZMod` extended Euclid vs checked binary GCD vs Fermat).
+multiplication, additive NTT implementations, scalar-field inversion
+(`fields-mont64x8-*-inv`: `ZMod` extended Euclid vs checked binary GCD vs Fermat),
+and binary tower field operations (`fields-tower-bt128-*`: `BitVec` spec vs
+packed-word implementation).
 
 Some groups run each implementation over both the canonical `ZMod`
 representation and the native-word Montgomery representation, so the two appear as
