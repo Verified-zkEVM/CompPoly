@@ -55,7 +55,7 @@ theorem support_spec {R : Type*} [Zero R] [BEq R] (p : Foo R) : ... := ...
 
 These examples come directly from the recent typeclass-tightening refactor.
 
-- `CompPoly/Univariate/Quotient.lean` now defines the quotient carrier at
+- `CompPoly/Univariate/Quotient/Core.lean` now defines the quotient carrier at
   `Zero` level because coefficientwise equivalence only needs zero-padding:
 
 ```lean
@@ -85,15 +85,17 @@ lemma neg_coeff {R : Type*} [NegZeroClass R] (p : CPolynomial.Raw R) (i : ℕ) :
 ```
 
 - `CompPoly/Univariate/Raw/Division.lean` no longer carries a blanket `Ring`
-  assumption at section scope because every definition already has its own
-  `[Field R]` requirement:
+  assumption at section scope. Only `[BEq R]` is shared; each definition then
+  states what it actually needs, and the three monic-division definitions turn out
+  to need no inverses at all:
 
 ```lean
 section Division
 
 variable [BEq R]
 
-def divModByMonicAux [Field R] ...
+def divModByMonicAux [CommRing R] ...   -- also divByMonic, modByMonic
+def subScaledShift [Field R] ...        -- the rest genuinely need inverses
 ```
 
 ## Review Checklist

@@ -60,7 +60,7 @@ The description should include:
 
 ## Style and Naming Guidelines
 We aim to adhere to the [Lean community's contribution guidelines](https://github.com/leanprover-community/leanprover-community.github.io/tree/lean4/templates/contribute).
-Our [linting script](`./scripts/lint-style.sh`) helps enforce some aspects of these guidelines.
+Our [linting script](scripts/lint-style.sh) helps enforce some aspects of these guidelines.
 
 ### Naming Conventions
 
@@ -233,7 +233,7 @@ When referencing papers in Lean docstrings:
   ```
   Format: `* [Author Last Name, First Initial, *Title*][citation_key]`.
 
-* **Add BibTeX entries**: All academic papers must have entries in `blueprint/src/references.bib`. When adding a new paper, add the BibTeX entry, use the citation key in your Lean file, and list it in the References section.
+* **Add BibTeX entries**: All academic papers must have entries in [`blueprint/src/references.bib`](blueprint/src/references.bib). When adding a new paper, add the BibTeX entry, use the citation key in your Lean file, and list it in the References section. That file is currently a standalone bibliography — there is no rendered leanblueprint project yet — and its header records the `grep` that lists cited-but-missing keys.
 
 * **Non-academic references**: Implementation references (GitHub repos, specifications) may include URLs directly and typically don't need BibTeX entries.
 

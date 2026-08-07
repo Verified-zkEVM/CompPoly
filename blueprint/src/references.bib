@@ -1,0 +1,177 @@
+% CompPoly bibliography.
+%
+% Every citation key used in a Lean docstring must have an entry here; see the
+% "Citation Standards" section of CONTRIBUTING.md. Keys are cited from Lean as
+% `[Author, *Title*][Key]` inside a `## References` block.
+%
+% To find keys that are cited but missing from this file:
+%
+%   grep -rho '\]\[[A-Za-z][A-Za-z0-9+]*\]' --include='*.lean' CompPoly/ \
+%     | sort -u
+%
+% (That grep also matches `[...][Y]` and `[...][x]` from ordinary Lean indexing
+% notation; ignore those two.)
+
+% ---------------------------------------------------------------------------
+% Coding theory: Reed-Solomon encoding and decoding
+% ---------------------------------------------------------------------------
+
+@article{GS99,
+  author  = {Guruswami, Venkatesan and Sudan, Madhu},
+  title   = {Improved decoding of {Reed--Solomon} and algebraic-geometry codes},
+  journal = {IEEE Transactions on Information Theory},
+  volume  = {45},
+  number  = {6},
+  pages   = {1757--1767},
+  year    = {1999},
+  doi     = {10.1109/18.782097}
+}
+
+@incollection{Gao02,
+  author    = {Gao, Shuhong},
+  title     = {A new algorithm for decoding {Reed--Solomon} codes},
+  booktitle = {Communications, Information and Network Security},
+  editor    = {Bhargava, Vijay K. and Poor, H. Vincent and Tarokh, Vahid and
+               Yoon, Seokho},
+  series    = {The Springer International Series in Engineering and Computer
+               Science},
+  volume    = {712},
+  pages     = {55--68},
+  publisher = {Springer},
+  year      = {2003},
+  doi       = {10.1007/978-1-4757-3789-9_5},
+  note      = {Manuscript circulated from 2002; cited as \texttt{Gao02}}
+}
+
+@article{RR00,
+  author  = {Roth, Ron M. and Ruckenstein, Gitit},
+  title   = {Efficient decoding of {Reed--Solomon} codes beyond half the minimum
+             distance},
+  journal = {IEEE Transactions on Information Theory},
+  volume  = {46},
+  number  = {1},
+  pages   = {246--257},
+  year    = {2000},
+  doi     = {10.1109/18.817522}
+}
+
+@article{Ale05,
+  author  = {Alekhnovich, Michael},
+  title   = {Linear {Diophantine} equations over polynomials and soft decoding of
+             {Reed--Solomon} codes},
+  journal = {IEEE Transactions on Information Theory},
+  volume  = {51},
+  number  = {7},
+  pages   = {2257--2265},
+  year    = {2005},
+  doi     = {10.1109/TIT.2005.850102}
+}
+
+@article{LOS06,
+  author  = {Lee, Kwankyu and O'Sullivan, Michael E.},
+  title   = {List decoding of {Reed--Solomon} codes from a {Gr\"obner} basis
+             perspective},
+  journal = {Journal of Symbolic Computation},
+  volume  = {43},
+  number  = {9},
+  pages   = {645--658},
+  year    = {2008},
+  doi     = {10.1016/j.jsc.2008.01.002},
+  note    = {Preprint \texttt{arXiv:math/0601022} (2006); cited as \texttt{LOS06}}
+}
+
+@inproceedings{LCH14,
+  author    = {Lin, Sian-Jheng and Chung, Wei-Ho and Han, Yunghsiang S.},
+  title     = {Novel polynomial basis and its application to {Reed--Solomon}
+               erasure codes},
+  booktitle = {55th Annual IEEE Symposium on Foundations of Computer Science
+               (FOCS)},
+  pages     = {316--325},
+  year      = {2014},
+  doi       = {10.1109/FOCS.2014.41}
+}
+
+% ---------------------------------------------------------------------------
+% Root finding, polynomial arithmetic, and linear algebra
+% ---------------------------------------------------------------------------
+
+@article{MOV92,
+  author  = {Menezes, Alfred J. and van Oorschot, Paul C. and
+             Vanstone, Scott A.},
+  title   = {Subgroup refinement algorithms for root finding in {$GF(q)$}},
+  journal = {SIAM Journal on Computing},
+  volume  = {21},
+  number  = {2},
+  pages   = {228--239},
+  year    = {1992},
+  doi     = {10.1137/0221017}
+}
+
+@article{MS03,
+  author  = {Mulders, Thom and Storjohann, Arne},
+  title   = {On lattice reduction for polynomial matrices},
+  journal = {Journal of Symbolic Computation},
+  volume  = {35},
+  number  = {4},
+  pages   = {377--401},
+  year    = {2003},
+  doi     = {10.1016/S0747-7171(02)00139-6}
+}
+
+@inproceedings{GGJ96,
+  author    = {von zur Gathen, Joachim and Gerhard, J\"urgen},
+  title     = {Arithmetic and factorization of polynomials over {$\mathbb{F}_2$}
+               (extended abstract)},
+  booktitle = {Proceedings of the 1996 International Symposium on Symbolic and
+               Algebraic Computation (ISSAC '96)},
+  pages     = {1--9},
+  publisher = {ACM},
+  year      = {1996},
+  doi       = {10.1145/236869.236882},
+  note      = {Cited in the Lean sources as \texttt{GGJ96}}
+}
+
+@book{Lan02,
+  author    = {Lang, Serge},
+  title     = {Algebra},
+  edition   = {3},
+  series    = {Graduate Texts in Mathematics},
+  volume    = {211},
+  publisher = {Springer},
+  year      = {2002},
+  doi       = {10.1007/978-1-4613-0041-0}
+}
+
+% ---------------------------------------------------------------------------
+% Binary towers
+% ---------------------------------------------------------------------------
+
+@misc{DP23,
+  author       = {Diamond, Benjamin E. and Posen, Jim},
+  title        = {Succinct arguments over towers of binary fields},
+  howpublished = {Cryptology ePrint Archive, Paper 2023/1784},
+  year         = {2023},
+  url          = {https://eprint.iacr.org/2023/1784}
+}
+
+@misc{DP24,
+  author       = {Diamond, Benjamin E. and Posen, Jim},
+  title        = {Polylogarithmic proofs for multilinears over binary towers},
+  howpublished = {Cryptology ePrint Archive, Paper 2024/504},
+  year         = {2024},
+  url          = {https://eprint.iacr.org/2024/504}
+}
+
+% ---------------------------------------------------------------------------
+% Cited from docs/wiki/field-extensions.md rather than a Lean docstring.
+% TODO: fill in author and title from the ePrint before relying on this entry.
+% ---------------------------------------------------------------------------
+
+@misc{ABF26,
+  title        = {Cryptology ePrint Archive, Paper 2026/680},
+  howpublished = {Cryptology ePrint Archive, Paper 2026/680},
+  year         = {2026},
+  url          = {https://eprint.iacr.org/2026/680},
+  note         = {Parameter point behind ArkLib's \texttt{KoalaSextic};
+                  author list and title not yet transcribed}
+}
