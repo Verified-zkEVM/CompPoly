@@ -8,8 +8,8 @@ This directory contains the main helper scripts for local validation and CI supp
 - `./scripts/check-imports.sh` - verify that `CompPoly.lean` is up to date.
 - `./scripts/lint-style.sh` - run the Lean style linter and repo-wide Lean-file
   checks.
-- `python3 ./scripts/check-docs-integrity.py` - verify the `CLAUDE.md` symlink and
-  local markdown links across the handbook.
+- `python3 ./scripts/check-docs-integrity.py` - verify the `CLAUDE.md` symlink,
+  local markdown links, and backticked source paths across the handbook.
 
 ## Script Inventory
 
@@ -67,6 +67,23 @@ script doubles as a checker.
 Run `python3 scripts/gen_rabin_certificate.py --self-test` to check the generator
 against known-answer cases, including a reducible sextic that the prime-degree form of
 the test would wrongly accept.
+
+### `check-docs-integrity.py`
+
+Three checks over every tracked `.md` file:
+
+1. `CLAUDE.md` exists and is a symlink to `AGENTS.md`.
+2. Local markdown links resolve.
+3. Backticked source paths — `` `CompPoly/Univariate/Basic.lean` `` and friends,
+   with extensions `.lean`, `.py`, `.sh`, `.yml`, `.bib` — point at files that
+   exist.
+
+The third check is the one that catches module splits and renames, since the docs
+cite far more paths in backticks than in markdown links. Bare filenames with no
+directory, glob patterns, and paths ending in `/` are skipped as prose. Paths may
+be written relative to the repo root, to the citing file's directory, or to one of
+the subtree roots in `PATH_PREFIXES` — so a page about `Fields/` may write
+`KoalaBear/Ext4.lean`. Adding a prefix weakens the check; prefer fixing the doc.
 
 ### `build_timing_report.sh`
 

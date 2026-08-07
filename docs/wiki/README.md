@@ -21,6 +21,8 @@ are too specific or too changeable to keep at the repo root.
   GHASH model, and additive-NTT architecture.
 - [`field-extensions.md`](field-extensions.md) - the computable field-extension
   framework for arbitrary monic moduli and its irreducibility criteria.
+- [`coding-theory.md`](coding-theory.md) - Reed-Solomon encoding, unique and list
+  decoding, univariate root finding, and the linear-algebra engines beneath them.
 
 ## Maintenance Contract
 
@@ -36,6 +38,8 @@ are too specific or too changeable to keep at the repo root.
     blanket instance scopes.
   - `binary-fields-and-ntt.md` for the specialized field and NTT stack.
   - `field-extensions.md` for the odd-characteristic field-extension framework.
+  - `coding-theory.md` for Reed-Solomon coding, the decoders, root finding, and
+    the matrix layer.
 - Add new pages when a recurring topic no longer fits cleanly in an existing page.
 - If a PR changes commands, repo structure, generated-file behavior, or recurring
   architecture guidance, update the matching page in the same PR.

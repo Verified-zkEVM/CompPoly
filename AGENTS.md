@@ -20,13 +20,18 @@ Human contributors should usually start with [`README.md`](README.md),
 ## Where To Work
 
 - `CompPoly/Univariate/` - canonical univariate representation, quotient model,
-  interpolation, and Mathlib bridges.
+  interpolation, and Mathlib bridges, plus the NTT transforms, batch evaluation,
+  root finding (`Univariate/Roots/`), and Reed-Solomon encoding and Gao decoding
+  (`Univariate/ReedSolomon/`).
 - `CompPoly/Multivariate/` - sparse computable multivariate polynomials,
   operations, renaming, restriction, and `MvPolynomial` equivalences.
 - `CompPoly/Multilinear/` - coefficient and Boolean-hypercube evaluation forms for
   multilinear polynomials.
 - `CompPoly/Bivariate/` - specialized bivariate layer built from nested
-  univariate polynomials.
+  univariate polynomials, including the Guruswami-Sudan list decoder
+  (`Bivariate/GuruswamiSudan/`).
+- `CompPoly/LinearAlgebra/` - executable dense matrices and polynomial matrices
+  with shifted row reduction; the engines under the decoder.
 - `CompPoly/Fields/` - concrete field instances plus the computable
   field-extension framework (`Fields/Extension/`, `F[X]/f` for an arbitrary monic
   `f`, with binomials `X^d - W` as the ergonomic special case) and binary-field,
@@ -62,6 +67,8 @@ Human contributors should usually start with [`README.md`](README.md),
   minimal typeclass assumptions and no-blanket-scope guidance.
 - [`docs/wiki/binary-fields-and-ntt.md`](docs/wiki/binary-fields-and-ntt.md) -
   binary-field stack, GHASH, and additive NTT.
+- [`docs/wiki/coding-theory.md`](docs/wiki/coding-theory.md) - Reed-Solomon
+  encoding, unique and list decoding, root finding, and the matrix layer.
 - [`docs/wiki/field-extensions.md`](docs/wiki/field-extensions.md) - computable
   field extensions for an arbitrary monic modulus, and their two irreducibility
   paths: Rabin's test collapsed to base-field exponentiations for binomials,
