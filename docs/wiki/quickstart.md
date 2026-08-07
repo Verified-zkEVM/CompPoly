@@ -76,9 +76,13 @@ to be covered there. See [`../../bench/README.md`](../../bench/README.md).
 ## CI Mapping
 
 - [`../../.github/workflows/lean_action_ci.yml`](../../.github/workflows/lean_action_ci.yml)
-  runs a clean build, warm rebuild, and `lake test`, then posts a build-timing
-  report. It also builds and runs `CompPolyBench --medium` over the curated
+  runs a **warm** (incremental) `lake build` by default — reusing cached Lake
+  oleans so only dirty modules rebuild — then `lake test`, and posts a
+  build-timing report. It also builds and runs `CompPolyBench --medium` over the curated
   `BENCH_CI_GROUPS` selection, then uploads benchmark reports as CI artifacts.
+  For a full cold rebuild, use **Actions → Lean Action CI → Run workflow** and
+  enable the `clean_build` input (wipes `.lake/build` first). Default PR/push
+  runs do not wipe the cache.
 - [`../../.github/workflows/linting.yml`](../../.github/workflows/linting.yml) runs
   the style linter on changed `.lean` files in PRs and push builds.
 - [`../../.github/workflows/check_imports.yml`](../../.github/workflows/check_imports.yml)
