@@ -97,7 +97,7 @@ def satisfiesMultiplicityConstraintsViaDivisibilityBool {F : Type*}
 contract, agreeing with `interpolationWitnessIsValidBool` on point sets with
 distinct `x`-coordinates but avoiding its per-point Hasse derivative loop. -/
 def interpolationWitnessIsValidViaDivisibilityBool {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+    [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (V : CPolynomial.VanishingPolynomialContext F)
     (E : CPolynomial.BatchEvalContext F)
     (Mul : CPolynomial.MulContext F) (Mod : CPolynomial.ModContext F)

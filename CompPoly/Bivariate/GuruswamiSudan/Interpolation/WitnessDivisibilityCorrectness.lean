@@ -44,7 +44,7 @@ namespace GuruswamiSudan
 
 open CBivariate
 
-variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
 
 /-! ### Generic helpers -/
 
@@ -55,7 +55,7 @@ private theorem witness_cpoly_eq_of_toPoly_eq {R : Type*}
   intro i
   rw [CPolynomial.coeff_toPoly, CPolynomial.coeff_toPoly, h]
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 private theorem witness_linearFactor_toPoly (x : F) :
     (CPolynomial.linearFactor x).toPoly =
       (Polynomial.X - Polynomial.C x : Polynomial F) := by
@@ -63,7 +63,7 @@ private theorem witness_linearFactor_toPoly (x : F) :
     CPolynomial.X_toPoly, Polynomial.C_neg]
   ring
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 private theorem witness_foldl_linearFactor_monic (l : List F) (acc : CPolynomial F)
     (hacc : acc.toPoly.Monic) :
     (l.foldl (fun acc x ↦ acc * CPolynomial.linearFactor x) acc).toPoly.Monic := by
@@ -212,7 +212,7 @@ private theorem witness_outerCoeff_shiftC_C (x y : F) (c : CPolynomial F)
 
 /-! ### The quotient keeps multiplicity -/
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- Univariate coefficients of a difference. -/
 private theorem witness_coeff_sub (p q : CPolynomial F) (i : Nat) :
     CPolynomial.coeff (p - q) i =
@@ -301,7 +301,7 @@ private theorem witness_hasMultiplicity_quot
 
 /-! ### Multiplicity closure helpers -/
 
-omit [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F] in
+omit [BEq F] [LawfulBEq F] [DecidableEq F] in
 private theorem witness_hasMultiplicityAtLeast_zero (P : CBivariate F) (x y : F) :
     CBivariate.HasMultiplicityAtLeast P x y 0 :=
   fun _ _ hab ↦ absurd hab (by omega)

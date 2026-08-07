@@ -33,7 +33,7 @@ namespace ApproximantBasis
 open PolynomialMatrix
 open PolynomialMatrix.Approximant
 
-variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
 
 /-- Normalize a row-derived approximant candidate using the shared interpolation
 vector policy. -/

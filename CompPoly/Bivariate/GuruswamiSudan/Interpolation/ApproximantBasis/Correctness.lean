@@ -31,11 +31,11 @@ namespace ApproximantBasis
 open PolynomialMatrix
 open PolynomialMatrix.Approximant
 
-variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
 
 /-! ## Width truncation helpers -/
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- Entries of the width truncation of a coefficient row. -/
 private theorem rowGet_toCoeffRow_ofCoeffRow (row : PolynomialRow F)
     (width : Nat) {j : Nat} (hj : j < width) :
@@ -47,7 +47,7 @@ private theorem rowGet_toCoeffRow_ofCoeffRow (row : PolynomialRow F)
     CPolynomial.coeff_ofArray]
   rfl
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- Width truncation preserves all coefficients below the width. -/
 private theorem coeff_toCoeffRow_ofCoeffRow (row : PolynomialRow F)
     {width i j : Nat} (hj : j < width) :
@@ -69,7 +69,7 @@ private theorem coeff_toCoeffRow_ofCoeffRow (row : PolynomialRow F)
     rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hjrow]
     exact CPolynomial.coeff_zero i
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- Every interpolation monomial has `Y`-degree below the interpolation width
 when the `Y`-weight is positive. -/
 private theorem interpolationMonomials_yDegree_lt (params : GSInterpParams)
@@ -88,7 +88,7 @@ private theorem interpolationMonomials_yDegree_lt (params : GSInterpParams)
   rw [interpolationWidth]
   omega
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- The interpolation coefficient vector only sees the first
 `interpolationWidth params` coefficient rows. -/
 private theorem interpolationCoefficientVector_toCoeffRow (params : GSInterpParams)
@@ -109,7 +109,7 @@ private theorem interpolationCoefficientVector_toCoeffRow (params : GSInterpPara
       (interpolationMonomials_yDegree_lt params hw
         (Array.getElem_mem_toList hi'))
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- Width truncation does not increase the shifted row degree. -/
 private theorem rowShiftedDegree?_toCoeffRow_le {row : PolynomialRow F}
     {shift : Array Nat} {width d d' : Nat}
@@ -136,7 +136,7 @@ private theorem rowShiftedDegree?_toCoeffRow_le {row : PolynomialRow F}
   simp only [shiftedEntryDegree?]
   exact hentry
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- A vector with all-zero entries does not normalize. -/
 private theorem normalizeVector?_eq_none_of_all_zero {v : Array F}
     (h : ∀ i, i < v.size → v.getD i 0 = 0) :
@@ -354,7 +354,7 @@ theorem approximantBasisInterpolate_sound
 
 /-! ## Completeness -/
 
-omit [LawfulBEq F] [Nontrivial F] [DecidableEq F] in
+omit [LawfulBEq F] [DecidableEq F] in
 /-- The shifted row degree only sees shift entries below the row size. -/
 private theorem rowShiftedDegree?_congr_shift {row : PolynomialRow F}
     {shift shift' : Array Nat}
@@ -365,7 +365,7 @@ private theorem rowShiftedDegree?_congr_shift {row : PolynomialRow F}
   have hj' : j < row.size := List.mem_range.mp hj
   simp only [shiftedEntryDegree?, h j hj']
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- Entry access for the weighted-degree shift array. -/
 private theorem weightedDegreeShift_getD {w width j : Nat} (hj : j < width) :
     (CBivariate.weightedDegreeShift w width).getD j 0 = j * w := by
@@ -389,7 +389,7 @@ private theorem ofCoeffRow_eq_zero_of_rowIsZero {row : PolynomialRow F}
   · rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hn]
     rfl
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- Bounded-weighted-degree polynomials have no `Y`-coefficients at or above
 the interpolation width. -/
 private theorem coeff_eq_zero_of_interpolationWidth_le
@@ -421,7 +421,7 @@ private theorem coeff_eq_zero_of_interpolationWidth_le
   intro i
   exact hcoeffs i
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- Width truncation is the identity on bounded-weighted-degree polynomials. -/
 private theorem ofCoeffRow_toCoeffRow_eq
     {params : GSInterpParams} (hw : 0 < yWeight params) {Q : CBivariate F}
