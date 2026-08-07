@@ -5,6 +5,13 @@ on:
     branches: [main, master]
   pull_request:
   workflow_dispatch:
+    inputs:
+      clean_build:
+        description: >-
+          Wipe .lake/build and run a full clean lake build before the warm path.
+          Default CI is warm/incremental (reuse cached oleans).
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -80,11 +87,28 @@ jobs:
           if [ -n "$merge_base_sha" ]; then
             echo "BUILD_TIMING_MERGE_BASE_SHA=$merge_base_sha" >> "$GITHUB_ENV"
           fi
+      # Default: warm/incremental builds (reuse oleans; Lake rebuilds only dirty modules).
+      # Clean full rebuild only when manually requested via workflow_dispatch.
+      - name: Resolve clean-build flag
+        run: |
+          clean_build=false
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && \
+             [ "${{ inputs.clean_build }}" = "true" ]; then
+            clean_build=true
+          fi
+          echo "CLEAN_BUILD=$clean_build" >> "$GITHUB_ENV"
+          if [ "$clean_build" = true ]; then
+            echo "Clean build requested: will wipe .lake/build before lake build."
+          else
+            echo "Warm build (default): reuse cached .lake oleans; no wipe."
+          fi
       - name: Restore Lake cache
         id: lake-cache
         uses: actions/cache/restore@v4
         with:
           path: .lake
+          # Exact key per commit; restore-keys fall back to latest compatible
+          # toolchain+manifest cache (typically main or a recent PR head).
           key: lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ github.sha }}
           restore-keys: |
             lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
@@ -97,10 +121,11 @@ jobs:
           lint: false
           use-github-cache: false
       - name: Time clean build
+        if: env.CLEAN_BUILD == 'true'
         run: |
           bash scripts/build_timing_report.sh run clean_build "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c 'rm -rf .lake/build && lake build'
-      - name: Time warm rebuild
+      - name: Time library build (warm)
         run: |
           bash scripts/build_timing_report.sh run warm_rebuild "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c 'lake build'
@@ -143,6 +168,9 @@ jobs:
           path: ${{ env.EVALUATION_BENCH_ARTIFACT_DIR }}
           if-no-files-found: warn
           retention-days: 30
+      # Save after successful runs so the next PR can restore oleans via restore-keys.
+      # Skip exact cache-hit re-runs of the same commit (key already stored; save would fail).
+      # New main SHAs always miss the exact key, so tip oleans are refreshed for PRs.
       - name: Save Lake cache
         if: success() && steps.lake-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -159,6 +187,12 @@ jobs:
           fi
           if [ -f "$BUILD_TIMING_LOG_DIR/clean_build.log" ]; then
             cp "$BUILD_TIMING_LOG_DIR/clean_build.log" "$BUILD_TIMING_ARTIFACT_DIR/clean_build.log"
+          fi
+          if [ -f "$BUILD_TIMING_LOG_DIR/warm_rebuild.log" ]; then
+            cp "$BUILD_TIMING_LOG_DIR/warm_rebuild.log" "$BUILD_TIMING_ARTIFACT_DIR/warm_rebuild.log"
+          fi
+          if [ -f "$BUILD_TIMING_LOG_DIR/test_path.log" ]; then
+            cp "$BUILD_TIMING_LOG_DIR/test_path.log" "$BUILD_TIMING_ARTIFACT_DIR/test_path.log"
           fi
       - name: Upload timing artifact
         if: always()
