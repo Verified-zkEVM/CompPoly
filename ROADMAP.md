@@ -192,7 +192,12 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - ✅ Smooth multiplicative-subgroup refinement splitting for finite fields whose
      multiplicative group admits a smooth schedule ([MOV92],
      `Roots/SmoothSubgroup/`), benchmarked as `univariate-roots-finite-field-*`
-   - 🔄 Splitting strategies for fields with no smooth refinement schedule
+   - ✅ Shoup-style small-characteristic trace splitting ([vzGS92],
+     `Roots/Shoup/`) and bounded Las Vegas Cantor–Zassenhaus (`Roots/LasVegas/`,
+     odd-char and char-2 trace branches with probability proofs) for fields
+     without a smooth refinement schedule
+   - 🔄 Named high-width binary-tower `SmallPrimeTraceContext` instances (32/64)
+     and optional GF(2^{48})/GF(2^{72}) carriers for production char-2 benches
 
 10. **Computable linear algebra**
     - ✅ Dense row-major matrices with row operations, RREF shape and semantics, and
