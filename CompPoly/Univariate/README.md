@@ -18,8 +18,8 @@ Formally verified computable univariate polynomials for [CompPoly](../../README.
 - **Raw/Division.lean** — Raw polynomial division APIs (`divByMonic`, `modByMonic`, `div`, `mod`).
 - **Raw/Proofs.lean** — Proof layer for the raw API (algebraic laws and operation correctness).
 - **Basic.lean** — Canonical `CPolynomial` with ring structure (Add, Mul, Zero, One, etc.).
-- **Quotient.lean** — Quotient type and operations descending from `Raw`.
-- **QuotientEquiv.lean** — Equivalence between the quotient representation and canonical `CPolynomial`.
+- **Quotient/Core.lean** — Quotient type and operations descending from `Raw`.
+- **Quotient/Equiv.lean** — Equivalence between the quotient representation and canonical `CPolynomial`.
 - **ToPoly.lean** — Umbrella import for conversion/equivalence with Mathlib's `Polynomial R`.
 - **ToPoly/Core.lean** — Core conversion maps and API lemmas.
 - **ToPoly/Equiv.lean** — Round-trip theorems and ring equivalence with Mathlib polynomials.

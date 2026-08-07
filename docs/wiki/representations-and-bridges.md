@@ -10,7 +10,7 @@ usually the first architectural decision in a change.
 | Univariate | `CPolynomial.Raw R`, `CPolynomial R`, `QuotientCPolynomial R` | Canonical coefficient-sequence arithmetic, quotient reasoning, interpolation | `CompPoly/Univariate/README.md`, `CompPoly/Univariate/Basic.lean`, `CompPoly/Univariate/ToPoly.lean` |
 | Multivariate | `CMvPolynomial n R` | Sparse computable multivariate operations and `MvPolynomial` interop | `CompPoly/Multivariate/CMvPolynomial.lean`, `CompPoly/Multivariate/Operations.lean`, `CompPoly/Multivariate/MvPolyEquiv.lean` |
 | Multilinear | `CMlPolynomial R n`, `CMlPolynomialEval R n` | Boolean-hypercube evaluation form, basis conversion, multilinear extensions | `CompPoly/Multilinear/Basic.lean`, `CompPoly/Multilinear/Equiv.lean` |
-| Field extensions | `Extension.Ext P` | Computable `F[X]/(X^d - W)` arithmetic for challenge fields | `CompPoly/Fields/Extension.lean`, `docs/wiki/field-extensions.md` |
+| Field extensions | `Extension.Ext P` | Computable `F[X]/f` arithmetic for challenge fields, `f` an arbitrary monic modulus | `CompPoly/Fields/Extension.lean`, `docs/wiki/field-extensions.md` |
 | Bivariate | `CBivariate R` | Specialized two-variable APIs and `R[X][Y]` transport | `CompPoly/Bivariate/README.md`, `CompPoly/Bivariate/Basic.lean`, `CompPoly/Bivariate/ToPoly.lean`, `CompPoly/ToMathlib/Polynomial/BivariateDegree.lean`, `CompPoly/ToMathlib/Polynomial/BivariateWeightedDegree.lean`, `CompPoly/ToMathlib/Polynomial/BivariateMultiplicity.lean` |
 
 ## Univariate Family
@@ -141,8 +141,10 @@ specific polynomial representation.
 ## Field Extensions
 
 `CompPoly.Extension.Ext P` is a *fixed-length* dense representation, unlike the
-polynomial surfaces above: `Vector F P.d`, where `P : BinomialParams F` pins the degree
-and the constant `W` of the defining binomial `X^d - W`.
+polynomial surfaces above: `Vector F P.d`, where `P : ExtensionParams F` carries the
+degree `d`, the lower coefficients of the monic modulus `f`, and the base-field
+cardinality `q` as a type index. Binomials `X^d - W` are the ergonomic special case,
+entered through `BinomialParams.toExtensionParams`.
 
 The bridge is
 [`../../CompPoly/Fields/Extension/Bridge.lean`](../../CompPoly/Fields/Extension/Bridge.lean),

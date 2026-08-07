@@ -10,7 +10,9 @@ For example:
 - library module: `CompPoly/Univariate/Raw.lean`
 - test module: `tests/CompPolyTests/Univariate/Raw.lean`
 
-Some tests are cross-cutting rather than one-to-one mirrors (for example, `CompPolyTests/BF128GhashPrelude.lean`).
+Some tests are cross-cutting rather than one-to-one mirrors, and some mirror a
+whole subtree rather than a single module (for example,
+`tests/CompPolyTests/Fields/Binary/BF128Ghash/`).
 
 ## Running tests
 
