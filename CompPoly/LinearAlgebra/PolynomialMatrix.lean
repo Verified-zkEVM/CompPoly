@@ -7,6 +7,8 @@ module
 
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Basic
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Degree
+public import CompPoly.LinearAlgebra.PolynomialMatrix.Operations
+public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Shifted
 public import CompPoly.LinearAlgebra.PolynomialMatrix.RowSpan
 public import CompPoly.LinearAlgebra.PolynomialMatrix.ShiftedReduction
