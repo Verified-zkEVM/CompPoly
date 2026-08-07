@@ -67,11 +67,11 @@ structure ModularEquation (F : Type*) [Zero F] where
   matrix : PolynomialMatrix F
 
 /-- Number of principal solution coordinates. -/
-def ModularEquation.solutionWidth [Zero F] (equation : ModularEquation F) : Nat :=
+def ModularEquation.solutionWidth (equation : ModularEquation F) : Nat :=
   equation.matrix.size
 
 /-- Number of modular columns. -/
-def ModularEquation.modularWidth [Zero F] (equation : ModularEquation F) : Nat :=
+def ModularEquation.modularWidth (equation : ModularEquation F) : Nat :=
   equation.moduli.size
 
 /-- Diagonal rows `-diag(moduli)` for the exact-nullspace lift. -/
@@ -277,7 +277,7 @@ def candidateRowShift (rows : PolynomialMatrix F) (shift : Array Nat) : Array Na
 The row `e_j * lcm(moduli)` is always a solution and `deg lcm(moduli)` is at
 most the modulus degree mass, so every coordinate's minimal shifted pivot
 degree is within this window. -/
-def pivotWindowCap [Zero F] (equation : ModularEquation F) : Nat :=
+def pivotWindowCap (equation : ModularEquation F) : Nat :=
   modulusDegreeMass equation.moduli
 
 /-- Coefficient-degree bound for the full-window fallback problem.  Any row of
@@ -286,7 +286,7 @@ in-window solution has plain coefficient degrees at most
 `pivotWindowCap + maxShiftDegree shift`: comparing two principal coordinates
 costs at most the shift spread, and `pivotWindowCap` bounds every minimal
 pivot degree. -/
-def fullWindowDegreeBound [Zero F] (equation : ModularEquation F)
+def fullWindowDegreeBound (equation : ModularEquation F)
     (shift : Array Nat) : Nat :=
   pivotWindowCap equation + maxShiftDegree shift
 
@@ -334,7 +334,7 @@ hand.  Solutions at or above the best adaptive degree are dominated by the
 adaptive result itself, so the certified window only has to cover the degrees
 strictly below it; when the adaptive loop found nothing it falls back to the
 full pivot window. -/
-def verificationWindowBound [Zero F] (equation : ModularEquation F)
+def verificationWindowBound (equation : ModularEquation F)
     (shift : Array Nat) (bestDegree? : Option Nat) : Nat :=
   match bestDegree? with
   | none => fullWindowDegreeBound equation shift
@@ -375,7 +375,7 @@ def degreeGatePassed (degreeBound? bestDegree? : Option Nat) : Bool :=
 bound the window only has to cover solutions within the bound, so it is
 `min(bound, cap) + maxShift`; without one it falls back to the best-degree
 window of `verificationWindowBound`. -/
-def gatedWindowBound [Zero F] (equation : ModularEquation F)
+def gatedWindowBound (equation : ModularEquation F)
     (shift : Array Nat) (degreeBound? bestDegree? : Option Nat) : Nat :=
   match degreeBound? with
   | some bound => min bound (pivotWindowCap equation) + maxShiftDegree shift

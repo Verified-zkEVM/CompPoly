@@ -36,7 +36,7 @@ namespace ApproximantBasis
 open PolynomialMatrix
 open PolynomialMatrix.Approximant
 
-variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
 
 /-- GS column moduli `M_b = G^(s-b)`, for `b = 0, ..., s-1`, built by iterated
 context multiplication so each power costs one fast product. -/

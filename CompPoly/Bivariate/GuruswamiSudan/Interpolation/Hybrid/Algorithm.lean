@@ -52,7 +52,7 @@ namespace Hybrid
 open PolynomialMatrix
 open PolynomialMatrix.Approximant
 
-variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
 
 /-- Positive-`Y`-weight hybrid interpolation branch: reduce the
 Lee-O'Sullivan basis with the budgeted fuel and keep the result when it

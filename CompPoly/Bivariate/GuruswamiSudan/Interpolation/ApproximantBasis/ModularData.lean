@@ -32,11 +32,11 @@ namespace ApproximantBasis
 open Polynomial
 open PolynomialMatrix
 
-variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
 
 /-! ## Generic helpers -/
 
-omit [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F] in
+omit [Field F] [BEq F] [LawfulBEq F] [DecidableEq F] in
 private theorem foldl_add_eq_sum {M : Type*} [AddCommMonoid M] (f : Nat → M) :
     ∀ n : Nat,
       (List.range n).foldl (fun acc k ↦ acc + f k) 0 = ∑ k ∈ Finset.range n, f k := by
@@ -47,7 +47,7 @@ private theorem foldl_add_eq_sum {M : Type*} [AddCommMonoid M] (f : Nat → M) :
       rw [List.range_succ, List.foldl_append, ih, List.foldl_cons, List.foldl_nil,
         Finset.sum_range_succ]
 
-omit [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F] in
+omit [Field F] [BEq F] [LawfulBEq F] [DecidableEq F] in
 /-- First component of an `MProd`-state fold whose second component evolves
 independently of the first, as a `Prod`-state fold. -/
 private theorem foldl_mprod_fst {α β : Type u} {γ : Type*}
@@ -65,7 +65,7 @@ private theorem foldl_mprod_fst {α β : Type u} {γ : Type*}
       rw [List.foldl_cons, List.foldl_cons]
       exact ih _ _
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 private theorem toPoly_finset_sum (f : Nat → CPolynomial F) (n : Nat) :
     (∑ k ∈ Finset.range n, f k).toPoly = ∑ k ∈ Finset.range n, (f k).toPoly := by
   induction n with
@@ -74,7 +74,7 @@ private theorem toPoly_finset_sum (f : Nat → CPolynomial F) (n : Nat) :
   | succ n ih =>
       rw [Finset.sum_range_succ, Finset.sum_range_succ, CPolynomial.toPoly_add, ih]
 
-omit [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F] in
+omit [BEq F] [LawfulBEq F] [DecidableEq F] in
 /-- A common modulus of differences identifies the two divisibility facts. -/
 private theorem dvd_iff_dvd_of_dvd_sub {M a b : Polynomial F} (h : M ∣ a - b) :
     M ∣ a ↔ M ∣ b := by
@@ -86,7 +86,7 @@ private theorem dvd_iff_dvd_of_dvd_sub {M a b : Polynomial F} (h : M ∣ a - b) 
     have ha : M ∣ (a - b) + b := dvd_add h hb
     simpa using ha
 
-omit [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F] in
+omit [BEq F] [LawfulBEq F] [DecidableEq F] in
 /-- Entry access for `PolynomialMatrix.ofFn`. -/
 theorem ofFn_rowGet (rows width : Nat) (entry : Nat → Nat → CPolynomial F)
     {i j : Nat} (hi : i < rows) (hj : j < width) :
@@ -98,13 +98,13 @@ theorem ofFn_rowGet (rows width : Nat) (entry : Nat → Nat → CPolynomial F)
   rw [hrow, rowGet, Array.getD_eq_getD_getElem?, List.getElem?_toArray,
     List.getElem?_map, List.getElem?_range hj, Option.map_some, Option.getD_some]
 
-omit [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F] in
+omit [BEq F] [LawfulBEq F] [DecidableEq F] in
 /-- Row count of `PolynomialMatrix.ofFn`. -/
 theorem ofFn_size (rows width : Nat) (entry : Nat → Nat → CPolynomial F) :
     (PolynomialMatrix.ofFn rows width entry).size = rows := by
   simp [PolynomialMatrix.ofFn]
 
-omit [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F] in
+omit [BEq F] [LawfulBEq F] [DecidableEq F] in
 /-- Width of `PolynomialMatrix.ofFn` with at least one row. -/
 theorem ofFn_matrixWidth (rows width : Nat) (entry : Nat → Nat → CPolynomial F)
     (hrows : 0 < rows) :
@@ -119,7 +119,7 @@ theorem ofFn_matrixWidth (rows width : Nat) (entry : Nat → Nat → CPolynomial
 
 /-! ## Modular reduction semantics -/
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- `modByMonicWith` computes the Mathlib monic remainder under `toPoly`. -/
 theorem modByMonicWith_toPoly (modCtx : CPolynomial.ModContext F)
     {p M : CPolynomial F} (hM : Polynomial.Monic M.toPoly) :
@@ -134,7 +134,7 @@ theorem modByMonicWith_toPoly (modCtx : CPolynomial.ModContext F)
   exact CPolynomial.modByMonic_toPoly_eq_modByMonic p M
     ((CPolynomial.monic_toPoly_iff M).mpr hM)
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- `modByMonicWith` is congruent to the identity modulo the modulus. -/
 theorem dvd_modByMonicWith_sub (modCtx : CPolynomial.ModContext F)
     {p M : CPolynomial F} (hM : Polynomial.Monic M.toPoly) :
@@ -144,7 +144,7 @@ theorem dvd_modByMonicWith_sub (modCtx : CPolynomial.ModContext F)
   refine ⟨-(p.toPoly /ₘ M.toPoly), ?_⟩
   linear_combination hdecomp
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- The executable remainder vanishes exactly on multiples of the modulus. -/
 theorem modByMonicWith_eq_zero_iff_dvd (modCtx : CPolynomial.ModContext F)
     {p M : CPolynomial F} (hM : Polynomial.Monic M.toPoly) :
@@ -269,7 +269,7 @@ private theorem gsRelationColumn_eq_foldl (mulCtx : CPolynomial.MulContext F)
   -- `forIn` now reduces to a `Prod` fold (not `MProd`); both sides match.
   rfl
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 private theorem relationColumn_foldl_size_untouched (mulCtx : CPolynomial.MulContext F)
     (modCtx : CPolynomial.ModContext F) (reducedR modulus : CPolynomial F) (b : Nat) :
     ∀ (n j₀ : Nat) (col : Array (CPolynomial F)) (pow : CPolynomial F),
@@ -301,7 +301,7 @@ private theorem relationColumn_foldl_size_untouched (mulCtx : CPolynomial.MulCon
       rw [Array.getD_eq_getD_getElem?, Array.getD_eq_getD_getElem?,
         Array.getElem?_setIfInBounds_ne (by omega)]
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 private theorem relationColumn_foldl_spec (mulCtx : CPolynomial.MulContext F)
     (modCtx : CPolynomial.ModContext F)
     {R reducedR modulus : CPolynomial F}
@@ -488,7 +488,7 @@ theorem gsRelationMatrixWithModuli_matrixWidth (mulCtx : CPolynomial.MulContext 
       params.multiplicity :=
   ofFn_matrixWidth _ _ _ (Nat.succ_pos _)
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- Outer-coefficient expansion of a coefficient row under `toPoly`. -/
 private theorem toPoly_ofCoeffRow_eq_sum (row : PolynomialRow F) :
     (CBivariate.ofCoeffRow row).toPoly =
@@ -510,7 +510,7 @@ private theorem toPoly_ofCoeffRow_eq_sum (row : PolynomialRow F) :
       Array.getD_eq_getD_getElem?, Array.getElem?_eq_none (by omega)]
     simp [CPolynomial.toPoly_zero]
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- Sheared coefficients of a coefficient row: the outer Hasse derivative of
 `ofCoeffRow row` evaluated at `R` is the binomial-weighted power sum. -/
 theorem hasseDeriv_toPoly_ofCoeffRow_eval (row : PolynomialRow F)
@@ -523,7 +523,7 @@ theorem hasseDeriv_toPoly_ofCoeffRow_eval (row : PolynomialRow F)
   rw [Polynomial.hasseDeriv_monomial, Polynomial.eval_monomial,
     Polynomial.C_eq_natCast]
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- Column entries of a row-by-matrix product as binomial sums. -/
 private theorem rowGet_rowMulMatrixWith_eq_sum (mulCtx : CPolynomial.MulContext F)
     (row : PolynomialRow F) (M : PolynomialMatrix F) {j : Nat}
@@ -537,7 +537,7 @@ private theorem rowGet_rowMulMatrixWith_eq_sum (mulCtx : CPolynomial.MulContext 
   refine Finset.sum_congr rfl fun k _hk ↦ ?_
   rw [mulCtx.mul_eq_mul]
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- One product-entry fold as a sum over the matrix height. -/
 private theorem rowMulMatrix_foldl_eq_sum_size (mulCtx : CPolynomial.MulContext F)
     (row : PolynomialRow F) (M : PolynomialMatrix F) (j : Nat) :
@@ -565,7 +565,7 @@ private theorem rowMulMatrix_foldl_eq_sum_size (mulCtx : CPolynomial.MulContext 
       rfl
     rw [hzero, show rowGet (#[] : PolynomialRow F) j = 0 from rfl, mul_zero]
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- The row-by-matrix product only sees the first `M.size` row entries. -/
 theorem rowMulMatrixWith_congr_of_agree (mulCtx : CPolynomial.MulContext F)
     {row row' : PolynomialRow F} (M : PolynomialMatrix F)
@@ -578,7 +578,7 @@ theorem rowMulMatrixWith_congr_of_agree (mulCtx : CPolynomial.MulContext F)
   refine Finset.sum_congr rfl fun k hk ↦ ?_
   rw [hagree k (Finset.mem_range.mp hk)]
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- The modular row predicate only sees the first `M.size` row entries. -/
 theorem rowSatisfiesModularBool_congr_of_agree (mulCtx : CPolynomial.MulContext F)
     (modCtx : CPolynomial.ModContext F) {row row' : PolynomialRow F}
@@ -589,7 +589,7 @@ theorem rowSatisfiesModularBool_congr_of_agree (mulCtx : CPolynomial.MulContext 
   rw [rowSatisfiesModularBool, rowSatisfiesModularBool, rowMulMatrixModDiagonalWith,
     rowMulMatrixModDiagonalWith, rowMulMatrixWith_congr_of_agree mulCtx M hagree]
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- The executable modular row predicate, columnwise. -/
 private theorem rowSatisfiesModularBool_iff_forall (mulCtx : CPolynomial.MulContext F)
     (modCtx : CPolynomial.ModContext F) (row : PolynomialRow F)

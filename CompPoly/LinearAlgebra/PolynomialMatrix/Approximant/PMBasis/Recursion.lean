@@ -118,7 +118,7 @@ def pmBasisWithFuel (runtime : PMBasisRuntime F)
 
 /-- Default fuel choice, large enough to split each positive order down to the
 leaf cutoff. -/
-def pmBasisFuel [Zero F] (problem : XAdicProblem F) : Nat :=
+def pmBasisFuel (problem : XAdicProblem F) : Nat :=
   maxOrder problem + 1
 
 /-- Recursive PM-basis entry point. -/

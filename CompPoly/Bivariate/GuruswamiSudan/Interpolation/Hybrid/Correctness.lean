@@ -38,9 +38,8 @@ namespace Hybrid
 open PolynomialMatrix
 open PolynomialMatrix.Approximant
 
-variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
 
-omit [Nontrivial F] in
 /-- When the budgeted probe ends conflict-free it equals the full fast
 reduction. -/
 private theorem hybrid_probe_eq_reduceFast

@@ -41,9 +41,9 @@ namespace ApproximantBasis
 
 open Polynomial
 
-variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F]
+variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
 
-omit [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F] in
+omit [BEq F] [LawfulBEq F] [DecidableEq F] in
 /-- `(X - x)^k` divides `A` iff the first `k` Hasse derivatives of `A` vanish
 at `x`. -/
 theorem X_sub_C_pow_dvd_iff_hasseDeriv_eval_eq_zero
@@ -59,7 +59,7 @@ theorem X_sub_C_pow_dvd_iff_hasseDeriv_eval_eq_zero
     rw [← Polynomial.taylor_apply, Polynomial.taylor_coeff]
     exact h d hd
 
-omit [BEq F] [LawfulBEq F] [Nontrivial F] [DecidableEq F] in
+omit [BEq F] [LawfulBEq F] [DecidableEq F] in
 /-- Shear-transfer core: the `(X - x)`-adic divisibility family of the outer
 Hasse-derivative evaluations of `P` moves between outer evaluation points `u`
 and `v` that agree modulo `X - x`. -/
@@ -142,7 +142,7 @@ theorem X_sub_C_pow_dvd_hasseDeriv_eval_iff_hasMultiplicity
     exact X_sub_C_pow_dvd_hasseDeriv_eval_of_dvd_sub hdvd_sub
       (hfamilyCy.2 h) hb
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- The linear factor of one node under `toPoly`. -/
 theorem linearFactor_toPoly_eq (x : F) :
     (CPolynomial.linearFactor x).toPoly = (X - C x : Polynomial F) := by
@@ -150,7 +150,7 @@ theorem linearFactor_toPoly_eq (x : F) :
     CPolynomial.C_toPoly]
   simp [sub_eq_add_neg, add_comm]
 
-omit [Nontrivial F] [DecidableEq F] in
+omit [DecidableEq F] in
 private theorem vanishingPolynomialArray_toPoly_list
     (xs : List F) (acc : CPolynomial F) :
     (xs.foldl (fun acc x ↦ acc * CPolynomial.linearFactor x) acc).toPoly =
@@ -183,7 +183,7 @@ theorem vanishingPolynomialArray_toPoly_monic (xs : Array F) :
   exact Polynomial.monic_multiset_prod_of_monic _ _
     fun x _hx ↦ Polynomial.monic_X_sub_C x
 
-omit [BEq F] [LawfulBEq F] [Nontrivial F] in
+omit [BEq F] [LawfulBEq F] in
 /-- Per-node `(X - x)^k` divisibility glues to divisibility by the `k`-th
 power of the product of distinct linear factors. -/
 theorem prod_X_sub_C_pow_dvd_of_nodup
