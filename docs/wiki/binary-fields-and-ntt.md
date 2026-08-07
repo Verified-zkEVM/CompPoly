@@ -5,51 +5,42 @@ specialized characteristic-2 stack used for GHASH and additive-NTT work.
 
 ## Top-Level Layout
 
+This page owns `CompPoly/Fields/Binary/` only:
+
 ```text
-CompPoly/Fields/
-  Basic.lean
-  BabyBear.lean, KoalaBear.lean, Goldilocks.lean, BN254.lean, ...
-  BabyBear/
+CompPoly/Fields/Binary/
+  Common.lean
+  BF128Ghash/
+    Prelude.lean
     Basic.lean
-    Fast.lean
-    Fast/ (Prelude.lean, Montgomery.lean, Convert.lean)
-  KoalaBear/
+    Impl.lean
+    XPowTwoPowGcdCertificate.lean
+    XPowTwoPowModCertificate.lean
+  Tower/
+    Abstract/*
+    Concrete/*
+    Support/*
     Basic.lean
-    Fast.lean
-    Fast/ (Prelude.lean, Montgomery.lean, Convert.lean)
-  Montgomery/
-    Basic.lean
-    Native32.lean
-    Native32Field.lean
-  Binary/
-    Common.lean
-    BF128Ghash/
-      Prelude.lean
-      Basic.lean
-      Impl.lean
-      XPowTwoPowGcdCertificate.lean
-      XPowTwoPowModCertificate.lean
-    Tower/
-      Abstract/*
-      Concrete/*
-      Support/*
-      Basic.lean
-      Equiv.lean
-      Impl.lean
-      Prelude.lean
-      TensorAlgebra.lean
-    AdditiveNTT/
-      AdditiveNTT.lean
-      Domain.lean
-      NovelPolynomialBasis.lean
-      Intermediate.lean
-      Algorithm.lean
-      Impl.lean
-      Correctness.lean
+    Equiv.lean
+    Impl.lean
+    Prelude.lean
+    TensorAlgebra.lean
+  AdditiveNTT/
+    AdditiveNTT.lean
+    Domain.lean
+    NovelPolynomialBasis.lean
+    Intermediate.lean
+    Algorithm.lean
+    Impl.lean
+    Correctness.lean
 ```
 
-Use [`../../CompPoly/Fields/README.md`](../../CompPoly/Fields/README.md) as the
-directory-level overview for the broader field catalog.
+For everything else under `CompPoly/Fields/` — the prime-field catalog, the
+Montgomery fast paths, and the extension framework — see
+[`../../CompPoly/Fields/README.md`](../../CompPoly/Fields/README.md), which is the
+per-module source of truth, and
+[`field-extensions.md`](field-extensions.md) for the odd-characteristic extension
+architecture. That catalog is deliberately not duplicated here.
 
 ## Common Binary Infrastructure
 

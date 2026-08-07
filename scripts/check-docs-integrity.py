@@ -4,6 +4,11 @@
 Checks:
 1. `CLAUDE.md` exists and is a symlink to `AGENTS.md`
 2. Local markdown links in tracked repo docs resolve
+3. Backticked source paths in those docs (`CompPoly/Foo/Bar.lean`) point at files
+   that exist
+
+Check 3 exists because the docs cite far more paths in backticks than in markdown
+links, and those are the ones that rot silently when a module is split or renamed.
 
 Exit code 0 if all checks pass, 1 otherwise.
 """
@@ -20,6 +25,37 @@ AGENTS_PATH = REPO_ROOT / "AGENTS.md"
 
 MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]+\]\(([^)]+)\)")
 IGNORED_DIRS = {".git", ".lake"}
+
+# Backticked source paths, e.g. `CompPoly/Univariate/Basic.lean`.
+BACKTICK_PATH_RE = re.compile(r"`([A-Za-z0-9_./\-]+\.(?:lean|py|sh|yml|bib))`")
+
+# Docs routinely cite paths relative to a subtree rather than to the repo root
+# (`field-extensions.md` writes `KoalaBear/Ext4.lean`, `coding-theory.md` writes
+# `Interpolation/Basic.lean`). A backticked path counts as resolved if it exists
+# under any of these roots, or under the directory of the file citing it.
+#
+# Add a prefix only for a subtree that a doc page is genuinely written *about*, so
+# its prose can name files relatively. Every added prefix weakens the check, so
+# keep the list short and prefer fixing the doc.
+PATH_PREFIXES = (
+    "",
+    "CompPoly",
+    "CompPoly/Fields",
+    "CompPoly/Fields/Binary",
+    "CompPoly/Fields/KoalaBear",
+    "CompPoly/Univariate",
+    "CompPoly/Bivariate",
+    "CompPoly/Bivariate/GuruswamiSudan",
+    "CompPoly/LinearAlgebra",
+    "CompPoly/LinearAlgebra/PolynomialMatrix",
+    "tests",
+    "bench",
+)
+
+# Paths that are illustrative rather than real: glob patterns, and the `Foo/*`
+# shorthand the wiki uses for "everything in this directory".
+def _is_illustrative(path: str) -> bool:
+    return "*" in path or path.endswith("/")
 
 
 def markdown_files() -> list[Path]:
@@ -88,6 +124,23 @@ def check_markdown_links() -> list[str]:
     return errors
 
 
+def check_backtick_paths() -> list[str]:
+    errors: list[str] = []
+    for doc_file in markdown_files():
+        text = doc_file.read_text(encoding="utf-8")
+        for raw_target in BACKTICK_PATH_RE.findall(text):
+            # A bare filename with no directory is almost always prose
+            # ("regenerate `update-lib.sh`"), not a path claim.
+            if "/" not in raw_target or _is_illustrative(raw_target):
+                continue
+            candidates = [REPO_ROOT / prefix / raw_target for prefix in PATH_PREFIXES]
+            candidates.append(doc_file.parent / raw_target)
+            if not any(candidate.exists() for candidate in candidates):
+                rel_doc = doc_file.relative_to(REPO_ROOT)
+                errors.append(f"Broken path in {rel_doc}: `{raw_target}`")
+    return errors
+
+
 def main() -> int:
     all_errors: list[str] = []
 
@@ -96,6 +149,9 @@ def main() -> int:
 
     print("Checking markdown links...")
     all_errors.extend(check_markdown_links())
+
+    print("Checking backticked source paths...")
+    all_errors.extend(check_backtick_paths())
 
     if all_errors:
         print(f"\n{len(all_errors)} issue(s) found:\n")

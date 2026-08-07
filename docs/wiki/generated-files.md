@@ -8,7 +8,7 @@ This page records which paths are source of truth and which are derived outputs.
 |---|---|---|
 | `CompPoly.lean` | Generated and committed | Regenerate with `./scripts/update-lib.sh` after adding, renaming, or deleting `CompPoly/**/*.lean` files. Emitted in module form: `module`, blank line, one `public import` per file. |
 | `CompPoly/Fields/*/Ext*/`*`CertData.lean` | Generated and committed | Rabin irreducibility certificate data for non-binomial extension moduli. Regenerate with `scripts/gen_rabin_certificate.py --p <p> --f <coeffs> --lean <path> --namespace <NS>`; the exact command is recorded in each file's docstring. Do not hand-edit. Nothing in them is trusted — the kernel re-checks every step through `CompPoly.RabinCert.runChain`. |
-| `bench/report-*.md`, `bench/results-*.jsonl` | Generated, not source | Produced by `lake exe CompPolyBench`; keep reports as local or CI artifacts. |
+| `bench/report-*.md`, `bench/results-*.jsonl`, `bench/evaluation-bench-*` | Generated, not source | Produced by `lake exe CompPolyBench`; keep reports as local or CI artifacts. All three patterns are ignored — the first two by `bench/.gitignore`, `evaluation-bench-*` by the root `.gitignore` — so a benchmark run leaves the working tree clean. |
 | `CLAUDE.md` | Compatibility symlink | Must remain a symlink to `AGENTS.md`; do not replace it with a separate copy. |
 | `.lake/` | Derived, not source | Local dependency cache and build output produced by Lake. Do not edit files here by hand. |
 | `.lake/build/` | Derived, not source | Build artifacts from `lake build` and `lake test`. Safe to delete and regenerate. |

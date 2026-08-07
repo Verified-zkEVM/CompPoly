@@ -84,7 +84,23 @@ to be covered there. See [`../../bench/README.md`](../../bench/README.md).
 - [`../../.github/workflows/check_imports.yml`](../../.github/workflows/check_imports.yml)
   checks that `CompPoly.lean` matches the tracked source tree.
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
-  checks the `CLAUDE.md` symlink and local markdown links.
+  checks the `CLAUDE.md` symlink, local markdown links, and backticked file paths
+  in the docs.
+
+Four further workflows exist that are not part of the pass/fail gate:
+
+- [`../../.github/workflows/summary.yml`](../../.github/workflows/summary.yml)
+  posts a PR summary on open and on every new commit. It runs under
+  `pull_request_target` and never builds or executes PR code — it reads the diff
+  and committed source as data — which is what makes that safe for fork PRs.
+- [`../../.github/workflows/review.yml`](../../.github/workflows/review.yml) runs a
+  PR review **on demand only**, triggered by a `/review` comment from a repo
+  member. It is deliberately not run on PR open, because the review path builds and
+  elaborates the PR's Lean code with secrets in scope.
+- [`../../.github/workflows/update_lean_project.yml`](../../.github/workflows/update_lean_project.yml)
+  bumps the Lean toolchain and dependencies nightly, and can be dispatched manually.
+- [`../../.github/workflows/lean_release_tag.yml`](../../.github/workflows/lean_release_tag.yml)
+  adds a release tag when `lean-toolchain` changes on `main`.
 
 ## Lower-Level Commands
 

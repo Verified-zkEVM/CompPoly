@@ -60,9 +60,23 @@ run by every implementation in that group.
 
 ## What Is Measured
 
-The benchmark covers evaluation paths, direct and NTT-backed univariate
-multiplication, additive NTT implementations, and scalar-field inversion
-(`fields-mont64x8-*-inv`: `ZMod` extended Euclid vs checked binary GCD vs Fermat).
+Roughly by area, with representative group prefixes:
+
+| Area | Groups |
+|---|---|
+| Univariate evaluation and multiplication | `univariate-dense-*`, `univariate-sparse-*`, `univariate-mul-*`, `univariate-low-product-*` |
+| Modular reduction | `univariate-mod-by-monic-*`, `univariate-monic-remainder-*` |
+| Batch and many-polynomial evaluation | `univariate-batch-*`, `univariate-many-one-point-*` |
+| Multilinear and multivariate | `multilinear-coeff-*`, `multilinear-hypercube-*`, `multilinear-many-mle-*`, `multivariate-dense-*`, `multivariate-sparse-*` |
+| Bivariate | `bivariate-full-*` (evaluation and Kronecker-backed multiply), `bivariate-divlinear-*` and `bivariate-deflate-*` (linear-factor deflation) |
+| Guruswami-Sudan decoding | `guruswami-sudan-core-*`, across dense / Lee-O'Sullivan interpolation and Roth-Ruckenstein / Alekhnovich root search |
+| Univariate root finding | `univariate-roots-finite-field-*` |
+| Additive NTT | `additive-ntt-btf*` |
+| Extension fields | `fields-extension-*-mul`, `fields-extension-*-inv` |
+| Scalar-field inversion | `fields-mont64x8-*-inv`: `ZMod` extended Euclid vs checked binary GCD vs Fermat |
+
+Use `--list` for the authoritative set; the prefixes above drift as groups are
+added.
 
 Some groups run each implementation over both the canonical `ZMod`
 representation and the native-word Montgomery representation, so the two appear as
