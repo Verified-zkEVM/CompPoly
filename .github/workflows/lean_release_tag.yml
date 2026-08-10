@@ -90,6 +90,11 @@ jobs:
             || { echo "::error::no GitHub release for tag '${{ steps.resolve.outputs.tag }}'"; exit 1; }
 
       # Runs after the tag checkout so elan picks up that tag's `lean-toolchain`.
+      # This also supplies Mathlib's oleans: lean-action detects the Mathlib dependency
+      # in `lake-manifest.json` and runs `lake exe cache get` itself, so the library
+      # build below does not compile Mathlib from source. That is already the behaviour
+      # of the `auto` default; setting it explicitly documents the reliance and pins it
+      # against a future change of default.
       - name: Set up Lean environment
         uses: leanprover/lean-action@v1
         with:
@@ -98,9 +103,7 @@ jobs:
           test: false
           lint: false
           use-github-cache: false
-
-      - name: Fetch Mathlib oleans
-        run: lake exe cache get
+          use-mathlib-cache: true
 
       # Deliberately builds only the default `CompPoly` library into an empty build
       # directory. `lake upload` packs the whole build directory, and a full `lake build`
