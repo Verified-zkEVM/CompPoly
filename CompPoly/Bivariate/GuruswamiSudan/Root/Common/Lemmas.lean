@@ -457,9 +457,15 @@ theorem composeY_toPoly {F : Type*}
   rw [CPolynomial.eval_toPoly]
   rw [CBivariate.toPoly_eq_map]
   rw [Polynomial.eval_map]
-  exact (Polynomial.eval₂_hom
+  have ringEquiv_toPoly (r : CPolynomial F) :
+      (CPolynomial.ringEquiv (R := F)).toRingHom r = r.toPoly := by
+    rw [RingEquiv.toRingHom_eq_coe]
+    exact CPolynomial.ringEquiv_apply r
+  have h := (Polynomial.eval₂_hom
     (f := (CPolynomial.ringEquiv (R := F)).toRingHom)
     (p := CPolynomial.toPoly Q) (x := p)).symm
+  rw [ringEquiv_toPoly, ringEquiv_toPoly] at h
+  exact h
 
 theorem initialCoefficientPolynomial_evalHorner_eq_composeYCoeff_monomial_zero
     {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]

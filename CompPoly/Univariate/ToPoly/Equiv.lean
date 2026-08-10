@@ -14,7 +14,7 @@ public import CompPoly.Univariate.ToPoly.Core
 Ring equivalences between computable univariate polynomials and `Polynomial`.
 -/
 
-@[expose] public section
+public section
 
 open Polynomial
 
@@ -180,6 +180,12 @@ noncomputable def ringEquiv [LawfulBEq R] [Nontrivial R] :
     apply toPoly_toImpl
   map_mul' := by intros p q; rw [toPoly_mul p q]
   map_add' := by intros p q; apply toPoly_add
+
+/-- The forward map of `ringEquiv` is `toPoly`. -/
+@[simp]
+theorem ringEquiv_apply [LawfulBEq R] [Nontrivial R] (p : CPolynomial R) :
+    ringEquiv p = p.toPoly := by
+  rfl
 
 end RingEquiv
 

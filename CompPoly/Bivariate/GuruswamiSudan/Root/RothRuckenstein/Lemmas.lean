@@ -602,13 +602,20 @@ theorem cpoly_monomial_substitution_sum {F : Type*}
         0 =
       CPolynomial.monomial x coeff * (CPolynomial.C a + CPolynomial.X * p) ^ y := by
   apply (CPolynomial.ringEquiv (R := F)).injective
+  have ringEquiv_toPoly (r : CPolynomial F) :
+      (CPolynomial.ringEquiv (R := F)).toRingHom r = r.toPoly := by
+    rw [RingEquiv.toRingHom_eq_coe]
+    exact CPolynomial.ringEquiv_apply r
   change
-    ((List.range' 0 (y + 1)).foldl
+    (CPolynomial.ringEquiv (R := F)).toRingHom
+      ((List.range' 0 (y + 1)).foldl
         (fun acc t ↦
           acc + CPolynomial.monomial (x + t)
             (coeff * (Nat.choose y t : F) * a ^ (y - t)) * p ^ t)
-        0).toPoly =
-      (CPolynomial.monomial x coeff * (CPolynomial.C a + CPolynomial.X * p) ^ y).toPoly
+        0) =
+      (CPolynomial.ringEquiv (R := F)).toRingHom
+        (CPolynomial.monomial x coeff * (CPolynomial.C a + CPolynomial.X * p) ^ y)
+  rw [ringEquiv_toPoly, ringEquiv_toPoly]
   rw [foldl_cpoly_toPoly_add
     (fun t ↦
       CPolynomial.monomial (x + t) (coeff * (Nat.choose y t : F) * a ^ (y - t)) *
