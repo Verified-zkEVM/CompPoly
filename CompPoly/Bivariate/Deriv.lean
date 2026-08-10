@@ -5,6 +5,7 @@ Authors: Dimitris Mitsios
 -/
 module
 
+import all CompPoly.Bivariate.Basic
 public import CompPoly.Bivariate.Basic
 public import CompPoly.Bivariate.ToPoly
 public import CompPoly.Univariate.Deriv
@@ -269,8 +270,12 @@ theorem shiftY_toPoly [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [Dec
   congr 1
   rw [Polynomial.map_add, Polynomial.map_X, Polynomial.map_C]
   congr 2
-  show (CPolynomial.C b).toPoly = _
-  rw [CPolynomial.C_toPoly]
+  have ringEquiv_toPoly (p : CPolynomial R) :
+      (CPolynomial.ringEquiv (R := R)).toRingHom p = p.toPoly := by
+    rw [RingEquiv.toRingHom_eq_coe]
+    exact CPolynomial.ringEquiv_apply p
+  change (CPolynomial.ringEquiv (R := R)).toRingHom (CPolynomial.C b) = _
+  rw [ringEquiv_toPoly, CPolynomial.C_toPoly]
 
 /-- Outer coefficient of the X-shift: Taylor-shift the j-th Y-coefficient. -/
 theorem outerCoeff_shiftX [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
@@ -301,10 +306,20 @@ theorem eval_C_eq_evalY [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (b : R) (Q : CBivariate R) :
     CPolynomial.eval (CPolynomial.C b) Q = evalY b Q := by
   apply CPolynomial.ringEquiv.injective
-  show (CPolynomial.eval (CPolynomial.C b) Q).toPoly = (evalY b Q).toPoly
+  have ringEquiv_toPoly (p : CPolynomial R) :
+      (CPolynomial.ringEquiv (R := R)).toRingHom p = p.toPoly := by
+    rw [RingEquiv.toRingHom_eq_coe]
+    exact CPolynomial.ringEquiv_apply p
+  change
+    (CPolynomial.ringEquiv (R := R)).toRingHom
+        (CPolynomial.eval (CPolynomial.C b) Q) =
+      (CPolynomial.ringEquiv (R := R)).toRingHom (evalY b Q)
+  rw [ringEquiv_toPoly, ringEquiv_toPoly]
   rw [evalY_toPoly, CPolynomial.eval_toPoly, toPoly_eq_map, ← CPolynomial.C_toPoly b]
-  exact (Polynomial.eval_map_apply (p := CPolynomial.toPoly Q)
-          (CPolynomial.ringEquiv (R := R)).toRingHom (CPolynomial.C b)).symm
+  have h := (Polynomial.eval_map_apply (p := CPolynomial.toPoly Q)
+    (CPolynomial.ringEquiv (R := R)).toRingHom (CPolynomial.C b)).symm
+  rw [ringEquiv_toPoly, ringEquiv_toPoly] at h
+  exact h
 
 /-- The (0,0) coefficient of the shift is evaluation at the point. -/
 theorem coeff_shiftC_zero_zero [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]

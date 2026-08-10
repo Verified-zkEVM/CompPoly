@@ -5,6 +5,7 @@ Authors: Dimitris Mitsios
 -/
 module
 
+import all CompPoly.Univariate.ToPoly.Impl
 public import CompPoly.Univariate.Basic
 public import CompPoly.Univariate.ToPoly.Impl
 public import Mathlib.Algebra.Polynomial.Taylor

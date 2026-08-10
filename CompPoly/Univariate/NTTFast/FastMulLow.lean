@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Univariate.Raw.Proofs
 public import CompPoly.Univariate.NTTFast.Correctness.Pipeline
 public import CompPoly.Univariate.Raw.Proofs
 

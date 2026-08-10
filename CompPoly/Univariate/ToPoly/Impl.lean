@@ -5,6 +5,7 @@ Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
 -/
 module
 
+import all CompPoly.Univariate.ToPoly.Equiv
 public import CompPoly.Univariate.ToPoly.Equiv
 public import Mathlib.Algebra.Polynomial.Roots
 
@@ -15,7 +16,7 @@ Proofs that operations defined on CPolynomial and CPolynomial.Raw are correct
 wrt the mathlib specs, using the ring equivalence
 -/
 
-@[expose] public section
+public section
 
 open Polynomial
 
@@ -203,20 +204,20 @@ theorem C_mul_X_pow_toPoly [BEq R] [LawfulBEq R] [DecidableEq R] [Nontrivial R] 
 /-- CPolynomial.lcoeff is correct wrt the Mathlib spec. -/
 theorem lcoeff_toPoly [BEq R] [LawfulBEq R] (n : ℕ) (p : CPolynomial R) :
     lcoeff (R := R) n p = Polynomial.lcoeff R n (toPoly p) := by
-    simp [lcoeff, Polynomial.lcoeff_apply, ← coeff_toPoly]
+    simp [Polynomial.lcoeff_apply, ← coeff_toPoly]
 
 /-- CPolynomial.degreeLE is correct wrt the Mathlib spec. -/
 theorem degreeLE_toPoly {n : WithBot ℕ} [BEq R] [LawfulBEq R] {p : CPolynomial R} :
     p ∈ degreeLE (R := R) n ↔ p.toPoly ∈ Polynomial.degreeLE R n := by
   rw [Polynomial.mem_degreeLE]
-  change p.degree ≤ n ↔ p.toPoly.degree ≤ n
+  rw [mem_degreeLE]
   rw [degree_toPoly]
 
 /-- CPolynomial.degreeLT is correct wrt the Mathlib spec. -/
 theorem degreeLT_toPoly {n : ℕ} [BEq R] [LawfulBEq R] {p : CPolynomial R} :
     p ∈ degreeLT (R := R) n ↔ p.toPoly ∈ Polynomial.degreeLT R n := by
   rw [Polynomial.mem_degreeLT]
-  change p.degree < n ↔ p.toPoly.degree < n
+  rw [mem_degreeLT]
   rw [degree_toPoly]
 
 end ImplementationCorrectness

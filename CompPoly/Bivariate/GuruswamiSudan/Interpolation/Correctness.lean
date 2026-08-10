@@ -62,7 +62,7 @@ private theorem linearYDivisor_C_toPoly {F : Type*}
       (Polynomial.X - Polynomial.C y).map (Polynomial.C : F →+* Polynomial F) := by
   rw [CBivariate.toPoly_eq_map]
   rw [CBivariate.linearYDivisor_toPoly]
-  simp [CPolynomial.C_toPoly, CPolynomial.ringEquiv]
+  simp [CPolynomial.C_toPoly, CPolynomial.ringEquiv_apply]
 
 private theorem lowMessageYPolynomial_toPoly {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]

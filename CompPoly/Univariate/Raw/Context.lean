@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Univariate.Basic
 public import CompPoly.Univariate.DivisionCorrectness
 public import CompPoly.Univariate.NTT.FastMul
 public import CompPoly.Univariate.NTT.FastMulLow
@@ -18,7 +19,7 @@ Array-level execution dictionaries for reusable raw univariate polynomial
 kernels.
 -/
 
-@[expose] public section
+public section
 
 namespace CompPoly
 
