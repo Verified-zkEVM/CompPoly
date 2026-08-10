@@ -59,7 +59,7 @@ def messagePoly [Zero F] [BEq F] [LawfulBEq F]
 /-- `(messagePoly msg).degree < k`. -/
 lemma messagePoly_degree_lt [Zero F] [BEq F] [LawfulBEq F] {k : ℕ} (msg : Vector F k) :
     (messagePoly msg).degree < k :=
-  CPolynomial.mem_degreeLT_iff_degree.mp <|
+  CPolynomial.mem_degreeLT.mp <|
     CPolynomial.mem_degreeLT_iff_size_le.mpr
       ((CPolynomial.Raw.Trim.size_le_size msg.toArray).trans_eq msg.size_toArray)
 

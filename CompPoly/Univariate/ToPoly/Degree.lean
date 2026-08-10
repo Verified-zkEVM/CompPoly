@@ -58,18 +58,9 @@ theorem degree_lt_iff_coeff_zero (p : CPolynomial R) (n : ℕ) :
     simp only [coeff_toPoly]
 
 omit [BEq R] [LawfulBEq R] in
-theorem mem_degreeLE {n : WithBot ℕ} {p : (CPolynomial R)} :
-    p ∈ degreeLE (R := R) n ↔ degree p ≤ n := by
-  exact mem_degreeLE_iff_degree
-
-omit [BEq R] [LawfulBEq R] in
 theorem degreeLE_mono (m n : WithBot ℕ) (h_lessThan : m ≤ n) :
     degreeLE (R := R) m ≤ degreeLE (R := R) n :=
   fun _ hf => mem_degreeLE.2 (le_trans (mem_degreeLE.1 hf) h_lessThan)
-
-omit [BEq R] [LawfulBEq R] in
-theorem mem_degreeLT {n : ℕ} {p : CPolynomial R} : p ∈ degreeLT (R := R) n ↔ degree p < n := by
-  exact mem_degreeLT_iff_degree
 
 omit [BEq R] [LawfulBEq R] in
 theorem degreeLT_mono {m n : ℕ} (h : m ≤ n) :
@@ -80,7 +71,7 @@ omit [BEq R] [LawfulBEq R] in
 theorem degreeLT_succ_eq_degreeLE {n : ℕ} :
     degreeLT (R := R) (n + 1) = degreeLE (R := R) ↑n := by
   ext p
-  rw [mem_degreeLT_iff_degree, mem_degreeLE_iff_degree]
+  rw [mem_degreeLT, mem_degreeLE]
   cases hd : p.degree with
   | bot =>
       simp

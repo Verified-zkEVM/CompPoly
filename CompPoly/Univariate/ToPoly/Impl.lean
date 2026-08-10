@@ -210,14 +210,14 @@ theorem lcoeff_toPoly [BEq R] [LawfulBEq R] (n : ℕ) (p : CPolynomial R) :
 theorem degreeLE_toPoly {n : WithBot ℕ} [BEq R] [LawfulBEq R] {p : CPolynomial R} :
     p ∈ degreeLE (R := R) n ↔ p.toPoly ∈ Polynomial.degreeLE R n := by
   rw [Polynomial.mem_degreeLE]
-  rw [mem_degreeLE_iff_degree]
+  rw [mem_degreeLE]
   rw [degree_toPoly]
 
 /-- CPolynomial.degreeLT is correct wrt the Mathlib spec. -/
 theorem degreeLT_toPoly {n : ℕ} [BEq R] [LawfulBEq R] {p : CPolynomial R} :
     p ∈ degreeLT (R := R) n ↔ p.toPoly ∈ Polynomial.degreeLT R n := by
   rw [Polynomial.mem_degreeLT]
-  rw [mem_degreeLT_iff_degree]
+  rw [mem_degreeLT]
   rw [degree_toPoly]
 
 end ImplementationCorrectness

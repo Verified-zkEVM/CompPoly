@@ -134,7 +134,7 @@ theorem xgcd_toPoly_eq_gcd [Field R] [BEq R] [LawfulBEq R] [DecidableEq R] (p q 
     (xgcd p q).1.toPoly = EuclideanDomain.gcd p.toPoly q.toPoly := by
   unfold xgcd; apply xgcdAux_toPoly_eq_gcd
   rw [←degree_toPoly]
-  exact mem_degreeLT_iff_degree.mp (mem_degreeLT_iff_size_le.mpr le_rfl)
+  exact mem_degreeLT.mp (mem_degreeLT_iff_size_le.mpr le_rfl)
 
 /-- CompPoly's `xgcdAux` at threshold `0` coincides with
 Mathlib's `EuclideanDomain.xgcdAux`. -/
@@ -173,7 +173,7 @@ theorem xgcd_toPoly_eq_xgcd
   have h := xgcdAux_toPoly_eq_xgcdAux p.val.size p 1 0 q 0 1
     (by
       rw [←degree_toPoly]
-      exact mem_degreeLT_iff_degree.mp (mem_degreeLT_iff_size_le.mpr le_rfl))
+      exact mem_degreeLT.mp (mem_degreeLT_iff_size_le.mpr le_rfl))
   rw [toPoly_one, toPoly_zero] at h
   exact congrArg Prod.snd h
 
@@ -325,7 +325,7 @@ theorem gcdMonic_toPoly_eq_normalize_gcd
       (p.val.size + q.val.size + 1) p q (by
         have hqdeg : q.toPoly.degree < q.val.size := by
           rw [← degree_toPoly]
-          exact mem_degreeLT_iff_degree.mp (mem_degreeLT_iff_size_le.mpr le_rfl)
+          exact mem_degreeLT.mp (mem_degreeLT_iff_size_le.mpr le_rfl)
         have hleNat : q.val.size ≤ p.val.size + q.val.size + 1 := by
           omega
         have hle : (q.val.size : WithBot ℕ) ≤
@@ -497,7 +497,7 @@ lemma xgcd_stopSpec
   have hM : g₀.toPoly.natDegree + 1 ≤ g₀.val.size :=
     (Polynomial.natDegree_lt_iff_degree_lt hg₀poly).mpr
       (degree_toPoly g₀ ▸
-        mem_degreeLT_iff_degree.mp (mem_degreeLT_iff_size_le.mpr le_rfl))
+        mem_degreeLT.mp (mem_degreeLT_iff_size_le.mpr le_rfl))
   obtain ⟨N, hN⟩ : ∃ N, g₀.val.size = N + 1 := ⟨g₀.val.size - 1, by omega⟩
   obtain ⟨hr1, hs1, ht1⟩ : (g₁ - g₁/g₀*g₀).toPoly = g₁.toPoly ∧ (0 - g₁/g₀*1).toPoly = 0 ∧
       (1 - g₁/g₀*0).toPoly = 1 := by

@@ -52,12 +52,12 @@ def degreeLT (n : ℕ) : Set (CPolynomial R) :=
   { p | p.val.degreeBound < n }
 
 /-- Membership in `degreeLE` is the corresponding degree bound. -/
-theorem mem_degreeLE_iff_degree {n : WithBot ℕ} {p : CPolynomial R} :
+theorem mem_degreeLE {n : WithBot ℕ} {p : CPolynomial R} :
     p ∈ degreeLE (R := R) n ↔ p.degree ≤ n := by
   rfl
 
 /-- Membership in `degreeLT` is the corresponding strict degree bound. -/
-theorem mem_degreeLT_iff_degree {n : ℕ} {p : CPolynomial R} :
+theorem mem_degreeLT {n : ℕ} {p : CPolynomial R} :
     p ∈ degreeLT (R := R) n ↔ p.degree < n := by
   rfl
 
