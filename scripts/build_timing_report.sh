@@ -284,8 +284,10 @@ if measured_labels:
     )
 if "clean_build" not in current_records:
     print(
-        "- Clean build was skipped (default warm/incremental CI). "
-        "Trigger via Actions → Lean Action CI → Run workflow with `clean_build`."
+        "- Clean build was skipped (warm/incremental CI; no toolchain or "
+        "lake-manifest change). Runs automatically when `lean-toolchain` or "
+        "`lake-manifest.json` changes, or via Actions → Lean Action CI → "
+        "Run workflow with `clean_build`."
     )
 print()
 

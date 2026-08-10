@@ -9,7 +9,8 @@ on:
       clean_build:
         description: >-
           Wipe .lake/build and run a full clean lake build before the warm path.
-          Default CI is warm/incremental (reuse cached oleans).
+          Default CI is warm/incremental (reuse cached oleans). Clean also runs
+          automatically when lean-toolchain or lake-manifest.json changes.
         type: boolean
         default: false
 
@@ -88,17 +89,59 @@ jobs:
             echo "BUILD_TIMING_MERGE_BASE_SHA=$merge_base_sha" >> "$GITHUB_ENV"
           fi
       # Default: warm/incremental builds (reuse oleans; Lake rebuilds only dirty modules).
-      # Clean full rebuild only when manually requested via workflow_dispatch.
+      # Clean full rebuild when:
+      #   - workflow_dispatch with clean_build: true, or
+      #   - lean-toolchain or lake-manifest.json differs from the comparison base
+      #     (PR base SHA, previous push tip, or merge-base with origin/main on dispatch).
       - name: Resolve clean-build flag
         run: |
           clean_build=false
+          clean_reason=""
+
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && \
              [ "${{ inputs.clean_build }}" = "true" ]; then
             clean_build=true
+            clean_reason="workflow_dispatch clean_build input"
           fi
+
+          # Version-lock bump: force a wipe even if a cache restore-key matched.
+          # Cache keys already isolate toolchain+manifest, so misses are cold in
+          # practice; explicit clean keeps timing/policy honest and defends against
+          # key drift.
+          if [ "$clean_build" != true ]; then
+            base_ref=""
+            case "${{ github.event_name }}" in
+              pull_request)
+                base_ref="${{ github.event.pull_request.base.sha }}"
+                ;;
+              push)
+                before="${{ github.event.before }}"
+                if [ -n "$before" ] && \
+                   [ "$before" != "0000000000000000000000000000000000000000" ]; then
+                  base_ref="$before"
+                fi
+                ;;
+              workflow_dispatch)
+                if git rev-parse --verify origin/main >/dev/null 2>&1; then
+                  base_ref="$(git merge-base origin/main HEAD 2>/dev/null || true)"
+                elif git rev-parse --verify origin/master >/dev/null 2>&1; then
+                  base_ref="$(git merge-base origin/master HEAD 2>/dev/null || true)"
+                fi
+                ;;
+            esac
+
+            if [ -n "$base_ref" ] && git rev-parse --verify "$base_ref" >/dev/null 2>&1; then
+              if ! git diff --quiet "$base_ref" HEAD -- lean-toolchain lake-manifest.json; then
+                clean_build=true
+                changed="$(git diff --name-only "$base_ref" HEAD -- lean-toolchain lake-manifest.json | tr '\n' ' ')"
+                clean_reason="version lock changed vs ${base_ref:0:12} (${changed% })"
+              fi
+            fi
+          fi
+
           echo "CLEAN_BUILD=$clean_build" >> "$GITHUB_ENV"
           if [ "$clean_build" = true ]; then
-            echo "Clean build requested: will wipe .lake/build before lake build."
+            echo "Clean build: will wipe .lake/build before lake build ($clean_reason)."
           else
             echo "Warm build (default): reuse cached .lake oleans; no wipe."
           fi

@@ -80,9 +80,11 @@ to be covered there. See [`../../bench/README.md`](../../bench/README.md).
   oleans so only dirty modules rebuild — then `lake test`, and posts a
   build-timing report. It also builds and runs `CompPolyBench --medium` over the curated
   `BENCH_CI_GROUPS` selection, then uploads benchmark reports as CI artifacts.
-  For a full cold rebuild, use **Actions → Lean Action CI → Run workflow** and
-  enable the `clean_build` input (wipes `.lake/build` first). Default PR/push
-  runs do not wipe the cache.
+  A full cold rebuild (`rm -rf .lake/build && lake build`) runs automatically
+  when `lean-toolchain` or `lake-manifest.json` differs from the comparison base
+  (PR base, previous push tip, or merge-base with `main` on manual dispatch).
+  You can also force a clean via **Actions → Lean Action CI → Run workflow** with
+  the `clean_build` input. Ordinary source-only PR/push runs stay warm.
 - [`../../.github/workflows/linting.yml`](../../.github/workflows/linting.yml) runs
   the style linter on changed `.lean` files in PRs and push builds.
 - [`../../.github/workflows/check_imports.yml`](../../.github/workflows/check_imports.yml)
