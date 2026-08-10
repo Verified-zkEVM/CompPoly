@@ -17,6 +17,11 @@ lake exe cache get
 lake build
 ```
 
+`lake exe cache get` covers Mathlib and its dependencies, which is the expensive half.
+It does not cover CompPoly's own modules; `lake build` compiles those. Downstream
+projects that depend on CompPoly do get its prebuilt oleans automatically — see
+[`build-cache.md`](build-cache.md).
+
 ## Validation By Change Type
 
 ### Existing Lean files only
