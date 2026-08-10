@@ -541,10 +541,13 @@ private theorem composeY_monomialXY {F : Type*}
     CBivariate.composeY (CBivariate.monomialXY x y c) p =
       CPolynomial.monomial x c * p ^ y := by
   apply (CPolynomial.ringEquiv (R := F)).injective
-  rw [show CPolynomial.ringEquiv (CBivariate.composeY (CBivariate.monomialXY x y c) p) =
-      (CBivariate.composeY (CBivariate.monomialXY x y c) p).toPoly by rfl]
-  rw [show CPolynomial.ringEquiv (CPolynomial.monomial x c * p ^ y) =
-      (CPolynomial.monomial x c * p ^ y).toPoly by rfl]
+  change
+    (CPolynomial.ringEquiv (R := F)).toRingHom
+        (CBivariate.composeY (CBivariate.monomialXY x y c) p) =
+      (CPolynomial.ringEquiv (R := F)).toRingHom
+        (CPolynomial.monomial x c * p ^ y)
+  rw [CPolynomial.ringEquiv_toRingHom_apply,
+    CPolynomial.ringEquiv_toRingHom_apply]
   rw [composeY_toPoly, CBivariate.monomialXY_toPoly, CPolynomial.toPoly_mul,
     CPolynomial.toPoly_pow, Polynomial.eval_monomial]
   rw [show (CPolynomial.monomial x c : CPolynomial F).toPoly =

@@ -270,8 +270,8 @@ theorem shiftY_toPoly [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [Dec
   congr 1
   rw [Polynomial.map_add, Polynomial.map_X, Polynomial.map_C]
   congr 2
-  show (CPolynomial.C b).toPoly = _
-  rw [CPolynomial.C_toPoly]
+  change (CPolynomial.ringEquiv (R := R)).toRingHom (CPolynomial.C b) = _
+  rw [CPolynomial.ringEquiv_toRingHom_apply, CPolynomial.C_toPoly]
 
 /-- Outer coefficient of the X-shift: Taylor-shift the j-th Y-coefficient. -/
 theorem outerCoeff_shiftX [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
@@ -302,10 +302,17 @@ theorem eval_C_eq_evalY [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (b : R) (Q : CBivariate R) :
     CPolynomial.eval (CPolynomial.C b) Q = evalY b Q := by
   apply CPolynomial.ringEquiv.injective
-  show (CPolynomial.eval (CPolynomial.C b) Q).toPoly = (evalY b Q).toPoly
+  change
+    (CPolynomial.ringEquiv (R := R)).toRingHom
+        (CPolynomial.eval (CPolynomial.C b) Q) =
+      (CPolynomial.ringEquiv (R := R)).toRingHom (evalY b Q)
+  rw [CPolynomial.ringEquiv_toRingHom_apply, CPolynomial.ringEquiv_toRingHom_apply]
   rw [evalY_toPoly, CPolynomial.eval_toPoly, toPoly_eq_map, ← CPolynomial.C_toPoly b]
-  exact (Polynomial.eval_map_apply (p := CPolynomial.toPoly Q)
-          (CPolynomial.ringEquiv (R := R)).toRingHom (CPolynomial.C b)).symm
+  have h := (Polynomial.eval_map_apply (p := CPolynomial.toPoly Q)
+    (CPolynomial.ringEquiv (R := R)).toRingHom (CPolynomial.C b)).symm
+  rw [CPolynomial.ringEquiv_toRingHom_apply,
+    CPolynomial.ringEquiv_toRingHom_apply] at h
+  exact h
 
 /-- The (0,0) coefficient of the shift is evaluation at the point. -/
 theorem coeff_shiftC_zero_zero [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
