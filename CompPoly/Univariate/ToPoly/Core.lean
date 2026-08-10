@@ -20,7 +20,7 @@ public import CompPoly.Univariate.Linear
 Conversions between computable univariate polynomials and mathlib `Polynomial`.
 -/
 
-@[expose] public section
+public section
 
 open Polynomial
 
@@ -209,6 +209,13 @@ theorem trim_toImpl [LawfulBEq R] (p : R[X]) : p.toImpl.trim = p.toImpl := by
   exact Trim.trim_eq_of_isCanonical (isCanonical_toImpl p)
 
 end Raw
+
+omit [BEq R] in
+/-- Building a canonical polynomial from `toImpl` and converting it back yields the
+original mathlib polynomial. -/
+theorem toPoly_mk_toImpl (p : R[X]) :
+    CPolynomial.toPoly ⟨p.toImpl, Raw.isCanonical_toImpl p⟩ = p := by
+  exact Raw.toPoly_toImpl
 
 /-- `ofArray` preserves the raw polynomial's `toPoly` image. -/
 theorem ofArray_toPoly [LawfulBEq R] (p : CPolynomial.Raw R) :

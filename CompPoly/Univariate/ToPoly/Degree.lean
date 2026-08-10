@@ -40,7 +40,7 @@ noncomputable def toPolyLinearEquiv : CPolynomial R ≃ₗ[R] R[X] where
   map_add' := toPoly_add
   map_smul' := toPoly_smul
   left_inv := fun p => Subtype.ext (toImpl_toPoly_of_canonical p)
-  right_inv := fun _ => toPoly_toImpl
+  right_inv := toPoly_mk_toImpl
 theorem degree_le_iff_coeff_zero (p : CPolynomial R) (n : WithBot ℕ) :
     p.degree ≤ n ↔ ∀ k : ℕ, n < k → p.coeff k = 0 := by
     rw [degree_toPoly, Polynomial.degree_le_iff_coeff_zero]
