@@ -385,11 +385,14 @@ private theorem cpoly_C_one {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] :
     CPolynomial.C (1 : F) = 1 := by
   apply CPolynomial.ringEquiv.injective
+  have ringEquiv_toPoly (p : CPolynomial F) :
+      (CPolynomial.ringEquiv (R := F)).toRingHom p = p.toPoly := by
+    rw [RingEquiv.toRingHom_eq_coe]
+    exact CPolynomial.ringEquiv_apply p
   change
     (CPolynomial.ringEquiv (R := F)).toRingHom (CPolynomial.C (1 : F)) =
       (CPolynomial.ringEquiv (R := F)).toRingHom 1
-  rw [CPolynomial.ringEquiv_toRingHom_apply,
-    CPolynomial.ringEquiv_toRingHom_apply]
+  rw [ringEquiv_toPoly, ringEquiv_toPoly]
   rw [CPolynomial.C_toPoly, CPolynomial.toPoly_one, Polynomial.C_1]
 
 private theorem shiftedSubstitutionCoeffTerm_top_coeff {F : Type*}
