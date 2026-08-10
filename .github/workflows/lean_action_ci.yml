@@ -5,6 +5,14 @@ on:
     branches: [main, master]
   pull_request:
   workflow_dispatch:
+    inputs:
+      clean_build:
+        description: >-
+          Wipe .lake/build and run a full clean lake build before the warm path.
+          Default CI is warm/incremental (reuse cached oleans). Clean also runs
+          automatically when lean-toolchain or lake-manifest.json changes.
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -80,14 +88,91 @@ jobs:
           if [ -n "$merge_base_sha" ]; then
             echo "BUILD_TIMING_MERGE_BASE_SHA=$merge_base_sha" >> "$GITHUB_ENV"
           fi
-      - name: Restore Lake cache
-        id: lake-cache
+      # Default: warm/incremental builds (reuse oleans; Lake rebuilds only dirty modules).
+      # Clean full rebuild when:
+      #   - workflow_dispatch with clean_build: true, or
+      #   - lean-toolchain or lake-manifest.json differs from the comparison base
+      #     (PR base SHA, previous push tip, or merge-base with origin/main on dispatch).
+      - name: Resolve clean-build flag
+        run: |
+          clean_build=false
+          clean_reason=""
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && \
+             [ "${{ inputs.clean_build }}" = "true" ]; then
+            clean_build=true
+            clean_reason="workflow_dispatch clean_build input"
+          fi
+
+          # Version-lock bump: force a wipe even if a cache restore-key matched.
+          # Cache keys already isolate toolchain+manifest, so misses are cold in
+          # practice; explicit clean keeps timing/policy honest and defends against
+          # key drift.
+          if [ "$clean_build" != true ]; then
+            base_ref=""
+            case "${{ github.event_name }}" in
+              pull_request)
+                base_ref="${{ github.event.pull_request.base.sha }}"
+                ;;
+              push)
+                before="${{ github.event.before }}"
+                if [ -n "$before" ] && \
+                   [ "$before" != "0000000000000000000000000000000000000000" ]; then
+                  base_ref="$before"
+                fi
+                ;;
+              workflow_dispatch)
+                if git rev-parse --verify origin/main >/dev/null 2>&1; then
+                  base_ref="$(git merge-base origin/main HEAD 2>/dev/null || true)"
+                elif git rev-parse --verify origin/master >/dev/null 2>&1; then
+                  base_ref="$(git merge-base origin/master HEAD 2>/dev/null || true)"
+                fi
+                ;;
+            esac
+
+            if [ -n "$base_ref" ] && git rev-parse --verify "$base_ref" >/dev/null 2>&1; then
+              if ! git diff --quiet "$base_ref" HEAD -- lean-toolchain lake-manifest.json; then
+                clean_build=true
+                changed="$(git diff --name-only "$base_ref" HEAD -- lean-toolchain lake-manifest.json | tr '\n' ' ')"
+                clean_reason="version lock changed vs ${base_ref:0:12} (${changed% })"
+              fi
+            fi
+          fi
+
+          echo "CLEAN_BUILD=$clean_build" >> "$GITHUB_ENV"
+          if [ "$clean_build" = true ]; then
+            echo "Clean build: will wipe .lake/build before lake build ($clean_reason)."
+          else
+            echo "Warm build (default): reuse cached .lake oleans; no wipe."
+          fi
+      # Warm builds only pay off when the restore actually hits, so dependencies and our
+      # own build are cached separately.
+      #
+      # A single `path: .lake` entry carried both at ~2.6 GiB per commit. Keyed per
+      # commit against GitHub's 10 GB per-repo quota, that left room for roughly four
+      # entries, so consecutive pushes evicted one another and warm restores missed
+      # often — the repo was sitting at ~10.3 GiB active, permanently over quota.
+      # Splitting means the bulky dependency entry is written once per version-lock
+      # bump instead of once per push, leaving the quota free to hold many small
+      # per-commit build entries.
+      - name: Restore dependency cache
+        id: deps-cache
         uses: actions/cache/restore@v4
         with:
-          path: .lake
-          key: lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ github.sha }}
+          path: .lake/packages
+          # No commit component and no restore-keys: the version lock fully determines
+          # the dependency set, so a hit is always exact and a miss must be refetched.
+          key: lake-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
+      - name: Restore build cache
+        id: build-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .lake/build
+          # Exact key per commit; restore-keys fall back to latest compatible
+          # toolchain+manifest cache (typically main or a recent PR head).
+          key: lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ github.sha }}
           restore-keys: |
-            lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
+            lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
       - name: Set up Lean environment
         uses: leanprover/lean-action@v1
         with:
@@ -96,11 +181,18 @@ jobs:
           test: false
           lint: false
           use-github-cache: false
+          # This step is what supplies Mathlib's oleans: lean-action detects the Mathlib
+          # dependency in `lake-manifest.json` and runs `lake exe cache get` itself, so a
+          # dependency-cache miss costs a download rather than compiling Mathlib. That is
+          # already the behaviour of the `auto` default; setting it explicitly documents
+          # the reliance and pins it against a future change of default.
+          use-mathlib-cache: true
       - name: Time clean build
+        if: env.CLEAN_BUILD == 'true'
         run: |
           bash scripts/build_timing_report.sh run clean_build "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c 'rm -rf .lake/build && lake build'
-      - name: Time warm rebuild
+      - name: Time library build (warm)
         run: |
           bash scripts/build_timing_report.sh run warm_rebuild "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c 'lake build'
@@ -143,12 +235,22 @@ jobs:
           path: ${{ env.EVALUATION_BENCH_ARTIFACT_DIR }}
           if-no-files-found: warn
           retention-days: 30
-      - name: Save Lake cache
-        if: success() && steps.lake-cache.outputs.cache-hit != 'true'
+      # Both saves skip on an exact cache hit, where the key is already stored and the
+      # save would fail. In practice the dependency entry is written only after a
+      # version-lock bump, while the build entry is written on every new commit so the
+      # next PR can restore tip oleans via restore-keys.
+      - name: Save dependency cache
+        if: success() && steps.deps-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: .lake
-          key: lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ github.sha }}
+          path: .lake/packages
+          key: lake-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
+      - name: Save build cache
+        if: success() && steps.build-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .lake/build
+          key: lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ github.sha }}
       - name: Prepare timing artifact
         if: always()
         run: |
@@ -159,6 +261,12 @@ jobs:
           fi
           if [ -f "$BUILD_TIMING_LOG_DIR/clean_build.log" ]; then
             cp "$BUILD_TIMING_LOG_DIR/clean_build.log" "$BUILD_TIMING_ARTIFACT_DIR/clean_build.log"
+          fi
+          if [ -f "$BUILD_TIMING_LOG_DIR/warm_rebuild.log" ]; then
+            cp "$BUILD_TIMING_LOG_DIR/warm_rebuild.log" "$BUILD_TIMING_ARTIFACT_DIR/warm_rebuild.log"
+          fi
+          if [ -f "$BUILD_TIMING_LOG_DIR/test_path.log" ]; then
+            cp "$BUILD_TIMING_LOG_DIR/test_path.log" "$BUILD_TIMING_ARTIFACT_DIR/test_path.log"
           fi
       - name: Upload timing artifact
         if: always()

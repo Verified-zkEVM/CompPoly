@@ -81,9 +81,20 @@ to be covered there. See [`../../bench/README.md`](../../bench/README.md).
 ## CI Mapping
 
 - [`../../.github/workflows/lean_action_ci.yml`](../../.github/workflows/lean_action_ci.yml)
-  runs a clean build, warm rebuild, and `lake test`, then posts a build-timing
-  report. It also builds and runs `CompPolyBench --medium` over the curated
+  runs a **warm** (incremental) `lake build` by default — reusing cached Lake
+  oleans so only dirty modules rebuild — then `lake test`, and posts a
+  build-timing report. It also builds and runs `CompPolyBench --medium` over the curated
   `BENCH_CI_GROUPS` selection, then uploads benchmark reports as CI artifacts.
+  A full cold rebuild (`rm -rf .lake/build && lake build`) runs automatically
+  when `lean-toolchain` or `lake-manifest.json` differs from the comparison base
+  (PR base, previous push tip, or merge-base with `main` on manual dispatch).
+  You can also force a clean via **Actions → Lean Action CI → Run workflow** with
+  the `clean_build` input. Ordinary source-only PR/push runs stay warm.
+  Two Actions caches feed the warm path: `.lake/packages` keyed on
+  `lean-toolchain` plus `lake-manifest.json`, and `.lake/build` keyed additionally
+  per commit. A dependency-cache miss is not expensive, because `lean-action` runs
+  `lake exe cache get` for us, so Mathlib's oleans are downloaded rather than
+  compiled.
 - [`../../.github/workflows/linting.yml`](../../.github/workflows/linting.yml) runs
   the style linter on changed `.lean` files in PRs and push builds.
 - [`../../.github/workflows/check_imports.yml`](../../.github/workflows/check_imports.yml)
