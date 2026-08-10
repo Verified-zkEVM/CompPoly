@@ -181,13 +181,12 @@ jobs:
           test: false
           lint: false
           use-github-cache: false
-      # Fallback for a dependency-cache miss, which until now meant compiling all of
-      # Mathlib from source. Lake materializes the dependencies, then this pulls their
-      # prebuilt oleans from Mathlib's cache server. Skipped on a hit, where the oleans
-      # are already restored and this would only re-download them.
-      - name: Fetch Mathlib oleans
-        if: steps.deps-cache.outputs.cache-hit != 'true'
-        run: lake exe cache get
+          # This step is what supplies Mathlib's oleans: lean-action detects the Mathlib
+          # dependency in `lake-manifest.json` and runs `lake exe cache get` itself, so a
+          # dependency-cache miss costs a download rather than compiling Mathlib. That is
+          # already the behaviour of the `auto` default; setting it explicitly documents
+          # the reliance and pins it against a future change of default.
+          use-mathlib-cache: true
       - name: Time clean build
         if: env.CLEAN_BUILD == 'true'
         run: |

@@ -92,8 +92,9 @@ to be covered there. See [`../../bench/README.md`](../../bench/README.md).
   the `clean_build` input. Ordinary source-only PR/push runs stay warm.
   Two Actions caches feed the warm path: `.lake/packages` keyed on
   `lean-toolchain` plus `lake-manifest.json`, and `.lake/build` keyed additionally
-  per commit. On a dependency-cache miss the workflow runs `lake exe cache get`, so
-  a miss costs a download rather than a full Mathlib compile.
+  per commit. A dependency-cache miss is not expensive, because `lean-action` runs
+  `lake exe cache get` for us, so Mathlib's oleans are downloaded rather than
+  compiled.
 - [`../../.github/workflows/linting.yml`](../../.github/workflows/linting.yml) runs
   the style linter on changed `.lean` files in PRs and push builds.
 - [`../../.github/workflows/check_imports.yml`](../../.github/workflows/check_imports.yml)

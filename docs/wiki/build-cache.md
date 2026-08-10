@@ -84,7 +84,8 @@ tar tzf .lake/CompPoly-oleans.tar.gz | head
 
 ## What this does not cover
 
-CI's own per-commit build reuse is a separate mechanism — a GitHub Actions cache of
-`.lake` plus `lake exe cache get`, described in
+CI's own per-commit build reuse is a separate mechanism — two GitHub Actions caches,
+one for `.lake/packages` and one for `.lake/build`, with `lean-action` supplying
+Mathlib's oleans via `lake exe cache get`. See
 [`quickstart.md`](quickstart.md#ci-mapping). The release archive is cut once per
 release tag and plays no part in it.
