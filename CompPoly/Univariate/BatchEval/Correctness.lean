@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Univariate.Basic
 public import CompPoly.Univariate.BatchEval.SubproductTree
 public import CompPoly.Univariate.ToPoly.Impl
 

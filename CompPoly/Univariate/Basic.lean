@@ -23,7 +23,7 @@ public import CompPoly.Univariate.Raw.Division
   properties compared to the raw `CPolynomial.Raw` type.
 -/
 
-@[expose] public section
+public section
 namespace CompPoly
 
 open CPolynomial.Raw
@@ -54,6 +54,7 @@ variable {R : Type*}
   The NTT `butterflyStage` in `Univariate/NTT/Transform.lean` is not on this list: it
   operates on a scalar coefficient `Array R` and never calls `trim`.
 -/
+@[expose]
 def CPolynomial (R : Type*) [Zero R] := { p : CPolynomial.Raw R // IsCanonical p }
 
 namespace CPolynomial

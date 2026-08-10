@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Univariate.Basic
 public import CompPoly.Univariate.BatchEval.Context
 public import CompPoly.Univariate.Deriv
 public import CompPoly.Univariate.Vanishing
