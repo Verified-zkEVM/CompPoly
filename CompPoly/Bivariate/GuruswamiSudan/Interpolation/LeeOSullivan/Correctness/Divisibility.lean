@@ -256,8 +256,7 @@ theorem coeffY_dvd_vanishingPolynomial_pow_of_multiplicity
     apply cpoly_eq_of_toPoly_eq
     rw [CPolynomial.toPoly_mul, CPolynomial.toPoly_pow]
     have hWto : W.toPoly = Wpoly := by
-      change Wpoly.toImpl.toPoly = Wpoly
-      exact CPolynomial.Raw.toPoly_toImpl
+      simpa only [W] using CPolynomial.toPoly_mk_toImpl Wpoly
     rw [hWto]
     rw [hWpoly]
     ring
