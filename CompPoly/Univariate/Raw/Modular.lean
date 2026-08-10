@@ -14,7 +14,7 @@ Context-parametric modular multiplication and exponentiation over raw
 univariate polynomials.
 -/
 
-@[expose] public section
+public section
 
 namespace CompPoly
 

@@ -59,8 +59,9 @@ def messagePoly [Zero F] [BEq F] [LawfulBEq F]
 /-- `(messagePoly msg).degree < k`. -/
 lemma messagePoly_degree_lt [Zero F] [BEq F] [LawfulBEq F] {k : ℕ} (msg : Vector F k) :
     (messagePoly msg).degree < k :=
-  CPolynomial.mem_degreeLT_iff_size_le.mpr
-    ((CPolynomial.Raw.Trim.size_le_size msg.toArray).trans_eq msg.size_toArray)
+  CPolynomial.mem_degreeLT.mp <|
+    CPolynomial.mem_degreeLT_iff_size_le.mpr
+      ((CPolynomial.Raw.Trim.size_le_size msg.toArray).trans_eq msg.size_toArray)
 
 /-- `messagePoly` recovers a `CPolynomial` of degree `< k` from its bounded coefficient vector. -/
 lemma messagePoly_ofFn_coeff [Semiring F] [BEq F] [LawfulBEq F] (k : ℕ) (f : CPolynomial F)
