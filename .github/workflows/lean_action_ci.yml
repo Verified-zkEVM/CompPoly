@@ -145,16 +145,34 @@ jobs:
           else
             echo "Warm build (default): reuse cached .lake oleans; no wipe."
           fi
-      - name: Restore Lake cache
-        id: lake-cache
+      # Warm builds only pay off when the restore actually hits, so dependencies and our
+      # own build are cached separately.
+      #
+      # A single `path: .lake` entry carried both at ~2.6 GiB per commit. Keyed per
+      # commit against GitHub's 10 GB per-repo quota, that left room for roughly four
+      # entries, so consecutive pushes evicted one another and warm restores missed
+      # often — the repo was sitting at ~10.3 GiB active, permanently over quota.
+      # Splitting means the bulky dependency entry is written once per version-lock
+      # bump instead of once per push, leaving the quota free to hold many small
+      # per-commit build entries.
+      - name: Restore dependency cache
+        id: deps-cache
         uses: actions/cache/restore@v4
         with:
-          path: .lake
+          path: .lake/packages
+          # No commit component and no restore-keys: the version lock fully determines
+          # the dependency set, so a hit is always exact and a miss must be refetched.
+          key: lake-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
+      - name: Restore build cache
+        id: build-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .lake/build
           # Exact key per commit; restore-keys fall back to latest compatible
           # toolchain+manifest cache (typically main or a recent PR head).
-          key: lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ github.sha }}
+          key: lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ github.sha }}
           restore-keys: |
-            lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
+            lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
       - name: Set up Lean environment
         uses: leanprover/lean-action@v1
         with:
@@ -163,6 +181,13 @@ jobs:
           test: false
           lint: false
           use-github-cache: false
+      # Fallback for a dependency-cache miss, which until now meant compiling all of
+      # Mathlib from source. Lake materializes the dependencies, then this pulls their
+      # prebuilt oleans from Mathlib's cache server. Skipped on a hit, where the oleans
+      # are already restored and this would only re-download them.
+      - name: Fetch Mathlib oleans
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: lake exe cache get
       - name: Time clean build
         if: env.CLEAN_BUILD == 'true'
         run: |
@@ -211,15 +236,22 @@ jobs:
           path: ${{ env.EVALUATION_BENCH_ARTIFACT_DIR }}
           if-no-files-found: warn
           retention-days: 30
-      # Save after successful runs so the next PR can restore oleans via restore-keys.
-      # Skip exact cache-hit re-runs of the same commit (key already stored; save would fail).
-      # New main SHAs always miss the exact key, so tip oleans are refreshed for PRs.
-      - name: Save Lake cache
-        if: success() && steps.lake-cache.outputs.cache-hit != 'true'
+      # Both saves skip on an exact cache hit, where the key is already stored and the
+      # save would fail. In practice the dependency entry is written only after a
+      # version-lock bump, while the build entry is written on every new commit so the
+      # next PR can restore tip oleans via restore-keys.
+      - name: Save dependency cache
+        if: success() && steps.deps-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: .lake
-          key: lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ github.sha }}
+          path: .lake/packages
+          key: lake-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
+      - name: Save build cache
+        if: success() && steps.build-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .lake/build
+          key: lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ github.sha }}
       - name: Prepare timing artifact
         if: always()
         run: |
