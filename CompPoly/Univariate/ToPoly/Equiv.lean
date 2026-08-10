@@ -187,12 +187,6 @@ theorem ringEquiv_apply [LawfulBEq R] [Nontrivial R] (p : CPolynomial R) :
     ringEquiv p = p.toPoly := by
   rfl
 
-/-- The ring hom underlying `ringEquiv` is `toPoly`. -/
-@[simp]
-theorem ringEquiv_toRingHom_apply [LawfulBEq R] [Nontrivial R] (p : CPolynomial R) :
-    (ringEquiv (R := R)).toRingHom p = p.toPoly := by
-  rfl
-
 end RingEquiv
 
 end CPolynomial
