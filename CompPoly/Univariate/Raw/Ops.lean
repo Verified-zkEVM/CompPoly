@@ -6,6 +6,7 @@ Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles,
 -/
 module
 
+import all CompPoly.Univariate.Raw.Core
 public import CompPoly.Univariate.Raw.Core
 
 /-!
@@ -14,7 +15,7 @@ public import CompPoly.Univariate.Raw.Core
 Operations and evaluation lemmas for raw computable univariate polynomials.
 -/
 
-@[expose] public section
+public section
 
 namespace CompPoly
 

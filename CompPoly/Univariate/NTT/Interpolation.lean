@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Univariate.Basic
 public import CompPoly.Univariate.Lagrange
 public import CompPoly.Univariate.NTT.Evaluation
 public import CompPoly.Univariate.NTT.Inverse
@@ -178,10 +179,8 @@ theorem inverseSpec_interpolatePow_eq [BEq R] [LawfulBEq R]
             exact (CPolynomial.Raw.toImpl_toPoly (R := R) (inverseSpec D values)).symm
     _ = q.toPoly.toImpl := by
             rw [hpoly]
-    _ = q.val.trim := by
-            exact CPolynomial.Raw.toImpl_toPoly (R := R) q.val
     _ = q.val := by
-            exact CPolynomial.Raw.Trim.trim_eq_of_isCanonical q.property
+            exact CPolynomial.toImpl_toPoly_of_canonical q
 
 /-- The inverse NTT implementation interpolates the input values on the NTT domain. -/
 theorem inverseImpl_interpolatePow_eq [BEq R] [LawfulBEq R]

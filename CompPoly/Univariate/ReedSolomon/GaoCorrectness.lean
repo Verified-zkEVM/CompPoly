@@ -297,7 +297,8 @@ theorem decode_eq_some [Field F]
   -- Extract the message from the exact-division equation `hGVf`.
   obtain ⟨hmod0, hdivtp⟩ :=
     (exactDiv_toPoly_iff _ _ _ hVne0).mp (hGVf.trans (mul_comm _ _))
-  have hdiveq : G / V = messagePoly msg := toPolyLinearEquiv.injective hdivtp
+  have hdiveq : G / V = messagePoly msg := toPolyLinearEquiv.injective (by
+    simpa only [toPolyLinearEquiv_apply] using hdivtp)
   show (if G.mod V == 0 then if (G / V).degree < k then some (G / V) else none else none) = _
   rw [if_pos (beq_iff_eq.mpr hmod0), if_pos (hdiveq ▸ messagePoly_degree_lt msg), hdiveq]
 

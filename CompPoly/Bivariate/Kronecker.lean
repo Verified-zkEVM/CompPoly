@@ -5,6 +5,7 @@ Authors: Dimitris Mitsios
 -/
 module
 
+import all CompPoly.Univariate.ToPoly.Impl
 public import CompPoly.Bivariate.Basic
 public import CompPoly.Univariate.ToPoly
 public import CompPoly.Univariate.NTT.FastMul

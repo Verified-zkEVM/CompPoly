@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Univariate.Basic
 public import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Lemmas
 
 /-!
@@ -540,10 +541,16 @@ private theorem composeY_monomialXY {F : Type*}
     CBivariate.composeY (CBivariate.monomialXY x y c) p =
       CPolynomial.monomial x c * p ^ y := by
   apply (CPolynomial.ringEquiv (R := F)).injective
-  rw [show CPolynomial.ringEquiv (CBivariate.composeY (CBivariate.monomialXY x y c) p) =
-      (CBivariate.composeY (CBivariate.monomialXY x y c) p).toPoly by rfl]
-  rw [show CPolynomial.ringEquiv (CPolynomial.monomial x c * p ^ y) =
-      (CPolynomial.monomial x c * p ^ y).toPoly by rfl]
+  have ringEquiv_toPoly (r : CPolynomial F) :
+      (CPolynomial.ringEquiv (R := F)).toRingHom r = r.toPoly := by
+    rw [RingEquiv.toRingHom_eq_coe]
+    exact CPolynomial.ringEquiv_apply r
+  change
+    (CPolynomial.ringEquiv (R := F)).toRingHom
+        (CBivariate.composeY (CBivariate.monomialXY x y c) p) =
+      (CPolynomial.ringEquiv (R := F)).toRingHom
+        (CPolynomial.monomial x c * p ^ y)
+  rw [ringEquiv_toPoly, ringEquiv_toPoly]
   rw [composeY_toPoly, CBivariate.monomialXY_toPoly, CPolynomial.toPoly_mul,
     CPolynomial.toPoly_pow, Polynomial.eval_monomial]
   rw [show (CPolynomial.monomial x c : CPolynomial F).toPoly =

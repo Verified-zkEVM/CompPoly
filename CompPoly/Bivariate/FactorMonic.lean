@@ -75,7 +75,7 @@ theorem divByLinearY_euclid_toPoly
   rw [Polynomial.map_add, Polynomial.map_mul, CPolynomial.C_toPoly,
     linearYDivisor_toPoly (R := R) f]
   simp only [Polynomial.map_C, Polynomial.map_sub, Polynomial.map_X]
-  simpa [e, CPolynomial.ringEquiv, CBivariate.toPoly_eq_map,
+  simpa [e, CPolynomial.ringEquiv_apply, CBivariate.toPoly_eq_map,
     mul_comm, add_comm, add_left_comm, add_assoc] using
     (divByLinearY_spec Q f).symm
 

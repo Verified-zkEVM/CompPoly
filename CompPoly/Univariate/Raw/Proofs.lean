@@ -6,6 +6,7 @@ Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles,
 -/
 module
 
+import all CompPoly.Univariate.Raw.Division
 public import CompPoly.Univariate.Raw.Division
 
 /-!
@@ -14,7 +15,7 @@ public import CompPoly.Univariate.Raw.Division
 Proofs about operations on raw computable univariate polynomials.
 -/
 
-@[expose] public section
+public section
 
 namespace CompPoly
 

@@ -5,6 +5,7 @@ Authors: Salih Erdem Koçak, Doran Pamukçu
 -/
 module
 
+import all CompPoly.Univariate.Basic
 public import CompPoly.Univariate.NTT.Evaluation
 public import CompPoly.Univariate.NTT.Forward
 public import CompPoly.Univariate.NTT.Inverse

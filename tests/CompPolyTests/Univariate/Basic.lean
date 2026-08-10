@@ -5,6 +5,7 @@ Authors: Derek Sorensen
 -/
 module
 
+import all CompPoly.Univariate.Basic
 public import CompPoly.Univariate.Basic
 
 /-!

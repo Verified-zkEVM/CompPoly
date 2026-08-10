@@ -5,6 +5,7 @@ Authors: Abraxas1010 (IAOM / Apoth3osis)
 -/
 module
 
+import all CompPoly.Univariate.ReedSolomon
 public import CompPoly.Univariate.ReedSolomon
 public import CompPoly.Univariate.NTT.Evaluation
 

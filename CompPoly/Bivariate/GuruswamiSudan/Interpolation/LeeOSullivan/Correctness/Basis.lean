@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Bivariate.Basic
 public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Common
 public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Combinations
 
