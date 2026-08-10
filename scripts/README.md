@@ -10,8 +10,18 @@ This directory contains the main helper scripts for local validation and CI supp
   checks.
 - `python3 ./scripts/check-docs-integrity.py` - verify the `CLAUDE.md` symlink,
   local markdown links, and backticked source paths across the handbook.
+- `lake exe axiomsweep --check` - kernel-level axiom/`sorry` regression gate against
+  `scripts/axiom_baseline.json` (run after `lake build`).
 
 ## Script Inventory
+
+### `AxiomSweep.lean` (`lake exe axiomsweep`)
+
+Kernel-level axiom/`sorry` accounting for every reportable `CompPoly.*` declaration,
+computed from the built `.olean` environment, with a committed regression baseline
+(`axiom_baseline.json`). `--check` fails only on new taint; `--update-baseline`
+refreshes the baseline; `--out FILE` writes a full per-declaration report. See the
+module docstring for modes and known blind spots.
 
 ### `update-lib.sh`
 

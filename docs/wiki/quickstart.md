@@ -39,9 +39,12 @@ lake build
 lake exe axiomsweep --check
 ```
 
-`axiomsweep` is kernel-level axiom/`sorry` accounting for every `CompPoly.*`
-declaration (the `#print axioms` information, library-wide), diffed against the
-committed baseline `scripts/axiom_baseline.json`. It fails only on *new*
+`axiomsweep` is kernel-level axiom/`sorry` accounting for every reportable
+`CompPoly.*` declaration, diffed against the committed baseline
+`scripts/axiom_baseline.json`. It sweeps the `CompPoly` library as imported by the
+umbrella (`tests/` and `bench/` are outside it), and inherits the blind spots of any
+environment walk (structure-field defaults and `example`s never enter the
+environment) — see the module docstring in `scripts/AxiomSweep.lean`. It fails only on *new*
 `sorryAx` or non-standard-axiom taint, so pre-existing gaps stay allowed. After
 intentionally adding or closing a `sorry`, refresh and commit the baseline:
 
@@ -95,8 +98,8 @@ to be covered there. See [`../../bench/README.md`](../../bench/README.md).
 ## CI Mapping
 
 - [`../../.github/workflows/lean_action_ci.yml`](../../.github/workflows/lean_action_ci.yml)
-  runs a clean build, warm rebuild, and `lake test`, then posts a build-timing
-  report. It also builds and runs `CompPolyBench --medium` over the curated
+  runs a clean build, warm rebuild, and `lake test`, runs the axiom sweep
+  report-only, then posts a build-timing report. It also builds and runs `CompPolyBench --medium` over the curated
   `BENCH_CI_GROUPS` selection, then uploads benchmark reports as CI artifacts.
 - [`../../.github/workflows/linting.yml`](../../.github/workflows/linting.yml) runs
   the style linter on changed `.lean` files in PRs and push builds.
@@ -132,6 +135,7 @@ Use the direct scripts when debugging a specific failure:
 python3 ./scripts/check-docs-integrity.py
 lake test
 lake build CompPolyBench
+lake exe axiomsweep --check
 ```
 
 For more detail on the helper scripts, see
