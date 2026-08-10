@@ -489,7 +489,7 @@ theorem initialCoefficientPolynomial_evalHorner_eq_composeYCoeff_monomial_zero
         simp only [List.foldl_cons]
         apply ih
         dsimp [polyStep, coeffStep]
-        rw [cpoly_eval_add, hacc, cpoly_eval_monomial,
+        rw [cpoly_eval_add, hacc, cpoly_eval_monomial, CBivariate.coeff_eq_coeff_coeff,
           cpoly_mulPowCoeff_monomial_zero_depth_zero]
   exact hfold (List.range' 0 Q.val.size) 0 0
     (by simp [CPolynomial.eval_toPoly, CPolynomial.toPoly_zero])

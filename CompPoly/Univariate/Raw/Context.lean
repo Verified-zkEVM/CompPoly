@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Univariate.Basic
 public import CompPoly.Univariate.DivisionCorrectness
 public import CompPoly.Univariate.NTT.FastMul
 public import CompPoly.Univariate.NTT.FastMulLow

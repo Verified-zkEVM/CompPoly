@@ -5,6 +5,7 @@ Authors: Dimitris Mitsios
 -/
 module
 
+import all CompPoly.Bivariate.Basic
 public import CompPoly.Bivariate.Basic
 public import CompPoly.Bivariate.ToPoly
 public import CompPoly.Univariate.Deriv

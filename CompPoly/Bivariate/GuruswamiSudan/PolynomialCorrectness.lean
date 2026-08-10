@@ -309,7 +309,6 @@ theorem ofMonomialCoeffs_ne_zero_of_coeff_getD_ne_zero {R : Type*}
   let monomial := monomials.getD k ⟨0, 0⟩
   have hget := ofMonomialCoeffs_coeff_getD (R := R) (monomials := monomials)
     (coeffs := coeffs) hnodup hk
-  dsimp [monomial] at hget
   have hzeroCoeff :
       coeff (ofMonomialCoeffs monomials coeffs) monomial.xDegree monomial.yDegree = 0 := by
     rw [hzero]

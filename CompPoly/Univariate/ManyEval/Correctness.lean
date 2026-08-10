@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Univariate.Basic
 public import CompPoly.Univariate.ManyEval.Basic
 public import CompPoly.Data.Array.Lemmas
 

@@ -5,6 +5,7 @@ Authors: Derek Sorensen, Dimitris Mitsios
 -/
 module
 
+import all CompPoly.Univariate.Basic
 public import CompPoly.Univariate.Basic
 
 /-!
@@ -243,7 +244,8 @@ variable {R : Type*}
 /-- `CBivariate.coeff` as two composed `CPolynomial.coeff`. -/
 @[simp]
 theorem coeff_eq_coeff_coeff [Zero R] (f : CBivariate R) (i j : ℕ) :
-    coeff f i j = CPolynomial.coeff (CPolynomial.coeff f j) i := rfl
+    coeff f i j = CPolynomial.coeff (CPolynomial.coeff f j) i := by
+  rfl
 
 /-- Bivariate coefficients are additive. -/
 theorem coeff_add [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]

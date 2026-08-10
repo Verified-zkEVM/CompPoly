@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Bivariate.Basic
 public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Algorithm
 public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Correctness
 public import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
