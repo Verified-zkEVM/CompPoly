@@ -90,7 +90,7 @@ private def intDegreeLT : ↥(CPolynomial.degreeLT (R := Int) 3) := by
   simp [intPoly, CPolynomial.monomial, CPolynomial.Raw.monomial]
 
 example : CPolynomial.degreeLTEquiv (R := Int) 3 intDegreeLT ⟨1, by decide⟩ = 7 := by
-  simpa [CPolynomial.degreeLTEquiv, CPolynomial.degreeLTCoeffs, intDegreeLT, intPoly] using
+  simpa [CPolynomial.degreeLTEquiv, CPolynomial.degreeLTCoeffs_apply, intDegreeLT, intPoly] using
     CPolynomial.coeff_monomial (R := Int) 1 1 7
 
 end CPolynomial

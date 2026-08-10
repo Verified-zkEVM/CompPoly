@@ -22,7 +22,7 @@ public import CompPoly.Univariate.Raw.Proofs
   equivalence relation and thus descend to the quotient.
 -/
 
-@[expose] public section
+public section
 namespace CompPoly
 
 namespace CPolynomial
@@ -63,6 +63,7 @@ instance Raw.instSetoidCPolynomial [Zero R] : Setoid (CPolynomial.Raw R) where
 
   This quotient identifies polynomials that differ only by trailing zeros, and is intended
   to be equivalent to mathlib's `Polynomial R`. -/
+@[expose]
 def QuotientCPolynomial (R : Type*) [Zero R] := Quotient (@Raw.instSetoidCPolynomial R _)
 
 namespace QuotientCPolynomial

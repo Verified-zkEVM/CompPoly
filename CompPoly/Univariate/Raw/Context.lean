@@ -19,7 +19,7 @@ Array-level execution dictionaries for reusable raw univariate polynomial
 kernels.
 -/
 
-@[expose] public section
+public section
 
 namespace CompPoly
 

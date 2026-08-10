@@ -14,7 +14,7 @@ public import CompPoly.Univariate.ToPoly.Impl
 Degree lemmas for the computable-univariate to `Polynomial` conversion.
 -/
 
-@[expose] public section
+public section
 
 open Polynomial
 
@@ -41,6 +41,12 @@ noncomputable def toPolyLinearEquiv : CPolynomial R ≃ₗ[R] R[X] where
   map_smul' := toPoly_smul
   left_inv := fun p => Subtype.ext (toImpl_toPoly_of_canonical p)
   right_inv := toPoly_mk_toImpl
+
+/-- The forward map of `toPolyLinearEquiv` is `toPoly`. -/
+@[simp]
+theorem toPolyLinearEquiv_apply (p : CPolynomial R) : toPolyLinearEquiv p = p.toPoly := by
+  rfl
+
 theorem degree_le_iff_coeff_zero (p : CPolynomial R) (n : WithBot ℕ) :
     p.degree ≤ n ↔ ∀ k : ℕ, n < k → p.coeff k = 0 := by
     rw [degree_toPoly, Polynomial.degree_le_iff_coeff_zero]
@@ -54,7 +60,7 @@ theorem degree_lt_iff_coeff_zero (p : CPolynomial R) (n : ℕ) :
 omit [BEq R] [LawfulBEq R] in
 theorem mem_degreeLE {n : WithBot ℕ} {p : (CPolynomial R)} :
     p ∈ degreeLE (R := R) n ↔ degree p ≤ n := by
-  rfl
+  exact mem_degreeLE_iff_degree
 
 omit [BEq R] [LawfulBEq R] in
 theorem degreeLE_mono (m n : WithBot ℕ) (h_lessThan : m ≤ n) :
@@ -63,7 +69,7 @@ theorem degreeLE_mono (m n : WithBot ℕ) (h_lessThan : m ≤ n) :
 
 omit [BEq R] [LawfulBEq R] in
 theorem mem_degreeLT {n : ℕ} {p : CPolynomial R} : p ∈ degreeLT (R := R) n ↔ degree p < n := by
-  rfl
+  exact mem_degreeLT_iff_degree
 
 omit [BEq R] [LawfulBEq R] in
 theorem degreeLT_mono {m n : ℕ} (h : m ≤ n) :
@@ -74,8 +80,8 @@ omit [BEq R] [LawfulBEq R] in
 theorem degreeLT_succ_eq_degreeLE {n : ℕ} :
     degreeLT (R := R) (n + 1) = degreeLE (R := R) ↑n := by
   ext p
-  change p.val.degreeBound < (n + 1 : ℕ) ↔ p.val.degreeBound ≤ (n : WithBot ℕ)
-  cases hd : p.val.degreeBound with
+  rw [mem_degreeLT_iff_degree, mem_degreeLE_iff_degree]
+  cases hd : p.degree with
   | bot =>
       simp
   | coe a =>
@@ -110,7 +116,7 @@ lemma degreeLTEquiv_left_inv [DecidableEq R] (n : ℕ)
   intro i
   rw [show coeff (∑ j : Fin n, monomial (R := R) (↑j) (coeff p.1 j)) i =
     ∑ j : Fin n, coeff (monomial (R := R) (↑j) (coeff p.1 j)) i from
-      map_sum (lcoeff (R := R) i) _ _]
+      by simpa only [lcoeff_apply] using map_sum (lcoeff (R := R) i) _ _]
   simp only [coeff_monomial]
   by_cases hi : i < n
   · rw [Finset.sum_eq_single_of_mem ⟨i, hi⟩ (Finset.mem_univ _)
@@ -127,7 +133,7 @@ lemma degreeLTEquiv_right_inv [DecidableEq R] (n : ℕ)
   funext i
   rw [show coeff (∑ j : Fin n, monomial (R := R) (↑j) (f j)) ↑i =
     ∑ j : Fin n, coeff (monomial (R := R) (↑j) (f j)) ↑i from
-      map_sum (lcoeff (R := R) ↑i) _ _]
+      by simpa only [lcoeff_apply] using map_sum (lcoeff (R := R) ↑i) _ _]
   simp only [coeff_monomial]
   rw [Finset.sum_eq_single_of_mem i (Finset.mem_univ _)
     (fun j _ hji => if_neg fun h => hji (Fin.ext (by omega)))]
@@ -138,8 +144,14 @@ def degreeLTEquiv [DecidableEq R] (n : ℕ) :
   toFun := degreeLTCoeffs (R := R) n
   invFun := fun f => ⟨Finset.univ.sum (fun i : Fin n => monomial (R := R) (↑i) (f i)),
     degreeLTEquiv_invFun_mem (R := R) n f⟩
-  left_inv := degreeLTEquiv_left_inv (R := R) n
-  right_inv := degreeLTEquiv_right_inv (R := R) n
+  left_inv := by
+    intro p
+    simpa only [degreeLTCoeffs_apply] using degreeLTEquiv_left_inv (R := R) n p
+  right_inv := by
+    intro f
+    funext i
+    rw [degreeLTCoeffs_apply]
+    exact congrFun (degreeLTEquiv_right_inv (R := R) n f) i
   map_add' := by
     intro p q
     exact (degreeLTCoeffs (R := R) n).map_add p q
@@ -155,7 +167,7 @@ theorem degreeLTEquiv_toPoly [DecidableEq R] {n : ℕ} {p : CPolynomial R}
     (hp : p ∈ degreeLT (R := R) n) (i : Fin n) :
       degreeLTEquiv (R := R) n ⟨p, hp⟩ i =
           Polynomial.degreeLTEquiv R n ⟨p.toPoly, degreeLT_toPoly.mp hp⟩ i := by
-  simp [degreeLTEquiv, degreeLTCoeffs, Polynomial.degreeLTEquiv, ← coeff_toPoly]
+  simp [degreeLTEquiv, degreeLTCoeffs_apply, Polynomial.degreeLTEquiv, ← coeff_toPoly]
 
 theorem degreeLTEquiv_eq_zero_iff_eq_zero [DecidableEq R] {n : ℕ} {p : CPolynomial R}
     (hp : p ∈ degreeLT (R := R) n) :

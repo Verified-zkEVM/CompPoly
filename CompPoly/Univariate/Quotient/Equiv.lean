@@ -26,7 +26,7 @@ mathlib's `Polynomial R`.
 * `QuotientCPolynomial.ringEquiv` - the ring equivalence `QuotientCPolynomial R ≃+* Polynomial R`
 -/
 
-@[expose] public section
+public section
 
 namespace CompPoly
 

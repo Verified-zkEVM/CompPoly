@@ -14,7 +14,7 @@ public import CompPoly.Univariate.Basic
 This file contains linear maps and instance-stable bounded-degree predicates for `CPolynomial`.
 -/
 
-@[expose] public section
+public section
 
 namespace CompPoly
 
@@ -32,6 +32,11 @@ def lcoeff (n : ℕ) : (CPolynomial R) →ₗ[R] R where
   map_add' p q := coeff_add p q n
   map_smul' r p := coeff_smul r p n
 
+/-- Applying `lcoeff n` returns the coefficient of degree `n`. -/
+@[simp]
+theorem lcoeff_apply (n : ℕ) (p : CPolynomial R) : lcoeff n p = coeff p n := by
+  rfl
+
 end LinearMaps
 
 section DegreeBounds
@@ -45,6 +50,16 @@ def degreeLE (n : WithBot ℕ) : Set (CPolynomial R) :=
 /-- The set of `CPolynomial R` consisting of polynomials of degree < `n`. -/
 def degreeLT (n : ℕ) : Set (CPolynomial R) :=
   { p | p.val.degreeBound < n }
+
+/-- Membership in `degreeLE` is the corresponding degree bound. -/
+theorem mem_degreeLE_iff_degree {n : WithBot ℕ} {p : CPolynomial R} :
+    p ∈ degreeLE (R := R) n ↔ p.degree ≤ n := by
+  rfl
+
+/-- Membership in `degreeLT` is the corresponding strict degree bound. -/
+theorem mem_degreeLT_iff_degree {n : ℕ} {p : CPolynomial R} :
+    p ∈ degreeLT (R := R) n ↔ p.degree < n := by
+  rfl
 
 /-- `degreeLT n` is exactly the bounded-size carrier storing at most `n` coefficients. -/
 theorem mem_degreeLT_iff_size_le {n : ℕ} {p : CPolynomial R} :
@@ -181,6 +196,12 @@ def degreeLTCoeffs (n : ℕ) : ↥(degreeLT (R := R) n) →ₗ[R] (Fin n → R) 
     intro r p
     funext i
     exact coeff_smul r p.1 i
+
+/-- Applying `degreeLTCoeffs` returns the corresponding bounded coefficient. -/
+@[simp]
+theorem degreeLTCoeffs_apply (n : ℕ) (p : ↥(degreeLT (R := R) n)) (i : Fin n) :
+    degreeLTCoeffs n p i = coeff p.1 i := by
+  rfl
 
 end DegreeLTSubtype
 
