@@ -14,8 +14,9 @@ depend on — the same information as `#print axioms`, for the whole library at 
 
 Because this reads elaborated `.olean` data rather than source text, it sees exactly what
 the kernel accepted: private declarations and instances are reported, compiler-generated
-auxiliaries are traversed (their taint surfaces on the parent declaration), and no source-level heuristics are involved. The sweep covers what the root
-modules transitively import — pair it with the repo's import-completeness gate so every
+auxiliaries are traversed (their taint surfaces on the parent declaration), and no
+source-level heuristics are involved. The sweep covers what the root modules transitively
+import — pair it with the repo's import-completeness gate so every
 source file is actually in scope; an unimported file is invisible to any kernel-level
 census.
 
@@ -318,7 +319,7 @@ unsafe def main (args : List String) : IO UInt32 := do
       IO.eprintln s!"axiomsweep: cannot import root modules {roots}: {e.toString}\n\
         (roots must be importable modules — glob-based libs without an umbrella \
         module cannot be swept by library name)"
-      return 2
+      return (2 : UInt32)
   let ((entries, moduleCount), _) ← (buildEntries roots).toIO
     { fileName := "<axiomsweep>", fileMap := default } { env }
   let cur := currentBaseline entries
