@@ -5,6 +5,7 @@ Authors: Derek Sorensen
 -/
 module
 
+import all CompPoly.Univariate.ToPoly.Impl
 public import CompPoly.Bivariate.Basic
 public import CompPoly.Univariate.ToPoly.Impl
 public import Mathlib.Algebra.Polynomial.Bivariate

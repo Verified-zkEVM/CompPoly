@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Univariate.Basic
 public import CompPoly.Univariate.Roots.Correctness
 public import CompPoly.Univariate.Roots.RootProduct
 public import CompPoly.Univariate.Roots.SmoothSubgroup.Basic

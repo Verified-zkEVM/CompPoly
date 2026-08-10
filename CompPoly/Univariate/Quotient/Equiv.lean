@@ -5,6 +5,8 @@ Authors: Aristotle (Harmonic), Elias Judin
 -/
 module
 
+import all CompPoly.Univariate.Quotient.Core
+import all CompPoly.Univariate.ToPoly.Equiv
 public import CompPoly.Univariate.Quotient.Core
 public import CompPoly.Univariate.ToPoly.Equiv
 

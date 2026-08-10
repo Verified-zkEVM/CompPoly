@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Univariate.Basic
 public import CompPoly.Univariate.Lagrange
 public import CompPoly.Univariate.NTT.Evaluation
 public import CompPoly.Univariate.NTT.Inverse

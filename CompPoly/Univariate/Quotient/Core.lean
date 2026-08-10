@@ -5,6 +5,7 @@ Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
 -/
 module
 
+import all CompPoly.Univariate.Raw.Proofs
 public import Mathlib.Algebra.Tropical.Basic
 public import Mathlib.RingTheory.Polynomial.Basic
 public import CompPoly.Data.Array.Lemmas

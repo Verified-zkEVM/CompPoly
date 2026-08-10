@@ -5,6 +5,7 @@ Authors: Derek Sorensen
 -/
 module
 
+import all CompPoly.Univariate.ToPoly.Degree
 public import CompPoly.Univariate.ToPoly.Degree
 
 /-!

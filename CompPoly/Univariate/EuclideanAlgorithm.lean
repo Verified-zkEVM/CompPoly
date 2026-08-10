@@ -5,6 +5,7 @@ Authors: Juan Conejero, Valerii Huhnin
 -/
 module
 
+import all CompPoly.Univariate.DivisionCorrectness
 public import CompPoly.Univariate.Basic
 public import CompPoly.Univariate.DivisionCorrectness
 public import CompPoly.ToMathlib.Order.WithBot

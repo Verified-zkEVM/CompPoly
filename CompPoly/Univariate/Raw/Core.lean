@@ -15,7 +15,7 @@ public import CompPoly.Data.Array.Lemmas
 Core definitions for array-backed computable univariate polynomials.
 -/
 
-@[expose] public section
+public section
 
 open Polynomial
 
@@ -28,17 +28,17 @@ namespace CompPoly
   Two arrays may represent the same polynomial via zero-padding,
   for example `#[1,2,3] = #[1,2,3,0,0,0,...]`.
 -/
-@[reducible, inline, specialize]
+@[expose, reducible, inline, specialize]
 def CPolynomial.Raw (R : Type*) := Array R
 
 namespace CPolynomial.Raw
 
 /-- Construct a `CPolynomial.Raw` from an array of coefficients. -/
-@[reducible]
+@[expose, reducible]
 def mk {R : Type*} (coeffs : Array R) : CPolynomial.Raw R := coeffs
 
 /-- Extract the underlying array of coefficients. -/
-@[reducible]
+@[expose, reducible]
 def coeffs {R : Type*} (p : CPolynomial.Raw R) : Array R := p
 
 variable {R : Type*}
