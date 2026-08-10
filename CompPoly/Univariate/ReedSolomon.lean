@@ -5,6 +5,7 @@ Authors: Juan Conejero
 -/
 module
 
+import all CompPoly.Univariate.ToPoly.Impl
 public import CompPoly.Univariate.ToPoly.Impl
 
 /-!

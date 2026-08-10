@@ -5,6 +5,7 @@ Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles, Valerii
 -/
 module
 
+import all CompPoly.Univariate.Raw.Ops
 public import CompPoly.Univariate.Raw.Ops
 
 /-!
@@ -13,7 +14,7 @@ public import CompPoly.Univariate.Raw.Ops
 Division algorithms for raw computable univariate polynomials.
 -/
 
-@[expose] public section
+public section
 
 namespace CompPoly
 
@@ -26,6 +27,7 @@ section Division
 variable [BEq R]
 
 /-- Division with remainder by a monic polynomial using polynomial long division. -/
+@[expose]
 def divModByMonicAux [CommRing R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
     CPolynomial.Raw R × CPolynomial.Raw R :=
   go p.size p q
@@ -68,7 +70,7 @@ Unlike `modByMonic`, this does not compute the quotient and avoids the general
 polynomial multiplications used by each cancellation step. It is intended as an
 executable implementation for the canonical `modByMonic` specification.
 -/
-@[inline, specialize]
+@[expose, inline, specialize]
 def modByMonicRemainderOnly [Field R] (p : CPolynomial.Raw R) (q : CPolynomial.Raw R) :
     CPolynomial.Raw R :=
   go p.size p q
@@ -84,7 +86,7 @@ where
         go n p' q
 
 /-- Inverse modulo `X^k`, using Newton iteration and the supplied low-product backend. -/
-@[inline, specialize]
+@[expose, inline, specialize]
 def inverseModX [Field R] [LawfulBEq R] (M : MulLowContext R) (k : Nat)
     (p : CPolynomial.Raw R) : CPolynomial.Raw R :=
   if k = 0 then

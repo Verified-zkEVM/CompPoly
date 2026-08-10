@@ -5,6 +5,7 @@ Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
 -/
 module
 
+import all CompPoly.Univariate.ToPoly.Equiv
 public import CompPoly.Univariate.ToPoly.Equiv
 public import Mathlib.Algebra.Polynomial.Roots
 

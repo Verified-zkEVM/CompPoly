@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Univariate.Basic
 public import CompPoly.Bivariate.GuruswamiSudan.Root.Common
 public import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
 

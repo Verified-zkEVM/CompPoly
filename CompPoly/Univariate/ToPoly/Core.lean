@@ -5,6 +5,7 @@ Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
 -/
 module
 
+import all CompPoly.Univariate.Basic
 public import Mathlib.Algebra.Polynomial.Inductions
 public import Mathlib.Algebra.Ring.TransferInstance
 public import Mathlib.Algebra.Tropical.Basic

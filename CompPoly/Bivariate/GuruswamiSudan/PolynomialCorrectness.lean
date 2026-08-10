@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Univariate.Basic
 public import CompPoly.Bivariate.Deriv
 public import CompPoly.Bivariate.GuruswamiSudan.Polynomial
 public import CompPoly.Data.List.Lemmas

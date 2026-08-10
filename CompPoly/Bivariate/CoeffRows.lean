@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Univariate.Basic
 public import CompPoly.Bivariate.Basic
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Shifted
 

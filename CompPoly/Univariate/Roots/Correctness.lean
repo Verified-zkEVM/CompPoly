@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Univariate.EuclideanAlgorithm
 public import CompPoly.Univariate.Roots.Backend
 public import CompPoly.Univariate.Roots.Splitter
 public import CompPoly.Univariate.EuclideanAlgorithm

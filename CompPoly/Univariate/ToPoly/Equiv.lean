@@ -5,6 +5,7 @@ Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
 -/
 module
 
+import all CompPoly.Univariate.ToPoly.Core
 public import CompPoly.Univariate.ToPoly.Core
 
 /-!
