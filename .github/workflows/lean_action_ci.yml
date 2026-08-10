@@ -108,6 +108,12 @@ jobs:
         run: |
           bash scripts/build_timing_report.sh run test_path "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c 'lake test'
+      # Report-only during the initial soak; flip to enforcing by dropping the
+      # trailing `|| echo ...` once the baseline has survived a few PRs.
+      - name: Axiom sweep (report-only)
+        run: |
+          lake exe axiomsweep --check || \
+            echo "::warning::axiomsweep found new axiom/sorry taint (report-only during soak)"
       - name: Fail on build warnings
         continue-on-error: true
         run: lake build --wfail

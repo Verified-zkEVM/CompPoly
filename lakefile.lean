@@ -20,3 +20,11 @@ lean_lib CompPolyBenchLib where
 
 lean_exe CompPolyBench where
   srcDir := "bench"
+
+/-- Kernel-level axiom / `sorry` accounting with a committed regression baseline
+(`scripts/axiom_baseline.json`). Runtime-imports the built CompPoly oleans, so run it
+after `lake build`. See `scripts/AxiomSweep.lean`. -/
+lean_exe axiomsweep where
+  srcDir := "scripts"
+  root := `AxiomSweep
+  supportInterpreter := true

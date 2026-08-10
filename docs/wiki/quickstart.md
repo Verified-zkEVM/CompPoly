@@ -32,6 +32,25 @@ lake build
 lake test
 ```
 
+### Filling a `sorry`, or work that must stay axiom-clean
+
+```bash
+lake build
+lake exe axiomsweep --check
+```
+
+`axiomsweep` is kernel-level axiom/`sorry` accounting for every `CompPoly.*`
+declaration (the `#print axioms` information, library-wide), diffed against the
+committed baseline `scripts/axiom_baseline.json`. It fails only on *new*
+`sorryAx` or non-standard-axiom taint, so pre-existing gaps stay allowed. After
+intentionally adding or closing a `sorry`, refresh and commit the baseline:
+
+```bash
+lake exe axiomsweep --update-baseline
+```
+
+CI runs the same check report-only for now (see `lean_action_ci.yml`).
+
 ### Added, renamed, or deleted files under `CompPoly/`
 
 ```bash
