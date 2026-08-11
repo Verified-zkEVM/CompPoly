@@ -47,8 +47,6 @@ def naive [Semiring R] [BEq R] [LawfulBEq R] : MulContext R where
   mul p q := p * q
   mul_eq_mul _ _ := rfl
 
-def asdf : Prop := sorry
-
 /--
 NTT-backed multiplication context with canonical multiplication for unsupported lengths.
 
