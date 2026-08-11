@@ -38,8 +38,7 @@ private def f3Elements : Array F3 :=
 
 private theorem f3Elements_complete : ContainsAllFieldElements f3Elements := by
   unfold ContainsAllFieldElements
-  intro a
-  fin_cases a <;> decide
+  decide
 
 private def f3Enumeration : FieldEnumeration F3 :=
   fieldEnumerationOfArray f3Elements f3Elements_complete
@@ -57,8 +56,7 @@ private def f5Elements : Array F5 :=
 
 private theorem f5Elements_complete : ContainsAllFieldElements f5Elements := by
   unfold ContainsAllFieldElements
-  intro a
-  fin_cases a <;> decide
+  decide
 
 private def f5Enumeration : FieldEnumeration F5 :=
   fieldEnumerationOfArray f5Elements f5Elements_complete

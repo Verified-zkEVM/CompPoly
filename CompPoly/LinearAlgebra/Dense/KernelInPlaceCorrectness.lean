@@ -166,6 +166,7 @@ theorem swapRowsData_eq [Zero F] (M : DenseMatrix F) (rowA rowB : Nat) :
 theorem findPivotRowData_eq [Zero F] [BEq F] (M : DenseMatrix F) (startRow col : Nat) :
     findPivotRowData M.rows M.cols startRow col M.data = findPivotRow M startRow col := by
   simp only [findPivotRowData, findPivotRow, get, index]
+  rfl
 
 /-- The in-place elimination loop tracks the copying one entry-for-entry. -/
 private theorem forIn_eliminate_eq [Field F] (cols pivotRow pivotCol : Nat) :
@@ -270,6 +271,7 @@ theorem homogeneousWitnessInPlace_eq [Field F] [BEq F] (M : DenseMatrix F) :
     homogeneousWitnessInPlace M = homogeneousWitness M := by
   simp only [homogeneousWitnessInPlace, homogeneousWitness,
     homogeneousKernelBasisInPlace, homogeneousKernelBasis, rrefInPlace_eq, rref_cols]
+  rfl
 
 end DenseMatrix
 

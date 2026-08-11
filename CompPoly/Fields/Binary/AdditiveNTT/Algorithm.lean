@@ -332,7 +332,6 @@ theorem evenRefinement_eq_novel_poly_of_0_leading_suffix (i : Fin r) (h_i : i < 
   have h_right_sum_eq := Fin.sum_congr' (M:=L[X]) (b:=2^(ℓ - (i.val + 1)))
     (a:=2^(ℓ - i - 1)) (f:=right_inner_func) (h:=by rfl)
   conv_rhs =>
-    simp only [Fin.cast_eq_self]
     rw [←h_right_sum_eq]
     simp only [Fin.cast_eq_self]
   congr
@@ -394,7 +393,6 @@ theorem oddRefinement_eq_novel_poly_of_1_leading_suffix (i : Fin r) (h_i : i < �
   have h_right_sum_eq := Fin.sum_congr' (M:=L[X]) (b:=2^(ℓ - (i.val + 1)))
     (a:=2^(ℓ - i - 1)) (f:=right_inner_func) (h:=by rfl)
   conv_rhs =>
-    simp only [Fin.cast_eq_self]
     rw [←h_right_sum_eq]
     simp only [Fin.cast_eq_self]
   congr

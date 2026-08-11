@@ -31,6 +31,7 @@ namespace CPoly
 open Std
 
 /-- The subtype of polynomials with no zero coefficients. -/
+@[implicit_reducible]
 def Lawful (n : ℕ) (R : Type*) [Zero R] : Type _ :=
   {p : Unlawful n R // p.isNoZeroCoef}
 

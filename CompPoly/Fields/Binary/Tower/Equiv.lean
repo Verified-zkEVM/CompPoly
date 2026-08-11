@@ -15,7 +15,6 @@ Equivalences between the abstract and concrete binary tower constructions.
 
 @[expose] public section
 
-set_option backward.isDefEq.respectTransparency false
 namespace ConcreteBinaryTower
 
 open Polynomial
@@ -221,7 +220,7 @@ lemma towerRingHomForwardMap_add_eq (k : ℕ) (x y : ConcreteBTField k) :
         rw [h_map_0]; norm_num
       · simp only [y_one, one_is_1]
         simp only [add_self_cancel, h_map_1]
-        rw [GF_2_one_add_one_eq_zero]
+        rw [show (1 + 1 : BTField 0) = 0 from GF_2_one_add_one_eq_zero]
         rfl
   | succ k ih =>
     unfold towerRingHomForwardMap

@@ -31,6 +31,7 @@ namespace CompPoly
   Each `p : CBivariate R` is a polynomial in `Y` whose coefficients are univariate polynomials
   in `X`. The outer structure is indexed by powers of `Y`, the inner by powers of `X`.
   -/
+@[implicit_reducible]
 def CBivariate (R : Type*) [Zero R] :=
     CPolynomial (CPolynomial R)
 

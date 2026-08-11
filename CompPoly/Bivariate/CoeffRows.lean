@@ -98,8 +98,7 @@ theorem rowShiftedDegree?_eq_natWeightedDegree_ofCoeffRow
         PolynomialMatrix.shiftedEntryDegree? row (weightedDegreeShift w row.size) j =
           some ((row.getD j 0).natDegree +
             (weightedDegreeShift w row.size).getD j 0) := by
-      simp [PolynomialMatrix.shiftedEntryDegree?, PolynomialMatrix.rowGet]
-      simpa [PolynomialMatrix.rowGet] using hrow_ne
+      exact (PolynomialMatrix.shiftedEntryDegree?_eq_some_iff _ _ _ _).2 ⟨hrow_ne, rfl⟩
     have hle :=
       PolynomialMatrix.shiftedEntryDegree?_le_of_rowShiftedDegree?_eq_some
         hdeg hjlt hentry
@@ -124,13 +123,8 @@ theorem rowShiftedDegree?_eq_natWeightedDegree_ofCoeffRow
       simpa [houter] using hrow_ne
     have hd :
         d = (row.getD j 0).natDegree +
-            (weightedDegreeShift w row.size).getD j 0 := by
-      have hsimp :
-          row[j]?.getD 0 ≠ 0 ∧
-            d = (row[j]?.getD 0).natDegree +
-              (weightedDegreeShift w row.size)[j]?.getD 0 := by
-        simpa [PolynomialMatrix.shiftedEntryDegree?, PolynomialMatrix.rowGet] using hentry.symm
-      simpa [Array.getD_eq_getD_getElem?] using hsimp.2
+            (weightedDegreeShift w row.size).getD j 0 :=
+      ((PolynomialMatrix.shiftedEntryDegree?_eq_some_iff _ _ _ _).1 hentry).2.symm
     calc
       d = (row.getD j 0).natDegree +
             (weightedDegreeShift w row.size).getD j 0 := hd

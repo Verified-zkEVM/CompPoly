@@ -34,7 +34,7 @@ structure Domain (R : Type*) [Field R] where
 namespace Domain
 
 /-- Domain size. -/
-@[simp] def n (D : Domain R) : Nat := 2 ^ D.logN
+@[simp, implicit_reducible] def n (D : Domain R) : Nat := 2 ^ D.logN
 
 /-- Index type for vectors over the domain. -/
 abbrev Idx (D : Domain R) := Fin D.n
@@ -63,7 +63,7 @@ def inverse (D : Domain R) : Domain R where
 
 /-- The size of an NTT domain is nonzero in its coefficient field. -/
 theorem natCast_ne_zero (D : Domain R) : ((D.n : Nat) : R) ≠ 0 := by
-  letI : NeZero D.n := ⟨D.n_ne_zero⟩
+  let : NeZero D.n := ⟨D.n_ne_zero⟩
   exact D.primitive.neZero'.out
 
 section RawHelpers

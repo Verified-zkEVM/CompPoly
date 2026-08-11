@@ -74,6 +74,7 @@ theorem finSuccEquivNth_X_above {i : Fin n} (h : p < i.succ) :
 theorem finSuccEquivNth_X_below {i : Fin n} (h : i.castSucc < p) :
     finSuccEquivNth R p (X i.castSucc) = Polynomial.C (X i) := by
   simp [finSuccEquivNth_apply, Fin.insertNth_apply_below h _ _]
+  exact eq_rec_constant _ _
 
 /-- The coefficient of `m` in the `i`-th coefficient of `finSuccEquivNth R p f` equals the
     coefficient of `m.insertNth p i` in `f`. -/

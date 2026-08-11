@@ -94,7 +94,7 @@ theorem irreducible_of_rabin {f : F[X]} {d : ℕ}
     (h_coprime : ∀ ℓ ∈ d.primeFactors,
       IsCoprime f (X ^ (Fintype.card F ^ (d / ℓ)) - X)) :
     Irreducible f := by
-  haveI := factPrimeRingChar (F := F)
+  have := factPrimeRingChar (F := F)
   by_contra h_red
   -- A reducible `f` has an irreducible factor of degree at most `d / 2`.
   obtain ⟨p, hp_irr, hp_dvd_f, hp_deg⟩ :=
@@ -120,7 +120,7 @@ theorem rabin_of_irreducible {f : F[X]} {d : ℕ}
     (h_deg : f.natDegree = d) (h_pos : 0 < d) (h_irr : Irreducible f) :
     f ∣ X ^ (Fintype.card F ^ d) - X ∧
       ∀ ℓ ∈ d.primeFactors, IsCoprime f (X ^ (Fintype.card F ^ (d / ℓ)) - X) := by
-  haveI := factPrimeRingChar (F := F)
+  have := factPrimeRingChar (F := F)
   refine ⟨(irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd d f h_irr).mpr (h_deg ▸ dvd_rfl),
     fun ℓ hℓ => ?_⟩
   -- For irreducible `f`, coprimality is exactly non-divisibility.

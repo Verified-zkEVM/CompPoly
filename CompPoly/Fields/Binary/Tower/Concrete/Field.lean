@@ -31,7 +31,7 @@ theorem concrete_mul_eq
   concrete_mul a b =
     《 concrete_mul a₀ b₁ + concrete_mul b₀ a₁ + concrete_mul (concrete_mul a₁ b₁) (Z (k - 1)),
       concrete_mul a₀ b₀ + concrete_mul a₁ b₁ 》 := by
-  letI : Field (ConcreteBTField (k - 1)) := mkFieldInstance prevBTFieldProps
+  let : Field (ConcreteBTField (k - 1)) := mkFieldInstance prevBTFieldProps
   have h_a₁ : (split h_k a).1 = a₁ := by rw [h_a.symm]
   have h_a₀ : (split h_k a).2 = a₀ := by rw [h_a.symm]
   have h_b₁ : (split h_k b).1 = b₁ := by rw [h_b.symm]
@@ -197,7 +197,7 @@ lemma concrete_mul_comm
     {h_k : k > 0} (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
   (a b : ConcreteBTField k) :
   concrete_mul a b = concrete_mul b a := by
-  letI : Field (ConcreteBTField (k - 1)) := mkFieldInstance prevBTFieldProps
+  let : Field (ConcreteBTField (k - 1)) := mkFieldInstance prevBTFieldProps
   by_cases h_k_zero : k = 0
   · linarith
   · -- Inductive case : k > 0
@@ -234,7 +234,7 @@ lemma concrete_mul_assoc
     {h_k : k > 0} (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
   (a b c : ConcreteBTField k) :
   concrete_mul (concrete_mul a b) c = concrete_mul a (concrete_mul b c) := by
-  letI : Field (ConcreteBTField (k - 1)) := mkFieldInstance prevBTFieldProps
+  let : Field (ConcreteBTField (k - 1)) := mkFieldInstance prevBTFieldProps
   have hmul : ∀ (a b : ConcreteBTField (k - 1)), concrete_mul a b = a * b := fun a b => rfl
   by_cases h_k_zero : k = 0
   · linarith
@@ -303,7 +303,7 @@ lemma concrete_mul_left_distrib
     {h_k : k > 0} (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
   (a b c : ConcreteBTField k) :
     concrete_mul a (b + c) = concrete_mul a b + concrete_mul a c := by
-  letI : Field (ConcreteBTField (k - 1)) := mkFieldInstance prevBTFieldProps
+  let : Field (ConcreteBTField (k - 1)) := mkFieldInstance prevBTFieldProps
   have hmul : ∀ (a b : ConcreteBTField (k - 1)), concrete_mul a b = a * b := fun a b => rfl
   by_cases h_k_zero : k = 0
   · linarith
@@ -361,7 +361,7 @@ lemma norm_of_ne_zero_is_ne_zero {k : ℕ}
   let a₁ := (split h_k_gt_0 a).1
   let a₀ := (split h_k_gt_0 a).2
   concrete_mul a₀ (a₀ + concrete_mul a₁ (Z (k - 1))) + concrete_mul a₁ a₁ ≠ 0 := by
-  letI : Field (ConcreteBTField (k - 1)) := mkFieldInstance prevBTFieldResult.toConcreteBTFieldProps
+  let : Field (ConcreteBTField (k - 1)) := mkFieldInstance prevBTFieldResult.toConcreteBTFieldProps
   have hmul : ∀ (a b : ConcreteBTField (k - 1)), concrete_mul a b = a * b := fun a b => rfl
   -- Set up local variables for convenience
   set a₁ := (split h_k_gt_0 a).1
@@ -424,7 +424,7 @@ lemma norm_of_ne_zero_is_ne_zero {k : ℕ}
         simp only [IsRoot.def, eval_add, eval_pow, eval_X, eval_mul, eval_C, eval_one]
         rw [mul_comm, pow_two]
         exact h_root
-      · letI := prevBTFieldResult.instFintype
+      · let := prevBTFieldResult.instFintype
         have h_deg := degree_definingPoly (s:=Z (k - 1))
         unfold definingPoly at h_deg
         rw [h_deg]; norm_num
@@ -439,7 +439,7 @@ lemma concrete_mul_inv_cancel
     (prevBTFieldResult : ConcreteBTFStepResult (k := k - 1))
   (a : ConcreteBTField k) (h : a ≠ 0) :
   concrete_mul a (concrete_inv a) = one := by
-  letI : Field (ConcreteBTField (k - 1)) := mkFieldInstance prevBTFieldResult.toConcreteBTFieldProps
+  let : Field (ConcreteBTField (k - 1)) := mkFieldInstance prevBTFieldResult.toConcreteBTFieldProps
   have hmul : ∀ (a b : ConcreteBTField (k - 1)), concrete_mul a b = a * b := fun a b => rfl
   unfold concrete_inv
   by_cases h_k_zero : k = 0
@@ -539,7 +539,7 @@ lemma Z_square_eq (k : ℕ) (prevBTFieldProps : ConcreteBTFieldProps (k := k))
     (curBTFieldProps : ConcreteBTFieldProps (k := (k + 1))) :
   letI : Field (ConcreteBTField (k + 1)) := mkFieldInstance curBTFieldProps
   (Z (k + 1)) ^ 2 = 《 Z (k), 1 》 := by
-  letI : Field (ConcreteBTField (k + 1)) := mkFieldInstance curBTFieldProps
+  let : Field (ConcreteBTField (k + 1)) := mkFieldInstance curBTFieldProps
   have hmul : ∀ (a b : ConcreteBTField (k - 1)), concrete_mul a b = a * b := fun a b => rfl
   rw [pow_two]
   change concrete_mul (Z (k + 1)) (Z (k + 1)) = 《 Z (k), 1 》
@@ -671,9 +671,9 @@ lemma Z_square_mul_form
       * (algebraMap (ConcreteBTField k) (ConcreteBTField (k + 1))) (Z k)
       + 1 := by
   let curProps := liftBTFieldProps (k:=k) (prevBTFResult:=prev)
-  letI : Field (ConcreteBTField k) := mkFieldInstance (prev.toConcreteBTFieldProps)
-  letI : Field (ConcreteBTField (k + 1)) := mkFieldInstance (k:=k+1) (props:=curProps)
-  letI : Algebra (ConcreteBTField k) (ConcreteBTField (k + 1)) :=
+  let : Field (ConcreteBTField k) := mkFieldInstance (prev.toConcreteBTFieldProps)
+  let : Field (ConcreteBTField (k + 1)) := mkFieldInstance (k:=k+1) (props:=curProps)
+  let : Algebra (ConcreteBTField k) (ConcreteBTField (k + 1)) :=
     instAlgebraLiftConcreteBTField k prev
   -- use the join-form version and rewrite
   have h := Z_square_eq (k:=k) (prevBTFieldProps:=prev.toConcreteBTFieldProps)
@@ -704,9 +704,9 @@ lemma sum_inv_Z_next_eq
     instAlgebraLiftConcreteBTField k prev
   Z (k + 1) + (Z (k + 1))⁻¹ = (algebraMap (ConcreteBTField k) (ConcreteBTField (k + 1))) (Z k) := by
   let curProps := liftBTFieldProps (k:=k) (prevBTFResult:=prev)
-  letI : Field (ConcreteBTField k) := mkFieldInstance (prev.toConcreteBTFieldProps)
-  letI : Field (ConcreteBTField (k + 1)) := mkFieldInstance (k:=k+1) (props:=curProps)
-  letI : Algebra (ConcreteBTField k) (ConcreteBTField (k + 1)) :=
+  let : Field (ConcreteBTField k) := mkFieldInstance (prev.toConcreteBTFieldProps)
+  let : Field (ConcreteBTField (k + 1)) := mkFieldInstance (k:=k+1) (props:=curProps)
+  let : Algebra (ConcreteBTField k) (ConcreteBTField (k + 1)) :=
     instAlgebraLiftConcreteBTField k prev
   apply mul_left_cancel₀ (a := Z (k + 1)) (ha:=Z_ne_zero)
   rw [mul_add, ←pow_two]
