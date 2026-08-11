@@ -910,7 +910,6 @@ theorem monoToLagrangeLevel_lagrangeToMonoLevel_id (v : Vector R (2 ^ n)) (i : F
   else
     simp only [h_i1_testBit, Bool.false_eq_true, ↓reduceIte]
 
-set_option backward.isDefEq.respectTransparency.types false in
 theorem mobius_apply_zeta_apply_eq_id (n : ℕ) [NeZero n] (r : Fin n) (l : Fin (r.val + 1))
     (v : Vector R (2 ^ n)) : lagrangeToMonoSegment n r l (monoToLagrangeSegment n r l v) = v := by
   induction r using Fin.succRecOnSameFinType with

@@ -378,7 +378,7 @@ def BinaryTowerAux (k : ℕ) : (Σ' (F : Type 0), BinaryTowerResult F k) :=
       ⟨ inductive_result.fst, inductive_result.snd.binaryTowerResult ⟩
     exact res
 
-@[simp]
+@[simp, implicit_reducible]
 def BTField (k : ℕ) := (BinaryTowerAux k).1
 
 lemma BTField_is_BTFieldAux (k : ℕ) :

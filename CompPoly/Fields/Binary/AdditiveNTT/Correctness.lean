@@ -618,6 +618,8 @@ variable (β : Fin r → L) [hβ_lin_indep : Fact (LinearIndependent 𝔽q β)]
   [h_β₀_eq_1 : Fact (β 0 = 1)]
 variable {ℓ R_rate : ℕ} (h_ℓ_add_R_rate : ℓ + R_rate < r)
 
+attribute [local implicit_reducible] Nat.mod Nat.pow
+
 section AlgorithmCorrectness
 
 omit [DecidableEq L] [DecidableEq 𝔽q] hF₂ in
@@ -1089,7 +1091,7 @@ lemma foldl_NTTStage_inductive_aux (h_ℓ : ℓ ≤ r) (k : Fin (ℓ + 1))
   simp only at invariant_init
   induction k using Fin.succRecOnSameFinType with
   | zero =>
-    simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, Fin.foldl_zero, tsub_zero]
+    simp only [Fin.foldl_zero, tsub_zero]
     exact invariant_init
   | succ k k_h i_h =>
     have h_k_add_one := Fin.val_add_one' (a:=k) (by omega)
@@ -1108,7 +1110,6 @@ lemma foldl_NTTStage_inductive_aux (h_ℓ : ℓ ≤ r) (k : Fin (ℓ + 1))
     exact res
 
 omit [DecidableEq 𝔽q] hF₂ in
-set_option backward.isDefEq.respectTransparency.types false in
 /--
 **Main Correctness Theorem for Additive NTT**
 If `b` is the output of `additiveNTT` on input `a`, then for all `j`, `b j`
@@ -1155,7 +1156,7 @@ theorem additiveNTT_correctness (h_ℓ : ℓ ≤ r)
     have hv : v = 0 := Subsingleton.elim _ _
     subst hv
     exact base_coeffsBySuffix original_coeffs
-  simp only [hbase] at res
+  rw [hbase] at res
   rw [← res]
 
 end AlgorithmCorrectness

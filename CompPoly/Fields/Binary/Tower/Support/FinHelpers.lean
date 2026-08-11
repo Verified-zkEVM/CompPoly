@@ -21,12 +21,12 @@ open Module
 
 section FinHelpers
 
-set_option backward.isDefEq.respectTransparency.types false in
 @[simp]
 theorem bit_finProdFinEquiv_symm_2_pow_succ {n : ℕ} (j : Fin (2 ^ (n + 1))) (i : Fin (n + 1)) :
-    let e:=finProdFinEquiv (m:=2^(n)) (n:=2).symm
-    Nat.getBit (i) j = if i.val > 0 then Nat.getBit (i.val-1) (e j).1 else (e j).2 := by
-  simp only [finProdFinEquiv_symm_apply, Fin.coe_divNat, Fin.coe_modNat]
+    let e := (finProdFinEquiv (m := 2 ^ n) (n := 2)).symm
+    let j' : Fin (2 ^ n * 2) := Fin.cast (Nat.pow_succ 2 n) j
+    Nat.getBit (i) j = if i.val > 0 then Nat.getBit (i.val-1) (e j').1 else (e j').2 := by
+  simp only [finProdFinEquiv_symm_apply, Fin.coe_divNat, Fin.coe_modNat, Fin.val_cast]
   if h_i_gt_0 : i.val > 0 then
     simp_rw [h_i_gt_0]
     simp only [↓reduceIte]
@@ -85,13 +85,13 @@ def revFinProdFinEquiv {m n : ℕ} (h_m : m > 0) : Fin m × Fin n ≃ Fin (m * n
           )
   right_inv x := by exact Fin.eq_of_val_eq <| Nat.mod_add_div x.val m
 
-set_option backward.isDefEq.respectTransparency.types false in
 @[simp]
 theorem bit_revFinProdFinEquiv_symm_2_pow_succ {n : ℕ} (j : Fin (2 ^ (n + 1))) (i : Fin (n + 1)) :
     let e : Fin (2 ^ n * 2) ≃ Fin (2 ^ n) × Fin 2 :=
-      revFinProdFinEquiv (m:=2^(n)) (n:=2) (h_m:=by exact Nat.two_pow_pos n).symm
-    let msb : Fin 2 := (e j).2
-    let lsbs : Fin (2 ^ n) := (e j).1
+      (revFinProdFinEquiv (m := 2 ^ n) (n := 2) (h_m := Nat.two_pow_pos n)).symm
+    let j' : Fin (2 ^ n * 2) := Fin.cast (Nat.pow_succ 2 n) j
+    let msb : Fin 2 := (e j').2
+    let lsbs : Fin (2 ^ n) := (e j').1
     Nat.getBit (i) j = if i.val < n then Nat.getBit (i.val) lsbs else msb := by
   simp only [revFinProdFinEquiv_symm_apply]
   if h_i_lt_n : i < n then
@@ -101,12 +101,12 @@ theorem bit_revFinProdFinEquiv_symm_2_pow_succ {n : ℕ} (j : Fin (2 ^ (n + 1)))
     simp only;
     rw [← Nat.getLowBits_eq_mod_two_pow]
     rw [Nat.getBit_of_lowBits]
-    simp only [h_i_lt_n, ↓reduceIte]
+    simp only [h_i_lt_n, ↓reduceIte, Fin.val_cast]
   else
     simp_rw [h_i_lt_n]
     simp only [↓reduceIte]
     rw [leftDivNat]
-    simp only;
+    simp only [Fin.val_cast]
     simp at h_i_lt_n
     have hi_eq_n : i = n := by
       have h_i_lt : i < n + 1 := i.2

@@ -1066,6 +1066,7 @@ theorem W_linearity (i : Fin r) :
   induction i using Fin.succRecOnSameFinType with
   | zero =>
     -- Base Case: i = 0 => Prove W₀ is linear.
+    simp only [Fin.mk_zero']
     unfold W
     have h_U0 : (univ : Finset (U 𝔽q β 0)) = {0} := by
       ext u -- u : ↥(U 𝔽q β 0)

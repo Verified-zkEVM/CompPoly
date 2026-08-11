@@ -298,6 +298,7 @@ lemma qCompositionChain_eq_foldl (i : Fin r) :
         (qMap 𝔽q β ⟨j, by omega⟩ (by change j.val + 1 < r; omega)).comp acc) X := by
   induction i using Fin.succRecOnSameFinType with
   | zero =>
+      simp only [Fin.mk_zero']
       rw [qCompositionChain.eq_def]
       simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, Fin.foldl_zero]
       rfl
@@ -316,6 +317,7 @@ lemma normalizedW_eq_qMap_composition (ℓ R_rate : ℕ) (i : Fin r) :
     normalizedW 𝔽q β i = qCompositionChain 𝔽q β (ℓ := ℓ) (R_rate := R_rate) i := by
   induction i using Fin.succRecOnSameFinType with
   | zero =>
+      simp only [Fin.mk_zero']
       rw [qCompositionChain.eq_def]
       rw [normalizedW, W₀_eq_X, eval_X, h_β₀_eq_1.out, div_one, C_1, one_mul]
       rfl
