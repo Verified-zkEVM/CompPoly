@@ -93,4 +93,4 @@
    "configFile": "lakefile.toml"}],
  "name": "CompPoly",
  "lakeDir": ".lake",
- "fixedToolchain": false}
+ "fixedToolchain": true}
