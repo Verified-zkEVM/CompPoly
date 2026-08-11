@@ -5,6 +5,8 @@ Authors: Aristotle (Harmonic), Elias Judin
 -/
 module
 
+import all CompPoly.Univariate.Quotient.Core
+import all CompPoly.Univariate.ToPoly.Equiv
 public import CompPoly.Univariate.Quotient.Core
 public import CompPoly.Univariate.ToPoly.Equiv
 
@@ -24,7 +26,7 @@ mathlib's `Polynomial R`.
 * `QuotientCPolynomial.ringEquiv` - the ring equivalence `QuotientCPolynomial R ≃+* Polynomial R`
 -/
 
-@[expose] public section
+public section
 
 namespace CompPoly
 

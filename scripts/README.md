@@ -97,10 +97,18 @@ the subtree roots in `PATH_PREFIXES` — so a page about `Fields/` may write
 
 ### `build_timing_report.sh`
 
-Helper used by CI to measure and render build timings for clean builds, warm
-rebuilds, and the `lake test` path. The CI workflow also uploads timing-data
-artifacts so PR runs can compare against a previously recorded baseline without
-rerunning that baseline in the same job. This supports
+Helper used by CI to measure and render build timings. Labels:
+
+- `warm_rebuild` — default library gate: `lake build` with cached oleans
+  (incremental; only dirty modules rebuild).
+- `test_path` — `lake test`.
+- `clean_build` — `rm -rf .lake/build && lake build`, when Lean Action CI
+  detects a `lean-toolchain` or `lake-manifest.json` change vs the comparison
+  base, or when the workflow is run manually with the `clean_build` input.
+
+The CI workflow uploads timing-data artifacts so PR runs can compare against a
+previously recorded baseline without rerunning that baseline in the same job.
+This supports
 [`../.github/workflows/lean_action_ci.yml`](../.github/workflows/lean_action_ci.yml).
 
 ## Typical Workflows

@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Univariate.Basic
 public import CompPoly.Bivariate.GuruswamiSudan.Root.Common
 public import CompPoly.Bivariate.GuruswamiSudan.PolynomialCorrectness
 
@@ -456,9 +457,15 @@ theorem composeY_toPoly {F : Type*}
   rw [CPolynomial.eval_toPoly]
   rw [CBivariate.toPoly_eq_map]
   rw [Polynomial.eval_map]
-  exact (Polynomial.eval₂_hom
+  have ringEquiv_toPoly (r : CPolynomial F) :
+      (CPolynomial.ringEquiv (R := F)).toRingHom r = r.toPoly := by
+    rw [RingEquiv.toRingHom_eq_coe]
+    exact CPolynomial.ringEquiv_apply r
+  have h := (Polynomial.eval₂_hom
     (f := (CPolynomial.ringEquiv (R := F)).toRingHom)
     (p := CPolynomial.toPoly Q) (x := p)).symm
+  rw [ringEquiv_toPoly, ringEquiv_toPoly] at h
+  exact h
 
 theorem initialCoefficientPolynomial_evalHorner_eq_composeYCoeff_monomial_zero
     {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
@@ -488,7 +495,7 @@ theorem initialCoefficientPolynomial_evalHorner_eq_composeYCoeff_monomial_zero
         simp only [List.foldl_cons]
         apply ih
         dsimp [polyStep, coeffStep]
-        rw [cpoly_eval_add, hacc, cpoly_eval_monomial,
+        rw [cpoly_eval_add, hacc, cpoly_eval_monomial, CBivariate.coeff_eq_coeff_coeff,
           cpoly_mulPowCoeff_monomial_zero_depth_zero]
   exact hfold (List.range' 0 Q.val.size) 0 0
     (by simp [CPolynomial.eval_toPoly, CPolynomial.toPoly_zero])

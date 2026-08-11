@@ -5,6 +5,7 @@ Authors: Derek Sorensen
 -/
 module
 
+import all CompPoly.Bivariate.Basic
 public import CompPoly.Bivariate.ToPoly
 
 /-!

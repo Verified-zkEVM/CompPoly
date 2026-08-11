@@ -38,6 +38,19 @@ git = "https://github.com/Verified-zkEVM/CompPoly"
 rev = "init"
 ```
 
+Prefer pinning a [release tag](https://github.com/Verified-zkEVM/CompPoly/releases).
+Each release carries a prebuilt archive of CompPoly's `.olean` files, so `lake build`
+downloads them instead of compiling the library, on any platform. Pinning a bare
+branch or commit still works but builds from source. Fetch Mathlib's oleans the usual
+way alongside it:
+
+```bash
+lake exe cache get   # Mathlib's oleans
+lake build           # CompPoly's oleans are fetched automatically
+```
+
+See [`docs/wiki/build-cache.md`](docs/wiki/build-cache.md) for details.
+
 Then you can import the desired modules, for example:
 ```lean
 import CompPoly.Multivariate.CMvPolynomial

@@ -5,6 +5,8 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Univariate.EuclideanAlgorithm
+import all CompPoly.Univariate.Raw.Modular
 public import CompPoly.Univariate.Raw.Modular
 public import CompPoly.Univariate.EuclideanAlgorithm
 public import CompPoly.Univariate.Roots.Context

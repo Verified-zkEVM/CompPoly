@@ -124,8 +124,9 @@ private theorem cmvEquiv_symm_toPoly
       ((Polynomial.mapEquiv (CMvPolynomial.isEmptyRingEquiv (R := R)))
         (CMvPolynomial.finSuccEquiv (n := 0) (R := R) p))).toPoly =
       (Polynomial.mapEquiv (CMvPolynomial.isEmptyRingEquiv (R := R)))
-        (CMvPolynomial.finSuccEquiv (n := 0) (R := R) p) from
-    (ringEquiv (R := R)).right_inv _]
+        (CMvPolynomial.finSuccEquiv (n := 0) (R := R) p) from by
+      rw [← ringEquiv_apply]
+      exact (ringEquiv (R := R)).right_inv _]
   unfold CMvPolynomial.finSuccEquiv CPoly.polynomialCMvPolyEquiv
     CMvPolynomial.isEmptyRingEquiv
   ext n

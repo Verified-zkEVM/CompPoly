@@ -63,6 +63,8 @@ Human contributors should usually start with [`README.md`](README.md),
 - [`docs/wiki/repo-map.md`](docs/wiki/repo-map.md) - subtree map and task routing.
 - [`docs/wiki/generated-files.md`](docs/wiki/generated-files.md) - source-of-truth
   rules for generated or derived outputs.
+- [`docs/wiki/build-cache.md`](docs/wiki/build-cache.md) - Mathlib's olean cache and
+  CompPoly's prebuilt release archive.
 - [`docs/wiki/module-system.md`](docs/wiki/module-system.md) - module headers,
   `public`/`meta` imports, module privacy, and migration fix patterns.
 - [`docs/wiki/representations-and-bridges.md`](docs/wiki/representations-and-bridges.md)

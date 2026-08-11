@@ -5,6 +5,7 @@ Authors: Valerii Huhnin, Juan Conejero
 -/
 module
 
+import all CompPoly.Univariate.ToPoly.Impl
 public import Mathlib.Algebra.Polynomial.Div
 public import Mathlib.Algebra.Polynomial.FieldDivision
 public import Mathlib.Algebra.Polynomial.Reverse

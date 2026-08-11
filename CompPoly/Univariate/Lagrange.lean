@@ -5,6 +5,7 @@ Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Katerina Hristova, Jul
 -/
 module
 
+import all CompPoly.Univariate.ToPoly.Impl
 public import Mathlib.LinearAlgebra.Lagrange
 public import CompPoly.Univariate.Basic
 public import CompPoly.Univariate.ToPoly.Impl

@@ -1,4 +1,4 @@
-name: Add Lean release tag
+name: Lean release tag and prebuilt oleans
 
 on:
   push:
@@ -7,10 +7,26 @@ on:
       - 'master'
     paths:
       - 'lean-toolchain'
+  # Covers releases created by hand rather than by `lean-release-tag` (patch and
+  # variant tags, for example). Releases the automated job creates below use
+  # `GITHUB_TOKEN`, which by design does not re-trigger workflows, so this cannot
+  # double-fire for the toolchain-bump path.
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: >-
+          Existing release tag to build and attach prebuilt oleans to. Use this to
+          backfill a release that predates this workflow, or to rebuild an asset.
+        required: true
+        type: string
 
 jobs:
   lean-release-tag:
     name: Add Lean release tag
+    # On manual dispatch the tag and release already exist; only publish the asset.
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -20,3 +36,95 @@ jobs:
       with:
         do-release: true
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Attach a prebuilt olean archive to the release, so downstream projects fetch
+  # CompPoly's artifacts instead of compiling it. Lake's `preferReleaseBuild` (set in
+  # `lakefile.lean`) makes consumers use this automatically.
+  # See `docs/wiki/build-cache.md`.
+  publish-oleans:
+    name: Publish prebuilt oleans
+    needs: lean-release-tag
+    if: >-
+      always() &&
+      (needs.lean-release-tag.result == 'success' ||
+       needs.lean-release-tag.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # `lean-release-tag` names the tag after the toolchain suffix and puts it on the
+      # commit that changed `lean-toolchain`, which is not necessarily this push's HEAD.
+      # So derive the name, then build from the tag itself to keep the archive and the
+      # tag's source tree in agreement.
+      - name: Resolve release tag
+        id: resolve
+        run: |
+          case "${{ github.event_name }}" in
+            workflow_dispatch) tag='${{ inputs.tag }}' ;;
+            release)           tag='${{ github.event.release.tag_name }}' ;;
+            *)                 tag="$(sed -n 's|^leanprover/lean4:||p' lean-toolchain | tr -d '[:space:]')" ;;
+          esac
+          if [ -z "$tag" ]; then
+            echo "::error::could not resolve a release tag" && exit 1
+          fi
+          git fetch --tags --force --quiet
+          if ! git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "::error::tag '$tag' does not exist" && exit 1
+          fi
+          git checkout --quiet "refs/tags/$tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Building prebuilt oleans for $tag."
+
+      # `lake upload` shells out to `gh release upload`, which needs the release to
+      # already exist. `do-release: true` creates it above; a hand-made tag may not have
+      # one, so fail early with a clear message rather than deep inside Lake.
+      - name: Check the release exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "${{ steps.resolve.outputs.tag }}" >/dev/null \
+            || { echo "::error::no GitHub release for tag '${{ steps.resolve.outputs.tag }}'"; exit 1; }
+
+      # Runs after the tag checkout so elan picks up that tag's `lean-toolchain`.
+      # This also supplies Mathlib's oleans: lean-action detects the Mathlib dependency
+      # in `lake-manifest.json` and runs `lake exe cache get` itself, so the library
+      # build below does not compile Mathlib from source. That is already the behaviour
+      # of the `auto` default; setting it explicitly documents the reliance and pins it
+      # against a future change of default.
+      - name: Set up Lean environment
+        uses: leanprover/lean-action@v1
+        with:
+          auto-config: false
+          build: false
+          test: false
+          lint: false
+          use-github-cache: false
+          use-mathlib-cache: true
+
+      # Deliberately builds only the default `CompPoly` library into an empty build
+      # directory. `lake upload` packs the whole build directory, and a full `lake build`
+      # would also leave the benchmark executable's Linux-only `bin/` and `.o` output
+      # there, which would both bloat the asset and contradict the `platformIndependent`
+      # claim that lets one archive serve every platform.
+      - name: Build the library
+        run: |
+          rm -rf .lake/build
+          lake build CompPoly
+
+      - name: Pack and attach the archive
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: lake upload "${{ steps.resolve.outputs.tag }}"
+
+      - name: Report the archive
+        run: |
+          archive=".lake/CompPoly-oleans.tar.gz"
+          echo "### Prebuilt oleans for \`${{ steps.resolve.outputs.tag }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Archive size: $(du -h "$archive" | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Entries: $(tar tzf "$archive" | wc -l | tr -d ' ')" >> "$GITHUB_STEP_SUMMARY"
+          echo "- \`.olean\` files: $(tar tzf "$archive" | grep -c '\.olean$')" >> "$GITHUB_STEP_SUMMARY"
