@@ -213,9 +213,9 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
   | succ r1 ih_r1 =>
     set r := r1 + 1 with hr
     intro l h_l_le_r j
-    haveI instAlgebraR : Algebra (BTField r) (BTField r) :=
+    have instAlgebraR : Algebra (BTField r) (BTField r) :=
       binaryAlgebraTower (l:=r) (r:=r) (h_le:=by omega)
-    haveI instModuleR : Module (BTField r) (BTField r) := instAlgebraR.toModule
+    have instModuleR : Module (BTField r) (BTField r) := instAlgebraR.toModule
     if h_r_sub_l : r - l = 0 then
       rw [multilinearBasis]
       have h_l_eq_r : l = r := by omega
@@ -245,21 +245,21 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       have h_r1_eq_l_plus_prevDiff : r1 = l + prevDiff := by omega
       have h_r : r = r1 + 1 := by omega
       have h1 : l + (r - l - 1) = r1 := by omega
-      letI instAlgebraPrev : Algebra (BTField l) (BTField (r1)) :=
+      let instAlgebraPrev : Algebra (BTField l) (BTField (r1)) :=
         binaryAlgebraTower (l:=l) (r:=r1) (h_le:=by omega)
       set prevMultilinearBasis : Basis (Fin (2 ^ (r1 - l))) (BTField l) (BTField r1) :=
         multilinearBasis (l:=l) (r:=r1) (h_le:=by omega) with h_prevMultilinearBasis
       rw! [h_r1_sub_l] at prevMultilinearBasis
-      letI instAlgebra : Algebra (BTField l) (BTField (r1 + 1)) :=
+      let instAlgebra : Algebra (BTField l) (BTField (r1 + 1)) :=
         binaryAlgebraTower (l:=l) (r:=r1 + 1) (h_le:=by omega)
       rw! (castMode:=.all) [h1]
 
-      letI instAlgebraSucc : Algebra (BTField (r1)) (BTField (r1 + 1)) := by
+      let instAlgebraSucc : Algebra (BTField (r1)) (BTField (r1 + 1)) := by
         exact algebra_adjacent_tower (r1)
-      letI instModuleSucc : Module (BTField l) (BTField (r1 + 1)) := by
+      let instModuleSucc : Module (BTField l) (BTField (r1 + 1)) := by
         exact instAlgebra.toModule
 
-      letI : IsScalarTower (BTField l) (BTField (r1)) (BTField (r1 + 1)) := by
+      let : IsScalarTower (BTField l) (BTField (r1)) (BTField (r1 + 1)) := by
         exact BTField.isScalarTower_succ_right (l:=l) (r:=r1) (h_le:=by omega)
       rw [Basis.smulTower_apply]
       rw [Algebra.smul_def]
@@ -267,9 +267,9 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       rw! (castMode:=.all) [h_r.symm]
       rw [cast_eq, cast_eq]
 
-      letI instAlgebra2 : Algebra (BTField r1) (BTField r) :=
+      let instAlgebra2 : Algebra (BTField r1) (BTField r) :=
         binaryAlgebraTower (l:=r1) (r:=r) (h_le:=by omega)
-      letI instModule2 : Module (BTField r1) (BTField r) := instAlgebra2.toModule
+      let instModule2 : Module (BTField r1) (BTField r) := instAlgebra2.toModule
       set b := (powerBasisSucc r1) with hb
       rw! [←hb]
       have h : (2 ^ (r1 - l)) = (2 ^ (r - l - 1)) := by

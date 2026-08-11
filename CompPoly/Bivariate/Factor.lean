@@ -387,7 +387,6 @@ private theorem divByLinearY_divX_quot_coeff [CommRing R] [BEq R] [LawfulBEq R]
       CPolynomial.coeff ((divByLinearY (CPolynomial.divX Q) f).1) j
           = CPolynomial.coeff ((divByLinearY (0 : CBivariate R) f).1) j := by
               rw [divX_zero_of_natDegreeY_zero (Q := Q) h0]
-              rfl
       _ = 0 := by
             have hcoeff := congrArg (fun p : CBivariate R => CPolynomial.coeff p j) hzeroquot
             exact hcoeff.trans (CPolynomial.coeff_zero (R := CPolynomial R) j)

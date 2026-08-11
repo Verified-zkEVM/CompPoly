@@ -22,7 +22,7 @@ namespace CPolynomial
 @[implicit_reducible] private def natBeqEq : BEq Nat := ⟨fun a b => decide (a = b)⟩
 
 private theorem nat_lawful_beq_eq : @LawfulBEq Nat natBeqEq := by
-  letI : BEq Nat := natBeqEq
+  let : BEq Nat := natBeqEq
   refine { rfl := ?_, eq_of_beq := ?_ }
   · intro a; erw [show natBeqEq.beq a a = decide (a = a) from rfl]; simp
   · intro a b h; erw [show natBeqEq.beq a b = decide (a = b) from rfl] at h; simpa using h
@@ -30,7 +30,7 @@ private theorem nat_lawful_beq_eq : @LawfulBEq Nat natBeqEq := by
 @[implicit_reducible] def natBeqSucc : BEq Nat := ⟨fun a b => decide (a.succ = b.succ)⟩
 
 theorem nat_lawful_beq_succ : @LawfulBEq Nat natBeqSucc := by
-  letI : BEq Nat := natBeqSucc
+  let : BEq Nat := natBeqSucc
   refine { rfl := ?_, eq_of_beq := ?_ }
   · intro a; erw [show natBeqSucc.beq a a = decide (a.succ = a.succ) from rfl]; simp
   · intro a b h

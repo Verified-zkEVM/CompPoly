@@ -67,7 +67,7 @@ lemma irreducible_of_rabin_128_passed_over_GF2 (P : Polynomial (ZMod 2))
     (h_gcd : EuclideanDomain.gcd ((X : Polynomial (ZMod 2)) ^ (2 ^ 64) + X) P = 1) :
     Irreducible P := by
   have h_ringCharZmod2 : ringChar (ZMod 2) = 2 := by exact ZMod.ringChar_zmod_n 2
-  letI : Fact (Nat.Prime (ringChar (ZMod 2))) := by exact Fact.mk (by
+  let : Fact (Nat.Prime (ringChar (ZMod 2))) := by exact Fact.mk (by
     rw [h_ringCharZmod2]; exact Nat.prime_two)
   -- Proof by Contradiction: Assume P is reducible.
   by_contra h_red
@@ -136,7 +136,7 @@ lemma irreducible_of_rabin_128_passed_over_GF2 (P : Polynomial (ZMod 2))
 - `X_pow_2_pow_128_eq`: X^(2^128) = X (mod ghashPoly)
 - `rabin_gcd_condition_gHashPoly`: EuclideanDomain.gcd(X^(2^64) + X, ghashPoly) = 1 -/
 theorem ghashPoly_irreducible : Irreducible ghashPoly := by
-  letI : GCDMonoid (Polynomial (ZMod 2)) := by apply EuclideanDomain.gcdMonoid
+  let : GCDMonoid (Polynomial (ZMod 2)) := by apply EuclideanDomain.gcdMonoid
   apply irreducible_of_rabin_128_passed_over_GF2
   · exact ghashPoly_natDegree
   · -- Trace Condition: ghashPoly | X^(2^128) + X
@@ -178,7 +178,7 @@ instance : Algebra (ZMod 2) BF128Ghash := AdjoinRoot.instAlgebra ghashPoly
 
 /-- BF128Ghash has characteristic 2. -/
 instance : CharP BF128Ghash 2 := by
-  haveI : CharP (ZMod 2) 2 := inferInstance
+  have : CharP (ZMod 2) 2 := inferInstance
   apply charP_of_injective_algebraMap' (ZMod 2) 2
 
 /-- The canonical embedding of GF(2) into BF128Ghash. -/

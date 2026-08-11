@@ -80,7 +80,6 @@ lemma intermediateNormVpoly_eval_is_linear_map (i : Fin r) {k : ℕ} (h_k : i.va
     simp only [intermediateNormVpoly] at ih
     conv =>
       enter [2, x, 2];
-      simp only [Fin.val_succ]
       rw [Fin.foldl_succ_last]
     simp only [Fin.val_last, Fin.val_castSucc, eval_comp]
     set q_eval_is_linear_map := linear_map_of_comp_to_linear_map_of_eval
@@ -915,7 +914,7 @@ theorem intermediateChangeOfBasisMatrix_diag_ne_zero (i : Fin r) (h_i : i ≤ �
 omit [DecidableEq L] [DecidableEq 𝔽q] h_Fq_char_prime h_β₀_eq_1 in
 theorem intermediateChangeOfBasisMatrix_det_ne_zero (i : Fin r) (h_i : i ≤ ℓ) :
     (intermediateChangeOfBasisMatrix 𝔽q β h_ℓ_add_R_rate i h_i).det ≠ 0 := by
-  rw [Matrix.det_of_lowerTriangular]
+  rw [Matrix.det_of_isLowerTriangular]
   · apply Finset.prod_ne_zero_iff.mpr
     intro j hj_mem_univ
     let res := intermediateChangeOfBasisMatrix_diag_ne_zero 𝔽q β h_ℓ_add_R_rate i h_i j
@@ -955,7 +954,7 @@ theorem monomialToINovel_iNovelToMonomial_inverse (i : Fin r) (h_i : i ≤ ℓ)
     (coeffs : Fin (2 ^ (ℓ - i)) → L) :
     iNovelToMonomialCoeffs 𝔽q β h_ℓ_add_R_rate i h_i
       (monomialToINovelCoeffs 𝔽q β h_ℓ_add_R_rate i h_i coeffs) = coeffs := by
-  letI : Invertible (intermediateChangeOfBasisMatrix 𝔽q β h_ℓ_add_R_rate i h_i) :=
+  let : Invertible (intermediateChangeOfBasisMatrix 𝔽q β h_ℓ_add_R_rate i h_i) :=
     intermediateChangeOfBasisMatrix_invertible 𝔽q β h_ℓ_add_R_rate i h_i
   unfold monomialToINovelCoeffs iNovelToMonomialCoeffs
   dsimp
@@ -967,7 +966,7 @@ theorem iNovelToMonomial_monomialToINovel_inverse (i : Fin r) (h_i : i ≤ ℓ)
     (coeffs : Fin (2 ^ (ℓ - i)) → L) :
     monomialToINovelCoeffs 𝔽q β h_ℓ_add_R_rate i h_i
       (iNovelToMonomialCoeffs 𝔽q β h_ℓ_add_R_rate i h_i coeffs) = coeffs := by
-  letI : Invertible (intermediateChangeOfBasisMatrix 𝔽q β h_ℓ_add_R_rate i h_i) :=
+  let : Invertible (intermediateChangeOfBasisMatrix 𝔽q β h_ℓ_add_R_rate i h_i) :=
     intermediateChangeOfBasisMatrix_invertible 𝔽q β h_ℓ_add_R_rate i h_i
   unfold monomialToINovelCoeffs iNovelToMonomialCoeffs
   dsimp
@@ -1205,7 +1204,6 @@ theorem evaluation_poly_split_identity (i : Fin r) (h_i : i < ℓ)
     unfold rightOddTerm leftOddTerm
     simp only [Fin.eta]
     conv_rhs =>
-      simp only [Fin.is_lt, Fin.eta]
       enter [2, x];
       rw [odd_index_intermediate_novel_basis_decomposition 𝔽q β (h_i := h_i)]
       rw [mul_comm (a:=X)]

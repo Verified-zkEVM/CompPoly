@@ -47,7 +47,7 @@ lemma 𝔽q_element_eq_zero_or_eq_one : ∀ c : 𝔽q, c = 0 ∨ c = 1 := by
     have h_card_units : Fintype.card 𝔽qˣ = 1 := by
       rw [Fintype.card_units, hF₂.out]
     have h_c_is_one : Units.mk0 c hc = (1 : 𝔽qˣ) := by
-      haveI : Subsingleton 𝔽qˣ := by
+      have : Subsingleton 𝔽qˣ := by
         apply Fintype.card_le_one_iff_subsingleton.mp
         exact Nat.le_of_eq h_card_units
       apply Subsingleton.elim
@@ -547,6 +547,7 @@ lemma sDomain_card (i : Fin r) (h_i : i < ℓ + R_rate) :
 
 noncomputable section DomainBijection
 
+@[implicit_reducible]
 def splitPointIntoCoeffs (i : Fin r) (h_i : i < ℓ + R_rate)
     (x : sDomain 𝔽q β h_ℓ_add_R_rate i) : Fin (ℓ + R_rate - i.val) → ℕ := fun j =>
   if ((sDomain_basis 𝔽q β h_ℓ_add_R_rate i h_i).repr x j = 0) then 0 else 1

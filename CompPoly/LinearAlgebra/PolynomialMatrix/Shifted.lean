@@ -79,7 +79,16 @@ def rowShiftedLeadingTerm? [Zero F] [BEq F]
 private theorem shiftedEntryDegree?_eq_none_iff [Zero F] [BEq F] [LawfulBEq F]
     (row : PolynomialRow F) (shift : Array Nat) (j : Nat) :
     shiftedEntryDegree? row shift j = none ↔ rowGet row j = 0 := by
-  simp [shiftedEntryDegree?, rowGet]
+  simp only [shiftedEntryDegree?]
+  split <;> simp_all
+
+/-- A row entry has shifted degree `d` exactly when it is nonzero and `d` is its shifted degree. -/
+theorem shiftedEntryDegree?_eq_some_iff [Zero F] [BEq F] [LawfulBEq F]
+    (row : PolynomialRow F) (shift : Array Nat) (j d : Nat) :
+    shiftedEntryDegree? row shift j = some d ↔
+      rowGet row j ≠ 0 ∧ (rowGet row j).natDegree + shift.getD j 0 = d := by
+  simp only [shiftedEntryDegree?]
+  split <;> simp_all
 
 private theorem rowShiftedDegreeFold_none_iff [Zero F] [BEq F]
     (row : PolynomialRow F) (shift : Array Nat) :

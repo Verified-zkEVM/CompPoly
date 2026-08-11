@@ -422,7 +422,6 @@ private lemma eval₂HornerTermSpec_eq_evalMonomial {S : Type*} {n : ℕ}
   · simp
   · unfold hornerExponent
     simp [Vector.get]
-    rfl
 
 private lemma eval₂HornerTerms_fold_eq_eval₂_fold {R S : Type*} {n : ℕ}
     [Semiring R] [CommSemiring S] (f : R →+* S) (vs : Fin n → S) :

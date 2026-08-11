@@ -136,10 +136,12 @@ private theorem Raw.eval_monicNormalize_eq_zero_of_eval_eq_zero {F : Type*}
     {p : CPolynomial.Raw F} {a : F} (hp : p.eval a = 0) :
     (CPolynomial.Raw.monicNormalize p).eval a = 0 := by
   unfold CPolynomial.Raw.monicNormalize
-  by_cases hzero : p.trim = (#[] : CPolynomial.Raw F)
-  · simp [hzero, CPolynomial.Raw.eval, CPolynomial.Raw.eval₂]
-  · simp [hzero]
-    change CPolynomial.Raw.eval a (CPolynomial.Raw.smul p.trim.leadingCoeff⁻¹ p.trim) = 0
+  show CPolynomial.Raw.eval a
+      (if p.trim == (0 : CPolynomial.Raw F) then 0 else p.trim.leadingCoeff⁻¹ • p.trim) = 0
+  split
+  · simp [CPolynomial.Raw.eval, CPolynomial.Raw.eval₂]
+    rfl
+  · change CPolynomial.Raw.eval a (CPolynomial.Raw.smul p.trim.leadingCoeff⁻¹ p.trim) = 0
     rw [Raw.eval_smul, CPolynomial.Raw.eval_trim_eq_eval, hp]
     simp
 
@@ -250,7 +252,7 @@ theorem toPoly_monicNormalize_dvd_self {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (p : CPolynomial F) :
     (CPolynomial.monicNormalize p).toPoly ∣ p.toPoly := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   rw [CPolynomial.monicNormalize_toPoly_eq_normalize]
   exact (normalize_associated p.toPoly).dvd
 
@@ -270,7 +272,7 @@ theorem toPoly_gcdMonic_dvd_left {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (p q : CPolynomial F) :
     (CPolynomial.gcdMonic p q).toPoly ∣ p.toPoly := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   rw [CPolynomial.gcdMonic_toPoly_eq_normalize_gcd]
   exact (normalize_associated (EuclideanDomain.gcd p.toPoly q.toPoly)).dvd.trans
     (EuclideanDomain.gcd_dvd_left p.toPoly q.toPoly)
@@ -280,7 +282,7 @@ theorem toPoly_gcdMonic_dvd_right {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (p q : CPolynomial F) :
     (CPolynomial.gcdMonic p q).toPoly ∣ q.toPoly := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   rw [CPolynomial.gcdMonic_toPoly_eq_normalize_gcd]
   exact (normalize_associated (EuclideanDomain.gcd p.toPoly q.toPoly)).dvd.trans
     (EuclideanDomain.gcd_dvd_right p.toPoly q.toPoly)

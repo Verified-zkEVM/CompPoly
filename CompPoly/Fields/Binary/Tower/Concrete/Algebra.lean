@@ -230,7 +230,7 @@ lemma split_algebraMap_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField 
   -- this one is long because of the `cast` stuff, but it should be quite straightforward
   -- via def of `canonicalAlgMap` and `split_of_join`
   apply Eq.symm
-  letI instAlgebra := ConcreteBTFieldAlgebra (l:=k-1) (r:=k) (h_le:=by omega)
+  let instAlgebra := ConcreteBTFieldAlgebra (l:=k-1) (r:=k) (h_le:=by omega)
   set mappedVal := algebraMap (ConcreteBTField (k - 1)) (ConcreteBTField k) x
   have h := split_of_join (k:=k) (h_pos:=by omega) (x:=mappedVal)
     (hi_btf:=zero (k:=k-1)) (lo_btf:=x)
@@ -291,7 +291,7 @@ lemma algebraMap_eq_zero_x {i j : ℕ} (h_le : i < j) (x : ConcreteBTField i) :
 lemma split_smul_Z_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField (k - 1)) :
     letI instAlgebra := ConcreteBTFieldAlgebra (l:=k-1) (r:=k) (h_le:=by omega)
   split h_pos (x • Z k) = (x, 0) := by
-  letI instAlgebra := ConcreteBTFieldAlgebra (l:=k-1) (r:=k) (h_le:=by omega)
+  let instAlgebra := ConcreteBTFieldAlgebra (l:=k-1) (r:=k) (h_le:=by omega)
   change split h_pos ((algebraMap (ConcreteBTField (k - 1)) (ConcreteBTField k) x) * Z k) = (x, 0)
   have h_split_xLifted := split_algebraMap_eq_zero_x h_pos x
   have h_split_Z := split_Z h_pos

@@ -21,6 +21,7 @@ open Module
 
 section FinHelpers
 
+set_option backward.isDefEq.respectTransparency.types false in
 @[simp]
 theorem bit_finProdFinEquiv_symm_2_pow_succ {n : ℕ} (j : Fin (2 ^ (n + 1))) (i : Fin (n + 1)) :
     let e:=finProdFinEquiv (m:=2^(n)) (n:=2).symm
@@ -84,6 +85,7 @@ def revFinProdFinEquiv {m n : ℕ} (h_m : m > 0) : Fin m × Fin n ≃ Fin (m * n
           )
   right_inv x := by exact Fin.eq_of_val_eq <| Nat.mod_add_div x.val m
 
+set_option backward.isDefEq.respectTransparency.types false in
 @[simp]
 theorem bit_revFinProdFinEquiv_symm_2_pow_succ {n : ℕ} (j : Fin (2 ^ (n + 1))) (i : Fin (n + 1)) :
     let e : Fin (2 ^ n * 2) ≃ Fin (2 ^ n) × Fin 2 :=

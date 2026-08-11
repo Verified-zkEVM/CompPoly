@@ -98,8 +98,7 @@ lemma powerBasisSucc_gen (k : ℕ) :
 
 lemma powerBasisSucc_dim (k : ℕ) :
     powerBasisSucc (k:=k).dim = 2 := by
-  simp only [BTField, BTFieldIsField, powerBasisSucc, poly, PowerBasis.map_dim,
-    powerBasis_dim]
+  simp only [BTField, BTFieldIsField, powerBasisSucc, poly]
   exact natDegree_definingPoly (Z k)
 
 def join_via_add_smul {k : ℕ} (h_pos : k > 0) (hi_btf lo_btf : BTField (k - 1)) :
@@ -113,24 +112,24 @@ lemma join_via_add_smul_zero {k : ℕ} (h_pos : k > 0) :
     (⋘ 0, 0 ⋙ : BTField k) = 0 := by
   unfold join_via_add_smul
   simp only [map_zero, add_zero]
-  letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
+  let instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   rw [Algebra.smul_def', map_zero, zero_mul]
 
 lemma join_via_add_smul_one_zero_eq_Z {k : ℕ} (h_pos : k > 0) :
     ⋘ 1, 0 ⋙ = Z k := by
   unfold join_via_add_smul
-  letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
+  let instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   rw [Algebra.smul_def', map_one, map_zero, one_mul, add_zero]
 
 lemma join_via_add_smul_one {k : ℕ} (h_pos : k > 0) :
     (⋘ 0, 1 ⋙ : BTField k) = 1 := by
   unfold join_via_add_smul
-  letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
+  let instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   rw [Algebra.smul_def', map_zero, map_one, zero_mul, zero_add]
 
 theorem sum_join_via_add_smul (k : ℕ) (h_pos : k > 0) (a₁ a₀ b₁ b₀ : BTField (k - 1)) :
     ⋘ a₁, a₀ ⋙ + ⋘ b₁, b₀ ⋙ = ⋘ a₁ + b₁, a₀ + b₀ ⋙ := by
-  letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
+  let instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   unfold join_via_add_smul
   simp only [map_add]
   rw [add_smul a₁ b₁ (Z k)]
@@ -144,7 +143,7 @@ theorem sum_join_via_add_smul (k : ℕ) (h_pos : k > 0) (a₁ a₀ b₁ b₀ : B
 -/
 theorem mul_join_via_add_smul (k : ℕ) (h_pos : k > 0) (a₁ a₀ b₁ b₀ : BTField (k - 1)) :
     ⋘ a₁, a₀ ⋙ * ⋘ b₁, b₀ ⋙ = ⋘ a₁ * b₁ * Z (k - 1) + a₁ * b₀ + a₀ * b₁, a₀ * b₀ + a₁ * b₁ ⋙ := by
-  letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
+  let instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   conv_lhs =>
     unfold join_via_add_smul
     rw [mul_add, add_mul, add_mul, ←map_mul]
@@ -165,7 +164,6 @@ theorem mul_join_via_add_smul (k : ℕ) (h_pos : k > 0) (a₁ a₀ b₁ b₀ : B
     simp only [eq_mp_eq_cast] at h
     convert h
     conv_lhs =>
-      simp only [instAlgebra];
       change (towerAlgebraMap (l:=k-1) (r:=k) (h_le:=by omega)) (Z (k - 1))
     have h_towerMap_succ := towerAlgebraMap_succ_1 (k:=k-1)
     rw! (castMode:=.all) [Nat.sub_one_add_one (by omega)] at h_towerMap_succ
@@ -301,7 +299,7 @@ lemma split_algebraMap_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : BTField (k - 1))
   split (k:=k) (h_k:=h_pos) (algebraMap (BTField (k - 1)) (BTField k) x) = (0, x) := by
   -- this one is long because of the `cast` stuff, but it should be quite straightforward
   -- via def of `canonicalEmbedding` and `eq_join_via_add_smul_eq_iff_split`
-  letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
+  let instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   set mappedVal := algebraMap (BTField (k - 1)) (BTField k) x
   -- ⊢ split k h_pos mappedVal = (0, x)
   have h := eq_join_via_add_smul_eq_iff_split (k:=k) (h_pos:=by omega)
@@ -340,7 +338,7 @@ lemma split_algebraMap_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : BTField (k - 1))
 lemma algebraMap_succ_eq_zero_x {k : ℕ} (h_pos : k > 0) (x : BTField (k - 1)) :
     letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   algebraMap (BTField (k - 1)) (BTField k) x = ⋘ 0, x ⋙ := by
-  letI instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
+  let instAlgebra := binaryAlgebraTower (l:=k-1) (r:=k) (h_le:=by omega)
   have h := eq_join_via_add_smul_eq_iff_split (k:=k) (h_pos:=h_pos)
     (x:=(algebraMap (BTField (k - 1)) (BTField k)) x) (hi_btf:=0) (lo_btf:=x).mpr
   apply h

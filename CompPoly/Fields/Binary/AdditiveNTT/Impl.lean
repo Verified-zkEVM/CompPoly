@@ -322,7 +322,7 @@ theorem hβ_lin_indep_concrete (k : ℕ) :
     letI := ConcreteBTFieldAlgebra (l:=0) (r:=k) (h_le:=by omega)
     LinearIndependent (R := ConcreteBTField 0)
       (v := computableBasisExplicit k) := by
-  letI := ConcreteBTFieldAlgebra (l:=0) (r:=k) (h_le:=by omega)
+  let := ConcreteBTFieldAlgebra (l:=0) (r:=k) (h_le:=by omega)
   have h_eq : computableBasisExplicit k = fun i => multilinearBasis 0 k (by omega) i := by
     funext i
     unfold computableBasisExplicit

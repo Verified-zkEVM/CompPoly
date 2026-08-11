@@ -551,7 +551,7 @@ lemma evalY_eq_evalX_swap (y : F) (f : F[X][Y]) :
     Polynomial.Bivariate.evalY y f =
       Polynomial.Bivariate.evalX y (Polynomial.Bivariate.swap f) := by
   classical
-  letI : Algebra F[X] F[X] := Polynomial.algebra (R := F) (A := F)
+  let : Algebra F[X] F[X] := Polynomial.algebra (R := F) (A := F)
   have eval_eq_aeval : Polynomial.eval (Polynomial.C y) f = aeval (Polynomial.C y) f := by
     simp [Polynomial.aeval_def]
   have mapAlgHom_eq_map :
