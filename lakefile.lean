@@ -21,7 +21,7 @@ package CompPoly where
   -- prioritize it when resolving toolchains for downstream projects.
   fixedToolchain := true
 
-require "leanprover-community" / mathlib @ git "v4.32.0"
+require "leanprover-community" / mathlib @ git "v4.32.2"
 
 @[default_target]
 lean_lib CompPoly where
