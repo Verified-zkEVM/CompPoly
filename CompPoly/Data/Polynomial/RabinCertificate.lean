@@ -389,4 +389,37 @@ theorem irreducible_of_rabin_degree_six {F : Type*} [Field F] [Fintype F] {f : F
   irreducible_of_rabin_two_prime_factors h_deg (by norm_num) primeFactors_six h_trace
     (by simpa using h_cop₃) (by simpa using h_cop₂)
 
+/-- Explicit-cardinality form of the prime-degree Rabin test.
+
+Identical content to `irreducible_of_rabin_prime_degree`, but the field size is
+a caller-supplied numeral `q` (with `Fintype.card F = q`) rather than
+`Fintype.card F` itself. This lets a caller state the trace and coprimality
+certificates with `q` a concrete literal. That matters for **re-checking**: a
+kernel replay of the resulting proof from an empty environment then never has to
+reduce `Fintype.card F` (for a `ZMod p` field, an enumeration of ~`p` elements)
+to reconcile it with the literal through a rewrite cast. `q` stays universally
+quantified here, so this declaration itself carries no concrete large numeral,
+and the two forms are definitionally equal, so nothing is weakened. -/
+theorem irreducible_of_rabin_prime_degree_of_card {F : Type*} [Field F] [Fintype F]
+    {f : F[X]} {d : ℕ} (q : ℕ) (hq : Fintype.card F = q)
+    (hd : d.Prime) (h_deg : f.natDegree = d)
+    (h_trace : f ∣ X ^ (q ^ d) - X)
+    (h_cop : IsCoprime f (X ^ q - X)) :
+    Irreducible f := by
+  subst hq
+  exact irreducible_of_rabin_prime_degree hd h_deg h_trace h_cop
+
+/-- Explicit-cardinality form of the degree-6 Rabin test. See
+`irreducible_of_rabin_prime_degree_of_card` for why the numeral form matters for
+re-checking; the same reasoning applies here at composite degree 6. -/
+theorem irreducible_of_rabin_degree_six_of_card {F : Type*} [Field F] [Fintype F]
+    {f : F[X]} (q : ℕ) (hq : Fintype.card F = q)
+    (h_deg : f.natDegree = 6)
+    (h_trace : f ∣ X ^ (q ^ 6) - X)
+    (h_cop₃ : IsCoprime f (X ^ (q ^ 3) - X))
+    (h_cop₂ : IsCoprime f (X ^ (q ^ 2) - X)) :
+    Irreducible f := by
+  subst hq
+  exact irreducible_of_rabin_degree_six h_deg h_trace h_cop₃ h_cop₂
+
 end CompPoly.RabinCert

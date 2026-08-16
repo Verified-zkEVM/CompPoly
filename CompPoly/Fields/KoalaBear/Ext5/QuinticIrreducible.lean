@@ -110,12 +110,11 @@ theorem quintic_bezout_check :
 kernel-checked certificates for both conditions. -/
 theorem quinticPoly_irreducible : Irreducible quinticPoly := by
   have hcard : Fintype.card Field = fieldSize := ZMod.card _
-  refine irreducible_of_rabin_prime_degree (by norm_num) quinticPoly_natDegree ?_ ?_
-  · rw [hcard]
-    exact dvd_X_pow_sub_X_of_runChain toPoly_quinticL quinticPoly_ne_zero
+  refine irreducible_of_rabin_prime_degree_of_card fieldSize hcard (by norm_num)
+    quinticPoly_natDegree ?_ ?_
+  · exact dvd_X_pow_sub_X_of_runChain toPoly_quinticL quinticPoly_ne_zero
       quintic_trace_chain quintic_trace_exp
-  · rw [hcard]
-    exact isCoprime_X_pow_sub_X_of_runChain toPoly_quinticL quinticPoly_ne_zero
+  · exact isCoprime_X_pow_sub_X_of_runChain toPoly_quinticL quinticPoly_ne_zero
       quintic_frob_chain quintic_frob_exp quintic_w_check quintic_bezout_check
 
 instance : Fact (Irreducible quinticPoly) := ⟨quinticPoly_irreducible⟩
