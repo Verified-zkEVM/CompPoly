@@ -6,7 +6,6 @@ Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdusa
 module
 
 public import CompPoly.Multivariate.CMvMonomial
-public import CompPoly.Multivariate.Wheels
 public import CompPoly.Data.ExtTreeMap.ExtTreeMap
 public import Mathlib.Algebra.Lie.OfAssociative
 

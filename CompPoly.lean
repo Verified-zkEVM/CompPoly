@@ -59,6 +59,7 @@ public import CompPoly.Data.Fin.BigOperators
 public import CompPoly.Data.List.Lemmas
 public import CompPoly.Data.MvPolynomial.Notation
 public import CompPoly.Data.Nat.Bitwise
+public import CompPoly.Data.Option.Lemmas
 public import CompPoly.Data.Polynomial.Frobenius
 public import CompPoly.Data.Polynomial.MonomialBasis
 public import CompPoly.Data.Polynomial.Rabin
@@ -190,7 +191,6 @@ public import CompPoly.Multivariate.Rename
 public import CompPoly.Multivariate.Restrict
 public import CompPoly.Multivariate.Unlawful
 public import CompPoly.Multivariate.VarsDegrees
-public import CompPoly.Multivariate.Wheels
 public import CompPoly.ToMathlib.Finsupp.Fin
 public import CompPoly.ToMathlib.MvPolynomial.Equiv
 public import CompPoly.ToMathlib.Order.WithBot

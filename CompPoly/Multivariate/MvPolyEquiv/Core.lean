@@ -6,6 +6,7 @@ Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa, Dimitris Mitsios
 module
 
 public import Batteries.Data.Vector.Lemmas
+public import CompPoly.Data.List.Lemmas
 public import CompPoly.Multivariate.CMvPolynomial
 public import Mathlib.Algebra.MvPolynomial.Basic
 public import Mathlib.Algebra.MvPolynomial.Equiv
@@ -61,7 +62,7 @@ noncomputable def toCMvPolynomial (p : MvPolynomial (Fin n) R) : CMvPolynomial n
         exact h₁
         case distinct =>
           simp only [List.pairwise_map]
-          exact List.distinct_of_inj_nodup CMvMonomial.injective_ofFinsupp (Finset.nodup_toList _)
+          exact List.Nodup.pairwise_ne_map CMvMonomial.injective_ofFinsupp (Finset.nodup_toList _)
       grind
   ⟩
 
@@ -83,7 +84,7 @@ theorem toCMvPolynomial_fromCMvPolynomial {p : CMvPolynomial n R} :
     grind
     case distinct =>
       simp only [Std.compare_eq_iff_eq, List.pairwise_map]
-      exact List.distinct_of_inj_nodup CMvMonomial.injective_ofFinsupp (Finset.nodup_toList _)
+      exact List.Nodup.pairwise_ne_map CMvMonomial.injective_ofFinsupp (Finset.nodup_toList _)
 
 omit [BEq R] [LawfulBEq R] in
 @[grind =, simp]
@@ -107,7 +108,7 @@ theorem fromCMvPolynomial_toCMvPolynomial {p : MvPolynomial (Fin n) R} :
                                          (mem := by simp; use m) (distinct := ?distinct)]
     case distinct =>
       simp only [Std.compare_eq_iff_eq, List.pairwise_map]
-      exact List.distinct_of_inj_nodup CMvMonomial.injective_ofFinsupp (Finset.nodup_toList _)
+      exact List.Nodup.pairwise_ne_map CMvMonomial.injective_ofFinsupp (Finset.nodup_toList _)
   · have : ∀ x ∈ s, CMvMonomial.ofFinsupp x ≠ CMvMonomial.ofFinsupp m := by aesop
     grind
 
