@@ -14,10 +14,10 @@ public import Mathlib.Tactic.NormNum.Prime
 # Irreducibility of `X^5 + X^2 - 1` over KoalaBear
 
 The quintic `X^5 + X^2 - 1` is irreducible over `KoalaBear.Field`, proved by Rabin's test at
-prime degree (`CompPoly.RabinCert.irreducible_of_rabin_prime_degree`). No degree-5 *binomial*
-does the job: `gcd(5, p - 1) = 1`, so `x ↦ x^5` is a bijection on KoalaBear and every `X^5 - W`
-has a root. This non-binomial quintic is the defining polynomial of the degree-5 extension in
-`CompPoly/Fields/KoalaBear/Ext5.lean`.
+prime degree (`CompPoly.RabinCert.irreducible_of_rabin_prime_degree_of_card`). No degree-5
+*binomial* does the job: `gcd(5, p - 1) = 1`, so `x ↦ x^5` is a bijection on KoalaBear and every
+`X^5 - W` has a root. This non-binomial quintic is the defining polynomial of the degree-5
+extension in `CompPoly/Fields/KoalaBear/Ext5.lean`.
 
 The two Rabin conditions — `f ∣ X^(p^5) - X` and `IsCoprime f (X^p - X)` — are discharged by
 kernel-checked certificates from `CompPoly/Fields/KoalaBear/Ext5/QuinticCertData.lean`
@@ -110,8 +110,7 @@ theorem quintic_bezout_check :
 kernel-checked certificates for both conditions. -/
 theorem quinticPoly_irreducible : Irreducible quinticPoly := by
   have hcard : Fintype.card Field = fieldSize := ZMod.card _
-  refine irreducible_of_rabin_prime_degree_of_card fieldSize hcard (by norm_num)
-    quinticPoly_natDegree ?_ ?_
+  refine irreducible_of_rabin_prime_degree_of_card hcard (by norm_num) quinticPoly_natDegree ?_ ?_
   · exact dvd_X_pow_sub_X_of_runChain toPoly_quinticL quinticPoly_ne_zero
       quintic_trace_chain quintic_trace_exp
   · exact isCoprime_X_pow_sub_X_of_runChain toPoly_quinticL quinticPoly_ne_zero
