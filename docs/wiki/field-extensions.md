@@ -50,7 +50,7 @@ makes a cheap Frobenius and a norm-based inverse possible. See "Choosing a gener
 | Rabin's test, general | [`../../CompPoly/Data/Polynomial/Rabin.lean`](../../CompPoly/Data/Polynomial/Rabin.lean) | `irreducible_of_rabin`, `irreducible_iff_rabin` for any degree over any finite field |
 | Factor-degree bound | [`../../CompPoly/ToMathlib/Polynomial/Irreducible.lean`](../../CompPoly/ToMathlib/Polynomial/Irreducible.lean) | `exists_factor_natDegree_le_of_reducible` |
 | Binomial criterion | [`../../CompPoly/Fields/Extension/Binomial.lean`](../../CompPoly/Fields/Extension/Binomial.lean) | the collapse to base-field exponentiations; `irreducible_X_pow_four_sub_C_iff` |
-| Rabin certificates | [`../../CompPoly/Data/Polynomial/RabinCertificate.lean`](../../CompPoly/Data/Polynomial/RabinCertificate.lean) | kernel-checked chains for non-binomial moduli; `runChain_sound`, `irreducible_of_rabin_prime_degree`, `irreducible_of_rabin_two_prime_factors`, `irreducible_of_rabin_degree_six` |
+| Rabin certificates | [`../../CompPoly/Data/Polynomial/RabinCertificate.lean`](../../CompPoly/Data/Polynomial/RabinCertificate.lean) | kernel-checked chains for non-binomial moduli; `runChain_sound`, `irreducible_of_rabin_prime_degree`, `irreducible_of_rabin_two_prime_factors`, `irreducible_of_rabin_degree_six`, and the `_of_card` forms concrete callers use |
 | Carrier and ring ops | [`../../CompPoly/Fields/Extension/Defs.lean`](../../CompPoly/Fields/Extension/Defs.lean) | `ExtensionParams`, `BinomialParams` (+ `toExtensionParams`), `Ext P`, `Ext.shiftReduce`, `Ext.monomialMod`, `Ext.mul` (spec), `Ext.red` + `Ext.mulTbl` (compiled, via `@[csimp]`) |
 | Bridge and `CommRing` | [`../../CompPoly/Fields/Extension/Bridge.lean`](../../CompPoly/Fields/Extension/Bridge.lean) | `toQuot`, `toQuot_shiftReduce`, `toQuot_mul`, `instCommRing` |
 | Bijectivity and `Field` | [`../../CompPoly/Fields/Extension/Field.lean`](../../CompPoly/Fields/Extension/Field.lean) | `ringEquivQuot`, `card_ext`, `inv`, `instField` |
@@ -144,6 +144,15 @@ over `d.primeFactors`; the packaged forms are:
 | `6` | `irreducible_of_rabin_degree_six` | plus `IsCoprime f (X^(q^3) - X)` and `IsCoprime f (X^(q^2) - X)` |
 | two prime factors | `irreducible_of_rabin_two_prime_factors` | as above, `Nat.primeFactors d = {ℓ₁, ℓ₂}` supplied by the caller |
 
+Each of the first two also has an `_of_card` form (`irreducible_of_rabin_prime_degree_of_card`,
+`irreducible_of_rabin_degree_six_of_card`) taking the field size as a numeral `q` with
+`hcard : Fintype.card F = q`, supplied as `ZMod.card _`. Concrete extensions use those: their
+generated certificates are already stated in terms of `fieldSize`, so the conditions apply
+directly instead of needing a `rw [hcard]` cast per condition. This mirrors
+`irreducible_X_pow_four_sub_C_of_card` on the binomial side. The two forms are inter-derivable —
+instantiating at `q := Fintype.card F` with `rfl` recovers the plain one — and
+`tests/CompPolyTests/Data/Polynomial/RabinCertificate.lean` pins that round trip.
+
 Concretely, over KoalaBear `(X^3 + X + 4)(X^3 + X - 4)` divides `X^(p^6) - X` and is coprime to
 `X^p - X`, so it satisfies the prime-degree conditions verbatim while being visibly reducible;
 only the `q^3` check rejects it. `Nat.primeFactors 6 = {2, 3}` cannot be closed by `decide`
@@ -212,11 +221,14 @@ That is about 60 lines.
 2. Generate the certificate module:
    `python3 scripts/gen_rabin_certificate.py --p <p> --f <coeffs> --lean <path> --namespace <NS>`.
 3. Write the irreducibility wrapper: `toPoly p fL = f`, `natDegree`, `f ≠ 0`, then the
-   chain/Bézout `rfl` checks and the assembly through `irreducible_of_rabin_prime_degree`
-   (prime `d`, see `KoalaBear/Ext5/QuinticIrreducible.lean`) or
-   `irreducible_of_rabin_degree_six` / `irreducible_of_rabin_two_prime_factors` (composite `d`,
-   see `KoalaBear/Ext6/SexticIrreducible.lean`). At composite `d` there is one chain plus Bézout
-   block per prime factor, named `cop<m>Steps`/`cop<m>Rp`/… for `m = d / ℓ`.
+   chain/Bézout `rfl` checks and the assembly through
+   `irreducible_of_rabin_prime_degree_of_card` (prime `d`, see
+   `KoalaBear/Ext5/QuinticIrreducible.lean`) or `irreducible_of_rabin_degree_six_of_card`
+   (composite `d`, see `KoalaBear/Ext6/SexticIrreducible.lean`), passing
+   `hcard : Fintype.card Field = fieldSize := ZMod.card _`. At a composite `d` with no `_of_card`
+   form yet, use `irreducible_of_rabin_two_prime_factors` and cast each condition with
+   `rw [hcard]`. At composite `d` there is one chain plus Bézout block per prime factor, named
+   `cop<m>Steps`/`cop<m>Rp`/… for `m = d / ℓ`.
 4. Write the `ExtensionParams` (lower coefficients of `f`, little-endian) and prove
    `...Params.poly = f`; register the `Fact` and define the `abbrev` — see
    `KoalaBear/Ext5.lean` (supporting cert/proof files under `KoalaBear/Ext5/`).

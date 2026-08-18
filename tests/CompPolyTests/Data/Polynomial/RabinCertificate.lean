@@ -272,4 +272,35 @@ theorem not_isCoprime : ¬ IsCoprime fRed ((X : (ZMod P)[X]) ^ (P ^ 3) - X) := b
 
 end ReducibleSextic
 
+/-! ### The `_of_card` forms are equivalent to the plain ones
+
+`irreducible_of_rabin_prime_degree_of_card` and `irreducible_of_rabin_degree_six_of_card` state
+their conditions at a caller-supplied numeral `q` with `hcard : Fintype.card F = q`, which is the
+shape concrete extensions use. Their docstrings claim nothing is weakened; the two theorems below
+are that claim, machine-checked. Instantiating at `q := Fintype.card F` with `rfl` has to recover
+the plain form *verbatim*, so a future edit cannot silently add a hypothesis or shift an exponent.
+The opposite direction is the `_of_card` proof body itself, checked whenever the library builds.
+-/
+
+namespace OfCardRoundTrip
+
+/-- `irreducible_of_rabin_prime_degree_of_card` recovers `irreducible_of_rabin_prime_degree`. -/
+theorem prime_degree_recovered {F : Type*} [Field F] [Fintype F] {f : F[X]} {d : ℕ}
+    (hd : d.Prime) (h_deg : f.natDegree = d)
+    (h_trace : f ∣ X ^ (Fintype.card F ^ d) - X)
+    (h_cop : IsCoprime f (X ^ Fintype.card F - X)) :
+    Irreducible f :=
+  irreducible_of_rabin_prime_degree_of_card rfl hd h_deg h_trace h_cop
+
+/-- `irreducible_of_rabin_degree_six_of_card` recovers `irreducible_of_rabin_degree_six`. -/
+theorem degree_six_recovered {F : Type*} [Field F] [Fintype F] {f : F[X]}
+    (h_deg : f.natDegree = 6)
+    (h_trace : f ∣ X ^ (Fintype.card F ^ 6) - X)
+    (h_cop₃ : IsCoprime f (X ^ (Fintype.card F ^ 3) - X))
+    (h_cop₂ : IsCoprime f (X ^ (Fintype.card F ^ 2) - X)) :
+    Irreducible f :=
+  irreducible_of_rabin_degree_six_of_card rfl h_deg h_trace h_cop₃ h_cop₂
+
+end OfCardRoundTrip
+
 end CompPolyTests.RabinCertificate
