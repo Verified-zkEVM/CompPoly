@@ -132,8 +132,8 @@ public import CompPoly.Fields.KoalaBear.Ext6.SexticCertData
 public import CompPoly.Fields.KoalaBear.Ext6.SexticIrreducible
 public import CompPoly.Fields.KoalaBear.Fast
 public import CompPoly.Fields.Mersenne31
-import CompPoly.Fields.Mersenne31.Basic
-import CompPoly.Fields.Mersenne31.Fast
+public import CompPoly.Fields.Mersenne31.Basic
+public import CompPoly.Fields.Mersenne31.Fast
 public import CompPoly.Fields.Montgomery.Basic
 public import CompPoly.Fields.Montgomery.Native32
 public import CompPoly.Fields.Montgomery.Native32Field

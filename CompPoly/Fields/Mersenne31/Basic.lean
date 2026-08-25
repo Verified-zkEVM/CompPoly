@@ -4,8 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Varun Thakore
 -/
 
-import CompPoly.Fields.Basic
-import CompPoly.Fields.PrattCertificate
+module
+
+public import CompPoly.Fields.Basic
+public import CompPoly.Fields.PrattCertificate
 
 /-!
   # Mersenne prime field `2^{31} - 1`
@@ -13,8 +15,9 @@ import CompPoly.Fields.PrattCertificate
   This is the field used in Circle STARKs.
 -/
 
+@[expose] public section
+
 namespace Mersenne31
-namespace Basic
 
 /-- The Mersenne31 prime modulus `2^31 - 1`. -/
 @[reducible]
@@ -42,5 +45,4 @@ instance : NonBinaryField Field where
     simpa [Field, fieldSize] using
       (by decide : (2 : ZMod (2 ^ 31 - 1)) ≠ 0)
 
-end Basic
 end Mersenne31
