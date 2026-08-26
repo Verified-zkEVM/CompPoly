@@ -44,6 +44,7 @@ example : CirclePointIndex.subgroupGen 0 = 0 := by
 example : CirclePointIndex.subgroupGen logOrder = CirclePointIndex.generator := by
   simp
 
+/-- A small half-coset fixture for executable regression checks. -/
 def smallHalfCoset : Coset :=
   Coset.halfOdds 3 (by decide)
 
@@ -55,6 +56,7 @@ example : smallHalfCoset.indexAt 0 = smallHalfCoset.initialIndex := by
 example (i : Nat) : smallHalfCoset.conjugate.indexAt i = -smallHalfCoset.indexAt i := by
   simp [smallHalfCoset]
 
+/-- A small circle-domain fixture built from `smallHalfCoset`. -/
 def smallDomain : CircleDomain :=
   CircleDomain.new smallHalfCoset
 
@@ -66,6 +68,7 @@ example (i : Nat) :
   change smallDomain.indexAt (smallDomain.halfCoset.size + i) = -smallDomain.halfCoset.indexAt i
   exact CircleDomain.indexAt_right smallDomain i
 
+/-- A small canonical-coset fixture for domain-shape checks. -/
 def smallCanonicCoset : CanonicCoset where
   logSize := 4
   one_le_logSize := by decide

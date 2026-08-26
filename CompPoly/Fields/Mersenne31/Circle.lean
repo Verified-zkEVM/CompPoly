@@ -6,6 +6,7 @@ Authors: Adrien Lacombe
 module
 
 public import CompPoly.Fields.Mersenne31.Basic
+public meta import Lean.Elab.Tactic.Omega
 public import Mathlib.Tactic.Ring
 
 /-!
@@ -27,7 +28,7 @@ namespace Mersenne31
 namespace Circle
 
 /-- The canonical Mersenne31 field used by the circle-domain skeleton. -/
-abbrev Field := Basic.Field
+abbrev Field := Mersenne31.Field
 
 /-- Predicate for points on the circle `x^2 + y^2 = 1`. -/
 def OnCircle (x y : Field) : Prop :=
@@ -41,6 +42,7 @@ structure Point where
 
 namespace Point
 
+/-- Two circle points are equal when both coordinates are equal. -/
 @[ext]
 theorem ext {p q : Point} (hx : p.x = q.x) (hy : p.y = q.y) : p = q := by
   cases p
@@ -93,18 +95,23 @@ def nsmul (p : Point) : Nat → Point
   | 0 => 0
   | n + 1 => nsmul p n + p
 
+/-- The identity point has x-coordinate one. -/
 @[simp]
 theorem zero_x : (0 : Point).x = 1 := rfl
 
+/-- The identity point has y-coordinate zero. -/
 @[simp]
 theorem zero_y : (0 : Point).y = 0 := rfl
 
+/-- Conjugation preserves the x-coordinate. -/
 @[simp]
 theorem conjugate_x (p : Point) : (-p).x = p.x := rfl
 
+/-- Conjugation negates the y-coordinate. -/
 @[simp]
 theorem conjugate_y (p : Point) : (-p).y = -p.y := rfl
 
+/-- The identity point is a left identity for circle addition. -/
 @[simp]
 theorem zero_add (p : Point) : (0 : Point) + p = p := by
   obtain ⟨px, py, hp⟩ := p
@@ -162,22 +169,26 @@ the planned homomorphism proof. -/
 def toPoint (i : CirclePointIndex) : Point :=
   Point.nsmul Circle.generator i.val
 
+/-- Index zero maps to the circle identity. -/
 @[simp]
 theorem toPoint_zero : toPoint 0 = 0 := by
   unfold toPoint
   simp [Point.nsmul]
 
+/-- The distinguished index maps to the STWO circle generator. -/
 @[simp]
 theorem toPoint_generator : toPoint CirclePointIndex.generator = Circle.generator := by
   unfold toPoint CirclePointIndex.generator Circle.generator
   change Point.nsmul Circle.generator (0 + 1) = Circle.generator
   simp [Point.nsmul, Point.zero_add]
 
+/-- The subgroup generator for the trivial subgroup is zero modulo the circle order. -/
 @[simp]
 theorem subgroupGen_zero : subgroupGen 0 = 0 := by
   change ((2 ^ (logOrder - 0) : Nat) : ZMod order) = 0
   simp [order]
 
+/-- The full-order subgroup generator is the distinguished generator index. -/
 @[simp]
 theorem subgroupGen_logOrder : subgroupGen logOrder = generator := by
   simp [subgroupGen, generator]
@@ -234,26 +245,32 @@ def conjugate (c : Coset) : Coset where
   logSize := c.logSize
   logSize_le_logOrder := c.logSize_le_logOrder
 
+/-- The first coset index is its initial index. -/
 @[simp]
 theorem indexAt_zero (c : Coset) : c.indexAt 0 = c.initialIndex := by
   simp [indexAt]
 
+/-- Successive coset indices differ by the fixed step size. -/
 @[simp]
 theorem indexAt_succ (c : Coset) (i : Nat) :
     c.indexAt (i + 1) = c.indexAt i + c.stepSize := by
   simp [indexAt, Nat.cast_add, Nat.cast_one]
   ring
 
+/-- Conjugation preserves the coset log size. -/
 @[simp]
 theorem conjugate_logSize (c : Coset) : c.conjugate.logSize = c.logSize := rfl
 
+/-- The conjugate coset starts at the negated initial index. -/
 @[simp]
 theorem conjugate_initialIndex (c : Coset) :
     c.conjugate.initialIndex = -c.initialIndex := rfl
 
+/-- The conjugate coset uses the negated step size. -/
 @[simp]
 theorem conjugate_stepSize (c : Coset) : c.conjugate.stepSize = -c.stepSize := rfl
 
+/-- Each conjugate-coset index is the negation of the corresponding original index. -/
 @[simp]
 theorem conjugate_indexAt (c : Coset) (i : Nat) :
     c.conjugate.indexAt i = -c.indexAt i := by
@@ -291,16 +308,19 @@ def indexAt (D : CircleDomain) (i : Nat) : CirclePointIndex :=
 def pointAt (D : CircleDomain) (i : Nat) : Point :=
   CirclePointIndex.toPoint (D.indexAt i)
 
+/-- A circle domain has twice as many indices as its half coset. -/
 @[simp]
 theorem size_eq_two_mul_halfSize (D : CircleDomain) :
     D.size = 2 * D.halfCoset.size := by
   simp [size, logSize, Coset.size, pow_succ, Nat.mul_comm]
 
+/-- Indices in the first half of a circle domain come from its half coset. -/
 @[simp]
 theorem indexAt_left (D : CircleDomain) (i : Nat) (hi : i < D.halfCoset.size) :
     D.indexAt i = D.halfCoset.indexAt i := by
   simp [indexAt, hi]
 
+/-- Indices in the second half come from the negated half coset. -/
 @[simp]
 theorem indexAt_right (D : CircleDomain) (i : Nat) :
     D.indexAt (D.halfCoset.size + i) = -D.halfCoset.indexAt i := by
@@ -335,6 +355,7 @@ def halfCoset (c : CanonicCoset) : Coset :=
 def circleDomain (c : CanonicCoset) : CircleDomain :=
   CircleDomain.new c.halfCoset
 
+/-- The canonical circle domain preserves the canonical coset log size. -/
 @[simp]
 theorem circleDomain_logSize (c : CanonicCoset) : c.circleDomain.logSize = c.logSize := by
   unfold circleDomain CircleDomain.new CircleDomain.logSize halfCoset Coset.halfOdds Coset.new
@@ -342,6 +363,7 @@ theorem circleDomain_logSize (c : CanonicCoset) : c.circleDomain.logSize = c.log
   have hOne : 1 ≤ c.logSize := c.one_le_logSize
   omega
 
+/-- The canonical circle domain has `2^logSize` indices. -/
 @[simp]
 theorem circleDomain_size (c : CanonicCoset) : c.circleDomain.size = 2 ^ c.logSize := by
   simp [CircleDomain.size]

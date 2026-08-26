@@ -134,6 +134,7 @@ public import CompPoly.Fields.KoalaBear.Fast
 public import CompPoly.Fields.Mersenne
 public import CompPoly.Fields.Mersenne31
 public import CompPoly.Fields.Mersenne31.Basic
+public import CompPoly.Fields.Mersenne31.Circle
 public import CompPoly.Fields.Mersenne31.Fast
 public import CompPoly.Fields.Montgomery.Basic
 public import CompPoly.Fields.Montgomery.Native32
