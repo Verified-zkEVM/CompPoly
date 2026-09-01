@@ -19,7 +19,7 @@ Human contributors should usually start with [`README.md`](README.md),
 6. When filling or adding a `sorry` (or anything that must stay axiom-clean), run
    `lake exe axiomsweep --check`; refresh `scripts/axiom_baseline.json` with
    `lake exe axiomsweep --update-baseline` and commit the diff if the change is
-   intentional.
+   intentional. Native-compiler trust is never baselineable.
 
 ## Where To Work
 

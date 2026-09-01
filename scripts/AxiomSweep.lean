@@ -39,12 +39,14 @@ lake exe axiomsweep --update-baseline   # rewrite the baseline from the current 
 
 The committed baseline (`scripts/axiom_baseline.json`) records the currently-known
 `sorryAx`-tainted declarations and any declarations depending on non-standard axioms
-(anything beyond `propext`, `Classical.choice`, `Quot.sound` — so native trust axioms
-surface here too: `native_decide`-style tactics mint per-declaration
-`…._native.<tactic>.ax_*` axioms, recorded under their owning declaration). `--check`
-fails exactly when a declaration is tainted that the baseline does not cover. When gaps
-are closed, `--check` reports them and stays green; run `--update-baseline` to shrink the
-file in the same PR.
+(anything beyond `propext`, `Classical.choice`, `Quot.sound`). Native trust is never
+baselineable: bare `Lean.ofReduceBool` / `Lean.trustCompiler` dependencies and generated
+`…._native.<tactic>.ax_*` axioms both make `--check` fail and prevent
+`--update-baseline`. Other native axiom names are normalized under their owning
+declaration so diagnostics remain stable across rebuilds. `--check` fails exactly when
+a declaration is tainted that the baseline does not cover. When gaps are closed,
+`--check` reports them and stays green; run `--update-baseline` to shrink the file in the
+same PR.
 -/
 
 open Lean
@@ -57,11 +59,12 @@ def defaultRoots : Array Name := #[`CompPoly]
 /-- Axioms that carry no extra trust assumptions beyond Lean's standard foundation. -/
 def standardAxioms : List Name := [``propext, ``Classical.choice, ``Quot.sound]
 
-/-- Axioms that may never be baselined: bare native-compiler trust. A baseline edit
-cannot green these — remove the dependency instead. (Zero hits today; this floor keeps
-the baseline from ever becoming a second, laxer policy.) -/
+/-- Axioms that may never be baselined: bare or generated native-compiler trust.
+A baseline edit cannot green these — remove the dependency instead. (Zero hits today;
+this floor keeps the baseline from ever becoming a second, laxer policy.) -/
 def neverAllowlistable (a : String) : Bool :=
-  a == "Lean.ofReduceBool" || a == "Lean.trustCompiler"
+  a == "Lean.ofReduceBool" || a == "Lean.trustCompiler" ||
+    (a.splitOn "._native.").length != 1
 
 /-- Phase 1: DFS. Compute, for every constant reachable from the work list, an
 under-approximation of the set of axioms it transitively depends on, memoised across
@@ -228,6 +231,18 @@ def currentBaseline (entries : Array Entry) : Baseline where
     let bad := nonstandardOf e
     if bad.isEmpty then none else some { name := e.name, axioms := bad }
 
+/-- Report native-compiler trust that repository policy forbids baselining. Returns
+whether any forbidden dependency was found. -/
+def reportNeverAllowlistable (cur : Baseline) : IO Bool := do
+  let floor := cur.nonstandard.filter fun e => e.axioms.any neverAllowlistable
+  if floor.isEmpty then
+    return false
+  IO.eprintln s!"axiomsweep: {floor.size} declaration(s) depend on never-allowlistable \
+    axioms (native-compiler trust) — remove the dependency instead:"
+  for e in floor do
+    IO.eprintln s!"  {e.name} : {e.axioms.filter neverAllowlistable}"
+  return true
+
 /-- Compare the current taint sets against the committed baseline. Returns the exit
 code: `1` iff there is a regression (new taint not covered by the baseline). -/
 def runCheck (cur : Baseline) (basePath : String) : IO UInt32 := do
@@ -250,13 +265,7 @@ def runCheck (cur : Baseline) (basePath : String) : IO UInt32 := do
     match cur.nonstandard.find? (·.name == b.name) with
     | none => true
     | some c => b.axioms.any (!c.axioms.contains ·)
-  let mut failed := false
-  let floor := cur.nonstandard.filter fun e => e.axioms.any neverAllowlistable
-  if !floor.isEmpty then
-    failed := true
-    IO.eprintln s!"axiomsweep: {floor.size} declaration(s) depend on never-allowlistable \
-      axioms (bare native-compiler trust) — the baseline cannot green these:"
-    for e in floor do IO.eprintln s!"  {e.name} : {e.axioms.filter neverAllowlistable}"
+  let mut failed ← reportNeverAllowlistable cur
   if !newSorry.isEmpty then
     failed := true
     IO.eprintln s!"axiomsweep: {newSorry.size} declaration(s) newly depend on sorryAx \
@@ -338,6 +347,9 @@ unsafe def main (args : List String) : IO UInt32 := do
     IO.FS.writeFile out (report.pretty ++ "\n")
     IO.println s!"axiomsweep: wrote report to {out}"
   if cfg.update then
+    if ← reportNeverAllowlistable cur then
+      IO.eprintln "axiomsweep: refusing to write a baseline containing native trust."
+      return 1
     IO.FS.writeFile cfg.baseline ((toJson cur).pretty ++ "\n")
     IO.println s!"axiomsweep: wrote baseline to {cfg.baseline}"
     return 0

@@ -57,7 +57,8 @@ intentionally adding or closing a `sorry`, refresh and commit the baseline:
 lake exe axiomsweep --update-baseline
 ```
 
-CI runs the same check report-only for now (see `lean_action_ci.yml`).
+CI runs the same check as an enforcing gate (see `lean_action_ci.yml`). Native-compiler
+trust is never baselineable.
 
 ### Added, renamed, or deleted files under `CompPoly/`
 
@@ -105,7 +106,7 @@ to be covered there. See [`../../bench/README.md`](../../bench/README.md).
 - [`../../.github/workflows/lean_action_ci.yml`](../../.github/workflows/lean_action_ci.yml)
   runs a **warm** (incremental) `lake build` by default — reusing cached Lake
   oleans so only dirty modules rebuild — then `lake test`, then the axiom sweep
-  report-only, and posts a build-timing report. It also builds and runs
+  as an enforcing gate, and posts a build-timing report. It also builds and runs
   `CompPolyBench --medium` over the curated
   `BENCH_CI_GROUPS` selection, then uploads benchmark reports as CI artifacts.
   `BENCH_CI_GROUPS` selection, then uploads benchmark reports as CI artifacts.

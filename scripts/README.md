@@ -20,8 +20,9 @@ This directory contains the main helper scripts for local validation and CI supp
 Kernel-level axiom/`sorry` accounting for every reportable `CompPoly.*` declaration,
 computed from the built `.olean` environment, with a committed regression baseline
 (`axiom_baseline.json`). `--check` fails only on new taint; `--update-baseline`
-refreshes the baseline; `--out FILE` writes a full per-declaration report. See the
-module docstring for modes and known blind spots.
+refreshes the baseline; `--out FILE` writes a full per-declaration report. Bare and
+generated native-compiler trust is rejected regardless of the baseline. See the module
+docstring for modes and known blind spots.
 
 ### `update-lib.sh`
 
