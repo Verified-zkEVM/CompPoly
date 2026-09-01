@@ -200,6 +200,8 @@ jobs:
         run: |
           bash scripts/build_timing_report.sh run test_path "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c 'lake test'
+      - name: Axiom sweep
+        run: lake exe axiomsweep --check
       - name: Fail on build warnings
         continue-on-error: true
         run: lake build --wfail
