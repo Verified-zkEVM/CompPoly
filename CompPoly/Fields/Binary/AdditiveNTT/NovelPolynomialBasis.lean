@@ -1066,6 +1066,7 @@ theorem W_linearity (i : Fin r) :
   induction i using Fin.succRecOnSameFinType with
   | zero =>
     -- Base Case: i = 0 => Prove W₀ is linear.
+    simp only [Fin.mk_zero']
     unfold W
     have h_U0 : (univ : Finset (U 𝔽q β 0)) = {0} := by
       ext u -- u : ↥(U 𝔽q β 0)
@@ -1418,7 +1419,7 @@ lemma linearIndependent_rows_of_lower_triangular_ne_zero_diag
   LinearIndependent R A := by -- This follows from the fact that such a matrix is invertible
   -- because its determinant is non-zero.
   have h_det : A.det ≠ 0 := by
-    rw [Matrix.det_of_lowerTriangular A h_lower_triangular]
+    rw [Matrix.det_of_isLowerTriangular A h_lower_triangular]
     apply prod_ne_zero_iff.mpr
     intro i _; exact h_diag i
   exact Matrix.linearIndependent_rows_of_det_ne_zero (A := A) h_det
@@ -1465,7 +1466,7 @@ theorem changeOfBasisMatrix_det_ne_zero
   (changeOfBasisMatrix 𝔽q β ℓ h_ℓ).det ≠ 0 := by
   let A := changeOfBasisMatrix 𝔽q β ℓ h_ℓ
   -- Use the fact that A is lower-triangular with non-zero diagonal
-  rw [Matrix.det_of_lowerTriangular A]
+  rw [Matrix.det_of_isLowerTriangular A]
   · -- The determinant of a lower-triangular matrix is
     -- the product of diagonal entries: ⊢ ∏ i, A i i ≠ 0
     let res := changeOfBasisMatrix_diag_ne_zero 𝔽q β ℓ h_ℓ

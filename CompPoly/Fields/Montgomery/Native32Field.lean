@@ -53,6 +53,7 @@ attribute [-simp] Nat.reducePow
 
 /-- The fast carrier for a prime modulus: a native word below `modulus`,
 interpreted as a Montgomery residue. At runtime this erases to `UInt32`. -/
+@[implicit_reducible]
 def FastField (modulus : ℕ) [Mont32Field modulus] : Type :=
   { x : UInt32 // x.toNat < modulus }
 
@@ -498,7 +499,7 @@ private theorem mul_assoc (x y z : FastField modulus) : (x * y) * z = x * (y * z
 
 private theorem pow_succ_field (x : FastField modulus) (n : ℕ) : pow x (n + 1) = pow x n * x := by
   unfold pow
-  letI : Semigroup (FastField modulus) := { mul, mul_assoc }
+  let : Semigroup (FastField modulus) := { mul, mul_assoc }
   exact npowBinRec_succ n x
 
 /-- Fast squaring agrees with multiplication by itself in the canonical field. -/

@@ -24,7 +24,7 @@ protocols such as sumcheck.
 @[expose] public section
 namespace CPoly
 
-open CMvPolynomial
+open _root_.CPoly.CMvPolynomial
 
 section
 

@@ -276,7 +276,7 @@ theorem mul_assoc' (x y z : Ext P) : x * y * z = x * (y * z) :=
   toQuot_injective (by simp only [toQuot_mul, mul_assoc])
 
 @[simp] theorem toQuot_pow (x : Ext P) (n : ℕ) : toQuot (x ^ n) = toQuot x ^ n := by
-  letI : Semigroup (Ext P) := { mul_assoc := mul_assoc' }
+  let : Semigroup (Ext P) := { mul_assoc := mul_assoc' }
   induction n with
   | zero => rw [pow_def, npowBinRec_zero, toQuot_one, pow_zero]
   | succ n ih => rw [pow_def, npowBinRec_succ, toQuot_mul, ← pow_def, ih, pow_succ]

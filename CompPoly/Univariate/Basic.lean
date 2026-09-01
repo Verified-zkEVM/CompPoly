@@ -54,7 +54,7 @@ variable {R : Type*}
   The NTT `butterflyStage` in `Univariate/NTT/Transform.lean` is not on this list: it
   operates on a scalar coefficient `Array R` and never calls `trim`.
 -/
-@[expose]
+@[expose, implicit_reducible]
 def CPolynomial (R : Type*) [Zero R] := { p : CPolynomial.Raw R // IsCanonical p }
 
 namespace CPolynomial

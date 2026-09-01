@@ -185,7 +185,7 @@ theorem minPoly_of_powerBasisSucc_generator (k : ℕ) :
   unfold powerBasisSucc
   simp only
   rw [←C_mul']
-  letI: Fintype (ConcreteBTField k) := (getBTFResult k).instFintype
+  let: Fintype (ConcreteBTField k) := (getBTFResult k).instFintype
   refine Eq.symm (minpoly.unique' (ConcreteBTField k) (Z (k + 1)) ?_ ?_ ?_)
   · exact (definingPoly_is_monic (s:=Z (k)))
   · exact aeval_definingPoly_at_Z_succ k
@@ -460,7 +460,7 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
   | succ r1 ih_r1 =>
     set r := r1 + 1 with hr
     intro l h_l_le_r j
-    haveI instAlgebraR : Algebra (ConcreteBTField r) (ConcreteBTField r) :=
+    have instAlgebraR : Algebra (ConcreteBTField r) (ConcreteBTField r) :=
       ConcreteBTFieldAlgebra (l:=r) (r:=r) (h_le:=by omega)
     if h_r_sub_l : r - l = 0 then
       rw [multilinearBasis]
@@ -492,21 +492,21 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       have h_r1_eq_l_plus_prevDiff : r1 = l + prevDiff := by omega
       have h_r : r = r1 + 1 := by omega
       have h1 : l + (r - l - 1) = r1 := by omega
-      letI instAlgebraPrev : Algebra (ConcreteBTField l) (ConcreteBTField (r1)) :=
+      let instAlgebraPrev : Algebra (ConcreteBTField l) (ConcreteBTField (r1)) :=
         ConcreteBTFieldAlgebra (l:=l) (r:=r1) (h_le:=by omega)
       set prevMultilinearBasis :=
         multilinearBasis (l:=l) (r:=r1) (h_le:=by omega) with h_prevMultilinearBasis
       rw! [h_r1_sub_l] at prevMultilinearBasis
-      letI instAlgebra : Algebra (ConcreteBTField l) (ConcreteBTField (r1 + 1)) :=
+      let instAlgebra : Algebra (ConcreteBTField l) (ConcreteBTField (r1 + 1)) :=
         ConcreteBTFieldAlgebra (l:=l) (r:=r1 + 1) (h_le:=by omega)
       rw! (castMode:=.all) [h1]
 
-      letI instAlgebraSucc : Algebra (ConcreteBTField (r1)) (ConcreteBTField (r1 + 1)) := by
+      let instAlgebraSucc : Algebra (ConcreteBTField (r1)) (ConcreteBTField (r1 + 1)) := by
         exact algebra_adjacent_tower (r1)
-      letI instModuleSucc : Module (ConcreteBTField l) (ConcreteBTField (r1 + 1)) := by
+      let instModuleSucc : Module (ConcreteBTField l) (ConcreteBTField (r1 + 1)) := by
         exact instAlgebra.toModule
 
-      letI : IsScalarTower (ConcreteBTField l) (ConcreteBTField (r1))
+      let : IsScalarTower (ConcreteBTField l) (ConcreteBTField (r1))
         (ConcreteBTField (r1 + 1)) := by
         exact isScalarTower_succ_right (l:=l) (r:=r1) (h_le:=by omega)
       rw [Basis.smulTower_apply]
@@ -515,7 +515,7 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       -- simp_rw [h_.r]
       rw [cast_eq, cast_eq]
 
-      letI instAlgebra2 : Algebra (ConcreteBTField r1) (ConcreteBTField r) :=
+      let instAlgebra2 : Algebra (ConcreteBTField r1) (ConcreteBTField r) :=
         ConcreteBTFieldAlgebra (l:=r1) (r:=r) (h_le:=by omega)
       set b := (powerBasisSucc r1) with hb
       rw! (castMode:=.all) [←hb]

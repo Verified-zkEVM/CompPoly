@@ -32,7 +32,9 @@ This file provides the reusable, degree-agnostic *certificate* infrastructure:
   `isCoprime_X_pow_sub_X_of_runChain` (coprimality, from a Bézout certificate on the reduced
   residue).
 * `irreducible_of_rabin_prime_degree` packages Rabin's test for *prime* degree `d`, where the
-  conditions collapse to a single trace and a single coprimality check.
+  conditions collapse to a single trace and a single coprimality check. The `_of_card` variants
+  of the packaged forms take the field size as a numeral `q` with `Fintype.card F = q`; that is
+  the shape concrete extensions use.
 
 Certificate data is produced by the untrusted generator `scripts/gen_rabin_certificate.py`;
 the kernel re-checks every step. Contrast `CompPoly/Fields/Binary/BF128Ghash/`, the bespoke
@@ -388,5 +390,51 @@ theorem irreducible_of_rabin_degree_six {F : Type*} [Field F] [Fintype F] {f : F
     Irreducible f :=
   irreducible_of_rabin_two_prime_factors h_deg (by norm_num) primeFactors_six h_trace
     (by simpa using h_cop₃) (by simpa using h_cop₂)
+
+/-! ### Explicit-cardinality forms
+
+The wrappers above state their conditions at `Fintype.card F`. Concrete extensions instead define
+their field as `ZMod fieldSize` and generate certificates already stated in terms of the numeral
+(`chainExp 1 steps = fieldSize ^ d`), so the `_of_card` forms below take the field size as a
+caller-supplied `q` with `hcard : Fintype.card F = q`. Same shape as
+`irreducible_X_pow_four_sub_C_of_card` in `CompPoly/Fields/Extension/Binomial.lean`.
+-/
+
+/--
+**Rabin's test for prime degree, with the cardinality abstracted into a numeral `q`.**
+
+Identical content to `irreducible_of_rabin_prime_degree`, with the field size supplied as `q` and
+`hcard : Fintype.card F = q` rather than read off as `Fintype.card F`. Each Rabin condition is then
+discharged by applying its certificate directly, avoiding the concrete caller-side `Eq.mpr`
+transports introduced by `rw [hcard]`. Fresh replay checks a serialized and reconstructed expression
+graph, so it need not follow the same normalization path as checking the elaborator's in-memory
+term. In the observed cold replay, checking one such transport's certificate argument entered
+`Polynomial.pow → npowRec → Nat.rec`, unfolding `X ^ (fieldSize ^ 6)` one exponent step at a time
+until Lean's deep-recursion guard fired. Supply `hcard` as `ZMod.card _`.
+
+Nothing is weakened: instantiating at `q := Fintype.card F` with `rfl` recovers
+`irreducible_of_rabin_prime_degree` verbatim, and `CompPolyTests.RabinCertificate` pins that
+instantiation as a regression test.
+-/
+theorem irreducible_of_rabin_prime_degree_of_card {F : Type*} [Field F] [Fintype F]
+    {f : F[X]} {d q : ℕ} (hcard : Fintype.card F = q)
+    (hd : d.Prime) (h_deg : f.natDegree = d)
+    (h_trace : f ∣ X ^ (q ^ d) - X)
+    (h_cop : IsCoprime f (X ^ q - X)) :
+    Irreducible f := by
+  subst hcard
+  exact irreducible_of_rabin_prime_degree hd h_deg h_trace h_cop
+
+/-- **Rabin's test at degree 6, with the cardinality abstracted into a numeral `q`.** See
+`irreducible_of_rabin_prime_degree_of_card`; the same reasoning applies at composite degree 6. -/
+theorem irreducible_of_rabin_degree_six_of_card {F : Type*} [Field F] [Fintype F]
+    {f : F[X]} {q : ℕ} (hcard : Fintype.card F = q)
+    (h_deg : f.natDegree = 6)
+    (h_trace : f ∣ X ^ (q ^ 6) - X)
+    (h_cop₃ : IsCoprime f (X ^ (q ^ 3) - X))
+    (h_cop₂ : IsCoprime f (X ^ (q ^ 2) - X)) :
+    Irreducible f := by
+  subst hcard
+  exact irreducible_of_rabin_degree_six h_deg h_trace h_cop₃ h_cop₂
 
 end CompPoly.RabinCert

@@ -290,6 +290,7 @@ lemma toFinsupp_unitMono {k : ℕ}
   ext j
   simp [CMvMonomial.toFinsupp, Vector.get,
     Finsupp.single_apply, eq_comm]
+  rfl
 
 lemma fromCMvPolynomial_monomial {k : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
     (mono : CMvMonomial k) (c : R) :

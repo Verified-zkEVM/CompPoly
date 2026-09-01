@@ -183,8 +183,8 @@ private lemma monomial_basis_even {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^
   simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin]
   rw [Fin.prod_univ_succ]
   simp only [Fin.val_zero, Fin.val_succ]
-  rw [← Nat.bit_false_apply j.val, Nat.testBit_bit_zero]
-  simp only [Bool.false_eq_true, if_false, one_mul]
+  rw [← Nat.bit_false_apply j.val]
+  simp only [Nat.testBit_bit_zero, Bool.false_eq_true, if_false, one_mul]
   apply Finset.prod_congr rfl
   intro k _
   rw [Nat.testBit_bit_succ]
@@ -198,8 +198,8 @@ private lemma monomial_basis_odd {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^ 
   simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin]
   rw [Fin.prod_univ_succ]
   simp only [Fin.val_zero, Fin.val_succ]
-  rw [← Nat.bit_true_apply j.val, Nat.testBit_bit_zero]
-  simp only [if_true]
+  rw [← Nat.bit_true_apply j.val]
+  simp only [Nat.testBit_bit_zero, if_true]
   congr 1
   apply Finset.prod_congr rfl
   intro k _
@@ -276,7 +276,6 @@ private lemma eval_horner_step_dot_product {n : ℕ}
   rw [add_mul]
   congr 1
   rw [mul_comm x.head, mul_assoc]
-  rfl
 
 /-- Horner evaluation agrees with the dot-product evaluator. -/
 theorem eval_horner_eq_eval (p : CMlPolynomial R n) (x : Vector R n) :
@@ -434,8 +433,8 @@ private lemma lagrange_basis_even {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^
   simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin]
   rw [Fin.prod_univ_succ]
   simp only [Fin.val_zero, Fin.val_succ]
-  rw [← Nat.bit_false_apply j.val, Nat.testBit_bit_zero]
-  simp only [Bool.false_eq_true, if_false]
+  rw [← Nat.bit_false_apply j.val]
+  simp only [Nat.testBit_bit_zero, Bool.false_eq_true, if_false]
   congr 1
   apply Finset.prod_congr rfl
   intro k _
@@ -450,8 +449,8 @@ private lemma lagrange_basis_odd {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^ 
   simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin]
   rw [Fin.prod_univ_succ]
   simp only [Fin.val_zero, Fin.val_succ]
-  rw [← Nat.bit_true_apply j.val, Nat.testBit_bit_zero]
-  simp only [if_true]
+  rw [← Nat.bit_true_apply j.val]
+  simp only [Nat.testBit_bit_zero, if_true]
   congr 1
   apply Finset.prod_congr rfl
   intro k _
@@ -569,9 +568,7 @@ private lemma eval_mle_step_dot_product {n : ℕ}
   rw [add_mul]
   congr 1
   · rw [mul_comm (1 - x.head) (p.get ⟨2 * j.val, by omega⟩), mul_assoc]
-    rfl
   · rw [mul_comm x.head (p.get ⟨2 * j.val + 1, by omega⟩), mul_assoc]
-    rfl
 
 /-- Multilinear-extension interpolation agrees with the dot-product evaluator. -/
 theorem eval_mle_eq_eval (p : CMlPolynomialEval R n) (x : Vector R n) :
@@ -1005,7 +1002,7 @@ def equivMonomialLagrangeRepr : CMlPolynomial R n ≃ CMlPolynomialEval R n wher
       subst h_n_eq_0; rfl
     else
       have h_n_ne_zero: n ≠ 0 := by omega
-      letI: NeZero n := by exact { out := h_n_eq_0 }
+      let: NeZero n := by exact { out := h_n_eq_0 }
       rw [lagrangeToMono_eq_lagrangeToMonoSegment (n:=n)]
       rw [monoToLagrange_eq_monoToLagrangeSegment (n:=n)]
       simp only [Fin.zero_eta]
@@ -1018,7 +1015,7 @@ def equivMonomialLagrangeRepr : CMlPolynomial R n ≃ CMlPolynomialEval R n wher
       subst h_n_eq_0; rfl
     else
       have h_n_ne_zero: n ≠ 0 := by omega
-      letI: NeZero n := by exact { out := h_n_eq_0 }
+      let: NeZero n := by exact { out := h_n_eq_0 }
       rw [lagrangeToMono_eq_lagrangeToMonoSegment (n:=n)]
       rw [monoToLagrange_eq_monoToLagrangeSegment (n:=n)]
       exact

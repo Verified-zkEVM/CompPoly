@@ -131,6 +131,7 @@ lemma Raw.toPoly_pow [LawfulBEq R] (p : CPolynomial.Raw R) :
 @[simp, grind =]
 lemma Raw.toPoly_zero {R : Type*} [Semiring R] : (0 : CPolynomial.Raw R).toPoly = 0 := by
   simp [Raw.toPoly, Raw.eval₂]
+  rfl
 
 lemma toPoly_zero {R : Type*} [Semiring R] : (0 : CPolynomial R).toPoly = 0 := by
   apply Raw.toPoly_zero

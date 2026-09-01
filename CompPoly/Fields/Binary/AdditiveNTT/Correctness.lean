@@ -217,8 +217,8 @@ lemma W_eval_succ_eq_mul_add (i : Fin r) (h_i_add_1 : i + 1 < r) (x : L) :
       (W (𝔽q := 𝔽q) (β := β) (i := i)).eval x *
         ((W (𝔽q := 𝔽q) (β := β) (i := i)).eval x +
           (W (𝔽q := 𝔽q) (β := β) (i := i)).eval (β i)) := by
-  haveI : CharP 𝔽q 2 := charP_of_card_eq_prime hFq_card.out
-  haveI : CharP L 2 := (Algebra.charP_iff 𝔽q L 2).mp inferInstance
+  have : CharP 𝔽q 2 := charP_of_card_eq_prime hFq_card.out
+  have : CharP L 2 := (Algebra.charP_iff 𝔽q L 2).mp inferInstance
   have h := W_linear_comp_decomposition (𝔽q := 𝔽q) (β := β) (i := i)
     h_i_add_1 (p := C x)
   have h_eval := congrArg (fun p : L[X] => p.eval 0) h
@@ -617,6 +617,8 @@ variable [Algebra 𝔽q L]
 variable (β : Fin r → L) [hβ_lin_indep : Fact (LinearIndependent 𝔽q β)]
   [h_β₀_eq_1 : Fact (β 0 = 1)]
 variable {ℓ R_rate : ℕ} (h_ℓ_add_R_rate : ℓ + R_rate < r)
+
+attribute [local implicit_reducible] Nat.mod Nat.pow
 
 section AlgorithmCorrectness
 
@@ -1089,7 +1091,7 @@ lemma foldl_NTTStage_inductive_aux (h_ℓ : ℓ ≤ r) (k : Fin (ℓ + 1))
   simp only at invariant_init
   induction k using Fin.succRecOnSameFinType with
   | zero =>
-    simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, Fin.foldl_zero, tsub_zero]
+    simp only [Fin.foldl_zero, tsub_zero]
     exact invariant_init
   | succ k k_h i_h =>
     have h_k_add_one := Fin.val_add_one' (a:=k) (by omega)
@@ -1149,12 +1151,12 @@ theorem additiveNTT_correctness (h_ℓ : ℓ ≤ r)
   have hbase : ∀ (h : (0 : Fin r) ≤ ℓ) (v : Fin (2 ^ (0 : Fin r).val)),
       coeffsBySuffix (R_rate := R_rate) original_coeffs 0 h v = original_coeffs := by
     intro h v
-    haveI : Subsingleton (Fin (2 ^ (0 : Fin r).val)) := by
+    have : Subsingleton (Fin (2 ^ (0 : Fin r).val)) := by
       rw [show (0 : Fin r).val = 0 from rfl, pow_zero]; infer_instance
     have hv : v = 0 := Subsingleton.elim _ _
     subst hv
     exact base_coeffsBySuffix original_coeffs
-  simp only [hbase] at res
+  rw [hbase] at res
   rw [← res]
 
 end AlgorithmCorrectness

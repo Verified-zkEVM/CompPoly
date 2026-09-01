@@ -7,6 +7,7 @@ module
 
 public import Mathlib.Algebra.GroupWithZero.Nat
 public import Mathlib.Data.List.GetD
+public import Mathlib.Data.List.Nodup
 public import Mathlib.Order.Lattice.Nat
 public import Mathlib.Tactic.Cases
 
@@ -209,5 +210,13 @@ def dropLastWhile (p : α → Bool) (l : List α) : List α :=
 lemma zipWith_const {α β : Type _} {f : α → β → β} {l₁ : List α} {l₂ : List β}
     (h₁ : l₁.length = l₂.length) (h₂ : ∀ a b, f a b = b) : l₁.zipWith f l₂ = l₂ := by
   induction' l₁ with hd tl ih generalizing l₂ <;> rcases l₂ <;> aesop
+
+/-- An injective `f` separates the elements of a duplicate-free list pairwise.
+
+This is `List.Nodup.map` transported along `List.pairwise_map`, stated in the unmapped form that
+`Std.ExtTreeMap.getElem_ofList_of_mem` and friends ask for. -/
+theorem Nodup.pairwise_ne_map {α : Type u} {β : Type v} {l : List α} {f : α → β}
+    (hf : Function.Injective f) (hl : l.Nodup) : l.Pairwise fun a b => f a ≠ f b :=
+  List.pairwise_map.mp (Nodup.map hf hl)
 
 end List

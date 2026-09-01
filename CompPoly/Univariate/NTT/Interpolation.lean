@@ -162,6 +162,7 @@ theorem inverseSpec_interpolatePow_eq [BEq R] [LawfulBEq R]
     have hget : r.get k = values.getD k.1 0 := by
       dsimp [r]
       simp [loadNaturalVector, Vector.get]
+      rfl
     rw [← hget]
     simpa [q, Domain.node, omegaUnit, homegaUnit] using h
   have hpoly :
