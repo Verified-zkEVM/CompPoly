@@ -405,8 +405,12 @@ caller-supplied `q` with `hcard : Fintype.card F = q`. Same shape as
 
 Identical content to `irreducible_of_rabin_prime_degree`, with the field size supplied as `q` and
 `hcard : Fintype.card F = q` rather than read off as `Fintype.card F`. Each Rabin condition is then
-discharged by applying its certificate directly, rather than first casting the goal with
-`rw [hcard]`. Supply `hcard` as `ZMod.card _`.
+discharged by applying its certificate directly, avoiding the concrete caller-side `Eq.mpr`
+transports introduced by `rw [hcard]`. Fresh replay checks a serialized and reconstructed expression
+graph, so it need not follow the same normalization path as checking the elaborator's in-memory
+term. In the observed cold replay, checking one such transport's certificate argument entered
+`Polynomial.pow → npowRec → Nat.rec`, unfolding `X ^ (fieldSize ^ 6)` one exponent step at a time
+until Lean's deep-recursion guard fired. Supply `hcard` as `ZMod.card _`.
 
 Nothing is weakened: instantiating at `q := Fintype.card F` with `rfl` recovers
 `irreducible_of_rabin_prime_degree` verbatim, and `CompPolyTests.RabinCertificate` pins that
