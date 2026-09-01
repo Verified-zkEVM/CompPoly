@@ -1,29 +1,16 @@
 /-
 Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao
+Authors: Quang Dao, Varun Thakore
 -/
 module
 
-public import CompPoly.Fields.PrattCertificate
+public import CompPoly.Fields.Mersenne31
 
 /-!
-  # Mersenne prime field `2^{31} - 1`
+# Deprecated Mersenne31 compatibility import
 
-  This is the field used in Circle STARKs.
+This module re-exports `CompPoly.Fields.Mersenne31` for compatibility with the former import path.
 -/
 
-@[expose] public section
-
-namespace Mersenne31
-
-@[reducible]
-def fieldSize : Nat := 2 ^ 31 - 1
-
-abbrev Field := ZMod fieldSize
-
-theorem is_prime : Nat.Prime fieldSize := by
-  unfold fieldSize
-  pratt
-
-end Mersenne31
+deprecated_module "Use `CompPoly.Fields.Mersenne31` instead" (since := "2026-08-25")
