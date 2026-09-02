@@ -6,6 +6,10 @@ Authors: Valerii Huhnin
 
 module
 
+-- `coeff`, `ofArray` and friends are declared in bare `public section`s, so their
+-- bodies are opaque downstream; see `docs/wiki/module-system.md`.
+import all CompPoly.Univariate.Basic
+import all CompPoly.Univariate.Raw.Core
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis.KernelLeaf
 public import CompPoly.LinearAlgebra.PolynomialMatrix.StrassenCorrectness
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic

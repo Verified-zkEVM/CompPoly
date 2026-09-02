@@ -43,7 +43,7 @@ def kernelLeafPMBasisContextWithLowAndCompose (mulCtx : CPolynomial.MulContext F
     -- Shifted-minimality of the recursive PM-basis (the predictable-degree
     -- property of minimal approximant bases): every nonzero X-adic solution
     -- row is degree-dominated by some basis row.
-    letI : DecidableEq F := instDecidableEqOfLawfulBEq
+    let : DecidableEq F := instDecidableEqOfLawfulBEq
     intro problem shift row hpos hwf happrox hnz hwidth
     exact pmBasis_kernelLeaf_complete_minimal mulCtx lowCtx leafCutoff
       composeLeafCutoff problem shift row hpos hwf happrox hnz hwidth
