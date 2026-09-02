@@ -213,6 +213,11 @@ CompPoly aims to be the premier formally verified library for computable polynom
       `LinearAlgebra/PolynomialMatrix/`). The fast variants are proved extensionally
       equal to the direct ones in `MuldersStorjohannCorrectness/Fast.lean`, so every
       correctness result transfers.
+    - ✅ Order-basis (approximant) layer over polynomial matrices
+      (`PolynomialMatrix/Approximant/`): modular key equations, the divide-and-conquer
+      PM-Basis recursion with X-adic soundness and kernel-leaf completeness, and
+      partial linearization, alongside supporting row selection, minimal weak-Popov
+      forms, and Strassen multiplication used by the recursion.
 
 **Success Criteria**: notable speedup for large polynomial operations, verified correctness, benchmarks demonstrating competitive performance with industry-standard implementations.
 

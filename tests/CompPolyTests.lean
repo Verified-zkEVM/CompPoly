@@ -38,6 +38,7 @@ public import CompPolyTests.Fields.Mersenne31.Fast
 public import CompPolyTests.Fields.Mersenne31.Instances
 public import CompPolyTests.Fields.PrattCertificate
 public import CompPolyTests.LinearAlgebra.Dense
+public import CompPolyTests.LinearAlgebra.PolynomialMatrix.Approximant
 public import CompPolyTests.Multilinear.Equiv
 public import CompPolyTests.Multivariate.CMvMonomial
 public import CompPolyTests.Multivariate.Restrict
