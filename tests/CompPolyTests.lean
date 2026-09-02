@@ -35,6 +35,7 @@ public import CompPolyTests.Fields.Extension.Binomial
 public import CompPolyTests.Fields.Goldilocks.Fast
 public import CompPolyTests.Fields.KoalaBear.Fast
 public import CompPolyTests.Fields.Mersenne31.Fast
+public import CompPolyTests.Fields.Mersenne31.Instances
 public import CompPolyTests.Fields.PrattCertificate
 public import CompPolyTests.LinearAlgebra.Dense
 public import CompPolyTests.Multilinear.Equiv
