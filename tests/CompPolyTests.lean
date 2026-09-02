@@ -13,6 +13,7 @@ public import CompPolyTests.Bivariate.GuruswamiSudan.Compose
 public import CompPolyTests.Bivariate.GuruswamiSudan.Core
 public import CompPolyTests.Bivariate.GuruswamiSudan.Filter
 public import CompPolyTests.Bivariate.GuruswamiSudan.Hasse
+public import CompPolyTests.Bivariate.GuruswamiSudan.Interpolation.ApproximantBasis
 public import CompPolyTests.Bivariate.GuruswamiSudan.Interpolation.Dense
 public import CompPolyTests.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan
 public import CompPolyTests.Bivariate.GuruswamiSudan.Root.Alekhnovich

@@ -176,10 +176,10 @@ CompPoly aims to be the premier formally verified library for computable polynom
      `decode_none_farness`, which reads decoder refusal as a farness certificate
    - ✅ Implement Guruswami-Sudan list-decoding algorithm
      (`Bivariate/GuruswamiSudan/`), following the interpolation-and-root-finding
-     decomposition of [GS99]: a backend-parametric `Core` / `Context` with dense
-     and Lee-O'Sullivan ([LOS06]) interpolation and Roth-Ruckenstein ([RR00]) and
-     Alekhnovich ([Ale05]) root search, instantiated in `Implementations` and
-     `Executable`
+     decomposition of [GS99]: a backend-parametric `Core` / `Context` with dense,
+     Lee-O'Sullivan ([LOS06]), approximant-basis (PM-Basis), and hybrid
+     interpolation, plus Roth-Ruckenstein ([RR00]) and Alekhnovich ([Ale05]) root
+     search, instantiated in `Implementations` and `Executable`
    - ✅ Proofs of correctness: `gsCore_sound`, `gsCore_complete_of_interpolate`,
      and `gsCore_complete_of_roots_all_valid_witnesses` in `CoreCorrectness.lean`,
      stated against the context contracts so they hold for every backend

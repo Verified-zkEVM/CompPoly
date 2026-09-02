@@ -111,17 +111,23 @@ a context instance and inherits every theorem.
 
 ### Interpolation backends
 
-Both produce a valid witness in the sense of `ValidInterpolationWitness`; they
+All produce a valid witness in the sense of `ValidInterpolationWitness`; they
 differ in how the constrained linear system is solved.
 
 | Backend | Files | When to use |
 |---|---|---|
 | Dense | `Interpolation/Dense/{Algorithm,Correctness}.lean` | Small parameters. Builds the constraint matrix explicitly and calls the dense kernel solver. Simple, and the easiest to reason about. |
 | Lee-O'Sullivan | `Interpolation/LeeOSullivan/` ([LOS06]) | Larger parameters. Works from a Gröbner-basis perspective: build a module basis, then shift-reduce it with Mulders-Storjohann. `leeOSullivanInterpolate_sound` and `leeOSullivanInterpolate_complete`, with the argument split across nine files under `Correctness/`. |
+| Approximant-basis | `Interpolation/ApproximantBasis/` + `LinearAlgebra/PolynomialMatrix/Approximant/` | Long codes / many errors. Solves modular key equations via a minimal approximant (PM-Basis) solver; cost is quasi-linear in length and independent of corruption level. |
+| Hybrid | `Interpolation/Hybrid/` | Budgeted Lee–O'Sullivan with fallback to approximant (ski-rental style). Result equals one of the two verified backends. |
+
+Supporting pieces: `WitnessDivisibility*.lean` — quasi-linear multiplicity check
+equivalent to pointwise Hasse derivatives (used in long-code validation).
 
 `Interpolation/Basic.lean` holds the constraints and normalized-witness helpers
-shared by both, and `Interpolation/Correctness.lean` the shared results
+shared by the backends, and `Interpolation/Correctness.lean` the shared results
 (`interpolationWitnessIsValidBool_iff`, `lowMessageDegreeInterpolation_sound`).
+Named KoalaBear contexts for all four backends live in `Implementations.lean`.
 
 ### Root-finding backends
 
@@ -232,6 +238,8 @@ knowing which contracts they assume.
     polynomials*][vzGS92]
 * Cantor–Zassenhaus equal-degree factorization (odd characteristic) and
   char-2 trace splitting as used in `LasVegas/`
+* Beckermann–Labahn / Giorgi–Jeannerod–Villard PM-Basis approximant methods
+  as used in `PolynomialMatrix/Approximant/` and `Interpolation/ApproximantBasis/`
 
 BibTeX entries for these keys are in
 [`../../blueprint/src/references.bib`](../../blueprint/src/references.bib).
