@@ -73,6 +73,7 @@ Roughly by area, with representative group prefixes:
 | Univariate root finding | `univariate-roots-finite-field-*` |
 | Additive NTT | `additive-ntt-btf*` |
 | Extension fields | `fields-extension-*-mul`, `fields-extension-*-inv` |
+| Binary tower fields | `fields-tower-bt128-*`: `BitVec` spec vs packed-word implementation |
 | Scalar-field inversion | `fields-mont64x8-*-inv`: `ZMod` extended Euclid vs checked binary GCD vs Fermat |
 
 Use `--list` for the authoritative set; the prefixes above drift as groups are

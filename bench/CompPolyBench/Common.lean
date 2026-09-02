@@ -255,6 +255,12 @@ def formatNanosAuto (nanos : Nat) : String :=
   let unit := chooseTimeUnit [nanos]
   formatNanosWithUnit unit nanos
 
+/-- Render in the shared unit, falling back to a labeled per-value unit when the
+shared unit would collapse the value to `<0.01`. -/
+def formatNanosInUnitOrAuto (unit : TimeUnit) (nanos : Nat) : String :=
+  let rendered := formatNanosInUnit unit nanos
+  if rendered == "<0.01" then formatNanosAuto nanos else rendered
+
 /-- Run selected tasks from a registry and concatenate their emitted groups. -/
 def runSelectedTasks (tasks : List BenchTask) (preset : BenchPreset) (selection : BenchSelection)
     (gen : StdGen) : IO (Array BenchGroup × StdGen) := do
@@ -826,9 +832,9 @@ def groupResultColumns (records : List BenchRecord) (totalUnit avgUnit : TimeUni
     ("Implementation", false, implementationLabelInGroup records),
     ("Iterations", true, fun r ↦ toString r.measuredIterations),
     ("Total (" ++ totalUnit.label ++ ")", true, fun r ↦
-      formatNanosInUnit totalUnit r.totalNanos),
+      formatNanosInUnitOrAuto totalUnit r.totalNanos),
     ("Avg (" ++ avgUnit.label ++ ")", true, fun r ↦
-      formatNanosInUnit avgUnit r.averageNanos)
+      formatNanosInUnitOrAuto avgUnit r.averageNanos)
   ]
 
 /-- Shared metadata rendered before each benchmark group result table. -/
