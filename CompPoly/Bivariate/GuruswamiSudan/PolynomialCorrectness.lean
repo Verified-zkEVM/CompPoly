@@ -829,7 +829,7 @@ private theorem hasseDeriv_map_taylorAlgHom {F : Type*} [Field F]
   Polynomial.hasseDeriv b (P.map (Polynomial.taylorAlgHom x).toRingHom) =
       (Polynomial.hasseDeriv b P).map (Polynomial.taylorAlgHom x).toRingHom := by
   ext n
-  simp [Polynomial.hasseDeriv_coeff, Polynomial.taylorAlgHom]
+  simp [Polynomial.hasseDeriv_coeff, Polynomial.taylorAlgHom, Polynomial.taylor_apply]
 
 /-- Evaluating after Taylor-shifting all inner coefficients is the Taylor shift
 of the evaluated coefficient polynomial. -/
@@ -842,7 +842,7 @@ private theorem eval_map_taylorAlgHom {F : Type*} [Field F]
     (Polynomial.taylorAlgHom x).toRingHom
       (P.eval₂ (RingHom.id (Polynomial F)) (Polynomial.C y))
   rw [Polynomial.hom_eval₂]
-  simp [Polynomial.taylor_C]
+  simp [Polynomial.taylorAlgHom]
 
 /-- Hasse derivatives in `X` commute with multiplication by an `X`-constant
 polynomial. -/
@@ -928,7 +928,7 @@ private theorem toPoly_hasseDerivative_eq_coeffwise_hasseDeriv_hasseDeriv {F : T
 
 /-- Evaluating the univariate `X`-Hasse derivative of the evaluated `Y`-Hasse
 derivative matches the executable bivariate Hasse derivative. -/
-private theorem eval_hasseDeriv_eval_hasseDeriv_toPoly {F : Type*}
+theorem eval_hasseDeriv_eval_hasseDeriv_toPoly {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
     (Q : CBivariate F) (x y : F) (a b : Nat) :
     Polynomial.eval x (Polynomial.hasseDeriv a
