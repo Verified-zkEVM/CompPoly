@@ -43,6 +43,8 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - ✅ `algebra`, `module`: Algebra and module structures
    - ✅ `degrees`; ✅ `eval₂Hom`: Degree utilities and evaluation homomorphisms
    - ✅ `finSuccEquiv`: Variable manipulation equivalences (for `CMvPolynomial`)
+   - ✅ `partialEvalFirst`: Partial evaluation fixing the first variable, with its
+     evaluation and per-variable degree-bound lemmas
    - ✅ `isEmptyRingEquiv` for `CMvPolynomial 0 R`
    - ✅ `smulZeroClass`: Scalar multiplication with zero behavior
    - ✅ `sumToIter`: Iteration utility with reconstruction/API lemmas

@@ -1,12 +1,12 @@
 /-
-Copyright (c) 2026 CompPoly Contributors. All rights reserved.
+Copyright (c) 2026 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: ArkLib Contributors
+Authors: Cody Gunton
 -/
-import CompPoly.Data.MvPolynomial.Notation
-import CompPoly.Multivariate.DegreeBound
-import CompPoly.Multivariate.Operations
-import CompPoly.Multivariate.MvPolyEquiv.Eval
+module
+
+public import CompPoly.Multivariate.Operations
+public import Mathlib.Algebra.MvPolynomial.Degrees
 
 /-!
 # Partial evaluation of the first variable of a `CMvPolynomial`
@@ -16,13 +16,13 @@ polynomial to a scalar value, together with its evaluation lemma and the
 per-variable degree-bound lemma.
 -/
 
-open CompPoly Std
+@[expose] public section
 
 namespace CPoly
 
 namespace CMvPolynomial
 
-variable {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
+variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 
 omit [BEq R] [LawfulBEq R] in
 private lemma partialEvalFirst_subst_degreeOf_le [Nontrivial R] (a : R)
@@ -32,16 +32,17 @@ private lemma partialEvalFirst_subst_degreeOf_le [Nontrivial R] (a : R)
         MvPolynomial (Fin n) R) ≤ if j = i.succ then 1 else 0 := by
   cases j using Fin.cases with
   | zero =>
-      simp [MvPolynomial.degreeOf_C]
+      simp only [Fin.cases_zero, MvPolynomial.degreeOf_C, zero_le]
   | succ j =>
       by_cases h : j = i
       · subst h
-        simp
+        simp only [Fin.cases_succ, MvPolynomial.degreeOf_X_self, ↓reduceIte, Std.le_refl]
       · have hsucc : Fin.succ j ≠ i.succ := by
           intro h'
           exact h ((Fin.succ_injective n) h')
         have hi_ne_j : i ≠ j := fun hij => h hij.symm
-        simp [hsucc, hi_ne_j, MvPolynomial.degreeOf_X]
+        simp only [Fin.cases_succ, MvPolynomial.degreeOf_X, hi_ne_j, ↓reduceIte, hsucc,
+          Std.le_refl]
 
 omit [BEq R] [LawfulBEq R] in
 private lemma partialEvalFirst_eval₂_monomial_degreeOf_le [Nontrivial R] {deg : ℕ}
@@ -74,16 +75,16 @@ private lemma partialEvalFirst_eval₂_monomial_degreeOf_le [Nontrivial R] {deg 
           classical
           by_cases hi : i.succ ∈ s.support
           · rw [Finset.sum_eq_single i.succ]
-            · simp
+            · simp only [↓reduceIte, mul_one, Std.le_refl]
             · intro x hx hne
-              simp [hne]
+              simp only [hne, ↓reduceIte, mul_zero]
             · intro hnot
               exact False.elim (hnot hi)
           · rw [Finset.sum_eq_zero]
-            · simp
+            · simp only [zero_le]
             · intro x hx
               have hne : x ≠ i.succ := fun h => hi (h ▸ hx)
-              simp [hne]
+              simp only [hne, ↓reduceIte, mul_zero]
     _ ≤ deg := hs
 
 omit [BEq R] [LawfulBEq R] in
@@ -103,7 +104,7 @@ private lemma partialEvalFirst_eval₂_degreeOf_le [Nontrivial R] {deg : ℕ}
           MvPolynomial (Fin n) R) ^ s x)).trans ?_
   apply Finset.sup_le
   intro s hs
-  simpa [MvPolynomial.eval₂_monomial, Finsupp.prod] using
+  simpa only [MvPolynomial.eval₂_monomial, Finsupp.prod] using
     partialEvalFirst_eval₂_monomial_degreeOf_le (n := n) (R := R)
       (deg := deg) a i s (p.coeff s) (hDeg s hs)
 
@@ -123,7 +124,7 @@ theorem partialEvalFirst_eval (a : R) (p : CMvPolynomial (n + 1) R) (v : Fin n �
   rw [MvPolynomial.eval₂_comp_left]
   have hc : (MvPolynomial.eval v).comp MvPolynomial.C = RingHom.id R := by
     ext r
-    simp
+    simp only [RingHom.coe_comp, Function.comp_apply, MvPolynomial.eval_C, RingHom.id_apply]
   have hv :
       (⇑(MvPolynomial.eval v) ∘
           fun i => fromCMvPolynomial
@@ -133,8 +134,10 @@ theorem partialEvalFirst_eval (a : R) (p : CMvPolynomial (n + 1) R) (v : Fin n �
         Fin.cons a v := by
     funext i
     cases i using Fin.cases with
-    | zero => simp [fromCMvPolynomial_C]
-    | succ i => simp [fromCMvPolynomial_X]
+    | zero => simp only [Function.comp_apply, Fin.cons_zero, fromCMvPolynomial_C,
+        MvPolynomial.eval_C]
+    | succ i => simp only [Function.comp_apply, Fin.cons_succ, fromCMvPolynomial_X,
+        MvPolynomial.eval_X]
   rw [hc, hv]
   exact (eval_equiv (p := p) (vals := Fin.cons a v)).symm
 
@@ -169,8 +172,8 @@ theorem partialEvalFirst_degreeOf_le [Nontrivial R] {deg : ℕ} (a : R)
             Fin.cases (MvPolynomial.C a) (fun k : Fin n => MvPolynomial.X k) j) := by
       funext j
       cases j using Fin.cases with
-      | zero => simp [fromCMvPolynomial_C]
-      | succ j => simp [fromCMvPolynomial_X]
+      | zero => simp only [Fin.cons_zero, fromCMvPolynomial_C, Fin.cases_zero]
+      | succ j => simp only [Fin.cons_succ, fromCMvPolynomial_X, Fin.cases_succ]
     rw [hvars]
     exact partialEvalFirst_eval₂_degreeOf_le (n := n) (R := R) a i
       (fromCMvPolynomial p) hSupport

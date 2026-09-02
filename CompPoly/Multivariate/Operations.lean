@@ -460,7 +460,6 @@ attribute [grind =]
   aeval_C aeval_X aeval_add aeval_mul
   aeval_zero aeval_one aeval_pow aeval_neg aeval_sub
 
-
 /-- The computable substitution `bind₁` agrees with Mathlib substitution after
 transporting through `fromCMvPolynomial`. -/
 theorem fromCMvPolynomial_bind₁ {n m : ℕ} {R : Type*} [CommSemiring R] [BEq R]
@@ -495,9 +494,11 @@ theorem fromCMvPolynomial_bind₁ {n m : ℕ} {R : Type*} [CommSemiring R] [BEq 
             (algebraMap R (CMvPolynomial m R)))
           (fun i => fromCMvPolynomial (f i))
           (fromCMvPolynomial p) := by
-    simpa [CPoly.polyRingEquiv, CPoly.polyEquiv] using h
+    simpa only [polyRingEquiv, polyEquiv, RingEquiv.toRingHom_eq_coe,
+      MvPolynomial.coe_eval₂Hom, RingHom.coe_coe, RingEquiv.coe_mk, Equiv.coe_fn_mk] using h
   rw [hcomp] at h'
   exact h'
+
 end CMvPolynomial
 
 namespace Lawful
