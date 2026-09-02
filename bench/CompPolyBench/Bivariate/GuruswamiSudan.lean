@@ -112,9 +112,15 @@ private def runGsInterpolationSmallKoala (preset : BenchPreset) (gen : StdGen) :
   let fastDenseMeasured := preset.selectNat 2 1 1
   let fastLeeDirectMeasured := preset.selectNat 600 90 20
   let fastLeeSubproductMeasured := preset.selectNat 400 60 10
+  let approximantMeasured := preset.selectNat 60 9 2
+  let hybridMeasured := preset.selectNat 90 13 3
+  let fastApproximantMeasured := preset.selectNat 300 45 10
+  let fastHybridMeasured := preset.selectNat 400 60 10
   let checksumIterations := groupChecksumIterations denseMeasured [
     leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
-    fastLeeDirectMeasured, fastLeeSubproductMeasured
+    fastLeeDirectMeasured, fastLeeSubproductMeasured,
+    approximantMeasured, hybridMeasured,
+    fastApproximantMeasured, fastHybridMeasured
   ]
   let denseRow <- runTimed
     "guruswami-sudan-interp-dense-small" "CBivariate"
@@ -161,12 +167,44 @@ private def runGsInterpolationSmallKoala (preset : BenchPreset) (gen : StdGen) :
       gsSmallParams)
     (checksumInterpolationValidityOption fastPoints gsSmallParams)
     checksumIterations
+  let approximantRow <- runTimed
+    "guruswami-sudan-interp-approximant-small" "CBivariate"
+    "Approximant basis (PM-Basis)"
+    "KoalaBear.Field" gsSmallInterpInputShape preset warmup approximantMeasured
+    (fun _ ↦ koalaBearApproximantBasisSubproductInterpContext.interpolate points
+      gsSmallParams)
+    (checksumInterpolationValidityOption points gsSmallParams)
+    checksumIterations
+  let hybridRow <- runTimed
+    "guruswami-sudan-interp-hybrid-small" "CBivariate"
+    "Hybrid (budgeted Lee-O'Sullivan with approximant fallback)"
+    "KoalaBear.Field" gsSmallInterpInputShape preset warmup hybridMeasured
+    (fun _ ↦ koalaBearHybridInterpContext.interpolate points gsSmallParams)
+    (checksumInterpolationValidityOption points gsSmallParams)
+    checksumIterations
+  let fastApproximantRow <- runTimed
+    "guruswami-sudan-interp-approximant-small-fast" "CBivariate"
+    "Approximant basis (PM-Basis)"
+    "KoalaBear.Fast.Field" gsSmallInterpInputShape preset warmup
+    fastApproximantMeasured
+    (fun _ ↦ fastKoalaBearApproximantBasisSubproductInterpContext.interpolate
+      fastPoints gsSmallParams)
+    (checksumInterpolationValidityOption fastPoints gsSmallParams)
+    checksumIterations
+  let fastHybridRow <- runTimed
+    "guruswami-sudan-interp-hybrid-small-fast" "CBivariate"
+    "Hybrid (budgeted Lee-O'Sullivan with approximant fallback)"
+    "KoalaBear.Fast.Field" gsSmallInterpInputShape preset warmup fastHybridMeasured
+    (fun _ ↦ fastKoalaBearHybridInterpContext.interpolate fastPoints gsSmallParams)
+    (checksumInterpolationValidityOption fastPoints gsSmallParams)
+    checksumIterations
   pure ({
     groupKey := "guruswami-sudan-interp-small-koalabear",
     title := "Guruswami-Sudan interpolation, small (KoalaBear)",
     records := #[
       denseRow, leeDirectRow, leeSubproductRow,
-      fastDenseRow, fastLeeDirectRow, fastLeeSubproductRow
+      fastDenseRow, fastLeeDirectRow, fastLeeSubproductRow,
+      approximantRow, hybridRow, fastApproximantRow, fastHybridRow
     ]
   }, gen)
 

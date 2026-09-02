@@ -6,6 +6,10 @@ Authors: Valerii Huhnin
 
 module
 
+-- `linearFactor`, `coeff` and friends are declared in bare `public section`s, so
+-- their bodies are opaque downstream; see `docs/wiki/module-system.md`.
+import all CompPoly.Univariate.Basic
+import all CompPoly.Univariate.Raw.Core
 public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.ApproximantBasis.Basic
 public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.ApproximantBasis.Multiplicity
 public import CompPoly.Univariate.DivisionCorrectness
@@ -265,7 +269,7 @@ private theorem gsRelationColumn_eq_foldl (mulCtx : CPolynomial.MulContext F)
   rw [gsRelationColumn]
   simp only [Std.Legacy.Range.forIn_eq_forIn_range', Std.Legacy.Range.size,
     Nat.add_sub_cancel, Nat.div_one, List.forIn_pure_yield_eq_foldl,
-    bind_pure_comp, map_pure, Id.run_pure, relationColumnStep]
+    bind_pure_comp, map_pure, Id.run_pure]
   -- `forIn` now reduces to a `Prod` fold (not `MProd`); both sides match.
   rfl
 

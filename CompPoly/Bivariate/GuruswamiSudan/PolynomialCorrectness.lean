@@ -829,7 +829,7 @@ private theorem hasseDeriv_map_taylorAlgHom {F : Type*} [Field F]
   Polynomial.hasseDeriv b (P.map (Polynomial.taylorAlgHom x).toRingHom) =
       (Polynomial.hasseDeriv b P).map (Polynomial.taylorAlgHom x).toRingHom := by
   ext n
-  simp [Polynomial.hasseDeriv_coeff, Polynomial.taylorAlgHom, Polynomial.taylor_apply]
+  simp [Polynomial.hasseDeriv_coeff, Polynomial.taylorAlgHom]
 
 /-- Evaluating after Taylor-shifting all inner coefficients is the Taylor shift
 of the evaluated coefficient polynomial. -/
@@ -842,7 +842,12 @@ private theorem eval_map_taylorAlgHom {F : Type*} [Field F]
     (Polynomial.taylorAlgHom x).toRingHom
       (P.eval₂ (RingHom.id (Polynomial F)) (Polynomial.C y))
   rw [Polynomial.hom_eval₂]
-  simp [Polynomial.taylorAlgHom]
+  -- The shift fixes constant inner coefficients, so the two `eval₂` constants agree.
+  -- Keep `taylorAlgHom` folded so `coe_taylorAlgHom` can fire.
+  have hC : (Polynomial.taylorAlgHom x).toRingHom (Polynomial.C y) = Polynomial.C y := by
+    simp [Polynomial.taylor_C]
+  rw [hC]
+  simp
 
 /-- Hasse derivatives in `X` commute with multiplication by an `X`-constant
 polynomial. -/

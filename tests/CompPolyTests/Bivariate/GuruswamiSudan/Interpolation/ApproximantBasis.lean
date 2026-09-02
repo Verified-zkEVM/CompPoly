@@ -7,6 +7,7 @@ Authors: Valerii Huhnin
 module
 
 public meta import CompPoly.Bivariate.GuruswamiSudan.Interpolation.ApproximantBasis
+public meta import CompPoly.Univariate.Roots.Enumeration
 public meta import CompPoly.Bivariate.GuruswamiSudan.Core
 public meta import CompPoly.Bivariate.GuruswamiSudan.Root.RothRuckenstein.Correctness
 public meta import Mathlib.Algebra.Field.ZMod
@@ -138,9 +139,13 @@ private def f3Elements : Array F3 :=
   #[0, 1, 2]
 
 private theorem f3Elements_complete : ContainsAllFieldElements f3Elements := by
-  unfold ContainsAllFieldElements
   intro a
-  fin_cases a <;> decide
+  -- Explicit membership witnesses: `Decidable (_ ∈ _.toList)` no longer synthesizes
+  -- for this carrier, so avoid `decide` here.
+  fin_cases a
+  · exact List.Mem.head _
+  · exact List.Mem.tail _ (List.Mem.head _)
+  · exact List.Mem.tail _ (List.Mem.tail _ (List.Mem.head _))
 
 private def fieldRoots : FieldRootContext F3 :=
   enumeratingFieldRootContext F3 f3Elements f3Elements_complete
