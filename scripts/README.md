@@ -8,10 +8,21 @@ This directory contains the main helper scripts for local validation and CI supp
 - `./scripts/check-imports.sh` - verify that `CompPoly.lean` is up to date.
 - `./scripts/lint-style.sh` - run the Lean style linter and repo-wide Lean-file
   checks.
-- `python3 ./scripts/check-docs-integrity.py` - verify the `CLAUDE.md` symlink and
-  local markdown links across the handbook.
+- `python3 ./scripts/check-docs-integrity.py` - verify the `CLAUDE.md` symlink,
+  local markdown links, and backticked source paths across the handbook.
+- `lake exe axiomsweep --check` - kernel-level axiom/`sorry` regression gate against
+  `scripts/axiom_baseline.json` (run after `lake build`).
 
 ## Script Inventory
+
+### `AxiomSweep.lean` (`lake exe axiomsweep`)
+
+Kernel-level axiom/`sorry` accounting for every reportable `CompPoly.*` declaration,
+computed from the built `.olean` environment, with a committed regression baseline
+(`axiom_baseline.json`). `--check` fails only on new taint; `--update-baseline`
+refreshes the baseline; `--out FILE` writes a full per-declaration report. Bare and
+generated native-compiler trust is rejected regardless of the baseline. See the module
+docstring for modes and known blind spots.
 
 ### `update-lib.sh`
 
@@ -68,12 +79,37 @@ Run `python3 scripts/gen_rabin_certificate.py --self-test` to check the generato
 against known-answer cases, including a reducible sextic that the prime-degree form of
 the test would wrongly accept.
 
+### `check-docs-integrity.py`
+
+Three checks over every tracked `.md` file:
+
+1. `CLAUDE.md` exists and is a symlink to `AGENTS.md`.
+2. Local markdown links resolve.
+3. Backticked source paths — `` `CompPoly/Univariate/Basic.lean` `` and friends,
+   with extensions `.lean`, `.py`, `.sh`, `.yml`, `.bib` — point at files that
+   exist.
+
+The third check is the one that catches module splits and renames, since the docs
+cite far more paths in backticks than in markdown links. Bare filenames with no
+directory, glob patterns, and paths ending in `/` are skipped as prose. Paths may
+be written relative to the repo root, to the citing file's directory, or to one of
+the subtree roots in `PATH_PREFIXES` — so a page about `Fields/` may write
+`KoalaBear/Ext4.lean`. Adding a prefix weakens the check; prefer fixing the doc.
+
 ### `build_timing_report.sh`
 
-Helper used by CI to measure and render build timings for clean builds, warm
-rebuilds, and the `lake test` path. The CI workflow also uploads timing-data
-artifacts so PR runs can compare against a previously recorded baseline without
-rerunning that baseline in the same job. This supports
+Helper used by CI to measure and render build timings. Labels:
+
+- `warm_rebuild` — default library gate: `lake build` with cached oleans
+  (incremental; only dirty modules rebuild).
+- `test_path` — `lake test`.
+- `clean_build` — `rm -rf .lake/build && lake build`, when Lean Action CI
+  detects a `lean-toolchain` or `lake-manifest.json` change vs the comparison
+  base, or when the workflow is run manually with the `clean_build` input.
+
+The CI workflow uploads timing-data artifacts so PR runs can compare against a
+previously recorded baseline without rerunning that baseline in the same job.
+This supports
 [`../.github/workflows/lean_action_ci.yml`](../.github/workflows/lean_action_ci.yml).
 
 ## Typical Workflows

@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Univariate.ToPoly.Core
 public import CompPoly.Univariate.BatchEval.Naive
 public import CompPoly.Univariate.NTT.Forward
 public import CompPoly.Univariate.ToPoly.Core

@@ -55,9 +55,9 @@ instance AlgebraTower.toIsScalarTower (a : AlgebraTower C) {i j k : ι}
     letI : Algebra (C j) (C k) := by exact a.toAlgebra h2
     letI : Algebra (C i) (C k) := by exact a.toAlgebra (h1.trans h2)
     IsScalarTower (C i) (C j) (C k) := by
-  letI instIJ: Algebra (C i) (C j) := by exact a.toAlgebra h1
-  letI instJK: Algebra (C j) (C k) := by exact a.toAlgebra h2
-  letI instIK: Algebra (C i) (C k) := by exact a.toAlgebra (h1.trans h2)
+  let instIJ: Algebra (C i) (C j) := by exact a.toAlgebra h1
+  let instJK: Algebra (C j) (C k) := by exact a.toAlgebra h2
+  let instIK: Algebra (C i) (C k) := by exact a.toAlgebra (h1.trans h2)
   exact {
     smul_assoc := fun (x : C i) (y : C j) (z : C k) => by
       simp_rw [Algebra.smul_def]

@@ -5,6 +5,7 @@ Authors: Derek Sorensen
 -/
 module
 
+import all CompPoly.Univariate.ToPoly.Impl
 public import CompPoly.Bivariate.Basic
 public import CompPoly.Univariate.ToPoly.Impl
 public import Mathlib.Algebra.Polynomial.Bivariate
@@ -230,7 +231,6 @@ theorem toPoly_eq_map {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring
       intro n
       split_ifs <;> simp_all +decide [ CPolynomial.toPoly ]
       · erw [ CPolynomial.Raw.coeff_toPoly ]
-        unfold CPolynomial.ringEquiv
         aesop
       · rw [ CPolynomial.Raw.coeff_toPoly ]
         simp +decide [ CPolynomial.support, * ] at *
@@ -495,8 +495,6 @@ theorem CC_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R] 
   rw [ toPoly_eq_map ]
   unfold CBivariate.CC
   simp [ CPolynomial.C_toPoly ]
-  change (CPolynomial.C r).toPoly = Polynomial.C r
-  exact CPolynomial.C_toPoly r
 
 /--
 `X` (inner variable) corresponds to `Polynomial.C Polynomial.X` in `R[X][Y]`.
@@ -505,7 +503,6 @@ theorem X_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R] :
     toPoly (X (R := R)) = Polynomial.C Polynomial.X := by
   rw [ toPoly_eq_map ]
   simp [ CBivariate.X, CPolynomial.C_toPoly ]
-  change (CPolynomial.X : CPolynomial R).toPoly = Polynomial.X
   exact CPolynomial.X_toPoly
 
 /--
@@ -652,12 +649,13 @@ theorem eval_eval_horner_x_then_y_eq_eval_eval {R : Type*}
     dsimp [coeffEval]
     congr
     ext c acc
-    simp [CPolynomial.eval_horner_eq_eval, CPolynomial.eval_toPoly, CPolynomial.ringEquiv]
+    simp [CPolynomial.eval_horner_eq_eval, CPolynomial.eval_toPoly,
+      CPolynomial.ringEquiv_apply]
   have h_evalX_map :
       (evalX (R := R) x p).toPoly = (CPolynomial.toPoly p).map coeffEval := by
     ext j
     rw [evalX_toPoly_coeff]
-    simp [toPoly_coeff, coeffEval, CPolynomial.ringEquiv]
+    simp [toPoly_coeff, coeffEval, CPolynomial.ringEquiv_apply]
     rw [← CPolynomial.coeff_toPoly (p := p) (i := j)]
     simp [CPolynomial.coeff, CPolynomial.Raw.coeff]
   calc

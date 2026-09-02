@@ -16,20 +16,30 @@ Human contributors should usually start with [`README.md`](README.md),
    `./scripts/update-lib.sh` and then `./scripts/check-imports.sh`.
 4. Use `./scripts/lint-style.sh` when touching Lean style-sensitive files.
 5. If you touch repo docs or links, run `python3 ./scripts/check-docs-integrity.py`.
+6. When filling or adding a `sorry` (or anything that must stay axiom-clean), run
+   `lake exe axiomsweep --check`; refresh `scripts/axiom_baseline.json` with
+   `lake exe axiomsweep --update-baseline` and commit the diff if the change is
+   intentional. Native-compiler trust is never baselineable.
 
 ## Where To Work
 
 - `CompPoly/Univariate/` - canonical univariate representation, quotient model,
-  interpolation, and Mathlib bridges.
+  interpolation, and Mathlib bridges, plus the NTT transforms, batch evaluation,
+  root finding (`Univariate/Roots/`), and Reed-Solomon encoding and Gao decoding
+  (`Univariate/ReedSolomon/`).
 - `CompPoly/Multivariate/` - sparse computable multivariate polynomials,
   operations, renaming, restriction, and `MvPolynomial` equivalences.
 - `CompPoly/Multilinear/` - coefficient and Boolean-hypercube evaluation forms for
   multilinear polynomials.
 - `CompPoly/Bivariate/` - specialized bivariate layer built from nested
-  univariate polynomials.
-- `CompPoly/Fields/` - concrete field instances plus the binomial field-extension
-  framework (`Fields/Extension/`) and binary-field, GHASH, and additive-NTT
-  infrastructure.
+  univariate polynomials, including the Guruswami-Sudan list decoder
+  (`Bivariate/GuruswamiSudan/`).
+- `CompPoly/LinearAlgebra/` - executable dense matrices and polynomial matrices
+  with shifted row reduction; the engines under the decoder.
+- `CompPoly/Fields/` - concrete field instances plus the computable
+  field-extension framework (`Fields/Extension/`, `F[X]/f` for an arbitrary monic
+  `f`, with binomials `X^d - W` as the ergonomic special case) and binary-field,
+  GHASH, and additive-NTT infrastructure.
 - `CompPoly/Data/` - reusable supporting lemmas and helper definitions.
 - `CompPoly/ToMathlib/` - local bridge lemmas and Mathlib-facing support code.
 - `tests/` - regression coverage under the `CompPolyTests` namespace.
@@ -53,6 +63,8 @@ Human contributors should usually start with [`README.md`](README.md),
 - [`docs/wiki/repo-map.md`](docs/wiki/repo-map.md) - subtree map and task routing.
 - [`docs/wiki/generated-files.md`](docs/wiki/generated-files.md) - source-of-truth
   rules for generated or derived outputs.
+- [`docs/wiki/build-cache.md`](docs/wiki/build-cache.md) - Mathlib's olean cache and
+  CompPoly's prebuilt release archive.
 - [`docs/wiki/module-system.md`](docs/wiki/module-system.md) - module headers,
   `public`/`meta` imports, module privacy, and migration fix patterns.
 - [`docs/wiki/representations-and-bridges.md`](docs/wiki/representations-and-bridges.md)
@@ -61,8 +73,12 @@ Human contributors should usually start with [`README.md`](README.md),
   minimal typeclass assumptions and no-blanket-scope guidance.
 - [`docs/wiki/binary-fields-and-ntt.md`](docs/wiki/binary-fields-and-ntt.md) -
   binary-field stack, GHASH, and additive NTT.
+- [`docs/wiki/coding-theory.md`](docs/wiki/coding-theory.md) - Reed-Solomon
+  encoding, unique and list decoding, root finding, and the matrix layer.
 - [`docs/wiki/field-extensions.md`](docs/wiki/field-extensions.md) - computable
-  binomial field extensions and their irreducibility criterion.
+  field extensions for an arbitrary monic modulus, and their two irreducibility
+  paths: Rabin's test collapsed to base-field exponentiations for binomials,
+  kernel-checked Rabin certificates otherwise.
 
 ## Canonical Project Docs
 

@@ -39,7 +39,7 @@ lemma ENat.le_floor_NNReal_iff (x : ENat) (y : ℝ≥0) (hx_ne_top : x ≠ ⊤) 
     (x : ENat) ≤ ((Nat.floor y) : ENat) ↔ x.toNat ≤ Nat.floor y := by
   lift x to ℕ using hx_ne_top
   -- y : ℝ≥0, x : ℕ, ⊢ ↑x ≤ ↑⌊y⌋₊ ↔ (↑x).toNat ≤ ⌊y⌋₊
-  simp only [ENat.coe_le_coe, toNat_coe]
+  simp only [ENat.natCast_le_natCast, toNat_natCast]
 
 section ENNReal
 open ENNReal

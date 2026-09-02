@@ -253,7 +253,7 @@ private theorem hasseDeriv_map_taylorAlgHom {F : Type*} [Field F]
   Polynomial.hasseDeriv b (P.map (Polynomial.taylorAlgHom x).toRingHom) =
       (Polynomial.hasseDeriv b P).map (Polynomial.taylorAlgHom x).toRingHom := by
   ext n
-  simp [Polynomial.hasseDeriv_coeff, Polynomial.taylorAlgHom, Polynomial.taylor_apply]
+  simp [Polynomial.hasseDeriv_coeff, Polynomial.taylorAlgHom]
 
 /-- Evaluating after Taylor-shifting all inner coefficients is the Taylor shift
 of the evaluated coefficient polynomial. -/
@@ -266,7 +266,7 @@ private theorem eval_map_taylorAlgHom {F : Type*} [Field F]
     (Polynomial.taylorAlgHom x).toRingHom
       (P.eval₂ (RingHom.id (Polynomial F)) (Polynomial.C y))
   rw [Polynomial.hom_eval₂]
-  simp [Polynomial.taylorAlgHom]
+  simp [Polynomial.taylor_C]
 
 /-- Hasse derivatives in `X` commute with multiplication by an `X`-constant
 polynomial. -/
@@ -392,7 +392,7 @@ private theorem taylor_composeY_toPoly_eq {F : Type*}
   change (Polynomial.taylorAlgHom x).toRingHom
       (Polynomial.eval₂ (RingHom.id (Polynomial F)) p.toPoly Q.toPoly) = _
   rw [Polynomial.hom_eval₂]
-  simp [Polynomial.eval_map, Polynomial.taylorAlgHom, Polynomial.taylor_apply]
+  simp [Polynomial.eval_map, Polynomial.taylor_apply]
 
 /-- If `P(x) = y`, the nonconstant Taylor tail `P(X + x) - y` is divisible by
 `X`. -/

@@ -132,7 +132,8 @@ theorem kernel_sum_forward_inverse_eq_if (D : Domain R) (i j : D.Idx) :
         D.omega ^ ((i : Nat) * (k : Nat))) =
       if j = i then (D.n : R) else 0 := by
   convert kernel_sum_eq_if D.inverse i j using 1 <;>
-    simp [Domain.inverse, Domain.omegaInv, mul_comm] <;> rfl
+    simp [Domain.inverse, Domain.omegaInv, mul_comm]
+  rfl
 
 end NTT
 end CPolynomial

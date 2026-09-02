@@ -31,7 +31,7 @@ namespace CPoly
   Monomial in `n` variables.
   - `#v[e₀, e₁, e₂]` denotes X₀^e₀ * X₁^e₁ * X₂^e₂
 -/
-@[grind =]
+@[grind =, implicit_reducible]
 def CMvMonomial (n : ℕ) : Type := Vector ℕ n
 
 syntax "#m[" withoutPosition(term,*,?) "]" : term
@@ -164,7 +164,9 @@ lemma map_mul {m₁ m₂ : Multiplicative (Fin n →₀ ℕ)} :
     ofFinsupp (m₁ * m₂) = (ofFinsupp m₁) + (ofFinsupp m₂) := by
   unfold_projs; ext
   erw [Vector.getElem_ofFn, Vector.getElem_zipWith]
-  simp [Multiplicative.toAdd, Multiplicative.ofAdd, ofFinsupp]
+  unfold ofFinsupp
+  erw [Vector.getElem_ofFn, Vector.getElem_ofFn]
+  rfl
 
 end CMvMonomial
 

@@ -172,7 +172,7 @@ def fastKoalaBearSmoothCyclicRootContext :
         KoalaBear.fieldSize fastKoalaBearPrimitiveRoot KoalaBear.smoothRootSchedule h)
     (by
       intro M D p a _hvalid hp hroot
-      letI : Finite KoalaBear.Fast.Field :=
+      let : Finite KoalaBear.Fast.Field :=
         Finite.of_equiv KoalaBear.Field KoalaBear.Fast.ringEquiv.toEquiv.symm
       exact CPolynomial.Roots.FiniteField.smoothLinearFactorsAlgorithmWith_complete
         M D (CPolynomial.BatchEvalContext.horner KoalaBear.Fast.Field)

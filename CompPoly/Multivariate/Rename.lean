@@ -228,6 +228,7 @@ lemma toFinsupp_unitMono {k : ℕ} (i : Fin k) :
   ext j
   simp [CMvMonomial.toFinsupp, Vector.get,
     Finsupp.single_apply, eq_comm]
+  rfl
 
 /-- `fromCMvPolynomial` maps `CMvPolynomial.X i` to
 `MvPolynomial.X i`. -/

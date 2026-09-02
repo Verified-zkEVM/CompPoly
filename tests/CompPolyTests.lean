@@ -33,6 +33,7 @@ public import CompPolyTests.Fields.Binary.Tower.Fast
 public import CompPolyTests.Fields.Extension.Arithmetic
 public import CompPolyTests.Fields.Extension.Binomial
 public import CompPolyTests.Fields.KoalaBear.Fast
+public import CompPolyTests.Fields.Mersenne31.Fast
 public import CompPolyTests.Fields.PrattCertificate
 public import CompPolyTests.LinearAlgebra.Dense
 public import CompPolyTests.Multilinear.Equiv

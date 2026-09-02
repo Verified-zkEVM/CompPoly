@@ -5,6 +5,7 @@ Authors: Derek Sorensen
 -/
 module
 
+import all CompPoly.Univariate.ToPoly.Degree
 public import CompPoly.Univariate.ToPoly.Degree
 
 /-!
@@ -21,7 +22,7 @@ namespace CPolynomial
 @[implicit_reducible] private def natBeqEq : BEq Nat := ⟨fun a b => decide (a = b)⟩
 
 private theorem nat_lawful_beq_eq : @LawfulBEq Nat natBeqEq := by
-  letI : BEq Nat := natBeqEq
+  let : BEq Nat := natBeqEq
   refine { rfl := ?_, eq_of_beq := ?_ }
   · intro a; erw [show natBeqEq.beq a a = decide (a = a) from rfl]; simp
   · intro a b h; erw [show natBeqEq.beq a b = decide (a = b) from rfl] at h; simpa using h
@@ -29,7 +30,7 @@ private theorem nat_lawful_beq_eq : @LawfulBEq Nat natBeqEq := by
 @[implicit_reducible] def natBeqSucc : BEq Nat := ⟨fun a b => decide (a.succ = b.succ)⟩
 
 theorem nat_lawful_beq_succ : @LawfulBEq Nat natBeqSucc := by
-  letI : BEq Nat := natBeqSucc
+  let : BEq Nat := natBeqSucc
   refine { rfl := ?_, eq_of_beq := ?_ }
   · intro a; erw [show natBeqSucc.beq a a = decide (a.succ = a.succ) from rfl]; simp
   · intro a b h
@@ -89,7 +90,7 @@ private def intDegreeLT : ↥(CPolynomial.degreeLT (R := Int) 3) := by
   simp [intPoly, CPolynomial.monomial, CPolynomial.Raw.monomial]
 
 example : CPolynomial.degreeLTEquiv (R := Int) 3 intDegreeLT ⟨1, by decide⟩ = 7 := by
-  simpa [CPolynomial.degreeLTEquiv, CPolynomial.degreeLTCoeffs, intDegreeLT, intPoly] using
+  simpa [CPolynomial.degreeLTEquiv, CPolynomial.degreeLTCoeffs_apply, intDegreeLT, intPoly] using
     CPolynomial.coeff_monomial (R := Int) 1 1 7
 
 end CPolynomial

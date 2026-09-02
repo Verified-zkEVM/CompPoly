@@ -5,6 +5,7 @@ Authors: Valerii Huhnin, Juan Conejero
 -/
 module
 
+import all CompPoly.Univariate.ToPoly.Impl
 public import Mathlib.Algebra.Polynomial.Div
 public import Mathlib.Algebra.Polynomial.FieldDivision
 public import Mathlib.Algebra.Polynomial.Reverse
@@ -296,9 +297,9 @@ private lemma toPoly_reverse_eq_reflect (n : Nat) (p : Raw R)
   rw [toPoly_reverse_coeff, Polynomial.coeff_reflect]
   by_cases hi : i < n
   · have hle : i ≤ n - 1 := by omega
-    simp [hi, Polynomial.revAt, hle]
-  · have hle : ¬i ≤ n - 1 := by omega
-    simp [hi, Polynomial.revAt, hle]
+    simp [hi, Polynomial.revAt_le hle]
+  · have hlt : n - 1 < i := by omega
+    simp [hi, Polynomial.revAt_eq_self_of_lt hlt]
     exact (Polynomial.coeff_eq_zero_of_natDegree_lt
       (lt_of_lt_of_le hdeg (Nat.le_of_not_lt hi))).symm
 
@@ -704,7 +705,8 @@ private theorem reversal_remainder_toPoly_eq_modByMonic
         have hjk : j < k := by omega
         have hjm : j ≤ m := by omega
         have hij : Polynomial.revAt m j = i := by
-          simp [Polynomial.revAt, hjm, j]
+          rw [Polynomial.revAt_le hjm]
+          simp only [j]
           omega
         have hcoeff := h_reflect_high j hjk
         rw [Polynomial.coeff_reflect, Polynomial.coeff_reflect, hij] at hcoeff

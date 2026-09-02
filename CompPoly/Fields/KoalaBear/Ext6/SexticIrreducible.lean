@@ -138,15 +138,12 @@ theorem sextic_cop2_bezout_check :
 factors, with kernel-checked certificates for all three conditions. -/
 theorem sexticPoly_irreducible : Irreducible sexticPoly := by
   have hcard : Fintype.card Field = fieldSize := ZMod.card _
-  refine irreducible_of_rabin_degree_six sexticPoly_natDegree ?_ ?_ ?_
-  · rw [hcard]
-    exact dvd_X_pow_sub_X_of_runChain toPoly_sexticL sexticPoly_ne_zero
+  refine irreducible_of_rabin_degree_six_of_card hcard sexticPoly_natDegree ?_ ?_ ?_
+  · exact dvd_X_pow_sub_X_of_runChain toPoly_sexticL sexticPoly_ne_zero
       sextic_trace_chain sextic_trace_exp
-  · rw [hcard]
-    exact isCoprime_X_pow_sub_X_of_runChain toPoly_sexticL sexticPoly_ne_zero
+  · exact isCoprime_X_pow_sub_X_of_runChain toPoly_sexticL sexticPoly_ne_zero
       sextic_cop3_chain sextic_cop3_exp sextic_cop3_w_check sextic_cop3_bezout_check
-  · rw [hcard]
-    exact isCoprime_X_pow_sub_X_of_runChain toPoly_sexticL sexticPoly_ne_zero
+  · exact isCoprime_X_pow_sub_X_of_runChain toPoly_sexticL sexticPoly_ne_zero
       sextic_cop2_chain sextic_cop2_exp sextic_cop2_w_check sextic_cop2_bezout_check
 
 instance : Fact (Irreducible sexticPoly) := ⟨sexticPoly_irreducible⟩

@@ -7,7 +7,8 @@ The reference for the module system is [here](https://lean-lang.org/doc/referenc
 
 ## File Header Shape
 
-After the migration to the module system library and bench files look like this:
+New library modules should use the narrowest import and exposure modifiers that
+their public API requires:
 
 ```lean
 /-
@@ -17,25 +18,47 @@ Authors: ...
 -/
 module
 
-public import Mathlib.Algebra.Ring.Defs
+import Mathlib.Tactic.Ring
 public import CompPoly.Data.Array.Lemmas
 
 /-!
 # Module docstring
 -/
 
-@[expose] public section
+public section
 ```
 
 - `module` goes on the line after the copyright header, before the imports.
-- Imports are `public import`, so downstream modules keep seeing them.
-  - As we develop the library and reduce the export surface, 
-    we may make imports non-public.
-- `@[expose] public section` goes after the module docstring and stays open for the
-  rest of the file, so definition bodies remain available to `rfl`, `decide`, `simp`,
-  and kernel reduction downstream.
-  - As we develop the library and reduce the export surface, 
-    we may remove `@[expose]`.
+- Use plain `import` for proof and implementation dependencies. Use `public import`
+  only when the current module deliberately re-exports the imported API or a public
+  declaration requires it.
+- Use `public section` for exported declarations. Keep definition bodies opaque by
+  default, and put `@[expose]` on individual definitions only when downstream
+  definitional reduction is an intentional part of their interface.
+
+## Internal Definition Access
+
+Proof and correctness modules in this package may need to unfold an implementation
+without exposing it to every downstream importer. Import the private scope alongside
+the public API in that case:
+
+```lean
+module
+
+import all CompPoly.Univariate.Raw.Ops
+public import CompPoly.Univariate.Raw.Ops
+
+public section
+```
+
+The plain `import all` is an explicit same-package implementation dependency; the
+separate `public import` preserves the intended re-export. Prefer a characterization
+lemma when ordinary downstream code only needs a behavioral fact. The
+`CompPoly.Univariate.Raw` modules are the first migrated example of this pattern.
+
+Definitions implemented with a `where` recursion may require targeted `@[expose]`
+when a separate correctness module refers to the generated `.go` declaration by
+name. Do not restore file-wide exposure for this case.
 
 ## Test Files And `meta`
 

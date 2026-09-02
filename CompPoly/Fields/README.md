@@ -40,7 +40,10 @@ This directory contains formally verified field infrastructure used in zero-know
 | **KoalaBear.lean** | Facade for KoalaBear modules, re-exporting the canonical field and fast native-word implementation. |
 | **KoalaBear/Basic.lean** | \(2^{31} - 2^{24} + 1\) — lean Ethereum spec. |
 | **KoalaBear/Fast.lean** | KoalaBear-namespaced API over the shared fast-field implementation (`Montgomery/Native32Field.lean`): thin wrappers forwarding the native `UInt32` Montgomery-residue operations and their `KoalaBear.Field` equivalence (`@[simp]`) lemmas. |
-| **Mersenne.lean** | \(2^{31} - 1\) — Circle STARKs. |
+| **Mersenne31.lean** | Facade for the \(2^{31} - 1\) Circle STARK field, re-exporting the canonical `ZMod` model and fast native-word implementation. |
+| **Mersenne31/Basic.lean** | Canonical \(2^{31} - 1\) field model and primality proof. |
+| **Mersenne31/Fast.lean** | Verified `UInt32` implementation of Mersenne31 arithmetic. |
+| **Mersenne.lean** | Deprecated compatibility re-export of `Mersenne31.lean`; retained so existing imports continue to work. |
 | **Montgomery/Basic.lean** | Radix-generic Montgomery reduction, field-agnostic number theory shared by the fast prime fields. |
 | **Montgomery/Native32.lean** | Raw `UInt32`/`UInt64` Montgomery reduction over explicit word constants, including bounds and correctness. |
 | **Montgomery/Native32Field.lean** | Per-field parameters, the shared `FastField` carrier, arithmetic, instances, and canonical-field bridge. |

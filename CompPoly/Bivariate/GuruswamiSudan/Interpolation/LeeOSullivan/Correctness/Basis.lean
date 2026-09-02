@@ -5,6 +5,7 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Bivariate.Basic
 public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Common
 public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness.Combinations
 
@@ -185,7 +186,6 @@ private theorem linearYDivisor_eq_Y_sub_ofYConstant
       (CBivariate.Y : CBivariate F) - CBivariate.ofYConstant R := by
   rw [CBivariate.linearYDivisor, CBivariate.ofYConstant]
   rw [cbivariate_Y_eq_outer_X]
-  rfl
 
 theorem hasMultiplicityAtLeast_Y_mul
     {P : CBivariate F} {x y : F} {m : Nat}

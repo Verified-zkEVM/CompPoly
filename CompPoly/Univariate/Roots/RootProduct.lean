@@ -5,6 +5,8 @@ Authors: Valerii Huhnin
 -/
 module
 
+import all CompPoly.Univariate.EuclideanAlgorithm
+import all CompPoly.Univariate.Raw.Modular
 public import CompPoly.Univariate.Raw.Modular
 public import CompPoly.Univariate.EuclideanAlgorithm
 public import CompPoly.Univariate.Roots.Context
@@ -490,7 +492,7 @@ theorem finiteFieldRootProductWith_dvd_frobenius_of_context {F : Type*}
     (ctx : FiniteFieldContext F) {p : CPolynomial F} (_hp : p ≠ 0) :
     (finiteFieldRootProductWith M D ctx p).toPoly ∣
       ((Polynomial.X : Polynomial F) ^ ctx.q - Polynomial.X) := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   rw [finiteFieldRootProductWith_toPoly_eq_normalize_gcd M D ctx _hp]
   apply dvd_trans (normalize_associated _).dvd
   let pMonic := CPolynomial.monicNormalize p

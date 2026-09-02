@@ -99,7 +99,21 @@ CompPoly aims to be the premier formally verified library for computable polynom
 
 #### Priorities
 1. **Fast field arithmetic**
-   - Optimized implementations of off-the-shelf available Field instances to enable performance, including for prime and other finite fields
+   - ✅ Radix-generic Montgomery reduction shared by every fast prime field
+     (`Fields/Montgomery/Basic.lean`)
+   - ✅ Single-word `UInt32` Montgomery carrier for 31-bit primes
+     (`Montgomery/Native32.lean`, `Montgomery/Native32Field.lean`, `Mont32Field`),
+     instantiated by `BabyBear/Fast.lean` and `KoalaBear/Fast.lean`
+   - ✅ Eight-limb Montgomery carrier with CIOS multiplication for moduli below
+     `2^255` (`Montgomery/Native64x8*.lean`, `Mont64x8Field`), instantiated by
+     `BN254/Fast.lean`, `BLS12_381/Fast.lean`, and `BLS12_377/Fast.lean`
+   - ✅ Checked binary-GCD inversion for the eight-limb fields
+     (`Montgomery/Native64x8Inv.lean`, [eprint 2020/972](https://eprint.iacr.org/2020/972)),
+     benchmarked against `ZMod` extended Euclid and Fermat in `fields-mont64x8-*-inv`
+   - 🔄 64-bit-radix Montgomery layer, so Goldilocks and Hachi (`2^32 - 99`) gain a
+     `FastField` base; `Mont32Field` requires modulus < `2^31`
+   - 🔄 Instantiate `Extension.Ext` over a Montgomery carrier rather than `ZMod`
+     (see the extension performance notes under Phase 1)
 
 2. **Polynomial multiplication**
    - ✅ Radix-2 NTT domain, forward/inverse transforms, and reference fast multiply (`Univariate/NTT/`)
@@ -118,7 +132,9 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - ✅ Batch evaluation at multiple points: naive, Horner, and subproduct-tree algorithms (`Univariate/BatchEval/`)
    - ✅ Subproduct-tree batch eval with configurable multiply/remainder backends (naive, NTT, NTTFast)
    - ✅ Add Horner's method where beneficial
-   - Optimize for common ZK evaluation patterns
+   - ✅ Many-polynomial, one-shared-point evaluation — the common commitment-opening
+     shape — with correctness proofs (`Univariate/ManyEval/`, `Multilinear/ManyEval/`)
+   - 🔄 Optimize for further common ZK evaluation patterns
 
 5. **Complete multilinear transform functions**
    - ✅ Complete documentation of zeta/Möbius transform formulas
@@ -131,15 +147,64 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - 🔄 Expand regression coverage and published performance baselines
 
 7. **Bivariate polynomial operations**
-   - Optimize the existing bivariate polynomial type `CPolynomial (CPolynomial R)` and evaluate whether a more specialized representation is beneficial
-   - Efficient factorization algorithms for bivariate polynomials
+   - ✅ Optimize the existing bivariate polynomial type `CPolynomial (CPolynomial R)`:
+     Kronecker substitution (`Bivariate/Kronecker.lean`) turns a bivariate
+     multiplication into a single univariate one (`kroneckerPack_mul`,
+     `kroneckerUnpack_mul`), with linear-time `kroneckerPackFast` /
+     `kroneckerUnpackFast` proved equal to the spec versions and NTT-backed
+     `kroneckerUnpack_withFallback`. Benchmarked as `bivariate-full-*`. The nested
+     representation was kept; no more specialized one proved necessary.
+   - 🔄 Efficient factorization algorithms for bivariate polynomials. What exists
+     is linear-factor deflation rather than general factorization:
+     `Bivariate/Factor.lean` defines `divByLinearY` (the computable factor theorem,
+     over any `CommRing`) and `Bivariate/FactorMonic.lean` proves
+     `divByLinearY_eq_divByMonic`, tying it to general monic Euclidean division.
+     Benchmarked as `bivariate-deflate-*`.
    - ✅ Integration with existing `CMvPolynomial 2 R` with equivalence proofs
 
-7. **Error-correcting interpolation algorithms**
-   - Implement Berlekamp-Welch algorithm for Reed-Solomon decoding
-   - Implement Guruswami-Sudan list-decoding algorithm
-   - Proofs of correctness
+8. **Error-correcting interpolation algorithms**
+   - ✅ Reed-Solomon encoding through the forward NTT
+     (`Univariate/ReedSolomon/NTTEncode.lean`): `forwardImpl_eq_encode` and
+     `nttCodeword_eq_encode` identify the `O(n log n)` transform with
+     `ReedSolomon.encode` exactly, with no padding required
+   - ✅ Unique decoding via Gao's key-equation decoder
+     (`ReedSolomon/GaoDecoder.lean`, [Gao02]) with `GaoCorrectness.lean`:
+     `decode_sound`, `decode_eq_some`, `decode_eq_none_iff`, and
+     `decode_none_farness`, which reads decoder refusal as a farness certificate
+   - ✅ Implement Guruswami-Sudan list-decoding algorithm
+     (`Bivariate/GuruswamiSudan/`), following the interpolation-and-root-finding
+     decomposition of [GS99]: a backend-parametric `Core` / `Context` with dense
+     and Lee-O'Sullivan ([LOS06]) interpolation and Roth-Ruckenstein ([RR00]) and
+     Alekhnovich ([Ale05]) root search, instantiated in `Implementations` and
+     `Executable`
+   - ✅ Proofs of correctness: `gsCore_sound`, `gsCore_complete_of_interpolate`,
+     and `gsCore_complete_of_roots_all_valid_witnesses` in `CoreCorrectness.lean`,
+     stated against the context contracts so they hold for every backend
+   - Berlekamp-Welch decoding. Gao's decoder already covers the same
+     unique-decoding regime, so this is worth adding only as a cross-check, or if a
+     downstream specification asks for it by name.
    - Integration with FRI commitments and polynomial commitment schemes
+
+9. **Univariate root finding**
+   - ✅ Backend-parametric root pipeline (`Univariate/Roots/`): the `Backend`,
+     `Context`, and `Splitter` interfaces, candidate extraction / validation /
+     deduplication (`Extraction.lean`), `RootProduct.lean`, and `Correctness.lean`
+   - ✅ Smooth multiplicative-subgroup refinement splitting for finite fields whose
+     multiplicative group admits a smooth schedule ([MOV92],
+     `Roots/SmoothSubgroup/`), benchmarked as `univariate-roots-finite-field-*`
+   - 🔄 Splitting strategies for fields with no smooth refinement schedule
+
+10. **Computable linear algebra**
+    - ✅ Dense row-major matrices with row operations, RREF shape and semantics, and
+      kernel extraction, each with a `*Correctness.lean` companion
+      (`LinearAlgebra/Dense/`)
+    - ✅ In-place kernel solver (`Dense/KernelInPlace.lean`) with correctness, used
+      by the dense Guruswami-Sudan interpolation backend
+    - ✅ Polynomial matrices with shifted degrees and row spans, plus
+      Mulders-Storjohann shifted row reduction ([MS03],
+      `LinearAlgebra/PolynomialMatrix/`). The fast variants are proved extensionally
+      equal to the direct ones in `MuldersStorjohannCorrectness/Fast.lean`, so every
+      correctness result transfers.
 
 **Success Criteria**: notable speedup for large polynomial operations, verified correctness, benchmarks demonstrating competitive performance with industry-standard implementations.
 

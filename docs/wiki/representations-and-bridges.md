@@ -10,8 +10,10 @@ usually the first architectural decision in a change.
 | Univariate | `CPolynomial.Raw R`, `CPolynomial R`, `QuotientCPolynomial R` | Canonical coefficient-sequence arithmetic, quotient reasoning, interpolation | `CompPoly/Univariate/README.md`, `CompPoly/Univariate/Basic.lean`, `CompPoly/Univariate/ToPoly.lean` |
 | Multivariate | `CMvPolynomial n R` | Sparse computable multivariate operations and `MvPolynomial` interop | `CompPoly/Multivariate/CMvPolynomial.lean`, `CompPoly/Multivariate/Operations.lean`, `CompPoly/Multivariate/MvPolyEquiv.lean` |
 | Multilinear | `CMlPolynomial R n`, `CMlPolynomialEval R n` | Boolean-hypercube evaluation form, basis conversion, multilinear extensions | `CompPoly/Multilinear/Basic.lean`, `CompPoly/Multilinear/Equiv.lean` |
-| Field extensions | `Extension.Ext P` | Computable `F[X]/(X^d - W)` arithmetic for challenge fields | `CompPoly/Fields/Extension.lean`, `docs/wiki/field-extensions.md` |
+| Field extensions | `Extension.Ext P` | Computable `F[X]/f` arithmetic for challenge fields, `f` an arbitrary monic modulus | `CompPoly/Fields/Extension.lean`, `docs/wiki/field-extensions.md` |
 | Bivariate | `CBivariate R` | Specialized two-variable APIs and `R[X][Y]` transport | `CompPoly/Bivariate/README.md`, `CompPoly/Bivariate/Basic.lean`, `CompPoly/Bivariate/ToPoly.lean`, `CompPoly/ToMathlib/Polynomial/BivariateDegree.lean`, `CompPoly/ToMathlib/Polynomial/BivariateWeightedDegree.lean`, `CompPoly/ToMathlib/Polynomial/BivariateMultiplicity.lean` |
+| Dense matrices | `DenseMatrix F` | Row-major matrices over a field: Gauss-Jordan reduction and homogeneous kernels | `CompPoly/LinearAlgebra/README.md`, `CompPoly/LinearAlgebra/Dense/Basic.lean` |
+| Polynomial matrices | `PolynomialMatrix F`, `PolynomialRow F` | Rows of univariate polynomials, shifted degrees, and shifted row reduction | `CompPoly/LinearAlgebra/README.md`, `CompPoly/LinearAlgebra/PolynomialMatrix/Basic.lean` |
 
 ## Univariate Family
 
@@ -137,12 +139,36 @@ specific polynomial representation.
   `CMlPolynomial` or `CMlPolynomialEval`.
 - If the API is naturally two-variable and you want `X` / `Y`-specific operations,
   start with `CBivariate`.
+- If you need to solve a linear system or reduce a matrix rather than manipulate a
+  polynomial, start with `DenseMatrix` or `PolynomialMatrix`. These are `Array`-backed
+  and carry no shape invariant in the type; there is no bridge to Mathlib's `Matrix`.
+
+## Matrix Surfaces
+
+`CompPoly/LinearAlgebra/` is the one family here with no Mathlib bridge layer, by
+design: it exists to run, and its correctness statements are phrased against
+row-span and pivot-shape predicates defined locally (`RowSpan`, `PivotColumnsShaped`)
+rather than transported to `Matrix`. Both layers ship a direct definition and a
+faster variant proved equal to it — `rrefInPlace_eq` for dense matrices,
+`muldersStorjohannReduceFast_eq` for polynomial ones — so proofs go against the
+direct version and executable code calls the fast one. See
+[`../../CompPoly/LinearAlgebra/README.md`](../../CompPoly/LinearAlgebra/README.md).
+
+## Coding Theory
+
+Reed-Solomon codewords are not a separate representation — they are arrays of field
+elements produced by evaluating a `CPolynomial` on a domain — but the decoders are a
+substantial surface spanning `Univariate/ReedSolomon/`, `Bivariate/GuruswamiSudan/`,
+`Univariate/Roots/`, and `LinearAlgebra/`. They are documented together in
+[`coding-theory.md`](coding-theory.md).
 
 ## Field Extensions
 
 `CompPoly.Extension.Ext P` is a *fixed-length* dense representation, unlike the
-polynomial surfaces above: `Vector F P.d`, where `P : BinomialParams F` pins the degree
-and the constant `W` of the defining binomial `X^d - W`.
+polynomial surfaces above: `Vector F P.d`, where `P : ExtensionParams F` carries the
+degree `d`, the lower coefficients of the monic modulus `f`, and the base-field
+cardinality `q` as a type index. Binomials `X^d - W` are the ergonomic special case,
+entered through `BinomialParams.toExtensionParams`.
 
 The bridge is
 [`../../CompPoly/Fields/Extension/Bridge.lean`](../../CompPoly/Fields/Extension/Bridge.lean),

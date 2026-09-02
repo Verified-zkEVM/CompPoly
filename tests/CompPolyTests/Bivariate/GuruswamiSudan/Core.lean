@@ -42,8 +42,8 @@ private def f3Elements : Array F3 :=
 
 private theorem f3Elements_complete : ContainsAllFieldElements f3Elements := by
   unfold ContainsAllFieldElements
-  intro a
-  fin_cases a <;> decide
+    CPolynomial.Roots.FiniteField.ContainsAllFieldElements
+  decide
 
 private def fieldRoots : FieldRootContext F3 :=
   enumeratingFieldRootContext F3 f3Elements f3Elements_complete

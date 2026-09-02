@@ -112,7 +112,7 @@ This is useful when the type `Fin r` is fixed and we want to induct on the eleme
 It's similar to `Fin.inductionOn`, but formulated with an explicit upper bound check.
 -/
 @[elab_as_elim] def Fin.succRecOnSameFinType {motive : Fin r → Sort _}
-    (zero : motive (0 : Fin r))
+    (zero : motive (⟨0, Nat.pos_of_neZero r⟩ : Fin r))
     (succ : ∀ i : Fin r, i + 1 < r → motive i → motive (i + 1)) : ∀ (i : Fin r), motive i
   | ⟨0, _⟩ => by exact zero
   | ⟨Nat.succ i_val, h⟩ => by -- ⊢ motive ⟨i_val.succ, h⟩

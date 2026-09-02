@@ -20,6 +20,7 @@ namespace ConcreteBinaryTower
 
 open Polynomial
 
+@[implicit_reducible]
 def ConcreteBTField : ℕ → Type := fun k => BitVec (2 ^ k)
 
 section BitVecDCast
@@ -702,7 +703,6 @@ theorem join_eq_iff_dcast_extractLsb {k : ℕ} (h_pos : k > 0) (x : ConcreteBTFi
       x = join (k := k) h_pos hi_btf lo_btf ↔
         dcast sum.symm x = BitVec.append (msbs := hi_btf) (lsbs := lo_btf) := by
     -- avoid simp (which may use the target theorem as a simp lemma)
-    dsimp [sum]
     exact (eq_join_iff_dcast_eq_append (k := k) (h_pos := h_pos) (x := x)
       (hi := hi_btf) (lo := lo_btf))
 
