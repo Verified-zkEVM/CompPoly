@@ -39,17 +39,17 @@ private lemma eval_X_apply {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [Lawfu
 -- Fixing variable `0` leaves constants alone.
 example (a c : ℚ) :
     partialEvalFirst (n := 1) a (CMvPolynomial.C c) = CMvPolynomial.C c := by
-  simp [partialEvalFirst]
+  simp only [partialEvalFirst, Nat.reduceAdd, bind₁_C]
 
 -- Variable `0` becomes the scalar it was fixed to.
 example (a : ℚ) :
     partialEvalFirst (n := 1) a (CMvPolynomial.X 0) = CMvPolynomial.C a := by
-  simp [partialEvalFirst]
+  simp only [partialEvalFirst, Nat.reduceAdd, Fin.isValue, bind₁_X, Fin.cons_zero]
 
 -- Every other variable is shifted down by one.
 example (a : ℚ) (i : Fin 1) :
     partialEvalFirst a (CMvPolynomial.X i.succ) = CMvPolynomial.X i := by
-  simp [partialEvalFirst]
+  simp only [partialEvalFirst, Nat.reduceAdd, bind₁_X, Fin.cons_succ]
 
 /-! ## Agreement with direct evaluation -/
 

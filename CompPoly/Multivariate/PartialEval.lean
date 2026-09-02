@@ -39,7 +39,7 @@ private lemma partialEvalFirst_subst_degreeOf_le [Nontrivial R] (a : R)
         simp only [Fin.cases_succ, MvPolynomial.degreeOf_X_self, ↓reduceIte, Std.le_refl]
       · have hsucc : Fin.succ j ≠ i.succ := by
           intro h'
-          exact h ((Fin.succ_injective n) h')
+          exact h (Fin.succ_inj.mp h')
         have hi_ne_j : i ≠ j := fun hij => h hij.symm
         simp only [Fin.cases_succ, MvPolynomial.degreeOf_X, hi_ne_j, ↓reduceIte, hsucc,
           Std.le_refl]
