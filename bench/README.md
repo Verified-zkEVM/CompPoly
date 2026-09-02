@@ -74,6 +74,7 @@ Roughly by area, with representative group prefixes:
 | Additive NTT | `additive-ntt-btf*` |
 | Extension fields | `fields-extension-*-mul`, `fields-extension-*-inv` |
 | Binary tower fields | `fields-tower-bt128-*`: `BitVec` spec vs packed-word implementation |
+| Goldilocks arithmetic | `fields-goldilocks-{mul,inv}`: canonical `ZMod` vs single-word `UInt64` |
 | Scalar-field inversion | `fields-mont64x8-*-inv`: `ZMod` extended Euclid vs checked binary GCD vs Fermat |
 
 Use `--list` for the authoritative set; the prefixes above drift as groups are

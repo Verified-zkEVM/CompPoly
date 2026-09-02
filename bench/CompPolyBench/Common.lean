@@ -120,10 +120,6 @@ def additiveNttMeasuredIterations (preset : BenchPreset) : Nat :=
 instance : Fact (Nat.Prime KoalaBear.fieldSize) where
   out := KoalaBear.is_prime
 
-/-- Primality witness used for generic `ZMod` benchmarks over `Goldilocks`. -/
-instance : Fact (Nat.Prime Goldilocks.fieldSize) where
-  out := Goldilocks.is_prime
-
 /-- Result row emitted by one timed benchmark case. -/
 structure BenchRecord where
   name : String
@@ -431,6 +427,10 @@ def koalaBearArray (size : Nat) (sparse : Bool) : StateM StdGen (Array KoalaBear
 def koalaBearFastArray (xs : Array KoalaBear.Field) : Array KoalaBear.Fast.Field :=
   xs.map KoalaBear.Fast.ofField
 
+/-- Convert Goldilocks field inputs to the native-word Goldilocks representation. -/
+def goldilocksFastArray (xs : Array Goldilocks.Field) : Array Goldilocks.Fast.Field :=
+  xs.map Goldilocks.Fast.ofField
+
 /-- Generate KoalaBear coefficients with a nonzero every `sparseStride` entries. -/
 def koalaBearArrayWithStride (size sparseStride : Nat) :
     StateM StdGen (Array KoalaBear.Field) := do
@@ -486,6 +486,13 @@ def checksumBabyBear (x : BabyBear.Field) : Nat :=
 /-- Convert a fast BabyBear element to a checksum word. -/
 def checksumBabyBearFast (x : BabyBear.Fast.Field) : Nat :=
   x.toNat
+
+/-- Convert a fast Goldilocks element to a checksum word.
+
+The carrier is an `abbrev` for a `Subtype`, so dot notation would resolve to
+`Subtype.toNat`; call the field's own `toNat` directly. -/
+def checksumGoldilocksFast (x : Goldilocks.Fast.Field) : Nat :=
+  Goldilocks.Fast.toNat x
 
 /-- Convert a `ZMod` element to a checksum word. -/
 def checksumZMod {modulus : Nat} (x : ZMod modulus) : Nat :=
@@ -822,6 +829,8 @@ def implementationLabelInGroup (records : List BenchRecord) (record : BenchRecor
     label
   else if record.field == "BabyBear.Fast.Field" then
     label ++ " (fast BabyBear)"
+  else if record.field == "Goldilocks.Fast.Field" then
+    label ++ " (fast Goldilocks)"
   else
     label ++ " (" ++ record.field ++ ")"
 

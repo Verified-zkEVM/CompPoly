@@ -47,7 +47,8 @@ env:
     fields-extension-koalabear-ext4-mul,fields-extension-koalabear-ext4-inv,
     fields-extension-babybear-ext4-mul,fields-extension-babybear-ext4-inv,
     fields-mont64x8-bn254-inv,fields-mont64x8-bls12-381-inv,
-    fields-mont64x8-bls12-377-inv
+    fields-mont64x8-bls12-377-inv,
+    fields-goldilocks-mul,fields-goldilocks-inv
 
 jobs:
   build:
