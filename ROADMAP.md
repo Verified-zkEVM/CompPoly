@@ -107,6 +107,9 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - ✅ Eight-limb Montgomery carrier with CIOS multiplication for moduli below
      `2^255` (`Montgomery/Native64x8*.lean`, `Mont64x8Field`), instantiated by
      `BN254/Fast.lean`, `BLS12_381/Fast.lean`, and `BLS12_377/Fast.lean`
+   - ✅ Single-word `UInt64` carriers for 64-bit and 31-bit primes outside the
+     Montgomery bounds (`Goldilocks/Fast.lean`, `Mersenne31/Fast.lean`), reducing
+     via the modulus identity rather than Montgomery residues
    - ✅ Checked binary-GCD inversion for the eight-limb fields
      (`Montgomery/Native64x8Inv.lean`, [eprint 2020/972](https://eprint.iacr.org/2020/972)),
      benchmarked against `ZMod` extended Euclid and Fermat in `fields-mont64x8-*-inv`

@@ -34,9 +34,12 @@ This directory contains formally verified field infrastructure used in zero-know
 | **KoalaBear/Ext6/SexticCertData.lean** | Generated Rabin certificate data for the sextic, including one coprimality certificate per prime factor of 6. Do not hand-edit. |
 | **KoalaBear/Ext6/SexticIrreducible.lean** | Kernel-checked irreducibility of \(X^6 + X^3 + 1\) via Rabin's test at composite degree. |
 | **KoalaBear/Ext6/GaloisField.lean** | Opt-in bridge identifying `Ext6` with Mathlib's abstract `GaloisField KoalaBear.fieldSize 6` (ArkLib's `KoalaSextic` parameter point). Separate module so the GaloisField import is not forced on `Ext6` users. |
+| **Goldilocks.lean** | Facade for the \(2^{64} - 2^{32} + 1\) Plonky2/3 field, re-exporting the canonical `ZMod` model and fast native-word implementation. |
+| **Goldilocks/Basic.lean** | Canonical \(2^{64} - 2^{32} + 1\) field model and primality proof. |
+| **Goldilocks/Fast.lean** | Verified `UInt64` implementation of Goldilocks arithmetic. A single-word 64-bit prime fits neither Montgomery carrier — `Mont32Field` requires modulus < 2^31 and `Mont64x8Field` is an eight-limb layout — so this is a bespoke implementation resting on \(2^{64} \equiv 2^{32} - 1\). |
+| **Goldilocks/FastDefs.lean** | Zero-import runtime word kernels behind `Goldilocks/Fast.lean`, kept importless so `precompileModules` lanes can compile them. |
 | **Hachi.lean** | \(2^{32} - 99\) — 32-bit prime field. **Name provisional.** Included as a 32-bit example rather than a production target: it exercises a base field with no Montgomery fast path (`Mont32Field` requires modulus < 2^31) and two-adicity 2, so no radix-2 NTT domain exists for it. |
 | **Hachi/Ext4.lean** | \(\mathrm{Hachi}[X]/(X^4 - 2)\). |
-| **Goldilocks.lean** | \(2^{64} - 2^{32} + 1\) — Plonky2/3. |
 | **KoalaBear.lean** | Facade for KoalaBear modules, re-exporting the canonical field and fast native-word implementation. |
 | **KoalaBear/Basic.lean** | \(2^{31} - 2^{24} + 1\) — lean Ethereum spec. |
 | **KoalaBear/Fast.lean** | KoalaBear-namespaced API over the shared fast-field implementation (`Montgomery/Native32Field.lean`): thin wrappers forwarding the native `UInt32` Montgomery-residue operations and their `KoalaBear.Field` equivalence (`@[simp]`) lemmas. |
