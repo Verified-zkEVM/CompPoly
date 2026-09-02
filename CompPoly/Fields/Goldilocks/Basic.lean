@@ -4,17 +4,20 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Varun Thakore
 -/
 
-import CompPoly.Fields.Basic
-import CompPoly.Fields.PrattCertificate
+module
+
+public import CompPoly.Fields.Basic
+public import CompPoly.Fields.PrattCertificate
 
 /-!
-# Goldilocks Prime Field `2^{64} - 2^{32} + 1`
+  # Goldilocks prime field `2^{64} - 2^{32} + 1`
 
-This module defines the canonical `ZMod` model of the Goldilocks prime field.
+  This is the field used in Plonky2/3.
 -/
 
+@[expose] public section
+
 namespace Goldilocks
-namespace Basic
 
 /-- The Goldilocks prime modulus, `2^64 - 2^32 + 1`. -/
 @[reducible]
@@ -38,8 +41,8 @@ instance : _root_.Field Field := ZMod.instField fieldSize
 /-- Goldilocks has characteristic different from two. -/
 instance : NonBinaryField Field where
   char_neq_2 := by
+    -- `decide` can discharge this concrete ZMod equality.
     simpa [Field, fieldSize] using
       (by decide : (2 : ZMod (2 ^ 64 - 2 ^ 32 + 1)) ≠ 0)
 
-end Basic
 end Goldilocks

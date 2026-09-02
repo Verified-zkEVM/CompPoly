@@ -120,6 +120,9 @@ public import CompPoly.Fields.Extension.Bridge
 public import CompPoly.Fields.Extension.Defs
 public import CompPoly.Fields.Extension.Field
 public import CompPoly.Fields.Goldilocks
+public import CompPoly.Fields.Goldilocks.Basic
+public import CompPoly.Fields.Goldilocks.Fast
+public import CompPoly.Fields.Goldilocks.FastDefs
 public import CompPoly.Fields.Hachi
 public import CompPoly.Fields.Hachi.Ext4
 public import CompPoly.Fields.KoalaBear
