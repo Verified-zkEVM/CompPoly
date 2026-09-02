@@ -123,6 +123,7 @@ public import CompPoly.Fields.Goldilocks
 public import CompPoly.Fields.Goldilocks.Basic
 public import CompPoly.Fields.Goldilocks.Fast
 public import CompPoly.Fields.Goldilocks.FastDefs
+public import CompPoly.Fields.Goldilocks.FastReduction
 public import CompPoly.Fields.Hachi
 public import CompPoly.Fields.Hachi.Ext4
 public import CompPoly.Fields.KoalaBear
