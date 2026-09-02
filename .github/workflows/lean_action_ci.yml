@@ -43,6 +43,7 @@ env:
     guruswami-sudan-core-small-koalabear,
     guruswami-sudan-filtered-core-small-koalabear,
     additive-ntt-btf3-l2-r2,additive-ntt-btf3-l4-r2,additive-ntt-btf4-l7-r2,
+    fields-tower-bt128-mul,fields-tower-bt128-inv,
     fields-extension-koalabear-ext4-mul,fields-extension-koalabear-ext4-inv,
     fields-extension-babybear-ext4-mul,fields-extension-babybear-ext4-inv,
     fields-mont64x8-bn254-inv,fields-mont64x8-bls12-381-inv,

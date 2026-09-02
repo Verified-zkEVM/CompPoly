@@ -76,6 +76,10 @@ support lemmas:
 - `Tower/Concrete/*` - concrete basis, core definitions, and field instances.
 - `Tower/Support/*` - supporting lemmas about defining polynomials, linear
   independence, and finite-index helpers.
+- `Tower/Fast.lean` - packed machine-word tower arithmetic with a GF(2^8)
+  lookup-table base, proven against `ConcreteBTField`; `Field` instances and ring
+  isomorphisms at every level up to GF(2^128). Runtime definitions live in the
+  zero-import `Tower/FastDefs.lean` for `precompileModules` consumers.
 - `Tower/Equiv.lean`, `Tower/Impl.lean`, and `Tower/TensorAlgebra.lean` connect the
   layers and expose useful transport lemmas.
 
