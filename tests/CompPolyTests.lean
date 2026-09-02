@@ -53,4 +53,6 @@ public import CompPolyTests.Univariate.NTT.Inverse
 public import CompPolyTests.Univariate.Raw
 public import CompPolyTests.Univariate.Roots.Enumeration
 public import CompPolyTests.Univariate.Roots.FiniteField
+public import CompPolyTests.Univariate.Roots.LasVegas
+public import CompPolyTests.Univariate.Roots.Shoup
 public import CompPolyTests.Univariate.ToPoly
