@@ -42,6 +42,7 @@ public import CompPolyTests.LinearAlgebra.Dense
 public import CompPolyTests.LinearAlgebra.PolynomialMatrix.Approximant
 public import CompPolyTests.Multilinear.Equiv
 public import CompPolyTests.Multivariate.CMvMonomial
+public import CompPolyTests.Multivariate.PartialEval
 public import CompPolyTests.Multivariate.Restrict
 public import CompPolyTests.Multivariate.TypeclassMinimization
 public import CompPolyTests.Multivariate.VarsDegrees

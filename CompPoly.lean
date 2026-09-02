@@ -228,6 +228,7 @@ public import CompPoly.Multivariate.MvPolyEquiv.Core
 public import CompPoly.Multivariate.MvPolyEquiv.Eval
 public import CompPoly.Multivariate.MvPolyEquiv.Instances
 public import CompPoly.Multivariate.Operations
+public import CompPoly.Multivariate.PartialEval
 public import CompPoly.Multivariate.Rename
 public import CompPoly.Multivariate.Restrict
 public import CompPoly.Multivariate.Unlawful
