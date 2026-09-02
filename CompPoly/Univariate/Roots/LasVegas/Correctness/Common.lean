@@ -6,6 +6,11 @@ Authors: Valerii Huhnin
 
 module
 
+-- `eval`, `natDegree` and friends are declared in a bare `public section`, so their
+-- bodies are opaque downstream. The proofs below step through the `Raw` layer these
+-- wrappers are defined by, which is the same-package implementation dependency
+-- `import all` exists for; see `docs/wiki/module-system.md`.
+import all CompPoly.Univariate.Basic
 public import CompPoly.Univariate.Roots.LasVegas.Basic
 public import Mathlib.Algebra.Polynomial.Div
 
@@ -318,7 +323,7 @@ theorem val_size_lt_of_toPoly_degree_lt {F : Type*}
 theorem monicNormalize_size_le_self {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] (p : CPolynomial F) :
     (CPolynomial.monicNormalize p).val.size ≤ p.val.size := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   by_cases hp : p = 0
   · subst p
     have hzero : CPolynomial.monicNormalize (0 : CPolynomial F) = 0 := by
@@ -359,7 +364,7 @@ theorem quotientAfterChild_size_le_parent {F : Type*}
   unfold quotientAfterChild
   by_cases hproper : isNontrivialProperChild parent child = true
   · rw [if_pos hproper]
-    letI : DecidableEq F := instDecidableEqOfLawfulBEq
+    let : DecidableEq F := instDecidableEqOfLawfulBEq
     apply val_size_le_of_toPoly_natDegree_le hparent
     rw [CPolynomial.monicNormalize_toPoly_eq_normalize]
     change (normalize (CPolynomial.div parent child).toPoly).natDegree ≤
@@ -402,7 +407,7 @@ theorem monicNormalize_toPoly_degree_pos_of_proper {F : Type*}
     {parent p : CPolynomial F}
     (hproper : isNontrivialProperChild parent (CPolynomial.monicNormalize p) = true) :
     0 < (CPolynomial.monicNormalize p).toPoly.degree := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   unfold isNontrivialProperChild at hproper
   simp at hproper
   have hpNormNe : CPolynomial.monicNormalize p ≠ 0 := hproper.1.1
@@ -425,7 +430,7 @@ theorem quotientAfterChild_size_lt_parent_of_monicNormalize_proper {F : Type*}
       isNontrivialProperChild parent (CPolynomial.monicNormalize childSource) = true) :
     (quotientAfterChild parent (CPolynomial.monicNormalize childSource)).val.size <
       parent.val.size := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   unfold quotientAfterChild
   rw [if_pos hproper]
   apply val_size_lt_of_toPoly_degree_lt hparent
@@ -453,7 +458,11 @@ theorem div_ne_zero_of_dvd_of_ne_zero {F : Type*}
   rcases hdiv with ⟨r, hr⟩
   have hquotPoly : parent.toPoly / child.toPoly = 0 := by
     have h := congrArg CPolynomial.toPoly hquot
-    rw [CPolynomial.div_toPoly_eq_div] at h
+    -- `toPoly 0` no longer reduces to `0` definitionally downstream, so bridge it with
+    -- the characterization lemma instead.
+    have hzero : (0 : CPolynomial F).toPoly = 0 :=
+      (CPolynomial.toPoly_eq_zero_iff (0 : CPolynomial F)).mpr rfl
+    rw [CPolynomial.div_toPoly_eq_div, hzero] at h
     exact h
   have hdivPoly : parent.toPoly / child.toPoly = r := by
     exact (EuclideanDomain.eq_div_of_mul_eq_right hchildPoly hr.symm).symm
@@ -516,7 +525,7 @@ theorem child_quotient_natDegree_le_parent {F : Type*}
     (hdiv : child.toPoly ∣ parent.toPoly) (hparent : parent ≠ 0) :
     child.toPoly.natDegree + (quotientAfterChild parent child).toPoly.natDegree ≤
       parent.toPoly.natDegree := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   have hchild : child ≠ 0 := by
     unfold isNontrivialProperChild at hproper
     simp at hproper
@@ -662,7 +671,7 @@ theorem normStackWork_append {F : Type*}
 theorem monicNormalize_toPoly_natDegree_eq {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] (p : CPolynomial F) :
     (CPolynomial.monicNormalize p).toPoly.natDegree = p.toPoly.natDegree := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   by_cases hp : p = 0
   · subst p
     rw [CPolynomial.monicNormalize_toPoly_eq_normalize, CPolynomial.toPoly_zero, normalize_zero]
@@ -682,7 +691,7 @@ theorem monicNormalize_toPoly_natDegree_eq {F : Type*}
 theorem monicNormalize_zero {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] :
     CPolynomial.monicNormalize (0 : CPolynomial F) = 0 := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   apply (CPolynomial.toPoly_eq_zero_iff _).1
   rw [CPolynomial.monicNormalize_toPoly_eq_normalize, CPolynomial.toPoly_zero, normalize_zero]
 
@@ -721,7 +730,7 @@ theorem normSplitWork_pos_of_monicNormalize_ne_zero_ne_one {F : Type*}
     (hzero : CPolynomial.monicNormalize p ≠ 0)
     (hone : CPolynomial.monicNormalize p ≠ 1) :
     1 ≤ normSplitWork p := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   unfold normSplitWork
   apply splitWork_pos_of_natDegree_pos
   apply Polynomial.natDegree_pos_iff_degree_pos.mpr
@@ -739,7 +748,7 @@ theorem normSplitWork_pos_of_monicNormalize_ne_zero_ne_one {F : Type*}
 theorem monicNormalize_toPoly_monic_of_ne_zero {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] {p : CPolynomial F} (hp : p ≠ 0) :
     (CPolynomial.monicNormalize p).toPoly.Monic := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   rw [CPolynomial.monicNormalize_toPoly_eq_normalize]
   exact Polynomial.monic_normalize ((CPolynomial.toPoly_eq_zero_iff p).not.mpr hp)
 
@@ -1012,7 +1021,7 @@ theorem gcdMonic_ne_zero_left {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     {p : CPolynomial F} (r : CPolynomial F) (hp : p ≠ 0) :
     CPolynomial.gcdMonic p r ≠ 0 := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   intro hzero
   have hpoly := congrArg CPolynomial.toPoly hzero
   rw [CPolynomial.gcdMonic_toPoly_eq_normalize_gcd, CPolynomial.toPoly_zero,
@@ -1025,7 +1034,7 @@ theorem eval_monicNormalize_gcdMonic_eq_zero_iff {F : Type*}
     (p r : CPolynomial F) (z : F) :
     CPolynomial.eval z (CPolynomial.monicNormalize (CPolynomial.gcdMonic p r)) = 0 ↔
       CPolynomial.eval z p = 0 ∧ CPolynomial.eval z r = 0 := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   simp only [CPolynomial.eval_toPoly]
   rw [CPolynomial.monicNormalize_toPoly_eq_normalize,
     CPolynomial.gcdMonic_toPoly_eq_normalize_gcd, normalize_idem]

@@ -6,6 +6,11 @@ Authors: Valerii Huhnin
 
 module
 
+-- These wrappers live in bare `public section`s, so their bodies are opaque
+-- downstream while the proofs below step through the `Raw` layer they are defined by.
+-- `import all` is the same-package implementation dependency for exactly this; see
+-- `docs/wiki/module-system.md`.
+import all CompPoly.Univariate.Basic
 public import CompPoly.Univariate.Roots.LasVegas.Probability.Basic
 
 /-!
@@ -260,7 +265,7 @@ private theorem uniformCoefficientArrayPMF_two_eval_pair {F : Type*}
           CPolynomial.eval b (CPolynomial.ofArray coeffs) = y}) ↔
         (c0 = c0s ∧ c1 = c1s) := by
     intro c0 c1
-    rw [Set.mem_setOf_eq, eval_ofArray_pair, eval_ofArray_pair]
+    rw [Set.mem_ofPred_eq, eval_ofArray_pair, eval_ofArray_pair]
     constructor
     · rintro ⟨hx, hy⟩
       have hc1 : c1 = c1s := by
@@ -384,7 +389,7 @@ private theorem uniformCoefficientArrayPMF_eval_pair {F : Type*}
           (fun coeffs hsupp ↦ by
             have hsize := uniformCoefficientArrayPMF_support_size
               enumeration.toFieldEnumeration n hsupp
-            rw [Set.mem_preimage, Set.mem_setOf_eq, Set.mem_setOf_eq,
+            rw [Set.mem_preimage, Set.mem_ofPred_eq, Set.mem_ofPred_eq,
               eval_ofArray_push, eval_ofArray_push, hsize]
             constructor
             · rintro ⟨h1, h2⟩

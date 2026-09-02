@@ -6,6 +6,9 @@ Authors: Valerii Huhnin
 
 module
 
+-- `natDegree` and friends are declared in bare `public section`s, so their bodies
+-- are opaque downstream; see `docs/wiki/module-system.md`.
+import all CompPoly.Univariate.Basic
 public import CompPoly.Univariate.Roots.LasVegas.Probability.OddTrial
 public import CompPoly.Univariate.Roots.LasVegas.Probability.Recursive
 
@@ -276,7 +279,7 @@ theorem tryOddSplitAttemptsWith_uniformTable_none_le_geometric {F : Type*}
   | zero =>
       rw [eventProbability, uniformProbeTablePMF, PMF.toOuterMeasure_pure_apply,
         if_pos (by
-          rw [Set.mem_setOf_eq]
+          rw [Set.mem_ofPred_eq]
           unfold tryOddSplitAttemptsWith
           rfl)]
       simp
@@ -323,7 +326,7 @@ theorem tryOddSplitAttemptsWith_uniformTable_none_le_geometric {F : Type*}
         · rw [if_pos h0]
           congr 1
           ext rest
-          rw [Set.mem_preimage, Set.mem_setOf_eq, Set.mem_setOf_eq, hsection h rest]
+          rw [Set.mem_preimage, Set.mem_ofPred_eq, Set.mem_ofPred_eq, hsection h rest]
           simp [h0]
         · rw [if_neg h0]
           have hempty : (List.cons h ⁻¹'
@@ -331,7 +334,7 @@ theorem tryOddSplitAttemptsWith_uniformTable_none_le_geometric {F : Type*}
                 tryOddSplitAttemptsWith M D q (tableProbeFamily table) g
                   (attempts + 1) 0 = none}) = ∅ := by
             ext rest
-            rw [Set.mem_preimage, Set.mem_setOf_eq, hsection h rest]
+            rw [Set.mem_preimage, Set.mem_ofPred_eq, hsection h rest]
             simp [h0]
           rw [hempty]
           simp
@@ -567,7 +570,7 @@ theorem recursiveSplitWithTables_rank_le_geometric {q : Nat}
           (recursiveSplitWithTables tryTable 0 stack tables)[j]? = some true} =
           (∅ : Set (List (List (CPolynomial F)))) := by
         ext tables
-        rw [Set.mem_setOf_eq, recursiveSplitWithTables.eq_def]
+        rw [Set.mem_ofPred_eq, recursiveSplitWithTables.eq_def]
         simp
       rw [eventProbability, hE]
       simp
@@ -579,7 +582,7 @@ theorem recursiveSplitWithTables_rank_le_geometric {q : Nat}
               (recursiveSplitWithTables tryTable (fuel + 1) [] tables)[j]? =
                 some true} = (∅ : Set (List (List (CPolynomial F)))) := by
             ext tables
-            rw [Set.mem_setOf_eq, recursiveSplitWithTables.eq_def]
+            rw [Set.mem_ofPred_eq, recursiveSplitWithTables.eq_def]
             simp
           rw [eventProbability, hE]
           simp
@@ -592,7 +595,7 @@ theorem recursiveSplitWithTables_rank_le_geometric {q : Nat}
                   (recursiveSplitWithTables tryTable fuel stack tables)[j]? =
                     some true} := by
               ext tables
-              rw [Set.mem_setOf_eq, Set.mem_setOf_eq,
+              rw [Set.mem_ofPred_eq, Set.mem_ofPred_eq,
                 recursiveSplitWithTables_skip tryTable fuel stack hdeg tables]
             rw [hE]
             exact ih stack j n fun x hx ↦ hstack x (by simp [hx])
@@ -604,7 +607,7 @@ theorem recursiveSplitWithTables_rank_le_geometric {q : Nat}
             | zero =>
                 rw [uniformProbeTablesPMF, eventProbability,
                   PMF.toOuterMeasure_pure_apply, if_neg (by
-                    rw [Set.mem_setOf_eq,
+                    rw [Set.mem_ofPred_eq,
                       recursiveSplitWithTables_nil_tables tryTable fuel stack hdeg]
                     simp)]
                 exact zero_le
@@ -633,7 +636,7 @@ theorem recursiveSplitWithTables_rank_le_geometric {q : Nat}
                               (recursiveSplitWithTables tryTable (fuel + 1)
                                 (g :: stack) tables)[0]? = some true}) = ∅ := by
                           ext tables
-                          rw [Set.mem_preimage, Set.mem_setOf_eq,
+                          rw [Set.mem_preimage, Set.mem_ofPred_eq,
                             recursiveSplitWithTables_cons_some tryTable fuel
                               stack hdeg tables hchildren]
                           simp
@@ -663,7 +666,7 @@ theorem recursiveSplitWithTables_rank_le_geometric {q : Nat}
                                 (recursiveSplitWithTables tryTable fuel stack
                                   tables)[j']? = some true} := by
                             ext tables
-                            rw [Set.mem_preimage, Set.mem_setOf_eq, Set.mem_setOf_eq,
+                            rw [Set.mem_preimage, Set.mem_ofPred_eq, Set.mem_ofPred_eq,
                               recursiveSplitWithTables_cons_none tryTable fuel
                                 stack hdeg tables htry]
                             simp
@@ -679,7 +682,7 @@ theorem recursiveSplitWithTables_rank_le_geometric {q : Nat}
                                   (children.toList ++ stack) tables)[j']? =
                                     some true} := by
                             ext tables
-                            rw [Set.mem_preimage, Set.mem_setOf_eq, Set.mem_setOf_eq,
+                            rw [Set.mem_preimage, Set.mem_ofPred_eq, Set.mem_ofPred_eq,
                               recursiveSplitWithTables_cons_some tryTable fuel
                                 stack hdeg tables htry]
                             simp
@@ -711,7 +714,7 @@ theorem recursiveSplitWithTables_rank_eq_zero_of_budget_le
       (recursiveSplitWithTables tryTable fuel stack tables)[j]? = some true} =
       (∅ : Set (List (List (CPolynomial F)))) := by
     ext tables
-    rw [Set.mem_setOf_eq]
+    rw [Set.mem_ofPred_eq]
     have hlen := recursiveSplitWithTables_length_le tryTable hsplit fuel stack tables
     rw [List.getElem?_eq_none (by omega)]
     simp
@@ -744,7 +747,7 @@ theorem recursiveSplitWithTables_recursiveFallbackProbabilityModel {q : Nat}
     (recursiveSplitWithTables tryTable fuel [g] tables)[j]? = some true},
     ?_, ?_, ?_⟩
   · intro tables htables
-    rw [Set.mem_setOf_eq] at htables
+    rw [Set.mem_ofPred_eq] at htables
     obtain ⟨i, hi⟩ := List.mem_iff_getElem?.mp htables
     exact Set.mem_iUnion.mpr ⟨i, hi⟩
   · intro j hj
@@ -921,7 +924,7 @@ theorem lasVegasTryTableSplit_uniformTable_none_le_geometric {F : Type*}
             tryOddSplitAttemptsWith M D q (tableProbeFamily table) g attempts 0 =
               none} := by
         ext table
-        rw [Set.mem_setOf_eq, Set.mem_setOf_eq]
+        rw [Set.mem_ofPred_eq, Set.mem_ofPred_eq]
         unfold lasVegasTryTableSplit
         cases traceCtx? <;> simp [hodd]
       rw [hset]
@@ -938,7 +941,7 @@ theorem lasVegasTryTableSplit_uniformTable_none_le_geometric {F : Type*}
             tryEvenTraceSplitAttemptsWith M D traceCtx q (tableProbeFamily table) g
               attempts 0 = none} := by
         ext table
-        rw [Set.mem_setOf_eq, Set.mem_setOf_eq]
+        rw [Set.mem_ofPred_eq, Set.mem_ofPred_eq]
         unfold lasVegasTryTableSplit
         rw [hctx]
         dsimp only

@@ -6,6 +6,9 @@ Authors: Valerii Huhnin
 
 module
 
+-- `natDegree` is declared in a bare `public section`, so `natDegree 0 = 0` no
+-- longer holds by `rfl` downstream; see `docs/wiki/module-system.md`.
+import all CompPoly.Univariate.Basic
 public import CompPoly.Univariate.Roots.LasVegas.Probability.OddBuckets
 public import Mathlib.Algebra.Polynomial.Roots
 public import Mathlib.Algebra.Squarefree.Basic
@@ -250,7 +253,7 @@ theorem oddSplitTrial_success_probability_ge_half_of_two_le {F : Type*}
     obtain ⟨children, hchildren⟩ :=
       cantorZassenhausOddAttemptWith_success_of_bucket_separated M D q attempt hg
         hra hrb hsep
-    simp only [Set.mem_preimage, Set.mem_setOf_eq, hchildren]
+    simp only [Set.mem_preimage, Set.mem_ofPred_eq, hchildren]
     exact trivial
   have hpre : ((fun h : CPolynomial F ↦
       (CPolynomial.eval a h, CPolynomial.eval b h)) ⁻¹'

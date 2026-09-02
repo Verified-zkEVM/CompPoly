@@ -6,6 +6,15 @@ Authors: Valerii Huhnin
 
 module
 
+-- These wrappers live in bare `public section`s, so their bodies are opaque
+-- downstream while the proofs below step through the `Raw` layer they are defined by.
+-- `import all` is the same-package implementation dependency for exactly this; see
+-- `docs/wiki/module-system.md`.
+import all CompPoly.Univariate.Basic
+import all CompPoly.Univariate.Modular
+import all CompPoly.Univariate.Raw.Division
+import all CompPoly.Univariate.Raw.Modular
+import all CompPoly.Univariate.ToPoly.Core
 public import CompPoly.Univariate.Roots.Correctness
 public import CompPoly.Univariate.Roots.Shoup.Basic
 public import CompPoly.Univariate.Roots.Shoup.FrobeniusLinear
@@ -84,9 +93,9 @@ theorem eval_traceCoordinatePolynomialWith {F : Type*}
 private theorem smallPrimeTraceContext_charP {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] (ctx : SmallPrimeTraceContext F) :
     CharP F ctx.p := by
-  letI : Finite F := ctx.finite
-  letI : Fintype F := Fintype.ofFinite F
-  letI : Fact ctx.p.Prime := ⟨ctx.p_prime⟩
+  let : Finite F := ctx.finite
+  let : Fintype F := Fintype.ofFinite F
+  let : Fact ctx.p.Prime := ⟨ctx.p_prime⟩
   have hcard : Fintype.card F = ctx.p ^ ctx.k := by
     rw [← Nat.card_eq_fintype_card, ctx.card_eq, ctx.q_eq]
   exact charP_of_card_eq_prime_pow hcard
@@ -96,8 +105,8 @@ theorem traceValue_sub {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (ctx : SmallPrimeTraceContext F) (x y : F) :
     ctx.traceValue (x - y) = ctx.traceValue x - ctx.traceValue y := by
-  letI : CharP F ctx.p := smallPrimeTraceContext_charP ctx
-  letI : ExpChar F ctx.p := ExpChar.prime ctx.p_prime
+  let : CharP F ctx.p := smallPrimeTraceContext_charP ctx
+  let : ExpChar F ctx.p := ExpChar.prime ctx.p_prime
   rw [ctx.traceValue_eq_powerSum, ctx.traceValue_eq_powerSum, ctx.traceValue_eq_powerSum]
   unfold tracePowerSum
   have hgo : ∀ (xs : List Nat) (accx accy : F),
@@ -169,7 +178,7 @@ theorem shoup_gcdBucket_root_iff {F : Type*}
           (CPolynomial.gcdMonic u
             (traceCoordinatePolynomialWith M D ctx u beta - CPolynomial.C c))) = 0 ↔
       CPolynomial.eval a u = 0 ∧ ctx.traceValue (beta * a) = c := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   let witness := traceCoordinatePolynomialWith M D ctx u beta - CPolynomial.C c
   have hgcdNe : CPolynomial.gcdMonic u witness ≠ 0 := gcdMonic_ne_zero_of_left hu
   rw [monicNormalize_root_iff hgcdNe, gcdMonic_root_iff_left_right]
@@ -323,7 +332,7 @@ private theorem shoupRefineBaseConstants_dvd {F : Type*}
                   pushNontrivialChild children child)
                 acc).toList →
             factor.toPoly ∣ u.toPoly := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   intro constants
   induction constants with
   | nil =>
@@ -384,7 +393,7 @@ private theorem shoupRefineFactorWith_dvd {F : Type*}
     (ctx : SmallPrimeTraceContext F) (beta : F) {u factor : CPolynomial F}
     (hmem : factor ∈ (shoupRefineFactorWith M D ctx beta u).toList) :
     factor.toPoly ∣ u.toPoly := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   unfold shoupRefineFactorWith at hmem
   let u' := CPolynomial.monicNormalize u
   by_cases hzero : (u' == 0 || u' == 1) = true
@@ -831,7 +840,7 @@ theorem shoupSplitCandidatesWith_dvd_input {F : Type*}
     (ctx : SmallPrimeTraceContext F) {p factor : CPolynomial F}
     (hmem : factor ∈ (shoupSplitCandidatesWith M D ctx p).toList) :
     factor.toPoly ∣ p.toPoly := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   unfold shoupSplitCandidatesWith at hmem
   let p' := CPolynomial.monicNormalize p
   by_cases hzero : (p' == 0 || p' == 1) = true
@@ -1319,7 +1328,7 @@ theorem finiteFieldRootProductWith_dvd_frobenius {F : Type*}
     (ctx : SmallPrimeTraceContext F) {p : CPolynomial F} (_hp : p ≠ 0) :
     (finiteFieldRootProductWith M D ctx.toFiniteFieldContext p).toPoly ∣
       ((Polynomial.X : Polynomial F) ^ ctx.q - Polynomial.X) := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   rw [finiteFieldRootProductWith_toPoly_eq_normalize_gcd M D ctx.toFiniteFieldContext _hp]
   apply dvd_trans (normalize_associated _).dvd
   let pMonic := CPolynomial.monicNormalize p

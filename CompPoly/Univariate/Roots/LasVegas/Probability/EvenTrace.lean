@@ -6,6 +6,9 @@ Authors: Valerii Huhnin
 
 module
 
+-- `natDegree` and friends are declared in bare `public section`s, so their bodies
+-- are opaque downstream; see `docs/wiki/module-system.md`.
+import all CompPoly.Univariate.Basic
 public import CompPoly.Univariate.Roots.LasVegas.Probability.OddTrial
 public import Mathlib.FieldTheory.Finite.Basic
 
@@ -48,8 +51,8 @@ structure EvenTraceUniformFieldModel (F : Type*) (q : Nat)
 private theorem tracePowerSum_mul_self {F : Type*} [Field F] [Fintype F]
     {k : Nat} (hcard : Fintype.card F = 2 ^ k) (hchar : ringChar F = 2) (x : F) :
     tracePowerSum 2 k x * tracePowerSum 2 k x = tracePowerSum 2 k x := by
-  haveI : CharP F 2 := hchar ▸ ringChar.charP F
-  haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  have : CharP F 2 := hchar ▸ ringChar.charP F
+  have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
   rw [tracePowerSum_eq_sum_range]
   have hsq : (∑ i ∈ Finset.range k, x ^ 2 ^ i) * (∑ i ∈ Finset.range k, x ^ 2 ^ i) =
       ∑ i ∈ Finset.range k, x ^ 2 ^ (i + 1) := by
@@ -237,7 +240,7 @@ theorem evenTraceTrial_success_probability_ge_half_of_two_le {F : Type*}
         | some children => TrialResult.split children
         | none => TrialResult.failed) ⁻¹' {trial | trial.IsSuccess} := by
     intro h hsep
-    rw [Set.mem_setOf_eq] at hsep
+    rw [Set.mem_ofPred_eq] at hsep
     have hsucc : ∃ children,
         cantorZassenhausEvenTraceAttemptWith M D traceCtx q
           ({ probe := fun _q _factor _attempt ↦ h } : ProbeFamily F)
@@ -255,7 +258,7 @@ theorem evenTraceTrial_success_probability_ge_half_of_two_le {F : Type*}
           (by rw [hfield.p_eq, hA]; exact one_ne_zero)
       · exact absurd (hA.trans hB.symm) hsep
     obtain ⟨children, hchildren⟩ := hsucc
-    simp only [Set.mem_preimage, Set.mem_setOf_eq, hchildren]
+    simp only [Set.mem_preimage, Set.mem_ofPred_eq, hchildren]
     exact trivial
   have hpre : ((fun h : CPolynomial F ↦
       (CPolynomial.eval a h, CPolynomial.eval b h)) ⁻¹'
@@ -494,7 +497,7 @@ theorem tryEvenTraceSplitAttemptsWith_uniformTable_none_le_geometric {F : Type*}
   | zero =>
       rw [eventProbability, uniformProbeTablePMF, PMF.toOuterMeasure_pure_apply,
         if_pos (by
-          rw [Set.mem_setOf_eq]
+          rw [Set.mem_ofPred_eq]
           unfold tryEvenTraceSplitAttemptsWith
           rfl)]
       simp
@@ -543,7 +546,7 @@ theorem tryEvenTraceSplitAttemptsWith_uniformTable_none_le_geometric {F : Type*}
         · rw [if_pos h0]
           congr 1
           ext rest
-          rw [Set.mem_preimage, Set.mem_setOf_eq, Set.mem_setOf_eq, hsection h rest]
+          rw [Set.mem_preimage, Set.mem_ofPred_eq, Set.mem_ofPred_eq, hsection h rest]
           simp [h0]
         · rw [if_neg h0]
           have hempty : (List.cons h ⁻¹'
@@ -551,7 +554,7 @@ theorem tryEvenTraceSplitAttemptsWith_uniformTable_none_le_geometric {F : Type*}
                 tryEvenTraceSplitAttemptsWith M D traceCtx q (tableProbeFamily table) g
                   (attempts + 1) 0 = none}) = ∅ := by
             ext rest
-            rw [Set.mem_preimage, Set.mem_setOf_eq, hsection h rest]
+            rw [Set.mem_preimage, Set.mem_ofPred_eq, hsection h rest]
             simp [h0]
           rw [hempty]
           simp

@@ -52,8 +52,7 @@ private def f5Elements : Array F5 :=
 
 private theorem f5Elements_complete : ContainsAllFieldElements f5Elements := by
   unfold ContainsAllFieldElements
-  intro a
-  fin_cases a <;> decide
+  decide
 
 private def f5Enumeration : FieldEnumeration F5 :=
   fieldEnumerationOfArray f5Elements f5Elements_complete
@@ -252,8 +251,7 @@ private def f2ElementsReversed : Array F2 :=
 private theorem f2ElementsReversed_complete :
     ContainsAllFieldElements f2ElementsReversed := by
   unfold ContainsAllFieldElements
-  intro a
-  fin_cases a <;> decide
+  decide
 
 private def f2Enumeration : FieldEnumeration F2 :=
   fieldEnumerationOfArray f2ElementsReversed f2ElementsReversed_complete

@@ -6,6 +6,11 @@ Authors: Valerii Huhnin
 
 module
 
+-- `natDegree` and `coeff` are declared in a bare `public section`, so their bodies are
+-- opaque downstream. The proofs below reason about the underlying array directly, which
+-- is the same-package implementation dependency `import all` exists for; see
+-- `docs/wiki/module-system.md`.
+import all CompPoly.Univariate.Basic
 public import CompPoly.Univariate.Roots.Shoup.Basic
 public import Mathlib.Algebra.CharP.CharAndCard
 
@@ -39,9 +44,9 @@ theorem isRepresentedLinearFactor_of_dvd_frobenius_unique_root {F : Type*}
     (hroot : CPolynomial.eval a factor = 0)
     (hunique : ∀ b, CPolynomial.eval b factor = 0 → b = a) :
     isRepresentedLinearFactor factor = true := by
-  letI : DecidableEq F := instDecidableEqOfLawfulBEq
-  letI : Finite F := ctx.finite
-  letI : Fintype F := Fintype.ofFinite F
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
+  let : Finite F := ctx.finite
+  let : Fintype F := Fintype.ofFinite F
   have hqcard : ctx.q = Fintype.card F := by
     rw [← ctx.card_eq, Nat.card_eq_fintype_card]
   have hfactorPolyNe : factor.toPoly ≠ 0 :=

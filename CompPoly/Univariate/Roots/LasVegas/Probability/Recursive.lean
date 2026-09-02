@@ -6,6 +6,9 @@ Authors: Valerii Huhnin
 
 module
 
+-- `natDegree` and friends are declared in bare `public section`s, so their bodies
+-- are opaque downstream; see `docs/wiki/module-system.md`.
+import all CompPoly.Univariate.Basic
 public import CompPoly.Univariate.Roots.LasVegas.Probability.EvenTrace
 public import CompPoly.Univariate.Roots.LasVegas.Probability.OddTrial
 
@@ -436,7 +439,7 @@ theorem recursiveSplitProcessPMF_rank_eq_zero_of_budget_le {F : Type*}
   intro tr2 hsupp hmem
   have hlen := recursiveSplitProcessPMF_support_length trial attempts hsplit
     fuel stack hsupp
-  rw [Set.mem_setOf_eq, List.getElem?_eq_none (l := tr2) (by omega)] at hmem
+  rw [Set.mem_ofPred_eq, List.getElem?_eq_none (l := tr2) (by omega)] at hmem
   simp at hmem
 
 /--
@@ -464,7 +467,7 @@ theorem recursiveSplitProcessPMF_recursiveFallbackProbabilityModel {F : Type*}
       attempts (CPolynomial.natDegree g) := by
   refine ⟨fun j ↦ {tr2 : List Bool | tr2[j]? = some true}, ?_, ?_, ?_⟩
   · intro tr2 htr2
-    rw [Set.mem_setOf_eq] at htr2
+    rw [Set.mem_ofPred_eq] at htr2
     obtain ⟨i, hi⟩ := List.mem_iff_getElem?.mp htr2
     exact Set.mem_iUnion.mpr ⟨i, hi⟩
   · intro j hj
