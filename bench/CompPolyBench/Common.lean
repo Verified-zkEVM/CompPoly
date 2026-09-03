@@ -6,7 +6,7 @@ Authors: Valerii Huhnin
 module
 
 public import Init.Data.Random
-public import CompPolyBench.Harness.Timer
+public import CompPolyBench.Harness.Sample
 public import Lean.Data.Json.Parser
 public import Lean.Data.Json.Printer
 public import Std.Time
@@ -137,6 +137,8 @@ structure BenchRecord where
   averageNanos : Nat
   checksum : Nat
   sinkDigest : UInt64
+  stats : SampleStats
+  samples : Array Nat
 
 /-- A set of benchmark rows expected to produce matching checksums. -/
 structure BenchGroup where
@@ -542,9 +544,17 @@ that its fast counterpart does not. -/
 @[inline] def sinkZMod {modulus : Nat} (x : ZMod modulus) : UInt64 :=
   natSink (ZMod.val x)
 
+/-- Ceiling on validation-pass iterations.
+
+The validation pass re-runs the benchmark body, so leaving it equal to the
+measured iteration count made correctness checking cost as much as measurement.
+The cap is above every benchmark's operand-pool size, so the oracle still sees
+every input it did before. -/
+def validationIterationCap : Nat := 256
+
 /-- Compute the checksum iteration count shared by a benchmark group. -/
 def groupChecksumIterations (first : Nat) (rest : List Nat) : Nat :=
-  rest.foldl Nat.min first
+  min validationIterationCap (rest.foldl Nat.min first)
 
 /--
 Time one benchmark closure and package its metadata and checksum.
@@ -560,15 +570,19 @@ show up in the measurement.
 -/
 @[specialize] def runTimed (name representation method field inputShape : String)
     (preset : BenchPreset) (warmup measured : Nat) (run : Nat → α) (checksum : α → Nat)
-    (checksumIterations : Nat := measured)
+    (checksumIterations : Nat := min validationIterationCap measured)
     (sink : α → UInt64 := fun x ↦ natSink (checksum x)) : IO BenchRecord := do
   let body : Nat → UInt64 → UInt64 := fun i acc ↦ sinkStep acc (sink (run i))
-  let warmed ← warmIterations warmup 0 body
   let mut validationChecksum := 0
   for i in [0:checksumIterations] do
     validationChecksum := mixChecksum validationChecksum (checksum (run i))
-  let sample ← timeIterations measured warmed body
-  let total := sample.nanos
+  let plan := planSamples measured
+  -- The validation pass above already executed the body, so it counts towards
+  -- reaching steady state. For an expensive workload validated once, this is the
+  -- difference between running it three times and running it twice.
+  let desiredWarmup := max warmup plan.itersPerSample
+  let sampled ← collectSamples (desiredWarmup - min desiredWarmup checksumIterations) plan body
+  let total := sampled.totalNanos
   pure {
     name := name
     representation := representation
@@ -576,13 +590,15 @@ show up in the measurement.
     preset := preset.name
     field := field
     inputShape := inputShape
-    warmupIterations := warmup
+    warmupIterations := desiredWarmup
     checksumIterations := checksumIterations
-    measuredIterations := measured
+    measuredIterations := sampled.totalIterations
     totalNanos := total
-    averageNanos := if measured = 0 then 0 else total / measured
+    averageNanos := sampled.stats.medianPicos / 1000
     checksum := validationChecksum
-    sinkDigest := sample.sink
+    sinkDigest := sampled.sink
+    stats := sampled.stats
+    samples := sampled.samples
   }
 
 /-- Append benchmark records from `ys` onto `xs`. -/
@@ -616,7 +632,20 @@ def BenchRecord.toJsonLine (record : BenchRecord) : String :=
     "\"total_nanos\":" ++ toString record.totalNanos,
     "\"average_nanos\":" ++ toString record.averageNanos,
     "\"checksum\":" ++ toString record.checksum,
-    "\"sink_digest\":" ++ toString record.sinkDigest
+    "\"sink_digest\":" ++ toString record.sinkDigest,
+    "\"sample_count\":" ++ toString record.stats.count,
+    "\"iters_per_sample\":" ++ toString record.stats.itersPerSample,
+    "\"unreplicated\":" ++ (if record.stats.unreplicated then "true" else "false"),
+    "\"min_picos\":" ++ toString record.stats.minPicos,
+    "\"median_picos\":" ++ toString record.stats.medianPicos,
+    "\"mean_picos\":" ++ toString record.stats.meanPicos,
+    "\"p95_picos\":" ++ toString record.stats.p95Picos,
+    "\"stddev_picos\":" ++ toString record.stats.stddevPicos,
+    "\"mad_picos\":" ++ toString record.stats.madPicos,
+    "\"mild_outliers\":" ++ toString record.stats.mildOutliers,
+    "\"severe_outliers\":" ++ toString record.stats.severeOutliers,
+    "\"samples_picos\":[" ++
+      String.intercalate "," (record.samples.toList.map toString) ++ "]"
   ] ++ "}"
 
 /-- Render all benchmark records as JSONL. -/
@@ -859,6 +888,23 @@ def implementationLabelInGroup (records : List BenchRecord) (record : BenchRecor
   else
     label ++ " (" ++ record.field ++ ")"
 
+/-- Render a record's sample dispersion as a percentage of its median.
+
+Reads `n=1` where a benchmark could not be replicated at all, `(n=k)` where it
+was replicated too few times for the spread to mean much, and `!k` where Tukey
+labelled `k` samples as severe outliers. Outliers are labelled, never dropped;
+the full per-sample vector is in the JSONL. -/
+def renderSpread (record : BenchRecord) : String :=
+  let stats := record.stats
+  if stats.count ≤ 1 then
+    "n=1"
+  else
+    let tenths :=
+      if stats.medianPicos = 0 then 0 else 1000 * stats.madPicos / stats.medianPicos
+    let base := "±" ++ toString (tenths / 10) ++ "." ++ toString (tenths % 10) ++ "%"
+    let base := if stats.unreplicated then base ++ " (n=" ++ toString stats.count ++ ")" else base
+    if stats.severeOutliers > 0 then base ++ " !" ++ toString stats.severeOutliers else base
+
 /-- Columns rendered in a group result table after shared metadata is lifted out. -/
 def groupResultColumns (records : List BenchRecord) (totalUnit avgUnit : TimeUnit) :
     List (String × Bool × (BenchRecord → String)) :=
@@ -867,8 +913,9 @@ def groupResultColumns (records : List BenchRecord) (totalUnit avgUnit : TimeUni
     ("Iterations", true, fun r ↦ toString r.measuredIterations),
     ("Total (" ++ totalUnit.label ++ ")", true, fun r ↦
       formatNanosInUnitOrAuto totalUnit r.totalNanos),
-    ("Avg (" ++ avgUnit.label ++ ")", true, fun r ↦
-      formatNanosInUnitOrAuto avgUnit r.averageNanos)
+    ("Median (" ++ avgUnit.label ++ ")", true, fun r ↦
+      formatNanosInUnitOrAuto avgUnit r.averageNanos),
+    ("Spread", true, renderSpread)
   ]
 
 /-- Shared metadata rendered before each benchmark group result table. -/
@@ -878,7 +925,8 @@ def renderGroupMetadata (records : List BenchRecord) (totalUnit : TimeUnit) : Li
     renderSharedStringLine "Field / configuration" records (fun r ↦ r.field),
     renderSharedStringLine "Input shape" records (fun r ↦ r.inputShape),
     renderSharedNatLine "Warmup iterations" records (fun r ↦ r.warmupIterations),
-    renderSharedNatLine "Checksum iterations" records (fun r ↦ r.checksumIterations)
+    renderSharedNatLine "Checksum iterations" records (fun r ↦ r.checksumIterations),
+    renderSharedNatLine "Samples" records (fun r ↦ r.stats.count)
   ] ++ [
     "- Total group time: `" ++ formatNanosWithUnit totalUnit (totalGroupNanos records) ++
       "`",

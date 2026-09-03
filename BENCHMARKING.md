@@ -1301,8 +1301,8 @@ reviews as a small diff and the stack merges bottom-up. Base of the stack is
 
 | # | Branch | Scope | Status |
 |---|---|---|---|
-| 1 | `dhsorens/bench-measurement-core` | Cheap `UInt64` sink in the timed loop, forcing discipline, real warmup, floor + canary groups, `jsonString` escaping, symmetric additive-NTT digests | in progress |
-| 2 | `dhsorens/bench-sampling` | Calibration ramp, adaptive `itersPerSample`, multi-sample collection, median/MAD/Tukey stats, presets as budgets, one-iteration validation pass | not started |
+| 1 | `dhsorens/bench-measurement-core` | Cheap `UInt64` sink in the timed loop, forcing discipline, real warmup, floor + canary groups, `jsonString` escaping, symmetric additive-NTT digests | landed |
+| 2 | `dhsorens/bench-sampling` | Multi-sample collection, median/MAD/Tukey stats, unreplicated flags, capped validation pass reused as warmup | landed |
 | 3 | `dhsorens/bench-determinism` | Per-group seeding from the group key, key/title declared once, dead-code removal, committed digest fixtures | not started |
 | 4 | `dhsorens/bench-reporting` | `Harness/Emit`, cross-platform hardware probe, `bench/out/`, CI step moved off the blocking job, `docs/wiki/benchmarking.md`, `clMul` guard migration | not started |
 
@@ -1393,3 +1393,71 @@ mismatches); `harness-floor` and `harness-canary` added to `BENCH_CI_GROUPS`;
 **Not required:** `./scripts/update-lib.sh` globs `CompPoly/*.lean` only, so new
 modules under `bench/` need no regeneration — the lakefile's
 `Glob.submodules \`CompPolyBench` covers them.
+
+### 12.2 Sampling and statistics (`dhsorens/bench-sampling`)
+
+**New modules.** `bench/CompPolyBench/Harness/Stats.lean` (summary statistics),
+`bench/CompPolyBench/Harness/Sample.lean` (sample collection). `runTimed` now
+splits its iteration budget into samples instead of timing one region.
+
+**Measured effect**, full 68-group `--small` run, 286 records:
+
+| | before | after |
+|---|---:|---:|
+| rows with 5 or more samples | 0 | **172** |
+| rows with 2-4 samples, flagged | 0 | 47 |
+| rows with a single unrepeated sample | 253 of 253 | 67, each marked `n=1` |
+| dispersion reported | none | median MAD **1.4%**, p90 3.0%, max 5.1% |
+| rows with severe Tukey outliers | not detectable | 27 |
+| timed-region total | 152.8 s | 152.0 s |
+| full run wall clock | — | 277 s |
+
+**The noise floor is now a measured quantity.** Across the 172 replicated rows
+the median absolute deviation is 1.4% of the median, with p90 at 3.0% and a
+maximum of 5.1%. §9.3 asks what the regression-gate threshold should be and
+could not answer it without data; this is that data, on a *quiet local machine*.
+A 5% gate sits at roughly the worst observed sample dispersion, so it is a
+defensible starting point and anything tighter than about 3% would be
+false-positive-prone even before a shared CI runner adds its own variance.
+
+**Deviation from the plan.** The 227 `selectNat` sites are **not** retired here.
+Retiring them requires a wall-clock budget per benchmark, which is precisely the
+per-benchmark judgement deferred to the systematic pass; doing it now would mean
+touching all 226 `runTimed` call sites twice. Instead each existing count is
+reinterpreted as a total-work budget and split into up to `targetSampleCount`
+samples. This fixes replication wherever the budget can pay for it and leaves the
+counts to retire naturally when each benchmark gets a considered budget. The
+geometric calibration ramp of §6.3 is deferred with them: with a total budget
+supplied there is nothing for it to calibrate.
+
+**Findings from doing the work.**
+
+1. *A zero interquartile range makes Tukey label everything.* Where samples agree
+   to the picosecond, both fences collapse onto the quartiles and every sample
+   that differs at all is marked a severe outlier — the opposite of the intended
+   signal. Labelling is now suppressed when the interquartile range is zero.
+2. *An unspecialised function between `runTimed` and the timed loop costs 5x.*
+   Interposing `collectSamples` re-introduced the closure indirection that
+   `@[specialize] runTimed` had removed, and `goldilocks-mul-fast` went from 3 ns
+   to 16 ns. `@[specialize]` on `collectSamples` restored it. Anything that sits
+   between the specialisation boundary and the loop has to carry the attribute.
+3. *11.4.3 was right about the validation pass but wrong about the fix.* On the
+   original harness the validation pass cost **138 s against a 192 s timed
+   region** — 72%, so it really did nearly double the suite. But capping it at
+   `validationIterationCap` saves only ~0.8 s, because the cost is concentrated
+   in rows whose validation already ran exactly *once* and whose single run takes
+   up to 22 s. The cap is still right for the 19 cheap rows it touches; the
+   saving on expensive rows comes instead from letting the validation pass count
+   towards warmup, since it has already executed the body. An expensive workload
+   validated once now runs twice per benchmark rather than three times.
+4. *The capping change is exactly auditable.* 19 records had a validation pass
+   above the cap; exactly those 19 digests changed and the other 267 did not,
+   with no unexplained differences. Letting validation count as warmup changed no
+   digest at all.
+
+**Still unreplicated.** 67 rows remain at `n=1`. Every one is a workload whose
+single iteration already exhausts its budget — `univariate-batch-large-*` at
+degree 65536, the additive-NTT reference rows, `univariate-mod-by-monic-medium-*`.
+No amount of harness work fixes these; they need smaller input shapes, which is a
+per-benchmark judgement for the systematic pass. They are now visibly marked
+rather than silently averaged.

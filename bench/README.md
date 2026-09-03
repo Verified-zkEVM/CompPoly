@@ -98,7 +98,10 @@ univariate-dense-bls12-381    univariate-dense-bls12-377
 `runTimed` does two passes over each benchmark body.
 
 The **validation pass** is untimed and folds a strong `Nat` digest
-(`mixChecksum`) over the full result. This is what the group agreement check
+(`mixChecksum`) over the full result. It is capped at
+`validationIterationCap` iterations — above every benchmark's operand-pool
+size, so the oracle sees every input, without the pass costing as much as the
+measurement it validates. This is what the group agreement check
 compares, and it is the reason a wrong-but-fast implementation cannot be
 benchmarked: a mismatch inside a group exits nonzero.
 
@@ -118,6 +121,37 @@ Both rows of a group should carry comparable sink cost. Where a representation
 makes that impossible — a `ZMod` element above `2 ^ 63` has no cheap word digest
 while its fast counterpart does — the residual shows up in `harness-floor`
 territory and the group's ratio is a lower bound on the real speedup.
+
+### Sampling and dispersion
+
+A benchmark's cost is collected as a *set* of samples, not one total. Each
+benchmark's iteration count is treated as a total-work budget and split into up
+to `targetSampleCount` timed samples; every sample replays the same iteration
+indices, so samples differ only in machine state.
+
+Reports show the **median** sample as the headline number and a `Spread` column
+holding the median absolute deviation as a percentage of the median:
+
+| Spread | Meaning |
+|---|---|
+| `±2.4%` | normal: 20 samples, MAD 2.4% of the median |
+| `±1.1% (n=3)` | replicated, but too few times for the spread to mean much |
+| `n=1` | one iteration exhausted the budget; a single unrepeated sample |
+| `±0.4% !2` | two samples were labelled severe Tukey outliers |
+
+`n=1` rows carry no dispersion information at all and no ratio should be read
+off them. They occur where a single iteration is already expensive; the fix is a
+smaller input shape, not more iterations.
+
+Outliers are **labelled, never dropped**, at the conventional Tukey fences of
+1.5x and 3x the interquartile range. Labelling is suppressed when the
+interquartile range is zero, since fences of zero width would mark every sample
+that differs at all. The full per-sample vector is emitted as `samples_picos` in
+the JSONL, along with `min`, `median`, `mean`, `p95`, `stddev` and `mad` in
+picoseconds per iteration.
+
+Warmup is at least one sample's worth of iterations regardless of the preset, so
+no benchmark is measured entirely cold.
 
 ### Harness self-check
 
