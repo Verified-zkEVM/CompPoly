@@ -76,6 +76,7 @@ Roughly by area, with representative group prefixes:
 | Binary tower fields | `fields-tower-bt128-*`: `BitVec` spec vs packed-word implementation |
 | Goldilocks arithmetic | `fields-goldilocks-{mul,inv}`: canonical `ZMod` vs single-word `UInt64` |
 | Scalar-field inversion | `fields-mont64x8-*-inv`: `ZMod` extended Euclid vs checked binary GCD vs Fermat |
+| Harness self-check | `harness-floor`, `harness-canary`: the harness measuring itself, see below |
 
 Use `--list` for the authoritative set; the prefixes above drift as groups are
 added.
@@ -91,6 +92,42 @@ univariate-mul-koalabear      univariate-mul-babybear
 univariate-dense-bn254
 univariate-dense-bls12-381    univariate-dense-bls12-377
 ```
+
+## How A Benchmark Is Measured
+
+`runTimed` does two passes over each benchmark body.
+
+The **validation pass** is untimed and folds a strong `Nat` digest
+(`mixChecksum`) over the full result. This is what the group agreement check
+compares, and it is the reason a wrong-but-fast implementation cannot be
+benchmarked: a mismatch inside a group exits nonzero.
+
+The **timed pass** folds each result through `sink : α → UInt64` instead. A sink
+exists only to keep the result live so the body cannot be optimised away; its
+value is never compared against anything. The default sink truncates the `Nat`
+digest, which is free when that digest already fits a machine word. Pass an
+explicit `sink :=` when it does not:
+
+- carriers whose canonical value exceeds `2 ^ 63` — a `Nat` digest there
+  allocates a bignum on most inputs (`sinkGoldilocksFast`, `sinkZMod`);
+- aggregate results — sink a fixed-position sample rather than walking the whole
+  structure, and make every row of a group sink the *same* shape, or the group's
+  ratio measures the digests rather than the implementations.
+
+Both rows of a group should carry comparable sink cost. Where a representation
+makes that impossible — a `ZMod` element above `2 ^ 63` has no cheap word digest
+while its fast counterpart does — the residual shows up in `harness-floor`
+territory and the group's ratio is a lower bound on the real speedup.
+
+### Harness self-check
+
+`harness-floor` times an empty body, giving the per-iteration cost of the loop
+and the sink; every other benchmark's reported time sits on top of it.
+`harness-canary` times a body with a known, non-eliminable cost and **fails the
+run** if it does not exceed the floor by at least `canaryFloorRatio`. A benchmark
+that has been optimised away otherwise looks exactly like a benchmark that got
+very fast, and the canary is what tells the two apart. Both are measured whenever
+either is selected, because the check is a comparison between them.
 
 ## Determinism
 

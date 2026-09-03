@@ -24,6 +24,7 @@ env:
   # every registered group, and a new group is only covered here once added below.
   # An unknown key fails the run, so a renamed group is caught rather than dropped.
   BENCH_CI_GROUPS: >-
+    harness-floor,harness-canary,
     univariate-dense-koalabear,univariate-dense-babybear,
     univariate-sparse-koalabear,
     univariate-monic-remainder-small-koalabear,
