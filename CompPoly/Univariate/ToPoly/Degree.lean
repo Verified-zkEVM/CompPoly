@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen
+Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Julian Sutherland
 -/
 module
 
@@ -187,6 +187,20 @@ theorem eval_eq_sum_degreeLTEquiv [DecidableEq R] {n : ℕ} {p : CPolynomial R}
 end degreeLTEquiv
 
 end LinearEquiv
+
+section OfFinCoeff
+
+variable [LawfulBEq R] [DecidableEq R]
+
+/-- The polynomial built from `N` coefficients has `toPoly` of degree below `N`. -/
+theorem degree_toPoly_ofFinCoeff_lt (N : ℕ) (c : ℕ → R) :
+    (ofFinCoeff N c).toPoly.degree < (N : WithBot ℕ) := by
+  rw [← degree_toPoly, degree_lt_iff_coeff_zero]
+  intro k hk
+  rw [coeff_ofFinCoeff]
+  exact if_neg (by omega)
+
+end OfFinCoeff
 
 end CPolynomial
 
