@@ -130,7 +130,9 @@ Three files measure timings at *elaboration* time via `#eval`:
 - `tests/CompPolyTests/Univariate/NTT/Benchmark.lean` — NTT-vs-naive crossover
   sweep over 20 operand sizes, `IO.monoMsNow`.
 - `tests/CompPolyTests/Bivariate/KroneckerBenchmark.lean`
-- `tests/CompPolyTests/Fields/Binary/CommonBench.lean`
+- `CommonBench.lean` under `tests/CompPolyTests/Fields/Binary/` (removed in 12.4;
+  its correctness guards now live in
+  `tests/CompPolyTests/Fields/Binary/Common.lean`)
 
 None is imported by `tests/CompPolyTests.lean`, so none runs under `lake test`
 or in CI. Each documents its own manual invocation (`lake build
@@ -1100,7 +1102,7 @@ anywhere in this document.
 | CI bench steps | `.github/workflows/lean_action_ci.yml:210` |
 | CI group allowlist | `.github/workflows/lean_action_ci.yml:22` (`BENCH_CI_GROUPS`) |
 | Build-time baseline logic | `scripts/build_timing_report.sh`, `lean_action_ci.yml:283` |
-| Orphaned `#eval` benchmarks | `tests/CompPolyTests/Univariate/NTT/Benchmark.lean`, `tests/CompPolyTests/Bivariate/KroneckerBenchmark.lean`, `tests/CompPolyTests/Fields/Binary/CommonBench.lean` |
+| Orphaned `#eval` benchmarks | `tests/CompPolyTests/Univariate/NTT/Benchmark.lean`, `tests/CompPolyTests/Bivariate/KroneckerBenchmark.lean` (a third, `CommonBench.lean`, was removed in 12.4) |
 
 ---
 
@@ -1234,7 +1236,7 @@ matters more than the absolute offset, and it is the specific thing to fix.
    `GuruswamiSudan/ReceivedWord.lean:439-446`).
 
 7. **§6.6's "delete the three orphaned `tests/` benchmarks" would drop real
-   coverage.** `tests/CompPolyTests/Fields/Binary/CommonBench.lean` also carries
+   coverage.** The since-removed `CommonBench.lean` also carried
    four `#guard` correctness checks and a retained baseline `clMul` implementation
    (the deleted `Finset.fold`-over-`Fin 256` version) used as a reference against
    the current one. Nothing imports the file, so CI never runs those guards. They
@@ -1304,7 +1306,7 @@ reviews as a small diff and the stack merges bottom-up. Base of the stack is
 | 1 | `dhsorens/bench-measurement-core` | Cheap `UInt64` sink in the timed loop, forcing discipline, real warmup, floor + canary groups, `jsonString` escaping, symmetric additive-NTT digests | landed |
 | 2 | `dhsorens/bench-sampling` | Multi-sample collection, median/MAD/Tukey stats, unreplicated flags, capped validation pass reused as warmup | landed |
 | 3 | `dhsorens/bench-determinism` | Per-group seeding from the group key, registration made authoritative, dead-code removal | landed |
-| 4 | `dhsorens/bench-reporting` | `Harness/Emit`, cross-platform hardware probe, `bench/out/`, CI step moved off the blocking job, `docs/wiki/benchmarking.md`, `clMul` guard migration | not started |
+| 4 | `dhsorens/bench-reporting` | Cross-platform hardware probe, `bench/out/`, `docs/wiki/benchmarking.md`, `clMul` guard migration | landed |
 
 ### 12.1 Measurement core (`dhsorens/bench-measurement-core`)
 
@@ -1499,3 +1501,64 @@ since the validation pass length derives from the measured iteration count.
 diffing two result files must key on `(name, field, input_shape)` — keying on
 `name` alone silently collapses those rows and reports false differences. Worth
 knowing before the comparison tooling in §6.7 gets written.
+
+### 12.4 Reporting, platform, and docs (`dhsorens/bench-reporting`)
+
+**Darwin hardware probe.** `collectRunnerHardware` falls back to `sysctl` when
+neither `lscpu` nor `nproc` exists, so a local run reports the machine that
+produced a number instead of `unavailable outside GitHub Actions`. `df --output`
+is GNU-only, so the darwin path parses the full `df -h` table where the size is
+the second field. A local report now reads
+`Apple M3 Max / 16 logical CPUs / 64 GiB`.
+
+**Single output directory.** Reports and results go to `bench/out/`, created on
+demand and ignored wholesale, replacing two ignore rules across two files. This
+also closes 11.4.8's live hazard: CI's artifact glob was `bench/results-*.jsonl`,
+correct on a fresh checkout but locally sweeping every stale file into the
+artifact. The 17 accumulated output files, including the May 2026
+`evaluation-*` generation, are gone.
+
+**`clMul` guards rescued before deletion.** The `CommonBench.lean` file under
+`tests/CompPolyTests/Fields/Binary/` carried four `#guard`
+correctness checks and the removed `Finset.fold`-over-`Fin 256` baseline that
+pins the current `clMul` to the behaviour it replaced — none of which CI ran,
+because nothing imported the file. They now live in
+`tests/CompPolyTests/Fields/Binary/Common.lean`, which `CompPolyTests.lean`
+imports, and the benchmark file is deleted. Verified by breaking one guard and
+confirming the build fails, then restoring it. This is the coverage §6.6 would
+have deleted silently.
+
+`tests/CompPolyTests/Univariate/NTT/Benchmark.lean` and
+`KroneckerBenchmark.lean` are deliberately left in place: the former holds the
+only NTT-vs-schoolbook crossover logic in the repo and is the specification for a
+future crossover metric.
+
+**`docs/wiki/benchmarking.md`** added and registered in both hand-maintained
+lists in `docs/wiki/README.md`, since `check-docs-integrity.py` validates that
+links resolve but not that a page is registered anywhere. It owns the two-pass
+model, the sink rule, how to read a `Spread` column, the self-check, determinism,
+how to add a group, and a known-gaps list. The duplicated line at
+`docs/wiki/quickstart.md:111-112` is fixed and `generated-files.md` updated.
+
+**Deviations from the plan.**
+
+1. *The benchmark step was not moved off the blocking CI job.* The decision
+   recorded in 11.6 was that measurement quality should not trade against CI
+   duration, and it has not: nothing in PRs 1-3 caps sampling to fit a budget.
+   But *structurally* moving benchmarks to their own job means a second
+   Mathlib-dependent build, which trades a real and recurring CI cost for a
+   scheduling benefit. That is a cost decision rather than an engineering one and
+   is left open — see below. The `BENCH_CI_GROUPS` comment no longer claims
+   wall-clock is the limiting criterion, and the step keeps its fail-closed
+   behaviour: benchmark *timings* are informational, but a checksum mismatch or a
+   canary failure is a correctness signal that should fail the run.
+2. *A separate reporting module was not split out.* `Common.lean` is down from 935 to ~1020
+   lines gross, but four concerns have already moved into `Harness/` (`Sink`,
+   `Timer`, `Sample`, `Stats`) and the remaining reporting code is about to be
+   rewritten anyway when per-representation floors and the label-table retirement
+   land. Moving it now would mean moving it twice.
+
+**Open decision.** Whether benchmarks should run as a separate parallel CI job.
+Trade-off: it removes ~5 minutes from the build job's critical path but adds a
+second Mathlib-dependent build to every run. Worth deciding alongside result
+storage, since a nightly job storing history would change the calculus.

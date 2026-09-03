@@ -11,6 +11,8 @@ are too specific or too changeable to keep at the repo root.
 - [`repo-map.md`](repo-map.md) - where to edit and how the main subtrees relate.
 - [`generated-files.md`](generated-files.md) - derived outputs and their sources of
   truth.
+- [`benchmarking.md`](benchmarking.md) - how the benchmark suite measures, how to
+  read its output, and how to add a group.
 - [`build-cache.md`](build-cache.md) - Mathlib's olean cache and CompPoly's prebuilt
   release archive.
 - [`module-system.md`](module-system.md) - Lean module-system conventions, `meta`
@@ -34,6 +36,8 @@ are too specific or too changeable to keep at the repo root.
   - `quickstart.md` for commands, validation, and CI expectations.
   - `repo-map.md` for repo structure and work-area routing.
   - `generated-files.md` for derived outputs and source-of-truth rules.
+  - `benchmarking.md` for benchmark measurement, output interpretation, and
+    adding groups.
   - `build-cache.md` for prebuilt-artifact caches and how they are published.
   - `module-system.md` for module headers, `public`/`meta` imports, and privacy.
   - `representations-and-bridges.md` for representation choice and Mathlib bridges.

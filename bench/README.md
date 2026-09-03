@@ -46,17 +46,18 @@ lake exe CompPolyBench --markdown-only --groups univariate-low-product-koalabear
 
 ## Output
 
-Each run writes generated JSONL and Markdown reports under `bench/`:
+Each run writes generated JSONL and Markdown reports under `bench/out/`, which
+is created on demand and ignored in its entirety:
 
 ```text
-results-YYMMDD-HHMMSS.jsonl
-report-YYMMDD-HHMMSS.md
+bench/out/results-YYMMDD-HHMMSS.jsonl
+bench/out/report-YYMMDD-HHMMSS.md
 ```
 
 By default, a run writes both files. A checksum mismatch is reported in the
 Markdown report and makes the executable exit nonzero after writing artifacts.
 Within each group, checksums are computed over the shared prefix of iterations
-run by every implementation in that group.
+run by every implementation in that group, capped at `validationIterationCap`.
 
 ## What Is Measured
 

@@ -109,7 +109,6 @@ to be covered there. See [`../../bench/README.md`](../../bench/README.md).
   as an enforcing gate, and posts a build-timing report. It also builds and runs
   `CompPolyBench --medium` over the curated
   `BENCH_CI_GROUPS` selection, then uploads benchmark reports as CI artifacts.
-  `BENCH_CI_GROUPS` selection, then uploads benchmark reports as CI artifacts.
   A full cold rebuild (`rm -rf .lake/build && lake build`) runs automatically
   when `lean-toolchain` or `lake-manifest.json` differs from the comparison base
   (PR base, previous push tip, or merge-base with `main` on manual dispatch).

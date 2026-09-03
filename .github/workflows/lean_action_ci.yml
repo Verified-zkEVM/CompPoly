@@ -19,10 +19,15 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Benchmark groups CI runs, keeping the benchmark step's wall-clock bounded as the
-  # suite grows. This is deliberately a subset: `lake exe CompPolyBench --list` shows
-  # every registered group, and a new group is only covered here once added below.
-  # An unknown key fails the run, so a renamed group is caught rather than dropped.
+  # Benchmark groups CI runs. This is deliberately a subset: `lake exe CompPolyBench
+  # --list` shows every registered group, and a new group is only covered here once
+  # added below. An unknown key fails the run, so a renamed group is caught rather
+  # than dropped.
+  #
+  # The step runs after the build it reuses, so its cost is wall-clock on this job
+  # and nothing else. Benchmark *timings* are informational, but a checksum mismatch
+  # or a harness-canary failure is a correctness signal and deliberately fails the
+  # run, so this step has no `continue-on-error`.
   BENCH_CI_GROUPS: >-
     harness-floor,harness-canary,
     univariate-dense-koalabear,univariate-dense-babybear,
@@ -221,8 +226,8 @@ jobs:
         run: |
           rm -rf "$EVALUATION_BENCH_ARTIFACT_DIR"
           mkdir -p "$EVALUATION_BENCH_ARTIFACT_DIR"
-          results=(bench/results-*.jsonl)
-          reports=(bench/report-*.md)
+          results=(bench/out/results-*.jsonl)
+          reports=(bench/out/report-*.md)
           if [ -e "${results[0]}" ]; then
             cp "${results[@]}" "$EVALUATION_BENCH_ARTIFACT_DIR/"
           fi

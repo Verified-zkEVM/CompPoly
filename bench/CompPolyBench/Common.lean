@@ -309,13 +309,20 @@ def makeRunId : IO String := do
   let started ← Std.Time.PlainDateTime.now
   pure <| started.format "yyMMdd-HHmmss"
 
+/-- Directory holding generated benchmark output.
+
+A single directory rather than files dropped beside the sources, so a local run
+does not accumulate reports in `bench/` and CI's artifact glob cannot pick up
+anything but the run it just made. -/
+def outputDir : System.FilePath := "bench" / "out"
+
 /-- Path for the generated JSONL benchmark results. -/
 def resultsPath (runId : String) : System.FilePath :=
-  "bench" / ("results-" ++ runId ++ ".jsonl")
+  outputDir / ("results-" ++ runId ++ ".jsonl")
 
 /-- Path for the generated Markdown benchmark report. -/
 def reportPath (runId : String) : System.FilePath :=
-  "bench" / ("report-" ++ runId ++ ".md")
+  outputDir / ("report-" ++ runId ++ ".md")
 
 /-- Trim command output and normalize empty output to the empty string. -/
 def trimCommandOutput (s : String) : String :=
@@ -380,11 +387,60 @@ def memTotalGib (output : String) : Option String :=
   go (output.splitOn "\n")
 
 /-- Collect best-effort GitHub runner or local machine metadata. -/
+def sysctlValue (key : String) : IO (Option String) :=
+  runInfoCommand "sysctl" #["-n", key]
+
+/-- Size column of a BSD `df -h` row.
+
+`df --output=size` is GNU-only, so the darwin probe parses the full table and the
+size is the second field rather than the first. -/
+def dfRootSizeBsd (output : String) : Option String :=
+  match output.splitOn "\n" with
+  | _header :: row :: _ =>
+      match whitespaceFields row with
+      | _fs :: size :: _ => some size
+      | _ => none
+  | _ => none
+
+/-- Convert a byte count reported by `sysctl` to whole gibibytes. -/
+def bytesToGib (text : String) : Option String :=
+  (text.trimAscii.toString.toNat?).map fun bytes ↦
+    toString (bytes / (1024 * 1024 * 1024)) ++ " GiB"
+
+/-- Collect host details on darwin, where none of the Linux probes exist. -/
+def collectDarwinHardware : IO RunnerHardware := do
+  let cpuModel ← sysctlValue "machdep.cpu.brand_string"
+  let logicalCpus ← sysctlValue "hw.logicalcpu"
+  let physicalCpus ← sysctlValue "hw.physicalcpu"
+  let memBytes ← sysctlValue "hw.memsize"
+  let dfRoot ← runInfoCommand "df" #["-h", "/"]
+  pure {
+    runnerOs := some "macOS"
+    runnerArch := none
+    cpuModel := cpuModel
+    logicalCpus := logicalCpus
+    coresPerSocket := physicalCpus
+    threadsPerCore := none
+    sockets := some "1"
+    ramTotal := memBytes.bind bytesToGib
+    rootDisk := dfRoot.bind dfRootSizeBsd
+    hypervisor := none }
+
+/-- Collect host details, preferring the Linux probes and falling back to darwin's.
+
+The Linux path is the one CI takes; the darwin path exists so a local run reports
+which machine produced a number instead of `unavailable outside GitHub Actions`. -/
 def collectRunnerHardware : IO RunnerHardware := do
   let runnerOs ← IO.getEnv "RUNNER_OS"
   let runnerArch ← IO.getEnv "RUNNER_ARCH"
   let nproc ← runInfoCommand "nproc" #[]
   let lscpu ← runInfoCommand "lscpu" #["--json"]
+  if lscpu.isNone && nproc.isNone then
+    let darwin ← collectDarwinHardware
+    if darwin.cpuModel.isSome then
+      return { darwin with
+        runnerOs := runnerOs.orElse fun _ ↦ darwin.runnerOs
+        runnerArch := runnerArch }
   let meminfo ←
     try
       let text ← IO.FS.readFile "/proc/meminfo"

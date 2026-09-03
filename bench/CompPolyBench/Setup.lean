@@ -162,6 +162,7 @@ def runSelected (selection : BenchSelection) (output : BenchOutput) (preset : Be
   let gen := mkStdGen seed
   let (groups, _) ← runSelectedTasks allTasks preset selection gen
   let records := flattenGroups groups
+  IO.FS.createDirAll outputDir
   if output.writeJson then
     IO.FS.writeFile (resultsPath runId) (renderJsonl records)
   if output.writeMarkdown then
