@@ -27,12 +27,6 @@ namespace CompPolyBench
 /-- Input-shape label shared by the Goldilocks arithmetic benchmarks. -/
 private def goldilocksShape : String := "256 random elements"
 
-/-- Benchmark group metadata for Goldilocks arithmetic. -/
-def goldilocksGroupInfos : List BenchGroupInfo := [
-  ⟨"fields-goldilocks-mul", "Goldilocks multiplication"⟩,
-  ⟨"fields-goldilocks-inv", "Goldilocks inversion"⟩
-]
-
 /-- Time canonical against native-word Goldilocks multiplication as a single group. -/
 private def runGoldilocksMul (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do

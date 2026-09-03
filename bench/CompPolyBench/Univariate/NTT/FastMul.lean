@@ -20,12 +20,6 @@ open CompPoly
 
 namespace CompPolyBench
 
-/-- Benchmark group metadata for `CompPoly.Univariate.NTT.FastMul`. -/
-def univariateNttFastMulGroupInfos : List BenchGroupInfo := [
-  ⟨"univariate-mul-koalabear", "Univariate multiplication (KoalaBear)"⟩,
-  ⟨"univariate-mul-babybear", "Univariate multiplication (BabyBear)"⟩
-]
-
 /-- Display and checksum operations associated with a benchmark field. -/
 private structure BenchField (F : Type*) where
   id : String
@@ -178,10 +172,5 @@ def univariateNttFastMulTasks : List BenchTask := [
     ⟨"univariate-mul-babybear", "Univariate multiplication (BabyBear)"⟩
     runBabyBearUnivariateMul
 ]
-
-/-- Run selected direct univariate multiplication and root-of-unity NTT benchmarks. -/
-def runUnivariateNttFastMul (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :
-    IO (Array BenchGroup × StdGen) := do
-  runSelectedTasks univariateNttFastMulTasks preset selection gen
 
 end CompPolyBench

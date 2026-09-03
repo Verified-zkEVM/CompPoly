@@ -19,13 +19,6 @@ open CompPoly
 
 namespace CompPolyBench
 
-/-- Benchmark group metadata for `CompPoly.Bivariate.Basic`. -/
-def bivariateGroupInfos : List BenchGroupInfo := [
-  ⟨"bivariate-full-koalabear", "Bivariate full evaluation (KoalaBear)"⟩,
-  ⟨"bivariate-full-goldilocks", "Bivariate full evaluation (Goldilocks)"⟩,
-  ⟨"bivariate-full-bn254", "Bivariate full evaluation (BN254)"⟩
-]
-
 /-- Shared input-shape label for bivariate evaluation benchmarks. -/
 private def bivariateInputShape : String :=
   "xDegree<8, yDegree<64, one nonzero per 4 coeffs, 32 points"
@@ -193,10 +186,5 @@ def bivariateTasks : List BenchTask := [
     ⟨"bivariate-full-bn254", "Bivariate full evaluation (BN254)"⟩
     runBn254Bivariate
 ]
-
-/-- Run selected bivariate full-evaluation benchmarks. -/
-def runBivariate (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :
-    IO (Array BenchGroup × StdGen) := do
-  runSelectedTasks bivariateTasks preset selection gen
 
 end CompPolyBench

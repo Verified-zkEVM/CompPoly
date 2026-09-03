@@ -165,11 +165,20 @@ either is selected, because the check is a comparison between them.
 
 ## Determinism
 
-Input generation uses a fixed seed. Checksums are stable for the same group
-selection and preset. They are a cross-check between implementations within one
-group, not a value to compare across runs: the generator is threaded through the
-selected groups in order, so changing the selection — or adding a group — changes
-the inputs, and therefore the checksums, of the groups that follow it.
+Each group derives its own input generator from its key (`genFor`), so a group's
+inputs do not depend on which other groups ran, or in what order. Concretely:
+
+- `--group X` and `--groups X,Y` measure the same inputs for `X`, in either order;
+- adding, removing or renaming a group changes nothing for any other group;
+- the `BENCH_CI_GROUPS` subset measures the same inputs as a full local run;
+- a checksum is comparable across runs and across commits, so a change in one is
+  a real change in behaviour rather than a change in the input schedule.
+
+Checksums remain a cross-check between the implementations within a group; that
+they are now also stable across runs is what makes them usable as regression
+fixtures. Digests are still preset-dependent, because the validation pass runs
+`min validationIterationCap` of the group's measured iteration count and that
+count varies by preset.
 
 ## CI
 

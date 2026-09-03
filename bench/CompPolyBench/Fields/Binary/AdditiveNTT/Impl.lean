@@ -17,13 +17,6 @@ open ConcreteBinaryTower
 
 namespace CompPolyBench
 
-/-- Benchmark group metadata for `CompPoly.Fields.Binary.AdditiveNTT.Impl`. -/
-def additiveNttGroupInfos : List BenchGroupInfo := [
-  ⟨"additive-ntt-btf3-l2-r2", "Additive NTT BTF3 l=2 R_rate=2"⟩,
-  ⟨"additive-ntt-btf3-l4-r2", "Additive NTT BTF3 l=4 R_rate=2"⟩,
-  ⟨"additive-ntt-btf4-l7-r2", "Additive NTT BTF4 l=7 R_rate=2"⟩
-]
-
 /-- Checksum all output values from a `BTF₃` additive NTT benchmark. -/
 private def checksumBtf3Output {n : Nat} (output : Fin (2 ^ n) → AdditiveNTT.BTF₃) : Nat :=
   (List.finRange (2 ^ n)).foldl
@@ -207,10 +200,5 @@ def additiveNttTasks : List BenchTask := [
     ⟨"additive-ntt-btf4-l7-r2", "Additive NTT BTF4 l=7 R_rate=2"⟩
     runAdditiveNttBtf4L7R2
 ]
-
-/-- Run selected additive NTT benchmarks. -/
-def runAdditiveNtt (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :
-    IO (Array BenchGroup × StdGen) := do
-  runSelectedTasks additiveNttTasks preset selection gen
 
 end CompPolyBench

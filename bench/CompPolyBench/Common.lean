@@ -181,13 +181,27 @@ def BenchSelection.filterTasks (selection : BenchSelection)
       tasks.filter fun task ↦
         selection.selectsAny (task.infos.map fun info ↦ info.groupKey)
 
-/-- Build one registry task from metadata and a single-group runner. -/
+/-- Derive a benchmark group's input generator from its key.
+
+Seeding per group rather than threading one generator through the run is what
+makes a group's inputs independent of which other groups ran, and in what order.
+Without it `--group X` and `--groups X,Y` measure different inputs, a group added
+anywhere changes the inputs of every group after it, and no digest can be
+compared across runs. -/
+def genFor (groupKey : String) : StdGen :=
+  mkStdGen (seed ^^^ (String.hash groupKey).toNat)
+
+/-- Build one registry task from metadata and a single-group runner.
+
+The group's key and title come from `info`, which is what `--list` and the CI
+allowlist validate against, so a runner cannot drift from its registration. The
+incoming generator is passed through untouched; each group draws its own. -/
 def BenchTask.fromGroupRunner (info : BenchGroupInfo)
     (runGroup : BenchPreset → StdGen → IO (BenchGroup × StdGen)) : BenchTask where
   infos := [info]
   runTask := fun preset _ gen ↦ do
-    let (group, gen) ← runGroup preset gen
-    pure (#[group], gen)
+    let (group, _) ← runGroup preset (genFor info.groupKey)
+    pure (#[{ group with groupKey := info.groupKey, title := info.title }], gen)
 
 /-- Total measured runtime across all benchmark records in a group. -/
 def totalGroupNanos (records : List BenchRecord) : Nat :=

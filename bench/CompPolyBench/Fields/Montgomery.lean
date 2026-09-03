@@ -28,13 +28,6 @@ namespace CompPolyBench
 /-- Input-shape label shared by the scalar inversion benchmarks. -/
 private def scalarInvShape : String := "256 random elements"
 
-/-- Benchmark group metadata for scalar-field inversion. -/
-def montgomeryInvGroupInfos : List BenchGroupInfo := [
-  ⟨"fields-mont64x8-bn254-inv", "Scalar-field inversion (BN254)"⟩,
-  ⟨"fields-mont64x8-bls12-381-inv", "Scalar-field inversion (BLS12-381)"⟩,
-  ⟨"fields-mont64x8-bls12-377-inv", "Scalar-field inversion (BLS12-377)"⟩
-]
-
 /-- Time the three inversion implementations of one scalar field as a single group. -/
 private def runScalarInv (modulus : Nat) [Mont64x8Field modulus] [GcdData modulus]
     (groupKey title fieldName fastFieldName : String)

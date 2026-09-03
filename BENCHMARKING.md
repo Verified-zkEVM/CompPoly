@@ -1303,7 +1303,7 @@ reviews as a small diff and the stack merges bottom-up. Base of the stack is
 |---|---|---|---|
 | 1 | `dhsorens/bench-measurement-core` | Cheap `UInt64` sink in the timed loop, forcing discipline, real warmup, floor + canary groups, `jsonString` escaping, symmetric additive-NTT digests | landed |
 | 2 | `dhsorens/bench-sampling` | Multi-sample collection, median/MAD/Tukey stats, unreplicated flags, capped validation pass reused as warmup | landed |
-| 3 | `dhsorens/bench-determinism` | Per-group seeding from the group key, key/title declared once, dead-code removal, committed digest fixtures | not started |
+| 3 | `dhsorens/bench-determinism` | Per-group seeding from the group key, registration made authoritative, dead-code removal | landed |
 | 4 | `dhsorens/bench-reporting` | `Harness/Emit`, cross-platform hardware probe, `bench/out/`, CI step moved off the blocking job, `docs/wiki/benchmarking.md`, `clMul` guard migration | not started |
 
 ### 12.1 Measurement core (`dhsorens/bench-measurement-core`)
@@ -1461,3 +1461,41 @@ degree 65536, the additive-NTT reference rows, `univariate-mod-by-monic-medium-*
 No amount of harness work fixes these; they need smaller input shapes, which is a
 per-benchmark judgement for the systematic pass. They are now visibly marked
 rather than silently averaged.
+
+### 12.3 Determinism (`dhsorens/bench-determinism`)
+
+**The change.** `genFor` derives each group's `StdGen` from its key, applied
+inside `BenchTask.fromGroupRunner`. Because all 66 registered tasks go through
+that one function (11.4.5), this is a three-line change and no group runner's
+signature moves. The shared generator is now passed through untouched.
+
+**Verified.** `--group fields-goldilocks-mul`, `--groups fields-goldilocks-mul,additive-ntt-btf3-l2-r2`
+and the same pair reversed all produce identical digests for every row. Running
+the exact `BENCH_CI_GROUPS` subset reproduces the full run's digest on **all 184
+comparable rows** — the property §3.4 says is unobtainable today. Full 68-group
+run: exit 0, 286 records, 273 s.
+
+**Registration is now authoritative.** `fromGroupRunner` stamps `groupKey` and
+`title` from the `BenchGroupInfo` that `--list` and the CI allowlist validate
+against, so a runner's own literals can no longer drift from its registration.
+The literals inside the 66 group runners are now inert; removing them means
+rewriting every runner's return expression and is left to the systematic pass,
+which will touch each one anyway.
+
+**Dead code removed.** 25 declarations with no references anywhere: the ten
+per-area `runX` wrappers and fifteen `*GroupInfos` aggregate lists (seven dead
+before this branch, eight more once the `runX` wrappers that consumed them
+went). 175 lines deleted, 17 added.
+
+**Digest fixtures deferred, deliberately.** Per-group seeding is the prerequisite
+and it now holds, but committing 250 expected digests immediately before a
+systematic pass that will deliberately change many benchmarks' input shapes would
+produce a fixture file in near-permanent conflict. The mechanism is worth adding
+once the benchmark set settles. Note also that digests remain preset-dependent,
+since the validation pass length derives from the measured iteration count.
+
+**Comparison keys need care.** Record `name` is not unique: `extension-mul` and
+`extension-inv` are each emitted by the ext4, ext5 and ext6 groups. Any tool
+diffing two result files must key on `(name, field, input_shape)` — keying on
+`name` alone silently collapses those rows and reports false differences. Worth
+knowing before the comparison tooling in §6.7 gets written.
