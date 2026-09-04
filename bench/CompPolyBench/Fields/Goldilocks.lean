@@ -27,12 +27,6 @@ namespace CompPolyBench
 /-- Input-shape label shared by the Goldilocks arithmetic benchmarks. -/
 private def goldilocksShape : String := "256 random elements"
 
-/-- Benchmark group metadata for Goldilocks arithmetic. -/
-def goldilocksGroupInfos : List BenchGroupInfo := [
-  ⟨"fields-goldilocks-mul", "Goldilocks multiplication"⟩,
-  ⟨"fields-goldilocks-inv", "Goldilocks inversion"⟩
-]
-
 /-- Time canonical against native-word Goldilocks multiplication as a single group. -/
 private def runGoldilocksMul (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
@@ -45,12 +39,13 @@ private def runGoldilocksMul (preset : BenchPreset) (gen : StdGen) :
   let zmodRecord ← runTimed "goldilocks-mul-zmod" "ZMod" "mul" "Goldilocks.Field"
     goldilocksShape preset warmup zmodMeasured
     (fun i ↦ values.getD (i % values.size) 1 * values.getD ((i + 1) % values.size) 1)
-    checksumZMod (checksumIterations := checksumIterations)
+    checksumZMod (checksumIterations := checksumIterations) (sink := sinkZMod)
   let fastRecord ← runTimed "goldilocks-mul-fast" "UInt64" "mul" "Goldilocks.Fast.Field"
     goldilocksShape preset warmup fastMeasured
     (fun i ↦ fastValues.getD (i % fastValues.size) 1 *
       fastValues.getD ((i + 1) % fastValues.size) 1)
     checksumGoldilocksFast (checksumIterations := checksumIterations)
+    (sink := sinkGoldilocksFast)
   pure ({ groupKey := "fields-goldilocks-mul", title := "Goldilocks multiplication",
           records := #[zmodRecord, fastRecord] }, gen)
 
@@ -66,11 +61,12 @@ private def runGoldilocksInv (preset : BenchPreset) (gen : StdGen) :
   let zmodRecord ← runTimed "goldilocks-inv-zmod" "ZMod" "inv" "Goldilocks.Field"
     goldilocksShape preset warmup zmodMeasured
     (fun i ↦ (values.getD (i % values.size) 1)⁻¹)
-    checksumZMod (checksumIterations := checksumIterations)
+    checksumZMod (checksumIterations := checksumIterations) (sink := sinkZMod)
   let fastRecord ← runTimed "goldilocks-inv-fast" "UInt64" "inv (Fermat chain)"
     "Goldilocks.Fast.Field" goldilocksShape preset warmup fastMeasured
     (fun i ↦ (fastValues.getD (i % fastValues.size) 1)⁻¹)
     checksumGoldilocksFast (checksumIterations := checksumIterations)
+    (sink := sinkGoldilocksFast)
   pure ({ groupKey := "fields-goldilocks-inv", title := "Goldilocks inversion",
           records := #[zmodRecord, fastRecord] }, gen)
 

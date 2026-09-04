@@ -18,14 +18,6 @@ open CompPoly
 
 namespace CompPolyBench
 
-/-- Benchmark group metadata for `CompPoly.Multivariate.CMvPolynomial`. -/
-def multivariateGroupInfos : List BenchGroupInfo := [
-  ⟨"multivariate-dense-koalabear", "Multivariate dense evaluation (KoalaBear)"⟩,
-  ⟨"multivariate-sparse-koalabear", "Multivariate sparse evaluation (KoalaBear)"⟩,
-  ⟨"multivariate-dense-goldilocks", "Multivariate dense evaluation (Goldilocks)"⟩,
-  ⟨"multivariate-sparse-goldilocks", "Multivariate sparse evaluation (Goldilocks)"⟩
-]
-
 /-- Number of variables used by multivariate evaluation benchmarks. -/
 private def multivariateVars : Nat := 5
 
@@ -252,10 +244,5 @@ def multivariateTasks : List BenchTask := [
     ⟨"multivariate-sparse-goldilocks", "Multivariate sparse evaluation (Goldilocks)"⟩
     runGoldilocksMultivariateSparse
 ]
-
-/-- Run selected sparse and dense multivariate evaluation benchmarks. -/
-def runMultivariate (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :
-    IO (Array BenchGroup × StdGen) := do
-  runSelectedTasks multivariateTasks preset selection gen
 
 end CompPolyBench

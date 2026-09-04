@@ -32,19 +32,6 @@ open CompPoly
 
 namespace CompPolyBench
 
-/-- Benchmark group metadata for bivariate linear division (3 fields × 3 sizes). -/
-def factorGroupInfos : List BenchGroupInfo := [
-  ⟨"bivariate-divlinear-koalabear-y8", "Bivariate division by Y - f (KoalaBear, yDeg<8)"⟩,
-  ⟨"bivariate-divlinear-koalabear-y16", "Bivariate division by Y - f (KoalaBear, yDeg<16)"⟩,
-  ⟨"bivariate-divlinear-koalabear-y32", "Bivariate division by Y - f (KoalaBear, yDeg<32)"⟩,
-  ⟨"bivariate-divlinear-goldilocks-y8", "Bivariate division by Y - f (Goldilocks, yDeg<8)"⟩,
-  ⟨"bivariate-divlinear-goldilocks-y16", "Bivariate division by Y - f (Goldilocks, yDeg<16)"⟩,
-  ⟨"bivariate-divlinear-goldilocks-y32", "Bivariate division by Y - f (Goldilocks, yDeg<32)"⟩,
-  ⟨"bivariate-divlinear-bn254-y8", "Bivariate division by Y - f (BN254, yDeg<8)"⟩,
-  ⟨"bivariate-divlinear-bn254-y16", "Bivariate division by Y - f (BN254, yDeg<16)"⟩,
-  ⟨"bivariate-divlinear-bn254-y32", "Bivariate division by Y - f (BN254, yDeg<32)"⟩
-]
-
 /-- Input-shape label for a given coefficient count (`xDegree < 8`, so
 `yDegree < terms / 8`). -/
 private def factorInputShape (terms : Nat) : String :=

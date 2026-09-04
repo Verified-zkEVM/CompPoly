@@ -17,13 +17,6 @@ open ConcreteBinaryTower
 
 namespace CompPolyBench
 
-/-- Benchmark group metadata for `CompPoly.Fields.Binary.AdditiveNTT.Impl`. -/
-def additiveNttGroupInfos : List BenchGroupInfo := [
-  ⟨"additive-ntt-btf3-l2-r2", "Additive NTT BTF3 l=2 R_rate=2"⟩,
-  ⟨"additive-ntt-btf3-l4-r2", "Additive NTT BTF3 l=4 R_rate=2"⟩,
-  ⟨"additive-ntt-btf4-l7-r2", "Additive NTT BTF4 l=7 R_rate=2"⟩
-]
-
 /-- Checksum all output values from a `BTF₃` additive NTT benchmark. -/
 private def checksumBtf3Output {n : Nat} (output : Fin (2 ^ n) → AdditiveNTT.BTF₃) : Nat :=
   (List.finRange (2 ^ n)).foldl
@@ -36,10 +29,45 @@ private def checksumBtf3OutputArray {n : Nat} (output : Array AdditiveNTT.BTF₃
 /-- Checksum a concrete binary-tower additive NTT output array. -/
 private def checksumConcreteBtfOutputArray {k n : Nat} (output : Array (ConcreteBTField k)) :
     Nat :=
+  let values := AdditiveNTT.arrayToFinFunction (2 ^ n) output
   (List.finRange (2 ^ n)).foldl
-    (fun acc i ↦
-      mixChecksum acc
-        (checksumConcreteBtf ((AdditiveNTT.arrayToFinFunction (2 ^ n) output) i))) 0
+    (fun acc i ↦ mixChecksum acc (checksumConcreteBtf (values i))) 0
+
+/-! ### Timed-region sinks
+
+The reference row returns `Fin (2 ^ n) → α` — a *function*, so an output value
+does not exist until an index is applied — while the fast row returns a
+materialised `Array`. Realising the whole result is therefore part of the
+reference row's work and not part of the fast row's, so both sinks fold over
+every output position: sampling a few positions would leave the reference row
+computing a fraction of what the fast row computes and the ratio would be
+meaningless.
+
+What these avoid, relative to the `Nat` digests above, is the bignum
+`mixChecksum` and the per-iteration `List.finRange (2 ^ n)` materialisation. The
+fold itself is a handful of machine instructions per output. -/
+
+/-- Fold every position of a `Fin`-indexed output into a sink accumulator. -/
+@[inline] private def sinkFinAll {m : Nat} (toNat : α → Nat) (output : Fin m → α) : UInt64 :=
+  Nat.fold m (fun i h acc ↦ sinkStep acc (natSink (toNat (output ⟨i, h⟩)))) 0
+
+/-- Fold every element of an output array into a sink accumulator. -/
+@[inline] private def sinkArrayAll (toNat : α → Nat) (output : Array α) : UInt64 :=
+  output.foldl (fun acc x ↦ sinkStep acc (natSink (toNat x))) 0
+
+/-- Sink a `BTF₃` additive NTT output function. -/
+@[inline] private def sinkBtf3Output {n : Nat} (output : Fin (2 ^ n) → AdditiveNTT.BTF₃) :
+    UInt64 :=
+  sinkFinAll checksumBtf3 output
+
+/-- Sink a `BTF₃` additive NTT output array. -/
+@[inline] private def sinkBtf3OutputArray (output : Array AdditiveNTT.BTF₃) : UInt64 :=
+  sinkArrayAll checksumBtf3 output
+
+/-- Sink a concrete binary-tower additive NTT output array. -/
+@[inline] private def sinkConcreteBtfOutputArray {k : Nat} (output : Array (ConcreteBTField k)) :
+    UInt64 :=
+  sinkArrayAll checksumConcreteBtf output
 
 /-- Run an additive NTT over `BTF₃`. -/
 private def runBtf3Ntt (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_rate < 2 ^ 3)
@@ -97,11 +125,13 @@ private def runAdditiveNttCase (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_ra
     fieldLabel inputShape preset warmup measured
     (fun _ ↦ runBtf3Ntt ℓ R_rate h_ℓ_add_R_rate input)
     (checksumBtf3Output (n := ℓ + R_rate)) (checksumIterations := checksumIterations)
+    (sink := sinkBtf3Output)
   let fastRecord ← runTimed
     fastName "computableAdditiveNTTFast" "computableAdditiveNTTFast"
     fieldLabel inputShape preset warmup fastMeasured
     (fun _ ↦ runBtf3NttFast ℓ R_rate h_ℓ_add_R_rate input)
     (checksumBtf3OutputArray (n := ℓ + R_rate)) (checksumIterations := checksumIterations)
+    (sink := sinkBtf3OutputArray)
   pure ({
       groupKey := key,
       title := s!"Additive NTT BTF3 l={ℓ} R_rate={R_rate}",
@@ -124,6 +154,7 @@ private def runAdditiveNttFastLargeCase (k ℓ R_rate : Nat)
     fieldLabel inputShape preset warmup measured
     (fun _ ↦ runConcreteBtfNttFast k ℓ R_rate h_ℓ_add_R_rate input)
     (checksumConcreteBtfOutputArray (k := k) (n := ℓ + R_rate))
+    (sink := sinkConcreteBtfOutputArray)
   pure ({
       groupKey := key,
       title := s!"Additive NTT BTF{k} l={ℓ} R_rate={R_rate}",
@@ -169,10 +200,5 @@ def additiveNttTasks : List BenchTask := [
     ⟨"additive-ntt-btf4-l7-r2", "Additive NTT BTF4 l=7 R_rate=2"⟩
     runAdditiveNttBtf4L7R2
 ]
-
-/-- Run selected additive NTT benchmarks. -/
-def runAdditiveNtt (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :
-    IO (Array BenchGroup × StdGen) := do
-  runSelectedTasks additiveNttTasks preset selection gen
 
 end CompPolyBench

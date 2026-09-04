@@ -39,12 +39,6 @@ private def cpolysOfFlatArray {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
     polys := polys.push (cpolyOfArray polyCoeffs)
   return polys
 
-/-- Benchmark group metadata for `CompPoly.Univariate.ManyEval`. -/
-def univariateManyEvalGroupInfos : List BenchGroupInfo := [
-  ⟨"univariate-many-one-point-koalabear",
-    "Univariate many-polynomial one-point evaluation (KoalaBear)"⟩
-]
-
 /-- Benchmark runner for KoalaBear many-polynomial one-point evaluation. -/
 private def runKoalaBearManyEvalOnePoint (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
@@ -100,10 +94,5 @@ def univariateManyEvalTasks : List BenchTask := [
       "Univariate many-polynomial one-point evaluation (KoalaBear)"⟩
     runKoalaBearManyEvalOnePoint
 ]
-
-/-- Execute selected many-polynomial evaluation benchmarks. -/
-def runUnivariateManyEval (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :
-    IO (Array BenchGroup × StdGen) := do
-  runSelectedTasks univariateManyEvalTasks preset selection gen
 
 end CompPolyBench

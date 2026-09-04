@@ -26,12 +26,6 @@ namespace CompPolyBench
 /-- Input-shape label shared by the tower benchmarks. -/
 private def towerShape : String := "64 random 128-bit elements, pairwise"
 
-/-- Benchmark group metadata for the binary tower field. -/
-def towerGroupInfos : List BenchGroupInfo := [
-  ⟨"fields-tower-bt128-mul", "Binary tower multiplication (GF(2^128))"⟩,
-  ⟨"fields-tower-bt128-inv", "Binary tower inversion (GF(2^128))"⟩
-]
-
 /-- Limb-fold checksum for packed tower elements; avoids building the 128-bit value. -/
 def checksumFastBT128 (x : Fast.FastBT128) : Nat := x.lo.toNat ^^^ x.hi.toNat
 
