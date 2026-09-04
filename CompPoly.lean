@@ -105,6 +105,12 @@ public import CompPoly.Fields.Binary.BF128Ghash.Impl
 public import CompPoly.Fields.Binary.BF128Ghash.Prelude
 public import CompPoly.Fields.Binary.BF128Ghash.XPowTwoPowGcdCertificate
 public import CompPoly.Fields.Binary.BF128Ghash.XPowTwoPowModCertificate
+public import CompPoly.Fields.Binary.BF64
+public import CompPoly.Fields.Binary.BF64.BaseCertificate
+public import CompPoly.Fields.Binary.BF64.Basic
+public import CompPoly.Fields.Binary.BF64.Ext3
+public import CompPoly.Fields.Binary.BF64.Impl
+public import CompPoly.Fields.Binary.BF64.Reduce
 public import CompPoly.Fields.Binary.Common
 public import CompPoly.Fields.Binary.Tower.Abstract.Algebra
 public import CompPoly.Fields.Binary.Tower.Abstract.Basis
