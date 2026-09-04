@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: CompPoly Contributors
+Authors: Nicolas Schleicher
 -/
 module
 
@@ -164,8 +164,36 @@ instance : Fact (Irreducible ext3Params.poly) :=
 Definitionally `Vector BF64 3`, the three-limb layout `c0 + c1 * y + c2 * y^2`. -/
 abbrev Ext3 : Type := Ext ext3Params
 
+/-- The extension inherits characteristic two from its base field. -/
+instance : CharP Ext3 2 :=
+  charP_of_injective_algebraMap' (R := BF64) (A := Ext3) 2
+
+/-- The adjoined root `y` of `y^3 + y + 1`, as an element of `Ext3`. -/
+def ext3Gen : Ext3 := Ext.gen
+
+/--
+`ext3Gen` is the framework's `Ext.gen`.
+
+Deliberately **not** `@[simp]`: as a rewrite it fires before `ext3Gen_pow_three` can match,
+which would knock that lemma out of the simp set.
+-/
+theorem ext3Gen_eq_gen : ext3Gen = Ext.gen := rfl
+
+/-- `ext3Gen` maps to the adjoined root of the specification. -/
+@[simp] theorem toQuot_ext3Gen : Ext.toQuot ext3Gen = Ext.rt ext3Params := Ext.toQuot_gen
+
+/-- `ext3Gen` is a root of `y^3 + y + 1`, in the form `aeval` expects. -/
+theorem aeval_ext3Gen : aeval ext3Gen ext3Params.poly = 0 := Ext.aeval_gen_poly
+
+/-- **The defining relation**: the adjoined root satisfies `y^3 = y + 1`. -/
+@[simp] theorem ext3Gen_pow_three : ext3Gen ^ 3 = ext3Gen + 1 := by
+  have h := aeval_ext3Gen
+  rw [ext3Params_poly, ext3Poly] at h
+  simp only [map_add, map_pow, aeval_X, aeval_one] at h
+  rw [← sub_eq_zero, CharTwo.sub_eq_add, ← h, add_assoc]
+
 /-- `Ext3` has `2 ^ 192` elements. -/
-theorem card_ext3 : Fintype.card Ext3 = 2 ^ 192 := by
+@[simp] theorem card_ext3 : Fintype.card Ext3 = 2 ^ 192 := by
   rw [Ext.card_ext, ext3Params_q, ext3Params_d, ← pow_mul]
 
 end BF64
