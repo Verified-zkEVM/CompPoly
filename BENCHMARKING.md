@@ -1573,8 +1573,8 @@ performance depends on whatever it transitively calls, and
 `CompPoly/Fields/Montgomery/**` underpins nearly every group, so a filter honest
 enough to be safe would fire on almost every substantive PR. And it reduces the
 *cost* of a signal that is not actionable rather than taking it off the blocking
-path: §12.2 measured 1.4% median dispersion on a quiet local machine, and
-`ubuntu-latest` is a shared 2-vCPU VM.
+path — see finding 5 below for what the runner's noise actually looks like, which
+is not what I assumed.
 
 The step was doing two separable jobs — 41 groups cross-checking a canonical
 `ZMod` model against its native-word implementation on random inputs plus the
@@ -1632,6 +1632,41 @@ groups whose single iteration costs seconds; the numbers are recorded in
 PR, because the correctness gate needs the binary. Only the timed *run* moved
 out. Dropping the compile too would mean dropping the differential check, which
 is the opposite of the priority.
+
+5. *The shared runner is steadier than I assumed, and I had this backwards.* I
+   wrote here and in the docs that CI-runner dispersion would be worse than the
+   1.4% median MAD §12.2 measured locally. The first real CI run of the timing
+   workflow says otherwise: **median MAD 0.2%, p90 0.5%, max 1.0%** across 172
+   replicated rows, appreciably *tighter* than the local figures. A busy
+   development laptop with frequency scaling and heterogeneous cores is a noisier
+   place to measure than an idle VM slice.
+
+   What is worse on CI is the tail: **56 of 172 rows carried severe Tukey
+   outliers, against 27 of 286 locally** — the signature of a quiet baseline
+   punctuated by preemption.
+
+   The decision stands but the reason was wrong, and is corrected everywhere it
+   appeared. Neither figure is what a gate needs: a gate compares *runs against
+   each other*, on a runner whose CPU model varies between runs (§3.6), and one
+   run cannot measure that variance. Timings are advisory because cross-run
+   comparability is unvalidated, not because within-run noise is high.
+   Establishing the run-to-run figure is the next measurement worth making, and
+   is what any threshold should be set from.
+
+**Verified on a real runner**, not only locally. The first push auto-triggered the
+timing workflow through the `bench/**` filter, so both paths ran end to end:
+
+| | duration |
+|---|---:|
+| main CI job, total | 3m29s |
+| ... of which `Validate benchmark implementations` | **46s** |
+| ... of which `Build evaluation benchmark executable` | 64s |
+| timing workflow, total | 4m55s |
+| ... of which `Run benchmarks` | 167s |
+
+On the runner the correctness gate costs 46s where the timed run it replaced
+cost about 167s. The workflow restored both caches, validated its group
+selection, and upserted a PR comment carrying the advisory caveat.
 
 **Not done.** No nightly schedule. Timings are produced when someone asks —
 manual dispatch, a `/bench` comment from a repo member, or a PR touching

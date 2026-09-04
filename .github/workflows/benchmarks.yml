@@ -1,10 +1,14 @@
 name: Benchmarks
 
 # Timings run ONLY on demand. `lean_action_ci.yml` gates on benchmark
-# *correctness* (`--validate-only`) on every PR, but this runner is a shared
-# 2-vCPU VM whose wall-clock is not worth gating on: on a quiet local machine
-# the median sample dispersion is around 1.4%, and a shared runner is worse.
-# So timings are advisory, produced when someone asks for them.
+# *correctness* (`--validate-only`) on every PR; timings are advisory and
+# produced when someone asks for them.
+#
+# Not because this runner is jittery -- measured within-run dispersion here is
+# tighter than on a quiet laptop (median MAD 0.2% vs 1.4%), though severe
+# outliers are about twice as common. The reason is that a gate compares runs
+# against each other, on a runner whose CPU model changes between runs, and that
+# variance has not been measured.
 #
 # Three ways in:
 #   * Actions -> Benchmarks -> Run workflow, with a preset and optional groups

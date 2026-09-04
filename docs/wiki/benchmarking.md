@@ -38,9 +38,16 @@ collects no samples, so it is deterministic and machine-independent. That is
 exactly what a gate should be. It is also the fast local answer to "is this
 implementation still correct".
 
-Timings stay out of the blocking path because `ubuntu-latest` is a shared 2-vCPU
-VM. The median sample dispersion measured on a quiet local machine is around
-1.4%; a shared runner is worse, so gating on those numbers would gate on noise.
+Timings stay out of the blocking path, but the measured reason is not the
+obvious one. On `ubuntu-latest` *within-run* dispersion came out **tighter** than
+on a quiet local machine — median MAD 0.2% against 1.4% — while severe Tukey
+outliers were about twice as common (56 of 172 rows against 27 of 286). A mostly
+idle VM slice punctuated by preemption looks exactly like that.
+
+Neither number is what a gate needs. A regression gate compares **runs against
+each other**, on a runner whose CPU model varies between runs, and a single run
+cannot measure that variance. So the timings are advisory because cross-run
+comparability is unvalidated, not because the runner is jittery.
 
 Three ways to get timings: **Actions → Benchmarks → Run workflow** with a preset
 and optional group list; a `/bench` comment on a PR from a repo member,

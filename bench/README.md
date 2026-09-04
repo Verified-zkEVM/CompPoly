@@ -203,10 +203,13 @@ Benchmarks → Run workflow** with a preset and optional group list, a `/bench`
 comment on a PR from a repo member, or automatically on any PR touching
 `bench/**`. Results are posted as a PR comment and uploaded as an artifact.
 
-They are kept out of the blocking path deliberately. GitHub's `ubuntu-latest` is
-a shared 2-vCPU VM; the median sample dispersion on a quiet local machine is
-around 1.4%, and a shared runner is worse, so gating on those numbers would gate
-on noise.
+They are kept out of the blocking path deliberately, though not for the reason
+you might expect. *Within* one run the shared runner is actually steadier than a
+busy laptop — median MAD 0.2% against 1.4% locally — but severe outliers are
+about twice as common, and neither figure is the one a gate needs. What a
+regression gate compares is **runs against each other**, on a runner whose CPU
+model changes between runs, and no single run can measure that. Until it is
+measured, the timings are advisory.
 
 ## The curated group set
 
