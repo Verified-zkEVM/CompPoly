@@ -34,6 +34,9 @@ The main bridge to Mathlib lives in:
 - [`../../CompPoly/Univariate/ToPoly/Core.lean`](../../CompPoly/Univariate/ToPoly/Core.lean)
 - [`../../CompPoly/Univariate/ToPoly/Equiv.lean`](../../CompPoly/Univariate/ToPoly/Equiv.lean)
 - [`../../CompPoly/Univariate/ToPoly/Degree.lean`](../../CompPoly/Univariate/ToPoly/Degree.lean)
+- [`../../CompPoly/Univariate/ToPoly/RingHom.lean`](../../CompPoly/Univariate/ToPoly/RingHom.lean)
+  for `CPolynomial.C`/`eval₂`/coefficient-map bundled as `RingHom`s and the
+  `ringHom_ext` extensionality principle.
 
 For interpolation work, also read:
 

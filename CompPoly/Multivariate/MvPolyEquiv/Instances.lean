@@ -376,6 +376,10 @@ noncomputable def polyRingEquiv :
   map_mul' := map_mul
   map_add' := map_add
 
+/-- The underlying function of `polyRingEquiv` is the computable `fromCMvPolynomial`. -/
+theorem coe_polyRingEquiv :
+    ⇑(CPoly.polyRingEquiv (n := n) (R := R)) = CPoly.fromCMvPolynomial := rfl
+
 end
 
 namespace CMvPolynomial
@@ -385,6 +389,9 @@ variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 /-- Ring equivalence between `CMvPolynomial 0 R` and `R`. -/
 noncomputable def isEmptyRingEquiv : CMvPolynomial 0 R ≃+* R :=
   polyRingEquiv.trans (MvPolynomial.isEmptyAlgEquiv R (Fin 0)).toRingEquiv
+
+instance instNontrivial [Nontrivial R] : Nontrivial (CMvPolynomial n R) :=
+  (CPoly.polyRingEquiv (n := n) (R := R)).symm.injective.nontrivial
 
 instance instSMul : SMul R (CMvPolynomial n R) where
   smul r p := C r * p
@@ -426,7 +433,8 @@ lemma fromCMvPolynomial_C (r : R) :
       erw [ExtTreeMap.getElem?_ofList_of_contains_eq_false (by simp [hne])]
       rfl
 
-noncomputable def CRingHom : R →+* CMvPolynomial n R where
+/-- `CMvPolynomial.C` bundled as a ring homomorphism.  Computable. -/
+def CHom : R →+* CMvPolynomial n R where
   toFun := C
   map_one' := by
     rw [eq_iff_fromCMvPolynomial]
@@ -441,8 +449,10 @@ noncomputable def CRingHom : R →+* CMvPolynomial n R where
     rw [eq_iff_fromCMvPolynomial]
     simp [fromCMvPolynomial_C, CPoly.map_add]
 
+@[simp] theorem CHom_apply (c : R) : (CHom (n := n) c) = CMvPolynomial.C c := rfl
+
 noncomputable instance instAlgebra : Algebra R (CMvPolynomial n R) :=
-  Algebra.mk (toSMul := instSMul) CRingHom
+  Algebra.mk (toSMul := instSMul) CHom
     (fun r x => mul_comm (C r) x)
     (fun _ _ => rfl)
 

@@ -223,6 +223,7 @@ public import CompPoly.Multilinear.TransformEquiv
 public import CompPoly.Multivariate.CMvMonomial
 public import CompPoly.Multivariate.CMvPolynomial
 public import CompPoly.Multivariate.CMvPolynomialEvalLemmas
+public import CompPoly.Multivariate.Eval
 public import CompPoly.Multivariate.FinSuccEquiv
 public import CompPoly.Multivariate.HornerLemmas
 public import CompPoly.Multivariate.Lawful
@@ -338,4 +339,5 @@ public import CompPoly.Univariate.ToPoly.Core
 public import CompPoly.Univariate.ToPoly.Degree
 public import CompPoly.Univariate.ToPoly.Equiv
 public import CompPoly.Univariate.ToPoly.Impl
+public import CompPoly.Univariate.ToPoly.RingHom
 public import CompPoly.Univariate.Vanishing

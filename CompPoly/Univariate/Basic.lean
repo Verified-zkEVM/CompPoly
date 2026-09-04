@@ -1,7 +1,8 @@
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles, Valerii Huhnin
+Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles, Valerii Huhnin,
+         Julian Sutherland
 -/
 module
 
@@ -198,6 +199,20 @@ theorem coeff_ofArray [Zero R] [BEq R] [LawfulBEq R]
     (CPolynomial.ofArray coeffs).coeff i = coeffs.getD i 0 := by
   unfold CPolynomial.coeff CPolynomial.ofArray
   rw [CPolynomial.Raw.Trim.coeff_eq_coeff]
+
+/-- Construct a canonical polynomial from a coefficient function `Fin n → R`.
+
+  Index `i` gives the coefficient of `X^i`; the resulting array is trimmed to remove
+  trailing zeros. -/
+def ofFn [Zero R] [BEq R] [LawfulBEq R] {n : ℕ} (f : Fin n → R) : CPolynomial R :=
+  ofArray (Array.ofFn f)
+
+/-- Coefficients of `ofFn` are the source function entries below `n`, and zero at or above `n`. -/
+theorem coeff_ofFn [Zero R] [BEq R] [LawfulBEq R] {n : ℕ} (f : Fin n → R) (i : ℕ) :
+    (CPolynomial.ofFn f).coeff i = if h : i < n then f ⟨i, h⟩ else 0 := by
+  rw [ofFn, coeff_ofArray]
+  simp only [Array.getD_eq_getD_getElem?, Array.getElem?_ofFn]
+  split <;> simp_all
 
 /-- The constant polynomial `C r`. -/
 def C [Zero R] [BEq R] [LawfulBEq R] (r : R) : CPolynomial R :=
@@ -1084,6 +1099,36 @@ lemma coeff_finset_sum [Semiring R] [BEq R] [LawfulBEq R]
   induction s using Finset.induction with
   | empty => simp only [Finset.sum_empty, coeff_zero]
   | insert _ _ hna ih => rw [Finset.sum_insert hna, coeff_add, ih, Finset.sum_insert hna]
+
+/-! ### Polynomials from a finite coefficient function -/
+
+/-- Extracting the `k`-th coefficient as an additive homomorphism. -/
+@[expose]
+def coeffHom [Semiring R] [BEq R] [LawfulBEq R] (k : ℕ) : CPolynomial R →+ R where
+  toFun p := p.coeff k
+  map_zero' := coeff_zero k
+  map_add' p q := coeff_add p q k
+
+@[simp] theorem coeffHom_apply [Semiring R] [BEq R] [LawfulBEq R] (k : ℕ) (p : CPolynomial R) :
+    coeffHom k p = p.coeff k := rfl
+
+/-- The polynomial with prescribed finite coefficient function: `Σ_{k<N} cₖ Xᵏ`. -/
+def ofFinCoeff [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R] (N : ℕ) (c : ℕ → R) :
+    CPolynomial R :=
+  ∑ k ∈ Finset.range N, monomial k (c k)
+
+@[simp] theorem coeff_ofFinCoeff [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R]
+    (N : ℕ) (c : ℕ → R) (j : ℕ) :
+    (ofFinCoeff N c).coeff j = if j < N then c j else 0 := by
+  rw [ofFinCoeff, coeff_finset_sum]
+  simp only [coeff_monomial]
+  rw [Finset.sum_ite_eq (Finset.range N) j (fun k => c k)]
+  simp
+
+/-- A monomial with zero coefficient is the zero polynomial. -/
+theorem monomial_eq_zero [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R] (n : ℕ) :
+    (monomial n (0 : R) : CPolynomial R) = 0 :=
+  eq_zero_iff_coeff_zero.mpr (fun j => by rw [coeff_monomial]; split_ifs <;> rfl)
 
 end Semiring
 
