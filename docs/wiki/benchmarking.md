@@ -9,15 +9,50 @@ This page owns the recurring guidance.
 
 ```bash
 lake build CompPolyBench
-lake exe CompPolyBench --small                       # every registered group
+lake exe CompPolyBench --small                       # every registered group, timed
+lake exe CompPolyBench --medium --validate-only      # correctness only, no timings
 lake exe CompPolyBench --groups fields-goldilocks-mul
 lake exe CompPolyBench --list                        # authoritative group keys
 ```
 
 Output lands in `bench/out/`, which is created on demand and ignored in its
 entirety. A checksum mismatch inside a group makes the executable exit nonzero
-after writing its artifacts, and CI's benchmark step has no `continue-on-error`,
-so a mismatch fails the run.
+after writing its artifacts, and CI's validation step has no
+`continue-on-error`, so a mismatch fails the run.
+
+## Two tracks, because only one of them is trustworthy
+
+The suite does two separable jobs. Keeping them apart is the difference between a
+gate you can believe and a gate that fails on noise.
+
+| | Correctness | Timing |
+|---|---|---|
+| What | digest pass, group agreement, harness canary | median, dispersion, outlier labels |
+| Where | `lean_action_ci.yml`, **every PR** | `benchmarks.yml`, **on demand** |
+| How | `--validate-only` over `bench/ci-groups.txt` | `--small`/`--medium`/`--large` |
+| Cost | ~34s over the curated set, ~138s over all groups | minutes |
+| Gates? | **yes**, fails the run | no, advisory |
+
+`--validate-only` runs the untimed digest pass and the agreement check and
+collects no samples, so it is deterministic and machine-independent. That is
+exactly what a gate should be. It is also the fast local answer to "is this
+implementation still correct".
+
+Timings stay out of the blocking path because `ubuntu-latest` is a shared 2-vCPU
+VM. The median sample dispersion measured on a quiet local machine is around
+1.4%; a shared runner is worse, so gating on those numbers would gate on noise.
+
+Three ways to get timings: **Actions → Benchmarks → Run workflow** with a preset
+and optional group list; a `/bench` comment on a PR from a repo member,
+optionally followed by a group list; or automatically on a PR touching
+`bench/**`, since a change to the harness itself should be measured. Results
+arrive as a PR comment and an artifact.
+
+One thing the canary needs: it compares timed totals, so under `--validate-only`
+it would pass vacuously against a zero floor. `runTimed` therefore takes a
+`forceTiming` flag that the self-check sets, and the canary keeps running (~50ms)
+in both modes. If you touch that path, break the canary body deliberately and
+confirm a `--validate-only` run still fails.
 
 ## The two passes
 
@@ -110,9 +145,9 @@ and ext6 groups. Any tool comparing two result files must key on
    check is meaningful.
 3. Supply a `sink` if the default would allocate, and make the group's rows
    symmetric under the rule above.
-4. Add the key to `BENCH_CI_GROUPS` in
-   [`.github/workflows/lean_action_ci.yml`](../../.github/workflows/lean_action_ci.yml)
-   if CI should run it. An unknown key fails the run, so a rename is caught.
+4. Add the key to `bench/ci-groups.txt` to have it covered by the correctness
+   gate and by the default selection of the on-demand timing workflow. An
+   unknown key fails the run, so a rename is caught rather than dropped.
 5. New modules under `bench/` need no `./scripts/update-lib.sh` run; that script
    globs `CompPoly/*.lean` only, and the lakefile globs `CompPolyBench`
    submodules.

@@ -171,7 +171,7 @@ inputs do not depend on which other groups ran, or in what order. Concretely:
 
 - `--group X` and `--groups X,Y` measure the same inputs for `X`, in either order;
 - adding, removing or renaming a group changes nothing for any other group;
-- the `BENCH_CI_GROUPS` subset measures the same inputs as a full local run;
+- the curated CI subset measures the same inputs as a full local run;
 - a checksum is comparable across runs and across commits, so a change in one is
   a real change in behaviour rather than a change in the input schedule.
 
@@ -181,13 +181,36 @@ fixtures. Digests are still preset-dependent, because the validation pass runs
 `min validationIterationCap` of the group's measured iteration count and that
 count varies by preset.
 
-## CI
+## The two CI tracks
 
-GitHub Actions runs `lake exe CompPolyBench --medium` over the curated group list
-in the `BENCH_CI_GROUPS` environment variable, uploads generated artifacts, and
-appends the Markdown report to the step summary.
+Correctness and timing are separated, because only one of them is trustworthy on
+a shared runner.
 
-CI does not run every registered group, so **a new group must be added to
-`BENCH_CI_GROUPS` in `.github/workflows/lean_action_ci.yml` to be covered there**.
-An unknown key in that list fails the run, so a renamed group is caught rather than
-silently dropped.
+**Correctness gates every PR.** `lean_action_ci.yml` runs
+
+```bash
+lake exe CompPolyBench --medium --validate-only --groups "<curated set>"
+```
+
+which does the untimed digest pass and the group agreement check but collects no
+samples. It takes about 34 seconds over the curated set and fails the run on a
+digest mismatch or a collapsed harness canary. `--validate-only` is worth running
+locally for the same reason: it is the fast way to ask whether an implementation
+is still correct.
+
+**Timings run on demand.** `benchmarks.yml` produces them three ways: **Actions →
+Benchmarks → Run workflow** with a preset and optional group list, a `/bench`
+comment on a PR from a repo member, or automatically on any PR touching
+`bench/**`. Results are posted as a PR comment and uploaded as an artifact.
+
+They are kept out of the blocking path deliberately. GitHub's `ubuntu-latest` is
+a shared 2-vCPU VM; the median sample dispersion on a quiet local machine is
+around 1.4%, and a shared runner is worse, so gating on those numbers would gate
+on noise.
+
+## The curated group set
+
+Both tracks default to the group list in `bench/ci-groups.txt` — one key per
+line, `#` comments ignored. Neither runs every registered group, so **a new group
+must be added there to be covered**. An unknown key fails the run, so a renamed
+group is caught rather than silently dropped.

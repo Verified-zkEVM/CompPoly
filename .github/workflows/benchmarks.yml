@@ -1,0 +1,240 @@
+name: Benchmarks
+
+# Timings run ONLY on demand. `lean_action_ci.yml` gates on benchmark
+# *correctness* (`--validate-only`) on every PR, but this runner is a shared
+# 2-vCPU VM whose wall-clock is not worth gating on: on a quiet local machine
+# the median sample dispersion is around 1.4%, and a shared runner is worse.
+# So timings are advisory, produced when someone asks for them.
+#
+# Three ways in:
+#   * Actions -> Benchmarks -> Run workflow, with a preset and optional groups
+#   * a `/bench` comment on a PR, from a repo member
+#   * automatically on a PR that touches `bench/**`, since a change to the
+#     harness itself should be measured
+on:
+  workflow_dispatch:
+    inputs:
+      preset:
+        description: >-
+          Iteration budget. `small` is quickest; `large` gives the most samples
+          per benchmark and takes correspondingly longer.
+        type: choice
+        options: [small, medium, large]
+        default: medium
+      groups:
+        description: >-
+          Comma-separated group keys to run. Leave empty for the curated set in
+          bench/ci-groups.txt. `lake exe CompPolyBench --list` shows every key;
+          an unknown key fails the run.
+        type: string
+        default: ''
+  issue_comment:
+    types: [created]
+  pull_request:
+    paths:
+      - 'bench/**'
+
+# Keyed on the PR or ref rather than shared with CI, so asking for benchmarks
+# never cancels a correctness run. A separate workflow file already gets a
+# distinct `github.workflow`, so this only needs to disambiguate within itself.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    # The COMMENT author, not the PR author, is the trust boundary on the
+    # comment path -- the same rule `review.yml` applies.
+    if: >-
+      github.event_name != 'issue_comment' ||
+      (
+        github.event.issue.pull_request &&
+        startsWith(github.event.comment.body, '/bench') &&
+        (
+          github.event.comment.author_association == 'OWNER' ||
+          github.event.comment.author_association == 'MEMBER' ||
+          github.event.comment.author_association == 'COLLABORATOR'
+        )
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      # `issue_comment` fires against the base ref, so the PR head has to be
+      # resolved and checked out explicitly or we would benchmark the wrong code.
+      - name: Resolve benchmark target
+        id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          if [ "$EVENT_NAME" = "issue_comment" ]; then
+            ref="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$ISSUE_NUMBER" --jq .head.sha)"
+            echo "pr=$ISSUE_NUMBER" >> "$GITHUB_OUTPUT"
+          else
+            ref=""
+            echo "pr=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.target.outputs.ref }}
+
+      # The comment body is read through env and never interpolated into the
+      # script, so a comment cannot inject shell. Anything after `/bench` is
+      # treated as a group list and validated against `--list` below.
+      - name: Resolve preset and group selection
+        id: selection
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          DISPATCH_PRESET: ${{ inputs.preset }}
+          DISPATCH_GROUPS: ${{ inputs.groups }}
+        run: |
+          preset=medium
+          groups=""
+          case "$EVENT_NAME" in
+            workflow_dispatch)
+              preset="${DISPATCH_PRESET:-medium}"
+              groups="${DISPATCH_GROUPS:-}"
+              ;;
+            issue_comment)
+              groups="$(printf '%s' "$COMMENT_BODY" | head -n1 \
+                | sed -E 's|^/bench[[:space:]]*||' | tr -d '[:space:]')"
+              ;;
+          esac
+          if [ -z "$groups" ]; then
+            groups="$(sed -e 's/#.*//' -e 's/[[:space:]]//g' bench/ci-groups.txt \
+              | grep -v '^$' | paste -sd, -)"
+            echo "selection=the curated set in \`bench/ci-groups.txt\`" >> "$GITHUB_OUTPUT"
+          else
+            echo "selection=$groups" >> "$GITHUB_OUTPUT"
+          fi
+          echo "preset=$preset" >> "$GITHUB_OUTPUT"
+          echo "groups=$groups" >> "$GITHUB_OUTPUT"
+
+      # Restore only. The repo's Actions cache is documented as already over
+      # quota, which is why `.lake` is split into two entries; saving from here
+      # would add a competing writer for no benefit.
+      - name: Restore dependency cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .lake/packages
+          key: lake-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
+      - name: Restore build cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .lake/build
+          key: lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ github.sha }}
+          restore-keys: |
+            lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
+      - name: Set up Lean environment
+        uses: leanprover/lean-action@v1
+        with:
+          auto-config: false
+          build: false
+          test: false
+          lint: false
+          use-github-cache: false
+          use-mathlib-cache: true
+
+      - name: Build benchmark executable
+        run: lake build CompPolyBench
+      - name: Validate group selection
+        env:
+          GROUPS: ${{ steps.selection.outputs.groups }}
+        run: |
+          # An unknown key already fails the benchmark run, but failing here
+          # costs seconds instead of the whole suite. Keys are matched as fixed
+          # whole strings, never as patterns: on the comment path a key is
+          # attacker-influenced text.
+          lake exe CompPolyBench --list \
+            | sed -n 's/^  \([^ ][^ ]*\)  -  .*/\1/p' > "$RUNNER_TEMP/known-groups.txt"
+          status=0
+          while IFS= read -r key; do
+            [ -z "$key" ] && continue
+            if ! grep -qxF "$key" "$RUNNER_TEMP/known-groups.txt"; then
+              echo "unknown benchmark group: $key" >&2
+              status=1
+            fi
+          done <<< "$(printf '%s' "$GROUPS" | tr ',' '\n')"
+          exit "$status"
+      - name: Run benchmarks
+        env:
+          PRESET: ${{ steps.selection.outputs.preset }}
+          GROUPS: ${{ steps.selection.outputs.groups }}
+        run: lake exe CompPolyBench "--$PRESET" --groups "$GROUPS"
+
+      - name: Assemble benchmark report
+        if: always()
+        env:
+          PRESET: ${{ steps.selection.outputs.preset }}
+          SELECTION: ${{ steps.selection.outputs.selection }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/bench-artifact"
+          results=(bench/out/results-*.jsonl)
+          reports=(bench/out/report-*.md)
+          if [ -e "${results[0]}" ]; then
+            cp "${results[@]}" "$RUNNER_TEMP/bench-artifact/"
+          fi
+          {
+            echo '<!-- comppoly-benchmark-report -->'
+            echo
+            echo "### Benchmarks (\`--$PRESET\`)"
+            echo
+            echo "Groups: $SELECTION"
+            echo
+            echo "Timings come from a shared 2-vCPU GitHub runner and are"
+            echo "**advisory**. Read the \`Spread\` column before any ratio:"
+            echo "\`n=1\` rows are a single unrepeated sample and carry no"
+            echo "dispersion at all. Correctness is gated separately, on every PR."
+            echo
+            if [ -e "${reports[0]}" ]; then
+              cp "${reports[@]}" "$RUNNER_TEMP/bench-artifact/"
+              for report in "${reports[@]}"; do
+                cat "$report"
+              done
+            else
+              echo 'No report was produced; the run failed before writing one.'
+            fi
+          } > "$RUNNER_TEMP/bench-comment.md"
+          cat "$RUNNER_TEMP/bench-comment.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload benchmark artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: ${{ runner.temp }}/bench-artifact
+          if-no-files-found: warn
+          retention-days: 30
+
+      # Same marker-upsert shape as the build-timing comment in
+      # `lean_action_ci.yml`, so repeated runs replace rather than pile up.
+      - name: Upsert benchmark PR comment
+        if: always() && steps.target.outputs.pr != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- comppoly-benchmark-report -->';
+            const body = fs.readFileSync(process.env.RUNNER_TEMP + '/bench-comment.md', 'utf8');
+            const issue_number = Number('${{ steps.target.outputs.pr }}');
+            const { owner, repo } = context.repo;
+            let existing = null;
+            for await (const response of github.paginate.iterator(
+              github.rest.issues.listComments, { owner, repo, issue_number, per_page: 100 }
+            )) {
+              for (const comment of response.data) {
+                if (comment.user?.type === 'Bot' && comment.body?.includes(marker)) {
+                  existing = comment;
+                }
+              }
+            }
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }

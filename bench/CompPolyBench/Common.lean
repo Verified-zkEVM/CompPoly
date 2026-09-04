@@ -284,9 +284,13 @@ def runSelectedTasks (tasks : List BenchTask) (preset : BenchPreset) (selection 
   for task in selection.filterTasks tasks do
     let (taskGroups, nextGen) ← task.runTask preset selection gen
     gen := nextGen
+    let validateOnly ← validateOnlyRef.get
     for group in taskGroups do
-      let groupTotal := totalGroupNanos group.records.toList
-      IO.println s!"finished {group.groupKey} in {formatNanosAuto groupTotal}"
+      if validateOnly then
+        IO.println s!"validated {group.groupKey}"
+      else
+        let groupTotal := totalGroupNanos group.records.toList
+        IO.println s!"finished {group.groupKey} in {formatNanosAuto groupTotal}"
       groups := groups.push group
   pure (groups, gen)
 
@@ -637,20 +641,27 @@ Inside the timed region each result is folded through `sink` instead, which
 defaults to truncating the `Nat` digest and should be overridden with a
 `UInt64`-native digest wherever the benchmark is cheap enough for the digest to
 show up in the measurement.
+
+Under `--validate-only` no samples are collected and the record carries digests
+alone. `forceTiming` opts out of that, for the harness self-check, whose canary
+compares timed totals and would pass vacuously against a zero floor.
 -/
 @[specialize] def runTimed (name representation method field inputShape : String)
     (preset : BenchPreset) (warmup measured : Nat) (run : Nat → α) (checksum : α → Nat)
     (checksumIterations : Nat := min validationIterationCap measured)
-    (sink : α → UInt64 := fun x ↦ natSink (checksum x)) : IO BenchRecord := do
+    (sink : α → UInt64 := fun x ↦ natSink (checksum x))
+    (forceTiming : Bool := false) : IO BenchRecord := do
   let body : Nat → UInt64 → UInt64 := fun i acc ↦ sinkStep acc (sink (run i))
   let mut validationChecksum := 0
   for i in [0:checksumIterations] do
     validationChecksum := mixChecksum validationChecksum (checksum (run i))
-  let plan := planSamples measured
+  let validateOnly := (← validateOnlyRef.get) && !forceTiming
+  let plan := if validateOnly then { itersPerSample := 0, sampleCount := 0 } else
+    planSamples measured
   -- The validation pass above already executed the body, so it counts towards
   -- reaching steady state. For an expensive workload validated once, this is the
   -- difference between running it three times and running it twice.
-  let desiredWarmup := max warmup plan.itersPerSample
+  let desiredWarmup := if validateOnly then 0 else max warmup plan.itersPerSample
   let sampled ← collectSamples (desiredWarmup - min desiredWarmup checksumIterations) plan body
   let total := sampled.totalNanos
   pure {
@@ -1074,5 +1085,37 @@ def renderMarkdown (hardware : RunnerHardware) (preset : BenchPreset) (groups : 
     "## Results",
     ""
   ] ++ (groups.toList.map renderGroupResults).foldr List.append []) ++ "\n"
+
+/-- Render one row of the validation report. -/
+private def validationRow (group : BenchGroup) : String :=
+  let records := group.records.toList
+  let status :=
+    match matchingChecksum? records with
+    | some checksum => "agree | `" ++ toString checksum ++ "`"
+    | none => "**MISMATCH** | -"
+  "| `" ++ group.groupKey ++ "` | " ++ toString group.records.size ++ " | " ++ status ++ " |"
+
+/-- Render the report for a `--validate-only` run.
+
+Deliberately not the timing table: a validation run collects no samples, so
+every duration would be zero. What it has to say is whether each group's
+implementations agree, and on what digest. -/
+def renderValidationMarkdown (preset : BenchPreset) (groups : Array BenchGroup) : String :=
+  let mismatches := checksumMismatchGroups groups
+  String.intercalate "\n" ([
+    "# Benchmark Validation Report",
+    "",
+    "- Seed: `" ++ toString seed ++ "`",
+    "- Preset: `" ++ preset.name ++ "`",
+    "- Groups checked: `" ++ toString groups.size ++ "`",
+    "- Mismatched groups: `" ++ toString mismatches.length ++ "`",
+    "",
+    "No timings were collected. Every implementation in a group is run over the",
+    "same inputs and must agree on a digest; a disagreement means one of them is",
+    "wrong. Run the benchmark workflow for timings.",
+    "",
+    "| Group | Rows | Implementations | Digest |",
+    "| ----- | ---: | --------------- | ------ |"
+  ] ++ groups.toList.map validationRow) ++ "\n"
 
 end CompPolyBench

@@ -1307,6 +1307,7 @@ reviews as a small diff and the stack merges bottom-up. Base of the stack is
 | 2 | `dhsorens/bench-sampling` | Multi-sample collection, median/MAD/Tukey stats, unreplicated flags, capped validation pass reused as warmup | landed |
 | 3 | `dhsorens/bench-determinism` | Per-group seeding from the group key, registration made authoritative, dead-code removal | landed |
 | 4 | `dhsorens/bench-reporting` | Cross-platform hardware probe, `bench/out/`, `docs/wiki/benchmarking.md`, `clMul` guard migration | landed |
+| 5 | `dhsorens/bench-foundations` | `--validate-only`, correctness gate in main CI, on-demand `benchmarks.yml` | landed |
 
 ### 12.1 Measurement core (`dhsorens/bench-measurement-core`)
 
@@ -1558,7 +1559,80 @@ how to add a group, and a known-gaps list. The duplicated line at
    rewritten anyway when per-representation floors and the label-table retirement
    land. Moving it now would mean moving it twice.
 
-**Open decision.** Whether benchmarks should run as a separate parallel CI job.
-Trade-off: it removes ~5 minutes from the build job's critical path but adds a
-second Mathlib-dependent build to every run. Worth deciding alongside result
-storage, since a nightly job storing history would change the calculus.
+**Open decision** — resolved in 12.5, though not the way it was framed. The
+question assumed the choice was *where the benchmark job runs*. The better cut
+turned out to be *what it runs*: the step was doing correctness and timing at
+once, and only the timing half needed to leave.
+
+### 12.5 Splitting correctness from timing in CI (`--validate-only` and `benchmarks.yml`)
+
+The question was whether benchmarks could run only when the code they touch
+changes. Path filtering is available — `lean_release_tag.yml` already uses a
+`paths:` filter — but it is the wrong instrument twice over. A group's
+performance depends on whatever it transitively calls, and
+`CompPoly/Fields/Montgomery/**` underpins nearly every group, so a filter honest
+enough to be safe would fire on almost every substantive PR. And it reduces the
+*cost* of a signal that is not actionable rather than taking it off the blocking
+path: §12.2 measured 1.4% median dispersion on a quiet local machine, and
+`ubuntu-latest` is a shared 2-vCPU VM.
+
+The step was doing two separable jobs — 41 groups cross-checking a canonical
+`ZMod` model against its native-word implementation on random inputs plus the
+harness canary, and a timing report. So the split is not "run benchmarks
+sometimes" but **the correctness half always gates; the timing half never runs in
+blocking CI**.
+
+**`--validate-only`.** Runs the untimed digest pass and the agreement check and
+collects no samples. Deterministic and machine-independent, which is what a gate
+should be. Threaded through an `initialize IO.Ref Bool` in
+`bench/CompPolyBench/Harness/Timer.lean` rather than a parameter, because every
+alternative means editing all 226 `runTimed` call sites. Reports through a
+compact `renderValidationMarkdown` — group, rows, agreement, digest — rather
+than a timing table of zeros.
+
+**Measured**, 41 curated groups at `--medium`, darwin/arm64:
+
+| | wall clock |
+|---|---:|
+| timed run (what CI did) | **124 s** |
+| `--validate-only` (what CI does now) | **32 s** |
+| `--validate-only`, all 68 groups | 138 s |
+
+So the gate got about 4x cheaper *and* kept the only part of it worth gating on.
+The 41-group set is retained over all 68 because the extra 106 s buys coverage of
+groups whose single iteration costs seconds; the numbers are recorded in
+`bench/ci-groups.txt` so the trade can be revisited.
+
+**Findings from doing the work.**
+
+1. *The canary would have been silently disabled.* `runHarnessSelfCheck` compares
+   timed totals, and with no samples collected `0 < 3 * 0` is false — the check
+   would pass vacuously in exactly the mode CI runs, disabling the one guard
+   against benchmark bodies being optimised away. `runTimed` therefore takes
+   `forceTiming`, which the self-check sets; the canary costs ~50 ms and runs in
+   both modes. Verified by stubbing `canaryRounds` to 0 and confirming a
+   `--validate-only` run exits 1.
+2. *`BENCH_CI_GROUPS` could not stay a workflow `env:` entry.* A second workflow
+   cannot see it, and duplicating 41 keys invites drift. The list moved to
+   `bench/ci-groups.txt`, one key per line with `#` comments, read by both
+   workflows — and it now sits next to the benchmarks it names rather than buried
+   in YAML.
+3. *No required status checks exist on `main`.* The ruleset enforces only
+   `deletion`, `non_fast_forward` and `pull_request`. The usual footgun — a
+   workflow skipped by a `paths:` filter never reports its check and blocks the
+   PR — therefore does not apply here, so both a separate workflow and a
+   step-level skip were structurally safe. Worth re-checking if required checks
+   are ever added.
+4. *The new workflow must not save caches.* `lean_action_ci.yml` documents the
+   Actions cache as already over quota (~10.3 GiB against 10 GB), which is why
+   `.lake` is split into two entries. `benchmarks.yml` restores both and saves
+   neither.
+
+**Kept in main CI deliberately.** `lake build CompPolyBench` still runs on every
+PR, because the correctness gate needs the binary. Only the timed *run* moved
+out. Dropping the compile too would mean dropping the differential check, which
+is the opposite of the priority.
+
+**Not done.** No nightly schedule. Timings are produced when someone asks —
+manual dispatch, a `/bench` comment from a repo member, or a PR touching
+`bench/**`, which is the one place path filtering genuinely fits.
