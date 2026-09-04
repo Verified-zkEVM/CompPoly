@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: CompPoly Contributors
+Authors: Nicolas Schleicher
 -/
 module
 
@@ -25,7 +25,7 @@ python3 scripts/gen_rabin_certificate.py --p 2 \
   --f '1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1' \
   --lean <this file> --namespace BF64.BaseCert \
-  --authors 'CompPoly Contributors'
+  --authors 'Nicolas Schleicher'
 ```
 
 Nothing here is trusted — the kernel re-checks every step through
