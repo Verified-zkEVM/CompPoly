@@ -16,6 +16,13 @@ CompPoly/Fields/Binary/
     Impl.lean
     XPowTwoPowGcdCertificate.lean
     XPowTwoPowModCertificate.lean
+  BF64.lean
+  BF64/
+    BaseCertificate.lean
+    Basic.lean
+    Reduce.lean
+    Impl.lean
+    Ext3.lean
   Tower/
     Abstract/*
     Concrete/*
@@ -67,6 +74,41 @@ The GHASH model lives under `Binary/BF128Ghash/`.
 Use this area when the task is specifically about `GF(2^128)`, GHASH, or the
 certificate-based proof strategy for binary-field arithmetic.
 
+## Polynomial-Basis GF(2^64) Surface
+
+`Binary/BF64/` builds `GF(2^64)` as the flat quotient
+`GF(2)[x] / (x^64 + x^4 + x^3 + x + 1)`, together with its degree-three extension
+`GF(2^192)`.
+
+This is a *different presentation* from the `GF(2^64)` that appears as level 6 of
+`Binary/Tower/`. The tower builds it by iterated quadratic extension, so the two use
+different bases and their bit-level encodings disagree — on the same bit patterns, `2 * 3`
+is `6` here and `1` in the tower's rung. Neither substitutes for the other wherever the
+encoding is observable.
+
+- [`../../CompPoly/Fields/Binary/BF64/BaseCertificate.lean`](../../CompPoly/Fields/Binary/BF64/BaseCertificate.lean)
+  holds generated Rabin certificate data; regenerate it with
+  [`../../scripts/gen_rabin_certificate.py`](../../scripts/gen_rabin_certificate.py)
+  rather than editing it.
+- [`../../CompPoly/Fields/Binary/BF64/Basic.lean`](../../CompPoly/Fields/Binary/BF64/Basic.lean)
+  defines the modulus, proves it irreducible, and gives the quotient model `BF64Quot` with
+  its cardinality. Degree 64 is composite, so the general `Polynomial.irreducible_of_rabin`
+  is used; the collapsed prime-degree form is unsound here.
+- [`../../CompPoly/Fields/Binary/BF64/Reduce.lean`](../../CompPoly/Fields/Binary/BF64/Reduce.lean)
+  folds a 128-bit carry-less product back into 64 bits using the reduction constant `0x1B`.
+- [`../../CompPoly/Fields/Binary/BF64/Impl.lean`](../../CompPoly/Fields/Binary/BF64/Impl.lean)
+  carries the computable `BitVec 64` representation, its bridge to the quotient, and the
+  `CommRing` / `Field` instances built around an Itoh-Tsujii inverse.
+- [`../../CompPoly/Fields/Binary/BF64/Ext3.lean`](../../CompPoly/Fields/Binary/BF64/Ext3.lean)
+  instantiates the extension framework at `y^3 + y + 1`, whose irreducibility needs no
+  certificate.
+
+The instances here are assembled field-by-field on purpose: a transport such as
+`Function.Injective.commRing` takes the bridge as *data* and would make the arithmetic
+noncomputable, which would also break `Ext3`. The `#guard` checks in
+[`../../tests/CompPolyTests/Fields/Binary/BF64.lean`](../../tests/CompPolyTests/Fields/Binary/BF64.lean)
+run the compiled arithmetic and fail the build if that ever regresses.
+
 ## Binary Tower Surface
 
 The tower development splits into abstract theory, concrete constructions, and
@@ -111,12 +153,14 @@ Algorithm changes often cascade into `Intermediate`, `Impl`, and `Correctness`.
 
 - Shared BitVec or characteristic-2 helper lemma: `Binary/Common.lean`
 - GHASH field model or certificate proof: `Binary/BF128Ghash/`
+- Polynomial-basis `GF(2^64)` or its cubic extension: `Binary/BF64/`
 - General tower-field structure or extension lemmas: `Binary/Tower/`
 - Additive-NTT basis, domain, or correctness proof: `Binary/AdditiveNTT/`
 
 ## Reading Order Suggestions
 
 - For GHASH: `Prelude` -> `Basic` -> `Impl` -> certificate files
+- For polynomial-basis `GF(2^64)`: `Basic` -> `Reduce` -> `Impl` -> `Ext3`
 - For tower fields: `Prelude` / `Basic` -> `Abstract` or `Concrete` branch ->
   `Equiv` / `Impl`
 - For additive NTT: `Domain` -> `NovelPolynomialBasis` -> `Intermediate` ->

@@ -66,6 +66,7 @@ This directory contains formally verified field infrastructure used in zero-know
 The `Binary/` subtree provides characteristic-2 field infrastructure used by GHASH and additive-NTT workflows:
 
 - `Binary/BF128Ghash/*` — GF(2^128) model, implementation, and certificates.
+- `Binary/BF64/*` — polynomial-basis GF(2^64) (`GF(2)[x]/(x^64 + x^4 + x^3 + x + 1)`) with a computable `BitVec 64` carrier, plus its degree-3 extension GF(2^192). A different basis from the GF(2^64) rung of `Binary/Tower/`, so the two disagree on bit-level encodings.
 - `Binary/AdditiveNTT/*` — additive-NTT domain/algorithm/correctness stack.
 - `Binary/Tower/*` — abstract/concrete binary tower-field constructions and supporting lemmas.
 - `Binary/Tower/Fast.lean` — packed machine-word tower arithmetic with a GF(2^8) table base, proven against the concrete tower; `Field` instances up to GF(2^128).

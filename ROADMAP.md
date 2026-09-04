@@ -52,6 +52,7 @@ CompPoly aims to be the premier formally verified library for computable polynom
 
 1. **Further data types**
    - ✅ Basic field definitions (currently in Arklib) ported into CompPoly (e.g. BabyBear, Goldilocks, BN254, BLS12_381, binary tower)
+   - ✅ Polynomial-basis `GF(2^64)` and its degree-3 extension `GF(2^192)` (`Fields/Binary/BF64/`), a flat quotient by an irreducible degree-64 pentanomial rather than an iterated quadratic tower
       - ✅ computable field extensions with interface (`CompPoly/Fields/Extension/`):
         `F[X]/f` for an **arbitrary monic** `f` with `CommRing`/`Field`, `Algebra F (Ext P)`
         (hence `Module`), a base embedding `ofBase`, the adjoined root `gen` with
