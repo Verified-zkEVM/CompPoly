@@ -51,19 +51,20 @@ namespace BF64
 
 open Polynomial CompPoly.Extension
 
-set_option maxRecDepth 4000
-
 /-! ## The defining cubic -/
 
 /-- The extension modulus `y^3 + y + 1` over `GF(2^64)`. -/
 noncomputable def ext3Poly : Polynomial BF64 := X ^ 3 + X + 1
 
+/-- The cubic has degree `3`. -/
 theorem ext3Poly_natDegree : ext3Poly.natDegree = 3 := by
   rw [ext3Poly]; compute_degree!
 
+/-- `ext3Poly_natDegree` in `degree` form. -/
 theorem ext3Poly_degree : ext3Poly.degree = (3 : ℕ) := by
   rw [ext3Poly]; compute_degree!
 
+/-- The cubic is monic, as the extension framework requires. -/
 theorem ext3Poly_monic : ext3Poly.Monic := by
   rw [ext3Poly]; monicity!
 
@@ -138,7 +139,9 @@ def ext3Params : ExtensionParams BF64 where
   q := 2 ^ 64
   card_eq := card_bf64
 
+/-- The extension has degree three. -/
 @[simp] theorem ext3Params_d : ext3Params.d = 3 := rfl
+/-- The base field has `2 ^ 64` elements. -/
 @[simp] theorem ext3Params_q : ext3Params.q = 2 ^ 64 := rfl
 
 /-- The parameters' defining polynomial is the cubic. -/

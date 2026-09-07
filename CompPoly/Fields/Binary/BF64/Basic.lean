@@ -69,8 +69,8 @@ namespace BF64
 
 open Polynomial CompPoly.RabinCert BF64.BaseCert
 
-set_option maxHeartbeats 4000000
-set_option maxRecDepth 10000
+set_option maxHeartbeats 400000
+set_option maxRecDepth 4000
 
 /-- Little-endian coefficients of `x^64 + x^4 + x^3 + x + 1`: the terms of degree
 `0, 1, 3, 4` and `64`. -/
@@ -97,12 +97,15 @@ theorem toPoly_baseCoeffs : toPoly 2 baseCoeffs = basePoly := by
     Nat.cast_zero, Nat.cast_one, map_zero, map_one, basePoly]
   ring
 
+/-- The modulus has degree `64`: the leading `X ^ 64` dominates the tail. -/
 theorem basePoly_natDegree : basePoly.natDegree = 64 := by
   rw [basePoly]; compute_degree!
 
+/-- `basePoly_natDegree` in `degree` form, as the division lemmas expect. -/
 theorem basePoly_degree : basePoly.degree = (64 : ℕ) := by
   rw [basePoly]; compute_degree!
 
+/-- The modulus is nonzero, so it can be divided by. -/
 theorem basePoly_ne_zero : basePoly ≠ 0 := by
   intro h
   have hd := basePoly_natDegree
@@ -147,10 +150,13 @@ instance : Fact (Irreducible basePoly) := ⟨basePoly_irreducible⟩
 constant `0x1B`. -/
 noncomputable def baseTail : Polynomial (ZMod 2) := X ^ 4 + X ^ 3 + X + 1
 
+/-- The defining equation of `baseTail`, for rewriting. -/
 theorem baseTail_eq : baseTail = X ^ 4 + X ^ 3 + X + 1 := rfl
 
+/-- The defining equation of `basePoly`, for rewriting. -/
 theorem basePoly_eq : basePoly = X ^ 64 + X ^ 4 + X ^ 3 + X + 1 := rfl
 
+/-- The modulus split into its leading term and its tail. -/
 theorem basePoly_eq_add_tail : basePoly = X ^ 64 + baseTail := by
   unfold basePoly baseTail; ring
 

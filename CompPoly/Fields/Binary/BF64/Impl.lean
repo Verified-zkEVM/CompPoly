@@ -80,8 +80,10 @@ noncomputable def toQuot (a : BF64) : BF64Quot :=
 
 /-! ## Equation lemmas for the operations -/
 
+/-- Addition unfolds to `xor`. -/
 theorem add_def (a b : BF64) : a + b = a ^^^ b := rfl
 
+/-- Multiplication unfolds to a carry-less product followed by `reduce`. -/
 theorem mul_def (a b : BF64) : a * b = reduce (carryLessMul (w := 128) a b) := rfl
 
 /-! ## The bridge is a ring homomorphism -/
@@ -388,6 +390,7 @@ def equivFin : BF64 ≃ Fin (2 ^ 64) where
 
 instance : Fintype BF64 := Fintype.ofEquiv _ equivFin.symm
 
+/-- `BF64` has `2 ^ 64` elements. -/
 theorem card_bf64 : Fintype.card BF64 = 2 ^ 64 := by
   rw [Fintype.card_congr equivFin, Fintype.card_fin]
 
@@ -417,13 +420,16 @@ instance : Inv BF64 := ⟨invItohTsujii⟩
 
 instance : Div BF64 := ⟨fun a b => a * invItohTsujii b⟩
 
+/-- Inversion unfolds to the Itoh-Tsujii chain. -/
 theorem inv_def (a : BF64) : a⁻¹ = invItohTsujii a := rfl
 
+/-- Division unfolds to multiplication by the Itoh-Tsujii inverse. -/
 theorem div_def (a b : BF64) : a / b = a * invItohTsujii b := rfl
 
 @[simp] theorem inv_zero_bf64 : (0 : BF64)⁻¹ = 0 := by
   rw [inv_def, invItohTsujii, if_pos rfl]
 
+/-- `BF64` satisfies `IsField`, the bundled-data-free form of the field axioms. -/
 theorem isField_bf64 : IsField BF64 where
   exists_pair_ne := exists_pair_ne
   mul_comm := mul_comm

@@ -40,9 +40,6 @@ namespace BF64
 
 open Polynomial BinaryField
 
-set_option maxHeartbeats 2000000
-set_option maxRecDepth 8000
-
 /-! ## Halves of a double-width value -/
 
 /-- The high 64 bits of a 128-bit value. -/
@@ -51,17 +48,19 @@ def highHalf (x : BitVec 128) : BitVec 64 := BitVec.setWidth 64 (x >>> 64)
 /-- The low 64 bits of a 128-bit value. -/
 def lowHalf (x : BitVec 128) : BitVec 64 := BitVec.setWidth 64 x
 
+/-- Bit `i` of the high half is bit `64 + i` of the whole. -/
 theorem highHalf_testBit (x : BitVec 128) (i : ℕ) (h : i < 64) :
     (highHalf x).toNat.testBit i = x.toNat.testBit (64 + i) := by
   unfold highHalf
   rw [BitVec.toNat_setWidth, Nat.testBit_mod_two_pow]
   simp only [h, decide_true, Bool.true_and, BitVec.toNat_ushiftRight, Nat.testBit_shiftRight]
 
+/-- Bit `i` of the low half is bit `i` of the whole. -/
 theorem lowHalf_testBit (x : BitVec 128) (i : ℕ) (h : i < 64) :
     (lowHalf x).toNat.testBit i = x.toNat.testBit i := by
   unfold lowHalf
   rw [BitVec.toNat_setWidth, Nat.testBit_mod_two_pow]
-  simp [h]
+  simp only [h, decide_true, Bool.true_and]
 
 /-- Splitting a 128-bit value into `high * x^64 + low`. -/
 theorem toPoly_halves (x : BitVec 128) :
@@ -90,6 +89,7 @@ theorem highHalf_lt (x : BitVec 128) {d : ℕ} (hx : x.toNat < 2 ^ (64 + d)) :
   rw [Nat.shiftRight_eq_div_pow]
   exact Nat.div_lt_of_lt_mul (by rw [← pow_add]; exact hx)
 
+/-- The low half is always below `2 ^ 64`, being 64 bits wide. -/
 theorem lowHalf_lt (x : BitVec 128) : (lowHalf x).toNat < 2 ^ 64 := (lowHalf x).isLt
 
 /-- A carry-less product of values below `2 ^ p` and `2 ^ q` is below `2 ^ (p + q)`. -/
@@ -115,6 +115,10 @@ theorem carryLessMul_lt {v w : ℕ} (a b : BitVec v) {p q : ℕ}
 `x^4 + x^3 + x + 1`. -/
 def reductionConstant : BitVec 64 := 0x1B
 
+/-- **The reduction constant is the right one**: `0x1B` denotes `x^4 + x^3 + x + 1`.
+
+A wrong constant here would compile and silently give a different field, so this ties the
+bit pattern to the polynomial rather than leaving it to the reader. -/
 theorem toPoly_reductionConstant : toPoly reductionConstant = baseTail := by
   have h : reductionConstant = (1 <<< 4) ^^^ (1 <<< 3) ^^^ (1 <<< 1) ^^^ 1 := by decide +kernel
   rw [h, baseTail_eq]
@@ -126,6 +130,7 @@ theorem toPoly_reductionConstant : toPoly reductionConstant = baseTail := by
       toPoly_one_eq_one (w := 64) (h_w_pos := by omega)]
   ring
 
+/-- The reduction constant fits in five bits, which bounds how much a fold can grow. -/
 theorem reductionConstant_lt : reductionConstant.toNat < 2 ^ 5 := by decide +kernel
 
 /-- One reduction fold: replace the high half's factor of `x^64` by `baseTail`. -/
