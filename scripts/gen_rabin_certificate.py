@@ -307,16 +307,21 @@ def steps_to_lean(steps) -> str:
 
 def _wrap_command(p: int, f_arg: str, ns: str, authors: str) -> list[str]:
     """Emit the regeneration command as shell lines, none exceeding the style limit.
-    The `--f` argument is a single unbreakable token, so it is split across
-    backslash-continued lines the way a shell accepts them."""
+    `--f=` keeps a negative leading coefficient from parsing as an option name. A long
+    value is split by closing the quote before each break and reopening it at column 0
+    on the next line, so the backslash falls outside the quotes where it continues the
+    line and the shell rejoins the pieces into one argument."""
     lines = ["python3 scripts/gen_rabin_certificate.py --p %d \\" % p]
-    head = "  --f '"
-    budget = 96
+    head = "  --f='"
+    limit = 98
     chunks: list[str] = []
     cur = ""
     for piece in f_arg.split(","):
         tok = piece if not cur else "," + piece
-        if cur and len(cur) + len(tok) > budget - 4:
+        # The first chunk carries `head`; later ones only a reopening quote. Every
+        # chunk may gain a trailing `,'\\` (3) or a closing `' \\` (3).
+        room = limit - (len(head) if not chunks else 1) - 3
+        if cur and len(cur) + len(tok) > room:
             chunks.append(cur)
             cur = piece
         else:
@@ -326,10 +331,10 @@ def _wrap_command(p: int, f_arg: str, ns: str, authors: str) -> list[str]:
     if len(chunks) == 1:
         lines.append(head + chunks[0] + "' \\")
     else:
-        lines.append(head + chunks[0] + ",\\")
+        lines.append(head + chunks[0] + ",'\\")
         for c in chunks[1:-1]:
-            lines.append(c + ",\\")
-        lines.append(chunks[-1] + "' \\")
+            lines.append("'" + c + ",'\\")
+        lines.append("'" + chunks[-1] + "' \\")
     lines.append("  --lean <this file> --namespace %s \\" % ns)
     lines.append("  --authors '%s'" % authors)
     return lines
