@@ -33,6 +33,7 @@ direct GF(2^128) implementation (`BF128Ghash/`).
 - `clMul`: Carry-less multiplication of bit vectors
 - `toPoly_xor`: `toPoly (a ^^^ b) = toPoly a + toPoly b`
 - `toPoly_clMul`: `toPoly (clMul a b) = toPoly a * toPoly b`
+- `toPoly_one_shiftLeft`: `toPoly (1 <<< n) = X^n`
 -/
 
 @[expose] public section
@@ -338,6 +339,46 @@ lemma clMul_unfold (a b : B128) :
       (fun acc i => acc ^^^ (if a.getLsbD i
         then to256 b <<< (i : Nat) else 0)) (0 : B256) :=
   carryLessMul_unfold a b
+
+/-- A single set bit at position `n` denotes the monomial `X^n`. -/
+lemma toPoly_one_shiftLeft {w : Nat} (n : Nat) (h : n < w) :
+    toPoly (1 <<< n : BitVec w) = X^n := by
+  rw [toPoly]
+  rw [Finset.sum_eq_single (⟨n, h⟩ : Fin w)]
+  -- 1. The Main Term (j = n): Prove it equals X^n
+  · simp only
+    simp only [BitVec.natCast_eq_ofNat, ite_eq_left_iff, Bool.not_eq_true]
+    intro h_getLsb_eq_false
+    have h_getLsb_eq_true : (BitVec.ofNat w (1 <<< n)).getLsb ⟨n, h⟩ = true := by
+      rw [BitVec.getLsb]
+      simp only [BitVec.toNat_ofNat, Nat.testBit_mod_two_pow, h, decide_true, Nat.testBit_shiftLeft,
+        ge_iff_le, le_refl, tsub_self, Nat.testBit_zero, Nat.mod_succ, Bool.and_self]
+    rw [h_getLsb_eq_false] at h_getLsb_eq_true
+    absurd h_getLsb_eq_true
+    exact Bool.false_ne_true
+  -- 2. The Other Terms (j ≠ n): Prove they are 0
+  · intro b _ hb_ne_n_fin
+    split_ifs with h_lsb
+    · -- Contradiction: If bit is set, b must equal n
+      exfalso
+      have h_getLsb_eq_false : ((1 <<< n) : BitVec w).getLsb b = false := by
+        rw [BitVec.getLsb]
+        have h_lhs : ((1 <<< n) : BitVec w).toNat = 1 <<< n := by
+          simp only [Nat.shiftLeft_eq, one_mul, BitVec.natCast_eq_ofNat, BitVec.toNat_ofNat]
+          apply Nat.mod_eq_of_lt
+          apply Nat.pow_lt_pow_right (ha := by omega) (h := by omega)
+        rw [h_lhs]
+        rw [Nat.one_shiftLeft]
+        rw [Nat.testBit_two_pow];
+        let h_ne := Fin.val_ne_of_ne hb_ne_n_fin
+        exact decide_eq_false (id (Ne.symm h_ne))
+      rw [h_getLsb_eq_false] at h_lsb
+      absurd h_lsb
+      exact Bool.false_ne_true
+    · rfl -- If bit is not set, result is 0
+  -- 3. Universe Check: Prove n is in Finset.univ
+  · intro h_absurd
+    simp at h_absurd -- Finset.univ contains everything
 
 lemma toPoly_one_eq_one {w : Nat} (h_w_pos : w > 0) : toPoly (BitVec.ofNat w 1) = 1 := by
   unfold toPoly

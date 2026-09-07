@@ -6,7 +6,7 @@ Authors: Nicolas Schleicher
 module
 
 public import CompPoly.Fields.Binary.BF64.Basic
-public import CompPoly.Fields.Binary.BF128Ghash.Prelude
+public import CompPoly.Fields.Binary.Common
 
 /-!
 # Reducing a carry-less product modulo the `GF(2^64)` modulus
@@ -123,9 +123,9 @@ theorem toPoly_reductionConstant : toPoly reductionConstant = baseTail := by
   have h : reductionConstant = (1 <<< 4) ^^^ (1 <<< 3) ^^^ (1 <<< 1) ^^^ 1 := by decide +kernel
   rw [h, baseTail_eq]
   simp only [toPoly_xor]
-  rw [BF128Ghash.toPoly_one_shiftLeft 4 (by omega),
-      BF128Ghash.toPoly_one_shiftLeft 3 (by omega),
-      BF128Ghash.toPoly_one_shiftLeft 1 (by omega),
+  rw [toPoly_one_shiftLeft 4 (by omega),
+      toPoly_one_shiftLeft 3 (by omega),
+      toPoly_one_shiftLeft 1 (by omega),
       show (1 : BitVec 64) = BitVec.ofNat 64 1 from rfl,
       toPoly_one_eq_one (w := 64) (h_w_pos := by omega)]
   ring
