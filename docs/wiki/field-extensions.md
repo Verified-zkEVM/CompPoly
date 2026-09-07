@@ -219,7 +219,7 @@ That is about 60 lines.
 1. Pick a monic irreducible `f` (confirm with `scripts/gen_rabin_certificate.py`, which
    exits nonzero if `f` is reducible).
 2. Generate the certificate module:
-   `python3 scripts/gen_rabin_certificate.py --p <p> --f <coeffs> --lean <path> --namespace <NS>`.
+   `python3 scripts/gen_rabin_certificate.py --p <p> --f=<coeffs> --lean <path> --namespace <NS>`.
 3. Write the irreducibility wrapper: `toPoly p fL = f`, `natDegree`, `f ≠ 0`, then the
    chain/Bézout `rfl` checks and the assembly through
    `irreducible_of_rabin_prime_degree_of_card` (prime `d`, see

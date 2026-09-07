@@ -7,7 +7,7 @@ This page records which paths are source of truth and which are derived outputs.
 | Path | Status | How it is maintained |
 |---|---|---|
 | `CompPoly.lean` | Generated and committed | Regenerate with `./scripts/update-lib.sh` after adding, renaming, or deleting `CompPoly/**/*.lean` files. Emitted in module form: `module`, blank line, one `public import` per file. |
-| `CompPoly/Fields/*/Ext*/`*`CertData.lean` | Generated and committed | Rabin irreducibility certificate data for non-binomial extension moduli. Regenerate with `scripts/gen_rabin_certificate.py --p <p> --f <coeffs> --lean <path> --namespace <NS>`; the exact command is recorded in each file's docstring. Do not hand-edit. Nothing in them is trusted — the kernel re-checks every step through `CompPoly.RabinCert.runChain`. |
+| `CompPoly/Fields/*/Ext*/`*`CertData.lean` | Generated and committed | Rabin irreducibility certificate data for non-binomial extension moduli. Regenerate with `scripts/gen_rabin_certificate.py --p <p> --f=<coeffs> --lean <path> --namespace <NS>`; the exact command is recorded in each file's docstring. Do not hand-edit. Nothing in them is trusted — the kernel re-checks every step through `CompPoly.RabinCert.runChain`. |
 | `bench/report-*.md`, `bench/results-*.jsonl`, `bench/evaluation-bench-*` | Generated, not source | Produced by `lake exe CompPolyBench`; keep reports as local or CI artifacts. All three patterns are ignored — the first two by `bench/.gitignore`, `evaluation-bench-*` by the root `.gitignore` — so a benchmark run leaves the working tree clean. |
 | `scripts/axiom_baseline.json` | Generated and committed | Kernel-level axiom/`sorry` regression baseline. Regenerate with `lake exe axiomsweep --update-baseline` after a built `lake build`; commit the diff in the same PR that intentionally adds or removes baselineable taint. Checked by the enforcing axiom-sweep CI step; native-compiler trust cannot be baselined. |
 | `CLAUDE.md` | Compatibility symlink | Must remain a symlink to `AGENTS.md`; do not replace it with a separate copy. |
@@ -38,10 +38,13 @@ writes a complete, compilable module — header, docstring with the regenerating
 step lists — so the workflow after changing a modulus is:
 
 ```bash
-python3 scripts/gen_rabin_certificate.py --p <prime> --f <little-endian coeffs> \
+python3 scripts/gen_rabin_certificate.py --p <prime> --f=<little-endian coeffs> \
     --lean <path to CertData.lean> --namespace <Field>.<Name>Cert
 ./scripts/update-lib.sh
 ```
+
+Attach the coefficients with `--f=`: a modulus with a negative leading coefficient starts with
+`-`, which the separated `--f <coeffs>` form parses as an option name.
 
 The generator's exit code is its verdict: non-zero means the polynomial is reducible. Run
 `python3 scripts/gen_rabin_certificate.py --self-test` to check the generator itself against
