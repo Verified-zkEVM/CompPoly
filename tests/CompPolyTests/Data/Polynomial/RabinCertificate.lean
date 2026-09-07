@@ -15,7 +15,7 @@ public import Mathlib.Tactic.NormNum.Prime
 End-to-end exercise of `CompPoly/Data/Polynomial/RabinCertificate.lean` at a size where the
 certificate can be checked by hand: `X^2 + X + 1` is irreducible over `ZMod 5` (it has no
 roots: squares mod 5 are `{0, 1, 4}` and `x^2 + x + 1` hits `1, 3, 2, 3, 1`). The certificate
-data below is what `scripts/gen_rabin_certificate.py --p 5 --f "1,1,1"` emits.
+data below is what `scripts/gen_rabin_certificate.py --p 5 --f='1,1,1'` emits.
 
 This keeps the framework honest independently of the (much larger) KoalaBear quintic
 certificate in `CompPoly/Fields/KoalaBear/Ext5/QuinticCertData.lean`.

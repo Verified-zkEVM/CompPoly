@@ -28,9 +28,10 @@ Self-test over the known-answer cases in `SELF_TESTS`:
     python3 scripts/gen_rabin_certificate.py --self-test
 """
 from __future__ import annotations
-import argparse, json, sys
+import argparse, json, subprocess, sys
 import textwrap
 
+LINE_LIMIT = 98  # Lean style limit is 100, but we leave room for a trailing comma or bracket.
 
 def poly_trim(a: list[int]) -> list[int]:
     a = a[:]
@@ -313,7 +314,7 @@ def _wrap_command(p: int, f_arg: str, ns: str, authors: str) -> list[str]:
     line and the shell rejoins the pieces into one argument."""
     lines = ["python3 scripts/gen_rabin_certificate.py --p %d \\" % p]
     head = "  --f='"
-    limit = 98
+    limit = LINE_LIMIT
     chunks: list[str] = []
     cur = ""
     for piece in f_arg.split(","):
@@ -340,13 +341,61 @@ def _wrap_command(p: int, f_arg: str, ns: str, authors: str) -> list[str]:
     return lines
 
 
+# (coeff string, note) — moduli whose emitted command must survive a shell round-trip.
+# The long cases force `_wrap_command` to split the value across lines; the short ones
+# guard the unsplit branch and the negative leading coefficient.
+FORMAT_TESTS = [
+    ("1,1,1", "short, unsplit"),
+    ("-1,0,1,0,0,1", "negative leading coefficient (Ext5)"),
+    ("1," + ",".join(["0"] * 63) + ",1", "degree-64 GF(2) modulus, splits"),
+    ("-1," + ",".join(["0"] * 200) + ",1", "long and negative, splits several times"),
+]
+
+
+def format_test() -> int:
+    """Check that the emitted regeneration command survives a shell round-trip.
+
+    `_wrap_command` splits a long `--f` value across lines, and the shell must rejoin
+    the pieces into exactly the original token: a backslash misplaced inside the quotes
+    would leave a literal backslash and newline in the value, which `int()` then
+    rejects. Returns a process exit code."""
+    failures = 0
+    for fstr, note in FORMAT_TESTS:
+        lines = _wrap_command(2130706433, fstr, "NS.Cert", "Test Author")
+        # `--lean <this file>` is a documentation placeholder; `<` would redirect.
+        script = [ln for ln in lines if "--lean" not in ln]
+        script[-1] = script[-1].rstrip("\\").rstrip()
+        script[0] = script[0].replace(
+            "python3 scripts/gen_rabin_certificate.py", 'printf "%s\\n"', 1)
+        proc = subprocess.run(["bash", "-c", "\n".join(script)],
+                              capture_output=True, text=True)
+        argv = proc.stdout.split("\n")
+        got = next((a[len("--f="):] for a in argv if a.startswith("--f=")), None)
+        overlong = [len(ln) for ln in lines if len(ln) > LINE_LIMIT]
+        ok = proc.returncode == 0 and got == fstr and not overlong
+        if not ok:
+            failures += 1
+        status = "ok  " if ok else "FAIL"
+        detail = ""
+        if proc.returncode != 0:
+            detail = "  shell rejected the command: " + proc.stderr.strip()
+        elif got != fstr:
+            detail = "  --f round-tripped as %r" % got
+        elif overlong:
+            detail = "  lines over %d columns: %s" % (LINE_LIMIT, overlong)
+        print(f"[{status}] --f={fstr[:32]}{'...' if len(fstr) > 32 else ''} "
+              f"({len(lines)} lines)  {note}{detail}")
+    print(f"\n{len(FORMAT_TESTS) - failures}/{len(FORMAT_TESTS)} passed")
+    return 1 if failures else 0
+
+
 def poly_to_lean(l: list[int], prefix_len: int = 0, indent: str = "  ") -> str:
     """Render a coefficient list, wrapping if the rendered `def` line would overflow.
     `prefix_len` is the width of the `def <name> : List ℕ := ` text preceding it."""
     one_line = "[" + ", ".join(str(c) for c in l) + "]"
-    if prefix_len + len(one_line) <= 98:
+    if prefix_len + len(one_line) <= LINE_LIMIT:
         return one_line
-    return _wrap_coeffs(l, indent, limit=98 - prefix_len if prefix_len else 98)
+    return _wrap_coeffs(l, indent, limit=LINE_LIMIT - prefix_len if prefix_len else LINE_LIMIT)
 
 
 def main() -> int:
@@ -362,10 +411,14 @@ def main() -> int:
     ap.add_argument("--authors", type=str, default="Derek Sorensen",
                     help="value for the Authors line of the generated copyright header")
     ap.add_argument("--self-test", action="store_true",
-                    help="check the generator against known-answer cases and exit")
+                    help="check the certificate arithmetic and the emitted command, then exit")
     args = ap.parse_args()
     if args.self_test:
-        return self_test()
+        print("== certificate arithmetic ==")
+        arithmetic = self_test()
+        print("\n== emitted command formatting ==")
+        formatting = format_test()
+        return arithmetic or formatting
     p = args.p
     f = [c % p for c in map(int, args.f.split(","))]
     cert = build_certificate(p, f)
