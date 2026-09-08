@@ -97,11 +97,16 @@ encoding is observable.
 - [`../../CompPoly/Fields/Binary/BF64/Reduce.lean`](../../CompPoly/Fields/Binary/BF64/Reduce.lean)
   folds a 128-bit carry-less product back into 64 bits using the reduction constant `0x1B`.
 - [`../../CompPoly/Fields/Binary/BF64/Impl.lean`](../../CompPoly/Fields/Binary/BF64/Impl.lean)
-  carries the computable `BitVec 64` representation, its bridge to the quotient, and the
+  carries the nominal field elements with `BitVec 64` coordinates, their quotient bridge, and the
   `CommRing` / `Field` instances built around an Itoh-Tsujii inverse.
 - [`../../CompPoly/Fields/Binary/BF64/Ext3.lean`](../../CompPoly/Fields/Binary/BF64/Ext3.lean)
   instantiates the extension framework at `y^3 + y + 1`, whose irreducibility needs no
   certificate.
+
+Use `BF64.ofBitVec` to construct polynomial-basis words and `BF64.toBitVec` to recover them;
+the maps are inverse and introduce no implicit conversion to another field presentation.
+For example, `BF64.ofBitVec (2#64)` denotes `X`, while `(2 : BF64)` is zero. Raw reference
+vectors must use the coordinate constructor rather than field numeral casts.
 
 The instances here are assembled field-by-field on purpose: a transport such as
 `Function.Injective.commRing` takes the bridge as *data* and would make the arithmetic
