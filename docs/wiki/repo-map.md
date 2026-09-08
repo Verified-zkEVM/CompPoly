@@ -18,7 +18,7 @@ CompPoly/
   Multilinear/        multilinear coefficient and evaluation representations
   Bivariate/          specialized `CPolynomial (CPolynomial R)` layer
     GuruswamiSudan/     list decoder: interpolation and root-finding backends
-  LinearAlgebra/      dense matrices and polynomial matrices with row reduction
+  LinearAlgebra/      matrix algorithms and tensor basis theory
   Fields/             concrete fields plus binary-field and additive-NTT stack
 tests/                regression modules under `CompPolyTests`
 bench/                benchmark executable, runner docs, and local reports
