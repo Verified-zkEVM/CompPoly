@@ -204,6 +204,7 @@ algebra over `ConcreteBTField k`.
 -/
 instance instAlgebraTowerConcreteBTF : AlgebraTower (ConcreteBTField) where
   algebraMap := concreteTowerAlgebraMap
+  algebraMap_self' := concreteTowerAlgebraMap_id
   commutes' := by
     intro i j h r x
     exact CommMonoid.mul_comm ((concreteTowerAlgebraMap i j h) r) x
