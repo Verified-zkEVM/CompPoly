@@ -66,6 +66,7 @@ This directory contains formally verified field infrastructure used in zero-know
 The `Binary/` subtree provides characteristic-2 field infrastructure used by GHASH and additive-NTT workflows:
 
 - `Binary/BF128Ghash/*` — GF(2^128) model, implementation, and certificates.
+- `Binary/BF64/*` — polynomial-basis GF(2^64) (`GF(2)[x]/(x^64 + x^4 + x^3 + x + 1)`) with a computable `BitVec 64` carrier, plus its degree-3 extension GF(2^192). A different basis from the GF(2^64) rung of `Binary/Tower/`, so the two disagree on bit-level encodings.
 - `Binary/AdditiveNTT/*` — additive-NTT domain/algorithm/correctness stack.
 - `Binary/Tower/*` — abstract/concrete binary tower-field constructions and supporting lemmas.
 - `Binary/Tower/Fast.lean` — packed machine-word tower arithmetic with a GF(2^8) table base, proven against the concrete tower; `Field` instances up to GF(2^128).
@@ -73,11 +74,13 @@ The `Binary/` subtree provides characteristic-2 field infrastructure used by GHA
 
 ## Field extensions
 
-`Extension/` provides computable `F[X]/f` arithmetic for an arbitrary monic `f` in odd
-characteristic, with the `Field` structure proved against `AdjoinRoot f`, plus
+`Extension/` provides computable `F[X]/f` arithmetic for an arbitrary monic `f` over any finite
+base field, with the `Field` structure proved against `AdjoinRoot f`, plus
 `Algebra F (Ext P)`, a base embedding `ofBase`, and the adjoined root `gen`. Binomial moduli
 `X^d - W` are the special case entered through `BinomialParams.toExtensionParams`, and get
-`gen ^ d = ofBase W`.
+`gen ^ d = ofBase W`. Nothing assumes odd characteristic: `Binary/BF64/Ext3.lean` instantiates
+the framework over `GF(2^64)`, though the odd-characteristic instances are still the
+better-exercised path.
 
 Irreducibility of the defining polynomial comes from Rabin's test. For a binomial it collapses to
 two exponentiations in the base field — no generated certificates. For a general modulus it uses

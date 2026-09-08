@@ -89,6 +89,7 @@ CompPoly aims to be the premier formally verified library for computable polynom
            `Polynomial.irreducible_of_rabin` so the two soundness proofs do not need
            parallel maintenance
          - 64-bit-radix Montgomery layer, so `Hachi` gets a `FastField` base
+   - ✅ Polynomial-basis `GF(2^64)` and its degree-3 extension `GF(2^192)` (`Fields/Binary/BF64/`), a flat quotient by an irreducible degree-64 pentanomial rather than an iterated quadratic tower
    - ✅ Implement a specialized Bivariate polynomial type, e.g. as `CPolynomial (CPolynomial R)` with specialized polynomial operations (that can then be optimized)
 
 **Success Criteria**: Zero `sorry`s in core operations, all ring structures complete, clean build with no warnings, reasonable proof ergonomics.
