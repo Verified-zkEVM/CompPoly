@@ -128,6 +128,15 @@ support lemmas:
 Use the tower subtree when the task is about characteristic-2 extensions more
 generally, not just GHASH.
 
+The shared `AlgebraTower` contract in `CompPoly/Data/RingTheory/AlgebraTower.lean`
+requires self-maps to be identities as well as maps to compose coherently. New
+constructors must supply `identity'`; the abstract and concrete binary towers use
+their existing `towerAlgebraMap_id` and `concreteTowerAlgebraMap_id` proofs. Clients
+can simplify self-maps with `AlgebraTower.algebraMap_self` and
+`AlgebraTower.algebraMap_self_apply`, including an arbitrary proof of `i ≤ i`.
+This contract still requires only commutative semirings indexed by a preorder;
+it does not require injective maps or field instances.
+
 ## Additive NTT Surface
 
 The additive-NTT stack is split by role rather than by one monolithic file:
