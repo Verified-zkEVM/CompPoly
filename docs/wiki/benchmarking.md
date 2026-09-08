@@ -175,3 +175,8 @@ Recorded so they are not rediscovered. The audit and plan live in
 - Coverage gaps against the roadmap: no standalone multiplicative NTT/iNTT group,
   no base-field microbenchmarks outside Goldilocks, no `add`/`square`/batch-inverse,
   no Reed-Solomon or polynomial-matrix groups.
+- The polynomial-basis `GF(2^64)` of `CompPoly/Fields/Binary/BF64/` and its cubic
+  extension have no group, so the only binary-field timings are the tower ones.
+  A `mul` group there would measure carry-less multiply plus sparse reduction
+  against the tower's packed-word path, which is the comparison the two
+  representations exist to settle.

@@ -1529,6 +1529,17 @@ imports, and the benchmark file is deleted. Verified by breaking one guard and
 confirming the build fails, then restoring it. This is the coverage §6.6 would
 have deleted silently.
 
+Rescuing the guards turned out to be worth more than it first appeared. While
+this branch was open, #320 made the multiplication width-generic
+(`carryLessMul {v w}`, with `clMul` as its 128-bit instance) and #321 added
+`BF64`, whose `mul` is the 64-bit instance. The rescued baseline was written
+against `clMul` alone, so on merging it pinned only one of the two widths now in
+use — the new one was covered only indirectly, by #321's reference vectors,
+which pin the *field* rather than the multiplication against its predecessor.
+The baseline is now generic in the operand width and carries four more guards at
+width 64, checked the same way. Had the file gone in §6.6, the generalization
+would have landed with nothing pinning either width to the fold it replaced.
+
 `tests/CompPolyTests/Univariate/NTT/Benchmark.lean` and
 `KroneckerBenchmark.lean` are deliberately left in place: the former holds the
 only NTT-vs-schoolbook crossover logic in the repo and is the specification for a
