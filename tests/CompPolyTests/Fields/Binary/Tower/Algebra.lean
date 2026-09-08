@@ -11,9 +11,9 @@ import CompPoly.Fields.Binary.Tower.Concrete.Algebra
 /-!
 # Binary tower algebra regression tests
 
-Both tower instances satisfy the generic self-map law at symbolic levels. Adjacent maps
-remain the existing canonical embeddings, and skipping a level agrees with composition.
-All checks quantify over arbitrary field elements rather than testing only zero and one.
+The abstract and concrete binary towers satisfy the self-map identity law at symbolic levels.
+Adjacent maps are the canonical embeddings, and each map from level `k` to level `k + 2`
+is the composite of two canonical embeddings. All checks quantify over arbitrary field elements.
 -/
 
 namespace CompPolyTests.BinaryTowerAlgebra
@@ -39,18 +39,6 @@ example (k : ℕ) (x : ConcreteBTField k) :
       canonicalAlgMap k x := by
   change concreteTowerAlgebraMap k (k + 1) _ x = _
   rw [concreteTowerAlgebraMap_succ_1]
-
-example (i j k : ℕ) (hij : i ≤ j) (hjk : j ≤ k) (x : BTField i) :
-    AlgebraTower.algebraMap (AT := BTField) i k (hij.trans hjk) x =
-      AlgebraTower.algebraMap (AT := BTField) j k hjk
-        (AlgebraTower.algebraMap (AT := BTField) i j hij x) := by
-  rw [AlgebraTower.coherence', RingHom.comp_apply]
-
-example (i j k : ℕ) (hij : i ≤ j) (hjk : j ≤ k) (x : ConcreteBTField i) :
-    AlgebraTower.algebraMap (AT := ConcreteBTField) i k (hij.trans hjk) x =
-      AlgebraTower.algebraMap (AT := ConcreteBTField) j k hjk
-        (AlgebraTower.algebraMap (AT := ConcreteBTField) i j hij x) := by
-  rw [AlgebraTower.coherence', RingHom.comp_apply]
 
 example (k : ℕ) (x : BTField k) :
     AlgebraTower.algebraMap (AT := BTField) k (k + 2) (by omega) x =

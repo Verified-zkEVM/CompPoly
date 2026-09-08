@@ -8,37 +8,34 @@ module
 public import Mathlib.LinearAlgebra.Matrix.Reindex
 
 /-!
-  # Tower of Algebras and Tower of Algebra Equivalences
+# Towers of algebras and their equivalences
 
-  This file contains definitions, theorems, instances that are used in defining tower of algebras
-  and their equivalences.
+An `AlgebraTower` is a preorder-indexed family of commutative semirings with ring
+homomorphisms between comparable levels. Self-maps are identities, and the maps compose
+along chains of indices. Each map induces an algebra structure on its target, and
+composition gives compatible scalar actions across three levels.
 
-  ## Main definitions
-
-  * `AlgebraTower` : a tower of algebras
-  * `AlgebraTowerEquiv` : an equivalence of towers of algebras
+An `AlgebraTowerEquiv` consists of ring equivalences at each level that commute with
+the tower maps.
 -/
 
 @[expose] public section
 
-/-- A tower of algebras is a sequence of algebras `AT i` indexed over a preorder `ι` with the
-    following data:
-    - `algebraMap : AT i →+* AT j` is a ring homomorphism from `AT i` to `AT j` for all `i ≤ j`
-    - `identity'` states that the map from a level to itself is the identity
-    - `commutes'` is a proof that the ring homomorphism commutes with the multiplication
-    - `coherence'`: A tower of algebras is coherent if the algebra maps satisfy the
-      coherence condition: the direct map from i to k equals the composition of maps i → j → k.
--/
+/-- A preorder-indexed family of commutative semirings with compatible ring homomorphisms.
+
+The map from a level to itself is the identity. For `i ≤ j ≤ k`, the map from `i` to `k`
+is the composite of the maps from `i` to `j` and from `j` to `k`. -/
 class AlgebraTower {ι : Type*} [Preorder ι] (AT : ι → Type*)
   [∀ i, CommSemiring (AT i)] where
   /-- Ring homomorphisms from `AT i` to `AT j` for all `i ≤ j`. -/
   protected algebraMap : ∀ i j, (h : i ≤ j) → (AT i →+* AT j)
-  /-- The map from a level to itself is the identity. -/
-  identity' : ∀ i, algebraMap i i le_rfl = RingHom.id (AT i)
-  /-- Commutativity of multiplication with respect to the ring homomorphism. -/
+  /-- The ring homomorphism from level `i` to itself is the identity. -/
+  algebraMap_self' : ∀ i, algebraMap i i le_rfl = RingHom.id (AT i)
+  /-- Every image element commutes with every element of the target semiring. -/
   commutes' : ∀ (i j : ι) (h : i ≤ j) (r : AT i) (x : AT j),
     (algebraMap i j h r) * x = x * (algebraMap i j h r)
-  coherence': ∀ (i j k : ι) (h1 : i ≤ j) (h2 : j ≤ k),
+  /-- The map from `i` to `k` is the composite of the maps from `i` to `j` and `j` to `k`. -/
+  coherence' : ∀ (i j k : ι) (h1 : i ≤ j) (h2 : j ≤ k),
     algebraMap i k (h1.trans h2) =
       (algebraMap j k h2).comp (algebraMap i j h1)
 
@@ -47,14 +44,13 @@ variable {ι : Type*} [Preorder ι]
   {B : ι → Type*} [∀ i, CommSemiring (B i)] [AlgebraTower B]
   {C : ι → Type*} [∀ i, CommSemiring (C i)] [AlgebraTower C]
 
-/-- A self-map is the identity, independently of the chosen order proof. -/
+/-- The tower map from level `i` to itself is the identity for every proof of `i ≤ i`. -/
 @[simp]
 lemma AlgebraTower.algebraMap_self (i : ι) (h : i ≤ i) :
     AlgebraTower.algebraMap (AT := A) i i h = RingHom.id (A i) :=
-  AlgebraTower.identity' i
+  AlgebraTower.algebraMap_self' i
 
-/-- Mapping an element to its own level leaves it unchanged. -/
-@[simp]
+/-- The tower map from level `i` to itself fixes every element of that level. -/
 lemma AlgebraTower.algebraMap_self_apply (i : ι) (h : i ≤ i) (x : A i) :
     AlgebraTower.algebraMap (AT := A) i i h x = x := by
   rw [AlgebraTower.algebraMap_self, RingHom.id_apply]
