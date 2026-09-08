@@ -83,7 +83,7 @@ private def runExtOp {E : Type} (groupKey title name method fieldName shape : St
   pure ({ groupKey := groupKey, title := title, records := #[record] }, gen)
 
 /-- Build the pairwise operand sampler for an extension over a `ZMod` base field. -/
-private def extSampler {F : Type*} [Field F] [Fintype F] {P : ExtensionParams F}
+private def extSampler {F : Type*} [Ring F] {P : ExtensionParams F}
     (values : Array F) : Nat → Ext P × Ext P :=
   let elem (i : Nat) : Ext P :=
     Ext.ofFn fun j ↦ values.getD ((i * P.d + j.val) % values.size) 0

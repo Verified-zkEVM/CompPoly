@@ -53,16 +53,19 @@ makes a cheap Frobenius and a norm-based inverse possible. See "Choosing a gener
 | Factor-degree bound | [`../../CompPoly/ToMathlib/Polynomial/Irreducible.lean`](../../CompPoly/ToMathlib/Polynomial/Irreducible.lean) | `exists_factor_natDegree_le_of_reducible` |
 | Binomial criterion | [`../../CompPoly/Fields/Extension/Binomial.lean`](../../CompPoly/Fields/Extension/Binomial.lean) | the collapse to base-field exponentiations; `irreducible_X_pow_four_sub_C_iff` |
 | Rabin certificates | [`../../CompPoly/Data/Polynomial/RabinCertificate.lean`](../../CompPoly/Data/Polynomial/RabinCertificate.lean) | kernel-checked chains for non-binomial moduli; `runChain_sound`, `irreducible_of_rabin_prime_degree`, `irreducible_of_rabin_two_prime_factors`, `irreducible_of_rabin_degree_six`, and the `_of_card` forms concrete callers use |
-| Carrier and ring ops | [`../../CompPoly/Fields/Extension/Defs.lean`](../../CompPoly/Fields/Extension/Defs.lean) | `ExtensionParams`, `BinomialParams` (+ `toExtensionParams`), `Ext P`, `Ext.shiftReduce`, `Ext.monomialMod`, `Ext.mul` (spec), `Ext.red` + `Ext.mulTbl` (compiled, via `@[csimp]`) |
+| Carrier and raw arithmetic | [`../../CompPoly/Fields/Extension/Arithmetic.lean`](../../CompPoly/Fields/Extension/Arithmetic.lean) | `ExtensionParams`, `BinomialParams` (+ `toExtensionParams`), `Ext P`, `Ext.shiftReduce`, `Ext.monomialMod`, `Ext.mul` (spec), `Ext.red` + `Ext.mulTbl` (compiled, via `@[csimp]`) |
+| Polynomial specification | [`../../CompPoly/Fields/Extension/Defs.lean`](../../CompPoly/Fields/Extension/Defs.lean) | `ExtensionParams.poly`, degree/monicity, binomial correspondence |
+| Finiteness and cardinality | [`../../CompPoly/Fields/Extension/Cardinality.lean`](../../CompPoly/Fields/Extension/Cardinality.lean) | `Finite`, optional `Fintype`, cardinality certificates, `card_ext`, `nat_card_ext` |
 | Bridge and `CommRing` | [`../../CompPoly/Fields/Extension/Bridge.lean`](../../CompPoly/Fields/Extension/Bridge.lean) | `toQuot`, `toQuot_shiftReduce`, `toQuot_mul`, `instCommRing` |
-| Bijectivity and `Field` | [`../../CompPoly/Fields/Extension/Field.lean`](../../CompPoly/Fields/Extension/Field.lean) | `ringEquivQuot`, `card_ext`, `inv`, `instField` |
+| Bijectivity and `Field` | [`../../CompPoly/Fields/Extension/Field.lean`](../../CompPoly/Fields/Extension/Field.lean) | `ringEquivQuot`, inverse correctness, `instField` |
 
-Import `CompPoly.Fields.Extension.Defs` for presentations and arithmetic, `Bridge` for
-the quotient bridge and ring laws, or `Field` for the field structure. The binomial
-irreducibility criterion has its own import, `CompPoly.Fields.Extension.Binomial`;
-`Defs` does not import it. The `CompPoly.Fields.Extension` facade re-exports all four
-modules. Presentation parameters still require a finite base field and its certified
-cardinality, including when only `Defs` is imported.
+Import `CompPoly.Fields.Extension.Arithmetic` for raw presentations, coordinates and ring
+arithmetic, including the canonical inverse candidate. The raw carrier has no algebraic
+assumptions; arithmetic uses `Ring`. Import `Defs` for polynomial specifications, `Bridge`
+for quotient correspondence and ring laws, or `Cardinality` for finite-coordinate facts.
+`Field` requires a finite base field, a separate `Fact (Nat.card F = P.q)` certificate and
+irreducibility. The binomial criterion remains in `CompPoly.Fields.Extension.Binomial`.
+The `CompPoly.Fields.Extension` facade re-exports all six modules.
 
 `Data/Polynomial/Rabin.lean` generalizes the degree-128/GF(2) specialization
 `irreducible_of_rabin_128_passed_over_GF2` in `Fields/Binary/BF128Ghash/Basic.lean`, but does not
@@ -121,7 +124,7 @@ Concretely, for `P : ExtensionParams F`:
 | Base field | `Ext.ofBase : F → Ext P`, `Ext.ofBaseRingHom`, `Algebra F (Ext P)` (hence `Module F (Ext P)` via `Algebra.toModule`) |
 | Adjoined root | `Ext.gen`, `Ext.gen_pow_d : gen ^ d = monomialMod d`, `Ext.aeval_gen_poly : aeval gen P.poly = 0`; for a binomial, `Ext.gen_pow_d_binomial : gen ^ d = ofBase W` |
 | Specification | `Ext.toQuot`, `Ext.ringEquivQuot : Ext P ≃+* AdjoinRoot P.poly` |
-| Cardinality | `Fintype (Ext P)`, `Ext.card_ext : Fintype.card (Ext P) = q ^ d` |
+| Cardinality | `Finite (Ext P)`, optional `Fintype (Ext P)`, `Ext.nat_card_ext : Nat.card (Ext P) = q ^ d` and enumeration compatibility `Ext.card_ext` |
 | Coefficients | `Ext.coeff`, `Ext.ofFn`, `Ext.equivFn : Ext P ≃ (Fin d → F)` |
 
 With the `Algebra` instance in place, ordinary Mathlib machinery — `aeval`, scalar towers,
@@ -232,7 +235,10 @@ So prefer, in order: a cyclotomic `Φₙ` when one has the right degree; then a 
 
 1. Pick `W`. For `d = 4` over `q ≡ 1 mod 4`, any non-square works; prefer the smallest, so
    that multiplying by `W` is cheap.
-2. Write the `BinomialParams`, supplying `card_eq := ZMod.card _`.
+2. Write the raw `BinomialParams`, including literal `q`, and separately provide
+   `instance : Fact (Nat.card Field = params.q)`. For `ZMod`, rewrite
+   `Nat.card_eq_fintype_card` and use `ZMod.card _`. The cardinality certificate is forwarded
+   to `params.toExtensionParams`.
 3. Prove irreducibility with `irreducible_X_pow_four_sub_C_of_card`. The two exponentiation
    goals need the type presented as `ZMod <numeral>`, because `reduce_mod_char` reads the
    modulus syntactically and `fieldSize` is an expression like `2 ^ 31 - 2 ^ 24 + 1`. Use a
@@ -282,13 +288,28 @@ The one place a degree bound is needed on the *polynomial* side — showing that
 [`Univariate/ToPoly/Degree.lean`](../../CompPoly/Univariate/ToPoly/Degree.lean)), it exists but is
 **not** wired to this framework; connecting them would be new work.
 
-`ExtensionParams` carries `d`, the modulus's lower coefficients, and the base-field cardinality
-`q` as a *type index*, so two different extensions of the same base field are different types
-whose instances cannot be confused. `q` is data rather than `Fintype.card F` because Fermat
+`ExtensionParams` carries `d`, the modulus's lower coefficients, and a proposed base cardinality
+`q` as a *type index*. With fixed operations on the coefficient type, different parameter
+values give different presentation types. The raw carrier does not choose between multiple
+ring dictionaries on the same coefficient type. `q` is data rather than `Fintype.card F` because Fermat
 inversion evaluates the exponent at runtime, and `Fintype.card (ZMod p)` would enumerate all
 of `Fin p`. `BinomialParams` is the ergonomic front-end for `X^d - W`, mapped in by
 `BinomialParams.toExtensionParams` (lower coefficients `(-W, 0, …, 0)`), with `toExtensionParams_poly`
 identifying the two spellings of the defining polynomial.
+
+Cardinality correctness is separate from the raw parameters: field laws require `Finite F`
+and `Fact (Nat.card F = P.q)`, both propositions. `Ext.inv` always evaluates the stored
+exponent, even for an incorrect `q`; without the certificates it is only an inverse candidate.
+For example, `q = 0` gives `0⁻¹ = 1`. The cardinality and field proofs create enumerations
+locally when needed; no enumeration dictionary is passed to raw operations or the field
+instance. `Ext.nat_card_ext` and the proof-only `Finite (Ext P)` instance support subsequent
+certified extensions without requiring an executable enumeration.
+
+The raw and certificate boundaries are exercised in
+[`RawArithmetic.lean`](../../tests/CompPolyTests/Fields/Extension/RawArithmetic.lean) and
+[`Certificates.lean`](../../tests/CompPolyTests/Fields/Extension/Certificates.lean), including
+an infinite coefficient ring, incorrect cardinality, and an infinite field with irreducible
+modulus and true cardinality zero.
 
 **The instances are assembled field-by-field, not by `Function.Injective.commRing` /
 `.field`.** Those transports take `toQuot` as data, which forces the resulting instance
@@ -362,7 +383,7 @@ The remaining causes, in order of size:
 2. **The base field is `ZMod p`**, i.e. boxed `Nat` arithmetic. Instantiating over
    `KoalaBear.Fast.Field` (`UInt32` Montgomery,
    [`Montgomery/Native32Field.lean`](../../CompPoly/Fields/Montgomery/Native32Field.lean))
-   needs only `Fintype` for that carrier plus irreducibility transported along
+   needs `Finite` and a certified `Nat.card` for that carrier, plus irreducibility transported along
    `Montgomery.Native32.ringEquiv` with `Polynomial.mapEquiv`. No change to the framework.
 3. **Inversion is Fermat** (`x ^ (q^d - 2)`), about `d · log q` extension multiplications — the
    ~140x ratio to `mul` above, and it is the reason the `#guard` regressions dominate the test

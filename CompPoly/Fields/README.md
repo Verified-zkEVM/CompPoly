@@ -22,7 +22,9 @@ This directory contains formally verified field infrastructure used in zero-know
 | **BN254/Fast.lean** | Eight-limb Montgomery instantiation of the BN254 scalar field (`Mont64x8Field` and `GcdData` constants, `ScalarField`, `ringEquiv`). |
 | **Extension.lean** | Facade for the field-extension stack (arbitrary monic modulus; binomial as a special case). |
 | **Extension/Binomial.lean** | Irreducibility of `X^d - W` over a finite field: Rabin's test collapsed to two base-field exponentiations (`irreducible_X_pow_four_sub_C_iff`). |
-| **Extension/Defs.lean** | `ExtensionParams` (degree, lower coefficients of the monic modulus, base cardinality), `BinomialParams` and its `toExtensionParams`, and the presentation-indexed carrier `Ext P` with length-`d` coefficient vectors and ring operations — including the `red` reduction table and the `@[csimp]`-registered `mulTbl`. |
+| **Extension/Arithmetic.lean** | `ExtensionParams` (degree, lower coefficients of the monic modulus, base cardinality), `BinomialParams` and its `toExtensionParams`, and the presentation-indexed carrier `Ext P` with length-`d` coefficient vectors and ring operations — including the `red` reduction table and the `@[csimp]`-registered `mulTbl`. |
+| **Extension/Defs.lean** | Polynomial specifications, degree/monicity, and binomial correspondence. |
+| **Extension/Cardinality.lean** | Proof-only finiteness, optional enumeration, and certified cardinality of the coefficient carrier. |
 | **Extension/Bridge.lean** | `toQuot : Ext P → AdjoinRoot P.poly`, its ring-hom and injectivity proofs, and `CommRing (Ext P)`. |
 | **Extension/Field.lean** | Bijectivity (`ringEquivQuot`), cardinality, Fermat inversion, and `Field (Ext P)`. |
 | **BabyBear/Ext4.lean** | \(\mathrm{BabyBear}[X]/(X^4 - 11)\). |
