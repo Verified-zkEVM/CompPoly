@@ -57,6 +57,13 @@ makes a cheap Frobenius and a norm-based inverse possible. See "Choosing a gener
 | Bridge and `CommRing` | [`../../CompPoly/Fields/Extension/Bridge.lean`](../../CompPoly/Fields/Extension/Bridge.lean) | `toQuot`, `toQuot_shiftReduce`, `toQuot_mul`, `instCommRing` |
 | Bijectivity and `Field` | [`../../CompPoly/Fields/Extension/Field.lean`](../../CompPoly/Fields/Extension/Field.lean) | `ringEquivQuot`, `card_ext`, `inv`, `instField` |
 
+Import `CompPoly.Fields.Extension.Defs` for presentations and arithmetic, `Bridge` for
+the quotient bridge and ring laws, or `Field` for the field structure. The binomial
+irreducibility criterion has its own import, `CompPoly.Fields.Extension.Binomial`;
+`Defs` does not import it. The `CompPoly.Fields.Extension` facade re-exports all four
+modules. Presentation parameters still require a finite base field and its certified
+cardinality, including when only `Defs` is imported.
+
 `Data/Polynomial/Rabin.lean` generalizes the degree-128/GF(2) specialization
 `irreducible_of_rabin_128_passed_over_GF2` in `Fields/Binary/BF128Ghash/Basic.lean`, but does not
 yet replace it, so there are currently **two** Rabin soundness proofs in the repo. Rebasing the
