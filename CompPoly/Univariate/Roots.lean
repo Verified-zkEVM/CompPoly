@@ -7,6 +7,8 @@ module
 
 public import CompPoly.Univariate.Roots.Correctness
 public import CompPoly.Univariate.Roots.Enumeration
+public import CompPoly.Univariate.Roots.LasVegas
+public import CompPoly.Univariate.Roots.Shoup
 public import CompPoly.Univariate.Roots.SmoothSubgroup
 
 /-!

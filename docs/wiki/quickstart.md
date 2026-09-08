@@ -37,6 +37,29 @@ lake build
 lake test
 ```
 
+### Filling a `sorry`, or work that must stay axiom-clean
+
+```bash
+lake build
+lake exe axiomsweep --check
+```
+
+`axiomsweep` is kernel-level axiom/`sorry` accounting for every reportable
+`CompPoly.*` declaration, diffed against the committed baseline
+`scripts/axiom_baseline.json`. It sweeps the `CompPoly` library as imported by the
+umbrella (`tests/` and `bench/` are outside it), and inherits the blind spots of any
+environment walk (structure-field defaults and `example`s never enter the
+environment) — see the module docstring in `scripts/AxiomSweep.lean`. It fails only on *new*
+`sorryAx` or non-standard-axiom taint, so pre-existing gaps stay allowed. After
+intentionally adding or closing a `sorry`, refresh and commit the baseline:
+
+```bash
+lake exe axiomsweep --update-baseline
+```
+
+CI runs the same check as an enforcing gate (see `lean_action_ci.yml`). Native-compiler
+trust is never baselineable.
+
 ### Added, renamed, or deleted files under `CompPoly/`
 
 ```bash
@@ -82,8 +105,10 @@ to be covered there. See [`../../bench/README.md`](../../bench/README.md).
 
 - [`../../.github/workflows/lean_action_ci.yml`](../../.github/workflows/lean_action_ci.yml)
   runs a **warm** (incremental) `lake build` by default — reusing cached Lake
-  oleans so only dirty modules rebuild — then `lake test`, and posts a
-  build-timing report. It also builds and runs `CompPolyBench --medium` over the curated
+  oleans so only dirty modules rebuild — then `lake test`, then the axiom sweep
+  as an enforcing gate, and posts a build-timing report. It also builds and runs
+  `CompPolyBench --medium` over the curated
+  `BENCH_CI_GROUPS` selection, then uploads benchmark reports as CI artifacts.
   `BENCH_CI_GROUPS` selection, then uploads benchmark reports as CI artifacts.
   A full cold rebuild (`rm -rf .lake/build && lake build`) runs automatically
   when `lean-toolchain` or `lake-manifest.json` differs from the comparison base
@@ -129,6 +154,7 @@ Use the direct scripts when debugging a specific failure:
 python3 ./scripts/check-docs-integrity.py
 lake test
 lake build CompPolyBench
+lake exe axiomsweep --check
 ```
 
 For more detail on the helper scripts, see

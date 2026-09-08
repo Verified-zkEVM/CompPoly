@@ -39,5 +39,13 @@ example (w x : Vector ℚ 2) :
     eqTilde w x = eval (lagrangeBasis w) x := by
   rfl
 
+example (w x : Vector ℚ 2) :
+    eqTilde w x = ∏ i : Fin 2, (w[i] * x[i] + (1 - w[i]) * (1 - x[i])) := by
+  exact eqTilde_eq_prod w x
+
+example (w₁ x₁ : Vector ℚ 2) (w₂ x₂ : Vector ℚ 3) :
+    eqTilde (w₁ ++ w₂) (x₁ ++ x₂) = eqTilde w₁ x₁ * eqTilde w₂ x₂ := by
+  exact eqTilde_append w₁ x₁ w₂ x₂
+
 end CMlPolynomialEval
 end CompPoly

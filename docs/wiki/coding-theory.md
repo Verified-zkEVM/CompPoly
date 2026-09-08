@@ -111,17 +111,23 @@ a context instance and inherits every theorem.
 
 ### Interpolation backends
 
-Both produce a valid witness in the sense of `ValidInterpolationWitness`; they
+All produce a valid witness in the sense of `ValidInterpolationWitness`; they
 differ in how the constrained linear system is solved.
 
 | Backend | Files | When to use |
 |---|---|---|
 | Dense | `Interpolation/Dense/{Algorithm,Correctness}.lean` | Small parameters. Builds the constraint matrix explicitly and calls the dense kernel solver. Simple, and the easiest to reason about. |
 | Lee-O'Sullivan | `Interpolation/LeeOSullivan/` ([LOS06]) | Larger parameters. Works from a Gröbner-basis perspective: build a module basis, then shift-reduce it with Mulders-Storjohann. `leeOSullivanInterpolate_sound` and `leeOSullivanInterpolate_complete`, with the argument split across nine files under `Correctness/`. |
+| Approximant-basis | `Interpolation/ApproximantBasis/` + `LinearAlgebra/PolynomialMatrix/Approximant/` | Long codes / many errors. Solves modular key equations via a minimal approximant (PM-Basis) solver; cost is quasi-linear in length and independent of corruption level. |
+| Hybrid | `Interpolation/Hybrid/` | Budgeted Lee–O'Sullivan with fallback to approximant (ski-rental style). Result equals one of the two verified backends. |
+
+Supporting pieces: `WitnessDivisibility*.lean` — quasi-linear multiplicity check
+equivalent to pointwise Hasse derivatives (used in long-code validation).
 
 `Interpolation/Basic.lean` holds the constraints and normalized-witness helpers
-shared by both, and `Interpolation/Correctness.lean` the shared results
+shared by the backends, and `Interpolation/Correctness.lean` the shared results
 (`interpolationWitnessIsValidBool_iff`, `lowMessageDegreeInterpolation_sound`).
+Named KoalaBear contexts for all four backends live in `Implementations.lean`.
 
 ### Root-finding backends
 
@@ -157,11 +163,22 @@ specific to it.
 | `RootProduct.lean` | the product of linear factors over a root set |
 | `Correctness.lean` | `monicNormalize_root_iff`, `gcdMonic_root_iff_left_right`, and the divisibility transport lemmas |
 | `SmoothSubgroup/` | subgroup-refinement splitting ([MOV92]) for fields whose multiplicative group admits a smooth schedule |
+| `Shoup/` | small-characteristic trace-coordinate splitting ([vzGS92]); `SmallPrimeTraceContext` + adapter to `LinearFactorProductSplitter` |
+| `LasVegas/` | bounded Las Vegas Cantor–Zassenhaus (odd-char and char-2 trace branches) with explicit `ProbeFamily` randomness, deterministic fallback, and probability proofs |
 
-The pipeline consumes a `LinearFactorProductSplitter`; `SmoothSubgroup/` supplies
-a contract-bearing smooth context plus an adapter to that interface. A field with
-no smooth refinement schedule needs a different splitter — that is the open work
-here. Benchmarked as `univariate-roots-finite-field-*`.
+The pipeline consumes a `LinearFactorProductSplitter`. Three backends supply that
+interface:
+
+| Backend | When to use |
+|---|---|
+| SmoothSubgroup | Multiplicative group admits a smooth cyclic refinement schedule |
+| Shoup | Small base characteristic `p`, presented as `GF(p^k)`; splits via `k` trace coordinates without enumerating the field |
+| LasVegas | General finite fields; odd-field CZ and/or even-trace attempts under a probe cutoff, with enumeration fallback |
+
+Concrete coverage includes `ZMod` odd primes (Las Vegas tests) and degree-one
+binary cases via `ZMod 2` and binary-tower level 0 (Shoup tests). Larger Tower
+levels as char-2 Shoup contexts are the natural integration path for production
+binary fields.
 
 ## Where To Start By Task
 
@@ -182,8 +199,8 @@ here. Benchmarked as `univariate-roots-finite-field-*`.
 - Gao: `GaoDecoder` → `GaoCorrectness` (soundness → completeness → farness)
 - Guruswami-Sudan: `Context` → `Core` → `CoreCorrectness` → one interpolation
   backend → one root backend → `Filter` → `Executable`
-- Root finding: `Context` → `Backend` → `Extraction` → `Correctness`, then
-  `SmoothSubgroup/` if the field admits it
+- Root finding: `Context` → `Backend` → `Extraction` → `Correctness`, then the
+  splitter that fits the field (`SmoothSubgroup/`, `Shoup/`, or `LasVegas/`)
 
 Read `Context.lean` first for GS. The contexts are the interface the rest of the
 subtree is written against, and the correctness theorems are unreadable without
@@ -196,8 +213,10 @@ knowing which contracts they assume.
   asks for it by name.
 - **No FRI or polynomial-commitment integration.** `decode_none_farness` is the
   hook a proximity test would use, but nothing consumes it yet.
-- **Root finding needs a smooth multiplicative group** for the only splitter that
-  currently exists.
+- **Binary Tower root contexts for high widths** (e.g. 32/64-bit) are not yet
+  packaged as named `SmallPrimeTraceContext` instances; the Shoup tests exercise
+  tower level 0 and `ZMod 2`. Wire higher levels when char-2 root search is needed
+  in production paths.
 - **List-size bounds are not formalized.** Soundness and completeness are proved
   relative to the supplied parameters; the Johnson-bound analysis that says how
   many candidates can survive is not.
@@ -215,6 +234,12 @@ knowing which contracts they assume.
     Decoding of Reed-Solomon Codes*][Ale05]
 * [Menezes, A. J., van Oorschot, P. C., and Vanstone, S. A., *Subgroup
     Refinement Algorithms for Root Finding in GF(q)*][MOV92]
+* [von zur Gathen, J., and Shoup, V., *Computing Frobenius maps and factoring
+    polynomials*][vzGS92]
+* Cantor–Zassenhaus equal-degree factorization (odd characteristic) and
+  char-2 trace splitting as used in `LasVegas/`
+* Beckermann–Labahn / Giorgi–Jeannerod–Villard PM-Basis approximant methods
+  as used in `PolynomialMatrix/Approximant/` and `Interpolation/ApproximantBasis/`
 
 BibTeX entries for these keys are in
 [`../../blueprint/src/references.bib`](../../blueprint/src/references.bib).

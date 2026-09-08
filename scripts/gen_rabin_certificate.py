@@ -28,8 +28,10 @@ Self-test over the known-answer cases in `SELF_TESTS`:
     python3 scripts/gen_rabin_certificate.py --self-test
 """
 from __future__ import annotations
-import argparse, json, sys
+import argparse, json, subprocess, sys
+import textwrap
 
+LINE_LIMIT = 98  # Lean style limit is 100, but we leave room for a trailing comma or bracket.
 
 def poly_trim(a: list[int]) -> list[int]:
     a = a[:]
@@ -260,9 +262,29 @@ def self_test() -> int:
     return 1 if failures else 0
 
 
+def _wrap_coeffs(coeffs: list[int], indent: str, limit: int = 98) -> str:
+    """Render a coefficient list as a bracketed Lean literal, filling lines up to
+    `limit` columns and continuing on `indent`-prefixed lines. Long lists (high-degree
+    moduli, or small primes with many terms) do not fit on one or two lines."""
+    body_lines: list[str] = []
+    cur = indent + "["
+    first = True
+    for c in coeffs:
+        tok = str(c) if first else ", " + str(c)
+        # +1 leaves room for the closing bracket or a trailing comma.
+        if not first and len(cur) + len(tok) + 1 > limit:
+            body_lines.append(cur + ",")
+            cur = indent + " " + str(c)
+        else:
+            cur += tok
+        first = False
+    body_lines.append(cur + "]")
+    return "\n".join(body_lines).lstrip()
+
+
 def steps_to_lean(steps) -> str:
-    """Render a step list as a Lean `List CompPoly.RabinCert.Step` literal,
-    wrapping each step across two lines to respect the 100-column style limit."""
+    """Render a step list as a Lean `List CompPoly.RabinCert.Step` literal, wrapping
+    each step so that every emitted line respects the 100-column style limit."""
     rows = []
     for s in steps:
         mulx = "true" if s["op"] == "mulX" else "false"
@@ -271,13 +293,109 @@ def steps_to_lean(steps) -> str:
         one_line = f"  ⟨{mulx}, [{q}], [{r}]⟩"
         if len(one_line) <= 98:
             rows.append(one_line)
-        else:
-            rows.append(f"  ⟨{mulx}, [{q}],\n    [{r}]⟩")
+            continue
+        two_line = f"  ⟨{mulx}, [{q}],\n    [{r}]⟩"
+        if all(len(ln) <= 98 for ln in two_line.split("\n")):
+            rows.append(two_line)
+            continue
+        # Both halves still overflow: wrap each coefficient list over as many
+        # lines as it needs.
+        q_wrapped = _wrap_coeffs(s["q"], "    ")
+        r_wrapped = _wrap_coeffs(s["r"], "    ")
+        rows.append(f"  ⟨{mulx},\n    {q_wrapped},\n    {r_wrapped}⟩")
     return "[\n" + ",\n".join(rows) + "]"
 
 
-def poly_to_lean(l: list[int]) -> str:
-    return "[" + ", ".join(str(c) for c in l) + "]"
+def _wrap_command(p: int, f_arg: str, ns: str, authors: str) -> list[str]:
+    """Emit the regeneration command as shell lines, none exceeding the style limit.
+    `--f=` keeps a negative leading coefficient from parsing as an option name. A long
+    value is split by closing the quote before each break and reopening it at column 0
+    on the next line, so the backslash falls outside the quotes where it continues the
+    line and the shell rejoins the pieces into one argument."""
+    lines = ["python3 scripts/gen_rabin_certificate.py --p %d \\" % p]
+    head = "  --f='"
+    limit = LINE_LIMIT
+    chunks: list[str] = []
+    cur = ""
+    for piece in f_arg.split(","):
+        tok = piece if not cur else "," + piece
+        # The first chunk carries `head`; later ones only a reopening quote. Every
+        # chunk may gain a trailing `,'\\` (3) or a closing `' \\` (3).
+        room = limit - (len(head) if not chunks else 1) - 3
+        if cur and len(cur) + len(tok) > room:
+            chunks.append(cur)
+            cur = piece
+        else:
+            cur += tok
+    if cur:
+        chunks.append(cur)
+    if len(chunks) == 1:
+        lines.append(head + chunks[0] + "' \\")
+    else:
+        lines.append(head + chunks[0] + ",'\\")
+        for c in chunks[1:-1]:
+            lines.append("'" + c + ",'\\")
+        lines.append("'" + chunks[-1] + "' \\")
+    lines.append("  --lean <this file> --namespace %s \\" % ns)
+    lines.append("  --authors '%s'" % authors)
+    return lines
+
+
+# (coeff string, note) — moduli whose emitted command must survive a shell round-trip.
+# The long cases force `_wrap_command` to split the value across lines; the short ones
+# guard the unsplit branch and the negative leading coefficient.
+FORMAT_TESTS = [
+    ("1,1,1", "short, unsplit"),
+    ("-1,0,1,0,0,1", "negative leading coefficient (Ext5)"),
+    ("1," + ",".join(["0"] * 63) + ",1", "degree-64 GF(2) modulus, splits"),
+    ("-1," + ",".join(["0"] * 200) + ",1", "long and negative, splits several times"),
+]
+
+
+def format_test() -> int:
+    """Check that the emitted regeneration command survives a shell round-trip.
+
+    `_wrap_command` splits a long `--f` value across lines, and the shell must rejoin
+    the pieces into exactly the original token: a backslash misplaced inside the quotes
+    would leave a literal backslash and newline in the value, which `int()` then
+    rejects. Returns a process exit code."""
+    failures = 0
+    for fstr, note in FORMAT_TESTS:
+        lines = _wrap_command(2130706433, fstr, "NS.Cert", "Test Author")
+        # `--lean <this file>` is a documentation placeholder; `<` would redirect.
+        script = [ln for ln in lines if "--lean" not in ln]
+        script[-1] = script[-1].rstrip("\\").rstrip()
+        script[0] = script[0].replace(
+            "python3 scripts/gen_rabin_certificate.py", 'printf "%s\\n"', 1)
+        proc = subprocess.run(["bash", "-c", "\n".join(script)],
+                              capture_output=True, text=True)
+        argv = proc.stdout.split("\n")
+        got = next((a[len("--f="):] for a in argv if a.startswith("--f=")), None)
+        overlong = [len(ln) for ln in lines if len(ln) > LINE_LIMIT]
+        ok = proc.returncode == 0 and got == fstr and not overlong
+        if not ok:
+            failures += 1
+        status = "ok  " if ok else "FAIL"
+        detail = ""
+        if proc.returncode != 0:
+            detail = "  shell rejected the command: " + proc.stderr.strip()
+        elif got != fstr:
+            detail = "  --f round-tripped as %r" % got
+        elif overlong:
+            detail = "  lines over %d columns: %s" % (LINE_LIMIT, overlong)
+        print(f"[{status}] --f={fstr[:32]}{'...' if len(fstr) > 32 else ''} "
+              f"({len(lines)} lines)  {note}{detail}")
+    print(f"\n{len(FORMAT_TESTS) - failures}/{len(FORMAT_TESTS)} passed")
+    return 1 if failures else 0
+
+
+def poly_to_lean(l: list[int], prefix_len: int = 0, indent: str = "  ") -> str:
+    """Render a coefficient list, wrapping if the rendered `def` line would overflow.
+    `prefix_len` is the width of the `def <name> : List ℕ := ` text preceding it."""
+    one_line = "[" + ", ".join(str(c) for c in l) + "]"
+    if prefix_len + len(one_line) <= LINE_LIMIT:
+        return one_line
+    return _wrap_coeffs(l, indent, limit=LINE_LIMIT - prefix_len if prefix_len else LINE_LIMIT)
 
 
 def main() -> int:
@@ -290,11 +408,17 @@ def main() -> int:
                     help="write Lean data definitions (steps + Bezout) here")
     ap.add_argument("--namespace", type=str, default="QuinticCert",
                     help="namespace for the emitted Lean definitions")
+    ap.add_argument("--authors", type=str, default="Derek Sorensen",
+                    help="value for the Authors line of the generated copyright header")
     ap.add_argument("--self-test", action="store_true",
-                    help="check the generator against known-answer cases and exit")
+                    help="check the certificate arithmetic and the emitted command, then exit")
     args = ap.parse_args()
     if args.self_test:
-        return self_test()
+        print("== certificate arithmetic ==")
+        arithmetic = self_test()
+        print("\n== emitted command formatting ==")
+        formatting = format_test()
+        return arithmetic or formatting
     p = args.p
     f = [c % p for c in map(int, args.f.split(","))]
     cert = build_certificate(p, f)
@@ -339,16 +463,20 @@ def main() -> int:
                 f"def {sname} : List Step := {steps_to_lean(c['steps'])}",
                 "",
                 f"/-- The residue `X^({exp}) mod f`. -/",
-                f"def {rname} : List ℕ := {poly_to_lean(c['rp'])}",
+                f"def {rname} : List ℕ := "
+                f"{poly_to_lean(c['rp'], len(rname) + 20)}",
                 "",
                 f"/-- `{wname} = (X^({exp}) mod f) - X`, the reduced form of `X^({exp}) - X`. -/",
-                f"def {wname} : List ℕ := {poly_to_lean(c['w'])}",
+                f"def {wname} : List ℕ := "
+                f"{poly_to_lean(c['w'], len(wname) + 20)}",
                 "",
                 f"/-- Bézout coefficient: `{uname}·f + {vname}·{wname} = 1`. -/",
-                f"def {uname} : List ℕ := {poly_to_lean(c['u'])}",
+                f"def {uname} : List ℕ := "
+                f"{poly_to_lean(c['u'], len(uname) + 20)}",
                 "",
                 f"/-- Bézout coefficient: `{uname}·f + {vname}·{wname} = 1`. -/",
-                f"def {vname} : List ℕ := {poly_to_lean(c['v'])}",
+                f"def {vname} : List ℕ := "
+                f"{poly_to_lean(c['v'], len(vname) + 20)}",
                 "",
             ]
         if is_prime_degree:
@@ -360,23 +488,23 @@ def main() -> int:
                 f"def frobSteps : List Step := {steps_to_lean(coprimes[0]['steps'])}",
                 "",
                 "/-- The residue `X^p mod f`. -/",
-                f"def rp : List ℕ := {poly_to_lean(coprimes[0]['rp'])}",
+                f"def rp : List ℕ := {poly_to_lean(coprimes[0]['rp'], 22)}",
                 "",
                 "/-- `w = (X^p mod f) - X`, the reduced form of `X^p - X`. -/",
-                f"def w : List ℕ := {poly_to_lean(coprimes[0]['w'])}",
+                f"def w : List ℕ := {poly_to_lean(coprimes[0]['w'], 21)}",
                 "",
                 "/-- Bézout coefficient: `u·f + v·w = 1`. -/",
-                f"def u : List ℕ := {poly_to_lean(coprimes[0]['u'])}",
+                f"def u : List ℕ := {poly_to_lean(coprimes[0]['u'], 21)}",
                 "",
                 "/-- Bézout coefficient: `u·f + v·w = 1`. -/",
-                f"def v : List ℕ := {poly_to_lean(coprimes[0]['v'])}",
+                f"def v : List ℕ := {poly_to_lean(coprimes[0]['v'], 21)}",
                 "",
             ]
         lines = [
             "/-",
             "Copyright (c) 2026 CompPoly Contributors. All rights reserved.",
             "Released under Apache 2.0 license as described in the file LICENSE.",
-            "Authors: Derek Sorensen",
+            f"Authors: {args.authors}",
             "-/",
             "module",
             "",
@@ -385,7 +513,8 @@ def main() -> int:
             "/-!",
             f"# Rabin certificate data for `p = {p}`",
             "",
-            f"The modulus `f` has little-endian coefficients `{f}`.",
+            *textwrap.wrap(f"The modulus `f` has little-endian coefficients `{f}`.",
+                           width=98, break_long_words=False, break_on_hyphens=False),
             "",
             *([] if is_prime_degree else [
                 f"`d = {d}` is composite, so Rabin's coprimality condition needs one certificate "
@@ -396,9 +525,15 @@ def main() -> int:
                 "linear-factor case would admit a product of equal-degree factors.",
                 "",
             ]),
-            f"GENERATED by `scripts/gen_rabin_certificate.py --p {p} --f {args.f!r}`.",
-            "Do not edit by hand; regenerate instead. Nothing here is trusted — the kernel",
-            "re-checks every step through `CompPoly.RabinCert.runChain`.",
+            "GENERATED. Do not edit by hand; regenerate with:",
+            "",
+            "```sh",
+            *_wrap_command(p, args.f, args.namespace, args.authors),
+            "```",
+            "",
+            "Nothing here is trusted — the kernel re-checks every step through",
+            "`CompPoly.RabinCert.runChain`, so incorrect data fails to compile rather than",
+            "producing a false theorem.",
             "-/",
             "",
             "@[expose] public section",
