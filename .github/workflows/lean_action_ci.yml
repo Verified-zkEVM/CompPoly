@@ -18,38 +18,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # Benchmark groups CI runs, keeping the benchmark step's wall-clock bounded as the
-  # suite grows. This is deliberately a subset: `lake exe CompPolyBench --list` shows
-  # every registered group, and a new group is only covered here once added below.
-  # An unknown key fails the run, so a renamed group is caught rather than dropped.
-  BENCH_CI_GROUPS: >-
-    univariate-dense-koalabear,univariate-dense-babybear,
-    univariate-sparse-koalabear,
-    univariate-monic-remainder-small-koalabear,
-    univariate-dense-goldilocks,univariate-dense-bn254,
-    univariate-dense-bls12-381,univariate-dense-bls12-377,
-    univariate-batch-small-koalabear,
-    univariate-many-one-point-koalabear,
-    univariate-mul-koalabear,univariate-mul-babybear,
-    univariate-low-product-koalabear,
-    univariate-roots-finite-field-koalabear,
-    multivariate-dense-koalabear,multivariate-sparse-koalabear,
-    multilinear-coeff-koalabear,multilinear-hypercube-koalabear,
-    multilinear-many-mle-koalabear,
-    bivariate-full-koalabear,bivariate-divlinear-koalabear-y32,
-    guruswami-sudan-interp-small-koalabear,
-    guruswami-sudan-root-koalabear,
-    guruswami-sudan-core-small-koalabear,
-    guruswami-sudan-filtered-core-small-koalabear,
-    additive-ntt-btf3-l2-r2,additive-ntt-btf3-l4-r2,additive-ntt-btf4-l7-r2,
-    fields-tower-bt128-mul,fields-tower-bt128-inv,
-    fields-extension-koalabear-ext4-mul,fields-extension-koalabear-ext4-inv,
-    fields-extension-babybear-ext4-mul,fields-extension-babybear-ext4-inv,
-    fields-mont64x8-bn254-inv,fields-mont64x8-bls12-381-inv,
-    fields-mont64x8-bls12-377-inv,
-    fields-goldilocks-mul,fields-goldilocks-inv
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -209,19 +177,26 @@ jobs:
         run: lake build --wfail
       - name: Build evaluation benchmark executable
         run: lake build CompPolyBench
-      - name: Run evaluation benchmarks
-        # BENCH_CI_GROUPS is a folded YAML scalar, so strip the line-break whitespace
-        # the folding introduces before handing it to --groups.
+      - name: Validate benchmark implementations
+        # Correctness only: every implementation in a group runs over the same
+        # inputs and must agree on a digest, so a wrong-but-fast implementation
+        # fails here. No timings are collected -- this runner is a shared 2-vCPU
+        # VM whose wall-clock is not worth gating on. Timings come from the
+        # Benchmarks workflow, on demand.
+        #
+        # Deliberately no continue-on-error: a digest mismatch, or a harness
+        # canary that has collapsed onto the loop floor, is a correctness failure.
         run: |
-          lake exe CompPolyBench --medium \
-            --groups "$(printf '%s' "$BENCH_CI_GROUPS" | tr -d '[:space:]')"
-      - name: Prepare evaluation benchmark artifact
+          groups="$(sed -e 's/#.*//' -e 's/[[:space:]]//g' bench/ci-groups.txt \
+            | grep -v '^$' | paste -sd, -)"
+          lake exe CompPolyBench --medium --validate-only --groups "$groups"
+      - name: Prepare benchmark validation artifact
         if: always()
         run: |
           rm -rf "$EVALUATION_BENCH_ARTIFACT_DIR"
           mkdir -p "$EVALUATION_BENCH_ARTIFACT_DIR"
-          results=(bench/results-*.jsonl)
-          reports=(bench/report-*.md)
+          results=(bench/out/results-*.jsonl)
+          reports=(bench/out/report-*.md)
           if [ -e "${results[0]}" ]; then
             cp "${results[@]}" "$EVALUATION_BENCH_ARTIFACT_DIR/"
           fi
@@ -231,7 +206,7 @@ jobs:
               cat "$report" >> "$GITHUB_STEP_SUMMARY"
             done
           fi
-      - name: Upload evaluation benchmark artifact
+      - name: Upload benchmark validation artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
