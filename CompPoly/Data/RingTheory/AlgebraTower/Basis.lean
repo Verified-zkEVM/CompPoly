@@ -16,6 +16,10 @@ public import Mathlib.RingTheory.AlgebraTower
 `AlgebraTower.natCoordinates`. Its `repr` is the coordinate map, and its vectors equal the
 executable `AlgebraTower.natBasisVector` values.
 
+`AlgebraTower.natBasisOfLE` provides the same basis at arbitrary endpoints `i ≤ j`,
+with vectors in `A j` and coefficients in `A i`. Its representation agrees with
+`AlgebraTower.natCoordinatesOfLE`, and `AlgebraTower.natBasisVectorOfLE` computes its vectors.
+
 The successor basis agrees with `Module.Basis.smulTower'`, reindexed by `finProdFinEquiv`.
 The old coordinate index varies fastest. Each vector is the embedded old basis vector
 multiplied by the corresponding new successor basis vector. No normalization of that
@@ -91,5 +95,45 @@ theorem natBasisVector_succ (i n : ℕ) (b : Fin (d (i + n)))
   simp only [Module.Basis.reindex_apply, Equiv.symm_apply_apply, Module.Basis.smulTower'_apply]
   rw [natBasisVector_eq_natBasis, Module.Basis.coe_ofEquivFun]
   rfl
+
+/-- The basis at arbitrary comparable endpoints, over the action of the given tower map. -/
+noncomputable def natBasisOfLE {i j : ℕ} (h : i ≤ j) :
+    letI := t.toAlgebra h
+    Module.Basis (Fin (coordinateSize d i (j - i))) (A i) (A j) := by
+  letI := t.toAlgebra h
+  exact Module.Basis.ofEquivFun (natCoordinatesOfLE step h)
+
+/-- The endpoint basis representation is the executable endpoint coordinate map. -/
+@[simp]
+theorem natBasisOfLE_repr {i j : ℕ} (h : i ≤ j) (x : A j)
+    (idx : Fin (coordinateSize d i (j - i))) :
+    letI := t.toAlgebra h
+    (natBasisOfLE step h).repr x idx = natCoordinatesOfLE step h x idx := by
+  rfl
+
+/-- Packing a unit coordinate vector computes the corresponding endpoint basis vector. -/
+theorem natBasisVectorOfLE_eq_natBasisOfLE {i j : ℕ} (h : i ≤ j)
+    (idx : Fin (coordinateSize d i (j - i))) :
+    natBasisVectorOfLE step h idx = natBasisOfLE step h idx := by
+  let := t.toAlgebra h
+  apply (natBasisOfLE step h).repr.injective
+  ext pos
+  rw [natBasisOfLE_repr, congrFun (natCoordinatesOfLE_natBasisVectorOfLE step h idx) pos,
+    Module.Basis.repr_self]
+  simp only [Pi.single_apply, Finsupp.single_apply, eq_comm]
+
+/-- Endpoint basis vectors agree with the height-indexed basis after identifying the endpoints. -/
+theorem natBasisOfLE_apply {i j : ℕ} (h : i ≤ j)
+    (idx : Fin (coordinateSize d i (j - i))) :
+    natBasisOfLE step h idx =
+      cast (congrArg A (Nat.add_sub_of_le h)) (natBasis step i (j - i) idx) := by
+  rw [← natBasisVectorOfLE_eq_natBasisOfLE, natBasisVectorOfLE_eq_natBasisVector,
+    natBasisVector_eq_natBasis]
+
+/-- At equal endpoints the unique basis vector is one. -/
+@[simp]
+theorem natBasisOfLE_self (i : ℕ) (idx : Fin (coordinateSize d i (i - i))) :
+    natBasisOfLE step (Nat.le_refl i) idx = 1 := by
+  rw [← natBasisVectorOfLE_eq_natBasisOfLE, natBasisVectorOfLE_self]
 
 end AlgebraTower
