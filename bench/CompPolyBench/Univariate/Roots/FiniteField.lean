@@ -28,12 +28,25 @@ private def rootWorkloadDegree : Nat := rootWorkloadRootCount + 2
 
 private def rootWorkloadDistinctRoots : Nat := rootWorkloadRootCount + 1
 
-private def rootWorkloadRootSeeds : List Nat :=
-  [3, 3] ++ (List.range rootWorkloadRootCount).map (fun i ↦ i + 5)
+/-- Root seeds for one workload polynomial, offset by `base`.
+
+`base` comes from the group's random stream rather than being written down, and
+that is load-bearing rather than cosmetic. With fixed seeds the whole benchmark
+body is a closed term — `p` is a nullary constant and so is the root context —
+and Lean evaluates it once and hands every later iteration the cached array. The
+row then reports its true cost divided by `itersPerSample`, which was 1 to 20
+under hand-tuned counts and is hundreds of thousands under a wall-clock budget.
+Drawing `base` at run time makes the body depend on a local, which is the same
+shape every other group in the suite already has.
+
+The structure is unchanged: `rootWorkloadDistinctRoots` distinct roots with one
+of them repeated, so the degree and the root multiset shape do not move. -/
+private def rootWorkloadRootSeeds (base : Nat) : List Nat :=
+  [base, base] ++ (List.range rootWorkloadRootCount).map (fun i ↦ base + i + 2)
 
 private def rootWorkloadShape : String :=
   s!"degree={rootWorkloadDegree}, {rootWorkloadDistinctRoots} distinct roots, " ++
-    "repeated root at 3"
+    "one of them repeated"
 
 private def productOfLinearRootSeeds {F : Type*}
     [Field F] [BEq F] [LawfulBEq F] (seeds : List Nat) : CPolynomial F :=
@@ -42,8 +55,8 @@ private def productOfLinearRootSeeds {F : Type*}
     1
 
 private def nonlinearRootPolynomial {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] : CPolynomial F :=
-  productOfLinearRootSeeds rootWorkloadRootSeeds
+    [Field F] [BEq F] [LawfulBEq F] (base : Nat) : CPolynomial F :=
+  productOfLinearRootSeeds (rootWorkloadRootSeeds base)
 
 private def insertSortedNat (x : Nat) : List Nat → List Nat
   | [] => [x]
@@ -70,8 +83,10 @@ def univariateFiniteFieldRootGroupInfos : List BenchGroupInfo := [
 
 private def runKoalaBearFiniteFieldRoots (preset : BenchPreset) (gen : StdGen) :
     IO (Prod BenchGroup StdGen) := do
-  let p : CPolynomial KoalaBear.Field := nonlinearRootPolynomial
-  let fastP : CPolynomial KoalaBear.Fast.Field := nonlinearRootPolynomial
+  let (bases, gen) := (randomNatArray 1 1000).run gen
+  let base := bases.getD 0 1 + 1
+  let p : CPolynomial KoalaBear.Field := nonlinearRootPolynomial base
+  let fastP : CPolynomial KoalaBear.Fast.Field := nonlinearRootPolynomial base
   let warmup := preset.selectNat 1 0 0
   let measured := preset.selectNat 10 1 1
   let nttMeasured := preset.selectNat 40 6 1
