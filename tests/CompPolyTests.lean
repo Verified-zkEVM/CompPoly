@@ -32,6 +32,7 @@ public import CompPolyTests.Fields.BabyBear.Fast
 public import CompPolyTests.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
 public import CompPolyTests.Fields.Binary.BF128Ghash.Prelude
 public import CompPolyTests.Fields.Binary.BF64
+public import CompPolyTests.Fields.Binary.BF64.Presentation
 public import CompPolyTests.Fields.Binary.Common
 public import CompPolyTests.Fields.Binary.Tower.Algebra
 public import CompPolyTests.Fields.Binary.Tower.Fast

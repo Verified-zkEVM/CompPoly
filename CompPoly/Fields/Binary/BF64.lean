@@ -15,7 +15,7 @@ public import CompPoly.Fields.Binary.BF64.Ext3
 
 Facade module. It re-exports the specification-side quotient model from
 `CompPoly.Fields.Binary.BF64.Basic`, the reduction from `...Reduce`, the computable
-`BitVec 64` carrier from `...Impl`, and the degree-three extension from `...Ext3`.
+nominal word carrier from `...Impl`, and the degree-three extension from `...Ext3`.
 -/
 
 @[expose] public section
