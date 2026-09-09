@@ -630,6 +630,34 @@ def validationIterationCap : Nat := 256
 def groupChecksumIterations (first : Nat) (rest : List Nat) : Nat :=
   min validationIterationCap (rest.foldl Nat.min first)
 
+/-- Everything about one benchmark row except its body, its digest, and its sink.
+
+Introduced because `runTimed` took five consecutive `String` arguments across
+228 call sites, where a transposed pair is a silent mislabelling rather than a
+type error. The three `α`-dependent arguments stay outside: giving `BenchSpec` a
+type parameter to carry `sink` would put one on every literal in the suite in
+order to serve the forty rows that override it, and a group with a `ZMod` row
+beside a `Fast` row has a different result type per row anyway. -/
+structure BenchSpec where
+  /-- Row name, unique within the suite. -/
+  name : String
+  /-- Representation label, such as `ZMod` or `UInt64`. -/
+  representation : String
+  /-- Operation label, such as `mul` or `inv (Fermat chain)`. -/
+  method : String
+  /-- Field or configuration label. -/
+  field : String
+  /-- Input-shape label, shared by every row of a group. -/
+  inputShape : String
+  /-- Iterations of the untimed digest pass.
+
+  Must not depend on the preset: see the note on `validationIterationCap`. -/
+  digestIterations : Nat
+  /-- Opt out of the `--validate-only` short circuit, for the harness
+  self-check, which has to be measured even when nothing else is. -/
+  forceTiming : Bool := false
+deriving Inhabited
+
 /--
 Time one benchmark closure and package its metadata and checksum.
 
@@ -646,41 +674,55 @@ Under `--validate-only` no samples are collected and the record carries digests
 alone. `forceTiming` opts out of that, for the harness self-check, whose canary
 compares timed totals and would pass vacuously against a zero floor.
 -/
-@[specialize] def runTimed (name representation method field inputShape : String)
-    (preset : BenchPreset) (warmup measured : Nat) (run : Nat → α) (checksum : α → Nat)
-    (checksumIterations : Nat := min validationIterationCap measured)
-    (sink : α → UInt64 := fun x ↦ natSink (checksum x))
-    (forceTiming : Bool := false) : IO BenchRecord := do
+@[specialize] def runTimedSpec (spec : BenchSpec) (preset : BenchPreset)
+    (warmup measured : Nat) (run : Nat → α) (checksum : α → Nat)
+    (sink : α → UInt64 := fun x ↦ natSink (checksum x)) : IO BenchRecord := do
   let body : Nat → UInt64 → UInt64 := fun i acc ↦ sinkStep acc (sink (run i))
   let mut validationChecksum := 0
-  for i in [0:checksumIterations] do
+  for i in [0:spec.digestIterations] do
     validationChecksum := mixChecksum validationChecksum (checksum (run i))
-  let validateOnly := (← validateOnlyRef.get) && !forceTiming
+  let validateOnly := (← validateOnlyRef.get) && !spec.forceTiming
   let plan := if validateOnly then { itersPerSample := 0, sampleCount := 0 } else
     planSamples measured
   -- The validation pass above already executed the body, so it counts towards
   -- reaching steady state. For an expensive workload validated once, this is the
   -- difference between running it three times and running it twice.
   let desiredWarmup := if validateOnly then 0 else max warmup plan.itersPerSample
-  let sampled ← collectSamples (desiredWarmup - min desiredWarmup checksumIterations) plan body
-  let total := sampled.totalNanos
+  let residualWarmup := desiredWarmup - min desiredWarmup spec.digestIterations
+  let sampled ← collectSamples residualWarmup plan body
   pure {
-    name := name
-    representation := representation
-    method := method
+    name := spec.name
+    representation := spec.representation
+    method := spec.method
     preset := preset.name
-    field := field
-    inputShape := inputShape
+    field := spec.field
+    inputShape := spec.inputShape
     warmupIterations := desiredWarmup
-    checksumIterations := checksumIterations
+    checksumIterations := spec.digestIterations
     measuredIterations := sampled.totalIterations
-    totalNanos := total
+    totalNanos := sampled.totalNanos
     averageNanos := sampled.stats.medianPicos / 1000
     checksum := validationChecksum
     sinkDigest := sampled.sink
     stats := sampled.stats
     samples := sampled.samples
   }
+
+/-- Positional-argument form of `runTimedSpec`, kept while the suite migrates.
+
+Deleted once every call site passes a `BenchSpec`. It exists so that the
+migration of 228 call sites is a commit that provably changes nothing: it moves
+arguments into a record and touches no behaviour. -/
+@[specialize] def runTimed (name representation method field inputShape : String)
+    (preset : BenchPreset) (warmup measured : Nat) (run : Nat → α) (checksum : α → Nat)
+    (checksumIterations : Nat := min validationIterationCap measured)
+    (sink : α → UInt64 := fun x ↦ natSink (checksum x))
+    (forceTiming : Bool := false) : IO BenchRecord :=
+  runTimedSpec
+    { name := name, representation := representation, method := method, field := field,
+      inputShape := inputShape, digestIterations := checksumIterations,
+      forceTiming := forceTiming }
+    preset warmup measured run checksum (sink := sink)
 
 /-- Append benchmark records from `ys` onto `xs`. -/
 def appendRecords (xs ys : Array BenchRecord) : Array BenchRecord :=
