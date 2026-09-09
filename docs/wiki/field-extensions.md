@@ -23,10 +23,11 @@ binomial is available, prefer it — it buys two things:
 - **Cheap multiplication.** `X^d = W` means the high half of the schoolbook product folds
   back with a single scalar multiply, with no polynomial remainder step.
 
-But a binomial is not always available. A degree-`d` binomial extension of `F_q` requires
-`d ∣ q - 1`; when `gcd(d, q - 1) = 1` the map `x ↦ x^d` is a bijection and **every** `X^d - W`
-has a root. Over KoalaBear, `p - 1 = 2^24 · 127`, so the only binomial degrees available are the
-powers of two (up to `2^24`) and multiples of 127:
+But a binomial is not always available. For `d > 1`, when `gcd(d, q - 1) = 1`, the map
+`x ↦ x^d` is a bijection on `F_q`, so **every** `X^d - W` has a root and is reducible.
+The condition `d ∣ q - 1` suffices for the exponent-divisibility side conditions in the binomial
+criterion below, but is not necessary for irreducibility in general. Over KoalaBear,
+`p - 1 = 2^24 · 127`, and the degrees considered here behave as follows:
 
 | `d` | bits | binomial? |
 |---|---|---|
@@ -92,14 +93,13 @@ and [`KoalaBear/Ext6.lean`](../../CompPoly/Fields/KoalaBear/Ext6.lean) (`X^6 + X
 
 [`Binary/BF64/Ext3.lean`](../../CompPoly/Fields/Binary/BF64/Ext3.lean) adjoins a root of
 `y^3 + y + 1` over `GF(2^64)`, giving `GF(2^192)`. It is the framework's first and so far only
-characteristic-2 instance, and it uses the *general* `ExtensionParams` path rather than
-`BinomialParams`: over a char-2 field `X^3 - W = X^3 + W`, and the binomial criterion needs
-`d ∣ q - 1`, which fails for `d = 3` and `q = 2^64` (`3 ∤ 2^64 - 1`). So `Ext P` is instantiated
-directly, and `Ext ext3Params` has a coefficient vector of type `Vector BF64 3`.
+characteristic-2 instance. The selected modulus has a nonzero linear coefficient, so it uses
+the *general* `ExtensionParams` path. Keeping that modulus fixes the intended polynomial-basis
+presentation; `Ext ext3Params` has a coefficient vector of type `Vector BF64 3`.
 
 Two things about it are worth knowing when reading the rest of this page:
 
-- **The base field is not `ZMod p`.** `BF64` is a `BitVec 64` carrier with carry-less
+- **The base field is not `ZMod p`.** `BF64` is a nominal carrier storing a `BitVec 64`, with carry-less
   multiplication, so the performance figures below — all measured over `ZMod` — do not
   characterise it.
 - **Irreducibility needs no certificate.** A cubic is irreducible exactly when it has no root,
@@ -116,11 +116,11 @@ modulus, so the identification follows from `card_ext6` alone and is independent
 
 ## What The Interface Provides
 
-Concretely, for `P : ExtensionParams F`:
+Concretely, for `P : ExtensionParams F` over a field `F`:
 
 | Surface | Declarations |
 |---|---|
-| Ring / field | `CommRing (Ext P)`, `Field (Ext P)` (the latter given `[Fact (Irreducible P.poly)]`) |
+| Ring / field | `CommRing (Ext P)`; `Field (Ext P)` additionally requires `[Finite F]`, `[Fact (Nat.card F = P.q)]`, and `[Fact (Irreducible P.poly)]` |
 | Base field | `Ext.ofBase : F → Ext P`, `Ext.ofBaseRingHom`, `Algebra F (Ext P)` (hence `Module F (Ext P)` via `Algebra.toModule`) |
 | Adjoined root | `Ext.gen`, `Ext.gen_pow_d : gen ^ d = monomialMod d`, `Ext.aeval_gen_poly : aeval gen P.poly = 0`; for a binomial, `Ext.gen_pow_d_binomial : gen ^ d = ofBase W` |
 | Specification | `Ext.toQuot`, `Ext.ringEquivQuot : Ext P ≃+* AdjoinRoot P.poly` |
