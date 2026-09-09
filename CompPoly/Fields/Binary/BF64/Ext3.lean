@@ -138,7 +138,9 @@ def ext3Params : ExtensionParams BF64 where
   two_le := by norm_num
   lower := #v[1, 1, 0]
   q := 2 ^ 64
-  card_eq := card_bf64
+
+instance : Fact (Nat.card BF64 = ext3Params.q) :=
+  ⟨by rw [Nat.card_eq_fintype_card]; exact card_bf64⟩
 
 /-- The extension has degree three. -/
 @[simp] theorem ext3Params_d : ext3Params.d = 3 := rfl

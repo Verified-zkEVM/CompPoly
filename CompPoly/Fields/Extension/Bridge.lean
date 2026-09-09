@@ -45,7 +45,7 @@ namespace CompPoly.Extension.Ext
 
 open Polynomial AdjoinRoot
 
-variable {F : Type*} [Field F] [Fintype F] {P : ExtensionParams F}
+variable {F : Type*} [Field F] {P : ExtensionParams F}
 
 /-- The specification of the extension: the quotient ring `F[X] / f`. -/
 scoped notation "Quot[" P "]" => AdjoinRoot (ExtensionParams.poly P)
