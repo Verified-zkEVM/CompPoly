@@ -16,6 +16,10 @@ functions as the tower maps. A rectangular two-step example distinguishes the tw
 orders. Rank zero, rank one, and height zero exercise the boundary cases without field or
 nontriviality assumptions. Symbolic clients check the selected scalar action and the actual
 basis representation.
+
+Endpoint clients accept unrelated `i`, `j` and `h : i ≤ j` without client-side casts. Constant
+coordinate counts zero, one and two exercise the normalized index type. A zero intermediate
+count gives an explicitly noninjective tower map from a nontrivial source.
 -/
 
 namespace CompPolyTests.AlgebraTower.Coordinates
@@ -127,6 +131,74 @@ example (x : FunctionTower (fun _ => 0) 2) :
 example (r i n : ℕ) : coordinateSize (fun _ => r) i n = r ^ n :=
   coordinateSize_const r i n
 
+-- Endpoint transport preserves the independently specified rectangular order.
+#guard List.ofFn (show Fin 6 → ℕ from
+    natCoordinatesOfLE (functionCoordinates ranks) (show 0 ≤ 2 by decide)
+    rectangular) == [10, 11, 20, 21, 30, 31]
+#guard (show ℕ from natPackOfLE (functionCoordinates ranks) (show 0 ≤ 2 by decide)
+    ![10, 11, 20, 21, 30, 31] 2 0) == 30
+
+example (x : FunctionTower ranks 1) (idx : Fin 2) :
+    natCoordinatesOfLE (functionCoordinates ranks) (show 0 ≤ 1 by decide) x idx = x idx := by
+  rw [natCoordinatesOfLE_apply, natCoordinates_succ, natCoordinates_zero]
+  change x ⟨idx.val / 1, _⟩ = x idx
+  congr 1
+  exact Fin.ext (Nat.div_one idx.val)
+
+example : natBasisVectorOfLE (functionCoordinates ranks) (show 0 ≤ 2 by decide) 4 =
+    natBasisVector (functionCoordinates ranks) 0 2 4 :=
+  natBasisVectorOfLE_eq_natBasisVector _ _ _
+
+private def shiftedBinary : FunctionTower (fun _ => 2) 3 :=
+  ![![![10, 11], ![20, 21]], ![![30, 31], ![40, 41]]]
+
+-- Four coefficients over level one retain both entries of each lower-level element.
+#guard List.ofFn (fun idx => List.ofFn (show Fin 2 → ℕ from
+    natCoordinatesConstOfLE (functionCoordinates (fun _ => 2)) (show 1 ≤ 3 by decide)
+      shiftedBinary idx)) == [[10, 11], [20, 21], [30, 31], [40, 41]]
+#guard (show ℕ from (natCoordinatesConstOfLE (functionCoordinates (fun _ => 2))
+    (show 1 ≤ 3 by decide)).symm ![![10, 11], ![20, 21], ![30, 31], ![40, 41]]
+      1 0 1) == 31
+
+private abbrev zeroMiddle : ℕ → ℕ
+  | 0 => 2
+  | 1 => 0
+  | _ => 1
+
+example : (0 : FunctionTower zeroMiddle 1) ≠ 1 := by
+  intro h
+  exact Nat.zero_ne_one (congrFun h 0)
+
+-- The distinct source elements above have the same image in the zero function ring.
+example : (functionTower zeroMiddle).algebraMap 1 2 (by decide) 0 =
+    (functionTower zeroMiddle).algebraMap 1 2 (by decide) 1 := by
+  funext idx
+  exact Fin.elim0 idx
+
+example (x : FunctionTower zeroMiddle 3) :
+    natPackOfLE (functionCoordinates zeroMiddle) (show 1 ≤ 3 by decide)
+      (natCoordinatesOfLE (functionCoordinates zeroMiddle) (show 1 ≤ 3 by decide) x) = x :=
+  natPackOfLE_natCoordinatesOfLE _ _ _
+
+-- Zero successors give no coordinates at positive height, but one at height zero.
+example (x : FunctionTower (fun _ => 0) 2) :
+    (natCoordinatesConstOfLE (functionCoordinates (fun _ => 0)) (show 0 ≤ 2 by decide)).symm
+      (fun idx : Fin 0 => Fin.elim0 idx) = x := by
+  apply (natCoordinatesConstOfLE (functionCoordinates (fun _ => 0))
+    (show 0 ≤ 2 by decide)).injective
+  rw [LinearEquiv.apply_symm_apply]
+  funext idx
+  exact Fin.elim0 idx
+
+#guard List.ofFn (show Fin 1 → ℕ from
+    natCoordinatesConstOfLE (functionCoordinates (fun _ => 0))
+    (Nat.le_refl 0) 37) == [37]
+
+example {i j : ℕ} (h : i ≤ j) (x : FunctionTower (fun _ => 1) j) :
+    (natCoordinatesConstOfLE (functionCoordinates (fun _ => 1)) h).symm
+      (natCoordinatesConstOfLE (functionCoordinates (fun _ => 1)) h x) = x :=
+  LinearEquiv.symm_apply_apply _ _
+
 section Generic
 
 variable {A : ℕ → Type*} [∀ k, CommSemiring (A k)] [t : AlgebraTower A]
@@ -155,6 +227,62 @@ example (i n : ℕ) (c : Fin (coordinateSize d i n) → A i) :
     funext j
     rw [natBasis_repr, congrFun (natCoordinates_natPack step i n c) j]
   simpa only [hc] using (natBasis step i n).sum_repr (natPack step i n c)
+
+-- These endpoint types contain neither a client-side carrier cast nor a rewritten endpoint.
+example {i j : ℕ} (h : i ≤ j) (x : A j) :
+    natPackOfLE step h (natCoordinatesOfLE step h x) = x :=
+  natPackOfLE_natCoordinatesOfLE _ _ _
+
+example {i j : ℕ} (h : i ≤ j) (a : A i) (x : A j) :
+    natCoordinatesOfLE step h (t.algebraMap i j h a * x) =
+      a • natCoordinatesOfLE step h x := by
+  let := t.toAlgebra h
+  exact (natCoordinatesOfLE step h).map_smul a x
+
+example {i j : ℕ} (h h' : i ≤ j) : natCoordinatesOfLE step h = natCoordinatesOfLE step h' :=
+  rfl
+
+example {i j : ℕ} (h h' : i ≤ j) (c : Fin (coordinateSize d i (j - i)) → A i) :
+    natPackOfLE step h c = natPackOfLE step h' c := rfl
+
+example {i j : ℕ} (h h' : i ≤ j) :
+    natBasisVectorOfLE step h = natBasisVectorOfLE step h' := rfl
+
+example {i j : ℕ} (h h' : i ≤ j) : natBasisOfLE step h = natBasisOfLE step h' := rfl
+
+example {i j : ℕ} (h : i ≤ j) (c : Fin (coordinateSize d i (j - i)) → A i) :
+    letI := t.toAlgebra h
+    (natBasisOfLE step h).repr (natPackOfLE step h c) = c := by
+  let := t.toAlgebra h
+  funext idx
+  rw [natBasisOfLE_repr, congrFun (natCoordinatesOfLE_natPackOfLE step h c) idx]
+
+example {i j : ℕ} (h : i ≤ j) (c : Fin (coordinateSize d i (j - i)) → A i) :
+    letI := t.toAlgebra h
+    ∑ idx, c idx • natBasisOfLE step h idx = natPackOfLE step h c := by
+  let := t.toAlgebra h
+  have hc : (natBasisOfLE step h).repr (natPackOfLE step h c) = c := by
+    funext idx
+    rw [natBasisOfLE_repr, congrFun (natCoordinatesOfLE_natPackOfLE step h c) idx]
+  simpa only [hc] using (natBasisOfLE step h).sum_repr (natPackOfLE step h c)
+
+example {i j : ℕ} (h : i ≤ j) (idx : Fin (coordinateSize d i (j - i))) :
+    natBasisOfLE step h idx =
+      cast (congrArg A (Nat.add_sub_of_le h)) (natBasis step i (j - i) idx) :=
+  natBasisOfLE_apply _ _ _
+
+variable {r : ℕ}
+  (constantStep : ∀ k, letI := t.toAlgebra (Nat.le_succ k)
+    A (k + 1) ≃ₗ[A k] (Fin r → A k))
+
+example {i j : ℕ} (h h' : i ≤ j) :
+    natCoordinatesConstOfLE constantStep h = natCoordinatesConstOfLE constantStep h' := rfl
+
+example {i j : ℕ} (h : i ≤ j) (a : A i) (x : A j) :
+    natCoordinatesConstOfLE constantStep h (t.algebraMap i j h a * x) =
+      a • natCoordinatesConstOfLE constantStep h x := by
+  let := t.toAlgebra h
+  exact (natCoordinatesConstOfLE constantStep h).map_smul a x
 
 end Generic
 
