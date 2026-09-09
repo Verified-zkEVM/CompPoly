@@ -1097,9 +1097,9 @@ private def validationRow (group : BenchGroup) : String :=
 
 /-- Render the report for a `--validate-only` run.
 
-Deliberately not the timing table: a validation run collects no samples, so
-every duration would be zero. What it has to say is whether each group's
-implementations agree, and on what digest. -/
+Show whether each group's implementations agree on a digest. Ordinary workloads
+are untimed; harness checks may retain samples through `forceTiming`. This report
+omits timing values, including any harness samples. -/
 def renderValidationMarkdown (preset : BenchPreset) (groups : Array BenchGroup) : String :=
   let mismatches := checksumMismatchGroups groups
   String.intercalate "\n" ([
@@ -1110,9 +1110,10 @@ def renderValidationMarkdown (preset : BenchPreset) (groups : Array BenchGroup) 
     "- Groups checked: `" ++ toString groups.size ++ "`",
     "- Mismatched groups: `" ++ toString mismatches.length ++ "`",
     "",
-    "No timings were collected. Every implementation in a group is run over the",
-    "same inputs and must agree on a digest; a disagreement means one of them is",
-    "wrong. Run the benchmark workflow for timings.",
+    "Ordinary workloads were not timed; harness checks may still record samples.",
+    "Every implementation in a group is run over the same inputs and must agree",
+    "on a digest; a disagreement means one of them is wrong. Run the benchmark",
+    "workflow for workload timings.",
     "",
     "| Group | Rows | Implementations | Digest |",
     "| ----- | ---: | --------------- | ------ |"

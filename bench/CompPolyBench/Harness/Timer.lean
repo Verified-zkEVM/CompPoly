@@ -24,9 +24,9 @@ namespace CompPolyBench
 
 /-- Whether this process is running in validation-only mode.
 
-Set once from the command line rather than threaded through `runTimed`, whose
-226 call sites all pass their arguments positionally. Read by `runTimed`, which
-skips sample collection entirely when it is set. -/
+Set from the command line and read by `runTimed`. When set, ordinary workloads
+run their checksum validation without warmup or timed samples. Harness checks
+that pass `forceTiming := true` still collect samples. -/
 initialize validateOnlyRef : IO.Ref Bool ← IO.mkRef false
 
 /-- Elapsed time for one timed sample, with the sink accumulator it produced. -/
