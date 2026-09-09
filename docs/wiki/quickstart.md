@@ -52,7 +52,7 @@ lake exe axiomsweep --check
 ```
 
 `axiomsweep` is kernel-level axiom/`sorry` accounting for every reportable
-`CompPoly.*` declaration, diffed against the committed baseline
+declaration owned by a `CompPoly.*` module, diffed against the committed baseline
 `scripts/axiom_baseline.json`. It sweeps the `CompPoly` library as imported by the
 umbrella (`tests/` and `bench/` are outside it), and inherits the blind spots of any
 environment walk (structure-field defaults and `example`s never enter the
@@ -103,20 +103,28 @@ lake build CompPolyBench
 lake exe CompPolyBench --medium
 ```
 
-CI runs a curated subset rather than the full suite, so a new benchmark group must
-be added to `BENCH_CI_GROUPS` in
-[`../../.github/workflows/lean_action_ci.yml`](../../.github/workflows/lean_action_ci.yml)
-to be covered there. See [`../../bench/README.md`](../../bench/README.md).
+CI gates on benchmark *correctness*, not timings:
+
+```bash
+lake exe CompPolyBench --medium --validate-only
+```
+
+Both CI tracks run a curated subset rather than the full suite, so a new
+benchmark group must be added to `bench/ci-groups.txt` to be covered. Timings
+come from the on-demand Benchmarks workflow. See
+[`../../bench/README.md`](../../bench/README.md) and
+[`benchmarking.md`](benchmarking.md).
 
 ## CI Mapping
 
 - [`../../.github/workflows/lean_action_ci.yml`](../../.github/workflows/lean_action_ci.yml)
   runs a **warm** (incremental) `lake build` by default — reusing cached Lake
   oleans so only dirty modules rebuild — then `lake test`, a linked native field smoke
-  test under the documented resource bounds, and the axiom sweep
-  as an enforcing gate, and posts a build-timing report. It also builds and runs
-  `CompPolyBench --medium` over the curated
-  `BENCH_CI_GROUPS` selection, then uploads benchmark reports as CI artifacts.
+  test under the documented resource bounds, and the axiom sweep as an enforcing gate,
+  and posts a build-timing report. It also builds `CompPolyBench` and runs it in
+  `--validate-only` mode over the curated group set in `bench/ci-groups.txt`, which checks
+  that each group's implementations agree without timing ordinary workloads; harness checks
+  may still record samples. It uploads the digests as an artifact.
   A full cold rebuild (`rm -rf .lake/build && lake build`) runs automatically
   when `lean-toolchain` or `lake-manifest.json` differs from the comparison base
   (PR base, previous push tip, or merge-base with `main` on manual dispatch).
@@ -135,8 +143,15 @@ to be covered there. See [`../../bench/README.md`](../../bench/README.md).
   checks the `CLAUDE.md` symlink, local markdown links, and backticked file paths
   in the docs.
 
-Four further workflows exist that are not part of the pass/fail gate:
+Five further workflows exist that are not part of the pass/fail gate:
 
+- [`../../.github/workflows/benchmarks.yml`](../../.github/workflows/benchmarks.yml)
+  produces benchmark **timings** **on demand only** — via **Actions → Benchmarks →
+  Run workflow**, a `/bench` comment from a repo member, or automatically on a PR
+  touching `bench/**`. Timings are kept out of the gate because `ubuntu-latest` is
+  a shared 2-vCPU VM whose wall-clock is not worth gating on; benchmark
+  *correctness* is gated by `lean_action_ci.yml` instead. It restores the build
+  caches but never saves them.
 - [`../../.github/workflows/summary.yml`](../../.github/workflows/summary.yml)
   posts a PR summary on open and on every new commit. It runs under
   `pull_request_target` and never builds or executes PR code — it reads the diff
