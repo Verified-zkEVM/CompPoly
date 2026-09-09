@@ -120,18 +120,18 @@ private def runAdditiveNttCase (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_ra
   let fieldLabel := s!"ConcreteBTField 0 -> BTF3, l={ℓ}, R_rate={R_rate}"
   let inputShape := s!"{inputSize} input coeffs, {outputSize} output evals"
   let checksumIterations := groupChecksumIterations measured [fastMeasured]
-  let currentRecord ← runTimed
-    currentName "computableAdditiveNTT" "computableAdditiveNTT"
-    fieldLabel inputShape preset warmup measured
-    (fun _ ↦ runBtf3Ntt ℓ R_rate h_ℓ_add_R_rate input)
-    (checksumBtf3Output (n := ℓ + R_rate)) (checksumIterations := checksumIterations)
-    (sink := sinkBtf3Output)
-  let fastRecord ← runTimed
-    fastName "computableAdditiveNTTFast" "computableAdditiveNTTFast"
-    fieldLabel inputShape preset warmup fastMeasured
-    (fun _ ↦ runBtf3NttFast ℓ R_rate h_ℓ_add_R_rate input)
-    (checksumBtf3OutputArray (n := ℓ + R_rate)) (checksumIterations := checksumIterations)
-    (sink := sinkBtf3OutputArray)
+  let currentRecord ← runTimedSpec
+    { name := currentName, representation := "computableAdditiveNTT",
+      method := "computableAdditiveNTT", field := fieldLabel, inputShape := inputShape,
+      digestIterations := checksumIterations }
+    preset warmup measured (fun _ ↦ runBtf3Ntt ℓ R_rate h_ℓ_add_R_rate input)
+    (checksumBtf3Output (n := ℓ + R_rate)) (sink := sinkBtf3Output)
+  let fastRecord ← runTimedSpec
+    { name := fastName, representation := "computableAdditiveNTTFast",
+      method := "computableAdditiveNTTFast", field := fieldLabel, inputShape := inputShape,
+      digestIterations := checksumIterations }
+    preset warmup fastMeasured (fun _ ↦ runBtf3NttFast ℓ R_rate h_ℓ_add_R_rate input)
+    (checksumBtf3OutputArray (n := ℓ + R_rate)) (sink := sinkBtf3OutputArray)
   pure ({
       groupKey := key,
       title := s!"Additive NTT BTF3 l={ℓ} R_rate={R_rate}",
@@ -149,12 +149,12 @@ private def runAdditiveNttFastLargeCase (k ℓ R_rate : Nat)
     fun i ↦ ConcreteBinaryTower.fromNat (k := k) (values.getD i.val 0)
   let fieldLabel := s!"ConcreteBTField 0 -> BTF{k}, l={ℓ}, R_rate={R_rate}"
   let inputShape := s!"{inputSize} input coeffs, {outputSize} output evals"
-  let fastRecord ← runTimed
-    fastName "computableAdditiveNTTFast" "computableAdditiveNTTFast"
-    fieldLabel inputShape preset warmup measured
-    (fun _ ↦ runConcreteBtfNttFast k ℓ R_rate h_ℓ_add_R_rate input)
-    (checksumConcreteBtfOutputArray (k := k) (n := ℓ + R_rate))
-    (sink := sinkConcreteBtfOutputArray)
+  let fastRecord ← runTimedSpec
+    { name := fastName, representation := "computableAdditiveNTTFast",
+      method := "computableAdditiveNTTFast", field := fieldLabel, inputShape := inputShape,
+      digestIterations := min validationIterationCap measured }
+    preset warmup measured (fun _ ↦ runConcreteBtfNttFast k ℓ R_rate h_ℓ_add_R_rate input)
+    (checksumConcreteBtfOutputArray (k := k) (n := ℓ + R_rate)) (sink := sinkConcreteBtfOutputArray)
   pure ({
       groupKey := key,
       title := s!"Additive NTT BTF{k} l={ℓ} R_rate={R_rate}",

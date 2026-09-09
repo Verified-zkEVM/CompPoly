@@ -36,16 +36,21 @@ private def runGoldilocksMul (preset : BenchPreset) (gen : StdGen) :
   let zmodMeasured := preset.selectNat 200000 30000 6000
   let fastMeasured := preset.selectNat 200000 30000 6000
   let checksumIterations := groupChecksumIterations zmodMeasured [fastMeasured]
-  let zmodRecord ← runTimed "goldilocks-mul-zmod" "ZMod" "mul" "Goldilocks.Field"
-    goldilocksShape preset warmup zmodMeasured
-    (fun i ↦ values.getD (i % values.size) 1 * values.getD ((i + 1) % values.size) 1)
-    checksumZMod (checksumIterations := checksumIterations) (sink := sinkZMod)
-  let fastRecord ← runTimed "goldilocks-mul-fast" "UInt64" "mul" "Goldilocks.Fast.Field"
-    goldilocksShape preset warmup fastMeasured
+  let zmodRecord ← runTimedSpec
+    { name := "goldilocks-mul-zmod", representation := "ZMod", method := "mul",
+      field := "Goldilocks.Field", inputShape := goldilocksShape,
+      digestIterations := checksumIterations }
+    preset warmup zmodMeasured
+    (fun i ↦ values.getD (i % values.size) 1 * values.getD ((i + 1) % values.size) 1) checksumZMod
+    (sink := sinkZMod)
+  let fastRecord ← runTimedSpec
+    { name := "goldilocks-mul-fast", representation := "UInt64", method := "mul",
+      field := "Goldilocks.Fast.Field", inputShape := goldilocksShape,
+      digestIterations := checksumIterations }
+    preset warmup fastMeasured
     (fun i ↦ fastValues.getD (i % fastValues.size) 1 *
       fastValues.getD ((i + 1) % fastValues.size) 1)
-    checksumGoldilocksFast (checksumIterations := checksumIterations)
-    (sink := sinkGoldilocksFast)
+    checksumGoldilocksFast (sink := sinkGoldilocksFast)
   pure ({ groupKey := "fields-goldilocks-mul", title := "Goldilocks multiplication",
           records := #[zmodRecord, fastRecord] }, gen)
 
@@ -58,15 +63,18 @@ private def runGoldilocksInv (preset : BenchPreset) (gen : StdGen) :
   let zmodMeasured := preset.selectNat 20000 3000 600
   let fastMeasured := preset.selectNat 24000 3600 720
   let checksumIterations := groupChecksumIterations zmodMeasured [fastMeasured]
-  let zmodRecord ← runTimed "goldilocks-inv-zmod" "ZMod" "inv" "Goldilocks.Field"
-    goldilocksShape preset warmup zmodMeasured
-    (fun i ↦ (values.getD (i % values.size) 1)⁻¹)
-    checksumZMod (checksumIterations := checksumIterations) (sink := sinkZMod)
-  let fastRecord ← runTimed "goldilocks-inv-fast" "UInt64" "inv (Fermat chain)"
-    "Goldilocks.Fast.Field" goldilocksShape preset warmup fastMeasured
-    (fun i ↦ (fastValues.getD (i % fastValues.size) 1)⁻¹)
-    checksumGoldilocksFast (checksumIterations := checksumIterations)
-    (sink := sinkGoldilocksFast)
+  let zmodRecord ← runTimedSpec
+    { name := "goldilocks-inv-zmod", representation := "ZMod", method := "inv",
+      field := "Goldilocks.Field", inputShape := goldilocksShape,
+      digestIterations := checksumIterations }
+    preset warmup zmodMeasured (fun i ↦ (values.getD (i % values.size) 1)⁻¹) checksumZMod
+    (sink := sinkZMod)
+  let fastRecord ← runTimedSpec
+    { name := "goldilocks-inv-fast", representation := "UInt64", method := "inv (Fermat chain)",
+      field := "Goldilocks.Fast.Field", inputShape := goldilocksShape,
+      digestIterations := checksumIterations }
+    preset warmup fastMeasured (fun i ↦ (fastValues.getD (i % fastValues.size) 1)⁻¹)
+    checksumGoldilocksFast (sink := sinkGoldilocksFast)
   pure ({ groupKey := "fields-goldilocks-inv", title := "Goldilocks inversion",
           records := #[zmodRecord, fastRecord] }, gen)
 

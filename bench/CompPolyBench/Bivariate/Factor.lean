@@ -85,16 +85,18 @@ private def runFactorZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
     f + CPolynomial.C (perturb.getD (i % perturb.size) 0)
   let checksumBiv (p : CBivariate (ZMod modulus)) : Nat :=
     checksumCPolynomial (checksumCPolynomial checksumZMod) p
-  let horner ← runTimed
-    ("bivariate-deflate-horner-" ++ yLabel ++ nameSuffix) "CBivariate" "divByLinearY" fieldName
-    shape preset warmup hornerMeasured
-    (fun i ↦ (CBivariate.divByLinearY q (fAt i)).1)
-    checksumBiv (checksumIterations := checksumIterations)
-  let monic ← runTimed
-    ("bivariate-deflate-divbymonic-" ++ yLabel ++ nameSuffix) "CBivariate" "divByMonic" fieldName
-    shape preset warmup monicMeasured
+  let horner ← runTimedSpec
+    { name := ("bivariate-deflate-horner-" ++ yLabel ++ nameSuffix),
+      representation := "CBivariate", method := "divByLinearY", field := fieldName,
+      inputShape := shape, digestIterations := checksumIterations }
+    preset warmup hornerMeasured (fun i ↦ (CBivariate.divByLinearY q (fAt i)).1) checksumBiv
+  let monic ← runTimedSpec
+    { name := ("bivariate-deflate-divbymonic-" ++ yLabel ++ nameSuffix),
+      representation := "CBivariate", method := "divByMonic", field := fieldName,
+      inputShape := shape, digestIterations := checksumIterations }
+    preset warmup monicMeasured
     (fun i ↦ (CPolynomial.divByMonic q (linearDivisor (fAt i)) : CBivariate (ZMod modulus)))
-    checksumBiv (checksumIterations := checksumIterations)
+    checksumBiv
   pure ({
     groupKey := key,
     title := "Bivariate division by Y - f (" ++ fieldTitle ++ ", " ++ yLabel ++ ")",
@@ -120,16 +122,18 @@ private def runFactorKoalaBear (key yLabel : String) (terms : Nat)
     f + CPolynomial.C (perturb.getD (i % perturb.size) 0)
   let checksumBiv (p : CBivariate KoalaBear.Field) : Nat :=
     checksumCPolynomial (checksumCPolynomial checksumKoalaBear) p
-  let horner ← runTimed
-    ("bivariate-deflate-horner-" ++ yLabel) "CBivariate" "divByLinearY" "KoalaBear.Field"
-    shape preset warmup hornerMeasured
-    (fun i ↦ (CBivariate.divByLinearY q (fAt i)).1)
-    checksumBiv (checksumIterations := checksumIterations)
-  let monic ← runTimed
-    ("bivariate-deflate-divbymonic-" ++ yLabel) "CBivariate" "divByMonic" "KoalaBear.Field"
-    shape preset warmup monicMeasured
+  let horner ← runTimedSpec
+    { name := ("bivariate-deflate-horner-" ++ yLabel), representation := "CBivariate",
+      method := "divByLinearY", field := "KoalaBear.Field", inputShape := shape,
+      digestIterations := checksumIterations }
+    preset warmup hornerMeasured (fun i ↦ (CBivariate.divByLinearY q (fAt i)).1) checksumBiv
+  let monic ← runTimedSpec
+    { name := ("bivariate-deflate-divbymonic-" ++ yLabel), representation := "CBivariate",
+      method := "divByMonic", field := "KoalaBear.Field", inputShape := shape,
+      digestIterations := checksumIterations }
+    preset warmup monicMeasured
     (fun i ↦ (CPolynomial.divByMonic q (linearDivisor (fAt i)) : CBivariate KoalaBear.Field))
-    checksumBiv (checksumIterations := checksumIterations)
+    checksumBiv
   pure ({
     groupKey := key,
     title := "Bivariate division by Y - f (KoalaBear, " ++ yLabel ++ ")",

@@ -51,16 +51,17 @@ def checksumConcreteBt128 (x : ConcreteBTField 7) : Nat :=
   let concreteMeasured := concreteBudget preset
   let fastMeasured := fastBudget preset
   let checksumIterations := groupChecksumIterations concreteMeasured [fastMeasured]
-  let concreteRecord ← runTimed "tower-bt128" "ConcreteBTField"
-    (method ++ " (ConcreteBTField)") "GF(2^128)"
-    towerShape preset warmup concreteMeasured
-    (fun i ↦ let (a, b) := concreteSample i; concreteOp a b)
-    checksumConcreteBt128 (checksumIterations := checksumIterations)
-  let fastRecord ← runTimed "tower-bt128-fast" "FastBT128"
-    (method ++ " (FastBT128)") "GF(2^128)"
-    towerShape preset warmup fastMeasured
-    (fun i ↦ let (a, b) := fastSample i; fastOp a b)
-    checksumFastBT128 (checksumIterations := checksumIterations)
+  let concreteRecord ← runTimedSpec
+    { name := "tower-bt128", representation := "ConcreteBTField",
+      method := (method ++ " (ConcreteBTField)"), field := "GF(2^128)", inputShape := towerShape,
+      digestIterations := checksumIterations }
+    preset warmup concreteMeasured (fun i ↦ let (a, b) := concreteSample i; concreteOp a b)
+    checksumConcreteBt128
+  let fastRecord ← runTimedSpec
+    { name := "tower-bt128-fast", representation := "FastBT128",
+      method := (method ++ " (FastBT128)"), field := "GF(2^128)", inputShape := towerShape,
+      digestIterations := checksumIterations }
+    preset warmup fastMeasured (fun i ↦ let (a, b) := fastSample i; fastOp a b) checksumFastBT128
   pure ({ groupKey := groupKey, title := title,
           records := #[concreteRecord, fastRecord] }, gen)
 

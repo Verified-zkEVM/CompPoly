@@ -65,9 +65,10 @@ Time one extension operation over a field-specific sample, packaged as a single-
 private def runExtOp {E : Type} (groupKey title name method fieldName shape : String)
     (checksum : E → Nat) (sample : Nat → E × E) (op : E → E → E)
     (measured : Nat) (preset : BenchPreset) (gen : StdGen) : IO (BenchGroup × StdGen) := do
-  let record ← runTimed name "Extension.Ext" method fieldName shape preset
-    (warmupIterations preset) measured
-    (fun i ↦ let (a, b) := sample i; op a b) checksum
+  let record ← runTimedSpec
+    { name := name, representation := "Extension.Ext", method := method, field := fieldName,
+      inputShape := shape, digestIterations := min validationIterationCap measured }
+    preset (warmupIterations preset) measured (fun i ↦ let (a, b) := sample i; op a b) checksum
   pure ({ groupKey := groupKey, title := title, records := #[record] }, gen)
 
 /-- Build the pairwise operand sampler for an extension over a `ZMod` base field. -/

@@ -40,18 +40,20 @@ private def runScalarInv (modulus : Nat) [Mont64x8Field modulus] [GcdData modulu
   let gcdMeasured := gcdBudget preset
   let fermatMeasured := fermatBudget preset
   let checksumIterations := groupChecksumIterations zmodMeasured [gcdMeasured, fermatMeasured]
-  let zmodRecord ← runTimed "scalar-inv-xgcd" "ZMod" "inv (xgcd)" fieldName
-    scalarInvShape preset warmup zmodMeasured
-    (fun i ↦ (values.getD (i % values.size) 1)⁻¹)
-    checksumZMod (checksumIterations := checksumIterations)
-  let gcdRecord ← runTimed "scalar-inv-gcd" "Mont64x8" "inv (binary GCD)" fastFieldName
-    scalarInvShape preset warmup gcdMeasured
-    (fun i ↦ (fastValues.getD (i % fastValues.size) 1).invGcd)
-    (fun x ↦ x.toNat) (checksumIterations := checksumIterations)
-  let fermatRecord ← runTimed "scalar-inv-fermat" "Mont64x8" "inv (Fermat)" fastFieldName
-    scalarInvShape preset warmup fermatMeasured
-    (fun i ↦ (fastValues.getD (i % fastValues.size) 1).inv)
-    (fun x ↦ x.toNat) (checksumIterations := checksumIterations)
+  let zmodRecord ← runTimedSpec
+    { name := "scalar-inv-xgcd", representation := "ZMod", method := "inv (xgcd)",
+      field := fieldName, inputShape := scalarInvShape, digestIterations := checksumIterations }
+    preset warmup zmodMeasured (fun i ↦ (values.getD (i % values.size) 1)⁻¹) checksumZMod
+  let gcdRecord ← runTimedSpec
+    { name := "scalar-inv-gcd", representation := "Mont64x8", method := "inv (binary GCD)",
+      field := fastFieldName, inputShape := scalarInvShape, digestIterations := checksumIterations }
+    preset warmup gcdMeasured (fun i ↦ (fastValues.getD (i % fastValues.size) 1).invGcd)
+    (fun x ↦ x.toNat)
+  let fermatRecord ← runTimedSpec
+    { name := "scalar-inv-fermat", representation := "Mont64x8", method := "inv (Fermat)",
+      field := fastFieldName, inputShape := scalarInvShape, digestIterations := checksumIterations }
+    preset warmup fermatMeasured (fun i ↦ (fastValues.getD (i % fastValues.size) 1).inv)
+    (fun x ↦ x.toNat)
   pure ({ groupKey := groupKey, title := title,
           records := #[zmodRecord, gcdRecord, fermatRecord] }, gen)
 

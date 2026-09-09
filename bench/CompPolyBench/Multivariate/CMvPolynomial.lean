@@ -67,16 +67,19 @@ private def runDenseMultivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
   let hornerMeasured :=
     preset.selectNat largeHornerMeasured mediumHornerMeasured smallHornerMeasured
   let checksumIterations := groupChecksumIterations measured [hornerMeasured]
-  let denseEval ← runTimed
-    ("multivariate-dense-eval-" ++ nameSuffix) "CMvPolynomial" "eval" fieldName
-    multivariateDenseShape preset warmup measured
-    (fun i ↦ CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) poly)
-    checksumZMod (checksumIterations := checksumIterations)
-  let denseHorner ← runTimed
-    ("multivariate-dense-horner-" ++ nameSuffix) "CMvPolynomial" "evalHorner" fieldName
-    multivariateDenseShape preset warmup hornerMeasured
+  let denseEval ← runTimedSpec
+    { name := ("multivariate-dense-eval-" ++ nameSuffix), representation := "CMvPolynomial",
+      method := "eval", field := fieldName, inputShape := multivariateDenseShape,
+      digestIterations := checksumIterations }
+    preset warmup measured
+    (fun i ↦ CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) poly) checksumZMod
+  let denseHorner ← runTimedSpec
+    { name := ("multivariate-dense-horner-" ++ nameSuffix), representation := "CMvPolynomial",
+      method := "evalHorner", field := fieldName, inputShape := multivariateDenseShape,
+      digestIterations := checksumIterations }
+    preset warmup hornerMeasured
     (fun i ↦ CPoly.CMvPolynomial.evalHorner (evalPoint (i % multivariatePointCount)) poly)
-    checksumZMod (checksumIterations := checksumIterations)
+    checksumZMod
   pure ({
     groupKey := key,
     title := "Multivariate dense evaluation (" ++ fieldTitle ++ ")",
@@ -99,16 +102,19 @@ private def runSparseMultivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
   let hornerMeasured :=
     preset.selectNat largeHornerMeasured mediumHornerMeasured smallHornerMeasured
   let checksumIterations := groupChecksumIterations measured [hornerMeasured]
-  let sparseEval ← runTimed
-    ("multivariate-sparse-eval-" ++ nameSuffix) "CMvPolynomial" "eval" fieldName
-    multivariateSparseShape preset warmup measured
-    (fun i ↦ CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) poly)
-    checksumZMod (checksumIterations := checksumIterations)
-  let sparseHorner ← runTimed
-    ("multivariate-sparse-horner-" ++ nameSuffix) "CMvPolynomial" "evalHorner" fieldName
-    multivariateSparseShape preset warmup hornerMeasured
+  let sparseEval ← runTimedSpec
+    { name := ("multivariate-sparse-eval-" ++ nameSuffix), representation := "CMvPolynomial",
+      method := "eval", field := fieldName, inputShape := multivariateSparseShape,
+      digestIterations := checksumIterations }
+    preset warmup measured
+    (fun i ↦ CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) poly) checksumZMod
+  let sparseHorner ← runTimedSpec
+    { name := ("multivariate-sparse-horner-" ++ nameSuffix), representation := "CMvPolynomial",
+      method := "evalHorner", field := fieldName, inputShape := multivariateSparseShape,
+      digestIterations := checksumIterations }
+    preset warmup hornerMeasured
     (fun i ↦ CPoly.CMvPolynomial.evalHorner (evalPoint (i % multivariatePointCount)) poly)
-    checksumZMod (checksumIterations := checksumIterations)
+    checksumZMod
   pure ({
     groupKey := key,
     title := "Multivariate sparse evaluation (" ++ fieldTitle ++ ")",
@@ -136,29 +142,36 @@ private def runKoalaBearMultivariateDense (preset : BenchPreset) (gen : StdGen) 
   let checksumIterations := groupChecksumIterations measured [
     hornerMeasured, fastMeasured, fastHornerMeasured
   ]
-  let denseEval ← runTimed
-    "multivariate-dense-eval" "CMvPolynomial" "eval" "KoalaBear.Field"
-    multivariateDenseShape preset warmup measured
+  let denseEval ← runTimedSpec
+    { name := "multivariate-dense-eval", representation := "CMvPolynomial", method := "eval",
+      field := "KoalaBear.Field", inputShape := multivariateDenseShape,
+      digestIterations := checksumIterations }
+    preset warmup measured
     (fun i ↦ CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) poly)
-    checksumKoalaBear (checksumIterations := checksumIterations)
-  let fastDenseEval ← runTimed
-    "multivariate-dense-eval-fast" "CMvPolynomial" "eval" "KoalaBear.Fast.Field"
-    multivariateDenseShape preset warmup fastMeasured
+    checksumKoalaBear
+  let fastDenseEval ← runTimedSpec
+    { name := "multivariate-dense-eval-fast", representation := "CMvPolynomial", method := "eval",
+      field := "KoalaBear.Fast.Field", inputShape := multivariateDenseShape,
+      digestIterations := checksumIterations }
+    preset warmup fastMeasured
     (fun i ↦ CPoly.CMvPolynomial.eval (fastEvalPoint (i % multivariatePointCount))
       fastPoly)
-    checksumKoalaBearFast (checksumIterations := checksumIterations)
-  let denseHorner ← runTimed
-    "multivariate-dense-horner" "CMvPolynomial" "evalHorner" "KoalaBear.Field"
-    multivariateDenseShape preset warmup hornerMeasured
+    checksumKoalaBearFast
+  let denseHorner ← runTimedSpec
+    { name := "multivariate-dense-horner", representation := "CMvPolynomial",
+      method := "evalHorner", field := "KoalaBear.Field", inputShape := multivariateDenseShape,
+      digestIterations := checksumIterations }
+    preset warmup hornerMeasured
     (fun i ↦ CPoly.CMvPolynomial.evalHorner (evalPoint (i % multivariatePointCount)) poly)
-    checksumKoalaBear (checksumIterations := checksumIterations)
-  let fastDenseHorner ← runTimed
-    "multivariate-dense-horner-fast" "CMvPolynomial" "evalHorner"
-    "KoalaBear.Fast.Field"
-    multivariateDenseShape preset warmup fastHornerMeasured
+    checksumKoalaBear
+  let fastDenseHorner ← runTimedSpec
+    { name := "multivariate-dense-horner-fast", representation := "CMvPolynomial",
+      method := "evalHorner", field := "KoalaBear.Fast.Field",
+      inputShape := multivariateDenseShape, digestIterations := checksumIterations }
+    preset warmup fastHornerMeasured
     (fun i ↦ CPoly.CMvPolynomial.evalHorner (fastEvalPoint (i % multivariatePointCount))
       fastPoly)
-    checksumKoalaBearFast (checksumIterations := checksumIterations)
+    checksumKoalaBearFast
   pure ({
     groupKey := "multivariate-dense-koalabear",
     title := "Multivariate dense evaluation (KoalaBear)",
@@ -186,29 +199,36 @@ private def runKoalaBearMultivariateSparse (preset : BenchPreset) (gen : StdGen)
   let checksumIterations := groupChecksumIterations measured [
     hornerMeasured, fastMeasured, fastHornerMeasured
   ]
-  let sparseEval ← runTimed
-    "multivariate-sparse-eval" "CMvPolynomial" "eval" "KoalaBear.Field"
-    multivariateSparseShape preset warmup measured
+  let sparseEval ← runTimedSpec
+    { name := "multivariate-sparse-eval", representation := "CMvPolynomial", method := "eval",
+      field := "KoalaBear.Field", inputShape := multivariateSparseShape,
+      digestIterations := checksumIterations }
+    preset warmup measured
     (fun i ↦ CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) poly)
-    checksumKoalaBear (checksumIterations := checksumIterations)
-  let fastSparseEval ← runTimed
-    "multivariate-sparse-eval-fast" "CMvPolynomial" "eval" "KoalaBear.Fast.Field"
-    multivariateSparseShape preset warmup fastMeasured
+    checksumKoalaBear
+  let fastSparseEval ← runTimedSpec
+    { name := "multivariate-sparse-eval-fast", representation := "CMvPolynomial", method := "eval",
+      field := "KoalaBear.Fast.Field", inputShape := multivariateSparseShape,
+      digestIterations := checksumIterations }
+    preset warmup fastMeasured
     (fun i ↦ CPoly.CMvPolynomial.eval (fastEvalPoint (i % multivariatePointCount))
       fastPoly)
-    checksumKoalaBearFast (checksumIterations := checksumIterations)
-  let sparseHorner ← runTimed
-    "multivariate-sparse-horner" "CMvPolynomial" "evalHorner" "KoalaBear.Field"
-    multivariateSparseShape preset warmup hornerMeasured
+    checksumKoalaBearFast
+  let sparseHorner ← runTimedSpec
+    { name := "multivariate-sparse-horner", representation := "CMvPolynomial",
+      method := "evalHorner", field := "KoalaBear.Field", inputShape := multivariateSparseShape,
+      digestIterations := checksumIterations }
+    preset warmup hornerMeasured
     (fun i ↦ CPoly.CMvPolynomial.evalHorner (evalPoint (i % multivariatePointCount)) poly)
-    checksumKoalaBear (checksumIterations := checksumIterations)
-  let fastSparseHorner ← runTimed
-    "multivariate-sparse-horner-fast" "CMvPolynomial" "evalHorner"
-    "KoalaBear.Fast.Field"
-    multivariateSparseShape preset warmup fastHornerMeasured
+    checksumKoalaBear
+  let fastSparseHorner ← runTimedSpec
+    { name := "multivariate-sparse-horner-fast", representation := "CMvPolynomial",
+      method := "evalHorner", field := "KoalaBear.Fast.Field",
+      inputShape := multivariateSparseShape, digestIterations := checksumIterations }
+    preset warmup fastHornerMeasured
     (fun i ↦ CPoly.CMvPolynomial.evalHorner (fastEvalPoint (i % multivariatePointCount))
       fastPoly)
-    checksumKoalaBearFast (checksumIterations := checksumIterations)
+    checksumKoalaBearFast
   pure ({
     groupKey := "multivariate-sparse-koalabear",
     title := "Multivariate sparse evaluation (KoalaBear)",

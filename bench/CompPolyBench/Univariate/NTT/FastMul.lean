@@ -72,56 +72,66 @@ private def runUnivariateMulWithFast {F G : Type}
     nttMeasured, nttFastMeasured, nttFastPlanMeasured, fastMeasured, fastNttMeasured,
     fastNttFastMeasured, fastNttFastPlanMeasured
   ]
-  let canonicalNaive ← runTimed
-    "univariate-mul-naive" "CPolynomial" "mul" canonicalField.id
-    univariateMulShape preset warmup measured
-    (fun _ ↦ mulLhsPoly * mulRhsPoly) canonicalChecksum
-    (checksumIterations := checksumIterations)
-  let fastNaive ← runTimed
-    "univariate-mul-naive-fast" "CPolynomial" "mul" fastField.id
-    univariateMulShape preset warmup fastMeasured
-    (fun _ ↦ fastMulLhsPoly * fastMulRhsPoly) fastChecksum
-    (checksumIterations := checksumIterations)
-  let canonicalNtt ← runTimed
-    "univariate-mul-ntt" "CPolynomial" (univariateMulNttMethod "FastMul.fastMulImpl")
-    canonicalField.id univariateMulShape preset warmup nttMeasured
+  let canonicalNaive ← runTimedSpec
+    { name := "univariate-mul-naive", representation := "CPolynomial", method := "mul",
+      field := canonicalField.id, inputShape := univariateMulShape,
+      digestIterations := checksumIterations }
+    preset warmup measured (fun _ ↦ mulLhsPoly * mulRhsPoly) canonicalChecksum
+  let fastNaive ← runTimedSpec
+    { name := "univariate-mul-naive-fast", representation := "CPolynomial", method := "mul",
+      field := fastField.id, inputShape := univariateMulShape,
+      digestIterations := checksumIterations }
+    preset warmup fastMeasured (fun _ ↦ fastMulLhsPoly * fastMulRhsPoly) fastChecksum
+  let canonicalNtt ← runTimedSpec
+    { name := "univariate-mul-ntt", representation := "CPolynomial",
+      method := (univariateMulNttMethod "FastMul.fastMulImpl"), field := canonicalField.id,
+      inputShape := univariateMulShape, digestIterations := checksumIterations }
+    preset warmup nttMeasured
     (fun _ ↦
       CPolynomial.NTT.FastMul.fastMulImpl canonicalDomain mulLhsPoly mulRhsPoly)
-    canonicalChecksum (checksumIterations := checksumIterations)
-  let fastNtt ← runTimed
-    s!"univariate-mul-ntt-{slug}-fast" "CPolynomial"
-    (univariateMulNttMethod "FastMul.fastMulImpl") fastField.id
-    univariateMulShape preset warmup fastNttMeasured
+    canonicalChecksum
+  let fastNtt ← runTimedSpec
+    { name := s!"univariate-mul-ntt-{slug}-fast", representation := "CPolynomial",
+      method := (univariateMulNttMethod "FastMul.fastMulImpl"), field := fastField.id,
+      inputShape := univariateMulShape, digestIterations := checksumIterations }
+    preset warmup fastNttMeasured
     (fun _ ↦ CPolynomial.NTT.FastMul.fastMulImpl fastDomain
       fastMulLhsPoly fastMulRhsPoly)
-    fastChecksum (checksumIterations := checksumIterations)
-  let canonicalNttFast ← runTimed
-    "univariate-mul-ntt-fast" "CPolynomial" (univariateMulNttMethod "NTTFast.fastMulImpl")
-    canonicalField.id univariateMulShape preset warmup nttFastMeasured
+    fastChecksum
+  let canonicalNttFast ← runTimedSpec
+    { name := "univariate-mul-ntt-fast", representation := "CPolynomial",
+      method := (univariateMulNttMethod "NTTFast.fastMulImpl"), field := canonicalField.id,
+      inputShape := univariateMulShape, digestIterations := checksumIterations }
+    preset warmup nttFastMeasured
     (fun _ ↦
       CPolynomial.NTTFast.fastMulImpl canonicalDomain mulLhsPoly mulRhsPoly)
-    canonicalChecksum (checksumIterations := checksumIterations)
-  let fastNttFast ← runTimed
-    s!"univariate-mul-ntt-fast-{slug}-fast" "CPolynomial"
-    (univariateMulNttMethod "NTTFast.fastMulImpl") fastField.id
-    univariateMulShape preset warmup fastNttFastMeasured
+    canonicalChecksum
+  let fastNttFast ← runTimedSpec
+    { name := s!"univariate-mul-ntt-fast-{slug}-fast", representation := "CPolynomial",
+      method := (univariateMulNttMethod "NTTFast.fastMulImpl"), field := fastField.id,
+      inputShape := univariateMulShape, digestIterations := checksumIterations }
+    preset warmup fastNttFastMeasured
     (fun _ ↦ CPolynomial.NTTFast.fastMulImpl fastDomain
       fastMulLhsPoly fastMulRhsPoly)
-    fastChecksum (checksumIterations := checksumIterations)
-  let canonicalNttFastPlan ← runTimed
-    "univariate-mul-ntt-fast-plan" "CPolynomial"
-    (univariateMulNttMethod
-      "NTTFast.Plan.fastMulImpl, cached twiddles, mixed radix-4 DIF/DIT, dual forward")
-    canonicalField.id univariateMulShape preset warmup nttFastPlanMeasured
+    fastChecksum
+  let canonicalNttFastPlan ← runTimedSpec
+    { name := "univariate-mul-ntt-fast-plan", representation := "CPolynomial",
+      method := (univariateMulNttMethod
+      "NTTFast.Plan.fastMulImpl, cached twiddles, mixed radix-4 DIF/DIT, dual forward"),
+      field := canonicalField.id, inputShape := univariateMulShape,
+      digestIterations := checksumIterations }
+    preset warmup nttFastPlanMeasured
     (fun _ ↦ CPolynomial.NTTFast.Plan.fastMulImpl canonicalPlan mulLhsPoly mulRhsPoly)
-    canonicalChecksum (checksumIterations := checksumIterations)
-  let fastNttFastPlan ← runTimed
-    "univariate-mul-ntt-fast-plan-fast" "CPolynomial"
-    (univariateMulNttMethod
-      "NTTFast.Plan.fastMulImpl, cached twiddles, mixed radix-4 DIF/DIT, dual forward")
-    fastField.id univariateMulShape preset warmup fastNttFastPlanMeasured
+    canonicalChecksum
+  let fastNttFastPlan ← runTimedSpec
+    { name := "univariate-mul-ntt-fast-plan-fast", representation := "CPolynomial",
+      method := (univariateMulNttMethod
+      "NTTFast.Plan.fastMulImpl, cached twiddles, mixed radix-4 DIF/DIT, dual forward"),
+      field := fastField.id, inputShape := univariateMulShape,
+      digestIterations := checksumIterations }
+    preset warmup fastNttFastPlanMeasured
     (fun _ ↦ CPolynomial.NTTFast.Plan.fastMulImpl fastPlan fastMulLhsPoly fastMulRhsPoly)
-    fastChecksum (checksumIterations := checksumIterations)
+    fastChecksum
   pure ({
     groupKey := key,
     title := "Univariate multiplication (" ++ fieldTitle ++ ")",

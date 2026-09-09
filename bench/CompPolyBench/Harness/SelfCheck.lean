@@ -65,13 +65,16 @@ private def runHarnessSelfCheck (preset : BenchPreset) (selection : BenchSelecti
     (gen : StdGen) : IO (Array BenchGroup × StdGen) := do
   let measured := harnessMeasuredIterations preset
   let warmup := measured / 10
-  let floorRecord ← runTimed "harness-floor" "UInt64" "empty body"
-    "none" "no input" preset warmup measured
-    (fun i ↦ i.toUInt64) (fun x ↦ x.toNat) (sink := u64Sink) (forceTiming := true)
-  let canaryRecord ← runTimed "harness-canary" "UInt64" s!"{canaryRounds} mixing rounds"
-    "none" "no input" preset warmup measured
-    (fun i ↦ canaryWork i.toUInt64) (fun x ↦ x.toNat) (sink := u64Sink)
-    (forceTiming := true)
+  let floorRecord ← runTimedSpec
+    { name := "harness-floor", representation := "UInt64", method := "empty body", field := "none",
+      inputShape := "no input", digestIterations := min validationIterationCap measured,
+      forceTiming := true }
+    preset warmup measured (fun i ↦ i.toUInt64) (fun x ↦ x.toNat) (sink := u64Sink)
+  let canaryRecord ← runTimedSpec
+    { name := "harness-canary", representation := "UInt64",
+      method := s!"{canaryRounds} mixing rounds", field := "none", inputShape := "no input",
+      digestIterations := min validationIterationCap measured, forceTiming := true }
+    preset warmup measured (fun i ↦ canaryWork i.toUInt64) (fun x ↦ x.toNat) (sink := u64Sink)
   if canaryRecord.totalNanos < canaryFloorRatio * floorRecord.totalNanos then
     throw <| IO.userError <|
       s!"harness canary collapsed onto the loop floor: canary {canaryRecord.totalNanos}ns " ++

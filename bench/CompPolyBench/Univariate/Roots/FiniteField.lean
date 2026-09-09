@@ -82,42 +82,43 @@ private def runKoalaBearFiniteFieldRoots (preset : BenchPreset) (gen : StdGen) :
   let checksumIterations := groupChecksumIterations measured [
     nttMeasured, nttFastMeasured, fastMeasured, fastNttMeasured, fastNttFastMeasured
   ]
-  let row <- runTimed
-    "univariate-roots-finite-field-naive" "CPolynomial"
-    "smooth cyclic, canonical"
-    "KoalaBear.Field" rootWorkloadShape preset warmup measured
-    (fun _ ↦ koalaBearFieldRootContext.rootsInField p)
-    (checksumNormalizedRoots checksumKoalaBear) checksumIterations
-  let nttRow <- runTimed
-    "univariate-roots-finite-field-ntt" "CPolynomial"
-    "smooth cyclic, NTT"
-    "KoalaBear.Field" rootWorkloadShape preset warmup nttMeasured
-    (fun _ ↦ koalaBearNttFieldRootContext.rootsInField p)
-    (checksumNormalizedRoots checksumKoalaBear) checksumIterations
-  let nttFastRow <- runTimed
-    "univariate-roots-finite-field-nttfast" "CPolynomial"
-    "smooth cyclic, NTTFast"
-    "KoalaBear.Field" rootWorkloadShape preset warmup nttFastMeasured
-    (fun _ ↦ koalaBearNttFastFieldRootContext.rootsInField p)
-    (checksumNormalizedRoots checksumKoalaBear) checksumIterations
-  let fastRow <- runTimed
-    "univariate-roots-finite-field-fast-naive" "CPolynomial"
-    "smooth cyclic, canonical"
-    "KoalaBear.Fast.Field" rootWorkloadShape preset warmup fastMeasured
-    (fun _ ↦ fastKoalaBearFieldRootContext.rootsInField fastP)
-    (checksumNormalizedRoots checksumKoalaBearFast) checksumIterations
-  let fastNttRow <- runTimed
-    "univariate-roots-finite-field-fast-ntt" "CPolynomial"
-    "smooth cyclic, NTT"
-    "KoalaBear.Fast.Field" rootWorkloadShape preset warmup fastNttMeasured
-    (fun _ ↦ fastKoalaBearNttFieldRootContext.rootsInField fastP)
-    (checksumNormalizedRoots checksumKoalaBearFast) checksumIterations
-  let fastNttFastRow <- runTimed
-    "univariate-roots-finite-field-fast-nttfast" "CPolynomial"
-    "smooth cyclic, NTTFast"
-    "KoalaBear.Fast.Field" rootWorkloadShape preset warmup fastNttFastMeasured
+  let row <- runTimedSpec
+    { name := "univariate-roots-finite-field-naive", representation := "CPolynomial",
+      method := "smooth cyclic, canonical", field := "KoalaBear.Field",
+      inputShape := rootWorkloadShape, digestIterations := checksumIterations }
+    preset warmup measured (fun _ ↦ koalaBearFieldRootContext.rootsInField p)
+    (checksumNormalizedRoots checksumKoalaBear)
+  let nttRow <- runTimedSpec
+    { name := "univariate-roots-finite-field-ntt", representation := "CPolynomial",
+      method := "smooth cyclic, NTT", field := "KoalaBear.Field", inputShape := rootWorkloadShape,
+      digestIterations := checksumIterations }
+    preset warmup nttMeasured (fun _ ↦ koalaBearNttFieldRootContext.rootsInField p)
+    (checksumNormalizedRoots checksumKoalaBear)
+  let nttFastRow <- runTimedSpec
+    { name := "univariate-roots-finite-field-nttfast", representation := "CPolynomial",
+      method := "smooth cyclic, NTTFast", field := "KoalaBear.Field",
+      inputShape := rootWorkloadShape, digestIterations := checksumIterations }
+    preset warmup nttFastMeasured (fun _ ↦ koalaBearNttFastFieldRootContext.rootsInField p)
+    (checksumNormalizedRoots checksumKoalaBear)
+  let fastRow <- runTimedSpec
+    { name := "univariate-roots-finite-field-fast-naive", representation := "CPolynomial",
+      method := "smooth cyclic, canonical", field := "KoalaBear.Fast.Field",
+      inputShape := rootWorkloadShape, digestIterations := checksumIterations }
+    preset warmup fastMeasured (fun _ ↦ fastKoalaBearFieldRootContext.rootsInField fastP)
+    (checksumNormalizedRoots checksumKoalaBearFast)
+  let fastNttRow <- runTimedSpec
+    { name := "univariate-roots-finite-field-fast-ntt", representation := "CPolynomial",
+      method := "smooth cyclic, NTT", field := "KoalaBear.Fast.Field",
+      inputShape := rootWorkloadShape, digestIterations := checksumIterations }
+    preset warmup fastNttMeasured (fun _ ↦ fastKoalaBearNttFieldRootContext.rootsInField fastP)
+    (checksumNormalizedRoots checksumKoalaBearFast)
+  let fastNttFastRow <- runTimedSpec
+    { name := "univariate-roots-finite-field-fast-nttfast", representation := "CPolynomial",
+      method := "smooth cyclic, NTTFast", field := "KoalaBear.Fast.Field",
+      inputShape := rootWorkloadShape, digestIterations := checksumIterations }
+    preset warmup fastNttFastMeasured
     (fun _ ↦ fastKoalaBearNttFastFieldRootContext.rootsInField fastP)
-    (checksumNormalizedRoots checksumKoalaBearFast) checksumIterations
+    (checksumNormalizedRoots checksumKoalaBearFast)
   pure ({
     groupKey := "univariate-roots-finite-field-koalabear",
     title := "Univariate finite-field smooth-subgroup root search (KoalaBear)",
