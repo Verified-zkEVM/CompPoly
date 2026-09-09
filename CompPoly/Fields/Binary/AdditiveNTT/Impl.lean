@@ -318,26 +318,30 @@ def computableBasisExplicit (k : ℕ) (i : Fin (2 ^ k)) : ConcreteBTField k :=
       1
 
 omit [NeZero r] in
+/-- The executable bit-indexed basis equals the multilinear tower basis over level zero. -/
+theorem computableBasisExplicit_eq_multilinearBasis (k : ℕ) :
+    computableBasisExplicit k = fun i => multilinearBasis 0 k (by omega) i := by
+  funext i
+  unfold computableBasisExplicit
+  rw [multilinearBasis_apply k 0 (by omega) i]
+  simp only [beq_iff_eq, Nat.sub_zero, 𝕏, map_pow]
+  congr 1
+  funext x
+  have h_lt := Nat.getBit_lt_2 (n := i) (k := x)
+  by_cases h : Nat.getBit (k := x) (n := i) = 1
+  · simp only [h, ↓reduceIte, pow_one]
+    rw! (castMode := .all) [Nat.zero_add]
+    rfl
+  · have hBit_eq_0 : Nat.getBit (k := x) (n := i) = 0 := by omega
+    simp only [hBit_eq_0, zero_ne_one, ↓reduceIte, pow_zero]
+
+omit [NeZero r] in
 theorem hβ_lin_indep_concrete (k : ℕ) :
     letI := ConcreteBTFieldAlgebra (l:=0) (r:=k) (h_le:=by omega)
     LinearIndependent (R := ConcreteBTField 0)
       (v := computableBasisExplicit k) := by
   let := ConcreteBTFieldAlgebra (l:=0) (r:=k) (h_le:=by omega)
-  have h_eq : computableBasisExplicit k = fun i => multilinearBasis 0 k (by omega) i := by
-    funext i
-    unfold computableBasisExplicit
-    rw [multilinearBasis_apply k 0 (by omega) i]
-    simp only [beq_iff_eq, Nat.sub_zero, 𝕏, map_pow]
-    congr 1
-    funext x
-    have h_lt := Nat.getBit_lt_2 (n := i) (k := x)
-    by_cases h: Nat.getBit (k := x) (n := i) = 1
-    · simp only [h, ↓reduceIte, pow_one]
-      rw! (castMode := .all) [Nat.zero_add]
-      rfl
-    · have hBit_eq_0: Nat.getBit (k := x) (n := i) = 0 := by omega
-      simp only [hBit_eq_0, zero_ne_one, ↓reduceIte, pow_zero]
-  rw [h_eq]
+  rw [computableBasisExplicit_eq_multilinearBasis]
   exact (multilinearBasis 0 k (by omega)).linearIndependent
 
 abbrev BTF₃ := ConcreteBTField 3 -- 8 bits
