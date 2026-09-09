@@ -35,6 +35,10 @@ lean_lib CompPoly where
 lean_lib CompPolyTests where
   srcDir := "tests"
 
+/-- Linked field-startup and arithmetic checks; see tests/README.md for bounded execution. -/
+lean_exe CompPolyNativeSmoke where
+  srcDir := "tests"
+
 lean_lib CompPolyBenchLib where
   srcDir := "bench"
   globs := #[Glob.submodules `CompPolyBench]

@@ -37,6 +37,13 @@ lake build
 lake test
 ```
 
+### Native field arithmetic or startup changes
+
+Build the dedicated native smoke target and run it with the resource limits documented in
+[`../../tests/README.md`](../../tests/README.md#native-startup-and-field-arithmetic). The checks
+exercise linked module initialization and actual BF64/Ext3 arithmetic; `lake test` alone does not
+exercise that startup path.
+
 ### Filling a `sorry`, or work that must stay axiom-clean
 
 ```bash
@@ -105,10 +112,10 @@ to be covered there. See [`../../bench/README.md`](../../bench/README.md).
 
 - [`../../.github/workflows/lean_action_ci.yml`](../../.github/workflows/lean_action_ci.yml)
   runs a **warm** (incremental) `lake build` by default — reusing cached Lake
-  oleans so only dirty modules rebuild — then `lake test`, then the axiom sweep
+  oleans so only dirty modules rebuild — then `lake test`, a linked native field smoke
+  test under the documented resource bounds, and the axiom sweep
   as an enforcing gate, and posts a build-timing report. It also builds and runs
   `CompPolyBench --medium` over the curated
-  `BENCH_CI_GROUPS` selection, then uploads benchmark reports as CI artifacts.
   `BENCH_CI_GROUPS` selection, then uploads benchmark reports as CI artifacts.
   A full cold rebuild (`rm -rf .lake/build && lake build`) runs automatically
   when `lean-toolchain` or `lake-manifest.json` differs from the comparison base
