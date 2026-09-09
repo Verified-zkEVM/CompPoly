@@ -50,6 +50,23 @@ theorem multiplication_matches_reference :
       (fun v => reduce (BinaryField.carryLessMul (w := 128) v.1 v.2.1) == v.2.2) = true := by
   decide +kernel
 
+/-! ## Finiteness without runtime enumeration -/
+
+example : Finite _root_.BF64 := inferInstance
+example : Finite Ext3 := inferInstance
+example : Nat.card _root_.BF64 = 2 ^ 64 := nat_card_bf64
+example : Nat.card Ext3 = 2 ^ 192 := nat_card_ext3
+
+example : True := by
+  fail_if_success
+    let _ : Fintype _root_.BF64 := inferInstance
+  fail_if_success
+    let _ : Fintype Ext3 := inferInstance
+  trivial
+
+example [Fintype _root_.BF64] : Fintype.card _root_.BF64 = 2 ^ 64 := card_bf64
+example [Fintype Ext3] : Fintype.card Ext3 = 2 ^ 192 := card_ext3
+
 /-! ## Non-vacuity guards -/
 
 /-- The polynomial element `X`, encoded by bit one, is not zero. -/

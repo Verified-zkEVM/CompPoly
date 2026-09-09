@@ -108,6 +108,13 @@ the maps are inverse and introduce no implicit conversion to another field prese
 For example, `BF64.ofBitVec (2#64)` denotes `X`, while `(2 : BF64)` is zero. Raw reference
 vectors must use the coordinate constructor rather than field numeral casts.
 
+`BF64` and `BF64.Ext3` expose proof-only `Finite` instances and the cardinality theorems
+`BF64.nat_card_bf64` and `BF64.nat_card_ext3`. They provide no default enumeration dictionary.
+A proof that needs `Fintype` can choose `Fintype.ofFinite` locally; `card_bf64` and `card_ext3`
+then apply to that chosen enumeration. Arithmetic does not enumerate these enormous fields.
+The [native startup test](../../tests/README.md#native-startup-and-field-arithmetic) checks
+linked initialization and actual base/extension arithmetic under resource bounds.
+
 The instances here are assembled field-by-field on purpose: a transport such as
 `Function.Injective.commRing` takes the bridge as *data* and would make the arithmetic
 noncomputable, which would also break `Ext3`. The `#guard` checks in

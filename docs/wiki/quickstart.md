@@ -37,6 +37,13 @@ lake build
 lake test
 ```
 
+### Native field arithmetic or startup changes
+
+Build the dedicated native smoke target and run it with the resource limits documented in
+[`../../tests/README.md`](../../tests/README.md#native-startup-and-field-arithmetic). The checks
+exercise linked module initialization and actual BF64/Ext3 arithmetic; `lake test` alone does not
+exercise that startup path.
+
 ### Filling a `sorry`, or work that must stay axiom-clean
 
 ```bash
@@ -45,7 +52,7 @@ lake exe axiomsweep --check
 ```
 
 `axiomsweep` is kernel-level axiom/`sorry` accounting for every reportable
-`CompPoly.*` declaration, diffed against the committed baseline
+declaration owned by a `CompPoly.*` module, diffed against the committed baseline
 `scripts/axiom_baseline.json`. It sweeps the `CompPoly` library as imported by the
 umbrella (`tests/` and `bench/` are outside it), and inherits the blind spots of any
 environment walk (structure-field defaults and `example`s never enter the
@@ -112,11 +119,12 @@ come from the on-demand Benchmarks workflow. See
 
 - [`../../.github/workflows/lean_action_ci.yml`](../../.github/workflows/lean_action_ci.yml)
   runs a **warm** (incremental) `lake build` by default — reusing cached Lake
-  oleans so only dirty modules rebuild — then `lake test`, then the axiom sweep
-  as an enforcing gate, and posts a build-timing report. It also builds
-  `CompPolyBench` and runs it in `--validate-only` mode over the curated group
-  set in `bench/ci-groups.txt`, which checks that each group's implementations
-  agree without collecting timings, and uploads the digests as an artifact.
+  oleans so only dirty modules rebuild — then `lake test`, a linked native field smoke
+  test under the documented resource bounds, and the axiom sweep as an enforcing gate,
+  and posts a build-timing report. It also builds `CompPolyBench` and runs it in
+  `--validate-only` mode over the curated group set in `bench/ci-groups.txt`, which checks
+  that each group's implementations agree without timing ordinary workloads; harness checks
+  may still record samples. It uploads the digests as an artifact.
   A full cold rebuild (`rm -rf .lake/build && lake build`) runs automatically
   when `lean-toolchain` or `lake-manifest.json` differs from the comparison base
   (PR base, previous push tip, or merge-base with `main` on manual dispatch).
