@@ -19,9 +19,15 @@ open CompPoly
 
 namespace CompPolyBench
 
+/-- Number of distinct evaluation points cycled by the bivariate benchmarks.
+
+Also the period of every body in this file in its iteration index, and so the
+digest length of every group here. -/
+private def bivariatePointCount : Nat := 32
+
 /-- Shared input-shape label for bivariate evaluation benchmarks. -/
 private def bivariateInputShape : String :=
-  "xDegree<8, yDegree<64, one nonzero per 4 coeffs, 32 points"
+  s!"xDegree<8, yDegree<64, one nonzero per 4 coeffs, {bivariatePointCount} points"
 
 /-- Build a bivariate polynomial from generated coefficients. -/
 private def buildCBivariate {R : Type*}
@@ -46,7 +52,7 @@ private def runBivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
   let (points, gen) := (zmodArray modulus 64 false).run gen
   let poly := buildCBivariate terms
   let evalPoint (i : Nat) : ZMod modulus × ZMod modulus :=
-    let offset := 2 * (i % 32)
+    let offset := 2 * (i % bivariatePointCount)
     (points.getD (offset % points.size) 0, points.getD ((offset + 1) % points.size) 0)
   let warmup := warmupIterations preset
   let measured := measuredIterations preset
@@ -54,9 +60,7 @@ private def runBivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
     preset.selectNat largeHornerYxMeasured mediumHornerYxMeasured smallHornerYxMeasured
   let hornerXyMeasured :=
     preset.selectNat largeHornerXyMeasured mediumHornerXyMeasured smallHornerXyMeasured
-  let checksumIterations := groupChecksumIterations measured [
-    hornerYxMeasured, hornerXyMeasured
-  ]
+  let checksumIterations := digestPeriod bivariatePointCount
   let naive ← runTimedSpec
     { name := ("bivariate-full-eval-naive" ++ nameSuffix), representation := "CBivariate",
       method := "evalEval", field := fieldName, inputShape := bivariateInputShape,
@@ -96,13 +100,13 @@ private def runKoalaBearBivariate (preset : BenchPreset) (gen : StdGen) :
   let (points, gen) := (koalaBearPoints 64).run gen
   let p := buildCBivariate terms
   let evalPoint (i : Nat) : KoalaBear.Field × KoalaBear.Field :=
-    let offset := 2 * (i % 32)
+    let offset := 2 * (i % bivariatePointCount)
     (points.getD (offset % points.size) 0, points.getD ((offset + 1) % points.size) 0)
   let fastTerms := koalaBearFastArray terms
   let fastPoints := koalaBearFastArray points
   let fastP := buildCBivariate fastTerms
   let fastEvalPoint (i : Nat) : KoalaBear.Fast.Field × KoalaBear.Fast.Field :=
-    let offset := 2 * (i % 32)
+    let offset := 2 * (i % bivariatePointCount)
     (fastPoints.getD (offset % fastPoints.size) 0,
       fastPoints.getD ((offset + 1) % fastPoints.size) 0)
   let warmup := warmupIterations preset
@@ -112,10 +116,7 @@ private def runKoalaBearBivariate (preset : BenchPreset) (gen : StdGen) :
   let fastMeasured := preset.selectNat 14000 2000 400
   let fastHornerYxMeasured := preset.selectNat 35000 5000 1000
   let fastHornerXyMeasured := preset.selectNat 1680000 240000 48000
-  let checksumIterations := groupChecksumIterations measured [
-    hornerYxMeasured, hornerXyMeasured, fastMeasured, fastHornerYxMeasured,
-    fastHornerXyMeasured
-  ]
+  let checksumIterations := digestPeriod bivariatePointCount
   let naive ← runTimedSpec
     { name := "bivariate-full-eval-naive", representation := "CBivariate", method := "evalEval",
       field := "KoalaBear.Field", inputShape := bivariateInputShape,

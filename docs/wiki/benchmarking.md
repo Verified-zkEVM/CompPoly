@@ -68,9 +68,10 @@ them is the main way benchmark numbers go wrong.
 
 The **validation pass** is untimed. It folds a strong `Nat` digest over the full
 result, and it is what the cross-implementation agreement check compares. This is
-why a wrong-but-fast implementation cannot be benchmarked here. It is capped at
-`validationIterationCap` iterations and counts towards warmup, since it has
-already executed the body.
+why a wrong-but-fast implementation cannot be benchmarked here. It runs for the
+period of the body in its iteration index (`digestPeriod`, capped at
+`digestIterationCap`), and counts towards warmup, since it has already executed
+the body.
 
 The **timed pass** folds each result through `sink : α → UInt64`. A sink exists
 only to keep the result live so the body cannot be optimised away; its value is

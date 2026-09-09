@@ -119,7 +119,7 @@ private def runAdditiveNttCase (ℓ R_rate : Nat) (h_ℓ_add_R_rate : ℓ + R_ra
     fun i ↦ ConcreteBinaryTower.fromNat (k := 3) (values.getD i.val 0)
   let fieldLabel := s!"ConcreteBTField 0 -> BTF3, l={ℓ}, R_rate={R_rate}"
   let inputShape := s!"{inputSize} input coeffs, {outputSize} output evals"
-  let checksumIterations := groupChecksumIterations measured [fastMeasured]
+  let checksumIterations := digestPeriod 1
   let currentRecord ← runTimedSpec
     { name := currentName, representation := "computableAdditiveNTT",
       method := "computableAdditiveNTT", field := fieldLabel, inputShape := inputShape,
@@ -152,7 +152,7 @@ private def runAdditiveNttFastLargeCase (k ℓ R_rate : Nat)
   let fastRecord ← runTimedSpec
     { name := fastName, representation := "computableAdditiveNTTFast",
       method := "computableAdditiveNTTFast", field := fieldLabel, inputShape := inputShape,
-      digestIterations := min validationIterationCap measured }
+      digestIterations := digestPeriod 1 }
     preset warmup measured (fun _ ↦ runConcreteBtfNttFast k ℓ R_rate h_ℓ_add_R_rate input)
     (checksumConcreteBtfOutputArray (k := k) (n := ℓ + R_rate)) (sink := sinkConcreteBtfOutputArray)
   pure ({

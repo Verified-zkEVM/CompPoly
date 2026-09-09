@@ -56,6 +56,13 @@ independent: an eliminated canary body collapses onto the floor whatever the
 hardware. -/
 def canaryFloorRatio : Nat := 3
 
+/-- Digest length for the self-check benchmarks.
+
+Both bodies are unbounded in the iteration index, so they have no period. Their
+digests are not correctness oracles — nothing is cross-checked against them — so
+the length only has to be fixed. -/
+private def harnessDigestIterations : Nat := 16
+
 /-- Measured iterations for the self-check benchmarks. -/
 private def harnessMeasuredIterations (preset : BenchPreset) : Nat :=
   preset.selectNat 2000000 500000 100000
@@ -67,13 +74,13 @@ private def runHarnessSelfCheck (preset : BenchPreset) (selection : BenchSelecti
   let warmup := measured / 10
   let floorRecord ← runTimedSpec
     { name := "harness-floor", representation := "UInt64", method := "empty body", field := "none",
-      inputShape := "no input", digestIterations := min validationIterationCap measured,
+      inputShape := "no input", digestIterations := harnessDigestIterations,
       forceTiming := true }
     preset warmup measured (fun i ↦ i.toUInt64) (fun x ↦ x.toNat) (sink := u64Sink)
   let canaryRecord ← runTimedSpec
     { name := "harness-canary", representation := "UInt64",
       method := s!"{canaryRounds} mixing rounds", field := "none", inputShape := "no input",
-      digestIterations := min validationIterationCap measured, forceTiming := true }
+      digestIterations := harnessDigestIterations, forceTiming := true }
     preset warmup measured (fun i ↦ canaryWork i.toUInt64) (fun x ↦ x.toNat) (sink := u64Sink)
   if canaryRecord.totalNanos < canaryFloorRatio * floorRecord.totalNanos then
     throw <| IO.userError <|

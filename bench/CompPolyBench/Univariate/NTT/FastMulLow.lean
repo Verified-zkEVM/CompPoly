@@ -56,10 +56,7 @@ private def runKoalaBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGe
   let fastConvolutionMeasured := preset.selectNat 70 10 2
   let fastNttMeasured := preset.selectNat 420 60 12
   let fastNttFastMeasured := preset.selectNat 1960 280 56
-  let checksumIterations := groupChecksumIterations measured [
-    convolutionMeasured, nttMeasured, nttFastMeasured, fastMeasured, fastConvolutionMeasured,
-    fastNttMeasured, fastNttFastMeasured
-  ]
+  let checksumIterations := digestPeriod 1
   let lowNaive ← runTimedSpec
     { name := "univariate-mul-low-naive", representation := "CPolynomial.Raw",
       method := "MulLowContext.naive", field := "KoalaBear.Field",

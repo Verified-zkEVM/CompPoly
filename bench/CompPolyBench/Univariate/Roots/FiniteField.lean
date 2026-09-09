@@ -79,9 +79,7 @@ private def runKoalaBearFiniteFieldRoots (preset : BenchPreset) (gen : StdGen) :
   let fastMeasured := preset.selectNat 60 9 2
   let fastNttMeasured := preset.selectNat 120 17 3
   let fastNttFastMeasured := preset.selectNat 400 60 12
-  let checksumIterations := groupChecksumIterations measured [
-    nttMeasured, nttFastMeasured, fastMeasured, fastNttMeasured, fastNttFastMeasured
-  ]
+  let checksumIterations := digestPeriod 1
   let row <- runTimedSpec
     { name := "univariate-roots-finite-field-naive", representation := "CPolynomial",
       method := "smooth cyclic, canonical", field := "KoalaBear.Field",

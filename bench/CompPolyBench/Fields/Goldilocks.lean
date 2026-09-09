@@ -35,7 +35,7 @@ private def runGoldilocksMul (preset : BenchPreset) (gen : StdGen) :
   let warmup := warmupIterations preset
   let zmodMeasured := preset.selectNat 200000 30000 6000
   let fastMeasured := preset.selectNat 200000 30000 6000
-  let checksumIterations := groupChecksumIterations zmodMeasured [fastMeasured]
+  let checksumIterations := digestPeriod values.size
   let zmodRecord ← runTimedSpec
     { name := "goldilocks-mul-zmod", representation := "ZMod", method := "mul",
       field := "Goldilocks.Field", inputShape := goldilocksShape,
@@ -62,7 +62,7 @@ private def runGoldilocksInv (preset : BenchPreset) (gen : StdGen) :
   let warmup := warmupIterations preset
   let zmodMeasured := preset.selectNat 20000 3000 600
   let fastMeasured := preset.selectNat 24000 3600 720
-  let checksumIterations := groupChecksumIterations zmodMeasured [fastMeasured]
+  let checksumIterations := digestPeriod values.size
   let zmodRecord ← runTimedSpec
     { name := "goldilocks-inv-zmod", representation := "ZMod", method := "inv",
       field := "Goldilocks.Field", inputShape := goldilocksShape,

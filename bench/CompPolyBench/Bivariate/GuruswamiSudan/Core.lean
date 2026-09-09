@@ -44,12 +44,7 @@ def runGsCoreSmallKoala (preset : BenchPreset) (gen : StdGen) :
   let fastAlekDenseMeasured := fastDenseMeasured
   let fastAlekLeeDirectMeasured := fastLeeDirectMeasured
   let fastAlekLeeSubproductMeasured := fastLeeSubproductMeasured
-  let checksumIterations := groupChecksumIterations denseMeasured [
-    leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
-    fastLeeDirectMeasured, fastLeeSubproductMeasured, alekDenseMeasured,
-    alekLeeDirectMeasured, alekLeeSubproductMeasured, fastAlekDenseMeasured,
-    fastAlekLeeDirectMeasured, fastAlekLeeSubproductMeasured
-  ]
+  let checksumIterations := digestPeriod 1
   let denseRow <- runTimedSpec
     { name := "guruswami-sudan-core-dense-small", representation := "CBivariate",
       method := "Dense linear + RR roots", field := "KoalaBear.Field",
@@ -190,12 +185,7 @@ def runGsFilteredCoreSmallKoala (preset : BenchPreset) (gen : StdGen) :
   let fastAlekDenseMeasured := fastDenseMeasured
   let fastAlekLeeDirectMeasured := fastLeeDirectMeasured
   let fastAlekLeeSubproductMeasured := fastLeeSubproductMeasured
-  let checksumIterations := groupChecksumIterations denseMeasured [
-    leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
-    fastLeeDirectMeasured, fastLeeSubproductMeasured, alekDenseMeasured,
-    alekLeeDirectMeasured, alekLeeSubproductMeasured, fastAlekDenseMeasured,
-    fastAlekLeeDirectMeasured, fastAlekLeeSubproductMeasured
-  ]
+  let checksumIterations := digestPeriod 1
   let denseRow <- runTimedSpec
     { name := "guruswami-sudan-filtered-core-dense-small", representation := "CBivariate",
       method := "Dense linear + RR roots + filter", field := "KoalaBear.Field",

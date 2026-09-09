@@ -618,17 +618,23 @@ that its fast counterpart does not. -/
 @[inline] def sinkZMod {modulus : Nat} (x : ZMod modulus) : UInt64 :=
   natSink (ZMod.val x)
 
-/-- Ceiling on validation-pass iterations.
+/-- Ceiling on digest-pass iterations.
 
-The validation pass re-runs the benchmark body, so leaving it equal to the
-measured iteration count made correctness checking cost as much as measurement.
-The cap is above every benchmark's operand-pool size, so the oracle still sees
-every input it did before. -/
-def validationIterationCap : Nat := 256
+The digest pass re-runs the benchmark body, so leaving it equal to the measured
+iteration count made correctness checking cost as much as measurement. The cap is
+at or above every benchmark's operand-pool size, so the oracle still sees every
+input it did before. -/
+def digestIterationCap : Nat := 256
 
-/-- Compute the checksum iteration count shared by a benchmark group. -/
-def groupChecksumIterations (first : Nat) (rest : List Nat) : Nat :=
-  min validationIterationCap (rest.foldl Nat.min first)
+/-- Digest iterations for a body whose result cycles with period `period`.
+
+The period is a property of the benchmark body, never of the preset or the
+machine: a digest derived from an iteration count is not comparable across runs,
+and once those counts come from a wall-clock budget it would differ between
+machines too, which makes committed digest fixtures impossible rather than merely
+awkward. Truncating to the period is not a weaker check — iterations past one full
+cycle recompute a bit-identical result. -/
+def digestPeriod (period : Nat) : Nat := max 1 (min digestIterationCap period)
 
 /-- Everything about one benchmark row except its body, its digest, and its sink.
 
@@ -651,7 +657,7 @@ structure BenchSpec where
   inputShape : String
   /-- Iterations of the untimed digest pass.
 
-  Must not depend on the preset: see the note on `validationIterationCap`. -/
+  Must be the body's period in `i`, never preset-shaped: see `digestPeriod`. -/
   digestIterations : Nat
   /-- Opt out of the `--validate-only` short circuit, for the harness
   self-check, which has to be measured even when nothing else is. -/
@@ -715,7 +721,7 @@ migration of 228 call sites is a commit that provably changes nothing: it moves
 arguments into a record and touches no behaviour. -/
 @[specialize] def runTimed (name representation method field inputShape : String)
     (preset : BenchPreset) (warmup measured : Nat) (run : Nat → α) (checksum : α → Nat)
-    (checksumIterations : Nat := min validationIterationCap measured)
+    (checksumIterations : Nat := min digestIterationCap measured)
     (sink : α → UInt64 := fun x ↦ natSink (checksum x))
     (forceTiming : Bool := false) : IO BenchRecord :=
   runTimedSpec

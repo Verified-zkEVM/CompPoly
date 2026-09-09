@@ -56,9 +56,7 @@ private def runKoalaBearManyEvalOnePoint (preset : BenchPreset) (gen : StdGen) :
   let sharedPowersMeasured := preset.selectNat 110 15 3
   let fastHornerMeasured := preset.selectNat 1200 170 35
   let fastSharedPowersMeasured := preset.selectNat 2100 300 60
-  let checksumIterations := groupChecksumIterations hornerMeasured [
-    sharedPowersMeasured, fastHornerMeasured, fastSharedPowersMeasured
-  ]
+  let checksumIterations := digestPeriod 1
   let horner ← runTimedSpec
     { name := "univariate-many-one-point-horner", representation := "Array CPolynomial",
       method := "evalManyHorner", field := "KoalaBear.Field", inputShape := manyEvalOnePointShape,

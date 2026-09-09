@@ -76,10 +76,9 @@ private def runFactorZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
   let q := buildCBivariate qTerms
   let f := buildCPolynomial fTerms
   let warmup := warmupIterations preset
-  let measured := measuredIterations preset
   let hornerMeasured := preset.selectNat largeHorner mediumHorner smallHorner
   let monicMeasured := preset.selectNat largeMonic mediumMonic smallMonic
-  let checksumIterations := groupChecksumIterations measured [hornerMeasured, monicMeasured]
+  let checksumIterations := digestPeriod perturb.size
   let shape := factorInputShape terms
   let fAt (i : Nat) : CPolynomial (ZMod modulus) :=
     f + CPolynomial.C (perturb.getD (i % perturb.size) 0)
@@ -113,10 +112,9 @@ private def runFactorKoalaBear (key yLabel : String) (terms : Nat)
   let q := buildCBivariate qTerms
   let f := buildCPolynomial fTerms
   let warmup := warmupIterations preset
-  let measured := measuredIterations preset
   let hornerMeasured := preset.selectNat largeHorner mediumHorner smallHorner
   let monicMeasured := preset.selectNat largeMonic mediumMonic smallMonic
-  let checksumIterations := groupChecksumIterations measured [hornerMeasured, monicMeasured]
+  let checksumIterations := digestPeriod perturb.size
   let shape := factorInputShape terms
   let fAt (i : Nat) : CPolynomial KoalaBear.Field :=
     f + CPolynomial.C (perturb.getD (i % perturb.size) 0)

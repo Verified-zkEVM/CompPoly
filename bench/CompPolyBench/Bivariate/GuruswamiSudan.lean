@@ -33,7 +33,7 @@ private def runGsInterpolationSystemKoala (preset : BenchPreset) (gen : StdGen) 
   let warmup := gsWarmupIterations preset
   let measured := preset.selectNat 3 1 1
   let fastMeasured := preset.selectNat 10 2 1
-  let checksumIterations := groupChecksumIterations measured [fastMeasured]
+  let checksumIterations := digestPeriod 1
   let row <- runTimedSpec
     { name := "guruswami-sudan-interp-system", representation := "DenseMatrix",
       method := "Interpolation system construction", field := "KoalaBear.Field",
@@ -66,8 +66,7 @@ private def runGsInterpolationSolveKoala (preset : BenchPreset) (gen : StdGen) :
   let fastMeasured := preset.selectNat 2 1 1
   let inPlaceMeasured := preset.selectNat 8 2 1
   let fastInPlaceMeasured := preset.selectNat 16 3 1
-  let checksumIterations := groupChecksumIterations measured
-    [fastMeasured, inPlaceMeasured, fastInPlaceMeasured]
+  let checksumIterations := digestPeriod 1
   let row <- runTimedSpec
     { name := "guruswami-sudan-interp-solve-copying", representation := "DenseMatrix",
       method := "Homogeneous interpolation solve, copying", field := "KoalaBear.Field",
@@ -116,12 +115,7 @@ private def runGsInterpolationSmallKoala (preset : BenchPreset) (gen : StdGen) :
   let hybridMeasured := preset.selectNat 90 13 3
   let fastApproximantMeasured := preset.selectNat 300 45 10
   let fastHybridMeasured := preset.selectNat 400 60 10
-  let checksumIterations := groupChecksumIterations denseMeasured [
-    leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
-    fastLeeDirectMeasured, fastLeeSubproductMeasured,
-    approximantMeasured, hybridMeasured,
-    fastApproximantMeasured, fastHybridMeasured
-  ]
+  let checksumIterations := digestPeriod 1
   let denseRow <- runTimedSpec
     { name := "guruswami-sudan-interp-dense-small", representation := "CBivariate",
       method := "Dense linear", field := "KoalaBear.Field", inputShape := gsSmallInterpInputShape,
@@ -224,10 +218,7 @@ private def runGsRootKoala (preset : BenchPreset) (gen : StdGen) :
   let alekhnovichNttFastMeasured := preset.selectNat 10 2 1
   let alekhnovichFastMeasured := preset.selectNat 30 5 1
   let alekhnovichFastNttFastMeasured := preset.selectNat 30 5 1
-  let checksumIterations := groupChecksumIterations measured [
-    nttFastMeasured, fastMeasured, fastNttFastMeasured, alekhnovichMeasured,
-    alekhnovichNttFastMeasured, alekhnovichFastMeasured, alekhnovichFastNttFastMeasured
-  ]
+  let checksumIterations := digestPeriod 1
   let row <- runTimedSpec
     { name := "guruswami-sudan-root-roth", representation := "CBivariate",
       method := "Roth-Ruckenstein root finding with nonlinear field-root equations",
@@ -308,7 +299,9 @@ private def runGsPackedFilterKoala (preset : BenchPreset) (gen : StdGen) :
   let points := codewordPoints message
   let fastPoints := codewordPoints fastMessage
   let radius : Nat := 0
-  let candidateCount := preset.selectNat 128 64 32
+  -- An input shape, not a budget: varying it by preset made this group's digest
+  -- preset-dependent no matter how the digest length was chosen.
+  let candidateCount : Nat := 128
   let inputShape := s!"n={gsPointCount},k={gsMessageDegree},cand={candidateCount},r={radius}"
   let candidates : Array (CPolynomial KoalaBear.Field) :=
     (List.range candidateCount).map (fun i ↦
@@ -319,7 +312,7 @@ private def runGsPackedFilterKoala (preset : BenchPreset) (gen : StdGen) :
   let warmup := gsWarmupIterations preset
   let measured := preset.selectNat 20 3 1
   let fastMeasured := preset.selectNat 200 30 5
-  let checksumIterations := groupChecksumIterations measured [fastMeasured]
+  let checksumIterations := digestPeriod 1
   let row <- runTimedSpec
     { name := "guruswami-sudan-packed-filter", representation := "CPolynomial",
       method := "Packed distance filtering", field := "KoalaBear.Field", inputShape := inputShape,

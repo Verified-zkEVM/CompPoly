@@ -66,7 +66,7 @@ private def runDenseMultivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
   let measured := measuredIterations preset
   let hornerMeasured :=
     preset.selectNat largeHornerMeasured mediumHornerMeasured smallHornerMeasured
-  let checksumIterations := groupChecksumIterations measured [hornerMeasured]
+  let checksumIterations := digestPeriod multivariatePointCount
   let denseEval ← runTimedSpec
     { name := ("multivariate-dense-eval-" ++ nameSuffix), representation := "CMvPolynomial",
       method := "eval", field := fieldName, inputShape := multivariateDenseShape,
@@ -101,7 +101,7 @@ private def runSparseMultivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
   let measured := measuredIterations preset
   let hornerMeasured :=
     preset.selectNat largeHornerMeasured mediumHornerMeasured smallHornerMeasured
-  let checksumIterations := groupChecksumIterations measured [hornerMeasured]
+  let checksumIterations := digestPeriod multivariatePointCount
   let sparseEval ← runTimedSpec
     { name := ("multivariate-sparse-eval-" ++ nameSuffix), representation := "CMvPolynomial",
       method := "eval", field := fieldName, inputShape := multivariateSparseShape,
@@ -139,9 +139,7 @@ private def runKoalaBearMultivariateDense (preset : BenchPreset) (gen : StdGen) 
   let hornerMeasured := preset.selectNat 10000 1500 300
   let fastMeasured := preset.selectNat 14000 2000 400
   let fastHornerMeasured := preset.selectNat 31500 4500 900
-  let checksumIterations := groupChecksumIterations measured [
-    hornerMeasured, fastMeasured, fastHornerMeasured
-  ]
+  let checksumIterations := digestPeriod multivariatePointCount
   let denseEval ← runTimedSpec
     { name := "multivariate-dense-eval", representation := "CMvPolynomial", method := "eval",
       field := "KoalaBear.Field", inputShape := multivariateDenseShape,
@@ -196,9 +194,7 @@ private def runKoalaBearMultivariateSparse (preset : BenchPreset) (gen : StdGen)
   let hornerMeasured := preset.selectNat 10000 1500 300
   let fastMeasured := preset.selectNat 14000 2000 400
   let fastHornerMeasured := preset.selectNat 31500 4500 900
-  let checksumIterations := groupChecksumIterations measured [
-    hornerMeasured, fastMeasured, fastHornerMeasured
-  ]
+  let checksumIterations := digestPeriod multivariatePointCount
   let sparseEval ← runTimedSpec
     { name := "multivariate-sparse-eval", representation := "CMvPolynomial", method := "eval",
       field := "KoalaBear.Field", inputShape := multivariateSparseShape,

@@ -39,7 +39,7 @@ private def runScalarInv (modulus : Nat) [Mont64x8Field modulus] [GcdData modulu
   let zmodMeasured := zmodBudget preset
   let gcdMeasured := gcdBudget preset
   let fermatMeasured := fermatBudget preset
-  let checksumIterations := groupChecksumIterations zmodMeasured [gcdMeasured, fermatMeasured]
+  let checksumIterations := digestPeriod values.size
   let zmodRecord ← runTimedSpec
     { name := "scalar-inv-xgcd", representation := "ZMod", method := "inv (xgcd)",
       field := fieldName, inputShape := scalarInvShape, digestIterations := checksumIterations }

@@ -91,13 +91,7 @@ private def runKoalaBearUnivariateBatchSmall (preset : BenchPreset) (gen : StdGe
   let fastReversalConvolutionMeasured := preset.selectNat 280 40 8
   let fastReversalNttMeasured := preset.selectNat 420 60 12
   let fastReversalNttFastMeasured := preset.selectNat 1750 250 50
-  let checksumIterations := groupChecksumIterations measured [
-    sumMeasured, hornerMeasured, remainderMeasured, nttMeasured, nttFastMeasured,
-    reversalConvolutionMeasured, reversalNttMeasured, reversalNttFastMeasured,
-    fastSumMeasured, fastHornerMeasured, fastMeasured, fastRemainderMeasured,
-    fastNttMeasured, fastNttFastMeasured, fastReversalConvolutionMeasured,
-    fastReversalNttMeasured, fastReversalNttFastMeasured
-  ]
+  let checksumIterations := digestPeriod 1
   let smallBatchSum ← runTimedSpec
     { name := "univariate-batch-naive-sum", representation := "CPolynomial", method := "evalBatch",
       field := "KoalaBear.Field", inputShape := univariateBatchShape,
@@ -316,11 +310,7 @@ private def runKoalaBearUnivariateBatchMedium (preset : BenchPreset) (gen : StdG
   let fastNttFastMeasured := preset.selectNat 28 4 1
   let fastReversalNttMeasured := preset.selectNat 210 30 6
   let fastReversalNttFastMeasured := preset.selectNat 910 130 26
-  let checksumIterations := groupChecksumIterations measured [
-    hornerMeasured, reversalNttMeasured, reversalNttFastMeasured, fastMeasured,
-    fastHornerMeasured, fastRemainderMeasured, fastNttMeasured, fastNttFastMeasured,
-    fastReversalNttMeasured, fastReversalNttFastMeasured
-  ]
+  let checksumIterations := digestPeriod 1
   let mediumBatchSum ← runTimedSpec
     { name := "univariate-batch-medium-naive-sum", representation := "CPolynomial",
       method := "evalBatch", field := "KoalaBear.Field", inputShape := mediumUnivariateBatchShape,
@@ -495,10 +485,7 @@ private def runKoalaBearUnivariateBatchLarge (preset : BenchPreset) (gen : StdGe
   let fastMeasured := preset.selectNat 70 10 2
   let fastReversalNttMeasured := preset.selectNat 63 9 2
   let fastReversalNttFastMeasured := preset.selectNat 420 60 12
-  let checksumIterations := groupChecksumIterations measured [
-    reversalNttMeasured, reversalNttFastMeasured, fastMeasured, fastReversalNttMeasured,
-    fastReversalNttFastMeasured
-  ]
+  let checksumIterations := digestPeriod 1
   let largeBatchHorner ← runTimedSpec
     { name := "univariate-batch-large-naive-horner", representation := "CPolynomial",
       method := "evalBatchHorner", field := "KoalaBear.Field",

@@ -68,10 +68,7 @@ private def runUnivariateMulWithFast {F G : Type}
   let fastNttMeasured := budgets.fastNtt preset
   let fastNttFastMeasured := budgets.fastNttFast preset
   let fastNttFastPlanMeasured := budgets.fastNttFastPlan preset
-  let checksumIterations := groupChecksumIterations measured [
-    nttMeasured, nttFastMeasured, nttFastPlanMeasured, fastMeasured, fastNttMeasured,
-    fastNttFastMeasured, fastNttFastPlanMeasured
-  ]
+  let checksumIterations := digestPeriod 1
   let canonicalNaive ← runTimedSpec
     { name := "univariate-mul-naive", representation := "CPolynomial", method := "mul",
       field := canonicalField.id, inputShape := univariateMulShape,

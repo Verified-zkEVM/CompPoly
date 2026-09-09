@@ -35,7 +35,7 @@ private def runDenseUnivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
   let measured := measuredIterations preset
   let hornerMeasured :=
     preset.selectNat largeHornerMeasured mediumHornerMeasured smallHornerMeasured
-  let checksumIterations := groupChecksumIterations measured [hornerMeasured]
+  let checksumIterations := digestPeriod points.size
   let sumRecord ← runTimedSpec
     { name := ("univariate-dense-sum-" ++ nameSuffix), representation := "CPolynomial",
       method := "eval sum-of-powers", field := fieldName,
@@ -77,9 +77,7 @@ private def runDenseUnivariateWithFast {F G : Type}
   let hornerMeasured := hornerBudget preset
   let fastMeasured := fastBudget preset
   let fastHornerMeasured := fastHornerBudget preset
-  let checksumIterations := groupChecksumIterations measured [
-    hornerMeasured, fastMeasured, fastHornerMeasured
-  ]
+  let checksumIterations := digestPeriod points.size
   let denseSum ← runTimedSpec
     { name := "univariate-dense-sum", representation := "CPolynomial",
       method := "eval sum-of-powers", field := canonicalFieldName,
@@ -145,9 +143,7 @@ private def runKoalaBearUnivariateSparse (preset : BenchPreset) (gen : StdGen) :
   let hornerMeasured := preset.selectNat 50000 7000 1500
   let fastMeasured := preset.selectNat 63000 9000 1800
   let fastHornerMeasured := preset.selectNat 490000 70000 14000
-  let checksumIterations := groupChecksumIterations measured [
-    hornerMeasured, fastMeasured, fastHornerMeasured
-  ]
+  let checksumIterations := digestPeriod points.size
   let sparseSum ← runTimedSpec
     { name := "univariate-sparse-sum", representation := "CPolynomial",
       method := "eval sum-of-powers", field := "KoalaBear.Field",
@@ -231,11 +227,7 @@ private def runKoalaBearUnivariateMonicRemainderSmall (preset : BenchPreset) (ge
   let fastReversalConvolutionMeasured := preset.selectNat 1400 200 40
   let fastReversalNttMeasured := preset.selectNat 2100 300 60
   let fastReversalNttFastMeasured := preset.selectNat 11200 1600 320
-  let checksumIterations := groupChecksumIterations measured [
-    remainderMeasured, reversalConvolutionMeasured, reversalNttMeasured, reversalNttFastMeasured,
-    fastMeasured, fastRemainderMeasured, fastReversalConvolutionMeasured,
-    fastReversalNttMeasured, fastReversalNttFastMeasured
-  ]
+  let checksumIterations := digestPeriod 1
   let smallModNaive ← runTimedSpec
     { name := "univariate-mod-by-monic-naive", representation := "CPolynomial",
       method := "modByMonic", field := "KoalaBear.Field", inputShape := univariateModShape,
@@ -362,10 +354,7 @@ private def runKoalaBearUnivariateMonicRemainderMedium (preset : BenchPreset) (g
   let fastMeasured := preset.selectNat 14 2 1
   let fastReversalNttMeasured := preset.selectNat 840 120 24
   let fastReversalNttFastMeasured := preset.selectNat 9800 1400 280
-  let checksumIterations := groupChecksumIterations measured [
-    remainderMeasured, reversalNttMeasured, reversalNttFastMeasured, fastRemainderMeasured,
-    fastMeasured, fastReversalNttMeasured, fastReversalNttFastMeasured
-  ]
+  let checksumIterations := digestPeriod 1
   let mediumModRemainder ← runTimedSpec
     { name := "univariate-mod-by-monic-medium-remainder-only", representation := "CPolynomial",
       method := "modByMonicRemainderOnly", field := "KoalaBear.Field",

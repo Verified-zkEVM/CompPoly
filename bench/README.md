@@ -56,8 +56,8 @@ bench/out/report-YYMMDD-HHMMSS.md
 
 By default, a run writes both files. A checksum mismatch is reported in the
 Markdown report and makes the executable exit nonzero after writing artifacts.
-Within each group, checksums are computed over the shared prefix of iterations
-run by every implementation in that group, capped at `validationIterationCap`.
+Within each group, checksums are computed over the group's `digestPeriod` — the
+period of its bodies in the iteration index, capped at `digestIterationCap`.
 
 ## What Is Measured
 
@@ -99,9 +99,9 @@ univariate-dense-bls12-381    univariate-dense-bls12-377
 `runTimed` does two passes over each benchmark body.
 
 The **validation pass** is untimed and folds a strong `Nat` digest
-(`mixChecksum`) over the full result. It is capped at
-`validationIterationCap` iterations — above every benchmark's operand-pool
-size, so the oracle sees every input, without the pass costing as much as the
+(`mixChecksum`) over the full result. It runs for `digestPeriod` iterations —
+the period of the body in its iteration index, capped at `digestIterationCap`,
+so the oracle sees every input without the pass costing as much as the
 measurement it validates. This is what the group agreement check
 compares, and it is the reason a wrong-but-fast implementation cannot be
 benchmarked: a mismatch inside a group exits nonzero.
@@ -176,10 +176,10 @@ inputs do not depend on which other groups ran, or in what order. Concretely:
   a real change in behaviour rather than a change in the input schedule.
 
 Checksums remain a cross-check between the implementations within a group; that
-they are now also stable across runs is what makes them usable as regression
-fixtures. Digests are still preset-dependent, because the validation pass runs
-`min validationIterationCap` of the group's measured iteration count and that
-count varies by preset.
+they are also stable across runs, and across presets, is what makes them usable
+as regression fixtures. The digest length is the period of the group's bodies in
+the iteration index, which is a property of the benchmark rather than of the
+preset or the machine it runs on.
 
 ## The two CI tracks
 

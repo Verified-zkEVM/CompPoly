@@ -50,7 +50,7 @@ def checksumConcreteBt128 (x : ConcreteBTField 7) : Nat :=
   let warmup := warmupIterations preset
   let concreteMeasured := concreteBudget preset
   let fastMeasured := fastBudget preset
-  let checksumIterations := groupChecksumIterations concreteMeasured [fastMeasured]
+  let checksumIterations := digestPeriod values.size
   let concreteRecord ← runTimedSpec
     { name := "tower-bt128", representation := "ConcreteBTField",
       method := (method ++ " (ConcreteBTField)"), field := "GF(2^128)", inputShape := towerShape,

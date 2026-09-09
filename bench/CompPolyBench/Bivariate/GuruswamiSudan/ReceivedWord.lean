@@ -87,10 +87,7 @@ private def runGsInterpolationNonCodewordSmallKoala (preset : BenchPreset)
   let fastDenseMeasured := preset.selectNat 2 1 1
   let fastLeeDirectMeasured := preset.selectNat 80 11 2
   let fastLeeSubproductMeasured := preset.selectNat 70 10 2
-  let checksumIterations := groupChecksumIterations denseMeasured [
-    leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
-    fastLeeDirectMeasured, fastLeeSubproductMeasured
-  ]
+  let checksumIterations := digestPeriod 1
   let denseRow <- runTimedSpec
     { name := "guruswami-sudan-interp-dense-noncodeword-small", representation := "CBivariate",
       method := "Dense linear", field := "KoalaBear.Field",
@@ -171,12 +168,7 @@ private def runGsCoreNonCodewordSmallKoala (preset : BenchPreset)
   let fastAlekDenseMeasured := fastDenseMeasured
   let fastAlekLeeDirectMeasured := fastLeeDirectMeasured
   let fastAlekLeeSubproductMeasured := fastLeeSubproductMeasured
-  let checksumIterations := groupChecksumIterations denseMeasured [
-    leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
-    fastLeeDirectMeasured, fastLeeSubproductMeasured, alekDenseMeasured,
-    alekLeeDirectMeasured, alekLeeSubproductMeasured, fastAlekDenseMeasured,
-    fastAlekLeeDirectMeasured, fastAlekLeeSubproductMeasured
-  ]
+  let checksumIterations := digestPeriod 1
   let denseRow <- runTimedSpec
     { name := "guruswami-sudan-core-dense-noncodeword-small", representation := "CBivariate",
       method := "Dense linear + RR roots", field := "KoalaBear.Field",
@@ -331,12 +323,7 @@ private def runGsFilteredCoreNonCodewordSmallKoala (preset : BenchPreset)
   let fastAlekDenseMeasured := fastDenseMeasured
   let fastAlekLeeDirectMeasured := fastLeeDirectMeasured
   let fastAlekLeeSubproductMeasured := fastLeeSubproductMeasured
-  let checksumIterations := groupChecksumIterations denseMeasured [
-    leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
-    fastLeeDirectMeasured, fastLeeSubproductMeasured, alekDenseMeasured,
-    alekLeeDirectMeasured, alekLeeSubproductMeasured, fastAlekDenseMeasured,
-    fastAlekLeeDirectMeasured, fastAlekLeeSubproductMeasured
-  ]
+  let checksumIterations := digestPeriod 1
   let denseRow <- runTimedSpec
     { name := "guruswami-sudan-filtered-core-dense-noncodeword-small",
       representation := "CBivariate", method := "Dense linear + RR roots + filter",
