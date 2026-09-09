@@ -49,11 +49,17 @@ constant-folded. -/
     | n + 1 => go n (canaryRound acc)
   go canaryRounds x
 
-/-- Least multiple by which the canary must exceed the floor.
+/-- Least multiple by which the canary's per-iteration cost must exceed the floor's.
 
 The check is a ratio rather than an absolute duration so it is machine
 independent: an eliminated canary body collapses onto the floor whatever the
-hardware. -/
+hardware.
+
+It compares **per-iteration medians**, not totals. Totals only separate the two
+rows while they run the same number of iterations; once iteration counts come
+from a wall-clock budget the totals are equalised by construction, and a check
+on them would either throw on every run or, lowered to accommodate that, pass
+vacuously forever — leaving the harness with no dead-code detection at all. -/
 def canaryFloorRatio : Nat := 3
 
 /-- Digest length for the self-check benchmarks.
@@ -82,12 +88,19 @@ private def runHarnessSelfCheck (preset : BenchPreset) (selection : BenchSelecti
       method := s!"{canaryRounds} mixing rounds", field := "none", inputShape := "no input",
       digestIterations := harnessDigestIterations, forceTiming := true }
     preset warmup measured (fun i ↦ canaryWork i.toUInt64) (fun x ↦ x.toNat) (sink := u64Sink)
-  if canaryRecord.totalNanos < canaryFloorRatio * floorRecord.totalNanos then
+  let floorPicos := floorRecord.stats.medianPicos
+  let canaryPicos := canaryRecord.stats.medianPicos
+  if floorPicos == 0 || canaryPicos == 0 then
     throw <| IO.userError <|
-      s!"harness canary collapsed onto the loop floor: canary {canaryRecord.totalNanos}ns " ++
-      s!"vs floor {floorRecord.totalNanos}ns over {measured} iterations " ++
-      s!"(expected at least {canaryFloorRatio}x). Benchmark bodies are being " ++
-      "optimised away, so every measured time in this run is meaningless."
+      s!"harness self-check produced a zero per-iteration median (floor {floorPicos}ps, " ++
+      s!"canary {canaryPicos}ps): the clock could not resolve the loop, so the canary " ++
+      "check below cannot say anything and no timing in this run is trustworthy."
+  if canaryPicos < canaryFloorRatio * floorPicos then
+    throw <| IO.userError <|
+      s!"harness canary collapsed onto the loop floor: canary {canaryPicos}ps per " ++
+      s!"iteration vs floor {floorPicos}ps (expected at least {canaryFloorRatio}x). " ++
+      "Benchmark bodies are being optimised away, so every measured time in this " ++
+      "run is meaningless."
   let mut groups := #[]
   if selection.selects "harness-floor" then
     groups := groups.push
