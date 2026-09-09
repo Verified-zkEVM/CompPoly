@@ -85,7 +85,7 @@ and [`KoalaBear/Ext6.lean`](../../CompPoly/Fields/KoalaBear/Ext6.lean) (`X^6 + X
 characteristic-2 instance, and it uses the *general* `ExtensionParams` path rather than
 `BinomialParams`: over a char-2 field `X^3 - W = X^3 + W`, and the binomial criterion needs
 `d ∣ q - 1`, which fails for `d = 3` and `q = 2^64` (`3 ∤ 2^64 - 1`). So `Ext P` is instantiated
-directly, and `Ext ext3Params` is definitionally `Vector BF64 3`.
+directly, and `Ext ext3Params` has a coefficient vector of type `Vector BF64 3`.
 
 Two things about it are worth knowing when reading the rest of this page:
 
@@ -259,7 +259,9 @@ That is the generated data plus about 200 hand-written lines.
 
 ## Representation And Computability
 
-`Ext P` is `Vector F P.d`: dense, little-endian, length exactly `d`. There is no degree-bound
+`Ext P` retains `P` in a structure with a `Vector F P.d` coefficient field: dense,
+little-endian, length exactly `d`. The inverse maps `Ext.coeffs` and `Ext.ofVector`
+provide explicit access to this representation. There is no degree-bound
 invariant to maintain — the bound is *structural*, a consequence of the length, not a proposition
 carried alongside the data. As a result this subtree is **independent of the `CPolynomial`
 stack**: nothing under `CompPoly/Fields/Extension/` imports `CompPoly/Univariate/`.
