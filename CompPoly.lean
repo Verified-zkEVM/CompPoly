@@ -77,6 +77,8 @@ public import CompPoly.Data.Polynomial.MonomialBasis
 public import CompPoly.Data.Polynomial.Rabin
 public import CompPoly.Data.Polynomial.RabinCertificate
 public import CompPoly.Data.RingTheory.AlgebraTower
+public import CompPoly.Data.RingTheory.AlgebraTower.Basis
+public import CompPoly.Data.RingTheory.AlgebraTower.Coordinates
 public import CompPoly.Data.RingTheory.CanonicalEuclideanDomain
 public import CompPoly.Data.Vector.Basic
 public import CompPoly.Fields.BLS12_377

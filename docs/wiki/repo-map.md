@@ -71,6 +71,10 @@ scripts/              repo utilities and validation helpers
   `CompPoly/LinearAlgebra/`.
 - Moving a reusable support lemma that should not live next to one specific feature:
   start in `CompPoly/Data/` or `CompPoly/ToMathlib/`.
+- Composing chosen finite coordinates along a natural-number-indexed algebra tower:
+  use `CompPoly/Data/RingTheory/AlgebraTower/Coordinates.lean`. Its executable packing and
+  coordinate vectors correspond to the basis in
+  `CompPoly/Data/RingTheory/AlgebraTower/Basis.lean`; successor coordinate counts may vary.
 - Adding regression coverage: start in `tests/` and mirror the source namespace when
   possible.
 - Updating benchmark coverage or reports: start in `bench/`.

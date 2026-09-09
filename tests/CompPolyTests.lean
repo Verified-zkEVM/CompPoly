@@ -25,6 +25,7 @@ public import CompPolyTests.Bivariate.WeightedDegree
 public import CompPolyTests.Data.MvPolynomial.Notation
 public import CompPolyTests.Data.Polynomial.RabinCertificate
 public import CompPolyTests.Data.RingTheory.AlgebraTower
+public import CompPolyTests.Data.RingTheory.AlgebraTower.Coordinates
 public import CompPolyTests.Fields.BLS12_377.Fast
 public import CompPolyTests.Fields.BLS12_381.Fast
 public import CompPolyTests.Fields.BN254.Fast
