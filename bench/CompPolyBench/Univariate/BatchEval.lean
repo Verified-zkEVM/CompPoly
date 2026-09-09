@@ -20,13 +20,6 @@ open CompPoly
 
 namespace CompPolyBench
 
-/-- Benchmark group metadata for `CompPoly.Univariate.BatchEval`. -/
-def univariateBatchEvalGroupInfos : List BenchGroupInfo := [
-  ⟨"univariate-batch-small-koalabear", "Univariate batch evaluation, small (KoalaBear)"⟩,
-  ⟨"univariate-batch-medium-koalabear", "Univariate batch evaluation, medium (KoalaBear)"⟩,
-  ⟨"univariate-batch-large-koalabear", "Univariate batch evaluation, large (KoalaBear)"⟩
-]
-
 /-- Run the small KoalaBear univariate batch-evaluation benchmark group. -/
 private def runKoalaBearUnivariateBatchSmall (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
@@ -502,10 +495,5 @@ def univariateBatchEvalTasks : List BenchTask := [
     ⟨"univariate-batch-large-koalabear", "Univariate batch evaluation, large (KoalaBear)"⟩
     runKoalaBearUnivariateBatchLarge
 ]
-
-/-- Run selected univariate batch-evaluation benchmarks. -/
-def runUnivariateBatchEval (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :
-    IO (Array BenchGroup × StdGen) := do
-  runSelectedTasks univariateBatchEvalTasks preset selection gen
 
 end CompPolyBench
