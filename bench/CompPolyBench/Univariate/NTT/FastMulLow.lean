@@ -19,11 +19,6 @@ open CompPoly
 
 namespace CompPolyBench
 
-/-- Benchmark group metadata for `CompPoly.Univariate.NTT.FastMulLow`. -/
-def univariateNttFastMulLowGroupInfos : List BenchGroupInfo := [
-  ⟨"univariate-low-product-koalabear", "Univariate low product (KoalaBear)"⟩
-]
-
 /-- Benchmark low-product multiplication variants used by remainder and batch-evaluation paths. -/
 private def runKoalaBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
@@ -132,11 +127,5 @@ def univariateNttFastMulLowTasks : List BenchTask := [
     ⟨"univariate-low-product-koalabear", "Univariate low product (KoalaBear)"⟩
     runKoalaBearUnivariateLowProduct
 ]
-
-/-- Run selected low-product multiplication benchmarks. -/
-def runUnivariateNttFastMulLow (preset : BenchPreset) (selection : BenchSelection)
-    (gen : StdGen) :
-    IO (Array BenchGroup × StdGen) := do
-  runSelectedTasks univariateNttFastMulLowTasks preset selection gen
 
 end CompPolyBench
