@@ -57,18 +57,6 @@ def checksumKoalaBearExt5 (x : KoalaBear.Ext5) : Nat :=
 def checksumKoalaBearExt6 (x : KoalaBear.Ext6) : Nat :=
   x.coeffs.toArray.foldl (fun acc z ↦ acc + z.val) 0
 
-/-- Benchmark group metadata for the extension fields. -/
-def extensionGroupInfos : List BenchGroupInfo := [
-  ⟨"fields-extension-koalabear-ext4-mul", "Degree-4 extension multiplication (KoalaBear)"⟩,
-  ⟨"fields-extension-koalabear-ext4-inv", "Degree-4 extension inversion (KoalaBear)"⟩,
-  ⟨"fields-extension-babybear-ext4-mul", "Degree-4 extension multiplication (BabyBear)"⟩,
-  ⟨"fields-extension-babybear-ext4-inv", "Degree-4 extension inversion (BabyBear)"⟩,
-  ⟨"fields-extension-koalabear-ext5-mul", "Degree-5 extension multiplication (KoalaBear)"⟩,
-  ⟨"fields-extension-koalabear-ext5-inv", "Degree-5 extension inversion (KoalaBear)"⟩,
-  ⟨"fields-extension-koalabear-ext6-mul", "Degree-6 extension multiplication (KoalaBear)"⟩,
-  ⟨"fields-extension-koalabear-ext6-inv", "Degree-6 extension inversion (KoalaBear)"⟩
-]
-
 /--
 Time one extension operation over a field-specific sample, packaged as a single-record group.
 
@@ -82,7 +70,7 @@ private def runExtOp {E : Type} (groupKey title name method fieldName shape : St
     (fun i ↦ let (a, b) := sample i; op a b) checksum
   pure ({ groupKey := groupKey, title := title, records := #[record] }, gen)
 
-/-- Build the pairwise operand sampler for an extension over a `ZMod` base field. -/
+/-- Build a pairwise sampler by filling extension coordinates from the supplied values. -/
 private def extSampler {F : Type*} [Ring F] {P : ExtensionParams F}
     (values : Array F) : Nat → Ext P × Ext P :=
   let elem (i : Nat) : Ext P :=

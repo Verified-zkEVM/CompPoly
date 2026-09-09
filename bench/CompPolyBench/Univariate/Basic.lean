@@ -22,21 +22,6 @@ open CompPoly
 
 namespace CompPolyBench
 
-/-- Benchmark group metadata for `CompPoly.Univariate.Basic`. -/
-def univariateBasicGroupInfos : List BenchGroupInfo := [
-  ⟨"univariate-dense-koalabear", "Univariate dense evaluation (KoalaBear)"⟩,
-  ⟨"univariate-sparse-koalabear", "Univariate sparse evaluation (KoalaBear)"⟩,
-  ⟨"univariate-monic-remainder-small-koalabear",
-    "Univariate monic remainder, small (KoalaBear)"⟩,
-  ⟨"univariate-monic-remainder-medium-koalabear",
-    "Univariate monic remainder, medium (KoalaBear)"⟩,
-  ⟨"univariate-dense-goldilocks", "Univariate dense evaluation (Goldilocks)"⟩,
-  ⟨"univariate-dense-bn254", "Univariate dense evaluation (BN254)"⟩,
-  ⟨"univariate-dense-bls12-381", "Univariate dense evaluation (BLS12-381)"⟩,
-  ⟨"univariate-dense-bls12-377", "Univariate dense evaluation (BLS12-377)"⟩,
-  ⟨"univariate-dense-babybear", "Univariate dense evaluation (BabyBear)"⟩
-]
-
 /-- Benchmark dense univariate evaluation over a generic prime `ZMod` field. -/
 private def runDenseUnivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
     (key nameSuffix fieldName fieldTitle : String)
@@ -510,10 +495,5 @@ def univariateBasicTasks : List BenchTask := [
     ⟨"univariate-dense-babybear", "Univariate dense evaluation (BabyBear)"⟩
     runBabyBearUnivariateDense
 ]
-
-/-- Run selected evaluation and public monic-remainder benchmarks. -/
-def runUnivariateBasic (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :
-    IO (Array BenchGroup × StdGen) := do
-  runSelectedTasks univariateBasicTasks preset selection gen
 
 end CompPolyBench

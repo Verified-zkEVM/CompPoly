@@ -53,16 +53,6 @@ private def mlePolysOfFlatArray {R : Type*} [Zero R] (polyCount n : Nat) (values
     polys := polys.push (CMlPolynomialEval.ofArray polyValues n)
   return polys
 
-/-- Benchmark group metadata for `CompPoly.Multilinear.Basic`. -/
-def multilinearGroupInfos : List BenchGroupInfo := [
-  ⟨"multilinear-coeff-koalabear", "Multilinear coefficient-form evaluation (KoalaBear)"⟩,
-  ⟨"multilinear-hypercube-koalabear", "Multilinear hypercube-form evaluation (KoalaBear)"⟩,
-  ⟨manyMleKoalaBearGroupKey, manyMleKoalaBearTitle⟩,
-  ⟨"multilinear-coeff-goldilocks", "Multilinear coefficient-form evaluation (Goldilocks)"⟩,
-  ⟨"multilinear-hypercube-goldilocks",
-    "Multilinear hypercube-form evaluation (Goldilocks)"⟩
-]
-
 /-- Run KoalaBear coefficient-form multilinear evaluation benchmarks. -/
 private def runKoalaBearMultilinearCoeff (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
@@ -289,10 +279,5 @@ def multilinearTasks : List BenchTask := [
       "Multilinear hypercube-form evaluation (Goldilocks)"⟩
     runGoldilocksMultilinearHypercube
 ]
-
-/-- Run selected coefficient-form and hypercube-form multilinear evaluation benchmarks. -/
-def runMultilinear (preset : BenchPreset) (selection : BenchSelection) (gen : StdGen) :
-    IO (Array BenchGroup × StdGen) := do
-  runSelectedTasks multilinearTasks preset selection gen
 
 end CompPolyBench
