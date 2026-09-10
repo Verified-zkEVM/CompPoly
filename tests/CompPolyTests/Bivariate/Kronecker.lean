@@ -14,7 +14,7 @@ public meta import CompPolyTests.Bivariate.KroneckerCommon
   Packing coefficients and round-trip recovery for `kroneckerPack` / `kroneckerUnpack`,
   followed by a runtime check that, on small KoalaBear data, each pipeline (schoolbook,
   classic NTT, recursive NTT) returns the same product as direct multiplication. The full
-  timing comparison lives in `KroneckerBenchmark.lean`.
+  timing comparison lives in the `bivariate-full-*` benchmark groups.
 -/
 
 public meta section

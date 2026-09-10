@@ -30,7 +30,7 @@ gate you can believe and a gate that fails on noise.
 | What | digest pass, group agreement, harness canary | median, dispersion, outlier labels |
 | Where | `lean_action_ci.yml`, **every PR** | `benchmarks.yml`, **on demand** |
 | How | `--validate-only` over `bench/ci-groups.txt` | `--small`/`--medium`/`--large` |
-| Cost | ~34s over the curated set, ~138s over all groups | minutes |
+| Cost | ~29s of CPU over the curated set, ~174s over all groups | minutes |
 | Gates? | **yes**, fails the run | no, advisory |
 
 `--validate-only` runs the untimed digest pass and the agreement check and
@@ -159,26 +159,69 @@ and ext6 groups. Any tool comparing two result files must key on
    for the key and title.
 2. Call `runTimedSpec` with a `BenchSpec` record. There is no iteration count to
    choose — the preset's budget and the calibration ramp size the row.
-3. Set `digestIterations` to the **period of the body in its iteration index**,
+3. Give the row a `workUnits` if it performs its operation more than once —
+   see "Chained bodies" below — and a `digestClass` if the group carries more
+   than one comparison. Every row of a group must agree on `workUnits`, and
+   must agree on a digest *within* each class; either disagreement fails the
+   run.
+4. Set `digestIterations` to the **period of the body in its iteration index**,
    via `digestPeriod`: 1 for a `fun _ ↦ …` body, the pool size for a body that
    cycles one. It must never depend on the preset or on anything the machine
    decides, or the digest stops being comparable across runs and fixtures become
    impossible. Truncating to the period is not a weaker check — iterations past
    one full cycle recompute a bit-identical result.
-4. Make the body depend on `i`, through a value built at run time. A body that
-   is a closed term is evaluated once and cached, and the row then reports its
-   true cost divided by `itersPerSample` — see finding 2 in `BENCHMARKING.md`
-   §12.6 for a group that did this for months.
-5. Give every implementation in the group the same `checksum`, so the agreement
-   check is meaningful.
-6. Supply a `sink` if the default would allocate, and make the group's rows
+5. Make the body depend on `i`, through a value built at run time. There are
+   two ways to lose this and both have happened here. A body that is a *closed
+   term* is evaluated once and cached, and the row then reports its true cost
+   divided by `itersPerSample` — see finding 2 in `BENCHMARKING.md` §12.6, and
+   the plan-construction group, which reported 32 ns for two sizes that differ
+   by 14x. A body that is merely *loop-invariant* can be shared with a value
+   computed outside the loop: the NTT forward group precomputed its spectrum
+   with the same expression the reference row then timed, and that row reported
+   6 ns for a `2^12` transform. Indexing a small pool by `i` closes both.
+6. Give every implementation in a digest class the same `checksum`, so the
+   agreement check is meaningful.
+7. Supply a `sink` if the default would allocate, and make the group's rows
    symmetric under the rule above.
-7. Add the key to `bench/ci-groups.txt` to have it covered by the correctness
+8. Add the key to `bench/ci-groups.txt` to have it covered by the correctness
    gate and by the default selection of the on-demand timing workflow. An
    unknown key fails the run, so a rename is caught rather than dropped.
-8. New modules under `bench/` need no `./scripts/update-lib.sh` run; that script
+9. New modules under `bench/` need no `./scripts/update-lib.sh` run; that script
    globs `CompPoly/*.lean` only, and the lakefile globs `CompPolyBench`
    submodules.
+
+## Chained bodies
+
+A field operation is one or two nanoseconds and the harness floor is about
+1.8 ns, so a body that performs it once per iteration reports the harness. The
+combinators in `bench/CompPolyBench/Harness/Chain.lean` perform it `workUnits` times
+per iteration instead, and the report divides.
+
+Three properties of those combinators are load-bearing, and the obvious
+alternative is measurably wrong in each case:
+
+- **No array.** `Subtype` erases to its payload but `Array` does not inherit
+  that: every element is a `lean_object*`, and `lean_box_uint64` allocates. A
+  one-cycle dependent chain cannot be fed from a pointer array.
+- **No `for` with `let mut`.** `ForIn` threads one state value, so ten mutable
+  locals become a nested `Prod`, which does not erase — nine allocations per
+  round.
+- **The operation is a direct argument of an `@[specialize]` runner**, never a
+  structure field and never a `[Field F]` projection. Through a closure it is
+  an indirect call per operation, which is more than the operation.
+
+Two consequences for a call site. Bind a captured constant to a local before
+building the operation lambda: a projection inside it is lifted into the
+operation and costs a load and an unbox per round. And take `workUnits` from
+`latencyUnits` / `throughputUnitsOf` rather than from the depth you asked for,
+since the chains run whole unrolled blocks and round a bad depth down.
+
+**Read the emitted IR when adding a chain.** `.lake/build/ir/**.c` should show
+the specialised loop taking unboxed scalar parameters with no `lean_alloc_*`
+in the body. `harness-chain-linearity` catches a chain that is not executed at
+all; it does not catch one that is partly folded, and a chain of a
+`GF(2)`-linear operation folds completely — see the note on `chainFloorStep`
+in `bench/CompPolyBench/Harness/SelfCheck.lean`.
 
 ## Known gaps
 
@@ -192,11 +235,18 @@ Recorded so they are not rediscovered. The audit and plan live in
   benchmarks; only build timing gets that treatment.
 - Per-row floor subtraction is not reported, because the floor is
   per-representation rather than global.
-- Coverage gaps against the roadmap: no standalone multiplicative NTT/iNTT group,
-  no base-field microbenchmarks outside Goldilocks, no `add`/`square`/batch-inverse,
-  no Reed-Solomon or polynomial-matrix groups.
-- The polynomial-basis `GF(2^64)` of `CompPoly/Fields/Binary/BF64/` and its cubic
-  extension have no group, so the only binary-field timings are the tower ones.
-  A `mul` group there would measure carry-less multiply plus sparse reduction
-  against the tower's packed-word path, which is the comparison the two
-  representations exist to settle.
+- No polynomial-matrix groups, and no `batchInverse` / `sumOfProducts` /
+  `dot_array` — Plonky3 benchmarks those and CompPoly does not have them yet,
+  so the feature comes before the measurement. No prime-field `square` group
+  either, deliberately: `square` is `mul x x` on every prime carrier here, and
+  Plonky3 has no field-level `square` benchmark for the same reason.
+- The polynomial-basis `GF(2^64)` of `CompPoly/Fields/Binary/BF64/` and its
+  cubic extension have no group, and **cannot have one until a library bug is
+  fixed**. `BF64.instFintype` (`CompPoly/Fields/Binary/BF64/Impl.lean:391`) is
+  a closed constant whose value is a `Finset` of all `2 ^ 64` elements, and
+  Lean evaluates closed constants at module initialisation — so any executable
+  importing that module hangs before `main` runs. Elaboration never notices,
+  because the interpreter forces constants on demand, which is why the tests
+  build. Marking the instance `noncomputable` is not the fix: `Extension.Ext`
+  takes `[Fintype F]` and its operations then stop compiling, so the repair is
+  to `CompPoly/Fields/Extension/` rather than to the instance.

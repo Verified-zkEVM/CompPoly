@@ -74,6 +74,14 @@ structure BenchRecord where
   groupKey : String := ""
   /-- Report title of the group this row belongs to, stamped alongside the key. -/
   groupTitle : String := ""
+  /-- Which rows of the group this one must agree with on a digest.
+
+  A group is a set of rows measured together; it is not always a set of rows
+  computing the *same value*. A field's `mul` and its `add` belong in one table
+  and cannot share a digest. Rows are partitioned by this label and agreement is
+  required within each part, so one group can carry several comparisons. Empty
+  is a class like any other, which is what every pre-existing group uses. -/
+  digestClass : String := ""
   name : String
   representation : String
   method : String
@@ -84,7 +92,18 @@ structure BenchRecord where
   checksumIterations : Nat
   measuredIterations : Nat
   totalNanos : Nat
-  averageNanos : Nat
+  /-- Median per-iteration cost in nanoseconds.
+
+  A median, not a mean; it was called `averageNanos` until the name was found to
+  be describing the wrong statistic. -/
+  medianNanos : Nat
+  /-- Elementary operations one iteration of this body performs.
+
+  A property of the *problem*, not of the implementation: the rows of a group
+  must agree on it, or a per-unit figure would divide away the very difference
+  the group exists to show. One for an ordinary row; the chain length for a
+  chained operation; `(n / 2) * log n` for a transform. -/
+  workUnits : Nat := 1
   checksum : Nat
   sinkDigest : UInt64
   stats : SampleStats
@@ -613,6 +632,18 @@ structure BenchSpec where
 
   Must be the body's period in `i`, never preset-shaped: see `digestPeriod`. -/
   digestIterations : Nat
+  /-- Which rows of the group this row must agree with on a digest.
+
+  Leave empty when every row of the group computes the same value. Set it to
+  separate the comparisons inside a group that carries more than one; see
+  `BenchRecord.digestClass`. -/
+  digestClass : String := ""
+  /-- Elementary operations one iteration of the body performs.
+
+  Left at one for a row that performs its operation once. Set it and the report
+  gains a per-unit column; see `BenchRecord.workUnits` for why every row of a
+  group has to agree on the value. -/
+  workUnits : Nat := 1
   /-- Opt out of the `--validate-only` short circuit, for the harness
   self-check, which has to be measured even when nothing else is. -/
   forceTiming : Bool := false
@@ -673,7 +704,9 @@ against a floor that was never measured.
     checksumIterations := spec.digestIterations
     measuredIterations := sampled.totalIterations
     totalNanos := sampled.totalNanos
-    averageNanos := sampled.stats.medianPicos / 1000
+    medianNanos := sampled.stats.medianPicos / 1000
+    workUnits := spec.workUnits
+    digestClass := spec.digestClass
     checksum := validationChecksum
     sinkDigest := sampled.sink
     stats := sampled.stats
@@ -832,7 +865,9 @@ def BenchRecord.toJsonLine (record : BenchRecord) : String :=
     "\"checksum_iterations\":" ++ toString record.checksumIterations,
     "\"measured_iterations\":" ++ toString record.measuredIterations,
     "\"total_nanos\":" ++ toString record.totalNanos,
-    "\"average_nanos\":" ++ toString record.averageNanos,
+    "\"median_nanos\":" ++ toString record.medianNanos,
+    "\"work_units\":" ++ toString record.workUnits,
+    "\"digest_class\":" ++ jsonString record.digestClass,
     "\"checksum\":" ++ toString record.checksum,
     "\"sink_digest\":" ++ toString record.sinkDigest,
     "\"sample_count\":" ++ toString record.stats.count,
@@ -870,11 +905,11 @@ def padRight (s : String) (width : Nat) : String :=
 def padLeft (s : String) (width : Nat) : String :=
   spaces (width - s.length) ++ s
 
-/-- Drop missing optional lines while preserving present ones. -/
-def keepSome : List (Option String) → List String
+/-- Drop missing optional entries while preserving present ones. -/
+def keepSome {α : Type*} : List (Option α) → List α
   | [] => []
-  | some line :: lines => line :: keepSome lines
-  | none :: lines => keepSome lines
+  | some value :: values => value :: keepSome values
+  | none :: values => keepSome values
 
 /-- Compute the Markdown width required for a result table column. -/
 def columnWidth (records : List BenchRecord)
@@ -913,7 +948,7 @@ def renderMarkdownTable (columns : List (String × Bool × (BenchRecord → Stri
   markdownRow headers widths (columns.map (fun _ ↦ false)) :: markdownRow separator widths
     (columns.map (fun _ ↦ false)) :: rows
 
-/-- Return the shared checksum for a group if all rows have the same checksum. -/
+/-- Return the shared checksum for a list of rows if all of them agree. -/
 def matchingChecksum? (records : List BenchRecord) : Option Nat :=
   match records with
   | [] => none
@@ -924,6 +959,23 @@ def matchingChecksum? (records : List BenchRecord) : Option Nat :=
         some record.checksum
       else
         none
+
+/-- The digest classes present in a group, in first-appearance order. -/
+def digestClasses (records : List BenchRecord) : List String :=
+  records.foldl (init := []) fun seen record ↦
+    if seen.contains record.digestClass then seen else seen ++ [record.digestClass]
+
+/-- The rows of one digest class. -/
+def recordsInClass (records : List BenchRecord) (cls : String) : List BenchRecord :=
+  records.filter fun record ↦ record.digestClass == cls
+
+/-- Whether every digest class in a group agrees internally.
+
+Agreement is required *within* a class, not across the group: a group carrying a
+field's `mul` and its `add` has two classes and two digests, and demanding one
+digest for both would be demanding that multiplication equal addition. -/
+def classesAgree (records : List BenchRecord) : Bool :=
+  (digestClasses records).all fun cls ↦ (matchingChecksum? (recordsInClass records cls)).isSome
 
 /-- Return a shared string field for a group if all rows agree. -/
 def matchingString? (records : List BenchRecord) (field : BenchRecord → String) : Option String :=
@@ -957,15 +1009,31 @@ def renderSharedNatLine (label : String) (records : List BenchRecord)
     (field : BenchRecord → Nat) : Option String :=
   (matchingNat? records field).map fun value ↦ "- " ++ label ++ ": `" ++ toString value ++ "`"
 
-/-- Render a short checksum status line for a benchmark group. -/
-def renderChecksumStatus (records : List BenchRecord) : String :=
-  match matchingChecksum? records with
-  | some checksum => "- Checksum: `" ++ toString checksum ++ "`"
-  | none => "- Checksum: **ERROR: mismatch detected**"
+/-- Render a short checksum status line for a benchmark group.
 
-/-- Return benchmark groups whose rows do not have a shared checksum. -/
+One digest when the group has a single class, and one per class when it has
+several, so a multi-comparison group still shows what agreed with what. -/
+def renderChecksumStatus (records : List BenchRecord) : String :=
+  let render (cls : String) : String :=
+    let label := if cls.isEmpty then "" else cls ++ ": "
+    match matchingChecksum? (recordsInClass records cls) with
+    | some checksum => label ++ "`" ++ toString checksum ++ "`"
+    | none => label ++ "**ERROR: mismatch detected**"
+  "- Checksum: " ++ String.intercalate ", " ((digestClasses records).map render)
+
+/-- Return benchmark groups in which some digest class does not agree. -/
 def checksumMismatchGroups (groups : Array BenchGroup) : List BenchGroup :=
-  groups.toList.filter fun group ↦ (matchingChecksum? group.records.toList).isNone
+  groups.toList.filter fun group ↦ !classesAgree group.records.toList
+
+/-- Return benchmark groups whose rows disagree on `workUnits`.
+
+Rows of one group measure the same problem at the same shape, so a disagreement
+here is a mis-specified group rather than something to render around: the
+per-unit column would otherwise divide each row by a different denominator and
+silently flatten the ratio the group exists to report. -/
+def workUnitsMismatchGroups (groups : Array BenchGroup) : List BenchGroup :=
+  groups.toList.filter fun group ↦
+    (matchingNat? group.records.toList (fun record ↦ record.workUnits)).isNone
 
 /-- Lookup a rendered implementation label by exact benchmark metadata. -/
 def lookupImplementationLabel? : String → List (String × String) → Option String
@@ -1107,6 +1175,23 @@ def renderSpread (record : BenchRecord) : String :=
     let base := if stats.unreplicated then base ++ " (n=" ++ toString stats.count ++ ")" else base
     if stats.severeOutliers > 0 then base ++ " !" ++ toString stats.severeOutliers else base
 
+/-- Per-unit cost column, present only when the group declares work units.
+
+Picoseconds rather than a chosen unit: a per-unit figure is normally
+sub-nanosecond, which is exactly where `chooseTimeUnit` would render it as
+`0.000`. Not emitted into the JSONL — that file carries `work_units` and the
+full statistics, and a consumer dividing for itself does not inherit the
+truncation this column accepts for the sake of a readable table. -/
+def perUnitColumn? (records : List BenchRecord) :
+    Option (String × Bool × (BenchRecord → String)) :=
+  match matchingNat? records (fun record ↦ record.workUnits) with
+  | some units =>
+      if units > 1 then
+        some ("Per unit (ps)", true, fun record ↦ toString (record.stats.medianPicos / units))
+      else
+        none
+  | none => none
+
 /-- Columns rendered in a group result table after shared metadata is lifted out.
 
 Warmup and sample count are columns rather than shared metadata lines because
@@ -1123,7 +1208,8 @@ def groupResultColumns (records : List BenchRecord) (totalUnit avgUnit : TimeUni
     ("Total (" ++ totalUnit.label ++ ")", true, fun r ↦
       formatNanosInUnitOrAuto totalUnit r.totalNanos),
     ("Median (" ++ avgUnit.label ++ ")", true, fun r ↦
-      formatNanosInUnitOrAuto avgUnit r.averageNanos),
+      formatNanosInUnitOrAuto avgUnit r.medianNanos)
+  ] ++ keepSome [perUnitColumn? records] ++ [
     ("Spread", true, renderSpread)
   ]
 
@@ -1145,7 +1231,7 @@ def renderGroupResults (group : BenchGroup) : List String :=
   let records := group.records.toList
   let groupTotal := totalGroupNanos records
   let totalUnit := chooseTimeUnit (groupTotal :: records.map fun r ↦ r.totalNanos)
-  let avgUnit := chooseTimeUnit (records.map fun r ↦ r.averageNanos)
+  let avgUnit := chooseTimeUnit (records.map fun r ↦ r.medianNanos)
   [
     "### " ++ group.title,
     "",
@@ -1216,9 +1302,12 @@ def renderMarkdown (hardware : RunnerHardware) (preset : BenchPreset) (groups : 
 private def validationRow (group : BenchGroup) : String :=
   let records := group.records.toList
   let status :=
-    match matchingChecksum? records with
-    | some checksum => "agree | `" ++ toString checksum ++ "`"
-    | none => "**MISMATCH** | -"
+    if classesAgree records then
+      let digests := (digestClasses records).filterMap fun cls ↦
+        (matchingChecksum? (recordsInClass records cls)).map toString
+      "agree | `" ++ String.intercalate "`, `" digests ++ "`"
+    else
+      "**MISMATCH** | -"
   "| `" ++ group.groupKey ++ "` | " ++ toString group.records.size ++ " | " ++ status ++ " |"
 
 /-- Render the report for a `--validate-only` run.
