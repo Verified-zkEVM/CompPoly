@@ -80,6 +80,25 @@ theorem ext {n : ℕ} [Zero R] (p q : CMvPolynomial n R)
 
 attribute [local grind =] Option.some_inj
 
+section DecidableEq
+
+variable {n : ℕ} [Zero R] [BEq R] [LawfulBEq R]
+
+/-- Decidable equality on `CMvPolynomial n R`, bootstrapped from `LawfulBEq R` so that it is
+available without a separate `[DecidableEq R]` assumption. -/
+instance instDecidableEq : DecidableEq (CMvPolynomial n R) :=
+  letI : DecidableEq R := instDecidableEqOfLawfulBEq
+  CPoly.Lawful.instDecidableEq
+
+/-- `BEq` on `CMvPolynomial n R` via its decidable equality; canonical, so `LawfulBEq` holds. -/
+instance instBEq : BEq (CMvPolynomial n R) := ⟨fun a b => decide (a = b)⟩
+
+instance instLawfulBEq : LawfulBEq (CMvPolynomial n R) where
+  eq_of_beq h := of_decide_eq_true h
+  rfl := decide_eq_true (Eq.refl _)
+
+end DecidableEq
+
 section
 
 variable [BEq R] [LawfulBEq R]
