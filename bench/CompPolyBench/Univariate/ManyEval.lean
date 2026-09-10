@@ -51,37 +51,32 @@ private def runKoalaBearManyEvalOnePoint (preset : BenchPreset) (gen : StdGen) :
   let fastPoints := koalaBearFastArray points
   let fastPolys := cpolysOfFlatArray manyEvalPolyCount manyEvalCoeffSlots fastCoeffs
   let fastX := fastPoints.getD 0 0
-  let warmup := preset.selectNat 1 1 0
-  let hornerMeasured := preset.selectNat 110 15 3
-  let sharedPowersMeasured := preset.selectNat 110 15 3
-  let fastHornerMeasured := preset.selectNat 1200 170 35
-  let fastSharedPowersMeasured := preset.selectNat 2100 300 60
   let checksumIterations := digestPeriod 1
   let horner ← runTimedSpec
     { name := "univariate-many-one-point-horner", representation := "Array CPolynomial",
       method := "evalManyHorner", field := "KoalaBear.Field", inputShape := manyEvalOnePointShape,
       digestIterations := checksumIterations }
-    preset warmup hornerMeasured (fun _ ↦ CPolynomial.evalManyHorner polys x)
+    preset (fun _ ↦ CPolynomial.evalManyHorner polys x)
     (checksumArray checksumKoalaBear)
   let sharedPowers ← runTimedSpec
     { name := "univariate-many-one-point-shared-powers-row-major",
       representation := "Array CPolynomial", method := "evalManySharedPowers",
       field := "KoalaBear.Field", inputShape := manyEvalOnePointShape,
       digestIterations := checksumIterations }
-    preset warmup sharedPowersMeasured (fun _ ↦ CPolynomial.evalManySharedPowers polys x)
+    preset (fun _ ↦ CPolynomial.evalManySharedPowers polys x)
     (checksumArray checksumKoalaBear)
   let fastHorner ← runTimedSpec
     { name := "univariate-many-one-point-horner-fast", representation := "Array CPolynomial",
       method := "evalManyHorner", field := "KoalaBear.Fast.Field",
       inputShape := manyEvalOnePointShape, digestIterations := checksumIterations }
-    preset warmup fastHornerMeasured (fun _ ↦ CPolynomial.evalManyHorner fastPolys fastX)
+    preset (fun _ ↦ CPolynomial.evalManyHorner fastPolys fastX)
     (checksumArray checksumKoalaBearFast)
   let fastSharedPowers ← runTimedSpec
     { name := "univariate-many-one-point-shared-powers-row-major-fast",
       representation := "Array CPolynomial", method := "evalManySharedPowers",
       field := "KoalaBear.Fast.Field", inputShape := manyEvalOnePointShape,
       digestIterations := checksumIterations }
-    preset warmup fastSharedPowersMeasured
+    preset
     (fun _ ↦ CPolynomial.evalManySharedPowers fastPolys fastX) (checksumArray checksumKoalaBearFast)
   pure ({
     groupKey := "univariate-many-one-point-koalabear",

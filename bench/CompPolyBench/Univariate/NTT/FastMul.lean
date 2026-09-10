@@ -25,17 +25,6 @@ private structure BenchField (F : Type*) where
   id : String
   checksum : F → Nat
 
-/-- Per-preset measured iteration budgets for the direct multiplication group. The
-canonical naive row uses the shared `mulMeasuredIterations` budget. -/
-private structure MulBudgets where
-  ntt : BenchPreset → Nat
-  nttFast : BenchPreset → Nat
-  nttFastPlan : BenchPreset → Nat
-  fastNaive : BenchPreset → Nat
-  fastNtt : BenchPreset → Nat
-  fastNttFast : BenchPreset → Nat
-  fastNttFastPlan : BenchPreset → Nat
-
 /-- Benchmark direct univariate multiplication and root-of-unity NTT variants over a
 canonical field and its native-word counterpart. `slug` distinguishes the two
 native-word NTT row names, whose canonical-representation names are already taken. -/
@@ -45,7 +34,7 @@ private def runUnivariateMulWithFast {F G : Type}
     (canonicalField : BenchField F) (fastField : BenchField G)
     (genCoeffs : Nat → StateM StdGen (Array F)) (toFast : Array F → Array G)
     (canonicalDomain : CPolynomial.NTT.Domain F) (fastDomain : CPolynomial.NTT.Domain G)
-    (budgets : MulBudgets) (preset : BenchPreset) (gen : StdGen) :
+    (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (mulLhsCoeffs, gen) := (genCoeffs univariateMulCoeffSlots).run gen
   let (mulRhsCoeffs, gen) := (genCoeffs univariateMulCoeffSlots).run gen
@@ -59,31 +48,22 @@ private def runUnivariateMulWithFast {F G : Type}
   let fastPlan := CPolynomial.NTTFast.Plan.ofDomain fastDomain
   let canonicalChecksum := checksumCPolynomial canonicalField.checksum
   let fastChecksum := checksumCPolynomial fastField.checksum
-  let warmup := mulWarmupIterations preset
-  let measured := mulMeasuredIterations preset
-  let nttMeasured := budgets.ntt preset
-  let nttFastMeasured := budgets.nttFast preset
-  let nttFastPlanMeasured := budgets.nttFastPlan preset
-  let fastMeasured := budgets.fastNaive preset
-  let fastNttMeasured := budgets.fastNtt preset
-  let fastNttFastMeasured := budgets.fastNttFast preset
-  let fastNttFastPlanMeasured := budgets.fastNttFastPlan preset
   let checksumIterations := digestPeriod 1
   let canonicalNaive ← runTimedSpec
     { name := "univariate-mul-naive", representation := "CPolynomial", method := "mul",
       field := canonicalField.id, inputShape := univariateMulShape,
       digestIterations := checksumIterations }
-    preset warmup measured (fun _ ↦ mulLhsPoly * mulRhsPoly) canonicalChecksum
+    preset (fun _ ↦ mulLhsPoly * mulRhsPoly) canonicalChecksum
   let fastNaive ← runTimedSpec
     { name := "univariate-mul-naive-fast", representation := "CPolynomial", method := "mul",
       field := fastField.id, inputShape := univariateMulShape,
       digestIterations := checksumIterations }
-    preset warmup fastMeasured (fun _ ↦ fastMulLhsPoly * fastMulRhsPoly) fastChecksum
+    preset (fun _ ↦ fastMulLhsPoly * fastMulRhsPoly) fastChecksum
   let canonicalNtt ← runTimedSpec
     { name := "univariate-mul-ntt", representation := "CPolynomial",
       method := (univariateMulNttMethod "FastMul.fastMulImpl"), field := canonicalField.id,
       inputShape := univariateMulShape, digestIterations := checksumIterations }
-    preset warmup nttMeasured
+    preset
     (fun _ ↦
       CPolynomial.NTT.FastMul.fastMulImpl canonicalDomain mulLhsPoly mulRhsPoly)
     canonicalChecksum
@@ -91,7 +71,7 @@ private def runUnivariateMulWithFast {F G : Type}
     { name := s!"univariate-mul-ntt-{slug}-fast", representation := "CPolynomial",
       method := (univariateMulNttMethod "FastMul.fastMulImpl"), field := fastField.id,
       inputShape := univariateMulShape, digestIterations := checksumIterations }
-    preset warmup fastNttMeasured
+    preset
     (fun _ ↦ CPolynomial.NTT.FastMul.fastMulImpl fastDomain
       fastMulLhsPoly fastMulRhsPoly)
     fastChecksum
@@ -99,7 +79,7 @@ private def runUnivariateMulWithFast {F G : Type}
     { name := "univariate-mul-ntt-fast", representation := "CPolynomial",
       method := (univariateMulNttMethod "NTTFast.fastMulImpl"), field := canonicalField.id,
       inputShape := univariateMulShape, digestIterations := checksumIterations }
-    preset warmup nttFastMeasured
+    preset
     (fun _ ↦
       CPolynomial.NTTFast.fastMulImpl canonicalDomain mulLhsPoly mulRhsPoly)
     canonicalChecksum
@@ -107,7 +87,7 @@ private def runUnivariateMulWithFast {F G : Type}
     { name := s!"univariate-mul-ntt-fast-{slug}-fast", representation := "CPolynomial",
       method := (univariateMulNttMethod "NTTFast.fastMulImpl"), field := fastField.id,
       inputShape := univariateMulShape, digestIterations := checksumIterations }
-    preset warmup fastNttFastMeasured
+    preset
     (fun _ ↦ CPolynomial.NTTFast.fastMulImpl fastDomain
       fastMulLhsPoly fastMulRhsPoly)
     fastChecksum
@@ -117,7 +97,7 @@ private def runUnivariateMulWithFast {F G : Type}
       "NTTFast.Plan.fastMulImpl, cached twiddles, mixed radix-4 DIF/DIT, dual forward"),
       field := canonicalField.id, inputShape := univariateMulShape,
       digestIterations := checksumIterations }
-    preset warmup nttFastPlanMeasured
+    preset
     (fun _ ↦ CPolynomial.NTTFast.Plan.fastMulImpl canonicalPlan mulLhsPoly mulRhsPoly)
     canonicalChecksum
   let fastNttFastPlan ← runTimedSpec
@@ -126,7 +106,7 @@ private def runUnivariateMulWithFast {F G : Type}
       "NTTFast.Plan.fastMulImpl, cached twiddles, mixed radix-4 DIF/DIT, dual forward"),
       field := fastField.id, inputShape := univariateMulShape,
       digestIterations := checksumIterations }
-    preset warmup fastNttFastPlanMeasured
+    preset
     (fun _ ↦ CPolynomial.NTTFast.Plan.fastMulImpl fastPlan fastMulLhsPoly fastMulRhsPoly)
     fastChecksum
   pure ({
@@ -144,13 +124,6 @@ private def runKoalaBearUnivariateMul (preset : BenchPreset) (gen : StdGen) :
     ⟨"KoalaBear.Field", checksumKoalaBear⟩ ⟨"KoalaBear.Fast.Field", checksumKoalaBearFast⟩
     (fun size ↦ koalaBearArray size false) koalaBearFastArray
     koalaBearMulNttDomain koalaBearFastMulNttDomain
-    { ntt := (·.selectNat 200 30 5)
-      nttFast := (·.selectNat 800 120 25)
-      nttFastPlan := (·.selectNat 850 120 25)
-      fastNaive := (·.selectNat 210 30 6)
-      fastNtt := (·.selectNat 630 90 18)
-      fastNttFast := (·.selectNat 2450 350 70)
-      fastNttFastPlan := (·.selectNat 2450 350 70) }
     preset gen
 
 /-- Benchmark BabyBear direct univariate multiplication and root-of-unity NTT variants. -/
@@ -161,13 +134,6 @@ private def runBabyBearUnivariateMul (preset : BenchPreset) (gen : StdGen) :
     ⟨"BabyBear.Field", checksumBabyBear⟩ ⟨"BabyBear.Fast.Field", checksumBabyBearFast⟩
     (fun size ↦ babyBearArray size false) babyBearFastArray
     babyBearMulNttDomain babyBearFastMulNttDomain
-    { ntt := (·.selectNat 200 30 5)
-      nttFast := (·.selectNat 800 120 25)
-      nttFastPlan := (·.selectNat 850 120 25)
-      fastNaive := (·.selectNat 210 30 6)
-      fastNtt := (·.selectNat 630 90 18)
-      fastNttFast := (·.selectNat 2450 350 70)
-      fastNttFastPlan := (·.selectNat 2450 350 70) }
     preset gen
 
 /-- Runnable `CompPoly.Univariate.NTT.FastMul` benchmark tasks. -/

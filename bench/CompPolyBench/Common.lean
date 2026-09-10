@@ -6,7 +6,7 @@ Authors: Valerii Huhnin
 module
 
 public import Init.Data.Random
-public import CompPolyBench.Harness.Sample
+public import CompPolyBench.Harness.Budget
 public import Lean.Data.Json.Parser
 public import Lean.Data.Json.Printer
 public import Std.Time
@@ -47,76 +47,17 @@ def BenchPreset.name : BenchPreset → String
   | BenchPreset.medium => "medium"
   | BenchPreset.large => "large"
 
-/-- Return the precomputed value for the active benchmark preset. -/
-def BenchPreset.selectNat (preset : BenchPreset) (large medium small : Nat) : Nat :=
-  match preset with
-  | BenchPreset.large => large
-  | BenchPreset.medium => medium
-  | BenchPreset.small => small
+/-- Measurement budget for the active benchmark preset.
 
-/-- Warmup iteration count for ordinary evaluation benchmarks. -/
-def warmupIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 100 10 0
-
-/-- Measured iteration count for ordinary evaluation benchmarks. -/
-def measuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 5000 700 150
-
-/-- Warmup iteration count for batch-evaluation benchmarks over the base input shape. -/
-def batchWarmupIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 1 1 0
-
-/-- Measured iteration count for batch-evaluation benchmarks over the base input shape. -/
-def batchMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 5 1 1
-
-/-- Warmup iteration count for batch-evaluation benchmarks over the medium input shape. -/
-def mediumBatchWarmupIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 1 1 0
-
-/-- Measured iteration count for batch-evaluation benchmarks over the medium input shape. -/
-def mediumBatchMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 10 1 1
-
-/-- Warmup iteration count for batch-evaluation benchmarks over the large input shape. -/
-def largeBatchWarmupIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 1 1 0
-
-/-- Measured iteration count for batch-evaluation benchmarks over the large input shape. -/
-def largeBatchMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 10 1 1
-
-/-- Warmup iteration count for direct monic-remainder benchmarks. -/
-def modWarmupIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 1 1 0
-
-/-- Measured iteration count for direct monic-remainder benchmarks. -/
-def modMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 20 3 1
-
-/-- Warmup iteration count for direct monic-remainder benchmarks over the medium input shape. -/
-def mediumModWarmupIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 1 1 0
-
-/-- Measured iteration count for direct monic-remainder benchmarks over the medium input shape. -/
-def mediumModMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 5 1 1
-
-/-- Warmup iteration count for direct univariate multiplication benchmarks. -/
-def mulWarmupIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 1 1 0
-
-/-- Measured iteration count for direct univariate multiplication benchmarks. -/
-def mulMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 20 3 1
-
-/-- Warmup iteration count for the base additive NTT benchmark. -/
-def additiveNttWarmupIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 10 1 0
-
-/-- Measured iteration count for the base additive NTT benchmark. -/
-def additiveNttMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 1000 150 30
+What a preset selects. It used to select an iteration count per benchmark, from
+a hand-written `large medium small` triple at each of 228 call sites; a count is
+not comparable between two rows of one table, goes stale as the code it measures
+gets faster, and has to be re-guessed on every machine. A wall-clock budget is
+comparable, and `Harness.Budget` works the count out per row. -/
+def BenchPreset.budget : BenchPreset → BenchBudget
+  | BenchPreset.large => largeBudget
+  | BenchPreset.medium => mediumBudget
+  | BenchPreset.small => smallBudget
 
 /-- Primality witness used for generic `ZMod` benchmarks over `KoalaBear`. -/
 instance : Fact (Nat.Prime KoalaBear.fieldSize) where
@@ -667,35 +608,47 @@ deriving Inhabited
 /--
 Time one benchmark closure and package its metadata and checksum.
 
-The strong `Nat` checksum runs *before* timing, over `checksumIterations` — the
-minimum measured-iteration count used by the records in the surrounding group —
-and is what the group agreement check compares.
+The strong `Nat` digest runs *before* timing, over `spec.digestIterations` — the
+period of the body in its iteration index — and is what the group agreement
+check compares.
 
 Inside the timed region each result is folded through `sink` instead, which
 defaults to truncating the `Nat` digest and should be overridden with a
 `UInt64`-native digest wherever the benchmark is cheap enough for the digest to
 show up in the measurement.
 
-Under `--validate-only` no samples are collected and the record carries digests
-alone. `forceTiming` opts out of that, for the harness self-check, whose canary
-compares timed totals and would pass vacuously against a zero floor.
+The row is then sized from `preset.budget`: a calibration ramp doubles as warmup
+and estimates the per-iteration cost, and that estimate decides how many
+iterations one sample holds and how many samples are affordable. Nothing about
+the shape of the work is chosen here — an expensive row still reports `n=1`, but
+now only when one iteration genuinely exhausts the budget.
+
+Under `--validate-only` neither calibration nor sampling runs and the record
+carries digests alone. Skipping calibration is the point: a ramp on a
+thirteen-second body costs thirteen seconds, and `--validate-only` is the only
+benchmark step on the blocking CI path. `forceTiming` opts out of the short
+circuit, for the harness self-check, whose canary has nothing to compare
+against a floor that was never measured.
 -/
 @[specialize] def runTimedSpec (spec : BenchSpec) (preset : BenchPreset)
-    (warmup measured : Nat) (run : Nat → α) (checksum : α → Nat)
+    (run : Nat → α) (checksum : α → Nat)
     (sink : α → UInt64 := fun x ↦ natSink (checksum x)) : IO BenchRecord := do
   let body : Nat → UInt64 → UInt64 := fun i acc ↦ sinkStep acc (sink (run i))
   let mut validationChecksum := 0
   for i in [0:spec.digestIterations] do
     validationChecksum := mixChecksum validationChecksum (checksum (run i))
   let validateOnly := (← validateOnlyRef.get) && !spec.forceTiming
+  let budget := preset.budget
+  -- The ramp is not discounted for the digest pass the way a fixed warmup count
+  -- used to be. It cannot be: the budget is in nanoseconds and the digest pass is
+  -- untimed. Nor is it worth it — for a cheap body the digest is at most 256
+  -- iterations against tens of milliseconds of ramp, and for an expensive one the
+  -- ramp stops after its first step either way.
+  let calibration ← if validateOnly then pure default else
+    calibrate budget.warmupNanos body
   let plan := if validateOnly then { itersPerSample := 0, sampleCount := 0 } else
-    planSamples measured
-  -- The validation pass above already executed the body, so it counts towards
-  -- reaching steady state. For an expensive workload validated once, this is the
-  -- difference between running it three times and running it twice.
-  let desiredWarmup := if validateOnly then 0 else max warmup plan.itersPerSample
-  let residualWarmup := desiredWarmup - min desiredWarmup spec.digestIterations
-  let sampled ← collectSamples residualWarmup plan body
+    planFromCalibration budget calibration.picosPerIteration
+  let sampled ← collectSamples calibration.sink plan body
   pure {
     name := spec.name
     representation := spec.representation
@@ -703,7 +656,7 @@ compares timed totals and would pass vacuously against a zero floor.
     preset := preset.name
     field := spec.field
     inputShape := spec.inputShape
-    warmupIterations := desiredWarmup
+    warmupIterations := calibration.iterations
     checksumIterations := spec.digestIterations
     measuredIterations := sampled.totalIterations
     totalNanos := sampled.totalNanos
@@ -713,22 +666,6 @@ compares timed totals and would pass vacuously against a zero floor.
     stats := sampled.stats
     samples := sampled.samples
   }
-
-/-- Positional-argument form of `runTimedSpec`, kept while the suite migrates.
-
-Deleted once every call site passes a `BenchSpec`. It exists so that the
-migration of 228 call sites is a commit that provably changes nothing: it moves
-arguments into a record and touches no behaviour. -/
-@[specialize] def runTimed (name representation method field inputShape : String)
-    (preset : BenchPreset) (warmup measured : Nat) (run : Nat → α) (checksum : α → Nat)
-    (checksumIterations : Nat := min digestIterationCap measured)
-    (sink : α → UInt64 := fun x ↦ natSink (checksum x))
-    (forceTiming : Bool := false) : IO BenchRecord :=
-  runTimedSpec
-    { name := name, representation := representation, method := method, field := field,
-      inputShape := inputShape, digestIterations := checksumIterations,
-      forceTiming := forceTiming }
-    preset warmup measured run checksum (sink := sink)
 
 /-- Append benchmark records from `ys` onto `xs`. -/
 def appendRecords (xs ys : Array BenchRecord) : Array BenchRecord :=
@@ -1034,12 +971,19 @@ def renderSpread (record : BenchRecord) : String :=
     let base := if stats.unreplicated then base ++ " (n=" ++ toString stats.count ++ ")" else base
     if stats.severeOutliers > 0 then base ++ " !" ++ toString stats.severeOutliers else base
 
-/-- Columns rendered in a group result table after shared metadata is lifted out. -/
+/-- Columns rendered in a group result table after shared metadata is lifted out.
+
+Warmup and sample count are columns rather than shared metadata lines because
+calibration sizes each row separately: two rows of one group no longer agree on
+either, so `matchingNat?` would silently drop both lines from every report. Only
+the digest length is still shared by construction. -/
 def groupResultColumns (records : List BenchRecord) (totalUnit avgUnit : TimeUnit) :
     List (String × Bool × (BenchRecord → String)) :=
   [
     ("Implementation", false, implementationLabelInGroup records),
+    ("Warmup", true, fun r ↦ toString r.warmupIterations),
     ("Iterations", true, fun r ↦ toString r.measuredIterations),
+    ("Samples", true, fun r ↦ toString r.stats.count),
     ("Total (" ++ totalUnit.label ++ ")", true, fun r ↦
       formatNanosInUnitOrAuto totalUnit r.totalNanos),
     ("Median (" ++ avgUnit.label ++ ")", true, fun r ↦
@@ -1053,9 +997,7 @@ def renderGroupMetadata (records : List BenchRecord) (totalUnit : TimeUnit) : Li
     renderSharedStringLine "Representation" records (fun r ↦ r.representation),
     renderSharedStringLine "Field / configuration" records (fun r ↦ r.field),
     renderSharedStringLine "Input shape" records (fun r ↦ r.inputShape),
-    renderSharedNatLine "Warmup iterations" records (fun r ↦ r.warmupIterations),
-    renderSharedNatLine "Checksum iterations" records (fun r ↦ r.checksumIterations),
-    renderSharedNatLine "Samples" records (fun r ↦ r.stats.count)
+    renderSharedNatLine "Checksum iterations" records (fun r ↦ r.checksumIterations)
   ] ++ [
     "- Total group time: `" ++ formatNanosWithUnit totalUnit (totalGroupNanos records) ++
       "`",

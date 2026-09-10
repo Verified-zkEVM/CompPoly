@@ -41,27 +41,23 @@ def checksumConcreteBt128 (x : ConcreteBTField 7) : Nat :=
 @[specialize] private def runTowerGroup (groupKey title method : String)
     (concreteOp : ConcreteBTField 7 → ConcreteBTField 7 → ConcreteBTField 7)
     (fastOp : Fast.FastBT128 → Fast.FastBT128 → Fast.FastBT128)
-    (concreteBudget fastBudget : BenchPreset → Nat)
     (preset : BenchPreset) (gen : StdGen) : IO (BenchGroup × StdGen) := do
   let (values, gen) := (randomNatArray 64 (2 ^ 128 - 1)).run gen
   let concreteSample := towerSampler
     (values.map fun n ↦ (fromNat n : ConcreteBTField 7)) (fromNat 1)
   let fastSample := towerSampler (values.map Fast.FastBT128.ofNat) (.ofNat 1)
-  let warmup := warmupIterations preset
-  let concreteMeasured := concreteBudget preset
-  let fastMeasured := fastBudget preset
   let checksumIterations := digestPeriod values.size
   let concreteRecord ← runTimedSpec
     { name := "tower-bt128", representation := "ConcreteBTField",
       method := (method ++ " (ConcreteBTField)"), field := "GF(2^128)", inputShape := towerShape,
       digestIterations := checksumIterations }
-    preset warmup concreteMeasured (fun i ↦ let (a, b) := concreteSample i; concreteOp a b)
+    preset (fun i ↦ let (a, b) := concreteSample i; concreteOp a b)
     checksumConcreteBt128
   let fastRecord ← runTimedSpec
     { name := "tower-bt128-fast", representation := "FastBT128",
       method := (method ++ " (FastBT128)"), field := "GF(2^128)", inputShape := towerShape,
       digestIterations := checksumIterations }
-    preset warmup fastMeasured (fun i ↦ let (a, b) := fastSample i; fastOp a b) checksumFastBT128
+    preset (fun i ↦ let (a, b) := fastSample i; fastOp a b) checksumFastBT128
   pure ({ groupKey := groupKey, title := title,
           records := #[concreteRecord, fastRecord] }, gen)
 
@@ -70,7 +66,6 @@ private def runTowerMul (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   runTowerGroup "fields-tower-bt128-mul" "Binary tower multiplication (GF(2^128))" "mul"
     concrete_mul Fast.FastBT128.mul
-    (fun p ↦ p.selectNat 1000 150 30) (fun p ↦ p.selectNat 2000000 300000 60000)
     preset gen
 
 /-- Run the GF(2^128) inversion benchmark. -/
@@ -78,7 +73,6 @@ private def runTowerInv (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   runTowerGroup "fields-tower-bt128-inv" "Binary tower inversion (GF(2^128))" "inv"
     (fun a _ ↦ concrete_inv a) (fun a _ ↦ a.inv)
-    (fun p ↦ p.selectNat 500 75 15) (fun p ↦ p.selectNat 500000 75000 15000)
     preset gen
 
 /-- Registry entries for the binary tower benchmarks. -/

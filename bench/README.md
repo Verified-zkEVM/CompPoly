@@ -96,7 +96,7 @@ univariate-dense-bls12-381    univariate-dense-bls12-377
 
 ## How A Benchmark Is Measured
 
-`runTimed` does two passes over each benchmark body.
+`runTimedSpec` does two passes over each benchmark body.
 
 The **validation pass** is untimed and folds a strong `Nat` digest
 (`mixChecksum`) over the full result. It runs for `digestPeriod` iterations —
@@ -125,10 +125,18 @@ territory and the group's ratio is a lower bound on the real speedup.
 
 ### Sampling and dispersion
 
-A benchmark's cost is collected as a *set* of samples, not one total. Each
-benchmark's iteration count is treated as a total-work budget and split into up
-to `targetSampleCount` timed samples; every sample replays the same iteration
-indices, so samples differ only in machine state.
+A benchmark's cost is collected as a *set* of samples, not one total, and the
+sizes come from the preset's wall-clock budget rather than from a written-down
+iteration count. A calibration ramp times 1, 2, 4, … iterations until the
+warmup budget is met — the ramp *is* the warmup — and its last step estimates
+the per-iteration cost. That estimate fixes how many iterations make up a
+`sampleNanos` sample, and `measureNanos` caps how many samples the row can
+afford. Every sample replays the same iteration indices, so samples differ only
+in machine state.
+
+A consequence worth knowing: `Iterations` is no longer comparable between runs,
+because it depends on how fast the machine was when the row was calibrated.
+`Median` and `Spread` are the columns to compare.
 
 Reports show the **median** sample as the headline number and a `Spread` column
 holding the median absolute deviation as a percentage of the median:

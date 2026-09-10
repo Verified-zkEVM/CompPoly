@@ -69,25 +69,19 @@ digests are not correctness oracles — nothing is cross-checked against them �
 the length only has to be fixed. -/
 private def harnessDigestIterations : Nat := 16
 
-/-- Measured iterations for the self-check benchmarks. -/
-private def harnessMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 2000000 500000 100000
-
 /-- Time the harness floor and the canary, and reject a collapsed canary. -/
 private def runHarnessSelfCheck (preset : BenchPreset) (selection : BenchSelection)
     (gen : StdGen) : IO (Array BenchGroup × StdGen) := do
-  let measured := harnessMeasuredIterations preset
-  let warmup := measured / 10
   let floorRecord ← runTimedSpec
     { name := "harness-floor", representation := "UInt64", method := "empty body", field := "none",
       inputShape := "no input", digestIterations := harnessDigestIterations,
       forceTiming := true }
-    preset warmup measured (fun i ↦ i.toUInt64) (fun x ↦ x.toNat) (sink := u64Sink)
+    preset (fun i ↦ i.toUInt64) (fun x ↦ x.toNat) (sink := u64Sink)
   let canaryRecord ← runTimedSpec
     { name := "harness-canary", representation := "UInt64",
       method := s!"{canaryRounds} mixing rounds", field := "none", inputShape := "no input",
       digestIterations := harnessDigestIterations, forceTiming := true }
-    preset warmup measured (fun i ↦ canaryWork i.toUInt64) (fun x ↦ x.toNat) (sink := u64Sink)
+    preset (fun i ↦ canaryWork i.toUInt64) (fun x ↦ x.toNat) (sink := u64Sink)
   let floorPicos := floorRecord.stats.medianPicos
   let canaryPicos := canaryRecord.stats.medianPicos
   if floorPicos == 0 || canaryPicos == 0 then

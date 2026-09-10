@@ -80,19 +80,12 @@ def guruswamiSudanReceivedWordGroupInfos : List BenchGroupInfo := [
 private def runGsInterpolationNonCodewordSmallKoala (preset : BenchPreset)
     (gen : StdGen) : IO (Prod BenchGroup StdGen) := do
   let (inputs, gen) := perturbedSmallInputs gen
-  let warmup := gsWarmupIterations preset
-  let denseMeasured := preset.selectNat 1 1 1
-  let leeDirectMeasured := preset.selectNat 15 2 1
-  let leeSubproductMeasured := preset.selectNat 15 2 1
-  let fastDenseMeasured := preset.selectNat 2 1 1
-  let fastLeeDirectMeasured := preset.selectNat 80 11 2
-  let fastLeeSubproductMeasured := preset.selectNat 70 10 2
   let checksumIterations := digestPeriod 1
   let denseRow <- runTimedSpec
     { name := "guruswami-sudan-interp-dense-noncodeword-small", representation := "CBivariate",
       method := "Dense linear", field := "KoalaBear.Field",
       inputShape := gsNonCodewordSmallInputShape, digestIterations := checksumIterations }
-    preset warmup denseMeasured
+    preset
     (fun _ ↦ koalaBearDenseInterpContext.interpolate inputs.points gsSmallParams)
     (checksumInterpolationValidityOption inputs.points gsSmallParams)
   let leeDirectRow <- runTimedSpec
@@ -100,7 +93,7 @@ private def runGsInterpolationNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Lee-O'Sullivan direct",
       field := "KoalaBear.Field", inputShape := gsNonCodewordSmallInputShape,
       digestIterations := checksumIterations }
-    preset warmup leeDirectMeasured
+    preset
     (fun _ ↦ koalaBearLeeDirectInterpContext.interpolate inputs.points gsSmallParams)
     (checksumInterpolationValidityOption inputs.points gsSmallParams)
   let leeSubproductRow <- runTimedSpec
@@ -108,7 +101,7 @@ private def runGsInterpolationNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Lee-O'Sullivan subproduct",
       field := "KoalaBear.Field", inputShape := gsNonCodewordSmallInputShape,
       digestIterations := checksumIterations }
-    preset warmup leeSubproductMeasured
+    preset
     (fun _ ↦
       koalaBearLeeSubproductInterpContext.interpolate inputs.points gsSmallParams)
     (checksumInterpolationValidityOption inputs.points gsSmallParams)
@@ -116,7 +109,7 @@ private def runGsInterpolationNonCodewordSmallKoala (preset : BenchPreset)
     { name := "guruswami-sudan-interp-dense-noncodeword-small-fast",
       representation := "CBivariate", method := "Dense linear", field := "KoalaBear.Fast.Field",
       inputShape := gsNonCodewordSmallInputShape, digestIterations := checksumIterations }
-    preset warmup fastDenseMeasured
+    preset
     (fun _ ↦ fastKoalaBearDenseInterpContext.interpolate inputs.fastPoints gsSmallParams)
     (checksumInterpolationValidityOption inputs.fastPoints gsSmallParams)
   let fastLeeDirectRow <- runTimedSpec
@@ -124,7 +117,7 @@ private def runGsInterpolationNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Lee-O'Sullivan direct",
       field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallInputShape,
       digestIterations := checksumIterations }
-    preset warmup fastLeeDirectMeasured
+    preset
     (fun _ ↦
       fastKoalaBearLeeDirectInterpContext.interpolate inputs.fastPoints
         gsSmallParams)
@@ -134,7 +127,7 @@ private def runGsInterpolationNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Lee-O'Sullivan subproduct",
       field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallInputShape,
       digestIterations := checksumIterations }
-    preset warmup fastLeeSubproductMeasured
+    preset
     (fun _ ↦
       fastKoalaBearLeeSubproductInterpContext.interpolate inputs.fastPoints
         gsSmallParams)
@@ -155,25 +148,12 @@ private def runGsCoreNonCodewordSmallKoala (preset : BenchPreset)
     alekhnovichRootContext KoalaBear.Field koalaBearFieldRootContext
   let fastAlekRootContext :=
     alekhnovichRootContext KoalaBear.Fast.Field fastKoalaBearFieldRootContext
-  let warmup := gsWarmupIterations preset
-  let denseMeasured := preset.selectNat 1 1 1
-  let leeDirectMeasured := preset.selectNat 15 2 1
-  let leeSubproductMeasured := preset.selectNat 15 2 1
-  let fastDenseMeasured := preset.selectNat 2 1 1
-  let fastLeeDirectMeasured := preset.selectNat 80 11 2
-  let fastLeeSubproductMeasured := preset.selectNat 70 10 2
-  let alekDenseMeasured := denseMeasured
-  let alekLeeDirectMeasured := leeDirectMeasured
-  let alekLeeSubproductMeasured := leeSubproductMeasured
-  let fastAlekDenseMeasured := fastDenseMeasured
-  let fastAlekLeeDirectMeasured := fastLeeDirectMeasured
-  let fastAlekLeeSubproductMeasured := fastLeeSubproductMeasured
   let checksumIterations := digestPeriod 1
   let denseRow <- runTimedSpec
     { name := "guruswami-sudan-core-dense-noncodeword-small", representation := "CBivariate",
       method := "Dense linear + RR roots", field := "KoalaBear.Field",
       inputShape := gsNonCodewordSmallInputShape, digestIterations := checksumIterations }
-    preset warmup denseMeasured
+    preset
     (fun _ ↦
       (gsCore inputs.points koalaBearDenseInterpContext koalaBearRothRootContext
         gsSmallParams).filter (passesCandidateDistance inputs.points gsNonCodewordSmallErrors))
@@ -183,7 +163,7 @@ private def runGsCoreNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Dense linear + Alekhnovich roots",
       field := "KoalaBear.Field", inputShape := gsNonCodewordSmallInputShape,
       digestIterations := checksumIterations }
-    preset warmup alekDenseMeasured
+    preset
     (fun _ ↦
       (gsCore inputs.points koalaBearDenseInterpContext alekRootContext
         gsSmallParams).filter (passesCandidateDistance inputs.points gsNonCodewordSmallErrors))
@@ -192,7 +172,7 @@ private def runGsCoreNonCodewordSmallKoala (preset : BenchPreset)
     { name := "guruswami-sudan-core-lee-direct-noncodeword-small", representation := "CBivariate",
       method := "Lee-O'Sullivan direct + RR roots", field := "KoalaBear.Field",
       inputShape := gsNonCodewordSmallInputShape, digestIterations := checksumIterations }
-    preset warmup leeDirectMeasured
+    preset
     (fun _ ↦
       (gsCore inputs.points koalaBearLeeDirectInterpContext koalaBearRothRootContext
         gsSmallParams).filter (passesCandidateDistance inputs.points gsNonCodewordSmallErrors))
@@ -202,7 +182,7 @@ private def runGsCoreNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Lee-O'Sullivan direct + Alekhnovich roots",
       field := "KoalaBear.Field", inputShape := gsNonCodewordSmallInputShape,
       digestIterations := checksumIterations }
-    preset warmup alekLeeDirectMeasured
+    preset
     (fun _ ↦
       (gsCore inputs.points koalaBearLeeDirectInterpContext alekRootContext
         gsSmallParams).filter (passesCandidateDistance inputs.points gsNonCodewordSmallErrors))
@@ -212,7 +192,7 @@ private def runGsCoreNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Lee-O'Sullivan subproduct + RR roots",
       field := "KoalaBear.Field", inputShape := gsNonCodewordSmallInputShape,
       digestIterations := checksumIterations }
-    preset warmup leeSubproductMeasured
+    preset
     (fun _ ↦
       (gsCore inputs.points koalaBearLeeSubproductInterpContext koalaBearRothRootContext
         gsSmallParams).filter (passesCandidateDistance inputs.points gsNonCodewordSmallErrors))
@@ -222,7 +202,7 @@ private def runGsCoreNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Lee-O'Sullivan subproduct + Alekhnovich roots",
       field := "KoalaBear.Field", inputShape := gsNonCodewordSmallInputShape,
       digestIterations := checksumIterations }
-    preset warmup alekLeeSubproductMeasured
+    preset
     (fun _ ↦
       (gsCore inputs.points koalaBearLeeSubproductInterpContext alekRootContext
         gsSmallParams).filter (passesCandidateDistance inputs.points gsNonCodewordSmallErrors))
@@ -231,7 +211,7 @@ private def runGsCoreNonCodewordSmallKoala (preset : BenchPreset)
     { name := "guruswami-sudan-core-dense-noncodeword-small-fast", representation := "CBivariate",
       method := "Dense linear + RR roots", field := "KoalaBear.Fast.Field",
       inputShape := gsNonCodewordSmallInputShape, digestIterations := checksumIterations }
-    preset warmup fastDenseMeasured
+    preset
     (fun _ ↦
       (gsCore inputs.fastPoints fastKoalaBearDenseInterpContext
         fastKoalaBearRothRootContext gsSmallParams).filter
@@ -242,7 +222,7 @@ private def runGsCoreNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Dense linear + Alekhnovich roots",
       field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallInputShape,
       digestIterations := checksumIterations }
-    preset warmup fastAlekDenseMeasured
+    preset
     (fun _ ↦
       (gsCore inputs.fastPoints fastKoalaBearDenseInterpContext
         fastAlekRootContext gsSmallParams).filter
@@ -253,7 +233,7 @@ private def runGsCoreNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Lee-O'Sullivan direct + RR roots",
       field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallInputShape,
       digestIterations := checksumIterations }
-    preset warmup fastLeeDirectMeasured
+    preset
     (fun _ ↦
       (gsCore inputs.fastPoints fastKoalaBearLeeDirectInterpContext
         fastKoalaBearRothRootContext gsSmallParams).filter
@@ -264,7 +244,7 @@ private def runGsCoreNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Lee-O'Sullivan direct + Alekhnovich roots",
       field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallInputShape,
       digestIterations := checksumIterations }
-    preset warmup fastAlekLeeDirectMeasured
+    preset
     (fun _ ↦
       (gsCore inputs.fastPoints fastKoalaBearLeeDirectInterpContext
         fastAlekRootContext gsSmallParams).filter
@@ -275,7 +255,7 @@ private def runGsCoreNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Lee-O'Sullivan subproduct + RR roots",
       field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallInputShape,
       digestIterations := checksumIterations }
-    preset warmup fastLeeSubproductMeasured
+    preset
     (fun _ ↦
       (gsCore inputs.fastPoints fastKoalaBearLeeSubproductInterpContext
         fastKoalaBearRothRootContext gsSmallParams).filter
@@ -286,7 +266,7 @@ private def runGsCoreNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Lee-O'Sullivan subproduct + Alekhnovich roots",
       field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallInputShape,
       digestIterations := checksumIterations }
-    preset warmup fastAlekLeeSubproductMeasured
+    preset
     (fun _ ↦
       (gsCore inputs.fastPoints fastKoalaBearLeeSubproductInterpContext
         fastAlekRootContext gsSmallParams).filter
@@ -310,26 +290,13 @@ private def runGsFilteredCoreNonCodewordSmallKoala (preset : BenchPreset)
     alekhnovichRootContext KoalaBear.Field koalaBearFieldRootContext
   let fastAlekRootContext :=
     alekhnovichRootContext KoalaBear.Fast.Field fastKoalaBearFieldRootContext
-  let warmup := gsWarmupIterations preset
-  let denseMeasured := preset.selectNat 1 1 1
-  let leeDirectMeasured := preset.selectNat 15 2 1
-  let leeSubproductMeasured := preset.selectNat 15 2 1
-  let fastDenseMeasured := preset.selectNat 2 1 1
-  let fastLeeDirectMeasured := preset.selectNat 80 11 2
-  let fastLeeSubproductMeasured := preset.selectNat 70 10 2
-  let alekDenseMeasured := denseMeasured
-  let alekLeeDirectMeasured := leeDirectMeasured
-  let alekLeeSubproductMeasured := leeSubproductMeasured
-  let fastAlekDenseMeasured := fastDenseMeasured
-  let fastAlekLeeDirectMeasured := fastLeeDirectMeasured
-  let fastAlekLeeSubproductMeasured := fastLeeSubproductMeasured
   let checksumIterations := digestPeriod 1
   let denseRow <- runTimedSpec
     { name := "guruswami-sudan-filtered-core-dense-noncodeword-small",
       representation := "CBivariate", method := "Dense linear + RR roots + filter",
       field := "KoalaBear.Field", inputShape := gsNonCodewordSmallFilteredShape,
       digestIterations := checksumIterations }
-    preset warmup denseMeasured
+    preset
     (fun _ ↦
       gsFilteredCore inputs.points koalaBearDenseInterpContext koalaBearRothRootContext
         gsSmallParams gsNonCodewordSmallErrors)
@@ -339,7 +306,7 @@ private def runGsFilteredCoreNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Dense linear + Alekhnovich roots + filter",
       field := "KoalaBear.Field", inputShape := gsNonCodewordSmallFilteredShape,
       digestIterations := checksumIterations }
-    preset warmup alekDenseMeasured
+    preset
     (fun _ ↦
       gsFilteredCore inputs.points koalaBearDenseInterpContext alekRootContext
         gsSmallParams gsNonCodewordSmallErrors)
@@ -349,7 +316,7 @@ private def runGsFilteredCoreNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Lee-O'Sullivan direct + RR roots + filter",
       field := "KoalaBear.Field", inputShape := gsNonCodewordSmallFilteredShape,
       digestIterations := checksumIterations }
-    preset warmup leeDirectMeasured
+    preset
     (fun _ ↦
       gsFilteredCore inputs.points koalaBearLeeDirectInterpContext
         koalaBearRothRootContext gsSmallParams gsNonCodewordSmallErrors)
@@ -359,7 +326,7 @@ private def runGsFilteredCoreNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate",
       method := "Lee-O'Sullivan direct + Alekhnovich roots + filter", field := "KoalaBear.Field",
       inputShape := gsNonCodewordSmallFilteredShape, digestIterations := checksumIterations }
-    preset warmup alekLeeDirectMeasured
+    preset
     (fun _ ↦
       gsFilteredCore inputs.points koalaBearLeeDirectInterpContext alekRootContext
         gsSmallParams gsNonCodewordSmallErrors)
@@ -369,7 +336,7 @@ private def runGsFilteredCoreNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Lee-O'Sullivan subproduct + RR roots + filter",
       field := "KoalaBear.Field", inputShape := gsNonCodewordSmallFilteredShape,
       digestIterations := checksumIterations }
-    preset warmup leeSubproductMeasured
+    preset
     (fun _ ↦
       gsFilteredCore inputs.points koalaBearLeeSubproductInterpContext
         koalaBearRothRootContext gsSmallParams gsNonCodewordSmallErrors)
@@ -380,7 +347,7 @@ private def runGsFilteredCoreNonCodewordSmallKoala (preset : BenchPreset)
       method := "Lee-O'Sullivan subproduct + Alekhnovich roots + filter",
       field := "KoalaBear.Field", inputShape := gsNonCodewordSmallFilteredShape,
       digestIterations := checksumIterations }
-    preset warmup alekLeeSubproductMeasured
+    preset
     (fun _ ↦
       gsFilteredCore inputs.points koalaBearLeeSubproductInterpContext alekRootContext
         gsSmallParams gsNonCodewordSmallErrors)
@@ -390,7 +357,7 @@ private def runGsFilteredCoreNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Dense linear + RR roots + filter",
       field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallFilteredShape,
       digestIterations := checksumIterations }
-    preset warmup fastDenseMeasured
+    preset
     (fun _ ↦
       gsFilteredCore inputs.fastPoints fastKoalaBearDenseInterpContext
         fastKoalaBearRothRootContext gsSmallParams gsNonCodewordSmallErrors)
@@ -400,7 +367,7 @@ private def runGsFilteredCoreNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Dense linear + Alekhnovich roots + filter",
       field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallFilteredShape,
       digestIterations := checksumIterations }
-    preset warmup fastAlekDenseMeasured
+    preset
     (fun _ ↦
       gsFilteredCore inputs.fastPoints fastKoalaBearDenseInterpContext
         fastAlekRootContext gsSmallParams gsNonCodewordSmallErrors)
@@ -410,7 +377,7 @@ private def runGsFilteredCoreNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Lee-O'Sullivan direct + RR roots + filter",
       field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallFilteredShape,
       digestIterations := checksumIterations }
-    preset warmup fastLeeDirectMeasured
+    preset
     (fun _ ↦
       gsFilteredCore inputs.fastPoints fastKoalaBearLeeDirectInterpContext
         fastKoalaBearRothRootContext gsSmallParams gsNonCodewordSmallErrors)
@@ -421,7 +388,7 @@ private def runGsFilteredCoreNonCodewordSmallKoala (preset : BenchPreset)
       method := "Lee-O'Sullivan direct + Alekhnovich roots + filter",
       field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallFilteredShape,
       digestIterations := checksumIterations }
-    preset warmup fastAlekLeeDirectMeasured
+    preset
     (fun _ ↦
       gsFilteredCore inputs.fastPoints fastKoalaBearLeeDirectInterpContext
         fastAlekRootContext gsSmallParams gsNonCodewordSmallErrors)
@@ -431,7 +398,7 @@ private def runGsFilteredCoreNonCodewordSmallKoala (preset : BenchPreset)
       representation := "CBivariate", method := "Lee-O'Sullivan subproduct + RR roots + filter",
       field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallFilteredShape,
       digestIterations := checksumIterations }
-    preset warmup fastLeeSubproductMeasured
+    preset
     (fun _ ↦
       gsFilteredCore inputs.fastPoints fastKoalaBearLeeSubproductInterpContext
         fastKoalaBearRothRootContext gsSmallParams gsNonCodewordSmallErrors)
@@ -442,7 +409,7 @@ private def runGsFilteredCoreNonCodewordSmallKoala (preset : BenchPreset)
       method := "Lee-O'Sullivan subproduct + Alekhnovich roots + filter",
       field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallFilteredShape,
       digestIterations := checksumIterations }
-    preset warmup fastAlekLeeSubproductMeasured
+    preset
     (fun _ ↦
       gsFilteredCore inputs.fastPoints fastKoalaBearLeeSubproductInterpContext
         fastAlekRootContext gsSmallParams gsNonCodewordSmallErrors)

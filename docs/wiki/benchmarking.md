@@ -165,10 +165,9 @@ and ext6 groups. Any tool comparing two result files must key on
 Recorded so they are not rediscovered. The audit and plan live in
 `BENCHMARKING.md` at the repo root.
 
-- 67 rows are still `n=1`, all of them workloads whose single iteration exhausts
-  its budget. They need smaller input shapes, decided per benchmark.
-- Iteration counts are still hand-tuned `selectNat` triples rather than wall-clock
-  budgets, so `Total` is not comparable between rows of one table.
+- A handful of rows are still `n=1`, all of them workloads whose single iteration
+  exhausts its budget. They need smaller input shapes, decided per benchmark; no
+  harness change reaches that.
 - No result storage, baseline comparison, or regression gate for run-time
   benchmarks; only build timing gets that treatment.
 - Per-row floor subtraction is not reported, because the floor is

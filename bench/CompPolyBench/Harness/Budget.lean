@@ -138,6 +138,29 @@ def planFromCalibration (budget : BenchBudget) (picosPerIteration : Nat) :
   { itersPerSample := itersPerSample
     sampleCount := max 1 (min budget.sampleCount affordable) }
 
+/-! ## The three preset budgets
+
+`sampleNanos` is 1 ms at every preset, for the reason recorded on the field.
+What a preset varies is how many samples it asks for and how long a single row
+may spend in total.
+-/
+
+/-- Budget for `--large`: 200 ms of warmup, 50 samples, one minute per row. -/
+def largeBudget : BenchBudget :=
+  { warmupNanos := 200000000, sampleNanos := 1000000, sampleCount := 50,
+    measureNanos := 60000000000 }
+
+/-- Budget for `--medium`, the default and what CI runs: 50 ms of warmup, 20
+samples, two seconds per row. -/
+def mediumBudget : BenchBudget :=
+  { warmupNanos := 50000000, sampleNanos := 1000000, sampleCount := 20,
+    measureNanos := 2000000000 }
+
+/-- Budget for `--small`: 20 ms of warmup, 10 samples, 0.2 s per row. -/
+def smallBudget : BenchBudget :=
+  { warmupNanos := 20000000, sampleNanos := 1000000, sampleCount := 10,
+    measureNanos := 200000000 }
+
 /-! ## Sizing checks
 
 Sample sizing at the three interesting scales, plus the degenerate ones.
@@ -146,18 +169,6 @@ the structure. They run at elaboration time, so a wrong one fails `lake build`.
 -/
 
 section Guards
-
-private def largeBudget : BenchBudget :=
-  { warmupNanos := 200000000, sampleNanos := 1000000, sampleCount := 50,
-    measureNanos := 60000000000 }
-
-private def mediumBudget : BenchBudget :=
-  { warmupNanos := 50000000, sampleNanos := 1000000, sampleCount := 20,
-    measureNanos := 2000000000 }
-
-private def smallBudget : BenchBudget :=
-  { warmupNanos := 20000000, sampleNanos := 1000000, sampleCount := 10,
-    measureNanos := 200000000 }
 
 -- A 1.5 ns body: a sample is two thirds of a million iterations, and every
 -- sample the count asks for is affordable.

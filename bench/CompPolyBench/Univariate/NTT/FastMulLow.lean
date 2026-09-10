@@ -47,28 +47,19 @@ private def runKoalaBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGe
   let fastNttFastWithFallbackLowMul :
       CPolynomial.Raw.MulLowContext KoalaBear.Fast.Field :=
     CPolynomial.NTTFast.FastMulLow.withFallback koalaBearFastBestDomainForLength?
-  let warmup := mulWarmupIterations preset
-  let measured := mulMeasuredIterations preset
-  let convolutionMeasured := preset.selectNat 30 5 1
-  let nttMeasured := preset.selectNat 100 15 3
-  let nttFastMeasured := preset.selectNat 500 70 15
-  let fastMeasured := preset.selectNat 210 30 6
-  let fastConvolutionMeasured := preset.selectNat 70 10 2
-  let fastNttMeasured := preset.selectNat 420 60 12
-  let fastNttFastMeasured := preset.selectNat 1960 280 56
   let checksumIterations := digestPeriod 1
   let lowNaive ← runTimedSpec
     { name := "univariate-mul-low-naive", representation := "CPolynomial.Raw",
       method := "MulLowContext.naive", field := "KoalaBear.Field",
       inputShape := univariateMulLowShape, digestIterations := checksumIterations }
-    preset warmup measured
+    preset
     (fun _ ↦ naiveLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw mulLowRhsRaw)
     (checksumRawPolynomial checksumKoalaBear)
   let fastLowNaive ← runTimedSpec
     { name := "univariate-mul-low-naive-fast", representation := "CPolynomial.Raw",
       method := "MulLowContext.naive", field := "KoalaBear.Fast.Field",
       inputShape := univariateMulLowShape, digestIterations := checksumIterations }
-    preset warmup fastMeasured
+    preset
     (fun _ ↦ fastNaiveLowMul.mulLow univariateMulLowOutputCoeffSlots fastMulLowLhsRaw
       fastMulLowRhsRaw)
     (checksumRawPolynomial checksumKoalaBearFast)
@@ -76,7 +67,7 @@ private def runKoalaBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGe
     { name := "univariate-mul-low-convolution", representation := "CPolynomial.Raw",
       method := "MulLowContext.convolution", field := "KoalaBear.Field",
       inputShape := univariateMulLowShape, digestIterations := checksumIterations }
-    preset warmup convolutionMeasured
+    preset
     (fun _ ↦ convolutionLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
       mulLowRhsRaw)
     (checksumRawPolynomial checksumKoalaBear)
@@ -84,7 +75,7 @@ private def runKoalaBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGe
     { name := "univariate-mul-low-convolution-fast", representation := "CPolynomial.Raw",
       method := "MulLowContext.convolution", field := "KoalaBear.Fast.Field",
       inputShape := univariateMulLowShape, digestIterations := checksumIterations }
-    preset warmup fastConvolutionMeasured
+    preset
     (fun _ ↦ fastConvolutionLowMul.mulLow univariateMulLowOutputCoeffSlots
       fastMulLowLhsRaw fastMulLowRhsRaw)
     (checksumRawPolynomial checksumKoalaBearFast)
@@ -92,7 +83,7 @@ private def runKoalaBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGe
     { name := "univariate-mul-low-ntt-with-fallback", representation := "CPolynomial.Raw",
       method := "FastMulLow.withFallback", field := "KoalaBear.Field",
       inputShape := univariateMulLowShape, digestIterations := checksumIterations }
-    preset warmup nttMeasured
+    preset
     (fun _ ↦ nttWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
       mulLowRhsRaw)
     (checksumRawPolynomial checksumKoalaBear)
@@ -100,7 +91,7 @@ private def runKoalaBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGe
     { name := "univariate-mul-low-ntt-with-fallback-fast", representation := "CPolynomial.Raw",
       method := "FastMulLow.withFallback", field := "KoalaBear.Fast.Field",
       inputShape := univariateMulLowShape, digestIterations := checksumIterations }
-    preset warmup fastNttMeasured
+    preset
     (fun _ ↦ fastNttWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots
       fastMulLowLhsRaw fastMulLowRhsRaw)
     (checksumRawPolynomial checksumKoalaBearFast)
@@ -108,7 +99,7 @@ private def runKoalaBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGe
     { name := "univariate-mul-low-ntt-fast-with-fallback", representation := "CPolynomial.Raw",
       method := "NTTFast.FastMulLow.withFallback", field := "KoalaBear.Field",
       inputShape := univariateMulLowShape, digestIterations := checksumIterations }
-    preset warmup nttFastMeasured
+    preset
     (fun _ ↦ nttFastWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
       mulLowRhsRaw)
     (checksumRawPolynomial checksumKoalaBear)
@@ -117,7 +108,7 @@ private def runKoalaBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGe
       representation := "CPolynomial.Raw", method := "NTTFast.FastMulLow.withFallback",
       field := "KoalaBear.Fast.Field", inputShape := univariateMulLowShape,
       digestIterations := checksumIterations }
-    preset warmup fastNttFastMeasured
+    preset
     (fun _ ↦ fastNttFastWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots
       fastMulLowLhsRaw fastMulLowRhsRaw)
     (checksumRawPolynomial checksumKoalaBearFast)

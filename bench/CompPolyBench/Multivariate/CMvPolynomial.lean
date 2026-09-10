@@ -54,7 +54,6 @@ private def buildCMvPolynomial {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R
 /-- Benchmark dense multivariate evaluation over a generic prime `ZMod` field. -/
 private def runDenseMultivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
     (key nameSuffix fieldName fieldTitle : String)
-    (largeHornerMeasured mediumHornerMeasured smallHornerMeasured : Nat)
     (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (terms, gen) := (zmodArray modulus multivariateTermSlots false).run gen
@@ -62,22 +61,18 @@ private def runDenseMultivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
   let poly := buildCMvPolynomial terms
   let evalPoint (offset : Nat) : Fin multivariateVars → ZMod modulus :=
     fun j ↦ points.getD ((offset + j.val) % points.size) 0
-  let warmup := warmupIterations preset
-  let measured := measuredIterations preset
-  let hornerMeasured :=
-    preset.selectNat largeHornerMeasured mediumHornerMeasured smallHornerMeasured
   let checksumIterations := digestPeriod multivariatePointCount
   let denseEval ← runTimedSpec
     { name := ("multivariate-dense-eval-" ++ nameSuffix), representation := "CMvPolynomial",
       method := "eval", field := fieldName, inputShape := multivariateDenseShape,
       digestIterations := checksumIterations }
-    preset warmup measured
+    preset
     (fun i ↦ CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) poly) checksumZMod
   let denseHorner ← runTimedSpec
     { name := ("multivariate-dense-horner-" ++ nameSuffix), representation := "CMvPolynomial",
       method := "evalHorner", field := fieldName, inputShape := multivariateDenseShape,
       digestIterations := checksumIterations }
-    preset warmup hornerMeasured
+    preset
     (fun i ↦ CPoly.CMvPolynomial.evalHorner (evalPoint (i % multivariatePointCount)) poly)
     checksumZMod
   pure ({
@@ -89,7 +84,6 @@ private def runDenseMultivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
 /-- Benchmark sparse multivariate evaluation over a generic prime `ZMod` field. -/
 private def runSparseMultivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
     (key nameSuffix fieldName fieldTitle : String)
-    (largeHornerMeasured mediumHornerMeasured smallHornerMeasured : Nat)
     (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (terms, gen) := (zmodArrayWithStride modulus multivariateTermSlots 16).run gen
@@ -97,22 +91,18 @@ private def runSparseMultivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
   let poly := buildCMvPolynomial terms
   let evalPoint (offset : Nat) : Fin multivariateVars → ZMod modulus :=
     fun j ↦ points.getD ((offset + j.val) % points.size) 0
-  let warmup := warmupIterations preset
-  let measured := measuredIterations preset
-  let hornerMeasured :=
-    preset.selectNat largeHornerMeasured mediumHornerMeasured smallHornerMeasured
   let checksumIterations := digestPeriod multivariatePointCount
   let sparseEval ← runTimedSpec
     { name := ("multivariate-sparse-eval-" ++ nameSuffix), representation := "CMvPolynomial",
       method := "eval", field := fieldName, inputShape := multivariateSparseShape,
       digestIterations := checksumIterations }
-    preset warmup measured
+    preset
     (fun i ↦ CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) poly) checksumZMod
   let sparseHorner ← runTimedSpec
     { name := ("multivariate-sparse-horner-" ++ nameSuffix), representation := "CMvPolynomial",
       method := "evalHorner", field := fieldName, inputShape := multivariateSparseShape,
       digestIterations := checksumIterations }
-    preset warmup hornerMeasured
+    preset
     (fun i ↦ CPoly.CMvPolynomial.evalHorner (evalPoint (i % multivariatePointCount)) poly)
     checksumZMod
   pure ({
@@ -134,24 +124,19 @@ private def runKoalaBearMultivariateDense (preset : BenchPreset) (gen : StdGen) 
   let fastPoly := buildCMvPolynomial fastTerms
   let fastEvalPoint (offset : Nat) : Fin multivariateVars → KoalaBear.Fast.Field :=
     fun j ↦ fastPoints.getD ((offset + j.val) % fastPoints.size) 0
-  let warmup := warmupIterations preset
-  let measured := measuredIterations preset
-  let hornerMeasured := preset.selectNat 10000 1500 300
-  let fastMeasured := preset.selectNat 14000 2000 400
-  let fastHornerMeasured := preset.selectNat 31500 4500 900
   let checksumIterations := digestPeriod multivariatePointCount
   let denseEval ← runTimedSpec
     { name := "multivariate-dense-eval", representation := "CMvPolynomial", method := "eval",
       field := "KoalaBear.Field", inputShape := multivariateDenseShape,
       digestIterations := checksumIterations }
-    preset warmup measured
+    preset
     (fun i ↦ CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) poly)
     checksumKoalaBear
   let fastDenseEval ← runTimedSpec
     { name := "multivariate-dense-eval-fast", representation := "CMvPolynomial", method := "eval",
       field := "KoalaBear.Fast.Field", inputShape := multivariateDenseShape,
       digestIterations := checksumIterations }
-    preset warmup fastMeasured
+    preset
     (fun i ↦ CPoly.CMvPolynomial.eval (fastEvalPoint (i % multivariatePointCount))
       fastPoly)
     checksumKoalaBearFast
@@ -159,14 +144,14 @@ private def runKoalaBearMultivariateDense (preset : BenchPreset) (gen : StdGen) 
     { name := "multivariate-dense-horner", representation := "CMvPolynomial",
       method := "evalHorner", field := "KoalaBear.Field", inputShape := multivariateDenseShape,
       digestIterations := checksumIterations }
-    preset warmup hornerMeasured
+    preset
     (fun i ↦ CPoly.CMvPolynomial.evalHorner (evalPoint (i % multivariatePointCount)) poly)
     checksumKoalaBear
   let fastDenseHorner ← runTimedSpec
     { name := "multivariate-dense-horner-fast", representation := "CMvPolynomial",
       method := "evalHorner", field := "KoalaBear.Fast.Field",
       inputShape := multivariateDenseShape, digestIterations := checksumIterations }
-    preset warmup fastHornerMeasured
+    preset
     (fun i ↦ CPoly.CMvPolynomial.evalHorner (fastEvalPoint (i % multivariatePointCount))
       fastPoly)
     checksumKoalaBearFast
@@ -189,24 +174,19 @@ private def runKoalaBearMultivariateSparse (preset : BenchPreset) (gen : StdGen)
   let fastPoly := buildCMvPolynomial fastTerms
   let fastEvalPoint (offset : Nat) : Fin multivariateVars → KoalaBear.Fast.Field :=
     fun j ↦ fastPoints.getD ((offset + j.val) % fastPoints.size) 0
-  let warmup := warmupIterations preset
-  let measured := measuredIterations preset
-  let hornerMeasured := preset.selectNat 10000 1500 300
-  let fastMeasured := preset.selectNat 14000 2000 400
-  let fastHornerMeasured := preset.selectNat 31500 4500 900
   let checksumIterations := digestPeriod multivariatePointCount
   let sparseEval ← runTimedSpec
     { name := "multivariate-sparse-eval", representation := "CMvPolynomial", method := "eval",
       field := "KoalaBear.Field", inputShape := multivariateSparseShape,
       digestIterations := checksumIterations }
-    preset warmup measured
+    preset
     (fun i ↦ CPoly.CMvPolynomial.eval (evalPoint (i % multivariatePointCount)) poly)
     checksumKoalaBear
   let fastSparseEval ← runTimedSpec
     { name := "multivariate-sparse-eval-fast", representation := "CMvPolynomial", method := "eval",
       field := "KoalaBear.Fast.Field", inputShape := multivariateSparseShape,
       digestIterations := checksumIterations }
-    preset warmup fastMeasured
+    preset
     (fun i ↦ CPoly.CMvPolynomial.eval (fastEvalPoint (i % multivariatePointCount))
       fastPoly)
     checksumKoalaBearFast
@@ -214,14 +194,14 @@ private def runKoalaBearMultivariateSparse (preset : BenchPreset) (gen : StdGen)
     { name := "multivariate-sparse-horner", representation := "CMvPolynomial",
       method := "evalHorner", field := "KoalaBear.Field", inputShape := multivariateSparseShape,
       digestIterations := checksumIterations }
-    preset warmup hornerMeasured
+    preset
     (fun i ↦ CPoly.CMvPolynomial.evalHorner (evalPoint (i % multivariatePointCount)) poly)
     checksumKoalaBear
   let fastSparseHorner ← runTimedSpec
     { name := "multivariate-sparse-horner-fast", representation := "CMvPolynomial",
       method := "evalHorner", field := "KoalaBear.Fast.Field",
       inputShape := multivariateSparseShape, digestIterations := checksumIterations }
-    preset warmup fastHornerMeasured
+    preset
     (fun i ↦ CPoly.CMvPolynomial.evalHorner (fastEvalPoint (i % multivariatePointCount))
       fastPoly)
     checksumKoalaBearFast
@@ -235,15 +215,13 @@ private def runKoalaBearMultivariateSparse (preset : BenchPreset) (gen : StdGen)
 private def runGoldilocksMultivariateDense (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   runDenseMultivariateZMod Goldilocks.fieldSize
-    "multivariate-dense-goldilocks" "goldilocks" "Goldilocks.Field" "Goldilocks"
-    14000 2000 400 preset gen
+    "multivariate-dense-goldilocks" "goldilocks" "Goldilocks.Field" "Goldilocks" preset gen
 
 /-- Run Goldilocks sparse multivariate evaluation benchmarks. -/
 private def runGoldilocksMultivariateSparse (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   runSparseMultivariateZMod Goldilocks.fieldSize
-    "multivariate-sparse-goldilocks" "goldilocks" "Goldilocks.Field" "Goldilocks"
-    11000 1600 300 preset gen
+    "multivariate-sparse-goldilocks" "goldilocks" "Goldilocks.Field" "Goldilocks" preset gen
 
 /-- Runnable multivariate benchmark tasks. -/
 def multivariateTasks : List BenchTask := [
