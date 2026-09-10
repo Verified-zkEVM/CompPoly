@@ -33,6 +33,14 @@ percent — and buys two things: the body genuinely depends on `i`, so it is
 neither cached as a closed term nor hoisted out of the sample loop, and the
 untimed digest sees a whole pool of inputs rather than one.
 
+## Scaffolding other field groups share
+
+`ChainRep`, `chainLatencyRow`, `chainThroughputRow`, `runBinOpGroup` and
+`runUnOpGroup` are the chained-group scaffolding, and are used from the binary
+tower groups as well. They live here rather than beside `Harness/Chain.lean`
+because they need `runTimedSpec`, which `Harness/Chain.lean` deliberately does
+not import.
+
 ## Latency and throughput
 
 Reported separately, as Plonky3's `benchmark_mul_latency` and
@@ -109,15 +117,15 @@ structure ChainRep (F : Type) where
 
 `(0 : F)⁻¹` is `0` in Lean, so a pool containing zero would give an inversion
 chain a fixed point and measure one input rather than the pool. -/
-private def nonzeroPool {F : Type} [Zero F] [One F] [DecidableEq F] (xs : Array F) : Array F :=
+def nonzeroPool {F : Type} [Zero F] [One F] [DecidableEq F] (xs : Array F) : Array F :=
   xs.map fun x ↦ if x = 0 then 1 else x
 
 /-- Input-shape label shared by every row of a chained field group. -/
-private def chainShape (rounds : Nat) : String :=
+def chainShape (rounds : Nat) : String :=
   s!"{fieldPoolSize} seeds, {rounds}-operation chains"
 
 /-- Time a dependent chain of `op` over one representation. -/
-@[specialize] private def chainLatencyRow {F : Type} (fieldTag opTag method cls : String)
+@[specialize] def chainLatencyRow {F : Type} (fieldTag opTag method cls : String)
     (rounds : Nat) (rep : ChainRep F) (op : F → F) (preset : BenchPreset) : IO BenchRecord :=
   runTimedSpec
     { name := s!"{fieldTag}-{opTag}-{rep.suffix}", representation := rep.representation,
@@ -129,7 +137,7 @@ private def chainShape (rounds : Nat) : String :=
     rep.checksum (sink := rep.sink)
 
 /-- Time ten independent chains of `op` over one representation. -/
-@[specialize] private def chainThroughputRow {F : Type} (fieldTag opTag method cls : String)
+@[specialize] def chainThroughputRow {F : Type} (fieldTag opTag method cls : String)
     (rounds : Nat) (rep : ChainRep F) (op : F → F → F) (preset : BenchPreset) : IO BenchRecord :=
   runTimedSpec
     { name := s!"{fieldTag}-{opTag}-{rep.suffix}", representation := rep.representation,
@@ -145,7 +153,7 @@ private def chainShape (rounds : Nat) : String :=
     rep.checksum (sink := rep.sink)
 
 /-- Time a binary field operation, both shapes, over both representations. -/
-@[specialize] private def runBinOpGroup {S F : Type} (groupKey title fieldTag opTag : String)
+@[specialize] def runBinOpGroup {S F : Type} (groupKey title fieldTag opTag : String)
     (latencyRounds tputRounds : Nat)
     (slow : ChainRep S) (slowOp : S → S → S)
     (fast : ChainRep F) (fastOp : F → F → F)
@@ -173,7 +181,7 @@ private def chainShape (rounds : Nat) : String :=
 The chained step is `op (x + constant)` rather than `op x`: iterating a bare
 inversion alternates between two values, which measures one input rather than
 the pool. The addition it costs is a percent of an inversion. -/
-@[specialize] private def runUnOpGroup {S F : Type} (groupKey title fieldTag opTag method : String)
+@[specialize] def runUnOpGroup {S F : Type} (groupKey title fieldTag opTag method : String)
     (slow : ChainRep S) (slowAdd : S → S → S) (slowOp : S → S)
     (fast : ChainRep F) (fastAdd : F → F → F) (fastOp : F → F)
     (preset : BenchPreset) : IO BenchGroup := do

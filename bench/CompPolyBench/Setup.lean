@@ -11,6 +11,7 @@ public import CompPolyBench.Bivariate.GuruswamiSudan
 public import CompPolyBench.Fields.Arith
 public import CompPolyBench.Fields.Binary.AdditiveNTT.Impl
 public import CompPolyBench.Fields.Binary.Tower
+public import CompPolyBench.Fields.Binary.Tower.Scalar
 public import CompPolyBench.Fields.Extension
 public import CompPolyBench.Fields.Montgomery
 public import CompPolyBench.Harness.SelfCheck
@@ -32,7 +33,7 @@ namespace CompPolyBench
 def allTasks : List BenchTask :=
   harnessTasks ++ univariateTasks ++ multivariateTasks ++ multilinearTasks ++ bivariateTasks ++
     factorTasks ++ guruswamiSudanTasks ++ additiveNttTasks ++ extensionTasks ++
-    montgomeryInvTasks ++ towerTasks ++ fieldArithTasks
+    montgomeryInvTasks ++ towerTasks ++ towerScalarTasks ++ fieldArithTasks
 
 /-- Metadata for every benchmark group accepted by the command-line selector. -/
 def allGroupInfos : List BenchGroupInfo :=
