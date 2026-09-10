@@ -12,9 +12,11 @@ public import CompPolyBench.Harness.Chain
 # Base-field arithmetic benchmarks
 
 `mul`, `add`, `inv` and `pow` over the four small prime fields a STARK prover
-spends its time in: KoalaBear, BabyBear, Mersenne31 and Goldilocks. Each group
-runs the canonical `ZMod` implementation beside the verified native-word one on
-the same inputs, so the group digest cross-checks the two.
+spends its time in — KoalaBear, BabyBear, Mersenne31 and Goldilocks — and
+`mul` over the three eight-limb pairing scalar fields, BN254, BLS12-381 and
+BLS12-377. Each group runs the canonical `ZMod` implementation beside the
+verified native-word one on the same inputs, so the group digest cross-checks
+the two.
 
 ## Why these are chains
 
@@ -59,6 +61,19 @@ inversion is tens of multiplications and the canonical `ZMod` row is three
 orders of magnitude slower again. Still long enough that the harness floor is
 under a thousandth of the row. -/
 def expChainRounds : Nat := unrollBlock
+
+/-- Latency-chain depth for the eight-limb scalar fields.
+
+A quarter of `chainRounds`: a 256-bit Montgomery multiply is an order of
+magnitude more than a 32-bit one and the canonical row three further orders,
+so the full depth would put a single iteration past the sample budget. Chosen
+to be both a whole number of `unrollBlock`s and `throughputWidth` times a whole
+number of `throughputUnroll`s, so the latency and throughput rows of a group
+agree on `workUnits` — which the group check enforces. -/
+def heavyChainRounds : Nat := 5 * unrollBlock
+
+/-- Throughput-chain depth pairing with `heavyChainRounds`. -/
+def heavyThroughputRounds : Nat := 8 * throughputUnroll
 
 /-- Exponent used by the `pow` benchmarks.
 
@@ -107,7 +122,7 @@ private def chainShape (rounds : Nat) : String :=
   runTimedSpec
     { name := s!"{fieldTag}-{opTag}-{rep.suffix}", representation := rep.representation,
       method := method, field := rep.field, inputShape := chainShape rounds,
-      digestIterations := digestPeriod fieldPoolSize, workUnits := rounds,
+      digestIterations := digestPeriod fieldPoolSize, workUnits := latencyUnits rounds,
       digestClass := cls }
     preset
     (fun i ↦ chainLatency op rounds (rep.pool.getD (i % fieldPoolSize) rep.constant))
@@ -115,22 +130,23 @@ private def chainShape (rounds : Nat) : String :=
 
 /-- Time ten independent chains of `op` over one representation. -/
 @[specialize] private def chainThroughputRow {F : Type} (fieldTag opTag method cls : String)
-    (rep : ChainRep F) (op : F → F → F) (preset : BenchPreset) : IO BenchRecord :=
+    (rounds : Nat) (rep : ChainRep F) (op : F → F → F) (preset : BenchPreset) : IO BenchRecord :=
   runTimedSpec
     { name := s!"{fieldTag}-{opTag}-{rep.suffix}", representation := rep.representation,
-      method := method, field := rep.field, inputShape := chainShape throughputUnits,
-      digestIterations := digestPeriod fieldPoolSize, workUnits := throughputUnits,
+      method := method, field := rep.field, inputShape := chainShape (throughputUnitsOf rounds),
+      digestIterations := digestPeriod fieldPoolSize, workUnits := throughputUnitsOf rounds,
       digestClass := cls }
     preset
     (fun i ↦
       let seed (k : Nat) : F := rep.pool.getD ((i + k) % fieldPoolSize) rep.constant
-      chainThroughput op op throughputRounds
+      chainThroughput op op rounds
         (seed 0) (seed 1) (seed 2) (seed 3) (seed 4)
         (seed 5) (seed 6) (seed 7) (seed 8) (seed 9))
     rep.checksum (sink := rep.sink)
 
 /-- Time a binary field operation, both shapes, over both representations. -/
 @[specialize] private def runBinOpGroup {S F : Type} (groupKey title fieldTag opTag : String)
+    (latencyRounds tputRounds : Nat)
     (slow : ChainRep S) (slowOp : S → S → S)
     (fast : ChainRep F) (fastOp : F → F → F)
     (preset : BenchPreset) : IO BenchGroup := do
@@ -142,13 +158,13 @@ private def chainShape (rounds : Nat) : String :=
   let slowConstant := slow.constant
   let fastConstant := fast.constant
   let slowLatency ← chainLatencyRow fieldTag opTag s!"{opTag} (latency)" "latency"
-    chainRounds slow (fun x ↦ slowOp x slowConstant) preset
+    latencyRounds slow (fun x ↦ slowOp x slowConstant) preset
   let fastLatency ← chainLatencyRow fieldTag opTag s!"{opTag} (latency)" "latency"
-    chainRounds fast (fun x ↦ fastOp x fastConstant) preset
+    latencyRounds fast (fun x ↦ fastOp x fastConstant) preset
   let slowThroughput ← chainThroughputRow fieldTag opTag s!"{opTag} (throughput)"
-    "throughput" slow slowOp preset
+    "throughput" tputRounds slow slowOp preset
   let fastThroughput ← chainThroughputRow fieldTag opTag s!"{opTag} (throughput)"
-    "throughput" fast fastOp preset
+    "throughput" tputRounds fast fastOp preset
   pure { groupKey := groupKey, title := title,
          records := #[slowLatency, fastLatency, slowThroughput, fastThroughput] }
 
@@ -244,7 +260,7 @@ private def runKoalaBearMul (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (slow, fast, gen) := koalaBearReps gen
   let group ← runBinOpGroup "fields-koalabear-mul" "KoalaBear multiplication"
-    "koalabear" "mul" slow (· * ·) fast Montgomery.Native32.mul preset
+    "koalabear" "mul" chainRounds throughputRounds slow (· * ·) fast Montgomery.Native32.mul preset
   pure (group, gen)
 
 /-- Time KoalaBear addition. -/
@@ -252,7 +268,7 @@ private def runKoalaBearAdd (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (slow, fast, gen) := koalaBearReps gen
   let group ← runBinOpGroup "fields-koalabear-add" "KoalaBear addition"
-    "koalabear" "add" slow (· + ·) fast Montgomery.Native32.add preset
+    "koalabear" "add" chainRounds throughputRounds slow (· + ·) fast Montgomery.Native32.add preset
   pure (group, gen)
 
 /-- Time KoalaBear inversion. -/
@@ -282,7 +298,7 @@ private def runBabyBearMul (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (slow, fast, gen) := babyBearReps gen
   let group ← runBinOpGroup "fields-babybear-mul" "BabyBear multiplication"
-    "babybear" "mul" slow (· * ·) fast Montgomery.Native32.mul preset
+    "babybear" "mul" chainRounds throughputRounds slow (· * ·) fast Montgomery.Native32.mul preset
   pure (group, gen)
 
 /-- Time BabyBear addition. -/
@@ -290,7 +306,7 @@ private def runBabyBearAdd (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (slow, fast, gen) := babyBearReps gen
   let group ← runBinOpGroup "fields-babybear-add" "BabyBear addition"
-    "babybear" "add" slow (· + ·) fast Montgomery.Native32.add preset
+    "babybear" "add" chainRounds throughputRounds slow (· + ·) fast Montgomery.Native32.add preset
   pure (group, gen)
 
 /-- Time BabyBear inversion. -/
@@ -320,7 +336,7 @@ private def runMersenne31Mul (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (slow, fast, gen) := mersenne31Reps gen
   let group ← runBinOpGroup "fields-mersenne31-mul" "Mersenne31 multiplication"
-    "mersenne31" "mul" slow (· * ·) fast Mersenne31.Fast.mul preset
+    "mersenne31" "mul" chainRounds throughputRounds slow (· * ·) fast Mersenne31.Fast.mul preset
   pure (group, gen)
 
 /-- Time Mersenne31 addition. -/
@@ -328,7 +344,7 @@ private def runMersenne31Add (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (slow, fast, gen) := mersenne31Reps gen
   let group ← runBinOpGroup "fields-mersenne31-add" "Mersenne31 addition"
-    "mersenne31" "add" slow (· + ·) fast Mersenne31.Fast.add preset
+    "mersenne31" "add" chainRounds throughputRounds slow (· + ·) fast Mersenne31.Fast.add preset
   pure (group, gen)
 
 /-- Time Mersenne31 inversion. -/
@@ -357,7 +373,7 @@ private def runGoldilocksMul (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (slow, fast, gen) := goldilocksReps gen
   let group ← runBinOpGroup "fields-goldilocks-mul" "Goldilocks multiplication"
-    "goldilocks" "mul" slow (· * ·) fast Goldilocks.Fast.mul preset
+    "goldilocks" "mul" chainRounds throughputRounds slow (· * ·) fast Goldilocks.Fast.mul preset
   pure (group, gen)
 
 /-- Time Goldilocks addition. -/
@@ -365,7 +381,7 @@ private def runGoldilocksAdd (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (slow, fast, gen) := goldilocksReps gen
   let group ← runBinOpGroup "fields-goldilocks-add" "Goldilocks addition"
-    "goldilocks" "add" slow (· + ·) fast Goldilocks.Fast.add preset
+    "goldilocks" "add" chainRounds throughputRounds slow (· + ·) fast Goldilocks.Fast.add preset
   pure (group, gen)
 
 /-- Time Goldilocks inversion. -/
@@ -385,6 +401,80 @@ private def runGoldilocksPow (preset : BenchPreset) (gen : StdGen) :
     "goldilocks" "pow" "pow (binary ladder)"
     slow (· + ·) (npowBinRec powExponent ·)
     fast Goldilocks.Fast.add (Goldilocks.Fast.pow · powExponent) preset
+  pure (group, gen)
+
+/-! ### Eight-limb pairing scalar fields
+
+`mul` only. Inversion over these carriers already has a group of its own in
+`Fields/Montgomery.lean`, which compares three algorithms rather than two
+representations. Both rows need an explicit sink: the canonical value is a
+254- to 255-bit bignum, and `sinkMont64x8` reads two limbs instead of
+reassembling one. -/
+
+/-- BN254 scalar operands, canonical and eight-limb, from one pool. -/
+private def bn254Reps (gen : StdGen) :
+    ChainRep BN254.ScalarField × ChainRep BN254.Fast.ScalarField × StdGen :=
+  let (values, gen) := (zmodArray BN254.scalarFieldSize fieldPoolSize false).run gen
+  let pool := nonzeroPool values
+  let fastPool := bn254FastArray pool
+  ({ representation := "ZMod", field := "BN254.ScalarField", suffix := "zmod",
+     pool := pool, constant := pool.getD 0 1, checksum := checksumZMod, sink := sinkZMod },
+   { representation := "Limbs8", field := "BN254.Fast.ScalarField", suffix := "fast",
+     pool := fastPool, constant := fastPool.getD 0 1, checksum := checksumBn254Fast,
+     sink := sinkMont64x8 },
+   gen)
+
+/-- BLS12-381 scalar operands, canonical and eight-limb, from one pool. -/
+private def bls12_381Reps (gen : StdGen) :
+    ChainRep BLS12_381.ScalarField × ChainRep BLS12_381.Fast.ScalarField × StdGen :=
+  let (values, gen) := (zmodArray BLS12_381.scalarFieldSize fieldPoolSize false).run gen
+  let pool := nonzeroPool values
+  let fastPool := bls12_381FastArray pool
+  ({ representation := "ZMod", field := "BLS12_381.ScalarField", suffix := "zmod",
+     pool := pool, constant := pool.getD 0 1, checksum := checksumZMod, sink := sinkZMod },
+   { representation := "Limbs8", field := "BLS12_381.Fast.ScalarField", suffix := "fast",
+     pool := fastPool, constant := fastPool.getD 0 1, checksum := checksumBls12_381Fast,
+     sink := sinkMont64x8 },
+   gen)
+
+/-- BLS12-377 scalar operands, canonical and eight-limb, from one pool. -/
+private def bls12_377Reps (gen : StdGen) :
+    ChainRep BLS12_377.ScalarField × ChainRep BLS12_377.Fast.ScalarField × StdGen :=
+  let (values, gen) := (zmodArray BLS12_377.scalarFieldSize fieldPoolSize false).run gen
+  let pool := nonzeroPool values
+  let fastPool := bls12_377FastArray pool
+  ({ representation := "ZMod", field := "BLS12_377.ScalarField", suffix := "zmod",
+     pool := pool, constant := pool.getD 0 1, checksum := checksumZMod, sink := sinkZMod },
+   { representation := "Limbs8", field := "BLS12_377.Fast.ScalarField", suffix := "fast",
+     pool := fastPool, constant := fastPool.getD 0 1, checksum := checksumBls12_377Fast,
+     sink := sinkMont64x8 },
+   gen)
+
+/-- Time BN254 scalar multiplication. -/
+private def runBn254Mul (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  let (slow, fast, gen) := bn254Reps gen
+  let group ← runBinOpGroup "fields-bn254-mul" "BN254 scalar multiplication"
+    "bn254" "mul" heavyChainRounds heavyThroughputRounds
+    slow (· * ·) fast Montgomery.Native64x8.FastField.mul preset
+  pure (group, gen)
+
+/-- Time BLS12-381 scalar multiplication. -/
+private def runBls12_381Mul (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  let (slow, fast, gen) := bls12_381Reps gen
+  let group ← runBinOpGroup "fields-bls12-381-mul" "BLS12-381 scalar multiplication"
+    "bls12-381" "mul" heavyChainRounds heavyThroughputRounds
+    slow (· * ·) fast Montgomery.Native64x8.FastField.mul preset
+  pure (group, gen)
+
+/-- Time BLS12-377 scalar multiplication. -/
+private def runBls12_377Mul (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  let (slow, fast, gen) := bls12_377Reps gen
+  let group ← runBinOpGroup "fields-bls12-377-mul" "BLS12-377 scalar multiplication"
+    "bls12-377" "mul" heavyChainRounds heavyThroughputRounds
+    slow (· * ·) fast Montgomery.Native64x8.FastField.mul preset
   pure (group, gen)
 
 /-- Registry entries for the base-field arithmetic benchmarks. -/
@@ -420,7 +510,13 @@ def fieldArithTasks : List BenchTask := [
   BenchTask.fromGroupRunner ⟨"fields-goldilocks-inv", "Goldilocks inversion"⟩
     runGoldilocksInv,
   BenchTask.fromGroupRunner ⟨"fields-goldilocks-pow", "Goldilocks exponentiation"⟩
-    runGoldilocksPow
+    runGoldilocksPow,
+  BenchTask.fromGroupRunner ⟨"fields-bn254-mul", "BN254 scalar multiplication"⟩
+    runBn254Mul,
+  BenchTask.fromGroupRunner ⟨"fields-bls12-381-mul", "BLS12-381 scalar multiplication"⟩
+    runBls12_381Mul,
+  BenchTask.fromGroupRunner ⟨"fields-bls12-377-mul", "BLS12-377 scalar multiplication"⟩
+    runBls12_377Mul
 ]
 
 end CompPolyBench

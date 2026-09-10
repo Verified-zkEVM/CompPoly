@@ -93,10 +93,26 @@ A whole number of `throughputUnroll`s, for the same reason `chainRounds` is a
 whole number of `unrollBlock`s. -/
 def throughputRounds : Nat := 32 * throughputUnroll
 
-/-- Work units performed by one throughput iteration.
+/-- Operations a latency chain of `rounds` actually performs.
+
+`chainLatency` runs whole `unrollBlock`s, so a `rounds` that is not a multiple
+of one is rounded down. Rows take their `workUnits` from here rather than from
+the `rounds` they asked for, so a badly chosen depth measures fewer operations
+than its name suggests instead of dividing by a count the machine never
+performed. -/
+def latencyUnits (rounds : Nat) : Nat := unrollBlock * (rounds / unrollBlock)
+
+/-- Operations a throughput chain of `rounds` actually performs.
+
+`throughputWidth` per round, whole `throughputUnroll`s only; see
+`latencyUnits`. -/
+def throughputUnitsOf (rounds : Nat) : Nat :=
+  throughputWidth * throughputUnroll * (rounds / throughputUnroll)
+
+/-- Work units performed by one throughput iteration at `throughputRounds`.
 
 Equal to `chainRounds` by construction; see the note there. -/
-def throughputUnits : Nat := throughputWidth * throughputRounds
+def throughputUnits : Nat := throughputUnitsOf throughputRounds
 
 /-- Apply `op` eight times, straight-line.
 
