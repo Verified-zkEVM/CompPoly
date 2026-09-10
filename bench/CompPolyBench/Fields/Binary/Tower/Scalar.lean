@@ -39,9 +39,9 @@ namespace CompPolyBench
 `GF(2^64)` addition is `xor`, so `nonzeroPool` is not needed: the inversion
 chain's step already mixes with a fixed operand, and `inv64 0 = 0` is only
 reachable if the seed and the constant coincide. -/
-private def towerWordRep (suffix method : String) (pool : Array UInt64) :
+private def towerWordRep (suffix representation field : String) (pool : Array UInt64) :
     ChainRep UInt64 :=
-  { representation := "UInt64", field := method, suffix := suffix,
+  { representation := representation, field := field, suffix := suffix,
     pool := pool, constant := pool.getD 0 1,
     checksum := fun x ↦ x.toNat, sink := u64Sink }
 
@@ -63,8 +63,8 @@ private def runTowerMul8 (preset : BenchPreset) (gen : StdGen) :
   let group ← runBinOpGroup "fields-tower-bt8-mul"
     "Binary tower multiplication (GF(2^8)), table against recursive"
     "tower-bt8" "mul" chainRounds throughputRounds
-    (towerWordRep "rec" "GF(2^8)" pool) Fast.mul8
-    (towerWordRep "table" "GF(2^8)" pool) Fast.mul8T preset
+    (towerWordRep "rec" "UInt64" "GF(2^8) recursive" pool) Fast.mul8
+    (towerWordRep "table" "UInt64" "GF(2^8) table" pool) Fast.mul8T preset
   pure (group, gen)
 
 /-- Time `GF(2^64)` multiplication, recursive against table-driven. -/
@@ -74,8 +74,8 @@ private def runTowerMul64 (preset : BenchPreset) (gen : StdGen) :
   let group ← runBinOpGroup "fields-tower-bt64-mul"
     "Binary tower multiplication (GF(2^64)), table against recursive"
     "tower-bt64" "mul" chainRounds throughputRounds
-    (towerWordRep "rec" "GF(2^64)" pool) Fast.mul64
-    (towerWordRep "table" "GF(2^64)" pool) Fast.mul64T preset
+    (towerWordRep "rec" "UInt64" "GF(2^64) recursive" pool) Fast.mul64
+    (towerWordRep "table" "UInt64" "GF(2^64) table" pool) Fast.mul64T preset
   pure (group, gen)
 
 /-- Time `GF(2^64)` inversion, recursive against table-driven. -/
@@ -84,9 +84,9 @@ private def runTowerInv64 (preset : BenchPreset) (gen : StdGen) :
   let (pool, gen) := towerWordPool 64 gen
   let group ← runUnOpGroup "fields-tower-bt64-inv-word"
     "Binary tower inversion (GF(2^64)), table against recursive"
-    "tower-bt64" "inv" "inv"
-    (towerWordRep "rec" "GF(2^64)" pool) (· ^^^ ·) Fast.inv64
-    (towerWordRep "table" "GF(2^64)" pool) (· ^^^ ·) Fast.inv64T preset
+    "tower-bt64" "inv" "inv (recursive)" "inv (table)"
+    (towerWordRep "rec" "UInt64" "GF(2^64) recursive" pool) (· ^^^ ·) Fast.inv64
+    (towerWordRep "table" "UInt64" "GF(2^64) table" pool) (· ^^^ ·) Fast.inv64T preset
   pure (group, gen)
 
 /-- Registry entries for the tower's scalar kernels. -/

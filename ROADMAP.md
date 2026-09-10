@@ -150,7 +150,15 @@ CompPoly aims to be the premier formally verified library for computable polynom
 6. **Benchmarking**
    - ✅ Basic, reproducible evaluation benchmark executable (`lake exe CompPolyBench`; see `bench/README.md`)
    - ✅ CI build/run with artifact upload (GitHub Actions `lean_action_ci.yml`)
-   - 🔄 Expand regression coverage and published performance baselines
+   - ✅ Operation-level coverage: base-field `mul`/`add`/`inv`/`pow` over
+     KoalaBear, BabyBear, Mersenne31 and Goldilocks, the eight-limb Montgomery
+     multiply, the binary tower's table-driven kernels, the standalone
+     multiplicative NTT over `n = 2^8 … 2^16`, Reed-Solomon encoding, and the
+     schoolbook/NTT crossover. Field and kernel rows are chained and reported
+     per operation, latency and throughput separately; see
+     [`docs/wiki/benchmarking.md`](docs/wiki/benchmarking.md)
+   - 🔄 Published performance baselines, and a measured comparison against a
+     pinned external implementation ([`BENCHMARKING.md`](BENCHMARKING.md) §13)
 
 7. **Bivariate polynomial operations**
    - ✅ Optimize the existing bivariate polynomial type `CPolynomial (CPolynomial R)`:

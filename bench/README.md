@@ -82,9 +82,14 @@ Roughly by area, with representative group prefixes:
 | Additive NTT | `additive-ntt-btf*` |
 | Extension fields | `fields-extension-*-mul`, `fields-extension-*-inv` |
 | Binary tower fields | `fields-tower-bt128-*`: `BitVec` spec vs packed-word implementation |
-| Goldilocks arithmetic | `fields-goldilocks-{mul,inv}`: canonical `ZMod` vs single-word `UInt64` |
+| Base-field arithmetic | `fields-{koalabear,babybear,mersenne31,goldilocks}-{mul,add,inv,pow}`: canonical `ZMod` vs native-word, latency and throughput |
+| Pairing scalar multiplication | `fields-{bn254,bls12-381,bls12-377}-mul` |
 | Scalar-field inversion | `fields-mont64x8-*-inv`: `ZMod` extended Euclid vs checked binary GCD vs Fermat |
-| Harness self-check | `harness-floor`, `harness-canary`: the harness measuring itself, see below |
+| Binary tower scalar kernels | `fields-tower-bt{8,64}-*`: table-driven vs recursive |
+| Multiplicative NTT | `ntt-{koalabear,babybear}-l*` over `n = 2^8 … 2^16`, plus `ntt-plan-koalabear` |
+| Reed-Solomon encoding | `rs-encode-koalabear-l*`: definitional encoder vs the certified NTT one |
+| Schoolbook / NTT crossover | `univariate-mul-crossover-*`, degree<4 to degree<1024 |
+| Harness self-check | `harness-floor`, `harness-canary`, `harness-chain-floor`, `harness-chain-linearity`: the harness measuring itself, see below |
 
 Use `--list` for the authoritative set; the prefixes above drift as groups are
 added.
@@ -129,6 +134,28 @@ Both rows of a group should carry comparable sink cost. Where a representation
 makes that impossible — a `ZMod` element above `2 ^ 63` has no cheap word digest
 while its fast counterpart does — the residual shows up in `harness-floor`
 territory and the group's ratio is a lower bound on the real speedup.
+
+### Chained bodies and the per-unit column
+
+An operation of one or two nanoseconds cannot be measured one per timed
+iteration: the harness floor is about the same size, and the operand-pool
+idiom around it — `xs.getD (i % xs.size) unit` — is a boxed-`Nat` modulo, a
+bounds check and a boxed array read, twice. So the field and kernel groups
+perform their operation `workUnits` times per iteration, through the
+combinators in `bench/CompPolyBench/Harness/Chain.lean`, and the report gains a
+**Per unit (ps)** column dividing the median by that count.
+
+Two shapes, reported separately because a prover is bounded by different ones
+in different places, and named as Plonky3 names them:
+
+- **latency** — each operation depends on the last, so the pipeline cannot
+  overlap two;
+- **throughput** — ten independent accumulators, so it can.
+
+Every row of a group must agree on `workUnits`, because the count describes the
+*problem* and not the implementation; a group whose rows disagree fails the
+run. A per-unit number is **not** comparable with `harness-floor`, which is a
+per-iteration cost: the chain floor for comparison is `harness-chain-floor`.
 
 ### Sampling and dispersion
 
@@ -179,6 +206,18 @@ that has been optimised away otherwise looks exactly like a benchmark that got
 very fast, and the canary is what tells the two apart. Both are measured whenever
 either is selected, because the check is a comparison between them.
 
+`harness-chain-floor` and `harness-chain-linearity` do the same two jobs for
+chained bodies. The floor group carries the cheapest honest operation in both
+chain shapes, so a per-unit number can be read against something; the linearity
+group **fails the run** unless eight times the chain length costs at least four
+times as much, which is what catches a chain the compiler has collapsed.
+
+Both checks earn their keep. The chain floor's first operation was
+`x ^^^ (x >>> 7)`, whose 64-deep block is algebraically the identity in
+characteristic two, and LLVM found that: the row reported a sixteenth of a
+cycle per operation *and the linearity check still passed*, because what
+collapsed was each block rather than the loop over blocks.
+
 ## Determinism
 
 Each group derives its own input generator from its key (`genFor`), so a group's
@@ -208,7 +247,7 @@ lake exe CompPolyBench --medium --validate-only --groups "<curated set>"
 ```
 
 which does the untimed digest pass and the group agreement check but collects no
-samples. It takes about 34 seconds over the curated set and fails the run on a
+samples. It takes about 29 seconds of CPU over the curated set and fails the run on a
 digest mismatch or a collapsed harness canary. `--validate-only` is worth running
 locally for the same reason: it is the fast way to ask whether an implementation
 is still correct.

@@ -181,15 +181,16 @@ def chainShape (rounds : Nat) : String :=
 The chained step is `op (x + constant)` rather than `op x`: iterating a bare
 inversion alternates between two values, which measures one input rather than
 the pool. The addition it costs is a percent of an inversion. -/
-@[specialize] def runUnOpGroup {S F : Type} (groupKey title fieldTag opTag method : String)
+@[specialize] def runUnOpGroup {S F : Type} (groupKey title fieldTag opTag : String)
+    (slowMethod fastMethod : String)
     (slow : ChainRep S) (slowAdd : S → S → S) (slowOp : S → S)
     (fast : ChainRep F) (fastAdd : F → F → F) (fastOp : F → F)
     (preset : BenchPreset) : IO BenchGroup := do
   let slowConstant := slow.constant
   let fastConstant := fast.constant
-  let slowRecord ← chainLatencyRow fieldTag opTag method "" expChainRounds slow
+  let slowRecord ← chainLatencyRow fieldTag opTag slowMethod "" expChainRounds slow
     (fun x ↦ slowOp (slowAdd x slowConstant)) preset
-  let fastRecord ← chainLatencyRow fieldTag opTag method "" expChainRounds fast
+  let fastRecord ← chainLatencyRow fieldTag opTag fastMethod "" expChainRounds fast
     (fun x ↦ fastOp (fastAdd x fastConstant)) preset
   pure { groupKey := groupKey, title := title, records := #[slowRecord, fastRecord] }
 
@@ -284,7 +285,7 @@ private def runKoalaBearInv (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (slow, fast, gen) := koalaBearReps gen
   let group ← runUnOpGroup "fields-koalabear-inv" "KoalaBear inversion"
-    "koalabear" "inv" "inv" slow (· + ·) (·⁻¹)
+    "koalabear" "inv" "inv (ZMod.inv)" "inv (Fermat chain)" slow (· + ·) (·⁻¹)
     fast Montgomery.Native32.add Montgomery.Native32.inv preset
   pure (group, gen)
 
@@ -293,7 +294,7 @@ private def runKoalaBearPow (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (slow, fast, gen) := koalaBearReps gen
   let group ← runUnOpGroup "fields-koalabear-pow" "KoalaBear exponentiation"
-    "koalabear" "pow" "pow (binary ladder)"
+    "koalabear" "pow" "pow (binary ladder)" "pow (binary ladder)"
     slow (· + ·) (npowBinRec powExponent ·)
     fast Montgomery.Native32.add
     (Montgomery.Native32.pow · powExponent) preset
@@ -322,7 +323,7 @@ private def runBabyBearInv (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (slow, fast, gen) := babyBearReps gen
   let group ← runUnOpGroup "fields-babybear-inv" "BabyBear inversion"
-    "babybear" "inv" "inv" slow (· + ·) (·⁻¹)
+    "babybear" "inv" "inv (ZMod.inv)" "inv (Fermat chain)" slow (· + ·) (·⁻¹)
     fast Montgomery.Native32.add Montgomery.Native32.inv preset
   pure (group, gen)
 
@@ -331,7 +332,7 @@ private def runBabyBearPow (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (slow, fast, gen) := babyBearReps gen
   let group ← runUnOpGroup "fields-babybear-pow" "BabyBear exponentiation"
-    "babybear" "pow" "pow (binary ladder)"
+    "babybear" "pow" "pow (binary ladder)" "pow (binary ladder)"
     slow (· + ·) (npowBinRec powExponent ·)
     fast Montgomery.Native32.add
     (Montgomery.Native32.pow · powExponent) preset
@@ -360,7 +361,7 @@ private def runMersenne31Inv (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (slow, fast, gen) := mersenne31Reps gen
   let group ← runUnOpGroup "fields-mersenne31-inv" "Mersenne31 inversion"
-    "mersenne31" "inv" "inv" slow (· + ·) (·⁻¹)
+    "mersenne31" "inv" "inv (ZMod.inv)" "inv (Fermat chain)" slow (· + ·) (·⁻¹)
     fast Mersenne31.Fast.add Mersenne31.Fast.inv preset
   pure (group, gen)
 
@@ -369,7 +370,7 @@ private def runMersenne31Pow (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (slow, fast, gen) := mersenne31Reps gen
   let group ← runUnOpGroup "fields-mersenne31-pow" "Mersenne31 exponentiation"
-    "mersenne31" "pow" "pow (binary ladder)"
+    "mersenne31" "pow" "pow (binary ladder)" "pow (binary ladder)"
     slow (· + ·) (npowBinRec powExponent ·)
     fast Mersenne31.Fast.add (Mersenne31.Fast.pow · powExponent) preset
   pure (group, gen)
@@ -397,7 +398,7 @@ private def runGoldilocksInv (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (slow, fast, gen) := goldilocksReps gen
   let group ← runUnOpGroup "fields-goldilocks-inv" "Goldilocks inversion"
-    "goldilocks" "inv" "inv (Fermat chain)" slow (· + ·) (·⁻¹)
+    "goldilocks" "inv" "inv (ZMod.inv)" "inv (Fermat chain)" slow (· + ·) (·⁻¹)
     fast Goldilocks.Fast.add Goldilocks.Fast.inv preset
   pure (group, gen)
 
@@ -406,7 +407,7 @@ private def runGoldilocksPow (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (slow, fast, gen) := goldilocksReps gen
   let group ← runUnOpGroup "fields-goldilocks-pow" "Goldilocks exponentiation"
-    "goldilocks" "pow" "pow (binary ladder)"
+    "goldilocks" "pow" "pow (binary ladder)" "pow (binary ladder)"
     slow (· + ·) (npowBinRec powExponent ·)
     fast Goldilocks.Fast.add (Goldilocks.Fast.pow · powExponent) preset
   pure (group, gen)

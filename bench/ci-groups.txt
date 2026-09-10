@@ -10,9 +10,10 @@
 # fails the run, so a renamed group is caught rather than silently dropped.
 #
 # Excluded on purpose are the groups whose single iteration costs seconds
-# (univariate-batch-large-*, univariate-mod-by-monic-medium-*). Validating this
-# subset takes ~34s against ~138s for every registered group; widen it if that
-# trade changes.
+# (univariate-batch-large-*, univariate-mod-by-monic-medium-*), and the sizes
+# of a sweep that the middle of the sweep already covers: one size of the
+# multiplicative NTT and two of the schoolbook/NTT crossover stand in for the
+# rest, since a body that is wrong at one size is wrong at all of them.
 #
 # One key per line. Blank lines and `#` comments are ignored.
 harness-floor
@@ -58,3 +59,19 @@ fields-mont64x8-bls12-381-inv
 fields-mont64x8-bls12-377-inv
 fields-goldilocks-mul
 fields-goldilocks-inv
+fields-koalabear-mul
+fields-koalabear-add
+fields-koalabear-inv
+fields-koalabear-pow
+fields-babybear-mul
+fields-mersenne31-mul
+fields-bn254-mul
+fields-tower-bt8-mul
+fields-tower-bt64-mul
+fields-tower-bt64-inv-word
+ntt-koalabear-l12
+ntt-babybear-l12
+ntt-plan-koalabear
+rs-encode-koalabear-l10
+univariate-mul-crossover-64
+univariate-mul-crossover-256
