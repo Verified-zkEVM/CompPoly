@@ -113,6 +113,14 @@ On a quiet local machine the median absolute deviation across replicated rows is
 around 1.4% of the median, with a maximum near 5%. Treat differences below that
 as noise, and expect a shared CI runner to be worse.
 
+`Warmup` and `Iterations` come from the preset's wall-clock budget, not from a
+number written down beside the benchmark: a calibration ramp times 1, 2, 4, …
+iterations until the warmup budget is met, and its last step estimates the
+per-iteration cost that sizes the samples. So **`Iterations` is not comparable
+between runs** — it depends on how fast the machine was when that row was
+calibrated. Compare `Median` and `Spread`. `manifest-<runId>.json` records the
+commit, dirty flag, toolchain, budgets, seed and host for exactly this reason.
+
 ## The harness self-check
 
 `harness-floor` times an empty body: the per-iteration cost of the loop and the
@@ -149,14 +157,26 @@ and ext6 groups. Any tool comparing two result files must key on
 1. Write a group runner returning a `BenchGroup`, and register it with
    `BenchTask.fromGroupRunner`. The `BenchGroupInfo` you pass is authoritative
    for the key and title.
-2. Give every implementation in the group the same `checksum`, so the agreement
+2. Call `runTimedSpec` with a `BenchSpec` record. There is no iteration count to
+   choose — the preset's budget and the calibration ramp size the row.
+3. Set `digestIterations` to the **period of the body in its iteration index**,
+   via `digestPeriod`: 1 for a `fun _ ↦ …` body, the pool size for a body that
+   cycles one. It must never depend on the preset or on anything the machine
+   decides, or the digest stops being comparable across runs and fixtures become
+   impossible. Truncating to the period is not a weaker check — iterations past
+   one full cycle recompute a bit-identical result.
+4. Make the body depend on `i`, through a value built at run time. A body that
+   is a closed term is evaluated once and cached, and the row then reports its
+   true cost divided by `itersPerSample` — see finding 2 in `BENCHMARKING.md`
+   §12.6 for a group that did this for months.
+5. Give every implementation in the group the same `checksum`, so the agreement
    check is meaningful.
-3. Supply a `sink` if the default would allocate, and make the group's rows
+6. Supply a `sink` if the default would allocate, and make the group's rows
    symmetric under the rule above.
-4. Add the key to `bench/ci-groups.txt` to have it covered by the correctness
+7. Add the key to `bench/ci-groups.txt` to have it covered by the correctness
    gate and by the default selection of the on-demand timing workflow. An
    unknown key fails the run, so a rename is caught rather than dropped.
-5. New modules under `bench/` need no `./scripts/update-lib.sh` run; that script
+8. New modules under `bench/` need no `./scripts/update-lib.sh` run; that script
    globs `CompPoly/*.lean` only, and the lakefile globs `CompPolyBench`
    submodules.
 

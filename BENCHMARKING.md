@@ -1272,6 +1272,17 @@ coverage work (§6.6, §7 Phase 4), the instruction-count track (§6.5, §7 Phas
 the external yardstick (§6.6, §7 Phase 6), and the Peregrine track (§8) including
 its hook.
 
+**Radar is deferred by decision, not pending.** Recorded here so it is not
+rediscovered later as an oversight: there is no `bench/run` entry point, no
+registration ask, and no radar metric format, and none of the three is waiting
+on anything. §5.1 and §7 Phase 2 keep the details should the decision change.
+The regression gate stays blocked behind it — without Radar it is self-hosted
+baseline comparison, for which the machinery exists to copy
+(`lean_action_ci.yml` finds and downloads the merge-base run's artifact, and
+`scripts/build_timing_report.sh render` renders the comparison for build
+timing) but the threshold does not, and §12.5 finding 5 is explicit that no
+single run can measure the run-to-run variance a gate would compare against.
+
 Three decisions settled that §9 left open:
 
 - **§9.4, preset budget: do not gate on CI benchmark wall-clock.** The benchmark
@@ -1308,6 +1319,7 @@ reviews as a small diff and the stack merges bottom-up. Base of the stack is
 | 3 | `dhsorens/bench-determinism` | Per-group seeding from the group key, registration made authoritative, dead-code removal | landed |
 | 4 | `dhsorens/bench-reporting` | Cross-platform hardware probe, `bench/out/`, `docs/wiki/benchmarking.md`, `clMul` guard migration | landed |
 | 5 | `dhsorens/bench-foundations` | `--validate-only`, correctness gate in main CI, on-demand `benchmarks.yml` | landed |
+| 6 | `dhsorens/bench-sizing-and-coverage` | Wall-clock budgets replace 228 hand-tuned iteration counts, one declaration site per row, preset-independent digests, group identity and a run manifest in the output | in review |
 
 ### 12.1 Measurement core (`dhsorens/bench-measurement-core`)
 
@@ -1682,3 +1694,79 @@ selection, and upserted a PR comment carrying the advisory caveat.
 **Not done.** No nightly schedule. Timings are produced when someone asks —
 manual dispatch, a `/bench` comment from a repo member, or a PR touching
 `bench/**`, which is the one place path filtering genuinely fits.
+
+### 12.6 Budget-driven sizing (`dhsorens/bench-sizing-and-coverage`)
+
+§11.4 item 4 and §6.3 said the same thing from two directions: the suite carried
+one hand-tuned iteration count per benchmark per preset, 228 of them, and a count
+is the wrong unit. It is not comparable between two rows of one table, it goes
+stale as the code it measures gets faster, and choosing one for a new benchmark
+is guesswork that has to be redone on every machine. §12.2 deferred retiring
+them; this branch does it.
+
+A preset now selects a `BenchBudget` — warmup nanoseconds, sample length, sample
+count, and a total ceiling per row — and each row is calibrated against it by a
+geometric ramp that doubles as warmup. Two design points are load-bearing.
+`sampleNanos` is 1 ms at every preset: a sample is a mean over `itersPerSample`
+iterations, so raising that count averages dispersion away, and a preset-varying
+sample length would make `--small` and `--large` report structurally different
+spread for identical code. And `measureNanos` is a second, separate ceiling,
+because `sampleNanos` × `sampleCount` is 50 ms even at `--large`, which would pin
+the seconds-per-iteration rows at one sample forever.
+
+Getting there needed three preparatory steps, each verifiable on its own. A
+`BenchSpec` record replaced five consecutive `String` arguments at 228 call
+sites, in a commit that provably changed nothing. Digest lengths became the
+**period of the body in its iteration index** rather than `min 256 measured`:
+195 of the 282 rows shared across presets had carried three different digests,
+and under budget sizing the same expression would have made a digest vary with
+the *machine*, which turns committed fixtures from awkward into impossible.
+`guruswami-sudan-packed-filter` needed a separate fix — its `candidateCount` was
+`preset.selectNat 128 64 32`, an input shape wearing a budget's clothes, which no
+digest rule could have repaired; pinned at 128.
+
+**Findings.**
+
+1. *The canary would have inverted silently.*
+   `bench/CompPolyBench/Harness/SelfCheck.lean` asserted
+   `canary.totalNanos > 3 x floor.totalNanos`. Totals separate the two rows only
+   while they run the same number of iterations, and a wall-clock budget
+   equalises them by construction. Left alone it throws on every run; "fixed" by
+   lowering `canaryFloorRatio` it passes vacuously forever and the harness loses
+   its only dead-code detection. It compares per-iteration medians now, landed
+   *before* the flip so the flip was not verified through a check that was
+   throwing. Observed ratios 160x-776x across presets and both modes.
+
+2. *One group had been reporting its cost divided by `itersPerSample` since it
+   was written.* The finite-field root group's body was a closed term — `p` was
+   bound to a nullary constant and so is the root context — so it was evaluated
+   once and every later iteration in a sample got the cached array back. At the
+   hand-tuned counts that was a factor of 1 to 20 and invisible; calibration
+   raised `itersPerSample` to ~700k and made it 10^8. Fixed by drawing the
+   workload's root seeds from the group's random stream, so the body depends on
+   a local the way every other group's does. `fast-nttfast`'s real cost is
+   74 ms, not the 24 ms the suite had been reporting. Found by the per-iteration
+   median comparison the sizing flip's verification calls for, and the reason to
+   insist on that comparison rather than a digest diff alone.
+
+3. *Two report lines would have vanished without an error.* "Warmup iterations"
+   and "Samples" were rendered with `matchingNat?`, which stops matching once two
+   rows of a group are calibrated separately. They are table columns now.
+
+**Effect on the run data**, `--medium`, curated set: rows with fewer than five
+samples fell from 22 to 9 and rows at `n=1` from 14 to 2, while per-iteration
+medians moved by at most 8.6% (whole distribution 0.878-1.086, median 1.006).
+Calibration repeats within 1.01x over three runs. The curated timed run went
+from 120.1s to 110.7s and `--validate-only --medium` from 36.1s to 33.0s — the
+latter a small saving, as §11.4 item 3 predicted, because the cost sits in rows
+validated exactly once.
+
+**What it does not fix.** Rows still reading `n=1` have single iterations that
+genuinely exhaust the budget; their problem is input shape and no harness change
+reaches it. With calibration in place a parameterised group can pick the largest
+shape that fits its budget, which is the mechanism for that pass when it happens.
+One thing is lost deliberately: `measured_iterations` is no longer comparable
+across runs, since it depends on how fast the machine was during calibration.
+`group_key`, `group_title`, and a per-run `manifest-<runId>.json` — commit,
+dirty flag, toolchain, preset, resolved budgets, seed, selection, hardware —
+are what replaces it for attribution.
