@@ -65,6 +65,15 @@ instance : Fact (Nat.Prime KoalaBear.fieldSize) where
 
 /-- Result row emitted by one timed benchmark case. -/
 structure BenchRecord where
+  /-- Registry key of the group this row belongs to.
+
+  `runTimedSpec` does not know it — a row is built before it is placed in a
+  group — so it is stamped in `flattenGroups` from `BenchGroup.groupKey`, which
+  `BenchTask.fromGroupRunner` single-sources from the registry that `--list` and
+  `bench/ci-groups.txt` validate against. Empty until then. -/
+  groupKey : String := ""
+  /-- Report title of the group this row belongs to, stamped alongside the key. -/
+  groupTitle : String := ""
   name : String
   representation : String
   method : String
@@ -268,6 +277,10 @@ def resultsPath (runId : String) : System.FilePath :=
 /-- Path for the generated Markdown benchmark report. -/
 def reportPath (runId : String) : System.FilePath :=
   outputDir / ("report-" ++ runId ++ ".md")
+
+/-- Path for the per-run provenance manifest. -/
+def manifestPath (runId : String) : System.FilePath :=
+  outputDir / ("manifest-" ++ runId ++ ".json")
 
 /-- Trim command output and normalize empty output to the empty string. -/
 def trimCommandOutput (s : String) : String :=
@@ -675,9 +688,130 @@ def appendRecords (xs ys : Array BenchRecord) : Array BenchRecord :=
 def appendGroups (xs ys : Array BenchGroup) : Array BenchGroup :=
   ys.foldl (init := xs) fun acc group ↦ acc.push group
 
-/-- Flatten grouped benchmark records for JSONL output. -/
+/-- Flatten grouped benchmark records for JSONL output, stamping group identity.
+
+The key and the title live only in the Markdown report otherwise, so a JSONL
+consumer has to reconstruct the grouping from row names. Stamped here rather
+than at `runTimedSpec`, which genuinely does not know which group a row will
+end up in. -/
 def flattenGroups (groups : Array BenchGroup) : Array BenchRecord :=
-  groups.foldl (init := #[]) fun acc group ↦ appendRecords acc group.records
+  groups.foldl (init := #[]) fun acc group ↦
+    appendRecords acc (group.records.map fun record ↦
+      { record with groupKey := group.groupKey, groupTitle := group.title })
+
+/-! ### Run manifest
+
+What produced a number, recorded beside it. Budget-driven sizing costs the suite
+its one previously-stable provenance signal: `measured_iterations` used to be a
+written-down constant, and is now a function of how fast the machine was when
+the row was calibrated. Nothing else in the JSONL says which commit, which
+toolchain, or which hardware a run came from.
+
+Deliberately a separate file rather than a header line in the JSONL: every
+consumer of that file assumes uniform records, and a header would break all of
+them at once.
+-/
+
+/-- Provenance for one benchmark run. -/
+structure RunManifest where
+  /-- Timestamp identifier shared with the results and report filenames. -/
+  runId : String
+  /-- `git rev-parse HEAD`, or `none` outside a checkout. -/
+  commit : Option String
+  /-- Whether the working tree had uncommitted changes.
+
+  Not optional in spirit: a timing taken from a dirty tree is not attributable
+  to anything, and the flag is the only way a reader finds that out later. -/
+  dirty : Bool
+  /-- Contents of `lean-toolchain`. -/
+  toolchain : Option String
+  /-- Preset name, and the budget it resolved to. -/
+  preset : BenchPreset
+  /-- Whether this run collected timings at all. -/
+  validateOnly : Bool
+  /-- Group keys requested, or `none` for the whole suite. -/
+  selection : Option (List String)
+  /-- Groups and rows actually produced. -/
+  groupCount : Nat
+  /-- Rows actually produced. -/
+  recordCount : Nat
+  /-- Host details, as the Markdown report collects them. -/
+  hardware : RunnerHardware
+
+/-- Collect the commit and dirty flag, tolerating a non-checkout. -/
+def collectGitProvenance : IO (Option String × Bool) := do
+  let commit ← runInfoCommand "git" #["rev-parse", "HEAD"]
+  let status ← runInfoCommand "git" #["status", "--porcelain"]
+  -- `runInfoCommand` maps empty output to `none`, so a clean tree reads as
+  -- `none` and any modification at all reads as `some`.
+  pure (commit, status.isSome)
+
+/-- Read the pinned toolchain, tolerating its absence. -/
+def collectToolchain : IO (Option String) := do
+  try
+    let text ← IO.FS.readFile "lean-toolchain"
+    let trimmed := trimCommandOutput text
+    pure <| if trimmed.isEmpty then none else some trimmed
+  catch _ =>
+    pure none
+
+/-- Gather everything the manifest records about this run. -/
+def collectRunManifest (runId : String) (preset : BenchPreset) (validateOnly : Bool)
+    (selection : BenchSelection) (groupCount recordCount : Nat) : IO RunManifest := do
+  let (commit, dirty) ← collectGitProvenance
+  let toolchain ← collectToolchain
+  let hardware ← collectRunnerHardware
+  pure {
+    runId := runId
+    commit := commit
+    dirty := dirty
+    toolchain := toolchain
+    preset := preset
+    validateOnly := validateOnly
+    selection := match selection with
+      | BenchSelection.all => none
+      | BenchSelection.only keys => some keys
+    groupCount := groupCount
+    recordCount := recordCount
+    hardware := hardware }
+
+/-- Render a manifest as pretty-printed JSON. -/
+def RunManifest.render (manifest : RunManifest) : String :=
+  let str (value : Option String) : Lean.Json :=
+    match value with
+    | some text => Lean.Json.str text
+    | none => Lean.Json.null
+  let budget := manifest.preset.budget
+  let json := Lean.Json.mkObj [
+    ("run_id", Lean.Json.str manifest.runId),
+    ("commit", str manifest.commit),
+    ("dirty", Lean.Json.bool manifest.dirty),
+    ("toolchain", str manifest.toolchain),
+    ("preset", Lean.Json.str manifest.preset.name),
+    ("validate_only", Lean.Json.bool manifest.validateOnly),
+    ("seed", Lean.Json.num seed),
+    ("budget", Lean.Json.mkObj [
+      ("warmup_nanos", Lean.Json.num budget.warmupNanos),
+      ("sample_nanos", Lean.Json.num budget.sampleNanos),
+      ("sample_count", Lean.Json.num budget.sampleCount),
+      ("measure_nanos", Lean.Json.num budget.measureNanos)]),
+    ("selection", match manifest.selection with
+      | none => Lean.Json.null
+      | some keys => Lean.Json.arr (keys.map Lean.Json.str).toArray),
+    ("group_count", Lean.Json.num manifest.groupCount),
+    ("record_count", Lean.Json.num manifest.recordCount),
+    ("hardware", Lean.Json.mkObj [
+      ("runner_os", str manifest.hardware.runnerOs),
+      ("runner_arch", str manifest.hardware.runnerArch),
+      ("cpu_model", str manifest.hardware.cpuModel),
+      ("logical_cpus", str manifest.hardware.logicalCpus),
+      ("cores_per_socket", str manifest.hardware.coresPerSocket),
+      ("threads_per_core", str manifest.hardware.threadsPerCore),
+      ("sockets", str manifest.hardware.sockets),
+      ("ram_total", str manifest.hardware.ramTotal),
+      ("root_disk", str manifest.hardware.rootDisk),
+      ("hypervisor", str manifest.hardware.hypervisor)])]
+  json.pretty ++ "\n"
 
 /-- Render a benchmark string field as a JSON string, escaped. -/
 def jsonString (s : String) : String :=
@@ -686,6 +820,8 @@ def jsonString (s : String) : String :=
 /-- Render one benchmark record as a JSONL row. -/
 def BenchRecord.toJsonLine (record : BenchRecord) : String :=
   "{" ++ String.intercalate "," [
+    "\"group_key\":" ++ jsonString record.groupKey,
+    "\"group_title\":" ++ jsonString record.groupTitle,
     "\"name\":" ++ jsonString record.name,
     "\"representation\":" ++ jsonString record.representation,
     "\"method\":" ++ jsonString record.method,

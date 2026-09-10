@@ -197,8 +197,12 @@ jobs:
           mkdir -p "$EVALUATION_BENCH_ARTIFACT_DIR"
           results=(bench/out/results-*.jsonl)
           reports=(bench/out/report-*.md)
+          manifests=(bench/out/manifest-*.json)
           if [ -e "${results[0]}" ]; then
             cp "${results[@]}" "$EVALUATION_BENCH_ARTIFACT_DIR/"
+          fi
+          if [ -e "${manifests[0]}" ]; then
+            cp "${manifests[@]}" "$EVALUATION_BENCH_ARTIFACT_DIR/"
           fi
           if [ -e "${reports[0]}" ]; then
             cp "${reports[@]}" "$EVALUATION_BENCH_ARTIFACT_DIR/"

@@ -52,7 +52,14 @@ is created on demand and ignored in its entirety:
 ```text
 bench/out/results-YYMMDD-HHMMSS.jsonl
 bench/out/report-YYMMDD-HHMMSS.md
+bench/out/manifest-YYMMDD-HHMMSS.json
 ```
+
+The manifest records what produced the numbers — commit, whether the tree was
+dirty, toolchain, preset and the budget it resolved to, seed, selection, and
+host details — and is written for every run, `--validate-only` included. It is
+a separate file rather than a header line in the JSONL, because every consumer
+of that file assumes uniform records.
 
 By default, a run writes both files. A checksum mismatch is reported in the
 Markdown report and makes the executable exit nonzero after writing artifacts.
