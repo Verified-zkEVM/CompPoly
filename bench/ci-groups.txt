@@ -17,6 +17,8 @@
 # One key per line. Blank lines and `#` comments are ignored.
 harness-floor
 harness-canary
+harness-chain-floor
+harness-chain-linearity
 univariate-dense-koalabear
 univariate-dense-babybear
 univariate-sparse-koalabear
