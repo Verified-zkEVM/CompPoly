@@ -74,6 +74,14 @@ structure BenchRecord where
   groupKey : String := ""
   /-- Report title of the group this row belongs to, stamped alongside the key. -/
   groupTitle : String := ""
+  /-- Which rows of the group this one must agree with on a digest.
+
+  A group is a set of rows measured together; it is not always a set of rows
+  computing the *same value*. A field's `mul` and its `add` belong in one table
+  and cannot share a digest. Rows are partitioned by this label and agreement is
+  required within each part, so one group can carry several comparisons. Empty
+  is a class like any other, which is what every pre-existing group uses. -/
+  digestClass : String := ""
   name : String
   representation : String
   method : String
@@ -624,6 +632,12 @@ structure BenchSpec where
 
   Must be the body's period in `i`, never preset-shaped: see `digestPeriod`. -/
   digestIterations : Nat
+  /-- Which rows of the group this row must agree with on a digest.
+
+  Leave empty when every row of the group computes the same value. Set it to
+  separate the comparisons inside a group that carries more than one; see
+  `BenchRecord.digestClass`. -/
+  digestClass : String := ""
   /-- Elementary operations one iteration of the body performs.
 
   Left at one for a row that performs its operation once. Set it and the report
@@ -692,6 +706,7 @@ against a floor that was never measured.
     totalNanos := sampled.totalNanos
     medianNanos := sampled.stats.medianPicos / 1000
     workUnits := spec.workUnits
+    digestClass := spec.digestClass
     checksum := validationChecksum
     sinkDigest := sampled.sink
     stats := sampled.stats
@@ -852,6 +867,7 @@ def BenchRecord.toJsonLine (record : BenchRecord) : String :=
     "\"total_nanos\":" ++ toString record.totalNanos,
     "\"median_nanos\":" ++ toString record.medianNanos,
     "\"work_units\":" ++ toString record.workUnits,
+    "\"digest_class\":" ++ jsonString record.digestClass,
     "\"checksum\":" ++ toString record.checksum,
     "\"sink_digest\":" ++ toString record.sinkDigest,
     "\"sample_count\":" ++ toString record.stats.count,
@@ -932,7 +948,7 @@ def renderMarkdownTable (columns : List (String × Bool × (BenchRecord → Stri
   markdownRow headers widths (columns.map (fun _ ↦ false)) :: markdownRow separator widths
     (columns.map (fun _ ↦ false)) :: rows
 
-/-- Return the shared checksum for a group if all rows have the same checksum. -/
+/-- Return the shared checksum for a list of rows if all of them agree. -/
 def matchingChecksum? (records : List BenchRecord) : Option Nat :=
   match records with
   | [] => none
@@ -943,6 +959,23 @@ def matchingChecksum? (records : List BenchRecord) : Option Nat :=
         some record.checksum
       else
         none
+
+/-- The digest classes present in a group, in first-appearance order. -/
+def digestClasses (records : List BenchRecord) : List String :=
+  records.foldl (init := []) fun seen record ↦
+    if seen.contains record.digestClass then seen else seen ++ [record.digestClass]
+
+/-- The rows of one digest class. -/
+def recordsInClass (records : List BenchRecord) (cls : String) : List BenchRecord :=
+  records.filter fun record ↦ record.digestClass == cls
+
+/-- Whether every digest class in a group agrees internally.
+
+Agreement is required *within* a class, not across the group: a group carrying a
+field's `mul` and its `add` has two classes and two digests, and demanding one
+digest for both would be demanding that multiplication equal addition. -/
+def classesAgree (records : List BenchRecord) : Bool :=
+  (digestClasses records).all fun cls ↦ (matchingChecksum? (recordsInClass records cls)).isSome
 
 /-- Return a shared string field for a group if all rows agree. -/
 def matchingString? (records : List BenchRecord) (field : BenchRecord → String) : Option String :=
@@ -976,15 +1009,21 @@ def renderSharedNatLine (label : String) (records : List BenchRecord)
     (field : BenchRecord → Nat) : Option String :=
   (matchingNat? records field).map fun value ↦ "- " ++ label ++ ": `" ++ toString value ++ "`"
 
-/-- Render a short checksum status line for a benchmark group. -/
-def renderChecksumStatus (records : List BenchRecord) : String :=
-  match matchingChecksum? records with
-  | some checksum => "- Checksum: `" ++ toString checksum ++ "`"
-  | none => "- Checksum: **ERROR: mismatch detected**"
+/-- Render a short checksum status line for a benchmark group.
 
-/-- Return benchmark groups whose rows do not have a shared checksum. -/
+One digest when the group has a single class, and one per class when it has
+several, so a multi-comparison group still shows what agreed with what. -/
+def renderChecksumStatus (records : List BenchRecord) : String :=
+  let render (cls : String) : String :=
+    let label := if cls.isEmpty then "" else cls ++ ": "
+    match matchingChecksum? (recordsInClass records cls) with
+    | some checksum => label ++ "`" ++ toString checksum ++ "`"
+    | none => label ++ "**ERROR: mismatch detected**"
+  "- Checksum: " ++ String.intercalate ", " ((digestClasses records).map render)
+
+/-- Return benchmark groups in which some digest class does not agree. -/
 def checksumMismatchGroups (groups : Array BenchGroup) : List BenchGroup :=
-  groups.toList.filter fun group ↦ (matchingChecksum? group.records.toList).isNone
+  groups.toList.filter fun group ↦ !classesAgree group.records.toList
 
 /-- Return benchmark groups whose rows disagree on `workUnits`.
 
@@ -1263,9 +1302,12 @@ def renderMarkdown (hardware : RunnerHardware) (preset : BenchPreset) (groups : 
 private def validationRow (group : BenchGroup) : String :=
   let records := group.records.toList
   let status :=
-    match matchingChecksum? records with
-    | some checksum => "agree | `" ++ toString checksum ++ "`"
-    | none => "**MISMATCH** | -"
+    if classesAgree records then
+      let digests := (digestClasses records).filterMap fun cls ↦
+        (matchingChecksum? (recordsInClass records cls)).map toString
+      "agree | `" ++ String.intercalate "`, `" digests ++ "`"
+    else
+      "**MISMATCH** | -"
   "| `" ++ group.groupKey ++ "` | " ++ toString group.records.size ++ " | " ++ status ++ " |"
 
 /-- Render the report for a `--validate-only` run.
