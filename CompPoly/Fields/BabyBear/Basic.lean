@@ -50,6 +50,8 @@ def twoAdicity : Nat := 27
 
 instance : Fact (Nat.Prime fieldSize) := ⟨is_prime⟩
 
+instance : _root_.Field Field := ZMod.instField fieldSize
+
 instance : NonBinaryField Field where
   char_neq_2 := by decide
 
