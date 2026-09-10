@@ -127,16 +127,18 @@ report into `$GITHUB_STEP_SUMMARY`.
 
 Three files measure timings at *elaboration* time via `#eval`:
 
-- `tests/CompPolyTests/Univariate/NTT/Benchmark.lean` — NTT-vs-naive crossover
-  sweep over 20 operand sizes, `IO.monoMsNow`.
-- `tests/CompPolyTests/Bivariate/KroneckerBenchmark.lean`
+- `Benchmark.lean` under `tests/CompPolyTests/Univariate/NTT/` (removed in 12.7;
+  the sweep it held is now the `univariate-mul-crossover-*` groups) — NTT-vs-naive
+  crossover sweep over 20 operand sizes, `IO.monoMsNow`.
+- `KroneckerBenchmark.lean` under `tests/CompPolyTests/Bivariate/` (removed in
+  12.7; `bivariate-full-*` covers the same multiply)
 - `CommonBench.lean` under `tests/CompPolyTests/Fields/Binary/` (removed in 12.4;
   its correctness guards now live in
   `tests/CompPolyTests/Fields/Binary/Common.lean`)
 
-None is imported by `tests/CompPolyTests.lean`, so none runs under `lake test`
-or in CI. Each documents its own manual invocation (`lake build
-CompPolyTests.Bivariate.KroneckerBenchmark`).
+None was imported by `tests/CompPolyTests.lean`, so none ran under `lake test`
+or in CI. Each documented its own manual invocation, in the shape `lake build
+CompPolyTests.Bivariate.KroneckerBenchmark`. All three are now gone.
 
 ### 1.4 Build-time measurement (`scripts/build_timing_report.sh`)
 
@@ -1102,7 +1104,7 @@ anywhere in this document.
 | CI bench steps | `.github/workflows/lean_action_ci.yml:210` |
 | CI group allowlist | `.github/workflows/lean_action_ci.yml:22` (`BENCH_CI_GROUPS`) |
 | Build-time baseline logic | `scripts/build_timing_report.sh`, `lean_action_ci.yml:283` |
-| Orphaned `#eval` benchmarks | `tests/CompPolyTests/Univariate/NTT/Benchmark.lean`, `tests/CompPolyTests/Bivariate/KroneckerBenchmark.lean` (a third, `CommonBench.lean`, was removed in 12.4) |
+| Orphaned `#eval` benchmarks | none remain; `Benchmark.lean` and `KroneckerBenchmark.lean` were removed in 12.7, and a third, `CommonBench.lean`, in 12.4 |
 
 ---
 
@@ -1552,10 +1554,12 @@ The baseline is now generic in the operand width and carries four more guards at
 width 64, checked the same way. Had the file gone in §6.6, the generalization
 would have landed with nothing pinning either width to the fold it replaced.
 
-`tests/CompPolyTests/Univariate/NTT/Benchmark.lean` and
-`KroneckerBenchmark.lean` are deliberately left in place: the former holds the
-only NTT-vs-schoolbook crossover logic in the repo and is the specification for a
-future crossover metric.
+`Benchmark.lean` under `tests/CompPolyTests/Univariate/NTT/` and
+`KroneckerBenchmark.lean` under `tests/CompPolyTests/Bivariate/` were
+deliberately left in place here: the former held the only NTT-vs-schoolbook
+crossover logic in the repo and was the specification for a future crossover
+metric. That metric exists as of 12.7 — the `univariate-mul-crossover-*`
+groups — and both files were deleted with it.
 
 **`docs/wiki/benchmarking.md`** added and registered in both hand-maintained
 lists in `docs/wiki/README.md`, since `check-docs-integrity.py` validates that
