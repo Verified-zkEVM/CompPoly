@@ -187,12 +187,18 @@ def runSelected (selection : BenchSelection) (output : BenchOutput) (preset : Be
       s!"validated {records.size} benchmark records in {groups.size} groups for run {runId}"
     else
       s!"wrote {records.size} benchmark records in {groups.size} groups for run {runId}"
-  match checksumMismatchGroups groups with
-  | [] => pure 0
-  | mismatchedGroups =>
-      for group in mismatchedGroups do
-        IO.eprintln s!"ERROR: checksum mismatch in benchmark group `{group.groupKey}`"
-      pure 1
+  let mut failed := false
+  for group in checksumMismatchGroups groups do
+    IO.eprintln s!"ERROR: checksum mismatch in benchmark group `{group.groupKey}`"
+    failed := true
+  -- Rows of one group measure the same problem, so disagreeing on `workUnits`
+  -- means the group is mis-specified rather than merely unrenderable.
+  for group in workUnitsMismatchGroups groups do
+    IO.eprintln <|
+      s!"ERROR: rows of benchmark group `{group.groupKey}` disagree on workUnits; " ++
+      "every row of a group must declare the same problem size"
+    failed := true
+  pure (if failed then 1 else 0)
 
 /-- Execute the benchmark command selected by command-line arguments. -/
 def run (args : List String) : IO UInt32 := do
