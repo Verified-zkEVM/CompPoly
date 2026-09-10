@@ -19,9 +19,15 @@ open CompPoly
 
 namespace CompPolyBench
 
+/-- Number of distinct evaluation points cycled by the bivariate benchmarks.
+
+Also the period of every body in this file in its iteration index, and so the
+digest length of every group here. -/
+private def bivariatePointCount : Nat := 32
+
 /-- Shared input-shape label for bivariate evaluation benchmarks. -/
 private def bivariateInputShape : String :=
-  "xDegree<8, yDegree<64, one nonzero per 4 coeffs, 32 points"
+  s!"xDegree<8, yDegree<64, one nonzero per 4 coeffs, {bivariatePointCount} points"
 
 /-- Build a bivariate polynomial from generated coefficients. -/
 private def buildCBivariate {R : Type*}
@@ -38,46 +44,42 @@ private def buildCBivariate {R : Type*}
 /-- Run bivariate full-evaluation benchmarks over a generic prime `ZMod` field. -/
 private def runBivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
     (key nameSuffix fieldName fieldTitle : String)
-    (largeHornerYxMeasured mediumHornerYxMeasured smallHornerYxMeasured : Nat)
-    (largeHornerXyMeasured mediumHornerXyMeasured smallHornerXyMeasured : Nat)
     (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (terms, gen) := (zmodArray modulus 512 true).run gen
   let (points, gen) := (zmodArray modulus 64 false).run gen
   let poly := buildCBivariate terms
   let evalPoint (i : Nat) : ZMod modulus × ZMod modulus :=
-    let offset := 2 * (i % 32)
+    let offset := 2 * (i % bivariatePointCount)
     (points.getD (offset % points.size) 0, points.getD ((offset + 1) % points.size) 0)
-  let warmup := warmupIterations preset
-  let measured := measuredIterations preset
-  let hornerYxMeasured :=
-    preset.selectNat largeHornerYxMeasured mediumHornerYxMeasured smallHornerYxMeasured
-  let hornerXyMeasured :=
-    preset.selectNat largeHornerXyMeasured mediumHornerXyMeasured smallHornerXyMeasured
-  let checksumIterations := groupChecksumIterations measured [
-    hornerYxMeasured, hornerXyMeasured
-  ]
-  let naive ← runTimed
-    ("bivariate-full-eval-naive" ++ nameSuffix) "CBivariate" "evalEval" fieldName
-    bivariateInputShape preset warmup measured
+  let checksumIterations := digestPeriod bivariatePointCount
+  let naive ← runTimedSpec
+    { name := ("bivariate-full-eval-naive" ++ nameSuffix), representation := "CBivariate",
+      method := "evalEval", field := fieldName, inputShape := bivariateInputShape,
+      digestIterations := checksumIterations }
+    preset
     (fun i ↦
       let point := evalPoint i
       CBivariate.evalEval point.1 point.2 poly)
-    checksumZMod (checksumIterations := checksumIterations)
-  let hornerYx ← runTimed
-    ("bivariate-full-eval-horner-yx" ++ nameSuffix) "CBivariate" "evalEvalHornerYThenX"
-    fieldName bivariateInputShape preset warmup hornerYxMeasured
+    checksumZMod
+  let hornerYx ← runTimedSpec
+    { name := ("bivariate-full-eval-horner-yx" ++ nameSuffix), representation := "CBivariate",
+      method := "evalEvalHornerYThenX", field := fieldName, inputShape := bivariateInputShape,
+      digestIterations := checksumIterations }
+    preset
     (fun i ↦
       let point := evalPoint i
       CBivariate.evalEvalHornerYThenX point.1 point.2 poly)
-    checksumZMod (checksumIterations := checksumIterations)
-  let hornerXy ← runTimed
-    ("bivariate-full-eval-horner-xy" ++ nameSuffix) "CBivariate" "evalEvalHornerXThenY"
-    fieldName bivariateInputShape preset warmup hornerXyMeasured
+    checksumZMod
+  let hornerXy ← runTimedSpec
+    { name := ("bivariate-full-eval-horner-xy" ++ nameSuffix), representation := "CBivariate",
+      method := "evalEvalHornerXThenY", field := fieldName, inputShape := bivariateInputShape,
+      digestIterations := checksumIterations }
+    preset
     (fun i ↦
       let point := evalPoint i
       CBivariate.evalEvalHornerXThenY point.1 point.2 poly)
-    checksumZMod (checksumIterations := checksumIterations)
+    checksumZMod
   pure ({
       groupKey := key,
       title := "Bivariate full evaluation (" ++ fieldTitle ++ ")",
@@ -90,70 +92,70 @@ private def runKoalaBearBivariate (preset : BenchPreset) (gen : StdGen) :
   let (points, gen) := (koalaBearPoints 64).run gen
   let p := buildCBivariate terms
   let evalPoint (i : Nat) : KoalaBear.Field × KoalaBear.Field :=
-    let offset := 2 * (i % 32)
+    let offset := 2 * (i % bivariatePointCount)
     (points.getD (offset % points.size) 0, points.getD ((offset + 1) % points.size) 0)
   let fastTerms := koalaBearFastArray terms
   let fastPoints := koalaBearFastArray points
   let fastP := buildCBivariate fastTerms
   let fastEvalPoint (i : Nat) : KoalaBear.Fast.Field × KoalaBear.Fast.Field :=
-    let offset := 2 * (i % 32)
+    let offset := 2 * (i % bivariatePointCount)
     (fastPoints.getD (offset % fastPoints.size) 0,
       fastPoints.getD ((offset + 1) % fastPoints.size) 0)
-  let warmup := warmupIterations preset
-  let measured := measuredIterations preset
-  let hornerYxMeasured := preset.selectNat 11000 1600 300
-  let hornerXyMeasured := preset.selectNat 100000 14000 3000
-  let fastMeasured := preset.selectNat 14000 2000 400
-  let fastHornerYxMeasured := preset.selectNat 35000 5000 1000
-  let fastHornerXyMeasured := preset.selectNat 1680000 240000 48000
-  let checksumIterations := groupChecksumIterations measured [
-    hornerYxMeasured, hornerXyMeasured, fastMeasured, fastHornerYxMeasured,
-    fastHornerXyMeasured
-  ]
-  let naive ← runTimed
-    "bivariate-full-eval-naive" "CBivariate" "evalEval" "KoalaBear.Field"
-    bivariateInputShape preset warmup measured
+  let checksumIterations := digestPeriod bivariatePointCount
+  let naive ← runTimedSpec
+    { name := "bivariate-full-eval-naive", representation := "CBivariate", method := "evalEval",
+      field := "KoalaBear.Field", inputShape := bivariateInputShape,
+      digestIterations := checksumIterations }
+    preset
     (fun i ↦
       let point := evalPoint i
       CBivariate.evalEval point.1 point.2 p)
-    checksumKoalaBear (checksumIterations := checksumIterations)
-  let fastNaive ← runTimed
-    "bivariate-full-eval-naive-fast" "CBivariate" "evalEval" "KoalaBear.Fast.Field"
-    bivariateInputShape preset warmup fastMeasured
+    checksumKoalaBear
+  let fastNaive ← runTimedSpec
+    { name := "bivariate-full-eval-naive-fast", representation := "CBivariate",
+      method := "evalEval", field := "KoalaBear.Fast.Field", inputShape := bivariateInputShape,
+      digestIterations := checksumIterations }
+    preset
     (fun i ↦
       let point := fastEvalPoint i
       CBivariate.evalEval point.1 point.2 fastP)
-    checksumKoalaBearFast (checksumIterations := checksumIterations)
-  let hornerYx ← runTimed
-    "bivariate-full-eval-horner-yx" "CBivariate" "evalEvalHornerYThenX" "KoalaBear.Field"
-    bivariateInputShape preset warmup hornerYxMeasured
+    checksumKoalaBearFast
+  let hornerYx ← runTimedSpec
+    { name := "bivariate-full-eval-horner-yx", representation := "CBivariate",
+      method := "evalEvalHornerYThenX", field := "KoalaBear.Field",
+      inputShape := bivariateInputShape, digestIterations := checksumIterations }
+    preset
     (fun i ↦
       let point := evalPoint i
       CBivariate.evalEvalHornerYThenX point.1 point.2 p)
-    checksumKoalaBear (checksumIterations := checksumIterations)
-  let fastHornerYx ← runTimed
-    "bivariate-full-eval-horner-yx-fast" "CBivariate" "evalEvalHornerYThenX"
-    "KoalaBear.Fast.Field"
-    bivariateInputShape preset warmup fastHornerYxMeasured
+    checksumKoalaBear
+  let fastHornerYx ← runTimedSpec
+    { name := "bivariate-full-eval-horner-yx-fast", representation := "CBivariate",
+      method := "evalEvalHornerYThenX", field := "KoalaBear.Fast.Field",
+      inputShape := bivariateInputShape, digestIterations := checksumIterations }
+    preset
     (fun i ↦
       let point := fastEvalPoint i
       CBivariate.evalEvalHornerYThenX point.1 point.2 fastP)
-    checksumKoalaBearFast (checksumIterations := checksumIterations)
-  let hornerXy ← runTimed
-    "bivariate-full-eval-horner-xy" "CBivariate" "evalEvalHornerXThenY" "KoalaBear.Field"
-    bivariateInputShape preset warmup hornerXyMeasured
+    checksumKoalaBearFast
+  let hornerXy ← runTimedSpec
+    { name := "bivariate-full-eval-horner-xy", representation := "CBivariate",
+      method := "evalEvalHornerXThenY", field := "KoalaBear.Field",
+      inputShape := bivariateInputShape, digestIterations := checksumIterations }
+    preset
     (fun i ↦
       let point := evalPoint i
       CBivariate.evalEvalHornerXThenY point.1 point.2 p)
-    checksumKoalaBear (checksumIterations := checksumIterations)
-  let fastHornerXy ← runTimed
-    "bivariate-full-eval-horner-xy-fast" "CBivariate" "evalEvalHornerXThenY"
-    "KoalaBear.Fast.Field"
-    bivariateInputShape preset warmup fastHornerXyMeasured
+    checksumKoalaBear
+  let fastHornerXy ← runTimedSpec
+    { name := "bivariate-full-eval-horner-xy-fast", representation := "CBivariate",
+      method := "evalEvalHornerXThenY", field := "KoalaBear.Fast.Field",
+      inputShape := bivariateInputShape, digestIterations := checksumIterations }
+    preset
     (fun i ↦
       let point := fastEvalPoint i
       CBivariate.evalEvalHornerXThenY point.1 point.2 fastP)
-    checksumKoalaBearFast (checksumIterations := checksumIterations)
+    checksumKoalaBearFast
   pure ({
     groupKey := "bivariate-full-koalabear",
     title := "Bivariate full evaluation (KoalaBear)",
@@ -165,14 +167,14 @@ private def runGoldilocksBivariate (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   runBivariateZMod
     Goldilocks.fieldSize "bivariate-full-goldilocks" "-goldilocks" "Goldilocks.Field"
-    "Goldilocks" 12000 1700 350 30000 4500 900 preset gen
+    "Goldilocks" preset gen
 
 /-- Run the BN254 bivariate full-evaluation benchmark. -/
 private def runBn254Bivariate (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   runBivariateZMod
     BN254.scalarFieldSize "bivariate-full-bn254" "-bn254" "BN254.ScalarField" "BN254"
-    12000 1700 350 27000 4000 800 preset gen
+    preset gen
 
 /-- Runnable bivariate benchmark tasks. -/
 def bivariateTasks : List BenchTask := [

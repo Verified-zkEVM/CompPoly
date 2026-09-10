@@ -171,14 +171,17 @@ def runSelected (selection : BenchSelection) (output : BenchOutput) (preset : Be
   let (groups, _) ← runSelectedTasks allTasks preset selection gen
   let records := flattenGroups groups
   IO.FS.createDirAll outputDir
+  -- Written for every run, including `--validate-only` and `--markdown-only`: a
+  -- result nobody can attribute to a commit and a machine is not worth keeping.
+  let manifest ← collectRunManifest runId preset validateOnly selection groups.size records.size
+  IO.FS.writeFile (manifestPath runId) manifest.render
   if output.writeJson then
     IO.FS.writeFile (resultsPath runId) (renderJsonl records)
   if output.writeMarkdown then
     if validateOnly then
       IO.FS.writeFile (reportPath runId) (renderValidationMarkdown preset groups)
     else
-      let hardware ← collectRunnerHardware
-      IO.FS.writeFile (reportPath runId) (renderMarkdown hardware preset groups)
+      IO.FS.writeFile (reportPath runId) (renderMarkdown manifest.hardware preset groups)
   IO.println <|
     if validateOnly then
       s!"validated {records.size} benchmark records in {groups.size} groups for run {runId}"

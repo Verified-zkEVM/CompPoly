@@ -49,35 +49,52 @@ constant-folded. -/
     | n + 1 => go n (canaryRound acc)
   go canaryRounds x
 
-/-- Least multiple by which the canary must exceed the floor.
+/-- Least multiple by which the canary's per-iteration cost must exceed the floor's.
 
 The check is a ratio rather than an absolute duration so it is machine
 independent: an eliminated canary body collapses onto the floor whatever the
-hardware. -/
+hardware.
+
+It compares **per-iteration medians**, not totals. Totals only separate the two
+rows while they run the same number of iterations; once iteration counts come
+from a wall-clock budget the totals are equalised by construction, and a check
+on them would either throw on every run or, lowered to accommodate that, pass
+vacuously forever — leaving the harness with no dead-code detection at all. -/
 def canaryFloorRatio : Nat := 3
 
-/-- Measured iterations for the self-check benchmarks. -/
-private def harnessMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 2000000 500000 100000
+/-- Digest length for the self-check benchmarks.
+
+Both bodies are unbounded in the iteration index, so they have no period. Their
+digests are not correctness oracles — nothing is cross-checked against them — so
+the length only has to be fixed. -/
+private def harnessDigestIterations : Nat := 16
 
 /-- Time the harness floor and the canary, and reject a collapsed canary. -/
 private def runHarnessSelfCheck (preset : BenchPreset) (selection : BenchSelection)
     (gen : StdGen) : IO (Array BenchGroup × StdGen) := do
-  let measured := harnessMeasuredIterations preset
-  let warmup := measured / 10
-  let floorRecord ← runTimed "harness-floor" "UInt64" "empty body"
-    "none" "no input" preset warmup measured
-    (fun i ↦ i.toUInt64) (fun x ↦ x.toNat) (sink := u64Sink) (forceTiming := true)
-  let canaryRecord ← runTimed "harness-canary" "UInt64" s!"{canaryRounds} mixing rounds"
-    "none" "no input" preset warmup measured
-    (fun i ↦ canaryWork i.toUInt64) (fun x ↦ x.toNat) (sink := u64Sink)
-    (forceTiming := true)
-  if canaryRecord.totalNanos < canaryFloorRatio * floorRecord.totalNanos then
+  let floorRecord ← runTimedSpec
+    { name := "harness-floor", representation := "UInt64", method := "empty body", field := "none",
+      inputShape := "no input", digestIterations := harnessDigestIterations,
+      forceTiming := true }
+    preset (fun i ↦ i.toUInt64) (fun x ↦ x.toNat) (sink := u64Sink)
+  let canaryRecord ← runTimedSpec
+    { name := "harness-canary", representation := "UInt64",
+      method := s!"{canaryRounds} mixing rounds", field := "none", inputShape := "no input",
+      digestIterations := harnessDigestIterations, forceTiming := true }
+    preset (fun i ↦ canaryWork i.toUInt64) (fun x ↦ x.toNat) (sink := u64Sink)
+  let floorPicos := floorRecord.stats.medianPicos
+  let canaryPicos := canaryRecord.stats.medianPicos
+  if floorPicos == 0 || canaryPicos == 0 then
     throw <| IO.userError <|
-      s!"harness canary collapsed onto the loop floor: canary {canaryRecord.totalNanos}ns " ++
-      s!"vs floor {floorRecord.totalNanos}ns over {measured} iterations " ++
-      s!"(expected at least {canaryFloorRatio}x). Benchmark bodies are being " ++
-      "optimised away, so every measured time in this run is meaningless."
+      s!"harness self-check produced a zero per-iteration median (floor {floorPicos}ps, " ++
+      s!"canary {canaryPicos}ps): the clock could not resolve the loop, so the canary " ++
+      "check below cannot say anything and no timing in this run is trustworthy."
+  if canaryPicos < canaryFloorRatio * floorPicos then
+    throw <| IO.userError <|
+      s!"harness canary collapsed onto the loop floor: canary {canaryPicos}ps per " ++
+      s!"iteration vs floor {floorPicos}ps (expected at least {canaryFloorRatio}x). " ++
+      "Benchmark bodies are being optimised away, so every measured time in this " ++
+      "run is meaningless."
   let mut groups := #[]
   if selection.selects "harness-floor" then
     groups := groups.push

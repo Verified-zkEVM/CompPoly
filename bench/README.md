@@ -52,12 +52,19 @@ is created on demand and ignored in its entirety:
 ```text
 bench/out/results-YYMMDD-HHMMSS.jsonl
 bench/out/report-YYMMDD-HHMMSS.md
+bench/out/manifest-YYMMDD-HHMMSS.json
 ```
+
+The manifest records what produced the numbers — commit, whether the tree was
+dirty, toolchain, preset and the budget it resolved to, seed, selection, and
+host details — and is written for every run, `--validate-only` included. It is
+a separate file rather than a header line in the JSONL, because every consumer
+of that file assumes uniform records.
 
 By default, a run writes both files. A checksum mismatch is reported in the
 Markdown report and makes the executable exit nonzero after writing artifacts.
-Within each group, checksums are computed over the shared prefix of iterations
-run by every implementation in that group, capped at `validationIterationCap`.
+Within each group, checksums are computed over the group's `digestPeriod` — the
+period of its bodies in the iteration index, capped at `digestIterationCap`.
 
 ## What Is Measured
 
@@ -96,12 +103,12 @@ univariate-dense-bls12-381    univariate-dense-bls12-377
 
 ## How A Benchmark Is Measured
 
-`runTimed` does two passes over each benchmark body.
+`runTimedSpec` does two passes over each benchmark body.
 
 The **validation pass** is untimed and folds a strong `Nat` digest
-(`mixChecksum`) over the full result. It is capped at
-`validationIterationCap` iterations — above every benchmark's operand-pool
-size, so the oracle sees every input, without the pass costing as much as the
+(`mixChecksum`) over the full result. It runs for `digestPeriod` iterations —
+the period of the body in its iteration index, capped at `digestIterationCap`,
+so the oracle sees every input without the pass costing as much as the
 measurement it validates. This is what the group agreement check
 compares, and it is the reason a wrong-but-fast implementation cannot be
 benchmarked: a mismatch inside a group exits nonzero.
@@ -125,10 +132,18 @@ territory and the group's ratio is a lower bound on the real speedup.
 
 ### Sampling and dispersion
 
-A benchmark's cost is collected as a *set* of samples, not one total. Each
-benchmark's iteration count is treated as a total-work budget and split into up
-to `targetSampleCount` timed samples; every sample replays the same iteration
-indices, so samples differ only in machine state.
+A benchmark's cost is collected as a *set* of samples, not one total, and the
+sizes come from the preset's wall-clock budget rather than from a written-down
+iteration count. A calibration ramp times 1, 2, 4, … iterations until the
+warmup budget is met — the ramp *is* the warmup — and its last step estimates
+the per-iteration cost. That estimate fixes how many iterations make up a
+`sampleNanos` sample, and `measureNanos` caps how many samples the row can
+afford. Every sample replays the same iteration indices, so samples differ only
+in machine state.
+
+A consequence worth knowing: `Iterations` is no longer comparable between runs,
+because it depends on how fast the machine was when the row was calibrated.
+`Median` and `Spread` are the columns to compare.
 
 Reports show the **median** sample as the headline number and a `Spread` column
 holding the median absolute deviation as a percentage of the median:
@@ -176,10 +191,10 @@ inputs do not depend on which other groups ran, or in what order. Concretely:
   a real change in behaviour rather than a change in the input schedule.
 
 Checksums remain a cross-check between the implementations within a group; that
-they are now also stable across runs is what makes them usable as regression
-fixtures. Digests are still preset-dependent, because the validation pass runs
-`min validationIterationCap` of the group's measured iteration count and that
-count varies by preset.
+they are also stable across runs, and across presets, is what makes them usable
+as regression fixtures. The digest length is the period of the group's bodies in
+the iteration index, which is a property of the benchmark rather than of the
+preset or the machine it runs on.
 
 ## The two CI tracks
 

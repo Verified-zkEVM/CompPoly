@@ -25,27 +25,24 @@ namespace CompPolyBench
 /-- Benchmark dense univariate evaluation over a generic prime `ZMod` field. -/
 private def runDenseUnivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
     (key nameSuffix fieldName fieldTitle : String)
-    (largeHornerMeasured mediumHornerMeasured smallHornerMeasured : Nat)
     (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (denseCoeffs, gen) := (zmodArray modulus 512 false).run gen
   let (points, gen) := (zmodArray modulus 32 false).run gen
   let densePoly := cpolyOfArray denseCoeffs
-  let warmup := warmupIterations preset
-  let measured := measuredIterations preset
-  let hornerMeasured :=
-    preset.selectNat largeHornerMeasured mediumHornerMeasured smallHornerMeasured
-  let checksumIterations := groupChecksumIterations measured [hornerMeasured]
-  let sumRecord ← runTimed
-    ("univariate-dense-sum-" ++ nameSuffix) "CPolynomial" "eval sum-of-powers" fieldName
-    "degree<512, dense, 32 points" preset warmup measured
-    (fun i ↦ CPolynomial.eval (points.getD (i % points.size) 0) densePoly)
-    checksumZMod (checksumIterations := checksumIterations)
-  let hornerRecord ← runTimed
-    ("univariate-dense-horner-" ++ nameSuffix) "CPolynomial" "evalHorner" fieldName
-    "degree<512, dense, 32 points" preset warmup hornerMeasured
-    (fun i ↦ CPolynomial.evalHorner (points.getD (i % points.size) 0) densePoly)
-    checksumZMod (checksumIterations := checksumIterations)
+  let checksumIterations := digestPeriod points.size
+  let sumRecord ← runTimedSpec
+    { name := ("univariate-dense-sum-" ++ nameSuffix), representation := "CPolynomial",
+      method := "eval sum-of-powers", field := fieldName,
+      inputShape := "degree<512, dense, 32 points", digestIterations := checksumIterations }
+    preset (fun i ↦ CPolynomial.eval (points.getD (i % points.size) 0) densePoly)
+    checksumZMod
+  let hornerRecord ← runTimedSpec
+    { name := ("univariate-dense-horner-" ++ nameSuffix), representation := "CPolynomial",
+      method := "evalHorner", field := fieldName, inputShape := "degree<512, dense, 32 points",
+      digestIterations := checksumIterations }
+    preset
+    (fun i ↦ CPolynomial.evalHorner (points.getD (i % points.size) 0) densePoly) checksumZMod
   pure ({
     groupKey := key,
     title := "Univariate dense evaluation (" ++ fieldTitle ++ ")",
@@ -61,7 +58,6 @@ private def runDenseUnivariateWithFast {F G : Type}
     (key fieldTitle canonicalFieldName fastFieldName : String)
     (genCoeffs : Nat → StateM StdGen (Array F)) (toFast : Array F → Array G)
     (canonicalChecksum : F → Nat) (fastChecksum : G → Nat)
-    (hornerBudget fastBudget fastHornerBudget : BenchPreset → Nat)
     (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (denseCoeffs, gen) := (genCoeffs 512).run gen
@@ -70,34 +66,32 @@ private def runDenseUnivariateWithFast {F G : Type}
   let fastDenseCoeffs := toFast denseCoeffs
   let fastPoints := toFast points
   let fastDensePoly := cpolyOfArray fastDenseCoeffs
-  let warmup := warmupIterations preset
-  let measured := measuredIterations preset
-  let hornerMeasured := hornerBudget preset
-  let fastMeasured := fastBudget preset
-  let fastHornerMeasured := fastHornerBudget preset
-  let checksumIterations := groupChecksumIterations measured [
-    hornerMeasured, fastMeasured, fastHornerMeasured
-  ]
-  let denseSum ← runTimed
-    "univariate-dense-sum" "CPolynomial" "eval sum-of-powers" canonicalFieldName
-    "degree<512, dense, 32 points" preset warmup measured
-    (fun i ↦ CPolynomial.eval (points.getD (i % points.size) 0) densePoly)
-    canonicalChecksum (checksumIterations := checksumIterations)
-  let fastDenseSum ← runTimed
-    "univariate-dense-sum-fast" "CPolynomial" "eval sum-of-powers"
-    fastFieldName "degree<512, dense, 32 points" preset warmup fastMeasured
-    (fun i ↦ CPolynomial.eval (fastPoints.getD (i % fastPoints.size) 0) fastDensePoly)
-    fastChecksum (checksumIterations := checksumIterations)
-  let denseHorner ← runTimed
-    "univariate-dense-horner" "CPolynomial" "evalHorner" canonicalFieldName
-    "degree<512, dense, 32 points" preset warmup hornerMeasured
-    (fun i ↦ CPolynomial.evalHorner (points.getD (i % points.size) 0) densePoly)
-    canonicalChecksum (checksumIterations := checksumIterations)
-  let fastDenseHorner ← runTimed
-    "univariate-dense-horner-fast" "CPolynomial" "evalHorner" fastFieldName
-    "degree<512, dense, 32 points" preset warmup fastHornerMeasured
+  let checksumIterations := digestPeriod points.size
+  let denseSum ← runTimedSpec
+    { name := "univariate-dense-sum", representation := "CPolynomial",
+      method := "eval sum-of-powers", field := canonicalFieldName,
+      inputShape := "degree<512, dense, 32 points", digestIterations := checksumIterations }
+    preset (fun i ↦ CPolynomial.eval (points.getD (i % points.size) 0) densePoly)
+    canonicalChecksum
+  let fastDenseSum ← runTimedSpec
+    { name := "univariate-dense-sum-fast", representation := "CPolynomial",
+      method := "eval sum-of-powers", field := fastFieldName,
+      inputShape := "degree<512, dense, 32 points", digestIterations := checksumIterations }
+    preset
+    (fun i ↦ CPolynomial.eval (fastPoints.getD (i % fastPoints.size) 0) fastDensePoly) fastChecksum
+  let denseHorner ← runTimedSpec
+    { name := "univariate-dense-horner", representation := "CPolynomial", method := "evalHorner",
+      field := canonicalFieldName, inputShape := "degree<512, dense, 32 points",
+      digestIterations := checksumIterations }
+    preset
+    (fun i ↦ CPolynomial.evalHorner (points.getD (i % points.size) 0) densePoly) canonicalChecksum
+  let fastDenseHorner ← runTimedSpec
+    { name := "univariate-dense-horner-fast", representation := "CPolynomial",
+      method := "evalHorner", field := fastFieldName, inputShape := "degree<512, dense, 32 points",
+      digestIterations := checksumIterations }
+    preset
     (fun i ↦ CPolynomial.evalHorner (fastPoints.getD (i % fastPoints.size) 0) fastDensePoly)
-    fastChecksum (checksumIterations := checksumIterations)
+    fastChecksum
   pure ({
     groupKey := key,
     title := "Univariate dense evaluation (" ++ fieldTitle ++ ")",
@@ -111,8 +105,7 @@ private def runKoalaBearUnivariateDense (preset : BenchPreset) (gen : StdGen) :
     "univariate-dense-koalabear" "KoalaBear" "KoalaBear.Field" "KoalaBear.Fast.Field"
     (fun size ↦ koalaBearArray size false) koalaBearFastArray
     checksumKoalaBear checksumKoalaBearFast
-    (fun p ↦ p.selectNat 45000 6500 1300) (fun p ↦ p.selectNat 63000 9000 1800)
-    (fun p ↦ p.selectNat 490000 70000 14000) preset gen
+    preset gen
 
 /-- Benchmark dense BabyBear univariate evaluation. -/
 private def runBabyBearUnivariateDense (preset : BenchPreset) (gen : StdGen) :
@@ -121,8 +114,7 @@ private def runBabyBearUnivariateDense (preset : BenchPreset) (gen : StdGen) :
     "univariate-dense-babybear" "BabyBear" "BabyBear.Field" "BabyBear.Fast.Field"
     (fun size ↦ babyBearArray size false) babyBearFastArray
     checksumBabyBear checksumBabyBearFast
-    (fun p ↦ p.selectNat 45000 6500 1300) (fun p ↦ p.selectNat 63000 9000 1800)
-    (fun p ↦ p.selectNat 490000 70000 14000) preset gen
+    preset gen
 
 /-- Benchmark sparse KoalaBear univariate evaluation. -/
 private def runKoalaBearUnivariateSparse (preset : BenchPreset) (gen : StdGen) :
@@ -133,36 +125,37 @@ private def runKoalaBearUnivariateSparse (preset : BenchPreset) (gen : StdGen) :
   let fastSparseCoeffs := koalaBearFastArray sparseCoeffs
   let fastPoints := koalaBearFastArray points
   let fastSparsePoly := cpolyOfArray fastSparseCoeffs
-  let warmup := warmupIterations preset
-  let measured := measuredIterations preset
-  let hornerMeasured := preset.selectNat 50000 7000 1500
-  let fastMeasured := preset.selectNat 63000 9000 1800
-  let fastHornerMeasured := preset.selectNat 490000 70000 14000
-  let checksumIterations := groupChecksumIterations measured [
-    hornerMeasured, fastMeasured, fastHornerMeasured
-  ]
-  let sparseSum ← runTimed
-    "univariate-sparse-sum" "CPolynomial" "eval sum-of-powers" "KoalaBear.Field"
-    "degree<512, one nonzero per 4 coeffs, 32 points" preset warmup measured
-    (fun i ↦ CPolynomial.eval (points.getD (i % points.size) 0) sparsePoly)
-    checksumKoalaBear (checksumIterations := checksumIterations)
-  let fastSparseSum ← runTimed
-    "univariate-sparse-sum-fast" "CPolynomial" "eval sum-of-powers"
-    "KoalaBear.Fast.Field"
-    "degree<512, one nonzero per 4 coeffs, 32 points" preset warmup fastMeasured
+  let checksumIterations := digestPeriod points.size
+  let sparseSum ← runTimedSpec
+    { name := "univariate-sparse-sum", representation := "CPolynomial",
+      method := "eval sum-of-powers", field := "KoalaBear.Field",
+      inputShape := "degree<512, one nonzero per 4 coeffs, 32 points",
+      digestIterations := checksumIterations }
+    preset (fun i ↦ CPolynomial.eval (points.getD (i % points.size) 0) sparsePoly)
+    checksumKoalaBear
+  let fastSparseSum ← runTimedSpec
+    { name := "univariate-sparse-sum-fast", representation := "CPolynomial",
+      method := "eval sum-of-powers", field := "KoalaBear.Fast.Field",
+      inputShape := "degree<512, one nonzero per 4 coeffs, 32 points",
+      digestIterations := checksumIterations }
+    preset
     (fun i ↦ CPolynomial.eval (fastPoints.getD (i % fastPoints.size) 0) fastSparsePoly)
-    checksumKoalaBearFast (checksumIterations := checksumIterations)
-  let sparseHorner ← runTimed
-    "univariate-sparse-horner" "CPolynomial" "evalHorner" "KoalaBear.Field"
-    "degree<512, one nonzero per 4 coeffs, 32 points" preset warmup hornerMeasured
-    (fun i ↦ CPolynomial.evalHorner (points.getD (i % points.size) 0) sparsePoly)
-    checksumKoalaBear (checksumIterations := checksumIterations)
-  let fastSparseHorner ← runTimed
-    "univariate-sparse-horner-fast" "CPolynomial" "evalHorner" "KoalaBear.Fast.Field"
-    "degree<512, one nonzero per 4 coeffs, 32 points" preset warmup fastHornerMeasured
+    checksumKoalaBearFast
+  let sparseHorner ← runTimedSpec
+    { name := "univariate-sparse-horner", representation := "CPolynomial", method := "evalHorner",
+      field := "KoalaBear.Field", inputShape := "degree<512, one nonzero per 4 coeffs, 32 points",
+      digestIterations := checksumIterations }
+    preset
+    (fun i ↦ CPolynomial.evalHorner (points.getD (i % points.size) 0) sparsePoly) checksumKoalaBear
+  let fastSparseHorner ← runTimedSpec
+    { name := "univariate-sparse-horner-fast", representation := "CPolynomial",
+      method := "evalHorner", field := "KoalaBear.Fast.Field",
+      inputShape := "degree<512, one nonzero per 4 coeffs, 32 points",
+      digestIterations := checksumIterations }
+    preset
     (fun i ↦ CPolynomial.evalHorner (fastPoints.getD (i % fastPoints.size) 0)
       fastSparsePoly)
-    checksumKoalaBearFast (checksumIterations := checksumIterations)
+    checksumKoalaBearFast
   pure ({
     groupKey := "univariate-sparse-koalabear",
     title := "Univariate sparse evaluation (KoalaBear)",
@@ -205,81 +198,79 @@ private def runKoalaBearUnivariateMonicRemainderSmall (preset : BenchPreset) (ge
     CPolynomial.ModContext.reversal fastNttWithFallbackLowMul
   let fastReversalNttFastLowMod : CPolynomial.ModContext KoalaBear.Fast.Field :=
     CPolynomial.ModContext.reversal fastNttFastWithFallbackLowMul
-  let warmup := modWarmupIterations preset
-  let measured := modMeasuredIterations preset
-  let remainderMeasured := preset.selectNat 3400 500 100
-  let reversalConvolutionMeasured := preset.selectNat 650 100 20
-  let reversalNttMeasured := preset.selectNat 550 80 20
-  let reversalNttFastMeasured := preset.selectNat 2200 300 60
-  let fastMeasured := preset.selectNat 140 20 4
-  let fastRemainderMeasured := preset.selectNat 15400 2200 440
-  let fastReversalConvolutionMeasured := preset.selectNat 1400 200 40
-  let fastReversalNttMeasured := preset.selectNat 2100 300 60
-  let fastReversalNttFastMeasured := preset.selectNat 11200 1600 320
-  let checksumIterations := groupChecksumIterations measured [
-    remainderMeasured, reversalConvolutionMeasured, reversalNttMeasured, reversalNttFastMeasured,
-    fastMeasured, fastRemainderMeasured, fastReversalConvolutionMeasured,
-    fastReversalNttMeasured, fastReversalNttFastMeasured
-  ]
-  let smallModNaive ← runTimed
-    "univariate-mod-by-monic-naive" "CPolynomial" "modByMonic" "KoalaBear.Field"
-    univariateModShape preset warmup measured
-    (fun _ ↦ CPolynomial.modByMonic batchPoly modDivisor)
-    (checksumCPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
-  let fastSmallModNaive ← runTimed
-    "univariate-mod-by-monic-naive-fast" "CPolynomial" "modByMonic"
-    "KoalaBear.Fast.Field"
-    univariateModShape preset warmup fastMeasured
-    (fun _ ↦ CPolynomial.modByMonic fastBatchPoly fastModDivisor)
-    (checksumCPolynomial checksumKoalaBearFast) (checksumIterations := checksumIterations)
-  let smallModRemainder ← runTimed
-    "univariate-mod-by-monic-remainder-only" "CPolynomial" "modByMonicRemainderOnly"
-    "KoalaBear.Field"
-    univariateModShape preset warmup remainderMeasured
+  let checksumIterations := digestPeriod 1
+  let smallModNaive ← runTimedSpec
+    { name := "univariate-mod-by-monic-naive", representation := "CPolynomial",
+      method := "modByMonic", field := "KoalaBear.Field", inputShape := univariateModShape,
+      digestIterations := checksumIterations }
+    preset (fun _ ↦ CPolynomial.modByMonic batchPoly modDivisor)
+    (checksumCPolynomial checksumKoalaBear)
+  let fastSmallModNaive ← runTimedSpec
+    { name := "univariate-mod-by-monic-naive-fast", representation := "CPolynomial",
+      method := "modByMonic", field := "KoalaBear.Fast.Field", inputShape := univariateModShape,
+      digestIterations := checksumIterations }
+    preset (fun _ ↦ CPolynomial.modByMonic fastBatchPoly fastModDivisor)
+    (checksumCPolynomial checksumKoalaBearFast)
+  let smallModRemainder ← runTimedSpec
+    { name := "univariate-mod-by-monic-remainder-only", representation := "CPolynomial",
+      method := "modByMonicRemainderOnly", field := "KoalaBear.Field",
+      inputShape := univariateModShape, digestIterations := checksumIterations }
+    preset
     (fun _ ↦ CPolynomial.modByMonicRemainderOnly batchPoly modDivisor)
-    (checksumCPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
-  let fastSmallModRemainder ← runTimed
-    "univariate-mod-by-monic-remainder-only-fast" "CPolynomial" "modByMonicRemainderOnly"
-    "KoalaBear.Fast.Field"
-    univariateModShape preset warmup fastRemainderMeasured
+    (checksumCPolynomial checksumKoalaBear)
+  let fastSmallModRemainder ← runTimedSpec
+    { name := "univariate-mod-by-monic-remainder-only-fast", representation := "CPolynomial",
+      method := "modByMonicRemainderOnly", field := "KoalaBear.Fast.Field",
+      inputShape := univariateModShape, digestIterations := checksumIterations }
+    preset
     (fun _ ↦ CPolynomial.modByMonicRemainderOnly fastBatchPoly fastModDivisor)
-    (checksumCPolynomial checksumKoalaBearFast) (checksumIterations := checksumIterations)
-  let smallModReversalConvolution ← runTimed
-    "univariate-mod-by-monic-reversal-convolution-low-mul" "CPolynomial"
-    "modByMonicByReversal, MulLowContext.convolution" "KoalaBear.Field"
-    univariateModShape preset warmup reversalConvolutionMeasured
+    (checksumCPolynomial checksumKoalaBearFast)
+  let smallModReversalConvolution ← runTimedSpec
+    { name := "univariate-mod-by-monic-reversal-convolution-low-mul",
+      representation := "CPolynomial", method := "modByMonicByReversal, MulLowContext.convolution",
+      field := "KoalaBear.Field", inputShape := univariateModShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦ reversalConvolutionLowMod.modByMonic batchPoly modDivisor)
-    (checksumCPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
-  let fastSmallModReversalConvolution ← runTimed
-    "univariate-mod-by-monic-reversal-convolution-low-mul-fast" "CPolynomial"
-    "modByMonicByReversal, MulLowContext.convolution" "KoalaBear.Fast.Field"
-    univariateModShape preset warmup fastReversalConvolutionMeasured
+    (checksumCPolynomial checksumKoalaBear)
+  let fastSmallModReversalConvolution ← runTimedSpec
+    { name := "univariate-mod-by-monic-reversal-convolution-low-mul-fast",
+      representation := "CPolynomial", method := "modByMonicByReversal, MulLowContext.convolution",
+      field := "KoalaBear.Fast.Field", inputShape := univariateModShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦ fastReversalConvolutionLowMod.modByMonic fastBatchPoly fastModDivisor)
-    (checksumCPolynomial checksumKoalaBearFast) (checksumIterations := checksumIterations)
-  let smallModReversalNtt ← runTimed
-    "univariate-mod-by-monic-reversal-ntt-low-mul" "CPolynomial"
-    "modByMonicByReversal, FastMulLow.withFallback" "KoalaBear.Field"
-    univariateModShape preset warmup reversalNttMeasured
-    (fun _ ↦ reversalNttLowMod.modByMonic batchPoly modDivisor)
-    (checksumCPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
-  let fastSmallModReversalNtt ← runTimed
-    "univariate-mod-by-monic-reversal-ntt-low-mul-fast" "CPolynomial"
-    "modByMonicByReversal, FastMulLow.withFallback" "KoalaBear.Fast.Field"
-    univariateModShape preset warmup fastReversalNttMeasured
+    (checksumCPolynomial checksumKoalaBearFast)
+  let smallModReversalNtt ← runTimedSpec
+    { name := "univariate-mod-by-monic-reversal-ntt-low-mul", representation := "CPolynomial",
+      method := "modByMonicByReversal, FastMulLow.withFallback", field := "KoalaBear.Field",
+      inputShape := univariateModShape, digestIterations := checksumIterations }
+    preset (fun _ ↦ reversalNttLowMod.modByMonic batchPoly modDivisor)
+    (checksumCPolynomial checksumKoalaBear)
+  let fastSmallModReversalNtt ← runTimedSpec
+    { name := "univariate-mod-by-monic-reversal-ntt-low-mul-fast", representation := "CPolynomial",
+      method := "modByMonicByReversal, FastMulLow.withFallback", field := "KoalaBear.Fast.Field",
+      inputShape := univariateModShape, digestIterations := checksumIterations }
+    preset
     (fun _ ↦ fastReversalNttLowMod.modByMonic fastBatchPoly fastModDivisor)
-    (checksumCPolynomial checksumKoalaBearFast) (checksumIterations := checksumIterations)
-  let smallModReversalNttFast ← runTimed
-    "univariate-mod-by-monic-reversal-ntt-fast-low-mul" "CPolynomial"
-    "modByMonicByReversal, NTTFast.FastMulLow.withFallback" "KoalaBear.Field"
-    univariateModShape preset warmup reversalNttFastMeasured
+    (checksumCPolynomial checksumKoalaBearFast)
+  let smallModReversalNttFast ← runTimedSpec
+    { name := "univariate-mod-by-monic-reversal-ntt-fast-low-mul", representation := "CPolynomial",
+      method := "modByMonicByReversal, NTTFast.FastMulLow.withFallback",
+      field := "KoalaBear.Field", inputShape := univariateModShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦ reversalNttFastLowMod.modByMonic batchPoly modDivisor)
-    (checksumCPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
-  let fastSmallModReversalNttFast ← runTimed
-    "univariate-mod-by-monic-reversal-ntt-fast-low-mul-fast" "CPolynomial"
-    "modByMonicByReversal, NTTFast.FastMulLow.withFallback" "KoalaBear.Fast.Field"
-    univariateModShape preset warmup fastReversalNttFastMeasured
+    (checksumCPolynomial checksumKoalaBear)
+  let fastSmallModReversalNttFast ← runTimedSpec
+    { name := "univariate-mod-by-monic-reversal-ntt-fast-low-mul-fast",
+      representation := "CPolynomial",
+      method := "modByMonicByReversal, NTTFast.FastMulLow.withFallback",
+      field := "KoalaBear.Fast.Field", inputShape := univariateModShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦ fastReversalNttFastLowMod.modByMonic fastBatchPoly fastModDivisor)
-    (checksumCPolynomial checksumKoalaBearFast) (checksumIterations := checksumIterations)
+    (checksumCPolynomial checksumKoalaBearFast)
   pure ({
     groupKey := "univariate-monic-remainder-small-koalabear",
     title := "Univariate monic remainder, small (KoalaBear)",
@@ -325,71 +316,76 @@ private def runKoalaBearUnivariateMonicRemainderMedium (preset : BenchPreset) (g
     CPolynomial.ModContext.reversal fastNttWithFallbackLowMul
   let fastReversalNttFastLowMod : CPolynomial.ModContext KoalaBear.Fast.Field :=
     CPolynomial.ModContext.reversal fastNttFastWithFallbackLowMul
-  let warmup := mediumModWarmupIterations preset
-  let measured := mediumModMeasuredIterations preset
-  let remainderMeasured := preset.selectNat 30 5 1
-  let reversalNttMeasured := preset.selectNat 200 30 5
-  let reversalNttFastMeasured := preset.selectNat 900 130 30
-  let fastRemainderMeasured := preset.selectNat 175 25 5
-  let fastMeasured := preset.selectNat 14 2 1
-  let fastReversalNttMeasured := preset.selectNat 840 120 24
-  let fastReversalNttFastMeasured := preset.selectNat 9800 1400 280
-  let checksumIterations := groupChecksumIterations measured [
-    remainderMeasured, reversalNttMeasured, reversalNttFastMeasured, fastRemainderMeasured,
-    fastMeasured, fastReversalNttMeasured, fastReversalNttFastMeasured
-  ]
-  let mediumModRemainder ← runTimed
-    "univariate-mod-by-monic-medium-remainder-only" "CPolynomial"
-    "modByMonicRemainderOnly" "KoalaBear.Field"
-    mediumUnivariateModShape preset warmup remainderMeasured
+  let checksumIterations := digestPeriod 1
+  let mediumModRemainder ← runTimedSpec
+    { name := "univariate-mod-by-monic-medium-remainder-only", representation := "CPolynomial",
+      method := "modByMonicRemainderOnly", field := "KoalaBear.Field",
+      inputShape := mediumUnivariateModShape, digestIterations := checksumIterations }
+    preset
     (fun _ ↦ CPolynomial.modByMonicRemainderOnly mediumBatchPoly mediumModDivisor)
-    (checksumCPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
-  let fastMediumModRemainder ← runTimed
-    "univariate-mod-by-monic-medium-remainder-only-fast" "CPolynomial"
-    "modByMonicRemainderOnly" "KoalaBear.Fast.Field"
-    mediumUnivariateModShape preset warmup fastRemainderMeasured
+    (checksumCPolynomial checksumKoalaBear)
+  let fastMediumModRemainder ← runTimedSpec
+    { name := "univariate-mod-by-monic-medium-remainder-only-fast",
+      representation := "CPolynomial", method := "modByMonicRemainderOnly",
+      field := "KoalaBear.Fast.Field", inputShape := mediumUnivariateModShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦ CPolynomial.modByMonicRemainderOnly fastMediumBatchPoly
       fastMediumModDivisor)
-    (checksumCPolynomial checksumKoalaBearFast) (checksumIterations := checksumIterations)
-  let mediumModReversalConvolution ← runTimed
-    "univariate-mod-by-monic-medium-reversal-convolution-low-mul" "CPolynomial"
-    "modByMonicByReversal, MulLowContext.convolution" "KoalaBear.Field"
-    mediumUnivariateModShape preset warmup measured
+    (checksumCPolynomial checksumKoalaBearFast)
+  let mediumModReversalConvolution ← runTimedSpec
+    { name := "univariate-mod-by-monic-medium-reversal-convolution-low-mul",
+      representation := "CPolynomial", method := "modByMonicByReversal, MulLowContext.convolution",
+      field := "KoalaBear.Field", inputShape := mediumUnivariateModShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦ reversalConvolutionLowMod.modByMonic mediumBatchPoly mediumModDivisor)
-    (checksumCPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
-  let fastMediumModReversalConvolution ← runTimed
-    "univariate-mod-by-monic-medium-reversal-convolution-low-mul-fast" "CPolynomial"
-    "modByMonicByReversal, MulLowContext.convolution" "KoalaBear.Fast.Field"
-    mediumUnivariateModShape preset warmup fastMeasured
+    (checksumCPolynomial checksumKoalaBear)
+  let fastMediumModReversalConvolution ← runTimedSpec
+    { name := "univariate-mod-by-monic-medium-reversal-convolution-low-mul-fast",
+      representation := "CPolynomial", method := "modByMonicByReversal, MulLowContext.convolution",
+      field := "KoalaBear.Fast.Field", inputShape := mediumUnivariateModShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦ fastReversalConvolutionLowMod.modByMonic fastMediumBatchPoly
       fastMediumModDivisor)
-    (checksumCPolynomial checksumKoalaBearFast) (checksumIterations := checksumIterations)
-  let mediumModReversalNtt ← runTimed
-    "univariate-mod-by-monic-medium-reversal-ntt-low-mul" "CPolynomial"
-    "modByMonicByReversal, FastMulLow.withFallback" "KoalaBear.Field"
-    mediumUnivariateModShape preset warmup reversalNttMeasured
+    (checksumCPolynomial checksumKoalaBearFast)
+  let mediumModReversalNtt ← runTimedSpec
+    { name := "univariate-mod-by-monic-medium-reversal-ntt-low-mul",
+      representation := "CPolynomial", method := "modByMonicByReversal, FastMulLow.withFallback",
+      field := "KoalaBear.Field", inputShape := mediumUnivariateModShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦ reversalNttLowMod.modByMonic mediumBatchPoly mediumModDivisor)
-    (checksumCPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
-  let fastMediumModReversalNtt ← runTimed
-    "univariate-mod-by-monic-medium-reversal-ntt-low-mul-fast" "CPolynomial"
-    "modByMonicByReversal, FastMulLow.withFallback" "KoalaBear.Fast.Field"
-    mediumUnivariateModShape preset warmup fastReversalNttMeasured
+    (checksumCPolynomial checksumKoalaBear)
+  let fastMediumModReversalNtt ← runTimedSpec
+    { name := "univariate-mod-by-monic-medium-reversal-ntt-low-mul-fast",
+      representation := "CPolynomial", method := "modByMonicByReversal, FastMulLow.withFallback",
+      field := "KoalaBear.Fast.Field", inputShape := mediumUnivariateModShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦ fastReversalNttLowMod.modByMonic fastMediumBatchPoly
       fastMediumModDivisor)
-    (checksumCPolynomial checksumKoalaBearFast) (checksumIterations := checksumIterations)
-  let mediumModReversalNttFast ← runTimed
-    "univariate-mod-by-monic-medium-reversal-ntt-fast-low-mul" "CPolynomial"
-    "modByMonicByReversal, NTTFast.FastMulLow.withFallback" "KoalaBear.Field"
-    mediumUnivariateModShape preset warmup reversalNttFastMeasured
+    (checksumCPolynomial checksumKoalaBearFast)
+  let mediumModReversalNttFast ← runTimedSpec
+    { name := "univariate-mod-by-monic-medium-reversal-ntt-fast-low-mul",
+      representation := "CPolynomial",
+      method := "modByMonicByReversal, NTTFast.FastMulLow.withFallback",
+      field := "KoalaBear.Field", inputShape := mediumUnivariateModShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦ reversalNttFastLowMod.modByMonic mediumBatchPoly mediumModDivisor)
-    (checksumCPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
-  let fastMediumModReversalNttFast ← runTimed
-    "univariate-mod-by-monic-medium-reversal-ntt-fast-low-mul-fast" "CPolynomial"
-    "modByMonicByReversal, NTTFast.FastMulLow.withFallback" "KoalaBear.Fast.Field"
-    mediumUnivariateModShape preset warmup fastReversalNttFastMeasured
+    (checksumCPolynomial checksumKoalaBear)
+  let fastMediumModReversalNttFast ← runTimedSpec
+    { name := "univariate-mod-by-monic-medium-reversal-ntt-fast-low-mul-fast",
+      representation := "CPolynomial",
+      method := "modByMonicByReversal, NTTFast.FastMulLow.withFallback",
+      field := "KoalaBear.Fast.Field", inputShape := mediumUnivariateModShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦ fastReversalNttFastLowMod.modByMonic fastMediumBatchPoly
       fastMediumModDivisor)
-    (checksumCPolynomial checksumKoalaBearFast) (checksumIterations := checksumIterations)
+    (checksumCPolynomial checksumKoalaBearFast)
   pure ({
     groupKey := "univariate-monic-remainder-medium-koalabear",
     title := "Univariate monic remainder, medium (KoalaBear)",
@@ -403,7 +399,7 @@ private def runGoldilocksUnivariateDense (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   runDenseUnivariateZMod
     Goldilocks.fieldSize "univariate-dense-goldilocks" "goldilocks" "Goldilocks.Field"
-    "Goldilocks" 40000 6000 1200 preset gen
+    "Goldilocks" preset gen
 
 /-- Convert BN254 field inputs to the native eight-limb representation. -/
 private def bn254FastArray (xs : Array BN254.ScalarField) : Array BN254.Fast.ScalarField :=
@@ -420,8 +416,7 @@ private def runBn254UnivariateDense (preset : BenchPreset) (gen : StdGen) :
     "univariate-dense-bn254" "BN254" "BN254.ScalarField" "BN254.Fast.ScalarField"
     (fun size ↦ zmodArray BN254.scalarFieldSize size false) bn254FastArray
     checksumZMod checksumBn254Fast
-    (fun p ↦ p.selectNat 40000 6000 1200) (fun p ↦ p.selectNat 20000 3000 600)
-    (fun p ↦ p.selectNat 160000 23000 4600) preset gen
+    preset gen
 
 /-- Convert BLS12-381 field inputs to the native eight-limb representation. -/
 private def bls12_381FastArray (xs : Array BLS12_381.ScalarField) :
@@ -440,8 +435,7 @@ private def runBls12_381UnivariateDense (preset : BenchPreset) (gen : StdGen) :
     "BLS12_381.Fast.ScalarField"
     (fun size ↦ zmodArray BLS12_381.scalarFieldSize size false) bls12_381FastArray
     checksumZMod checksumBls12_381Fast
-    (fun p ↦ p.selectNat 40000 6000 1200) (fun p ↦ p.selectNat 20000 3000 600)
-    (fun p ↦ p.selectNat 160000 23000 4600) preset gen
+    preset gen
 
 /-- Convert BLS12-377 field inputs to the native eight-limb representation. -/
 private def bls12_377FastArray (xs : Array BLS12_377.ScalarField) :
@@ -460,8 +454,7 @@ private def runBls12_377UnivariateDense (preset : BenchPreset) (gen : StdGen) :
     "BLS12_377.Fast.ScalarField"
     (fun size ↦ zmodArray BLS12_377.scalarFieldSize size false) bls12_377FastArray
     checksumZMod checksumBls12_377Fast
-    (fun p ↦ p.selectNat 40000 6000 1200) (fun p ↦ p.selectNat 20000 3000 600)
-    (fun p ↦ p.selectNat 160000 23000 4600) preset gen
+    preset gen
 
 /-- Runnable `CompPoly.Univariate.Basic` benchmark tasks. -/
 def univariateBasicTasks : List BenchTask := [

@@ -47,73 +47,71 @@ private def runKoalaBearUnivariateLowProduct (preset : BenchPreset) (gen : StdGe
   let fastNttFastWithFallbackLowMul :
       CPolynomial.Raw.MulLowContext KoalaBear.Fast.Field :=
     CPolynomial.NTTFast.FastMulLow.withFallback koalaBearFastBestDomainForLength?
-  let warmup := mulWarmupIterations preset
-  let measured := mulMeasuredIterations preset
-  let convolutionMeasured := preset.selectNat 30 5 1
-  let nttMeasured := preset.selectNat 100 15 3
-  let nttFastMeasured := preset.selectNat 500 70 15
-  let fastMeasured := preset.selectNat 210 30 6
-  let fastConvolutionMeasured := preset.selectNat 70 10 2
-  let fastNttMeasured := preset.selectNat 420 60 12
-  let fastNttFastMeasured := preset.selectNat 1960 280 56
-  let checksumIterations := groupChecksumIterations measured [
-    convolutionMeasured, nttMeasured, nttFastMeasured, fastMeasured, fastConvolutionMeasured,
-    fastNttMeasured, fastNttFastMeasured
-  ]
-  let lowNaive ← runTimed
-    "univariate-mul-low-naive" "CPolynomial.Raw" "MulLowContext.naive" "KoalaBear.Field"
-    univariateMulLowShape preset warmup measured
+  let checksumIterations := digestPeriod 1
+  let lowNaive ← runTimedSpec
+    { name := "univariate-mul-low-naive", representation := "CPolynomial.Raw",
+      method := "MulLowContext.naive", field := "KoalaBear.Field",
+      inputShape := univariateMulLowShape, digestIterations := checksumIterations }
+    preset
     (fun _ ↦ naiveLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw mulLowRhsRaw)
-    (checksumRawPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
-  let fastLowNaive ← runTimed
-    "univariate-mul-low-naive-fast" "CPolynomial.Raw" "MulLowContext.naive"
-    "KoalaBear.Fast.Field"
-    univariateMulLowShape preset warmup fastMeasured
+    (checksumRawPolynomial checksumKoalaBear)
+  let fastLowNaive ← runTimedSpec
+    { name := "univariate-mul-low-naive-fast", representation := "CPolynomial.Raw",
+      method := "MulLowContext.naive", field := "KoalaBear.Fast.Field",
+      inputShape := univariateMulLowShape, digestIterations := checksumIterations }
+    preset
     (fun _ ↦ fastNaiveLowMul.mulLow univariateMulLowOutputCoeffSlots fastMulLowLhsRaw
       fastMulLowRhsRaw)
-    (checksumRawPolynomial checksumKoalaBearFast) (checksumIterations := checksumIterations)
-  let lowConvolution ← runTimed
-    "univariate-mul-low-convolution" "CPolynomial.Raw" "MulLowContext.convolution"
-    "KoalaBear.Field"
-    univariateMulLowShape preset warmup convolutionMeasured
+    (checksumRawPolynomial checksumKoalaBearFast)
+  let lowConvolution ← runTimedSpec
+    { name := "univariate-mul-low-convolution", representation := "CPolynomial.Raw",
+      method := "MulLowContext.convolution", field := "KoalaBear.Field",
+      inputShape := univariateMulLowShape, digestIterations := checksumIterations }
+    preset
     (fun _ ↦ convolutionLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
       mulLowRhsRaw)
-    (checksumRawPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
-  let fastLowConvolution ← runTimed
-    "univariate-mul-low-convolution-fast" "CPolynomial.Raw" "MulLowContext.convolution"
-    "KoalaBear.Fast.Field"
-    univariateMulLowShape preset warmup fastConvolutionMeasured
+    (checksumRawPolynomial checksumKoalaBear)
+  let fastLowConvolution ← runTimedSpec
+    { name := "univariate-mul-low-convolution-fast", representation := "CPolynomial.Raw",
+      method := "MulLowContext.convolution", field := "KoalaBear.Fast.Field",
+      inputShape := univariateMulLowShape, digestIterations := checksumIterations }
+    preset
     (fun _ ↦ fastConvolutionLowMul.mulLow univariateMulLowOutputCoeffSlots
       fastMulLowLhsRaw fastMulLowRhsRaw)
-    (checksumRawPolynomial checksumKoalaBearFast) (checksumIterations := checksumIterations)
-  let lowNtt ← runTimed
-    "univariate-mul-low-ntt-with-fallback" "CPolynomial.Raw" "FastMulLow.withFallback"
-    "KoalaBear.Field"
-    univariateMulLowShape preset warmup nttMeasured
+    (checksumRawPolynomial checksumKoalaBearFast)
+  let lowNtt ← runTimedSpec
+    { name := "univariate-mul-low-ntt-with-fallback", representation := "CPolynomial.Raw",
+      method := "FastMulLow.withFallback", field := "KoalaBear.Field",
+      inputShape := univariateMulLowShape, digestIterations := checksumIterations }
+    preset
     (fun _ ↦ nttWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
       mulLowRhsRaw)
-    (checksumRawPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
-  let fastLowNtt ← runTimed
-    "univariate-mul-low-ntt-with-fallback-fast" "CPolynomial.Raw"
-    "FastMulLow.withFallback" "KoalaBear.Fast.Field"
-    univariateMulLowShape preset warmup fastNttMeasured
+    (checksumRawPolynomial checksumKoalaBear)
+  let fastLowNtt ← runTimedSpec
+    { name := "univariate-mul-low-ntt-with-fallback-fast", representation := "CPolynomial.Raw",
+      method := "FastMulLow.withFallback", field := "KoalaBear.Fast.Field",
+      inputShape := univariateMulLowShape, digestIterations := checksumIterations }
+    preset
     (fun _ ↦ fastNttWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots
       fastMulLowLhsRaw fastMulLowRhsRaw)
-    (checksumRawPolynomial checksumKoalaBearFast) (checksumIterations := checksumIterations)
-  let lowNttFast ← runTimed
-    "univariate-mul-low-ntt-fast-with-fallback" "CPolynomial.Raw"
-    "NTTFast.FastMulLow.withFallback" "KoalaBear.Field"
-    univariateMulLowShape preset warmup nttFastMeasured
+    (checksumRawPolynomial checksumKoalaBearFast)
+  let lowNttFast ← runTimedSpec
+    { name := "univariate-mul-low-ntt-fast-with-fallback", representation := "CPolynomial.Raw",
+      method := "NTTFast.FastMulLow.withFallback", field := "KoalaBear.Field",
+      inputShape := univariateMulLowShape, digestIterations := checksumIterations }
+    preset
     (fun _ ↦ nttFastWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots mulLowLhsRaw
       mulLowRhsRaw)
-    (checksumRawPolynomial checksumKoalaBear) (checksumIterations := checksumIterations)
-  let fastLowNttFast ← runTimed
-    "univariate-mul-low-ntt-fast-with-fallback-fast" "CPolynomial.Raw"
-    "NTTFast.FastMulLow.withFallback" "KoalaBear.Fast.Field"
-    univariateMulLowShape preset warmup fastNttFastMeasured
+    (checksumRawPolynomial checksumKoalaBear)
+  let fastLowNttFast ← runTimedSpec
+    { name := "univariate-mul-low-ntt-fast-with-fallback-fast",
+      representation := "CPolynomial.Raw", method := "NTTFast.FastMulLow.withFallback",
+      field := "KoalaBear.Fast.Field", inputShape := univariateMulLowShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦ fastNttFastWithFallbackLowMul.mulLow univariateMulLowOutputCoeffSlots
       fastMulLowLhsRaw fastMulLowRhsRaw)
-    (checksumRawPolynomial checksumKoalaBearFast) (checksumIterations := checksumIterations)
+    (checksumRawPolynomial checksumKoalaBearFast)
   pure ({
     groupKey := "univariate-low-product-koalabear",
     title := "Univariate low product (KoalaBear)",
