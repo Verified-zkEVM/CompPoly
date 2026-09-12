@@ -35,6 +35,7 @@ public import CompPolyTests.Fields.Binary.BF64
 public import CompPolyTests.Fields.Binary.Common
 public import CompPolyTests.Fields.Binary.Tower.Algebra
 public import CompPolyTests.Fields.Binary.Tower.Fast
+public import CompPolyTests.Fields.Binary.Tower.TensorAlgebra
 public import CompPolyTests.Fields.Extension.Arithmetic
 public import CompPolyTests.Fields.Extension.Binomial
 public import CompPolyTests.Fields.Goldilocks.Fast
@@ -45,6 +46,7 @@ public import CompPolyTests.Fields.Pasta.Fast
 public import CompPolyTests.Fields.PrattCertificate
 public import CompPolyTests.LinearAlgebra.Dense
 public import CompPolyTests.LinearAlgebra.PolynomialMatrix.Approximant
+public import CompPolyTests.LinearAlgebra.TensorProduct.Basis
 public import CompPolyTests.Multilinear.Equiv
 public import CompPolyTests.Multivariate.CMvMonomial
 public import CompPolyTests.Multivariate.PartialEval
