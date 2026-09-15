@@ -84,12 +84,6 @@ section DecidableEq
 
 variable {n : ℕ} [Zero R] [BEq R] [LawfulBEq R]
 
-/-- Decidable equality on `CMvPolynomial n R`, bootstrapped from `LawfulBEq R` so that it is
-available without a separate `[DecidableEq R]` assumption. -/
-instance instDecidableEq : DecidableEq (CMvPolynomial n R) :=
-  letI : DecidableEq R := instDecidableEqOfLawfulBEq
-  CPoly.Lawful.instDecidableEq
-
 /-- `BEq` on `CMvPolynomial n R` via its decidable equality; canonical, so `LawfulBEq` holds. -/
 instance instBEq : BEq (CMvPolynomial n R) := ⟨fun a b => decide (a = b)⟩
 

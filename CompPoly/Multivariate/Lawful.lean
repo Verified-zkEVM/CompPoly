@@ -233,7 +233,7 @@ def sub [Add R] [Neg R] (p₁ p₂ : Lawful n R) : Lawful n R :=
 
 instance [Add R] [Neg R] : Sub (Lawful n R) := ⟨sub⟩
 
-instance instDecidableEq [DecidableEq R] : DecidableEq (Lawful n R) := fun x y ↦
+instance instDecidableEq : DecidableEq (Lawful n R) := fun x y ↦
   if h : x.1.toList = y.1.toList
   then Decidable.isTrue (by have := ExtTreeMap.ext_toList (t₁ := x.1) (t₂ := y.1)
                             simp_rw [Subtype.val_inj] at this

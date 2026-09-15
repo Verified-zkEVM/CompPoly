@@ -451,6 +451,16 @@ def CHom : R →+* CMvPolynomial n R where
 
 @[simp] theorem CHom_apply (c : R) : (CHom (n := n) c) = CMvPolynomial.C c := rfl
 
+/-- `fromCMvPolynomial` commutes with a finite sum. -/
+theorem fromCMvPolynomial_sum {ι : Type*} (s : Finset ι) (f : ι → CMvPolynomial n R) :
+    fromCMvPolynomial (∑ i ∈ s, f i) = ∑ i ∈ s, fromCMvPolynomial (f i) :=
+  map_sum (polyRingEquiv (n := n) (R := R)) f s
+
+/-- `fromCMvPolynomial` commutes with a finite product. -/
+theorem fromCMvPolynomial_prod {ι : Type*} (s : Finset ι) (f : ι → CMvPolynomial n R) :
+    fromCMvPolynomial (∏ i ∈ s, f i) = ∏ i ∈ s, fromCMvPolynomial (f i) :=
+  map_prod (polyRingEquiv (n := n) (R := R)) f s
+
 noncomputable instance instAlgebra : Algebra R (CMvPolynomial n R) :=
   Algebra.mk (toSMul := instSMul) CHom
     (fun r x => mul_comm (C r) x)
