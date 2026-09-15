@@ -116,6 +116,12 @@ support lemmas:
 
 - `Tower/Abstract/*` - abstract tower definitions and algebra.
 - `Tower/Concrete/*` - concrete basis, core definitions, and field instances.
+  [Concrete/Coordinates.lean](../../CompPoly/Fields/Binary/Tower/Concrete/Coordinates.lean)
+  supplies `ConcreteBinaryTower.Coordinates.succCoordinates`: an
+  executable linear equivalence from level `k + 1` to two level-`k` coefficients, ordered
+  constant term first and generator term second. It uses the existing tower embedding
+  for the scalar action. Pass it to `AlgebraTower.natCoordinatesOfLE` or
+  `AlgebraTower.natCoordinatesConstOfLE` for coordinates between arbitrary ordered levels.
 - `Tower/Support/*` - supporting lemmas about defining polynomials, linear
   independence, and finite-index helpers.
 - `Tower/Fast.lean` - packed machine-word tower arithmetic with a GF(2^8)
