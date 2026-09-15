@@ -127,16 +127,18 @@ report into `$GITHUB_STEP_SUMMARY`.
 
 Three files measure timings at *elaboration* time via `#eval`:
 
-- `tests/CompPolyTests/Univariate/NTT/Benchmark.lean` — NTT-vs-naive crossover
-  sweep over 20 operand sizes, `IO.monoMsNow`.
-- `tests/CompPolyTests/Bivariate/KroneckerBenchmark.lean`
+- `Benchmark.lean` under `tests/CompPolyTests/Univariate/NTT/` (removed in 12.7;
+  the sweep it held is now the `univariate-mul-crossover-*` groups) — NTT-vs-naive
+  crossover sweep over 20 operand sizes, `IO.monoMsNow`.
+- `KroneckerBenchmark.lean` under `tests/CompPolyTests/Bivariate/` (removed in
+  12.7; `bivariate-full-*` covers the same multiply)
 - `CommonBench.lean` under `tests/CompPolyTests/Fields/Binary/` (removed in 12.4;
   its correctness guards now live in
   `tests/CompPolyTests/Fields/Binary/Common.lean`)
 
-None is imported by `tests/CompPolyTests.lean`, so none runs under `lake test`
-or in CI. Each documents its own manual invocation (`lake build
-CompPolyTests.Bivariate.KroneckerBenchmark`).
+None was imported by `tests/CompPolyTests.lean`, so none ran under `lake test`
+or in CI. Each documented its own manual invocation, in the shape `lake build
+CompPolyTests.Bivariate.KroneckerBenchmark`. All three are now gone.
 
 ### 1.4 Build-time measurement (`scripts/build_timing_report.sh`)
 
@@ -1102,7 +1104,7 @@ anywhere in this document.
 | CI bench steps | `.github/workflows/lean_action_ci.yml:210` |
 | CI group allowlist | `.github/workflows/lean_action_ci.yml:22` (`BENCH_CI_GROUPS`) |
 | Build-time baseline logic | `scripts/build_timing_report.sh`, `lean_action_ci.yml:283` |
-| Orphaned `#eval` benchmarks | `tests/CompPolyTests/Univariate/NTT/Benchmark.lean`, `tests/CompPolyTests/Bivariate/KroneckerBenchmark.lean` (a third, `CommonBench.lean`, was removed in 12.4) |
+| Orphaned `#eval` benchmarks | none remain; `Benchmark.lean` and `KroneckerBenchmark.lean` were removed in 12.7, and a third, `CommonBench.lean`, in 12.4 |
 
 ---
 
@@ -1272,6 +1274,17 @@ coverage work (§6.6, §7 Phase 4), the instruction-count track (§6.5, §7 Phas
 the external yardstick (§6.6, §7 Phase 6), and the Peregrine track (§8) including
 its hook.
 
+**Radar is deferred by decision, not pending.** Recorded here so it is not
+rediscovered later as an oversight: there is no `bench/run` entry point, no
+registration ask, and no radar metric format, and none of the three is waiting
+on anything. §5.1 and §7 Phase 2 keep the details should the decision change.
+The regression gate stays blocked behind it — without Radar it is self-hosted
+baseline comparison, for which the machinery exists to copy
+(`lean_action_ci.yml` finds and downloads the merge-base run's artifact, and
+`scripts/build_timing_report.sh render` renders the comparison for build
+timing) but the threshold does not, and §12.5 finding 5 is explicit that no
+single run can measure the run-to-run variance a gate would compare against.
+
 Three decisions settled that §9 left open:
 
 - **§9.4, preset budget: do not gate on CI benchmark wall-clock.** The benchmark
@@ -1308,6 +1321,7 @@ reviews as a small diff and the stack merges bottom-up. Base of the stack is
 | 3 | `dhsorens/bench-determinism` | Per-group seeding from the group key, registration made authoritative, dead-code removal | landed |
 | 4 | `dhsorens/bench-reporting` | Cross-platform hardware probe, `bench/out/`, `docs/wiki/benchmarking.md`, `clMul` guard migration | landed |
 | 5 | `dhsorens/bench-foundations` | `--validate-only`, correctness gate in main CI, on-demand `benchmarks.yml` | landed |
+| 6 | `dhsorens/bench-sizing-and-coverage` | Wall-clock budgets replace 228 hand-tuned iteration counts, one declaration site per row, preset-independent digests, group identity and a run manifest in the output | in review |
 
 ### 12.1 Measurement core (`dhsorens/bench-measurement-core`)
 
@@ -1540,10 +1554,12 @@ The baseline is now generic in the operand width and carries four more guards at
 width 64, checked the same way. Had the file gone in §6.6, the generalization
 would have landed with nothing pinning either width to the fold it replaced.
 
-`tests/CompPolyTests/Univariate/NTT/Benchmark.lean` and
-`KroneckerBenchmark.lean` are deliberately left in place: the former holds the
-only NTT-vs-schoolbook crossover logic in the repo and is the specification for a
-future crossover metric.
+`Benchmark.lean` under `tests/CompPolyTests/Univariate/NTT/` and
+`KroneckerBenchmark.lean` under `tests/CompPolyTests/Bivariate/` were
+deliberately left in place here: the former held the only NTT-vs-schoolbook
+crossover logic in the repo and was the specification for a future crossover
+metric. That metric exists as of 12.7 — the `univariate-mul-crossover-*`
+groups — and both files were deleted with it.
 
 **`docs/wiki/benchmarking.md`** added and registered in both hand-maintained
 lists in `docs/wiki/README.md`, since `check-docs-integrity.py` validates that
@@ -1682,3 +1698,144 @@ selection, and upserted a PR comment carrying the advisory caveat.
 **Not done.** No nightly schedule. Timings are produced when someone asks —
 manual dispatch, a `/bench` comment from a repo member, or a PR touching
 `bench/**`, which is the one place path filtering genuinely fits.
+
+### 12.6 Budget-driven sizing (`dhsorens/bench-sizing-and-coverage`)
+
+§11.4 item 4 and §6.3 said the same thing from two directions: the suite carried
+one hand-tuned iteration count per benchmark per preset, 228 of them, and a count
+is the wrong unit. It is not comparable between two rows of one table, it goes
+stale as the code it measures gets faster, and choosing one for a new benchmark
+is guesswork that has to be redone on every machine. §12.2 deferred retiring
+them; this branch does it.
+
+A preset now selects a `BenchBudget` — warmup nanoseconds, sample length, sample
+count, and a total ceiling per row — and each row is calibrated against it by a
+geometric ramp that doubles as warmup. Two design points are load-bearing.
+`sampleNanos` is 1 ms at every preset: a sample is a mean over `itersPerSample`
+iterations, so raising that count averages dispersion away, and a preset-varying
+sample length would make `--small` and `--large` report structurally different
+spread for identical code. And `measureNanos` is a second, separate ceiling,
+because `sampleNanos` × `sampleCount` is 50 ms even at `--large`, which would pin
+the seconds-per-iteration rows at one sample forever.
+
+Getting there needed three preparatory steps, each verifiable on its own. A
+`BenchSpec` record replaced five consecutive `String` arguments at 228 call
+sites, in a commit that provably changed nothing. Digest lengths became the
+**period of the body in its iteration index** rather than `min 256 measured`:
+195 of the 282 rows shared across presets had carried three different digests,
+and under budget sizing the same expression would have made a digest vary with
+the *machine*, which turns committed fixtures from awkward into impossible.
+`guruswami-sudan-packed-filter` needed a separate fix — its `candidateCount` was
+`preset.selectNat 128 64 32`, an input shape wearing a budget's clothes, which no
+digest rule could have repaired; pinned at 128.
+
+**Findings.**
+
+1. *The canary would have inverted silently.*
+   `bench/CompPolyBench/Harness/SelfCheck.lean` asserted
+   `canary.totalNanos > 3 x floor.totalNanos`. Totals separate the two rows only
+   while they run the same number of iterations, and a wall-clock budget
+   equalises them by construction. Left alone it throws on every run; "fixed" by
+   lowering `canaryFloorRatio` it passes vacuously forever and the harness loses
+   its only dead-code detection. It compares per-iteration medians now, landed
+   *before* the flip so the flip was not verified through a check that was
+   throwing. Observed ratios 160x-776x across presets and both modes.
+
+2. *One group had been reporting its cost divided by `itersPerSample` since it
+   was written.* The finite-field root group's body was a closed term — `p` was
+   bound to a nullary constant and so is the root context — so it was evaluated
+   once and every later iteration in a sample got the cached array back. At the
+   hand-tuned counts that was a factor of 1 to 20 and invisible; calibration
+   raised `itersPerSample` to ~700k and made it 10^8. Fixed by drawing the
+   workload's root seeds from the group's random stream, so the body depends on
+   a local the way every other group's does. `fast-nttfast`'s real cost is
+   74 ms, not the 24 ms the suite had been reporting. Found by the per-iteration
+   median comparison the sizing flip's verification calls for, and the reason to
+   insist on that comparison rather than a digest diff alone.
+
+3. *Two report lines would have vanished without an error.* "Warmup iterations"
+   and "Samples" were rendered with `matchingNat?`, which stops matching once two
+   rows of a group are calibrated separately. They are table columns now.
+
+**Effect on the run data**, `--medium`, curated set: rows with fewer than five
+samples fell from 22 to 9 and rows at `n=1` from 14 to 2, while per-iteration
+medians moved by at most 8.6% (whole distribution 0.878-1.086, median 1.006).
+Calibration repeats within 1.01x over three runs. The curated timed run went
+from 120.1s to 110.7s and `--validate-only --medium` from 36.1s to 33.0s — the
+latter a small saving, as §11.4 item 3 predicted, because the cost sits in rows
+validated exactly once.
+
+**What it does not fix.** Rows still reading `n=1` have single iterations that
+genuinely exhaust the budget; their problem is input shape and no harness change
+reaches it. With calibration in place a parameterised group can pick the largest
+shape that fits its budget, which is the mechanism for that pass when it happens.
+One thing is lost deliberately: `measured_iterations` is no longer comparable
+across runs, since it depends on how fast the machine was during calibration.
+`group_key`, `group_title`, and a per-run `manifest-<runId>.json` — commit,
+dirty flag, toolchain, preset, resolved budgets, seed, selection, hardware —
+are what replaces it for attribution.
+
+### 12.7 Coverage: base fields, transforms, and chained bodies (`dhsorens/bench-coverage`)
+
+Closes the coverage gaps §6.6 listed, and the ones §3.8 called invisible. 70
+groups became 113 and 290 records became 413; the curated correctness gate went
+from 44 groups to 59 and got *cheaper*, ~34s to ~29s of CPU, for the reason in
+finding 3 below.
+
+**The body shape had to change first.** `harness-floor` was 1.80 ns and
+`goldilocks-mul-fast` 3.16 ns, and the generated C showed why: the operand-pool
+idiom every group used, `xs.getD (i % xs.size) unit`, is two boxed-`Nat`
+modulos, two bounds checks and two boxed array reads around one multiply. The
+field operation was a rounding error in its own measurement.
+`bench/CompPolyBench/Harness/Chain.lean` performs the operation `workUnits` times per iteration instead — no array,
+because `lean_box_uint64` allocates and a one-cycle dependent chain cannot be
+fed from a pointer array; no `for` with `let mut`, because `Prod` does not
+erase; unrolled blocks, because the `Nat` counter costs more than a Montgomery
+multiply. Latency and throughput are reported separately, as Plonky3 separates
+them, and `harness-chain-floor` and `harness-chain-linearity` police the shape.
+
+Three findings worth keeping.
+
+1. **A `GF(2)`-linear chain folds, and the linearity check does not catch it.**
+   The chain floor's first operation was `x ^^^ (x >>> 7)`, the map `I + S`. In
+   characteristic two `(I + S) ^ 64 = I + S ^ 64`, and `S ^ 64` shifts right by
+   448, so a 64-deep block *is the identity*. LLVM found it; the row reported
+   15 ps per operation, a sixteenth of a cycle, and `harness-chain-linearity`
+   passed anyway, because what collapsed was each block and not the loop over
+   blocks. The floor operation must mix two algebras; a wrapping add carries
+   between bits and does not commute with the shift.
+
+2. **Loop-invariance is a second way to lose a body, distinct from closed-term
+   caching.** §12.6 finding 2 recorded the closed-term case. The NTT group hit
+   the other one: it precomputed its spectrum with the very expression the
+   forward reference row then timed, the compiler recognised the two as one,
+   and the row reported 6 ns for a `2^12` transform at every size identically.
+   Indexing a small pool by the iteration counter closes both, and every chained
+   and transform body here does.
+
+3. **BabyBear was missing an instance KoalaBear had.**
+   `KoalaBear/Basic.lean` declares `instance : Field Field := ZMod.instField
+   fieldSize`; `BabyBear/Basic.lean` did not. Putting the two fields side by
+   side in one group made canonical BabyBear `mul` show as 32.0 ns against
+   5.9 ns for KoalaBear and Mersenne31 — the same shape, the same size of
+   prime. Adding the instance closed the gap exactly. This is the case
+   `CLAUDE.md` describes under Performance Guidelines, and it is the first
+   thing the coverage work paid for.
+
+**Blocked, and recorded so it is not rediscovered.** The polynomial-basis
+`GF(2^64)` and its cubic extension still have no group. `BF64.instFintype`
+(`CompPoly/Fields/Binary/BF64/Impl.lean:391`) is a closed constant whose value
+is a `Finset` of all `2 ^ 64` elements, and Lean evaluates closed constants at
+module initialisation — so any executable importing that module hangs before
+`main` runs, `--list` included. Elaboration never notices, because the
+interpreter forces constants on demand, which is why the tests build. Marking
+it `noncomputable` is not the repair: `Extension.Ext` carries `[Fintype F]` and
+its operations stop compiling. The fix belongs in
+`CompPoly/Fields/Extension/`.
+
+**Also deferred**, with reasons: `sub` groups; a larger additive NTT, since
+each `(k, ℓ, R_rate)` needs its own proof-carrying wrapper and the reference
+row cannot survive `ℓ ≥ 8`; `batchInverse` / `sumOfProducts` / `dot_array`,
+which Plonky3 benchmarks and CompPoly does not have; and prime-field `square`,
+which is `mul x x` on every carrier here — Plonky3 has no field-level `square`
+benchmark for the same reason.
