@@ -290,16 +290,20 @@ anything but the run it just made. -/
 def outputDir : System.FilePath := "bench" / "out"
 
 /-- Path for the generated JSONL benchmark results. -/
-def resultsPath (runId : String) : System.FilePath :=
-  outputDir / ("results-" ++ runId ++ ".jsonl")
+def resultsPath (outDir : System.FilePath) (runId : String) : System.FilePath :=
+  outDir / ("results-" ++ runId ++ ".jsonl")
 
 /-- Path for the generated Markdown benchmark report. -/
-def reportPath (runId : String) : System.FilePath :=
-  outputDir / ("report-" ++ runId ++ ".md")
+def reportPath (outDir : System.FilePath) (runId : String) : System.FilePath :=
+  outDir / ("report-" ++ runId ++ ".md")
 
 /-- Path for the per-run provenance manifest. -/
-def manifestPath (runId : String) : System.FilePath :=
-  outputDir / ("manifest-" ++ runId ++ ".json")
+def manifestPath (outDir : System.FilePath) (runId : String) : System.FilePath :=
+  outDir / ("manifest-" ++ runId ++ ".json")
+
+/-- Path for the Markdown report of an A/B comparison. -/
+def comparePath (outDir : System.FilePath) (runId : String) : System.FilePath :=
+  outDir / ("compare-" ++ runId ++ ".md")
 
 /-- Trim command output and normalize empty output to the empty string. -/
 def trimCommandOutput (s : String) : String :=
@@ -850,39 +854,83 @@ def RunManifest.render (manifest : RunManifest) : String :=
 def jsonString (s : String) : String :=
   Lean.Json.renderString s
 
+/-! ### JSONL key names
+
+Single-sourced so that the writer below and the reader in
+`CompPolyBench.Compare.Read` cannot drift apart: a renamed key changes both, and
+the round-trip guards in the reader catch a key that was renamed in only one. -/
+
+namespace JsonKey
+
+def groupKey : String := "group_key"
+def groupTitle : String := "group_title"
+def name : String := "name"
+def representation : String := "representation"
+def method : String := "method"
+def preset : String := "preset"
+def field : String := "field"
+def inputShape : String := "input_shape"
+def warmupIterations : String := "warmup_iterations"
+def checksumIterations : String := "checksum_iterations"
+def measuredIterations : String := "measured_iterations"
+def totalNanos : String := "total_nanos"
+def medianNanos : String := "median_nanos"
+def workUnits : String := "work_units"
+def digestClass : String := "digest_class"
+def checksum : String := "checksum"
+def sinkDigest : String := "sink_digest"
+def sampleCount : String := "sample_count"
+def itersPerSample : String := "iters_per_sample"
+def unreplicated : String := "unreplicated"
+def minPicos : String := "min_picos"
+def medianPicos : String := "median_picos"
+def meanPicos : String := "mean_picos"
+def p95Picos : String := "p95_picos"
+def stddevPicos : String := "stddev_picos"
+def madPicos : String := "mad_picos"
+def mildOutliers : String := "mild_outliers"
+def severeOutliers : String := "severe_outliers"
+def samplesPicos : String := "samples_picos"
+
+end JsonKey
+
+/-- Render one `"key":value` member of a JSON object; `value` is already JSON. -/
+def jsonField (key value : String) : String :=
+  jsonString key ++ ":" ++ value
+
 /-- Render one benchmark record as a JSONL row. -/
 def BenchRecord.toJsonLine (record : BenchRecord) : String :=
   "{" ++ String.intercalate "," [
-    "\"group_key\":" ++ jsonString record.groupKey,
-    "\"group_title\":" ++ jsonString record.groupTitle,
-    "\"name\":" ++ jsonString record.name,
-    "\"representation\":" ++ jsonString record.representation,
-    "\"method\":" ++ jsonString record.method,
-    "\"preset\":" ++ jsonString record.preset,
-    "\"field\":" ++ jsonString record.field,
-    "\"input_shape\":" ++ jsonString record.inputShape,
-    "\"warmup_iterations\":" ++ toString record.warmupIterations,
-    "\"checksum_iterations\":" ++ toString record.checksumIterations,
-    "\"measured_iterations\":" ++ toString record.measuredIterations,
-    "\"total_nanos\":" ++ toString record.totalNanos,
-    "\"median_nanos\":" ++ toString record.medianNanos,
-    "\"work_units\":" ++ toString record.workUnits,
-    "\"digest_class\":" ++ jsonString record.digestClass,
-    "\"checksum\":" ++ toString record.checksum,
-    "\"sink_digest\":" ++ toString record.sinkDigest,
-    "\"sample_count\":" ++ toString record.stats.count,
-    "\"iters_per_sample\":" ++ toString record.stats.itersPerSample,
-    "\"unreplicated\":" ++ (if record.stats.unreplicated then "true" else "false"),
-    "\"min_picos\":" ++ toString record.stats.minPicos,
-    "\"median_picos\":" ++ toString record.stats.medianPicos,
-    "\"mean_picos\":" ++ toString record.stats.meanPicos,
-    "\"p95_picos\":" ++ toString record.stats.p95Picos,
-    "\"stddev_picos\":" ++ toString record.stats.stddevPicos,
-    "\"mad_picos\":" ++ toString record.stats.madPicos,
-    "\"mild_outliers\":" ++ toString record.stats.mildOutliers,
-    "\"severe_outliers\":" ++ toString record.stats.severeOutliers,
-    "\"samples_picos\":[" ++
-      String.intercalate "," (record.samples.toList.map toString) ++ "]"
+    jsonField JsonKey.groupKey (jsonString record.groupKey),
+    jsonField JsonKey.groupTitle (jsonString record.groupTitle),
+    jsonField JsonKey.name (jsonString record.name),
+    jsonField JsonKey.representation (jsonString record.representation),
+    jsonField JsonKey.method (jsonString record.method),
+    jsonField JsonKey.preset (jsonString record.preset),
+    jsonField JsonKey.field (jsonString record.field),
+    jsonField JsonKey.inputShape (jsonString record.inputShape),
+    jsonField JsonKey.warmupIterations (toString record.warmupIterations),
+    jsonField JsonKey.checksumIterations (toString record.checksumIterations),
+    jsonField JsonKey.measuredIterations (toString record.measuredIterations),
+    jsonField JsonKey.totalNanos (toString record.totalNanos),
+    jsonField JsonKey.medianNanos (toString record.medianNanos),
+    jsonField JsonKey.workUnits (toString record.workUnits),
+    jsonField JsonKey.digestClass (jsonString record.digestClass),
+    jsonField JsonKey.checksum (toString record.checksum),
+    jsonField JsonKey.sinkDigest (toString record.sinkDigest),
+    jsonField JsonKey.sampleCount (toString record.stats.count),
+    jsonField JsonKey.itersPerSample (toString record.stats.itersPerSample),
+    jsonField JsonKey.unreplicated (if record.stats.unreplicated then "true" else "false"),
+    jsonField JsonKey.minPicos (toString record.stats.minPicos),
+    jsonField JsonKey.medianPicos (toString record.stats.medianPicos),
+    jsonField JsonKey.meanPicos (toString record.stats.meanPicos),
+    jsonField JsonKey.p95Picos (toString record.stats.p95Picos),
+    jsonField JsonKey.stddevPicos (toString record.stats.stddevPicos),
+    jsonField JsonKey.madPicos (toString record.stats.madPicos),
+    jsonField JsonKey.mildOutliers (toString record.stats.mildOutliers),
+    jsonField JsonKey.severeOutliers (toString record.stats.severeOutliers),
+    jsonField JsonKey.samplesPicos
+      ("[" ++ String.intercalate "," (record.samples.toList.map toString) ++ "]")
   ] ++ "}"
 
 /-- Render all benchmark records as JSONL. -/
@@ -911,10 +959,9 @@ def keepSome {α : Type*} : List (Option α) → List α
   | some value :: values => value :: keepSome values
   | none :: values => keepSome values
 
-/-- Compute the Markdown width required for a result table column. -/
-def columnWidth (records : List BenchRecord)
-    (column : String × Bool × (BenchRecord → String)) : Nat :=
-  records.foldl (fun width record ↦ max width (column.2.2 record).length) column.1.length
+/-- Compute the Markdown width required for a table column. -/
+def columnWidth {ρ : Type} (rows : List ρ) (column : String × Bool × (ρ → String)) : Nat :=
+  rows.foldl (fun width row ↦ max width (column.2.2 row).length) column.1.length
 
 /-- Pad one Markdown table cell according to its alignment. -/
 def formatCell (alignRight : Bool) (width : Nat) (s : String) : String :=
@@ -935,9 +982,9 @@ def markdownRow (cells : List String) (widths : List Nat)
 def markdownSeparatorCell (alignRight : Bool) (width : Nat) : String :=
   if alignRight then dashes ((max width 4) - 1) ++ ":" else dashes (max width 3)
 
-/-- Render a Markdown table for benchmark results. -/
-def renderMarkdownTable (columns : List (String × Bool × (BenchRecord → String)))
-    (records : List BenchRecord) : List String :=
+/-- Render a Markdown table; each column is a header, a right-align flag, and a cell. -/
+def renderMarkdownTable {ρ : Type} (columns : List (String × Bool × (ρ → String)))
+    (records : List ρ) : List String :=
   let widths := columns.map (columnWidth records)
   let headers := columns.map (fun column ↦ column.1)
   let alignRights := columns.map (fun column ↦ column.2.1)
@@ -1158,6 +1205,10 @@ def implementationLabelInGroup (records : List BenchRecord) (record : BenchRecor
   else
     label ++ " (" ++ record.field ++ ")"
 
+/-- Render a dispersion given in tenths of a percent as `±x.y%`. -/
+def renderTenthsPercent (tenths : Nat) : String :=
+  "±" ++ toString (tenths / 10) ++ "." ++ toString (tenths % 10) ++ "%"
+
 /-- Render a record's sample dispersion as a percentage of its median.
 
 Reads `n=1` where a benchmark could not be replicated at all, `(n=k)` where it
@@ -1171,7 +1222,7 @@ def renderSpread (record : BenchRecord) : String :=
   else
     let tenths :=
       if stats.medianPicos = 0 then 0 else 1000 * stats.madPicos / stats.medianPicos
-    let base := "±" ++ toString (tenths / 10) ++ "." ++ toString (tenths % 10) ++ "%"
+    let base := renderTenthsPercent tenths
     let base := if stats.unreplicated then base ++ " (n=" ++ toString stats.count ++ ")" else base
     if stats.severeOutliers > 0 then base ++ " !" ++ toString stats.severeOutliers else base
 
