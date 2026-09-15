@@ -291,7 +291,8 @@ def driftLine? (row : RowComparison) : Option DriftLine :=
   | some b, some c, some milli =>
       let label := row.key.groupKey ++
         (if row.key.digestClass.isEmpty then "" else " · " ++ row.key.digestClass)
-      some { label, ratioMilli := milli, warn := c.median * 10 < b.median * 9 || c.median * 10 > b.median * 11 }
+      let warn := c.median * 10 < b.median * 9 || c.median * 10 > b.median * 11
+      some { label, ratioMilli := milli, warn }
   | _, _, _ => none
 
 /-- Compare the two sides.
