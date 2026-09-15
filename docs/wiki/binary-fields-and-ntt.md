@@ -85,9 +85,12 @@ and `inv_itoh_tsujii` retain those same nominal signatures; callers with raw wor
 explicitly. The former `ConcreteBF128Ghash_eq_BitVec` type equality is replaced by the coordinate
 equivalence. Raw carry-less multiplication and reduction retain their word interfaces.
 
-The named inversion algorithm is executable. The generic `Field` dictionary still selects its
-inverse noncomputably; restoring its computability is tracked separately in
-[issue #276](https://github.com/Verified-zkEVM/CompPoly/issues/276).
+The generic `Field` dictionary uses the same executable multiplication and Itoh–Tsujii inverse
+as the named operations. Natural and integer powers use binary exponentiation. Division and
+rational scalar actions use total field inversion, so an even rational denominator maps to
+zero in characteristic two. The legacy `instHDivConcreteBF128Ghash` and
+`instDivisionRingConcreteBF128Ghash` names remain deprecated abbreviations; they no longer
+register competing instances.
 
 ## Polynomial-Basis GF(2^64) Surface
 

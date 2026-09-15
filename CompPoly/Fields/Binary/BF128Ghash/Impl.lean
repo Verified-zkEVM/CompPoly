@@ -14,8 +14,9 @@ coefficient of `X^i`. Explicit coordinate maps separate this presentation from r
 words and other binary fields. Addition, multiplication, and the named inversion algorithm
 are executable, with an injective interpretation in
 `GF(2)[X] / (X^128 + X^7 + X^2 + X + 1)` proving their algebraic laws.
-The generic `Field` instance remains noncomputable. These coordinates describe polynomial
-coefficients; they do not introduce a byte or wire-format conversion.
+The `Field` instance uses the same executable operations, with binary exponentiation for
+natural and integer powers. These coordinates describe polynomial coefficients; they do not
+introduce a byte or wire-format conversion.
 
 ## Main Definitions
 
@@ -680,9 +681,9 @@ instance instRingConcreteBF128Ghash : Ring ConcreteBF128Ghash where
   right_distrib := right_distrib
   zero_mul := zero_mul
   mul_zero := mul_zero
-  npow := npowRecAuto
-  npow_zero := by intro x; rfl
-  npow_succ := by intro n x; rfl
+  npow := npowBinRecAuto
+  npow_zero := npowBinRec_zero
+  npow_succ := npowBinRec_succ
   natCast := natCast
   natCast_zero := natCast_zero
   natCast_succ := natCast_succ
@@ -895,8 +896,10 @@ lemma mul_inv_cancel (a : ConcreteBF128Ghash) (h : a ≠ 0) : a * a⁻¹ = 1 := 
 instance instDivConcreteBF128Ghash : Div (ConcreteBF128Ghash) where
   div a b := a * (Inv.inv b)
 
-instance instHDivConcreteBF128Ghash : HDiv (ConcreteBF128Ghash) (ConcreteBF128Ghash)
-  (ConcreteBF128Ghash) where hDiv a b := a * (Inv.inv b)
+/-- Compatibility name for division inherited from the homogeneous division instance. -/
+@[deprecated "Use the inferred homogeneous division instance." (since := "2026-09-16")]
+abbrev instHDivConcreteBF128Ghash :
+    HDiv ConcreteBF128Ghash ConcreteBF128Ghash ConcreteBF128Ghash := inferInstance
 
 lemma div_eq_mul_inv (a b : ConcreteBF128Ghash) : a / b = a * b⁻¹ := by rfl
 
@@ -907,8 +910,8 @@ lemma mul_comm (a b : ConcreteBF128Ghash) : a * b = b * a := by
 
 /-! ### Field instance
 
-The existing `Field` instance uses `IsField.toField`, which chooses its inverse
-noncomputably. The named `invItohTsujii` algorithm provides executable inversion.
+The field structure retains the explicit arithmetic, including the total inversion chain.
+Both natural and integer powers use binary exponentiation.
 -/
 
 theorem isField_concrete : IsField ConcreteBF128Ghash where
@@ -916,15 +919,46 @@ theorem isField_concrete : IsField ConcreteBF128Ghash where
   mul_comm := mul_comm
   mul_inv_cancel := fun {_} h => ⟨Inv.inv _, mul_inv_cancel _ h⟩
 
-/-- `Field` structure on the concrete GHASH field. -/
-noncomputable instance instFieldConcreteBF128Ghash : Field ConcreteBF128Ghash := by
-  letI : Ring ConcreteBF128Ghash := (instRingConcreteBF128Ghash :)
-  exact isField_concrete.toField
+/-- The GHASH field with executable inversion, division, and binary exponentiation. -/
+instance instFieldConcreteBF128Ghash : Field ConcreteBF128Ghash where
+  mul_comm := mul_comm
+  inv := invItohTsujii
+  div a b := a * invItohTsujii b
+  div_eq_mul_inv _ _ := rfl
+  exists_pair_ne := exists_pair_ne
+  mul_inv_cancel := mul_inv_cancel
+  inv_zero := inv_zero
+  zpow := zpowRec npowBinRecAuto
+  zpow_zero' _ := rfl
+  zpow_succ' := npowBinRec_succ
+  zpow_neg' _ _ := rfl
+  qsmul := (Rat.castRec · * ·)
+  nnqsmul := (NNRat.castRec · * ·)
 
-/-- Legacy name used by downstream modules. -/
-noncomputable instance instDivisionRingConcreteBF128Ghash :
-    DivisionRing ConcreteBF128Ghash :=
+/-- Compatibility name for the division ring inherited from the field. -/
+@[deprecated "Use the division ring inherited from the Field instance." (since := "2026-09-16")]
+abbrev instDivisionRingConcreteBF128Ghash : DivisionRing ConcreteBF128Ghash :=
   Field.toDivisionRing
+
+/-- Inversion is the total Itoh-Tsujii algorithm, including at zero. -/
+theorem inv_def (a : ConcreteBF128Ghash) : a⁻¹ = invItohTsujii a := rfl
+
+/-- Division multiplies by the total Itoh-Tsujii inverse of the denominator. -/
+theorem div_def (a b : ConcreteBF128Ghash) : a / b = a * invItohTsujii b := rfl
+
+/-- Natural powers use binary exponentiation. -/
+theorem npow_def (a : ConcreteBF128Ghash) (n : ℕ) : a ^ n = npowBinRec n a := rfl
+
+/-- Integer powers use binary exponentiation and invert the result for negative exponents. -/
+theorem zpow_def (a : ConcreteBF128Ghash) (n : ℤ) :
+    a ^ n = zpowRec npowBinRecAuto n a := rfl
+
+/-- The quotient interpretation preserves inversion, including at zero. -/
+theorem toQuot_inv (a : ConcreteBF128Ghash) : toQuot a⁻¹ = (toQuot a)⁻¹ := by
+  by_cases h : a = 0
+  · simp only [h, toQuot_zero, _root_.inv_zero]
+  · apply eq_inv_of_mul_eq_one_right
+    rw [← toQuot_mul, mul_inv_cancel a h, toQuot_one]
 
 end DivisionRing_Field_Instances
 
