@@ -5,8 +5,9 @@ Authors: Derek Sorensen
 -/
 module
 
-public import CompPoly.Fields.Extension.Binomial
 public import Mathlib.Algebra.BigOperators.Fin
+public import Mathlib.Algebra.Polynomial.BigOperators
+public import Mathlib.Data.Fintype.Card
 
 /-!
 # Computable extension fields by an arbitrary monic modulus
