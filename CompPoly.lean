@@ -99,6 +99,7 @@ public import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
 public import CompPoly.Fields.Binary.AdditiveNTT.Algorithm
 public import CompPoly.Fields.Binary.AdditiveNTT.Correctness
 public import CompPoly.Fields.Binary.AdditiveNTT.Domain
+public import CompPoly.Fields.Binary.AdditiveNTT.Executable
 public import CompPoly.Fields.Binary.AdditiveNTT.Impl
 public import CompPoly.Fields.Binary.AdditiveNTT.Intermediate
 public import CompPoly.Fields.Binary.AdditiveNTT.NovelPolynomialBasis

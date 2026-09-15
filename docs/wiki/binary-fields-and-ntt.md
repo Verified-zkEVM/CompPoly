@@ -176,10 +176,14 @@ The additive-NTT stack is split by role rather than by one monolithic file:
 - [`../../CompPoly/Fields/Binary/AdditiveNTT/Algorithm.lean`](../../CompPoly/Fields/Binary/AdditiveNTT/Algorithm.lean)
   defines evaluation points, twiddle factors, stage updates, and the algorithm data
   flow.
+- [`../../CompPoly/Fields/Binary/AdditiveNTT/Executable.lean`](../../CompPoly/Fields/Binary/AdditiveNTT/Executable.lean)
+  defines the generic function-backed and array-backed algorithms without importing a tower
+  construction.
 - [`../../CompPoly/Fields/Binary/AdditiveNTT/Impl.lean`](../../CompPoly/Fields/Binary/AdditiveNTT/Impl.lean)
-  packages the implementation-facing surface.
+  re-exports those algorithms with concrete tower bases, instances, and the existing example.
 - [`../../CompPoly/Fields/Binary/AdditiveNTT/Correctness.lean`](../../CompPoly/Fields/Binary/AdditiveNTT/Correctness.lean)
-  proves the implementation correct.
+  proves the generic implementations correct without requiring a concrete tower. The umbrella
+  `AdditiveNTT.lean` retains the combined generic and concrete surface for existing consumers.
 
 When changing additive NTT, expect to read several of these files together.
 Algorithm changes often cascade into `Intermediate`, `Impl`, and `Correctness`.
@@ -199,4 +203,4 @@ Algorithm changes often cascade into `Intermediate`, `Impl`, and `Correctness`.
 - For tower fields: `Prelude` / `Basic` -> `Abstract` or `Concrete` branch ->
   `Equiv` / `Impl`
 - For additive NTT: `Domain` -> `NovelPolynomialBasis` -> `Intermediate` ->
-  `Algorithm` -> `Impl` -> `Correctness`
+  `Algorithm` -> `Executable` -> `Correctness`; add `Impl` for concrete tower instances
