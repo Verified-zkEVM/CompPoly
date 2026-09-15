@@ -137,8 +137,10 @@ public import CompPoly.Fields.Binary.Tower.Support.LinearIndependentFin2
 public import CompPoly.Fields.Binary.Tower.Support.Preliminaries
 public import CompPoly.Fields.Binary.Tower.TensorAlgebra
 public import CompPoly.Fields.Extension
+public import CompPoly.Fields.Extension.Arithmetic
 public import CompPoly.Fields.Extension.Binomial
 public import CompPoly.Fields.Extension.Bridge
+public import CompPoly.Fields.Extension.Cardinality
 public import CompPoly.Fields.Extension.Defs
 public import CompPoly.Fields.Extension.Field
 public import CompPoly.Fields.Goldilocks
@@ -224,6 +226,7 @@ public import CompPoly.LinearAlgebra.PolynomialMatrix.RowSpan
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Shifted
 public import CompPoly.LinearAlgebra.PolynomialMatrix.ShiftedReduction
 public import CompPoly.LinearAlgebra.PolynomialMatrix.StrassenCorrectness
+public import CompPoly.LinearAlgebra.TensorProduct.Basis
 public import CompPoly.Multilinear.Basic
 public import CompPoly.Multilinear.Equiv
 public import CompPoly.Multilinear.ManyEval

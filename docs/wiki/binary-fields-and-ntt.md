@@ -97,11 +97,23 @@ encoding is observable.
 - [`../../CompPoly/Fields/Binary/BF64/Reduce.lean`](../../CompPoly/Fields/Binary/BF64/Reduce.lean)
   folds a 128-bit carry-less product back into 64 bits using the reduction constant `0x1B`.
 - [`../../CompPoly/Fields/Binary/BF64/Impl.lean`](../../CompPoly/Fields/Binary/BF64/Impl.lean)
-  carries the computable `BitVec 64` representation, its bridge to the quotient, and the
+  carries the nominal field elements with `BitVec 64` coordinates, their quotient bridge, and the
   `CommRing` / `Field` instances built around an Itoh-Tsujii inverse.
 - [`../../CompPoly/Fields/Binary/BF64/Ext3.lean`](../../CompPoly/Fields/Binary/BF64/Ext3.lean)
   instantiates the extension framework at `y^3 + y + 1`, whose irreducibility needs no
   certificate.
+
+Use `BF64.ofBitVec` to construct polynomial-basis words and `BF64.toBitVec` to recover them;
+the maps are inverse and introduce no implicit conversion to another field presentation.
+For example, `BF64.ofBitVec (2#64)` denotes `X`, while `(2 : BF64)` is zero. Raw reference
+vectors must use the coordinate constructor rather than field numeral casts.
+
+`BF64` and `BF64.Ext3` expose proof-only `Finite` instances and the cardinality theorems
+`BF64.nat_card_bf64` and `BF64.nat_card_ext3`. They provide no default enumeration dictionary.
+A proof that needs `Fintype` can choose `Fintype.ofFinite` locally; `card_bf64` and `card_ext3`
+then apply to that chosen enumeration. Arithmetic does not enumerate these enormous fields.
+The [native startup test](../../tests/README.md#native-startup-and-field-arithmetic) checks
+linked initialization and actual base/extension arithmetic under resource bounds.
 
 The instances here are assembled field-by-field on purpose: a transport such as
 `Function.Injective.commRing` takes the bridge as *data* and would make the arithmetic
@@ -133,8 +145,13 @@ support lemmas:
   lookup-table base, proven against `ConcreteBTField`; `Field` instances and ring
   isomorphisms at every level up to GF(2^128). Runtime definitions live in the
   zero-import `Tower/FastDefs.lean` for `precompileModules` consumers.
-- `Tower/Equiv.lean`, `Tower/Impl.lean`, and `Tower/TensorAlgebra.lean` connect the
-  layers and expose useful transport lemmas.
+- `Tower/Equiv.lean` and `Tower/Impl.lean` connect the layers and expose useful
+  transport lemmas.
+- `Tower/TensorAlgebra.lean` re-exports the generic tensor basis API from
+  `CompPoly/LinearAlgebra/TensorProduct/Basis.lean`. Its right scalar action is
+  explicit; importing either path preserves Mathlib's default left action. See
+  [`../../CompPoly/LinearAlgebra/README.md`](../../CompPoly/LinearAlgebra/README.md)
+  for the local algebra, module and scalar-action selection needed for equal tensor factors.
 
 Use the tower subtree when the task is about characteristic-2 extensions more
 generally, not just GHASH.
