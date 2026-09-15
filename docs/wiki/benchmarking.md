@@ -13,12 +13,19 @@ lake exe CompPolyBench --small                       # every registered group, t
 lake exe CompPolyBench --medium --validate-only      # correctness only, no timings
 lake exe CompPolyBench --groups fields-goldilocks-mul
 lake exe CompPolyBench --list                        # authoritative group keys
+lake exe CompPolyBench --out-dir bench/out/mine <key> # somewhere other than bench/out
+lake exe CompPolyBench --compare --baseline <dir> --candidate <dir>   # judge two builds
+./scripts/bench-ab.sh run fields-goldilocks-mul      # freeze, interleave, compare
 ```
 
 Output lands in `bench/out/`, which is created on demand and ignored in its
 entirety. A checksum mismatch inside a group makes the executable exit nonzero
 after writing its artifacts, and CI's validation step has no
 `continue-on-error`, so a mismatch fails the run.
+
+Comparing two builds of the library on one machine is the job of `--compare`
+and its driver `scripts/bench-ab.sh`; the loop that uses them is
+[`autoresearch.md`](autoresearch.md).
 
 ## Two tracks, because only one of them is trustworthy
 
@@ -148,9 +155,10 @@ runs and commits.
 Digests remain preset-dependent, because the validation pass length derives from
 the measured iteration count.
 
-Record `name` is **not** unique — `extension-mul` is emitted by the ext4, ext5
-and ext6 groups. Any tool comparing two result files must key on
-`(name, field, input_shape)`.
+Record `name` is **not** unique, in two ways: `extension-mul` is emitted by the
+ext4, ext5 and ext6 groups, and a chained group emits a latency row and a
+throughput row under one name. Any tool comparing two result files must key on
+`(group_key, name, digest_class, method)`, which is what `--compare` does.
 
 ## Adding a benchmark
 
@@ -248,8 +256,10 @@ Recorded so they are not rediscovered. The audit and plan live in
 - A handful of rows are still `n=1`, all of them workloads whose single iteration
   exhausts its budget. They need smaller input shapes, decided per benchmark; no
   harness change reaches that.
-- No result storage, baseline comparison, or regression gate for run-time
-  benchmarks; only build timing gets that treatment.
+- No result storage or CI regression gate for run-time benchmarks; only build
+  timing gets that treatment. What exists is a same-machine comparison of two
+  builds, `--compare` driven by `scripts/bench-ab.sh`, which needs no stored
+  history because it runs both binaries turn about.
 - Per-row floor subtraction is not reported, because the floor is
   per-representation rather than global.
 - No polynomial-matrix groups, and no `batchInverse` / `sumOfProducts` /

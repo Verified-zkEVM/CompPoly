@@ -159,6 +159,9 @@ CompPoly aims to be the premier formally verified library for computable polynom
      schoolbook/NTT crossover. Field and kernel rows are chained and reported
      per operation, latency and throughput separately; see
      [`docs/wiki/benchmarking.md`](docs/wiki/benchmarking.md)
+   - ✅ Same-machine A/B comparison of two builds (`CompPolyBench --compare`,
+     driven by `scripts/bench-ab.sh`), the measurement behind the optimisation
+     loop in [`docs/wiki/autoresearch.md`](docs/wiki/autoresearch.md)
    - 🔄 Published performance baselines, and a measured comparison against a
      pinned external implementation ([`BENCHMARKING.md`](BENCHMARKING.md) §13)
 
