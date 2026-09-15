@@ -80,67 +80,58 @@ def guruswamiSudanReceivedWordGroupInfos : List BenchGroupInfo := [
 private def runGsInterpolationNonCodewordSmallKoala (preset : BenchPreset)
     (gen : StdGen) : IO (Prod BenchGroup StdGen) := do
   let (inputs, gen) := perturbedSmallInputs gen
-  let warmup := gsWarmupIterations preset
-  let denseMeasured := preset.selectNat 1 1 1
-  let leeDirectMeasured := preset.selectNat 15 2 1
-  let leeSubproductMeasured := preset.selectNat 15 2 1
-  let fastDenseMeasured := preset.selectNat 2 1 1
-  let fastLeeDirectMeasured := preset.selectNat 80 11 2
-  let fastLeeSubproductMeasured := preset.selectNat 70 10 2
-  let checksumIterations := groupChecksumIterations denseMeasured [
-    leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
-    fastLeeDirectMeasured, fastLeeSubproductMeasured
-  ]
-  let denseRow <- runTimed
-    "guruswami-sudan-interp-dense-noncodeword-small" "CBivariate"
-    "Dense linear"
-    "KoalaBear.Field" gsNonCodewordSmallInputShape preset warmup denseMeasured
+  let checksumIterations := digestPeriod 1
+  let denseRow <- runTimedSpec
+    { name := "guruswami-sudan-interp-dense-noncodeword-small", representation := "CBivariate",
+      method := "Dense linear", field := "KoalaBear.Field",
+      inputShape := gsNonCodewordSmallInputShape, digestIterations := checksumIterations }
+    preset
     (fun _ ↦ koalaBearDenseInterpContext.interpolate inputs.points gsSmallParams)
     (checksumInterpolationValidityOption inputs.points gsSmallParams)
-    checksumIterations
-  let leeDirectRow <- runTimed
-    "guruswami-sudan-interp-lee-direct-noncodeword-small" "CBivariate"
-    "Lee-O'Sullivan direct"
-    "KoalaBear.Field" gsNonCodewordSmallInputShape preset warmup leeDirectMeasured
+  let leeDirectRow <- runTimedSpec
+    { name := "guruswami-sudan-interp-lee-direct-noncodeword-small",
+      representation := "CBivariate", method := "Lee-O'Sullivan direct",
+      field := "KoalaBear.Field", inputShape := gsNonCodewordSmallInputShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦ koalaBearLeeDirectInterpContext.interpolate inputs.points gsSmallParams)
     (checksumInterpolationValidityOption inputs.points gsSmallParams)
-    checksumIterations
-  let leeSubproductRow <- runTimed
-    "guruswami-sudan-interp-lee-subproduct-noncodeword-small" "CBivariate"
-    "Lee-O'Sullivan subproduct"
-    "KoalaBear.Field" gsNonCodewordSmallInputShape preset warmup leeSubproductMeasured
+  let leeSubproductRow <- runTimedSpec
+    { name := "guruswami-sudan-interp-lee-subproduct-noncodeword-small",
+      representation := "CBivariate", method := "Lee-O'Sullivan subproduct",
+      field := "KoalaBear.Field", inputShape := gsNonCodewordSmallInputShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       koalaBearLeeSubproductInterpContext.interpolate inputs.points gsSmallParams)
     (checksumInterpolationValidityOption inputs.points gsSmallParams)
-    checksumIterations
-  let fastDenseRow <- runTimed
-    "guruswami-sudan-interp-dense-noncodeword-small-fast" "CBivariate"
-    "Dense linear"
-    "KoalaBear.Fast.Field" gsNonCodewordSmallInputShape preset warmup
-    fastDenseMeasured
+  let fastDenseRow <- runTimedSpec
+    { name := "guruswami-sudan-interp-dense-noncodeword-small-fast",
+      representation := "CBivariate", method := "Dense linear", field := "KoalaBear.Fast.Field",
+      inputShape := gsNonCodewordSmallInputShape, digestIterations := checksumIterations }
+    preset
     (fun _ ↦ fastKoalaBearDenseInterpContext.interpolate inputs.fastPoints gsSmallParams)
     (checksumInterpolationValidityOption inputs.fastPoints gsSmallParams)
-    checksumIterations
-  let fastLeeDirectRow <- runTimed
-    "guruswami-sudan-interp-lee-direct-noncodeword-small-fast" "CBivariate"
-    "Lee-O'Sullivan direct"
-    "KoalaBear.Fast.Field" gsNonCodewordSmallInputShape preset warmup
-    fastLeeDirectMeasured
+  let fastLeeDirectRow <- runTimedSpec
+    { name := "guruswami-sudan-interp-lee-direct-noncodeword-small-fast",
+      representation := "CBivariate", method := "Lee-O'Sullivan direct",
+      field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallInputShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       fastKoalaBearLeeDirectInterpContext.interpolate inputs.fastPoints
         gsSmallParams)
     (checksumInterpolationValidityOption inputs.fastPoints gsSmallParams)
-    checksumIterations
-  let fastLeeSubproductRow <- runTimed
-    "guruswami-sudan-interp-lee-subproduct-noncodeword-small-fast" "CBivariate"
-    "Lee-O'Sullivan subproduct"
-    "KoalaBear.Fast.Field" gsNonCodewordSmallInputShape preset warmup
-    fastLeeSubproductMeasured
+  let fastLeeSubproductRow <- runTimedSpec
+    { name := "guruswami-sudan-interp-lee-subproduct-noncodeword-small-fast",
+      representation := "CBivariate", method := "Lee-O'Sullivan subproduct",
+      field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallInputShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       fastKoalaBearLeeSubproductInterpContext.interpolate inputs.fastPoints
         gsSmallParams)
     (checksumInterpolationValidityOption inputs.fastPoints gsSmallParams)
-    checksumIterations
   pure ({
     groupKey := "guruswami-sudan-interp-noncodeword-small-koalabear",
     title := "Guruswami-Sudan interpolation on perturbed received word, small (KoalaBear)",
@@ -157,132 +148,130 @@ private def runGsCoreNonCodewordSmallKoala (preset : BenchPreset)
     alekhnovichRootContext KoalaBear.Field koalaBearFieldRootContext
   let fastAlekRootContext :=
     alekhnovichRootContext KoalaBear.Fast.Field fastKoalaBearFieldRootContext
-  let warmup := gsWarmupIterations preset
-  let denseMeasured := preset.selectNat 1 1 1
-  let leeDirectMeasured := preset.selectNat 15 2 1
-  let leeSubproductMeasured := preset.selectNat 15 2 1
-  let fastDenseMeasured := preset.selectNat 2 1 1
-  let fastLeeDirectMeasured := preset.selectNat 80 11 2
-  let fastLeeSubproductMeasured := preset.selectNat 70 10 2
-  let alekDenseMeasured := denseMeasured
-  let alekLeeDirectMeasured := leeDirectMeasured
-  let alekLeeSubproductMeasured := leeSubproductMeasured
-  let fastAlekDenseMeasured := fastDenseMeasured
-  let fastAlekLeeDirectMeasured := fastLeeDirectMeasured
-  let fastAlekLeeSubproductMeasured := fastLeeSubproductMeasured
-  let checksumIterations := groupChecksumIterations denseMeasured [
-    leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
-    fastLeeDirectMeasured, fastLeeSubproductMeasured, alekDenseMeasured,
-    alekLeeDirectMeasured, alekLeeSubproductMeasured, fastAlekDenseMeasured,
-    fastAlekLeeDirectMeasured, fastAlekLeeSubproductMeasured
-  ]
-  let denseRow <- runTimed
-    "guruswami-sudan-core-dense-noncodeword-small" "CBivariate"
-    "Dense linear + RR roots"
-    "KoalaBear.Field" gsNonCodewordSmallInputShape preset warmup denseMeasured
+  let checksumIterations := digestPeriod 1
+  let denseRow <- runTimedSpec
+    { name := "guruswami-sudan-core-dense-noncodeword-small", representation := "CBivariate",
+      method := "Dense linear + RR roots", field := "KoalaBear.Field",
+      inputShape := gsNonCodewordSmallInputShape, digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       (gsCore inputs.points koalaBearDenseInterpContext koalaBearRothRootContext
         gsSmallParams).filter (passesCandidateDistance inputs.points gsNonCodewordSmallErrors))
-    checksumPolynomialArrayKoala checksumIterations
-  let denseAlekRow <- runTimed
-    "guruswami-sudan-core-dense-noncodeword-small-alekhnovich" "CBivariate"
-    "Dense linear + Alekhnovich roots"
-    "KoalaBear.Field" gsNonCodewordSmallInputShape preset warmup alekDenseMeasured
+    checksumPolynomialArrayKoala
+  let denseAlekRow <- runTimedSpec
+    { name := "guruswami-sudan-core-dense-noncodeword-small-alekhnovich",
+      representation := "CBivariate", method := "Dense linear + Alekhnovich roots",
+      field := "KoalaBear.Field", inputShape := gsNonCodewordSmallInputShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       (gsCore inputs.points koalaBearDenseInterpContext alekRootContext
         gsSmallParams).filter (passesCandidateDistance inputs.points gsNonCodewordSmallErrors))
-    checksumPolynomialArrayKoala checksumIterations
-  let leeDirectRow <- runTimed
-    "guruswami-sudan-core-lee-direct-noncodeword-small" "CBivariate"
-    "Lee-O'Sullivan direct + RR roots"
-    "KoalaBear.Field" gsNonCodewordSmallInputShape preset warmup leeDirectMeasured
+    checksumPolynomialArrayKoala
+  let leeDirectRow <- runTimedSpec
+    { name := "guruswami-sudan-core-lee-direct-noncodeword-small", representation := "CBivariate",
+      method := "Lee-O'Sullivan direct + RR roots", field := "KoalaBear.Field",
+      inputShape := gsNonCodewordSmallInputShape, digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       (gsCore inputs.points koalaBearLeeDirectInterpContext koalaBearRothRootContext
         gsSmallParams).filter (passesCandidateDistance inputs.points gsNonCodewordSmallErrors))
-    checksumPolynomialArrayKoala checksumIterations
-  let leeDirectAlekRow <- runTimed
-    "guruswami-sudan-core-lee-direct-noncodeword-small-alekhnovich" "CBivariate"
-    "Lee-O'Sullivan direct + Alekhnovich roots"
-    "KoalaBear.Field" gsNonCodewordSmallInputShape preset warmup alekLeeDirectMeasured
+    checksumPolynomialArrayKoala
+  let leeDirectAlekRow <- runTimedSpec
+    { name := "guruswami-sudan-core-lee-direct-noncodeword-small-alekhnovich",
+      representation := "CBivariate", method := "Lee-O'Sullivan direct + Alekhnovich roots",
+      field := "KoalaBear.Field", inputShape := gsNonCodewordSmallInputShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       (gsCore inputs.points koalaBearLeeDirectInterpContext alekRootContext
         gsSmallParams).filter (passesCandidateDistance inputs.points gsNonCodewordSmallErrors))
-    checksumPolynomialArrayKoala checksumIterations
-  let leeSubproductRow <- runTimed
-    "guruswami-sudan-core-lee-subproduct-noncodeword-small" "CBivariate"
-    "Lee-O'Sullivan subproduct + RR roots"
-    "KoalaBear.Field" gsNonCodewordSmallInputShape preset warmup leeSubproductMeasured
+    checksumPolynomialArrayKoala
+  let leeSubproductRow <- runTimedSpec
+    { name := "guruswami-sudan-core-lee-subproduct-noncodeword-small",
+      representation := "CBivariate", method := "Lee-O'Sullivan subproduct + RR roots",
+      field := "KoalaBear.Field", inputShape := gsNonCodewordSmallInputShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       (gsCore inputs.points koalaBearLeeSubproductInterpContext koalaBearRothRootContext
         gsSmallParams).filter (passesCandidateDistance inputs.points gsNonCodewordSmallErrors))
-    checksumPolynomialArrayKoala checksumIterations
-  let leeSubproductAlekRow <- runTimed
-    "guruswami-sudan-core-lee-subproduct-noncodeword-small-alekhnovich" "CBivariate"
-    "Lee-O'Sullivan subproduct + Alekhnovich roots"
-    "KoalaBear.Field" gsNonCodewordSmallInputShape preset warmup alekLeeSubproductMeasured
+    checksumPolynomialArrayKoala
+  let leeSubproductAlekRow <- runTimedSpec
+    { name := "guruswami-sudan-core-lee-subproduct-noncodeword-small-alekhnovich",
+      representation := "CBivariate", method := "Lee-O'Sullivan subproduct + Alekhnovich roots",
+      field := "KoalaBear.Field", inputShape := gsNonCodewordSmallInputShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       (gsCore inputs.points koalaBearLeeSubproductInterpContext alekRootContext
         gsSmallParams).filter (passesCandidateDistance inputs.points gsNonCodewordSmallErrors))
-    checksumPolynomialArrayKoala checksumIterations
-  let fastDenseRow <- runTimed
-    "guruswami-sudan-core-dense-noncodeword-small-fast" "CBivariate"
-    "Dense linear + RR roots"
-    "KoalaBear.Fast.Field" gsNonCodewordSmallInputShape preset warmup fastDenseMeasured
+    checksumPolynomialArrayKoala
+  let fastDenseRow <- runTimedSpec
+    { name := "guruswami-sudan-core-dense-noncodeword-small-fast", representation := "CBivariate",
+      method := "Dense linear + RR roots", field := "KoalaBear.Fast.Field",
+      inputShape := gsNonCodewordSmallInputShape, digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       (gsCore inputs.fastPoints fastKoalaBearDenseInterpContext
         fastKoalaBearRothRootContext gsSmallParams).filter
           (passesCandidateDistance inputs.fastPoints gsNonCodewordSmallErrors))
-    checksumPolynomialArrayKoalaFast checksumIterations
-  let fastDenseAlekRow <- runTimed
-    "guruswami-sudan-core-dense-noncodeword-small-alekhnovich-fast" "CBivariate"
-    "Dense linear + Alekhnovich roots"
-    "KoalaBear.Fast.Field" gsNonCodewordSmallInputShape preset warmup
-    fastAlekDenseMeasured
+    checksumPolynomialArrayKoalaFast
+  let fastDenseAlekRow <- runTimedSpec
+    { name := "guruswami-sudan-core-dense-noncodeword-small-alekhnovich-fast",
+      representation := "CBivariate", method := "Dense linear + Alekhnovich roots",
+      field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallInputShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       (gsCore inputs.fastPoints fastKoalaBearDenseInterpContext
         fastAlekRootContext gsSmallParams).filter
           (passesCandidateDistance inputs.fastPoints gsNonCodewordSmallErrors))
-    checksumPolynomialArrayKoalaFast checksumIterations
-  let fastLeeDirectRow <- runTimed
-    "guruswami-sudan-core-lee-direct-noncodeword-small-fast" "CBivariate"
-    "Lee-O'Sullivan direct + RR roots"
-    "KoalaBear.Fast.Field" gsNonCodewordSmallInputShape preset warmup
-    fastLeeDirectMeasured
+    checksumPolynomialArrayKoalaFast
+  let fastLeeDirectRow <- runTimedSpec
+    { name := "guruswami-sudan-core-lee-direct-noncodeword-small-fast",
+      representation := "CBivariate", method := "Lee-O'Sullivan direct + RR roots",
+      field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallInputShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       (gsCore inputs.fastPoints fastKoalaBearLeeDirectInterpContext
         fastKoalaBearRothRootContext gsSmallParams).filter
           (passesCandidateDistance inputs.fastPoints gsNonCodewordSmallErrors))
-    checksumPolynomialArrayKoalaFast checksumIterations
-  let fastLeeDirectAlekRow <- runTimed
-    "guruswami-sudan-core-lee-direct-noncodeword-small-alekhnovich-fast" "CBivariate"
-    "Lee-O'Sullivan direct + Alekhnovich roots"
-    "KoalaBear.Fast.Field" gsNonCodewordSmallInputShape preset warmup
-    fastAlekLeeDirectMeasured
+    checksumPolynomialArrayKoalaFast
+  let fastLeeDirectAlekRow <- runTimedSpec
+    { name := "guruswami-sudan-core-lee-direct-noncodeword-small-alekhnovich-fast",
+      representation := "CBivariate", method := "Lee-O'Sullivan direct + Alekhnovich roots",
+      field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallInputShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       (gsCore inputs.fastPoints fastKoalaBearLeeDirectInterpContext
         fastAlekRootContext gsSmallParams).filter
           (passesCandidateDistance inputs.fastPoints gsNonCodewordSmallErrors))
-    checksumPolynomialArrayKoalaFast checksumIterations
-  let fastLeeSubproductRow <- runTimed
-    "guruswami-sudan-core-lee-subproduct-noncodeword-small-fast" "CBivariate"
-    "Lee-O'Sullivan subproduct + RR roots"
-    "KoalaBear.Fast.Field" gsNonCodewordSmallInputShape preset warmup
-    fastLeeSubproductMeasured
+    checksumPolynomialArrayKoalaFast
+  let fastLeeSubproductRow <- runTimedSpec
+    { name := "guruswami-sudan-core-lee-subproduct-noncodeword-small-fast",
+      representation := "CBivariate", method := "Lee-O'Sullivan subproduct + RR roots",
+      field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallInputShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       (gsCore inputs.fastPoints fastKoalaBearLeeSubproductInterpContext
         fastKoalaBearRothRootContext gsSmallParams).filter
           (passesCandidateDistance inputs.fastPoints gsNonCodewordSmallErrors))
-    checksumPolynomialArrayKoalaFast checksumIterations
-  let fastLeeSubproductAlekRow <- runTimed
-    "guruswami-sudan-core-lee-subproduct-noncodeword-small-alekhnovich-fast" "CBivariate"
-    "Lee-O'Sullivan subproduct + Alekhnovich roots"
-    "KoalaBear.Fast.Field" gsNonCodewordSmallInputShape preset warmup
-    fastAlekLeeSubproductMeasured
+    checksumPolynomialArrayKoalaFast
+  let fastLeeSubproductAlekRow <- runTimedSpec
+    { name := "guruswami-sudan-core-lee-subproduct-noncodeword-small-alekhnovich-fast",
+      representation := "CBivariate", method := "Lee-O'Sullivan subproduct + Alekhnovich roots",
+      field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallInputShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       (gsCore inputs.fastPoints fastKoalaBearLeeSubproductInterpContext
         fastAlekRootContext gsSmallParams).filter
           (passesCandidateDistance inputs.fastPoints gsNonCodewordSmallErrors))
-    checksumPolynomialArrayKoalaFast checksumIterations
+    checksumPolynomialArrayKoalaFast
   pure ({
     groupKey := "guruswami-sudan-core-noncodeword-small-koalabear",
     title := "Guruswami-Sudan full core on perturbed received word, small (KoalaBear)",
@@ -301,128 +290,130 @@ private def runGsFilteredCoreNonCodewordSmallKoala (preset : BenchPreset)
     alekhnovichRootContext KoalaBear.Field koalaBearFieldRootContext
   let fastAlekRootContext :=
     alekhnovichRootContext KoalaBear.Fast.Field fastKoalaBearFieldRootContext
-  let warmup := gsWarmupIterations preset
-  let denseMeasured := preset.selectNat 1 1 1
-  let leeDirectMeasured := preset.selectNat 15 2 1
-  let leeSubproductMeasured := preset.selectNat 15 2 1
-  let fastDenseMeasured := preset.selectNat 2 1 1
-  let fastLeeDirectMeasured := preset.selectNat 80 11 2
-  let fastLeeSubproductMeasured := preset.selectNat 70 10 2
-  let alekDenseMeasured := denseMeasured
-  let alekLeeDirectMeasured := leeDirectMeasured
-  let alekLeeSubproductMeasured := leeSubproductMeasured
-  let fastAlekDenseMeasured := fastDenseMeasured
-  let fastAlekLeeDirectMeasured := fastLeeDirectMeasured
-  let fastAlekLeeSubproductMeasured := fastLeeSubproductMeasured
-  let checksumIterations := groupChecksumIterations denseMeasured [
-    leeDirectMeasured, leeSubproductMeasured, fastDenseMeasured,
-    fastLeeDirectMeasured, fastLeeSubproductMeasured, alekDenseMeasured,
-    alekLeeDirectMeasured, alekLeeSubproductMeasured, fastAlekDenseMeasured,
-    fastAlekLeeDirectMeasured, fastAlekLeeSubproductMeasured
-  ]
-  let denseRow <- runTimed
-    "guruswami-sudan-filtered-core-dense-noncodeword-small" "CBivariate"
-    "Dense linear + RR roots + filter"
-    "KoalaBear.Field" gsNonCodewordSmallFilteredShape preset warmup denseMeasured
+  let checksumIterations := digestPeriod 1
+  let denseRow <- runTimedSpec
+    { name := "guruswami-sudan-filtered-core-dense-noncodeword-small",
+      representation := "CBivariate", method := "Dense linear + RR roots + filter",
+      field := "KoalaBear.Field", inputShape := gsNonCodewordSmallFilteredShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       gsFilteredCore inputs.points koalaBearDenseInterpContext koalaBearRothRootContext
         gsSmallParams gsNonCodewordSmallErrors)
-    checksumPolynomialArrayKoala checksumIterations
-  let denseAlekRow <- runTimed
-    "guruswami-sudan-filtered-core-dense-noncodeword-small-alekhnovich" "CBivariate"
-    "Dense linear + Alekhnovich roots + filter"
-    "KoalaBear.Field" gsNonCodewordSmallFilteredShape preset warmup alekDenseMeasured
+    checksumPolynomialArrayKoala
+  let denseAlekRow <- runTimedSpec
+    { name := "guruswami-sudan-filtered-core-dense-noncodeword-small-alekhnovich",
+      representation := "CBivariate", method := "Dense linear + Alekhnovich roots + filter",
+      field := "KoalaBear.Field", inputShape := gsNonCodewordSmallFilteredShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       gsFilteredCore inputs.points koalaBearDenseInterpContext alekRootContext
         gsSmallParams gsNonCodewordSmallErrors)
-    checksumPolynomialArrayKoala checksumIterations
-  let leeDirectRow <- runTimed
-    "guruswami-sudan-filtered-core-lee-direct-noncodeword-small" "CBivariate"
-    "Lee-O'Sullivan direct + RR roots + filter"
-    "KoalaBear.Field" gsNonCodewordSmallFilteredShape preset warmup leeDirectMeasured
+    checksumPolynomialArrayKoala
+  let leeDirectRow <- runTimedSpec
+    { name := "guruswami-sudan-filtered-core-lee-direct-noncodeword-small",
+      representation := "CBivariate", method := "Lee-O'Sullivan direct + RR roots + filter",
+      field := "KoalaBear.Field", inputShape := gsNonCodewordSmallFilteredShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       gsFilteredCore inputs.points koalaBearLeeDirectInterpContext
         koalaBearRothRootContext gsSmallParams gsNonCodewordSmallErrors)
-    checksumPolynomialArrayKoala checksumIterations
-  let leeDirectAlekRow <- runTimed
-    "guruswami-sudan-filtered-core-lee-direct-noncodeword-small-alekhnovich" "CBivariate"
-    "Lee-O'Sullivan direct + Alekhnovich roots + filter"
-    "KoalaBear.Field" gsNonCodewordSmallFilteredShape preset warmup alekLeeDirectMeasured
+    checksumPolynomialArrayKoala
+  let leeDirectAlekRow <- runTimedSpec
+    { name := "guruswami-sudan-filtered-core-lee-direct-noncodeword-small-alekhnovich",
+      representation := "CBivariate",
+      method := "Lee-O'Sullivan direct + Alekhnovich roots + filter", field := "KoalaBear.Field",
+      inputShape := gsNonCodewordSmallFilteredShape, digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       gsFilteredCore inputs.points koalaBearLeeDirectInterpContext alekRootContext
         gsSmallParams gsNonCodewordSmallErrors)
-    checksumPolynomialArrayKoala checksumIterations
-  let leeSubproductRow <- runTimed
-    "guruswami-sudan-filtered-core-lee-subproduct-noncodeword-small" "CBivariate"
-    "Lee-O'Sullivan subproduct + RR roots + filter"
-    "KoalaBear.Field" gsNonCodewordSmallFilteredShape preset warmup leeSubproductMeasured
+    checksumPolynomialArrayKoala
+  let leeSubproductRow <- runTimedSpec
+    { name := "guruswami-sudan-filtered-core-lee-subproduct-noncodeword-small",
+      representation := "CBivariate", method := "Lee-O'Sullivan subproduct + RR roots + filter",
+      field := "KoalaBear.Field", inputShape := gsNonCodewordSmallFilteredShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       gsFilteredCore inputs.points koalaBearLeeSubproductInterpContext
         koalaBearRothRootContext gsSmallParams gsNonCodewordSmallErrors)
-    checksumPolynomialArrayKoala checksumIterations
-  let leeSubproductAlekRow <- runTimed
-    "guruswami-sudan-filtered-core-lee-subproduct-noncodeword-small-alekhnovich" "CBivariate"
-    "Lee-O'Sullivan subproduct + Alekhnovich roots + filter"
-    "KoalaBear.Field" gsNonCodewordSmallFilteredShape preset warmup
-    alekLeeSubproductMeasured
+    checksumPolynomialArrayKoala
+  let leeSubproductAlekRow <- runTimedSpec
+    { name := "guruswami-sudan-filtered-core-lee-subproduct-noncodeword-small-alekhnovich",
+      representation := "CBivariate",
+      method := "Lee-O'Sullivan subproduct + Alekhnovich roots + filter",
+      field := "KoalaBear.Field", inputShape := gsNonCodewordSmallFilteredShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       gsFilteredCore inputs.points koalaBearLeeSubproductInterpContext alekRootContext
         gsSmallParams gsNonCodewordSmallErrors)
-    checksumPolynomialArrayKoala checksumIterations
-  let fastDenseRow <- runTimed
-    "guruswami-sudan-filtered-core-dense-noncodeword-small-fast" "CBivariate"
-    "Dense linear + RR roots + filter"
-    "KoalaBear.Fast.Field" gsNonCodewordSmallFilteredShape preset warmup
-    fastDenseMeasured
+    checksumPolynomialArrayKoala
+  let fastDenseRow <- runTimedSpec
+    { name := "guruswami-sudan-filtered-core-dense-noncodeword-small-fast",
+      representation := "CBivariate", method := "Dense linear + RR roots + filter",
+      field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallFilteredShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       gsFilteredCore inputs.fastPoints fastKoalaBearDenseInterpContext
         fastKoalaBearRothRootContext gsSmallParams gsNonCodewordSmallErrors)
-    checksumPolynomialArrayKoalaFast checksumIterations
-  let fastDenseAlekRow <- runTimed
-    "guruswami-sudan-filtered-core-dense-noncodeword-small-alekhnovich-fast" "CBivariate"
-    "Dense linear + Alekhnovich roots + filter"
-    "KoalaBear.Fast.Field" gsNonCodewordSmallFilteredShape preset warmup
-    fastAlekDenseMeasured
+    checksumPolynomialArrayKoalaFast
+  let fastDenseAlekRow <- runTimedSpec
+    { name := "guruswami-sudan-filtered-core-dense-noncodeword-small-alekhnovich-fast",
+      representation := "CBivariate", method := "Dense linear + Alekhnovich roots + filter",
+      field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallFilteredShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       gsFilteredCore inputs.fastPoints fastKoalaBearDenseInterpContext
         fastAlekRootContext gsSmallParams gsNonCodewordSmallErrors)
-    checksumPolynomialArrayKoalaFast checksumIterations
-  let fastLeeDirectRow <- runTimed
-    "guruswami-sudan-filtered-core-lee-direct-noncodeword-small-fast" "CBivariate"
-    "Lee-O'Sullivan direct + RR roots + filter"
-    "KoalaBear.Fast.Field" gsNonCodewordSmallFilteredShape preset warmup
-    fastLeeDirectMeasured
+    checksumPolynomialArrayKoalaFast
+  let fastLeeDirectRow <- runTimedSpec
+    { name := "guruswami-sudan-filtered-core-lee-direct-noncodeword-small-fast",
+      representation := "CBivariate", method := "Lee-O'Sullivan direct + RR roots + filter",
+      field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallFilteredShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       gsFilteredCore inputs.fastPoints fastKoalaBearLeeDirectInterpContext
         fastKoalaBearRothRootContext gsSmallParams gsNonCodewordSmallErrors)
-    checksumPolynomialArrayKoalaFast checksumIterations
-  let fastLeeDirectAlekRow <- runTimed
-    "guruswami-sudan-filtered-core-lee-direct-noncodeword-small-alekhnovich-fast" "CBivariate"
-    "Lee-O'Sullivan direct + Alekhnovich roots + filter"
-    "KoalaBear.Fast.Field" gsNonCodewordSmallFilteredShape preset warmup
-    fastAlekLeeDirectMeasured
+    checksumPolynomialArrayKoalaFast
+  let fastLeeDirectAlekRow <- runTimedSpec
+    { name := "guruswami-sudan-filtered-core-lee-direct-noncodeword-small-alekhnovich-fast",
+      representation := "CBivariate",
+      method := "Lee-O'Sullivan direct + Alekhnovich roots + filter",
+      field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallFilteredShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       gsFilteredCore inputs.fastPoints fastKoalaBearLeeDirectInterpContext
         fastAlekRootContext gsSmallParams gsNonCodewordSmallErrors)
-    checksumPolynomialArrayKoalaFast checksumIterations
-  let fastLeeSubproductRow <- runTimed
-    "guruswami-sudan-filtered-core-lee-subproduct-noncodeword-small-fast" "CBivariate"
-    "Lee-O'Sullivan subproduct + RR roots + filter"
-    "KoalaBear.Fast.Field" gsNonCodewordSmallFilteredShape preset warmup
-    fastLeeSubproductMeasured
+    checksumPolynomialArrayKoalaFast
+  let fastLeeSubproductRow <- runTimedSpec
+    { name := "guruswami-sudan-filtered-core-lee-subproduct-noncodeword-small-fast",
+      representation := "CBivariate", method := "Lee-O'Sullivan subproduct + RR roots + filter",
+      field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallFilteredShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       gsFilteredCore inputs.fastPoints fastKoalaBearLeeSubproductInterpContext
         fastKoalaBearRothRootContext gsSmallParams gsNonCodewordSmallErrors)
-    checksumPolynomialArrayKoalaFast checksumIterations
-  let fastLeeSubproductAlekRow <- runTimed
-    "guruswami-sudan-filtered-core-lee-subproduct-noncodeword-small-alekhnovich-fast" "CBivariate"
-    "Lee-O'Sullivan subproduct + Alekhnovich roots + filter"
-    "KoalaBear.Fast.Field" gsNonCodewordSmallFilteredShape preset warmup
-    fastAlekLeeSubproductMeasured
+    checksumPolynomialArrayKoalaFast
+  let fastLeeSubproductAlekRow <- runTimedSpec
+    { name := "guruswami-sudan-filtered-core-lee-subproduct-noncodeword-small-alekhnovich-fast",
+      representation := "CBivariate",
+      method := "Lee-O'Sullivan subproduct + Alekhnovich roots + filter",
+      field := "KoalaBear.Fast.Field", inputShape := gsNonCodewordSmallFilteredShape,
+      digestIterations := checksumIterations }
+    preset
     (fun _ ↦
       gsFilteredCore inputs.fastPoints fastKoalaBearLeeSubproductInterpContext
         fastAlekRootContext gsSmallParams gsNonCodewordSmallErrors)
-    checksumPolynomialArrayKoalaFast checksumIterations
+    checksumPolynomialArrayKoalaFast
   pure ({
     groupKey := "guruswami-sudan-filtered-core-noncodeword-small-koalabear",
     title := "Guruswami-Sudan filtered core on perturbed received word, small (KoalaBear)",

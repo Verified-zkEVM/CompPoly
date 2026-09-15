@@ -13,11 +13,10 @@ public import CompPolyBench.Harness.Timer
 
 Collecting a benchmark's cost as a *set* of samples rather than one total.
 
-The suite's per-benchmark iteration counts are treated as a total-work budget:
-rather than timing all of them in one region and dividing, the budget is split
-into `targetSampleCount` samples so the spread between them is visible. A
-benchmark whose single iteration already exhausts the budget cannot be split and
-is reported as unreplicated rather than as a number with an implied precision it
+A row's cost is measured as several timed samples so the spread between them is
+visible; `Harness.Budget` decides how many and how long each one is. A benchmark
+whose single iteration already exhausts the budget cannot be split and is
+reported as unreplicated rather than as a number with an implied precision it
 does not have.
 -/
 
@@ -32,22 +31,6 @@ structure SamplingPlan where
   /-- Number of samples to collect. -/
   sampleCount : Nat
 deriving Inhabited
-
-/-- Samples aimed for when the iteration budget allows it. -/
-def targetSampleCount : Nat := 20
-
-/-- Divide a total iteration budget into samples.
-
-Where the budget allows at least `targetSampleCount` iterations the budget is
-split evenly. Below that each iteration becomes its own sample, which keeps as
-much replication as the budget can pay for. -/
-def planSamples (totalIterations : Nat) : SamplingPlan :=
-  if totalIterations = 0 then
-    { itersPerSample := 0, sampleCount := 0 }
-  else if totalIterations ≤ targetSampleCount then
-    { itersPerSample := 1, sampleCount := totalIterations }
-  else
-    { itersPerSample := totalIterations / targetSampleCount, sampleCount := targetSampleCount }
 
 /-- Elapsed nanoseconds of one sample converted to picoseconds per iteration. -/
 @[inline] def picosPerIteration (nanos iters : Nat) : Nat :=
@@ -67,15 +50,15 @@ structure SampledRun where
   sink : UInt64
 deriving Inhabited
 
-/-- Warm a benchmark body, then collect `plan.sampleCount` timed samples of it.
+/-- Collect `plan.sampleCount` timed samples of a benchmark body.
 
-`warmup` is the number of *residual* warmup iterations to run; the caller is
-expected to have already discounted any pass that executed the body beforehand.
-Every sample replays the same iteration indices, so samples differ only in
-machine state and not in the work performed. -/
-@[specialize] def collectSamples (warmup : Nat) (plan : SamplingPlan)
+`init` seeds the sink accumulator, and must be the one carried out of whatever
+warmed the body — the calibration ramp in practice. Threading it is what keeps
+that earlier loop from being eliminable. Every sample replays the same iteration
+indices, so samples differ only in machine state and not in the work performed. -/
+@[specialize] def collectSamples (init : UInt64) (plan : SamplingPlan)
     (body : Nat → UInt64 → UInt64) : IO SampledRun := do
-  let mut acc ← warmIterations warmup 0 body
+  let mut acc := init
   let mut samples : Array Nat := Array.emptyWithCapacity plan.sampleCount
   let mut totalNanos := 0
   for _ in [0:plan.sampleCount] do
