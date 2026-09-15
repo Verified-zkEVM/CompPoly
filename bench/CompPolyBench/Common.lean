@@ -6,7 +6,7 @@ Authors: Valerii Huhnin
 module
 
 public import Init.Data.Random
-public import CompPolyBench.Harness.Sample
+public import CompPolyBench.Harness.Budget
 public import Lean.Data.Json.Parser
 public import Lean.Data.Json.Printer
 public import Std.Time
@@ -47,76 +47,17 @@ def BenchPreset.name : BenchPreset → String
   | BenchPreset.medium => "medium"
   | BenchPreset.large => "large"
 
-/-- Return the precomputed value for the active benchmark preset. -/
-def BenchPreset.selectNat (preset : BenchPreset) (large medium small : Nat) : Nat :=
-  match preset with
-  | BenchPreset.large => large
-  | BenchPreset.medium => medium
-  | BenchPreset.small => small
+/-- Measurement budget for the active benchmark preset.
 
-/-- Warmup iteration count for ordinary evaluation benchmarks. -/
-def warmupIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 100 10 0
-
-/-- Measured iteration count for ordinary evaluation benchmarks. -/
-def measuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 5000 700 150
-
-/-- Warmup iteration count for batch-evaluation benchmarks over the base input shape. -/
-def batchWarmupIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 1 1 0
-
-/-- Measured iteration count for batch-evaluation benchmarks over the base input shape. -/
-def batchMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 5 1 1
-
-/-- Warmup iteration count for batch-evaluation benchmarks over the medium input shape. -/
-def mediumBatchWarmupIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 1 1 0
-
-/-- Measured iteration count for batch-evaluation benchmarks over the medium input shape. -/
-def mediumBatchMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 10 1 1
-
-/-- Warmup iteration count for batch-evaluation benchmarks over the large input shape. -/
-def largeBatchWarmupIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 1 1 0
-
-/-- Measured iteration count for batch-evaluation benchmarks over the large input shape. -/
-def largeBatchMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 10 1 1
-
-/-- Warmup iteration count for direct monic-remainder benchmarks. -/
-def modWarmupIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 1 1 0
-
-/-- Measured iteration count for direct monic-remainder benchmarks. -/
-def modMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 20 3 1
-
-/-- Warmup iteration count for direct monic-remainder benchmarks over the medium input shape. -/
-def mediumModWarmupIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 1 1 0
-
-/-- Measured iteration count for direct monic-remainder benchmarks over the medium input shape. -/
-def mediumModMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 5 1 1
-
-/-- Warmup iteration count for direct univariate multiplication benchmarks. -/
-def mulWarmupIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 1 1 0
-
-/-- Measured iteration count for direct univariate multiplication benchmarks. -/
-def mulMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 20 3 1
-
-/-- Warmup iteration count for the base additive NTT benchmark. -/
-def additiveNttWarmupIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 10 1 0
-
-/-- Measured iteration count for the base additive NTT benchmark. -/
-def additiveNttMeasuredIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 1000 150 30
+What a preset selects. It used to select an iteration count per benchmark, from
+a hand-written `large medium small` triple at each of 228 call sites; a count is
+not comparable between two rows of one table, goes stale as the code it measures
+gets faster, and has to be re-guessed on every machine. A wall-clock budget is
+comparable, and `Harness.Budget` works the count out per row. -/
+def BenchPreset.budget : BenchPreset → BenchBudget
+  | BenchPreset.large => largeBudget
+  | BenchPreset.medium => mediumBudget
+  | BenchPreset.small => smallBudget
 
 /-- Primality witness used for generic `ZMod` benchmarks over `KoalaBear`. -/
 instance : Fact (Nat.Prime KoalaBear.fieldSize) where
@@ -124,6 +65,23 @@ instance : Fact (Nat.Prime KoalaBear.fieldSize) where
 
 /-- Result row emitted by one timed benchmark case. -/
 structure BenchRecord where
+  /-- Registry key of the group this row belongs to.
+
+  `runTimedSpec` does not know it — a row is built before it is placed in a
+  group — so it is stamped in `flattenGroups` from `BenchGroup.groupKey`, which
+  `BenchTask.fromGroupRunner` single-sources from the registry that `--list` and
+  `bench/ci-groups.txt` validate against. Empty until then. -/
+  groupKey : String := ""
+  /-- Report title of the group this row belongs to, stamped alongside the key. -/
+  groupTitle : String := ""
+  /-- Which rows of the group this one must agree with on a digest.
+
+  A group is a set of rows measured together; it is not always a set of rows
+  computing the *same value*. A field's `mul` and its `add` belong in one table
+  and cannot share a digest. Rows are partitioned by this label and agreement is
+  required within each part, so one group can carry several comparisons. Empty
+  is a class like any other, which is what every pre-existing group uses. -/
+  digestClass : String := ""
   name : String
   representation : String
   method : String
@@ -134,7 +92,18 @@ structure BenchRecord where
   checksumIterations : Nat
   measuredIterations : Nat
   totalNanos : Nat
-  averageNanos : Nat
+  /-- Median per-iteration cost in nanoseconds.
+
+  A median, not a mean; it was called `averageNanos` until the name was found to
+  be describing the wrong statistic. -/
+  medianNanos : Nat
+  /-- Elementary operations one iteration of this body performs.
+
+  A property of the *problem*, not of the implementation: the rows of a group
+  must agree on it, or a per-unit figure would divide away the very difference
+  the group exists to show. One for an ordinary row; the chain length for a
+  chained operation; `(n / 2) * log n` for a transform. -/
+  workUnits : Nat := 1
   checksum : Nat
   sinkDigest : UInt64
   stats : SampleStats
@@ -327,6 +296,10 @@ def resultsPath (runId : String) : System.FilePath :=
 /-- Path for the generated Markdown benchmark report. -/
 def reportPath (runId : String) : System.FilePath :=
   outputDir / ("report-" ++ runId ++ ".md")
+
+/-- Path for the per-run provenance manifest. -/
+def manifestPath (runId : String) : System.FilePath :=
+  outputDir / ("manifest-" ++ runId ++ ".json")
 
 /-- Trim command output and normalize empty output to the empty string. -/
 def trimCommandOutput (s : String) : String :=
@@ -618,64 +591,122 @@ that its fast counterpart does not. -/
 @[inline] def sinkZMod {modulus : Nat} (x : ZMod modulus) : UInt64 :=
   natSink (ZMod.val x)
 
-/-- Ceiling on validation-pass iterations.
+/-- Ceiling on digest-pass iterations.
 
-The validation pass re-runs the benchmark body, so leaving it equal to the
-measured iteration count made correctness checking cost as much as measurement.
-The cap is above every benchmark's operand-pool size, so the oracle still sees
-every input it did before. -/
-def validationIterationCap : Nat := 256
+The digest pass re-runs the benchmark body, so leaving it equal to the measured
+iteration count made correctness checking cost as much as measurement. The cap is
+at or above every benchmark's operand-pool size, so the oracle still sees every
+input it did before. -/
+def digestIterationCap : Nat := 256
 
-/-- Compute the checksum iteration count shared by a benchmark group. -/
-def groupChecksumIterations (first : Nat) (rest : List Nat) : Nat :=
-  min validationIterationCap (rest.foldl Nat.min first)
+/-- Digest iterations for a body whose result cycles with period `period`.
+
+The period is a property of the benchmark body, never of the preset or the
+machine: a digest derived from an iteration count is not comparable across runs,
+and once those counts come from a wall-clock budget it would differ between
+machines too, which makes committed digest fixtures impossible rather than merely
+awkward. Truncating to the period is not a weaker check — iterations past one full
+cycle recompute a bit-identical result. -/
+def digestPeriod (period : Nat) : Nat := max 1 (min digestIterationCap period)
+
+/-- Everything about one benchmark row except its body, its digest, and its sink.
+
+Introduced because `runTimed` took five consecutive `String` arguments across
+228 call sites, where a transposed pair is a silent mislabelling rather than a
+type error. The three `α`-dependent arguments stay outside: giving `BenchSpec` a
+type parameter to carry `sink` would put one on every literal in the suite in
+order to serve the forty rows that override it, and a group with a `ZMod` row
+beside a `Fast` row has a different result type per row anyway. -/
+structure BenchSpec where
+  /-- Row name, unique within the suite. -/
+  name : String
+  /-- Representation label, such as `ZMod` or `UInt64`. -/
+  representation : String
+  /-- Operation label, such as `mul` or `inv (Fermat chain)`. -/
+  method : String
+  /-- Field or configuration label. -/
+  field : String
+  /-- Input-shape label, shared by every row of a group. -/
+  inputShape : String
+  /-- Iterations of the untimed digest pass.
+
+  Must be the body's period in `i`, never preset-shaped: see `digestPeriod`. -/
+  digestIterations : Nat
+  /-- Which rows of the group this row must agree with on a digest.
+
+  Leave empty when every row of the group computes the same value. Set it to
+  separate the comparisons inside a group that carries more than one; see
+  `BenchRecord.digestClass`. -/
+  digestClass : String := ""
+  /-- Elementary operations one iteration of the body performs.
+
+  Left at one for a row that performs its operation once. Set it and the report
+  gains a per-unit column; see `BenchRecord.workUnits` for why every row of a
+  group has to agree on the value. -/
+  workUnits : Nat := 1
+  /-- Opt out of the `--validate-only` short circuit, for the harness
+  self-check, which has to be measured even when nothing else is. -/
+  forceTiming : Bool := false
+deriving Inhabited
 
 /--
 Time one benchmark closure and package its metadata and checksum.
 
-The strong `Nat` checksum runs *before* timing, over `checksumIterations` — the
-minimum measured-iteration count used by the records in the surrounding group —
-and is what the group agreement check compares.
+The strong `Nat` digest runs *before* timing, over `spec.digestIterations` — the
+period of the body in its iteration index — and is what the group agreement
+check compares.
 
 Inside the timed region each result is folded through `sink` instead, which
 defaults to truncating the `Nat` digest and should be overridden with a
 `UInt64`-native digest wherever the benchmark is cheap enough for the digest to
 show up in the measurement.
 
-Under `--validate-only` no samples are collected and the record carries digests
-alone. `forceTiming` opts out of that, for the harness self-check, whose canary
-compares timed totals and would pass vacuously against a zero floor.
+The row is then sized from `preset.budget`: a calibration ramp doubles as warmup
+and estimates the per-iteration cost, and that estimate decides how many
+iterations one sample holds and how many samples are affordable. Nothing about
+the shape of the work is chosen here — an expensive row still reports `n=1`, but
+now only when one iteration genuinely exhausts the budget.
+
+Under `--validate-only` neither calibration nor sampling runs and the record
+carries digests alone. Skipping calibration is the point: a ramp on a
+thirteen-second body costs thirteen seconds, and `--validate-only` is the only
+benchmark step on the blocking CI path. `forceTiming` opts out of the short
+circuit, for the harness self-check, whose canary has nothing to compare
+against a floor that was never measured.
 -/
-@[specialize] def runTimed (name representation method field inputShape : String)
-    (preset : BenchPreset) (warmup measured : Nat) (run : Nat → α) (checksum : α → Nat)
-    (checksumIterations : Nat := min validationIterationCap measured)
-    (sink : α → UInt64 := fun x ↦ natSink (checksum x))
-    (forceTiming : Bool := false) : IO BenchRecord := do
+@[specialize] def runTimedSpec (spec : BenchSpec) (preset : BenchPreset)
+    (run : Nat → α) (checksum : α → Nat)
+    (sink : α → UInt64 := fun x ↦ natSink (checksum x)) : IO BenchRecord := do
   let body : Nat → UInt64 → UInt64 := fun i acc ↦ sinkStep acc (sink (run i))
   let mut validationChecksum := 0
-  for i in [0:checksumIterations] do
+  for i in [0:spec.digestIterations] do
     validationChecksum := mixChecksum validationChecksum (checksum (run i))
-  let validateOnly := (← validateOnlyRef.get) && !forceTiming
+  let validateOnly := (← validateOnlyRef.get) && !spec.forceTiming
+  let budget := preset.budget
+  -- The ramp is not discounted for the digest pass the way a fixed warmup count
+  -- used to be. It cannot be: the budget is in nanoseconds and the digest pass is
+  -- untimed. Nor is it worth it — for a cheap body the digest is at most 256
+  -- iterations against tens of milliseconds of ramp, and for an expensive one the
+  -- ramp stops after its first step either way.
+  let calibration ← if validateOnly then pure default else
+    calibrate budget.warmupNanos body
   let plan := if validateOnly then { itersPerSample := 0, sampleCount := 0 } else
-    planSamples measured
-  -- The validation pass above already executed the body, so it counts towards
-  -- reaching steady state. For an expensive workload validated once, this is the
-  -- difference between running it three times and running it twice.
-  let desiredWarmup := if validateOnly then 0 else max warmup plan.itersPerSample
-  let sampled ← collectSamples (desiredWarmup - min desiredWarmup checksumIterations) plan body
-  let total := sampled.totalNanos
+    planFromCalibration budget calibration.picosPerIteration
+  let sampled ← collectSamples calibration.sink plan body
   pure {
-    name := name
-    representation := representation
-    method := method
+    name := spec.name
+    representation := spec.representation
+    method := spec.method
     preset := preset.name
-    field := field
-    inputShape := inputShape
-    warmupIterations := desiredWarmup
-    checksumIterations := checksumIterations
+    field := spec.field
+    inputShape := spec.inputShape
+    warmupIterations := calibration.iterations
+    checksumIterations := spec.digestIterations
     measuredIterations := sampled.totalIterations
-    totalNanos := total
-    averageNanos := sampled.stats.medianPicos / 1000
+    totalNanos := sampled.totalNanos
+    medianNanos := sampled.stats.medianPicos / 1000
+    workUnits := spec.workUnits
+    digestClass := spec.digestClass
     checksum := validationChecksum
     sinkDigest := sampled.sink
     stats := sampled.stats
@@ -690,9 +721,130 @@ def appendRecords (xs ys : Array BenchRecord) : Array BenchRecord :=
 def appendGroups (xs ys : Array BenchGroup) : Array BenchGroup :=
   ys.foldl (init := xs) fun acc group ↦ acc.push group
 
-/-- Flatten grouped benchmark records for JSONL output. -/
+/-- Flatten grouped benchmark records for JSONL output, stamping group identity.
+
+The key and the title live only in the Markdown report otherwise, so a JSONL
+consumer has to reconstruct the grouping from row names. Stamped here rather
+than at `runTimedSpec`, which genuinely does not know which group a row will
+end up in. -/
 def flattenGroups (groups : Array BenchGroup) : Array BenchRecord :=
-  groups.foldl (init := #[]) fun acc group ↦ appendRecords acc group.records
+  groups.foldl (init := #[]) fun acc group ↦
+    appendRecords acc (group.records.map fun record ↦
+      { record with groupKey := group.groupKey, groupTitle := group.title })
+
+/-! ### Run manifest
+
+What produced a number, recorded beside it. Budget-driven sizing costs the suite
+its one previously-stable provenance signal: `measured_iterations` used to be a
+written-down constant, and is now a function of how fast the machine was when
+the row was calibrated. Nothing else in the JSONL says which commit, which
+toolchain, or which hardware a run came from.
+
+Deliberately a separate file rather than a header line in the JSONL: every
+consumer of that file assumes uniform records, and a header would break all of
+them at once.
+-/
+
+/-- Provenance for one benchmark run. -/
+structure RunManifest where
+  /-- Timestamp identifier shared with the results and report filenames. -/
+  runId : String
+  /-- `git rev-parse HEAD`, or `none` outside a checkout. -/
+  commit : Option String
+  /-- Whether the working tree had uncommitted changes.
+
+  Not optional in spirit: a timing taken from a dirty tree is not attributable
+  to anything, and the flag is the only way a reader finds that out later. -/
+  dirty : Bool
+  /-- Contents of `lean-toolchain`. -/
+  toolchain : Option String
+  /-- Preset name, and the budget it resolved to. -/
+  preset : BenchPreset
+  /-- Whether this run collected timings at all. -/
+  validateOnly : Bool
+  /-- Group keys requested, or `none` for the whole suite. -/
+  selection : Option (List String)
+  /-- Groups and rows actually produced. -/
+  groupCount : Nat
+  /-- Rows actually produced. -/
+  recordCount : Nat
+  /-- Host details, as the Markdown report collects them. -/
+  hardware : RunnerHardware
+
+/-- Collect the commit and dirty flag, tolerating a non-checkout. -/
+def collectGitProvenance : IO (Option String × Bool) := do
+  let commit ← runInfoCommand "git" #["rev-parse", "HEAD"]
+  let status ← runInfoCommand "git" #["status", "--porcelain"]
+  -- `runInfoCommand` maps empty output to `none`, so a clean tree reads as
+  -- `none` and any modification at all reads as `some`.
+  pure (commit, status.isSome)
+
+/-- Read the pinned toolchain, tolerating its absence. -/
+def collectToolchain : IO (Option String) := do
+  try
+    let text ← IO.FS.readFile "lean-toolchain"
+    let trimmed := trimCommandOutput text
+    pure <| if trimmed.isEmpty then none else some trimmed
+  catch _ =>
+    pure none
+
+/-- Gather everything the manifest records about this run. -/
+def collectRunManifest (runId : String) (preset : BenchPreset) (validateOnly : Bool)
+    (selection : BenchSelection) (groupCount recordCount : Nat) : IO RunManifest := do
+  let (commit, dirty) ← collectGitProvenance
+  let toolchain ← collectToolchain
+  let hardware ← collectRunnerHardware
+  pure {
+    runId := runId
+    commit := commit
+    dirty := dirty
+    toolchain := toolchain
+    preset := preset
+    validateOnly := validateOnly
+    selection := match selection with
+      | BenchSelection.all => none
+      | BenchSelection.only keys => some keys
+    groupCount := groupCount
+    recordCount := recordCount
+    hardware := hardware }
+
+/-- Render a manifest as pretty-printed JSON. -/
+def RunManifest.render (manifest : RunManifest) : String :=
+  let str (value : Option String) : Lean.Json :=
+    match value with
+    | some text => Lean.Json.str text
+    | none => Lean.Json.null
+  let budget := manifest.preset.budget
+  let json := Lean.Json.mkObj [
+    ("run_id", Lean.Json.str manifest.runId),
+    ("commit", str manifest.commit),
+    ("dirty", Lean.Json.bool manifest.dirty),
+    ("toolchain", str manifest.toolchain),
+    ("preset", Lean.Json.str manifest.preset.name),
+    ("validate_only", Lean.Json.bool manifest.validateOnly),
+    ("seed", Lean.Json.num seed),
+    ("budget", Lean.Json.mkObj [
+      ("warmup_nanos", Lean.Json.num budget.warmupNanos),
+      ("sample_nanos", Lean.Json.num budget.sampleNanos),
+      ("sample_count", Lean.Json.num budget.sampleCount),
+      ("measure_nanos", Lean.Json.num budget.measureNanos)]),
+    ("selection", match manifest.selection with
+      | none => Lean.Json.null
+      | some keys => Lean.Json.arr (keys.map Lean.Json.str).toArray),
+    ("group_count", Lean.Json.num manifest.groupCount),
+    ("record_count", Lean.Json.num manifest.recordCount),
+    ("hardware", Lean.Json.mkObj [
+      ("runner_os", str manifest.hardware.runnerOs),
+      ("runner_arch", str manifest.hardware.runnerArch),
+      ("cpu_model", str manifest.hardware.cpuModel),
+      ("logical_cpus", str manifest.hardware.logicalCpus),
+      ("cores_per_socket", str manifest.hardware.coresPerSocket),
+      ("threads_per_core", str manifest.hardware.threadsPerCore),
+      ("sockets", str manifest.hardware.sockets),
+      ("ram_total", str manifest.hardware.ramTotal),
+      ("root_disk", str manifest.hardware.rootDisk),
+      ("hypervisor", str manifest.hardware.hypervisor)])]
+  json.pretty ++ "\n"
 
 /-- Render a benchmark string field as a JSON string, escaped. -/
 def jsonString (s : String) : String :=
@@ -701,6 +853,8 @@ def jsonString (s : String) : String :=
 /-- Render one benchmark record as a JSONL row. -/
 def BenchRecord.toJsonLine (record : BenchRecord) : String :=
   "{" ++ String.intercalate "," [
+    "\"group_key\":" ++ jsonString record.groupKey,
+    "\"group_title\":" ++ jsonString record.groupTitle,
     "\"name\":" ++ jsonString record.name,
     "\"representation\":" ++ jsonString record.representation,
     "\"method\":" ++ jsonString record.method,
@@ -711,7 +865,9 @@ def BenchRecord.toJsonLine (record : BenchRecord) : String :=
     "\"checksum_iterations\":" ++ toString record.checksumIterations,
     "\"measured_iterations\":" ++ toString record.measuredIterations,
     "\"total_nanos\":" ++ toString record.totalNanos,
-    "\"average_nanos\":" ++ toString record.averageNanos,
+    "\"median_nanos\":" ++ toString record.medianNanos,
+    "\"work_units\":" ++ toString record.workUnits,
+    "\"digest_class\":" ++ jsonString record.digestClass,
     "\"checksum\":" ++ toString record.checksum,
     "\"sink_digest\":" ++ toString record.sinkDigest,
     "\"sample_count\":" ++ toString record.stats.count,
@@ -749,11 +905,11 @@ def padRight (s : String) (width : Nat) : String :=
 def padLeft (s : String) (width : Nat) : String :=
   spaces (width - s.length) ++ s
 
-/-- Drop missing optional lines while preserving present ones. -/
-def keepSome : List (Option String) → List String
+/-- Drop missing optional entries while preserving present ones. -/
+def keepSome {α : Type*} : List (Option α) → List α
   | [] => []
-  | some line :: lines => line :: keepSome lines
-  | none :: lines => keepSome lines
+  | some value :: values => value :: keepSome values
+  | none :: values => keepSome values
 
 /-- Compute the Markdown width required for a result table column. -/
 def columnWidth (records : List BenchRecord)
@@ -792,7 +948,7 @@ def renderMarkdownTable (columns : List (String × Bool × (BenchRecord → Stri
   markdownRow headers widths (columns.map (fun _ ↦ false)) :: markdownRow separator widths
     (columns.map (fun _ ↦ false)) :: rows
 
-/-- Return the shared checksum for a group if all rows have the same checksum. -/
+/-- Return the shared checksum for a list of rows if all of them agree. -/
 def matchingChecksum? (records : List BenchRecord) : Option Nat :=
   match records with
   | [] => none
@@ -803,6 +959,23 @@ def matchingChecksum? (records : List BenchRecord) : Option Nat :=
         some record.checksum
       else
         none
+
+/-- The digest classes present in a group, in first-appearance order. -/
+def digestClasses (records : List BenchRecord) : List String :=
+  records.foldl (init := []) fun seen record ↦
+    if seen.contains record.digestClass then seen else seen ++ [record.digestClass]
+
+/-- The rows of one digest class. -/
+def recordsInClass (records : List BenchRecord) (cls : String) : List BenchRecord :=
+  records.filter fun record ↦ record.digestClass == cls
+
+/-- Whether every digest class in a group agrees internally.
+
+Agreement is required *within* a class, not across the group: a group carrying a
+field's `mul` and its `add` has two classes and two digests, and demanding one
+digest for both would be demanding that multiplication equal addition. -/
+def classesAgree (records : List BenchRecord) : Bool :=
+  (digestClasses records).all fun cls ↦ (matchingChecksum? (recordsInClass records cls)).isSome
 
 /-- Return a shared string field for a group if all rows agree. -/
 def matchingString? (records : List BenchRecord) (field : BenchRecord → String) : Option String :=
@@ -836,15 +1009,31 @@ def renderSharedNatLine (label : String) (records : List BenchRecord)
     (field : BenchRecord → Nat) : Option String :=
   (matchingNat? records field).map fun value ↦ "- " ++ label ++ ": `" ++ toString value ++ "`"
 
-/-- Render a short checksum status line for a benchmark group. -/
-def renderChecksumStatus (records : List BenchRecord) : String :=
-  match matchingChecksum? records with
-  | some checksum => "- Checksum: `" ++ toString checksum ++ "`"
-  | none => "- Checksum: **ERROR: mismatch detected**"
+/-- Render a short checksum status line for a benchmark group.
 
-/-- Return benchmark groups whose rows do not have a shared checksum. -/
+One digest when the group has a single class, and one per class when it has
+several, so a multi-comparison group still shows what agreed with what. -/
+def renderChecksumStatus (records : List BenchRecord) : String :=
+  let render (cls : String) : String :=
+    let label := if cls.isEmpty then "" else cls ++ ": "
+    match matchingChecksum? (recordsInClass records cls) with
+    | some checksum => label ++ "`" ++ toString checksum ++ "`"
+    | none => label ++ "**ERROR: mismatch detected**"
+  "- Checksum: " ++ String.intercalate ", " ((digestClasses records).map render)
+
+/-- Return benchmark groups in which some digest class does not agree. -/
 def checksumMismatchGroups (groups : Array BenchGroup) : List BenchGroup :=
-  groups.toList.filter fun group ↦ (matchingChecksum? group.records.toList).isNone
+  groups.toList.filter fun group ↦ !classesAgree group.records.toList
+
+/-- Return benchmark groups whose rows disagree on `workUnits`.
+
+Rows of one group measure the same problem at the same shape, so a disagreement
+here is a mis-specified group rather than something to render around: the
+per-unit column would otherwise divide each row by a different denominator and
+silently flatten the ratio the group exists to report. -/
+def workUnitsMismatchGroups (groups : Array BenchGroup) : List BenchGroup :=
+  groups.toList.filter fun group ↦
+    (matchingNat? group.records.toList (fun record ↦ record.workUnits)).isNone
 
 /-- Lookup a rendered implementation label by exact benchmark metadata. -/
 def lookupImplementationLabel? : String → List (String × String) → Option String
@@ -986,16 +1175,41 @@ def renderSpread (record : BenchRecord) : String :=
     let base := if stats.unreplicated then base ++ " (n=" ++ toString stats.count ++ ")" else base
     if stats.severeOutliers > 0 then base ++ " !" ++ toString stats.severeOutliers else base
 
-/-- Columns rendered in a group result table after shared metadata is lifted out. -/
+/-- Per-unit cost column, present only when the group declares work units.
+
+Picoseconds rather than a chosen unit: a per-unit figure is normally
+sub-nanosecond, which is exactly where `chooseTimeUnit` would render it as
+`0.000`. Not emitted into the JSONL — that file carries `work_units` and the
+full statistics, and a consumer dividing for itself does not inherit the
+truncation this column accepts for the sake of a readable table. -/
+def perUnitColumn? (records : List BenchRecord) :
+    Option (String × Bool × (BenchRecord → String)) :=
+  match matchingNat? records (fun record ↦ record.workUnits) with
+  | some units =>
+      if units > 1 then
+        some ("Per unit (ps)", true, fun record ↦ toString (record.stats.medianPicos / units))
+      else
+        none
+  | none => none
+
+/-- Columns rendered in a group result table after shared metadata is lifted out.
+
+Warmup and sample count are columns rather than shared metadata lines because
+calibration sizes each row separately: two rows of one group no longer agree on
+either, so `matchingNat?` would silently drop both lines from every report. Only
+the digest length is still shared by construction. -/
 def groupResultColumns (records : List BenchRecord) (totalUnit avgUnit : TimeUnit) :
     List (String × Bool × (BenchRecord → String)) :=
   [
     ("Implementation", false, implementationLabelInGroup records),
+    ("Warmup", true, fun r ↦ toString r.warmupIterations),
     ("Iterations", true, fun r ↦ toString r.measuredIterations),
+    ("Samples", true, fun r ↦ toString r.stats.count),
     ("Total (" ++ totalUnit.label ++ ")", true, fun r ↦
       formatNanosInUnitOrAuto totalUnit r.totalNanos),
     ("Median (" ++ avgUnit.label ++ ")", true, fun r ↦
-      formatNanosInUnitOrAuto avgUnit r.averageNanos),
+      formatNanosInUnitOrAuto avgUnit r.medianNanos)
+  ] ++ keepSome [perUnitColumn? records] ++ [
     ("Spread", true, renderSpread)
   ]
 
@@ -1005,9 +1219,7 @@ def renderGroupMetadata (records : List BenchRecord) (totalUnit : TimeUnit) : Li
     renderSharedStringLine "Representation" records (fun r ↦ r.representation),
     renderSharedStringLine "Field / configuration" records (fun r ↦ r.field),
     renderSharedStringLine "Input shape" records (fun r ↦ r.inputShape),
-    renderSharedNatLine "Warmup iterations" records (fun r ↦ r.warmupIterations),
-    renderSharedNatLine "Checksum iterations" records (fun r ↦ r.checksumIterations),
-    renderSharedNatLine "Samples" records (fun r ↦ r.stats.count)
+    renderSharedNatLine "Checksum iterations" records (fun r ↦ r.checksumIterations)
   ] ++ [
     "- Total group time: `" ++ formatNanosWithUnit totalUnit (totalGroupNanos records) ++
       "`",
@@ -1019,7 +1231,7 @@ def renderGroupResults (group : BenchGroup) : List String :=
   let records := group.records.toList
   let groupTotal := totalGroupNanos records
   let totalUnit := chooseTimeUnit (groupTotal :: records.map fun r ↦ r.totalNanos)
-  let avgUnit := chooseTimeUnit (records.map fun r ↦ r.averageNanos)
+  let avgUnit := chooseTimeUnit (records.map fun r ↦ r.medianNanos)
   [
     "### " ++ group.title,
     "",
@@ -1090,9 +1302,12 @@ def renderMarkdown (hardware : RunnerHardware) (preset : BenchPreset) (groups : 
 private def validationRow (group : BenchGroup) : String :=
   let records := group.records.toList
   let status :=
-    match matchingChecksum? records with
-    | some checksum => "agree | `" ++ toString checksum ++ "`"
-    | none => "**MISMATCH** | -"
+    if classesAgree records then
+      let digests := (digestClasses records).filterMap fun cls ↦
+        (matchingChecksum? (recordsInClass records cls)).map toString
+      "agree | `" ++ String.intercalate "`, `" digests ++ "`"
+    else
+      "**MISMATCH** | -"
   "| `" ++ group.groupKey ++ "` | " ++ toString group.records.size ++ " | " ++ status ++ " |"
 
 /-- Render the report for a `--validate-only` run.
