@@ -139,6 +139,10 @@ support lemmas:
   Its readback theorems identify each coefficient with the corresponding raw bit block,
   including natural-word and individual-bit readback. These coordinates use the tower field's
   own embedding and retain low-first block order.
+  [Concrete/BasisCoordinates.lean](../../CompPoly/Fields/Binary/Tower/Concrete/BasisCoordinates.lean)
+  identifies these executable coordinates with the representation of `multilinearBasis`
+  at the same numeric indices. Its packing formula reconstructs a word as the sum of
+  embedded coefficients times those basis vectors.
 - `Tower/Support/*` - supporting lemmas about defining polynomials, linear
   independence, and finite-index helpers.
 - `Tower/Fast.lean` - packed machine-word tower arithmetic with a GF(2^8)

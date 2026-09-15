@@ -35,6 +35,12 @@ def coordinates {i j : ℕ} (h : i ≤ j) :
     ConcreteBTField j ≃ₗ[ConcreteBTField i] (Fin (2 ^ (j - i)) → ConcreteBTField i) :=
   natCoordinatesConstOfLE succCoordinates h
 
+/-- The relative equivalence is the constant-two composition of the low-first successor
+coordinate equivalences, with the scalar action induced by the concrete tower embedding. -/
+theorem coordinates_eq_natCoordinatesConstOfLE {i j : ℕ} (h : i ≤ j) :
+    coordinates h = natCoordinatesConstOfLE succCoordinates h := by
+  rfl
+
 /-- Construct a level-`j` word from level-`i` coefficients, with coefficient `q` occupying
 the block of `2 ^ i` bits starting at bit `2 ^ i * q`. -/
 def pack {i j : ℕ} (h : i ≤ j) (c : Fin (2 ^ (j - i)) → ConcreteBTField i) :
