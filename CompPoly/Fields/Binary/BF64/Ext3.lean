@@ -36,7 +36,7 @@ follows.
 
 * `ext3Poly_irreducible` — the cubic is irreducible over `BF64`.
 * `ext3Params_poly` — the coefficient vector `#v[1, 1, 0]` denotes that cubic.
-* `card_ext3` — `Fintype.card Ext3 = 2 ^ 192`.
+* `nat_card_ext3` — `Nat.card Ext3 = 2 ^ 192`.
 
 ## Implementation notes
 
@@ -99,6 +99,7 @@ A root has `a ^ 7 = 1`, so its multiplicative order divides `7`. It also divides
 `a = 1`. But `1` is not a root.
 -/
 theorem ext3Poly_no_root (a : BF64) : ¬ext3Poly.IsRoot a := by
+  let := Fintype.ofFinite BF64
   intro h
   have h7 := pow_seven_of_isRoot h
   have ha : a ≠ 0 := by
@@ -140,7 +141,7 @@ def ext3Params : ExtensionParams BF64 where
   q := 2 ^ 64
 
 instance : Fact (Nat.card BF64 = ext3Params.q) :=
-  ⟨by rw [Nat.card_eq_fintype_card]; exact card_bf64⟩
+  ⟨nat_card_bf64⟩
 
 /-- The extension has degree three. -/
 @[simp] theorem ext3Params_d : ext3Params.d = 3 := rfl
@@ -198,8 +199,12 @@ theorem aeval_ext3Gen : aeval ext3Gen ext3Params.poly = 0 := Ext.aeval_gen_poly
   simp only [map_add, map_pow, aeval_X, aeval_one] at h
   rw [← sub_eq_zero, CharTwo.sub_eq_add, ← h, add_assoc]
 
-/-- `Ext3` has `2 ^ 192` elements. -/
-@[simp] theorem card_ext3 : Fintype.card Ext3 = 2 ^ 192 := by
-  rw [Ext.card_ext, ext3Params_q, ext3Params_d, ← pow_mul]
+/-- `Ext3` has `2 ^ 192` elements, independently of an enumeration. -/
+@[simp] theorem nat_card_ext3 : Nat.card Ext3 = 2 ^ 192 := by
+  rw [Ext.nat_card_ext, ext3Params_q, ext3Params_d, ← pow_mul]
+
+/-- Any enumeration of `Ext3` has `2 ^ 192` elements. -/
+@[simp] theorem card_ext3 [Fintype Ext3] : Fintype.card Ext3 = 2 ^ 192 := by
+  rw [← Nat.card_eq_fintype_card, nat_card_ext3]
 
 end BF64

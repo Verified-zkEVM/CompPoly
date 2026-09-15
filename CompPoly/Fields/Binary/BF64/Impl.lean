@@ -17,6 +17,8 @@ Itoh-Tsujii addition chain. The carrier maps into `AdjoinRoot basePoly` through
 `BF64.toQuot`, so Mathlib's field theory applies while the operations stay executable.
 The nominal carrier separates this polynomial presentation from raw words and binary towers.
 `ofBitVec` and `toBitVec` expose its coordinates; field numerals use characteristic-two casts.
+Finiteness is supplied as a proposition, with cardinality stated using `Nat.card`. Enumeration
+is an explicit proof-side choice and is never constructed during native module startup.
 
 ## Main definitions
 
@@ -31,7 +33,7 @@ The nominal carrier separates this polynomial presentation from raw words and bi
 * `BF64.toQuot_add`, `BF64.toQuot_mul` — the bridge is a ring homomorphism.
 * `BF64.toQuot_injective`, `BF64.toQuot_surjective` — it is a bijection.
 * `BF64.mul_invItohTsujii` — the addition chain really inverts.
-* `BF64.card_bf64` — `Fintype.card BF64 = 2 ^ 64`.
+* `BF64.nat_card_bf64` — `Nat.card BF64 = 2 ^ 64`.
 
 ## Implementation notes
 
@@ -454,17 +456,20 @@ def equivFin : BF64 ≃ Fin (2 ^ 64) where
   left_inv _ := rfl
   right_inv _ := rfl
 
-instance : Fintype BF64 := Fintype.ofEquiv _ equivFin.symm
+instance : Finite BF64 := Finite.of_equiv (Fin (2 ^ 64)) equivFin.symm
 
-/-- `BF64` has `2 ^ 64` elements. -/
-theorem card_bf64 : Fintype.card BF64 = 2 ^ 64 := by
-  rw [Fintype.card_congr equivFin, Fintype.card_fin]
+/-- `BF64` has `2 ^ 64` elements, independently of an enumeration. -/
+theorem nat_card_bf64 : Nat.card BF64 = 2 ^ 64 := by
+  rw [Nat.card_congr equivFin, Nat.card_fin]
+
+/-- Any enumeration of `BF64` has `2 ^ 64` elements. -/
+theorem card_bf64 [Fintype BF64] : Fintype.card BF64 = 2 ^ 64 := by
+  rw [← Nat.card_eq_fintype_card, nat_card_bf64]
 
 /-- The bridge is surjective: it is injective between finite types of equal cardinality. -/
 theorem toQuot_surjective : Function.Surjective toQuot := by
-  have hcard : Fintype.card BF64 = Fintype.card (BF64Quot) := by
-    rw [card_bf64, card_bf64Quot]
-  exact ((Fintype.bijective_iff_injective_and_card toQuot).mpr ⟨toQuot_injective, hcard⟩).2
+  refine (toQuot_injective.bijective_of_nat_card_le ?_).2
+  rw [nat_card_bf64, Nat.card_eq_fintype_card, card_bf64Quot]
 
 /-- The Itoh-Tsujii inverse really is a multiplicative inverse. -/
 theorem mul_invItohTsujii {a : BF64} (h : a ≠ 0) : a * invItohTsujii a = 1 := by
