@@ -1951,20 +1951,22 @@ The first target from the table in `docs/wiki/autoresearch.md`, taken through
 the protocol exactly as written: one change per iteration, `lake build` as the
 proof gate, `--validate-only` on the extension groups, `bench-ab.sh run` at
 `--medium` with five rounds a side, keep on `faster`, revert otherwise, and
-`freeze --force` after each keep. Three iterations; the third was reverted.
-Every gate held throughout: no `mismatch`, no `SUSPECT`, harness drift within
-±1.7%.
+`freeze --force` after each keep. Three iterations; the third was reverted, and a fourth was forced by the
+test suite rather than chosen by the loop. Every A/B gate held throughout: no
+`mismatch`, no `SUSPECT`, harness drift within ±1.7%.
 
 | Iteration | Change | `mul` d=4 | `mul` d=5 | `mul` d=6 | `inv` d=4 | Kept |
 |---|---|---:|---:|---:|---:|---|
 | 1 | `Fin.foldl` loops replace the two `Finset.sum`s in `mulTbl` | 0.431 | 0.385 | 0.363 | 0.698 | yes |
 | 2 | `red` built by one `redScan`, `O(d^2)` not `O(d^3)` | 0.998 | 1.007 | 1.025 | 0.540 | yes |
 | 3 | convolution into `2d - 1` coefficients, then one contraction against `red` | 1.062 | 0.962 | 0.838 | 1.120 | **no** |
+| 4 | `@[inline]` dropped from `mulTbl` (see finding 4) | 1.227 | 1.156 | 1.138 | 0.969 | yes, forced |
 
-Cumulative over the two kept iterations, KoalaBear: `mul` 17.1 → 7.3 µs at
-d=4 and 44.3 → 15.4 µs at d=6; `inv` 2.60 → 0.99 ms at d=4. The proof burden
-was one lemma per iteration: `Fin.foldl_add_eq_add_sum`, `redScan_getElem`,
-and (for the reverted one) a convolution identity over `Finset.range`.
+Net against `origin/main`, KoalaBear: `mul` 17.1 → 9.5 µs at d=4 (0.556),
+27.7 → 13.5 µs at d=5 (0.487), 44.3 → 19.3 µs at d=6 (0.435); BabyBear `mul`
+17.1 → 9.3 µs; `inv` 2.60 → 1.02 ms at d=4 (0.392). The proof burden was one
+lemma per iteration: `Fin.foldl_add_eq_add_sum`, `redScan_getElem`, and (for
+the reverted one) a convolution identity over `Finset.range`.
 
 **Findings from doing the work.**
 
@@ -1988,6 +1990,19 @@ and (for the reverted one) a convolution identity over `Finset.range`.
    question, not an algorithmic one; the O(d²) contraction is worth retrying
    once the constant is gone, since it already wins at d=6. The patch is
    small (99 lines) and reproducible from this entry.
+4. **The loop's gates are not the only gates.** Iteration 1 kept `mulTbl`'s
+   pre-existing `@[inline, specialize]`. With the two nested `Fin.foldl`
+   closures in its body, every `*` call site now paid seconds of *compile*
+   time to inline and specialise them; `tests/CompPolyTests/Fields/Extension/Arithmetic.lean`
+   has about a hundred such sites inside `#guard`s, and `lake test` ran for
+   four hours on CI before it was cancelled. Locally the same file elaborated
+   for over 200 s at a steady 1.2 GB before being killed. Dropping `@[inline]`
+   (keeping `@[specialize]`) brings the file back to 10 s and costs 14–23 % of
+   the multiply's runtime, which the A/B reported as `slower` on every `mul`
+   row. It was kept anyway: a kernel the test suite cannot compile is not
+   faster. The protocol in `docs/wiki/autoresearch.md` now says so, and the
+   inlined variant is the follow-up: find what makes the nested closures
+   expensive to inline, since the runtime win is real.
 
 ---
 
