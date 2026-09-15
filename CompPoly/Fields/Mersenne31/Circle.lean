@@ -6,8 +6,8 @@ Authors: Adrien Lacombe
 module
 
 public import CompPoly.Fields.Mersenne31.Basic
-public meta import Lean.Elab.Tactic.Omega
-public import Mathlib.Tactic.Ring
+meta import Lean.Elab.Tactic.Omega
+import Mathlib.Tactic.Ring
 
 /-!
 # Mersenne31 Circle Domains
@@ -22,7 +22,7 @@ canonical natural representative `i.val`. A follow-on PR should prove generator
 order `2^31` and that `toPoint` is a group homomorphism on `CirclePointIndex`.
 -/
 
-@[expose] public section
+public section
 
 namespace Mersenne31
 namespace Circle
@@ -31,6 +31,7 @@ namespace Circle
 abbrev Field := Mersenne31.Field
 
 /-- Predicate for points on the circle `x^2 + y^2 = 1`. -/
+@[expose]
 def OnCircle (x y : Field) : Prop :=
   x ^ 2 + y ^ 2 = 1
 
@@ -112,7 +113,7 @@ theorem nsmul_eq_nsmulRec (p : Point) (n : Nat) : nsmul p n = nsmulRec n p := by
 
 /-- The zero multiple is the circle identity. -/
 @[simp]
-theorem nsmul_zero (p : Point) : nsmul p 0 = 0 := rfl
+theorem nsmul_zero (p : Point) : nsmul p 0 = 0 := by rfl
 
 /-- Increasing the scalar by one adds one copy of the point. -/
 theorem nsmul_succ (p : Point) (n : Nat) : nsmul p (n + 1) = nsmul p n + p :=
@@ -120,19 +121,19 @@ theorem nsmul_succ (p : Point) (n : Nat) : nsmul p (n + 1) = nsmul p n + p :=
 
 /-- The identity point has x-coordinate one. -/
 @[simp]
-theorem zero_x : (0 : Point).x = 1 := rfl
+theorem zero_x : (0 : Point).x = 1 := by rfl
 
 /-- The identity point has y-coordinate zero. -/
 @[simp]
-theorem zero_y : (0 : Point).y = 0 := rfl
+theorem zero_y : (0 : Point).y = 0 := by rfl
 
 /-- Conjugation preserves the x-coordinate. -/
 @[simp]
-theorem conjugate_x (p : Point) : (-p).x = p.x := rfl
+theorem conjugate_x (p : Point) : (-p).x = p.x := by rfl
 
 /-- Conjugation negates the y-coordinate. -/
 @[simp]
-theorem conjugate_y (p : Point) : (-p).y = -p.y := rfl
+theorem conjugate_y (p : Point) : (-p).y = -p.y := by rfl
 
 /-- The identity point is a left identity for circle addition. -/
 @[simp]
@@ -152,6 +153,14 @@ def generatorX : Field := 2
 /-- STWO's Mersenne31 circle generator y-coordinate. -/
 def generatorY : Field := 1268011823
 
+/-- The STWO generator's x-coordinate constant is two. -/
+@[simp]
+theorem generatorX_eq : generatorX = 2 := by rfl
+
+/-- The value of the STWO generator's y-coordinate constant. -/
+@[simp]
+theorem generatorY_eq : generatorY = 1268011823 := by rfl
+
 /-- STWO's Mersenne31 circle generator lies on `x^2 + y^2 = 1`. -/
 theorem generator_onCircle : OnCircle generatorX generatorY := by
   change ((2 : Field) ^ 2 + (1268011823 : Field) ^ 2 = 1)
@@ -163,12 +172,20 @@ def generator : Point where
   y := generatorY
   onCircle := generator_onCircle
 
+/-- The STWO generator has x-coordinate two. -/
+@[simp]
+theorem generator_x : generator.x = 2 := by rfl
+
+/-- The STWO generator's y-coordinate. -/
+@[simp]
+theorem generator_y : generator.y = 1268011823 := by rfl
+
 /-- The log order of STWO's Mersenne31 circle group. -/
-@[reducible]
+@[expose, reducible]
 def logOrder : Nat := 31
 
 /-- The order of the Mersenne31 circle-index group, `2^31`. -/
-@[reducible]
+@[expose, reducible]
 def order : Nat := 2 ^ logOrder
 
 /-- Integer index for multiples of the Mersenne31 circle generator. -/
@@ -282,16 +299,16 @@ theorem indexAt_succ (c : Coset) (i : Nat) :
 
 /-- Conjugation preserves the coset log size. -/
 @[simp]
-theorem conjugate_logSize (c : Coset) : c.conjugate.logSize = c.logSize := rfl
+theorem conjugate_logSize (c : Coset) : c.conjugate.logSize = c.logSize := by rfl
 
 /-- The conjugate coset starts at the negated initial index. -/
 @[simp]
 theorem conjugate_initialIndex (c : Coset) :
-    c.conjugate.initialIndex = -c.initialIndex := rfl
+    c.conjugate.initialIndex = -c.initialIndex := by rfl
 
 /-- The conjugate coset uses the negated step size. -/
 @[simp]
-theorem conjugate_stepSize (c : Coset) : c.conjugate.stepSize = -c.stepSize := rfl
+theorem conjugate_stepSize (c : Coset) : c.conjugate.stepSize = -c.stepSize := by rfl
 
 /-- Each conjugate-coset index is the negation of the corresponding original index. -/
 @[simp]
@@ -311,6 +328,10 @@ namespace CircleDomain
 /-- Construct a circle domain from the half coset. -/
 def new (halfCoset : Coset) : CircleDomain where
   halfCoset := halfCoset
+
+/-- The domain constructor preserves its half coset. -/
+@[simp]
+theorem new_halfCoset (c : Coset) : (new c).halfCoset = c := by rfl
 
 /-- Domain log size. A domain contains a half coset and its conjugate. -/
 def logSize (D : CircleDomain) : Nat :=

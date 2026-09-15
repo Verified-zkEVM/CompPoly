@@ -5,23 +5,41 @@ Authors: Adrien Lacombe
 -/
 module
 
+public import CompPoly.Fields.Mersenne31.Circle
 public meta import CompPoly.Fields.Mersenne31.Circle
 
 /-!
 # Mersenne31 Circle Domain Tests
 
-Regression checks for the STWO-style Mersenne31 circle-domain skeleton.
+Public-API proofs and executable regression checks for the STWO-style Mersenne31
+circle-domain skeleton. Ordinary imports deliberately do not expose implementation bodies.
 -/
 
-public meta section
+public section
 
 namespace Mersenne31.Circle
 
 example : OnCircle generatorX generatorY := generator_onCircle
 
-example : generator.x = 2 := rfl
+example : generatorX = 2 := generatorX_eq
 
-example : generator.y = 1268011823 := rfl
+example : generatorY = 1268011823 := generatorY_eq
+
+example : generator.x = 2 := generator_x
+
+example : generator.y = 1268011823 := generator_y
+
+example (p q r : Point) : (p + q) + r = p + (q + r) := add_assoc p q r
+
+example (p : Point) : Point.nsmul p 0 = 0 := by
+  fail_if_success rfl
+  simp only [Point.nsmul_zero]
+
+example (p : Point) : (-p).x = p.x := by
+  simp only [Point.conjugate_x]
+
+example (c : Coset) : (CircleDomain.new c).halfCoset = c := by
+  simp only [CircleDomain.new_halfCoset]
 
 example : OnCircle (generator + generator).x (generator + generator).y :=
   (generator + generator).onCircle
@@ -55,6 +73,8 @@ example : CirclePointIndex.subgroupGen 0 = 0 := by
 example : CirclePointIndex.subgroupGen logOrder = CirclePointIndex.generator := by
   simp
 
+meta section
+
 /-- A small half-coset fixture for executable regression checks. -/
 def smallHalfCoset : Coset :=
   Coset.halfOdds 3 (by decide)
@@ -76,8 +96,8 @@ def smallDomain : CircleDomain :=
 
 example (i : Nat) :
     smallDomain.indexAt (smallHalfCoset.size + i) = -smallHalfCoset.indexAt i := by
-  change smallDomain.indexAt (smallDomain.halfCoset.size + i) = -smallDomain.halfCoset.indexAt i
-  exact CircleDomain.indexAt_right smallDomain i
+  simpa only [smallDomain, CircleDomain.new_halfCoset] using
+    CircleDomain.indexAt_right smallDomain i
 
 /-- A small canonical-coset fixture for domain-shape checks. -/
 def smallCanonicCoset : CanonicCoset where
@@ -102,5 +122,7 @@ def smallCanonicCoset : CanonicCoset where
   let p := smallDomain.pointAt i
   let q := smallDomain.pointAt (smallHalfCoset.size + i)
   p.x == q.x && p.y == -q.y
+
+end
 
 end Mersenne31.Circle
