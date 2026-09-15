@@ -24,9 +24,9 @@ namespace CompPolyBench
 
 /-- Whether this process is running in validation-only mode.
 
-Set from the command line and read by `runTimed`. When set, ordinary workloads
-run their checksum validation without warmup or timed samples. Harness checks
-that pass `forceTiming := true` still collect samples. -/
+Set from the command line and read by `runTimedSpec`. When set, ordinary workloads
+run their checksum validation without calibration or timed samples. Harness checks
+with `forceTiming := true` still calibrate and collect samples. -/
 initialize validateOnlyRef : IO.Ref Bool ← IO.mkRef false
 
 /-- Elapsed time for one timed sample, with the sink accumulator it produced. -/
@@ -37,23 +37,11 @@ structure TimedSample where
   sink : UInt64
 deriving Inhabited
 
-/-- Run a benchmark body `iters` times without timing it, returning the sink
-accumulator so the loop has an observable result.
-
-The accumulator must be fed into the subsequent timed run; discarding it would
-leave the warmup loop eliminable, which is how warmup came to be a no-op before. -/
-@[inline] def warmIterations (iters : Nat) (init : UInt64)
-    (body : Nat → UInt64 → UInt64) : IO UInt64 := do
-  let mut acc := init
-  for i in [0:iters] do
-    acc := body i acc
-  pure acc
-
 /-- Run a benchmark body `iters` times and return the elapsed nanoseconds.
 
-`init` seeds the sink accumulator, normally from `warmIterations`. The
-accumulator is bound and returned before the closing clock read, so the loop is
-sequenced inside the timed region. -/
+`init` seeds the sink accumulator, normally carried in from the calibration
+ramp. The accumulator is bound and returned before the closing clock read, so
+the loop is sequenced inside the timed region. -/
 @[inline] def timeIterations (iters : Nat) (init : UInt64)
     (body : Nat → UInt64 → UInt64) : IO TimedSample := do
   let mut acc := init
@@ -63,11 +51,5 @@ sequenced inside the timed region. -/
   let forced := acc
   let stop ← IO.monoNanosNow
   pure { nanos := stop - start, sink := forced }
-
-/-- Warm a benchmark body and then time it, in one step. -/
-@[inline] def warmThenTime (warmup measured : Nat)
-    (body : Nat → UInt64 → UInt64) : IO TimedSample := do
-  let warmed ← warmIterations warmup 0 body
-  timeIterations measured warmed body
 
 end CompPolyBench

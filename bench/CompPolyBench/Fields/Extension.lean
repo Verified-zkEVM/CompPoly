@@ -57,6 +57,9 @@ def checksumKoalaBearExt5 (x : KoalaBear.Ext5) : Nat :=
 def checksumKoalaBearExt6 (x : KoalaBear.Ext6) : Nat :=
   x.coeffs.toArray.foldl (fun acc z ↦ acc + z.val) 0
 
+/-- Operand-pool size of `extSampler`, and so the period of every body here. -/
+private def extPoolSize : Nat := 64
+
 /--
 Time one extension operation over a field-specific sample, packaged as a single-record group.
 
@@ -64,10 +67,11 @@ Time one extension operation over a field-specific sample, packaged as a single-
 -/
 private def runExtOp {E : Type} (groupKey title name method fieldName shape : String)
     (checksum : E → Nat) (sample : Nat → E × E) (op : E → E → E)
-    (measured : Nat) (preset : BenchPreset) (gen : StdGen) : IO (BenchGroup × StdGen) := do
-  let record ← runTimed name "Extension.Ext" method fieldName shape preset
-    (warmupIterations preset) measured
-    (fun i ↦ let (a, b) := sample i; op a b) checksum
+    (preset : BenchPreset) (gen : StdGen) : IO (BenchGroup × StdGen) := do
+  let record ← runTimedSpec
+    { name := name, representation := "Extension.Ext", method := method, field := fieldName,
+      inputShape := shape, digestIterations := digestPeriod extPoolSize }
+    preset (fun i ↦ let (a, b) := sample i; op a b) checksum
   pure ({ groupKey := groupKey, title := title, records := #[record] }, gen)
 
 /-- Build the pairwise operand sampler for an extension over a `ZMod` base field. -/
@@ -75,8 +79,8 @@ private def extSampler {F : Type*} [Field F] [Fintype F] {P : ExtensionParams F}
     (values : Array F) : Nat → Ext P × Ext P :=
   let elem (i : Nat) : Ext P :=
     Ext.ofFn fun j ↦ values.getD ((i * P.d + j.val) % values.size) 0
-  let xs : Array (Ext P) := Array.ofFn (n := 64) fun i ↦ elem i.val
-  fun i ↦ (xs.getD (i % 64) 1, xs.getD ((i + 17) % 64) 1)
+  let xs : Array (Ext P) := Array.ofFn (n := extPoolSize) fun i ↦ elem i.val
+  fun i ↦ (xs.getD (i % extPoolSize) 1, xs.getD ((i + 17) % extPoolSize) 1)
 
 /-- Run the KoalaBear degree-4 multiplication benchmark. -/
 private def runKoalaBearExt4Mul (preset : BenchPreset) (gen : StdGen) :
@@ -86,7 +90,7 @@ private def runKoalaBearExt4Mul (preset : BenchPreset) (gen : StdGen) :
     "Degree-4 extension multiplication (KoalaBear)" "extension-mul" "mul" "KoalaBear.Ext4"
     (extShape 4)
     checksumKoalaBearExt4 (extSampler (P := KoalaBear.ext4Params.toExtensionParams) values) (· * ·)
-    (preset.selectNat 200000 30000 6000) preset gen
+    preset gen
 
 /-- Run the KoalaBear degree-4 inversion benchmark. -/
 private def runKoalaBearExt4Inv (preset : BenchPreset) (gen : StdGen) :
@@ -97,7 +101,7 @@ private def runKoalaBearExt4Inv (preset : BenchPreset) (gen : StdGen) :
     (extShape 4)
     checksumKoalaBearExt4 (extSampler (P := KoalaBear.ext4Params.toExtensionParams) values)
       (fun a _ ↦ a⁻¹)
-    (preset.selectNat 2000 300 60) preset gen
+    preset gen
 
 /-- Run the BabyBear degree-4 multiplication benchmark. -/
 private def runBabyBearExt4Mul (preset : BenchPreset) (gen : StdGen) :
@@ -107,7 +111,7 @@ private def runBabyBearExt4Mul (preset : BenchPreset) (gen : StdGen) :
     "Degree-4 extension multiplication (BabyBear)" "extension-mul" "mul" "BabyBear.Ext4"
     (extShape 4)
     checksumBabyBearExt4 (extSampler (P := BabyBear.ext4Params.toExtensionParams) values) (· * ·)
-    (preset.selectNat 200000 30000 6000) preset gen
+    preset gen
 
 /-- Run the BabyBear degree-4 inversion benchmark. -/
 private def runBabyBearExt4Inv (preset : BenchPreset) (gen : StdGen) :
@@ -118,7 +122,7 @@ private def runBabyBearExt4Inv (preset : BenchPreset) (gen : StdGen) :
     (extShape 4)
     checksumBabyBearExt4 (extSampler (P := BabyBear.ext4Params.toExtensionParams) values)
       (fun a _ ↦ a⁻¹)
-    (preset.selectNat 2000 300 60) preset gen
+    preset gen
 
 /-- Run the KoalaBear degree-5 multiplication benchmark. -/
 private def runKoalaBearExt5Mul (preset : BenchPreset) (gen : StdGen) :
@@ -128,7 +132,7 @@ private def runKoalaBearExt5Mul (preset : BenchPreset) (gen : StdGen) :
     "Degree-5 extension multiplication (KoalaBear)" "extension-mul" "mul" "KoalaBear.Ext5"
     (extShape 5)
     checksumKoalaBearExt5 (extSampler (P := KoalaBear.ext5Params) values) (· * ·)
-    (preset.selectNat 200000 30000 6000) preset gen
+    preset gen
 
 /-- Run the KoalaBear degree-5 inversion benchmark. -/
 private def runKoalaBearExt5Inv (preset : BenchPreset) (gen : StdGen) :
@@ -138,7 +142,7 @@ private def runKoalaBearExt5Inv (preset : BenchPreset) (gen : StdGen) :
     "Degree-5 extension inversion (KoalaBear)" "extension-inv" "inv (Fermat)" "KoalaBear.Ext5"
     (extShape 5)
     checksumKoalaBearExt5 (extSampler (P := KoalaBear.ext5Params) values) (fun a _ ↦ a⁻¹)
-    (preset.selectNat 2000 300 60) preset gen
+    preset gen
 
 /-- Run the KoalaBear degree-6 multiplication benchmark. -/
 private def runKoalaBearExt6Mul (preset : BenchPreset) (gen : StdGen) :
@@ -148,7 +152,7 @@ private def runKoalaBearExt6Mul (preset : BenchPreset) (gen : StdGen) :
     "Degree-6 extension multiplication (KoalaBear)" "extension-mul" "mul" "KoalaBear.Ext6"
     (extShape 6)
     checksumKoalaBearExt6 (extSampler (P := KoalaBear.ext6Params) values) (· * ·)
-    (preset.selectNat 200000 30000 6000) preset gen
+    preset gen
 
 /-- Run the KoalaBear degree-6 inversion benchmark. -/
 private def runKoalaBearExt6Inv (preset : BenchPreset) (gen : StdGen) :
@@ -158,7 +162,7 @@ private def runKoalaBearExt6Inv (preset : BenchPreset) (gen : StdGen) :
     "Degree-6 extension inversion (KoalaBear)" "extension-inv" "inv (Fermat)" "KoalaBear.Ext6"
     (extShape 6)
     checksumKoalaBearExt6 (extSampler (P := KoalaBear.ext6Params) values) (fun a _ ↦ a⁻¹)
-    (preset.selectNat 2000 300 60) preset gen
+    preset gen
 
 /-- Registry entries for the extension benchmarks. -/
 def extensionTasks : List BenchTask := [
