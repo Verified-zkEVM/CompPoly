@@ -30,6 +30,8 @@ public import CompPolyTests.Fields.BLS12_377.Fast
 public import CompPolyTests.Fields.BLS12_381.Fast
 public import CompPolyTests.Fields.BN254.Fast
 public import CompPolyTests.Fields.BabyBear.Fast
+public import CompPolyTests.Fields.Binary.AdditiveNTT.Compatibility
+public import CompPolyTests.Fields.Binary.AdditiveNTT.Executable
 public import CompPolyTests.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
 public import CompPolyTests.Fields.Binary.BF128Ghash.Prelude
 public import CompPolyTests.Fields.Binary.BF64
