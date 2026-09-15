@@ -5,6 +5,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 module
 
+public import CompPoly.Data.RingTheory.AlgebraTower
 public import CompPoly.Fields.Binary.Tower.Concrete.Field
 
 /-!

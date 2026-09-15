@@ -5,8 +5,10 @@ Authors: Derek Sorensen
 -/
 module
 
+public import CompPoly.Fields.Extension.Arithmetic
 public import CompPoly.Fields.Extension.Binomial
 public import CompPoly.Fields.Extension.Bridge
+public import CompPoly.Fields.Extension.Cardinality
 public import CompPoly.Fields.Extension.Defs
 public import CompPoly.Fields.Extension.Field
 
@@ -19,12 +21,14 @@ individual modules for details:
 
 * `CompPoly/Fields/Extension/Binomial.lean` — irreducibility of `X^d - W` over a finite field,
   via Rabin's test collapsed to two base-field exponentiations.
-* `CompPoly/Fields/Extension/Defs.lean` — `ExtensionParams` (an arbitrary monic modulus) and the
+* `CompPoly/Fields/Extension/Arithmetic.lean` — `ExtensionParams` (an arbitrary monic modulus), the
   binomial front-end `BinomialParams`, plus the coefficient-vector carrier `Ext P` with its ring
-  operations (`shiftReduce`, `monomialMod`, `mul`).
+  operations (`shiftReduce`, `monomialMod`, `mul`) and the inverse candidate.
+* `CompPoly/Fields/Extension/Defs.lean` — polynomial specifications and binomial correspondence.
 * `CompPoly/Fields/Extension/Bridge.lean` — `toQuot : Ext P → AdjoinRoot P.poly`, the
   multiply-by-`X` law `toQuot_shiftReduce`, and the `CommRing` structure.
-* `CompPoly/Fields/Extension/Field.lean` — bijectivity, cardinality, and the `Field` structure.
+* `CompPoly/Fields/Extension/Cardinality.lean` — optional finiteness and cardinality certificates.
+* `CompPoly/Fields/Extension/Field.lean` — bijectivity and the certified `Field` structure.
 -/
 
 @[expose] public section

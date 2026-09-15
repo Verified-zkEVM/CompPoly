@@ -97,11 +97,23 @@ encoding is observable.
 - [`../../CompPoly/Fields/Binary/BF64/Reduce.lean`](../../CompPoly/Fields/Binary/BF64/Reduce.lean)
   folds a 128-bit carry-less product back into 64 bits using the reduction constant `0x1B`.
 - [`../../CompPoly/Fields/Binary/BF64/Impl.lean`](../../CompPoly/Fields/Binary/BF64/Impl.lean)
-  carries the computable `BitVec 64` representation, its bridge to the quotient, and the
+  carries the nominal field elements with `BitVec 64` coordinates, their quotient bridge, and the
   `CommRing` / `Field` instances built around an Itoh-Tsujii inverse.
 - [`../../CompPoly/Fields/Binary/BF64/Ext3.lean`](../../CompPoly/Fields/Binary/BF64/Ext3.lean)
   instantiates the extension framework at `y^3 + y + 1`, whose irreducibility needs no
   certificate.
+
+Use `BF64.ofBitVec` to construct polynomial-basis words and `BF64.toBitVec` to recover them;
+the maps are inverse and introduce no implicit conversion to another field presentation.
+For example, `BF64.ofBitVec (2#64)` denotes `X`, while `(2 : BF64)` is zero. Raw reference
+vectors must use the coordinate constructor rather than field numeral casts.
+
+`BF64` and `BF64.Ext3` expose proof-only `Finite` instances and the cardinality theorems
+`BF64.nat_card_bf64` and `BF64.nat_card_ext3`. They provide no default enumeration dictionary.
+A proof that needs `Fintype` can choose `Fintype.ofFinite` locally; `card_bf64` and `card_ext3`
+then apply to that chosen enumeration. Arithmetic does not enumerate these enormous fields.
+The [native startup test](../../tests/README.md#native-startup-and-field-arithmetic) checks
+linked initialization and actual base/extension arithmetic under resource bounds.
 
 The instances here are assembled field-by-field on purpose: a transport such as
 `Function.Injective.commRing` takes the bridge as *data* and would make the arithmetic
@@ -116,14 +128,37 @@ support lemmas:
 
 - `Tower/Abstract/*` - abstract tower definitions and algebra.
 - `Tower/Concrete/*` - concrete basis, core definitions, and field instances.
+  These modules use shared support lemmas without importing the abstract tower construction.
+  `Tower/Equiv.lean` imports both constructions to relate them; use that bridge or
+  `Tower/Impl.lean` when both presentations are needed.
+  [Concrete/Coordinates.lean](../../CompPoly/Fields/Binary/Tower/Concrete/Coordinates.lean)
+  supplies `ConcreteBinaryTower.Coordinates.succCoordinates`: an
+  executable linear equivalence from level `k + 1` to two level-`k` coefficients, ordered
+  constant term first and generator term second. It uses the existing tower embedding
+  for the scalar action. Pass it to `AlgebraTower.natCoordinatesOfLE` or
+  `AlgebraTower.natCoordinatesConstOfLE` for coordinates between arbitrary ordered levels.
+  [Concrete/RelativeCoordinates.lean](../../CompPoly/Fields/Binary/Tower/Concrete/RelativeCoordinates.lean)
+  specializes these maps as `coordinates` and `pack`, with round-trip and scalar-action laws.
+  Its readback theorems identify each coefficient with the corresponding raw bit block,
+  including natural-word and individual-bit readback. These coordinates use the tower field's
+  own embedding and retain low-first block order.
+  [Concrete/BasisCoordinates.lean](../../CompPoly/Fields/Binary/Tower/Concrete/BasisCoordinates.lean)
+  identifies these executable coordinates with the representation of `multilinearBasis`
+  at the same numeric indices. Its packing formula reconstructs a word as the sum of
+  embedded coefficients times those basis vectors.
 - `Tower/Support/*` - supporting lemmas about defining polynomials, linear
   independence, and finite-index helpers.
 - `Tower/Fast.lean` - packed machine-word tower arithmetic with a GF(2^8)
   lookup-table base, proven against `ConcreteBTField`; `Field` instances and ring
   isomorphisms at every level up to GF(2^128). Runtime definitions live in the
   zero-import `Tower/FastDefs.lean` for `precompileModules` consumers.
-- `Tower/Equiv.lean`, `Tower/Impl.lean`, and `Tower/TensorAlgebra.lean` connect the
-  layers and expose useful transport lemmas.
+- `Tower/Equiv.lean` and `Tower/Impl.lean` connect the layers and expose useful
+  transport lemmas.
+- `Tower/TensorAlgebra.lean` re-exports the generic tensor basis API from
+  `CompPoly/LinearAlgebra/TensorProduct/Basis.lean`. Its right scalar action is
+  explicit; importing either path preserves Mathlib's default left action. See
+  [`../../CompPoly/LinearAlgebra/README.md`](../../CompPoly/LinearAlgebra/README.md)
+  for the local algebra, module and scalar-action selection needed for equal tensor factors.
 
 Use the tower subtree when the task is about characteristic-2 extensions more
 generally, not just GHASH.
@@ -141,10 +176,14 @@ The additive-NTT stack is split by role rather than by one monolithic file:
 - [`../../CompPoly/Fields/Binary/AdditiveNTT/Algorithm.lean`](../../CompPoly/Fields/Binary/AdditiveNTT/Algorithm.lean)
   defines evaluation points, twiddle factors, stage updates, and the algorithm data
   flow.
+- [`../../CompPoly/Fields/Binary/AdditiveNTT/Executable.lean`](../../CompPoly/Fields/Binary/AdditiveNTT/Executable.lean)
+  defines the generic function-backed and array-backed algorithms without importing a tower
+  construction.
 - [`../../CompPoly/Fields/Binary/AdditiveNTT/Impl.lean`](../../CompPoly/Fields/Binary/AdditiveNTT/Impl.lean)
-  packages the implementation-facing surface.
+  re-exports those algorithms with concrete tower bases, instances, and the existing example.
 - [`../../CompPoly/Fields/Binary/AdditiveNTT/Correctness.lean`](../../CompPoly/Fields/Binary/AdditiveNTT/Correctness.lean)
-  proves the implementation correct.
+  proves the generic implementations correct without requiring a concrete tower. The umbrella
+  `AdditiveNTT.lean` retains the combined generic and concrete surface for existing consumers.
 
 When changing additive NTT, expect to read several of these files together.
 Algorithm changes often cascade into `Intermediate`, `Impl`, and `Correctness`.
@@ -164,4 +203,4 @@ Algorithm changes often cascade into `Intermediate`, `Impl`, and `Correctness`.
 - For tower fields: `Prelude` / `Basic` -> `Abstract` or `Concrete` branch ->
   `Equiv` / `Impl`
 - For additive NTT: `Domain` -> `NovelPolynomialBasis` -> `Intermediate` ->
-  `Algorithm` -> `Impl` -> `Correctness`
+  `Algorithm` -> `Executable` -> `Correctness`; add `Impl` for concrete tower instances

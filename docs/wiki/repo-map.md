@@ -18,7 +18,7 @@ CompPoly/
   Multilinear/        multilinear coefficient and evaluation representations
   Bivariate/          specialized `CPolynomial (CPolynomial R)` layer
     GuruswamiSudan/     list decoder: interpolation and root-finding backends
-  LinearAlgebra/      dense matrices and polynomial matrices with row reduction
+  LinearAlgebra/      matrix algorithms and tensor basis theory
   Fields/             concrete fields plus binary-field and additive-NTT stack
 tests/                regression modules under `CompPolyTests`
 bench/                benchmark executable, runner docs, and local reports
@@ -71,6 +71,12 @@ scripts/              repo utilities and validation helpers
   `CompPoly/LinearAlgebra/`.
 - Moving a reusable support lemma that should not live next to one specific feature:
   start in `CompPoly/Data/` or `CompPoly/ToMathlib/`.
+- Composing chosen finite coordinates along a natural-number-indexed algebra tower:
+  use `CompPoly/Data/RingTheory/AlgebraTower/Coordinates.lean`. Its executable packing and
+  coordinate vectors correspond to the basis in
+  `CompPoly/Data/RingTheory/AlgebraTower/Basis.lean`; successor coordinate counts may vary.
+  Both leaves support arbitrary comparable endpoints, with constant-count coordinates also
+  presented on a `Fin` type whose size is a power of the successor count.
 - Adding regression coverage: start in `tests/` and mirror the source namespace when
   possible.
 - Updating benchmark coverage or reports: start in `bench/`.

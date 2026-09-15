@@ -127,16 +127,18 @@ report into `$GITHUB_STEP_SUMMARY`.
 
 Three files measure timings at *elaboration* time via `#eval`:
 
-- `tests/CompPolyTests/Univariate/NTT/Benchmark.lean` — NTT-vs-naive crossover
-  sweep over 20 operand sizes, `IO.monoMsNow`.
-- `tests/CompPolyTests/Bivariate/KroneckerBenchmark.lean`
+- `Benchmark.lean` under `tests/CompPolyTests/Univariate/NTT/` (removed in 12.7;
+  the sweep it held is now the `univariate-mul-crossover-*` groups) — NTT-vs-naive
+  crossover sweep over 20 operand sizes, `IO.monoMsNow`.
+- `KroneckerBenchmark.lean` under `tests/CompPolyTests/Bivariate/` (removed in
+  12.7; `bivariate-full-*` covers the same multiply)
 - `CommonBench.lean` under `tests/CompPolyTests/Fields/Binary/` (removed in 12.4;
   its correctness guards now live in
   `tests/CompPolyTests/Fields/Binary/Common.lean`)
 
-None is imported by `tests/CompPolyTests.lean`, so none runs under `lake test`
-or in CI. Each documents its own manual invocation (`lake build
-CompPolyTests.Bivariate.KroneckerBenchmark`).
+None was imported by `tests/CompPolyTests.lean`, so none ran under `lake test`
+or in CI. Each documented its own manual invocation, in the shape `lake build
+CompPolyTests.Bivariate.KroneckerBenchmark`. All three are now gone.
 
 ### 1.4 Build-time measurement (`scripts/build_timing_report.sh`)
 
@@ -1102,7 +1104,7 @@ anywhere in this document.
 | CI bench steps | `.github/workflows/lean_action_ci.yml:210` |
 | CI group allowlist | `.github/workflows/lean_action_ci.yml:22` (`BENCH_CI_GROUPS`) |
 | Build-time baseline logic | `scripts/build_timing_report.sh`, `lean_action_ci.yml:283` |
-| Orphaned `#eval` benchmarks | `tests/CompPolyTests/Univariate/NTT/Benchmark.lean`, `tests/CompPolyTests/Bivariate/KroneckerBenchmark.lean` (a third, `CommonBench.lean`, was removed in 12.4) |
+| Orphaned `#eval` benchmarks | none remain; `Benchmark.lean` and `KroneckerBenchmark.lean` were removed in 12.7, and a third, `CommonBench.lean`, in 12.4 |
 
 ---
 
@@ -1552,10 +1554,12 @@ The baseline is now generic in the operand width and carries four more guards at
 width 64, checked the same way. Had the file gone in §6.6, the generalization
 would have landed with nothing pinning either width to the fold it replaced.
 
-`tests/CompPolyTests/Univariate/NTT/Benchmark.lean` and
-`KroneckerBenchmark.lean` are deliberately left in place: the former holds the
-only NTT-vs-schoolbook crossover logic in the repo and is the specification for a
-future crossover metric.
+`Benchmark.lean` under `tests/CompPolyTests/Univariate/NTT/` and
+`KroneckerBenchmark.lean` under `tests/CompPolyTests/Bivariate/` were
+deliberately left in place here: the former held the only NTT-vs-schoolbook
+crossover logic in the repo and was the specification for a future crossover
+metric. That metric exists as of 12.7 — the `univariate-mul-crossover-*`
+groups — and both files were deleted with it.
 
 **`docs/wiki/benchmarking.md`** added and registered in both hand-maintained
 lists in `docs/wiki/README.md`, since `check-docs-integrity.py` validates that
@@ -1770,3 +1774,68 @@ across runs, since it depends on how fast the machine was during calibration.
 `group_key`, `group_title`, and a per-run `manifest-<runId>.json` — commit,
 dirty flag, toolchain, preset, resolved budgets, seed, selection, hardware —
 are what replaces it for attribution.
+
+### 12.7 Coverage: base fields, transforms, and chained bodies (`dhsorens/bench-coverage`)
+
+Closes the coverage gaps §6.6 listed, and the ones §3.8 called invisible. 70
+groups became 113 and 290 records became 413; the curated correctness gate went
+from 44 groups to 59 and got *cheaper*, ~34s to ~29s of CPU, for the reason in
+finding 3 below.
+
+**The body shape had to change first.** `harness-floor` was 1.80 ns and
+`goldilocks-mul-fast` 3.16 ns, and the generated C showed why: the operand-pool
+idiom every group used, `xs.getD (i % xs.size) unit`, is two boxed-`Nat`
+modulos, two bounds checks and two boxed array reads around one multiply. The
+field operation was a rounding error in its own measurement.
+`bench/CompPolyBench/Harness/Chain.lean` performs the operation `workUnits` times per iteration instead — no array,
+because `lean_box_uint64` allocates and a one-cycle dependent chain cannot be
+fed from a pointer array; no `for` with `let mut`, because `Prod` does not
+erase; unrolled blocks, because the `Nat` counter costs more than a Montgomery
+multiply. Latency and throughput are reported separately, as Plonky3 separates
+them, and `harness-chain-floor` and `harness-chain-linearity` police the shape.
+
+Three findings worth keeping.
+
+1. **A `GF(2)`-linear chain folds, and the linearity check does not catch it.**
+   The chain floor's first operation was `x ^^^ (x >>> 7)`, the map `I + S`. In
+   characteristic two `(I + S) ^ 64 = I + S ^ 64`, and `S ^ 64` shifts right by
+   448, so a 64-deep block *is the identity*. LLVM found it; the row reported
+   15 ps per operation, a sixteenth of a cycle, and `harness-chain-linearity`
+   passed anyway, because what collapsed was each block and not the loop over
+   blocks. The floor operation must mix two algebras; a wrapping add carries
+   between bits and does not commute with the shift.
+
+2. **Loop-invariance is a second way to lose a body, distinct from closed-term
+   caching.** §12.6 finding 2 recorded the closed-term case. The NTT group hit
+   the other one: it precomputed its spectrum with the very expression the
+   forward reference row then timed, the compiler recognised the two as one,
+   and the row reported 6 ns for a `2^12` transform at every size identically.
+   Indexing a small pool by the iteration counter closes both, and every chained
+   and transform body here does.
+
+3. **BabyBear was missing an instance KoalaBear had.**
+   `KoalaBear/Basic.lean` declares `instance : Field Field := ZMod.instField
+   fieldSize`; `BabyBear/Basic.lean` did not. Putting the two fields side by
+   side in one group made canonical BabyBear `mul` show as 32.0 ns against
+   5.9 ns for KoalaBear and Mersenne31 — the same shape, the same size of
+   prime. Adding the instance closed the gap exactly. This is the case
+   `CLAUDE.md` describes under Performance Guidelines, and it is the first
+   thing the coverage work paid for.
+
+**Blocked, and recorded so it is not rediscovered.** The polynomial-basis
+`GF(2^64)` and its cubic extension still have no group. `BF64.instFintype`
+(`CompPoly/Fields/Binary/BF64/Impl.lean:391`) is a closed constant whose value
+is a `Finset` of all `2 ^ 64` elements, and Lean evaluates closed constants at
+module initialisation — so any executable importing that module hangs before
+`main` runs, `--list` included. Elaboration never notices, because the
+interpreter forces constants on demand, which is why the tests build. Marking
+it `noncomputable` is not the repair: `Extension.Ext` carries `[Fintype F]` and
+its operations stop compiling. The fix belongs in
+`CompPoly/Fields/Extension/`.
+
+**Also deferred**, with reasons: `sub` groups; a larger additive NTT, since
+each `(k, ℓ, R_rate)` needs its own proof-carrying wrapper and the reference
+row cannot survive `ℓ ≥ 8`; `batchInverse` / `sumOfProducts` / `dot_array`,
+which Plonky3 benchmarks and CompPoly does not have; and prime-field `square`,
+which is `mul x x` on every carrier here — Plonky3 has no field-level `square`
+benchmark for the same reason.

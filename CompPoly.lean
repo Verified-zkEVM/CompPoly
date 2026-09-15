@@ -77,6 +77,8 @@ public import CompPoly.Data.Polynomial.MonomialBasis
 public import CompPoly.Data.Polynomial.Rabin
 public import CompPoly.Data.Polynomial.RabinCertificate
 public import CompPoly.Data.RingTheory.AlgebraTower
+public import CompPoly.Data.RingTheory.AlgebraTower.Basis
+public import CompPoly.Data.RingTheory.AlgebraTower.Coordinates
 public import CompPoly.Data.RingTheory.CanonicalEuclideanDomain
 public import CompPoly.Data.Vector.Basic
 public import CompPoly.Fields.BLS12_377
@@ -97,6 +99,7 @@ public import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
 public import CompPoly.Fields.Binary.AdditiveNTT.Algorithm
 public import CompPoly.Fields.Binary.AdditiveNTT.Correctness
 public import CompPoly.Fields.Binary.AdditiveNTT.Domain
+public import CompPoly.Fields.Binary.AdditiveNTT.Executable
 public import CompPoly.Fields.Binary.AdditiveNTT.Impl
 public import CompPoly.Fields.Binary.AdditiveNTT.Intermediate
 public import CompPoly.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
@@ -119,8 +122,11 @@ public import CompPoly.Fields.Binary.Tower.Abstract.Split
 public import CompPoly.Fields.Binary.Tower.Basic
 public import CompPoly.Fields.Binary.Tower.Concrete.Algebra
 public import CompPoly.Fields.Binary.Tower.Concrete.Basis
+public import CompPoly.Fields.Binary.Tower.Concrete.BasisCoordinates
+public import CompPoly.Fields.Binary.Tower.Concrete.Coordinates
 public import CompPoly.Fields.Binary.Tower.Concrete.Core
 public import CompPoly.Fields.Binary.Tower.Concrete.Field
+public import CompPoly.Fields.Binary.Tower.Concrete.RelativeCoordinates
 public import CompPoly.Fields.Binary.Tower.Equiv
 public import CompPoly.Fields.Binary.Tower.Fast
 public import CompPoly.Fields.Binary.Tower.FastDefs
@@ -133,8 +139,10 @@ public import CompPoly.Fields.Binary.Tower.Support.LinearIndependentFin2
 public import CompPoly.Fields.Binary.Tower.Support.Preliminaries
 public import CompPoly.Fields.Binary.Tower.TensorAlgebra
 public import CompPoly.Fields.Extension
+public import CompPoly.Fields.Extension.Arithmetic
 public import CompPoly.Fields.Extension.Binomial
 public import CompPoly.Fields.Extension.Bridge
+public import CompPoly.Fields.Extension.Cardinality
 public import CompPoly.Fields.Extension.Defs
 public import CompPoly.Fields.Extension.Field
 public import CompPoly.Fields.Goldilocks
@@ -220,6 +228,7 @@ public import CompPoly.LinearAlgebra.PolynomialMatrix.RowSpan
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Shifted
 public import CompPoly.LinearAlgebra.PolynomialMatrix.ShiftedReduction
 public import CompPoly.LinearAlgebra.PolynomialMatrix.StrassenCorrectness
+public import CompPoly.LinearAlgebra.TensorProduct.Basis
 public import CompPoly.Multilinear.Basic
 public import CompPoly.Multilinear.Equiv
 public import CompPoly.Multilinear.ManyEval
