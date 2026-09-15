@@ -109,13 +109,6 @@ def checksumPolynomialArrayKoalaFast
     (ps : Array (CPolynomial KoalaBear.Fast.Field)) : Nat :=
   checksumArray (checksumCPolynomial checksumKoalaBearFast) ps
 
-def gsWarmupIterations (preset : BenchPreset) : Nat :=
-  preset.selectNat 1 0 0
-
-/-
-Preset iteration counts are fixed per benchmark row to keep total runtimes
-comparable within each group across `small`, `medium`, and `large` runs.
--/
 /-- Benchmark group metadata for Guruswami-Sudan cost-center rows. -/
 def guruswamiSudanGroupInfos : List BenchGroupInfo := [
   ⟨"guruswami-sudan-interp-system-small-koalabear",
