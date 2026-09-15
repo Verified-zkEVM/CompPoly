@@ -40,6 +40,7 @@ export BinaryField (B128 B256 to256 to256_toNat clMul clSq toPoly clMul_unfold
   toPoly_one_eq_one toPoly_zero_eq_zero toPoly_ne_zero_iff_ne_zero
   toPoly_degree_lt_w toPoly_degree_of_lt_two_pow BitVec_lt_two_pow_of_toPoly_degree_lt
   toPoly_xor toPoly_fold_xor toPoly_128_extend_256 toPoly_shiftLeft_no_overflow
+  toPoly_one_shiftLeft
   toPoly_clMul gcd_eq_gcd_next_step gcd_one_zero)
 
 section GHASHPolynomial
@@ -174,46 +175,6 @@ section VerificationFunctions
 -- We represent it as a 256-bit vector
 def P_val : B256 :=
   (1 <<< 128) ^^^ (1 <<< 7) ^^^ (1 <<< 2) ^^^ (1 <<< 1) ^^^ 1
-
--- Helper: toPoly (1 <<< n) is just X^n
-lemma toPoly_one_shiftLeft {w : Nat} (n : Nat) (h : n < w) :
-    toPoly (1 <<< n : BitVec w) = X^n := by
-  rw [toPoly]
-  rw [Finset.sum_eq_single (⟨n, h⟩ : Fin w)]
-  -- 1. The Main Term (j = n): Prove it equals X^n
-  · simp only
-    simp only [BitVec.natCast_eq_ofNat, ite_eq_left_iff, Bool.not_eq_true]
-    intro h_getLsb_eq_false
-    have h_getLsb_eq_true : (BitVec.ofNat w (1 <<< n)).getLsb ⟨n, h⟩ = true := by
-      rw [BitVec.getLsb]
-      simp only [BitVec.toNat_ofNat, Nat.testBit_mod_two_pow, h, decide_true, Nat.testBit_shiftLeft,
-        ge_iff_le, le_refl, tsub_self, Nat.testBit_zero, Nat.mod_succ, Bool.and_self]
-    rw [h_getLsb_eq_false] at h_getLsb_eq_true
-    absurd h_getLsb_eq_true
-    exact Bool.false_ne_true
-  -- 2. The Other Terms (j ≠ n): Prove they are 0
-  · intro b _ hb_ne_n_fin
-    split_ifs with h_lsb
-    · -- Contradiction: If bit is set, b must equal n
-      exfalso
-      have h_getLsb_eq_false : ((1 <<< n) : BitVec w).getLsb b = false := by
-        rw [BitVec.getLsb]
-        have h_lhs : ((1 <<< n) : BitVec w).toNat = 1 <<< n := by
-          simp only [Nat.shiftLeft_eq, one_mul, BitVec.natCast_eq_ofNat, BitVec.toNat_ofNat]
-          apply Nat.mod_eq_of_lt
-          apply Nat.pow_lt_pow_right (ha := by omega) (h := by omega)
-        rw [h_lhs]
-        rw [Nat.one_shiftLeft]
-        rw [Nat.testBit_two_pow];
-        let h_ne := Fin.val_ne_of_ne hb_ne_n_fin
-        exact decide_eq_false (id (Ne.symm h_ne))
-      rw [h_getLsb_eq_false] at h_lsb
-      absurd h_lsb
-      exact Bool.false_ne_true
-    · rfl -- If bit is not set, result is 0
-  -- 3. Universe Check: Prove n is in Finset.univ
-  · intro h_absurd
-    simp at h_absurd -- Finset.univ contains everything
 
 -- Main Proof
 lemma ghashPoly_eq_P_val : ghashPoly = toPoly P_val := by

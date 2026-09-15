@@ -1,14 +1,16 @@
 # Field Extensions
 
-`CompPoly/Fields/Extension/` is the computable field-extension framework for odd
-characteristic. It models `F[X] / f` for an **arbitrary monic modulus** `f` as a dense
-coefficient vector and proves it equal to `AdjoinRoot f`, so Mathlib field theory applies to
-it. The parameters are `ExtensionParams` (the modulus stored by its lower coefficients);
-binomials `X^d - W` keep the ergonomic front-end `BinomialParams`, mapped in by
-`BinomialParams.toExtensionParams`.
+`CompPoly/Fields/Extension/` is the computable field-extension framework. It models `F[X] / f`
+for an **arbitrary monic modulus** `f` as a dense coefficient vector and proves it equal to
+`AdjoinRoot f`, so Mathlib field theory applies to it. The parameters are `ExtensionParams` (the
+modulus stored by its lower coefficients); binomials `X^d - W` keep the ergonomic front-end
+`BinomialParams`, mapped in by `BinomialParams.toExtensionParams`.
 
-This page owns extension-field architecture. The characteristic-2 stack is a separate,
-independent development — see [`binary-fields-and-ntt.md`](binary-fields-and-ntt.md).
+This page owns extension-field architecture. Nothing in it assumes odd characteristic, and
+the framework has one characteristic-2 consumer: `BF64.Ext3`, the cubic extension of `GF(2^64)`
+(see "A characteristic-2 consumer" below). The rest of the char-2 stack — the GHASH field, the
+tower fields, the additive NTT — is a separate, independent development that predates this
+framework; see [`binary-fields-and-ntt.md`](binary-fields-and-ntt.md).
 
 ## Binomials When Possible, General Moduli When Not
 
@@ -57,9 +59,10 @@ makes a cheap Frobenius and a norm-based inverse possible. See "Choosing a gener
 
 `Data/Polynomial/Rabin.lean` generalizes the degree-128/GF(2) specialization
 `irreducible_of_rabin_128_passed_over_GF2` in `Fields/Binary/BF128Ghash/Basic.lean`, but does not
-yet replace it — `Binary/` is deliberately untouched, so there are currently **two** Rabin
-soundness proofs in the repo. Rebasing the GHASH one onto `irreducible_of_rabin` is a named
-follow-up; until then, a fix to the argument needs applying in both places.
+yet replace it, so there are currently **two** Rabin soundness proofs in the repo. Rebasing the
+GHASH one onto `irreducible_of_rabin` is a named follow-up; until then, a fix to the argument
+needs applying in both places. Note this is about the *GHASH* development specifically —
+`BF64` does use the general pipeline, via the generated `Binary/BF64/BaseCertificate.lean`.
 
 Concrete instances live next to their base field:
 [`KoalaBear/Ext4.lean`](../../CompPoly/Fields/KoalaBear/Ext4.lean) (`X^4 - 3`),
@@ -74,6 +77,25 @@ and [`KoalaBear/Ext6.lean`](../../CompPoly/Fields/KoalaBear/Ext6.lean) (`X^6 + X
 *composite*-degree general modulus, with
 [`Ext6/SexticIrreducible.lean`](../../CompPoly/Fields/KoalaBear/Ext6/SexticIrreducible.lean) and
 [`Ext6/SexticCertData.lean`](../../CompPoly/Fields/KoalaBear/Ext6/SexticCertData.lean)).
+
+### A characteristic-2 consumer
+
+[`Binary/BF64/Ext3.lean`](../../CompPoly/Fields/Binary/BF64/Ext3.lean) adjoins a root of
+`y^3 + y + 1` over `GF(2^64)`, giving `GF(2^192)`. It is the framework's first and so far only
+characteristic-2 instance, and it uses the *general* `ExtensionParams` path rather than
+`BinomialParams`: over a char-2 field `X^3 - W = X^3 + W`, and the binomial criterion needs
+`d ∣ q - 1`, which fails for `d = 3` and `q = 2^64` (`3 ∤ 2^64 - 1`). So `Ext P` is instantiated
+directly, and `Ext ext3Params` is definitionally `Vector BF64 3`.
+
+Two things about it are worth knowing when reading the rest of this page:
+
+- **The base field is not `ZMod p`.** `BF64` is a `BitVec 64` carrier with carry-less
+  multiplication, so the performance figures below — all measured over `ZMod` — do not
+  characterise it.
+- **Irreducibility needs no certificate.** A cubic is irreducible exactly when it has no root,
+  and a root of `y^3 + y + 1` would satisfy `a^7 = 1`; `gcd(7, 2^64 - 1) = 1` forces `a = 1`,
+  which is not a root. That is a short direct argument, not the Rabin pipeline. The *base*
+  modulus of `BF64` — the degree-64 one over `GF(2)` — does use the certificate pipeline.
 
 [`Ext6/GaloisField.lean`](../../CompPoly/Fields/KoalaBear/Ext6/GaloisField.lean) is a separate
 opt-in module identifying `Ext6` with Mathlib's abstract `GaloisField KoalaBear.fieldSize 6`, so
@@ -219,7 +241,7 @@ That is about 60 lines.
 1. Pick a monic irreducible `f` (confirm with `scripts/gen_rabin_certificate.py`, which
    exits nonzero if `f` is reducible).
 2. Generate the certificate module:
-   `python3 scripts/gen_rabin_certificate.py --p <p> --f <coeffs> --lean <path> --namespace <NS>`.
+   `python3 scripts/gen_rabin_certificate.py --p <p> --f=<coeffs> --lean <path> --namespace <NS>`.
 3. Write the irreducibility wrapper: `toPoly p fL = f`, `natDegree`, `f ≠ 0`, then the
    chain/Bézout `rfl` checks and the assembly through
    `irreducible_of_rabin_prime_degree_of_card` (prime `d`, see

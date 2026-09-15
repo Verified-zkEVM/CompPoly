@@ -40,5 +40,7 @@ namespace Mersenne31.Fast
 #guard toNat ((37 : Field) / 37) = 1
 #guard toField ((37 : Field)⁻¹) = ((37 : Mersenne31.Field)⁻¹)
 #guard toField ((37 : Field) ^ (-3 : Int)) = ((37 : Mersenne31.Field) ^ (-3 : Int))
+#guard ringEquiv ((123 : Field) + 456) = ((123 : Mersenne31.Field) + 456)
+#guard ringEquiv ((123 : Field) * 456) = ((123 : Mersenne31.Field) * 456)
 
 end Mersenne31.Fast

@@ -43,6 +43,8 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - ✅ `algebra`, `module`: Algebra and module structures
    - ✅ `degrees`; ✅ `eval₂Hom`: Degree utilities and evaluation homomorphisms
    - ✅ `finSuccEquiv`: Variable manipulation equivalences (for `CMvPolynomial`)
+   - ✅ `partialEvalFirst`: Partial evaluation fixing the first variable, with its
+     evaluation and per-variable degree-bound lemmas
    - ✅ `isEmptyRingEquiv` for `CMvPolynomial 0 R`
    - ✅ `smulZeroClass`: Scalar multiplication with zero behavior
    - ✅ `sumToIter`: Iteration utility with reconstruction/API lemmas
@@ -87,6 +89,7 @@ CompPoly aims to be the premier formally verified library for computable polynom
            `Polynomial.irreducible_of_rabin` so the two soundness proofs do not need
            parallel maintenance
          - 64-bit-radix Montgomery layer, so `Hachi` gets a `FastField` base
+   - ✅ Polynomial-basis `GF(2^64)` and its degree-3 extension `GF(2^192)` (`Fields/Binary/BF64/`), a flat quotient by an irreducible degree-64 pentanomial rather than an iterated quadratic tower
    - ✅ Implement a specialized Bivariate polynomial type, e.g. as `CPolynomial (CPolynomial R)` with specialized polynomial operations (that can then be optimized)
 
 **Success Criteria**: Zero `sorry`s in core operations, all ring structures complete, clean build with no warnings, reasonable proof ergonomics.
@@ -107,6 +110,9 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - ✅ Eight-limb Montgomery carrier with CIOS multiplication for moduli below
      `2^255` (`Montgomery/Native64x8*.lean`, `Mont64x8Field`), instantiated by
      `BN254/Fast.lean`, `BLS12_381/Fast.lean`, and `BLS12_377/Fast.lean`
+   - ✅ Single-word `UInt64` carriers for 64-bit and 31-bit primes outside the
+     Montgomery bounds (`Goldilocks/Fast.lean`, `Mersenne31/Fast.lean`), reducing
+     via the modulus identity rather than Montgomery residues
    - ✅ Checked binary-GCD inversion for the eight-limb fields
      (`Montgomery/Native64x8Inv.lean`, [eprint 2020/972](https://eprint.iacr.org/2020/972)),
      benchmarked against `ZMod` extended Euclid and Fermat in `fields-mont64x8-*-inv`
@@ -173,10 +179,10 @@ CompPoly aims to be the premier formally verified library for computable polynom
      `decode_none_farness`, which reads decoder refusal as a farness certificate
    - ✅ Implement Guruswami-Sudan list-decoding algorithm
      (`Bivariate/GuruswamiSudan/`), following the interpolation-and-root-finding
-     decomposition of [GS99]: a backend-parametric `Core` / `Context` with dense
-     and Lee-O'Sullivan ([LOS06]) interpolation and Roth-Ruckenstein ([RR00]) and
-     Alekhnovich ([Ale05]) root search, instantiated in `Implementations` and
-     `Executable`
+     decomposition of [GS99]: a backend-parametric `Core` / `Context` with dense,
+     Lee-O'Sullivan ([LOS06]), approximant-basis (PM-Basis), and hybrid
+     interpolation, plus Roth-Ruckenstein ([RR00]) and Alekhnovich ([Ale05]) root
+     search, instantiated in `Implementations` and `Executable`
    - ✅ Proofs of correctness: `gsCore_sound`, `gsCore_complete_of_interpolate`,
      and `gsCore_complete_of_roots_all_valid_witnesses` in `CoreCorrectness.lean`,
      stated against the context contracts so they hold for every backend
@@ -192,7 +198,12 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - ✅ Smooth multiplicative-subgroup refinement splitting for finite fields whose
      multiplicative group admits a smooth schedule ([MOV92],
      `Roots/SmoothSubgroup/`), benchmarked as `univariate-roots-finite-field-*`
-   - 🔄 Splitting strategies for fields with no smooth refinement schedule
+   - ✅ Shoup-style small-characteristic trace splitting ([vzGS92],
+     `Roots/Shoup/`) and bounded Las Vegas Cantor–Zassenhaus (`Roots/LasVegas/`,
+     odd-char and char-2 trace branches with probability proofs) for fields
+     without a smooth refinement schedule
+   - 🔄 Named high-width binary-tower `SmallPrimeTraceContext` instances (32/64)
+     and optional GF(2^{48})/GF(2^{72}) carriers for production char-2 benches
 
 10. **Computable linear algebra**
     - ✅ Dense row-major matrices with row operations, RREF shape and semantics, and
@@ -205,6 +216,11 @@ CompPoly aims to be the premier formally verified library for computable polynom
       `LinearAlgebra/PolynomialMatrix/`). The fast variants are proved extensionally
       equal to the direct ones in `MuldersStorjohannCorrectness/Fast.lean`, so every
       correctness result transfers.
+    - ✅ Order-basis (approximant) layer over polynomial matrices
+      (`PolynomialMatrix/Approximant/`): modular key equations, the divide-and-conquer
+      PM-Basis recursion with X-adic soundness and kernel-leaf completeness, and
+      partial linearization, alongside supporting row selection, minimal weak-Popov
+      forms, and Strassen multiplication used by the recursion.
 
 **Success Criteria**: notable speedup for large polynomial operations, verified correctness, benchmarks demonstrating competitive performance with industry-standard implementations.
 

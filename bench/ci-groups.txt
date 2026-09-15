@@ -1,0 +1,58 @@
+# Curated benchmark group set, with two consumers:
+#
+#   * the correctness gate in .github/workflows/lean_action_ci.yml, which runs
+#     `CompPolyBench --validate-only` over these groups on every PR;
+#   * the default selection of .github/workflows/benchmarks.yml, the on-demand
+#     timing workflow.
+#
+# Deliberately a subset. `lake exe CompPolyBench --list` shows every registered
+# group; a new group is covered here only once added below, and an unknown key
+# fails the run, so a renamed group is caught rather than silently dropped.
+#
+# Excluded on purpose are the groups whose single iteration costs seconds
+# (univariate-batch-large-*, univariate-mod-by-monic-medium-*). Validating this
+# subset takes ~34s against ~138s for every registered group; widen it if that
+# trade changes.
+#
+# One key per line. Blank lines and `#` comments are ignored.
+harness-floor
+harness-canary
+univariate-dense-koalabear
+univariate-dense-babybear
+univariate-sparse-koalabear
+univariate-monic-remainder-small-koalabear
+univariate-dense-goldilocks
+univariate-dense-bn254
+univariate-dense-bls12-381
+univariate-dense-bls12-377
+univariate-batch-small-koalabear
+univariate-many-one-point-koalabear
+univariate-mul-koalabear
+univariate-mul-babybear
+univariate-low-product-koalabear
+univariate-roots-finite-field-koalabear
+multivariate-dense-koalabear
+multivariate-sparse-koalabear
+multilinear-coeff-koalabear
+multilinear-hypercube-koalabear
+multilinear-many-mle-koalabear
+bivariate-full-koalabear
+bivariate-divlinear-koalabear-y32
+guruswami-sudan-interp-small-koalabear
+guruswami-sudan-root-koalabear
+guruswami-sudan-core-small-koalabear
+guruswami-sudan-filtered-core-small-koalabear
+additive-ntt-btf3-l2-r2
+additive-ntt-btf3-l4-r2
+additive-ntt-btf4-l7-r2
+fields-tower-bt128-mul
+fields-tower-bt128-inv
+fields-extension-koalabear-ext4-mul
+fields-extension-koalabear-ext4-inv
+fields-extension-babybear-ext4-mul
+fields-extension-babybear-ext4-inv
+fields-mont64x8-bn254-inv
+fields-mont64x8-bls12-381-inv
+fields-mont64x8-bls12-377-inv
+fields-goldilocks-mul
+fields-goldilocks-inv

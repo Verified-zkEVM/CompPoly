@@ -174,6 +174,7 @@ algebra over `BTField k`.
 -/
 noncomputable instance : AlgebraTower (BTField) where
   algebraMap := towerAlgebraMap
+  algebraMap_self' := towerAlgebraMap_id
   commutes' := by
     intro i j h r x
     exact CommMonoid.mul_comm ((towerAlgebraMap i j h) r) x

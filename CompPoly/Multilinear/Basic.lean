@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Chung Thai Nguyen
+Authors: Quang Dao, Chung Thai Nguyen, Aristotle (Harmonic), Elias Judin
 -/
 module
 
@@ -524,6 +524,18 @@ def eval₂Mle (p : CMlPolynomialEval R n) (f : R →+* S) (x : Vector S n) : S 
 def eval (p : CMlPolynomialEval R n) (x : Vector R n) : R :=
   Vector.dotProduct p (lagrangeBasis x)
 
+/-- Evaluation commutes with scalar multiplication of a hypercube table. -/
+theorem eval_smul (a : R) (p : CMlPolynomialEval R n) (x : Vector R n) :
+    eval (a • p) x = a * eval p x := by
+  unfold eval
+  rw [Vector.dotProduct_eq_root_dotProduct, Vector.dotProduct_eq_root_dotProduct]
+  simp only [_root_.dotProduct, Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro i _
+  rw [Vector.get_eq_getElem (a • p) i, Vector.get_eq_getElem p i,
+    Vector.getElem_smul]
+  simp only [smul_eq_mul, mul_assoc]
+
 /-- Evaluate a `CMlPolynomialEval` at a point using a ring homomorphism -/
 def eval₂ (p : CMlPolynomialEval R n) (f : R →+* S) (x : Vector S n) : S := eval (map f p) x
 
@@ -583,6 +595,45 @@ theorem eval_mle_eq_eval (p : CMlPolynomialEval R n) (x : Vector R n) :
       · exact ih _ _
       · simp only [eval]
         exact eval_mle_step_dot_product p x
+
+/-- The multilinear equality kernel is the product of its coordinatewise affine factors. -/
+theorem eqTilde_eq_prod (w x : Vector R n) :
+    eqTilde w x = ∏ i : Fin n, (w[i] * x[i] + (1 - w[i]) * (1 - x[i])) := by
+  rw [eqTilde, ← eval_mle_eq_eval]
+  induction n with
+  | zero => simp [evalMle, evalMleValues]
+  | succ n ih =>
+      rw [evalMle_succ]
+      have hstep : evalMleLayer (lagrangeBasis w) x.head =
+          (w.head * x.head + (1 - w.head) * (1 - x.head)) • lagrangeBasis w.tail := by
+        apply Vector.ext
+        intro j hj
+        rw [← Vector.get_eq_getElem (evalMleLayer (lagrangeBasis w) x.head) ⟨j, hj⟩]
+        rw [← Vector.get_eq_getElem
+          ((w.head * x.head + (1 - w.head) * (1 - x.head)) • lagrangeBasis w.tail)
+          ⟨j, hj⟩]
+        rw [evalMleLayer_get, lagrange_basis_even, lagrange_basis_odd]
+        rw [Vector.get_eq_getElem
+          ((w.head * x.head + (1 - w.head) * (1 - x.head)) • lagrangeBasis w.tail)
+          ⟨j, hj⟩]
+        rw [Vector.getElem_smul]
+        simp only [smul_eq_mul]
+        change (1 - x.head) * ((1 - w.head) * (lagrangeBasis w.tail).get ⟨j, hj⟩) +
+            x.head * (w.head * (lagrangeBasis w.tail).get ⟨j, hj⟩) =
+          (w.head * x.head + (1 - w.head) * (1 - x.head)) *
+            (lagrangeBasis w.tail).get ⟨j, hj⟩
+        ring
+      rw [hstep, eval_mle_eq_eval, eval_smul, ← eval_mle_eq_eval, ih,
+        Fin.prod_univ_succ]
+      congr 1
+      exact Finset.prod_congr rfl fun i _ => by simp [Nat.add_comm]
+
+/-- The equality kernel factors across appended coordinate blocks. -/
+theorem eqTilde_append {m : ℕ} (w₁ x₁ : Vector R n) (w₂ x₂ : Vector R m) :
+    eqTilde (w₁ ++ w₂) (x₁ ++ x₂) = eqTilde w₁ x₁ * eqTilde w₂ x₂ := by
+  simp only [eqTilde_eq_prod]
+  rw [Fin.prod_univ_add]
+  congr 1 <;> exact Finset.prod_congr rfl fun i _ => by simp
 
 /-- Multilinear-extension interpolation through a ring homomorphism agrees with the
 dot-product evaluator. -/
