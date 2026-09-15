@@ -24,6 +24,13 @@ The decomposition and linearity proofs use the existing algebraic expansion lemm
 These successor equivalences can be passed to `AlgebraTower.natCoordinatesOfLE` from
 `CompPoly.Data.RingTheory.AlgebraTower.Coordinates` to obtain coordinates between any ordered
 pair of levels.
+
+The tower and constant-first successor expansion are described in [DP23], §2.3.
+The paper's generator `X_k` corresponds to `Z (k + 1)` here.
+
+## References
+
+* [Diamond, B. E. and Posen, J., *Succinct arguments over towers of binary fields*][DP23]
 -/
 
 public section
