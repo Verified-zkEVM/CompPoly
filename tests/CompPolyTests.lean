@@ -38,6 +38,7 @@ public import CompPolyTests.Fields.Binary.Tower.Fast
 public import CompPolyTests.Fields.Binary.Tower.TensorAlgebra
 public import CompPolyTests.Fields.Extension.Arithmetic
 public import CompPolyTests.Fields.Extension.Binomial
+public import CompPolyTests.Fields.Extension.Presentation
 public import CompPolyTests.Fields.Goldilocks.Fast
 public import CompPolyTests.Fields.KoalaBear.Fast
 public import CompPolyTests.Fields.Mersenne31.Fast

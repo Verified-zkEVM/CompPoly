@@ -17,8 +17,9 @@ GF(2^64)[y] / (y^3 + y + 1),   giving GF(2^192)
 ```
 
 An element is `c0 + c1 * y + c2 * y^2` with each coefficient in `BF64`. The carrier comes
-from the computable extension framework in `CompPoly/Fields/Extension/`, so `Ext ext3Params`
-is definitionally `Vector BF64 3` — the three-limb layout, with no translation needed.
+from the computable extension framework in `CompPoly/Fields/Extension/`. Its coefficient
+vector is `Vector BF64 3`, with the three limbs ordered as `c0`, `c1`, and `c2`.
+`Ext.coeffs` and `Ext.ofVector` give inverse maps between elements and these coordinates.
 
 Irreducibility needs no certificate here, unlike the degree-64 base modulus: a cubic is
 irreducible exactly when it has no root, and a short characteristic-two argument rules one
@@ -164,7 +165,7 @@ instance : Fact (Irreducible ext3Params.poly) :=
 
 /-- `GF(2^192)`, the degree-three extension `GF(2^64)[y] / (y^3 + y + 1)`.
 
-Definitionally `Vector BF64 3`, the three-limb layout `c0 + c1 * y + c2 * y^2`. -/
+Its coefficient vector has three limbs representing `c0 + c1 * y + c2 * y^2` in that order. -/
 abbrev Ext3 : Type := Ext ext3Params
 
 /-- The extension inherits characteristic two from its base field. -/

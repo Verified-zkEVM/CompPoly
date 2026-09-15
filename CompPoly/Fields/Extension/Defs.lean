@@ -17,9 +17,10 @@ no trimming and no size branching. Multiplication expands each product monomial 
 `monomialMod (i + j)`, the reduced form of `Xⁱ⁺ʲ` modulo `f`, obtained by iterating a single
 "multiply by `X`, reduce mod `f`" linear map, `shiftReduce`.
 
-The parameters are bundled into `ExtensionParams` and carried as a *type index* (`Ext P`), so two
-different extensions of the same base field are different types and cannot have their instances
-confused.
+The parameters are bundled into `ExtensionParams` and retained in the structure type `Ext P`.
+Elements of different presentations cannot be interchanged merely because their coefficient
+vectors have the same length. The maps `Ext.coeffs` and `Ext.ofVector` expose the coordinates
+explicitly.
 
 The special case `f = X^d - W` (a binomial extension) is recovered by
 `BinomialParams.toExtensionParams`, whose `lower` vector is `(-W, 0, …, 0)`; see
@@ -34,7 +35,7 @@ establishes `CommRing`; `CompPoly/Fields/Extension/Field.lean` adds inversion an
 
 * `ExtensionParams`: the degree `d`, the lower coefficients of the monic modulus, and the
   base-field cardinality `q`.
-* `Ext P`: the carrier, `Vector F P.d`.
+* `Ext P`: the presentation-indexed carrier with coefficient vectors of length `P.d`.
 * `Ext.shiftReduce`: multiply by `X` and reduce mod `f`; iterated to build `Ext.monomialMod`.
 * `Ext.monomialMod k`: the reduced form of `X^k` modulo `f`.
 * `Ext.mul`: multiplication, expanding product monomials through `monomialMod`.
@@ -64,10 +65,8 @@ The data defining an extension `F[X] / f` by a monic modulus `f` of degree `d`.
 The modulus is stored by its `d` lower coefficients: `f = X^d + ∑_{i < d} lower[i] · X^i`. The
 leading coefficient is an implicit `1`, so `f` is monic by construction.
 
-Irreducibility is deliberately *not* a field here: the commutative-ring structure on `Ext P`
-does not need it, and requiring it would force every consumer of the ring operations to carry
-the proof. `Ext.instField` takes `[Fact (Irreducible P.poly)]` separately, mirroring
-`AdjoinRoot`.
+Irreducibility is not part of these parameters: the quotient is a commutative ring for every
+monic modulus. A field structure additionally requires irreducibility of the modulus.
 -/
 structure ExtensionParams (F : Type*) [Field F] [Fintype F] where
   /-- The degree of the extension. -/
@@ -93,8 +92,7 @@ variable [Fintype F] (P : ExtensionParams F)
 /-- The coefficient of `X^i` in the lower part of the modulus. -/
 @[inline] def lowerCoeff (i : Fin P.d) : F := P.lower[i.val]
 
-/-- `lowerCoeff` extended by zero outside the valid range, for reindexing sums in
-`CompPoly/Fields/Extension/Bridge.lean`. -/
+/-- The lower modulus coefficient at index `k`, or zero when `P.d ≤ k`. -/
 def lowerCoeffNat (k : ℕ) : F := if h : k < P.d then P.lower[k] else 0
 
 @[simp] theorem lowerCoeffNat_coe (i : Fin P.d) : P.lowerCoeffNat (i : ℕ) = P.lowerCoeff i := by
@@ -130,20 +128,29 @@ theorem monic_poly : P.poly.Monic := by
 end ExtensionParams
 
 /--
-The carrier of the extension `F[X] / f`: a dense coefficient vector of length `P.d`,
-little-endian (index `i` is the coefficient of `X^i`).
+The carrier of the quotient by the monic modulus in `P`, with coefficients in ascending
+order of powers. The parameter remains part of the type even when two moduli have equal degree.
 -/
-def Ext {F : Type*} [Field F] [Fintype F] (P : ExtensionParams F) : Type _ := Vector F P.d
+structure Ext {F : Type*} [Field F] [Fintype F] (P : ExtensionParams F) : Type _ where
+  /-- The coefficient of `X^i` is stored at index `i`. -/
+  coeffs : Vector F P.d
 
 namespace Ext
 
 variable [Fintype F] {P : ExtensionParams F}
 
-/-- View an element as its coefficient vector. This is the identity. -/
-@[inline] def coeffs (x : Ext P) : Vector F P.d := x
+/-- Build an element from coefficients in ascending order of powers. -/
+@[inline] def ofVector (v : Vector F P.d) : Ext P := ⟨v⟩
 
-/-- Build an element from a coefficient vector. This is the identity. -/
-@[inline] def ofVector (v : Vector F P.d) : Ext P := v
+/-- Extracting the coefficients of a constructed element returns the input vector. -/
+@[simp] theorem coeffs_ofVector (v : Vector F P.d) : coeffs (ofVector (P := P) v) = v := rfl
+
+/-- Reconstructing an element from its coefficient vector returns that element. -/
+@[simp] theorem ofVector_coeffs (x : Ext P) : ofVector (coeffs x) = x := rfl
+
+/-- The coefficient vector uniquely determines an element. -/
+theorem coeffs_injective : Function.Injective (coeffs (P := P)) :=
+  fun _ _ h => congrArg ofVector h
 
 /-- Build an element from a coefficient function. -/
 @[inline] def ofFn (g : Fin P.d → F) : Ext P := ofVector (Vector.ofFn g)
@@ -152,16 +159,15 @@ variable [Fintype F] {P : ExtensionParams F}
 @[inline] def coeff (x : Ext P) (i : Fin P.d) : F := (coeffs x)[i.val]
 
 @[simp] theorem coeff_ofFn (g : Fin P.d → F) (i : Fin P.d) : coeff (ofFn g) i = g i := by
-  simp [coeff, ofFn, ofVector, coeffs]
+  simp [coeff, ofFn, ofVector]
 
 /-- Two elements with the same coefficients are equal. -/
 @[ext] theorem ext {x y : Ext P} (h : ∀ i, coeff x i = coeff y i) : x = y :=
-  Vector.ext fun i hi => h ⟨i, hi⟩
+  coeffs_injective (Vector.ext fun i hi => h ⟨i, hi⟩)
 
 theorem ofFn_coeff (x : Ext P) : ofFn (coeff x) = x := by ext i; simp
 
-/-- `coeff` extended by zero outside the valid range. Handy for reindexing sums in
-`CompPoly/Fields/Extension/Bridge.lean` without carrying `Fin` bound proofs. -/
+/-- The coefficient at index `i`, or zero when `P.d ≤ i`. -/
 def coeffNat (x : Ext P) (i : ℕ) : F := if h : i < P.d then coeff x ⟨i, h⟩ else 0
 
 @[simp] theorem coeffNat_coe (x : Ext P) (i : Fin P.d) : coeffNat x (i : ℕ) = coeff x i := by
@@ -279,10 +285,19 @@ instance : Pow (Ext P) ℕ := ⟨fun x n => npowBinRec n x⟩
 instance : NatCast (Ext P) := ⟨fun n => ofFn fun i => if (i : ℕ) = 0 then (n : F) else 0⟩
 instance : IntCast (Ext P) := ⟨fun n => ofFn fun i => if (i : ℕ) = 0 then (n : F) else 0⟩
 
-instance [DecidableEq F] : DecidableEq (Ext P) :=
-  inferInstanceAs (DecidableEq (Vector F P.d))
-instance [BEq F] : BEq (Ext P) := inferInstanceAs (BEq (Vector F P.d))
-instance [Repr F] : Repr (Ext P) := inferInstanceAs (Repr (Vector F P.d))
+instance [DecidableEq F] : DecidableEq (Ext P) := fun x y =>
+  decidable_of_iff (x.coeffs = y.coeffs) coeffs_injective.eq_iff
+
+instance [BEq F] : BEq (Ext P) := ⟨fun x y => x.coeffs == y.coeffs⟩
+
+instance [BEq F] [LawfulBEq F] : LawfulBEq (Ext P) where
+  eq_of_beq {x y} h := by
+    exact coeffs_injective (eq_of_beq h)
+  rfl {x} := by
+    change (x.coeffs == x.coeffs) = true
+    exact BEq.rfl
+
+instance [Repr F] : Repr (Ext P) := ⟨fun x prec => reprPrec x.coeffs prec⟩
 instance : Inhabited (Ext P) := ⟨0⟩
 
 /-! ### Coefficients of the operations -/
@@ -348,8 +363,8 @@ identifies the two spellings of the defining polynomial.
 -/
 
 /--
-The data defining a binomial extension `F[X] / (X^d - W)`. A thin front-end for the special
-case `ExtensionParams` with `lower = (-W, 0, …, 0)`; see `BinomialParams.toExtensionParams`.
+Parameters for the quotient `F[X] / (X^d - W)`: the degree, constant `W`, and cardinality
+of the base field. The modulus has lower coefficients `(-W, 0, …, 0)`.
 -/
 structure BinomialParams (F : Type*) [Field F] [Fintype F] where
   /-- The degree of the extension. -/
