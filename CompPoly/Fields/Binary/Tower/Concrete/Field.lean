@@ -62,6 +62,30 @@ theorem concrete_mul_eq
       rw [add_comm (b:=a₁ * b₁), ←add_assoc, ←add_assoc, add_self_cancel, zero_add]
   · rfl
 
+/-- Splitting recursive multiplication gives the high and low coefficients of the quadratic
+product. -/
+private lemma split_concrete_mul
+    (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1)) (a b : ConcreteBTField k) :
+    let a₁ := (split h_k a).1
+    let a₀ := (split h_k a).2
+    let b₁ := (split h_k b).1
+    let b₀ := (split h_k b).2
+    split h_k (concrete_mul a b) =
+      (concrete_mul a₀ b₁ + concrete_mul b₀ a₁ +
+        concrete_mul (concrete_mul a₁ b₁) (Z (k - 1)),
+       concrete_mul a₀ b₀ + concrete_mul a₁ b₁) := by
+  dsimp only
+  rw [concrete_mul_eq prevBTFieldProps a b
+    (a₁ := (split h_k a).1) (a₀ := (split h_k a).2)
+    (b₁ := (split h_k b).1) (b₀ := (split h_k b).2) (h_a := rfl) (h_b := rfl)]
+  exact split_join_eq_split h_k _ _
+
+/-- Splitting a sum adds its high halves and its low halves separately. -/
+private lemma split_add (a b : ConcreteBTField k) :
+    split h_k (a + b) =
+      ((split h_k a).1 + (split h_k b).1, (split h_k a).2 + (split h_k b).2) :=
+  split_sum_eq_sum_split h_k a b _ _ _ _ rfl rfl
+
 lemma concrete_zero_mul
     (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
   (a : ConcreteBTField k) : concrete_mul (zero (k:=k)) a = zero (k:=k) := by
@@ -231,121 +255,29 @@ lemma concrete_mul_comm
     rw [add_comm (a:= a₀ * b₁) (b:= b₀ * a₁)]
     simp only [and_self]
 
+/-- The recursive multiplication is associative at a positive level whenever the predecessor
+level satisfies its field laws. -/
 lemma concrete_mul_assoc
     {h_k : k > 0} (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
   (a b c : ConcreteBTField k) :
   concrete_mul (concrete_mul a b) c = concrete_mul a (concrete_mul b c) := by
   let : Field (ConcreteBTField (k - 1)) := mkFieldInstance prevBTFieldProps
-  have hmul : ∀ (a b : ConcreteBTField (k - 1)), concrete_mul a b = a * b := fun a b => rfl
-  by_cases h_k_zero : k = 0
-  · linarith
-  · -- Inductive case : k > 0
-    -- Approach : utilize concrete_mul_eq of level (k - 1)
-    -- ⊢ concrete_mul (concrete_mul a b) c = concrete_mul a (concrete_mul b c)
-    let p1 := split h_k a
-    let p2 := split h_k b
-    let p3 := split h_k c
-    let a₁ := p1.fst
-    let a₀ := p1.snd
-    let b₁ := p2.fst
-    let b₀ := p2.snd
-    let c₁ := p3.fst
-    let c₀ := p3.snd
-    have h_split_a : split h_k a = (a₁, a₀) := by rfl
-    have h_split_b : split h_k b = (b₁, b₀) := by rfl
-    have h_split_c : split h_k c = (c₁, c₀) := by rfl
-    have h_a₁_a₀ : a = 《 a₁, a₀ 》 := by exact (join_of_split h_k a a₁ a₀) h_split_a
-    have h_b₁_b₀ : b = 《 b₁, b₀ 》 := by exact (join_of_split h_k b b₁ b₀) h_split_b
-    have h_c₁_c₀ : c = 《 c₁, c₀ 》 := by exact (join_of_split h_k c c₁ c₀) h_split_c
-    -- ⊢ concrete_mul (concrete_mul a b) c = concrete_mul a (concrete_mul b c)
-    have a_mul_b_eq := concrete_mul_eq prevBTFieldProps (h_k:=h_k) (a:=a) (b:=b) (a₁:=a₁)
-      (a₀:=a₀) (b₁:=b₁) (b₀:=b₀) (h_a:=h_split_a) (h_b:=h_split_b)
-    have b_mul_c_eq := concrete_mul_eq prevBTFieldProps (h_k:=h_k) (a:=b) (b:=c) (a₁:=b₁)
-      (a₀:=b₀) (b₁:=c₁) (b₀:=c₀) (h_a:=h_split_b) (h_b:=h_split_c)
-    set ab₁ := concrete_mul a₀ b₁ + concrete_mul b₀ a₁
- + concrete_mul (concrete_mul a₁ b₁) (Z (k - 1))
-    set ab₀ := concrete_mul a₀ b₀ + concrete_mul a₁ b₁
-    have h_split_a_mul_b : split h_k (concrete_mul a b) = (ab₁, ab₀) := by
-      exact (split_of_join h_k (concrete_mul a b) ab₁ ab₀ a_mul_b_eq).symm
-    set bc₁ := concrete_mul b₀ c₁ + concrete_mul c₀ b₁
- + concrete_mul (concrete_mul b₁ c₁) (Z (k - 1))
-    set bc₀ := concrete_mul b₀ c₀ + concrete_mul b₁ c₁
-    have h_split_b_mul_c : split h_k (concrete_mul b c) = (bc₁, bc₀) := by
-      exact (split_of_join h_k (concrete_mul b c) bc₁ bc₀ b_mul_c_eq).symm
+  have hmul : ∀ (x y : ConcreteBTField (k - 1)), concrete_mul x y = x * y := fun _ _ => rfl
+  apply (eq_iff_split_eq h_k _ _).mpr
+  simp only [split_concrete_mul prevBTFieldProps, hmul, Prod.mk.injEq]
+  constructor <;> ring
 
-    set ab := concrete_mul a b
-    set bc := concrete_mul b c
-    -- rw [a_mul_b_eq, b_mul_c_eq]
-    -- ⊢ concrete_mul ab c = concrete_mul a bc
-    have a_mul_bc_eq := concrete_mul_eq prevBTFieldProps (h_k:=h_k) (a:=a) (b:=bc) (a₁:=a₁)
-      (a₀:=a₀) (b₁:=bc₁) (b₀:=bc₀) (h_a:=h_split_a) (h_b:=h_split_b_mul_c.symm)
-    have ab_mul_c_eq := concrete_mul_eq prevBTFieldProps (h_k:=h_k) (a:=ab) (b:=c) (a₁:=ab₁)
-      (a₀:=ab₀) (b₁:=c₁) (b₀:=c₀) (h_a:=h_split_a_mul_b.symm) (h_b:=h_split_c)
-    set a_bc₁ := concrete_mul a₀ bc₁ + concrete_mul bc₀ a₁
- + concrete_mul (concrete_mul a₁ bc₁) (Z (k - 1))
-    set a_bc₀ := concrete_mul a₀ bc₀ + concrete_mul a₁ bc₁
-    have h_split_a_bc : split h_k (concrete_mul a bc) = (a_bc₁, a_bc₀) := by
-      exact (split_of_join h_k (concrete_mul a bc) a_bc₁ a_bc₀ a_mul_bc_eq).symm
-    set ab_c₁ := concrete_mul ab₀ c₁ + concrete_mul c₀ ab₁
- + concrete_mul (concrete_mul ab₁ c₁) (Z (k - 1))
-    set ab_c₀ := concrete_mul ab₀ c₀ + concrete_mul ab₁ c₁
-    have h_split_ab_c : split h_k (concrete_mul ab c) = (ab_c₁, ab_c₀) := by
-      exact (split_of_join h_k (concrete_mul ab c) ab_c₁ ab_c₀ ab_mul_c_eq).symm
-
-    rw [a_mul_bc_eq, ab_mul_c_eq] -- convert concrete mul to join
-    rw [join_eq_join_iff]
-    -- ⊢ ab_c₁ = a_bc₁ ∧ ab_c₀ = a_bc₀
-    unfold a_bc₁ ab_c₁ ab_c₀ a_bc₀ ab₀ ab₁ bc₀ bc₁ -- unfold all
-    simp_rw [hmul]
-    ring_nf
-    simp only [and_self]
-
+/-- At a positive level, recursive multiplication distributes over addition in its second
+argument whenever the predecessor level satisfies its field laws. -/
 lemma concrete_mul_left_distrib
     {h_k : k > 0} (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
   (a b c : ConcreteBTField k) :
     concrete_mul a (b + c) = concrete_mul a b + concrete_mul a c := by
   let : Field (ConcreteBTField (k - 1)) := mkFieldInstance prevBTFieldProps
-  have hmul : ∀ (a b : ConcreteBTField (k - 1)), concrete_mul a b = a * b := fun a b => rfl
-  by_cases h_k_zero : k = 0
-  · linarith
-  · -- Inductive case : k > 0
-    -- Approach : utilize concrete_mul_eq of level (k - 1)
-    -- ⊢ concrete_mul (concrete_mul a b) c = concrete_mul a (concrete_mul b c)
-    let p1 := split h_k a
-    let p2 := split h_k b
-    let p3 := split h_k c
-    let a₁ := p1.fst
-    let a₀ := p1.snd
-    let b₁ := p2.fst
-    let b₀ := p2.snd
-    let c₁ := p3.fst
-    let c₀ := p3.snd
-    have h_split_a : split h_k a = (a₁, a₀) := by rfl
-    have h_split_b : split h_k b = (b₁, b₀) := by rfl
-    have h_split_c : split h_k c = (c₁, c₀) := by rfl
-    have h_a₁_a₀ : a = 《 a₁, a₀ 》 := by exact (join_of_split h_k a a₁ a₀) h_split_a
-    have h_b₁_b₀ : b = 《 b₁, b₀ 》 := by exact (join_of_split h_k b b₁ b₀) h_split_b
-    have h_c₁_c₀ : c = 《 c₁, c₀ 》 := by exact (join_of_split h_k c c₁ c₀) h_split_c
-    have h_split_b_add_c : split h_k (b + c) = (b₁ + c₁, b₀ + c₀) := by
-      exact split_sum_eq_sum_split h_k (x₀:=b) (x₁:=c) (hi₀:=b₁) (lo₀:=b₀)
-        (hi₁:=c₁) (lo₁:=c₀) (h_split_x₀:=h_split_b) (h_split_x₁:=h_split_c)
-    -- ⊢ concrete_mul a (b + c) = concrete_mul a b + concrete_mul a c
-    conv =>
-      lhs
-      -- rewrite a * (b + c)
-      rw [concrete_mul_eq prevBTFieldProps (h_k:=h_k) (a:=a) (b:=b + c) (a₁:=a₁)
-        (a₀:=a₀) (b₁:=b₁ + c₁) (b₀:=b₀ + c₀) (h_a:=h_split_a) (h_b:=h_split_b_add_c.symm)]
-    conv =>
-      rhs
-      rw [concrete_mul_eq prevBTFieldProps (h_k:=h_k) (a:=a) (b:=b) (a₁:=a₁)
-        (a₀:=a₀) (b₁:=b₁) (b₀:=b₀) (h_a:=h_split_a) (h_b:=h_split_b)]
-      rw [concrete_mul_eq prevBTFieldProps (h_k:=h_k) (a:=a) (b:=c) (a₁:=a₁)
-        (a₀:=a₀) (b₁:=c₁) (b₀:=c₀) (h_a:=h_split_a) (h_b:=h_split_c)]
-    simp_rw [hmul]
-    rw [join_add_join]
-    rw [join_eq_join_iff]
-    ring_nf
-    simp only [and_self]
+  have hmul : ∀ (x y : ConcreteBTField (k - 1)), concrete_mul x y = x * y := fun _ _ => rfl
+  apply (eq_iff_split_eq h_k _ _).mpr
+  simp only [split_concrete_mul prevBTFieldProps, split_add, hmul, Prod.mk.injEq]
+  constructor <;> ring
 
 lemma concrete_mul_right_distrib
     {h_k : k > 0} (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1))
