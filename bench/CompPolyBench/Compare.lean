@@ -51,7 +51,8 @@ def runCompare (options : CompareOptions) : IO UInt32 := do
           IO.println s!"wrote {path}"
         for row in report.rows do
           if row.verdict.fatal then
-            IO.eprintln s!"ERROR: {row.key.groupKey} / {renderRowLabel row.key}: {row.verdict.label}"
+            IO.eprintln <|
+              s!"ERROR: {row.key.groupKey} / {renderRowLabel row.key}: {row.verdict.label}"
         pure (if report.failed then compareExitFailed else 0)
   catch e =>
     IO.eprintln s!"{e}"
