@@ -53,14 +53,14 @@ deriving Inhabited
 def replicationThreshold : Nat := 5
 
 /-- Sample at a fractional position of a sorted array, by nearest rank. -/
-private def quantile (sorted : Array Nat) (numerator denominator : Nat) : Nat :=
+def quantile (sorted : Array Nat) (numerator denominator : Nat) : Nat :=
   if sorted.isEmpty then 0
   else
     let idx := min (sorted.size - 1) (sorted.size * numerator / denominator)
     sorted.getD idx 0
 
 /-- Median of a sorted array; the mean of the middle pair when the size is even. -/
-private def medianOfSorted (sorted : Array Nat) : Nat :=
+def medianOfSorted (sorted : Array Nat) : Nat :=
   let n := sorted.size
   if n = 0 then 0
   else if n % 2 = 1 then sorted.getD (n / 2) 0
