@@ -11,14 +11,17 @@ public import Mathlib.RingTheory.AdjoinRoot
 /-!
 # The computable `GF(2^64)` carrier
 
-An element is a 64-bit word whose bit `i` is the coefficient of `x^i`. Addition is `xor`,
+An element stores a 64-bit word whose bit `i` is the coefficient of `x^i`. Addition is `xor`,
 multiplication is a carry-less product followed by `reduce`, and inversion is the
 Itoh-Tsujii addition chain. The carrier maps into `AdjoinRoot basePoly` through
 `BF64.toQuot`, so Mathlib's field theory applies while the operations stay executable.
+The nominal carrier separates this polynomial presentation from raw words and binary towers.
+`ofBitVec` and `toBitVec` expose its coordinates; field numerals use characteristic-two casts.
 
 ## Main definitions
 
-* `BF64` — the carrier, `BitVec 64`, with `Add`, `Mul`, `Inv`, `CommRing` and `Field`.
+* `BF64` — the nominal carrier with `Add`, `Mul`, `Inv`, `CommRing` and `Field`.
+* `BF64.ofBitVec`, `BF64.toBitVec` — explicit maps to and from its 64-bit coordinates.
 * `BF64.toQuot` — the bridge into `BF64Quot`.
 * `BF64.powTwoPow` — repeated squaring, `a ^ (2 ^ k)`.
 * `BF64.invItohTsujii` — inversion by the Itoh-Tsujii addition chain.
@@ -49,30 +52,77 @@ multiplications for a full-order exponent and is unusable in the kernel.
 
 open Polynomial BinaryField
 
-/-- `GF(2^64)` in its computable, machine representation: a 64-bit word whose bit `i` is
-the coefficient of `x^i`. -/
-abbrev BF64 : Type := BitVec 64
+/-- An element of `GF(2)[X] / (X^64 + X^4 + X^3 + X + 1)`, stored in a polynomial basis. -/
+structure BF64 where
+  /-- Bit `i` is the coefficient of `X^i`. -/
+  toBitVec : BitVec 64
+  deriving DecidableEq, BEq
 
 namespace BF64
 
-instance : Zero BF64 := ⟨(0 : BitVec 64)⟩
-instance : One BF64 := ⟨(1 : BitVec 64)⟩
+/-- Construct a field element from its polynomial-basis bits. -/
+@[inline] def ofBitVec (a : BitVec 64) : BF64 := ⟨a⟩
 
-/-- Addition in characteristic two is `xor`. -/
-instance : Add BF64 := ⟨fun a b => a ^^^ b⟩
+/-- Reading the coordinates of a constructed element recovers the input word. -/
+@[simp] theorem toBitVec_ofBitVec (a : BitVec 64) : (ofBitVec a).toBitVec = a := rfl
+
+/-- Reconstructing an element from its coordinates recovers that element. -/
+@[simp] theorem ofBitVec_toBitVec (a : BF64) : ofBitVec a.toBitVec = a := rfl
+
+/-- Polynomial-basis bits uniquely determine a field element. -/
+theorem toBitVec_injective : Function.Injective toBitVec := by
+  intro a b h
+  cases a
+  cases b
+  cases h
+  rfl
+
+/-- Elements with equal polynomial-basis coordinates are equal. -/
+@[ext] theorem ext {a b : BF64} (h : a.toBitVec = b.toBitVec) : a = b :=
+  toBitVec_injective h
+
+/-- The equivalence between field elements and their polynomial-basis coordinates. -/
+def equivBitVec : BF64 ≃ BitVec 64 where
+  toFun := toBitVec
+  invFun := ofBitVec
+  left_inv := ofBitVec_toBitVec
+  right_inv := toBitVec_ofBitVec
+
+instance : LawfulBEq BF64 where
+  eq_of_beq {a b} h := toBitVec_injective (eq_of_beq h)
+  rfl {a} := by
+    change (a.toBitVec == a.toBitVec) = true
+    exact BEq.rfl
+
+instance : Repr BF64 := ⟨fun a prec => reprPrec a.toBitVec prec⟩
+
+instance : Zero BF64 := ⟨ofBitVec 0⟩
+instance : One BF64 := ⟨ofBitVec 1⟩
+instance : Inhabited BF64 := ⟨0⟩
+
+/-- Zero has every polynomial-basis coefficient equal to zero. -/
+@[simp] theorem toBitVec_zero : (0 : BF64).toBitVec = 0#64 := rfl
+
+/-- One has only its constant coefficient equal to one. -/
+@[simp] theorem toBitVec_one : (1 : BF64).toBitVec = 1#64 := rfl
+
+/-- Addition in characteristic two is coefficientwise `xor`. -/
+instance : Add BF64 := ⟨fun a b => ofBitVec (a.toBitVec ^^^ b.toBitVec)⟩
 
 /-- Negation is the identity in characteristic two. -/
 instance : Neg BF64 := ⟨fun a => a⟩
 
-instance : Sub BF64 := ⟨fun a b => a ^^^ b⟩
+instance : Sub BF64 := ⟨fun a b => ofBitVec (a.toBitVec ^^^ b.toBitVec)⟩
 
-/-- Multiplication: the carry-less product, reduced modulo the modulus. -/
-instance : Mul BF64 :=
-  ⟨fun a b => reduce (carryLessMul (w := 128) a b)⟩
+/-- Multiply by reducing the carry-less product of the polynomial-basis words. -/
+def mul (a b : BF64) : BF64 :=
+  ofBitVec (reduce (carryLessMul (w := 128) a.toBitVec b.toBitVec))
+
+instance : Mul BF64 := ⟨mul⟩
 
 /-- The polynomial denoted by a carrier value. -/
 noncomputable def toPolyBF64 (a : BF64) : Polynomial (ZMod 2) :=
-  toPoly (a : BitVec 64)
+  toPoly a.toBitVec
 
 /-- The bridge into the quotient. -/
 noncomputable def toQuot (a : BF64) : BF64Quot :=
@@ -81,10 +131,14 @@ noncomputable def toQuot (a : BF64) : BF64Quot :=
 /-! ## Equation lemmas for the operations -/
 
 /-- Addition unfolds to `xor`. -/
-theorem add_def (a b : BF64) : a + b = a ^^^ b := rfl
+theorem add_def (a b : BF64) : a + b = ofBitVec (a.toBitVec ^^^ b.toBitVec) := rfl
 
-/-- Multiplication unfolds to a carry-less product followed by `reduce`. -/
-theorem mul_def (a b : BF64) : a * b = reduce (carryLessMul (w := 128) a b) := rfl
+/-- Multiplication uses the named executable product. -/
+theorem mul_def (a b : BF64) : a * b = mul a b := rfl
+
+/-- The product word is the reduced carry-less product of the input words. -/
+@[simp] theorem toBitVec_mul (a b : BF64) :
+    (a * b).toBitVec = reduce (carryLessMul (w := 128) a.toBitVec b.toBitVec) := rfl
 
 /-! ## The bridge is a ring homomorphism -/
 
@@ -97,7 +151,7 @@ theorem mul_def (a b : BF64) : a * b = reduce (carryLessMul (w := 128) a b) := r
 
 @[simp] theorem toPolyBF64_add (a b : BF64) :
     toPolyBF64 (a + b) = toPolyBF64 a + toPolyBF64 b := by
-  rw [toPolyBF64, toPolyBF64, toPolyBF64, add_def]
+  change toPoly (a.toBitVec ^^^ b.toBitVec) = toPoly a.toBitVec + toPoly b.toBitVec
   exact toPoly_xor _ _
 
 @[simp] theorem toQuot_add (a b : BF64) : toQuot (a + b) = toQuot a + toQuot b := by
@@ -105,10 +159,10 @@ theorem mul_def (a b : BF64) : a * b = reduce (carryLessMul (w := 128) a b) := r
 
 /-- Multiplication agrees with the quotient's, because `reduce` computes the remainder. -/
 @[simp] theorem toQuot_mul (a b : BF64) : toQuot (a * b) = toQuot a * toQuot b := by
-  rw [toQuot, toQuot, toQuot, ← map_mul, toPolyBF64, mul_def, toPoly_reduce,
+  rw [toQuot, toQuot, toQuot, ← map_mul, toPolyBF64, toBitVec_mul, toPoly_reduce,
     toPoly_carryLessMul _ _ (by omega)]
   rw [AdjoinRoot.mk_eq_mk, toPolyBF64, toPolyBF64]
-  exact ⟨-(toPoly a * toPoly b / basePoly), by
+  exact ⟨-(toPoly a.toBitVec * toPoly b.toBitVec / basePoly), by
     rw [EuclideanDomain.mod_eq_sub_mul_div]; ring⟩
 
 /-- Distinct carrier values denote distinct quotient elements.
@@ -117,23 +171,21 @@ A difference of two carrier values has degree below 64, while the modulus has de
 exactly 64, so the modulus can divide it only when it is zero. -/
 theorem toQuot_injective : Function.Injective toQuot := by
   intro a b h
-  have hsub : toPolyBF64 a - toPolyBF64 b = toPoly (a ^^^ b) := by
+  have hsub : toPolyBF64 a - toPolyBF64 b = toPoly (a.toBitVec ^^^ b.toBitVec) := by
     rw [toPoly_xor, toPolyBF64, toPolyBF64]
     exact ZMod2Poly.sub_eq_add _ _
   have hdvd : basePoly ∣ toPolyBF64 a - toPolyBF64 b := AdjoinRoot.mk_eq_mk.mp h
-  have hzero : toPoly (a ^^^ b) = 0 := by
+  have hzero : toPoly (a.toBitVec ^^^ b.toBitVec) = 0 := by
     by_contra hnz
     have hne : toPolyBF64 a - toPolyBF64 b ≠ 0 := by rw [hsub]; exact hnz
     have hle := Polynomial.degree_le_of_dvd hdvd hne
     rw [hsub, basePoly_degree] at hle
-    exact absurd (toPoly_degree_lt_w (w := 64) (by norm_num) (a ^^^ b)) (not_lt.mpr hle)
-  have hxor : (a ^^^ b : BitVec 64) = 0 := by
+    exact absurd (toPoly_degree_lt_w (w := 64) (by norm_num)
+      (a.toBitVec ^^^ b.toBitVec)) (not_lt.mpr hle)
+  have hxor : a.toBitVec ^^^ b.toBitVec = 0 := by
     by_contra hnz
-    exact ((toPoly_ne_zero_iff_ne_zero (a ^^^ b)).mpr hnz) hzero
-  have : a = b := by
-    have := congrArg (fun v => v ^^^ b) hxor
-    simpa [BitVec.xor_assoc] using this
-  exact this
+    exact ((toPoly_ne_zero_iff_ne_zero (a.toBitVec ^^^ b.toBitVec)).mpr hnz) hzero
+  exact toBitVec_injective (BitVec.xor_eq_zero_iff.mp hxor)
 
 /-! ## Algebraic structure
 
@@ -153,18 +205,31 @@ theorem toQuot_inj {a b : BF64} : toQuot a = toQuot b ↔ a = b :=
   ⟨fun h => toQuot_injective h, fun h => h ▸ rfl⟩
 
 /-- Addition is self-cancelling: the field has characteristic two. -/
-theorem add_self (a : BF64) : a + a = 0 := BitVec.xor_self
+theorem add_self (a : BF64) : a + a = 0 := by
+  apply toBitVec_injective
+  exact BitVec.xor_self
 
 /-! ### Scalar and power operations
 
-In characteristic two an integer scalar multiple collapses to a parity test, and the
-natural- and integer-number casts collapse likewise. Defining them in that closed form
-keeps them computable and makes the transport conditions immediate.
+Scalar multiples use the additive recursion. Natural casts use parity, and integer casts
+use the corresponding natural cast and negation. Raw polynomial-basis words enter through
+`ofBitVec`, independently of numeral casting.
 -/
 
 instance : SMul ℕ BF64 := ⟨nsmulRec⟩
 instance : SMul ℤ BF64 := ⟨zsmulRec nsmulRec⟩
-instance : NatCast BF64 := ⟨Nat.unaryCast⟩
+
+/-- Cast a natural number by its parity in characteristic two. -/
+@[inline] def natCast (n : ℕ) : BF64 := if n % 2 = 0 then 0 else 1
+
+instance : NatCast BF64 := ⟨natCast⟩
+
+/-- Casting a successor adds the multiplicative unit. -/
+theorem natCast_succ (n : ℕ) : natCast (n + 1) = natCast n + 1 := by
+  apply toBitVec_injective
+  rcases Nat.mod_two_eq_zero_or_one n with h | h <;>
+    simp [natCast, Nat.add_mod, h, add_def]
+
 instance : IntCast BF64 := ⟨Int.castDef⟩
 instance : Pow BF64 ℕ := ⟨fun a n => npowBinRec n a⟩
 
@@ -231,8 +296,9 @@ theorem toQuot_natCast (n : ℕ) : toQuot (n : BF64) = (n : BF64Quot) := by
   induction n with
   | zero => show toQuot 0 = _; rw [toQuot_zero, Nat.cast_zero]
   | succ k ih =>
-    show toQuot ((k : BF64) + 1) = _
-    rw [toQuot_add, ih, toQuot_one, Nat.cast_succ]
+    change toQuot (natCast k) = _ at ih
+    change toQuot (natCast (k + 1)) = _
+    rw [natCast_succ, toQuot_add, ih, toQuot_one, Nat.cast_succ]
 
 instance : CommRing BF64 where
   left_distrib a b c := toQuot_injective (by simp only [toQuot_mul, toQuot_add, mul_add])
@@ -383,8 +449,8 @@ theorem exists_pair_ne : ∃ x y : BF64, x ≠ y :=
 
 /-- The carrier is in bijection with `Fin (2 ^ 64)`, by its underlying representation. -/
 def equivFin : BF64 ≃ Fin (2 ^ 64) where
-  toFun a := a.toFin
-  invFun i := BitVec.ofFin i
+  toFun a := a.toBitVec.toFin
+  invFun i := ofBitVec (BitVec.ofFin i)
   left_inv _ := rfl
   right_inv _ := rfl
 
