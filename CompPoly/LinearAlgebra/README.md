@@ -1,10 +1,13 @@
-# Computable Linear Algebra
+# Linear Algebra
 
 Executable matrices for [CompPoly](../../README.md), in two independent flavours:
 dense matrices over a field, and row-oriented matrices whose entries are
 univariate polynomials. Both exist to serve the Guruswami-Sudan interpolation
 backends (see [`../../docs/wiki/coding-theory.md`](../../docs/wiki/coding-theory.md)),
 but neither depends on the decoder and both are usable on their own.
+
+`TensorProduct/Basis.lean` contains generic tensor basis theory with explicit
+scalar actions, independently of the executable matrix layers.
 
 ## Types
 
@@ -82,7 +85,39 @@ fused `rowSubScaledShift` update.
 direct definitions transfers to the fast ones. Write proofs against the direct
 version; call the fast one.
 
-## Conventions
+## Tensor product bases (`TensorProduct/`)
+
+`TensorProduct/Basis.lean` provides `Module.Basis.baseChangeRight`: a basis of
+`Left ⊗[K] Right` over `Right` with basis vectors `b i ⊗ₜ[K] 1` and scalars acting
+on the right factor. Its construction uses Mathlib's
+`Algebra.TensorProduct.commRight.toLinearEquiv`. The coordinate formula is
+`baseChangeRight_repr_tmul`; the basis vectors are exposed by
+`baseChangeRight_apply`. Standard `Basis.sum_repr` and `Basis.repr_sum_self`
+give reconstruction and coordinate recovery.
+
+Mathlib provides direct tensor instances for `Algebra`, `Module`, `DistribMulAction`
+and `SMul`, using the left factor. For a right view on equal factors, select all
+four locally:
+
+```lean
+letI rightAlgebra : Algebra L (L ⊗[K] L) := Algebra.TensorProduct.rightAlgebra
+letI : Module L (L ⊗[K] L) := rightAlgebra.toModule
+letI : DistribMulAction L (L ⊗[K] L) := rightAlgebra.toModule.toDistribMulAction
+letI : SMul L (L ⊗[K] L) := rightAlgebra.toSMul
+let bRight := b.baseChangeRight (Right := L)
+```
+
+The module selection allows right-basis projections such as `bRight.repr`.
+The `SMul` selection makes `c • z` act on the right factor, and `DistribMulAction`
+ensures that ordinary laws such as `smul_add` and `mul_smul` use that same action.
+Selecting the algebra alone does not override those direct defaults. No alternative
+global instance is installed by this module or its binary-tower re-export.
+
+This recipe chooses one meaning for scalar notation in its scope. Both coordinate
+functions can coexist after their respective module choices have been fixed;
+the recipe does not provide two simultaneous meanings for `•` on the same carrier.
+
+## Matrix conventions
 
 - Both layers are `Array`-backed and index with plain `Nat`, with out-of-bounds
   reads returning a default rather than requiring a proof at the call site. Shape
