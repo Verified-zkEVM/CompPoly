@@ -50,7 +50,9 @@ def ext4Params : BinomialParams Field where
   W := 3
   two_le := by norm_num
   q := fieldSize
-  card_eq := ZMod.card _
+
+instance : Fact (Nat.card Field = ext4Params.q) :=
+  ⟨by rw [Nat.card_eq_fintype_card]; exact ZMod.card _⟩
 
 @[simp] theorem ext4Params_d : ext4Params.d = 4 := rfl
 @[simp] theorem ext4Params_W : ext4Params.W = 3 := rfl
