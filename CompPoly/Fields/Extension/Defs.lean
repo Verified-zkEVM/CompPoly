@@ -244,13 +244,23 @@ def red (P : ExtensionParams F) : Vector (Ext P) (2 * P.d - 1) :=
     (red P)[k] = monomialMod k := by
   simp only [red, Vector.getElem_ofFn]
 
+/-- A left fold that adds `f i` at each step is `a` plus the sum; the bridge from the loops the
+compiler runs to the `Finset.sum`s the specification is stated with. -/
+theorem _root_.Fin.foldl_add_eq_add_sum {M : Type*} [AddCommMonoid M] {n : ℕ} (f : Fin n → M)
+    (a : M) : Fin.foldl n (fun acc i => acc + f i) a = a + ∑ i, f i := by
+  induction n generalizing a with
+  | zero => simp only [Fin.foldl_zero, Finset.univ_eq_empty, Finset.sum_empty, add_zero]
+  | succ n ih => rw [Fin.foldl_succ, ih, Fin.sum_univ_succ, add_assoc]
+
 /--
 Table-driven multiplication: the compiled implementation of `mul`.
 
 Mathematically identical to `mul`, but the reduced monomials `X^(i+j) mod f` are computed once
-into `red` instead of being re-derived by `monomialMod` for every output coefficient. That drops
-the cost from roughly `O(d^5)` to `O(d^3)`: `mul` evaluates `shiftReduce^[i+j]` once per
-`(m, i, j)` triple, so the same `d`-fold iteration is repeated `d^3` times.
+into `red` instead of being re-derived by `monomialMod` for every output coefficient, and the
+two sums are `Fin.foldl` loops rather than `Finset.sum`, which compiles to list-building
+`Multiset` machinery. The table drops the cost from roughly `O(d^5)` to `O(d^3)`: `mul`
+evaluates `shiftReduce^[i+j]` once per `(m, i, j)` triple, so the same `d`-fold iteration is
+repeated `d^3` times.
 
 `mul` remains the definition everything is proved about; `mul_eq_mulTbl` below swaps this in for
 compilation via `@[csimp]`.
@@ -259,17 +269,16 @@ compilation via `@[csimp]`.
 def mulTbl (x y : Ext P) : Ext P :=
   let tbl := red P
   ofFn fun m =>
-    ∑ i : Fin P.d, ∑ j : Fin P.d,
-      coeff x i * coeff y j *
-        coeff (tbl[(i : ℕ) + (j : ℕ)]'(by
-          have hi := i.isLt; have hj := j.isLt; have hd := P.two_le; omega)) m
+    Fin.foldl P.d (fun acc i =>
+      Fin.foldl P.d (fun acc j =>
+        acc + coeff x i * coeff y j *
+          coeff (tbl[(i : ℕ) + (j : ℕ)]'(by
+            have hi := i.isLt; have hj := j.isLt; have hd := P.two_le; omega)) m) acc) 0
 
 @[csimp] theorem mul_eq_mulTbl : @mul = @mulTbl := by
   funext F _ _ P x y
   refine Ext.ext fun m => ?_
-  simp only [mul, mulTbl, coeff_ofFn]
-  refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_
-  rw [red_getElem]
+  simp only [mul, mulTbl, coeff_ofFn, Fin.foldl_add_eq_add_sum, zero_add, red_getElem]
 
 instance : Mul (Ext P) := ⟨mul⟩
 
