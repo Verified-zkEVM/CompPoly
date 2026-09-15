@@ -50,24 +50,42 @@ theorem multiplication_matches_reference :
       (fun v => reduce (BinaryField.carryLessMul (w := 128) v.1 v.2.1) == v.2.2) = true := by
   decide +kernel
 
+/-! ## Finiteness without runtime enumeration -/
+
+example : Finite _root_.BF64 := inferInstance
+example : Finite Ext3 := inferInstance
+example : Nat.card _root_.BF64 = 2 ^ 64 := nat_card_bf64
+example : Nat.card Ext3 = 2 ^ 192 := nat_card_ext3
+
+example : True := by
+  fail_if_success
+    let _ : Fintype _root_.BF64 := inferInstance
+  fail_if_success
+    let _ : Fintype Ext3 := inferInstance
+  trivial
+
+example [Fintype _root_.BF64] : Fintype.card _root_.BF64 = 2 ^ 64 := card_bf64
+example [Fintype Ext3] : Fintype.card Ext3 = 2 ^ 192 := card_ext3
+
 /-! ## Non-vacuity guards -/
 
-/-- The element `x`, a generator of the multiplicative group, is not zero. -/
-theorem generator_ne_zero : (0x2 : _root_.BF64) ≠ 0 := by decide +kernel
+/-- The polynomial element `X`, encoded by bit one, is not zero. -/
+theorem generator_ne_zero : (ofBitVec (2#64)) ≠ 0 := by decide +kernel
 
-/-- The generator is not one, so it is not a degenerate choice. -/
-theorem generator_ne_one : (0x2 : _root_.BF64) ≠ 1 := by decide +kernel
+/-- The polynomial element `X` is distinct from the constant polynomial one. -/
+theorem generator_ne_one : (ofBitVec (2#64)) ≠ 1 := by decide +kernel
 
 /-- Multiplication by one is the identity on a sample element, so `reduce` is not
 collapsing everything to a constant. -/
 theorem one_mul_sample :
-    ((1 : _root_.BF64) * 0x01090913877ed8ed : _root_.BF64) = 0x01090913877ed8ed := by
+    ((1 : _root_.BF64) * ofBitVec (0x01090913877ed8ed#64)) =
+      ofBitVec (0x01090913877ed8ed#64) := by
   rw [_root_.BF64.mul_def]; decide +kernel
 
 /-- A product that genuinely wraps: the reduction is exercised, not bypassed.
 `x^63 * x = x^64 ≡ x^4 + x^3 + x + 1 = 0x1B`. -/
 theorem reduction_is_exercised :
-    ((0x8000000000000000 : _root_.BF64) * 0x2 : _root_.BF64) = 0x1B := by
+    (ofBitVec (0x8000000000000000#64) * ofBitVec (2#64)) = ofBitVec (0x1B#64) := by
   rw [_root_.BF64.mul_def]; decide +kernel
 
 /-! ## Extension-field vectors
@@ -80,8 +98,8 @@ section Vectors
 
 open CompPoly.Extension
 
-private def limbs (c0 c1 c2 : _root_.BF64) : Ext3 :=
-  Ext.ofFn (fun i => if (i : ℕ) = 0 then c0 else if (i : ℕ) = 1 then c1 else c2)
+private def limbs (c0 c1 c2 : BitVec 64) : Ext3 :=
+  Ext.ofFn (fun i => ofBitVec (if (i : ℕ) = 0 then c0 else if (i : ℕ) = 1 then c1 else c2))
 
 /-- The adjoined root `y`. -/
 private def y : Ext3 := limbs 0 1 0
@@ -104,7 +122,7 @@ private def y : Ext3 := limbs 0 1 0
        == limbs 0x2ad322ebf2f9043b 0x8ac800aa67154c80 0x6d0f76651d3c4d0c
 
 -- Inversion evaluates in both fields.
-#guard (0x01090913877ed8ed : _root_.BF64) * (0x01090913877ed8ed : _root_.BF64)⁻¹ == 1
+#guard ofBitVec (0x01090913877ed8ed#64) * (ofBitVec (0x01090913877ed8ed#64))⁻¹ == 1
 #guard (0 : _root_.BF64)⁻¹ == 0
 #guard y * y⁻¹ == 1
 
