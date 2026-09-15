@@ -53,7 +53,8 @@ executable representation. It exists to state irreducibility and is never evalua
 
 `BF64Quot` is the *quotient* presentation, used for cardinality and as the target of the
 bridge. The computable presentation that arithmetic runs on is `BF64` in
-`CompPoly/Fields/Binary/BF64/Impl.lean`, a `BitVec 64`; the two are related by
+`CompPoly/Fields/Binary/BF64/Impl.lean`, a nominal type storing a `BitVec 64`;
+the two are related by
 `BF64.toQuot`, which `BF64.toQuot_injective` and `BF64.toQuot_surjective` show is a
 bijection.
 
