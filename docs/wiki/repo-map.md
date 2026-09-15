@@ -75,6 +75,8 @@ scripts/              repo utilities and validation helpers
   use `CompPoly/Data/RingTheory/AlgebraTower/Coordinates.lean`. Its executable packing and
   coordinate vectors correspond to the basis in
   `CompPoly/Data/RingTheory/AlgebraTower/Basis.lean`; successor coordinate counts may vary.
+  Both leaves support arbitrary comparable endpoints, with constant-count coordinates also
+  presented on a `Fin` type whose size is a power of the successor count.
 - Adding regression coverage: start in `tests/` and mirror the source namespace when
   possible.
 - Updating benchmark coverage or reports: start in `bench/`.

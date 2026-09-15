@@ -26,8 +26,13 @@ a unit coordinate vector. Both are executable, with no enumeration of the tower 
 The corresponding mathematical basis is constructed in
 `CompPoly.Data.RingTheory.AlgebraTower.Basis`.
 
+For arbitrary endpoints `h : i ≤ j`, `AlgebraTower.natCoordinatesOfLE` and its packing
+and vector companions accept elements of `A j` directly. `AlgebraTower.natCoordinatesConstOfLE`
+also presents constant successor coordinate count `r` as `Fin (r ^ (j - i))`.
+
 The construction uses `LinearEquiv.restrictScalars`, `LinearEquiv.piCongrRight`,
-`LinearEquiv.curry`, and `finProdFinEquiv`.
+`LinearEquiv.curry`, and `finProdFinEquiv`. Endpoint and coordinate-count identifications use
+`LinearEquiv.cast`, `LinearEquiv.funCongrLeft`, and `finCongr`.
 -/
 
 public section
@@ -158,5 +163,131 @@ def natBasisVector (i n : ℕ) (j : Fin (coordinateSize d i n)) : A (i + n) :=
 theorem natCoordinates_natBasisVector (i n : ℕ) (j : Fin (coordinateSize d i n)) :
     natCoordinates step i n (natBasisVector step i n j) = Pi.single j 1 :=
   natCoordinates_natPack step i n (Pi.single j 1)
+
+private theorem natCoordinates_cast_apply (i : ℕ) {n m : ℕ} (h : n = m)
+    (x : A (i + n)) (idx : Fin (coordinateSize d i m)) :
+    natCoordinates step i m (cast (congrArg (fun k => A (i + k)) h) x) idx =
+      natCoordinates step i n x (Fin.cast (congrArg (coordinateSize d i) h.symm) idx) := by
+  cases h
+  rfl
+
+/-- Coordinates of `A j` over `A i` for comparable endpoints, with the given tower action.
+The coordinate count and order are those of the `j - i` successor steps starting at `i`. -/
+def natCoordinatesOfLE {i j : ℕ} (h : i ≤ j) :
+    letI := t.toAlgebra h
+    A j ≃ₗ[A i] (Fin (coordinateSize d i (j - i)) → A i) := by
+  letI := t.toAlgebra h
+  letI : ∀ k : {k : ℕ // i ≤ k}, Module (A i) (A k.val) :=
+    fun k => (t.toAlgebra k.property).toModule
+  let e : (⟨j, h⟩ : {k : ℕ // i ≤ k}) =
+      ⟨i + (j - i), Nat.le_add_right i (j - i)⟩ :=
+    Subtype.ext (Nat.add_sub_of_le h).symm
+  exact (LinearEquiv.cast (R := A i) (M := fun k : {k : ℕ // i ≤ k} => A k.val) e).trans
+    (natCoordinates step i (j - i))
+
+/-- Endpoint coordinates are height coordinates after identifying `j` with `i + (j - i)`.
+The coordinate index is unchanged. -/
+theorem natCoordinatesOfLE_apply {i j : ℕ} (h : i ≤ j) (x : A j)
+    (idx : Fin (coordinateSize d i (j - i))) :
+    natCoordinatesOfLE step h x idx =
+      natCoordinates step i (j - i) (cast (congrArg A (Nat.add_sub_of_le h).symm) x) idx := by
+  rfl
+
+/-- With equal endpoints the single coordinate is the original element. -/
+@[simp]
+theorem natCoordinatesOfLE_self (i : ℕ) (x : A i)
+    (idx : Fin (coordinateSize d i (i - i))) :
+    natCoordinatesOfLE step (Nat.le_refl i) x idx = x := by
+  rw [natCoordinatesOfLE_apply,
+    natCoordinates_cast_apply step i (Nat.sub_self i).symm, natCoordinates_zero]
+
+/-- Pack coordinates into `A j`, inverting the coordinate map over the given tower action. -/
+def natPackOfLE {i j : ℕ} (h : i ≤ j) (c : Fin (coordinateSize d i (j - i)) → A i) : A j :=
+  (natCoordinatesOfLE step h).symm c
+
+/-- Endpoint packing is height packing followed by the identification `i + (j - i) = j`. -/
+theorem natPackOfLE_eq_natPack {i j : ℕ} (h : i ≤ j)
+    (c : Fin (coordinateSize d i (j - i)) → A i) :
+    natPackOfLE step h c = cast (congrArg A (Nat.add_sub_of_le h)) (natPack step i (j - i) c) := by
+  rfl
+
+/-- Packing at equal endpoints returns the single coefficient. -/
+@[simp]
+theorem natPackOfLE_self (i : ℕ) (c : Fin (coordinateSize d i (i - i)) → A i) :
+    natPackOfLE step (Nat.le_refl i) c =
+      c ⟨0, by simp only [Nat.sub_self, coordinateSize_zero]; decide⟩ := by
+  exact (natCoordinatesOfLE_self step i (natPackOfLE step (Nat.le_refl i) c) _).symm.trans
+    (congrFun ((natCoordinatesOfLE step (Nat.le_refl i)).apply_symm_apply c) _)
+
+/-- Reading packed endpoint coordinates recovers the input coefficients. -/
+@[simp]
+theorem natCoordinatesOfLE_natPackOfLE {i j : ℕ} (h : i ≤ j)
+    (c : Fin (coordinateSize d i (j - i)) → A i) :
+    natCoordinatesOfLE step h (natPackOfLE step h c) = c :=
+  (natCoordinatesOfLE step h).apply_symm_apply c
+
+/-- Packing the endpoint coordinates of an element recovers that element. -/
+@[simp]
+theorem natPackOfLE_natCoordinatesOfLE {i j : ℕ} (h : i ≤ j) (x : A j) :
+    natPackOfLE step h (natCoordinatesOfLE step h x) = x :=
+  (natCoordinatesOfLE step h).symm_apply_apply x
+
+/-- The executable endpoint vector with coordinate one at `idx` and zero elsewhere. -/
+def natBasisVectorOfLE {i j : ℕ} (h : i ≤ j) (idx : Fin (coordinateSize d i (j - i))) : A j :=
+  natPackOfLE step h (Pi.single idx 1)
+
+/-- Endpoint vectors agree with height vectors under the canonical endpoint identification. -/
+theorem natBasisVectorOfLE_eq_natBasisVector {i j : ℕ} (h : i ≤ j)
+    (idx : Fin (coordinateSize d i (j - i))) :
+    natBasisVectorOfLE step h idx =
+      cast (congrArg A (Nat.add_sub_of_le h)) (natBasisVector step i (j - i) idx) :=
+  natPackOfLE_eq_natPack step h (Pi.single idx 1)
+
+/-- An endpoint vector reads back as its unit coordinate vector. -/
+@[simp]
+theorem natCoordinatesOfLE_natBasisVectorOfLE {i j : ℕ} (h : i ≤ j)
+    (idx : Fin (coordinateSize d i (j - i))) :
+    natCoordinatesOfLE step h (natBasisVectorOfLE step h idx) = Pi.single idx 1 :=
+  natCoordinatesOfLE_natPackOfLE step h (Pi.single idx 1)
+
+/-- At equal endpoints the unique executable basis vector is one. -/
+@[simp]
+theorem natBasisVectorOfLE_self (i : ℕ) (idx : Fin (coordinateSize d i (i - i))) :
+    natBasisVectorOfLE step (Nat.le_refl i) idx = 1 := by
+  rw [natBasisVectorOfLE, natPackOfLE_self]
+  have hidx : idx = ⟨0, by simp only [Nat.sub_self, coordinateSize_zero]; decide⟩ := by
+    apply Fin.ext
+    have := idx.isLt
+    simp only [Nat.sub_self, coordinateSize_zero] at this
+    exact Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ this)
+  simp only [hidx, Pi.single_eq_same]
+
+variable {r : ℕ}
+  (constantStep : ∀ k, letI := t.toAlgebra (Nat.le_succ k)
+    A (k + 1) ≃ₗ[A k] (Fin r → A k))
+
+/-- Endpoint coordinates with constant successor coordinate count `r`, indexed by `Fin (r^(j-i))`.
+Only the coordinate count is identified with a power; each index retains its numeric value. -/
+def natCoordinatesConstOfLE {i j : ℕ} (h : i ≤ j) :
+    letI := t.toAlgebra h
+    A j ≃ₗ[A i] (Fin (r ^ (j - i)) → A i) := by
+  letI := t.toAlgebra h
+  exact (natCoordinatesOfLE (d := fun _ => r) constantStep h).trans
+    (LinearEquiv.funCongrLeft (A i) (A i)
+      (finCongr (coordinateSize_const r i (j - i))).symm)
+
+/-- Constant-count coordinates read the same numeric index in the endpoint coordinate map. -/
+theorem natCoordinatesConstOfLE_apply {i j : ℕ} (h : i ≤ j) (x : A j)
+    (idx : Fin (r ^ (j - i))) :
+    natCoordinatesConstOfLE constantStep h x idx =
+      natCoordinatesOfLE constantStep h x
+        (Fin.cast (coordinateSize_const r i (j - i)).symm idx) := by
+  rfl
+
+/-- Constant-count coordinates at equal endpoints consist of the original element. -/
+@[simp]
+theorem natCoordinatesConstOfLE_self (i : ℕ) (x : A i) (idx : Fin (r ^ (i - i))) :
+    natCoordinatesConstOfLE constantStep (Nat.le_refl i) x idx = x := by
+  rw [natCoordinatesConstOfLE_apply, natCoordinatesOfLE_self]
 
 end AlgebraTower
