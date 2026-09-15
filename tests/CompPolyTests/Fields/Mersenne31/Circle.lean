@@ -38,6 +38,17 @@ example : CirclePointIndex.toPoint 0 = 0 := by
 example : CirclePointIndex.toPoint CirclePointIndex.generator = generator := by
   simp
 
+example (p : Point) (n : Nat) : Point.nsmul p n = nsmulRec n p :=
+  Point.nsmul_eq_nsmulRec p n
+
+#guard (List.range 64).all fun n =>
+  let actual := Point.nsmul generator n
+  let expected := nsmulRec n generator
+  actual.x == expected.x && actual.y == expected.y
+
+#guard (CirclePointIndex.toPoint (-1)).x = generator.x
+#guard (CirclePointIndex.toPoint (-1)).y = -generator.y
+
 example : CirclePointIndex.subgroupGen 0 = 0 := by
   simp
 
@@ -78,5 +89,18 @@ def smallCanonicCoset : CanonicCoset where
 #guard smallCanonicCoset.halfCoset.logSize = 3
 #guard smallCanonicCoset.circleDomain.logSize = 4
 #guard smallCanonicCoset.circleDomain.size = 16
+
+#guard (smallCanonicCoset.circleDomain.indexAt 0).val = 67108864
+#guard (smallCanonicCoset.circleDomain.pointAt 0).x = 1179735656
+#guard (smallCanonicCoset.circleDomain.pointAt 0).y = 1241207368
+
+#guard (List.range smallCanonicCoset.circleDomain.size).all fun i =>
+  let p := smallCanonicCoset.circleDomain.pointAt i
+  p.x ^ 2 + p.y ^ 2 == (1 : Field)
+
+#guard (List.range smallHalfCoset.size).all fun i =>
+  let p := smallDomain.pointAt i
+  let q := smallDomain.pointAt (smallHalfCoset.size + i)
+  p.x == q.x && p.y == -q.y
 
 end Mersenne31.Circle

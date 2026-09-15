@@ -90,10 +90,33 @@ instance : Neg Point := ⟨conjugate⟩
 
 instance : Add Point := ⟨add⟩
 
-/-- Repeated circle-group addition. -/
-def nsmul (p : Point) : Nat → Point
-  | 0 => 0
-  | n + 1 => nsmul p n + p
+instance : AddSemigroup Point where
+  add := Point.add
+  add_assoc p q r := by
+    apply Point.ext
+    · change (p.x * q.x - p.y * q.y) * r.x - (p.x * q.y + p.y * q.x) * r.y =
+        p.x * (q.x * r.x - q.y * r.y) - p.y * (q.x * r.y + q.y * r.x)
+      ring
+    · change (p.x * q.x - p.y * q.y) * r.y + (p.x * q.y + p.y * q.x) * r.x =
+        p.x * (q.x * r.y + q.y * r.x) + p.y * (q.x * r.x - q.y * r.y)
+      ring
+
+/-- Circle scalar multiplication by binary doubling and addition. -/
+def nsmul (p : Point) (n : Nat) : Point :=
+  nsmulBinRec n p
+
+/-- Binary scalar multiplication agrees with repeated circle-group addition. -/
+theorem nsmul_eq_nsmulRec (p : Point) (n : Nat) : nsmul p n = nsmulRec n p := by
+  change nsmulBinRecAuto n p = nsmulRecAuto n p
+  rw [nsmulRec_eq_nsmulBinRec]
+
+/-- The zero multiple is the circle identity. -/
+@[simp]
+theorem nsmul_zero (p : Point) : nsmul p 0 = 0 := rfl
+
+/-- Increasing the scalar by one adds one copy of the point. -/
+theorem nsmul_succ (p : Point) (n : Nat) : nsmul p (n + 1) = nsmul p n + p :=
+  nsmulBinRec_succ n p
 
 /-- The identity point has x-coordinate one. -/
 @[simp]
@@ -173,14 +196,14 @@ def toPoint (i : CirclePointIndex) : Point :=
 @[simp]
 theorem toPoint_zero : toPoint 0 = 0 := by
   unfold toPoint
-  simp [Point.nsmul]
+  simp
 
 /-- The distinguished index maps to the STWO circle generator. -/
 @[simp]
 theorem toPoint_generator : toPoint CirclePointIndex.generator = Circle.generator := by
   unfold toPoint CirclePointIndex.generator Circle.generator
   change Point.nsmul Circle.generator (0 + 1) = Circle.generator
-  simp [Point.nsmul, Point.zero_add]
+  simp only [Point.nsmul_succ, Point.nsmul_zero, Point.zero_add]
 
 /-- The subgroup generator for the trivial subgroup is zero modulo the circle order. -/
 @[simp]
