@@ -6,9 +6,7 @@ Authors: Valerii Huhnin
 module
 
 public import CompPolyBench.Univariate.Common
-public import CompPoly.Fields.BN254
-public import CompPoly.Fields.BLS12_381
-public import CompPoly.Fields.BLS12_377
+public import CompPolyBench.Fields.Inputs
 public import CompPoly.Univariate.NTT.FastMulLow
 public import CompPoly.Univariate.NTTFast.FastMulLow
 
@@ -401,14 +399,6 @@ private def runGoldilocksUnivariateDense (preset : BenchPreset) (gen : StdGen) :
     Goldilocks.fieldSize "univariate-dense-goldilocks" "goldilocks" "Goldilocks.Field"
     "Goldilocks" preset gen
 
-/-- Convert BN254 field inputs to the native eight-limb representation. -/
-private def bn254FastArray (xs : Array BN254.ScalarField) : Array BN254.Fast.ScalarField :=
-  xs.map BN254.Fast.ofField
-
-/-- Convert a fast BN254 element to a checksum word. -/
-private def checksumBn254Fast (x : BN254.Fast.ScalarField) : Nat :=
-  x.toNat
-
 /-- Benchmark dense BN254 univariate evaluation. -/
 private def runBn254UnivariateDense (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
@@ -417,15 +407,6 @@ private def runBn254UnivariateDense (preset : BenchPreset) (gen : StdGen) :
     (fun size ↦ zmodArray BN254.scalarFieldSize size false) bn254FastArray
     checksumZMod checksumBn254Fast
     preset gen
-
-/-- Convert BLS12-381 field inputs to the native eight-limb representation. -/
-private def bls12_381FastArray (xs : Array BLS12_381.ScalarField) :
-    Array BLS12_381.Fast.ScalarField :=
-  xs.map BLS12_381.Fast.ofField
-
-/-- Convert a fast BLS12-381 element to a checksum word. -/
-private def checksumBls12_381Fast (x : BLS12_381.Fast.ScalarField) : Nat :=
-  x.toNat
 
 /-- Benchmark dense BLS12-381 univariate evaluation. -/
 private def runBls12_381UnivariateDense (preset : BenchPreset) (gen : StdGen) :
@@ -436,15 +417,6 @@ private def runBls12_381UnivariateDense (preset : BenchPreset) (gen : StdGen) :
     (fun size ↦ zmodArray BLS12_381.scalarFieldSize size false) bls12_381FastArray
     checksumZMod checksumBls12_381Fast
     preset gen
-
-/-- Convert BLS12-377 field inputs to the native eight-limb representation. -/
-private def bls12_377FastArray (xs : Array BLS12_377.ScalarField) :
-    Array BLS12_377.Fast.ScalarField :=
-  xs.map BLS12_377.Fast.ofField
-
-/-- Convert a fast BLS12-377 element to a checksum word. -/
-private def checksumBls12_377Fast (x : BLS12_377.Fast.ScalarField) : Nat :=
-  x.toNat
 
 /-- Benchmark dense BLS12-377 univariate evaluation. -/
 private def runBls12_377UnivariateDense (preset : BenchPreset) (gen : StdGen) :
