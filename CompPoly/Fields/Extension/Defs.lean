@@ -230,46 +230,96 @@ def mul (x y : Ext P) : Ext P :=
     ∑ i : Fin P.d, ∑ j : Fin P.d,
       coeff x i * coeff y j * coeff (monomialMod ((i : ℕ) + (j : ℕ))) m
 
+/-- Append `cur, shiftReduce cur, …`, `n` entries in all, to `acc`; the scan that builds `red`.
+This is the table the `shiftReduce` docstring above refers to. -/
+def redScan : ℕ → Ext P → Array (Ext P) → Array (Ext P)
+  | 0, _, acc => acc
+  | n + 1, cur, acc => redScan n (shiftReduce cur) (acc.push cur)
+
+theorem redScan_size (n : ℕ) (cur : Ext P) (acc : Array (Ext P)) :
+    (redScan n cur acc).size = acc.size + n := by
+  induction n generalizing cur acc with
+  | zero => rfl
+  | succ n ih => rw [redScan, ih, Array.size_push]; omega
+
+/-- Entry `k` of the scan is `shiftReduce^[k - acc.size] cur` past the prefix it was given. -/
+theorem redScan_getElem (n : ℕ) (cur : Ext P) (acc : Array (Ext P)) (k : ℕ)
+    (h : k < (redScan n cur acc).size) :
+    (redScan n cur acc)[k] =
+      if hlt : k < acc.size then acc[k] else shiftReduce^[k - acc.size] cur := by
+  induction n generalizing cur acc with
+  | zero =>
+      have hk : k < acc.size := by simpa [redScan] using h
+      simp [redScan, hk]
+  | succ n ih =>
+      simp only [redScan]
+      rw [ih]
+      by_cases hlt : k < acc.size
+      · have hpush : k < (acc.push cur).size := by simp only [Array.size_push]; omega
+        rw [dif_pos hpush, dif_pos hlt]
+        exact Array.getElem_push_lt hlt
+      · by_cases heq : k = acc.size
+        · subst heq
+          rw [dif_pos (by simp only [Array.size_push]; omega), dif_neg (lt_irrefl _),
+            Array.getElem_push_eq, Nat.sub_self, Function.iterate_zero, id]
+        · have hpush : ¬ k < (acc.push cur).size := by simp only [Array.size_push]; omega
+          rw [dif_neg hpush, dif_neg hlt, Array.size_push, ← Function.iterate_succ_apply]
+          congr 1
+          omega
+
 /--
 The reduction table: `red P` holds `X^k mod f` for every `k ≤ 2d - 2`, i.e. every exponent a
 product of two reduced elements can reach.
 
-This is the table the `shiftReduce` docstring above refers to. It exists purely for speed: `mul`
-is the specification, and `mulTbl` below is the compiled implementation that consults this table.
+Built by one `redScan` from `1`, so the whole table costs `O(d^2)`; `Vector.ofFn (monomialMod ·)`
+would iterate `shiftReduce` from scratch for every entry, `O(d^3)` in all. It exists purely for
+speed: `mul` is the specification, and `mulTbl` below is the compiled implementation that
+consults this table.
 -/
 def red (P : ExtensionParams F) : Vector (Ext P) (2 * P.d - 1) :=
-  Vector.ofFn fun k => monomialMod (k : ℕ)
+  ⟨redScan (2 * P.d - 1) 1 #[], by rw [redScan_size, Array.size_empty, Nat.zero_add]⟩
 
 @[simp] theorem red_getElem {k : ℕ} (hk : k < 2 * P.d - 1) :
     (red P)[k] = monomialMod k := by
-  simp only [red, Vector.getElem_ofFn]
+  simp only [red, Vector.getElem_mk]
+  rw [redScan_getElem]
+  simp [monomialMod]
+
+/-- A left fold that adds `f i` at each step is `a` plus the sum; the bridge from the loops the
+compiler runs to the `Finset.sum`s the specification is stated with. -/
+theorem _root_.Fin.foldl_add_eq_add_sum {M : Type*} [AddCommMonoid M] {n : ℕ} (f : Fin n → M)
+    (a : M) : Fin.foldl n (fun acc i => acc + f i) a = a + ∑ i, f i := by
+  induction n generalizing a with
+  | zero => simp only [Fin.foldl_zero, Finset.univ_eq_empty, Finset.sum_empty, add_zero]
+  | succ n ih => rw [Fin.foldl_succ, ih, Fin.sum_univ_succ, add_assoc]
 
 /--
 Table-driven multiplication: the compiled implementation of `mul`.
 
 Mathematically identical to `mul`, but the reduced monomials `X^(i+j) mod f` are computed once
-into `red` instead of being re-derived by `monomialMod` for every output coefficient. That drops
-the cost from roughly `O(d^5)` to `O(d^3)`: `mul` evaluates `shiftReduce^[i+j]` once per
-`(m, i, j)` triple, so the same `d`-fold iteration is repeated `d^3` times.
+into `red` instead of being re-derived by `monomialMod` for every output coefficient, and the
+two sums are `Fin.foldl` loops rather than `Finset.sum`, which compiles to list-building
+`Multiset` machinery. The table drops the cost from roughly `O(d^5)` to `O(d^3)`: `mul`
+evaluates `shiftReduce^[i+j]` once per `(m, i, j)` triple, so the same `d`-fold iteration is
+repeated `d^3` times.
 
 `mul` remains the definition everything is proved about; `mul_eq_mulTbl` below swaps this in for
 compilation via `@[csimp]`.
 -/
-@[inline, specialize]
+@[specialize]
 def mulTbl (x y : Ext P) : Ext P :=
   let tbl := red P
   ofFn fun m =>
-    ∑ i : Fin P.d, ∑ j : Fin P.d,
-      coeff x i * coeff y j *
-        coeff (tbl[(i : ℕ) + (j : ℕ)]'(by
-          have hi := i.isLt; have hj := j.isLt; have hd := P.two_le; omega)) m
+    Fin.foldl P.d (fun acc i =>
+      Fin.foldl P.d (fun acc j =>
+        acc + coeff x i * coeff y j *
+          coeff (tbl[(i : ℕ) + (j : ℕ)]'(by
+            have hi := i.isLt; have hj := j.isLt; have hd := P.two_le; omega)) m) acc) 0
 
 @[csimp] theorem mul_eq_mulTbl : @mul = @mulTbl := by
   funext F _ _ P x y
   refine Ext.ext fun m => ?_
-  simp only [mul, mulTbl, coeff_ofFn]
-  refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_
-  rw [red_getElem]
+  simp only [mul, mulTbl, coeff_ofFn, Fin.foldl_add_eq_add_sum, zero_add, red_getElem]
 
 instance : Mul (Ext P) := ⟨mul⟩
 
