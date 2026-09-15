@@ -21,6 +21,13 @@ The proof compares the existing basis's generator-product formula with the succe
 law in `AlgebraTower.natBasisVector_succ`. Both use low-first coordinate order: earlier tower
 generators correspond to lower index bits. An auxiliary basis constructed with
 `Module.Basis.ofEquivFun` is private to the identification proof.
+
+The generator-product basis and its ordering are those of [DP23], §2.3, with the
+paper's generator `X_k` represented by `Z (k + 1)`.
+
+## References
+
+* [Diamond, B. E. and Posen, J., *Succinct arguments over towers of binary fields*][DP23]
 -/
 
 public section

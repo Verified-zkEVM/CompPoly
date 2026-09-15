@@ -20,6 +20,13 @@ The equivalence composes `succCoordinates` through `AlgebraTower.natCoordinatesC
 Its inverse `pack` reconstructs the original word. The readback theorems relate the algebraic
 coordinates to bitvector slicing and natural-number bit blocks. They refer to raw stored words,
 which differ from field numerals in characteristic two.
+
+The coefficient ordering follows the relative multilinear basis of [DP23], §2.3:
+earlier tower generators correspond to lower index bits.
+
+## References
+
+* [Diamond, B. E. and Posen, J., *Succinct arguments over towers of binary fields*][DP23]
 -/
 
 public section

@@ -19,6 +19,14 @@ subspace-polynomial constants and twiddle tables.
 `CompPoly.Fields.Binary.AdditiveNTT.Correctness` relates these implementations to the
 abstract algorithm and its evaluation specification. Concrete tower instances and the
 compatibility entry point remain in `CompPoly.Fields.Binary.AdditiveNTT.Impl`.
+
+The coefficient tiling, twiddle factors, and descending butterfly stages follow the
+Lin–Chung–Han additive NTT presentation in [DP24], Algorithm 2. The array-backed path
+caches quantities used by these same stages.
+
+## References
+
+* [Diamond, B. E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
 -/
 
 @[expose] public section
