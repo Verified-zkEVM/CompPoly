@@ -28,7 +28,6 @@ private def first : ExtensionParams (ZMod 2) where
   two_le := le_rfl
   lower := #v[1, 0]
   q := 2
-  card_eq := ZMod.card 2
 
 /-- Parameters for the monic modulus `X² + X + 1` over `GF(2)`. -/
 private def second : ExtensionParams (ZMod 2) where
@@ -36,7 +35,6 @@ private def second : ExtensionParams (ZMod 2) where
   two_le := le_rfl
   lower := #v[1, 1]
   q := 2
-  card_eq := ZMod.card 2
 
 example (_x : Ext first) : True := by
   fail_if_success
@@ -64,7 +62,8 @@ example : LawfulBEq (Ext first) := inferInstance
 
 section Operations
 
-variable {F : Type*} [Field F] [Fintype F] {P : ExtensionParams F}
+variable {F : Type*} [Field F] [Finite F] {P : ExtensionParams F}
+  [Fact (Nat.card F = P.q)]
   [Fact (Irreducible P.poly)]
 
 -- Field projections retain the canonical executable operations.
