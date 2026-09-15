@@ -8,10 +8,11 @@ module
 public import CompPolyBench.Bivariate.Basic
 public import CompPolyBench.Bivariate.Factor
 public import CompPolyBench.Bivariate.GuruswamiSudan
+public import CompPolyBench.Fields.Arith
 public import CompPolyBench.Fields.Binary.AdditiveNTT.Impl
 public import CompPolyBench.Fields.Binary.Tower
+public import CompPolyBench.Fields.Binary.Tower.Scalar
 public import CompPolyBench.Fields.Extension
-public import CompPolyBench.Fields.Goldilocks
 public import CompPolyBench.Fields.Montgomery
 public import CompPolyBench.Harness.SelfCheck
 public import CompPolyBench.Multilinear.Basic
@@ -32,7 +33,7 @@ namespace CompPolyBench
 def allTasks : List BenchTask :=
   harnessTasks ++ univariateTasks ++ multivariateTasks ++ multilinearTasks ++ bivariateTasks ++
     factorTasks ++ guruswamiSudanTasks ++ additiveNttTasks ++ extensionTasks ++
-    montgomeryInvTasks ++ towerTasks ++ goldilocksTasks
+    montgomeryInvTasks ++ towerTasks ++ towerScalarTasks ++ fieldArithTasks
 
 /-- Metadata for every benchmark group accepted by the command-line selector. -/
 def allGroupInfos : List BenchGroupInfo :=
@@ -171,25 +172,34 @@ def runSelected (selection : BenchSelection) (output : BenchOutput) (preset : Be
   let (groups, _) ← runSelectedTasks allTasks preset selection gen
   let records := flattenGroups groups
   IO.FS.createDirAll outputDir
+  -- Written for every run, including `--validate-only` and `--markdown-only`: a
+  -- result nobody can attribute to a commit and a machine is not worth keeping.
+  let manifest ← collectRunManifest runId preset validateOnly selection groups.size records.size
+  IO.FS.writeFile (manifestPath runId) manifest.render
   if output.writeJson then
     IO.FS.writeFile (resultsPath runId) (renderJsonl records)
   if output.writeMarkdown then
     if validateOnly then
       IO.FS.writeFile (reportPath runId) (renderValidationMarkdown preset groups)
     else
-      let hardware ← collectRunnerHardware
-      IO.FS.writeFile (reportPath runId) (renderMarkdown hardware preset groups)
+      IO.FS.writeFile (reportPath runId) (renderMarkdown manifest.hardware preset groups)
   IO.println <|
     if validateOnly then
       s!"validated {records.size} benchmark records in {groups.size} groups for run {runId}"
     else
       s!"wrote {records.size} benchmark records in {groups.size} groups for run {runId}"
-  match checksumMismatchGroups groups with
-  | [] => pure 0
-  | mismatchedGroups =>
-      for group in mismatchedGroups do
-        IO.eprintln s!"ERROR: checksum mismatch in benchmark group `{group.groupKey}`"
-      pure 1
+  let mut failed := false
+  for group in checksumMismatchGroups groups do
+    IO.eprintln s!"ERROR: checksum mismatch in benchmark group `{group.groupKey}`"
+    failed := true
+  -- Rows of one group measure the same problem, so disagreeing on `workUnits`
+  -- means the group is mis-specified rather than merely unrenderable.
+  for group in workUnitsMismatchGroups groups do
+    IO.eprintln <|
+      s!"ERROR: rows of benchmark group `{group.groupKey}` disagree on workUnits; " ++
+      "every row of a group must declare the same problem size"
+    failed := true
+  pure (if failed then 1 else 0)
 
 /-- Execute the benchmark command selected by command-line arguments. -/
 def run (args : List String) : IO UInt32 := do

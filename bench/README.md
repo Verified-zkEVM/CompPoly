@@ -52,12 +52,19 @@ is created on demand and ignored in its entirety:
 ```text
 bench/out/results-YYMMDD-HHMMSS.jsonl
 bench/out/report-YYMMDD-HHMMSS.md
+bench/out/manifest-YYMMDD-HHMMSS.json
 ```
+
+The manifest records what produced the numbers — commit, whether the tree was
+dirty, toolchain, preset and the budget it resolved to, seed, selection, and
+host details — and is written for every run, `--validate-only` included. It is
+a separate file rather than a header line in the JSONL, because every consumer
+of that file assumes uniform records.
 
 By default, a run writes both files. A checksum mismatch is reported in the
 Markdown report and makes the executable exit nonzero after writing artifacts.
-Within each group, checksums are computed over the shared prefix of iterations
-run by every implementation in that group, capped at `validationIterationCap`.
+Within each group, checksums are computed over the group's `digestPeriod` — the
+period of its bodies in the iteration index, capped at `digestIterationCap`.
 
 ## What Is Measured
 
@@ -75,9 +82,14 @@ Roughly by area, with representative group prefixes:
 | Additive NTT | `additive-ntt-btf*` |
 | Extension fields | `fields-extension-*-mul`, `fields-extension-*-inv` |
 | Binary tower fields | `fields-tower-bt128-*`: `BitVec` spec vs packed-word implementation |
-| Goldilocks arithmetic | `fields-goldilocks-{mul,inv}`: canonical `ZMod` vs single-word `UInt64` |
+| Base-field arithmetic | `fields-{koalabear,babybear,mersenne31,goldilocks}-{mul,add,inv,pow}`: canonical `ZMod` vs native-word, latency and throughput |
+| Pairing scalar multiplication | `fields-{bn254,bls12-381,bls12-377}-mul` |
 | Scalar-field inversion | `fields-mont64x8-*-inv`: `ZMod` extended Euclid vs checked binary GCD vs Fermat |
-| Harness self-check | `harness-floor`, `harness-canary`: the harness measuring itself, see below |
+| Binary tower scalar kernels | `fields-tower-bt{8,64}-*`: table-driven vs recursive |
+| Multiplicative NTT | `ntt-{koalabear,babybear}-l*` over `n = 2^8 … 2^16`, plus `ntt-plan-koalabear` |
+| Reed-Solomon encoding | `rs-encode-koalabear-l*`: definitional encoder vs the certified NTT one |
+| Schoolbook / NTT crossover | `univariate-mul-crossover-*`, degree<4 to degree<1024 |
+| Harness self-check | `harness-floor`, `harness-canary`, `harness-chain-floor`, `harness-chain-linearity`: the harness measuring itself, see below |
 
 Use `--list` for the authoritative set; the prefixes above drift as groups are
 added.
@@ -96,12 +108,12 @@ univariate-dense-bls12-381    univariate-dense-bls12-377
 
 ## How A Benchmark Is Measured
 
-`runTimed` does two passes over each benchmark body.
+`runTimedSpec` does two passes over each benchmark body.
 
 The **validation pass** is untimed and folds a strong `Nat` digest
-(`mixChecksum`) over the full result. It is capped at
-`validationIterationCap` iterations — above every benchmark's operand-pool
-size, so the oracle sees every input, without the pass costing as much as the
+(`mixChecksum`) over the full result. It runs for `digestPeriod` iterations —
+the period of the body in its iteration index, capped at `digestIterationCap`,
+so the oracle sees every input without the pass costing as much as the
 measurement it validates. This is what the group agreement check
 compares, and it is the reason a wrong-but-fast implementation cannot be
 benchmarked: a mismatch inside a group exits nonzero.
@@ -123,12 +135,42 @@ makes that impossible — a `ZMod` element above `2 ^ 63` has no cheap word dige
 while its fast counterpart does — the residual shows up in `harness-floor`
 territory and the group's ratio is a lower bound on the real speedup.
 
+### Chained bodies and the per-unit column
+
+An operation of one or two nanoseconds cannot be measured one per timed
+iteration: the harness floor is about the same size, and the operand-pool
+idiom around it — `xs.getD (i % xs.size) unit` — is a boxed-`Nat` modulo, a
+bounds check and a boxed array read, twice. So the field and kernel groups
+perform their operation `workUnits` times per iteration, through the
+combinators in `bench/CompPolyBench/Harness/Chain.lean`, and the report gains a
+**Per unit (ps)** column dividing the median by that count.
+
+Two shapes, reported separately because a prover is bounded by different ones
+in different places, and named as Plonky3 names them:
+
+- **latency** — each operation depends on the last, so the pipeline cannot
+  overlap two;
+- **throughput** — ten independent accumulators, so it can.
+
+Every row of a group must agree on `workUnits`, because the count describes the
+*problem* and not the implementation; a group whose rows disagree fails the
+run. A per-unit number is **not** comparable with `harness-floor`, which is a
+per-iteration cost: the chain floor for comparison is `harness-chain-floor`.
+
 ### Sampling and dispersion
 
-A benchmark's cost is collected as a *set* of samples, not one total. Each
-benchmark's iteration count is treated as a total-work budget and split into up
-to `targetSampleCount` timed samples; every sample replays the same iteration
-indices, so samples differ only in machine state.
+A benchmark's cost is collected as a *set* of samples, not one total, and the
+sizes come from the preset's wall-clock budget rather than from a written-down
+iteration count. A calibration ramp times 1, 2, 4, … iterations until the
+warmup budget is met — the ramp *is* the warmup — and its last step estimates
+the per-iteration cost. That estimate fixes how many iterations make up a
+`sampleNanos` sample, and `measureNanos` caps how many samples the row can
+afford. Every sample replays the same iteration indices, so samples differ only
+in machine state.
+
+A consequence worth knowing: `Iterations` is no longer comparable between runs,
+because it depends on how fast the machine was when the row was calibrated.
+`Median` and `Spread` are the columns to compare.
 
 Reports show the **median** sample as the headline number and a `Spread` column
 holding the median absolute deviation as a percentage of the median:
@@ -164,6 +206,18 @@ that has been optimised away otherwise looks exactly like a benchmark that got
 very fast, and the canary is what tells the two apart. Both are measured whenever
 either is selected, because the check is a comparison between them.
 
+`harness-chain-floor` and `harness-chain-linearity` do the same two jobs for
+chained bodies. The floor group carries the cheapest honest operation in both
+chain shapes, so a per-unit number can be read against something; the linearity
+group **fails the run** unless eight times the chain length costs at least four
+times as much, which is what catches a chain the compiler has collapsed.
+
+Both checks earn their keep. The chain floor's first operation was
+`x ^^^ (x >>> 7)`, whose 64-deep block is algebraically the identity in
+characteristic two, and LLVM found that: the row reported a sixteenth of a
+cycle per operation *and the linearity check still passed*, because what
+collapsed was each block rather than the loop over blocks.
+
 ## Determinism
 
 Each group derives its own input generator from its key (`genFor`), so a group's
@@ -176,10 +230,10 @@ inputs do not depend on which other groups ran, or in what order. Concretely:
   a real change in behaviour rather than a change in the input schedule.
 
 Checksums remain a cross-check between the implementations within a group; that
-they are now also stable across runs is what makes them usable as regression
-fixtures. Digests are still preset-dependent, because the validation pass runs
-`min validationIterationCap` of the group's measured iteration count and that
-count varies by preset.
+they are also stable across runs, and across presets, is what makes them usable
+as regression fixtures. The digest length is the period of the group's bodies in
+the iteration index, which is a property of the benchmark rather than of the
+preset or the machine it runs on.
 
 ## The two CI tracks
 
@@ -193,7 +247,7 @@ lake exe CompPolyBench --medium --validate-only --groups "<curated set>"
 ```
 
 which does the untimed digest pass and the group agreement check but collects no
-samples. It takes about 34 seconds over the curated set and fails the run on a
+samples. It takes about 29 seconds of CPU over the curated set and fails the run on a
 digest mismatch or a collapsed harness canary. `--validate-only` is worth running
 locally for the same reason: it is the fast way to ask whether an implementation
 is still correct.
