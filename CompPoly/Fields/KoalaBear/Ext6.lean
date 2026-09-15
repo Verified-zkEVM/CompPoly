@@ -52,7 +52,9 @@ def ext6Params : ExtensionParams Field where
   two_le := by norm_num
   lower := #v[1, 0, 0, 1, 0, 0]
   q := fieldSize
-  card_eq := ZMod.card _
+
+instance : Fact (Nat.card Field = ext6Params.q) :=
+  ⟨by rw [Nat.card_eq_fintype_card]; exact ZMod.card _⟩
 
 @[simp] theorem ext6Params_d : ext6Params.d = 6 := rfl
 @[simp] theorem ext6Params_q : ext6Params.q = fieldSize := rfl
