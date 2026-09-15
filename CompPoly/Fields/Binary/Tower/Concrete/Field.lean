@@ -8,10 +8,16 @@ module
 public import CompPoly.Fields.Binary.Tower.Concrete.Core
 public import CompPoly.Fields.Binary.Tower.Support.IrreducibilityAndTraceMapProperty
 
+import Mathlib.Algebra.QuadraticAlgebra.Basic
+import Mathlib.Algebra.Polynomial.Degree.SmallDegree
+
 /-!
 # Concrete Binary Tower Field
 
 Field-structure lemmas for successive levels of the concrete binary tower.
+
+Norm nonvanishing is certified using `QuadraticAlgebra.norm_eq_zero_iff_eq_zero` over the
+predecessor field. This argument does not assume a field structure on the successor level.
 -/
 
 @[expose] public section
@@ -288,85 +294,49 @@ lemma concrete_mul_right_distrib
   rw [concrete_mul_comm prevBTFieldProps (h_k:=h_k) (a:=b) (b:=c)]
   exact concrete_mul_left_distrib prevBTFieldProps (h_k:=h_k) (a:=c) (b:=a) (c:=b)
 
+private lemma quadratic_no_root_of_irreducible {F : Type*} [Field F] {z : F}
+    (h : Irreducible (definingPoly z)) : ∀ r : F, r ^ 2 ≠ -1 + z * r := by
+  have hdeg : (definingPoly z).natDegree ≠ 1 := by
+    have hquad : (definingPoly z).natDegree = 2 := by
+      simpa only [definingPoly, C_1, one_mul] using
+        Polynomial.natDegree_quadratic (a := (1 : F)) (b := z) (c := 1) one_ne_zero
+    rw [hquad]
+    decide
+  intro r hr
+  apply h.not_isRoot_of_natDegree_ne_one hdeg (x := -r)
+  simp only [Polynomial.IsRoot.def, definingPoly, eval_add, eval_pow, eval_X, eval_mul,
+    eval_C, eval_one]
+  linear_combination hr
+
+/-- For a nonzero element at a positive level, `lo * (lo + hi * z) + hi * hi` is nonzero
+in the predecessor field, where `lo` and `hi` are its low and high halves and `z = Z (k - 1)`.
+This is the denominator in the quadratic inverse formula. -/
 lemma norm_of_ne_zero_is_ne_zero {k : ℕ}
     {h_k_gt_0 : k > 0} (prevBTFieldResult : ConcreteBTFStepResult (k := k - 1))
   (a : ConcreteBTField k) (h_a_ne_zero : a ≠ 0) :
   let a₁ := (split h_k_gt_0 a).1
   let a₀ := (split h_k_gt_0 a).2
   concrete_mul a₀ (a₀ + concrete_mul a₁ (Z (k - 1))) + concrete_mul a₁ a₁ ≠ 0 := by
-  let : Field (ConcreteBTField (k - 1)) := mkFieldInstance prevBTFieldResult.toConcreteBTFieldProps
-  have hmul : ∀ (a b : ConcreteBTField (k - 1)), concrete_mul a b = a * b := fun a b => rfl
-  -- Set up local variables for convenience
-  set a₁ := (split h_k_gt_0 a).1
-  set a₀ := (split h_k_gt_0 a).2
-  simp_rw [hmul]
-  rw [left_distrib]
-  have ha : a = 《a₁, a₀》 := by
-    apply (join_of_split h_k_gt_0 a a₁ a₀) rfl
-  set Na := a₀*a₀ + a₀*(a₁*Z (k - 1)) + a₁*a₁ -- ⊢ Na ≠ 0
-  -- Main proof by contradiction
-  by_contra h_Na_is_zero
-  by_cases h_a₁_zero : a₁ = 0
-  · -- Case 1 : a₁ = 0
-    have h_a₀_ne_zero : a₀ ≠ 0 := by
-      intro h_a₀_zero
-      have h_a_is_zero : a = 0 := by
-        rw [ha, h_a₁_zero, h_a₀_zero]
-        rw! [←zero_is_0, ←zero_is_0, join_zero_zero]
-        rfl
-      exact h_a_ne_zero h_a_is_zero
-    have h_Na_eq_a₀_sq : Na = a₀ * a₀ := by
-      simp only [Na, Z, h_a₁_zero, mul_zero, add_zero, zero_mul]
-    rw [h_Na_eq_a₀_sq] at h_Na_is_zero -- h_Na_is_zero : a₀ * a₀ = 0
-    -- In a field, a₀ * a₀ = 0 implies a₀ = 0.
-    have h_a₀_is_zero_from_mul := (mul_self_eq_zero).mp h_Na_is_zero
-    -- This contradicts our proof that a₀ is non-zero.
-    exact h_a₀_ne_zero h_a₀_is_zero_from_mul
-  · -- Case 2 : a₁ ≠ 0
-    -- Since a₁ is a non-zero element of a field, its inverse exists.
-    set a₁_inv := a₁⁻¹
-    set r := a₀ * a₁_inv
-    -- We have Na = 0. The goal is to manipulate this equation to show
-    -- that it implies the defining polynomial has a root in the base field.
-    have h_root : r*r + r*Z (k - 1) + 1 = 0 := by
-      have h_manip : (a₁_inv * a₁_inv) * Na = 0 := by rw [h_Na_is_zero, mul_zero]
-      rw [show Na = a₀*a₀ + (a₀*a₁)*Z (k - 1) + a₁*a₁ by { simp [Na]; ring }] at h_manip
-      rw [left_distrib, left_distrib] at h_manip
-      rw [h_manip.symm]
-      have h1 : r * r = a₁_inv * a₁_inv * (a₀ * a₀) := by ring
-      have h2 : r * Z (k - 1) = a₁_inv * a₁_inv * (a₀ * a₁ * Z (k - 1)) := by
-        apply Eq.symm
-        -- ⊢ a₁_inv * a₁_inv * (a₀ * a₁ * Z (k - 1)) = r * Z (k - 1)
-        calc _ = (a₁ * a₁_inv) * (a₀ * a₁_inv) * Z (k - 1) := by ring
-          _ = (a₀ * a₁_inv) * Z (k - 1) := by
-            rw [mul_inv_cancel₀ (a:=a₁) (by omega)]; norm_num
-          _ = _ := by rfl
-      have h3 : a₁_inv * a₁_inv * (a₁ * a₁) = 1 := by
-        calc _ = a₁_inv * (a₁_inv * a₁) * a₁ := by ring
-          _ = a₁_inv * a₁ * (a₁_inv * a₁) := by ring
-          _ = (a₁ * a₁_inv) * (a₁ * a₁_inv) := by ring
-          _ = 1 := by rw [mul_inv_cancel₀ (a:=a₁) (by omega)]; norm_num
-      rw [h1, h2, h3]
-    have h_is_root : (X^2 + C (Z (k - 1)) * X + 1).eval (r) = 0 := by
-      simp only [pow_two, eval_add, eval_mul, eval_X, eval_C, eval_one, ←h_root]
-      ring
-    -- A polynomial that has a root in its base field cannot be irreducible.
-    have h_not_irreducible : ¬ Irreducible (X^2 + C (Z (k - 1)) * X + 1) := by
-      apply not_irreducible_of_isRoot_of_degree_gt_one (X^2 + C (Z (k - 1)) * X + 1)
-      · use r
-        simp only [IsRoot.def, eval_add, eval_pow, eval_X, eval_mul, eval_C, eval_one]
-        rw [mul_comm, pow_two]
-        exact h_root
-      · let := prevBTFieldResult.instFintype
-        have h_deg := degree_definingPoly (s:=Z (k - 1))
-        unfold definingPoly at h_deg
-        rw [h_deg]; norm_num
-
-    -- This gives our final contradiction, because our field extension requires
-    -- the defining polynomial to be irreducible.
-    have h:= prevBTFieldResult.instIrreduciblePoly
-    unfold definingPoly at h
-    exact h_not_irreducible h
+  let : Field (ConcreteBTField (k - 1)) :=
+    mkFieldInstance prevBTFieldResult.toConcreteBTFieldProps
+  let : Fact (∀ r : ConcreteBTField (k - 1), r ^ 2 ≠ -1 + Z (k - 1) * r) :=
+    ⟨quadratic_no_root_of_irreducible prevBTFieldResult.instIrreduciblePoly⟩
+  let lo := (split h_k_gt_0 a).2
+  let hi := (split h_k_gt_0 a).1
+  let x : QuadraticAlgebra (ConcreteBTField (k - 1)) (-1) (Z (k - 1)) := ⟨lo, hi⟩
+  have hx : x ≠ 0 := by
+    intro h
+    have hlo : (split h_k_gt_0 a).2 = 0 := congrArg QuadraticAlgebra.re h
+    have hhi : (split h_k_gt_0 a).1 = 0 := congrArg QuadraticAlgebra.im h
+    apply h_a_ne_zero
+    rw [← join_split_eq_join h_k_gt_0 a, hhi, hlo]
+    exact join_zero_zero h_k_gt_0
+  have hnorm : x.norm = lo * (lo + hi * Z (k - 1)) + hi * hi := by
+    change lo * lo + Z (k - 1) * lo * hi - (-1) * hi * hi = _
+    ring
+  change lo * (lo + hi * Z (k - 1)) + hi * hi ≠ 0
+  rw [← hnorm]
+  exact fun h => hx (QuadraticAlgebra.norm_eq_zero_iff_eq_zero.mp h)
 
 lemma concrete_mul_inv_cancel
     (prevBTFieldResult : ConcreteBTFStepResult (k := k - 1))
