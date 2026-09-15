@@ -22,7 +22,9 @@ This directory contains formally verified field infrastructure used in zero-know
 | **BN254/Fast.lean** | Eight-limb Montgomery instantiation of the BN254 scalar field (`Mont64x8Field` and `GcdData` constants, `ScalarField`, `ringEquiv`). |
 | **Extension.lean** | Facade for the field-extension stack (arbitrary monic modulus; binomial as a special case). |
 | **Extension/Binomial.lean** | Irreducibility of `X^d - W` over a finite field: Rabin's test collapsed to two base-field exponentiations (`irreducible_X_pow_four_sub_C_iff`). |
-| **Extension/Defs.lean** | `ExtensionParams` (degree, lower coefficients of the monic modulus, base cardinality), `BinomialParams` and its `toExtensionParams`, and the presentation-indexed carrier `Ext P` with length-`d` coefficient vectors and ring operations — including the `red` reduction table and the `@[csimp]`-registered `mulTbl`. |
+| **Extension/Arithmetic.lean** | `ExtensionParams` (degree, lower coefficients of the monic modulus, base cardinality), `BinomialParams` and its `toExtensionParams`, and the presentation-indexed carrier `Ext P` with length-`d` coefficient vectors and ring operations — including the `red` reduction table and the `@[csimp]`-registered `mulTbl`. |
+| **Extension/Defs.lean** | Polynomial specifications, degree/monicity, and binomial correspondence. |
+| **Extension/Cardinality.lean** | Proof-only finiteness, optional enumeration, and certified cardinality of the coefficient carrier. |
 | **Extension/Bridge.lean** | `toQuot : Ext P → AdjoinRoot P.poly`, its ring-hom and injectivity proofs, and `CommRing (Ext P)`. |
 | **Extension/Field.lean** | Bijectivity (`ringEquivQuot`), cardinality, Fermat inversion, and `Field (Ext P)`. |
 | **BabyBear/Ext4.lean** | \(\mathrm{BabyBear}[X]/(X^4 - 11)\). |
@@ -66,7 +68,7 @@ This directory contains formally verified field infrastructure used in zero-know
 The `Binary/` subtree provides characteristic-2 field infrastructure used by GHASH and additive-NTT workflows:
 
 - `Binary/BF128Ghash/*` — GF(2^128) model, implementation, and certificates.
-- `Binary/BF64/*` — polynomial-basis GF(2^64) (`GF(2)[x]/(x^64 + x^4 + x^3 + x + 1)`) with a computable `BitVec 64` carrier, plus its degree-3 extension GF(2^192). A different basis from the GF(2^64) rung of `Binary/Tower/`, so the two disagree on bit-level encodings.
+- `Binary/BF64/*` — polynomial-basis GF(2^64) (`GF(2)[x]/(x^64 + x^4 + x^3 + x + 1)`) with a nominal carrier storing `BitVec 64` coordinates, plus its degree-3 extension GF(2^192). A different basis from the GF(2^64) rung of `Binary/Tower/`, so the two disagree on bit-level encodings.
 - `Binary/AdditiveNTT/*` — additive-NTT domain/algorithm/correctness stack.
 - `Binary/Tower/*` — abstract/concrete binary tower-field constructions and supporting lemmas.
 - `Binary/Tower/Fast.lean` — packed machine-word tower arithmetic with a GF(2^8) table base, proven against the concrete tower; `Field` instances up to GF(2^128).

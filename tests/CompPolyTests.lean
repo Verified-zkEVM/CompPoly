@@ -33,13 +33,16 @@ public import CompPolyTests.Fields.Binary.AdditiveNTT.Basis
 public import CompPolyTests.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
 public import CompPolyTests.Fields.Binary.BF128Ghash.Prelude
 public import CompPolyTests.Fields.Binary.BF64
+public import CompPolyTests.Fields.Binary.BF64.Presentation
 public import CompPolyTests.Fields.Binary.Common
 public import CompPolyTests.Fields.Binary.Tower.Algebra
 public import CompPolyTests.Fields.Binary.Tower.Fast
 public import CompPolyTests.Fields.Binary.Tower.TensorAlgebra
 public import CompPolyTests.Fields.Extension.Arithmetic
+public import CompPolyTests.Fields.Extension.Certificates
 public import CompPolyTests.Fields.Extension.Binomial
 public import CompPolyTests.Fields.Extension.Presentation
+public import CompPolyTests.Fields.Extension.RawArithmetic
 public import CompPolyTests.Fields.Goldilocks.Fast
 public import CompPolyTests.Fields.KoalaBear.Fast
 public import CompPolyTests.Fields.Mersenne31.Fast
