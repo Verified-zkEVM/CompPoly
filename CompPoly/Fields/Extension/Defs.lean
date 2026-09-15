@@ -306,7 +306,7 @@ repeated `d^3` times.
 `mul` remains the definition everything is proved about; `mul_eq_mulTbl` below swaps this in for
 compilation via `@[csimp]`.
 -/
-@[inline, specialize]
+@[specialize]
 def mulTbl (x y : Ext P) : Ext P :=
   let tbl := red P
   ofFn fun m =>
