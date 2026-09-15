@@ -122,8 +122,13 @@ support lemmas:
   lookup-table base, proven against `ConcreteBTField`; `Field` instances and ring
   isomorphisms at every level up to GF(2^128). Runtime definitions live in the
   zero-import `Tower/FastDefs.lean` for `precompileModules` consumers.
-- `Tower/Equiv.lean`, `Tower/Impl.lean`, and `Tower/TensorAlgebra.lean` connect the
-  layers and expose useful transport lemmas.
+- `Tower/Equiv.lean` and `Tower/Impl.lean` connect the layers and expose useful
+  transport lemmas.
+- `Tower/TensorAlgebra.lean` re-exports the generic tensor basis API from
+  `CompPoly/LinearAlgebra/TensorProduct/Basis.lean`. Its right scalar action is
+  explicit; importing either path preserves Mathlib's default left action. See
+  [`../../CompPoly/LinearAlgebra/README.md`](../../CompPoly/LinearAlgebra/README.md)
+  for the local algebra, module and scalar-action selection needed for equal tensor factors.
 
 Use the tower subtree when the task is about characteristic-2 extensions more
 generally, not just GHASH.

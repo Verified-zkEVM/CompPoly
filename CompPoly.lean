@@ -220,6 +220,7 @@ public import CompPoly.LinearAlgebra.PolynomialMatrix.RowSpan
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Shifted
 public import CompPoly.LinearAlgebra.PolynomialMatrix.ShiftedReduction
 public import CompPoly.LinearAlgebra.PolynomialMatrix.StrassenCorrectness
+public import CompPoly.LinearAlgebra.TensorProduct.Basis
 public import CompPoly.Multilinear.Basic
 public import CompPoly.Multilinear.Equiv
 public import CompPoly.Multilinear.ManyEval
