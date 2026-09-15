@@ -181,8 +181,16 @@ jobs:
           mkdir -p "$RUNNER_TEMP/bench-artifact"
           results=(bench/out/results-*.jsonl)
           reports=(bench/out/report-*.md)
+          manifests=(bench/out/manifest-*.json)
           if [ -e "${results[0]}" ]; then
             cp "${results[@]}" "$RUNNER_TEMP/bench-artifact/"
+          fi
+          # Provenance: which commit, toolchain and hardware produced these
+          # numbers, and whether the tree was dirty. Iteration counts come from
+          # a wall-clock budget now, so they no longer say anything about which
+          # machine a row ran on.
+          if [ -e "${manifests[0]}" ]; then
+            cp "${manifests[@]}" "$RUNNER_TEMP/bench-artifact/"
           fi
           {
             echo '<!-- comppoly-benchmark-report -->'

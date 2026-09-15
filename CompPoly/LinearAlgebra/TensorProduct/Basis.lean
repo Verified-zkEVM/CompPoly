@@ -19,6 +19,14 @@ default action on the left factor, including when `Left = Right`.
 For equal factors, select the right `Algebra`, `Module`, `DistribMulAction` and `SMul`
 locally when combining this basis with scalar notation and module laws. Tensor products
 provide independent default instances at each of these levels.
+
+For background on tensor-product bases, see [Lan02]. For equal field factors, this
+right-action basis is the basis used for the row representation in [DP24], §2.5.
+
+## References
+
+* [Lang, S., *Algebra*][Lan02]
+* [Diamond, B. E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
 -/
 
 @[expose] public section
