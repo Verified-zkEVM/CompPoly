@@ -203,19 +203,61 @@ def mul (x y : Ext P) : Ext P :=
     ∑ i : Fin P.d, ∑ j : Fin P.d,
       coeff x i * coeff y j * coeff (monomialMod ((i : ℕ) + (j : ℕ))) m
 
+/-- Append `cur, shiftReduce cur, …`, `n` entries in all, to `acc`; the scan that builds `red`.
+This is the table the `shiftReduce` docstring above refers to. -/
+def redScan : ℕ → Ext P → Array (Ext P) → Array (Ext P)
+  | 0, _, acc => acc
+  | n + 1, cur, acc => redScan n (shiftReduce cur) (acc.push cur)
+
+theorem redScan_size (n : ℕ) (cur : Ext P) (acc : Array (Ext P)) :
+    (redScan n cur acc).size = acc.size + n := by
+  induction n generalizing cur acc with
+  | zero => rfl
+  | succ n ih => rw [redScan, ih, Array.size_push]; omega
+
+/-- Entry `k` of the scan is `shiftReduce^[k - acc.size] cur` past the prefix it was given. -/
+theorem redScan_getElem (n : ℕ) (cur : Ext P) (acc : Array (Ext P)) (k : ℕ)
+    (h : k < (redScan n cur acc).size) :
+    (redScan n cur acc)[k] =
+      if hlt : k < acc.size then acc[k] else shiftReduce^[k - acc.size] cur := by
+  induction n generalizing cur acc with
+  | zero =>
+      have hk : k < acc.size := by simpa [redScan] using h
+      simp [redScan, hk]
+  | succ n ih =>
+      simp only [redScan]
+      rw [ih]
+      by_cases hlt : k < acc.size
+      · have hpush : k < (acc.push cur).size := by simp only [Array.size_push]; omega
+        rw [dite_eq_left hpush, dite_eq_left hlt]
+        exact Array.getElem_push_lt hlt
+      · by_cases heq : k = acc.size
+        · subst heq
+          rw [dite_eq_left (by simp only [Array.size_push]; omega), dite_eq_right (lt_irrefl _),
+            Array.getElem_push_eq, Nat.sub_self, Function.iterate_zero, id]
+        · have hpush : ¬ k < (acc.push cur).size := by simp only [Array.size_push]; omega
+          rw [dite_eq_right hpush, dite_eq_right hlt, Array.size_push,
+            ← Function.iterate_succ_apply]
+          congr 1
+          omega
+
 /--
 The reduction table: `red P` holds `X^k mod f` for every `k ≤ 2d - 2`, i.e. every exponent a
 product of two reduced elements can reach.
 
-This is the table the `shiftReduce` docstring above refers to. It exists purely for speed: `mul`
-is the specification, and `mulTbl` below is the compiled implementation that consults this table.
+Built by one `redScan` from `1`, so the whole table costs `O(d^2)`; `Vector.ofFn (monomialMod ·)`
+would iterate `shiftReduce` from scratch for every entry, `O(d^3)` in all. It exists purely for
+speed: `mul` is the specification, and `mulTbl` below is the compiled implementation that
+consults this table.
 -/
 def red (P : ExtensionParams F) : Vector (Ext P) (2 * P.d - 1) :=
-  Vector.ofFn fun k => monomialMod (k : ℕ)
+  ⟨redScan (2 * P.d - 1) 1 #[], by rw [redScan_size, Array.size_empty, Nat.zero_add]⟩
 
 @[simp] theorem red_getElem {k : ℕ} (hk : k < 2 * P.d - 1) :
     (red P)[k] = monomialMod k := by
-  simp only [red, Vector.getElem_ofFn]
+  simp only [red, Vector.getElem_mk]
+  rw [redScan_getElem]
+  simp [monomialMod]
 
 /-- A left fold that adds `f i` at each step is `a` plus the sum; the bridge from the loops the
 compiler runs to the `Finset.sum`s the specification is stated with. -/
