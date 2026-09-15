@@ -6,7 +6,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 module
 
 public import CompPoly.Data.Classes.DCast
-public import CompPoly.Fields.Binary.Tower.Abstract.Basis
+public import CompPoly.Fields.Binary.Tower.Support.DefiningPoly
 
 /-!
 # Concrete Binary Tower Core

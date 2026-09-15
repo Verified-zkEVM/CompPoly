@@ -6,6 +6,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 module
 
 public import CompPoly.Fields.Binary.Tower.Concrete.Core
+public import CompPoly.Fields.Binary.Tower.Support.IrreducibilityAndTraceMapProperty
 
 /-!
 # Concrete Binary Tower Field

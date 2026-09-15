@@ -116,6 +116,9 @@ support lemmas:
 
 - `Tower/Abstract/*` - abstract tower definitions and algebra.
 - `Tower/Concrete/*` - concrete basis, core definitions, and field instances.
+  These modules use shared support lemmas without importing the abstract tower construction.
+  `Tower/Equiv.lean` imports both constructions to relate them; use that bridge or
+  `Tower/Impl.lean` when both presentations are needed.
   [Concrete/Coordinates.lean](../../CompPoly/Fields/Binary/Tower/Concrete/Coordinates.lean)
   supplies `ConcreteBinaryTower.Coordinates.succCoordinates`: an
   executable linear equivalence from level `k + 1` to two level-`k` coefficients, ordered

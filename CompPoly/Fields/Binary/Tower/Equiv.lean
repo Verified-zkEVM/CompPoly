@@ -5,6 +5,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 module
 
+public import CompPoly.Fields.Binary.Tower.Abstract.Basis
 public import CompPoly.Fields.Binary.Tower.Concrete.Basis
 
 /-!
