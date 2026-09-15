@@ -1331,6 +1331,7 @@ reviews as a small diff and the stack merges bottom-up. Base of the stack is
 | 6 | `dhsorens/bench-sizing-and-coverage` | Wall-clock budgets replace 228 hand-tuned iteration counts, one declaration site per row, preset-independent digests, group identity and a run manifest in the output | landed |
 | 7 | `dhsorens/bench-coverage` | Base-field, eight-limb, tower-kernel, NTT-sweep, Reed-Solomon and crossover groups; chained bodies; `work_units` and `digest_class` | landed |
 | 8 | `dhsorens/bench-ab` | `--compare` and `--out-dir`, the `bench-ab.sh` driver, and the optimisation-loop protocol in `docs/wiki/autoresearch.md` | in review |
+| 9 | `dhsorens/ext-mul-loop` | First run of the loop, on `Extension.Ext.mul`: three iterations, two kept, one reverted | in review |
 
 ### 12.1 Measurement core (`dhsorens/bench-measurement-core`)
 
@@ -1943,6 +1944,50 @@ exit 3; one altered preset refused with exit 1 before any table.
 **Deferred.** Stored results and a CI regression gate remain undone by decision;
 the external yardstick of §13 remains the separate PR that turns "faster than
 before" into "fast enough".
+
+### 12.9 First run of the loop: `Extension.Ext.mul` (`dhsorens/ext-mul-loop`)
+
+The first target from the table in `docs/wiki/autoresearch.md`, taken through
+the protocol exactly as written: one change per iteration, `lake build` as the
+proof gate, `--validate-only` on the extension groups, `bench-ab.sh run` at
+`--medium` with five rounds a side, keep on `faster`, revert otherwise, and
+`freeze --force` after each keep. Three iterations; the third was reverted.
+Every gate held throughout: no `mismatch`, no `SUSPECT`, harness drift within
+±1.7%.
+
+| Iteration | Change | `mul` d=4 | `mul` d=5 | `mul` d=6 | `inv` d=4 | Kept |
+|---|---|---:|---:|---:|---:|---|
+| 1 | `Fin.foldl` loops replace the two `Finset.sum`s in `mulTbl` | 0.431 | 0.385 | 0.363 | 0.698 | yes |
+| 2 | `red` built by one `redScan`, `O(d^2)` not `O(d^3)` | 0.998 | 1.007 | 1.025 | 0.540 | yes |
+| 3 | convolution into `2d - 1` coefficients, then one contraction against `red` | 1.062 | 0.962 | 0.838 | 1.120 | **no** |
+
+Cumulative over the two kept iterations, KoalaBear: `mul` 17.1 → 7.3 µs at
+d=4 and 44.3 → 15.4 µs at d=6; `inv` 2.60 → 0.99 ms at d=4. The proof burden
+was one lemma per iteration: `Fin.foldl_add_eq_add_sum`, `redScan_getElem`,
+and (for the reverted one) a convolution identity over `Finset.range`.
+
+**Findings from doing the work.**
+
+1. **The proof gate was never the bottleneck.** Each iteration's `@[csimp]`
+   proof closed in one to four build cycles, all of them syntactic (which
+   lemma name, which normal form), none mathematical. The loop's cost is the
+   measurement, not the proof.
+2. **Iteration 2 measured the path it did not target.** `mul` was `same`
+   because, on the specialised multiply path, `red P` for a fixed modulus is a
+   closed term the compiler evaluates once, so the table was already free
+   there. `inv` improved 1.85× because `npowBinRec` reaches `mulTbl` with the
+   modulus as a runtime argument and was rebuilding the table on every
+   multiplication. A row the loop did not aim at is still a row it must read.
+3. **Fewer field operations did not mean faster.** Iteration 3 cuts the
+   multiply from `2d^3` field operations to about `3d^2` and was slower at
+   d=4. The remaining ~7 µs for sixteen base-field products is not arithmetic.
+   The compiled bench module for the extension groups constructs Mathlib
+   `MulZeroClass` dictionaries from a `Semiring` at runtime, which points at
+   generic instance construction on the hot path rather than at the
+   algorithm. That is the next iteration's target, and it is a specialisation
+   question, not an algorithmic one; the O(d²) contraction is worth retrying
+   once the constant is gone, since it already wins at d=6. The patch is
+   small (99 lines) and reproducible from this entry.
 
 ---
 
