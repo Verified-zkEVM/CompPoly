@@ -1,35 +1,40 @@
 /-
-Copyright (c) 2025 CompPoly. All rights reserved.
+Copyright (c) 2024-2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Natalia Klaus, Frantisek Silvasi, Derek Sorensen, Andrew Zitek-Estrada
+Authors: Pablo Martín Vinuelas
 -/
 module
 
-public import CompPoly.Multivariate.MvPolyEquiv.Eval
-public import CompPoly.Multivariate.MvPolyEquiv.Instances
+public import CompPoly.Multivariate.Operations
 public import CompPoly.Univariate.CMvEquiv
 
 /-!
-# simp/grind lemmas for `CPoly.CMvPolynomial.eval`
+  # Evaluation of computable multivariate polynomials, bundled and over `Finset`s
 
-These lemmas are meant to support proof automation (simp/grind normalization)
-when reasoning about polynomial evaluation (e.g. Horner correctness proofs).
+  CompPoly records that `CMvPolynomial.eval vals` respects each ring operation separately
+  (`eval_zero`, `eval_one`, `eval_add`, `eval_mul`, `eval_C`, …), which is what `simp`/`grind`
+  need to normalize a *fixed* expression. Two things are missing for reasoning about a **family**
+  of polynomials: the value of a bare variable, and commutation with `Finset.sum` / `Finset.prod`.
 
-The final section provides a degree-bounded eval-extensionality lemma for
-single-variable `CMvPolynomial`s over an integral domain (a Schwartz–Zippel
-style result specialized to one variable), suitable for soundness proofs in
-protocols such as sumcheck.
+  Both follow at once from bundling: `CMvPolynomial.eval vals` is `eval₂Hom (RingHom.id R) vals`,
+  so `map_sum` and `map_prod` apply verbatim. `evalHom` records that bundling; the two `Finset`
+  lemmas are its immediate corollaries, stated in unbundled form so that call sites can rewrite
+  without unfolding.
+
 -/
 
 @[expose] public section
-namespace CPoly
 
-open _root_.CPoly.CMvPolynomial
+namespace CPoly.CMvPolynomial
 
-section
+variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R] (vals : Fin n → R)
 
-variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
-variable (vals : Fin n → R)
+/-- Evaluation at a fixed point, bundled as a ring homomorphism — the identity-coefficient case
+of `eval₂Hom`. This is what gives evaluation the `map_*` API of a `RingHom`. -/
+def evalHom : CMvPolynomial n R →+* R := eval₂Hom (RingHom.id R) vals
+
+@[simp]
+theorem evalHom_apply (p : CMvPolynomial n R) : evalHom vals p = p.eval vals := rfl
 
 @[simp]
 lemma eval_zero : (0 : CMvPolynomial n R).eval vals = 0 := by
@@ -42,6 +47,10 @@ lemma eval_one : (1 : CMvPolynomial n R).eval vals = 1 := by
 @[simp]
 lemma eval_C (c : R) : (CMvPolynomial.C c : CMvPolynomial n R).eval vals = c := by
   simp [eval_equiv, fromCMvPolynomial_C]
+
+@[simp]
+theorem eval_X (i : Fin n) : (X (R := R) i).eval vals = vals i := by
+  rw [eval_equiv, fromCMvPolynomial_X, MvPolynomial.eval_X]
 
 @[simp]
 lemma eval_add (p q : CMvPolynomial n R) :
@@ -60,8 +69,6 @@ lemma eval_pow (p : CMvPolynomial n R) (k : ℕ) :
   | succ k ih =>
       rw [pow_succ, eval_mul, ih, pow_succ]
 
-end
-
 section
 
 variable {n : ℕ} {R : Type} [CommRing R] [BEq R] [LawfulBEq R]
@@ -79,10 +86,32 @@ lemma eval_sub (p q : CMvPolynomial n R) :
 
 end
 
+/-- Evaluation commutes with a finite sum of polynomials. -/
+theorem eval_sum {ι : Type*} (s : Finset ι) (f : ι → CMvPolynomial n R) :
+    (∑ i ∈ s, f i).eval vals = ∑ i ∈ s, (f i).eval vals :=
+  map_sum (evalHom vals) f s
+
+/-- Evaluation commutes with a finite product of polynomials. -/
+theorem eval_prod {ι : Type*} (s : Finset ι) (f : ι → CMvPolynomial n R) :
+    (∏ i ∈ s, f i).eval vals = ∏ i ∈ s, (f i).eval vals :=
+  map_prod (evalHom vals) f s
+
+/-! ## Transporting a whole polynomial
+
+The lemmas above are enough for statements about *values*. A statement about *degrees* is not
+determined by values (two distinct polynomials agree everywhere over a finite field), so it has to
+cross the representation boundary at the level of the polynomial itself, through
+`fromCMvPolynomial`. That map is the forward direction of `polyRingEquiv`, hence a ring
+homomorphism, so it too commutes with `Finset.sum` and `Finset.prod`. -/
+
+end CPoly.CMvPolynomial
+
+namespace CPoly.CMvPolynomial
+
+variable {n : ℕ} {R : Type*} [CommRing R] [BEq R] [LawfulBEq R]
+
 attribute [grind =]
   eval_zero eval_one eval_C eval_add eval_mul eval_pow eval_neg eval_sub
-
-/-! ### Degree-bounded eval-extensionality (univariate) -/
 
 section EvalExtUnivariate
 
@@ -96,7 +125,7 @@ difference through the `CPolynomial.cmvEquiv` bridge.
 The hypothesis form matches Schwartz–Zippel usage at call sites: callers
 typically have a degree bound on the difference polynomial, not on `p` and
 `q` individually. -/
-theorem CMvPolynomial.eval_ext_univariate
+theorem eval_ext_univariate
     [CommRing R] [DecidableEq R] [BEq R] [LawfulBEq R] [IsDomain R]
     {p q : CMvPolynomial 1 R} {d : ℕ} {S : Finset R}
     (hdeg : (fromCMvPolynomial p - fromCMvPolynomial q).degreeOf 0 ≤ d)
@@ -124,4 +153,4 @@ theorem CMvPolynomial.eval_ext_univariate
 
 end EvalExtUnivariate
 
-end CPoly
+end CPoly.CMvPolynomial

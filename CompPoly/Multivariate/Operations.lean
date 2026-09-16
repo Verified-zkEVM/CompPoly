@@ -326,6 +326,51 @@ lemma fromCMvPolynomial_X {k : ℕ} {R : Type*} [CommSemiring R] [BEq R] [Lawful
   rw [X_eq_monomial, fromCMvPolynomial_monomial, toFinsupp_unitMono]
   rfl
 
+/-! ### `C` and `eval₂` as ring homomorphisms -/
+
+@[simp] theorem eval₂_C {n : ℕ} {R S : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+    [CommSemiring S] (f : R →+* S) (vs : Fin n → S) (c : R) :
+    CMvPolynomial.eval₂ f vs (CMvPolynomial.C c) = f c := by
+  rw [eval₂_equiv (f := f) (vals := vs), fromCMvPolynomial_C, MvPolynomial.eval₂_C]
+
+@[simp] theorem eval₂_X {n : ℕ} {R S : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+    [CommSemiring S] (f : R →+* S) (vs : Fin n → S) (i : Fin n) :
+    CMvPolynomial.eval₂ f vs (CMvPolynomial.X i) = vs i := by
+  rw [eval₂_equiv (f := f) (vals := vs), fromCMvPolynomial_X, MvPolynomial.eval₂_X]
+
+@[simp] theorem eval₂Hom_C {n : ℕ} {R S : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+    [CommSemiring S] (f : R →+* S) (vs : Fin n → S) (c : R) :
+    CMvPolynomial.eval₂Hom f vs (CMvPolynomial.C c) = f c := by
+  rw [eval₂Hom_apply, eval₂_C]
+
+@[simp] theorem eval₂Hom_X {n : ℕ} {R S : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+    [CommSemiring S] (f : R →+* S) (vs : Fin n → S) (i : Fin n) :
+    CMvPolynomial.eval₂Hom f vs (CMvPolynomial.X i) = vs i := by
+  rw [eval₂Hom_apply, eval₂_X]
+
+/-- Two ring homomorphisms out of `CMvPolynomial n R` are equal once they agree on the constants
+and on every variable. -/
+theorem ringHom_ext {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+    {T : Type*} [Semiring T] {f g : CMvPolynomial n R →+* T}
+    (hC : ∀ c, f (CMvPolynomial.C c) = g (CMvPolynomial.C c))
+    (hX : ∀ i, f (CMvPolynomial.X i) = g (CMvPolynomial.X i)) : f = g := by
+  have hsymmC : ∀ c, (CPoly.polyRingEquiv (n := n) (R := R)).symm (MvPolynomial.C c)
+      = CMvPolynomial.C c := fun c =>
+    (CPoly.polyRingEquiv (n := n) (R := R)).injective (by
+      rw [RingEquiv.apply_symm_apply, coe_polyRingEquiv, fromCMvPolynomial_C])
+  have hsymmX : ∀ i, (CPoly.polyRingEquiv (n := n) (R := R)).symm (MvPolynomial.X i)
+      = CMvPolynomial.X i := fun i =>
+    (CPoly.polyRingEquiv (n := n) (R := R)).injective (by
+      rw [RingEquiv.apply_symm_apply, coe_polyRingEquiv, fromCMvPolynomial_X])
+  have hcomp : f.comp (CPoly.polyRingEquiv (n := n) (R := R)).symm.toRingHom
+      = g.comp (CPoly.polyRingEquiv (n := n) (R := R)).symm.toRingHom := by
+    refine MvPolynomial.ringHom_ext (fun c => ?_) (fun i => ?_)
+    · simpa [hsymmC] using hC c
+    · simpa [hsymmX] using hX i
+  refine RingHom.ext (fun p => ?_)
+  obtain ⟨q, rfl⟩ := (CPoly.polyRingEquiv (n := n) (R := R)).symm.surjective p
+  exact congrFun (congrArg (·.toFun) hcomp) q
+
 @[simp] lemma aeval_X {n : ℕ} {R σ : Type*}
     [CommSemiring R] [BEq R] [LawfulBEq R]
     [CommSemiring σ] [Algebra R σ]
@@ -338,8 +383,7 @@ lemma fromCMvPolynomial_X {k : ℕ} {R : Type*} [CommSemiring R] [BEq R] [Lawful
 @[simp] lemma bind₁_X {n m : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
     (f : Fin n → CMvPolynomial m R) (i : Fin n) :
     bind₁ f (CMvPolynomial.X (R := R) i) = f i := by
-  rw [bind₁_eq_aeval]
-  simpa using (aeval_X (n := n) (R := R) (σ := CMvPolynomial m R) f i)
+  rw [bind₁_eq_aeval, aeval_X]
 
 @[simp] lemma bind₁_id {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
     (p : CMvPolynomial n R) :
