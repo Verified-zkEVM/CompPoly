@@ -962,4 +962,8 @@ theorem toQuot_inv (a : ConcreteBF128Ghash) : toQuot a⁻¹ = (toQuot a)⁻¹ :=
 
 end DivisionRing_Field_Instances
 
+/-- The polynomial-basis GHASH field has characteristic two. -/
+instance : CharP ConcreteBF128Ghash 2 :=
+  (CharP.charP_iff_prime_eq_zero Nat.prime_two).2 rfl
+
 end BF128Ghash

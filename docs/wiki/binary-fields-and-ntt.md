@@ -73,6 +73,15 @@ This differs from the level-three binary tower despite their equal cardinalities
 implicit conversions between those presentations or from raw bytes. An embedding into another
 field requires a separately specified generator image and a proof that it satisfies the modulus.
 
+[`Aes.Ghash`](../../CompPoly/Fields/Binary/Aes/Ghash.lean) supplies the executable ring
+homomorphism `AesField.toGhash`. It sends the AES generator to GHASH polynomial-basis word
+`0x0dcb364640a222fe6b8330483c2e9849`, and proves the root identity, generator image and
+injectivity. Its actual function evaluates the eight coefficients; the quotient universal
+property proves the homomorphism laws without introducing a new scalar-action instance.
+Ordinary `map_add`, `map_mul`, `map_inv₀` and `map_pow` lemmas apply. The pinned implementations
+selecting this root are referenced in the module docstring. This field embedding does not
+establish a protocol's weight-basis or soundness conditions.
+
 The degree-eight irreducibility proof uses the general Rabin criterion, checking Frobenius
 remainders at exponents 256 and 16. Regenerate its certificate with the command recorded in
 [`Aes.Certificate`](../../CompPoly/Fields/Binary/Aes/Certificate.lean).

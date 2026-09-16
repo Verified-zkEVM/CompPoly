@@ -5,7 +5,7 @@ Authors: CompPoly Contributors
 -/
 module
 
-public import CompPoly.Fields.Binary.Aes.Basic
+public import CompPoly.Fields.Binary.Aes.Ghash
 public import CompPoly.Fields.Binary.BF128Ghash.Impl
 public import CompPoly.Fields.Binary.BF64.Ext3
 
@@ -86,6 +86,14 @@ def run : IO Unit := do
   check "AES inverse vector" (aes⁻¹.toBitVec == 0xca#8)
   check "AES generic inverse" (inverseProduct aes == 1)
   check "AES zero inverse" ((0 : AesField)⁻¹ == 0)
+  check "AES embedding generator"
+    ((AesField.toGhash (AesField.ofBitVec (2#8))).toBitVec ==
+      0x0dcb364640a222fe6b8330483c2e9849#128)
+  check "AES embedding product"
+    (AesField.toGhash (aes * AesField.ofBitVec (0xca#8)) ==
+      AesField.toGhash aes * AesField.toGhash (AesField.ofBitVec (0xca#8)))
+  check "AES embedding inverse" (AesField.toGhash aes⁻¹ == (AesField.toGhash aes)⁻¹)
+  check "AES embedding zero" (AesField.toGhash 0 == 0)
   let high := BF128Ghash.ofBitVec (0x80000000000000000000000000000000#128)
   let expectedInverse := BF128Ghash.ofBitVec (0x0b604395d27ef1a8b604395d27ef1a8ee#128)
   check "GHASH reduction" ((high * BF128Ghash.ofBitVec (2#128)).toBitVec == 0x87#128)
