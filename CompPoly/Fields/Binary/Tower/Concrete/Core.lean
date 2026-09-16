@@ -1018,6 +1018,15 @@ theorem split_Z {k : ℕ} (h_pos : k > 0) :
 lemma one_bitvec_toNat {width : ℕ} (h_width : width > 0) : (1#width).toNat = 1 := by
   simp only [BitVec.toNat_ofNat, Nat.one_mod_two_pow_eq_one, h_width]
 
+/-- The generator at level `k + 1` is the word with its only set bit at position `2 ^ k`. -/
+theorem toNat_Z_succ (k : ℕ) : (Z (k + 1)).toNat = 2 ^ (2 ^ k) := by
+  rw [Z, dif_neg (Nat.succ_ne_zero k)]
+  rw [join_eq_dcast_append, ← BitVec.dcast_bitvec_toNat_eq, BitVec.append_eq]
+  rw [BitVec.toNat_append]
+  change (1#(2 ^ k)).toNat <<< (2 ^ k) ||| (0#(2 ^ k)).toNat = 2 ^ (2 ^ k)
+  rw [one_bitvec_toNat (Nat.two_pow_pos k)]
+  simp only [BitVec.toNat_ofNat, Nat.zero_mod, Nat.or_zero, Nat.shiftLeft_eq, one_mul]
+
 lemma one_bitvec_shiftRight {d : ℕ} (h_d : d > 0) : 1 >>> d = 0 := by
   apply Nat.shiftRight_eq_zero
   rw [Nat.one_lt_two_pow_iff]
