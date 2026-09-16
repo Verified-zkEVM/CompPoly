@@ -121,6 +121,7 @@ public import CompPoly.Fields.Binary.Tower.Abstract.Core
 public import CompPoly.Fields.Binary.Tower.Abstract.Split
 public import CompPoly.Fields.Binary.Tower.Basic
 public import CompPoly.Fields.Binary.Tower.Concrete.Algebra
+public import CompPoly.Fields.Binary.Tower.Concrete.Arithmetic
 public import CompPoly.Fields.Binary.Tower.Concrete.Basis
 public import CompPoly.Fields.Binary.Tower.Concrete.BasisCoordinates
 public import CompPoly.Fields.Binary.Tower.Concrete.Coordinates

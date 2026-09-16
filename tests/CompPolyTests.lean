@@ -39,6 +39,7 @@ public import CompPolyTests.Fields.Binary.BF64
 public import CompPolyTests.Fields.Binary.BF64.Presentation
 public import CompPolyTests.Fields.Binary.Common
 public import CompPolyTests.Fields.Binary.Tower.Algebra
+public import CompPolyTests.Fields.Binary.Tower.Arithmetic
 public import CompPolyTests.Fields.Binary.Tower.BasisCoordinates
 public import CompPolyTests.Fields.Binary.Tower.ConcreteImports
 public import CompPolyTests.Fields.Binary.Tower.Coordinates
