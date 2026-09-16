@@ -61,6 +61,7 @@ public import CompPolyTests.LinearAlgebra.Dense
 public import CompPolyTests.LinearAlgebra.PolynomialMatrix.Approximant
 public import CompPolyTests.LinearAlgebra.TensorProduct.Basis
 public import CompPolyTests.Multilinear.Equiv
+public import CompPolyTests.Multilinear.ProductAccumulation
 public import CompPolyTests.Multivariate.CMvMonomial
 public import CompPolyTests.Multivariate.PartialEval
 public import CompPolyTests.Multivariate.Restrict
