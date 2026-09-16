@@ -242,8 +242,10 @@ instance instBEq : BEq (Lawful n R) :=
 instance instLawfulBEq : LawfulBEq (Lawful n R) :=
   inferInstanceAs (LawfulBEq {p : Unlawful n R // p.isNoZeroCoef})
 
-instance instDecidableEq : DecidableEq (Lawful n R) :=
-  inferInstanceAs (DecidableEq {p : Unlawful n R // p.isNoZeroCoef})
+-- Derive this from the structural `BEq`: the subtype instance can otherwise select
+-- `Unlawful.instDecidableEq`, which compares maps by materializing both as lists.
+instance instDecidableEq : DecidableEq (Lawful n R) := fun _ _ =>
+  decidable_of_iff _ beq_iff_eq
 
 /-- The $i$-th variable as a polynomial. -/
 def X (i : ℕ) : Lawful (i + 1) ℤ :=
