@@ -31,8 +31,8 @@ def canonicalAlgMap (k : ℕ) := concreteCanonicalEmbedding (k:=k)
 /-- The embedding into the next level preserves the stored natural word. -/
 theorem toNat_canonicalAlgMap (k : ℕ) (x : ConcreteBTField k) :
     (canonicalAlgMap k x).toNat = x.toNat := by
-  change BitVec.toNat (join (k := k + 1) (by omega) 0 x) = BitVec.toNat x
-  rw [join_eq_dcast_append, ← BitVec.dcast_bitvec_toNat_eq, BitVec.append_eq]
+  change (join (k := k + 1) (by omega) 0 x).toBitVec.toNat = x.toBitVec.toNat
+  rw [join_eq_dcast_append, ← BitVec.dcast_bitvec_toNat_eq]
   rw [BitVec.toNat_append]
   change 0 <<< (2 ^ k) ||| x.toNat = x.toNat
   rw [Nat.zero_shiftLeft, Nat.zero_or]

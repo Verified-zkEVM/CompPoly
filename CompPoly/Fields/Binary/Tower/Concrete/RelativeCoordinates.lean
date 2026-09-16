@@ -99,7 +99,7 @@ theorem pack_smul {i j : ℕ} (h : i ≤ j) (a : ConcreteBTField i)
 private theorem low_eq_setWidth (k : ℕ) (x : ConcreteBTField (k + 1)) :
     (low k x).toBitVec = x.toBitVec.setWidth (2 ^ k) := by
   apply BitVec.eq_of_toNat_eq
-  simp only [ConcreteBTField.toBitVec, low, split, ← BitVec.dcast_bitvec_toNat_eq,
+  simp only [low, split, ConcreteBTField.toBitVec_ofBitVec, ← BitVec.dcast_bitvec_toNat_eq,
     BitVec.extractLsb, BitVec.extractLsb', BitVec.toNat_ofNat, BitVec.toNat_setWidth,
     Nat.add_one_sub_one, Nat.sub_zero, Nat.shiftRight_zero]
   rw [Nat.sub_add_cancel ((Nat.one_le_two_pow : 1 ≤ 2 ^ k))]
@@ -107,7 +107,7 @@ private theorem low_eq_setWidth (k : ℕ) (x : ConcreteBTField (k + 1)) :
 private theorem high_eq_setWidth (k : ℕ) (x : ConcreteBTField (k + 1)) :
     (high k x).toBitVec = (BitVec.ushiftRight x.toBitVec (2 ^ k)).setWidth (2 ^ k) := by
   apply BitVec.eq_of_toNat_eq
-  simp only [ConcreteBTField.toBitVec, high, split, ← BitVec.dcast_bitvec_toNat_eq,
+  simp only [high, split, ConcreteBTField.toBitVec_ofBitVec, ← BitVec.dcast_bitvec_toNat_eq,
     BitVec.extractLsb, BitVec.extractLsb', BitVec.toNat_ofNat, BitVec.toNat_setWidth,
     Nat.add_one_sub_one]
   congr 2

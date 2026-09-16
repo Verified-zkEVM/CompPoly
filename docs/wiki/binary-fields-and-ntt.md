@@ -168,9 +168,9 @@ binary exponentiation followed by inversion for negative integer powers. The pub
 `npow_def` and `zpow_def` identify those operations; `concrete_pow_nat_eq_pow` relates the
 named raw binary-power routine to natural field powers. Integer-power notation uses the
 field dictionary. The old `instHPowConcreteBTFℤ` name remains as a deprecated explicit
-dictionary, without an instance registration. The tower's carrier remains reducible: inline
-`BitVec` literals can still select word powers even with a tower type ascription. Bind a
-tower-typed variable or supply the tower type explicitly to a generic field function.
+dictionary, without an instance registration. The former standalone `HAdd`, `HMul`, and
+`HDiv` dictionaries likewise remain only as deprecated explicit names; notation inherits the
+homogeneous operations.
 
 Use the tower subtree when the task is about characteristic-2 extensions more
 generally, not just GHASH.
@@ -185,11 +185,16 @@ the field numeral `(2 : ConcreteBTField 1)` is zero.
 The endpoint embedding theorems state zero-extension after `toBitVec`, and the
 relative-coordinate slice theorem constructs each field coefficient with
 `ofBitVec`. Use `toBitVec_coordinates` for raw slices, `getLsbD_coordinates` for
-individual bits, and `toNat_coordinates` for unsigned blocks. The concrete carrier
-is still definitionally a bitvector: these explicit interfaces prepare clients for
-presentation isolation but do not yet prevent implicit raw-word use. The explicit
-extensionality theorem `ConcreteBTField.ext` is available without registration as
-an `ext` tactic rule while the carrier remains an alias.
+individual bits, and `toNat_coordinates` for unsigned blocks. The nominal carrier rejects
+implicit conversion to and from raw words or the distinct `BF64` presentation. In particular,
+a tower type ascription on an inline `BitVec` literal is rejected; use `ofBitVec` or `fromNat`.
+`ConcreteBTField.ext` proves equality from equal stored words. The available comparison
+operations order the unsigned stored words, independently of field arithmetic.
+
+The recursive field construction and the fast packed-word refinement remain in place.
+The concrete additive NTT's `BTF₃` aliases retain their canonical arithmetic dictionaries and
+a computable enumeration of the 256 byte-field elements; this does not supply executable
+enumeration at larger tower levels.
 
 ## Additive NTT Surface
 

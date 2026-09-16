@@ -60,7 +60,7 @@ example : concreteTowerAlgebraMap 1 3 (by decide) (Z 1) ≠ Z 3 := by
   intro h
   have hw := congrArg ConcreteBTField.toNat h
   rw [toNat_concreteTowerAlgebraMap] at hw
-  change BitVec.toNat (Z (0 + 1)) = BitVec.toNat (Z (2 + 1)) at hw
+  change (Z (0 + 1)).toNat = (Z (2 + 1)).toNat at hw
   rw [toNat_Z_succ, toNat_Z_succ] at hw
   exact (by decide : 2 ≠ 16) hw
 
