@@ -67,6 +67,8 @@ This directory contains formally verified field infrastructure used in zero-know
 
 The `Binary/` subtree provides characteristic-2 field infrastructure used by GHASH and additive-NTT workflows:
 
+- `Binary/Aes/*` — the degree-eight AES polynomial field, reusing `Ext` arithmetic with explicit
+  `BitVec 8` coordinates and a separate kernel-checked irreducibility certificate.
 - `Binary/BF128Ghash/*` — GF(2^128) model, a nominal polynomial-basis carrier with explicit `BitVec 128` coordinates, and certificates for the GHASH modulus.
 - `Binary/BF64/*` — polynomial-basis GF(2^64) (`GF(2)[x]/(x^64 + x^4 + x^3 + x + 1)`) with a nominal carrier storing `BitVec 64` coordinates, plus its degree-3 extension GF(2^192). A different basis from the GF(2^64) rung of `Binary/Tower/`, so the two disagree on bit-level encodings.
 - `Binary/AdditiveNTT/*` — additive-NTT domain/algorithm/correctness stack.

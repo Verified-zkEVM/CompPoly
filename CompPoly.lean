@@ -103,6 +103,9 @@ public import CompPoly.Fields.Binary.AdditiveNTT.Executable
 public import CompPoly.Fields.Binary.AdditiveNTT.Impl
 public import CompPoly.Fields.Binary.AdditiveNTT.Intermediate
 public import CompPoly.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
+public import CompPoly.Fields.Binary.Aes.Arithmetic
+public import CompPoly.Fields.Binary.Aes.Basic
+public import CompPoly.Fields.Binary.Aes.Certificate
 public import CompPoly.Fields.Binary.BF128Ghash.Basic
 public import CompPoly.Fields.Binary.BF128Ghash.Impl
 public import CompPoly.Fields.Binary.BF128Ghash.Prelude

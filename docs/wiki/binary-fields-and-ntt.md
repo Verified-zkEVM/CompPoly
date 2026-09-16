@@ -58,6 +58,25 @@ used by both GHASH and tower/NTT developments.
 If the work item is shared binary-field algebra rather than one specific protocol or
 algorithm, start there.
 
+## AES byte presentation
+
+`AesField` is the nominal `Ext` presentation over `ZMod 2` with modulus
+`X^8 + X^4 + X^3 + X + 1`. Import
+[`Aes.Arithmetic`](../../CompPoly/Fields/Binary/Aes/Arithmetic.lean) for executable arithmetic,
+`ofBitVec`, `toBitVec`, and their inverse laws. Bit `i` is the coefficient of `X^i`.
+Import [`Aes.Basic`](../../CompPoly/Fields/Binary/Aes/Basic.lean) for the certified `Field`,
+characteristic two, cardinality 256, and quotient equivalence. The raw arithmetic module does
+not import those proofs or the generated certificate.
+
+A field numeral `(2 : AesField)` is zero; `AesField.ofBitVec (2#8)` is the polynomial generator.
+This differs from the level-three binary tower despite their equal cardinalities. There are no
+implicit conversions between those presentations or from raw bytes. An embedding into another
+field requires a separately specified generator image and a proof that it satisfies the modulus.
+
+The degree-eight irreducibility proof uses the general Rabin criterion, checking Frobenius
+remainders at exponents 256 and 16. Regenerate its certificate with the command recorded in
+[`Aes.Certificate`](../../CompPoly/Fields/Binary/Aes/Certificate.lean).
+
 ## GHASH Surface
 
 The GHASH model lives under `Binary/BF128Ghash/`.

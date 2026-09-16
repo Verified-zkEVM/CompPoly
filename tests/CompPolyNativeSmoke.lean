@@ -5,13 +5,14 @@ Authors: CompPoly Contributors
 -/
 module
 
+public import CompPoly.Fields.Binary.Aes.Basic
 public import CompPoly.Fields.Binary.BF128Ghash.Impl
 public import CompPoly.Fields.Binary.BF64.Ext3
 
 /-!
 # Native field startup and arithmetic checks
 
-This executable imports BF64, its cubic extension, and GHASH, then checks canonical arithmetic.
+This executable imports AES, BF64, its cubic extension, and GHASH to check canonical arithmetic.
 The test guide documents resource limits for native initialization and execution.
 Unlike compile-time guards, this target exercises the linked executable's module initializers.
 The extension product uses the reference vector from the existing BF64 regression tests.
@@ -61,7 +62,7 @@ private def checkGhashOperations {F : Type*} [Field F] [BEq F]
   check "GHASH nonnegative rational scalar" ((3 / 5 : ℚ≥0) • x == x)
   check "GHASH vanishing nonnegative rational scalar" ((1 / 2 : ℚ≥0) • x == 0)
 
-/-- Check reduction, reference products, and total field operations in the three presentations. -/
+/-- Check reduction, reference products, and total field operations in the four presentations. -/
 def run : IO Unit := do
   check "BF64 reduction"
     (((BF64.ofBitVec (0x8000000000000000#64)) * BF64.ofBitVec (2#64)).toBitVec == 0x1b#64)
@@ -77,6 +78,14 @@ def run : IO Unit := do
     (a + 1 == fromWords 0x950e87d7f5606614 0x2c61275c9e6b6cf8 0x1f00bca0042db923)
   check "Ext3 inverse" (inverseProduct a == 1)
   check "Ext3 zero inverse" ((0 : BF64.Ext3)⁻¹ == 0)
+  let aes := AesField.ofBitVec (0x53#8)
+  check "AES reduction"
+    (((AesField.ofBitVec (0x80#8)) * AesField.ofBitVec (2#8)).toBitVec == 0x1b#8)
+  check "AES reference product"
+    (((AesField.ofBitVec (0x57#8)) * AesField.ofBitVec (0x13#8)).toBitVec == 0xfe#8)
+  check "AES inverse vector" (aes⁻¹.toBitVec == 0xca#8)
+  check "AES generic inverse" (inverseProduct aes == 1)
+  check "AES zero inverse" ((0 : AesField)⁻¹ == 0)
   let high := BF128Ghash.ofBitVec (0x80000000000000000000000000000000#128)
   let expectedInverse := BF128Ghash.ofBitVec (0x0b604395d27ef1a8b604395d27ef1a8ee#128)
   check "GHASH reduction" ((high * BF128Ghash.ofBitVec (2#128)).toBitVec == 0x87#128)

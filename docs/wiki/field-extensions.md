@@ -7,9 +7,10 @@ modulus stored by its lower coefficients); binomials `X^d - W` keep the ergonomi
 `BinomialParams`, mapped in by `BinomialParams.toExtensionParams`.
 
 This page owns extension-field architecture. Nothing in it assumes odd characteristic, and
-the framework has one characteristic-2 consumer: `BF64.Ext3`, the cubic extension of `GF(2^64)`
-(see "A characteristic-2 consumer" below). The rest of the char-2 stack — the GHASH field, the
-tower fields, the additive NTT — is a separate, independent development that predates this
+its characteristic-two consumers include `BF64.Ext3`, the cubic extension of `GF(2^64)`, and
+`AesField`, the degree-eight AES polynomial presentation over `ZMod 2` (see below). The rest
+of the char-2 stack — the GHASH field, the tower fields, the additive NTT — is a separate,
+independent development that predates this
 framework; see [`binary-fields-and-ntt.md`](binary-fields-and-ntt.md).
 
 ## Binomials When Possible, General Moduli When Not
@@ -89,11 +90,11 @@ and [`KoalaBear/Ext6.lean`](../../CompPoly/Fields/KoalaBear/Ext6.lean) (`X^6 + X
 [`Ext6/SexticIrreducible.lean`](../../CompPoly/Fields/KoalaBear/Ext6/SexticIrreducible.lean) and
 [`Ext6/SexticCertData.lean`](../../CompPoly/Fields/KoalaBear/Ext6/SexticCertData.lean)).
 
-### A characteristic-2 consumer
+### Characteristic-two consumers
 
 [`Binary/BF64/Ext3.lean`](../../CompPoly/Fields/Binary/BF64/Ext3.lean) adjoins a root of
-`y^3 + y + 1` over `GF(2^64)`, giving `GF(2^192)`. It is the framework's first and so far only
-characteristic-2 instance. The selected modulus has a nonzero linear coefficient, so it uses
+`y^3 + y + 1` over `GF(2^64)`, giving `GF(2^192)`. It is the framework's first
+characteristic-two instance. The selected modulus has a nonzero linear coefficient, so it uses
 the *general* `ExtensionParams` path. Keeping that modulus fixes the intended polynomial-basis
 presentation; `Ext ext3Params` has a coefficient vector of type `Vector BF64 3`.
 
@@ -106,6 +107,11 @@ Two things about it are worth knowing when reading the rest of this page:
   and a root of `y^3 + y + 1` would satisfy `a^7 = 1`; `gcd(7, 2^64 - 1) = 1` forces `a = 1`,
   which is not a root. That is a short direct argument, not the Rabin pipeline. The *base*
   modulus of `BF64` — the degree-64 one over `GF(2)` — does use the certificate pipeline.
+
+[`Binary/Aes/Basic.lean`](../../CompPoly/Fields/Binary/Aes/Basic.lean) instantiates the same
+framework over `ZMod 2` with `X^8 + X^4 + X^3 + X + 1`. Its byte interface is separate from
+its irreducibility and field proofs; see
+[the AES surface](binary-fields-and-ntt.md#aes-byte-presentation).
 
 [`Ext6/GaloisField.lean`](../../CompPoly/Fields/KoalaBear/Ext6/GaloisField.lean) is a separate
 opt-in module identifying `Ext6` with Mathlib's abstract `GaloisField KoalaBear.fieldSize 6`, so
