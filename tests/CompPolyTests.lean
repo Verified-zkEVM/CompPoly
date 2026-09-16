@@ -34,6 +34,7 @@ public import CompPolyTests.Fields.Binary.AdditiveNTT.Basis
 public import CompPolyTests.Fields.Binary.AdditiveNTT.Compatibility
 public import CompPolyTests.Fields.Binary.AdditiveNTT.Executable
 public import CompPolyTests.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
+public import CompPolyTests.Fields.Binary.BF128Ghash.Operations
 public import CompPolyTests.Fields.Binary.BF128Ghash.Prelude
 public import CompPolyTests.Fields.Binary.BF128Ghash.Presentation
 public import CompPolyTests.Fields.Binary.BF64
