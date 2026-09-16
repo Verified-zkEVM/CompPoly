@@ -61,7 +61,8 @@ example : Nat.card AesField = 256 := AesField.nat_card
 #guard ofBitVec (2#8) != 0
 #guard gen == ofBitVec (2#8)
 #guard ((ofBitVec (2#8)) * ofBitVec (2#8)).toBitVec == 4#8
-#guard ConcreteBinaryTower.concrete_mul (k := 3) (2#8) (2#8) == 3#8
+#guard (ConcreteBinaryTower.concrete_mul (k := 3)
+  (ConcreteBinaryTower.fromNat 2) (ConcreteBinaryTower.fromNat 2)).toNat == 3
 #guard (inverse (ofBitVec (0x53#8))).toBitVec == 0xca#8
 #guard inverse (0 : AesField) == 0
 #guard divide (ofBitVec (0x80#8)) 0 == 0
