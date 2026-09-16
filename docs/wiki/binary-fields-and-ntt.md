@@ -10,7 +10,10 @@ This page owns `CompPoly/Fields/Binary/` only:
 ```text
 CompPoly/Fields/Binary/
   Common.lean
+  Common/
+    Arithmetic.lean
   BF128Ghash/
+    Arithmetic.lean
     Prelude.lean
     Basic.lean
     Impl.lean
@@ -51,12 +54,12 @@ architecture. That catalog is deliberately not duplicated here.
 
 ## Common Binary Infrastructure
 
-[`../../CompPoly/Fields/Binary/Common.lean`](../../CompPoly/Fields/Binary/Common.lean)
-is the shared base for characteristic-2 support, BitVec-facing helpers, and lemmas
-used by both GHASH and tower/NTT developments.
+[`Common.Arithmetic`](../../CompPoly/Fields/Binary/Common/Arithmetic.lean) provides width-generic
+zero extension, carry-less multiplication, and the 128-bit multiplication and squaring helpers.
+It imports neither polynomial quotients nor finite-field certificates.
 
-If the work item is shared binary-field algebra rather than one specific protocol or
-algorithm, start there.
+[`Common`](../../CompPoly/Fields/Binary/Common.lean) reexports that arithmetic and adds the
+polynomial interpretation, characteristic-two algebra, and correspondence proofs.
 
 ## AES byte presentation
 
@@ -90,13 +93,17 @@ remainders at exponents 256 and 16. Regenerate its certificate with the command 
 
 The GHASH model lives under `Binary/BF128Ghash/`.
 
+- [`Arithmetic`](../../CompPoly/Fields/Binary/BF128Ghash/Arithmetic.lean) provides the nominal
+  carrier, word maps, XOR addition, folded multiplication, and named inversion without
+  polynomial quotients or irreducibility certificates.
 - [`../../CompPoly/Fields/Binary/BF128Ghash/Prelude.lean`](../../CompPoly/Fields/Binary/BF128Ghash/Prelude.lean)
   defines the GHASH polynomial and the low-level verification helpers used by the
   later certificate files.
 - [`../../CompPoly/Fields/Binary/BF128Ghash/Basic.lean`](../../CompPoly/Fields/Binary/BF128Ghash/Basic.lean)
   packages the field surface.
 - [`../../CompPoly/Fields/Binary/BF128Ghash/Impl.lean`](../../CompPoly/Fields/Binary/BF128Ghash/Impl.lean)
-  contains implementation-facing lemmas and constructions.
+  reexports the arithmetic, proves its quotient correspondence, and assembles the canonical
+  ring and field instances.
 - The `XPowTwoPow*Certificate.lean` files encode concrete certificate proofs.
 
 Use this area when the task is specifically about `GF(2^128)`, GHASH, or the

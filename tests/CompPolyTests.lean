@@ -37,6 +37,7 @@ public import CompPolyTests.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
 public import CompPolyTests.Fields.Binary.Aes.Arithmetic
 public import CompPolyTests.Fields.Binary.Aes.Field
 public import CompPolyTests.Fields.Binary.Aes.Ghash
+public import CompPolyTests.Fields.Binary.BF128Ghash.Arithmetic
 public import CompPolyTests.Fields.Binary.BF128Ghash.Prelude
 public import CompPolyTests.Fields.Binary.BF128Ghash.Operations
 public import CompPolyTests.Fields.Binary.BF128Ghash.Presentation
