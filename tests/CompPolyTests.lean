@@ -46,6 +46,7 @@ public import CompPolyTests.Fields.Binary.Tower.EndpointEmbeddings
 public import CompPolyTests.Fields.Binary.Tower.Fast
 public import CompPolyTests.Fields.Binary.Tower.Norm
 public import CompPolyTests.Fields.Binary.Tower.RelativeCoordinates
+public import CompPolyTests.Fields.Binary.Tower.WordEncoding
 public import CompPolyTests.Fields.Binary.Tower.TensorAlgebra
 public import CompPolyTests.Fields.Extension.Arithmetic
 public import CompPolyTests.Fields.Extension.Certificates

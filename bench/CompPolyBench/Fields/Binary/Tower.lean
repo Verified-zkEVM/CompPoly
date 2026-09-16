@@ -31,7 +31,7 @@ def checksumFastBT128 (x : Fast.FastBT128) : Nat := x.lo.toNat ^^^ x.hi.toNat
 
 /-- The same limb fold on the concrete representation. -/
 def checksumConcreteBt128 (x : ConcreteBTField 7) : Nat :=
-  BitVec.toNat x % 2 ^ 64 ^^^ BitVec.toNat x >>> 64
+  ConcreteBTField.toNat x % 2 ^ 64 ^^^ ConcreteBTField.toNat x >>> 64
 
 /-- Pairwise operand sampler over a fixed pool. -/
 @[inline] private def towerSampler {E : Type} (xs : Array E) (one : E) : Nat → E × E :=

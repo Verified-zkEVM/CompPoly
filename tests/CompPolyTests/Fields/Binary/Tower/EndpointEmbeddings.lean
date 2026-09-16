@@ -24,6 +24,7 @@ example {i j : ℕ} (h : i ≤ j) (x : ConcreteBTField i) :
 
 example (i : ℕ) (h : i ≤ i) (x : ConcreteBTField i) :
     concreteTowerAlgebraMap i i h x = x := by
+  apply ConcreteBTField.toBitVec_injective
   rw [concreteTowerAlgebraMap_eq_setWidth, BitVec.setWidth_eq]
 
 example (i : ℕ) (x : ConcreteBTField i) :
@@ -31,33 +32,35 @@ example (i : ℕ) (x : ConcreteBTField i) :
   rw [toNat_canonicalAlgMap, toNat_canonicalAlgMap]
 
 example (i : ℕ) (x : ConcreteBTField i) :
-    concreteTowerAlgebraMap i (i + 3) (by omega) x = x.setWidth (2 ^ (i + 3)) :=
+    (concreteTowerAlgebraMap i (i + 3) (by omega) x).toBitVec =
+      x.toBitVec.setWidth (2 ^ (i + 3)) :=
   concreteTowerAlgebraMap_eq_setWidth _ x
 
-example : concreteTowerAlgebraMap 0 3 (by decide) (Z 0) = BitVec.ofNat 8 1 := by
+example : (concreteTowerAlgebraMap 0 3 (by decide) (Z 0)).toBitVec = BitVec.ofNat 8 1 := by
   rw [concreteTowerAlgebraMap_eq_setWidth]
   decide +kernel
 
-example : concreteTowerAlgebraMap 7 8 (by decide) (BitVec.ofNat 128 (2 ^ 127 + 1)) =
-    BitVec.ofNat 256 (2 ^ 127 + 1) := by
+example : (concreteTowerAlgebraMap 7 8 (by decide)
+    (ConcreteBTField.ofBitVec (BitVec.ofNat 128 (2 ^ 127 + 1)))).toBitVec =
+      BitVec.ofNat 256 (2 ^ 127 + 1) := by
   rw [concreteTowerAlgebraMap_eq_setWidth]
   decide +kernel
 
 example (j : ℕ) (h : 7 ≤ j) (x : ConcreteBTField 7) :
-    (concreteTowerAlgebraMap 7 j h x).getLsbD 127 = x.getLsbD 127 := by
+    (concreteTowerAlgebraMap 7 j h x).toBitVec.getLsbD 127 = x.toBitVec.getLsbD 127 := by
   rw [concreteTowerAlgebraMap_eq_setWidth, BitVec.getLsbD_setWidth]
   have hwidth : 2 ^ 7 ≤ 2 ^ j := Nat.pow_le_pow_right (by decide) h
   simp only [show 127 < 2 ^ j by omega, decide_true, Bool.true_and]
 
-example : concreteTowerAlgebraMap 1 3 (by decide) (Z 1) = BitVec.ofNat 8 2 :=
+example : (concreteTowerAlgebraMap 1 3 (by decide) (Z 1)).toBitVec = BitVec.ofNat 8 2 :=
   concreteTowerAlgebraMap_Z_succ (k := 0) (by decide)
 
 -- Zero-extension retains the old generator rather than selecting the destination generator.
 example : concreteTowerAlgebraMap 1 3 (by decide) (Z 1) ≠ Z 3 := by
   intro h
-  have hw := congrArg BitVec.toNat h
+  have hw := congrArg ConcreteBTField.toNat h
   rw [toNat_concreteTowerAlgebraMap] at hw
-  change (Z (0 + 1)).toNat = (Z (2 + 1)).toNat at hw
+  change BitVec.toNat (Z (0 + 1)) = BitVec.toNat (Z (2 + 1)) at hw
   rw [toNat_Z_succ, toNat_Z_succ] at hw
   exact (by decide : 2 ≠ 16) hw
 

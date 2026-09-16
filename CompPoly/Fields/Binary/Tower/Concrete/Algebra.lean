@@ -31,7 +31,7 @@ def canonicalAlgMap (k : ℕ) := concreteCanonicalEmbedding (k:=k)
 /-- The embedding into the next level preserves the stored natural word. -/
 theorem toNat_canonicalAlgMap (k : ℕ) (x : ConcreteBTField k) :
     (canonicalAlgMap k x).toNat = x.toNat := by
-  change (join (k := k + 1) (by omega) 0 x).toNat = x.toNat
+  change BitVec.toNat (join (k := k + 1) (by omega) 0 x) = BitVec.toNat x
   rw [join_eq_dcast_append, ← BitVec.dcast_bitvec_toNat_eq, BitVec.append_eq]
   rw [BitVec.toNat_append]
   change 0 <<< (2 ^ k) ||| x.toNat = x.toNat
@@ -221,16 +221,18 @@ theorem toNat_concreteTowerAlgebraMap {i j : ℕ} (h : i ≤ j) (x : ConcreteBTF
 /-- An embedding between ordered levels zero-extends the original bitvector. -/
 theorem concreteTowerAlgebraMap_eq_setWidth {i j : ℕ} (h : i ≤ j)
     (x : ConcreteBTField i) :
-    concreteTowerAlgebraMap i j h x = x.setWidth (2 ^ j) := by
+    (concreteTowerAlgebraMap i j h x).toBitVec = x.toBitVec.setWidth (2 ^ j) := by
   apply BitVec.eq_of_toNat_eq
-  rw [toNat_concreteTowerAlgebraMap,
-    BitVec.toNat_setWidth_of_le (Nat.pow_le_pow_right (by decide) h)]
+  rw [ConcreteBTField.toNat_toBitVec, toNat_concreteTowerAlgebraMap,
+    BitVec.toNat_setWidth_of_le (Nat.pow_le_pow_right (by decide) h),
+    ConcreteBTField.toNat_toBitVec]
 
 /-- The image of the level-`k + 1` generator keeps its set bit at position `2 ^ k`. -/
 theorem concreteTowerAlgebraMap_Z_succ {k j : ℕ} (h : k + 1 ≤ j) :
-    concreteTowerAlgebraMap (k + 1) j h (Z (k + 1)) =
+    (concreteTowerAlgebraMap (k + 1) j h (Z (k + 1))).toBitVec =
       BitVec.ofNat (2 ^ j) (2 ^ (2 ^ k)) := by
-  rw [concreteTowerAlgebraMap_eq_setWidth, ← BitVec.ofNat_toNat, toNat_Z_succ]
+  rw [concreteTowerAlgebraMap_eq_setWidth, ← BitVec.ofNat_toNat]
+  exact congrArg (BitVec.ofNat (2 ^ j)) (toNat_Z_succ k)
 
 /--
 **Formalization of Cross - Level Algebra** : For any `k ≤ τ`, `ConcreteBTField τ` is an

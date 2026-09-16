@@ -6,6 +6,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 module
 
 import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
+meta import CompPoly.Fields.Binary.AdditiveNTT.Impl
 
 /-!
 # Additive NTT compatibility entry point
@@ -30,5 +31,9 @@ example (k : ℕ) :
   hβ_lin_indep_concrete k
 
 example : Fin 16 → BTF₃ := testNTTBTF₃
+
+-- The existing field numeral 7 is 1; retain every word of the affine example's output.
+#guard (List.finRange 16).map (fun i => (testNTTBTF₃ i).toNat) ==
+  [1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14]
 
 end CompPolyTests.AdditiveNTTCompatibility
