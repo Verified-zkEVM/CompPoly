@@ -49,6 +49,7 @@ public import CompPolyTests.Fields.Binary.Tower.BasisCoordinates
 public import CompPolyTests.Fields.Binary.Tower.ConcreteImports
 public import CompPolyTests.Fields.Binary.Tower.CoordinateArithmetic
 public import CompPolyTests.Fields.Binary.Tower.Coordinates
+public import CompPolyTests.Fields.Binary.Tower.EndpointEmbeddings
 public import CompPolyTests.Fields.Binary.Tower.Fast
 public import CompPolyTests.Fields.Binary.Tower.Norm
 public import CompPolyTests.Fields.Binary.Tower.RelativeCoordinates

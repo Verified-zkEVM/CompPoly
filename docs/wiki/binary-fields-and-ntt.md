@@ -184,6 +184,9 @@ support lemmas:
   These modules use shared support lemmas without importing the abstract tower construction.
   `Tower/Equiv.lean` imports both constructions to relate them; use that bridge or
   `Tower/Impl.lean` when both presentations are needed.
+  [Concrete/Algebra.lean](../../CompPoly/Fields/Binary/Tower/Concrete/Algebra.lean)
+  identifies every ordered-level embedding with bitvector zero-extension. Embeddings preserve
+  the stored natural word and the original bit position of each generator.
   [Concrete/Coordinates.lean](../../CompPoly/Fields/Binary/Tower/Concrete/Coordinates.lean)
   supplies `ConcreteBinaryTower.Coordinates.succCoordinates`: an
   executable linear equivalence from level `k + 1` to two level-`k` coefficients, ordered
