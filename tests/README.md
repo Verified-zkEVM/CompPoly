@@ -31,8 +31,8 @@ lake build CompPolyTests.Univariate.Raw
 ## Native startup and field arithmetic
 
 `lake test` checks the Lean test modules. The separate `CompPolyNativeSmoke` executable checks
-linked module initialization and AES/BF64/Ext3/GHASH arithmetic. On Linux with GNU `timeout`, run
-from the repository root:
+linked module initialization, AES/BF64/Ext3/GHASH arithmetic, and canonical binary-tower powers.
+On Linux with GNU `timeout`, run from the repository root:
 
 ```bash
 lake build --wfail CompPolyNativeSmoke && (
@@ -56,3 +56,9 @@ integer powers, casts, and rational scalar actions, including zero and even deno
 a success message only after every check passes. This is native
 implementation evidence, not a proof of the compiler or a performance benchmark. Other platforms
 can build the target; running it requires equivalent platform-specific resource limits.
+
+The tower checks pass the field dictionary to a generic helper with inlining and specialization
+disabled. They cover large natural and negative integer exponents, zero bases and exponents,
+and a high bit at level 7. `CompPolyTests/Fields/Binary/Tower/Powers.lean` additionally checks symbolic
+operation projections and agreement with the named raw binary-power routine. These checks
+establish operation and execution behavior, not compiler correctness or a performance ranking.

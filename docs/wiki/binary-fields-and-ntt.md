@@ -223,6 +223,15 @@ support lemmas:
   [`../../CompPoly/LinearAlgebra/README.md`](../../CompPoly/LinearAlgebra/README.md)
   for the local algebra, module and scalar-action selection needed for equal tensor factors.
 
+The concrete tower's `Field` dictionary uses binary exponentiation for natural powers and
+binary exponentiation followed by inversion for negative integer powers. The public
+`npow_def` and `zpow_def` identify those operations; `concrete_pow_nat_eq_pow` relates the
+named raw binary-power routine to natural field powers. Integer-power notation uses the
+field dictionary. The old `instHPowConcreteBTFℤ` name remains as a deprecated explicit
+dictionary, without an instance registration. The tower's carrier remains reducible: inline
+`BitVec` literals can still select word powers even with a tower type ascription. Bind a
+tower-typed variable or supply the tower type explicitly to a generic field function.
+
 Use the tower subtree when the task is about characteristic-2 extensions more
 generally, not just GHASH.
 

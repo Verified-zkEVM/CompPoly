@@ -8,11 +8,13 @@ module
 public import CompPoly.Fields.Binary.Aes.Ghash
 public import CompPoly.Fields.Binary.BF128Ghash.Impl
 public import CompPoly.Fields.Binary.BF64.Ext3
+public import CompPoly.Fields.Binary.Tower.Concrete.Field
 
 /-!
 # Native field startup and arithmetic checks
 
-This executable imports AES, BF64, its cubic extension, and GHASH to check canonical arithmetic.
+This executable checks canonical arithmetic in AES, BF64, its cubic extension, GHASH,
+and the binary tower.
 The test guide documents resource limits for native initialization and execution.
 Unlike compile-time guards, this target exercises the linked executable's module initializers.
 The extension product uses the reference vector from the existing BF64 regression tests.
@@ -62,7 +64,17 @@ private def checkGhashOperations {F : Type*} [Field F] [BEq F]
   check "GHASH nonnegative rational scalar" ((3 / 5 : ℚ≥0) • x == x)
   check "GHASH vanishing nonnegative rational scalar" ((1 / 2 : ℚ≥0) • x == 0)
 
-/-- Check reduction, reference products, and total field operations in the four presentations. -/
+/-- Check large signed powers through the field dictionary at a nonzero tower element. -/
+@[noinline, nospecialize]
+private def checkTowerPowers {F : Type*} [Field F] [BEq F] (x : F) : IO Unit := do
+  check "tower natural power" (x ^ (2 ^ 128 : ℕ) == x)
+  check "tower integer power" (x ^ (-((2 ^ 128 : ℕ) : ℤ)) == x⁻¹)
+  check "tower zero natural exponent" ((0 : F) ^ (0 : ℕ) == 1)
+  check "tower zero integer exponent" ((0 : F) ^ (0 : ℤ) == 1)
+  check "tower positive power of zero" ((0 : F) ^ (2 ^ 128 : ℕ) == 0)
+  check "tower negative power of zero" ((0 : F) ^ (-((2 ^ 128 : ℕ) : ℤ)) == 0)
+
+/-- Check reduction, reference products, total field operations, and large tower powers. -/
 def run : IO Unit := do
   check "BF64 reduction"
     (((BF64.ofBitVec (0x8000000000000000#64)) * BF64.ofBitVec (2#64)).toBitVec == 0x1b#64)
@@ -99,6 +111,13 @@ def run : IO Unit := do
   check "GHASH reduction" ((high * BF128Ghash.ofBitVec (2#128)).toBitVec == 0x87#128)
   check "GHASH named inverse" (BF128Ghash.invItohTsujii high == expectedInverse)
   checkGhashOperations high expectedInverse
+  let towerGenerator := ConcreteBinaryTower.fromNat (k := 1) 2
+  check "tower power encoding" ((towerGenerator ^ (2 : ℕ)).toNat == 3)
+  checkTowerPowers towerGenerator
+  checkTowerPowers (F := ConcreteBinaryTower.ConcreteBTField 3)
+    (ConcreteBinaryTower.fromNat 0x80)
+  checkTowerPowers (F := ConcreteBinaryTower.ConcreteBTField 7)
+    (ConcreteBinaryTower.fromNat 0x80000000000000000000000000000000)
   IO.println "Native field startup and arithmetic checks passed."
 
 end CompPolyTests.NativeSmoke
