@@ -233,12 +233,21 @@ def sub [Add R] [Neg R] (p₁ p₂ : Lawful n R) : Lawful n R :=
 
 instance [Add R] [Neg R] : Sub (Lawful n R) := ⟨sub⟩
 
-instance instDecidableEq : DecidableEq (Lawful n R) := fun x y ↦
-  if h : x.1.toList = y.1.toList
-  then Decidable.isTrue (by have := ExtTreeMap.ext_toList (t₁ := x.1) (t₂ := y.1)
-                            simp_rw [Subtype.val_inj] at this
-                            grind)
-  else Decidable.isFalse (by grind)
+-- Instance search does not unfold the `@[implicit_reducible]` definition of `Lawful` to discover
+-- these subtype instances. Spell out the subtype so equality uses `ExtTreeMap` directly, including
+-- its constant-time size check, instead of materializing both maps as lists.
+instance instDecidableEq : DecidableEq (Lawful n R) := fun a b =>
+  letI : BEq (Lawful n R) :=
+    inferInstanceAs (BEq {p : Unlawful n R // p.isNoZeroCoef})
+  letI : LawfulBEq (Lawful n R) :=
+    inferInstanceAs (LawfulBEq {p : Unlawful n R // p.isNoZeroCoef})
+  decidable_of_iff (a == b) beq_iff_eq
+
+instance instBEq : BEq (Lawful n R) := ⟨fun a b => decide (a = b)⟩
+
+instance instLawfulBEq : LawfulBEq (Lawful n R) where
+  eq_of_beq h := of_decide_eq_true h
+  rfl := decide_eq_true (Eq.refl _)
 
 /-- The $i$-th variable as a polynomial. -/
 def X (i : ℕ) : Lawful (i + 1) ℤ :=
