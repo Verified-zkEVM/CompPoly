@@ -34,8 +34,8 @@ public import CompPolyTests.Fields.Binary.AdditiveNTT.Basis
 public import CompPolyTests.Fields.Binary.AdditiveNTT.Compatibility
 public import CompPolyTests.Fields.Binary.AdditiveNTT.Executable
 public import CompPolyTests.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
-public import CompPolyTests.Fields.Binary.BF128Ghash.Prelude
 public import CompPolyTests.Fields.Binary.BF128Ghash.Operations
+public import CompPolyTests.Fields.Binary.BF128Ghash.Prelude
 public import CompPolyTests.Fields.Binary.BF128Ghash.Presentation
 public import CompPolyTests.Fields.Binary.BF64
 public import CompPolyTests.Fields.Binary.BF64.Presentation
@@ -43,6 +43,7 @@ public import CompPolyTests.Fields.Binary.Common
 public import CompPolyTests.Fields.Binary.Tower.Algebra
 public import CompPolyTests.Fields.Binary.Tower.BasisCoordinates
 public import CompPolyTests.Fields.Binary.Tower.ConcreteImports
+public import CompPolyTests.Fields.Binary.Tower.CoordinateArithmetic
 public import CompPolyTests.Fields.Binary.Tower.Coordinates
 public import CompPolyTests.Fields.Binary.Tower.Fast
 public import CompPolyTests.Fields.Binary.Tower.Norm
