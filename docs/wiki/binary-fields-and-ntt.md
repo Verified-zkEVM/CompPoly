@@ -74,6 +74,21 @@ The GHASH model lives under `Binary/BF128Ghash/`.
 Use this area when the task is specifically about `GF(2^128)`, GHASH, or the
 certificate-based proof strategy for binary-field arithmetic.
 
+`BF128Ghash.ConcreteBF128Ghash` is a nominal carrier. Use `BF128Ghash.ofBitVec` to construct
+elements and `.toBitVec` to recover polynomial-basis coordinates: bit `i` denotes the coefficient
+of `X^i`. These maps form `BF128Ghash.equivBitVec`; there is no implicit conversion to raw words
+or the 128-bit binary tower. A field numeral such as `(2 : ConcreteBF128Ghash)` is zero, whereas
+`ofBitVec (2#128)` denotes `X`. This coordinate interface does not specify a byte or wire format.
+
+`square`, `powTwoPow`, and `invItohTsujii` take nominal elements. The deprecated names `pow_2k`
+and `inv_itoh_tsujii` retain those same nominal signatures; callers with raw words must convert
+explicitly. The former `ConcreteBF128Ghash_eq_BitVec` type equality is replaced by the coordinate
+equivalence. Raw carry-less multiplication and reduction retain their word interfaces.
+
+The named inversion algorithm is executable. The generic `Field` dictionary still selects its
+inverse noncomputably; restoring its computability is tracked separately in
+[issue #276](https://github.com/Verified-zkEVM/CompPoly/issues/276).
+
 ## Polynomial-Basis GF(2^64) Surface
 
 `Binary/BF64/` builds `GF(2^64)` as the flat quotient
