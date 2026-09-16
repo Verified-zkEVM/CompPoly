@@ -154,6 +154,10 @@ support lemmas:
   zero-import `Tower/FastDefs.lean` for `precompileModules` consumers.
 - `Tower/Equiv.lean` and `Tower/Impl.lean` connect the layers and expose useful
   transport lemmas.
+  The tower equivalence identifies the concrete and abstract multilinear basis vectors
+  at the same numeric indices. The basis transport theorem uses the chosen tower scalar
+  actions and changes coefficients by the base-level equivalence. Its representation theorem
+  transfers coordinates at each numeric index, without repeating the basis-transport proof.
 - `Tower/TensorAlgebra.lean` re-exports the generic tensor basis API from
   `CompPoly/LinearAlgebra/TensorProduct/Basis.lean`. Its right scalar action is
   explicit; importing either path preserves Mathlib's default left action. See

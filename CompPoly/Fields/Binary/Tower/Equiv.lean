@@ -12,6 +12,11 @@ public import CompPoly.Fields.Binary.Tower.Concrete.Basis
 # Binary Tower Equivalence
 
 Equivalences between the abstract and concrete binary tower constructions.
+
+The concrete-to-abstract equivalence commutes with the chosen tower embeddings and preserves
+the multilinear basis at each numeric index. `multilinearBasis_map_towerEquiv` identifies
+the bases after changing coefficients at the base level and transporting the ambient space.
+The coefficient actions are selected locally from the tower maps.
 -/
 
 @[expose] public section
@@ -484,6 +489,70 @@ noncomputable def instAlgebraTowerEquiv : AlgebraTowerEquiv
   toRingEquiv := fun i => (towerEquiv i).ringEquiv
   commutesLeft' := fun i j h r => by
     exact towerEquiv_commutes_left (i:=i) (j:=j) (h:=h) (r:=r)
+
+/-- The tower equivalence sends each concrete multilinear basis vector to the abstract
+basis vector at the same numeric index. -/
+theorem towerEquiv_multilinearBasis {i j : ℕ} (h : i ≤ j) (q : Fin (2 ^ (j - i))) :
+    (towerEquiv j).ringEquiv (multilinearBasis i j h q) =
+      BinaryTower.multilinearBasis i j h q := by
+  rw [multilinearBasis_apply, BinaryTower.multilinearBasis_apply, map_prod]
+  apply Finset.prod_congr rfl
+  intro t _
+  change (towerEquiv j).ringEquiv
+      (AlgebraTower.algebraMap (i + t.val + 1) j (by omega)
+        (Z (i + t.val + 1) ^ Nat.getBit t.val q.val)) =
+    AlgebraTower.algebraMap (i + t.val + 1) j (by omega)
+      (BinaryTower.Z (i + t.val + 1) ^ Nat.getBit t.val q.val)
+  rw [← towerEquiv_commutes_left, map_pow]
+  rw [towerEquiv_ringEquiv_apply, towerRingHomForwardMap_Z]
+
+/-- Transporting the concrete multilinear basis along the tower equivalence gives the
+abstract basis with coefficients changed by the inverse equivalence at the base level.
+Both coefficient actions are the chosen tower actions. -/
+theorem multilinearBasis_map_towerEquiv {i j : ℕ} (h : i ≤ j) :
+    let := ConcreteBTFieldAlgebra h
+    let := binaryAlgebraTower h
+    let := instAlgebraTowerEquiv.toAlgebraOverLeft i j h
+    (multilinearBasis i j h).map
+        (instAlgebraTowerEquiv.toAlgEquivOverLeft i j h).toLinearEquiv =
+      (BinaryTower.multilinearBasis i j h).mapCoeffs (towerEquiv i).ringEquiv.symm
+        (by
+          intro a x
+          change towerAlgebraMap i j h
+              ((towerEquiv i).ringEquiv ((towerEquiv i).ringEquiv.symm a)) * x =
+            towerAlgebraMap i j h a * x
+          rw [RingEquiv.apply_symm_apply]) := by
+  let := ConcreteBTFieldAlgebra h
+  let := binaryAlgebraTower h
+  let := instAlgebraTowerEquiv.toAlgebraOverLeft i j h
+  apply Module.Basis.eq_of_apply_eq
+  intro q
+  rw [Module.Basis.map_apply, Module.Basis.mapCoeffs_apply]
+  exact towerEquiv_multilinearBasis h q
+
+/-- The abstract basis coordinates of a mapped element are its concrete basis coordinates
+mapped by the equivalence at the base level, at the same numeric indices.
+Both representations use their chosen tower coefficient actions. -/
+theorem multilinearBasis_repr_towerEquiv {i j : ℕ} (h : i ≤ j) (x : ConcreteBTField j)
+    (q : Fin (2 ^ (j - i))) :
+    let := ConcreteBTFieldAlgebra h
+    let := binaryAlgebraTower h
+    (BinaryTower.multilinearBasis i j h).repr ((towerEquiv j).ringEquiv x) q =
+      (towerEquiv i).ringEquiv ((ConcreteBinaryTower.multilinearBasis i j h).repr x q) := by
+  let := ConcreteBTFieldAlgebra h
+  let := binaryAlgebraTower h
+  let := instAlgebraTowerEquiv.toAlgebraOverLeft i j h
+  have hh := congrArg (fun b => b.repr ((towerEquiv j).ringEquiv x) q)
+    (multilinearBasis_map_towerEquiv h)
+  rw [Module.Basis.map_repr, Module.Basis.mapCoeffs_repr] at hh
+  change (ConcreteBinaryTower.multilinearBasis i j h).repr
+      ((towerEquiv j).ringEquiv.symm ((towerEquiv j).ringEquiv x)) q =
+    (towerEquiv i).ringEquiv.symm
+      ((BinaryTower.multilinearBasis i j h).repr ((towerEquiv j).ringEquiv x) q) at hh
+  rw [RingEquiv.symm_apply_apply] at hh
+  apply (towerEquiv i).ringEquiv.symm.injective
+  rw [RingEquiv.symm_apply_apply]
+  exact hh.symm
 
 -- #check instAlgebraTowerEquiv.toAlgEquivOverLeft 7 100 (by omega)
 -- #check instAlgebraTowerEquiv.toAlgEquivOverRight 7 100 (by omega)
