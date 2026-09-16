@@ -451,6 +451,9 @@ theorem natDegree_C [Zero R] [BEq R] [LawfulBEq R] (r : R) :
       rw [Trim.push_trim #[] r hr]
       simp
 
+theorem natDegree_zero [Zero R] [BEq R] [LawfulBEq R] :
+    (0 : CPolynomial R).natDegree = 0 := by rfl
+
 /-- The support of a constant polynomial `C r` is `{0}`. -/
 theorem support_C [Zero R] [BEq R] [LawfulBEq R] {r : R} (hr : r ≠ 0) :
     (C r).support = {0} := by
