@@ -61,7 +61,7 @@ example : (inferInstance : Mul (BitVec 64)) = BitVec.instMul := rfl
 
 -- The same coordinates do not identify the two multiplication laws.
 #guard ((ofBitVec (2#64)) * ofBitVec (2#64)).toBitVec == 4#64
-#guard (concrete_mul (k := 6) (2#64) (2#64)).toNat == 3
+#guard (concrete_mul (k := 6) (fromNat 2) (fromNat 2)).toNat == 3
 
 -- Generic field code retains the canonical executable operations and casts.
 example (x y : BF64) : (inferInstance : Field BF64).mul x y = BF64.mul x y := rfl

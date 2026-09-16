@@ -28,6 +28,15 @@ def canonicalAlgMap (k : ℕ) := concreteCanonicalEmbedding (k:=k)
   (prevBTFieldProps:= ((getBTFResult k).toConcreteBTFieldProps))
   (curBTFieldProps:= ((getBTFResult (k + 1)).toConcreteBTFieldProps))
 
+/-- The embedding into the next level preserves the stored natural word. -/
+theorem toNat_canonicalAlgMap (k : ℕ) (x : ConcreteBTField k) :
+    (canonicalAlgMap k x).toNat = x.toNat := by
+  change (join (k := k + 1) (by omega) 0 x).toBitVec.toNat = x.toBitVec.toNat
+  rw [join_eq_dcast_append, ← BitVec.dcast_bitvec_toNat_eq]
+  rw [BitVec.toNat_append]
+  change 0 <<< (2 ^ k) ||| x.toNat = x.toNat
+  rw [Nat.zero_shiftLeft, Nat.zero_or]
+
 /-- `Z(k+1)` is the adjoined root of `poly k` to `ConcreteBTField (k+1)`, so it is not
 lifted to `ConcreteBTField (k+1)` by `canonicalAlgMap` -/
 @[simp]
@@ -199,6 +208,32 @@ theorem concreteTowerAlgebraMap_assoc :
       rw [right_split, ←RingHom.comp_assoc]
       -- A = (23) ∘ 1
       rw [←concreteTowerAlgebraMap_succ]
+
+/-- An embedding between any ordered levels preserves the stored natural word. -/
+theorem toNat_concreteTowerAlgebraMap {i j : ℕ} (h : i ≤ j) (x : ConcreteBTField i) :
+    (concreteTowerAlgebraMap i j h x).toNat = x.toNat := by
+  induction j, h using Nat.le_induction with
+  | base => rw [concreteTowerAlgebraMap_id]; rfl
+  | succ j h ih =>
+      rw [concreteTowerAlgebraMap_succ i j h, concreteTowerAlgebraMap_succ_1,
+        RingHom.comp_apply, toNat_canonicalAlgMap, ih]
+
+/-- An embedding between ordered levels zero-extends the original bitvector. -/
+theorem concreteTowerAlgebraMap_eq_setWidth {i j : ℕ} (h : i ≤ j)
+    (x : ConcreteBTField i) :
+    (concreteTowerAlgebraMap i j h x).toBitVec = x.toBitVec.setWidth (2 ^ j) := by
+  apply BitVec.eq_of_toNat_eq
+  rw [ConcreteBTField.toNat_toBitVec, toNat_concreteTowerAlgebraMap,
+    BitVec.toNat_setWidth_of_le (Nat.pow_le_pow_right (by decide) h),
+    ConcreteBTField.toNat_toBitVec]
+
+/-- The image of the level-`k + 1` generator keeps its set bit at position `2 ^ k`. -/
+theorem concreteTowerAlgebraMap_Z_succ {k j : ℕ} (h : k + 1 ≤ j) :
+    (concreteTowerAlgebraMap (k + 1) j h (Z (k + 1))).toBitVec =
+      BitVec.ofNat (2 ^ j) (2 ^ (2 ^ k)) := by
+  rw [concreteTowerAlgebraMap_eq_setWidth, ← BitVec.ofNat_toNat]
+  exact congrArg (BitVec.ofNat (2 ^ j)) (toNat_Z_succ k)
+
 /--
 **Formalization of Cross - Level Algebra** : For any `k ≤ τ`, `ConcreteBTField τ` is an
 algebra over `ConcreteBTField k`.

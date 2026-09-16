@@ -6,12 +6,13 @@ Authors: CompPoly Contributors
 module
 
 import CompPoly.Fields.Binary.Tower.Concrete.BasisCoordinates
+import CompPoly.Fields.Binary.Tower.Concrete.CoordinateArithmetic
 
 /-!
 # Concrete binary tower import boundary
 
-The concrete field, basis, and coordinate APIs must be usable without loading the abstract
-tower construction. The basis-coordinate correspondence imports all of these concrete layers.
+The concrete field, basis, coordinate, and quadratic arithmetic APIs must be usable without
+loading the abstract tower construction.
 -/
 
 namespace CompPolyTests.ConcreteTowerImports

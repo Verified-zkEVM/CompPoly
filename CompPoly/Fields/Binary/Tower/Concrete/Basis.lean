@@ -269,7 +269,7 @@ theorem minPoly_of_powerBasisSucc_generator (k : ℕ) :
 
 lemma powerBasisSucc_dim (k : ℕ) :
     powerBasisSucc (k:=k).dim = 2 := by
-  simp only [ConcreteBTField, powerBasisSucc]
+  simp only [powerBasisSucc]
 
 def hli_level_diff_0 (l : ℕ) :
     letI instAlgebra:= ConcreteBTFieldAlgebra (l:=l) (r:=l) (h_le:=by omega)
@@ -291,7 +291,6 @@ def hli_level_diff_0 (l : ℕ) :
       smul_eq_mul, Finset.sum_singleton] at hg -- hg : g 0 = 0 ∨ 1 = 0
     have h_one_ne_zero : (1 : ConcreteBTField l) ≠ (0 : ConcreteBTField l) := by
       exact one_ne_zero
-    simp only [ConcreteBTField, Fin.isValue] at hg
     rw [Subsingleton.elim j 0] -- j must be 0
     rw [hg.symm]
     exact Eq.symm (MulOneClass.mul_one (g 0))
