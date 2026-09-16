@@ -1459,7 +1459,9 @@ instance instHDivConcreteBTF {k : ℕ} : HDiv (ConcreteBTField k) (ConcreteBTFie
 lemma concrete_div_eq_mul_inv {k : ℕ} (a b : ConcreteBTField k) : a / b = a * (concrete_inv b) := by
   rfl
 
-instance instHPowConcreteBTFℤ {k : ℕ} : HPow (ConcreteBTField k) ℤ (ConcreteBTField k) where
+/-- Legacy integer-power dictionary using the raw binary-power routine. -/
+@[deprecated "Use integer powers from the Field instance." (since := "2026-09-16")]
+abbrev instHPowConcreteBTFℤ {k : ℕ} : HPow (ConcreteBTField k) ℤ (ConcreteBTField k) where
   hPow a n :=
     match n with
     | Int.ofNat m => concrete_pow_nat a m
@@ -1521,6 +1523,11 @@ structure ConcreteBTFieldProps (k : ℕ) extends (ConcreteBTFDivisionRingProps k
   right_distrib := props.mul_right_distrib
   zero_mul := props.zero_mul
   mul_zero := props.mul_zero
+  npow := npowBinRec
+  npow_zero := npowBinRec_zero
+  npow_succ := by
+    let : Semigroup (ConcreteBTField k) := { mul_assoc := props.mul_assoc }
+    exact npowBinRec_succ
 
   natCast n := natCast n
   natCast_zero := natCast_zero
@@ -1536,6 +1543,12 @@ structure ConcreteBTFieldProps (k : ℕ) extends (ConcreteBTFDivisionRingProps k
   exists_pair_ne := concrete_exists_pair_ne (k := k)
   mul_inv_cancel := props.mul_inv_cancel
   inv_zero := concrete_inv_zero
+  zpow := zpowRec npowBinRec
+  zpow_zero' _ := rfl
+  zpow_succ' := by
+    let := mkRingInstance props
+    exact npowBinRec_succ
+  zpow_neg' _ _ := rfl
   qsmul := (Rat.castRec · * ·)
   nnqsmul := (NNRat.castRec · * ·)
 
