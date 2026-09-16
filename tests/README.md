@@ -50,7 +50,8 @@ failures, resource exhaustion, and timeout all fail the command.
 
 The executable checks a wrapping BF64 product, an Ext3 reference product, addition, and inversion
 including zero. AES checks cover reduction, a reference product, an inverse vector, and generic
-field inversion. GHASH checks also exercise generic field inversion/division, large natural and
+field inversion. The AES-to-GHASH embedding checks its generator image, multiplication,
+inversion and zero. GHASH checks also exercise generic field inversion/division, large natural and
 integer powers, casts, and rational scalar actions, including zero and even denominators. It prints
 a success message only after every check passes. This is native
 implementation evidence, not a proof of the compiler or a performance benchmark. Other platforms

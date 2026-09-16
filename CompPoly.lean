@@ -106,6 +106,7 @@ public import CompPoly.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
 public import CompPoly.Fields.Binary.Aes.Arithmetic
 public import CompPoly.Fields.Binary.Aes.Basic
 public import CompPoly.Fields.Binary.Aes.Certificate
+public import CompPoly.Fields.Binary.Aes.Ghash
 public import CompPoly.Fields.Binary.BF128Ghash.Basic
 public import CompPoly.Fields.Binary.BF128Ghash.Impl
 public import CompPoly.Fields.Binary.BF128Ghash.Prelude
