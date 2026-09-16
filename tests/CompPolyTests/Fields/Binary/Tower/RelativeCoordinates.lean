@@ -39,13 +39,14 @@ example (i : ℕ) (h : i ≤ i) (c : Fin (2 ^ (i - i)) → ConcreteBTField i) :
     pack h c = c 0 := pack_self i h c
 
 example (k : ℕ) (x : ConcreteBTField (k + 1)) :
-    coordinates (Nat.le_succ k) x 0 = x.setWidth (2 ^ k) := by
+    coordinates (Nat.le_succ k) x 0 =
+      ConcreteBTField.ofBitVec (x.toBitVec.setWidth (2 ^ k)) := by
   rw [coordinates_eq_setWidth_ushiftRight]
   simp only [Fin.val_zero, Nat.mul_zero, BitVec.ushiftRight_eq, BitVec.ushiftRight_zero]
 
 example (k : ℕ) (x : ConcreteBTField (k + 2)) (q : Fin (2 ^ (k + 2 - k))) :
     coordinates (show k ≤ k + 2 by omega) x q =
-      (BitVec.ushiftRight x (2 ^ k * q.val)).setWidth (2 ^ k) :=
+      ConcreteBTField.ofBitVec ((BitVec.ushiftRight x.toBitVec (2 ^ k * q.val)).setWidth (2 ^ k)) :=
   coordinates_eq_setWidth_ushiftRight _ x q
 
 -- All operations here elaborate to the concrete field and the explicitly selected endpoint action.
@@ -100,7 +101,7 @@ example : coordinates (show 6 ≤ 7 by decide)
   fin_cases q <;> rw [coordinates_eq_setWidth_ushiftRight] <;> decide +kernel
 
 example : (coordinates (show 6 ≤ 7 by decide)
-    (fromNat (k := 7) (2 ^ 127 + 9 * 2 ^ 64 + 2 ^ 63 + 5)) 1).getLsbD 63 = true := by
+    (fromNat (k := 7) (2 ^ 127 + 9 * 2 ^ 64 + 2 ^ 63 + 5)) 1).toBitVec.getLsbD 63 = true := by
   rw [getLsbD_coordinates _ _ _ _ (by decide)]
   decide +kernel
 
@@ -109,8 +110,8 @@ example : (coordinates (show 1 ≤ 3 by decide) (fromNat (k := 3) 121) 2).toNat 
   decide +kernel
 
 -- Without the within-block bound, readback could incorrectly expose a neighboring block.
-example : (coordinates (show 1 ≤ 2 by decide) (fromNat (k := 2) 4) 0).getLsbD 2 ≠
-    (fromNat (k := 2) 4).getLsbD 2 := by
+example : (coordinates (show 1 ≤ 2 by decide) (fromNat (k := 2) 4) 0).toBitVec.getLsbD 2 ≠
+    (fromNat (k := 2) 4).toBitVec.getLsbD 2 := by
   rw [coordinates_eq_setWidth_ushiftRight]
   decide +kernel
 

@@ -5,12 +5,16 @@ Authors: CompPoly Contributors
 -/
 module
 
+public import CompPoly.Fields.Binary.Aes.Ghash
+public import CompPoly.Fields.Binary.BF128Ghash.Impl
 public import CompPoly.Fields.Binary.BF64.Ext3
+public import CompPoly.Fields.Binary.Tower.Concrete.Field
 
 /-!
 # Native field startup and arithmetic checks
 
-This executable imports BF64 and its cubic extension, then checks their canonical arithmetic.
+This executable checks canonical arithmetic in AES, BF64, its cubic extension, GHASH,
+and the binary tower.
 The test guide documents resource limits for native initialization and execution.
 Unlike compile-time guards, this target exercises the linked executable's module initializers.
 The extension product uses the reference vector from the existing BF64 regression tests.
@@ -33,7 +37,44 @@ private def check (label : String) (ok : Bool) : IO Unit :=
 /-- Exercise multiplication and inversion through generic field data. -/
 private def inverseProduct {F : Type*} [Field F] (x : F) : F := x * x⁻¹
 
-/-- Check reduction, a reference extension product, and total inversion in both fields. -/
+/-- Exercise the actual generic field dictionary without inlining or specialization. -/
+@[noinline, nospecialize]
+private def checkGhashOperations {F : Type*} [Field F] [BEq F]
+    (x expectedInverse : F) : IO Unit := do
+  check "GHASH generic inverse" (x⁻¹ == expectedInverse)
+  check "GHASH generic zero inverse" ((0 : F)⁻¹ == 0)
+  check "GHASH generic division" (x / x == 1)
+  check "GHASH division by zero" (x / 0 == 0)
+  check "GHASH zero numerator" ((0 : F) / x == 0)
+  check "GHASH natural power" (x ^ (2 ^ 128 - 2 : ℕ) == expectedInverse)
+  check "GHASH integer power" (x ^ (-((2 ^ 128 - 1 : ℕ) : ℤ)) == 1)
+  check "GHASH zero power" ((0 : F) ^ (0 : ℕ) == 1)
+  check "GHASH positive power of zero" ((0 : F) ^ (2 ^ 128 : ℕ) == 0)
+  check "GHASH negative power of zero" ((0 : F) ^ (-1 : ℤ) == 0)
+  check "GHASH natural cast" ((2 : F) == 0)
+  check "GHASH integer cast" (((-3 : ℤ) : F) == 1)
+  check "GHASH natural scalar" ((2 : ℕ) • x == 0)
+  check "GHASH integer scalar" ((-3 : ℤ) • x == x)
+  check "GHASH rational cast" (((3 / 5 : ℚ) : F) == 1)
+  check "GHASH vanishing rational denominator" (((1 / 2 : ℚ) : F) == 0)
+  check "GHASH nonnegative rational cast" (((3 / 5 : ℚ≥0) : F) == 1)
+  check "GHASH vanishing nonnegative rational denominator" (((1 / 2 : ℚ≥0) : F) == 0)
+  check "GHASH rational scalar" ((-3 / 5 : ℚ) • x == x)
+  check "GHASH vanishing rational scalar" ((1 / 2 : ℚ) • x == 0)
+  check "GHASH nonnegative rational scalar" ((3 / 5 : ℚ≥0) • x == x)
+  check "GHASH vanishing nonnegative rational scalar" ((1 / 2 : ℚ≥0) • x == 0)
+
+/-- Check large signed powers through the field dictionary at a nonzero tower element. -/
+@[noinline, nospecialize]
+private def checkTowerPowers {F : Type*} [Field F] [BEq F] (x : F) : IO Unit := do
+  check "tower natural power" (x ^ (2 ^ 128 : ℕ) == x)
+  check "tower integer power" (x ^ (-((2 ^ 128 : ℕ) : ℤ)) == x⁻¹)
+  check "tower zero natural exponent" ((0 : F) ^ (0 : ℕ) == 1)
+  check "tower zero integer exponent" ((0 : F) ^ (0 : ℤ) == 1)
+  check "tower positive power of zero" ((0 : F) ^ (2 ^ 128 : ℕ) == 0)
+  check "tower negative power of zero" ((0 : F) ^ (-((2 ^ 128 : ℕ) : ℤ)) == 0)
+
+/-- Check reduction, reference products, total field operations, and large tower powers. -/
 def run : IO Unit := do
   check "BF64 reduction"
     (((BF64.ofBitVec (0x8000000000000000#64)) * BF64.ofBitVec (2#64)).toBitVec == 0x1b#64)
@@ -49,6 +90,34 @@ def run : IO Unit := do
     (a + 1 == fromWords 0x950e87d7f5606614 0x2c61275c9e6b6cf8 0x1f00bca0042db923)
   check "Ext3 inverse" (inverseProduct a == 1)
   check "Ext3 zero inverse" ((0 : BF64.Ext3)⁻¹ == 0)
+  let aes := AesField.ofBitVec (0x53#8)
+  check "AES reduction"
+    (((AesField.ofBitVec (0x80#8)) * AesField.ofBitVec (2#8)).toBitVec == 0x1b#8)
+  check "AES reference product"
+    (((AesField.ofBitVec (0x57#8)) * AesField.ofBitVec (0x13#8)).toBitVec == 0xfe#8)
+  check "AES inverse vector" (aes⁻¹.toBitVec == 0xca#8)
+  check "AES generic inverse" (inverseProduct aes == 1)
+  check "AES zero inverse" ((0 : AesField)⁻¹ == 0)
+  check "AES embedding generator"
+    ((AesField.toGhash (AesField.ofBitVec (2#8))).toBitVec ==
+      0x0dcb364640a222fe6b8330483c2e9849#128)
+  check "AES embedding product"
+    (AesField.toGhash (aes * AesField.ofBitVec (0xca#8)) ==
+      AesField.toGhash aes * AesField.toGhash (AesField.ofBitVec (0xca#8)))
+  check "AES embedding inverse" (AesField.toGhash aes⁻¹ == (AesField.toGhash aes)⁻¹)
+  check "AES embedding zero" (AesField.toGhash 0 == 0)
+  let high := BF128Ghash.ofBitVec (0x80000000000000000000000000000000#128)
+  let expectedInverse := BF128Ghash.ofBitVec (0x0b604395d27ef1a8b604395d27ef1a8ee#128)
+  check "GHASH reduction" ((high * BF128Ghash.ofBitVec (2#128)).toBitVec == 0x87#128)
+  check "GHASH named inverse" (BF128Ghash.invItohTsujii high == expectedInverse)
+  checkGhashOperations high expectedInverse
+  let towerGenerator := ConcreteBinaryTower.fromNat (k := 1) 2
+  check "tower power encoding" ((towerGenerator ^ (2 : ℕ)).toNat == 3)
+  checkTowerPowers towerGenerator
+  checkTowerPowers (F := ConcreteBinaryTower.ConcreteBTField 3)
+    (ConcreteBinaryTower.fromNat 0x80)
+  checkTowerPowers (F := ConcreteBinaryTower.ConcreteBTField 7)
+    (ConcreteBinaryTower.fromNat 0x80000000000000000000000000000000)
   IO.println "Native field startup and arithmetic checks passed."
 
 end CompPolyTests.NativeSmoke

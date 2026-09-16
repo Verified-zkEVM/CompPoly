@@ -11,7 +11,9 @@ public import CompPoly.Fields.Binary.Tower.Support.DefiningPoly
 /-!
 # Concrete Binary Tower Core
 
-Core definitions for the concrete bitvector model of the binary tower.
+The concrete binary tower uses a nominal carrier with low-first bitvector coordinates.
+Explicit encoding maps separate word operations from field operations. Multiplication and
+inversion follow the retained recursive quadratic construction.
 -/
 
 @[expose] public section
@@ -20,8 +22,63 @@ namespace ConcreteBinaryTower
 
 open Polynomial
 
-@[implicit_reducible]
-def ConcreteBTField : ℕ → Type := fun k => BitVec (2 ^ k)
+/-- A binary tower element with low-first bit coordinates at level `k`. -/
+structure ConcreteBTField (k : ℕ) where
+  /-- The `2 ^ k` binary coordinates. -/
+  toBitVec : BitVec (2 ^ k)
+
+namespace ConcreteBTField
+
+/-- Interpret `2 ^ k` bits as the coordinates of a level-`k` tower element. -/
+@[inline] def ofBitVec {k : ℕ} (x : BitVec (2 ^ k)) : ConcreteBTField k := ⟨x⟩
+
+/-- Reading the coordinates of a constructed element recovers the input word. -/
+@[simp] theorem toBitVec_ofBitVec {k : ℕ} (x : BitVec (2 ^ k)) :
+    (ofBitVec x).toBitVec = x := rfl
+
+/-- Reconstructing an element from its stored coordinates recovers the element. -/
+@[simp] theorem ofBitVec_toBitVec {k : ℕ} (x : ConcreteBTField k) :
+    ofBitVec x.toBitVec = x := rfl
+
+/-- The explicit equivalence between tower elements and their stored words. -/
+def equivBitVec (k : ℕ) : ConcreteBTField k ≃ BitVec (2 ^ k) where
+  toFun := toBitVec
+  invFun := ofBitVec
+  left_inv := ofBitVec_toBitVec
+  right_inv := toBitVec_ofBitVec
+
+/-- Stored word coordinates uniquely determine a tower element. -/
+theorem toBitVec_injective {k : ℕ} : Function.Injective (toBitVec (k := k)) :=
+  (equivBitVec k).injective
+
+/-- Distinct stored words construct distinct tower elements. -/
+theorem ofBitVec_injective {k : ℕ} : Function.Injective (ofBitVec (k := k)) :=
+  (equivBitVec k).symm.injective
+
+/-- Tower elements with equal stored word coordinates are equal. -/
+theorem ext {k : ℕ} {x y : ConcreteBTField k} (h : x.toBitVec = y.toBitVec) : x = y :=
+  toBitVec_injective h
+
+/-- Read the stored word as an unsigned natural number. This is not a field cast. -/
+@[inline] def toNat {k : ℕ} (x : ConcreteBTField k) : ℕ := x.toBitVec.toNat
+
+/-- Reading a constructed word as a natural number preserves its unsigned value. -/
+@[simp] theorem toNat_ofBitVec {k : ℕ} (x : BitVec (2 ^ k)) :
+    (ofBitVec x).toNat = x.toNat := rfl
+
+/-- Reading encoded bits as a natural number agrees with the tower word readback. -/
+@[simp] theorem toNat_toBitVec {k : ℕ} (x : ConcreteBTField k) :
+    x.toBitVec.toNat = x.toNat := rfl
+
+/-- A level-`k` stored word lies below `2 ^ (2 ^ k)`. -/
+theorem toNat_lt {k : ℕ} (x : ConcreteBTField k) : x.toNat < 2 ^ (2 ^ k) := x.toBitVec.isLt
+
+/-- Unsigned word readback uniquely determines a tower element. -/
+theorem toNat_injective {k : ℕ} : Function.Injective (toNat (k := k)) := by
+  intro x y h
+  exact toBitVec_injective (BitVec.eq_of_toNat_eq h)
+
+end ConcreteBTField
 
 section BitVecDCast
 lemma cast_ConcreteBTField_eq (k m : ℕ) (h_eq : k = m) :
@@ -234,24 +291,42 @@ def bitVecToString (width : ℕ) (bv : BitVec width) : String :=
   ) ""
 
 def ConcreteBTField.toBitString {k : ℕ} (bv : ConcreteBTField k) : String :=
-  bitVecToString (2 ^ k) (bv)
+  bitVecToString (2 ^ k) bv.toBitVec
 
 -- Helper : Bit width for ConcreteBTField
 def width (k : ℕ) : ℕ := 2 ^ k
 
 -- Convert Nat to ConcreteBTField
 def fromNat {k : ℕ} (n : Nat) : ConcreteBTField k :=
-  BitVec.ofNat (2 ^ k) n
+  ConcreteBTField.ofBitVec (BitVec.ofNat (2 ^ k) n)
+
+namespace ConcreteBTField
+
+/-- The explicit natural-word constructor stores the low `2 ^ k` bits. -/
+@[simp] theorem toBitVec_fromNat {k : ℕ} (n : ℕ) :
+    (fromNat (k := k) n).toBitVec = BitVec.ofNat (2 ^ k) n := rfl
+
+/-- Reading an explicit natural-word construction reduces modulo its word size. -/
+@[simp] theorem toNat_fromNat {k : ℕ} (n : ℕ) :
+    (fromNat (k := k) n).toNat = n % 2 ^ (2 ^ k) := rfl
+
+/-- Reconstructing a tower element from its unsigned stored word recovers it. -/
+@[simp] theorem fromNat_toNat {k : ℕ} (x : ConcreteBTField k) : fromNat x.toNat = x := by
+  apply toNat_injective
+  rw [toNat_fromNat, Nat.mod_eq_of_lt x.toNat_lt]
+
+end ConcreteBTField
 
 @[simp] theorem fromNat_toNat_eq_self {k : ℕ} (bv : BitVec (2 ^ k)) :
-  (fromNat (BitVec.toNat bv) : ConcreteBTField k) = bv := by
-  simp only [BitVec.ofNat_toNat, BitVec.setWidth_eq, fromNat, ConcreteBTField]
+  (fromNat bv.toNat : ConcreteBTField k) = ConcreteBTField.ofBitVec bv := by
+  simp only [fromNat, BitVec.ofNat_toNat, BitVec.setWidth_eq]
 
 instance ConcreteBTField.instDCast_local : DCast ℕ ConcreteBTField where
-  dcast h_k_eq term_k1 := BitVec.cast (congrArg (fun n => 2 ^ n) h_k_eq) term_k1
+  dcast h_k_eq term_k1 :=
+    ⟨BitVec.cast (congrArg (fun n => 2 ^ n) h_k_eq) term_k1.toBitVec⟩
   dcast_id := by
     intro k_idx; funext x
-    simp only [id_eq, BitVec.cast, BitVec.ofNatLT_toNat]
+    rfl
 
 end ConversionUtils
 
@@ -293,10 +368,10 @@ end NumericLemmas
 section FieldOperationsAndInstances
 
 -- Zero element
-def zero {k : ℕ} : ConcreteBTField k := BitVec.zero (2 ^ k)
+def zero {k : ℕ} : ConcreteBTField k := ⟨BitVec.zero (2 ^ k)⟩
 
 -- One element
-def one {k : ℕ} : ConcreteBTField k := 1#(2 ^ k)
+def one {k : ℕ} : ConcreteBTField k := ⟨1#(2 ^ k)⟩
 
 instance instZeroConcreteBTField (k : ℕ) : Zero (ConcreteBTField k) where
   zero := zero
@@ -304,47 +379,59 @@ instance instOneConcreteBTField (k : ℕ) : One (ConcreteBTField k) where
   one := one
 
 -- Basic operations
-def add {k : ℕ} (x y : ConcreteBTField k) : ConcreteBTField k := BitVec.xor x y
+def add {k : ℕ} (x y : ConcreteBTField k) : ConcreteBTField k := ⟨BitVec.xor x.toBitVec y.toBitVec⟩
 def neg {k : ℕ} (x : ConcreteBTField k) : ConcreteBTField k := x
 
--- Type class instances
-instance (k : ℕ) : HAdd (ConcreteBTField k) (ConcreteBTField k) (ConcreteBTField k)
-  where hAdd := add
-
--- Type class instances
 instance (k : ℕ) : Add (ConcreteBTField k) where
   add := add
 
+/-- Compatibility name for addition inherited from the homogeneous operation. -/
+@[deprecated "Use addition inherited from Add." (since := "2026-09-16")]
+abbrev instHAddConcreteBTField (k : ℕ) :
+    HAdd (ConcreteBTField k) (ConcreteBTField k) (ConcreteBTField k) := inferInstance
+
 theorem sum_fromNat_eq_from_xor_Nat {k : ℕ} (x y : Nat) :
     fromNat (k:=k) (x ^^^ y) = fromNat (k:=k) x + fromNat (k:=k) y := by
-  unfold fromNat
+  apply ConcreteBTField.ext
   show BitVec.ofNat _ (x ^^^ y) = (BitVec.ofNat _ x) ^^^ (BitVec.ofNat _ y)
   rw [BitVec.ofNat_xor]
 
 -- Basic lemmas for addition
 lemma add_self_cancel {k : ℕ} (a : ConcreteBTField k) : a + a = 0 := by
-  exact BitVec.xor_self (x:=a)
+  apply ConcreteBTField.ext
+  exact BitVec.xor_self (x := a.toBitVec)
 
 lemma add_eq_zero_iff_eq {k : ℕ} (a b : ConcreteBTField k) : a + b = 0 ↔ a = b := by
-  exact BitVec.xor_eq_zero_iff
+  constructor
+  · intro h
+    apply ConcreteBTField.ext
+    exact BitVec.xor_eq_zero_iff.mp (congrArg ConcreteBTField.toBitVec h)
+  · rintro rfl
+    exact add_self_cancel a
 
 lemma add_assoc {k : ℕ} : ∀ (a b c : ConcreteBTField k), a + b + c = a + (b + c) := by
-  exact BitVec.xor_assoc
+  intro a b c
+  apply ConcreteBTField.ext
+  exact BitVec.xor_assoc a.toBitVec b.toBitVec c.toBitVec
 
 -- Addition is commutative
 lemma add_comm {k : ℕ} (a b : ConcreteBTField k) : a + b = b + a := by
-  exact BitVec.xor_comm a b
+  apply ConcreteBTField.ext
+  exact BitVec.xor_comm a.toBitVec b.toBitVec
 
 -- Zero is identity
 lemma zero_add {k : ℕ} (a : ConcreteBTField k) : 0 + a = a := by
-  exact BitVec.zero_xor (x:=a)
+  apply ConcreteBTField.ext
+  exact BitVec.zero_xor (x := a.toBitVec)
 
 lemma add_zero {k : ℕ} (a : ConcreteBTField k) : a + 0 = a := by
-  exact BitVec.xor_zero (x:=a)
+  apply ConcreteBTField.ext
+  exact BitVec.xor_zero (x := a.toBitVec)
 
 -- Negation is additive inverse (in char 2, neg = id)
 lemma neg_add_cancel {k : ℕ} (a : ConcreteBTField k) : neg a + a = 0 := by
-  exact BitVec.xor_self (x:=a)
+  apply ConcreteBTField.ext
+  exact BitVec.xor_self (x := a.toBitVec)
 
 lemma if_self_rfl {α : Type*} [DecidableEq α] (a b : α) :
     (if a = b then b else a) = a := by
@@ -371,22 +458,8 @@ noncomputable instance : DecidableEq (GF(2)) :=
         exact congrArg φ h_eq)
 
 instance (k : ℕ) : DecidableEq (ConcreteBTField k) :=
-  fun x y =>
-    let p := BitVec.toNat x = BitVec.toNat y
-    let q := x = y
-    let hp : Decidable p := Nat.decEq (BitVec.toNat x) (BitVec.toNat y)
-    let h_iff_pq : p ↔ q := (BitVec.toNat_eq).symm -- p is (toNat x = toNat y), q is (x = y)
-    match hp with
-    | isTrue (proof_p : p) =>
-      -- We have a proof of p (toNat x = toNat y). We need a proof of q (x = y).
-      -- h_iff_pq.mp gives p → q. So, (h_iff_pq.mp proof_p) is a proof of q.
-      isTrue (h_iff_pq.mp proof_p)
-    | isFalse (nproof_p : ¬p) =>
-      -- We have a proof of ¬p. We need a proof of ¬q (which is q → False).
-      -- So, assume proof_q : q. We need to derive False.
-      -- h_iff_pq.mpr gives q → p. So, (h_iff_pq.mpr proof_q) is a proof of p.
-      -- This contradicts nproof_p.
-      isFalse (fun (proof_q : q) => nproof_p (h_iff_pq.mpr proof_q))
+  fun x y => decidable_of_iff (x.toBitVec = y.toBitVec)
+    ConcreteBTField.toBitVec_injective.eq_iff
 
 noncomputable def toConcreteBTF0 : GF(2) → ConcreteBTField 0 :=
   fun x => if decide (x = 0) then zero else one -- it depends on 'instFieldGaloisField'
@@ -495,9 +568,9 @@ lemma zsmul_neg' {k : ℕ} (n : ℕ) (a : ConcreteBTField k) :
 def split {k : ℕ} (h : k > 0) (x : ConcreteBTField k) :
     ConcreteBTField (k - 1) × ConcreteBTField (k - 1) :=
   let lo_bits : BitVec (2 ^ (k - 1) - 1 - 0 + 1) :=
-    BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x
+    BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x.toBitVec
   let hi_bits : BitVec (2 ^ k - 1 - 2 ^ (k - 1) + 1) :=
-    BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x
+    BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x.toBitVec
   have h_lo : 2 ^ (k - 1) - 1 - 0 + 1 = 2 ^ (k - 1) := by
     calc 2 ^ (k - 1) - 1 - 0 + 1 = 2 ^ (k - 1) - 1 + 1 := by norm_num
       _ = 2 ^ (k - 1) := by rw [Nat.sub_add_cancel]; exact one_le_two_pow_n (n:=k - 1)
@@ -505,12 +578,12 @@ def split {k : ℕ} (h : k > 0) (x : ConcreteBTField k) :
   -- Use cast to avoid overuse of fromNat & toNat
   let lo : BitVec (2 ^ (k - 1)) := dcast h_lo lo_bits
   let hi : BitVec (2 ^ (k - 1)) := dcast h_hi hi_bits
-  (hi, lo)
+  (ConcreteBTField.ofBitVec hi, ConcreteBTField.ofBitVec lo)
 
 def join {k : ℕ} (h_pos : k > 0) (hi lo : ConcreteBTField (k - 1)) : ConcreteBTField k := by
-  let res := BitVec.append (msbs:=hi) (lsbs:=lo)
+  let res := BitVec.append (msbs:=hi.toBitVec) (lsbs:=lo.toBitVec)
   rw [h_sum_two_same_pow2 (h_pos:=h_pos)] at res
-  exact res
+  exact ⟨res⟩
 
 scoped[ConcreteBinaryTower] notation "《" hi ", " lo "》" => join (h_pos:=by omega) hi lo
 
@@ -532,11 +605,10 @@ lemma zero_is_0 {k : ℕ} : (zero (k:=k)) = (0 : ConcreteBTField k) := by rfl
 lemma one_is_1 {k : ℕ} : (one (k:=k)) = 1 := by rfl
 lemma concrete_one_ne_zero {k : ℕ} : (one (k:=k)) ≠ (zero (k:=k)) := by
   intro h_eq
-  have h_toNat_eq : (one (k:=k)).toNat = (zero (k:=k)).toNat := congrArg BitVec.toNat h_eq
-  simp [one, zero, BitVec.toNat_ofNat] at h_toNat_eq
+  have h_toNat_eq : (one (k:=k)).toNat = (zero (k:=k)).toNat := congrArg ConcreteBTField.toNat h_eq
+  simp [one, zero, ConcreteBTField.toNat] at h_toNat_eq
 
 instance {k : ℕ} : NeZero (1 : ConcreteBTField k) := by
-  unfold ConcreteBTField
   exact {out := concrete_one_ne_zero (k:=k) }
 
 @[reducible] def mkAddCommGroupInstance {k : ℕ} : AddCommGroup (ConcreteBTField k) := {
@@ -588,52 +660,13 @@ theorem split_bitvec_eq_iff_fromNat {k : ℕ} (h_pos : k > 0) (x : ConcreteBTFie
   split h_pos x = (hi_btf, lo_btf) ↔
   (hi_btf = fromNat (k:=k - 1) (x.toNat >>> 2 ^ (k - 1)) ∧
   lo_btf = fromNat (k:=k - 1) (x.toNat &&& (2 ^ (2 ^ (k - 1)) - 1))) := by
-  have lhs_lo_case := BitVec.extractLsb_eq_and_pow_2_minus_1_ofNat (num_bits:=2 ^ (k - 1))
-    (n:=2 ^ k) (Nat.two_pow_pos (k - 1)) (x:=x)
-  have rhs_hi_case_bitvec_eq := BitVec.extractLsb_eq_shift_ofNat (n:=2 ^ k) (r:=2 ^ k - 1)
-    (l:=2 ^ (k - 1)) (x:=x)
-  constructor
-  · -- Forward direction : split x = (hi_btf, lo_btf) → bitwise operations
-    intro h_split
-    unfold split at h_split
-    have ⟨h_hi, h_lo⟩ := Prod.ext_iff.mp h_split
-    simp only at h_hi h_lo
-    have hi_eq : hi_btf = fromNat (k:=k - 1) (x.toNat >>> 2 ^ (k - 1)) := by
-      unfold fromNat
-      rw [←h_hi]
-      rw [dcast_symm (h_sub_middle h_pos).symm]
-      rw [rhs_hi_case_bitvec_eq]
-      rw [BitVec.dcast_bitvec_eq]
-    have lo_eq : lo_btf = fromNat (k:=k - 1) (x.toNat &&& ((2 ^ (2 ^ (k - 1)) - 1))) := by
-      unfold fromNat
-      rw [←h_lo]
-      have rhs_lo_case_bitvec_eq :=
-        BitVec.extractLsb_eq_shift_ofNat (n:=2 ^ k) (r:=2 ^ (k - 1) - 1) (l:=0) (x:=x)
-      rw [dcast_symm (h_middle_sub).symm]
-      rw [rhs_lo_case_bitvec_eq]
-      rw [BitVec.dcast_bitvec_eq] -- remove dcast
-      rw [←lhs_lo_case]
-      exact rhs_lo_case_bitvec_eq
-    exact ⟨hi_eq, lo_eq⟩
-  · -- Backward direction : bitwise operations → split x = (hi_btf, lo_btf)
-    intro h_bits
-    unfold split
-    have ⟨h_hi, h_lo⟩ := h_bits
-    have hi_extract_eq : dcast (h_sub_middle h_pos) (BitVec.extractLsb (hi := 2 ^ k - 1)
-      (lo := 2 ^ (k - 1)) x) = fromNat (k:=k - 1) (x.toNat >>> 2 ^ (k - 1)) := by
-      unfold fromNat
-      rw [dcast_symm (h_sub_middle h_pos).symm]
-      rw [rhs_hi_case_bitvec_eq]
-      rw [BitVec.dcast_bitvec_eq]
-
-    have lo_extract_eq : dcast (h_middle_sub) (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1)
-      (lo := 0) x) = fromNat (k:=k - 1) (x.toNat &&& ((2 ^ (2 ^ (k - 1)) - 1))) := by
-      unfold fromNat
-      rw [lhs_lo_case]
-      rw [BitVec.dcast_bitvec_eq]
-
-    simp only [hi_extract_eq, Nat.sub_zero, lo_extract_eq, Nat.and_two_pow_sub_one_eq_mod, h_hi,
-      h_lo]
+  have hmod (n w : ℕ) : BitVec.ofNat w (n % 2 ^ w) = BitVec.ofNat w n := by
+    apply BitVec.eq_of_toNat_eq
+    simp only [BitVec.toNat_ofNat, Nat.mod_mod]
+  simp only [split, Prod.mk.injEq, ConcreteBTField.ofBitVec, fromNat,
+    ConcreteBTField.toNat, BitVec.extractLsb, BitVec.extractLsb',
+    Nat.sub_zero, Nat.shiftRight_zero, Nat.and_two_pow_sub_one_eq_mod]
+  simp only [BitVec.dcast_bitvec_eq, hmod, eq_comm]
 
 theorem BitVec.extractLsb_dcast_eq {w w2 hi lo : ℕ} (x : BitVec w) (h : w = w2) :
     BitVec.extractLsb (hi:=hi) (lo:=lo) (dcast h x) =
@@ -644,199 +677,49 @@ theorem BitVec.extractLsb_dcast_eq {w w2 hi lo : ℕ} (x : BitVec w) (h : w = w2
   rw [h_toNat]
 
 theorem join_eq_dcast_append {k : ℕ} (h_pos : k > 0) (hi lo : ConcreteBTField (k - 1)) :
-    join (k:=k) h_pos hi lo =
-      dcast (h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos))
-        (BitVec.append (msbs:=hi) (lsbs:=lo)) := by
+    (join (k := k) h_pos hi lo).toBitVec =
+      dcast (h_sum_two_same_pow2 (k := k) h_pos) (hi.toBitVec ++ lo.toBitVec) := by
   unfold join
   simp [dcast_eq_root_cast]
 
 theorem eq_join_iff_dcast_eq_append {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField k)
     (hi lo : ConcreteBTField (k - 1)) :
-    x = join (k:=k) h_pos hi lo ↔
-      dcast (h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos)).symm x =
-        BitVec.append (msbs:=hi) (lsbs:=lo) := by
-  classical
+    x = join (k := k) h_pos hi lo ↔
+      dcast (h_sum_two_same_pow2 (k := k) h_pos).symm x.toBitVec =
+        hi.toBitVec ++ lo.toBitVec := by
+  rw [← ConcreteBTField.toBitVec_injective.eq_iff, join_eq_dcast_append]
   constructor
-  · intro hx
-    have hx' := hx
-    rw [join_eq_dcast_append (k:=k) (h_pos:=h_pos) (hi:=hi) (lo:=lo)] at hx'
-    -- hx' : x = dcast sum (append ..)
-    exact
-      dcast_symm (ha := h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos)) (hb := hx'.symm)
-  · intro hx
-    have hx' :
-        dcast (h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos))
-            (BitVec.append (msbs:=hi) (lsbs:=lo)) =
-          x :=
-      dcast_symm (ha := (h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos)).symm) (hb := hx)
-    have hx'' :
-        x =
-          dcast (h_sum_two_same_pow2 (k:=k) (h_pos:=h_pos))
-            (BitVec.append (msbs:=hi) (lsbs:=lo)) :=
-      hx'.symm
-    rw [← join_eq_dcast_append (k:=k) (h_pos:=h_pos) (hi:=hi) (lo:=lo)] at hx''
-    exact hx''
+  · intro h
+    exact dcast_symm (ha := h_sum_two_same_pow2 h_pos) (hb := h.symm)
+  · intro h
+    exact (dcast_symm (ha := (h_sum_two_same_pow2 h_pos).symm) (hb := h)).symm
 
 
 theorem join_eq_iff_dcast_extractLsb {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField k)
     (hi_btf lo_btf : ConcreteBTField (k - 1)) :
-  x = 《 hi_btf, lo_btf 》 ↔
-  (hi_btf = dcast (h_sub_middle h_pos)
-      (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) ∧
-    lo_btf = dcast (h_middle_sub)
-      (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) := by
-  classical
-  have hpos_eq : h_pos = (by omega : k > 0) := Subsingleton.elim _ _
-  cases hpos_eq
-  -- unfold the join notation
-  change x = join (k := k) h_pos hi_btf lo_btf ↔
-    (hi_btf = dcast (h_sub_middle h_pos)
-        (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) ∧
-      lo_btf = dcast (h_middle_sub)
-        (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x))
-
-  let sum := h_sum_two_same_pow2 (k := k) (h_pos := h_pos)
-  have hpow : 2 ^ (k - 1) > 0 := Nat.two_pow_pos (k - 1)
-
-  -- main chain of iff's
-  have h_join :
-      x = join (k := k) h_pos hi_btf lo_btf ↔
-        dcast sum.symm x = BitVec.append (msbs := hi_btf) (lsbs := lo_btf) := by
-    -- avoid simp (which may use the target theorem as a simp lemma)
-    exact (eq_join_iff_dcast_eq_append (k := k) (h_pos := h_pos) (x := x)
-      (hi := hi_btf) (lo := lo_btf))
-
-  have h_extract' :
-      dcast sum.symm x = BitVec.append (msbs := hi_btf) (lsbs := lo_btf) ↔
-        (hi_btf = dcast (by omega)
-            (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x) ∧
-          lo_btf = dcast (by omega)
-            (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) := by
-    -- use BitVec.eq_append_iff_extract on the casted x
-    have h := (BitVec.eq_append_iff_extract (lo_size := 2 ^ (k - 1)) (hi_size := 2 ^ (k - 1))
-      (lo := lo_btf) (hi := hi_btf)
-      (h_hi_gt_0 := hpow)
-      (h_lo_gt_0 := hpow)
-      (x := dcast sum.symm x))
-    -- now rewrite the extractLsb of dcast sum.symm x into extractLsb of x
-    constructor
-    · intro hx
-      have hx' : dcast sum.symm x =
-          dcast (by rfl) (BitVec.append (msbs := hi_btf) (lsbs := lo_btf)) := by
-        simpa [dcast_eq] using hx
-      have hparts := h.mp hx'
-      simp_rw [BitVec.extractLsb_dcast_eq (x := x) (h := sum.symm)] at hparts
-      exact hparts
-    · intro hparts
-      have hparts' :
-          hi_btf = dcast (by omega)
-              (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1))
-                (dcast sum.symm x)) ∧
-            lo_btf = dcast (by omega)
-              (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) (dcast sum.symm x)) := by
-        simpa [BitVec.extractLsb_dcast_eq (x := x) (h := sum.symm)] using hparts
-      have hx' := h.mpr hparts'
-      simpa [dcast_eq] using hx'
-
-  have h_final :
-      (hi_btf = dcast (by omega)
-            (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x) ∧
-          lo_btf = dcast (by omega)
-            (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) ↔
-        (hi_btf = dcast (h_sub_middle h_pos)
-            (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) ∧
-          lo_btf = dcast (h_middle_sub)
-            (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) := by
-    -- prepare the cast equality for the hi-part
-    have h_hi1_eq :
-        2 ^ (k - 1) + 2 ^ (k - 1) - 1 = 2 ^ k - 1 := by
-      omega
-
-    have h_width_eq :
-        (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = (2 ^ k - 1) - 2 ^ (k - 1) + 1 := by
-      simp [h_hi1_eq]
-
-    have h_extract_cast :
-        dcast h_width_eq
-            (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x)
-          = BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x := by
-      simpa using
-        (BitVec.dcast_bitvec_extractLsb_eq (x := x) (h_lo_eq := rfl) (h_width_eq := h_width_eq))
-
-    have h_extract_cast_symm :
-        dcast h_width_eq.symm
-            (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x)
-          = BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x := by
-      exact dcast_symm (ha := h_width_eq) (hb := h_extract_cast)
-
-    have h_hi_term :
-        dcast (by omega :
-              (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = 2 ^ (k - 1))
-            (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x)
-          =
-          dcast (h_sub_middle h_pos)
-            (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) := by
-      -- rewrite extractLsb hi-parameter and compose casts
-      calc
-        dcast (by omega :
-              (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = 2 ^ (k - 1))
-            (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x)
-            =
-            dcast (by omega :
-              (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = 2 ^ (k - 1))
-              (dcast h_width_eq.symm
-                (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x)) := by
-              -- replace the extracted bits using the casted equality
-              rw [← h_extract_cast_symm]
-        _ =
-            dcast (h_width_eq.symm.trans (by omega :
-              (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = 2 ^ (k - 1)))
-              (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) := by
-              -- compose the two casts
-              simp [dcast_trans]
-        _ =
-            dcast (h_sub_middle h_pos)
-              (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) := by
-              -- proof irrelevance for the cast proof
-              have hproof :
-                  h_width_eq.symm.trans (by omega :
-                    (2 ^ (k - 1) + 2 ^ (k - 1) - 1) - 2 ^ (k - 1) + 1 = 2 ^ (k - 1))
-                    = h_sub_middle h_pos := by
-                exact Subsingleton.elim _ _
-              simp only
-
-    -- proof irrelevance for the lo-part cast proof
-    have h_lo_proof :
-        (by omega : 2 ^ (k - 1) - 1 - 0 + 1 = 2 ^ (k - 1)) = h_middle_sub (k := k) := by
-      exact Subsingleton.elim _ _
-
-    constructor
-    · intro h
-      refine ⟨?_, ?_⟩
-      · -- hi part
-        simpa [h_hi_term] using h.1
-      · -- lo part
-        simpa [h_lo_proof] using h.2
-    · intro h
-      refine ⟨?_, ?_⟩
-      · -- hi part
-        simpa [h_hi_term.symm] using h.1
-      · -- lo part
-        simpa [h_lo_proof.symm] using h.2
-
-  calc
-    x = join (k := k) h_pos hi_btf lo_btf ↔
-        dcast sum.symm x = BitVec.append (msbs := hi_btf) (lsbs := lo_btf) := h_join
-    _ ↔
-        (hi_btf = dcast (by omega)
-            (BitVec.extractLsb (hi := 2 ^ (k - 1) + 2 ^ (k - 1) - 1) (lo := 2 ^ (k - 1)) x) ∧
-          lo_btf = dcast (by omega)
-            (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) := h_extract'
-    _ ↔
-        (hi_btf = dcast (h_sub_middle h_pos)
-            (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) ∧
-          lo_btf = dcast (h_middle_sub)
-            (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x)) := h_final
+    x = 《 hi_btf, lo_btf 》 ↔
+      (hi_btf.toBitVec = dcast (h_sub_middle h_pos)
+        (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x.toBitVec) ∧
+      lo_btf.toBitVec = dcast h_middle_sub
+        (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x.toBitVec)) := by
+  rw [eq_join_iff_dcast_eq_append]
+  have h := BitVec.eq_append_iff_extract lo_btf.toBitVec hi_btf.toBitVec
+    (Nat.two_pow_pos _) (Nat.two_pow_pos _)
+    (dcast (h_sum_two_same_pow2 h_pos).symm x.toBitVec)
+  simp only [BitVec.dcast_id, BitVec.extractLsb_dcast_eq] at h
+  have hhalf := Nat.two_pow_pos (k - 1)
+  have hhigh :
+      dcast (by omega : 2 ^ (k - 1) + 2 ^ (k - 1) - 1 - 2 ^ (k - 1) + 1 =
+        2 ^ (k - 1))
+        (BitVec.extractLsb (2 ^ (k - 1) + 2 ^ (k - 1) - 1) (2 ^ (k - 1)) x.toBitVec) =
+      dcast (h_sub_middle h_pos)
+        (BitVec.extractLsb (2 ^ k - 1) (2 ^ (k - 1)) x.toBitVec) := by
+    apply BitVec.eq_of_toNat_eq
+    simp only [← BitVec.dcast_bitvec_toNat_eq, BitVec.extractLsb, BitVec.extractLsb',
+      BitVec.toNat_ofNat]
+    rw [h_sum_two_same_pow2 h_pos]
+  rw [hhigh] at h
+  exact h
 
 theorem join_eq_join_iff {k : ℕ} (h_pos : k > 0) (hi₀ lo₀ hi₁ lo₁ : ConcreteBTField (k - 1)) :
     《 hi₀, lo₀ 》 = 《 hi₁, lo₁ 》 ↔ (hi₀ = hi₁ ∧ lo₀ = lo₁) := by
@@ -851,6 +734,8 @@ theorem join_eq_join_iff {k : ℕ} (h_pos : k > 0) (hi₀ lo₀ hi₁ lo₁ : Co
     have h_x₀_eq_x₁ : x₀ = x₁ := by rw [h_x₀, h_x₁, h_join]
     have ⟨h_hi₀, h_lo₀⟩ := h₀.mp h_x₀
     have ⟨h_hi₁, h_lo₁⟩ := h₁.mp h_x₁
+    rw [← ConcreteBTField.toBitVec_injective.eq_iff,
+      ← ConcreteBTField.toBitVec_injective.eq_iff]
     rw [h_hi₁, h_hi₀, h_lo₀, h_lo₁]
     rw [h_x₀_eq_x₁]
     exact ⟨rfl, rfl⟩
@@ -862,46 +747,14 @@ theorem join_eq_bitvec_iff_fromNat {k : ℕ} (h_pos : k > 0) (x : ConcreteBTFiel
   x = 《 hi_btf, lo_btf 》 ↔
   (hi_btf = fromNat (k:=k - 1) (x.toNat >>> 2 ^ (k - 1)) ∧
   lo_btf = fromNat (k:=k - 1) (x.toNat &&& (2 ^ (2 ^ (k - 1)) - 1))) := by
-  -- Idea : derive from theorem join_eq_iff_dcast_extractLsb
-  constructor
-  · -- Forward direction
-    intro h_join
-    have h := join_eq_iff_dcast_extractLsb h_pos x hi_btf lo_btf
-    have ⟨h_hi, h_lo⟩ := h.mp h_join
-    have hi_eq : hi_btf = fromNat (k:=k - 1) (x.toNat >>> 2 ^ (k - 1)) := by
-      rw [h_hi]
-      have := BitVec.extractLsb_eq_shift_ofNat (n:=2 ^ k) (r:=2 ^ k - 1) (l:=2 ^ (k - 1)) (x:=x)
-      rw [this]
-      unfold fromNat
-      rw [BitVec.dcast_bitvec_eq]
-    have lo_eq : lo_btf = fromNat (k:=k - 1) (x.toNat &&& (2 ^ (2 ^ (k - 1)) - 1)) := by
-      rw [h_lo]
-      have := BitVec.extractLsb_eq_and_pow_2_minus_1_ofNat (num_bits:=2 ^ (k - 1)) (n:=2 ^ k)
-                (Nat.two_pow_pos (k - 1)) (x:=x)
-      rw [this]
-      unfold fromNat
-      rw [BitVec.dcast_bitvec_eq]
-    exact ⟨hi_eq, lo_eq⟩
-  · -- Backward direction
-    intro h_bits
-    have ⟨h_hi, h_lo⟩ := h_bits
-    have h := join_eq_iff_dcast_extractLsb h_pos x hi_btf lo_btf
-    have hi_eq : hi_btf = dcast (h_sub_middle h_pos)
-      (BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) x) := by
-      rw [h_hi]
-      unfold fromNat
-      have := BitVec.extractLsb_eq_shift_ofNat (n:=2 ^ k) (r:=2 ^ k - 1) (l:=2 ^ (k - 1)) (x:=x)
-      rw [this]
-      rw [BitVec.dcast_bitvec_eq]
-    have lo_eq : lo_btf = dcast (h_middle_sub)
-      (BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) x) := by
-      rw [h_lo]
-      unfold fromNat
-      have := BitVec.extractLsb_eq_and_pow_2_minus_1_ofNat (num_bits:=2 ^ (k - 1)) (n:=2 ^ k)
-                (Nat.two_pow_pos (k - 1)) (x:=x)
-      rw [this]
-      rw [BitVec.dcast_bitvec_eq]
-    exact h.mpr ⟨hi_eq, lo_eq⟩
+  rw [join_eq_iff_dcast_extractLsb]
+  simp only [← ConcreteBTField.toBitVec_injective.eq_iff, ConcreteBTField.toBitVec_fromNat,
+    ConcreteBTField.toNat, BitVec.extractLsb, BitVec.extractLsb', Nat.sub_zero,
+    Nat.shiftRight_zero, Nat.and_two_pow_sub_one_eq_mod, BitVec.dcast_bitvec_eq]
+  have hmod (n w : ℕ) : BitVec.ofNat w (n % 2 ^ w) = BitVec.ofNat w n := by
+    apply BitVec.eq_of_toNat_eq
+    simp only [BitVec.toNat_ofNat, Nat.mod_mod]
+  rw [hmod]
 
 theorem join_of_split {k : ℕ} (h_pos : k > 0) (x : ConcreteBTField k)
     (hi_btf lo_btf : ConcreteBTField (k - 1))
@@ -956,22 +809,27 @@ theorem split_sum_eq_sum_split {k : ℕ} (h_pos : k > 0) (x₀ x₁ : ConcreteBT
   -- Approach : convert equation to Nat realm for simple proof
   have h₀ := (split_bitvec_eq_iff_fromNat (k:=k) (h_pos:=h_pos) x₀ hi₀ lo₀).mp h_split_x₀
   have h₁ := (split_bitvec_eq_iff_fromNat (k:=k) (h_pos:=h_pos) x₁ hi₁ lo₁).mp h_split_x₁
-  have h_sum_hi : (hi₀ + hi₁) = fromNat (BitVec.toNat (x₀ + x₁) >>> 2 ^ (k - 1)) := by
+  have h_sum_hi : (hi₀ + hi₁) = fromNat (ConcreteBTField.toNat (x₀ + x₁) >>> 2 ^ (k - 1)) := by
     rw [h₀.1, h₁.1]
     rw [←sum_fromNat_eq_from_xor_Nat]
-    have h_nat_eq : BitVec.toNat x₀ >>> 2 ^ (k - 1) ^^^ BitVec.toNat x₁ >>> 2 ^ (k - 1)
-      = BitVec.toNat (x₀ + x₁) >>> 2 ^ (k - 1) := by
+    have h_nat_eq : x₀.toNat >>> 2 ^ (k - 1) ^^^ x₁.toNat >>> 2 ^ (k - 1)
+      = ConcreteBTField.toNat (x₀ + x₁) >>> 2 ^ (k - 1) := by
       -- unfold Concrete BTF addition into BitVec.xor
-      erw [BitVec.toNat_xor]
+      change _ = (x₀.toBitVec ^^^ x₁.toBitVec).toNat >>> 2 ^ (k - 1)
+      rw [BitVec.toNat_xor]
       rw [Nat.shiftRight_xor_distrib.symm]
+      rfl
     rw [h_nat_eq]
-  have h_sum_lo : (lo₀ + lo₁) = fromNat (BitVec.toNat (x₀ + x₁) &&& 2 ^ 2 ^ (k - 1) - 1) := by
+  have h_sum_lo : (lo₀ + lo₁) =
+      fromNat ((x₀ + x₁).toNat &&& 2 ^ 2 ^ (k - 1) - 1) := by
     rw [h₀.2, h₁.2]
     rw [←sum_fromNat_eq_from_xor_Nat]
-    have h_nat_eq : BitVec.toNat x₀ &&& 2 ^ 2 ^ (k - 1) - 1 ^^^ BitVec.toNat x₁
-      &&& 2 ^ 2 ^ (k - 1) - 1 = BitVec.toNat (x₀ + x₁) &&& 2 ^ 2 ^ (k - 1) - 1 := by
-      erw [BitVec.toNat_xor]
+    have h_nat_eq : ConcreteBTField.toNat x₀ &&& 2 ^ 2 ^ (k - 1) - 1 ^^^ ConcreteBTField.toNat x₁
+      &&& 2 ^ 2 ^ (k - 1) - 1 = ConcreteBTField.toNat (x₀ + x₁) &&& 2 ^ 2 ^ (k - 1) - 1 := by
+      change _ = (x₀.toBitVec ^^^ x₁.toBitVec).toNat &&& (2 ^ 2 ^ (k - 1) - 1)
+      rw [BitVec.toNat_xor]
       rw [Nat.and_xor_distrib_right.symm]
+      rfl
     rw [h_nat_eq]
   have h_sum_hi_lo : (hi₀ + hi₁, lo₀ + lo₁) = split h_pos (x₀ + x₁) := by
     rw [(split_bitvec_eq_iff_fromNat (k:=k) (h_pos:=h_pos) (x₀ + x₁)
@@ -1000,6 +858,7 @@ theorem split_zero {k : ℕ} (h_pos : k > 0) : split h_pos zero = (zero, zero) :
   rw [split]
   simp only [zero, BitVec.zero_eq, BitVec.extractLsb_ofNat, Nat.zero_mod, Nat.zero_shiftRight,
     Nat.sub_zero, Nat.shiftRight_zero, BitVec.dcast_bitvec_eq_zero]
+  rfl
 
 -- Special element Z_k for each level k
 def Z (k : ℕ) : ConcreteBTField k :=
@@ -1018,6 +877,16 @@ theorem split_Z {k : ℕ} (h_pos : k > 0) :
 lemma one_bitvec_toNat {width : ℕ} (h_width : width > 0) : (1#width).toNat = 1 := by
   simp only [BitVec.toNat_ofNat, Nat.one_mod_two_pow_eq_one, h_width]
 
+/-- The generator at level `k + 1` is the word with its only set bit at position `2 ^ k`. -/
+theorem toNat_Z_succ (k : ℕ) : (Z (k + 1)).toNat = 2 ^ (2 ^ k) := by
+  rw [Z, dif_neg (Nat.succ_ne_zero k)]
+  unfold ConcreteBTField.toNat
+  rw [join_eq_dcast_append, ← BitVec.dcast_bitvec_toNat_eq]
+  rw [BitVec.toNat_append]
+  change (1#(2 ^ k)).toNat <<< (2 ^ k) ||| (0#(2 ^ k)).toNat = 2 ^ (2 ^ k)
+  rw [one_bitvec_toNat (Nat.two_pow_pos k)]
+  simp only [BitVec.toNat_ofNat, Nat.zero_mod, Nat.or_zero, Nat.shiftLeft_eq, one_mul]
+
 lemma one_bitvec_shiftRight {d : ℕ} (h_d : d > 0) : 1 >>> d = 0 := by
   apply Nat.shiftRight_eq_zero
   rw [Nat.one_lt_two_pow_iff]
@@ -1025,27 +894,14 @@ lemma one_bitvec_shiftRight {d : ℕ} (h_d : d > 0) : 1 >>> d = 0 := by
 
 lemma split_one {k : ℕ} (h_k : k > 0) :
     split h_k (one (k:=k)) = (zero (k:=k - 1), one (k:=k - 1)) := by
-  rw [split]
-  let lo_bits := BitVec.extractLsb (hi := 2 ^ (k - 1) - 1) (lo := 0) (one (k:=k))
-  let hi_bits := BitVec.extractLsb (hi := 2 ^ k - 1) (lo := 2 ^ (k - 1)) (one (k:=k))
-  apply Prod.ext
-  · simp only
-    simp only [BitVec.extractLsb, BitVec.extractLsb']
-    rw [one]
-    have one_toNat_eq := one_bitvec_toNat (width:=2 ^ k)
-      (h_width:=zero_lt_pow_n (m:=2) (n:=k) (h_m:=Nat.zero_lt_two))
-    rw [one_toNat_eq]
-    have one_shiftRight_eq : 1 >>> 2 ^ (k - 1) = 0 :=
-      one_bitvec_shiftRight (d:=2 ^ (k - 1)) (h_d:=by exact Nat.two_pow_pos (k - 1))
-    rw [one_shiftRight_eq]
-    rw [zero, BitVec.zero_eq]
-    have h_sub_middle := sub_middle_of_pow2_with_one_canceled (k:=k) (h_k:=h_k)
-    rw [BitVec.dcast_bitvec_eq_zero]
-  · simp only
-    simp only [BitVec.extractLsb, BitVec.extractLsb']
-    simp only [Nat.sub_zero, one, BitVec.toNat_ofNat, Nat.ofNat_pos, pow_pos, Nat.one_mod_two_pow,
-      Nat.shiftRight_zero] -- converts BitVec.toNat one >>> 0 into 1#(2 ^ (k - 1))
-    rw [BitVec.dcast_bitvec_eq]
+  apply (split_bitvec_eq_iff_fromNat h_k _ _ _).mpr
+  have hword : (one (k := k)).toNat = 1 := one_bitvec_toNat (Nat.two_pow_pos k)
+  rw [hword, one_bitvec_shiftRight (Nat.two_pow_pos _)]
+  constructor
+  · rfl
+  · apply ConcreteBTField.toNat_injective
+    simp [one, ConcreteBTField.toNat, fromNat, ConcreteBTField.ofBitVec,
+      Nat.and_two_pow_sub_one_eq_mod]
 
 lemma join_zero_zero {k : ℕ} (h_k : k > 0) :
     《 zero (k:=k - 1), zero (k:=k - 1) 》 = zero (k:=k) := by
@@ -1129,9 +985,13 @@ def concrete_mul {k : ℕ} (a b : ConcreteBTField k) : ConcreteBTField k :=
     res
 termination_by (k, a.toNat, b.toNat)
 
--- Multiplication instance
-instance (k : ℕ) : HMul (ConcreteBTField k) (ConcreteBTField k) (ConcreteBTField k)
-  where hMul := concrete_mul
+instance {k : ℕ} : Mul (ConcreteBTField k) where
+  mul := concrete_mul
+
+/-- Compatibility name for multiplication inherited from the homogeneous operation. -/
+@[deprecated "Use multiplication inherited from Mul." (since := "2026-09-16")]
+abbrev instHMulConcreteBTField (k : ℕ) :
+    HMul (ConcreteBTField k) (ConcreteBTField k) (ConcreteBTField k) := inferInstance
 
 -- Multiplicative inverse
 def concrete_inv {k : ℕ} (a : ConcreteBTField k) : ConcreteBTField k :=
@@ -1166,103 +1026,36 @@ lemma cast_mul (m n : ℕ) {x y : ConcreteBTField m} (h_eq : m = n) :
 
 /- Typeclass instances for algebraic structures -/
 
-instance {k : ℕ} : Mul (ConcreteBTField k) where
-  mul := concrete_mul
 
+/-- Strict unsigned order on stored words, independent of field arithmetic. -/
 instance (k : ℕ) : LT (ConcreteBTField k) where
-  lt := fun x y => by
-    unfold ConcreteBTField at x y
-    exact x < y
+  lt x y := x.toNat < y.toNat
 
+/-- Unsigned order on stored words, independent of field arithmetic. -/
 instance (k : ℕ) : LE (ConcreteBTField k) where
-  le := fun x y => by
-    unfold ConcreteBTField at x y
-    exact x ≤ y
+  le x y := x.toNat ≤ y.toNat
 
+/-- The preorder inherited from unsigned word readback. -/
 instance (k : ℕ) : Preorder (ConcreteBTField k) where
-  le_refl := fun x => BitVec.le_refl x
-  le_trans := fun x y z hxy hyz => BitVec.le_trans hxy hyz
-  lt := fun x y => x < y
-  lt_iff_le_not_ge := fun x y => by
-    unfold ConcreteBTField at x y
-    have bitvec_statement := (BitVec.not_lt : ¬x < y ↔ y ≤ x)
-    -- We need to prove : x < y ↔ x ≤ y ∧ ¬y ≤ x
-    constructor
-    · -- Forward direction : x < y → x ≤ y ∧ ¬y ≤ x
-      intro h_lt
-      constructor
-      · -- x < y → x ≤ y
-        exact BitVec.le_of_lt h_lt
-      · -- x < y → ¬y ≤ x
-        intro h_le_yx
-        have h_not_le := mt bitvec_statement.mpr
-        push Not at h_not_le
-        have neg_y_le_x := h_not_le h_lt
-        contradiction
-    · -- Reverse direction : x ≤ y ∧ ¬y ≤ x → x < y
-      intro h
-      cases h with | intro h_le_xy h_not_le_yx =>
-      have x_lt_y:= mt bitvec_statement.mp h_not_le_yx
-      push Not at x_lt_y
-      exact x_lt_y
+  le_refl x := Nat.le_refl x.toNat
+  le_trans _ _ _ := Nat.le_trans
+  lt_iff_le_not_ge x y := by
+    change x.toNat < y.toNat ↔ x.toNat ≤ y.toNat ∧ ¬y.toNat ≤ x.toNat
+    exact _root_.lt_iff_le_not_ge
 
 theorem toNatInRange {k : ℕ} (b : ConcreteBTField k) :
-    BitVec.toNat b ≤ 2 ^ (2 ^ k) * 1 := by
-  unfold ConcreteBTField at b
-  have le_symm : 2 ^ k ≤ 2 ^ k := by omega
-  have toNat_le_2pow:= BitVec.toNat_lt_twoPow_of_le (m:=2 ^ k) (n:=(2 ^ k))
-  have b_le := toNat_le_2pow le_symm (x:=b)
-  omega
+    b.toNat ≤ 2 ^ (2 ^ k) * 1 := by
+  simpa only [Nat.mul_one] using Nat.le_of_lt b.toNat_lt
 
 theorem eq_zero_or_eq_one {a : ConcreteBTField 0} : a = zero ∨ a = one := by
-  unfold ConcreteBTField at a -- Now a is a BitVec (2 ^ 0) = BitVec 1
-  have h := BitVec.eq_zero_or_eq_one a
-  cases h with
-  | inl h_zero =>
-    left
-    unfold zero
-    exact h_zero
-  | inr h_one =>
-    right
-    unfold one
-    exact h_one
+  rcases BitVec.eq_zero_or_eq_one a.toBitVec with h | h
+  · exact Or.inl (ConcreteBTField.ext h)
+  · exact Or.inr (ConcreteBTField.ext h)
 
 theorem concrete_eq_zero_or_eq_one {k : ℕ} {a : ConcreteBTField k} (h_k_zero : k = 0) :
     a = zero ∨ a = one := by
-  if h_k_zero : k = 0 then
-    have h_2_pow_k_eq_1 : 2 ^ k = 1 := by rw [h_k_zero]; norm_num
-    let a0 : ConcreteBTField 0 := Eq.mp (congrArg ConcreteBTField h_k_zero) a
-    have a0_is_eq_mp_a : a0 = Eq.mp (congrArg ConcreteBTField h_k_zero) a := by rfl
-    -- Approach : convert to BitVec.cast and derive equality of the cast for 0 and 1
-    rcases eq_zero_or_eq_one (a := a0) with (ha0 | ha1)
-    · -- a0 = zero
-      left
-      -- Transport equality back to ConcreteBTField k
-      have : a = Eq.mpr (congrArg ConcreteBTField h_k_zero) a0 := by
-        simp only [a0_is_eq_mp_a, eq_mp_eq_cast, eq_mpr_eq_cast, cast_cast, cast_eq]
-      rw [this, ha0]
-      -- zero (k:=k) = Eq.mpr ... (zero (k:=0))
-      have : zero = Eq.mpr (congrArg ConcreteBTField h_k_zero) (zero (k:=0)) := by
-        simp only [zero, eq_mpr_eq_cast, BitVec.zero]
-        erw [←dcast_eq_root_cast]
-        simp only [BitVec.ofNatLT_zero, Nat.pow_zero]
-        rw [BitVec.dcast_zero] -- ⊢ 1 = 2 ^ k
-        exact h_2_pow_k_eq_1.symm
-      rw [this]
-    · -- a0 = one
-      right
-      have : a = Eq.mpr (congrArg ConcreteBTField h_k_zero) a0 := by
-        simp only [a0_is_eq_mp_a, eq_mp_eq_cast, eq_mpr_eq_cast, cast_cast, cast_eq]
-      rw [this, ha1]
-      have : one = Eq.mpr (congrArg ConcreteBTField h_k_zero) (one (k:=0)) := by
-        simp only [one, eq_mpr_eq_cast]
-        erw [←dcast_eq_root_cast]
-        simp only [Nat.pow_zero]
-        rw [BitVec.dcast_one] -- ⊢ 1 = 2 ^ k
-        exact h_2_pow_k_eq_1.symm
-      rw [this]
-  else
-    contradiction
+  subst k
+  exact eq_zero_or_eq_one (a := a)
 
 lemma add_eq_one_iff (a b : ConcreteBTField 0) :
     a + b = 1 ↔ (a = 0 ∧ b = 1) ∨ (a = 1 ∧ b = 0) := by
@@ -1444,13 +1237,20 @@ theorem intCast_negSucc {k : ℕ} (n : ℕ) : intCast (k:=k) (Int.negSucc n)
     rw [h_nat]
     rfl
 
-instance instHDivConcreteBTF {k : ℕ} : HDiv (ConcreteBTField k) (ConcreteBTField k)
-  (ConcreteBTField k) where hDiv a b := a * (concrete_inv b)
+instance instDivConcreteBTF {k : ℕ} : Div (ConcreteBTField k) where
+  div a b := a * concrete_inv b
+
+/-- Compatibility name for division inherited from the homogeneous operation. -/
+@[deprecated "Use division inherited from Div." (since := "2026-09-16")]
+abbrev instHDivConcreteBTF {k : ℕ} :
+    HDiv (ConcreteBTField k) (ConcreteBTField k) (ConcreteBTField k) := inferInstance
 
 lemma concrete_div_eq_mul_inv {k : ℕ} (a b : ConcreteBTField k) : a / b = a * (concrete_inv b) := by
   rfl
 
-instance instHPowConcreteBTFℤ {k : ℕ} : HPow (ConcreteBTField k) ℤ (ConcreteBTField k) where
+/-- Legacy integer-power dictionary using the raw binary-power routine. -/
+@[deprecated "Use integer powers from the Field instance." (since := "2026-09-16")]
+abbrev instHPowConcreteBTFℤ {k : ℕ} : HPow (ConcreteBTField k) ℤ (ConcreteBTField k) where
   hPow a n :=
     match n with
     | Int.ofNat m => concrete_pow_nat a m
@@ -1460,9 +1260,6 @@ instance instHPowConcreteBTFℤ {k : ℕ} : HPow (ConcreteBTField k) ℤ (Concre
       else concrete_pow_nat (concrete_inv a) (m + 1) -- a ^ ( - (m + 1)) = (a ^ ( - 1)) ^ (m + 1)
 
 end NumericCasting
-
-instance instDivConcreteBTF {k : ℕ} : Div (ConcreteBTField k) where
-  div a b := a * (concrete_inv b)
 
 -- Ring properties structure
 structure ConcreteBTFRingProps (k : ℕ) extends (ConcreteBTFAddCommGroupProps k) where
@@ -1512,6 +1309,11 @@ structure ConcreteBTFieldProps (k : ℕ) extends (ConcreteBTFDivisionRingProps k
   right_distrib := props.mul_right_distrib
   zero_mul := props.zero_mul
   mul_zero := props.mul_zero
+  npow := npowBinRec
+  npow_zero := npowBinRec_zero
+  npow_succ := by
+    let : Semigroup (ConcreteBTField k) := { mul_assoc := props.mul_assoc }
+    exact npowBinRec_succ
 
   natCast n := natCast n
   natCast_zero := natCast_zero
@@ -1527,6 +1329,12 @@ structure ConcreteBTFieldProps (k : ℕ) extends (ConcreteBTFDivisionRingProps k
   exists_pair_ne := concrete_exists_pair_ne (k := k)
   mul_inv_cancel := props.mul_inv_cancel
   inv_zero := concrete_inv_zero
+  zpow := zpowRec npowBinRec
+  zpow_zero' _ := rfl
+  zpow_succ' := by
+    let := mkRingInstance props
+    exact npowBinRec_succ
+  zpow_neg' _ _ := rfl
   qsmul := (Rat.castRec · * ·)
   nnqsmul := (NNRat.castRec · * ·)
 

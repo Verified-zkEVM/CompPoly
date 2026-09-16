@@ -10,7 +10,10 @@ This page owns `CompPoly/Fields/Binary/` only:
 ```text
 CompPoly/Fields/Binary/
   Common.lean
+  Common/
+    Arithmetic.lean
   BF128Ghash/
+    Arithmetic.lean
     Prelude.lean
     Basic.lean
     Impl.lean
@@ -51,28 +54,78 @@ architecture. That catalog is deliberately not duplicated here.
 
 ## Common Binary Infrastructure
 
-[`../../CompPoly/Fields/Binary/Common.lean`](../../CompPoly/Fields/Binary/Common.lean)
-is the shared base for characteristic-2 support, BitVec-facing helpers, and lemmas
-used by both GHASH and tower/NTT developments.
+[`Common.Arithmetic`](../../CompPoly/Fields/Binary/Common/Arithmetic.lean) provides width-generic
+zero extension, carry-less multiplication, and the 128-bit multiplication and squaring helpers.
+It imports neither polynomial quotients nor finite-field certificates.
 
-If the work item is shared binary-field algebra rather than one specific protocol or
-algorithm, start there.
+[`Common`](../../CompPoly/Fields/Binary/Common.lean) reexports that arithmetic and adds the
+polynomial interpretation, characteristic-two algebra, and correspondence proofs.
+
+## AES byte presentation
+
+`AesField` is the nominal `Ext` presentation over `ZMod 2` with modulus
+`X^8 + X^4 + X^3 + X + 1`. Import
+[`Aes.Arithmetic`](../../CompPoly/Fields/Binary/Aes/Arithmetic.lean) for executable arithmetic,
+`ofBitVec`, `toBitVec`, and their inverse laws. Bit `i` is the coefficient of `X^i`.
+Import [`Aes.Basic`](../../CompPoly/Fields/Binary/Aes/Basic.lean) for the certified `Field`,
+characteristic two, cardinality 256, and quotient equivalence. The raw arithmetic module does
+not import those proofs or the generated certificate.
+
+A field numeral `(2 : AesField)` is zero; `AesField.ofBitVec (2#8)` is the polynomial generator.
+This differs from the level-three binary tower despite their equal cardinalities. There are no
+implicit conversions between those presentations or from raw bytes. An embedding into another
+field requires a separately specified generator image and a proof that it satisfies the modulus.
+
+[`Aes.Ghash`](../../CompPoly/Fields/Binary/Aes/Ghash.lean) supplies the executable ring
+homomorphism `AesField.toGhash`. It sends the AES generator to GHASH polynomial-basis word
+`0x0dcb364640a222fe6b8330483c2e9849`, and proves the root identity, generator image and
+injectivity. Its actual function evaluates the eight coefficients; the quotient universal
+property proves the homomorphism laws without introducing a new scalar-action instance.
+Ordinary `map_add`, `map_mul`, `map_inv₀` and `map_pow` lemmas apply. The pinned implementations
+selecting this root are referenced in the module docstring. This field embedding does not
+establish a protocol's weight-basis or soundness conditions.
+
+The degree-eight irreducibility proof uses the general Rabin criterion, checking Frobenius
+remainders at exponents 256 and 16. Regenerate its certificate with the command recorded in
+[`Aes.Certificate`](../../CompPoly/Fields/Binary/Aes/Certificate.lean).
 
 ## GHASH Surface
 
 The GHASH model lives under `Binary/BF128Ghash/`.
 
+- [`Arithmetic`](../../CompPoly/Fields/Binary/BF128Ghash/Arithmetic.lean) provides the nominal
+  carrier, word maps, XOR addition, folded multiplication, and named inversion without
+  polynomial quotients or irreducibility certificates.
 - [`../../CompPoly/Fields/Binary/BF128Ghash/Prelude.lean`](../../CompPoly/Fields/Binary/BF128Ghash/Prelude.lean)
   defines the GHASH polynomial and the low-level verification helpers used by the
   later certificate files.
 - [`../../CompPoly/Fields/Binary/BF128Ghash/Basic.lean`](../../CompPoly/Fields/Binary/BF128Ghash/Basic.lean)
   packages the field surface.
 - [`../../CompPoly/Fields/Binary/BF128Ghash/Impl.lean`](../../CompPoly/Fields/Binary/BF128Ghash/Impl.lean)
-  contains implementation-facing lemmas and constructions.
+  reexports the arithmetic, proves its quotient correspondence, and assembles the canonical
+  ring and field instances.
 - The `XPowTwoPow*Certificate.lean` files encode concrete certificate proofs.
 
 Use this area when the task is specifically about `GF(2^128)`, GHASH, or the
 certificate-based proof strategy for binary-field arithmetic.
+
+`BF128Ghash.ConcreteBF128Ghash` is a nominal carrier. Use `BF128Ghash.ofBitVec` to construct
+elements and `.toBitVec` to recover polynomial-basis coordinates: bit `i` denotes the coefficient
+of `X^i`. These maps form `BF128Ghash.equivBitVec`; there is no implicit conversion to raw words
+or the 128-bit binary tower. A field numeral such as `(2 : ConcreteBF128Ghash)` is zero, whereas
+`ofBitVec (2#128)` denotes `X`. This coordinate interface does not specify a byte or wire format.
+
+`square`, `powTwoPow`, and `invItohTsujii` take nominal elements. The deprecated names `pow_2k`
+and `inv_itoh_tsujii` retain those same nominal signatures; callers with raw words must convert
+explicitly. The former `ConcreteBF128Ghash_eq_BitVec` type equality is replaced by the coordinate
+equivalence. Raw carry-less multiplication and reduction retain their word interfaces.
+
+The generic `Field` dictionary uses the same executable multiplication and Itoh–Tsujii inverse
+as the named operations. Natural and integer powers use binary exponentiation. Division and
+rational scalar actions use total field inversion, so an even rational denominator maps to
+zero in characteristic two. The legacy `instHDivConcreteBF128Ghash` and
+`instDivisionRingConcreteBF128Ghash` names remain deprecated abbreviations; they no longer
+register competing instances.
 
 ## Polynomial-Basis GF(2^64) Surface
 
@@ -131,12 +184,18 @@ support lemmas:
   These modules use shared support lemmas without importing the abstract tower construction.
   `Tower/Equiv.lean` imports both constructions to relate them; use that bridge or
   `Tower/Impl.lean` when both presentations are needed.
+  [Concrete/Algebra.lean](../../CompPoly/Fields/Binary/Tower/Concrete/Algebra.lean)
+  identifies every ordered-level embedding with bitvector zero-extension. Embeddings preserve
+  the stored natural word and the original bit position of each generator.
   [Concrete/Coordinates.lean](../../CompPoly/Fields/Binary/Tower/Concrete/Coordinates.lean)
   supplies `ConcreteBinaryTower.Coordinates.succCoordinates`: an
   executable linear equivalence from level `k + 1` to two level-`k` coefficients, ordered
   constant term first and generator term second. It uses the existing tower embedding
   for the scalar action. Pass it to `AlgebraTower.natCoordinatesOfLE` or
   `AlgebraTower.natCoordinatesConstOfLE` for coordinates between arbitrary ordered levels.
+  [Concrete/CoordinateArithmetic.lean](../../CompPoly/Fields/Binary/Tower/Concrete/CoordinateArithmetic.lean)
+  supplies the quadratic product, conjugate, norm, and total inverse formulas for these
+  successor coordinates, including zero, without importing the abstract tower bridge.
   [Concrete/RelativeCoordinates.lean](../../CompPoly/Fields/Binary/Tower/Concrete/RelativeCoordinates.lean)
   specializes these maps as `coordinates` and `pack`, with round-trip and scalar-action laws.
   Its readback theorems identify each coefficient with the corresponding raw bit block,
@@ -154,14 +213,48 @@ support lemmas:
   zero-import `Tower/FastDefs.lean` for `precompileModules` consumers.
 - `Tower/Equiv.lean` and `Tower/Impl.lean` connect the layers and expose useful
   transport lemmas.
+  The tower equivalence identifies the concrete and abstract multilinear basis vectors
+  at the same numeric indices. The basis transport theorem uses the chosen tower scalar
+  actions and changes coefficients by the base-level equivalence. Its representation theorem
+  transfers coordinates at each numeric index, without repeating the basis-transport proof.
 - `Tower/TensorAlgebra.lean` re-exports the generic tensor basis API from
   `CompPoly/LinearAlgebra/TensorProduct/Basis.lean`. Its right scalar action is
   explicit; importing either path preserves Mathlib's default left action. See
   [`../../CompPoly/LinearAlgebra/README.md`](../../CompPoly/LinearAlgebra/README.md)
   for the local algebra, module and scalar-action selection needed for equal tensor factors.
 
+The concrete tower's `Field` dictionary uses binary exponentiation for natural powers and
+binary exponentiation followed by inversion for negative integer powers. The public
+`npow_def` and `zpow_def` identify those operations; `concrete_pow_nat_eq_pow` relates the
+named raw binary-power routine to natural field powers. Integer-power notation uses the
+field dictionary. The old `instHPowConcreteBTFℤ` name remains as a deprecated explicit
+dictionary, without an instance registration. The former standalone `HAdd`, `HMul`, and
+`HDiv` dictionaries likewise remain only as deprecated explicit names; notation inherits the
+homogeneous operations.
+
 Use the tower subtree when the task is about characteristic-2 extensions more
 generally, not just GHASH.
+
+`ConcreteBTField.ofBitVec` and `ConcreteBTField.toBitVec` give explicit access to the
+stored word; `ConcreteBTField.equivBitVec` packages their inverse laws.
+`ConcreteBTField.toNat` reads the entire unsigned word, and `fromNat` constructs a
+word by reducing modulo `2^(2^k)` at level `k`. These are representation maps,
+not field homomorphisms. In particular, `fromNat (k := 1) 2` stores word `2`, while
+the field numeral `(2 : ConcreteBTField 1)` is zero.
+
+The endpoint embedding theorems state zero-extension after `toBitVec`, and the
+relative-coordinate slice theorem constructs each field coefficient with
+`ofBitVec`. Use `toBitVec_coordinates` for raw slices, `getLsbD_coordinates` for
+individual bits, and `toNat_coordinates` for unsigned blocks. The nominal carrier rejects
+implicit conversion to and from raw words or the distinct `BF64` presentation. In particular,
+a tower type ascription on an inline `BitVec` literal is rejected; use `ofBitVec` or `fromNat`.
+`ConcreteBTField.ext` proves equality from equal stored words. The available comparison
+operations order the unsigned stored words, independently of field arithmetic.
+
+The recursive field construction and the fast packed-word refinement remain in place.
+The concrete additive NTT's `BTF₃` aliases retain their canonical arithmetic dictionaries and
+a computable enumeration of the 256 byte-field elements; this does not supply executable
+enumeration at larger tower levels.
 
 ## Additive NTT Surface
 
