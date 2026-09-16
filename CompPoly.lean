@@ -107,6 +107,7 @@ public import CompPoly.Fields.Binary.Aes.Arithmetic
 public import CompPoly.Fields.Binary.Aes.Basic
 public import CompPoly.Fields.Binary.Aes.Certificate
 public import CompPoly.Fields.Binary.Aes.Ghash
+public import CompPoly.Fields.Binary.BF128Ghash.Arithmetic
 public import CompPoly.Fields.Binary.BF128Ghash.Basic
 public import CompPoly.Fields.Binary.BF128Ghash.Impl
 public import CompPoly.Fields.Binary.BF128Ghash.Prelude
@@ -119,6 +120,7 @@ public import CompPoly.Fields.Binary.BF64.Ext3
 public import CompPoly.Fields.Binary.BF64.Impl
 public import CompPoly.Fields.Binary.BF64.Reduce
 public import CompPoly.Fields.Binary.Common
+public import CompPoly.Fields.Binary.Common.Arithmetic
 public import CompPoly.Fields.Binary.Tower.Abstract.Algebra
 public import CompPoly.Fields.Binary.Tower.Abstract.Basis
 public import CompPoly.Fields.Binary.Tower.Abstract.Core
