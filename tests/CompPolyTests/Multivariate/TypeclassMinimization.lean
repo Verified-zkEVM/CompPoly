@@ -101,6 +101,9 @@ example (p : CMvPolynomial 1 MinimalCoeff) (q : CMvPolynomial 2 MinimalCoeff) :
     CMvPolynomial 2 MinimalCoeff :=
   p * q
 
+example (p q : CMvPolynomial 2 MinimalCoeff) : decide (p = q) = (p == q) := by
+  rfl
+
 end CMvPolynomial
 
 end CPoly

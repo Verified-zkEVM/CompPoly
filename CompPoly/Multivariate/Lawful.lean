@@ -236,16 +236,18 @@ instance [Add R] [Neg R] : Sub (Lawful n R) := ⟨sub⟩
 -- Instance search does not unfold the `@[implicit_reducible]` definition of `Lawful` to discover
 -- these subtype instances. Spell out the subtype so equality uses `ExtTreeMap` directly, including
 -- its constant-time size check, instead of materializing both maps as lists.
-instance instBEq : BEq (Lawful n R) :=
-  inferInstanceAs (BEq {p : Unlawful n R // p.isNoZeroCoef})
+instance instDecidableEq : DecidableEq (Lawful n R) := fun a b =>
+  letI : BEq (Lawful n R) :=
+    inferInstanceAs (BEq {p : Unlawful n R // p.isNoZeroCoef})
+  letI : LawfulBEq (Lawful n R) :=
+    inferInstanceAs (LawfulBEq {p : Unlawful n R // p.isNoZeroCoef})
+  decidable_of_iff (a == b) beq_iff_eq
 
-instance instLawfulBEq : LawfulBEq (Lawful n R) :=
-  inferInstanceAs (LawfulBEq {p : Unlawful n R // p.isNoZeroCoef})
+instance instBEq : BEq (Lawful n R) := ⟨fun a b => decide (a = b)⟩
 
--- Derive this from the structural `BEq`: the subtype instance can otherwise select
--- `Unlawful.instDecidableEq`, which compares maps by materializing both as lists.
-instance instDecidableEq : DecidableEq (Lawful n R) := fun _ _ =>
-  decidable_of_iff _ beq_iff_eq
+instance instLawfulBEq : LawfulBEq (Lawful n R) where
+  eq_of_beq h := of_decide_eq_true h
+  rfl := decide_eq_true (Eq.refl _)
 
 /-- The $i$-th variable as a polynomial. -/
 def X (i : ℕ) : Lawful (i + 1) ℤ :=
