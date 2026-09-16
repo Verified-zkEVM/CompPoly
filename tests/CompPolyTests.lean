@@ -44,6 +44,7 @@ public import CompPolyTests.Fields.Binary.Tower.ConcreteImports
 public import CompPolyTests.Fields.Binary.Tower.Coordinates
 public import CompPolyTests.Fields.Binary.Tower.Fast
 public import CompPolyTests.Fields.Binary.Tower.Norm
+public import CompPolyTests.Fields.Binary.Tower.Powers
 public import CompPolyTests.Fields.Binary.Tower.RelativeCoordinates
 public import CompPolyTests.Fields.Binary.Tower.TensorAlgebra
 public import CompPolyTests.Fields.Extension.Arithmetic

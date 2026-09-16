@@ -6,11 +6,12 @@ Authors: CompPoly Contributors
 module
 
 public import CompPoly.Fields.Binary.BF64.Ext3
+public import CompPoly.Fields.Binary.Tower.Concrete.Field
 
 /-!
 # Native field startup and arithmetic checks
 
-This executable imports BF64 and its cubic extension, then checks their canonical arithmetic.
+This executable checks canonical arithmetic in BF64, its cubic extension, and the binary tower.
 The test guide documents resource limits for native initialization and execution.
 Unlike compile-time guards, this target exercises the linked executable's module initializers.
 The extension product uses the reference vector from the existing BF64 regression tests.
@@ -33,7 +34,17 @@ private def check (label : String) (ok : Bool) : IO Unit :=
 /-- Exercise multiplication and inversion through generic field data. -/
 private def inverseProduct {F : Type*} [Field F] (x : F) : F := x * x⁻¹
 
-/-- Check reduction, a reference extension product, and total inversion in both fields. -/
+/-- Check large signed powers through the field dictionary at a nonzero tower element. -/
+@[noinline, nospecialize]
+private def checkTowerPowers {F : Type*} [Field F] [BEq F] (x : F) : IO Unit := do
+  check "tower natural power" (x ^ (2 ^ 128 : ℕ) == x)
+  check "tower integer power" (x ^ (-((2 ^ 128 : ℕ) : ℤ)) == x⁻¹)
+  check "tower zero natural exponent" ((0 : F) ^ (0 : ℕ) == 1)
+  check "tower zero integer exponent" ((0 : F) ^ (0 : ℤ) == 1)
+  check "tower positive power of zero" ((0 : F) ^ (2 ^ 128 : ℕ) == 0)
+  check "tower negative power of zero" ((0 : F) ^ (-((2 ^ 128 : ℕ) : ℤ)) == 0)
+
+/-- Check reduction, a reference product, total inversion, and large tower powers. -/
 def run : IO Unit := do
   check "BF64 reduction"
     (((BF64.ofBitVec (0x8000000000000000#64)) * BF64.ofBitVec (2#64)).toBitVec == 0x1b#64)
@@ -49,6 +60,13 @@ def run : IO Unit := do
     (a + 1 == fromWords 0x950e87d7f5606614 0x2c61275c9e6b6cf8 0x1f00bca0042db923)
   check "Ext3 inverse" (inverseProduct a == 1)
   check "Ext3 zero inverse" ((0 : BF64.Ext3)⁻¹ == 0)
+  let towerGenerator := ConcreteBinaryTower.fromNat (k := 1) 2
+  check "tower power encoding" ((towerGenerator ^ (2 : ℕ)).toNat == 3)
+  checkTowerPowers towerGenerator
+  checkTowerPowers (F := ConcreteBinaryTower.ConcreteBTField 3)
+    (ConcreteBinaryTower.fromNat 0x80)
+  checkTowerPowers (F := ConcreteBinaryTower.ConcreteBTField 7)
+    (ConcreteBinaryTower.fromNat 0x80000000000000000000000000000000)
   IO.println "Native field startup and arithmetic checks passed."
 
 end CompPolyTests.NativeSmoke
