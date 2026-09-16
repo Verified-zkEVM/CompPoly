@@ -123,6 +123,7 @@ public import CompPoly.Fields.Binary.Tower.Basic
 public import CompPoly.Fields.Binary.Tower.Concrete.Algebra
 public import CompPoly.Fields.Binary.Tower.Concrete.Basis
 public import CompPoly.Fields.Binary.Tower.Concrete.BasisCoordinates
+public import CompPoly.Fields.Binary.Tower.Concrete.CoordinateArithmetic
 public import CompPoly.Fields.Binary.Tower.Concrete.Coordinates
 public import CompPoly.Fields.Binary.Tower.Concrete.Core
 public import CompPoly.Fields.Binary.Tower.Concrete.Field
