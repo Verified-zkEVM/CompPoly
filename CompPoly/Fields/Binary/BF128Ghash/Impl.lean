@@ -5,21 +5,32 @@ Authors: Chung Thai Nguyen, Quang Dao, Dimitris Mitsios
 -/
 module
 
+public import CompPoly.Fields.Binary.BF128Ghash.Arithmetic
 public import CompPoly.Fields.Binary.BF128Ghash.Basic
 
-/-! # BF128Ghash Computable Specification (GF(2^128))
+/-! # GHASH Polynomial-Basis Field
 
-We define the field operations using computable `BitVec`.
-We verify them by proving isomorphism to `GF(2)[X] / (X^128 + X^7 + X^2 + X + 1)`.
+The nominal carrier stores polynomial-basis `BitVec 128` coordinates: bit `i` is the
+coefficient of `X^i`. Explicit coordinate maps separate this presentation from raw machine
+words and other binary fields. Addition, multiplication, and the named inversion algorithm
+are executable, with an injective interpretation in
+`GF(2)[X] / (X^128 + X^7 + X^2 + X + 1)` proving their algebraic laws.
+The `Field` instance uses the same executable operations, with binary exponentiation for
+natural and integer powers. These coordinates describe polynomial coefficients; they do not
+introduce a byte or wire-format conversion. Import
+`CompPoly.Fields.Binary.BF128Ghash.Arithmetic` for the nominal carrier and executable
+operations without the quotient or irreducibility certificates.
 
 ## Main Definitions
 
-- `ConcreteBF128Ghash`: The type of `GF(2^128)` elements represented as `BitVec 128`
+- `ConcreteBF128Ghash`: Nominal elements with `BitVec 128` polynomial coordinates
+- `ofBitVec`, `ConcreteBF128Ghash.toBitVec`: Explicit inverse coordinate maps
 - `instFieldConcreteBF128Ghash`: The field instance for `ConcreteBF128Ghash`
 - `toQuot`: The canonical map from `ConcreteBF128Ghash` to `AdjoinRoot ghashPoly`
 - `reduce_clMul`: The reduction of the carry-less multiplication
-- `inv_itoh_tsujii`: The Itoh-Tsujii inversion algorithm
-- `toQuot_inv_itoh_tsujii`: The lemma that `inv_itoh_tsujii` computes `a^(2^128 - 2)`
+- `powTwoPow`: Repeated squaring in the nominal field
+- `invItohTsujii`: The Itoh-Tsujii inversion algorithm
+- `toQuot_invItohTsujii`: The lemma that `invItohTsujii` computes `a^(2^128 - 2)`
 
 ## References
 * [NIST-SP-800-38D] Dworkin, M. Recommendation for Block Cipher Modes of Operation:
@@ -36,16 +47,15 @@ set_option maxRecDepth 1500
 
 open BitVec Polynomial Ideal BF128Ghash AdjoinRoot
 
-@[reducible]
-def ConcreteBF128Ghash : Type := B128
-
-lemma ConcreteBF128Ghash_eq_BitVec : ConcreteBF128Ghash = BitVec 128 := rfl
+/-- The carrier is finite without choosing an enumeration. -/
+instance : Finite ConcreteBF128Ghash :=
+  Finite.of_equiv (Fin (2 ^ 128))
+    { toFun := fun a => ofBitVec (BitVec.ofFin a)
+      invFun := fun a => a.toBitVec.toFin
+      left_inv := fun _ => rfl
+      right_inv := fun _ => rfl }
 
 section CarryLessMultiplicationReduction
-
-/-- Folding Constant R = X^7 + X^2 + X + 1.
-  Since P = X^128 + R, we have X^128 ≡ R (mod P). -/
-def R_val : B128 := 135#128
 
 lemma R_val_eq_ghashTail : toPoly R_val = ghashTail := by
   have h_val : R_val = (1 <<< 7) ^^^ (1 <<< 2) ^^^ (1 <<< 1) ^^^ 1 := rfl
@@ -155,8 +165,8 @@ lemma toPoly_split_256 (x : B256) :
 lemma poly_reduce_step (A : Polynomial (ZMod 2)) :
     (A * X^128) % ghashPoly = (A * ghashTail) % ghashPoly := by
   have h_add_eq : X^128 = ghashPoly + ghashTail := by
-    rw [ghashPoly_eq_X_pow_add_tail, add_assoc]
-    rw [ZMod2Poly.add_self_cancel, add_zero]
+    rw [ghashPoly_eq_X_pow_add_tail, _root_.add_assoc]
+    rw [ZMod2Poly.add_self_cancel, _root_.add_zero]
   conv_lhs => rw [h_add_eq]
   -- rw [mul_add (x := A) (y := ghashPoly) (z := ghashTail)]
   have h_mul_add_left : A * (ghashPoly + ghashTail) = A * ghashPoly + A * ghashTail := by
@@ -167,21 +177,8 @@ lemma poly_reduce_step (A : Polynomial (ZMod 2)) :
     rw (occs := .pos [1]) [mul_comm A ghashPoly]
     rw [CanonicalEuclideanDomain.mul_mod_eq_zero_of_mod_dvd (hn := ghashPoly_ne_zero)
       (h_mod_eq_zero := by rw [EuclideanDomain.mod_self])]
-    rw [zero_add]
+    rw [_root_.zero_add]
     rw [CanonicalEuclideanDomain.mod_mod_eq_mod (hn := ghashPoly_ne_zero)]
-
-def fold_step (prod : B256) : B256 :=
-  let h := prod.extractLsb 255 128
-  let l := prod.extractLsb 127 0
-  clMul h R_val ^^^ (to256 l)
-
-/-- Modular Reduction using Folding (Algebraic).
-  Fast O(1) reduction replacing long division.
-  Uses the property X^128 ≡ X^7 + X^2 + X + 1 (mod P). -/
-def reduce_clMul (prod : B256) : B128 :=
-  let acc := fold_step prod
-  let res := fold_step acc
-  res.extractLsb 127 0
 
 /-- One fold preserves the value modulo P. -/
 lemma fold_step_mod_eq (x : B256) :
@@ -338,140 +335,41 @@ lemma reduce_clMul_correct (prod : B256) :
 
 end CarryLessMultiplicationReduction
 
-section AddCommGroupInstance
-
-instance : Zero ConcreteBF128Ghash where zero := 0#128
-instance : One ConcreteBF128Ghash where one := 1#128
-instance : Add ConcreteBF128Ghash where add a b := a ^^^ b
-instance : Neg ConcreteBF128Ghash where neg a := a
-instance : Sub ConcreteBF128Ghash where sub a b := a ^^^ b
-
-instance : Mul ConcreteBF128Ghash where
-  mul a b :=
-    let prod := clMul a b
-    reduce_clMul prod
-
--- -----------------------------------------------------------------------------
--- 4. AddCommGroup Instance
--- -----------------------------------------------------------------------------
-
-lemma add_assoc (a b c : ConcreteBF128Ghash) : a + b + c = a + (b + c) := by
-  exact BitVec.xor_assoc a b c
-
-lemma add_comm (a b : ConcreteBF128Ghash) : a + b = b + a := by
-  exact BitVec.xor_comm a b
-
-lemma add_zero (a : ConcreteBF128Ghash) : a + 0 = a := by
-  apply BitVec.xor_zero (w := 128)
-
-lemma zero_add (a : ConcreteBF128Ghash) : 0 + a = a := by
-  rw [add_comm]
-  apply BitVec.xor_zero (w := 128)
-
-lemma neg_add_cancel (a : ConcreteBF128Ghash) : -a + a = 0 := by
-  change a ^^^ a = 0
-  apply BitVec.xor_self
-
-lemma add_self_cancel (a : ConcreteBF128Ghash) : a + a = 0 := by
-  apply BitVec.xor_self
-
-lemma nsmul_succ (n : ℕ) (x : ConcreteBF128Ghash) :
-    (if (n + 1) % 2 = 0 then (0 : ConcreteBF128Ghash) else x)
-    = (if n % 2 = 0 then (0 : ConcreteBF128Ghash) else x) + x := by
-  have h_mod : (n + 1) % 2 = (n % 2 + 1) % 2 := Nat.add_mod n 1 2
-  by_cases h : n % 2 = 0
-  · rw [h, Nat.zero_add] at h_mod
-    rw [h]; simp only [ofNat_eq_ofNat, ↓reduceIte]
-    have h_mod: (n + 1) % 2 = 1 := by omega
-    rw [h_mod]; simp only [one_ne_zero, ↓reduceIte]
-    dsimp only [HAdd.hAdd, Add.add]
-    exact Eq.symm BitVec.zero_xor
-  · have h1 : n % 2 = 1 := by
-      have := Nat.mod_two_eq_zero_or_one n
-      exact Nat.mod_two_ne_zero.mp h
-    rw [h1] at h_mod ⊢
-    have h_mod: (n + 1) % 2 = 0 := by omega
-    rw [h_mod]; simp only [↓reduceIte, ofNat_eq_ofNat, one_ne_zero]
-    dsimp only [HAdd.hAdd, Add.add]; simp only [BitVec.xor_self]
-
-lemma zsmul_succ (n : ℕ) (x : ConcreteBF128Ghash) :
-    (if (n + 1 : ℤ) % 2 = 0 then (0 : ConcreteBF128Ghash) else x)
-    = (if (n : ℤ) % 2 = 0 then (0 : ConcreteBF128Ghash) else x) + x := by
-  norm_cast
-  exact nsmul_succ n x
-
-lemma int_neg_mod_two (n : ℤ) : (-n) % 2 = n % 2 := by
-  simp only [Int.neg_emod_two]
-
-lemma zsmul_neg (n : ℕ) (x : ConcreteBF128Ghash) :
-    (if (Int.negSucc n) % 2 = 0 then (0 : ConcreteBF128Ghash) else x)
-    = -(if (n + 1 : ℤ) % 2 = 0 then (0 : ConcreteBF128Ghash) else x) := by
-  have h_neg : Int.negSucc n = - (n + 1 : ℤ) := rfl
-  rw [h_neg]
-  rw [int_neg_mod_two (n + 1)]
-  simp
-  rfl
-
-/-- In characteristic 2, `n • x = x` if `n` is odd, and `n • x = 0` if `n` is even.
-This is because `2 • x = x + x = 0` in any ring of characteristic 2. -/
-instance : AddCommGroup ConcreteBF128Ghash where
-  add_assoc := add_assoc
-  add_comm := add_comm
-  add_zero := add_zero
-  zero_add := zero_add
-  neg_add_cancel := neg_add_cancel
-  nsmul := fun n x => if n % 2 = 0 then 0 else x
-  zsmul := fun n x => if n % 2 = 0 then 0 else x
-  nsmul_zero := fun x => by
-    rfl
-  nsmul_succ := nsmul_succ
-  zsmul_zero' := fun x => by
-    rfl
-  zsmul_succ' := zsmul_succ
-  zsmul_neg' := zsmul_neg
-
-instance : Mul ConcreteBF128Ghash where
-  mul a b :=
-    let prod := clMul a b
-    reduce_clMul prod
-
-end AddCommGroupInstance
-
 section RingInstance_and_PolyQuotient
 
 abbrev PolyQuot := AdjoinRoot ghashPoly
 
+/-- Interpret polynomial-basis coordinates in the quotient by the defining polynomial. -/
 noncomputable def toQuot (a : ConcreteBF128Ghash) : PolyQuot :=
-  AdjoinRoot.mk ghashPoly (toPoly a)
+  AdjoinRoot.mk ghashPoly (toPoly a.toBitVec)
 
 /-- Frobenius property: a^(2^128) = a in GF(2^128). -/
 lemma toQuot_pow_card (a : ConcreteBF128Ghash) : (toQuot a)^(2^128) = toQuot a := by
   rw [←BF128Ghash_card]
   rw [FiniteField.pow_card (toQuot a)]
 
-/-- Injectivity of `toQuot`.
-  If two elements map to the same quotient value, they must be equal.
-  Proof uses deg(toPoly a) < 128 and P has degree 128. -/
+/-- The quotient interpretation is injective: coordinate polynomials have degree below 128,
+whereas the defining polynomial has degree 128. -/
 lemma toQuot_injective : Function.Injective toQuot := by
   intro a b h
   unfold toQuot at h
-  have h_sub : toPoly a - toPoly b = toPoly (a ^^^ b) := by
+  have h_sub : toPoly a.toBitVec - toPoly b.toBitVec = toPoly (a.toBitVec ^^^ b.toBitVec) := by
     rw [toPoly_xor]
     ring_nf
-    exact ZMod2Poly.sub_eq_add (toPoly a) (toPoly b)
-  let diff := a ^^^ b
+    exact ZMod2Poly.sub_eq_add (toPoly a.toBitVec) (toPoly b.toBitVec)
+  let diff := a.toBitVec ^^^ b.toBitVec
   have h_deg : (toPoly diff).degree < 128 := by
     apply toPoly_degree_lt_w (w:=128) (by norm_num)
-  have h_dvd : ghashPoly ∣ (toPoly a - toPoly b) := by
+  have h_dvd : ghashPoly ∣ (toPoly a.toBitVec - toPoly b.toBitVec) := by
     rw [AdjoinRoot.mk_eq_mk] at h
     exact h
   have h_zero : toPoly diff = 0 := by
     by_contra h_nz
-    have h_diff_nz : toPoly a - toPoly b ≠ 0 := by
+    have h_diff_nz : toPoly a.toBitVec - toPoly b.toBitVec ≠ 0 := by
       rw [h_sub]; exact h_nz
-    have h_deg_poly : ghashPoly.degree ≤ (toPoly a - toPoly b).degree :=
+    have h_deg_poly : ghashPoly.degree ≤ (toPoly a.toBitVec - toPoly b.toBitVec).degree :=
       Polynomial.degree_le_of_dvd (h1 := h_dvd) (h2 := h_diff_nz)
-    have h_eq_deg : (toPoly a - toPoly b).degree = (toPoly diff).degree := by
+    have h_eq_deg : (toPoly a.toBitVec - toPoly b.toBitVec).degree = (toPoly diff).degree := by
       rw [h_sub.symm]
     rw [ghashPoly_degree] at h_deg_poly
     rw [h_eq_deg] at h_deg_poly
@@ -481,13 +379,12 @@ lemma toQuot_injective : Function.Injective toQuot := by
     have h_diff_ne_zero : diff ≠ 0 := by omega
     rw [←toPoly_ne_zero_iff_ne_zero (v := diff)] at h_diff_ne_zero
     exact h_diff_ne_zero h_zero
-  exact eq_of_sub_eq_zero h_diff_eq_zero
+  exact ConcreteBF128Ghash.ext (BitVec.xor_eq_zero_iff.mp h_diff_eq_zero)
 
 lemma toQuot_add (a b : ConcreteBF128Ghash) : toQuot (a + b) = toQuot a + toQuot b := by
   unfold toQuot
-  have h_add_eq_xor : a + b = a ^^^ b := rfl
-  rw [h_add_eq_xor, toPoly_xor]
-  exact map_add (AdjoinRoot.mk ghashPoly) (toPoly a) (toPoly b)
+  rw [toBitVec_add, toPoly_xor]
+  exact map_add (AdjoinRoot.mk ghashPoly) (toPoly a.toBitVec) (toPoly b.toBitVec)
 
 lemma toQuot_zero : toQuot 0 = 0 := by
   simp [toQuot, toPoly_zero_eq_zero]
@@ -505,21 +402,22 @@ lemma toQuot_ne_zero (a : ConcreteBF128Ghash) (h_a_ne_zero : a ≠ 0) : toQuot a
   let h_a_eq_0 := eq_of_toQuot_eq (h := h)
   exact h_a_ne_zero h_a_eq_0
 
-/-- Multiplication homomorphism: `clMul + reduce_clMul` implements polynomial multiplication
-mod P. -/
+/-- Interpreting a reduced carry-less product agrees with multiplication in the quotient. -/
 lemma toQuot_mul (a b : ConcreteBF128Ghash) : toQuot (a * b) = toQuot a * toQuot b := by
   unfold toQuot
-  have h_clMul : toPoly (clMul a b) = toPoly a * toPoly b :=  toPoly_clMul a b
-  have h_reduce : toPoly (reduce_clMul (clMul a b)) =
-                  toPoly (clMul a b) % ghashPoly := by
+  have h_clMul : toPoly (clMul a.toBitVec b.toBitVec) =
+      toPoly a.toBitVec * toPoly b.toBitVec := toPoly_clMul a.toBitVec b.toBitVec
+  have h_reduce : toPoly (reduce_clMul (clMul a.toBitVec b.toBitVec)) =
+                  toPoly (clMul a.toBitVec b.toBitVec) % ghashPoly := by
     apply reduce_clMul_correct
-  change AdjoinRoot.mk ghashPoly (toPoly (reduce_clMul (clMul a b))) =
-         AdjoinRoot.mk ghashPoly (toPoly a) * AdjoinRoot.mk ghashPoly (toPoly b)
+  change AdjoinRoot.mk ghashPoly (toPoly (reduce_clMul (clMul a.toBitVec b.toBitVec))) =
+         AdjoinRoot.mk ghashPoly (toPoly a.toBitVec) * AdjoinRoot.mk ghashPoly (toPoly b.toBitVec)
   rw [h_reduce, h_clMul, ← map_mul (AdjoinRoot.mk ghashPoly), AdjoinRoot.mk_eq_mk]
   apply dvd_sub_comm.mp
-  exact CanonicalEuclideanDomain.dvd_sub_mod (a := toPoly a * toPoly b) (b := ghashPoly)
+  exact CanonicalEuclideanDomain.dvd_sub_mod
+    (a := toPoly a.toBitVec * toPoly b.toBitVec) (b := ghashPoly)
 
--- Ring axioms verified via toQuot isomorphism
+-- Ring axioms follow from the injective quotient interpretation.
 lemma mul_assoc (a b c : ConcreteBF128Ghash) : a * b * c = a * (b * c) := by
   apply toQuot_injective
   rw [toQuot_mul, toQuot_mul, toQuot_mul, toQuot_mul]
@@ -554,60 +452,6 @@ lemma mul_zero (a : ConcreteBF128Ghash) : a * 0 = 0 := by
   apply toQuot_injective
   simp only [toQuot_mul, toQuot_zero, MulZeroClass.mul_zero]
 
--- Natural number casting: even numbers → 0, odd numbers → 1
-def natCast (n : ℕ) : ConcreteBF128Ghash := if n % 2 = 0 then 0 else 1
-
-instance : NatCast ConcreteBF128Ghash where
-  natCast := natCast
-
-@[simp] lemma natCast_eq (n : ℕ) : (↑n : ConcreteBF128Ghash) = natCast n := rfl
-
-lemma natCast_zero : natCast 0 = 0 := by simp [natCast]
-
-lemma natCast_succ (n : ℕ) : natCast (n + 1) = natCast n + 1 := by
-  simp [natCast]
-  by_cases h : n % 2 = 0
-  · -- If n is even, then n+1 is odd
-    have h_succ : (n + 1) % 2 = 1 := by omega
-    simp [h, h_succ]
-  · -- If n is odd, then n+1 is even
-    have h_succ : (n + 1) % 2 = 0 := by omega
-    simp only [h, h_succ]; norm_num;
-    rw [add_self_cancel]; rfl
-
--- Integer casting: same as natural casting (mod 2)
-def intCast (n : ℤ) : ConcreteBF128Ghash := if n % 2 = 0 then 0 else 1
-
-instance : IntCast ConcreteBF128Ghash where
-  intCast := intCast
-
-lemma intCast_ofNat (n : ℕ) : intCast (n : ℤ) = natCast n := by
-  simp [intCast, natCast]
-  by_cases h : n % 2 = 0
-  · have h_int : (n : ℤ) % 2 = 0 := by norm_cast;
-    simp [h, h_int]
-  · have h_n : n % 2 = 1 := by omega
-    have h_int : (n : ℤ) % 2 = 1 := by norm_cast;
-    simp only [h_n, one_ne_zero, ↓reduceIte, ite_eq_right_iff, zero_eq_one_iff, OfNat.ofNat_ne_zero,
-      imp_false, Int.two_dvd_ne_zero, h_int]
-
-lemma intCast_negSucc (n : ℕ) : intCast (Int.negSucc n) = -(↑(n + 1) : ConcreteBF128Ghash) := by
-  by_cases h_mod : (n + 1) % 2 = 0
-  · have h_neg : ( - (n + 1 : ℤ)) % 2 = 0 := by omega
-    unfold intCast
-    have int_neg_succ : Int.negSucc n = - (n + 1 : ℤ) := by rfl
-    rw [int_neg_succ, h_neg]
-    have h_nat : (↑(n + 1) : ConcreteBF128Ghash) = (0 : ConcreteBF128Ghash) := by
-      simp only [natCast_eq, natCast, h_mod]; rfl
-    rw [h_nat]; rfl
-  · have h_neg : ( - (n + 1 : ℤ)) % 2 = 1 := by omega
-    unfold intCast
-    have int_neg_succ : Int.negSucc n = - (n + 1 : ℤ) := by rfl
-    rw [int_neg_succ, h_neg, if_neg (by simp)]
-    have h_nat : (↑(n + 1) : ConcreteBF128Ghash) = (1 : ConcreteBF128Ghash) := by
-      simp only [natCast_eq, natCast, h_mod]; rfl
-    rw [h_nat]; rfl
-
 instance instSemigroupConcreteBF128Ghash : Semigroup ConcreteBF128Ghash where
   mul_assoc := mul_assoc
 
@@ -619,9 +463,9 @@ instance instRingConcreteBF128Ghash : Ring ConcreteBF128Ghash where
   right_distrib := right_distrib
   zero_mul := zero_mul
   mul_zero := mul_zero
-  npow := npowRecAuto
-  npow_zero := by intro x; rfl
-  npow_succ := by intro n x; rfl
+  npow := npowBinRecAuto
+  npow_zero := npowBinRec_zero
+  npow_succ := npowBinRec_succ
   natCast := natCast
   natCast_zero := natCast_zero
   natCast_succ := natCast_succ
@@ -633,55 +477,17 @@ end RingInstance_and_PolyQuotient
 
 section ItohTsujiiInversion
 
-/-- Squaring in GF(2^128). -/
-def square (a : B128) : B128 := a * a
-
-/-- Computes a^(2^k) by repeated squaring. -/
-def pow_2k (a : B128) (k : Nat) : B128 :=
-  match k with
-  | 0 => a
-  | n + 1 => pow_2k (square a) n
-
-/-- Inversion using Itoh-Tsujii Algorithm.
-  Computes a^-1 = a^(2^128 - 2) = (a^(2^127 - 1))^2.
-  We use an addition chain for 127 = 2^7 - 1. -/
-def inv_itoh_tsujii (a : B128) : B128 :=
-  if a.toNat = 0 then 0#128 else
-    -- Addition chain for 127:
-    -- 1 -> 2 -> 3 -> 6 -> 7 -> 14 -> 15 -> 30 -> 31 -> 62 -> 63 -> 126 -> 127
-    let u1 := a                         -- 2^1 - 1
-    let u2 := (pow_2k u1 1) * u1        -- 2^2 - 1
-    let u3 := (pow_2k u2 1) * u1        -- 2^3 - 1
-    let u6 := (pow_2k u3 3) * u3        -- 2^6 - 1
-    let u7 := (pow_2k u6 1) * u1        -- 2^7 - 1
-    let u14 := (pow_2k u7 7) * u7       -- 2^14 - 1
-    let u15 := (pow_2k u14 1) * u1      -- 2^15 - 1
-    let u30 := (pow_2k u15 15) * u15    -- 2^30 - 1
-    let u31 := (pow_2k u30 1) * u1      -- 2^31 - 1
-    let u62 := (pow_2k u31 31) * u31    -- 2^62 - 1
-    let u63 := (pow_2k u62 1) * u1      -- 2^63 - 1
-    let u126 := (pow_2k u63 63) * u63   -- 2^126 - 1
-    let u127 := (pow_2k u126 1) * u1    -- 2^127 - 1
-    square u127                         -- 2^128 - 2
-
-instance : Inv ConcreteBF128Ghash where
-  inv a := inv_itoh_tsujii a
-
-lemma inv_zero : (0 : ConcreteBF128Ghash)⁻¹ = 0 := by
-  simp [Inv.inv]
-  unfold inv_itoh_tsujii
-  simp
 lemma toQuot_square (a : ConcreteBF128Ghash) : toQuot (square a) = (toQuot a)^2 := by
   unfold square
   rw [toQuot_mul]; exact Eq.symm (pow_two (toQuot a))
 
-lemma toQuot_pow_2k (a : ConcreteBF128Ghash) (k : Nat) :
-    toQuot (pow_2k a k) = (toQuot a)^(2^k) := by
+lemma toQuot_powTwoPow (a : ConcreteBF128Ghash) (k : Nat) :
+    toQuot (powTwoPow a k) = (toQuot a)^(2^k) := by
   induction k generalizing a with
   | zero =>
-    simp only [pow_2k, pow_zero, pow_one]
+    simp only [powTwoPow, pow_zero, pow_one]
   | succ n ih =>
-    simp only [pow_2k]
+    simp only [powTwoPow]
     rw [ih, toQuot_square]
     rw [← pow_mul, pow_succ, mul_comm]
 
@@ -690,7 +496,7 @@ noncomputable def target_val (a : PolyQuot) (k : ℕ) : PolyQuot := a ^ (2^k - 1
 
 /-- Fundamental Itoh-Tsujii Step Lemma:
   If `x = a^(2^n - 1)` and `y = a^(2^m - 1)`, then `(x^(2^m)) * y = a^(2^(n+m) - 1)`.
-  This corresponds to the code `(pow_2k u_n m) * u_m`. -/
+  This corresponds to the code `(powTwoPow u_n m) * u_m`. -/
 lemma itoh_tsujii_step {a x y : PolyQuot} {n m : ℕ}
     (hn : n > 0) (hm : m > 0) (hx : x = target_val a n) (hy : y = target_val a m) :
     x^(2^m) * y = target_val a (n + m) := by
@@ -735,65 +541,66 @@ lemma itoh_tsujii_step {a x y : PolyQuot} {n m : ℕ}
       exact Nat.one_le_two_pow
     rw [Nat.sub_add_cancel (h := h_le)]
 
-lemma toQuot_inv_itoh_tsujii (a : ConcreteBF128Ghash) (h_ne : a ≠ 0) :
-    toQuot (inv_itoh_tsujii a) = (toQuot a)^(2^128 - 2) := by
-  unfold inv_itoh_tsujii
+lemma toQuot_invItohTsujii (a : ConcreteBF128Ghash) (h_ne : a ≠ 0) :
+    toQuot (invItohTsujii a) = (toQuot a)^(2^128 - 2) := by
+  unfold invItohTsujii
   let q := toQuot a
   have h_u1 : toQuot a = target_val q 1 := by
     simp only [target_val, pow_one, Nat.add_one_sub_one]; rfl
-  have h_u2 : toQuot ((pow_2k a 1) * a) = target_val q 2 := by
-    simp only [toQuot_mul, toQuot_pow_2k]
+  have h_u2 : toQuot ((powTwoPow a 1) * a) = target_val q 2 := by
+    simp only [toQuot_mul, toQuot_powTwoPow]
     exact itoh_tsujii_step (by norm_num) (by norm_num) h_u1 h_u1
-  let u2 := (pow_2k a 1) * a
-  have h_u3 : toQuot ((pow_2k u2 1) * a) = target_val q 3 := by
-    simp only [toQuot_mul, toQuot_pow_2k]
+  let u2 := (powTwoPow a 1) * a
+  have h_u3 : toQuot ((powTwoPow u2 1) * a) = target_val q 3 := by
+    simp only [toQuot_mul, toQuot_powTwoPow]
     exact itoh_tsujii_step (by norm_num) (by norm_num) h_u2 h_u1
-  let u3 := (pow_2k u2 1) * a
-  have h_u6 : toQuot ((pow_2k u3 3) * u3) = target_val q 6 := by
-    simp only [toQuot_mul, toQuot_pow_2k]
+  let u3 := (powTwoPow u2 1) * a
+  have h_u6 : toQuot ((powTwoPow u3 3) * u3) = target_val q 6 := by
+    simp only [toQuot_mul, toQuot_powTwoPow]
     exact itoh_tsujii_step (by norm_num) (by norm_num) h_u3 h_u3
-  let u6 := (pow_2k u3 3) * u3
-  have h_u7 : toQuot ((pow_2k u6 1) * a) = target_val q 7 := by
-    simp only [toQuot_mul, toQuot_pow_2k]
+  let u6 := (powTwoPow u3 3) * u3
+  have h_u7 : toQuot ((powTwoPow u6 1) * a) = target_val q 7 := by
+    simp only [toQuot_mul, toQuot_powTwoPow]
     exact itoh_tsujii_step (by norm_num) (by norm_num) h_u6 h_u1
-  let u7 := (pow_2k u6 1) * a
-  have h_u14 : toQuot ((pow_2k u7 7) * u7) = target_val q 14 := by
-    simp only [toQuot_mul, toQuot_pow_2k]
+  let u7 := (powTwoPow u6 1) * a
+  have h_u14 : toQuot ((powTwoPow u7 7) * u7) = target_val q 14 := by
+    simp only [toQuot_mul, toQuot_powTwoPow]
     exact itoh_tsujii_step (by norm_num) (by norm_num) h_u7 h_u7
-  let u14 := (pow_2k u7 7) * u7
-  have h_u15 : toQuot ((pow_2k u14 1) * a) = target_val q 15 := by
-    simp only [toQuot_mul, toQuot_pow_2k]
+  let u14 := (powTwoPow u7 7) * u7
+  have h_u15 : toQuot ((powTwoPow u14 1) * a) = target_val q 15 := by
+    simp only [toQuot_mul, toQuot_powTwoPow]
     exact itoh_tsujii_step (by norm_num) (by norm_num) h_u14 h_u1
-  let u15 := (pow_2k u14 1) * a
-  have h_u30 : toQuot ((pow_2k u15 15) * u15) = target_val q 30 := by
-    simp only [toQuot_mul, toQuot_pow_2k]
+  let u15 := (powTwoPow u14 1) * a
+  have h_u30 : toQuot ((powTwoPow u15 15) * u15) = target_val q 30 := by
+    simp only [toQuot_mul, toQuot_powTwoPow]
     exact itoh_tsujii_step (by norm_num) (by norm_num) h_u15 h_u15
-  let u30 := (pow_2k u15 15) * u15
-  have h_u31 : toQuot ((pow_2k u30 1) * a) = target_val q 31 := by
-    simp only [toQuot_mul, toQuot_pow_2k]
+  let u30 := (powTwoPow u15 15) * u15
+  have h_u31 : toQuot ((powTwoPow u30 1) * a) = target_val q 31 := by
+    simp only [toQuot_mul, toQuot_powTwoPow]
     exact itoh_tsujii_step (by norm_num) (by norm_num) h_u30 h_u1
-  let u31 := (pow_2k u30 1) * a
-  have h_u62 : toQuot ((pow_2k u31 31) * u31) = target_val q 62 := by
-    simp only [toQuot_mul, toQuot_pow_2k]
+  let u31 := (powTwoPow u30 1) * a
+  have h_u62 : toQuot ((powTwoPow u31 31) * u31) = target_val q 62 := by
+    simp only [toQuot_mul, toQuot_powTwoPow]
     exact itoh_tsujii_step (by norm_num) (by norm_num) h_u31 h_u31
-  let u62 := (pow_2k u31 31) * u31
-  have h_u63 : toQuot ((pow_2k u62 1) * a) = target_val q 63 := by
-    simp only [toQuot_mul, toQuot_pow_2k]
+  let u62 := (powTwoPow u31 31) * u31
+  have h_u63 : toQuot ((powTwoPow u62 1) * a) = target_val q 63 := by
+    simp only [toQuot_mul, toQuot_powTwoPow]
     exact itoh_tsujii_step (by norm_num) (by norm_num) h_u62 h_u1
-  let u63 := (pow_2k u62 1) * a
-  have h_u126 : toQuot ((pow_2k u63 63) * u63) = target_val q 126 := by
-    simp only [toQuot_mul, toQuot_pow_2k]
+  let u63 := (powTwoPow u62 1) * a
+  have h_u126 : toQuot ((powTwoPow u63 63) * u63) = target_val q 126 := by
+    simp only [toQuot_mul, toQuot_powTwoPow]
     exact itoh_tsujii_step (by norm_num) (by norm_num) h_u63 h_u63
-  let u126 := (pow_2k u63 63) * u63
-  have h_u127 : toQuot ((pow_2k u126 1) * a) = target_val q 127 := by
-    simp only [toQuot_mul, toQuot_pow_2k]
+  let u126 := (powTwoPow u63 63) * u63
+  have h_u127 : toQuot ((powTwoPow u126 1) * a) = target_val q 127 := by
+    simp only [toQuot_mul, toQuot_powTwoPow]
     exact itoh_tsujii_step (by norm_num) (by norm_num) h_u126 h_u1
-  let u127 := (pow_2k u126 1) * a
-  have h_toNat_ne_zero : a.toNat ≠ 0 := by
+  let u127 := (powTwoPow u126 1) * a
+  have h_toNat_ne_zero : a.toBitVec.toNat ≠ 0 := by
     by_contra h_eq_zero
     have h_a_eq_zero : a = 0 := by
+      apply ConcreteBF128Ghash.ext
       apply BitVec.eq_of_toNat_eq
-      simp only [h_eq_zero, ofNat_eq_ofNat, toNat_ofNat, Nat.reducePow, Nat.zero_mod]
+      simpa only [toBitVec_zero, BitVec.toNat_zero] using h_eq_zero
     exact h_ne h_a_eq_zero
   simp only [if_neg h_toNat_ne_zero]
   rw [toQuot_square, h_u127]
@@ -801,18 +608,23 @@ lemma toQuot_inv_itoh_tsujii (a : ConcreteBF128Ghash) (h_ne : a ≠ 0) :
   rw [←pow_mul]
   congr 1
 
+@[deprecated (since := "2026-09-16")] alias pow_2k := powTwoPow
+@[deprecated (since := "2026-09-16")] alias inv_itoh_tsujii := invItohTsujii
+@[deprecated (since := "2026-09-16")] alias toQuot_pow_2k := toQuot_powTwoPow
+@[deprecated (since := "2026-09-16")] alias toQuot_inv_itoh_tsujii := toQuot_invItohTsujii
+
 end ItohTsujiiInversion
 
 section DivisionRing_Field_Instances
 
 lemma exists_pair_ne : ∃ x y : ConcreteBF128Ghash, x ≠ y :=
-  ⟨0#128, 1#128, by simp only [ne_eq, zero_eq_one_iff, OfNat.ofNat_ne_zero, not_false_eq_true]⟩
+  ⟨0, 1, by decide⟩
 
 lemma mul_inv_cancel (a : ConcreteBF128Ghash) (h : a ≠ 0) : a * a⁻¹ = 1 := by
   apply toQuot_injective
   rw [toQuot_mul, toQuot_one]
-  have h_inv : a⁻¹ = inv_itoh_tsujii a := rfl
-  rw [h_inv, toQuot_inv_itoh_tsujii a h]
+  have h_inv : a⁻¹ = invItohTsujii a := rfl
+  rw [h_inv, toQuot_invItohTsujii a h]
   rw [←pow_succ']
   have h_exp_eq : 2 ^ 128 - 2 + 1 = 2 ^ 128 - 1 := by omega
   rw [h_exp_eq]
@@ -826,30 +638,15 @@ lemma mul_inv_cancel (a : ConcreteBF128Ghash) (h : a ≠ 0) : a * a⁻¹ = 1 := 
     exact toQuot_injective h
   exact _root_.mul_inv_cancel₀ h_quot_ne_zero
 
-instance instDivConcreteBF128Ghash : Div (ConcreteBF128Ghash) where
-  div a b := a * (Inv.inv b)
-
-instance instHDivConcreteBF128Ghash : HDiv (ConcreteBF128Ghash) (ConcreteBF128Ghash)
-  (ConcreteBF128Ghash) where hDiv a b := a * (Inv.inv b)
-
-lemma div_eq_mul_inv (a b : ConcreteBF128Ghash) : a / b = a * b⁻¹ := by rfl
-
 lemma mul_comm (a b : ConcreteBF128Ghash) : a * b = b * a := by
   apply toQuot_injective
   rw [toQuot_mul, toQuot_mul]
   exact _root_.mul_comm (toQuot a) (toQuot b)
 
-/-! ### Field instance via `IsField.toField`
+/-! ### Field instance
 
-Hand-assembling `DivisionRing`/`Field` (or `Function.Injective.field`) on this
-BitVec carrier is prohibitively slow under Lean 4.32. We instead package the
-field axioms as an `IsField` proposition and apply Mathlib's `IsField.toField`,
-using a type-ascribed `Ring` so Lean does not re-elaborate the ring hierarchy
-(see the comment on `IsField.toField` in Mathlib).
-
-The resulting inverse is unique and therefore equal to `inv_itoh_tsujii` on
-nonzero elements; use `inv_itoh_tsujii` directly when a concrete algorithm is
-required.
+The field structure retains the explicit arithmetic, including the total inversion chain.
+Both natural and integer powers use binary exponentiation.
 -/
 
 theorem isField_concrete : IsField ConcreteBF128Ghash where
@@ -857,16 +654,51 @@ theorem isField_concrete : IsField ConcreteBF128Ghash where
   mul_comm := mul_comm
   mul_inv_cancel := fun {_} h => ⟨Inv.inv _, mul_inv_cancel _ h⟩
 
-/-- `Field` structure on the concrete GHASH field. -/
-noncomputable instance instFieldConcreteBF128Ghash : Field ConcreteBF128Ghash := by
-  letI : Ring ConcreteBF128Ghash := (instRingConcreteBF128Ghash :)
-  exact isField_concrete.toField
+/-- The GHASH field with executable inversion, division, and binary exponentiation. -/
+instance instFieldConcreteBF128Ghash : Field ConcreteBF128Ghash where
+  mul_comm := mul_comm
+  inv := invItohTsujii
+  div a b := a * invItohTsujii b
+  div_eq_mul_inv _ _ := rfl
+  exists_pair_ne := exists_pair_ne
+  mul_inv_cancel := mul_inv_cancel
+  inv_zero := inv_zero
+  zpow := zpowRec npowBinRecAuto
+  zpow_zero' _ := rfl
+  zpow_succ' := npowBinRec_succ
+  zpow_neg' _ _ := rfl
+  qsmul := (Rat.castRec · * ·)
+  nnqsmul := (NNRat.castRec · * ·)
 
-/-- Legacy name used by downstream modules. -/
-noncomputable instance instDivisionRingConcreteBF128Ghash :
-    DivisionRing ConcreteBF128Ghash :=
+/-- Compatibility name for the division ring inherited from the field. -/
+@[deprecated "Use the division ring inherited from the Field instance." (since := "2026-09-16")]
+abbrev instDivisionRingConcreteBF128Ghash : DivisionRing ConcreteBF128Ghash :=
   Field.toDivisionRing
 
+/-- Inversion is the total Itoh-Tsujii algorithm, including at zero. -/
+theorem inv_def (a : ConcreteBF128Ghash) : a⁻¹ = invItohTsujii a := rfl
+
+/-- Division multiplies by the total Itoh-Tsujii inverse of the denominator. -/
+theorem div_def (a b : ConcreteBF128Ghash) : a / b = a * invItohTsujii b := rfl
+
+/-- Natural powers use binary exponentiation. -/
+theorem npow_def (a : ConcreteBF128Ghash) (n : ℕ) : a ^ n = npowBinRec n a := rfl
+
+/-- Integer powers use binary exponentiation and invert the result for negative exponents. -/
+theorem zpow_def (a : ConcreteBF128Ghash) (n : ℤ) :
+    a ^ n = zpowRec npowBinRecAuto n a := rfl
+
+/-- The quotient interpretation preserves inversion, including at zero. -/
+theorem toQuot_inv (a : ConcreteBF128Ghash) : toQuot a⁻¹ = (toQuot a)⁻¹ := by
+  by_cases h : a = 0
+  · simp only [h, toQuot_zero, _root_.inv_zero]
+  · apply eq_inv_of_mul_eq_one_right
+    rw [← toQuot_mul, mul_inv_cancel a h, toQuot_one]
+
 end DivisionRing_Field_Instances
+
+/-- The polynomial-basis GHASH field has characteristic two. -/
+instance : CharP ConcreteBF128Ghash 2 :=
+  (CharP.charP_iff_prime_eq_zero Nat.prime_two).2 rfl
 
 end BF128Ghash
