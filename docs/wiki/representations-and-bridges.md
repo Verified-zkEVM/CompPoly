@@ -101,6 +101,21 @@ Use this area for:
 - multilinear-extension equivalences,
 - fast multilinear pathways that do not fit the sparse `CMvPolynomial` API.
 
+`CMlPolynomial.evalWithProducts` supports coefficient evaluation through a separate
+product accumulator. It returns a value in the coefficient type after reducing the
+accumulated products with an additive homomorphism. Its correctness theorem requires
+that reducing each constructed product gives the ordinary product of its factors.
+The little-endian monomial order is the same as for `CMlPolynomial.eval`.
+
+The underlying `Vector.accumulateProducts` in
+[`../../CompPoly/Data/Vector/Basic.lean`](../../CompPoly/Data/Vector/Basic.lean)
+accepts equal-length vectors and an arbitrary initial accumulator, and returns the
+accumulator before reduction. `Vector.reduce_accumulateProducts` accounts for that
+initial value as well as the dot product. Ordinary multiplication with identity
+reduction is the eager fallback; a specialized accumulator must supply its own
+additive reduction and product equation. No field-specific backend is selected by
+this generic interface.
+
 ## Bivariate Family
 
 `CBivariate R` is the specialized `CPolynomial (CPolynomial R)` layer. Use it when

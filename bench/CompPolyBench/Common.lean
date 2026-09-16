@@ -552,11 +552,11 @@ def checksumZMod {modulus : Nat} (x : ZMod modulus) : Nat :=
 
 /-- Convert a concrete `BTF₃` element to a checksum word. -/
 def checksumBtf3 (x : AdditiveNTT.BTF₃) : Nat :=
-  BitVec.toNat x
+  ConcreteBTField.toNat x
 
 /-- Convert a concrete binary-tower field element to a checksum word. -/
 def checksumConcreteBtf {k : Nat} (x : ConcreteBTField k) : Nat :=
-  BitVec.toNat x
+  ConcreteBTField.toNat x
 
 /-- Checksum an array-like benchmark result. -/
 def checksumArray (checksum : α → Nat) (xs : Array α) : Nat :=

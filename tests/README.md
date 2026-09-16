@@ -31,8 +31,8 @@ lake build CompPolyTests.Univariate.Raw
 ## Native startup and field arithmetic
 
 `lake test` checks the Lean test modules. The separate `CompPolyNativeSmoke` executable checks
-linked module initialization and BF64/Ext3 arithmetic. On Linux with GNU `timeout`, run from the
-repository root:
+linked module initialization, AES/BF64/Ext3/GHASH arithmetic, binary-tower powers, and packed
+coefficient accumulation. On Linux with GNU `timeout`, run from the repository root:
 
 ```bash
 lake build --wfail CompPolyNativeSmoke && (
@@ -49,6 +49,23 @@ accidental full-field enumeration could otherwise exhaust memory. Arithmetic mis
 failures, resource exhaustion, and timeout all fail the command.
 
 The executable checks a wrapping BF64 product, an Ext3 reference product, addition, and inversion
-including zero. It prints a success message only after every check passes. This is native
+including zero. AES checks cover reduction, a reference product, an inverse vector, and generic
+field inversion. The AES-to-GHASH embedding checks its generator image, multiplication,
+inversion and zero. GHASH checks also exercise generic field inversion/division, large natural and
+integer powers, casts, and rational scalar actions, including zero and even denominators. It prints
+a success message only after every check passes. This is native
 implementation evidence, not a proof of the compiler or a performance benchmark. Other platforms
 can build the target; running it requires equivalent platform-specific resource limits.
+
+The tower checks pass the field dictionary to a generic helper with inlining and specialization
+disabled. They cover large natural and negative integer exponents, zero bases and exponents,
+and a high bit at level 7. `CompPolyTests/Fields/Binary/Tower/Powers.lean` additionally checks symbolic
+operation projections and agreement with the named raw binary-power routine. These checks
+establish operation and execution behavior, not compiler correctness or a performance ranking.
+
+The packed accumulation checks compare complete 128-bit output words against concrete tower
+operations. They exercise arbitrary initial accumulators, empty and cancelling sums, both limbs,
+the highest bit, and the generic coefficient-evaluation entry point. A same-width BF64/tower
+counterexample checks that the two field presentations remain distinct. The corresponding
+`CompPolyTests/Fields/Binary/Tower/ProductAccumulation.lean` regression also checks the universal
+refinement statements and coefficient ordering.

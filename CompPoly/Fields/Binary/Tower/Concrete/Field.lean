@@ -14,7 +14,9 @@ import Mathlib.Algebra.Polynomial.Degree.SmallDegree
 /-!
 # Concrete Binary Tower Field
 
-Field-structure lemmas for successive levels of the concrete binary tower.
+Field-structure lemmas for successive levels of the concrete binary tower. The field
+dictionary uses binary natural powers and integer powers that invert the natural-power
+result for negative exponents. The named raw binary-power routine agrees with field powers.
 
 Norm nonvanishing is certified using `QuadraticAlgebra.norm_eq_zero_iff_eq_zero` over the
 predecessor field. This argument does not assume a field structure on the successor level.
@@ -823,6 +825,33 @@ noncomputable def getBTFResult (k : ℕ) : ConcreteBTFStepResult k :=
 
 instance instFieldConcrete {k : ℕ} : Field (ConcreteBTField k) :=
   mkFieldInstance (getBTFResult k).toConcreteBTFieldProps
+
+/-- Natural powers use binary exponentiation of the concrete multiplication. -/
+theorem npow_def (a : ConcreteBTField k) (n : ℕ) : a ^ n = npowBinRec n a := rfl
+
+/-- Integer powers use binary exponentiation, followed by inversion for negative exponents. -/
+theorem zpow_def (a : ConcreteBTField k) (n : ℤ) :
+    a ^ n = zpowRec npowBinRec n a := rfl
+
+/-- The raw binary-power routine agrees with natural powers in the field. -/
+theorem concrete_pow_nat_eq_pow (a : ConcreteBTField k) (n : ℕ) :
+    concrete_pow_nat a n = a ^ n := by
+  induction n using Nat.strong_induction_on generalizing a with
+  | h n ih =>
+    rw [concrete_pow_nat]
+    split_ifs with hzero heven
+    · subst n
+      exact (pow_zero a).symm
+    · rw [ih (n / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero hzero) (by decide))]
+      change (a * a) ^ (n / 2) = a ^ n
+      rw [← pow_two, ← pow_mul]
+      congr 1
+      omega
+    · rw [ih (n / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero hzero) (by decide))]
+      change a * (a * a) ^ (n / 2) = a ^ n
+      rw [← pow_two, ← pow_mul, ← pow_succ']
+      congr 1
+      omega
 
 instance instCharP2 {k : ℕ} : CharP (ConcreteBTField k) 2 :=
   charP_eq_2_of_add_self_eq_zero (F:=(ConcreteBTField k)) (sumZeroIffEq:=add_eq_zero_iff_eq)
