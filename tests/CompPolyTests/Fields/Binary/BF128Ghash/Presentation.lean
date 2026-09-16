@@ -81,7 +81,7 @@ example (n : ℤ) :
 #guard ((ofBitVec (0x80000000000000000000000000000000#128)) * ofBitVec (2#128)).toBitVec ==
   0x87#128
 #guard ((ofBitVec (2#128)) * ofBitVec (2#128)).toBitVec == 4#128
-#guard (concrete_mul (k := 7) (2#128) (2#128)).toNat == 3
+#guard (concrete_mul (k := 7) (fromNat 2) (fromNat 2)).toNat == 3
 
 -- Squaring and inversion must retain reduced polynomial multiplication inside the chain.
 #guard (invItohTsujii (ofBitVec (2#128))).toBitVec ==
