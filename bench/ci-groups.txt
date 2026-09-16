@@ -50,6 +50,7 @@ additive-ntt-btf3-l4-r2
 additive-ntt-btf4-l7-r2
 fields-tower-bt128-mul
 fields-tower-bt128-inv
+fields-tower-bt128-coeff-eval
 fields-extension-koalabear-ext4-mul
 fields-extension-koalabear-ext4-inv
 fields-extension-babybear-ext4-mul

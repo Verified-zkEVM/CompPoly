@@ -6,7 +6,7 @@ Authors: CompPoly Contributors
 module
 
 public import CompPoly.Fields.Binary.BF64.Ext3
-public import CompPoly.Fields.Binary.Tower.Concrete.Field
+public import CompPoly.Fields.Binary.Tower.Fast.Multilinear
 
 /-!
 # Native field startup and arithmetic checks
@@ -44,7 +44,51 @@ private def checkTowerPowers {F : Type*} [Field F] [BEq F] (x : F) : IO Unit := 
   check "tower positive power of zero" ((0 : F) ^ (2 ^ 128 : ℕ) == 0)
   check "tower negative power of zero" ((0 : F) ^ (-((2 ^ 128 : ℕ) : ℤ)) == 0)
 
-/-- Check reduction, a reference product, total inversion, and large tower powers. -/
+open CompPoly ConcreteBinaryTower.Fast
+
+/-- Evaluate coefficients through the generic eager product-accumulation entry point. -/
+private def eagerEval {F : Type*} [CommSemiring F] {n : ℕ}
+    (p : CMlPolynomial F n) (x : Vector F n) : F :=
+  CMlPolynomial.evalWithProducts (· * ·) (AddMonoidHom.id F) p x
+
+/-- Check complete output words for packed accumulation and coefficient evaluation. -/
+private def checkPackedAccumulation : IO Unit := do
+  let words := #v[0, 1, 2, 3, 2 ^ 63, 2 ^ 64, 2 ^ 127, 2 ^ 127 + 2 ^ 64 + 7]
+  for w in words do
+    let init := FastBT128.ofNat w
+    let a := (#v[w, w + 1, 2 ^ 64, 2 ^ 127]).map
+      FastBT128.ofNat
+    let b := (#v[2 ^ 127, 2 ^ 63, w, 3]).map FastBT128.ofNat
+    let result := Vector.accumulateProducts (· * ·) init a b
+    let reference := Vector.accumulateProducts (· * ·)
+      (ConcreteBinaryTower.fromNat (k := 7) w)
+      (a.map FastBT128.toConcrete)
+      (b.map FastBT128.toConcrete)
+    check "packed accumulation full word" (result.toNat == reference.toNat)
+    check "packed empty accumulation"
+      ((Vector.accumulateProducts (· * ·) init #v[] #v[]).toNat == w)
+    let cancel := Vector.accumulateProducts (· * ·) init #v[init, init] #v[init, init]
+    check "packed cancelling accumulation" (cancel.toNat == w)
+    let point := (#v[2, w]).map FastBT128.ofNat
+    let evaluated := eagerEval a point
+    let evaluatedReference := CMlPolynomial.eval
+      (a.map FastBT128.toConcrete)
+      (point.map FastBT128.toConcrete)
+    check "packed coefficient evaluation full word" (evaluated.toNat == evaluatedReference.toNat)
+    check "packed constant evaluation" ((eagerEval #v[init] #v[]).toNat == w)
+  let two := FastBT128.ofNat 2
+  let three := FastBT128.ofNat 3
+  check "packed coefficient order" ((eagerEval #v[0, 1, 0, 0] #v[two, three]).toNat == 2)
+  check "packed coefficient order reversed"
+    ((eagerEval #v[0, 1, 0, 0] #v[three, two]).toNat == 3)
+  check "packed monomial product" ((eagerEval #v[0, 0, 0, 1] #v[two, three]).toNat == 1)
+  let polynomialTwo := BF64.ofBitVec (2#64)
+  let towerTwo := ConcreteBinaryTower.fromNat (k := 6) 2
+  check "same-width presentation distinction"
+    ((polynomialTwo * polynomialTwo).toBitVec.toNat == 4 &&
+      (towerTwo * towerTwo).toNat == 3)
+
+/-- Check scalar arithmetic, large tower powers, and packed coefficient accumulation. -/
 def run : IO Unit := do
   check "BF64 reduction"
     (((BF64.ofBitVec (0x8000000000000000#64)) * BF64.ofBitVec (2#64)).toBitVec == 0x1b#64)
@@ -67,6 +111,7 @@ def run : IO Unit := do
     (ConcreteBinaryTower.fromNat 0x80)
   checkTowerPowers (F := ConcreteBinaryTower.ConcreteBTField 7)
     (ConcreteBinaryTower.fromNat 0x80000000000000000000000000000000)
+  checkPackedAccumulation
   IO.println "Native field startup and arithmetic checks passed."
 
 end CompPolyTests.NativeSmoke

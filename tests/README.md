@@ -58,3 +58,10 @@ disabled. They cover large natural and negative integer exponents, zero bases an
 and a high bit at level 7. `CompPolyTests/Fields/Binary/Tower/Powers.lean` additionally checks symbolic
 operation projections and agreement with the named raw binary-power routine. These checks
 establish operation and execution behavior, not compiler correctness or a performance ranking.
+
+The packed accumulation checks compare complete 128-bit output words against concrete tower
+operations. They exercise arbitrary initial accumulators, empty and cancelling sums, both limbs,
+the highest bit, and the generic coefficient-evaluation entry point. A same-width BF64/tower
+counterexample checks that the two field presentations remain distinct. The corresponding
+`CompPolyTests/Fields/Binary/Tower/ProductAccumulation.lean` regression also checks the universal
+refinement statements and coefficient ordering.

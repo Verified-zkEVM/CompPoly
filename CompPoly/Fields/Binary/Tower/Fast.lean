@@ -1234,6 +1234,17 @@ instance : Inv FastBT128 := ⟨inv⟩
 def toConcrete (v : FastBT128) : ConcreteBTField 7 :=
   (《 fromNat (k := 6) v.hi.toNat, fromNat (k := 6) v.lo.toNat 》 : ConcreteBTField 7)
 
+/-- Conversion to the concrete tower preserves the complete 128-bit natural-number encoding. -/
+@[simp] theorem toNat_toConcrete (a : FastBT128) : (toConcrete a).toNat = a.toNat := by
+  change (toConcrete a).toBitVec.toNat = _
+  rw [toConcrete, join_eq_dcast_append, ← BitVec.dcast_bitvec_toNat_eq]
+  rw [BitVec.toNat_append, ← Nat.shiftLeft_add_eq_or_of_lt
+    (fromNat (k := 6) a.lo.toNat).toBitVec.isLt, Nat.shiftLeft_eq]
+  change (fromNat (k := 6) a.hi.toNat).toNat * 2 ^ 64 +
+    (fromNat (k := 6) a.lo.toNat).toNat = _
+  rw [toNat_fromNat (UInt64.toNat_lt _), toNat_fromNat (UInt64.toNat_lt _)]
+  exact Nat.add_comm _ _
+
 theorem toConcrete_injective : Function.Injective toConcrete := by
   intro a b h
   obtain ⟨h1, h0⟩ := (join_eq_join_iff (Nat.succ_pos 6) _ _ _ _).mp h
