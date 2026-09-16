@@ -223,6 +223,13 @@ support lemmas:
   [`../../CompPoly/LinearAlgebra/README.md`](../../CompPoly/LinearAlgebra/README.md)
   for the local algebra, module and scalar-action selection needed for equal tensor factors.
 
+`Tower/Concrete/Arithmetic.lean` provides the nominal carrier, explicit word maps, named
+multiplication/inversion/power routines, and elementary additive laws without the finite-field
+certificate support. `Tower/Concrete/Core.lean` re-exports that interface and adds law records,
+finite-field utilities and dictionary assembly. Canonical `Field` clients still import
+`Tower/Concrete/Field.lean`, which supplies the recursive construction. The narrow arithmetic import
+has a regression guard excluding the support chain and certificate/construction declarations.
+
 The concrete tower's `Field` dictionary uses binary exponentiation for natural powers and
 binary exponentiation followed by inversion for negative integer powers. The public
 `npow_def` and `zpow_def` identify those operations; `concrete_pow_nat_eq_pow` relates the
