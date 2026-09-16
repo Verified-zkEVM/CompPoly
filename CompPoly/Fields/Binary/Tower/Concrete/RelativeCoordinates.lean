@@ -97,17 +97,17 @@ theorem pack_smul {i j : ℕ} (h : i ≤ j) (a : ConcreteBTField i)
   (coordinates h).symm.map_smul a c
 
 private theorem low_eq_setWidth (k : ℕ) (x : ConcreteBTField (k + 1)) :
-    low k x = x.setWidth (2 ^ k) := by
+    (low k x).toBitVec = x.toBitVec.setWidth (2 ^ k) := by
   apply BitVec.eq_of_toNat_eq
-  simp only [low, split, ← BitVec.dcast_bitvec_toNat_eq,
+  simp only [ConcreteBTField.toBitVec, low, split, ← BitVec.dcast_bitvec_toNat_eq,
     BitVec.extractLsb, BitVec.extractLsb', BitVec.toNat_ofNat, BitVec.toNat_setWidth,
     Nat.add_one_sub_one, Nat.sub_zero, Nat.shiftRight_zero]
   rw [Nat.sub_add_cancel ((Nat.one_le_two_pow : 1 ≤ 2 ^ k))]
 
 private theorem high_eq_setWidth (k : ℕ) (x : ConcreteBTField (k + 1)) :
-    high k x = (BitVec.ushiftRight x (2 ^ k)).setWidth (2 ^ k) := by
+    (high k x).toBitVec = (BitVec.ushiftRight x.toBitVec (2 ^ k)).setWidth (2 ^ k) := by
   apply BitVec.eq_of_toNat_eq
-  simp only [high, split, ← BitVec.dcast_bitvec_toNat_eq,
+  simp only [ConcreteBTField.toBitVec, high, split, ← BitVec.dcast_bitvec_toNat_eq,
     BitVec.extractLsb, BitVec.extractLsb', BitVec.toNat_ofNat, BitVec.toNat_setWidth,
     Nat.add_one_sub_one]
   congr 2
@@ -116,12 +116,13 @@ private theorem high_eq_setWidth (k : ℕ) (x : ConcreteBTField (k + 1)) :
   omega
 
 private theorem succCoordinates_low (k : ℕ) (x : ConcreteBTField (k + 1)) :
-    succCoordinates k x 0 = x.setWidth (2 ^ k) := by
+    (succCoordinates k x 0).toBitVec = x.toBitVec.setWidth (2 ^ k) := by
   rw [succCoordinates_apply]
   exact low_eq_setWidth k x
 
 private theorem succCoordinates_high (k : ℕ) (x : ConcreteBTField (k + 1)) :
-    succCoordinates k x 1 = (BitVec.ushiftRight x (2 ^ k)).setWidth (2 ^ k) := by
+    (succCoordinates k x 1).toBitVec =
+      (BitVec.ushiftRight x.toBitVec (2 ^ k)).setWidth (2 ^ k) := by
   rw [succCoordinates_apply]
   exact high_eq_setWidth k x
 
@@ -145,8 +146,8 @@ private theorem slice_high {w m len offset : ℕ} (x : BitVec w)
 
 private theorem height_bits (i n : ℕ) (x : ConcreteBTField (i + n))
     (q : Fin (AlgebraTower.coordinateSize (fun _ => 2) i n)) :
-    AlgebraTower.natCoordinates succCoordinates i n x q =
-      (BitVec.ushiftRight x (2 ^ i * q.val)).setWidth (2 ^ i) := by
+    (AlgebraTower.natCoordinates succCoordinates i n x q).toBitVec =
+      (BitVec.ushiftRight x.toBitVec (2 ^ i * q.val)).setWidth (2 ^ i) := by
   induction n with
   | zero =>
       have hq : q.val = 0 := by
@@ -155,7 +156,7 @@ private theorem height_bits (i n : ℕ) (x : ConcreteBTField (i + n))
         omega
       simp only [AlgebraTower.natCoordinates_zero, hq, Nat.mul_zero,
         BitVec.ushiftRight_eq, BitVec.ushiftRight_zero]
-      exact (BitVec.setWidth_eq (x : BitVec _)).symm
+      exact (BitVec.setWidth_eq x.toBitVec).symm
   | succ n ih =>
       rw [AlgebraTower.natCoordinates_succ, ih]
       have size := AlgebraTower.coordinateSize_const 2 i n
@@ -168,7 +169,7 @@ private theorem height_bits (i n : ℕ) (x : ConcreteBTField (i + n))
           change q.val % AlgebraTower.coordinateSize (fun _ => 2) i n = q.val
           rw [size, Nat.mod_eq_of_lt hq]
         rw [outer, inner, succCoordinates_low]
-        change (((x : BitVec _).setWidth (2 ^ (i + n))) >>> (2 ^ i * q.val)).setWidth (2 ^ i) = _
+        change ((x.toBitVec.setWidth (2 ^ (i + n))) >>> (2 ^ i * q.val)).setWidth (2 ^ i) = _
         apply slice_low
         calc
           2 ^ i * q.val + 2 ^ i = 2 ^ i * (q.val + 1) := by rw [Nat.mul_add, Nat.mul_one]
@@ -188,7 +189,7 @@ private theorem height_bits (i n : ℕ) (x : ConcreteBTField (i + n))
           change q.val % AlgebraTower.coordinateSize (fun _ => 2) i n = q.val - 2 ^ n
           rw [size, Nat.mod_eq_sub_mod (by omega), Nat.mod_eq_of_lt (by omega)]
         rw [outer, inner, succCoordinates_high]
-        change (((BitVec.ushiftRight x (2 ^ (i + n))).setWidth (2 ^ (i + n))) >>>
+        change (((BitVec.ushiftRight x.toBitVec (2 ^ (i + n))).setWidth (2 ^ (i + n))) >>>
           (2 ^ i * (q.val - 2 ^ n))).setWidth (2 ^ i) = _
         have hcut : 2 ^ i * (q.val - 2 ^ n) + 2 ^ i ≤ 2 ^ (i + n) := by
           calc
@@ -202,14 +203,18 @@ private theorem height_bits (i n : ℕ) (x : ConcreteBTField (i + n))
         rw [offset]
 
 private theorem bits_cast {i j : ℕ} (h : i = j) (x : ConcreteBTField i) :
-    cast (congrArg ConcreteBTField h) x = (x : BitVec _).cast (congrArg (2 ^ ·) h) := by
+    (cast (congrArg ConcreteBTField h) x).toBitVec = x.toBitVec.cast (congrArg (2 ^ ·) h) := by
   cases h
   rfl
 
 /-- Coordinate `q` is the raw bit block of width `2 ^ i` starting at bit `2 ^ i * q`. -/
 theorem coordinates_eq_setWidth_ushiftRight {i j : ℕ} (h : i ≤ j) (x : ConcreteBTField j)
     (q : Fin (2 ^ (j - i))) :
-    coordinates h x q = (BitVec.ushiftRight x (2 ^ i * q.val)).setWidth (2 ^ i) := by
+    coordinates h x q =
+      ConcreteBTField.ofBitVec
+        ((BitVec.ushiftRight x.toBitVec (2 ^ i * q.val)).setWidth (2 ^ i)) := by
+  apply ConcreteBTField.toBitVec_injective
+  rw [ConcreteBTField.toBitVec_ofBitVec]
   unfold coordinates
   rw [AlgebraTower.natCoordinatesConstOfLE_apply,
     AlgebraTower.natCoordinatesOfLE_apply, height_bits, bits_cast (Nat.add_sub_of_le h).symm]
@@ -218,12 +223,19 @@ theorem coordinates_eq_setWidth_ushiftRight {i j : ℕ} (h : i ≤ j) (x : Concr
   simp only [BitVec.ushiftRight_eq, BitVec.getLsbD_setWidth, BitVec.getLsbD_ushiftRight,
     BitVec.getLsbD_cast, Fin.val_cast]
 
+/-- Encoding coordinate `q` returns the corresponding low-first bit block of the input word. -/
+theorem toBitVec_coordinates {i j : ℕ} (h : i ≤ j) (x : ConcreteBTField j)
+    (q : Fin (2 ^ (j - i))) :
+    (coordinates h x q).toBitVec =
+      (BitVec.ushiftRight x.toBitVec (2 ^ i * q.val)).setWidth (2 ^ i) := by
+  rw [coordinates_eq_setWidth_ushiftRight, ConcreteBTField.toBitVec_ofBitVec]
+
 /-- Reading bit `b` within coordinate `q` reads the bit at offset `2 ^ i * q + b`
 in the original word. The bound keeps `b` inside the coefficient's bit width. -/
 theorem getLsbD_coordinates {i j : ℕ} (h : i ≤ j) (x : ConcreteBTField j)
     (q : Fin (2 ^ (j - i))) (b : ℕ) (hb : b < 2 ^ i) :
-    (coordinates h x q).getLsbD b = x.getLsbD (2 ^ i * q.val + b) := by
-  rw [coordinates_eq_setWidth_ushiftRight, BitVec.ushiftRight_eq]
+    (coordinates h x q).toBitVec.getLsbD b = x.toBitVec.getLsbD (2 ^ i * q.val + b) := by
+  rw [toBitVec_coordinates, BitVec.ushiftRight_eq]
   simp only [BitVec.getLsbD_setWidth, BitVec.getLsbD_ushiftRight, hb,
     decide_true, Bool.true_and]
 
@@ -232,8 +244,10 @@ bit `2 ^ i * q` in the original word. -/
 theorem toNat_coordinates {i j : ℕ} (h : i ≤ j) (x : ConcreteBTField j)
     (q : Fin (2 ^ (j - i))) :
     (coordinates h x q).toNat =
-      Nat.getMiddleBits (2 ^ i * q.val) (2 ^ i) (x : BitVec _).toNat := by
-  rw [coordinates_eq_setWidth_ushiftRight, BitVec.ushiftRight_eq, BitVec.toNat_setWidth,
+      Nat.getMiddleBits (2 ^ i * q.val) (2 ^ i) x.toNat := by
+  change (coordinates h x q).toBitVec.toNat =
+    Nat.getMiddleBits (2 ^ i * q.val) (2 ^ i) x.toBitVec.toNat
+  rw [toBitVec_coordinates, BitVec.ushiftRight_eq, BitVec.toNat_setWidth,
     BitVec.toNat_ushiftRight, Nat.getMiddleBits_eq_mod]
 
 end ConcreteBinaryTower.Coordinates

@@ -235,6 +235,22 @@ tower-typed variable or supply the tower type explicitly to a generic field func
 Use the tower subtree when the task is about characteristic-2 extensions more
 generally, not just GHASH.
 
+`ConcreteBTField.ofBitVec` and `ConcreteBTField.toBitVec` give explicit access to the
+stored word; `ConcreteBTField.equivBitVec` packages their inverse laws.
+`ConcreteBTField.toNat` reads the entire unsigned word, and `fromNat` constructs a
+word by reducing modulo `2^(2^k)` at level `k`. These are representation maps,
+not field homomorphisms. In particular, `fromNat (k := 1) 2` stores word `2`, while
+the field numeral `(2 : ConcreteBTField 1)` is zero.
+
+The endpoint embedding theorems state zero-extension after `toBitVec`, and the
+relative-coordinate slice theorem constructs each field coefficient with
+`ofBitVec`. Use `toBitVec_coordinates` for raw slices, `getLsbD_coordinates` for
+individual bits, and `toNat_coordinates` for unsigned blocks. The concrete carrier
+is still definitionally a bitvector: these explicit interfaces prepare clients for
+presentation isolation but do not yet prevent implicit raw-word use. The explicit
+extensionality theorem `ConcreteBTField.ext` is available without registration as
+an `ext` tactic rule while the carrier remains an alias.
+
 ## Additive NTT Surface
 
 The additive-NTT stack is split by role rather than by one monolithic file:

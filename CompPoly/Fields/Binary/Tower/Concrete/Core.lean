@@ -1571,4 +1571,80 @@ structure ConcreteBTFStepResult (k : ℕ) extends (ConcreteBTFieldProps k) where
 
 end FieldOperationsAndInstances
 
+/-! ## Explicit word coordinates
+
+The coordinate maps preserve the stored bits. They are representation equivalences, not
+field homomorphisms to raw machine-word arithmetic. The carrier is still definitionally a
+bitvector; using these maps makes that representation dependency explicit at client boundaries.
+-/
+
+namespace ConcreteBTField
+
+/-- Read the `2 ^ k` stored bits of a level-`k` tower element. -/
+@[inline] def toBitVec {k : ℕ} (x : ConcreteBTField k) : BitVec (2 ^ k) := x
+
+/-- Interpret `2 ^ k` bits as the coordinates of a level-`k` tower element. -/
+@[inline] def ofBitVec {k : ℕ} (x : BitVec (2 ^ k)) : ConcreteBTField k := x
+
+/-- Reading the coordinates of a constructed element recovers the input word. -/
+@[simp] theorem toBitVec_ofBitVec {k : ℕ} (x : BitVec (2 ^ k)) :
+    (ofBitVec x).toBitVec = x := rfl
+
+/-- Reconstructing an element from its stored coordinates recovers the element. -/
+@[simp] theorem ofBitVec_toBitVec {k : ℕ} (x : ConcreteBTField k) :
+    ofBitVec x.toBitVec = x := rfl
+
+/-- The explicit equivalence between tower elements and their stored words. -/
+def equivBitVec (k : ℕ) : ConcreteBTField k ≃ BitVec (2 ^ k) where
+  toFun := toBitVec
+  invFun := ofBitVec
+  left_inv := ofBitVec_toBitVec
+  right_inv := toBitVec_ofBitVec
+
+/-- Stored word coordinates uniquely determine a tower element. -/
+theorem toBitVec_injective {k : ℕ} : Function.Injective (toBitVec (k := k)) :=
+  (equivBitVec k).injective
+
+/-- Distinct stored words construct distinct tower elements. -/
+theorem ofBitVec_injective {k : ℕ} : Function.Injective (ofBitVec (k := k)) :=
+  (equivBitVec k).symm.injective
+
+/-- Tower elements with equal stored word coordinates are equal. -/
+theorem ext {k : ℕ} {x y : ConcreteBTField k} (h : x.toBitVec = y.toBitVec) : x = y :=
+  toBitVec_injective h
+
+/-- Read the stored word as an unsigned natural number. This is not a field cast. -/
+@[inline] def toNat {k : ℕ} (x : ConcreteBTField k) : ℕ := x.toBitVec.toNat
+
+/-- Reading a constructed word as a natural number preserves its unsigned value. -/
+@[simp] theorem toNat_ofBitVec {k : ℕ} (x : BitVec (2 ^ k)) :
+    (ofBitVec x).toNat = x.toNat := rfl
+
+/-- Reading encoded bits as a natural number agrees with the tower word readback. -/
+@[simp] theorem toNat_toBitVec {k : ℕ} (x : ConcreteBTField k) :
+    x.toBitVec.toNat = x.toNat := rfl
+
+/-- A level-`k` stored word lies below `2 ^ (2 ^ k)`. -/
+theorem toNat_lt {k : ℕ} (x : ConcreteBTField k) : x.toNat < 2 ^ (2 ^ k) := x.toBitVec.isLt
+
+/-- Unsigned word readback uniquely determines a tower element. -/
+theorem toNat_injective {k : ℕ} : Function.Injective (toNat (k := k)) := by
+  intro x y h
+  exact toBitVec_injective (BitVec.eq_of_toNat_eq h)
+
+/-- The explicit natural-word constructor stores the low `2 ^ k` bits. -/
+@[simp] theorem toBitVec_fromNat {k : ℕ} (n : ℕ) :
+    (fromNat (k := k) n).toBitVec = BitVec.ofNat (2 ^ k) n := rfl
+
+/-- Reading an explicit natural-word construction reduces modulo its word size. -/
+@[simp] theorem toNat_fromNat {k : ℕ} (n : ℕ) :
+    (fromNat (k := k) n).toNat = n % 2 ^ (2 ^ k) := rfl
+
+/-- Reconstructing a tower element from its unsigned stored word recovers it. -/
+@[simp] theorem fromNat_toNat {k : ℕ} (x : ConcreteBTField k) : fromNat x.toNat = x := by
+  apply toNat_injective
+  rw [toNat_fromNat, Nat.mod_eq_of_lt x.toNat_lt]
+
+end ConcreteBTField
+
 end ConcreteBinaryTower

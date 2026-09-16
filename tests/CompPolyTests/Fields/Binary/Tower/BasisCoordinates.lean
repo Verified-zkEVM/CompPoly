@@ -94,7 +94,7 @@ example :
 example :
     let := ConcreteBTFieldAlgebra (show 6 ≤ 7 by decide)
     ((multilinearBasis 6 7 (by decide)).repr
-      (fromNat (k := 7) (2 ^ 127 + 9 * 2 ^ 64 + 2 ^ 63 + 5)) 1).getLsbD 63 = true := by
+      (fromNat (k := 7) (2 ^ 127 + 9 * 2 ^ 64 + 2 ^ 63 + 5)) 1).toBitVec.getLsbD 63 = true := by
   let := ConcreteBTFieldAlgebra (show 6 ≤ 7 by decide)
   rw [multilinearBasis_repr, getLsbD_coordinates _ _ _ _ (by decide)]
   decide +kernel
@@ -128,7 +128,8 @@ example :
       (@SMul.smul _ _ (ConcreteBTFieldAlgebra (Nat.le_succ 1)).toSMul
         (fromNat (k := 1) 3) (fromNat (k := 2) 13)) 1 ≠
       (multilinearBasis 1 2 (Nat.le_succ 1)).repr
-        (BitVec.mul (fromNat (k := 2) 3) (fromNat (k := 2) 13)) 1 := by
+        (ConcreteBTField.ofBitVec
+          (BitVec.mul (fromNat (k := 2) 3).toBitVec (fromNat (k := 2) 13).toBitVec)) 1 := by
   let := ConcreteBTFieldAlgebra (Nat.le_succ 1)
   rw [scalar_word, multilinearBasis_repr, multilinearBasis_repr,
     coordinates_eq_setWidth_ushiftRight, coordinates_eq_setWidth_ushiftRight]
