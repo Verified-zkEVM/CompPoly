@@ -300,3 +300,15 @@ theorem dotProduct_eq_root_dotProduct (a b : Vector R n) :
       rfl
 
 end Vector
+
+namespace Vector
+
+/-- A ring homomorphism maps a dot product to the dot product of the mapped vectors. -/
+theorem map_dotProduct {R S : Type*} [NonAssocSemiring R] [NonAssocSemiring S]
+    (f : R →+* S) {n : ℕ} (a b : Vector R n) :
+    f (dotProduct a b) = dotProduct (a.map f) (b.map f) := by
+  rw [dotProduct_eq_root_dotProduct, f.map_dotProduct, dotProduct_eq_root_dotProduct]
+  congr 1 <;> funext i <;>
+    simp only [Function.comp_apply, Vector.get_eq_getElem, Vector.getElem_map]
+
+end Vector

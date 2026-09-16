@@ -160,6 +160,14 @@ little‑endian order (bit 0 is the least significant bit). The entry at `i` is
 def monomialBasis (w : Vector R n) : Vector R (2 ^ n) :=
   Vector.ofFn (fun i => ∏ j : Fin n, if (BitVec.ofFin i).getLsb j then w[j] else 1)
 
+/-- Mapping each monomial-basis value by a ring homomorphism equals evaluating the
+monomial basis at the mapped point. -/
+theorem map_monomialBasis (f : R →+* S) (x : Vector R n) :
+    (monomialBasis x).map f = monomialBasis (x.map f) := by
+  ext i hi
+  simp only [Vector.getElem_map, monomialBasis, Vector.getElem_ofFn, map_prod,
+    apply_ite, map_one, Fin.getElem_fin]
+
 @[simp]
 theorem monomialBasis_zero {w : Vector R 0} : monomialBasis w = #v[1] := by
   ext i hi
@@ -238,6 +246,14 @@ def eval₂Horner (p : CMlPolynomial R n) (f : R →+* S) (x : Vector S n) : S :
 /-- Evaluate a `CMlPolynomial` at a point -/
 def eval (p : CMlPolynomial R n) (x : Vector R n) : R :=
   Vector.dotProduct p (monomialBasis x)
+
+/-- Mapping a coefficient-form evaluation by a ring homomorphism equals evaluating the
+mapped coefficients at the mapped point. -/
+theorem map_eval (f : R →+* S) (p : CMlPolynomial R n) (x : Vector R n) :
+    f (eval p x) = eval (map f p) (x.map f) := by
+  unfold eval
+  rw [Vector.map_dotProduct, map_monomialBasis]
+  rfl
 
 /-- Evaluate monomial coefficients by accumulating their products with the monomial-basis
 values in `W`, starting at zero, then reducing once to a value in `R`. -/

@@ -137,6 +137,7 @@ public import CompPoly.Fields.Binary.Tower.Concrete.Field
 public import CompPoly.Fields.Binary.Tower.Concrete.RelativeCoordinates
 public import CompPoly.Fields.Binary.Tower.Equiv
 public import CompPoly.Fields.Binary.Tower.Fast
+public import CompPoly.Fields.Binary.Tower.Fast.Multilinear
 public import CompPoly.Fields.Binary.Tower.FastDefs
 public import CompPoly.Fields.Binary.Tower.Impl
 public import CompPoly.Fields.Binary.Tower.Prelude

@@ -211,6 +211,12 @@ support lemmas:
   lookup-table base, proven against `ConcreteBTField`; `Field` instances and ring
   isomorphisms at every level up to GF(2^128). Runtime definitions live in the
   zero-import `Tower/FastDefs.lean` for `precompileModules` consumers.
+- `Tower/Fast/Multilinear.lean` - opt-in refinement of eager packed product accumulation
+  and coefficient-form multilinear evaluation to the concrete tower. It uses canonical
+  `FastBT128` multiplication and addition with identity reduction; it does not provide
+  an unreduced-product representation. `FastBT128.toNat_toConcrete` preserves the complete
+  word across the field bridge. The `fields-tower-bt128-coeff-eval` benchmark group compares
+  this consumer with concrete evaluation and participates in `--validate-only` checks.
 - `Tower/Equiv.lean` and `Tower/Impl.lean` connect the layers and expose useful
   transport lemmas.
   The tower equivalence identifies the concrete and abstract multilinear basis vectors
