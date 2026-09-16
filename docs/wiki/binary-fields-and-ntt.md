@@ -190,6 +190,9 @@ support lemmas:
   constant term first and generator term second. It uses the existing tower embedding
   for the scalar action. Pass it to `AlgebraTower.natCoordinatesOfLE` or
   `AlgebraTower.natCoordinatesConstOfLE` for coordinates between arbitrary ordered levels.
+  [Concrete/CoordinateArithmetic.lean](../../CompPoly/Fields/Binary/Tower/Concrete/CoordinateArithmetic.lean)
+  supplies the quadratic product, conjugate, norm, and total inverse formulas for these
+  successor coordinates, including zero, without importing the abstract tower bridge.
   [Concrete/RelativeCoordinates.lean](../../CompPoly/Fields/Binary/Tower/Concrete/RelativeCoordinates.lean)
   specializes these maps as `coordinates` and `pack`, with round-trip and scalar-action laws.
   Its readback theorems identify each coefficient with the corresponding raw bit block,
