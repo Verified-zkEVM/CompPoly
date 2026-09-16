@@ -16,6 +16,9 @@ public import Mathlib.Tactic.Ring
 
 /-!
 # Definitions and lemmas for `Vector`
+
+`accumulateProducts` separates product accumulation from reduction. Its reduction theorem
+recovers `dotProduct` whenever reduction preserves zero, addition, and the chosen products.
 -/
 
 @[expose] public section
@@ -139,6 +142,43 @@ def dotProduct [Zero R] [Add R] [Mul R] (a b : Vector R n) : R :=
 
 @[inherit_doc]
 scoped notation:80 a " *ᵥ " b => dotProduct a b
+
+/-- Accumulate paired products from equal-length vectors, from left to right, starting at `init`.
+The products and accumulator lie in `W`; no reduction is performed. -/
+def accumulateProducts {W : Type*} [Add W] (product : R → R → W) (init : W)
+    (a b : Vector R n) : W :=
+  a.zipWith product b |>.foldl (· + ·) init
+
+/-- If reduction preserves addition and each paired product, reducing the accumulator gives
+the reduced initial value plus the dot product of the input vectors. -/
+theorem reduce_accumulateProducts {W : Type*} [AddZero W] [AddMonoid R] [Mul R]
+    (reduce : W →+ R) (product : R → R → W)
+    (hproduct : ∀ x y, reduce (product x y) = x * y) (init : W) (a b : Vector R n) :
+    reduce (accumulateProducts product init a b) = reduce init + dotProduct a b := by
+  have hmap : (a.zipWith product b).map reduce = a.zipWith (· * ·) b := by
+    ext i
+    simp only [getElem_map, getElem_zipWith, hproduct]
+  calc
+    reduce (accumulateProducts product init a b) =
+        ((a.zipWith product b).map reduce).foldl (· + ·) (reduce init) :=
+      (foldl_map_hom (fun x y => (map_add reduce x y).symm)).symm
+    _ = (a.zipWith (· * ·) b).foldl (· + ·) (reduce init) := by rw [hmap]
+    _ = reduce init + dotProduct a b := by
+      simpa only [dotProduct, _root_.add_zero] using
+        (foldl_assoc (op := (· + ·)) (xs := a.zipWith (· * ·) b)
+          (a₁ := reduce init) (a₂ := 0))
+
+/-- Reducing a product accumulator initialized at zero recovers the dot product. -/
+theorem reduce_accumulateProducts_zero {W : Type*} [AddZero W] [AddMonoid R] [Mul R]
+    (reduce : W →+ R) (product : R → R → W)
+    (hproduct : ∀ x y, reduce (product x y) = x * y) (a b : Vector R n) :
+    reduce (accumulateProducts product 0 a b) = dotProduct a b := by
+  rw [reduce_accumulateProducts reduce product hproduct, map_zero, _root_.zero_add]
+
+/-- Ordinary multiplication is an eager product accumulator, with identity reduction. -/
+theorem accumulateProducts_mul [AddMonoid R] [Mul R] (init : R) (a b : Vector R n) :
+    accumulateProducts (· * ·) init a b = init + dotProduct a b :=
+  reduce_accumulateProducts (AddMonoidHom.id R) (· * ·) (fun _ _ => rfl) init a b
 
 @[simp]
 lemma dotProduct_cons [AddCommMonoid R] [Mul R] (a : R) (b : Vector R n) (c : R) (d : Vector R n) :

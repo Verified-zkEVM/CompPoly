@@ -239,6 +239,21 @@ def eval₂Horner (p : CMlPolynomial R n) (f : R →+* S) (x : Vector S n) : S :
 def eval (p : CMlPolynomial R n) (x : Vector R n) : R :=
   Vector.dotProduct p (monomialBasis x)
 
+/-- Evaluate monomial coefficients by accumulating their products with the monomial-basis
+values in `W`, starting at zero, then reducing once to a value in `R`. -/
+def evalWithProducts {W : Type*} [AddZero W] (product : R → R → W) (reduce : W →+ R)
+    (p : CMlPolynomial R n) (x : Vector R n) : R :=
+  reduce (Vector.accumulateProducts product 0 p (monomialBasis x))
+
+/-- Product accumulation followed by additive reduction agrees with coefficient evaluation
+when reducing each product gives the ordinary product of its two factors. -/
+theorem evalWithProducts_eq_eval {W : Type*} [AddZero W]
+    (product : R → R → W) (reduce : W →+ R)
+    (hproduct : ∀ a b, reduce (product a b) = a * b)
+    (p : CMlPolynomial R n) (x : Vector R n) :
+    evalWithProducts product reduce p x = eval p x :=
+  Vector.reduce_accumulateProducts_zero reduce product hproduct p (monomialBasis x)
+
 def eval₂ (p : CMlPolynomial R n) (f : R →+* S) (x : Vector S n) : S := eval (map f p) x
 
 private lemma eval_horner_step_dot_product {n : ℕ}
