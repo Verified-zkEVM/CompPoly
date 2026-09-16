@@ -31,8 +31,8 @@ lake build CompPolyTests.Univariate.Raw
 ## Native startup and field arithmetic
 
 `lake test` checks the Lean test modules. The separate `CompPolyNativeSmoke` executable checks
-linked module initialization and AES/BF64/Ext3 arithmetic. On Linux with GNU `timeout`, run from the
-repository root:
+linked module initialization and AES/BF64/Ext3/GHASH arithmetic. On Linux with GNU `timeout`, run
+from the repository root:
 
 ```bash
 lake build --wfail CompPolyNativeSmoke && (
@@ -50,6 +50,8 @@ failures, resource exhaustion, and timeout all fail the command.
 
 The executable checks a wrapping BF64 product, an Ext3 reference product, addition, and inversion
 including zero. AES checks cover reduction, a reference product, an inverse vector, and generic
-field inversion. It prints a success message only after every check passes. This is native
+field inversion. GHASH checks also exercise generic field inversion/division, large natural and
+integer powers, casts, and rational scalar actions, including zero and even denominators. It prints
+a success message only after every check passes. This is native
 implementation evidence, not a proof of the compiler or a performance benchmark. Other platforms
 can build the target; running it requires equivalent platform-specific resource limits.
