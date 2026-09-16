@@ -1407,7 +1407,7 @@ def ofConcrete (x : ConcreteBTField 7) : FastBT128 := ofNat x.toNat
     show (x.toNat >>> 64) % 2 ^ 64 = x.toNat >>> 2 ^ 6
     refine Nat.mod_eq_of_lt ?_
     rw [Nat.shiftRight_eq_div_pow]
-    exact Nat.div_lt_of_lt_mul (by rw [← Nat.pow_add]; exact x.isLt)
+    exact Nat.div_lt_of_lt_mul (by rw [← Nat.pow_add]; exact x.toNat_lt)
   · simp only [Nat.succ_sub_one]
     congr 1
     show x.toNat % 2 ^ 64 = x.toNat &&& 2 ^ 2 ^ 6 - 1

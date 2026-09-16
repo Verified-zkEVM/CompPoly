@@ -258,9 +258,7 @@ theorem split_mul_eq_mul_split {k : ℕ} (h_pos : k > 0) (x₀ x₁ : ConcreteBT
   -- ⊢ x₀ * x₁ = join h_pos (hi₀ * hi₁ + hi₀ * lo₁ + lo₀ * hi₁) (lo₀ * lo₁)
   have h_mul_repr := h_mul_eq (a:=x₀) (b:=x₁) (h_k:=h_pos) (a₁:=hi₀) (a₀:=lo₀) (b₁:=hi₁) (b₀:=lo₁)
     (by exact Eq.symm h_split_x₀) (by exact Eq.symm h_split_x₁)
-  -- Now convert all * to concrete_mul and all + to concrete_add
-  simp only [HMul.hMul]
-  rw [h_mul_repr]
+  exact h_mul_repr
 
 lemma towerRingHomForwardMap_mul_eq (k : ℕ) (x y : ConcreteBTField k) :
     towerRingHomForwardMap (k:=k) (x * y)

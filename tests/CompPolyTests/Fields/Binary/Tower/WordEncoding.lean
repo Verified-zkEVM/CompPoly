@@ -13,7 +13,7 @@ public import CompPoly.Fields.Binary.Tower.Concrete.Core
 
 The explicit encoding API preserves complete stored words and natural-word truncation.
 Field numerals and operations remain distinct from raw word construction and arithmetic.
-These are representation-map tests; the underlying carrier is still a bitvector alias.
+The nominal carrier rejects implicit conversion in both directions, even at a fixed level.
 -/
 
 public meta section
@@ -47,6 +47,23 @@ example {k : ℕ} (n : ℕ) : (fromNat (k := k) n).toNat = n % 2 ^ (2 ^ k) :=
 #guard (fromNat (k := 7) (2 ^ 127 + 2 ^ 64 + 7)).toBitVec ==
   BitVec.ofNat 128 (2 ^ 127 + 2 ^ 64 + 7)
 #guard (fromNat (k := 8) (2 ^ 256 + 2 ^ 255 + 1)).toNat == 2 ^ 255 + 1
+
+example {k : ℕ} (_x : ConcreteBTField k) (_word : BitVec (2 ^ k)) : True := by
+  fail_if_success
+    let _raw : BitVec (2 ^ k) := _x
+  fail_if_success
+    let _field : ConcreteBTField k := _word
+  trivial
+
+-- A type ascription cannot turn an inline raw literal into a field element.
+example : True := by
+  fail_if_success
+    let _x : ConcreteBTField 1 := 2#2
+  fail_if_success
+    let _x := ((2#2 : ConcreteBTField 1) ^ (2 : ℕ)).toNat
+  fail_if_success
+    have _h : ConcreteBTField 6 = BitVec 64 := rfl
+  trivial
 
 -- Importing the representation API does not change ordinary raw-word operations.
 #guard (2#2) * (2#2) == 0#2
