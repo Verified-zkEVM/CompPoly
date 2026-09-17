@@ -279,7 +279,7 @@ lemma X_eq_monomial {k : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
   · ext m; unfold CMvPolynomial.coeff Lawful.fromUnlawful
     erw [Unlawful.filter_get]; simp [h]; grind
   · simp only [show ((1 : R) == 0) = false from by simp [h]]
-    exact (if_neg (by decide)).symm
+    exact (ite_eq_right (by decide)).symm
 
 lemma toFinsupp_unitMono {k : ℕ}
     (i : Fin k) :
@@ -306,13 +306,13 @@ lemma fromCMvPolynomial_monomial {k : ℕ} {R : Type*} [CommSemiring R] [BEq R] 
     erw [Unlawful.filter_get]
     simp only [Unlawful.ofList]
     by_cases hm : CMvMonomial.toFinsupp mono = μ
-    · subst hm; rw [if_pos rfl, CMvMonomial.ofFinsupp_toFinsupp]
+    · subst hm; rw [ite_eq_left rfl, CMvMonomial.ofFinsupp_toFinsupp]
       erw [ExtTreeMap.getElem?_ofList_of_mem
         (k := mono) (k_eq := compare_self) (v := c)
         (mem := by simp) (distinct := ?distinct)]
       · simp
       case distinct => simp
-    · rw [if_neg hm]
+    · rw [ite_eq_right hm]
       have hne : CMvMonomial.ofFinsupp μ ≠ mono :=
         fun h => hm (h ▸ CMvMonomial.toFinsupp_ofFinsupp)
       erw [ExtTreeMap.getElem?_ofList_of_contains_eq_false
@@ -404,8 +404,9 @@ theorem ringHom_ext {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
     ext r m
     rw [RingHom.comp_apply]
     rw [show (algebraMap R (CMvPolynomial n R)) r = CMvPolynomial.C (n := n) r from rfl]
-    simpa [CPoly.polyRingEquiv, CPoly.polyEquiv] using congrArg (fun q => MvPolynomial.coeff m q)
-      (CMvPolynomial.fromCMvPolynomial_C (n := n) (R := R) r)
+    simpa [CPoly.polyRingEquiv, CPoly.polyEquiv] using
+      congrArg (fun q : MvPolynomial (Fin n) R => q.coeff m)
+        (CMvPolynomial.fromCMvPolynomial_C (n := n) (R := R) r)
   have hcomp' :
       ((CPoly.polyRingEquiv (n := n) (R := R) : CMvPolynomial n R →+* MvPolynomial (Fin n) R).comp
         (algebraMap R (CMvPolynomial n R))) = MvPolynomial.C := by
@@ -466,7 +467,7 @@ lemma fromCMvPolynomial_finsupp_sum {n k : ℕ} [CommSemiring R] [BEq R] [Lawful
     Finsupp.sum (AddMonoidAlgebra.coeff (fromCMvPolynomial a))
       (fun μ c => fromCMvPolynomial (g μ c)) := by
   unfold Finsupp.sum; ext
-  simp [MvPolynomial.coeff_sum, coeff_eq, coeff_sum]
+  simp [coeff_eq, coeff_sum]
 
 /-! ## API lemmas for `sumToIter` -/
 
@@ -523,9 +524,8 @@ theorem fromCMvPolynomial_bind₁ {n m : ℕ} {R : Type*} [CommSemiring R] [BEq 
         (algebraMap R (CMvPolynomial m R)) = MvPolynomial.C := by
     ext r μ
     rw [RingHom.comp_apply]
-    change MvPolynomial.coeff μ
-        (fromCMvPolynomial (algebraMap R (CMvPolynomial m R) r)) =
-      MvPolynomial.coeff μ (MvPolynomial.C r)
+    change (fromCMvPolynomial (algebraMap R (CMvPolynomial m R) r)).coeff μ =
+      (MvPolynomial.C r : MvPolynomial (Fin m) R).coeff μ
     rw [show (algebraMap R (CMvPolynomial m R)) r = CMvPolynomial.C (n := m) r from rfl]
     rw [fromCMvPolynomial_C]
   rw [eval₂_equiv (p := p) (f := algebraMap R (CMvPolynomial m R)) (vals := f)]

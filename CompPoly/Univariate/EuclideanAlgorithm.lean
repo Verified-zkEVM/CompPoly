@@ -120,9 +120,9 @@ lemma xgcdAux_toPoly_eq_gcd
       (Polynomial.degree_eq_bot.mp (Nat.WithBot.lt_zero_iff.mp hn))
     rw [xgcdAux, hr, toPoly_zero, EuclideanDomain.gcd_zero_left]
   | succ k ih =>
-    rw [xgcdAux, if_neg (Nat.not_lt_zero _)]
+    rw [xgcdAux, ite_eq_right (Nat.not_lt_zero _)]
     by_cases hr : r = 0; simp [hr, toPoly_zero, EuclideanDomain.gcd_zero_left]
-    rw [if_neg (by simpa), ih] <;>
+    rw [ite_eq_right (by simpa), ih] <;>
     rw [toPoly_sub_div_mul, _root_.mul_comm, ←EuclideanDomain.mod_eq_sub_mul_div]
     · rw [EuclideanDomain.gcd_val r.toPoly r'.toPoly]
     · have hrtp : r.toPoly ≠ 0 := (toPoly_eq_zero_iff r).not.mpr hr
@@ -151,11 +151,11 @@ lemma xgcdAux_toPoly_eq_xgcdAux
     rw [xgcdAux, hr, EuclideanDomain.xgcd_zero_left]
     rfl
   | succ k ih =>
-    rw [xgcdAux, if_neg (Nat.not_lt_zero _)]
+    rw [xgcdAux, ite_eq_right (Nat.not_lt_zero _)]
     by_cases hr : r = 0
-    · rw [if_pos (by simpa), hr, toPoly_zero, EuclideanDomain.xgcd_zero_left]
+    · rw [ite_eq_left (by simpa), hr, toPoly_zero, EuclideanDomain.xgcd_zero_left]
       rfl
-    · rw [if_neg (by simpa)]
+    · rw [ite_eq_right (by simpa)]
       have hrtp : r.toPoly ≠ 0 := (toPoly_eq_zero_iff r).not.mpr hr
       rw [ih, EuclideanDomain.xgcdAux_rec hrtp] <;>
       rw [toPoly_sub_div_mul, _root_.mul_comm, ←EuclideanDomain.mod_eq_sub_mul_div] <;>
@@ -230,12 +230,12 @@ theorem monicNormalize_toPoly_eq_normalize
   rw [ofArray_toPoly, CPolynomial.trim_eq]
   by_cases hpraw : ((p.val : CPolynomial.Raw R) == 0)
   · have hp : p = 0 := CPolynomial.ext (LawfulBEq.eq_of_beq hpraw)
-    rw [if_pos hpraw, hp]
+    rw [ite_eq_left hpraw, hp]
     rw [CPolynomial.Raw.toPoly_zero, CPolynomial.toPoly_zero, normalize_zero]
   · have hp : p ≠ 0 := by
       intro hp
       exact hpraw (by subst p; exact beq_self_eq_true _)
-    rw [if_neg hpraw, Raw.toPoly_smul]
+    rw [ite_eq_right hpraw, Raw.toPoly_smul]
     have hlead : CPolynomial.Raw.leadingCoeff p.val = p.leadingCoeff := by
       simp [CPolynomial.Raw.leadingCoeff, CPolynomial.leadingCoeff, CPolynomial.trim_eq]
     rw [hlead]
@@ -269,14 +269,14 @@ private theorem gcdMonicWithFuel_toPoly_eq_normalize_gcd
         simp [CPolynomial.gcdMonicWithFuel, CPolynomial.Raw.gcdMonicWithFuel,
           CPolynomial.trim_eq, CPolynomial.toPoly_zero]
         have hzero : (↑(0 : CPolynomial R) : CPolynomial.Raw R) = (#[] : CPolynomial.Raw R) := rfl
-        rw [if_pos hzero]
+        rw [ite_eq_left hzero]
         change (CPolynomial.monicNormalize p).toPoly = normalize p.toPoly
         exact monicNormalize_toPoly_eq_normalize p
       · have hqraw : ¬((q.val : CPolynomial.Raw R) == 0) := by
           intro h
           exact hq (CPolynomial.ext (LawfulBEq.eq_of_beq h))
         rw [CPolynomial.gcdMonicWithFuel, CPolynomial.Raw.gcdMonicWithFuel,
-          CPolynomial.trim_eq, CPolynomial.trim_eq, if_neg hqraw]
+          CPolynomial.trim_eq, CPolynomial.trim_eq, ite_eq_right hqraw]
         change (CPolynomial.gcdMonicWithFuel fuel q (p % q)).toPoly =
           normalize (EuclideanDomain.gcd p.toPoly q.toPoly)
         rw [ih]
@@ -469,11 +469,13 @@ lemma xgcdAux_stopSpec_of_invariant
   | succ k ih =>
     intro r s t r' s' t' hinv hlt; simp only [xgcdAux]
     by_cases hd : r.natDegree < threshold
-    · rw [if_pos hd]
+    · rw [ite_eq_left hd]
       exact ⟨hinv.bez, natDegree_toPoly r ▸ hd,
         (add_le_add le_rfl hinv.thr).trans_eq hinv.degree_complement, fun htz =>
         hg₀ (Polynomial.degree_eq_bot.mp (by simp [← hinv.degree_complement, htz]))⟩
-    · rw [if_neg hd]; have hrne : r ≠ 0 := fun h => hd (by rwa [h]); rw [if_neg (by simpa)]
+    · rw [ite_eq_right hd]
+      have hrne : r ≠ 0 := fun h => hd (by rwa [h])
+      rw [ite_eq_right (by simpa)]
       have hd' : ¬ r.toPoly.natDegree < threshold := natDegree_toPoly r ▸ hd
       have hstep := hinv.step ((toPoly_eq_zero_iff _).not.mpr hrne) hd'
       simp only [← toPoly_sub_div_mul] at hstep
@@ -505,7 +507,7 @@ lemma xgcd_stopSpec
       rw [toPoly_sub_div_mul, (Polynomial.div_eq_zero_iff hg₀poly).mpr hdeg'] <;>
       simp [toPoly_zero, toPoly_one]
   simp only [xgcd, hN, xgcdAux]
-  rw [if_neg hstop, if_neg (by simpa using (toPoly_eq_zero_iff _).not.mp hg₀poly)]
+  rw [ite_eq_right hstop, ite_eq_right (by simpa using (toPoly_eq_zero_iff _).not.mp hg₀poly)]
   have hinv : BezoutDegreeInvariantOf g₀ g₁ threshold
       (g₁ - g₁/g₀*g₀) (0 - g₁/g₀*1) (1 - g₁/g₀*0) g₀ 1 0 := by
     rw [BezoutDegreeInvariantOf, hr1, hs1, ht1, toPoly_one, toPoly_zero]

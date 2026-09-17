@@ -445,7 +445,7 @@ private theorem linearRootOfFactor?_eq_some_of_candidate {F : Type*}
     CPolynomial.linearRootOfFactor? factor = some a := by
   rw [CPolynomial.linearRootOfFactor?]
   have hcond : factor.val.size ≤ 2 ∧ factor.coeff 1 ≠ 0 := h.1
-  rw [if_pos]
+  rw [ite_eq_left]
   · congr
     apply (div_eq_iff hcond.2).2
     rw [neg_eq_iff_add_eq_zero]

@@ -104,7 +104,7 @@ private theorem cantorZassenhausOddAttemptWith_root {F : Type*}
       · refine ⟨zeroPart, hzeroMem hproperZero, hzeroRoot⟩
       · have hafterZeroRoot : CPolynomial.eval a afterZero = 0 := by
           dsimp [afterZero, quotientAfterChild]
-          rw [if_neg hproperZero]
+          rw [ite_eq_right hproperZero]
           exact hroot'
         by_cases hsquareRoot : CPolynomial.eval a squarePart = 0
         · have hproperSquare :
@@ -134,7 +134,7 @@ private theorem cantorZassenhausOddAttemptWith_root {F : Type*}
               exact hproperSquare
                 (proper_child_of_proper_intermediate hproperAfterZero hafterZeroSizeLe)
             dsimp [afterSquare, quotientAfterChild]
-            rw [if_neg hnotProperAfterZero]
+            rw [ite_eq_right hnotProperAfterZero]
             exact hafterZeroRoot
           have hproperAfter :
               isNontrivialProperChild g' afterSquare = true :=
@@ -495,7 +495,7 @@ theorem cantorZassenhausOddAttemptWith_stackWork_le {F : Type*}
         exact le_trans hraw (by simpa [g'] using hwork)
       · have hafterEq : afterSquare = afterZero := by
           dsimp [afterSquare, quotientAfterChild]
-          rw [if_neg hproperSquareAfter]
+          rw [ite_eq_right hproperSquareAfter]
         by_cases hproperSquareG : isNontrivialProperChild g' squarePart = true
         · have hsquareNe : squarePart ≠ 0 := by
             unfold isNontrivialProperChild at hproperSquareG
@@ -561,7 +561,7 @@ theorem cantorZassenhausOddAttemptWith_stackWork_le {F : Type*}
           exact le_trans hraw (by simpa [g'] using hpair)
     · have hafterZeroEq : afterZero = g' := by
         dsimp [afterZero, quotientAfterChild]
-        rw [if_neg hproperZero]
+        rw [ite_eq_right hproperZero]
       have hproperSquareG :
           isNontrivialProperChild g' squarePart = true :=
         middle_proper_of_triple_eraseDups_filter_size_ge_two_of_not_left

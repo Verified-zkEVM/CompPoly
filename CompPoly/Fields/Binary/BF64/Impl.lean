@@ -388,7 +388,7 @@ private theorem chainTarget_step {q x y : BF64Quot} {n m : ℕ}
 /-- The Itoh-Tsujii chain computes `a ^ (2 ^ 64 - 2)`. -/
 theorem toQuot_invItohTsujii (a : BF64) (h : a ≠ 0) :
     toQuot (invItohTsujii a) = toQuot a ^ (2 ^ 64 - 2) := by
-  rw [invItohTsujii, if_neg h]
+  rw [invItohTsujii, ite_eq_right h]
   set q := toQuot a with hq
   have e1 : toQuot a = chainTarget q 1 := by
     simp only [chainTarget, hq]; norm_num
@@ -498,7 +498,7 @@ theorem inv_def (a : BF64) : a⁻¹ = invItohTsujii a := rfl
 theorem div_def (a b : BF64) : a / b = a * invItohTsujii b := rfl
 
 @[simp] theorem inv_zero_bf64 : (0 : BF64)⁻¹ = 0 := by
-  rw [inv_def, invItohTsujii, if_pos rfl]
+  rw [inv_def, invItohTsujii, ite_eq_left rfl]
 
 /-- `BF64` satisfies `IsField`, the bundled-data-free form of the field axioms. -/
 theorem isField_bf64 : IsField BF64 where

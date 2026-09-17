@@ -299,14 +299,14 @@ theorem rowGet_vectorToPolynomialRow_coeff (cap width : Nat)
       List.getElem?_range hk, Option.map_some, Option.getD_some,
       CPolynomial.coeff_ofArray]
     rcases Nat.lt_or_ge a cap with ha | ha
-    · rw [if_pos ⟨hk, ha⟩, Array.getD_eq_getD_getElem?, List.getElem?_toArray,
+    · rw [ite_eq_left ⟨hk, ha⟩, Array.getD_eq_getD_getElem?, List.getElem?_toArray,
         List.getElem?_map, List.getElem?_range ha, Option.map_some,
         Option.getD_some]
-    · rw [if_neg (by omega), Array.getD_eq_getD_getElem?, List.getElem?_toArray,
+    · rw [ite_eq_right (by omega), Array.getD_eq_getD_getElem?, List.getElem?_toArray,
         List.getElem?_eq_none (by simpa using ha), Option.getD_none]
   · rw [Array.getD_eq_getD_getElem?, List.getElem?_toArray,
       List.getElem?_eq_none (by simpa using hk), Option.getD_none,
-      if_neg (by omega)]
+      ite_eq_right (by omega)]
     exact CPolynomial.coeff_zero a
 
 /-- Polynomial rows reconstructed from scalar kernel vectors satisfy the
@@ -360,14 +360,14 @@ theorem vectorToPolynomialRow_approximates (mulCtx : CPolynomial.MulContext F)
       (Nat.lt_of_lt_of_le (Finset.mem_range.mp hx) htcap)) fun a ha hnot ↦ ?_)
   · have ha' : a < t + 1 := Finset.mem_range.mp ha
     rw [← CPolynomial.coeff_toPoly, ← CPolynomial.coeff_toPoly,
-      rowGet_vectorToPolynomialRow_coeff, if_pos ⟨hk', by omega⟩,
-      hentry a (by omega), if_pos (by omega)]
+      rowGet_vectorToPolynomialRow_coeff, ite_eq_left ⟨hk', by omega⟩,
+      hentry a (by omega), ite_eq_left (by omega)]
     exact mul_comm _ _
   · have ha1 : a < leafDegreeCap problem := Finset.mem_range.mp ha
     have ha2 : t + 1 ≤ a := by
       by_contra hcon
       exact hnot (Finset.mem_range.mpr (by omega))
-    rw [hentry a ha1, if_neg (by omega), zero_mul]
+    rw [hentry a ha1, ite_eq_right (by omega), zero_mul]
 
 /-- Arithmetic of the packed index `k * cap + a`. -/
 theorem pm_pack_index {cap : Nat} (hcap : 0 < cap) {size k a : Nat}
@@ -427,10 +427,10 @@ theorem vectorToPolynomialRow_rowToCoefficientVector
     rcases Nat.lt_or_ge k problem.matrix.size with hk | hk
     · rcases Nat.lt_or_ge a (leafDegreeCap problem) with ha | ha
       · obtain ⟨hc, hdiv, hmod⟩ := pm_pack_index hcap_pos hk ha
-        rw [if_pos ⟨hk, ha⟩, rowToCoefficientVector_getD problem row hc,
+        rw [ite_eq_left ⟨hk, ha⟩, rowToCoefficientVector_getD problem row hc,
           hdiv, hmod]
-      · rw [if_neg (by omega), hdeg k (by omega) a ha]
-    · rw [if_neg (by omega)]
+      · rw [ite_eq_right (by omega), hdeg k (by omega) a ha]
+    · rw [ite_eq_right (by omega)]
       have hzero : rowGet row k = 0 := by
         rw [rowGet, Array.getD_eq_getD_getElem?,
           Array.getElem?_eq_none (by omega)]
@@ -550,13 +550,13 @@ theorem coefficientMatrixRows_dot_eq_zero_of_approximates
         fun a ha hnot ↦ ?_)
     · have ha' : a < t + 1 := Finset.mem_range.mp ha
       rw [← CPolynomial.coeff_toPoly, ← CPolynomial.coeff_toPoly,
-        hentry k hk a (by omega), if_pos (by omega), hw k hk a (by omega)]
+        hentry k hk a (by omega), ite_eq_left (by omega), hw k hk a (by omega)]
       exact mul_comm _ _
     · have ha1 : a < leafDegreeCap problem := Finset.mem_range.mp ha
       have ha2 : t + 1 ≤ a := by
         by_contra hcon
         exact hnot (Finset.mem_range.mpr (by omega))
-      rw [hentry k hk a ha1, if_neg (by omega), zero_mul]
+      rw [hentry k hk a ha1, ite_eq_right (by omega), zero_mul]
   rw [pm_sum_range_mul,
     Finset.sum_congr rfl fun k hk ↦ hinner k (Finset.mem_range.mp hk),
     ← Polynomial.finsetSum_coeff]

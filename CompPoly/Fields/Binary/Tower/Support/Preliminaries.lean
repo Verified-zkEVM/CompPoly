@@ -349,15 +349,15 @@ theorem unique_linear_sum_repr (R : Type*) [CommRing R] (S : Type*) [CommRing S]
         unfold repr2
         rw [Finsupp.add_apply]
         rw [Finsupp.single_apply, Finsupp.single_apply]
-        rw [if_pos rfl] -- i0 = i0
-        rw [if_neg i1_ne_i0]
+        rw [ite_eq_left rfl] -- i0 = i0
+        rw [ite_eq_right i1_ne_i0]
         rw [zero_add]
     have repr2_i1 : repr2 i1 = y.1 := by
       unfold repr2
       rw [Finsupp.add_apply]
       rw [Finsupp.single_apply, Finsupp.single_apply]
-      rw [if_pos rfl] -- ⊢ (y.1 + if i0 = i1 then y.2 else 0) = y.1
-      rw [if_neg (fun h => i1_ne_i0 h.symm)]
+      rw [ite_eq_left rfl] -- ⊢ (y.1 + if i0 = i1 then y.2 else 0) = y.1
+      rw [ite_eq_right (fun h => i1_ne_i0 h.symm)]
       rw [add_zero]
     have sum_repr_eq : ∑ i : Fin pb.dim, repr2 i • pb.basis i = s := by
       rw [sum_univ_twos (hn := h_dim) (f := fun i => repr2 i • pb.basis i)]

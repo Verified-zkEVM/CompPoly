@@ -148,8 +148,8 @@ theorem truncateX_add [Semiring F] [BEq F] [LawfulBEq F] (order : Nat)
   intro i
   simp only [truncateX_coeff, CPolynomial.coeff_add]
   by_cases hi : i < order
-  · simp only [if_pos hi]
-  · simp only [if_neg hi, add_zero]
+  · simp only [ite_eq_left hi]
+  · simp only [ite_eq_right hi, add_zero]
 
 /-- Truncation distributes over subtraction. -/
 theorem truncateX_sub [Ring F] [BEq F] [LawfulBEq F] (order : Nat)
@@ -159,8 +159,8 @@ theorem truncateX_sub [Ring F] [BEq F] [LawfulBEq F] (order : Nat)
   intro i
   simp only [truncateX_coeff, CPolynomial.coeff_sub]
   by_cases hi : i < order
-  · simp only [if_pos hi]
-  · simp only [if_neg hi, sub_zero]
+  · simp only [ite_eq_left hi]
+  · simp only [ite_eq_right hi, sub_zero]
 
 /-- Nested truncations keep the smaller order. -/
 theorem truncateX_truncateX [Semiring F] [BEq F] [LawfulBEq F] (o o' : Nat)
@@ -171,9 +171,9 @@ theorem truncateX_truncateX [Semiring F] [BEq F] [LawfulBEq F] (o o' : Nat)
   simp only [truncateX_coeff]
   by_cases h₁ : i < o
   · by_cases h₂ : i < o'
-    · rw [if_pos h₁, if_pos h₂, if_pos (by omega)]
-    · rw [if_pos h₁, if_neg h₂, if_neg (by omega)]
-  · rw [if_neg h₁, if_neg (by omega)]
+    · rw [ite_eq_left h₁, ite_eq_left h₂, ite_eq_left (by omega)]
+    · rw [ite_eq_left h₁, ite_eq_right h₂, ite_eq_right (by omega)]
+  · rw [ite_eq_right h₁, ite_eq_right (by omega)]
 
 /-- Truncation distributes over finite range sums. -/
 theorem truncateX_sum [Semiring F] [BEq F] [LawfulBEq F] (order n : Nat)
@@ -185,8 +185,8 @@ theorem truncateX_sum [Semiring F] [BEq F] [LawfulBEq F] (order n : Nat)
   rw [truncateX_coeff, CPolynomial.coeff_finset_sum, CPolynomial.coeff_finset_sum]
   simp only [truncateX_coeff]
   by_cases hi : i < order
-  · simp only [if_pos hi]
-  · simp only [if_neg hi, Finset.sum_const_zero]
+  · simp only [ite_eq_left hi]
+  · simp only [ite_eq_right hi, Finset.sum_const_zero]
 
 private theorem coeff_eq_zero_of_natDegree_lt [Zero F] [BEq F] [LawfulBEq F]
     {p : CPolynomial F} {i : Nat} (h : p.natDegree < i) :
@@ -212,7 +212,7 @@ theorem truncateX_mul_of_productCoeffCap_le [Semiring F] [BEq F] [LawfulBEq F]
     rcases hz with hp | hq
     · rw [hp, CPolynomial.zero_mul, truncateX_zero]
     · rw [hq, CPolynomial.mul_zero, truncateX_zero]
-  · rw [productCoeffCap, if_neg hz] at h
+  · rw [productCoeffCap, ite_eq_right hz] at h
     rw [CPolynomial.eq_iff_coeff]
     intro i
     rw [truncateX_coeff]
@@ -247,11 +247,11 @@ theorem rowGet_ofFn [Zero F] (rows width : Nat) (entry : Nat → Nat → CPolyno
       if i < rows ∧ j < width then entry i j else 0 := by
   rw [getD_ofFn]
   by_cases hi : i < rows
-  · rw [if_pos hi, rowGet_list_range_map]
+  · rw [ite_eq_left hi, rowGet_list_range_map]
     by_cases hj : j < width
-    · rw [if_pos hj, if_pos ⟨hi, hj⟩]
-    · rw [if_neg hj, if_neg (fun hc ↦ hj hc.2)]
-  · rw [if_neg hi, if_neg (fun hc ↦ hi hc.1)]
+    · rw [ite_eq_left hj, ite_eq_left ⟨hi, hj⟩]
+    · rw [ite_eq_right hj, ite_eq_right (fun hc ↦ hj hc.2)]
+  · rw [ite_eq_right hi, ite_eq_right (fun hc ↦ hi hc.1)]
     exact rowGet_of_size_le (Nat.zero_le j)
 
 private theorem matrixWidth_eq_getD_size [Zero F] (M : PolynomialMatrix F) :
@@ -267,9 +267,9 @@ theorem MatrixWidth_ofFn [Zero F] (rows width : Nat)
   rw [matrixWidth_eq_getD_size, getD_ofFn]
   by_cases h : rows = 0
   · subst h
-    rw [if_neg (by omega), if_pos rfl]
+    rw [ite_eq_right (by omega), ite_eq_left rfl]
     rfl
-  · rw [if_pos (by omega), if_neg h]
+  · rw [ite_eq_left (by omega), ite_eq_right h]
     simp only [List.size_toArray, List.length_map, List.length_range]
 
 /-- Width of a square `ofFn`. -/
@@ -313,7 +313,7 @@ theorem rowGet_rowMulMatrixWith [Semiring F] [BEq F] [LawfulBEq F]
     (M : PolynomialMatrix F) {j : Nat} (hj : j < MatrixWidth M) :
     rowGet (rowMulMatrixWith mulCtx row M) j =
       ∑ k ∈ Finset.range row.size, rowGet row k * rowGet (M.getD k #[]) j := by
-  rw [rowMulMatrixWith, rowGet_list_range_map, if_pos hj, foldl_add_eq_sum]
+  rw [rowMulMatrixWith, rowGet_list_range_map, ite_eq_left hj, foldl_add_eq_sum]
   simp only [mulCtx.mul_eq_mul]
 
 /-- The naive row-by-matrix product is zero past the matrix width. -/
@@ -466,9 +466,9 @@ theorem add_ofFn [Semiring F] [BEq F] [LawfulBEq F] (rows width : Nat)
   by_cases h : rows = 0
   · subst h
     simp [add, ofFn]
-  · simp only [add, ofFn_size, MatrixWidth_ofFn, if_neg h, Nat.max_self]
+  · simp only [add, ofFn_size, MatrixWidth_ofFn, ite_eq_right h, Nat.max_self]
     refine ofFn_congr fun i hi j hj ↦ ?_
-    rw [rowGet_ofFn, rowGet_ofFn, if_pos ⟨hi, hj⟩, if_pos ⟨hi, hj⟩]
+    rw [rowGet_ofFn, rowGet_ofFn, ite_eq_left ⟨hi, hj⟩, ite_eq_left ⟨hi, hj⟩]
 
 /-- Pointwise subtraction of equally shaped `ofFn` matrices. -/
 theorem sub_ofFn [Ring F] [BEq F] [LawfulBEq F] (rows width : Nat)
@@ -478,9 +478,9 @@ theorem sub_ofFn [Ring F] [BEq F] [LawfulBEq F] (rows width : Nat)
   by_cases h : rows = 0
   · subst h
     simp [sub, ofFn]
-  · simp only [sub, ofFn_size, MatrixWidth_ofFn, if_neg h, Nat.max_self]
+  · simp only [sub, ofFn_size, MatrixWidth_ofFn, ite_eq_right h, Nat.max_self]
     refine ofFn_congr fun i hi j hj ↦ ?_
-    rw [rowGet_ofFn, rowGet_ofFn, if_pos ⟨hi, hj⟩, if_pos ⟨hi, hj⟩]
+    rw [rowGet_ofFn, rowGet_ofFn, ite_eq_left ⟨hi, hj⟩, ite_eq_left ⟨hi, hj⟩]
 
 /-- The naive product of square `ofFn` matrices. -/
 theorem mulWith_ofFn_ofFn [Semiring F] [BEq F] [LawfulBEq F]
@@ -493,7 +493,7 @@ theorem mulWith_ofFn_ofFn [Semiring F] [BEq F] [LawfulBEq F]
   rw [ofFn_size]
   refine Finset.sum_congr rfl fun k hk ↦ ?_
   have hk' := Finset.mem_range.mp hk
-  rw [rowGet_ofFn, rowGet_ofFn, if_pos ⟨hi, hk'⟩, if_pos ⟨hk', hj⟩]
+  rw [rowGet_ofFn, rowGet_ofFn, ite_eq_left ⟨hi, hk'⟩, ite_eq_left ⟨hk', hj⟩]
 
 /-- Column truncation of an `ofFn` matrix. -/
 theorem truncateColumns_ofFn [Semiring F] [BEq F] [LawfulBEq F] (orders : Array Nat)
@@ -507,10 +507,10 @@ theorem truncateColumns_ofFn [Semiring F] [BEq F] [LawfulBEq F] (orders : Array 
           (fun j ↦ truncateX (orders.getD j 0) (entry i j))).toArray := by
     intro i hi
     rw [ofFn_size] at hi
-    rw [getD_ofFn, if_pos hi, rowTruncateColumns]
+    rw [getD_ofFn, ite_eq_left hi, rowTruncateColumns]
     simp only [List.size_toArray, List.length_map, List.length_range]
     refine congrArg List.toArray (List.map_congr_left fun j hj ↦ ?_)
-    rw [rowGet_list_range_map, if_pos (List.mem_range.mp hj)]
+    rw [rowGet_list_range_map, ite_eq_left (List.mem_range.mp hj)]
   rw [map_eq_ofFn h, ofFn_size]
 
 /-! ## Strassen seven-product sum identities -/
@@ -593,7 +593,7 @@ private theorem pad_step [Semiring F] [BEq F] [LawfulBEq F]
   conv_rhs => rw [mulWith_eq_ofFn]
   simp only [padSquare, trimShape, block, Nat.zero_add, mulWith_ofFn_ofFn]
   refine ofFn_congr fun i hi j hj ↦ ?_
-  rw [rowGet_ofFn, if_pos ⟨lt_of_lt_of_le hi hA, lt_of_lt_of_le hj hBw⟩]
+  rw [rowGet_ofFn, ite_eq_left ⟨lt_of_lt_of_le hi hA, lt_of_lt_of_le hj hBw⟩]
   exact sum_entry_eq_of_matrix_le (A.getD i #[]) B j hBs
 
 private theorem trunc_pad_step [Semiring F] [BEq F] [LawfulBEq F]
@@ -608,8 +608,8 @@ private theorem trunc_pad_step [Semiring F] [BEq F] [LawfulBEq F]
   simp only [padSquare, trimShape, block, Nat.zero_add, mulWith_ofFn_ofFn,
     truncateColumns_ofFn]
   refine ofFn_congr fun i hi j hj ↦ ?_
-  rw [rowGet_ofFn, if_pos ⟨lt_of_lt_of_le hi hA, lt_of_lt_of_le hj hBw⟩,
-    natArraySlice_getD, if_pos (lt_of_lt_of_le hj hBw), Nat.zero_add]
+  rw [rowGet_ofFn, ite_eq_left ⟨lt_of_lt_of_le hi hA, lt_of_lt_of_le hj hBw⟩,
+    natArraySlice_getD, ite_eq_left (lt_of_lt_of_le hj hBw), Nat.zero_add]
   exact congrArg (truncateX (orders.getD j 0))
     (sum_entry_eq_of_matrix_le (A.getD i #[]) B j hBs)
 
@@ -640,25 +640,25 @@ theorem mulStrassenWithFuel_eq_mulWith [Ring F] [BEq F] [LawfulBEq F]
           mulWith_ofFn_ofFn]
         refine ofFn_congr fun i hi j hj ↦ ?_
         by_cases hi' : i < h <;> by_cases hj' : j < h
-        · rw [if_pos hi', if_pos hj', rowGet_ofFn, if_pos ⟨hi', hj'⟩,
+        · rw [ite_eq_left hi', ite_eq_left hj', rowGet_ofFn, ite_eq_left ⟨hi', hj'⟩,
             Finset.sum_range_add]
           exact strassen_sum₁₁ h _ _ _ _ _ _
         · obtain ⟨j', rfl⟩ : ∃ j', j = h + j' := ⟨j - h, by omega⟩
           have hj'' : j' < h := by omega
-          rw [if_pos hi', if_neg hj', Nat.add_sub_cancel_left, rowGet_ofFn,
-            if_pos ⟨hi', hj''⟩, Finset.sum_range_add]
+          rw [ite_eq_left hi', ite_eq_right hj', Nat.add_sub_cancel_left, rowGet_ofFn,
+            ite_eq_left ⟨hi', hj''⟩, Finset.sum_range_add]
           exact strassen_sum₁₂ h _ _ _ _
         · obtain ⟨i', rfl⟩ : ∃ i', i = h + i' := ⟨i - h, by omega⟩
           have hi'' : i' < h := by omega
-          rw [if_neg hi', Nat.add_sub_cancel_left, if_pos hj', rowGet_ofFn,
-            if_pos ⟨hi'', hj'⟩, Finset.sum_range_add]
+          rw [ite_eq_right hi', Nat.add_sub_cancel_left, ite_eq_left hj', rowGet_ofFn,
+            ite_eq_left ⟨hi'', hj'⟩, Finset.sum_range_add]
           exact strassen_sum₂₁ h _ _ _ _
         · obtain ⟨i', rfl⟩ : ∃ i', i = h + i' := ⟨i - h, by omega⟩
           obtain ⟨j', rfl⟩ : ∃ j', j = h + j' := ⟨j - h, by omega⟩
           have hi'' : i' < h := by omega
           have hj'' : j' < h := by omega
-          rw [if_neg hi', if_neg hj', Nat.add_sub_cancel_left,
-            Nat.add_sub_cancel_left, rowGet_ofFn, if_pos ⟨hi'', hj''⟩,
+          rw [ite_eq_right hi', ite_eq_right hj', Nat.add_sub_cancel_left,
+            Nat.add_sub_cancel_left, rowGet_ofFn, ite_eq_left ⟨hi'', hj''⟩,
             Finset.sum_range_add]
           exact strassen_sum₂₂ h _ _ _ _ _ _
       · rw [ih]
@@ -724,8 +724,8 @@ theorem mulTruncColumnStrassenWithFuel_eq_truncateColumns [Ring F] [BEq F] [Lawf
           mulWith_ofFn_ofFn, truncateColumns_ofFn]
         refine ofFn_congr fun i hi j hj ↦ ?_
         by_cases hi' : i < h <;> by_cases hj' : j < h
-        · rw [if_pos hi', if_pos hj', rowGet_ofFn, if_pos ⟨hi', hj'⟩]
-          simp only [natArraySlice_getD, maxNatArrays_getD, if_pos hj', Nat.zero_add]
+        · rw [ite_eq_left hi', ite_eq_left hj', rowGet_ofFn, ite_eq_left ⟨hi', hj'⟩]
+          simp only [natArraySlice_getD, maxNatArrays_getD, ite_eq_left hj', Nat.zero_add]
           have hmin₁ : min (orders.getD j 0)
               (max (orders.getD j 0) (orders.getD (h + j) 0)) = orders.getD j 0 :=
             Nat.min_eq_left (Nat.le_max_left _ _)
@@ -736,9 +736,9 @@ theorem mulTruncColumnStrassenWithFuel_eq_truncateColumns [Ring F] [BEq F] [Lawf
           exact congrArg (truncateX (orders.getD j 0)) (strassen_sum₁₁ h _ _ _ _ _ _)
         · obtain ⟨j', rfl⟩ : ∃ j', j = h + j' := ⟨j - h, by omega⟩
           have hj'' : j' < h := by omega
-          rw [if_pos hi', if_neg hj', Nat.add_sub_cancel_left, rowGet_ofFn,
-            if_pos ⟨hi', hj''⟩]
-          simp only [natArraySlice_getD, maxNatArrays_getD, if_pos hj'', Nat.zero_add]
+          rw [ite_eq_left hi', ite_eq_right hj', Nat.add_sub_cancel_left, rowGet_ofFn,
+            ite_eq_left ⟨hi', hj''⟩]
+          simp only [natArraySlice_getD, maxNatArrays_getD, ite_eq_left hj'', Nat.zero_add]
           have hmin₁ : min (orders.getD (h + j') 0)
               (max (orders.getD j' 0) (orders.getD (h + j') 0)) =
                 orders.getD (h + j') 0 :=
@@ -750,9 +750,9 @@ theorem mulTruncColumnStrassenWithFuel_eq_truncateColumns [Ring F] [BEq F] [Lawf
             (strassen_sum₁₂ h _ _ _ _)
         · obtain ⟨i', rfl⟩ : ∃ i', i = h + i' := ⟨i - h, by omega⟩
           have hi'' : i' < h := by omega
-          rw [if_neg hi', Nat.add_sub_cancel_left, if_pos hj', rowGet_ofFn,
-            if_pos ⟨hi'', hj'⟩]
-          simp only [natArraySlice_getD, maxNatArrays_getD, if_pos hj', Nat.zero_add]
+          rw [ite_eq_right hi', Nat.add_sub_cancel_left, ite_eq_left hj', rowGet_ofFn,
+            ite_eq_left ⟨hi'', hj'⟩]
+          simp only [natArraySlice_getD, maxNatArrays_getD, ite_eq_left hj', Nat.zero_add]
           have hmin₁ : min (orders.getD j 0)
               (max (orders.getD j 0) (orders.getD (h + j) 0)) = orders.getD j 0 :=
             Nat.min_eq_left (Nat.le_max_left _ _)
@@ -764,9 +764,9 @@ theorem mulTruncColumnStrassenWithFuel_eq_truncateColumns [Ring F] [BEq F] [Lawf
           obtain ⟨j', rfl⟩ : ∃ j', j = h + j' := ⟨j - h, by omega⟩
           have hi'' : i' < h := by omega
           have hj'' : j' < h := by omega
-          rw [if_neg hi', if_neg hj', Nat.add_sub_cancel_left,
-            Nat.add_sub_cancel_left, rowGet_ofFn, if_pos ⟨hi'', hj''⟩]
-          simp only [natArraySlice_getD, maxNatArrays_getD, if_pos hj'', Nat.zero_add]
+          rw [ite_eq_right hi', ite_eq_right hj', Nat.add_sub_cancel_left,
+            Nat.add_sub_cancel_left, rowGet_ofFn, ite_eq_left ⟨hi'', hj''⟩]
+          simp only [natArraySlice_getD, maxNatArrays_getD, ite_eq_left hj'', Nat.zero_add]
           have hmin₁ : min (orders.getD (h + j') 0)
               (max (orders.getD j' 0) (orders.getD (h + j') 0)) =
                 orders.getD (h + j') 0 :=

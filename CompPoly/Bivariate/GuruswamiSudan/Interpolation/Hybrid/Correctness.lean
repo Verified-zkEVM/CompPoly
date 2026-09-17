@@ -74,7 +74,7 @@ theorem hybridPositiveInterpolate_eq_lee_or_approximant
         ApproximantBasis.approximantBasisPositiveInterpolate V E solver
           points params := by
   by_cases hdist : distinctXCoordinatesBool points
-  · simp only [hybridPositiveInterpolate, hdist, if_true]
+  · simp only [hybridPositiveInterpolate, hdist, ite_true]
     split
     case h_1 _ hconf =>
       right
@@ -83,12 +83,12 @@ theorem hybridPositiveInterpolate_eq_lee_or_approximant
       left
       rw [hybrid_probe_eq_reduceFast
         (LeeOSullivan.leeOSullivanBasisRowsWithRG_wellFormed _ _ params) hconf]
-      simp only [LeeOSullivan.leeOSullivanPositiveInterpolate, hdist, if_true,
+      simp only [LeeOSullivan.leeOSullivanPositiveInterpolate, hdist, ite_true,
         muldersStorjohannFastReducerContext]
       rfl
   · left
-    rw [hybridPositiveInterpolate, if_neg hdist,
-      LeeOSullivan.leeOSullivanPositiveInterpolate, if_neg hdist]
+    rw [hybridPositiveInterpolate, ite_eq_right hdist,
+      LeeOSullivan.leeOSullivanPositiveInterpolate, ite_eq_right hdist]
 
 /-- The hybrid result always coincides with one of the two verified
 backends. -/
@@ -106,9 +106,9 @@ theorem hybridInterpolate_eq_lee_or_approximant
   by_cases hlow : params.messageDegree ≤ 1
   · left
     simp only [hybridInterpolate, LeeOSullivan.leeOSullivanInterpolate, hlow,
-      if_true]
+      ite_true]
   · simp only [hybridInterpolate, LeeOSullivan.leeOSullivanInterpolate,
-      ApproximantBasis.approximantBasisInterpolate, hlow, if_false]
+      ApproximantBasis.approximantBasisInterpolate, hlow, ite_false]
     exact hybridPositiveInterpolate_eq_lee_or_approximant V E solver budget
       points params
 

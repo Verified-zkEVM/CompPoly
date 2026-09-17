@@ -92,7 +92,7 @@ private theorem forwardSpec_inverseSpec_get_eq (D : Domain R) (values : Array R)
           rw [Finset.sum_eq_single i]
           · have hn : ((D.n : Nat) : R) ≠ 0 := by
               simpa [Domain.n] using D.natCast_ne_zero
-            simp only [if_true]
+            simp only [ite_true]
             rw [Domain.nInv]
             rw [_root_.mul_comm (values[i.1]?.getD 0) (((D.n : Nat) : R))]
             rw [← _root_.mul_assoc]

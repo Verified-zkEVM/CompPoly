@@ -450,8 +450,8 @@ lemma neg_add_cancel {k : ℕ} (a : ConcreteBTField k) : neg a + a = 0 := by
 lemma if_self_rfl {α : Type*} [DecidableEq α] (a b : α) :
     (if a = b then b else a) = a := by
   by_cases h : a = b
-  · rw [if_pos h, h]
-  · rw [if_neg h]
+  · rw [ite_eq_left h, h]
+  · rw [ite_eq_right h]
 
 instance (k : ℕ) : DecidableEq (ConcreteBTField k) :=
   fun x y => decidable_of_iff (x.toBitVec = y.toBitVec)
@@ -550,8 +550,8 @@ lemma zsmul_neg' {k : ℕ} (n : ℕ) (a : ConcreteBTField k) :
       rw [neg_succ_mod_2_eq_0_nat] at h
       contradiction
     -- ⊢ (if - (↑n + 1) % 2 = 0 then zero else a) = neg (if 1 = 0 then zero else a)
-    rw [if_neg one_ne_zero, neg]
-    rw [if_neg neg_n_succ_mod_2_ne_0]
+    rw [ite_eq_right one_ne_zero, neg]
+    rw [ite_eq_right neg_n_succ_mod_2_ne_0]
   }
 
 -- Split a field element into high and low parts
@@ -861,7 +861,7 @@ lemma one_bitvec_toNat {width : ℕ} (h_width : width > 0) : (1#width).toNat = 1
 
 /-- The generator at level `k + 1` is the word with its only set bit at position `2 ^ k`. -/
 theorem toNat_Z_succ (k : ℕ) : (Z (k + 1)).toNat = 2 ^ (2 ^ k) := by
-  rw [Z, dif_neg (Nat.succ_ne_zero k)]
+  rw [Z, dite_eq_right (Nat.succ_ne_zero k)]
   unfold ConcreteBTField.toNat
   rw [join_eq_dcast_append, ← BitVec.dcast_bitvec_toNat_eq]
   rw [BitVec.toNat_append]
@@ -1046,8 +1046,8 @@ instance instInvConcreteBTF {k : ℕ} : Inv (ConcreteBTField k) where
 lemma concrete_inv_zero {k : ℕ} : concrete_inv (k:=k) 0 = 0 := by
   unfold concrete_inv
   by_cases h_k_zero : k = 0
-  · rw [dif_pos h_k_zero]; norm_num
-  · rw [dif_neg h_k_zero]; norm_num
+  · rw [dite_eq_left h_k_zero]; norm_num
+  · rw [dite_eq_right h_k_zero]; norm_num
 
 lemma concrete_exists_pair_ne {k : ℕ} : ∃ x y : ConcreteBTField k, x ≠ y :=
   ⟨zero (k:=k), one (k:=k), (concrete_one_ne_zero (k:=k)).symm⟩
@@ -1124,7 +1124,7 @@ lemma concrete_mul_left_distrib0 (a b c : ConcreteBTField 0) :
         simp [hb] at c_cases
         have c_ne_0 : c ≠ 0 := by
           simp only [c_cases, ne_eq, one_ne_zero, not_false_eq_true]
-        rw [if_neg c_ne_0]
+        rw [ite_eq_right c_ne_0]
         exact c_cases.symm
       · rw [one_is_1] at hb; simp [hb] at c_cases; simp [hb, c_cases]
 
@@ -1207,7 +1207,7 @@ theorem intCast_negSucc {k : ℕ} (n : ℕ) : intCast (k:=k) (Int.negSucc n)
     have int_neg_succ : Int.negSucc n = - (n + 1 : ℤ) := by rfl
     rw [int_neg_succ]
     simp only [h_neg]
-    rw [if_neg (by simp)]
+    rw [ite_eq_right (by simp)]
     have h_nat : (↑(n + 1) : ConcreteBTField k) = (one : ConcreteBTField k) := by
       simp only [natCast_eq, natCast, h_mod]
       rfl

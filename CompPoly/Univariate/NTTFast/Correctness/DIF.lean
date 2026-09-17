@@ -232,15 +232,15 @@ private theorem difMathPairsSpec_half
           = (if bb < block + 1 then v1 else v0) := by
       by_cases hlt : bb < block
       · have hlt' : bb < block + 1 := Nat.lt_trans hlt (Nat.lt_succ_self _)
-        rw [if_pos hlt, if_pos hlt']
+        rw [ite_eq_left hlt, ite_eq_left hlt']
       · by_cases hEq : bb = block
         · have hlt' : bb < block + 1 := by simp [hEq]
-          rw [if_neg hlt, if_pos hEq, if_pos hpair, if_pos hlt']
+          rw [ite_eq_right hlt, ite_eq_left hEq, ite_eq_left hpair, ite_eq_left hlt']
         · have hnot : ¬bb < block + 1 := by
             exact not_lt_of_ge
               (Nat.succ_le_of_lt
                 (Nat.lt_of_le_of_ne (Nat.le_of_not_lt hlt) (Ne.symm hEq)))
-          rw [if_neg hlt, if_neg hEq, if_neg hnot]
+          rw [ite_eq_right hlt, ite_eq_right hEq, ite_eq_right hnot]
     simpa [difMathPairsSpec, difMathBlocksSpec, bb, v1, v0] using hcase
 
 private theorem difMathBlocksSpec_final
@@ -270,7 +270,7 @@ private theorem difMathBlocksSpec_final
       rw [hmul']
       simpa [NTT.Domain.n] using hi
     have hcase : (if bb < D.n / blockSize then v1 else v0) = v1 := by
-      rw [if_pos hblock]
+      rw [ite_eq_left hblock]
     simpa [difMathBlocksSpec, difMathStageSpec, blockSize, bb, v1, v0] using hcase
 
 private theorem eq_lower_or_upper_of_block_pair
@@ -363,21 +363,21 @@ private theorem difMathPairsSpec_get_unchanged
       (difMathPairsSpec D stage block (j + 1) a)[i] := by
   simp only [difMathPairsSpec, Array.getElem_ofFn]
   by_cases hltBlock : i / 2 ^ (stage + 1) < block
-  · rw [if_pos hltBlock, if_pos hltBlock]
-  · rw [if_neg hltBlock, if_neg hltBlock]
+  · rw [ite_eq_left hltBlock, ite_eq_left hltBlock]
+  · rw [ite_eq_right hltBlock, ite_eq_right hltBlock]
     by_cases hEqBlock : i / 2 ^ (stage + 1) = block
-    · rw [if_pos hEqBlock, if_pos hEqBlock]
+    · rw [ite_eq_left hEqBlock, ite_eq_left hEqBlock]
       by_cases hltPair : i % 2 ^ stage < j
-      · rw [if_pos hltPair, if_pos (Nat.lt_trans hltPair (Nat.lt_succ_self j))]
+      · rw [ite_eq_left hltPair, ite_eq_left (Nat.lt_trans hltPair (Nat.lt_succ_self j))]
       · have hgePair : j ≤ i % 2 ^ stage := Nat.le_of_not_lt hltPair
-        rw [if_neg hltPair]
+        rw [ite_eq_right hltPair]
         by_cases hltPairNext : i % 2 ^ stage < j + 1
         · have hpair : i % 2 ^ stage = j := by omega
           rcases eq_lower_or_upper_of_block_pair stage block j i hEqBlock hpair with h | h
           · exact (hneLower h.symm).elim
           · exact (hneUpper h.symm).elim
-        · rw [if_neg hltPairNext]
-    · rw [if_neg hEqBlock, if_neg hEqBlock]
+        · rw [ite_eq_right hltPairNext]
+    · rw [ite_eq_right hEqBlock, ite_eq_right hEqBlock]
 
 private theorem dif_upper_lt_of_lower_lt_domain
     (D : NTT.Domain R) (stage block j : Nat) (hstage : stage < D.logN) (hj : j < 2 ^ stage)
@@ -578,7 +578,7 @@ private theorem butterflyDIFPairStep_difMathPairsSpec_succ
     simp only [Array.set!, Array.size_setIfInBounds] at hi₁
     simp [Array.set!, Array.getElem_setIfInBounds, hi₁]
     by_cases hUpper : block * 2 ^ (stage + 1) + j + 2 ^ stage = i
-    · rw [if_pos hUpper]
+    · rw [ite_eq_left hUpper]
       subst i
       have hUpperOld :
           block * 2 ^ (stage + 1) + j + 2 ^ stage <
@@ -600,9 +600,9 @@ private theorem butterflyDIFPairStep_difMathPairsSpec_succ
       rw [difMathPairsSpec_get_upper_next D stage block j a hj hi₂]
       rw [← (Array.getD_eq_getD_getElem? (xs := twiddles) (i := j) (d := 0)), htw]
       exact (difMathValueAt_succ_upper D stage block j a hstage hj).symm
-    · rw [if_neg hUpper]
+    · rw [ite_eq_right hUpper]
       by_cases hLower : block * 2 ^ (stage + 1) + j = i
-      · rw [if_pos hLower]
+      · rw [ite_eq_left hLower]
         subst i
         have hLowerDomain : block * 2 ^ (stage + 1) + j < D.n := by
           simpa [difMathPairsSpec] using hi₁
@@ -620,7 +620,7 @@ private theorem butterflyDIFPairStep_difMathPairsSpec_succ
         rw [difMathPairsSpec_get_upper_current D stage block j a hj hUpperOld]
         rw [difMathPairsSpec_get_lower_next D stage block j a hj hi₂]
         exact (difMathValueAt_succ_lower D stage block j a hstage hj).symm
-      · rw [if_neg hLower]
+      · rw [ite_eq_right hLower]
         exact difMathPairsSpec_get_unchanged D stage block j a hi₁ hi₂ hLower hUpper
 
 private theorem butterflyDIFInner_difMathPairsSpec_final

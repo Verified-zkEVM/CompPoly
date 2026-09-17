@@ -294,7 +294,7 @@ private theorem uniformCoefficientArrayPMF_two_eval_pair {F : Type*}
     intro c0
     rw [PMF.toOuterMeasure_bind_apply]
     by_cases hc0 : c0 = c0s
-    · rw [if_pos hc0]
+    · rw [ite_eq_left hc0]
       calc (∑' c1 : F, uniformFieldElementPMF enumeration.toFieldEnumeration c1 *
               (PMF.pure #[c0, c1] : PMF (Array F)).toOuterMeasure
                 {coeffs : Array F | CPolynomial.eval a (CPolynomial.ofArray coeffs) = x ∧
@@ -305,14 +305,14 @@ private theorem uniformCoefficientArrayPMF_two_eval_pair {F : Type*}
             intro c1
             rw [PMF.toOuterMeasure_pure_apply]
             by_cases hc1 : c1 = c1s
-            · rw [if_pos ((hmem c0 c1).2 ⟨hc0, hc1⟩), if_pos hc1]
+            · rw [ite_eq_left ((hmem c0 c1).2 ⟨hc0, hc1⟩), ite_eq_left hc1]
               simp
-            · rw [if_neg (fun hin ↦ hc1 ((hmem c0 c1).1 hin).2), if_neg hc1]
+            · rw [ite_eq_right (fun hin ↦ hc1 ((hmem c0 c1).1 hin).2), ite_eq_right hc1]
               simp
         _ = uniformFieldElementPMF enumeration.toFieldEnumeration c1s :=
             tsum_ite_eq c1s _
         _ = (q : ℝ≥0∞)⁻¹ := uniformFieldElementPMF_apply enumeration c1s
-    · rw [if_neg hc0]
+    · rw [ite_eq_right hc0]
       calc (∑' c1 : F, uniformFieldElementPMF enumeration.toFieldEnumeration c1 *
               (PMF.pure #[c0, c1] : PMF (Array F)).toOuterMeasure
                 {coeffs : Array F | CPolynomial.eval a (CPolynomial.ofArray coeffs) = x ∧
@@ -321,7 +321,7 @@ private theorem uniformCoefficientArrayPMF_two_eval_pair {F : Type*}
             apply tsum_congr
             intro c1
             rw [PMF.toOuterMeasure_pure_apply,
-              if_neg (fun hin ↦ hc0 ((hmem c0 c1).1 hin).1)]
+              ite_eq_right (fun hin ↦ hc0 ((hmem c0 c1).1 hin).1)]
             simp
         _ = 0 := tsum_zero
   calc (∑' c0 : F, uniformFieldElementPMF enumeration.toFieldEnumeration c0 *
@@ -336,8 +336,8 @@ private theorem uniformCoefficientArrayPMF_two_eval_pair {F : Type*}
         intro c0
         rw [hstep c0]
         by_cases hc0 : c0 = c0s
-        · rw [if_pos hc0, if_pos hc0]
-        · rw [if_neg hc0, if_neg hc0]
+        · rw [ite_eq_left hc0, ite_eq_left hc0]
+        · rw [ite_eq_right hc0, ite_eq_right hc0]
           simp
     _ = uniformFieldElementPMF enumeration.toFieldEnumeration c0s * (q : ℝ≥0∞)⁻¹ :=
         tsum_ite_eq c0s _
@@ -457,7 +457,7 @@ theorem uniformFieldElementPMF_pair_apply {F : Type*} [Zero F] {q : Nat}
     rw [PMF.map_apply]
     by_cases hx : x' = x
     · subst hx
-      rw [if_pos rfl]
+      rw [ite_eq_left rfl]
       trans (∑' y' : F, if y' = y then
           uniformFieldElementPMF enumeration.toFieldEnumeration y' else 0)
       · apply tsum_congr
@@ -465,13 +465,13 @@ theorem uniformFieldElementPMF_pair_apply {F : Type*} [Zero F] {q : Nat}
         by_cases hy : y' = y
         · subst hy
           simp
-        · rw [if_neg fun hp ↦ hy (Prod.ext_iff.mp hp).2.symm, if_neg hy]
+        · rw [ite_eq_right fun hp ↦ hy (Prod.ext_iff.mp hp).2.symm, ite_eq_right hy]
       · exact tsum_ite_eq y _
-    · rw [if_neg hx]
+    · rw [ite_eq_right hx]
       trans (∑' _y' : F, (0 : ℝ≥0∞))
       · apply tsum_congr
         intro y'
-        rw [if_neg fun hp ↦ hx ((Prod.ext_iff.mp hp).1.symm)]
+        rw [ite_eq_right fun hp ↦ hx ((Prod.ext_iff.mp hp).1.symm)]
       · exact tsum_zero
   trans (∑' x' : F, if x' = x then
       uniformFieldElementPMF enumeration.toFieldEnumeration x' *
@@ -480,8 +480,8 @@ theorem uniformFieldElementPMF_pair_apply {F : Type*} [Zero F] {q : Nat}
     intro x'
     rw [hxy x']
     by_cases hx : x' = x
-    · rw [if_pos hx, if_pos hx]
-    · rw [if_neg hx, if_neg hx]
+    · rw [ite_eq_left hx, ite_eq_left hx]
+    · rw [ite_eq_right hx, ite_eq_right hx]
       simp
   · rw [tsum_ite_eq x fun x' ↦ uniformFieldElementPMF enumeration.toFieldEnumeration x' *
         uniformFieldElementPMF enumeration.toFieldEnumeration y,

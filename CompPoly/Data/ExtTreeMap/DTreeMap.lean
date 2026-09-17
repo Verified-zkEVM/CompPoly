@@ -59,7 +59,7 @@ theorem Const.get?_foldl_no_touch
     have hstep' :
         get? (alter t hd.1 (fun | none => some hd.2 | some b₁ => some (f hd.1 b₁ hd.2))) k
         = get? t k := by
-      simpa only [hno_hd, if_false] using hstep
+      simpa only [hno_hd, ite_false] using hstep
     have ih' := ih
       (alter t hd.1 (fun | none => some hd.2 | some b₁ => some (f hd.1 b₁ hd.2))) hno_tl
     simpa only [List.foldl, hstep'] using ih'

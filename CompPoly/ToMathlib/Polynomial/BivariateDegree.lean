@@ -49,18 +49,6 @@ classical sense if the bivariate polynomial is interpreted as a univariate polyn
 def leadingCoeffY (f : F[X][Y]) : F[X] :=
   f.coeff (natDegree f)
 
-/-- The polynomial coefficient of the highest power of `Y` is `0` if and only if the bivariate
-polynomial is the zero polynomial. -/
-@[simp, grind =]
-theorem leadingCoeffY_eq_zero (f : F[X][Y]) : leadingCoeffY f = 0 ↔ f = 0 := by
-  simp [leadingCoeffY]
-
-/-- The polynomial coefficient of the highest power of `Y` is not `0` if and only if the
-bivariate polynomial is non-zero. -/
-@[simp, grind =]
-lemma leadingCoeffY_ne_zero (f : F[X][Y]) : leadingCoeffY f ≠ 0 ↔ f ≠ 0 := by
-  exact not_congr (leadingCoeffY_eq_zero (f := f))
-
 /-- The `Y`-degree of a bivariate polynomial, as a natural number. -/
 def natDegreeY (f : F[X][Y]) : ℕ :=
   Polynomial.natDegree f
@@ -189,19 +177,6 @@ lemma degreeY_as_weighted_deg :
       Polynomial.natDegree_eq_support_max' (p := f) hf, Finset.max'_eq_sup'
     ]
     simp [Finset.sup'_eq_sup]
-
-/-- Over an integral domain, the product of two non-zero bivariate polynomials is non-zero. -/
-@[grind ←]
-lemma mul_ne_zero [IsDomain F] (f g : F[X][Y]) (hf : f ≠ 0) (hg : g ≠ 0) :
-    f * g ≠ 0 :=
-  _root_.mul_ne_zero hf hg
-
-/-- Over an integral domain, the `Y`-degree of the product of two non-zero bivariate polynomials is
-equal to the sum of their degrees. -/
-@[simp, grind _=_]
-lemma degreeY_mul [IsDomain F] (f g : F[X][Y]) (hf : f ≠ 0) (hg : g ≠ 0) :
-    natDegreeY (f * g) = natDegreeY f + natDegreeY g := by
-  simpa [natDegreeY] using (Polynomial.natDegree_mul hf hg)
 
 theorem coeff_natDegree_le_degreeX (f : F[X][Y]) (n : ℕ) : (f.coeff n).natDegree ≤ degreeX f := by
   classical
@@ -641,7 +616,7 @@ lemma exists_x_preserve_natDegreeY (B : F[X][Y]) (hB : B ≠ 0) (P : Finset F)
   classical
   let p : F[X] := leadingCoeffY B
   have hp0 : p ≠ 0 := by
-    simpa [p] using (leadingCoeffY_ne_zero (f := B)).2 hB
+    exact Polynomial.leadingCoeff_ne_zero.2 hB
   have hp_deg : p.natDegree ≤ degreeX B := by
     simpa [p, leadingCoeffY, natDegreeY] using
       (coeff_natDegree_le_degreeX B B.natDegree)

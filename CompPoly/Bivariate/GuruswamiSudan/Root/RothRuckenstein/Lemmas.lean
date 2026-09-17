@@ -87,12 +87,12 @@ theorem cpoly_toPoly_eq_X_pow_mul_dropXPower_of_coeff_eq_zero_lt {R : Type*}
   rw [← CPolynomial.coeff_toPoly (p := p) (i := i)]
   rw [Polynomial.coeff_X_pow_mul']
   by_cases hn : n ≤ i
-  · rw [if_pos hn]
+  · rw [ite_eq_left hn]
     rw [← CPolynomial.coeff_toPoly (p := CPolynomial.dropXPower p n) (i := i - n)]
     rw [cpoly_coeff_dropXPower]
     congr 1
     omega
-  · rw [if_neg hn]
+  · rw [ite_eq_right hn]
     exact hzero i (Nat.lt_of_not_ge hn)
 
 theorem cbivar_coeff_divXPower {R : Type*} [Zero R] [BEq R] [LawfulBEq R]

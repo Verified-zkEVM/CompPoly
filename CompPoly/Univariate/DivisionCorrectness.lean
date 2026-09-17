@@ -12,7 +12,7 @@ public import Mathlib.Algebra.Polynomial.Reverse
 public import Mathlib.Tactic.Ring
 public import CompPoly.Univariate.ToPoly.Impl
 public import CompPoly.Univariate.ToPoly.Degree
-public import CompPoly.ToMathlib.Polynomial.Div
+public import Mathlib.Algebra.Polynomial.RingDivision
 
 /-!
 # Univariate Division Correctness
@@ -371,7 +371,7 @@ private lemma div_step_degree_lt (p q : Raw R)
         p.size - q.size ≤ p.size - 1 ∧
           p.size - 1 - (p.size - q.size) < q.size := by
       omega
-    rw [if_pos hcond]
+    rw [ite_eq_left hcond]
     have hidx : p.size - 1 - (p.size - q.size) = q.size - 1 := by omega
     rw [hplast, hidx, hqlast]
     simp
@@ -380,7 +380,7 @@ private lemma div_step_degree_lt (p q : Raw R)
     have hcond :
         ¬(p.size - q.size ≤ m ∧ m - (p.size - q.size) < q.size) := by
       omega
-    rw [if_neg hcond, hpcoeff]
+    rw [ite_eq_right hcond, hpcoeff]
     simp
 
 private lemma div_step_size_lt (p q : Raw R)
@@ -751,7 +751,7 @@ theorem modByMonicByReversal_eq_modByMonic
       change Raw.modByMonicByReversal M (p.val : Raw R) q.val =
         (p.val : Raw R).modByMonic q.val
       unfold Raw.modByMonicByReversal
-      rw [if_pos hguard, if_pos hsize]
+      rw [ite_eq_left hguard, ite_eq_left hsize]
       cases hp : (p.val : Raw R).size with
       | zero =>
           unfold Raw.modByMonic Raw.divModByMonicAux
@@ -774,7 +774,7 @@ theorem modByMonicByReversal_eq_modByMonic
       change Raw.modByMonicByReversal M (p.val : Raw R) q.val =
         (p.val : Raw R).modByMonic q.val
       unfold Raw.modByMonicByReversal
-      rw [if_pos hguard, if_neg hsize]
+      rw [ite_eq_left hguard, ite_eq_right hsize]
       let rem : Raw R :=
         let k := p.val.size - q.val.size + 1
         let remainderLen := q.val.size - 1
@@ -819,7 +819,7 @@ theorem modByMonicByReversal_eq_modByMonic
     change Raw.modByMonicByReversal M (p.val : Raw R) q.val =
       (CPolynomial.modByMonic p q).val
     unfold Raw.modByMonicByReversal
-    rw [if_neg hguard]
+    rw [ite_eq_right hguard]
     exact congrArg Subtype.val (modByMonicRemainderOnly_eq_modByMonic p q)
 
 end Division

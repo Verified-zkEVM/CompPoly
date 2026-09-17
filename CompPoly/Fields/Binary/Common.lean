@@ -371,7 +371,7 @@ lemma toPoly_ne_zero_iff_ne_zero {w : Nat} (v : BitVec w) :
               intro h_eq
               have h_val_eq' : b.val = i.val := by rw [h_eq]
               exact h_val_eq h_val_eq'
-            simp only [if_neg (Ne.symm h_val_eq), h_b_ne_i, ↓reduceIte]
+            simp only [ite_eq_right (Ne.symm h_val_eq), h_b_ne_i, ↓reduceIte]
         · -- v.getLsb b = false
           split_ifs
           · simp only [coeff_zero]
@@ -396,7 +396,7 @@ lemma toPoly_ne_zero_iff_ne_zero {w : Nat} (v : BitVec w) :
     have h_v_eq_zero : v = 0 := by
       ext bitIdx
       simp only [BitVec.ofNat_eq_ofNat, BitVec.getElem_zero]
-      (expose_names; exact eq_false_of_ne_true (h_all_bits_false ⟨bitIdx, hi⟩))
+      (expose_names; exact Bool.eq_false_of_ne_true (h_all_bits_false ⟨bitIdx, hi⟩))
     exact h_v_ne_zero h_v_eq_zero
 
 /-- ToPoly degree is less than width -/
@@ -623,7 +623,7 @@ theorem toPoly_coeff {w : ℕ} (v : BitVec w) (n : ℕ) :
   rw [Polynomial.finsetSum_coeff]
   by_cases h : n < w
   · -- case n < w
-    simp only [dif_pos h]
+    simp only [dite_eq_left h]
     let i0 : Fin w := ⟨n, h⟩
     -- rewrite the coefficient sum as a single term
     have hmain :
@@ -640,9 +640,9 @@ theorem toPoly_coeff {w : ℕ} (v : BitVec w) (n : ℕ) :
           have hn : n = (i0 : ℕ) := by
             simp [i0]
           -- now simp
-          simp only [if_pos hb, Polynomial.coeff_X_pow, if_pos hn]
+          simp only [ite_eq_left hb, Polynomial.coeff_X_pow, ite_eq_left hn]
         · -- bit is 0
-          simp only [if_neg hb, Polynomial.coeff_zero]
+          simp only [ite_eq_right hb, Polynomial.coeff_zero]
       · -- other indices
         intro i hi_mem hi_ne
         by_cases hb : v.getLsb i = true
@@ -653,16 +653,16 @@ theorem toPoly_coeff {w : ℕ} (v : BitVec w) (n : ℕ) :
             apply Fin.ext
             -- turn hn : n = i into i.val = n
             simpa [i0] using hn.symm
-          simp only [if_pos hb, Polynomial.coeff_X_pow, if_neg hne_val]
+          simp only [ite_eq_left hb, Polynomial.coeff_X_pow, ite_eq_right hne_val]
         · -- term itself is 0
-          simp only [if_neg hb, Polynomial.coeff_zero]
+          simp only [ite_eq_right hb, Polynomial.coeff_zero]
       · -- i0 ∈ univ
         intro hi0_not
         simp [Finset.mem_univ] at hi0_not
     -- conclude
     simpa [Polynomial.finsetSum_coeff, i0] using hmain
   · -- case ¬ n < w
-    simp only [dif_neg h]
+    simp only [dite_eq_right h]
     -- show every summand has coefficient 0
     apply Finset.sum_eq_zero
     intro i hi_mem
@@ -670,8 +670,8 @@ theorem toPoly_coeff {w : ℕ} (v : BitVec w) (n : ℕ) :
     · have hw_le : w ≤ n := Nat.le_of_not_gt h
       have hne_val : n ≠ (i : ℕ) := by
         exact ne_of_gt (lt_of_lt_of_le i.isLt hw_le)
-      simp only [if_pos hb, Polynomial.coeff_X_pow, if_neg hne_val]
-    · simp only [if_neg hb, Polynomial.coeff_zero]
+      simp only [ite_eq_left hb, Polynomial.coeff_X_pow, ite_eq_right hne_val]
+    · simp only [ite_eq_right hb, Polynomial.coeff_zero]
 
 theorem toPoly_shiftLeft_no_overflow {w d : ℕ} (a : BitVec w) (ha : a.toNat < 2 ^ d) {shift : ℕ}
     (h_no_overflow : d + shift ≤ w) : toPoly (a <<< shift) = (toPoly a) * X^shift := by

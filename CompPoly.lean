@@ -264,10 +264,8 @@ public import CompPoly.ToMathlib.Finsupp.Fin
 public import CompPoly.ToMathlib.MvPolynomial.Equiv
 public import CompPoly.ToMathlib.Order.WithBot
 public import CompPoly.ToMathlib.Polynomial.BivariateDegree
-public import CompPoly.ToMathlib.Polynomial.BivariateEvaluation
 public import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
 public import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
-public import CompPoly.ToMathlib.Polynomial.Div
 public import CompPoly.ToMathlib.Polynomial.Irreducible
 public import CompPoly.ToMathlib.Polynomial.Roots
 public import CompPoly.Univariate.Barycentric

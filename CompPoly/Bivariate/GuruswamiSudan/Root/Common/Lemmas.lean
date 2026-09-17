@@ -64,7 +64,7 @@ theorem array_mem_eraseDups_fold_of_mem {α : Type*} [BEq α] [LawfulBEq α]
   | x :: xs, out, h => by
       rw [List.foldl_cons]
       by_cases hx : x ∈ out
-      · rw [if_pos hx]
+      · rw [ite_eq_left hx]
         apply array_mem_eraseDups_fold_of_mem a xs out
         rcases h with h | h
         · exact Or.inl h
@@ -72,7 +72,7 @@ theorem array_mem_eraseDups_fold_of_mem {α : Type*} [BEq α] [LawfulBEq α]
           rcases h with rfl | h
           · exact Or.inl hx
           · exact Or.inr h
-      · rw [if_neg hx]
+      · rw [ite_eq_right hx]
         apply array_mem_eraseDups_fold_of_mem a xs (out.push x)
         rcases h with h | h
         · exact Or.inl (by simp [h])
@@ -147,11 +147,11 @@ theorem cbivar_coeff_truncateX {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
       if i < n then (Array.getD Q.val j 0).coeff i else 0
     rw [CPolynomial.coeff_zero]
     by_cases hi : i < n
-    · rw [if_pos hi]
+    · rw [ite_eq_left hi]
       rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hjle]
       change 0 = (0 : CPolynomial R).coeff i
       rw [CPolynomial.coeff_zero]
-    · rw [if_neg hi]
+    · rw [ite_eq_right hi]
 
 theorem polynomialPrefix_zero {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
     (p : CPolynomial R) : polynomialPrefix p 0 = 0 := by
@@ -195,7 +195,7 @@ theorem polynomialPrefix_eq_self_of_degreeLt {F : Type*}
     rw [degreeLtBool] at hb
     simp at hb
     have hsize : p.val.size ≤ i := by omega
-    rw [if_neg hi, CPolynomial.coeff_eq_zero_of_size_le p hsize]
+    rw [ite_eq_right hi, CPolynomial.coeff_eq_zero_of_size_le p hsize]
 
 theorem list_foldl_add_eq_sum {R : Type*} [AddMonoid R]
     (f : Nat → R) : ∀ (xs : List Nat) (acc : R),
@@ -524,7 +524,7 @@ theorem rootsInFieldForNonzeroEquation_complete {F : Type*}
     (hp : p ≠ 0) (ha : CPolynomial.eval a p = 0) :
     a ∈ (rootsInFieldForNonzeroEquation fieldRoots p).toList := by
   unfold rootsInFieldForNonzeroEquation
-  rw [if_neg]
+  rw [ite_eq_right]
   · exact fieldRoots.complete p a hp ha
   · intro hbeq
     exact hp (beq_iff_eq.mp hbeq)

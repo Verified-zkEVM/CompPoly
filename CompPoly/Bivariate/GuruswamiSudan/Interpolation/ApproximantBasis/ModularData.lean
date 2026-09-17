@@ -133,7 +133,7 @@ theorem modByMonicWith_toPoly (modCtx : CPolynomial.ModContext F)
     have : M.toPoly = 0 := by
       rw [hzero, CPolynomial.toPoly_zero]
     exact hM.ne_zero this
-  rw [PolynomialMatrix.modByMonicWith, if_neg (by simpa using hMne),
+  rw [PolynomialMatrix.modByMonicWith, ite_eq_right (by simpa using hMne),
     modCtx.modByMonic_eq_modByMonic]
   exact CPolynomial.modByMonic_toPoly_eq_modByMonic p M
     ((CPolynomial.monic_toPoly_iff M).mpr hM)
@@ -214,7 +214,7 @@ theorem gsModuli_eq (mulCtx : CPolynomial.MulContext F) (G : CPolynomial F) (s :
     simp only [beq_iff_eq, Std.Legacy.Range.forIn_eq_forIn_range',
       Std.Legacy.Range.size, Nat.add_sub_cancel, Nat.div_one,
       List.forIn_pure_yield_eq_foldl, bind_pure_comp, map_pure,
-      Id.run_pure, Nat.ne_of_gt hs, if_false]
+      Id.run_pure, Nat.ne_of_gt hs, ite_false]
     congr 1
     have hstart : (#[G] : Array (CPolynomial F)) =
         ((List.range 1).map fun i ↦ G ^ (i + 1)).toArray := by
@@ -502,14 +502,14 @@ private theorem toPoly_ofCoeffRow_eq_sum (row : PolynomialRow F) :
   rw [CBivariate.toPoly_coeff, Polynomial.finsetSum_coeff]
   by_cases hn : n < row.size
   · rw [Finset.sum_eq_single n
-      (fun k _hk hkn ↦ by rw [Polynomial.coeff_monomial, if_neg hkn])
+      (fun k _hk hkn ↦ by rw [Polynomial.coeff_monomial, ite_eq_right hkn])
       (fun hnotin ↦ absurd (Finset.mem_range.mpr hn) hnotin)]
-    rw [Polynomial.coeff_monomial, if_pos rfl, CBivariate.ofCoeffRow,
+    rw [Polynomial.coeff_monomial, ite_eq_left rfl, CBivariate.ofCoeffRow,
       CPolynomial.coeff_ofArray]
   · rw [Finset.sum_eq_zero
       (fun k hk ↦ by
         rw [Polynomial.coeff_monomial,
-          if_neg (by rcases Finset.mem_range.mp hk with h; omega)])]
+          ite_eq_right (by rcases Finset.mem_range.mp hk with h; omega)])]
     rw [CBivariate.ofCoeffRow, CPolynomial.coeff_ofArray,
       Array.getD_eq_getD_getElem?, Array.getElem?_eq_none (by omega)]
     simp [CPolynomial.toPoly_zero]

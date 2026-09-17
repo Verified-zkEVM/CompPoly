@@ -799,7 +799,7 @@ theorem concrete_inv_step {k : ℕ} (a : ConcreteBTField (k + 1))
     simp only [concrete_mul_eq_mul, zero_mul, mul_zero, mul_one, add_zero, concrete_inv_one]
     simp only [← zero_is_0, ← one_is_1]
     exact (join_zero_one (Nat.succ_pos k)).symm
-  · rw [concrete_inv, dif_neg (Nat.succ_ne_zero k), dif_neg h0, dif_neg h1]
+  · rw [concrete_inv, dite_eq_right (Nat.succ_ne_zero k), dite_eq_right h0, dite_eq_right h1]
     simp_rw [← ha]
     rfl
 
@@ -932,9 +932,9 @@ def ofConcrete {k : ℕ} (x : ConcreteBTField k) (hk : k ≤ 6 := by omega) : Fa
 theorem toConcrete_if_zero {p : Prop} [Decidable p] (x : FastBT k) :
     toConcrete (if p then 0 else x) = if p then ConcreteBinaryTower.zero else toConcrete x := by
   by_cases h : p
-  · rw [if_pos h, if_pos h, toConcrete_zero]
+  · rw [ite_eq_left h, ite_eq_left h, toConcrete_zero]
     exact zero_is_0.symm
-  · rw [if_neg h, if_neg h]
+  · rw [ite_eq_right h, ite_eq_right h]
 
 theorem toConcrete_nsmul (n : ℕ) (x : FastBT k) :
     toConcrete (n • x) = n • toConcrete x := toConcrete_if_zero x
@@ -947,16 +947,16 @@ theorem toConcrete_natCast (n : ℕ) :
   rw [CharP.cast_eq_mod (ConcreteBTField k) 2 n]
   show toConcrete (if n % 2 = 0 then 0 else 1) = _
   rcases (by omega : n % 2 = 0 ∨ n % 2 = 1) with h2 | h2
-  · rw [if_pos h2, toConcrete_zero, h2, Nat.cast_zero]
-  · rw [if_neg (by omega), toConcrete_one, h2, Nat.cast_one]
+  · rw [ite_eq_left h2, toConcrete_zero, h2, Nat.cast_zero]
+  · rw [ite_eq_right (by omega), toConcrete_one, h2, Nat.cast_one]
 
 theorem toConcrete_intCast (n : ℤ) :
     toConcrete (n : FastBT k) = (n : ConcreteBTField k) := by
   rw [CharP.intCast_eq_intCast_mod (R := ConcreteBTField k) 2 (a := n), Nat.cast_ofNat]
   show toConcrete (if n % 2 = 0 then 0 else 1) = _
   rcases (by omega : n % 2 = 0 ∨ n % 2 = 1) with h2 | h2
-  · rw [if_pos h2, toConcrete_zero, h2, Int.cast_zero]
-  · rw [if_neg (by omega), toConcrete_one, h2, Int.cast_one]
+  · rw [ite_eq_left h2, toConcrete_zero, h2, Int.cast_zero]
+  · rw [ite_eq_right (by omega), toConcrete_one, h2, Int.cast_one]
 
 instance : AddCommGroup (FastBT k) :=
   toConcrete_injective.addCommGroup toConcrete toConcrete_zero toConcrete_add
@@ -1288,9 +1288,9 @@ theorem toConcrete_injective : Function.Injective toConcrete := by
 theorem toConcrete_if_zero {p : Prop} [Decidable p] (x : FastBT128) :
     toConcrete (if p then 0 else x) = if p then ConcreteBinaryTower.zero else toConcrete x := by
   by_cases h : p
-  · rw [if_pos h, if_pos h, toConcrete_zero]
+  · rw [ite_eq_left h, ite_eq_left h, toConcrete_zero]
     exact zero_is_0.symm
-  · rw [if_neg h, if_neg h]
+  · rw [ite_eq_right h, ite_eq_right h]
 
 theorem toConcrete_nsmul (n : ℕ) (x : FastBT128) :
     toConcrete (n • x) = n • toConcrete x := toConcrete_if_zero x
@@ -1308,16 +1308,16 @@ theorem toConcrete_natCast (n : ℕ) :
   rw [CharP.cast_eq_mod (ConcreteBTField 7) 2 n]
   show toConcrete (if n % 2 = 0 then 0 else 1) = _
   rcases (by omega : n % 2 = 0 ∨ n % 2 = 1) with h2 | h2
-  · rw [if_pos h2, toConcrete_zero, h2, Nat.cast_zero]
-  · rw [if_neg (by omega), toConcrete_one, h2, Nat.cast_one]
+  · rw [ite_eq_left h2, toConcrete_zero, h2, Nat.cast_zero]
+  · rw [ite_eq_right (by omega), toConcrete_one, h2, Nat.cast_one]
 
 theorem toConcrete_intCast (n : ℤ) :
     toConcrete (n : FastBT128) = (n : ConcreteBTField 7) := by
   rw [CharP.intCast_eq_intCast_mod (R := ConcreteBTField 7) 2 (a := n), Nat.cast_ofNat]
   show toConcrete (if n % 2 = 0 then 0 else 1) = _
   rcases (by omega : n % 2 = 0 ∨ n % 2 = 1) with h2 | h2
-  · rw [if_pos h2, toConcrete_zero, h2, Int.cast_zero]
-  · rw [if_neg (by omega), toConcrete_one, h2, Int.cast_one]
+  · rw [ite_eq_left h2, toConcrete_zero, h2, Int.cast_zero]
+  · rw [ite_eq_right (by omega), toConcrete_one, h2, Int.cast_one]
 
 @[simp] theorem toConcrete_mul (a b : FastBT128) :
     toConcrete (a * b) = toConcrete a * toConcrete b := by

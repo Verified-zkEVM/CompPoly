@@ -175,8 +175,8 @@ theorem leadingCoeff_zero : leadingCoeff (0 : CPolynomial.Raw R) = (0 : R) := by
 theorem monomial_canonical [LawfulBEq R] [DecidableEq R] (n : ℕ) (c : R) :
     (monomial n c).trim = monomial n c := by
   by_cases h : c = 0
-  · simp [monomial, if_pos h, Trim.canonical_empty]
-  · simp [monomial, if_neg h, mk]
+  · simp [monomial, ite_eq_left h, Trim.canonical_empty]
+  · simp [monomial, ite_eq_right h, mk]
     rw [Trim.push_trim _ _ h]
 
 theorem X_canonical [Nontrivial R] [LawfulBEq R] : X.trim = (X : CPolynomial.Raw R) := by
@@ -191,12 +191,12 @@ lemma coeff_monomial [DecidableEq R] {n i : ℕ} {c : R} :
   by_cases hc : c = 0
   · simp [monomial, hc]
   · unfold monomial
-    rw [if_neg hc]; clear hc
+    rw [ite_eq_right hc]; clear hc
     have h_arr : (mk (Array.replicate n 0 ++ #[c])) =
                    mk (Array.replicate n 0) ++ mk #[c] := by rfl
     rw [h_arr]; clear h_arr
     by_cases hn : n = i
-    · rw [if_pos hn, hn]; clear hn
+    · rw [ite_eq_left hn, hn]; clear hn
       have : (mk (Array.replicate i 0) ++ mk #[c]).coeff i = (mk #[c]).coeff 0 := by
         rw [concat_coeff₂]
         simp only [Array.size_replicate, tsub_self, Array.getD_eq_getD_getElem?,
@@ -208,7 +208,7 @@ lemma coeff_monomial [DecidableEq R] {n i : ℕ} {c : R} :
         simp
       rw [this]
       simp
-    · rw [if_neg hn]
+    · rw [ite_eq_right hn]
       by_cases h_ineq : i < n
       · have : (mk (Array.replicate n 0 ++ #[c])).coeff i =
                (mk (Array.replicate n 0)).coeff i := by
@@ -239,10 +239,10 @@ omit [BEq R] in
 lemma coeff_one (i : ℕ) :
     coeff (1 : CPolynomial.Raw R) i = if i = 0 then 1 else 0 := by
   by_cases h : i = 0
-  · rw [if_pos h, h]
+  · rw [ite_eq_left h, h]
     change coeff #[1] 0 = 1
     simp
-  · rw [if_neg h]
+  · rw [ite_eq_right h]
     change coeff #[1] i = 0
     grind
 
@@ -387,7 +387,7 @@ lemma sum_range_extend  (p q : CPolynomial.Raw R) (k : ℕ) :
       by_cases h : p.size ≤ k + 1
       · rw [ ← Finset.sum_range_add_sum_Ico _ h ]
         rw [ Finset.sum_congr rfl fun i hi =>
-            if_neg ( by linarith [ Finset.mem_range.mp hi ] ), Finset.sum_Ico_eq_sum_range ]
+            ite_eq_right ( by linarith [ Finset.mem_range.mp hi ] ), Finset.sum_Ico_eq_sum_range ]
         simp +decide [ coeff ]
       · rw [ Finset.sum_ite ]
         rw [ show Finset.filter ( fun x => ¬k < x ) ( Finset.range ( Array.size p ) )
@@ -515,7 +515,7 @@ lemma coeff_sum : ∀ (p : CPolynomial.Raw R) (k : ℕ),
     simp +decide [ Array.getElem?_append, hk ]
   · simp +decide [ mulPowX ]
     unfold smul; simp +decide [ Array.getElem?_append ]
-    rw [ if_neg hk.not_gt ]; cases k - p.length <;> simp +decide
+    rw [ ite_eq_right hk.not_gt ]; cases k - p.length <;> simp +decide
     · exact mul_one _
     · exact rfl
 
@@ -693,9 +693,8 @@ lemma X_mul_eq_mulX_trim [LawfulBEq R]
   congr! 1
   · convert smul_zero_trim p using 1
     · convert zero_add_trim _ using 1
-      · exact congr_arg _ (by exact mulPowX_zero (smul 0 p))
+      · exact congr_arg _ (mulPowX_zero (smul 0 p)).symm
       · exact ‹LawfulBEq R›
-    · rfl
   · rw [ smul_one_eq_self ]
     rfl
 
@@ -1138,11 +1137,11 @@ lemma coeff_mul_X_pow [LawfulBEq R] (p : CPolynomial.Raw R) (n i : ℕ) :
     · rw [coeff_monomial]
       have hidx : n = i - (i - n) := by omega
       by_cases hp : i - n < p.size
-      · rw [if_pos hidx, if_pos ⟨hn, hp⟩, mul_one]
+      · rw [ite_eq_left hidx, ite_eq_left ⟨hn, hp⟩, mul_one]
       · have hp' : p.size ≤ i - n := by omega
         have hcoeff : p.coeff (i - n) = 0 := by
           simp [coeff, Array.getElem?_eq_none hp']
-        rw [if_pos hidx, if_neg (by intro h; exact hp h.2), mul_one]
+        rw [ite_eq_left hidx, ite_eq_right (by intro h; exact hp h.2), mul_one]
         exact hcoeff
     · intro b hbmem hb
       rw [coeff_monomial]

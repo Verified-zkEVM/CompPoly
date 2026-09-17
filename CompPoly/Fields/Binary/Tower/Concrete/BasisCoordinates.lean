@@ -116,12 +116,12 @@ private theorem height_vector (i n : ℕ) (q : Fin (coordinateSize (fun _ => 2) 
       · apply Finset.prod_congr rfl
         intro t _
         rw [hbit]
-        simp only [Fin.val_castSucc, t.isLt, if_pos]
+        simp only [Fin.val_castSucc, t.isLt, ite_eq_left]
         exact congrFun (congrArg DFunLike.coe
           (concreteTowerAlgebraMap_assoc (i + n + 1) (i + n) (i + t.val + 1)
             (by omega) (by omega))).symm _
       · rw [hbit]
-        simp only [Fin.val_last, lt_self_iff_false, if_false]
+        simp only [Fin.val_last, lt_self_iff_false, ite_false]
         change Z (i + n + 1) ^ q.divNat.val =
           concreteTowerAlgebraMap (i + n + 1) (i + n + 1) _
             (Z (i + n + 1) ^ q.divNat.val)

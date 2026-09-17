@@ -79,15 +79,15 @@ private theorem lasVegasSplitLoopWith_mem_of_mem_out {F : Type*}
           simp only
           by_cases hskip : (CPolynomial.monicNormalize g == 0 ||
               CPolynomial.monicNormalize g == 1) = true
-          · rw [if_pos hskip]
+          · rw [ite_eq_left hskip]
             exact ih stack out hmem
-          · rw [if_neg hskip]
+          · rw [ite_eq_right hskip]
             by_cases hlin : isRepresentedLinearFactor (CPolynomial.monicNormalize g) = true
-            · rw [if_pos hlin]
+            · rw [ite_eq_left hlin]
               exact ih stack (out.push (CPolynomial.monicNormalize g)) (by simp [hmem])
-            · rw [if_neg hlin]
+            · rw [ite_eq_right hlin]
               by_cases hodd : (cfg.tryOddRandomizedSplitting && q % 2 == 1) = true
-              · rw [if_pos hodd]
+              · rw [ite_eq_left hodd]
                 cases htry :
                     tryOddSplitAttemptsWith M D q probes (CPolynomial.monicNormalize g)
                       cfg.cutoff 0 with
@@ -99,9 +99,9 @@ private theorem lasVegasSplitLoopWith_mem_of_mem_out {F : Type*}
                 | some children =>
                     simp only
                     exact ih (children.toList ++ stack) out hmem
-              · rw [if_neg hodd]
+              · rw [ite_eq_right hodd]
                 by_cases heven : (cfg.tryEvenTraceSplitting && q % 2 == 0) = true
-                · rw [if_pos heven]
+                · rw [ite_eq_left heven]
                   cases traceCtx? with
                   | none =>
                       simp only
@@ -111,7 +111,7 @@ private theorem lasVegasSplitLoopWith_mem_of_mem_out {F : Type*}
                   | some traceCtx =>
                       simp only
                       by_cases hmatch : traceContextMatchesQ traceCtx q = true
-                      · rw [if_pos hmatch]
+                      · rw [ite_eq_left hmatch]
                         cases htry :
                             tryEvenTraceSplitAttemptsWith M D traceCtx q probes
                               (CPolynomial.monicNormalize g) cfg.cutoff 0 with
@@ -124,12 +124,12 @@ private theorem lasVegasSplitLoopWith_mem_of_mem_out {F : Type*}
                         | some children =>
                             simp only
                             exact ih (children.toList ++ stack) out hmem
-                      · rw [if_neg hmatch]
+                      · rw [ite_eq_right hmatch]
                         exact ih stack
                           (out ++ enumeratedLinearFactors enumeration
                             (CPolynomial.monicNormalize g))
                           (by simp [hmem])
-                · rw [if_neg heven]
+                · rw [ite_eq_right heven]
                   exact ih stack
                     (out ++ enumeratedLinearFactors enumeration (CPolynomial.monicNormalize g))
                     (by simp [hmem])
@@ -230,16 +230,16 @@ private theorem lasVegasSplitLoopWith_complete_of_state {F : Type*}
             by_cases hskip :
                 (CPolynomial.monicNormalize g == 0 ||
                     CPolynomial.monicNormalize g == 1) = true
-            · rw [if_pos hskip]
+            · rw [ite_eq_left hskip]
               rcases hmemRoot' with hrootHead | hrootTail
               · subst rootPoly
                 simp [hheadReady.1, hheadReady.2] at hskip
               · exact ih stack out htailWork htailReady
                   (Or.inr ⟨rootPoly, hrootTail, hrootNe, hrootEval⟩)
-            · rw [if_neg hskip]
+            · rw [ite_eq_right hskip]
               have hgNorm : CPolynomial.monicNormalize g ≠ 0 := hheadReady.1
               by_cases hlin : isRepresentedLinearFactor (CPolynomial.monicNormalize g) = true
-              · rw [if_pos hlin]
+              · rw [ite_eq_left hlin]
                 rcases hmemRoot' with hrootHead | hrootTail
                 · subst rootPoly
                   have hrootNorm :
@@ -253,7 +253,7 @@ private theorem lasVegasSplitLoopWith_complete_of_state {F : Type*}
                 · exact ih stack (out.push (CPolynomial.monicNormalize g))
                     htailWork htailReady
                     (Or.inr ⟨rootPoly, hrootTail, hrootNe, hrootEval⟩)
-              · rw [if_neg hlin]
+              · rw [ite_eq_right hlin]
                 have hfallback :
                     ∃ factor,
                       factor ∈
@@ -274,7 +274,7 @@ private theorem lasVegasSplitLoopWith_complete_of_state {F : Type*}
                       htailWork htailReady
                       (Or.inr ⟨rootPoly, hrootTail, hrootNe, hrootEval⟩)
                 by_cases hodd : (cfg.tryOddRandomizedSplitting && q % 2 == 1) = true
-                · rw [if_pos hodd]
+                · rw [ite_eq_left hodd]
                   cases htry :
                       tryOddSplitAttemptsWith M D q probes (CPolynomial.monicNormalize g)
                         cfg.cutoff 0 with
@@ -318,9 +318,9 @@ private theorem lasVegasSplitLoopWith_complete_of_state {F : Type*}
                       · exact ih (children.toList ++ stack) out hnextWork hnextReady
                           (Or.inr
                             ⟨rootPoly, by simp [hrootTail], hrootNe, hrootEval⟩)
-                · rw [if_neg hodd]
+                · rw [ite_eq_right hodd]
                   by_cases heven : (cfg.tryEvenTraceSplitting && q % 2 == 0) = true
-                  · rw [if_pos heven]
+                  · rw [ite_eq_left heven]
                     cases traceCtx? with
                     | none =>
                         simp only
@@ -328,7 +328,7 @@ private theorem lasVegasSplitLoopWith_complete_of_state {F : Type*}
                     | some traceCtx =>
                         simp only
                         by_cases hmatch : traceContextMatchesQ traceCtx q = true
-                        · rw [if_pos hmatch]
+                        · rw [ite_eq_left hmatch]
                           cases htry :
                               tryEvenTraceSplitAttemptsWith M D traceCtx q probes
                                 (CPolynomial.monicNormalize g) cfg.cutoff 0 with
@@ -373,9 +373,9 @@ private theorem lasVegasSplitLoopWith_complete_of_state {F : Type*}
                               · exact ih (children.toList ++ stack) out hnextWork hnextReady
                                   (Or.inr
                                     ⟨rootPoly, by simp [hrootTail], hrootNe, hrootEval⟩)
-                        · rw [if_neg hmatch]
+                        · rw [ite_eq_right hmatch]
                           exact hfallback
-                  · rw [if_neg heven]
+                  · rw [ite_eq_right heven]
                     exact hfallback
 
 private theorem lasVegasSplitLinearFactorsWithTrace?_complete {F : Type*}

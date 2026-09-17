@@ -61,7 +61,7 @@ def toBitVec (a : AesField) : BitVec 8 :=
 @[simp] theorem getLsbD_toBitVec (a : AesField) (i : Fin 8) :
     (toBitVec a).getLsbD i = decide (Ext.coeff a i = 1) := by
   simp only [toBitVec, BitVec.getLsbD_cast, BitVec.getLsbD_ofBoolListLE,
-    List.getD_eq_getElem?_getD, List.getElem?_ofFn, i.isLt, dif_pos, Option.getD_some]
+    List.getD_eq_getElem?_getD, List.getElem?_ofFn, i.isLt, dite_eq_left, Option.getD_some]
 
 /-- Decoding an encoded byte recovers every input bit. -/
 @[simp] theorem toBitVec_ofBitVec (a : BitVec 8) : toBitVec (ofBitVec a) = a := by

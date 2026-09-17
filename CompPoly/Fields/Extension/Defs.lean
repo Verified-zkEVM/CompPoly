@@ -76,7 +76,7 @@ theorem toExtensionParams_poly : P.toExtensionParams.poly = P.poly := by
     · rw [toExtensionParams_lowerCoeff]; simp
     · intro i _ hi
       have hi0 : (i : ℕ) ≠ 0 := fun h => hi (Fin.ext (by simpa using h))
-      rw [toExtensionParams_lowerCoeff, if_neg hi0, map_zero, zero_mul]
+      rw [toExtensionParams_lowerCoeff, ite_eq_right hi0, map_zero, zero_mul]
   rw [ExtensionParams.poly, hsum, poly, ← sub_eq_add_neg, toExtensionParams_d]
 
 end BinomialParams

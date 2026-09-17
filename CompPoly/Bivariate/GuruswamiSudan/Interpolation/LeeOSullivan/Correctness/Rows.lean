@@ -85,7 +85,7 @@ theorem leeOSullivanBasisPolynomial_coeff_eq_zero_of_width_le
       have hc := congrArg (fun p : CPolynomial F ↦ CPolynomial.coeff p 0) h
       change CPolynomial.coeff (CPolynomial.C (1 : F) : CPolynomial F) 0 =
         CPolynomial.coeff (0 : CPolynomial F) 0 at hc
-      rw [CPolynomial.coeff_C, if_pos rfl, CPolynomial.coeff_zero] at hc
+      rw [CPolynomial.coeff_C, ite_eq_left rfl, CPolynomial.coeff_zero] at hc
       exact one_ne_zero hc
     rw [CBivariate.Y, CPolynomial.natDegree_monomial hC]
   have hL : (CBivariate.linearYDivisor R : CBivariate F).natDegree ≤ 1 := by
@@ -292,7 +292,7 @@ theorem koetterBasisCombination_single_weight
     · have hEq : j = idx := LawfulBEq.eq_of_beq hbeq
       subst j
       simp [targetTerm, hgetD]
-    · rw [if_neg hbeq, if_neg hbeq, ofYConstant_zero, zero_mul]
+    · rw [ite_eq_right hbeq, ite_eq_right hbeq, ofYConstant_zero, zero_mul]
   have hfold :
       (List.range basis.size).foldl
           (fun out j ↦

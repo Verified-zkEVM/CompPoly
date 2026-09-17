@@ -202,8 +202,8 @@ theorem step_sound {p : ℕ} [Fact p.Prime] {fL cur : List ℕ} {f : (ZMod p)[X]
   rw [checkStep] at hcheck
   cases hm : s.mulX with
   | false =>
-    rw [hm, cond_false] at hcheck
-    rw [cond_false]
+    rw [hm, Bool.cond_false] at hcheck
+    rw [Bool.cond_false]
     have hstep := verify_mulAdd hcheck
     rw [hfL] at hstep
     calc (X : (ZMod p)[X]) ^ (2 * e) % f
@@ -215,8 +215,8 @@ theorem step_sound {p : ℕ} [Fact p.Prime] {fL cur : List ℕ} {f : (ZMod p)[X]
       _ = (toPoly p s.q * f + toPoly p s.r) % f := by rw [hstep]
       _ = toPoly p s.r % f := mod_add_mul_cancel hf0
   | true =>
-    rw [hm, cond_true] at hcheck
-    rw [cond_true]
+    rw [hm, Bool.cond_true] at hcheck
+    rw [Bool.cond_true]
     have hstep := toPoly_eq_of_eqModP hcheck
     rw [toPoly_addNat, toPoly_mulNat, hfL, toPoly_cons, Nat.cast_zero, map_zero,
       zero_add] at hstep
@@ -245,9 +245,9 @@ theorem runChain_sound {p : ℕ} [Fact p.Prime] {fL : List ℕ} {f : (ZMod p)[X]
     rw [show runChain p fL cur (s :: rest)
         = cond (checkStep p fL cur s) (runChain p fL s.r rest) none from rfl] at hrun
     cases hc : checkStep p fL cur s with
-    | false => rw [hc, cond_false] at hrun; exact absurd hrun (by simp)
+    | false => rw [hc, Bool.cond_false] at hrun; exact absurd hrun (by simp)
     | true =>
-      rw [hc, cond_true] at hrun
+      rw [hc, Bool.cond_true] at hrun
       exact runChain_sound hfL hf0 rest s.r out _ hrun (step_sound hfL hf0 hc hprev)
 
 /-- A chain started at `[0, 1]` (the residue of `X¹`) computes `X^N % f`. -/

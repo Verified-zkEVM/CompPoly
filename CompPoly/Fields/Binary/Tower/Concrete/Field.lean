@@ -48,7 +48,7 @@ theorem concrete_mul_eq
   conv =>
     lhs
     unfold concrete_mul
-    rw [dif_neg (Nat.ne_of_gt h_k)]
+    rw [dite_eq_right (Nat.ne_of_gt h_k)]
     simp only [h_a₁, h_a₀, h_b₁, h_b₀] -- Do this to resolve the two nested matches (of the splits)
     -- while still allowing substitution of a₀ a₁ b₀ b₁ (components of the splits) into the goal
   rw [join_eq_join_iff]
@@ -102,7 +102,7 @@ lemma concrete_zero_mul
   · -- Base case : k = 0
     simp only [h_k_zero, ↓reduceDIte, zero, ite_true]
   · -- Inductive case : k > 0
-    simp only [dif_neg h_k_zero]
+    simp only [dite_eq_right h_k_zero]
     -- Obtain h_k_gt_0 from h_k_zero
     have h_k_gt_0_proof : k > 0 := by omega
     -- Split zero into (zero, zero)
@@ -123,7 +123,7 @@ lemma concrete_mul_zero
   · -- Base case : k = 0
     simp only [h_k_zero, ↓reduceDIte, zero, BitVec.zero_eq, ↓reduceIte, ite_self]
   · -- Inductive case : k > 0
-    simp only [dif_neg h_k_zero]
+    simp only [dite_eq_right h_k_zero]
     -- Obtain h_k_gt_0 from h_k_zero
     have h_k_gt_0_proof : k > 0 := by omega
     -- Split zero into (zero, zero)
@@ -148,7 +148,7 @@ lemma concrete_one_mul
     simp [h_k_zero, ↓reduceDIte, one_is_1, zero_is_0]; intro h; exact h.symm
   · -- Inductive case : k > 0
     have h_k_gt_0 : k > 0 := by omega
-    simp only [dif_neg h_k_zero]
+    simp only [dite_eq_right h_k_zero]
     let p := split h_k_gt_0 a
     let a₁ := p.fst
     let a₀ := p.snd
@@ -173,7 +173,7 @@ lemma concrete_mul_one
       simp only [if_self_rfl]
   · -- Inductive case : k > 0
     have h_k_gt_0 : k > 0 := by omega
-    simp only [dif_neg h_k_zero]
+    simp only [dite_eq_right h_k_zero]
     let p := split h_k_gt_0 a
     let a₁ := p.fst
     let a₀ := p.snd
@@ -196,13 +196,13 @@ lemma concrete_pow_base_one
     unfold concrete_pow_nat
     by_cases h_n_zero : n = 0
     · -- Base case : n = 0
-      rw [if_pos h_n_zero]
+      rw [ite_eq_left h_n_zero]
       exact one_is_1  -- one = 1
     · -- Inductive step : n ≠ 0
-      rw [if_neg h_n_zero]
+      rw [ite_eq_right h_n_zero]
       by_cases h_mod : n % 2 = 0
       · -- Even case : n % 2 = 0
-        rw [if_pos h_mod]
+        rw [ite_eq_left h_mod]
         have h_square : concrete_mul (1 : ConcreteBTField k) 1 = 1 := by
           rw [← one_is_1]
           rw [concrete_one_mul prevBTFieldProps]  -- Assume concrete_mul 1 1 = 1
@@ -213,7 +213,7 @@ lemma concrete_pow_base_one
           exact Nat.le_refl 2
         apply ih (n / 2) h_div_lt  -- Use ih for n / 2 < n
       · -- Odd case : n % 2 ≠ 0
-        rw [if_neg h_mod]
+        rw [ite_eq_right h_mod]
         have h_square : concrete_mul (1 : ConcreteBTField k) 1 = 1 := by
           rw [← one_is_1]
           rw [concrete_one_mul prevBTFieldProps]  -- Assume concrete_mul 1 1 = 1
@@ -348,7 +348,7 @@ lemma concrete_mul_inv_cancel
   have hmul : ∀ (a b : ConcreteBTField (k - 1)), concrete_mul a b = a * b := fun a b => rfl
   unfold concrete_inv
   by_cases h_k_zero : k = 0
-  · rw [dif_pos h_k_zero]
+  · rw [dite_eq_left h_k_zero]
     have h_2_pow_k_eq_1 : 2 ^ k = 1 := by rw [h_k_zero]; norm_num
     let a0 : ConcreteBTField 0 := Eq.mp (congrArg ConcreteBTField h_k_zero) a
     have a0_is_eq_mp_a : a0 = Eq.mp (congrArg ConcreteBTField h_k_zero) a := by rfl
@@ -360,20 +360,20 @@ lemma concrete_mul_inv_cancel
     · -- ha1 : a = 1
       have a_is_1 : a = 1 := ha1
       have a_ne_0 : a ≠ 0 := by rw [a_is_1]; exact one_ne_zero
-      rw [if_neg a_ne_0]
+      rw [ite_eq_right a_ne_0]
       rw [←one_is_1]
       rw [concrete_mul_one prevBTFieldResult.toConcreteBTFieldProps (a:=a)]
       rw [ha1]
   · by_cases h_a_zero : a = 0
     · contradiction
-    · rw [dif_neg h_k_zero]
-      rw [dif_neg h_a_zero]
+    · rw [dite_eq_right h_k_zero]
+      rw [dite_eq_right h_a_zero]
       by_cases h_a_one : a = 1
-      · rw [dif_pos h_a_one]
+      · rw [dite_eq_left h_a_one]
         rw [←one_is_1]
         rw [concrete_mul_one prevBTFieldResult.toConcreteBTFieldProps (a:=a)]
         rw [h_a_one, one_is_1]
-      · rw [dif_neg h_a_one]
+      · rw [dite_eq_right h_a_one]
         have h_k_gt_0 : k > 0 := Nat.zero_lt_of_ne_zero h_k_zero
         let split_a := split h_k_gt_0 a
         let a₁ := split_a.fst

@@ -44,12 +44,12 @@ theorem swapRows_preserves_column_shape_of_ne [Zero F] [One F]
   · subst row
     rw [swapRows_get_left hM hrowA hcol]
     rw [hshape rowB hrowB]
-    rw [if_neg hB, if_neg hA]
+    rw [ite_eq_right hB, ite_eq_right hA]
   · by_cases hrowB' : row = rowB
     · subst row
       rw [swapRows_get_right hM hrowB hcol]
       rw [hshape rowA hrowA]
-      rw [if_neg hA, if_neg hB]
+      rw [ite_eq_right hA, ite_eq_right hB]
     · rw [swapRows_get_of_row_ne hcol]
       · exact hshape row hrow
       · intro h
@@ -731,7 +731,7 @@ theorem rrefLoop_pivotColumnsShaped [Field F] [BEq F] [LawfulBEq F] :
                     intro h
                     apply hrp
                     rw [h, hrowEq]
-                  rw [if_neg hrp]
+                  rw [ite_eq_right hrp]
                   unfold reduced
                   exact normalizeAndEliminate_get_row_pivot hswappedWf hrowSwapped
                     hcolSwapped (by simpa [swapped, swapRows_rows] using hrM)
@@ -771,7 +771,7 @@ theorem rrefLoop_pivotColumnsShaped [Field F] [BEq F] [LawfulBEq F] :
                       exact hshape_i.2.2 r hr)
                 have hsourceZero : swapped.get row oldCol = 0 := by
                   have h := hswappedShape row hrowSwapped
-                  rw [if_neg hrow_ne_i] at h
+                  rw [ite_eq_right hrow_ne_i] at h
                   exact h
                 rw [Array.getD_eq_getD_getElem?, Array.getElem?_push_lt hiOld]
                 simp only [Option.getD_some]

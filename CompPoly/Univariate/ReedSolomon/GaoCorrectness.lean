@@ -300,7 +300,7 @@ theorem decode_eq_some [Field F]
   have hdiveq : G / V = messagePoly msg := toPolyLinearEquiv.injective (by
     simpa only [toPolyLinearEquiv_apply] using hdivtp)
   show (if G.mod V == 0 then if (G / V).degree < k then some (G / V) else none else none) = _
-  rw [if_pos (beq_iff_eq.mpr hmod0), if_pos (hdiveq ▸ messagePoly_degree_lt msg), hdiveq]
+  rw [ite_eq_left (beq_iff_eq.mpr hmod0), ite_eq_left (hdiveq ▸ messagePoly_degree_lt msg), hdiveq]
 
 /-- **Decoder refusal is a farness certificate**: if the decoder returns `none`, the
 received word is beyond the guaranteed radius `⌊(n-k)/2⌋` of *every* codeword — positive,

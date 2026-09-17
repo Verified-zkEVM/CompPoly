@@ -249,7 +249,7 @@ theorem fastMulSpec_coeff (D : Domain R) (p q : CPolynomial.Raw R)
       rw [fastMulSpec]
       rw [coeff_truncate]
       by_cases hi : i < Domain.requiredLength p q
-      · rw [if_pos hi]
+      · rw [ite_eq_left hi]
         have hiD : i < D.n := Nat.lt_of_lt_of_le hi hfit'
         rw [CPolynomial.Raw.coeff]
         rw [Forward.forwardSpec_eq_evalOnDomain D p hpdeg]
@@ -257,7 +257,7 @@ theorem fastMulSpec_coeff (D : Domain R) (p q : CPolynomial.Raw R)
         rw [pointwise_evalOnDomain_eq_evalOnDomain_mul D p q]
         rw [← Forward.forwardSpec_eq_evalOnDomain D (p * q) hpqdeg]
         exact inverse_forwardSpec_coeff_of_lt D (p * q) hiD
-      · rw [if_neg hi]
+      · rw [ite_eq_right hi]
         exact (mul_coeff_eq_zero_of_requiredLength_le p q hppos hqpos
           (Nat.le_of_not_lt hi)).symm
 

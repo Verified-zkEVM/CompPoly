@@ -256,7 +256,7 @@ private theorem pivotRow_basisVectorForFreeColumn_term [Field F] [BEq F]
           have hA : A.get row c = 0 := by
             rw [← hj.2]
             have hshape_j := hshape j hj.1
-            rw [hshape_j.2.2 row hrowA, if_neg (by intro h; exact hjrow h.symm)]
+            rw [hshape_j.2.2 row hrowA, ite_eq_right (by intro h; exact hjrow h.symm)]
           rw [hA]
           have hnotPivotOpt : ¬c = pivots[row]?.getD 0 := by
             intro h
@@ -289,7 +289,7 @@ private theorem foldl_range_two_special [AddCommGroup F] {free pivot : Nat}
       · subst free
         have hstartNotIn : ¬(start + 1 ≤ start ∧ start < start + 1 + len) := by omega
         have hstartIn : start ≤ start ∧ start < start + (len + 1) := by omega
-        rw [if_neg hstartNotIn, if_pos hstartIn]
+        rw [ite_eq_right hstartNotIn, ite_eq_left hstartIn]
         simp only [↓reduceIte, add_zero]
         by_cases hpivotIn : start + 1 ≤ pivot ∧ pivot < start + 1 + len
         · have hstartPivot : start ≤ pivot ∧ pivot < start + (len + 1) := by omega
@@ -434,7 +434,7 @@ private theorem dotRow_eq_getD_of_all_pivots [Field F] [BEq F]
           have hcPivot : c = pivot := by
             unfold pivot
             exact hjc.symm
-          rw [hArow, if_pos rfl, hcPivot]
+          rw [hArow, ite_eq_left rfl, hcPivot]
           simp [x]
           simpa [x] using ih (acc + x) (by
             intro d hd
@@ -447,7 +447,7 @@ private theorem dotRow_eq_getD_of_all_pivots [Field F] [BEq F]
             exact pivotColumnsStrict_getD_ne hstrict hj hrow (by
               intro h
               exact hrj h.symm) hdup
-          rw [hArow, if_neg hrj, if_neg hcNePivot]
+          rw [hArow, ite_eq_right hrj, ite_eq_right hcNePivot]
           simp only [zero_mul, add_zero]
           simpa [x] using ih acc (by
             intro d hd
@@ -459,7 +459,7 @@ private theorem dotRow_eq_getD_of_all_pivots [Field F] [BEq F]
   rw [hfold (List.range' 0 A.cols) 0 hmemRange]
   rw [foldl_range_one_special (F := F) (pivot := pivot) x 0 A.cols 0]
   have hpivotIn : 0 ≤ pivot ∧ pivot < 0 + A.cols := by omega
-  rw [if_pos hpivotIn]
+  rw [ite_eq_left hpivotIn]
   simp only [zero_add]
   unfold x pivot
   rfl

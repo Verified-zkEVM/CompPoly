@@ -192,7 +192,7 @@ private lemma monomial_basis_even {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^
   rw [Fin.prod_univ_succ]
   simp only [Fin.val_zero, Fin.val_succ]
   rw [← Nat.bit_false_apply j.val]
-  simp only [Nat.testBit_bit_zero, Bool.false_eq_true, if_false, one_mul]
+  simp only [Nat.testBit_bit_zero, Bool.false_eq_true, ite_false, one_mul]
   apply Finset.prod_congr rfl
   intro k _
   rw [Nat.testBit_bit_succ]
@@ -207,7 +207,7 @@ private lemma monomial_basis_odd {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^ 
   rw [Fin.prod_univ_succ]
   simp only [Fin.val_zero, Fin.val_succ]
   rw [← Nat.bit_true_apply j.val]
-  simp only [Nat.testBit_bit_zero, if_true]
+  simp only [Nat.testBit_bit_zero, ite_true]
   congr 1
   apply Finset.prod_congr rfl
   intro k _
@@ -289,14 +289,14 @@ private lemma eval_horner_step_dot_product {n : ℕ}
           p.get ⟨i, h⟩ * (monomialBasis x).get ⟨i, h⟩ else 0)).symm using 1
     · apply Finset.sum_congr rfl
       intro i _
-      simp only [Fin.is_lt, dif_pos]
+      simp only [Fin.is_lt, dite_eq_left]
     · congr 1
       · apply Finset.sum_congr rfl
         intro i _
-        rw [dif_pos (by omega)]
+        rw [dite_eq_left (by omega)]
       · apply Finset.sum_congr rfl
         intro i _
-        rw [dif_pos (by omega)]
+        rw [dite_eq_left (by omega)]
   rw [hsplit]
   unfold evalHornerStep
   simp only [Vector.get_ofFn]
@@ -465,7 +465,7 @@ private lemma lagrange_basis_even {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^
   rw [Fin.prod_univ_succ]
   simp only [Fin.val_zero, Fin.val_succ]
   rw [← Nat.bit_false_apply j.val]
-  simp only [Nat.testBit_bit_zero, Bool.false_eq_true, if_false]
+  simp only [Nat.testBit_bit_zero, Bool.false_eq_true, ite_false]
   congr 1
   apply Finset.prod_congr rfl
   intro k _
@@ -481,7 +481,7 @@ private lemma lagrange_basis_odd {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^ 
   rw [Fin.prod_univ_succ]
   simp only [Fin.val_zero, Fin.val_succ]
   rw [← Nat.bit_true_apply j.val]
-  simp only [Nat.testBit_bit_zero, if_true]
+  simp only [Nat.testBit_bit_zero, ite_true]
   congr 1
   apply Finset.prod_congr rfl
   intro k _
@@ -593,14 +593,14 @@ private lemma eval_mle_step_dot_product {n : ℕ}
           p.get ⟨i, h⟩ * (lagrangeBasis x).get ⟨i, h⟩ else 0)).symm using 1
     · apply Finset.sum_congr rfl
       intro i _
-      simp only [Fin.is_lt, dif_pos]
+      simp only [Fin.is_lt, dite_eq_left]
     · congr 1
       · apply Finset.sum_congr rfl
         intro i _
-        rw [dif_pos (by omega)]
+        rw [dite_eq_left (by omega)]
       · apply Finset.sum_congr rfl
         intro i _
-        rw [dif_pos (by omega)]
+        rw [dite_eq_left (by omega)]
   rw [hsplit]
   unfold evalMleStep
   simp only [Vector.get_ofFn]

@@ -496,7 +496,7 @@ theorem tryEvenTraceSplitAttemptsWith_uniformTable_none_le_geometric {F : Type*}
   induction attempts with
   | zero =>
       rw [eventProbability, uniformProbeTablePMF, PMF.toOuterMeasure_pure_apply,
-        if_pos (by
+        ite_eq_left (by
           rw [Set.mem_ofPred_eq]
           unfold tryEvenTraceSplitAttemptsWith
           rfl)]
@@ -543,12 +543,12 @@ theorem tryEvenTraceSplitAttemptsWith_uniformTable_none_le_geometric {F : Type*}
         rw [PMF.toOuterMeasure_map_apply]
         by_cases h0 : cantorZassenhausEvenTraceAttemptWith M D traceCtx q
             ({ probe := fun _q _factor _attempt ↦ h } : ProbeFamily F) g 0 = none
-        · rw [if_pos h0]
+        · rw [ite_eq_left h0]
           congr 1
           ext rest
           rw [Set.mem_preimage, Set.mem_ofPred_eq, Set.mem_ofPred_eq, hsection h rest]
           simp [h0]
-        · rw [if_neg h0]
+        · rw [ite_eq_right h0]
           have hempty : (List.cons h ⁻¹'
               {table : List (CPolynomial F) |
                 tryEvenTraceSplitAttemptsWith M D traceCtx q (tableProbeFamily table) g
@@ -574,11 +574,11 @@ theorem tryEvenTraceSplitAttemptsWith_uniformTable_none_le_geometric {F : Type*}
             rw [hweight h]
             by_cases h0 : cantorZassenhausEvenTraceAttemptWith M D traceCtx q
                 ({ probe := fun _q _factor _attempt ↦ h } : ProbeFamily F) g 0 = none
-            · rw [if_pos h0, if_pos h0]
+            · rw [ite_eq_left h0, ite_eq_left h0]
               exact mul_le_mul' le_rfl (by
                 have := ih
                 rwa [eventProbability] at this)
-            · rw [if_neg h0, if_neg h0]
+            · rw [ite_eq_right h0, ite_eq_right h0]
               simp
         _ = (uniformProbePMF enumeration coefficientCount).toOuterMeasure
               {h : CPolynomial F | cantorZassenhausEvenTraceAttemptWith M D traceCtx q

@@ -100,7 +100,7 @@ theorem BarycentricDomain.eval_at_node (dom : BarycentricDomain R n) (y : Fin n 
     (i : Fin n) : dom.eval y (dom.nodes i) = y i := by
   unfold BarycentricDomain.eval
   have hexists : ∃ j : Fin n, dom.nodes j = dom.nodes i := ⟨i, rfl⟩
-  simp only [dif_pos hexists]
+  simp only [dite_eq_left hexists]
   congr 1
   exact dom.nodes_injective (Fin.find_spec hexists)
 

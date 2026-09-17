@@ -69,8 +69,8 @@ theorem coeff_mul_X_pow [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     | succ k =>
       rw [coeff_mul_X_succ, ih]
       by_cases h : m ≤ k
-      · rw [if_pos h, if_pos (Nat.succ_le_succ h), Nat.succ_sub_succ]
-      · rw [if_neg h, if_neg (fun hc => h (Nat.le_of_succ_le_succ hc))]
+      · rw [ite_eq_left h, ite_eq_left (Nat.succ_le_succ h), Nat.succ_sub_succ]
+      · rw [ite_eq_right h, ite_eq_right (fun hc => h (Nat.le_of_succ_le_succ hc))]
 
 /-- Multiplication by `X ^ m`, implemented as a coefficient shift. -/
 def shiftPow [Zero R] [BEq R] [LawfulBEq R] (m : ℕ) (p : CPolynomial R) : CPolynomial R :=
@@ -84,9 +84,9 @@ theorem coeff_shiftPow [Zero R] [BEq R] [LawfulBEq R] (m : ℕ) (p : CPolynomial
   simp only [CPolynomial.Raw.mulPowX, CPolynomial.Raw.coeff, CPolynomial.Raw.mk,
     Array.getD_eq_getD_getElem?]
   by_cases h : m ≤ n
-  · rw [if_pos h, Array.getElem?_append_right (by simpa using h)]
+  · rw [ite_eq_left h, Array.getElem?_append_right (by simpa using h)]
     simp
-  · rw [if_neg h, Array.getElem?_append_left (by simpa using Nat.lt_of_not_le h)]
+  · rw [ite_eq_right h, Array.getElem?_append_left (by simpa using Nat.lt_of_not_le h)]
     simp [Nat.lt_of_not_le h]
 
 /-- `shiftPow m p = p * X ^ m`. -/
@@ -155,7 +155,7 @@ theorem coeff_kroneckerPack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     {D : ℕ} (hD : 0 < D) (p : CBivariate R) (hp : natDegreeX p < D) (n : ℕ) :
     CPolynomial.coeff (kroneckerPack D p) n = coeff p (n % D) (n / D) := by
   rw [kroneckerPack_eq_sum, CPolynomial.coeff_finset_sum, Finset.sum_eq_single (n / D)]
-  · rw [CPolynomial.coeff_mul_X_pow, if_pos (Nat.mul_div_le n D)]
+  · rw [CPolynomial.coeff_mul_X_pow, ite_eq_left (Nat.mul_div_le n D)]
     have hsub : n - D * (n / D) = n % D := by have := Nat.mod_add_div n D; omega
     rw [hsub]; rfl
   · intro i hi hine
@@ -203,7 +203,7 @@ theorem coeff_kroneckerUnpack_of_le [Semiring R] [BEq R] [LawfulBEq R] [Nontrivi
   rw [coeff_finset_sum]
   apply Finset.sum_eq_zero
   intro k _
-  rw [coeff_monomialXY, if_neg]
+  rw [coeff_monomialXY, ite_eq_right]
   rintro ⟨hik, _⟩
   have : k % D < D := Nat.mod_lt _ hD
   omega
@@ -216,16 +216,16 @@ theorem coeff_kroneckerUnpack [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     ⟨(gap_mod hi).symm, (gap_div hD hi).symm⟩
   unfold kroneckerUnpack
   rw [coeff_finset_sum, Finset.sum_eq_single (D * j + i)]
-  · rw [coeff_monomialXY, if_pos hkey]
+  · rw [coeff_monomialXY, ite_eq_left hkey]
   · intro k _ hkne
-    rw [coeff_monomialXY, if_neg]
+    rw [coeff_monomialXY, ite_eq_right]
     rintro ⟨hik, hjk⟩
     apply hkne
     subst hik; subst hjk
     have := Nat.mod_add_div k D
     omega
   · intro hns
-    rw [coeff_monomialXY, if_pos hkey]
+    rw [coeff_monomialXY, ite_eq_left hkey]
     by_contra hc
     exact hns ((CPolynomial.mem_support_iff P (D * j + i)).2 hc)
 
@@ -244,14 +244,14 @@ theorem coeff_window [Zero R] [BEq R] [LawfulBEq R] (D j : ℕ) (P : CPolynomial
   rw [CPolynomial.Raw.Trim.coeff_eq_coeff, CPolynomial.Raw.coeff,
     Array.getD_eq_getD_getElem?, Array.getElem?_extract]
   by_cases hiD : i < D
-  · rw [if_pos hiD, hcoe]
+  · rw [ite_eq_left hiD, hcoe]
     by_cases hb : i < min (D * j + D) P.val.size - D * j
-    · rw [if_pos hb]
-    · rw [if_neg hb, Nat.not_lt] at *
+    · rw [ite_eq_left hb]
+    · rw [ite_eq_right hb, Nat.not_lt] at *
       have hsz : P.val.size ≤ D * j + i := by omega
       rw [Array.getElem?_eq_none hsz]
-  · rw [if_neg hiD, Nat.not_lt] at *
-    rw [if_neg (by omega : ¬ i < min (D * j + D) P.val.size - D * j)]
+  · rw [ite_eq_right hiD, Nat.not_lt] at *
+    rw [ite_eq_right (by omega : ¬ i < min (D * j + D) P.val.size - D * j)]
     rfl
 
 /-- Efficient unpacking, assembling columns directly. -/
@@ -271,16 +271,16 @@ theorem kroneckerUnpackFast_eq [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
   rw [Finset.sum_ite_eq (Finset.range (P.natDegree / D + 1)) j
     (fun j' => CPolynomial.coeff (window D j' P) i), coeff_window]
   by_cases hiD : i < D
-  · rw [if_pos hiD, coeff_kroneckerUnpack hD _ i j hiD]
+  · rw [ite_eq_left hiD, coeff_kroneckerUnpack hD _ i j hiD]
     by_cases hjr : j ∈ Finset.range (P.natDegree / D + 1)
-    · rw [if_pos hjr]
-    · rw [if_neg hjr]
+    · rw [ite_eq_left hjr]
+    · rw [ite_eq_right hjr]
       rw [Finset.mem_range, Nat.not_lt] at hjr
       refine (CPolynomial.coeff_eq_zero_of_natDegree_lt ?_).symm
       have : P.natDegree < D * j := by
         rw [Nat.mul_comm]; exact (Nat.div_lt_iff_lt_mul hD).1 hjr
       omega
-  · rw [if_neg hiD, coeff_kroneckerUnpack_of_le hD _ i j (Nat.le_of_not_lt hiD)]
+  · rw [ite_eq_right hiD, coeff_kroneckerUnpack_of_le hD _ i j (Nat.le_of_not_lt hiD)]
     by_cases hjr : j ∈ Finset.range (P.natDegree / D + 1) <;> simp [hjr]
 
 end Unpack

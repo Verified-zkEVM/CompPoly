@@ -701,7 +701,7 @@ theorem evalX_toPoly_eval_commute_converse
   exact lhs.symm.trans key |>.trans rhs
 
 /--
-Computable analogue of `Polynomial.Bivariate.eval_comm`:
+Computable analogue of `Polynomial.map_evalRingHom_eval`:
 evaluating `Y` at `a` and then `X` at `x` agrees with first applying the
 `X = x` evaluation through the inner coefficients and then evaluating `Y`
 at `a`.

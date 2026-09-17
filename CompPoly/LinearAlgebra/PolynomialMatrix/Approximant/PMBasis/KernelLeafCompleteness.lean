@@ -98,9 +98,9 @@ private theorem pm_truncateX_eq_zero_of_coeff (order : Nat) {p : CPolynomial F}
   intro t
   rw [truncateX_coeff, CPolynomial.coeff_zero]
   rcases Nat.lt_or_ge t order with ht | ht
-  · rw [if_pos ht]
+  · rw [ite_eq_left ht]
     exact h t ht
-  · rw [if_neg (by omega)]
+  · rw [ite_eq_right (by omega)]
 
 /-- A polynomial with vanishing low coefficients factors through `X^cap` with
 quotient `divXTrunc cap`. -/
@@ -111,11 +111,11 @@ private theorem pm_high_factor {cap : Nat} {p : CPolynomial F}
   intro t
   rw [pm_coeff_mul_coeffXPower]
   rcases Nat.lt_or_ge t cap with ht | ht
-  · rw [if_neg (by omega), hlow t ht]
-  · rw [if_pos ht, divXTrunc_coeff]
+  · rw [ite_eq_right (by omega), hlow t ht]
+  · rw [ite_eq_left ht, divXTrunc_coeff]
     rcases Nat.lt_or_ge (t - cap) p.val.size with hs | hs
-    · rw [if_pos hs, Nat.sub_add_cancel ht]
-    · rw [if_neg (by omega), CPolynomial.coeff_eq_zero_of_size_le p (by omega)]
+    · rw [ite_eq_left hs, Nat.sub_add_cancel ht]
+    · rw [ite_eq_right (by omega), CPolynomial.coeff_eq_zero_of_size_le p (by omega)]
 
 /-- Entries of a monomial unit row. -/
 theorem pm_rowGet_monomialUnitRow (n i d k : Nat) :
@@ -126,11 +126,11 @@ theorem pm_rowGet_monomialUnitRow (n i d k : Nat) :
       List.getElem?_toArray, List.getElem?_map, List.getElem?_range hk,
       Option.map_some, Option.getD_some]
     by_cases hik : i = k
-    · rw [if_pos (beq_iff_eq.mpr hik), if_pos ⟨hk, hik⟩]
-    · rw [if_neg (by simpa using hik), if_neg fun h ↦ hik h.2]
+    · rw [ite_eq_left (beq_iff_eq.mpr hik), ite_eq_left ⟨hk, hik⟩]
+    · rw [ite_eq_right (by simpa using hik), ite_eq_right fun h ↦ hik h.2]
   · rw [monomialUnitRow, rowGet, Array.getD_eq_getD_getElem?,
       List.getElem?_toArray, List.getElem?_eq_none (by simpa using hk),
-      Option.getD_none, if_neg fun h ↦ absurd h.1 (Nat.not_lt.mpr hk)]
+      Option.getD_none, ite_eq_right fun h ↦ absurd h.1 (Nat.not_lt.mpr hk)]
 
 /-- The completion matrix has one row per module coordinate. -/
 private theorem pm_completionRows_size (problem : XAdicProblem F) :
@@ -302,7 +302,7 @@ private theorem pm_lowRow_mem_rowSpan_union (mulCtx : CPolynomial.MulContext F)
       rcases Nat.lt_or_ge x kb.size with h | h
       · exact absurd (Finset.mem_range.mpr h) hxn
       · exact h
-    rw [hcoeffs_getD x hxM, if_neg (by omega), zero_mul,
+    rw [hcoeffs_getD x hxM, ite_eq_right (by omega), zero_mul,
       CPolynomial.coeff_zero]
   refine Eq.trans ?_ (Finset.sum_subset hsub hvan)
   have hterm : ∀ i ∈ Finset.range kb.size,
@@ -319,7 +319,7 @@ private theorem pm_lowRow_mem_rowSpan_union (mulCtx : CPolynomial.MulContext F)
           (kb.getD i #[]) := by
       rw [hMdef, pm_append_getD_left _ (by rw [Array.size_map]; exact hikb),
         pm_map_getD _ _ #[] _ hikb]
-    rw [hcoeffs_getD i hiM, if_pos hikb, hMget, pm_coeff_C_mul,
+    rw [hcoeffs_getD i hiM, ite_eq_left hikb, hMget, pm_coeff_C_mul,
       rowGet_vectorToPolynomialRow_coeff]
   have hlhs : CPolynomial.coeff (rowGet rem j) a =
       if j < problem.matrix.size ∧ a < leafDegreeCap problem then
@@ -328,12 +328,12 @@ private theorem pm_lowRow_mem_rowSpan_union (mulCtx : CPolynomial.MulContext F)
     rw [← hrt, rowGet_vectorToPolynomialRow_coeff]
   rw [hlhs, Finset.sum_congr rfl hterm]
   by_cases hcond : j < problem.matrix.size ∧ a < leafDegreeCap problem
-  · rw [if_pos hcond]
+  · rw [ite_eq_left hcond]
     obtain ⟨hidx, -, -⟩ := pm_pack_index hcap_pos hcond.1 hcond.2
     refine Eq.trans (hcomplete _ (by rw [hcols]; exact hidx)) ?_
-    exact Finset.sum_congr rfl fun i _hi ↦ by rw [if_pos hcond]
-  · rw [if_neg hcond]
-    exact (Finset.sum_eq_zero fun i _hi ↦ by rw [if_neg hcond, mul_zero]).symm
+    exact Finset.sum_congr rfl fun i _hi ↦ by rw [ite_eq_left hcond]
+  · rw [ite_eq_right hcond]
+    exact (Finset.sum_eq_zero fun i _hi ↦ by rw [ite_eq_right hcond, mul_zero]).symm
 
 /-- **High part.**  A row whose entry coefficients all vanish below the leaf
 degree cap lies in the row span of the kernel-leaf input rows: every entry
@@ -395,14 +395,14 @@ private theorem pm_highRow_mem_rowSpan_union (problem : XAdicProblem F)
       intro b hb hbne
       have hbM : b < M.size := Finset.mem_range.mp hb
       rcases Nat.lt_or_ge b A.size with hbA | hbA
-      · rw [hcoeffs_getD b hbM, if_neg (by omega), zero_mul]
+      · rw [hcoeffs_getD b hbM, ite_eq_right (by omega), zero_mul]
       · rw [hMget_right hbA hbM, pm_rowGet_monomialUnitRow,
-          if_neg (by rintro ⟨-, h2⟩; exact hbne (by omega)), mul_zero]
+          ite_eq_right (by rintro ⟨-, h2⟩; exact hbne (by omega)), mul_zero]
     refine (Eq.trans (Finset.sum_eq_single_of_mem (A.size + j)
       (Finset.mem_range.mpr (by omega)) hother) ?_).symm
-    rw [hcoeffs_getD _ (by omega), if_pos (Nat.le_add_right _ _),
+    rw [hcoeffs_getD _ (by omega), ite_eq_left (Nat.le_add_right _ _),
       hMget_right (Nat.le_add_right _ _) (by omega), Nat.add_sub_cancel_left,
-      pm_rowGet_monomialUnitRow, if_pos ⟨hj, rfl⟩]
+      pm_rowGet_monomialUnitRow, ite_eq_left ⟨hj, rfl⟩]
     exact pm_high_factor fun t ht ↦ hlow j t ht
   · have hzero : rowGet hi j = 0 := by
       rw [rowGet, array_getD_of_le' _ _ (by omega)]
@@ -410,9 +410,9 @@ private theorem pm_highRow_mem_rowSpan_union (problem : XAdicProblem F)
     refine (Finset.sum_eq_zero fun b hb ↦ ?_).symm
     have hbM : b < M.size := Finset.mem_range.mp hb
     rcases Nat.lt_or_ge b A.size with hbA | hbA
-    · rw [hcoeffs_getD b hbM, if_neg (by omega), zero_mul]
+    · rw [hcoeffs_getD b hbM, ite_eq_right (by omega), zero_mul]
     · rw [hMget_right hbA hbM, pm_rowGet_monomialUnitRow,
-        if_neg fun h ↦ hj h.1, mul_zero]
+        ite_eq_right fun h ↦ hj h.1, mul_zero]
 
 /-- **Decomposition.**  Every solution row splits as a truncated low part plus
 an `X^(leafDegreeCap)`-divisible high part, both of which stay in the row span
@@ -445,7 +445,7 @@ private theorem pm_solution_mem_rowSpan_union (mulCtx : CPolynomial.MulContext F
   have hhilow : ∀ k a, a < leafDegreeCap problem →
       CPolynomial.coeff (rowGet hi k) a = 0 := by
     intro k a ha
-    rw [hhiget k, CPolynomial.coeff_sub, truncateX_coeff, if_pos ha, sub_self]
+    rw [hhiget k, CPolynomial.coeff_sub, truncateX_coeff, ite_eq_left ha, sub_self]
   have hhiapprox : RowApproximates mulCtx problem hi := by
     refine pm_rowApproximates_of_entry_dvd mulCtx problem fun k ↦ ?_
     rw [← truncateX_eq_zero_iff_X_pow_dvd]
@@ -460,7 +460,7 @@ private theorem pm_solution_mem_rowSpan_union (mulCtx : CPolynomial.MulContext F
       leafDegreeCap problem ≤ a →
       CPolynomial.coeff (rowGet (rowSub row hi) k) a = 0 := by
     intro k _hk a ha
-    rw [hremget k, truncateX_coeff, if_neg (by omega)]
+    rw [hremget k, truncateX_coeff, ite_eq_right (by omega)]
   have hremapprox : RowApproximates mulCtx problem (rowSub row hi) :=
     rowApproximates_rowSub mulCtx problem happrox hhiapprox
   have hsplit : rowAdd (rowSub row hi) hi = row := rowSub_add_cancel hhisize
@@ -532,7 +532,7 @@ theorem kernelLeafBasis_rowSpan_complete [DecidableEq F]
     intro hz
     have hget : rowGet (monomialUnitRow (F := F) problem.matrix.size 0
         (leafDegreeCap problem)) 0 = coeffXPower 1 (leafDegreeCap problem) := by
-      rw [pm_rowGet_monomialUnitRow, if_pos ⟨hpos, rfl⟩]
+      rw [pm_rowGet_monomialUnitRow, ite_eq_left ⟨hpos, rfl⟩]
     have hmem0 : (monomialUnitRow (F := F) problem.matrix.size 0
         (leafDegreeCap problem))[0]'(by omega) ∈
         (monomialUnitRow (F := F) problem.matrix.size 0
@@ -543,7 +543,7 @@ theorem kernelLeafBasis_rowSpan_complete [DecidableEq F]
     have hone : CPolynomial.coeff (coeffXPower (1 : F) (leafDegreeCap problem))
         (leafDegreeCap problem) = 1 := by
       rw [CPolynomial.coeff_toPoly, coeffXPower_toPoly, Polynomial.coeff_C_mul,
-        Polynomial.coeff_X_pow, if_pos rfl, mul_one]
+        Polynomial.coeff_X_pow, ite_eq_left rfl, mul_one]
     rw [← hget, CPolynomial.coeff_zero] at hone
     exact zero_ne_one hone
   have hwit_span : monomialUnitRow (F := F) problem.matrix.size 0

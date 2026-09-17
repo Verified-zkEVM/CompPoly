@@ -56,9 +56,9 @@ theorem reduceNat_lt (R p negInv x : ℕ)
     reduceNatQuotient R p negInv x else reduceNatQuotient R p negInv x - p) < p
   have hu := reduceNatQuotient_lt_two_mul R p negInv x hR hp hx
   by_cases h : reduceNatQuotient R p negInv x < p
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     exact h
-  · rw [if_neg h]
+  · rw [ite_eq_right h]
     omega
 
 /-- The Montgomery divisibility identity: if `(negInv * p) % R = R - 1` (i.e.
@@ -99,12 +99,12 @@ theorem reduceNat_cast (R p negInv : ℕ) [Fact (Nat.Prime p)] (hR : 0 < R)
   change ((if u < p then u else u - p : ℕ) : ZMod p) =
     (x : ZMod p) * (R : ZMod p)⁻¹
   by_cases hu : u < p
-  · rw [if_pos hu]
+  · rw [ite_eq_left hu]
     exact hu_cast
   · have hfield : ((u - p : ℕ) : ZMod p) = (u : ZMod p) := by
       rw [Nat.cast_sub (Nat.le_of_not_gt hu)]
       simp
-    rw [if_neg hu]
+    rw [ite_eq_right hu]
     rw [hfield]
     exact hu_cast
 
