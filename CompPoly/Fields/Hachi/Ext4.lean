@@ -16,7 +16,7 @@ public import Mathlib.Tactic.ReduceModChar
 
 `W = 2` is the smallest non-square modulo `p`, which also makes multiplication by `W` a
 doubling. Because `p ≡ 1 mod 4`, `X^4 - W` is irreducible for any non-square `W`; concretely
-this is discharged by `Polynomial.irreducible_X_pow_four_sub_C_of_card` from
+this is discharged by `Polynomial.irreducible_X_pow_four_sub_C` from
 `2^((p^4-1)/4) = 1` and `2^((p^2-1)/4) ≠ 1`.
 
 ## Main definitions
@@ -59,7 +59,7 @@ instance : Fact (Nat.card Field = ext4Params.q) :=
 /-- `X^4 - 2` is irreducible over Hachi, by the collapsed Rabin criterion. -/
 theorem ext4Params_poly_irreducible : Irreducible ext4Params.poly := by
   rw [BinomialParams.poly]
-  refine irreducible_X_pow_four_sub_C_of_card (q := qNum) (ZMod.card _) (by decide)
+  refine irreducible_X_pow_four_sub_C (q := qNum) (ZMod.card _) (by decide)
     (by norm_num) (by norm_num) ?_ ?_
   · show (2 : ZMod qNum) ^ ((qNum ^ 4 - 1) / 4) = 1
     reduce_mod_char

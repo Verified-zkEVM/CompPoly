@@ -101,6 +101,14 @@ trusting the compiler.
   pattern in `CompPoly/Fields/Binary/BF128Ghash/Prelude.lean`.
 - If `decide` is too slow, restructure the proposition, for example by batching
   checks into a single conjunction, rather than reaching for `native_decide`.
+- Keep concrete certificate proofs free of rewrite transports. A criterion that
+  depends on a field size takes it as a numeral `q` with `hcard : Fintype.card F = q`
+  and substitutes it internally, so a concrete caller states its conditions at the
+  numeral and an abstract one passes `rfl`. State a new criterion that way, and do not
+  add a `Fintype.card F`-only variant: the caller-side `rw [hcard]` it invites leaves a
+  transport around a certificate whose type carries a huge exponent, which can send a
+  from-empty kernel replay into step-by-step `npowRec` unfolding. See
+  [`docs/wiki/field-extensions.md`](docs/wiki/field-extensions.md).
 
 ## Performance Guidelines
 

@@ -40,7 +40,10 @@ identities, and divisibility conditions for irreducible polynomials.
    - `degree_dvd_of_irreducible_dvd_X_pow_card_pow_sub_X`: If irreducible `p` divides `X^(q^n) - X`,
      then `deg(p) ∣ n`
    - `irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd`: Fundamental theorem:
-     `p ∣ X^(q^n) - X ↔ deg(p) ∣ n`
+     `p ∣ X^(c^n) - X ↔ deg(p) ∣ n`, with the field size as a numeral `c` together with
+     `Fintype.card R = c`
+   - `irreducible_dvd_X_pow_add_X_iff_natDegree_dvd`: its characteristic-two form, stated with
+     `+ X` as the binary fields write it
 
 ## TODOs
 - potentially generalize the Frobenius theorems to generic algebras?
@@ -499,20 +502,45 @@ theorem degree_dvd_of_irreducible_dvd_X_pow_card_pow_sub_X
 
 /--
 **Fundamental Theorem of Irreducible Polynomials over Finite Fields:**
-For an irreducible polynomial q over a finite field R:
-`q | X^(|R|^n) - X`  ↔  `deg(q) | n`. -/
+For an irreducible polynomial `q` over a finite field `R` with `c` elements:
+`q ∣ X^(c^n) - X` ↔ `deg q ∣ n`.
+
+The field size enters as a numeral `c` together with `hcard : Fintype.card R = c`, rather than
+being read off as `Fintype.card R`. A concrete field then states the divisibility at its own
+field-size literal and supplies `hcard` as `ZMod.card _`; a caller with no numeral in hand passes
+`rfl` and recovers the `Fintype.card R` statement verbatim. See the section comment in
+`CompPoly/Data/Polynomial/Rabin.lean` for why every criterion in the library is shaped this way.
+-/
 lemma irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd {R : Type*} [Field R]
     [Fact (Nat.Prime (ringChar R))]
-    [Fintype R] (n : ℕ) (q : Polynomial R) (hq_irr : Irreducible q) :
-    q ∣ (X ^ ((Fintype.card R) ^ n) - X) ↔ q.natDegree ∣ n := by
+    [Fintype R] {c : ℕ} (hcard : Fintype.card R = c) (n : ℕ) (q : Polynomial R)
+    (hq_irr : Irreducible q) :
+    q ∣ (X ^ (c ^ n) - X) ↔ q.natDegree ∣ n := by
+  subst hcard
   constructor
   · intro h_dvd
     apply degree_dvd_of_irreducible_dvd_X_pow_card_pow_sub_X q hq_irr n h_dvd
-
   · intro h_deg_dvd
     have h_base := irreducible_dvd_X_pow_card_pow_sub_X q hq_irr
     apply dvd_trans h_base
     apply X_pow_card_pow_dvd_X_pow_card_pow_of_dvd q.natDegree n h_deg_dvd
+
+/--
+The characteristic-two form of `irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd`, stated with `+ X`
+as a binary field writes it: `q ∣ X^(c^n) + X ↔ deg q ∣ n`.
+
+Over `GF(2)` the two spellings are the same polynomial, but only one of them is *syntactically*
+what a caller has. Absorbing `CharTwo.sub_eq_add` here — once, at a statement generic in `c` and
+`n` — means the concrete caller applies this as a term instead of rewriting a hypothesis whose
+type carries a large exponent such as `X ^ 2 ^ 128`.
+-/
+lemma irreducible_dvd_X_pow_add_X_iff_natDegree_dvd {R : Type*} [Field R]
+    [Fact (Nat.Prime (ringChar R))]
+    [Fintype R] [CharP R 2] {c : ℕ} (hcard : Fintype.card R = c) (n : ℕ) (q : Polynomial R)
+    (hq_irr : Irreducible q) :
+    q ∣ (X ^ (c ^ n) + X) ↔ q.natDegree ∣ n := by
+  rw [← CharTwo.sub_eq_add]
+  exact irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd hcard n q hq_irr
 
 end FrobeniusPolynomialDivisibility
 end Polynomial

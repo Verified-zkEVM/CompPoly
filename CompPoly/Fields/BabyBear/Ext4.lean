@@ -16,7 +16,7 @@ public import Mathlib.Tactic.ReduceModChar
 RISC Zero and Plonky3.
 
 Irreducibility of `X^4 - 11` is discharged by
-`Polynomial.irreducible_X_pow_four_sub_C_of_card`, whose two hypotheses are single
+`Polynomial.irreducible_X_pow_four_sub_C`, whose two hypotheses are single
 exponentiations in the base field: `11^((p^4-1)/4) = 1` and `11^((p^2-1)/4) ≠ 1`.
 
 ## Main definitions
@@ -59,7 +59,7 @@ instance : Fact (Nat.card Field = ext4Params.q) :=
 /-- `X^4 - 11` is irreducible over BabyBear, by the collapsed Rabin criterion. -/
 theorem ext4Params_poly_irreducible : Irreducible ext4Params.poly := by
   rw [BinomialParams.poly]
-  refine irreducible_X_pow_four_sub_C_of_card (q := qNum) (ZMod.card _) (by decide)
+  refine irreducible_X_pow_four_sub_C (q := qNum) (ZMod.card _) (by decide)
     (by norm_num) (by norm_num) ?_ ?_
   · show (11 : ZMod qNum) ^ ((qNum ^ 4 - 1) / 4) = 1
     reduce_mod_char

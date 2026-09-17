@@ -51,10 +51,10 @@ makes a cheap Frobenius and a norm-based inverse possible. See "Choosing a gener
 
 | Layer | File | Owns |
 |---|---|---|
-| Rabin's test, general | [`../../CompPoly/Data/Polynomial/Rabin.lean`](../../CompPoly/Data/Polynomial/Rabin.lean) | `irreducible_of_rabin`, `irreducible_iff_rabin` for any degree over any finite field |
+| Rabin's test, general | [`../../CompPoly/Data/Polynomial/Rabin.lean`](../../CompPoly/Data/Polynomial/Rabin.lean) | `irreducible_of_rabin`, `irreducible_iff_rabin` for any degree over any finite field, with the size as a numeral |
 | Factor-degree bound | [`../../CompPoly/ToMathlib/Polynomial/Irreducible.lean`](../../CompPoly/ToMathlib/Polynomial/Irreducible.lean) | `exists_factor_natDegree_le_of_reducible` |
-| Binomial criterion | [`../../CompPoly/Fields/Extension/Binomial.lean`](../../CompPoly/Fields/Extension/Binomial.lean) | the collapse to base-field exponentiations; `irreducible_X_pow_four_sub_C_iff` |
-| Rabin certificates | [`../../CompPoly/Data/Polynomial/RabinCertificate.lean`](../../CompPoly/Data/Polynomial/RabinCertificate.lean) | kernel-checked chains for non-binomial moduli; `runChain_sound`, `irreducible_of_rabin_prime_degree`, `irreducible_of_rabin_two_prime_factors`, `irreducible_of_rabin_degree_six`, and the `_of_card` forms concrete callers use |
+| Binomial criterion | [`../../CompPoly/Fields/Extension/Binomial.lean`](../../CompPoly/Fields/Extension/Binomial.lean) | the collapse to base-field exponentiations; `irreducible_X_pow_sub_C_iff`, `irreducible_X_pow_four_sub_C_iff` |
+| Rabin certificates | [`../../CompPoly/Data/Polynomial/RabinCertificate.lean`](../../CompPoly/Data/Polynomial/RabinCertificate.lean) | kernel-checked chains for non-binomial moduli; `runChain_sound`, `irreducible_of_rabin_prime_degree`, `irreducible_of_rabin_two_prime_factors`, `irreducible_of_rabin_prime_power`, `irreducible_of_rabin_degree_six` |
 | Carrier and raw arithmetic | [`../../CompPoly/Fields/Extension/Arithmetic.lean`](../../CompPoly/Fields/Extension/Arithmetic.lean) | `ExtensionParams`, `BinomialParams` (+ `toExtensionParams`), `Ext P`, `Ext.shiftReduce`, `Ext.monomialMod`, `Ext.mul` (spec), `Ext.red` + `Ext.mulTbl` (compiled, via `@[csimp]`) |
 | Polynomial specification | [`../../CompPoly/Fields/Extension/Defs.lean`](../../CompPoly/Fields/Extension/Defs.lean) | `ExtensionParams.poly`, degree/monicity, binomial correspondence |
 | Finiteness and cardinality | [`../../CompPoly/Fields/Extension/Cardinality.lean`](../../CompPoly/Fields/Extension/Cardinality.lean) | `Finite`, optional `Fintype`, cardinality certificates, `card_ext`, `nat_card_ext` |
@@ -179,17 +179,17 @@ over `d.primeFactors`; the packaged forms are:
 | `d` | Wrapper | Checks |
 |---|---|---|
 | prime | `irreducible_of_rabin_prime_degree` | `f ∣ X^(q^d) - X`, `IsCoprime f (X^q - X)` |
+| `ℓ ^ k` | `irreducible_of_rabin_prime_power` | `f ∣ X^(q^d) - X`, `IsCoprime f (X^(q^(d/ℓ)) - X)`; `d = ℓ^k` supplied by the caller |
 | `6` | `irreducible_of_rabin_degree_six` | plus `IsCoprime f (X^(q^3) - X)` and `IsCoprime f (X^(q^2) - X)` |
 | two prime factors | `irreducible_of_rabin_two_prime_factors` | as above, `Nat.primeFactors d = {ℓ₁, ℓ₂}` supplied by the caller |
 
-Each of the first two also has an `_of_card` form (`irreducible_of_rabin_prime_degree_of_card`,
-`irreducible_of_rabin_degree_six_of_card`) taking the field size as a numeral `q` with
-`hcard : Fintype.card F = q`, supplied as `ZMod.card _`. Concrete extensions use those: their
-generated certificates are already stated in terms of `fieldSize`, so the conditions apply
-directly instead of needing a `rw [hcard]` cast per condition. This mirrors
-`irreducible_X_pow_four_sub_C_of_card` on the binomial side. The two forms are inter-derivable —
-instantiating at `q := Fintype.card F` with `rfl` recovers the plain one — and
-`tests/CompPolyTests/Data/Polynomial/RabinCertificate.lean` pins that round trip.
+The prime-power row covers `4`, `8`, `16`, `64` and `128` — every binary-field degree in the
+repo and most binomial ones — and is why `Aes.modulus` (`d = 8`) and `BF64.basePoly` (`d = 64`)
+no longer carry their own `Nat.primeFactors` lemma. At three or more distinct prime factors
+there is no wrapper yet; call `Polynomial.irreducible_of_rabin` and discharge the
+`d.primeFactors` quantifier at the call site.
+
+Every one of them takes the field size as a numeral, described next.
 
 Concretely, over KoalaBear `(X^3 + X + 4)(X^3 + X - 4)` divides `X^(p^6) - X` and is coprime to
 `X^p - X`, so it satisfies the prime-degree conditions verbatim while being visibly reducible;
@@ -208,6 +208,62 @@ The KoalaBear quintic instance costs ~290 generated lines and compiles in about 
 seconds — contrast the roughly 2100 lines of per-step `BitVec` certificates the same test
 costs the GHASH polynomial (`Fields/Binary/BF128Ghash/XPowTwoPow{Mod,Gcd}Certificate.lean`),
 which predates this framework.
+
+### The Field Size Enters As A Numeral
+
+Every criterion that depends on a field size takes it as a numeral `q` together with
+`hcard : Fintype.card F = q`, and substitutes it away internally. There is exactly one form of
+each statement:
+
+| Criterion | File |
+|---|---|
+| `Polynomial.irreducible_of_rabin`, `rabin_of_irreducible`, `irreducible_iff_rabin` | `Data/Polynomial/Rabin.lean` |
+| `irreducible_of_rabin_prime_degree`, `..._prime_power`, `..._two_prime_factors`, `..._degree_six` | `Data/Polynomial/RabinCertificate.lean` |
+| `Polynomial.irreducible_X_pow_sub_C{,_iff}`, `irreducible_X_pow_four_sub_C{,_iff}` | `Fields/Extension/Binomial.lean` |
+| `Polynomial.irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd`, and `..._add_X_...` for characteristic two | `Data/Polynomial/Frobenius.lean` |
+
+Both kinds of caller are served by the one form:
+
+- **A concrete field** supplies `hcard` as `ZMod.card _` (or its own cardinality lemma, such as
+  `card_bf64`) and states its conditions at the numeral its certificates were generated for. A
+  concrete field is `ZMod fieldSize` with `fieldSize` an *expression* like `2 ^ 31 - 2 ^ 24 + 1`,
+  so this is also what lets `norm_num` and `reduce_mod_char` discharge the side conditions: both
+  need the modulus as a literal.
+- **An abstract caller** passes `rfl` and gets the `Fintype.card F` statement back verbatim. The
+  `q`-parameterized statement is the same theorem, universally quantified over the spelling of the
+  size, so nothing is lost; `Extension/Binomial.lean` calls the Rabin layer exactly this way.
+
+**Why there is no `Fintype.card F`-only variant.** Such a variant forces a concrete caller to cast
+each condition with `rw [hcard]`, which leaves an `Eq.mpr` transport wrapped around a certificate
+whose type carries a huge exponent (`X ^ (fieldSize ^ 6)`). A kernel replay from an empty
+environment checks a serialized and reconstructed expression graph and need not follow the
+normalization path that checking the elaborator's in-memory term took; one such transport has been
+observed to send the kernel into `Polynomial.pow → npowRec → Nat.rec`, unfolding the power one
+exponent step at a time until the deep-recursion guard fired. With a single
+numeral-parameterized form, that cast has no occasion to appear — for us, or for a downstream
+author writing their own extension, who is covered by no linter of ours.
+
+The `_of_card` spellings that v4.33.1 and v4.34.0 shipped
+(`irreducible_of_rabin_prime_degree_of_card`, `irreducible_of_rabin_degree_six_of_card`,
+`irreducible_X_pow_four_sub_C_of_card` and `..._iff_of_card`) survive as deprecated aliases of
+the names above, with identical statements, so existing callers keep working with a warning.
+
+History: PR #306 introduced parallel `_of_card` wrappers for the two KoalaBear certificates and
+misattributed the cost to reducing `Fintype.card (ZMod p)` itself; #307 corrected the rationale;
+#308 recorded the mechanism above; #369 collapsed the two parallel surfaces into the single form
+documented here.
+
+**The same shape, one level down.** Rewriting *at a hypothesis* whose type carries a large
+exponent — `rw [CharTwo.sub_eq_add] at h` where `h : q ∣ X ^ 2 ^ 128 + X` — has the same problem
+and the same fix: absorb the rewrite into a statement generic in the exponent, as
+`irreducible_dvd_X_pow_add_X_iff_natDegree_dvd` does for the characteristic-two spelling, so the
+concrete caller only ever applies a term. `BF128Ghash` uses it in both directions for exactly
+that reason.
+
+Passing `rfl` to recover the `Fintype.card F` statement is pinned as a regression test in
+`tests/CompPolyTests/Data/Polynomial/{Rabin,RabinCertificate,Frobenius}.lean` and
+`tests/CompPolyTests/Fields/Extension/Binomial.lean`, so a later edit cannot quietly add a
+hypothesis or shift an exponent.
 
 ### Choosing a general modulus
 
@@ -245,10 +301,12 @@ So prefer, in order: a cyclotomic `Φₙ` when one has the right degree; then a 
    `instance : Fact (Nat.card Field = params.q)`. For `ZMod`, rewrite
    `Nat.card_eq_fintype_card` and use `ZMod.card _`. The cardinality certificate is forwarded
    to `params.toExtensionParams`.
-3. Prove irreducibility with `irreducible_X_pow_four_sub_C_of_card`. The two exponentiation
-   goals need the type presented as `ZMod <numeral>`, because `reduce_mod_char` reads the
-   modulus syntactically and `fieldSize` is an expression like `2 ^ 31 - 2 ^ 24 + 1`. Use a
-   `show` — see any of the three `Ext4.lean` files.
+3. Prove irreducibility with `irreducible_X_pow_four_sub_C`, or `irreducible_X_pow_sub_C` at a
+   degree other than `4` (it takes the conditions quantified over `d.primeFactors`), passing
+   `hcard` as `ZMod.card _`. The exponentiation goals need the type presented as
+   `ZMod <numeral>`, because `reduce_mod_char` reads the modulus syntactically and `fieldSize` is
+   an expression like `2 ^ 31 - 2 ^ 24 + 1`. Use a `show` — see any of the three `Ext4.lean`
+   files.
 4. Register `instance : Fact (Irreducible ...)`, define the `abbrev` as
    `Ext ...Params.toExtensionParams`, and route the `Fact` through `toExtensionParams_poly` — see
    `KoalaBear/Ext4.lean`.
@@ -263,13 +321,16 @@ That is about 60 lines.
    `python3 scripts/gen_rabin_certificate.py --p <p> --f=<coeffs> --lean <path> --namespace <NS>`.
 3. Write the irreducibility wrapper: `toPoly p fL = f`, `natDegree`, `f ≠ 0`, then the
    chain/Bézout `rfl` checks and the assembly through
-   `irreducible_of_rabin_prime_degree_of_card` (prime `d`, see
-   `KoalaBear/Ext5/QuinticIrreducible.lean`) or `irreducible_of_rabin_degree_six_of_card`
+   `irreducible_of_rabin_prime_degree` (prime `d`, see
+   `KoalaBear/Ext5/QuinticIrreducible.lean`) or `irreducible_of_rabin_degree_six`
    (composite `d`, see `KoalaBear/Ext6/SexticIrreducible.lean`), passing
-   `hcard : Fintype.card Field = fieldSize := ZMod.card _`. At a composite `d` with no `_of_card`
-   form yet, use `irreducible_of_rabin_two_prime_factors` and cast each condition with
-   `rw [hcard]`. At composite `d` there is one chain plus Bézout block per prime factor, named
-   `cop<m>Steps`/`cop<m>Rp`/… for `m = d / ℓ`.
+   `hcard : Fintype.card Field = fieldSize := ZMod.card _`. At another composite `d`, use
+   `irreducible_of_rabin_prime_power` when `d = ℓ ^ k` — as `BF64.basePoly_irreducible`
+   does at `d = 64` — `irreducible_of_rabin_two_prime_factors` at two distinct prime
+   factors, or `Polynomial.irreducible_of_rabin` beyond that. Each condition then applies
+   directly; if you find yourself writing `rw [hcard]` to make one fit, see "The Field Size
+   Enters As A Numeral". At composite `d` there is one
+   chain plus Bézout block per prime factor, named `cop<m>Steps`/`cop<m>Rp`/… for `m = d / ℓ`.
 4. Write the `ExtensionParams` (lower coefficients of `f`, little-endian) and prove
    `...Params.poly = f`; register the `Fact` and define the `abbrev` — see
    `KoalaBear/Ext5.lean` (supporting cert/proof files under `KoalaBear/Ext5/`).
