@@ -20,6 +20,10 @@ Human contributors should usually start with [`README.md`](README.md),
    `lake exe axiomsweep --check`; refresh `scripts/axiom_baseline.json` with
    `lake exe axiomsweep --update-baseline` and commit the diff if the change is
    intentional. Native-compiler trust is never baselineable.
+7. When making a fast implementation faster, follow the loop in
+   [`docs/wiki/autoresearch.md`](docs/wiki/autoresearch.md): `lake build` is the
+   proof gate, `./scripts/bench-ab.sh run <group>` is the measurement, and only a
+   `faster` verdict without `SUSPECT` is kept.
 
 ## Where To Work
 
@@ -63,6 +67,10 @@ Human contributors should usually start with [`README.md`](README.md),
 - [`docs/wiki/repo-map.md`](docs/wiki/repo-map.md) - subtree map and task routing.
 - [`docs/wiki/generated-files.md`](docs/wiki/generated-files.md) - source-of-truth
   rules for generated or derived outputs.
+- [`docs/wiki/benchmarking.md`](docs/wiki/benchmarking.md) - how the benchmark suite
+  measures, how to read its output, and how to add a group.
+- [`docs/wiki/autoresearch.md`](docs/wiki/autoresearch.md) - the optimisation loop
+  over the fast implementations: proof gate, A/B measurement, verdicts, targets.
 - [`docs/wiki/build-cache.md`](docs/wiki/build-cache.md) - Mathlib's olean cache and
   CompPoly's prebuilt release archive.
 - [`docs/wiki/module-system.md`](docs/wiki/module-system.md) - module headers,
