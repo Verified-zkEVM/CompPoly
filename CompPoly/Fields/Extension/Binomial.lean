@@ -35,8 +35,9 @@ same test costs when the defining polynomial is not a binomial.
 * `Polynomial.irreducible_X_pow_four_sub_C`: the `d = 4` corollary, which discharges
   `Nat.primeFactors` internally. This is the degree used by BabyBear, KoalaBear and Hachi
   extension fields.
-* The `_of_card` forms of both, which take the field size as a numeral `q` together with
-  `Fintype.card F = q`. Concrete extensions use these.
+
+Both take the field size as a numeral `q` together with `Fintype.card F = q`, as everything in
+the Rabin layer does; pass `rfl` if you have no numeral.
 
 ## References
 
@@ -141,7 +142,12 @@ theorem ne_one_of_isCoprime_X_pow_sub_C_X_pow_sub_X {W : F} {d N : ℕ} (hd : 0 
     W ^ ((N - 1) / d) ≠ 1 := fun hW =>
   not_isUnit_X_pow_sub_C W hd (h.isUnit_of_dvd (X_pow_sub_C_dvd_X_pow_sub_X hd hN hdvd hW))
 
-/-! ### The irreducibility criterion -/
+/-! ### The irreducibility criterion
+
+Each statement takes the field size as a numeral `q` with `hcard : Fintype.card F = q`, matching
+`Polynomial.irreducible_of_rabin`; a concrete field supplies `ZMod.card _` and a caller with no
+numeral passes `rfl`. The section comment in `CompPoly/Data/Polynomial/Rabin.lean` says why.
+-/
 
 variable [Fintype F]
 
@@ -158,23 +164,35 @@ Over a finite field with `q` elements, `X^d - W` is irreducible if and only if
 The divisibility side conditions `h_top` and `h_mid` hold in every case of interest — for
 `d = 4` and `q ≡ 1 mod 4`, for instance — and are decidable arithmetic facts about `q` and `d`.
 -/
-theorem irreducible_X_pow_sub_C_iff {d : ℕ} {W : F} (hd : 0 < d) (hW0 : W ≠ 0)
-    (h_top : d ∣ Fintype.card F ^ d - 1)
-    (h_mid : ∀ ℓ ∈ d.primeFactors, d ∣ Fintype.card F ^ (d / ℓ) - 1) :
+theorem irreducible_X_pow_sub_C_iff {d q : ℕ} {W : F} (hcard : Fintype.card F = q)
+    (hd : 0 < d) (hW0 : W ≠ 0)
+    (h_top : d ∣ q ^ d - 1)
+    (h_mid : ∀ ℓ ∈ d.primeFactors, d ∣ q ^ (d / ℓ) - 1) :
     Irreducible ((X : F[X]) ^ d - C W) ↔
-      (W ^ ((Fintype.card F ^ d - 1) / d) = 1 ∧
-        ∀ ℓ ∈ d.primeFactors, W ^ ((Fintype.card F ^ (d / ℓ) - 1) / d) ≠ 1) := by
+      (W ^ ((q ^ d - 1) / d) = 1 ∧
+        ∀ ℓ ∈ d.primeFactors, W ^ ((q ^ (d / ℓ) - 1) / d) ≠ 1) := by
+  subst hcard
   have h_deg : ((X : F[X]) ^ d - C W).natDegree = d := natDegree_X_pow_sub_C
   constructor
   · intro h_irr
-    obtain ⟨h₁, h₂⟩ := rabin_of_irreducible h_deg hd h_irr
+    obtain ⟨h₁, h₂⟩ := rabin_of_irreducible rfl h_deg hd h_irr
     refine ⟨eq_one_of_X_pow_sub_C_dvd_X_pow_sub_X hd hW0 (one_le_card_pow d) h_top h₁,
       fun ℓ hℓ => ?_⟩
     exact ne_one_of_isCoprime_X_pow_sub_C_X_pow_sub_X hd (one_le_card_pow _) (h_mid ℓ hℓ) (h₂ ℓ hℓ)
   · intro ⟨h₁, h₂⟩
-    refine irreducible_of_rabin h_deg hd
+    refine irreducible_of_rabin rfl h_deg hd
       (X_pow_sub_C_dvd_X_pow_sub_X hd (one_le_card_pow d) h_top h₁) (fun ℓ hℓ => ?_)
     exact isCoprime_X_pow_sub_C_X_pow_sub_X hd hW0 (one_le_card_pow _) (h_mid ℓ hℓ) (h₂ ℓ hℓ)
+
+/-- The `mpr` direction of `irreducible_X_pow_sub_C_iff`, as a standalone lemma. -/
+theorem irreducible_X_pow_sub_C {d q : ℕ} {W : F} (hcard : Fintype.card F = q)
+    (hd : 0 < d) (hW0 : W ≠ 0)
+    (h_top : d ∣ q ^ d - 1)
+    (h_mid : ∀ ℓ ∈ d.primeFactors, d ∣ q ^ (d / ℓ) - 1)
+    (rabin_top : W ^ ((q ^ d - 1) / d) = 1)
+    (rabin_mid : ∀ ℓ ∈ d.primeFactors, W ^ ((q ^ (d / ℓ) - 1) / d) ≠ 1) :
+    Irreducible ((X : F[X]) ^ d - C W) :=
+  (irreducible_X_pow_sub_C_iff hcard hd hW0 h_top h_mid).mpr ⟨rabin_top, rabin_mid⟩
 
 /-- The prime factors of `4`. -/
 private theorem primeFactors_four : (4 : ℕ).primeFactors = {2} := by
@@ -193,89 +211,30 @@ so callers never touch `Nat.primeFactors`.
 
 Being an `iff`, a *failed* check proves reducibility rather than merely failing to prove
 irreducibility.
+
+Concrete fields are defined as `ZMod fieldSize` where `fieldSize` is an *expression* such as
+`2 ^ 31 - 2 ^ 24 + 1`, and the hypotheses are stated at the numeral `q`, which is what lets a
+caller discharge them with `norm_num` and `reduce_mod_char`. `reduce_mod_char` still needs to see
+the *type* as `ZMod <numeral>`, so the two exponentiation goals are usually preceded by a `show`;
+see `CompPoly/Fields/KoalaBear/Ext4.lean` for the idiom.
 -/
-theorem irreducible_X_pow_four_sub_C_iff {W : F} (hW0 : W ≠ 0)
-    (h_top : 4 ∣ Fintype.card F ^ 4 - 1)
-    (h_mid : 4 ∣ Fintype.card F ^ 2 - 1) :
+theorem irreducible_X_pow_four_sub_C_iff {q : ℕ} {W : F} (hcard : Fintype.card F = q)
+    (hW0 : W ≠ 0) (h_top : 4 ∣ q ^ 4 - 1) (h_mid : 4 ∣ q ^ 2 - 1) :
     Irreducible ((X : F[X]) ^ 4 - C W) ↔
-      (W ^ ((Fintype.card F ^ 4 - 1) / 4) = 1 ∧
-        W ^ ((Fintype.card F ^ 2 - 1) / 4) ≠ 1) := by
-  have hmid' : ∀ ℓ ∈ (4 : ℕ).primeFactors, 4 ∣ Fintype.card F ^ (4 / ℓ) - 1 := by
+      (W ^ ((q ^ 4 - 1) / 4) = 1 ∧ W ^ ((q ^ 2 - 1) / 4) ≠ 1) := by
+  have hmid' : ∀ ℓ ∈ (4 : ℕ).primeFactors, 4 ∣ q ^ (4 / ℓ) - 1 := by
     simp only [primeFactors_four, Finset.mem_singleton]
     rintro ℓ rfl
     simpa using h_mid
-  rw [irreducible_X_pow_sub_C_iff (by norm_num) hW0 h_top hmid']
+  rw [irreducible_X_pow_sub_C_iff hcard (by norm_num) hW0 h_top hmid']
   simp only [primeFactors_four, Finset.mem_singleton, forall_eq]
 
 /-- The `mpr` direction of `irreducible_X_pow_four_sub_C_iff`, as a standalone lemma. -/
-theorem irreducible_X_pow_four_sub_C {W : F} (hW0 : W ≠ 0)
-    (h_top : 4 ∣ Fintype.card F ^ 4 - 1)
-    (h_mid : 4 ∣ Fintype.card F ^ 2 - 1)
-    (rabin_top : W ^ ((Fintype.card F ^ 4 - 1) / 4) = 1)
-    (rabin_mid : W ^ ((Fintype.card F ^ 2 - 1) / 4) ≠ 1) :
-    Irreducible ((X : F[X]) ^ 4 - C W) :=
-  (irreducible_X_pow_four_sub_C_iff hW0 h_top h_mid).mpr ⟨rabin_top, rabin_mid⟩
-
-/-! ### Explicit-cardinality forms
-
-Concrete extensions supply the field size as a numeral rather than as `Fintype.card F`; see the
-section comment in `CompPoly/Data/Polynomial/Rabin.lean` for why that is the shape to use at a
-concrete field. `subst` moves the bridge into the wrapper, so the caller's conditions are stated
-at the numeral and no `rw [hcard]` transport appears in the concrete proof term.
--/
-
-/-- `irreducible_X_pow_sub_C_iff` with the cardinality abstracted into a numeral `q`. This is the
-general-degree form; `irreducible_X_pow_four_sub_C_iff_of_card` is the `d = 4` case with
-`Nat.primeFactors 4` discharged. Supply `hcard` as `ZMod.card _`. -/
-theorem irreducible_X_pow_sub_C_iff_of_card {d q : ℕ} {W : F}
-    (hcard : Fintype.card F = q) (hd : 0 < d) (hW0 : W ≠ 0)
-    (h_top : d ∣ q ^ d - 1)
-    (h_mid : ∀ ℓ ∈ d.primeFactors, d ∣ q ^ (d / ℓ) - 1) :
-    Irreducible ((X : F[X]) ^ d - C W) ↔
-      (W ^ ((q ^ d - 1) / d) = 1 ∧
-        ∀ ℓ ∈ d.primeFactors, W ^ ((q ^ (d / ℓ) - 1) / d) ≠ 1) := by
-  subst hcard
-  exact irreducible_X_pow_sub_C_iff hd hW0 h_top h_mid
-
-/-- The `mpr` direction of `irreducible_X_pow_sub_C_iff_of_card`, as a standalone lemma: the
-general-degree counterpart of `irreducible_X_pow_four_sub_C_of_card`. -/
-theorem irreducible_X_pow_sub_C_of_card {d q : ℕ} {W : F}
-    (hcard : Fintype.card F = q) (hd : 0 < d) (hW0 : W ≠ 0)
-    (h_top : d ∣ q ^ d - 1)
-    (h_mid : ∀ ℓ ∈ d.primeFactors, d ∣ q ^ (d / ℓ) - 1)
-    (rabin_top : W ^ ((q ^ d - 1) / d) = 1)
-    (rabin_mid : ∀ ℓ ∈ d.primeFactors, W ^ ((q ^ (d / ℓ) - 1) / d) ≠ 1) :
-    Irreducible ((X : F[X]) ^ d - C W) :=
-  (irreducible_X_pow_sub_C_iff_of_card hcard hd hW0 h_top h_mid).mpr ⟨rabin_top, rabin_mid⟩
-
-/--
-`irreducible_X_pow_four_sub_C` with the cardinality abstracted into a numeral `q`.
-
-Concrete fields are defined as `ZMod fieldSize` where `fieldSize` is an *expression* such as
-`2 ^ 31 - 2 ^ 24 + 1`. Stating the hypotheses in terms of a literal `q` lets callers discharge
-them with `norm_num` and `reduce_mod_char`, both of which need the modulus as a numeral.
-Supply `hcard` as `ZMod.card _`.
-
-Note that `reduce_mod_char` still needs to see the *type* as `ZMod <numeral>`, so the two
-exponentiation goals are usually preceded by a `show`; see
-`CompPoly/Fields/KoalaBear/Ext4.lean` for the idiom.
--/
-theorem irreducible_X_pow_four_sub_C_of_card {q : ℕ} {W : F}
-    (hcard : Fintype.card F = q) (hW0 : W ≠ 0)
-    (h_top : 4 ∣ q ^ 4 - 1) (h_mid : 4 ∣ q ^ 2 - 1)
+theorem irreducible_X_pow_four_sub_C {q : ℕ} {W : F} (hcard : Fintype.card F = q)
+    (hW0 : W ≠ 0) (h_top : 4 ∣ q ^ 4 - 1) (h_mid : 4 ∣ q ^ 2 - 1)
     (rabin_top : W ^ ((q ^ 4 - 1) / 4) = 1)
     (rabin_mid : W ^ ((q ^ 2 - 1) / 4) ≠ 1) :
-    Irreducible ((X : F[X]) ^ 4 - C W) := by
-  subst hcard
-  exact irreducible_X_pow_four_sub_C hW0 h_top h_mid rabin_top rabin_mid
-
-/-- `irreducible_X_pow_four_sub_C_iff` with the cardinality abstracted into a numeral `q`. -/
-theorem irreducible_X_pow_four_sub_C_iff_of_card {q : ℕ} {W : F}
-    (hcard : Fintype.card F = q) (hW0 : W ≠ 0)
-    (h_top : 4 ∣ q ^ 4 - 1) (h_mid : 4 ∣ q ^ 2 - 1) :
-    Irreducible ((X : F[X]) ^ 4 - C W) ↔
-      (W ^ ((q ^ 4 - 1) / 4) = 1 ∧ W ^ ((q ^ 2 - 1) / 4) ≠ 1) := by
-  subst hcard
-  exact irreducible_X_pow_four_sub_C_iff hW0 h_top h_mid
+    Irreducible ((X : F[X]) ^ 4 - C W) :=
+  (irreducible_X_pow_four_sub_C_iff hcard hW0 h_top h_mid).mpr ⟨rabin_top, rabin_mid⟩
 
 end Polynomial

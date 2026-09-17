@@ -32,11 +32,11 @@ This file provides the reusable, degree-agnostic *certificate* infrastructure:
   `isCoprime_X_pow_sub_X_of_runChain` (coprimality, from a Bézout certificate on the reduced
   residue).
 * `irreducible_of_rabin_prime_degree` packages Rabin's test for *prime* degree `d`, where the
-  conditions collapse to a single trace and a single coprimality check, and
+  conditions collapse to a single trace and a single coprimality check;
   `irreducible_of_rabin_prime_power` does the same at `d = ℓ ^ k`, where the collapse is still
-  sound. The `_of_card` variants
-  of the packaged forms take the field size as a numeral `q` with `Fintype.card F = q`; that is
-  the shape concrete extensions use, and every packaged form has one.
+  sound; `irreducible_of_rabin_two_prime_factors` and `irreducible_of_rabin_degree_six` cover a
+  degree with two distinct prime factors. All take the field size as a numeral `q` with
+  `Fintype.card F = q`, the shape concrete extensions use.
 
 Certificate data is produced by the untrusted generator `scripts/gen_rabin_certificate.py`;
 the kernel re-checks every step. Contrast `CompPoly/Fields/Binary/BF128Ghash/`, the bespoke
@@ -318,24 +318,31 @@ theorem isCoprime_X_pow_sub_X_of_runChain {p : ℕ} [Fact p.Prime] {fL : List �
 /-! ### Packaging Rabin's test at a concrete degree
 
 `Polynomial.irreducible_of_rabin` already quantifies the coprimality condition over
-`d.primeFactors`. The wrappers below discharge that quantifier for the two shapes of `d` that
+`d.primeFactors`. The wrappers below discharge that quantifier for the shapes of `d` that
 concrete extensions use, so a caller supplies one coprimality proof per prime factor and nothing
-else. Note that `irreducible_of_rabin_prime_degree` does **not** apply at composite `d`, and its
+else. Each takes the field size as a numeral `q` with `hcard : Fintype.card F = q`, exactly as
+`Polynomial.irreducible_of_rabin` does — supply `ZMod.card _` at a concrete field, or `rfl` to
+read the conditions at `Fintype.card F`. The section comment in
+`CompPoly/Data/Polynomial/Rabin.lean` records why that is the only shape these statements have.
+
+Note that `irreducible_of_rabin_prime_degree` does **not** apply at composite `d`, and its
 collapsed condition is not merely inconvenient but unsound there: a product of equal-degree
 factors divides `X^(q^d) - X` and is coprime to `X^q - X`, so it would pass.
+`irreducible_of_rabin_prime_power` is the collapse that *is* sound at `d = ℓ ^ k`.
 -/
 
 /--
-**Rabin's test for prime degree.** For `f` of *prime* degree `d` over a finite field, the
-per-prime-factor conditions collapse to a single coprimality check at exponent `q = |F|`:
+**Rabin's test for prime degree.** For `f` of *prime* degree `d` over a finite field with `q`
+elements, the per-prime-factor conditions collapse to a single coprimality check at exponent `q`:
 `f` is irreducible provided `f ∣ X^(q^d) - X` and `IsCoprime f (X^q - X)`.
 -/
-theorem irreducible_of_rabin_prime_degree {F : Type*} [Field F] [Fintype F] {f : F[X]} {d : ℕ}
+theorem irreducible_of_rabin_prime_degree {F : Type*} [Field F] [Fintype F] {f : F[X]} {d q : ℕ}
+    (hcard : Fintype.card F = q)
     (hd : d.Prime) (h_deg : f.natDegree = d)
-    (h_trace : f ∣ X ^ (Fintype.card F ^ d) - X)
-    (h_cop : IsCoprime f (X ^ Fintype.card F - X)) :
+    (h_trace : f ∣ X ^ (q ^ d) - X)
+    (h_cop : IsCoprime f (X ^ q - X)) :
     Irreducible f := by
-  refine Polynomial.irreducible_of_rabin h_deg hd.pos h_trace fun ℓ hℓ => ?_
+  refine Polynomial.irreducible_of_rabin hcard h_deg hd.pos h_trace fun ℓ hℓ => ?_
   rw [hd.primeFactors, Finset.mem_singleton] at hℓ
   subst hℓ
   rw [Nat.div_self hd.pos, pow_one]
@@ -354,13 +361,14 @@ caller's numeral (`q ^ 64`, not `q ^ 2 ^ 6`); supply `hd_eq` as `by norm_num`. T
 the characteristic-two moduli use — `Aes.modulus` at `d = 8` and `BF64.basePoly` at `d = 64`.
 -/
 theorem irreducible_of_rabin_prime_power {F : Type*} [Field F] [Fintype F] {f : F[X]}
-    {d ℓ k : ℕ} (hℓ : ℓ.Prime) (hk : k ≠ 0) (hd_eq : d = ℓ ^ k)
+    {d ℓ k q : ℕ} (hcard : Fintype.card F = q)
+    (hℓ : ℓ.Prime) (hk : k ≠ 0) (hd_eq : d = ℓ ^ k)
     (h_deg : f.natDegree = d)
-    (h_trace : f ∣ X ^ (Fintype.card F ^ d) - X)
-    (h_cop : IsCoprime f (X ^ (Fintype.card F ^ (d / ℓ)) - X)) :
+    (h_trace : f ∣ X ^ (q ^ d) - X)
+    (h_cop : IsCoprime f (X ^ (q ^ (d / ℓ)) - X)) :
     Irreducible f := by
   have hd_pos : 0 < d := by subst hd_eq; exact pow_pos hℓ.pos k
-  refine Polynomial.irreducible_of_rabin h_deg hd_pos h_trace fun m hm => ?_
+  refine Polynomial.irreducible_of_rabin hcard h_deg hd_pos h_trace fun m hm => ?_
   have hfac : d.primeFactors = {ℓ} := by subst hd_eq; exact Nat.primeFactors_prime_pow hk hℓ
   rw [hfac, Finset.mem_singleton] at hm
   subst hm
@@ -377,13 +385,14 @@ Both checks are needed. Dropping the `q^3` one admits a product of two irreducib
 dropping the `q^2` one admits a product of three irreducible quadratics.
 -/
 theorem irreducible_of_rabin_two_prime_factors {F : Type*} [Field F] [Fintype F] {f : F[X]}
-    {d ℓ₁ ℓ₂ : ℕ} (h_deg : f.natDegree = d) (h_pos : 0 < d)
+    {d ℓ₁ ℓ₂ q : ℕ} (hcard : Fintype.card F = q)
+    (h_deg : f.natDegree = d) (h_pos : 0 < d)
     (h_factors : d.primeFactors = {ℓ₁, ℓ₂})
-    (h_trace : f ∣ X ^ (Fintype.card F ^ d) - X)
-    (h_cop₁ : IsCoprime f (X ^ (Fintype.card F ^ (d / ℓ₁)) - X))
-    (h_cop₂ : IsCoprime f (X ^ (Fintype.card F ^ (d / ℓ₂)) - X)) :
+    (h_trace : f ∣ X ^ (q ^ d) - X)
+    (h_cop₁ : IsCoprime f (X ^ (q ^ (d / ℓ₁)) - X))
+    (h_cop₂ : IsCoprime f (X ^ (q ^ (d / ℓ₂)) - X)) :
     Irreducible f := by
-  refine Polynomial.irreducible_of_rabin h_deg h_pos h_trace fun ℓ hℓ => ?_
+  refine Polynomial.irreducible_of_rabin hcard h_deg h_pos h_trace fun ℓ hℓ => ?_
   rw [h_factors] at hℓ
   rcases Finset.mem_insert.mp hℓ with h | h
   · subst h; exact h_cop₁
@@ -409,91 +418,14 @@ internally, so callers never touch `Nat.primeFactors`.
 The `q^3` check is what rules out a product of two irreducible cubics, and the `q^2` check a
 product of three irreducible quadratics; the trace condition alone permits both.
 -/
-theorem irreducible_of_rabin_degree_six {F : Type*} [Field F] [Fintype F] {f : F[X]}
-    (h_deg : f.natDegree = 6)
-    (h_trace : f ∣ X ^ (Fintype.card F ^ 6) - X)
-    (h_cop₃ : IsCoprime f (X ^ (Fintype.card F ^ 3) - X))
-    (h_cop₂ : IsCoprime f (X ^ (Fintype.card F ^ 2) - X)) :
-    Irreducible f :=
-  irreducible_of_rabin_two_prime_factors h_deg (by norm_num) primeFactors_six h_trace
-    (by simpa using h_cop₃) (by simpa using h_cop₂)
-
-/-! ### Explicit-cardinality forms
-
-The wrappers above state their conditions at `Fintype.card F`. Concrete extensions instead define
-their field as `ZMod fieldSize` and generate certificates already stated in terms of the numeral
-(`chainExp 1 steps = fieldSize ^ d`), so the `_of_card` forms below take the field size as a
-caller-supplied `q` with `hcard : Fintype.card F = q`. Every packaged wrapper above has one, and
-so does each statement in `CompPoly/Data/Polynomial/Rabin.lean`
-(`Polynomial.irreducible_of_rabin_of_card` for a degree with any number of prime factors) and
-`irreducible_X_pow_four_sub_C_of_card` on the binomial side. **Concrete callers should use the
-`_of_card` form**; the section comment in `Rabin.lean` records why a caller-side `rw [hcard]`
-around a certificate is worth avoiding.
--/
-
-/--
-**Rabin's test for prime degree, with the cardinality abstracted into a numeral `q`.**
-
-Identical content to `irreducible_of_rabin_prime_degree`, with the field size supplied as `q` and
-`hcard : Fintype.card F = q` rather than read off as `Fintype.card F`. Each Rabin condition is then
-discharged by applying its certificate directly, avoiding the concrete caller-side `Eq.mpr`
-transports introduced by `rw [hcard]`. Fresh replay checks a serialized and reconstructed expression
-graph, so it need not follow the same normalization path as checking the elaborator's in-memory
-term. In the observed cold replay, checking one such transport's certificate argument entered
-`Polynomial.pow → npowRec → Nat.rec`, unfolding `X ^ (fieldSize ^ 6)` one exponent step at a time
-until Lean's deep-recursion guard fired. Supply `hcard` as `ZMod.card _`.
-
-Nothing is weakened: instantiating at `q := Fintype.card F` with `rfl` recovers
-`irreducible_of_rabin_prime_degree` verbatim, and `CompPolyTests.RabinCertificate` pins that
-instantiation as a regression test.
--/
-theorem irreducible_of_rabin_prime_degree_of_card {F : Type*} [Field F] [Fintype F]
-    {f : F[X]} {d q : ℕ} (hcard : Fintype.card F = q)
-    (hd : d.Prime) (h_deg : f.natDegree = d)
-    (h_trace : f ∣ X ^ (q ^ d) - X)
-    (h_cop : IsCoprime f (X ^ q - X)) :
-    Irreducible f := by
-  subst hcard
-  exact irreducible_of_rabin_prime_degree hd h_deg h_trace h_cop
-
-/-- **Rabin's test at degree 6, with the cardinality abstracted into a numeral `q`.** See
-`irreducible_of_rabin_prime_degree_of_card`; the same reasoning applies at composite degree 6. -/
-theorem irreducible_of_rabin_degree_six_of_card {F : Type*} [Field F] [Fintype F]
-    {f : F[X]} {q : ℕ} (hcard : Fintype.card F = q)
+theorem irreducible_of_rabin_degree_six {F : Type*} [Field F] [Fintype F] {f : F[X]} {q : ℕ}
+    (hcard : Fintype.card F = q)
     (h_deg : f.natDegree = 6)
     (h_trace : f ∣ X ^ (q ^ 6) - X)
     (h_cop₃ : IsCoprime f (X ^ (q ^ 3) - X))
     (h_cop₂ : IsCoprime f (X ^ (q ^ 2) - X)) :
-    Irreducible f := by
-  subst hcard
-  exact irreducible_of_rabin_degree_six h_deg h_trace h_cop₃ h_cop₂
-
-/-- **Rabin's test at a degree with exactly two prime factors, with the cardinality abstracted
-into a numeral `q`.** See `irreducible_of_rabin_prime_degree_of_card`; this is the form to use at
-a composite degree that `irreducible_of_rabin_degree_six_of_card` does not cover, with
-`h_factors` supplied as for `irreducible_of_rabin_two_prime_factors`. -/
-theorem irreducible_of_rabin_two_prime_factors_of_card {F : Type*} [Field F] [Fintype F]
-    {f : F[X]} {d ℓ₁ ℓ₂ q : ℕ} (hcard : Fintype.card F = q)
-    (h_deg : f.natDegree = d) (h_pos : 0 < d)
-    (h_factors : d.primeFactors = {ℓ₁, ℓ₂})
-    (h_trace : f ∣ X ^ (q ^ d) - X)
-    (h_cop₁ : IsCoprime f (X ^ (q ^ (d / ℓ₁)) - X))
-    (h_cop₂ : IsCoprime f (X ^ (q ^ (d / ℓ₂)) - X)) :
-    Irreducible f := by
-  subst hcard
-  exact irreducible_of_rabin_two_prime_factors h_deg h_pos h_factors h_trace h_cop₁ h_cop₂
-
-/-- **Rabin's test at a prime-power degree, with the cardinality abstracted into a numeral `q`.**
-See `irreducible_of_rabin_prime_degree_of_card` for why this is the form to call at a concrete
-field, and `irreducible_of_rabin_prime_power` for the test itself. -/
-theorem irreducible_of_rabin_prime_power_of_card {F : Type*} [Field F] [Fintype F] {f : F[X]}
-    {d ℓ k q : ℕ} (hcard : Fintype.card F = q)
-    (hℓ : ℓ.Prime) (hk : k ≠ 0) (hd_eq : d = ℓ ^ k)
-    (h_deg : f.natDegree = d)
-    (h_trace : f ∣ X ^ (q ^ d) - X)
-    (h_cop : IsCoprime f (X ^ (q ^ (d / ℓ)) - X)) :
-    Irreducible f := by
-  subst hcard
-  exact irreducible_of_rabin_prime_power hℓ hk hd_eq h_deg h_trace h_cop
+    Irreducible f :=
+  irreducible_of_rabin_two_prime_factors hcard h_deg (by norm_num) primeFactors_six h_trace
+    (by simpa using h_cop₃) (by simpa using h_cop₂)
 
 end CompPoly.RabinCert

@@ -78,10 +78,10 @@ lemma irreducible_of_rabin_128_passed_over_GF2 (P : Polynomial (ZMod 2))
   have h_q_dvd_trace : q ∣ ((X : Polynomial (ZMod 2)) ^ (2 ^ 128) + X) :=
     dvd_trans h_q_dvd_P h_trace
   -- 3. In Finite Fields, if irreducible q | (X^(p^n) + X), then deg(q) | n. The `+ X` form of
-  -- `irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd_of_card` absorbs both the char-2 spelling and
+  -- `irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd` absorbs both the char-2 spelling and
   -- the cardinality, so this applies as a term and nothing is rewritten under `X ^ 2 ^ 128`.
   have h_deg_dvd_128 : q.natDegree ∣ 128 :=
-    (Polynomial.irreducible_dvd_X_pow_add_X_iff_natDegree_dvd_of_card (R := ZMod 2)
+    (Polynomial.irreducible_dvd_X_pow_add_X_iff_natDegree_dvd (R := ZMod 2)
       (hcard := ZMod.card 2) (n := 128) (q := q) (hq_irr := h_q_irr)).mp h_q_dvd_trace
   -- 4. Arithmetic Logic: deg(q) ≤ 64 and deg(q) | 128 implies deg(q) | 64.
   have h_deg_dvd_64 : q.natDegree ∣ 64 := by
@@ -110,7 +110,7 @@ lemma irreducible_of_rabin_128_passed_over_GF2 (P : Polynomial (ZMod 2))
   -- 5. Applying the theorem in reverse:
   -- Since deg(q) | 64, q must divide (X^(2^64) + X), in the `+ X` form the hypothesis uses.
   have h_q_dvd_check : q ∣ ((X : Polynomial (ZMod 2)) ^ (2 ^ 64) + X) :=
-    (Polynomial.irreducible_dvd_X_pow_add_X_iff_natDegree_dvd_of_card (R := ZMod 2)
+    (Polynomial.irreducible_dvd_X_pow_add_X_iff_natDegree_dvd (R := ZMod 2)
       (hcard := ZMod.card 2) (n := 64) (q := q) (hq_irr := h_q_irr)).mpr h_deg_dvd_64
   -- 6. Contradiction.
   -- q divides P (from hypothesis) and q divides (X^(2^64) + X), hence their GCD.

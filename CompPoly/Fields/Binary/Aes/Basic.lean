@@ -18,7 +18,7 @@ The degree-eight modulus `X^8 + X^4 + X^3 + X + 1` is irreducible over `GF(2)`.
 Rabin's general criterion uses eight Frobenius squarings and the coprimality condition
 at `X^16 - X`, since two is the sole prime divisor of eight. The existing kernel-checked
 certificate API verifies those conditions; generated data lives in `Aes.Certificate`. The
-criterion is applied as `irreducible_of_rabin_prime_power_of_card`, which handles `d = 2 ^ 3`
+criterion is applied as `irreducible_of_rabin_prime_power`, which handles `d = 2 ^ 3`
 and takes the field size as the numeral `2`, so each certificate discharges its condition
 directly with no cardinality rewrite around it; see `CompPoly/Data/Polynomial/Rabin.lean`.
 
@@ -71,7 +71,7 @@ private theorem toPoly_modulusCoeffs : toPoly 2 modulusCoeffs = modulus := by
 
 /-- The AES defining polynomial is irreducible over `GF(2)`. -/
 theorem modulus_irreducible : Irreducible modulus := by
-  refine irreducible_of_rabin_prime_power_of_card (ZMod.card 2) Nat.prime_two (k := 3) (by decide)
+  refine irreducible_of_rabin_prime_power (ZMod.card 2) Nat.prime_two (k := 3) (by decide)
     (by norm_num) modulus_natDegree ?_ ?_
   · exact dvd_X_pow_sub_X_of_runChain (steps := traceSteps) toPoly_modulusCoeffs modulus_ne_zero
       (by rfl) (by rfl)

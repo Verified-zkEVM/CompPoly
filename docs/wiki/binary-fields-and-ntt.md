@@ -86,7 +86,7 @@ selecting this root are referenced in the module docstring. This field embedding
 establish a protocol's weight-basis or soundness conditions.
 
 The degree-eight irreducibility proof uses the prime-power Rabin criterion
-(`irreducible_of_rabin_prime_power_of_card` at `8 = 2 ^ 3`), checking Frobenius remainders at
+(`irreducible_of_rabin_prime_power` at `8 = 2 ^ 3`), checking Frobenius remainders at
 exponents 256 and 16. Regenerate its certificate with the command recorded in
 [`Aes.Certificate`](../../CompPoly/Fields/Binary/Aes/Certificate.lean).
 
@@ -146,10 +146,10 @@ encoding is observable.
   rather than editing it.
 - [`../../CompPoly/Fields/Binary/BF64/Basic.lean`](../../CompPoly/Fields/Binary/BF64/Basic.lean)
   defines the modulus, proves it irreducible, and gives the quotient model `BF64Quot` with
-  its cardinality. Degree 64 is composite, so `irreducible_of_rabin_prime_power_of_card` is used
+  its cardinality. Degree 64 is composite, so `irreducible_of_rabin_prime_power` is used
   at `64 = 2 ^ 6`, with the field size as the numeral `2` via `ZMod.card 2`; the collapsed
   prime-degree form is unsound here. See [`field-extensions.md`](field-extensions.md) on why the
-  `_of_card` form is the one to call.
+  field size enters as a numeral.
 - [`../../CompPoly/Fields/Binary/BF64/Reduce.lean`](../../CompPoly/Fields/Binary/BF64/Reduce.lean)
   folds a 128-bit carry-less product back into 64 bits using the reduction constant `0x1B`.
 - [`../../CompPoly/Fields/Binary/BF64/Impl.lean`](../../CompPoly/Fields/Binary/BF64/Impl.lean)

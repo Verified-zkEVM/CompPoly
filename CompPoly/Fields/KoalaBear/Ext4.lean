@@ -15,7 +15,7 @@ public import Mathlib.Tactic.ReduceModChar
 `KoalaBear[X] / (X^4 - 3)`, the challenge field used alongside the KoalaBear base field in
 Plonky3-style STARKs.
 
-Irreducibility of `X^4 - 3` is discharged by `Polynomial.irreducible_X_pow_four_sub_C_of_card`,
+Irreducibility of `X^4 - 3` is discharged by `Polynomial.irreducible_X_pow_four_sub_C`,
 whose two hypotheses are single exponentiations in the base field:
 `3^((p^4-1)/4) = 1` and `3^((p^2-1)/4) ≠ 1`. Both are closed by `reduce_mod_char`, which does
 modular repeated squaring at elaboration time — no `native_decide`, and no generated
@@ -61,7 +61,7 @@ instance : Fact (Nat.card Field = ext4Params.q) :=
 /-- `X^4 - 3` is irreducible over KoalaBear, by the collapsed Rabin criterion. -/
 theorem ext4Params_poly_irreducible : Irreducible ext4Params.poly := by
   rw [BinomialParams.poly]
-  refine irreducible_X_pow_four_sub_C_of_card (q := qNum) (ZMod.card _) (by decide)
+  refine irreducible_X_pow_four_sub_C (q := qNum) (ZMod.card _) (by decide)
     (by norm_num) (by norm_num) ?_ ?_
   · show (3 : ZMod qNum) ^ ((qNum ^ 4 - 1) / 4) = 1
     reduce_mod_char
