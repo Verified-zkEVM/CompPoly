@@ -33,6 +33,9 @@ specialization, to arbitrary degree over any finite field.
 * `Polynomial.irreducible_of_rabin`: the two conditions imply irreducibility.
 * `Polynomial.rabin_of_irreducible`: the converse, so the test is exact.
 * `Polynomial.irreducible_iff_rabin`: the resulting characterization.
+* `Polynomial.irreducible_of_rabin_of_card` and friends: the same three statements with the
+  field size supplied as a numeral `q` together with `Fintype.card F = q`. These are the forms
+  concrete fields use; see the section comment below them for why.
 
 ## References
 
@@ -143,5 +146,56 @@ theorem irreducible_iff_rabin {f : F[X]} {d : ℕ}
         ∀ ℓ ∈ d.primeFactors, IsCoprime f (X ^ (Fintype.card F ^ (d / ℓ)) - X)) :=
   ⟨rabin_of_irreducible h_deg h_pos,
     fun ⟨h₁, h₂⟩ => irreducible_of_rabin h_deg h_pos h₁ h₂⟩
+
+/-! ### Explicit-cardinality forms
+
+The statements above read the field size off as `Fintype.card F`. A concrete field is instead
+defined as `ZMod fieldSize` (or has a cardinality lemma naming a numeral), and its Rabin
+certificates are generated in terms of that numeral, so a caller of the plain forms has to cast
+every condition with `rw [hcard]`. The `_of_card` forms below take the size as a caller-supplied
+`q` with `hcard : Fintype.card F = q` and do that substitution once, inside the wrapper, so each
+condition applies directly.
+
+Keeping the concrete side transport-free is deliberate. A `rw [hcard]` at the caller leaves an
+`Eq.mpr` around a certificate argument whose type carries a huge exponent (`X ^ (q ^ d)`), and a
+kernel replay from an empty environment need not follow the same normalization path the
+elaborator took: one such transport has been observed to send the kernel into
+`Polynomial.pow → npowRec → Nat.rec`, unfolding the power one exponent step at a time. See
+`CompPoly/Data/Polynomial/RabinCertificate.lean` for the packaged-degree `_of_card` wrappers and
+`docs/wiki/field-extensions.md` for the recipe concrete extensions follow.
+
+Nothing is weakened: instantiating at `q := Fintype.card F` with `rfl` recovers each plain form
+verbatim, pinned in `tests/CompPolyTests/Data/Polynomial/Rabin.lean`.
+-/
+
+/-- **Rabin's irreducibility test (soundness), with the cardinality abstracted into a numeral
+`q`.** Identical content to `irreducible_of_rabin`, with the field size supplied as `q` and
+`hcard : Fintype.card F = q`. Supply `hcard` as `ZMod.card _`. -/
+theorem irreducible_of_rabin_of_card {f : F[X]} {d q : ℕ} (hcard : Fintype.card F = q)
+    (h_deg : f.natDegree = d) (h_pos : 0 < d)
+    (h_trace : f ∣ X ^ (q ^ d) - X)
+    (h_coprime : ∀ ℓ ∈ d.primeFactors, IsCoprime f (X ^ (q ^ (d / ℓ)) - X)) :
+    Irreducible f := by
+  subst hcard
+  exact irreducible_of_rabin h_deg h_pos h_trace h_coprime
+
+/-- **Rabin's irreducibility test (completeness), with the cardinality abstracted into a numeral
+`q`.** See `irreducible_of_rabin_of_card`. -/
+theorem rabin_of_irreducible_of_card {f : F[X]} {d q : ℕ} (hcard : Fintype.card F = q)
+    (h_deg : f.natDegree = d) (h_pos : 0 < d) (h_irr : Irreducible f) :
+    f ∣ X ^ (q ^ d) - X ∧
+      ∀ ℓ ∈ d.primeFactors, IsCoprime f (X ^ (q ^ (d / ℓ)) - X) := by
+  subst hcard
+  exact rabin_of_irreducible h_deg h_pos h_irr
+
+/-- **Rabin's irreducibility test, with the cardinality abstracted into a numeral `q`.** See
+`irreducible_of_rabin_of_card`. -/
+theorem irreducible_iff_rabin_of_card {f : F[X]} {d q : ℕ} (hcard : Fintype.card F = q)
+    (h_deg : f.natDegree = d) (h_pos : 0 < d) :
+    Irreducible f ↔
+      (f ∣ X ^ (q ^ d) - X ∧
+        ∀ ℓ ∈ d.primeFactors, IsCoprime f (X ^ (q ^ (d / ℓ)) - X)) := by
+  subst hcard
+  exact irreducible_iff_rabin h_deg h_pos
 
 end Polynomial

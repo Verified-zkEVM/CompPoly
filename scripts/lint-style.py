@@ -57,6 +57,7 @@ ERR_NUM_LIN = 19 # file is too large
 ERR_NSP = 20 # non-terminal simp
 ERR_ADN = 25 # the string "Adaptation note"
 ERR_NDEC = 26 # forbidden native_decide / Lean.ofReduceBool
+ERR_PCARD = 27 # concrete field applies a `Fintype.card F` criterion instead of its `_of_card` form
 
 exceptions = []
 
@@ -88,6 +89,8 @@ with SCRIPTS_DIR.joinpath("style-exceptions.txt").open(encoding="utf-8") as f:
             exceptions += [(ERR_NUM_LIN, path, extra[1])]
         elif errno == "ERR_NDEC":
             exceptions += [(ERR_NDEC, path, None)]
+        elif errno == "ERR_PCARD":
+            exceptions += [(ERR_PCARD, path, None)]
         else:
             print(f"Error: unexpected errno in style-exceptions.txt: {errno}")
             sys.exit(1)
@@ -342,6 +345,57 @@ def forbidden_tcb_check(lines, path):
             errors += [(ERR_NDEC, line_nr, path)]
     return errors, lines
 
+# Irreducibility criteria stated at `Fintype.card F`. Every one of them has an `_of_card` form
+# taking the field size as a numeral together with `Fintype.card F = q`, and a *concrete* field
+# must call that form: applying the plain one means casting each condition with `rw [hcard]`,
+# which leaves an `Eq.mpr` transport around a certificate whose type carries a huge exponent.
+# See `docs/wiki/field-extensions.md`, section "Explicit-Cardinality (`_of_card`) Forms".
+PLAIN_CARD_CRITERIA = [
+    "irreducible_of_rabin",
+    "rabin_of_irreducible",
+    "irreducible_iff_rabin",
+    "irreducible_of_rabin_prime_degree",
+    "irreducible_of_rabin_prime_power",
+    "irreducible_of_rabin_two_prime_factors",
+    "irreducible_of_rabin_degree_six",
+    "irreducible_X_pow_sub_C",
+    "irreducible_X_pow_sub_C_iff",
+    "irreducible_X_pow_four_sub_C",
+    "irreducible_X_pow_four_sub_C_iff",
+    "irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd",
+]
+
+# `(?![\w'])` is what keeps a plain name from matching its own `_of_card` form.
+PLAIN_CARD_PATTERN = re.compile(r"\b(" + "|".join(PLAIN_CARD_CRITERIA) + r")(?![\w'])")
+
+# The subtrees the ban applies to: concrete fields and their extensions, plus their tests,
+# which are the worked examples a new extension is copied from. `tests/CompPolyTests/Data/`
+# is deliberately out of scope: those files name the plain forms on purpose, to pin that each
+# `_of_card` form recovers its plain statement. If concrete fields ever live outside these
+# subtrees, this scope moves too — not just `PLAIN_CARD_CRITERIA`.
+PLAIN_CARD_SCOPE = ("CompPoly/Fields/", "tests/CompPolyTests/Fields/")
+
+# Files inside that subtree that *state* these criteria rather than applying them at a
+# concrete field, and so may name the plain forms.
+PLAIN_CARD_OWNERS = ["CompPoly/Fields/Extension/Binomial.lean"]
+
+def plain_card_criterion_check(lines, path):
+    """
+    Flag a concrete field that applies an irreducibility criterion stated at `Fintype.card F`
+    instead of the criterion's `_of_card` form. Comments and strings are exempt, so docstrings
+    may still discuss the plain names.
+    """
+    errors = []
+    posix = path.as_posix()
+    if not posix.startswith(PLAIN_CARD_SCOPE) or posix in PLAIN_CARD_OWNERS:
+        return errors, lines
+    for line_nr, line, is_comment, in_string in annotate_strings(annotate_comments(lines)):
+        if is_comment or in_string:
+            continue
+        if PLAIN_CARD_PATTERN.search(line):
+            errors += [(ERR_PCARD, line_nr, path)]
+    return errors, lines
+
 def isolated_by_dot_semicolon_check(lines, path):
     errors = []
     newlines = []
@@ -452,6 +506,8 @@ def format_errors(errors):
             output_message(path, line_nr, "ERR_ADN", 'Found the string "Adaptation note:", please use the #adaptation_note command instead')
         if errno == ERR_NDEC:
             output_message(path, line_nr, "ERR_NDEC", "Forbidden TCB-bypassing construct (`native_decide` or `Lean.ofReduceBool`) found")
+        if errno == ERR_PCARD:
+            output_message(path, line_nr, "ERR_PCARD", "Applies an irreducibility criterion stated at `Fintype.card F`; a concrete field must use that criterion's `_of_card` form instead (see docs/wiki/field-extensions.md)")
 
 def lint(path, fix=False):
     global new_exceptions
@@ -493,6 +549,9 @@ def lint(path, fix=False):
             errs, newlines = banned_import_check(newlines, path)
             format_errors(errs)
             errs, newlines = forbidden_tcb_check(newlines, path)
+            format_errors(errs)
+            # Runs on a fresh enumeration: the checks above have consumed `newlines`.
+            errs, _ = plain_card_criterion_check(enumerate(lines, 1), path)
             format_errors(errs)
     # if we haven't been asked to fix errors, or there are no errors or no fixes, we're done
     if fix and new_exceptions and enum_lines != newlines:

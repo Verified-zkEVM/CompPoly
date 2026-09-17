@@ -54,6 +54,17 @@ The underlying Python linter for Lean style issues. It checks module docstrings,
 line length, forbidden imports or tactics, trailing whitespace, and the local
 `native_decide` policy, while honoring entries in `style-exceptions.txt`.
 
+It also enforces one library-specific rule, `ERR_PCARD`: a file under `CompPoly/Fields/`
+or `tests/CompPolyTests/Fields/` may not name an irreducibility criterion stated at
+`Fintype.card F` outside a comment, because a concrete field must call that criterion's
+`_of_card` form. The banned names are listed in `PLAIN_CARD_CRITERIA`; extend that list
+whenever a criterion gains an `_of_card` form. Two neighbouring knobs move less often but
+matter as much: `PLAIN_CARD_SCOPE` is the subtree list, which has to grow if concrete fields
+ever live outside those two paths, and `PLAIN_CARD_OWNERS` exempts the files that *state*
+the criteria rather than applying them. `tests/CompPolyTests/Data/` stays out of scope
+because those tests name the plain forms deliberately, to pin that each `_of_card` form
+recovers its plain statement. See `docs/wiki/field-extensions.md` for the rationale.
+
 Use this directly only when you want to lint a specific subset of files.
 
 ### `gen_rabin_certificate.py`

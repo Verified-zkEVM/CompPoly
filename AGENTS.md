@@ -101,6 +101,14 @@ trusting the compiler.
   pattern in `CompPoly/Fields/Binary/BF128Ghash/Prelude.lean`.
 - If `decide` is too slow, restructure the proposition, for example by batching
   checks into a single conjunction, rather than reaching for `native_decide`.
+- Keep concrete certificate proofs free of rewrite transports. When a generic lemma
+  reads a field size as `Fintype.card F` and the concrete caller has a numeral, use
+  the lemma's `_of_card` form (adding one if it is missing) instead of casting each
+  condition with `rw [hcard]`: a transport around a certificate whose type carries a
+  huge exponent can send a from-empty kernel replay into step-by-step `npowRec`
+  unfolding. `./scripts/lint-style.sh` enforces this as `ERR_PCARD` for files under
+  `CompPoly/Fields/`. See
+  [`docs/wiki/field-extensions.md`](docs/wiki/field-extensions.md).
 
 ## Performance Guidelines
 

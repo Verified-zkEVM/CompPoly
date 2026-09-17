@@ -17,7 +17,10 @@ import Mathlib.Tactic.ComputeDegree
 The degree-eight modulus `X^8 + X^4 + X^3 + X + 1` is irreducible over `GF(2)`.
 Rabin's general criterion uses eight Frobenius squarings and the coprimality condition
 at `X^16 - X`, since two is the sole prime divisor of eight. The existing kernel-checked
-certificate API verifies those conditions; generated data lives in `Aes.Certificate`.
+certificate API verifies those conditions; generated data lives in `Aes.Certificate`. The
+criterion is applied as `irreducible_of_rabin_prime_power_of_card`, which handles `d = 2 ^ 3`
+and takes the field size as the numeral `2`, so each certificate discharges its condition
+directly with no cardinality rewrite around it; see `CompPoly/Data/Polynomial/Rabin.lean`.
 
 The monic-extension framework supplies executable field operations and the quotient bridge
 for the nominal `AesField` carrier. Its byte coordinates and raw arithmetic can be imported
@@ -66,20 +69,13 @@ private theorem toPoly_modulusCoeffs : toPoly 2 modulusCoeffs = modulus := by
     map_zero, map_one, modulus]
   ring
 
-private theorem primeFactors_eight : (8 : ℕ).primeFactors = {2} := by
-  rw [show (8 : ℕ) = 2 ^ 3 from rfl, Nat.primeFactors_prime_pow (by decide) Nat.prime_two]
-
 /-- The AES defining polynomial is irreducible over `GF(2)`. -/
 theorem modulus_irreducible : Irreducible modulus := by
-  refine Polynomial.irreducible_of_rabin (d := 8) modulus_natDegree (by decide) ?_ ?_
-  · rw [ZMod.card]
-    exact dvd_X_pow_sub_X_of_runChain (steps := traceSteps) toPoly_modulusCoeffs modulus_ne_zero
+  refine irreducible_of_rabin_prime_power_of_card (ZMod.card 2) Nat.prime_two (k := 3) (by decide)
+    (by norm_num) modulus_natDegree ?_ ?_
+  · exact dvd_X_pow_sub_X_of_runChain (steps := traceSteps) toPoly_modulusCoeffs modulus_ne_zero
       (by rfl) (by rfl)
-  · intro ℓ hℓ
-    rw [primeFactors_eight, Finset.mem_singleton] at hℓ
-    subst ℓ
-    rw [ZMod.card]
-    exact isCoprime_X_pow_sub_X_of_runChain (steps := cop4Steps) (rp := cop4Rp)
+  · exact isCoprime_X_pow_sub_X_of_runChain (steps := cop4Steps) (rp := cop4Rp)
       (w := cop4W) (u := cop4U) (v := cop4V) toPoly_modulusCoeffs modulus_ne_zero
       (by rfl) (by rfl) (by rfl) (by rfl)
 

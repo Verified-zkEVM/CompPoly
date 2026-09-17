@@ -32,9 +32,11 @@ This file provides the reusable, degree-agnostic *certificate* infrastructure:
   `isCoprime_X_pow_sub_X_of_runChain` (coprimality, from a Bézout certificate on the reduced
   residue).
 * `irreducible_of_rabin_prime_degree` packages Rabin's test for *prime* degree `d`, where the
-  conditions collapse to a single trace and a single coprimality check. The `_of_card` variants
+  conditions collapse to a single trace and a single coprimality check, and
+  `irreducible_of_rabin_prime_power` does the same at `d = ℓ ^ k`, where the collapse is still
+  sound. The `_of_card` variants
   of the packaged forms take the field size as a numeral `q` with `Fintype.card F = q`; that is
-  the shape concrete extensions use.
+  the shape concrete extensions use, and every packaged form has one.
 
 Certificate data is produced by the untrusted generator `scripts/gen_rabin_certificate.py`;
 the kernel re-checks every step. Contrast `CompPoly/Fields/Binary/BF128Ghash/`, the bespoke
@@ -340,6 +342,31 @@ theorem irreducible_of_rabin_prime_degree {F : Type*} [Field F] [Fintype F] {f :
   exact h_cop
 
 /--
+**Rabin's test for a prime-power degree**, such as `d = 8`, `64` or `128`.
+
+`d = ℓ ^ k` has the single prime factor `ℓ`, so — exactly as at prime degree — the caller supplies
+the trace condition plus one coprimality certificate, here at exponent `q ^ (d / ℓ)`. Unlike
+`irreducible_of_rabin_prime_degree` this is *sound* at composite `d`: the check at `d / ℓ` rules
+out every proper divisor of `d`, because every proper divisor of `ℓ ^ k` divides `ℓ ^ (k - 1)`.
+
+`d` is kept separate from `ℓ ^ k` and tied to it by `hd_eq` so that the conditions read at the
+caller's numeral (`q ^ 64`, not `q ^ 2 ^ 6`); supply `hd_eq` as `by norm_num`. This is the shape
+the characteristic-two moduli use — `Aes.modulus` at `d = 8` and `BF64.basePoly` at `d = 64`.
+-/
+theorem irreducible_of_rabin_prime_power {F : Type*} [Field F] [Fintype F] {f : F[X]}
+    {d ℓ k : ℕ} (hℓ : ℓ.Prime) (hk : k ≠ 0) (hd_eq : d = ℓ ^ k)
+    (h_deg : f.natDegree = d)
+    (h_trace : f ∣ X ^ (Fintype.card F ^ d) - X)
+    (h_cop : IsCoprime f (X ^ (Fintype.card F ^ (d / ℓ)) - X)) :
+    Irreducible f := by
+  have hd_pos : 0 < d := by subst hd_eq; exact pow_pos hℓ.pos k
+  refine Polynomial.irreducible_of_rabin h_deg hd_pos h_trace fun m hm => ?_
+  have hfac : d.primeFactors = {ℓ} := by subst hd_eq; exact Nat.primeFactors_prime_pow hk hℓ
+  rw [hfac, Finset.mem_singleton] at hm
+  subst hm
+  exact h_cop
+
+/--
 **Rabin's test for a degree with exactly two prime factors**, such as `d = 6`.
 
 The caller supplies the trace condition plus one coprimality certificate per prime factor, at
@@ -396,8 +423,12 @@ theorem irreducible_of_rabin_degree_six {F : Type*} [Field F] [Fintype F] {f : F
 The wrappers above state their conditions at `Fintype.card F`. Concrete extensions instead define
 their field as `ZMod fieldSize` and generate certificates already stated in terms of the numeral
 (`chainExp 1 steps = fieldSize ^ d`), so the `_of_card` forms below take the field size as a
-caller-supplied `q` with `hcard : Fintype.card F = q`. Same shape as
-`irreducible_X_pow_four_sub_C_of_card` in `CompPoly/Fields/Extension/Binomial.lean`.
+caller-supplied `q` with `hcard : Fintype.card F = q`. Every packaged wrapper above has one, and
+so does each statement in `CompPoly/Data/Polynomial/Rabin.lean`
+(`Polynomial.irreducible_of_rabin_of_card` for a degree with any number of prime factors) and
+`irreducible_X_pow_four_sub_C_of_card` on the binomial side. **Concrete callers should use the
+`_of_card` form**; the section comment in `Rabin.lean` records why a caller-side `rw [hcard]`
+around a certificate is worth avoiding.
 -/
 
 /--
@@ -436,5 +467,33 @@ theorem irreducible_of_rabin_degree_six_of_card {F : Type*} [Field F] [Fintype F
     Irreducible f := by
   subst hcard
   exact irreducible_of_rabin_degree_six h_deg h_trace h_cop₃ h_cop₂
+
+/-- **Rabin's test at a degree with exactly two prime factors, with the cardinality abstracted
+into a numeral `q`.** See `irreducible_of_rabin_prime_degree_of_card`; this is the form to use at
+a composite degree that `irreducible_of_rabin_degree_six_of_card` does not cover, with
+`h_factors` supplied as for `irreducible_of_rabin_two_prime_factors`. -/
+theorem irreducible_of_rabin_two_prime_factors_of_card {F : Type*} [Field F] [Fintype F]
+    {f : F[X]} {d ℓ₁ ℓ₂ q : ℕ} (hcard : Fintype.card F = q)
+    (h_deg : f.natDegree = d) (h_pos : 0 < d)
+    (h_factors : d.primeFactors = {ℓ₁, ℓ₂})
+    (h_trace : f ∣ X ^ (q ^ d) - X)
+    (h_cop₁ : IsCoprime f (X ^ (q ^ (d / ℓ₁)) - X))
+    (h_cop₂ : IsCoprime f (X ^ (q ^ (d / ℓ₂)) - X)) :
+    Irreducible f := by
+  subst hcard
+  exact irreducible_of_rabin_two_prime_factors h_deg h_pos h_factors h_trace h_cop₁ h_cop₂
+
+/-- **Rabin's test at a prime-power degree, with the cardinality abstracted into a numeral `q`.**
+See `irreducible_of_rabin_prime_degree_of_card` for why this is the form to call at a concrete
+field, and `irreducible_of_rabin_prime_power` for the test itself. -/
+theorem irreducible_of_rabin_prime_power_of_card {F : Type*} [Field F] [Fintype F] {f : F[X]}
+    {d ℓ k q : ℕ} (hcard : Fintype.card F = q)
+    (hℓ : ℓ.Prime) (hk : k ≠ 0) (hd_eq : d = ℓ ^ k)
+    (h_deg : f.natDegree = d)
+    (h_trace : f ∣ X ^ (q ^ d) - X)
+    (h_cop : IsCoprime f (X ^ (q ^ (d / ℓ)) - X)) :
+    Irreducible f := by
+  subst hcard
+  exact irreducible_of_rabin_prime_power hℓ hk hd_eq h_deg h_trace h_cop
 
 end CompPoly.RabinCert

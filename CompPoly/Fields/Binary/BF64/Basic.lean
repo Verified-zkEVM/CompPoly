@@ -113,33 +113,26 @@ theorem basePoly_ne_zero : basePoly ≠ 0 := by
   rw [h, natDegree_zero] at hd
   exact absurd hd (by norm_num)
 
-/-- The prime factors of `64`. `decide` cannot do this: `Nat.primeFactorsList` is
-well-founded recursive and does not reduce in the kernel. -/
-private theorem primeFactors_sixtyFour : (64 : ℕ).primeFactors = {2} := by
-  rw [show (64 : ℕ) = 2 ^ 6 from by norm_num,
-    Nat.primeFactors_prime_pow (by norm_num) Nat.prime_two]
-
 /--
 `x^64 + x^4 + x^3 + x + 1` is irreducible over `GF(2)`, by Rabin's test against the
 kernel-checked chains in `BF64.BaseCert`.
 
-Degree `64` has the single prime factor `2`, so the trace condition is joined by one
+Degree `64 = 2 ^ 6` has the single prime factor `2`, so the trace condition is joined by one
 coprimality check, at exponent `2^32`. Note that the collapsed
 `irreducible_of_rabin_prime_degree` is *unsound* at this degree — it would accept a
-product of equal-degree factors — so the general `Polynomial.irreducible_of_rabin` is
-used, with `primeFactors_sixtyFour` supplying the prime factors of `64`.
+product of equal-degree factors — so `irreducible_of_rabin_prime_power_of_card` is used, which
+is the prime-power collapse and is sound here.
+
+The `_of_card` form takes the field size as the numeral `2` with `ZMod.card 2`, so each
+certificate discharges its condition directly; see the section comment in
+`CompPoly/Data/Polynomial/Rabin.lean`.
 -/
 theorem basePoly_irreducible : Irreducible basePoly := by
-  refine Polynomial.irreducible_of_rabin (d := 64) ?_ (by norm_num) ?_ ?_
-  · exact basePoly_natDegree
-  · rw [ZMod.card]
-    exact dvd_X_pow_sub_X_of_runChain (steps := traceSteps) toPoly_baseCoeffs basePoly_ne_zero
+  refine irreducible_of_rabin_prime_power_of_card (ZMod.card 2) Nat.prime_two (k := 6)
+    (by norm_num) (by norm_num) basePoly_natDegree ?_ ?_
+  · exact dvd_X_pow_sub_X_of_runChain (steps := traceSteps) toPoly_baseCoeffs basePoly_ne_zero
       (by rfl) (by rfl)
-  · intro ℓ hℓ
-    rw [primeFactors_sixtyFour, Finset.mem_singleton] at hℓ
-    subst hℓ
-    rw [ZMod.card]
-    exact isCoprime_X_pow_sub_X_of_runChain (steps := cop32Steps) (rp := cop32Rp)
+  · exact isCoprime_X_pow_sub_X_of_runChain (steps := cop32Steps) (rp := cop32Rp)
       (w := cop32W) (u := cop32U) (v := cop32V) toPoly_baseCoeffs basePoly_ne_zero
       (by rfl) (by rfl) (by rfl) (by rfl)
 

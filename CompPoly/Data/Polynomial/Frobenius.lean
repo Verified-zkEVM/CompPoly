@@ -41,6 +41,10 @@ identities, and divisibility conditions for irreducible polynomials.
      then `deg(p) ∣ n`
    - `irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd`: Fundamental theorem:
      `p ∣ X^(q^n) - X ↔ deg(p) ∣ n`
+   - `irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd_of_card`: the same theorem with the field
+     size supplied as a numeral together with `Fintype.card R = c`; the form concrete fields use
+   - `irreducible_dvd_X_pow_add_X_iff_natDegree_dvd_of_card`: its characteristic-two form, stated
+     with `+ X` as the binary fields write it
 
 ## TODOs
 - potentially generalize the Frobenius theorems to generic algebras?
@@ -513,6 +517,42 @@ lemma irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd {R : Type*} [Field R]
     have h_base := irreducible_dvd_X_pow_card_pow_sub_X q hq_irr
     apply dvd_trans h_base
     apply X_pow_card_pow_dvd_X_pow_card_pow_of_dvd q.natDegree n h_deg_dvd
+
+
+/--
+`irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd` with the cardinality abstracted into a numeral
+`c`, so a concrete field states the divisibility at its own field-size literal.
+
+A caller over `ZMod 2` would otherwise bridge the two spellings with `rw [ZMod.card]`, leaving an
+`Eq.mpr` transport around a divisibility whose type carries a large exponent such as `X ^ 2 ^ 128`;
+the section comment in `CompPoly/Data/Polynomial/Rabin.lean` records why that is worth avoiding.
+Supply `hcard` as `ZMod.card _`.
+-/
+lemma irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd_of_card {R : Type*} [Field R]
+    [Fact (Nat.Prime (ringChar R))]
+    [Fintype R] {c : ℕ} (hcard : Fintype.card R = c) (n : ℕ) (q : Polynomial R)
+    (hq_irr : Irreducible q) :
+    q ∣ (X ^ (c ^ n) - X) ↔ q.natDegree ∣ n := by
+  subst hcard
+  exact irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd n q hq_irr
+
+/--
+The characteristic-two form of `irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd_of_card`, stated
+with `+ X` as a binary field writes it: `q ∣ X^(c^n) + X ↔ deg q ∣ n`.
+
+Over `GF(2)` the two spellings are the same polynomial, but only one of them is *syntactically*
+what a caller has. Absorbing `CharTwo.sub_eq_add` here — once, at a generic statement — means the
+concrete caller applies this as a term instead of rewriting a hypothesis whose type carries a
+large exponent such as `X ^ 2 ^ 128`; see the section comment in
+`CompPoly/Data/Polynomial/Rabin.lean`.
+-/
+lemma irreducible_dvd_X_pow_add_X_iff_natDegree_dvd_of_card {R : Type*} [Field R]
+    [Fact (Nat.Prime (ringChar R))]
+    [Fintype R] [CharP R 2] {c : ℕ} (hcard : Fintype.card R = c) (n : ℕ) (q : Polynomial R)
+    (hq_irr : Irreducible q) :
+    q ∣ (X ^ (c ^ n) + X) ↔ q.natDegree ∣ n := by
+  rw [← CharTwo.sub_eq_add]
+  exact irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd_of_card hcard n q hq_irr
 
 end FrobeniusPolynomialDivisibility
 end Polynomial
