@@ -229,6 +229,9 @@ theorem irreducible_X_pow_four_sub_C_iff {q : ℕ} {W : F} (hcard : Fintype.card
   rw [irreducible_X_pow_sub_C_iff hcard (by norm_num) hW0 h_top hmid']
   simp only [primeFactors_four, Finset.mem_singleton, forall_eq]
 
+@[deprecated (since := "2026-09-18")]
+alias irreducible_X_pow_four_sub_C_iff_of_card := irreducible_X_pow_four_sub_C_iff
+
 /-- The `mpr` direction of `irreducible_X_pow_four_sub_C_iff`, as a standalone lemma. -/
 theorem irreducible_X_pow_four_sub_C {q : ℕ} {W : F} (hcard : Fintype.card F = q)
     (hW0 : W ≠ 0) (h_top : 4 ∣ q ^ 4 - 1) (h_mid : 4 ∣ q ^ 2 - 1)
@@ -236,5 +239,8 @@ theorem irreducible_X_pow_four_sub_C {q : ℕ} {W : F} (hcard : Fintype.card F =
     (rabin_mid : W ^ ((q ^ 2 - 1) / 4) ≠ 1) :
     Irreducible ((X : F[X]) ^ 4 - C W) :=
   (irreducible_X_pow_four_sub_C_iff hcard hW0 h_top h_mid).mpr ⟨rabin_top, rabin_mid⟩
+
+@[deprecated (since := "2026-09-18")]
+alias irreducible_X_pow_four_sub_C_of_card := irreducible_X_pow_four_sub_C
 
 end Polynomial

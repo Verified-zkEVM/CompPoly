@@ -243,6 +243,11 @@ exponent step at a time until the deep-recursion guard fired. With a single
 numeral-parameterized form, that cast has no occasion to appear — for us, or for a downstream
 author writing their own extension, who is covered by no linter of ours.
 
+The `_of_card` spellings that v4.33.1 and v4.34.0 shipped
+(`irreducible_of_rabin_prime_degree_of_card`, `irreducible_of_rabin_degree_six_of_card`,
+`irreducible_X_pow_four_sub_C_of_card` and `..._iff_of_card`) survive as deprecated aliases of
+the names above, with identical statements, so existing callers keep working with a warning.
+
 History: PR #306 introduced parallel `_of_card` wrappers for the two KoalaBear certificates and
 misattributed the cost to reducing `Fintype.card (ZMod p)` itself; #307 corrected the rationale;
 #308 recorded the mechanism above; #369 collapsed the two parallel surfaces into the single form

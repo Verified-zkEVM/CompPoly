@@ -87,7 +87,9 @@ CompPoly aims to be the premier formally verified library for computable polynom
          - Rebase the GHASH Rabin specialization
            (`irreducible_of_rabin_128_passed_over_GF2`) onto the general
            `Polynomial.irreducible_of_rabin` so the two soundness proofs do not need
-           parallel maintenance
+           parallel maintenance — the Frobenius divisibility step is already shared
+           (`irreducible_dvd_X_pow_add_X_iff_natDegree_dvd`); the factor-degree argument is
+           what is still duplicated
          - 64-bit-radix Montgomery layer, so `Hachi` gets a `FastField` base
    - ✅ Polynomial-basis `GF(2^64)` and its degree-3 extension `GF(2^192)` (`Fields/Binary/BF64/`), a flat quotient by an irreducible degree-64 pentanomial rather than an iterated quadratic tower
    - ✅ Implement a specialized Bivariate polynomial type, e.g. as `CPolynomial (CPolynomial R)` with specialized polynomial operations (that can then be optimized)

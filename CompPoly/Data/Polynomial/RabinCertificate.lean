@@ -348,6 +348,9 @@ theorem irreducible_of_rabin_prime_degree {F : Type*} [Field F] [Fintype F] {f :
   rw [Nat.div_self hd.pos, pow_one]
   exact h_cop
 
+@[deprecated (since := "2026-09-18")]
+alias irreducible_of_rabin_prime_degree_of_card := irreducible_of_rabin_prime_degree
+
 /--
 **Rabin's test for a prime-power degree**, such as `d = 8`, `64` or `128`.
 
@@ -427,5 +430,8 @@ theorem irreducible_of_rabin_degree_six {F : Type*} [Field F] [Fintype F] {f : F
     Irreducible f :=
   irreducible_of_rabin_two_prime_factors hcard h_deg (by norm_num) primeFactors_six h_trace
     (by simpa using h_cop₃) (by simpa using h_cop₂)
+
+@[deprecated (since := "2026-09-18")]
+alias irreducible_of_rabin_degree_six_of_card := irreducible_of_rabin_degree_six
 
 end CompPoly.RabinCert
