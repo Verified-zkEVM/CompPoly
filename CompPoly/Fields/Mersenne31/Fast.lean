@@ -313,10 +313,10 @@ private theorem reduceUInt32Lt2ModulusRaw_lt (x : UInt32)
     (reduceUInt32Lt2ModulusRaw x).toNat < Mersenne31.fieldSize := by
   unfold reduceUInt32Lt2ModulusRaw
   by_cases hx : x < modulus
-  · rw [if_pos hx]
+  · rw [ite_eq_left hx]
     rw [UInt32.lt_iff_toNat_lt, modulus_toNat] at hx
     exact hx
-  · rw [if_neg hx]
+  · rw [ite_eq_right hx]
     have hmod_le_x : modulus ≤ x := by
       rw [UInt32.le_iff_toNat_le, modulus_toNat]
       rw [UInt32.lt_iff_toNat_lt, modulus_toNat] at hx
@@ -343,8 +343,8 @@ private theorem reduceUInt32Lt2Modulus_cast (x : UInt32)
     (x.toNat : Mersenne31.Field)
   unfold reduceUInt32Lt2ModulusRaw
   by_cases hx : x < modulus
-  · rw [if_pos hx]
-  · rw [if_neg hx]
+  · rw [ite_eq_left hx]
+  · rw [ite_eq_right hx]
     have hmod_le_x : modulus ≤ x := by
       rw [UInt32.le_iff_toNat_le, modulus_toNat]
       rw [UInt32.lt_iff_toNat_lt, modulus_toNat] at hx
@@ -436,12 +436,12 @@ theorem toField_sub (x y : Field) : toField (x - y) = toField x - toField y := b
     (x.val.toNat : Mersenne31.Field) - (y.val.toNat : Mersenne31.Field))
   unfold sub
   by_cases hxy : x.val ≥ y.val
-  · rw [dif_pos hxy]
+  · rw [dite_eq_left hxy]
     rw [UInt32.toNat_sub_of_le _ _ hxy]
     rw [Nat.cast_sub (by
       rw [ge_iff_le, UInt32.le_iff_toNat_le] at hxy
       exact hxy)]
-  · rw [dif_neg hxy]
+  · rw [dite_eq_right hxy]
     have hsum_lt : x.val.toNat + Mersenne31.fieldSize < UInt32.size := by
       nlinarith [x.property, fieldSize_add_fieldSize_lt_uint32Size]
     have hsum_eq :
@@ -487,14 +487,14 @@ theorem toField_neg (x : Field) : toField (-x) = -toField x := by
     -(x.val.toNat : Mersenne31.Field))
   unfold neg
   by_cases hx : x.val = 0
-  · rw [dif_pos hx]
+  · rw [dite_eq_left hx]
     have hxNat : x.val.toNat = 0 := by
       simpa using congrArg UInt32.toNat hx
     rw [hxNat]
     change ((toNat (0 : Field) : Mersenne31.Field)) = 0
     rw [toNat_zero]
     simp
-  · rw [dif_neg hx]
+  · rw [dite_eq_right hx]
     have hle : x.val ≤ modulus := by
       rw [UInt32.le_iff_toNat_le, modulus_toNat]
       exact Nat.le_of_lt x.property

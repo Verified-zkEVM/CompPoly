@@ -52,9 +52,9 @@ private theorem me_getD_list_range_map {α : Type*} (g : Nat → α) (n j : Nat)
     (((List.range n).map g).toArray).getD j d = if j < n then g j else d := by
   rw [Array.getD_eq_getD_getElem?, List.getElem?_toArray, List.getElem?_map]
   by_cases hj : j < n
-  · rw [List.getElem?_range hj, Option.map_some, Option.getD_some, if_pos hj]
+  · rw [List.getElem?_range hj, Option.map_some, Option.getD_some, ite_eq_left hj]
   · rw [List.getElem?_eq_none (by simpa using Nat.le_of_not_lt hj), Option.map_none,
-      Option.getD_none, if_neg hj]
+      Option.getD_none, ite_eq_right hj]
 
 private theorem me_getD_append_left {α : Type*} {A B : Array α} {i : Nat} (d : α)
     (hi : i < A.size) :
@@ -71,7 +71,7 @@ private theorem me_getD_append_right {α : Type*} {A B : Array α} {i : Nat} (d 
 private theorem me_getD_replicate {α : Type*} {n : Nat} (a d : α) {i : Nat}
     (hi : i < n) :
     (Array.replicate n a).getD i d = a := by
-  rw [Array.getD_eq_getD_getElem?, Array.getElem?_replicate, if_pos hi, Option.getD_some]
+  rw [Array.getD_eq_getD_getElem?, Array.getElem?_replicate, ite_eq_left hi, Option.getD_some]
 
 /-- In-bounds `getD` values are list members. -/
 theorem me_getD_mem_toList {α : Type*} {xs : Array α} {i : Nat} (d : α)
@@ -193,7 +193,7 @@ private theorem me_shiftedEntryDegree_eq {row : PolynomialRow F} {shift : Array 
     {j : Nat} (hne : rowGet row j ≠ 0) :
     shiftedEntryDegree? row shift j =
       some ((rowGet row j).natDegree + shift.getD j 0) := by
-  rw [shiftedEntryDegree?, if_neg (by simpa using hne)]
+  rw [shiftedEntryDegree?, ite_eq_right (by simpa using hne)]
 
 private theorem me_shiftedEntryDegree_some {row : PolynomialRow F} {shift : Array Nat}
     {j e : Nat} (h : shiftedEntryDegree? row shift j = some e) :
@@ -350,7 +350,7 @@ private theorem me_modByMonicWith_toPoly (modCtx : CPolynomial.ModContext F)
     intro hzero
     have : M.toPoly = 0 := by rw [hzero, CPolynomial.toPoly_zero]
     exact hM.ne_zero this
-  rw [modByMonicWith, if_neg (by simpa using hMne), modCtx.modByMonic_eq_modByMonic]
+  rw [modByMonicWith, ite_eq_right (by simpa using hMne), modCtx.modByMonic_eq_modByMonic]
   exact CPolynomial.modByMonic_toPoly_eq_modByMonic p M
     ((CPolynomial.monic_toPoly_iff M).mpr hM)
 
@@ -574,7 +574,7 @@ theorem me_prodRow_facts (mulCtx : CPolynomial.MulContext F)
   have hprodne : prod ≠ 0 := me_moduliProduct_ne_zero hmonic
   have hnz : rowIsZero prow = false := by
     refine me_rowIsZero_false_of_entry (j := p) (by omega) ?_
-    rw [hget, if_pos hp, if_pos rfl]
+    rw [hget, ite_eq_left hp, ite_eq_left rfl]
     exact hprodne
   have hsat : rowSatisfiesModularBool mulCtx modCtx prow equation.matrix
       equation.moduli = true := by
@@ -585,11 +585,11 @@ theorem me_prodRow_facts (mulCtx : CPolynomial.MulContext F)
     rw [me_rowMul_toPoly mulCtx prow equation.matrix (lt_of_lt_of_le hb hcols)
       (le_of_eq hsize)]
     refine Finset.dvd_sum fun k hk ↦ ?_
-    rw [hget, if_pos (Finset.mem_range.mp hk)]
+    rw [hget, ite_eq_left (Finset.mem_range.mp hk)]
     by_cases hkp : k = p
-    · rw [if_pos hkp]
+    · rw [ite_eq_left hkp]
       exact Dvd.dvd.mul_right (me_moduliProduct_dvd hb) _
-    · rw [if_neg hkp, CPolynomial.toPoly_zero, zero_mul]
+    · rw [ite_eq_right hkp, CPolynomial.toPoly_zero, zero_mul]
       exact dvd_zero _
   obtain ⟨e, he⟩ := me_rowShiftedDegree_isSome (shift := shift) hnz
   refine ⟨prow, e, hsat, hnz, hsize, he, ?_⟩
@@ -598,8 +598,8 @@ theorem me_prodRow_facts (mulCtx : CPolynomial.MulContext F)
   have hjp : j = p := by
     by_contra hne
     refine hjne ?_
-    rw [hget, if_pos hjsize, if_neg hne]
-  rw [hget, if_pos hjsize, if_pos hjp] at hjeq
+    rw [hget, ite_eq_left hjsize, ite_eq_right hne]
+  rw [hget, ite_eq_left hjsize, ite_eq_left hjp] at hjeq
   have hdeg : prod.natDegree ≤ pivotWindowCap equation := by
     rw [CPolynomial.natDegree_toPoly]
     exact me_moduliProduct_natDegree_le equation.moduli
@@ -646,16 +646,16 @@ theorem me_verification_dominates
   have hliftSize : liftM.size = sW + mW := by
     rw [hliftM, Array.size_append, hFredSize, hnegSize]
   have hFredWidth : MatrixWidth Fred = mW := by
-    rw [hFred, MatrixWidth_ofFn, if_neg (by omega)]
+    rw [hFred, MatrixWidth_ofFn, ite_eq_right (by omega)]
   have hFredEntry : ∀ {k b : Nat}, k < sW → b < mW →
       rowGet (Fred.getD k #[]) b =
         modByMonicWith modCtx (rowGet (equation.matrix.getD k #[]) b)
           (equation.moduli.getD b 0) := by
     intro k b hk hb
-    rw [hFred, rowGet_ofFn, if_pos ⟨hk, hb⟩]
+    rw [hFred, rowGet_ofFn, ite_eq_left ⟨hk, hb⟩]
   have hliftWidth : MatrixWidth liftM = mW := by
     rw [me_matrixWidth_eq_getD, hliftM, me_getD_append_left _ (by omega), hFred,
-      getD_ofFn, if_pos (by omega)]
+      getD_ofFn, ite_eq_left (by omega)]
     simp
   have hliftRows : ∀ r ∈ MatrixRows liftM, r.size = mW := by
     intro r hr
@@ -666,14 +666,14 @@ theorem me_verification_dominates
       have hgetD : Fred.getD i #[] = r := by
         rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hi', Option.getD_some]
         simpa [Array.getElem_toList] using hget
-      rw [← hgetD, hFred, getD_ofFn, if_pos (by omega)]
+      rw [← hgetD, hFred, getD_ofFn, ite_eq_left (by omega)]
       simp
     · rcases List.getElem_of_mem hr with ⟨i, hi, hget⟩
       have hi' : i < (negativeDiagonalRows equation.moduli).size := by simpa using hi
       have hgetD : (negativeDiagonalRows equation.moduli).getD i #[] = r := by
         rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hi', Option.getD_some]
         simpa [Array.getElem_toList] using hget
-      rw [← hgetD, negativeDiagonalRows, getD_ofFn, if_pos (by omega)]
+      rw [← hgetD, negativeDiagonalRows, getD_ofFn, ite_eq_left (by omega)]
       simp only [List.size_toArray, List.length_map, List.length_range]
       omega
   have hwf : WellFormed liftM := by
@@ -693,7 +693,7 @@ theorem me_verification_dominates
     intro c b hc hb
     rw [hliftM, me_getD_append_right _ (by omega)]
     rw [show sW + c - Fred.size = c from by omega]
-    rw [negativeDiagonalRows, rowGet_ofFn, if_pos ⟨by omega, by omega⟩]
+    rw [negativeDiagonalRows, rowGet_ofFn, ite_eq_left ⟨by omega, by omega⟩]
   -- Monicity facts.
   have hMon : ∀ {b : Nat}, b < mW →
       Polynomial.Monic ((equation.moduli.getD b 0).toPoly) :=
@@ -860,10 +860,10 @@ theorem me_verification_dominates
     rw [hlifted, rowGet, me_getD_list_range_map]
   have hliftedL : ∀ {k : Nat}, k < sW → rowGet lifted k = rowGet rowStar k := by
     intro k hk
-    rw [hliftedGet, if_pos (by omega), if_pos hk]
+    rw [hliftedGet, ite_eq_left (by omega), ite_eq_left hk]
   have hliftedR : ∀ {c : Nat}, c < mW → rowGet lifted (sW + c) = quot c := by
     intro c hc
-    rw [hliftedGet, if_pos (by omega), if_neg (by omega)]
+    rw [hliftedGet, ite_eq_left (by omega), ite_eq_right (by omega)]
     rw [show sW + c - sW = c from by omega]
   obtain ⟨j0, hj0, hj0ne⟩ := exists_nonzero_entry_of_rowIsZero_false hnz
   have hj0sW : j0 < sW := by omega
@@ -895,11 +895,11 @@ theorem me_verification_dominates
           (rowGet (liftM.getD (sW + k) #[]) j).toPoly =
           -((quot j).toPoly * (equation.moduli.getD j 0).toPoly) := by
         rw [Finset.sum_eq_single_of_mem j (Finset.mem_range.mpr hjm) ?_]
-        · rw [hliftedR hjm, hliftR hjm hjm, if_pos (by simp),
+        · rw [hliftedR hjm, hliftR hjm hjm, ite_eq_left (by simp),
             CPolynomial.toPoly_neg]
           ring
         · intro c hc hcj
-          rw [hliftR (Finset.mem_range.mp hc) hjm, if_neg (by simpa using hcj),
+          rw [hliftR (Finset.mem_range.mp hc) hjm, ite_eq_right (by simpa using hcj),
             CPolynomial.toPoly_zero, mul_zero]
       rw [hfirst, hsecond, hquotExact hjm]
       ring
@@ -989,7 +989,7 @@ theorem me_verification_dominates
       · have hcm : k - sW < mW := by omega
         rw [show k = sW + (k - sW) from by omega, hliftR hcm hjm]
         by_cases hcj : k - sW = j
-        · rw [if_pos (by simpa using hcj)]
+        · rw [ite_eq_left (by simpa using hcj)]
           have hb1 : (rowGet bRow (sW + j)).toPoly.natDegree ≤ e + 1 := by
             refine hbEntryR hjm ?_
             rwa [show sW + j = k from by omega]
@@ -997,7 +997,7 @@ theorem me_verification_dominates
           rw [hcj, CPolynomial.toPoly_neg, Polynomial.natDegree_neg,
             ← CPolynomial.natDegree_toPoly (equation.moduli.getD j 0)]
           omega
-        · rw [if_neg (by simpa using hcj), CPolynomial.toPoly_zero, mul_zero,
+        · rw [ite_eq_right (by simpa using hcj), CPolynomial.toPoly_zero, mul_zero,
             Polynomial.natDegree_zero]
           exact Nat.zero_le _
     omega
@@ -1020,10 +1020,10 @@ theorem me_verification_dominates
         (rowGet (liftM.getD (sW + k) #[]) j).toPoly =
         -((rowGet bRow (sW + j)).toPoly * (equation.moduli.getD j 0).toPoly) := by
       rw [Finset.sum_eq_single_of_mem j (Finset.mem_range.mpr hjm) ?_]
-      · rw [hliftR hjm hjm, if_pos (by simp), CPolynomial.toPoly_neg]
+      · rw [hliftR hjm hjm, ite_eq_left (by simp), CPolynomial.toPoly_neg]
         ring
       · intro c hc hcj
-        rw [hliftR (Finset.mem_range.mp hc) hjm, if_neg (by simpa using hcj),
+        rw [hliftR (Finset.mem_range.mp hc) hjm, ite_eq_right (by simpa using hcj),
           CPolynomial.toPoly_zero, mul_zero]
     rw [hfirst, hsecond] at h0
     have h0' : ∑ k ∈ Finset.range sW, (rowGet bRow k).toPoly *
@@ -1084,7 +1084,7 @@ theorem me_verification_dominates
         ∑ k ∈ Finset.range sW, (rowGet bRow k).toPoly *
           (rowGet (equation.matrix.getD k #[]) b).toPoly := by
       refine Finset.sum_congr rfl fun k hk ↦ ?_
-      rw [hbPrinGet, if_pos (Finset.mem_range.mp hk)]
+      rw [hbPrinGet, ite_eq_left (Finset.mem_range.mp hk)]
     rw [hcong]
     exact hbDvdF hb
   have hbPrinNz : rowIsZero bPrin = false := by
@@ -1095,7 +1095,7 @@ theorem me_verification_dominates
         have hallP : ∀ k, k < sW → rowGet bRow k = 0 := by
           intro k hk
           have h := me_rowGet_eq_zero_of_rowIsZero hzero k
-          rwa [hbPrinGet, if_pos hk] at h
+          rwa [hbPrinGet, ite_eq_left hk] at h
         have hallQ : ∀ c, c < mW → rowGet bRow (sW + c) = 0 := by
           intro c hc
           have hprod := hbProd hc
@@ -1129,9 +1129,9 @@ theorem me_verification_dominates
   have hdegBle : degB ≤ e := by
     obtain ⟨j, hjsize, hjne, hjeq⟩ := me_rowShiftedDegree_attained hdegB
     rw [hbPrinSize] at hjsize
-    have hjne' : rowGet bRow j ≠ 0 := by rwa [hbPrinGet, if_pos hjsize] at hjne
+    have hjne' : rowGet bRow j ≠ 0 := by rwa [hbPrinGet, ite_eq_left hjsize] at hjne
     have h := hbEntryL hjsize hjne'
-    rw [hbPrinGet, if_pos hjsize] at hjeq
+    rw [hbPrinGet, ite_eq_left hjsize] at hjeq
     rw [CPolynomial.natDegree_toPoly] at hjeq
     omega
   exact ⟨bPrin, degB, hbPrinMemF, hdegB, hdegBle⟩

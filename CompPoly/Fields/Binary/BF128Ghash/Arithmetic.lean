@@ -250,7 +250,7 @@ lemma intCast_negSucc (n : ℕ) : intCast (Int.negSucc n) = -(↑(n + 1) : Concr
   · have h_neg : ( - (n + 1 : ℤ)) % 2 = 1 := by omega
     unfold intCast
     have int_neg_succ : Int.negSucc n = - (n + 1 : ℤ) := by rfl
-    rw [int_neg_succ, h_neg, if_neg (by simp)]
+    rw [int_neg_succ, h_neg, ite_eq_right (by simp)]
     have h_nat : (↑(n + 1) : ConcreteBF128Ghash) = (1 : ConcreteBF128Ghash) := by
       simp only [natCast_eq, natCast, h_mod]; rfl
     rw [h_nat]; rfl

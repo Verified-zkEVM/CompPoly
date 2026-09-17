@@ -105,8 +105,8 @@ lemma mulPowX_equiv {R : Type*} [Zero R]
   by_cases hj : j < i <;> simp_all +decide [ mulPowX ]
   · unfold mk; rw [ Array.getElem?_append, Array.getElem?_append ]; aesop
   · convert h ( j - i ) using 1 <;> rw [ Array.getElem?_append ] <;> simp +decide [ hj ]
-    · rw [ if_neg ( not_lt_of_ge hj ) ]
-    · rw [ if_neg ( not_lt_of_ge hj ) ]
+    · rw [ ite_eq_right ( not_lt_of_ge hj ) ]
+    · rw [ ite_eq_right ( not_lt_of_ge hj ) ]
 
 /-- Adding a polynomial equivalent to zero acts as the identity. -/
 lemma add_zero_equiv {R : Type*} [Semiring R] [BEq R] [LawfulBEq R]

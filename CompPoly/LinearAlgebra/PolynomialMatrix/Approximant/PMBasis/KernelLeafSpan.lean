@@ -261,11 +261,11 @@ private theorem foldRange_add_update (n : Nat) (f : Nat → Nat) {p : Nat}
               (List.range p).foldl (fun acc k ↦ acc + f k) 0 := by
           apply foldRange_add_eq_of_pointwise
           intro k hk
-          rw [if_neg (by omega)]
-        rw [hpref, if_pos rfl]
+          rw [ite_eq_right (by omega)]
+        rw [hpref, ite_eq_left rfl]
         omega
       · have hstep := ih (by omega)
-        rw [if_neg (fun h ↦ hpn h.symm)]
+        rw [ite_eq_right (fun h ↦ hpn h.symm)]
         omega
 
 omit [LawfulBEq F] in
@@ -303,9 +303,9 @@ private theorem pivotTableMeasure_setIfInBounds [DecidableEq F]
     rw [array_getD_setIfInBounds]
     by_cases hkp : k = p
     · subst hkp
-      rw [if_pos ⟨rfl, hp⟩, if_pos rfl]
+      rw [ite_eq_left ⟨rfl, hp⟩, ite_eq_left rfl]
       rfl
-    · rw [if_neg (fun hcon ↦ hkp hcon.1.symm), if_neg hkp]
+    · rw [ite_eq_right (fun hcon ↦ hkp hcon.1.symm), ite_eq_right hkp]
   rw [hpoint]
   exact foldRange_add_update pivots.size _ hp (shiftedRowMeasure row shift)
 
@@ -370,10 +370,10 @@ private theorem insertKernelLeafPivotRowWithFuel_pivotInv {n : Nat} :
         intro position newRow hsize hpos p' r' hget'
         rw [array_getD_setIfInBounds] at hget'
         by_cases hp' : position = p' ∧ position < pivots.size
-        · rw [if_pos hp'] at hget'
+        · rw [ite_eq_left hp'] at hget'
           cases hget'
           exact ⟨hsize, hp'.1 ▸ hpos⟩
-        · rw [if_neg hp'] at hget'
+        · rw [ite_eq_right hp'] at hget'
           exact hinv p' r' hget'
       rw [insertKernelLeafPivotRowWithFuel] at hget
       cases hterm : rowShiftedLeadingTerm? row shift with
@@ -435,9 +435,9 @@ private theorem insertKernelLeafPivotRowWithFuel_persist :
         intro position newRow
         rw [array_getD_setIfInBounds]
         by_cases hpq : position = q ∧ position < pivots.size
-        · rw [if_pos hpq]
+        · rw [ite_eq_left hpq]
           exact ⟨newRow, rfl⟩
-        · rw [if_neg hpq]
+        · rw [ite_eq_right hpq]
           exact ⟨s, hq⟩
       rw [insertKernelLeafPivotRowWithFuel]
       split
@@ -514,10 +514,10 @@ private theorem insertKernelLeafPivotRowWithFuel_measure_le [DecidableEq F]
                 rw [array_getD_setIfInBounds] at hget'
                 by_cases hp' : target.position = p ∧
                     target.position < pivots.size
-                · rw [if_pos hp'] at hget'
+                · rw [ite_eq_left hp'] at hget'
                   cases hget'
                   exact ⟨hrow, hp'.1 ▸ hrowpos⟩
-                · rw [if_neg hp'] at hget'
+                · rw [ite_eq_right hp'] at hget'
                   exact hinv p r hget'
               have hredsize :
                   (cancelKernelLeafLeadingTerm pivot row shift).size = n := by
@@ -607,15 +607,15 @@ private theorem insertKernelLeafPivotRowWithFuel_rowSpan [DecidableEq F]
           intro p r hget'
           rw [array_getD_setIfInBounds] at hget'
           by_cases hp' : target.position = p ∧ target.position < pivots.size
-          · rw [if_pos hp'] at hget'
+          · rw [ite_eq_left hp'] at hget'
             cases hget'
             exact ⟨hrow, hp'.1 ▸ hrowpos⟩
-          · rw [if_neg hp'] at hget'
+          · rw [ite_eq_right hp'] at hget'
             exact hinv p r hget'
         have hgetrow :
             (pivots.setIfInBounds target.position (some row)).getD
               target.position none = some row := by
-          rw [array_getD_setIfInBounds, if_pos ⟨rfl, hb⟩]
+          rw [array_getD_setIfInBounds, ite_eq_left ⟨rfl, hb⟩]
         split
         · rename_i hpiv
           refine ⟨?_, fun _ ↦
@@ -630,7 +630,7 @@ private theorem insertKernelLeafPivotRowWithFuel_rowSpan [DecidableEq F]
           have hget' :
               (pivots.setIfInBounds target.position (some row)).getD p none =
                 some r := by
-            rw [array_getD_setIfInBounds, if_neg hpne]
+            rw [array_getD_setIfInBounds, ite_eq_right hpne]
             exact hget
           exact stored_mem_rowSpan_pivotRows (fun p r h ↦ (hsetinv p r h).1)
             hget'
@@ -687,7 +687,7 @@ private theorem insertKernelLeafPivotRowWithFuel_rowSpan [DecidableEq F]
                 have hget' :
                     (pivots.setIfInBounds target.position (some row)).getD p
                       none = some r := by
-                  rw [array_getD_setIfInBounds, if_neg hpne]
+                  rw [array_getD_setIfInBounds, ite_eq_right hpne]
                   exact hget
                 exact hIH.1 p r hget'
             · rename_i hlt
@@ -980,7 +980,7 @@ private theorem sum_shiftedRowMeasure_lt_reduceKernelLeafFuel [DecidableEq F]
         0 (List.mem_range.mpr hi') ?_
       rw [hgetD]
       exact hdeg
-  have hsum := List.sum_le_card_nsmul
+  have hsum := List.sum_le_length_nsmul
     (rows.toList.map (fun r ↦ shiftedRowMeasure r shift)) ((D + 1) * (n + 1))
     (by
       intro x hx

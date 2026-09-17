@@ -226,7 +226,7 @@ private theorem pushNontrivialChild_mem_of_ne_zero_ne_one {F : Type*}
     rcases hcases with hzero | hone
     · exact h0 hzero
     · exact h1 hone
-  rw [if_neg hskip]
+  rw [ite_eq_right hskip]
   simp
 
 private theorem pushNontrivialChild_mem_of_mem {F : Type*}
@@ -236,9 +236,9 @@ private theorem pushNontrivialChild_mem_of_mem {F : Type*}
     factor ∈ (pushNontrivialChild children child).toList := by
   unfold pushNontrivialChild
   by_cases hskip : (child == 0 || child == 1) = true
-  · rw [if_pos hskip]
+  · rw [ite_eq_left hskip]
     exact hmem
-  · rw [if_neg hskip]
+  · rw [ite_eq_right hskip]
     simp [hmem]
 
 private theorem mem_pushNontrivialChild {F : Type*}
@@ -248,9 +248,9 @@ private theorem mem_pushNontrivialChild {F : Type*}
     factor ∈ children.toList ∨ factor = child := by
   unfold pushNontrivialChild at hmem
   by_cases hskip : (child == 0 || child == 1) = true
-  · rw [if_pos hskip] at hmem
+  · rw [ite_eq_left hskip] at hmem
     exact Or.inl hmem
-  · rw [if_neg hskip] at hmem
+  · rw [ite_eq_right hskip] at hmem
     simp at hmem
     rcases hmem with hmem | hfactor
     · exact Or.inl (by simpa using hmem)
@@ -377,12 +377,12 @@ private theorem shoupRefineFactorWith_root {F : Type*}
     · rw [h1] at hroot'
       rw [eval_one a] at hroot'
       exact (one_ne_zero hroot').elim
-  · rw [if_neg hzero]
+  · rw [ite_eq_right hzero]
     by_cases hlin : isRepresentedLinearFactor u' = true
-    · rw [if_pos hlin]
+    · rw [ite_eq_left hlin]
       refine ⟨u', ?_, hu', hroot'⟩
       simp [u']
-    · rw [if_neg hlin]
+    · rw [ite_eq_right hlin]
       rw [← Array.foldl_toList]
       exact shoupRefineBaseConstants_root M D ctx beta hu' hroot'
         ctx.baseConstants.toList #[] (Or.inr (ctx.traceValue_mem_base (beta * a)))
@@ -397,15 +397,15 @@ private theorem shoupRefineFactorWith_dvd {F : Type*}
   unfold shoupRefineFactorWith at hmem
   let u' := CPolynomial.monicNormalize u
   by_cases hzero : (u' == 0 || u' == 1) = true
-  · rw [if_pos hzero] at hmem
+  · rw [ite_eq_left hzero] at hmem
     simp at hmem
-  · rw [if_neg hzero] at hmem
+  · rw [ite_eq_right hzero] at hmem
     by_cases hlin : isRepresentedLinearFactor u' = true
-    · rw [if_pos hlin] at hmem
+    · rw [ite_eq_left hlin] at hmem
       simp at hmem
       subst factor
       exact monicNormalize_toPoly_dvd_self u
-    · rw [if_neg hlin] at hmem
+    · rw [ite_eq_right hlin] at hmem
       rw [← Array.foldl_toList] at hmem
       have hdivU' : factor.toPoly ∣ u'.toPoly :=
         shoupRefineBaseConstants_dvd M D ctx beta ctx.baseConstants.toList #[]
@@ -604,7 +604,7 @@ private theorem monicNormalize_zero {F : Type*}
         ((0 : CPolynomial F).val : CPolynomial.Raw F).trim.leadingCoeff⁻¹ •
           ((0 : CPolynomial F).val : CPolynomial.Raw F).trim).trim =
       (0 : CPolynomial.Raw F)
-  rw [if_pos]
+  rw [ite_eq_left]
   · exact CPolynomial.Raw.zero_canonical
   · change (((0 : CPolynomial.Raw F).trim) == 0) = true
     rw [CPolynomial.Raw.zero_canonical]
@@ -697,17 +697,17 @@ private theorem shoupRefineFactorWith_rootsAgreeOn {F : Type*}
   unfold shoupRefineFactorWith at hmem
   let u' := CPolynomial.monicNormalize u
   by_cases hzero : (u' == 0 || u' == 1) = true
-  · rw [if_pos hzero] at hmem
+  · rw [ite_eq_left hzero] at hmem
     simp at hmem
-  · rw [if_neg hzero] at hmem
+  · rw [ite_eq_right hzero] at hmem
     by_cases hlin : isRepresentedLinearFactor u' = true
-    · rw [if_pos hlin] at hmem
+    · rw [ite_eq_left hlin] at hmem
       simp at hmem
       subst factor
       exact rootsAgreeOn_of_root_unique ctx (coords ++ [beta])
         (fun hrootA hrootB ↦
           representedLinearFactor_root_unique hlin hrootA hrootB)
-    · rw [if_neg hlin] at hmem
+    · rw [ite_eq_right hlin] at hmem
       rw [← Array.foldl_toList] at hmem
       have hu' : u' ≠ 0 := by
         intro hz
@@ -824,12 +824,12 @@ theorem shoupSplitCandidatesWith_root {F : Type*}
     · rw [h1] at hroot'
       rw [eval_one a] at hroot'
       exact (one_ne_zero hroot').elim
-  · rw [if_neg hzero]
+  · rw [ite_eq_right hzero]
     by_cases hlin : isRepresentedLinearFactor p' = true
-    · rw [if_pos hlin]
+    · rw [ite_eq_left hlin]
       refine ⟨p', ?_, hp', hroot'⟩
       simp [p']
-    · rw [if_neg hlin]
+    · rw [ite_eq_right hlin]
       rw [← Array.foldl_toList]
       exact shoupRefineBasisWith_root M D ctx ctx.basis.toList #[p']
         ⟨p', by simp [p'], hp', hroot'⟩
@@ -844,15 +844,15 @@ theorem shoupSplitCandidatesWith_dvd_input {F : Type*}
   unfold shoupSplitCandidatesWith at hmem
   let p' := CPolynomial.monicNormalize p
   by_cases hzero : (p' == 0 || p' == 1) = true
-  · rw [if_pos hzero] at hmem
+  · rw [ite_eq_left hzero] at hmem
     simp at hmem
-  · rw [if_neg hzero] at hmem
+  · rw [ite_eq_right hzero] at hmem
     by_cases hlin : isRepresentedLinearFactor p' = true
-    · rw [if_pos hlin] at hmem
+    · rw [ite_eq_left hlin] at hmem
       simp at hmem
       subst factor
       exact monicNormalize_toPoly_dvd_self p
-    · rw [if_neg hlin] at hmem
+    · rw [ite_eq_right hlin] at hmem
       rw [← Array.foldl_toList] at hmem
       exact shoupRefineBasisWith_dvd M D ctx ctx.basis.toList #[p']
         (by
@@ -875,15 +875,15 @@ private theorem shoupSplitCandidatesWith_root_unique {F : Type*}
   unfold shoupSplitCandidatesWith at hmem
   let p' := CPolynomial.monicNormalize p
   by_cases hzero : (p' == 0 || p' == 1) = true
-  · rw [if_pos hzero] at hmem
+  · rw [ite_eq_left hzero] at hmem
     simp at hmem
-  · rw [if_neg hzero] at hmem
+  · rw [ite_eq_right hzero] at hmem
     by_cases hlin : isRepresentedLinearFactor p' = true
-    · rw [if_pos hlin] at hmem
+    · rw [ite_eq_left hlin] at hmem
       simp at hmem
       subst factor
       exact representedLinearFactor_root_unique hlin hrootA hrootB
-    · rw [if_neg hlin] at hmem
+    · rw [ite_eq_right hlin] at hmem
       rw [← Array.foldl_toList] at hmem
       have hagree : rootsAgreeOn ctx ctx.basis.toList factor := by
         have hbasis := shoupRefineBasisWith_rootsAgreeOn M D ctx
@@ -1090,7 +1090,7 @@ private theorem raw_mulModWith_toPoly_eq_modByMonic {F : Type*}
   have hzero : ¬modulus.trim == (0 : CPolynomial.Raw F) := by
     intro h
     exact hmod (LawfulBEq.eq_of_beq h)
-  rw [if_neg hzero]
+  rw [ite_eq_right hzero]
   have hproductTrim : (M.mul p q).trim = M.mul p q := by
     rw [M.mul_eq_mul]
     exact CPolynomial.Raw.mul_is_trimmed p q
@@ -1186,7 +1186,7 @@ private theorem raw_powModBinaryAuxWith_toPoly_modByMonic {F : Type*}
                   ((CPolynomial.ofArray acc).toPoly *
                     (CPolynomial.ofArray current).toPoly) %ₘ m := by
               dsimp [acc', m]
-              rw [if_pos hodd]
+              rw [ite_eq_left hodd]
               rw [raw_mulModWith_toPoly_eq_modByMonic M D hmod]
               exact polynomial_modByMonic_idem (raw_monicNormalize_toPoly_monic hmod)
             have hpow :
@@ -1218,7 +1218,7 @@ private theorem raw_powModBinaryAuxWith_toPoly_modByMonic {F : Type*}
                 (CPolynomial.ofArray acc').toPoly %ₘ m =
                   (CPolynomial.ofArray acc).toPoly %ₘ m := by
               dsimp [acc']
-              rw [if_neg hodd]
+              rw [ite_eq_right hodd]
             have hpow :
                 ((CPolynomial.ofArray current).toPoly *
                     (CPolynomial.ofArray current).toPoly) ^ ((n + 1) / 2) =
@@ -1248,7 +1248,7 @@ private theorem raw_powModWith_X_toPoly_modByMonic {F : Type*}
   have hzero : ¬modulus.trim == (0 : CPolynomial.Raw F) := by
     intro h
     exact hmod (LawfulBEq.eq_of_beq h)
-  rw [if_neg hzero]
+  rw [ite_eq_right hzero]
   let m := (CPolynomial.ofArray (CPolynomial.Raw.monicNormalize modulus)).toPoly
   let oneMod := D.modByMonic (1 : CPolynomial.Raw F) (CPolynomial.Raw.monicNormalize modulus)
   change
@@ -1289,7 +1289,7 @@ private theorem raw_xModWith_toPoly_modByMonic {F : Type*}
   have hzero : ¬modulus.trim == (0 : CPolynomial.Raw F) := by
     intro h
     exact hmod (LawfulBEq.eq_of_beq h)
-  rw [if_neg hzero]
+  rw [ite_eq_right hzero]
   let m := (CPolynomial.ofArray (CPolynomial.Raw.monicNormalize modulus)).toPoly
   have hXTrim : (CPolynomial.Raw.X : CPolynomial.Raw F).trim = CPolynomial.Raw.X := by
     exact CPolynomial.Raw.X_canonical

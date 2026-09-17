@@ -111,11 +111,11 @@ lemma degreeLTEquiv_left_inv [DecidableEq R] (n : ℕ)
   simp only [coeff_monomial]
   by_cases hi : i < n
   · rw [Finset.sum_eq_single_of_mem ⟨i, hi⟩ (Finset.mem_univ _)
-      (fun j _ hji => if_neg fun h => hji (Fin.ext h.symm))]
+      (fun j _ hji => ite_eq_right fun h => hji (Fin.ext h.symm))]
     simp
   · rw [show coeff p.1 i = 0 from
       (degree_lt_iff_coeff_zero p.1 n).mp (mem_degreeLT.mp p.2) i (by omega)]
-    exact Finset.sum_eq_zero fun j _ => if_neg (by have := j.isLt; omega)
+    exact Finset.sum_eq_zero fun j _ => ite_eq_right (by have := j.isLt; omega)
 
 lemma degreeLTEquiv_right_inv [DecidableEq R] (n : ℕ)
     (f : Fin n → R) :
@@ -127,7 +127,7 @@ lemma degreeLTEquiv_right_inv [DecidableEq R] (n : ℕ)
       by simpa only [lcoeff_apply] using map_sum (lcoeff (R := R) ↑i) _ _]
   simp only [coeff_monomial]
   rw [Finset.sum_eq_single_of_mem i (Finset.mem_univ _)
-    (fun j _ hji => if_neg fun h => hji (Fin.ext (by omega)))]
+    (fun j _ hji => ite_eq_right fun h => hji (Fin.ext (by omega)))]
   simp
 
 def degreeLTEquiv [DecidableEq R] (n : ℕ) :
@@ -198,7 +198,7 @@ theorem degree_toPoly_ofFinCoeff_lt (N : ℕ) (c : ℕ → R) :
   rw [← degree_toPoly, degree_lt_iff_coeff_zero]
   intro k hk
   rw [coeff_ofFinCoeff]
-  exact if_neg (by omega)
+  exact ite_eq_right (by omega)
 
 end OfFinCoeff
 

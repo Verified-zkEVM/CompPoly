@@ -13,13 +13,13 @@ public import Mathlib.Data.Nat.Digits.Defs
 public import Mathlib.Data.Finsupp.Basic
 public import Mathlib.Algebra.Order.BigOperators.Group.Finset
 public import Mathlib.Algebra.BigOperators.Fin
-public import Mathlib.Data.NNReal.Defs
-public import Mathlib.Data.NNReal.Basic -- for instFloorSemiring of ℝ≥0
+public import Mathlib.Basic.NNReal.Defs
+public import Mathlib.Basic.NNReal.Basic -- for instFloorSemiring of ℝ≥0
 public import Mathlib.Algebra.CharP.Defs
 public import Mathlib.Data.Nat.Cast.Order.Field
 public import Mathlib.Data.ENat.Defs
 public import Mathlib.Data.ENat.Basic
-public import Mathlib.Data.ENNReal.Inv
+public import Mathlib.Basic.ENNReal.Inv
 public import Mathlib.Data.Nat.GCD.Basic
 
 /-!
@@ -879,7 +879,7 @@ lemma getBit_of_sub_two_pow_of_bit_1 {n i j: ℕ} (h_getBit_eq_1: getBit i n = 1
     simp only [beq_iff_eq]
     simp only [h_j_eq_i, ↓reduceIte]
     push Not at h_j_eq_i
-    simp only [if_neg h_j_eq_i.symm, xor_zero]
+    simp only [ite_eq_right h_j_eq_i.symm, xor_zero]
 
 lemma getBit_of_lowBits {n: ℕ} (numLowBits : ℕ) : ∀ k, getBit k (getLowBits numLowBits n) =
     if k < numLowBits then getBit k n else 0 := by

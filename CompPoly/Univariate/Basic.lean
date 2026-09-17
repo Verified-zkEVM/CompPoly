@@ -1180,9 +1180,9 @@ lemma coeff_erase [Zero R] [BEq R] [LawfulBEq R]
     Array.getD_eq_getD_getElem?, Array.getD_eq_getD_getElem?,
     Array.getElem?_setIfInBounds]
   by_cases hni : i = n
-  · rw [if_pos hni.symm, if_pos hni]
+  · rw [ite_eq_left hni.symm, ite_eq_left hni]
     split <;> rfl
-  · rw [if_neg hni, if_neg (fun h => hni h.symm)]
+  · rw [ite_eq_right hni, ite_eq_right (fun h => hni h.symm)]
 
 /-- Leading coefficient equals the coefficient at `natDegree`. -/
 lemma leadingCoeff_eq_coeff_natDegree [Zero R] (p : CPolynomial R) :
@@ -1210,9 +1210,9 @@ lemma monomial_add_erase [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
   rw [coeff_add, coeff_monomial, coeff_erase]
   by_cases hi : i = p.natDegree
   · subst hi
-    rw [if_pos rfl, if_pos rfl, leadingCoeff_eq_coeff_natDegree]
+    rw [ite_eq_left rfl, ite_eq_left rfl, leadingCoeff_eq_coeff_natDegree]
     simp
-  · rw [if_neg hi, if_neg hi]
+  · rw [ite_eq_right hi, ite_eq_right hi]
     simp
 
 lemma coeff_neg [Ring R] [BEq R] [LawfulBEq R]
@@ -1248,7 +1248,7 @@ theorem subMulMonomial_eq [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
     rw [coeff_sub, coeff_monomial_mul]
   rw [subMulMonomial]
   by_cases hguard : c == 0 || b == 0
-  · rw [if_pos hguard, eq_iff_coeff]
+  · rw [ite_eq_left hguard, eq_iff_coeff]
     intro i
     rw [hcoeff i]
     rcases Bool.or_eq_true_iff.mp hguard with hc | hb
@@ -1257,7 +1257,7 @@ theorem subMulMonomial_eq [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
     · rw [eq_of_beq hb]
       simp only [coeff_zero]
       simp
-  · rw [if_neg hguard, eq_iff_coeff]
+  · rw [ite_eq_right hguard, eq_iff_coeff]
     intro i
     rw [coeff_ofArray, hcoeff i]
     by_cases hi : i < max a.val.size (d + b.val.size)
@@ -1285,7 +1285,7 @@ lemma erase_correct [Ring R] [BEq R] [LawfulBEq R] [DecidableEq R]
   rw [coeff_erase, coeff_sub, coeff_monomial]
   by_cases hi : i = n
   · subst hi; simp
-  · rw [if_neg hi, if_neg hi]; simp
+  · rw [ite_eq_right hi, ite_eq_right hi]; simp
 
 protected theorem neg_add_cancel [Ring R] [BEq R] [LawfulBEq R]
     (p : CPolynomial R) : -p + p = 0 := by

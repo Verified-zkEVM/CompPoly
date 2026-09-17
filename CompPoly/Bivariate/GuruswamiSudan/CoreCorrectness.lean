@@ -319,9 +319,9 @@ private theorem coeff_coeffwise_hasseDeriv_sum {F : Type*} [Field F]
   rw [Polynomial.sum_def]
   by_cases hj : j ∈ P.support
   · rw [Finset.sum_eq_single j]
-    · rw [Polynomial.coeff_monomial, if_pos rfl]
+    · rw [Polynomial.coeff_monomial, ite_eq_left rfl]
     · intro k _hk hkj
-      rw [Polynomial.coeff_monomial, if_neg hkj]
+      rw [Polynomial.coeff_monomial, ite_eq_right hkj]
     · intro hjnot
       contradiction
   · rw [Finset.sum_eq_zero]
@@ -331,7 +331,7 @@ private theorem coeff_coeffwise_hasseDeriv_sum {F : Type*} [Field F]
       have hkj : k ≠ j := by
         intro h
         exact hj (h ▸ hk)
-      rw [Polynomial.coeff_monomial, if_neg hkj]
+      rw [Polynomial.coeff_monomial, ite_eq_right hkj]
 
 /-- The executable bivariate Hasse derivative matches the Mathlib-side
 coefficientwise inner Hasse derivative of the outer Hasse derivative. -/

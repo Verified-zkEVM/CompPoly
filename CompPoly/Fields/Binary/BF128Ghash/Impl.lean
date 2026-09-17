@@ -602,7 +602,7 @@ lemma toQuot_invItohTsujii (a : ConcreteBF128Ghash) (h_ne : a ≠ 0) :
       apply BitVec.eq_of_toNat_eq
       simpa only [toBitVec_zero, BitVec.toNat_zero] using h_eq_zero
     exact h_ne h_a_eq_zero
-  simp only [if_neg h_toNat_ne_zero]
+  simp only [ite_eq_right h_toNat_ne_zero]
   rw [toQuot_square, h_u127]
   unfold target_val
   rw [←pow_mul]

@@ -52,7 +52,7 @@ theorem kernel_term_eq (D : Domain R) {i : Nat} (hi : i < D.n) (j k : Nat) :
 theorem omega_sum_pow_mul_eq_if_dvd (D : Domain R) (m : Nat) :
     (∑ k : D.Idx, D.omega ^ (m * (k : Nat))) = if D.n ∣ m then (D.n : R) else 0 := by
   by_cases hdiv : D.n ∣ m
-  · rw [if_pos hdiv]
+  · rw [ite_eq_left hdiv]
     rcases hdiv with ⟨t, rfl⟩
     trans ∑ _k : D.Idx, (1 : R)
     · apply Finset.sum_congr rfl
@@ -61,7 +61,7 @@ theorem omega_sum_pow_mul_eq_if_dvd (D : Domain R) (m : Nat) :
       rw [pow_mul]
       simp [Domain.n, D.primitive.pow_eq_one]
     · simp
-  · rw [if_neg hdiv]
+  · rw [ite_eq_right hdiv]
     have hne : D.omega ^ m ≠ 1 := by
       intro h
       exact hdiv ((D.primitive.pow_eq_one_iff_dvd m).mp h)
@@ -123,8 +123,8 @@ theorem kernel_sum_eq_if (D : Domain R) (i j : D.Idx) :
           exact omega_sum_pow_mul_eq_if_dvd D ((j : Nat) + (D.n - (i : Nat)))
     _ = if j = i then (D.n : R) else 0 := by
           by_cases h : j = i
-          · rw [if_pos h, if_pos ((dvd_add_sub_iff_fin_eq D i j).mpr h)]
-          · rw [if_neg h, if_neg (mt (dvd_add_sub_iff_fin_eq D i j).mp h)]
+          · rw [ite_eq_left h, ite_eq_left ((dvd_add_sub_iff_fin_eq D i j).mpr h)]
+          · rw [ite_eq_right h, ite_eq_right (mt (dvd_add_sub_iff_fin_eq D i j).mp h)]
 
 /-- Orthogonality of the inverse/forward NTT kernels over the domain. -/
 theorem kernel_sum_forward_inverse_eq_if (D : Domain R) (i j : D.Idx) :

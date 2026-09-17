@@ -192,7 +192,6 @@ theorem hasseDerivative_X_mul_succ_xOrder {F : Type*}
             coeff Q (i + (a + 1)) (j + b) := by
         convert coeff_X_mul_succ (Q := Q) (i + a + 1) (j + b) using 2
         · omega
-        · omega
       rw [hX]
       rw [show i + 1 + (a + 1) = (i + a + 1).succ by omega]
       rw [show i + (a + 1) = i + a + 1 by omega]
@@ -589,7 +588,7 @@ theorem foldl_add_single_beq_of_not_mem {α : Type*} [AddCommMonoid α]
       have hidx : ¬ idx == target := by
         intro hbeq
         exact hnot (by simp [LawfulBEq.eq_of_beq hbeq])
-      rw [if_neg hidx, add_zero]
+      rw [ite_eq_right hidx, add_zero]
       exact ih acc (by
         intro hmem
         exact hnot (by simp [hmem]))
@@ -607,11 +606,11 @@ theorem foldl_add_single_beq_of_nodup_mem {α : Type*} [AddCommMonoid α]
       rw [List.nodup_cons] at hnodup
       rcases hnodup with ⟨hidxNotMem, hxsNodup⟩
       by_cases hidx : idx == target
-      · rw [if_pos hidx, zero_add]
+      · rw [ite_eq_left hidx, zero_add]
         have hidxEq : idx = target := LawfulBEq.eq_of_beq hidx
         subst idx
         exact foldl_add_single_beq_of_not_mem xs target term term hidxNotMem
-      · rw [if_neg hidx, add_zero]
+      · rw [ite_eq_right hidx, add_zero]
         have hmemTail : target ∈ xs := by
           rcases (List.mem_cons.mp hmem) with hhead | htail
           · subst idx

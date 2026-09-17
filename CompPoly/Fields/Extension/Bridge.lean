@@ -124,7 +124,7 @@ private theorem coeff_repr (x : Ext P) (k : Fin P.d) :
   rw [finsetSum_coeff, Finset.sum_eq_single_of_mem k (Finset.mem_univ _)]
   · simp
   · intro i _ hi
-    rw [coeff_C_mul_X_pow, if_neg (fun h => hi (Fin.ext h.symm))]
+    rw [coeff_C_mul_X_pow, ite_eq_right (fun h => hi (Fin.ext h.symm))]
 
 theorem toQuot_injective : Function.Injective (toQuot (P := P)) := by
   intro x y h
@@ -213,10 +213,10 @@ theorem toQuot_shiftReduce (e : Ext P) : toQuot (shiftReduce e) = rt P * toQuot 
         algebraMap F Quot[P] (if m = 0 then 0 else coeffNat e (m - 1)) * (rt P) ^ m)
       = ∑ k ∈ Finset.range (P.d - 1), algebraMap F Quot[P] (coeffNat e k) * (rt P) ^ (k + 1) := by
     conv_lhs => rw [hd, Finset.sum_range_succ']
-    rw [show (if (0 : ℕ) = 0 then (0 : F) else coeffNat e (0 - 1)) = 0 from if_pos rfl,
+    rw [show (if (0 : ℕ) = 0 then (0 : F) else coeffNat e (0 - 1)) = 0 from ite_eq_left rfl,
       map_zero, zero_mul, add_zero]
     refine Finset.sum_congr rfl fun k _ => ?_
-    rw [if_neg (Nat.succ_ne_zero k), Nat.add_sub_cancel]
+    rw [ite_eq_right (Nat.succ_ne_zero k), Nat.add_sub_cancel]
   -- Rewrite the RHS by peeling off its top index.
   have hrhs : (∑ i ∈ Finset.range P.d, algebraMap F Quot[P] (coeffNat e i) * (rt P) ^ (i + 1))
       = (∑ k ∈ Finset.range (P.d - 1), algebraMap F Quot[P] (coeffNat e k) * (rt P) ^ (k + 1))
@@ -423,7 +423,7 @@ theorem rt_pow_d_binomial (P : BinomialParams F) :
     · rw [BinomialParams.toExtensionParams_lowerCoeff]; simp
     · intro i _ hi
       have hi0 : (i : ℕ) ≠ 0 := fun h => hi (Fin.ext (by simpa using h))
-      rw [BinomialParams.toExtensionParams_lowerCoeff, if_neg hi0, map_zero, zero_mul]
+      rw [BinomialParams.toExtensionParams_lowerCoeff, ite_eq_right hi0, map_zero, zero_mul]
   have h := rt_relation (P := P.toExtensionParams)
   rw [hsum, ← sub_eq_add_neg, sub_eq_zero] at h
   exact h

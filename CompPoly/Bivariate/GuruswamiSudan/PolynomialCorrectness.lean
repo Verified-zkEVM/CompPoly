@@ -217,7 +217,7 @@ theorem array_getD_inj_of_nodup {α : Type*} [DecidableEq α] {xs : Array α}
     {default : α} (hnodup : xs.toList.Nodup) {i j : Nat}
     (hi : i < xs.size) (hj : j < xs.size)
     (h : xs.getD i default = xs.getD j default) : i = j := by
-  exact (List.getElem_inj hnodup).mp (by
+  exact (List.Nodup.getElem_inj hnodup).mp (by
     rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hi] at h
     rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hj] at h
     have hiList : i < xs.toList.length := by
@@ -287,7 +287,7 @@ theorem ofMonomialCoeffs_coeff_getD {R : Type*}
               cases hcmono : monomials.getD col ⟨0, 0⟩
               simp [hkmono, hcmono] at hx hy ⊢
               exact ⟨hx, hy⟩
-            rw [if_neg hpair_ne, if_neg hcolk]
+            rw [ite_eq_right hpair_ne, ite_eq_right hcolk]
         rw [hterm]
         apply ih
         intro c hc
@@ -364,7 +364,7 @@ theorem ofMonomialCoeffs_coeff_eq_zero_of_weight_gt {R : Type*}
     exact Nat.not_lt_of_ge hle hgt
   · change (if i = monomial.xDegree ∧ j = monomial.yDegree then coeffs.getD col 0
         else 0) = 0
-    rw [if_neg hmatch]
+    rw [ite_eq_right hmatch]
 
 /-- A polynomial assembled from bounded monomials has weighted degree below the
 same bound. -/
@@ -483,7 +483,7 @@ theorem hasseDerivativeTermList_coeff_fold {R : Type*} [Semiring R]
         intro terms acc hterms
         simp only [List.foldl_cons]
         by_cases hy : b ≤ yDeg
-        · simp only [hy, if_true]
+        · simp only [hy, ite_true]
           have hinner : ∀ (xs : List Nat) (terms : List (HasseTerm R)) (acc : R),
               terms.foldl
                   (fun acc term ↦
@@ -519,14 +519,14 @@ theorem hasseDerivativeTermList_coeff_fold {R : Type*} [Semiring R]
                 intro terms acc hterms
                 simp only [List.foldl_cons]
                 by_cases hx : a ≤ xDeg
-                · simp only [hx, if_true]
+                · simp only [hx, ite_true]
                   apply ihx
                   simp [List.foldl_append, hterms]
-                · simp only [hx, if_false]
+                · simp only [hx, ite_false]
                   exact ihx terms acc hterms
           apply ih
           exact hinner (List.range' 0 (Q.val.coeff yDeg).val.size) terms acc hterms
-        · simp only [hy, if_false]
+        · simp only [hy, ite_false]
           exact ih terms acc hterms
   simpa using houter (List.range' 0 Q.val.size) [] 0 rfl
 
@@ -587,7 +587,7 @@ theorem hasseDerivativeTermList_coeff_inner_fold {R : Type*} [Semiring R]
         have ha : a ≤ i + a := by omega
         have hi : i = i + a - a := by omega
         have hjy : j = j + b - b := by omega
-        rw [if_pos ha, if_pos ⟨hi, hjy⟩, if_pos rfl]
+        rw [ite_eq_left ha, ite_eq_left ⟨hi, hjy⟩, ite_eq_left rfl]
       · by_cases ha : a ≤ xDeg
         · have hi_ne : i ≠ xDeg - a := by
             intro hi
@@ -659,13 +659,13 @@ theorem hasseDerivativeTermList_coeff_value {R : Type*} [Semiring R]
     apply List.foldl_congr_of_mem
     intro acc yDeg
     by_cases hy : b ≤ yDeg
-    · rw [if_pos hy]
+    · rw [ite_eq_left hy]
       rw [hasseDerivativeTermList_coeff_inner_fold a b i j yDeg (Q.val.coeff yDeg) acc hy]
       by_cases hyTarget : yDeg = j + b
       · subst yDeg
         simp [source]
       · simp [hyTarget]
-    · rw [if_neg hy]
+    · rw [ite_eq_right hy]
       have hyTarget : yDeg ≠ j + b := by
         intro htarget
         subst yDeg
@@ -678,7 +678,7 @@ theorem hasseDerivativeTermList_coeff_value {R : Type*} [Semiring R]
     simp [hin, hyIn]
     by_cases hxIn : i + a < (Q.val.coeff (j + b)).val.size
     · dsimp only [source]
-      rw [if_pos hxIn]
+      rw [ite_eq_left hxIn]
       simp [CPolynomial.coeff, CPolynomial.Raw.coeff, Array.getD_eq_getD_getElem?,
         Array.getElem?_eq_getElem hyIn]
     · have hxLe : (Q.val.coeff (j + b)).val.size ≤ i + a := Nat.le_of_not_gt hxIn
@@ -686,7 +686,7 @@ theorem hasseDerivativeTermList_coeff_value {R : Type*} [Semiring R]
         simpa [CPolynomial.Raw.coeff, Array.getD_eq_getD_getElem?,
           Array.getElem?_eq_getElem hyIn] using hxLe
       dsimp only [source]
-      rw [if_neg hxIn]
+      rw [ite_eq_right hxIn]
       rw [Array.getElem?_eq_none hxLe']
       simp
   · have hyLe : Q.val.size ≤ j + b := Nat.le_of_not_gt hyIn
@@ -741,27 +741,27 @@ theorem hasseDerivative_monomialXY {R : Type*}
   intro i j
   rw [hasseDerivative_coeff]
   by_cases hle : a ≤ n ∧ b ≤ m
-  · rw [if_pos hle, coeff_monomialXY, coeff_monomialXY]
+  · rw [ite_eq_left hle, coeff_monomialXY, coeff_monomialXY]
     by_cases hmatch : i = n - a ∧ j = m - b
     · rcases hmatch with ⟨hi, hj⟩
       have hia : i + a = n := by omega
       have hjb : j + b = m := by omega
       have hsource : i + a = n ∧ j + b = m := ⟨hia, hjb⟩
-      rw [if_pos hsource, if_pos ⟨hi, hj⟩]
+      rw [ite_eq_left hsource, ite_eq_left ⟨hi, hj⟩]
       rw [hia, hjb]
-    · rw [if_neg hmatch]
+    · rw [ite_eq_right hmatch]
       have hsource : ¬(i + a = n ∧ j + b = m) := by
         rintro ⟨hia, hjb⟩
         apply hmatch
         constructor <;> omega
-      rw [if_neg hsource]
+      rw [ite_eq_right hsource]
       simp
-  · rw [if_neg hle, coeff_monomialXY, coeff_zero]
+  · rw [ite_eq_right hle, coeff_monomialXY, coeff_zero]
     have hsource : ¬(i + a = n ∧ j + b = m) := by
       rintro ⟨hia, hjb⟩
       apply hle
       constructor <;> omega
-    rw [if_neg hsource]
+    rw [ite_eq_right hsource]
     simp
 
 /-- Full evaluation is additive. -/
@@ -900,9 +900,9 @@ private theorem coeff_coeffwise_hasseDeriv_sum {F : Type*} [Field F]
   rw [Polynomial.sum_def]
   by_cases hj : j ∈ P.support
   · rw [Finset.sum_eq_single j]
-    · rw [Polynomial.coeff_monomial, if_pos rfl]
+    · rw [Polynomial.coeff_monomial, ite_eq_left rfl]
     · intro k _hk hkj
-      rw [Polynomial.coeff_monomial, if_neg hkj]
+      rw [Polynomial.coeff_monomial, ite_eq_right hkj]
     · intro hjnot
       contradiction
   · rw [Finset.sum_eq_zero]
@@ -912,7 +912,7 @@ private theorem coeff_coeffwise_hasseDeriv_sum {F : Type*} [Field F]
       have hkj : k ≠ j := by
         intro h
         exact hj (h ▸ hk)
-      rw [Polynomial.coeff_monomial, if_neg hkj]
+      rw [Polynomial.coeff_monomial, ite_eq_right hkj]
 
 /-- The executable bivariate Hasse derivative matches the Mathlib-side
 coefficientwise inner Hasse derivative of the outer Hasse derivative. -/

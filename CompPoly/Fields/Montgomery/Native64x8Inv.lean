@@ -38,11 +38,11 @@ theorem gcdInner_succ (rounds : ℕ) (a b : UInt64) (f0 g0 f1 g1 : Int) :
         gcdInner rounds ((a - b) >>> 1) b (f0 - f1) (g0 - g1) (f1 * 2) (g1 * 2) := by
   simp only [gcdInner]
   by_cases h1 : a &&& 1 == 0
-  · rw [if_pos h1, if_pos h1]
-  · rw [if_neg h1, if_neg h1]
+  · rw [ite_eq_left h1, ite_eq_left h1]
+  · rw [ite_eq_right h1, ite_eq_right h1]
     by_cases h2 : a < b
-    · rw [if_pos h2, if_pos h2]
-    · rw [if_neg h2, if_neg h2]
+    · rw [ite_eq_left h2, ite_eq_left h2]
+    · rw [ite_eq_right h2, ite_eq_right h2]
 
 /-- Transition entries at most double per divstep. -/
 theorem gcdInner_natAbs_le {rounds : ℕ} {a b a' b' : UInt64}
@@ -345,7 +345,7 @@ theorem montPow_eq_mul_pow (acc x : FastField modulus) (n : ℕ) :
     next h =>
       have hlt : n / 2 < n := by omega
       by_cases hodd : n % 2 == 1
-      · rw [if_pos hodd,
+      · rw [ite_eq_left hodd,
           show Native64x8.mul P.modulusLimbs P.montgomeryNegInv acc.val x.val
             = (acc * x).val from rfl,
           show Native64x8.mul P.modulusLimbs P.montgomeryNegInv x.val x.val
@@ -356,7 +356,7 @@ theorem montPow_eq_mul_pow (acc x : FastField modulus) (n : ℕ) :
         simp only [FastField.toField_mul, toField_hpow]
         conv_rhs => rw [show n = 2 * (n / 2) + 1 by omega]
         ring
-      · rw [if_neg hodd,
+      · rw [ite_eq_right hodd,
           show Native64x8.mul P.modulusLimbs P.montgomeryNegInv x.val x.val
             = (x * x).val from rfl,
           ih _ hlt]

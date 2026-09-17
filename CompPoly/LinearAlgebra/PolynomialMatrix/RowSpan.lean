@@ -203,24 +203,24 @@ private theorem rowLinearCombination_unit_range
       rw [ih (by omega)]
       by_cases hin : i < n
       · have hne : n ≠ i := by omega
-        rw [if_pos hin]
+        rw [ite_eq_left hin]
         rw [unitRowCoeffs_getD_ne (F := F) hne]
         rw [rowScalePolynomial_C_zero_of_wellFormed hM hnM]
-        rw [if_pos (by omega)]
+        rw [ite_eq_left (by omega)]
         exact rowAdd_zeroRow_right row hrowWidth
-      · rw [if_neg hin]
+      · rw [ite_eq_right hin]
         by_cases hni : n = i
         · subst n
           rw [unitRowCoeffs_getD_self (F := F) hi]
           rw [hrow, rowScalePolynomial_C_one]
-          rw [if_pos (by omega)]
+          rw [ite_eq_left (by omega)]
           exact rowAdd_zeroRow_left row hrowWidth
         · have hne : n ≠ i := hni
           rw [unitRowCoeffs_getD_ne (F := F) hne]
           rw [rowScalePolynomial_C_zero_of_wellFormed hM hnM]
           have hzeroWidth : (zeroRow (F := F) (MatrixWidth M)).size = MatrixWidth M := by
             simp [zeroRow]
-          rw [if_neg (by omega)]
+          rw [ite_eq_right (by omega)]
           exact rowAdd_zeroRow_right (zeroRow (F := F) (MatrixWidth M)) hzeroWidth
 
 /-- Every stored row belongs to its matrix row span. -/

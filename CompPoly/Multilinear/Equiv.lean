@@ -101,7 +101,7 @@ theorem toMvPolynomial_is_multilinear (p : CMlPolynomial R n) :
   by_contra h_s_k_gt_1
   push Not at h_s_k_gt_1 -- h_s_k_gt_1 : 1 < s k
   have h_invalid: ∀ x: Fin (2^n),
-    (coeff s (MvPolynomial.monomial (R:=R) (monomialOfNat x) (a:=p[x]))) = 0 := by
+    ((MvPolynomial.monomial (R:=R) (monomialOfNat x) (a:=p[x])).coeff s) = 0 := by
     intro x
     rw [MvPolynomial.coeff_monomial]
     -- ⊢ (if monomialOfNat ↑x = s then p[x] else 0) = 0
@@ -114,14 +114,14 @@ theorem toMvPolynomial_is_multilinear (p : CMlPolynomial R n) :
       have h_ne_1_lt_getBit: ¬(1 < Nat.getBit k x.val) := by omega
       exact h_ne_1_lt_getBit h_s_k_gt_1
     simp only [h_monomialOfNat_x_ne_s, ↓reduceIte]
-  have h_sum_zero: ∑ x: Fin (2^n), (coeff s (MvPolynomial.monomial
-    (R:=R) (monomialOfNat x) (a:=p[x]))) = 0 := by
+  have h_sum_zero: ∑ x: Fin (2^n), ((MvPolynomial.monomial
+    (R:=R) (monomialOfNat x) (a:=p[x])).coeff s) = 0 := by
     simp_rw [h_invalid]
     exact Fintype.sum_eq_zero (fun a ↦ 0) (congrFun rfl)
   exact hs h_sum_zero
 
 theorem coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial (p : CMlPolynomial R n) (m : Fin n →₀ ℕ) :
-    coeff m (toMvPolynomial p) =
+    (toMvPolynomial p).coeff m =
     if h_binary : (∀ j : Fin n, m j ≤ 1) then
         let i_of_m : ℕ := Nat.binaryFinMapToNat (m := m) (h_binary := h_binary)
         p[i_of_m]
@@ -306,7 +306,7 @@ noncomputable def linearEquivMvPolynomialDeg1 :
       -- ⊢ coeff i ↑(p + q).toMvPolynomialDeg1 =
       -- coeff i ↑(p.toMvPolynomialDeg1 + q.toMvPolynomialDeg1)
       unfold equivMvPolynomialDeg1 toMvPolynomialDeg1
-      simp only [AddMemClass.mk_add_mk, coeff_add]
+      simp only [AddMemClass.mk_add_mk, AddMonoidAlgebra.coeff_add, Finsupp.add_apply]
       simp only [coeff_of_toMvPolynomial_eq_coeff_of_CMlPolynomial]
       if h_binary: (∀ j: Fin n, i j ≤ 1) then
         simp only [h_binary, implies_true, ↓reduceDIte]

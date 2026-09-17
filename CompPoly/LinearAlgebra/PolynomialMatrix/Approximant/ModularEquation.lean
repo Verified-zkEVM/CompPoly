@@ -63,7 +63,7 @@ def modularSolutionBasisContextViaPMBasis
             equation shift degreeBound? =
             (adaptiveSolutionBasis mulCtx modCtx pmCtx equation shift degreeBound?).filtered := by
           simp only [filteredSolutionBasisViaPMBasis]
-          rw [if_pos hgate]
+          rw [ite_eq_left hgate]
         rw [leastSolutionRowDegree?] at hBest
         rcases Option.map_eq_some_iff.mp hBest with ⟨choice, hchoice, hchoicedeg⟩
         obtain ⟨hidx, hrowEq, hcdeg⟩ := leastShiftedDegreeChoice?_some_valid hchoice
@@ -207,8 +207,8 @@ def modularSolutionBasisContextViaPMBasis
                         shift degreeBound?).filtered shift))) := by
           simp only [filteredSolutionBasisViaPMBasis]
           rw [hgate]
-          simp only [Bool.false_eq_true, if_false]
-          rw [if_neg (by simp only [beq_iff_eq]; omega)]
+          simp only [Bool.false_eq_true, ite_false]
+          rw [ite_eq_right (by simp only [beq_iff_eq]; omega)]
         constructor
         · -- Width discipline of the returned rows.
           intro basisRow hbasisRow

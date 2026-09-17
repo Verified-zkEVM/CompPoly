@@ -128,7 +128,7 @@ theorem pmBasisWithFuelCore_kernelLeaf_rows (mulCtx : CPolynomial.MulContext F)
             intro hpos
             rw [hRmatdef]
             simp only [residualMatrixWithProduct]
-            rw [MatrixWidth_ofFn, if_neg (by omega), hprodwidth hpos]
+            rw [MatrixWidth_ofFn, ite_eq_right (by omega), hprodwidth hpos]
           constructor
           · refine rowApproximates_composed mulCtx hIH₁ hRsize hRwidth ?_ hIH₂.1
             intro l j hl hj hjw t ht
@@ -143,14 +143,14 @@ theorem pmBasisWithFuelCore_kernelLeaf_rows (mulCtx : CPolynomial.MulContext F)
                     problem.matrix).getD l #[]) j) := by
               rw [hRmatdef]
               simp only [residualMatrixWithProduct]
-              rw [rowGet_ofFn, if_pos ⟨by rw [hprodsize]; exact hl,
+              rw [rowGet_ofFn, ite_eq_left ⟨by rw [hprodsize]; exact hl,
                 by rw [hprodwidth hP₁0]; exact hjw⟩]
             rw [hRentry, divXTrunc_coeff,
-              if_pos (by rw [hresOrders, residualOrders,
+              ite_eq_left (by rw [hresOrders, residualOrders,
                 natArray_map_getD _ _ hj]; omega)]
             rw [mulTruncColumnStrassenWith_entry lowCtx composeLeafCutoff _ P₁
               problem.matrix (by omega) j]
-            rw [truncateX_coeff, if_pos (by
+            rw [truncateX_coeff, ite_eq_left (by
               rw [natArray_map_getD _ _ hjres, hresOrders, residualOrders,
                 natArray_map_getD _ _ hj]
               omega)]
@@ -620,7 +620,7 @@ theorem pmBasisWithFuelCore_kernelLeaf_rowSpan_complete [DecidableEq F]
           have hRwidth : MatrixWidth Rmat = MatrixWidth problem.matrix := by
             rw [hRmatdef]
             simp only [residualMatrixWithProduct]
-            rw [MatrixWidth_ofFn, if_neg (by omega), hprodwidth]
+            rw [MatrixWidth_ofFn, ite_eq_right (by omega), hprodwidth]
           have hRcong : ∀ l j, l < P₁.size → j < problem.orders.size →
               j < MatrixWidth problem.matrix →
               ∀ t, t < problem.orders.getD j 0 - d₁ →
@@ -640,14 +640,14 @@ theorem pmBasisWithFuelCore_kernelLeaf_rowSpan_complete [DecidableEq F]
                     problem.matrix).getD l #[]) j) := by
               rw [hRmatdef]
               simp only [residualMatrixWithProduct]
-              rw [rowGet_ofFn, if_pos ⟨by rw [hprodsize]; exact hl,
+              rw [rowGet_ofFn, ite_eq_left ⟨by rw [hprodsize]; exact hl,
                 by rw [hprodwidth]; exact hjw⟩]
             rw [hRentry, divXTrunc_coeff,
-              if_pos (by rw [hresOrders, residualOrders,
+              ite_eq_left (by rw [hresOrders, residualOrders,
                 natArray_map_getD _ _ hj]; omega)]
             rw [mulTruncColumnStrassenWith_entry lowCtx composeLeafCutoff _ P₁
               problem.matrix (by omega) j]
-            rw [truncateX_coeff, if_pos (by
+            rw [truncateX_coeff, ite_eq_left (by
               rw [natArray_map_getD _ _ hjres, hresOrders, residualOrders,
                 natArray_map_getD _ _ hj]
               omega)]
@@ -681,7 +681,7 @@ theorem pmBasisWithFuelCore_kernelLeaf_rowSpan_complete [DecidableEq F]
               exact hget
             rw [← hr_eq, hRmatdef]
             simp only [residualMatrixWithProduct]
-            rw [getD_ofFn, if_pos (by
+            rw [getD_ofFn, ite_eq_left (by
               rw [hRmatdef] at hi'
               simpa [residualMatrixWithProduct, ofFn_size] using hi')]
             simp
@@ -826,7 +826,7 @@ private theorem pm_coeffXPower_one_ne_zero (d : Nat) :
   intro h
   have hcoeff : CPolynomial.coeff (coeffXPower (1 : F) d) d = 1 := by
     rw [CPolynomial.coeff_toPoly, coeffXPower_toPoly, Polynomial.coeff_C_mul,
-      Polynomial.coeff_X_pow, if_pos rfl, mul_one]
+      Polynomial.coeff_X_pow, ite_eq_left rfl, mul_one]
   rw [h, CPolynomial.coeff_zero] at hcoeff
   exact zero_ne_one hcoeff
 
@@ -843,7 +843,7 @@ private theorem pm_shiftedEntryDegree_monomialUnitRow_self {n i : Nat}
       some (cap + shift.getD i 0) := by
   have hget : rowGet (monomialUnitRow (F := F) n i cap) i =
       coeffXPower 1 cap := by
-    rw [pm_rowGet_monomialUnitRow, if_pos ⟨hi, rfl⟩]
+    rw [pm_rowGet_monomialUnitRow, ite_eq_left ⟨hi, rfl⟩]
   rw [shiftedEntryDegree?_eq_some_of_rowGet_ne_zero (by
       rw [hget]
       exact pm_coeffXPower_one_ne_zero cap),
@@ -854,7 +854,7 @@ private theorem pm_shiftedEntryDegree_monomialUnitRow_ne {n i j : Nat}
     (cap : Nat) (shift : Array Nat) (hij : i ≠ j) :
     shiftedEntryDegree? (monomialUnitRow (F := F) n i cap) shift j = none := by
   refine pm_shiftedEntryDegree_eq_none_of_rowGet_eq_zero ?_
-  rw [pm_rowGet_monomialUnitRow, if_neg fun h ↦ hij h.2]
+  rw [pm_rowGet_monomialUnitRow, ite_eq_right fun h ↦ hij h.2]
 
 /-- Shifted row degree of a monomial unit row. -/
 private theorem pm_rowShiftedDegree_monomialUnitRow {n i : Nat} (cap : Nat)
@@ -866,7 +866,7 @@ private theorem pm_rowShiftedDegree_monomialUnitRow {n i : Nat} (cap : Nat)
       exfalso
       have hz := rowShiftedDegree?_eq_none_iff.1 hd
       have hzero := pm_rowGet_eq_zero_of_rowIsZero hz i
-      rw [pm_rowGet_monomialUnitRow, if_pos ⟨hi, rfl⟩] at hzero
+      rw [pm_rowGet_monomialUnitRow, ite_eq_left ⟨hi, rfl⟩] at hzero
       exact pm_coeffXPower_one_ne_zero cap hzero
   | some d =>
       rcases exists_shiftedEntryDegree?_eq_of_rowShiftedDegree?_eq_some hd
@@ -965,9 +965,9 @@ private theorem pm_missingCompletionRows_facts [DecidableEq F]
   rcases List.mem_filterMap.mp hmem with ⟨i, hi, hg⟩
   rw [List.mem_range] at hi
   by_cases hc : rowsContainLeadingPosition rows shift i
-  · rw [if_pos hc] at hg
+  · rw [ite_eq_left hc] at hg
     cases hg
-  · rw [if_neg hc] at hg
+  · rw [ite_eq_right hc] at hg
     refine ⟨i, hi, ?_, by simpa using hc⟩
     rw [← Option.some.inj hg]
     exact pm_rowShiftedLeadingPosition_monomialUnitRow
@@ -1003,17 +1003,17 @@ private theorem pm_missingCompletionRows_pairwise [DecidableEq F]
     simp only [List.getElem_range] at hb hb'
     have hbpos : rowShiftedLeadingPosition? b shift = some u := by
       by_cases hc : rowsContainLeadingPosition rows shift u
-      · rw [if_pos hc] at hb
+      · rw [ite_eq_left hc] at hb
         cases hb
-      · rw [if_neg hc] at hb
+      · rw [ite_eq_right hc] at hb
         rw [← Option.some.inj hb]
         exact pm_rowShiftedLeadingPosition_monomialUnitRow
           (leafDegreeCap problem) shift hu'
     have hbpos' : rowShiftedLeadingPosition? b' shift = some v := by
       by_cases hc : rowsContainLeadingPosition rows shift v
-      · rw [if_pos hc] at hb'
+      · rw [ite_eq_left hc] at hb'
         cases hb'
-      · rw [if_neg hc] at hb'
+      · rw [ite_eq_right hc] at hb'
         rw [← Option.some.inj hb']
         exact pm_rowShiftedLeadingPosition_monomialUnitRow
           (leafDegreeCap problem) shift hv'
@@ -1169,9 +1169,9 @@ theorem pmBasis_kernelLeaf_complete_minimal [DecidableEq F]
     · rw [missingCompletionRows, List.toList_toArray] at hr
       rcases List.mem_filterMap.mp hr with ⟨i, _hi, hg⟩
       by_cases hc : rowsContainLeadingPosition red shift i
-      · rw [if_pos hc] at hg
+      · rw [ite_eq_left hc] at hg
         cases hg
-      · rw [if_neg hc] at hg
+      · rw [ite_eq_right hc] at hg
         rw [← Option.some.inj hg, hn]
         simp [monomialUnitRow]
   have hrow'fin : row' ∈ RowSpan (completeMissingPivotRows problem shift

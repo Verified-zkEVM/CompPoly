@@ -107,7 +107,6 @@ def multilinearBasis (l r : ℕ) (h_le : l ≤ r) :
       ) (c:=by
         convert (powerBasisSucc (r1)).basis using 1
         · rw [powerBasisSucc_dim (k:=r1)]
-        · exact Semiring.ext rfl rfl
       )
     convert res
     -- Basis are equal under the same @binaryAlgebraTower
@@ -231,7 +230,7 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       rw [multilinearBasis]
       -- key to remove Eq.rec : dif_neg h_r_sub_l
       simp (config := { maxSteps := 100000 }) only [Nat.pow_zero, eq_mp_eq_cast, cast_eq,
-        eq_mpr_eq_cast, dif_neg h_r_sub_l]
+        eq_mpr_eq_cast, dite_eq_right h_r_sub_l]
       have h2 : 2 ^ (r - l - 1) * 2 = 2 ^ (r - l) := by
         rw [←Nat.pow_succ, Nat.succ_eq_add_one, Nat.sub_add_cancel (by omega)]
       erw [BTField.Basis_cast_index_apply (h_eq:=by omega) (h_le:=by omega)]

@@ -277,11 +277,11 @@ theorem coeff_monomialXY [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [Deci
   unfold monomialXY
   rw [CPolynomial.coeff_monomial]
   by_cases hj : j = b
-  · rw [if_pos hj, CPolynomial.coeff_monomial]
+  · rw [ite_eq_left hj, CPolynomial.coeff_monomial]
     by_cases hi : i = a
-    · rw [if_pos hi, if_pos ⟨hi, hj⟩]
-    · rw [if_neg hi, if_neg (fun h => hi h.1)]
-  · rw [if_neg hj, CPolynomial.coeff_zero, if_neg (fun h => hj h.2)]
+    · rw [ite_eq_left hi, ite_eq_left ⟨hi, hj⟩]
+    · rw [ite_eq_right hi, ite_eq_right (fun h => hi h.1)]
+  · rw [ite_eq_right hj, CPolynomial.coeff_zero, ite_eq_right (fun h => hj h.2)]
 
 /-- Coefficient of `Y^m * c(X)` as a bivariate polynomial. -/
 theorem coeff_monomialY [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
@@ -289,8 +289,8 @@ theorem coeff_monomialY [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [Decid
     coeff (CPolynomial.monomial m c) i j = if j = m then CPolynomial.coeff c i else 0 := by
   rw [coeff_eq_coeff_coeff, CPolynomial.coeff_monomial]
   by_cases hj : j = m
-  · rw [if_pos hj, if_pos hj]
-  · rw [if_neg hj, if_neg hj, CPolynomial.coeff_zero]
+  · rw [ite_eq_left hj, ite_eq_left hj]
+  · rw [ite_eq_right hj, ite_eq_right hj, CPolynomial.coeff_zero]
 
 /-- Two bivariate polynomials are equal iff all their coefficients agree. -/
 theorem eq_iff_coeff [Zero R] [BEq R] [LawfulBEq R] {p q : CBivariate R} :
@@ -343,7 +343,7 @@ theorem natWeightedDegree_monomialXY [DecidableEq R]
   simp only [
     CBivariate.natWeightedDegree, CBivariate.monomialXY,
     CPolynomial.support_monomial hmon, Finset.sup_singleton,
-    CPolynomial.coeff_monomial, if_pos,
+    CPolynomial.coeff_monomial, ite_eq_left,
     CPolynomial.natDegree_monomial hc]
 
 /-- The weighted degree of the zero polynomial is zero. -/
@@ -399,7 +399,7 @@ theorem natWeightedDegree_CC {r : R} (u v : ℕ) :
   · rw [CPolynomial.support_C hr, Finset.sup_singleton]
     show u * (CPolynomial.coeff
       (CPolynomial.C (CPolynomial.C r)) 0).natDegree + v * 0 = 0
-    rw [CPolynomial.coeff_C, if_pos rfl, CPolynomial.natDegree_C]
+    rw [CPolynomial.coeff_C, ite_eq_left rfl, CPolynomial.natDegree_C]
     ring
 
 /-- The weighted degree of a sum is at most the max of the weighted degrees. -/

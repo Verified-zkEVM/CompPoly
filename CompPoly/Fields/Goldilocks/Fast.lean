@@ -322,10 +322,10 @@ theorem toNat_ofUInt64 (x : UInt64) :
   have hx_two := uint64_toNat_lt_two_fieldSize x
   unfold reduceUInt64Raw
   by_cases hx : x < modulus
-  · rw [if_pos hx]
+  · rw [ite_eq_left hx]
     rw [UInt64.lt_iff_toNat_lt, modulus_toNat] at hx
     exact (Nat.mod_eq_of_lt hx).symm
-  · rw [if_neg hx]
+  · rw [ite_eq_right hx]
     rw [UInt64.lt_iff_toNat_lt, modulus_toNat] at hx
     have hp : Goldilocks.fieldSize ≤ x.toNat := Nat.le_of_not_gt hx
     have hle : modulus ≤ x := by
@@ -436,9 +436,9 @@ theorem toField_add (x y : Field) : toField (x + y) = toField x + toField y := b
         (if carry then (UInt64.size : Goldilocks.Field) else 0) =
       (x.val.toNat : Goldilocks.Field) + (y.val.toNat : Goldilocks.Field))
   by_cases hcarry : carry = true
-  · simp only [hcarry, if_true] at hvalue ⊢
+  · simp only [hcarry, ite_true] at hvalue ⊢
     rw [← Nat.cast_add, hvalue, Nat.cast_add]
-  · simp only [hcarry, Bool.false_eq_true, if_false, add_zero] at hvalue ⊢
+  · simp only [hcarry, Bool.false_eq_true, ite_false, add_zero] at hvalue ⊢
     rw [hvalue, Nat.cast_add]
 
 /-- Fast negation agrees with canonical-field negation. -/

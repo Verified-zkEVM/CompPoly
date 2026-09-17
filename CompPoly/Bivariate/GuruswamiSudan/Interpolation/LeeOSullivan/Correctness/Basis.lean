@@ -523,7 +523,7 @@ theorem leeOSullivanBasisPolynomial_coeffY_eq_zero_of_idx_lt
       have hc := congrArg (fun p : CPolynomial F ↦ CPolynomial.coeff p 0) h
       change CPolynomial.coeff (CPolynomial.C (1 : F) : CPolynomial F) 0 =
         CPolynomial.coeff (0 : CPolynomial F) 0 at hc
-      rw [CPolynomial.coeff_C, if_pos rfl, CPolynomial.coeff_zero] at hc
+      rw [CPolynomial.coeff_C, ite_eq_left rfl, CPolynomial.coeff_zero] at hc
       exact one_ne_zero hc
     rw [CBivariate.Y, CPolynomial.natDegree_monomial hC]
   have hL : (CBivariate.linearYDivisor R : CBivariate F).natDegree ≤ 1 := by

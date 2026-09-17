@@ -71,9 +71,10 @@ variable (P : ExtensionParams F)
 def lowerCoeffNat (k : ℕ) : F := if h : k < P.d then P.lower[k] else 0
 
 @[simp] theorem lowerCoeffNat_coe (i : Fin P.d) : P.lowerCoeffNat (i : ℕ) = P.lowerCoeff i := by
-  rw [lowerCoeffNat, dif_pos i.isLt]; rfl
+  rw [lowerCoeffNat, dite_eq_left i.isLt]; rfl
 
-theorem lowerCoeffNat_of_ge {k : ℕ} (h : P.d ≤ k) : P.lowerCoeffNat k = 0 := dif_neg (by omega)
+theorem lowerCoeffNat_of_ge {k : ℕ} (h : P.d ≤ k) : P.lowerCoeffNat k = 0 :=
+  dite_eq_right (by omega)
 
 omit [Ring F] in
 theorem d_pos : 0 < P.d := by have := P.two_le; omega
@@ -137,13 +138,13 @@ def equivFn (P : ExtensionParams F) : Ext P ≃ (Fin P.d → F) where
 def coeffNat (x : Ext P) (i : ℕ) : F := if h : i < P.d then coeff x ⟨i, h⟩ else 0
 
 @[simp] theorem coeffNat_coe (x : Ext P) (i : Fin P.d) : coeffNat x (i : ℕ) = coeff x i := by
-  rw [coeffNat, dif_pos i.isLt]
+  rw [coeffNat, dite_eq_left i.isLt]
 
 theorem coeffNat_of_lt (x : Ext P) {i : ℕ} (h : i < P.d) : coeffNat x i = coeff x ⟨i, h⟩ :=
-  dif_pos h
+  dite_eq_left h
 
 theorem coeffNat_of_ge (x : Ext P) {i : ℕ} (h : P.d ≤ i) : coeffNat x i = 0 :=
-  dif_neg (by omega)
+  dite_eq_right (by omega)
 
 /-! ### Distinguished elements
 

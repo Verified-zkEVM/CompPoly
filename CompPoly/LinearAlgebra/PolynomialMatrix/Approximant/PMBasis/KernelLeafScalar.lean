@@ -114,7 +114,7 @@ theorem normalizeScalarRow_getD [Field F] [BEq F] [LawfulBEq F]
     (normalizeScalarRow row pivotCol).getD k 0 =
       row.getD k 0 / row.getD pivotCol 0 := by
   unfold normalizeScalarRow
-  rw [if_neg (by simpa using hpivot)]
+  rw [ite_eq_right (by simpa using hpivot)]
   by_cases hk : k < row.size
   · rw [array_getD_eq_getElem (by simpa using hk), array_getD_eq_getElem hk]
     simp
@@ -262,7 +262,7 @@ private theorem normalizeAndEliminateScalarRows_eq_foldl [Field F] [BEq F]
         (rows.setIfInBounds pivotRow
           (normalizeScalarRow (rows.getD pivotRow #[]) pivotCol)) := by
   unfold normalizeAndEliminateScalarRows elimStep
-  rw [if_neg (by simpa using h)]
+  rw [ite_eq_right (by simpa using h)]
 
 private theorem elimStep_size [Field F] [BEq F] (pivotRow : Nat)
     (pivotVector : Array F) (pivotCol : Nat) (rows : Array (Array F))
@@ -270,11 +270,11 @@ private theorem elimStep_size [Field F] [BEq F] (pivotRow : Nat)
     (elimStep pivotRow pivotVector pivotCol rows row).size = rows.size := by
   unfold elimStep
   by_cases hrp : (row == pivotRow) = true
-  · rw [if_pos hrp]
-  · rw [if_neg hrp]
+  · rw [ite_eq_left hrp]
+  · rw [ite_eq_right hrp]
     by_cases hfac : (-((rows.getD row #[]).getD pivotCol 0) == 0) = true
-    · rw [if_pos hfac]
-    · rw [if_neg hfac]
+    · rw [ite_eq_left hfac]
+    · rw [ite_eq_right hfac]
       exact Array.size_setIfInBounds
 
 private theorem foldl_elimStep_size [Field F] [BEq F] (pivotRow : Nat)
@@ -295,15 +295,15 @@ private theorem elimStep_getD_pivotRow [Field F] [BEq F] (pivotRow : Nat)
       rows.getD pivotRow #[] := by
   unfold elimStep
   by_cases hrp : (row == pivotRow) = true
-  · rw [if_pos hrp]
-  · rw [if_neg hrp]
+  · rw [ite_eq_left hrp]
+  · rw [ite_eq_right hrp]
     by_cases hfac : (-((rows.getD row #[]).getD pivotCol 0) == 0) = true
-    · rw [if_pos hfac]
-    · rw [if_neg hfac]
+    · rw [ite_eq_left hfac]
+    · rw [ite_eq_right hfac]
       have hne : ¬(row = pivotRow ∧ row < rows.size) := by
         intro hc
         exact hrp (beq_iff_eq.mpr hc.1)
-      rw [array_getD_setIfInBounds, if_neg hne]
+      rw [array_getD_setIfInBounds, ite_eq_right hne]
 
 private theorem foldl_elimStep_getD_pivotRow [Field F] [BEq F]
     (pivotRow : Nat) (pivotVector : Array F) (pivotCol : Nat) :
@@ -325,25 +325,25 @@ private theorem orthRows_of_elimStep [Field F] [BEq F] [LawfulBEq F]
     OrthRows cols rows v := by
   unfold elimStep at h
   by_cases hap : (a == pivotRow) = true
-  · rwa [if_pos hap] at h
-  · rw [if_neg hap] at h
+  · rwa [ite_eq_left hap] at h
+  · rw [ite_eq_right hap] at h
     by_cases hfac : (-((rows.getD a #[]).getD pivotCol 0) == 0) = true
-    · rwa [if_pos hfac] at h
-    · rw [if_neg hfac] at h
+    · rwa [ite_eq_left hfac] at h
+    · rw [ite_eq_right hfac] at h
       intro i
       by_cases hia : i = a
       · subst hia
         have hi := h i
         rw [array_getD_setIfInBounds] at hi
         by_cases hsize : i < rows.size
-        · rw [if_pos ⟨rfl, hsize⟩, scalarDot_addScaledScalarRow, hpv,
+        · rw [ite_eq_left ⟨rfl, hsize⟩, scalarDot_addScaledScalarRow, hpv,
             mul_zero, add_zero] at hi
           exact hi
         · have hne : ¬(i = i ∧ i < rows.size) := fun hc ↦ hsize hc.2
-          rwa [if_neg hne] at hi
+          rwa [ite_eq_right hne] at hi
       · have hi := h i
         have hne : ¬(a = i ∧ a < rows.size) := fun hc ↦ hia hc.1.symm
-        rwa [array_getD_setIfInBounds, if_neg hne] at hi
+        rwa [array_getD_setIfInBounds, ite_eq_right hne] at hi
 
 private theorem orthRows_of_foldl_elimStep [Field F] [BEq F] [LawfulBEq F]
     {cols pivotRow pivotCol : Nat} {pivotVector v : Array F}
@@ -367,7 +367,7 @@ private theorem orthRows_of_normalizeAndEliminate [Field F] [BEq F]
     OrthRows cols rows v := by
   by_cases hpivot : (rows.getD pivotRow #[]).getD pivotCol 0 = 0
   · unfold normalizeAndEliminateScalarRows at h
-    rwa [if_pos (by simpa using hpivot)] at h
+    rwa [ite_eq_left (by simpa using hpivot)] at h
   · rw [normalizeAndEliminateScalarRows_eq_foldl rows pivotRow pivotCol hpivot]
       at h
     have hpv_entry :
@@ -375,7 +375,7 @@ private theorem orthRows_of_normalizeAndEliminate [Field F] [BEq F]
             (normalizeScalarRow (rows.getD pivotRow #[]) pivotCol)).getD
           pivotRow #[] =
           normalizeScalarRow (rows.getD pivotRow #[]) pivotCol := by
-      rw [array_getD_setIfInBounds, if_pos ⟨rfl, hpr⟩]
+      rw [array_getD_setIfInBounds, ite_eq_left ⟨rfl, hpr⟩]
     have hpv : scalarDot cols
         (normalizeScalarRow (rows.getD pivotRow #[]) pivotCol) v = 0 := by
       have hp := h pivotRow
@@ -389,7 +389,7 @@ private theorem orthRows_of_normalizeAndEliminate [Field F] [BEq F]
     · have hi := h₁ i
       have hne : ¬(pivotRow = i ∧ pivotRow < rows.size) :=
         fun hc ↦ hip hc.1.symm
-      rwa [array_getD_setIfInBounds, if_neg hne] at hi
+      rwa [array_getD_setIfInBounds, ite_eq_right hne] at hi
 
 private theorem orthRows_of_scalarRrefRowsLoop [Field F] [BEq F] [LawfulBEq F]
     {cols : Nat} {v : Array F} :
@@ -429,15 +429,15 @@ private theorem orthRows_of_scalarRrefRowsLoop [Field F] [BEq F] [LawfulBEq F]
               have hs := hswapped p
               rw [swapScalarRows_getD rows hp_lt hrow] at hs
               by_cases hpr : p = i
-              · rwa [if_pos hpr, hpr] at hs
-              · rwa [if_neg hpr, if_pos rfl] at hs
+              · rwa [ite_eq_left hpr, hpr] at hs
+              · rwa [ite_eq_right hpr, ite_eq_left rfl] at hs
             · by_cases hia : i = p
               · subst hia
                 have hs := hswapped row
-                rwa [swapScalarRows_getD rows hp_lt hrow, if_pos rfl] at hs
+                rwa [swapScalarRows_getD rows hp_lt hrow, ite_eq_left rfl] at hs
               · have hs := hswapped i
-                rwa [swapScalarRows_getD rows hp_lt hrow, if_neg hib,
-                  if_neg hia] at hs
+                rwa [swapScalarRows_getD rows hp_lt hrow, ite_eq_right hib,
+                  ite_eq_right hia] at hs
 
 /-- Orthogonality to all rows of the final RREF matrix transfers back to all
 rows of the original matrix: every row operation is invertible. -/
@@ -462,13 +462,13 @@ private theorem elimStep_getD_other [Field F] [BEq F] {pivotRow : Nat}
       rows.getD i #[] := by
   unfold elimStep
   by_cases hap : (a == pivotRow) = true
-  · rw [if_pos hap]
-  · rw [if_neg hap]
+  · rw [ite_eq_left hap]
+  · rw [ite_eq_right hap]
     by_cases hfac : (-((rows.getD a #[]).getD pivotCol 0) == 0) = true
-    · rw [if_pos hfac]
-    · rw [if_neg hfac]
+    · rw [ite_eq_left hfac]
+    · rw [ite_eq_right hfac]
       have hne : ¬(a = i ∧ a < rows.size) := fun hc ↦ hia hc.1.symm
-      rw [array_getD_setIfInBounds, if_neg hne]
+      rw [array_getD_setIfInBounds, ite_eq_right hne]
 
 private theorem elimStep_getD_self_entry [Field F] [BEq F] [LawfulBEq F]
     (pivotRow : Nat) (pivotVector : Array F) (pivotCol : Nat)
@@ -481,19 +481,19 @@ private theorem elimStep_getD_self_entry [Field F] [BEq F] [LawfulBEq F]
           (rows.getD a #[]).getD pivotCol 0 * pivotVector.getD k 0 := by
   unfold elimStep
   by_cases hap : (a == pivotRow) = true
-  · rw [if_pos hap, if_pos (beq_iff_eq.mp hap)]
+  · rw [ite_eq_left hap, ite_eq_left (beq_iff_eq.mp hap)]
   · have hap' : ¬a = pivotRow := by simpa using hap
-    rw [if_neg hap, if_neg hap']
+    rw [ite_eq_right hap, ite_eq_right hap']
     by_cases hfac : (-((rows.getD a #[]).getD pivotCol 0) == 0) = true
     · have hzero : (rows.getD a #[]).getD pivotCol 0 = 0 :=
         neg_eq_zero.mp (beq_iff_eq.mp hfac)
-      rw [if_pos hfac, hzero, zero_mul, sub_zero]
-    · rw [if_neg hfac]
+      rw [ite_eq_left hfac, hzero, zero_mul, sub_zero]
+    · rw [ite_eq_right hfac]
       by_cases hsize : a < rows.size
-      · rw [array_getD_setIfInBounds, if_pos ⟨rfl, hsize⟩,
+      · rw [array_getD_setIfInBounds, ite_eq_left ⟨rfl, hsize⟩,
           addScaledScalarRow_getD, neg_mul, ← sub_eq_add_neg]
       · have hne : ¬(a = a ∧ a < rows.size) := fun hc ↦ hsize hc.2
-        rw [array_getD_setIfInBounds, if_neg hne,
+        rw [array_getD_setIfInBounds, ite_eq_right hne,
           array_getD_of_le' rows #[] (Nat.le_of_not_lt hsize)]
         have h0 : ∀ j, (#[] : Array F).getD j 0 = 0 :=
           fun j ↦ array_getD_of_le' _ _ (by simp)
@@ -515,7 +515,7 @@ private theorem foldl_elimStep_getD_entry [Field F] [BEq F] [LawfulBEq F]
   | nil =>
       intro _ acc i k
       have hne : ¬(i ∈ ([] : List Nat) ∧ i ≠ pivotRow) := by simp
-      rw [List.foldl_nil, if_neg hne]
+      rw [List.foldl_nil, ite_eq_right hne]
   | cons a l ih =>
       intro hnodup acc i k
       obtain ⟨ha_notin, hl⟩ := List.nodup_cons.mp hnodup
@@ -523,20 +523,20 @@ private theorem foldl_elimStep_getD_entry [Field F] [BEq F] [LawfulBEq F]
       by_cases hia : i = a
       · subst hia
         have hnot : ¬(i ∈ l ∧ i ≠ pivotRow) := fun hc ↦ ha_notin hc.1
-        rw [if_neg hnot, elimStep_getD_self_entry]
+        rw [ite_eq_right hnot, elimStep_getD_self_entry]
         by_cases hip : i = pivotRow
         · have hnot2 : ¬(i ∈ i :: l ∧ i ≠ pivotRow) := fun hc ↦ hc.2 hip
-          rw [if_pos hip, if_neg hnot2]
-        · rw [if_neg hip, if_pos ⟨by simp, hip⟩]
+          rw [ite_eq_left hip, ite_eq_right hnot2]
+        · rw [ite_eq_right hip, ite_eq_left ⟨by simp, hip⟩]
       · rw [elimStep_getD_other hia]
         by_cases hil : i ∈ l ∧ i ≠ pivotRow
-        · rw [if_pos hil, if_pos ⟨List.mem_cons_of_mem a hil.1, hil.2⟩]
+        · rw [ite_eq_left hil, ite_eq_left ⟨List.mem_cons_of_mem a hil.1, hil.2⟩]
         · have hnot : ¬(i ∈ a :: l ∧ i ≠ pivotRow) := by
             intro hc
             rcases List.mem_cons.mp hc.1 with h | h
             · exact hia h
             · exact hil ⟨h, hc.2⟩
-          rw [if_neg hil, if_neg hnot]
+          rw [ite_eq_right hil, ite_eq_right hnot]
 
 private theorem normalizeAndEliminateScalarRows_getD_entry [Field F] [BEq F]
     [LawfulBEq F] (rows : Array (Array F)) (pivotRow pivotCol : Nat)
@@ -559,7 +559,7 @@ private theorem normalizeAndEliminateScalarRows_getD_entry [Field F] [BEq F]
           (normalizeScalarRow (rows.getD pivotRow #[]) pivotCol)).getD
         pivotRow #[] =
         normalizeScalarRow (rows.getD pivotRow #[]) pivotCol := by
-    rw [array_getD_setIfInBounds, if_pos ⟨rfl, hpr⟩]
+    rw [array_getD_setIfInBounds, ite_eq_left ⟨rfl, hpr⟩]
   have hpv_getD := normalizeScalarRow_getD (rows.getD pivotRow #[]) pivotCol
     hpivot
   by_cases hip : i = pivotRow
@@ -568,22 +568,22 @@ private theorem normalizeAndEliminateScalarRows_getD_entry [Field F] [BEq F]
         (rows.setIfInBounds i
           (normalizeScalarRow (rows.getD i #[]) pivotCol)).size ∧ i ≠ i) :=
       fun hc ↦ hc.2 rfl
-    rw [if_neg hnot, if_pos rfl, hrows₁_pr, hpv_getD]
-  · rw [if_neg hip]
+    rw [ite_eq_right hnot, ite_eq_left rfl, hrows₁_pr, hpv_getD]
+  · rw [ite_eq_right hip]
     have hrows₁_i :
         (rows.setIfInBounds pivotRow
             (normalizeScalarRow (rows.getD pivotRow #[]) pivotCol)).getD
           i #[] = rows.getD i #[] := by
       have hne : ¬(pivotRow = i ∧ pivotRow < rows.size) :=
         fun hc ↦ hip hc.1.symm
-      rw [array_getD_setIfInBounds, if_neg hne]
+      rw [array_getD_setIfInBounds, ite_eq_right hne]
     by_cases hisize : i < rows.size
     · have hmem : i ∈ List.range
           (rows.setIfInBounds pivotRow
             (normalizeScalarRow (rows.getD pivotRow #[]) pivotCol)).size := by
         rw [List.mem_range, Array.size_setIfInBounds]
         exact hisize
-      rw [if_pos ⟨hmem, hip⟩, hrows₁_i, hpv_getD]
+      rw [ite_eq_left ⟨hmem, hip⟩, hrows₁_i, hpv_getD]
     · have hnot : ¬(i ∈ List.range
           (rows.setIfInBounds pivotRow
             (normalizeScalarRow (rows.getD pivotRow #[]) pivotCol)).size ∧
@@ -592,7 +592,7 @@ private theorem normalizeAndEliminateScalarRows_getD_entry [Field F] [BEq F]
         have := List.mem_range.mp hc.1
         rw [Array.size_setIfInBounds] at this
         exact hisize this
-      rw [if_neg hnot, hrows₁_i,
+      rw [ite_eq_right hnot, hrows₁_i,
         array_getD_of_le' rows #[] (Nat.le_of_not_lt hisize)]
       have h0 : ∀ j, (#[] : Array F).getD j 0 = 0 :=
         fun j ↦ array_getD_of_le' _ _ (by simp)
@@ -676,13 +676,13 @@ private theorem scalarRrefRowsLoop_spec [Field F] [BEq F] [LawfulBEq F]
               intro i hi k hk
               rw [hgetD i]
               by_cases hir : i = row
-              · rw [if_pos hir]
+              · rw [ite_eq_left hir]
                 exact hzero p hp_le k hk
-              · rw [if_neg hir]
+              · rw [ite_eq_right hir]
                 by_cases hip : i = p
-                · rw [if_pos hip]
+                · rw [ite_eq_left hip]
                   exact hzero row (le_refl row) k hk
-                · rw [if_neg hip]
+                · rw [ite_eq_right hip]
                   exact hzero i hi k hk
             have hS_unit : ∀ t, t < pivots.size → ∀ i,
                 (S.getD i #[]).getD (pivots.getD t 0) 0 =
@@ -690,17 +690,17 @@ private theorem scalarRrefRowsLoop_spec [Field F] [BEq F] [LawfulBEq F]
               intro t ht i
               rw [hgetD i]
               by_cases hir : i = row
-              · rw [if_pos hir, hzero p hp_le _ (hltcol t ht),
-                  if_neg (by omega : ¬i = t)]
-              · rw [if_neg hir]
+              · rw [ite_eq_left hir, hzero p hp_le _ (hltcol t ht),
+                  ite_eq_right (by omega : ¬i = t)]
+              · rw [ite_eq_right hir]
                 by_cases hip : i = p
-                · rw [if_pos hip, hzero row (le_refl row) _ (hltcol t ht)]
+                · rw [ite_eq_left hip, hzero row (le_refl row) _ (hltcol t ht)]
                   have hit : ¬i = t := by omega
-                  rw [if_neg hit]
-                · rw [if_neg hip]
+                  rw [ite_eq_right hit]
+                · rw [ite_eq_right hip]
                   exact hunit t ht i
             have hS_pivot : (S.getD row #[]).getD col 0 ≠ 0 := by
-              rw [hgetD row, if_pos rfl]
+              rw [hgetD row, ite_eq_left rfl]
               exact hp_ne
             have hE := normalizeAndEliminateScalarRows_getD_entry S row col
               (by omega) hS_pivot
@@ -711,49 +711,49 @@ private theorem scalarRrefRowsLoop_spec [Field F] [BEq F] [LawfulBEq F]
               rw [Array.size_push] at ht
               rw [array_getD_push, array_getD_push]
               by_cases hts : t = pivots.size
-              · rw [if_pos hts, if_neg (by omega : ¬s = pivots.size)]
+              · rw [ite_eq_left hts, ite_eq_right (by omega : ¬s = pivots.size)]
                 exact hltcol s (by omega)
-              · rw [if_neg hts, if_neg (by omega : ¬s = pivots.size)]
+              · rw [ite_eq_right hts, ite_eq_right (by omega : ¬s = pivots.size)]
                 exact hmono s t hst (by omega)
             · intro t ht
               rw [Array.size_push] at ht
               rw [array_getD_push]
               by_cases hts : t = pivots.size
-              · rw [if_pos hts]
+              · rw [ite_eq_left hts]
                 exact Nat.lt_succ_self col
-              · rw [if_neg hts]
+              · rw [ite_eq_right hts]
                 exact Nat.lt_succ_of_lt (hltcol t (by omega))
             · intro t ht
               rw [Array.size_push] at ht
               rw [array_getD_push]
               by_cases hts : t = pivots.size
-              · rw [if_pos hts]
+              · rw [ite_eq_left hts]
                 exact hcol
-              · rw [if_neg hts]
+              · rw [ite_eq_right hts]
                 exact hltcols t (by omega)
             · intro t ht i
               rw [Array.size_push] at ht
               rw [array_getD_push]
               by_cases hts : t = pivots.size
-              · rw [if_pos hts, hE i col]
+              · rw [ite_eq_left hts, hE i col]
                 by_cases hir : i = row
-                · rw [if_pos hir, div_self hS_pivot,
-                    if_pos (by omega : i = t)]
-                · rw [if_neg hir, div_self hS_pivot, mul_one, sub_self,
-                    if_neg (by omega : ¬i = t)]
-              · rw [if_neg hts]
+                · rw [ite_eq_left hir, div_self hS_pivot,
+                    ite_eq_left (by omega : i = t)]
+                · rw [ite_eq_right hir, div_self hS_pivot, mul_one, sub_self,
+                    ite_eq_right (by omega : ¬i = t)]
+              · rw [ite_eq_right hts]
                 have ht' : t < pivots.size := by omega
                 have hSrow_c : (S.getD row #[]).getD (pivots.getD t 0) 0 = 0 := by
-                  rw [hgetD row, if_pos rfl]
+                  rw [hgetD row, ite_eq_left rfl]
                   exact hzero p hp_le _ (hltcol t ht')
                 rw [hE i (pivots.getD t 0)]
                 by_cases hir : i = row
-                · rw [if_pos hir, hSrow_c, zero_div,
-                    if_neg (by omega : ¬i = t)]
-                · rw [if_neg hir, hSrow_c, zero_div, mul_zero, sub_zero]
+                · rw [ite_eq_left hir, hSrow_c, zero_div,
+                    ite_eq_right (by omega : ¬i = t)]
+                · rw [ite_eq_right hir, hSrow_c, zero_div, mul_zero, sub_zero]
                   exact hS_unit t ht' i
             · intro i hi k hk
-              rw [hE i k, if_neg (by omega : ¬i = row)]
+              rw [hE i k, ite_eq_right (by omega : ¬i = row)]
               by_cases hkc : k < col
               · rw [hS_zero i (by omega) k hkc,
                   hS_zero row (le_refl row) k hkc, zero_div, mul_zero,
@@ -860,7 +860,7 @@ private theorem basisVectorForFreeColumnRows_getD_free [Field F]
   rw [array_getD_of_lt' _ 0 (by rw [Array.size_ofFn]; exact hfree),
     Array.getElem_ofFn]
   dsimp only
-  rw [if_pos (beq_iff_eq.mpr rfl)]
+  rw [ite_eq_left (beq_iff_eq.mpr rfl)]
 
 private theorem basisVectorForFreeColumnRows_getD_none [Field F]
     (rows : Array (Array F)) (pivots : Array Nat) (cols free : Nat) {k : Nat}
@@ -871,7 +871,7 @@ private theorem basisVectorForFreeColumnRows_getD_none [Field F]
   rw [array_getD_of_lt' _ 0 (by rw [Array.size_ofFn]; exact hk),
     Array.getElem_ofFn]
   dsimp only
-  rw [if_neg (by simpa using hkf)]
+  rw [ite_eq_right (by simpa using hkf)]
   simp only [hnone]
 
 private theorem basisVectorForFreeColumnRows_getD_some [Field F]
@@ -884,7 +884,7 @@ private theorem basisVectorForFreeColumnRows_getD_some [Field F]
   rw [array_getD_of_lt' _ 0 (by rw [Array.size_ofFn]; exact hk),
     Array.getElem_ofFn]
   dsimp only
-  rw [if_neg (by simpa using hkf)]
+  rw [ite_eq_right (by simpa using hkf)]
   simp only [hsome]
 
 private theorem scalarDot_basisVector [Field F] [BEq F] [LawfulBEq F]
@@ -908,8 +908,8 @@ private theorem scalarDot_basisVector [Field F] [BEq F] [LawfulBEq F]
       · subst hkf
         have hkp : ¬k = R.pivots.getD i 0 := fun h ↦ hfreeNot i hi h.symm
         rw [basisVectorForFreeColumnRows_getD_free R.rows R.pivots cols hk',
-          if_pos rfl, if_neg hkp, mul_one, add_zero]
-      · rw [if_neg hkf, zero_add]
+          ite_eq_left rfl, ite_eq_right hkp, mul_one, add_zero]
+      · rw [ite_eq_right hkf, zero_add]
         by_cases hkpiv : ∃ t, t < R.pivots.size ∧ R.pivots.getD t 0 = k
         · obtain ⟨t, ht, htk⟩ := hkpiv
           have hsome : DenseMatrix.pivotRowOfColumn? R.pivots k = some t := by
@@ -920,20 +920,20 @@ private theorem scalarDot_basisVector [Field F] [BEq F] [LawfulBEq F]
           rw [← htk, hspec.unit t ht i]
           by_cases hit : i = t
           · subst hit
-            rw [if_pos rfl, if_pos rfl, one_mul]
-          · rw [if_neg hit, zero_mul]
+            rw [ite_eq_left rfl, ite_eq_left rfl, one_mul]
+          · rw [ite_eq_right hit, zero_mul]
             have hne : ¬R.pivots.getD t 0 = R.pivots.getD i 0 := by
               intro heq
               rcases Nat.lt_trichotomy t i with hlt | heq' | hgt
               · exact absurd heq (Nat.ne_of_lt (hspec.mono t i hlt hi))
               · exact hit heq'.symm
               · exact absurd heq.symm (Nat.ne_of_lt (hspec.mono i t hgt ht))
-            rw [if_neg hne]
+            rw [ite_eq_right hne]
         · have hnone : DenseMatrix.pivotRowOfColumn? R.pivots k = none :=
             pivotRowOfColumn?_eq_none fun t ht heq ↦ hkpiv ⟨t, ht, heq⟩
           have hne : ¬k = R.pivots.getD i 0 := fun h ↦ hkpiv ⟨i, hi, h.symm⟩
           rw [basisVectorForFreeColumnRows_getD_none R.rows R.pivots cols
-            free hk' hkf hnone, mul_zero, if_neg hne]
+            free hk' hkf hnone, mul_zero, ite_eq_right hne]
     unfold scalarDot
     rw [Finset.sum_congr rfl hterm, Finset.sum_add_distrib,
       Finset.sum_ite_eq_of_mem' (Finset.range cols) free _
@@ -1004,19 +1004,19 @@ private theorem orthRows_elimStep_forward [Field F] [BEq F]
     OrthRows cols (elimStep pivotRow pivotVector pivotCol rows a) v := by
   unfold elimStep
   by_cases hap : (a == pivotRow) = true
-  · rw [if_pos hap]
+  · rw [ite_eq_left hap]
     exact h
-  · rw [if_neg hap]
+  · rw [ite_eq_right hap]
     by_cases hfac : (-((rows.getD a #[]).getD pivotCol 0) == 0) = true
-    · rw [if_pos hfac]
+    · rw [ite_eq_left hfac]
       exact h
-    · rw [if_neg hfac]
+    · rw [ite_eq_right hfac]
       intro i
       rw [array_getD_setIfInBounds]
       by_cases hcond : a = i ∧ a < rows.size
-      · rw [if_pos hcond, scalarDot_addScaledScalarRow, h a, hpv, mul_zero,
+      · rw [ite_eq_left hcond, scalarDot_addScaledScalarRow, h a, hpv, mul_zero,
           add_zero]
-      · rw [if_neg hcond]
+      · rw [ite_eq_right hcond]
         exact h i
 
 private theorem orthRows_foldl_elimStep_forward [Field F] [BEq F]
@@ -1043,7 +1043,7 @@ private theorem orthRows_normalizeAndEliminate_forward [Field F] [BEq F]
       v := by
   by_cases hpivot : (rows.getD pivotRow #[]).getD pivotCol 0 = 0
   · unfold normalizeAndEliminateScalarRows
-    rw [if_pos (by simpa using hpivot)]
+    rw [ite_eq_left (by simpa using hpivot)]
     exact h
   · rw [normalizeAndEliminateScalarRows_eq_foldl rows pivotRow pivotCol hpivot]
     have hpv : scalarDot cols
@@ -1055,9 +1055,9 @@ private theorem orthRows_normalizeAndEliminate_forward [Field F] [BEq F]
     intro i
     rw [array_getD_setIfInBounds]
     by_cases hcond : pivotRow = i ∧ pivotRow < rows.size
-    · rw [if_pos hcond]
+    · rw [ite_eq_left hcond]
       exact hpv
-    · rw [if_neg hcond]
+    · rw [ite_eq_right hcond]
       exact h i
 
 private theorem orthRows_swapScalarRows_forward [Field F] {cols : Nat}
@@ -1067,13 +1067,13 @@ private theorem orthRows_swapScalarRows_forward [Field F] {cols : Nat}
   intro i
   rw [swapScalarRows_getD rows ha hb]
   by_cases hib : i = b
-  · rw [if_pos hib]
+  · rw [ite_eq_left hib]
     exact h a
-  · rw [if_neg hib]
+  · rw [ite_eq_right hib]
     by_cases hia : i = a
-    · rw [if_pos hia]
+    · rw [ite_eq_left hia]
       exact h b
-    · rw [if_neg hia]
+    · rw [ite_eq_right hia]
       exact h i
 
 private theorem orthRows_scalarRrefRowsLoop_forward [Field F] [BEq F]
@@ -1176,10 +1176,10 @@ private theorem basisVector_getD_freeColumn [Field F]
       if j = i then 1 else 0 := by
   obtain ⟨hjlt, hjnot⟩ := freeColumns_mem (freeColumns_getD_mem hj)
   by_cases hij : j = i
-  · rw [if_pos hij, hij]
+  · rw [ite_eq_left hij, hij]
     exact basisVectorForFreeColumnRows_getD_free rows pivots cols
       (freeColumns_mem (freeColumns_getD_mem hi)).1
-  · rw [if_neg hij]
+  · rw [ite_eq_right hij]
     exact basisVectorForFreeColumnRows_getD_none rows pivots cols _ hjlt
       (fun hc ↦ hij (freeColumns_getD_inj hj hi hc))
       (pivotRowOfColumn?_eq_none hjnot)
@@ -1214,9 +1214,9 @@ private theorem kernelBasis_complete_aux [Field F] [BEq F] [LawfulBEq F]
               ((DenseMatrix.freeColumns cols R.pivots).getD j 0) 0 = 0 := by
       intro i hi hij
       rw [basisVector_getD_freeColumn R.rows R.pivots cols
-        (Finset.mem_range.mp hi) hj, if_neg (fun hc ↦ hij hc.symm), mul_zero]
+        (Finset.mem_range.mp hi) hj, ite_eq_right (fun hc ↦ hij hc.symm), mul_zero]
     rw [Finset.sum_eq_single_of_mem j (Finset.mem_range.mpr hj) h0,
-      basisVector_getD_freeColumn R.rows R.pivots cols hj hj, if_pos rfl,
+      basisVector_getD_freeColumn R.rows R.pivots cols hj hj, ite_eq_left rfl,
       mul_one]
   intro k hk
   rcases freeColumns_or_pivot (pivots := R.pivots) hk with
@@ -1275,10 +1275,10 @@ private theorem kernelBasis_complete_aux [Field F] [BEq F] [LawfulBEq F]
           (Finset.mem_range.mp hk') with ⟨j, hj, hjk'⟩ | ⟨s, hs, hsk'⟩
       · rw [← hjk', ← hfree_coord j hj, sub_self, mul_zero]
       · have hst : ¬t = s := fun hc ↦ hne (by rw [hc]; exact hsk'.symm)
-        rw [← hsk', hspec.unit s hs t, if_neg hst, zero_mul]
+        rw [← hsk', hspec.unit s hs t, ite_eq_right hst, zero_mul]
     rw [Finset.sum_eq_single_of_mem (R.pivots.getD t 0)
         (Finset.mem_range.mpr (hspec.pivots_lt t ht)) hothers,
-      hspec.unit t ht t, if_pos rfl, one_mul, sub_eq_zero] at hsum
+      hspec.unit t ht t, ite_eq_left rfl, one_mul, sub_eq_zero] at hsum
     rw [← htk]
     exact hsum
 

@@ -172,7 +172,7 @@ private theorem divByLinearY_pair_of_one_lt [CommRing R] [BEq R] [LawfulBEq R]
       (List.range (n - 1)).foldl step (a n, #[(a n)]) = (r1, res1.2.push r1) := by
     simpa [n, a, step, res1, r1] using (divByLinearY_fold_split (Q := Q) (f := f) h)
   unfold divByLinearY
-  rw [if_neg h0]
+  rw [ite_eq_right h0]
   dsimp [n, a, step, res1, r1]
   rw [hsplit]
 
@@ -308,7 +308,7 @@ private theorem divByLinearY_divX_pair_of_one_lt [CommRing R] [BEq R] [LawfulBEq
     rw [hdivX]
     omega
   unfold divByLinearY
-  simp only [hdivX0, if_false]
+  simp only [hdivX0, ite_false]
   rw [hdivX]
   simp only [CPolynomial.coeff_divX]
   let step1 : CPolynomial R × Array (CPolynomial R) → ℕ → CPolynomial R × Array (CPolynomial R) :=

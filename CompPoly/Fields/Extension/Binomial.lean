@@ -80,7 +80,8 @@ private theorem not_isUnit_X_pow_sub_C (W : F) {d : ℕ} (hd : 0 < d) :
 /-- `X` does not divide `X^d - C W` when `W ≠ 0`: the constant coefficient is `-W`. -/
 theorem not_X_dvd_X_pow_sub_C {W : F} {d : ℕ} (hd : 0 < d) (hW : W ≠ 0) :
     ¬ (X : F[X]) ∣ X ^ d - C W := by
-  rw [X_dvd_iff, coeff_sub, coeff_X_pow, coeff_C_zero, if_neg (by omega), zero_sub, neg_eq_zero]
+  rw [X_dvd_iff, coeff_sub, coeff_X_pow, coeff_C_zero, ite_eq_right (by omega), zero_sub,
+    neg_eq_zero]
   exact hW
 
 /-! ### The two collapsed Rabin conditions -/
