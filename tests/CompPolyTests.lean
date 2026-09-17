@@ -67,6 +67,7 @@ public import CompPolyTests.Fields.Extension.Presentation
 public import CompPolyTests.Fields.Extension.RawArithmetic
 public import CompPolyTests.Fields.Goldilocks.Fast
 public import CompPolyTests.Fields.KoalaBear.Fast
+public import CompPolyTests.Fields.Mersenne31.Circle
 public import CompPolyTests.Fields.Mersenne31.Fast
 public import CompPolyTests.Fields.Mersenne31.Instances
 public import CompPolyTests.Fields.Pasta.Fast
