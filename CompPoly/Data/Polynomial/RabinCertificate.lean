@@ -86,6 +86,8 @@ noncomputable def toPoly (p : ℕ) : List ℕ → (ZMod p)[X]
 
 @[simp] theorem toPoly_nil {p : ℕ} : toPoly p [] = 0 := rfl
 
+/-- The defining Horner step of `toPoly`, as a rewrite rule: a head coefficient contributes a
+constant and the tail is multiplied by `X`. -/
 theorem toPoly_cons {p : ℕ} (c : ℕ) (cs : List ℕ) :
     toPoly p (c :: cs) = C (c : ZMod p) + X * toPoly p cs := rfl
 
@@ -96,6 +98,9 @@ theorem toPoly_cons {p : ℕ} (c : ℕ) (cs : List ℕ) :
 @[simp] theorem toPoly_one {p : ℕ} : toPoly p [1] = 1 := by
   rw [toPoly_cons, toPoly_nil, Nat.cast_one, map_one, mul_zero, add_zero]
 
+/-- `addNat` denotes addition: the coefficientwise sum of two lists is the sum of the
+polynomials they denote. One of the three specification bridges that make the `ℕ`-list
+arithmetic usable as a certificate format. -/
 theorem toPoly_addNat {p : ℕ} : ∀ a b : List ℕ,
     toPoly p (addNat a b) = toPoly p a + toPoly p b
   | [], b => by rw [show addNat [] b = b from rfl, toPoly_nil, zero_add]
@@ -105,6 +110,7 @@ theorem toPoly_addNat {p : ℕ} : ∀ a b : List ℕ,
       toPoly_addNat as bs, toPoly_cons, toPoly_cons, Nat.cast_add, map_add]
     ring
 
+/-- `scaleNat` denotes multiplication by a constant. -/
 theorem toPoly_scaleNat {p : ℕ} (c : ℕ) : ∀ l : List ℕ,
     toPoly p (scaleNat c l) = C (c : ZMod p) * toPoly p l
   | [] => by rw [show scaleNat c [] = [] from rfl, toPoly_nil, mul_zero]
@@ -113,6 +119,9 @@ theorem toPoly_scaleNat {p : ℕ} (c : ℕ) : ∀ l : List ℕ,
       toPoly_scaleNat c as, toPoly_cons, Nat.cast_mul, map_mul]
     ring
 
+/-- `mulNat` denotes multiplication: schoolbook convolution of the coefficient lists is the
+product of the polynomials they denote. Proved from `toPoly_addNat` and `toPoly_scaleNat`,
+following the same recursion `mulNat` uses. -/
 theorem toPoly_mulNat {p : ℕ} : ∀ a b : List ℕ,
     toPoly p (mulNat a b) = toPoly p a * toPoly p b
   | [], b => by rw [show mulNat [] b = [] from rfl, toPoly_nil, zero_mul]
@@ -127,6 +136,9 @@ theorem cast_eq_cast_of_mod_eq {p a b : ℕ} (h : a % p = b % p) :
     (a : ZMod p) = (b : ZMod p) := by
   rw [← ZMod.natCast_mod a p, ← ZMod.natCast_mod b p, h]
 
+/-- A list whose every coefficient is `0` mod `p` denotes the zero polynomial. This is the base
+case behind `toPoly_eq_of_eqModP`, which is how a `eqModP` kernel check becomes an equation
+between polynomials. -/
 theorem toPoly_eq_zero_of_all_mod_eq_zero {p : ℕ} : ∀ {l : List ℕ},
     l.all (· % p == 0) = true → toPoly p l = 0
   | [], _ => rfl

@@ -54,6 +54,10 @@ identities, and divisibility conditions for irreducible polynomials.
 variable {Fq : Type*} [Field Fq] [Fintype Fq]
 
 omit [Fintype Fq] in
+/-- An algebra over a finite field inherits its exponential characteristic: if `ringChar Fq ≠ 0`
+then `ExpChar K (ringChar Fq)` for any `Fq`-algebra `K` that is a field. Named as an instance but
+kept a theorem deliberately — it is introduced locally where a Frobenius argument needs it, rather
+than added to the instance graph for every algebra. -/
 theorem instExpCharOfAlgebra {K : Type*} [Field K] [Algebra Fq K]
     {h_ringChar_Fq_pos : (ringChar Fq) ≠ 0} : ExpChar K (ringChar Fq) := by
   let p := ringChar Fq
@@ -80,40 +84,32 @@ i.e. `∏_{c ∈ Fq} (X - c) = X^q - X`.
 theorem prod_X_sub_C_eq_X_pow_card_sub_X :
     (∏ c ∈ (Finset.univ : Finset Fq), (Polynomial.X - Polynomial.C c)) =
     Polynomial.X^(Fintype.card Fq) - Polynomial.X := by
-
   set P : Fq[X] := ∏ c ∈ (Finset.univ : Finset Fq), (Polynomial.X - Polynomial.C c)
   set Q : Fq[X] := Polynomial.X^(Fintype.card Fq) - Polynomial.X
-
   -- We will prove P = Q by showing they are both monic and have the same roots.
   have hP_monic : P.Monic := by
     apply Polynomial.monic_prod_of_monic
     intro c _
     exact Polynomial.monic_X_sub_C c
-
   have hQ_monic : Q.Monic := by
     apply Polynomial.monic_X_pow_sub
     rw [Polynomial.degree_X]
     exact_mod_cast (by exact Fintype.one_lt_card)
-
   have h_roots_P : P.roots = (Finset.univ : Finset Fq).val := by
     apply Polynomial.roots_prod_X_sub_C
   -- The roots of Q are, by Fermat's Little Theorem, also all elements of Fq.
   have h_roots_Q : Q.roots = (Finset.univ : Finset Fq).val := by
     exact FiniteField.roots_X_pow_card_sub_X Fq
-
   -- Step 3 : Prove P and Q have the same set of roots.
   have h_roots_eq : P.roots = Q.roots := by
     rw [h_roots_P, h_roots_Q]
-
   have hP_splits : P.Splits := by
     apply Polynomial.Splits.prod
     intro c _
     apply Polynomial.Splits.X_sub_C
-
   have hQ_card_roots : Q.roots.card = Fintype.card Fq := by
     rw [h_roots_Q]
     exact rfl
-
   have natDegree_Q : Q.natDegree = Fintype.card Fq := by
     unfold Q
     have degLt : (X : Fq[X]).natDegree < ((X : Fq[X]) ^ Fintype.card Fq).natDegree := by
@@ -122,13 +118,11 @@ theorem prod_X_sub_C_eq_X_pow_card_sub_X :
       exact Fintype.one_lt_card
     rw [Polynomial.natDegree_sub_eq_left_of_natDegree_lt degLt]
     rw [Polynomial.natDegree_X_pow]
-
   have hQ_splits : Q.Splits := by
     unfold Q
     apply Polynomial.splits_iff_card_roots.mpr
     rw [hQ_card_roots]
     rw [natDegree_Q]
-
   -- Since P and Q are monic, split, and have the same roots, they are equal.
   have hP_eq_prod : P = (Multiset.map (fun a ↦ Polynomial.X - Polynomial.C a) P.roots).prod := by
     apply Polynomial.Splits.eq_prod_roots_of_monic hP_splits hP_monic
@@ -144,9 +138,7 @@ where `L` is any field extension of `Fq`.
 theorem prod_X_sub_C_eq_X_pow_card_sub_X_in_L :
     (∏ c ∈ (Finset.univ : Finset Fq), (Polynomial.X - Polynomial.C (algebraMap Fq L c))) =
     Polynomial.X^(Fintype.card Fq) - Polynomial.X := by
-
   let f := algebraMap Fq L
-
   -- The goal is an equality in L[X]. We will show that this equality is just
   -- the "mapped" version of the equality in Fq[X], which we already proved.
   have h_lhs_map : (∏ c ∈ (Finset.univ : Finset Fq), (Polynomial.X - Polynomial.C (f c))) =
@@ -170,26 +162,21 @@ theorem prod_poly_sub_C_eq_poly_pow_card_sub_poly_in_L
     (p : L[X]) :
     (∏ c ∈ (Finset.univ : Finset Fq), (p - Polynomial.C (algebraMap Fq L c))) =
     p^(Fintype.card Fq) - p := by
-
   -- The strategy is to take the known identity for the polynomial X and substitute
   -- X with the arbitrary polynomial p. This substitution is formally known as
   -- polynomial composition (`Polynomial.comp`).
-
   let q := Fintype.card Fq
   let base_identity := prod_X_sub_C_eq_X_pow_card_sub_X_in_L (L := L) (Fq:=Fq)
-
   -- APPROACH : f = g => f.comp(p) = g.comp(p)
   have h_composed_eq : (∏ c ∈ (Finset.univ : Finset Fq), (X - C (algebraMap Fq L c))).comp p
     = ((X:L[X])^q - X).comp p := by
     rw [base_identity]
-
   have h_lhs_simp : (∏ c ∈ (Finset.univ : Finset Fq), (X - C (algebraMap Fq L c))).comp p =
                      ∏ c ∈ (Finset.univ : Finset Fq), (p - C (algebraMap Fq L c)) := by
     rw [Polynomial.prod_comp]
     apply Finset.prod_congr rfl
     intro c _
     rw [Polynomial.sub_comp, Polynomial.X_comp, Polynomial.C_comp]
-
   have h_rhs_simp : ((X:L[X])^q - X).comp p = p^q - p := by
     rw [Polynomial.sub_comp, Polynomial.pow_comp, Polynomial.X_comp]
   rw [h_lhs_simp, h_rhs_simp] at h_composed_eq
@@ -227,7 +214,6 @@ theorem frobenius_identity_in_algebra [Fact (Nat.Prime (ringChar Fq))]
   have h_charP_Fq : CharP Fq p := by
     simp only [p]
     exact ringChar.charP Fq
-
   have h_charP_L : CharP L p := by
     have h_inj : Function.Injective (algebraMap Fq L) := by
       exact RingHom.injective (algebraMap Fq L)
@@ -346,10 +332,8 @@ theorem X_pow_card_pow_dvd_X_pow_card_pow_of_dvd (d n : ℕ) (h_dvd : d ∣ n) :
     obtain ⟨k, rfl⟩ := h_dvd
     rw [pow_mul]
     exact Nat.sub_one_dvd_pow_sub_one _ _
-
   have h_poly_div : (X ^ (q ^ d - 1) - 1) ∣ (X ^ (q ^ n - 1) - 1 : Fq[X]) :=
     X_pow_sub_one_dvd_X_pow_sub_one_of_dvd (q ^ d - 1) (q ^ n - 1) h_exp_dvd
-
   have h_mul_X : X * (X ^ (q ^ d - 1) - 1) ∣ X * (X ^ (q ^ n - 1) - 1 : Fq[X]) :=
     mul_dvd_mul_left X h_poly_div
   have h_qd_pos : 0 < q ^ d := by
@@ -358,7 +342,6 @@ theorem X_pow_card_pow_dvd_X_pow_card_pow_of_dvd (d n : ℕ) (h_dvd : d ∣ n) :
   have h_qn_pos : 0 < q ^ n := by
     have h_res := Nat.one_le_pow (m := q) (n := n) (h := by omega)
     omega
-
   conv_lhs at h_mul_X =>
     rw [mul_sub, mul_one, mul_comm, ←pow_succ]; simp only [Nat.sub_add_cancel h_qd_pos]
   conv_rhs at h_mul_X =>
@@ -382,7 +365,6 @@ theorem irreducible_dvd_X_pow_card_pow_sub_X (p : Fq[X]) (hp_irr : Irreducible p
     p ∣ (X ^ (q ^ d) - X) := by
   let q := Fintype.card Fq
   let d := p.natDegree
-
   -- 1. Construct the field extension K = Fq[X]/(p)
   let K := AdjoinRoot p
   let : Fintype K := by
@@ -395,7 +377,6 @@ theorem irreducible_dvd_X_pow_card_pow_sub_X (p : Fq[X]) (hp_irr : Irreducible p
       exact Finite.of_equiv (Fin pb.dim →₀ Fq) (pb.basis.repr.toEquiv.symm)
     exact Fintype.ofFinite (AdjoinRoot p)
   have : Fact (Irreducible p) := ⟨hp_irr⟩
-
   -- 2. The size of K is q^d
   have h_card_K : Fintype.card K = q ^ d := by
     dsimp only [K]
@@ -433,7 +414,6 @@ theorem degree_dvd_of_irreducible_dvd_X_pow_card_pow_sub_X
     p.natDegree ∣ n := by
   let q := Fintype.card Fq
   let d := p.natDegree
-
   -- 1. Construct extension K
   let K := AdjoinRoot p
   have : Fact (Irreducible p) := ⟨hp_irr⟩
@@ -454,17 +434,13 @@ theorem degree_dvd_of_irreducible_dvd_X_pow_card_pow_sub_X
     let pb := AdjoinRoot.powerBasis hp_ne_zero
     rw [PowerBasis.finrank pb]
     rfl
-
   -- 2. α (root of p) must satisfy α^(q^n) = α
   let α := AdjoinRoot.root p
   have h_root : eval₂ (algebraMap Fq K) α (X ^ (q ^ n) - X) = 0 :=
     eval₂_eq_zero_of_dvd_of_eval₂_eq_zero (f := algebraMap Fq K) (h := h_dvd)
       (h0 := AdjoinRoot.eval₂_root p)
-
   rw [eval₂_sub, eval₂_X_pow, eval₂_X, sub_eq_zero] at h_root
-
   -- 3. If α^(q^n) = α, then x^(q^n) = x for ALL x ∈ K.
-
   have h_fixes_all (x : K) : x ^ (q ^ n) = x := by
     induction x using AdjoinRoot.induction_on with
     | ih f =>
@@ -474,7 +450,6 @@ theorem degree_dvd_of_irreducible_dvd_X_pow_card_pow_sub_X
           exact CharP.ringChar_ne_zero_of_finite Fq)
       have h_iterated := aeval_pow_card_pow_eq_aeval_pow_card_pow (Fq := Fq) (K := K) f (x := α) n
       rw [h_iterated, h_root]
-
   -- 4. If x^(q^n) = x for all x ∈ K, then (q^d - 1) | (q^n - 1).
   have h_group_order : q ^ d - 1 ∣ q ^ n - 1 := by
     have h_units_pow_eq_one : ∀ u : Kˣ, u ^ (q ^ n - 1) = 1 := by
