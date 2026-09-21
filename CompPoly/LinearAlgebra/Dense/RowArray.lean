@@ -26,7 +26,13 @@ namespace CompPoly
 
 namespace DenseMatrix
 
-variable {F : Type*} [Field F] [BEq F]
+variable {F : Type*}
+
+/-- The rows of a dense matrix as a row array, each of width `M.cols`. -/
+def toRows [Zero F] (M : DenseMatrix F) : Array (Array F) :=
+  Array.ofFn fun i : Fin M.rows ↦ Array.ofFn fun j : Fin M.cols ↦ M.get i j
+
+variable [Field F] [BEq F]
 
 /-- Swap two scalar rows in a row-array matrix. -/
 def swapScalarRows (rows : Array (Array F)) (rowA rowB : Nat) :

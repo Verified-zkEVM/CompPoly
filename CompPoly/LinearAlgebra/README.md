@@ -31,6 +31,9 @@ scalar actions, independently of the executable matrix layers.
 | **KernelCorrectness.lean** | `homogeneousWitness_eq_none_iff` and `homogeneousWitness_exists_of_rows_lt_cols` — a wide homogeneous system always has a nonzero solution. |
 | **KernelInPlace.lean** | Allocation-efficient variant: `rrefInPlace`, `homogeneousKernelBasisInPlace`, `homogeneousWitnessInPlace`. |
 | **KernelInPlaceCorrectness.lean** | `rrefInPlace_eq` and `homogeneousWitnessInPlace_eq`, proving the fast path returns exactly what the direct path does. |
+| **RowArray.lean** | The same Gauss-Jordan reduction and kernel extraction over a row array `Array (Array F)`: `scalarRrefRows`, `homogeneousKernelBasisRows`, and `toRows`. Used by the PM-basis kernel leaf. |
+| **RowArrayCorrectness.lean** | `homogeneousKernelBasisRows_dot_eq_zero` (soundness) and `homogeneousKernelBasisRows_complete` (every orthogonal vector is the combination of the basis with its free-column entries as coefficients). |
+| **KernelBasisCorrectness.lean** | `homogeneousKernelBasis_eq_homogeneousKernelBasisRows`: on a well-formed matrix the dense and row-array reductions agree. Hence the full dense basis is sound (`homogeneousKernelBasis_isHomogeneousSolution`), complete (`homogeneousKernelBasis_complete`), and independent (`homogeneousKernelBasis_getD_freeColumn`, `homogeneousKernelBasis_linearIndependent`), with one vector per non-pivot column. |
 
 ### Why the in-place variant exists
 

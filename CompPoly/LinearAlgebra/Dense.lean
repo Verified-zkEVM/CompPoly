@@ -16,6 +16,7 @@ public import CompPoly.LinearAlgebra.Dense.KernelCorrectness
 public import CompPoly.LinearAlgebra.Dense.KernelInPlaceCorrectness
 public import CompPoly.LinearAlgebra.Dense.RowArray
 public import CompPoly.LinearAlgebra.Dense.RowArrayCorrectness
+public import CompPoly.LinearAlgebra.Dense.KernelBasisCorrectness
 
 /-!
 # Dense Linear Algebra

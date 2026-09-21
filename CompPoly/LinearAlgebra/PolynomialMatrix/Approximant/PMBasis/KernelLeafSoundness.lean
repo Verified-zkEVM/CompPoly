@@ -30,7 +30,8 @@ namespace PolynomialMatrix
 
 namespace Approximant
 
-open DenseMatrix (array_getD_of_lt' homogeneousKernelBasisRows homogeneousKernelBasisRows_dot_eq_zero)
+open DenseMatrix (array_getD_of_lt' homogeneousKernelBasisRows
+  homogeneousKernelBasisRows_dot_eq_zero)
 
 variable {F : Type*} [Field F] [BEq F] [LawfulBEq F]
 

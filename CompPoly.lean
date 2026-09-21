@@ -193,6 +193,7 @@ public import CompPoly.Fields.Secp256k1
 public import CompPoly.LinearAlgebra.Dense
 public import CompPoly.LinearAlgebra.Dense.Basic
 public import CompPoly.LinearAlgebra.Dense.Kernel
+public import CompPoly.LinearAlgebra.Dense.KernelBasisCorrectness
 public import CompPoly.LinearAlgebra.Dense.KernelCorrectness
 public import CompPoly.LinearAlgebra.Dense.KernelInPlace
 public import CompPoly.LinearAlgebra.Dense.KernelInPlaceCorrectness

@@ -186,7 +186,8 @@ theorem swapScalarRows_size (rows : Array (Array F)) (a b : Nat) :
     (swapScalarRows rows a b).size = rows.size := by
   simp [swapScalarRows, Array.size_setIfInBounds]
 
-private theorem swapScalarRows_getD (rows : Array (Array F)) {a b : Nat}
+/-- Rows of `swapScalarRows rows a b`: rows `a` and `b` are exchanged. -/
+theorem swapScalarRows_getD (rows : Array (Array F)) {a b : Nat}
     (ha : a < rows.size) (hb : b < rows.size) (i : Nat) :
     (swapScalarRows rows a b).getD i #[] =
       if i = b then rows.getD a #[]
@@ -290,6 +291,16 @@ private theorem foldl_elimStep_size [Field F] [BEq F] (pivotRow : Nat)
   | cons a l ih =>
       intro acc
       rw [List.foldl_cons, ih, elimStep_size]
+
+/-- Normalizing and eliminating preserves the row count. -/
+theorem normalizeAndEliminateScalarRows_size [Field F] [BEq F] [LawfulBEq F]
+    (rows : Array (Array F)) (pivotRow pivotCol : Nat) :
+    (normalizeAndEliminateScalarRows rows pivotRow pivotCol).size = rows.size := by
+  by_cases h : (rows.getD pivotRow #[]).getD pivotCol 0 = 0
+  · unfold normalizeAndEliminateScalarRows
+    rw [ite_eq_left (beq_iff_eq.mpr h)]
+  · rw [normalizeAndEliminateScalarRows_eq_foldl rows pivotRow pivotCol h,
+      foldl_elimStep_size, Array.size_setIfInBounds]
 
 private theorem elimStep_getD_pivotRow [Field F] [BEq F] (pivotRow : Nat)
     (pivotVector : Array F) (pivotCol : Nat) (rows : Array (Array F))
@@ -541,7 +552,10 @@ private theorem foldl_elimStep_getD_entry [Field F] [BEq F] [LawfulBEq F]
             · exact hil ⟨h, hc.2⟩
           rw [ite_eq_right hil, ite_eq_right hnot]
 
-private theorem normalizeAndEliminateScalarRows_getD_entry [Field F] [BEq F]
+/-- Entries of `normalizeAndEliminateScalarRows`: the pivot row is divided by
+the pivot, and every other row loses its pivot-column multiple of the normalized
+pivot row. -/
+theorem normalizeAndEliminateScalarRows_getD_entry [Field F] [BEq F]
     [LawfulBEq F] (rows : Array (Array F)) (pivotRow pivotCol : Nat)
     (hpr : pivotRow < rows.size)
     (hpivot : (rows.getD pivotRow #[]).getD pivotCol 0 ≠ 0) (i k : Nat) :
@@ -803,7 +817,8 @@ private theorem containsNat_false_getD_ne {xs : Array Nat} {x : Nat}
   rw [h] at htrue
   exact Bool.false_ne_true htrue
 
-private theorem freeColumns_mem {cols : Nat} {pivots : Array Nat} {free : Nat}
+/-- A free column is below `cols` and is not a recorded pivot column. -/
+theorem freeColumns_mem {cols : Nat} {pivots : Array Nat} {free : Nat}
     (h : free ∈ (freeColumns cols pivots).toList) :
     free < cols ∧ ∀ t, t < pivots.size → pivots.getD t 0 ≠ free := by
   unfold freeColumns at h
@@ -813,7 +828,9 @@ private theorem freeColumns_mem {cols : Nat} {pivots : Array Nat} {free : Nat}
     simpa using h.2
   exact containsNat_false_getD_ne hfalse
 
-private theorem pivotRowOfColumn?_some {pivots : Array Nat} {col t : Nat}
+/-- `pivotRowOfColumn?` returns an in-range index whose recorded pivot is the
+requested column. -/
+theorem pivotRowOfColumn?_some {pivots : Array Nat} {col t : Nat}
     (h : pivotRowOfColumn? pivots col = some t) :
     t < pivots.size ∧ pivots.getD t 0 = col := by
   unfold pivotRowOfColumn? at h
@@ -849,7 +866,8 @@ private theorem pivotRowOfColumn?_eq_none {pivots : Array Nat} {k : Nat}
   intro x hx
   simpa using h x (List.mem_range.mp hx)
 
-private theorem basisVectorForFreeColumnRows_size [Field F]
+/-- Each row-array kernel basis vector has `cols` entries. -/
+theorem basisVectorForFreeColumnRows_size [Field F]
     (rows : Array (Array F)) (pivots : Array Nat) (cols free : Nat) :
     (basisVectorForFreeColumnRows rows pivots cols free).size = cols := by
   unfold basisVectorForFreeColumnRows
@@ -1116,7 +1134,8 @@ private theorem orthRows_scalarRrefRows_forward [Field F] [BEq F] [LawfulBEq F]
 
 /-! ### Free-column bookkeeping for the completeness theorem -/
 
-private theorem freeColumns_getD_mem {cols : Nat} {pivots : Array Nat}
+/-- In-range entries of `freeColumns` are members of it. -/
+theorem freeColumns_getD_mem {cols : Nat} {pivots : Array Nat}
     {i : Nat} (hi : i < (freeColumns cols pivots).size) :
     (freeColumns cols pivots).getD i 0 ∈
       (freeColumns cols pivots).toList := by
@@ -1169,7 +1188,9 @@ private theorem freeColumns_or_pivot {cols : Nat} {pivots : Array Nat}
       rw [array_getD_of_lt' _ 0 hj', ← Array.getElem_toList hj]
       exact hjk
 
-private theorem basisVector_getD_freeColumn [Field F]
+/-- The basis vector of the `i`-th free column is one at that column and zero at
+every other free column. -/
+theorem basisVector_getD_freeColumn [Field F]
     (rows : Array (Array F)) (pivots : Array Nat) (cols : Nat) {i j : Nat}
     (hi : i < (freeColumns cols pivots).size)
     (hj : j < (freeColumns cols pivots).size) :
@@ -1285,13 +1306,16 @@ private theorem kernelBasis_complete_aux [Field F] [BEq F] [LawfulBEq F]
     rw [← htk]
     exact hsum
 
-private theorem homogeneousKernelBasisRows_size_eq [Field F] [BEq F]
+/-- The row-array kernel basis has one vector per free column. -/
+theorem homogeneousKernelBasisRows_size_eq [Field F] [BEq F]
     [LawfulBEq F] (rows : Array (Array F)) (cols : Nat) :
     (homogeneousKernelBasisRows rows cols).size =
       (freeColumns cols (scalarRrefRows rows cols).pivots).size := by
   simp only [homogeneousKernelBasisRows, Array.size_map]
 
-private theorem homogeneousKernelBasisRows_getD_eq [Field F] [BEq F]
+/-- The `i`-th row-array kernel basis vector is the basis vector of the `i`-th
+free column. -/
+theorem homogeneousKernelBasisRows_getD_eq [Field F] [BEq F]
     [LawfulBEq F] (rows : Array (Array F)) (cols : Nat) {i : Nat}
     (hi : i <
       (freeColumns cols (scalarRrefRows rows cols).pivots).size) :
