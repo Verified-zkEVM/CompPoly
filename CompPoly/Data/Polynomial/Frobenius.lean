@@ -54,10 +54,10 @@ identities, and divisibility conditions for irreducible polynomials.
 variable {Fq : Type*} [Field Fq] [Fintype Fq]
 
 omit [Fintype Fq] in
-/-- An algebra over a finite field inherits its exponential characteristic: if `ringChar Fq ≠ 0`
-then `ExpChar K (ringChar Fq)` for any `Fq`-algebra `K` that is a field. Named as an instance but
-kept a theorem deliberately — it is introduced locally where a Frobenius argument needs it, rather
-than added to the instance graph for every algebra. -/
+/-- An algebra over a field of positive characteristic inherits its exponential characteristic:
+if `ringChar Fq ≠ 0`, then `ExpChar K (ringChar Fq)` for any `Fq`-algebra `K` that is a field.
+Named as an instance but kept a theorem deliberately — it is introduced locally where a Frobenius
+argument needs it, rather than added to the instance graph for every algebra. -/
 theorem instExpCharOfAlgebra {K : Type*} [Field K] [Algebra Fq K]
     {h_ringChar_Fq_pos : (ringChar Fq) ≠ 0} : ExpChar K (ringChar Fq) := by
   let p := ringChar Fq
