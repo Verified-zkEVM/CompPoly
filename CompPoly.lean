@@ -1,6 +1,7 @@
 module
 
 public import CompPoly.Bivariate.Basic
+public import CompPoly.Bivariate.Bytes
 public import CompPoly.Bivariate.CMvEquiv
 public import CompPoly.Bivariate.CoeffRows
 public import CompPoly.Bivariate.Deriv
@@ -64,6 +65,7 @@ public import CompPoly.Bivariate.ToPoly
 public import CompPoly.Data.Array.Lemmas
 public import CompPoly.Data.Bytes.CanonicalNat
 public import CompPoly.Data.Bytes.Codec
+public import CompPoly.Data.Bytes.Delimited
 public import CompPoly.Data.Bytes.LittleEndian
 public import CompPoly.Data.Bytes.Vector
 public import CompPoly.Data.Classes.CanonicalNat
@@ -255,11 +257,13 @@ public import CompPoly.LinearAlgebra.PolynomialMatrix.ShiftedReduction
 public import CompPoly.LinearAlgebra.PolynomialMatrix.StrassenCorrectness
 public import CompPoly.LinearAlgebra.TensorProduct.Basis
 public import CompPoly.Multilinear.Basic
+public import CompPoly.Multilinear.Bytes
 public import CompPoly.Multilinear.Equiv
 public import CompPoly.Multilinear.ManyEval
 public import CompPoly.Multilinear.ManyEval.Basic
 public import CompPoly.Multilinear.ManyEval.Correctness
 public import CompPoly.Multilinear.TransformEquiv
+public import CompPoly.Multivariate.Bytes
 public import CompPoly.Multivariate.CMvMonomial
 public import CompPoly.Multivariate.CMvPolynomial
 public import CompPoly.Multivariate.Eval
@@ -291,6 +295,7 @@ public import CompPoly.Univariate.BatchEval.Context
 public import CompPoly.Univariate.BatchEval.Correctness
 public import CompPoly.Univariate.BatchEval.Naive
 public import CompPoly.Univariate.BatchEval.SubproductTree
+public import CompPoly.Univariate.Bytes
 public import CompPoly.Univariate.CMvEquiv
 public import CompPoly.Univariate.CoefficientInterpolation
 public import CompPoly.Univariate.Context

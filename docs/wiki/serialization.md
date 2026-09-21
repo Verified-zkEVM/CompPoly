@@ -132,20 +132,49 @@ little-endian expansion of the element's base-`q` canonical natural, which is wh
 from `P.d * k` bytes, and a vector of challenges likewise from `n * k` bytes; these instances
 are stated at the product `n * k`, so a protocol should write its challenge sizes as products.
 
+## Self-delimiting codecs
+
+A variable-length type cannot have a `ByteCodec`. What it has instead is `DelimitedCodec α`
+(`CompPoly/Data/Bytes/Delimited.lean`): `encode : α → List UInt8` and
+`decode? : List UInt8 → Option (α × List UInt8)`, a decoder that reads exactly one encoding off
+the front of a stream and returns the rest, with the law
+`decode? (encode x ++ rest) = some (x, rest)` for every `Valid x`. `Valid` marks what the
+format can represent: everything for a fixed-width codec (`DelimitedCodec.ofByteCodec`, so
+every `ByteCodec` is a delimited codec too), and for the framed formats below, whatever fits
+in a `u64`.
+
+Lengths, counts, and exponents are `u64` little-endian words, the arkworks layout. So a natural
+is valid below `2 ^ 64`, and a list is valid when its length is and its entries are. The class
+derives `Serialize`, `DeserializeOption`, and `Serde` on `ByteArray` (a `ByteArray` must hold
+exactly one encoding; leftover bytes are refused), and `Serialize.IsInjective` for `Total`
+codecs, where everything is valid. Otherwise injectivity is `encode_inj`, which takes the two
+validity hypotheses. Composite codecs exist for lists (count, then entries), pairs (first, then
+second), and fixed-length vectors (entries, no count; a definition, `DelimitedCodec.vector`,
+rather than an instance, so a vector of fixed-width elements keeps its `ByteCodec`).
+
 ## Polynomials
 
-Variable-length types get two encodings that agree:
+| Type | Codec | Layout | Module |
+|---|---|---|---|
+| `↥(degreeLT n)` | `ByteCodec`, `n * width R` | the `n` coefficients, zero-padded; decoding trims | `CompPoly/Univariate/Bytes.lean` |
+| `CPolynomial R` | `DelimitedCodec` | `u64` count, then the coefficients | `CompPoly/Univariate/Bytes.lean` |
+| `CMlPolynomial R n`, `CMlPolynomialEval R n` | `ByteCodec`, `2 ^ n * width R` | the vector codec, little-endian index order | `CompPoly/Multilinear/Bytes.lean` |
+| `CMvPolynomial n R` | `DelimitedCodec` | `u64` term count, then terms in key order: `n` exponents as `u64`, then the coefficient | `CompPoly/Multivariate/Bytes.lean` |
+| `CBivariate R` | `DelimitedCodec` | the univariate codec at coefficient type `CPolynomial R` | `CompPoly/Bivariate/Bytes.lean` |
 
-- **Fixed width** for protocol messages: `↥(degreeLT n)` as `n` coefficients, zero-padded,
-  through `degreeLTCoeffs`; `CMlPolynomial R n` as its `2 ^ n` coefficients; `Ext P` as `P.d`
-  coefficients. Unconditionally injective.
-- **Self-delimiting** for fixtures and hashing: a `u64` little-endian length prefix, then the
-  coefficients. Injective because the representation is canonical (no trailing zeros, sorted
-  keys with no zero coefficients), stated under `size < 2 ^ 64`. The fixed encoding at
-  `n = size` is the suffix of this one.
+The fixed-width univariate codec is the message shape of a sumcheck round polynomial or a FRI
+fold; it is unconditionally injective. The self-delimiting one is for fixtures and hashing and
+nests, which is how the bivariate codec is obtained for free. Both are injective because the
+representation is canonical: no trailing zeros, sorted keys with no zero coefficients. They
+agree where they overlap: `encode_eq_encodeU64_append_toBytes` says the self-delimiting
+encoding is the count followed by the fixed-width encoding at `n = size`. A univariate
+polynomial over a fixed-width coefficient type is `Valid` exactly when its size is below
+`2 ^ 64` (`valid_iff_size_lt`); a multivariate one additionally needs every exponent below
+`2 ^ 64`. Decoding a multivariate polynomial rebuilds the map and drops zero coefficients, so
+it lands on the canonical polynomial whatever order the stream listed the terms in.
 
-`CMvPolynomial` gets only the self-delimiting form: term count, then per term `n` exponents and
-one coefficient, all `u64`-framed. `CBivariate` nests the univariate encoding.
+There is no fixed-width multivariate codec. Genuinely multivariate protocol messages are
+multilinear, and those have the dense codec.
 
 ## Adding an instance
 
@@ -156,3 +185,7 @@ one coefficient, all `u64`-framed. `CBivariate` nests the univariate encoding.
    composite.
 3. Everything ArkLib consumes is now derived. Add a `#guard` round trip and one known vector to
    the mirrored test module under `tests/CompPolyTests/`.
+
+For a variable-length type, give it `DelimitedCodec` instead, built from the list, pair, and
+vector codecs, with `Valid` stating what fits in the framing, and prove the one law from the
+laws of the parts.

@@ -6,6 +6,7 @@ Authors: Valerii Huhnin
 module
 
 public import CompPolyTests.Bivariate.Basic
+public import CompPolyTests.Bivariate.Bytes
 public import CompPolyTests.Bivariate.Degree
 public import CompPolyTests.Bivariate.Deriv
 public import CompPolyTests.Bivariate.Factor
@@ -23,6 +24,7 @@ public import CompPolyTests.Bivariate.Kronecker
 public import CompPolyTests.Bivariate.Multiplicity
 public import CompPolyTests.Bivariate.WeightedDegree
 public import CompPolyTests.Data.Bytes.CanonicalNat
+public import CompPolyTests.Data.Bytes.Delimited
 public import CompPolyTests.Data.Bytes.LittleEndian
 public import CompPolyTests.Data.Bytes.Vector
 public import CompPolyTests.Data.MvPolynomial.Notation
@@ -84,8 +86,10 @@ public import CompPolyTests.Fields.PrattCertificate
 public import CompPolyTests.LinearAlgebra.Dense
 public import CompPolyTests.LinearAlgebra.PolynomialMatrix.Approximant
 public import CompPolyTests.LinearAlgebra.TensorProduct.Basis
+public import CompPolyTests.Multilinear.Bytes
 public import CompPolyTests.Multilinear.Equiv
 public import CompPolyTests.Multilinear.ProductAccumulation
+public import CompPolyTests.Multivariate.Bytes
 public import CompPolyTests.Multivariate.CMvMonomial
 public import CompPolyTests.Multivariate.PartialEval
 public import CompPolyTests.Multivariate.Restrict
@@ -93,6 +97,7 @@ public import CompPolyTests.Multivariate.TypeclassMinimization
 public import CompPolyTests.Multivariate.VarsDegrees
 public import CompPolyTests.Univariate.Barycentric
 public import CompPolyTests.Univariate.Basic
+public import CompPolyTests.Univariate.Bytes
 public import CompPolyTests.Univariate.EuclideanAlgorithm
 public import CompPolyTests.Univariate.Linear
 public import CompPolyTests.Univariate.NTT.FastMul
