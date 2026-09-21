@@ -25,6 +25,102 @@ For substantial contributions, such as a new proof system, we strongly encourage
 * **Why a Blueprint?** This helps align the contribution with the project's structure and goals *before* significant coding and proving effort is invested. It facilitates discussion and feedback from maintainers and the community. It also makes it easier to manage large efforts in a distributed way.
 * **Process:** Please open a new discussion or issue to propose your planned contribution and discuss the blueprint before starting implementation.
 
+## Performance Contributions
+
+Making a fast implementation faster is a welcome contribution. The
+full protocol is [`docs/wiki/autoresearch.md`](docs/wiki/autoresearch.md);
+how the suite measures is [`docs/wiki/benchmarking.md`](docs/wiki/benchmarking.md);
+the time to beat for every row is [`docs/wiki/benchmark-best-times.md`](docs/wiki/benchmark-best-times.md).
+
+### Rules
+
+* **Every function stays formally verified.** The specification definition does
+  not change. A faster implementation is swapped in by `@[csimp]` with an
+  equality theorem, or as a twin definition with an `_eq_` theorem that the call
+  site depends on. Those are the two accepted shapes. `@[implemented_by]`
+  substitutes code without a proof and is not accepted for this purpose, and
+  `native_decide` is forbidden everywhere (see the TCB policy in
+  [`AGENTS.md`](AGENTS.md)). `lake exe axiomsweep --check` must pass.
+* **One change per PR.** A PR is one optimisation with one measured effect, so
+  the verdict is attributable. Two independent ideas are two PRs.
+* **The digest must not move.** Benchmark inputs are seeded per group, so a
+  group's digest is the same across builds and commits. A `mismatch` verdict
+  means the candidate computes something else; it is a bug, not a measurement.
+* **Test, then measure, then prove.** The proof is the expensive part, so
+  spend it last, on a change already shown correct on concrete inputs and
+  faster in measurement. If the implementation you are optimising has no tests
+  of its own under `tests/`, add them first. While exploring, the refinement theorem
+  may carry a `sorry` so the new code is what gets tested and timed; a PR never
+  contains one, and `lake exe axiomsweep --check` is how you confirm that.
+* **`lake test` is part of the gate, not just `lake build`.** An implementation
+  whose tests take hours to elaborate is not faster: inlining attributes on
+  loop-shaped bodies have done exactly that here.
+* **Write the proof so the next optimisation does not break it.** State the
+  implementation's coefficient and unfolding facts as named lemmas marked
+  `@[simp]` or `@[grind =]`, and close the refinement theorem with `simp only [...]` over
+  them or with `grind`, rather than a hand-written `rw` chain. The next change
+  to the implementation then updates lemmas, not proof steps. See "Proving so the proof
+  survives the next iteration" in `docs/wiki/autoresearch.md`.
+* **Quote ratios, not nanoseconds.** Numbers from your machine are not
+  comparable with the tables in `benchmark-best-times.md`, which are taken on
+  one reference machine. Report the A/B verdict and the candidate-over-baseline
+  ratio per row. A maintainer re-measures on the reference machine after merge
+  and updates the tables and the pass log; do not edit them in your PR.
+* **Keep the harness out of it.** A PR that changes `bench/` and a fast
+  implementation at once cannot be judged, since both sides of the comparison
+  moved. If a new benchmark group is needed, add it first in its own PR,
+  following "Adding a benchmark" in `docs/wiki/benchmarking.md`.
+
+### Running the benchmarks
+
+```bash
+lake build CompPolyBenchLib CompPolyBench           # `lake build` alone does not build bench/
+lake exe CompPolyBench --list                        # every group key
+lake exe CompPolyBench --medium --validate-only --groups <key>   # correctness only, no timings
+lake exe CompPolyBench --medium --groups <key>       # timed; output under bench/out/
+```
+
+`--medium` is the preset CI, the A/B loop and the best-times tables use.
+Results, a Markdown report and a manifest land in `bench/out/`, which is
+ignored by git. Read the `Spread` column before the number: an `n=1` row
+carries no dispersion and no ratio should be read off it.
+
+### Running the loop
+
+```bash
+./scripts/bench-ab.sh freeze                 # build the baseline binary from the current tree
+# edit the fast implementation (a `sorry` on its refinement theorem is fine here)
+lake build && lake test                      # test: the implementation's tests and the digest gate
+./scripts/bench-ab.sh run <key>[,<key>...]   # measure: both binaries turn about, then --compare
+# on `faster` without SUSPECT: prove the refinement theorem, then
+lake build && lake test && lake exe axiomsweep --check
+```
+
+Freeze from `main` before editing. `run` builds the candidate once, runs the
+two binaries alternately, appends the harness groups so machine drift is
+measured alongside, and prints the comparison; a copy lands in
+`bench/out/ab/<run>/compare-*.md`. A row is `faster` only when the ratio of
+medians clears the threshold (5% by default) and every candidate invocation
+beat every baseline invocation. Keep on `faster` without `SUSPECT` and with
+harness drift inside ±10%; revert otherwise, and repeat rather than read a run
+whose drift is outside that band. Use a quiet machine, and do not rebuild or
+edit `bench/` while a run is in flight.
+
+### What the PR must contain
+
+* Title `perf(<scope>): <subject>`.
+* The change in one paragraph: what was slow, why, what the new code does.
+* The proof: the `@[csimp]` or `_eq_` theorem that ties the new code to the
+  specification, named in the description, and closed over the implementation's
+  lemma set rather than by a rewrite chain.
+* The tests: the concrete-input tests for the implementation, added in this PR
+  if it had none.
+* The A/B evidence: the `compare-*.md` table or its relevant rows, with the
+  preset, rounds, and the drift line. A `same` or `slower` verdict that is kept
+  for another reason (a compile-time fix, a correctness repair) says so.
+* Confirmation that `lake build`, `lake test`, `--validate-only` on the affected
+  groups and `lake exe axiomsweep --check` pass.
+
 ## Pull Request Guidelines
 
 We follow the specific convention for pull request titles and descriptions used by the Lean community.

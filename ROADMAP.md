@@ -162,8 +162,12 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - ✅ Same-machine A/B comparison of two builds (`CompPolyBench --compare`,
      driven by `scripts/bench-ab.sh`), the measurement behind the optimisation
      loop in [`docs/wiki/autoresearch.md`](docs/wiki/autoresearch.md)
-   - 🔄 Published performance baselines, and a measured comparison against a
-     pinned external implementation ([`BENCHMARKING.md`](BENCHMARKING.md) §13)
+   - ✅ Published performance baselines:
+     [`docs/wiki/benchmark-best-times.md`](docs/wiki/benchmark-best-times.md)
+     records the current best time of every benchmarked component, refreshed
+     by each optimisation pass
+   - 🔄 A measured comparison against a pinned external implementation
+     ([`docs/bench-audit-2026.md`](docs/bench-audit-2026.md) §13)
 
 7. **Bivariate polynomial operations**
    - ✅ Optimize the existing bivariate polynomial type `CPolynomial (CPolynomial R)`:

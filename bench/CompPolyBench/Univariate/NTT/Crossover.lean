@@ -19,7 +19,7 @@ native-word representation.
 This replaces `tests/CompPolyTests/Univariate/NTT/Benchmark.lean`, which held
 the only crossover logic in the repo, ran nothing under `lake test`, was
 imported by nothing, and printed its results through `#eval`.
-`BENCHMARKING.md` recorded it as "the specification for a future crossover
+`docs/bench-audit-2026.md` recorded it as "the specification for a future crossover
 metric"; this is that metric, so the file goes.
 
 One group per operand size, because `workUnits` — the operand coefficient

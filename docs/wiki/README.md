@@ -13,8 +13,11 @@ are too specific or too changeable to keep at the repo root.
   truth.
 - [`benchmarking.md`](benchmarking.md) - how the benchmark suite measures, how to
   read its output, and how to add a group.
+- [`benchmark-best-times.md`](benchmark-best-times.md) - the current best time of
+  every benchmarked component, and the log of optimisation passes.
 - [`autoresearch.md`](autoresearch.md) - the optimisation loop: edit a fast
-  kernel, prove it, A/B it against a frozen baseline, keep or revert.
+  implementation, test it, A/B it against a frozen baseline, then prove it; keep or
+  revert.
 - [`build-cache.md`](build-cache.md) - Mathlib's olean cache and CompPoly's prebuilt
   release archive.
 - [`module-system.md`](module-system.md) - Lean module-system conventions, `meta`
@@ -41,7 +44,7 @@ are too specific or too changeable to keep at the repo root.
   - `benchmarking.md` for benchmark measurement, output interpretation, and
     adding groups.
   - `autoresearch.md` for the agent-driven optimisation loop, its A/B protocol,
-    and the list of kernels it may target.
+    and the list of fast implementations it may target.
   - `build-cache.md` for prebuilt-artifact caches and how they are published.
   - `module-system.md` for module headers, `public`/`meta` imports, and privacy.
   - `representations-and-bridges.md` for representation choice and Mathlib bridges.

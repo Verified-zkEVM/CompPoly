@@ -1,9 +1,30 @@
 # Benchmarking
 
-How the compiled benchmark suite measures, what its output means, and what to do
-when adding a benchmark. [`bench/README.md`](../../bench/README.md) is the
-operator's guide — invocation, presets, group selection, the group inventory.
-This page owns the recurring guidance.
+How the compiled benchmark suite measures, what its output means, what to do
+when adding a benchmark, and where the best time recorded so far for every
+operation it covers is kept. [`bench/README.md`](../../bench/README.md) is the operator's guide —
+invocation, presets, group selection, the group inventory — and
+[`autoresearch.md`](autoresearch.md) is the optimisation loop. This page owns
+the recurring guidance; the record that loop writes into, one section per
+benchmarked component with every row tied to the commit whose build produced
+it, is [`benchmark-best-times.md`](benchmark-best-times.md). The audit and
+change log that produced the suite are frozen in
+[`docs/bench-audit-2026.md`](../bench-audit-2026.md).
+
+## The suite
+
+`lake exe CompPolyBench` is a compiled executable under `bench/`, built from the
+same library the proofs are about. It is organised in **groups**: one group is
+one operation at one input shape over one field, such as
+`fields-koalabear-mul` or `ntt-koalabear-l12`, and `--list` prints the
+authoritative set (about a hundred and ten at the time of writing). A group
+holds one or more **rows**, one per implementation of that operation. Where the
+library has both a canonical definition and a fast twin, the group carries both
+as rows: `ZMod` against the Montgomery word, the `BitVec` specification against
+the packed tower, the definitional Reed-Solomon encoder against the certified
+NTT one. Where it has only the fast implementation, the group is a single row.
+Every row is executed twice, once to validate and once to time; see
+[The two passes](#the-two-passes).
 
 ## Commands
 
@@ -95,6 +116,26 @@ carriers whose canonical value exceeds `2 ^ 63` are the usual case. Both rows of
 a group should carry comparable sink cost; where a representation makes that
 impossible, the group's ratio is a lower bound on the real speedup.
 
+## Presets
+
+There are no iteration counts written beside benchmarks. A preset is a
+wall-clock budget, and the harness sizes each row from it
+(`bench/CompPolyBench/Harness/Budget.lean`):
+
+| Preset | Warmup ramp | One sample | Samples | Cap per row |
+|---|---:|---:|---:|---:|
+| `--small` | 20 ms | 1 ms | 10 | 0.2 s |
+| `--medium` | 50 ms | 1 ms | 20 | 2 s |
+| `--large` | 200 ms | 1 ms | 50 | 60 s |
+
+The sample length is the same at every preset on purpose: a sample is a mean
+over `itersPerSample` iterations, so varying it would make `--small` and
+`--large` report structurally different spread for identical code. Sample
+count is the quality axis a preset varies; the cap is what lets workloads
+costing seconds per iteration be replicated at all. `--medium` is what CI and
+the A/B loop use, and what the tables in
+[`benchmark-best-times.md`](benchmark-best-times.md) are measured at.
+
 ## Reading a result
 
 The headline number is the **median** sample, not the mean and not a total. The
@@ -160,6 +201,37 @@ ext4, ext5 and ext6 groups, and a chained group emits a latency row and a
 throughput row under one name. Any tool comparing two result files must key on
 `(group_key, name, digest_class, method)`, which is what `--compare` does.
 
+## Comparing two builds
+
+`CompPolyBench --compare` judges a candidate build against a baseline build
+from the results files each wrote, one file per invocation, and
+`scripts/bench-ab.sh` is its driver:
+
+```bash
+./scripts/bench-ab.sh freeze                     # build and keep the baseline binary
+# ... edit the fast implementation, lake build ...
+./scripts/bench-ab.sh run fields-koalabear-mul   # both binaries, turn about, then --compare
+```
+
+The driver runs the two binaries alternately for five rounds a side, appends
+the harness groups so machine drift is measured alongside, and the comparison
+reasons about the five invocation medians per side. A row is **`faster`** only
+when the ratio of medians clears a threshold (5% by default) *and* every
+candidate invocation beat every baseline invocation; `slower` is the mirror
+image; everything else is `same`. A digest that differs between the builds is a
+**`mismatch`** and exits 3: the candidate computes something else, and no ratio
+is read. A candidate implausibly fast against the harness floor is flagged
+**`SUSPECT`**. Harness drift outside ±10% means the machine was not steady and
+the run is repeated rather than read.
+
+The loop built on this is [`autoresearch.md`](autoresearch.md): one change per
+iteration; the implementation's tests and the digest gate first, `bench-ab.sh run` as
+the measurement second, and the refinement proof last, paid only for a change
+that is `faster` without `SUSPECT`; revert otherwise. The trusted
+code base does not move during it: a fast implementation is swapped in by
+`@[csimp]` with an equality theorem, or by a twin definition with an `_eq_`
+theorem, never by `@[implemented_by]` or `native_decide`.
+
 ## Adding a benchmark
 
 1. Write a group runner returning a `BenchGroup`, and register it with
@@ -181,7 +253,7 @@ throughput row under one name. Any tool comparing two result files must key on
 5. Make the body depend on `i`, through a value built at run time. There are
    two ways to lose this and both have happened here. A body that is a *closed
    term* is evaluated once and cached, and the row then reports its true cost
-   divided by `itersPerSample` — see finding 2 in `BENCHMARKING.md` §12.6, and
+   divided by `itersPerSample` — see finding 2 in `docs/bench-audit-2026.md` §12.6, and
    the plan-construction group, which reported 32 ns for two sizes that differ
    by 14x. A body that is merely *loop-invariant* can be shared with a value
    computed outside the loop: the NTT forward group precomputed its spectrum
@@ -203,7 +275,10 @@ throughput row under one name. Any tool comparing two result files must key on
 A field operation is one or two nanoseconds and the harness floor is about
 1.8 ns, so a body that performs it once per iteration reports the harness. The
 combinators in `bench/CompPolyBench/Harness/Chain.lean` perform it `workUnits` times
-per iteration instead, and the report divides.
+per iteration instead, and the report divides, giving the **per-unit** cost.
+Two chain shapes are reported, named as Plonky3 names them: *latency*, where
+each operation depends on the last, and *throughput*, with ten independent
+accumulators the pipeline can overlap.
 
 Three properties of those combinators are load-bearing, and the obvious
 alternative is measurably wrong in each case:
@@ -231,11 +306,24 @@ all; it does not catch one that is partly folded, and a chain of a
 `GF(2)`-linear operation folds completely — see the note on `chainFloorStep`
 in `bench/CompPolyBench/Harness/SelfCheck.lean`.
 
+## Where things live
+
+| What | Where |
+|---|---|
+| Harness (timing, budgets, statistics, chains, self-check) | `bench/CompPolyBench/Harness/` |
+| Group definitions, by library layer | `bench/CompPolyBench/{Fields,Univariate,Multivariate,Multilinear,Bivariate}/` |
+| CLI, group registry, report and JSONL writers | `bench/CompPolyBench/Setup.lean`, `bench/CompPolyBench/Common.lean` |
+| `--compare` (reader, verdicts, rendering) | `bench/CompPolyBench/Compare/` |
+| A/B driver | `scripts/bench-ab.sh` |
+| Curated CI set | `bench/ci-groups.txt` |
+| CI workflows | `.github/workflows/lean_action_ci.yml`, `.github/workflows/benchmarks.yml` |
+| Run output (ignored by git) | `bench/out/` |
+
 ## External comparison targets
 
 There is no public cycle-count to cite. "Competitive with industry" means
 **same operation, same size, same CPU** against a pinned peer, SIMD off.
-The full argument is [`BENCHMARKING.md` §13](../../BENCHMARKING.md#13-external-comparison-targets).
+The full argument is [`docs/bench-audit-2026.md` §13](../bench-audit-2026.md#13-external-comparison-targets).
 
 | Layer | Peer | "On par" |
 |---|---|---|
@@ -251,7 +339,7 @@ SOTA.
 ## Known gaps
 
 Recorded so they are not rediscovered. The audit and plan live in
-`BENCHMARKING.md` at the repo root.
+`docs/bench-audit-2026.md`.
 
 - A handful of rows are still `n=1`, all of them workloads whose single iteration
   exhausts its budget. They need smaller input shapes, decided per benchmark; no
@@ -278,7 +366,7 @@ Recorded so they are not rediscovered. The audit and plan live in
   takes `[Fintype F]` and its operations then stop compiling, so the repair is
   to `CompPoly/Fields/Extension/` rather than to the instance.
 - No external yardstick yet. Peers and the "on par" bar live in
-  [`BENCHMARKING.md` §13](../../BENCHMARKING.md#13-external-comparison-targets):
+  [`docs/bench-audit-2026.md` §13](../bench-audit-2026.md#13-external-comparison-targets):
   measure Plonky3 (scalar, SIMD off) for the small fields and multiplicative
   NTT, Binius for towers and the additive NTT, arkworks / gnark-crypto for
   pairing scalars. "On par" means within ~2–5× of those *scalar* kernels on
