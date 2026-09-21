@@ -17,9 +17,11 @@ concrete inputs and faster in measurement:
 2. **Test.** The tests for the implementation being edited must pass, and the digest
    gate `lake exe CompPolyBench --validate-only --groups <target>` must exit 0,
    so every implementation in the group still agrees with the others. If the
-   implementation has no tests of its own, write them before the first edit: a few
-   `#guard`s or `decide`-closed examples on concrete inputs catch most wrong
-   edits in seconds, long before a proof attempt would.
+   implementation has no tests of its own, write them before the first edit,
+   against the original: a few `#guard`s or `decide`-closed examples on
+   concrete inputs that the current, formally verified function passes. They
+   then run on every iteration and catch most wrong edits in seconds, long
+   before a proof attempt would.
 3. **Measure.** `./scripts/bench-ab.sh run <target>` compares the current
    build against a frozen baseline on this machine, turn about, and prints one
    verdict per row. Only a change that is `faster` with no `SUSPECT` is worth
@@ -29,7 +31,10 @@ concrete inputs and faster in measurement:
    3 that theorem may be `sorry`ed so that the `@[csimp]` swap is live and the
    new code is what gets tested and timed; the `sorry` exists only inside an
    iteration, and `lake exe axiomsweep --check` at the end of the session is
-   what confirms none survived.
+   what confirms none survived. If the proof attempt finds a bug that step 2
+   let through, add a test that fails on exactly that input before fixing the
+   code: the suite is how the next iteration catches the same class of mistake
+   in seconds instead of at the proof.
 5. **Decision.** Keep the change once all of 2 to 4 hold. Otherwise revert.
 
 The objective is the **ratio** the comparison prints, never a nanosecond figure.
@@ -71,7 +76,9 @@ Rules the loop follows:
 - **One change per iteration.** A verdict on two edits says nothing about either.
 - **Tests before measurement, measurement before proof.** A wrong edit is
   cheapest to find in a test, and a slow one in a measurement; neither deserves
-  a proof. Write the tests first if the implementation lacks them.
+  a proof. Write the tests first if the implementation lacks them, against the
+  verified original, and grow them whenever the proof catches something they
+  did not.
 - **A `sorry` lives inside an iteration only.** It is how the unproved candidate
   gets tested and timed. It is never committed, never pushed, and the session
   ends with `lake exe axiomsweep --check` clean.
