@@ -13,12 +13,19 @@ lake exe CompPolyBench --small                       # every registered group, t
 lake exe CompPolyBench --medium --validate-only      # correctness only, no timings
 lake exe CompPolyBench --groups fields-goldilocks-mul
 lake exe CompPolyBench --list                        # authoritative group keys
+lake exe CompPolyBench --out-dir bench/out/mine <key> # somewhere other than bench/out
+lake exe CompPolyBench --compare --baseline <dir> --candidate <dir>   # judge two builds
+./scripts/bench-ab.sh run fields-goldilocks-mul      # freeze, interleave, compare
 ```
 
 Output lands in `bench/out/`, which is created on demand and ignored in its
 entirety. A checksum mismatch inside a group makes the executable exit nonzero
 after writing its artifacts, and CI's validation step has no
 `continue-on-error`, so a mismatch fails the run.
+
+Comparing two builds of the library on one machine is the job of `--compare`
+and its driver `scripts/bench-ab.sh`; the loop that uses them is
+[`autoresearch.md`](autoresearch.md).
 
 ## Two tracks, because only one of them is trustworthy
 
@@ -148,9 +155,10 @@ runs and commits.
 Digests remain preset-dependent, because the validation pass length derives from
 the measured iteration count.
 
-Record `name` is **not** unique — `extension-mul` is emitted by the ext4, ext5
-and ext6 groups. Any tool comparing two result files must key on
-`(name, field, input_shape)`.
+Record `name` is **not** unique, in two ways: `extension-mul` is emitted by the
+ext4, ext5 and ext6 groups, and a chained group emits a latency row and a
+throughput row under one name. Any tool comparing two result files must key on
+`(group_key, name, digest_class, method)`, which is what `--compare` does.
 
 ## Adding a benchmark
 
@@ -223,6 +231,23 @@ all; it does not catch one that is partly folded, and a chain of a
 `GF(2)`-linear operation folds completely — see the note on `chainFloorStep`
 in `bench/CompPolyBench/Harness/SelfCheck.lean`.
 
+## External comparison targets
+
+There is no public cycle-count to cite. "Competitive with industry" means
+**same operation, same size, same CPU** against a pinned peer, SIMD off.
+The full argument is [`BENCHMARKING.md` §13](../../BENCHMARKING.md#13-external-comparison-targets).
+
+| Layer | Peer | "On par" |
+|---|---|---|
+| BabyBear / KoalaBear / Goldilocks / Mersenne31 field ops, multiplicative NTT, RS encode | Plonky3 (scalar kernel) | within ~2–5× |
+| Binary towers, `clMul` / BF64, additive NTT | Binius (scalar / packed-off) | within ~2–5×, at `log n` ≈ 13–16 |
+| BN254 / BLS12-381 / Pasta `mul` / `inv` | arkworks or gnark-crypto | within ~2–5× |
+| Gao decode, Guruswami–Sudan | none | no production peer; do not invent one |
+
+Do not compare against packed AVX-512 numbers, whole-prover benches,
+zkalc, ZPrize, or ePrint cycle tables. Beat-`ZMod` is necessary and not
+SOTA.
+
 ## Known gaps
 
 Recorded so they are not rediscovered. The audit and plan live in
@@ -231,8 +256,10 @@ Recorded so they are not rediscovered. The audit and plan live in
 - A handful of rows are still `n=1`, all of them workloads whose single iteration
   exhausts its budget. They need smaller input shapes, decided per benchmark; no
   harness change reaches that.
-- No result storage, baseline comparison, or regression gate for run-time
-  benchmarks; only build timing gets that treatment.
+- No result storage or CI regression gate for run-time benchmarks; only build
+  timing gets that treatment. What exists is a same-machine comparison of two
+  builds, `--compare` driven by `scripts/bench-ab.sh`, which needs no stored
+  history because it runs both binaries turn about.
 - Per-row floor subtraction is not reported, because the floor is
   per-representation rather than global.
 - No polynomial-matrix groups, and no `batchInverse` / `sumOfProducts` /
@@ -250,3 +277,10 @@ Recorded so they are not rediscovered. The audit and plan live in
   build. Marking the instance `noncomputable` is not the fix: `Extension.Ext`
   takes `[Fintype F]` and its operations then stop compiling, so the repair is
   to `CompPoly/Fields/Extension/` rather than to the instance.
+- No external yardstick yet. Peers and the "on par" bar live in
+  [`BENCHMARKING.md` §13](../../BENCHMARKING.md#13-external-comparison-targets):
+  measure Plonky3 (scalar, SIMD off) for the small fields and multiplicative
+  NTT, Binius for towers and the additive NTT, arkworks / gnark-crypto for
+  pairing scalars. "On par" means within ~2–5× of those *scalar* kernels on
+  the same CPU, not packed AVX-512 or a whole-prover bench. Do not cite
+  published cycle tables.

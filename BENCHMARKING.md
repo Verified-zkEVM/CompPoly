@@ -20,6 +20,7 @@ repo should be interpreted.
 - [10. Sources](#10-sources)
 - [11. Review of this audit against the code and the run data](#11-review-of-this-audit-against-the-code-and-the-run-data)
 - [12. Change log](#12-change-log)
+- [13. External comparison targets](#13-external-comparison-targets)
 
 ---
 
@@ -299,7 +300,8 @@ analysis in the repo is in the orphaned `tests/…/NTT/Benchmark.lean`.
 "As fast as possible" is unfalsifiable without a reference. Nothing compares
 against plonky3, arkworks, gnark-crypto, or published cycles-per-operation
 figures, and nothing is expressed in a comparable unit (cycles/op, ns/op at a
-stated clock).
+stated clock). The peers and the "on par" bar for each measured layer are in
+[§13](#13-external-comparison-targets); the implementation remains Phase 6.
 
 ### 3.10 Smaller defects
 
@@ -747,14 +749,15 @@ methodologically-broken benchmark path invites someone to trust it.
 
 **External yardstick (§3.9).** Since no published cycle baselines survived
 verification (§5.5), do not cite numbers — *measure* them. Add
-`bench/external/` holding a small Rust project pinning `plonky3` (and
-optionally `arkworks`/`gnark-crypto`) with `cargo bench` over the *same*
-operations at the *same* sizes, run on the *same* runner, emitted into the *same*
-radar metrics under a `reference/` prefix. Then "CompPoly's KoalaBear mul is 3.2×
-plonky3's" is a measured claim on identical hardware rather than a comparison
-across two papers' machines. This is also the only honest way to state a
-roadmap success criterion like "competitive performance with industry-standard
-implementations".
+`bench/external/` holding a small Rust project pinning the peers in
+[§13](#13-external-comparison-targets) — Plonky3 first, then Binius, then
+arkworks / gnark-crypto for the pairing scalars — with `cargo bench` over the
+*same* operations at the *same* sizes, run on the *same* runner, emitted into
+the *same* radar metrics under a `reference/` prefix. Then "CompPoly's
+KoalaBear mul is 3.2× plonky3's" is a measured claim on identical hardware
+rather than a comparison across two papers' machines. This is also the only
+honest way to state a roadmap success criterion like "competitive performance
+with industry-standard implementations".
 
 ### 6.7 Reporting and storage
 
@@ -862,8 +865,12 @@ Also in this phase: delete the three orphaned `tests/` `#eval` benchmarks, and a
 
 ### Phase 6 — External yardstick (2–3 days)
 
-`bench/external/` with pinned `plonky3` (± `arkworks`) benchmarks over matching
-operations and sizes, on the same runner, into `reference/` metrics (§6.6).
+`bench/external/` implementing [§13](#13-external-comparison-targets): pinned
+Plonky3 first (scalar kernels, SIMD off), then Binius for the tower / additive
+NTT, then arkworks / gnark-crypto for the pairing scalars. Same operations,
+same sizes, same runner, into `reference/` metrics (§6.6). Do not cite
+published cycle tables; the point of this phase is to produce the numbers
+those tables do not give us.
 
 ### Phase 7 — Multi-backend differential track
 
@@ -1087,9 +1094,9 @@ Verified in the research pass (3-voter adversarial verification):
 benchmark methodology or published cycle baselines (arkworks, plonky3,
 gnark-crypto, blst, zkalc, ZPrize), nor on Lean-4-specific measurement hazards,
 and this session's web-search budget was exhausted before I could cover them
-directly. §4 substitutes direct measurement for the second gap; §6.6 substitutes
-measurement-on-identical-hardware for the first. No cycle-count figures are quoted
-anywhere in this document.
+directly. §4 substitutes direct measurement for the second gap; §6.6 and
+[§13](#13-external-comparison-targets) substitute measurement-on-identical-hardware
+for the first. No cycle-count figures are quoted anywhere in this document.
 
 ### Repo locations referenced
 
@@ -1321,7 +1328,9 @@ reviews as a small diff and the stack merges bottom-up. Base of the stack is
 | 3 | `dhsorens/bench-determinism` | Per-group seeding from the group key, registration made authoritative, dead-code removal | landed |
 | 4 | `dhsorens/bench-reporting` | Cross-platform hardware probe, `bench/out/`, `docs/wiki/benchmarking.md`, `clMul` guard migration | landed |
 | 5 | `dhsorens/bench-foundations` | `--validate-only`, correctness gate in main CI, on-demand `benchmarks.yml` | landed |
-| 6 | `dhsorens/bench-sizing-and-coverage` | Wall-clock budgets replace 228 hand-tuned iteration counts, one declaration site per row, preset-independent digests, group identity and a run manifest in the output | in review |
+| 6 | `dhsorens/bench-sizing-and-coverage` | Wall-clock budgets replace 228 hand-tuned iteration counts, one declaration site per row, preset-independent digests, group identity and a run manifest in the output | landed |
+| 7 | `dhsorens/bench-coverage` | Base-field, eight-limb, tower-kernel, NTT-sweep, Reed-Solomon and crossover groups; chained bodies; `work_units` and `digest_class` | landed |
+| 8 | `dhsorens/bench-ab` | `--compare` and `--out-dir`, the `bench-ab.sh` driver, and the optimisation-loop protocol in `docs/wiki/autoresearch.md` | in review |
 
 ### 12.1 Measurement core (`dhsorens/bench-measurement-core`)
 
@@ -1839,3 +1848,188 @@ row cannot survive `ℓ ≥ 8`; `batchInverse` / `sumOfProducts` / `dot_array`,
 which Plonky3 benchmarks and CompPoly does not have; and prime-field `square`,
 which is `mul x x` on every carrier here — Plonky3 has no field-level `square`
 benchmark for the same reason.
+
+### 12.8 A/B comparison and the optimisation loop (`dhsorens/bench-ab`)
+
+Closes the local half of §3.5. §7 Phase 2 named a self-hosted baseline
+comparison as the fallback if Radar registration stalled; Radar was declined
+outright on 2026-09-09, and what was built instead is narrower and sturdier than
+that fallback: not a comparison against a stored run on a runner whose CPU varies,
+but a comparison of two binaries on one machine, run turn about, minutes apart.
+Nothing is stored, so nothing has to be comparable across days.
+
+**What it is for.** An agent editing a fast kernel needs a keep-or-revert signal
+that it cannot fool. The signal has three gates in order — `lake build`, so the
+refinement proof still closes; `--validate-only`, so the group still agrees on
+its digest; and the A/B verdict — and the protocol around them is
+`docs/wiki/autoresearch.md`. This entry records the measurement half.
+
+**`--compare`.** A new command in the benchmark binary, so the statistics live
+beside the harness that produced the numbers and share its key names. It reads
+`K` results files per side, one per invocation, and judges each row from the
+`K` invocation-level medians, the unit §5.3 argues for: samples within one
+process are not independent, invocations are. Rows are keyed on
+`(group_key, name, digest_class, method)`; `name` alone collides both within a
+chained group and across single-row groups, which `docs/wiki/benchmarking.md`
+had mis-stated as `(name, field, input_shape)` and now states correctly.
+
+The criterion is two conditions at once. The ratio of the two medians must
+clear a practical-importance threshold, 5% by default as §9 item 3 suggested,
+*and* the sides must separate strictly: every candidate median below every
+baseline median for `faster`, the mirror image for `slower`. Strict separation
+of two groups of five happens by chance one time in `C(10,5) = 252`; the header
+prints that denominator for whatever `K` was used, so a one-round run announces
+its own weakness (`1 in 2`). Everything else is `same`. Two verdicts are fatal
+and exit `3`: `mismatch`, when the sides disagree on a row's digest or work
+units, and `missing`, when a row is absent from some file on one side. The
+digest comparison is free and it is the only cross-binary correctness check a
+single-row group gets, since the inputs are seeded per group (§12.3) and the
+digest is therefore the same across commits.
+
+`SUSPECT` is a flag, not a verdict: a ratio below 0.1 with an unchanged digest,
+a one-unit row cheaper than `harness-floor`, or a chained row cheaper per
+operation than `harness-chain-floor`. These are the dead-body signatures of
+§12.6 finding 2 and §12.7 findings 1–2, and the driver appends the harness
+groups to every run so the floors are always present. The same rows double as a
+drift check: their candidate-over-baseline ratio is printed in the header and
+warned on outside ±10%.
+
+**`--out-dir`.** Run ids have one-second resolution, and an interleaved A/B on a
+cheap group finishes an invocation in under two seconds, so the driver gives each
+invocation its own directory. The flag also serves `--compare`, which then writes
+`compare-<runId>.md` beside the table it prints.
+
+**The driver.** `scripts/bench-ab.sh freeze` keeps a copy of the built binary
+and its commit; `run <groups>` builds once, then alternates baseline and
+candidate for `BENCH_AB_ROUNDS` rounds, reversing the order each round so a slow
+drift cannot favour one side, and finishes by invoking the candidate's
+`--compare`. It never calls `lake exe` after measurement starts. Statistics stay
+in Lean; the script only sequences.
+
+**Measured, A/A.** The same binary compared against itself on
+`fields-koalabear-mul` plus the four harness groups, five rounds a side at
+`--medium`, on the same laptop as §12.7's figures:
+
+| Row | Baseline (ps/iter) | Candidate (ps/iter) | Ratio |
+|---|---:|---:|---:|
+| `koalabear-mul-fast · latency` | 4 193 373 | 4 212 553 | 1.005 |
+| `koalabear-mul-fast · throughput` | 666 174 | 670 799 | 1.007 |
+| `koalabear-mul-zmod · latency` | 7 547 480 | 7 580 747 | 1.004 |
+| `harness-chain-floor · latency` | 643 855 | 644 685 | 1.001 |
+
+All ten rows `same`, every ratio within 0.993–1.007, invocation-median spread
+0.1–2.4%, exit 0. Each invocation took one to two seconds, so a five-round A/B
+on one field group costs about twenty seconds of wall clock after the build.
+Synthetic edits of the candidate files then produced each of the other outcomes
+on demand: a doubled median gave `slower` at 2.009; a median divided by twenty
+gave `faster` at 0.050 with `SUSPECT: ratio < 0.1`; one altered digest gave
+`mismatch (checksum)` and exit 3; one deleted row gave `missing (candidate)` and
+exit 3; one altered preset refused with exit 1 before any table.
+
+**Findings from doing the work.**
+
+1. **Unreplicated rows must not be fatal.** The first draft made `n<5` a
+   `mismatch`. That would deadlock the loop on any group with an expensive row,
+   since the row's own replication is not what the comparison reasons about; the
+   `K` invocations are. Such rows are judged and annotated `(n<5)`.
+2. **`slower` does not change the exit code.** The agent reads the verdict; an
+   exit code that also said "slower" would make a correct negative result look
+   like a broken run. Only `mismatch` and `missing` are failures, because they
+   mean the candidate changed *what* was measured.
+3. **The harness rows need exempting from the floor alarm** and nothing else.
+   They are compared like every other row, and their being `same` in an A/A is
+   the check that the two sides ran on the same machine in the same state.
+
+**Deferred.** Stored results and a CI regression gate remain undone by decision;
+the external yardstick of §13 remains the separate PR that turns "faster than
+before" into "fast enough".
+
+---
+
+## 13. External comparison targets
+
+Status: goals for Phase 6, not yet implemented. Complements §3.9 / §6.6.
+There is still no public number this repo should cite as a target; this
+section names the *peer* and the *bar* for each layer the suite measures.
+
+The roadmap success criterion — "benchmarks demonstrating competitive
+performance with industry-standard implementations" — is the right goal.
+The only honest way to claim it is **same operation, same size, same CPU**,
+CompPoly against a pinned copy of the peer. Citing "Plonky3 does KoalaBear
+mul in X ns on some blog" is how this field lies to itself. §5.5 already
+killed every published cycle baseline the research pass found; this section
+does not resurrect them.
+
+### 13.1 There is no leaderboard
+
+CompPoly is not one thing. Each layer has a different SOTA, and whole-prover
+benches (Plonky3 "2^20 Poseidon in 480 ms", [binius.xyz](https://www.binius.xyz/benchmarks/))
+include Merkle trees, hashes, and a proving system. Winning or losing those
+would not tell you if `KoalaBear.Fast.mul` is good.
+
+Units that can carry a claim: **ns/op** and **cycles/op** on a named CPU, or
+**ns/butterfly** for an NTT (`t / (n/2 · log n)`). Not "1.27× faster than
+`ZMod`."
+
+### 13.2 Peer by layer
+
+| What we measure | Peer | Why |
+|---|---|---|
+| BabyBear, KoalaBear, Goldilocks, Mersenne31: `add` / `mul` / `square` / `inv` | [Plonky3](https://github.com/Plonky3/Plonky3) | Those primes exist because of Plonky2/3 and RISC Zero. Winterfell / miden-crypto are a second opinion, not a different league. |
+| Multiplicative NTT / iNTT, RS encode as "NTT of a message" | Plonky3 DFT (`radix-2-dit-parallel`, `recursive-dft`, `small-batch-dft`) | CompPoly already identifies the forward NTT with `ReedSolomon.encode`. Same sizes as the standalone sweep in §6.6. |
+| Binary towers, `clMul` / BF64, additive NTT | [Binius](https://github.com/IrreducibleOSS/binius) (Irreducible) | The production stack for this math. Measure at the sizes they actually bench (`log n` ≈ 13–16), not ℓ = 2/4/7. |
+| BN254, BLS12-381, Pasta scalars: `mul` / `inv` | arkworks, gnark-crypto; [blst](https://github.com/supranational/blst) for BLS | Pairing-curve arithmetic, not the small-field story. |
+| Gao unique decode, Guruswami–Sudan | no production peer | These are not what provers race. A C++ list-decoder comparison would be a separate, academic claim. Do not invent a "SOTA" here. |
+
+**Do not treat as a target.** [zkalc](https://github.com/asn-d6/zkalc) is a
+cost *model* for MSM / pairings / FFTs, not a field-mul suite. ZPrize and
+Icicle are GPU contests. ePrint cycle tables (the Mersenne31-vs-BabyBear
+NEON/AVX-512 numbers in the circle-STARK note, and similar) look
+authoritative and are not runnable in this repo.
+
+### 13.3 What "on par" means
+
+Do not aim at the numbers Plonky3 publishes. Those assume
+`RUSTFLAGS=-Ctarget-cpu=native`: AVX2 / AVX-512 / NEON, **many multiplies
+per instruction**. CompPoly's fast paths are scalar Lean → C, one word at a
+time. Comparing that to packed AVX-512 is how you conclude "20× slower"
+when the algorithm might be fine.
+
+| Bar | What it means | If we hit it |
+|---|---|---|
+| Beat Mathlib `ZMod` | Already true once the stopwatch works (~100× on Goldilocks mul, §12.1) | Necessary. Not SOTA. |
+| **Within ~2–5× of *scalar* Plonky3 / Binius** (SIMD off, one element) | Same reduction, no vector packing | **This is "on par" for a verified Lean library.** The remaining gap is language and runtime, not a worse algorithm. |
+| Match packed Plonky3 / Binius | AVX/NEON, cache-blocked NTT at 2^18–2^24 | Their product. CompPoly gets there by extraction or a handwritten backend, not by proving harder. |
+| GPU / ZPrize / Icicle | Different machine | Ignore. |
+
+A claim that can go in a paper without wincing:
+
+> On this CPU, CompPoly's scalar KoalaBear mul (resp. radix-2 NTT at
+> *n* = 2^16) is *X*× Plonky3's scalar kernel. The packed Plonky3 kernel
+> is a further *Y*× from SIMD, which we do not have.
+
+Until *X* is measured on one box, the suite can say it is faster than
+`ZMod`. It cannot say it is on par with industry.
+
+### 13.4 What to pin, in order
+
+If Phase 6 adds one external crate, it is **Plonky3**, SIMD features off,
+and it measures:
+
+- `add` / `mul` / `square` / `inv` on BabyBear, KoalaBear, Goldilocks,
+  Mersenne31
+- forward and inverse NTT at the same `n` the CompPoly sweep uses
+  (start where the suite already is; later 2^16+)
+- RS encode as the NTT of a message, which is already how CompPoly
+  defines it
+
+Second crate, when the binary-field work wants a claim: **Binius**, packed
+off if the API allows, additive NTT at `log n` ≈ 13–16.
+
+Third, only for the Mont64x8 / pairing-scalar groups: arkworks or
+gnark-crypto over the same `mul` / `inv` the `fields-mont64x8-*-inv` rows
+already run.
+
+Pin crate versions. Emit under a `reference/` metric prefix on the same
+runner as `CompPolyBench`. A ratio that is not produced that way is not a
+ratio this document will quote.
