@@ -40,8 +40,9 @@ Run from the repository root.
 #   1. edit one kernel
 lake build                                            # proofs still close
 lake build CompPolyBenchLib CompPolyBench             # bench still builds
-lake exe CompPolyBench --validate-only --groups fields-koalabear-mul
-./scripts/bench-ab.sh run fields-koalabear-mul        # the verdict
+lake env lean tests/CompPolyTests/Fields/Extension/Arithmetic.lean  # tests that import the kernel
+lake exe CompPolyBench --validate-only --groups fields-extension-koalabear-ext4-mul
+./scripts/bench-ab.sh run fields-extension-koalabear-ext4-mul   # the verdict
 #   2. keep on `faster` with no SUSPECT, else `git checkout -- <files>`
 #   3. after a kept change, make it the new baseline
 ./scripts/bench-ab.sh freeze --force
@@ -57,6 +58,13 @@ Rules the loop follows:
 - **One change per iteration.** A verdict on two edits says nothing about either.
 - **No new warnings.** Both builds were warning-clean when the loop began; keep
   them so.
+- **Elaborate the tests that import the kernel, every iteration.** `lake build`
+  proves the change; it does not compile the `#guard`s that call it. A body that
+  became expensive to *inline* passes the build and then costs seconds per call
+  site in a test file with a hundred of them. The first loop run lost a
+  four-hour CI job to exactly this (`BENCHMARKING.md` §12.9, finding 4). Find
+  them with `grep -rl <module> tests/`, and treat a file that takes more than a
+  minute as a failed gate.
 - **Build before measuring, never during.** The driver builds once and then calls
   the binaries directly. Do not run `lake exe` or `lake build` while a run is in
   flight, and do not edit under `bench/` in the same iteration as a kernel.
@@ -122,7 +130,7 @@ is authoritative.
 
 | Target | Groups | Fast implementation | Gate | Idea |
 |---|---|---|---|---|
-| `Ext.mul`, O(d³) → O(d²) | `fields-extension-{koalabear-ext4,babybear-ext4,koalabear-ext5,koalabear-ext6}-mul` | `CompPoly/Fields/Extension/Arithmetic.lean` (`mulTbl`, `red`) | `mul_eq_mulTbl` (`@[csimp]`), `toQuot_mul` in `CompPoly/Fields/Extension/Bridge.lean` | schoolbook into a flat `2d - 1` accumulator, one `red` fold, `red` hoisted per modulus. Single-row groups: the build and the cross-binary digest are the only gates |
+| `Ext.mul`, O(d³) → O(d²) | `fields-extension-{koalabear-ext4,babybear-ext4,koalabear-ext5,koalabear-ext6}-mul` | `CompPoly/Fields/Extension/Arithmetic.lean` (`mulTbl`, `red`) | `mul_eq_mulTbl` (`@[csimp]`), `toQuot_mul` in `CompPoly/Fields/Extension/Bridge.lean` | first loop run (BENCHMARKING.md §12.9): `Fin.foldl` sums and an O(d²) table kept, net ~2× at d=4; the O(d²) convolution lost to a constant that is not arithmetic, so the next step is the runtime instance construction on this path, then the convolution again. Single-row groups: the build and the cross-binary digest are the only gates |
 | Base-field kernels | `fields-{koalabear,babybear,mersenne31,goldilocks}-{mul,add,inv,pow}`, `fields-{bn254,bls12-381,bls12-377}-mul` | `CompPoly/Fields/Montgomery/Native32Field.lean`, `CompPoly/Fields/Goldilocks/Fast.lean`, `CompPoly/Fields/Mersenne31/Fast.lean`, `CompPoly/Fields/Montgomery/Native64x8Mul.lean` | `toField_*`, `ringEquiv`, `instField` | two to four digest-cross-checked rows per group; the best-behaved targets |
 | Eight-limb inversion | `fields-mont64x8-{bn254,bls12-381,bls12-377}-inv` | `CompPoly/Fields/Montgomery/Native64x8InvDefs.lean` | `invGcdRaw_eq_inv` and its bounds chain in `CompPoly/Fields/Montgomery/Native64x8Inv.lean` | three algorithms in one group, one digest class |
 | Many-polynomial evaluation | `univariate-many-one-point-koalabear`, `univariate-dense-*` | `CompPoly/Univariate/ManyEval/Basic.lean`, `CompPoly/Univariate/Raw/Ops.lean` | `evalManyHorner_eq_map_eval`, `evalManySharedPowers_eq_map_eval`, `eval₂_horner_eq_eval₂` | plain array loops with short refinement proofs |
