@@ -22,7 +22,7 @@ Human contributors should usually start with [`README.md`](README.md),
    intentional. Native-compiler trust is never baselineable.
 7. When making a fast implementation faster, follow the loop in
    [`docs/wiki/autoresearch.md`](docs/wiki/autoresearch.md): edit, test, measure,
-   prove, in that order. The kernel's tests and `--validate-only` come first,
+   prove, in that order. The implementation's tests and `--validate-only` come first,
    `./scripts/bench-ab.sh run <group>` is the measurement, only a `faster`
    verdict without `SUSPECT` earns the refinement proof, and a `sorry` on that
    theorem lives inside an iteration only, never in a commit.
@@ -146,7 +146,7 @@ trusting the compiler.
   saturation-based reasoning.
 - Use `decide` sparingly on large types; each `decide` must be kernel-evaluated.
 - For a theorem that a changing implementation must keep satisfying, such as a
-  fast kernel's refinement theorem, state the implementation's facts as named
+  fast implementation's refinement theorem, state its facts as named
   lemmas marked `@[simp]` or `@[grind =]` and close the theorem over that set
   (`simp only [...]` or `grind`) rather than by a hand-written `rw` chain, so
   the next change to the implementation updates lemmas, not proof steps. See

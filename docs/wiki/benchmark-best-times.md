@@ -32,7 +32,7 @@ conditions, and only numbers measured that way belong in these tables:
 Columns: **Row** is the implementation (`name` · method · representation, as
 the JSONL names them); **Median** is the median sample per iteration;
 **Per unit** is that median divided by `workUnits` for chained rows, the number
-to compare between field kernels; **Spread** is the median absolute deviation as
+to compare between field operations; **Spread** is the median absolute deviation as
 a percentage of the median, with `(n=k)` for under-replicated rows, `n=1` for
 single-sample rows and `!k` for `k` severe outliers; **Best at** is the short
 commit of the build that produced the number.
@@ -227,7 +227,7 @@ Plonky3's BabyBear and KoalaBear quartic extensions.
 *What it is.* The binary tower built by iterated quadratic extension: the packed-word `GF(2^128)`
 implementation against its `BitVec` specification for `mul`, `inv` and
 multilinear coefficient evaluation (`CompPoly/Fields/Binary/Tower/Fast*.lean`),
-and the scalar kernels underneath, `GF(2^8)` and `GF(2^64)` table-driven
+and the scalar operations underneath, `GF(2^8)` and `GF(2^64)` table-driven
 against recursive (`CompPoly/Fields/Binary/Tower/FastDefs.lean`).
 
 *Gate.* `mul64T_eq_mul64`, `inv64T_eq_inv64` and the `toConcrete_*` lemmas in

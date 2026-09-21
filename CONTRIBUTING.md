@@ -27,12 +27,10 @@ For substantial contributions, such as a new proof system, we strongly encourage
 
 ## Performance Contributions
 
-Making a fast implementation faster is a welcome contribution, and it has its
-own rules, because the thing being changed is code that a proof is about. The
-full protocol is [`docs/wiki/autoresearch.md`](docs/wiki/autoresearch.md); how the
-suite measures is [`docs/wiki/benchmarking.md`](docs/wiki/benchmarking.md); the
-time to beat for every row is
-[`docs/wiki/benchmark-best-times.md`](docs/wiki/benchmark-best-times.md).
+Making a fast implementation faster is a welcome contribution. The
+full protocol is [`docs/wiki/autoresearch.md`](docs/wiki/autoresearch.md);
+how the suite measures is [`docs/wiki/benchmarking.md`](docs/wiki/benchmarking.md);
+the time to beat for every row is [`docs/wiki/benchmark-best-times.md`](docs/wiki/benchmark-best-times.md).
 
 ### Rules
 
@@ -50,18 +48,18 @@ time to beat for every row is
   means the candidate computes something else; it is a bug, not a measurement.
 * **Test, then measure, then prove.** The proof is the expensive part, so
   spend it last, on a change already shown correct on concrete inputs and
-  faster in measurement. If the kernel you are optimising has no tests of its
-  own under `tests/`, add them first. While exploring, the refinement theorem
+  faster in measurement. If the implementation you are optimising has no tests
+  of its own under `tests/`, add them first. While exploring, the refinement theorem
   may carry a `sorry` so the new code is what gets tested and timed; a PR never
   contains one, and `lake exe axiomsweep --check` is how you confirm that.
-* **`lake test` is part of the gate, not just `lake build`.** A kernel whose
-  tests take hours to elaborate is not faster: inlining attributes on
+* **`lake test` is part of the gate, not just `lake build`.** An implementation
+  whose tests take hours to elaborate is not faster: inlining attributes on
   loop-shaped bodies have done exactly that here.
 * **Write the proof so the next optimisation does not break it.** State the
-  kernel's coefficient and unfolding facts as named lemmas marked `@[simp]` or
-  `@[grind =]`, and close the refinement theorem with `simp only [...]` over
+  implementation's coefficient and unfolding facts as named lemmas marked
+  `@[simp]` or `@[grind =]`, and close the refinement theorem with `simp only [...]` over
   them or with `grind`, rather than a hand-written `rw` chain. The next change
-  to the kernel then updates lemmas, not proof steps. See "Proving so the proof
+  to the implementation then updates lemmas, not proof steps. See "Proving so the proof
   survives the next iteration" in `docs/wiki/autoresearch.md`.
 * **Quote ratios, not nanoseconds.** Numbers from your machine are not
   comparable with the tables in `benchmark-best-times.md`, which are taken on
@@ -92,7 +90,7 @@ carries no dispersion and no ratio should be read off it.
 ```bash
 ./scripts/bench-ab.sh freeze                 # build the baseline binary from the current tree
 # edit the fast implementation (a `sorry` on its refinement theorem is fine here)
-lake build && lake test                      # test: the kernel's tests and the digest gate
+lake build && lake test                      # test: the implementation's tests and the digest gate
 ./scripts/bench-ab.sh run <key>[,<key>...]   # measure: both binaries turn about, then --compare
 # on `faster` without SUSPECT: prove the refinement theorem, then
 lake build && lake test && lake exe axiomsweep --check
@@ -113,10 +111,10 @@ edit `bench/` while a run is in flight.
 * Title `perf(<scope>): <subject>`.
 * The change in one paragraph: what was slow, why, what the new code does.
 * The proof: the `@[csimp]` or `_eq_` theorem that ties the new code to the
-  specification, named in the description, and closed over the kernel's lemma
-  set rather than by a rewrite chain.
-* The tests: the concrete-input tests for the kernel, added in this PR if the
-  kernel had none.
+  specification, named in the description, and closed over the implementation's
+  lemma set rather than by a rewrite chain.
+* The tests: the concrete-input tests for the implementation, added in this PR
+  if it had none.
 * The A/B evidence: the `compare-*.md` table or its relevant rows, with the
   preset, rounds, and the drift line. A `same` or `slower` verdict that is kept
   for another reason (a compile-time fix, a correctness repair) says so.

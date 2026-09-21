@@ -12,18 +12,19 @@ specification. The proof is the expensive part of a change, so the loop is
 ordered to spend it last, on changes that have already been shown correct on
 concrete inputs and faster in measurement:
 
-1. **Edit** one kernel.
-2. **Test.** The tests for the kernel being edited must pass, and the digest
+1. **Edit** one fast implementation: one change, to one of the definitions in
+   the "Fast implementation" column of the [target table](#targets).
+2. **Test.** The tests for the implementation being edited must pass, and the digest
    gate `lake exe CompPolyBench --validate-only --groups <target>` must exit 0,
    so every implementation in the group still agrees with the others. If the
-   kernel has no tests of its own, write them before the first edit: a few
+   implementation has no tests of its own, write them before the first edit: a few
    `#guard`s or `decide`-closed examples on concrete inputs catch most wrong
    edits in seconds, long before a proof attempt would.
 3. **Measure.** `./scripts/bench-ab.sh run <target>` compares the current
    build against a frozen baseline on this machine, turn about, and prints one
    verdict per row. Only a change that is `faster` with no `SUSPECT` is worth
    proving.
-4. **Prove.** The refinement theorem for the kernel (`mul_eq_mulTbl`,
+4. **Prove.** The refinement theorem for the implementation (`mul_eq_mulTbl`,
    `toField_mul`, `invGcdRaw_eq_inv`, and so on) must close. During steps 2 and
    3 that theorem may be `sorry`ed so that the `@[csimp]` swap is live and the
    new code is what gets tested and timed; the `sorry` exists only inside an
@@ -45,11 +46,11 @@ Run from the repository root.
 ./scripts/bench-ab.sh freeze
 
 # each iteration
-#   1. edit one kernel; `sorry` its refinement theorem if the proof is not immediate
+#   1. edit one fast implementation; `sorry` its refinement theorem if the proof is not immediate
 lake build                                            # compiles, with at most that one `sorry` warning
 lake build CompPolyBenchLib CompPolyBench             # bench still builds
 #   2. test
-lake env lean tests/CompPolyTests/Fields/Extension/Arithmetic.lean  # tests that import the kernel
+lake env lean tests/CompPolyTests/Fields/Extension/Arithmetic.lean  # tests that import the implementation
 lake exe CompPolyBench --validate-only --groups fields-extension-koalabear-ext4-mul
 #   3. measure
 ./scripts/bench-ab.sh run fields-extension-koalabear-ext4-mul   # the verdict
@@ -70,14 +71,14 @@ Rules the loop follows:
 - **One change per iteration.** A verdict on two edits says nothing about either.
 - **Tests before measurement, measurement before proof.** A wrong edit is
   cheapest to find in a test, and a slow one in a measurement; neither deserves
-  a proof. Write the tests first if the kernel lacks them.
+  a proof. Write the tests first if the implementation lacks them.
 - **A `sorry` lives inside an iteration only.** It is how the unproved candidate
   gets tested and timed. It is never committed, never pushed, and the session
   ends with `lake exe axiomsweep --check` clean.
 - **No new warnings at the end of an iteration.** Both builds were warning-clean
   when the loop began; the `sorry` warning is the one expected mid-iteration,
   and it is gone once step 4 closes.
-- **Elaborate the tests that import the kernel, every iteration.** `lake build`
+- **Elaborate the tests that import the implementation, every iteration.** `lake build`
   proves the change; it does not compile the `#guard`s that call it. A body that
   became expensive to *inline* passes the build and then costs seconds per call
   site in a test file with a hundred of them. The first loop run lost a
@@ -86,7 +87,8 @@ Rules the loop follows:
   minute as a failed gate.
 - **Build before measuring, never during.** The driver builds once and then calls
   the binaries directly. Do not run `lake exe` or `lake build` while a run is in
-  flight, and do not edit under `bench/` in the same iteration as a kernel.
+  flight, and do not edit under `bench/` in the same iteration as a fast
+  implementation.
 - **Stop and read on `mismatch`, `missing`, or `SUSPECT`.** These are not
   measurements. A `mismatch` means the candidate computed a different digest from
   the baseline on identical inputs; `missing` means the set of rows changed;
@@ -95,17 +97,19 @@ Rules the loop follows:
 
 ## Proving so the proof survives the next iteration
 
-The refinement theorem is rewritten every time its kernel is, so write it to be
+The refinement theorem is rewritten every time its implementation is, so write
+it to be
 cheap to rewrite. An explicit `rw` chain that names each intermediate form is
 the most brittle proof there is: the next change to the loop shape breaks every
 step. Instead:
 
-- **Give the kernel its own lemma set.** State the coefficient and unfolding
+- **Give the implementation its own lemma set.** State the coefficient and unfolding
   facts about the implementation as separate lemmas (`coeff_ofFn`,
   `red_getElem`, `Fin.foldl_add_eq_add_sum` are the current examples) and mark
   them `@[simp]`, or `@[grind =]` where they are equations `grind` should use.
-  The refinement theorem then closes by `simp only [<the kernel's lemmas>]` or
-  `grind`, and a later change to the kernel updates the lemmas, not the proof.
+  The refinement theorem then closes by `simp only [<the implementation's
+  lemmas>]` or `grind`, and a later change to the implementation updates the
+  lemmas, not the proof.
 - **Put the mathematics in the lemmas, not the theorem.** The theorem should
   be the one line that says the two definitions agree pointwise; the reason
   they do is a lemma with a name, which the next iteration can reuse or replace
@@ -115,7 +119,8 @@ step. Instead:
   (`Finset.sum` over `Fin`, `monomialMod`), never the other way, so that
   adding a lemma cannot send the simp set in circles.
 - **Prefer a named set over a bare `simp`, and `grind` over a hand-written
-  chain.** `simp only [...]` with the kernel's lemmas is stable and fast; bare
+  chain.** `simp only [...]` with the implementation's lemmas is stable and
+  fast; bare
   `simp` pulls in Mathlib's whole set and changes under it; `grind` with
   annotated lemmas is more robust than `rw` and acceptable where `omega`,
   `ring` or `simp only` do not close the goal directly. See the tactic guidance
@@ -155,8 +160,8 @@ be repeated rather than read.
 
 ## What keeps the loop honest
 
-- The gate is the proof, however late in the iteration it is paid. A kernel
-  routed through `@[implemented_by]` has no proof gate, because that attribute
+- The gate is the proof, however late in the iteration it is paid. A fast
+  implementation routed through `@[implemented_by]` has no proof gate, because that attribute
   substitutes code without one. The single
   use in `CompPoly/Univariate/Roots/Shoup/Basic.lean` is outside the loop, and no
   new one may be introduced by it. `@[csimp]` with an equality theorem, or a twin
@@ -181,10 +186,10 @@ its rows there.
 | Target | Groups | Fast implementation | Gate | Idea |
 |---|---|---|---|---|
 | `Ext.mul`, O(d³) → O(d²) | `fields-extension-{koalabear-ext4,babybear-ext4,koalabear-ext5,koalabear-ext6}-mul` | `CompPoly/Fields/Extension/Arithmetic.lean` (`mulTbl`, `red`) | `mul_eq_mulTbl` (`@[csimp]`), `toQuot_mul` in `CompPoly/Fields/Extension/Bridge.lean` | first loop run (`docs/bench-audit-2026.md` §12.9): `Fin.foldl` sums and an O(d²) table kept, net ~2× at d=4; the O(d²) convolution lost to a constant that is not arithmetic, so the next step is the runtime instance construction on this path, then the convolution again. Single-row groups: the build and the cross-binary digest are the only gates |
-| Base-field kernels | `fields-{koalabear,babybear,mersenne31,goldilocks}-{mul,add,inv,pow}`, `fields-{bn254,bls12-381,bls12-377}-mul` | `CompPoly/Fields/Montgomery/Native32Field.lean`, `CompPoly/Fields/Goldilocks/Fast.lean`, `CompPoly/Fields/Mersenne31/Fast.lean`, `CompPoly/Fields/Montgomery/Native64x8Mul.lean` | `toField_*`, `ringEquiv`, `instField` | two to four digest-cross-checked rows per group; the best-behaved targets |
+| Base-field arithmetic | `fields-{koalabear,babybear,mersenne31,goldilocks}-{mul,add,inv,pow}`, `fields-{bn254,bls12-381,bls12-377}-mul` | `CompPoly/Fields/Montgomery/Native32Field.lean`, `CompPoly/Fields/Goldilocks/Fast.lean`, `CompPoly/Fields/Mersenne31/Fast.lean`, `CompPoly/Fields/Montgomery/Native64x8Mul.lean` | `toField_*`, `ringEquiv`, `instField` | two to four digest-cross-checked rows per group; the best-behaved targets |
 | Eight-limb inversion | `fields-mont64x8-{bn254,bls12-381,bls12-377}-inv` | `CompPoly/Fields/Montgomery/Native64x8InvDefs.lean` | `invGcdRaw_eq_inv` and its bounds chain in `CompPoly/Fields/Montgomery/Native64x8Inv.lean` | three algorithms in one group, one digest class |
 | Many-polynomial evaluation | `univariate-many-one-point-koalabear`, `univariate-dense-*` | `CompPoly/Univariate/ManyEval/Basic.lean`, `CompPoly/Univariate/Raw/Ops.lean` | `evalManyHorner_eq_map_eval`, `evalManySharedPowers_eq_map_eval`, `eval₂_horner_eq_eval₂` | plain array loops with short refinement proofs |
-| Tower scalar kernels | `fields-tower-bt{8,64}-mul`, `fields-tower-bt64-inv-word`, `fields-tower-bt128-{mul,inv}` | `CompPoly/Fields/Binary/Tower/FastDefs.lean` | `mul64T_eq_mul64`, `inv64T_eq_inv64`, `toConcrete_*` in `CompPoly/Fields/Binary/Tower/Fast.lean` | table twins already close to optimal; low headroom |
+| Tower scalar arithmetic | `fields-tower-bt{8,64}-mul`, `fields-tower-bt64-inv-word`, `fields-tower-bt128-{mul,inv}` | `CompPoly/Fields/Binary/Tower/FastDefs.lean` | `mul64T_eq_mul64`, `inv64T_eq_inv64`, `toConcrete_*` in `CompPoly/Fields/Binary/Tower/Fast.lean` | table twins already close to optimal; low headroom |
 | Additive NTT | `additive-ntt-btf3-l2-r2`, `additive-ntt-btf3-l4-r2`, `additive-ntt-btf4-l7-r2` | `CompPoly/Fields/Binary/AdditiveNTT/Impl.lean` | `computableAdditiveNTTFast_eq_computableAdditiveNTT` | the `btf4` group is fast-only; rely on the build |
 | NTTFast stages | `ntt-{koalabear,babybear}-l{8,10,12,14,16}`, `ntt-plan-koalabear` | `CompPoly/Univariate/NTTFast/Plan.lean` | `CompPoly/Univariate/NTTFast/Correctness/Pipeline.lean` | largest surface and largest proof burden; last |
 
