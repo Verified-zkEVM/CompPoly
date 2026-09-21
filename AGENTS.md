@@ -93,6 +93,9 @@ Human contributors should usually start with [`README.md`](README.md),
   field extensions for an arbitrary monic modulus, and their two irreducibility
   paths: Rabin's test collapsed to base-field exponentiations for binomials,
   kernel-checked Rabin certificates otherwise.
+- [`docs/wiki/serialization.md`](docs/wiki/serialization.md) - byte encodings of
+  field elements and polynomials, the `CanonicalNat`/`ByteCodec` classes, and the
+  ArkLib protocol classes they feed.
 
 ## Canonical Project Docs
 
