@@ -23,6 +23,8 @@ public import CompPolyTests.Bivariate.Kronecker
 public import CompPolyTests.Bivariate.Multiplicity
 public import CompPolyTests.Bivariate.WeightedDegree
 public import CompPolyTests.Data.MvPolynomial.Notation
+public import CompPolyTests.Data.Polynomial.Frobenius
+public import CompPolyTests.Data.Polynomial.Rabin
 public import CompPolyTests.Data.Polynomial.RabinCertificate
 public import CompPolyTests.Data.RingTheory.AlgebraTower
 public import CompPolyTests.Data.RingTheory.AlgebraTower.Coordinates

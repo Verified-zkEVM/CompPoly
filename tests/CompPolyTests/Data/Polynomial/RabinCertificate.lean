@@ -84,11 +84,9 @@ theorem corrupted_chain_rejected :
 -- The assembled irreducibility proof, entirely from the certificate.
 theorem fPoly_irreducible : Irreducible fPoly := by
   have hcard : Fintype.card (ZMod P) = P := ZMod.card P
-  refine irreducible_of_rabin_prime_degree (by norm_num) fPoly_natDegree ?_ ?_
-  · rw [hcard]
-    exact dvd_X_pow_sub_X_of_runChain toPoly_fL fPoly_ne_zero trace_chain trace_exp
-  · rw [hcard]
-    exact isCoprime_X_pow_sub_X_of_runChain toPoly_fL fPoly_ne_zero frob_chain frob_exp
+  refine irreducible_of_rabin_prime_degree hcard (by norm_num) fPoly_natDegree ?_ ?_
+  · exact dvd_X_pow_sub_X_of_runChain toPoly_fL fPoly_ne_zero trace_chain trace_exp
+  · exact isCoprime_X_pow_sub_X_of_runChain toPoly_fL fPoly_ne_zero frob_chain frob_exp
       w_check bez_check
 
 /-! ### Composite degree
@@ -192,14 +190,11 @@ theorem cop2_bez : eqModP P (addNat (mulNat cop2U fL6) (mulNat cop2V cop2W)) [1]
 /-- The assembled degree-6 irreducibility proof, entirely from certificates. -/
 theorem f6_irreducible : Irreducible f6 := by
   have hcard : Fintype.card (ZMod P) = P := ZMod.card P
-  refine irreducible_of_rabin_degree_six f6_natDegree ?_ ?_ ?_
-  · rw [hcard]
-    exact dvd_X_pow_sub_X_of_runChain toPoly_fL6 f6_ne_zero trace6_chain trace6_exp
-  · rw [hcard]
-    exact isCoprime_X_pow_sub_X_of_runChain toPoly_fL6 f6_ne_zero cop3_chain cop3_exp cop3_w
+  refine irreducible_of_rabin_degree_six hcard f6_natDegree ?_ ?_ ?_
+  · exact dvd_X_pow_sub_X_of_runChain toPoly_fL6 f6_ne_zero trace6_chain trace6_exp
+  · exact isCoprime_X_pow_sub_X_of_runChain toPoly_fL6 f6_ne_zero cop3_chain cop3_exp cop3_w
       cop3_bez
-  · rw [hcard]
-    exact isCoprime_X_pow_sub_X_of_runChain toPoly_fL6 f6_ne_zero cop2_chain cop2_exp cop2_w
+  · exact isCoprime_X_pow_sub_X_of_runChain toPoly_fL6 f6_ne_zero cop2_chain cop2_exp cop2_w
       cop2_bez
 
 end Sextic
@@ -272,35 +267,53 @@ theorem not_isCoprime : ¬ IsCoprime fRed ((X : (ZMod P)[X]) ^ (P ^ 3) - X) := b
 
 end ReducibleSextic
 
-/-! ### The `_of_card` forms are equivalent to the plain ones
+/-! ### `rfl` recovers the `Fintype.card F` statements
 
-`irreducible_of_rabin_prime_degree_of_card` and `irreducible_of_rabin_degree_six_of_card` state
-their conditions at a caller-supplied numeral `q` with `hcard : Fintype.card F = q`, which is the
-shape concrete extensions use. Their docstrings claim nothing is weakened; the two theorems below
-are that claim, machine-checked. Instantiating at `q := Fintype.card F` with `rfl` has to recover
-the plain form *verbatim*, so a future edit cannot silently add a hypothesis or shift an exponent.
-The opposite direction is the `_of_card` proof body itself, checked whenever the library builds.
+`irreducible_of_rabin_prime_degree`, `irreducible_of_rabin_degree_six`,
+`irreducible_of_rabin_two_prime_factors` and `irreducible_of_rabin_prime_power` state their
+conditions at a caller-supplied numeral `q` with `hcard : Fintype.card F = q`, which is what a
+concrete extension needs. Passing `rfl` has to give back the `Fintype.card F` statement
+*verbatim*, so an abstract caller loses nothing and a later edit cannot silently add a hypothesis
+or shift an exponent. The four theorems below are that claim, machine-checked.
 -/
 
-namespace OfCardRoundTrip
+namespace CardRflInstance
 
-/-- `irreducible_of_rabin_prime_degree_of_card` recovers `irreducible_of_rabin_prime_degree`. -/
+/-- At `hcard := rfl`, the prime-degree test reads at `Fintype.card F`. -/
 theorem prime_degree_recovered {F : Type*} [Field F] [Fintype F] {f : F[X]} {d : ℕ}
     (hd : d.Prime) (h_deg : f.natDegree = d)
     (h_trace : f ∣ X ^ (Fintype.card F ^ d) - X)
     (h_cop : IsCoprime f (X ^ Fintype.card F - X)) :
     Irreducible f :=
-  irreducible_of_rabin_prime_degree_of_card rfl hd h_deg h_trace h_cop
+  irreducible_of_rabin_prime_degree rfl hd h_deg h_trace h_cop
 
-/-- `irreducible_of_rabin_degree_six_of_card` recovers `irreducible_of_rabin_degree_six`. -/
+/-- At `hcard := rfl`, the degree-6 test reads at `Fintype.card F`. -/
 theorem degree_six_recovered {F : Type*} [Field F] [Fintype F] {f : F[X]}
     (h_deg : f.natDegree = 6)
     (h_trace : f ∣ X ^ (Fintype.card F ^ 6) - X)
     (h_cop₃ : IsCoprime f (X ^ (Fintype.card F ^ 3) - X))
     (h_cop₂ : IsCoprime f (X ^ (Fintype.card F ^ 2) - X)) :
     Irreducible f :=
-  irreducible_of_rabin_degree_six_of_card rfl h_deg h_trace h_cop₃ h_cop₂
+  irreducible_of_rabin_degree_six rfl h_deg h_trace h_cop₃ h_cop₂
 
-end OfCardRoundTrip
+/-- At `hcard := rfl`, the two-prime-factor test reads at `Fintype.card F`. -/
+theorem two_prime_factors_recovered {F : Type*} [Field F] [Fintype F] {f : F[X]}
+    {d ℓ₁ ℓ₂ : ℕ} (h_deg : f.natDegree = d) (h_pos : 0 < d)
+    (h_factors : d.primeFactors = {ℓ₁, ℓ₂})
+    (h_trace : f ∣ X ^ (Fintype.card F ^ d) - X)
+    (h_cop₁ : IsCoprime f (X ^ (Fintype.card F ^ (d / ℓ₁)) - X))
+    (h_cop₂ : IsCoprime f (X ^ (Fintype.card F ^ (d / ℓ₂)) - X)) :
+    Irreducible f :=
+  irreducible_of_rabin_two_prime_factors rfl h_deg h_pos h_factors h_trace h_cop₁ h_cop₂
+
+/-- At `hcard := rfl`, the prime-power test reads at `Fintype.card F`. -/
+theorem prime_power_recovered {F : Type*} [Field F] [Fintype F] {f : F[X]} {d ℓ k : ℕ}
+    (hℓ : ℓ.Prime) (hk : k ≠ 0) (hd_eq : d = ℓ ^ k) (h_deg : f.natDegree = d)
+    (h_trace : f ∣ X ^ (Fintype.card F ^ d) - X)
+    (h_cop : IsCoprime f (X ^ (Fintype.card F ^ (d / ℓ)) - X)) :
+    Irreducible f :=
+  irreducible_of_rabin_prime_power rfl hℓ hk hd_eq h_deg h_trace h_cop
+
+end CardRflInstance
 
 end CompPolyTests.RabinCertificate

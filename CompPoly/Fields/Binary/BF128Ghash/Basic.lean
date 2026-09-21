@@ -77,17 +77,12 @@ lemma irreducible_of_rabin_128_passed_over_GF2 (P : Polynomial (ZMod 2))
   -- 2. Transitivity: q | P and P | (X^(2^128) + X) implies q | (X^(2^128) + X).
   have h_q_dvd_trace : q ∣ ((X : Polynomial (ZMod 2)) ^ (2 ^ 128) + X) :=
     dvd_trans h_q_dvd_P h_trace
-  -- 3. In Finite Fields, if irreducible q | (X^(p^n) - X), then deg(q) | n.
-  -- The standard theorem is `irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd`.
-  -- Since we are in ZMod 2, we rewrite (X^(2^128) + X) to (X^(2^128) - X).
-  have := CharTwo.sub_eq_add (X^2^128 : (ZMod 2)[X]) X
-  simp only [← this] at h_q_dvd_trace
-  -- Apply the theorem: q | (X^(2^128) - X) -> deg(q) | 128
-  have h_deg_dvd_128 : q.natDegree ∣ 128 := by
-    apply Polynomial.irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd (R := ZMod 2)
-      (n := 128) (q := q) (hq_irr := h_q_irr).mp (by
-      rw [ZMod.card]; exact h_q_dvd_trace
-    )
+  -- 3. In Finite Fields, if irreducible q | (X^(p^n) + X), then deg(q) | n. The `+ X` form of
+  -- `irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd` absorbs both the char-2 spelling and
+  -- the cardinality, so this applies as a term and nothing is rewritten under `X ^ 2 ^ 128`.
+  have h_deg_dvd_128 : q.natDegree ∣ 128 :=
+    (Polynomial.irreducible_dvd_X_pow_add_X_iff_natDegree_dvd (R := ZMod 2)
+      (hcard := ZMod.card 2) (n := 128) (q := q) (hq_irr := h_q_irr)).mp h_q_dvd_trace
   -- 4. Arithmetic Logic: deg(q) ≤ 64 and deg(q) | 128 implies deg(q) | 64.
   have h_deg_dvd_64 : q.natDegree ∣ 64 := by
     -- 128 = 64 * 2. If d | 64*2 and d <= 64, then d | 64.
@@ -113,19 +108,14 @@ lemma irreducible_of_rabin_128_passed_over_GF2 (P : Polynomial (ZMod 2))
     rw [hk_eq]
     exact Nat.pow_dvd_pow 2 h_k_le_6
   -- 5. Applying the theorem in reverse:
-  -- Since deg(q) | 64, q must divide (X^(2^64) - X).
-  have h_q_dvd_check : q ∣ ((X : Polynomial (ZMod 2)) ^ (2 ^ 64) - X) := by
-    have hres := Polynomial.irreducible_dvd_X_pow_sub_X_iff_natDegree_dvd (R := ZMod 2) (n := 64)
-      (q := q) (hq_irr := h_q_irr).mpr h_deg_dvd_64
-    rw [ZMod.card] at hres
-    exact hres
+  -- Since deg(q) | 64, q must divide (X^(2^64) + X), in the `+ X` form the hypothesis uses.
+  have h_q_dvd_check : q ∣ ((X : Polynomial (ZMod 2)) ^ (2 ^ 64) + X) :=
+    (Polynomial.irreducible_dvd_X_pow_add_X_iff_natDegree_dvd (R := ZMod 2)
+      (hcard := ZMod.card 2) (n := 64) (q := q) (hq_irr := h_q_irr)).mpr h_deg_dvd_64
   -- 6. Contradiction.
-  -- q divides P (from hypothesis).
-  -- q divides (X^(2^64) + X) (rewriting -X back to +X).
-  rw [CharTwo.sub_eq_add] at h_q_dvd_check
-  -- Therefore q divides their GCD.
+  -- q divides P (from hypothesis) and q divides (X^(2^64) + X), hence their GCD.
   have h_q_dvd_gcd : q ∣ EuclideanDomain.gcd ((X : Polynomial (ZMod 2)) ^ (2 ^ 64) + X) P :=
-    EuclideanDomain.dvd_gcd (by convert h_q_dvd_check) h_q_dvd_P
+    EuclideanDomain.dvd_gcd h_q_dvd_check h_q_dvd_P
   -- But the GCD is 1 (by hypothesis `h_gcd`).
   rw [h_gcd] at h_q_dvd_gcd
   -- So q | 1. Irreducible polynomials cannot divide 1 (they are not units).
