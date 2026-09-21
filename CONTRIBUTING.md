@@ -48,9 +48,21 @@ time to beat for every row is
 * **The digest must not move.** Benchmark inputs are seeded per group, so a
   group's digest is the same across builds and commits. A `mismatch` verdict
   means the candidate computes something else; it is a bug, not a measurement.
-* **The proof gate is `lake build` *and* `lake test`.** A kernel whose tests
-  take hours to elaborate is not faster: inlining attributes on loop-shaped
-  bodies have done exactly that here. Run both before measuring.
+* **Test, then measure, then prove.** The proof is the expensive part, so
+  spend it last, on a change already shown correct on concrete inputs and
+  faster in measurement. If the kernel you are optimising has no tests of its
+  own under `tests/`, add them first. While exploring, the refinement theorem
+  may carry a `sorry` so the new code is what gets tested and timed; a PR never
+  contains one, and `lake exe axiomsweep --check` is how you confirm that.
+* **`lake test` is part of the gate, not just `lake build`.** A kernel whose
+  tests take hours to elaborate is not faster: inlining attributes on
+  loop-shaped bodies have done exactly that here.
+* **Write the proof so the next optimisation does not break it.** State the
+  kernel's coefficient and unfolding facts as named lemmas marked `@[simp]` or
+  `@[grind =]`, and close the refinement theorem with `simp only [...]` over
+  them or with `grind`, rather than a hand-written `rw` chain. The next change
+  to the kernel then updates lemmas, not proof steps. See "Proving so the proof
+  survives the next iteration" in `docs/wiki/autoresearch.md`.
 * **Quote ratios, not nanoseconds.** Numbers from your machine are not
   comparable with the tables in `benchmark-best-times.md`, which are taken on
   one reference machine. Report the A/B verdict and the candidate-over-baseline
@@ -79,9 +91,11 @@ carries no dispersion and no ratio should be read off it.
 
 ```bash
 ./scripts/bench-ab.sh freeze                 # build the baseline binary from the current tree
-# edit the fast implementation; then the proof gate:
-lake build && lake test
-./scripts/bench-ab.sh run <key>[,<key>...]   # both binaries turn about, five rounds a side, then --compare
+# edit the fast implementation (a `sorry` on its refinement theorem is fine here)
+lake build && lake test                      # test: the kernel's tests and the digest gate
+./scripts/bench-ab.sh run <key>[,<key>...]   # measure: both binaries turn about, then --compare
+# on `faster` without SUSPECT: prove the refinement theorem, then
+lake build && lake test && lake exe axiomsweep --check
 ```
 
 Freeze from `main` before editing. `run` builds the candidate once, runs the
@@ -99,7 +113,10 @@ edit `bench/` while a run is in flight.
 * Title `perf(<scope>): <subject>`.
 * The change in one paragraph: what was slow, why, what the new code does.
 * The proof: the `@[csimp]` or `_eq_` theorem that ties the new code to the
-  specification, named in the description.
+  specification, named in the description, and closed over the kernel's lemma
+  set rather than by a rewrite chain.
+* The tests: the concrete-input tests for the kernel, added in this PR if the
+  kernel had none.
 * The A/B evidence: the `compare-*.md` table or its relevant rows, with the
   preset, rounds, and the drift line. A `same` or `slower` verdict that is kept
   for another reason (a compile-time fix, a correctness repair) says so.

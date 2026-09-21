@@ -225,8 +225,9 @@ is read. A candidate implausibly fast against the harness floor is flagged
 the run is repeated rather than read.
 
 The loop built on this is [`autoresearch.md`](autoresearch.md): one change per
-iteration, `lake build` as the proof gate, `bench-ab.sh run` as the
-measurement, keep on `faster` without `SUSPECT`, revert otherwise. The trusted
+iteration; the kernel's tests and the digest gate first, `bench-ab.sh run` as
+the measurement second, and the refinement proof last, paid only for a change
+that is `faster` without `SUSPECT`; revert otherwise. The trusted
 code base does not move during it: a fast implementation is swapped in by
 `@[csimp]` with an equality theorem, or by a twin definition with an `_eq_`
 theorem, never by `@[implemented_by]` or `native_decide`.

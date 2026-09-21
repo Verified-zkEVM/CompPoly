@@ -16,7 +16,8 @@ are too specific or too changeable to keep at the repo root.
 - [`benchmark-best-times.md`](benchmark-best-times.md) - the current best time of
   every benchmarked component, and the log of optimisation passes.
 - [`autoresearch.md`](autoresearch.md) - the optimisation loop: edit a fast
-  kernel, prove it, A/B it against a frozen baseline, keep or revert.
+  kernel, test it, A/B it against a frozen baseline, then prove it; keep or
+  revert.
 - [`build-cache.md`](build-cache.md) - Mathlib's olean cache and CompPoly's prebuilt
   release archive.
 - [`module-system.md`](module-system.md) - Lean module-system conventions, `meta`

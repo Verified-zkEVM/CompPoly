@@ -21,9 +21,11 @@ Human contributors should usually start with [`README.md`](README.md),
    `lake exe axiomsweep --update-baseline` and commit the diff if the change is
    intentional. Native-compiler trust is never baselineable.
 7. When making a fast implementation faster, follow the loop in
-   [`docs/wiki/autoresearch.md`](docs/wiki/autoresearch.md): `lake build` is the
-   proof gate, `./scripts/bench-ab.sh run <group>` is the measurement, and only a
-   `faster` verdict without `SUSPECT` is kept.
+   [`docs/wiki/autoresearch.md`](docs/wiki/autoresearch.md): edit, test, measure,
+   prove, in that order. The kernel's tests and `--validate-only` come first,
+   `./scripts/bench-ab.sh run <group>` is the measurement, only a `faster`
+   verdict without `SUSPECT` earns the refinement proof, and a `sorry` on that
+   theorem lives inside an iteration only, never in a commit.
 
 ## Where To Work
 
@@ -73,7 +75,8 @@ Human contributors should usually start with [`README.md`](README.md),
   current best time of every benchmarked component, and the log of optimisation
   passes that produced them.
 - [`docs/wiki/autoresearch.md`](docs/wiki/autoresearch.md) - the optimisation loop
-  over the fast implementations: proof gate, A/B measurement, verdicts, targets.
+  over the fast implementations: test, measure, prove; verdicts, robust proofs,
+  targets.
 - [`docs/wiki/build-cache.md`](docs/wiki/build-cache.md) - Mathlib's olean cache and
   CompPoly's prebuilt release archive.
 - [`docs/wiki/module-system.md`](docs/wiki/module-system.md) - module headers,
@@ -142,6 +145,12 @@ trusting the compiler.
   `simp only`, or `exact`. `grind` generates large proof terms via
   saturation-based reasoning.
 - Use `decide` sparingly on large types; each `decide` must be kernel-evaluated.
+- For a theorem that a changing implementation must keep satisfying, such as a
+  fast kernel's refinement theorem, state the implementation's facts as named
+  lemmas marked `@[simp]` or `@[grind =]` and close the theorem over that set
+  (`simp only [...]` or `grind`) rather than by a hand-written `rw` chain, so
+  the next change to the implementation updates lemmas, not proof steps. See
+  [`docs/wiki/autoresearch.md`](docs/wiki/autoresearch.md).
 
 ### Certificate / computational proofs
 

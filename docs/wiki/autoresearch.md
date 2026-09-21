@@ -1,27 +1,35 @@
 # Autoresearch: the optimisation loop
 
-How an agent makes a fast implementation faster without anyone watching: edit,
-prove, measure, keep or revert. [`benchmarking.md`](benchmarking.md) owns how the
+How an agent makes a fast implementation faster: edit, test, measure, prove,
+keep or revert, in that order. [`benchmarking.md`](benchmarking.md) owns how the
 suite measures; [`bench/README.md`](../../bench/README.md) is the operator's guide
 to the executable. This page owns the loop that sits on top of both.
 
 ## What the loop is
 
 CompPoly's fast paths are compiled Lean with a proof that each one equals its
-specification. That makes an optimisation loop safer here than in an ordinary
-library: a candidate that is fast but wrong does not build. The loop is therefore
-three gates in a fixed order, and a decision:
+specification. The proof is the expensive part of a change, so the loop is
+ordered to spend it last, on changes that have already been shown correct on
+concrete inputs and faster in measurement:
 
-1. **Proof gate.** `lake build` must succeed. The refinement theorem for the
-   kernel being edited (`mul_eq_mulTbl`, `toField_mul`, `invGcdRaw_eq_inv`, and
-   so on) still closes, or the change is wrong.
-2. **Digest gate.** `lake exe CompPolyBench --validate-only --groups <target>`
-   must exit 0. Every implementation in the group still agrees with the others.
-3. **Measurement.** `./scripts/bench-ab.sh run <target>` compares the current
+1. **Edit** one kernel.
+2. **Test.** The tests for the kernel being edited must pass, and the digest
+   gate `lake exe CompPolyBench --validate-only --groups <target>` must exit 0,
+   so every implementation in the group still agrees with the others. If the
+   kernel has no tests of its own, write them before the first edit: a few
+   `#guard`s or `decide`-closed examples on concrete inputs catch most wrong
+   edits in seconds, long before a proof attempt would.
+3. **Measure.** `./scripts/bench-ab.sh run <target>` compares the current
    build against a frozen baseline on this machine, turn about, and prints one
-   verdict per row.
-4. **Decision.** Keep the change only on `faster` with no `SUSPECT`. Otherwise
-   revert.
+   verdict per row. Only a change that is `faster` with no `SUSPECT` is worth
+   proving.
+4. **Prove.** The refinement theorem for the kernel (`mul_eq_mulTbl`,
+   `toField_mul`, `invGcdRaw_eq_inv`, and so on) must close. During steps 2 and
+   3 that theorem may be `sorry`ed so that the `@[csimp]` swap is live and the
+   new code is what gets tested and timed; the `sorry` exists only inside an
+   iteration, and `lake exe axiomsweep --check` at the end of the session is
+   what confirms none survived.
+5. **Decision.** Keep the change once all of 2 to 4 hold. Otherwise revert.
 
 The objective is the **ratio** the comparison prints, never a nanosecond figure.
 Absolute numbers on a laptop drift by up to 2x between runs while ratios
@@ -37,27 +45,38 @@ Run from the repository root.
 ./scripts/bench-ab.sh freeze
 
 # each iteration
-#   1. edit one kernel
-lake build                                            # proofs still close
+#   1. edit one kernel; `sorry` its refinement theorem if the proof is not immediate
+lake build                                            # compiles, with at most that one `sorry` warning
 lake build CompPolyBenchLib CompPolyBench             # bench still builds
+#   2. test
 lake env lean tests/CompPolyTests/Fields/Extension/Arithmetic.lean  # tests that import the kernel
 lake exe CompPolyBench --validate-only --groups fields-extension-koalabear-ext4-mul
+#   3. measure
 ./scripts/bench-ab.sh run fields-extension-koalabear-ext4-mul   # the verdict
-#   2. keep on `faster` with no SUSPECT, else `git checkout -- <files>`
-#   3. after a kept change, make it the new baseline
+#      on anything but `faster` with no SUSPECT: `git checkout -- <files>`, next idea
+#   4. prove: replace the `sorry`, and only now
+lake build                                            # warning-clean again
+#   5. after a kept change, make it the new baseline
 ./scripts/bench-ab.sh freeze --force
 
 # when the session ends
 lake test
 ./scripts/lint-style.sh
-lake exe axiomsweep --check
+lake exe axiomsweep --check                          # no `sorry` survived
 ```
 
 Rules the loop follows:
 
 - **One change per iteration.** A verdict on two edits says nothing about either.
-- **No new warnings.** Both builds were warning-clean when the loop began; keep
-  them so.
+- **Tests before measurement, measurement before proof.** A wrong edit is
+  cheapest to find in a test, and a slow one in a measurement; neither deserves
+  a proof. Write the tests first if the kernel lacks them.
+- **A `sorry` lives inside an iteration only.** It is how the unproved candidate
+  gets tested and timed. It is never committed, never pushed, and the session
+  ends with `lake exe axiomsweep --check` clean.
+- **No new warnings at the end of an iteration.** Both builds were warning-clean
+  when the loop began; the `sorry` warning is the one expected mid-iteration,
+  and it is gone once step 4 closes.
 - **Elaborate the tests that import the kernel, every iteration.** `lake build`
   proves the change; it does not compile the `#guard`s that call it. A body that
   became expensive to *inline* passes the build and then costs seconds per call
@@ -73,6 +92,34 @@ Rules the loop follows:
   the baseline on identical inputs; `missing` means the set of rows changed;
   `SUSPECT` means the candidate is faster than its problem allows.
 - **Never stage with `git add -A`.** Name the files.
+
+## Proving so the proof survives the next iteration
+
+The refinement theorem is rewritten every time its kernel is, so write it to be
+cheap to rewrite. An explicit `rw` chain that names each intermediate form is
+the most brittle proof there is: the next change to the loop shape breaks every
+step. Instead:
+
+- **Give the kernel its own lemma set.** State the coefficient and unfolding
+  facts about the implementation as separate lemmas (`coeff_ofFn`,
+  `red_getElem`, `Fin.foldl_add_eq_add_sum` are the current examples) and mark
+  them `@[simp]`, or `@[grind =]` where they are equations `grind` should use.
+  The refinement theorem then closes by `simp only [<the kernel's lemmas>]` or
+  `grind`, and a later change to the kernel updates the lemmas, not the proof.
+- **Put the mathematics in the lemmas, not the theorem.** The theorem should
+  be the one line that says the two definitions agree pointwise; the reason
+  they do is a lemma with a name, which the next iteration can reuse or replace
+  on its own.
+- **Keep the specification's normal form fixed.** `simp` lemmas about the
+  implementation should rewrite towards the specification's shape
+  (`Finset.sum` over `Fin`, `monomialMod`), never the other way, so that
+  adding a lemma cannot send the simp set in circles.
+- **Prefer a named set over a bare `simp`, and `grind` over a hand-written
+  chain.** `simp only [...]` with the kernel's lemmas is stable and fast; bare
+  `simp` pulls in Mathlib's whole set and changes under it; `grind` with
+  annotated lemmas is more robust than `rw` and acceptable where `omega`,
+  `ring` or `simp only` do not close the goal directly. See the tactic guidance
+  in [`AGENTS.md`](../../AGENTS.md).
 
 ## Reading the verdict
 
@@ -108,8 +155,9 @@ be repeated rather than read.
 
 ## What keeps the loop honest
 
-- The gate is the proof. A kernel routed through `@[implemented_by]` has no
-  proof gate, because that attribute substitutes code without one. The single
+- The gate is the proof, however late in the iteration it is paid. A kernel
+  routed through `@[implemented_by]` has no proof gate, because that attribute
+  substitutes code without one. The single
   use in `CompPoly/Univariate/Roots/Shoup/Basic.lean` is outside the loop, and no
   new one may be introduced by it. `@[csimp]` with an equality theorem, or a twin
   definition with an `_eq_` theorem that the call site depends on, are the two
