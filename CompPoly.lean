@@ -63,6 +63,7 @@ public import CompPoly.Bivariate.GuruswamiSudan.Util
 public import CompPoly.Bivariate.Kronecker
 public import CompPoly.Bivariate.ToPoly
 public import CompPoly.Data.Array.Lemmas
+public import CompPoly.Data.Bytes.Bias
 public import CompPoly.Data.Bytes.CanonicalNat
 public import CompPoly.Data.Bytes.Codec
 public import CompPoly.Data.Bytes.Delimited

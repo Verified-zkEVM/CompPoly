@@ -86,7 +86,11 @@ Two decoders, both derived from `ofNat`:
   every `n`, the decoder for a challenge squeezed from a byte sponge. Reading back an exact-width
   encoding recovers the element; reading more bytes than the width makes the result close to
   uniform, with statistical distance at most `bound / 256 ^ n`. spongefish squeezes the width
-  plus sixteen bytes.
+  plus sixteen bytes. `CompPoly/Data/Bytes/Bias.lean` proves this by counting:
+  `card_fiber_ofBytesModOrder` gives the exact number of `n`-byte strings landing on each
+  element (`256 ^ n / bound` or one more), and `tv_ofBytesModOrder_le` the total-variation
+  bound over `ℚ`, with no probability theory. ArkLib's `Deserialize.CloseToUniform` is derived
+  from it.
 
 ## Fast carriers must agree with the spec
 
