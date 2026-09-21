@@ -198,10 +198,12 @@ def shoupRefineFactorsWith {F : Type*}
     (fun out factor ↦ out ++ shoupRefineFactorWith M D ctx beta factor)
     #[]
 
+/-- Modular Frobenius powers `X^(p^i) mod u` already computed, keyed by the modulus `u`. -/
 abbrev ShoupTracePowerCache (F : Type*) [Field F] [BEq F] [LawfulBEq F] :=
   List (CPolynomial F × Array (CPolynomial F))
 
-private def lookupTracePowers {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+/-- The cached Frobenius powers for `u`, if present. -/
+def lookupTracePowers {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     (u : CPolynomial F) :
     ShoupTracePowerCache F → Option (Array (CPolynomial F))
   | [] => none
@@ -211,7 +213,8 @@ private def lookupTracePowers {F : Type*} [Field F] [BEq F] [LawfulBEq F]
       else
         lookupTracePowers u rest
 
-private def tracePowersWithCache {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+/-- The Frobenius powers for `u`, from the cache or computed and added to it. -/
+def tracePowersWithCache {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
     (ctx : SmallPrimeTraceContext F) (u : CPolynomial F)
     (cache : ShoupTracePowerCache F) :
@@ -222,7 +225,8 @@ private def tracePowersWithCache {F : Type*} [Field F] [BEq F] [LawfulBEq F]
       let powers := modularXPowersWith M D u ctx.p ctx.k
       (powers, (u, powers) :: cache)
 
-private def shoupRefineFactorCachedWith {F : Type*}
+/-- `shoupRefineFactorWith` reading and extending a Frobenius-power cache. -/
+def shoupRefineFactorCachedWith {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
     (ctx : SmallPrimeTraceContext F) (beta : F)
@@ -245,7 +249,8 @@ private def shoupRefineFactorCachedWith {F : Type*}
         #[]
     (cache, children)
 
-private def shoupRefineFactorsCachedWith {F : Type*}
+/-- `shoupRefineFactorsWith` threading a Frobenius-power cache. -/
+def shoupRefineFactorsCachedWith {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
     (ctx : SmallPrimeTraceContext F) (beta : F)
@@ -258,7 +263,8 @@ private def shoupRefineFactorsCachedWith {F : Type*}
       (cache, out ++ children))
     (cache, #[])
 
-private def shoupRefineBasisCachedWith {F : Type*}
+/-- Refine by every trace coordinate in `basis`, threading a Frobenius-power cache. -/
+def shoupRefineBasisCachedWith {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
     (ctx : SmallPrimeTraceContext F) (basis : List F)
@@ -270,7 +276,12 @@ private def shoupRefineBasisCachedWith {F : Type*}
       shoupRefineFactorsCachedWith M D ctx beta cache factors)
     (cache, factors)).2
 
-private def shoupSplitCandidatesCachedWith {F : Type*}
+/--
+Compiled form of `shoupSplitCandidatesWith`. A factor that survives a refinement
+round unchanged reuses its Frobenius powers from the cache instead of recomputing
+them. `shoupSplitCandidatesWith_eq_cached` proves the two equal.
+-/
+def shoupSplitCandidatesCachedWith {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
     (ctx : SmallPrimeTraceContext F) (p : CPolynomial F) :
@@ -401,7 +412,6 @@ theorem representedLinearFactorsOnly_mem_of_mem {F : Type*}
   simpa using mem_representedLinearFactorsOnly_foldl_of_mem_input factors #[] hmem hlin
 
 /-- Trace-coordinate refinement candidates before the final linear-only filter. -/
-@[implemented_by shoupSplitCandidatesCachedWith]
 def shoupSplitCandidatesWith {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
@@ -416,6 +426,156 @@ def shoupSplitCandidatesWith {F : Type*}
     ctx.basis.foldl
       (fun factors beta ↦ shoupRefineFactorsWith M D ctx beta factors)
       #[p]
+
+/-- Every cache entry holds the Frobenius powers of its own key. -/
+def ShoupTracePowerCache.Valid {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (ctx : SmallPrimeTraceContext F) (cache : ShoupTracePowerCache F) : Prop :=
+  ∀ v powers, (v, powers) ∈ cache → powers = modularXPowersWith M D v ctx.p ctx.k
+
+/-- The empty cache is valid. -/
+theorem ShoupTracePowerCache.valid_nil {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (ctx : SmallPrimeTraceContext F) :
+    ShoupTracePowerCache.Valid M D ctx [] := by
+  intro v powers h
+  simp at h
+
+/-- A hit in a valid cache returns the Frobenius powers of the queried modulus. -/
+theorem lookupTracePowers_eq {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+    {M : CPolynomial.Raw.MulContext F} {D : CPolynomial.Raw.ModContext F}
+    {ctx : SmallPrimeTraceContext F} {u : CPolynomial F} {powers : Array (CPolynomial F)} :
+    ∀ {cache : ShoupTracePowerCache F}, cache.Valid M D ctx →
+      lookupTracePowers u cache = some powers →
+        powers = modularXPowersWith M D u ctx.p ctx.k
+  | [], _, h => by simp [lookupTracePowers] at h
+  | (v, vs) :: rest, hvalid, h => by
+      unfold lookupTracePowers at h
+      by_cases huv : u = v
+      · subst huv
+        rw [ite_eq_left (beq_self_eq_true u)] at h
+        obtain rfl := Option.some.inj h
+        exact hvalid u _ (by simp)
+      · rw [ite_eq_right (by simpa using huv)] at h
+        exact lookupTracePowers_eq (fun w ws hw ↦ hvalid w ws (by simp [hw])) h
+
+/-- Reading through a valid cache returns the Frobenius powers and keeps the cache valid. -/
+theorem tracePowersWithCache_spec {F : Type*} [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (ctx : SmallPrimeTraceContext F) (u : CPolynomial F)
+    {cache : ShoupTracePowerCache F} (hvalid : cache.Valid M D ctx) :
+    (tracePowersWithCache M D ctx u cache).1 = modularXPowersWith M D u ctx.p ctx.k ∧
+      (tracePowersWithCache M D ctx u cache).2.Valid M D ctx := by
+  unfold tracePowersWithCache
+  cases hlook : lookupTracePowers u cache with
+  | some powers => exact ⟨lookupTracePowers_eq hvalid hlook, hvalid⟩
+  | none =>
+      refine ⟨rfl, ?_⟩
+      intro v powers hmem
+      rcases List.mem_cons.mp hmem with h | h
+      · cases h
+        rfl
+      · exact hvalid v powers h
+
+/-- The cached single-factor refinement matches `shoupRefineFactorWith`. -/
+theorem shoupRefineFactorCachedWith_spec {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (ctx : SmallPrimeTraceContext F) (beta : F) (u : CPolynomial F)
+    {cache : ShoupTracePowerCache F} (hvalid : cache.Valid M D ctx) :
+    (shoupRefineFactorCachedWith M D ctx beta cache u).2 =
+        shoupRefineFactorWith M D ctx beta u ∧
+      (shoupRefineFactorCachedWith M D ctx beta cache u).1.Valid M D ctx := by
+  unfold shoupRefineFactorCachedWith shoupRefineFactorWith
+  dsimp only
+  split
+  · exact ⟨rfl, hvalid⟩
+  · split
+    · exact ⟨rfl, hvalid⟩
+    · obtain ⟨hpowers, hvalid'⟩ :=
+        tracePowersWithCache_spec M D ctx (CPolynomial.monicNormalize u) hvalid
+      rcases hr : tracePowersWithCache M D ctx (CPolynomial.monicNormalize u) cache with
+        ⟨powers, cache'⟩
+      rw [hr] at hpowers hvalid'
+      dsimp only at hpowers hvalid' ⊢
+      subst hpowers
+      rw [traceCoordinatePolynomialFromPowers_modularXPowersWith]
+      exact ⟨rfl, hvalid'⟩
+
+/-- The cached refinement of a factor array matches `shoupRefineFactorsWith`. -/
+theorem shoupRefineFactorsCachedWith_spec {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (ctx : SmallPrimeTraceContext F) (beta : F) (factors : Array (CPolynomial F))
+    {cache : ShoupTracePowerCache F} (hvalid : cache.Valid M D ctx) :
+    (shoupRefineFactorsCachedWith M D ctx beta cache factors).2 =
+        shoupRefineFactorsWith M D ctx beta factors ∧
+      (shoupRefineFactorsCachedWith M D ctx beta cache factors).1.Valid M D ctx := by
+  unfold shoupRefineFactorsCachedWith shoupRefineFactorsWith
+  rw [← Array.foldl_toList, ← Array.foldl_toList]
+  suffices h : ∀ (xs : List (CPolynomial F)) (cache : ShoupTracePowerCache F)
+      (out : Array (CPolynomial F)), cache.Valid M D ctx →
+      (xs.foldl
+          (fun state factor ↦
+            let (cache, out) := state
+            let (cache, children) := shoupRefineFactorCachedWith M D ctx beta cache factor
+            (cache, out ++ children))
+          (cache, out)).2 =
+          xs.foldl (fun out factor ↦ out ++ shoupRefineFactorWith M D ctx beta factor) out ∧
+        (xs.foldl
+          (fun state factor ↦
+            let (cache, out) := state
+            let (cache, children) := shoupRefineFactorCachedWith M D ctx beta cache factor
+            (cache, out ++ children))
+          (cache, out)).1.Valid M D ctx from
+    h factors.toList cache #[] hvalid
+  intro xs
+  induction xs with
+  | nil => intro cache out hvalid; exact ⟨rfl, hvalid⟩
+  | cons x xs ih =>
+      intro cache out hvalid
+      obtain ⟨hchildren, hvalid'⟩ := shoupRefineFactorCachedWith_spec M D ctx beta x hvalid
+      simp only [List.foldl_cons]
+      rcases hr : shoupRefineFactorCachedWith M D ctx beta cache x with ⟨cache', children⟩
+      rw [hr] at hchildren hvalid'
+      dsimp only at hchildren hvalid' ⊢
+      subst hchildren
+      exact ih cache' _ hvalid'
+
+/-- From a valid cache, the cached basis loop is the uncached fold over the basis. -/
+theorem shoupRefineBasisCachedWith_eq {F : Type*}
+    [Field F] [BEq F] [LawfulBEq F]
+    (M : CPolynomial.Raw.MulContext F) (D : CPolynomial.Raw.ModContext F)
+    (ctx : SmallPrimeTraceContext F) :
+    ∀ (basis : List F) {cache : ShoupTracePowerCache F} (factors : Array (CPolynomial F)),
+      cache.Valid M D ctx →
+      shoupRefineBasisCachedWith M D ctx basis cache factors =
+        basis.foldl (fun factors beta ↦ shoupRefineFactorsWith M D ctx beta factors) factors
+  | [], _, _, _ => rfl
+  | beta :: basis, cache, factors, hvalid => by
+      obtain ⟨hfactors, hvalid'⟩ :=
+        shoupRefineFactorsCachedWith_spec M D ctx beta factors hvalid
+      unfold shoupRefineBasisCachedWith at *
+      simp only [List.foldl_cons]
+      rcases hr : shoupRefineFactorsCachedWith M D ctx beta cache factors with
+        ⟨cache', factors'⟩
+      rw [hr] at hfactors hvalid'
+      dsimp only at hfactors hvalid' ⊢
+      subst hfactors
+      exact shoupRefineBasisCachedWith_eq M D ctx basis _ hvalid'
+
+/-- The cached splitter computes the specification; compiled code runs the cached one. -/
+@[csimp] theorem shoupSplitCandidatesWith_eq_cached :
+    @shoupSplitCandidatesWith = @shoupSplitCandidatesCachedWith := by
+  funext F _ _ _ M D ctx p
+  unfold shoupSplitCandidatesWith shoupSplitCandidatesCachedWith
+  dsimp only
+  split
+  · rfl
+  · split
+    · rfl
+    · rw [shoupRefineBasisCachedWith_eq M D ctx _ _
+        (ShoupTracePowerCache.valid_nil M D ctx), Array.foldl_toList]
 
 /-- Shoup trace-coordinate splitting, returning only represented linear factors. -/
 def shoupSplitLinearFactorsWith {F : Type*}
