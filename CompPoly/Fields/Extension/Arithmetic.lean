@@ -267,6 +267,28 @@ theorem _root_.Fin.foldl_add_eq_add_sum {M : Type*} [AddCommMonoid M] {n : ℕ} 
   | zero => simp only [Fin.foldl_zero, Finset.univ_eq_empty, Finset.sum_empty, add_zero]
   | succ n ih => rw [Fin.foldl_succ, ih, Fin.sum_univ_succ, add_assoc]
 
+omit [Ring F] in
+/--
+The accumulation loops of `mulTbl`: coefficient `m` of the product, summed over all `(i, j)`
+against the reduction table `tbl`, from `init`.
+
+Deliberately a separate function over its own `Mul` and `Add` instances, `@[noinline]` and
+`@[nospecialize]`. Written inside `mulTbl`, or inlined or specialised on the `Ring F` instance,
+`*` and `+` on `F` are re-derived from the ring dictionary on every step of the innermost loop,
+through projections that allocate an intermediate structure each time; the emitted C of the
+first loop run had `instDistribOfSemiring` in the loop body. Here the two operations arrive as
+arguments, derived once per call of `mulTbl`, and the loop only applies them. (`nospecialize`
+matters: instance arguments are specialised even without `@[specialize]` on the callee.)
+-/
+@[noinline, nospecialize]
+def mulTblLoop [Mul F] [Add F] (tbl : Vector (Ext P) (2 * P.d - 1)) (x y : Ext P) (m : Fin P.d)
+    (init : F) : F :=
+  Fin.foldl P.d (fun acc i =>
+    Fin.foldl P.d (fun acc j =>
+      acc + coeff x i * coeff y j *
+        coeff (tbl[(i : ℕ) + (j : ℕ)]'(by
+          have hi := i.isLt; have hj := j.isLt; have hd := P.two_le; omega)) m) acc) init
+
 /--
 Table-driven multiplication: the compiled implementation of `mul`.
 
@@ -278,22 +300,17 @@ evaluates `shiftReduce^[i+j]` once per `(m, i, j)` triple, so the same `d`-fold 
 repeated `d^3` times.
 
 `mul` remains the definition everything is proved about; `mul_eq_mulTbl` below swaps this in for
-compilation via `@[csimp]`.
+compilation via `@[csimp]`. The loops live in `mulTblLoop`, for the reason given there.
 -/
 @[specialize]
 def mulTbl (x y : Ext P) : Ext P :=
   let tbl := red P
-  ofFn fun m =>
-    Fin.foldl P.d (fun acc i =>
-      Fin.foldl P.d (fun acc j =>
-        acc + coeff x i * coeff y j *
-          coeff (tbl[(i : ℕ) + (j : ℕ)]'(by
-            have hi := i.isLt; have hj := j.isLt; have hd := P.two_le; omega)) m) acc) 0
+  ofFn fun m => mulTblLoop tbl x y m 0
 
 @[csimp] theorem mul_eq_mulTbl : @mul = @mulTbl := by
   funext F _ P x y
   refine Ext.ext fun m => ?_
-  simp only [mul, mulTbl, coeff_ofFn, Fin.foldl_add_eq_add_sum, zero_add, red_getElem]
+  simp only [mul, mulTbl, mulTblLoop, coeff_ofFn, Fin.foldl_add_eq_add_sum, zero_add, red_getElem]
 
 instance : Mul (Ext P) := ⟨mul⟩
 
