@@ -49,7 +49,10 @@ the time to beat for every row is [`docs/wiki/benchmark-best-times.md`](docs/wik
 * **Test, then measure, then prove.** The proof is the expensive part, so
   spend it last, on a change already shown correct on concrete inputs and
   faster in measurement. If the implementation you are optimising has no tests
-  of its own under `tests/`, add them first. While exploring, the refinement theorem
+  of its own under `tests/`, add them first, and make sure the original,
+  formally verified function passes them before you change anything; they are
+  then the test step of every iteration. If the proof later finds a bug the
+  tests let through, add a test that targets that bug. While exploring, the refinement theorem
   may carry a `sorry` so the new code is what gets tested and timed; a PR never
   contains one, and `lake exe axiomsweep --check` is how you confirm that.
 * **`lake test` is part of the gate, not just `lake build`.** An implementation
