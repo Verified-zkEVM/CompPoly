@@ -162,7 +162,8 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - ✅ Same-machine A/B comparison of two builds (`CompPolyBench --compare`,
      driven by `scripts/bench-ab.sh`), the measurement behind the optimisation
      loop in [`docs/wiki/autoresearch.md`](docs/wiki/autoresearch.md)
-   - ✅ Published performance baselines: [`BENCHMARKING.md`](BENCHMARKING.md)
+   - ✅ Published performance baselines:
+     [`docs/wiki/benchmarking.md`](docs/wiki/benchmarking.md#current-best-times)
      records the current best time of every benchmarked component, refreshed
      by each optimisation pass
    - 🔄 A measured comparison against a pinned external implementation

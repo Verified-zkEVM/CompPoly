@@ -68,7 +68,8 @@ Human contributors should usually start with [`README.md`](README.md),
 - [`docs/wiki/generated-files.md`](docs/wiki/generated-files.md) - source-of-truth
   rules for generated or derived outputs.
 - [`docs/wiki/benchmarking.md`](docs/wiki/benchmarking.md) - how the benchmark suite
-  measures, how to read its output, and how to add a group.
+  measures, how to read its output, how to add a group, and the current best
+  time of every benchmarked component.
 - [`docs/wiki/autoresearch.md`](docs/wiki/autoresearch.md) - the optimisation loop
   over the fast implementations: proof gate, A/B measurement, verdicts, targets.
 - [`docs/wiki/build-cache.md`](docs/wiki/build-cache.md) - Mathlib's olean cache and
