@@ -11,7 +11,7 @@ module
 import all CompPoly.Univariate.Basic
 import all CompPoly.Univariate.Raw.Core
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis.XAdicSoundness
-public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis.KernelLeafScalar
+public import CompPoly.LinearAlgebra.Dense.RowArrayCorrectness
 
 /-!
 # Kernel-Leaf Basis Soundness
@@ -29,6 +29,8 @@ namespace CompPoly
 namespace PolynomialMatrix
 
 namespace Approximant
+
+open DenseMatrix (array_getD_of_lt' homogeneousKernelBasisRows homogeneousKernelBasisRows_dot_eq_zero)
 
 variable {F : Type*} [Field F] [BEq F] [LawfulBEq F]
 

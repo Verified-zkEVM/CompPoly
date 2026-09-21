@@ -196,6 +196,7 @@ public import CompPoly.LinearAlgebra.Dense.Kernel
 public import CompPoly.LinearAlgebra.Dense.KernelCorrectness
 public import CompPoly.LinearAlgebra.Dense.KernelInPlace
 public import CompPoly.LinearAlgebra.Dense.KernelInPlaceCorrectness
+public import CompPoly.LinearAlgebra.Dense.RowArrayCorrectness
 public import CompPoly.LinearAlgebra.Dense.RowOps
 public import CompPoly.LinearAlgebra.Dense.RowOpsCorrectness
 public import CompPoly.LinearAlgebra.Dense.RrefSemantics
@@ -211,7 +212,6 @@ public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis.Correctness
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis.KernelLeaf
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis.KernelLeafCompleteness
-public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis.KernelLeafScalar
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis.KernelLeafSoundness
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis.KernelLeafSpan
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis.Recursion
