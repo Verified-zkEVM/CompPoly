@@ -269,38 +269,46 @@ theorem _root_.Fin.foldl_add_eq_add_sum {M : Type*} [AddCommMonoid M] {n : ℕ} 
 
 omit [Ring F] in
 /--
-The accumulation loops of `mulTbl`: coefficient `m` of the product, summed over all `(i, j)`
-against the reduction table `tbl`, from `init`.
+Coefficient `k` of the unreduced product `x · y` in `F[X]`, the convolution `∑_{i + j = k} xᵢ yⱼ`,
+as one loop over `i` with `j = k - i`; a pair outside `[0, d)` contributes zero. `k` ranges over
+`[0, 2d - 1)`, the degrees a product of two reduced elements can reach.
 
 Deliberately a separate function over its own `Mul` and `Add` instances, `@[noinline]` and
-`@[nospecialize]`. Written inside `mulTbl`, or inlined or specialised on the `Ring F` instance,
-`*` and `+` on `F` are re-derived from the ring dictionary on every step of the innermost loop,
-through projections that allocate an intermediate structure each time; the emitted C of the
-first loop run had `instDistribOfSemiring` in the loop body. Here the two operations arrive as
-arguments, derived once per call of `mulTbl`, and the loop only applies them. (`nospecialize`
-matters: instance arguments are specialised even without `@[specialize]` on the callee.)
+`@[nospecialize]`, and likewise `contractCoeff` below. Written inside `mulTbl`, or inlined or
+specialised on the `Ring F` instance, `*` and `+` on `F` are re-derived from the ring dictionary
+on every step of the innermost loop, through projections that allocate an intermediate structure
+each time; the emitted C of the first loop run had `instDistribOfSemiring` in the loop body.
+Here the two operations arrive as arguments, derived once per call of `mulTbl`, and the loop
+only applies them. (`nospecialize` matters: instance arguments are specialised even without
+`@[specialize]` on the callee.)
 -/
 @[noinline, nospecialize]
-def mulTblLoop [Mul F] [Add F] (tbl : Vector (Ext P) (2 * P.d - 1)) (x y : Ext P) (m : Fin P.d)
-    (init : F) : F :=
+def convCoeff [Mul F] [Add F] [Zero F] (x y : Ext P) (k : ℕ) (init : F) : F :=
   Fin.foldl P.d (fun acc i =>
-    Fin.foldl P.d (fun acc j =>
-      acc + coeff x i * coeff y j *
-        coeff (tbl[(i : ℕ) + (j : ℕ)]'(by
-          have hi := i.isLt; have hj := j.isLt; have hd := P.two_le; omega)) m) acc) init
+    acc + if h : (i : ℕ) ≤ k ∧ k - (i : ℕ) < P.d then coeff x i * coeff y ⟨k - (i : ℕ), h.2⟩ else 0)
+    init
+
+omit [Ring F] in
+/-- Coefficient `m` of the reduction of the unreduced product `prod` against the table `tbl`:
+`∑_k prodₖ · [X^k mod f]ₘ`. See `convCoeff` for why this is a separate function. -/
+@[noinline, nospecialize]
+def contractCoeff [Mul F] [Add F] (tbl : Vector (Ext P) (2 * P.d - 1))
+    (prod : Vector F (2 * P.d - 1)) (m : Fin P.d) (init : F) : F :=
+  Fin.foldl (2 * P.d - 1) (fun acc k => acc + prod[(k : ℕ)] * coeff tbl[(k : ℕ)] m) init
 
 /--
 Table-driven multiplication: the compiled implementation of `mul`.
 
-Mathematically identical to `mul`, but the reduced monomials `X^(i+j) mod f` are computed once
-into `red` instead of being re-derived by `monomialMod` for every output coefficient, and the
-two sums are `Fin.foldl` loops rather than `Finset.sum`, which compiles to list-building
-`Multiset` machinery. The table drops the cost from roughly `O(d^5)` to `O(d^3)`: `mul`
-evaluates `shiftReduce^[i+j]` once per `(m, i, j)` triple, so the same `d`-fold iteration is
-repeated `d^3` times.
+Mathematically identical to `mul`, in two stages: the unreduced product `x · y` in `F[X]`,
+`2d - 1` coefficients by `convCoeff`, then one contraction of those against the reduction table
+`red` by `contractCoeff`. That is `d^2 + (2d - 1) d` coefficient multiplications where `mul`
+performs `d^3`, and the reduced monomials come from the table instead of being re-derived by
+`monomialMod` for every output coefficient. The sums are `Fin.foldl` loops rather than
+`Finset.sum`, which compiles to list-building `Multiset` machinery.
 
 `mul` remains the definition everything is proved about; `mul_eq_mulTbl` below swaps this in for
-compilation via `@[csimp]`. The loops live in `mulTblLoop`, for the reason given there.
+compilation via `@[csimp]`. The loops live in `convCoeff` and `contractCoeff`, for the reason
+given there.
 
 Specialised on `P` as well as on the instances: at a call site whose modulus is a constant, which
 is every concrete extension field, the table `red P` is then a closed term the compiler
@@ -309,12 +317,52 @@ evaluates once, rather than being rebuilt on every multiplication.
 @[specialize P]
 def mulTbl (x y : Ext P) : Ext P :=
   let tbl := red P
-  ofFn fun m => mulTblLoop tbl x y m 0
+  let prod : Vector F (2 * P.d - 1) := Vector.ofFn fun k => convCoeff x y k 0
+  ofFn fun m => contractCoeff tbl prod m 0
+
+/-- `convCoeff` from zero is the convolution sum, with the second index as a `coeffNat`. -/
+theorem convCoeff_zero (x y : Ext P) (k : ℕ) :
+    convCoeff x y k 0 = ∑ i : Fin P.d,
+      if (i : ℕ) ≤ k ∧ k - (i : ℕ) < P.d then coeff x i * coeffNat y (k - (i : ℕ)) else 0 := by
+  simp only [convCoeff, Fin.foldl_add_eq_add_sum, zero_add]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  split_ifs with h
+  · rw [coeffNat_of_lt y h.2]
+  · rfl
+
+/-- The reindexing behind `mul_eq_mulTbl`: summing `g (i + j)` over `j < d` is summing `g k` over
+the `k < 2d - 1` that `i + j` reaches, for a fixed `i < d`. -/
+theorem sum_fin_add_eq_sum_fin_ite {M : Type*} [AddCommMonoid M] {d : ℕ} (i : Fin d)
+    (g : ℕ → M) :
+    ∑ j : Fin d, g ((i : ℕ) + (j : ℕ)) =
+      ∑ k : Fin (2 * d - 1), if (i : ℕ) ≤ (k : ℕ) ∧ (k : ℕ) - (i : ℕ) < d then g k else 0 := by
+  have hi := i.isLt
+  rw [Fin.sum_univ_eq_sum_range (fun j => g ((i : ℕ) + j)) d,
+    Fin.sum_univ_eq_sum_range (fun k => if (i : ℕ) ≤ k ∧ k - (i : ℕ) < d then g k else 0)
+      (2 * d - 1),
+    ← Finset.sum_filter]
+  have hset : (Finset.range (2 * d - 1)).filter (fun k => (i : ℕ) ≤ k ∧ k - (i : ℕ) < d) =
+      (Finset.range d).image (fun j => (i : ℕ) + j) := by
+    ext k
+    simp only [Finset.mem_filter, Finset.mem_range, Finset.mem_image]
+    constructor
+    · rintro ⟨hk, hik, hki⟩
+      exact ⟨k - (i : ℕ), by omega, by omega⟩
+    · rintro ⟨j, hj, rfl⟩
+      omega
+  rw [hset, Finset.sum_image fun a _ b _ h => Nat.add_left_cancel h]
 
 @[csimp] theorem mul_eq_mulTbl : @mul = @mulTbl := by
   funext F _ P x y
   refine Ext.ext fun m => ?_
-  simp only [mul, mulTbl, mulTblLoop, coeff_ofFn, Fin.foldl_add_eq_add_sum, zero_add, red_getElem]
+  simp only [mul, mulTbl, contractCoeff, coeff_ofFn, Fin.foldl_add_eq_add_sum, zero_add,
+    Vector.getElem_ofFn, red_getElem, convCoeff_zero, Finset.sum_mul, ite_mul, zero_mul]
+  conv_rhs => rw [Finset.sum_comm]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  simp only [← coeffNat_coe]
+  refine (Finset.sum_congr rfl fun j _ => ?_).trans (sum_fin_add_eq_sum_fin_ite i fun k =>
+    coeffNat x i * coeffNat y (k - (i : ℕ)) * coeffNat (monomialMod k) m)
+  simp only [Nat.add_sub_cancel_left]
 
 instance : Mul (Ext P) := ⟨mul⟩
 
