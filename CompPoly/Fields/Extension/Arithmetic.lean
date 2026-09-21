@@ -301,8 +301,12 @@ repeated `d^3` times.
 
 `mul` remains the definition everything is proved about; `mul_eq_mulTbl` below swaps this in for
 compilation via `@[csimp]`. The loops live in `mulTblLoop`, for the reason given there.
+
+Specialised on `P` as well as on the instances: at a call site whose modulus is a constant, which
+is every concrete extension field, the table `red P` is then a closed term the compiler
+evaluates once, rather than being rebuilt on every multiplication.
 -/
-@[specialize]
+@[specialize P]
 def mulTbl (x y : Ext P) : Ext P :=
   let tbl := red P
   ofFn fun m => mulTblLoop tbl x y m 0
