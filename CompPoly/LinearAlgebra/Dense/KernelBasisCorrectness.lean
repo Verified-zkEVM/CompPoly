@@ -382,6 +382,59 @@ theorem homogeneousKernelBasis_size [Field F] [BEq F] (M : DenseMatrix F) :
     (homogeneousKernelBasis M).size = (freeColumns M.cols (rref M).pivots).size := by
   simp [homogeneousKernelBasis]
 
+private theorem containsNat_iff_mem {xs : Array Nat} {x : Nat} :
+    containsNat xs x = true ↔ x ∈ xs.toList := by
+  unfold containsNat
+  rw [Array.any_eq_true']
+  constructor
+  · rintro ⟨y, hy, hbeq⟩
+    rw [← beq_iff_eq.mp hbeq]
+    exact Array.mem_def.mp hy
+  · intro hx
+    exact ⟨x, Array.mem_def.mpr hx, beq_self_eq_true x⟩
+
+/-- Strictly increasing pivot columns below `cols` and the free columns partition
+the columns `0, …, cols - 1`. -/
+theorem freeColumns_size_add_pivots_size {cols : Nat} {pivots : Array Nat}
+    (hstrict : PivotColumnsStrict pivots)
+    (hlt : ∀ i, i < pivots.size → pivots.getD i 0 < cols) :
+    (freeColumns cols pivots).size + pivots.size = cols := by
+  have hnodup : pivots.toList.Nodup := by
+    refine (List.pairwise_iff_getElem.mpr fun i j hi hj hij ↦ ?_).imp Nat.ne_of_lt
+    have hi' : i < pivots.size := by simpa using hi
+    have hj' : j < pivots.size := by simpa using hj
+    have h := hstrict i j hi' hj' hij
+    simpa [array_getD_of_lt' _ _ hi', array_getD_of_lt' _ _ hj'] using h
+  have hmem : ∀ c, c ∈ (List.range cols).filter (fun c ↦ containsNat pivots c) ↔
+      c ∈ pivots.toList := by
+    intro c
+    rw [List.mem_filter, List.mem_range, containsNat_iff_mem]
+    refine ⟨fun h ↦ h.2, fun hc ↦ ⟨?_, hc⟩⟩
+    obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hc
+    have hi' : i < pivots.size := by simpa using hi
+    simpa [array_getD_of_lt' _ _ hi'] using hlt i hi'
+  have hperm :=
+    (List.perm_ext_iff_of_nodup (List.nodup_range.filter _) hnodup).mpr hmem
+  have htot := List.length_eq_countP_add_countP (fun c ↦ containsNat pivots c)
+    (l := List.range cols)
+  rw [List.length_range, List.countP_eq_length_filter, hperm.length_eq,
+    Array.length_toList] at htot
+  have hfree : (freeColumns cols pivots).size =
+      List.countP (fun c ↦ ¬containsNat pivots c = true) (List.range cols) := by
+    unfold freeColumns
+    rw [List.size_toArray, List.countP_eq_length_filter]
+    congr 1
+    exact List.filter_congr fun c _ ↦ by cases containsNat pivots c <;> rfl
+  omega
+
+/-- **Rank-nullity for the dense kernel basis.** The basis has one vector per
+non-pivot column of `rref M`. -/
+theorem homogeneousKernelBasis_size_add_rank [Field F] [BEq F] (M : DenseMatrix F) :
+    (homogeneousKernelBasis M).size + (rref M).pivots.size = M.cols := by
+  rw [homogeneousKernelBasis_size]
+  exact freeColumns_size_add_pivots_size (rref_pivotColumnsStrict M)
+    (rref_pivots_getD_lt_cols M)
+
 /-- The `i`-th dense kernel basis vector is one at the `i`-th free column and zero
 at every other free column. -/
 theorem homogeneousKernelBasis_getD_freeColumn [Field F] [BEq F] [LawfulBEq F]
