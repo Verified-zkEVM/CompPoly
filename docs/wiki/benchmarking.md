@@ -181,7 +181,7 @@ throughput row under one name. Any tool comparing two result files must key on
 5. Make the body depend on `i`, through a value built at run time. There are
    two ways to lose this and both have happened here. A body that is a *closed
    term* is evaluated once and cached, and the row then reports its true cost
-   divided by `itersPerSample` — see finding 2 in `BENCHMARKING.md` §12.6, and
+   divided by `itersPerSample` — see finding 2 in `docs/bench-audit-2026.md` §12.6, and
    the plan-construction group, which reported 32 ns for two sizes that differ
    by 14x. A body that is merely *loop-invariant* can be shared with a value
    computed outside the loop: the NTT forward group precomputed its spectrum
@@ -235,7 +235,7 @@ in `bench/CompPolyBench/Harness/SelfCheck.lean`.
 
 There is no public cycle-count to cite. "Competitive with industry" means
 **same operation, same size, same CPU** against a pinned peer, SIMD off.
-The full argument is [`BENCHMARKING.md` §13](../../BENCHMARKING.md#13-external-comparison-targets).
+The full argument is [`docs/bench-audit-2026.md` §13](../bench-audit-2026.md#13-external-comparison-targets).
 
 | Layer | Peer | "On par" |
 |---|---|---|
@@ -251,7 +251,8 @@ SOTA.
 ## Known gaps
 
 Recorded so they are not rediscovered. The audit and plan live in
-`BENCHMARKING.md` at the repo root.
+`docs/bench-audit-2026.md`; the current best time of every benchmarked
+component is in [`BENCHMARKING.md`](../../BENCHMARKING.md) at the repo root.
 
 - A handful of rows are still `n=1`, all of them workloads whose single iteration
   exhausts its budget. They need smaller input shapes, decided per benchmark; no
@@ -278,7 +279,7 @@ Recorded so they are not rediscovered. The audit and plan live in
   takes `[Fintype F]` and its operations then stop compiling, so the repair is
   to `CompPoly/Fields/Extension/` rather than to the instance.
 - No external yardstick yet. Peers and the "on par" bar live in
-  [`BENCHMARKING.md` §13](../../BENCHMARKING.md#13-external-comparison-targets):
+  [`docs/bench-audit-2026.md` §13](../bench-audit-2026.md#13-external-comparison-targets):
   measure Plonky3 (scalar, SIMD off) for the small fields and multiplicative
   NTT, Binius for towers and the additive NTT, arkworks / gnark-crypto for
   pairing scalars. "On par" means within ~2–5× of those *scalar* kernels on

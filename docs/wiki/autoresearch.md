@@ -62,7 +62,7 @@ Rules the loop follows:
   proves the change; it does not compile the `#guard`s that call it. A body that
   became expensive to *inline* passes the build and then costs seconds per call
   site in a test file with a hundred of them. The first loop run lost a
-  four-hour CI job to exactly this (`BENCHMARKING.md` §12.9, finding 4). Find
+  four-hour CI job to exactly this (`docs/bench-audit-2026.md` §12.9, finding 4). Find
   them with `grep -rl <module> tests/`, and treat a file that takes more than a
   minute as a failed gate.
 - **Build before measuring, never during.** The driver builds once and then calls
@@ -95,7 +95,7 @@ Strict separation of two groups of five happens by chance one time in 252. With
 one-round run is a smoke test, not a verdict.
 
 `SUSPECT` is appended to a verdict, never a verdict on its own. Its three reasons
-are the dead-body signatures recorded in `BENCHMARKING.md` §12.6 and §12.7: a
+are the dead-body signatures recorded in `docs/bench-audit-2026.md` §12.6 and §12.7: a
 ratio below 0.1 with an unchanged digest, a one-unit row cheaper than the empty
 harness loop, or a chained row cheaper per operation than the two-instruction
 chain floor. In each case the compiler folded the body, the digest pass did not
@@ -130,7 +130,7 @@ is authoritative.
 
 | Target | Groups | Fast implementation | Gate | Idea |
 |---|---|---|---|---|
-| `Ext.mul`, O(d³) → O(d²) | `fields-extension-{koalabear-ext4,babybear-ext4,koalabear-ext5,koalabear-ext6}-mul` | `CompPoly/Fields/Extension/Arithmetic.lean` (`mulTbl`, `red`) | `mul_eq_mulTbl` (`@[csimp]`), `toQuot_mul` in `CompPoly/Fields/Extension/Bridge.lean` | first loop run (BENCHMARKING.md §12.9): `Fin.foldl` sums and an O(d²) table kept, net ~2× at d=4; the O(d²) convolution lost to a constant that is not arithmetic, so the next step is the runtime instance construction on this path, then the convolution again. Single-row groups: the build and the cross-binary digest are the only gates |
+| `Ext.mul`, O(d³) → O(d²) | `fields-extension-{koalabear-ext4,babybear-ext4,koalabear-ext5,koalabear-ext6}-mul` | `CompPoly/Fields/Extension/Arithmetic.lean` (`mulTbl`, `red`) | `mul_eq_mulTbl` (`@[csimp]`), `toQuot_mul` in `CompPoly/Fields/Extension/Bridge.lean` | first loop run (`docs/bench-audit-2026.md` §12.9): `Fin.foldl` sums and an O(d²) table kept, net ~2× at d=4; the O(d²) convolution lost to a constant that is not arithmetic, so the next step is the runtime instance construction on this path, then the convolution again. Single-row groups: the build and the cross-binary digest are the only gates |
 | Base-field kernels | `fields-{koalabear,babybear,mersenne31,goldilocks}-{mul,add,inv,pow}`, `fields-{bn254,bls12-381,bls12-377}-mul` | `CompPoly/Fields/Montgomery/Native32Field.lean`, `CompPoly/Fields/Goldilocks/Fast.lean`, `CompPoly/Fields/Mersenne31/Fast.lean`, `CompPoly/Fields/Montgomery/Native64x8Mul.lean` | `toField_*`, `ringEquiv`, `instField` | two to four digest-cross-checked rows per group; the best-behaved targets |
 | Eight-limb inversion | `fields-mont64x8-{bn254,bls12-381,bls12-377}-inv` | `CompPoly/Fields/Montgomery/Native64x8InvDefs.lean` | `invGcdRaw_eq_inv` and its bounds chain in `CompPoly/Fields/Montgomery/Native64x8Inv.lean` | three algorithms in one group, one digest class |
 | Many-polynomial evaluation | `univariate-many-one-point-koalabear`, `univariate-dense-*` | `CompPoly/Univariate/ManyEval/Basic.lean`, `CompPoly/Univariate/Raw/Ops.lean` | `evalManyHorner_eq_map_eval`, `evalManySharedPowers_eq_map_eval`, `eval₂_horner_eq_eval₂` | plain array loops with short refinement proofs |
@@ -149,6 +149,6 @@ before any optimisation applies: `Ext` over the Montgomery carrier (no
 
 The loop can say "faster than before". It cannot say "fast enough": that needs
 the peer measured on the same CPU, which is the external comparison of
-`BENCHMARKING.md` §13 and has not been built. Until it lands, treat the bar there
+`docs/bench-audit-2026.md` §13 and has not been built. Until it lands, treat the bar there
 as the target: within two to five times the *scalar* Plonky3 or Binius kernel for
 the same operation at the same size.

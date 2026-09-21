@@ -14,7 +14,7 @@ public import CompPoly.Univariate.NTTFast.Plan
 # Multiplicative NTT benchmarks
 
 The forward and inverse transforms on their own, swept over size, rather than
-buried inside a multiplication. `BENCHMARKING.md` §13 names the multiplicative
+buried inside a multiplication. `docs/bench-audit-2026.md` §13 names the multiplicative
 NTT as one of the operations to measure against Plonky3, and until now the only
 way to see it here was as one term of `univariate-mul-*`.
 

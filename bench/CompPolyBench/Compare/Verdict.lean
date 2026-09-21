@@ -27,7 +27,7 @@ strong digest of a row is the same across binaries and commits; a candidate whos
 digest differs from the baseline computed something else, and the row is a
 `mismatch` rather than a measurement. And a candidate that is implausibly fast
 with an unchanged digest is flagged `suspect`, the signature of a body the
-compiler folded away (`BENCHMARKING.md` §12.6 and §12.7).
+compiler folded away (`docs/bench-audit-2026.md` §12.6 and §12.7).
 -/
 
 public section
