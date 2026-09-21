@@ -35,7 +35,10 @@ Two classes are CompPoly's own:
   total `ofNat` that reduces modulo `bound`, with laws making `toNat` a bijection onto
   `Fin bound`. So `bound` is the cardinality and `ofNat n` is the element with canonical natural
   `n % bound`. For a prime field the canonical natural is the residue; for a binary field the
-  bit pattern of the declared basis; for an extension the base-`q` expansion of its coefficients.
+  bit pattern of the declared basis. Two constructors cover the concrete cases:
+  `CanonicalNat.ofToField` builds the structure of a fast carrier from its own `toNat` and the
+  conversion from `ZMod p`, taking the carrier-agreement law as a hypothesis;
+  `CanonicalNat.ofBitVec` builds it from a bit-pattern presentation.
 - **`ByteCodec F`** (`CompPoly/Data/Bytes/Codec.lean`): `width`, `toBytes : F → Vector UInt8
   width`, and `ofBytes?` with the one law `ofBytes? (toBytes x) = some x`. From it, `HasSize`,
   `Serialize`, `Serialize.IsInjective`, `DeserializeOption`, and `Serde` are derived once, for
@@ -65,7 +68,11 @@ it on numerals: `ByteCodec.width BabyBear.Field = 4` is `by decide`.
 | Goldilocks, `BF64` | 8 |
 | `BF128` | 16 |
 | BN254, BLS12-377, BLS12-381, Pasta, secp256k1 scalar fields | 32 |
+| `AesField`, tower level 3 | 1 |
 | `Ext P` | `P.d` times the base width |
+
+For a bit-pattern type the width is `(k + 7) / 8` by `bytesFor_two_pow`, so a binary field's
+width lemma is a small numeral computation rather than a kernel evaluation of `2 ^ k`.
 
 ## Decoding
 
@@ -89,15 +96,41 @@ the lemma that its `toNat` agrees with the `ZMod` instance under `ofField`. That
 makes the bytes carrier-independent, and it doubles as the correctness statement of the fast
 instance. Dumping the stored Montgomery word would be faster and wrong.
 
+| Carrier | Instance module | Agreement lemma |
+|---|---|---|
+| `Native32.FastField` (BabyBear, KoalaBear) | `CompPoly/Fields/Montgomery/Native32Bytes.lean` | `FastField.toBytes_ofField` |
+| `Native64x8.FastField` (BN254, BLS12-377/381, Pasta) | `CompPoly/Fields/Montgomery/Native64x8Bytes.lean` | `FastField.toBytes_ofField` |
+| `Goldilocks.Fast.Field` | `CompPoly/Fields/Goldilocks/Bytes.lean` | `toBytes_ofField` |
+| `Mersenne31.Fast.Field` | `CompPoly/Fields/Mersenne31/Bytes.lean` | `toBytes_ofField` |
+| `FastBT128` against `ConcreteBTField 7` | `CompPoly/Fields/Binary/Tower/Bytes.lean` | `toByteArray_toConcrete` |
+
+Every `ZMod p` gets its instances from `CompPoly/Data/Bytes/CanonicalNat.lean` at once, so the
+spec fields need no per-field module.
+
 ## Binary fields
 
 A binary field element is a bit pattern relative to a basis, and the basis is part of the type.
 `AesField` and level three of the binary tower both have 256 elements and different bases;
 `ConcreteBF128Ghash` and `FastBT128` likewise at 128 bits. Each instance encodes the bit pattern
-of its own declared basis, little-endian, and documents the modulus polynomial. There is no
-cross-presentation conversion in the serialization layer; the explicit ring homomorphisms such
-as `AesField.toGhash` remain the only sanctioned path. GCM's big-endian, bit-reflected wire
-format is out of scope here and would be a separately named codec.
+of its own declared basis, little-endian, and documents the modulus polynomial
+(`CompPoly/Fields/Binary/BF64/Bytes.lean`, `CompPoly/Fields/Binary/BF128Ghash/Bytes.lean`,
+`CompPoly/Fields/Binary/Aes/Bytes.lean`, `CompPoly/Fields/Binary/Tower/Bytes.lean`). There is
+no cross-presentation conversion in the serialization layer; the explicit ring homomorphisms
+such as `AesField.toGhash` remain the only sanctioned path. GCM's big-endian, bit-reflected
+wire format is out of scope here and would be a separately named codec. For a bit-pattern type
+the bound is `2 ^ (8 * width)`, so exact-width decoding never fails and exact-width squeezing is
+exactly uniform.
+
+## Vectors and extensions
+
+`Vector F n` encodes as the concatenation of its entries' encodings, `n * width F` bytes
+(`CompPoly/Data/Bytes/Vector.lean`), and decodes entry by entry, failing if any entry fails.
+`Ext P` is its coefficient vector, so it encodes as `P.d * width F` bytes
+(`CompPoly/Fields/Extension/Bytes.lean`), the arkworks and plonky3 layout. This is not the
+little-endian expansion of the element's base-`q` canonical natural, which is why `Ext` has a
+`ByteCodec` but no `CanonicalNat`. Challenges in `Ext P` are read coefficient by coefficient
+from `P.d * k` bytes, and a vector of challenges likewise from `n * k` bytes; these instances
+are stated at the product `n * k`, so a protocol should write its challenge sizes as products.
 
 ## Polynomials
 

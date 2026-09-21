@@ -105,6 +105,44 @@ def equivFin : F ≃ Fin (bound F) where
 theorem card_eq [Fintype F] : Fintype.card F = bound F := by
   rw [Fintype.card_congr (equivFin (F := F)), Fintype.card_fin]
 
+/-! ## Constructors
+
+Two ways a concrete type acquires the structure. A fast carrier of a prime field supplies its
+own `toNat` together with the conversion from `ZMod p`; a binary field supplies its bit
+pattern. Both are `@[instance_reducible]` definitions so an instance can be
+`CanonicalNat.ofToField …` or `CanonicalNat.ofBitVec …` directly. -/
+
+/-- The canonical-natural structure of a carrier of `ZMod p`: the carrier's own `toNat`, with
+`ofField` as the way back. The hypothesis `toNat_ofField` is the carrier-agreement law, so
+every encoding derived from this structure agrees with the one on `ZMod p`. -/
+@[instance_reducible]
+def ofToField {p : ℕ} [NeZero p] (toNat : F → ℕ) (ofField : ZMod p → F)
+    (toNat_lt : ∀ x, toNat x < p) (ofField_cast_toNat : ∀ x, ofField (toNat x : ZMod p) = x)
+    (toNat_ofField : ∀ n : ZMod p, toNat (ofField n) = n.val) : CanonicalNat F where
+  bound := p
+  toNat := toNat
+  ofNat n := ofField (n : ZMod p)
+  toNat_lt := toNat_lt
+  ofNat_toNat := ofField_cast_toNat
+  toNat_ofNat_of_lt h := by rw [toNat_ofField, ZMod.val_natCast, Nat.mod_eq_of_lt h]
+  ofNat_mod n := by rw [ZMod.natCast_mod]
+
+/-- The canonical-natural structure of a type presented as `k`-bit patterns: the bit pattern
+read as an integer, with `bound = 2 ^ k`. -/
+@[instance_reducible]
+def ofBitVec {k : ℕ} (toBitVec : F → BitVec k) (ofBitVec : BitVec k → F)
+    (ofBitVec_toBitVec : ∀ x, ofBitVec (toBitVec x) = x)
+    (toBitVec_ofBitVec : ∀ b, toBitVec (ofBitVec b) = b) : CanonicalNat F where
+  bound := 2 ^ k
+  toNat x := (toBitVec x).toNat
+  ofNat n := ofBitVec (BitVec.ofNat k n)
+  toNat_lt x := (toBitVec x).isLt
+  ofNat_toNat x := by rw [BitVec.ofNat_toNat, BitVec.setWidth_eq, ofBitVec_toBitVec]
+  toNat_ofNat_of_lt h := by rw [toBitVec_ofBitVec, BitVec.toNat_ofNat, Nat.mod_eq_of_lt h]
+  ofNat_mod n := by
+    congr 1
+    rw [← BitVec.toNat_inj, BitVec.toNat_ofNat, BitVec.toNat_ofNat, Nat.mod_mod]
+
 end CanonicalNat
 
 /-- `ZMod p` with the residue in `[0, p)` as canonical natural. -/
