@@ -12,8 +12,9 @@ are too specific or too changeable to keep at the repo root.
 - [`generated-files.md`](generated-files.md) - derived outputs and their sources of
   truth.
 - [`benchmarking.md`](benchmarking.md) - how the benchmark suite measures, how to
-  read its output, how to add a group, and the current best time of every
-  benchmarked component.
+  read its output, and how to add a group.
+- [`benchmark-best-times.md`](benchmark-best-times.md) - the current best time of
+  every benchmarked component, and the log of optimisation passes.
 - [`autoresearch.md`](autoresearch.md) - the optimisation loop: edit a fast
   kernel, prove it, A/B it against a frozen baseline, keep or revert.
 - [`build-cache.md`](build-cache.md) - Mathlib's olean cache and CompPoly's prebuilt

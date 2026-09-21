@@ -126,7 +126,9 @@ be repeated rather than read.
 
 Ordered by how well each is gated and how much headroom is documented. Group
 keys are the argument to `bench-ab.sh run`; `lake exe CompPolyBench --list`
-is authoritative.
+is authoritative. The time to beat for every row, and the log of kept passes,
+is [`benchmark-best-times.md`](benchmark-best-times.md); a kept pass overwrites
+its rows there.
 
 | Target | Groups | Fast implementation | Gate | Idea |
 |---|---|---|---|---|

@@ -4,11 +4,12 @@ Status: **frozen**. This is the audit, literature review, redesign plan and
 change log that produced the current benchmark suite, kept because other pages
 cite its section numbers. §1–§4 describe the harness *before* #319 and no longer
 match the code. The live documents are
-[`docs/wiki/benchmarking.md`](wiki/benchmarking.md) (how the suite measures,
-operator guidance, and the current best times per component) and
+[`docs/wiki/benchmarking.md`](wiki/benchmarking.md) (how the suite measures
+and operator guidance), [`docs/wiki/benchmark-best-times.md`](wiki/benchmark-best-times.md)
+(the current best times per component and the pass log) and
 [`docs/wiki/autoresearch.md`](wiki/autoresearch.md) (the optimisation loop).
 The change log in §12 ends with the first optimisation pass; later passes are
-recorded as updates to the best-times tables in `docs/wiki/benchmarking.md`.
+recorded in `docs/wiki/benchmark-best-times.md`.
 
 Original status line: proposal for review. Nothing in `bench/` has been changed.
 Author's note: §4.1 contains a measured result that should be read before
