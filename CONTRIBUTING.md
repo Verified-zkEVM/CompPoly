@@ -124,6 +124,36 @@ edit `bench/` while a run is in flight.
 * Confirmation that `lake build`, `lake test`, `--validate-only` on the affected
   groups and `lake exe axiomsweep --check` pass.
 
+## New Types Owe a Codec
+
+A new field carrier or polynomial representation is a protocol type the moment
+ArkLib can name it, so it ships with its serialization in the same PR. The
+formats and the invariants they keep are in
+[`docs/wiki/serialization.md`](docs/wiki/serialization.md); its "Adding an
+instance" section is the recipe. What the PR must contain:
+
+* The codec. A fixed-width scalar (a prime-field carrier, a binary field) gets
+  `CanonicalNat` and `ByteCodec := ByteCodec.ofCanonicalNat _`. A fixed-length
+  composite (an extension, a dense coefficient vector) gets `ByteCodec` by
+  concatenation, usually through `ByteCodec.instVector`. A variable-length
+  type gets `DelimitedCodec`, built from the list, pair, and vector codecs with
+  `Valid` stating what fits the `u64` framing.
+* The theorems through the class interfaces, not only the raw functions:
+  `deserialize (serialize x) = some x` and injectivity, which the derived
+  instances give for free once the codec's one law is proved, plus the total
+  decoder's round trip for a scalar (`CanonicalNat.deserialize_serialize`).
+* For a fast carrier of an existing field, the agreement lemma with the spec
+  field, `toBytes (ofField x) = toBytes x`, and a test that the stored word is
+  not what gets emitted. This is the correctness statement of the instance, and
+  it is what keeps the bytes carrier-independent.
+* A `Bytes.lean` test module mirroring the source module: a known byte vector,
+  a round trip through `serialize`/`deserialize`, and one rejected input.
+* A `Repr` instance if the type has none. It is not part of the byte format, but
+  a type that can be written out should also be printable.
+
+Do not add `ToJson`/`FromJson` or another ad hoc encoding alongside; JSON, when
+a consumer asks for it, will be hex strings of these same bytes.
+
 ## Pull Request Guidelines
 
 We follow the specific convention for pull request titles and descriptions used by the Lean community.
