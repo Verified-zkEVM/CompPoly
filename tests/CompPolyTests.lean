@@ -22,6 +22,8 @@ public import CompPolyTests.Bivariate.GuruswamiSudan.Root.RothRuckenstein
 public import CompPolyTests.Bivariate.Kronecker
 public import CompPolyTests.Bivariate.Multiplicity
 public import CompPolyTests.Bivariate.WeightedDegree
+public import CompPolyTests.Data.Bytes.CanonicalNat
+public import CompPolyTests.Data.Bytes.LittleEndian
 public import CompPolyTests.Data.MvPolynomial.Notation
 public import CompPolyTests.Data.Polynomial.Frobenius
 public import CompPolyTests.Data.Polynomial.Rabin
