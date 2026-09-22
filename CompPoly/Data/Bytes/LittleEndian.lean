@@ -129,6 +129,26 @@ theorem le_pow_bytesFor (bound : ℕ) : bound ≤ 256 ^ bytesFor bound := by
   rw [h4]
   omega
 
+/-- The width of a power of two: `k` bits need `⌈k / 8⌉` bytes. Stated so that a bit-pattern
+type's width is a small numeral computation rather than a kernel evaluation of `2 ^ k`. -/
+theorem bytesFor_two_pow {k : ℕ} (hk : 0 < k) : bytesFor (2 ^ k) = (k + 7) / 8 := by
+  have hlog : Nat.log2 (2 ^ k - 1) = k - 1 := by
+    rw [Nat.log2_eq_log_two, Nat.log_eq_iff (Or.inr ⟨by norm_num, ?_⟩)]
+    · have h1 : 1 ≤ 2 ^ k := Nat.one_le_two_pow
+      have h2 : 2 ^ (k - 1) * 2 = 2 ^ k := by
+        rw [← pow_succ, Nat.sub_add_cancel hk]
+      constructor
+      · omega
+      · rw [Nat.sub_add_cancel hk]
+        omega
+    · have : 2 ≤ 2 ^ k := by
+        calc 2 = 2 ^ 1 := by norm_num
+          _ ≤ 2 ^ k := Nat.pow_le_pow_right (by norm_num) hk
+      omega
+  unfold bytesFor
+  rw [hlog]
+  omega
+
 /-! ## Vectors -/
 
 /-- The `w` little-endian bytes of `n` as a vector. -/

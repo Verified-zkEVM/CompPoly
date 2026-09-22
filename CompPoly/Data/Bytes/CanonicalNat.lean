@@ -104,3 +104,33 @@ instance instByteCodecZMod (p : ℕ) [NeZero p] : ByteCodec (ZMod p) := ByteCode
     ByteCodec.ofBytes? v = (CanonicalNat.ofNat? (ofVecLE v) : Option (ZMod p)) := rfl
 
 end CompPoly
+
+/-! ## Round trips through the class interfaces
+
+For a type whose codec is `ByteCodec.ofCanonicalNat`, the total decoder inverts the serializer
+at the codec's width. Together with `ByteCodec.deserialize_serialize` (the partial decoder) and
+the `Serialize.IsInjective` instances, this is the full round-trip story a protocol relies on.
+-/
+
+namespace CompPoly
+
+/-- The total decoder inverts the serializer at the codec's own width, whenever the codec is
+the one derived from canonical naturals. -/
+theorem CanonicalNat.deserialize_serialize {F : Type u} [CanonicalNat F] [inst : ByteCodec F]
+    (h : inst = ByteCodec.ofCanonicalNat F) (x : F) :
+    (Deserialize.deserialize (serialize x : Vector UInt8 (ByteCodec.width F)) : F) = x := by
+  subst h
+  exact ofBytesModOrder_toVecLE_toNat x
+
+theorem CanonicalNat.deserialize_serialize_byteArray {F : Type u} [CanonicalNat F]
+    [inst : ByteCodec F] (h : inst = ByteCodec.ofCanonicalNat F) (x : F) :
+    (Deserialize.deserialize (serialize x : ByteArray) : F) = x := by
+  subst h
+  exact ofByteArrayModOrder_toByteArrayLE_toNat x
+
+/-- `ZMod p`: the total decoder inverts the serializer. -/
+theorem deserialize_serialize_zmod {p : ℕ} [NeZero p] (x : ZMod p) :
+    (Deserialize.deserialize (serialize x : ByteArray) : ZMod p) = x :=
+  CanonicalNat.deserialize_serialize_byteArray rfl x
+
+end CompPoly
