@@ -257,9 +257,20 @@ CompPoly aims to be the premier formally verified library for computable polynom
 	- Evaluate tradeoffs: “fast Lean code” vs “Lean spec + lowering to fast backend”
 	- Goal: enable verification of PrimeIR/LLZK polynomial implementations against CompPoly semantics
 2.	**Serialization (bytes/JSON/protocol/hashing)**
-	- Define serialization format(s) for polynomial types
-	- Compatibility with ArkLib protocol serialization needs
-	- Consider: to/from bytes, to/from JSON, canonical encoding for hashing
+	- ✅ Byte formats for every field carrier and polynomial representation
+	  ([`docs/wiki/serialization.md`](docs/wiki/serialization.md)): `CanonicalNat` and
+	  `ByteCodec` for fixed-width types (`CompPoly/Data/Bytes/`), little-endian canonical
+	  integers in the arkworks/plonky3 layout, with every fast carrier proved to encode
+	  identically to its spec field; `DelimitedCodec` for variable-length types with `u64`
+	  framing, so `CPolynomial`, `CMvPolynomial`, and `CBivariate` serialize and nest, and
+	  `↥(degreeLT n)`, `CMlPolynomial`, and `Ext` have fixed-width codecs for protocol messages
+	- ✅ ArkLib's `Serialize`/`Deserialize`/`Serde`/`HasSize` classes live in
+	  `CompPoly/Data/Classes/` with instances for every type above, each with
+	  `deserialize (serialize x) = some x` and injectivity; the reduce-modulo-order challenge
+	  decoder comes with its exact fiber count and total-variation bound
+	  (`CompPoly/Data/Bytes/Bias.lean`), from which ArkLib derives `CloseToUniform`
+	- JSON (hex strings of the same bytes, via `Lean.Json`) only when a consumer asks; no
+	  customer today
 3.	**FFT-based interpolation variants (post-FFT/NTT)**
 	- Implement FFT-based Lagrange interpolation when the evaluation domain is an FFT/NTT-friendly subgroup
 	- Add fast barycentric interpolation for repeated interpolation queries over a fixed set of nodes

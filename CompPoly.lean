@@ -1,6 +1,7 @@
 module
 
 public import CompPoly.Bivariate.Basic
+public import CompPoly.Bivariate.Bytes
 public import CompPoly.Bivariate.CMvEquiv
 public import CompPoly.Bivariate.CoeffRows
 public import CompPoly.Bivariate.Deriv
@@ -62,8 +63,17 @@ public import CompPoly.Bivariate.GuruswamiSudan.Util
 public import CompPoly.Bivariate.Kronecker
 public import CompPoly.Bivariate.ToPoly
 public import CompPoly.Data.Array.Lemmas
+public import CompPoly.Data.Bytes.Bias
+public import CompPoly.Data.Bytes.CanonicalNat
+public import CompPoly.Data.Bytes.Codec
+public import CompPoly.Data.Bytes.Delimited
+public import CompPoly.Data.Bytes.LittleEndian
+public import CompPoly.Data.Bytes.Vector
+public import CompPoly.Data.Classes.CanonicalNat
 public import CompPoly.Data.Classes.DCast
+public import CompPoly.Data.Classes.HasSize
 public import CompPoly.Data.Classes.LawfulBEq
+public import CompPoly.Data.Classes.Serialize
 public import CompPoly.Data.ExtTreeMap.DTreeMap
 public import CompPoly.Data.ExtTreeMap.ExtDTreeMap
 public import CompPoly.Data.ExtTreeMap.ExtTreeMap
@@ -105,10 +115,12 @@ public import CompPoly.Fields.Binary.AdditiveNTT.Intermediate
 public import CompPoly.Fields.Binary.AdditiveNTT.NovelPolynomialBasis
 public import CompPoly.Fields.Binary.Aes.Arithmetic
 public import CompPoly.Fields.Binary.Aes.Basic
+public import CompPoly.Fields.Binary.Aes.Bytes
 public import CompPoly.Fields.Binary.Aes.Certificate
 public import CompPoly.Fields.Binary.Aes.Ghash
 public import CompPoly.Fields.Binary.BF128Ghash.Arithmetic
 public import CompPoly.Fields.Binary.BF128Ghash.Basic
+public import CompPoly.Fields.Binary.BF128Ghash.Bytes
 public import CompPoly.Fields.Binary.BF128Ghash.Impl
 public import CompPoly.Fields.Binary.BF128Ghash.Prelude
 public import CompPoly.Fields.Binary.BF128Ghash.XPowTwoPowGcdCertificate
@@ -116,6 +128,7 @@ public import CompPoly.Fields.Binary.BF128Ghash.XPowTwoPowModCertificate
 public import CompPoly.Fields.Binary.BF64
 public import CompPoly.Fields.Binary.BF64.BaseCertificate
 public import CompPoly.Fields.Binary.BF64.Basic
+public import CompPoly.Fields.Binary.BF64.Bytes
 public import CompPoly.Fields.Binary.BF64.Ext3
 public import CompPoly.Fields.Binary.BF64.Impl
 public import CompPoly.Fields.Binary.BF64.Reduce
@@ -126,6 +139,7 @@ public import CompPoly.Fields.Binary.Tower.Abstract.Basis
 public import CompPoly.Fields.Binary.Tower.Abstract.Core
 public import CompPoly.Fields.Binary.Tower.Abstract.Split
 public import CompPoly.Fields.Binary.Tower.Basic
+public import CompPoly.Fields.Binary.Tower.Bytes
 public import CompPoly.Fields.Binary.Tower.Concrete.Algebra
 public import CompPoly.Fields.Binary.Tower.Concrete.Arithmetic
 public import CompPoly.Fields.Binary.Tower.Concrete.Basis
@@ -151,11 +165,13 @@ public import CompPoly.Fields.Extension
 public import CompPoly.Fields.Extension.Arithmetic
 public import CompPoly.Fields.Extension.Binomial
 public import CompPoly.Fields.Extension.Bridge
+public import CompPoly.Fields.Extension.Bytes
 public import CompPoly.Fields.Extension.Cardinality
 public import CompPoly.Fields.Extension.Defs
 public import CompPoly.Fields.Extension.Field
 public import CompPoly.Fields.Goldilocks
 public import CompPoly.Fields.Goldilocks.Basic
+public import CompPoly.Fields.Goldilocks.Bytes
 public import CompPoly.Fields.Goldilocks.Fast
 public import CompPoly.Fields.Goldilocks.FastDefs
 public import CompPoly.Fields.Goldilocks.FastReduction
@@ -174,11 +190,14 @@ public import CompPoly.Fields.KoalaBear.Ext6.SexticIrreducible
 public import CompPoly.Fields.KoalaBear.Fast
 public import CompPoly.Fields.Mersenne31
 public import CompPoly.Fields.Mersenne31.Basic
+public import CompPoly.Fields.Mersenne31.Bytes
 public import CompPoly.Fields.Mersenne31.Fast
 public import CompPoly.Fields.Montgomery.Basic
 public import CompPoly.Fields.Montgomery.Native32
+public import CompPoly.Fields.Montgomery.Native32Bytes
 public import CompPoly.Fields.Montgomery.Native32Field
 public import CompPoly.Fields.Montgomery.Native64x8
+public import CompPoly.Fields.Montgomery.Native64x8Bytes
 public import CompPoly.Fields.Montgomery.Native64x8Defs
 public import CompPoly.Fields.Montgomery.Native64x8Field
 public import CompPoly.Fields.Montgomery.Native64x8Inv
@@ -241,11 +260,13 @@ public import CompPoly.LinearAlgebra.PolynomialMatrix.ShiftedReduction
 public import CompPoly.LinearAlgebra.PolynomialMatrix.StrassenCorrectness
 public import CompPoly.LinearAlgebra.TensorProduct.Basis
 public import CompPoly.Multilinear.Basic
+public import CompPoly.Multilinear.Bytes
 public import CompPoly.Multilinear.Equiv
 public import CompPoly.Multilinear.ManyEval
 public import CompPoly.Multilinear.ManyEval.Basic
 public import CompPoly.Multilinear.ManyEval.Correctness
 public import CompPoly.Multilinear.TransformEquiv
+public import CompPoly.Multivariate.Bytes
 public import CompPoly.Multivariate.CMvMonomial
 public import CompPoly.Multivariate.CMvPolynomial
 public import CompPoly.Multivariate.Eval
@@ -277,6 +298,7 @@ public import CompPoly.Univariate.BatchEval.Context
 public import CompPoly.Univariate.BatchEval.Correctness
 public import CompPoly.Univariate.BatchEval.Naive
 public import CompPoly.Univariate.BatchEval.SubproductTree
+public import CompPoly.Univariate.Bytes
 public import CompPoly.Univariate.CMvEquiv
 public import CompPoly.Univariate.CoefficientInterpolation
 public import CompPoly.Univariate.Context
