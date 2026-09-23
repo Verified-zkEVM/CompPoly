@@ -1050,6 +1050,24 @@ theorem eval₂Horner_eq_eval₂
     have := foldl_zipIdx_eq_foldr_pow_k f x 0 0 p.toList
     simpa using this.symm
 
+/-- Compiled code evaluates by Horner's method; `eval₂` remains the specification. -/
+@[csimp]
+theorem eval₂_eq_eval₂Horner : @eval₂ = @eval₂Horner := by
+  funext _ _ _ _ f x p
+  exact (eval₂Horner_eq_eval₂ f x p).symm
+
+omit [BEq R] in
+/-- Horner evaluation agrees with the sum-of-powers evaluation. -/
+theorem evalHorner_eq_eval (x : R) (p : CPolynomial.Raw R) : evalHorner x p = eval x p :=
+  eval₂Horner_eq_eval₂ (RingHom.id R) x p
+
+/-- Compiled code evaluates by Horner's method; `eval` remains the specification.
+`eval` is `@[inline]`, so without this callers would inline its sum-of-powers body. -/
+@[csimp]
+theorem eval_eq_evalHorner : @eval = @evalHorner := by
+  funext _ _ x p
+  exact (evalHorner_eq_eval x p).symm
+
 end EvalTheorems
 
 end Semiring
