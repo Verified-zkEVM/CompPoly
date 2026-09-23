@@ -53,3 +53,15 @@ run the compiled `eval`/`eval₂` and compare with hand-computed values and with
 #guard CPolynomial.eval (2 : ℚ) ((CPolynomial.X : CPolynomial ℚ) ^ 3 - CPolynomial.C 1) == 7
 #guard CPolynomial.eval₂ (Int.castRingHom ℚ) (1 / 3 : ℚ)
   ((CPolynomial.X : CPolynomial ℤ) ^ 2 + CPolynomial.C 2) == 19 / 9
+
+-- The checks above pass without the `@[csimp]` lemmas too; this fails if one is removed.
+open Lean in
+run_meta do
+  let map := (Compiler.CSimp.ext.getState (← getEnv)).map
+  for (src, tgt) in [
+      (``CompPoly.CPolynomial.Raw.eval₂, ``CompPoly.CPolynomial.Raw.eval₂Horner),
+      (``CompPoly.CPolynomial.Raw.eval, ``CompPoly.CPolynomial.Raw.evalHorner),
+      (``CompPoly.CPolynomial.eval₂, ``CompPoly.CPolynomial.eval₂Horner),
+      (``CompPoly.CPolynomial.eval, ``CompPoly.CPolynomial.evalHorner)] do
+    unless (map.find? src).map (·.toDeclName) == some tgt do
+      throwError "no @[csimp] lemma replaces {src} with {tgt}"
