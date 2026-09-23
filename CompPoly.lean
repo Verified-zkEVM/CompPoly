@@ -294,6 +294,7 @@ public import CompPoly.Univariate.Basic
 public import CompPoly.Univariate.BatchEval
 public import CompPoly.Univariate.BatchEval.Context
 public import CompPoly.Univariate.BatchEval.Correctness
+public import CompPoly.Univariate.BatchEval.Interpolation
 public import CompPoly.Univariate.BatchEval.Naive
 public import CompPoly.Univariate.BatchEval.SubproductTree
 public import CompPoly.Univariate.Bytes
@@ -311,6 +312,8 @@ public import CompPoly.Univariate.ManyEval.Basic
 public import CompPoly.Univariate.ManyEval.Correctness
 public import CompPoly.Univariate.Modular
 public import CompPoly.Univariate.NTT.BabyBear
+public import CompPoly.Univariate.NTT.Barycentric
+public import CompPoly.Univariate.NTT.Coset
 public import CompPoly.Univariate.NTT.Domain
 public import CompPoly.Univariate.NTT.Evaluation
 public import CompPoly.Univariate.NTT.FastMul
@@ -328,6 +331,7 @@ public import CompPoly.Univariate.NTTFast.Correctness.Pair
 public import CompPoly.Univariate.NTTFast.Correctness.Pipeline
 public import CompPoly.Univariate.NTTFast.Correctness.Radix4DIF
 public import CompPoly.Univariate.NTTFast.Correctness.Radix4DIT
+public import CompPoly.Univariate.NTTFast.Coset
 public import CompPoly.Univariate.NTTFast.Evaluation
 public import CompPoly.Univariate.NTTFast.FastMul
 public import CompPoly.Univariate.NTTFast.FastMulLow
@@ -345,6 +349,7 @@ public import CompPoly.Univariate.Raw.Proofs
 public import CompPoly.Univariate.ReedSolomon
 public import CompPoly.Univariate.ReedSolomon.GaoCorrectness
 public import CompPoly.Univariate.ReedSolomon.GaoDecoder
+public import CompPoly.Univariate.ReedSolomon.GaoNTT
 public import CompPoly.Univariate.ReedSolomon.NTTEncode
 public import CompPoly.Univariate.Roots
 public import CompPoly.Univariate.Roots.Backend
