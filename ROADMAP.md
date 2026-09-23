@@ -228,6 +228,9 @@ CompPoly aims to be the premier formally verified library for computable polynom
       (`LinearAlgebra/Dense/`)
     - ✅ In-place kernel solver (`Dense/KernelInPlace.lean`) with correctness, used
       by the dense Guruswami-Sudan interpolation backend
+    - ✅ Full homogeneous-kernel basis contract: soundness, completeness, and
+      free-column independence (`Dense/KernelBasisCorrectness.lean`), shared with
+      the PM-basis leaf through the row-array kernel (`Dense/RowArray*.lean`)
     - ✅ Polynomial matrices with shifted degrees and row spans, plus
       Mulders-Storjohann shifted row reduction ([MS03],
       `LinearAlgebra/PolynomialMatrix/`). The fast variants are proved extensionally
