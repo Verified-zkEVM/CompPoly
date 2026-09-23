@@ -290,6 +290,18 @@ theorem eval_horner_eq_eval [Semiring R] (x : R) (p : CPolynomial R) :
   simpa [eval, evalHorner, eval₂, eval₂Horner] using
     (eval₂_horner_eq_eval₂ (f := RingHom.id R) (x := x) (p := p))
 
+/-- Compiled code evaluates by Horner's method; `eval₂` remains the specification. -/
+@[csimp]
+theorem eval₂_eq_eval₂Horner : @eval₂ = @eval₂Horner := by
+  funext _ _ _ _ f x p
+  exact (eval₂_horner_eq_eval₂ f x p).symm
+
+/-- Compiled code evaluates by Horner's method; `eval` remains the specification. -/
+@[csimp]
+theorem eval_eq_evalHorner : @eval = @evalHorner := by
+  funext _ _ x p
+  exact (eval_horner_eq_eval x p).symm
+
 /-- The support of a polynomial: indices with nonzero coefficients. -/
 def support [Zero R] [BEq R] (p : CPolynomial R) : Finset ℕ :=
   (Finset.range p.val.size).filter (fun i => p.val.coeff i != 0)
