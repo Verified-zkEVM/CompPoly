@@ -6,6 +6,7 @@ Authors: Valerii Huhnin
 module
 
 public import CompPolyTests.Bivariate.Basic
+public import CompPolyTests.Bivariate.Bytes
 public import CompPolyTests.Bivariate.Degree
 public import CompPolyTests.Bivariate.Deriv
 public import CompPolyTests.Bivariate.Factor
@@ -22,6 +23,11 @@ public import CompPolyTests.Bivariate.GuruswamiSudan.Root.RothRuckenstein
 public import CompPolyTests.Bivariate.Kronecker
 public import CompPolyTests.Bivariate.Multiplicity
 public import CompPolyTests.Bivariate.WeightedDegree
+public import CompPolyTests.Data.Bytes.Bias
+public import CompPolyTests.Data.Bytes.CanonicalNat
+public import CompPolyTests.Data.Bytes.Delimited
+public import CompPolyTests.Data.Bytes.LittleEndian
+public import CompPolyTests.Data.Bytes.Vector
 public import CompPolyTests.Data.MvPolynomial.Notation
 public import CompPolyTests.Data.Polynomial.Frobenius
 public import CompPolyTests.Data.Polynomial.Rabin
@@ -45,6 +51,7 @@ public import CompPolyTests.Fields.Binary.BF128Ghash.Prelude
 public import CompPolyTests.Fields.Binary.BF128Ghash.Presentation
 public import CompPolyTests.Fields.Binary.BF64
 public import CompPolyTests.Fields.Binary.BF64.Presentation
+public import CompPolyTests.Fields.Binary.Bytes
 public import CompPolyTests.Fields.Binary.Common
 public import CompPolyTests.Fields.Binary.Tower.Algebra
 public import CompPolyTests.Fields.Binary.Tower.Arithmetic
@@ -63,21 +70,27 @@ public import CompPolyTests.Fields.Binary.Tower.RelativeCoordinates
 public import CompPolyTests.Fields.Binary.Tower.TensorAlgebra
 public import CompPolyTests.Fields.Binary.Tower.WordEncoding
 public import CompPolyTests.Fields.Extension.Arithmetic
-public import CompPolyTests.Fields.Extension.Certificates
 public import CompPolyTests.Fields.Extension.Binomial
+public import CompPolyTests.Fields.Extension.Bytes
+public import CompPolyTests.Fields.Extension.Certificates
 public import CompPolyTests.Fields.Extension.Presentation
 public import CompPolyTests.Fields.Extension.RawArithmetic
+public import CompPolyTests.Fields.Goldilocks.Bytes
 public import CompPolyTests.Fields.Goldilocks.Fast
 public import CompPolyTests.Fields.KoalaBear.Fast
+public import CompPolyTests.Fields.Mersenne31.Bytes
 public import CompPolyTests.Fields.Mersenne31.Fast
 public import CompPolyTests.Fields.Mersenne31.Instances
+public import CompPolyTests.Fields.Montgomery.Bytes
 public import CompPolyTests.Fields.Pasta.Fast
 public import CompPolyTests.Fields.PrattCertificate
 public import CompPolyTests.LinearAlgebra.Dense
 public import CompPolyTests.LinearAlgebra.PolynomialMatrix.Approximant
 public import CompPolyTests.LinearAlgebra.TensorProduct.Basis
+public import CompPolyTests.Multilinear.Bytes
 public import CompPolyTests.Multilinear.Equiv
 public import CompPolyTests.Multilinear.ProductAccumulation
+public import CompPolyTests.Multivariate.Bytes
 public import CompPolyTests.Multivariate.CMvMonomial
 public import CompPolyTests.Multivariate.PartialEval
 public import CompPolyTests.Multivariate.Restrict
@@ -85,6 +98,7 @@ public import CompPolyTests.Multivariate.TypeclassMinimization
 public import CompPolyTests.Multivariate.VarsDegrees
 public import CompPolyTests.Univariate.Barycentric
 public import CompPolyTests.Univariate.Basic
+public import CompPolyTests.Univariate.Bytes
 public import CompPolyTests.Univariate.EuclideanAlgorithm
 public import CompPolyTests.Univariate.Linear
 public import CompPolyTests.Univariate.NTT.FastMul

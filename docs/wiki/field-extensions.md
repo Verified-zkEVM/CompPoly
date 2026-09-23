@@ -310,6 +310,10 @@ So prefer, in order: a cyclotomic `Φₙ` when one has the right degree; then a 
 4. Register `instance : Fact (Irreducible ...)`, define the `abbrev` as
    `Ext ...Params.toExtensionParams`, and route the `Fact` through `toExtensionParams_poly` — see
    `KoalaBear/Ext4.lean`.
+5. Serialization comes for free: `Ext P` over any base with a `ByteCodec` is its coefficient
+   vector, `P.d * width` bytes (`Extension/Bytes.lean`). Add a `#guard` with one byte vector to
+   the mirrored test module and nothing else. A new *carrier* is different — see the note
+   after the next checklist.
 
 That is about 60 lines.
 
@@ -334,8 +338,15 @@ That is about 60 lines.
 4. Write the `ExtensionParams` (lower coefficients of `f`, little-endian) and prove
    `...Params.poly = f`; register the `Fact` and define the `abbrev` — see
    `KoalaBear/Ext5.lean` (supporting cert/proof files under `KoalaBear/Ext5/`).
+5. Serialization comes for free, as for a binomial extension; add the one `#guard`.
 
 That is the generated data plus about 200 hand-written lines.
+
+A new **carrier** does not get its codec for free: a Montgomery-backed `Ext`, or a fast prime
+field for a new base, must add `CanonicalNat`/`ByteCodec` instances and prove it encodes
+identically to the spec field (`toBytes (ofField x) = toBytes x`), as
+`Montgomery/Native32Bytes.lean` does. The rule and the checklist are in
+[`serialization.md`](serialization.md) and `CONTRIBUTING.md` ("New Types Owe a Codec").
 
 ## Representation And Computability
 
