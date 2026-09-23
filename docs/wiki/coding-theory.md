@@ -66,11 +66,19 @@ specification, transported.
 |---|---|---|
 | Decoder | [`ReedSolomon/GaoDecoder.lean`](../../CompPoly/Univariate/ReedSolomon/GaoDecoder.lean) | `nodalPoly`, `receivedInterpolant`, `partialGcd`, `decode` |
 | Correctness | [`ReedSolomon/GaoCorrectness.lean`](../../CompPoly/Univariate/ReedSolomon/GaoCorrectness.lean) | `decode_sound`, `decode_eq_some`, `decode_eq_none_iff`, `decode_none_farness` |
+| NTT domain | [`ReedSolomon/GaoNTT.lean`](../../CompPoly/Univariate/ReedSolomon/GaoNTT.lean) | `decodeNTT`, `decodePlan`, `decodeNTT_eq_decode`, `decodePlan_eq_decode` |
 
 The algorithm interpolates the received word, then runs a partial extended
 Euclid against the nodal polynomial and stops at the degree threshold; the
 message falls out of the resulting Bézout relation. `decode` returns
 `Option (CPolynomial F)`.
+
+On the domain induced by a radix-2 NTT domain both Euclidean inputs have fast
+forms. The nodal polynomial is `Xⁿ - 1` and the interpolant is the inverse NTT.
+`decodeNTT` (unplanned) and `decodePlan` (through an `NTTFast.Plan`) use them,
+and `decodeNTT_eq_decode` / `decodePlan_eq_decode` prove the result equal to
+`decode` on that domain, so every correctness theorem transfers unchanged. The
+partial Euclid is still quadratic, so the gain is in the interpolation.
 
 The correctness layer is stronger than plain soundness, and the extra results
 are the reason to prefer this decoder:
@@ -183,6 +191,7 @@ binary fields.
 ## Where To Start By Task
 
 - Encoding, or tying a transform to `ReedSolomon.encode`: `ReedSolomon/NTTEncode.lean`
+- Decoding on an NTT domain: `ReedSolomon/GaoNTT.lean`
 - Unique decoding, or using decode failure as a proximity certificate:
   `ReedSolomon/GaoCorrectness.lean`
 - Changing what the GS decoder *does* without touching proofs: add a context
