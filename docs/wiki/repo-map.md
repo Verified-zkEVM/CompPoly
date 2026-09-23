@@ -10,8 +10,8 @@ CompPoly/
   Data/               shared helper lemmas and small support definitions
   ToMathlib/          local bridge lemmas and upstream-facing support code
   Univariate/         canonical computable univariate polynomials
-    NTT/, NTTFast/      root-of-unity transforms, spec and optimized
-    BatchEval/          batch and many-point evaluation
+    NTT/, NTTFast/      root-of-unity and coset transforms, interpolation, spec and optimized
+    BatchEval/          batch evaluation and subproduct-tree interpolation
     Roots/              univariate root finding
     ReedSolomon/        Reed-Solomon encoding and Gao decoding
   Multivariate/       sparse computable multivariate polynomials
@@ -45,7 +45,10 @@ scripts/              repo utilities and validation helpers
 ## Where To Start By Task
 
 - Extending `CPolynomial`, quotient polynomials, or interpolation:
-  start in `CompPoly/Univariate/`.
+  start in `CompPoly/Univariate/`. Fast interpolation lives in three places:
+  `NTT/Interpolation.lean` and `NTTFast/Interpolation.lean` on an NTT domain,
+  `NTT/Coset.lean` and `NTTFast/Coset.lean` on its cosets, and
+  `BatchEval/Interpolation.lean` on arbitrary nodes.
 - Working on root-of-unity NTT evaluation, interpolation, or multiplication:
   start in `CompPoly/Univariate/NTT/` for shared domains/specifications and
   `CompPoly/Univariate/NTTFast/` for planned optimized transforms.

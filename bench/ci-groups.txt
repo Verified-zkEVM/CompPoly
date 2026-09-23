@@ -74,5 +74,9 @@ ntt-koalabear-l12
 ntt-babybear-l12
 ntt-plan-koalabear
 rs-encode-koalabear-l10
+rs-gao-decode-koalabear-l6
+univariate-interp-koalabear-l6
+univariate-interp-coset-koalabear-l12
+univariate-barycentric-koalabear-l8
 univariate-mul-crossover-64
 univariate-mul-crossover-256

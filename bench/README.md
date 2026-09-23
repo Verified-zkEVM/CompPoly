@@ -131,6 +131,8 @@ Roughly by area, with representative group prefixes:
 | Binary tower scalar kernels | `fields-tower-bt{8,64}-*`: table-driven vs recursive |
 | Multiplicative NTT | `ntt-{koalabear,babybear}-l*` over `n = 2^8 … 2^16`, plus `ntt-plan-koalabear` |
 | Reed-Solomon encoding | `rs-encode-koalabear-l*`: definitional encoder vs the certified NTT one |
+| Interpolation | `univariate-interp-koalabear-l*` (Lagrange vs subproduct tree vs NTT vs planned NTT), `univariate-interp-coset-*`, `univariate-barycentric-*` (generic vs closed-form weights) |
+| Reed-Solomon decoding | `rs-gao-decode-koalabear-l*`: definitional Gao decoder vs `decodeNTT` / `decodePlan` |
 | Schoolbook / NTT crossover | `univariate-mul-crossover-*`, degree<4 to degree<1024 |
 | Harness self-check | `harness-floor`, `harness-canary`, `harness-chain-floor`, `harness-chain-linearity`: the harness measuring itself, see below |
 
