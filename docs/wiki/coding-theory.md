@@ -163,7 +163,7 @@ specific to it.
 | `RootProduct.lean` | the product of linear factors over a root set |
 | `Correctness.lean` | `monicNormalize_root_iff`, `gcdMonic_root_iff_left_right`, and the divisibility transport lemmas |
 | `SmoothSubgroup/` | subgroup-refinement splitting ([MOV92]) for fields whose multiplicative group admits a smooth schedule |
-| `Shoup/` | small-characteristic trace-coordinate splitting ([vzGS92]); `SmallPrimeTraceContext` + adapter to `LinearFactorProductSplitter` |
+| `Shoup/` | small-characteristic trace-coordinate splitting ([vzGS92]); `SmallPrimeTraceContext` + adapter to `LinearFactorProductSplitter`; compiled code reuses Frobenius powers across rounds through `shoupSplitCandidatesCachedWith`, swapped in by the `@[csimp]` theorem `shoupSplitCandidatesWith_eq_cached` |
 | `LasVegas/` | bounded Las Vegas Cantor–Zassenhaus (odd-char and char-2 trace branches) with explicit `ProbeFamily` randomness, deterministic fallback, and probability proofs |
 
 The pipeline consumes a `LinearFactorProductSplitter`. Three backends supply that
