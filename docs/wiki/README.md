@@ -32,6 +32,9 @@ are too specific or too changeable to keep at the repo root.
   framework for arbitrary monic moduli and its irreducibility criteria.
 - [`coding-theory.md`](coding-theory.md) - Reed-Solomon encoding, unique and list
   decoding, univariate root finding, and the linear-algebra engines beneath them.
+- [`serialization.md`](serialization.md) - byte encodings of field elements and
+  polynomials: the `CanonicalNat` and `ByteCodec` classes, the ported ArkLib
+  protocol classes, decoders, and the carrier-agreement rule.
 
 ## Maintenance Contract
 
@@ -54,6 +57,8 @@ are too specific or too changeable to keep at the repo root.
   - `field-extensions.md` for the odd-characteristic field-extension framework.
   - `coding-theory.md` for Reed-Solomon coding, the decoders, root finding, and
     the matrix layer.
+  - `serialization.md` for byte formats, the serialization classes, and the
+    invariants consumers may rely on.
 - Add new pages when a recurring topic no longer fits cleanly in an existing page.
 - If a PR changes commands, repo structure, generated-file behavior, or recurring
   architecture guidance, update the matching page in the same PR.

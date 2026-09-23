@@ -26,6 +26,12 @@ Human contributors should usually start with [`README.md`](README.md),
    `./scripts/bench-ab.sh run <group>` is the measurement, only a `faster`
    verdict without `SUSPECT` earns the refinement proof, and a `sorry` on that
    theorem lives inside an iteration only, never in a commit.
+8. When adding a field carrier or a polynomial representation, give it its codec in
+   the same PR (`CanonicalNat`/`ByteCodec`, or `DelimitedCodec` for variable-length
+   types), the round-trip and injectivity theorems through the class interfaces, and
+   for a fast carrier the agreement lemma with its spec field. See "New Types Owe a
+   Codec" in [`CONTRIBUTING.md`](CONTRIBUTING.md) and
+   [`docs/wiki/serialization.md`](docs/wiki/serialization.md).
 
 ## Where To Work
 
@@ -93,6 +99,9 @@ Human contributors should usually start with [`README.md`](README.md),
   field extensions for an arbitrary monic modulus, and their two irreducibility
   paths: Rabin's test collapsed to base-field exponentiations for binomials,
   kernel-checked Rabin certificates otherwise.
+- [`docs/wiki/serialization.md`](docs/wiki/serialization.md) - byte encodings of
+  field elements and polynomials, the `CanonicalNat`/`ByteCodec` classes, and the
+  ArkLib protocol classes they feed.
 
 ## Canonical Project Docs
 
