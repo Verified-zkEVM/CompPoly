@@ -185,6 +185,14 @@ private def bt0PartialRootsOut : Array BT0 :=
 #guard !(bt0PartialRootsOut.contains (1 : BT0))
 #guard bt0PartialRootsOut.size == 1
 
+-- These fixtures use `k = 1`, so they pass without the cache swap; this fails if it is removed.
+open Lean in
+run_meta do
+  let map := (Compiler.CSimp.ext.getState (← getEnv)).map
+  unless (map.find? ``shoupSplitCandidatesWith).map (·.toDeclName) ==
+      some ``shoupSplitCandidatesCachedWith do
+    throwError "no @[csimp] lemma replaces shoupSplitCandidatesWith with the cached splitter"
+
 end Univariate.Roots.Shoup
 
 end CompPolyTests
