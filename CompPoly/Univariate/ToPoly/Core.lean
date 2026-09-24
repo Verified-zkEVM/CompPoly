@@ -262,7 +262,18 @@ theorem Raw.toPoly_natDegree_lt_trim_size_of_pos [LawfulBEq R]
       simp [himpl]
     omega
 
+/-- `toPoly` is injective, with no `Nontrivial` or commutativity assumption. -/
+@[simp]
+theorem toPoly_inj [LawfulBEq R] {p q : CPolynomial R} : p.toPoly = q.toPoly ↔ p = q := by
+  constructor
+  · intro h
+    apply CPolynomial.ext
+    rw [← toImpl_toPoly_of_canonical p, ← toImpl_toPoly_of_canonical q, h]
+  · rintro rfl
+    rfl
+
 /-- `toPoly` maps a canonical polynomial to `0` iff the polynomial is `0`. -/
+@[simp]
 theorem toPoly_eq_zero_iff [LawfulBEq R] (p : CPolynomial R) :
     p.toPoly = 0 ↔ p = 0 := by
   constructor

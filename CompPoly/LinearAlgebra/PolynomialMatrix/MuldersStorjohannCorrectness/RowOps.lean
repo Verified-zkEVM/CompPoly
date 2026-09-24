@@ -350,15 +350,8 @@ theorem rowAdd_mem_rowSpan
 
 omit [DecidableEq F] in
 theorem C_neg_one_mul (p : CPolynomial F) :
-    CPolynomial.C (-1 : F) * p = -p := by
-  apply (CPolynomial.eq_iff_coeff).2
-  intro i
-  rw [CPolynomial.coeff_toPoly, CPolynomial.coeff_toPoly]
-  rw [CPolynomial.toPoly_neg]
-  have hpoly := congrArg (fun P : Polynomial F ↦ P.coeff i)
-    (CPolynomial.toPoly_mul (CPolynomial.C (-1 : F)) p)
-  rw [CPolynomial.C_toPoly] at hpoly
-  simpa using hpoly
+    CPolynomial.C (-1 : F) * p = -p :=
+  CPolynomial.toPoly_inj.mp (by simp)
 
 omit [DecidableEq F] in
 theorem rowNeg_eq_rowScalePolynomial (row : PolynomialRow F) :

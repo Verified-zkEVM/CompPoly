@@ -165,7 +165,8 @@ lemma nodalPoly_eval_node_eq_zero [CommRing F] [Nontrivial F] (D : Domain F) (i 
     (nodalPoly D).toPoly.eval (D.val[i]) = 0 := by
   rw [toPoly_nodalPoly, Polynomial.eval_prod]
   exact Finset.prod_eq_zero (Finset.mem_univ i)
-    (by simp only [Fin.getElem_fin, Polynomial.eval_sub, eval_X, Polynomial.eval_C, sub_self])
+    (by simp only [Fin.getElem_fin, Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C,
+      sub_self])
 
 /-- `partialGcd`'s output satisfies the stop spec for `(nodalPoly D, receivedInterpolant D r)` at
 threshold `(D.n + k + 1) / 2`. -/

@@ -138,23 +138,27 @@ noncomputable def bivariateEquiv :
     embedCoeffs.trans <| foldInner.trans foldOuter
 
 /-- `bivariateEquiv` preserves addition. -/
+@[simp, grind =]
 lemma bivariateEquiv_add (p q : CBivariate R) :
     bivariateEquiv (p + q) =
       bivariateEquiv p + bivariateEquiv q :=
   bivariateEquiv.map_add p q
 
 /-- `bivariateEquiv` preserves multiplication. -/
+@[simp, grind =]
 lemma bivariateEquiv_mul (p q : CBivariate R) :
     bivariateEquiv (p * q) =
       bivariateEquiv p * bivariateEquiv q :=
   bivariateEquiv.map_mul p q
 
 /-- `bivariateEquiv` maps zero to zero. -/
+@[simp, grind =]
 lemma bivariateEquiv_zero :
     bivariateEquiv (0 : CBivariate R) = 0 :=
   map_zero bivariateEquiv
 
 /-- `bivariateEquiv` maps bivariate constants to multivariate constants. -/
+@[simp, grind =]
 lemma bivariateEquiv_CC (r : R) :
     bivariateEquiv (CBivariate.CC r) = CMvPolynomial.C r := by
   unfold bivariateEquiv
@@ -163,6 +167,7 @@ lemma bivariateEquiv_CC (r : R) :
         CMvPolynomial.finSuccEquiv_symm_C]
 
 /-- `bivariateEquiv` maps `CBivariate.X` to the second variable. -/
+@[simp, grind =]
 lemma bivariateEquiv_X :
     bivariateEquiv (CBivariate.X : CBivariate R) =
       CMvPolynomial.X 1 := by
@@ -170,6 +175,7 @@ lemma bivariateEquiv_X :
   simp [bivariateEquiv, ringEquiv, X_toPoly]
 
 /-- `bivariateEquiv` maps `CBivariate.Y` to the first variable. -/
+@[simp, grind =]
 lemma bivariateEquiv_Y :
     bivariateEquiv (CBivariate.Y : CBivariate R) =
       CMvPolynomial.X 0 := by
@@ -177,6 +183,7 @@ lemma bivariateEquiv_Y :
   simp [bivariateEquiv, ringEquiv, Y_toPoly]
 
 /-- `bivariateEquiv.symm` maps multivariate constants to bivariate constants. -/
+@[simp, grind =]
 lemma bivariateEquiv_symm_C (r : R) :
     bivariateEquiv.symm (CMvPolynomial.C r) =
       CBivariate.CC r := by
@@ -184,6 +191,7 @@ lemma bivariateEquiv_symm_C (r : R) :
   simp [bivariateEquiv_CC]
 
 /-- `bivariateEquiv.symm` maps the first variable to `CBivariate.Y`. -/
+@[simp, grind =]
 lemma bivariateEquiv_symm_X0 :
     bivariateEquiv.symm (CMvPolynomial.X 0 : CMvPolynomial 2 R) =
       CBivariate.Y := by
@@ -191,6 +199,7 @@ lemma bivariateEquiv_symm_X0 :
   simp [bivariateEquiv_Y]
 
 /-- `bivariateEquiv.symm` maps the second variable to `CBivariate.X`. -/
+@[simp, grind =]
 lemma bivariateEquiv_symm_X1 :
     bivariateEquiv.symm (CMvPolynomial.X 1 : CMvPolynomial 2 R) =
       CBivariate.X := by
