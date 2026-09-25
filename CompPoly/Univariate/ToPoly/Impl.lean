@@ -31,19 +31,22 @@ section ImplementationCorrectness
 variable {R : Type*} [Semiring R]
 
 /-- CPolynomial.monomial is correct wrt the Mathlib spec. -/
-theorem monomial_toPoly [DecidableEq R] [LawfulBEq R] (n : ℕ) (c : R) :
+@[simp, grind =]
+theorem monomial_toPoly [BEq R] [LawfulBEq R] [DecidableEq R] (n : ℕ) (c : R) :
     (monomial n c).toPoly = Polynomial.monomial n c := by
   ext i
   simp only [CPolynomial.toPoly, monomial]
   rw [Polynomial.coeff_monomial, coeff_toPoly, CPolynomial.Raw.coeff_monomial]
 
 /-- CPolynomial.C is correct wrt the Mathlib spec. -/
+@[simp, grind =]
 theorem C_toPoly [BEq R] [LawfulBEq R] (r : R) : (C r).toPoly = Polynomial.C r := by
   change ((Raw.C r).trim : Raw R).toPoly = Polynomial.C r
   rw [Raw.toPoly_trim]
   exact Raw.toPoly_C r
 
 /-- CPolynomial.X is correct wrt the Mathlib spec. -/
+@[simp, grind =]
 theorem X_toPoly [BEq R] [LawfulBEq R] [Nontrivial R] :
     (X : CPolynomial R).toPoly = Polynomial.X := by
   change (CPolynomial.Raw.X : CPolynomial.Raw R).toPoly = Polynomial.X
@@ -56,6 +59,7 @@ theorem eval_toPoly [BEq R] [LawfulBEq R] (x : R) (p : CPolynomial R) :
   exact (Raw.eval_toPoly_eq_eval x p.val).symm
 
 /-- Evaluation of a constant computable polynomial. -/
+@[simp, grind =]
 theorem eval_C [BEq R] [LawfulBEq R] (a c : R) :
     CPolynomial.eval a (CPolynomial.C c) = c := by
   rw [CPolynomial.eval_toPoly, CPolynomial.C_toPoly, Polynomial.eval_C]
@@ -227,6 +231,7 @@ section EvaluationDivision
 variable {R : Type*}
 
 /-- Evaluation preserves multiplication. -/
+@[simp, grind =]
 theorem eval_mul [CommSemiring R] [BEq R] [LawfulBEq R]
     (p q : CPolynomial R) (x : R) :
     (p * q).eval x = p.eval x * q.eval x := by
@@ -269,6 +274,7 @@ theorem eval_ext
       heval_zero (lt_of_le_of_lt hrPolyDeg hTcard)
 
 /-- Evaluation preserves subtraction. -/
+@[simp, grind =]
 theorem eval_sub [Ring R] [BEq R] [LawfulBEq R]
     (a : R) (p q : CPolynomial R) :
     CPolynomial.eval a (p - q) = CPolynomial.eval a p - CPolynomial.eval a q := by
@@ -276,9 +282,50 @@ theorem eval_sub [Ring R] [BEq R] [LawfulBEq R]
     ← CPolynomial.eval_toPoly, ← CPolynomial.eval_toPoly]
 
 /-- Evaluation of the constant one computable polynomial. -/
+@[simp, grind =]
 theorem eval_one [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (a : R) : CPolynomial.eval a (1 : CPolynomial R) = 1 := by
   rw [CPolynomial.eval_toPoly, CPolynomial.toPoly_one, Polynomial.eval_one]
+
+/-- Evaluation of the zero polynomial. -/
+@[simp, grind =]
+theorem eval_zero [Semiring R] [BEq R] [LawfulBEq R] (a : R) :
+    CPolynomial.eval a (0 : CPolynomial R) = 0 := by
+  rw [CPolynomial.eval_toPoly, CPolynomial.toPoly_zero, Polynomial.eval_zero]
+
+/-- Evaluation preserves addition. -/
+@[simp, grind =]
+theorem eval_add [Semiring R] [BEq R] [LawfulBEq R] (a : R) (p q : CPolynomial R) :
+    CPolynomial.eval a (p + q) = CPolynomial.eval a p + CPolynomial.eval a q := by
+  rw [CPolynomial.eval_toPoly, CPolynomial.toPoly_add, Polynomial.eval_add,
+    ← CPolynomial.eval_toPoly, ← CPolynomial.eval_toPoly]
+
+/-- Evaluation preserves negation. -/
+@[simp, grind =]
+theorem eval_neg [Ring R] [BEq R] [LawfulBEq R] (a : R) (p : CPolynomial R) :
+    CPolynomial.eval a (-p) = -CPolynomial.eval a p := by
+  rw [CPolynomial.eval_toPoly, CPolynomial.toPoly_neg, Polynomial.eval_neg,
+    ← CPolynomial.eval_toPoly]
+
+/-- Evaluation of the variable. -/
+@[simp, grind =]
+theorem eval_X [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] (a : R) :
+    CPolynomial.eval a (CPolynomial.X : CPolynomial R) = a := by
+  rw [CPolynomial.eval_toPoly, CPolynomial.X_toPoly, Polynomial.eval_X]
+
+/-- Evaluation preserves powers. -/
+@[simp, grind =]
+theorem eval_pow [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] (a : R)
+    (p : CPolynomial R) (n : ℕ) :
+    CPolynomial.eval a (p ^ n) = CPolynomial.eval a p ^ n := by
+  rw [CPolynomial.eval_toPoly, CPolynomial.toPoly_pow, Polynomial.eval_pow,
+    ← CPolynomial.eval_toPoly]
+
+/-- Evaluation of a monomial. -/
+@[simp, grind =]
+theorem eval_monomial [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R] (a c : R) (n : ℕ) :
+    CPolynomial.eval a (CPolynomial.monomial n c) = c * a ^ n := by
+  rw [CPolynomial.eval_toPoly, CPolynomial.monomial_toPoly, Polynomial.eval_monomial]
 
 /-- Dividing by `X` preserves a nonzero root when the constant coefficient vanishes. -/
 theorem eval_divX_eq_zero_of_ne_zero_root [Field R] [BEq R] [LawfulBEq R]

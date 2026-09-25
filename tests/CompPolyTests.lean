@@ -99,6 +99,7 @@ public import CompPolyTests.Multivariate.VarsDegrees
 public import CompPolyTests.Univariate.Barycentric
 public import CompPolyTests.Univariate.Basic
 public import CompPolyTests.Univariate.Bytes
+public import CompPolyTests.Univariate.Ergonomics
 public import CompPolyTests.Univariate.EuclideanAlgorithm
 public import CompPolyTests.Univariate.Interpolation
 public import CompPolyTests.Univariate.Linear

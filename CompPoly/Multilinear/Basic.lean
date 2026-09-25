@@ -327,6 +327,37 @@ theorem eval₂_horner_eq_eval₂ (p : CMlPolynomial R n) (f : R →+* S) (x : V
     eval₂Horner p f x = eval₂ p f x := by
   simpa [eval₂Horner, eval₂] using
     (eval_horner_eq_eval (p := map f p) (x := x))
+/-- Evaluation is additive in the coefficient vector. -/
+@[simp] theorem eval_add (p q : CMlPolynomial R n) (x : Vector R n) :
+    eval (p + q) x = eval p x + eval q x := by
+  unfold eval
+  rw [Vector.dotProduct_eq_root_dotProduct, Vector.dotProduct_eq_root_dotProduct,
+    Vector.dotProduct_eq_root_dotProduct]
+  simp only [_root_.dotProduct, ← Finset.sum_add_distrib, ← add_mul]
+  apply Finset.sum_congr rfl
+  intro i _
+  simp only [Vector.get_eq_getElem, Vector.getElem_add]
+
+/-- The zero coefficient vector evaluates to zero. -/
+@[simp] theorem eval_zero (x : Vector R n) : eval (0 : CMlPolynomial R n) x = 0 := by
+  unfold eval
+  rw [Vector.dotProduct_eq_root_dotProduct]
+  simp only [_root_.dotProduct]
+  apply Finset.sum_eq_zero
+  intro i _
+  simp only [Vector.get_eq_getElem, Vector.getElem_zero, zero_mul]
+
+/-- Evaluation commutes with scalar multiplication of the coefficient vector. -/
+@[simp] theorem eval_smul (a : R) (p : CMlPolynomial R n) (x : Vector R n) :
+    eval (a • p) x = a * eval p x := by
+  unfold eval
+  rw [Vector.dotProduct_eq_root_dotProduct, Vector.dotProduct_eq_root_dotProduct]
+  simp only [_root_.dotProduct, Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro i _
+  rw [Vector.get_eq_getElem (a • p) i, Vector.get_eq_getElem p i, Vector.getElem_smul]
+  simp only [smul_eq_mul, mul_assoc]
+
 end CMlPolynomialMonomialBasisAndEvaluations
 
 end CMlPolynomial
@@ -556,7 +587,7 @@ def eval (p : CMlPolynomialEval R n) (x : Vector R n) : R :=
   Vector.dotProduct p (lagrangeBasis x)
 
 /-- Evaluation commutes with scalar multiplication of a hypercube table. -/
-theorem eval_smul (a : R) (p : CMlPolynomialEval R n) (x : Vector R n) :
+@[simp] theorem eval_smul (a : R) (p : CMlPolynomialEval R n) (x : Vector R n) :
     eval (a • p) x = a * eval p x := by
   unfold eval
   rw [Vector.dotProduct_eq_root_dotProduct, Vector.dotProduct_eq_root_dotProduct]
@@ -672,6 +703,26 @@ theorem eval₂_mle_eq_eval₂ (p : CMlPolynomialEval R n) (f : R →+* S) (x : 
     eval₂Mle p f x = eval₂ p f x := by
   simpa [eval₂Mle, eval₂] using
     (eval_mle_eq_eval (p := map f p) (x := x))
+
+/-- Evaluation is additive in the coefficient vector. -/
+@[simp] theorem eval_add (p q : CMlPolynomialEval R n) (x : Vector R n) :
+    eval (p + q) x = eval p x + eval q x := by
+  unfold eval
+  rw [Vector.dotProduct_eq_root_dotProduct, Vector.dotProduct_eq_root_dotProduct,
+    Vector.dotProduct_eq_root_dotProduct]
+  simp only [_root_.dotProduct, ← Finset.sum_add_distrib, ← add_mul]
+  apply Finset.sum_congr rfl
+  intro i _
+  simp only [Vector.get_eq_getElem, Vector.getElem_add]
+
+/-- The zero coefficient vector evaluates to zero. -/
+@[simp] theorem eval_zero (x : Vector R n) : eval (0 : CMlPolynomialEval R n) x = 0 := by
+  unfold eval
+  rw [Vector.dotProduct_eq_root_dotProduct]
+  simp only [_root_.dotProduct]
+  apply Finset.sum_eq_zero
+  intro i _
+  simp only [Vector.get_eq_getElem, Vector.getElem_zero, zero_mul]
 
 end CMlPolynomialLagrangeBasisAndEvaluations
 
