@@ -266,9 +266,9 @@ public import CompPoly.Multilinear.ManyEval
 public import CompPoly.Multilinear.ManyEval.Basic
 public import CompPoly.Multilinear.ManyEval.Correctness
 public import CompPoly.Multilinear.TransformEquiv
+public import CompPoly.Multivariate.Basic
 public import CompPoly.Multivariate.Bytes
 public import CompPoly.Multivariate.CMvMonomial
-public import CompPoly.Multivariate.CMvPolynomial
 public import CompPoly.Multivariate.Eval
 public import CompPoly.Multivariate.FinSuccEquiv
 public import CompPoly.Multivariate.HornerLemmas
