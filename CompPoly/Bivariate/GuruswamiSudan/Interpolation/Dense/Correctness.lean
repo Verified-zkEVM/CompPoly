@@ -928,14 +928,6 @@ theorem denseInterpolate_exists_of_dimension_slack {F : Type*}
     exact denseInterpolateWithBasis_exists_of_dimension_slack
       (basis := interpolationMonomials params) points params hSlack
 
-private theorem cpoly_index_le_natDegree_of_coeff_ne_zero {F : Type*}
-    [Zero F] [BEq F] [LawfulBEq F]
-    {p : CPolynomial F} {i : Nat} (hcoeff : p.coeff i ≠ 0) :
-    i ≤ p.natDegree := by
-  have hmem : i ∈ p.support := (CPolynomial.mem_support_iff p i).mpr hcoeff
-  rw [CPolynomial.natDegree_eq_support_sup]
-  exact Finset.le_sup (f := fun n ↦ n) hmem
-
 /-- When `messageDegree > 1`, the weighted-degree basis is complete for the
 semantic weighted-degree predicate. -/
 theorem weightedDegreeBasis_complete_of_messageDegree_gt_one {F : Type*}
@@ -965,7 +957,7 @@ theorem weightedDegreeBasis_complete_of_messageDegree_gt_one {F : Type*}
     exact Finset.le_sup
       (f := fun m ↦ 1 * (Q.val.coeff m).natDegree + yWeight params * m) hjmem
   have hile : i ≤ (Q.val.coeff j).natDegree :=
-    cpoly_index_le_natDegree_of_coeff_ne_zero (p := Q.val.coeff j) hcoeff
+    CPolynomial.le_natDegree_of_ne_zero (p := Q.val.coeff j) hcoeff
   have hweight :
       1 * i + yWeight params * j ≤ params.weightedDegreeBound := by
     calc

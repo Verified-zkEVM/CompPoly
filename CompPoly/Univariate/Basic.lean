@@ -848,6 +848,12 @@ theorem le_natDegree_of_ne_zero [Zero R] [BEq R] [LawfulBEq R]
   rw [natDegree_eq_support_sup]
   exact Finset.le_sup (f := fun n => n) ((mem_support_iff p i).mpr h)
 
+/-- A coefficient above the `natDegree` is zero. -/
+theorem coeff_eq_zero_of_natDegree_lt [Zero R] [BEq R] [LawfulBEq R]
+    {p : CPolynomial R} {i : ℕ} (h : p.natDegree < i) : coeff p i = 0 := by
+  by_contra hne
+  exact (le_natDegree_of_ne_zero hne).not_gt h
+
 /-- The natDegree of a sum is at most the max of the natDegrees. -/
 theorem natDegree_add_le [Semiring R] [DecidableEq R]
     [BEq R] [LawfulBEq R] (p q : CPolynomial R) :

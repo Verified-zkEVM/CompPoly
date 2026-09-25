@@ -325,6 +325,10 @@ CompPoly aims to be the premier formally verified library for computable polynom
 	  `norm_cast`. Mathlib's `natDegree_mul`, `leadingCoeff_mul`, `degree_add_le` and
 	  `natDegree_pow` transfer to `CPolynomial` in one `exact_mod_cast` line. Statements that
 	  mention `C` or `X` need a `push_cast` step first
+	- ✅ A `CPolynomial` degree API (`degree_mul`, `natDegree_pow`, `leadingCoeff_mul`,
+	  `degree_X_sub_C`, the add/sub/mul/pow bounds, …), each transferred from Mathlib in one
+	  line, with Mathlib's `@[simp]` attributes. It replaces 17 local `cpoly_*` helpers in the
+	  Guruswami-Sudan and Mulders-Storjohann proofs
 	- Goal: “one-liner conversions” (or near) between spec polynomials and computable
 	  polynomials. Met for degree and coefficient facts through `exact_mod_cast`; see
 	  [`docs/wiki/representations-and-bridges.md`](docs/wiki/representations-and-bridges.md#the-topoly-coercion)
