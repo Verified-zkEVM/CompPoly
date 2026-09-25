@@ -46,7 +46,7 @@ theorem C_toPoly [BEq R] [LawfulBEq R] (r : R) : (C r).toPoly = Polynomial.C r :
   exact Raw.toPoly_C r
 
 /-- CPolynomial.X is correct wrt the Mathlib spec. -/
-@[simp, grind =]
+@[simp, grind =, norm_cast]
 theorem X_toPoly [BEq R] [LawfulBEq R] [Nontrivial R] :
     (X : CPolynomial R).toPoly = Polynomial.X := by
   change (CPolynomial.Raw.X : CPolynomial.Raw R).toPoly = Polynomial.X
@@ -286,6 +286,38 @@ theorem eval_sub [Ring R] [BEq R] [LawfulBEq R]
 theorem eval_one [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (a : R) : CPolynomial.eval a (1 : CPolynomial R) = 1 := by
   rw [CPolynomial.eval_toPoly, CPolynomial.toPoly_one, Polynomial.eval_one]
+
+/-! ### Cast-oriented forms of the lift lemmas
+
+The lift lemmas (`eval_toPoly`, `coeff_toPoly`, …) rewrite a `CPolynomial` query into a
+Mathlib one. These are the same facts in the orientation `norm_cast` wants, with the coercion
+on the left, so that `exact_mod_cast` pulls a Mathlib statement about `↑p` back to one about
+`p`. -/
+
+@[norm_cast]
+theorem toPoly_eval [Semiring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) (x : R) :
+    (p : Polynomial R).eval x = p.eval x :=
+  (eval_toPoly x p).symm
+
+@[norm_cast]
+theorem toPoly_coeff [Semiring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) (i : ℕ) :
+    (p : Polynomial R).coeff i = p.coeff i :=
+  (coeff_toPoly p i).symm
+
+@[norm_cast]
+theorem toPoly_degree [Semiring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) :
+    (p : Polynomial R).degree = p.degree :=
+  (degree_toPoly p).symm
+
+@[norm_cast]
+theorem toPoly_natDegree [Semiring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) :
+    (p : Polynomial R).natDegree = p.natDegree :=
+  (natDegree_toPoly p).symm
+
+@[norm_cast]
+theorem toPoly_leadingCoeff [Semiring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) :
+    (p : Polynomial R).leadingCoeff = p.leadingCoeff :=
+  (leadingCoeff_toPoly p).symm
 
 /-- Evaluation of the zero polynomial. -/
 @[simp, grind =]

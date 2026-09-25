@@ -191,6 +191,32 @@ example : derivative (p * q) = derivative p * q + p * derivative q :=
 `CPolynomial`s. It moves the goal to Mathlib, pushes `toPoly` through, and closes it with the
 Mathlib lemma you name.
 
+### The `toPoly` Coercion
+
+`toPoly` is also the coercion `CPolynomial R → Polynomial R` (`@[coe]`, with a `Coe`
+instance), so `↑p` and `p.toPoly` are the same term. The push lemmas carry `norm_cast`, and
+`toPoly_eval`, `toPoly_coeff`, `toPoly_degree`, `toPoly_natDegree` and `toPoly_leadingCoeff`
+restate the lift lemmas with the cast on the left, as `norm_cast` wants. A Mathlib theorem
+about `↑p` then transfers in one line:
+
+```lean
+example (hp : p ≠ 0) (hq : q ≠ 0) : (p * q).natDegree = p.natDegree + q.natDegree := by
+  exact_mod_cast Polynomial.natDegree_mul (p := (p : Polynomial R)) (q := q)
+    (by exact_mod_cast hp) (by exact_mod_cast hq)
+example : (p * q).leadingCoeff = p.leadingCoeff * q.leadingCoeff := by
+  exact_mod_cast Polynomial.leadingCoeff_mul (p : Polynomial R) q
+```
+
+Two limits:
+
+- The cast-oriented lemmas are `norm_cast` only, **not** `@[simp]`. With both orientations
+  in the simp set, `simp [eval_toPoly]` loops, and the library uses that call in many places.
+- `C_toPoly` and `derivative_toPoly` cannot be `norm_cast` lemmas. `Polynomial.C` and
+  `derivative` are bundled maps applied through a coercion to functions, and `norm_cast`
+  rejects a right-hand side that starts with a coercion. A statement
+  mentioning `C` or `X` takes one more step: rewrite the query into Mathlib's
+  (`rw [← toPoly_coeff]`), `push_cast`, then `exact_mod_cast` the Mathlib lemma.
+
 Known friction when porting a Mathlib proof:
 
 - Inside `namespace CPolynomial`, `X`, `C`, `degree` and `eval_*` resolve to the

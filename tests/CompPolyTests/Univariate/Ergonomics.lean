@@ -58,6 +58,41 @@ example (p : CPolynomial R) : C (1 : R) * p = p := toPoly_inj.mp (by simp)
 
 example (p : CPolynomial R) : (p.toPoly = 0) ↔ p = 0 := by simp
 
+/-! ### Transfer from Mathlib through the `toPoly` coercion -/
+
+section Cast
+
+variable {S : Type*} [CommRing S] [IsDomain S] [BEq S] [LawfulBEq S]
+
+-- Degree of a product, from `Polynomial.natDegree_mul`, with both side conditions cast.
+example (p q : CPolynomial S) (hp : p ≠ 0) (hq : q ≠ 0) :
+    (p * q).natDegree = p.natDegree + q.natDegree := by
+  exact_mod_cast Polynomial.natDegree_mul (p := (p : Polynomial S)) (q := q)
+    (by exact_mod_cast hp) (by exact_mod_cast hq)
+
+example (p q : CPolynomial S) : (p * q).leadingCoeff = p.leadingCoeff * q.leadingCoeff := by
+  exact_mod_cast Polynomial.leadingCoeff_mul (p : Polynomial S) q
+
+example (p q : CPolynomial S) : (p + q).degree ≤ max p.degree q.degree := by
+  exact_mod_cast Polynomial.degree_add_le (p : Polynomial S) q
+
+example (p : CPolynomial S) (n : ℕ) : (p ^ n).natDegree = n * p.natDegree := by
+  exact_mod_cast Polynomial.natDegree_pow (p : Polynomial S) n
+
+-- A statement about `X` or `C` needs one more step: unfold the query into Mathlib's and
+-- `push_cast` it, since `C_toPoly` cannot be a `norm_cast` lemma.
+example (p : CPolynomial S) (n : ℕ) : (X * p).coeff (n + 1) = p.coeff n := by
+  rw [← toPoly_coeff]
+  push_cast
+  exact_mod_cast Polynomial.coeff_X_mul (p := (p : Polynomial S)) (n := n)
+
+-- A root of `p` gives divisibility in Mathlib's terms.
+example (p : CPolynomial S) (a : S) (h : p.eval a = 0) :
+    Polynomial.X - Polynomial.C a ∣ (p : Polynomial S) :=
+  Polynomial.dvd_iff_isRoot.mpr (by rw [Polynomial.IsRoot.def]; exact_mod_cast h)
+
+end Cast
+
 /-! ### Bivariate transport -/
 
 example (p q : CBivariate R) (a : R) :

@@ -36,12 +36,12 @@ lemma Raw.toPoly_neg {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p : CPolynomial
   change p.neg.coeff i = -p.coeff i
   exact Raw.neg_coeff p i
 
-@[simp, grind =]
+@[simp, grind =, norm_cast]
 lemma toPoly_neg {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) :
     (-p).toPoly = -p.toPoly := by
   exact Raw.toPoly_neg p.val
 
-@[simp, grind =]
+@[simp, grind =, norm_cast]
 lemma toPoly_add [LawfulBEq R] (p q : CPolynomial R) :
     (p + q).toPoly = p.toPoly + q.toPoly := by
   apply Raw.toPoly_add
@@ -53,7 +53,7 @@ lemma Raw.toPoly_sub {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
   change (p + -q).toPoly = p.toPoly + -q.toPoly
   rw [Raw.toPoly_add, Raw.toPoly_neg]
 
-@[simp, grind =]
+@[simp, grind =, norm_cast]
 lemma toPoly_sub {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) :
     (p - q).toPoly = p.toPoly - q.toPoly := by
   change (p + -q).toPoly = p.toPoly + -q.toPoly
@@ -89,7 +89,7 @@ lemma toPoly_mul_coeffC [LawfulBEq R] (p q : CPolynomial R) (i : ℕ) :
     (p.val * q.val).toPoly.coeff i = (p.val.toPoly * q.val.toPoly).coeff i := by
   simpa using Raw.toPoly_mul_coeff p.val q.val i
 
-@[simp, grind =]
+@[simp, grind =, norm_cast]
 lemma toPoly_mul [LawfulBEq R] (p q : CPolynomial R) :
     (p * q).toPoly = p.toPoly * q.toPoly := by
   exact Raw.toPoly_mul p.val q.val
@@ -115,7 +115,7 @@ lemma Raw.toPoly_one {R : Type*} [Semiring R] :
   apply this.trans; clear this
   apply toPoly_C
 
-@[simp, grind =]
+@[simp, grind =, norm_cast]
 lemma toPoly_one [LawfulBEq R] [Nontrivial R] :
     (1 : CPolynomial R).toPoly = 1 := by
   apply Raw.toPoly_one
@@ -134,7 +134,7 @@ lemma Raw.toPoly_zero {R : Type*} [Semiring R] : (0 : CPolynomial.Raw R).toPoly 
   simp [Raw.toPoly, Raw.eval₂]
   rfl
 
-@[simp, grind =]
+@[simp, grind =, norm_cast]
 lemma toPoly_zero {R : Type*} [Semiring R] : (0 : CPolynomial R).toPoly = 0 := by
   apply Raw.toPoly_zero
 
@@ -144,14 +144,14 @@ lemma Raw.toPoly_X {R : Type*} [Semiring R] :
   unfold CPolynomial.Raw.X
   simp [Raw.toPoly, Raw.eval₂]
 
-@[simp, grind =]
+@[simp, grind =, norm_cast]
 lemma toPoly_pow [Nontrivial R] [LawfulBEq R] (p : CPolynomial R) (n : ℕ) :
     (p ^ n).toPoly = p.toPoly ^ n := by
   change (p ^ n).val.toPoly = p.val.toPoly ^ n
   rw [val_pow]
   exact Raw.toPoly_pow p.val n
 
-@[simp, grind =]
+@[simp, grind =, norm_cast]
 lemma toPoly_sum.{u} {R : Type*} [Semiring R] [BEq R] [LawfulBEq R] {ι : Type u}
     [DecidableEq ι]
     {s : Finset ι} {f : ι → CPolynomial R} :
@@ -162,7 +162,7 @@ lemma toPoly_sum.{u} {R : Type*} [Semiring R] [BEq R] [LawfulBEq R] {ι : Type u
   | insert a s ha ih =>
       simp [Finset.sum_insert, ha, toPoly_add, ih]
 
-@[simp, grind =]
+@[simp, grind =, norm_cast]
 lemma toPoly_prod.{u} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     {ι : Type u} [DecidableEq ι]
     {s : Finset ι} {f : ι → CPolynomial R} :

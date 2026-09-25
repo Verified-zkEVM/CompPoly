@@ -57,7 +57,11 @@ noncomputable def Raw.toPoly' [Semiring R] (p : CPolynomial.Raw R) : Polynomial 
   )))
 
 /-- Convert a canonical polynomial to a (mathlib) `Polynomial`. -/
-noncomputable def toPoly [Semiring R] (p : CPolynomial R) : Polynomial R := p.val.toPoly
+@[coe] noncomputable def toPoly [Semiring R] (p : CPolynomial R) : Polynomial R := p.val.toPoly
+
+/-- `toPoly` is the coercion to Mathlib's `Polynomial`, so `norm_cast`, `push_cast` and
+`exact_mod_cast` transfer statements across it. -/
+noncomputable instance [Semiring R] : Coe (CPolynomial R) (Polynomial R) := ⟨toPoly⟩
 
 end ToPolyDefs
 
@@ -263,7 +267,7 @@ theorem Raw.toPoly_natDegree_lt_trim_size_of_pos [LawfulBEq R]
     omega
 
 /-- `toPoly` is injective, with no `Nontrivial` or commutativity assumption. -/
-@[simp]
+@[simp, norm_cast]
 theorem toPoly_inj [LawfulBEq R] {p q : CPolynomial R} : p.toPoly = q.toPoly ↔ p = q := by
   constructor
   · intro h
@@ -273,7 +277,7 @@ theorem toPoly_inj [LawfulBEq R] {p q : CPolynomial R} : p.toPoly = q.toPoly ↔
     rfl
 
 /-- `toPoly` maps a canonical polynomial to `0` iff the polynomial is `0`. -/
-@[simp]
+@[simp, norm_cast]
 theorem toPoly_eq_zero_iff [LawfulBEq R] (p : CPolynomial R) :
     p.toPoly = 0 ↔ p = 0 := by
   constructor
