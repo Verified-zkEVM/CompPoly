@@ -211,8 +211,9 @@ Two limits:
 
 - The cast-oriented lemmas are `norm_cast` only, **not** `@[simp]`. With both orientations
   in the simp set, `simp [eval_toPoly]` loops, and the library uses that call in many places.
-- `C_toPoly` and `derivative_toPoly` cannot be `norm_cast` lemmas, because their right-hand
-  sides start with Mathlib's `Polynomial.C` or `derivative` rather than a cast. A statement
+- `C_toPoly` and `derivative_toPoly` cannot be `norm_cast` lemmas. `Polynomial.C` and
+  `derivative` are bundled maps applied through a coercion to functions, and `norm_cast`
+  rejects a right-hand side that starts with a coercion. A statement
   mentioning `C` or `X` takes one more step: rewrite the query into Mathlib's
   (`rw [← toPoly_coeff]`), `push_cast`, then `exact_mod_cast` the Mathlib lemma.
 
