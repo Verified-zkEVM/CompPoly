@@ -32,7 +32,7 @@ variable {R : Type*} [Semiring R]
 
 /-- CPolynomial.monomial is correct wrt the Mathlib spec. -/
 @[simp, grind =]
-theorem monomial_toPoly [DecidableEq R] [LawfulBEq R] (n : ℕ) (c : R) :
+theorem monomial_toPoly [BEq R] [LawfulBEq R] [DecidableEq R] (n : ℕ) (c : R) :
     (monomial n c).toPoly = Polynomial.monomial n c := by
   ext i
   simp only [CPolynomial.toPoly, monomial]
@@ -355,7 +355,7 @@ theorem eval_pow [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] (a : R)
 
 /-- Evaluation of a monomial. -/
 @[simp, grind =]
-theorem eval_monomial [Semiring R] [DecidableEq R] [LawfulBEq R] (a c : R) (n : ℕ) :
+theorem eval_monomial [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R] (a c : R) (n : ℕ) :
     CPolynomial.eval a (CPolynomial.monomial n c) = c * a ^ n := by
   rw [CPolynomial.eval_toPoly, CPolynomial.monomial_toPoly, Polynomial.eval_monomial]
 
