@@ -45,6 +45,11 @@ theorem C_toPoly [BEq R] [LawfulBEq R] (r : R) : (C r).toPoly = Polynomial.C r :
   rw [Raw.toPoly_trim]
   exact Raw.toPoly_C r
 
+/-- The constant polynomial `C 1` is `1`. -/
+@[simp]
+theorem C_one [BEq R] [LawfulBEq R] [Nontrivial R] : (C 1 : CPolynomial R) = 1 :=
+  toPoly_inj.mp (by rw [C_toPoly, toPoly_one, map_one])
+
 /-- CPolynomial.X is correct wrt the Mathlib spec. -/
 @[simp, grind =, norm_cast]
 theorem X_toPoly [BEq R] [LawfulBEq R] [Nontrivial R] :

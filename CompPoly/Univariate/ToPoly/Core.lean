@@ -148,7 +148,7 @@ theorem toPoly_toImpl {p : Q[X]} : p.toImpl.toPoly = p := by
   simp only [h, reduceDIte, Option.getD_none]
   replace h := Nat.lt_of_succ_le (not_lt.mp h)
   symm
-  exact coeff_eq_zero_of_natDegree_lt h
+  exact Polynomial.coeff_eq_zero_of_natDegree_lt h
 
 /-- Trimming doesn't change the `toPoly` image. -/
 @[grind =]

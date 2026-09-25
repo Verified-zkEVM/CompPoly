@@ -274,23 +274,6 @@ theorem rowShiftedLeadingTerm?_coeff_ne_zero
   exact hzero
 
 omit [DecidableEq F] in
-theorem cpoly_natDegree_mul_le (P Q : CPolynomial F) :
-    (P * Q).natDegree ≤ P.natDegree + Q.natDegree := by
-  rw [CPolynomial.natDegree_toPoly, CPolynomial.toPoly_mul,
-    CPolynomial.natDegree_toPoly, CPolynomial.natDegree_toPoly]
-  exact Polynomial.natDegree_mul_le
-
-omit [DecidableEq F] in
-theorem cpoly_natDegree_mul
-    {P Q : CPolynomial F} (hP : P ≠ 0) (hQ : Q ≠ 0) :
-    (P * Q).natDegree = P.natDegree + Q.natDegree := by
-  rw [CPolynomial.natDegree_toPoly, CPolynomial.toPoly_mul,
-    CPolynomial.natDegree_toPoly, CPolynomial.natDegree_toPoly]
-  exact Polynomial.natDegree_mul
-    ((CPolynomial.toPoly_eq_zero_iff P).not.mpr hP)
-    ((CPolynomial.toPoly_eq_zero_iff Q).not.mpr hQ)
-
-omit [DecidableEq F] in
 theorem cpoly_coeff_mul_natDegree_add_ne_zero
     {P Q : CPolynomial F} (hP : P ≠ 0) (hQ : Q ≠ 0) :
     (P * Q).coeff (P.natDegree + Q.natDegree) ≠ 0 := by
@@ -304,21 +287,8 @@ theorem cpoly_coeff_mul_natDegree_add_ne_zero
     exact htoProd (by rw [hzero, CPolynomial.toPoly_zero])
   have hlead := CPolynomial.leadingCoeff_ne_zero hprod
   rw [CPolynomial.leadingCoeff_eq_coeff_natDegree,
-    cpoly_natDegree_mul hP hQ] at hlead
+    CPolynomial.natDegree_mul hP hQ] at hlead
   exact hlead
-
-omit [DecidableEq F] in
-theorem cpoly_natDegree_sub_le (P Q : CPolynomial F) :
-    (P - Q).natDegree ≤ max P.natDegree Q.natDegree := by
-  rw [CPolynomial.natDegree_toPoly, CPolynomial.toPoly_sub,
-    CPolynomial.natDegree_toPoly, CPolynomial.natDegree_toPoly]
-  exact Polynomial.natDegree_sub_le P.toPoly Q.toPoly
-
-omit [DecidableEq F] in
-theorem cpoly_natDegree_neg (P : CPolynomial F) :
-    (-P).natDegree = P.natDegree := by
-  rw [CPolynomial.natDegree_toPoly, CPolynomial.toPoly_neg,
-    CPolynomial.natDegree_toPoly, Polynomial.natDegree_neg]
 
 theorem cpoly_natDegree_monomial_le (d : Nat) (c : F) :
     (CPolynomial.monomial d c).natDegree ≤ d := by
@@ -330,7 +300,7 @@ theorem cpoly_natDegree_monomial_le (d : Nat) (c : F) :
 theorem cpoly_natDegree_monomial_mul_le
     (d : Nat) (c : F) (P : CPolynomial F) :
     (CPolynomial.monomial d c * P).natDegree ≤ d + P.natDegree := by
-  have hmul := cpoly_natDegree_mul_le (CPolynomial.monomial d c) P
+  have hmul := CPolynomial.natDegree_mul_le (CPolynomial.monomial d c) P
   have hmono := cpoly_natDegree_monomial_le d c
   omega
 
@@ -353,14 +323,14 @@ theorem cpoly_natDegree_sub_shift_le
     (hQ : Q ≠ 0 → Q.natDegree + shiftDegree ≤ bound)
     (hne : P - Q ≠ 0) :
     (P - Q).natDegree + shiftDegree ≤ bound := by
-  have hsub := cpoly_natDegree_sub_le P Q
+  have hsub := CPolynomial.natDegree_sub_le P Q
   by_cases hPzero : P = 0
   · by_cases hQzero : Q = 0
     · subst P
       subst Q
       simp at hne
     · have hQbound := hQ hQzero
-      simpa [hPzero, cpoly_natDegree_neg] using hQbound
+      simpa [hPzero, CPolynomial.natDegree_neg] using hQbound
   · by_cases hQzero : Q = 0
     · have hPbound := hP hPzero
       simpa [hQzero] using hPbound
@@ -375,14 +345,14 @@ theorem cpoly_natDegree_sub_shift_lt
     (hQ : Q ≠ 0 → Q.natDegree + shiftDegree < bound)
     (hne : P - Q ≠ 0) :
     (P - Q).natDegree + shiftDegree < bound := by
-  have hsub := cpoly_natDegree_sub_le P Q
+  have hsub := CPolynomial.natDegree_sub_le P Q
   by_cases hPzero : P = 0
   · by_cases hQzero : Q = 0
     · subst P
       subst Q
       simp at hne
     · have hQbound := hQ hQzero
-      simpa [hPzero, cpoly_natDegree_neg] using hQbound
+      simpa [hPzero, CPolynomial.natDegree_neg] using hQbound
   · by_cases hQzero : Q = 0
     · have hPbound := hP hPzero
       simpa [hQzero] using hPbound

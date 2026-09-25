@@ -504,7 +504,7 @@ theorem X_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R] :
 theorem Y_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R] [DecidableEq R] :
     toPoly (CBivariate.Y (R := R)) = (Polynomial.X : Polynomial (Polynomial R)) := by
   rw [CBivariate.Y, toPoly_monomial]
-  simp [CPolynomial.C_toPoly, Polynomial.monomial_one_one_eq_X]
+  simp [Polynomial.monomial_one_one_eq_X]
 
 /--
 `monomialXY n m c` corresponds to `Y^m` with inner coefficient `X^n * c`.

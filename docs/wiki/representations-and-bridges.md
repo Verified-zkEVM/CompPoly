@@ -217,11 +217,34 @@ Two limits:
   mentioning `C` or `X` takes one more step: rewrite the query into Mathlib's
   (`rw [← toPoly_coeff]`), `push_cast`, then `exact_mod_cast` the Mathlib lemma.
 
+### Degree Arithmetic
+
+Routine degree reasoning does not need to leave `CPolynomial`.
+[`../../CompPoly/Univariate/ToPoly/Degree.lean`](../../CompPoly/Univariate/ToPoly/Degree.lean)
+restates Mathlib's degree, `natDegree` and `leadingCoeff` lemmas for `CPolynomial` under the
+same names. Lemmas about `1`, `X` or powers also assume `[Nontrivial R]`, as their `toPoly`
+lemmas do.
+
+- **`@[simp]`, as in Mathlib:** `degree_mul`, `leadingCoeff_mul`, `degree_pow`, `natDegree_pow`,
+  `leadingCoeff_pow` (over a ring with no zero divisors), `degree_neg`, `natDegree_neg`,
+  `leadingCoeff_neg`, `degree_X_sub_C`, `natDegree_X_sub_C`, `leadingCoeff_C`, and the degree
+  and leading coefficient of `X` and `1`. So `simp` computes `((X - C a) ^ n).natDegree = n`.
+- **Named, not simp:** `natDegree_mul` (for nonzero factors), `degree_C` (for `r ≠ 0`),
+  `degree_C_le`, `degree_add_le`, `degree_sub_le`, `natDegree_sub_le`, `degree_mul_le`,
+  `natDegree_mul_le`, `degree_pow_le`, `natDegree_pow_le`, `natDegree_pow_le_of_le`, and
+  `degree_add_eq_left_of_degree_lt` with its right-hand twin.
+- **Elsewhere:** `coeff_eq_zero_of_natDegree_lt` and `le_natDegree_of_ne_zero` in
+  `Basic.lean`, and `C_one` (`@[simp]`) in `ToPoly/Impl.lean`.
+
+Before this API, several decoder and matrix files proved their own copies (four of
+`natDegree_mul_le` alone). Check here before adding a local `cpoly_*` helper.
+
 Known friction when porting a Mathlib proof:
 
-- Inside `namespace CPolynomial`, `X`, `C`, `degree` and `eval_*` resolve to the
-  `CPolynomial` versions. Qualify the Mathlib side (`Polynomial.eval_X`), or `open` with
-  `hiding`.
+- Inside `namespace CPolynomial`, `X`, `C`, `degree`, `eval_*` and the degree lemmas above
+  (`degree_mul`, `natDegree_X`, `coeff_eq_zero_of_natDegree_lt`, …) resolve to the
+  `CPolynomial` versions, and with `open Polynomial` an unqualified name is ambiguous. Qualify
+  the Mathlib side (`Polynomial.degree_mul`), or `open` with `hiding`.
 - `CPolynomial.toPoly`, `Raw.coeff` and `Raw.toPoly` are not exposed by a plain `public
   import`. A proof that must see through them with `change`, `unfold` or `rfl` needs `import
   all` of `ToPoly/Core.lean` or `Raw/Core.lean`. See [`module-system.md`](module-system.md).

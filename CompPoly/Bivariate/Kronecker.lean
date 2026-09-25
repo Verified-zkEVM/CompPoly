@@ -50,12 +50,6 @@ namespace CPolynomial
 
 variable {R : Type*}
 
-/-- A coefficient past the degree is zero. -/
-theorem coeff_eq_zero_of_natDegree_lt [Zero R] [BEq R] [LawfulBEq R]
-    {p : CPolynomial R} {i : ℕ} (h : p.natDegree < i) : coeff p i = 0 := by
-  by_contra hc
-  exact absurd (le_natDegree_of_ne_zero hc) (Nat.not_le.2 h)
-
 /-- Coefficient of `c * X ^ m`. -/
 theorem coeff_mul_X_pow [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (c : CPolynomial R) (m n : ℕ) :

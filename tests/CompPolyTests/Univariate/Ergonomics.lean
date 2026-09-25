@@ -93,6 +93,33 @@ example (p : CPolynomial S) (a : S) (h : p.eval a = 0) :
 
 end Cast
 
+/-! ### Degree arithmetic without leaving `CPolynomial` -/
+
+section Degree
+
+variable {S : Type*} [CommRing S] [IsDomain S] [BEq S] [LawfulBEq S]
+
+-- The simp set computes the degree of a product of linear factors.
+example (a b : S) : ((X - C a) * (X - C b)).degree = 2 := by
+  simp [one_add_one_eq_two]
+
+example (a : S) (n : ℕ) : ((X - C a) ^ n).natDegree = n := by simp
+
+example (p : CPolynomial S) : (-p * X).leadingCoeff = -p.leadingCoeff := by simp
+
+-- The bounds are named lemmas, as in Mathlib.
+example (p q : CPolynomial R) :
+    (p * q - p).natDegree ≤ max (p.natDegree + q.natDegree) p.natDegree :=
+  (natDegree_sub_le _ _).trans (max_le_max_right _ (natDegree_mul_le p q))
+
+example (p : CPolynomial R) (n : ℕ) (h : p.natDegree ≤ 3) : (p ^ n).natDegree ≤ n * 3 :=
+  natDegree_pow_le_of_le n h
+
+example (p : CPolynomial R) (i : ℕ) (h : p.natDegree < i) : p.coeff i = 0 :=
+  coeff_eq_zero_of_natDegree_lt h
+
+end Degree
+
 /-! ### Bivariate transport -/
 
 example (p q : CBivariate R) (a : R) :

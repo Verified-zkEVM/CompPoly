@@ -274,6 +274,10 @@ theorem natDegree_pow_le [Nontrivial R] (p : CPolynomial R) (n : ℕ) :
     (p ^ n).natDegree ≤ n * p.natDegree := by
   exact_mod_cast Polynomial.natDegree_pow_le (p := (p : Polynomial R)) (n := n)
 
+theorem natDegree_pow_le_of_le [Nontrivial R] {p : CPolynomial R} {m : ℕ} (n : ℕ)
+    (h : p.natDegree ≤ m) : (p ^ n).natDegree ≤ n * m :=
+  (natDegree_pow_le p n).trans (Nat.mul_le_mul_left n h)
+
 end DegreeArith
 
 section DegreeArithRing
