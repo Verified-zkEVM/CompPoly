@@ -30,7 +30,7 @@ section LinearEquiv
 
 variable [LawfulBEq R]
 
-@[simp, grind =]
+@[simp, grind =, norm_cast]
 lemma toPoly_smul (r : R) (p : CPolynomial R) :
     (r • p).toPoly = r • p.toPoly := by
   ext i; rw [Polynomial.coeff_smul, ← coeff_toPoly, ← coeff_toPoly, coeff_smul, smul_eq_mul]

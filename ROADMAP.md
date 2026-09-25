@@ -320,7 +320,14 @@ CompPoly aims to be the premier formally verified library for computable polynom
 	- ✅ The same for the other families. The bivariate `toPoly` transport and `bivariateEquiv_*`
 	  are `@[simp, grind =]`, and multilinear `eval_{zero,add,smul}` are `@[simp]` for both the
 	  coefficient and evaluation forms
-	- Goal: “one-liner conversions” (or near) between spec polynomials and computable polynomials
+	- ✅ `toPoly` is the coercion `CPolynomial R → Polynomial R`, with the push lemmas and
+	  cast-oriented `eval`/`coeff`/`degree`/`natDegree`/`leadingCoeff` lemmas tagged
+	  `norm_cast`. Mathlib's `natDegree_mul`, `leadingCoeff_mul`, `degree_add_le` and
+	  `natDegree_pow` transfer to `CPolynomial` in one `exact_mod_cast` line. Statements that
+	  mention `C` or `X` need a `push_cast` step first
+	- Goal: “one-liner conversions” (or near) between spec polynomials and computable
+	  polynomials. Met for degree and coefficient facts through `exact_mod_cast`; see
+	  [`docs/wiki/representations-and-bridges.md`](docs/wiki/representations-and-bridges.md#the-topoly-coercion)
 
 5.	**Integration with ArkLib / Hax + Rust libraries (e.g. plonky3)**
 	- Make CompPoly the canonical polynomial backend for ArkLib specs where applicable
