@@ -48,7 +48,7 @@ private lemma degree_mul_lt_of_bounds [Semiring F] [NoZeroDivisors F]
     {A B g₀ : F[X]} (hg₀ : g₀ ≠ 0) (d₀ : ℕ)
     (hA : A.degree + d₀ ≤ g₀.degree) (hB : B.degree < d₀) :
     (A * B).degree < g₀.degree := by
-  rw [degree_mul]
+  rw [Polynomial.degree_mul]
   obtain rfl | hA0 := eq_or_ne A 0
   · simp only [Polynomial.degree_zero, WithBot.bot_add, bot_lt_iff_ne_bot, ne_eq, degree_eq_bot,
       hg₀, not_false_eq_true]
@@ -147,8 +147,8 @@ lemma toPoly_nodalPoly [CommRing F] [Nontrivial F] (D : Domain F) :
 lemma natDegree_nodalPoly [CommRing F] [NoZeroDivisors F] [Nontrivial F] (D : Domain F) :
     (nodalPoly D).toPoly.natDegree = D.n := by
   rw [toPoly_nodalPoly, Polynomial.natDegree_prod _ _ (fun i _ => X_sub_C_ne_zero _)]
-  simp only [Fin.getElem_fin, natDegree_sub_C, natDegree_X, Finset.sum_const, Finset.card_univ,
-    Fintype.card_fin, smul_eq_mul, mul_one]
+  simp only [Fin.getElem_fin, natDegree_sub_C, Polynomial.natDegree_X, Finset.sum_const,
+    Finset.card_univ, Fintype.card_fin, smul_eq_mul, mul_one]
 
 /-- `(nodalPoly D).toPoly ≠ 0` (it is monic, a product of distinct linear factors). -/
 lemma toPoly_nodalPoly_ne_zero [CommRing F] [Nontrivial F] (D : Domain F) :
@@ -286,7 +286,7 @@ theorem decode_eq_some [Field F]
   have hGdeg : G.toPoly.degree < ((D.n + k + 1) / 2 : ℕ) :=
     Polynomial.degree_le_natDegree.trans_lt (mod_cast hstop)
   have hG'deg : (w * (messagePoly msg).toPoly).degree < ((D.n + k + 1) / 2 : ℕ) := by
-    rw [degree_mul, hwdeg]
+    rw [Polynomial.degree_mul, hwdeg]
     exact (WithBot.add_lt_add_left (by simp only [ne_eq, WithBot.natCast_ne_bot, not_false_eq_true])
       (degree_toPoly (messagePoly msg) ▸ messagePoly_degree_lt msg)).trans_le (mod_cast by omega)
   have hV'deg : w.degree + ((D.n + k + 1) / 2 : ℕ) ≤ (nodalPoly D).toPoly.degree := by

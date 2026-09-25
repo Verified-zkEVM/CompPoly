@@ -415,7 +415,7 @@ lemma BezoutDegreeInvariant.degree_complement [CommRing F] [NoZeroDivisors F] [N
     t.degree + r'.degree = g₀.degree := by
   have hid : t * r' - t' * r = (s' * t - s * t') * g₀ := by rw [h.bez, h.bez']; ring
   have hdom : (t' * r).degree < (t * r').degree := by simpa using WithBot.add_lt_add h.degt h.degr
-  rw [← degree_mul, ← degree_sub_eq_left_of_degree_lt hdom, hid, degree_mul,
+  rw [← Polynomial.degree_mul, ← degree_sub_eq_left_of_degree_lt hdom, hid, Polynomial.degree_mul,
     degree_eq_zero_of_isUnit h.det, zero_add]
 
 /-- One Euclidean step grows the cofactor degree: `deg t < deg (t' - (r'/r) t)`. -/

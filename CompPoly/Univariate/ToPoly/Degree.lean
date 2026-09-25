@@ -203,6 +203,147 @@ theorem degree_toPoly_ofFinCoeff_lt (N : ℕ) (c : ℕ → R) :
 
 end OfFinCoeff
 
+/-! ### Degree arithmetic
+
+`CPolynomial` versions of Mathlib's degree, `natDegree` and `leadingCoeff` lemmas, each
+transferred through the `toPoly` coercion. The `@[simp]` attributes follow Mathlib's. -/
+
+section DegreeArith
+
+variable [LawfulBEq R]
+
+theorem degree_C_le (r : R) : (C r).degree ≤ 0 := by
+  rw [degree_toPoly, C_toPoly]; exact Polynomial.degree_C_le
+
+theorem degree_C {r : R} (hr : r ≠ 0) : (C r).degree = 0 := by
+  rw [degree_toPoly, C_toPoly]; exact Polynomial.degree_C hr
+
+@[simp]
+theorem leadingCoeff_C (r : R) : (C r).leadingCoeff = r := by
+  rw [leadingCoeff_toPoly, C_toPoly]; exact Polynomial.leadingCoeff_C r
+
+@[simp]
+theorem degree_X [Nontrivial R] : (X : CPolynomial R).degree = 1 := by
+  rw [degree_toPoly, X_toPoly]; exact Polynomial.degree_X
+
+@[simp]
+theorem natDegree_X [Nontrivial R] : (X : CPolynomial R).natDegree = 1 := by
+  rw [natDegree_toPoly, X_toPoly]; exact Polynomial.natDegree_X
+
+@[simp]
+theorem leadingCoeff_X [Nontrivial R] : (X : CPolynomial R).leadingCoeff = 1 := by
+  rw [leadingCoeff_toPoly, X_toPoly]; exact Polynomial.leadingCoeff_X
+
+@[simp]
+theorem degree_one [Nontrivial R] : (1 : CPolynomial R).degree = 0 := by
+  rw [degree_toPoly, toPoly_one]; exact Polynomial.degree_one
+
+@[simp]
+theorem natDegree_one [Nontrivial R] : (1 : CPolynomial R).natDegree = 0 := by
+  rw [natDegree_toPoly, toPoly_one]; exact Polynomial.natDegree_one
+
+@[simp]
+theorem leadingCoeff_one [Nontrivial R] : (1 : CPolynomial R).leadingCoeff = 1 := by
+  rw [leadingCoeff_toPoly, toPoly_one]; exact Polynomial.leadingCoeff_one
+
+theorem degree_add_le (p q : CPolynomial R) : (p + q).degree ≤ max p.degree q.degree := by
+  exact_mod_cast Polynomial.degree_add_le (p : Polynomial R) q
+
+theorem degree_add_eq_left_of_degree_lt {p q : CPolynomial R} (h : q.degree < p.degree) :
+    (p + q).degree = p.degree := by
+  exact_mod_cast Polynomial.degree_add_eq_left_of_degree_lt (p := (p : Polynomial R)) (q := q)
+    (by exact_mod_cast h)
+
+theorem degree_add_eq_right_of_degree_lt {p q : CPolynomial R} (h : p.degree < q.degree) :
+    (p + q).degree = q.degree := by
+  exact_mod_cast Polynomial.degree_add_eq_right_of_degree_lt (p := (p : Polynomial R)) (q := q)
+    (by exact_mod_cast h)
+
+theorem degree_mul_le (p q : CPolynomial R) : (p * q).degree ≤ p.degree + q.degree := by
+  exact_mod_cast Polynomial.degree_mul_le (p : Polynomial R) q
+
+theorem natDegree_mul_le (p q : CPolynomial R) :
+    (p * q).natDegree ≤ p.natDegree + q.natDegree := by
+  exact_mod_cast Polynomial.natDegree_mul_le (p := (p : Polynomial R)) (q := q)
+
+theorem degree_pow_le [Nontrivial R] (p : CPolynomial R) (n : ℕ) :
+    (p ^ n).degree ≤ n • p.degree := by
+  exact_mod_cast Polynomial.degree_pow_le (p : Polynomial R) n
+
+theorem natDegree_pow_le [Nontrivial R] (p : CPolynomial R) (n : ℕ) :
+    (p ^ n).natDegree ≤ n * p.natDegree := by
+  exact_mod_cast Polynomial.natDegree_pow_le (p := (p : Polynomial R)) (n := n)
+
+end DegreeArith
+
+section DegreeArithRing
+
+variable {S : Type*} [Ring S] [BEq S] [LawfulBEq S]
+
+@[simp]
+theorem degree_neg (p : CPolynomial S) : (-p).degree = p.degree := by
+  exact_mod_cast Polynomial.degree_neg (p : Polynomial S)
+
+@[simp]
+theorem natDegree_neg (p : CPolynomial S) : (-p).natDegree = p.natDegree := by
+  exact_mod_cast Polynomial.natDegree_neg (p : Polynomial S)
+
+@[simp]
+theorem leadingCoeff_neg (p : CPolynomial S) : (-p).leadingCoeff = -p.leadingCoeff := by
+  exact_mod_cast Polynomial.leadingCoeff_neg (p : Polynomial S)
+
+theorem degree_sub_le (p q : CPolynomial S) : (p - q).degree ≤ max p.degree q.degree := by
+  exact_mod_cast Polynomial.degree_sub_le (p : Polynomial S) q
+
+theorem natDegree_sub_le (p q : CPolynomial S) :
+    (p - q).natDegree ≤ max p.natDegree q.natDegree := by
+  exact_mod_cast Polynomial.natDegree_sub_le (p : Polynomial S) q
+
+@[simp]
+theorem degree_X_sub_C [Nontrivial S] (a : S) : (X - C a).degree = 1 := by
+  rw [degree_toPoly, toPoly_sub, X_toPoly, C_toPoly]; exact Polynomial.degree_X_sub_C a
+
+@[simp]
+theorem natDegree_X_sub_C [Nontrivial S] (a : S) : (X - C a).natDegree = 1 := by
+  rw [natDegree_toPoly, toPoly_sub, X_toPoly, C_toPoly]; exact Polynomial.natDegree_X_sub_C a
+
+end DegreeArithRing
+
+section DegreeArithNoZeroDivisors
+
+variable [LawfulBEq R] [NoZeroDivisors R]
+
+@[simp]
+theorem degree_mul (p q : CPolynomial R) : (p * q).degree = p.degree + q.degree := by
+  exact_mod_cast Polynomial.degree_mul (p := (p : Polynomial R)) (q := q)
+
+theorem natDegree_mul {p q : CPolynomial R} (hp : p ≠ 0) (hq : q ≠ 0) :
+    (p * q).natDegree = p.natDegree + q.natDegree := by
+  exact_mod_cast Polynomial.natDegree_mul ((toPoly_eq_zero_iff p).not.mpr hp)
+    ((toPoly_eq_zero_iff q).not.mpr hq)
+
+@[simp]
+theorem leadingCoeff_mul (p q : CPolynomial R) :
+    (p * q).leadingCoeff = p.leadingCoeff * q.leadingCoeff := by
+  exact_mod_cast Polynomial.leadingCoeff_mul (p : Polynomial R) q
+
+@[simp]
+theorem degree_pow [Nontrivial R] (p : CPolynomial R) (n : ℕ) :
+    (p ^ n).degree = n • p.degree := by
+  exact_mod_cast Polynomial.degree_pow (p : Polynomial R) n
+
+@[simp]
+theorem natDegree_pow [Nontrivial R] (p : CPolynomial R) (n : ℕ) :
+    (p ^ n).natDegree = n * p.natDegree := by
+  exact_mod_cast Polynomial.natDegree_pow (p : Polynomial R) n
+
+@[simp]
+theorem leadingCoeff_pow [Nontrivial R] (p : CPolynomial R) (n : ℕ) :
+    (p ^ n).leadingCoeff = p.leadingCoeff ^ n := by
+  exact_mod_cast Polynomial.leadingCoeff_pow (p : Polynomial R) n
+
+end DegreeArithNoZeroDivisors
+
 end CPolynomial
 
 end CompPoly
