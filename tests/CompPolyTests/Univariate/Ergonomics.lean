@@ -13,9 +13,9 @@ public import CompPoly.Univariate.ToPoly
 /-!
   # Proof-Ergonomics Regression Tests
 
-  Routine univariate, bivariate and multilinear goals that the default `simp` and `grind` sets must close with no
-  arguments. A failure here means a lemma has left, or has not joined, the simp or grind set
-  described in `docs/wiki/representations-and-bridges.md`.
+  Routine univariate, bivariate and multilinear goals that the default `simp` and `grind` sets
+  must close with no arguments. A failure here means a lemma has left, or has not joined, the
+  simp or grind set described in `docs/wiki/representations-and-bridges.md`.
 -/
 
 @[expose] public section
