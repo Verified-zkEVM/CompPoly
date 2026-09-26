@@ -1435,6 +1435,8 @@ lemma mul_smul [Semiring R] [BEq R] [LawfulBEq R]
   rw [eq_iff_coeff]; intro i
   rw [coeff_smul, coeff_smul, coeff_smul, _root_.mul_assoc]
 
+/-- Scalar multiplication by a nonzero element preserves `natDegree`,
+    when `R` has no zero divisors. -/
 lemma smul_natDegree_nz [Semiring R] [NoZeroDivisors R] [BEq R] [LawfulBEq R]
     {r : R} {p : CPolynomial R} : r ≠ 0 → p.natDegree = (r • p).natDegree := by
   intros h
@@ -1444,6 +1446,7 @@ lemma smul_natDegree_nz [Semiring R] [NoZeroDivisors R] [BEq R] [LawfulBEq R]
     simp [h]
   rw [natDegree_eq_support_sup, natDegree_eq_support_sup, hsupp]
 
+/-- Scalar multiplication by a nonzero element does not increase `natDegree`. -/
 lemma smul_natDegree [Semiring R] [BEq R] [LawfulBEq R]
     {r : R} {p : CPolynomial R} : r ≠ 0 → (r • p).natDegree ≤ p.natDegree := by
   intro _
@@ -1454,6 +1457,8 @@ lemma smul_natDegree [Semiring R] [BEq R] [LawfulBEq R]
   rw [mem_support_iff]
   exact fun h0 => hi (by rw [h0, Semiring.mul_zero])
 
+/-- Scalar multiplication by a nonzero element preserves `degree`,
+    when `R` has no zero divisors. -/
 lemma smul_degree_nz [Semiring R] [NoZeroDivisors R] [BEq R] [LawfulBEq R]
     {r : R} {p : CPolynomial R} : r ≠ 0 → p.degree = (r • p).degree := by
   intro hr
@@ -1469,6 +1474,7 @@ lemma smul_degree_nz [Semiring R] [NoZeroDivisors R] [BEq R] [LawfulBEq R]
       exact (mul_eq_zero.mp hi).resolve_left hr
     rw [degree_eq_natDegree p hp, degree_eq_natDegree (r • p) hrp, smul_natDegree_nz hr]
 
+/-- Scalar multiplication by a nonzero element does not increase `degree`. -/
 lemma smul_degree [Semiring R] [BEq R] [LawfulBEq R]
     {r : R} {p : CPolynomial R} : r ≠ 0 → (r • p).degree ≤ p.degree := by
   intro hr
