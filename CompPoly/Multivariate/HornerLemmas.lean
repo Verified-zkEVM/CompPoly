@@ -5,13 +5,13 @@ Authors: Frantisek Silvasi, Julian Sutherland, Andrei Burdușa, Derek Sorensen, 
 -/
 module
 
-public import CompPoly.Multivariate.CMvPolynomial
+public import CompPoly.Multivariate.Basic
 
 /-!
 # Correctness lemmas for multivariate Horner evaluation
 
 This file proves that the fixed-order multivariate Horner evaluator in
-`CompPoly.Multivariate.CMvPolynomial` agrees with ordinary multivariate
+`CompPoly.Multivariate.Basic` agrees with ordinary multivariate
 evaluation.
 -/
 

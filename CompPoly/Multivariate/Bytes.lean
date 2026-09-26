@@ -5,7 +5,7 @@ Authors: Derek Sorensen
 -/
 module
 
-public import CompPoly.Multivariate.CMvPolynomial
+public import CompPoly.Multivariate.Basic
 public import CompPoly.Data.Bytes.Delimited
 import all CompPoly.Multivariate.CMvMonomial
 
