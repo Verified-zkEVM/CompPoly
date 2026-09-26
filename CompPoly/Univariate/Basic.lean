@@ -802,6 +802,7 @@ theorem degree_eq_natDegree [Zero R] (p : CPolynomial R) (hp : p ≠ 0) :
       rw [hdeg, hnat]
 
 /-- Lemma for computing the degree of 0 in proofs. -/
+@[simp]
 lemma degree_zero [Zero R] : degree (0 : CPolynomial R) = ⊥ := by
   rfl
 
@@ -855,6 +856,21 @@ theorem natDegree_add_le [Semiring R] [DecidableEq R]
   rw [natDegree_eq_support_sup (p + q), natDegree_eq_support_sup p,
     natDegree_eq_support_sup q, ← Finset.sup_union]
   exact Finset.sup_mono (support_add_subset p q)
+
+/-- The degree of a sum is at most the max of the degrees. -/
+theorem degree_add_le [Semiring R] [DecidableEq R]
+    [BEq R] [LawfulBEq R] (p q : CPolynomial R) :
+    (p + q).degree ≤ max p.degree q.degree := by
+  by_cases hpq : p + q = 0
+  · rw [hpq, degree_zero]; exact bot_le
+  by_cases hp : p = 0
+  · subst hp; rw [CPolynomial.zero_add]; exact le_max_of_le_right le_rfl
+  by_cases hq : q = 0
+  · subst hq; rw [CPolynomial.add_zero]; exact le_max_of_le_left le_rfl
+  calc (p + q).degree = ↑(p + q).natDegree := degree_eq_natDegree (p + q) hpq
+    _ ≤ ↑(max p.natDegree q.natDegree) := WithBot.coe_le_coe.mpr (natDegree_add_le p q)
+    _ = max (p.natDegree : WithBot ℕ) (q.natDegree : WithBot ℕ) := WithBot.coe_max _ _
+    _ = max p.degree q.degree := by rw [degree_eq_natDegree p hp, degree_eq_natDegree q hq]
 
 /-- The leading coefficient of a nonzero polynomial is nonzero. -/
 lemma leadingCoeff_ne_zero [Zero R] [BEq R] [LawfulBEq R] {p : CPolynomial R} (h : p ≠ 0) :
@@ -1418,6 +1434,51 @@ lemma mul_smul [Semiring R] [BEq R] [LawfulBEq R]
     (r * s) • p = r • (s • p) := by
   rw [eq_iff_coeff]; intro i
   rw [coeff_smul, coeff_smul, coeff_smul, _root_.mul_assoc]
+
+lemma smul_natDegree_nz [Semiring R] [NoZeroDivisors R] [BEq R] [LawfulBEq R]
+    {r : R} {p : CPolynomial R} : r ≠ 0 → p.natDegree = (r • p).natDegree := by
+  intros h
+  have hsupp : (r • p).support = p.support := by
+    ext i
+    rw [mem_support_iff, mem_support_iff, coeff_smul, mul_ne_zero_iff]
+    simp [h]
+  rw [natDegree_eq_support_sup, natDegree_eq_support_sup, hsupp]
+
+lemma smul_natDegree [Semiring R] [BEq R] [LawfulBEq R]
+    {r : R} {p : CPolynomial R} : r ≠ 0 → (r • p).natDegree ≤ p.natDegree := by
+  intro _
+  rw [natDegree_eq_support_sup, natDegree_eq_support_sup]
+  apply Finset.sup_mono
+  intro i hi
+  rw [mem_support_iff, coeff_smul] at hi
+  rw [mem_support_iff]
+  exact fun h0 => hi (by rw [h0, Semiring.mul_zero])
+
+lemma smul_degree_nz [Semiring R] [NoZeroDivisors R] [BEq R] [LawfulBEq R]
+    {r : R} {p : CPolynomial R} : r ≠ 0 → p.degree = (r • p).degree := by
+  intro hr
+  by_cases hp : p = 0
+  · subst hp; rw [CPolynomial.smul_zero]
+  · have hrp : r • p ≠ 0 := by
+      intro h
+      apply hp
+      rw [eq_zero_iff_coeff_zero] at h ⊢
+      intro i
+      have hi := h i
+      rw [coeff_smul] at hi
+      exact (mul_eq_zero.mp hi).resolve_left hr
+    rw [degree_eq_natDegree p hp, degree_eq_natDegree (r • p) hrp, smul_natDegree_nz hr]
+
+lemma smul_degree [Semiring R] [BEq R] [LawfulBEq R]
+    {r : R} {p : CPolynomial R} : r ≠ 0 → (r • p).degree ≤ p.degree := by
+  intro hr
+  by_cases hp : p = 0
+  · subst hp; rw [CPolynomial.smul_zero]
+  · by_cases hrp : r • p = 0
+    · rw [hrp, degree_zero]; exact bot_le
+    · rw [degree_eq_natDegree p hp, degree_eq_natDegree (r • p) hrp]
+      exact WithBot.coe_le_coe.mpr (smul_natDegree hr)
+
 
 /-- `CPolynomial` forms a module when R is a semiring. -/
 instance [Semiring R] [BEq R] [LawfulBEq R] : Module R (CPolynomial R) where
