@@ -13,8 +13,6 @@ public import CompPoly.Data.Array.Lemmas
 public import CompPoly.Univariate.Raw.Proofs
 public import CompPoly.Univariate.Raw.Division
 
-set_option linter.style.longFile 1700
-
 /-!
   # Computable Univariate Polynomials
 
@@ -864,21 +862,6 @@ theorem natDegree_add_le [Semiring R] [DecidableEq R]
   rw [natDegree_eq_support_sup (p + q), natDegree_eq_support_sup p,
     natDegree_eq_support_sup q, ← Finset.sup_union]
   exact Finset.sup_mono (support_add_subset p q)
-
-/-- The degree of a sum is at most the max of the degrees. -/
-theorem degree_add_le [Semiring R] [DecidableEq R]
-    [BEq R] [LawfulBEq R] (p q : CPolynomial R) :
-    (p + q).degree ≤ max p.degree q.degree := by
-  by_cases hpq : p + q = 0
-  · rw [hpq, degree_zero]; exact bot_le
-  by_cases hp : p = 0
-  · subst hp; rw [CPolynomial.zero_add]; exact le_max_of_le_right le_rfl
-  by_cases hq : q = 0
-  · subst hq; rw [CPolynomial.add_zero]; exact le_max_of_le_left le_rfl
-  calc (p + q).degree = ↑(p + q).natDegree := degree_eq_natDegree (p + q) hpq
-    _ ≤ ↑(max p.natDegree q.natDegree) := WithBot.coe_le_coe.mpr (natDegree_add_le p q)
-    _ = max (p.natDegree : WithBot ℕ) (q.natDegree : WithBot ℕ) := WithBot.coe_max _ _
-    _ = max p.degree q.degree := by rw [degree_eq_natDegree p hp, degree_eq_natDegree q hq]
 
 /-- The leading coefficient of a nonzero polynomial is nonzero. -/
 lemma leadingCoeff_ne_zero [Zero R] [BEq R] [LawfulBEq R] {p : CPolynomial R} (h : p ≠ 0) :
