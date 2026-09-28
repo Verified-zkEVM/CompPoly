@@ -68,7 +68,7 @@ private lemma mobiusPartial_n (p : Vector R (2 ^ n)) (i : Fin (2 ^ n)) :
   unfold mobiusPartial
   rw [Finset.sum_eq_single i]
   · have h1 : i.val &&& i.val = i.val := by simp [Nat.and_self]
-    simp only [h1, and_self, if_true, Nat.sub_self, Nat.zero_mod, if_true]
+    simp only [h1, and_self, ite_true, Nat.sub_self, Nat.zero_mod, ite_true]
   · intro j _ hji
     have hji' : j.val ≠ i.val := fun h => hji (Fin.ext h)
     have hi_lt : i.val < 2 ^ n := i.isLt
@@ -578,7 +578,7 @@ private lemma zetaPartial_zero (p : Vector R (2 ^ n)) (i : Fin (2 ^ n)) :
   unfold zetaPartial
   rw [Finset.sum_eq_single i]
   · have h1 : i.val &&& i.val = i.val := by simp [Nat.and_self]
-    simp only [h1, pow_zero, Nat.div_one, and_self, if_true]
+    simp only [h1, pow_zero, Nat.div_one, and_self, ite_true]
   · intro j _ hji
     have hji' : j.val ≠ i.val := fun h ↦ hji (Fin.ext h)
     simp only [pow_zero, Nat.div_one]

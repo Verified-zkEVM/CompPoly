@@ -568,13 +568,13 @@ the level; statements go through `fromNat` so the spec side reasons inside
 `ConcreteBTField`. -/
 
 theorem toNat_fromNat {k n : ℕ} (h : n < 2 ^ 2 ^ k) :
-    BitVec.toNat (fromNat (k := k) n) = n := by
+    (fromNat (k := k) n).toNat = n := by
   show (BitVec.ofNat (2 ^ k) n).toNat = n
   rw [BitVec.toNat_ofNat]
   exact Nat.mod_eq_of_lt h
 
 theorem fromNat_toNat {k : ℕ} (x : ConcreteBTField k) : fromNat x.toNat = x :=
-  BitVec.eq_of_toNat_eq (toNat_fromNat x.isLt)
+  ConcreteBTField.fromNat_toNat x
 
 theorem eq_zero_or_one {v : UInt64} (hv : v.toNat < 2 ^ 2 ^ 0) : v = 0 ∨ v = 1 := by
   rcases (by omega : v.toNat = 0 ∨ v.toNat = 1) with h | h
@@ -639,9 +639,13 @@ theorem fromNat_join {k : ℕ} (hk : k + 1 ≤ 6) {hi lo : UInt64}
   refine (join_eq_bitvec_iff_fromNat (Nat.succ_pos k) _ _ _).mpr ⟨?_, ?_⟩
   · simp only [Nat.succ_sub_one]
     congr 1
+    change hi.toNat = (fromNat (k := k + 1) ((hi <<< UInt64.ofNat (2 ^ k)) ||| lo).toNat).toNat
+      >>> 2 ^ k
     rw [toNat_fromNat hXlt, hX, nat_join_shiftRight hlo]
   · simp only [Nat.succ_sub_one]
     congr 1
+    change lo.toNat = (fromNat (k := k + 1) ((hi <<< UInt64.ofNat (2 ^ k)) ||| lo).toNat).toNat
+      &&& (2 ^ 2 ^ k - 1)
     rw [toNat_fromNat hXlt, hX, nat_join_and hlo]
 
 theorem split_fromNat {k : ℕ} (hk : k + 1 ≤ 6) {a : UInt64}
@@ -653,10 +657,15 @@ theorem split_fromNat {k : ℕ} (hk : k + 1 ≤ 6) {a : UInt64}
   refine (split_bitvec_eq_iff_fromNat (Nat.succ_pos k) _ _ _).mpr ⟨?_, ?_⟩
   · simp only [Nat.succ_sub_one]
     congr 1
-    rw [shiftRight_toNat hk5, toNat_fromNat ha]
+    rw [shiftRight_toNat hk5]
+    change a.toNat >>> 2 ^ k = (fromNat (k := k + 1) a.toNat).toNat >>> 2 ^ k
+    rw [toNat_fromNat ha]
   · simp only [Nat.succ_sub_one]
     congr 1
-    rw [and_mask_toNat hk5, toNat_fromNat ha]
+    rw [and_mask_toNat hk5]
+    change a.toNat &&& (2 ^ 2 ^ k - 1) =
+      (fromNat (k := k + 1) a.toNat).toNat &&& (2 ^ 2 ^ k - 1)
+    rw [toNat_fromNat ha]
 
 theorem concrete_mul_eq_mul {k : ℕ} (x y : ConcreteBTField k) :
     concrete_mul x y = x * y := rfl
@@ -790,7 +799,7 @@ theorem concrete_inv_step {k : ℕ} (a : ConcreteBTField (k + 1))
     simp only [concrete_mul_eq_mul, zero_mul, mul_zero, mul_one, add_zero, concrete_inv_one]
     simp only [← zero_is_0, ← one_is_1]
     exact (join_zero_one (Nat.succ_pos k)).symm
-  · rw [concrete_inv, dif_neg (Nat.succ_ne_zero k), dif_neg h0, dif_neg h1]
+  · rw [concrete_inv, dite_eq_right (Nat.succ_ne_zero k), dite_eq_right h0, dite_eq_right h1]
     simp_rw [← ha]
     rfl
 
@@ -874,12 +883,12 @@ def toConcrete (x : FastBT k) : ConcreteBTField k := fromNat x.val.toNat
 
 /-- Master bridge lemma: `toConcrete` preserves the numeric value. -/
 @[simp] theorem toConcrete_toNat (x : FastBT k) :
-    BitVec.toNat (toConcrete x) = x.val.toNat := toNat_fromNat x.isLt
+    (toConcrete x).toNat = x.val.toNat := toNat_fromNat x.isLt
 
 theorem toConcrete_injective : Function.Injective (toConcrete (k := k)) := by
   intro a b h
   have hval : a.val = b.val := by
-    have := congrArg BitVec.toNat h
+    have := congrArg ConcreteBTField.toNat h
     rw [toConcrete_toNat, toConcrete_toNat] at this
     exact UInt64.toNat_inj.mp this
   cases a; cases b
@@ -889,13 +898,13 @@ theorem toConcrete_injective : Function.Injective (toConcrete (k := k)) := by
 theorem ofConcrete_val_toNat {k : ℕ} (hk : k ≤ 6) (x : ConcreteBTField k) :
     (UInt64.ofNat x.toNat).toNat = x.toNat := by
   show x.toNat % 2 ^ 64 = x.toNat
-  refine Nat.mod_eq_of_lt (Nat.lt_of_lt_of_le x.isLt ?_)
+  refine Nat.mod_eq_of_lt (Nat.lt_of_lt_of_le x.toNat_lt ?_)
   exact Nat.pow_le_pow_right (by omega)
     (Nat.le_trans (Nat.pow_le_pow_right (by omega) hk) (by norm_num))
 
 /-- Repack a concrete element; one-word levels only (`k ≤ 6`). -/
 def ofConcrete {k : ℕ} (x : ConcreteBTField k) (hk : k ≤ 6 := by omega) : FastBT k :=
-  .mk (UInt64.ofNat x.toNat) <| by rw [ofConcrete_val_toNat hk]; exact x.isLt
+  .mk (UInt64.ofNat x.toNat) <| by rw [ofConcrete_val_toNat hk]; exact x.toNat_lt
 
 @[simp] theorem toConcrete_ofConcrete {k : ℕ} (x : ConcreteBTField k) (hk : k ≤ 6) :
     toConcrete (ofConcrete x hk) = x := by
@@ -923,9 +932,9 @@ def ofConcrete {k : ℕ} (x : ConcreteBTField k) (hk : k ≤ 6 := by omega) : Fa
 theorem toConcrete_if_zero {p : Prop} [Decidable p] (x : FastBT k) :
     toConcrete (if p then 0 else x) = if p then ConcreteBinaryTower.zero else toConcrete x := by
   by_cases h : p
-  · rw [if_pos h, if_pos h, toConcrete_zero]
+  · rw [ite_eq_left h, ite_eq_left h, toConcrete_zero]
     exact zero_is_0.symm
-  · rw [if_neg h, if_neg h]
+  · rw [ite_eq_right h, ite_eq_right h]
 
 theorem toConcrete_nsmul (n : ℕ) (x : FastBT k) :
     toConcrete (n • x) = n • toConcrete x := toConcrete_if_zero x
@@ -938,16 +947,16 @@ theorem toConcrete_natCast (n : ℕ) :
   rw [CharP.cast_eq_mod (ConcreteBTField k) 2 n]
   show toConcrete (if n % 2 = 0 then 0 else 1) = _
   rcases (by omega : n % 2 = 0 ∨ n % 2 = 1) with h2 | h2
-  · rw [if_pos h2, toConcrete_zero, h2, Nat.cast_zero]
-  · rw [if_neg (by omega), toConcrete_one, h2, Nat.cast_one]
+  · rw [ite_eq_left h2, toConcrete_zero, h2, Nat.cast_zero]
+  · rw [ite_eq_right (by omega), toConcrete_one, h2, Nat.cast_one]
 
 theorem toConcrete_intCast (n : ℤ) :
     toConcrete (n : FastBT k) = (n : ConcreteBTField k) := by
   rw [CharP.intCast_eq_intCast_mod (R := ConcreteBTField k) 2 (a := n), Nat.cast_ofNat]
   show toConcrete (if n % 2 = 0 then 0 else 1) = _
   rcases (by omega : n % 2 = 0 ∨ n % 2 = 1) with h2 | h2
-  · rw [if_pos h2, toConcrete_zero, h2, Int.cast_zero]
-  · rw [if_neg (by omega), toConcrete_one, h2, Int.cast_one]
+  · rw [ite_eq_left h2, toConcrete_zero, h2, Int.cast_zero]
+  · rw [ite_eq_right (by omega), toConcrete_one, h2, Int.cast_one]
 
 instance : AddCommGroup (FastBT k) :=
   toConcrete_injective.addCommGroup toConcrete toConcrete_zero toConcrete_add
@@ -1225,14 +1234,25 @@ instance : Inv FastBT128 := ⟨inv⟩
 def toConcrete (v : FastBT128) : ConcreteBTField 7 :=
   (《 fromNat (k := 6) v.hi.toNat, fromNat (k := 6) v.lo.toNat 》 : ConcreteBTField 7)
 
+/-- Conversion to the concrete tower preserves the complete 128-bit natural-number encoding. -/
+@[simp] theorem toNat_toConcrete (a : FastBT128) : (toConcrete a).toNat = a.toNat := by
+  change (toConcrete a).toBitVec.toNat = _
+  rw [toConcrete, join_eq_dcast_append, ← BitVec.dcast_bitvec_toNat_eq]
+  rw [BitVec.toNat_append, ← Nat.shiftLeft_add_eq_or_of_lt
+    (fromNat (k := 6) a.lo.toNat).toBitVec.isLt, Nat.shiftLeft_eq]
+  change (fromNat (k := 6) a.hi.toNat).toNat * 2 ^ 64 +
+    (fromNat (k := 6) a.lo.toNat).toNat = _
+  rw [toNat_fromNat (UInt64.toNat_lt _), toNat_fromNat (UInt64.toNat_lt _)]
+  exact Nat.add_comm _ _
+
 theorem toConcrete_injective : Function.Injective toConcrete := by
   intro a b h
   obtain ⟨h1, h0⟩ := (join_eq_join_iff (Nat.succ_pos 6) _ _ _ _).mp h
   have hhi : a.hi = b.hi := UInt64.toNat_inj.mp (by
-    have h' := congrArg BitVec.toNat h1
+    have h' := congrArg ConcreteBTField.toNat h1
     rwa [toNat_fromNat (UInt64.toNat_lt _), toNat_fromNat (UInt64.toNat_lt _)] at h')
   have hlo : a.lo = b.lo := UInt64.toNat_inj.mp (by
-    have h' := congrArg BitVec.toNat h0
+    have h' := congrArg ConcreteBTField.toNat h0
     rwa [toNat_fromNat (UInt64.toNat_lt _), toNat_fromNat (UInt64.toNat_lt _)] at h')
   cases a; cases b
   simp only [FastBT128.mk.injEq]
@@ -1268,9 +1288,9 @@ theorem toConcrete_injective : Function.Injective toConcrete := by
 theorem toConcrete_if_zero {p : Prop} [Decidable p] (x : FastBT128) :
     toConcrete (if p then 0 else x) = if p then ConcreteBinaryTower.zero else toConcrete x := by
   by_cases h : p
-  · rw [if_pos h, if_pos h, toConcrete_zero]
+  · rw [ite_eq_left h, ite_eq_left h, toConcrete_zero]
     exact zero_is_0.symm
-  · rw [if_neg h, if_neg h]
+  · rw [ite_eq_right h, ite_eq_right h]
 
 theorem toConcrete_nsmul (n : ℕ) (x : FastBT128) :
     toConcrete (n • x) = n • toConcrete x := toConcrete_if_zero x
@@ -1288,16 +1308,16 @@ theorem toConcrete_natCast (n : ℕ) :
   rw [CharP.cast_eq_mod (ConcreteBTField 7) 2 n]
   show toConcrete (if n % 2 = 0 then 0 else 1) = _
   rcases (by omega : n % 2 = 0 ∨ n % 2 = 1) with h2 | h2
-  · rw [if_pos h2, toConcrete_zero, h2, Nat.cast_zero]
-  · rw [if_neg (by omega), toConcrete_one, h2, Nat.cast_one]
+  · rw [ite_eq_left h2, toConcrete_zero, h2, Nat.cast_zero]
+  · rw [ite_eq_right (by omega), toConcrete_one, h2, Nat.cast_one]
 
 theorem toConcrete_intCast (n : ℤ) :
     toConcrete (n : FastBT128) = (n : ConcreteBTField 7) := by
   rw [CharP.intCast_eq_intCast_mod (R := ConcreteBTField 7) 2 (a := n), Nat.cast_ofNat]
   show toConcrete (if n % 2 = 0 then 0 else 1) = _
   rcases (by omega : n % 2 = 0 ∨ n % 2 = 1) with h2 | h2
-  · rw [if_pos h2, toConcrete_zero, h2, Int.cast_zero]
-  · rw [if_neg (by omega), toConcrete_one, h2, Int.cast_one]
+  · rw [ite_eq_left h2, toConcrete_zero, h2, Int.cast_zero]
+  · rw [ite_eq_right (by omega), toConcrete_one, h2, Int.cast_one]
 
 @[simp] theorem toConcrete_mul (a b : FastBT128) :
     toConcrete (a * b) = toConcrete a * toConcrete b := by
@@ -1398,7 +1418,7 @@ def ofConcrete (x : ConcreteBTField 7) : FastBT128 := ofNat x.toNat
     show (x.toNat >>> 64) % 2 ^ 64 = x.toNat >>> 2 ^ 6
     refine Nat.mod_eq_of_lt ?_
     rw [Nat.shiftRight_eq_div_pow]
-    exact Nat.div_lt_of_lt_mul (by rw [← Nat.pow_add]; exact x.isLt)
+    exact Nat.div_lt_of_lt_mul (by rw [← Nat.pow_add]; exact x.toNat_lt)
   · simp only [Nat.succ_sub_one]
     congr 1
     show x.toNat % 2 ^ 64 = x.toNat &&& 2 ^ 2 ^ 6 - 1

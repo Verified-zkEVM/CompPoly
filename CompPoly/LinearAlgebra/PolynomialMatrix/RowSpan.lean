@@ -38,25 +38,13 @@ def RowSpan [Semiring F] [BEq F] [LawfulBEq F]
 
 private theorem C_one_mul [Semiring F] [BEq F] [LawfulBEq F]
     (p : CPolynomial F) :
-    CPolynomial.C (1 : F) * p = p := by
-  apply (CPolynomial.eq_iff_coeff).2
-  intro i
-  have hpoly := congrArg (fun P : Polynomial F ↦ P.coeff i)
-    (CPolynomial.toPoly_mul (CPolynomial.C (1 : F)) p)
-  rw [CPolynomial.C_toPoly] at hpoly
-  rw [CPolynomial.coeff_toPoly, CPolynomial.coeff_toPoly]
-  simpa using hpoly
+    CPolynomial.C (1 : F) * p = p :=
+  CPolynomial.toPoly_inj.mp (by simp)
 
 private theorem C_zero_mul [Semiring F] [BEq F] [LawfulBEq F]
     (p : CPolynomial F) :
-    CPolynomial.C (0 : F) * p = 0 := by
-  apply (CPolynomial.eq_iff_coeff).2
-  intro i
-  have hpoly := congrArg (fun P : Polynomial F ↦ P.coeff i)
-    (CPolynomial.toPoly_mul (CPolynomial.C (0 : F)) p)
-  rw [CPolynomial.C_toPoly] at hpoly
-  rw [CPolynomial.coeff_toPoly, CPolynomial.coeff_toPoly]
-  simpa [CPolynomial.toPoly_zero] using hpoly
+    CPolynomial.C (0 : F) * p = 0 :=
+  CPolynomial.toPoly_inj.mp (by simp)
 
 private theorem rowGet_zeroRow [Semiring F] [BEq F] [LawfulBEq F]
     (width j : Nat) :
@@ -203,24 +191,24 @@ private theorem rowLinearCombination_unit_range
       rw [ih (by omega)]
       by_cases hin : i < n
       · have hne : n ≠ i := by omega
-        rw [if_pos hin]
+        rw [ite_eq_left hin]
         rw [unitRowCoeffs_getD_ne (F := F) hne]
         rw [rowScalePolynomial_C_zero_of_wellFormed hM hnM]
-        rw [if_pos (by omega)]
+        rw [ite_eq_left (by omega)]
         exact rowAdd_zeroRow_right row hrowWidth
-      · rw [if_neg hin]
+      · rw [ite_eq_right hin]
         by_cases hni : n = i
         · subst n
           rw [unitRowCoeffs_getD_self (F := F) hi]
           rw [hrow, rowScalePolynomial_C_one]
-          rw [if_pos (by omega)]
+          rw [ite_eq_left (by omega)]
           exact rowAdd_zeroRow_left row hrowWidth
         · have hne : n ≠ i := hni
           rw [unitRowCoeffs_getD_ne (F := F) hne]
           rw [rowScalePolynomial_C_zero_of_wellFormed hM hnM]
           have hzeroWidth : (zeroRow (F := F) (MatrixWidth M)).size = MatrixWidth M := by
             simp [zeroRow]
-          rw [if_neg (by omega)]
+          rw [ite_eq_right (by omega)]
           exact rowAdd_zeroRow_right (zeroRow (F := F) (MatrixWidth M)) hzeroWidth
 
 /-- Every stored row belongs to its matrix row span. -/

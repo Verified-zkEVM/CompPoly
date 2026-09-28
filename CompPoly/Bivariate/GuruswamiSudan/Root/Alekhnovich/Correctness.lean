@@ -28,33 +28,6 @@ namespace CompPoly
 
 namespace GuruswamiSudan
 
-private theorem cpoly_natDegree_mul_le_of_field {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F]
-    (P Q : CPolynomial F) :
-    (P * Q).natDegree ≤ P.natDegree + Q.natDegree := by
-  rw [CPolynomial.natDegree_toPoly, CPolynomial.toPoly_mul,
-    CPolynomial.natDegree_toPoly, CPolynomial.natDegree_toPoly]
-  exact Polynomial.natDegree_mul_le
-
-private theorem cpoly_natDegree_pow_le_of_le {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F]
-    (P : CPolynomial F) {d : Nat} (hP : P.natDegree ≤ d) :
-    ∀ n, (P ^ n).natDegree ≤ n * d
-  | 0 => by
-      rw [pow_zero, CPolynomial.natDegree_toPoly, CPolynomial.toPoly_one]
-      simp
-  | n + 1 => by
-      have hmul :
-          (P ^ (n + 1)).natDegree ≤ P.natDegree + (P ^ n).natDegree := by
-        rw [pow_succ']
-        exact cpoly_natDegree_mul_le_of_field P (P ^ n)
-      have hpow := cpoly_natDegree_pow_le_of_le P hP n
-      exact le_trans hmul (by
-        calc
-          P.natDegree + (P ^ n).natDegree ≤ d + n * d := Nat.add_le_add hP hpow
-          _ = (n + 1) * d := by
-            rw [Nat.succ_mul, Nat.add_comm])
-
 private theorem cpoly_natDegree_le_pred_of_degreeLt {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     {p : CPolynomial F} {k : Nat} (hp : degreeLt p k) :
@@ -263,7 +236,7 @@ private theorem cbivar_coeff_monomial_truncate_of_lt {F : Type*}
   rw [CPolynomial.coeff_monomial, CPolynomial.coeff_monomial]
   by_cases hj : j = r
   · subst j
-    simp only [eq_self, if_true]
+    simp only [eq_self, ite_true]
     rw [cpoly_truncate_coeff]
     simp [hi]
   · simp [hj]
@@ -381,20 +354,6 @@ private theorem cpoly_coeff_mul_X_pow_zero {F : Type*}
   have hne : ¬ 0 = n := by omega
   simp [hne]
 
-private theorem cpoly_C_one {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] :
-    CPolynomial.C (1 : F) = 1 := by
-  apply CPolynomial.ringEquiv.injective
-  have ringEquiv_toPoly (p : CPolynomial F) :
-      (CPolynomial.ringEquiv (R := F)).toRingHom p = p.toPoly := by
-    rw [RingEquiv.toRingHom_eq_coe]
-    exact CPolynomial.ringEquiv_apply p
-  change
-    (CPolynomial.ringEquiv (R := F)).toRingHom (CPolynomial.C (1 : F)) =
-      (CPolynomial.ringEquiv (R := F)).toRingHom 1
-  rw [ringEquiv_toPoly, ringEquiv_toPoly]
-  rw [CPolynomial.C_toPoly, CPolynomial.toPoly_one, Polynomial.C_1]
-
 private theorem shiftedSubstitutionCoeffTerm_top_coeff {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (coeffY f : CPolynomial F) (t y x : Nat) :
@@ -403,7 +362,7 @@ private theorem shiftedSubstitutionCoeffTerm_top_coeff {F : Type*}
   unfold shiftedSubstitutionCoeffTerm
   rw [Nat.sub_self]
   simp only [Nat.choose_self, Nat.cast_one, pow_zero]
-  rw [cpoly_C_one]
+  rw [CPolynomial.C_one]
   simpa [mul_assoc] using cpoly_coeff_mul_X_pow coeffY (t * y) x
 
 private theorem shiftedSubstitutionCoeffTerm_coeff_zero_of_r_pos {F : Type*}
@@ -466,7 +425,7 @@ private theorem shiftedSubstitution_inner_coeff_target {F : Type*}
         rw [h]
         by_cases hry : r = y
         · subst r
-          rw [if_pos rfl, if_pos rfl]
+          rw [ite_eq_left rfl, ite_eq_left rfl]
           rw [shiftedSubstitutionCoeffTerm_top_coeff]
         · have hyr : y ≠ r := fun h ↦ hry h.symm
           simp [hyr, hry]
@@ -585,7 +544,7 @@ private theorem shiftedSubstitution_inner_coeff_zero_of_x_zero_y_pos {F : Type*}
         by_cases hyr : y = r
         · subst r
           simp [shiftedSubstitutionCoeffTerm_coeff_zero_of_r_pos coeffY f t y₀ y ht hy]
-        · rw [if_neg hyr]
+        · rw [ite_eq_right hyr]
           rw [CPolynomial.coeff_zero, add_zero]
   exact hfold (List.range (y₀ + 1)) out
 
@@ -754,10 +713,10 @@ private theorem shiftPolynomialByXPower_coeff {F : Type*}
   rw [CPolynomial.toPoly_mul, CPolynomial.toPoly_pow, CPolynomial.X_toPoly]
   rw [Polynomial.coeff_X_pow_mul']
   by_cases hti : t ≤ i
-  · rw [if_pos hti]
+  · rw [ite_eq_left hti]
     rw [← CPolynomial.coeff_toPoly]
     simp [hti]
-  · rw [if_neg hti]
+  · rw [ite_eq_right hti]
     simp [hti]
 
 private theorem polynomialPrefix_add_shift_dropXPower {F : Type*}
@@ -770,13 +729,13 @@ private theorem polynomialPrefix_add_shift_dropXPower {F : Type*}
   unfold polynomialPrefix
   rw [cpoly_truncate_coeff]
   by_cases hit : i < t
-  · rw [if_pos hit]
+  · rw [ite_eq_left hit]
     have hnot : ¬ t ≤ i := Nat.not_le_of_gt hit
-    rw [if_neg hnot]
+    rw [ite_eq_right hnot]
     simp
-  · rw [if_neg hit]
+  · rw [ite_eq_right hit]
     have hle : t ≤ i := Nat.le_of_not_lt hit
-    rw [if_pos hle]
+    rw [ite_eq_left hle]
     rw [cpoly_coeff_dropXPower]
     rw [show i - t + t = i by omega]
     simp
@@ -863,35 +822,35 @@ private theorem polynomialPrefix_add_shift_prefix_dropXPower {F : Type*}
   unfold polynomialPrefix
   rw [cpoly_truncate_coeff]
   by_cases hi_tu : i < t + u
-  · rw [if_pos hi_tu]
+  · rw [ite_eq_left hi_tu]
     by_cases hti : t ≤ i
-    · rw [if_pos hti]
+    · rw [ite_eq_left hti]
       rw [cpoly_truncate_coeff (CPolynomial.dropXPower p t) u (i - t)]
       have hi_sub : i - t < u := by omega
-      rw [if_pos hi_sub]
+      rw [ite_eq_left hi_sub]
       rw [cpoly_coeff_dropXPower]
       rw [show i - t + t = i by omega]
       by_cases hit : i < t
       · exact False.elim ((Nat.not_lt_of_ge hti) hit)
-      · rw [cpoly_truncate_coeff p t i, if_neg hit]
+      · rw [cpoly_truncate_coeff p t i, ite_eq_right hit]
         simp
-    · rw [if_neg hti]
+    · rw [ite_eq_right hti]
       have hit : i < t := Nat.lt_of_not_ge hti
-      rw [cpoly_truncate_coeff, if_pos hit]
+      rw [cpoly_truncate_coeff, ite_eq_left hit]
       simp
-  · rw [if_neg hi_tu]
+  · rw [ite_eq_right hi_tu]
     by_cases hti : t ≤ i
-    · rw [if_pos hti]
+    · rw [ite_eq_left hti]
       rw [cpoly_truncate_coeff (CPolynomial.dropXPower p t) u (i - t)]
       have hi_sub_not : ¬ i - t < u := by omega
-      rw [if_neg hi_sub_not]
+      rw [ite_eq_right hi_sub_not]
       by_cases hit : i < t
       · exact False.elim ((Nat.not_lt_of_ge hti) hit)
-      · rw [cpoly_truncate_coeff p t i, if_neg hit]
+      · rw [cpoly_truncate_coeff p t i, ite_eq_right hit]
         simp
-    · rw [if_neg hti]
+    · rw [ite_eq_right hti]
       have hit : i < t := Nat.lt_of_not_ge hti
-      rw [cpoly_truncate_coeff, if_pos hit]
+      rw [cpoly_truncate_coeff, ite_eq_left hit]
       omega
 
 private theorem MatchesRootPrefix.compose {F : Type*}
@@ -915,12 +874,12 @@ private theorem polynomialPrefix_prefix_of_le {F : Type*}
   unfold polynomialPrefix
   rw [cpoly_truncate_coeff, cpoly_truncate_coeff]
   by_cases hik : i < k
-  · rw [if_pos hik]
+  · rw [ite_eq_left hik]
     have hit : i < t := Nat.lt_of_lt_of_le hik hkt
-    rw [cpoly_truncate_coeff, if_pos hit]
-    rw [if_pos hik]
-  · rw [if_neg hik]
-    rw [cpoly_truncate_coeff p k i, if_neg hik]
+    rw [cpoly_truncate_coeff, ite_eq_left hit]
+    rw [ite_eq_left hik]
+  · rw [ite_eq_right hik]
+    rw [cpoly_truncate_coeff p k i, ite_eq_right hik]
 
 private theorem polynomialPrefix_rootPrefix_eq_of_degreeLt {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
@@ -2375,14 +2334,14 @@ theorem composeY_eq_zero_of_rootMod_of_substitutionDegreeBound {F : Type*}
         CPolynomial.mulPowCoeff (Q.val.coeff y) p y i = 0 := by
       intro y hy
       rw [cpoly_mulPowCoeff_eq_coeff_mul_pow]
-      apply cpoly_coeff_eq_zero_of_natDegree_lt
+      apply CPolynomial.coeff_eq_zero_of_natDegree_lt
       have hylt : y < Q.val.size := by
         simpa using (List.mem_range'_1.mp hy).2
       have hpow : (p ^ y).natDegree ≤ y * (k - 1) :=
-        cpoly_natDegree_pow_le_of_le p hpdeg y
+        CPolynomial.natDegree_pow_le_of_le (p := p) y hpdeg
       have hmul : ((Q.val.coeff y) * p ^ y).natDegree ≤
           (Q.val.coeff y).natDegree + (p ^ y).natDegree :=
-        cpoly_natDegree_mul_le_of_field (Q.val.coeff y) (p ^ y)
+        CPolynomial.natDegree_mul_le (Q.val.coeff y) (p ^ y)
       have hboundY := hbound y hylt
       omega
     have hfold : ∀ ys : List Nat,

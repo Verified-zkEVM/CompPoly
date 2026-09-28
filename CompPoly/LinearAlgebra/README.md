@@ -1,10 +1,13 @@
-# Computable Linear Algebra
+# Linear Algebra
 
 Executable matrices for [CompPoly](../../README.md), in two independent flavours:
 dense matrices over a field, and row-oriented matrices whose entries are
 univariate polynomials. Both exist to serve the Guruswami-Sudan interpolation
 backends (see [`../../docs/wiki/coding-theory.md`](../../docs/wiki/coding-theory.md)),
 but neither depends on the decoder and both are usable on their own.
+
+`TensorProduct/Basis.lean` contains generic tensor basis theory with explicit
+scalar actions, independently of the executable matrix layers.
 
 ## Types
 
@@ -28,6 +31,9 @@ but neither depends on the decoder and both are usable on their own.
 | **KernelCorrectness.lean** | `homogeneousWitness_eq_none_iff` and `homogeneousWitness_exists_of_rows_lt_cols` — a wide homogeneous system always has a nonzero solution. |
 | **KernelInPlace.lean** | Allocation-efficient variant: `rrefInPlace`, `homogeneousKernelBasisInPlace`, `homogeneousWitnessInPlace`. |
 | **KernelInPlaceCorrectness.lean** | `rrefInPlace_eq` and `homogeneousWitnessInPlace_eq`, proving the fast path returns exactly what the direct path does. |
+| **RowArray.lean** | The same Gauss-Jordan reduction and kernel extraction over a row array `Array (Array F)`: `scalarRrefRows`, `homogeneousKernelBasisRows`, and `toRows`. Used by the PM-basis kernel leaf. |
+| **RowArrayCorrectness.lean** | `homogeneousKernelBasisRows_dot_eq_zero` (soundness) and `homogeneousKernelBasisRows_complete` (every orthogonal vector is the combination of the basis with its free-column entries as coefficients). |
+| **KernelBasisCorrectness.lean** | `homogeneousKernelBasis_eq_homogeneousKernelBasisRows`: on a well-formed matrix the dense and row-array reductions agree. Hence the full dense basis is sound (`homogeneousKernelBasis_isHomogeneousSolution`), complete (`homogeneousKernelBasis_complete`), and independent (`homogeneousKernelBasis_getD_freeColumn`, `homogeneousKernelBasis_linearIndependent`), with one vector per non-pivot column: `homogeneousKernelBasis_size_add_rank` states size plus rank equals `M.cols`. |
 
 ### Why the in-place variant exists
 
@@ -82,7 +88,39 @@ fused `rowSubScaledShift` update.
 direct definitions transfers to the fast ones. Write proofs against the direct
 version; call the fast one.
 
-## Conventions
+## Tensor product bases (`TensorProduct/`)
+
+`TensorProduct/Basis.lean` provides `Module.Basis.baseChangeRight`: a basis of
+`Left ⊗[K] Right` over `Right` with basis vectors `b i ⊗ₜ[K] 1` and scalars acting
+on the right factor. Its construction uses Mathlib's
+`Algebra.TensorProduct.commRight.toLinearEquiv`. The coordinate formula is
+`baseChangeRight_repr_tmul`; the basis vectors are exposed by
+`baseChangeRight_apply`. Standard `Basis.sum_repr` and `Basis.repr_sum_self`
+give reconstruction and coordinate recovery.
+
+Mathlib provides direct tensor instances for `Algebra`, `Module`, `DistribMulAction`
+and `SMul`, using the left factor. For a right view on equal factors, select all
+four locally:
+
+```lean
+letI rightAlgebra : Algebra L (L ⊗[K] L) := Algebra.TensorProduct.rightAlgebra
+letI : Module L (L ⊗[K] L) := rightAlgebra.toModule
+letI : DistribMulAction L (L ⊗[K] L) := rightAlgebra.toModule.toDistribMulAction
+letI : SMul L (L ⊗[K] L) := rightAlgebra.toSMul
+let bRight := b.baseChangeRight (Right := L)
+```
+
+The module selection allows right-basis projections such as `bRight.repr`.
+The `SMul` selection makes `c • z` act on the right factor, and `DistribMulAction`
+ensures that ordinary laws such as `smul_add` and `mul_smul` use that same action.
+Selecting the algebra alone does not override those direct defaults. No alternative
+global instance is installed by this module or its binary-tower re-export.
+
+This recipe chooses one meaning for scalar notation in its scope. Both coordinate
+functions can coexist after their respective module choices have been fixed;
+the recipe does not provide two simultaneous meanings for `•` on the same carrier.
+
+## Matrix conventions
 
 - Both layers are `Array`-backed and index with plain `Nat`, with out-of-bounds
   reads returning a default rather than requiring a proof at the call site. Shape

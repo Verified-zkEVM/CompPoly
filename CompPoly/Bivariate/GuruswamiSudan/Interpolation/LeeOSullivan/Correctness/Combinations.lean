@@ -18,41 +18,6 @@ Generic finite-Y and basis-combination lemmas used by Lee-O'Sullivan correctness
 
 namespace CompPoly
 
-theorem cpoly_natDegree_mul_le {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] (P Q : CPolynomial F) :
-    (P * Q).natDegree ≤ P.natDegree + Q.natDegree := by
-  rw [CPolynomial.natDegree_toPoly, CPolynomial.toPoly_mul,
-    CPolynomial.natDegree_toPoly, CPolynomial.natDegree_toPoly]
-  exact Polynomial.natDegree_mul_le
-
-theorem cpoly_eval_add {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] (x : F) (P Q : CPolynomial F) :
-    CPolynomial.eval x (P + Q) = CPolynomial.eval x P + CPolynomial.eval x Q := by
-  rw [CPolynomial.eval_toPoly, CPolynomial.toPoly_add, Polynomial.eval_add,
-    ← CPolynomial.eval_toPoly, ← CPolynomial.eval_toPoly]
-
-theorem cpoly_eval_X {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] (x : F) :
-    CPolynomial.eval x CPolynomial.X = x := by
-  rw [CPolynomial.eval_toPoly, CPolynomial.X_toPoly, Polynomial.eval_X]
-
-theorem cpoly_eq_of_toPoly_eq {F : Type*}
-    [Semiring F] [BEq F] [LawfulBEq F] {P Q : CPolynomial F}
-    (h : P.toPoly = Q.toPoly) :
-    P = Q := by
-  apply (CPolynomial.eq_iff_coeff (p := P) (q := Q)).2
-  intro i
-  have hcoeff := congrArg (fun p : Polynomial F ↦ p.coeff i) h
-  change P.toPoly.coeff i = Q.toPoly.coeff i at hcoeff
-  rwa [← CPolynomial.coeff_toPoly, ← CPolynomial.coeff_toPoly] at hcoeff
-
-theorem cpoly_coeff_eq_zero_of_natDegree_lt {F : Type*}
-    [Zero F] [BEq F] [LawfulBEq F] {P : CPolynomial F} {i : Nat}
-    (h : P.natDegree < i) :
-    P.coeff i = 0 := by
-  by_contra hne
-  exact (Nat.not_lt_of_ge (CPolynomial.le_natDegree_of_ne_zero hne)) h
-
 namespace CBivariate
 
 theorem coeff_neg {R : Type*}
@@ -192,7 +157,6 @@ theorem hasseDerivative_X_mul_succ_xOrder {F : Type*}
             coeff Q (i + (a + 1)) (j + b) := by
         convert coeff_X_mul_succ (Q := Q) (i + a + 1) (j + b) using 2
         · omega
-        · omega
       rw [hX]
       rw [show i + 1 + (a + 1) = (i + a + 1).succ by omega]
       rw [show i + (a + 1) = i + a + 1 by omega]
@@ -321,7 +285,7 @@ theorem natWeightedDegree_ofYConstant_mul_le {F : Type*}
     CPolynomial.le_natDegree_of_ne_zero hcoeff
   have hmul :
       (A * P.val.coeff j).natDegree ≤ A.natDegree + (P.val.coeff j).natDegree :=
-    cpoly_natDegree_mul_le A (P.val.coeff j)
+    CPolynomial.natDegree_mul_le A (P.val.coeff j)
   have hrowNe : P.val.coeff j ≠ 0 := by
     intro hzero
     rw [hzero, CPolynomial.mul_zero] at hcoeff
@@ -510,7 +474,7 @@ theorem hasseDerivativeEval_ofYConstant_mul_eq_eval_mul_of_lower {F : Type*}
               rw [CBivariate.hasseDerivativeEval_X_mul_zero_xOrder,
                 ihDiv P 0 (by intro a ha; omega),
                 CBivariate.hasseDerivativeEval_CC_mul,
-                cpoly_eval_add, CPolynomial.eval_mul, cpoly_eval_X, CPolynomial.eval_C]
+                CPolynomial.eval_add, CPolynomial.eval_mul, CPolynomial.eval_X, CPolynomial.eval_C]
               ring
           | succ order =>
               have hLowerCurrent :
@@ -526,7 +490,7 @@ theorem hasseDerivativeEval_ofYConstant_mul_eq_eval_mul_of_lower {F : Type*}
                 ihDiv P order hLowerPrev,
                 hLower order (by omega),
                 CBivariate.hasseDerivativeEval_CC_mul,
-                cpoly_eval_add, CPolynomial.eval_mul, cpoly_eval_X, CPolynomial.eval_C]
+                CPolynomial.eval_add, CPolynomial.eval_mul, CPolynomial.eval_X, CPolynomial.eval_C]
               ring
   intro A P order hLower
   exact hmain A.val.size A rfl P order hLower
@@ -589,7 +553,7 @@ theorem foldl_add_single_beq_of_not_mem {α : Type*} [AddCommMonoid α]
       have hidx : ¬ idx == target := by
         intro hbeq
         exact hnot (by simp [LawfulBEq.eq_of_beq hbeq])
-      rw [if_neg hidx, add_zero]
+      rw [ite_eq_right hidx, add_zero]
       exact ih acc (by
         intro hmem
         exact hnot (by simp [hmem]))
@@ -607,11 +571,11 @@ theorem foldl_add_single_beq_of_nodup_mem {α : Type*} [AddCommMonoid α]
       rw [List.nodup_cons] at hnodup
       rcases hnodup with ⟨hidxNotMem, hxsNodup⟩
       by_cases hidx : idx == target
-      · rw [if_pos hidx, zero_add]
+      · rw [ite_eq_left hidx, zero_add]
         have hidxEq : idx = target := LawfulBEq.eq_of_beq hidx
         subst idx
         exact foldl_add_single_beq_of_not_mem xs target term term hidxNotMem
-      · rw [if_neg hidx, add_zero]
+      · rw [ite_eq_right hidx, add_zero]
         have hmemTail : target ∈ xs := by
           rcases (List.mem_cons.mp hmem) with hhead | htail
           · subst idx

@@ -93,7 +93,7 @@ theorem subBorrow_cast (a b : UInt64) (hb : b.toNat < 2 ^ 32) :
     (((if a < b then a - b - negModulus else a - b).toNat) : Goldilocks.Field) =
       (a.toNat : Goldilocks.Field) - (b.toNat : Goldilocks.Field) := by
   by_cases h : a < b
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     have hlt : a.toNat < b.toNat := by
       simpa [UInt64.lt_iff_toNat_lt] using h
     have hb_le_size : b.toNat ≤ UInt64.size := Nat.le_of_lt (UInt64.toNat_lt_size b)
@@ -120,7 +120,7 @@ theorem subBorrow_cast (a b : UInt64) (hb : b.toNat < 2 ^ 32) :
     rw [Nat.cast_sub hb_le_size]
     rw [uint64_cast_eq_negModulus]
     ring
-  · rw [if_neg h]
+  · rw [ite_eq_right h]
     have hle : b ≤ a := by
       rw [UInt64.le_iff_toNat_le]
       rw [UInt64.lt_iff_toNat_lt] at h
@@ -144,7 +144,7 @@ theorem addOverflowBounded_cast (a b : UInt64)
         simpa [UInt64.lt_iff_toNat_lt] using hlt
       rw [UInt64.toNat_add, Nat.mod_eq_of_lt hsum] at hlt_nat
       omega
-    rw [if_neg hnot]
+    rw [ite_eq_right hnot]
     rw [UInt64.toNat_add, Nat.mod_eq_of_lt hsum, Nat.cast_add]
   · have hsize_le : UInt64.size ≤ a.toNat + b.toNat := Nat.le_of_not_gt hsum
     have hlt : a + b < a := by
@@ -158,7 +158,7 @@ theorem addOverflowBounded_cast (a b : UInt64)
       rw [Nat.mod_eq_of_lt hdiff_lt]
       have hb := UInt64.toNat_lt_size b
       omega
-    rw [if_pos hlt]
+    rw [ite_eq_left hlt]
     have hsum_mod : (a + b).toNat = a.toNat + b.toNat - UInt64.size := by
       rw [UInt64.toNat_add]
       rw [Nat.mod_eq_sub_mod hsize_le]
@@ -495,10 +495,10 @@ theorem reduceUInt64Raw_lt (x : UInt64) :
     (reduceUInt64Raw x).toNat < Goldilocks.fieldSize := by
   unfold reduceUInt64Raw
   by_cases hx : x < modulus
-  · rw [if_pos hx]
+  · rw [ite_eq_left hx]
     rw [UInt64.lt_iff_toNat_lt, modulus_toNat] at hx
     exact hx
-  · rw [if_neg hx]
+  · rw [ite_eq_right hx]
     have hmod_le_x_nat : Goldilocks.fieldSize ≤ x.toNat := by
       rw [UInt64.lt_iff_toNat_lt, modulus_toNat] at hx
       exact Nat.le_of_not_gt hx
@@ -515,8 +515,8 @@ theorem reduceUInt64Raw_cast (x : UInt64) :
       (x.toNat : Goldilocks.Field) := by
   unfold reduceUInt64Raw
   by_cases hx : x < modulus
-  · rw [if_pos hx]
-  · rw [if_neg hx]
+  · rw [ite_eq_left hx]
+  · rw [ite_eq_right hx]
     have hmod_le_x : modulus ≤ x := by
       rw [UInt64.le_iff_toNat_le, modulus_toNat]
       rw [UInt64.lt_iff_toNat_lt, modulus_toNat] at hx
@@ -612,7 +612,7 @@ theorem reduceAddWithCarryRaw_lt (lo : UInt64) (carry : Bool)
     (reduceAddWithCarryRaw lo carry).toNat < Goldilocks.fieldSize := by
   unfold reduceAddWithCarryRaw
   cases carry
-  · simp only [Bool.false_eq_true, if_false]
+  · simp only [Bool.false_eq_true, ite_false]
     exact reduceUInt64Raw_lt lo
   · simp only [↓reduceIte] at h ⊢
     rw [UInt64.toNat_add]
@@ -634,7 +634,7 @@ theorem reduceAddWithCarryRaw_cast (lo : UInt64) (carry : Bool)
         (if carry then (UInt64.size : Goldilocks.Field) else 0) := by
   unfold reduceAddWithCarryRaw
   cases carry
-  · simp only [Bool.false_eq_true, if_false, add_zero]
+  · simp only [Bool.false_eq_true, ite_false, add_zero]
     exact reduceUInt64Raw_cast lo
   · simp only [↓reduceIte]
     change lo.toNat + UInt64.size < 2 * Goldilocks.fieldSize at h
@@ -743,9 +743,9 @@ theorem negRaw_lt (x : UInt64) (hx : x.toNat < Goldilocks.fieldSize) :
     (negRaw x).toNat < Goldilocks.fieldSize := by
   unfold negRaw
   by_cases hzero : x = 0
-  · rw [if_pos hzero]
+  · rw [ite_eq_left hzero]
     decide
-  · rw [if_neg hzero]
+  · rw [ite_eq_right hzero]
     have hx_ne_nat : x.toNat ≠ 0 := by
       intro hz
       apply hzero
@@ -765,12 +765,12 @@ theorem negRaw_cast (x : UInt64) (hx : x.toNat < Goldilocks.fieldSize) :
       -((x.toNat : Goldilocks.Field)) := by
   unfold negRaw
   by_cases hzero : x = 0
-  · rw [if_pos hzero]
+  · rw [ite_eq_left hzero]
     have hxNat : x.toNat = 0 := by
       simpa using congrArg UInt64.toNat hzero
     rw [hxNat]
     simp
-  · rw [if_neg hzero]
+  · rw [ite_eq_right hzero]
     have hle : x ≤ modulus := by
       rw [UInt64.le_iff_toNat_le, modulus_toNat]
       exact Nat.le_of_lt hx
@@ -788,12 +788,12 @@ theorem subRaw_lt (x y : UInt64)
     (subRaw x y).toNat < Goldilocks.fieldSize := by
   unfold subRaw
   by_cases hxy : y ≤ x
-  · rw [if_pos hxy]
+  · rw [ite_eq_left hxy]
     rw [UInt64.toNat_sub_of_le _ _ hxy]
     have hy_le_x : y.toNat ≤ x.toNat := by
       simpa [UInt64.le_iff_toNat_le] using hxy
     omega
-  · rw [if_neg hxy]
+  · rw [ite_eq_right hxy]
     have hx_lt_y : x.toNat < y.toNat := by
       have hnot : ¬y.toNat ≤ x.toNat := by
         intro hle
@@ -836,12 +836,12 @@ theorem subRaw_cast (x y : UInt64)
       (x.toNat : Goldilocks.Field) - (y.toNat : Goldilocks.Field) := by
   unfold subRaw
   by_cases hxy : y ≤ x
-  · rw [if_pos hxy]
+  · rw [ite_eq_left hxy]
     rw [UInt64.toNat_sub_of_le _ _ hxy]
     rw [Nat.cast_sub (by
       rw [UInt64.le_iff_toNat_le] at hxy
       exact hxy)]
-  · rw [if_neg hxy]
+  · rw [ite_eq_right hxy]
     have hx_lt_y : x.toNat < y.toNat := by
       have hnot : ¬y.toNat ≤ x.toNat := by
         intro hle

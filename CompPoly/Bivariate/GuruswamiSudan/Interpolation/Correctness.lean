@@ -200,7 +200,7 @@ private theorem hasseDerivative_pos_xOrder_eq_zero_of_toPoly_map_C {F : Type*}
   rw [CBivariate.hasseDerivative_coeff, CBivariate.coeff_zero]
   rw [cbivariate_coeff_of_toPoly_map_C hQ]
   have hne : ¬ i + a = 0 := by omega
-  rw [if_neg hne]
+  rw [ite_eq_right hne]
   simp
 
 private theorem hasseDerivativeEval_pos_xOrder_of_toPoly_map_C {F : Type*}

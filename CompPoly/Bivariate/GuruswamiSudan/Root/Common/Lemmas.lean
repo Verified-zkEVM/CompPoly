@@ -64,7 +64,7 @@ theorem array_mem_eraseDups_fold_of_mem {α : Type*} [BEq α] [LawfulBEq α]
   | x :: xs, out, h => by
       rw [List.foldl_cons]
       by_cases hx : x ∈ out
-      · rw [if_pos hx]
+      · rw [ite_eq_left hx]
         apply array_mem_eraseDups_fold_of_mem a xs out
         rcases h with h | h
         · exact Or.inl h
@@ -72,7 +72,7 @@ theorem array_mem_eraseDups_fold_of_mem {α : Type*} [BEq α] [LawfulBEq α]
           rcases h with rfl | h
           · exact Or.inl hx
           · exact Or.inr h
-      · rw [if_neg hx]
+      · rw [ite_eq_right hx]
         apply array_mem_eraseDups_fold_of_mem a xs (out.push x)
         rcases h with h | h
         · exact Or.inl (by simp [h])
@@ -147,11 +147,11 @@ theorem cbivar_coeff_truncateX {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
       if i < n then (Array.getD Q.val j 0).coeff i else 0
     rw [CPolynomial.coeff_zero]
     by_cases hi : i < n
-    · rw [if_pos hi]
+    · rw [ite_eq_left hi]
       rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none hjle]
       change 0 = (0 : CPolynomial R).coeff i
       rw [CPolynomial.coeff_zero]
-    · rw [if_neg hi]
+    · rw [ite_eq_right hi]
 
 theorem polynomialPrefix_zero {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
     (p : CPolynomial R) : polynomialPrefix p 0 = 0 := by
@@ -195,7 +195,7 @@ theorem polynomialPrefix_eq_self_of_degreeLt {F : Type*}
     rw [degreeLtBool] at hb
     simp at hb
     have hsize : p.val.size ≤ i := by omega
-    rw [if_neg hi, CPolynomial.coeff_eq_zero_of_size_le p hsize]
+    rw [ite_eq_right hi, CPolynomial.coeff_eq_zero_of_size_le p hsize]
 
 theorem list_foldl_add_eq_sum {R : Type*} [AddMonoid R]
     (f : Nat → R) : ∀ (xs : List Nat) (acc : R),
@@ -212,35 +212,19 @@ theorem list_sum_map_range_eq_finset_sum {R : Type*} [AddCommMonoid R]
   | n + 1 => by
       rw [List.sum_range_succ, Finset.sum_range_succ, list_sum_map_range_eq_finset_sum f n]
 
-theorem cpoly_eval_add {R : Type*}
-    [Semiring R] [BEq R] [LawfulBEq R]
-    (p q : CPolynomial R) (c : R) :
-    CPolynomial.eval c (p + q) = CPolynomial.eval c p + CPolynomial.eval c q := by
-  rw [CPolynomial.eval_toPoly, CPolynomial.toPoly_add, Polynomial.eval_add,
-    ← CPolynomial.eval_toPoly, ← CPolynomial.eval_toPoly]
-
-theorem cpoly_eval_monomial {R : Type*}
-    [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
-    (y : Nat) (a c : R) :
-    (CPolynomial.monomial y a).eval c = a * c ^ y := by
-  rw [CPolynomial.eval_toPoly]
-  rw [show (CPolynomial.monomial y a : CPolynomial R).toPoly =
-      Polynomial.monomial y a from CPolynomial.monomial_toPoly (R := R) y a]
-  simp [Polynomial.eval_monomial]
-
 theorem composeY_add {R : Type*}
     [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
     (P Q : CBivariate R) (p : CPolynomial R) :
     CBivariate.composeY (P + Q) p = CBivariate.composeY P p + CBivariate.composeY Q p := by
   unfold CBivariate.composeY
-  exact cpoly_eval_add P Q p
+  exact CPolynomial.eval_add p P Q
 
 theorem composeY_outer_monomial {R : Type*}
     [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (c p : CPolynomial R) (y : Nat) :
     CBivariate.composeY (CPolynomial.monomial y c : CBivariate R) p = c * p ^ y := by
   unfold CBivariate.composeY
-  exact cpoly_eval_monomial y c p
+  exact CPolynomial.eval_monomial p c y
 
 theorem cpoly_powCoeff_eq_coeff_pow {R : Type*}
     [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
@@ -495,7 +479,7 @@ theorem initialCoefficientPolynomial_evalHorner_eq_composeYCoeff_monomial_zero
         simp only [List.foldl_cons]
         apply ih
         dsimp [polyStep, coeffStep]
-        rw [cpoly_eval_add, hacc, cpoly_eval_monomial, CBivariate.coeff_eq_coeff_coeff,
+        rw [CPolynomial.eval_add, hacc, CPolynomial.eval_monomial, CBivariate.coeff_eq_coeff_coeff,
           cpoly_mulPowCoeff_monomial_zero_depth_zero]
   exact hfold (List.range' 0 Q.val.size) 0 0
     (by simp [CPolynomial.eval_toPoly, CPolynomial.toPoly_zero])
@@ -524,7 +508,7 @@ theorem rootsInFieldForNonzeroEquation_complete {F : Type*}
     (hp : p ≠ 0) (ha : CPolynomial.eval a p = 0) :
     a ∈ (rootsInFieldForNonzeroEquation fieldRoots p).toList := by
   unfold rootsInFieldForNonzeroEquation
-  rw [if_neg]
+  rw [ite_eq_right]
   · exact fieldRoots.complete p a hp ha
   · intro hbeq
     exact hp (beq_iff_eq.mp hbeq)

@@ -79,7 +79,7 @@ theorem finSuccEquivNth_X_below {i : Fin n} (h : i.castSucc < p) :
 /-- The coefficient of `m` in the `i`-th coefficient of `finSuccEquivNth R p f` equals the
     coefficient of `m.insertNth p i` in `f`. -/
 theorem finSuccEquivNth_coeff_coeff (m : Fin n →₀ ℕ) (f : MvPolynomial (Fin (n + 1)) R) (i : ℕ) :
-    coeff m (Polynomial.coeff (finSuccEquivNth R p f) i) = coeff (m.insertNth p i) f := by
+    (Polynomial.coeff (finSuccEquivNth R p f) i).coeff m = f.coeff (m.insertNth p i) := by
   induction f using MvPolynomial.induction_on' generalizing i m with
   | monomial u a =>
     simp only [finSuccEquivNth_apply, coe_eval₂Hom, eval₂_monomial, RingHom.coe_comp, comp_apply,
@@ -88,20 +88,21 @@ theorem finSuccEquivNth_coeff_coeff (m : Fin n →₀ ℕ) (f : MvPolynomial (Fi
       ← map_prod, ← RingHom.map_pow]
     rw [← mul_boole, mul_comm (Polynomial.X ^ u p), Polynomial.coeff_C_mul_X_pow]; congr 1
     obtain rfl | hjmi := eq_or_ne u (m.insertNth p i)
-    · simpa only [insertNth_apply_same, if_pos rfl, if_true,
+    · simpa only [insertNth_apply_same, ite_eq_left rfl, ite_true,
         insertNth_apply_succAbove, monomial_eq, C_1, one_mul, prod_pow] using
         coeff_monomial m m (1 : R)
-    · simp only [hjmi, if_false]
+    · simp only [hjmi, ite_false]
       obtain hij | rfl := ne_or_eq i (u p)
-      · simp only [hij, if_false, coeff_zero]
-      simp only [if_true]
+      · simp only [hij, ite_false, AddMonoidAlgebra.coeff_zero, Finsupp.zero_apply]
+      simp only [ite_true]
       have hmj : m ≠ u.removeNth p := by
         rintro rfl
         rw [insertNth_self_removeNth] at hjmi
         contradiction
-      simpa only [monomial_eq, C_1, one_mul, prod_pow, Finsupp.removeNth_apply, if_neg hmj.symm]
-        using coeff_monomial m (u.removeNth p) (1 : R)
-  | add p q hp hq => simp only [map_add, Polynomial.coeff_add, coeff_add, hp, hq]
+      simpa only [monomial_eq, C_1, one_mul, prod_pow, Finsupp.removeNth_apply,
+        ite_eq_right hmj.symm] using coeff_monomial m (u.removeNth p) (1 : R)
+  | add p q hp hq =>
+    simp only [map_add, Polynomial.coeff_add, AddMonoidAlgebra.coeff_add, Finsupp.add_apply, hp, hq]
 
 /-- The evaluation of `f` at `Fin.insertNth p y s` equals the evaluation at `y` of the polynomial
 obtained by partially evaluating `finSuccEquivNth R p f` at `s`.
@@ -154,8 +155,8 @@ variable. -/
 theorem support_finSuccEquivNth (f : MvPolynomial (Fin (n + 1)) R) :
     (finSuccEquivNth R p f).support = Finset.image (fun m : Fin (n + 1) →₀ ℕ => m p) f.support := by
   ext i
-  simp only [Polynomial.mem_support_iff, ne_eq, MvPolynomial.ext_iff, coeff_zero, not_forall,
-    Finset.mem_image, mem_support_iff, finSuccEquivNth_coeff_coeff]
+  simp only [Polynomial.mem_support_iff, ne_eq, MvPolynomial.ext_iff, AddMonoidAlgebra.coeff_zero,
+    Finsupp.zero_apply, not_forall, Finset.mem_image, mem_support_iff, finSuccEquivNth_coeff_coeff]
   constructor
   · rintro ⟨m, hm⟩
     exact ⟨m.insertNth p i, hm, insertNth_apply_same _ _ _⟩

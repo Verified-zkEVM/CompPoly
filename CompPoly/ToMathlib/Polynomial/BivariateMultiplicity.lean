@@ -91,7 +91,7 @@ theorem rootMultiplicity₀_ge_iff (g : F[X][Y]) (r : ℕ) :
     obtain ⟨⟨i, j⟩, _, hsome⟩ := hmem
     by_cases hz : coeff g i j = 0
     · simp [hz] at hsome
-    · simp only [hz, if_false, Option.some.injEq] at hsome
+    · simp only [hz, ite_false, Option.some.injEq] at hsome
       subst hsome; by_contra hlt; exact hz (H i j (by omega))
   · intro H i j hij
     by_contra hne

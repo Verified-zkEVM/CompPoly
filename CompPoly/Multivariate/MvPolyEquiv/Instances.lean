@@ -29,7 +29,7 @@ variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 lemma map_add (a b : CMvPolynomial n R) :
     fromCMvPolynomial (a + b) = fromCMvPolynomial a + fromCMvPolynomial b := by
   ext m
-  rw [MvPolynomial.coeff_add, coeff_eq, coeff_eq, coeff_eq]
+  rw [AddMonoidAlgebra.coeff_add, Finsupp.add_apply, coeff_eq, coeff_eq, coeff_eq]
   unfold CMvPolynomial.coeff
   unfold_projs
   unfold CPoly.Lawful.add
@@ -78,7 +78,7 @@ lemma map_add (a b : CMvPolynomial n R) :
 @[simp]
 lemma map_zero : fromCMvPolynomial (0 : CMvPolynomial n R) = 0 := by
   ext m
-  rw [MvPolynomial.coeff_zero]
+  rw [AddMonoidAlgebra.coeff_zero, Finsupp.zero_apply]
   unfold fromCMvPolynomial
   simp only
     [ Lawful.mem_iff_cast,
@@ -99,15 +99,14 @@ instance {n : ℕ} : TransCmp (α := CMvMonomial n)
 @[simp]
 lemma map_one : fromCMvPolynomial (1 : CMvPolynomial n R) = 1 := by
   ext m
-  have : MvPolynomial.coeff m 1 = if m = 0 then 1 else (0 : R) := by
-    unfold MvPolynomial.coeff
+  have : (1 : MvPolynomial (Fin n) R).coeff m = if m = 0 then 1 else (0 : R) := by
     unfold_projs
     simp only [Nat.zero_eq, Unlawful.zero_eq_zero]
     split_ifs with h <;>
       unfold AddMonoidAlgebra.single Finsupp.toFun Finsupp.single <;>
         simp [h]
   rw [this]
-  unfold fromCMvPolynomial MvPolynomial.coeff
+  unfold fromCMvPolynomial
   simp only [Lawful.getElem?_eq_val_getElem?, Finsupp.coe_mk]
   unfold_projs
   unfold Lawful.C Unlawful.C MonoR.C
@@ -202,7 +201,7 @@ lemma foldl_eq_sum {β : Type*} [AddCommMonoid β]
   rw [ExtTreeMap.foldl_eq_foldl_toList]
   rw [←List.foldl_map (g := fun x y ↦ x + y), ←List.sum_eq_foldl]
   rw [toList_pairs_monomial_coeff]
-  conv => rhs; arg 1; arg 1; ext x; arg 2; rw [←MvPolynomial.coeff, coeff_eq]
+  conv => rhs; arg 1; arg 1; ext x; arg 2; rw [coeff_eq]
   congr 1
   have monomials_dedup_self : (Lawful.monomials t).dedup = Lawful.monomials t := by
     unfold Lawful.monomials
@@ -230,7 +229,7 @@ lemma fromCMvPolynomial_sum_eq_sum_fromCMvPolynomial
       Finsupp.sum (AddMonoidAlgebra.coeff (fromCMvPolynomial a))
         (fun m c ↦ fromCMvPolynomial (f m c)) := by
   unfold Finsupp.sum; ext
-  simp [MvPolynomial.coeff_sum, coeff_eq, coeff_sum]
+  simp [coeff_eq, coeff_sum]
 
 @[simp]
 lemma map_mul (a b : CMvPolynomial n R) :
@@ -272,7 +271,7 @@ lemma map_mul (a b : CMvPolynomial n R) :
           CMvMonomial.ofFinsupp (m₁ + m₂) := rfl
       rw [hmono]
       simp only [compare_self]
-      unfold MvPolynomial.coeff AddMonoidAlgebra.single
+      unfold AddMonoidAlgebra.single
       simp only [ite_true, Option.getD_some]
       erw [Finsupp.single_eq_same]
     · simp only
@@ -281,7 +280,7 @@ lemma map_mul (a b : CMvPolynomial n R) :
           not_false_eq_true,
           getElem?_neg
         ]
-      unfold MvPolynomial.coeff AddMonoidAlgebra.single
+      unfold AddMonoidAlgebra.single
       erw [Finsupp.single_eq_of_ne (by symm; grind)]
       split
       next h contra =>
@@ -340,7 +339,7 @@ variable {n : ℕ} {R : Type*} [CommRing R] [BEq R] [LawfulBEq R]
 lemma map_neg (a : CMvPolynomial n R) :
     fromCMvPolynomial (-a) = -fromCMvPolynomial a := by
   ext m
-  simp only [MvPolynomial.coeff_neg, coeff_eq]
+  simp only [AddMonoidAlgebra.coeff_neg, Finsupp.neg_apply, coeff_eq]
   unfold CMvPolynomial.coeff
   unfold_projs
   unfold Lawful.neg Unlawful.neg Lawful.fromUnlawful
@@ -376,6 +375,10 @@ noncomputable def polyRingEquiv :
   map_mul' := map_mul
   map_add' := map_add
 
+/-- The underlying function of `polyRingEquiv` is the computable `fromCMvPolynomial`. -/
+theorem coe_polyRingEquiv :
+    ⇑(CPoly.polyRingEquiv (n := n) (R := R)) = CPoly.fromCMvPolynomial := rfl
+
 end
 
 namespace CMvPolynomial
@@ -385,6 +388,9 @@ variable {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
 /-- Ring equivalence between `CMvPolynomial 0 R` and `R`. -/
 noncomputable def isEmptyRingEquiv : CMvPolynomial 0 R ≃+* R :=
   polyRingEquiv.trans (MvPolynomial.isEmptyAlgEquiv R (Fin 0)).toRingEquiv
+
+instance instNontrivial [Nontrivial R] : Nontrivial (CMvPolynomial n R) :=
+  (CPoly.polyRingEquiv (n := n) (R := R)).symm.injective.nontrivial
 
 instance instSMul : SMul R (CMvPolynomial n R) where
   smul r p := C r * p
@@ -412,13 +418,13 @@ lemma fromCMvPolynomial_C (r : R) :
       show (Vector.ofFn (⇑(0 : Fin n →₀ ℕ)))[i] = (Vector.replicate n 0)[i]
       simp only [Finsupp.coe_zero, Pi.zero_apply, Vector.getElem_ofFn, Vector.getElem_replicate]
     by_cases hm : (0 : Fin n →₀ ℕ) = m
-    · subst hm; rw [if_pos rfl]
+    · subst hm; rw [ite_eq_left rfl]
       erw [ExtTreeMap.getElem?_ofList_of_mem
         (k := CMvMonomial.zero) (k' := CMvMonomial.ofFinsupp 0)
         (by rw [ofFinsupp_zero]; exact compare_self)
         (v := r) (by simp) (by simp)]
       simp
-    · rw [if_neg hm]
+    · rw [ite_eq_right hm]
       have hne : CMvMonomial.ofFinsupp m ≠ CMvMonomial.zero := by
         intro h; apply hm; ext i
         have hi := congr_fun (congr_arg Vector.get h) i
@@ -426,7 +432,8 @@ lemma fromCMvPolynomial_C (r : R) :
       erw [ExtTreeMap.getElem?_ofList_of_contains_eq_false (by simp [hne])]
       rfl
 
-noncomputable def CRingHom : R →+* CMvPolynomial n R where
+/-- `CMvPolynomial.C` bundled as a ring homomorphism.  Computable. -/
+def CHom : R →+* CMvPolynomial n R where
   toFun := C
   map_one' := by
     rw [eq_iff_fromCMvPolynomial]
@@ -441,8 +448,20 @@ noncomputable def CRingHom : R →+* CMvPolynomial n R where
     rw [eq_iff_fromCMvPolynomial]
     simp [fromCMvPolynomial_C, CPoly.map_add]
 
+@[simp] theorem CHom_apply (c : R) : (CHom (n := n) c) = CMvPolynomial.C c := rfl
+
+/-- `fromCMvPolynomial` commutes with a finite sum. -/
+theorem fromCMvPolynomial_sum {ι : Type*} (s : Finset ι) (f : ι → CMvPolynomial n R) :
+    fromCMvPolynomial (∑ i ∈ s, f i) = ∑ i ∈ s, fromCMvPolynomial (f i) :=
+  map_sum (polyRingEquiv (n := n) (R := R)) f s
+
+/-- `fromCMvPolynomial` commutes with a finite product. -/
+theorem fromCMvPolynomial_prod {ι : Type*} (s : Finset ι) (f : ι → CMvPolynomial n R) :
+    fromCMvPolynomial (∏ i ∈ s, f i) = ∏ i ∈ s, fromCMvPolynomial (f i) :=
+  map_prod (polyRingEquiv (n := n) (R := R)) f s
+
 noncomputable instance instAlgebra : Algebra R (CMvPolynomial n R) :=
-  Algebra.mk (toSMul := instSMul) CRingHom
+  Algebra.mk (toSMul := instSMul) CHom
     (fun r x => mul_comm (C r) x)
     (fun _ _ => rfl)
 

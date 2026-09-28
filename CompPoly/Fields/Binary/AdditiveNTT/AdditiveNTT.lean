@@ -9,3 +9,4 @@ public import CompPoly.Fields.Binary.AdditiveNTT.Domain
 public import CompPoly.Fields.Binary.AdditiveNTT.Intermediate
 public import CompPoly.Fields.Binary.AdditiveNTT.Algorithm
 public import CompPoly.Fields.Binary.AdditiveNTT.Correctness
+public import CompPoly.Fields.Binary.AdditiveNTT.Impl

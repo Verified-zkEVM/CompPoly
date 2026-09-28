@@ -54,7 +54,7 @@ theorem truncateX_eq_zero_iff_X_pow_dvd (order : Nat) (p : CPolynomial F) :
   constructor
   · intro h t ht
     have hcoeff := congrArg (fun q ↦ CPolynomial.coeff q t) h
-    simp only [truncateX_coeff, if_pos ht, CPolynomial.coeff_zero] at hcoeff
+    simp only [truncateX_coeff, ite_eq_left ht, CPolynomial.coeff_zero] at hcoeff
     rw [← CPolynomial.coeff_toPoly]
     exact hcoeff
   · intro h
@@ -195,7 +195,7 @@ private theorem polynomialScaleCoeffX_zero (c : F) (d : Nat) :
   rw [polynomialScaleCoeffX]
   split
   · rfl
-  · rw [if_pos (by simp)]
+  · rw [ite_eq_left (by simp)]
 
 /-- Coefficient-shift scaling under `toPoly`. -/
 theorem polynomialScaleCoeffX_toPoly (c : F) (d : Nat) (p : CPolynomial F) :
@@ -203,17 +203,17 @@ theorem polynomialScaleCoeffX_toPoly (c : F) (d : Nat) (p : CPolynomial F) :
       Polynomial.C c * Polynomial.X ^ d * p.toPoly := by
   rw [polynomialScaleCoeffX]
   by_cases hc : c == 0
-  · rw [if_pos hc]
+  · rw [ite_eq_left hc]
     have hc' : c = 0 := by simpa using hc
     rw [hc', CPolynomial.toPoly_zero]
     simp
-  · rw [if_neg hc]
+  · rw [ite_eq_right hc]
     by_cases hp : p == 0
-    · rw [if_pos hp]
+    · rw [ite_eq_left hp]
       have hp' : p = 0 := by simpa using hp
       rw [hp', CPolynomial.toPoly_zero]
       simp
-    · rw [if_neg hp]
+    · rw [ite_eq_right hp]
       apply Polynomial.ext
       intro t
       rw [← CPolynomial.coeff_toPoly, CPolynomial.coeff_ofArray]
@@ -226,12 +226,12 @@ theorem polynomialScaleCoeffX_toPoly (c : F) (d : Nat) (p : CPolynomial F) :
         · rw [mul_zero]
       rw [hrhs]
       rcases Nat.lt_or_ge t d with htd | htd
-      · rw [if_neg (by omega)]
+      · rw [ite_eq_right (by omega)]
         rw [Array.getD_eq_getD_getElem?, List.getElem?_toArray,
           List.getElem?_append_left (by simpa using htd),
           List.getElem?_replicate_of_lt htd]
         rfl
-      · rw [if_pos htd]
+      · rw [ite_eq_left htd]
         rw [Array.getD_eq_getD_getElem?, List.getElem?_toArray,
           List.getElem?_append_right (by simpa using htd)]
         rw [List.length_replicate]
@@ -471,7 +471,7 @@ theorem coeffXPower_toPoly (c : F) (d : Nat) :
   rcases Nat.lt_trichotomy t d with ht | ht | ht
   · rw [Array.getD_eq_getD_getElem?, Array.getElem?_push_lt
       (by simpa using ht), Option.getD_some, Array.getElem_replicate,
-      if_neg (by omega), mul_zero]
+      ite_eq_right (by omega), mul_zero]
   · subst ht
     rw [Array.getD_eq_getD_getElem?]
     rw [show ((Array.replicate t (0 : F)).push c)[t]? = some c from by
@@ -499,13 +499,13 @@ theorem rowApproximates_monomialUnitRow (mulCtx : CPolynomial.MulContext F)
         Option.map_some, Option.getD_some]
     rw [hentry]
     by_cases hik : i == k
-    · rw [if_pos hik, coeffXPower_toPoly]
+    · rw [ite_eq_left hik, coeffXPower_toPoly]
       calc (Polynomial.X : Polynomial F) ^ (problem.orders.getD j 0)
           ∣ (Polynomial.X : Polynomial F) ^ d := pow_dvd_pow _ (hd j hj)
         _ ∣ Polynomial.C (1 : F) * Polynomial.X ^ d *
               (rowGet (problem.matrix.getD k #[]) j).toPoly :=
             Dvd.dvd.mul_right (Dvd.dvd.mul_left dvd_rfl _) _
-    · rw [if_neg hik, CPolynomial.toPoly_zero, zero_mul]
+    · rw [ite_eq_right hik, CPolynomial.toPoly_zero, zero_mul]
       exact dvd_zero _
   · have hentry : rowGet (monomialUnitRow (F := F) problem.matrix.size i d) k =
         0 := by
@@ -586,9 +586,9 @@ theorem divXTrunc_coeff (shift order : Nat) (p : CPolynomial F) (t : Nat) :
       if t < order then CPolynomial.coeff p (t + shift) else 0 := by
   rw [divXTrunc, CPolynomial.coeff_ofArray]
   rcases Nat.lt_or_ge t order with ht | ht
-  · rw [if_pos ht, Array.getD_eq_getD_getElem?, List.getElem?_toArray,
+  · rw [ite_eq_left ht, Array.getD_eq_getD_getElem?, List.getElem?_toArray,
       List.getElem?_map, List.getElem?_range ht, Option.map_some, Option.getD_some]
-  · rw [if_neg (by omega), Array.getD_eq_getD_getElem?, List.getElem?_toArray,
+  · rw [ite_eq_right (by omega), Array.getD_eq_getD_getElem?, List.getElem?_toArray,
       List.getElem?_eq_none (by simpa using ht), Option.getD_none]
 
 /-- The row-by-matrix product does not depend on the multiplication context. -/

@@ -461,8 +461,8 @@ lemma rootMultiplicity_comp_X_sub_C (p : L[X]) (a x : L) :
   -- = if p = 0 then 0 else multiplicity (X - (C x - C a)) p
   -- `(X - C x)^n | (p.comp (X - C a)) <=> (X - (C x - C a))^n | p`
   by_cases hp_zero : p = 0
-  · simp only [hp_zero, if_true]
-  · simp only [hp_zero, if_false]
+  · simp only [hp_zero, ite_true]
+  · simp only [hp_zero, ite_false]
     have h_p_comp_zero: p.comp (X - C a) ≠ 0 := by
       by_contra h_p_comp_zero_contra
       simp only [comp_X_sub_C_eq_zero_iff] at h_p_comp_zero_contra
@@ -569,7 +569,7 @@ lemma rootMultiplicity_W (i : Fin r) (a : L) :
       · -- If v ≠ u, then count should be 0
         simp only [SetLike.coe_eq_coe, Multiset.count_univ]
         -- ⊢ (if u = v then 1 else 0) = if v = u then 1 else 0
-        simp only [h_v_eq_u, if_false]
+        simp only [h_v_eq_u, ite_false]
         simp only [ite_eq_right_iff, one_ne_zero, imp_false]
         exact fun a ↦ h_v_eq_u (id (Eq.symm a))
     rw [h_filter_eq_singleton, Multiset.card_singleton]
@@ -698,10 +698,10 @@ lemma rootMultiplicity_prod_W_comp_X_sub_C
       if x = x0 then a - x • β i ∈ ↑(U 𝔽q β i) else a - x • β i ∉ ↑(U 𝔽q β i) := by
       intro x
       by_cases h_x_eq_x0 : x = x0
-      · rw [if_pos h_x_eq_x0] -- ⊢ a - x • β i ∈ U 𝔽q β i
+      · rw [ite_eq_left h_x_eq_x0] -- ⊢ a - x • β i ∈ U 𝔽q β i
         rw [←h_x_eq_x0] at hx0
         exact hx0
-      · rw [if_neg h_x_eq_x0] -- ⊢ a - x • β i ∉ U 𝔽q β i
+      · rw [ite_eq_right h_x_eq_x0] -- ⊢ a - x • β i ∉ U 𝔽q β i
         by_contra h_mem
         have h1 := hx0_unique x
         simp only [h_mem, forall_const] at h1
@@ -710,10 +710,10 @@ lemma rootMultiplicity_prod_W_comp_X_sub_C
     have h_true_x: ∀ x: 𝔽q, (a - x • β i ∈ ↑(U 𝔽q β i)) = if x = x0 then True else False := by
       intro x
       by_cases h_x_eq_x0 : x = x0
-      · rw [if_pos h_x_eq_x0]
+      · rw [ite_eq_left h_x_eq_x0]
         rw [←h_x_eq_x0] at hx0
         simp only [hx0]
-      · rw [if_neg h_x_eq_x0]
+      · rw [ite_eq_right h_x_eq_x0]
         by_contra h_mem
         push Not at h_mem
         simp only [ne_eq, eq_iff_iff, iff_false, not_not] at h_mem
@@ -723,7 +723,7 @@ lemma rootMultiplicity_prod_W_comp_X_sub_C
     conv =>
       lhs
       enter [2, x]
-      simp only [SetLike.mem_coe, h_true_x x, if_false_right, and_true]
+      simp only [SetLike.mem_coe, h_true_x x, ite_false_right, and_true]
     rw [sum_ite_eq']
     simp only [mem_univ, ↓reduceIte]
   · -- ⊢ (∑ x, if a - x • β i ∈ ↑(U 𝔽q β i) then 1 else 0)
@@ -745,7 +745,7 @@ lemma rootMultiplicity_prod_W_comp_X_sub_C
     conv =>
       lhs
       enter [2, x]
-      simp only [SetLike.mem_coe, h_zero_x x, if_false_right, and_true]
+      simp only [SetLike.mem_coe, h_zero_x x, ite_false_right, and_true]
     simp only [↓reduceIte, sum_const_zero]
 
 omit h_Fq_char_prime hF₂ in
@@ -1337,7 +1337,7 @@ lemma degree_Xⱼ (ℓ : ℕ) (h_ℓ : ℓ ≤ r) (j : Fin (2 ^ ℓ)) :
       -- ⊢ ↑(↑j >>> ↑i % 2) * 2 ^ ↑i = if ↑j >>> ↑i % 2 = 1 then 2 ^ ↑i else 0
       by_cases h: (j.val >>> i.val) % 2 = 1
       · simp only [h, Nat.cast_one, one_mul, ↓reduceIte]
-      · simp only [h, if_false];
+      · simp only [h, ite_false];
         have h_0: (j.val >>> i.val) % 2 = 0 := by
           exact Nat.mod_two_ne_one.mp h
         rw [h_0]
@@ -1357,7 +1357,6 @@ lemma degree_Xⱼ (ℓ : ℕ) (h_ℓ : ℓ ≤ r) (j : Fin (2 ^ ℓ)) :
       · apply Finset.sum_congr rfl
         intro x _
         simp only [Nat.cast_ite, Nat.cast_pow, Nat.cast_ofNat, Nat.cast_zero]
-      · rfl
     -- ⊢ (∑ x, f x.val) = j.val in ℕ
     rw [Fin.sum_univ_eq_sum_range (n:=ℓ)] -- switch to sum over Finset.range ℓ
     have h_range: range ℓ = Icc 0 (ℓ-1) := by
@@ -1371,8 +1370,8 @@ lemma degree_Xⱼ (ℓ : ℕ) (h_ℓ : ℓ ≤ r) (j : Fin (2 ^ ℓ)) :
       apply sum_congr rfl (fun x hx => by
         have h_res: (if Nat.getBit x j = 1 then 2 ^ x else 0) = (Nat.getBit x j) * 2^x := by
           by_cases h: Nat.getBit x j = 1
-          · simp only [h, if_true]; norm_num
-          · simp only [h, if_false]; push Not at h;
+          · simp only [h, ite_true]; norm_num
+          · simp only [h, ite_false]; push Not at h;
             have h_bit_x_j_eq_0: Nat.getBit x j = 0 := by
               have h_either_eq := Nat.getBit_eq_zero_or_one (k := x) (n := j)
               simp only [h, or_false] at h_either_eq

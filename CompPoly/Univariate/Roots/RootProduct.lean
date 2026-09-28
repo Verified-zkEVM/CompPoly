@@ -83,7 +83,7 @@ private theorem raw_monicNormalize_ne_zero_of_trim_ne_zero {F : Type*}
   · have hpzeroNe : ¬p.trim = (#[] : CPolynomial.Raw F) := by
       intro hpzero
       exact hzero (by simp [hpzero])
-    rw [if_neg hzero]
+    rw [ite_eq_right hzero]
     intro hsmul
     have hsize_smul :
         (CPolynomial.Raw.smul (p.trim.leadingCoeff)⁻¹ p.trim).size = p.trim.size := by
@@ -173,7 +173,7 @@ theorem finiteFieldRootProductWith_toPoly_eq_normalize_gcd {F : Type*}
   have hpzero : ¬(p.val.trim == (0 : CPolynomial.Raw F)) := by
     intro hzero
     exact hpraw (LawfulBEq.eq_of_beq hzero)
-  rw [if_neg hpzero]
+  rw [ite_eq_right hpzero]
   have hpMonicVal :
       (CPolynomial.monicNormalize p).val = CPolynomial.Raw.monicNormalize p.val := by
     unfold CPolynomial.monicNormalize CPolynomial.ofArray
@@ -254,7 +254,7 @@ private theorem raw_mulModWith_toPoly_eq_modByMonic {F : Type*}
   have hzero : ¬modulus.trim == (0 : CPolynomial.Raw F) := by
     intro h
     exact hmod (LawfulBEq.eq_of_beq h)
-  rw [if_neg hzero]
+  rw [ite_eq_right hzero]
   have hproductTrim : (M.mul p q).trim = M.mul p q := by
     rw [M.mul_eq_mul]
     exact CPolynomial.Raw.mul_is_trimmed p q
@@ -350,7 +350,7 @@ private theorem raw_powModBinaryAuxWith_toPoly_modByMonic {F : Type*}
                   ((CPolynomial.ofArray acc).toPoly *
                     (CPolynomial.ofArray current).toPoly) %ₘ m := by
               dsimp [acc', m]
-              rw [if_pos hodd]
+              rw [ite_eq_left hodd]
               rw [raw_mulModWith_toPoly_eq_modByMonic M D hmod]
               exact polynomial_modByMonic_idem (raw_monicNormalize_toPoly_monic hmod)
             have hpow :
@@ -382,7 +382,7 @@ private theorem raw_powModBinaryAuxWith_toPoly_modByMonic {F : Type*}
                 (CPolynomial.ofArray acc').toPoly %ₘ m =
                   (CPolynomial.ofArray acc).toPoly %ₘ m := by
               dsimp [acc']
-              rw [if_neg hodd]
+              rw [ite_eq_right hodd]
             have hpow :
                 ((CPolynomial.ofArray current).toPoly *
                     (CPolynomial.ofArray current).toPoly) ^ ((n + 1) / 2) =
@@ -412,7 +412,7 @@ private theorem raw_powModWith_X_toPoly_modByMonic {F : Type*}
   have hzero : ¬modulus.trim == (0 : CPolynomial.Raw F) := by
     intro h
     exact hmod (LawfulBEq.eq_of_beq h)
-  rw [if_neg hzero]
+  rw [ite_eq_right hzero]
   let m := (CPolynomial.ofArray (CPolynomial.Raw.monicNormalize modulus)).toPoly
   let oneMod := D.modByMonic (1 : CPolynomial.Raw F) (CPolynomial.Raw.monicNormalize modulus)
   change
@@ -453,7 +453,7 @@ private theorem raw_xModWith_toPoly_modByMonic {F : Type*}
   have hzero : ¬modulus.trim == (0 : CPolynomial.Raw F) := by
     intro h
     exact hmod (LawfulBEq.eq_of_beq h)
-  rw [if_neg hzero]
+  rw [ite_eq_right hzero]
   let m := (CPolynomial.ofArray (CPolynomial.Raw.monicNormalize modulus)).toPoly
   have hXTrim : (CPolynomial.Raw.X : CPolynomial.Raw F).trim = CPolynomial.Raw.X := by
     exact CPolynomial.Raw.X_canonical
@@ -567,14 +567,14 @@ private theorem raw_gcdMonicWithFuel_trim_ne_zero_of_left {F : Type*}
       intro p q hp
       rw [CPolynomial.Raw.gcdMonicWithFuel]
       by_cases hqzero : q.trim == (0 : CPolynomial.Raw F)
-      · rw [if_pos hqzero]
+      · rw [ite_eq_left hqzero]
         rw [raw_monicNormalize_trim]
         apply raw_monicNormalize_ne_zero_of_trim_ne_zero
         simpa [CPolynomial.Raw.Trim.trim_twice] using hp
       · have hqzeroNe : ¬q.trim = (0 : CPolynomial.Raw F) := by
           intro hqtrim0
           exact hqzero (by simp [hqtrim0])
-        rw [if_neg hqzero]
+        rw [ite_eq_right hqzero]
         apply ih
         intro hqtrim0
         rw [CPolynomial.Raw.Trim.trim_twice q] at hqtrim0

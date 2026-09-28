@@ -160,7 +160,7 @@ theorem muldersStorjohannStep_rowSpan_superset
               exact matrix_row_mem_rowSpan hreplaceI_wf
                 (by simpa [hgetJ] using replaceRow_oldRow_mem hj hne)
             by_cases hdeg : degI ≤ degJ
-            · simp only [hdeg, if_true]
+            · simp only [hdeg, ite_true]
               by_cases hkj : k = j
               · subst k
                 have hcancel : cancelShiftedLeadingTerm (M[j]?.getD #[])
@@ -180,7 +180,7 @@ theorem muldersStorjohannStep_rowSpan_superset
                 simpa [Array.getElem?_eq_getElem hj] using htarget
               · have hne' : j ≠ k := fun h ↦ hkj h.symm
                 exact matrix_row_mem_rowSpan hreplaceJ_wf (replaceRow_oldRow_mem hkM hne')
-            · simp only [hdeg, if_false]
+            · simp only [hdeg, ite_false]
               by_cases hki : k = i
               · subst k
                 have hcancel : cancelShiftedLeadingTerm (M[i]?.getD #[])

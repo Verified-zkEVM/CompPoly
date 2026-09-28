@@ -99,7 +99,8 @@ private def runConcreteBtfNttFast (k ℓ R_rate : Nat)
     (input : Fin (2 ^ ℓ) → ConcreteBTField k) :
     Array (ConcreteBTField k) := by
   letI : Fintype (ConcreteBTField k) :=
-    Fintype.ofEquiv (Fin (2 ^ (2 ^ k))) (BitVec.equivFin (m := 2 ^ k)).symm.toEquiv
+    Fintype.ofEquiv (Fin (2 ^ (2 ^ k)))
+      ((ConcreteBTField.equivBitVec k).trans (BitVec.equivFin (m := 2 ^ k))).symm
   letI : Algebra (ConcreteBTField 0) (ConcreteBTField k) :=
     ConcreteBTFieldAlgebra (l := 0) (r := k) (h_le := by omega)
   exact AdditiveNTT.computableAdditiveNTTFast

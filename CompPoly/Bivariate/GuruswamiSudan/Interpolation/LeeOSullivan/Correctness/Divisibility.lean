@@ -73,9 +73,9 @@ private theorem lee_coeff_coeffwise_hasseDeriv_sum
   rw [Polynomial.sum_def]
   by_cases hj : j ∈ P.support
   · rw [Finset.sum_eq_single j]
-    · rw [Polynomial.coeff_monomial, if_pos rfl]
+    · rw [Polynomial.coeff_monomial, ite_eq_left rfl]
     · intro k _hk hkj
-      rw [Polynomial.coeff_monomial, if_neg hkj]
+      rw [Polynomial.coeff_monomial, ite_eq_right hkj]
     · intro hjnot
       contradiction
   · rw [Finset.sum_eq_zero]
@@ -85,7 +85,7 @@ private theorem lee_coeff_coeffwise_hasseDeriv_sum
       have hkj : k ≠ j := by
         intro h
         exact hj (h ▸ hk)
-      rw [Polynomial.coeff_monomial, if_neg hkj]
+      rw [Polynomial.coeff_monomial, ite_eq_right hkj]
 
 private theorem lee_toPoly_hasseDerivative_eq_coeffwise_hasseDeriv_hasseDeriv
     (Q : CBivariate F) (a b : Nat) :
@@ -123,9 +123,9 @@ private theorem coeffY_hasseDeriv_eval_eq_hasseDerivativeEval_of_forall_gt
     ext j i
     by_cases hj : j = 0
     · subst j
-      rw [Polynomial.hasseDeriv_coeff, Polynomial.coeff_C, if_pos rfl]
+      rw [Polynomial.hasseDeriv_coeff, Polynomial.coeff_C, ite_eq_left rfl]
       simp [CBivariate.coeff_toPoly_Y]
-    · rw [Polynomial.hasseDeriv_coeff, Polynomial.coeff_C, if_neg hj]
+    · rw [Polynomial.hasseDeriv_coeff, Polynomial.coeff_C, ite_eq_right hj]
       have hgt : n < j + n := by omega
       rw [CBivariate.coeff_toPoly_Y, hY (j + n) hgt, CPolynomial.toPoly_zero]
       simp
@@ -253,7 +253,7 @@ theorem coeffY_dvd_vanishingPolynomial_pow_of_multiplicity
     rcases hGpowDvd with ⟨Wpoly, hWpoly⟩
     let W : CPolynomial F := ⟨Wpoly.toImpl, CPolynomial.Raw.isCanonical_toImpl Wpoly⟩
     refine ⟨W, ?_⟩
-    apply cpoly_eq_of_toPoly_eq
+    apply CPolynomial.toPoly_inj.mp
     rw [CPolynomial.toPoly_mul, CPolynomial.toPoly_pow]
     have hWto : W.toPoly = Wpoly := by
       simpa only [W] using CPolynomial.toPoly_mk_toImpl Wpoly

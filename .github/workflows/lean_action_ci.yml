@@ -170,6 +170,15 @@ jobs:
         run: |
           bash scripts/build_timing_report.sh run test_path "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c 'lake test'
+      - name: Build native field smoke test
+        run: lake build --wfail CompPolyNativeSmoke
+      - name: Check native field startup and arithmetic
+        env:
+          LEAN_NUM_THREADS: "1"
+        run: |
+          ulimit -v 4194304
+          ulimit -c 0
+          timeout --kill-after=5s 30s .lake/build/bin/CompPolyNativeSmoke
       - name: Axiom sweep
         run: lake exe axiomsweep --check
       - name: Fail on build warnings

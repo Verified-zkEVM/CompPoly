@@ -274,11 +274,11 @@ theorem recursiveSplitProcessPMF_support_length {F : Type*}
       | cons g stack =>
           rw [recursiveSplitProcessPMF] at hmem
           by_cases hdeg : CPolynomial.natDegree g < 2
-          · rw [if_pos hdeg] at hmem
+          · rw [ite_eq_left hdeg] at hmem
             refine le_trans (ih stack hmem) ?_
             simp only [stackSplitBudget]
             omega
-          · rw [if_neg hdeg] at hmem
+          · rw [ite_eq_right hdeg] at hmem
             rw [PMF.mem_support_bind_iff] at hmem
             obtain ⟨o, ho, hmem2⟩ := hmem
             have hdeg2 : 2 ≤ g.toPoly.natDegree := by
@@ -338,21 +338,21 @@ theorem recursiveSplitProcessPMF_rank_le_geometric {F : Type*}
   | zero =>
       intro stack j _hstack
       rw [recursiveSplitProcessPMF, eventProbability, PMF.toOuterMeasure_pure_apply,
-        if_neg (by simp)]
+        ite_eq_right (by simp)]
       exact zero_le
   | succ fuel ih =>
       intro stack j hstack
       cases stack with
       | nil =>
           rw [recursiveSplitProcessPMF, eventProbability, PMF.toOuterMeasure_pure_apply,
-            if_neg (by simp)]
+            ite_eq_right (by simp)]
           exact zero_le
       | cons g stack =>
           rw [recursiveSplitProcessPMF]
           by_cases hdeg : CPolynomial.natDegree g < 2
-          · rw [if_pos hdeg]
+          · rw [ite_eq_left hdeg]
             exact ih stack j fun x hx ↦ hstack x (by simp [hx])
-          · rw [if_neg hdeg]
+          · rw [ite_eq_right hdeg]
             rw [eventProbability, PMF.toOuterMeasure_bind_apply]
             have hvalid := hstack g (by simp)
             have hdeg2 : 2 ≤ CPolynomial.natDegree g := Nat.le_of_not_lt hdeg
@@ -808,9 +808,9 @@ theorem lasVegasSplitTrialPMF_support_isSplitStep {F : Type*}
   | some traceCtx =>
       dsimp only at hmem
       by_cases hodd : q % 2 = 1
-      · rw [if_pos hodd] at hmem
+      · rw [ite_eq_left hodd] at hmem
         exact oddSplitTrialPMF_support_isSplitStep M D enumeration q hg hmem
-      · rw [if_neg hodd] at hmem
+      · rw [ite_eq_right hodd] at hmem
         exact evenTraceTrialPMF_support_isSplitStep M D traceCtx enumeration q hg hmem
 
 /-- Backend trials on splitter-valid factors succeed at rate one half. -/
@@ -846,7 +846,7 @@ theorem lasVegasSplitTrialPMF_success_probability_ge_half {F : Type*}
         unfold lasVegasSplitTrialPMF
         rw [hctx]
         dsimp only
-        rw [if_neg (by omega : ¬q % 2 = 1)]
+        rw [ite_eq_right (by omega : ¬q % 2 = 1)]
       rw [heq]
       exact evenTraceTrial_success_probability_ge_half M D traceCtx enumeration g attempt
         hfield (hinput.hasTwoDistinctRoots hdegree) hdegree

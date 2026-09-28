@@ -184,7 +184,7 @@ private lemma interpolateRaw_eq_sum {ι : Type*} [DecidableEq ι]
   change (interpolateRaw s x y).toPoly.coeff k =
     (∑ i ∈ s, C (y i) * basis s x i).toPoly.coeff k
   rw [toPoly_interpolateRaw, toPoly_sum]
-  congr 1
+  congr 2
   apply Finset.sum_congr rfl
   intro i _
   rw [toPoly_mul, C_toPoly, cbasis_eq_basis]

@@ -66,8 +66,6 @@ private lemma mvToUnivariate_eq_map_finSuccEquiv [CommSemiring R]
     · intro r
       simp [MvPolynomial.finSuccEquiv_apply, Polynomial.map_C,
             MvPolynomial.isEmptyRingEquiv]
-      change r = MvPolynomial.coeff (0 : Fin 0 →₀ ℕ) (MvPolynomial.C r)
-      simp [MvPolynomial.coeff_C]
     · intro i
       have hi : i = 0 := Subsingleton.elim _ _
       subst hi

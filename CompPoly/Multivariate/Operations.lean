@@ -279,7 +279,7 @@ lemma X_eq_monomial {k : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
   · ext m; unfold CMvPolynomial.coeff Lawful.fromUnlawful
     erw [Unlawful.filter_get]; simp [h]; grind
   · simp only [show ((1 : R) == 0) = false from by simp [h]]
-    exact (if_neg (by decide)).symm
+    exact (ite_eq_right (by decide)).symm
 
 lemma toFinsupp_unitMono {k : ℕ}
     (i : Fin k) :
@@ -306,13 +306,13 @@ lemma fromCMvPolynomial_monomial {k : ℕ} {R : Type*} [CommSemiring R] [BEq R] 
     erw [Unlawful.filter_get]
     simp only [Unlawful.ofList]
     by_cases hm : CMvMonomial.toFinsupp mono = μ
-    · subst hm; rw [if_pos rfl, CMvMonomial.ofFinsupp_toFinsupp]
+    · subst hm; rw [ite_eq_left rfl, CMvMonomial.ofFinsupp_toFinsupp]
       erw [ExtTreeMap.getElem?_ofList_of_mem
         (k := mono) (k_eq := compare_self) (v := c)
         (mem := by simp) (distinct := ?distinct)]
       · simp
       case distinct => simp
-    · rw [if_neg hm]
+    · rw [ite_eq_right hm]
       have hne : CMvMonomial.ofFinsupp μ ≠ mono :=
         fun h => hm (h ▸ CMvMonomial.toFinsupp_ofFinsupp)
       erw [ExtTreeMap.getElem?_ofList_of_contains_eq_false
@@ -326,6 +326,51 @@ lemma fromCMvPolynomial_X {k : ℕ} {R : Type*} [CommSemiring R] [BEq R] [Lawful
   rw [X_eq_monomial, fromCMvPolynomial_monomial, toFinsupp_unitMono]
   rfl
 
+/-! ### `C` and `eval₂` as ring homomorphisms -/
+
+@[simp] theorem eval₂_C {n : ℕ} {R S : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+    [CommSemiring S] (f : R →+* S) (vs : Fin n → S) (c : R) :
+    CMvPolynomial.eval₂ f vs (CMvPolynomial.C c) = f c := by
+  rw [eval₂_equiv (f := f) (vals := vs), fromCMvPolynomial_C, MvPolynomial.eval₂_C]
+
+@[simp] theorem eval₂_X {n : ℕ} {R S : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+    [CommSemiring S] (f : R →+* S) (vs : Fin n → S) (i : Fin n) :
+    CMvPolynomial.eval₂ f vs (CMvPolynomial.X i) = vs i := by
+  rw [eval₂_equiv (f := f) (vals := vs), fromCMvPolynomial_X, MvPolynomial.eval₂_X]
+
+@[simp] theorem eval₂Hom_C {n : ℕ} {R S : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+    [CommSemiring S] (f : R →+* S) (vs : Fin n → S) (c : R) :
+    CMvPolynomial.eval₂Hom f vs (CMvPolynomial.C c) = f c := by
+  rw [eval₂Hom_apply, eval₂_C]
+
+@[simp] theorem eval₂Hom_X {n : ℕ} {R S : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+    [CommSemiring S] (f : R →+* S) (vs : Fin n → S) (i : Fin n) :
+    CMvPolynomial.eval₂Hom f vs (CMvPolynomial.X i) = vs i := by
+  rw [eval₂Hom_apply, eval₂_X]
+
+/-- Two ring homomorphisms out of `CMvPolynomial n R` are equal once they agree on the constants
+and on every variable. -/
+theorem ringHom_ext {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
+    {T : Type*} [Semiring T] {f g : CMvPolynomial n R →+* T}
+    (hC : ∀ c, f (CMvPolynomial.C c) = g (CMvPolynomial.C c))
+    (hX : ∀ i, f (CMvPolynomial.X i) = g (CMvPolynomial.X i)) : f = g := by
+  have hsymmC : ∀ c, (CPoly.polyRingEquiv (n := n) (R := R)).symm (MvPolynomial.C c)
+      = CMvPolynomial.C c := fun c =>
+    (CPoly.polyRingEquiv (n := n) (R := R)).injective (by
+      rw [RingEquiv.apply_symm_apply, coe_polyRingEquiv, fromCMvPolynomial_C])
+  have hsymmX : ∀ i, (CPoly.polyRingEquiv (n := n) (R := R)).symm (MvPolynomial.X i)
+      = CMvPolynomial.X i := fun i =>
+    (CPoly.polyRingEquiv (n := n) (R := R)).injective (by
+      rw [RingEquiv.apply_symm_apply, coe_polyRingEquiv, fromCMvPolynomial_X])
+  have hcomp : f.comp (CPoly.polyRingEquiv (n := n) (R := R)).symm.toRingHom
+      = g.comp (CPoly.polyRingEquiv (n := n) (R := R)).symm.toRingHom := by
+    refine MvPolynomial.ringHom_ext (fun c => ?_) (fun i => ?_)
+    · simpa [hsymmC] using hC c
+    · simpa [hsymmX] using hX i
+  refine RingHom.ext (fun p => ?_)
+  obtain ⟨q, rfl⟩ := (CPoly.polyRingEquiv (n := n) (R := R)).symm.surjective p
+  exact congrFun (congrArg (·.toFun) hcomp) q
+
 @[simp] lemma aeval_X {n : ℕ} {R σ : Type*}
     [CommSemiring R] [BEq R] [LawfulBEq R]
     [CommSemiring σ] [Algebra R σ]
@@ -338,8 +383,7 @@ lemma fromCMvPolynomial_X {k : ℕ} {R : Type*} [CommSemiring R] [BEq R] [Lawful
 @[simp] lemma bind₁_X {n m : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
     (f : Fin n → CMvPolynomial m R) (i : Fin n) :
     bind₁ f (CMvPolynomial.X (R := R) i) = f i := by
-  rw [bind₁_eq_aeval]
-  simpa using (aeval_X (n := n) (R := R) (σ := CMvPolynomial m R) f i)
+  rw [bind₁_eq_aeval, aeval_X]
 
 @[simp] lemma bind₁_id {n : ℕ} {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R]
     (p : CMvPolynomial n R) :
@@ -360,8 +404,9 @@ lemma fromCMvPolynomial_X {k : ℕ} {R : Type*} [CommSemiring R] [BEq R] [Lawful
     ext r m
     rw [RingHom.comp_apply]
     rw [show (algebraMap R (CMvPolynomial n R)) r = CMvPolynomial.C (n := n) r from rfl]
-    simpa [CPoly.polyRingEquiv, CPoly.polyEquiv] using congrArg (fun q => MvPolynomial.coeff m q)
-      (CMvPolynomial.fromCMvPolynomial_C (n := n) (R := R) r)
+    simpa [CPoly.polyRingEquiv, CPoly.polyEquiv] using
+      congrArg (fun q : MvPolynomial (Fin n) R => q.coeff m)
+        (CMvPolynomial.fromCMvPolynomial_C (n := n) (R := R) r)
   have hcomp' :
       ((CPoly.polyRingEquiv (n := n) (R := R) : CMvPolynomial n R →+* MvPolynomial (Fin n) R).comp
         (algebraMap R (CMvPolynomial n R))) = MvPolynomial.C := by
@@ -422,7 +467,7 @@ lemma fromCMvPolynomial_finsupp_sum {n k : ℕ} [CommSemiring R] [BEq R] [Lawful
     Finsupp.sum (AddMonoidAlgebra.coeff (fromCMvPolynomial a))
       (fun μ c => fromCMvPolynomial (g μ c)) := by
   unfold Finsupp.sum; ext
-  simp [MvPolynomial.coeff_sum, coeff_eq, coeff_sum]
+  simp [coeff_eq, coeff_sum]
 
 /-! ## API lemmas for `sumToIter` -/
 
@@ -479,9 +524,8 @@ theorem fromCMvPolynomial_bind₁ {n m : ℕ} {R : Type*} [CommSemiring R] [BEq 
         (algebraMap R (CMvPolynomial m R)) = MvPolynomial.C := by
     ext r μ
     rw [RingHom.comp_apply]
-    change MvPolynomial.coeff μ
-        (fromCMvPolynomial (algebraMap R (CMvPolynomial m R) r)) =
-      MvPolynomial.coeff μ (MvPolynomial.C r)
+    change (fromCMvPolynomial (algebraMap R (CMvPolynomial m R) r)).coeff μ =
+      (MvPolynomial.C r : MvPolynomial (Fin m) R).coeff μ
     rw [show (algebraMap R (CMvPolynomial m R)) r = CMvPolynomial.C (n := m) r from rfl]
     rw [fromCMvPolynomial_C]
   rw [eval₂_equiv (p := p) (f := algebraMap R (CMvPolynomial m R)) (vals := f)]

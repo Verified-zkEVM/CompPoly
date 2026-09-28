@@ -452,13 +452,13 @@ theorem size_eq_two_mul_halfSize (D : CircleDomain) :
 @[simp]
 theorem indexAt_left (D : CircleDomain) (i : Nat) (hi : i < D.halfCoset.size) :
     D.indexAt i = D.halfCoset.indexAt i := by
-  rw [indexAt_def, if_pos hi]
+  rw [indexAt_def, ite_eq_left hi]
 
 /-- Indices at or beyond the half-coset size come from the conjugate half. -/
 @[simp]
 theorem indexAt_of_le (D : CircleDomain) (i : Nat) (hi : D.halfCoset.size ≤ i) :
     D.indexAt i = -D.halfCoset.indexAt (i - D.halfCoset.size) := by
-  rw [indexAt_def, if_neg (Nat.not_lt.mpr hi), Coset.conjugate_indexAt]
+  rw [indexAt_def, ite_eq_right (Nat.not_lt.mpr hi), Coset.conjugate_indexAt]
 
 /-- Indices in the second half come from the negated half coset. -/
 @[simp]

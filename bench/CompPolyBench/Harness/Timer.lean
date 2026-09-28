@@ -24,9 +24,9 @@ namespace CompPolyBench
 
 /-- Whether this process is running in validation-only mode.
 
-Set once from the command line rather than carried on every `BenchSpec`. Read by
-`runTimedSpec`, which skips calibration and sample collection entirely when it is
-set. -/
+Set from the command line and read by `runTimedSpec`. When set, ordinary workloads
+run their checksum validation without calibration or timed samples. Harness checks
+with `forceTiming := true` still calibrate and collect samples. -/
 initialize validateOnlyRef : IO.Ref Bool ← IO.mkRef false
 
 /-- Elapsed time for one timed sample, with the sink accumulator it produced. -/

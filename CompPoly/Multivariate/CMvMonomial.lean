@@ -11,6 +11,7 @@ public import Mathlib.Algebra.Group.TypeTags.Basic
 public import Mathlib.Algebra.GroupWithZero.Nat
 public import Mathlib.Algebra.Ring.Defs
 public import Mathlib.Order.Lattice.Nat
+public import Mathlib.Order.Preorder.Finsupp
 public import Batteries.Data.Vector.Basic
 
 /-!
@@ -107,15 +108,26 @@ def add : CMvMonomial n → CMvMonomial n → CMvMonomial n :=
 instance : Add (CMvMonomial n) := ⟨add⟩
 
 @[simp]
+theorem getElem_add (i : ℕ) (h : i < n) : (m₁ + m₂)[i] = m₁[i] + m₂[i] :=
+  Vector.getElem_zipWith (f := Nat.add) h
+
+@[simp]
 lemma add_zero : m + 0 = m := by unfold_projs; dsimp [add, zero, CMvMonomial]; grind
 
 /-- Check if $m_1$ divides $m_2$ (true if all exponents of $m_1$ are $\le$ those of $m_2$). -/
 def divides (m₁ m₂ : CMvMonomial n) : Bool :=
-  Vector.all (Vector.zipWith (flip Nat.ble) m₁ m₂) (· == true)
+  Vector.all (Vector.zipWith Nat.ble m₁ m₂) (· == true)
 
 instance : Dvd (CMvMonomial n) := ⟨fun m₁ m₂ ↦ divides m₁ m₂⟩
 
 instance : Decidable (m₁ ∣ m₂) := by dsimp [(·∣·)]; infer_instance
+
+theorem dvd_iff_divides : m₁ ∣ m₂ ↔ divides m₁ m₂ = true := Iff.rfl
+
+/-- `m₁ ∣ m₂` holds exactly when every exponent of `m₁` is at most the matching exponent of
+`m₂`. -/
+theorem dvd_iff : m₁ ∣ m₂ ↔ ∀ (i : ℕ) (h : i < n), m₁[i] ≤ m₂[i] := by
+  simp [dvd_iff_divides, divides, Vector.all_eq_true]
 
 /--
   The monomial division $m_1 / m_2$ (subtracts exponents element-wise).
@@ -127,7 +139,22 @@ def div (m₁ m₂ : CMvMonomial n) : CMvMonomial n :=
 
 instance : Div (CMvMonomial n) := ⟨div⟩
 
-instance : Decidable (m₁ ∣ m₂) := by dsimp [(·∣·)]; infer_instance
+@[simp]
+theorem getElem_div (i : ℕ) (h : i < n) : (m₁ / m₂)[i] = m₁[i] - m₂[i] :=
+  Vector.getElem_zipWith (f := Nat.sub) h
+
+theorem add_div_of_dvd (h : m₁ ∣ m₂) : m₁ + m₂ / m₁ = m₂ := by
+  rw [dvd_iff] at h
+  ext i hi
+  simp [Nat.add_sub_of_le (h i hi)]
+
+/-- Divisibility agrees with monomial multiplication, which adds exponents. -/
+theorem dvd_iff_exists_add : m₁ ∣ m₂ ↔ ∃ c, m₂ = m₁ + c := by
+  refine ⟨fun h ↦ ⟨m₂ / m₁, (add_div_of_dvd h).symm⟩, ?_⟩
+  rintro ⟨c, rfl⟩
+  rw [dvd_iff]
+  intro i hi
+  simp
 
 /-- Convert a `CMvMonomial` to a `Finsupp`. -/
 def toFinsupp (m : CMvMonomial n) : Fin n →₀ ℕ :=
@@ -146,6 +173,11 @@ theorem ofFinsupp_toFinsupp : ofFinsupp m.toFinsupp = m := by
 @[grind =, simp]
 theorem toFinsupp_ofFinsupp {m : Fin n →₀ ℕ} : (ofFinsupp m).toFinsupp = m := by
   ext i; aesop (add simp [CMvMonomial.toFinsupp, CMvMonomial.ofFinsupp, Vector.get])
+
+/-- Divisibility is the pointwise order on exponent vectors. -/
+theorem dvd_iff_toFinsupp_le : m₁ ∣ m₂ ↔ m₁.toFinsupp ≤ m₂.toFinsupp := by
+  rw [dvd_iff, Finsupp.le_def]
+  exact ⟨fun h i ↦ h i i.isLt, fun h i hi ↦ h ⟨i, hi⟩⟩
 
 lemma injective_ofFinsupp : Function.Injective (ofFinsupp (n := n)) :=
   Function.HasLeftInverse.injective ⟨toFinsupp, fun _ ↦ toFinsupp_ofFinsupp⟩
@@ -190,8 +222,10 @@ def C (c : R) : MonoR n R := (CMvMonomial.zero, c)
 
 variable [CommSemiring R] [HMod R R R] [BEq R]
 
+/-- Check if $t_1$ divides $t_2$: the monomial of $t_1$ divides that of $t_2$, and the
+coefficient of $t_2$ is zero modulo that of $t_1$. -/
 def divides (t₁ t₂ : MonoR n R) : Bool :=
-  t₁.1 ∣ t₂.1 ∧ t₁.2 % t₂.2 == 0
+  t₁.1 ∣ t₂.1 ∧ t₂.2 % t₁.2 == 0
 
 instance : Dvd (MonoR n R) := ⟨fun t₁ t₂ ↦ divides t₁ t₂⟩
 

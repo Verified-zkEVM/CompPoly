@@ -6,7 +6,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 module
 
 public import CompPoly.Fields.Binary.AdditiveNTT.Algorithm
-public import CompPoly.Fields.Binary.AdditiveNTT.Impl
+public import CompPoly.Fields.Binary.AdditiveNTT.Executable
 public import Mathlib.Algebra.CharP.CharAndCard
 public import Mathlib.Algebra.CharP.Two
 

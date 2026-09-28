@@ -14,7 +14,7 @@ public meta import CompPolyTests.Bivariate.KroneckerCommon
   Packing coefficients and round-trip recovery for `kroneckerPack` / `kroneckerUnpack`,
   followed by a runtime check that, on small KoalaBear data, each pipeline (schoolbook,
   classic NTT, recursive NTT) returns the same product as direct multiplication. The full
-  timing comparison lives in `KroneckerBenchmark.lean`.
+  timing comparison lives in the `bivariate-full-*` benchmark groups.
 -/
 
 public meta section
@@ -29,12 +29,12 @@ private theorem natDegreeX_XY2 : natDegreeX (monomialXY 1 2 (1 : ℚ)) = 1 := by
 /-- Packing `X Y^2` with gap `3` puts its coefficient at position `3 * 2 + 1 = 7`. -/
 example : CPolynomial.coeff (kroneckerPack 3 (monomialXY 1 2 (1 : ℚ))) 7 = 1 := by
   rw [coeff_kroneckerPack (by norm_num) _ (by rw [natDegreeX_XY2]; omega)]
-  rw [coeff_monomialXY, if_pos (by decide)]
+  rw [coeff_monomialXY, ite_eq_left (by decide)]
 
 /-- Positions that do not encode a monomial of `X Y^2` pack to `0`. -/
 example : CPolynomial.coeff (kroneckerPack 3 (monomialXY 1 2 (1 : ℚ))) 5 = 0 := by
   rw [coeff_kroneckerPack (by norm_num) _ (by rw [natDegreeX_XY2]; omega)]
-  rw [coeff_monomialXY, if_neg (by decide)]
+  rw [coeff_monomialXY, ite_eq_right (by decide)]
 
 /-- Round-trip: unpacking the packed monomial recovers it (gap `2 > natDegreeX = 1`). -/
 example :

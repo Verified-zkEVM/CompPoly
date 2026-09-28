@@ -237,18 +237,18 @@ handful of naturals. -/
 
 private theorem cond_of_borrow_zero {M Q T : ℕ} (h : M + Q = T) (hM : M < 2 ^ 256) :
     M = if T < Q then T else T - Q := by
-  rw [if_neg (by omega)]
+  rw [ite_eq_right (by omega)]
   omega
 
 private theorem cond_of_borrow_one {M Q T : ℕ} (h : M + Q = T + 2 ^ 256) (hM : M < 2 ^ 256) :
     T = if T < Q then T else T - Q := by
-  rw [if_pos (by omega)]
+  rw [ite_eq_left (by omega)]
 
 private theorem cond_eq_mod {T Q : ℕ} (h : T < 2 * Q) :
     (if T < Q then T else T - Q) = T % Q := by
   by_cases hc : T < Q
-  · rw [if_pos hc, Nat.mod_eq_of_lt hc]
-  · rw [if_neg hc]
+  · rw [ite_eq_left hc, Nat.mod_eq_of_lt hc]
+  · rw [ite_eq_right hc]
     conv_rhs => rw [show T = T - Q + Q by omega]
     rw [Nat.add_mod_right, Nat.mod_eq_of_lt (by omega)]
 

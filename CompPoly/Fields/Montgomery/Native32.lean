@@ -71,11 +71,11 @@ theorem conditionalSubtract_toNat :
       if u.toNat < p32.toNat then u.toNat else u.toNat - p32.toNat := by
   simp only [conditionalSubtract, UInt32.lt_iff_toNat_lt]
   by_cases hx : u.toNat < p32.toNat
-  · simp only [if_pos hx]
+  · simp only [ite_eq_left hx]
   · have hp_le_x : p32 ≤ u := by
       rw [UInt32.le_iff_toNat_le]
       omega
-    simp only [if_neg hx, UInt32.toNat_sub_of_le _ _ hp_le_x]
+    simp only [ite_eq_right hx, UInt32.toNat_sub_of_le _ _ hp_le_x]
 
 /-- Native Montgomery reduction agrees with the natural-number specification. -/
 theorem reduceRaw_toNat (hp32 : p32.toNat = modulus) (hp64 : p64.toNat = modulus)
@@ -95,12 +95,12 @@ theorem conditionalSubtract_lt (h : u.toNat < 2 * p32.toNat) :
     (conditionalSubtract p32 u).toNat < p32.toNat := by
   simp only [conditionalSubtract, UInt32.lt_iff_toNat_lt]
   by_cases hx : u.toNat < p32.toNat
-  · rw [if_pos hx]
+  · rw [ite_eq_left hx]
     exact hx
   · have hp_le_x : p32 ≤ u := by
       rw [UInt32.le_iff_toNat_le]
       omega
-    rw [if_neg hx, UInt32.toNat_sub_of_le _ _ hp_le_x]
+    rw [ite_eq_right hx, UInt32.toNat_sub_of_le _ _ hp_le_x]
     omega
 
 theorem conditionalSubtract_cast :
@@ -108,12 +108,12 @@ theorem conditionalSubtract_cast :
       (u.toNat : ZMod p32.toNat) := by
   simp only [conditionalSubtract]
   by_cases hx : u < p32
-  · rw [if_pos hx]
+  · rw [ite_eq_left hx]
   · have hp_le_x : p32 ≤ u := by
       rw [UInt32.le_iff_toNat_le]
       rw [UInt32.lt_iff_toNat_lt] at hx
       exact Nat.le_of_not_gt hx
-    rw [if_neg hx, UInt32.toNat_sub_of_le _ _ hp_le_x]
+    rw [ite_eq_right hx, UInt32.toNat_sub_of_le _ _ hp_le_x]
     rw [Nat.cast_sub (by
       rw [UInt32.le_iff_toNat_le] at hp_le_x
       exact hp_le_x)]

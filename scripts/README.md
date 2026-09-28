@@ -12,6 +12,8 @@ This directory contains the main helper scripts for local validation and CI supp
   local markdown links, and backticked source paths across the handbook.
 - `lake exe axiomsweep --check` - kernel-level axiom/`sorry` regression gate against
   `scripts/axiom_baseline.json` (run after `lake build`).
+- `./scripts/bench-ab.sh run <group>` - A/B the current build against a frozen
+  baseline on one benchmark group and print a verdict per row.
 
 ## Script Inventory
 
@@ -112,7 +114,41 @@ previously recorded baseline without rerunning that baseline in the same job.
 This supports
 [`../.github/workflows/lean_action_ci.yml`](../.github/workflows/lean_action_ci.yml).
 
+### `bench-ab.sh`
+
+Driver for the optimisation loop in
+[`../docs/wiki/autoresearch.md`](../docs/wiki/autoresearch.md). Three
+subcommands:
+
+- `freeze [--force]` builds `CompPolyBench` and keeps a copy under
+  `bench/out/ab/baseline/` together with the commit it came from.
+- `run <group>[,<group>...]` builds the current tree once, then runs the frozen
+  baseline and the fresh binary alternately (`BENCH_AB_ROUNDS`, default 5, at
+  `BENCH_AB_PRESET`, default `medium`) on the given groups plus the harness
+  self-check, each invocation into its own `--out-dir`, and finishes with
+  `CompPolyBench --compare`. Its exit code is the compare command's.
+- `clean [--all]` removes comparison runs under `bench/out/ab/`.
+
+Use this when:
+
+- you changed a fast implementation and want to know whether it got faster,
+- you want a same-machine number rather than one compared against yesterday's,
+- an agent is iterating on a kernel and needs a keep-or-revert signal.
+
+Everything it writes is under `bench/out/`, which is ignored. It never runs
+`lake exe` once measurement has started, so a rebuild cannot race a run.
+
 ## Typical Workflows
+
+### Optimising a fast kernel
+
+```bash
+./scripts/bench-ab.sh freeze
+# edit one kernel
+lake build
+lake exe CompPolyBench --validate-only --groups fields-koalabear-mul
+./scripts/bench-ab.sh run fields-koalabear-mul
+```
 
 ### Added or renamed source files
 

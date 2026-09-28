@@ -218,16 +218,16 @@ private theorem forwardMathPairsSpec_half
           = (if bb < block + 1 then v1 else v0) := by
       by_cases hlt : bb < block
       · have hlt' : bb < block + 1 := Nat.lt_trans hlt (Nat.lt_succ_self _)
-        rw [if_pos hlt, if_pos hlt']
+        rw [ite_eq_left hlt, ite_eq_left hlt']
       · by_cases hEq : bb = block
         · have hlt' : bb < block + 1 := by
             simp [hEq]
-          rw [if_neg hlt, if_pos hEq, if_pos hpair, if_pos hlt']
+          rw [ite_eq_right hlt, ite_eq_left hEq, ite_eq_left hpair, ite_eq_left hlt']
         · have hnot : ¬ bb < block + 1 := by
             exact not_lt_of_ge
               (Nat.succ_le_of_lt
                 (Nat.lt_of_le_of_ne (Nat.le_of_not_lt hlt) (Ne.symm hEq)))
-          rw [if_neg hlt, if_neg hEq, if_neg hnot]
+          rw [ite_eq_right hlt, ite_eq_right hEq, ite_eq_right hnot]
     simpa [forwardMathPairsSpec, forwardMathBlocksSpec, forwardMathValueAt, bb, v1, v0]
       using hcase
 
@@ -265,7 +265,7 @@ private theorem forwardMathBlocksSpec_final
       dsimp [bb]
       exact Nat.div_lt_of_lt_mul hi'
     have hcase : (if bb < D.n / blockSize then v1 else v0) = v1 := by
-      rw [if_pos hblock]
+      rw [ite_eq_left hblock]
     simpa [forwardMathBlocksSpec, forwardMathStageSpec, forwardMathValueAt, blockSize, bb, v1, v0]
       using hcase
 
@@ -592,21 +592,21 @@ private theorem forwardMathPairsSpec_get_unchanged
       (forwardMathPairsSpec D stage block (j + 1) a)[i] := by
   simp only [forwardMathPairsSpec, Array.getElem_ofFn]
   by_cases hltBlock : i / 2 ^ (stage + 1) < block
-  · rw [if_pos hltBlock, if_pos hltBlock]
-  · rw [if_neg hltBlock, if_neg hltBlock]
+  · rw [ite_eq_left hltBlock, ite_eq_left hltBlock]
+  · rw [ite_eq_right hltBlock, ite_eq_right hltBlock]
     by_cases hEqBlock : i / 2 ^ (stage + 1) = block
-    · rw [if_pos hEqBlock, if_pos hEqBlock]
+    · rw [ite_eq_left hEqBlock, ite_eq_left hEqBlock]
       by_cases hltPair : i % 2 ^ stage < j
-      · rw [if_pos hltPair, if_pos (Nat.lt_trans hltPair (Nat.lt_succ_self j))]
+      · rw [ite_eq_left hltPair, ite_eq_left (Nat.lt_trans hltPair (Nat.lt_succ_self j))]
       · have hgePair : j ≤ i % 2 ^ stage := Nat.le_of_not_lt hltPair
-        rw [if_neg hltPair]
+        rw [ite_eq_right hltPair]
         by_cases hltPairNext : i % 2 ^ stage < j + 1
         · have hpair : i % 2 ^ stage = j := by omega
           rcases eq_lower_or_upper_of_block_pair stage block j i hEqBlock hpair with h | h
           · exact (hneLower h.symm).elim
           · exact (hneUpper h.symm).elim
-        · rw [if_neg hltPairNext]
-    · rw [if_neg hEqBlock, if_neg hEqBlock]
+        · rw [ite_eq_right hltPairNext]
+    · rw [ite_eq_right hEqBlock, ite_eq_right hEqBlock]
 
 private theorem butterfly_upper_lt_of_lower_lt_domain
     (D : Domain R) (stage block j : Nat) (hstage : stage < D.logN) (hj : j < 2 ^ stage)
@@ -672,7 +672,7 @@ private theorem butterflyInnerStep_forwardMathPairsSpec_succ
       simp only [Array.size_setIfInBounds] at hi₁
       simp [Array.getElem_setIfInBounds, hi₁]
       by_cases hUpper : block * 2 ^ (stage + 1) + donePairs + 2 ^ stage = i
-      · rw [if_pos hUpper]
+      · rw [ite_eq_left hUpper]
         subst i
         have hLowerOld :
             block * 2 ^ (stage + 1) + donePairs <
@@ -685,9 +685,9 @@ private theorem butterflyInnerStep_forwardMathPairsSpec_succ
         rw [forwardMathPairsSpec_get_upper_current D stage block donePairs a hdonePairs hi₁]
         rw [forwardMathPairsSpec_get_upper_next D stage block donePairs a hdonePairs hi₂]
         exact (forwardMathValueAt_succ_upper D stage block donePairs a hstage hdonePairs).symm
-      · rw [if_neg hUpper]
+      · rw [ite_eq_right hUpper]
         by_cases hLower : block * 2 ^ (stage + 1) + donePairs = i
-        · rw [if_pos hLower]
+        · rw [ite_eq_left hLower]
           subst i
           have hLowerDomain : block * 2 ^ (stage + 1) + donePairs < D.n := by
             simpa [forwardMathPairsSpec] using hi₁
@@ -706,7 +706,7 @@ private theorem butterflyInnerStep_forwardMathPairsSpec_succ
           rw [forwardMathPairsSpec_get_upper_current D stage block donePairs a hdonePairs hUpperOld]
           rw [forwardMathPairsSpec_get_lower_next D stage block donePairs a hdonePairs hi₂]
           exact (forwardMathValueAt_succ_lower D stage block donePairs a hstage hdonePairs).symm
-        · rw [if_neg hLower]
+        · rw [ite_eq_right hLower]
           exact forwardMathPairsSpec_get_unchanged D stage block donePairs a
             hi₁ hi₂ hLower hUpper
   · rw [pow_succ]

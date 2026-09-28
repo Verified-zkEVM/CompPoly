@@ -5,7 +5,7 @@ Authors: Derek Sorensen
 -/
 module
 
-public import CompPoly.Multivariate.CMvPolynomialEvalLemmas
+public import CompPoly.Multivariate.Eval
 public import CompPoly.Multivariate.PartialEval
 
 /-!

@@ -5,6 +5,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 module
 
+public import Mathlib.Data.Nat.Init
 public import Mathlib.LinearAlgebra.Matrix.Reindex
 
 /-!
@@ -14,6 +15,9 @@ An `AlgebraTower` is a preorder-indexed family of commutative semirings with rin
 homomorphisms between comparable levels. Self-maps are identities, and the maps compose
 along chains of indices. Each map induces an algebra structure on its target, and
 composition gives compatible scalar actions across three levels.
+
+`AlgebraTower.ofNatStep` constructs a natural-number-indexed tower by composing chosen
+homomorphisms between adjacent levels. These homomorphisms need not be injective.
 
 An `AlgebraTowerEquiv` consists of ring equivalences at each level that commute with
 the tower maps.
@@ -38,6 +42,48 @@ class AlgebraTower {ι : Type*} [Preorder ι] (AT : ι → Type*)
   coherence' : ∀ (i j k : ι) (h1 : i ≤ j) (h2 : j ≤ k),
     algebraMap i k (h1.trans h2) =
       (algebraMap j k h2).comp (algebraMap i j h1)
+
+namespace AlgebraTower
+
+section Nat
+
+variable {A : ℕ → Type*} [∀ k, CommSemiring (A k)]
+
+/-- Construct a tower by composing chosen ring homomorphisms between adjacent levels.
+
+The map from a level to itself is the identity. The map from `i` to `j + 1`, for `i ≤ j`,
+is `step j` composed with the map from `i` to `j`. No injectivity assumption is required. -/
+@[instance_reducible]
+def ofNatStep (step : ∀ k, A k →+* A (k + 1)) : AlgebraTower A where
+  algebraMap i _ h :=
+    Nat.leRec (motive := fun j _ => A i →+* A j) (RingHom.id _)
+      (fun {_} _ f => (step _).comp f) h
+  algebraMap_self' _ := Nat.leRec_self _ _
+  commutes' _ _ _ r x := mul_comm _ _
+  coherence' _ _ _ hij hjk := by
+    induction hjk with
+    | refl => rw [Nat.leRec_self, RingHom.id_comp]
+    | @step k h ih =>
+      rw [Nat.leRec_succ _ _ (hij.trans h), Nat.leRec_succ _ _ h, ih, RingHom.comp_assoc]
+
+/-- Extending a constructed tower map by one level composes it with the chosen next map. -/
+theorem ofNatStep_algebraMap_succ_right (step : ∀ k, A k →+* A (k + 1))
+    {i j : ℕ} (h : i ≤ j) :
+    (ofNatStep step).algebraMap i (j + 1) (h.trans (Nat.le_succ j)) =
+      (step j).comp ((ofNatStep step).algebraMap i j h) :=
+  Nat.leRec_succ _ _ h
+
+/-- The map between adjacent levels is the homomorphism supplied to the constructor. -/
+@[simp]
+theorem ofNatStep_algebraMap_succ (step : ∀ k, A k →+* A (k + 1))
+    (i : ℕ) (h : i ≤ i + 1) :
+    (ofNatStep step).algebraMap i (i + 1) h = step i := by
+  rw [ofNatStep_algebraMap_succ_right step (Nat.le_refl i),
+    (ofNatStep step).algebraMap_self', RingHom.comp_id]
+
+end Nat
+
+end AlgebraTower
 
 variable {ι : Type*} [Preorder ι]
   {A : ι → Type*} [∀ i, CommSemiring (A i)] [AlgebraTower A]

@@ -160,6 +160,14 @@ little‑endian order (bit 0 is the least significant bit). The entry at `i` is
 def monomialBasis (w : Vector R n) : Vector R (2 ^ n) :=
   Vector.ofFn (fun i => ∏ j : Fin n, if (BitVec.ofFin i).getLsb j then w[j] else 1)
 
+/-- Mapping each monomial-basis value by a ring homomorphism equals evaluating the
+monomial basis at the mapped point. -/
+theorem map_monomialBasis (f : R →+* S) (x : Vector R n) :
+    (monomialBasis x).map f = monomialBasis (x.map f) := by
+  ext i hi
+  simp only [Vector.getElem_map, monomialBasis, Vector.getElem_ofFn, map_prod,
+    apply_ite, map_one, Fin.getElem_fin]
+
 @[simp]
 theorem monomialBasis_zero {w : Vector R 0} : monomialBasis w = #v[1] := by
   ext i hi
@@ -184,7 +192,7 @@ private lemma monomial_basis_even {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^
   rw [Fin.prod_univ_succ]
   simp only [Fin.val_zero, Fin.val_succ]
   rw [← Nat.bit_false_apply j.val]
-  simp only [Nat.testBit_bit_zero, Bool.false_eq_true, if_false, one_mul]
+  simp only [Nat.testBit_bit_zero, Bool.false_eq_true, ite_false, one_mul]
   apply Finset.prod_congr rfl
   intro k _
   rw [Nat.testBit_bit_succ]
@@ -199,7 +207,7 @@ private lemma monomial_basis_odd {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^ 
   rw [Fin.prod_univ_succ]
   simp only [Fin.val_zero, Fin.val_succ]
   rw [← Nat.bit_true_apply j.val]
-  simp only [Nat.testBit_bit_zero, if_true]
+  simp only [Nat.testBit_bit_zero, ite_true]
   congr 1
   apply Finset.prod_congr rfl
   intro k _
@@ -239,6 +247,29 @@ def eval₂Horner (p : CMlPolynomial R n) (f : R →+* S) (x : Vector S n) : S :
 def eval (p : CMlPolynomial R n) (x : Vector R n) : R :=
   Vector.dotProduct p (monomialBasis x)
 
+/-- Mapping a coefficient-form evaluation by a ring homomorphism equals evaluating the
+mapped coefficients at the mapped point. -/
+theorem map_eval (f : R →+* S) (p : CMlPolynomial R n) (x : Vector R n) :
+    f (eval p x) = eval (map f p) (x.map f) := by
+  unfold eval
+  rw [Vector.map_dotProduct, map_monomialBasis]
+  rfl
+
+/-- Evaluate monomial coefficients by accumulating their products with the monomial-basis
+values in `W`, starting at zero, then reducing once to a value in `R`. -/
+def evalWithProducts {W : Type*} [AddZero W] (product : R → R → W) (reduce : W →+ R)
+    (p : CMlPolynomial R n) (x : Vector R n) : R :=
+  reduce (Vector.accumulateProducts product 0 p (monomialBasis x))
+
+/-- Product accumulation followed by additive reduction agrees with coefficient evaluation
+when reducing each product gives the ordinary product of its two factors. -/
+theorem evalWithProducts_eq_eval {W : Type*} [AddZero W]
+    (product : R → R → W) (reduce : W →+ R)
+    (hproduct : ∀ a b, reduce (product a b) = a * b)
+    (p : CMlPolynomial R n) (x : Vector R n) :
+    evalWithProducts product reduce p x = eval p x :=
+  Vector.reduce_accumulateProducts_zero reduce product hproduct p (monomialBasis x)
+
 def eval₂ (p : CMlPolynomial R n) (f : R →+* S) (x : Vector S n) : S := eval (map f p) x
 
 private lemma eval_horner_step_dot_product {n : ℕ}
@@ -258,14 +289,14 @@ private lemma eval_horner_step_dot_product {n : ℕ}
           p.get ⟨i, h⟩ * (monomialBasis x).get ⟨i, h⟩ else 0)).symm using 1
     · apply Finset.sum_congr rfl
       intro i _
-      simp only [Fin.is_lt, dif_pos]
+      simp only [Fin.is_lt, dite_eq_left]
     · congr 1
       · apply Finset.sum_congr rfl
         intro i _
-        rw [dif_pos (by omega)]
+        rw [dite_eq_left (by omega)]
       · apply Finset.sum_congr rfl
         intro i _
-        rw [dif_pos (by omega)]
+        rw [dite_eq_left (by omega)]
   rw [hsplit]
   unfold evalHornerStep
   simp only [Vector.get_ofFn]
@@ -296,6 +327,37 @@ theorem eval₂_horner_eq_eval₂ (p : CMlPolynomial R n) (f : R →+* S) (x : V
     eval₂Horner p f x = eval₂ p f x := by
   simpa [eval₂Horner, eval₂] using
     (eval_horner_eq_eval (p := map f p) (x := x))
+/-- Evaluation is additive in the coefficient vector. -/
+@[simp] theorem eval_add (p q : CMlPolynomial R n) (x : Vector R n) :
+    eval (p + q) x = eval p x + eval q x := by
+  unfold eval
+  rw [Vector.dotProduct_eq_root_dotProduct, Vector.dotProduct_eq_root_dotProduct,
+    Vector.dotProduct_eq_root_dotProduct]
+  simp only [_root_.dotProduct, ← Finset.sum_add_distrib, ← add_mul]
+  apply Finset.sum_congr rfl
+  intro i _
+  simp only [Vector.get_eq_getElem, Vector.getElem_add]
+
+/-- The zero coefficient vector evaluates to zero. -/
+@[simp] theorem eval_zero (x : Vector R n) : eval (0 : CMlPolynomial R n) x = 0 := by
+  unfold eval
+  rw [Vector.dotProduct_eq_root_dotProduct]
+  simp only [_root_.dotProduct]
+  apply Finset.sum_eq_zero
+  intro i _
+  simp only [Vector.get_eq_getElem, Vector.getElem_zero, zero_mul]
+
+/-- Evaluation commutes with scalar multiplication of the coefficient vector. -/
+@[simp] theorem eval_smul (a : R) (p : CMlPolynomial R n) (x : Vector R n) :
+    eval (a • p) x = a * eval p x := by
+  unfold eval
+  rw [Vector.dotProduct_eq_root_dotProduct, Vector.dotProduct_eq_root_dotProduct]
+  simp only [_root_.dotProduct, Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro i _
+  rw [Vector.get_eq_getElem (a • p) i, Vector.get_eq_getElem p i, Vector.getElem_smul]
+  simp only [smul_eq_mul, mul_assoc]
+
 end CMlPolynomialMonomialBasisAndEvaluations
 
 end CMlPolynomial
@@ -434,7 +496,7 @@ private lemma lagrange_basis_even {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^
   rw [Fin.prod_univ_succ]
   simp only [Fin.val_zero, Fin.val_succ]
   rw [← Nat.bit_false_apply j.val]
-  simp only [Nat.testBit_bit_zero, Bool.false_eq_true, if_false]
+  simp only [Nat.testBit_bit_zero, Bool.false_eq_true, ite_false]
   congr 1
   apply Finset.prod_congr rfl
   intro k _
@@ -450,7 +512,7 @@ private lemma lagrange_basis_odd {n : ℕ} (x : Vector R (n + 1)) (j : Fin (2 ^ 
   rw [Fin.prod_univ_succ]
   simp only [Fin.val_zero, Fin.val_succ]
   rw [← Nat.bit_true_apply j.val]
-  simp only [Nat.testBit_bit_zero, if_true]
+  simp only [Nat.testBit_bit_zero, ite_true]
   congr 1
   apply Finset.prod_congr rfl
   intro k _
@@ -525,7 +587,7 @@ def eval (p : CMlPolynomialEval R n) (x : Vector R n) : R :=
   Vector.dotProduct p (lagrangeBasis x)
 
 /-- Evaluation commutes with scalar multiplication of a hypercube table. -/
-theorem eval_smul (a : R) (p : CMlPolynomialEval R n) (x : Vector R n) :
+@[simp] theorem eval_smul (a : R) (p : CMlPolynomialEval R n) (x : Vector R n) :
     eval (a • p) x = a * eval p x := by
   unfold eval
   rw [Vector.dotProduct_eq_root_dotProduct, Vector.dotProduct_eq_root_dotProduct]
@@ -562,14 +624,14 @@ private lemma eval_mle_step_dot_product {n : ℕ}
           p.get ⟨i, h⟩ * (lagrangeBasis x).get ⟨i, h⟩ else 0)).symm using 1
     · apply Finset.sum_congr rfl
       intro i _
-      simp only [Fin.is_lt, dif_pos]
+      simp only [Fin.is_lt, dite_eq_left]
     · congr 1
       · apply Finset.sum_congr rfl
         intro i _
-        rw [dif_pos (by omega)]
+        rw [dite_eq_left (by omega)]
       · apply Finset.sum_congr rfl
         intro i _
-        rw [dif_pos (by omega)]
+        rw [dite_eq_left (by omega)]
   rw [hsplit]
   unfold evalMleStep
   simp only [Vector.get_ofFn]
@@ -641,6 +703,26 @@ theorem eval₂_mle_eq_eval₂ (p : CMlPolynomialEval R n) (f : R →+* S) (x : 
     eval₂Mle p f x = eval₂ p f x := by
   simpa [eval₂Mle, eval₂] using
     (eval_mle_eq_eval (p := map f p) (x := x))
+
+/-- Evaluation is additive in the coefficient vector. -/
+@[simp] theorem eval_add (p q : CMlPolynomialEval R n) (x : Vector R n) :
+    eval (p + q) x = eval p x + eval q x := by
+  unfold eval
+  rw [Vector.dotProduct_eq_root_dotProduct, Vector.dotProduct_eq_root_dotProduct,
+    Vector.dotProduct_eq_root_dotProduct]
+  simp only [_root_.dotProduct, ← Finset.sum_add_distrib, ← add_mul]
+  apply Finset.sum_congr rfl
+  intro i _
+  simp only [Vector.get_eq_getElem, Vector.getElem_add]
+
+/-- The zero coefficient vector evaluates to zero. -/
+@[simp] theorem eval_zero (x : Vector R n) : eval (0 : CMlPolynomialEval R n) x = 0 := by
+  unfold eval
+  rw [Vector.dotProduct_eq_root_dotProduct]
+  simp only [_root_.dotProduct]
+  apply Finset.sum_eq_zero
+  intro i _
+  simp only [Vector.get_eq_getElem, Vector.getElem_zero, zero_mul]
 
 end CMlPolynomialLagrangeBasisAndEvaluations
 

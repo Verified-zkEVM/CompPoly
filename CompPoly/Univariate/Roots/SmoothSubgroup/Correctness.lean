@@ -108,13 +108,13 @@ private theorem linearFactorsFromLeafValues_sound {F : Type*}
               acc) ?_ hmem
         intro fac hfac
         by_cases hcond : (values.getD x.2 1 == 0) = true
-        · rw [if_pos hcond] at hfac
+        · rw [ite_eq_left hcond] at hfac
           by_cases hlast : fac = CPolynomial.linearFactor x.1
           · rw [hlast]
             exact linearFactor_isLinearFactor x.1
           · apply hacc
             simpa [hlast] using hfac
-        · rw [if_neg hcond] at hfac
+        · rw [ite_eq_right hcond] at hfac
           exact hacc fac hfac
   exact haux points.toList.zipIdx #[] (by simp) h
 
@@ -155,9 +155,9 @@ private theorem mem_linearFactorsFromLeafValues_of_get_eq_zero {F : Type*}
         rcases h with hacc | hx
         · left
           by_cases hcond : (values.getD x.2 1 == 0) = true
-          · rw [if_pos hcond]
+          · rw [ite_eq_left hcond]
             simp [hacc]
-          · rw [if_neg hcond]
+          · rw [ite_eq_right hcond]
             exact hacc
         · simp at hx
           rcases hx with hx | hx
@@ -165,7 +165,7 @@ private theorem mem_linearFactorsFromLeafValues_of_get_eq_zero {F : Type*}
             left
             have hbeq : (values.getD idx 1 == 0) = true := by
               simp [hval]
-            rw [if_pos hbeq]
+            rw [ite_eq_left hbeq]
             simp
           · right
             exact hx
@@ -225,39 +225,39 @@ theorem smoothCosetLinearFactorsWithSchedule_sound {F : Type*}
       unfold smoothCosetLinearFactorsWithSchedule at h
       by_cases hzero : (CPolynomial.monicNormalize p == 0 ||
           CPolynomial.monicNormalize p == 1) = true
-      · rw [if_pos hzero] at h
+      · rw [ite_eq_left hzero] at h
         simp at h
-      · rw [if_neg hzero] at h
+      · rw [ite_eq_right hzero] at h
         by_cases hlin : isRepresentedLinearFactor (CPolynomial.monicNormalize p) = true
-        · rw [if_pos hlin] at h
+        · rw [ite_eq_left hlin] at h
           simp at h
           rcases h with rfl
           exact isRepresentedLinearFactor_sound hlin
-        · rw [if_neg hlin] at h
+        · rw [ite_eq_right hlin] at h
           exact smoothLeafLinearFactors_sound E alpha gamma order (CPolynomial.monicNormalize p) h
   | cons ell rest ih =>
       intro order alpha gamma p factor h
       unfold smoothCosetLinearFactorsWithSchedule at h
       by_cases hzero : (CPolynomial.monicNormalize p == 0 ||
           CPolynomial.monicNormalize p == 1) = true
-      · rw [if_pos hzero] at h
+      · rw [ite_eq_left hzero] at h
         simp at h
-      · rw [if_neg hzero] at h
+      · rw [ite_eq_right hzero] at h
         by_cases hlin : isRepresentedLinearFactor (CPolynomial.monicNormalize p) = true
-        · rw [if_pos hlin] at h
+        · rw [ite_eq_left hlin] at h
           simp at h
           rcases h with rfl
           exact isRepresentedLinearFactor_sound hlin
-        · rw [if_neg hlin] at h
+        · rw [ite_eq_right hlin] at h
           by_cases hellsmall : ell ≤ 1
-          · rw [if_pos hellsmall] at h
+          · rw [ite_eq_left hellsmall] at h
             exact ih order alpha gamma (CPolynomial.monicNormalize p) factor h
-          · rw [if_neg hellsmall] at h
+          · rw [ite_eq_right hellsmall] at h
             by_cases helleq : ell = order
-            · rw [if_pos helleq] at h
+            · rw [ite_eq_left helleq] at h
               exact smoothLeafLinearFactors_sound E alpha gamma order
                 (CPolynomial.monicNormalize p) h
-            · rw [if_neg helleq] at h
+            · rw [ite_eq_right helleq] at h
               let childOrder := order / ell
               let tau := gamma ^ childOrder
               let xPow := xPowModWith M D (CPolynomial.monicNormalize p) childOrder
@@ -295,9 +295,9 @@ theorem smoothCosetLinearFactorsWithSchedule_sound {F : Type*}
                             (alpha * gamma ^ j) (gamma ^ ell) child) ?_ hmem
                     intro fac hfac
                     by_cases hskip : (child == 0 || child == 1) = true
-                    · rw [if_pos hskip] at hfac
+                    · rw [ite_eq_left hskip] at hfac
                       exact hacc fac hfac
-                    · rw [if_neg hskip] at hfac
+                    · rw [ite_eq_right hskip] at hfac
                       simp at hfac
                       rcases hfac with haccmem | hrec
                       · exact hacc fac (by simpa using haccmem)
@@ -316,11 +316,11 @@ theorem smoothLinearFactorsAlgorithmWith_sound {F : Type*}
   unfold smoothLinearFactorsAlgorithmWith at h
   by_cases hzero : (CPolynomial.monicNormalize p == 0 ||
       CPolynomial.monicNormalize p == 1) = true
-  · rw [if_pos hzero] at h
+  · rw [ite_eq_left hzero] at h
     simp at h
-  · rw [if_neg hzero] at h
+  · rw [ite_eq_right hzero] at h
     by_cases hconst : (((CPolynomial.monicNormalize p).coeff 0 == 0) = true)
-    · rw [if_pos hconst] at h
+    · rw [ite_eq_left hconst] at h
       unfold smoothNonzeroLinearFactorsWith at h
       simp at h
       rcases h with hzeroFactor | hnonzero
@@ -329,7 +329,7 @@ theorem smoothLinearFactorsAlgorithmWith_sound {F : Type*}
       · exact smoothCosetLinearFactorsWithSchedule_sound M D E schedule.toList (q - 1)
           1 generator (CPolynomial.monicNormalize (CPolynomial.divX (CPolynomial.monicNormalize p)))
           factor (by simpa using hnonzero)
-    · rw [if_neg hconst] at h
+    · rw [ite_eq_right hconst] at h
       unfold smoothNonzeroLinearFactorsWith at h
       simp at h
       exact smoothCosetLinearFactorsWithSchedule_sound M D E schedule.toList (q - 1)
@@ -485,13 +485,13 @@ instance instDecidableSmoothScheduleDivides (schedule : List Nat) (order : Nat) 
   | cons ell rest ih =>
       unfold SmoothScheduleDivides
       by_cases hellsmall : ell ≤ 1
-      · rw [if_pos hellsmall]
+      · rw [ite_eq_left hellsmall]
         exact ih order
-      · rw [if_neg hellsmall]
+      · rw [ite_eq_right hellsmall]
         by_cases helleq : ell = order
-        · rw [if_pos helleq]
+        · rw [ite_eq_left helleq]
           infer_instance
-        · rw [if_neg helleq]
+        · rw [ite_eq_right helleq]
           infer_instance
 
 /-- The declared smooth schedule reaches singleton cosets. -/
@@ -533,12 +533,12 @@ theorem smoothCosetLinearFactorsWithSchedule_complete {F : Type*}
         · rw [h1] at hroot'
           rw [eval_one a] at hroot'
           exact (one_ne_zero hroot').elim
-      · rw [if_neg hzero]
+      · rw [ite_eq_right hzero]
         by_cases hlin : isRepresentedLinearFactor p' = true
-        · rw [if_pos hlin]
+        · rw [ite_eq_left hlin]
           refine ⟨p', ?_, representedLinearFactor_candidate_of_root hlin hroot'⟩
           simp [p']
-        · rw [if_neg hlin]
+        · rw [ite_eq_right hlin]
           exact smoothLeafLinearFactors_complete E hcoset hroot'
   | cons ell rest ih =>
       intro order alpha gamma p a hsched hgamma hp hroot hcoset
@@ -554,22 +554,22 @@ theorem smoothCosetLinearFactorsWithSchedule_complete {F : Type*}
         · rw [h1] at hroot'
           rw [eval_one a] at hroot'
           exact (one_ne_zero hroot').elim
-      · rw [if_neg hzero]
+      · rw [ite_eq_right hzero]
         by_cases hlin : isRepresentedLinearFactor p' = true
-        · rw [if_pos hlin]
+        · rw [ite_eq_left hlin]
           refine ⟨p', ?_, representedLinearFactor_candidate_of_root hlin hroot'⟩
           simp [p']
-        · rw [if_neg hlin]
+        · rw [ite_eq_right hlin]
           by_cases hellsmall : ell ≤ 1
-          · rw [if_pos hellsmall]
+          · rw [ite_eq_left hellsmall]
             have hschedRest : SmoothScheduleDivides rest order := by
               simpa [SmoothScheduleDivides, hellsmall] using hsched
             exact ih order alpha gamma p' a hschedRest hgamma hp' hroot' hcoset
-          · rw [if_neg hellsmall]
+          · rw [ite_eq_right hellsmall]
             by_cases helleq : ell = order
-            · rw [if_pos helleq]
+            · rw [ite_eq_left helleq]
               exact smoothLeafLinearFactors_complete E hcoset hroot'
-            · rw [if_neg helleq]
+            · rw [ite_eq_right helleq]
               have hschedRest : ell ∣ order ∧ SmoothScheduleDivides rest (order / ell) := by
                 simpa [SmoothScheduleDivides, hellsmall, helleq] using hsched
               rcases hschedRest with ⟨hell_dvd, hschedChild⟩
@@ -677,9 +677,9 @@ theorem smoothCosetLinearFactorsWithSchedule_complete {F : Type*}
                           CPolynomial.monicNormalize
                             (CPolynomial.gcdMonic p'
                               (xPow - CPolynomial.C (alpha ^ childOrder * tau ^ y))) == 1) = true
-                      · rw [if_pos hskipY]
+                      · rw [ite_eq_left hskipY]
                         exact hmem
-                      · rw [if_neg hskipY]
+                      · rw [ite_eq_right hskipY]
                         let childY := CPolynomial.monicNormalize
                           (CPolynomial.gcdMonic p'
                             (xPow - CPolynomial.C (alpha ^ childOrder * tau ^ y)))
@@ -693,7 +693,7 @@ theorem smoothCosetLinearFactorsWithSchedule_complete {F : Type*}
                         left
                         rcases hrec with ⟨factor, hmem, hcand⟩
                         refine ⟨factor, ?_, hcand⟩
-                        rw [if_neg hskip]
+                        rw [ite_eq_right hskip]
                         simpa [child, witness, beta] using
                           Array.mem_append_right acc (by simpa using hmem)
                       · right
@@ -725,14 +725,14 @@ theorem smoothLinearFactorsAlgorithmWith_complete {F : Type*}
     · rw [h1] at hroot'
       rw [eval_one a] at hroot'
       exact (one_ne_zero hroot').elim
-  · rw [if_neg hzero]
+  · rw [ite_eq_right hzero]
     by_cases ha0 : a = 0
     · subst a
       have hcoeff : p'.coeff 0 = 0 := by
         simpa [eval_zero_eq_coeff_zero] using hroot'
       have hconst : ((p'.coeff 0 == 0) = true) := by
         simp [hcoeff]
-      rw [if_pos hconst]
+      rw [ite_eq_left hconst]
       refine ⟨CPolynomial.linearFactor (0 : F), ?_, linearFactor_isRootFactorCandidate 0⟩
       unfold smoothNonzeroLinearFactorsWith
       simp
@@ -744,7 +744,7 @@ theorem smoothLinearFactorsAlgorithmWith_complete {F : Type*}
           ⟨k, hk, ha⟩
         exact ⟨k, hk, by simp [ha]⟩
       by_cases hconst : ((p'.coeff 0 == 0) = true)
-      · rw [if_pos hconst]
+      · rw [ite_eq_left hconst]
         have hcoeff : p'.coeff 0 = 0 := by simpa using hconst
         have hdivRoot : CPolynomial.eval a (CPolynomial.divX p') = 0 :=
           eval_divX_eq_zero_of_ne_zero_root ha0 hcoeff hroot'
@@ -762,7 +762,7 @@ theorem smoothLinearFactorsAlgorithmWith_complete {F : Type*}
         unfold smoothNonzeroLinearFactorsWith
         simpa [p'] using Array.mem_append_right (#[CPolynomial.linearFactor (0 : F)])
           (by simpa using hmem)
-      · rw [if_neg hconst]
+      · rw [ite_eq_right hconst]
         rcases smoothCosetLinearFactorsWithSchedule_complete M D E schedule.toList (q - 1)
             (1 : F) generator p' a hschedule hgenPow hp' hroot' hcoset with
           ⟨factor, hmem, hcand⟩

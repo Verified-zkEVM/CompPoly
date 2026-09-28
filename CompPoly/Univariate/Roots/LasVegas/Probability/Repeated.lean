@@ -278,7 +278,7 @@ theorem tryOddSplitAttemptsWith_uniformTable_none_le_geometric {F : Type*}
   induction attempts with
   | zero =>
       rw [eventProbability, uniformProbeTablePMF, PMF.toOuterMeasure_pure_apply,
-        if_pos (by
+        ite_eq_left (by
           rw [Set.mem_ofPred_eq]
           unfold tryOddSplitAttemptsWith
           rfl)]
@@ -323,12 +323,12 @@ theorem tryOddSplitAttemptsWith_uniformTable_none_le_geometric {F : Type*}
         rw [PMF.toOuterMeasure_map_apply]
         by_cases h0 : cantorZassenhausOddAttemptWith M D q
             ({ probe := fun _q _factor _attempt ↦ h } : ProbeFamily F) g 0 = none
-        · rw [if_pos h0]
+        · rw [ite_eq_left h0]
           congr 1
           ext rest
           rw [Set.mem_preimage, Set.mem_ofPred_eq, Set.mem_ofPred_eq, hsection h rest]
           simp [h0]
-        · rw [if_neg h0]
+        · rw [ite_eq_right h0]
           have hempty : (List.cons h ⁻¹'
               {table : List (CPolynomial F) |
                 tryOddSplitAttemptsWith M D q (tableProbeFamily table) g
@@ -354,11 +354,11 @@ theorem tryOddSplitAttemptsWith_uniformTable_none_le_geometric {F : Type*}
             rw [hweight h]
             by_cases h0 : cantorZassenhausOddAttemptWith M D q
                 ({ probe := fun _q _factor _attempt ↦ h } : ProbeFamily F) g 0 = none
-            · rw [if_pos h0, if_pos h0]
+            · rw [ite_eq_left h0, ite_eq_left h0]
               exact mul_le_mul' le_rfl (by
                 have := ih
                 rwa [eventProbability] at this)
-            · rw [if_neg h0, if_neg h0]
+            · rw [ite_eq_right h0, ite_eq_right h0]
               simp
         _ = (uniformProbePMF enumeration coefficientCount).toOuterMeasure
               {h : CPolynomial F | cantorZassenhausOddAttemptWith M D q
@@ -448,14 +448,14 @@ private theorem recursiveSplitWithTables_skip (fuel : Nat) {g : CPolynomial F}
       recursiveSplitWithTables tryTable fuel stack tables := by
   rw [recursiveSplitWithTables.eq_def]
   dsimp only
-  rw [if_pos hdeg]
+  rw [ite_eq_left hdeg]
 
 private theorem recursiveSplitWithTables_nil_tables (fuel : Nat) {g : CPolynomial F}
     (stack : List (CPolynomial F)) (hdeg : ¬ CPolynomial.natDegree g < 2) :
     recursiveSplitWithTables tryTable (fuel + 1) (g :: stack) [] = [] := by
   rw [recursiveSplitWithTables.eq_def]
   dsimp only
-  rw [if_neg hdeg]
+  rw [ite_eq_right hdeg]
 
 private theorem recursiveSplitWithTables_cons_none (fuel : Nat) {g : CPolynomial F}
     (stack : List (CPolynomial F)) (hdeg : ¬ CPolynomial.natDegree g < 2)
@@ -465,7 +465,7 @@ private theorem recursiveSplitWithTables_cons_none (fuel : Nat) {g : CPolynomial
       true :: recursiveSplitWithTables tryTable fuel stack tables := by
   rw [recursiveSplitWithTables.eq_def]
   dsimp only
-  rw [if_neg hdeg]
+  rw [ite_eq_right hdeg]
   simp [htry]
 
 private theorem recursiveSplitWithTables_cons_some (fuel : Nat) {g : CPolynomial F}
@@ -478,7 +478,7 @@ private theorem recursiveSplitWithTables_cons_some (fuel : Nat) {g : CPolynomial
         (children.toList ++ stack) tables := by
   rw [recursiveSplitWithTables.eq_def]
   dsimp only
-  rw [if_neg hdeg]
+  rw [ite_eq_right hdeg]
   simp [htry]
 
 /-- Table-driven traces never exceed the split budget of the initial stack. -/
@@ -606,7 +606,7 @@ theorem recursiveSplitWithTables_rank_le_geometric {q : Nat}
             cases n with
             | zero =>
                 rw [uniformProbeTablesPMF, eventProbability,
-                  PMF.toOuterMeasure_pure_apply, if_neg (by
+                  PMF.toOuterMeasure_pure_apply, ite_eq_right (by
                     rw [Set.mem_ofPred_eq,
                       recursiveSplitWithTables_nil_tables tryTable fuel stack hdeg]
                     simp)]
@@ -624,11 +624,11 @@ theorem recursiveSplitWithTables_rank_le_geometric {q : Nat}
                       intro table
                       rw [PMF.toOuterMeasure_map_apply]
                       by_cases htry : tryTable table g = none
-                      · rw [if_pos htry]
+                      · rw [ite_eq_left htry]
                         refine le_trans (mul_le_mul' le_rfl
                           (toOuterMeasure_apply_le_one _ _)) ?_
                         rw [MulOneClass.mul_one]
-                      · rw [if_neg htry]
+                      · rw [ite_eq_right htry]
                         obtain ⟨children, hchildren⟩ :=
                           Option.ne_none_iff_exists'.mp htry
                         have hpre : (List.cons table ⁻¹'
@@ -891,9 +891,9 @@ theorem lasVegasTryTableSplit_isSplitStep {F : Type*}
   | some traceCtx =>
       dsimp only at htry
       by_cases hodd : q % 2 = 1
-      · rw [if_pos hodd] at htry
+      · rw [ite_eq_left hodd] at htry
         exact tryOddSplitAttemptsWith_isSplitStep M D q _ hg htry
-      · rw [if_neg hodd] at htry
+      · rw [ite_eq_right hodd] at htry
         exact tryEvenTraceSplitAttemptsWith_isSplitStep M D traceCtx q _ hg htry
 
 /-- Backend table attempts on splitter-valid factors fail with probability at
@@ -945,7 +945,7 @@ theorem lasVegasTryTableSplit_uniformTable_none_le_geometric {F : Type*}
         unfold lasVegasTryTableSplit
         rw [hctx]
         dsimp only
-        rw [if_neg (by omega : ¬ q % 2 = 1)]
+        rw [ite_eq_right (by omega : ¬ q % 2 = 1)]
       rw [hset]
       have hbridge := tryEvenTraceSplitAttemptsWith_uniformTable_none_le_geometric M D
         traceCtx enumeration.toFieldEnumeration q coefficientCount g

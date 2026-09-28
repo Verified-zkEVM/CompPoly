@@ -45,7 +45,7 @@ abbrev n (D : Domain F) : ℕ := D.val.size
 /-- Indexing into the (nodup) domain array is injective on `Fin D.n`. -/
 lemma node_injective (D : Domain F) :
     Function.Injective (fun i : Fin D.n => D.val[i]) :=
-  fun _ _ hxy => Fin.ext ((List.getElem_inj D.property).mp hxy)
+  fun _ _ hxy => Fin.ext ((List.Nodup.getElem_inj D.property).mp hxy)
 
 end Domain
 

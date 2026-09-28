@@ -1,0 +1,500 @@
+/-
+Copyright (c) 2026 CompPoly Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Derek Sorensen
+-/
+module
+
+public import Mathlib.Algebra.Ring.Defs
+public import Mathlib.Algebra.BigOperators.Fin
+
+/-!
+# Computable arithmetic for monic quotient presentations
+
+`ExtensionParams F` stores the degree, lower modulus coefficients and an explicit inverse-exponent
+parameter `q`. `Ext P` is one nominal carrier with coefficient vectors in ascending degree order.
+Its coordinate maps require no algebraic structure; arithmetic uses a ring of coefficients.
+The presentation index separates parameter values for a fixed coefficient algebra. Operations
+and their theorems are relative to the supplied ring or field structure on `F`; the raw carrier
+does not separate alternative algebra structures on that same type. Distinct coefficient
+presentations should use nominal coefficient types and explicit ring maps. The polynomial quotient
+interpretation uses commutative coefficients; the raw formulas are defined for any ring.
+
+Multiplication reduces monomials with `shiftReduce`. The executable reduction-table implementation
+`mulTbl` is connected to `mul` by `mul_eq_mulTbl`. Power uses binary exponentiation, and the
+canonical inverse candidate uses the literal exponent `q^d - 2`.
+
+This module supplies no cardinality or irreducibility certificate. Polynomial specifications and
+quotient correspondence belong to `Extension/Defs.lean` and `Extension/Bridge.lean`; certified field
+laws belong to `Extension/Field.lean`. Raw parameters with an incorrect `q` still admit arithmetic
+but do not thereby acquire field laws. The binomial conversion describes the modulus `X^d - W`.
+-/
+
+@[expose] public section
+
+namespace CompPoly.Extension
+
+variable {F : Type*} [Ring F]
+
+/--
+The data defining an extension `F[X] / f` by a monic modulus `f` of degree `d`.
+
+The modulus is stored by its `d` lower coefficients: `f = X^d + ∑_{i < d} lower[i] · X^i`. The
+leading coefficient is an implicit `1`, so `f` is monic by construction.
+
+Irreducibility is not part of these parameters: the quotient is a commutative ring for every
+monic modulus over a commutative ring. Field laws additionally require finite-cardinality and
+irreducibility certificates.
+-/
+structure ExtensionParams (F : Type*) where
+  /-- The degree of the extension. -/
+  d : ℕ
+  /-- Degree at least two; a degree-one "extension" is just `F`. -/
+  two_le : 2 ≤ d
+  /-- The lower coefficients of the monic modulus, little-endian: `lower[i]` is the coefficient
+  of `X^i` in `poly`, for `i < d`. The coefficient of `X^d` is an implicit `1`. -/
+  lower : Vector F d
+  /-- The proposed base cardinality, stored explicitly for the inverse exponent.
+
+  Raw arithmetic does not certify this value. Field laws require a separate proof that
+  `Nat.card F = q`, together with finiteness and irreducibility. -/
+  q : ℕ
+
+namespace ExtensionParams
+
+variable (P : ExtensionParams F)
+
+/-- The coefficient of `X^i` in the lower part of the modulus. -/
+@[inline] def lowerCoeff (i : Fin P.d) : F := P.lower[i.val]
+
+/-- The lower modulus coefficient at index `k`, or zero when `P.d ≤ k`. -/
+def lowerCoeffNat (k : ℕ) : F := if h : k < P.d then P.lower[k] else 0
+
+@[simp] theorem lowerCoeffNat_coe (i : Fin P.d) : P.lowerCoeffNat (i : ℕ) = P.lowerCoeff i := by
+  rw [lowerCoeffNat, dite_eq_left i.isLt]; rfl
+
+theorem lowerCoeffNat_of_ge {k : ℕ} (h : P.d ≤ k) : P.lowerCoeffNat k = 0 :=
+  dite_eq_right (by omega)
+
+omit [Ring F] in
+theorem d_pos : 0 < P.d := by have := P.two_le; omega
+
+end ExtensionParams
+
+/--
+The carrier of the quotient by the monic modulus in `P`, with coefficients in ascending
+order of powers. The parameter remains part of the type even when two moduli have equal degree.
+-/
+structure Ext {F : Type*} (P : ExtensionParams F) : Type _ where
+  /-- The coefficient of `X^i` is stored at index `i`. -/
+  coeffs : Vector F P.d
+
+namespace Ext
+
+variable {P : ExtensionParams F}
+
+/-- Build an element from coefficients in ascending order of powers. -/
+@[inline] def ofVector (v : Vector F P.d) : Ext P := ⟨v⟩
+
+omit [Ring F] in
+/-- Extracting the coefficients of a constructed element returns the input vector. -/
+@[simp] theorem coeffs_ofVector (v : Vector F P.d) : coeffs (ofVector (P := P) v) = v := rfl
+
+omit [Ring F] in
+/-- Reconstructing an element from its coefficient vector returns that element. -/
+@[simp] theorem ofVector_coeffs (x : Ext P) : ofVector (coeffs x) = x := rfl
+
+omit [Ring F] in
+/-- The coefficient vector uniquely determines an element. -/
+theorem coeffs_injective : Function.Injective (coeffs (P := P)) :=
+  fun _ _ h => congrArg ofVector h
+
+/-- Build an element from a coefficient function. -/
+@[inline] def ofFn (g : Fin P.d → F) : Ext P := ofVector (Vector.ofFn g)
+
+/-- The coefficient of `X^i`. -/
+@[inline] def coeff (x : Ext P) (i : Fin P.d) : F := (coeffs x)[i.val]
+
+omit [Ring F] in
+@[simp] theorem coeff_ofFn (g : Fin P.d → F) (i : Fin P.d) : coeff (ofFn g) i = g i := by
+  simp [coeff, ofFn, ofVector]
+
+omit [Ring F] in
+/-- Two elements with the same coefficients are equal. -/
+@[ext] theorem ext {x y : Ext P} (h : ∀ i, coeff x i = coeff y i) : x = y :=
+  coeffs_injective (Vector.ext fun i hi => h ⟨i, hi⟩)
+
+omit [Ring F] in
+theorem ofFn_coeff (x : Ext P) : ofFn (coeff x) = x := by ext i; simp
+
+/-- Coefficient vectors are exactly functions out of `Fin d`. -/
+def equivFn (P : ExtensionParams F) : Ext P ≃ (Fin P.d → F) where
+  toFun := coeff
+  invFun := ofFn
+  left_inv := ofFn_coeff
+  right_inv g := funext fun i => coeff_ofFn g i
+
+/-- The coefficient at index `i`, or zero when `P.d ≤ i`. -/
+def coeffNat (x : Ext P) (i : ℕ) : F := if h : i < P.d then coeff x ⟨i, h⟩ else 0
+
+@[simp] theorem coeffNat_coe (x : Ext P) (i : Fin P.d) : coeffNat x (i : ℕ) = coeff x i := by
+  rw [coeffNat, dite_eq_left i.isLt]
+
+theorem coeffNat_of_lt (x : Ext P) {i : ℕ} (h : i < P.d) : coeffNat x i = coeff x ⟨i, h⟩ :=
+  dite_eq_left h
+
+theorem coeffNat_of_ge (x : Ext P) {i : ℕ} (h : P.d ≤ i) : coeffNat x i = 0 :=
+  dite_eq_right (by omega)
+
+/-! ### Distinguished elements
+
+`ofBase` places a coefficient-ring element in the constant coordinate, and `gen` has the
+coordinates of `X`. The quotient bridge over a field promotes the constant embedding to an
+`Algebra` structure and identifies the reduced power `gen ^ d` with `monomialMod d`.
+-/
+
+/-- Place a coefficient-ring element in the constant coordinate. -/
+@[inline] def ofBase (c : F) : Ext P := ofFn fun i => if (i : ℕ) = 0 then c else 0
+
+/-- The coordinate vector with coefficient one at `X` and zero elsewhere. -/
+def gen : Ext P := ofFn fun i => if (i : ℕ) = 1 then 1 else 0
+
+/-! ### Operations
+
+Multiplication is defined in terms of `shiftReduce` — the "multiply by `X`, reduce mod `f`"
+map — whose iterates `monomialMod k = shiftReduce^[k] 1` are the reduced monomials `X^k mod f`.
+Everything downstream is proved from the single homomorphism law
+`toQuot (shiftReduce e) = rt * toQuot e`.
+-/
+
+instance : Zero (Ext P) := ⟨ofFn fun _ => 0⟩
+instance : One (Ext P) := ⟨ofFn fun i => if (i : ℕ) = 0 then 1 else 0⟩
+instance : Add (Ext P) := ⟨fun x y => ofFn fun i => coeff x i + coeff y i⟩
+instance : Neg (Ext P) := ⟨fun x => ofFn fun i => -coeff x i⟩
+instance : Sub (Ext P) := ⟨fun x y => ofFn fun i => coeff x i - coeff y i⟩
+instance : SMul F (Ext P) := ⟨fun c x => ofFn fun i => c * coeff x i⟩
+
+/--
+Multiply by `X` and reduce modulo `f`.
+
+`X · (∑ eᵢ Xⁱ) = ∑ eᵢ X^(i+1)`, whose top term `e_{d-1} X^d` wraps via `X^d = -∑ lowerₘ Xᵐ`.
+So coefficient `m` of the reduced result is `e_{m-1} - e_{d-1} · lowerₘ`, with `e_{-1} = 0`.
+This is the single linear map whose iterates build the reduction table `red`.
+-/
+def shiftReduce (e : Ext P) : Ext P :=
+  ofFn fun m =>
+    (if (m : ℕ) = 0 then 0 else coeffNat e ((m : ℕ) - 1))
+      - coeffNat e (P.d - 1) * P.lowerCoeff m
+
+/-- The reduced form of `X^k` modulo `f`, obtained by iterating `shiftReduce` (multiply by `X`,
+reduce) `k` times from `1 = X^0`. Its image under `toQuot` is `rt ^ k`. -/
+def monomialMod (k : ℕ) : Ext P := (shiftReduce)^[k] 1
+
+/--
+The monic-reduction product formula, representing multiplication in `F[X] / f`
+when the coefficient ring is commutative.
+
+Each product monomial `Xⁱ⁺ʲ` is reduced modulo `f` by `monomialMod (i + j)`, so coefficient `m`
+of the product collects `xᵢ · yⱼ · [X^(i+j) mod f]ₘ` over all pairs `(i, j)`.
+-/
+@[inline, specialize]
+def mul (x y : Ext P) : Ext P :=
+  ofFn fun m =>
+    ∑ i : Fin P.d, ∑ j : Fin P.d,
+      coeff x i * coeff y j * coeff (monomialMod ((i : ℕ) + (j : ℕ))) m
+
+/-- Append `cur, shiftReduce cur, …`, `n` entries in all, to `acc`; the scan that builds `red`.
+This is the table the `shiftReduce` docstring above refers to. -/
+def redScan : ℕ → Ext P → Array (Ext P) → Array (Ext P)
+  | 0, _, acc => acc
+  | n + 1, cur, acc => redScan n (shiftReduce cur) (acc.push cur)
+
+theorem redScan_size (n : ℕ) (cur : Ext P) (acc : Array (Ext P)) :
+    (redScan n cur acc).size = acc.size + n := by
+  induction n generalizing cur acc with
+  | zero => rfl
+  | succ n ih => rw [redScan, ih, Array.size_push]; omega
+
+/-- Entry `k` of the scan is `shiftReduce^[k - acc.size] cur` past the prefix it was given. -/
+theorem redScan_getElem (n : ℕ) (cur : Ext P) (acc : Array (Ext P)) (k : ℕ)
+    (h : k < (redScan n cur acc).size) :
+    (redScan n cur acc)[k] =
+      if hlt : k < acc.size then acc[k] else shiftReduce^[k - acc.size] cur := by
+  induction n generalizing cur acc with
+  | zero =>
+      have hk : k < acc.size := by simpa [redScan] using h
+      simp [redScan, hk]
+  | succ n ih =>
+      simp only [redScan]
+      rw [ih]
+      by_cases hlt : k < acc.size
+      · have hpush : k < (acc.push cur).size := by simp only [Array.size_push]; omega
+        rw [dite_eq_left hpush, dite_eq_left hlt]
+        exact Array.getElem_push_lt hlt
+      · by_cases heq : k = acc.size
+        · subst heq
+          rw [dite_eq_left (by simp only [Array.size_push]; omega), dite_eq_right (lt_irrefl _),
+            Array.getElem_push_eq, Nat.sub_self, Function.iterate_zero, id]
+        · have hpush : ¬ k < (acc.push cur).size := by simp only [Array.size_push]; omega
+          rw [dite_eq_right hpush, dite_eq_right hlt, Array.size_push,
+            ← Function.iterate_succ_apply]
+          congr 1
+          omega
+
+/--
+The reduction table: `red P` holds `X^k mod f` for every `k ≤ 2d - 2`, i.e. every exponent a
+product of two reduced elements can reach.
+
+Built by one `redScan` from `1`, so the whole table costs `O(d^2)`; `Vector.ofFn (monomialMod ·)`
+would iterate `shiftReduce` from scratch for every entry, `O(d^3)` in all. It exists purely for
+speed: `mul` is the specification, and `mulTbl` below is the compiled implementation that
+consults this table.
+-/
+def red (P : ExtensionParams F) : Vector (Ext P) (2 * P.d - 1) :=
+  ⟨redScan (2 * P.d - 1) 1 #[], by rw [redScan_size, Array.size_empty, Nat.zero_add]⟩
+
+@[simp] theorem red_getElem {k : ℕ} (hk : k < 2 * P.d - 1) :
+    (red P)[k] = monomialMod k := by
+  simp only [red, Vector.getElem_mk]
+  rw [redScan_getElem]
+  simp [monomialMod]
+
+/-- A left fold that adds `f i` at each step is `a` plus the sum; the bridge from the loops the
+compiler runs to the `Finset.sum`s the specification is stated with. -/
+theorem _root_.Fin.foldl_add_eq_add_sum {M : Type*} [AddCommMonoid M] {n : ℕ} (f : Fin n → M)
+    (a : M) : Fin.foldl n (fun acc i => acc + f i) a = a + ∑ i, f i := by
+  induction n generalizing a with
+  | zero => simp only [Fin.foldl_zero, Finset.univ_eq_empty, Finset.sum_empty, add_zero]
+  | succ n ih => rw [Fin.foldl_succ, ih, Fin.sum_univ_succ, add_assoc]
+
+omit [Ring F] in
+/--
+Coefficient `k` of the unreduced product `x · y` in `F[X]`, the convolution `∑_{i + j = k} xᵢ yⱼ`,
+as one loop over `i` with `j = k - i`; a pair outside `[0, d)` contributes zero. `k` ranges over
+`[0, 2d - 1)`, the degrees a product of two reduced elements can reach.
+
+Deliberately a separate function over its own `Mul` and `Add` instances, `@[noinline]` and
+`@[nospecialize]`, and likewise `contractCoeff` below. Written inside `mulTbl`, or inlined or
+specialised on the `Ring F` instance, `*` and `+` on `F` are re-derived from the ring dictionary
+on every step of the innermost loop, through projections that allocate an intermediate structure
+each time; the emitted C of the first loop run had `instDistribOfSemiring` in the loop body.
+Here the two operations arrive as arguments, derived once per call of `mulTbl`, and the loop
+only applies them. (`nospecialize` matters: instance arguments are specialised even without
+`@[specialize]` on the callee.)
+-/
+@[noinline, nospecialize]
+def convCoeff [Mul F] [Add F] [Zero F] (x y : Ext P) (k : ℕ) (init : F) : F :=
+  Fin.foldl P.d (fun acc i =>
+    acc + if h : (i : ℕ) ≤ k ∧ k - (i : ℕ) < P.d then coeff x i * coeff y ⟨k - (i : ℕ), h.2⟩ else 0)
+    init
+
+omit [Ring F] in
+/-- Coefficient `m` of the reduction of the unreduced product `prod` against the table `tbl`:
+`∑_k prodₖ · [X^k mod f]ₘ`. See `convCoeff` for why this is a separate function. -/
+@[noinline, nospecialize]
+def contractCoeff [Mul F] [Add F] (tbl : Vector (Ext P) (2 * P.d - 1))
+    (prod : Vector F (2 * P.d - 1)) (m : Fin P.d) (init : F) : F :=
+  Fin.foldl (2 * P.d - 1) (fun acc k => acc + prod[(k : ℕ)] * coeff tbl[(k : ℕ)] m) init
+
+/--
+Table-driven multiplication: the compiled implementation of `mul`.
+
+Mathematically identical to `mul`, in two stages: the unreduced product `x · y` in `F[X]`,
+`2d - 1` coefficients by `convCoeff`, then one contraction of those against the reduction table
+`red` by `contractCoeff`. That is `d^2 + (2d - 1) d` coefficient multiplications where `mul`
+performs `d^3`, and the reduced monomials come from the table instead of being re-derived by
+`monomialMod` for every output coefficient. The sums are `Fin.foldl` loops rather than
+`Finset.sum`, which compiles to list-building `Multiset` machinery.
+
+`mul` remains the definition everything is proved about; `mul_eq_mulTbl` below swaps this in for
+compilation via `@[csimp]`. The loops live in `convCoeff` and `contractCoeff`, for the reason
+given there.
+
+Specialised on `P` as well as on the instances: at a call site whose modulus is a constant, which
+is every concrete extension field, the table `red P` is then a closed term the compiler
+evaluates once, rather than being rebuilt on every multiplication.
+-/
+@[specialize P]
+def mulTbl (x y : Ext P) : Ext P :=
+  let tbl := red P
+  let prod : Vector F (2 * P.d - 1) := Vector.ofFn fun k => convCoeff x y k 0
+  ofFn fun m => contractCoeff tbl prod m 0
+
+/-- `convCoeff` from zero is the convolution sum, with the second index as a `coeffNat`. -/
+theorem convCoeff_zero (x y : Ext P) (k : ℕ) :
+    convCoeff x y k 0 = ∑ i : Fin P.d,
+      if (i : ℕ) ≤ k ∧ k - (i : ℕ) < P.d then coeff x i * coeffNat y (k - (i : ℕ)) else 0 := by
+  simp only [convCoeff, Fin.foldl_add_eq_add_sum, zero_add]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  split_ifs with h
+  · rw [coeffNat_of_lt y h.2]
+  · rfl
+
+/-- The reindexing behind `mul_eq_mulTbl`: summing `g (i + j)` over `j < d` is summing `g k` over
+the `k < 2d - 1` that `i + j` reaches, for a fixed `i < d`. -/
+theorem sum_fin_add_eq_sum_fin_ite {M : Type*} [AddCommMonoid M] {d : ℕ} (i : Fin d)
+    (g : ℕ → M) :
+    ∑ j : Fin d, g ((i : ℕ) + (j : ℕ)) =
+      ∑ k : Fin (2 * d - 1), if (i : ℕ) ≤ (k : ℕ) ∧ (k : ℕ) - (i : ℕ) < d then g k else 0 := by
+  have hi := i.isLt
+  rw [Fin.sum_univ_eq_sum_range (fun j => g ((i : ℕ) + j)) d,
+    Fin.sum_univ_eq_sum_range (fun k => if (i : ℕ) ≤ k ∧ k - (i : ℕ) < d then g k else 0)
+      (2 * d - 1),
+    ← Finset.sum_filter]
+  have hset : (Finset.range (2 * d - 1)).filter (fun k => (i : ℕ) ≤ k ∧ k - (i : ℕ) < d) =
+      (Finset.range d).image (fun j => (i : ℕ) + j) := by
+    ext k
+    simp only [Finset.mem_filter, Finset.mem_range, Finset.mem_image]
+    constructor
+    · rintro ⟨hk, hik, hki⟩
+      exact ⟨k - (i : ℕ), by omega, by omega⟩
+    · rintro ⟨j, hj, rfl⟩
+      omega
+  rw [hset, Finset.sum_image fun a _ b _ h => Nat.add_left_cancel h]
+
+@[csimp] theorem mul_eq_mulTbl : @mul = @mulTbl := by
+  funext F _ P x y
+  refine Ext.ext fun m => ?_
+  simp only [mul, mulTbl, contractCoeff, coeff_ofFn, Fin.foldl_add_eq_add_sum, zero_add,
+    Vector.getElem_ofFn, red_getElem, convCoeff_zero, Finset.sum_mul, ite_mul, zero_mul]
+  conv_rhs => rw [Finset.sum_comm]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  simp only [← coeffNat_coe]
+  refine (Finset.sum_congr rfl fun j _ => ?_).trans (sum_fin_add_eq_sum_fin_ite i fun k =>
+    coeffNat x i * coeffNat y (k - (i : ℕ)) * coeffNat (monomialMod k) m)
+  simp only [Nat.add_sub_cancel_left]
+
+instance : Mul (Ext P) := ⟨mul⟩
+
+/-- `Nat`-power by binary exponentiation, so `x ^ n` costs `O(log n)` multiplications. -/
+instance : Pow (Ext P) ℕ := ⟨fun x n => npowBinRec n x⟩
+
+instance : NatCast (Ext P) := ⟨fun n => ofFn fun i => if (i : ℕ) = 0 then (n : F) else 0⟩
+instance : IntCast (Ext P) := ⟨fun n => ofFn fun i => if (i : ℕ) = 0 then (n : F) else 0⟩
+
+instance [DecidableEq F] : DecidableEq (Ext P) := fun x y =>
+  decidable_of_iff (x.coeffs = y.coeffs) coeffs_injective.eq_iff
+
+instance [BEq F] : BEq (Ext P) := ⟨fun x y => x.coeffs == y.coeffs⟩
+
+instance [BEq F] [LawfulBEq F] : LawfulBEq (Ext P) where
+  eq_of_beq {x y} h := by
+    exact coeffs_injective (eq_of_beq h)
+  rfl {x} := by
+    change (x.coeffs == x.coeffs) = true
+    exact BEq.rfl
+
+instance [Repr F] : Repr (Ext P) := ⟨fun x prec => reprPrec x.coeffs prec⟩
+instance : Inhabited (Ext P) := ⟨0⟩
+
+/-! ### Coefficients of the operations -/
+
+@[simp] theorem coeff_zero (i : Fin P.d) : coeff (0 : Ext P) i = 0 := coeff_ofFn _ _
+@[simp] theorem coeff_one (i : Fin P.d) :
+    coeff (1 : Ext P) i = if (i : ℕ) = 0 then 1 else 0 := coeff_ofFn _ _
+@[simp] theorem coeff_add (x y : Ext P) (i : Fin P.d) :
+    coeff (x + y) i = coeff x i + coeff y i := coeff_ofFn _ _
+@[simp] theorem coeff_neg (x : Ext P) (i : Fin P.d) : coeff (-x) i = -coeff x i := coeff_ofFn _ _
+@[simp] theorem coeff_sub (x y : Ext P) (i : Fin P.d) :
+    coeff (x - y) i = coeff x i - coeff y i := coeff_ofFn _ _
+@[simp] theorem coeff_smul (c : F) (x : Ext P) (i : Fin P.d) :
+    coeff (c • x) i = c * coeff x i := coeff_ofFn _ _
+
+@[simp] theorem coeff_shiftReduce (e : Ext P) (m : Fin P.d) :
+    coeff (shiftReduce e) m =
+      (if (m : ℕ) = 0 then 0 else coeffNat e ((m : ℕ) - 1))
+        - coeffNat e (P.d - 1) * P.lowerCoeff m := coeff_ofFn _ _
+
+@[simp] theorem coeff_mul (x y : Ext P) (m : Fin P.d) :
+    coeff (x * y) m =
+      ∑ i : Fin P.d, ∑ j : Fin P.d,
+        coeff x i * coeff y j * coeff (monomialMod ((i : ℕ) + (j : ℕ))) m :=
+  coeff_ofFn _ _
+
+@[simp] theorem coeff_ofBase (c : F) (i : Fin P.d) :
+    coeff (ofBase (P := P) c) i = if (i : ℕ) = 0 then c else 0 := coeff_ofFn _ _
+
+@[simp] theorem coeff_gen (i : Fin P.d) :
+    coeff (gen : Ext P) i = if (i : ℕ) = 1 then 1 else 0 := coeff_ofFn _ _
+
+/-- `ofBase` agrees with `1` on the multiplicative unit. -/
+@[simp] theorem ofBase_one : ofBase (P := P) (1 : F) = 1 := rfl
+
+/-- `ofBase` agrees with `0`. -/
+@[simp] theorem ofBase_zero : ofBase (P := P) (0 : F) = 0 := by
+  ext i; simp only [coeff_ofBase, coeff_zero, ite_self]
+
+/-- `ofBase` agrees with the `ℕ`-cast, so scalars and numerals do not diverge. -/
+@[simp] theorem ofBase_natCast (n : ℕ) : ofBase (P := P) (n : F) = (n : Ext P) := rfl
+
+/-- `ofBase` agrees with the `ℤ`-cast. -/
+@[simp] theorem ofBase_intCast (n : ℤ) : ofBase (P := P) (n : F) = (n : Ext P) := rfl
+
+@[simp] theorem coeff_natCast (n : ℕ) (i : Fin P.d) :
+    coeff (n : Ext P) i = if (i : ℕ) = 0 then (n : F) else 0 := coeff_ofFn _ _
+
+@[simp] theorem coeff_intCast (n : ℤ) (i : Fin P.d) :
+    coeff (n : Ext P) i = if (i : ℕ) = 0 then (n : F) else 0 := coeff_ofFn _ _
+
+theorem pow_def (x : Ext P) (n : ℕ) : x ^ n = npowBinRec n x := rfl
+
+/-- The canonical inverse candidate `x ^ (q^d - 2)`.
+
+Inverse laws require finite-cardinality and irreducibility certificates. For arbitrary `q`,
+this operation need not send zero to zero. -/
+def inv (x : Ext P) : Ext P := x ^ (P.q ^ P.d - 2)
+
+instance instInv : Inv (Ext P) := ⟨inv⟩
+instance instDiv : Div (Ext P) := ⟨fun x y => x * inv y⟩
+
+theorem inv_def (x : Ext P) : x⁻¹ = x ^ (P.q ^ P.d - 2) := rfl
+theorem div_def (x y : Ext P) : x / y = x * y⁻¹ := rfl
+
+end Ext
+
+/-! ### Binomial extensions as a special case
+
+A binomial extension `F[X] / (X^d - W)` is the case `lower = (-W, 0, …, 0)`. `BinomialParams`
+keeps the `W`-only interface; `toExtensionParams` maps it into the general framework. The
+polynomial correspondence and binomial irreducibility criterion are proved separately.
+-/
+
+/--
+Parameters for the quotient `F[X] / (X^d - W)`: the degree, constant `W`, and a proposed
+base cardinality. The modulus has lower coefficients `(-W, 0, …, 0)`.
+-/
+structure BinomialParams (F : Type*) where
+  /-- The degree of the extension. -/
+  d : ℕ
+  /-- The extension adjoins a `d`-th root of `W`. -/
+  W : F
+  /-- Degree at least two; a degree-one "extension" is just `F`. -/
+  two_le : 2 ≤ d
+  /-- The proposed base cardinality used by the inverse exponent. -/
+  q : ℕ
+
+namespace BinomialParams
+
+variable (P : BinomialParams F)
+
+omit [Ring F] in
+theorem d_pos : 0 < P.d := by have := P.two_le; omega
+
+/-- The general-framework parameters for the binomial modulus `X^d - W`: the lower coefficient
+vector is `(-W, 0, …, 0)`. -/
+def toExtensionParams : ExtensionParams F where
+  d := P.d
+  two_le := P.two_le
+  lower := Vector.ofFn fun i => if (i : ℕ) = 0 then -P.W else 0
+  q := P.q
+
+@[simp] theorem toExtensionParams_d : P.toExtensionParams.d = P.d := rfl
+@[simp] theorem toExtensionParams_q : P.toExtensionParams.q = P.q := rfl
+
+@[simp] theorem toExtensionParams_lowerCoeff (i : Fin P.toExtensionParams.d) :
+    P.toExtensionParams.lowerCoeff i = if (i : ℕ) = 0 then -P.W else 0 := by
+  simp only [ExtensionParams.lowerCoeff, toExtensionParams, Vector.getElem_ofFn]
+
+end BinomialParams
+
+end CompPoly.Extension

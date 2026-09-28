@@ -5,6 +5,7 @@ Authors: Chung Thai Nguyen, Quang Dao, Derek Sorensen, Dimitris Mitsios
 -/
 module
 
+public import CompPoly.Fields.Binary.Common.Arithmetic
 public import Mathlib.FieldTheory.Finite.Basic
 public import Mathlib.RingTheory.Polynomial.Basic
 public import Mathlib.RingTheory.AdjoinRoot
@@ -24,7 +25,8 @@ It includes:
 3. **BitVec ↔ Polynomial isomorphism** — `toPoly` and related lemmas
 
 These utilities are used by both the tower construction (`Tower/`) and the
-direct GF(2^128) implementation (`BF128Ghash/`).
+direct GF(2^128) implementation (`BF128Ghash/`). Import
+`CompPoly.Fields.Binary.Common.Arithmetic` for word operations without polynomial support.
 
 ## Main Definitions
 
@@ -232,86 +234,6 @@ lemma BitVec.toNat_of_cast {w w2 : ℕ} (x : BitVec w) (h_width_eq : w = w2) :
 
 end BitVecHelperLemmas
 
-section BitVecOperations
-
--- We use BitVec 256 to ensure no overflows during squaring
-abbrev B128 := BitVec 128
-abbrev B256 := BitVec 256
-
--- Extend 128 to 256
-def to256 (v : B128) : B256 := BitVec.zeroExtend 256 v
-
-lemma to256_toNat (v : B128) : (to256 v).toNat = v.toNat := by
-  simp only [to256, BitVec.truncate_eq_setWidth, BitVec.toNat_setWidth, Nat.reducePow,
-    Nat.mod_succ_eq_iff_lt, Nat.succ_eq_add_one, Nat.reduceAdd]
-  change BitVec.toNat v < 2^256
-  have h_toNat_lt := BitVec.toNat_lt_twoPow_of_le (n := 256) (x := v) (h := by omega)
-  omega
-
--- Std.Commutative and Std.Associative instances for Nat.xor required by Finset.fold
-instance : Std.Commutative Nat.xor where
-  comm := Nat.xor_comm
-
-instance : Std.Associative Nat.xor where
-  assoc := Nat.xor_assoc
-
--- Std.Commutative and Std.Associative instances for BitVec.xor required by Finset.fold
-instance {w : Nat} : Std.Commutative (α := BitVec w) BitVec.xor where
-  comm := fun a b => by
-    ext i
-    simp only [BitVec.xor_eq, BitVec.getElem_xor]
-    rw [Bool.xor_comm]
-
-instance {w : Nat} : Std.Associative (α := BitVec w) BitVec.xor where
-  assoc := fun a b c => by
-    ext i
-    simp only [BitVec.xor_eq, BitVec.getElem_xor, Bool.bne_assoc]
-
-/-- Widen a bit vector by zero-extension, at an arbitrary target width. -/
-def zeroExtendTo {v w : ℕ} (a : BitVec v) : BitVec w := BitVec.zeroExtend w a
-
-theorem toNat_zeroExtendTo {v w : ℕ} (a : BitVec v) (h : v ≤ w) :
-    (zeroExtendTo (w := w) a).toNat = a.toNat := by
-  unfold zeroExtendTo
-  simp [BitVec.toNat_setWidth]
-  exact Nat.mod_eq_of_lt (lt_of_lt_of_le a.isLt (Nat.pow_le_pow_right (by norm_num) h))
-
-/-- `to256` is the 128-to-256 instance of `zeroExtendTo`. -/
-theorem to256_eq_zeroExtendTo (v : B128) : to256 v = zeroExtendTo v := rfl
-
-/-- Carry-less (polynomial) multiplication, at an arbitrary operand and result width.
-
-The result width `w` must admit the full product for the denotation to be faithful;
-`toPoly_carryLessMul` carries that hypothesis as `v + v ≤ w`. -/
-def carryLessMul {v w : ℕ} (a b : BitVec v) : BitVec w :=
-  Fin.foldl v (fun acc i =>
-    if a.getLsbD i then acc ^^^ (zeroExtendTo b <<< (i : Nat))
-    else acc) (0 : BitVec w)
-
-/-- Carry-less (polynomial) multiplication of two 128-bit vectors.
-
-The 128-bit instance of `carryLessMul`, kept under the name the GHASH development uses. -/
-def clMul (a b : B128) : B256 := carryLessMul a b
-
-theorem clMul_eq_carryLessMul (a b : B128) : clMul a b = carryLessMul (w := 256) a b := rfl
-
-/-- Carry-less squaring of a 128-bit vector. -/
-def clSq (a : B128) : B256 :=
-  clMul a a
-
-lemma fold_range_xor_eq_foldl {w : Nat} (n : Nat) (f : Nat → BitVec w) :
-    (Finset.range n).fold BitVec.xor 0 f =
-    Fin.foldl n (fun acc i => acc ^^^ (f i)) 0 := by
-  induction n with
-  | zero => simp
-  | succ k ih =>
-    rw [Fin.foldl_succ_last, Finset.range_add_one, Finset.fold_insert Finset.notMem_range_self]
-    simp only [Fin.val_castSucc, Fin.val_last]
-    rw [←ih, BitVec.xor_comm]
-    rfl
-
-end BitVecOperations
-
 /-! ## Section 4: BitVec ↔ Polynomial Isomorphism -/
 
 section PolynomialIsomorphism
@@ -449,7 +371,7 @@ lemma toPoly_ne_zero_iff_ne_zero {w : Nat} (v : BitVec w) :
               intro h_eq
               have h_val_eq' : b.val = i.val := by rw [h_eq]
               exact h_val_eq h_val_eq'
-            simp only [if_neg (Ne.symm h_val_eq), h_b_ne_i, ↓reduceIte]
+            simp only [ite_eq_right (Ne.symm h_val_eq), h_b_ne_i, ↓reduceIte]
         · -- v.getLsb b = false
           split_ifs
           · simp only [coeff_zero]
@@ -474,7 +396,7 @@ lemma toPoly_ne_zero_iff_ne_zero {w : Nat} (v : BitVec w) :
     have h_v_eq_zero : v = 0 := by
       ext bitIdx
       simp only [BitVec.ofNat_eq_ofNat, BitVec.getElem_zero]
-      (expose_names; exact eq_false_of_ne_true (h_all_bits_false ⟨bitIdx, hi⟩))
+      (expose_names; exact Bool.eq_false_of_ne_true (h_all_bits_false ⟨bitIdx, hi⟩))
     exact h_v_ne_zero h_v_eq_zero
 
 /-- ToPoly degree is less than width -/
@@ -701,7 +623,7 @@ theorem toPoly_coeff {w : ℕ} (v : BitVec w) (n : ℕ) :
   rw [Polynomial.finsetSum_coeff]
   by_cases h : n < w
   · -- case n < w
-    simp only [dif_pos h]
+    simp only [dite_eq_left h]
     let i0 : Fin w := ⟨n, h⟩
     -- rewrite the coefficient sum as a single term
     have hmain :
@@ -718,9 +640,9 @@ theorem toPoly_coeff {w : ℕ} (v : BitVec w) (n : ℕ) :
           have hn : n = (i0 : ℕ) := by
             simp [i0]
           -- now simp
-          simp only [if_pos hb, Polynomial.coeff_X_pow, if_pos hn]
+          simp only [ite_eq_left hb, Polynomial.coeff_X_pow, ite_eq_left hn]
         · -- bit is 0
-          simp only [if_neg hb, Polynomial.coeff_zero]
+          simp only [ite_eq_right hb, Polynomial.coeff_zero]
       · -- other indices
         intro i hi_mem hi_ne
         by_cases hb : v.getLsb i = true
@@ -731,16 +653,16 @@ theorem toPoly_coeff {w : ℕ} (v : BitVec w) (n : ℕ) :
             apply Fin.ext
             -- turn hn : n = i into i.val = n
             simpa [i0] using hn.symm
-          simp only [if_pos hb, Polynomial.coeff_X_pow, if_neg hne_val]
+          simp only [ite_eq_left hb, Polynomial.coeff_X_pow, ite_eq_right hne_val]
         · -- term itself is 0
-          simp only [if_neg hb, Polynomial.coeff_zero]
+          simp only [ite_eq_right hb, Polynomial.coeff_zero]
       · -- i0 ∈ univ
         intro hi0_not
         simp [Finset.mem_univ] at hi0_not
     -- conclude
     simpa [Polynomial.finsetSum_coeff, i0] using hmain
   · -- case ¬ n < w
-    simp only [dif_neg h]
+    simp only [dite_eq_right h]
     -- show every summand has coefficient 0
     apply Finset.sum_eq_zero
     intro i hi_mem
@@ -748,8 +670,8 @@ theorem toPoly_coeff {w : ℕ} (v : BitVec w) (n : ℕ) :
     · have hw_le : w ≤ n := Nat.le_of_not_gt h
       have hne_val : n ≠ (i : ℕ) := by
         exact ne_of_gt (lt_of_lt_of_le i.isLt hw_le)
-      simp only [if_pos hb, Polynomial.coeff_X_pow, if_neg hne_val]
-    · simp only [if_neg hb, Polynomial.coeff_zero]
+      simp only [ite_eq_left hb, Polynomial.coeff_X_pow, ite_eq_right hne_val]
+    · simp only [ite_eq_right hb, Polynomial.coeff_zero]
 
 theorem toPoly_shiftLeft_no_overflow {w d : ℕ} (a : BitVec w) (ha : a.toNat < 2 ^ d) {shift : ℕ}
     (h_no_overflow : d + shift ≤ w) : toPoly (a <<< shift) = (toPoly a) * X^shift := by

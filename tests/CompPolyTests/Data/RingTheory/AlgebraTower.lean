@@ -9,12 +9,16 @@ import CompPoly.Data.RingTheory.AlgebraTower
 import Mathlib.Data.ZMod.Basic
 
 /-!
-# Algebra tower identity regression tests
+# Algebra tower identity and adjacent-map regression tests
 
 The projection `(x, y) ↦ (x, x)` on `GF(2) × GF(2)` is an idempotent ring endomorphism.
 Using it between every pair of levels gives coherent maps whose self-maps are not identities.
 The identity law excludes this family of maps. Identity maps on the same carrier give a valid
 tower over a commutative semiring that is not a field.
+
+Using the projection only as the adjacent step gives a valid tower via `AlgebraTower.ofNatStep`.
+Symbolic clients check composition and recover any existing natural-number-indexed tower
+from its adjacent maps.
 -/
 
 namespace CompPolyTests.AlgebraTower
@@ -33,6 +37,53 @@ example (i : ι) (h : i ≤ i) (x : A i) :
   simp only [AlgebraTower.algebraMap_self_apply]
 
 end Generic
+
+section NatStep
+
+variable {A : ℕ → Type*} [∀ k, CommSemiring (A k)]
+  (step : ∀ k, A k →+* A (k + 1))
+
+example (i : ℕ) (h : i ≤ i) :
+    (AlgebraTower.ofNatStep step).algebraMap i i h = RingHom.id (A i) :=
+  (AlgebraTower.ofNatStep step).algebraMap_self' i
+
+example (i : ℕ) (h : i ≤ i + 1) :
+    (AlgebraTower.ofNatStep step).algebraMap i (i + 1) h = step i := by
+  simp
+
+example {i j : ℕ} (h h' : i ≤ j) :
+    (AlgebraTower.ofNatStep step).algebraMap i j h =
+      (AlgebraTower.ofNatStep step).algebraMap i j h' := rfl
+
+example {i j k : ℕ} (hij : i ≤ j) (hjk : j ≤ k) (x : A i) :
+    (AlgebraTower.ofNatStep step).algebraMap i k (hij.trans hjk) x =
+      (AlgebraTower.ofNatStep step).algebraMap j k hjk
+        ((AlgebraTower.ofNatStep step).algebraMap i j hij x) :=
+  congrArg (fun f : A i →+* A k => f x)
+    ((AlgebraTower.ofNatStep step).coherence' i j k hij hjk)
+
+example {i j k : ℕ} (hij : i ≤ j) (hjk : j ≤ k) :
+    letI := AlgebraTower.ofNatStep step
+    letI := AlgebraTower.toAlgebra (A := A) hij
+    letI := AlgebraTower.toAlgebra (A := A) hjk
+    letI := AlgebraTower.toAlgebra (A := A) (hij.trans hjk)
+    IsScalarTower (A i) (A j) (A k) :=
+  AlgebraTower.toIsScalarTower (AlgebraTower.ofNatStep step) hij hjk
+
+-- Reconstructing an existing tower from its adjacent maps preserves every comparable map.
+example [t : AlgebraTower A] {i j : ℕ} (h : i ≤ j) :
+    (AlgebraTower.ofNatStep (fun k => t.algebraMap k (k + 1) (Nat.le_succ k))).algebraMap
+      i j h = t.algebraMap i j h := by
+  induction h with
+  | refl =>
+    exact ((AlgebraTower.ofNatStep (fun k =>
+      t.algebraMap k (k + 1) (Nat.le_succ k))).algebraMap_self' i).trans
+        (t.algebraMap_self' i).symm
+  | @step j h ih =>
+    rw [AlgebraTower.ofNatStep_algebraMap_succ_right _ h, ih,
+      t.coherence' i j (j + 1) h (Nat.le_succ j)]
+
+end NatStep
 
 private abbrev R := ZMod 2 × ZMod 2
 
@@ -70,5 +121,25 @@ private abbrev constantTower : AlgebraTower (fun _ : ℕ => R) where
   coherence' _ _ _ _ _ := rfl
 
 example (x : R) : constantTower.algebraMap 0 2 (by decide) x = x := rfl
+
+/-- A valid tower with noninjective adjacent maps on the same non-field carrier. -/
+private abbrev projectionTower : AlgebraTower (fun _ : ℕ => R) :=
+  AlgebraTower.ofNatStep (fun _ => diagonal)
+
+example (k : ℕ) : projectionTower.algebraMap k k le_rfl (0, 1) = (0, 1) := by
+  rw [projectionTower.algebraMap_self']
+  rfl
+
+example : projectionTower.algebraMap 0 2 (by decide) (0, 1) = (0, 0) := by
+  rw [AlgebraTower.ofNatStep_algebraMap_succ_right _ (show 0 ≤ 1 by decide),
+    AlgebraTower.ofNatStep_algebraMap_succ]
+  rfl
+
+example (k : ℕ) :
+    ¬ Function.Injective (projectionTower.algebraMap k (k + 1) (Nat.le_succ k)) := by
+  rw [AlgebraTower.ofNatStep_algebraMap_succ]
+  intro h
+  have he := h (show diagonal (0, 1) = diagonal (0, 0) from rfl)
+  exact one_ne_zero (congrArg Prod.snd he)
 
 end CompPolyTests.AlgebraTower

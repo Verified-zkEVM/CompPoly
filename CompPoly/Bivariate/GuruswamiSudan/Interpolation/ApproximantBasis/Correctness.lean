@@ -129,7 +129,7 @@ private theorem rowShiftedDegree?_toCoeffRow_le {row : PolynomialRow F}
   simp only [shiftedEntryDegree?, hgets] at hentry
   have hne : ¬ rowGet row j == 0 := by
     by_contra h0
-    rw [if_pos h0] at hentry
+    rw [ite_eq_left h0] at hentry
     cases hentry
   have hjrow : j < row.size := by
     by_contra hge
@@ -237,13 +237,13 @@ theorem approximantBasisInterpolate_sound
     ValidInterpolationWitness points params Q := by
   unfold approximantBasisInterpolate at h
   by_cases hLow : params.messageDegree ≤ 1
-  · simp only [hLow, if_true, Option.some_inj] at h
+  · simp only [hLow, ite_true, Option.some_inj] at h
     rw [← h]
     exact lowMessageDegreeInterpolation_sound (points := points) (params := params) hLow
-  · simp only [hLow, if_false] at h
+  · simp only [hLow, ite_false] at h
     rw [approximantBasisPositiveInterpolate] at h
     by_cases hdistinctBool : distinctXCoordinatesBool points = true
-    · rw [if_pos hdistinctBool] at h
+    · rw [ite_eq_left hdistinctBool] at h
       have hdistinct : DistinctXCoordinates points :=
         LeeOSullivan.distinctXCoordinatesBool_iff.mp hdistinctBool
       set G := V.vanishingPolynomial (points.map fun point ↦ point.1) with hGdef
@@ -270,7 +270,7 @@ theorem approximantBasisInterpolate_sound
               normalizeApproximantCandidate? params (CBivariate.ofCoeffRow choice.row)
             else none) = some Q at h
           by_cases hdeg : choice.degree ≤ params.weightedDegreeBound
-          · rw [if_pos hdeg] at h
+          · rw [ite_eq_left hdeg] at h
             -- The chosen row is a basis member satisfying the modular predicate.
             rcases leastShiftedDegreeChoice?_some_valid hchoice with
               ⟨hindex, hrowEq, hrowDeg⟩
@@ -351,9 +351,9 @@ theorem approximantBasisInterpolate_sound
                   exact hd'
                 exact LeeOSullivan.normalizeLeeCandidate?_sound_of_raw
                   (points := points) (params := params) hLow hdegRaw hmult hnorm'
-          · rw [if_neg hdeg] at h
+          · rw [ite_eq_right hdeg] at h
             simp at h
-    · rw [if_neg hdistinctBool] at h
+    · rw [ite_eq_right hdistinctBool] at h
       simp at h
 
 /-! ## Completeness -/
@@ -460,7 +460,7 @@ theorem approximantBasisInterpolate_complete
   by_cases hLow : params.messageDegree ≤ 1
   · refine ⟨lowMessageDegreeInterpolation points params.multiplicity, ?_⟩
     unfold approximantBasisInterpolate
-    rw [if_pos hLow]
+    rw [ite_eq_left hLow]
   · rcases hexists with ⟨Q₀, hQ₀ne, hQ₀deg, hQ₀mult⟩
     have hw : 0 < yWeight params := by
       rw [yWeight]
@@ -610,7 +610,7 @@ theorem approximantBasisInterpolate_complete
     -- Assemble the executable run.
     refine ⟨Q, ?_⟩
     unfold approximantBasisInterpolate
-    rw [if_neg hLow, approximantBasisPositiveInterpolate, if_pos hdistinctBool]
+    rw [ite_eq_right hLow, approximantBasisPositiveInterpolate, ite_eq_left hdistinctBool]
     change (match leastShiftedDegreeChoice? basis data.shift with
       | none => none
       | some choice =>
@@ -621,7 +621,7 @@ theorem approximantBasisInterpolate_complete
     change (if choice.degree ≤ params.weightedDegreeBound then
         normalizeApproximantCandidate? params (CBivariate.ofCoeffRow choice.row)
       else none) = some Q
-    rw [if_pos hchoiceBound]
+    rw [ite_eq_left hchoiceBound]
     rw [normalizeApproximantCandidate?]
     rw [LeeOSullivan.normalizeLeeCandidate?] at hnorm
     exact hnorm

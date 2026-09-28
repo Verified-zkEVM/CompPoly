@@ -21,7 +21,7 @@ package CompPoly where
   -- prioritize it when resolving toolchains for downstream projects.
   fixedToolchain := true
 
-require "leanprover-community" / mathlib @ git "v4.33.1"
+require "leanprover-community" / mathlib @ git "v4.34.0"
 
 @[default_target]
 lean_lib CompPoly where
@@ -33,6 +33,10 @@ lean_lib CompPoly where
   platformIndependent := true
 
 lean_lib CompPolyTests where
+  srcDir := "tests"
+
+/-- Linked field-startup and arithmetic checks; see tests/README.md for bounded execution. -/
+lean_exe CompPolyNativeSmoke where
   srcDir := "tests"
 
 lean_lib CompPolyBenchLib where

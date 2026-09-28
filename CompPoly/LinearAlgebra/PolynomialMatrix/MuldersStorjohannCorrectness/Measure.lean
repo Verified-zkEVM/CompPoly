@@ -223,12 +223,12 @@ theorem muldersStorjohannStep_shiftedMatrixMeasure_lt
       shift <
     shiftedMatrixMeasure M shift
   by_cases hleIJ : termI.shiftedDegree ≤ termJ.shiftedDegree
-  · rw [if_pos hleIJ]
+  · rw [ite_eq_left hleIJ]
     apply shiftedMatrixMeasure_replaceRow_lt hj
     exact cancelShiftedLeadingTerm_shiftedRowMeasure_lt htermJ htermI hposJI hleIJ
       hsizeIJ
   · have hleJI : termJ.shiftedDegree ≤ termI.shiftedDegree := by omega
-    rw [if_neg hleIJ]
+    rw [ite_eq_right hleIJ]
     apply shiftedMatrixMeasure_replaceRow_lt hi
     exact cancelShiftedLeadingTerm_shiftedRowMeasure_lt htermI htermJ hposIJ hleJI
       hsizeIJ.symm

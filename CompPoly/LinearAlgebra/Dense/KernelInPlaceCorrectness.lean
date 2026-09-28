@@ -207,7 +207,7 @@ theorem normalizeAndEliminateData_eq [Field F] [BEq F] (M : DenseMatrix F)
   rw [hpiv]
   by_cases hp : M.get pivotRow pivotCol == 0
   · simp [hp]
-  · simp only [hp, if_false, Bool.false_eq_true]
+  · simp only [hp, ite_false, Bool.false_eq_true]
     have hstart : scaleRowData M.cols pivotRow (M.get pivotRow pivotCol)⁻¹ M.data
         = (scaleRow M pivotRow (M.get pivotRow pivotCol)⁻¹).data :=
       scaleRowData_eq M pivotRow _
@@ -235,7 +235,7 @@ theorem rrefLoopData_eq [Field F] [BEq F] :
       intro col row M pivots
       rw [rrefLoopData, rrefLoop, findPivotRowData_eq]
       by_cases hguard : col < M.cols && row < M.rows
-      · simp only [hguard, if_true]
+      · simp only [hguard, ite_true]
         cases hpiv : findPivotRow M row col with
         | none => simpa using ih (col + 1) row M pivots
         | some pivotRow =>
@@ -252,7 +252,7 @@ theorem rrefLoopData_eq [Field F] [BEq F] :
                   (normalizeAndEliminate_cols _ _ _).symm]
             exact ih (col + 1) (row + 1)
               (normalizeAndEliminate (swapRows M pivotRow row) row col) (pivots.push col)
-      · simp only [hguard, if_false, Bool.false_eq_true]
+      · simp only [hguard, ite_false, Bool.false_eq_true]
 
 /-- The in-place RREF equals the copying RREF. -/
 theorem rrefInPlace_eq [Field F] [BEq F] (M : DenseMatrix F) : rrefInPlace M = rref M := by

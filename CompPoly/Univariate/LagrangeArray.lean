@@ -72,8 +72,8 @@ private theorem pointNode_injOn_of_distinct
         (points.toList.map (fun point : F × F ↦ point.1))[j.val] := by
     simpa [pointNode, Array.getElem_toList] using h
   exact
-    (@List.getElem_inj F i.val j.val
-      (points.toList.map (fun point : F × F ↦ point.1)) hi hj hdistinct').mp hnodes
+    (@List.Nodup.getElem_inj F i.val j.val
+      (points.toList.map (fun point : F × F ↦ point.1)) hdistinct' hi hj).mp hnodes
 
 /-- Evaluating the packed-array interpolant at one indexed node returns the indexed value. -/
 theorem eval_interpolateArray_at_index

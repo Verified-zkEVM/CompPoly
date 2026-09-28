@@ -269,7 +269,7 @@ theorem minPoly_of_powerBasisSucc_generator (k : ℕ) :
 
 lemma powerBasisSucc_dim (k : ℕ) :
     powerBasisSucc (k:=k).dim = 2 := by
-  simp only [ConcreteBTField, powerBasisSucc]
+  simp only [powerBasisSucc]
 
 def hli_level_diff_0 (l : ℕ) :
     letI instAlgebra:= ConcreteBTFieldAlgebra (l:=l) (r:=l) (h_le:=by omega)
@@ -291,7 +291,6 @@ def hli_level_diff_0 (l : ℕ) :
       smul_eq_mul, Finset.sum_singleton] at hg -- hg : g 0 = 0 ∨ 1 = 0
     have h_one_ne_zero : (1 : ConcreteBTField l) ≠ (0 : ConcreteBTField l) := by
       exact one_ne_zero
-    simp only [ConcreteBTField, Fin.isValue] at hg
     rw [Subsingleton.elim j 0] -- j must be 0
     rw [hg.symm]
     exact Eq.symm (MulOneClass.mul_one (g 0))
@@ -355,7 +354,6 @@ def multilinearBasis (l r : ℕ) (h_le : l ≤ r) :
       ) (c:=by
         convert (powerBasisSucc (r1)).basis using 1
         · rw [powerBasisSucc_dim (k:=r1)]
-        · exact Semiring.ext rfl rfl
       )
     convert res
     -- Basis are equal under the same @ConcreteBTFieldAlgebra
@@ -477,7 +475,7 @@ theorem multilinearBasis_apply (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) → ∀
       rw [multilinearBasis]
       -- key to remove Eq.rec : dif_neg h_r_sub_l
       simp only [Nat.pow_zero, eq_mp_eq_cast, cast_eq,
-        eq_mpr_eq_cast, dif_neg h_r_sub_l]
+        eq_mpr_eq_cast, dite_eq_right h_r_sub_l]
       have h2 : 2 ^ (r - l - 1) * 2 = 2 ^ (r - l) := by
         rw [←Nat.pow_succ, Nat.succ_eq_add_one, Nat.sub_add_cancel (by omega)]
       rw [Basis_cast_index_apply (h_eq:=by omega) (h_le:=by omega)]

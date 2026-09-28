@@ -85,11 +85,11 @@ lemma ghashTail_monic : Monic ghashTail := by
   -- coeff (A + B) i = coeff A i + coeff B i
   rw [coeff_add, coeff_add, coeff_add]
   -- coeff (X^n) n = 1
-  rw [coeff_X_pow 7, if_pos rfl]
+  rw [coeff_X_pow 7, ite_eq_left rfl]
   -- coeff (X^k) 128 = 0 for k < 128
-  rw [coeff_X_pow 2, if_neg (by norm_num)]
-  rw [coeff_X, if_neg (by norm_num)]
-  rw [coeff_one, if_neg (by norm_num)]
+  rw [coeff_X_pow 2, ite_eq_right (by norm_num)]
+  rw [coeff_X, ite_eq_right (by norm_num)]
+  rw [coeff_one, ite_eq_right (by norm_num)]
   -- 1 + 0 + 0 + 0 + 0 = 1
   simp only [add_zero]
 
@@ -121,12 +121,12 @@ lemma ghashPoly_monic : Monic ghashPoly := by
   -- coeff (A + B) i = coeff A i + coeff B i
   rw [coeff_add, coeff_add, coeff_add, coeff_add]
   -- coeff (X^n) n = 1
-  rw [coeff_X_pow 128, if_pos rfl]
+  rw [coeff_X_pow 128, ite_eq_left rfl]
   -- coeff (X^k) 128 = 0 for k < 128
-  rw [coeff_X_pow 7, if_neg (by norm_num)]
-  rw [coeff_X_pow 2, if_neg (by norm_num)]
-  rw [coeff_X, if_neg (by norm_num)]
-  rw [coeff_one, if_neg (by norm_num)]
+  rw [coeff_X_pow 7, ite_eq_right (by norm_num)]
+  rw [coeff_X_pow 2, ite_eq_right (by norm_num)]
+  rw [coeff_X, ite_eq_right (by norm_num)]
+  rw [coeff_one, ite_eq_right (by norm_num)]
   -- 1 + 0 + 0 + 0 + 0 = 1
   simp only [add_zero]
 

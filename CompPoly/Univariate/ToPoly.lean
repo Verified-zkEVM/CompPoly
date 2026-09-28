@@ -8,3 +8,4 @@ module
 public import CompPoly.Univariate.ToPoly.Core
 public import CompPoly.Univariate.ToPoly.Equiv
 public import CompPoly.Univariate.ToPoly.Degree
+public import CompPoly.Univariate.ToPoly.RingHom

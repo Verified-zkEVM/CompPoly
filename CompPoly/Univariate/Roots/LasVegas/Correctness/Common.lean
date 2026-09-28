@@ -55,8 +55,8 @@ theorem eval_reduceModWith_eq_self_of_root {F : Type*}
     CPolynomial.eval a (reduceModWith D modulus h) = CPolynomial.eval a h := by
   unfold reduceModWith
   by_cases hzero : modulus == 0
-  · rw [if_pos hzero]
-  · rw [if_neg hzero]
+  · rw [ite_eq_left hzero]
+  · rw [ite_eq_right hzero]
     have hrootMonic : CPolynomial.eval a (CPolynomial.monicNormalize modulus) = 0 :=
       monicNormalize_root_of_root hroot
     change
@@ -262,9 +262,9 @@ theorem quotientAfterChild_root_of_not_child_root {F : Type*}
     CPolynomial.eval a (quotientAfterChild parent child) = 0 := by
   unfold quotientAfterChild
   by_cases hproper : isNontrivialProperChild parent child = true
-  · rw [if_pos hproper]
+  · rw [ite_eq_left hproper]
     exact monicNormalize_div_root_of_dvd_of_root_of_ne_root hdiv hparent hchild
-  · rw [if_neg hproper]
+  · rw [ite_eq_right hproper]
     exact hparent
 
 theorem val_size_eq_natDegree_add_one_of_ne_zero {F : Type*}
@@ -363,7 +363,7 @@ theorem quotientAfterChild_size_le_parent {F : Type*}
     (quotientAfterChild parent child).val.size ≤ parent.val.size := by
   unfold quotientAfterChild
   by_cases hproper : isNontrivialProperChild parent child = true
-  · rw [if_pos hproper]
+  · rw [ite_eq_left hproper]
     let : DecidableEq F := instDecidableEqOfLawfulBEq
     apply val_size_le_of_toPoly_natDegree_le hparent
     rw [CPolynomial.monicNormalize_toPoly_eq_normalize]
@@ -374,7 +374,7 @@ theorem quotientAfterChild_size_le_parent {F : Type*}
     · exact (CPolynomial.toPoly_eq_zero_iff parent).not.mpr hparent
     · rw [Polynomial.degree_normalize]
       exact Polynomial.degree_div_le parent.toPoly child.toPoly
-  · rw [if_neg hproper]
+  · rw [ite_eq_right hproper]
 
 theorem toPoly_ne_one_of_ne_one {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
@@ -432,7 +432,7 @@ theorem quotientAfterChild_size_lt_parent_of_monicNormalize_proper {F : Type*}
       parent.val.size := by
   let : DecidableEq F := instDecidableEqOfLawfulBEq
   unfold quotientAfterChild
-  rw [if_pos hproper]
+  rw [ite_eq_left hproper]
   apply val_size_lt_of_toPoly_degree_lt hparent
   rw [CPolynomial.monicNormalize_toPoly_eq_normalize]
   change
@@ -480,14 +480,14 @@ theorem quotientAfterChild_ne_zero_of_dvd {F : Type*}
     quotientAfterChild parent child ≠ 0 := by
   unfold quotientAfterChild
   by_cases hproper : isNontrivialProperChild parent child = true
-  · rw [if_pos hproper]
+  · rw [ite_eq_left hproper]
     have hchild : child ≠ 0 := by
       unfold isNontrivialProperChild at hproper
       simp at hproper
       exact hproper.1.1
     exact monicNormalize_ne_zero_of_ne_zero
       (div_ne_zero_of_dvd_of_ne_zero hdiv hparent hchild)
-  · rw [if_neg hproper]
+  · rw [ite_eq_right hproper]
     exact hparent
 
 theorem quotientAfterChild_toPoly_dvd_parent {F : Type*}
@@ -497,7 +497,7 @@ theorem quotientAfterChild_toPoly_dvd_parent {F : Type*}
     (quotientAfterChild parent child).toPoly ∣ parent.toPoly := by
   unfold quotientAfterChild
   by_cases hproper : isNontrivialProperChild parent child = true
-  · rw [if_pos hproper]
+  · rw [ite_eq_left hproper]
     have hchild : child ≠ 0 := by
       unfold isNontrivialProperChild at hproper
       simp at hproper
@@ -516,7 +516,7 @@ theorem quotientAfterChild_toPoly_dvd_parent {F : Type*}
       rw [CPolynomial.div_toPoly_eq_div]
       exact hquot_dvd_parent
     exact (toPoly_monicNormalize_dvd_self (CPolynomial.div parent child)).trans hdivC
-  · rw [if_neg hproper]
+  · rw [ite_eq_right hproper]
 
 theorem child_quotient_natDegree_le_parent {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
@@ -552,7 +552,7 @@ theorem child_quotient_natDegree_le_parent {F : Type*}
     simpa [CPolynomial.monicNormalize_toPoly_eq_normalize,
       CPolynomial.div_toPoly_eq_div] using hnormPolyC
   unfold quotientAfterChild
-  rw [if_pos hproper]
+  rw [ite_eq_left hproper]
   rw [CPolynomial.monicNormalize_toPoly_eq_normalize]
   change child.toPoly.natDegree +
       (normalize (CPolynomial.div parent child).toPoly).natDegree ≤
@@ -785,14 +785,14 @@ theorem quotientAfterChild_toPoly_monic_of_dvd {F : Type*}
     (quotientAfterChild parent child).toPoly.Monic := by
   unfold quotientAfterChild
   by_cases hproper : isNontrivialProperChild parent child = true
-  · rw [if_pos hproper]
+  · rw [ite_eq_left hproper]
     have hchild : child ≠ 0 := by
       unfold isNontrivialProperChild at hproper
       simp at hproper
       exact hproper.1.1
     exact monicNormalize_toPoly_monic_of_ne_zero
       (div_ne_zero_of_dvd_of_ne_zero hdiv hparent hchild)
-  · rw [if_neg hproper]
+  · rw [ite_eq_right hproper]
     exact hparentMonic
 
 theorem eq_of_monic_dvd_of_val_size_le {F : Type*}
@@ -1011,7 +1011,7 @@ theorem split_child_or_quotient_root {F : Type*}
     · exact Or.inl ⟨hproper, hchild⟩
     · right
       unfold quotientAfterChild
-      rw [if_neg hproper]
+      rw [ite_eq_right hproper]
       exact hparent
   · right
     exact quotientAfterChild_root_of_not_child_root hdiv hparent hchild

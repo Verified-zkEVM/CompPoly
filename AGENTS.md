@@ -20,6 +20,18 @@ Human contributors should usually start with [`README.md`](README.md),
    `lake exe axiomsweep --check`; refresh `scripts/axiom_baseline.json` with
    `lake exe axiomsweep --update-baseline` and commit the diff if the change is
    intentional. Native-compiler trust is never baselineable.
+7. When making a fast implementation faster, follow the loop in
+   [`docs/wiki/autoresearch.md`](docs/wiki/autoresearch.md): edit, test, measure,
+   prove, in that order. The implementation's tests and `--validate-only` come first,
+   `./scripts/bench-ab.sh run <group>` is the measurement, only a `faster`
+   verdict without `SUSPECT` earns the refinement proof, and a `sorry` on that
+   theorem lives inside an iteration only, never in a commit.
+8. When adding a field carrier or a polynomial representation, give it its codec in
+   the same PR (`CanonicalNat`/`ByteCodec`, or `DelimitedCodec` for variable-length
+   types), the round-trip and injectivity theorems through the class interfaces, and
+   for a fast carrier the agreement lemma with its spec field. See "New Types Owe a
+   Codec" in [`CONTRIBUTING.md`](CONTRIBUTING.md) and
+   [`docs/wiki/serialization.md`](docs/wiki/serialization.md).
 
 ## Where To Work
 
@@ -63,6 +75,14 @@ Human contributors should usually start with [`README.md`](README.md),
 - [`docs/wiki/repo-map.md`](docs/wiki/repo-map.md) - subtree map and task routing.
 - [`docs/wiki/generated-files.md`](docs/wiki/generated-files.md) - source-of-truth
   rules for generated or derived outputs.
+- [`docs/wiki/benchmarking.md`](docs/wiki/benchmarking.md) - how the benchmark suite
+  measures, how to read its output, and how to add a group.
+- [`docs/wiki/benchmark-best-times.md`](docs/wiki/benchmark-best-times.md) - the
+  current best time of every benchmarked component, and the log of optimisation
+  passes that produced them.
+- [`docs/wiki/autoresearch.md`](docs/wiki/autoresearch.md) - the optimisation loop
+  over the fast implementations: test, measure, prove; verdicts, robust proofs,
+  targets.
 - [`docs/wiki/build-cache.md`](docs/wiki/build-cache.md) - Mathlib's olean cache and
   CompPoly's prebuilt release archive.
 - [`docs/wiki/module-system.md`](docs/wiki/module-system.md) - module headers,
@@ -79,6 +99,9 @@ Human contributors should usually start with [`README.md`](README.md),
   field extensions for an arbitrary monic modulus, and their two irreducibility
   paths: Rabin's test collapsed to base-field exponentiations for binomials,
   kernel-checked Rabin certificates otherwise.
+- [`docs/wiki/serialization.md`](docs/wiki/serialization.md) - byte encodings of
+  field elements and polynomials, the `CanonicalNat`/`ByteCodec` classes, and the
+  ArkLib protocol classes they feed.
 
 ## Canonical Project Docs
 
@@ -101,6 +124,14 @@ trusting the compiler.
   pattern in `CompPoly/Fields/Binary/BF128Ghash/Prelude.lean`.
 - If `decide` is too slow, restructure the proposition, for example by batching
   checks into a single conjunction, rather than reaching for `native_decide`.
+- Keep concrete certificate proofs free of rewrite transports. A criterion that
+  depends on a field size takes it as a numeral `q` with `hcard : Fintype.card F = q`
+  and substitutes it internally, so a concrete caller states its conditions at the
+  numeral and an abstract one passes `rfl`. State a new criterion that way, and do not
+  add a `Fintype.card F`-only variant: the caller-side `rw [hcard]` it invites leaves a
+  transport around a certificate whose type carries a huge exponent, which can send a
+  from-empty kernel replay into step-by-step `npowRec` unfolding. See
+  [`docs/wiki/field-extensions.md`](docs/wiki/field-extensions.md).
 
 ## Performance Guidelines
 
@@ -123,6 +154,12 @@ trusting the compiler.
   `simp only`, or `exact`. `grind` generates large proof terms via
   saturation-based reasoning.
 - Use `decide` sparingly on large types; each `decide` must be kernel-evaluated.
+- For a theorem that a changing implementation must keep satisfying, such as a
+  fast implementation's refinement theorem, state its facts as named
+  lemmas marked `@[simp]` or `@[grind =]` and close the theorem over that set
+  (`simp only [...]` or `grind`) rather than by a hand-written `rw` chain, so
+  the next change to the implementation updates lemmas, not proof steps. See
+  [`docs/wiki/autoresearch.md`](docs/wiki/autoresearch.md).
 
 ### Certificate / computational proofs
 

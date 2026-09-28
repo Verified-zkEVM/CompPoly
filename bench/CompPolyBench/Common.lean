@@ -74,6 +74,14 @@ structure BenchRecord where
   groupKey : String := ""
   /-- Report title of the group this row belongs to, stamped alongside the key. -/
   groupTitle : String := ""
+  /-- Which rows of the group this one must agree with on a digest.
+
+  A group is a set of rows measured together; it is not always a set of rows
+  computing the *same value*. A field's `mul` and its `add` belong in one table
+  and cannot share a digest. Rows are partitioned by this label and agreement is
+  required within each part, so one group can carry several comparisons. Empty
+  is a class like any other, which is what every pre-existing group uses. -/
+  digestClass : String := ""
   name : String
   representation : String
   method : String
@@ -84,7 +92,18 @@ structure BenchRecord where
   checksumIterations : Nat
   measuredIterations : Nat
   totalNanos : Nat
-  averageNanos : Nat
+  /-- Median per-iteration cost in nanoseconds.
+
+  A median, not a mean; it was called `averageNanos` until the name was found to
+  be describing the wrong statistic. -/
+  medianNanos : Nat
+  /-- Elementary operations one iteration of this body performs.
+
+  A property of the *problem*, not of the implementation: the rows of a group
+  must agree on it, or a per-unit figure would divide away the very difference
+  the group exists to show. One for an ordinary row; the chain length for a
+  chained operation; `(n / 2) * log n` for a transform. -/
+  workUnits : Nat := 1
   checksum : Nat
   sinkDigest : UInt64
   stats : SampleStats
@@ -271,16 +290,20 @@ anything but the run it just made. -/
 def outputDir : System.FilePath := "bench" / "out"
 
 /-- Path for the generated JSONL benchmark results. -/
-def resultsPath (runId : String) : System.FilePath :=
-  outputDir / ("results-" ++ runId ++ ".jsonl")
+def resultsPath (outDir : System.FilePath) (runId : String) : System.FilePath :=
+  outDir / ("results-" ++ runId ++ ".jsonl")
 
 /-- Path for the generated Markdown benchmark report. -/
-def reportPath (runId : String) : System.FilePath :=
-  outputDir / ("report-" ++ runId ++ ".md")
+def reportPath (outDir : System.FilePath) (runId : String) : System.FilePath :=
+  outDir / ("report-" ++ runId ++ ".md")
 
 /-- Path for the per-run provenance manifest. -/
-def manifestPath (runId : String) : System.FilePath :=
-  outputDir / ("manifest-" ++ runId ++ ".json")
+def manifestPath (outDir : System.FilePath) (runId : String) : System.FilePath :=
+  outDir / ("manifest-" ++ runId ++ ".json")
+
+/-- Path for the Markdown report of an A/B comparison. -/
+def comparePath (outDir : System.FilePath) (runId : String) : System.FilePath :=
+  outDir / ("compare-" ++ runId ++ ".md")
 
 /-- Trim command output and normalize empty output to the empty string. -/
 def trimCommandOutput (s : String) : String :=
@@ -533,11 +556,11 @@ def checksumZMod {modulus : Nat} (x : ZMod modulus) : Nat :=
 
 /-- Convert a concrete `BTF₃` element to a checksum word. -/
 def checksumBtf3 (x : AdditiveNTT.BTF₃) : Nat :=
-  BitVec.toNat x
+  ConcreteBTField.toNat x
 
 /-- Convert a concrete binary-tower field element to a checksum word. -/
 def checksumConcreteBtf {k : Nat} (x : ConcreteBTField k) : Nat :=
-  BitVec.toNat x
+  ConcreteBTField.toNat x
 
 /-- Checksum an array-like benchmark result. -/
 def checksumArray (checksum : α → Nat) (xs : Array α) : Nat :=
@@ -613,6 +636,18 @@ structure BenchSpec where
 
   Must be the body's period in `i`, never preset-shaped: see `digestPeriod`. -/
   digestIterations : Nat
+  /-- Which rows of the group this row must agree with on a digest.
+
+  Leave empty when every row of the group computes the same value. Set it to
+  separate the comparisons inside a group that carries more than one; see
+  `BenchRecord.digestClass`. -/
+  digestClass : String := ""
+  /-- Elementary operations one iteration of the body performs.
+
+  Left at one for a row that performs its operation once. Set it and the report
+  gains a per-unit column; see `BenchRecord.workUnits` for why every row of a
+  group has to agree on the value. -/
+  workUnits : Nat := 1
   /-- Opt out of the `--validate-only` short circuit, for the harness
   self-check, which has to be measured even when nothing else is. -/
   forceTiming : Bool := false
@@ -673,7 +708,9 @@ against a floor that was never measured.
     checksumIterations := spec.digestIterations
     measuredIterations := sampled.totalIterations
     totalNanos := sampled.totalNanos
-    averageNanos := sampled.stats.medianPicos / 1000
+    medianNanos := sampled.stats.medianPicos / 1000
+    workUnits := spec.workUnits
+    digestClass := spec.digestClass
     checksum := validationChecksum
     sinkDigest := sampled.sink
     stats := sampled.stats
@@ -817,37 +854,83 @@ def RunManifest.render (manifest : RunManifest) : String :=
 def jsonString (s : String) : String :=
   Lean.Json.renderString s
 
+/-! ### JSONL key names
+
+Single-sourced so that the writer below and the reader in
+`CompPolyBench.Compare.Read` cannot drift apart: a renamed key changes both, and
+the round-trip guards in the reader catch a key that was renamed in only one. -/
+
+namespace JsonKey
+
+def groupKey : String := "group_key"
+def groupTitle : String := "group_title"
+def name : String := "name"
+def representation : String := "representation"
+def method : String := "method"
+def preset : String := "preset"
+def field : String := "field"
+def inputShape : String := "input_shape"
+def warmupIterations : String := "warmup_iterations"
+def checksumIterations : String := "checksum_iterations"
+def measuredIterations : String := "measured_iterations"
+def totalNanos : String := "total_nanos"
+def medianNanos : String := "median_nanos"
+def workUnits : String := "work_units"
+def digestClass : String := "digest_class"
+def checksum : String := "checksum"
+def sinkDigest : String := "sink_digest"
+def sampleCount : String := "sample_count"
+def itersPerSample : String := "iters_per_sample"
+def unreplicated : String := "unreplicated"
+def minPicos : String := "min_picos"
+def medianPicos : String := "median_picos"
+def meanPicos : String := "mean_picos"
+def p95Picos : String := "p95_picos"
+def stddevPicos : String := "stddev_picos"
+def madPicos : String := "mad_picos"
+def mildOutliers : String := "mild_outliers"
+def severeOutliers : String := "severe_outliers"
+def samplesPicos : String := "samples_picos"
+
+end JsonKey
+
+/-- Render one `"key":value` member of a JSON object; `value` is already JSON. -/
+def jsonField (key value : String) : String :=
+  jsonString key ++ ":" ++ value
+
 /-- Render one benchmark record as a JSONL row. -/
 def BenchRecord.toJsonLine (record : BenchRecord) : String :=
   "{" ++ String.intercalate "," [
-    "\"group_key\":" ++ jsonString record.groupKey,
-    "\"group_title\":" ++ jsonString record.groupTitle,
-    "\"name\":" ++ jsonString record.name,
-    "\"representation\":" ++ jsonString record.representation,
-    "\"method\":" ++ jsonString record.method,
-    "\"preset\":" ++ jsonString record.preset,
-    "\"field\":" ++ jsonString record.field,
-    "\"input_shape\":" ++ jsonString record.inputShape,
-    "\"warmup_iterations\":" ++ toString record.warmupIterations,
-    "\"checksum_iterations\":" ++ toString record.checksumIterations,
-    "\"measured_iterations\":" ++ toString record.measuredIterations,
-    "\"total_nanos\":" ++ toString record.totalNanos,
-    "\"average_nanos\":" ++ toString record.averageNanos,
-    "\"checksum\":" ++ toString record.checksum,
-    "\"sink_digest\":" ++ toString record.sinkDigest,
-    "\"sample_count\":" ++ toString record.stats.count,
-    "\"iters_per_sample\":" ++ toString record.stats.itersPerSample,
-    "\"unreplicated\":" ++ (if record.stats.unreplicated then "true" else "false"),
-    "\"min_picos\":" ++ toString record.stats.minPicos,
-    "\"median_picos\":" ++ toString record.stats.medianPicos,
-    "\"mean_picos\":" ++ toString record.stats.meanPicos,
-    "\"p95_picos\":" ++ toString record.stats.p95Picos,
-    "\"stddev_picos\":" ++ toString record.stats.stddevPicos,
-    "\"mad_picos\":" ++ toString record.stats.madPicos,
-    "\"mild_outliers\":" ++ toString record.stats.mildOutliers,
-    "\"severe_outliers\":" ++ toString record.stats.severeOutliers,
-    "\"samples_picos\":[" ++
-      String.intercalate "," (record.samples.toList.map toString) ++ "]"
+    jsonField JsonKey.groupKey (jsonString record.groupKey),
+    jsonField JsonKey.groupTitle (jsonString record.groupTitle),
+    jsonField JsonKey.name (jsonString record.name),
+    jsonField JsonKey.representation (jsonString record.representation),
+    jsonField JsonKey.method (jsonString record.method),
+    jsonField JsonKey.preset (jsonString record.preset),
+    jsonField JsonKey.field (jsonString record.field),
+    jsonField JsonKey.inputShape (jsonString record.inputShape),
+    jsonField JsonKey.warmupIterations (toString record.warmupIterations),
+    jsonField JsonKey.checksumIterations (toString record.checksumIterations),
+    jsonField JsonKey.measuredIterations (toString record.measuredIterations),
+    jsonField JsonKey.totalNanos (toString record.totalNanos),
+    jsonField JsonKey.medianNanos (toString record.medianNanos),
+    jsonField JsonKey.workUnits (toString record.workUnits),
+    jsonField JsonKey.digestClass (jsonString record.digestClass),
+    jsonField JsonKey.checksum (toString record.checksum),
+    jsonField JsonKey.sinkDigest (toString record.sinkDigest),
+    jsonField JsonKey.sampleCount (toString record.stats.count),
+    jsonField JsonKey.itersPerSample (toString record.stats.itersPerSample),
+    jsonField JsonKey.unreplicated (if record.stats.unreplicated then "true" else "false"),
+    jsonField JsonKey.minPicos (toString record.stats.minPicos),
+    jsonField JsonKey.medianPicos (toString record.stats.medianPicos),
+    jsonField JsonKey.meanPicos (toString record.stats.meanPicos),
+    jsonField JsonKey.p95Picos (toString record.stats.p95Picos),
+    jsonField JsonKey.stddevPicos (toString record.stats.stddevPicos),
+    jsonField JsonKey.madPicos (toString record.stats.madPicos),
+    jsonField JsonKey.mildOutliers (toString record.stats.mildOutliers),
+    jsonField JsonKey.severeOutliers (toString record.stats.severeOutliers),
+    jsonField JsonKey.samplesPicos
+      ("[" ++ String.intercalate "," (record.samples.toList.map toString) ++ "]")
   ] ++ "}"
 
 /-- Render all benchmark records as JSONL. -/
@@ -870,16 +953,15 @@ def padRight (s : String) (width : Nat) : String :=
 def padLeft (s : String) (width : Nat) : String :=
   spaces (width - s.length) ++ s
 
-/-- Drop missing optional lines while preserving present ones. -/
-def keepSome : List (Option String) → List String
+/-- Drop missing optional entries while preserving present ones. -/
+def keepSome {α : Type*} : List (Option α) → List α
   | [] => []
-  | some line :: lines => line :: keepSome lines
-  | none :: lines => keepSome lines
+  | some value :: values => value :: keepSome values
+  | none :: values => keepSome values
 
-/-- Compute the Markdown width required for a result table column. -/
-def columnWidth (records : List BenchRecord)
-    (column : String × Bool × (BenchRecord → String)) : Nat :=
-  records.foldl (fun width record ↦ max width (column.2.2 record).length) column.1.length
+/-- Compute the Markdown width required for a table column. -/
+def columnWidth {ρ : Type} (rows : List ρ) (column : String × Bool × (ρ → String)) : Nat :=
+  rows.foldl (fun width row ↦ max width (column.2.2 row).length) column.1.length
 
 /-- Pad one Markdown table cell according to its alignment. -/
 def formatCell (alignRight : Bool) (width : Nat) (s : String) : String :=
@@ -900,9 +982,9 @@ def markdownRow (cells : List String) (widths : List Nat)
 def markdownSeparatorCell (alignRight : Bool) (width : Nat) : String :=
   if alignRight then dashes ((max width 4) - 1) ++ ":" else dashes (max width 3)
 
-/-- Render a Markdown table for benchmark results. -/
-def renderMarkdownTable (columns : List (String × Bool × (BenchRecord → String)))
-    (records : List BenchRecord) : List String :=
+/-- Render a Markdown table; each column is a header, a right-align flag, and a cell. -/
+def renderMarkdownTable {ρ : Type} (columns : List (String × Bool × (ρ → String)))
+    (records : List ρ) : List String :=
   let widths := columns.map (columnWidth records)
   let headers := columns.map (fun column ↦ column.1)
   let alignRights := columns.map (fun column ↦ column.2.1)
@@ -913,7 +995,7 @@ def renderMarkdownTable (columns : List (String × Bool × (BenchRecord → Stri
   markdownRow headers widths (columns.map (fun _ ↦ false)) :: markdownRow separator widths
     (columns.map (fun _ ↦ false)) :: rows
 
-/-- Return the shared checksum for a group if all rows have the same checksum. -/
+/-- Return the shared checksum for a list of rows if all of them agree. -/
 def matchingChecksum? (records : List BenchRecord) : Option Nat :=
   match records with
   | [] => none
@@ -924,6 +1006,23 @@ def matchingChecksum? (records : List BenchRecord) : Option Nat :=
         some record.checksum
       else
         none
+
+/-- The digest classes present in a group, in first-appearance order. -/
+def digestClasses (records : List BenchRecord) : List String :=
+  records.foldl (init := []) fun seen record ↦
+    if seen.contains record.digestClass then seen else seen ++ [record.digestClass]
+
+/-- The rows of one digest class. -/
+def recordsInClass (records : List BenchRecord) (cls : String) : List BenchRecord :=
+  records.filter fun record ↦ record.digestClass == cls
+
+/-- Whether every digest class in a group agrees internally.
+
+Agreement is required *within* a class, not across the group: a group carrying a
+field's `mul` and its `add` has two classes and two digests, and demanding one
+digest for both would be demanding that multiplication equal addition. -/
+def classesAgree (records : List BenchRecord) : Bool :=
+  (digestClasses records).all fun cls ↦ (matchingChecksum? (recordsInClass records cls)).isSome
 
 /-- Return a shared string field for a group if all rows agree. -/
 def matchingString? (records : List BenchRecord) (field : BenchRecord → String) : Option String :=
@@ -957,15 +1056,31 @@ def renderSharedNatLine (label : String) (records : List BenchRecord)
     (field : BenchRecord → Nat) : Option String :=
   (matchingNat? records field).map fun value ↦ "- " ++ label ++ ": `" ++ toString value ++ "`"
 
-/-- Render a short checksum status line for a benchmark group. -/
-def renderChecksumStatus (records : List BenchRecord) : String :=
-  match matchingChecksum? records with
-  | some checksum => "- Checksum: `" ++ toString checksum ++ "`"
-  | none => "- Checksum: **ERROR: mismatch detected**"
+/-- Render a short checksum status line for a benchmark group.
 
-/-- Return benchmark groups whose rows do not have a shared checksum. -/
+One digest when the group has a single class, and one per class when it has
+several, so a multi-comparison group still shows what agreed with what. -/
+def renderChecksumStatus (records : List BenchRecord) : String :=
+  let render (cls : String) : String :=
+    let label := if cls.isEmpty then "" else cls ++ ": "
+    match matchingChecksum? (recordsInClass records cls) with
+    | some checksum => label ++ "`" ++ toString checksum ++ "`"
+    | none => label ++ "**ERROR: mismatch detected**"
+  "- Checksum: " ++ String.intercalate ", " ((digestClasses records).map render)
+
+/-- Return benchmark groups in which some digest class does not agree. -/
 def checksumMismatchGroups (groups : Array BenchGroup) : List BenchGroup :=
-  groups.toList.filter fun group ↦ (matchingChecksum? group.records.toList).isNone
+  groups.toList.filter fun group ↦ !classesAgree group.records.toList
+
+/-- Return benchmark groups whose rows disagree on `workUnits`.
+
+Rows of one group measure the same problem at the same shape, so a disagreement
+here is a mis-specified group rather than something to render around: the
+per-unit column would otherwise divide each row by a different denominator and
+silently flatten the ratio the group exists to report. -/
+def workUnitsMismatchGroups (groups : Array BenchGroup) : List BenchGroup :=
+  groups.toList.filter fun group ↦
+    (matchingNat? group.records.toList (fun record ↦ record.workUnits)).isNone
 
 /-- Lookup a rendered implementation label by exact benchmark metadata. -/
 def lookupImplementationLabel? : String → List (String × String) → Option String
@@ -1090,6 +1205,10 @@ def implementationLabelInGroup (records : List BenchRecord) (record : BenchRecor
   else
     label ++ " (" ++ record.field ++ ")"
 
+/-- Render a dispersion given in tenths of a percent as `±x.y%`. -/
+def renderTenthsPercent (tenths : Nat) : String :=
+  "±" ++ toString (tenths / 10) ++ "." ++ toString (tenths % 10) ++ "%"
+
 /-- Render a record's sample dispersion as a percentage of its median.
 
 Reads `n=1` where a benchmark could not be replicated at all, `(n=k)` where it
@@ -1103,9 +1222,26 @@ def renderSpread (record : BenchRecord) : String :=
   else
     let tenths :=
       if stats.medianPicos = 0 then 0 else 1000 * stats.madPicos / stats.medianPicos
-    let base := "±" ++ toString (tenths / 10) ++ "." ++ toString (tenths % 10) ++ "%"
+    let base := renderTenthsPercent tenths
     let base := if stats.unreplicated then base ++ " (n=" ++ toString stats.count ++ ")" else base
     if stats.severeOutliers > 0 then base ++ " !" ++ toString stats.severeOutliers else base
+
+/-- Per-unit cost column, present only when the group declares work units.
+
+Picoseconds rather than a chosen unit: a per-unit figure is normally
+sub-nanosecond, which is exactly where `chooseTimeUnit` would render it as
+`0.000`. Not emitted into the JSONL — that file carries `work_units` and the
+full statistics, and a consumer dividing for itself does not inherit the
+truncation this column accepts for the sake of a readable table. -/
+def perUnitColumn? (records : List BenchRecord) :
+    Option (String × Bool × (BenchRecord → String)) :=
+  match matchingNat? records (fun record ↦ record.workUnits) with
+  | some units =>
+      if units > 1 then
+        some ("Per unit (ps)", true, fun record ↦ toString (record.stats.medianPicos / units))
+      else
+        none
+  | none => none
 
 /-- Columns rendered in a group result table after shared metadata is lifted out.
 
@@ -1123,7 +1259,8 @@ def groupResultColumns (records : List BenchRecord) (totalUnit avgUnit : TimeUni
     ("Total (" ++ totalUnit.label ++ ")", true, fun r ↦
       formatNanosInUnitOrAuto totalUnit r.totalNanos),
     ("Median (" ++ avgUnit.label ++ ")", true, fun r ↦
-      formatNanosInUnitOrAuto avgUnit r.averageNanos),
+      formatNanosInUnitOrAuto avgUnit r.medianNanos)
+  ] ++ keepSome [perUnitColumn? records] ++ [
     ("Spread", true, renderSpread)
   ]
 
@@ -1145,7 +1282,7 @@ def renderGroupResults (group : BenchGroup) : List String :=
   let records := group.records.toList
   let groupTotal := totalGroupNanos records
   let totalUnit := chooseTimeUnit (groupTotal :: records.map fun r ↦ r.totalNanos)
-  let avgUnit := chooseTimeUnit (records.map fun r ↦ r.averageNanos)
+  let avgUnit := chooseTimeUnit (records.map fun r ↦ r.medianNanos)
   [
     "### " ++ group.title,
     "",
@@ -1216,16 +1353,19 @@ def renderMarkdown (hardware : RunnerHardware) (preset : BenchPreset) (groups : 
 private def validationRow (group : BenchGroup) : String :=
   let records := group.records.toList
   let status :=
-    match matchingChecksum? records with
-    | some checksum => "agree | `" ++ toString checksum ++ "`"
-    | none => "**MISMATCH** | -"
+    if classesAgree records then
+      let digests := (digestClasses records).filterMap fun cls ↦
+        (matchingChecksum? (recordsInClass records cls)).map toString
+      "agree | `" ++ String.intercalate "`, `" digests ++ "`"
+    else
+      "**MISMATCH** | -"
   "| `" ++ group.groupKey ++ "` | " ++ toString group.records.size ++ " | " ++ status ++ " |"
 
 /-- Render the report for a `--validate-only` run.
 
-Deliberately not the timing table: a validation run collects no samples, so
-every duration would be zero. What it has to say is whether each group's
-implementations agree, and on what digest. -/
+Show whether each group's implementations agree on a digest. Ordinary workloads
+are untimed; harness checks may retain samples through `forceTiming`. This report
+omits timing values, including any harness samples. -/
 def renderValidationMarkdown (preset : BenchPreset) (groups : Array BenchGroup) : String :=
   let mismatches := checksumMismatchGroups groups
   String.intercalate "\n" ([
@@ -1236,9 +1376,10 @@ def renderValidationMarkdown (preset : BenchPreset) (groups : Array BenchGroup) 
     "- Groups checked: `" ++ toString groups.size ++ "`",
     "- Mismatched groups: `" ++ toString mismatches.length ++ "`",
     "",
-    "No timings were collected. Every implementation in a group is run over the",
-    "same inputs and must agree on a digest; a disagreement means one of them is",
-    "wrong. Run the benchmark workflow for timings.",
+    "Ordinary workloads were not timed; harness checks may still record samples.",
+    "Every implementation in a group is run over the same inputs and must agree",
+    "on a digest; a disagreement means one of them is wrong. Run the benchmark",
+    "workflow for workload timings.",
     "",
     "| Group | Rows | Implementations | Digest |",
     "| ----- | ---: | --------------- | ------ |"

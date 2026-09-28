@@ -96,7 +96,7 @@ def raw [Semiring F] [BEq F] [LawfulBEq F]
       rw [CPolynomial.Raw.Trim.coeff_eq_coeff]]
     rw [CPolynomial.Raw.mulLow_coeff]
     by_cases hi : i < order
-    · simp only [hi, if_true]
+    · simp only [hi, ite_true]
       rw [CPolynomial.coeff_mul, CPolynomial.Raw.mul_coeff]
     · simp [hi]
 

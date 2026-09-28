@@ -13,6 +13,11 @@ are too specific or too changeable to keep at the repo root.
   truth.
 - [`benchmarking.md`](benchmarking.md) - how the benchmark suite measures, how to
   read its output, and how to add a group.
+- [`benchmark-best-times.md`](benchmark-best-times.md) - the current best time of
+  every benchmarked component, and the log of optimisation passes.
+- [`autoresearch.md`](autoresearch.md) - the optimisation loop: edit a fast
+  implementation, test it, A/B it against a frozen baseline, then prove it; keep or
+  revert.
 - [`build-cache.md`](build-cache.md) - Mathlib's olean cache and CompPoly's prebuilt
   release archive.
 - [`module-system.md`](module-system.md) - Lean module-system conventions, `meta`
@@ -27,6 +32,9 @@ are too specific or too changeable to keep at the repo root.
   framework for arbitrary monic moduli and its irreducibility criteria.
 - [`coding-theory.md`](coding-theory.md) - Reed-Solomon encoding, unique and list
   decoding, univariate root finding, and the linear-algebra engines beneath them.
+- [`serialization.md`](serialization.md) - byte encodings of field elements and
+  polynomials: the `CanonicalNat` and `ByteCodec` classes, the ported ArkLib
+  protocol classes, decoders, and the carrier-agreement rule.
 
 ## Maintenance Contract
 
@@ -38,6 +46,8 @@ are too specific or too changeable to keep at the repo root.
   - `generated-files.md` for derived outputs and source-of-truth rules.
   - `benchmarking.md` for benchmark measurement, output interpretation, and
     adding groups.
+  - `autoresearch.md` for the agent-driven optimisation loop, its A/B protocol,
+    and the list of fast implementations it may target.
   - `build-cache.md` for prebuilt-artifact caches and how they are published.
   - `module-system.md` for module headers, `public`/`meta` imports, and privacy.
   - `representations-and-bridges.md` for representation choice and Mathlib bridges.
@@ -47,6 +57,8 @@ are too specific or too changeable to keep at the repo root.
   - `field-extensions.md` for the odd-characteristic field-extension framework.
   - `coding-theory.md` for Reed-Solomon coding, the decoders, root finding, and
     the matrix layer.
+  - `serialization.md` for byte formats, the serialization classes, and the
+    invariants consumers may rely on.
 - Add new pages when a recurring topic no longer fits cleanly in an existing page.
 - If a PR changes commands, repo structure, generated-file behavior, or recurring
   architecture guidance, update the matching page in the same PR.

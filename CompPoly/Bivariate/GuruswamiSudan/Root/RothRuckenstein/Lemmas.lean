@@ -59,15 +59,6 @@ theorem cpoly_coeff_natDegree_ne_zero_of_ne_zero {R : Type*}
   rw [← CPolynomial.leadingCoeff_toPoly p, CPolynomial.leadingCoeff_eq_coeff_natDegree] at hlead
   exact hlead
 
-theorem cpoly_coeff_eq_zero_of_natDegree_lt {R : Type*} [Zero R]
-    (p : CPolynomial R) {i : Nat} (hi : p.natDegree < i) :
-    p.coeff i = 0 := by
-  by_cases hp : p = 0
-  · rw [hp]
-    exact CPolynomial.coeff_zero i
-  · have hsize := cpoly_size_eq_natDegree_succ_of_ne_zero hp
-    exact cpoly_coeff_eq_zero_of_size_le p (by omega)
-
 theorem cpoly_coeff_dropXPower {R : Type*} [Zero R]
     (p : CPolynomial R) (n i : Nat) :
     (CPolynomial.dropXPower p n).coeff i = p.coeff (i + n) := by
@@ -87,12 +78,12 @@ theorem cpoly_toPoly_eq_X_pow_mul_dropXPower_of_coeff_eq_zero_lt {R : Type*}
   rw [← CPolynomial.coeff_toPoly (p := p) (i := i)]
   rw [Polynomial.coeff_X_pow_mul']
   by_cases hn : n ≤ i
-  · rw [if_pos hn]
+  · rw [ite_eq_left hn]
     rw [← CPolynomial.coeff_toPoly (p := CPolynomial.dropXPower p n) (i := i - n)]
     rw [cpoly_coeff_dropXPower]
     congr 1
     omega
-  · rw [if_neg hn]
+  · rw [ite_eq_right hn]
     exact hzero i (Nat.lt_of_not_ge hn)
 
 theorem cbivar_coeff_divXPower {R : Type*} [Zero R] [BEq R] [LawfulBEq R]

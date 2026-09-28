@@ -22,9 +22,9 @@ namespace CompPolyBench
 
 /-- Fold one result word into a running sink accumulator.
 
-Kept `@[noinline]` so the fold survives optimisation; the `harness-floor` group
-measures what this costs and `harness-canary` fails the run if it stops costing
-anything. -/
+The inline fold makes the next accumulator depend on the result word. Callers
+must keep the accumulator live through the timed region and consume it afterward.
+Inspect the compiled timing path to check that the benchmark work is retained. -/
 @[inline] def sinkStep (acc x : UInt64) : UInt64 :=
   let mixed := (acc ^^^ x) * 0x9E3779B97F4A7C15
   (mixed <<< 27) ||| (mixed >>> 37)

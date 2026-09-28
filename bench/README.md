@@ -44,10 +44,17 @@ lake exe CompPolyBench --json-only univariate-low-product-koalabear
 lake exe CompPolyBench --markdown-only --groups univariate-low-product-koalabear,additive-ntt-btf3-l2-r2
 ```
 
+Output directory:
+
+```bash
+lake exe CompPolyBench --out-dir bench/out/mine --groups fields-koalabear-mul
+```
+
 ## Output
 
 Each run writes generated JSONL and Markdown reports under `bench/out/`, which
-is created on demand and ignored in its entirety:
+is created on demand and ignored in its entirety, or under the directory given
+by `--out-dir`:
 
 ```text
 bench/out/results-YYMMDD-HHMMSS.jsonl
@@ -55,11 +62,47 @@ bench/out/report-YYMMDD-HHMMSS.md
 bench/out/manifest-YYMMDD-HHMMSS.json
 ```
 
+Run ids have one-second resolution, so two invocations within the same second
+would collide in one directory; `--out-dir` exists so a driver can give each
+invocation its own.
+
 The manifest records what produced the numbers — commit, whether the tree was
 dirty, toolchain, preset and the budget it resolved to, seed, selection, and
 host details — and is written for every run, `--validate-only` included. It is
 a separate file rather than a header line in the JSONL, because every consumer
 of that file assumes uniform records.
+
+## Comparing Two Builds
+
+`--compare` judges a candidate build against a baseline build from the results
+files each wrote, one file per invocation. It measures nothing itself.
+
+```bash
+lake exe CompPolyBench --compare \
+  --baseline bench/out/ab/run/baseline/1 --baseline bench/out/ab/run/baseline/2 \
+  --candidate bench/out/ab/run/candidate/1 --candidate bench/out/ab/run/candidate/2 \
+  --threshold 5 --out-dir bench/out/ab/run
+```
+
+Each path is a `results-*.jsonl` file or a directory holding some. Rows are
+matched on `(group_key, name, digest_class, method)`, and each side's evidence
+is its per-invocation `median_picos`. A row is `faster` when the ratio of the
+two medians is at least `--threshold` percent (default 5) below one **and**
+every candidate invocation beat every baseline invocation; `slower` is the
+mirror image; everything else is `same`. Rows whose digests or work units differ
+between the builds are `mismatch`, and a row absent from some file on one side
+is `missing`. A candidate that is implausibly fast with an unchanged digest is
+flagged `SUSPECT`. Harness rows, when present on both sides, are reported as
+machine drift in the header.
+
+Exit codes: `0` when every row was judged, whatever the verdicts; `1` when
+nothing could be compared (a path that does not exist, a malformed file, sides
+measured under different presets); `3` when at least one row is `mismatch` or
+`missing`.
+
+The intended driver is `scripts/bench-ab.sh`, which freezes a baseline binary,
+runs both binaries turn about, and calls `--compare`; the loop built on it is
+described in [`docs/wiki/autoresearch.md`](../docs/wiki/autoresearch.md).
 
 By default, a run writes both files. A checksum mismatch is reported in the
 Markdown report and makes the executable exit nonzero after writing artifacts.
@@ -82,9 +125,16 @@ Roughly by area, with representative group prefixes:
 | Additive NTT | `additive-ntt-btf*` |
 | Extension fields | `fields-extension-*-mul`, `fields-extension-*-inv` |
 | Binary tower fields | `fields-tower-bt128-*`: `BitVec` spec vs packed-word implementation |
-| Goldilocks arithmetic | `fields-goldilocks-{mul,inv}`: canonical `ZMod` vs single-word `UInt64` |
+| Base-field arithmetic | `fields-{koalabear,babybear,mersenne31,goldilocks}-{mul,add,inv,pow}`: canonical `ZMod` vs native-word, latency and throughput |
+| Pairing scalar multiplication | `fields-{bn254,bls12-381,bls12-377}-mul` |
 | Scalar-field inversion | `fields-mont64x8-*-inv`: `ZMod` extended Euclid vs checked binary GCD vs Fermat |
-| Harness self-check | `harness-floor`, `harness-canary`: the harness measuring itself, see below |
+| Binary tower scalar kernels | `fields-tower-bt{8,64}-*`: table-driven vs recursive |
+| Multiplicative NTT | `ntt-{koalabear,babybear}-l*` over `n = 2^8 … 2^16`, plus `ntt-plan-koalabear` |
+| Reed-Solomon encoding | `rs-encode-koalabear-l*`: definitional encoder vs the certified NTT one |
+| Interpolation | `univariate-interp-koalabear-l*` (Lagrange vs subproduct tree vs NTT vs planned NTT), `univariate-interp-coset-*`, `univariate-barycentric-*` (generic vs closed-form weights) |
+| Reed-Solomon decoding | `rs-gao-decode-koalabear-l*`: definitional Gao decoder vs `decodeNTT` / `decodePlan` |
+| Schoolbook / NTT crossover | `univariate-mul-crossover-*`, degree<4 to degree<1024 |
+| Harness self-check | `harness-floor`, `harness-canary`, `harness-chain-floor`, `harness-chain-linearity`: the harness measuring itself, see below |
 
 Use `--list` for the authoritative set; the prefixes above drift as groups are
 added.
@@ -129,6 +179,28 @@ Both rows of a group should carry comparable sink cost. Where a representation
 makes that impossible — a `ZMod` element above `2 ^ 63` has no cheap word digest
 while its fast counterpart does — the residual shows up in `harness-floor`
 territory and the group's ratio is a lower bound on the real speedup.
+
+### Chained bodies and the per-unit column
+
+An operation of one or two nanoseconds cannot be measured one per timed
+iteration: the harness floor is about the same size, and the operand-pool
+idiom around it — `xs.getD (i % xs.size) unit` — is a boxed-`Nat` modulo, a
+bounds check and a boxed array read, twice. So the field and kernel groups
+perform their operation `workUnits` times per iteration, through the
+combinators in `bench/CompPolyBench/Harness/Chain.lean`, and the report gains a
+**Per unit (ps)** column dividing the median by that count.
+
+Two shapes, reported separately because a prover is bounded by different ones
+in different places, and named as Plonky3 names them:
+
+- **latency** — each operation depends on the last, so the pipeline cannot
+  overlap two;
+- **throughput** — ten independent accumulators, so it can.
+
+Every row of a group must agree on `workUnits`, because the count describes the
+*problem* and not the implementation; a group whose rows disagree fails the
+run. A per-unit number is **not** comparable with `harness-floor`, which is a
+per-iteration cost: the chain floor for comparison is `harness-chain-floor`.
 
 ### Sampling and dispersion
 
@@ -179,6 +251,18 @@ that has been optimised away otherwise looks exactly like a benchmark that got
 very fast, and the canary is what tells the two apart. Both are measured whenever
 either is selected, because the check is a comparison between them.
 
+`harness-chain-floor` and `harness-chain-linearity` do the same two jobs for
+chained bodies. The floor group carries the cheapest honest operation in both
+chain shapes, so a per-unit number can be read against something; the linearity
+group **fails the run** unless eight times the chain length costs at least four
+times as much, which is what catches a chain the compiler has collapsed.
+
+Both checks earn their keep. The chain floor's first operation was
+`x ^^^ (x >>> 7)`, whose 64-deep block is algebraically the identity in
+characteristic two, and LLVM found that: the row reported a sixteenth of a
+cycle per operation *and the linearity check still passed*, because what
+collapsed was each block rather than the loop over blocks.
+
 ## Determinism
 
 Each group derives its own input generator from its key (`genFor`), so a group's
@@ -208,7 +292,7 @@ lake exe CompPolyBench --medium --validate-only --groups "<curated set>"
 ```
 
 which does the untimed digest pass and the group agreement check but collects no
-samples. It takes about 34 seconds over the curated set and fails the run on a
+samples. It takes about 29 seconds of CPU over the curated set and fails the run on a
 digest mismatch or a collapsed harness canary. `--validate-only` is worth running
 locally for the same reason: it is the fast way to ask whether an implementation
 is still correct.

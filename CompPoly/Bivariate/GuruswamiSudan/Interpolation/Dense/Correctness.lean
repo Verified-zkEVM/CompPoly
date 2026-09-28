@@ -425,20 +425,20 @@ private theorem hasseDerivativeEval_monomialXY_eq_hasseMonomialEval {F : Type*}
   unfold hasseMonomialEval
   by_cases hle : constraint.xOrder ≤ monomial.xDegree ∧
       constraint.yOrder ≤ monomial.yDegree
-  · rw [if_pos hle]
+  · rw [ite_eq_left hle]
     have hbool : (decide (constraint.xOrder ≤ monomial.xDegree) &&
         decide (constraint.yOrder ≤ monomial.yDegree)) = true := by
       simp [hle.1, hle.2]
-    rw [if_pos hbool]
+    rw [ite_eq_left hbool]
     rw [CBivariate.evalEval_monomialXY]
     ring
-  · rw [if_neg hle]
+  · rw [ite_eq_right hle]
     have hbool : ¬ ((decide (constraint.xOrder ≤ monomial.xDegree) &&
         decide (constraint.yOrder ≤ monomial.yDegree)) = true) := by
       intro htrue
       rcases Bool.and_eq_true_iff.mp htrue with ⟨hx, hy⟩
       exact hle ⟨of_decide_eq_true hx, of_decide_eq_true hy⟩
-    rw [if_neg hbool]
+    rw [ite_eq_right hbool]
     rw [CBivariate.evalEval_zero]
     simp
 
@@ -649,14 +649,14 @@ theorem interpolationPolynomialOnBasis_eq_of_complete {F : Type*}
         (if i = monomial.xDegree ∧ j = monomial.yDegree then
             (interpolationCoefficientVectorOnBasis basis Q).getD col 0
           else 0) = 0
-      rw [if_pos hmatch, hvec]
+      rw [ite_eq_left hmatch, hvec]
       rcases hmatch with ⟨hi, hj⟩
       simpa [hi, hj] using hcoeff
     · change
         (if i = monomial.xDegree ∧ j = monomial.yDegree then
             (interpolationCoefficientVectorOnBasis basis Q).getD col 0
           else 0) = 0
-      rw [if_neg hmatch]
+      rw [ite_eq_right hmatch]
   · rcases array_mem_getD (xs := basis)
         (x := ({ xDegree := i, yDegree := j } : CBivariate.Monomial))
         (default := ⟨0, 0⟩) (hcomplete i j hcoeff) with
@@ -928,14 +928,6 @@ theorem denseInterpolate_exists_of_dimension_slack {F : Type*}
     exact denseInterpolateWithBasis_exists_of_dimension_slack
       (basis := interpolationMonomials params) points params hSlack
 
-private theorem cpoly_index_le_natDegree_of_coeff_ne_zero {F : Type*}
-    [Zero F] [BEq F] [LawfulBEq F]
-    {p : CPolynomial F} {i : Nat} (hcoeff : p.coeff i ≠ 0) :
-    i ≤ p.natDegree := by
-  have hmem : i ∈ p.support := (CPolynomial.mem_support_iff p i).mpr hcoeff
-  rw [CPolynomial.natDegree_eq_support_sup]
-  exact Finset.le_sup (f := fun n ↦ n) hmem
-
 /-- When `messageDegree > 1`, the weighted-degree basis is complete for the
 semantic weighted-degree predicate. -/
 theorem weightedDegreeBasis_complete_of_messageDegree_gt_one {F : Type*}
@@ -965,7 +957,7 @@ theorem weightedDegreeBasis_complete_of_messageDegree_gt_one {F : Type*}
     exact Finset.le_sup
       (f := fun m ↦ 1 * (Q.val.coeff m).natDegree + yWeight params * m) hjmem
   have hile : i ≤ (Q.val.coeff j).natDegree :=
-    cpoly_index_le_natDegree_of_coeff_ne_zero (p := Q.val.coeff j) hcoeff
+    CPolynomial.le_natDegree_of_ne_zero (p := Q.val.coeff j) hcoeff
   have hweight :
       1 * i + yWeight params * j ≤ params.weightedDegreeBound := by
     calc
