@@ -306,9 +306,32 @@ CompPoly aims to be the premier formally verified library for computable polynom
 	- Mixed-radix NTT for subgroups whose order is not a power of two: not planned without a
 	  consumer. The subproduct tree already covers such node sets
 4.	**Proof ergonomics: simp/grind sets + tactics**
-	- Identify rewrite bottlenecks when porting Mathlib poly proofs → CompPoly
-	- Build simp sets and grind sets for common operations
-	- Goal: “one-liner conversions” (or near) between spec polynomials and computable polynomials
+	- 🔄 Identify rewrite bottlenecks when porting Mathlib poly proofs → CompPoly. Recorded in
+	  [`docs/wiki/representations-and-bridges.md`](docs/wiki/representations-and-bridges.md#proof-api-simp-and-grind-sets):
+	  `CPolynomial` names shadowing Mathlib's inside `namespace CPolynomial`, `import all`
+	  exposure for `toPoly`/`Raw.coeff`, the `CPoly` vs `CompPoly` namespace split, and core
+	  `Vector` instances taking over `+` on `CMlPolynomial`
+	- ✅ Univariate simp and grind sets. The push lemmas (`toPoly_add`, `toPoly_mul`, `C_toPoly`,
+	  `X_toPoly`, `derivative_toPoly`, …) and a complete evaluation set (`eval_zero`, `eval_add`,
+	  `eval_X`, `eval_pow`, …, with `evalHom`, `eval_sum` and `eval_prod`) are `@[simp, grind =]`,
+	  matching the multivariate set. Bare `simp` or `grind` now closes routine `toPoly` and
+	  `eval` goals, and `toPoly_inj.mp (by simp)` transfers an equation to Mathlib
+	  (`tests/CompPolyTests/Univariate/Ergonomics.lean`)
+	- ✅ The same for the other families. The bivariate `toPoly` transport and `bivariateEquiv_*`
+	  are `@[simp, grind =]`, and multilinear `eval_{zero,add,smul}` are `@[simp]` for both the
+	  coefficient and evaluation forms
+	- ✅ `toPoly` is the coercion `CPolynomial R → Polynomial R`, with the push lemmas and
+	  cast-oriented `eval`/`coeff`/`degree`/`natDegree`/`leadingCoeff` lemmas tagged
+	  `norm_cast`. Mathlib's `natDegree_mul`, `leadingCoeff_mul`, `degree_add_le` and
+	  `natDegree_pow` transfer to `CPolynomial` in one `exact_mod_cast` line. Statements that
+	  mention `C` or `X` need a `push_cast` step first
+	- ✅ A `CPolynomial` degree API (`degree_mul`, `natDegree_pow`, `leadingCoeff_mul`,
+	  `degree_X_sub_C`, the add/sub/mul/pow bounds, …), each transferred from Mathlib in one
+	  line, with Mathlib's `@[simp]` attributes. It replaces 17 local `cpoly_*` helpers in the
+	  Guruswami-Sudan and Mulders-Storjohann proofs
+	- Goal: “one-liner conversions” (or near) between spec polynomials and computable
+	  polynomials. Met for degree and coefficient facts through `exact_mod_cast`; see
+	  [`docs/wiki/representations-and-bridges.md`](docs/wiki/representations-and-bridges.md#the-topoly-coercion)
 
 5.	**Integration with ArkLib / Hax + Rust libraries (e.g. plonky3)**
 	- Make CompPoly the canonical polynomial backend for ArkLib specs where applicable

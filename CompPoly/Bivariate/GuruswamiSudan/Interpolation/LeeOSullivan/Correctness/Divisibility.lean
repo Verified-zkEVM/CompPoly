@@ -253,7 +253,7 @@ theorem coeffY_dvd_vanishingPolynomial_pow_of_multiplicity
     rcases hGpowDvd with ⟨Wpoly, hWpoly⟩
     let W : CPolynomial F := ⟨Wpoly.toImpl, CPolynomial.Raw.isCanonical_toImpl Wpoly⟩
     refine ⟨W, ?_⟩
-    apply cpoly_eq_of_toPoly_eq
+    apply CPolynomial.toPoly_inj.mp
     rw [CPolynomial.toPoly_mul, CPolynomial.toPoly_pow]
     have hWto : W.toPoly = Wpoly := by
       simpa only [W] using CPolynomial.toPoly_mk_toImpl Wpoly

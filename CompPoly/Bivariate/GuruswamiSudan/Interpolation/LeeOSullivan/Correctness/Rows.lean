@@ -95,20 +95,20 @@ theorem leeOSullivanBasisPolynomial_coeff_eq_zero_of_width_le
     rw [CPolynomial.natDegree_toPoly]
     simp [CBivariate.ofYConstant, CPolynomial.C_toPoly]
   have hYpow : Ypow.natDegree ≤ idx - t := by
-    have h := cpoly_natDegree_pow_le
-      (P := (CBivariate.Y : CBivariate F)) hY (idx - t)
+    have h := CPolynomial.natDegree_pow_le_of_le
+      (p := (CBivariate.Y : CBivariate F)) (h := hY) (idx - t)
     change CPolynomial.natDegree ((CBivariate.Y : CBivariate F) ^ (idx - t)) ≤
       (idx - t) * 1 at h
     simpa [Ypow] using h
   have hLpow : Lpow.natDegree ≤ t := by
-    have h := cpoly_natDegree_pow_le
-      (P := (CBivariate.linearYDivisor R : CBivariate F)) hL t
+    have h := CPolynomial.natDegree_pow_le_of_le
+      (p := (CBivariate.linearYDivisor R : CBivariate F)) (h := hL) t
     change CPolynomial.natDegree ((CBivariate.linearYDivisor R : CBivariate F) ^ t) ≤
       t * 1 at h
     simpa [Lpow] using h
   have hGpow : Gpow.natDegree ≤ 0 := by
-    have hpow := cpoly_natDegree_pow_le
-      (P := (CBivariate.ofYConstant G : CBivariate F)) hG
+    have hpow := CPolynomial.natDegree_pow_le_of_le
+      (p := (CBivariate.ofYConstant G : CBivariate F)) (h := hG)
       (params.multiplicity - t)
     change CPolynomial.natDegree
         ((CBivariate.ofYConstant G : CBivariate F) ^ (params.multiplicity - t)) ≤
@@ -119,11 +119,11 @@ theorem leeOSullivanBasisPolynomial_coeff_eq_zero_of_width_le
     have hYL : (Ypow * Lpow).natDegree ≤ (idx - t) + t := by
       calc
         (Ypow * Lpow).natDegree ≤ Ypow.natDegree + Lpow.natDegree :=
-          cpoly_natDegree_mul_le_semiring Ypow Lpow
+          CPolynomial.natDegree_mul_le Ypow Lpow
         _ ≤ (idx - t) + t := Nat.add_le_add hYpow hLpow
     calc
       (Ypow * Lpow * Gpow).natDegree ≤ (Ypow * Lpow).natDegree + Gpow.natDegree :=
-        cpoly_natDegree_mul_le_semiring (Ypow * Lpow) Gpow
+        CPolynomial.natDegree_mul_le (Ypow * Lpow) Gpow
       _ ≤ ((idx - t) + t) + 0 := Nat.add_le_add hYL hGpow
       _ ≤ idx := by
         have ht : t ≤ idx := by
@@ -135,7 +135,7 @@ theorem leeOSullivanBasisPolynomial_coeff_eq_zero_of_width_le
       (Ypow * Lpow * Gpow).natDegree < j := lt_of_le_of_lt hprod hjidx
   have hcoeffY :
       (Ypow * Lpow * Gpow).val.coeff j = 0 := by
-    exact cpoly_coeff_eq_zero_of_natDegree_lt hdegree
+    exact CPolynomial.coeff_eq_zero_of_natDegree_lt hdegree
   unfold CBivariate.coeff
   rw [show leeOSullivanBasisPolynomial R G params idx = Ypow * Lpow * Gpow by
     simp [leeOSullivanBasisPolynomial, Ypow, Lpow, Gpow, t]]
@@ -365,28 +365,6 @@ theorem ofCoeffRow_lee_rowSpan_of_spanContains
       simpa [leeOSullivanBasisPolynomials_size] using hidx
     simp [coeffs, Array.getD_eq_getD_getElem?, hidxWidth]
 
-omit [DecidableEq F] in
-private theorem cpoly_C_one_mul
-    (P : CPolynomial F) :
-    CPolynomial.C (1 : F) * P = P := by
-  apply (CPolynomial.eq_iff_coeff).2
-  intro i
-  rw [CPolynomial.coeff_toPoly (CPolynomial.C (1 : F) * P) i,
-    CPolynomial.coeff_toPoly P i]
-  rw [CPolynomial.toPoly_mul, CPolynomial.C_toPoly]
-  simp
-
-omit [DecidableEq F] in
-private theorem cpoly_C_zero_mul
-    (P : CPolynomial F) :
-    CPolynomial.C (0 : F) * P = 0 := by
-  apply (CPolynomial.eq_iff_coeff).2
-  intro i
-  rw [CPolynomial.coeff_toPoly (CPolynomial.C (0 : F) * P) i,
-    CPolynomial.coeff_toPoly (0 : CPolynomial F) i]
-  rw [CPolynomial.toPoly_mul, CPolynomial.C_toPoly, CPolynomial.toPoly_zero]
-  simp
-
 private def semanticUnitRowCoeffs
     (height i : Nat) : Array (CPolynomial F) :=
   Array.ofFn (fun j : Fin height ↦
@@ -451,13 +429,13 @@ private theorem ofCoeffRow_rowLinearCombination_unit
           rowGet (M.getD idx #[]) j).coeff x)) i
     · intro idx _hidx hidxNe
       rw [semanticUnitRowCoeffs_getD_ne (F := F) hidxNe]
-      rw [cpoly_C_zero_mul, CPolynomial.coeff_zero]
+      rw [CPolynomial.C_zero, zero_mul, CPolynomial.coeff_zero]
     · intro hnot
       rw [semanticUnitRowCoeffs_getD_self (F := F) hi]
-      rw [cpoly_C_one_mul]
+      rw [CPolynomial.C_one, one_mul]
       exact False.elim (hnot (Finset.mem_range.mpr hi))
   · rw [semanticUnitRowCoeffs_getD_self (F := F) hi]
-    rw [cpoly_C_one_mul]
+    rw [CPolynomial.C_one, one_mul]
 
 omit [DecidableEq F] in
 theorem ofCoeffRow_matrix_getD_semantic_rowSpan

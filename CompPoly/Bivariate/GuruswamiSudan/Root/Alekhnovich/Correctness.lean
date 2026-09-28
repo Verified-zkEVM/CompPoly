@@ -28,33 +28,6 @@ namespace CompPoly
 
 namespace GuruswamiSudan
 
-private theorem cpoly_natDegree_mul_le_of_field {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F]
-    (P Q : CPolynomial F) :
-    (P * Q).natDegree ≤ P.natDegree + Q.natDegree := by
-  rw [CPolynomial.natDegree_toPoly, CPolynomial.toPoly_mul,
-    CPolynomial.natDegree_toPoly, CPolynomial.natDegree_toPoly]
-  exact Polynomial.natDegree_mul_le
-
-private theorem cpoly_natDegree_pow_le_of_le {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F]
-    (P : CPolynomial F) {d : Nat} (hP : P.natDegree ≤ d) :
-    ∀ n, (P ^ n).natDegree ≤ n * d
-  | 0 => by
-      rw [pow_zero, CPolynomial.natDegree_toPoly, CPolynomial.toPoly_one]
-      simp
-  | n + 1 => by
-      have hmul :
-          (P ^ (n + 1)).natDegree ≤ P.natDegree + (P ^ n).natDegree := by
-        rw [pow_succ']
-        exact cpoly_natDegree_mul_le_of_field P (P ^ n)
-      have hpow := cpoly_natDegree_pow_le_of_le P hP n
-      exact le_trans hmul (by
-        calc
-          P.natDegree + (P ^ n).natDegree ≤ d + n * d := Nat.add_le_add hP hpow
-          _ = (n + 1) * d := by
-            rw [Nat.succ_mul, Nat.add_comm])
-
 private theorem cpoly_natDegree_le_pred_of_degreeLt {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     {p : CPolynomial F} {k : Nat} (hp : degreeLt p k) :
@@ -381,20 +354,6 @@ private theorem cpoly_coeff_mul_X_pow_zero {F : Type*}
   have hne : ¬ 0 = n := by omega
   simp [hne]
 
-private theorem cpoly_C_one {F : Type*}
-    [Field F] [BEq F] [LawfulBEq F] :
-    CPolynomial.C (1 : F) = 1 := by
-  apply CPolynomial.ringEquiv.injective
-  have ringEquiv_toPoly (p : CPolynomial F) :
-      (CPolynomial.ringEquiv (R := F)).toRingHom p = p.toPoly := by
-    rw [RingEquiv.toRingHom_eq_coe]
-    exact CPolynomial.ringEquiv_apply p
-  change
-    (CPolynomial.ringEquiv (R := F)).toRingHom (CPolynomial.C (1 : F)) =
-      (CPolynomial.ringEquiv (R := F)).toRingHom 1
-  rw [ringEquiv_toPoly, ringEquiv_toPoly]
-  rw [CPolynomial.C_toPoly, CPolynomial.toPoly_one, Polynomial.C_1]
-
 private theorem shiftedSubstitutionCoeffTerm_top_coeff {F : Type*}
     [Field F] [BEq F] [LawfulBEq F]
     (coeffY f : CPolynomial F) (t y x : Nat) :
@@ -403,7 +362,7 @@ private theorem shiftedSubstitutionCoeffTerm_top_coeff {F : Type*}
   unfold shiftedSubstitutionCoeffTerm
   rw [Nat.sub_self]
   simp only [Nat.choose_self, Nat.cast_one, pow_zero]
-  rw [cpoly_C_one]
+  rw [CPolynomial.C_one]
   simpa [mul_assoc] using cpoly_coeff_mul_X_pow coeffY (t * y) x
 
 private theorem shiftedSubstitutionCoeffTerm_coeff_zero_of_r_pos {F : Type*}
@@ -2375,14 +2334,14 @@ theorem composeY_eq_zero_of_rootMod_of_substitutionDegreeBound {F : Type*}
         CPolynomial.mulPowCoeff (Q.val.coeff y) p y i = 0 := by
       intro y hy
       rw [cpoly_mulPowCoeff_eq_coeff_mul_pow]
-      apply cpoly_coeff_eq_zero_of_natDegree_lt
+      apply CPolynomial.coeff_eq_zero_of_natDegree_lt
       have hylt : y < Q.val.size := by
         simpa using (List.mem_range'_1.mp hy).2
       have hpow : (p ^ y).natDegree ≤ y * (k - 1) :=
-        cpoly_natDegree_pow_le_of_le p hpdeg y
+        CPolynomial.natDegree_pow_le_of_le (p := p) y hpdeg
       have hmul : ((Q.val.coeff y) * p ^ y).natDegree ≤
           (Q.val.coeff y).natDegree + (p ^ y).natDegree :=
-        cpoly_natDegree_mul_le_of_field (Q.val.coeff y) (p ^ y)
+        CPolynomial.natDegree_mul_le (Q.val.coeff y) (p ^ y)
       have hboundY := hbound y hylt
       omega
     have hfold : ∀ ys : List Nat,

@@ -146,6 +146,114 @@ The local `ToMathlib` subtree is especially useful when a proof needs a helper l
 that conceptually belongs between CompPoly and Mathlib rather than inside one
 specific polynomial representation.
 
+## Proof API: Simp And Grind Sets
+
+The bridge lemmas come in two kinds, and only one belongs in the default simp set.
+
+- **Push lemmas** move `toPoly` inward: `toPoly_add`, `toPoly_sub`, `toPoly_neg`,
+  `toPoly_mul`, `toPoly_pow`, `toPoly_zero`, `toPoly_one`, `toPoly_sum`, `toPoly_prod`,
+  `toPoly_smul`, `C_toPoly`, `X_toPoly`, `monomial_toPoly` and `derivative_toPoly`, plus
+  `toPoly_inj` and `toPoly_eq_zero_iff`. They are `@[simp, grind =]`: a push never introduces
+  a `toPoly` that was not already in the goal.
+- **Lift lemmas** rewrite a `CPolynomial` operation into a Mathlib one: `eval_toPoly`,
+  `coeff_toPoly`, `degree_toPoly`, `natDegree_toPoly` and `leadingCoeff_toPoly`. They are
+  **not** simp. As simp lemmas they would turn every `CPolynomial.eval` in the library into a
+  `Polynomial.eval`. Name them when a proof crosses to Mathlib on purpose.
+
+Evaluation has its own `CPolynomial`-level set, `@[simp, grind =]`: `eval_zero`, `eval_one`,
+`eval_C`, `eval_X`, `eval_add`, `eval_neg`, `eval_sub`, `eval_mul`, `eval_pow` and
+`eval_monomial`. `evalHom` bundles evaluation as a `RingHom`, and `eval_sum`/`eval_prod`
+follow from it. This matches the multivariate set in
+[`../../CompPoly/Multivariate/Eval.lean`](../../CompPoly/Multivariate/Eval.lean).
+
+The other families follow the same rule:
+
+- **Bivariate:** `CBivariate.toPoly_{add,mul,zero,one,monomial}`, `CC_toPoly`, `X_toPoly`,
+  `Y_toPoly`, `monomialXY_toPoly` and the `ofPoly`/`toPoly` round trips are `@[simp, grind =]`.
+  So are the `bivariateEquiv_*` lemmas into `CMvPolynomial 2 R`.
+- **Multivariate:** `CMvPolynomial.eval_*` and the `fromCMvPolynomial` round trips, in
+  `Multivariate/Eval.lean` and `Multivariate/MvPolyEquiv/`.
+- **Multilinear:** `eval_zero`, `eval_add` and `eval_smul` for both `CMlPolynomial` and
+  `CMlPolynomialEval` are `@[simp]`.
+
+What that buys, all checked in
+[`../../tests/CompPolyTests/Univariate/Ergonomics.lean`](../../tests/CompPolyTests/Univariate/Ergonomics.lean):
+
+```lean
+example : (p * q + C a).toPoly = p.toPoly * q.toPoly + Polynomial.C a := by simp  -- or grind
+example : (p * q + 1).eval x = p.eval x * q.eval x + 1 := by simp                -- or grind
+example : C (1 : R) * p = p := toPoly_inj.mp (by simp)
+example : derivative (p * q) = derivative p * q + p * derivative q :=
+  toPoly_inj.mp (by simp [Polynomial.derivative_mul])
+```
+
+`toPoly_inj.mp (by simp [...])` is the general transfer pattern for an equation between
+`CPolynomial`s. It moves the goal to Mathlib, pushes `toPoly` through, and closes it with the
+Mathlib lemma you name.
+
+### The `toPoly` Coercion
+
+`toPoly` is also the coercion `CPolynomial R → Polynomial R` (`@[coe]`, with a `Coe`
+instance), so `↑p` and `p.toPoly` are the same term. The push lemmas carry `norm_cast`, and
+`toPoly_eval`, `toPoly_coeff`, `toPoly_degree`, `toPoly_natDegree` and `toPoly_leadingCoeff`
+restate the lift lemmas with the cast on the left, as `norm_cast` wants. A Mathlib theorem
+about `↑p` then transfers in one line:
+
+```lean
+example (hp : p ≠ 0) (hq : q ≠ 0) : (p * q).natDegree = p.natDegree + q.natDegree := by
+  exact_mod_cast Polynomial.natDegree_mul (p := (p : Polynomial R)) (q := q)
+    (by exact_mod_cast hp) (by exact_mod_cast hq)
+example : (p * q).leadingCoeff = p.leadingCoeff * q.leadingCoeff := by
+  exact_mod_cast Polynomial.leadingCoeff_mul (p : Polynomial R) q
+```
+
+Two limits:
+
+- The cast-oriented lemmas are `norm_cast` only, **not** `@[simp]`. With both orientations
+  in the simp set, `simp [eval_toPoly]` loops, and the library uses that call in many places.
+- `C_toPoly` and `derivative_toPoly` cannot be `norm_cast` lemmas. `Polynomial.C` and
+  `derivative` are bundled maps applied through a coercion to functions, and `norm_cast`
+  rejects a right-hand side that starts with a coercion. A statement
+  mentioning `C` or `X` takes one more step: rewrite the query into Mathlib's
+  (`rw [← toPoly_coeff]`), `push_cast`, then `exact_mod_cast` the Mathlib lemma.
+
+### Degree Arithmetic
+
+Routine degree reasoning does not need to leave `CPolynomial`.
+[`../../CompPoly/Univariate/ToPoly/Degree.lean`](../../CompPoly/Univariate/ToPoly/Degree.lean)
+restates Mathlib's degree, `natDegree` and `leadingCoeff` lemmas for `CPolynomial` under the
+same names. Lemmas about `1`, `X` or powers also assume `[Nontrivial R]`, as their `toPoly`
+lemmas do.
+
+- **`@[simp]`, as in Mathlib:** `degree_mul`, `leadingCoeff_mul`, `degree_pow`, `natDegree_pow`,
+  `leadingCoeff_pow` (over a ring with no zero divisors), `degree_neg`, `natDegree_neg`,
+  `leadingCoeff_neg`, `degree_X_sub_C`, `natDegree_X_sub_C`, `leadingCoeff_C`, and the degree
+  and leading coefficient of `X` and `1`. So `simp` computes `((X - C a) ^ n).natDegree = n`.
+- **Named, not simp:** `natDegree_mul` (for nonzero factors), `degree_C` (for `r ≠ 0`),
+  `degree_C_le`, `degree_add_le`, `degree_sub_le`, `natDegree_sub_le`, `degree_mul_le`,
+  `natDegree_mul_le`, `degree_pow_le`, `natDegree_pow_le`, `natDegree_pow_le_of_le`, and
+  `degree_add_eq_left_of_degree_lt` with its right-hand twin.
+- **Elsewhere:** `coeff_eq_zero_of_natDegree_lt` and `le_natDegree_of_ne_zero` in
+  `Basic.lean`, and `C_one` (`@[simp]`) in `ToPoly/Impl.lean`.
+
+Before this API, several decoder and matrix files proved their own copies (four of
+`natDegree_mul_le` alone). Check here before adding a local `cpoly_*` helper.
+
+Known friction when porting a Mathlib proof:
+
+- Inside `namespace CPolynomial`, `X`, `C`, `degree`, `eval_*` and the degree lemmas above
+  (`degree_mul`, `natDegree_X`, `coeff_eq_zero_of_natDegree_lt`, …) resolve to the
+  `CPolynomial` versions, and with `open Polynomial` an unqualified name is ambiguous. Qualify
+  the Mathlib side (`Polynomial.degree_mul`), or `open` with `hiding`.
+- `CPolynomial.toPoly`, `Raw.coeff` and `Raw.toPoly` are not exposed by a plain `public
+  import`. A proof that must see through them with `change`, `unfold` or `rfl` needs `import
+  all` of `ToPoly/Core.lean` or `Raw/Core.lean`. See [`module-system.md`](module-system.md).
+- Multivariate lives in `CPoly.CMvPolynomial` and univariate in `CompPoly.CPolynomial`.
+- `CMlPolynomial R n` and `CMlPolynomialEval R n` are `def`s for `Vector R (2 ^ n)`, so
+  `p + q` and `0` elaborate with core's `Vector` instances rather than the ones declared in
+  `Multilinear/Basic.lean`. Pointwise proofs go through `Vector.getElem_add` and
+  `Vector.getElem_zero`, not `Vector.zipWith`.
+
 ## Choosing A Surface
 
 - If you need canonical coefficient arrays and interpolation, start with
