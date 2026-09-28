@@ -135,6 +135,22 @@ theorem conjugate_x (p : Point) : (-p).x = p.x := by rfl
 @[simp]
 theorem conjugate_y (p : Point) : (-p).y = -p.y := by rfl
 
+/-- The antipode negates the x-coordinate. -/
+@[simp]
+theorem antipode_x (p : Point) : p.antipode.x = -p.x := by rfl
+
+/-- The antipode negates the y-coordinate. -/
+@[simp]
+theorem antipode_y (p : Point) : p.antipode.y = -p.y := by rfl
+
+/-- The x-coordinate of circle addition. -/
+@[simp]
+theorem add_x (p q : Point) : (p + q).x = p.x * q.x - p.y * q.y := by rfl
+
+/-- The y-coordinate of circle addition. -/
+@[simp]
+theorem add_y (p q : Point) : (p + q).y = p.x * q.y + p.y * q.x := by rfl
+
 /-- The identity point is a left identity for circle addition. -/
 @[simp]
 theorem zero_add (p : Point) : (0 : Point) + p = p := by
@@ -196,11 +212,19 @@ namespace CirclePointIndex
 /-- The distinguished generator index. -/
 def generator : CirclePointIndex := 1
 
+/-- The distinguished generator index is one. -/
+@[simp]
+theorem generator_eq : generator = 1 := by rfl
+
 /-- Subgroup generator index for the subgroup of order `2^logSize`. For
 `logSize ≤ logOrder` this is the canonical generator of that subgroup; callers
 that rely on the bound (`Coset.new`, `odds`, `halfOdds`) carry it themselves. -/
 def subgroupGen (logSize : Nat) : CirclePointIndex :=
   (2 ^ (logOrder - logSize) : Nat)
+
+/-- The subgroup step is the corresponding power of two modulo the circle order. -/
+theorem subgroupGen_eq (logSize : Nat) :
+    subgroupGen logSize = ((2 ^ (logOrder - logSize) : Nat) : CirclePointIndex) := by rfl
 
 /-- Interpret an index as a repeated multiple of the STWO circle generator.
 
@@ -208,6 +232,10 @@ Uses the canonical natural representative of `i`; see the module docstring for
 the planned homomorphism proof. -/
 def toPoint (i : CirclePointIndex) : Point :=
   Point.nsmul Circle.generator i.val
+
+/-- Index interpretation uses the canonical natural representative. -/
+theorem toPoint_def (i : CirclePointIndex) :
+    toPoint i = Point.nsmul Circle.generator i.val := by rfl
 
 /-- Index zero maps to the circle identity. -/
 @[simp]
@@ -221,6 +249,11 @@ theorem toPoint_generator : toPoint CirclePointIndex.generator = Circle.generato
   unfold toPoint CirclePointIndex.generator Circle.generator
   change Point.nsmul Circle.generator (0 + 1) = Circle.generator
   simp only [Point.nsmul_succ, Point.nsmul_zero, Point.zero_add]
+
+/-- Index one maps to the STWO circle generator. -/
+@[simp]
+theorem toPoint_one : toPoint 1 = Circle.generator := by
+  simpa only [generator_eq] using toPoint_generator
 
 /-- The subgroup generator for the trivial subgroup is zero modulo the circle order. -/
 @[simp]
@@ -252,31 +285,73 @@ def new (initialIndex : CirclePointIndex) (logSize : Nat) (hlogSize : logSize �
   logSize := logSize
   logSize_le_logOrder := hlogSize
 
+/-- The coset constructor preserves the initial index. -/
+@[simp]
+theorem new_initialIndex (i : CirclePointIndex) (n : Nat) (h : n ≤ logOrder) :
+    (new i n h).initialIndex = i := by rfl
+
+/-- The coset constructor uses the subgroup generator as its step. -/
+@[simp]
+theorem new_stepSize (i : CirclePointIndex) (n : Nat) (h : n ≤ logOrder) :
+    (new i n h).stepSize = CirclePointIndex.subgroupGen n := by rfl
+
+/-- The coset constructor preserves the log size. -/
+@[simp]
+theorem new_logSize (i : CirclePointIndex) (n : Nat) (h : n ≤ logOrder) :
+    (new i n h).logSize = n := by rfl
+
 /-- The additive subgroup of size `2^logSize`. -/
 def subgroup (logSize : Nat) (hlogSize : logSize ≤ logOrder) : Coset :=
   new 0 logSize hlogSize
+
+/-- A subgroup is the coset starting at zero. -/
+theorem subgroup_eq (n : Nat) (h : n ≤ logOrder) : subgroup n h = new 0 n h := by rfl
 
 /-- The STWO coset `G_{2n} + <G_n>`. -/
 def odds (logSize : Nat) (hlogSize : logSize + 1 ≤ logOrder) : Coset :=
   new (CirclePointIndex.subgroupGen (logSize + 1)) logSize
     (Nat.le_trans (Nat.le_succ logSize) hlogSize)
 
+/-- The odds coset starts at the next larger subgroup's generator. -/
+theorem odds_eq (n : Nat) (h : n + 1 ≤ logOrder) :
+    odds n h = new (CirclePointIndex.subgroupGen (n + 1)) n
+      (Nat.le_trans (Nat.le_succ n) h) := by rfl
+
 /-- The STWO coset `G_{4n} + <G_n>`, whose conjugate completes `odds (logSize + 1)`. -/
 def halfOdds (logSize : Nat) (hlogSize : logSize + 2 ≤ logOrder) : Coset :=
   new (CirclePointIndex.subgroupGen (logSize + 2)) logSize
     (Nat.le_trans (Nat.le_add_right logSize 2) hlogSize)
 
+/-- The half-odds coset starts two subgroup levels above its step. -/
+theorem halfOdds_eq (n : Nat) (h : n + 2 ≤ logOrder) :
+    halfOdds n h = new (CirclePointIndex.subgroupGen (n + 2)) n
+      (Nat.le_trans (Nat.le_add_right n 2) h) := by rfl
+
 /-- Number of indices in the coset. -/
 def size (c : Coset) : Nat :=
   2 ^ c.logSize
+
+/-- A coset's size is two to its log size. -/
+@[simp]
+theorem size_eq (c : Coset) : c.size = 2 ^ c.logSize := by rfl
 
 /-- The `i`th index in the coset order. -/
 def indexAt (c : Coset) (i : Nat) : CirclePointIndex :=
   c.initialIndex + c.stepSize * (i : CirclePointIndex)
 
+/-- Closed-form coset indexing, without recursive expansion of literal indices.
+Lower priority lets the zero and conjugation lemmas simplify first. -/
+@[simp low]
+theorem indexAt_eq (c : Coset) (i : Nat) :
+    c.indexAt i = c.initialIndex + c.stepSize * (i : CirclePointIndex) := by rfl
+
 /-- The circle point at the `i`th coset index. -/
 def pointAt (c : Coset) (i : Nat) : Point :=
   CirclePointIndex.toPoint (c.indexAt i)
+
+/-- A coset point is the interpretation of its index. -/
+theorem pointAt_def (c : Coset) (i : Nat) :
+    c.pointAt i = CirclePointIndex.toPoint (c.indexAt i) := by rfl
 
 /-- The conjugate coset `-initial - <step>`. -/
 def conjugate (c : Coset) : Coset where
@@ -291,7 +366,6 @@ theorem indexAt_zero (c : Coset) : c.indexAt 0 = c.initialIndex := by
   simp [indexAt]
 
 /-- Successive coset indices differ by the fixed step size. -/
-@[simp]
 theorem indexAt_succ (c : Coset) (i : Nat) :
     c.indexAt (i + 1) = c.indexAt i + c.stepSize := by
   simp [indexAt, Nat.cast_add, Nat.cast_one]
@@ -337,9 +411,16 @@ theorem new_halfCoset (c : Coset) : (new c).halfCoset = c := by rfl
 def logSize (D : CircleDomain) : Nat :=
   D.halfCoset.logSize + 1
 
+/-- A domain's log size is one more than its half coset's log size. -/
+@[simp low]
+theorem logSize_eq (D : CircleDomain) : D.logSize = D.halfCoset.logSize + 1 := by rfl
+
 /-- Number of indices in the domain. -/
 def size (D : CircleDomain) : Nat :=
   2 ^ D.logSize
+
+/-- A domain's size is two to its log size. -/
+theorem size_eq (D : CircleDomain) : D.size = 2 ^ D.logSize := by rfl
 
 /-- The `i`th domain index: first the half coset, then the conjugate coset. -/
 def indexAt (D : CircleDomain) (i : Nat) : CirclePointIndex :=
@@ -348,12 +429,21 @@ def indexAt (D : CircleDomain) (i : Nat) : CirclePointIndex :=
   else
     D.halfCoset.conjugate.indexAt (i - D.halfCoset.size)
 
+/-- Domain indexing splits at the half-coset size. -/
+theorem indexAt_def (D : CircleDomain) (i : Nat) :
+    D.indexAt i = if i < D.halfCoset.size then D.halfCoset.indexAt i
+      else D.halfCoset.conjugate.indexAt (i - D.halfCoset.size) := by rfl
+
 /-- The circle point at the `i`th domain index. -/
 def pointAt (D : CircleDomain) (i : Nat) : Point :=
   CirclePointIndex.toPoint (D.indexAt i)
 
+/-- A domain point is the interpretation of its index. -/
+theorem pointAt_def (D : CircleDomain) (i : Nat) :
+    D.pointAt i = CirclePointIndex.toPoint (D.indexAt i) := by rfl
+
 /-- A circle domain has twice as many indices as its half coset. -/
-@[simp]
+@[simp low]
 theorem size_eq_two_mul_halfSize (D : CircleDomain) :
     D.size = 2 * D.halfCoset.size := by
   simp [size, logSize, Coset.size, pow_succ, Nat.mul_comm]
@@ -362,15 +452,19 @@ theorem size_eq_two_mul_halfSize (D : CircleDomain) :
 @[simp]
 theorem indexAt_left (D : CircleDomain) (i : Nat) (hi : i < D.halfCoset.size) :
     D.indexAt i = D.halfCoset.indexAt i := by
-  simp [indexAt, hi]
+  rw [indexAt_def, if_pos hi]
+
+/-- Indices at or beyond the half-coset size come from the conjugate half. -/
+@[simp]
+theorem indexAt_of_le (D : CircleDomain) (i : Nat) (hi : D.halfCoset.size ≤ i) :
+    D.indexAt i = -D.halfCoset.indexAt (i - D.halfCoset.size) := by
+  rw [indexAt_def, if_neg (Nat.not_lt.mpr hi), Coset.conjugate_indexAt]
 
 /-- Indices in the second half come from the negated half coset. -/
 @[simp]
 theorem indexAt_right (D : CircleDomain) (i : Nat) :
     D.indexAt (D.halfCoset.size + i) = -D.halfCoset.indexAt i := by
-  have hnot : ¬ D.halfCoset.size + i < D.halfCoset.size := by
-    exact Nat.not_lt.mpr (Nat.le_add_right _ _)
-  simp [indexAt, hnot, Coset.conjugate_indexAt]
+  rw [indexAt_of_le D _ (Nat.le_add_right _ _), Nat.add_sub_cancel_left]
 
 end CircleDomain
 
@@ -386,6 +480,10 @@ namespace CanonicCoset
 def coset (c : CanonicCoset) : Coset :=
   Coset.odds c.logSize c.logSize_succ_le_logOrder
 
+/-- A canonical coset is the odds coset at its log size. -/
+theorem coset_eq (c : CanonicCoset) :
+    c.coset = Coset.odds c.logSize c.logSize_succ_le_logOrder := by rfl
+
 /-- The half coset used to form the canonical circle domain. -/
 def halfCoset (c : CanonicCoset) : Coset :=
   Coset.halfOdds (c.logSize - 1) (by
@@ -395,9 +493,20 @@ def halfCoset (c : CanonicCoset) : Coset :=
     rw [hEq]
     exact c.logSize_succ_le_logOrder)
 
+/-- The canonical half coset is the half-odds coset one log size below. -/
+theorem halfCoset_eq (c : CanonicCoset) :
+    c.halfCoset = Coset.halfOdds (c.logSize - 1) (by
+      have hOne := c.one_le_logSize
+      have hBound := c.logSize_succ_le_logOrder
+      omega) := by rfl
+
 /-- The canonical circle domain with the same log size. -/
 def circleDomain (c : CanonicCoset) : CircleDomain :=
   CircleDomain.new c.halfCoset
+
+/-- The canonical domain is built from the canonical half coset. -/
+theorem circleDomain_eq (c : CanonicCoset) :
+    c.circleDomain = CircleDomain.new c.halfCoset := by rfl
 
 /-- The canonical circle domain preserves the canonical coset log size. -/
 @[simp]
@@ -410,7 +519,7 @@ theorem circleDomain_logSize (c : CanonicCoset) : c.circleDomain.logSize = c.log
 /-- The canonical circle domain has `2^logSize` indices. -/
 @[simp]
 theorem circleDomain_size (c : CanonicCoset) : c.circleDomain.size = 2 ^ c.logSize := by
-  simp [CircleDomain.size]
+  rw [CircleDomain.size_eq, circleDomain_logSize]
 
 end CanonicCoset
 

@@ -7,6 +7,7 @@ module
 
 public import CompPoly.Fields.Mersenne31.Circle
 public meta import CompPoly.Fields.Mersenne31.Circle
+import Mathlib.Tactic.Ring
 
 /-!
 # Mersenne31 Circle Domain Tests
@@ -41,6 +42,113 @@ example (p : Point) : (-p).x = p.x := by
 example (c : Coset) : (CircleDomain.new c).halfCoset = c := by
   simp only [CircleDomain.new_halfCoset]
 
+example (c : Coset) (_h : c.indexAt 600 = 0) : True := by
+  simp at _h
+  trivial
+
+example (c : Coset) :
+    c.indexAt 600 = c.initialIndex + c.stepSize * (600 : CirclePointIndex) := by
+  simp
+
+example (c : Coset) (i : Nat) : c.conjugate.indexAt (i + 1) = -c.indexAt (i + 1) := by
+  simp
+
+example (c : Coset) (i : Nat) :
+    c.conjugate.indexAt (i + 1) = -(c.indexAt i + c.stepSize) := by
+  rw [Coset.conjugate_indexAt, Coset.indexAt_succ]
+
+example (p q : Point) : (p + q).x = p.x * q.x - p.y * q.y := by
+  simp only [Point.add_x]
+
+example (p q : Point) : (p + q).y = p.x * q.y + p.y * q.x := by
+  simp only [Point.add_y]
+
+example (p : Point) : p.antipode.antipode = p := by
+  apply Point.ext
+  · simp only [Point.antipode_x, neg_neg]
+  · simp only [Point.antipode_y, neg_neg]
+
+example (p : Point) : p + (-p) = 0 := by
+  apply Point.ext
+  · simpa only [Point.add_x, Point.conjugate_x, Point.conjugate_y, Point.zero_x,
+      mul_neg, sub_neg_eq_add, OnCircle, pow_two] using p.onCircle
+  · simp only [Point.add_y, Point.conjugate_x, Point.conjugate_y, Point.zero_y]
+    ring
+
+example (c : Coset) : c.size = 2 ^ c.logSize := by
+  simp only [Coset.size_eq]
+
+example (i : CirclePointIndex) (n : Nat) (h : n ≤ logOrder) :
+    (Coset.new i n h).initialIndex = i ∧
+      (Coset.new i n h).stepSize = CirclePointIndex.subgroupGen n ∧
+      (Coset.new i n h).logSize = n := by
+  simp only [Coset.new_initialIndex, Coset.new_stepSize, Coset.new_logSize, and_self]
+
+example (n : Nat) (h : n ≤ logOrder) :
+    (Coset.subgroup n h).initialIndex = 0 ∧
+      (Coset.subgroup n h).stepSize = CirclePointIndex.subgroupGen n ∧
+      (Coset.subgroup n h).logSize = n := by
+  simp only [Coset.subgroup_eq, Coset.new_initialIndex, Coset.new_stepSize,
+    Coset.new_logSize, and_self]
+
+example (n : Nat) (h : n + 1 ≤ logOrder) :
+    (Coset.odds n h).initialIndex = CirclePointIndex.subgroupGen (n + 1) ∧
+      (Coset.odds n h).stepSize = CirclePointIndex.subgroupGen n ∧
+      (Coset.odds n h).logSize = n := by
+  simp only [Coset.odds_eq, Coset.new_initialIndex, Coset.new_stepSize,
+    Coset.new_logSize, and_self]
+
+example (n : Nat) (h : n + 2 ≤ logOrder) :
+    (Coset.halfOdds n h).initialIndex = CirclePointIndex.subgroupGen (n + 2) ∧
+      (Coset.halfOdds n h).stepSize = CirclePointIndex.subgroupGen n ∧
+      (Coset.halfOdds n h).logSize = n := by
+  simp only [Coset.halfOdds_eq, Coset.new_initialIndex, Coset.new_stepSize,
+    Coset.new_logSize, and_self]
+
+example (i : CirclePointIndex) : CirclePointIndex.toPoint i = Point.nsmul generator i.val := by
+  rw [CirclePointIndex.toPoint_def]
+
+example (c : Coset) (i : Nat) : c.pointAt i =
+    Point.nsmul generator (c.initialIndex + c.stepSize * (i : CirclePointIndex)).val := by
+  rw [Coset.pointAt_def, CirclePointIndex.toPoint_def, Coset.indexAt_eq]
+
+example (D : CircleDomain) : D.logSize = D.halfCoset.logSize + 1 := by
+  rw [CircleDomain.logSize_eq]
+
+example (D : CircleDomain) : D.size = 2 ^ (D.halfCoset.logSize + 1) := by
+  rw [CircleDomain.size_eq, CircleDomain.logSize_eq]
+
+example (D : CircleDomain) : D.indexAt 0 = D.halfCoset.initialIndex := by
+  rw [CircleDomain.indexAt_left, Coset.indexAt_zero]
+  rw [Coset.size_eq]
+  exact pow_pos (by decide) _
+
+example (D : CircleDomain) : D.indexAt (D.halfCoset.size + 0) =
+    -D.halfCoset.initialIndex := by
+  simp
+
+example (D : CircleDomain) : D.indexAt D.halfCoset.size = -D.halfCoset.initialIndex := by
+  simp
+
+example (D : CircleDomain) (i : Nat) : D.pointAt i =
+    Point.nsmul generator (if i < D.halfCoset.size then D.halfCoset.indexAt i
+      else D.halfCoset.conjugate.indexAt (i - D.halfCoset.size)).val := by
+  rw [CircleDomain.pointAt_def, CirclePointIndex.toPoint_def, CircleDomain.indexAt_def]
+
+example (c : CanonicCoset) : c.coset.stepSize = CirclePointIndex.subgroupGen c.logSize := by
+  rw [CanonicCoset.coset_eq, Coset.odds_eq, Coset.new_stepSize]
+
+example (c : CanonicCoset) :
+    c.halfCoset.stepSize = CirclePointIndex.subgroupGen (c.logSize - 1) := by
+  rw [CanonicCoset.halfCoset_eq, Coset.halfOdds_eq, Coset.new_stepSize]
+
+example (c : CanonicCoset) : c.circleDomain.halfCoset = c.halfCoset := by
+  rw [CanonicCoset.circleDomain_eq, CircleDomain.new_halfCoset]
+
+example (c : CanonicCoset) : c.circleDomain.logSize = c.logSize := by simp
+
+example (c : CanonicCoset) : c.circleDomain.size = 2 ^ c.logSize := by simp
+
 example : OnCircle (generator + generator).x (generator + generator).y :=
   (generator + generator).onCircle
 
@@ -49,6 +157,13 @@ example : OnCircle (Point.antipode generator).x (Point.antipode generator).y :=
 
 #guard logOrder = 31
 #guard order = 2147483648
+#guard ((2147483648 : Nat) : CirclePointIndex) = 0
+
+example : CirclePointIndex.generator = 1 := by simp
+
+example : CirclePointIndex.subgroupGen 5 = ((2 ^ 26 : Nat) : CirclePointIndex) := by
+  rw [CirclePointIndex.subgroupGen_eq]
+  rfl
 
 example : CirclePointIndex.toPoint 0 = 0 := by
   simp
@@ -67,6 +182,14 @@ example (p : Point) (n : Nat) : Point.nsmul p n = nsmulRec n p :=
 #guard (CirclePointIndex.toPoint (-1)).x = generator.x
 #guard (CirclePointIndex.toPoint (-1)).y = -generator.y
 
+-- Pin both half-order and full-order behavior, independently of reduction modulo the index order.
+#guard (Point.nsmul generator (2 ^ 30)).x = -1
+#guard (Point.nsmul generator (2 ^ 30)).y = 0
+#guard (Point.nsmul generator (2 ^ 31)).x = 1
+#guard (Point.nsmul generator (2 ^ 31)).y = 0
+#guard (CirclePointIndex.toPoint ((2 ^ 30 : Nat) : CirclePointIndex)).x = -1
+#guard (CirclePointIndex.toPoint ((2 ^ 30 : Nat) : CirclePointIndex)).y = 0
+
 example : CirclePointIndex.subgroupGen 0 = 0 := by
   simp
 
@@ -80,6 +203,7 @@ def smallHalfCoset : Coset :=
   Coset.halfOdds 3 (by decide)
 
 #guard smallHalfCoset.size = 8
+#guard smallHalfCoset.stepSize.val = 268435456
 
 example : smallHalfCoset.indexAt 0 = smallHalfCoset.initialIndex := by
   simp [smallHalfCoset]
@@ -113,6 +237,18 @@ def smallCanonicCoset : CanonicCoset where
 #guard (smallCanonicCoset.circleDomain.indexAt 0).val = 67108864
 #guard (smallCanonicCoset.circleDomain.pointAt 0).x = 1179735656
 #guard (smallCanonicCoset.circleDomain.pointAt 0).y = 1241207368
+#guard (smallCanonicCoset.circleDomain.indexAt 1).val = 335544320
+#guard (smallCanonicCoset.circleDomain.pointAt 1).x = 1415090252
+#guard (smallCanonicCoset.circleDomain.pointAt 1).y = 2112881577
+
+#guard ((List.range 16).map fun i =>
+  let p := smallCanonicCoset.circleDomain.pointAt i
+  (p.x, p.y)).eraseDups.length = 16
+
+#guard ((List.range 16).map fun i => (smallCanonicCoset.circleDomain.indexAt i).val).mergeSort
+    (fun a b => decide (a ≤ b)) ==
+  ((List.range 16).map fun i => (smallCanonicCoset.coset.indexAt i).val).mergeSort
+    (fun a b => decide (a ≤ b))
 
 #guard (List.range smallCanonicCoset.circleDomain.size).all fun i =>
   let p := smallCanonicCoset.circleDomain.pointAt i
