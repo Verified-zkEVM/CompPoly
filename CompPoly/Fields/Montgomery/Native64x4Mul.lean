@@ -11,20 +11,13 @@ public import Mathlib.Tactic.Linarith
 /-!
 # Correctness of four-limb CIOS Montgomery multiplication
 
-A CIOS round is the composition of an accumulation and a reduction step:
-
-* `mulAccum a bi t` accumulates `a * bi` into the accumulator exactly,
-  `⟦mulAccum a bi t⟧ = ⟦t⟧ + ⟦a⟧ * bi`;
-* `mulReduce q negInv s` adds the multiple `m * q` of the modulus that cancels the low limb
-  and drops that limb, `2 ^ 64 * ⟦mulReduce q negInv s⟧ = ⟦s⟧ + m * q`.
-
-Composing them gives the round invariant `2 ^ 64 * ⟦mulRound⟧ = ⟦t⟧ + ⟦a⟧ * bi + m * q`, and
-folding four rounds gives `2 ^ 256 * ⟦t₄⟧ = ⟦a⟧ * ⟦b⟧ + M * q`, so the accumulator is the
-Montgomery product up to the final conditional subtraction.
+A round accumulates `a * bi` exactly (`mulAccum_spec`) and cancels the low limb against a
+multiple of the modulus (`mulReduce_spec`); folding four rounds gives
+`2 ^ 256 * ⟦t₄⟧ = ⟦a⟧ * ⟦b⟧ + M * q`, the Montgomery product up to the final conditional
+subtraction.
 
 ## Main results
 
-* `mulAccum_spec`, `mulReduce_spec` — the two halves of a round
 * `mulRound_spec` — the round invariant with the `2 * q` bound
 * `mul_spec` — `mul` is canonical and satisfies `2 ^ 256 * ⟦mul a b⟧ ≡ ⟦a⟧ * ⟦b⟧ [MOD q]`
 -/
@@ -47,17 +40,6 @@ theorem mul_sum4 (b a0 a1 a2 a3 : ℕ) :
     b * (a0 + 2 ^ 64 * a1 + 2 ^ 128 * a2 + 2 ^ 192 * a3) =
       b * a0 + 2 ^ 64 * (b * a1) + 2 ^ 128 * (b * a2) + 2 ^ 192 * (b * a3) := by
   ring
-
-private theorem word_lt (x : UInt64) : x.toNat < 2 ^ 64 := by
-  have := x.toNat_lt_size
-  norm_num [UInt64.size] at this
-  exact this
-
-/-- The low limb of a value is its residue modulo `2 ^ 64`. -/
-theorem Limbs4.toNat_mod (x : Limbs4) : x.toNat % 2 ^ 64 = x.l0.toNat := by
-  have h0 := word_lt x.l0
-  simp only [Limbs4.toNat]
-  omega
 
 /-- The Montgomery multiplier makes the low limb of the reduction vanish. -/
 private theorem montM_low_zero {s negInv Q q0 w u : ℕ} (hs : s < 2 ^ 64)
@@ -91,8 +73,7 @@ theorem State5.toNat_eq (t : State5) :
 
 /-! ### The accumulation step -/
 
-/-- `mulAccum` adds `a * bi` to the accumulator exactly: the carry out of the head limb is
-retained in the carry limb, and the carry limb is a bit. -/
+/-- `mulAccum` adds `a * bi` to the accumulator exactly, with a one-bit carry limb. -/
 theorem mulAccum_spec (a : Limbs4) (bi : UInt64) (t : State5) :
     (mulAccum a bi t).t5.toNat ≤ 1 ∧
       (mulAccum a bi t).toNat = t.toNat + a.toNat * bi.toNat := by
@@ -112,13 +93,12 @@ theorem mulAccum_spec (a : Limbs4) (bi : UInt64) (t : State5) :
 
 /-! ### The reduction step -/
 
-/-- `mulReduce` adds the multiple of the modulus that cancels the low limb, and the division
-by `2 ^ 64` performed by dropping that limb is exact. -/
+/-- `mulReduce` adds the multiple of the modulus that cancels the low limb, so dropping that
+limb divides by `2 ^ 64` exactly. -/
 theorem mulReduce_spec (q : Limbs4) (negInv : UInt64) (s : State6) (hs5 : s.t5.toNat ≤ 1)
     (hnq : negInv.toNat * q.toNat % 2 ^ 64 = 2 ^ 64 - 1) :
-    (mulReduce q negInv s).t4.toNat ≤ 2 ∧
-      2 ^ 64 * (mulReduce q negInv s).toNat =
-        s.toNat + (montM s.t0 negInv).toNat * q.toNat := by
+    2 ^ 64 * (mulReduce q negInv s).toNat =
+      s.toNat + (montM s.t0 negInv).toNat * q.toNat := by
   have hmv : (montM s.t0 negInv).toNat = s.t0.toNat * negInv.toNat % 2 ^ 64 :=
     montM_toNat _ _
   obtain ⟨w0, u0, f0, g0⟩ := mac_spec s.t0 (montM s.t0 negInv) q.l0 0
@@ -128,20 +108,18 @@ theorem mulReduce_spec (q : Limbs4) (negInv : UInt64) (s : State6) (hs5 : s.t5.t
   obtain ⟨w4, u4, f4, g4, k4⟩ := adc_spec s.t4 u3 0 (by decide)
   rw [UInt64.toNat_zero] at g0 g4
   have hw0 : w0.toNat = 0 := by
-    have hw := word_lt w0
+    have hw := UInt64.toNat_lt w0
     rw [hmv] at g0
-    exact montM_low_zero (word_lt s.t0) (Limbs4.toNat_mod q) hnq
+    exact montM_low_zero (UInt64.toNat_lt s.t0) (Limbs4.toNat_mod q) hnq
       (by rw [Nat.add_zero] at g0; exact g0) hw
   have hchain := carry_chain_sum g0 g1 g2 g3
   rw [← mul_sum4, ← Limbs4.toNat, Nat.add_zero] at hchain
   have hhead : (s.t5 + u4).toNat = s.t5.toNat + u4.toNat := by
     rw [UInt64.toNat_add, Nat.mod_eq_of_lt (by omega)]
   simp only [mulReduce, f0, f1, f2, f3, f4]
-  refine ⟨?_, ?_⟩
-  · rw [hhead]; omega
-  · rw [State5.toNat_eq]
-    simp only [State6.toNat, hhead]
-    omega
+  rw [State5.toNat_eq]
+  simp only [State6.toNat, hhead]
+  omega
 
 /-! ### The round invariant -/
 
@@ -155,13 +133,14 @@ theorem mulRound_spec (q a : Limbs4) (negInv bi : UInt64) (t : State5)
         2 ^ 64 * (mulRound q negInv a bi t).toNat =
           t.toNat + a.toNat * bi.toNat + m * q.toNat := by
   obtain ⟨ha5, hav⟩ := mulAccum_spec a bi t
-  obtain ⟨-, hrv⟩ := mulReduce_spec q negInv (mulAccum a bi t) ha5 hnq
+  have hrv := mulReduce_spec q negInv (mulAccum a bi t) ha5 hnq
   rw [hav] at hrv
   have hinv : 2 ^ 64 * (mulRound q negInv a bi t).toNat =
       t.toNat + a.toNat * bi.toNat + (montM (mulAccum a bi t).t0 negInv).toNat * q.toNat := by
     rw [mulRound]
     exact hrv
-  exact ⟨round_bound hinv htq haq (word_lt bi) (word_lt _), _, word_lt _, hinv⟩
+  exact ⟨round_bound hinv htq haq (UInt64.toNat_lt bi) (UInt64.toNat_lt _), _,
+    UInt64.toNat_lt _, hinv⟩
 
 /-! ### The four-round fold -/
 

@@ -8,11 +8,10 @@ module
 /-!
 # Four-limb Montgomery arithmetic: runtime definitions (zero-import)
 
-The runtime definitions of the four-limb Montgomery arithmetic over 64-bit limbs.  All
-correctness statements about them live in `CompPoly.Fields.Montgomery.Native64x4`, which
-imports this one.  Products are widened with `mulHi`, four 32-bit partial products; every
-word helper returns its low word and carry as a pair that the caller destructures, so the
-compiler keeps all accumulators in registers and nothing is boxed.
+The runtime definitions of the four-limb Montgomery arithmetic over 64-bit limbs; all
+correctness statements live in `CompPoly.Fields.Montgomery.Native64x4`, which imports this
+one.  Products widen through `mulHi` (four 32-bit partial products) and every word helper
+returns a pair the caller destructures, so nothing is boxed.
 
 This module deliberately has **zero imports**, for `precompileModules` consumers.
 -/
@@ -90,9 +89,8 @@ end Limbs4
 
 /-! ## Limbwise addition and subtraction
 
-The limb chains return their words flat, and a `Limbs4` is only built at the end of a branch:
-a value bound before a branch and returned by one side is allocated whether or not that side
-runs. -/
+Chains return flat words and a `Limbs4` is built only inside a branch: one bound before the
+branch is allocated whether or not that side runs. -/
 
 /-- Limbwise add-with-carry: the four sum limbs and the carry out of the top limb. -/
 @[inline] def addLimbs (a b : Limbs4) : UInt64 × UInt64 × UInt64 × UInt64 × UInt64 :=
@@ -190,8 +188,7 @@ def toNat (t : State6) : Nat :=
 
 end State6
 
-/-- The multiply half of a CIOS round: accumulate `a * bi` into the accumulator.  The carry
-out of the head limb is kept in the carry limb, so no information is lost. -/
+/-- The multiply half of a CIOS round, `t + a * bi`, keeping the carry out of the head limb. -/
 @[inline] def mulAccum (a : Limbs4) (bi : UInt64) (t : State5) : State6 :=
   let (s0, k) := mac t.t0 a.l0 bi 0
   let (s1, k) := mac t.t1 a.l1 bi k
@@ -200,8 +197,8 @@ out of the head limb is kept in the carry limb, so no information is lost. -/
   let (s4, s5) := adc t.t4 k 0
   ⟨s0, s1, s2, s3, s4, s5⟩
 
-/-- The reduce half of a CIOS round: add the multiple `montM s.t0 negInv` of the modulus that
-cancels the low limb, then drop that limb.  `negInv` has to be `-q⁻¹ mod 2 ^ 64`. -/
+/-- The reduce half of a CIOS round: add `montM s.t0 negInv * q`, which cancels the low limb,
+and drop that limb; `negInv` must be `-q⁻¹ mod 2 ^ 64`. -/
 @[inline] def mulReduce (q : Limbs4) (negInv : UInt64) (s : State6) : State5 :=
   let m := montM s.t0 negInv
   let (_, u) := mac s.t0 m q.l0 0

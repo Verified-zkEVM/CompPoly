@@ -13,12 +13,9 @@ public import Mathlib.FieldTheory.Finite.Basic
 /-!
 # Fast four-limb Montgomery fields
 
-The carrier, conversions, arithmetic, and field instances built on the raw four-limb
-Montgomery operations of `Montgomery/Native64x4`, for any prime modulus below `2 ^ 256`.
-
-A carrier element stores the Montgomery residue `x * 2 ^ 256 mod q` as four 64-bit limbs;
-`toField` divides that residue by `2 ^ 256` again and lands in `ZMod modulus`.  All arithmetic
-is transported along `toField`, which is a ring isomorphism onto `ZMod modulus`.
+The carrier `{ x : Limbs4 // x.toNat < modulus }` stores the Montgomery residue
+`x * 2 ^ 256 mod modulus` for any prime modulus below `2 ^ 256`; `toField` divides by `2 ^ 256`
+and lands in `ZMod modulus`, and all arithmetic is transported along that ring isomorphism.
 
 ## Main results
 
@@ -90,8 +87,8 @@ end Mont64x4Field
 
 /-! ## The carrier -/
 
-/-- The fast carrier for a prime modulus: four 64-bit limbs holding a value below `modulus`,
-interpreted as a Montgomery residue.  At runtime this erases to `Limbs4`. -/
+/-- The fast carrier: four 64-bit limbs holding a Montgomery residue below `modulus`, erasing
+to `Limbs4` at runtime. -/
 @[implicit_reducible]
 def FastField (modulus : ℕ) [Mont64x4Field modulus] : Type :=
   { x : Limbs4 // x.toNat < modulus }

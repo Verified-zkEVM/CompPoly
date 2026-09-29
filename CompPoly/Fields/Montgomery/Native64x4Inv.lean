@@ -25,11 +25,6 @@ namespace Montgomery.Native64x4
 
 open Montgomery.Native64x8 (gcdInner gcdInner_natAbs_le_31)
 
-private theorem word_lt (x : UInt64) : x.toNat < 2 ^ 64 := by
-  have := x.toNat_lt_size
-  norm_num [UInt64.size] at this
-  exact this
-
 /-! ## Order from the borrow chain -/
 
 /-- The final borrow decides the numeric order. -/
@@ -105,18 +100,18 @@ theorem lincombTail_lt {q uS vS : Limbs4} {negInv F G : UInt64} (hq0 : 0 < q.toN
   -- The Montgomery multiple of the modulus cancels the low word.
   rw [montM_toNat, Nat.mul_comm q.toNat] at hn
   have hdvd := Montgomery.dvd_add (2 ^ 64) q.toNat negInv.toNat (by norm_num) hnq s0.toNat
-  rw [Nat.mod_eq_of_lt (word_lt s0)] at hdvd
+  rw [Nat.mod_eq_of_lt (UInt64.toNat_lt s0)] at hdvd
   obtain ⟨k, hk⟩ := hdvd
   have hN : s0.toNat * negInv.toNat % 2 ^ 64 * q.toNat < 2 ^ 64 * q.toNat :=
     Nat.mul_lt_mul_of_pos_right (Nat.mod_lt _ (by decide)) hq0
   have hQ := Limbs4.toNat_lt q
-  have w0 := word_lt s0
-  have w1 := word_lt n0
-  have w2 := word_lt t0
-  have w3 := word_lt a4
-  have w4 := word_lt b4
-  have w5 := word_lt n4
-  have w6 := word_lt s4
+  have w0 := UInt64.toNat_lt s0
+  have w1 := UInt64.toNat_lt n0
+  have w2 := UInt64.toNat_lt t0
+  have w3 := UInt64.toNat_lt a4
+  have w4 := UInt64.toNat_lt b4
+  have w5 := UInt64.toNat_lt n4
+  have w6 := UInt64.toNat_lt s4
   apply condSubWide_lt
   rw [State5.toNat_eq]
   dsimp only

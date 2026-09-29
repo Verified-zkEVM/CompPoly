@@ -12,10 +12,9 @@ public import CompPoly.Fields.Montgomery.Native64x4Defs
 # Native Montgomery arithmetic over four 64-bit limbs
 
 Raw word operations for prime moduli below `2 ^ 256`, represented as four 64-bit limbs
-(`Limbs4`).  The definitions live in the zero-import module `Montgomery/Native64x4Defs`;
-this module states and proves everything about them.  Each word helper returns a pair, and
-its specification exhibits that pair, so a chain of `let (s, c) := ...` bindings unfolds to
-a linear system over plain naturals that `omega` closes.
+(`Limbs4`); the definitions live in the zero-import module `Montgomery/Native64x4Defs`.  Each
+word helper's specification exhibits the pair it returns, so a chain of `let (s, c) := ...`
+bindings unfolds to a linear system over naturals that `omega` closes.
 
 ## Main results
 
@@ -32,120 +31,79 @@ namespace Native64x4
 
 /-! ## Word-level specifications -/
 
-private theorem toNat_zero : (0 : UInt64).toNat = 0 := rfl
-
-private theorem toNat_one : (1 : UInt64).toNat = 1 := rfl
-
-private theorem word_lt (x : UInt64) : x.toNat < 2 ^ 64 := by
-  have := x.toNat_lt_size
-  norm_num [UInt64.size] at this
-  exact this
-
 /-- One wrapped addition with its overflow flag recomposes the exact sum. -/
 private theorem addWord_value (a b : UInt64) :
     (a + b).toNat + 2 ^ 64 * (if a + b < a then (1 : UInt64) else 0).toNat =
       a.toNat + b.toNat := by
-  have ha := word_lt a
-  have hb := word_lt b
+  have ha := UInt64.toNat_lt a
+  have hb := UInt64.toNat_lt b
   have hmod := Nat.mod_add_div (a.toNat + b.toNat) (2 ^ 64)
   by_cases h : a + b < a
   · have h' := h
     rw [UInt64.lt_iff_toNat_lt, UInt64.toNat_add] at h'
-    rw [ite_eq_left h, UInt64.toNat_add, toNat_one]
+    rw [ite_eq_left h, UInt64.toNat_add, UInt64.toNat_one]
     omega
   · have h' := h
     rw [UInt64.lt_iff_toNat_lt, UInt64.toNat_add] at h'
-    rw [ite_eq_right h, UInt64.toNat_add, toNat_zero]
+    rw [ite_eq_right h, UInt64.toNat_add, UInt64.toNat_zero]
     omega
 
 /-- One wrapped subtraction with its borrow flag recomposes the exact difference. -/
 private theorem subWord_value (a b : UInt64) :
     (a - b).toNat + b.toNat = a.toNat + 2 ^ 64 * (if a < b then (1 : UInt64) else 0).toNat := by
-  have ha := word_lt a
-  have hb := word_lt b
+  have ha := UInt64.toNat_lt a
+  have hb := UInt64.toNat_lt b
   have hmod := Nat.mod_add_div (2 ^ 64 - b.toNat + a.toNat) (2 ^ 64)
   by_cases h : a < b
   · have h' := h
     rw [UInt64.lt_iff_toNat_lt] at h'
-    rw [ite_eq_left h, UInt64.toNat_sub, toNat_one]
+    rw [ite_eq_left h, UInt64.toNat_sub, UInt64.toNat_one]
     omega
   · have h' := h
     rw [UInt64.lt_iff_toNat_lt] at h'
-    rw [ite_eq_right h, UInt64.toNat_sub, toNat_zero]
+    rw [ite_eq_right h, UInt64.toNat_sub, UInt64.toNat_zero]
     omega
 
 private theorem flag_le_one (p : Prop) [Decidable p] :
     (if p then (1 : UInt64) else 0).toNat ≤ 1 := by
   split <;> simp
 
-/-- Add-with-carry, existential form: the pair is exhibited so a `let (s, c) := adc ..`
-binding unfolds, and the words satisfy the exact sum identity. -/
+/-- Add-with-carry, existential form: the exact sum identity with a one-bit carry. -/
 theorem adc_spec (x y c : UInt64) (hc : c.toNat ≤ 1) :
     ∃ s co : UInt64, adc x y c = (s, co) ∧
       s.toNat + 2 ^ 64 * co.toNat = x.toNat + y.toNat + c.toNat ∧ co.toNat ≤ 1 := by
-  refine ⟨_, _, rfl, ?_, ?_⟩
-  · have h1 := addWord_value x y
-    have h2 := addWord_value (x + y) c
-    have hf1 := flag_le_one (x + y < x)
-    have hf2 := flag_le_one (x + y + c < x + y)
-    have hsum : ((if x + y < x then (1 : UInt64) else 0) +
-        (if x + y + c < x + y then (1 : UInt64) else 0)).toNat =
-        (if x + y < x then (1 : UInt64) else 0).toNat +
-        (if x + y + c < x + y then (1 : UInt64) else 0).toNat := by
-      rw [UInt64.toNat_add, Nat.mod_eq_of_lt (by omega)]
-    have hx := word_lt x
-    have hy := word_lt y
-    have hs := word_lt (x + y + c)
-    rw [hsum]
-    omega
-  · have hx := word_lt x
-    have hy := word_lt y
-    have hs := word_lt (x + y + c)
-    have h1 := addWord_value x y
-    have h2 := addWord_value (x + y) c
-    have hf1 := flag_le_one (x + y < x)
-    have hf2 := flag_le_one (x + y + c < x + y)
-    have hsum : ((if x + y < x then (1 : UInt64) else 0) +
-        (if x + y + c < x + y then (1 : UInt64) else 0)).toNat =
-        (if x + y < x then (1 : UInt64) else 0).toNat +
-        (if x + y + c < x + y then (1 : UInt64) else 0).toNat := by
-      rw [UInt64.toNat_add, Nat.mod_eq_of_lt (by omega)]
-    rw [hsum]
-    omega
+  have h1 := addWord_value x y
+  have h2 := addWord_value (x + y) c
+  have hf1 := flag_le_one (x + y < x)
+  have hf2 := flag_le_one (x + y + c < x + y)
+  have hx := UInt64.toNat_lt x
+  have hy := UInt64.toNat_lt y
+  have hs := UInt64.toNat_lt (x + y + c)
+  have hsum : ((if x + y < x then (1 : UInt64) else 0) +
+      (if x + y + c < x + y then (1 : UInt64) else 0)).toNat =
+      (if x + y < x then (1 : UInt64) else 0).toNat +
+      (if x + y + c < x + y then (1 : UInt64) else 0).toNat := by
+    rw [UInt64.toNat_add, Nat.mod_eq_of_lt (by omega)]
+  refine ⟨_, _, rfl, ?_, ?_⟩ <;> rw [hsum] <;> omega
 
-/-- Subtract-with-borrow, existential form. -/
+/-- Subtract-with-borrow, existential form: the exact difference identity with a one-bit
+borrow. -/
 theorem sbb_spec (x y b : UInt64) (hb : b.toNat ≤ 1) :
     ∃ d bo : UInt64, sbb x y b = (d, bo) ∧
       d.toNat + y.toNat + b.toNat = x.toNat + 2 ^ 64 * bo.toNat ∧ bo.toNat ≤ 1 := by
-  refine ⟨_, _, rfl, ?_, ?_⟩
-  · have h1 := subWord_value x y
-    have h2 := subWord_value (x - y) b
-    have hf1 := flag_le_one (x < y)
-    have hf2 := flag_le_one (x - y < b)
-    have hsum : ((if x < y then (1 : UInt64) else 0) +
-        (if x - y < b then (1 : UInt64) else 0)).toNat =
-        (if x < y then (1 : UInt64) else 0).toNat +
-        (if x - y < b then (1 : UInt64) else 0).toNat := by
-      rw [UInt64.toNat_add, Nat.mod_eq_of_lt (by omega)]
-    have hx := word_lt x
-    have hy := word_lt y
-    have hd := word_lt (x - y - b)
-    rw [hsum]
-    omega
-  · have hx := word_lt x
-    have hy := word_lt y
-    have hd := word_lt (x - y - b)
-    have h1 := subWord_value x y
-    have h2 := subWord_value (x - y) b
-    have hf1 := flag_le_one (x < y)
-    have hf2 := flag_le_one (x - y < b)
-    have hsum : ((if x < y then (1 : UInt64) else 0) +
-        (if x - y < b then (1 : UInt64) else 0)).toNat =
-        (if x < y then (1 : UInt64) else 0).toNat +
-        (if x - y < b then (1 : UInt64) else 0).toNat := by
-      rw [UInt64.toNat_add, Nat.mod_eq_of_lt (by omega)]
-    rw [hsum]
-    omega
+  have h1 := subWord_value x y
+  have h2 := subWord_value (x - y) b
+  have hf1 := flag_le_one (x < y)
+  have hf2 := flag_le_one (x - y < b)
+  have hx := UInt64.toNat_lt x
+  have hy := UInt64.toNat_lt y
+  have hd := UInt64.toNat_lt (x - y - b)
+  have hsum : ((if x < y then (1 : UInt64) else 0) +
+      (if x - y < b then (1 : UInt64) else 0)).toNat =
+      (if x < y then (1 : UInt64) else 0).toNat +
+      (if x - y < b then (1 : UInt64) else 0).toNat := by
+    rw [UInt64.toNat_add, Nat.mod_eq_of_lt (by omega)]
+  refine ⟨_, _, rfl, ?_, ?_⟩ <;> rw [hsum] <;> omega
 
 private theorem low32_value (x : UInt64) : (x &&& 0xffffffff).toNat = x.toNat % 2 ^ 32 := by
   rw [UInt64.toNat_and, show ((0xffffffff : UInt64).toNat) = 2 ^ 32 - 1 from by decide,
@@ -170,7 +128,7 @@ theorem mulHi_spec (a b : UInt64) :
   have lo32_lt : ∀ x : UInt64, (x &&& mask).toNat < 2 ^ 32 := fun x => by
     rw [low32_value]; exact Nat.mod_lt _ (by decide)
   have hi32_lt : ∀ x : UInt64, (x >>> 32).toNat < 2 ^ 32 := fun x => by
-    rw [high32_value]; have := word_lt x; omega
+    rw [high32_value]; have := UInt64.toNat_lt x; omega
   have split : ∀ x : UInt64, x.toNat = (x &&& mask).toNat + 2 ^ 32 * (x >>> 32).toNat :=
     fun x => by rw [low32_value, high32_value]; exact (Nat.mod_add_div x.toNat (2 ^ 32)).symm
   -- Every fact below is phrased in the `let` names, so `omega` sees one atom per word.
@@ -234,11 +192,11 @@ theorem mac_spec (t a b c : UInt64) :
   have h2 := addWord_value (t + a * b) c
   have hf1 := flag_le_one (t + a * b < t)
   have hf2 := flag_le_one (t + a * b + c < t + a * b)
-  have ht := word_lt t
-  have ha := word_lt a
-  have hb := word_lt b
-  have hc := word_lt c
-  have hs := word_lt (t + a * b + c)
+  have ht := UInt64.toNat_lt t
+  have ha := UInt64.toNat_lt a
+  have hb := UInt64.toNat_lt b
+  have hc := UInt64.toNat_lt c
+  have hs := UInt64.toNat_lt (t + a * b + c)
   have hab : a.toNat * b.toNat ≤ (2 ^ 64 - 1) * (2 ^ 64 - 1) :=
     Nat.mul_le_mul (by omega) (by omega)
   generalize a.toNat * b.toNat = P at *
@@ -260,7 +218,7 @@ theorem montM_toNat (s negInv : UInt64) :
 
 namespace Limbs4
 
-theorem zero_toNat : zero.toNat = 0 := by simp only [toNat, zero, toNat_zero]
+theorem zero_toNat : zero.toNat = 0 := by simp only [toNat, zero, UInt64.toNat_zero]
 
 theorem one_toNat : one.toNat = 1 := by decide
 
@@ -268,37 +226,43 @@ theorem ofNat_toNat (n : ℕ) : (ofNat n).toNat = n % 2 ^ 256 := by
   simp only [toNat, ofNat, UInt64.toNat_ofNat', Nat.shiftRight_eq_div_pow]
   omega
 
-end Limbs4
-
 /-- A four-limb value is below `2 ^ 256`. -/
-theorem Limbs4.toNat_lt (x : Limbs4) : x.toNat < 2 ^ 256 := by
-  have h0 := word_lt x.l0
-  have h1 := word_lt x.l1
-  have h2 := word_lt x.l2
-  have h3 := word_lt x.l3
-  simp only [Limbs4.toNat]
+theorem toNat_lt (x : Limbs4) : x.toNat < 2 ^ 256 := by
+  have h0 := UInt64.toNat_lt x.l0
+  have h1 := UInt64.toNat_lt x.l1
+  have h2 := UInt64.toNat_lt x.l2
+  have h3 := UInt64.toNat_lt x.l3
+  simp only [toNat]
+  omega
+
+/-- The low limb of a value is its residue modulo `2 ^ 64`. -/
+theorem toNat_mod (x : Limbs4) : x.toNat % 2 ^ 64 = x.l0.toNat := by
+  have h0 := UInt64.toNat_lt x.l0
+  simp only [toNat]
   omega
 
 /-- Limb vectors are determined by their value. -/
-theorem Limbs4.ext_of_toNat {x y : Limbs4} (h : x.toNat = y.toNat) : x = y := by
-  have hx0 := word_lt x.l0
-  have hx1 := word_lt x.l1
-  have hx2 := word_lt x.l2
-  have hx3 := word_lt x.l3
-  have hy0 := word_lt y.l0
-  have hy1 := word_lt y.l1
-  have hy2 := word_lt y.l2
-  have hy3 := word_lt y.l3
-  simp only [Limbs4.toNat] at h
+theorem ext_of_toNat {x y : Limbs4} (h : x.toNat = y.toNat) : x = y := by
+  have hx0 := UInt64.toNat_lt x.l0
+  have hx1 := UInt64.toNat_lt x.l1
+  have hx2 := UInt64.toNat_lt x.l2
+  have hx3 := UInt64.toNat_lt x.l3
+  have hy0 := UInt64.toNat_lt y.l0
+  have hy1 := UInt64.toNat_lt y.l1
+  have hy2 := UInt64.toNat_lt y.l2
+  have hy3 := UInt64.toNat_lt y.l3
+  simp only [toNat] at h
   have e0 : x.l0.toNat = y.l0.toNat := by omega
   have e1 : x.l1.toNat = y.l1.toNat := by omega
   have e2 : x.l2.toNat = y.l2.toNat := by omega
   have e3 : x.l3.toNat = y.l3.toNat := by omega
   obtain ⟨x0, x1, x2, x3⟩ := x
   obtain ⟨y0, y1, y2, y3⟩ := y
-  simp only [Limbs4.mk.injEq]
+  simp only [mk.injEq]
   exact ⟨UInt64.toNat_inj.mp e0, UInt64.toNat_inj.mp e1, UInt64.toNat_inj.mp e2,
     UInt64.toNat_inj.mp e3⟩
+
+end Limbs4
 
 /-! ### Chain lemmas -/
 
@@ -369,7 +333,7 @@ theorem addLimbs_spec (a b : Limbs4) :
   obtain ⟨s3, c3, e3, h3, g3⟩ := adc_spec a.l3 b.l3 c2 g2
   refine ⟨s0, s1, s2, s3, c3, ?_, g3, ?_⟩
   · simp only [addLimbs, e0, e1, e2, e3]
-  · rw [toNat_zero] at h0
+  · rw [UInt64.toNat_zero] at h0
     simp only [Limbs4.toNat]
     have h := carry_chain_sum h0 h1 h2 h3
     simp only [Nat.add_zero] at h
@@ -385,7 +349,7 @@ theorem subLimbs_spec (a b : Limbs4) :
   obtain ⟨d3, b3, e3, h3, g3⟩ := sbb_spec a.l3 b.l3 b2 g2
   refine ⟨d0, d1, d2, d3, b3, ?_, g3, ?_⟩
   · simp only [subLimbs, e0, e1, e2, e3]
-  · rw [toNat_zero] at h0
+  · rw [UInt64.toNat_zero] at h0
     simp only [Limbs4.toNat]
     have h := borrow_chain_sum h0 h1 h2 h3
     simp only [Nat.add_zero] at h
@@ -398,7 +362,7 @@ theorem condSub_toNat (q t : Limbs4) :
     (condSub q t).toNat = if t.toNat < q.toNat then t.toNat else t.toNat - q.toNat := by
   obtain ⟨d0, d1, d2, d3, bo, e, hbo, hchain⟩ := subLimbs_spec t q
   have hD := Limbs4.toNat_lt ⟨d0, d1, d2, d3⟩
-  simp only [condSub, e, beq_iff_eq, ← UInt64.toNat_inj, toNat_zero]
+  simp only [condSub, e, beq_iff_eq, ← UInt64.toNat_inj, UInt64.toNat_zero]
   split
   case isTrue h =>
     rw [h, Nat.mul_zero, Nat.add_zero] at hchain
@@ -422,7 +386,7 @@ theorem condSubWide_toNat (q : Limbs4) (t : State5) (h : t.toNat < 2 * q.toNat) 
   have hQ := Limbs4.toNat_lt q
   have hdec : t.toNat = t.toLimbs4.toNat + 2 ^ 256 * t.t4.toNat := rfl
   have hr : (⟨t.t0, t.t1, t.t2, t.t3⟩ : Limbs4) = t.toLimbs4 := rfl
-  simp only [condSubWide, e, bne_iff_ne, ne_eq, beq_iff_eq, ← UInt64.toNat_inj, toNat_zero]
+  simp only [condSubWide, e, bne_iff_ne, ne_eq, beq_iff_eq, ← UInt64.toNat_inj, UInt64.toNat_zero]
   split
   case isTrue hc => exact wide_of_head hdec hsub hbo hD hQ h hc
   case isFalse hc =>
@@ -453,7 +417,7 @@ theorem add_toNat (q a b : Limbs4) (haq : a.toNat < q.toNat) (hbq : b.toNat < q.
   have hS := Limbs4.toNat_lt ⟨s0, s1, s2, s3⟩
   have hD := Limbs4.toNat_lt ⟨d0, d1, d2, d3⟩
   have hQ := Limbs4.toNat_lt q
-  simp only [add, ea, es, bne_iff_ne, ne_eq, beq_iff_eq, ← UInt64.toNat_inj, toNat_zero]
+  simp only [add, ea, es, bne_iff_ne, ne_eq, beq_iff_eq, ← UInt64.toNat_inj, UInt64.toNat_zero]
   split
   case isTrue h =>
     rw [show c.toNat = 1 by omega] at ha
@@ -479,7 +443,7 @@ theorem sub_toNat (q a b : Limbs4) (haq : a.toNat < q.toNat) (hbq : b.toNat < q.
     (sub q a b).toNat = (a.toNat + (q.toNat - b.toNat)) % q.toNat := by
   obtain ⟨d0, d1, d2, d3, bo, e, hbo, hchain⟩ := subLimbs_spec a b
   have hD := Limbs4.toNat_lt ⟨d0, d1, d2, d3⟩
-  simp only [sub, e, beq_iff_eq, ← UInt64.toNat_inj, toNat_zero]
+  simp only [sub, e, beq_iff_eq, ← UInt64.toNat_inj, UInt64.toNat_zero]
   split
   case isTrue h =>
     rw [h] at hchain
