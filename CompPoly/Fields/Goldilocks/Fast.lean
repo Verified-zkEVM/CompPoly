@@ -148,41 +148,27 @@ def mul (x y : Field) : Field :=
 def square (x : Field) : Field :=
   mul x x
 
-/-- Repeated squaring: `squareN x n` computes `x^(2^n)`. -/
+/-- Repeated squaring: `squareN x n` computes `x^(2^n)`.
+
+Accumulates in `x` so the recursion is a tail call and compiles to a loop. -/
 @[inline]
 def squareN (x : Field) : Nat → Field
   | 0 => x
-  | n + 1 => square (squareN x n)
+  | n + 1 => squareN (square x) n
 
-/-- Exponentiation over the fast representation using binary exponentiation. -/
+/-- Exponentiation through the lazy ladder `powLazy`, canonicalized once. -/
 @[inline]
 def pow (x : Field) (n : Nat) : Field :=
-  @npowBinRec Field ⟨one⟩ ⟨mul⟩ n x
+  ⟨reduceUInt64Raw (powLazy 1 x.val n), reduceUInt64Raw_lt _⟩
 
 /-- Fermat exponent used for inversion in the Goldilocks prime field. -/
 @[inline]
 private def invExponent : Nat := Goldilocks.fieldSize - 2
 
-/-- Fast modular inversion using an addition chain for `p - 2`.
-
-For Goldilocks, `p - 2 = 0xFFFFFFFEFFFFFFFF`. The chain builds
-`x^(2^31 - 1)`, derives `x^(2^32 - 2)` and `x^(2^32 - 1)`, then combines them as
-
-`(2^32 - 2) * 2^32 + (2^32 - 1) = p - 2`.
--/
+/-- Fast modular inversion through the lazy Fermat chain `invLazy`, canonicalized once. -/
+@[inline]
 def inv (x : Field) : Field :=
-  let t2 := mul (square x) x
-  let t4 := mul (squareN t2 2) t2
-  let t8 := mul (squareN t4 4) t4
-  let t16 := mul (squareN t8 8) t8
-  let t31 :=
-    mul (squareN t16 15)
-      (mul (squareN t8 7)
-        (mul (squareN t4 3)
-          (mul (square t2) x)))
-  let t32m2 := square t31
-  let t32m1 := mul t32m2 x
-  mul (squareN t32m2 32) t32m1
+  ⟨reduceUInt64Raw (invLazy x.val), reduceUInt64Raw_lt _⟩
 
 /-- Division through inversion and fast multiplication. -/
 @[inline]
@@ -483,46 +469,26 @@ theorem toField_squareN (x : Field) (n : Nat) :
       simp
   | succ n ih =>
       unfold squareN
-      rw [toField_square, ih]
-      rw [← pow_add]
+      rw [ih, toField_square, ← pow_two, ← pow_mul]
       congr 1
       rw [Nat.pow_succ]
       omega
 
-/-- Fast multiplication is associative, proved by transporting to the canonical field. -/
-private theorem mul_assoc_field (x y z : Field) : (x * y) * z = x * (y * z) := by
-  apply toField_injective
-  rw [toField_mul, toField_mul, toField_mul, toField_mul]
-  ring
-
-/-- Binary exponentiation satisfies the expected successor equation. -/
-private theorem pow_succ (x : Field) (n : Nat) : pow x (n + 1) = pow x n * x := by
-  unfold pow
-  let _ : Semigroup Field := {
-    mul := (· * ·)
-    mul_assoc := mul_assoc_field
-  }
-  exact npowBinRec_succ n x
-
 /-- Fast natural-power computation agrees with powers in the canonical field. -/
 @[simp]
 theorem toField_pow (x : Field) (n : Nat) : toField (pow x n) = toField x ^ n := by
-  induction n with
-  | zero =>
-      unfold pow
-      rw [npowBinRec_zero]
-      rw [toField_one]
-      simp
-  | succ n ih =>
-      rw [pow_succ, toField_mul, ih, _root_.pow_succ]
+  change ((reduceUInt64Raw (powLazy 1 x.val n)).toNat : Goldilocks.Field) =
+    (x.val.toNat : Goldilocks.Field) ^ n
+  rw [reduceUInt64Raw_cast, powLazy_cast]
+  simp
 
 /-- The optimized inversion chain computes the Fermat inverse exponent. -/
 private theorem toField_inv_chain (x : Field) :
     toField (inv x) = toField x ^ invExponent := by
-  unfold inv
-  simp only [toField_mul_def, toField_square, toField_squareN]
-  ring_nf
-  simp [invExponent, Goldilocks.fieldSize]
+  change ((reduceUInt64Raw (invLazy x.val)).toNat : Goldilocks.Field) =
+    (x.val.toNat : Goldilocks.Field) ^ invExponent
+  rw [reduceUInt64Raw_cast, invLazy_cast]
+  rfl
 
 /-- Fast inversion agrees with canonical inversion before notation is unfolded. -/
 private theorem toField_inv_raw (x : Field) : toField (inv x) = (toField x)⁻¹ := by

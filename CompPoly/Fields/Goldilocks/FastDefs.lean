@@ -34,10 +34,16 @@ def negModulus : UInt64 := 0xffffffff
 /-! ## Raw word kernels
 
 Every kernel takes canonical `UInt64` inputs and returns a canonical representative
-below the modulus. Correctness lives in `CompPoly.Fields.Goldilocks.Fast`. -/
+below the modulus, except the `Lazy` kernels: those accept and return arbitrary words
+congruent to the intended value, so a chain of them pays one canonicalization at the
+end instead of one per step. Correctness lives in `CompPoly.Fields.Goldilocks.Fast`. -/
 
 
-/-- Full 64-by-64 product as `(lo, hi)` words, computed from 32-bit limbs. -/
+/-- Full 64-by-64 product as `(lo, hi)` words, computed from 32-bit limbs.
+
+The middle terms are folded through `t` and `u`, which never overflow, so no carry
+bookkeeping is needed. This shape is also what lets clang fuse the four limb
+products into one widening multiply even when `x` and `y` are the same word. -/
 @[inline]
 def wideMul (x y : UInt64) : UInt64 × UInt64 :=
   let xLo := x &&& negModulus
@@ -48,8 +54,9 @@ def wideMul (x y : UInt64) : UInt64 × UInt64 :=
   let p01 := xLo * yHi
   let p10 := xHi * yLo
   let p11 := xHi * yHi
-  let carry := (p00 >>> 32) + (p01 &&& negModulus) + (p10 &&& negModulus)
-  let hi := p11 + (p01 >>> 32) + (p10 >>> 32) + (carry >>> 32)
+  let t := (p00 >>> 32) + p01
+  let u := (t &&& negModulus) + p10
+  let hi := p11 + (t >>> 32) + (u >>> 32)
   (x * y, hi)
 
 /-- Raw one-word reduction for a `UInt64` value.
@@ -61,9 +68,10 @@ is enough to canonicalize a native word.
 def reduceUInt64Raw (x : UInt64) : UInt64 :=
   if x < modulus then x else x - modulus
 
-/-- Raw reduction of a 128-bit integer represented by low and high words modulo Goldilocks. -/
+/-- Fold a 128-bit value `lo + hi * 2^64` into one congruent word using
+`2^64 ≡ 2^32 - 1`. The result is not canonicalized. -/
 @[inline]
-def reduceUInt128Raw (lo hi : UInt64) : UInt64 :=
+def foldUInt128Lazy (lo hi : UInt64) : UInt64 :=
   let hi_hi := hi >>> 32
   let hi_lo := hi &&& negModulus
 
@@ -75,15 +83,23 @@ def reduceUInt128Raw (lo hi : UInt64) : UInt64 :=
 
   let t2 := t0 + t1
   let overflow := t2 < t0
-  let t2 := if overflow then t2 + negModulus else t2
+  if overflow then t2 + negModulus else t2
 
-  reduceUInt64Raw t2
+/-- Raw reduction of a 128-bit integer represented by low and high words modulo Goldilocks. -/
+@[inline]
+def reduceUInt128Raw (lo hi : UInt64) : UInt64 :=
+  reduceUInt64Raw (foldUInt128Lazy lo hi)
+
+/-- Product of two arbitrary words as one congruent, not necessarily canonical, word. -/
+@[inline]
+def mulLazy (x y : UInt64) : UInt64 :=
+  let product := wideMul x y
+  foldUInt128Lazy product.1 product.2
 
 /-- Raw reduction of a 64-by-64 product modulo Goldilocks. -/
 @[inline]
 def reduceMulRaw (x y : UInt64) : UInt64 :=
-  let product := wideMul x y
-  reduceUInt128Raw product.1 product.2
+  reduceUInt64Raw (mulLazy x y)
 
 /-- Raw one-step reduction for a 65-bit addition represented by low word and carry. -/
 @[inline]
@@ -102,5 +118,40 @@ def negRaw (x : UInt64) : UInt64 :=
 @[inline]
 def subRaw (x y : UInt64) : UInt64 :=
   if y ≤ x then x - y else x - y - negModulus
+
+/-! ## Lazy exponentiation -/
+
+
+/-- Square-and-multiply on unreduced words: `powLazy acc x n` computes `acc * x^n`. -/
+def powLazy (acc x : UInt64) (n : Nat) : UInt64 :=
+  if h : n = 0 then acc
+  else
+    let acc := if n % 2 = 1 then mulLazy acc x else acc
+    powLazy acc (mulLazy x x) (n / 2)
+termination_by n
+decreasing_by omega
+
+/-- `x^(2^n)` on unreduced words. -/
+def squareNLazy (x : UInt64) : Nat → UInt64
+  | 0 => x
+  | n + 1 => squareNLazy (mulLazy x x) n
+
+/-- Fermat chain for `x^(p - 2)` on unreduced words; the caller canonicalizes once.
+
+`p - 2 = 0xFFFFFFFEFFFFFFFF`: build `x^(2^31 - 1)`, derive `x^(2^32 - 2)` and
+`x^(2^32 - 1)`, then combine them as `(2^32 - 2) * 2^32 + (2^32 - 1)`. -/
+def invLazy (x : UInt64) : UInt64 :=
+  let t2 := mulLazy (mulLazy x x) x
+  let t4 := mulLazy (squareNLazy t2 2) t2
+  let t8 := mulLazy (squareNLazy t4 4) t4
+  let t16 := mulLazy (squareNLazy t8 8) t8
+  let t31 :=
+    mulLazy (squareNLazy t16 15)
+      (mulLazy (squareNLazy t8 7)
+        (mulLazy (squareNLazy t4 3)
+          (mulLazy (mulLazy t2 t2) x)))
+  let t32m2 := mulLazy t31 t31
+  let t32m1 := mulLazy t32m2 x
+  mulLazy (squareNLazy t32m2 32) t32m1
 
 end Goldilocks.Fast
