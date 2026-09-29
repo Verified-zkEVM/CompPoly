@@ -365,10 +365,18 @@ Recorded so they are not rediscovered. The audit and plan live in
   build. Marking the instance `noncomputable` is not the fix: `Extension.Ext`
   takes `[Fintype F]` and its operations then stop compiling, so the repair is
   to `CompPoly/Fields/Extension/` rather than to the instance.
-- No external yardstick yet. Peers and the "on par" bar live in
+- External comparisons beyond the small-field suite below remain to be added. Peers and the "on par" bar live in
   [`docs/bench-audit-2026.md` §13](../bench-audit-2026.md#13-external-comparison-targets):
   measure Plonky3 (scalar, SIMD off) for the small fields and multiplicative
   NTT, Binius for towers and the additive NTT, arkworks / gnark-crypto for
   pairing scalars. "On par" means within ~2–5× of those *scalar* kernels on
   the same CPU, not packed AVX-512 or a whole-prover bench. Do not cite
   published cycle tables.
+
+## Small fields against Rust
+
+`python3 scripts/bench-small-fields.py --cpu 0` builds and compares the selected KoalaBear, Mersenne31, and Goldilocks groups against pinned Plonky3 scalar implementations. Add/mul have latency and throughput rows; inv/exp have latency rows. Choose an available logical CPU; all work is pinned there and the two executables run sequentially. The output directory under `bench/out/` contains two compact tables in `report.md`, raw samples, exact inputs exported from Lean, and machine/toolchain metadata.
+
+The driver first verifies 18 cross-language digests and operation counts, then alternates executable order across five paired runs. Tables report the median of each run's sample median and the median absolute deviation between runs. Inv/exp include the same per-step add as Lean; throughput includes the same final nine-operation merge. Result consumption happens once per chain, outside its arithmetic loop. These measurements compare fast Lean with scalar Plonky3 on the same machine, and are not historical regression comparisons. Other workloads on the host can affect them.
+
+`--validate-only` skips timing, and runs in Lean Action CI on every PR. `--skip-build` reuses built executables. See [the benchmark README](../../bench/README.md#small-field-rust-comparison) for pinned versions and workload details.

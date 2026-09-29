@@ -316,3 +316,13 @@ Both tracks default to the group list in `bench/ci-groups.txt` — one key per
 line, `#` comments ignored. Neither runs every registered group, so **a new group
 must be added there to be covered**. An unknown key fails the run, so a renamed
 group is caught rather than silently dropped.
+
+## Small-field Rust comparison
+
+Run `python3 scripts/bench-small-fields.py --cpu 0` from the repository root on Linux. Choose an available logical CPU: the driver pins itself and both runners there, builds with one job, and runs Lean and Rust sequentially. It checks all 18 result digests before timing five paired runs in alternating order. `--validate-only` runs only the agreement checks; `--skip-build` reuses existing binaries.
+
+The comparison covers KoalaBear, Mersenne31, and Goldilocks: latency and throughput for add/mul, latency only for inv/exp. Plonky3 0.4.2 and Rust 1.93.1 are pinned in `rust/`; Cargo.lock pins transitive dependencies. The report shows fast Lean against Plonky3. Lean's reference rows still participate in its validation and runs but are omitted from the comparison tables.
+
+Each run creates an ignored `bench/out/small-fields-*` directory containing exact input fixtures, raw samples, a machine/toolchain manifest, and `report.md` suitable for a PR comment. Timings are advisory, especially on a shared host. CI checks workload agreement on every PR, including implementation changes; it does not gate on relative speed.
+
+Inputs and chain parameters come from `CompPolyFieldFixtures`, using the existing Lean generators. Rust matches the existing Lean batch shapes: 1,280 add/mul operations, or 64 inv/exp steps with an added constant between steps. Throughput updates ten lanes from their previous values and combines them with nine extra operations at the end. The reported divisor is 1,280, matching Lean. Exp uses the fixed exponent `0x5A5A5A5A`; inverse maps zero to zero. No per-operation accumulator or result array is added: only the final batch result is consumed. Rust uses scalar field APIs, with the compiler free to optimize them.
