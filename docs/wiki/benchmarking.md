@@ -385,3 +385,9 @@ Five paired runs alternate executable order. The output directory under `bench/o
 BN254 add/mul throughput uses two independent chains with the same fixed second operand as latency, 160 steps per lane (320 operations total), four rounds unrolled per loop, and one final combining operation excluded from the divisor. This avoids the ten-lane ring’s excessive live state for multi-limb values. Small-prime throughput retains its ten-lane ring.
 
 The BN254 throughput configuration was selected manually on Rust, then fixed identically in Lean. It is not selected independently per language or tuned during benchmark runs. Rust screening covered 1, 2, 3, 4, 6, and 8 lanes with 1, 4, and 8 rounds unrolled; two lanes avoided the spill overhead of wider configurations. Shortlisted unroll factors were checked again in the production Rust runner.
+
+### BN254 kernel optimization
+
+The checked binary-GCD inverse uses native `Int64` transition coefficients inside each divstep chunk, converting to `Int` at the chunk boundary. The integer kernel remains available for the coefficient-bound proofs and regression comparisons. The native candidate still passes the same boundedness, canonicality, and multiplication checks before use; the proved Fermat fallback handles a rejected candidate.
+
+On the Ryzen 7 3700X, pinned to CPU 11, five interleaved `--small` A/B rounds against `76f4a91` measured inversion at 0.915× baseline time (8.14 → 7.44 μs per chain step), with matching digests and no `SUSPECT`. All 4,096 inversion inputs in the comparison workload accepted the native candidate. These host-specific observations do not update the separate M3 reference-machine best-time tables.

@@ -80,4 +80,9 @@ set_option maxRecDepth 4000
     (37 : ScalarField).val (scalarFieldSize - 2)
   = ((37 : ScalarField)⁻¹).val
 
+-- Signed-word divsteps agree with the integer kernel at carry/sign boundaries.
+#guard ([0, 1, 0x8000000000000000, 0xffffffffffffffff] : List UInt64).all fun a ↦
+  ([1, 0x7fffffffffffffff, 0xffffffffffffffff] : List UInt64).all fun b ↦
+    gcdInnerFast 31 a b 1 0 0 1 == gcdInner 31 a b 1 0 0 1
+
 end BN254.Fast

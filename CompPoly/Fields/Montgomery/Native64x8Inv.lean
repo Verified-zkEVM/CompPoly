@@ -402,7 +402,7 @@ theorem invGcdRaw_eq_inv [GcdData modulus] (x : FastField modulus) :
       = (x⁻¹).val := by
   have hval : invGcdRaw modulus P.modulusLimbs P.montgomeryNegInv P.rModModulus x.val
       = (invWithCandidate x
-          (gcdInvCandidate modulus P.modulusLimbs P.montgomeryNegInv x.val)).val := by
+          (gcdInvCandidate modulus P.modulusLimbs P.montgomeryNegInv x.val gcdInnerFast)).val := by
     simp only [invGcdRaw, invWithCandidate]
     split
     next h => rfl
