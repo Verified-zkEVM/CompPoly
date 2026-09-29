@@ -53,7 +53,7 @@ See [`docs/wiki/build-cache.md`](docs/wiki/build-cache.md) for details.
 
 Then you can import the desired modules, for example:
 ```lean
-import CompPoly.Multivariate.CMvPolynomial
+import CompPoly.Multivariate.Basic
 import CompPoly.Multivariate.MvPolyEquiv
 import CompPoly.Multilinear.Basic
 import CompPoly.Univariate.Basic
