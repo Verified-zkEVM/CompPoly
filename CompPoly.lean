@@ -196,6 +196,13 @@ public import CompPoly.Fields.Montgomery.Basic
 public import CompPoly.Fields.Montgomery.Native32
 public import CompPoly.Fields.Montgomery.Native32Bytes
 public import CompPoly.Fields.Montgomery.Native32Field
+public import CompPoly.Fields.Montgomery.Native64x4
+public import CompPoly.Fields.Montgomery.Native64x4Bytes
+public import CompPoly.Fields.Montgomery.Native64x4Defs
+public import CompPoly.Fields.Montgomery.Native64x4Field
+public import CompPoly.Fields.Montgomery.Native64x4Inv
+public import CompPoly.Fields.Montgomery.Native64x4InvDefs
+public import CompPoly.Fields.Montgomery.Native64x4Mul
 public import CompPoly.Fields.Montgomery.Native64x8
 public import CompPoly.Fields.Montgomery.Native64x8Bytes
 public import CompPoly.Fields.Montgomery.Native64x8Defs

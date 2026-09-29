@@ -11,15 +11,15 @@ This directory contains formally verified field infrastructure used in zero-know
 | **BabyBear.lean** | Facade for BabyBear modules, re-exporting the canonical field and fast native-word implementation. |
 | **BabyBear/Basic.lean** | \(2^{31} - 2^{27} + 1\) — Risc Zero. |
 | **BabyBear/Fast.lean** | BabyBear-namespaced API over the shared fast-field implementation (`Montgomery/Native32Field.lean`): thin wrappers forwarding the native `UInt32` Montgomery-residue operations and their `BabyBear.Field` equivalence (`@[simp]`) lemmas. |
-| **BLS12_377.lean** | Facade for the BLS12-377 modules, re-exporting the canonical field and the fast eight-limb implementation. |
+| **BLS12_377.lean** | Facade for the BLS12-377 modules, re-exporting the canonical field and the fast four-limb implementation. |
 | **BLS12_377/Basic.lean** | Scalar field of BLS12-377 (253-bit, 2-adicity 47) — Zexe. |
-| **BLS12_377/Fast.lean** | Eight-limb Montgomery instantiation of the BLS12-377 scalar field (`Mont64x8Field` and `GcdData` constants, `ScalarField`, `ringEquiv`). |
-| **BLS12_381.lean** | Facade for the BLS12-381 modules, re-exporting the canonical field and the fast eight-limb implementation. |
+| **BLS12_377/Fast.lean** | Four-limb Montgomery instantiation of the BLS12-377 scalar field (`Mont64x4Field` and `GcdData` constants, `ScalarField`, `ringEquiv`). |
+| **BLS12_381.lean** | Facade for the BLS12-381 modules, re-exporting the canonical field and the fast four-limb implementation. |
 | **BLS12_381/Basic.lean** | Scalar field of BLS12-381 (255-bit, 2-adicity 32). |
-| **BLS12_381/Fast.lean** | Eight-limb Montgomery instantiation of the BLS12-381 scalar field (`Mont64x8Field` and `GcdData` constants, `ScalarField`, `ringEquiv`). |
-| **BN254.lean** | Facade for the BN254 modules, re-exporting the canonical field and the fast eight-limb implementation. |
+| **BLS12_381/Fast.lean** | Four-limb Montgomery instantiation of the BLS12-381 scalar field (`Mont64x4Field` and `GcdData` constants, `ScalarField`, `ringEquiv`). |
+| **BN254.lean** | Facade for the BN254 modules, re-exporting the canonical field and the fast four-limb implementation. |
 | **BN254/Basic.lean** | Scalar field of BN254 (254-bit, 2-adicity 28). |
-| **BN254/Fast.lean** | Eight-limb Montgomery instantiation of the BN254 scalar field (`Mont64x8Field` and `GcdData` constants, `ScalarField`, `ringEquiv`). |
+| **BN254/Fast.lean** | Four-limb Montgomery instantiation of the BN254 scalar field (`Mont64x4Field` and `GcdData` constants, `ScalarField`, `ringEquiv`). |
 | **Extension.lean** | Facade for the field-extension stack (arbitrary monic modulus; binomial as a special case). |
 | **Extension/Binomial.lean** | Irreducibility of `X^d - W` over a finite field: Rabin's test collapsed to two base-field exponentiations (`irreducible_X_pow_four_sub_C_iff`). |
 | **Extension/Arithmetic.lean** | `ExtensionParams` (degree, lower coefficients of the monic modulus, base cardinality), `BinomialParams` and its `toExtensionParams`, and the presentation-indexed carrier `Ext P` with length-`d` coefficient vectors and ring operations — including the `red` reduction table and the `@[csimp]`-registered `mulTbl`. |
@@ -38,7 +38,7 @@ This directory contains formally verified field infrastructure used in zero-know
 | **KoalaBear/Ext6/GaloisField.lean** | Opt-in bridge identifying `Ext6` with Mathlib's abstract `GaloisField KoalaBear.fieldSize 6` (ArkLib's `KoalaSextic` parameter point). Separate module so the GaloisField import is not forced on `Ext6` users. |
 | **Goldilocks.lean** | Facade for the \(2^{64} - 2^{32} + 1\) Plonky2/3 field, re-exporting the canonical `ZMod` model and fast native-word implementation. |
 | **Goldilocks/Basic.lean** | Canonical \(2^{64} - 2^{32} + 1\) field model and primality proof. |
-| **Goldilocks/Fast.lean** | Verified `UInt64` implementation of Goldilocks arithmetic. A single-word 64-bit prime fits neither Montgomery carrier — `Mont32Field` requires modulus < 2^31 and `Mont64x8Field` is an eight-limb layout — so this is a bespoke implementation resting on \(2^{64} \equiv 2^{32} - 1\). |
+| **Goldilocks/Fast.lean** | Verified `UInt64` implementation of Goldilocks arithmetic. A single-word 64-bit prime fits neither Montgomery carrier — `Mont32Field` requires modulus < 2^31 and `Mont64x4Field` is a four-limb layout — so this is a bespoke implementation resting on \(2^{64} \equiv 2^{32} - 1\). |
 | **Goldilocks/FastDefs.lean** | Zero-import runtime word kernels behind `Goldilocks/Fast.lean`, kept importless so `precompileModules` lanes can compile them. |
 | **Hachi.lean** | \(2^{32} - 99\) — 32-bit prime field. **Name provisional.** Included as a 32-bit example rather than a production target: it exercises a base field with no Montgomery fast path (`Mont32Field` requires modulus < 2^31) and two-adicity 2, so no radix-2 NTT domain exists for it. |
 | **Hachi/Ext4.lean** | \(\mathrm{Hachi}[X]/(X^4 - 2)\). |
@@ -51,19 +51,27 @@ This directory contains formally verified field infrastructure used in zero-know
 | **Montgomery/Basic.lean** | Radix-generic Montgomery reduction, field-agnostic number theory shared by the fast prime fields. |
 | **Montgomery/Native32.lean** | Raw `UInt32`/`UInt64` Montgomery reduction over explicit word constants, including bounds and correctness. |
 | **Montgomery/Native32Field.lean** | Per-field parameters, the shared `FastField` carrier, arithmetic, instances, and canonical-field bridge. |
-| **Montgomery/Native64x8Defs.lean** | Zero-import runtime definitions of the eight-limb Montgomery arithmetic, for `precompileModules` consumers. |
+| **Montgomery/Native64x4Defs.lean** | Zero-import runtime definitions of the four-limb (64-bit-radix) Montgomery arithmetic, for `precompileModules` consumers. |
+| **Montgomery/Native64x4.lean** | Word-level specifications and add/sub/negate correctness for the four-limb arithmetic. |
+| **Montgomery/Native64x4Mul.lean** | Correctness of the four-limb CIOS Montgomery multiplication. |
+| **Montgomery/Native64x4Field.lean** | The `Mont64x4Field` class, `FastField` carrier, arithmetic, instances, and canonical-field bridge for any prime modulus below `2^256`. |
+| **Montgomery/Native64x4Bytes.lean** | Byte codec of the four-limb carrier, agreeing with the `ZMod` codec. |
+| **Montgomery/Native64x4InvDefs.lean** | Mathlib-free binary-GCD inversion runtime ([eprint 2020/972](https://eprint.iacr.org/2020/972)) over four limbs: the `GcdData` schedule, the candidate, and the checked `invGcdRaw`. |
+| **Montgomery/Native64x4Inv.lean** | Correctness of the checked four-limb inversion (`invGcdRaw`, wrapper `FastField.invGcd`) and the candidate's mac-width safety. |
+| **Montgomery/Native64x8Defs.lean** | Zero-import runtime definitions of the eight-limb (32-bit-radix) Montgomery arithmetic; the carrier of `ScalarFft.lean`. |
 | **Montgomery/Native64x8.lean** | Word-level specifications and add/sub/negate correctness for the eight-limb arithmetic. |
 | **Montgomery/Native64x8Mul.lean** | Correctness of the eight-limb CIOS Montgomery multiplication. |
-| **Montgomery/Native64x8Field.lean** | The `Mont64x8Field` class, `FastField` carrier, arithmetic, instances, and canonical-field bridge for any prime modulus below `2^256`. |
-| **Montgomery/Native64x8InvDefs.lean** | Mathlib-free binary-GCD inversion runtime ([eprint 2020/972](https://eprint.iacr.org/2020/972)): the `GcdData` schedule, the candidate, and the checked `invGcdRaw`. |
-| **Montgomery/Native64x8Inv.lean** | Correctness of the checked inversion (`invGcdRaw`, wrapper `FastField.invGcd`), the divstep coefficient bounds, and the candidate's mac-width safety. |
+| **Montgomery/Native64x8Field.lean** | The `Mont64x8Field` class, `FastField` carrier, arithmetic, instances, and canonical-field bridge over eight limbs; no concrete field instantiates it since the four-limb carrier replaced it. |
+| **Montgomery/Native64x8Bytes.lean** | Byte codec of the eight-limb carrier. |
+| **Montgomery/Native64x8InvDefs.lean** | Mathlib-free binary-GCD inversion runtime over eight limbs, whose word-sized divstep loop `gcdInner` is shared with the four-limb inversion. |
+| **Montgomery/Native64x8Inv.lean** | Correctness of the checked eight-limb inversion and the divstep coefficient bounds, which the four-limb proofs reuse. |
 | **Montgomery/ScalarFft.lean** | Zero-import in-place radix-2 DIT FFT over eight-limb Montgomery residues and precomputed twiddles. |
 | **Pasta.lean** | Facade for the Pasta modules, re-exporting the canonical Pallas/Vesta base fields and their fast native-word implementations. |
 | **Pasta/Basic.lean** | The two 255-bit Pasta base primes (Pallas base = Vesta scalar and vice versa), with Pratt primality certificates. |
-| **Pasta/Fast.lean** | Pallas- and Vesta-namespaced API over the shared eight-limb fast-field implementation, with per-field constants and canonical-field bridges. |
-| **Secp256k1.lean** | Facade for the Secp256k1 modules, re-exporting the canonical base and scalar fields and their fast eight-limb implementations. |
+| **Pasta/Fast.lean** | Pallas- and Vesta-namespaced API over the shared four-limb fast-field implementation, with per-field constants and canonical-field bridges. |
+| **Secp256k1.lean** | Facade for the Secp256k1 modules, re-exporting the canonical base and scalar fields and their fast four-limb implementations. |
 | **Secp256k1/Basic.lean** | Base and scalar fields for the Secp256k1 curve (used in Bitcoin/Ethereum), with Pratt primality certificates. |
-| **Secp256k1/Fast.lean** | Eight-limb Montgomery instantiation of both Secp256k1 fields (`Mont64x8Field` and `GcdData` constants, `ScalarField`, `BaseField`, ring equivalences). |
+| **Secp256k1/Fast.lean** | Four-limb Montgomery instantiation of both Secp256k1 fields (`Mont64x4Field` and `GcdData` constants, `ScalarField`, `BaseField`, ring equivalences). |
 
 ## Binary-field modules
 

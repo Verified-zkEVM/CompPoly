@@ -109,14 +109,16 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - ✅ Single-word `UInt32` Montgomery carrier for 31-bit primes
      (`Montgomery/Native32.lean`, `Montgomery/Native32Field.lean`, `Mont32Field`),
      instantiated by `BabyBear/Fast.lean` and `KoalaBear/Fast.lean`
-   - ✅ Eight-limb Montgomery carrier with CIOS multiplication for moduli below
-     `2^255` (`Montgomery/Native64x8*.lean`, `Mont64x8Field`), instantiated by
-     `BN254/Fast.lean`, `BLS12_381/Fast.lean`, and `BLS12_377/Fast.lean`
+   - ✅ Four-limb Montgomery carrier with 64-bit-radix CIOS multiplication for any
+     prime modulus below `2^256` (`Montgomery/Native64x4*.lean`, `Mont64x4Field`),
+     instantiated by `BN254/Fast.lean`, `BLS12_381/Fast.lean`, `BLS12_377/Fast.lean`,
+     `Pasta/Fast.lean` and `Secp256k1/Fast.lean`; the earlier eight-limb carrier
+     (`Montgomery/Native64x8*.lean`) remains behind `ScalarFft.lean`
    - ✅ Single-word `UInt64` carriers for 64-bit and 31-bit primes outside the
      Montgomery bounds (`Goldilocks/Fast.lean`, `Mersenne31/Fast.lean`), reducing
      via the modulus identity rather than Montgomery residues
-   - ✅ Checked binary-GCD inversion for the eight-limb fields
-     (`Montgomery/Native64x8Inv.lean`, [eprint 2020/972](https://eprint.iacr.org/2020/972)),
+   - ✅ Checked binary-GCD inversion for the four-limb fields
+     (`Montgomery/Native64x4Inv.lean`, [eprint 2020/972](https://eprint.iacr.org/2020/972)),
      benchmarked against `ZMod` extended Euclid and Fermat in `fields-mont64x8-*-inv`
    - 🔄 64-bit-radix Montgomery layer, so Goldilocks and Hachi (`2^32 - 99`) gain a
      `FastField` base; `Mont32Field` requires modulus < `2^31`
@@ -153,7 +155,7 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - ✅ Basic, reproducible evaluation benchmark executable (`lake exe CompPolyBench`; see `bench/README.md`)
    - ✅ CI build/run with artifact upload (GitHub Actions `lean_action_ci.yml`)
    - ✅ Operation-level coverage: base-field `mul`/`add`/`inv`/`pow` over
-     KoalaBear, BabyBear, Mersenne31 and Goldilocks, the eight-limb Montgomery
+     KoalaBear, BabyBear, Mersenne31 and Goldilocks, the four-limb Montgomery
      multiply, the binary tower's table-driven kernels, the standalone
      multiplicative NTT over `n = 2^8 … 2^16`, Reed-Solomon encoding, and the
      schoolbook/NTT crossover. Field and kernel rows are chained and reported
