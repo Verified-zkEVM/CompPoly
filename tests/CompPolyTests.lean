@@ -84,6 +84,7 @@ public import CompPolyTests.Fields.Mersenne31.Instances
 public import CompPolyTests.Fields.Montgomery.Bytes
 public import CompPolyTests.Fields.Pasta.Fast
 public import CompPolyTests.Fields.PrattCertificate
+public import CompPolyTests.Fields.Secp256k1.Fast
 public import CompPolyTests.LinearAlgebra.Dense
 public import CompPolyTests.LinearAlgebra.PolynomialMatrix.Approximant
 public import CompPolyTests.LinearAlgebra.TensorProduct.Basis

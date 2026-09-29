@@ -414,10 +414,11 @@ private def runGoldilocksPow (preset : BenchPreset) (gen : StdGen) :
 
 /-! ### Eight-limb pairing scalar fields
 
-`mul` only. Inversion over these carriers already has a group of its own in
+`mul` and `add` only, over the three pairing scalar fields and the two secp256k1 fields.
+Inversion over these carriers already has a group of its own in
 `Fields/Montgomery.lean`, which compares three algorithms rather than two
 representations. Both rows need an explicit sink: the canonical value is a
-254- to 255-bit bignum, and `sinkMont64x8` reads two limbs instead of
+254- to 256-bit bignum, and `sinkMont64x8` reads two limbs instead of
 reassembling one. -/
 
 /-- BN254 scalar operands, canonical and eight-limb, from one pool. -/
@@ -459,6 +460,32 @@ private def bls12_377Reps (gen : StdGen) :
      sink := sinkMont64x8 },
    gen)
 
+/-- secp256k1 scalar-field operands, canonical and eight-limb, from one pool. -/
+private def secp256k1ScalarReps (gen : StdGen) :
+    ChainRep Secp256k1.ScalarField × ChainRep Secp256k1.Fast.ScalarField × StdGen :=
+  let (values, gen) := (zmodArray Secp256k1.SCALAR_FIELD_CARD fieldPoolSize false).run gen
+  let pool := nonzeroPool values
+  let fastPool := secp256k1ScalarFastArray pool
+  ({ representation := "ZMod", field := "Secp256k1.ScalarField", suffix := "zmod",
+     pool := pool, constant := pool.getD 0 1, checksum := checksumZMod, sink := sinkZMod },
+   { representation := "Limbs8", field := "Secp256k1.Fast.ScalarField", suffix := "fast",
+     pool := fastPool, constant := fastPool.getD 0 1,
+     checksum := checksumSecp256k1ScalarFast, sink := sinkMont64x8 },
+   gen)
+
+/-- secp256k1 base-field operands, canonical and eight-limb, from one pool. -/
+private def secp256k1BaseReps (gen : StdGen) :
+    ChainRep Secp256k1.BaseField × ChainRep Secp256k1.Fast.BaseField × StdGen :=
+  let (values, gen) := (zmodArray Secp256k1.BASE_FIELD_CARD fieldPoolSize false).run gen
+  let pool := nonzeroPool values
+  let fastPool := secp256k1BaseFastArray pool
+  ({ representation := "ZMod", field := "Secp256k1.BaseField", suffix := "zmod",
+     pool := pool, constant := pool.getD 0 1, checksum := checksumZMod, sink := sinkZMod },
+   { representation := "Limbs8", field := "Secp256k1.Fast.BaseField", suffix := "fast",
+     pool := fastPool, constant := fastPool.getD 0 1,
+     checksum := checksumSecp256k1BaseFast, sink := sinkMont64x8 },
+   gen)
+
 /-- Time BN254 scalar multiplication. -/
 private def runBn254Mul (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
@@ -484,6 +511,70 @@ private def runBls12_377Mul (preset : BenchPreset) (gen : StdGen) :
   let group ← runBinOpGroup "fields-bls12-377-mul" "BLS12-377 scalar multiplication"
     "bls12-377" "mul" heavyChainRounds heavyThroughputRounds
     slow (· * ·) fast Montgomery.Native64x8.FastField.mul preset
+  pure (group, gen)
+
+/-- Time BN254 scalar addition. -/
+private def runBn254Add (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  let (slow, fast, gen) := bn254Reps gen
+  let group ← runBinOpGroup "fields-bn254-add" "BN254 scalar addition"
+    "bn254" "add" chainRounds throughputRounds
+    slow (· + ·) fast Montgomery.Native64x8.FastField.add preset
+  pure (group, gen)
+
+/-- Time BLS12-381 scalar addition. -/
+private def runBls12_381Add (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  let (slow, fast, gen) := bls12_381Reps gen
+  let group ← runBinOpGroup "fields-bls12-381-add" "BLS12-381 scalar addition"
+    "bls12-381" "add" chainRounds throughputRounds
+    slow (· + ·) fast Montgomery.Native64x8.FastField.add preset
+  pure (group, gen)
+
+/-- Time BLS12-377 scalar addition. -/
+private def runBls12_377Add (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  let (slow, fast, gen) := bls12_377Reps gen
+  let group ← runBinOpGroup "fields-bls12-377-add" "BLS12-377 scalar addition"
+    "bls12-377" "add" chainRounds throughputRounds
+    slow (· + ·) fast Montgomery.Native64x8.FastField.add preset
+  pure (group, gen)
+
+/-- Time secp256k1 scalar-field multiplication. -/
+private def runSecp256k1ScalarMul (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  let (slow, fast, gen) := secp256k1ScalarReps gen
+  let group ← runBinOpGroup "fields-secp256k1-scalar-mul"
+    "secp256k1 scalar-field multiplication"
+    "secp256k1-scalar" "mul" heavyChainRounds heavyThroughputRounds
+    slow (· * ·) fast Montgomery.Native64x8.FastField.mul preset
+  pure (group, gen)
+
+/-- Time secp256k1 scalar-field addition. -/
+private def runSecp256k1ScalarAdd (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  let (slow, fast, gen) := secp256k1ScalarReps gen
+  let group ← runBinOpGroup "fields-secp256k1-scalar-add" "secp256k1 scalar-field addition"
+    "secp256k1-scalar" "add" chainRounds throughputRounds
+    slow (· + ·) fast Montgomery.Native64x8.FastField.add preset
+  pure (group, gen)
+
+/-- Time secp256k1 base-field multiplication. -/
+private def runSecp256k1BaseMul (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  let (slow, fast, gen) := secp256k1BaseReps gen
+  let group ← runBinOpGroup "fields-secp256k1-base-mul" "secp256k1 base-field multiplication"
+    "secp256k1-base" "mul" heavyChainRounds heavyThroughputRounds
+    slow (· * ·) fast Montgomery.Native64x8.FastField.mul preset
+  pure (group, gen)
+
+/-- Time secp256k1 base-field addition. -/
+private def runSecp256k1BaseAdd (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  let (slow, fast, gen) := secp256k1BaseReps gen
+  let group ← runBinOpGroup "fields-secp256k1-base-add" "secp256k1 base-field addition"
+    "secp256k1-base" "add" chainRounds throughputRounds
+    slow (· + ·) fast Montgomery.Native64x8.FastField.add preset
   pure (group, gen)
 
 /-- Registry entries for the base-field arithmetic benchmarks. -/
@@ -525,7 +616,22 @@ def fieldArithTasks : List BenchTask := [
   BenchTask.fromGroupRunner ⟨"fields-bls12-381-mul", "BLS12-381 scalar multiplication"⟩
     runBls12_381Mul,
   BenchTask.fromGroupRunner ⟨"fields-bls12-377-mul", "BLS12-377 scalar multiplication"⟩
-    runBls12_377Mul
+    runBls12_377Mul,
+  BenchTask.fromGroupRunner ⟨"fields-bn254-add", "BN254 scalar addition"⟩
+    runBn254Add,
+  BenchTask.fromGroupRunner ⟨"fields-bls12-381-add", "BLS12-381 scalar addition"⟩
+    runBls12_381Add,
+  BenchTask.fromGroupRunner ⟨"fields-bls12-377-add", "BLS12-377 scalar addition"⟩
+    runBls12_377Add,
+  BenchTask.fromGroupRunner
+    ⟨"fields-secp256k1-scalar-mul", "secp256k1 scalar-field multiplication"⟩
+    runSecp256k1ScalarMul,
+  BenchTask.fromGroupRunner ⟨"fields-secp256k1-scalar-add", "secp256k1 scalar-field addition"⟩
+    runSecp256k1ScalarAdd,
+  BenchTask.fromGroupRunner ⟨"fields-secp256k1-base-mul", "secp256k1 base-field multiplication"⟩
+    runSecp256k1BaseMul,
+  BenchTask.fromGroupRunner ⟨"fields-secp256k1-base-add", "secp256k1 base-field addition"⟩
+    runSecp256k1BaseAdd
 ]
 
 end CompPolyBench

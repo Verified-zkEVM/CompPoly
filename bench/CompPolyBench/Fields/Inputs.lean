@@ -10,13 +10,14 @@ public import CompPoly.Fields.Mersenne31
 public import CompPoly.Fields.BN254
 public import CompPoly.Fields.BLS12_381
 public import CompPoly.Fields.BLS12_377
+public import CompPoly.Fields.Secp256k1
 
 /-!
 # Field inputs, checksums and sinks
 
 Per-field benchmark scaffolding for the concrete fields that
-`CompPolyBench.Common` does not already carry: Mersenne31 and the three
-eight-limb Montgomery scalar fields.
+`CompPolyBench.Common` does not already carry: Mersenne31 and the
+eight-limb Montgomery fields.
 
 These live here rather than in `CompPolyBench.Common` because that module is
 imported by every benchmark, and the field modules below are needed by a
@@ -62,11 +63,11 @@ The carrier is an `abbrev` for a `Subtype`, so dot notation would resolve to
 def checksumMersenne31Fast (x : Mersenne31.Fast.Field) : Nat :=
   Mersenne31.Fast.toNat x
 
-/-! ## Eight-limb Montgomery scalar fields
+/-! ## Eight-limb Montgomery fields
 
-BN254, BLS12-381 and BLS12-377. The canonical value is a 254- to 255-bit
-bignum, so both representations need an explicit sink: `sinkZMod` for the
-canonical side and `sinkMont64x8` for the fast one. -/
+BN254, BLS12-381, BLS12-377 and the two secp256k1 fields. The canonical value
+is a 254- to 256-bit bignum, so both representations need an explicit sink:
+`sinkZMod` for the canonical side and `sinkMont64x8` for the fast one. -/
 
 /-- Convert BN254 field inputs to the native eight-limb representation. -/
 def bn254FastArray (xs : Array BN254.ScalarField) : Array BN254.Fast.ScalarField :=
@@ -92,6 +93,24 @@ def bls12_377FastArray (xs : Array BLS12_377.ScalarField) :
 
 /-- Convert a fast BLS12-377 element to a checksum word. -/
 def checksumBls12_377Fast (x : BLS12_377.Fast.ScalarField) : Nat :=
+  x.toNat
+
+/-- Convert secp256k1 scalar-field inputs to the native eight-limb representation. -/
+def secp256k1ScalarFastArray (xs : Array Secp256k1.ScalarField) :
+    Array Secp256k1.Fast.ScalarField :=
+  xs.map Secp256k1.Fast.ofScalarField
+
+/-- Convert a fast secp256k1 scalar-field element to a checksum word. -/
+def checksumSecp256k1ScalarFast (x : Secp256k1.Fast.ScalarField) : Nat :=
+  x.toNat
+
+/-- Convert secp256k1 base-field inputs to the native eight-limb representation. -/
+def secp256k1BaseFastArray (xs : Array Secp256k1.BaseField) :
+    Array Secp256k1.Fast.BaseField :=
+  xs.map Secp256k1.Fast.ofBaseField
+
+/-- Convert a fast secp256k1 base-field element to a checksum word. -/
+def checksumSecp256k1BaseFast (x : Secp256k1.Fast.BaseField) : Nat :=
   x.toNat
 
 /-- Sink an eight-limb Montgomery element by two of its limbs.
