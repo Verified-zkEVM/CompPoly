@@ -122,11 +122,7 @@ def toField (x : Field) : Goldilocks.Field :=
 /-- Fast modular addition in canonical form. -/
 @[inline]
 def add (x y : Field) : Field :=
-  let lo := x.val + y.val
-  let carry := decide (lo < x.val)
-  ⟨reduceAddWithCarryRaw lo carry,
-    reduceAddWithCarryRaw_lt lo carry
-      (addWithCarry_bound x.val y.val x.property y.property)⟩
+  ⟨addRaw x.val y.val, addRaw_lt x.val y.val x.property y.property⟩
 
 /-- Fast modular negation in canonical form. -/
 @[inline]
@@ -407,25 +403,9 @@ theorem toField_one : toField (1 : Field) = 1 := by
 /-- Fast addition agrees with canonical-field addition. -/
 @[simp]
 theorem toField_add (x y : Field) : toField (x + y) = toField x + toField y := by
-  change
-    (((add x y).val.toNat : Goldilocks.Field) =
-      (x.val.toNat : Goldilocks.Field) + (y.val.toNat : Goldilocks.Field))
-  unfold add
-  rw [reduceAddWithCarryRaw_cast _ _
-    (addWithCarry_bound x.val y.val x.property y.property)]
-  let lo := x.val + y.val
-  let carry := decide (lo < x.val)
-  have hvalue := addWithCarry_value x.val y.val
-  change lo.toNat + (if carry then UInt64.size else 0) = x.val.toNat + y.val.toNat at hvalue
-  change
-    ((lo.toNat : Goldilocks.Field) +
-        (if carry then (UInt64.size : Goldilocks.Field) else 0) =
-      (x.val.toNat : Goldilocks.Field) + (y.val.toNat : Goldilocks.Field))
-  by_cases hcarry : carry = true
-  · simp only [hcarry, ite_true] at hvalue ⊢
-    rw [← Nat.cast_add, hvalue, Nat.cast_add]
-  · simp only [hcarry, Bool.false_eq_true, ite_false, add_zero] at hvalue ⊢
-    rw [hvalue, Nat.cast_add]
+  change toField (add x y) = toField x + toField y
+  simp only [add, toField, toNat]
+  exact addRaw_cast x.val y.val x.property y.property
 
 /-- Fast negation agrees with canonical-field negation. -/
 @[simp]

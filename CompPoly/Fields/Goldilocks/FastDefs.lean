@@ -101,13 +101,15 @@ def mulLazy (x y : UInt64) : UInt64 :=
 def reduceMulRaw (x y : UInt64) : UInt64 :=
   reduceUInt64Raw (mulLazy x y)
 
-/-- Raw one-step reduction for a 65-bit addition represented by low word and carry. -/
+/-- Raw modular addition of canonical words.
+
+Computed as `x - (p - y)`: the subtraction borrows exactly when `x + y < p`, so one
+borrow-selected correction yields the canonical sum, with no separate compare against `p`. -/
 @[inline]
-def reduceAddWithCarryRaw (lo : UInt64) (carry : Bool) : UInt64 :=
-  if carry then
-    lo + negModulus
-  else
-    reduceUInt64Raw lo
+def addRaw (x y : UInt64) : UInt64 :=
+  let u := modulus - y
+  let s := x - u
+  if x < u then s - negModulus else s
 
 /-- Raw modular negation in canonical form. -/
 @[inline]

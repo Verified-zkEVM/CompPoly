@@ -567,138 +567,31 @@ theorem reduceMulRaw_cast (x y : UInt64) :
   unfold reduceMulRaw
   rw [reduceUInt64Raw_cast, mulLazy_cast]
 
-/-- Addition reduction returns a canonical representative. -/
-theorem reduceAddWithCarryRaw_lt (lo : UInt64) (carry : Bool)
-    (h :
-      lo.toNat + (if carry then UInt64.size else 0) < 2 * Goldilocks.fieldSize) :
-    (reduceAddWithCarryRaw lo carry).toNat < Goldilocks.fieldSize := by
-  unfold reduceAddWithCarryRaw
-  cases carry
-  · simp only [Bool.false_eq_true, ite_false]
-    exact reduceUInt64Raw_lt lo
-  · simp only [↓reduceIte] at h ⊢
-    rw [UInt64.toNat_add]
-    have hsum_lt_field : lo.toNat + negModulus.toNat < Goldilocks.fieldSize := by
-      rw [negModulus_toNat, Goldilocks.fieldSize]
-      rw [Goldilocks.fieldSize, UInt64.size] at h
-      omega
-    have hsum_lt_size : lo.toNat + negModulus.toNat < UInt64.size :=
-      Nat.lt_trans hsum_lt_field fieldSize_lt_uint64Size
-    rw [Nat.mod_eq_of_lt hsum_lt_size]
-    exact hsum_lt_field
-
-/-- Semantic correctness of addition reduction with carry. -/
-theorem reduceAddWithCarryRaw_cast (lo : UInt64) (carry : Bool)
-    (h :
-      lo.toNat + (if carry then UInt64.size else 0) < 2 * Goldilocks.fieldSize) :
-    ((reduceAddWithCarryRaw lo carry).toNat : Goldilocks.Field) =
-      (lo.toNat : Goldilocks.Field) +
-        (if carry then (UInt64.size : Goldilocks.Field) else 0) := by
-  unfold reduceAddWithCarryRaw
-  cases carry
-  · simp only [Bool.false_eq_true, ite_false, add_zero]
-    exact reduceUInt64Raw_cast lo
-  · simp only [↓reduceIte]
-    change lo.toNat + UInt64.size < 2 * Goldilocks.fieldSize at h
-    rw [UInt64.toNat_add]
-    have hsum_lt_field : lo.toNat + negModulus.toNat < Goldilocks.fieldSize := by
-      rw [negModulus_toNat, Goldilocks.fieldSize]
-      rw [Goldilocks.fieldSize, UInt64.size] at h
-      omega
-    have hsum_lt_size : lo.toNat + negModulus.toNat < UInt64.size :=
-      Nat.lt_trans hsum_lt_field fieldSize_lt_uint64Size
-    rw [Nat.mod_eq_of_lt hsum_lt_size]
-    rw [Nat.cast_add]
-    rw [uint64_cast_eq_negModulus]
-
-/-- The wrapped word and carry produced by adding two canonical representatives is bounded. -/
-theorem addWithCarry_bound (x y : UInt64)
-    (hx : x.toNat < Goldilocks.fieldSize)
+/-- Raw addition of canonical words computes the reduced sum. -/
+theorem addRaw_toNat (x y : UInt64) (hx : x.toNat < Goldilocks.fieldSize)
     (hy : y.toNat < Goldilocks.fieldSize) :
-    let lo := x + y
-    let carry := decide (lo < x)
-    lo.toNat + (if carry then UInt64.size else 0) < 2 * Goldilocks.fieldSize := by
-  intro lo carry
-  by_cases hcarry : carry
-  · simp only [hcarry]
-    have hlo_lt_x : lo.toNat < x.toNat := by
-      simpa [carry, UInt64.lt_iff_toNat_lt] using hcarry
-    have hsum_ge_size : UInt64.size ≤ x.toNat + y.toNat := by
-      by_contra hnot
-      have hsum_lt_size : x.toNat + y.toNat < UInt64.size :=
-        Nat.lt_of_not_ge hnot
-      have hlo_eq : lo.toNat = x.toNat + y.toNat := by
-        rw [show lo = x + y by rfl, UInt64.toNat_add]
-        exact Nat.mod_eq_of_lt hsum_lt_size
-      omega
-    have hsum_lt_2size : x.toNat + y.toNat < 2 * UInt64.size := by
-      nlinarith [UInt64.toNat_lt_size x, UInt64.toNat_lt_size y]
-    have hlo_eq : lo.toNat = x.toNat + y.toNat - UInt64.size := by
-      rw [show lo = x + y by rfl, UInt64.toNat_add]
-      rw [Nat.mod_eq_sub_mod (show x.toNat + y.toNat ≥ UInt64.size by
-        exact hsum_ge_size)]
-      rw [Nat.mod_eq_of_lt]
-      omega
-    rw [hlo_eq]
-    change x.toNat + y.toNat - UInt64.size + UInt64.size <
-      2 * Goldilocks.fieldSize
-    have hsum_lt_field : x.toNat + y.toNat < 2 * Goldilocks.fieldSize := by
-      omega
+    (addRaw x y).toNat = (x.toNat + y.toNat) % Goldilocks.fieldSize := by
+  have hx64 := UInt64.toNat_lt_size x
+  have hy64 := UInt64.toNat_lt_size y
+  simp only [addRaw]
+  split_ifs with h <;>
+    simp only [UInt64.lt_iff_toNat_lt, UInt64.toNat_sub, negModulus_toNat, modulus_toNat,
+      UInt64.size, Goldilocks.fieldSize] at * <;>
     omega
-  · simp only [hcarry]
-    exact uint64_toNat_lt_two_fieldSize lo
 
-/-- The wrapped word and carry produced by native addition reconstruct the exact Nat sum. -/
-theorem addWithCarry_value (x y : UInt64) :
-    let lo := x + y
-    let carry := decide (lo < x)
-    lo.toNat + (if carry then UInt64.size else 0) = x.toNat + y.toNat := by
-  intro lo carry
-  by_cases hcarry : carry
-  · simp only [hcarry]
-    have hsum_ge_size : UInt64.size ≤ x.toNat + y.toNat := by
-      by_contra hnot
-      have hsum_lt_size : x.toNat + y.toNat < UInt64.size :=
-        Nat.lt_of_not_ge hnot
-      have hlo_eq : lo.toNat = x.toNat + y.toNat := by
-        rw [show lo = x + y by rfl, UInt64.toNat_add]
-        exact Nat.mod_eq_of_lt hsum_lt_size
-      have hlo_lt_x : lo.toNat < x.toNat := by
-        simpa [carry, UInt64.lt_iff_toNat_lt] using hcarry
-      omega
-    have hsum_lt_2size : x.toNat + y.toNat < 2 * UInt64.size := by
-      nlinarith [UInt64.toNat_lt_size x, UInt64.toNat_lt_size y]
-    have hlo_eq : lo.toNat = x.toNat + y.toNat - UInt64.size := by
-      rw [show lo = x + y by rfl, UInt64.toNat_add]
-      rw [Nat.mod_eq_sub_mod (show x.toNat + y.toNat ≥ UInt64.size by
-        exact hsum_ge_size)]
-      rw [Nat.mod_eq_of_lt]
-      omega
-    rw [hlo_eq]
-    change x.toNat + y.toNat - UInt64.size + UInt64.size =
-      x.toNat + y.toNat
-    omega
-  · simp only [hcarry]
-    have hnot_lo_lt_x : ¬lo.toNat < x.toNat := by
-      intro hlo_lt_x
-      apply hcarry
-      simpa [carry, UInt64.lt_iff_toNat_lt] using hlo_lt_x
-    have hsum_lt_size : x.toNat + y.toNat < UInt64.size := by
-      by_contra hnot
-      have hsum_ge_size : UInt64.size ≤ x.toNat + y.toNat :=
-        Nat.le_of_not_gt hnot
-      have hsum_lt_2size : x.toNat + y.toNat < 2 * UInt64.size := by
-        nlinarith [UInt64.toNat_lt_size x, UInt64.toNat_lt_size y]
-      have hlo_eq : lo.toNat = x.toNat + y.toNat - UInt64.size := by
-        rw [show lo = x + y by rfl, UInt64.toNat_add]
-        rw [Nat.mod_eq_sub_mod (show x.toNat + y.toNat ≥ UInt64.size by
-          exact hsum_ge_size)]
-        rw [Nat.mod_eq_of_lt]
-        omega
-      have hy_lt_size : y.toNat < UInt64.size := UInt64.toNat_lt_size y
-      omega
-    rw [show lo = x + y by rfl, UInt64.toNat_add]
-    exact Nat.mod_eq_of_lt hsum_lt_size
+/-- Raw addition of canonical words returns a canonical representative. -/
+theorem addRaw_lt (x y : UInt64) (hx : x.toNat < Goldilocks.fieldSize)
+    (hy : y.toNat < Goldilocks.fieldSize) :
+    (addRaw x y).toNat < Goldilocks.fieldSize := by
+  rw [addRaw_toNat x y hx hy]
+  exact Nat.mod_lt _ fieldSize_pos
+
+/-- Raw addition agrees with canonical-field addition on canonical words. -/
+theorem addRaw_cast (x y : UInt64) (hx : x.toNat < Goldilocks.fieldSize)
+    (hy : y.toNat < Goldilocks.fieldSize) :
+    ((addRaw x y).toNat : Goldilocks.Field) =
+      (x.toNat : Goldilocks.Field) + (y.toNat : Goldilocks.Field) := by
+  rw [addRaw_toNat x y hx hy, ZMod.natCast_mod, Nat.cast_add]
 
 /-- Raw negation returns a canonical representative when given one. -/
 theorem negRaw_lt (x : UInt64) (hx : x.toNat < Goldilocks.fieldSize) :
