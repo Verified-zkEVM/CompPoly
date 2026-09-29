@@ -6,13 +6,13 @@ Authors: Georgios Raikos
 module
 
 public import CompPoly.Fields.BLS12_377.Basic
-public import CompPoly.Fields.Montgomery.Native64x8Inv
+public import CompPoly.Fields.Montgomery.Native64x4Inv
 
 /-!
 # Fast BLS12-377 Scalar Field
 
-A native eight-limb Montgomery implementation of BLS12-377 scalar arithmetic
-(`CompPoly.Fields.Montgomery.Native64x8Field`). This module supplies the BLS12-377
+A native four-limb Montgomery implementation of BLS12-377 scalar arithmetic
+(`CompPoly.Fields.Montgomery.Native64x4Field`). This module supplies the BLS12-377
 constants.
 -/
 
@@ -20,7 +20,7 @@ constants.
 
 namespace BLS12_377.Fast
 
-open Montgomery.Native64x8 (Mont64x8Field FastField GcdData)
+open Montgomery.Native64x4 (Mont64x4Field FastField GcdData)
 
 set_option exponentiation.threshold 1100
 
@@ -29,26 +29,21 @@ set_option exponentiation.threshold 1100
 /-- Divstep schedule of the binary-GCD inverse candidate. -/
 instance instGcdData : GcdData BLS12_377.scalarFieldSize where
   finalRounds := 39
-  initU :=
-    ⟨0x94e01332, 0xa5707af0, 0x6f1abbfb, 0xf9af464a, 0x7f75c179, 0x65dbc6f7, 0xc9364c65,
-      0x10e76cd3⟩
+  initU := ⟨0x50d904ef75fb587f, 0x25a2b48c71615c44, 0x8203611dc5f581c3, 0xd6a3a20c872ad35⟩
 
-/-- The per-field data realizing BLS12-377's scalar field as a fast eight-limb
-(32-bit-limb) Montgomery field. -/
-instance instMont64x8Field : Mont64x8Field BLS12_377.scalarFieldSize where
+/-- The per-field data realizing BLS12-377's scalar field as a fast four-limb Montgomery
+field. -/
+instance instMont64x4Field : Mont64x4Field BLS12_377.scalarFieldSize where
   prime := BLS12_377.ScalarField_is_prime
   modulusLimbs :=
-    ⟨0x1, 0xa118000, 0xd0000001, 0x59aa76fe, 0x5c37b001, 0x60b44d1e, 0x9a2ca556,
-      0x12ab655e⟩
+    ⟨0xa11800000000001, 0x59aa76fed0000001, 0x60b44d1e5c37b001, 0x12ab655e9a2ca556⟩
   rModModulus :=
-    ⟨0xfffffff3, 0x7d1c7fff, 0x6ffffff2, 0x7257f50f, 0x512c0fee, 0x16d81575, 0x2bbb9a9d,
-      0xd4bda32⟩
+    ⟨0x7d1c7ffffffffff3, 0x7257f50f6ffffff2, 0x16d81575512c0fee, 0xd4bda322bbb9a9d⟩
   r2ModModulus :=
-    ⟨0xb861857b, 0x25d577ba, 0x8860591f, 0xcc2c27b5, 0xe5dc8593, 0xa7cc008f, 0xeff1c939,
-      0x11fdae7⟩
-  montgomeryNegInv := 0xffffffff
+    ⟨0x25d577bab861857b, 0xcc2c27b58860591f, 0xa7cc008fe5dc8593, 0x11fdae7eff1c939⟩
+  montgomeryNegInv := 0xa117fffffffffff
 
-/-- The eight-limb BLS12-377 scalar field carrier, stored as a Montgomery residue. -/
+/-- The four-limb BLS12-377 scalar field carrier, stored as a Montgomery residue. -/
 abbrev ScalarField : Type := FastField BLS12_377.scalarFieldSize
 
 /-- Convert from the canonical `BLS12_377.ScalarField` field into fast Montgomery form. -/
@@ -56,7 +51,7 @@ abbrev ScalarField : Type := FastField BLS12_377.scalarFieldSize
 def ofField (x : BLS12_377.ScalarField) : ScalarField :=
   FastField.ofField x
 
-/-- Ring equivalence between the eight-limb representation and the canonical
+/-- Ring equivalence between the four-limb representation and the canonical
 `BLS12_377.ScalarField`. -/
 def ringEquiv : ScalarField ≃+* BLS12_377.ScalarField :=
   FastField.ringEquiv BLS12_377.scalarFieldSize

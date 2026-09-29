@@ -184,7 +184,7 @@ exact once both values fit one 64-bit word. -/
   let bS := if g < 0 then subLimbs q b else b
   let s := mulAccum bS (UInt64.ofNat g.natAbs)
     (mulAccum aS (UInt64.ofNat f.natAbs) State9.zero)
-  condSub q (mulReduce q negInv s).toLimbs8
+  condSubWide q (mulReduce q negInv s)
 
 /-! ## Main loop and candidate -/
 

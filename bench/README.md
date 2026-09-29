@@ -126,7 +126,7 @@ Roughly by area, with representative group prefixes:
 | Extension fields | `fields-extension-*-mul`, `fields-extension-*-inv` |
 | Binary tower fields | `fields-tower-bt128-*`: `BitVec` spec vs packed-word implementation |
 | Base-field arithmetic | `fields-{koalabear,babybear,mersenne31,goldilocks}-{mul,add,inv,pow}`: canonical `ZMod` vs native-word, latency and throughput |
-| Pairing scalar multiplication | `fields-{bn254,bls12-381,bls12-377}-mul` |
+| Four-limb field arithmetic | `fields-{bn254,bls12-381,bls12-377}-{mul,add}`, `fields-secp256k1-{scalar,base}-{mul,add}`: canonical `ZMod` vs four-limb Montgomery |
 | Scalar-field inversion | `fields-mont64x8-*-inv`: `ZMod` extended Euclid vs checked binary GCD vs Fermat |
 | Binary tower scalar kernels | `fields-tower-bt{8,64}-*`: table-driven vs recursive |
 | Multiplicative NTT | `ntt-{koalabear,babybear}-l*` over `n = 2^8 … 2^16`, plus `ntt-plan-koalabear` |

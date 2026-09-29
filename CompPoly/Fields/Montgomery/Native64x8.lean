@@ -12,7 +12,7 @@ public import Mathlib.Tactic.SplitIfs
 /-!
 # Native Montgomery arithmetic over eight 32-bit limbs
 
-Raw word operations for prime moduli below `2 ^ 255`, represented as eight 32-bit limbs
+Raw word operations for prime moduli below `2 ^ 256`, represented as eight 32-bit limbs
 carried in the low halves of `UInt64` words (`Limbs8`).  This is the multi-limb sibling of
 `Montgomery/Native32.lean`: every operation is a straight-line chain of `@[inline]` word
 helpers, and each helper comes with an existential `toNat` specification that names its
@@ -31,8 +31,9 @@ invariant is proved in the sibling module that builds the field carrier.
 
 ## Main results
 
-* `condSub_toNat`, `add_toNat`, `sub_toNat`, `neg_toNat` — correctness of the raw operations
-* `addLimbs_toNat`, `subLimbs_spec` — the underlying carry/borrow chains
+* `condSub_toNat`, `condSubWide_toNat`, `add_toNat`, `sub_toNat`, `neg_toNat` — correctness
+  of the raw operations
+* `addLimbs_spec`, `subLimbs_spec` — the underlying carry/borrow chains
 -/
 
 @[expose] public section
@@ -253,9 +254,16 @@ private theorem cond_eq_mod {T Q : ℕ} (h : T < 2 * Q) :
     conv_rhs => rw [show T = T - Q + Q by omega]
     rw [Nat.add_mod_right, Nat.mod_eq_of_lt (by omega)]
 
-private theorem carry_top_zero {S A B Q c : ℕ} (h : S + 2 ^ 256 * c = A + B)
-    (hS : S < 2 ^ 256) (hA : A < Q) (hB : B < Q) (hQ : 2 * Q < 2 ^ 256) :
-    S = A + B ∧ S < 2 * Q := by
+private theorem add_of_carry {S A B Q D bo : ℕ} (hchain : S + 2 ^ 256 * 1 = A + B)
+    (hsub : D + Q = S + 2 ^ 256 * bo) (hbo : bo ≤ 1) (hD : D < 2 ^ 256) (hQ : Q < 2 ^ 256)
+    (hA : A < Q) (hB : B < Q) : D = (A + B) % Q := by
+  rw [show A + B = D + Q by omega, Nat.add_mod_right, Nat.mod_eq_of_lt (by omega)]
+
+private theorem wide_of_head {T L t8 Q D bo : ℕ} (hdec : T = L + 2 ^ 256 * t8)
+    (hsub : D + Q = L + 2 ^ 256 * bo) (hbo : bo ≤ 1) (hD : D < 2 ^ 256)
+    (hQ : Q < 2 ^ 256) (hT : T < 2 * Q) (h : ¬t8 = 0) :
+    D = if T < Q then T else T - Q := by
+  rw [ite_eq_right (by omega)]
   omega
 
 private theorem sub_of_borrow_zero {A B Q D : ℕ} (h : D + B = A + 2 ^ 256 * 0)
@@ -265,7 +273,7 @@ private theorem sub_of_borrow_zero {A B Q D : ℕ} (h : D + B = A + 2 ^ 256 * 0)
 
 private theorem sub_of_borrow_one {A B Q D E c : ℕ} (hD : D + B = A + 2 ^ 256 * 1)
     (hE : E + 2 ^ 256 * c = D + Q) (hDlt : D < 2 ^ 256) (hElt : E < 2 ^ 256)
-    (hB : B < Q) (hA : A < Q) (hQ : 2 * Q < 2 ^ 256) : E = (A + (Q - B)) % Q := by
+    (hB : B < Q) (hA : A < Q) (hQ : Q < 2 ^ 256) : E = (A + (Q - B)) % Q := by
   rw [show A + (Q - B) = E by omega, Nat.mod_eq_of_lt (by omega)]
 
 /-! ## Limbwise addition and subtraction -/
@@ -275,9 +283,10 @@ theorem addLimbs_bounded (a b : Limbs8) : (addLimbs a b).Bounded := by
   exact ⟨adcLo_lt _ _ _, adcLo_lt _ _ _, adcLo_lt _ _ _, adcLo_lt _ _ _,
     adcLo_lt _ _ _, adcLo_lt _ _ _, adcLo_lt _ _ _, adcLo_lt _ _ _⟩
 
-/-- The limbwise sum and the discarded top carry recompose the sum of the inputs. -/
-theorem addLimbs_toNat (a b : Limbs8) (ha : a.Bounded) (hb : b.Bounded) :
-    ∃ c : ℕ, c ≤ 1 ∧ (addLimbs a b).toNat + 2 ^ 256 * c = a.toNat + b.toNat := by
+/-- The limbwise sum and the top carry recompose the sum of the inputs. -/
+theorem addLimbs_spec (a b : Limbs8) (ha : a.Bounded) (hb : b.Bounded) :
+    (addCarry a b).toNat ≤ 1 ∧
+      (addLimbs a b).toNat + 2 ^ 256 * (addCarry a b).toNat = a.toNat + b.toNat := by
   obtain ⟨ha0, ha1, ha2, ha3, ha4, ha5, ha6, ha7⟩ := ha
   obtain ⟨hb0, hb1, hb2, hb3, hb4, hb5, hb6, hb7⟩ := hb
   obtain ⟨s0, c0, ds0, dc0, e0, gc0, hs0⟩ :=
@@ -297,11 +306,19 @@ theorem addLimbs_toNat (a b : Limbs8) (ha : a.Bounded) (hb : b.Bounded) :
   obtain ⟨s7, c7, ds7, dc7, e7, gc7, hs7⟩ :=
     adc_spec a.l7 b.l7 _ ha7 hb7 (dc6 ▸ gc6)
   simp only [dc0, dc1, dc2, dc3, dc4, dc5, dc6, toNat_zero] at e0 e1 e2 e3 e4 e5 e6 e7
-  refine ⟨c7, gc7, ?_⟩
-  simp only [addLimbs, Limbs8.toNat, ds0, ds1, ds2, ds3, ds4, ds5, ds6, ds7]
-  have h := carry_chain_sum e0 e1 e2 e3 e4 e5 e6 e7
-  simp only [Nat.add_zero] at h
-  exact h
+  refine ⟨?_, ?_⟩
+  · simp only [addCarry, dc7]
+    exact gc7
+  · simp only [addLimbs, addCarry, Limbs8.toNat, ds0, ds1, ds2, ds3, ds4, ds5, ds6, ds7,
+      dc7]
+    have h := carry_chain_sum e0 e1 e2 e3 e4 e5 e6 e7
+    simp only [Nat.add_zero] at h
+    exact h
+
+/-- The limbwise sum and some top carry recompose the sum of the inputs. -/
+theorem addLimbs_toNat (a b : Limbs8) (ha : a.Bounded) (hb : b.Bounded) :
+    ∃ c : ℕ, c ≤ 1 ∧ (addLimbs a b).toNat + 2 ^ 256 * c = a.toNat + b.toNat :=
+  ⟨_, (addLimbs_spec a b ha hb).1, (addLimbs_spec a b ha hb).2⟩
 
 theorem subLimbs_bounded (a b : Limbs8) : (subLimbs a b).Bounded := by
   simp only [subLimbs, Limbs8.Bounded]
@@ -372,10 +389,41 @@ theorem condSub_lt (q t : Limbs8) (hq : q.Bounded) (ht : t.Bounded)
   rw [condSub_toNat q t hq ht]
   split <;> omega
 
+theorem condSubWide_bounded (q : Limbs8) (t : State9) (ht : t.Bounded) :
+    (condSubWide q t).Bounded := by
+  simp only [condSubWide]
+  split
+  · exact subLimbs_bounded t.toLimbs8 q
+  · exact condSub_bounded q _ ht.1
+
+/-- `condSubWide` subtracts the modulus exactly when an accumulator below `2 * q` is at least
+the modulus. -/
+theorem condSubWide_toNat (q : Limbs8) (t : State9) (hq : q.Bounded) (ht : t.Bounded)
+    (h : t.toNat < 2 * q.toNat) :
+    (condSubWide q t).toNat = if t.toNat < q.toNat then t.toNat else t.toNat - q.toNat := by
+  have hdec : t.toNat = t.toLimbs8.toNat + 2 ^ 256 * t.t8.toNat := rfl
+  simp only [condSubWide, bne_iff_ne, ne_eq, ← UInt64.toNat_inj, toNat_zero]
+  split
+  case isTrue hc =>
+    obtain ⟨hbo, hsub⟩ := subLimbs_spec t.toLimbs8 q ht.1 hq
+    exact wide_of_head hdec hsub hbo (Limbs8.toNat_lt (subLimbs_bounded t.toLimbs8 q))
+      (Limbs8.toNat_lt hq) h hc
+  case isFalse hc =>
+    rw [condSub_toNat q _ hq ht.1, show t.toLimbs8.toNat = t.toNat by omega]
+
+/-- `condSubWide` returns a canonical representative for accumulators below `2 * q`. -/
+theorem condSubWide_lt (q : Limbs8) (t : State9) (hq : q.Bounded) (ht : t.Bounded)
+    (h : t.toNat < 2 * q.toNat) : (condSubWide q t).toNat < q.toNat := by
+  rw [condSubWide_toNat q t hq ht h]
+  split <;> omega
+
 /-! ## Field operations -/
 
-theorem add_bounded (q a b : Limbs8) : (add q a b).Bounded :=
-  condSub_bounded _ _ (addLimbs_bounded a b)
+theorem add_bounded (q a b : Limbs8) : (add q a b).Bounded := by
+  simp only [add]
+  split
+  · exact subLimbs_bounded _ _
+  · exact condSub_bounded _ _ (addLimbs_bounded a b)
 
 theorem sub_bounded (q a b : Limbs8) : (sub q a b).Bounded := by
   simp only [sub]
@@ -385,27 +433,32 @@ theorem sub_bounded (q a b : Limbs8) : (sub q a b).Bounded := by
 
 theorem neg_bounded (q a : Limbs8) : (neg q a).Bounded := sub_bounded _ _ _
 
-/-- Modular addition is correct for canonical inputs of a modulus below `2 ^ 255`. -/
+/-- Modular addition is correct for canonical inputs of any bounded modulus. -/
 theorem add_toNat (q a b : Limbs8) (hq : q.Bounded) (ha : a.Bounded) (hb : b.Bounded)
-    (hq2 : 2 * q.toNat < 2 ^ 256) (haq : a.toNat < q.toNat) (hbq : b.toNat < q.toNat) :
+    (haq : a.toNat < q.toNat) (hbq : b.toNat < q.toNat) :
     (add q a b).toNat = (a.toNat + b.toNat) % q.toNat := by
-  obtain ⟨c, hc, hchain⟩ := addLimbs_toNat a b ha hb
-  obtain ⟨hsum, hlt⟩ :=
-    carry_top_zero hchain (Limbs8.toNat_lt (addLimbs_bounded a b)) haq hbq hq2
-  simp only [add]
-  rw [condSub_toNat q _ hq (addLimbs_bounded a b), hsum]
-  rw [hsum] at hlt
-  exact cond_eq_mod hlt
+  obtain ⟨hc, hchain⟩ := addLimbs_spec a b ha hb
+  simp only [add, bne_iff_ne, ne_eq, ← UInt64.toNat_inj, toNat_zero]
+  split
+  case isTrue h =>
+    obtain ⟨hbo, hsub⟩ := subLimbs_spec (addLimbs a b) q (addLimbs_bounded a b) hq
+    rw [show (addCarry a b).toNat = 1 by omega] at hchain
+    exact add_of_carry hchain hsub hbo (Limbs8.toNat_lt (subLimbs_bounded (addLimbs a b) q))
+      (Limbs8.toNat_lt hq) haq hbq
+  case isFalse h =>
+    rw [condSub_toNat q _ hq (addLimbs_bounded a b),
+      show (addLimbs a b).toNat = a.toNat + b.toNat by omega]
+    exact cond_eq_mod (by omega)
 
 theorem add_lt (q a b : Limbs8) (hq : q.Bounded) (ha : a.Bounded) (hb : b.Bounded)
-    (hq2 : 2 * q.toNat < 2 ^ 256) (haq : a.toNat < q.toNat) (hbq : b.toNat < q.toNat) :
+    (haq : a.toNat < q.toNat) (hbq : b.toNat < q.toNat) :
     (add q a b).toNat < q.toNat := by
-  rw [add_toNat q a b hq ha hb hq2 haq hbq]
+  rw [add_toNat q a b hq ha hb haq hbq]
   exact Nat.mod_lt _ (by omega)
 
-/-- Modular subtraction is correct for canonical inputs of a modulus below `2 ^ 255`. -/
+/-- Modular subtraction is correct for canonical inputs of any bounded modulus. -/
 theorem sub_toNat (q a b : Limbs8) (hq : q.Bounded) (ha : a.Bounded) (hb : b.Bounded)
-    (hq2 : 2 * q.toNat < 2 ^ 256) (haq : a.toNat < q.toNat) (hbq : b.toNat < q.toNat) :
+    (haq : a.toNat < q.toNat) (hbq : b.toNat < q.toNat) :
     (sub q a b).toNat = (a.toNat + (q.toNat - b.toNat)) % q.toNat := by
   obtain ⟨hbo, hchain⟩ := subLimbs_spec a b ha hb
   have hD := Limbs8.toNat_lt (subLimbs_bounded a b)
@@ -418,25 +471,25 @@ theorem sub_toNat (q a b : Limbs8) (hq : q.Bounded) (ha : a.Bounded) (hb : b.Bou
     rw [show (subBorrow a b).toNat = 1 by omega] at hchain
     obtain ⟨c, _, hchainE⟩ := addLimbs_toNat _ q (subLimbs_bounded a b) hq
     exact sub_of_borrow_one hchain hchainE hD
-      (Limbs8.toNat_lt (addLimbs_bounded _ _)) hbq haq hq2
+      (Limbs8.toNat_lt (addLimbs_bounded _ _)) hbq haq (Limbs8.toNat_lt hq)
 
 theorem sub_lt (q a b : Limbs8) (hq : q.Bounded) (ha : a.Bounded) (hb : b.Bounded)
-    (hq2 : 2 * q.toNat < 2 ^ 256) (haq : a.toNat < q.toNat) (hbq : b.toNat < q.toNat) :
+    (haq : a.toNat < q.toNat) (hbq : b.toNat < q.toNat) :
     (sub q a b).toNat < q.toNat := by
-  rw [sub_toNat q a b hq ha hb hq2 haq hbq]
+  rw [sub_toNat q a b hq ha hb haq hbq]
   exact Nat.mod_lt _ (by omega)
 
-/-- Modular negation is correct for canonical inputs of a modulus below `2 ^ 255`. -/
+/-- Modular negation is correct for canonical inputs of any bounded modulus. -/
 theorem neg_toNat (q a : Limbs8) (hq : q.Bounded) (ha : a.Bounded)
-    (hq2 : 2 * q.toNat < 2 ^ 256) (haq : a.toNat < q.toNat) :
+    (haq : a.toNat < q.toNat) :
     (neg q a).toNat = (q.toNat - a.toNat) % q.toNat := by
   simp only [neg]
-  rw [sub_toNat q Limbs8.zero a hq Limbs8.zero_bounded ha hq2
+  rw [sub_toNat q Limbs8.zero a hq Limbs8.zero_bounded ha
     (by rw [Limbs8.zero_toNat]; omega) haq, Limbs8.zero_toNat, Nat.zero_add]
 
 theorem neg_lt (q a : Limbs8) (hq : q.Bounded) (ha : a.Bounded)
-    (hq2 : 2 * q.toNat < 2 ^ 256) (haq : a.toNat < q.toNat) : (neg q a).toNat < q.toNat :=
-  sub_lt q Limbs8.zero a hq Limbs8.zero_bounded ha hq2
+    (haq : a.toNat < q.toNat) : (neg q a).toNat < q.toNat :=
+  sub_lt q Limbs8.zero a hq Limbs8.zero_bounded ha
     (by rw [Limbs8.zero_toNat]; omega) haq
 
 end Native64x8

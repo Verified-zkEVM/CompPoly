@@ -67,7 +67,7 @@ it on numerals: `ByteCodec.width BabyBear.Field = 4` is `by decide`.
 | BabyBear, KoalaBear, Mersenne31 | 4 |
 | Goldilocks, `BF64` | 8 |
 | `BF128` | 16 |
-| BN254, BLS12-377, BLS12-381, Pasta, secp256k1 scalar fields | 32 |
+| BN254, BLS12-377, BLS12-381, Pasta, secp256k1 | 32 |
 | `AesField`, tower level 3 | 1 |
 | `Ext P` | `P.d` times the base width |
 
@@ -103,7 +103,7 @@ instance. Dumping the stored Montgomery word would be faster and wrong.
 | Carrier | Instance module | Agreement lemma |
 |---|---|---|
 | `Native32.FastField` (BabyBear, KoalaBear) | `CompPoly/Fields/Montgomery/Native32Bytes.lean` | `FastField.toBytes_ofField` |
-| `Native64x8.FastField` (BN254, BLS12-377/381, Pasta) | `CompPoly/Fields/Montgomery/Native64x8Bytes.lean` | `FastField.toBytes_ofField` |
+| `Native64x4.FastField` (BN254, BLS12-377/381, Pasta, secp256k1) | `CompPoly/Fields/Montgomery/Native64x4Bytes.lean` | `FastField.toBytes_ofField` |
 | `Goldilocks.Fast.Field` | `CompPoly/Fields/Goldilocks/Bytes.lean` | `toBytes_ofField` |
 | `Mersenne31.Fast.Field` | `CompPoly/Fields/Mersenne31/Bytes.lean` | `toBytes_ofField` |
 | `FastBT128` against `ConcreteBTField 7` | `CompPoly/Fields/Binary/Tower/Bytes.lean` | `toByteArray_toConcrete` |
