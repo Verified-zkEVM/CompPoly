@@ -319,12 +319,26 @@ line, `#` comments ignored. Neither runs every registered group, so **a new grou
 must be added there to be covered**. An unknown key fails the run, so a renamed
 group is caught rather than silently dropped.
 
-## Small-field Rust comparison
+## Rust field comparison
 
-Run `python3 scripts/bench-small-fields.py --cpu 0` from the repository root on Linux. Choose an available logical CPU: the driver pins itself and both runners there, builds with one job, and runs Lean and Rust sequentially. It checks all 18 result digests before timing five paired runs in alternating order. `--validate-only` runs only the agreement checks; `--skip-build` reuses existing binaries.
+Run `python3 scripts/bench-fields.py --suite all --cpu 0` from the repository root on Linux. Choose an available logical CPU: the driver pins itself and both runners there, builds with one job, and runs Lean and Rust sequentially. It validates matching result digests and operation counts before five paired timing runs in alternating order. `--validate-only` skips timing; `--skip-build` reuses existing binaries.
 
-The comparison covers KoalaBear, Mersenne31, and Goldilocks: latency and throughput for add/mul, latency only for inv/exp. Plonky3 0.4.2 and Rust 1.93.1 are pinned in `rust/`; Cargo.lock pins transitive dependencies. The report shows fast Lean against Plonky3. Lean's reference rows still participate in its validation and runs but are omitted from the comparison tables.
+| Suite | Selected fields and operations | Rust library |
+| --- | --- | --- |
+| `small-prime` (default) | KoalaBear, Mersenne31, Goldilocks: add/mul latency and throughput, inv/exp latency | Plonky3 0.4.2 |
+| `large-prime` | BN254 scalar field: mul latency and throughput | arkworks 0.5.0 (`ark_bn254::Fr`) |
+| `all` | Both suites, 20 cases total | Both libraries |
 
-Each run creates an ignored `bench/out/small-fields-*` directory containing exact input fixtures, raw samples, a machine/toolchain manifest, and `report.md` suitable for a PR comment. Timings are advisory, especially on a shared host. CI checks workload agreement on every PR, including implementation changes; it does not gate on relative speed.
+One Cargo project under `bench/rust/` shares the measurement and chain harness. Library-specific modules decode inputs and supply canonical checksums and cheap result sinks. Rust 1.93.1 is pinned, and Cargo.lock pins dependencies. CI validates all selected suites on every PR; it does not gate on relative speed. Tables show fast Lean against Rust. Lean's reference implementations still participate in validation and runs, but are omitted from the tables.
 
-Inputs and chain parameters come from `CompPolyFieldFixtures`, using the existing Lean generators. Rust matches the existing Lean batch shapes: 1,280 add/mul operations, or 64 inv/exp steps with an added constant between steps. Throughput updates ten lanes from their previous values and combines them with nine extra operations at the end. The reported divisor is 1,280, matching Lean. Exp uses the fixed exponent `0x5A5A5A5A`; inverse maps zero to zero. No per-operation accumulator or result array is added: only the final batch result is consumed. Rust uses scalar field APIs, with the compiler free to optimize them.
+Each run creates an ignored `bench/out/fields-*` directory containing exact fixtures, raw samples, a machine/toolchain manifest, and `report.md` suitable for a PR comment. Timings are advisory, especially on a shared host.
+
+### Inputs and field correspondence
+
+`CompPolyFieldFixtures` exports the existing Lean input pools in `canonical-le-bytes-v1` format. Each modulus and operand is a fixed-width little-endian JSON byte array: 4 bytes for KoalaBear/Mersenne31, 8 for Goldilocks, and 32 for BN254. An operand encodes the canonical integer in `[0, p)`, not the internal Montgomery representation. Rust checks the encoding, width, modulus, and input range before converting to the library's representation, outside timing. The full canonical integer contributes to the untimed checksum; large values are not truncated to 64 bits.
+
+BN254 here means the **scalar** field with modulus `21888242871839275222246405745257275088548364400416034343698204186575808495617`, matching `ark_bn254::Fr`, not `Fq`. This common prime and canonical integer representation establish the correspondence. Future binary-field comparisons must additionally establish a basis mapping; equal bit patterns alone do not establish that correspondence.
+
+### Workloads
+
+Rust matches existing Lean batch shapes: 1,280 small-prime add/mul operations, 320 BN254 multiplications, or 64 inv/exp steps with an added constant between steps. Throughput updates ten lanes from their previous values and combines them with nine extra operations at the end. The reported divisors exclude that merge, matching Lean. Exp uses `0x5A5A5A5A`; inverse maps zero to zero. Only the final batch result is consumed. BN254's timed sink samples native Montgomery words, avoiding canonical conversion or serialization in the timed loop. Rust uses scalar library APIs with default target flags; arkworks parallel and optional assembly features are disabled.

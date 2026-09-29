@@ -373,10 +373,12 @@ Recorded so they are not rediscovered. The audit and plan live in
   the same CPU, not packed AVX-512 or a whole-prover bench. Do not cite
   published cycle tables.
 
-## Small fields against Rust
+## Fields against Rust
 
-`python3 scripts/bench-small-fields.py --cpu 0` builds and compares the selected KoalaBear, Mersenne31, and Goldilocks groups against pinned Plonky3 scalar implementations. Add/mul have latency and throughput rows; inv/exp have latency rows. Choose an available logical CPU; all work is pinned there and the two executables run sequentially. The output directory under `bench/out/` contains two compact tables in `report.md`, raw samples, exact inputs exported from Lean, and machine/toolchain metadata.
+`python3 scripts/bench-fields.py --suite all --cpu 0` compares selected Lean groups with pinned Rust libraries. `--suite small-prime` covers KoalaBear, Mersenne31, and Goldilocks against Plonky3; `--suite large-prime` covers BN254 scalar multiplication against arkworks. The default suite is `small-prime`. Choose an available logical CPU; both executables run sequentially on it.
 
-The driver first verifies 18 cross-language digests and operation counts, then alternates executable order across five paired runs. Tables report the median of each run's sample median and the median absolute deviation between runs. Inv/exp include the same per-step add as Lean; throughput includes the same final nine-operation merge. Result consumption happens once per chain, outside its arithmetic loop. These measurements compare fast Lean with scalar Plonky3 on the same machine, and are not historical regression comparisons. Other workloads on the host can affect them.
+The driver exports fixed-width canonical little-endian byte inputs from Lean and checks cross-language result digests and operation counts before timing. BN254 is explicitly matched to arkworks `Fr` by its modulus. Input decoding and canonical result checks are outside timing. See [the benchmark README](../../bench/README.md#rust-field-comparison) for field correspondence, pinned versions, and workload details.
 
-`--validate-only` skips timing, and runs in Lean Action CI on every PR. `--skip-build` reuses built executables. See [the benchmark README](../../bench/README.md#small-field-rust-comparison) for pinned versions and workload details.
+Five paired runs alternate executable order. The output directory under `bench/out/` contains two compact tables in `report.md`, raw samples, exact inputs, and machine/toolchain metadata. Tables report the median of run medians and the median absolute deviation between runs. These are same-machine library comparisons, not historical regression comparisons; other workloads on the host can affect them.
+
+`--validate-only` skips timing, and CI uses it with `--suite all` on every PR. `--skip-build` reuses built executables.

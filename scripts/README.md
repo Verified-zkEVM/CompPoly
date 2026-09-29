@@ -181,6 +181,6 @@ lake build
 python3 ./scripts/check-docs-integrity.py
 ```
 
-### Small-field Rust comparison
+### Rust field comparison
 
-`python3 scripts/bench-small-fields.py --cpu 0` checks Lean/Plonky3 agreement, runs 18 selected cases sequentially on one logical CPU, and writes compact tables plus raw samples under `bench/out/`. Use `--validate-only` for correctness checks without timing and `--skip-build` to reuse binaries. See [the benchmark README](../bench/README.md#small-field-rust-comparison).
+`python3 scripts/bench-fields.py --suite all --cpu 0` checks Lean/Rust agreement and writes compact comparison tables plus raw samples under `bench/out/`. Select `small-prime`, `large-prime`, or `all`; the default is `small-prime`. Use `--validate-only` for correctness checks and `--skip-build` to reuse binaries. See [the benchmark README](../bench/README.md#rust-field-comparison).

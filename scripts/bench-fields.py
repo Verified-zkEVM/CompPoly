@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate and compare the 18 selected Lean/Plonky3 scalar field workloads."""
+"""Validate and compare selected Lean/Rust field workloads."""
 import argparse
 import hashlib
 import json
@@ -11,10 +11,21 @@ import subprocess
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-FIELDS = {"koalabear": "KoalaBear", "mersenne31": "Mersenne31", "goldilocks": "Goldilocks"}
-GROUPS = [f"fields-{f}-{op}" for f in FIELDS for op in ("add", "mul", "inv", "pow")]
-EXPECTED = {(g, mode) for g in GROUPS for mode in
-            (("latency", "throughput") if g.endswith(("-add", "-mul")) else ("latency",))}
+SUITES = {
+    "small-prime": {"koalabear": ("KoalaBear", "Plonky3", ("add", "mul", "inv", "pow")),
+                    "mersenne31": ("Mersenne31", "Plonky3", ("add", "mul", "inv", "pow")),
+                    "goldilocks": ("Goldilocks", "Plonky3", ("add", "mul", "inv", "pow"))},
+    "large-prime": {"bn254": ("BN254 scalar", "arkworks", ("mul",))},
+}
+
+
+def selection(suite):
+    fields = {f: spec for name, values in SUITES.items()
+              if suite == "all" or suite == name for f, spec in values.items()}
+    groups = [f"fields-{f}-{op}" for f, (_, _, ops) in fields.items() for op in ops]
+    expected = {(g, mode) for g in groups for mode in
+                (("latency", "throughput") if g.endswith(("-add", "-mul")) else ("latency",))}
+    return fields, groups, expected
 
 
 def command(args, cwd=ROOT):
@@ -25,7 +36,7 @@ def rows(path):
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
-def indexed(records, lean=False):
+def indexed(records, expected, lean=False):
     selected = {}
     for row in records:
         if lean and not row["name"].endswith("-fast"):
@@ -35,28 +46,31 @@ def indexed(records, lean=False):
         if key in selected:
             raise ValueError(f"duplicate case: {key}")
         selected[key] = row
-    if selected.keys() != EXPECTED:
-        raise ValueError(f"unexpected cases: missing {EXPECTED - selected.keys()}, extra {selected.keys() - EXPECTED}")
+    if selected.keys() != expected:
+        raise ValueError(f"unexpected cases: missing {expected - selected.keys()}, extra {selected.keys() - expected}")
     return selected
 
 
 def compare(lean, rust):
-    for key in EXPECTED:
+    if lean.keys() != rust.keys():
+        raise ValueError("Lean/Rust case sets differ")
+    for key in lean:
         for prop in ("checksum", "work_units"):
             if int(lean[key][prop]) != int(rust[key][prop]):
                 raise ValueError(f"{key}: {prop} differs: {lean[key][prop]} vs {rust[key][prop]}")
 
 
-def report(out, measurements, manifest):
-    lines = ["## Small fields: fast Lean vs Plonky3", "",
+def report(out, measurements, manifest, fields, expected):
+    lines = ["## Fields: fast Lean vs Rust", "",
+             "Rust uses Plonky3 for small primes and arkworks for BN254 scalar multiplication.", "",
              "Nanoseconds per operation; **lower is better**. Values are the median of run medians; ± is the median absolute deviation between runs. Ratio = Lean / Rust (>1 means Rust is faster).", ""]
     for mode in ("latency", "throughput"):
-        lines += [f"### {mode.title()}", "", "| Field | Operation | Fast Lean (ns) | Plonky3 (ns) | Lean / Rust |",
+        lines += [f"### {mode.title()}", "", "| Field | Operation | Fast Lean (ns) | Rust (ns) | Lean / Rust |",
                   "| :--- | :--- | ---: | ---: | ---: |"]
-        for field, title in FIELDS.items():
-            for op in ("add", "mul", "inv", "pow"):
+        for field, (title, _library, operations) in fields.items():
+            for op in operations:
                 key = f"fields-{field}-{op}", mode
-                if key not in EXPECTED:
+                if key not in expected:
                     continue
                 values = []
                 for language in ("lean", "rust"):
@@ -71,22 +85,24 @@ def report(out, measurements, manifest):
     lines += ["### Machine and method", "",
               f"- **CPU:** {manifest['cpu_model']}; {manifest['logical_cpus']} logical CPUs. Both runners pinned to logical CPU {manifest['cpu']}, sequentially, with one thread (SMT siblings: {manifest['smt_siblings']}).",
               f"- **Memory:** {manifest['memory_gib']:.1f} GiB. **OS:** {manifest['os']}; kernel {manifest['kernel']} ({manifest['architecture']}).",
-              f"- **Toolchains:** {manifest['lean_version']}; {manifest['rust_version']}; Plonky3 0.4.2. Rust release, LTO, one codegen unit; RUSTFLAGS={manifest['rustflags']!r}.",
+              f"- **Toolchains:** {manifest['lean_version']}; {manifest['rust_version']}; Plonky3 0.4.2 and arkworks 0.5.0. Rust release, LTO, one codegen unit; RUSTFLAGS={manifest['rustflags']!r}.",
               f"- **Source:** `{manifest['commit']}`; tracked files dirty: {manifest['dirty']}. Fixture SHA-256: `{manifest['fixture_sha256']}`.",
-              f"- **Sampling:** {len(measurements)} paired runs, alternating Lean/Rust order; each case uses 50 ms warmup and 20 samples targeting 1 ms each. All 18 untimed result digests agree with Lean; Lean also checks its reference implementations.",
-              "- **Workloads:** add/mul use 1,280 operations per batch. Throughput uses ten scalar lanes and nine final combining operations (outside the 1,280 divisor), matching Lean. Inv/exp use 64 dependent steps of `inv(x + b)` / `(x + b)^0x5A5A5A5A`, so their times include one add per step. Only the final batch result is consumed.",
+              f"- **Sampling:** {len(measurements)} paired runs, alternating Lean/Rust order; each case uses 50 ms warmup and 20 samples targeting 1 ms each. All {len(expected)} untimed result digests agree with Lean; Lean also checks its reference implementations.",
+              "- **Workloads:** small-prime add/mul use 1,280 operations per batch; BN254 mul uses 320. Throughput uses ten scalar lanes and nine final combining operations (outside the batch divisor), matching Lean. Inv/exp use 64 dependent steps of `inv(x + b)` / `(x + b)^0x5A5A5A5A`, so their times include one add per step. Only the final batch result is consumed.",
               "- **Shared host:** other jobs may contend for the CPU, SMT sibling, caches, or boost budget. These are observations under load, not isolated-machine speed claims.", ""]
     (out / "report.md").write_text("\n".join(lines))
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--suite", choices=[*SUITES, "all"], default="small-prime")
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--skip-build", action="store_true", help="use already built executables")
     parser.add_argument("--cpu", type=int, help="logical CPU; default: first allowed CPU")
     parser.add_argument("--runs", type=int, default=5)
     parser.add_argument("--out-dir", type=Path)
     args = parser.parse_args()
+    fields, groups, expected = selection(args.suite)
     if args.runs < 3:
         parser.error("use at least three paired runs")
     allowed = os.sched_getaffinity(0)
@@ -96,13 +112,18 @@ def main():
     os.sched_setaffinity(0, {cpu})
     os.environ["LEAN_NUM_THREADS"] = "1"
     os.environ["CARGO_BUILD_JOBS"] = "1"
-    out = (args.out_dir or ROOT / "bench/out" / time.strftime("small-fields-%Y%m%d-%H%M%S")).resolve()
+    out = (args.out_dir or ROOT / "bench/out" / time.strftime(f"fields-{args.suite}-%Y%m%d-%H%M%S")).resolve()
     out.mkdir(parents=True, exist_ok=False)
     if not args.skip_build:
         subprocess.run(["lake", "build", "CompPolyBench", "CompPolyFieldFixtures"], cwd=ROOT, check=True)
         subprocess.run(["cargo", "build", "--release", "--locked", "-j", "1"], cwd=ROOT / "bench/rust", check=True)
     fixtures = out / "fixtures.jsonl"
-    fixtures.write_text(command([str(ROOT / ".lake/build/bin/CompPolyFieldFixtures")]) + "\n")
+    exported = [json.loads(line) for line in command(
+        [str(ROOT / ".lake/build/bin/CompPolyFieldFixtures")]).splitlines()]
+    selected = [row for row in exported if row["group_key"] in groups]
+    if len(selected) != len(groups) or {row["group_key"] for row in selected} != set(groups):
+        raise ValueError("missing or duplicate fixtures")
+    fixtures.write_text("".join(json.dumps(row) + "\n" for row in selected))
     rust_exe = ROOT / "bench/rust/target/release/comppoly-field-bench"
 
     def run(language, label, validate):
@@ -110,7 +131,7 @@ def main():
         directory.mkdir(parents=True)
         if language == "lean":
             cmd = [str(ROOT / ".lake/build/bin/CompPolyBench"), "--medium", "--json-only",
-                   "--groups", ",".join(GROUPS), "--out-dir", str(directory)]
+                   "--groups", ",".join(groups), "--out-dir", str(directory)]
         else:
             cmd = [str(rust_exe), str(fixtures)]
         if validate:
@@ -121,14 +142,15 @@ def main():
             files = list(directory.glob("results-*.jsonl"))
             if len(files) != 1:
                 raise ValueError("expected one Lean result file")
-            return indexed(rows(files[0]), lean=True)
-        return indexed(rows(directory / "stdout.jsonl"))
+            return indexed(rows(files[0]), expected, lean=True)
+        return indexed(rows(directory / "stdout.jsonl"), expected)
 
     compare(run("lean", "validation", True), run("rust", "validation", True))
-    print("All 18 cases: Lean/Rust checksums and operation counts agree.", flush=True)
+    print(f"All {len(expected)} cases: Lean/Rust checksums and operation counts agree.", flush=True)
     if args.validate_only:
         return
     manifest = {
+        "suite": args.suite,
         "commit": command(["git", "rev-parse", "HEAD"]),
         "dirty": bool(command(["git", "status", "--porcelain", "--untracked-files=no"])),
         "cpu": cpu, "logical_cpus": os.cpu_count(),
@@ -153,7 +175,7 @@ def main():
         measurements.append(pair)
     manifest["load_end"] = os.getloadavg()
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
-    report(out, measurements, manifest)
+    report(out, measurements, manifest, fields, expected)
     print(f"Report: {out / 'report.md'}")
 
 
