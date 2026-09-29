@@ -7,7 +7,7 @@ module
 
 public import CompPoly.Bivariate.Basic
 public import CompPoly.Bivariate.ToPoly
-public import CompPoly.Multivariate.CMvPolynomial
+public import CompPoly.Multivariate.Basic
 public import CompPoly.Multivariate.MvPolyEquiv.Instances
 public import CompPoly.Multivariate.FinSuccEquiv
 public import CompPoly.Multivariate.Rename

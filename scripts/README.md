@@ -58,6 +58,16 @@ line length, forbidden imports or tactics, trailing whitespace, and the local
 
 Use this directly only when you want to lint a specific subset of files.
 
+### `gen_mersenne31_circle_certificate.py`
+
+Emits the `generatorDoublings` declaration for the Mersenne31 circle generator by
+30 successive doublings modulo `2^31 - 1`. It prints the declaration without modifying
+source files. Run `python3 scripts/gen_mersenne31_circle_certificate.py --check` to
+verify the checked-in data, or pass a Lean file after `--check` to compare that file.
+The script is outside the trusted code base: Lean checks every step with kernel
+`decide` and proves the connection to scalar multiplication. See the
+[circle-group documentation](../docs/wiki/field-extensions.md#mersenne31-circle-group).
+
 ### `gen_rabin_certificate.py`
 
 TCB-external generator for kernel-checkable Rabin irreducibility certificates of a

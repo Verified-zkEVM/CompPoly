@@ -14,3 +14,4 @@ CompPoly/Fields/Binary/AdditiveNTT/NovelPolynomialBasis.lean : line 1 : ERR_NUM_
 CompPoly/Data/Nat/Bitwise.lean : line 1 : ERR_NUM_LIN : 1700 file contains 1537 lines, try to split it up : ERR_NUM_LIN
 CompPoly/Bivariate/GuruswamiSudan/Root/Alekhnovich/Correctness.lean : line 1 : ERR_NUM_LIN : 2600 file contains 2421 lines, try to split it up : ERR_NUM_LIN
 CompPoly/Data/ExtTreeMap/DTreeMap.lean : line 1 : ERR_LIN : Line has more than 100 characters : ERR_LIN
+CompPoly/Univariate/Basic.lean : line 1 : ERR_NUM_LIN : 1700 file contains 1516 lines, try to split it up : ERR_NUM_LIN
