@@ -138,7 +138,23 @@ With the `Algebra` instance in place, ordinary Mathlib machinery — `aeval`, sc
 
 **Still missing**, and the natural next step: tower support. There is no `AlgebraTower` instance
 (`CompPoly/Data/RingTheory/AlgebraTower.lean`), so `F ⊂ Ext F 2 ⊂ Ext F 4` does not compose and
-the Mersenne31 CM31/QM31 Circle-STARK stack is out of reach.
+the full Mersenne31 CM31/QM31 extension-tower stack remains unavailable.
+
+### Mersenne31 Circle Group
+
+The base-field circle group in
+[`Mersenne31/Circle.lean`](../../CompPoly/Fields/Mersenne31/Circle.lean) does not need that
+extension tower. It provides `AddCommGroup Point`, binary natural and integer scalar
+multiplication, the exact-order theorem `addOrderOf_generator`, and the additive
+homomorphism `CirclePointIndex.toPointHom`. The order proof uses a kernel-checked
+30-step doubling certificate to establish the half-order point, then Mathlib's
+prime-power order criterion. Executable guards remain regression checks, not proof substitutes.
+
+`Coset` and `CircleDomain` still describe indexing shapes: arbitrary steps are allowed,
+points may repeat, and a half coset may overlap its conjugate. Their `size` counts index
+positions, not necessarily distinct points. The follow-up must specify validity conditions
+and prove coset point distinctness, disjointness of domain halves, and the corresponding
+cardinality theorems. These claims cannot be made for all current structure values.
 
 ## Irreducibility: Rabin, Collapsed
 

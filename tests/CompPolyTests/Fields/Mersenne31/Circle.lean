@@ -13,7 +13,7 @@ import Mathlib.Tactic.Ring
 # Mersenne31 Circle Domain Tests
 
 Public-API proofs and executable regression checks for the STWO-style Mersenne31
-circle-domain skeleton. Ordinary imports deliberately do not expose implementation bodies.
+circle group and domain shapes. Ordinary imports deliberately do not expose implementation bodies.
 -/
 
 public section
@@ -32,9 +32,13 @@ example : generator.y = 1268011823 := generator_y
 
 example (p q r : Point) : (p + q) + r = p + (q + r) := add_assoc p q r
 
-example (p : Point) : Point.nsmul p 0 = 0 := by
-  fail_if_success rfl
-  simp only [Point.nsmul_zero]
+example : AddCommGroup Point := inferInstance
+
+example (p : Point) : (0 : Nat) • p = 0 := zero_nsmul _
+
+example (p q : Point) : p + q = q + p := add_comm _ _
+
+example (p : Point) : -p + p = 0 := neg_add_cancel _
 
 example (p : Point) : (-p).x = p.x := by
   simp only [Point.conjugate_x]
@@ -105,11 +109,12 @@ example (n : Nat) (h : n + 2 ≤ logOrder) :
   simp only [Coset.halfOdds_eq, Coset.new_initialIndex, Coset.new_stepSize,
     Coset.new_logSize, and_self]
 
-example (i : CirclePointIndex) : CirclePointIndex.toPoint i = Point.nsmul generator i.val := by
+example (i : CirclePointIndex) : CirclePointIndex.toPoint i = i.val • generator := by
+  fail_if_success rfl
   rw [CirclePointIndex.toPoint_def]
 
 example (c : Coset) (i : Nat) : c.pointAt i =
-    Point.nsmul generator (c.initialIndex + c.stepSize * (i : CirclePointIndex)).val := by
+    (c.initialIndex + c.stepSize * (i : CirclePointIndex)).val • generator := by
   rw [Coset.pointAt_def, CirclePointIndex.toPoint_def, Coset.indexAt_eq]
 
 example (D : CircleDomain) : D.logSize = D.halfCoset.logSize + 1 := by
@@ -131,8 +136,8 @@ example (D : CircleDomain) : D.indexAt D.halfCoset.size = -D.halfCoset.initialIn
   simp
 
 example (D : CircleDomain) (i : Nat) : D.pointAt i =
-    Point.nsmul generator (if i < D.halfCoset.size then D.halfCoset.indexAt i
-      else D.halfCoset.conjugate.indexAt (i - D.halfCoset.size)).val := by
+    (if i < D.halfCoset.size then D.halfCoset.indexAt i
+      else D.halfCoset.conjugate.indexAt (i - D.halfCoset.size)).val • generator := by
   rw [CircleDomain.pointAt_def, CirclePointIndex.toPoint_def, CircleDomain.indexAt_def]
 
 example (c : CanonicCoset) : c.coset.stepSize = CirclePointIndex.subgroupGen c.logSize := by
@@ -171,11 +176,31 @@ example : CirclePointIndex.toPoint 0 = 0 := by
 example : CirclePointIndex.toPoint CirclePointIndex.generator = generator := by
   simp
 
-example (p : Point) (n : Nat) : Point.nsmul p n = nsmulRec n p :=
-  Point.nsmul_eq_nsmulRec p n
+example : addOrderOf generator = 2 ^ 31 := addOrderOf_generator
+
+example : order • generator = 0 := order_nsmul_generator
+
+example : (2 ^ 30 : Nat) • generator = Point.antipode 0 := generator_half_order
+
+example (i j : CirclePointIndex) :
+    CirclePointIndex.toPoint (i + j) = CirclePointIndex.toPoint i + CirclePointIndex.toPoint j := by
+  simp only [CirclePointIndex.toPoint_add]
+
+example (i : CirclePointIndex) :
+    CirclePointIndex.toPoint (-i) = -CirclePointIndex.toPoint i := by
+  simp only [CirclePointIndex.toPoint_neg]
+
+example (i j : CirclePointIndex) :
+    CirclePointIndex.toPoint (i - j) = CirclePointIndex.toPoint i - CirclePointIndex.toPoint j := by
+  simp only [CirclePointIndex.toPoint_sub]
+
+example (i : CirclePointIndex) (n : Nat) :
+    CirclePointIndex.toPoint (n • i) = n • CirclePointIndex.toPoint i := by
+  simpa only [CirclePointIndex.toPointHom_apply] using
+    map_nsmul CirclePointIndex.toPointHom n i
 
 #guard (List.range 64).all fun n =>
-  let actual := Point.nsmul generator n
+  let actual := n • generator
   let expected := nsmulRec n generator
   actual.x == expected.x && actual.y == expected.y
 
@@ -183,10 +208,13 @@ example (p : Point) (n : Nat) : Point.nsmul p n = nsmulRec n p :=
 #guard (CirclePointIndex.toPoint (-1)).y = -generator.y
 
 -- Pin both half-order and full-order behavior, independently of reduction modulo the index order.
-#guard (Point.nsmul generator (2 ^ 30)).x = -1
-#guard (Point.nsmul generator (2 ^ 30)).y = 0
-#guard (Point.nsmul generator (2 ^ 31)).x = 1
-#guard (Point.nsmul generator (2 ^ 31)).y = 0
+#guard ((2 ^ 30 : Nat) • generator).x = -1
+#guard ((2 ^ 30 : Nat) • generator).y = 0
+#guard ((2 ^ 31 : Nat) • generator).x = 1
+#guard ((2 ^ 31 : Nat) • generator).y = 0
+#guard ((-(2 ^ 30) : Int) • generator).x = -1
+#guard ((-(2 ^ 30) : Int) • generator).y = 0
+#guard ((-1 : Int) • generator).y = -generator.y
 #guard (CirclePointIndex.toPoint ((2 ^ 30 : Nat) : CirclePointIndex)).x = -1
 #guard (CirclePointIndex.toPoint ((2 ^ 30 : Nat) : CirclePointIndex)).y = 0
 

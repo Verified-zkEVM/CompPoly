@@ -6,6 +6,7 @@ Authors: Adrien Lacombe
 module
 
 public import CompPoly.Fields.Mersenne31.Basic
+public import Mathlib.GroupTheory.OrderOfElement
 meta import Lean.Elab.Tactic.Omega
 import Mathlib.Tactic.Ring
 
@@ -17,18 +18,19 @@ Mersenne31 field. It records the circle equation, the STWO M31 circle generator,
 index arithmetic modulo the circle order, and the coset/domain shapes used by
 canonical circle domains.
 
-`CirclePointIndex.toPoint` currently interprets an index via `Point.nsmul` on the
-canonical natural representative `i.val`. A follow-on PR should prove generator
-order `2^31` and that `toPoint` is a group homomorphism on `CirclePointIndex`.
+Circle points form an additive commutative group, with binary scalar multiplication.
+The STWO generator has order `2^31`, and `CirclePointIndex.toPoint` respects addition.
+
+Cosets and domains currently describe indexing shapes, not certified sets of distinct
+points. A follow-up must specify validity conditions and prove point distinctness,
+disjointness of domain halves, and equality of the declared size with set cardinality.
+These properties do not hold for arbitrary values of the current structures.
 -/
 
 public section
 
 namespace Mersenne31
 namespace Circle
-
-/-- The canonical Mersenne31 field used by the circle-domain skeleton. -/
-abbrev Field := Mersenne31.Field
 
 /-- Predicate for points on the circle `x^2 + y^2 = 1`. -/
 @[expose]
@@ -64,7 +66,7 @@ def conjugate (p : Point) : Point where
   onCircle := by
     simpa [OnCircle, pow_two] using p.onCircle
 
-/-- The antipodal point. Reserved for follow-on circle-group lemmas. -/
+/-- The antipodal point, obtained by negating both coordinates. -/
 def antipode (p : Point) : Point where
   x := -p.x
   y := -p.y
@@ -101,23 +103,6 @@ instance : AddSemigroup Point where
     · change (p.x * q.x - p.y * q.y) * r.y + (p.x * q.y + p.y * q.x) * r.x =
         p.x * (q.x * r.y + q.y * r.x) + p.y * (q.x * r.x - q.y * r.y)
       ring
-
-/-- Circle scalar multiplication by binary doubling and addition. -/
-def nsmul (p : Point) (n : Nat) : Point :=
-  nsmulBinRec n p
-
-/-- Binary scalar multiplication agrees with repeated circle-group addition. -/
-theorem nsmul_eq_nsmulRec (p : Point) (n : Nat) : nsmul p n = nsmulRec n p := by
-  change nsmulBinRecAuto n p = nsmulRecAuto n p
-  rw [nsmulRec_eq_nsmulBinRec]
-
-/-- The zero multiple is the circle identity. -/
-@[simp]
-theorem nsmul_zero (p : Point) : nsmul p 0 = 0 := by rfl
-
-/-- Increasing the scalar by one adds one copy of the point. -/
-theorem nsmul_succ (p : Point) (n : Nat) : nsmul p (n + 1) = nsmul p n + p :=
-  nsmulBinRec_succ n p
 
 /-- The identity point has x-coordinate one. -/
 @[simp]
@@ -161,6 +146,35 @@ theorem zero_add (p : Point) : (0 : Point) + p = p := by
   · change (1 : Field) * py + (0 : Field) * px = py
     ring
 
+instance : AddCommGroup Point where
+  add := Point.add
+  zero := Point.zero
+  neg := Point.conjugate
+  add_assoc := add_assoc
+  zero_add := Point.zero_add
+  add_zero p := by
+    apply Point.ext
+    · simp only [add_x, zero_x, zero_y, mul_one, mul_zero, sub_zero]
+    · simp only [add_y, zero_x, zero_y, mul_one, mul_zero, _root_.zero_add]
+  add_comm p q := by
+    apply Point.ext
+    · simp only [add_x]
+      ring
+    · simp only [add_y]
+      ring
+  neg_add_cancel p := by
+    apply Point.ext
+    · change p.x * p.x - (-p.y) * p.y = 1
+      simpa only [neg_mul, sub_neg_eq_add, OnCircle, pow_two] using p.onCircle
+    · change p.x * p.y + (-p.y) * p.x = 0
+      ring
+  nsmul := nsmulBinRec
+  nsmul_zero := nsmulBinRec_zero
+  nsmul_succ := nsmulBinRec_succ
+  zsmul := zsmulRec nsmulBinRec
+  zsmul_zero' := nsmulBinRec_zero
+  zsmul_succ' := nsmulBinRec_succ
+
 end Point
 
 /-- STWO's Mersenne31 circle generator x-coordinate. -/
@@ -196,6 +210,52 @@ theorem generator_x : generator.x = 2 := by rfl
 @[simp]
 theorem generator_y : generator.y = 1268011823 := by rfl
 
+-- Each step checks supplied coordinates, avoiding exponential unfolding of repeated doubling.
+private def checkDoublings (p : Field × Field) : List (Field × Field) → Bool
+  | [] => decide (p = (-1, 0))
+  | q :: qs => decide (q = (p.1 * p.1 - p.2 * p.2, p.1 * p.2 + p.2 * p.1)) &&
+      checkDoublings q qs
+
+private theorem checkDoublings_sound (qs : List (Field × Field)) (p : Point)
+    (h : checkDoublings (p.x, p.y) qs = true) :
+    (((2 ^ qs.length : Nat) • p).x, ((2 ^ qs.length : Nat) • p).y) = (-1, 0) := by
+  induction qs generalizing p with
+  | nil =>
+    simpa only [checkDoublings, decide_eq_true_eq, List.length_nil, pow_zero, one_nsmul]
+      using h
+  | cons q qs ih =>
+    simp only [checkDoublings, Bool.and_eq_true, decide_eq_true_eq] at h
+    have hcoords : ((p + p).x, (p + p).y) = q := by
+      simpa only [Point.add_x, Point.add_y] using h.1.symm
+    have hnext : checkDoublings ((p + p).x, (p + p).y) qs = true := by
+      rw [hcoords]
+      exact h.2
+    simpa only [List.length_cons, pow_succ, mul_smul, two_nsmul] using ih (p + p) hnext
+
+private def generatorDoublings : List (Field × Field) :=
+  [(7, 777079998), (97, 141701737), (18817, 1720333214), (708158977, 683185920),
+   (334835419, 1444967316), (2042371533, 1362265296), (212706801, 1223819887),
+   (421007138, 256177860), (6346213, 905523693), (1022251061, 788094511),
+   (1633461177, 574296567), (595037635, 2111542451), (1799120754, 343598868),
+   (438833264, 1327019128), (1389168750, 838891026), (1543902459, 1632329423),
+   (1330239767, 1446369578), (1420207432, 2023238517), (2015554631, 1088093947),
+   (996212859, 1140996376), (1434706457, 1835793811), (13610297, 1064696601),
+   (785043271, 1260750973), (838195206, 1774253895), (579625837, 1690787918),
+   (1179735656, 1241207368), (590768354, 978592373), (32768, 2147450879),
+   (0, 2147483646), (2147483646, 0)]
+
+private theorem generatorDoublings_valid :
+    checkDoublings (generator.x, generator.y) generatorDoublings = true := by
+  decide
+
+/-- The half-order multiple of the STWO generator is the antipode of the identity. -/
+theorem generator_half_order : (2 ^ 30 : Nat) • generator = Point.antipode 0 := by
+  have h := checkDoublings_sound generatorDoublings generator generatorDoublings_valid
+  change (((2 ^ 30 : Nat) • generator).x, ((2 ^ 30 : Nat) • generator).y) = (-1, 0) at h
+  apply Point.ext
+  · simpa only [Point.antipode_x, Point.zero_x] using congrArg Prod.fst h
+  · simpa only [Point.antipode_y, Point.zero_y, neg_zero] using congrArg Prod.snd h
+
 /-- The log order of STWO's Mersenne31 circle group. -/
 @[expose, reducible]
 def logOrder : Nat := 31
@@ -203,6 +263,28 @@ def logOrder : Nat := 31
 /-- The order of the Mersenne31 circle-index group, `2^31`. -/
 @[expose, reducible]
 def order : Nat := 2 ^ logOrder
+
+/-- The circle-index modulus annihilates the STWO generator. -/
+theorem order_nsmul_generator : order • generator = 0 := by
+  simp only [order, logOrder]
+  rw [show (31 : Nat) = 30 + 1 from rfl]
+  rw [pow_succ', mul_smul, two_nsmul, generator_half_order]
+  apply Point.ext
+  · simp only [Point.add_x, Point.antipode_x, Point.antipode_y, Point.zero_x,
+      Point.zero_y, neg_zero, neg_mul_neg, mul_one, mul_zero, sub_zero]
+  · simp only [Point.add_y, Point.antipode_x, Point.antipode_y, Point.zero_y,
+      neg_zero, mul_zero, zero_mul, add_zero]
+
+/-- The STWO Mersenne31 circle generator has exact additive order `2^31`. -/
+@[simp]
+theorem addOrderOf_generator : addOrderOf generator = 2 ^ 31 := by
+  have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  apply addOrderOf_eq_prime_pow (p := 2) (n := 30)
+  · intro h
+    have hx := congrArg Point.x (generator_half_order.symm.trans h)
+    have hne : (-1 : Field) ≠ 1 := by decide
+    exact hne (by simpa only [Point.antipode_x, Point.zero_x] using hx)
+  · exact order_nsmul_generator
 
 /-- Integer index for multiples of the Mersenne31 circle generator. -/
 abbrev CirclePointIndex := ZMod order
@@ -226,16 +308,13 @@ def subgroupGen (logSize : Nat) : CirclePointIndex :=
 theorem subgroupGen_eq (logSize : Nat) :
     subgroupGen logSize = ((2 ^ (logOrder - logSize) : Nat) : CirclePointIndex) := by rfl
 
-/-- Interpret an index as a repeated multiple of the STWO circle generator.
-
-Uses the canonical natural representative of `i`; see the module docstring for
-the planned homomorphism proof. -/
+/-- Interpret the canonical representative of an index as a multiple of the STWO generator. -/
 def toPoint (i : CirclePointIndex) : Point :=
-  Point.nsmul Circle.generator i.val
+  i.val • Circle.generator
 
 /-- Index interpretation uses the canonical natural representative. -/
 theorem toPoint_def (i : CirclePointIndex) :
-    toPoint i = Point.nsmul Circle.generator i.val := by rfl
+    toPoint i = i.val • Circle.generator := by rfl
 
 /-- Index zero maps to the circle identity. -/
 @[simp]
@@ -246,14 +325,40 @@ theorem toPoint_zero : toPoint 0 = 0 := by
 /-- The distinguished index maps to the STWO circle generator. -/
 @[simp]
 theorem toPoint_generator : toPoint CirclePointIndex.generator = Circle.generator := by
-  unfold toPoint CirclePointIndex.generator Circle.generator
-  change Point.nsmul Circle.generator (0 + 1) = Circle.generator
-  simp only [Point.nsmul_succ, Point.nsmul_zero, Point.zero_add]
+  change (1 : Nat) • Circle.generator = Circle.generator
+  exact one_nsmul _
 
 /-- Index one maps to the STWO circle generator. -/
 @[simp]
 theorem toPoint_one : toPoint 1 = Circle.generator := by
   simpa only [generator_eq] using toPoint_generator
+
+/-- Index addition agrees with circle addition, including wraparound at the circle order. -/
+@[simp]
+theorem toPoint_add (i j : CirclePointIndex) : toPoint (i + j) = toPoint i + toPoint j := by
+  simp only [toPoint_def, ZMod.val_add]
+  simpa only [addOrderOf_generator, order, logOrder, add_nsmul] using
+    mod_addOrderOf_nsmul Circle.generator (i.val + j.val)
+
+/-- The additive homomorphism interpreting circle indices as points. -/
+def toPointHom : CirclePointIndex →+ Point where
+  toFun := toPoint
+  map_zero' := toPoint_zero
+  map_add' := toPoint_add
+
+/-- The homomorphism uses the executable index interpretation. -/
+@[simp]
+theorem toPointHom_apply (i : CirclePointIndex) : toPointHom i = toPoint i := by rfl
+
+/-- Negating an index conjugates its circle point. -/
+@[simp]
+theorem toPoint_neg (i : CirclePointIndex) : toPoint (-i) = -toPoint i :=
+  map_neg toPointHom i
+
+/-- Subtracting indices agrees with subtracting their circle points. -/
+@[simp]
+theorem toPoint_sub (i j : CirclePointIndex) : toPoint (i - j) = toPoint i - toPoint j :=
+  map_sub toPointHom i j
 
 /-- The subgroup generator for the trivial subgroup is zero modulo the circle order. -/
 @[simp]
@@ -268,7 +373,9 @@ theorem subgroupGen_logOrder : subgroupGen logOrder = generator := by
 
 end CirclePointIndex
 
-/-- A coset of circle indices with a fixed additive step. -/
+/-- An indexing shape with a fixed additive step, not a certified coset of distinct points.
+No relation between `stepSize` and `logSize` is required; a zero step is allowed.
+Validity conditions and distinctness/cardinality theorems are deferred to a follow-up. -/
 structure Coset where
   initialIndex : CirclePointIndex
   stepSize : CirclePointIndex
@@ -327,7 +434,7 @@ theorem halfOdds_eq (n : Nat) (h : n + 2 ≤ logOrder) :
     halfOdds n h = new (CirclePointIndex.subgroupGen (n + 2)) n
       (Nat.le_trans (Nat.le_add_right n 2) h) := by rfl
 
-/-- Number of indices in the coset. -/
+/-- Declared number of index positions, not necessarily the number of distinct points. -/
 def size (c : Coset) : Nat :=
   2 ^ c.logSize
 
@@ -393,7 +500,9 @@ theorem conjugate_indexAt (c : Coset) (i : Nat) :
 
 end Coset
 
-/-- A valid STWO circle domain: a half coset followed by its conjugate. -/
+/-- A domain indexing shape: a half coset followed by its conjugate.
+The halves need not be disjoint, and either half may contain repeated points.
+A follow-up must impose validity conditions before identifying `size` with cardinality. -/
 structure CircleDomain where
   halfCoset : Coset
 
@@ -415,7 +524,7 @@ def logSize (D : CircleDomain) : Nat :=
 @[simp low]
 theorem logSize_eq (D : CircleDomain) : D.logSize = D.halfCoset.logSize + 1 := by rfl
 
-/-- Number of indices in the domain. -/
+/-- Declared number of index positions, not necessarily the number of distinct points. -/
 def size (D : CircleDomain) : Nat :=
   2 ^ D.logSize
 
