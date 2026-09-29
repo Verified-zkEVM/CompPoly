@@ -393,3 +393,7 @@ The checked binary-GCD inverse uses native `Int64` transition coefficients insid
 On the Ryzen 7 3700X, pinned to CPU 11, five interleaved `--small` A/B rounds against `76f4a91` measured inversion at 0.915× baseline time (8.14 → 7.44 μs per chain step), with matching digests and no `SUSPECT`. All 4,096 inversion inputs in the comparison workload accepted the native candidate. These host-specific observations do not update the separate M3 reference-machine best-time tables.
 
 Conditional reduction compares bounded limbs from the most significant end and stops at the first difference. The five-pair BN254 A/B run against the signed-word-inversion baseline measured multiplication throughput at 0.883× baseline time (65.64 → 57.95 ns/op), with no judged regressions in the other BN254 rows.
+
+Binary exponentiation calls the inline `square` directly, exposing equal operands to code generation while retaining the definitionally equal binary-recursion algorithm. Five interleaved A/B rounds against `7c0bcd7` measured exponentiation at 0.916× baseline time (2.74 → 2.51 μs per chain step), with no `SUSPECT` or other row classified as slower.
+
+Compact eight-`UInt32` storage, branch-free reduction, reversed multiplication operands, and borrowed-operand kernels were also screened. None was retained: compact storage improved addition but slowed multiplication, branch-free reduction regressed other operations, and the operand variants offered no reliable improvement.

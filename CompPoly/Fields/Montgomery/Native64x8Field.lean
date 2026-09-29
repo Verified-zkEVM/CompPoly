@@ -176,7 +176,9 @@ def one (modulus : ℕ) [P : Mont64x8Field modulus] : FastField modulus :=
 
 /-- Exponentiation by repeated squaring. -/
 @[specialize] def pow (x : FastField modulus) (n : ℕ) : FastField modulus :=
-  @npowBinRec (FastField modulus) ⟨one modulus⟩ ⟨mul⟩ n x
+  n.binaryRec (fun (y _ : FastField modulus) ↦ y)
+    (fun bit _ rec y x ↦ rec (cond bit (mul y x) y) (square x))
+    (one modulus) x
 
 /-- Inversion by Fermat's little theorem, `x⁻¹ = x ^ (modulus - 2)`. -/
 @[inline] def inv (x : FastField modulus) : FastField modulus := pow x (modulus - 2)
@@ -417,9 +419,8 @@ theorem toField_square (x : FastField modulus) : toField (square x) = toField x 
 theorem toField_pow (x : FastField modulus) (n : ℕ) : toField (pow x n) = toField x ^ n := by
   induction n with
   | zero =>
-      unfold pow
-      rw [npowBinRec_zero, toField_one]
-      simp
+      change toField (one modulus) = toField x ^ 0
+      rw [← one_def, toField_one, pow_zero]
   | succ n ih => rw [pow_succ_field, toField_mul, ih, _root_.pow_succ]
 
 /-- Fermat-style inversion in `ZMod modulus`. -/
