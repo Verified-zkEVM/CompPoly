@@ -15,7 +15,7 @@ public import CompPoly.Fields.Mersenne31.Fast
 
   Facade module for the Mersenne31 field. It re-exports the canonical `ZMod` model
   from `CompPoly.Fields.Mersenne31.Basic` and the native-word implementation from
-  `CompPoly.Fields.Mersenne31.Fast`, plus the circle-domain skeleton from
+  `CompPoly.Fields.Mersenne31.Fast`, plus the circle group and domain-indexing API from
   `CompPoly.Fields.Mersenne31.Circle`.
 -/
 

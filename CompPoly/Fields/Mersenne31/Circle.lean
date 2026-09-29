@@ -37,6 +37,10 @@ namespace Circle
 def OnCircle (x y : Field) : Prop :=
   x ^ 2 + y ^ 2 = 1
 
+instance (x y : Field) : Decidable (OnCircle x y) := by
+  unfold OnCircle
+  infer_instance
+
 /-- A point on the Mersenne31 circle. -/
 structure Point where
   x : Field
@@ -93,16 +97,14 @@ instance : Neg Point := ⟨conjugate⟩
 
 instance : Add Point := ⟨add⟩
 
-instance : AddSemigroup Point where
-  add := Point.add
-  add_assoc p q r := by
-    apply Point.ext
-    · change (p.x * q.x - p.y * q.y) * r.x - (p.x * q.y + p.y * q.x) * r.y =
-        p.x * (q.x * r.x - q.y * r.y) - p.y * (q.x * r.y + q.y * r.x)
-      ring
-    · change (p.x * q.x - p.y * q.y) * r.y + (p.x * q.y + p.y * q.x) * r.x =
-        p.x * (q.x * r.y + q.y * r.x) + p.y * (q.x * r.x - q.y * r.y)
-      ring
+private theorem add_assoc_aux (p q r : Point) : (p + q) + r = p + (q + r) := by
+  apply Point.ext
+  · change (p.x * q.x - p.y * q.y) * r.x - (p.x * q.y + p.y * q.x) * r.y =
+      p.x * (q.x * r.x - q.y * r.y) - p.y * (q.x * r.y + q.y * r.x)
+    ring
+  · change (p.x * q.x - p.y * q.y) * r.y + (p.x * q.y + p.y * q.x) * r.x =
+      p.x * (q.x * r.y + q.y * r.x) + p.y * (q.x * r.x - q.y * r.y)
+    ring
 
 /-- The identity point has x-coordinate one. -/
 @[simp]
@@ -136,9 +138,7 @@ theorem add_x (p q : Point) : (p + q).x = p.x * q.x - p.y * q.y := by rfl
 @[simp]
 theorem add_y (p q : Point) : (p + q).y = p.x * q.y + p.y * q.x := by rfl
 
-/-- The identity point is a left identity for circle addition. -/
-@[simp]
-theorem zero_add (p : Point) : (0 : Point) + p = p := by
+private theorem zero_add_aux (p : Point) : (0 : Point) + p = p := by
   obtain ⟨px, py, hp⟩ := p
   apply Point.ext
   · change (1 : Field) * px - (0 : Field) * py = px
@@ -147,15 +147,12 @@ theorem zero_add (p : Point) : (0 : Point) + p = p := by
     ring
 
 instance : AddCommGroup Point where
-  add := Point.add
-  zero := Point.zero
-  neg := Point.conjugate
-  add_assoc := add_assoc
-  zero_add := Point.zero_add
+  add_assoc := private add_assoc_aux
+  zero_add := private zero_add_aux
   add_zero p := by
     apply Point.ext
     · simp only [add_x, zero_x, zero_y, mul_one, mul_zero, sub_zero]
-    · simp only [add_y, zero_x, zero_y, mul_one, mul_zero, _root_.zero_add]
+    · simp only [add_y, zero_x, zero_y, mul_one, mul_zero, zero_add]
   add_comm p q := by
     apply Point.ext
     · simp only [add_x]
@@ -170,10 +167,10 @@ instance : AddCommGroup Point where
       ring
   nsmul := nsmulBinRec
   nsmul_zero := nsmulBinRec_zero
-  nsmul_succ := nsmulBinRec_succ
+  nsmul_succ := @nsmulBinRec_succ Point { add_assoc := private add_assoc_aux } _
   zsmul := zsmulRec nsmulBinRec
   zsmul_zero' := nsmulBinRec_zero
-  zsmul_succ' := nsmulBinRec_succ
+  zsmul_succ' := @nsmulBinRec_succ Point { add_assoc := private add_assoc_aux } _
 
 end Point
 
@@ -232,17 +229,18 @@ private theorem checkDoublings_sound (qs : List (Field × Field)) (p : Point)
       exact h.2
     simpa only [List.length_cons, pow_succ, mul_smul, two_nsmul] using ih (p + p) hnext
 
+-- Regenerate with `python3 scripts/gen_mersenne31_circle_certificate.py`.
 private def generatorDoublings : List (Field × Field) :=
-  [(7, 777079998), (97, 141701737), (18817, 1720333214), (708158977, 683185920),
-   (334835419, 1444967316), (2042371533, 1362265296), (212706801, 1223819887),
-   (421007138, 256177860), (6346213, 905523693), (1022251061, 788094511),
-   (1633461177, 574296567), (595037635, 2111542451), (1799120754, 343598868),
-   (438833264, 1327019128), (1389168750, 838891026), (1543902459, 1632329423),
-   (1330239767, 1446369578), (1420207432, 2023238517), (2015554631, 1088093947),
-   (996212859, 1140996376), (1434706457, 1835793811), (13610297, 1064696601),
-   (785043271, 1260750973), (838195206, 1774253895), (579625837, 1690787918),
-   (1179735656, 1241207368), (590768354, 978592373), (32768, 2147450879),
-   (0, 2147483646), (2147483646, 0)]
+  [(7, 777079998), (97, 141701737), (18817, 1720333214),
+   (708158977, 683185920), (334835419, 1444967316), (2042371533, 1362265296),
+   (212706801, 1223819887), (421007138, 256177860), (6346213, 905523693),
+   (1022251061, 788094511), (1633461177, 574296567), (595037635, 2111542451),
+   (1799120754, 343598868), (438833264, 1327019128), (1389168750, 838891026),
+   (1543902459, 1632329423), (1330239767, 1446369578), (1420207432, 2023238517),
+   (2015554631, 1088093947), (996212859, 1140996376), (1434706457, 1835793811),
+   (13610297, 1064696601), (785043271, 1260750973), (838195206, 1774253895),
+   (579625837, 1690787918), (1179735656, 1241207368), (590768354, 978592373),
+   (32768, 2147450879), (0, 2147483646), (2147483646, 0)]
 
 private theorem generatorDoublings_valid :
     checkDoublings (generator.x, generator.y) generatorDoublings = true := by
@@ -266,6 +264,7 @@ def order : Nat := 2 ^ logOrder
 
 /-- The circle-index modulus annihilates the STWO generator. -/
 theorem order_nsmul_generator : order • generator = 0 := by
+  -- Keep the exponent symbolic: changing the full scalar directly unfolds too much here.
   simp only [order, logOrder]
   rw [show (31 : Nat) = 30 + 1 from rfl]
   rw [pow_succ', mul_smul, two_nsmul, generator_half_order]
@@ -278,7 +277,6 @@ theorem order_nsmul_generator : order • generator = 0 := by
 /-- The STWO Mersenne31 circle generator has exact additive order `2^31`. -/
 @[simp]
 theorem addOrderOf_generator : addOrderOf generator = 2 ^ 31 := by
-  have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
   apply addOrderOf_eq_prime_pow (p := 2) (n := 30)
   · intro h
     have hx := congrArg Point.x (generator_half_order.symm.trans h)
@@ -298,15 +296,14 @@ def generator : CirclePointIndex := 1
 @[simp]
 theorem generator_eq : generator = 1 := by rfl
 
-/-- Subgroup generator index for the subgroup of order `2^logSize`. For
-`logSize ≤ logOrder` this is the canonical generator of that subgroup; callers
-that rely on the bound (`Coset.new`, `odds`, `halfOdds`) carry it themselves. -/
-def subgroupGen (logSize : Nat) : CirclePointIndex :=
+/-- Subgroup generator index for the subgroup of order `2^logSize`.
+The explicit bound rules out truncated subtraction for out-of-range inputs. -/
+def subgroupGen (logSize : Nat) (_hlogSize : logSize ≤ logOrder) : CirclePointIndex :=
   (2 ^ (logOrder - logSize) : Nat)
 
 /-- The subgroup step is the corresponding power of two modulo the circle order. -/
-theorem subgroupGen_eq (logSize : Nat) :
-    subgroupGen logSize = ((2 ^ (logOrder - logSize) : Nat) : CirclePointIndex) := by rfl
+theorem subgroupGen_eq (logSize : Nat) (h : logSize ≤ logOrder) :
+    subgroupGen logSize h = ((2 ^ (logOrder - logSize) : Nat) : CirclePointIndex) := by rfl
 
 /-- Interpret the canonical representative of an index as a multiple of the STWO generator. -/
 def toPoint (i : CirclePointIndex) : Point :=
@@ -362,13 +359,14 @@ theorem toPoint_sub (i j : CirclePointIndex) : toPoint (i - j) = toPoint i - toP
 
 /-- The subgroup generator for the trivial subgroup is zero modulo the circle order. -/
 @[simp]
-theorem subgroupGen_zero : subgroupGen 0 = 0 := by
+theorem subgroupGen_zero (h : 0 ≤ logOrder) : subgroupGen 0 h = 0 := by
   change ((2 ^ (logOrder - 0) : Nat) : ZMod order) = 0
   simp [order]
 
 /-- The full-order subgroup generator is the distinguished generator index. -/
 @[simp]
-theorem subgroupGen_logOrder : subgroupGen logOrder = generator := by
+theorem subgroupGen_logOrder (h : logOrder ≤ logOrder) :
+    subgroupGen logOrder h = generator := by
   simp [subgroupGen, generator]
 
 end CirclePointIndex
@@ -388,7 +386,7 @@ namespace Coset
 def new (initialIndex : CirclePointIndex) (logSize : Nat) (hlogSize : logSize ≤ logOrder) :
     Coset where
   initialIndex := initialIndex
-  stepSize := CirclePointIndex.subgroupGen logSize
+  stepSize := CirclePointIndex.subgroupGen logSize hlogSize
   logSize := logSize
   logSize_le_logOrder := hlogSize
 
@@ -400,7 +398,7 @@ theorem new_initialIndex (i : CirclePointIndex) (n : Nat) (h : n ≤ logOrder) :
 /-- The coset constructor uses the subgroup generator as its step. -/
 @[simp]
 theorem new_stepSize (i : CirclePointIndex) (n : Nat) (h : n ≤ logOrder) :
-    (new i n h).stepSize = CirclePointIndex.subgroupGen n := by rfl
+    (new i n h).stepSize = CirclePointIndex.subgroupGen n h := by rfl
 
 /-- The coset constructor preserves the log size. -/
 @[simp]
@@ -416,22 +414,22 @@ theorem subgroup_eq (n : Nat) (h : n ≤ logOrder) : subgroup n h = new 0 n h :=
 
 /-- The STWO coset `G_{2n} + <G_n>`. -/
 def odds (logSize : Nat) (hlogSize : logSize + 1 ≤ logOrder) : Coset :=
-  new (CirclePointIndex.subgroupGen (logSize + 1)) logSize
+  new (CirclePointIndex.subgroupGen (logSize + 1) hlogSize) logSize
     (Nat.le_trans (Nat.le_succ logSize) hlogSize)
 
 /-- The odds coset starts at the next larger subgroup's generator. -/
 theorem odds_eq (n : Nat) (h : n + 1 ≤ logOrder) :
-    odds n h = new (CirclePointIndex.subgroupGen (n + 1)) n
+    odds n h = new (CirclePointIndex.subgroupGen (n + 1) h) n
       (Nat.le_trans (Nat.le_succ n) h) := by rfl
 
 /-- The STWO coset `G_{4n} + <G_n>`, whose conjugate completes `odds (logSize + 1)`. -/
 def halfOdds (logSize : Nat) (hlogSize : logSize + 2 ≤ logOrder) : Coset :=
-  new (CirclePointIndex.subgroupGen (logSize + 2)) logSize
+  new (CirclePointIndex.subgroupGen (logSize + 2) hlogSize) logSize
     (Nat.le_trans (Nat.le_add_right logSize 2) hlogSize)
 
 /-- The half-odds coset starts two subgroup levels above its step. -/
 theorem halfOdds_eq (n : Nat) (h : n + 2 ≤ logOrder) :
-    halfOdds n h = new (CirclePointIndex.subgroupGen (n + 2)) n
+    halfOdds n h = new (CirclePointIndex.subgroupGen (n + 2) h) n
       (Nat.le_trans (Nat.le_add_right n 2) h) := by rfl
 
 /-- Declared number of index positions, not necessarily the number of distinct points. -/

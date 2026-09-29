@@ -22,6 +22,14 @@ namespace Mersenne31.Circle
 
 example : OnCircle generatorX generatorY := generator_onCircle
 
+example : OnCircle generatorX generatorY := by
+  simp only [generatorX_eq, generatorY_eq]
+  decide
+
+example : Point := ⟨2, 1268011823, by decide⟩
+
+example : ¬ OnCircle 0 0 := by decide
+
 example : generatorX = 2 := generatorX_eq
 
 example : generatorY = 1268011823 := generatorY_eq
@@ -33,6 +41,26 @@ example : generator.y = 1268011823 := generator_y
 example (p q r : Point) : (p + q) + r = p + (q + r) := add_assoc p q r
 
 example : AddCommGroup Point := inferInstance
+
+section
+-- Check that the group reuses these instances, without unfolding them to compare operations.
+attribute [local irreducible] Point.instAdd Point.instZero Point.instNeg
+
+example : Point.instAddCommGroup.toAdd = Point.instAdd := by
+  with_reducible_and_instances rfl
+
+example : Point.instAddCommGroup.toZero = Point.instZero := by
+  with_reducible_and_instances rfl
+
+example : Point.instAddCommGroup.toNeg = Point.instNeg := by
+  with_reducible_and_instances rfl
+
+example : (inferInstance : AddSemigroup Point) = Point.instAddCommGroup.toAddSemigroup := by
+  with_reducible_and_instances rfl
+
+end
+
+example (p : Point) : (0 : Point) + p = p := zero_add p
 
 example (p : Point) : (0 : Nat) • p = 0 := zero_nsmul _
 
@@ -84,27 +112,29 @@ example (c : Coset) : c.size = 2 ^ c.logSize := by
 
 example (i : CirclePointIndex) (n : Nat) (h : n ≤ logOrder) :
     (Coset.new i n h).initialIndex = i ∧
-      (Coset.new i n h).stepSize = CirclePointIndex.subgroupGen n ∧
+      (Coset.new i n h).stepSize = CirclePointIndex.subgroupGen n h ∧
       (Coset.new i n h).logSize = n := by
   simp only [Coset.new_initialIndex, Coset.new_stepSize, Coset.new_logSize, and_self]
 
 example (n : Nat) (h : n ≤ logOrder) :
     (Coset.subgroup n h).initialIndex = 0 ∧
-      (Coset.subgroup n h).stepSize = CirclePointIndex.subgroupGen n ∧
+      (Coset.subgroup n h).stepSize = CirclePointIndex.subgroupGen n h ∧
       (Coset.subgroup n h).logSize = n := by
   simp only [Coset.subgroup_eq, Coset.new_initialIndex, Coset.new_stepSize,
     Coset.new_logSize, and_self]
 
 example (n : Nat) (h : n + 1 ≤ logOrder) :
-    (Coset.odds n h).initialIndex = CirclePointIndex.subgroupGen (n + 1) ∧
-      (Coset.odds n h).stepSize = CirclePointIndex.subgroupGen n ∧
+    (Coset.odds n h).initialIndex = CirclePointIndex.subgroupGen (n + 1) h ∧
+      (Coset.odds n h).stepSize =
+        CirclePointIndex.subgroupGen n (Nat.le_trans (Nat.le_succ n) h) ∧
       (Coset.odds n h).logSize = n := by
   simp only [Coset.odds_eq, Coset.new_initialIndex, Coset.new_stepSize,
     Coset.new_logSize, and_self]
 
 example (n : Nat) (h : n + 2 ≤ logOrder) :
-    (Coset.halfOdds n h).initialIndex = CirclePointIndex.subgroupGen (n + 2) ∧
-      (Coset.halfOdds n h).stepSize = CirclePointIndex.subgroupGen n ∧
+    (Coset.halfOdds n h).initialIndex = CirclePointIndex.subgroupGen (n + 2) h ∧
+      (Coset.halfOdds n h).stepSize =
+        CirclePointIndex.subgroupGen n (Nat.le_trans (Nat.le_add_right n 2) h) ∧
       (Coset.halfOdds n h).logSize = n := by
   simp only [Coset.halfOdds_eq, Coset.new_initialIndex, Coset.new_stepSize,
     Coset.new_logSize, and_self]
@@ -140,11 +170,14 @@ example (D : CircleDomain) (i : Nat) : D.pointAt i =
       else D.halfCoset.conjugate.indexAt (i - D.halfCoset.size)).val • generator := by
   rw [CircleDomain.pointAt_def, CirclePointIndex.toPoint_def, CircleDomain.indexAt_def]
 
-example (c : CanonicCoset) : c.coset.stepSize = CirclePointIndex.subgroupGen c.logSize := by
+example (c : CanonicCoset) : c.coset.stepSize = CirclePointIndex.subgroupGen c.logSize
+    (Nat.le_trans (Nat.le_succ _) c.logSize_succ_le_logOrder) := by
   rw [CanonicCoset.coset_eq, Coset.odds_eq, Coset.new_stepSize]
 
 example (c : CanonicCoset) :
-    c.halfCoset.stepSize = CirclePointIndex.subgroupGen (c.logSize - 1) := by
+    c.halfCoset.stepSize = CirclePointIndex.subgroupGen (c.logSize - 1)
+      (Nat.le_trans (Nat.sub_le _ _)
+        (Nat.le_trans (Nat.le_succ _) c.logSize_succ_le_logOrder)) := by
   rw [CanonicCoset.halfCoset_eq, Coset.halfOdds_eq, Coset.new_stepSize]
 
 example (c : CanonicCoset) : c.circleDomain.halfCoset = c.halfCoset := by
@@ -166,7 +199,8 @@ example : OnCircle (Point.antipode generator).x (Point.antipode generator).y :=
 
 example : CirclePointIndex.generator = 1 := by simp
 
-example : CirclePointIndex.subgroupGen 5 = ((2 ^ 26 : Nat) : CirclePointIndex) := by
+example : CirclePointIndex.subgroupGen 5 (by decide) =
+    ((2 ^ 26 : Nat) : CirclePointIndex) := by
   rw [CirclePointIndex.subgroupGen_eq]
   rfl
 
@@ -218,11 +252,20 @@ example (i : CirclePointIndex) (n : Nat) :
 #guard (CirclePointIndex.toPoint ((2 ^ 30 : Nat) : CirclePointIndex)).x = -1
 #guard (CirclePointIndex.toPoint ((2 ^ 30 : Nat) : CirclePointIndex)).y = 0
 
-example : CirclePointIndex.subgroupGen 0 = 0 := by
+example : CirclePointIndex.subgroupGen 0 (by decide) = 0 := by
   simp
 
-example : CirclePointIndex.subgroupGen logOrder = CirclePointIndex.generator := by
+example : CirclePointIndex.subgroupGen logOrder (by decide) = CirclePointIndex.generator := by
   simp
+
+example : (n : Nat) → n ≤ logOrder → CirclePointIndex := CirclePointIndex.subgroupGen
+
+example : True := by
+  fail_if_success
+    have _ := CirclePointIndex.subgroupGen 32 (by decide)
+  fail_if_success
+    have _ := CirclePointIndex.subgroupGen 100 (by decide)
+  trivial
 
 meta section
 

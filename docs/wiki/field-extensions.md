@@ -150,6 +150,17 @@ homomorphism `CirclePointIndex.toPointHom`. The order proof uses a kernel-checke
 30-step doubling certificate to establish the half-order point, then Mathlib's
 prime-power order criterion. Executable guards remain regression checks, not proof substitutes.
 
+Regenerate the certificate declaration with
+`python3 scripts/gen_mersenne31_circle_certificate.py`, or check the current declaration
+with `python3 scripts/gen_mersenne31_circle_certificate.py --check`. The script is
+outside the trusted code base; the kernel checks every supplied coordinate. The
+[Fields module index](../../CompPoly/Fields/README.md) also links this API.
+
+`OnCircle x y` has a computable `Decidable` instance, so concrete point fixtures can
+use `by decide`. `CirclePointIndex.subgroupGen logSize h` requires a proof
+`h : logSize ≤ logOrder`; out-of-range sizes are rejected instead of silently
+truncating the exponent. Coset constructors pass their existing bounds to it.
+
 `Coset` and `CircleDomain` still describe indexing shapes: arbitrary steps are allowed,
 points may repeat, and a half coset may overlap its conjugate. Their `size` counts index
 positions, not necessarily distinct points. The follow-up must specify validity conditions
