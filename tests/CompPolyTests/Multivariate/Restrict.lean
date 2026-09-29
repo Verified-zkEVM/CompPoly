@@ -22,22 +22,22 @@ open CMvPolynomial
 -- TODO: add concrete finite-support examples exercising mixed degree bounds.
 
 example (d : ℕ) : restrictTotalDegreeOf (n := 2) (R := ℚ) d (0 : CMvPolynomial 2 ℚ) = 0 := by
-  simp [restrictTotalDegree_zero]
+  simp [restrictTotalDegreeOf_zero]
 
 example (d : ℕ) : restrictDegreeOf (n := 2) (R := ℚ) d (0 : CMvPolynomial 2 ℚ) = 0 := by
-  simp [restrictDegree_zero]
+  simp [restrictDegreeOf_zero]
 
 example (d d' : ℕ) (p : CMvPolynomial 2 ℚ) :
     restrictTotalDegreeOf d (restrictTotalDegreeOf d' p) = restrictTotalDegreeOf (min d d') p := by
-  simp [restrictTotalDegree_restrictTotalDegree]
+  simp [restrictTotalDegreeOf_restrictTotalDegreeOf]
 
 example (d d' : ℕ) (p : CMvPolynomial 2 ℚ) :
     restrictDegreeOf d (restrictDegreeOf d' p) = restrictDegreeOf (min d d') p := by
-  simp [restrictDegree_restrictDegree]
+  simp [restrictDegreeOf_restrictDegreeOf]
 
 example (d d' : ℕ) (p : CMvPolynomial 2 ℚ) :
     restrictTotalDegreeOf d (restrictDegreeOf d' p) =
       restrictDegreeOf d' (restrictTotalDegreeOf d p) := by
-  simp [restrictTotalDegree_restrictDegree_comm]
+  simp [restrictTotalDegreeOf_restrictDegreeOf_comm]
 
 end CPoly
