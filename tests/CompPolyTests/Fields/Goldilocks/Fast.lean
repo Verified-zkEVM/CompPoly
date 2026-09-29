@@ -25,6 +25,12 @@ private def p : Nat := Goldilocks.fieldSize
 #guard toNat (ofNat p) = 0
 #guard toNat (ofNat (p + 73)) = 73
 #guard toNat (ofUInt64 (UInt64.ofNat (UInt64.size - 1))) = 4294967294
+-- Unreduced words are the same element as their residue.
+#guard (ofUInt64 0xFFFFFFFF00000001 : Field) = 0
+#guard (ofUInt64 0xFFFFFFFF00000002 : Field) = 1
+#guard (ofUInt64 0xFFFFFFFF00000002 : Field) * (7 : Field) = 7
+#guard toNat ((ofUInt64 0xFFFFFFFFFFFFFFFF : Field) + (ofUInt64 0xFFFFFFFFFFFFFFFF : Field))
+  = 2 * 4294967294
 #guard toNat ((ofNat (p - 1)) + (4 : Field)) = 3
 #guard toNat ((ofNat (p - 1)) + (ofNat (p - 1))) = p - 2
 #guard toNat ((17 : Field) - (6 : Field)) = 11
