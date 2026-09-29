@@ -21,7 +21,7 @@ and bit-length helper are shared with the eight-limb stack.  The proof side is
 
 namespace Montgomery.Native64x4
 
-open Montgomery.Native64x8 (gcdInner gcdBitLen)
+open Montgomery.Native64x8 (gcdInner gcdInnerFast gcdBitLen)
 
 /-! ## Per-field schedule -/
 
@@ -156,7 +156,9 @@ exact once both values fit one word. -/
 
 /-- The outer rounds: 31 divsteps on one-word approximations, then the transition matrix
 applied to both tracks. -/
-def gcdMainLoop (q : Limbs4) (negInv : UInt64) (rounds : Nat) (a u b v : Limbs4) :
+@[specialize] def gcdMainLoop (q : Limbs4) (negInv : UInt64) (rounds : Nat) (a u b v : Limbs4)
+    (inner : Nat → UInt64 → UInt64 → Int → Int → Int → Int →
+      UInt64 × UInt64 × Int × Int × Int × Int := gcdInner) :
     Limbs4 × Limbs4 × Limbs4 × Limbs4 :=
   match rounds with
   | 0 => (a, u, b, v)
@@ -164,7 +166,7 @@ def gcdMainLoop (q : Limbs4) (negInv : UInt64) (rounds : Nat) (a u b v : Limbs4)
     let (limbIdx, bits) := gcdNumBits a b
     let aT := gcdApprox a limbIdx bits
     let bT := gcdApprox b limbIdx bits
-    let (_, _, f0, g0, f1, g1) := gcdInner 31 aT bT 1 0 0 1
+    let (_, _, f0, g0, f1, g1) := inner 31 aT bT 1 0 0 1
     let (newA, signA) := gcdLinearCombDiv a b f0 g0
     let f0 := if signA < 0 then -f0 else f0
     let g0 := if signA < 0 then -g0 else g0
@@ -173,24 +175,28 @@ def gcdMainLoop (q : Limbs4) (negInv : UInt64) (rounds : Nat) (a u b v : Limbs4)
     let g1 := if signB < 0 then -g1 else g1
     let newU := gcdLinearCombMontyRed q negInv u v f0 g0
     let newV := gcdLinearCombMontyRed q negInv u v f1 g1
-    gcdMainLoop q negInv n newA newU newB newV
+    gcdMainLoop q negInv n newA newU newB newV inner
 
 /-- The final divsteps as two mac-width chunks, folding the Montgomery pair. -/
-def gcdFinalChunks (q : Limbs4) (negInv : UInt64) (finalRounds : Nat)
-    (a u b v : Limbs4) : Limbs4 :=
+@[specialize] def gcdFinalChunks (q : Limbs4) (negInv : UInt64) (finalRounds : Nat)
+    (a u b v : Limbs4)
+    (inner : Nat → UInt64 → UInt64 → Int → Int → Int → Int →
+      UInt64 × UInt64 × Int × Int × Int × Int := gcdInner) : Limbs4 :=
   let c1 := (finalRounds + 1) / 2
-  let (aw1, bw1, f0, g0, f1, g1) := gcdInner c1 a.l0 b.l0 1 0 0 1
+  let (aw1, bw1, f0, g0, f1, g1) := inner c1 a.l0 b.l0 1 0 0 1
   let u1 := gcdLinearCombMontyRed q negInv u v f0 g0
   let v1 := gcdLinearCombMontyRed q negInv u v f1 g1
-  let (_, _, _, _, fF, gF) := gcdInner (finalRounds - c1) aw1 bw1 1 0 0 1
+  let (_, _, _, _, fF, gF) := inner (finalRounds - c1) aw1 bw1 1 0 0 1
   gcdLinearCombMontyRed q negInv u1 v1 fF gF
 
 /-- Pornin binary-GCD candidate for the Montgomery inverse, canonical nonzero `x·R mod p`
 to `x⁻¹·R mod p`; proof-free, callers verify. -/
-def gcdInvCandidate (modulus : Nat) [P : GcdData modulus] (q : Limbs4)
-    (negInv : UInt64) (x : Limbs4) : Limbs4 :=
-  let (a, u, b, v) := gcdMainLoop q negInv 15 x P.initU q Limbs4.zero
-  gcdFinalChunks q negInv P.finalRounds a u b v
+@[specialize] def gcdInvCandidate (modulus : Nat) [P : GcdData modulus] (q : Limbs4)
+    (negInv : UInt64) (x : Limbs4)
+    (inner : Nat → UInt64 → UInt64 → Int → Int → Int → Int →
+      UInt64 × UInt64 × Int × Int × Int × Int := gcdInner) : Limbs4 :=
+  let (a, u, b, v) := gcdMainLoop q negInv 15 x P.initU q Limbs4.zero inner
+  gcdFinalChunks q negInv P.finalRounds a u b v inner
 
 /-! ## Checked inversion over raw limbs -/
 
@@ -206,7 +212,7 @@ decreasing_by omega
 /-- The GCD candidate, accepted only if it verifies (`z · x = 1`); else Fermat `montPow`. -/
 def invGcdRaw (modulus : Nat) [GcdData modulus] (q : Limbs4) (negInv : UInt64)
     (rMod : Limbs4) (x : Limbs4) : Limbs4 :=
-  let cand := gcdInvCandidate modulus q negInv x
+  let cand := gcdInvCandidate modulus q negInv x gcdInnerFast
   if (subLimbs cand q).2.2.2.2 = 1 ∧ mul q negInv cand x = rMod then cand
   else montPow q negInv rMod x (modulus - 2)
 
