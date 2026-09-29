@@ -326,8 +326,8 @@ Run `python3 scripts/bench-fields.py --suite all --cpu 0` from the repository ro
 | Suite | Selected fields and operations | Rust library |
 | --- | --- | --- |
 | `small-prime` (default) | KoalaBear, Mersenne31, Goldilocks: add/mul latency and throughput, inv/exp latency | Plonky3 0.4.2 |
-| `large-prime` | BN254 scalar field: mul latency and throughput | arkworks 0.5.0 (`ark_bn254::Fr`) |
-| `all` | Both suites, 20 cases total | Both libraries |
+| `large-prime` | BN254 scalar field: add/mul latency and throughput, inv/exp latency | arkworks 0.5.0 (`ark_bn254::Fr`) |
+| `all` | Both suites, 24 cases total | Both libraries |
 
 One Cargo project under `bench/rust/` shares the measurement and chain harness. Library-specific modules decode inputs and supply canonical checksums and cheap result sinks. Rust 1.93.1 is pinned, and Cargo.lock pins dependencies. CI validates all selected suites on every PR; it does not gate on relative speed. Tables show fast Lean against Rust. Lean's reference implementations still participate in validation and runs, but are omitted from the tables.
 
@@ -341,4 +341,6 @@ BN254 here means the **scalar** field with modulus `2188824287183927522224640574
 
 ### Workloads
 
-Rust matches existing Lean batch shapes: 1,280 small-prime add/mul operations, 320 BN254 multiplications, or 64 inv/exp steps with an added constant between steps. Throughput updates ten lanes from their previous values and combines them with nine extra operations at the end. The reported divisors exclude that merge, matching Lean. Exp uses `0x5A5A5A5A`; inverse maps zero to zero. Only the final batch result is consumed. BN254's timed sink samples native Montgomery words, avoiding canonical conversion or serialization in the timed loop. Rust uses scalar library APIs with default target flags; arkworks parallel and optional assembly features are disabled.
+Rust matches existing Lean batch shapes: 1,280 small-prime add/mul operations, 320 BN254 additions/multiplications, or 64 inv/exp steps with an added constant between steps. Throughput updates ten lanes from their previous values and combines them with nine extra operations at the end. The reported divisors exclude that merge, matching Lean. Exp uses `0x5A5A5A5A`; inverse maps zero to zero. Only the final batch result is consumed. BN254's timed sink samples native Montgomery words, avoiding canonical conversion or serialization in the timed loop. Rust uses scalar library APIs with default target flags; arkworks parallel and optional assembly features are disabled.
+
+BN254 inversion uses `FastField.invGcd`, the checked binary-GCD path, rather than the default Fermat inverse. Arkworks uses its field `inverse`. Each chain step adds the same fixed constant before inversion; zero maps to zero. BN254 exponentiation uses the same 32-bit exponent `0x5A5A5A5A` as the small fields, not a random full-width exponent.

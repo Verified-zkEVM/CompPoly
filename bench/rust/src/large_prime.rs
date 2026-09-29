@@ -4,7 +4,7 @@ use crate::{
     Fixture,
 };
 use ark_bn254::Fr;
-use ark_ff::{BigInteger, PrimeField};
+use ark_ff::{AdditiveGroup, BigInteger, Field, PrimeField};
 use std::hint::black_box;
 
 impl BenchValue for Fr {
@@ -25,24 +25,43 @@ impl BenchValue for Fr {
 }
 
 pub fn run(fixture: &Fixture, validate_only: bool) {
-    assert_eq!(fixture.group_key, "fields-bn254-mul");
-    assert_eq!(fixture.operation, "mul");
+    assert_eq!(
+        fixture.group_key,
+        format!("fields-bn254-{}", fixture.operation)
+    );
     assert_eq!(fixture.modulus, Fr::MODULUS.to_bytes_le());
     fixture.validate_inputs(32);
-    assert_eq!(fixture.latency_rounds, 320);
+    let binary = matches!(fixture.operation.as_str(), "add" | "mul");
+    assert_eq!(fixture.latency_rounds, if binary { 320 } else { 64 });
     assert_eq!(fixture.throughput_rounds, 32);
+    assert_eq!(fixture.exponent, 0x5A5A5A5A);
     let xs: Vec<Fr> = fixture
         .inputs
         .iter()
         .map(|x| Fr::from_le_bytes_mod_order(x))
         .collect();
     let b = black_box(xs[0]);
-    measure(fixture, "latency", 320, validate_only, |i| {
-        latency(|x| x * b, 320, xs[i % 64])
-    });
-    measure(fixture, "throughput", 320, validate_only, |i| {
-        throughput(|a, b| a * b, 32, std::array::from_fn(|k| xs[(i + k) % 64]))
-    });
+    macro_rules! binary {
+        ($op:expr) => {{
+            measure(fixture, "latency", 320, validate_only, |i| {
+                latency(|x| $op(x, b), 320, xs[i % 64])
+            });
+            measure(fixture, "throughput", 320, validate_only, |i| {
+                throughput($op, 32, std::array::from_fn(|k| xs[(i + k) % 64]))
+            });
+        }};
+    }
+    match fixture.operation.as_str() {
+        "add" => binary!(|a, b| a + b),
+        "mul" => binary!(|a, b| a * b),
+        "inv" => measure(fixture, "latency", 64, validate_only, |i| {
+            latency(|x| (x + b).inverse().unwrap_or(Fr::ZERO), 64, xs[i % 64])
+        }),
+        "pow" => measure(fixture, "latency", 64, validate_only, |i| {
+            latency(|x| (x + b).pow([0x5A5A5A5Au64]), 64, xs[i % 64])
+        }),
+        _ => panic!("unsupported operation"),
+    }
 }
 
 #[cfg(test)]

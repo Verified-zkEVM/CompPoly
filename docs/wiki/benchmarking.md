@@ -375,7 +375,7 @@ Recorded so they are not rediscovered. The audit and plan live in
 
 ## Fields against Rust
 
-`python3 scripts/bench-fields.py --suite all --cpu 0` compares selected Lean groups with pinned Rust libraries. `--suite small-prime` covers KoalaBear, Mersenne31, and Goldilocks against Plonky3; `--suite large-prime` covers BN254 scalar multiplication against arkworks. The default suite is `small-prime`. Choose an available logical CPU; both executables run sequentially on it.
+`python3 scripts/bench-fields.py --suite all --cpu 0` compares selected Lean groups with pinned Rust libraries. `--suite small-prime` covers KoalaBear, Mersenne31, and Goldilocks against Plonky3; `--suite large-prime` covers BN254 scalar add/mul latency and throughput, plus inv/exp latency, against arkworks. The default suite is `small-prime`. Choose an available logical CPU; both executables run sequentially on it.
 
 The driver exports fixed-width canonical little-endian byte inputs from Lean and checks cross-language result digests and operation counts before timing. BN254 is explicitly matched to arkworks `Fr` by its modulus. Input decoding and canonical result checks are outside timing. See [the benchmark README](../../bench/README.md#rust-field-comparison) for field correspondence, pinned versions, and workload details.
 

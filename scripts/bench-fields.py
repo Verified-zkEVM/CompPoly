@@ -15,7 +15,7 @@ SUITES = {
     "small-prime": {"koalabear": ("KoalaBear", "Plonky3", ("add", "mul", "inv", "pow")),
                     "mersenne31": ("Mersenne31", "Plonky3", ("add", "mul", "inv", "pow")),
                     "goldilocks": ("Goldilocks", "Plonky3", ("add", "mul", "inv", "pow"))},
-    "large-prime": {"bn254": ("BN254 scalar", "arkworks", ("mul",))},
+    "large-prime": {"bn254": ("BN254 scalar", "arkworks", ("add", "mul", "inv", "pow"))},
 }
 
 
@@ -62,7 +62,7 @@ def compare(lean, rust):
 
 def report(out, measurements, manifest, fields, expected):
     lines = ["## Fields: fast Lean vs Rust", "",
-             "Rust uses Plonky3 for small primes and arkworks for BN254 scalar multiplication.", "",
+             "Rust uses Plonky3 for small primes and arkworks for BN254 scalar arithmetic.", "",
              "Nanoseconds per operation; **lower is better**. Values are the median of run medians; ± is the median absolute deviation between runs. Ratio = Lean / Rust (>1 means Rust is faster).", ""]
     for mode in ("latency", "throughput"):
         lines += [f"### {mode.title()}", "", "| Field | Operation | Fast Lean (ns) | Rust (ns) | Lean / Rust |",
@@ -88,7 +88,7 @@ def report(out, measurements, manifest, fields, expected):
               f"- **Toolchains:** {manifest['lean_version']}; {manifest['rust_version']}; Plonky3 0.4.2 and arkworks 0.5.0. Rust release, LTO, one codegen unit; RUSTFLAGS={manifest['rustflags']!r}.",
               f"- **Source:** `{manifest['commit']}`; tracked files dirty: {manifest['dirty']}. Fixture SHA-256: `{manifest['fixture_sha256']}`.",
               f"- **Sampling:** {len(measurements)} paired runs, alternating Lean/Rust order; each case uses 50 ms warmup and 20 samples targeting 1 ms each. All {len(expected)} untimed result digests agree with Lean; Lean also checks its reference implementations.",
-              "- **Workloads:** small-prime add/mul use 1,280 operations per batch; BN254 mul uses 320. Throughput uses ten scalar lanes and nine final combining operations (outside the batch divisor), matching Lean. Inv/exp use 64 dependent steps of `inv(x + b)` / `(x + b)^0x5A5A5A5A`, so their times include one add per step. Only the final batch result is consumed.",
+              "- **Workloads:** small-prime add/mul use 1,280 operations per batch; BN254 add/mul use 320. Throughput uses ten scalar lanes and nine final combining operations (outside the batch divisor), matching Lean. Inv/exp use 64 dependent steps of `inv(x + b)` / `(x + b)^0x5A5A5A5A`, so their times include one add per step. Only the final batch result is consumed. BN254 inversion uses CompPoly’s checked binary-GCD implementation and arkworks’ inverse.",
               "- **Shared host:** other jobs may contend for the CPU, SMT sibling, caches, or boost budget. These are observations under load, not isolated-machine speed claims.", ""]
     (out / "report.md").write_text("\n".join(lines))
 

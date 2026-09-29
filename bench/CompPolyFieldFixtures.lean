@@ -28,7 +28,7 @@ def main : IO Unit := do
       ("koalabear", "koalabear", KoalaBear.fieldSize, 4, ["add", "mul", "inv", "pow"]),
       ("mersenne31", "mersenne31", Mersenne31.fieldSize, 4, ["add", "mul", "inv", "pow"]),
       ("goldilocks", "goldilocks", Goldilocks.fieldSize, 8, ["add", "mul", "inv", "pow"]),
-      ("bn254-scalar", "bn254", BN254.scalarFieldSize, 32, ["mul"])] do
+      ("bn254-scalar", "bn254", BN254.scalarFieldSize, 32, ["add", "mul", "inv", "pow"])] do
     for operation in operations do
       let key := s!"fields-{tag}-{operation}"
       let (values, _) := (zmodArray modulus fieldPoolSize false).run (genFor key)
@@ -39,8 +39,8 @@ def main : IO Unit := do
         ("operation", toJson operation), ("modulus", toJson (canonicalBytes width modulus)),
         ("inputs", toJson inputs), ("exponent", toJson powExponent),
         ("latency_rounds", toJson
-          (if tag == "bn254" then heavyChainRounds
-           else if operation == "add" || operation == "mul" then chainRounds else expChainRounds)),
+          (if operation == "inv" || operation == "pow" then expChainRounds
+           else if tag == "bn254" then heavyChainRounds else chainRounds)),
         ("throughput_rounds", toJson
           (if tag == "bn254" then heavyThroughputRounds else throughputRounds))]
       IO.println json.compress

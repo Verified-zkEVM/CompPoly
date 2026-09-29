@@ -414,9 +414,10 @@ private def runGoldilocksPow (preset : BenchPreset) (gen : StdGen) :
 
 /-! ### Eight-limb pairing scalar fields
 
-`mul` only. Inversion over these carriers already has a group of its own in
-`Fields/Montgomery.lean`, which compares three algorithms rather than two
-representations. Both rows need an explicit sink: the canonical value is a
+BN254 covers add, mul, inv and pow; the other carriers cover mul. The inversion
+groups in `Fields/Montgomery.lean` compare algorithms on individual inputs,
+whereas the BN254 row here measures a dependent chain using checked binary GCD.
+Both representations need an explicit sink: the canonical value is a
 254- to 255-bit bignum, and `sinkMont64x8` reads two limbs instead of
 reassembling one. -/
 
@@ -466,6 +467,36 @@ private def runBn254Mul (preset : BenchPreset) (gen : StdGen) :
   let group ← runBinOpGroup "fields-bn254-mul" "BN254 scalar multiplication"
     "bn254" "mul" heavyChainRounds heavyThroughputRounds
     slow (· * ·) fast Montgomery.Native64x8.FastField.mul preset
+  pure (group, gen)
+
+/-- Time BN254 scalar addition. -/
+private def runBn254Add (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  let (slow, fast, gen) := bn254Reps gen
+  let group ← runBinOpGroup "fields-bn254-add" "BN254 scalar addition"
+    "bn254" "add" heavyChainRounds heavyThroughputRounds
+    slow (· + ·) fast Montgomery.Native64x8.FastField.add preset
+  pure (group, gen)
+
+/-- Time BN254 scalar inversion through the checked binary-GCD implementation. -/
+private def runBn254Inv (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  let (slow, fast, gen) := bn254Reps gen
+  let group ← runUnOpGroup "fields-bn254-inv" "BN254 scalar inversion"
+    "bn254" "inv" "inv (xgcd)" "inv (checked binary GCD)"
+    slow (· + ·) (·⁻¹)
+    fast Montgomery.Native64x8.FastField.add Montgomery.Native64x8.FastField.invGcd preset
+  pure (group, gen)
+
+/-- Time BN254 scalar exponentiation with the shared fixed exponent. -/
+private def runBn254Pow (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  let (slow, fast, gen) := bn254Reps gen
+  let group ← runUnOpGroup "fields-bn254-pow" "BN254 scalar exponentiation"
+    "bn254" "pow" "pow (binary ladder)" "pow (binary ladder)"
+    slow (· + ·) (npowBinRec powExponent ·)
+    fast Montgomery.Native64x8.FastField.add
+      (Montgomery.Native64x8.FastField.pow · powExponent) preset
   pure (group, gen)
 
 /-- Time BLS12-381 scalar multiplication. -/
@@ -525,7 +556,13 @@ def fieldArithTasks : List BenchTask := [
   BenchTask.fromGroupRunner ⟨"fields-bls12-381-mul", "BLS12-381 scalar multiplication"⟩
     runBls12_381Mul,
   BenchTask.fromGroupRunner ⟨"fields-bls12-377-mul", "BLS12-377 scalar multiplication"⟩
-    runBls12_377Mul
+    runBls12_377Mul,
+  BenchTask.fromGroupRunner ⟨"fields-bn254-add", "BN254 scalar addition"⟩
+    runBn254Add,
+  BenchTask.fromGroupRunner ⟨"fields-bn254-inv", "BN254 scalar inversion"⟩
+    runBn254Inv,
+  BenchTask.fromGroupRunner ⟨"fields-bn254-pow", "BN254 scalar exponentiation"⟩
+    runBn254Pow
 ]
 
 end CompPolyBench
