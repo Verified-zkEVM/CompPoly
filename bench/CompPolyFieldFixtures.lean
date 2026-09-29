@@ -42,5 +42,5 @@ def main : IO Unit := do
           (if operation == "inv" || operation == "pow" then expChainRounds
            else if tag == "bn254" then heavyChainRounds else chainRounds)),
         ("throughput_rounds", toJson
-          (if tag == "bn254" then heavyThroughputRounds else throughputRounds))]
+          (if tag == "bn254" then 160 else throughputRounds))]
       IO.println json.compress

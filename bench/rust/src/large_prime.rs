@@ -1,6 +1,6 @@
 //! BN254 scalar field Fr (not the curve's base field Fq).
 use crate::{
-    harness::{latency, measure, throughput, BenchValue, DIGEST_MODULUS},
+    harness::{latency, measure, throughput_pair, BenchValue, DIGEST_MODULUS},
     Fixture,
 };
 use ark_bn254::Fr;
@@ -24,6 +24,16 @@ impl BenchValue for Fr {
     }
 }
 
+#[inline(always)]
+fn add(a: Fr, b: Fr) -> Fr {
+    a + b
+}
+
+#[inline(always)]
+fn mul(a: Fr, b: Fr) -> Fr {
+    a * b
+}
+
 pub fn run(fixture: &Fixture, validate_only: bool) {
     assert_eq!(
         fixture.group_key,
@@ -33,7 +43,7 @@ pub fn run(fixture: &Fixture, validate_only: bool) {
     fixture.validate_inputs(32);
     let binary = matches!(fixture.operation.as_str(), "add" | "mul");
     assert_eq!(fixture.latency_rounds, if binary { 320 } else { 64 });
-    assert_eq!(fixture.throughput_rounds, 32);
+    assert_eq!(fixture.throughput_rounds, 160);
     assert_eq!(fixture.exponent, 0x5A5A5A5A);
     let xs: Vec<Fr> = fixture
         .inputs
@@ -47,13 +57,13 @@ pub fn run(fixture: &Fixture, validate_only: bool) {
                 latency(|x| $op(x, b), 320, xs[i % 64])
             });
             measure(fixture, "throughput", 320, validate_only, |i| {
-                throughput($op, 32, std::array::from_fn(|k| xs[(i + k) % 64]))
+                throughput_pair($op, b, 160, xs[i % 64], xs[(i + 1) % 64])
             });
         }};
     }
     match fixture.operation.as_str() {
-        "add" => binary!(|a, b| a + b),
-        "mul" => binary!(|a, b| a * b),
+        "add" => binary!(add),
+        "mul" => binary!(mul),
         "inv" => measure(fixture, "latency", 64, validate_only, |i| {
             latency(|x| (x + b).inverse().unwrap_or(Fr::ZERO), 64, xs[i % 64])
         }),

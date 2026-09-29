@@ -51,6 +51,30 @@ pub fn throughput<F: Copy>(op: impl Fn(F, F) -> F, rounds: usize, xs: [F; 10]) -
     op(op(op(op(a, b), op(c, d)), op(op(e, f), op(g, h))), op(i, j))
 }
 
+/// Two independent chains with a shared fixed operand, for multi-limb fields.
+#[inline(always)]
+pub fn throughput_pair<F: Copy>(
+    op: impl Fn(F, F) -> F,
+    constant: F,
+    rounds: usize,
+    mut a: F,
+    mut b: F,
+) -> F {
+    macro_rules! step {
+        () => {
+            a = op(a, constant);
+            b = op(b, constant);
+        };
+    }
+    for _ in 0..rounds / 4 {
+        step!();
+        step!();
+        step!();
+        step!();
+    }
+    op(a, b)
+}
+
 pub fn measure<F: BenchValue>(
     fixture: &Fixture,
     mode: &str,
@@ -132,6 +156,13 @@ mod tests {
             }
             let expected = lanes.into_iter().reduce(op).unwrap();
             assert_eq!(throughput(op, 128, initial), expected);
+            let mut a = 7;
+            let mut b = 19;
+            for _ in 0..160 {
+                a = op(a, 13);
+                b = op(b, 13);
+            }
+            assert_eq!(throughput_pair(op, 13, 160, 7, 19), op(a, b));
         }
     }
 }

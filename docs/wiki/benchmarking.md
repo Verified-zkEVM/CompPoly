@@ -277,8 +277,7 @@ A field operation is one or two nanoseconds and the harness floor is about
 combinators in `bench/CompPolyBench/Harness/Chain.lean` perform it `workUnits` times
 per iteration instead, and the report divides, giving the **per-unit** cost.
 Two chain shapes are reported, named as Plonky3 names them: *latency*, where
-each operation depends on the last, and *throughput*, with ten independent
-accumulators the pipeline can overlap.
+each operation depends on the last, and *throughput*, with parallel accumulators (two for BN254, ten for other fields).
 
 Three properties of those combinators are load-bearing, and the obvious
 alternative is measurably wrong in each case:
@@ -382,3 +381,7 @@ The driver exports fixed-width canonical little-endian byte inputs from Lean and
 Five paired runs alternate executable order. The output directory under `bench/out/` contains two compact tables in `report.md`, raw samples, exact inputs, and machine/toolchain metadata. Tables report the median of run medians and the median absolute deviation between runs. These are same-machine library comparisons, not historical regression comparisons; other workloads on the host can affect them.
 
 `--validate-only` skips timing, and CI uses it with `--suite all` on every PR. `--skip-build` reuses built executables.
+
+BN254 add/mul throughput uses two independent chains with the same fixed second operand as latency, 160 steps per lane (320 operations total), four rounds unrolled per loop, and one final combining operation excluded from the divisor. This avoids the ten-lane ring’s excessive live state for multi-limb values. Small-prime throughput retains its ten-lane ring.
+
+The BN254 throughput configuration was selected manually on Rust, then fixed identically in Lean. It is not selected independently per language or tuned during benchmark runs. Rust screening covered 1, 2, 3, 4, 6, and 8 lanes with 1, 4, and 8 rounds unrolled; two lanes avoided the spill overhead of wider configurations. Shortlisted unroll factors were checked again in the production Rust runner.

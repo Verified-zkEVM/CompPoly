@@ -195,7 +195,7 @@ in different places, and named as Plonky3 names them:
 
 - **latency** — each operation depends on the last, so the pipeline cannot
   overlap two;
-- **throughput** — ten independent accumulators, so it can.
+- **throughput** — parallel accumulators: two for BN254, ten for other fields.
 
 Every row of a group must agree on `workUnits`, because the count describes the
 *problem* and not the implementation; a group whose rows disagree fails the
@@ -341,6 +341,10 @@ BN254 here means the **scalar** field with modulus `2188824287183927522224640574
 
 ### Workloads
 
-Rust matches existing Lean batch shapes: 1,280 small-prime add/mul operations, 320 BN254 additions/multiplications, or 64 inv/exp steps with an added constant between steps. Throughput updates ten lanes from their previous values and combines them with nine extra operations at the end. The reported divisors exclude that merge, matching Lean. Exp uses `0x5A5A5A5A`; inverse maps zero to zero. Only the final batch result is consumed. BN254's timed sink samples native Montgomery words, avoiding canonical conversion or serialization in the timed loop. Rust uses scalar library APIs with default target flags; arkworks parallel and optional assembly features are disabled.
+Rust matches existing Lean batch shapes: 1,280 small-prime add/mul operations, 320 BN254 additions/multiplications, or 64 inv/exp steps with an added constant between steps. Small-prime throughput updates ten lanes from their previous values and combines them with nine extra operations at the end. The reported divisors exclude that merge, matching Lean. Exp uses `0x5A5A5A5A`; inverse maps zero to zero. Only the final batch result is consumed. BN254's timed sink samples native Montgomery words, avoiding canonical conversion or serialization in the timed loop. Rust uses scalar library APIs with default target flags; arkworks parallel and optional assembly features are disabled.
 
 BN254 inversion uses `FastField.invGcd`, the checked binary-GCD path, rather than the default Fermat inverse. Arkworks uses its field `inverse`. Each chain step adds the same fixed constant before inversion; zero maps to zero. BN254 exponentiation uses the same 32-bit exponent `0x5A5A5A5A` as the small fields, not a random full-width exponent.
+
+BN254 add/mul throughput uses two independent chains with the same fixed second operand as latency, 160 steps per lane (320 operations total), four rounds unrolled per loop, and one final combining operation excluded from the divisor. This avoids the ten-lane ring’s excessive live state for multi-limb values. Small-prime throughput retains its ten-lane ring.
+
+The BN254 throughput configuration was selected manually on Rust, then fixed identically in Lean. It is not selected independently per language or tuned during benchmark runs. Rust screening covered 1, 2, 3, 4, 6, and 8 lanes with 1, 4, and 8 rounds unrolled; two lanes avoided the spill overhead of wider configurations. Shortlisted unroll factors were checked again in the production Rust runner.

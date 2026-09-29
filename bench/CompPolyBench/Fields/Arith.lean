@@ -47,8 +47,9 @@ Reported separately, as Plonky3's `benchmark_mul_latency` and
 `benchmark_mul_throughput` are, because they are different numbers and a prover
 is bounded by different ones in different places. The latency row chains the
 operation against a fixed operand, so each step waits on the last. The
-throughput row runs ten independent accumulators, so the pipeline can overlap
-them. `mul` and `add` carry both; `inv` and `pow` carry latency only, matching
+throughput row uses parallel accumulators: two fixed-operand chains for BN254,
+ten lanes for the other fields. `mul` and `add` carry both; `inv` and `pow` carry
+latency only, matching
 the peer, and use a shorter chain because one operation already costs tens of
 multiplications.
 -/
@@ -136,20 +137,35 @@ def chainShape (rounds : Nat) : String :=
     (fun i ↦ chainLatency op rounds (rep.pool.getD (i % fieldPoolSize) rep.constant))
     rep.checksum (sink := rep.sink)
 
-/-- Time ten independent chains of `op` over one representation. -/
+/-- Throughput patterns: small scalar ring, or two independent multi-limb chains. -/
+inductive ThroughputPattern where
+  | ring10
+  | parallel2
+
+/-- Number of arithmetic operations, excluding the final combination. -/
+def ThroughputPattern.units (pattern : ThroughputPattern) (rounds : Nat) : Nat :=
+  match pattern with
+  | .ring10 => throughputUnitsOf rounds
+  | .parallel2 => 8 * (rounds / 4)
+
+/-- Time parallel chains of `op` over one representation. -/
 @[specialize] def chainThroughputRow {F : Type} (fieldTag opTag method cls : String)
-    (rounds : Nat) (rep : ChainRep F) (op : F → F → F) (preset : BenchPreset) : IO BenchRecord :=
+    (rounds : Nat) (rep : ChainRep F) (op : F → F → F) (preset : BenchPreset)
+    (pattern : ThroughputPattern) : IO BenchRecord :=
+  let constant := rep.constant
   runTimedSpec
     { name := s!"{fieldTag}-{opTag}-{rep.suffix}", representation := rep.representation,
-      method := method, field := rep.field, inputShape := chainShape (throughputUnitsOf rounds),
-      digestIterations := digestPeriod fieldPoolSize, workUnits := throughputUnitsOf rounds,
+      method := method, field := rep.field, inputShape := chainShape (pattern.units rounds),
+      digestIterations := digestPeriod fieldPoolSize, workUnits := pattern.units rounds,
       digestClass := cls }
     preset
     (fun i ↦
       let seed (k : Nat) : F := rep.pool.getD ((i + k) % fieldPoolSize) rep.constant
-      chainThroughput op op rounds
-        (seed 0) (seed 1) (seed 2) (seed 3) (seed 4)
-        (seed 5) (seed 6) (seed 7) (seed 8) (seed 9))
+      match pattern with
+      | .ring10 => chainThroughput op op rounds
+          (seed 0) (seed 1) (seed 2) (seed 3) (seed 4)
+          (seed 5) (seed 6) (seed 7) (seed 8) (seed 9)
+      | .parallel2 => chainThroughputPair op rounds constant (seed 0) (seed 1))
     rep.checksum (sink := rep.sink)
 
 /-- Time a binary field operation, both shapes, over both representations. -/
@@ -157,7 +173,7 @@ def chainShape (rounds : Nat) : String :=
     (latencyRounds tputRounds : Nat)
     (slow : ChainRep S) (slowOp : S → S → S)
     (fast : ChainRep F) (fastOp : F → F → F)
-    (preset : BenchPreset) : IO BenchGroup := do
+    (preset : BenchPreset) (pattern : ThroughputPattern := .ring10) : IO BenchGroup := do
   -- Bound to locals, not read through `slow.constant` inside the lambda. A
   -- projection there is lifted into the operation itself, so the chain pays a
   -- `lean_ctor_get` and an unbox per operation. Out-of-order execution hides
@@ -170,9 +186,9 @@ def chainShape (rounds : Nat) : String :=
   let fastLatency ← chainLatencyRow fieldTag opTag s!"{opTag} (latency)" "latency"
     latencyRounds fast (fun x ↦ fastOp x fastConstant) preset
   let slowThroughput ← chainThroughputRow fieldTag opTag s!"{opTag} (throughput)"
-    "throughput" tputRounds slow slowOp preset
+    "throughput" tputRounds slow slowOp preset pattern
   let fastThroughput ← chainThroughputRow fieldTag opTag s!"{opTag} (throughput)"
-    "throughput" tputRounds fast fastOp preset
+    "throughput" tputRounds fast fastOp preset pattern
   pure { groupKey := groupKey, title := title,
          records := #[slowLatency, fastLatency, slowThroughput, fastThroughput] }
 
@@ -465,8 +481,8 @@ private def runBn254Mul (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (slow, fast, gen) := bn254Reps gen
   let group ← runBinOpGroup "fields-bn254-mul" "BN254 scalar multiplication"
-    "bn254" "mul" heavyChainRounds heavyThroughputRounds
-    slow (· * ·) fast Montgomery.Native64x8.FastField.mul preset
+    "bn254" "mul" heavyChainRounds 160
+    slow (· * ·) fast Montgomery.Native64x8.FastField.mul preset .parallel2
   pure (group, gen)
 
 /-- Time BN254 scalar addition. -/
@@ -474,8 +490,8 @@ private def runBn254Add (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
   let (slow, fast, gen) := bn254Reps gen
   let group ← runBinOpGroup "fields-bn254-add" "BN254 scalar addition"
-    "bn254" "add" heavyChainRounds heavyThroughputRounds
-    slow (· + ·) fast Montgomery.Native64x8.FastField.add preset
+    "bn254" "add" heavyChainRounds 160
+    slow (· + ·) fast Montgomery.Native64x8.FastField.add preset .parallel2
   pure (group, gen)
 
 /-- Time BN254 scalar inversion through the checked binary-GCD implementation. -/

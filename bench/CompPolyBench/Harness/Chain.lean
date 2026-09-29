@@ -196,4 +196,22 @@ bindings: see the note at the top of this file on `Prod` not erasing. -/
       go n a4 b4 c4 d4 e4 f4 g4 h4 i4 j4
   go (rounds / throughputUnroll) a b c d e f g h i j
 
+/-- Two independent chains sharing a fixed operand, unrolled four rounds at a time. -/
+@[specialize] def chainThroughputPair {F : Type} (op : F → F → F)
+    (rounds : Nat) (constant a b : F) : F :=
+  let rec @[specialize] go (n : Nat) (a b : F) : F :=
+    match n with
+    | 0 => op a b
+    | n + 1 =>
+      let a := op a constant
+      let b := op b constant
+      let a := op a constant
+      let b := op b constant
+      let a := op a constant
+      let b := op b constant
+      let a := op a constant
+      let b := op b constant
+      go n a b
+  go (rounds / 4) a b
+
 end CompPolyBench
