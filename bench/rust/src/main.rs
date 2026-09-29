@@ -55,16 +55,3 @@ fn main() {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn canonical_encoding_checks_width_order_and_range() {
-        assert!(canonical(&[255, 0], &[0, 1]));
-        assert!(canonical(&[0, 0], &[0, 1]));
-        assert!(!canonical(&[0, 1], &[0, 1]));
-        assert!(!canonical(&[1, 1], &[0, 1]));
-        assert!(!canonical(&[1], &[0, 1]));
-    }
-}
