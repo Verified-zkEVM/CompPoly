@@ -19,7 +19,7 @@ public meta section
 
 namespace Secp256k1.Fast
 
-open Secp256k1 (SCALAR_FIELD_CARD BASE_FIELD_CARD)
+open Secp256k1 (scalarFieldSize baseFieldSize)
 open Montgomery.Native64x8
 
 set_option maxRecDepth 4000
@@ -28,32 +28,32 @@ set_option maxRecDepth 4000
 
 -- Stored Montgomery residues.
 #guard (0 : ScalarField).val = Limbs8.zero
-#guard (1 : ScalarField).val = Mont64x8Field.rModModulus SCALAR_FIELD_CARD
+#guard (1 : ScalarField).val = Mont64x8Field.rModModulus scalarFieldSize
 
 -- Numeric literals reduce modulo the prime; `toNat` exits Montgomery form.
 #guard (37 : ScalarField).toNat = 37
-#guard (SCALAR_FIELD_CARD : ScalarField).toNat = 0
-#guard (SCALAR_FIELD_CARD + 37 : ScalarField).toNat = 37
+#guard (scalarFieldSize : ScalarField).toNat = 0
+#guard (scalarFieldSize + 37 : ScalarField).toNat = 37
 
 -- Addition (with and without wraparound).
-#guard ((SCALAR_FIELD_CARD - 1 : ScalarField) + 2).toNat = 1
-#guard ((SCALAR_FIELD_CARD - 1 : ScalarField) + (SCALAR_FIELD_CARD - 1 : ScalarField)).toNat
-  = SCALAR_FIELD_CARD - 2
+#guard ((scalarFieldSize - 1 : ScalarField) + 2).toNat = 1
+#guard ((scalarFieldSize - 1 : ScalarField) + (scalarFieldSize - 1 : ScalarField)).toNat
+  = scalarFieldSize - 2
 
 -- Subtraction (with and without borrow).
 #guard ((9 : ScalarField) - 5).toNat = 4
-#guard ((5 : ScalarField) - 9).toNat = SCALAR_FIELD_CARD - 4
+#guard ((5 : ScalarField) - 9).toNat = scalarFieldSize - 4
 
 -- Negation.
 #guard (-(0 : ScalarField)).toNat = 0
-#guard (-(1 : ScalarField)).toNat = SCALAR_FIELD_CARD - 1
+#guard (-(1 : ScalarField)).toNat = scalarFieldSize - 1
 
 -- Multiplication and squaring (`(-1) * (-1) = 1`).
-#guard ((SCALAR_FIELD_CARD - 1 : ScalarField) * (SCALAR_FIELD_CARD - 1 : ScalarField)).toNat
+#guard ((scalarFieldSize - 1 : ScalarField) * (scalarFieldSize - 1 : ScalarField)).toNat
   = 1
 #guard ((12345 : ScalarField) * 12345).toNat = 152399025
-#guard ((SCALAR_FIELD_CARD - 2 : ScalarField) * (SCALAR_FIELD_CARD - 3 : ScalarField)).toField
-  = ((SCALAR_FIELD_CARD - 2 : Secp256k1.ScalarField) * (SCALAR_FIELD_CARD - 3))
+#guard ((scalarFieldSize - 2 : ScalarField) * (scalarFieldSize - 3 : ScalarField)).toField
+  = ((scalarFieldSize - 2 : Secp256k1.ScalarField) * (scalarFieldSize - 3))
 #guard ((2 ^ 255 + 12345 : ScalarField) * (2 ^ 255 + 67890 : ScalarField)).toField
   = ((2 ^ 255 + 12345 : Secp256k1.ScalarField) * (2 ^ 255 + 67890))
 
@@ -74,54 +74,54 @@ set_option maxRecDepth 4000
 -- The checked binary-GCD inversion agrees with the Fermat inverse; the raw-candidate guard
 -- detects a silent fallback.
 #guard ((37 : ScalarField).invGcd * 37).toNat = 1
-#guard ((SCALAR_FIELD_CARD - 1 : ScalarField).invGcd).toField
-  = ((SCALAR_FIELD_CARD - 1 : Secp256k1.ScalarField)⁻¹)
+#guard ((scalarFieldSize - 1 : ScalarField).invGcd).toField
+  = ((scalarFieldSize - 1 : Secp256k1.ScalarField)⁻¹)
 #guard ((2 ^ 200 + 12345 : ScalarField).invGcd).toField
   = ((2 ^ 200 + 12345 : Secp256k1.ScalarField)⁻¹)
 #guard (987654321 : ScalarField).invGcd.toField = ((987654321 : Secp256k1.ScalarField)⁻¹)
 #guard (37 : ScalarField).invGcd.val
-  = gcdInvCandidate SCALAR_FIELD_CARD (Mont64x8Field.modulusLimbs SCALAR_FIELD_CARD)
-      (Mont64x8Field.montgomeryNegInv SCALAR_FIELD_CARD) (37 : ScalarField).val
+  = gcdInvCandidate scalarFieldSize (Mont64x8Field.modulusLimbs scalarFieldSize)
+      (Mont64x8Field.montgomeryNegInv scalarFieldSize) (37 : ScalarField).val
 #guard (2 ^ 255 + 12345 : ScalarField).invGcd.val
-  = gcdInvCandidate SCALAR_FIELD_CARD (Mont64x8Field.modulusLimbs SCALAR_FIELD_CARD)
-      (Mont64x8Field.montgomeryNegInv SCALAR_FIELD_CARD) (2 ^ 255 + 12345 : ScalarField).val
+  = gcdInvCandidate scalarFieldSize (Mont64x8Field.modulusLimbs scalarFieldSize)
+      (Mont64x8Field.montgomeryNegInv scalarFieldSize) (2 ^ 255 + 12345 : ScalarField).val
 
 -- The Fermat fallback, exercised directly (the fast path never takes it).
-#guard montPow (Mont64x8Field.modulusLimbs SCALAR_FIELD_CARD)
-    (Mont64x8Field.montgomeryNegInv SCALAR_FIELD_CARD)
-    (Mont64x8Field.rModModulus SCALAR_FIELD_CARD)
-    (37 : ScalarField).val (SCALAR_FIELD_CARD - 2)
+#guard montPow (Mont64x8Field.modulusLimbs scalarFieldSize)
+    (Mont64x8Field.montgomeryNegInv scalarFieldSize)
+    (Mont64x8Field.rModModulus scalarFieldSize)
+    (37 : ScalarField).val (scalarFieldSize - 2)
   = ((37 : ScalarField)⁻¹).val
 
 /-! ## Base field -/
 
 -- Stored Montgomery residues.
 #guard (0 : BaseField).val = Limbs8.zero
-#guard (1 : BaseField).val = Mont64x8Field.rModModulus BASE_FIELD_CARD
+#guard (1 : BaseField).val = Mont64x8Field.rModModulus baseFieldSize
 
 -- Numeric literals reduce modulo the prime; `toNat` exits Montgomery form.
 #guard (37 : BaseField).toNat = 37
-#guard (BASE_FIELD_CARD : BaseField).toNat = 0
-#guard (BASE_FIELD_CARD + 37 : BaseField).toNat = 37
+#guard (baseFieldSize : BaseField).toNat = 0
+#guard (baseFieldSize + 37 : BaseField).toNat = 37
 
 -- Addition (with and without wraparound).
-#guard ((BASE_FIELD_CARD - 1 : BaseField) + 2).toNat = 1
-#guard ((BASE_FIELD_CARD - 1 : BaseField) + (BASE_FIELD_CARD - 1 : BaseField)).toNat
-  = BASE_FIELD_CARD - 2
+#guard ((baseFieldSize - 1 : BaseField) + 2).toNat = 1
+#guard ((baseFieldSize - 1 : BaseField) + (baseFieldSize - 1 : BaseField)).toNat
+  = baseFieldSize - 2
 
 -- Subtraction (with and without borrow).
 #guard ((9 : BaseField) - 5).toNat = 4
-#guard ((5 : BaseField) - 9).toNat = BASE_FIELD_CARD - 4
+#guard ((5 : BaseField) - 9).toNat = baseFieldSize - 4
 
 -- Negation.
 #guard (-(0 : BaseField)).toNat = 0
-#guard (-(1 : BaseField)).toNat = BASE_FIELD_CARD - 1
+#guard (-(1 : BaseField)).toNat = baseFieldSize - 1
 
 -- Multiplication and squaring (`(-1) * (-1) = 1`).
-#guard ((BASE_FIELD_CARD - 1 : BaseField) * (BASE_FIELD_CARD - 1 : BaseField)).toNat = 1
+#guard ((baseFieldSize - 1 : BaseField) * (baseFieldSize - 1 : BaseField)).toNat = 1
 #guard ((12345 : BaseField) * 12345).toNat = 152399025
-#guard ((BASE_FIELD_CARD - 2 : BaseField) * (BASE_FIELD_CARD - 3 : BaseField)).toField
-  = ((BASE_FIELD_CARD - 2 : Secp256k1.BaseField) * (BASE_FIELD_CARD - 3))
+#guard ((baseFieldSize - 2 : BaseField) * (baseFieldSize - 3 : BaseField)).toField
+  = ((baseFieldSize - 2 : Secp256k1.BaseField) * (baseFieldSize - 3))
 #guard ((2 ^ 255 + 12345 : BaseField) * (2 ^ 255 + 67890 : BaseField)).toField
   = ((2 ^ 255 + 12345 : Secp256k1.BaseField) * (2 ^ 255 + 67890))
 
@@ -141,23 +141,23 @@ set_option maxRecDepth 4000
 -- The checked binary-GCD inversion agrees with the Fermat inverse; the raw-candidate guard
 -- detects a silent fallback.
 #guard ((37 : BaseField).invGcd * 37).toNat = 1
-#guard ((BASE_FIELD_CARD - 1 : BaseField).invGcd).toField
-  = ((BASE_FIELD_CARD - 1 : Secp256k1.BaseField)⁻¹)
+#guard ((baseFieldSize - 1 : BaseField).invGcd).toField
+  = ((baseFieldSize - 1 : Secp256k1.BaseField)⁻¹)
 #guard ((2 ^ 200 + 12345 : BaseField).invGcd).toField
   = ((2 ^ 200 + 12345 : Secp256k1.BaseField)⁻¹)
 #guard (987654321 : BaseField).invGcd.toField = ((987654321 : Secp256k1.BaseField)⁻¹)
 #guard (37 : BaseField).invGcd.val
-  = gcdInvCandidate BASE_FIELD_CARD (Mont64x8Field.modulusLimbs BASE_FIELD_CARD)
-      (Mont64x8Field.montgomeryNegInv BASE_FIELD_CARD) (37 : BaseField).val
+  = gcdInvCandidate baseFieldSize (Mont64x8Field.modulusLimbs baseFieldSize)
+      (Mont64x8Field.montgomeryNegInv baseFieldSize) (37 : BaseField).val
 #guard (2 ^ 255 + 12345 : BaseField).invGcd.val
-  = gcdInvCandidate BASE_FIELD_CARD (Mont64x8Field.modulusLimbs BASE_FIELD_CARD)
-      (Mont64x8Field.montgomeryNegInv BASE_FIELD_CARD) (2 ^ 255 + 12345 : BaseField).val
+  = gcdInvCandidate baseFieldSize (Mont64x8Field.modulusLimbs baseFieldSize)
+      (Mont64x8Field.montgomeryNegInv baseFieldSize) (2 ^ 255 + 12345 : BaseField).val
 
 -- The Fermat fallback, exercised directly (the fast path never takes it).
-#guard montPow (Mont64x8Field.modulusLimbs BASE_FIELD_CARD)
-    (Mont64x8Field.montgomeryNegInv BASE_FIELD_CARD)
-    (Mont64x8Field.rModModulus BASE_FIELD_CARD)
-    (37 : BaseField).val (BASE_FIELD_CARD - 2)
+#guard montPow (Mont64x8Field.modulusLimbs baseFieldSize)
+    (Mont64x8Field.montgomeryNegInv baseFieldSize)
+    (Mont64x8Field.rModModulus baseFieldSize)
+    (37 : BaseField).val (baseFieldSize - 2)
   = ((37 : BaseField)⁻¹).val
 
 end Secp256k1.Fast

@@ -463,7 +463,7 @@ private def bls12_377Reps (gen : StdGen) :
 /-- secp256k1 scalar-field operands, canonical and eight-limb, from one pool. -/
 private def secp256k1ScalarReps (gen : StdGen) :
     ChainRep Secp256k1.ScalarField × ChainRep Secp256k1.Fast.ScalarField × StdGen :=
-  let (values, gen) := (zmodArray Secp256k1.SCALAR_FIELD_CARD fieldPoolSize false).run gen
+  let (values, gen) := (zmodArray Secp256k1.scalarFieldSize fieldPoolSize false).run gen
   let pool := nonzeroPool values
   let fastPool := secp256k1ScalarFastArray pool
   ({ representation := "ZMod", field := "Secp256k1.ScalarField", suffix := "zmod",
@@ -476,7 +476,7 @@ private def secp256k1ScalarReps (gen : StdGen) :
 /-- secp256k1 base-field operands, canonical and eight-limb, from one pool. -/
 private def secp256k1BaseReps (gen : StdGen) :
     ChainRep Secp256k1.BaseField × ChainRep Secp256k1.Fast.BaseField × StdGen :=
-  let (values, gen) := (zmodArray Secp256k1.BASE_FIELD_CARD fieldPoolSize false).run gen
+  let (values, gen) := (zmodArray Secp256k1.baseFieldSize fieldPoolSize false).run gen
   let pool := nonzeroPool values
   let fastPool := secp256k1BaseFastArray pool
   ({ representation := "ZMod", field := "Secp256k1.BaseField", suffix := "zmod",

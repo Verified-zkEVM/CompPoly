@@ -26,7 +26,7 @@ set_option exponentiation.threshold 1100
 /-! ## Scalar field -/
 
 /-- Divstep schedule of the binary-GCD inverse candidate over the scalar field. -/
-instance : GcdData Secp256k1.SCALAR_FIELD_CARD where
+instance instScalarGcdData : GcdData Secp256k1.scalarFieldSize where
   finalRounds := 45
   initU :=
     ⟨0x35d9e12a, 0x14d610c5, 0x309a5692, 0x8cb9c9b1, 0xf0698647, 0x6f341f1c, 0x9a5fd791,
@@ -34,7 +34,7 @@ instance : GcdData Secp256k1.SCALAR_FIELD_CARD where
 
 /-- The per-field data realizing the secp256k1 scalar field as a fast eight-limb Montgomery
 field. -/
-instance : Mont64x8Field Secp256k1.SCALAR_FIELD_CARD where
+instance instScalarMont64x8Field : Mont64x8Field Secp256k1.scalarFieldSize where
   prime := Secp256k1.ScalarField_is_prime
   modulusLimbs :=
     ⟨0xd0364141, 0xbfd25e8c, 0xaf48a03b, 0xbaaedce6, 0xfffffffe, 0xffffffff, 0xffffffff,
@@ -47,7 +47,7 @@ instance : Mont64x8Field Secp256k1.SCALAR_FIELD_CARD where
   montgomeryNegInv := 0x5588b13f
 
 /-- The eight-limb secp256k1 scalar field carrier, stored as a Montgomery residue. -/
-abbrev ScalarField : Type := FastField Secp256k1.SCALAR_FIELD_CARD
+abbrev ScalarField : Type := FastField Secp256k1.scalarFieldSize
 
 /-- Convert from the canonical `Secp256k1.ScalarField` into fast Montgomery form. -/
 @[inline]
@@ -57,18 +57,18 @@ def ofScalarField (x : Secp256k1.ScalarField) : ScalarField :=
 /-- Ring equivalence between the eight-limb representation and the canonical
 `Secp256k1.ScalarField`. -/
 def scalarRingEquiv : ScalarField ≃+* Secp256k1.ScalarField :=
-  FastField.ringEquiv Secp256k1.SCALAR_FIELD_CARD
+  FastField.ringEquiv Secp256k1.scalarFieldSize
 
 /-! ## Base field -/
 
 /-- Divstep schedule of the binary-GCD inverse candidate over the base field. -/
-instance : GcdData Secp256k1.BASE_FIELD_CARD where
+instance instBaseGcdData : GcdData Secp256k1.baseFieldSize where
   finalRounds := 45
   initU := ⟨0x0, 0x3a4284, 0x1e88, 0x4, 0x0, 0x0, 0x0, 0x0⟩
 
 /-- The per-field data realizing the secp256k1 base field as a fast eight-limb Montgomery
 field. -/
-instance : Mont64x8Field Secp256k1.BASE_FIELD_CARD where
+instance instBaseMont64x8Field : Mont64x8Field Secp256k1.baseFieldSize where
   prime := Secp256k1.BaseField_is_prime
   modulusLimbs :=
     ⟨0xfffffc2f, 0xfffffffe, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
@@ -78,7 +78,7 @@ instance : Mont64x8Field Secp256k1.BASE_FIELD_CARD where
   montgomeryNegInv := 0xd2253531
 
 /-- The eight-limb secp256k1 base field carrier, stored as a Montgomery residue. -/
-abbrev BaseField : Type := FastField Secp256k1.BASE_FIELD_CARD
+abbrev BaseField : Type := FastField Secp256k1.baseFieldSize
 
 /-- Convert from the canonical `Secp256k1.BaseField` into fast Montgomery form. -/
 @[inline]
@@ -88,6 +88,6 @@ def ofBaseField (x : Secp256k1.BaseField) : BaseField :=
 /-- Ring equivalence between the eight-limb representation and the canonical
 `Secp256k1.BaseField`. -/
 def baseRingEquiv : BaseField ≃+* Secp256k1.BaseField :=
-  FastField.ringEquiv Secp256k1.BASE_FIELD_CARD
+  FastField.ringEquiv Secp256k1.baseFieldSize
 
 end Secp256k1.Fast

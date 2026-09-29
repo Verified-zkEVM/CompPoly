@@ -29,17 +29,17 @@ namespace Secp256k1
 -- Base field
 
 @[reducible]
-def BASE_FIELD_CARD : Nat := 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f
+def baseFieldSize : Nat := 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f
 
 /- Alternative representation -/
 example :
-    BASE_FIELD_CARD = 2 ^ 256 - 2 ^ 32 - 2 ^ 9 - 2 ^ 8 - 2 ^ 7 - 2 ^ 6 - 2 ^ 4 - 1 := by
-  unfold BASE_FIELD_CARD; norm_num
+    baseFieldSize = 2 ^ 256 - 2 ^ 32 - 2 ^ 9 - 2 ^ 8 - 2 ^ 7 - 2 ^ 6 - 2 ^ 4 - 1 := by
+  unfold baseFieldSize; norm_num
 
-abbrev BaseField := ZMod BASE_FIELD_CARD
+abbrev BaseField := ZMod baseFieldSize
 
 
-/- Pratt certificate for BASE_FIELD_CARD
+/- Pratt certificate for baseFieldSize
 
 (3 (2 3 7 13441 205115282021455665897114700593932402728804164701536103180137503955397371)
      (1 1 1 1 1)
@@ -74,9 +74,9 @@ abbrev BaseField := ZMod BASE_FIELD_CARD
 
 -/
 
-theorem BaseField_is_prime : Nat.Prime BASE_FIELD_CARD := by
-  unfold BASE_FIELD_CARD
-  refine PrattCertificate'.out (p := BASE_FIELD_CARD) ⟨3, (by reduce_mod_char), ?_⟩
+theorem BaseField_is_prime : Nat.Prime baseFieldSize := by
+  unfold baseFieldSize
+  refine PrattCertificate'.out (p := baseFieldSize) ⟨3, (by reduce_mod_char), ?_⟩
   refine .split [2, 3, 7, 13441,
     205115282021455665897114700593932402728804164701536103180137503955397371]
     (fun r hr => ?_) (by norm_num)
@@ -106,22 +106,22 @@ theorem BaseField_is_prime : Nat.Prime BASE_FIELD_CARD := by
       · exact .prime 255515944373312847190720520512484175977 1 _ (by pratt)
           (by reduce_mod_char; decide) (by norm_num)
 
-instance : Fact (Nat.Prime BASE_FIELD_CARD) := ⟨BaseField_is_prime⟩
+instance : Fact (Nat.Prime baseFieldSize) := ⟨BaseField_is_prime⟩
 
-instance : Field BaseField := ZMod.instField BASE_FIELD_CARD
+instance : Field BaseField := ZMod.instField baseFieldSize
 
 
 
 -- Scalar field
 
 @[reducible]
-def SCALAR_FIELD_CARD : Nat := 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141
+def scalarFieldSize : Nat := 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141
 
-abbrev ScalarField := ZMod SCALAR_FIELD_CARD
+abbrev ScalarField := ZMod scalarFieldSize
 
-theorem ScalarField_is_prime : Nat.Prime SCALAR_FIELD_CARD := by
-  unfold SCALAR_FIELD_CARD
-  refine PrattCertificate'.out (p := SCALAR_FIELD_CARD) ⟨7, (by reduce_mod_char), ?_⟩
+theorem ScalarField_is_prime : Nat.Prime scalarFieldSize := by
+  unfold scalarFieldSize
+  refine PrattCertificate'.out (p := scalarFieldSize) ⟨7, (by reduce_mod_char), ?_⟩
   refine .split [2 ^ 6, 3, 149, 631, 107361793816595537, 174723607534414371449,
     341948486974166000522343609283189] (fun r hr => ?_) (by norm_num)
   simp at hr
@@ -147,8 +147,8 @@ theorem ScalarField_is_prime : Nat.Prime SCALAR_FIELD_CARD := by
       · exact .prime 29047611873442575647497758179 1 _ (by pratt) (by reduce_mod_char; decide)
           (by norm_num)
 
-instance : Fact (Nat.Prime SCALAR_FIELD_CARD) := ⟨ScalarField_is_prime⟩
+instance : Fact (Nat.Prime scalarFieldSize) := ⟨ScalarField_is_prime⟩
 
-instance : Field ScalarField := ZMod.instField SCALAR_FIELD_CARD
+instance : Field ScalarField := ZMod.instField scalarFieldSize
 
 end Secp256k1

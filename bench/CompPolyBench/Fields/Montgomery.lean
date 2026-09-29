@@ -77,14 +77,14 @@ private def runBls12_377ScalarInv (preset : BenchPreset) (gen : StdGen) :
 /-- Run the secp256k1 scalar-field inversion benchmark. -/
 private def runSecp256k1ScalarInv (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
-  runScalarInv Secp256k1.SCALAR_FIELD_CARD "fields-mont64x8-secp256k1-scalar-inv"
+  runScalarInv Secp256k1.scalarFieldSize "fields-mont64x8-secp256k1-scalar-inv"
     "Scalar-field inversion (secp256k1)" "Secp256k1.ScalarField" "Secp256k1.Fast.ScalarField"
     preset gen
 
 /-- Run the secp256k1 base-field inversion benchmark. -/
 private def runSecp256k1BaseInv (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
-  runScalarInv Secp256k1.BASE_FIELD_CARD "fields-mont64x8-secp256k1-base-inv"
+  runScalarInv Secp256k1.baseFieldSize "fields-mont64x8-secp256k1-base-inv"
     "Base-field inversion (secp256k1)" "Secp256k1.BaseField" "Secp256k1.Fast.BaseField"
     preset gen
 
