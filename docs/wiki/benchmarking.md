@@ -81,7 +81,7 @@ Three ways to get timings: **Actions → Benchmarks → Run workflow** with a pr
 and optional group list; a `/bench` comment on a PR from a repo member,
 optionally followed by a group list; or automatically on a PR touching
 `bench/**`, since a change to the harness itself should be measured. Results
-arrive as a PR comment and an artifact.
+arrive as a PR comment and an artifact. Fork PR runs publish the report in the Actions summary and artifact without attempting a comment with their read-only token. Ordinary PR comments do not cancel active benchmark jobs; concurrency applies only after the benchmark job's comment filter.
 
 One thing the canary needs: it compares timed totals, so under `--validate-only`
 it would pass vacuously against a zero floor. `runTimed` therefore takes a

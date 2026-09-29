@@ -302,6 +302,8 @@ Benchmarks → Run workflow** with a preset and optional group list, a `/bench`
 comment on a PR from a repo member, or automatically on any PR touching
 `bench/**`. Results are posted as a PR comment and uploaded as an artifact.
 
+For fork PR runs, the report is available in the Actions summary and artifact; automatic commenting is skipped because the token is read-only. Ordinary PR comments do not cancel benchmark jobs; only a new eligible benchmark job supersedes a running one.
+
 They are kept out of the blocking path deliberately, though not for the reason
 you might expect. *Within* one run the shared runner is actually steadier than a
 busy laptop — median MAD 0.2% against 1.4% locally — but severe outliers are
