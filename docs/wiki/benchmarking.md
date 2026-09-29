@@ -386,7 +386,7 @@ BN254 add/mul throughput uses two independent chains with the same fixed second 
 
 The BN254 throughput configuration was selected manually on Rust, then fixed identically in Lean. It is not selected independently per language or tuned during benchmark runs. Rust screening covered 1, 2, 3, 4, 6, and 8 lanes with 1, 4, and 8 rounds unrolled; two lanes avoided the spill overhead of wider configurations. Shortlisted unroll factors were checked again in the production Rust runner.
 
-### BN254 kernel optimization
+### Eight-limb BN254 kernel optimization
 
 The checked binary-GCD inverse uses native `Int64` transition coefficients inside each divstep chunk, converting to `Int` at the chunk boundary. The integer kernel remains available for the coefficient-bound proofs and regression comparisons. The native candidate still passes the same boundedness, canonicality, and multiplication checks before use; the proved Fermat fallback handles a rejected candidate.
 
@@ -397,3 +397,13 @@ Conditional reduction compares bounded limbs from the most significant end and s
 Binary exponentiation calls the inline `square` directly, exposing equal operands to code generation while retaining the definitionally equal binary-recursion algorithm. Five interleaved A/B rounds against `7c0bcd7` measured exponentiation at 0.916× baseline time (2.74 → 2.51 μs per chain step), with no `SUSPECT` or other row classified as slower.
 
 Compact eight-`UInt32` storage, branch-free reduction, reversed multiplication operands, and borrowed-operand kernels were also screened. None was retained: compact storage improved addition but slowed multiplication, branch-free reduction regressed other operations, and the operand variants offered no reliable improvement.
+
+### Four-limb BN254 kernel optimization
+
+The Rust-comparison branch incorporates PR #391's four-limb, radix-`2^64` carrier. The benchmark workloads, lane counts, and cross-language operation counts remain unchanged. The eight-limb measurements above describe the preceding implementation, not the current carrier.
+
+The four-limb checked inverse reuses the native `Int64` divstep kernel. Five interleaved A/B rounds against merge commit `856f88e` measured inversion at 0.896× baseline time (6.75 → 6.05 μs per chain step), with no `SUSPECT` or other row classified as slower. The canonicality and multiplication checks and the proved Fermat fallback remain in place.
+
+Standalone multiplication screening compared swapped high-product operands, balanced partial-product sums, reordered carry accumulation, reassociated high-word additions, lexicographic final reduction, and reconstruction of a carry from the low product. Every variant checked 1,024 input pairs against the original kernel before timing. None showed a sufficient improvement to adopt; the reassociation gave only about 2–3%, while reconstructing the carry lengthened the dependency chain and slowed multiplication. These screening results do not replace the matched Lean/Rust measurements.
+
+The previous explicit-squaring exponentiation change was ported and tested in two forms. Inlining `square` regressed the exponentiation row to 1.164× baseline time; a separately specialized `square` measured 1.013× and was classified as unchanged. Neither was retained. The four-limb implementation keeps its original binary-exponentiation definition.
