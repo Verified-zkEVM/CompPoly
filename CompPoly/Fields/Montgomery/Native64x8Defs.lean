@@ -140,10 +140,27 @@ end Limbs8
 
 /-! ## Conditional subtraction and field operations -/
 
-/-- Subtract the modulus once if the value is at least the modulus.  The borrow chain
-decides the branch, so no comparison is needed. -/
+/-- Compare bounded limbs from the most significant end; stop at the first difference. -/
+@[inline] def limbsLt (a b : Limbs8) : Bool :=
+  if a.l7 == b.l7 then
+    if a.l6 == b.l6 then
+      if a.l5 == b.l5 then
+        if a.l4 == b.l4 then
+          if a.l3 == b.l3 then
+            if a.l2 == b.l2 then
+              if a.l1 == b.l1 then decide (a.l0 < b.l0)
+              else decide (a.l1 < b.l1)
+            else decide (a.l2 < b.l2)
+          else decide (a.l3 < b.l3)
+        else decide (a.l4 < b.l4)
+      else decide (a.l5 < b.l5)
+    else decide (a.l6 < b.l6)
+  else decide (a.l7 < b.l7)
+
+
+/-- Subtract the modulus only when the input is at least the modulus. -/
 @[inline] def condSub (q t : Limbs8) : Limbs8 :=
-  if subBorrow t q == 0 then subLimbs t q else t
+  if limbsLt t q then t else subLimbs t q
 
 /-- Modular addition. -/
 @[inline] def add (q a b : Limbs8) : Limbs8 := condSub q (addLimbs a b)

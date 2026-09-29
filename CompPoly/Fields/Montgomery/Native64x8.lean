@@ -7,6 +7,7 @@ module
 
 public import CompPoly.Fields.Montgomery.Basic
 public import CompPoly.Fields.Montgomery.Native64x8Defs
+public import Mathlib.Tactic.SplitIfs
 
 /-!
 # Native Montgomery arithmetic over eight 32-bit limbs
@@ -341,25 +342,29 @@ theorem subLimbs_spec (a b : Limbs8) (ha : a.Bounded) (hb : b.Bounded) :
 
 /-! ## Conditional subtraction -/
 
+/-- Lexicographic comparison agrees with the represented natural number on bounded limbs. -/
+theorem limbsLt_eq_true_iff (a b : Limbs8) (ha : a.Bounded) (hb : b.Bounded) :
+    limbsLt a b = true ↔ a.toNat < b.toNat := by
+  simp only [limbsLt, Limbs8.Bounded, Limbs8.toNat, beq_iff_eq,
+    Bool.ite_eq_true_distrib, decide_eq_true_eq, UInt64.lt_iff_toNat_lt,
+    ← UInt64.toNat_inj] at *
+  split_ifs <;> omega
+
 theorem condSub_bounded (q t : Limbs8) (ht : t.Bounded) : (condSub q t).Bounded := by
   simp only [condSub]
   split
-  · exact subLimbs_bounded t q
   · exact ht
+  · exact subLimbs_bounded t q
 
 /-- `condSub` subtracts the modulus exactly when the input is at least the modulus. -/
 theorem condSub_toNat (q t : Limbs8) (hq : q.Bounded) (ht : t.Bounded) :
     (condSub q t).toNat = if t.toNat < q.toNat then t.toNat else t.toNat - q.toNat := by
   obtain ⟨hbo, hchain⟩ := subLimbs_spec t q ht hq
   have hD := Limbs8.toNat_lt (subLimbs_bounded t q)
-  simp only [condSub, beq_iff_eq, ← UInt64.toNat_inj, toNat_zero]
+  simp only [condSub, limbsLt_eq_true_iff t q ht hq]
   split
-  case isTrue h =>
-    rw [h, Nat.mul_zero, Nat.add_zero] at hchain
-    exact cond_of_borrow_zero hchain hD
-  case isFalse h =>
-    rw [show (subBorrow t q).toNat = 1 by omega, Nat.mul_one] at hchain
-    exact cond_of_borrow_one hchain hD
+  · rfl
+  · omega
 
 /-- `condSub` returns a canonical representative for inputs below `2 * q`. -/
 theorem condSub_lt (q t : Limbs8) (hq : q.Bounded) (ht : t.Bounded)
