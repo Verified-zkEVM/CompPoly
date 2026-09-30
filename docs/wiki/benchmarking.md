@@ -474,3 +474,22 @@ Five interleaved production A/B rounds against `a4dd24a` measured BN254 exponent
 Four additional scalar loop layouts varied whether multiplication and squaring were inlined or outlined. All lost to the boxed control in the standalone screening. The fully inlined loop had a 280-byte stack frame, compared with 120 bytes in the boxed multiplication routine, consistent with register pressure from keeping both four-word states live. These are static assembly observations, not a measured attribution of cycles: hardware performance counters were unavailable to this user. Array-based windows of widths two through five and a width-three version with explicit table entries also lost. A native-word exponent alone gave only a small screening improvement. Screening results were used to choose production candidates, not as replacements for the matched Lean/Rust benchmark.
 
 A second retained change skips the initial multiply-by-one and the last unused square, without narrowing the natural-number exponent. Against the dedicated-square baseline, five production A/B pairs measured 0.922× time (1.757 → 1.619 μs), again `faster` without `SUSPECT`. Both loops are proved against field exponentiation through `toField` for every natural-number exponent. The two A/B ratios compound to about 14% less exponentiation time.
+
+### Goldilocks kernels from PR #392
+
+The benchmark branch incorporates [PR #392](https://github.com/Verified-zkEVM/CompPoly/pull/392). Goldilocks uses a revised wide-product expression, a separate cold borrow path in reduction, shift/subtract for the reduction's middle term, and subtraction-based canonical addition. Inversion and exponentiation keep congruent, potentially noncanonical words inside the chain and canonicalize once at the end. The carrier and public field operations remain canonical. The PR's KoalaBear/BabyBear `conditionalSubtract` inlining was already present on this branch.
+
+Five interleaved A/B pairs on CPU 11 of the Ryzen 7 3700X compared `79a3ea0` with merge `770f992`, using the unchanged field-operation workloads:
+
+| Goldilocks operation | Before (ns/op) | After (ns/op) | After / before |
+| --- | ---: | ---: | ---: |
+| Add latency | 1.268 | 0.747 | 0.589 |
+| Add throughput | 0.667 | 0.341 | 0.512 |
+| Mul latency | 3.771 | 3.154 | 0.836 |
+| Mul throughput | 1.200 | 1.262 | 1.052 |
+| Inversion | 432.806 | 183.945 | 0.425 |
+| Exponentiation | 146.258 | 89.556 | 0.612 |
+
+Multiplication throughput regressed; a second five-pair run confirmed 1.180 → 1.239 ns (1.050×). The other Goldilocks rows were classified faster. Addition throughput also received `SUSPECT: below chain floor`: the current comparer selects the latency chain floor for every row, including throughput. KoalaBear addition throughput, whose implementation was unchanged, received the same flag. This flag remains a limitation of that A/B result; the harness was not changed to remove it.
+
+A separate five-pair Lean/Rust run on clean `770f992` passed all 24 result checks. Goldilocks measured 0.99× Rust's time for add latency, 1.28× for mul latency, 0.44× for inversion, and 0.87× for exponentiation; throughput ratios were 0.59× for add and 1.45× for mul. All timings include the same operations and use the same inputs in both languages. Local artifacts are in `bench/out/goldilocks-pr392-20260930/` and A/B runs `bench/out/ab/260930-135904/` and `bench/out/ab/260930-140026/`.
