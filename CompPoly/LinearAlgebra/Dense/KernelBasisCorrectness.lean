@@ -424,7 +424,6 @@ theorem freeColumns_size_add_pivots_size {cols : Nat} {pivots : Array Nat}
     unfold freeColumns
     rw [List.size_toArray, List.countP_eq_length_filter]
     congr 1
-    exact List.filter_congr fun c _ ↦ by cases containsNat pivots c <;> rfl
   omega
 
 /-- **Rank-nullity for the dense kernel basis.** The basis has one vector per
