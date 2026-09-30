@@ -191,6 +191,7 @@ public import CompPoly.Fields.KoalaBear.Fast
 public import CompPoly.Fields.Mersenne31
 public import CompPoly.Fields.Mersenne31.Basic
 public import CompPoly.Fields.Mersenne31.Bytes
+public import CompPoly.Fields.Mersenne31.Circle
 public import CompPoly.Fields.Mersenne31.Fast
 public import CompPoly.Fields.Montgomery.Basic
 public import CompPoly.Fields.Montgomery.Native32
@@ -266,9 +267,9 @@ public import CompPoly.Multilinear.ManyEval
 public import CompPoly.Multilinear.ManyEval.Basic
 public import CompPoly.Multilinear.ManyEval.Correctness
 public import CompPoly.Multilinear.TransformEquiv
+public import CompPoly.Multivariate.Basic
 public import CompPoly.Multivariate.Bytes
 public import CompPoly.Multivariate.CMvMonomial
-public import CompPoly.Multivariate.CMvPolynomial
 public import CompPoly.Multivariate.Eval
 public import CompPoly.Multivariate.FinSuccEquiv
 public import CompPoly.Multivariate.HornerLemmas

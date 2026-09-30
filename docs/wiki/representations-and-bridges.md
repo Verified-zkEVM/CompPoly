@@ -8,7 +8,7 @@ usually the first architectural decision in a change.
 | Surface | Main type(s) | Best for | Main entrypoints |
 |---|---|---|---|
 | Univariate | `CPolynomial.Raw R`, `CPolynomial R`, `QuotientCPolynomial R` | Canonical coefficient-sequence arithmetic, quotient reasoning, interpolation | `CompPoly/Univariate/README.md`, `CompPoly/Univariate/Basic.lean`, `CompPoly/Univariate/ToPoly.lean` |
-| Multivariate | `CMvPolynomial n R` | Sparse computable multivariate operations and `MvPolynomial` interop | `CompPoly/Multivariate/CMvPolynomial.lean`, `CompPoly/Multivariate/Operations.lean`, `CompPoly/Multivariate/MvPolyEquiv.lean` |
+| Multivariate | `CMvPolynomial n R` | Sparse computable multivariate operations and `MvPolynomial` interop | `CompPoly/Multivariate/Basic.lean`, `CompPoly/Multivariate/Operations.lean`, `CompPoly/Multivariate/MvPolyEquiv.lean` |
 | Multilinear | `CMlPolynomial R n`, `CMlPolynomialEval R n` | Boolean-hypercube evaluation form, basis conversion, multilinear extensions | `CompPoly/Multilinear/Basic.lean`, `CompPoly/Multilinear/Equiv.lean` |
 | Field extensions | `Extension.Ext P` | Computable `F[X]/f` arithmetic for challenge fields, `f` an arbitrary monic modulus | `CompPoly/Fields/Extension.lean`, `docs/wiki/field-extensions.md` |
 | Bivariate | `CBivariate R` | Specialized two-variable APIs and `R[X][Y]` transport | `CompPoly/Bivariate/README.md`, `CompPoly/Bivariate/Basic.lean`, `CompPoly/Bivariate/ToPoly.lean`, `CompPoly/ToMathlib/Polynomial/BivariateDegree.lean`, `CompPoly/ToMathlib/Polynomial/BivariateWeightedDegree.lean`, `CompPoly/ToMathlib/Polynomial/BivariateMultiplicity.lean` |
@@ -75,7 +75,7 @@ root README. It is the right place for:
 
 The main split is:
 
-- [`../../CompPoly/Multivariate/CMvPolynomial.lean`](../../CompPoly/Multivariate/CMvPolynomial.lean)
+- [`../../CompPoly/Multivariate/Basic.lean`](../../CompPoly/Multivariate/Basic.lean)
   for core type-level definitions,
 - [`../../CompPoly/Multivariate/Operations.lean`](../../CompPoly/Multivariate/Operations.lean)
   for the higher-level operation surface,
