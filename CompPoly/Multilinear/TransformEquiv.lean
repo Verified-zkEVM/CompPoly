@@ -456,7 +456,7 @@ private lemma mobiusPartial_step
         simp [hsub, hnsub']
   else
     simp only [Bool.not_eq_true] at hbit
-    simp only [hbit]
+    simp only [hbit, Bool.false_eq_true, ↓reduceIte]
     apply Finset.sum_congr rfl; intro j _
     by_cases hsub : i.val &&& j.val = j.val
     · have hjf := submask_testBit_false hsub hbit
@@ -727,7 +727,7 @@ private lemma zetaPartial_step
         simp [hsub, hnsub']
   else
     simp only [Bool.not_eq_true] at hbit
-    simp only [hbit]
+    simp only [hbit, Bool.false_eq_true, ↓reduceIte]
     apply Finset.sum_congr rfl; intro j _
     by_cases hsub : i.val &&& j.val = j.val
     · have hjf : j.val.testBit k = false := submask_testBit_false hsub hbit
