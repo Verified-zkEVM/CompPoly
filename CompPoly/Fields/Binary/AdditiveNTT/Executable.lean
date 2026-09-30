@@ -193,10 +193,10 @@ tiling the coefficients and then applying stages `ℓ - 1` down to `0`. The basi
 `r`, and `ℓ + R_rate < r` bounds the evaluation domain. -/
 def computableAdditiveNTT (a : Fin (2 ^ ℓ) → L) : Fin (2^(ℓ + R_rate)) → L :=
   let b: Fin (2^(ℓ + R_rate)) → L := tileCoeffs a -- Note: can optimize on this
-  Fin.foldl (n:=ℓ) (f:= fun current_b i  =>
+  Fin.foldl (n:=ℓ) (fun current_b i  =>
     computableNTTStage (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - i - 1, by omega⟩) (b:=current_b)
-  ) (init:=b)
+  ) (b)
 
 /-- Array-backed coefficient tiling for the fast additive NTT path. -/
 def tileCoeffsArray (R_rate : ℕ) (a : Fin (2 ^ ℓ) → L) : Array L :=
