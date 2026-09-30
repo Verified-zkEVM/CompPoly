@@ -235,6 +235,8 @@ against recursive (`CompPoly/Fields/Binary/Tower/FastDefs.lean`).
 the recursive definitions' floor, so the documented headroom is low. *Peer:*
 Binius, packed off.
 
+The scalar rows below record the historical workloads at the listed commits. The matched Binius suite now uses different chains and fast-row names; these old times are not current baselines.
+
 | Group | Row | Shape | Median | Per unit | Spread | Best at |
 |---|---|---|---:|---:|---:|---|
 | `fields-tower-bt128-mul` | `tower-bt128` · mul (ConcreteBTField) | 64 random 128-bit elements, pairwise | 5.81 ms | - | ±0.5% | `1247810` |

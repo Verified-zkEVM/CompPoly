@@ -191,6 +191,8 @@ jobs:
         run: rustup show active-toolchain
       - name: Test and build field Rust benchmarks
         working-directory: bench/rust
+        env:
+          RUSTFLAGS: "-C target-cpu=native"
         run: |
           cargo test --release --locked -j 1
           cargo build --release --locked -j 1

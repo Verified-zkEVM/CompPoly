@@ -9,6 +9,7 @@ import platform
 import statistics
 import subprocess
 import time
+import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 SUITES = {
@@ -16,6 +17,8 @@ SUITES = {
                     "mersenne31": ("Mersenne31", "Plonky3", ("add", "mul", "inv", "pow")),
                     "goldilocks": ("Goldilocks", "Plonky3", ("add", "mul", "inv", "pow"))},
     "large-prime": {"bn254": ("BN254 scalar", "arkworks", ("add", "mul", "inv", "pow"))},
+    "binary": {f"tower-bt{bits}": (f"Binary tower {bits}", "Binius", ("mul", "square", "inv"))
+               for bits in (8, 64, 128)},
 }
 
 
@@ -62,7 +65,7 @@ def compare(lean, rust):
 
 def report(out, measurements, manifest, fields, expected):
     lines = ["## Fields: fast Lean vs Rust", "",
-             "Rust uses Plonky3 for small primes and arkworks for BN254 scalar arithmetic.", "",
+             "Rust uses Plonky3 for small primes, arkworks for BN254 scalar arithmetic, and Binius for binary towers.", "",
              "Nanoseconds per operation; **lower is better**. Values are the median of run medians; ± is the median absolute deviation between runs. Ratio = Lean / Rust (>1 means Rust is faster).", ""]
     for mode in ("latency", "throughput"):
         lines += [f"### {mode.title()}", "", "| Field | Operation | Fast Lean (ns) | Rust (ns) | Lean / Rust |",
@@ -85,10 +88,12 @@ def report(out, measurements, manifest, fields, expected):
     lines += ["### Machine and method", "",
               f"- **CPU:** {manifest['cpu_model']}; {manifest['logical_cpus']} logical CPUs. Both runners pinned to logical CPU {manifest['cpu']}, sequentially, with one thread (SMT siblings: {manifest['smt_siblings']}).",
               f"- **Memory:** {manifest['memory_gib']:.1f} GiB. **OS:** {manifest['os']}; kernel {manifest['kernel']} ({manifest['architecture']}).",
-              f"- **Toolchains:** {manifest['lean_version']}; {manifest['rust_version']}; Plonky3 0.4.2 and arkworks 0.5.0. Rust release, LTO, one codegen unit; RUSTFLAGS={manifest['rustflags']!r}.",
+              f"- **Toolchains:** {manifest['lean_version']}; {manifest['rust_version']}; Plonky3 0.4.2, arkworks 0.5.0, and Binius 0.2.0 (revision `{manifest['binius_revision']}`). Rust release, LTO, one codegen unit; RUSTFLAGS={manifest['rustflags']!r}.",
               f"- **Source:** `{manifest['commit']}`; tracked files dirty: {manifest['dirty']}. Fixture SHA-256: `{manifest['fixture_sha256']}`.",
-              f"- **Sampling:** {len(measurements)} paired runs, alternating Lean/Rust order; each case uses 50 ms warmup and 20 samples targeting 1 ms each. All {len(expected)} untimed result digests agree with Lean; Lean also checks its reference implementations.",
+              f"- **Sampling:** {len(measurements)} paired runs, alternating Lean/Rust order; each case uses 50 ms warmup and 20 samples targeting 1 ms each. All {len(expected)} untimed result digests agree with Lean; prime-field groups also check their reference implementations.",
               "- **Workloads:** small-prime add/mul use 1,280 operations per batch; BN254 add/mul use 320. Small-prime throughput uses a ten-lane ring and nine final combining operations; BN254 uses two independent chains, four rounds unrolled, with the same fixed operand as latency and one final combining operation. This configuration was selected manually on Rust and fixed identically in Lean. Combining operations are outside the batch divisor, matching Lean. Inv/exp use 64 dependent steps of `inv(x + b)` / `(x + b)^0x5A5A5A5A`, so their times include one add per step. Only the final batch result is consumed. BN254 inversion uses CompPoly’s checked binary-GCD implementation and arkworks’ inverse.",
+              "- **Binary workloads:** Fan–Paar tower coefficients in little-endian bytes, with the same basis on both sides. Multiplication uses 64 dependent steps or two independent 32-step chains plus one final multiply (excluded from the divisor). Squaring uses 63 dependent squares, unrolled seven at a time; 63 is not a whole Frobenius cycle at any selected size. Inversion uses 64 steps of `inv(x XOR b)`, including the XOR. Only the final batch result is consumed. Scalar Binius field types are used, with supported CPU instructions enabled; there is no explicit packed-SIMD workload.",
+              f"- **CPU instruction support:** {', '.join(manifest['cpu_features'])}. The archived Binius tower library is pinned because Binius64 uses different field representations.",
               "- **Shared host:** other jobs may contend for the CPU, SMT sibling, caches, or boost budget. These are observations under load, not isolated-machine speed claims.", ""]
     (out / "report.md").write_text("\n".join(lines))
 
@@ -112,6 +117,7 @@ def main():
     os.sched_setaffinity(0, {cpu})
     os.environ["LEAN_NUM_THREADS"] = "1"
     os.environ["CARGO_BUILD_JOBS"] = "1"
+    os.environ.setdefault("RUSTFLAGS", "-C target-cpu=native")
     out = (args.out_dir or ROOT / "bench/out" / time.strftime(f"fields-{args.suite}-%Y%m%d-%H%M%S")).resolve()
     out.mkdir(parents=True, exist_ok=False)
     if not args.skip_build:
@@ -149,7 +155,12 @@ def main():
     print(f"All {len(expected)} cases: Lean/Rust checksums and operation counts agree.", flush=True)
     if args.validate_only:
         return
+    lock = tomllib.loads((ROOT / "bench/rust/Cargo.lock").read_text())
+    binius = next(p for p in lock["package"] if p["name"] == "binius_field")
+    cpu_flags = next(line.split(":", 1)[1].split() for line in Path("/proc/cpuinfo").read_text().splitlines() if line.startswith("flags"))
     manifest = {
+        "binius_revision": binius["source"].split("#")[1],
+        "cpu_features": [f for f in ("sse2", "ssse3", "sse4_1", "avx", "avx2", "pclmulqdq", "gfni", "avx512f") if f in cpu_flags],
         "suite": args.suite,
         "commit": command(["git", "rev-parse", "HEAD"]),
         "dirty": bool(command(["git", "status", "--porcelain", "--untracked-files=no"])),

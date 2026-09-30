@@ -1,4 +1,5 @@
 //! Matched CompPoly field workloads using Plonky3 and arkworks.
+mod binary;
 mod harness;
 mod large_prime;
 mod small_prime;
@@ -7,6 +8,7 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 struct Fixture {
     encoding: String,
+    basis: String,
     group_key: String,
     field: String,
     operation: String,
@@ -19,7 +21,8 @@ struct Fixture {
 
 impl Fixture {
     fn validate_inputs(&self, width: usize) {
-        assert_eq!(self.encoding, "canonical-le-bytes-v1");
+        assert_eq!(self.encoding, "field-coordinates-le-v1");
+        assert_eq!(self.basis, "canonical-integer");
         assert_eq!(self.modulus.len(), width);
         assert_eq!(self.inputs.len(), 64);
         for bytes in &self.inputs {
@@ -51,6 +54,7 @@ fn main() {
                 small_prime::run::<p3_goldilocks::Goldilocks>(&fixture, args.len() == 2)
             }
             "bn254-scalar" => large_prime::run(&fixture, args.len() == 2),
+            "tower-bt8" | "tower-bt64" | "tower-bt128" => binary::run(&fixture, args.len() == 2),
             _ => panic!("unsupported field"),
         }
     }

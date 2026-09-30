@@ -5,7 +5,7 @@ Authors: Gregor Mitscha-Baude
 -/
 module
 
-public import CompPolyBench.Fields.Arith
+public import CompPolyBench.Fields.Binary.Tower.Scalar
 
 /-!
 # Field comparison inputs
@@ -18,7 +18,7 @@ public section
 
 open Lean CompPoly CompPolyBench
 
-/-- Fixed-width little-endian canonical integer bytes, independent of runtime representation. -/
+/-- Fixed-width little-endian coordinate bytes, independent of runtime representation. -/
 def canonicalBytes (width value : Nat) : Array Nat :=
   (Array.range width).map fun i ↦ (value >>> (8 * i)) % 256
 
@@ -34,7 +34,8 @@ def main : IO Unit := do
       let (values, _) := (zmodArray modulus fieldPoolSize false).run (genFor key)
       let inputs := values.map fun x ↦ canonicalBytes width (if x.val = 0 then 1 else x.val)
       let json := Lean.Json.mkObj [
-        ("encoding", toJson "canonical-le-bytes-v1"),
+        ("encoding", toJson "field-coordinates-le-v1"),
+        ("basis", toJson "canonical-integer"),
         ("group_key", toJson key), ("field", toJson field),
         ("operation", toJson operation), ("modulus", toJson (canonicalBytes width modulus)),
         ("inputs", toJson inputs), ("exponent", toJson powExponent),
@@ -44,3 +45,17 @@ def main : IO Unit := do
         ("throughput_rounds", toJson
           (if tag == "bn254" then 160 else throughputRounds))]
       IO.println json.compress
+  for bits in [8, 64, 128] do
+    for operation in ["mul", "square", "inv"] do
+      let field := s!"tower-bt{bits}"
+      let key := s!"fields-{field}-{operation}"
+      let (values, _) := towerBenchPool bits (genFor key)
+      IO.println <| (Lean.Json.mkObj [
+        ("encoding", toJson "field-coordinates-le-v1"),
+        ("basis", toJson "fan-paar-tower"),
+        ("group_key", toJson key), ("field", toJson field),
+        ("operation", toJson operation), ("modulus", toJson (#[] : Array Nat)),
+        ("inputs", toJson (values.map (canonicalBytes (bits / 8)))),
+        ("exponent", toJson (0 : Nat)),
+        ("latency_rounds", toJson (if operation == "square" then 63 else 64 : Nat)),
+        ("throughput_rounds", toJson (32 : Nat))]).compress

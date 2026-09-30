@@ -327,15 +327,16 @@ Run `python3 scripts/bench-fields.py --suite all --cpu 0` from the repository ro
 | --- | --- | --- |
 | `small-prime` (default) | KoalaBear, Mersenne31, Goldilocks: add/mul latency and throughput, inv/exp latency | Plonky3 0.4.2 |
 | `large-prime` | BN254 scalar field: add/mul latency and throughput, inv/exp latency | arkworks 0.5.0 (`ark_bn254::Fr`) |
-| `all` | Both suites, 24 cases total | Both libraries |
+| `binary` | 8-, 64-, 128-bit Fan–Paar towers: mul latency/throughput, square/inv latency | Binius 0.2.0, pinned Git revision |
+| `all` | All three suites, 36 cases total | All three libraries |
 
-One Cargo project under `bench/rust/` shares the measurement and chain harness. Library-specific modules decode inputs and supply canonical checksums and cheap result sinks. Rust 1.93.1 is pinned, and Cargo.lock pins dependencies. CI validates all selected suites on every PR; it does not gate on relative speed. Tables show fast Lean against Rust. Lean's reference implementations still participate in validation and runs, but are omitted from the tables.
+One Cargo project under `bench/rust/` shares the measurement and chain harness. Library-specific modules decode inputs and supply canonical checksums and cheap result sinks. Rust nightly-2026-02-26 is pinned for Binius’s x86 support, and Cargo.lock pins dependencies. The driver defaults `RUSTFLAGS` to `-C target-cpu=native` and records its value and the host instruction features; CI builds with the same flag. CI validates all selected suites on every PR; it does not gate on relative speed. Tables show fast Lean against Rust. Prime-field reference implementations still participate in validation and runs, but are omitted from the tables. Binary rows time only the verified fast Lean implementation and Binius; their cross-language result agreement is checked before timing.
 
 Each run creates an ignored `bench/out/fields-*` directory containing exact fixtures, raw samples, a machine/toolchain manifest, and `report.md` suitable for a PR comment. Timings are advisory, especially on a shared host.
 
 ### Inputs and field correspondence
 
-`CompPolyFieldFixtures` exports the existing Lean input pools in `canonical-le-bytes-v1` format. Each modulus and operand is a fixed-width little-endian JSON byte array: 4 bytes for KoalaBear/Mersenne31, 8 for Goldilocks, and 32 for BN254. An operand encodes the canonical integer in `[0, p)`, not the internal Montgomery representation. Rust checks the encoding, width, modulus, and input range before converting to the library's representation, outside timing. The full canonical integer contributes to the untimed checksum; large values are not truncated to 64 bits.
+`CompPolyFieldFixtures` exports pools in `field-coordinates-le-v1` format with an explicit `basis`. Prime-field operands use `canonical-integer`: fixed-width little-endian integers in `[0, p)`, with the modulus supplied separately. Binary operands use `fan-paar-tower`: little-endian tower coefficients in 1, 8, or 16 bytes, with an empty modulus array. These coordinates are not characteristic-two field numerals. Rust checks the encoding, basis, width, field identity, and workload parameters before decoding. The full coordinate word contributes to the untimed checksum, including both limbs at 128 bits.
 
 BN254 here means the **scalar** field with modulus `21888242871839275222246405745257275088548364400416034343698204186575808495617`, matching `ark_bn254::Fr`, not `Fq`. This common prime and canonical integer representation establish the correspondence. Future binary-field comparisons must additionally establish a basis mapping; equal bit patterns alone do not establish that correspondence.
 
@@ -348,3 +349,11 @@ BN254 inversion uses `FastField.invGcd`, the checked binary-GCD path, rather tha
 BN254 add/mul throughput uses two independent chains with the same fixed second operand as latency, 160 steps per lane (320 operations total), four rounds unrolled per loop, and one final combining operation excluded from the divisor. This avoids the ten-lane ring’s excessive live state for multi-limb values. Small-prime throughput retains its ten-lane ring.
 
 The BN254 throughput configuration was selected manually on Rust, then fixed identically in Lean. It is not selected independently per language or tuned during benchmark runs. Rust screening covered 1, 2, 3, 4, 6, and 8 lanes with 1, 4, and 8 rounds unrolled; two lanes avoided the spill overhead of wider configurations. Shortlisted unroll factors were checked again in the production Rust runner.
+
+### Binary tower workloads
+
+`--suite binary` selects three representation boundaries: the 8-bit table base, a 64-bit machine word, and the two-word 128-bit carrier. CompPoly's tower matches Binius's `BinaryField8b`, `BinaryField64b`, and `BinaryField128b`. The dependency is the original [Binius field library](https://github.com/IrreducibleOSS/binius/tree/47675e19c86c0fb676f75437073a77af8e337938/crates/field), pinned because Binius64 uses different field representations. CPU-supported instructions are enabled, but the workloads use scalar field types, not explicit packed SIMD batches.
+
+Multiplication uses 64 dependent steps or two independent 32-step chains with the same fixed operand; the final combining multiply is timed but excluded from the divisor, identically in both languages. Inversion uses 64 dependent `inv(x XOR b)` steps, with zero mapped to zero. Squaring uses 63 dependent squares, unrolled seven at a time. Neither the block nor the complete chain is a whole Frobenius cycle at any selected size. No per-operation result accumulation occurs. The pool holds 64 deterministic full-width words, excluding zero and one to avoid trivial multiplication constants.
+
+The `fields-tower-bt{8,64,128}-{mul,square,inv}` groups replace the old recursive/table comparison and pairwise 128-bit scalar workloads. Historical best-time rows from those workloads are not comparable with these chains. Lean's arithmetic refinements remain in `Tower/Fast.lean`; matching complete chain digests and operation counts establishes the new runtime correspondence with Binius.

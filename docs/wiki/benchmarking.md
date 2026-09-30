@@ -374,9 +374,9 @@ Recorded so they are not rediscovered. The audit and plan live in
 
 ## Fields against Rust
 
-`python3 scripts/bench-fields.py --suite all --cpu 0` compares selected Lean groups with pinned Rust libraries. `--suite small-prime` covers KoalaBear, Mersenne31, and Goldilocks against Plonky3; `--suite large-prime` covers BN254 scalar add/mul latency and throughput, plus inv/exp latency, against arkworks. The default suite is `small-prime`. Choose an available logical CPU; both executables run sequentially on it.
+`python3 scripts/bench-fields.py --suite all --cpu 0` compares selected Lean groups with pinned Rust libraries. `--suite small-prime` covers KoalaBear, Mersenne31, and Goldilocks against Plonky3; `--suite large-prime` covers BN254 scalar add/mul latency and throughput, plus inv/exp latency, against arkworks. `--suite binary` covers 8-, 64-, and 128-bit Fan–Paar tower mul latency/throughput and square/inv latency against pinned Binius. `all` selects 36 cases. The default suite is `small-prime`. Choose an available logical CPU; both executables run sequentially on it.
 
-The driver exports fixed-width canonical little-endian byte inputs from Lean and checks cross-language result digests and operation counts before timing. BN254 is explicitly matched to arkworks `Fr` by its modulus. Input decoding and canonical result checks are outside timing. See [the benchmark README](../../bench/README.md#rust-field-comparison) for field correspondence, pinned versions, and workload details.
+The driver exports fixed-width little-endian coordinate byte inputs with an explicit basis from Lean and checks cross-language result digests and operation counts before timing. BN254 is explicitly matched to arkworks `Fr` by its modulus. Input decoding and canonical result checks are outside timing. See [the benchmark README](../../bench/README.md#rust-field-comparison) for field correspondence, pinned versions, and workload details.
 
 Five paired runs alternate executable order. The output directory under `bench/out/` contains two compact tables in `report.md`, raw samples, exact inputs, and machine/toolchain metadata. Tables report the median of run medians and the median absolute deviation between runs. These are same-machine library comparisons, not historical regression comparisons; other workloads on the host can affect them.
 

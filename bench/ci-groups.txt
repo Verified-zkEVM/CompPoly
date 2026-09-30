@@ -74,7 +74,7 @@ fields-secp256k1-scalar-mul
 fields-secp256k1-base-mul
 fields-tower-bt8-mul
 fields-tower-bt64-mul
-fields-tower-bt64-inv-word
+fields-tower-bt64-inv
 ntt-koalabear-l12
 ntt-babybear-l12
 ntt-plan-koalabear
@@ -88,3 +88,8 @@ univariate-mul-crossover-256
 fields-bn254-add
 fields-bn254-inv
 fields-bn254-pow
+
+fields-tower-bt8-square
+fields-tower-bt8-inv
+fields-tower-bt64-square
+fields-tower-bt128-square
