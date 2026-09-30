@@ -407,3 +407,9 @@ The four-limb checked inverse reuses the native `Int64` divstep kernel. Five int
 Standalone multiplication screening compared swapped high-product operands, balanced partial-product sums, reordered carry accumulation, reassociated high-word additions, lexicographic final reduction, and reconstruction of a carry from the low product. Every variant checked 1,024 input pairs against the original kernel before timing. None showed a sufficient improvement to adopt; the reassociation gave only about 2–3%, while reconstructing the carry lengthened the dependency chain and slowed multiplication. These screening results do not replace the matched Lean/Rust measurements.
 
 The previous explicit-squaring exponentiation change was ported and tested in two forms. Inlining `square` regressed the exponentiation row to 1.164× baseline time; a separately specialized `square` measured 1.013× and was classified as unchanged. Neither was retained. The four-limb implementation keeps its original binary-exponentiation definition.
+
+### Addition ownership
+
+The four-limb BN254 addition chain originally tried to reuse its shared fixed operand. Generated code allocated a new result and released the old accumulator at every step. Specializing `FastField.add` while explicitly borrowing its second operand makes the first operand available for reuse. The benchmark loop then passes the accumulator onward without per-step reference-count increments or releases; only a shared input requires allocation.
+
+Five interleaved A/B rounds against `4502b00` measured addition latency at 0.382× baseline time (13.13 → 5.01 ns/op) and the two-lane row at 0.445× (12.27 → 5.46 ns/op), with no `SUSPECT` or other BN254 row classified as slower. This changes ownership and code generation, not field arithmetic or the matched benchmark workloads. The field carrier still lives in a heap object; reusing it does not give the register-only representation available to Rust.

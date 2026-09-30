@@ -120,8 +120,10 @@ def one (modulus : ℕ) [P : Mont64x4Field modulus] : FastField modulus :=
     rw [P.rModModulus_toNat]
     exact Nat.mod_lt _ Mont64x4Field.modulus_pos⟩
 
-/-- Fast modular addition in Montgomery form. -/
-@[inline] def add (x y : FastField modulus) : FastField modulus :=
+/-- Fast modular addition in Montgomery form. Borrow the second operand so chained additions
+can reuse the first operand's storage. Keep the function specialized rather than inline so
+this ownership boundary survives at call sites. -/
+@[specialize P] def add (x : FastField modulus) (y : @& FastField modulus) : FastField modulus :=
   ⟨Native64x4.add P.modulusLimbs x.val y.val, by
     have h := add_lt _ _ _ x.val_lt y.val_lt
     rwa [Mont64x4Field.q_toNat] at h⟩
