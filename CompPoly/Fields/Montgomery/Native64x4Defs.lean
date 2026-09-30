@@ -35,16 +35,18 @@ namespace Native64x4
   let w1 := (t &&& mask) + a0 * b1
   a1 * b1 + (t >>> 32) + (w1 >>> 32)
 
-/-- Add-with-carry: the low word and the carry-out of `x + y + c`, for `c ≤ 1`. -/
+/-- Add-with-carry: the low word and the carry-out of `x + y + c`, for `c ≤ 1`.
+The two overflow flags cannot both be set; OR exposes the one-bit carry to code generation. -/
 @[inline] def adc (x y c : UInt64) : UInt64 × UInt64 :=
   let s := x + y
   let s' := s + c
-  (s', (if s < x then 1 else 0) + (if s' < s then 1 else 0))
+  (s', (if s < x then 1 else 0) ||| (if s' < s then 1 else 0))
 
-/-- Subtract-with-borrow: the low word and the borrow-out of `x - y - b`, for `b ≤ 1`. -/
+/-- Subtract-with-borrow: the low word and the borrow-out of `x - y - b`, for `b ≤ 1`.
+The two borrow flags cannot both be set; OR exposes the one-bit borrow to code generation. -/
 @[inline] def sbb (x y b : UInt64) : UInt64 × UInt64 :=
   let d := x - y
-  (d - b, (if x < y then 1 else 0) + (if d < b then 1 else 0))
+  (d - b, (if x < y then 1 else 0) ||| (if d < b then 1 else 0))
 
 /-- Multiply-accumulate: the low and high words of `t + a * b + c`. -/
 @[inline] def mac (t a b c : UInt64) : UInt64 × UInt64 :=

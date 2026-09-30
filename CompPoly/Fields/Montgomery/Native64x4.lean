@@ -68,6 +68,17 @@ private theorem flag_le_one (p : Prop) [Decidable p] :
     (if p then (1 : UInt64) else 0).toNat ≤ 1 := by
   split <;> simp
 
+private theorem flag_or_value (p q : Prop) [Decidable p] [Decidable q]
+    (h : (if p then (1 : UInt64) else 0).toNat +
+      (if q then (1 : UInt64) else 0).toNat ≤ 1) :
+    ((if p then (1 : UInt64) else 0) ||| (if q then (1 : UInt64) else 0)).toNat =
+      (if p then (1 : UInt64) else 0).toNat +
+      (if q then (1 : UInt64) else 0).toNat := by
+  by_cases hp : p <;> by_cases hq : q <;>
+    simp only [hp, hq, ite_true, ite_false, UInt64.toNat_one, UInt64.toNat_zero] at *
+  · omega
+  all_goals rfl
+
 /-- Add-with-carry, existential form: the exact sum identity with a one-bit carry. -/
 theorem adc_spec (x y c : UInt64) (hc : c.toNat ≤ 1) :
     ∃ s co : UInt64, adc x y c = (s, co) ∧
@@ -79,11 +90,11 @@ theorem adc_spec (x y c : UInt64) (hc : c.toNat ≤ 1) :
   have hx := UInt64.toNat_lt x
   have hy := UInt64.toNat_lt y
   have hs := UInt64.toNat_lt (x + y + c)
-  have hsum : ((if x + y < x then (1 : UInt64) else 0) +
+  have hsum : ((if x + y < x then (1 : UInt64) else 0) |||
       (if x + y + c < x + y then (1 : UInt64) else 0)).toNat =
       (if x + y < x then (1 : UInt64) else 0).toNat +
       (if x + y + c < x + y then (1 : UInt64) else 0).toNat := by
-    rw [UInt64.toNat_add, Nat.mod_eq_of_lt (by omega)]
+    exact flag_or_value _ _ (by omega)
   refine ⟨_, _, rfl, ?_, ?_⟩ <;> rw [hsum] <;> omega
 
 /-- Subtract-with-borrow, existential form: the exact difference identity with a one-bit
@@ -98,11 +109,11 @@ theorem sbb_spec (x y b : UInt64) (hb : b.toNat ≤ 1) :
   have hx := UInt64.toNat_lt x
   have hy := UInt64.toNat_lt y
   have hd := UInt64.toNat_lt (x - y - b)
-  have hsum : ((if x < y then (1 : UInt64) else 0) +
+  have hsum : ((if x < y then (1 : UInt64) else 0) |||
       (if x - y < b then (1 : UInt64) else 0)).toNat =
       (if x < y then (1 : UInt64) else 0).toNat +
       (if x - y < b then (1 : UInt64) else 0).toNat := by
-    rw [UInt64.toNat_add, Nat.mod_eq_of_lt (by omega)]
+    exact flag_or_value _ _ (by omega)
   refine ⟨_, _, rfl, ?_, ?_⟩ <;> rw [hsum] <;> omega
 
 private theorem low32_value (x : UInt64) : (x &&& 0xffffffff).toNat = x.toNat % 2 ^ 32 := by
