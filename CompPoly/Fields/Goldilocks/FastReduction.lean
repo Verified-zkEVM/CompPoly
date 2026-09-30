@@ -268,165 +268,38 @@ theorem wideMul_low_toNat (lo : UInt64) (x y : UInt64) (hlo : lo = x * y) :
     lo.toNat = x.toNat * y.toNat % UInt64.size := by
   rw [hlo, UInt64.toNat_mul]
 
-/-- Pure Nat carry formula for the high word of a 32-bit-limb 64-by-64 product. -/
-theorem wideMul_high_nat (p00 p01 p10 p11 : Nat) :
-    let B := 2 ^ 32
-    let t := p00 / B + p01
-    let u := t % B + p10
-    p11 + t / B + u / B = (p00 + B * (p01 + p10) + B ^ 2 * p11) / B ^ 2 := by
-  dsimp
-  let t := p00 / 4294967296 + p01
-  let u := t % 4294967296 + p10
-  let q := p11 + t / 4294967296 + u / 4294967296
-  have hN :
-      p00 + 4294967296 * (p01 + p10) + 18446744073709551616 * p11 =
-        p00 % 4294967296 + 4294967296 * (u % 4294967296) +
-          18446744073709551616 * q := by
-    have hp00d : p00 % 4294967296 + 4294967296 * (p00 / 4294967296) = p00 :=
-      Nat.mod_add_div p00 4294967296
-    have htd : t % 4294967296 + 4294967296 * (t / 4294967296) = t :=
-      Nat.mod_add_div t 4294967296
-    have hud : u % 4294967296 + 4294967296 * (u / 4294967296) = u :=
-      Nat.mod_add_div u 4294967296
-    subst q
-    subst u
-    subst t
-    omega
-  rw [hN]
-  change q =
-    (p00 % 4294967296 + 4294967296 * (u % 4294967296) +
-        18446744073709551616 * q) /
-      18446744073709551616
-  rw [Nat.mul_comm 18446744073709551616 q]
-  rw [Nat.add_mul_div_right _ _ (show 0 < 18446744073709551616 by decide)]
-  rw [Nat.div_eq_of_lt]
-  · rw [Nat.zero_add]
-  · have hmod0 : p00 % 4294967296 < 4294967296 := Nat.mod_lt _ (by decide)
-    have hmod1 : u % 4294967296 < 4294967296 := Nat.mod_lt _ (by decide)
-    omega
+/-- Carry formula for the high word of a 32-bit-limb product. -/
+private theorem wideMul_hi_nat (p00 p01 p10 p11 : Nat) :
+    p11 + (p00 / 2 ^ 32 + p01) / 2 ^ 32 + ((p00 / 2 ^ 32 + p01) % 2 ^ 32 + p10) / 2 ^ 32 =
+      (p00 + 2 ^ 32 * (p01 + p10) + 2 ^ 64 * p11) / 2 ^ 64 := by
+  omega
 
-/-- High word returned by the 32-bit-limb `UInt64` multiplication algorithm. -/
-theorem wideMul_high_toNat
-    (x y hi : UInt64)
-    (hhi :
-      hi =
-        let xLo := x &&& negModulus
-        let xHi := x >>> 32
-        let yLo := y &&& negModulus
-        let yHi := y >>> 32
-        let p00 := xLo * yLo
-        let p01 := xLo * yHi
-        let p10 := xHi * yLo
-        let p11 := xHi * yHi
-        let t := (p00 >>> 32) + p01
-        let u := (t &&& negModulus) + p10
-        p11 + (t >>> 32) + (u >>> 32)) :
-    hi.toNat = x.toNat * y.toNat / UInt64.size := by
-  let xLo := x &&& negModulus
-  let xHi := x >>> 32
-  let yLo := y &&& negModulus
-  let yHi := y >>> 32
-  let p00 := xLo * yLo
-  let p01 := xLo * yHi
-  let p10 := xHi * yLo
-  let p11 := xHi * yHi
-  let t := (p00 >>> 32) + p01
-  let u := (t &&& negModulus) + p10
-  have hxLo_lt : xLo.toNat < 2 ^ 32 := by
-    subst xLo
-    exact uint64_low32_lt x
-  have hxHi_lt : xHi.toNat < 2 ^ 32 := by
-    subst xHi
-    exact uint64_high32_lt x
-  have hyLo_lt : yLo.toNat < 2 ^ 32 := by
-    subst yLo
-    exact uint64_low32_lt y
-  have hyHi_lt : yHi.toNat < 2 ^ 32 := by
-    subst yHi
-    exact uint64_high32_lt y
-  have hp00_nat : p00.toNat = xLo.toNat * yLo.toNat := by
-    subst p00
-    exact mul32_toNat xLo yLo hxLo_lt hyLo_lt
-  have hp01_nat : p01.toNat = xLo.toNat * yHi.toNat := by
-    subst p01
-    exact mul32_toNat xLo yHi hxLo_lt hyHi_lt
-  have hp10_nat : p10.toNat = xHi.toNat * yLo.toNat := by
-    subst p10
-    exact mul32_toNat xHi yLo hxHi_lt hyLo_lt
-  have hp11_nat : p11.toNat = xHi.toNat * yHi.toNat := by
-    subst p11
-    exact mul32_toNat xHi yHi hxHi_lt hyHi_lt
-  -- Each limb product is at most `(2^32 - 1)^2`, which leaves room for the folded terms.
-  have hp00_le : p00.toNat ≤ (2 ^ 32 - 1) * (2 ^ 32 - 1) := by
-    rw [hp00_nat]
-    exact Nat.mul_le_mul (by omega) (by omega)
-  have hp01_le : p01.toNat ≤ (2 ^ 32 - 1) * (2 ^ 32 - 1) := by
-    rw [hp01_nat]
-    exact Nat.mul_le_mul (by omega) (by omega)
-  have hp10_le : p10.toNat ≤ (2 ^ 32 - 1) * (2 ^ 32 - 1) := by
-    rw [hp10_nat]
-    exact Nat.mul_le_mul (by omega) (by omega)
-  have hp00_hi_lt : p00.toNat / 2 ^ 32 < 2 ^ 32 := by
-    omega
-  have ht_nat : t.toNat = p00.toNat / 2 ^ 32 + p01.toNat := by
-    subst t
-    rw [UInt64.toNat_add, shiftRight32_toNat]
-    have hlt : p00.toNat / 2 ^ 32 + p01.toNat < 2 ^ 64 := by
-      omega
-    rw [Nat.mod_eq_of_lt hlt]
-  have ht_mod_lt : t.toNat % 2 ^ 32 < 2 ^ 32 := Nat.mod_lt _ (by decide)
-  have hu_nat : u.toNat = t.toNat % 2 ^ 32 + p10.toNat := by
-    subst u
-    rw [UInt64.toNat_add, and_negModulus_toNat]
-    have hlt : t.toNat % 2 ^ 32 + p10.toNat < 2 ^ 64 := by
-      omega
-    rw [Nat.mod_eq_of_lt hlt]
-  have hwide := wideMul_high_nat p00.toNat p01.toNat p10.toNat p11.toNat
-  have hwide' :
-      p11.toNat + (p00.toNat / 2 ^ 32 + p01.toNat) / 2 ^ 32 +
-          ((p00.toNat / 2 ^ 32 + p01.toNat) % 2 ^ 32 + p10.toNat) / 2 ^ 32 =
-        (p00.toNat + 2 ^ 32 * (p01.toNat + p10.toNat) + (2 ^ 32) ^ 2 * p11.toNat) /
-          (2 ^ 32) ^ 2 := by
-    simpa using hwide
-  have hsplit :
-      p00.toNat + 2 ^ 32 * (p01.toNat + p10.toNat) + (2 ^ 32) ^ 2 * p11.toNat =
-        x.toNat * y.toNat := by
-    rw [hp00_nat, hp01_nat, hp10_nat, hp11_nat]
-    subst p00
-    subst p01
-    subst p10
-    subst p11
-    subst xLo
-    subst xHi
-    subst yLo
-    subst yHi
-    simpa [pow_add, pow_mul] using (product_split32 x y).symm
-  have hquot_lt :
-      p11.toNat + t.toNat / 2 ^ 32 + u.toNat / 2 ^ 32 < UInt64.size := by
-    rw [hu_nat, ht_nat, hwide', hsplit]
-    have hprod_bound : x.toNat * y.toNat < UInt64.size * UInt64.size := by
-      exact
-        mul_lt_mul'' (UInt64.toNat_lt_size x) (UInt64.toNat_lt_size y) (Nat.zero_le _)
-          (Nat.zero_le _)
-    change x.toNat * y.toNat / UInt64.size < UInt64.size
-    rw [Nat.div_lt_iff_lt_mul (by decide : 0 < UInt64.size)]
-    exact hprod_bound
-  have hhi_nat :
-      hi.toNat = p11.toNat + t.toNat / 2 ^ 32 + u.toNat / 2 ^ 32 := by
-    rw [hhi]
-    dsimp only
-    change (p11 + (t >>> 32) + (u >>> 32)).toNat =
-      p11.toNat + t.toNat / 2 ^ 32 + u.toNat / 2 ^ 32
-    rw [UInt64.toNat_add, UInt64.toNat_add]
-    rw [shiftRight32_toNat, shiftRight32_toNat]
-    have hquot_lt_pow :
-        p11.toNat + t.toNat / 2 ^ 32 + u.toNat / 2 ^ 32 < 2 ^ 64 := by
-      simpa [UInt64.size] using hquot_lt
-    have hsum01_pow : p11.toNat + t.toNat / 2 ^ 32 < 2 ^ 64 := by
-      omega
-    rw [Nat.mod_eq_of_lt hsum01_pow, Nat.mod_eq_of_lt hquot_lt_pow]
-  rw [hhi_nat, hu_nat, ht_nat, hwide', hsplit]
-  rfl
+/-- The high word of `wideMul` is the high half of the product. -/
+theorem wideMul_snd_toNat (x y : UInt64) :
+    (wideMul x y).2.toNat = x.toNat * y.toNat / 2 ^ 64 := by
+  have hxLo := uint64_low32_lt x
+  have hxHi := uint64_high32_lt x
+  have hyLo := uint64_low32_lt y
+  have hyHi := uint64_high32_lt y
+  have hp00 := mul32_toNat _ _ hxLo hyLo
+  have hp01 := mul32_toNat _ _ hxLo hyHi
+  have hp10 := mul32_toNat _ _ hxHi hyLo
+  have hp11 := mul32_toNat _ _ hxHi hyHi
+  have hwide := wideMul_hi_nat ((x &&& negModulus).toNat * (y &&& negModulus).toNat)
+    ((x &&& negModulus).toNat * (y >>> 32).toNat) ((x >>> 32).toNat * (y &&& negModulus).toNat)
+    ((x >>> 32).toNat * (y >>> 32).toNat)
+  have h00 : (x &&& negModulus).toNat * (y &&& negModulus).toNat ≤ (2 ^ 32 - 1) * (2 ^ 32 - 1) :=
+    Nat.mul_le_mul (by omega) (by omega)
+  have h01 : (x &&& negModulus).toNat * (y >>> 32).toNat ≤ (2 ^ 32 - 1) * (2 ^ 32 - 1) :=
+    Nat.mul_le_mul (by omega) (by omega)
+  have h10 : (x >>> 32).toNat * (y &&& negModulus).toNat ≤ (2 ^ 32 - 1) * (2 ^ 32 - 1) :=
+    Nat.mul_le_mul (by omega) (by omega)
+  have h11 : (x >>> 32).toNat * (y >>> 32).toNat ≤ (2 ^ 32 - 1) * (2 ^ 32 - 1) :=
+    Nat.mul_le_mul (by omega) (by omega)
+  rw [product_split32 x y]
+  simp only [wideMul, UInt64.toNat_add, shiftRight32_toNat, and_negModulus_toNat, hp00, hp01,
+    hp10, hp11] at hwide h00 h01 h10 h11 hxLo hxHi hyLo hyHi ⊢
+  omega
 
 /-- Combined semantic correctness of a 64-by-64 product represented by low and high words. -/
 theorem wideMul_cast
@@ -479,23 +352,23 @@ theorem reduceUInt64Raw_cast (x : UInt64) :
       exact hmod_le_x)]
     simp
 
-/-- The tail of the 128-bit fold: add the folded middle limb and correct one overflow. -/
-private theorem foldTail_cast (lo hi_hi hi_lo t0 : UInt64) (hhi_lo : hi_lo.toNat < 2 ^ 32)
+/-- Tail of the 128-bit fold: add the middle term and correct one overflow. -/
+private theorem foldTail_cast (lo hiHi hiLo t0 : UInt64) (hhiLo : hiLo.toNat < 2 ^ 32)
     (ht0 : (t0.toNat : Goldilocks.Field) =
-      (lo.toNat : Goldilocks.Field) - (hi_hi.toNat : Goldilocks.Field)) :
-    (((if t0 + hi_lo * negModulus < t0 then t0 + hi_lo * negModulus + negModulus
-        else t0 + hi_lo * negModulus)).toNat : Goldilocks.Field) =
-      (lo.toNat : Goldilocks.Field) - (hi_hi.toNat : Goldilocks.Field) +
-        (hi_lo.toNat : Goldilocks.Field) * (negModulus.toNat : Goldilocks.Field) := by
-  have ht1_cast : ((hi_lo * negModulus).toNat : Goldilocks.Field) =
-      (hi_lo.toNat : Goldilocks.Field) * (negModulus.toNat : Goldilocks.Field) := by
-    rw [mul_negModulus_toNat_of_lt hi_lo hhi_lo, Nat.cast_mul]
-  have hbound : t0.toNat + (hi_lo * negModulus).toNat < 2 * UInt64.size - negModulus.toNat := by
-    have ht0_lt := UInt64.toNat_lt_size t0
-    have ht1_le := mul_negModulus_toNat_le hi_lo hhi_lo
+      (lo.toNat : Goldilocks.Field) - (hiHi.toNat : Goldilocks.Field)) :
+    (((if t0 + hiLo * negModulus < t0 then t0 + hiLo * negModulus + negModulus
+        else t0 + hiLo * negModulus)).toNat : Goldilocks.Field) =
+      (lo.toNat : Goldilocks.Field) - (hiHi.toNat : Goldilocks.Field) +
+        (hiLo.toNat : Goldilocks.Field) * (negModulus.toNat : Goldilocks.Field) := by
+  have ht1 : ((hiLo * negModulus).toNat : Goldilocks.Field) =
+      (hiLo.toNat : Goldilocks.Field) * (negModulus.toNat : Goldilocks.Field) := by
+    rw [mul_negModulus_toNat_of_lt hiLo hhiLo, Nat.cast_mul]
+  have hsum : t0.toNat + (hiLo * negModulus).toNat < 2 * UInt64.size - negModulus.toNat := by
+    have ht0 := UInt64.toNat_lt_size t0
+    have ht1 := mul_negModulus_toNat_le hiLo hhiLo
     have htwice : 2 * negModulus.toNat ≤ UInt64.size := by decide
     omega
-  rw [addOverflowBounded_cast t0 (hi_lo * negModulus) hbound, ht0, ht1_cast]
+  rw [addOverflowBounded_cast t0 (hiLo * negModulus) hsum, ht0, ht1]
 
 /-- The middle limb times `2^32 - 1`, formed as a shift and a subtraction. -/
 theorem shiftLeft32_sub_low (hi : UInt64) :
@@ -515,22 +388,21 @@ theorem shiftLeft32_sub_low (hi : UInt64) :
   rw [UInt64.toNat_sub_of_le _ _ hle, hshl, mul_negModulus_toNat_of_lt _ hlo, negModulus_toNat]
   omega
 
-/-- Semantic correctness of the lazy 128-bit fold. -/
+/-- The lazy fold represents `lo + hi * 2^64`. -/
 theorem foldUInt128Lazy_cast (lo hi : UInt64) :
     ((foldUInt128Lazy lo hi).toNat : Goldilocks.Field) =
       (lo.toNat : Goldilocks.Field) +
         (hi.toNat : Goldilocks.Field) * (UInt64.size : Goldilocks.Field) := by
-  have hhi_hi_lt : (hi >>> 32).toNat < 2 ^ 32 := uint64_high32_lt hi
-  have hhi_lo_lt : (hi &&& negModulus).toNat < 2 ^ 32 := uint64_low32_lt hi
-  have hsub := subBorrow_cast lo (hi >>> 32) hhi_hi_lt
+  have hhiLo := uint64_low32_lt hi
+  have hsub := subBorrow_cast lo (hi >>> 32) (uint64_high32_lt hi)
   rw [hi_split_cast hi]
   simp only [foldUInt128Lazy, foldUInt128Borrow]
-  by_cases hb : lo < hi >>> 32
-  · rw [if_pos hb] at hsub ⊢
-    rw [foldTail_cast lo (hi >>> 32) (hi &&& negModulus) _ hhi_lo_lt hsub]
+  by_cases hborrow : lo < hi >>> 32
+  · rw [ite_eq_left hborrow] at hsub ⊢
+    rw [foldTail_cast lo (hi >>> 32) (hi &&& negModulus) _ hhiLo hsub]
     ring
-  · rw [if_neg hb] at hsub ⊢
-    rw [shiftLeft32_sub_low hi, foldTail_cast lo (hi >>> 32) (hi &&& negModulus) _ hhi_lo_lt hsub]
+  · rw [ite_eq_right hborrow] at hsub ⊢
+    rw [shiftLeft32_sub_low hi, foldTail_cast lo (hi >>> 32) (hi &&& negModulus) _ hhiLo hsub]
     ring
 
 /-- The raw 128-bit reducer returns a canonical representative below the modulus. -/
@@ -546,19 +418,14 @@ theorem reduceUInt128Raw_cast (lo hi : UInt64) :
   unfold reduceUInt128Raw
   rw [reduceUInt64Raw_cast, foldUInt128Lazy_cast]
 
-/-- Semantic correctness of the lazy product on arbitrary words. -/
+/-- The lazy product of any two words represents their product. -/
 @[simp]
 theorem mulLazy_cast (x y : UInt64) :
     ((mulLazy x y).toNat : Goldilocks.Field) =
       (x.toNat : Goldilocks.Field) * (y.toNat : Goldilocks.Field) := by
   unfold mulLazy
   rw [foldUInt128Lazy_cast]
-  exact
-    wideMul_cast x y (wideMul x y).1 (wideMul x y).2
-      (by unfold wideMul; rfl)
-      (by
-        unfold wideMul
-        exact wideMul_high_toNat x y _ rfl)
+  exact wideMul_cast x y _ _ rfl (wideMul_snd_toNat x y)
 
 /-- Product reduction returns a canonical representative below the modulus. -/
 theorem reduceMulRaw_lt (x y : UInt64) :
@@ -573,7 +440,7 @@ theorem reduceMulRaw_cast (x y : UInt64) :
   rw [reduceUInt64Raw_cast, mulLazy_cast]
 
 /-- Raw addition of canonical words computes the reduced sum. -/
-theorem addRaw_toNat (x y : UInt64) (hx : x.toNat < Goldilocks.fieldSize)
+theorem addRaw_toNat {x y : UInt64} (hx : x.toNat < Goldilocks.fieldSize)
     (hy : y.toNat < Goldilocks.fieldSize) :
     (addRaw x y).toNat = (x.toNat + y.toNat) % Goldilocks.fieldSize := by
   have hx64 := UInt64.toNat_lt_size x
@@ -585,18 +452,18 @@ theorem addRaw_toNat (x y : UInt64) (hx : x.toNat < Goldilocks.fieldSize)
     omega
 
 /-- Raw addition of canonical words returns a canonical representative. -/
-theorem addRaw_lt (x y : UInt64) (hx : x.toNat < Goldilocks.fieldSize)
+theorem addRaw_lt {x y : UInt64} (hx : x.toNat < Goldilocks.fieldSize)
     (hy : y.toNat < Goldilocks.fieldSize) :
     (addRaw x y).toNat < Goldilocks.fieldSize := by
-  rw [addRaw_toNat x y hx hy]
+  rw [addRaw_toNat hx hy]
   exact Nat.mod_lt _ fieldSize_pos
 
 /-- Raw addition agrees with canonical-field addition on canonical words. -/
-theorem addRaw_cast (x y : UInt64) (hx : x.toNat < Goldilocks.fieldSize)
+theorem addRaw_cast {x y : UInt64} (hx : x.toNat < Goldilocks.fieldSize)
     (hy : y.toNat < Goldilocks.fieldSize) :
     ((addRaw x y).toNat : Goldilocks.Field) =
       (x.toNat : Goldilocks.Field) + (y.toNat : Goldilocks.Field) := by
-  rw [addRaw_toNat x y hx hy, ZMod.natCast_mod, Nat.cast_add]
+  rw [addRaw_toNat hx hy, ZMod.natCast_mod, Nat.cast_add]
 
 /-- Raw negation returns a canonical representative when given one. -/
 theorem negRaw_lt (x : UInt64) (hx : x.toNat < Goldilocks.fieldSize) :
@@ -751,15 +618,15 @@ theorem powLazy_cast (acc x : UInt64) (n : Nat) :
     rw [powLazy]
     by_cases hn : n = 0
     · simp [hn]
-    · rw [dif_neg hn]
+    · rw [dite_eq_right hn]
       have hlt : n / 2 < n := Nat.div_lt_self (Nat.pos_of_ne_zero hn) (by decide)
       rw [ih (n / 2) hlt, mulLazy_cast, ← pow_two, ← pow_mul]
       have hsplit : n = 2 * (n / 2) + n % 2 := (Nat.div_add_mod n 2).symm
       by_cases hodd : n % 2 = 1
-      · rw [if_pos hodd, mulLazy_cast]
+      · rw [ite_eq_left hodd, mulLazy_cast]
         conv_rhs => rw [hsplit, hodd, pow_succ]
         ring
-      · rw [if_neg hodd]
+      · rw [ite_eq_right hodd]
         have hev : n % 2 = 0 := by omega
         conv_rhs => rw [hsplit, hev, Nat.add_zero]
 

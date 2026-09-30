@@ -18,8 +18,8 @@ kernels from `FastDefs` with the bounds proved in `FastReduction`. Every operati
 identified with its counterpart in the canonical `ZMod` model, and the field instances
 are transferred across `toField`.
 
-Reduction rests on `2^64 ≡ 2^32 - 1 (mod p)`, so a 128-bit product folds back into one
-word with shifts, one multiply by `2^32 - 1`, and carry corrections.
+Reduction rests on `2^64 ≡ 2^32 - 1 (mod p)`, which folds a 128-bit product back into one
+word with shifts, additions and carry corrections.
 -/
 
 @[expose] public section
@@ -122,7 +122,7 @@ def toField (x : Field) : Goldilocks.Field :=
 /-- Fast modular addition in canonical form. -/
 @[inline]
 def add (x y : Field) : Field :=
-  ⟨addRaw x.val y.val, addRaw_lt x.val y.val x.property y.property⟩
+  ⟨addRaw x.val y.val, addRaw_lt x.property y.property⟩
 
 /-- Fast modular negation in canonical form. -/
 @[inline]
@@ -144,9 +144,7 @@ def mul (x y : Field) : Field :=
 def square (x : Field) : Field :=
   mul x x
 
-/-- Repeated squaring: `squareN x n` computes `x^(2^n)`.
-
-Accumulates in `x` so the recursion is a tail call and compiles to a loop. -/
+/-- Repeated squaring, `squareN x n = x^(2^n)`, as a tail-recursive loop. -/
 @[inline]
 def squareN (x : Field) : Nat → Field
   | 0 => x
@@ -405,7 +403,7 @@ theorem toField_one : toField (1 : Field) = 1 := by
 theorem toField_add (x y : Field) : toField (x + y) = toField x + toField y := by
   change toField (add x y) = toField x + toField y
   simp only [add, toField, toNat]
-  exact addRaw_cast x.val y.val x.property y.property
+  exact addRaw_cast x.property y.property
 
 /-- Fast negation agrees with canonical-field negation. -/
 @[simp]

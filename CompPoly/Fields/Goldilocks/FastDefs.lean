@@ -8,13 +8,9 @@ module
 /-!
 # Fast Goldilocks: runtime definitions (zero-import)
 
-The runtime definitions of the native-word Goldilocks arithmetic, split out of
-`CompPoly.Fields.Goldilocks.Fast` verbatim. All correctness statements about them
-live in that sibling module, which imports this one.
-
-This module deliberately has **zero imports**: downstream consumers put it into
-`precompileModules` native-compilation lanes, and `precompileModules` compiles the
-entire import closure, so the runtime definitions must not pull in mathlib.
+Runtime word kernels of the native Goldilocks field, proved correct in
+`CompPoly.Fields.Goldilocks.FastReduction`. This module has zero imports so that
+`precompileModules` lanes, which compile the whole import closure, can take it without Mathlib.
 -/
 
 @[expose] public section
@@ -33,17 +29,12 @@ def negModulus : UInt64 := 0xffffffff
 
 /-! ## Raw word kernels
 
-Every kernel takes canonical `UInt64` inputs and returns a canonical representative
-below the modulus, except the `Lazy` kernels: those accept and return arbitrary words
-congruent to the intended value, so a chain of them pays one canonicalization at the
-end instead of one per step. Correctness lives in `CompPoly.Fields.Goldilocks.Fast`. -/
+Kernels take and return canonical words below the modulus; the `Lazy` ones take and
+return any congruent word, so a chain canonicalizes once at the end. -/
 
 
-/-- Full 64-by-64 product as `(lo, hi)` words, computed from 32-bit limbs.
-
-The middle terms are folded through `t` and `u`, which never overflow, so no carry
-bookkeeping is needed. This shape is also what lets clang fuse the four limb
-products into one widening multiply even when `x` and `y` are the same word. -/
+/-- Full 64-by-64 product as `(lo, hi)` words from 32-bit limbs, in the shape clang fuses
+into one widening multiply. -/
 @[inline]
 def wideMul (x y : UInt64) : UInt64 × UInt64 :=
   let xLo := x &&& negModulus
@@ -59,38 +50,29 @@ def wideMul (x y : UInt64) : UInt64 × UInt64 :=
   let hi := p11 + (t >>> 32) + (u >>> 32)
   (x * y, hi)
 
-/-- Raw one-word reduction for a `UInt64` value.
-
-Since every `UInt64` is below `2^64 = p + 2^32 - 1`, one subtraction by `p`
-is enough to canonicalize a native word.
--/
+/-- Canonicalize a word by one conditional subtraction, since every `UInt64` is below `2 * p`. -/
 @[inline]
 def reduceUInt64Raw (x : UInt64) : UInt64 :=
   if x < modulus then x else x - modulus
 
-/-- Rare path of the 128-bit fold, taken when the low word borrows against the top limb
-(probability about `2^-32` on random inputs). Kept out of line so the common path
-compiles to a predicted branch instead of a select on the critical path. -/
+/-- Borrow arm of the 128-bit fold, out of line so the common path takes a predicted branch. -/
 @[noinline]
-def foldUInt128Borrow (lo hi_hi hi_lo : UInt64) : UInt64 :=
-  let t0 := lo - hi_hi - negModulus
-  let t1 := hi_lo * negModulus
+def foldUInt128Borrow (lo hiHi hiLo : UInt64) : UInt64 :=
+  let t0 := lo - hiHi - negModulus
+  let t1 := hiLo * negModulus
   let t2 := t0 + t1
   if t2 < t0 then t2 + negModulus else t2
 
-/-- Fold a 128-bit value `lo + hi * 2^64` into one congruent word using
-`2^64 ≡ 2^32 - 1`. The result is not canonicalized.
-
-The middle term `hi_lo * (2^32 - 1)` is formed as `(hi <<< 32) - hi_lo`, two one-cycle
-operations rather than a three-cycle multiply. -/
+/-- Fold `lo + hi * 2^64` into one congruent, not necessarily canonical, word using
+`2^64 ≡ 2^32 - 1`; the middle term is `(hi <<< 32) - hiLo` rather than a multiply. -/
 @[inline]
 def foldUInt128Lazy (lo hi : UInt64) : UInt64 :=
-  let hi_hi := hi >>> 32
-  let hi_lo := hi &&& negModulus
-  if lo < hi_hi then foldUInt128Borrow lo hi_hi hi_lo
+  let hiHi := hi >>> 32
+  let hiLo := hi &&& negModulus
+  if lo < hiHi then foldUInt128Borrow lo hiHi hiLo
   else
-    let t0 := lo - hi_hi
-    let t1 := (hi <<< 32) - hi_lo
+    let t0 := lo - hiHi
+    let t1 := (hi <<< 32) - hiLo
     let t2 := t0 + t1
     if t2 < t0 then t2 + negModulus else t2
 
@@ -110,10 +92,7 @@ def mulLazy (x y : UInt64) : UInt64 :=
 def reduceMulRaw (x y : UInt64) : UInt64 :=
   reduceUInt64Raw (mulLazy x y)
 
-/-- Raw modular addition of canonical words.
-
-Computed as `x - (p - y)`: the subtraction borrows exactly when `x + y < p`, so one
-borrow-selected correction yields the canonical sum, with no separate compare against `p`. -/
+/-- Canonical sum as `x - (p - y)`, which borrows exactly when `x + y < p`. -/
 @[inline]
 def addRaw (x y : UInt64) : UInt64 :=
   let u := modulus - y
@@ -147,10 +126,8 @@ def squareNLazy (x : UInt64) : Nat → UInt64
   | 0 => x
   | n + 1 => squareNLazy (mulLazy x x) n
 
-/-- Fermat chain for `x^(p - 2)` on unreduced words; the caller canonicalizes once.
-
-`p - 2 = 0xFFFFFFFEFFFFFFFF`: build `x^(2^31 - 1)`, derive `x^(2^32 - 2)` and
-`x^(2^32 - 1)`, then combine them as `(2^32 - 2) * 2^32 + (2^32 - 1)`. -/
+/-- Fermat chain for `x^(p - 2)` on unreduced words, with
+`p - 2 = (2^32 - 2) * 2^32 + (2^32 - 1)`. -/
 def invLazy (x : UInt64) : UInt64 :=
   let t2 := mulLazy (mulLazy x x) x
   let t4 := mulLazy (squareNLazy t2 2) t2
