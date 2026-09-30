@@ -17,7 +17,7 @@ SUITES = {
                     "mersenne31": ("Mersenne31", "Plonky3", ("add", "mul", "inv", "pow")),
                     "goldilocks": ("Goldilocks", "Plonky3", ("add", "mul", "inv", "pow"))},
     "large-prime": {"bn254": ("BN254 scalar", "arkworks", ("add", "mul", "inv", "pow"))},
-    "binary": {f"tower-bt{bits}": (f"Binary tower {bits}", "Binius", ("add", "mul", "square", "inv"))
+    "binary": {f"tower-bt{bits}": (f"Binary tower {bits}", "Binius", ("mul", "square", "inv"))
                for bits in (8, 64, 128)},
 }
 
@@ -27,8 +27,7 @@ def selection(suite):
               if suite == "all" or suite == name for f, spec in values.items()}
     groups = [f"fields-{f}-{op}" for f, (_, _, ops) in fields.items() for op in ops]
     expected = {(g, mode) for g in groups for mode in
-                (("throughput",) if g.startswith("fields-tower-") and g.endswith("-add") else
-                 ("latency", "throughput") if g.endswith(("-add", "-mul")) else ("latency",))}
+                (("latency", "throughput") if g.endswith(("-add", "-mul")) else ("latency",))}
     return fields, groups, expected
 
 
@@ -84,7 +83,7 @@ def report(out, measurements, manifest, fields, expected):
                     mad = statistics.median(abs(x - median) for x in runs)
                     values.append((median, mad))
                 (lean, lm), (rust, rm) = values
-                lines.append(f"| {title} | {'array add' if field.startswith('tower-') and op == 'add' else 'exp' if op == 'pow' else op} | {lean:.2f} ± {lm:.2f} | {rust:.2f} ± {rm:.2f} | {lean/rust:.2f}× |")
+                lines.append(f"| {title} | {'exp' if op == 'pow' else op} | {lean:.2f} ± {lm:.2f} | {rust:.2f} ± {rm:.2f} | {lean/rust:.2f}× |")
         lines.append("")
     lines += ["### Machine and method", "",
               f"- **CPU:** {manifest['cpu_model']}; {manifest['logical_cpus']} logical CPUs. Both runners pinned to logical CPU {manifest['cpu']}, sequentially, with one thread (SMT siblings: {manifest['smt_siblings']}).",
@@ -93,7 +92,7 @@ def report(out, measurements, manifest, fields, expected):
               f"- **Source:** `{manifest['commit']}`; tracked files dirty: {manifest['dirty']}. Fixture SHA-256: `{manifest['fixture_sha256']}`.",
               f"- **Sampling:** {len(measurements)} paired runs, alternating Lean/Rust order; each case uses 50 ms warmup and 20 samples targeting 1 ms each. All {len(expected)} untimed result digests agree with Lean; prime-field groups also check their reference implementations.",
               "- **Workloads:** small-prime add/mul use 1,280 operations per batch; BN254 add/mul use 320. Small-prime throughput uses a ten-lane ring and nine final combining operations; BN254 uses two independent chains, four rounds unrolled, with the same fixed operand as latency and one final combining operation. This configuration was selected manually on Rust and fixed identically in Lean. Combining operations are outside the batch divisor, matching Lean. Inv/exp use 64 dependent steps of `inv(x + b)` / `(x + b)^0x5A5A5A5A`, so their times include one add per step. Only the final batch result is consumed. BN254 inversion uses CompPoly’s checked binary-GCD implementation and arkworks’ inverse.",
-              "- **Binary workloads:** Fan–Paar tower coefficients in little-endian bytes, with the same basis on both sides. Array addition produces 1,024 outputs from two arrays, rotating the left input by 0–63 elements between batches. Times include allocation, indexing, loads, stores, and output release; all outputs are checked outside timing, and the final element is consumed during timing. Multiplication uses 64 dependent steps or two independent 32-step chains plus one final multiply (excluded from the divisor). Squaring uses 63 dependent squares, unrolled seven at a time; 63 is not a whole Frobenius cycle at any selected size. Inversion uses 64 steps of `inv(x XOR b)`, including the XOR. Only the final batch result is consumed. Scalar Binius field types are used, with supported CPU instructions enabled; there is no explicit packed-SIMD workload.",
+              "- **Binary workloads:** Fan–Paar tower coefficients in little-endian bytes, with the same basis on both sides. Multiplication uses 64 dependent steps or two independent 32-step chains plus one final multiply (excluded from the divisor). Squaring uses 63 dependent squares, unrolled seven at a time; 63 is not a whole Frobenius cycle at any selected size. Inversion uses 64 steps of `inv(x XOR b)`, including the XOR. Only the final batch result is consumed. Scalar Binius field types are used, with supported CPU instructions enabled; there is no explicit packed-SIMD workload.",
               f"- **CPU instruction support:** {', '.join(manifest['cpu_features'])}. The archived Binius tower library is pinned because Binius64 uses different field representations.",
               "- **Shared host:** other jobs may contend for the CPU, SMT sibling, caches, or boost budget. These are observations under load, not isolated-machine speed claims.", ""]
     (out / "report.md").write_text("\n".join(lines))

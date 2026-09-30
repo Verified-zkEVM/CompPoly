@@ -46,11 +46,10 @@ def main : IO Unit := do
           (if tag == "bn254" then 160 else throughputRounds))]
       IO.println json.compress
   for bits in [8, 64, 128] do
-    for operation in ["add", "mul", "square", "inv"] do
+    for operation in ["mul", "square", "inv"] do
       let field := s!"tower-bt{bits}"
       let key := s!"fields-{field}-{operation}"
-      let (values, _) := if operation == "add" then towerAddPool bits (genFor key)
-        else towerBenchPool bits (genFor key)
+      let (values, _) := towerBenchPool bits (genFor key)
       IO.println <| (Lean.Json.mkObj [
         ("encoding", toJson "field-coordinates-le-v1"),
         ("basis", toJson "fan-paar-tower"),
@@ -58,6 +57,5 @@ def main : IO Unit := do
         ("operation", toJson operation), ("modulus", toJson (#[] : Array Nat)),
         ("inputs", toJson (values.map (canonicalBytes (bits / 8)))),
         ("exponent", toJson (0 : Nat)),
-        ("latency_rounds", toJson
-          (if operation == "add" then 0 else if operation == "square" then 63 else 64 : Nat)),
-        ("throughput_rounds", toJson (if operation == "add" then 1024 else 32 : Nat))]).compress
+        ("latency_rounds", toJson (if operation == "square" then 63 else 64 : Nat)),
+        ("throughput_rounds", toJson (32 : Nat))]).compress

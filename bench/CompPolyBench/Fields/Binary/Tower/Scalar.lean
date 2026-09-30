@@ -30,24 +30,6 @@ def towerBenchPool (bits : Nat) (gen : StdGen) : Array Nat × StdGen :=
   let (xs, gen) := (randomNatArray fieldPoolSize (2 ^ bits - 3)).run gen
   (xs.map (· + 2), gen)
 
-/-- Inputs for a 1,024-element array addition, with two full-width operand arrays. -/
-def towerAddPool (bits : Nat) (gen : StdGen) : Array Nat × StdGen :=
-  (randomNatArray 2048 (2 ^ bits - 1)).run gen
-
-/-- Array addition includes allocation, indexing, loads, stores, and result release. -/
-@[specialize] private def towerArrayAdd {F : Type} (add : F → F → F)
-    (pool : Array F) (fallback : F) (offset : Nat) : Array F := Id.run do
-  let mut out := Array.emptyWithCapacity 1024
-  for j in [:1024] do
-    out := out.push (add (pool.getD ((j + offset) % 1024) fallback)
-      (pool.getD (1024 + j) fallback))
-  return out
-
-/-- Every output contributes to validation, outside timing. -/
-@[specialize] private def towerArrayChecksum {F : Type} (checksum : F → Nat)
-    (xs : Array F) : Nat :=
-  xs.foldl (fun acc x ↦ (acc * 16777619 + checksum x + 97) % 18446744073709551557) 0
-
 /-- Sixty-three dependent squares, unrolled seven at a time to avoid an identity block. -/
 @[specialize] def towerSquareChain {F : Type} (square : F → F) (x : F) : F :=
   let rec @[specialize] go (n : Nat) (x : F) : F :=
@@ -63,16 +45,6 @@ def towerAddPool (bits : Nat) (gen : StdGen) : Array Nat × StdGen :=
   let tag := s!"tower-bt{bits}"
   let constant := rep.constant
   let records ← match opTag with
-    | "add" => do
-      let row ← runTimedSpec
-        { name := s!"{tag}-add-fast", representation := rep.representation,
-          method := "array add (allocation, loads, stores)", field := rep.field,
-          inputShape := "1024 elements; left offset 0..63", digestIterations := 64,
-          workUnits := 1024, digestClass := "throughput" }
-        preset (fun i ↦ towerArrayAdd add rep.pool constant (i % 64))
-        (towerArrayChecksum rep.checksum)
-        (sink := fun xs ↦ rep.sink (xs.getD 1023 constant))
-      pure #[row]
     | "mul" => do
       let latency ← chainLatencyRow tag opTag "mul (latency)" "latency" 64 rep
         (fun x ↦ mul x constant) preset
@@ -106,7 +78,7 @@ private def wordRep (bits : Nat) (xs : Array Nat) : ChainRep UInt64 :=
 /-- Select a tower level outside the timed region, preserving statically known operations. -/
 private def runTower (bits : Nat) (opTag : String) (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
-  let (xs, gen) := if opTag == "add" then towerAddPool bits gen else towerBenchPool bits gen
+  let (xs, gen) := towerBenchPool bits gen
   let group ← match bits with
     | 8 =>
       runTowerOperation 8 opTag (wordRep 8 xs) (· ^^^ ·)
@@ -128,7 +100,7 @@ private def runTower (bits : Nat) (opTag : String) (preset : BenchPreset) (gen :
 /-- Three representative tower sizes, with shared group names in fixtures and Rust. -/
 def towerScalarTasks : List BenchTask :=
   [8, 64, 128].flatMap fun bits ↦
-    ["add", "mul", "square", "inv"].map fun op ↦
+    ["mul", "square", "inv"].map fun op ↦
       BenchTask.fromGroupRunner
         ⟨s!"fields-tower-bt{bits}-{op}", s!"GF(2^{bits}) tower {op}"⟩ (runTower bits op)
 

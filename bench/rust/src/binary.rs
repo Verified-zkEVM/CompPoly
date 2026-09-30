@@ -24,17 +24,6 @@ value!(BinaryField8b);
 value!(BinaryField64b);
 value!(BinaryField128b);
 
-impl<F: BenchValue + Copy> BenchValue for Vec<F> {
-    fn checksum(self) -> u128 {
-        self.iter().fold(0, |acc, x| {
-            (acc * 16777619 + x.checksum() + 97) % DIGEST_MODULUS
-        })
-    }
-    fn sink(self) -> u64 {
-        self[1023].sink()
-    }
-}
-
 #[inline(always)]
 fn square_chain<F: Field>(mut x: F) -> F {
     for _ in 0..9 {
@@ -53,14 +42,6 @@ fn square_chain<F: Field>(mut x: F) -> F {
 fn run_field<F: Field + BenchValue>(fixture: &Fixture, validate_only: bool, xs: Vec<F>) {
     let constant = black_box(xs[0]);
     match fixture.operation.as_str() {
-        "add" => measure(fixture, "throughput", 1024, validate_only, |i| {
-            let offset = i % 64;
-            let mut out = Vec::with_capacity(1024);
-            for j in 0..1024 {
-                out.push(xs[(j + offset) % 1024] + xs[1024 + j]);
-            }
-            out
-        }),
         "mul" => {
             measure(fixture, "latency", 64, validate_only, |i| {
                 latency(|x| x * constant, 64, xs[i % 64])
@@ -93,19 +74,12 @@ pub fn run(fixture: &Fixture, validate_only: bool) {
         fixture.group_key,
         format!("fields-{}-{}", fixture.field, fixture.operation)
     );
-    let array_add = fixture.operation == "add";
-    assert_eq!(fixture.inputs.len(), if array_add { 2048 } else { 64 });
+    assert_eq!(fixture.inputs.len(), 64);
     assert_eq!(fixture.exponent, 0);
-    assert_eq!(fixture.throughput_rounds, if array_add { 1024 } else { 32 });
+    assert_eq!(fixture.throughput_rounds, 32);
     assert_eq!(
         fixture.latency_rounds,
-        if array_add {
-            0
-        } else if fixture.operation == "square" {
-            63
-        } else {
-            64
-        }
+        if fixture.operation == "square" { 63 } else { 64 }
     );
     let words: Vec<u128> = fixture
         .inputs
@@ -115,7 +89,7 @@ pub fn run(fixture: &Fixture, validate_only: bool) {
             let mut word = [0; 16];
             word[..bytes.len()].copy_from_slice(bytes);
             let word = u128::from_le_bytes(word);
-            assert!(array_add || word >= 2, "trivial multiplication input");
+            assert!(word >= 2, "trivial multiplication input");
             word
         })
         .collect();
