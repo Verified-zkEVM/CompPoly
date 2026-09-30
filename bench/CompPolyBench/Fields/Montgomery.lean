@@ -9,6 +9,7 @@ public import CompPolyBench.Common
 public import CompPoly.Fields.BN254
 public import CompPoly.Fields.BLS12_381
 public import CompPoly.Fields.BLS12_377
+public import CompPoly.Fields.Secp256k1
 
 /-!
 # Scalar-field inversion benchmarks
@@ -73,7 +74,21 @@ private def runBls12_377ScalarInv (preset : BenchPreset) (gen : StdGen) :
     "Scalar-field inversion (BLS12-377)" "BLS12_377.ScalarField" "BLS12_377.Fast.ScalarField"
     preset gen
 
-/-- Registry entries for the scalar-field inversion benchmarks. -/
+/-- Run the secp256k1 scalar-field inversion benchmark. -/
+private def runSecp256k1ScalarInv (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  runScalarInv Secp256k1.scalarFieldSize "fields-mont64x8-secp256k1-scalar-inv"
+    "Scalar-field inversion (secp256k1)" "Secp256k1.ScalarField" "Secp256k1.Fast.ScalarField"
+    preset gen
+
+/-- Run the secp256k1 base-field inversion benchmark. -/
+private def runSecp256k1BaseInv (preset : BenchPreset) (gen : StdGen) :
+    IO (BenchGroup × StdGen) := do
+  runScalarInv Secp256k1.baseFieldSize "fields-mont64x8-secp256k1-base-inv"
+    "Base-field inversion (secp256k1)" "Secp256k1.BaseField" "Secp256k1.Fast.BaseField"
+    preset gen
+
+/-- Registry entries for the eight-limb field inversion benchmarks. -/
 def montgomeryInvTasks : List BenchTask := [
   BenchTask.fromGroupRunner
     ⟨"fields-mont64x8-bn254-inv", "Scalar-field inversion (BN254)"⟩
@@ -83,7 +98,13 @@ def montgomeryInvTasks : List BenchTask := [
     runBls12_381ScalarInv,
   BenchTask.fromGroupRunner
     ⟨"fields-mont64x8-bls12-377-inv", "Scalar-field inversion (BLS12-377)"⟩
-    runBls12_377ScalarInv
+    runBls12_377ScalarInv,
+  BenchTask.fromGroupRunner
+    ⟨"fields-mont64x8-secp256k1-scalar-inv", "Scalar-field inversion (secp256k1)"⟩
+    runSecp256k1ScalarInv,
+  BenchTask.fromGroupRunner
+    ⟨"fields-mont64x8-secp256k1-base-inv", "Base-field inversion (secp256k1)"⟩
+    runSecp256k1BaseInv
 ]
 
 end CompPolyBench

@@ -55,14 +55,16 @@ This directory contains formally verified field infrastructure used in zero-know
 | **Montgomery/Native64x8Defs.lean** | Zero-import runtime definitions of the eight-limb Montgomery arithmetic, for `precompileModules` consumers. |
 | **Montgomery/Native64x8.lean** | Word-level specifications and add/sub/negate correctness for the eight-limb arithmetic. |
 | **Montgomery/Native64x8Mul.lean** | Correctness of the eight-limb CIOS Montgomery multiplication. |
-| **Montgomery/Native64x8Field.lean** | The `Mont64x8Field` class, `FastField` carrier, arithmetic, instances, and canonical-field bridge for moduli below `2^255`. |
+| **Montgomery/Native64x8Field.lean** | The `Mont64x8Field` class, `FastField` carrier, arithmetic, instances, and canonical-field bridge for any prime modulus below `2^256`. |
 | **Montgomery/Native64x8InvDefs.lean** | Mathlib-free binary-GCD inversion runtime ([eprint 2020/972](https://eprint.iacr.org/2020/972)): the `GcdData` schedule, the candidate, and the checked `invGcdRaw`. |
 | **Montgomery/Native64x8Inv.lean** | Correctness of the checked inversion (`invGcdRaw`, wrapper `FastField.invGcd`), the divstep coefficient bounds, and the candidate's mac-width safety. |
 | **Montgomery/ScalarFft.lean** | Zero-import in-place radix-2 DIT FFT over eight-limb Montgomery residues and precomputed twiddles. |
 | **Pasta.lean** | Facade for the Pasta modules, re-exporting the canonical Pallas/Vesta base fields and their fast native-word implementations. |
 | **Pasta/Basic.lean** | The two 255-bit Pasta base primes (Pallas base = Vesta scalar and vice versa), with Pratt primality certificates. |
 | **Pasta/Fast.lean** | Pallas- and Vesta-namespaced API over the shared eight-limb fast-field implementation, with per-field constants and canonical-field bridges. |
-| **Secp256k1.lean** | Base and scalar fields for the Secp256k1 curve (used in Bitcoin/Ethereum). |
+| **Secp256k1.lean** | Facade for the Secp256k1 modules, re-exporting the canonical base and scalar fields and their fast eight-limb implementations. |
+| **Secp256k1/Basic.lean** | Base and scalar fields for the Secp256k1 curve (used in Bitcoin/Ethereum), with Pratt primality certificates. |
+| **Secp256k1/Fast.lean** | Eight-limb Montgomery instantiation of both Secp256k1 fields (`Mont64x8Field` and `GcdData` constants, `ScalarField`, `BaseField`, ring equivalences). |
 
 ## Binary-field modules
 

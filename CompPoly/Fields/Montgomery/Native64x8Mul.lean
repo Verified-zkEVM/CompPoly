@@ -255,19 +255,15 @@ private theorem fold8 {T1 T2 T3 T4 T5 T6 T7 T8 A Q : ℕ}
 
 /-- The final conditional subtraction of `mul`, given the folded Montgomery identity. -/
 private theorem mul_finish (q : Limbs8) (t : State9) {A M : ℕ} (hq : q.Bounded)
-    (hb : t.Bounded) (hlt : t.toNat < 2 * q.toNat) (hq2 : 2 * q.toNat < 2 ^ 256)
+    (hb : t.Bounded) (hlt : t.toNat < 2 * q.toNat)
     (hfold : 2 ^ 256 * t.toNat = A + M * q.toNat) :
-    (condSub q t.toLimbs8).Bounded ∧ (condSub q t.toLimbs8).toNat < q.toNat ∧
-      2 ^ 256 * (condSub q t.toLimbs8).toNat ≡ A [MOD q.toNat] := by
-  have hlimbs : t.toLimbs8.toNat = t.toNat := by
-    have h1 := Limbs8.toNat_lt hb.1
-    have h2 : t.toNat = t.toLimbs8.toNat + 2 ^ 256 * t.t8.toNat := rfl
-    omega
+    (condSubWide q t).Bounded ∧ (condSubWide q t).toNat < q.toNat ∧
+      2 ^ 256 * (condSubWide q t).toNat ≡ A [MOD q.toNat] := by
   have hmod : 2 ^ 256 * t.toNat ≡ A [MOD q.toNat] := by
     unfold Nat.ModEq
     rw [hfold, Nat.add_mul_mod_self_right]
-  refine ⟨condSub_bounded _ _ hb.1, condSub_lt q _ hq hb.1 (by omega), ?_⟩
-  rw [condSub_toNat q _ hq hb.1, hlimbs]
+  refine ⟨condSubWide_bounded _ _ hb, condSubWide_lt q _ hq hb hlt, ?_⟩
+  rw [condSubWide_toNat q _ hq hb hlt]
   split
   · exact hmod
   · refine (Nat.ModEq.mul_left _ ?_).trans hmod
@@ -277,7 +273,7 @@ private theorem mul_finish (q : Limbs8) (t : State9) {A M : ℕ} (hq : q.Bounded
 theorem mul_spec (q : Limbs8) (negInv : UInt64) (a b : Limbs8)
     (hq : q.Bounded) (ha : a.Bounded) (hb : b.Bounded) (hn : negInv.toNat < 2 ^ 32)
     (hnq : negInv.toNat * q.toNat % 2 ^ 32 = 2 ^ 32 - 1)
-    (haq : a.toNat < q.toNat) (hq2 : 2 * q.toNat < 2 ^ 256) :
+    (haq : a.toNat < q.toNat) :
     (mul q negInv a b).Bounded ∧ (mul q negInv a b).toNat < q.toNat ∧
       2 ^ 256 * (mul q negInv a b).toNat ≡ a.toNat * b.toNat [MOD q.toNat] := by
   obtain ⟨hb0, hb1, hb2, hb3, hb4, hb5, hb6, hb7⟩ := hb
@@ -309,7 +305,7 @@ theorem mul_spec (q : Limbs8) (negInv : UInt64) (a b : Limbs8)
   have hfold := fold8 r0 r1 r2 r3 r4 r5 r6 r7
   rw [← mul_sum8, ← sum8_mul, ← Limbs8.toNat] at hfold
   simp only [mul]
-  exact mul_finish q _ hq B8 L8 hq2 hfold
+  exact mul_finish q _ hq B8 L8 hfold
 
 end Native64x8
 end Montgomery

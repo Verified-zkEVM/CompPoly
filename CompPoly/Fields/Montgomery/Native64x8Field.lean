@@ -15,7 +15,7 @@ public import Mathlib.FieldTheory.Finite.Basic
 
 The bounded carrier, conversions, arithmetic, and field instances built on the raw eight-limb
 Montgomery operations of `Montgomery/Native64x8`.  This is the multi-limb analogue of
-`Montgomery/Native32Field`, for prime moduli below `2 ^ 255`.
+`Montgomery/Native32Field`, for any prime modulus below `2 ^ 256`.
 
 A carrier element stores the Montgomery residue `x * 2 ^ 256 mod q` as eight 32-bit limbs;
 `toField` divides that residue by `2 ^ 256` again and lands in `ZMod modulus`.  All arithmetic
@@ -52,7 +52,6 @@ class Mont64x8Field (modulus : ℕ) where
   modulusLimbs_bounded : modulusLimbs.Bounded := by decide
   modulusLimbs_toNat : modulusLimbs.toNat = modulus := by decide
   two_lt_modulus : 2 < modulus := by decide
-  two_mul_modulus_lt : 2 * modulus < 2 ^ 256 := by decide
   rModModulus_bounded : rModModulus.Bounded := by decide
   rModModulus_toNat : rModModulus.toNat = 2 ^ 256 % modulus := by decide
   r2ModModulus_bounded : r2ModModulus.Bounded := by decide
@@ -72,14 +71,10 @@ instance : Fact (Nat.Prime modulus) := ⟨P.prime⟩
 theorem modulus_pos : 0 < modulus := Nat.zero_lt_of_lt P.two_lt_modulus
 
 theorem modulus_lt : modulus < 2 ^ 256 := by
-  have := P.two_mul_modulus_lt
-  omega
+  have h := Limbs8.toNat_lt P.modulusLimbs_bounded
+  rwa [P.modulusLimbs_toNat] at h
 
 theorem q_toNat : P.modulusLimbs.toNat = modulus := P.modulusLimbs_toNat
-
-theorem two_mul_q_lt : 2 * P.modulusLimbs.toNat < 2 ^ 256 := by
-  rw [q_toNat]
-  exact P.two_mul_modulus_lt
 
 theorem negInv_mul_q : P.montgomeryNegInv.toNat * P.modulusLimbs.toNat % 2 ^ 32 = 2 ^ 32 - 1 := by
   rw [q_toNat]
@@ -140,7 +135,7 @@ def one (modulus : ℕ) [P : Mont64x8Field modulus] : FastField modulus :=
   ⟨Native64x8.add P.modulusLimbs x.val y.val, add_bounded _ _ _,
     by
       have h := add_lt _ _ _ P.modulusLimbs_bounded x.val_bounded y.val_bounded
-        Mont64x8Field.two_mul_q_lt x.val_lt y.val_lt
+        x.val_lt y.val_lt
       rwa [Mont64x8Field.q_toNat] at h⟩
 
 /-- Fast modular subtraction in Montgomery form. -/
@@ -148,27 +143,24 @@ def one (modulus : ℕ) [P : Mont64x8Field modulus] : FastField modulus :=
   ⟨Native64x8.sub P.modulusLimbs x.val y.val, sub_bounded _ _ _,
     by
       have h := sub_lt _ _ _ P.modulusLimbs_bounded x.val_bounded y.val_bounded
-        Mont64x8Field.two_mul_q_lt x.val_lt y.val_lt
+        x.val_lt y.val_lt
       rwa [Mont64x8Field.q_toNat] at h⟩
 
 /-- Fast modular negation in Montgomery form. -/
 @[inline] def neg (x : FastField modulus) : FastField modulus :=
   ⟨Native64x8.neg P.modulusLimbs x.val, neg_bounded _ _,
     by
-      have h := neg_lt _ _ P.modulusLimbs_bounded x.val_bounded Mont64x8Field.two_mul_q_lt
-        x.val_lt
+      have h := neg_lt _ _ P.modulusLimbs_bounded x.val_bounded x.val_lt
       rwa [Mont64x8Field.q_toNat] at h⟩
 
 /-- Fast Montgomery multiplication. -/
 @[inline] def mul (x y : FastField modulus) : FastField modulus :=
   ⟨Native64x8.mul P.modulusLimbs P.montgomeryNegInv x.val y.val,
     (mul_spec _ _ _ _ P.modulusLimbs_bounded x.val_bounded y.val_bounded
-      P.montgomeryNegInv_lt Mont64x8Field.negInv_mul_q x.val_lt
-      Mont64x8Field.two_mul_q_lt).1,
+      P.montgomeryNegInv_lt Mont64x8Field.negInv_mul_q x.val_lt).1,
     by
       have h := (mul_spec _ _ _ _ P.modulusLimbs_bounded x.val_bounded y.val_bounded
-        P.montgomeryNegInv_lt Mont64x8Field.negInv_mul_q x.val_lt
-        Mont64x8Field.two_mul_q_lt).2.1
+        P.montgomeryNegInv_lt Mont64x8Field.negInv_mul_q x.val_lt).2.1
       rwa [Mont64x8Field.q_toNat] at h⟩
 
 /-- Fast squaring. -/
@@ -204,16 +196,14 @@ def one (modulus : ℕ) [P : Mont64x8Field modulus] : FastField modulus :=
       (by
         rw [Limbs8.ofNat_toNat, Mont64x8Field.q_toNat,
           Nat.mod_eq_of_lt (h.trans Mont64x8Field.modulus_lt)]
-        exact h)
-      Mont64x8Field.two_mul_q_lt).1,
+        exact h)).1,
     by
       have hlt := (mul_spec _ _ _ _ P.modulusLimbs_bounded (Limbs8.ofNat_bounded n)
         P.r2ModModulus_bounded P.montgomeryNegInv_lt Mont64x8Field.negInv_mul_q
         (by
           rw [Limbs8.ofNat_toNat, Mont64x8Field.q_toNat,
             Nat.mod_eq_of_lt (h.trans Mont64x8Field.modulus_lt)]
-          exact h)
-        Mont64x8Field.two_mul_q_lt).2.1
+          exact h)).2.1
       rwa [Mont64x8Field.q_toNat] at hlt⟩
 
 /-- Convert a natural number into fast Montgomery form. -/
@@ -286,8 +276,7 @@ private theorem mul_cast (x y : Limbs8) (hx : x.Bounded) (hy : y.Bounded)
       (x.toNat : ZMod modulus) * (y.toNat : ZMod modulus) *
         ((2 ^ 256 : ℕ) : ZMod modulus)⁻¹ := by
   have hmod := (mul_spec _ _ _ _ P.modulusLimbs_bounded hx hy P.montgomeryNegInv_lt
-    Mont64x8Field.negInv_mul_q (by rw [Mont64x8Field.q_toNat]; exact hxq)
-    Mont64x8Field.two_mul_q_lt).2.2
+    Mont64x8Field.negInv_mul_q (by rw [Mont64x8Field.q_toNat]; exact hxq)).2.2
   rw [Mont64x8Field.q_toNat] at hmod
   have hcast := (ZMod.natCast_eq_natCast_iff _ _ _).2 hmod
   rw [Nat.cast_mul, Nat.cast_mul] at hcast
@@ -307,7 +296,7 @@ private theorem val_cast (x : FastField modulus) :
 
 theorem toNat_lt (x : FastField modulus) : toNat x < modulus := by
   have := (mul_spec _ _ _ _ P.modulusLimbs_bounded x.val_bounded Limbs8.one_bounded
-    P.montgomeryNegInv_lt Mont64x8Field.negInv_mul_q x.val_lt Mont64x8Field.two_mul_q_lt).2.1
+    P.montgomeryNegInv_lt Mont64x8Field.negInv_mul_q x.val_lt).2.1
   rwa [Mont64x8Field.q_toNat] at this
 
 private theorem ofCanonicalNat_val_cast {n : ℕ} (h : n < modulus) :
@@ -371,7 +360,7 @@ theorem toField_one : toField (1 : FastField modulus) = 1 := by
 theorem toField_add (x y : FastField modulus) : toField (x + y) = toField x + toField y := by
   rw [toField_eq, toField_eq x, toField_eq y, add_def, add]
   have h := add_toNat P.modulusLimbs x.val y.val P.modulusLimbs_bounded x.val_bounded
-    y.val_bounded Mont64x8Field.two_mul_q_lt x.val_lt y.val_lt
+    y.val_bounded x.val_lt y.val_lt
   rw [h, Mont64x8Field.q_toNat, ZMod.natCast_mod, Nat.cast_add]
   ring
 
@@ -379,7 +368,7 @@ theorem toField_add (x y : FastField modulus) : toField (x + y) = toField x + to
 theorem toField_sub (x y : FastField modulus) : toField (x - y) = toField x - toField y := by
   rw [toField_eq, toField_eq x, toField_eq y, sub_def, sub]
   have h := sub_toNat P.modulusLimbs x.val y.val P.modulusLimbs_bounded x.val_bounded
-    y.val_bounded Mont64x8Field.two_mul_q_lt x.val_lt y.val_lt
+    y.val_bounded x.val_lt y.val_lt
   rw [h, Mont64x8Field.q_toNat, ZMod.natCast_mod, Nat.cast_add,
     Nat.cast_sub (le_of_lt y.property.2), ZMod.natCast_self]
   ring
@@ -387,8 +376,7 @@ theorem toField_sub (x y : FastField modulus) : toField (x - y) = toField x - to
 @[simp]
 theorem toField_neg (x : FastField modulus) : toField (-x) = -toField x := by
   rw [toField_eq, toField_eq x, neg_def, neg]
-  have h := neg_toNat P.modulusLimbs x.val P.modulusLimbs_bounded x.val_bounded
-    Mont64x8Field.two_mul_q_lt x.val_lt
+  have h := neg_toNat P.modulusLimbs x.val P.modulusLimbs_bounded x.val_bounded x.val_lt
   rw [h, Mont64x8Field.q_toNat, ZMod.natCast_mod, Nat.cast_sub (le_of_lt x.property.2),
     ZMod.natCast_self]
   ring
