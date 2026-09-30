@@ -38,13 +38,6 @@ on:
     paths:
       - 'bench/**'
 
-# Keyed on the PR or ref rather than shared with CI, so asking for benchmarks
-# never cancels a correctness run. A separate workflow file already gets a
-# distinct `github.workflow`, so this only needs to disambiguate within itself.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 jobs:
   benchmark:
     # The COMMENT author, not the PR author, is the trust boundary on the
@@ -60,6 +53,12 @@ jobs:
           github.event.comment.author_association == 'COLLABORATOR'
         )
       )
+    # Apply concurrency after the job's comment filter. Workflow-level concurrency
+    # would let an ordinary PR comment cancel a running benchmark even when its
+    # own benchmark job is skipped.
+    concurrency:
+      group: ${{ github.workflow }}-job-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
@@ -226,7 +225,12 @@ jobs:
       # Same marker-upsert shape as the build-timing comment in
       # `lean_action_ci.yml`, so repeated runs replace rather than pile up.
       - name: Upsert benchmark PR comment
-        if: always() && steps.target.outputs.pr != ''
+        # Fork pull_request tokens are read-only; keep their report in the
+        # Actions summary and artifact instead of failing on a comment write.
+        if: >-
+          always() && steps.target.outputs.pr != '' &&
+          (github.event_name != 'pull_request' ||
+           github.event.pull_request.head.repo.full_name == github.repository)
         uses: actions/github-script@v7
         with:
           script: |
