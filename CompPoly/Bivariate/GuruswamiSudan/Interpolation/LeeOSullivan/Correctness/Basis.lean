@@ -40,30 +40,6 @@ theorem foldl_range_add_eq_sum {α : Type*} [AddCommMonoid α]
       simp only [List.foldl_cons, List.foldl_nil]
       rw [ih, Finset.sum_range_succ]
 
-theorem cpoly_natDegree_mul_le_semiring {R : Type*}
-    [Semiring R] [BEq R] [LawfulBEq R] (P Q : CPolynomial R) :
-    (P * Q).natDegree ≤ P.natDegree + Q.natDegree := by
-  rw [CPolynomial.natDegree_toPoly, CPolynomial.toPoly_mul,
-    CPolynomial.natDegree_toPoly, CPolynomial.natDegree_toPoly]
-  exact Polynomial.natDegree_mul_le
-
-theorem cpoly_natDegree_pow_le {R : Type*}
-    [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
-    (P : CPolynomial R) {d : Nat} (hP : P.natDegree ≤ d) :
-    ∀ n, (P ^ n).natDegree ≤ n * d := by
-  intro n
-  induction n with
-  | zero =>
-      rw [pow_zero, CPolynomial.natDegree_toPoly, CPolynomial.toPoly_one]
-      simp
-  | succ n ih =>
-      rw [pow_succ]
-      calc
-        (P ^ n * P).natDegree ≤ (P ^ n).natDegree + P.natDegree :=
-          cpoly_natDegree_mul_le_semiring (P ^ n) P
-        _ ≤ n * d + d := Nat.add_le_add ih hP
-        _ = (n + 1) * d := by rw [Nat.succ_mul]
-
 private theorem cbivariate_Y_eq_outer_X :
     (CBivariate.Y : CBivariate F) = (CPolynomial.X : CBivariate F) := by
   have h := CPolynomial.C_mul_X_pow_eq_monomial
@@ -366,7 +342,7 @@ theorem leeOSullivanBasisPolynomials_satisfiesMultiplicityConstraints
 omit [DecidableEq F] in
 theorem ofYConstant_one :
     CBivariate.ofYConstant (1 : CPolynomial F) = (1 : CBivariate F) := by
-  apply cpoly_eq_of_toPoly_eq
+  apply CPolynomial.toPoly_inj.mp
   change (CPolynomial.C (1 : CPolynomial F)).toPoly =
     (1 : CPolynomial (CPolynomial F)).toPoly
   rw [CPolynomial.C_toPoly, CPolynomial.toPoly_one]
@@ -533,20 +509,20 @@ theorem leeOSullivanBasisPolynomial_coeffY_eq_zero_of_idx_lt
     rw [CPolynomial.natDegree_toPoly]
     simp [CBivariate.ofYConstant, CPolynomial.C_toPoly]
   have hYpow : Ypow.natDegree ≤ idx - t := by
-    have h := cpoly_natDegree_pow_le
-      (P := (CBivariate.Y : CBivariate F)) hY (idx - t)
+    have h := CPolynomial.natDegree_pow_le_of_le
+      (p := (CBivariate.Y : CBivariate F)) (h := hY) (idx - t)
     change CPolynomial.natDegree ((CBivariate.Y : CBivariate F) ^ (idx - t)) ≤
       (idx - t) * 1 at h
     simpa [Ypow] using h
   have hLpow : Lpow.natDegree ≤ t := by
-    have h := cpoly_natDegree_pow_le
-      (P := (CBivariate.linearYDivisor R : CBivariate F)) hL t
+    have h := CPolynomial.natDegree_pow_le_of_le
+      (p := (CBivariate.linearYDivisor R : CBivariate F)) (h := hL) t
     change CPolynomial.natDegree ((CBivariate.linearYDivisor R : CBivariate F) ^ t) ≤
       t * 1 at h
     simpa [Lpow] using h
   have hGpow : Gpow.natDegree ≤ 0 := by
-    have hpow := cpoly_natDegree_pow_le
-      (P := (CBivariate.ofYConstant G : CBivariate F)) hG
+    have hpow := CPolynomial.natDegree_pow_le_of_le
+      (p := (CBivariate.ofYConstant G : CBivariate F)) (h := hG)
       (params.multiplicity - t)
     change CPolynomial.natDegree
         ((CBivariate.ofYConstant G : CBivariate F) ^ (params.multiplicity - t)) ≤
@@ -557,11 +533,11 @@ theorem leeOSullivanBasisPolynomial_coeffY_eq_zero_of_idx_lt
     have hYL : (Ypow * Lpow).natDegree ≤ (idx - t) + t := by
       calc
         (Ypow * Lpow).natDegree ≤ Ypow.natDegree + Lpow.natDegree :=
-          cpoly_natDegree_mul_le_semiring Ypow Lpow
+          CPolynomial.natDegree_mul_le Ypow Lpow
         _ ≤ (idx - t) + t := Nat.add_le_add hYpow hLpow
     calc
       (Ypow * Lpow * Gpow).natDegree ≤ (Ypow * Lpow).natDegree + Gpow.natDegree :=
-        cpoly_natDegree_mul_le_semiring (Ypow * Lpow) Gpow
+        CPolynomial.natDegree_mul_le (Ypow * Lpow) Gpow
       _ ≤ ((idx - t) + t) + 0 := Nat.add_le_add hYL hGpow
       _ ≤ idx := by
         have ht : t ≤ idx := by
@@ -571,7 +547,7 @@ theorem leeOSullivanBasisPolynomial_coeffY_eq_zero_of_idx_lt
       (Ypow * Lpow * Gpow).natDegree < j := lt_of_le_of_lt hprod hj
   have hcoeffY :
       (Ypow * Lpow * Gpow).val.coeff j = 0 := by
-    exact cpoly_coeff_eq_zero_of_natDegree_lt hdegree
+    exact CPolynomial.coeff_eq_zero_of_natDegree_lt hdegree
   rw [show leeOSullivanBasisPolynomial R G params idx = Ypow * Lpow * Gpow by
     simp [leeOSullivanBasisPolynomial, Ypow, Lpow, Gpow, t]]
   exact hcoeffY

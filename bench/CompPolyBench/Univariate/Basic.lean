@@ -20,6 +20,12 @@ open CompPoly
 
 namespace CompPolyBench
 
+/-- The sum-of-powers evaluator that `CPolynomial.eval` specifies. `CPolynomial.eval` itself
+compiles to Horner's method through `CPolynomial.eval_eq_evalHorner`, so the sum-of-powers rows
+call this copy to keep measuring the method they are labelled with. -/
+private def evalSumOfPowers {R : Type} [Semiring R] (x : R) (p : CPolynomial R) : R :=
+  p.val.zipIdx.foldl (fun acc ⟨a, i⟩ => acc + a * x ^ i) 0
+
 /-- Benchmark dense univariate evaluation over a generic prime `ZMod` field. -/
 private def runDenseUnivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
     (key nameSuffix fieldName fieldTitle : String)
@@ -33,7 +39,7 @@ private def runDenseUnivariateZMod (modulus : Nat) [Fact (Nat.Prime modulus)]
     { name := ("univariate-dense-sum-" ++ nameSuffix), representation := "CPolynomial",
       method := "eval sum-of-powers", field := fieldName,
       inputShape := "degree<512, dense, 32 points", digestIterations := checksumIterations }
-    preset (fun i ↦ CPolynomial.eval (points.getD (i % points.size) 0) densePoly)
+    preset (fun i ↦ evalSumOfPowers (points.getD (i % points.size) 0) densePoly)
     checksumZMod
   let hornerRecord ← runTimedSpec
     { name := ("univariate-dense-horner-" ++ nameSuffix), representation := "CPolynomial",
@@ -69,14 +75,14 @@ private def runDenseUnivariateWithFast {F G : Type}
     { name := "univariate-dense-sum", representation := "CPolynomial",
       method := "eval sum-of-powers", field := canonicalFieldName,
       inputShape := "degree<512, dense, 32 points", digestIterations := checksumIterations }
-    preset (fun i ↦ CPolynomial.eval (points.getD (i % points.size) 0) densePoly)
+    preset (fun i ↦ evalSumOfPowers (points.getD (i % points.size) 0) densePoly)
     canonicalChecksum
   let fastDenseSum ← runTimedSpec
     { name := "univariate-dense-sum-fast", representation := "CPolynomial",
       method := "eval sum-of-powers", field := fastFieldName,
       inputShape := "degree<512, dense, 32 points", digestIterations := checksumIterations }
     preset
-    (fun i ↦ CPolynomial.eval (fastPoints.getD (i % fastPoints.size) 0) fastDensePoly) fastChecksum
+    (fun i ↦ evalSumOfPowers (fastPoints.getD (i % fastPoints.size) 0) fastDensePoly) fastChecksum
   let denseHorner ← runTimedSpec
     { name := "univariate-dense-horner", representation := "CPolynomial", method := "evalHorner",
       field := canonicalFieldName, inputShape := "degree<512, dense, 32 points",
@@ -129,7 +135,7 @@ private def runKoalaBearUnivariateSparse (preset : BenchPreset) (gen : StdGen) :
       method := "eval sum-of-powers", field := "KoalaBear.Field",
       inputShape := "degree<512, one nonzero per 4 coeffs, 32 points",
       digestIterations := checksumIterations }
-    preset (fun i ↦ CPolynomial.eval (points.getD (i % points.size) 0) sparsePoly)
+    preset (fun i ↦ evalSumOfPowers (points.getD (i % points.size) 0) sparsePoly)
     checksumKoalaBear
   let fastSparseSum ← runTimedSpec
     { name := "univariate-sparse-sum-fast", representation := "CPolynomial",
@@ -137,7 +143,7 @@ private def runKoalaBearUnivariateSparse (preset : BenchPreset) (gen : StdGen) :
       inputShape := "degree<512, one nonzero per 4 coeffs, 32 points",
       digestIterations := checksumIterations }
     preset
-    (fun i ↦ CPolynomial.eval (fastPoints.getD (i % fastPoints.size) 0) fastSparsePoly)
+    (fun i ↦ evalSumOfPowers (fastPoints.getD (i % fastPoints.size) 0) fastSparsePoly)
     checksumKoalaBearFast
   let sparseHorner ← runTimedSpec
     { name := "univariate-sparse-horner", representation := "CPolynomial", method := "evalHorner",

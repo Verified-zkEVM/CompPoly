@@ -7,6 +7,7 @@ module
 
 public import CompPolyBench.Univariate.Basic
 public import CompPolyBench.Univariate.BatchEval
+public import CompPolyBench.Univariate.Interpolation
 public import CompPolyBench.Univariate.ManyEval
 public import CompPolyBench.Univariate.NTT.FastMul
 public import CompPolyBench.Univariate.NTT.FastMulLow
@@ -28,6 +29,6 @@ def univariateTasks : List BenchTask :=
   univariateBasicTasks ++ univariateBatchEvalTasks ++
     univariateManyEvalTasks ++ univariateNttFastMulTasks ++
     univariateNttFastMulLowTasks ++ univariateFiniteFieldRootTasks ++
-    nttTransformTasks ++ reedSolomonTasks ++ crossoverTasks
+    nttTransformTasks ++ reedSolomonTasks ++ crossoverTasks ++ interpolationTasks
 
 end CompPolyBench

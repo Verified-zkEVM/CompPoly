@@ -6,32 +6,35 @@ Authors: Valerii Huhnin
 
 module
 
-public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis.KernelLeaf
+public import CompPoly.LinearAlgebra.Dense.RowArray
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
+public import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
+public import Mathlib.Algebra.BigOperators.Ring.Finset
 public import Mathlib.Algebra.Order.Field.Basic
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.Ring
 
 /-!
-# Scalar Kernel Leaf Correctness
+# Row-Array Homogeneous-Kernel Correctness
 
-Soundness and completeness of the row-array scalar RREF kernel used by the
-PM-basis leaf: every emitted vector is orthogonal to the input rows, and
-every orthogonal vector is an `F`-linear combination of the emitted basis.
+Soundness and completeness of the row-array RREF kernel
+`homogeneousKernelBasisRows`: every emitted vector is orthogonal to the input
+rows, and every orthogonal vector is an `F`-linear combination of the emitted
+basis, with coefficients read off at the free columns.
 -/
 
 @[expose] public section
 
 namespace CompPoly
 
-namespace PolynomialMatrix
-
-namespace Approximant
+namespace DenseMatrix
 
 variable {F : Type*} [Field F] [BEq F] [LawfulBEq F]
 
-/-! ## Scalar kernel leaf soundness
+/-! ## Row-array kernel soundness
 
-Soundness of the row-array scalar RREF kernel used by the PM-basis leaf:
+Soundness of the row-array RREF kernel:
 every vector produced by `homogeneousKernelBasisRows rows cols` has size
 `cols` and is orthogonal (over the first `cols` coordinates) to every input
 row. -/
@@ -183,7 +186,8 @@ theorem swapScalarRows_size (rows : Array (Array F)) (a b : Nat) :
     (swapScalarRows rows a b).size = rows.size := by
   simp [swapScalarRows, Array.size_setIfInBounds]
 
-private theorem swapScalarRows_getD (rows : Array (Array F)) {a b : Nat}
+/-- Rows of `swapScalarRows rows a b`: rows `a` and `b` are exchanged. -/
+theorem swapScalarRows_getD (rows : Array (Array F)) {a b : Nat}
     (ha : a < rows.size) (hb : b < rows.size) (i : Nat) :
     (swapScalarRows rows a b).getD i #[] =
       if i = b then rows.getD a #[]
@@ -287,6 +291,16 @@ private theorem foldl_elimStep_size [Field F] [BEq F] (pivotRow : Nat)
   | cons a l ih =>
       intro acc
       rw [List.foldl_cons, ih, elimStep_size]
+
+/-- Normalizing and eliminating preserves the row count. -/
+theorem normalizeAndEliminateScalarRows_size [Field F] [BEq F] [LawfulBEq F]
+    (rows : Array (Array F)) (pivotRow pivotCol : Nat) :
+    (normalizeAndEliminateScalarRows rows pivotRow pivotCol).size = rows.size := by
+  by_cases h : (rows.getD pivotRow #[]).getD pivotCol 0 = 0
+  · unfold normalizeAndEliminateScalarRows
+    rw [ite_eq_left (beq_iff_eq.mpr h)]
+  · rw [normalizeAndEliminateScalarRows_eq_foldl rows pivotRow pivotCol h,
+      foldl_elimStep_size, Array.size_setIfInBounds]
 
 private theorem elimStep_getD_pivotRow [Field F] [BEq F] (pivotRow : Nat)
     (pivotVector : Array F) (pivotCol : Nat) (rows : Array (Array F))
@@ -538,7 +552,10 @@ private theorem foldl_elimStep_getD_entry [Field F] [BEq F] [LawfulBEq F]
             · exact hil ⟨h, hc.2⟩
           rw [ite_eq_right hil, ite_eq_right hnot]
 
-private theorem normalizeAndEliminateScalarRows_getD_entry [Field F] [BEq F]
+/-- Entries of `normalizeAndEliminateScalarRows`: the pivot row is divided by
+the pivot, and every other row loses its pivot-column multiple of the normalized
+pivot row. -/
+theorem normalizeAndEliminateScalarRows_getD_entry [Field F] [BEq F]
     [LawfulBEq F] (rows : Array (Array F)) (pivotRow pivotCol : Nat)
     (hpr : pivotRow < rows.size)
     (hpivot : (rows.getD pivotRow #[]).getD pivotCol 0 ≠ 0) (i k : Nat) :
@@ -800,20 +817,23 @@ private theorem containsNat_false_getD_ne {xs : Array Nat} {x : Nat}
   rw [h] at htrue
   exact Bool.false_ne_true htrue
 
-private theorem freeColumns_mem {cols : Nat} {pivots : Array Nat} {free : Nat}
-    (h : free ∈ (DenseMatrix.freeColumns cols pivots).toList) :
+/-- A free column is below `cols` and is not a recorded pivot column. -/
+theorem freeColumns_mem {cols : Nat} {pivots : Array Nat} {free : Nat}
+    (h : free ∈ (freeColumns cols pivots).toList) :
     free < cols ∧ ∀ t, t < pivots.size → pivots.getD t 0 ≠ free := by
-  unfold DenseMatrix.freeColumns at h
+  unfold freeColumns at h
   rw [List.toList_toArray, List.mem_filter] at h
   refine ⟨List.mem_range.mp h.1, ?_⟩
   have hfalse : DenseMatrix.containsNat pivots free = false := by
     simpa using h.2
   exact containsNat_false_getD_ne hfalse
 
-private theorem pivotRowOfColumn?_some {pivots : Array Nat} {col t : Nat}
-    (h : DenseMatrix.pivotRowOfColumn? pivots col = some t) :
+/-- `pivotRowOfColumn?` returns an in-range index whose recorded pivot is the
+requested column. -/
+theorem pivotRowOfColumn?_some {pivots : Array Nat} {col t : Nat}
+    (h : pivotRowOfColumn? pivots col = some t) :
     t < pivots.size ∧ pivots.getD t 0 = col := by
-  unfold DenseMatrix.pivotRowOfColumn? at h
+  unfold pivotRowOfColumn? at h
   have hmem := List.mem_of_find?_eq_some h
   have hpred := List.find?_some h
   exact ⟨List.mem_range.mp hmem, beq_iff_eq.mp hpred⟩
@@ -822,11 +842,11 @@ private theorem pivotRowOfColumn?_eq_some_of_mono {pivots : Array Nat}
     (hmono : ∀ s t, s < t → t < pivots.size →
       pivots.getD s 0 < pivots.getD t 0)
     {t : Nat} (ht : t < pivots.size) :
-    DenseMatrix.pivotRowOfColumn? pivots (pivots.getD t 0) = some t := by
-  cases hfind : DenseMatrix.pivotRowOfColumn? pivots (pivots.getD t 0) with
+    pivotRowOfColumn? pivots (pivots.getD t 0) = some t := by
+  cases hfind : pivotRowOfColumn? pivots (pivots.getD t 0) with
   | none =>
       exfalso
-      unfold DenseMatrix.pivotRowOfColumn? at hfind
+      unfold pivotRowOfColumn? at hfind
       exact List.find?_eq_none.mp hfind t (List.mem_range.mpr ht)
         (beq_iff_eq.mpr rfl)
   | some r =>
@@ -840,13 +860,14 @@ private theorem pivotRowOfColumn?_eq_some_of_mono {pivots : Array Nat}
 
 private theorem pivotRowOfColumn?_eq_none {pivots : Array Nat} {k : Nat}
     (h : ∀ t, t < pivots.size → pivots.getD t 0 ≠ k) :
-    DenseMatrix.pivotRowOfColumn? pivots k = none := by
-  unfold DenseMatrix.pivotRowOfColumn?
+    pivotRowOfColumn? pivots k = none := by
+  unfold pivotRowOfColumn?
   rw [List.find?_eq_none]
   intro x hx
   simpa using h x (List.mem_range.mp hx)
 
-private theorem basisVectorForFreeColumnRows_size [Field F]
+/-- Each row-array kernel basis vector has `cols` entries. -/
+theorem basisVectorForFreeColumnRows_size [Field F]
     (rows : Array (Array F)) (pivots : Array Nat) (cols free : Nat) :
     (basisVectorForFreeColumnRows rows pivots cols free).size = cols := by
   unfold basisVectorForFreeColumnRows
@@ -865,7 +886,7 @@ private theorem basisVectorForFreeColumnRows_getD_free [Field F]
 private theorem basisVectorForFreeColumnRows_getD_none [Field F]
     (rows : Array (Array F)) (pivots : Array Nat) (cols free : Nat) {k : Nat}
     (hk : k < cols) (hkf : ¬k = free)
-    (hnone : DenseMatrix.pivotRowOfColumn? pivots k = none) :
+    (hnone : pivotRowOfColumn? pivots k = none) :
     (basisVectorForFreeColumnRows rows pivots cols free).getD k 0 = 0 := by
   unfold basisVectorForFreeColumnRows
   rw [array_getD_of_lt' _ 0 (by rw [Array.size_ofFn]; exact hk),
@@ -877,7 +898,7 @@ private theorem basisVectorForFreeColumnRows_getD_none [Field F]
 private theorem basisVectorForFreeColumnRows_getD_some [Field F]
     (rows : Array (Array F)) (pivots : Array Nat) (cols free : Nat) {k t : Nat}
     (hk : k < cols) (hkf : ¬k = free)
-    (hsome : DenseMatrix.pivotRowOfColumn? pivots k = some t) :
+    (hsome : pivotRowOfColumn? pivots k = some t) :
     (basisVectorForFreeColumnRows rows pivots cols free).getD k 0 =
       -((rows.getD t #[]).getD free 0) := by
   unfold basisVectorForFreeColumnRows
@@ -912,7 +933,7 @@ private theorem scalarDot_basisVector [Field F] [BEq F] [LawfulBEq F]
       · rw [ite_eq_right hkf, zero_add]
         by_cases hkpiv : ∃ t, t < R.pivots.size ∧ R.pivots.getD t 0 = k
         · obtain ⟨t, ht, htk⟩ := hkpiv
-          have hsome : DenseMatrix.pivotRowOfColumn? R.pivots k = some t := by
+          have hsome : pivotRowOfColumn? R.pivots k = some t := by
             rw [← htk]
             exact pivotRowOfColumn?_eq_some_of_mono hspec.mono ht
           rw [basisVectorForFreeColumnRows_getD_some R.rows R.pivots cols
@@ -929,7 +950,7 @@ private theorem scalarDot_basisVector [Field F] [BEq F] [LawfulBEq F]
               · exact hit heq'.symm
               · exact absurd heq.symm (Nat.ne_of_lt (hspec.mono i t hgt ht))
             rw [ite_eq_right hne]
-        · have hnone : DenseMatrix.pivotRowOfColumn? R.pivots k = none :=
+        · have hnone : pivotRowOfColumn? R.pivots k = none :=
             pivotRowOfColumn?_eq_none fun t ht heq ↦ hkpiv ⟨t, ht, heq⟩
           have hne : ¬k = R.pivots.getD i 0 := fun h ↦ hkpiv ⟨i, hi, h.symm⟩
           rw [basisVectorForFreeColumnRows_getD_none R.rows R.pivots cols
@@ -965,7 +986,7 @@ theorem homogeneousKernelBasisRows_size [Field F] [BEq F] [LawfulBEq F]
   obtain ⟨free, _, rfl⟩ := hv
   exact basisVectorForFreeColumnRows_size _ _ _ _
 
-/-- **Soundness of the scalar kernel leaf.**  Every vector produced by
+/-- **Soundness of the row-array kernel.**  Every vector produced by
 `homogeneousKernelBasisRows rows cols` is orthogonal, over the coordinates
 `0, …, cols - 1`, to every row of the input matrix.  No width hypothesis on
 the input rows is needed because the dot product only inspects the first
@@ -1113,21 +1134,22 @@ private theorem orthRows_scalarRrefRows_forward [Field F] [BEq F] [LawfulBEq F]
 
 /-! ### Free-column bookkeeping for the completeness theorem -/
 
-private theorem freeColumns_getD_mem {cols : Nat} {pivots : Array Nat}
-    {i : Nat} (hi : i < (DenseMatrix.freeColumns cols pivots).size) :
-    (DenseMatrix.freeColumns cols pivots).getD i 0 ∈
-      (DenseMatrix.freeColumns cols pivots).toList := by
+/-- In-range entries of `freeColumns` are members of it. -/
+theorem freeColumns_getD_mem {cols : Nat} {pivots : Array Nat}
+    {i : Nat} (hi : i < (freeColumns cols pivots).size) :
+    (freeColumns cols pivots).getD i 0 ∈
+      (freeColumns cols pivots).toList := by
   rw [array_getD_of_lt' _ 0 hi, ← Array.getElem_toList (by simpa using hi)]
   exact List.getElem_mem _
 
 private theorem freeColumns_getD_inj {cols : Nat} {pivots : Array Nat}
-    {i j : Nat} (hi : i < (DenseMatrix.freeColumns cols pivots).size)
-    (hj : j < (DenseMatrix.freeColumns cols pivots).size)
-    (h : (DenseMatrix.freeColumns cols pivots).getD i 0 =
-      (DenseMatrix.freeColumns cols pivots).getD j 0) :
+    {i j : Nat} (hi : i < (freeColumns cols pivots).size)
+    (hj : j < (freeColumns cols pivots).size)
+    (h : (freeColumns cols pivots).getD i 0 =
+      (freeColumns cols pivots).getD j 0) :
     i = j := by
   rw [array_getD_of_lt' _ 0 hi, array_getD_of_lt' _ 0 hj] at h
-  unfold DenseMatrix.freeColumns at hi hj h
+  unfold freeColumns at hi hj h
   rw [List.getElem_toArray, List.getElem_toArray] at h
   have hnodup : ((List.range cols).filter
       fun col ↦ !(DenseMatrix.containsNat pivots col)).Nodup :=
@@ -1146,33 +1168,35 @@ private theorem containsNat_true_exists {xs : Array Nat} {x : Nat}
 
 private theorem freeColumns_or_pivot {cols : Nat} {pivots : Array Nat}
     {k : Nat} (hk : k < cols) :
-    (∃ j, j < (DenseMatrix.freeColumns cols pivots).size ∧
-        (DenseMatrix.freeColumns cols pivots).getD j 0 = k) ∨
+    (∃ j, j < (freeColumns cols pivots).size ∧
+        (freeColumns cols pivots).getD j 0 = k) ∨
       ∃ t, t < pivots.size ∧ pivots.getD t 0 = k := by
   cases hc : DenseMatrix.containsNat pivots k with
   | true => exact Or.inr (containsNat_true_exists hc)
   | false =>
       left
-      have hmem : k ∈ (DenseMatrix.freeColumns cols pivots).toList := by
-        unfold DenseMatrix.freeColumns
+      have hmem : k ∈ (freeColumns cols pivots).toList := by
+        unfold freeColumns
         rw [List.toList_toArray, List.mem_filter]
         refine ⟨List.mem_range.mpr hk, ?_⟩
         rw [hc]
         rfl
       obtain ⟨j, hj, hjk⟩ := List.mem_iff_getElem.mp hmem
-      have hj' : j < (DenseMatrix.freeColumns cols pivots).size := by
+      have hj' : j < (freeColumns cols pivots).size := by
         simpa using hj
       refine ⟨j, hj', ?_⟩
       rw [array_getD_of_lt' _ 0 hj', ← Array.getElem_toList hj]
       exact hjk
 
-private theorem basisVector_getD_freeColumn [Field F]
+/-- The basis vector of the `i`-th free column is one at that column and zero at
+every other free column. -/
+theorem basisVector_getD_freeColumn [Field F]
     (rows : Array (Array F)) (pivots : Array Nat) (cols : Nat) {i j : Nat}
-    (hi : i < (DenseMatrix.freeColumns cols pivots).size)
-    (hj : j < (DenseMatrix.freeColumns cols pivots).size) :
+    (hi : i < (freeColumns cols pivots).size)
+    (hj : j < (freeColumns cols pivots).size) :
     (basisVectorForFreeColumnRows rows pivots cols
-        ((DenseMatrix.freeColumns cols pivots).getD i 0)).getD
-      ((DenseMatrix.freeColumns cols pivots).getD j 0) 0 =
+        ((freeColumns cols pivots).getD i 0)).getD
+      ((freeColumns cols pivots).getD j 0) 0 =
       if j = i then 1 else 0 := by
   obtain ⟨hjlt, hjnot⟩ := freeColumns_mem (freeColumns_getD_mem hj)
   by_cases hij : j = i
@@ -1194,24 +1218,24 @@ private theorem kernelBasis_complete_aux [Field F] [BEq F] [LawfulBEq F]
     (horthR : OrthRows cols R.rows v) :
     ∀ k, k < cols →
       v.getD k 0 =
-        ∑ i ∈ Finset.range (DenseMatrix.freeColumns cols R.pivots).size,
-          v.getD ((DenseMatrix.freeColumns cols R.pivots).getD i 0) 0 *
+        ∑ i ∈ Finset.range (freeColumns cols R.pivots).size,
+          v.getD ((freeColumns cols R.pivots).getD i 0) 0 *
             (basisVectorForFreeColumnRows R.rows R.pivots cols
-              ((DenseMatrix.freeColumns cols R.pivots).getD i 0)).getD k 0 := by
-  have hfree_coord : ∀ j, j < (DenseMatrix.freeColumns cols R.pivots).size →
-      v.getD ((DenseMatrix.freeColumns cols R.pivots).getD j 0) 0 =
-        ∑ i ∈ Finset.range (DenseMatrix.freeColumns cols R.pivots).size,
-          v.getD ((DenseMatrix.freeColumns cols R.pivots).getD i 0) 0 *
+              ((freeColumns cols R.pivots).getD i 0)).getD k 0 := by
+  have hfree_coord : ∀ j, j < (freeColumns cols R.pivots).size →
+      v.getD ((freeColumns cols R.pivots).getD j 0) 0 =
+        ∑ i ∈ Finset.range (freeColumns cols R.pivots).size,
+          v.getD ((freeColumns cols R.pivots).getD i 0) 0 *
             (basisVectorForFreeColumnRows R.rows R.pivots cols
-              ((DenseMatrix.freeColumns cols R.pivots).getD i 0)).getD
-              ((DenseMatrix.freeColumns cols R.pivots).getD j 0) 0 := by
+              ((freeColumns cols R.pivots).getD i 0)).getD
+              ((freeColumns cols R.pivots).getD j 0) 0 := by
     intro j hj
-    have h0 : ∀ i ∈ Finset.range (DenseMatrix.freeColumns cols R.pivots).size,
+    have h0 : ∀ i ∈ Finset.range (freeColumns cols R.pivots).size,
         i ≠ j →
-          v.getD ((DenseMatrix.freeColumns cols R.pivots).getD i 0) 0 *
+          v.getD ((freeColumns cols R.pivots).getD i 0) 0 *
             (basisVectorForFreeColumnRows R.rows R.pivots cols
-              ((DenseMatrix.freeColumns cols R.pivots).getD i 0)).getD
-              ((DenseMatrix.freeColumns cols R.pivots).getD j 0) 0 = 0 := by
+              ((freeColumns cols R.pivots).getD i 0)).getD
+              ((freeColumns cols R.pivots).getD j 0) 0 = 0 := by
       intro i hi hij
       rw [basisVector_getD_freeColumn R.rows R.pivots cols
         (Finset.mem_range.mp hi) hj, ite_eq_right (fun hc ↦ hij hc.symm), mul_zero]
@@ -1225,10 +1249,10 @@ private theorem kernelBasis_complete_aux [Field F] [BEq F] [LawfulBEq F]
     exact hfree_coord j hj
   · have hrow_v := horthR t
     unfold scalarDot at hrow_v
-    have hrow_b : ∀ i, i < (DenseMatrix.freeColumns cols R.pivots).size →
+    have hrow_b : ∀ i, i < (freeColumns cols R.pivots).size →
         ∑ k' ∈ Finset.range cols, (R.rows.getD t #[]).getD k' 0 *
           (basisVectorForFreeColumnRows R.rows R.pivots cols
-            ((DenseMatrix.freeColumns cols R.pivots).getD i 0)).getD k' 0 =
+            ((freeColumns cols R.pivots).getD i 0)).getD k' 0 =
           0 := by
       intro i hi
       obtain ⟨hilt, hinot⟩ := freeColumns_mem (freeColumns_getD_mem hi)
@@ -1238,10 +1262,10 @@ private theorem kernelBasis_complete_aux [Field F] [BEq F] [LawfulBEq F]
     have hsum : ∑ k' ∈ Finset.range cols,
         (R.rows.getD t #[]).getD k' 0 *
           (v.getD k' 0 -
-            ∑ i ∈ Finset.range (DenseMatrix.freeColumns cols R.pivots).size,
-              v.getD ((DenseMatrix.freeColumns cols R.pivots).getD i 0) 0 *
+            ∑ i ∈ Finset.range (freeColumns cols R.pivots).size,
+              v.getD ((freeColumns cols R.pivots).getD i 0) 0 *
                 (basisVectorForFreeColumnRows R.rows R.pivots cols
-                  ((DenseMatrix.freeColumns cols R.pivots).getD i 0)).getD
+                  ((freeColumns cols R.pivots).getD i 0)).getD
                   k' 0) = 0 := by
       simp only [mul_sub]
       rw [Finset.sum_sub_distrib, hrow_v, zero_sub, neg_eq_zero]
@@ -1250,14 +1274,14 @@ private theorem kernelBasis_complete_aux [Field F] [BEq F] [LawfulBEq F]
       refine Finset.sum_eq_zero fun i hi ↦ ?_
       have hswap : ∀ k' : Nat,
           (R.rows.getD t #[]).getD k' 0 *
-            (v.getD ((DenseMatrix.freeColumns cols R.pivots).getD i 0) 0 *
+            (v.getD ((freeColumns cols R.pivots).getD i 0) 0 *
               (basisVectorForFreeColumnRows R.rows R.pivots cols
-                ((DenseMatrix.freeColumns cols R.pivots).getD i 0)).getD
+                ((freeColumns cols R.pivots).getD i 0)).getD
                 k' 0) =
-          v.getD ((DenseMatrix.freeColumns cols R.pivots).getD i 0) 0 *
+          v.getD ((freeColumns cols R.pivots).getD i 0) 0 *
             ((R.rows.getD t #[]).getD k' 0 *
               (basisVectorForFreeColumnRows R.rows R.pivots cols
-                ((DenseMatrix.freeColumns cols R.pivots).getD i 0)).getD
+                ((freeColumns cols R.pivots).getD i 0)).getD
                 k' 0) :=
         fun k' ↦ mul_left_comm _ _ _
       rw [Finset.sum_congr rfl fun k' _ ↦ hswap k', ← Finset.mul_sum,
@@ -1265,10 +1289,10 @@ private theorem kernelBasis_complete_aux [Field F] [BEq F] [LawfulBEq F]
     have hothers : ∀ k' ∈ Finset.range cols, k' ≠ R.pivots.getD t 0 →
         (R.rows.getD t #[]).getD k' 0 *
           (v.getD k' 0 -
-            ∑ i ∈ Finset.range (DenseMatrix.freeColumns cols R.pivots).size,
-              v.getD ((DenseMatrix.freeColumns cols R.pivots).getD i 0) 0 *
+            ∑ i ∈ Finset.range (freeColumns cols R.pivots).size,
+              v.getD ((freeColumns cols R.pivots).getD i 0) 0 *
                 (basisVectorForFreeColumnRows R.rows R.pivots cols
-                  ((DenseMatrix.freeColumns cols R.pivots).getD i 0)).getD
+                  ((freeColumns cols R.pivots).getD i 0)).getD
                   k' 0) = 0 := by
       intro k' hk' hne
       rcases freeColumns_or_pivot (pivots := R.pivots)
@@ -1282,26 +1306,29 @@ private theorem kernelBasis_complete_aux [Field F] [BEq F] [LawfulBEq F]
     rw [← htk]
     exact hsum
 
-private theorem homogeneousKernelBasisRows_size_eq [Field F] [BEq F]
+/-- The row-array kernel basis has one vector per free column. -/
+theorem homogeneousKernelBasisRows_size_eq [Field F] [BEq F]
     [LawfulBEq F] (rows : Array (Array F)) (cols : Nat) :
     (homogeneousKernelBasisRows rows cols).size =
-      (DenseMatrix.freeColumns cols (scalarRrefRows rows cols).pivots).size := by
+      (freeColumns cols (scalarRrefRows rows cols).pivots).size := by
   simp only [homogeneousKernelBasisRows, Array.size_map]
 
-private theorem homogeneousKernelBasisRows_getD_eq [Field F] [BEq F]
+/-- The `i`-th row-array kernel basis vector is the basis vector of the `i`-th
+free column. -/
+theorem homogeneousKernelBasisRows_getD_eq [Field F] [BEq F]
     [LawfulBEq F] (rows : Array (Array F)) (cols : Nat) {i : Nat}
     (hi : i <
-      (DenseMatrix.freeColumns cols (scalarRrefRows rows cols).pivots).size) :
+      (freeColumns cols (scalarRrefRows rows cols).pivots).size) :
     (homogeneousKernelBasisRows rows cols).getD i #[] =
       basisVectorForFreeColumnRows (scalarRrefRows rows cols).rows
         (scalarRrefRows rows cols).pivots cols
-        ((DenseMatrix.freeColumns cols
+        ((freeColumns cols
           (scalarRrefRows rows cols).pivots).getD i 0) := by
   simp only [homogeneousKernelBasisRows]
   rw [array_getD_of_lt' _ #[] (by rw [Array.size_map]; exact hi),
     Array.getElem_map, array_getD_of_lt' _ 0 hi]
 
-/-- **Completeness of the scalar kernel leaf.**  Every vector orthogonal to
+/-- **Completeness of the row-array kernel.**  Every vector orthogonal to
 all input rows over the coordinates `0, …, cols - 1` is, coordinatewise below
 `cols`, the `F`-linear combination of the emitted kernel basis vectors whose
 coefficients are the values of the vector at the corresponding free
@@ -1313,7 +1340,7 @@ theorem homogeneousKernelBasisRows_complete [Field F] [BEq F] [LawfulBEq F]
     ∀ k, k < cols →
       v.getD k 0 =
         ∑ i ∈ Finset.range (homogeneousKernelBasisRows rows cols).size,
-          v.getD ((DenseMatrix.freeColumns cols
+          v.getD ((freeColumns cols
               (scalarRrefRows rows cols).pivots).getD i 0) 0 *
             ((homogeneousKernelBasisRows rows cols).getD i #[]).getD k 0 := by
   have horth : OrthRows cols rows v := by
@@ -1337,8 +1364,6 @@ theorem homogeneousKernelBasisRows_complete [Field F] [BEq F] [LawfulBEq F]
 
 end Main
 
-end Approximant
-
-end PolynomialMatrix
+end DenseMatrix
 
 end CompPoly

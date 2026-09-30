@@ -32,6 +32,8 @@ namespace PolynomialMatrix
 
 namespace Approximant
 
+open DenseMatrix (array_getD_of_le' array_getD_of_lt')
+
 variable {F : Type*} [Field F] [BEq F] [LawfulBEq F]
 
 /-- Every row of the fuel-bounded kernel-leaf PM-basis core approximates the

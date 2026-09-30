@@ -79,6 +79,7 @@ public import CompPolyTests.Fields.Goldilocks.Bytes
 public import CompPolyTests.Fields.Goldilocks.Fast
 public import CompPolyTests.Fields.KoalaBear.Fast
 public import CompPolyTests.Fields.Mersenne31.Bytes
+public import CompPolyTests.Fields.Mersenne31.Circle
 public import CompPolyTests.Fields.Mersenne31.Fast
 public import CompPolyTests.Fields.Mersenne31.Instances
 public import CompPolyTests.Fields.Montgomery.Bytes
@@ -99,10 +100,13 @@ public import CompPolyTests.Multivariate.VarsDegrees
 public import CompPolyTests.Univariate.Barycentric
 public import CompPolyTests.Univariate.Basic
 public import CompPolyTests.Univariate.Bytes
+public import CompPolyTests.Univariate.Ergonomics
 public import CompPolyTests.Univariate.EuclideanAlgorithm
+public import CompPolyTests.Univariate.Interpolation
 public import CompPolyTests.Univariate.Linear
 public import CompPolyTests.Univariate.NTT.FastMul
 public import CompPolyTests.Univariate.NTT.Forward
+public import CompPolyTests.Univariate.NTT.Interpolation
 public import CompPolyTests.Univariate.NTT.Inverse
 public import CompPolyTests.Univariate.Raw
 public import CompPolyTests.Univariate.Roots.Enumeration

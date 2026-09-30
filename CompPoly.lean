@@ -191,6 +191,7 @@ public import CompPoly.Fields.KoalaBear.Fast
 public import CompPoly.Fields.Mersenne31
 public import CompPoly.Fields.Mersenne31.Basic
 public import CompPoly.Fields.Mersenne31.Bytes
+public import CompPoly.Fields.Mersenne31.Circle
 public import CompPoly.Fields.Mersenne31.Fast
 public import CompPoly.Fields.Montgomery.Basic
 public import CompPoly.Fields.Montgomery.Native32
@@ -212,9 +213,12 @@ public import CompPoly.Fields.Secp256k1
 public import CompPoly.LinearAlgebra.Dense
 public import CompPoly.LinearAlgebra.Dense.Basic
 public import CompPoly.LinearAlgebra.Dense.Kernel
+public import CompPoly.LinearAlgebra.Dense.KernelBasisCorrectness
 public import CompPoly.LinearAlgebra.Dense.KernelCorrectness
 public import CompPoly.LinearAlgebra.Dense.KernelInPlace
 public import CompPoly.LinearAlgebra.Dense.KernelInPlaceCorrectness
+public import CompPoly.LinearAlgebra.Dense.RowArray
+public import CompPoly.LinearAlgebra.Dense.RowArrayCorrectness
 public import CompPoly.LinearAlgebra.Dense.RowOps
 public import CompPoly.LinearAlgebra.Dense.RowOpsCorrectness
 public import CompPoly.LinearAlgebra.Dense.RrefSemantics
@@ -230,7 +234,6 @@ public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis.Correctness
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis.KernelLeaf
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis.KernelLeafCompleteness
-public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis.KernelLeafScalar
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis.KernelLeafSoundness
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis.KernelLeafSpan
 public import CompPoly.LinearAlgebra.PolynomialMatrix.Approximant.PMBasis.Recursion
@@ -264,9 +267,9 @@ public import CompPoly.Multilinear.ManyEval
 public import CompPoly.Multilinear.ManyEval.Basic
 public import CompPoly.Multilinear.ManyEval.Correctness
 public import CompPoly.Multilinear.TransformEquiv
+public import CompPoly.Multivariate.Basic
 public import CompPoly.Multivariate.Bytes
 public import CompPoly.Multivariate.CMvMonomial
-public import CompPoly.Multivariate.CMvPolynomial
 public import CompPoly.Multivariate.Eval
 public import CompPoly.Multivariate.FinSuccEquiv
 public import CompPoly.Multivariate.HornerLemmas
@@ -294,6 +297,7 @@ public import CompPoly.Univariate.Basic
 public import CompPoly.Univariate.BatchEval
 public import CompPoly.Univariate.BatchEval.Context
 public import CompPoly.Univariate.BatchEval.Correctness
+public import CompPoly.Univariate.BatchEval.Interpolation
 public import CompPoly.Univariate.BatchEval.Naive
 public import CompPoly.Univariate.BatchEval.SubproductTree
 public import CompPoly.Univariate.Bytes
@@ -311,6 +315,8 @@ public import CompPoly.Univariate.ManyEval.Basic
 public import CompPoly.Univariate.ManyEval.Correctness
 public import CompPoly.Univariate.Modular
 public import CompPoly.Univariate.NTT.BabyBear
+public import CompPoly.Univariate.NTT.Barycentric
+public import CompPoly.Univariate.NTT.Coset
 public import CompPoly.Univariate.NTT.Domain
 public import CompPoly.Univariate.NTT.Evaluation
 public import CompPoly.Univariate.NTT.FastMul
@@ -328,6 +334,7 @@ public import CompPoly.Univariate.NTTFast.Correctness.Pair
 public import CompPoly.Univariate.NTTFast.Correctness.Pipeline
 public import CompPoly.Univariate.NTTFast.Correctness.Radix4DIF
 public import CompPoly.Univariate.NTTFast.Correctness.Radix4DIT
+public import CompPoly.Univariate.NTTFast.Coset
 public import CompPoly.Univariate.NTTFast.Evaluation
 public import CompPoly.Univariate.NTTFast.FastMul
 public import CompPoly.Univariate.NTTFast.FastMulLow
@@ -345,6 +352,7 @@ public import CompPoly.Univariate.Raw.Proofs
 public import CompPoly.Univariate.ReedSolomon
 public import CompPoly.Univariate.ReedSolomon.GaoCorrectness
 public import CompPoly.Univariate.ReedSolomon.GaoDecoder
+public import CompPoly.Univariate.ReedSolomon.GaoNTT
 public import CompPoly.Univariate.ReedSolomon.NTTEncode
 public import CompPoly.Univariate.Roots
 public import CompPoly.Univariate.Roots.Backend

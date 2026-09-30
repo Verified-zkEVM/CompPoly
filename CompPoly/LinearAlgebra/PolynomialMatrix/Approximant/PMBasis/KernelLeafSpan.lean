@@ -28,6 +28,8 @@ namespace PolynomialMatrix
 
 namespace Approximant
 
+open DenseMatrix (array_getD_of_le' array_getD_of_lt' array_getD_setIfInBounds)
+
 variable {F : Type*} [Field F] [BEq F] [LawfulBEq F]
 
 /-! ## Kernel-leaf reduction row-span soundness

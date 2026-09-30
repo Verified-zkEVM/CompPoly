@@ -91,6 +91,7 @@ theorem derivative_add [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R]
   exact right_distrib _ _ _
 
 /-- The computable derivative matches Mathlib's `Polynomial.derivative` under `toPoly`. -/
+@[simp, grind =]
 theorem derivative_toPoly [Semiring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) :
     (derivative p).toPoly = Polynomial.derivative (R := R) p.toPoly := by
   apply Polynomial.ext

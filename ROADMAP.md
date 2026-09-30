@@ -228,6 +228,9 @@ CompPoly aims to be the premier formally verified library for computable polynom
       (`LinearAlgebra/Dense/`)
     - ✅ In-place kernel solver (`Dense/KernelInPlace.lean`) with correctness, used
       by the dense Guruswami-Sudan interpolation backend
+    - ✅ Full homogeneous-kernel basis contract: soundness, completeness, and
+      free-column independence (`Dense/KernelBasisCorrectness.lean`), shared with
+      the PM-basis leaf through the row-array kernel (`Dense/RowArray*.lean`)
     - ✅ Polynomial matrices with shifted degrees and row spans, plus
       Mulders-Storjohann shifted row reduction ([MS03],
       `LinearAlgebra/PolynomialMatrix/`). The fast variants are proved extensionally
@@ -269,15 +272,66 @@ CompPoly aims to be the premier formally verified library for computable polynom
 	- JSON (hex strings of the same bytes, via `Lean.Json`) only when a consumer asks; no
 	  customer today
 3.	**FFT-based interpolation variants (post-FFT/NTT)**
-	- Implement FFT-based Lagrange interpolation when the evaluation domain is an FFT/NTT-friendly subgroup
-	- Add fast barycentric interpolation for repeated interpolation queries over a fixed set of nodes
-	- Provide `interpolateFFT` / `interpolateNTT` APIs that reuse precomputed twiddle factors and domain metadata
-	- Prove equivalence to the spec (naive) `interpolate` implementation and document complexity (O(n log n))
-	- Include edge-case handling: non-power-of-two domains, zero-padding strategies, and domain mismatch errors
+	- ✅ Interpolation on an NTT domain: `NTT.interpolate` and the planned
+	  `NTTFast.Plan.interpolate`, which reuses the plan's cached twiddles, take natural-order
+	  values to a `CPolynomial` in `O(n log n)`. `interpolate_eq_interpolatePow` proves both
+	  equal to the spec `CLagrange.interpolatePow` (`Univariate/NTT/Interpolation.lean`,
+	  `NTTFast/Interpolation.lean`)
+	- ✅ Coset transforms for low-degree extension on `g·⟨ω⟩` (`NTT/Coset.lean`), and
+	  `NTTFast.CosetPlan` with the powers `gⁱ`, `g⁻ⁱ` cached (`NTTFast/Coset.lean`):
+	  forward evaluation, inverse, and interpolation, with `interpolate_eq_interpolate`
+	  against Lagrange on the nodes `g·ωᵏ`
+	- ✅ Fast barycentric interpolation over a fixed node set: `BarycentricDomain.mk'`
+	  stores its weights instead of recomputing an `O(n)` product per access, and `eval`
+	  compiles to a single-division fold (`eval_eq_evalFast`, `@[csimp]`). On an NTT
+	  domain the weights have the closed form `ωⁱ/n` (`NTT.Domain.barycentric`, from
+	  `nodal_eq_X_pow_sub_one`), so setup is `O(n)` rather than `O(n²)`
+	- ✅ Nodes that are not a power-of-two subgroup: `interpolateSubproduct` interpolates on
+	  arbitrary distinct nodes through the existing subproduct tree, `O(M(n) log n)` with an
+	  NTT-backed `MulContext`. `interpolateSubproduct_eq_interpolateArrays` proves it
+	  equal to Lagrange (`Univariate/BatchEval/Interpolation.lean`). Zero-padding is not an
+	  interpolation strategy, since there are no values at the padded points. Domain-size
+	  mismatches are type errors, because values are a `Vector R D.n`
+	- ✅ Consumer: Gao's decoder on an NTT domain uses `Xⁿ - 1` and the inverse NTT
+	  (`ReedSolomon/GaoNTT.lean`: `decodeNTT`, `decodePlan`). `decodeNTT_eq_decode`
+	  transfers every correctness theorem
+	- ✅ Benchmarked (`univariate-interp-*`, `univariate-barycentric-*`,
+	  `rs-gao-decode-*`). At `n = 2^12` planned interpolation takes 0.19 ms against 0.86 ms
+	  unplanned and 190 ms through the subproduct tree. At `2^8`, an off-node barycentric query
+	  including setup takes 20 µs against 8 ms through `mk'`. At `2^6`, Gao decoding takes
+	  2.1 ms against 7.7 ms. The same pass replaced `bitRevNat`'s shifts with
+	  `* 2`/`/ 2`/`% 2` in compiled code (`bitRevNat_eq_bitRevNatFast`). That speeds up the
+	  reference radix-2 forward and inverse transforms 7.5× and 3.4×, and the certified RS
+	  encoder 6.7×
+	- Mixed-radix NTT for subgroups whose order is not a power of two: not planned without a
+	  consumer. The subproduct tree already covers such node sets
 4.	**Proof ergonomics: simp/grind sets + tactics**
-	- Identify rewrite bottlenecks when porting Mathlib poly proofs → CompPoly
-	- Build simp sets and grind sets for common operations
-	- Goal: “one-liner conversions” (or near) between spec polynomials and computable polynomials
+	- 🔄 Identify rewrite bottlenecks when porting Mathlib poly proofs → CompPoly. Recorded in
+	  [`docs/wiki/representations-and-bridges.md`](docs/wiki/representations-and-bridges.md#proof-api-simp-and-grind-sets):
+	  `CPolynomial` names shadowing Mathlib's inside `namespace CPolynomial`, `import all`
+	  exposure for `toPoly`/`Raw.coeff`, the `CPoly` vs `CompPoly` namespace split, and core
+	  `Vector` instances taking over `+` on `CMlPolynomial`
+	- ✅ Univariate simp and grind sets. The push lemmas (`toPoly_add`, `toPoly_mul`, `C_toPoly`,
+	  `X_toPoly`, `derivative_toPoly`, …) and a complete evaluation set (`eval_zero`, `eval_add`,
+	  `eval_X`, `eval_pow`, …, with `evalHom`, `eval_sum` and `eval_prod`) are `@[simp, grind =]`,
+	  matching the multivariate set. Bare `simp` or `grind` now closes routine `toPoly` and
+	  `eval` goals, and `toPoly_inj.mp (by simp)` transfers an equation to Mathlib
+	  (`tests/CompPolyTests/Univariate/Ergonomics.lean`)
+	- ✅ The same for the other families. The bivariate `toPoly` transport and `bivariateEquiv_*`
+	  are `@[simp, grind =]`, and multilinear `eval_{zero,add,smul}` are `@[simp]` for both the
+	  coefficient and evaluation forms
+	- ✅ `toPoly` is the coercion `CPolynomial R → Polynomial R`, with the push lemmas and
+	  cast-oriented `eval`/`coeff`/`degree`/`natDegree`/`leadingCoeff` lemmas tagged
+	  `norm_cast`. Mathlib's `natDegree_mul`, `leadingCoeff_mul`, `degree_add_le` and
+	  `natDegree_pow` transfer to `CPolynomial` in one `exact_mod_cast` line. Statements that
+	  mention `C` or `X` need a `push_cast` step first
+	- ✅ A `CPolynomial` degree API (`degree_mul`, `natDegree_pow`, `leadingCoeff_mul`,
+	  `degree_X_sub_C`, the add/sub/mul/pow bounds, …), each transferred from Mathlib in one
+	  line, with Mathlib's `@[simp]` attributes. It replaces 17 local `cpoly_*` helpers in the
+	  Guruswami-Sudan and Mulders-Storjohann proofs
+	- Goal: “one-liner conversions” (or near) between spec polynomials and computable
+	  polynomials. Met for degree and coefficient facts through `exact_mod_cast`; see
+	  [`docs/wiki/representations-and-bridges.md`](docs/wiki/representations-and-bridges.md#the-topoly-coercion)
 
 5.	**Integration with ArkLib / Hax + Rust libraries (e.g. plonky3)**
 	- Make CompPoly the canonical polynomial backend for ArkLib specs where applicable
@@ -333,4 +387,4 @@ CompPoly aims to be the premier formally verified library for computable polynom
 
 ---
 
-*Last updated: August 2026*
+*Last updated: September 2026*
