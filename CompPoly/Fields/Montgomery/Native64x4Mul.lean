@@ -186,5 +186,35 @@ theorem mul_spec (q : Limbs4) (negInv : UInt64) (a b : Limbs4)
   simp only [mul]
   exact mul_finish q _ L4 hfold
 
+private theorem mulHi_comm (a b : UInt64) : mulHi a b = mulHi b a := by
+  have h1 := mulHi_spec a b
+  have h2 := mulHi_spec b a
+  rw [UInt64.mul_comm b a, Nat.mul_comm b.toNat a.toNat] at h2
+  apply UInt64.toNat_inj.mp
+  omega
+
+private theorem macWords_mul (t a b c : UInt64) :
+    macWords t (a * b) (mulHi a b) c = mac t a b c := rfl
+
+private theorem mac_comm (t a b c : UInt64) : mac t a b c = mac t b a c := by
+  simp only [mac, UInt64.mul_comm a b, mulHi_comm a b]
+
+/-- Sharing symmetric products preserves the CIOS square exactly. -/
+theorem squareCached_eq_mul (q : Limbs4) (negInv : UInt64) (a : Limbs4) :
+    squareCached q negInv a = mul q negInv a a := by
+  have h01 : ∀ t c, mac t a.l1 a.l0 c = mac t a.l0 a.l1 c :=
+    fun t c ↦ mac_comm t a.l1 a.l0 c
+  have h02 : ∀ t c, mac t a.l2 a.l0 c = mac t a.l0 a.l2 c :=
+    fun t c ↦ mac_comm t a.l2 a.l0 c
+  have h03 : ∀ t c, mac t a.l3 a.l0 c = mac t a.l0 a.l3 c :=
+    fun t c ↦ mac_comm t a.l3 a.l0 c
+  have h12 : ∀ t c, mac t a.l2 a.l1 c = mac t a.l1 a.l2 c :=
+    fun t c ↦ mac_comm t a.l2 a.l1 c
+  have h13 : ∀ t c, mac t a.l3 a.l1 c = mac t a.l1 a.l3 c :=
+    fun t c ↦ mac_comm t a.l3 a.l1 c
+  have h23 : ∀ t c, mac t a.l3 a.l2 c = mac t a.l2 a.l3 c :=
+    fun t c ↦ mac_comm t a.l3 a.l2 c
+  simp only [squareCached, mul, mulRound, mulAccum, macWords_mul, h01, h02, h03, h12, h13, h23]
+
 end Native64x4
 end Montgomery

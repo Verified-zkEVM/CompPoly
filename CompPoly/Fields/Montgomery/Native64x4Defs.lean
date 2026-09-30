@@ -235,6 +235,61 @@ subtraction of the modulus, and never happens for a modulus below `2 ^ 255`. -/
   let t := mulRound q negInv a b.l3 t
   condSubWide q t
 
+/-- Accumulate a precomputed low/high product, preserving the full carry word. -/
+@[inline] def macWords (t lo hi c : UInt64) : UInt64 × UInt64 :=
+  let s := t + lo
+  let s' := s + c
+  (s', hi + (if s < t then 1 else 0) + (if s' < s then 1 else 0))
+
+/-- Montgomery square sharing the ten distinct limb products across CIOS rounds. -/
+@[inline] def squareCached (q : Limbs4) (negInv : UInt64) (a : Limbs4) : Limbs4 :=
+  let lo00 := a.l0 * a.l0
+  let hi00 := mulHi a.l0 a.l0
+  let lo01 := a.l0 * a.l1
+  let hi01 := mulHi a.l0 a.l1
+  let lo02 := a.l0 * a.l2
+  let hi02 := mulHi a.l0 a.l2
+  let lo03 := a.l0 * a.l3
+  let hi03 := mulHi a.l0 a.l3
+  let lo11 := a.l1 * a.l1
+  let hi11 := mulHi a.l1 a.l1
+  let lo12 := a.l1 * a.l2
+  let hi12 := mulHi a.l1 a.l2
+  let lo13 := a.l1 * a.l3
+  let hi13 := mulHi a.l1 a.l3
+  let lo22 := a.l2 * a.l2
+  let hi22 := mulHi a.l2 a.l2
+  let lo23 := a.l2 * a.l3
+  let hi23 := mulHi a.l2 a.l3
+  let lo33 := a.l3 * a.l3
+  let hi33 := mulHi a.l3 a.l3
+  let t := State5.zero
+  let (s0, c) := macWords t.t0 lo00 hi00 0
+  let (s1, c) := macWords t.t1 lo01 hi01 c
+  let (s2, c) := macWords t.t2 lo02 hi02 c
+  let (s3, c) := macWords t.t3 lo03 hi03 c
+  let (s4, s5) := adc t.t4 c 0
+  let t := mulReduce q negInv ⟨s0, s1, s2, s3, s4, s5⟩
+  let (s0, c) := macWords t.t0 lo01 hi01 0
+  let (s1, c) := macWords t.t1 lo11 hi11 c
+  let (s2, c) := macWords t.t2 lo12 hi12 c
+  let (s3, c) := macWords t.t3 lo13 hi13 c
+  let (s4, s5) := adc t.t4 c 0
+  let t := mulReduce q negInv ⟨s0, s1, s2, s3, s4, s5⟩
+  let (s0, c) := macWords t.t0 lo02 hi02 0
+  let (s1, c) := macWords t.t1 lo12 hi12 c
+  let (s2, c) := macWords t.t2 lo22 hi22 c
+  let (s3, c) := macWords t.t3 lo23 hi23 c
+  let (s4, s5) := adc t.t4 c 0
+  let t := mulReduce q negInv ⟨s0, s1, s2, s3, s4, s5⟩
+  let (s0, c) := macWords t.t0 lo03 hi03 0
+  let (s1, c) := macWords t.t1 lo13 hi13 c
+  let (s2, c) := macWords t.t2 lo23 hi23 c
+  let (s3, c) := macWords t.t3 lo33 hi33 c
+  let (s4, s5) := adc t.t4 c 0
+  let t := mulReduce q negInv ⟨s0, s1, s2, s3, s4, s5⟩
+  condSubWide q t
+
 /-- Montgomery squaring. -/
 @[inline] def square (q : Limbs4) (negInv : UInt64) (a : Limbs4) : Limbs4 :=
   mul q negInv a a

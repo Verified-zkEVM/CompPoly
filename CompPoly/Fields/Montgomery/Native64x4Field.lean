@@ -154,6 +154,33 @@ this ownership boundary survives at call sites. -/
 @[specialize] def pow (x : FastField modulus) (n : ℕ) : FastField modulus :=
   @npowBinRec (FastField modulus) ⟨one modulus⟩ ⟨mul⟩ n x
 
+/-- Dedicated square with shared symmetric limb products. -/
+@[specialize P] def squareCached (x : FastField modulus) : FastField modulus :=
+  ⟨Native64x4.squareCached P.modulusLimbs P.montgomeryNegInv x.val, by
+    rw [squareCached_eq_mul]
+    exact (mul x x).property⟩
+
+private theorem squareCached_eq (x : FastField modulus) : squareCached x = mul x x := by
+  apply Subtype.ext
+  exact squareCached_eq_mul P.modulusLimbs P.montgomeryNegInv x.val
+
+/-- Binary powering without the final unused square. -/
+@[specialize P] def powTrimmedGo (n : ℕ) (a x : FastField modulus) : FastField modulus :=
+  if _h : n ≤ 1 then if n == 0 then a else mul a x
+  else powTrimmedGo (n / 2) (if n % 2 == 1 then mul a x else a) (squareCached x)
+termination_by n
+
+/-- Start with the first selected power instead of multiplying by one. -/
+@[specialize P] def powTrimmedStart (n : ℕ) (x : FastField modulus) : FastField modulus :=
+  if _h : n ≤ 1 then if n == 0 then one modulus else x
+  else if n % 2 == 1 then powTrimmedGo (n / 2) x (squareCached x)
+  else powTrimmedStart (n / 2) (squareCached x)
+termination_by n
+
+/-- Exponentiation skipping the initial identity product and final unused square. -/
+@[specialize P] def powTrimmed (x : FastField modulus) (n : ℕ) : FastField modulus :=
+  powTrimmedStart n x
+
 /-- Inversion by Fermat's little theorem, `x⁻¹ = x ^ (modulus - 2)`. -/
 @[inline] def inv (x : FastField modulus) : FastField modulus := pow x (modulus - 2)
 
@@ -499,6 +526,60 @@ theorem ringEquiv_symm_apply {x : ZMod modulus} : (ringEquiv modulus).symm x = o
 /-- Field instance transferred from the canonical field through `toField`. -/
 instance instField : _root_.Field (FastField modulus) := by
   apply toField_injective.field toField <;> simp
+
+private theorem toField_powTrimmedGo (n : ℕ) (a x : FastField modulus) :
+    toField (powTrimmedGo n a x) = toField a * toField x ^ n := by
+  induction n using Nat.strong_induction_on generalizing a x with
+  | h n ih =>
+    rw [powTrimmedGo]
+    split
+    · next hn =>
+      interval_cases n <;> simp only [beq_iff_eq, ite_true, ite_false, pow_zero,
+        mul_one, Nat.one_ne_zero, pow_one, ← mul_def, toField_mul]
+    · next hn =>
+      rw [ih (n / 2) (by omega), squareCached_eq]
+      simp only [← mul_def, toField_mul]
+      by_cases hb : n % 2 = 1
+      · simp only [hb, beq_iff_eq, ite_true, toField_mul]
+        have he : n = 1 + 2 * (n / 2) := by omega
+        conv_rhs => rw [he]
+        simp only [pow_add, pow_mul, pow_one, pow_two]
+        ring
+      · have hb0 : n % 2 = 0 := by omega
+        simp only [hb0, beq_iff_eq, Nat.zero_ne_one, ite_false]
+        have he : n = 2 * (n / 2) := by omega
+        conv_rhs => rw [he]
+        simp only [pow_mul, pow_two]
+
+private theorem toField_powTrimmedStart (n : ℕ) (x : FastField modulus) :
+    toField (powTrimmedStart n x) = toField x ^ n := by
+  induction n using Nat.strong_induction_on generalizing x with
+  | h n ih =>
+    rw [powTrimmedStart]
+    split
+    · next hn =>
+      interval_cases n <;> simp only [beq_iff_eq, ite_true, ite_false, pow_zero,
+        ← one_def, toField_one, Nat.one_ne_zero, pow_one]
+    · next hn =>
+      by_cases hb : n % 2 = 1
+      · simp only [hb, beq_iff_eq, ite_true, toField_powTrimmedGo,
+          squareCached_eq, ← mul_def, toField_mul]
+        have he : n = 1 + 2 * (n / 2) := by omega
+        conv_rhs => rw [he]
+        simp only [pow_add, pow_mul, pow_one, pow_two]
+      · have hb0 : n % 2 = 0 := by omega
+        simp only [hb0, beq_iff_eq, Nat.zero_ne_one, ite_false]
+        rw [ih (n / 2) (by omega), squareCached_eq]
+        simp only [← mul_def, toField_mul]
+        have he : n = 2 * (n / 2) := by omega
+        conv_rhs => rw [he]
+        simp only [pow_mul, pow_two]
+
+/-- The optimized exponentiation implements the original field power. -/
+@[csimp] theorem pow_eq_powTrimmed : @pow = @powTrimmed := by
+  funext modulus P x n
+  apply toField_injective
+  rw [toField_pow, powTrimmed, toField_powTrimmedStart]
 
 /-- A fast four-limb field is non-binary. -/
 instance instNonBinaryField : NonBinaryField (FastField modulus) where
