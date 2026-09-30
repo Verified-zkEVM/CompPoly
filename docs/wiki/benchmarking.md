@@ -380,7 +380,7 @@ The driver exports fixed-width little-endian coordinate byte inputs with an expl
 
 Five paired runs alternate executable order. The output directory under `bench/out/` contains two compact tables in `report.md`, raw samples, exact inputs, and machine/toolchain metadata. Tables report the median of run medians and the median absolute deviation between runs. These are same-machine library comparisons, not historical regression comparisons; other workloads on the host can affect them.
 
-`--validate-only` skips timing, and CI uses it with `--suite all` on every PR. `--skip-build` reuses built executables.
+`--validate-only` skips timing, and CI uses it with `--suite all` on every PR. `--skip-build` requires a matching build record from a previous driver run.
 
 BN254 add/mul throughput uses two independent chains with the same fixed second operand as latency, 160 steps per lane (320 operations total), four rounds unrolled per loop, and one final combining operation excluded from the divisor. This avoids the ten-lane ring’s excessive live state for multi-limb values. Small-prime throughput retains its ten-lane ring.
 

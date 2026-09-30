@@ -183,4 +183,4 @@ python3 ./scripts/check-docs-integrity.py
 
 ### Rust field comparison
 
-`python3 scripts/bench-fields.py --suite all --cpu 0` checks Lean/Rust agreement and writes compact comparison tables plus raw samples under `bench/out/`. Select `small-prime`, `large-prime`, `binary`, or `all`; the default is `small-prime`. Use `--validate-only` for correctness checks and `--skip-build` to reuse binaries. See [the benchmark README](../bench/README.md#rust-field-comparison).
+`python3 scripts/bench-fields.py --suite all --cpu 0` checks Lean/Rust agreement and writes compact comparison tables plus raw samples under `bench/out/`. Select `small-prime`, `large-prime`, `binary`, or `all`; the default is `small-prime`. Use `--validate-only` for correctness checks and `--skip-build` to reuse a verified build from a previous driver run. See [the benchmark README](../bench/README.md#rust-field-comparison).

@@ -197,7 +197,7 @@ jobs:
           cargo test --release --locked -j 1
           cargo build --release --locked -j 1
       - name: Check Lean and Rust workload agreement
-        run: python3 scripts/bench-fields.py --suite all --validate-only --skip-build
+        run: python3 scripts/bench-fields.py --suite all --validate-only
       - name: Validate benchmark implementations
         # Correctness only: every implementation in a group runs over the same
         # inputs and must agree on a digest, so a wrong-but-fast implementation

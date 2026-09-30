@@ -321,7 +321,7 @@ group is caught rather than silently dropped.
 
 ## Rust field comparison
 
-Run `python3 scripts/bench-fields.py --suite all --cpu 0` from the repository root on Linux. Choose an available logical CPU: the driver pins itself and both runners there, builds with one job, and runs Lean and Rust sequentially. It validates matching result digests and operation counts before five paired timing runs in alternating order. `--validate-only` skips timing; `--skip-build` reuses existing binaries.
+Run `python3 scripts/bench-fields.py --suite all --cpu 0` from the repository root on Linux. Choose an available logical CPU: the driver pins itself and both runners there, builds with one job, and runs Lean and Rust sequentially. It validates matching result digests and operation counts before five paired timing runs in alternating order. `--validate-only` skips timing; `--skip-build` requires a matching build record from a previous driver run.
 
 | Suite | Selected fields and operations | Rust library |
 | --- | --- | --- |
@@ -357,3 +357,7 @@ The BN254 throughput configuration was selected manually on Rust, then fixed ide
 Multiplication uses 64 dependent steps or two independent 32-step chains with the same fixed operand; the final combining multiply is timed but excluded from the divisor, identically in both languages. Inversion uses 64 dependent `inv(x XOR b)` steps, with zero mapped to zero. Squaring uses 63 dependent squares, unrolled seven at a time. Neither the block nor the complete chain is a whole Frobenius cycle at any selected size. No per-operation result accumulation occurs. The pool holds 64 deterministic full-width words, excluding zero and one to avoid trivial multiplication constants.
 
 The `fields-tower-bt{8,64,128}-{mul,square,inv}` groups replace the old recursive/table comparison and pairwise 128-bit scalar workloads. Historical best-time rows from those workloads are not comparable with these chains. Lean's arithmetic refinements remain in `Tower/Fast.lean`; matching complete chain digests and operation counts establishes the new runtime correspondence with Binius.
+
+### Build provenance
+
+The driver records the source commit and source-content hash (including untracked, nonignored files), toolchain versions, build environment, native CPU features, and hashes of all three executables in `.lake/build/field-bench-build.json`. `--skip-build` rejects missing or mismatched records and asks for a normal run; normal runs use Lake/Cargo’s incremental builds. The run manifest copies that build record instead of inferring binary provenance from the current environment. Sources and executable hashes are checked again after validation and timing. Build flags must also match, including `CARGO_ENCODED_RUSTFLAGS` if set.
