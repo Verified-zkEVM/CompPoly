@@ -68,22 +68,31 @@ is enough to canonicalize a native word.
 def reduceUInt64Raw (x : UInt64) : UInt64 :=
   if x < modulus then x else x - modulus
 
+/-- Rare path of the 128-bit fold, taken when the low word borrows against the top limb
+(probability about `2^-32` on random inputs). Kept out of line so the common path
+compiles to a predicted branch instead of a select on the critical path. -/
+@[noinline]
+def foldUInt128Borrow (lo hi_hi hi_lo : UInt64) : UInt64 :=
+  let t0 := lo - hi_hi - negModulus
+  let t1 := hi_lo * negModulus
+  let t2 := t0 + t1
+  if t2 < t0 then t2 + negModulus else t2
+
 /-- Fold a 128-bit value `lo + hi * 2^64` into one congruent word using
-`2^64 ≡ 2^32 - 1`. The result is not canonicalized. -/
+`2^64 ≡ 2^32 - 1`. The result is not canonicalized.
+
+The middle term `hi_lo * (2^32 - 1)` is formed as `(hi <<< 32) - hi_lo`, two one-cycle
+operations rather than a three-cycle multiply. -/
 @[inline]
 def foldUInt128Lazy (lo hi : UInt64) : UInt64 :=
   let hi_hi := hi >>> 32
   let hi_lo := hi &&& negModulus
-
-  let borrow := lo < hi_hi
-  let t0 := lo - hi_hi
-  let t0 := if borrow then t0 - negModulus else t0
-
-  let t1 := hi_lo * negModulus
-
-  let t2 := t0 + t1
-  let overflow := t2 < t0
-  if overflow then t2 + negModulus else t2
+  if lo < hi_hi then foldUInt128Borrow lo hi_hi hi_lo
+  else
+    let t0 := lo - hi_hi
+    let t1 := (hi <<< 32) - hi_lo
+    let t2 := t0 + t1
+    if t2 < t0 then t2 + negModulus else t2
 
 /-- Raw reduction of a 128-bit integer represented by low and high words modulo Goldilocks. -/
 @[inline]

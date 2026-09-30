@@ -479,54 +479,59 @@ theorem reduceUInt64Raw_cast (x : UInt64) :
       exact hmod_le_x)]
     simp
 
+/-- The tail of the 128-bit fold: add the folded middle limb and correct one overflow. -/
+private theorem foldTail_cast (lo hi_hi hi_lo t0 : UInt64) (hhi_lo : hi_lo.toNat < 2 ^ 32)
+    (ht0 : (t0.toNat : Goldilocks.Field) =
+      (lo.toNat : Goldilocks.Field) - (hi_hi.toNat : Goldilocks.Field)) :
+    (((if t0 + hi_lo * negModulus < t0 then t0 + hi_lo * negModulus + negModulus
+        else t0 + hi_lo * negModulus)).toNat : Goldilocks.Field) =
+      (lo.toNat : Goldilocks.Field) - (hi_hi.toNat : Goldilocks.Field) +
+        (hi_lo.toNat : Goldilocks.Field) * (negModulus.toNat : Goldilocks.Field) := by
+  have ht1_cast : ((hi_lo * negModulus).toNat : Goldilocks.Field) =
+      (hi_lo.toNat : Goldilocks.Field) * (negModulus.toNat : Goldilocks.Field) := by
+    rw [mul_negModulus_toNat_of_lt hi_lo hhi_lo, Nat.cast_mul]
+  have hbound : t0.toNat + (hi_lo * negModulus).toNat < 2 * UInt64.size - negModulus.toNat := by
+    have ht0_lt := UInt64.toNat_lt_size t0
+    have ht1_le := mul_negModulus_toNat_le hi_lo hhi_lo
+    have htwice : 2 * negModulus.toNat ≤ UInt64.size := by decide
+    omega
+  rw [addOverflowBounded_cast t0 (hi_lo * negModulus) hbound, ht0, ht1_cast]
+
+/-- The middle limb times `2^32 - 1`, formed as a shift and a subtraction. -/
+theorem shiftLeft32_sub_low (hi : UInt64) :
+    (hi <<< 32) - (hi &&& negModulus) = (hi &&& negModulus) * negModulus := by
+  apply UInt64.toNat_inj.mp
+  have hlo := uint64_low32_lt hi
+  have hhi := UInt64.toNat_lt_size hi
+  have hshl : (hi <<< 32).toNat = (hi &&& negModulus).toNat * 2 ^ 32 := by
+    rw [UInt64.toNat_shiftLeft, and_negModulus_toNat]
+    have h : (32 : UInt64).toNat % 64 = 32 := by decide
+    rw [h, Nat.shiftLeft_eq]
+    simp only [UInt64.size] at hhi
+    omega
+  have hle : (hi &&& negModulus) ≤ hi <<< 32 := by
+    rw [UInt64.le_iff_toNat_le, hshl]
+    omega
+  rw [UInt64.toNat_sub_of_le _ _ hle, hshl, mul_negModulus_toNat_of_lt _ hlo, negModulus_toNat]
+  omega
+
 /-- Semantic correctness of the lazy 128-bit fold. -/
 theorem foldUInt128Lazy_cast (lo hi : UInt64) :
     ((foldUInt128Lazy lo hi).toNat : Goldilocks.Field) =
       (lo.toNat : Goldilocks.Field) +
         (hi.toNat : Goldilocks.Field) * (UInt64.size : Goldilocks.Field) := by
-  let hi_hi := hi >>> 32
-  let hi_lo := hi &&& negModulus
-  let t0 := if lo < hi_hi then lo - hi_hi - negModulus else lo - hi_hi
-  let t1 := hi_lo * negModulus
-  let t2 := if t0 + t1 < t0 then t0 + t1 + negModulus else t0 + t1
-  change (t2.toNat : Goldilocks.Field) =
-    (lo.toNat : Goldilocks.Field) +
-      (hi.toNat : Goldilocks.Field) * (UInt64.size : Goldilocks.Field)
-  have hhi_hi_lt : hi_hi.toNat < 2 ^ 32 := by
-    rw [show hi_hi = hi >>> 32 by rfl, shiftRight32_toNat]
-    have hhi := UInt64.toNat_lt_size hi
-    change hi.toNat < 2 ^ 64 at hhi
-    omega
-  have hhi_lo_lt : hi_lo.toNat < 2 ^ 32 := by
-    rw [show hi_lo = hi &&& negModulus by rfl, and_negModulus_toNat]
-    exact Nat.mod_lt _ (by decide)
-  have ht0_cast :
-      (t0.toNat : Goldilocks.Field) =
-        (lo.toNat : Goldilocks.Field) - (hi_hi.toNat : Goldilocks.Field) := by
-    rw [show t0 = if lo < hi_hi then lo - hi_hi - negModulus else lo - hi_hi by rfl]
-    exact subBorrow_cast lo hi_hi hhi_hi_lt
-  have ht1_cast :
-      (t1.toNat : Goldilocks.Field) =
-        (hi_lo.toNat : Goldilocks.Field) *
-          (negModulus.toNat : Goldilocks.Field) := by
-    rw [show t1 = hi_lo * negModulus by rfl]
-    rw [mul_negModulus_toNat_of_lt hi_lo hhi_lo_lt]
-    rw [Nat.cast_mul]
-  have ht2_bound : t0.toNat + t1.toNat < 2 * UInt64.size - negModulus.toNat := by
-    have ht0_lt := UInt64.toNat_lt_size t0
-    have ht1_le : t1.toNat ≤ UInt64.size - 2 * negModulus.toNat := by
-      simpa [t1] using mul_negModulus_toNat_le hi_lo hhi_lo_lt
-    have htwice_neg_le_size : 2 * negModulus.toNat ≤ UInt64.size := by
-      decide
-    omega
-  have ht2_cast :
-      (t2.toNat : Goldilocks.Field) =
-        (t0.toNat : Goldilocks.Field) + (t1.toNat : Goldilocks.Field) := by
-    rw [show t2 = if t0 + t1 < t0 then t0 + t1 + negModulus else t0 + t1 by rfl]
-    exact addOverflowBounded_cast t0 t1 ht2_bound
-  rw [ht2_cast, ht0_cast, ht1_cast]
+  have hhi_hi_lt : (hi >>> 32).toNat < 2 ^ 32 := uint64_high32_lt hi
+  have hhi_lo_lt : (hi &&& negModulus).toNat < 2 ^ 32 := uint64_low32_lt hi
+  have hsub := subBorrow_cast lo (hi >>> 32) hhi_hi_lt
   rw [hi_split_cast hi]
-  ring
+  simp only [foldUInt128Lazy, foldUInt128Borrow]
+  by_cases hb : lo < hi >>> 32
+  · rw [if_pos hb] at hsub ⊢
+    rw [foldTail_cast lo (hi >>> 32) (hi &&& negModulus) _ hhi_lo_lt hsub]
+    ring
+  · rw [if_neg hb] at hsub ⊢
+    rw [shiftLeft32_sub_low hi, foldTail_cast lo (hi >>> 32) (hi &&& negModulus) _ hhi_lo_lt hsub]
+    ring
 
 /-- The raw 128-bit reducer returns a canonical representative below the modulus. -/
 theorem reduceUInt128Raw_lt (lo hi : UInt64) :
