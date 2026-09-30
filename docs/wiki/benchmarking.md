@@ -431,3 +431,36 @@ Five interleaved A/B rounds against `b69a497` measured BN254 addition latency at
 Assembly inspection identified a further difference from arkworks: arkworks compares against the modulus before subtracting, whereas the retained Lean addition calculates the difference before choosing the result. An ignored scalar-state diagnostic using the same 320 additions and fixture inputs reached approximately 1.77 ns/op by combining the spare-bit optimization with comparison before subtraction. It keeps limbs in scalar loop parameters and has no per-addition calls or field objects. This is a screening result, not the ordinary field API or a replacement row in the Lean/Rust report.
 
 The corresponding ordinary-API variants were not retained. Conditional subtraction introduced allocation on the reduction branch; moving construction after a tuple-valued branch, changing operand order, masking the modulus, and extracting subtraction into a separate function failed to beat the retained implementation. Thus the scalar diagnostic demonstrates arithmetic close to Rust, while obtaining it through the boxed field API remains open.
+
+### Scalar limb API for specialized hot loops
+
+`Montgomery.Native64x4.Scalar` in `CompPoly/Fields/Montgomery/Native64x4Defs.lean` exposes `add`, `sub`, `mul`, and `square` with separate `UInt64` limb arguments. These are inline entry points to the existing verified arithmetic, with the same input bounds and Montgomery representation. The first four arguments are the modulus limbs; multiplication and squaring also take the Montgomery negative inverse. Results are four-word tuples.
+
+Immediately destructure each result and carry its words as separate loop parameters. Construct a `Limbs4` or field value at the boundary. For example, a multiplication step inside such a loop is:
+
+```lean
+let (r0, r1, r2, r3) := Montgomery.Native64x4.Scalar.mul
+  q0 q1 q2 q3 negInv a0 a1 a2 a3 b0 b1 b2 b3
+-- Continue with r0, r1, r2, r3 as separate scalar parameters.
+```
+
+The arguments are little-endian Montgomery residues, not canonical integers. Obtain the modulus limbs and negative inverse from `Mont64x4Field`; unpack existing fast field values through their `.val` limbs. Reconstructing a field value also requires the usual proof that the residue is below the modulus. The wrappers unfold directly to the existing operations, so their bounds and refinement lemmas remain applicable.
+
+Inlining and immediate destructuring allow the compiler to eliminate the intermediate tuples and limb objects. Storing the tuple as the loop state, passing it through a non-inlined function, or calling through an unspecialized function argument can reintroduce boxing. Inspect generated code and measure the actual loop: eliminating allocations can still lose to register spills or code layout, particularly for multiplication.
+
+A complete repeated-squaring loop illustrates the state layout:
+
+```lean
+open Montgomery.Native64x4
+
+def repeatedSquare (q : Limbs4) (negInv : UInt64) (n : Nat) (x : Limbs4) : Limbs4 :=
+  let rec go (n : Nat) (x0 x1 x2 x3 : UInt64) : Limbs4 :=
+    match n with
+    | 0 => ⟨x0, x1, x2, x3⟩
+    | n + 1 =>
+      let (s0, s1, s2, s3) := Scalar.square q.l0 q.l1 q.l2 q.l3 negInv x0 x1 x2 x3
+      go n s0 s1 s2 s3
+  go n x.l0 x.l1 x.l2 x.l3
+```
+
+Exponentiation was tested as a possible production example, with three scalar-state variants. Against `7912071`, five interleaved A/B rounds per variant measured the binary-recursion version at 1.079× baseline time (1.85 → 2.00 μs), explicit right-to-left tail recursion at 1.042× (1.88 → 1.96 μs), and left-to-right recursion with a fixed base at 1.077× (1.87 → 2.01 μs). All BN254 digests matched. None was retained: the existing `FastField.pow` remains the production implementation. The scalar API makes unboxed loops expressible, but the multiplication-heavy exponentiation experiments did not establish a speedup.

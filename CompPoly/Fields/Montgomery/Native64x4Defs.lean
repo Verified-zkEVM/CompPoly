@@ -239,5 +239,47 @@ subtraction of the modulus, and never happens for a modulus below `2 ^ 255`. -/
 @[inline] def square (q : Limbs4) (negInv : UInt64) (a : Limbs4) : Limbs4 :=
   mul q negInv a a
 
+/-! ## Scalar inputs for inlined hot loops -/
+
+namespace Scalar
+
+/-- Scalar-limb add. Inline the call and immediately destructure the result to eliminate
+intermediate limb objects. Inputs and output use Montgomery residues with the same
+preconditions as `Native64x4.add`. -/
+@[inline] def add (q0 q1 q2 q3 : UInt64)
+    (a0 a1 a2 a3 b0 b1 b2 b3 : UInt64) :
+    UInt64 × UInt64 × UInt64 × UInt64 :=
+  let r := Native64x4.add ⟨q0, q1, q2, q3⟩ ⟨a0, a1, a2, a3⟩ ⟨b0, b1, b2, b3⟩
+  (r.l0, r.l1, r.l2, r.l3)
+
+/-- Scalar-limb sub. Inline the call and immediately destructure the result to eliminate
+intermediate limb objects. Inputs and output use Montgomery residues with the same
+preconditions as `Native64x4.sub`. -/
+@[inline] def sub (q0 q1 q2 q3 : UInt64)
+    (a0 a1 a2 a3 b0 b1 b2 b3 : UInt64) :
+    UInt64 × UInt64 × UInt64 × UInt64 :=
+  let r := Native64x4.sub ⟨q0, q1, q2, q3⟩ ⟨a0, a1, a2, a3⟩ ⟨b0, b1, b2, b3⟩
+  (r.l0, r.l1, r.l2, r.l3)
+
+/-- Scalar-limb mul. Inline the call and immediately destructure the result to eliminate
+intermediate limb objects. Inputs and output use Montgomery residues with the same
+preconditions as `Native64x4.mul`. -/
+@[inline] def mul (q0 q1 q2 q3 : UInt64) (negInv : UInt64)
+    (a0 a1 a2 a3 b0 b1 b2 b3 : UInt64) :
+    UInt64 × UInt64 × UInt64 × UInt64 :=
+  let r := Native64x4.mul ⟨q0, q1, q2, q3⟩ negInv ⟨a0, a1, a2, a3⟩ ⟨b0, b1, b2, b3⟩
+  (r.l0, r.l1, r.l2, r.l3)
+
+/-- Scalar-limb square. Inline the call and immediately destructure the result to eliminate
+intermediate limb objects. Inputs and output use Montgomery residues with the same
+preconditions as `Native64x4.square`. -/
+@[inline] def square (q0 q1 q2 q3 : UInt64) (negInv : UInt64)
+    (a0 a1 a2 a3 : UInt64) :
+    UInt64 × UInt64 × UInt64 × UInt64 :=
+  let r := Native64x4.square ⟨q0, q1, q2, q3⟩ negInv ⟨a0, a1, a2, a3⟩
+  (r.l0, r.l1, r.l2, r.l3)
+
+end Scalar
+
 end Native64x4
 end Montgomery
