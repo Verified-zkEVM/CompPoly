@@ -6,13 +6,13 @@ Authors: Derek Sorensen
 module
 
 public meta import CompPoly.Fields.Montgomery.Native32Bytes
-public meta import CompPoly.Fields.Montgomery.Native64x8Bytes
+public meta import CompPoly.Fields.Montgomery.Native64x4Bytes
 public meta import CompPoly.Fields.BabyBear.Fast
 public meta import CompPoly.Fields.KoalaBear.Fast
 public meta import CompPoly.Fields.BN254.Fast
 public meta import CompPoly.Fields.BLS12_381.Fast
 public import CompPoly.Fields.Montgomery.Native32Bytes
-public import CompPoly.Fields.Montgomery.Native64x8Bytes
+public import CompPoly.Fields.Montgomery.Native64x4Bytes
 public import CompPoly.Fields.BabyBear.Fast
 public import CompPoly.Fields.KoalaBear.Fast
 public import CompPoly.Fields.BN254.Fast
@@ -79,7 +79,7 @@ example (n : BabyBear.Field) :
   Montgomery.Native32.FastField.toBytes_ofField n
 example (n : BN254.ScalarField) :
     ByteCodec.toBytes (BN254.Fast.ofField n) = ByteCodec.toBytes n :=
-  Montgomery.Native64x8.FastField.toBytes_ofField n
+  Montgomery.Native64x4.FastField.toBytes_ofField n
 example (x : BabyBear.Fast.Field) :
     (Deserialize.deserialize (serialize x : ByteArray) : BabyBear.Fast.Field) = x :=
   CanonicalNat.deserialize_serialize_byteArray rfl x
