@@ -93,3 +93,6 @@ fields-tower-bt8-square
 fields-tower-bt8-inv
 fields-tower-bt64-square
 fields-tower-bt128-square
+fields-tower-bt8-add
+fields-tower-bt64-add
+fields-tower-bt128-add
