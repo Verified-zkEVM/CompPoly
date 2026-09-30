@@ -119,11 +119,15 @@ limb. -/
   if bo == 0 then ⟨d0, d1, d2, d3⟩ else t
 
 /-- Modular addition; a carry out of the top limb forces the (wrapping, exact) subtraction
-of the modulus, and never happens for a modulus below `2 ^ 255`. -/
+of the modulus. For canonical inputs and a modulus below `2 ^ 255`, the top carry is
+impossible, so the spare-bit branch omits its test. -/
 @[inline] def add (q a b : Limbs4) : Limbs4 :=
   let (s0, s1, s2, s3, c) := addLimbs a b
   let (d0, d1, d2, d3, bo) := subLimbs ⟨s0, s1, s2, s3⟩ q
-  if c != 0 then ⟨d0, d1, d2, d3⟩ else if bo == 0 then ⟨d0, d1, d2, d3⟩ else ⟨s0, s1, s2, s3⟩
+  if q.l3 < 0x8000000000000000 then
+    if bo == 0 then ⟨d0, d1, d2, d3⟩ else ⟨s0, s1, s2, s3⟩
+  else
+    if c != 0 then ⟨d0, d1, d2, d3⟩ else if bo == 0 then ⟨d0, d1, d2, d3⟩ else ⟨s0, s1, s2, s3⟩
 
 /-- Modular subtraction: on a borrow, the modulus is added back. -/
 @[inline] def sub (q a b : Limbs4) : Limbs4 :=

@@ -428,7 +428,29 @@ theorem add_toNat (q a b : Limbs4) (haq : a.toNat < q.toNat) (hbq : b.toNat < q.
   have hS := Limbs4.toNat_lt ⟨s0, s1, s2, s3⟩
   have hD := Limbs4.toNat_lt ⟨d0, d1, d2, d3⟩
   have hQ := Limbs4.toNat_lt q
-  simp only [add, ea, es, bne_iff_ne, ne_eq, beq_iff_eq, ← UInt64.toNat_inj, UInt64.toNat_zero]
+  have hcZero (hq : q.l3 < 0x8000000000000000) : c = 0 := by
+    have h0 := UInt64.toNat_lt q.l0
+    have h1 := UInt64.toNat_lt q.l1
+    have h2 := UInt64.toNat_lt q.l2
+    rw [UInt64.lt_iff_toNat_lt] at hq
+    change q.l3.toNat < 2 ^ 63 at hq
+    have hsmall : q.toNat < 2 ^ 255 := by
+      simp only [Limbs4.toNat]
+      omega
+    apply UInt64.toNat_inj.mp
+    simp only [UInt64.toNat_zero]
+    omega
+  have he : add q a b =
+      if c != 0 then ⟨d0, d1, d2, d3⟩
+      else if bo == 0 then ⟨d0, d1, d2, d3⟩ else ⟨s0, s1, s2, s3⟩ := by
+    simp only [add, ea, es]
+    split
+    · rename_i hq
+      rw [hcZero hq]
+      rfl
+    · rfl
+  rw [he]
+  simp only [bne_iff_ne, ne_eq, beq_iff_eq, ← UInt64.toNat_inj, UInt64.toNat_zero]
   split
   case isTrue h =>
     rw [show c.toNat = 1 by omega] at ha

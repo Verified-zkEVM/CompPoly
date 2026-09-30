@@ -421,3 +421,13 @@ The four-limb `adc` and `sbb` helpers combine their overflow flags with bitwise 
 Five interleaved A/B rounds against `17a1eb9`, on the same Ryzen 7 3700X pinned to CPU 11, measured addition latency at 0.773× baseline time (5.06 → 3.91 ns/op) and the two-lane row at 0.780× (5.50 → 4.29 ns/op). All digests matched, with no `SUSPECT` or other BN254 row classified as slower. The benchmark harness and matched Rust workloads are unchanged.
 
 Additional `inline`, `always_inline`, and `macro_inline` variants were screened but not retained: none reliably improved the borrowed, specialized addition boundary, and inlining the original operand order brought back per-step allocations. A standalone scalar-state control removed per-step calls and allocations but still took about 4.4 ns with the old carry encoding, versus about 5 ns for the ordinary chain. This isolates a substantial arithmetic/code-generation cost beyond object handling; it is a diagnostic, not a replacement benchmark result.
+
+### Spare-bit addition and scalar diagnostics
+
+For moduli below `2^255`, the four-limb addition now omits the impossible carry out of the top limb. The modulus's top bit selects the path; specialization resolves it for concrete fields. The correctness proof uses canonical input bounds to establish that the carry is zero. Full-width moduli retain the carry-aware path.
+
+Five interleaved A/B rounds against `b69a497` measured BN254 addition latency at 0.904× baseline time (3.86 → 3.49 ns/op) and the two-lane row at 0.897× (4.23 → 3.80 ns/op). All digests matched, with no `SUSPECT` or other BN254 row classified as slower. No benchmark workload changed.
+
+Assembly inspection identified a further difference from arkworks: arkworks compares against the modulus before subtracting, whereas the retained Lean addition calculates the difference before choosing the result. An ignored scalar-state diagnostic using the same 320 additions and fixture inputs reached approximately 1.77 ns/op by combining the spare-bit optimization with comparison before subtraction. It keeps limbs in scalar loop parameters and has no per-addition calls or field objects. This is a screening result, not the ordinary field API or a replacement row in the Lean/Rust report.
+
+The corresponding ordinary-API variants were not retained. Conditional subtraction introduced allocation on the reduction branch; moving construction after a tuple-valued branch, changing operand order, masking the modulus, and extracting subtraction into a separate function failed to beat the retained implementation. Thus the scalar diagnostic demonstrates arithmetic close to Rust, while obtaining it through the boxed field API remains open.
