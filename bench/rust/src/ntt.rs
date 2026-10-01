@@ -1,120 +1,8 @@
-//! CompPoly NTTFast.Plan's exact scalar radix-4 schedule over Plonky3 KoalaBear.
+//! Existing optimized Plonky3 NTT API, with natural-order inputs and outputs.
 use crate::harness::{measure_workload, BenchValue, DIGEST_MODULUS};
-use p3_field::{Field, PrimeCharacteristicRing, PrimeField32};
+use p3_dft::{Radix2DFTSmallBatch, TwoAdicSubgroupDft};
+use p3_field::{Field, PackedValue, PrimeCharacteristicRing, PrimeField32, TwoAdicField};
 use p3_koala_bear::KoalaBear as F;
-
-struct Plan {
-    log_n: usize,
-    forward: Vec<Vec<F>>,
-    inverse: Vec<Vec<F>>,
-    n_inv: F,
-}
-
-fn powers(root: F, log_n: usize) -> Vec<Vec<F>> {
-    (0..log_n)
-        .map(|stage| {
-            let half = 1 << stage;
-            let step = root.exp_u64((1 << (log_n - stage - 1)) as u64);
-            let mut w = F::ONE;
-            (0..half)
-                .map(|_| {
-                    let old = w;
-                    w *= step;
-                    old
-                })
-                .collect()
-        })
-        .collect()
-}
-
-impl Plan {
-    fn new(root: F, log_n: usize) -> Self {
-        Self {
-            log_n,
-            forward: powers(root, log_n),
-            inverse: powers(root.inverse(), log_n),
-            n_inv: F::from_u32(1 << log_n).inverse(),
-        }
-    }
-
-    /// Natural input to bit-reversed output, matching Plan.forwardImpl.
-    fn forward(&self, input: &[F]) -> Vec<F> {
-        let mut a = input.to_vec();
-        for pass in 0..self.log_n / 2 {
-            let high = self.log_n - 1 - 2 * pass;
-            let low = high - 1;
-            let quarter = 1 << low;
-            for block in a.chunks_exact_mut(4 * quarter) {
-                for j in 0..quarter {
-                    let [x0, x1, x2, x3] = [
-                        block[j],
-                        block[j + quarter],
-                        block[j + 2 * quarter],
-                        block[j + 3 * quarter],
-                    ];
-                    let a0 = x0 + x2;
-                    let a2 = self.forward[high][j] * (x0 - x2);
-                    let a1 = x1 + x3;
-                    let a3 = self.forward[high][j + quarter] * (x1 - x3);
-                    block[j] = a0 + a1;
-                    block[j + quarter] = self.forward[low][j] * (a0 - a1);
-                    block[j + 2 * quarter] = a2 + a3;
-                    block[j + 3 * quarter] = self.forward[low][j] * (a2 - a3);
-                }
-            }
-        }
-        if self.log_n % 2 == 1 {
-            for block in a.chunks_exact_mut(2) {
-                let [u, v] = [block[0], block[1]];
-                block[0] = u + v;
-                block[1] = self.forward[0][0] * (u - v);
-            }
-        }
-        a
-    }
-
-    /// Bit-reversed input to natural output, including the final 1/n scaling pass.
-    fn inverse(&self, input: &[F]) -> Vec<F> {
-        let mut a = input.to_vec();
-        for pass in 0..self.log_n / 2 {
-            let low = 2 * pass;
-            let high = low + 1;
-            let quarter = 1 << low;
-            for block in a.chunks_exact_mut(4 * quarter) {
-                for j in 0..quarter {
-                    let [x0, x1, x2, x3] = [
-                        block[j],
-                        block[j + quarter],
-                        block[j + 2 * quarter],
-                        block[j + 3 * quarter],
-                    ];
-                    let t1 = self.inverse[low][j] * x1;
-                    let t3 = self.inverse[low][j] * x3;
-                    let a0 = x0 + t1;
-                    let a1 = x0 - t1;
-                    let a2 = x2 + t3;
-                    let a3 = x2 - t3;
-                    let u2 = self.inverse[high][j] * a2;
-                    let u3 = self.inverse[high][j + quarter] * a3;
-                    block[j] = a0 + u2;
-                    block[j + quarter] = a1 + u3;
-                    block[j + 2 * quarter] = a0 - u2;
-                    block[j + 3 * quarter] = a1 - u3;
-                }
-            }
-        }
-        if self.log_n % 2 == 1 {
-            let half = 1 << (self.log_n - 1);
-            for j in 0..half {
-                let u = a[j];
-                let t = self.inverse[self.log_n - 1][j] * a[j + half];
-                a[j] = u + t;
-                a[j + half] = u - t;
-            }
-        }
-        a.into_iter().map(|v| self.n_inv * v).collect()
-    }
-}
 
 struct Output(Vec<F>);
 impl BenchValue for Output {
@@ -135,6 +23,17 @@ impl BenchValue for Output {
 }
 
 pub fn run(args: &[String]) {
+    if args == ["--info"] {
+        println!(
+            "{}",
+            serde_json::json!({
+                "implementation": "p3_dft::Radix2DFTSmallBatch<KoalaBear>",
+                "packing_width": <F as Field>::Packing::WIDTH,
+                "workers": rayon::current_num_threads(),
+            })
+        );
+        return;
+    }
     assert_eq!(
         args.len(),
         4,
@@ -156,11 +55,14 @@ pub fn run(args: &[String]) {
         })
         .collect();
     let root = values[0];
-    assert_eq!(root.exp_u64(n as u64), F::ONE);
-    if n > 1 {
-        assert_ne!(root.exp_u64((n / 2) as u64), F::ONE);
-    }
-    let plan = Plan::new(root, log_n);
+    assert_eq!(
+        root,
+        F::two_adic_generator(log_n),
+        "fixture/library root mismatch"
+    );
+    // Precompute forward and inverse twiddles before validation and timing.
+    // Both the parallel feature and native packed arithmetic are enabled.
+    let plan = Radix2DFTSmallBatch::<F>::new(n);
     let inputs = [&values[1..n + 1], &values[n + 1..]];
     measure_workload(
         &format!("ntt-koalabear-{log_n}-{}", args[2]),
@@ -170,9 +72,9 @@ pub fn run(args: &[String]) {
         validate,
         |i| {
             Output(if args[2] == "forward" {
-                plan.forward(inputs[i % 2])
+                plan.dft(inputs[i % 2].to_vec())
             } else {
-                plan.inverse(inputs[i % 2])
+                plan.idft(inputs[i % 2].to_vec())
             })
         },
     );
@@ -181,25 +83,19 @@ pub fn run(args: &[String]) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use p3_field::TwoAdicField;
 
-    // Independent O(n²) oracle catches root direction, bit ordering and normalization errors.
+    // Check the selected API's root, natural ordering and normalization contract.
     #[test]
-    fn schedule_matches_direct_transform() {
+    fn library_api_matches_direct_transform() {
         for log_n in 0..=5 {
             let n = 1 << log_n;
             let root = F::two_adic_generator(log_n);
-            let plan = Plan::new(root, log_n);
+            let plan = Radix2DFTSmallBatch::<F>::new(n);
             let input: Vec<_> = (0..n)
                 .map(|i| F::from_u32((i * i + 7 * i + 3) as u32))
                 .collect();
-            let output = plan.forward(&input);
-            for (i, actual) in output.iter().enumerate() {
-                let k = if log_n == 0 {
-                    0
-                } else {
-                    i.reverse_bits() >> (usize::BITS as usize - log_n)
-                };
+            let output = plan.dft(input.clone());
+            for (k, actual) in output.iter().enumerate() {
                 let expected: F = input
                     .iter()
                     .enumerate()
@@ -207,7 +103,7 @@ mod tests {
                     .sum();
                 assert_eq!(*actual, expected);
             }
-            assert_eq!(plan.inverse(&output), input);
+            assert_eq!(plan.idft(output), input);
         }
     }
 }

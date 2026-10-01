@@ -1,4 +1,4 @@
-"""Matched scalar planned NTT suite for bench-fields.py."""
+"""Lean planned NTT versus the optimized Plonky3 API."""
 import json
 import os
 from pathlib import Path
@@ -10,10 +10,22 @@ import time
 
 
 def run(args, common, allowed):
-    cpu = min(allowed) if args.cpu is None else args.cpu
-    if cpu not in allowed:
-        raise SystemExit("--cpu is outside allowed affinity")
-    os.sched_setaffinity(0, {cpu})
+    if args.cpus:
+        cpus = [int(c) for c in args.cpus.split(",")]
+    elif args.cpu is not None:
+        cpus = [args.cpu]
+    else:
+        physical = {}
+        for c in sorted(allowed):
+            siblings = Path(f"/sys/devices/system/cpu/cpu{c}/topology/thread_siblings_list").read_text()
+            physical.setdefault(siblings, c)
+        preferred = list(physical.values()) + sorted(allowed - set(physical.values()))
+        cpus = preferred[:min(16, 2 ** (len(preferred).bit_length() - 1))]
+    workers = len(cpus)
+    if not workers or workers & (workers - 1) or len(set(cpus)) != workers or not set(cpus) <= allowed:
+        raise SystemExit("select a power-of-two number of distinct available CPUs")
+    physical_cores = len({Path(f"/sys/devices/system/cpu/cpu{c}/topology/thread_siblings_list").read_text() for c in cpus})
+    os.sched_setaffinity(0, {cpus[0]})
     os.environ["LEAN_NUM_THREADS"] = "1"
     os.environ["CARGO_BUILD_JOBS"] = "1"
     os.environ.setdefault("RUSTFLAGS", "-C target-cpu=native")
@@ -22,6 +34,11 @@ def run(args, common, allowed):
     build = common.prepare_build(args.skip_build)
     lean = common.ROOT / ".lake/build/bin/CompPolyNTTBench"
     rust = common.ROOT / "bench/rust/target/release/comppoly-field-bench"
+    os.sched_setaffinity(0, set(cpus))
+    runtime_env = dict(os.environ, LEAN_NUM_THREADS=str(workers), RAYON_NUM_THREADS=str(workers))
+    rust_ntt = json.loads(subprocess.check_output([str(rust), "--ntt", "--info"], env=runtime_env, text=True))
+    if rust_ntt["workers"] != workers:
+        raise ValueError("Plonky3 worker count mismatch")
     # Tiny odd/even sizes exercise leftover radix-2 stages; only large sizes are timed.
     sizes = (12, 16, 20)
     fixtures = {}
@@ -38,7 +55,8 @@ def run(args, common, allowed):
                 stream.write(value.to_bytes(4, "little"))
         fixtures[log_n] = path
     manifest = {
-        "build": build, "cpu": cpu, "workers": 1, "runs": args.runs,
+        "build": build, "cpus": cpus, "workers": workers, "physical_cores": physical_cores, "runs": args.runs,
+        "rust_ntt": rust_ntt, "ordering": "natural input and output",
         "cpu_model": next(s.split(":", 1)[1].strip() for s in Path("/proc/cpuinfo").read_text().splitlines() if s.startswith("model name")),
         "memory_gib": int(Path("/proc/meminfo").read_text().splitlines()[0].split()[1]) / 1024**2,
         "os": platform.freedesktop_os_release()["PRETTY_NAME"], "kernel": platform.release(),
@@ -51,7 +69,7 @@ def run(args, common, allowed):
     def measure(language, log_n, direction, label, validate):
         cmd = [str(lean)] if language == "lean" else [str(rust), "--ntt"]
         cmd += [str(fixtures[log_n]), str(log_n), direction, str(validate).lower()]
-        result = subprocess.check_output(cmd, cwd=common.ROOT, text=True)
+        result = subprocess.check_output(cmd, cwd=common.ROOT, env=runtime_env, text=True)
         (out / f"{label}-{log_n}-{direction}-{language}.jsonl").write_text(result)
         row = json.loads(result)
         if row["group_key"] != f"ntt-koalabear-{log_n}-{direction}" or row["work_units"] != 1:
@@ -80,8 +98,8 @@ def run(args, common, allowed):
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     if args.validate_only:
         return
-    lines = ["# KoalaBear planned NTT", "", "Milliseconds per complete transform; median of paired run medians ± between-run MAD. Both implementations use one thread. Lean / Rust > 1 means Rust is faster.", "",
-             "| Elements | Direction | Lean | Rust | Lean / Rust |", "|---:|---|---:|---:|---:|"]
+    lines = ["# KoalaBear NTT: Lean vs optimized Plonky3", "", "Milliseconds per complete transform; median of paired run medians ± between-run MAD. Both implementations receive the same CPU budget; Lean currently uses its sequential plan. Lean / Rust > 1 means Rust is faster.", "",
+             "| Elements | Direction | Lean | Plonky3 | Lean / Rust |", "|---:|---|---:|---:|---:|"]
     for log_n in sizes:
         for direction in ("forward", "inverse"):
             medians, cells = [], []
@@ -93,11 +111,11 @@ def run(args, common, allowed):
                 cells.append(f"{median:.4f} ± {mad:.4f}")
             lines.append(f"| {2**log_n:,} | {direction} | {' | '.join(cells)} | {medians[0] / medians[1]:.2f}× |")
     lines += ["", "## Machine and method", "",
-              f"- {manifest['cpu_model']}; {manifest['memory_gib']:.1f} GiB; {manifest['os']}, kernel {manifest['kernel']}; one thread pinned to CPU {cpu}.",
+              f"- {manifest['cpu_model']}; {manifest['memory_gib']:.1f} GiB; {manifest['os']}, kernel {manifest['kernel']}; {workers} workers on {physical_cores} physical cores, logical CPUs {cpus}.",
               f"- {build['context']['lean_version']}; {build['context']['rust_version']}; Rust flags {build['context']['rustflags']!r}. Source `{build['context']['commit']}`, dirty={build['context']['dirty']}.",
-              "- Lean uses the existing proved NTTFast.Plan. Rust uses scalar Plonky3 KoalaBear arithmetic and the exact same radix-4 butterfly schedule, with radix-2 tails at odd log sizes. This is not Plonky3's packed or parallel FFT API.",
-              "- Forward: natural-order coefficients to bit-reversed evaluations. Inverse: bit-reversed evaluations to natural-order coefficients, including 1/n normalization. Both use the same certified root exported by Lean.",
-              "- Plan construction, twiddle tables and fixture decoding are outside timing. Each transform includes its mutable working-buffer copy, arithmetic and output disposal; inverse normalization is timed. Inputs remain reusable and unchanged on both sides.",
+              f"- Lean uses the existing proved NTTFast.Plan. Rust calls {rust_ntt['implementation']} from p3-dft 0.4.2 directly, with packing width {rust_ntt['packing_width']}; native SIMD is enabled. Plonky3's parallel feature is enabled. This compares different algorithms implementing the same transform.",
+              "- Both APIs use natural-order inputs and outputs. Forward maps coefficients to evaluations; inverse maps evaluations to coefficients, including 1/n normalization. The fixture root must equal both Lean's certified root and Plonky3's selected root.",
+              "- Plan construction, twiddle tables and fixture decoding are outside timing. Input copying, arithmetic, output disposal and ordering conversions are timed, including Lean's bit-reversal adapter. Inverse normalization is timed. Inputs remain reusable and unchanged on both sides.",
               "- Two deterministic inputs alternate to prevent result hoisting. Full output digests are checked outside timing; a four-position output sink is used inside timing. Native validation includes tiny odd/even sizes and zero/one/near-modulus coordinates.",
               f"- {args.runs} alternating Lean/Rust pairs, 50 ms warmup and 20 samples per invocation. Shared-host load {manifest['load_start']} → {manifest['load_end']}; other work may affect timings.", ""]
     (out / "report.md").write_text("\n".join(lines))

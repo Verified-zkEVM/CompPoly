@@ -8,6 +8,7 @@ publish = false
 rayon = "=1.11.0"
 binius_field = { git = "https://github.com/IrreducibleOSS/binius", rev = "47675e19c86c0fb676f75437073a77af8e337938" }
 p3-field = "=0.4.2"
+p3-dft = { version = "=0.4.2", features = ["parallel"] }
 p3-koala-bear = "=0.4.2"
 p3-mersenne-31 = "=0.4.2"
 p3-goldilocks = "=0.4.2"

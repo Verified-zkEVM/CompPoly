@@ -8,7 +8,7 @@ module
 public import CompPolyBench.Univariate.Common
 public import CompPoly.Univariate.NTTFast.Correctness
 
-/-! # Matched planned KoalaBear NTT benchmarks -/
+/-! # Natural-order KoalaBear NTT benchmarks against optimized Plonky3 -/
 
 public section
 open CompPoly CompPolyBench
@@ -50,12 +50,15 @@ def main (args : List String) : IO UInt32 := do
     validateOnlyRef.set (validate == "true")
     let row ← runTimedSpec
       { name := s!"ntt-koalabear-{logN}-{direction}-fast", representation := "Array",
-        method := "planned radix-4", field := "koalabear", inputShape := s!"{n} elements",
+        method := "planned radix-4, natural order", field := "koalabear",
+        inputShape := s!"{n} elements",
         digestIterations := 2, digestClass := direction }
       .medium
       (fun i ↦
         let input := inputs[i % 2]!
-        if direction == "forward" then plan.forwardImpl input else plan.inverseImpl input)
+        if direction == "forward" then
+          CPolynomial.NTT.Transform.bitRevPermute domain (plan.forwardImpl input)
+        else plan.inverseImpl (CPolynomial.NTT.Transform.bitRevPermute domain input))
       (checksumArray checksumKoalaBearFast)
       (sink := arraySampleSink (fun x ↦ x.toNat.toUInt64))
     let record : BenchRecord := { row with groupKey := s!"ntt-koalabear-{logN}-{direction}" }

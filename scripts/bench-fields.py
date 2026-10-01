@@ -173,7 +173,7 @@ def main():
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--skip-build", action="store_true", help="reuse executables only if recorded build metadata and hashes match")
     parser.add_argument("--cpu", type=int, help="logical CPU; default: first allowed CPU")
-    parser.add_argument("--cpus", help="distinct logical CPU IDs for polynomial evaluation (one worker each; SMT allowed), e.g. 8,9,10,11")
+    parser.add_argument("--cpus", help="distinct logical CPU IDs for polynomial evaluation and NTT (one worker each; SMT allowed), e.g. 8,9,10,11")
     parser.add_argument("--runs", type=int, default=5)
     parser.add_argument("--out-dir", type=Path)
     args = parser.parse_args()

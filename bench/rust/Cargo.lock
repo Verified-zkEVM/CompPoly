@@ -257,6 +257,7 @@ dependencies = [
  "ark-bn254",
  "ark-ff",
  "binius_field",
+ "p3-dft",
  "p3-field",
  "p3-goldilocks",
  "p3-koala-bear",
@@ -594,6 +595,9 @@ name = "p3-maybe-rayon"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54afab3883d8a14676b492709d6c4e9fa535c36718b737db0817aacfaaaa11f6"
+dependencies = [
+ "rayon",
+]
 
 [[package]]
 name = "p3-mds"
