@@ -10,6 +10,7 @@ import statistics
 import subprocess
 import time
 import tomllib
+import bench_poly_eval
 
 ROOT = Path(__file__).resolve().parents[1]
 SUITES = {
@@ -37,6 +38,7 @@ def command(args, cwd=ROOT):
 
 BUILD_RECORD = ROOT / ".lake/build/field-bench-build.json"
 EXECUTABLES = (".lake/build/bin/CompPolyBench", ".lake/build/bin/CompPolyFieldFixtures",
+               ".lake/build/bin/CompPolyEvalBench",
                "bench/rust/target/release/comppoly-field-bench")
 
 
@@ -90,7 +92,7 @@ def prepare_build(skip):
         return record
     # A failed/interrupted build must not leave a valid-looking old record.
     BUILD_RECORD.unlink(missing_ok=True)
-    subprocess.run(["lake", "build", "CompPolyBench", "CompPolyFieldFixtures"], cwd=ROOT, check=True)
+    subprocess.run(["lake", "build", "CompPolyBench", "CompPolyFieldFixtures", "CompPolyEvalBench"], cwd=ROOT, check=True)
     subprocess.run(["cargo", "build", "--release", "--locked", "-j", "1"], cwd=ROOT / "bench/rust", check=True)
     if build_context() != context:
         raise SystemExit("Sources or build settings changed during the build; rerun before measuring.")
@@ -166,17 +168,22 @@ def report(out, measurements, manifest, fields, expected):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--suite", choices=[*SUITES, "all"], default="small-prime")
+    parser.add_argument("--suite", choices=[*SUITES, "poly-eval", "all"], default="small-prime")
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--skip-build", action="store_true", help="reuse executables only if recorded build metadata and hashes match")
     parser.add_argument("--cpu", type=int, help="logical CPU; default: first allowed CPU")
+    parser.add_argument("--cpus", help="distinct logical CPU IDs for polynomial evaluation (one worker each; SMT allowed), e.g. 8,9,10,11")
     parser.add_argument("--runs", type=int, default=5)
     parser.add_argument("--out-dir", type=Path)
     args = parser.parse_args()
-    fields, groups, expected = selection(args.suite)
     if args.runs < 3:
         parser.error("use at least three paired runs")
     allowed = os.sched_getaffinity(0)
+    if args.suite == "poly-eval":
+        import sys
+        bench_poly_eval.run(args, sys.modules[__name__], allowed)
+        return
+    fields, groups, expected = selection(args.suite)
     cpu = min(allowed) if args.cpu is None else args.cpu
     if cpu not in allowed:
         parser.error(f"CPU {cpu} is outside allowed affinity")
@@ -219,6 +226,8 @@ def main():
     print(f"All {len(expected)} cases: Lean/Rust checksums and operation counts agree.", flush=True)
     verify_build(build, build_context())
     if args.validate_only:
+        if args.suite == "all":
+            run_poly_after_fields(args, allowed, out)
         return
     lock = tomllib.loads((ROOT / "bench/rust/Cargo.lock").read_text())
     binius = next(p for p in lock["package"] if p["name"] == "binius_field")
@@ -255,6 +264,17 @@ def main():
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     report(out, measurements, manifest, fields, expected)
     print(f"Report: {out / 'report.md'}")
+    if args.suite == "all":
+        run_poly_after_fields(args, allowed, out)
+
+
+def run_poly_after_fields(args, allowed, out):
+    import copy
+    import sys
+    poly_args = copy.copy(args)
+    poly_args.out_dir = out / "poly-eval"
+    poly_args.skip_build = True
+    bench_poly_eval.run(poly_args, sys.modules[__name__], allowed)
 
 
 if __name__ == "__main__":

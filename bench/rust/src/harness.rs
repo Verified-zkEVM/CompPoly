@@ -82,8 +82,20 @@ pub fn measure<F: BenchValue>(
     validate_only: bool,
     run: impl Fn(usize) -> F,
 ) {
+    measure_workload(&fixture.group_key, mode, units, 64, validate_only, run);
+}
+
+/// Shared timing and digest machinery, with workload-specific validation period.
+pub fn measure_workload<F: BenchValue>(
+    key: &str,
+    mode: &str,
+    units: usize,
+    period: usize,
+    validate_only: bool,
+    run: impl Fn(usize) -> F,
+) {
     // Strong agreement check is separate from timing. One canonical result per chain.
-    let checksum = (0..64).fold(0u128, |acc, i| {
+    let checksum = (0..period).fold(0u128, |acc, i| {
         (acc * 16777619 + run(i).checksum() + 97) % 18446744073709551557
     });
     let mut samples = Vec::new();
@@ -121,7 +133,7 @@ pub fn measure<F: BenchValue>(
     println!(
         "{}",
         json!({
-            "group_key": fixture.group_key, "mode": mode, "work_units": units,
+            "group_key": key, "mode": mode, "work_units": units,
             "checksum": checksum.to_string(), "samples_picos": samples,
             "iters_per_sample": iters, "warmup_iterations": warmup_iterations,
             "sink_digest": sink.to_string(),

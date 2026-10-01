@@ -50,6 +50,10 @@ lean_exe CompPolyBench where
 lean_exe CompPolyFieldFixtures where
   srcDir := "bench"
 
+/-- One-polynomial, one-point evaluation runner for the shared Rust comparison. -/
+lean_exe CompPolyEvalBench where
+  srcDir := "bench"
+
 /-- Kernel-level axiom / `sorry` accounting with a committed regression baseline
 (`scripts/axiom_baseline.json`). Runtime-imports the built CompPoly oleans, so run it
 after `lake build`. See `scripts/AxiomSweep.lean`. -/

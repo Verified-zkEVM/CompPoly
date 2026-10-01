@@ -185,7 +185,7 @@ jobs:
         continue-on-error: true
         run: lake build --wfail
       - name: Build evaluation benchmark executable
-        run: lake build CompPolyBench CompPolyFieldFixtures
+        run: lake build CompPolyBench CompPolyFieldFixtures CompPolyEvalBench
       - name: Install field benchmark Rust toolchain
         working-directory: bench/rust
         run: rustup show active-toolchain

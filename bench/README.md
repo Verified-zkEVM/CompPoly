@@ -321,14 +321,15 @@ group is caught rather than silently dropped.
 
 ## Rust field comparison
 
-Run `python3 scripts/bench-fields.py --suite all --cpu 0` from the repository root on Linux. Choose an available logical CPU: the driver pins itself and both runners there, builds with one job, and runs Lean and Rust sequentially. It validates matching result digests and operation counts before five paired timing runs in alternating order. `--validate-only` skips timing; `--skip-build` requires a matching build record from a previous driver run.
+Run `python3 scripts/bench-fields.py --suite all --cpu 0` from the repository root on Linux. For scalar field suites, choose an available logical CPU: the driver pins itself and both runners there, builds with one job, and runs Lean and Rust sequentially. It validates matching result digests and operation counts before five paired timing runs in alternating order. `--validate-only` skips timing; `--skip-build` requires a matching build record from a previous driver run.
 
 | Suite | Selected fields and operations | Rust library |
 | --- | --- | --- |
 | `small-prime` (default) | KoalaBear, Mersenne31, Goldilocks: add/mul latency and throughput, inv/exp latency | Plonky3 0.4.2 |
 | `large-prime` | BN254 scalar field: add/mul latency and throughput, inv/exp latency | arkworks 0.5.0 (`ark_bn254::Fr`) |
 | `binary` | 8-, 64-, 128-bit Fan–Paar towers: mul latency/throughput, square/inv latency | Binius 0.2.0, pinned Git revision |
-| `all` | All three suites, 36 cases total | All three libraries |
+| `poly-eval` | One polynomial at one point: KoalaBear, Goldilocks, BN254 scalar, binary tower 128; 2^12, 2^16, 2^20 coefficients | Same libraries, Rayon 1.11 worker pool |
+| `all` | The 36 scalar cases plus the polynomial evaluation suite | All three libraries |
 
 One Cargo project under `bench/rust/` shares the measurement and chain harness. Library-specific modules decode inputs and supply canonical checksums and cheap result sinks. Rust nightly-2026-02-26 is pinned for Binius’s x86 support, and Cargo.lock pins dependencies. The driver defaults `RUSTFLAGS` to `-C target-cpu=native` and records its value and the host instruction features; CI builds with the same flag. CI validates all selected suites on every PR; it does not gate on relative speed. Tables show fast Lean against Rust. Prime-field reference implementations still participate in validation and runs, but are omitted from the tables. Binary rows time only the verified fast Lean implementation and Binius; their cross-language result agreement is checked before timing.
 
@@ -361,3 +362,15 @@ The `fields-tower-bt{8,64,128}-{mul,square,inv}` groups replace the old recursiv
 ### Build provenance
 
 The driver records the source commit and source-content hash (including untracked, nonignored files), toolchain versions, build environment, native CPU features, and hashes of all three executables in `.lake/build/field-bench-build.json`. `--skip-build` rejects missing or mismatched records and asks for a normal run; normal runs use Lake/Cargo’s incremental builds. The run manifest copies that build record instead of inferring binary provenance from the current environment. Sources and executable hashes are checked again after validation and timing. Build flags must also match, including `CARGO_ENCODED_RUSTFLAGS` if set.
+
+### One polynomial at one point
+
+Run `python3 scripts/bench-fields.py --suite poly-eval --cpus 1,2,3,4`. Supply distinct logical CPU IDs available on your machine; the number of workers equals the number of selected CPUs and must be a power of two, at least two. SMT siblings are allowed; the report distinguishes worker count from physical core count. Without `--cpus`, the driver selects up to sixteen logical CPUs (the largest power of two available, capped at sixteen), selecting distinct physical cores before adding SMT siblings. `--suite all` includes this suite after scalar field benchmarks; `--cpu` selects the scalar core and `--cpus` selects the polynomial cores independently. `--validate-only` checks all cross-language/method result digests without collecting timings.
+
+The table compares CompPoly's existing `evalHorner` with the new `evalFast`, and matched Rust implementations. Each invocation evaluates one dense polynomial at one point. It cycles through four deterministic points across invocations, not a batch of points. The three coefficient counts are 4,096, 65,536 and 1,048,576; fields are KoalaBear, Goldilocks, BN254 scalar and the 128-bit Fan–Paar binary tower. These rows use the fast field carriers. No reference-field or FFT timings are included.
+
+`evalFast x p logWorkers` defaults to `logWorkers = 4` (sixteen blocks) and uses up to `2 ^ logWorkers` independent Horner leaves over contiguous coefficient ranges, without copying coefficients. It combines a lower and upper range as `upper * x^lowerLength + lower`; explicit square-and-multiply has the same operation schedule in Rust. Tasks form a dependency tree using `Task.bind`/`Task.map`; only the caller waits. Launching a pure task and then doing sequential work can allow the compiler to delay the launch, so the explicit dependency tree is intentional. `evalFast_eq_evalHorner` proves correctness over any semiring, including empty polynomials and uneven splits. It leaves `eval` and `evalHorner` unchanged.
+
+Input decoding, polynomial construction, runtime pool creation and validation are outside timing. These are steady-state timings after validation/warmup; one-time input-sharing costs are excluded. Task scheduling, powers and joins are inside every timed evaluation. Rust uses a persistent Rayon pool with the same worker count and split tree. Horner is pinned to the first selected CPU; parallel evaluation uses the whole set. For scaling experiments, pass 8 or 16 logical CPU IDs to measure 8 or 16 workers; 16 workers on an 8-core/16-thread machine measures SMT, not 16 physical cores. Results report milliseconds per complete evaluation, median of paired run medians and between-run MAD, plus machine details. Small polynomials may lose to task overhead. Shared-host contention remains visible in the measurements.
+
+The fixture files store four points followed by coefficients in ascending degree order, using fixed-width little-endian coordinates (4/8/32/16 bytes respectively). The deterministic generator uses seed `comppoly-poly-eval-v1:<field>` and nonzero canonical coordinates. Binary coordinates use the same Fan–Paar basis as the scalar suite. Fixture hashes, source/build hashes, CPU affinity and worker counts are recorded in `manifest.json`. `CompPolyEvalBench` reads these inputs; `bench/rust/src/poly_eval.rs` supplies the matched Rust workload; `scripts/bench_poly_eval.py` extends the shared driver.

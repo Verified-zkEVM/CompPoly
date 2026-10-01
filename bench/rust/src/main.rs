@@ -2,6 +2,7 @@
 mod binary;
 mod harness;
 mod large_prime;
+mod poly_eval;
 mod small_prime;
 use serde::Deserialize;
 
@@ -38,6 +39,10 @@ fn canonical(bytes: &[u8], modulus: &[u8]) -> bool {
 
 fn main() {
     let args: Vec<_> = std::env::args().skip(1).collect();
+    if args.first().map(String::as_str) == Some("--poly-eval") {
+        poly_eval::run(&args[1..]);
+        return;
+    }
     assert!(
         args.len() == 1 || (args.len() == 2 && args[1] == "--validate-only"),
         "usage: comppoly-field-bench FIXTURES.jsonl [--validate-only]"
