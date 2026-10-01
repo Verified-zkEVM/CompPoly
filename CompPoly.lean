@@ -317,6 +317,7 @@ public import CompPoly.Univariate.Deriv
 public import CompPoly.Univariate.DivisionCorrectness
 public import CompPoly.Univariate.EuclideanAlgorithm
 public import CompPoly.Univariate.EvalFast
+public import CompPoly.Univariate.EvalFastFields
 public import CompPoly.Univariate.Lagrange
 public import CompPoly.Univariate.LagrangeArray
 public import CompPoly.Univariate.Linear

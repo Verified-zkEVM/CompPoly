@@ -26,6 +26,16 @@ namespace CompPoly.CPolynomial
 def evalRange [Semiring R] (p : Array R) (x : R) (lo hi : Nat) : R :=
   p.foldr (fun a acc ↦ acc * x + a) 0 hi lo
 
+/-- A field-specific leaf evaluator, with its agreement with Horner evaluation. -/
+class EvalKernel (R : Type*) [Semiring R] where
+  range : Array R → R → Nat → Nat → R
+  range_eq : ∀ p x lo hi, range p x lo hi = evalRange p x lo hi
+
+/-- Default leaves use the semiring’s existing arithmetic. -/
+instance (priority := low) [Semiring R] : EvalKernel R where
+  range := evalRange
+  range_eq := by intros; rfl
+
 /-- Explicit square-and-multiply, shared with the Rust workload. -/
 @[specialize]
 def evalPower [Monoid R] (x : R) (n : Nat) : R :=
@@ -53,10 +63,10 @@ theorem evalPower_eq_pow [Monoid R] (x : R) (n : Nat) : evalPower x n = x ^ n :=
 
 /-- Build a dependency tree: worker threads never block waiting for child tasks. -/
 @[specialize]
-def evalParallelTask [Semiring R] (p : Array R) (x : R) (lo hi : Nat) : Nat → Task R
-  | 0 => Task.spawn fun _ ↦ evalRange p x lo hi
+def evalParallelTask [Semiring R] [EvalKernel R] (p : Array R) (x : R) (lo hi : Nat) : Nat → Task R
+  | 0 => Task.spawn fun _ ↦ EvalKernel.range p x lo hi
   | depth + 1 =>
-    if hi - lo < 2 then Task.spawn fun _ ↦ evalRange p x lo hi else
+    if hi - lo < 2 then Task.spawn fun _ ↦ EvalKernel.range p x lo hi else
       let mid := lo + (hi - lo) / 2
       let lower := evalParallelTask p x lo mid depth
       let upper := evalParallelTask p x mid hi depth
@@ -65,12 +75,12 @@ def evalParallelTask [Semiring R] (p : Array R) (x : R) (lo hi : Nat) : Nat → 
 
 /-- Parallel range evaluation; only the calling thread waits for the final result. -/
 @[inline, specialize]
-def evalParallel [Semiring R] (p : Array R) (x : R) (lo hi depth : Nat) : R :=
+def evalParallel [Semiring R] [EvalKernel R] (p : Array R) (x : R) (lo hi depth : Nat) : R :=
   (evalParallelTask p x lo hi depth).get
 
 /-- Evaluate one polynomial at one point using up to `2 ^ logWorkers` concurrent blocks. -/
 @[inline, specialize]
-def evalFast [Semiring R] (x : R) (p : CPolynomial R) (logWorkers : Nat := 4) : R :=
+def evalFast [Semiring R] [EvalKernel R] (x : R) (p : CPolynomial R) (logWorkers : Nat := 4) : R :=
   evalParallel p.val x 0 p.val.size logWorkers
 
 private theorem horner_affine [Semiring R] (xs : List R) (x acc : R) :
@@ -97,29 +107,30 @@ private theorem evalRange_split [Semiring R] (p : Array R) (x : R)
   simp only [Array.length_toList, Array.size_extract_of_le (hmid.trans hhi)]
 
 /-- Every task subtree agrees with sequential evaluation of its coefficient range. -/
-theorem evalParallelTask_get_eq_evalRange [Semiring R] (p : Array R) (x : R)
+theorem evalParallelTask_get_eq_evalRange [Semiring R] [EvalKernel R] (p : Array R) (x : R)
     (depth lo hi : Nat) (hlo : lo ≤ hi) (hhi : hi ≤ p.size) :
     (evalParallelTask p x lo hi depth).get = evalRange p x lo hi := by
   induction depth generalizing lo hi with
-  | zero => rfl
+  | zero => exact EvalKernel.range_eq p x lo hi
   | succ depth ih =>
     rw [evalParallelTask]
     split
-    · rfl
+    · exact EvalKernel.range_eq p x lo hi
     · dsimp only
       simp only [Task.bind, Task.map]
       rw [ih _ _ (by omega) hhi, ih _ _ (by omega) (by omega), evalPower_eq_pow]
       exact (evalRange_split p x lo (lo + (hi - lo) / 2) hi (by omega) (by omega) hhi).symm
 
 /-- Parallel evaluation computes exactly the existing Horner evaluator. -/
-theorem evalFast_eq_evalHorner [Semiring R] (x : R) (p : CPolynomial R)
+theorem evalFast_eq_evalHorner [Semiring R] [EvalKernel R] (x : R) (p : CPolynomial R)
     (logWorkers : Nat) : evalFast x p logWorkers = p.evalHorner x := by
   rw [evalFast, evalParallel,
     evalParallelTask_get_eq_evalRange p.val x logWorkers 0 p.val.size (by omega) (by omega)]
   rfl
 
 /-- Parallel evaluation agrees with the mathematical polynomial evaluation API. -/
-theorem evalFast_eq_eval [Semiring R] (x : R) (p : CPolynomial R) (logWorkers : Nat) :
+theorem evalFast_eq_eval [Semiring R] [EvalKernel R] (x : R) (p : CPolynomial R)
+    (logWorkers : Nat) :
     evalFast x p logWorkers = p.eval x :=
   (evalFast_eq_evalHorner x p logWorkers).trans (eval_horner_eq_eval x p)
 

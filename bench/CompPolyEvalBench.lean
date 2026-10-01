@@ -7,7 +7,7 @@ module
 
 public import CompPolyBench.Fields.Inputs
 public import CompPoly.Fields.Binary.Tower.Fast
-public import CompPoly.Univariate.EvalFast
+public import CompPoly.Univariate.EvalFastFields
 
 /-! # One-polynomial, one-point evaluation against Rust -/
 
@@ -26,7 +26,7 @@ def readCoordinates (bytes : ByteArray) (width count : Nat) : Array Nat := Id.ru
 
 /-- Run the existing Horner API or the parallel API on a prebuilt polynomial. -/
 @[specialize]
-def runEval {F : Type} [Semiring F] [BEq F] [LawfulBEq F]
+def runEval {F : Type} [Semiring F] [CPolynomial.EvalKernel F] [BEq F] [LawfulBEq F]
     (field : String) (values : Array Nat) (n depth : Nat) (mode : String)
     (decode : Nat → F) (checksum : F → Nat) (sink : F → UInt64) : IO Unit := do
   let points := (values.extract 0 4).map decode

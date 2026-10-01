@@ -136,8 +136,8 @@ def run(args, common, allowed):
               f"- {build['context']['lean_version']}; {build['context']['rust_version']}; Rust flags {build['context']['rustflags']!r}. Source `{build['context']['commit']}`, dirty={build['context']['dirty']}.",
               "- Plonky3 for KoalaBear/Goldilocks, arkworks BN254 scalar, Binius Fan–Paar 128-bit tower. Identical fixed-width input bytes in both languages.",
               "- Each call evaluates one prebuilt polynomial at one point. Four varying points prevent constant-result timing; there is no batched evaluation or shared power table.",
-              "- Same binary split tree, zero-initialized Horner leaves, explicit square-and-multiply schedule, and high × power + low joins. No coefficient copies, FFT, or explicit SIMD.",
-              "- Task scheduling, per-call powers and joins are timed. Runtime worker pools and input decoding/construction are outside timing; validation/warmup also excludes first-use input-sharing costs. Lean uses Task.spawn; Rust uses a persistent Rayon pool.",
+              "- Same binary split tree, zero-initialized leaves, explicit square-and-multiply schedule, and high × power + low joins. Both parallel evaluators use custom lazy multiply-add kernels for prime fields and normalize at leaf boundaries; binary leaves are unchanged. Rust powers/joins use Plonky3/arkworks/Binius. Horner remains the baseline using existing field operations.",
+              "- Task scheduling, per-call powers and joins are timed. Runtime worker pools and input decoding/construction, including Rust raw representations, are outside timing; validation/warmup also excludes first-use input-sharing costs. Lean uses Task.spawn; Rust uses a persistent Rayon pool.",
               "- Four full-result digests agree across both languages and both methods before timing. Each run uses the existing 50 ms warmup / 20-sample harness. Only the final evaluation result is consumed.", ""]
     (out / "report.md").write_text("\n".join(lines))
     print(f"Report: {out / 'report.md'}")
