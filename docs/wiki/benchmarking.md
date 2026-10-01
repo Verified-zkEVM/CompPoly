@@ -503,3 +503,5 @@ A separate five-pair Lean/Rust run on clean `770f992` passed all 24 result check
 ### Lazy polynomial-evaluation leaves
 
 `CompPoly.Univariate.EvalFastFields` installs proved `EvalKernel` instances for KoalaBear, Goldilocks and BN254 scalar. Parallel leaves defer normalization using field-specific bounds, then return canonical values for the shared power/join tree. Both languages implement the same leaf arithmetic; Rust's parallel evaluator uses custom lazy kernels with Plonky3/arkworks carriers. The sequential `evalHorner` baseline and binary-field leaves are unchanged. See the [polynomial benchmark instructions](../../bench/README.md#one-polynomial-at-one-point) for the execution model and timing boundaries.
+
+BN254's lazy leaf uses scalar accumulator parameters and machine-word indices. Its modulus stays a parameter across a `@[noinline]` loop boundary so Clang can recognize the widening-product pattern in Montgomery reduction. Keep this boundary when refactoring; check generated machine code and paired measurements before embedding constants or inlining the loop. This changes code generation, not the arithmetic schedule shared with Rust.

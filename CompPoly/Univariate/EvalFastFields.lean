@@ -357,18 +357,145 @@ private theorem condSub_cast_bn (t : Limbs4) :
   · rw [Nat.cast_sub (by omega)]
     simp only [ZMod.natCast_self, sub_zero]
 
+private theorem pred_toNat (i stop : USize) (h : stop < i) :
+    (i - 1).toNat = i.toNat - 1 := by
+  have hh : (1 : USize) ≤ i := by
+    rw [USize.le_iff_toNat_le]
+    have := USize.lt_iff_toNat_lt.mp h
+    simp only [USize.toNat_one]
+    omega
+  rw [USize.toNat_sub_of_le _ _ hh, USize.toNat_one]
+
+/-- Horner loop with machine-word indices and scalar accumulator arguments.
+Keep the modulus as parameters and this function out of line: embedding constant modulus
+limbs prevents clang from recognizing some widening products in the Montgomery reduction. -/
+@[noinline]
+def evalScalarLoop (q : Limbs4) (ni : UInt64) (p : Array ScalarField) (x : ScalarField)
+    (stop : USize)
+    (i : USize) (hi : i.toNat ≤ p.size) (a0 a1 a2 a3 : UInt64) : Limbs4 :=
+  if h : stop < i then
+    let j := i - 1
+    let a := p.uget j (by
+      dsimp only [j]
+      rw [pred_toNat i stop h]
+      have := USize.lt_iff_toNat_lt.mp h
+      omega)
+    let (r0, r1, r2, r3, _) :=
+      addLimbs (evalProductRaw q ni x.val ⟨a0, a1, a2, a3⟩) a.val
+    let r : Limbs4 := ⟨r0, r1, r2, r3⟩
+    evalScalarLoop q ni p x stop j (by
+      dsimp only [j]
+      rw [pred_toNat i stop h]
+      omega) r.l0 r.l1 r.l2 r.l3
+  else ⟨a0, a1, a2, a3⟩
+termination_by i.toNat
+decreasing_by
+  rw [pred_toNat i stop h]
+  have := USize.lt_iff_toNat_lt.mp h
+  omega
+
+/-- Use native indices when the range fits a machine word. -/
+@[inline]
+def evalScalarRange (p : Array ScalarField) (x : ScalarField) (lo hi : Nat) : Limbs4 :=
+  let start := min hi p.size
+  if lo < start then
+    if h : start < USize.size then
+      evalScalarLoop instMont64x4Field.modulusLimbs instMont64x4Field.montgomeryNegInv
+        p x lo.toUSize start.toUSize (by
+          rw [Nat.toUSize, USize.toNat_ofNat', Nat.mod_eq_of_lt h]
+          exact Nat.min_le_right _ _) 0 0 0 0
+    else p.foldr (evalStep x) Limbs4.zero hi lo
+  else Limbs4.zero
+
+private theorem fold_step (p : Array ScalarField) (x : ScalarField) (stop n : Nat)
+    (hi : n ≤ p.size) (h : stop < n) (b : Limbs4) :
+    Array.foldrM.fold (m := Id) (fun a b ↦ evalStep x a b) p stop n hi b =
+      Array.foldrM.fold (m := Id) (fun a b ↦ evalStep x a b) p stop (n - 1) (by omega)
+        (evalStep x p[n - 1] b) := by
+  cases n with
+  | zero => omega
+  | succ n =>
+    rw [Array.foldrM.fold.eq_def]
+    simp only [beq_iff_eq, ne_of_gt h, ↓reduceIte]
+    rfl
+
+private theorem loop_eq (p : Array ScalarField) (x : ScalarField) (stop i : USize)
+    (hi : i.toNat ≤ p.size) (hs : stop.toNat ≤ i.toNat) (a0 a1 a2 a3 : UInt64) :
+    evalScalarLoop instMont64x4Field.modulusLimbs instMont64x4Field.montgomeryNegInv
+      p x stop i hi a0 a1 a2 a3 =
+    Array.foldrM.fold (m := Id) (fun a b ↦ evalStep x a b) p stop.toNat i.toNat hi
+      ⟨a0, a1, a2, a3⟩ := by
+  rw [evalScalarLoop.eq_def]
+  split
+  · rename_i h
+    have hn := USize.lt_iff_toNat_lt.mp h
+    have hp := pred_toNat i stop h
+    rw [fold_step p x stop.toNat i.toNat hi hn]
+    dsimp only
+    rw [loop_eq p x stop (i - 1) _ (by omega)]
+    simp only [Array.uget, hp, evalStep, evalProduct]
+  · rename_i h
+    have hn : i.toNat ≤ stop.toNat := by
+      rw [USize.lt_iff_toNat_lt] at h
+      omega
+    have he : i.toNat = stop.toNat := by omega
+    rw [Array.foldrM.fold.eq_def]
+    simp only [beq_iff_eq, he, ↓reduceIte, pure]
+termination_by i.toNat
+decreasing_by omega
+private theorem evalScalarRange_eq (p : Array ScalarField) (x : ScalarField) (lo hi : Nat) :
+    evalScalarRange p x lo hi = p.foldr (evalStep x) Limbs4.zero hi lo := by
+  unfold evalScalarRange
+  dsimp only
+  split
+  · rename_i hlt
+    split
+    · rename_i hword
+      rw [loop_eq _ _ _ _ _ (by
+        simp only [Nat.toUSize, USize.toNat_ofNat']
+        simp only [Nat.mod_eq_of_lt hword, Nat.mod_eq_of_lt (lt_trans hlt hword)]
+        omega)]
+      simp only [Nat.toUSize, USize.toNat_ofNat']
+      simp only [Nat.mod_eq_of_lt hword, Nat.mod_eq_of_lt (lt_trans hlt hword)]
+      unfold Array.foldr Array.foldrM
+      split
+      · rename_i hsize
+        simp only [Nat.min_eq_left hsize] at hlt ⊢
+        simp only [hlt, ↓reduceIte]
+        rfl
+      · rename_i hsize
+        simp only [Nat.min_eq_right (by omega : p.size ≤ hi)] at hlt ⊢
+        simp only [hlt, ↓reduceIte]
+        rfl
+    · rfl
+  · rename_i hlt
+    unfold Array.foldr Array.foldrM
+    split
+    · rename_i hsize
+      simp only [Nat.min_eq_left hsize] at hlt
+      simp only [hlt, ↓reduceIte]
+      rfl
+    · rename_i hsize
+      simp only [Nat.min_eq_right (by omega : p.size ≤ hi)] at hlt
+      simp only [hlt, ↓reduceIte]
+      rfl
+
 /-- Normalize only at the leaf boundary, using at most two subtractions. -/
 @[inline]
 def evalLazyRange (p : Array ScalarField) (x : ScalarField) (lo hi : Nat) : ScalarField :=
-  let acc := p.foldr (evalStep x) Limbs4.zero hi lo
+  let acc := evalScalarRange p x lo hi
   let q := instMont64x4Field.modulusLimbs
-  ⟨condSub q (condSub q acc), by exact normalize_bound acc (fold_bound p x lo hi)⟩
+  ⟨condSub q (condSub q acc), by exact normalize_bound acc (by
+      dsimp only [acc]
+      rw [evalScalarRange_eq]
+      exact fold_bound p x lo hi)⟩
 
 /-- Lazy evaluation agrees with canonical Horner evaluation. -/
 theorem evalLazyRange_eq (p : Array ScalarField) (x : ScalarField) (lo hi : Nat) :
     evalLazyRange p x lo hi = CompPoly.CPolynomial.evalRange p x lo hi := by
   apply FastField.toField_injective
   rw [FastField.toField_eq]
+  simp only [evalLazyRange, evalScalarRange_eq]
   change ((condSub instMont64x4Field.modulusLimbs
     (condSub instMont64x4Field.modulusLimbs (p.foldr (evalStep x) Limbs4.zero hi lo))).toNat :
       BN254.ScalarField) * _ = _
