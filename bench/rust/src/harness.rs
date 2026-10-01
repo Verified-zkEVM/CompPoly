@@ -5,7 +5,7 @@ use std::{hint::black_box, time::Instant};
 pub const DIGEST_MODULUS: u128 = 18446744073709551557;
 
 /// Canonical digest outside timing; cheap native-word observation after each batch.
-pub trait BenchValue: Copy {
+pub trait BenchValue {
     fn checksum(self) -> u128;
     fn sink(self) -> u64;
 }

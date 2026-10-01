@@ -2,6 +2,7 @@
 mod binary;
 mod harness;
 mod large_prime;
+mod ntt;
 mod poly_eval;
 mod small_prime;
 use serde::Deserialize;
@@ -41,6 +42,10 @@ fn main() {
     let args: Vec<_> = std::env::args().skip(1).collect();
     if args.first().map(String::as_str) == Some("--poly-eval") {
         poly_eval::run(&args[1..]);
+        return;
+    }
+    if args.first().map(String::as_str) == Some("--ntt") {
+        ntt::run(&args[1..]);
         return;
     }
     assert!(

@@ -54,6 +54,10 @@ lean_exe CompPolyFieldFixtures where
 lean_exe CompPolyEvalBench where
   srcDir := "bench"
 
+/-- Matched forward/inverse NTT runner for the shared Rust comparison. -/
+lean_exe CompPolyNTTBench where
+  srcDir := "bench"
+
 /-- Kernel-level axiom / `sorry` accounting with a committed regression baseline
 (`scripts/axiom_baseline.json`). Runtime-imports the built CompPoly oleans, so run it
 after `lake build`. See `scripts/AxiomSweep.lean`. -/
