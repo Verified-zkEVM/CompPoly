@@ -475,6 +475,23 @@ Four additional scalar loop layouts varied whether multiplication and squaring w
 
 A second retained change skips the initial multiply-by-one and the last unused square, without narrowing the natural-number exponent. Against the dedicated-square baseline, five production A/B pairs measured 0.922× time (1.757 → 1.619 μs), again `faster` without `SUSPECT`. Both loops are proved against field exponentiation through `toField` for every natural-number exponent. The two A/B ratios compound to about 14% less exponentiation time.
 
+### Parameter boundaries for canonical four-limb arithmetic
+
+The BN254 lazy-evaluation investigation also exposed an issue in ordinary canonical multiplication: embedding modulus words prevented Clang from recognizing widening products in Montgomery reduction. `FastField.mulKernel` and `FastField.squareKernel` keep those words dynamic across `@[noinline]` boundaries. The underlying `Native64x4` and `Scalar` APIs remain inlineable for custom loops. Arithmetic, canonical reduction, and the existing correctness theorems are unchanged; the field proofs unfold the new wrappers.
+
+Five alternating A/B pairs against `45d6384` on CPU 9 of the Ryzen 7 3700X, using the medium preset and unchanged benchmark workloads, measured:
+
+| BN254 operation | Before | After | Time reduction |
+| --- | ---: | ---: | ---: |
+| Multiplication latency | 35.01 ns/op | 20.86 ns/op | 40.4% |
+| Multiplication throughput workload | 35.10 ns/op | 22.52 ns/op | 35.9% |
+| Exponentiation chain step | 1.617 μs | 0.985 μs | 39.1% |
+| Inversion chain step | 5.763 μs | 5.713 μs | Classified unchanged |
+
+Both multiplication rows and exponentiation were classified `faster`. Across BN254 and multiplication in BLS12-381 scalar, BLS12-377 scalar, secp256k1 scalar and secp256k1 base, the comparison judged 30 rows: 11 faster, 19 unchanged, none slower, no digest mismatch or `SUSPECT`. Harness drift stayed within 3%. The other fields' fast multiplication rows all improved. These are measurements on this Linux host, not replacements for the Apple reference-machine best-times table.
+
+The final multiplication kernel contains 32 widening multiplies and four low-word multiplies; the symmetric square contains 26 widening multiplies and four low-word multiplies. Neither contains partial-product shifts. An isolated earlier experiment changing multiplication alone reduced exponentiation time by 12.5%; adding the squaring boundary then reduced it by another 30%. Final figures above compare both boundaries directly against the original executable. No compiler flags, external functions, benchmark schedules or lazy-reduction rules changed.
+
 ### Goldilocks kernels from PR #392
 
 The benchmark branch incorporates [PR #392](https://github.com/Verified-zkEVM/CompPoly/pull/392). Goldilocks uses a revised wide-product expression, a separate cold borrow path in reduction, shift/subtract for the reduction's middle term, and subtraction-based canonical addition. Inversion and exponentiation keep congruent, potentially noncanonical words inside the chain and canonicalize once at the end. The carrier and public field operations remain canonical. The PR's KoalaBear/BabyBear `conditionalSubtract` inlining was already present on this branch.

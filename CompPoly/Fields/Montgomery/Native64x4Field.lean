@@ -140,9 +140,18 @@ this ownership boundary survives at call sites. -/
     have h := neg_lt _ _ x.val_lt
     rwa [Mont64x4Field.q_toNat] at h⟩
 
+/-- Keep modulus words dynamic so clang recognizes widening products. The scalar API
+continues to inline `Native64x4.mul` directly for callers that retain unboxed state. -/
+@[noinline] def mulKernel (q : Limbs4) (negInv : UInt64) (a b : Limbs4) : Limbs4 :=
+  Native64x4.mul q negInv a b
+
+/-- The same code-generation boundary for the dedicated symmetric square. -/
+@[noinline] def squareKernel (q : Limbs4) (negInv : UInt64) (a : Limbs4) : Limbs4 :=
+  Native64x4.squareCached q negInv a
+
 /-- Fast Montgomery multiplication. -/
 @[inline] def mul (x y : FastField modulus) : FastField modulus :=
-  ⟨Native64x4.mul P.modulusLimbs P.montgomeryNegInv x.val y.val, by
+  ⟨mulKernel P.modulusLimbs P.montgomeryNegInv x.val y.val, by
     have h := (mul_spec P.modulusLimbs P.montgomeryNegInv x.val y.val
       Mont64x4Field.negInv_mul_q x.val_lt).1
     rwa [Mont64x4Field.q_toNat] at h⟩
@@ -156,7 +165,8 @@ this ownership boundary survives at call sites. -/
 
 /-- Dedicated square with shared symmetric limb products. -/
 @[specialize P] def squareCached (x : FastField modulus) : FastField modulus :=
-  ⟨Native64x4.squareCached P.modulusLimbs P.montgomeryNegInv x.val, by
+  ⟨squareKernel P.modulusLimbs P.montgomeryNegInv x.val, by
+    unfold squareKernel
     rw [squareCached_eq_mul]
     exact (mul x x).property⟩
 
@@ -388,7 +398,9 @@ theorem toField_neg (x : FastField modulus) : toField (-x) = -toField x := by
 
 @[simp]
 theorem toField_mul (x y : FastField modulus) : toField (x * y) = toField x * toField y := by
-  rw [toField_eq, toField_eq x, toField_eq y, mul_def, mul, mul_cast x.val y.val x.property]
+  rw [toField_eq, toField_eq x, toField_eq y, mul_def]
+  simp only [mul, mulKernel]
+  rw [mul_cast x.val y.val x.property]
   ring
 
 private theorem mul_assoc' (x y z : FastField modulus) : x * y * z = x * (y * z) := by
