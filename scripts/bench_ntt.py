@@ -56,7 +56,7 @@ def run(args, common, allowed):
         fixtures[log_n] = path
     manifest = {
         "build": build, "cpus": cpus, "workers": workers, "physical_cores": physical_cores, "runs": args.runs,
-        "rust_ntt": rust_ntt, "ordering": "natural input and output",
+        "rust_ntt": rust_ntt, "lean_ntt": {"implementation": "NTTFast.NaturalPlan", "arithmetic_workers": 1, "leanc_args": ["-march=native"]}, "ordering": "natural input and output",
         "cpu_model": next(s.split(":", 1)[1].strip() for s in Path("/proc/cpuinfo").read_text().splitlines() if s.startswith("model name")),
         "memory_gib": int(Path("/proc/meminfo").read_text().splitlines()[0].split()[1]) / 1024**2,
         "os": platform.freedesktop_os_release()["PRETTY_NAME"], "kernel": platform.release(),
@@ -113,9 +113,9 @@ def run(args, common, allowed):
     lines += ["", "## Machine and method", "",
               f"- {manifest['cpu_model']}; {manifest['memory_gib']:.1f} GiB; {manifest['os']}, kernel {manifest['kernel']}; {workers} workers on {physical_cores} physical cores, logical CPUs {cpus}.",
               f"- {build['context']['lean_version']}; {build['context']['rust_version']}; Rust flags {build['context']['rustflags']!r}. Source `{build['context']['commit']}`, dirty={build['context']['dirty']}.",
-              f"- Lean uses the existing proved NTTFast.Plan. Rust calls {rust_ntt['implementation']} from p3-dft 0.4.2 directly, with packing width {rust_ntt['packing_width']}; native SIMD is enabled. Plonky3's parallel feature is enabled. This compares different algorithms implementing the same transform.",
+              f"- Lean uses the proved NTTFast.NaturalPlan with cached permutation, specialized normalization and bounds-proved machine-index butterflies; its benchmark executable uses -march=native. Rust calls {rust_ntt['implementation']} from p3-dft 0.4.2 directly, with packing width {rust_ntt['packing_width']}; native SIMD is enabled. Plonky3's parallel feature is enabled. This compares different algorithms implementing the same transform.",
               "- Both APIs use natural-order inputs and outputs. Forward maps coefficients to evaluations; inverse maps evaluations to coefficients, including 1/n normalization. The fixture root must equal both Lean's certified root and Plonky3's selected root.",
-              "- Plan construction, twiddle tables and fixture decoding are outside timing. Input copying, arithmetic, output disposal and ordering conversions are timed, including Lean's bit-reversal adapter. Inverse normalization is timed. Inputs remain reusable and unchanged on both sides.",
+              "- Plan construction, twiddle tables, cached permutation indices and fixture decoding are outside timing. Input copying, arithmetic, output disposal and ordering conversions are timed, including Lean's bit-reversal adapter. Inverse normalization is timed. Inputs remain reusable and unchanged on both sides.",
               "- Two deterministic inputs alternate to prevent result hoisting. Full output digests are checked outside timing; a four-position output sink is used inside timing. Native validation includes tiny odd/even sizes and zero/one/near-modulus coordinates.",
               f"- {args.runs} alternating Lean/Rust pairs, 50 ms warmup and 20 samples per invocation. Shared-host load {manifest['load_start']} → {manifest['load_end']}; other work may affect timings.", ""]
     (out / "report.md").write_text("\n".join(lines))

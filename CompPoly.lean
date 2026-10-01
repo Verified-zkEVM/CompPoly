@@ -338,6 +338,8 @@ public import CompPoly.Univariate.NTT.Inverse
 public import CompPoly.Univariate.NTT.Kernel
 public import CompPoly.Univariate.NTT.KoalaBear
 public import CompPoly.Univariate.NTT.Transform
+public import CompPoly.Univariate.NTTFast.Butterfly
+public import CompPoly.Univariate.NTTFast.ButterflyDIT
 public import CompPoly.Univariate.NTTFast.Correctness
 public import CompPoly.Univariate.NTTFast.Correctness.Basic
 public import CompPoly.Univariate.NTTFast.Correctness.DIF
@@ -350,6 +352,7 @@ public import CompPoly.Univariate.NTTFast.Evaluation
 public import CompPoly.Univariate.NTTFast.FastMul
 public import CompPoly.Univariate.NTTFast.FastMulLow
 public import CompPoly.Univariate.NTTFast.Interpolation
+public import CompPoly.Univariate.NTTFast.Natural
 public import CompPoly.Univariate.NTTFast.Plan
 public import CompPoly.Univariate.Quotient.Core
 public import CompPoly.Univariate.Quotient.Equiv

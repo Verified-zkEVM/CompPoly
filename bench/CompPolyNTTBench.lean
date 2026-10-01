@@ -6,7 +6,7 @@ Authors: Gregor Mitscha-Baude
 module
 
 public import CompPolyBench.Univariate.Common
-public import CompPoly.Univariate.NTTFast.Correctness
+public import CompPoly.Univariate.NTTFast.Natural
 
 /-! # Natural-order KoalaBear NTT benchmarks against optimized Plonky3 -/
 
@@ -41,7 +41,7 @@ def main (args : List String) : IO UInt32 := do
   if validate != "true" && validate != "false" then throw <| IO.userError "invalid validation flag"
   if h : logN ≤ KoalaBear.twoAdicity then
     let domain := CPolynomial.NTT.KoalaBear.fastDomainOfLogN logN h
-    let plan := CPolynomial.NTTFast.Plan.ofDomain domain
+    let plan := CPolynomial.NTTFast.NaturalPlan.ofDomain domain
     let n := 2 ^ logN
     let values ← nttCoordinates (← IO.FS.readBinFile path)
     if values.size != 1 + 2 * n then throw <| IO.userError "incorrect NTT fixture length"
@@ -56,9 +56,7 @@ def main (args : List String) : IO UInt32 := do
       .medium
       (fun i ↦
         let input := inputs[i % 2]!
-        if direction == "forward" then
-          CPolynomial.NTT.Transform.bitRevPermute domain (plan.forwardImpl input)
-        else plan.inverseImpl (CPolynomial.NTT.Transform.bitRevPermute domain input))
+        if direction == "forward" then plan.forward input else plan.inverse input)
       (checksumArray checksumKoalaBearFast)
       (sink := arraySampleSink (fun x ↦ x.toNat.toUInt64))
     let record : BenchRecord := { row with groupKey := s!"ntt-koalabear-{logN}-{direction}" }

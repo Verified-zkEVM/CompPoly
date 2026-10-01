@@ -8,7 +8,7 @@ module
 public import CompPolyBench.Univariate.Common
 public import CompPoly.Univariate.NTT.Forward
 public import CompPoly.Univariate.NTT.Inverse
-public import CompPoly.Univariate.NTTFast.Plan
+public import CompPoly.Univariate.NTTFast.ButterflyDIT
 
 /-!
 # Multiplicative NTT benchmarks

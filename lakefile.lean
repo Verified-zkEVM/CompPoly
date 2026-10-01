@@ -57,6 +57,8 @@ lean_exe CompPolyEvalBench where
 /-- Matched forward/inverse NTT runner for the shared Rust comparison. -/
 lean_exe CompPolyNTTBench where
   srcDir := "bench"
+  -- Match the Rust benchmark's native CPU targeting; library artifacts remain portable.
+  moreLeancArgs := #["-march=native"]
 
 /-- Kernel-level axiom / `sorry` accounting with a committed regression baseline
 (`scripts/axiom_baseline.json`). Runtime-imports the built CompPoly oleans, so run it
