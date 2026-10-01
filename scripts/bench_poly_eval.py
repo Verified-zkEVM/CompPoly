@@ -116,9 +116,9 @@ def run(args, common, allowed):
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     if args.validate_only:
         return
-    lines = ["# One polynomial, one point", "", "Milliseconds per complete steady-state evaluation; median of run medians ± between-run MAD. Lower is better.", "",
-             f"| Field | Coefficients | Lean Horner (1 core) | Lean evalFast ({workers} workers) | Rust Horner (1 core) | Rust parallel ({workers} workers) | Lean speedup |",
-             "|---|---:|---:|---:|---:|---:|---:|"]
+    lines = ["# One polynomial, one point", "", "Milliseconds per complete steady-state evaluation; median of run medians ± between-run MAD. Lower is better. Lean / Rust compares parallel evaluation (>1 means Rust is faster).", "",
+             f"| Field | Coefficients | Lean Horner (1 core) | Lean evalFast ({workers} workers) | Rust Horner (1 core) | Rust parallel ({workers} workers) | Lean speedup | Lean / Rust |",
+             "|---|---:|---:|---:|---:|---:|---:|---:|"]
     for field, (title, _, _) in FIELDS.items():
         for size in sizes:
             values = []
@@ -129,7 +129,7 @@ def run(args, common, allowed):
                 mad = statistics.median(abs(x - median) for x in runs)
                 medians.append(median)
                 values.append(f"{median:.4f} ± {mad:.4f}")
-            lines.append(f"| {title} | {size:,} | " + " | ".join(values) + f" | {medians[0]/medians[1]:.2f}× |")
+            lines.append(f"| {title} | {size:,} | " + " | ".join(values) + f" | {medians[0]/medians[1]:.2f}× | {medians[1]/medians[3]:.2f}× |")
     lines += ["", "## Machine and method", "",
               f"- {manifest['cpu_model']}; {manifest['memory_gib']:.1f} GiB; {manifest['os']}, kernel {manifest['kernel']}.",
               f"- {workers} workers on {physical_cores} physical cores via logical CPUs {cpus}; SMT siblings are {'included' if physical_cores < workers else 'not included'}. Horner uses CPU {cpus[0]}. Shared host; load {manifest['load_start']} → {manifest['load_end']}.",
