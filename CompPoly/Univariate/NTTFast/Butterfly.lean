@@ -232,12 +232,12 @@ theorem checkedStages_eq [Field R] (D : NTT.Domain R) (tw : Array (Array R)) (a 
   simp only [checkedStages, runStagesDIFRadix4WithTwiddles,
     butterflyRadix4StageDIFWithTwiddles, checkedBlocks_eq]
 
-/-- Existing planned DIF entry point using the bounds-proved loops. -/
+/-- Forward variant using the bounds-proved DIF loops. -/
 @[inline] def checkedForward [Field R] (P : Plan R) (a : Array R) : Array R :=
   checkedStages P.domain P.twiddles (NTT.loadNaturalArray P.domain a)
 
-/-- Compile the public plan entry point through the checked loop. -/
-@[csimp] theorem forwardImpl_eq_checked : @forwardImpl = @checkedForward := by
+/-- The bounds-proved variant agrees with the existing plan entry point. -/
+theorem forwardImpl_eq_checked : @forwardImpl = @checkedForward := by
   funext R inst P a
   simp only [forwardImpl, checkedForward, checkedStages_eq]
 

@@ -237,12 +237,12 @@ theorem checkedDITStages_eq [Field R] (D : NTT.Domain R) (tw : Array (Array R)) 
   simp only [checkedDITStages, runStagesRadix4WithTwiddles,
     butterflyRadix4StageWithTwiddles, checkedDITBlocks_eq]
 
-/-- Existing planned DIT entry point using the bounds-proved loops. -/
+/-- Inverse variant using the bounds-proved DIT loops. -/
 @[inline] def checkedInverse [Field R] (P : Plan R) (a : Array R) : Array R :=
   P.normalize (checkedDITStages P.inverseDomain P.inverseTwiddles a)
 
-/-- Compile the public plan entry point through the checked loop. -/
-@[csimp] theorem inverseImpl_eq_checked : @inverseImpl = @checkedInverse := by
+/-- The bounds-proved variant agrees with the existing plan entry point. -/
+theorem inverseImpl_eq_checked : @inverseImpl = @checkedInverse := by
   funext R inst P a
   simp only [inverseImpl, checkedInverse, checkedDITStages_eq]
 
