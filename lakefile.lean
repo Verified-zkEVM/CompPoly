@@ -32,6 +32,12 @@ lean_lib CompPoly where
   -- genuinely is platform-specific. Mathlib uses the same mechanism.
   platformIndependent := true
 
+/-- CPU-targeted packed FFT kernels; the proof artifacts remain platform independent. -/
+lean_lib CompPolyPackedNative where
+  roots := #[`CompPoly.Univariate.NTTFast.Packed.Native]
+  platformIndependent := true
+  moreLeancArgs := #["-march=native"]
+
 lean_lib CompPolyTests where
   srcDir := "tests"
 
