@@ -354,6 +354,7 @@ public import CompPoly.Univariate.NTTFast.FastMul
 public import CompPoly.Univariate.NTTFast.FastMulLow
 public import CompPoly.Univariate.NTTFast.Interpolation
 public import CompPoly.Univariate.NTTFast.Natural
+public import CompPoly.Univariate.NTTFast.Parallel
 public import CompPoly.Univariate.NTTFast.Permutation
 public import CompPoly.Univariate.NTTFast.Plan
 public import CompPoly.Univariate.Quotient.Core

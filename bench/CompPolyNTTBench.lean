@@ -6,7 +6,7 @@ Authors: Gregor Mitscha-Baude
 module
 
 public import CompPolyBench.Univariate.Common
-public import CompPoly.Univariate.NTTFast.Natural
+public import CompPoly.Univariate.NTTFast.Parallel
 
 /-! # Natural-order KoalaBear NTT benchmarks against optimized Plonky3 -/
 
@@ -47,16 +47,20 @@ def main (args : List String) : IO UInt32 := do
     if values.size != 1 + 2 * n then throw <| IO.userError "incorrect NTT fixture length"
     if values.getD 0 0 != domain.omega then throw <| IO.userError "incorrect NTT root"
     let inputs := #[values.extract 1 (n + 1), values.extract (n + 1) (2 * n + 1)]
+    let workers := ((← IO.getEnv "LEAN_NUM_THREADS").bind String.toNat?).getD 16
+    if workers == 0 then throw <| IO.userError "LEAN_NUM_THREADS must be positive"
+    let logWorkers := workers.log2
     validateOnlyRef.set (validate == "true")
     let row ← runTimedSpec
       { name := s!"ntt-koalabear-{logN}-{direction}-fast", representation := "Array",
-        method := "planned radix-4, natural order", field := "koalabear",
+        method := "proved parallel radix-4, natural order", field := "koalabear",
         inputShape := s!"{n} elements",
         digestIterations := 2, digestClass := direction }
       .medium
       (fun i ↦
         let input := inputs[i % 2]!
-        if direction == "forward" then plan.forward input else plan.inverse input)
+        if direction == "forward" then plan.forwardParallel input logWorkers
+        else plan.inverseParallel input logWorkers)
       (checksumArray checksumKoalaBearFast)
       (sink := arraySampleSink (fun x ↦ x.toNat.toUInt64))
     let record : BenchRecord := { row with groupKey := s!"ntt-koalabear-{logN}-{direction}" }
