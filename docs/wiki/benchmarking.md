@@ -639,3 +639,29 @@ The repository comparer classified all six prototype rows at log sizes 12, 16 an
 Further removal did sacrifice performance in the tested replacements. Replacing native word reads with four proof-bounded Lean byte reads increased million-point time by roughly 6×. A direct, unrolled Lean writer using the existing byte primitives was about 3–3.5× slower; the generic Lean storage fallback was slower still. Moving only copy/growth fallback handling into Lean reduced C to 648 bytes but regressed small transforms and was rejected. These screens do not prove that a different storage representation or compiler implementation could never avoid the remaining externs.
 
 The prototype is not fully refined or installed in the default runner; native word copies were tested on the little-endian host. No Rust code or build settings changed. Selected source and runtime checks are saved in ignored `bench/out/ntt-storage-investigation-oct2/sources/NTTBench-two-unsigned-checked.lean`, with executable `bench/out/ntt-frozen-plonky3/lean-two-unsigned-oct2`. `bench/out/ntt-storage-investigation-oct2/sources/ntt-two-unsigned-final.py` reproduces the three-way comparison with the frozen verified Lean and Plonky3 executables, while retaining the old prototype as the minimization control. Measurements are in `bench/out/ntt-two-unsigned-final-oct2.json`. The normal verified runner was restored and rebuilt afterward.
+
+
+### Input fusion and kernel normalization (2026-10-02)
+
+The selected native-storage prototype fuses public field-array reads with the first butterfly split, removing its separate serial packing pass. A bounds-proved, inlined accessor reads the sixteen input lanes; the generated right-split kernel has vector multiplies and no reference-count call sites. Inverse scaling is folded into a separate sixteen-coefficient final-layer kernel, so it runs within the parallel FFT tasks before their final packed stores. The decoder then only reorders and converts those already-normalized values. Both changes are Lean; the two storage externs and their 774 bytes of inline C are unchanged.
+
+Kernel normalization is used when the leaf transform has an even log size of at least four. Other sizes retain normalization in the decoder. A zero task depth uses the existing packing path. The final source includes no `sorry`, but still lacks a complete FFT refinement theorem; it remains outside the verified library and default benchmark.
+
+The final comparison froze both prototypes, the verified no-new-extern implementation and the unchanged Plonky3 executable before timing. It used four physical cores (CPUs 2–5), four workers, sixteen leaf tasks, seven alternating rounds for million-point transforms and five for smaller sizes. Complete-transform medians, with conversion and normalization included:
+
+| Elements | Direction | Previous prototype | Combined prototype | New / old |
+|---:|---|---:|---:|---:|
+| 4,096 | forward | 0.2228 ms | 0.2009 ms | 0.902 |
+| 4,096 | inverse | 0.2124 ms | 0.1999 ms | 0.941 |
+| 65,536 | forward | 0.9522 ms | 0.8447 ms | 0.887 |
+| 65,536 | inverse | 1.1092 ms | 0.8323 ms | 0.750 |
+| 1,048,576 | forward | 14.9700 ms | 13.8785 ms | 0.927 |
+| 1,048,576 | inverse | 17.3561 ms | 14.1433 ms | 0.815 |
+
+The repository comparer classified all three inverse rows faster and all three forward rows unchanged, with no slower, missing, mismatched or suspect rows. The million-point inverse gain was 18.5%, with strict separation of the seven baseline/candidate runs; the forward median fell 7.3%, but overlapping runs did not establish a gain under the comparer. Harness floor/drift groups were absent. Rust measured 7.729 / 6.601 ms and verified Lean 37.300 / 42.655 ms at one million points, forward/inverse. The shared host remained busy, so those Rust figures should not be compared with older runs to infer a Rust implementation change; its executable SHA256 stayed `83479b757394874fc7304c974b13f48461176691ca9711a144876648ccc18229`.
+
+All output digests agreed with verified Lean and Plonky3 at log sizes 0, 1, 3, 4, 5, 12, 14, 15, 16, 17 and 20 in both directions. Additional agreement checks used task depths 0, 1, 2, 4 and 5 at log size 5; 0, 1, 2, 3, 4, 8 and 10 at log size 12; and 0, 1, 2, 3 and 5 at log size 20. These exercise unfused input paths, odd-sized leaves and leaves too small for kernel normalization. The unchanged externs also passed 1,408 compiled agreement checks against their Lean storage specifications.
+
+Independent screens informed the final choice. Input fusion alone improved the 65,536-point rows but did not establish a million-point forward gain. Kernel normalization alone lowered the million-point inverse median by about 11% in three rounds. Building four natural-order field arrays and concatenating them regressed; replacing the concatenation tree with a single bounds-proved assembly loop also regressed. Returning packed natural-order chunks avoided the field-array joins but added a complete output pass and did not improve the screen. The selected version keeps the existing tiled output conversion and performs inverse normalization before the output stage, rather than adding output tasks.
+
+Selected local source: `bench/out/ntt-storage-investigation-oct2/sources/NTTBench-fused-input-normalize.lean`; frozen executable: `bench/out/ntt-frozen-plonky3/lean-fused-input-normalize-oct2`. `bench/out/ntt-storage-investigation-oct2/sources/ntt-input-output-final.py` reproduces the final comparison, recorded in `bench/out/ntt-fused-input-normalize-final-oct2.json`. Comparer inputs and verdicts are under `bench/out/ntt-input-output-ab/`. The same ignored source directory retains the separate experiments and their screen drivers. The normal verified runner was restored exactly and rebuilt afterward. The externless implementation was not changed in this pass; parallelizing and optimizing it is the next implementation pass.
