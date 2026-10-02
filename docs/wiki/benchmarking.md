@@ -598,3 +598,26 @@ All full-output digests matched. These native prototypes remain outside the libr
 A bounds-proved packed-buffer read can avoid the conversion problem without a compiler change: its byte-size bound implies that the `Nat` index is a tagged immediate, allowing direct unboxing as in existing bounded array accessors. This version also generated vector multiplies and was within 2–4% of the explicit `USize` prototype in a three-pair single-worker check. The bound is essential; directly unboxing an arbitrary `Nat` would be incorrect.
 
 A separate diagnostic copied the Lean runtime header into a temporary compiler overlay. Marking the read-only big-Nat conversion `pure` alone did not change code generation. Also outlining its small-Nat wrapper enabled vectorization and reduced the Nat-indexed prototype's time by about 8–10%, but remained slower than using `USize` in the source. This is not a validated general-purpose runtime patch. Neither the installed toolchain nor the committed build settings were modified. The most direct extension remains proof-bounded packed UInt32 storage with batched ownership checks, paired with vectorizable Lean kernels and cache-conscious data movement.
+
+### Four/eight-core follow-up and fused final layers
+
+Further native-storage experiments used four physical cores (CPUs 2–5) or eight (CPUs 0–7), without SMT siblings. Sixteen leaf tasks stayed fixed. Four cores gave a steady final run of the verified library, but did not eliminate contention in every prototype run; the eight-core inverse comparison became substantially noisier as other work increased.
+
+The strongest new prototype fuses the last four FFT layers into a sixteen-coefficient kernel. Values stay in scalar locals between layers, and multiplications by unit twiddles are omitted. The previous prototype reread and rewrote the buffer between those small layers. All field arithmetic is still Lean; storage uses the earlier experimental word primitives. Full-output digests matched Plonky3 and the previous implementation at all eight validation sizes, in both directions.
+
+Five alternating rounds per core allocation, million-element complete transforms, milliseconds ± between-run MAD:
+
+| Physical cores | Direction | Previous native prototype | Fused final layers | Frozen Plonky3 | Fused / Rust |
+|---:|---|---:|---:|---:|---:|
+| 4 | forward | 30.290 ± 2.386 | 20.769 ± 1.897 | 6.618 ± 0.176 | 3.14× |
+| 4 | inverse | 36.738 ± 2.443 | 25.196 ± 1.736 | 7.136 ± 0.923 | 3.53× |
+| 8 | forward | 24.684 ± 1.027 | 15.164 ± 1.348 | 4.143 ± 0.052 | 3.66× |
+| 8 | inverse | 42.291 ± 7.754 | 37.584 ± 4.611 | 5.347 ± 1.221 | 7.03× |
+
+The four-core repository comparison classified both rows faster, with strict separation of all five baseline/candidate runs, matching digests and no suspect rows. Its harness floor/drift checks were unavailable. The eight-core forward runs also separated strictly; inverse runs overlapped across changing host load. The four- and eight-core measurements were separate runs, so their absolute differences are not an isolated scaling experiment. The native FFT still lacks a complete refinement proof and is not installed in the library or default runner.
+
+Several narrower experiments did not earn a retained change. Keeping task outputs as separate leaf buffers removed concatenation copies, but its forward results were inconsistent. Batched input conversion improved forward by only about 1%. Reading each word using four bounds-proved `ByteArray.uget` calls produced expensive vector byte shuffles and was 3–4× slower than the word-read prototype in its three-pair screen; delaying Lean inlining did not recover the word-read performance. This gives a concrete reason to investigate a dedicated word-read primitive rather than assuming the byte operations will combine efficiently in the vectorized kernel.
+
+Precomputed [Shoup-style multiplication](https://www.libntl.shoup.net/doc/ZZ.cpp.html) for fixed twiddles reduced wide vector-multiply instructions in the large kernel from 48 to 16, but did not improve complete-transform performance. It enlarged the twiddle tables and changed the kernel's register demands; those costs were not isolated. An eight-lane Shoup kernel also regressed forward in its screen. Using Shoup only in the fused small kernel improved forward by about 9% in three pairs, while inverse was unchanged; this was not taken through a five-round gate. The selected prototype keeps Montgomery arithmetic.
+
+A fresh standard-driver run on clean `58d39a7`, four physical cores, measured the verified library at 36.851 ± 0.132 ms forward and 43.037 ± 0.121 ms inverse for a million points; Plonky3 measured 7.003 ± 0.278 and 6.770 ± 0.151 ms respectively. These verified results are separate from the native prototypes. Reproduce with `python3 scripts/bench-fields.py --suite ntt --cpus 2,3,4,5`. No Rust source, build flags or executable changed during the experiments. The next implementation work is a packed storage API with explicit word reads and batched updates, and refinement proofs for the fused transform.
