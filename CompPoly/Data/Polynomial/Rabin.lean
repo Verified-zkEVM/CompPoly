@@ -95,11 +95,12 @@ no numeral in hand passes `rfl` and gets the `Fintype.card F` statement back ver
 
 The alternative — stating the conditions at `Fintype.card F` and having concrete callers cast each
 one with `rw [hcard]` — is what this shape exists to rule out. Such a cast leaves an `Eq.mpr`
-transport around a certificate argument whose type carries a huge exponent (`X ^ (q ^ d)`), and a
-kernel replay from an empty environment need not follow the same normalization path the elaborator
-took: one such transport has been observed to send the kernel into
-`Polynomial.pow → npowRec → Nat.rec`, unfolding the power one exponent step at a time until the
-deep-recursion guard fired. Since there is only one form of each statement, that cast has no
+transport around a certificate argument whose type carries a huge exponent (`X ^ (q ^ d)`): one
+such transport has been observed to send the kernel into `Polynomial.pow → npowRec → Nat.rec`,
+unfolding the power one exponent step at a time until the deep-recursion guard fired. Compiling the
+defining module is not evidence against this -- inside a `module`, imported definitions that are
+not `@[expose]`d have no body for the kernel, Mathlib's `Polynomial.instAdd` among them, so the
+slow path does not exist there, while a full-closure replay sees every body and takes it. Since there is only one form of each statement, that cast has no
 occasion to appear. `docs/wiki/field-extensions.md` records the history, and
 `CompPoly/Data/Polynomial/RabinCertificate.lean` packages these tests at concrete degrees.
 -/
