@@ -8,6 +8,7 @@ module
 import all Init.Data.Array.Basic
 public import CompPoly.Univariate.NTTFast.Correctness
 public import CompPoly.Univariate.NTTFast.ButterflyDIT
+public import CompPoly.Univariate.NTTFast.Permutation
 
 /-! # Reusable natural-order NTT plans
 
@@ -53,14 +54,45 @@ variable {R : Type*} [Field R]
 def ofDomain (D : NTT.Domain R) : NaturalPlan R :=
   ⟨Plan.ofDomain D, Array.ofFn (fun i : D.Idx ↦ NTT.Transform.bitRevNat D.logN i.val), rfl⟩
 
-/-- Gather entries using cached bit-reversed indices. -/
+/-- The cached index table has one entry per domain element. -/
+@[simp] theorem order_size (P : NaturalPlan R) : P.order.size = P.plan.domain.n := by
+  simp only [P.order_eq, Array.size_ofFn]
+
+/-- Each cached entry is the corresponding reversed index. -/
+theorem order_get (P : NaturalPlan R) (i : Nat) (hi : i < P.plan.domain.n) :
+    P.order[i]! = NTT.Transform.bitRevNat P.plan.domain.logN i := by
+  have hio : i < P.order.size := by simpa only [order_size] using hi
+  rw [getElem!_pos P.order i hio]
+  simp only [P.order_eq, Array.getElem_ofFn]
+
+/-- Reuse a correctly sized array by swapping each reversed pair once. -/
 @[inline] def permute (P : NaturalPlan R) (a : Array R) : Array R :=
-  P.order.map (fun i ↦ a.getD i 0)
+  if a.size = P.order.size then Array.permuteInvolution P.order a
+  else P.order.map (fun i ↦ a.getD i 0)
+
+/-- Pair swaps preserve the original gather, including padding and truncation cases. -/
+theorem permute_eq_map (P : NaturalPlan R) (a : Array R) :
+    P.permute a = P.order.map (fun i ↦ a.getD i 0) := by
+  unfold permute
+  split
+  · rename_i hs
+    apply Array.permuteInvolution_eq_map P.order a 0 hs.symm
+    · intro i hi
+      have hi' : i < P.plan.domain.n := by simpa only [order_size] using hi
+      rw [P.order_get i hi', order_size]
+      exact NTT.Transform.bitRevNat_lt _ _
+    · intro i hi
+      have hi' : i < P.plan.domain.n := by simpa only [order_size] using hi
+      rw [P.order_get i hi']
+      rw [P.order_get _ (NTT.Transform.bitRevNat_lt _ _)]
+      exact NTT.Transform.bitRevNat_involutive _ _ hi'
+  · rfl
 
 /-- Cached indexing computes the same permutation as the mathematical definition. -/
 theorem permute_eq (P : NaturalPlan R) (a : Array R) :
     P.permute a = NTT.Transform.bitRevPermute P.plan.domain a := by
-  simp only [permute, P.order_eq, Array.map_ofFn, NTT.Transform.bitRevPermute, Function.comp_def]
+  simp only [permute_eq_map, P.order_eq, Array.map_ofFn, NTT.Transform.bitRevPermute,
+    Function.comp_def]
 
 /-- Reuse an input of the right size; otherwise pad or truncate it as before. -/
 @[inline] def load (P : NaturalPlan R) (a : Array R) : Array R :=

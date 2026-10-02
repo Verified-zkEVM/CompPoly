@@ -529,7 +529,7 @@ BN254's lazy leaf uses scalar accumulator parameters and machine-word indices. I
 
 ### Lean natural-order NTT plans
 
-Import `CompPoly.Univariate.NTTFast.Natural` and construct `NTTFast.NaturalPlan.ofDomain domain` once, then call `plan.forward input` or `plan.inverse input`. The plan caches bit-reversal indices as well as the existing twiddle tables. Its forward path reuses correctly sized inputs until the first copy-on-write update; shorter inputs are zero-padded and longer ones truncated. Normalization uses a specialized scalar loop. Both operations are proved equal to the existing natural-order pipelines for every input array.
+Import `CompPoly.Univariate.NTTFast.Natural` and construct `NTTFast.NaturalPlan.ofDomain domain` once, then call `plan.forward input` or `plan.inverse input`. The plan caches bit-reversal indices as well as the existing twiddle tables. Its forward path reuses correctly sized inputs until the first copy-on-write update; shorter inputs are zero-padded and longer ones truncated. Bit reversal swaps each pair once in the working array instead of gathering a second array; a shared input still receives the required copy-on-write copy. Normalization uses a specialized scalar loop. Both operations are proved equal to the existing natural-order pipelines for every input array.
 
 The imported butterfly modules also install proved compiler substitutions for `NTTFast.Plan.forwardImpl` and `inverseImpl`. Array bounds are checked once per radix-four block; the hot loop uses `USize` indices and bounds-proved accesses. The original total functions cover invalid ranges, and natural-number indexing covers ranges exceeding the machine-word limit. No new external functions or compiler changes are used. The NTT benchmark executable targets the native CPU, matching Rust's native targeting; the library retains portable build settings.
 
@@ -537,7 +537,7 @@ The retained Lean implementation is sequential. Experiments with per-stage paral
 
 ### NTT storage and compiler investigation (2026-10-02)
 
-Follow-up experiments on Lean 4.34.0 separated storage costs from field arithmetic. These are engineering diagnostics, not new verified library implementations. The retained implementation and the main comparison table remain those from `51bb43a`; the Rust executable remains frozen from `8a34661`.
+Follow-up experiments on Lean 4.34.0 separated storage costs from field arithmetic. These are engineering diagnostics, not new verified library implementations. The first experiment below used the verified `51bb43a` implementation as its control; the Rust executable remains frozen from `8a34661`. The subsequent in-place permutation improvement and further experiments are recorded below.
 
 **Generic arrays do not allocate one object per KoalaBear value on this 64-bit host.** The subtype proof is erased and `UInt32` is a tagged immediate in an eight-byte array slot. Rust stores four-byte field values contiguously. The sixteen-lane prototype instead puts sixteen native `UInt32` fields in a heap record; this enables vectorization but introduces record allocation and sharing costs. See Lean's [`lean_box_uint32`, array accessors and exclusivity check](https://github.com/leanprover/lean4/blob/293d5d0c0c3f3dded4688b3ccd6a33939ac5102b/src/include/lean/lean.h).
 
@@ -554,7 +554,7 @@ Million-element complete transforms, milliseconds; median of five alternating ru
 | Experimental native storage, one word append | 31.233 ± 0.215 | 30.711 ± 0.726 |
 | Frozen parallel SIMD Plonky3 | 3.355 ± 0.016 | 3.299 ± 0.017 |
 
-The word append reduces this prototype's time by 37–40%, but leaves it roughly nine times slower than Plonky3. The native prototype has no full FFT refinement proof, and its word-copy implementation was only tested on this little-endian host. It is not installed in the library or the default benchmark. Native storage alone did not establish vectorized arithmetic: the sixteen-way byte-buffer inner loop did not emit the AVX2 arithmetic seen in the scalar-record prototype. A scalar byte-buffer screen with the word append also took about 31 ms.
+The word append reduces this prototype's time by 37–40%, but leaves it roughly nine times slower than Plonky3. The native prototype has no full FFT refinement proof, and its word-copy implementation was only tested on this little-endian host. It is not installed in the library or the default benchmark. In that first experiment, native storage alone did not establish vectorized arithmetic: the sixteen-way byte-buffer inner loop did not emit the AVX2 arithmetic seen in the scalar-record prototype. A scalar byte-buffer screen with the word append also took about 31 ms.
 
 Two compiler/runtime findings guide further work:
 
@@ -564,3 +564,37 @@ Two compiler/runtime findings guide further work:
 There was also a source-level specialization trap: placing `@[specialize]` on a concrete unpacking wrapper with no higher-order parameters left a generic callback in its element loop. Removing that annotation allowed the inner array builder to specialize and removed a large experimental regression. The [`Specialize` pass](https://github.com/leanprover/lean4/blob/293d5d0c0c3f3dded4688b3ccd6a33939ac5102b/src/Lean/Compiler/LCNF/Specialize.lean) explains that annotated bodies defer specialization to their call sites. Use the attribute on the higher-order builder, and inspect the resulting loop; it is not a blanket request to optimize any function.
 
 The most concrete small runtime extension is a packed UInt32 buffer API with proof-bounded reads, word appends and batch updates that check ownership once. It would remove repeated byte operations without moving field arithmetic into C. Achieving Plonky3-like performance still needs vectorizable kernels, cache-local layers and cheap partitioning of work; none of the measurements establishes that a single extern or compiler patch solves the full gap.
+
+### In-place permutation and vectorized storage follow-up
+
+The verified natural-order plan now swaps each bit-reversed pair once in its working array. A generic `Array.permuteInvolution_eq_map` theorem proves agreement with gathering for bounded involutive index tables; bit-reversal involution instantiates it. Inputs of other lengths retain the previous padding/truncation behavior. The arithmetic and Rust implementation are unchanged, and this improvement uses existing Lean primitives only.
+
+Five alternating single-worker rounds on CPU 9 compared the swap implementation against `51bb43a`. Complete-transform medians in milliseconds:
+
+| Elements | Direction | Previous gather | Pair swaps | New / old |
+|---:|---|---:|---:|---:|
+| 4,096 | forward | 0.0941 | 0.0929 | 0.988 |
+| 4,096 | inverse | 0.1102 | 0.1116 | 1.013 |
+| 65,536 | forward | 1.9714 | 1.8191 | 0.923 |
+| 65,536 | inverse | 2.2476 | 2.1392 | 0.952 |
+| 1,048,576 | forward | 44.6186 | 37.6438 | 0.844 |
+| 1,048,576 | inverse | 48.4924 | 43.3625 | 0.894 |
+
+The repository comparer classified three rows faster and three unchanged, with no slower, mismatched or suspect rows. These transform records do not include harness floor/drift rows, so those checks were unavailable. After proving and integrating the change into `NaturalPlan`, a separate three-pair check reproduced the gains (million-point new/old ratios 0.825 forward and 0.923 inverse on the shared host).
+
+The native-storage experiment also advanced beyond the earlier 31 ms prototype. Moving `Nat`→`USize` conversions outside the sixteen-lane butterfly kernel enabled AVX2 arithmetic: the earlier machine code had 116 big-Nat conversion call sites and no vector multiplies; the machine-index kernel had 42 vector-multiply instructions. Batched sixteen-word partition appends and a 4×16 tiled output permutation reduced data-movement costs. All field arithmetic still comes from Lean; the experimental externs provide word storage operations and batched array output writes.
+
+A separate five-round interleaved comparison, sixteen workers on the same host, gave these million-point complete-transform medians ± between-run MAD:
+
+| Implementation | Forward (ms) | Inverse (ms) |
+|---|---:|---:|
+| Verified `51bb43a` control | 43.872 ± 0.289 | 48.018 ± 0.458 |
+| Experimental vector kernel and batched partitioning | 21.903 ± 0.159 | 22.155 ± 0.084 |
+| Same experiment with 4×16 tiled output permutation | 15.976 ± 0.303 | 17.592 ± 0.598 |
+| Frozen Plonky3 | 3.341 ± 0.026 | 3.314 ± 0.008 |
+
+All full-output digests matched. These native prototypes remain outside the library and default benchmark: they lack a complete FFT refinement proof, and their word-copy externs were only exercised on the little-endian host. They narrow the measured gap to about 4.8–5.3×, without establishing Rust parity. A larger 16×16 output tile and an eight-lane kernel did worse in their screens; replacing conditional normalization with unsigned minimum did not improve the paired timings. Constant-twiddle transform variants were inconclusive because host contention rose during their screens.
+
+A bounds-proved packed-buffer read can avoid the conversion problem without a compiler change: its byte-size bound implies that the `Nat` index is a tagged immediate, allowing direct unboxing as in existing bounded array accessors. This version also generated vector multiplies and was within 2–4% of the explicit `USize` prototype in a three-pair single-worker check. The bound is essential; directly unboxing an arbitrary `Nat` would be incorrect.
+
+A separate diagnostic copied the Lean runtime header into a temporary compiler overlay. Marking the read-only big-Nat conversion `pure` alone did not change code generation. Also outlining its small-Nat wrapper enabled vectorization and reduced the Nat-indexed prototype's time by about 8–10%, but remained slower than using `USize` in the source. This is not a validated general-purpose runtime patch. Neither the installed toolchain nor the committed build settings were modified. The most direct extension remains proof-bounded packed UInt32 storage with batched ownership checks, paired with vectorizable Lean kernels and cache-conscious data movement.

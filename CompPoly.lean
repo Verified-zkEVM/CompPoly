@@ -62,6 +62,7 @@ public import CompPoly.Bivariate.GuruswamiSudan.Root.ShiftedSubstitution.Lemmas
 public import CompPoly.Bivariate.GuruswamiSudan.Util
 public import CompPoly.Bivariate.Kronecker
 public import CompPoly.Bivariate.ToPoly
+public import CompPoly.Data.Array.Involution
 public import CompPoly.Data.Array.Lemmas
 public import CompPoly.Data.Bytes.Bias
 public import CompPoly.Data.Bytes.CanonicalNat
@@ -353,6 +354,7 @@ public import CompPoly.Univariate.NTTFast.FastMul
 public import CompPoly.Univariate.NTTFast.FastMulLow
 public import CompPoly.Univariate.NTTFast.Interpolation
 public import CompPoly.Univariate.NTTFast.Natural
+public import CompPoly.Univariate.NTTFast.Permutation
 public import CompPoly.Univariate.NTTFast.Plan
 public import CompPoly.Univariate.Quotient.Core
 public import CompPoly.Univariate.Quotient.Equiv
