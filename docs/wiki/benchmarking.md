@@ -687,3 +687,25 @@ On the Ryzen 7 3700X (eight physical cores / sixteen hardware threads), seven al
 The unchanged native-storage prototype measured 12.468 / 12.385 ms, and frozen stock Plonky3 measured 3.377 / 3.338 ms, forward/inverse. All complete output digests matched at log sizes 0, 1, 3, 4, 5, 12, 14, 15, 16, 17, 18, 19 and 20. The large odd size exercises the parallel path and the final radix-two stage together. The measured source was clean `8ad5024`; raw local measurements and executable hashes are in ignored `bench/out/ntt-externless-investigation-oct2/proved-parallel-sixteen-workers.json`.
 
 Reproduce the verified comparison with `python3 scripts/bench-fields.py --suite ntt --cpus 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15`. Input copying, ordering, output disposal and inverse normalization are included; plans and decoding are outside timing. Sharing, copies, joins and the larger sequential stages still limit scaling. This pass adds no externs or compiler changes.
+
+
+### Native prototype parallel buffer collection
+
+The selected native-storage prototype now returns an array of packed leaf buffers from its parallel task tree. Task joins copy only buffer references. After the tasks finish, one preallocated packed buffer collects all leaves in order, and the existing tiled decoder produces natural-order field output. This transfers the externless implementation’s single-assembly strategy while preserving the native prototype’s fused input loading, vectorized arithmetic and fused inverse normalization. Its two storage externs and their 774 bytes of inline C are unchanged.
+
+The new `splitChunks_eq`, `splitInputChunks_eq` and `run_eq_before_collection` theorems prove that collection and assembly preserve the previous prototype’s packed buffer and final output for every input and task depth. Their axiom dependencies are only `propext`, `Classical.choice` and `Quot.sound`; there is no `sorry` or native-compiler trust. These are scheduling/output-equivalence proofs, not the complete FFT refinement theorem, which remains pending for the native prototype. The verified library and default runner remain the proved externless implementation.
+
+Five alternating rounds compared the candidate with the previous native prototype and frozen Plonky3 at one million points, separately using eight physical cores (CPUs 0–7) and sixteen hardware threads (CPUs 0–15) on the Ryzen 7 3700X. Each invocation supplies a median; “mean” below averages those invocation medians. Both means and medians improved in both directions at both worker counts:
+
+| Workers | Direction | Previous mean | Selected mean | Previous median | Selected median |
+|---:|---|---:|---:|---:|---:|
+| 8 | forward | 12.181 ms | 11.453 ms | 12.106 ms | 10.891 ms |
+| 8 | inverse | 11.497 ms | 10.985 ms | 11.435 ms | 10.875 ms |
+| 16 | forward | 12.268 ms | 11.336 ms | 12.027 ms | 11.306 ms |
+| 16 | inverse | 12.299 ms | 11.296 ms | 12.368 ms | 11.174 ms |
+
+The automatic 5% gate classified all four rows `same`, because timing ranges overlapped or the improvement fell below 5%. Gregor explicitly chose to retain the change based on the consistently lower averages across worker counts. The newer sixteen-worker sweep measured frozen Rust at 3.331 / 3.280 ms forward/inverse, within 2% of the earlier reference sweep. Full-output digests matched the previous prototype and Rust at thirteen log sizes, 0, 1, 3, 4, 5, 12, 14, 15, 16, 17, 18, 19 and 20, in both directions; the verified implementation has matching digests at those sizes. The storage externs passed 1,408 compiled agreement checks.
+
+Selected local source with equivalence proofs: `bench/out/ntt-storage-investigation-oct2/sources/NTTBench-collect-leaves.lean`. The measured executable is frozen at `bench/out/ntt-frozen-plonky3/lean-collect-leaves-oct2`; its exact pre-proof source is `bench/out/ntt-storage-investigation-oct2/sources/NTTBench-collect-leaves-measured.lean`. The timed `run` body is unchanged by the added proofs. The diagnostic profiler was updated to use collection as well. Raw samples and executable hashes are in `bench/out/ntt-native-port-oct2/{eight,sixteen}-workers-screen.json`; comparison inputs and verdicts are under `gate-8` and `gate-16`. Rebuild with the prototype procedure above. The current reproduction driver is `bench/out/ntt-storage-investigation-oct2/sources/ntt-selected-sixteen.py`; it compares the selected native executable, the verified parallel executable, the previous native control and frozen Rust.
+
+A later attempt to rerun all implementations and smaller sizes encountered a concurrent host build: load rose above 26 and even frozen Rust varied from roughly 6 to 156 ms between invocations. That sweep was stopped, retained as `bench/out/ntt-native-port-oct2/interrupted-busy-host-sweep.json`, and excluded from published results. The PR’s selected native numbers therefore come from the earlier stable paired sweep; verified Lean and its displayed Rust reference retain their earlier measurements. The default verified benchmark source was restored and rebuilt, and the frozen Rust executable was not changed.
