@@ -274,7 +274,7 @@ Computes the Additive NTT on a given set of coefficients from the novel basis.
 -/
 noncomputable def additiveNTT (a : Fin (2 ^ ℓ) → L) : Fin (2^(ℓ + R_rate)) → L :=
   let b: Fin (2^(ℓ + R_rate)) → L := tileCoeffs a -- Note: can optimize on this
-  Fin.foldl ℓ (fun current_b i  =>
+  Fin.foldl (n := ℓ) (fun current_b i  =>
     NTTStage 𝔽q β h_ℓ_add_R_rate (i := ⟨ℓ - i - 1, by omega⟩) (h_i := by simp only; omega) current_b
   ) b
 

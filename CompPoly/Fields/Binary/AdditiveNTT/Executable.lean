@@ -196,7 +196,7 @@ def computableAdditiveNTT (a : Fin (2 ^ ℓ) → L) : Fin (2^(ℓ + R_rate)) →
   Fin.foldl (n:=ℓ) (fun current_b i  =>
     computableNTTStage (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - i - 1, by omega⟩) (b:=current_b)
-  ) (b)
+  ) b
 
 /-- Array-backed coefficient tiling for the fast additive NTT path. -/
 def tileCoeffsArray (R_rate : ℕ) (a : Fin (2 ^ ℓ) → L) : Array L :=
