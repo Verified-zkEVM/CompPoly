@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Georgios Raikos
+Authors: Georgios Raikos, Gregor Mitscha-Baude
 -/
 module
 
@@ -62,6 +62,25 @@ def gcdInner (rounds : Nat) (a b : UInt64) (f0 g0 f1 g1 : Int) :
           if a < b then (b, a, f1, g1, f0, g0) else (a, b, f0, g0, f1, g1)
         (a - b, b, f0 - f1, g0 - g1, f1, g1)
     gcdInner n (a >>> 1) b f0 g0 (f1 * 2) (g1 * 2)
+
+/-- Native signed-word divsteps. The candidate is verified before it becomes a field inverse. -/
+def gcdInnerWord (rounds : Nat) (a b : UInt64) (f0 g0 f1 g1 : Int64) :
+    UInt64 × UInt64 × Int × Int × Int × Int :=
+  match rounds with
+  | 0 => (a, b, f0.toInt, g0.toInt, f1.toInt, g1.toInt)
+  | n + 1 =>
+    if a &&& 1 == 0 then
+      gcdInnerWord n (a >>> 1) b f0 g0 (f1 * 2) (g1 * 2)
+    else if a < b then
+      gcdInnerWord n ((b - a) >>> 1) a (f1 - f0) (g1 - g0) (f0 * 2) (g0 * 2)
+    else
+      gcdInnerWord n ((a - b) >>> 1) b (f0 - f1) (g0 - g1) (f1 * 2) (g1 * 2)
+
+/-- Word coefficients are widened back to integers only after the divstep loop. -/
+@[inline] def gcdInnerFast (rounds : Nat) (a b : UInt64) (f0 g0 f1 g1 : Int) :
+    UInt64 × UInt64 × Int × Int × Int × Int :=
+  gcdInnerWord rounds a b (Int64.ofInt f0) (Int64.ofInt g0)
+    (Int64.ofInt f1) (Int64.ofInt g1)
 
 /-! ## Approximation: 64-bit windows over 32-bit limbs -/
 
@@ -165,13 +184,15 @@ exact once both values fit one 64-bit word. -/
   let bS := if g < 0 then subLimbs q b else b
   let s := mulAccum bS (UInt64.ofNat g.natAbs)
     (mulAccum aS (UInt64.ofNat f.natAbs) State9.zero)
-  condSub q (mulReduce q negInv s).toLimbs8
+  condSubWide q (mulReduce q negInv s)
 
 /-! ## Main loop and candidate -/
 
 /-- The outer rounds: 31 divsteps on one-word approximations, then the transition matrix
 applied to both tracks. -/
-def gcdMainLoop (q : Limbs8) (negInv : UInt64) (rounds : Nat) (a u b v : Limbs8) :
+@[specialize] def gcdMainLoop (q : Limbs8) (negInv : UInt64) (rounds : Nat) (a u b v : Limbs8)
+    (inner : Nat → UInt64 → UInt64 → Int → Int → Int → Int →
+      UInt64 × UInt64 × Int × Int × Int × Int := gcdInner) :
     Limbs8 × Limbs8 × Limbs8 × Limbs8 :=
   match rounds with
   | 0 => (a, u, b, v)
@@ -179,7 +200,7 @@ def gcdMainLoop (q : Limbs8) (negInv : UInt64) (rounds : Nat) (a u b v : Limbs8)
     let (limbIdx, bits) := gcdNumBits a b
     let aT := gcdApprox a limbIdx bits
     let bT := gcdApprox b limbIdx bits
-    let (_, _, f0, g0, f1, g1) := gcdInner 31 aT bT 1 0 0 1
+    let (_, _, f0, g0, f1, g1) := inner 31 aT bT 1 0 0 1
     let (newA, signA) := gcdLinearCombDiv a b f0 g0
     let f0 := if signA < 0 then -f0 else f0
     let g0 := if signA < 0 then -g0 else g0
@@ -188,26 +209,30 @@ def gcdMainLoop (q : Limbs8) (negInv : UInt64) (rounds : Nat) (a u b v : Limbs8)
     let g1 := if signB < 0 then -g1 else g1
     let newU := gcdLinearCombMontyRed q negInv u v f0 g0
     let newV := gcdLinearCombMontyRed q negInv u v f1 g1
-    gcdMainLoop q negInv n newA newU newB newV
+    gcdMainLoop q negInv n newA newU newB newV inner
 
 /-- The final divsteps as two mac-width chunks, folding the Montgomery pair. -/
-def gcdFinalChunks (q : Limbs8) (negInv : UInt64) (finalRounds : Nat)
-    (a u b v : Limbs8) : Limbs8 :=
+@[specialize] def gcdFinalChunks (q : Limbs8) (negInv : UInt64) (finalRounds : Nat)
+    (a u b v : Limbs8)
+    (inner : Nat → UInt64 → UInt64 → Int → Int → Int → Int →
+      UInt64 × UInt64 × Int × Int × Int × Int := gcdInner) : Limbs8 :=
   let aw := (a.l1 <<< 32) ||| a.l0
   let bw := (b.l1 <<< 32) ||| b.l0
   let c1 := (finalRounds + 1) / 2
-  let (aw1, bw1, f0, g0, f1, g1) := gcdInner c1 aw bw 1 0 0 1
+  let (aw1, bw1, f0, g0, f1, g1) := inner c1 aw bw 1 0 0 1
   let u1 := gcdLinearCombMontyRed q negInv u v f0 g0
   let v1 := gcdLinearCombMontyRed q negInv u v f1 g1
-  let (_, _, _, _, fF, gF) := gcdInner (finalRounds - c1) aw1 bw1 1 0 0 1
+  let (_, _, _, _, fF, gF) := inner (finalRounds - c1) aw1 bw1 1 0 0 1
   gcdLinearCombMontyRed q negInv u1 v1 fF gF
 
 /-- Pornin binary-GCD candidate for the Montgomery inverse, canonical nonzero `x·R mod p`
 to `x⁻¹·R mod p`; proof-free, callers verify. -/
-def gcdInvCandidate (modulus : Nat) [P : GcdData modulus] (q : Limbs8)
-    (negInv : UInt64) (x : Limbs8) : Limbs8 :=
-  let (a, u, b, v) := gcdMainLoop q negInv 15 x P.initU q Limbs8.zero
-  gcdFinalChunks q negInv P.finalRounds a u b v
+@[specialize] def gcdInvCandidate (modulus : Nat) [P : GcdData modulus] (q : Limbs8)
+    (negInv : UInt64) (x : Limbs8)
+    (inner : Nat → UInt64 → UInt64 → Int → Int → Int → Int →
+      UInt64 × UInt64 × Int × Int × Int × Int := gcdInner) : Limbs8 :=
+  let (a, u, b, v) := gcdMainLoop q negInv 15 x P.initU q Limbs8.zero inner
+  gcdFinalChunks q negInv P.finalRounds a u b v inner
 
 /-! ## Checked inversion over raw limbs -/
 
@@ -223,7 +248,7 @@ decreasing_by omega
 /-- The GCD candidate, accepted only if it verifies (`z · x = 1`); else Fermat `montPow`. -/
 def invGcdRaw (modulus : Nat) [GcdData modulus] (q : Limbs8) (negInv : UInt64)
     (rMod : Limbs8) (x : Limbs8) : Limbs8 :=
-  let cand := gcdInvCandidate modulus q negInv x
+  let cand := gcdInvCandidate modulus q negInv x gcdInnerFast
   if cand.Bounded ∧ subBorrow cand q = 1 ∧ mul q negInv cand x = rMod then cand
   else montPow q negInv rMod x (modulus - 2)
 

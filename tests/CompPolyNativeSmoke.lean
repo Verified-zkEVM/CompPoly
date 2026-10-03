@@ -9,12 +9,14 @@ public import CompPoly.Fields.Binary.Aes.Ghash
 public import CompPoly.Fields.Binary.BF128Ghash.Impl
 public import CompPoly.Fields.Binary.BF64.Ext3
 public import CompPoly.Fields.Binary.Tower.Fast.Multilinear
+public import CompPolyTests.NTT.NativeStorage
 
 /-!
 # Native field startup and arithmetic checks
 
 This executable checks canonical arithmetic in AES, BF64, its cubic extension, GHASH,
-and the binary tower, including packed coefficient evaluation.
+and the binary tower, including packed coefficient evaluation. It also checks
+the packed FFT storage externs against independent bytewise Lean operations.
 The test guide documents resource limits for native initialization and execution.
 Unlike compile-time guards, this target exercises the linked executable's module initializers.
 The extension product uses the reference vector from the existing BF64 regression tests.
@@ -163,6 +165,7 @@ def run : IO Unit := do
   check "GHASH reduction" ((high * BF128Ghash.ofBitVec (2#128)).toBitVec == 0x87#128)
   check "GHASH named inverse" (BF128Ghash.invItohTsujii high == expectedInverse)
   checkGhashOperations high expectedInverse
+  CompPolyTests.NTT.NativeStorage.run
   IO.println "Native field startup and arithmetic checks passed."
 
 end CompPolyTests.NativeSmoke

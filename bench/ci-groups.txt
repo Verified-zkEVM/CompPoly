@@ -58,6 +58,8 @@ fields-extension-babybear-ext4-inv
 fields-mont64x8-bn254-inv
 fields-mont64x8-bls12-381-inv
 fields-mont64x8-bls12-377-inv
+fields-mont64x8-secp256k1-scalar-inv
+fields-mont64x8-secp256k1-base-inv
 fields-goldilocks-mul
 fields-goldilocks-inv
 fields-koalabear-mul
@@ -67,9 +69,12 @@ fields-koalabear-pow
 fields-babybear-mul
 fields-mersenne31-mul
 fields-bn254-mul
+fields-bn254-add
+fields-secp256k1-scalar-mul
+fields-secp256k1-base-mul
 fields-tower-bt8-mul
 fields-tower-bt64-mul
-fields-tower-bt64-inv-word
+fields-tower-bt64-inv
 ntt-koalabear-l12
 ntt-babybear-l12
 ntt-plan-koalabear
@@ -80,3 +85,11 @@ univariate-interp-coset-koalabear-l12
 univariate-barycentric-koalabear-l8
 univariate-mul-crossover-64
 univariate-mul-crossover-256
+fields-bn254-add
+fields-bn254-inv
+fields-bn254-pow
+
+fields-tower-bt8-square
+fields-tower-bt8-inv
+fields-tower-bt64-square
+fields-tower-bt128-square
