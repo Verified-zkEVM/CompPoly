@@ -26,6 +26,7 @@ line once, so `lastRev` is the bit-reversed, optionally scaled result of the fin
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode size_encode_uint32)
 
 /-- Sixteen field coordinates. -/
 structure FieldLine where
@@ -221,13 +222,14 @@ def spliceHalf (O : Array UInt32) (idx : Nat) (v0 v1 v2 v3 v4 v5 v6 v7 : UInt32)
 
 /-- A half-line store into packed words. -/
 theorem storeWords_half (O : Array UInt32) (off : USize) (idx : Nat) (ho : off.toNat = 4 * idx)
-    (hs : (Storage.pack O).size < USize.size) (v0 v1 v2 v3 v4 v5 v6 v7 : UInt32) :
-    Native.storeWords (Storage.pack O) off 8 v0 v1 v2 v3 v4 v5 v6 v7 0 0 0 0 0 0 0 0 =
-      Storage.pack (spliceHalf O idx v0 v1 v2 v3 v4 v5 v6 v7) := by
+    (hs : (encode O).size < USize.size) (v0 v1 v2 v3 v4 v5 v6 v7 : UInt32) :
+    Native.storeWords (encode O) off 8 v0 v1 v2 v3 v4 v5 v6 v7 0 0 0 0 0 0 0 0 =
+      encode (spliceHalf O idx v0 v1 v2 v3 v4 v5 v6 v7) := by
   unfold spliceHalf
   split
   · rename_i hi
-    exact Native.storeWords_replace_pack O off 8 idx (by decide) ho hi hs _ _ _ _ _ _ _ _ _ _ _ _
+    exact Native.storeWords_replace_encodeWords O off 8 idx (by decide) ho hi hs _ _ _ _ _ _ _ _ _
+        _ _ _
       _ _ _ _
   · rename_i hi
     have hf := (Native.storeWords_fits O off 8 idx (by decide) ho hs).not.mpr hi
@@ -283,65 +285,66 @@ def lineStores (O : Array UInt32) (mm c half : Nat) (val : Nat → Nat → UInt3
 set_option maxRecDepth 100000 in
 set_option maxHeartbeats 4000000 in
 /-- One kernel call stores the final layers of its eight lanes into sixteen half lines. -/
-theorem lastHalf_pack (t3 t2 t1 U : Array KoalaBear.Fast.Field) (i0 i1 i2 i3 i4 i5 i6 i7 c half :
+theorem lastHalf_encodeWords (t3 t2 t1 U : Array KoalaBear.Fast.Field) (i0 i1 i2 i3 i4 i5 i6 i7 c
+    half :
     USize) (mm : Nat) (f : KoalaBear.Fast.Field) (sc : Bool) (O : Array UInt32)
     (hm : 0 < mm) (hm32 : mm ≤ 32) (hh : half.toNat < 2) (hc : 16 * c.toNat + 16 ≤ 2 ^ mm)
-    (hu : 64 * 2 ^ mm < USize.size) (hs : (Storage.pack O).size < USize.size) (h) :
-    Native.lastHalf (packFields t3) (packFields t2) (packFields t1) (packFields U)
-      i0 i1 i2 i3 i4 i5 i6 i7 c (32 - mm).toUInt32 half f.val sc (Storage.pack O) h =
-      Storage.pack (lineStores O mm c.toNat half.toNat fun t k ↦
+    (hu : 64 * 2 ^ mm < USize.size) (hs : (encode O).size < USize.size) (h) :
+    Native.lastHalf (encode t3) (encode t2) (encode t1) (encode U)
+      i0 i1 i2 i3 i4 i5 i6 i7 c (32 - mm).toUInt32 half f.val sc (encode O) h =
+      encode (lineStores O mm c.toNat half.toNat fun t k ↦
         Native.scaleWord f.val sc
           ((laneLine t3 t2 t1 (pick8 i0 i1 i2 i3 i4 i5 i6 i7 k) U).get t).val) := by
   unfold Native.lastHalf
-  simp only [Native.readUOffset_packFields, add_val, sub_val, mul_val]
+  simp only [Native.readUOffset_encode, add_val, sub_val, mul_val]
   rw [storeWords_half _ _ _
     (lineOffset mm hm hm32 c 0 half (by simp only [USize.reduceToNat]; omega) hh hc hu)
     hs]
   rw [storeWords_half _ _ _
     (lineOffset mm hm hm32 c 1 half (by simp only [USize.reduceToNat]; omega) hh hc hu)
-    (by simp only [Storage.size_pack, size_spliceHalf] at hs ⊢; exact hs)]
+    (by simp only [size_encode_uint32, size_spliceHalf] at hs ⊢; exact hs)]
   rw [storeWords_half _ _ _
     (lineOffset mm hm hm32 c 2 half (by simp only [USize.reduceToNat]; omega) hh hc hu)
-    (by simp only [Storage.size_pack, size_spliceHalf] at hs ⊢; exact hs)]
+    (by simp only [size_encode_uint32, size_spliceHalf] at hs ⊢; exact hs)]
   rw [storeWords_half _ _ _
     (lineOffset mm hm hm32 c 3 half (by simp only [USize.reduceToNat]; omega) hh hc hu)
-    (by simp only [Storage.size_pack, size_spliceHalf] at hs ⊢; exact hs)]
+    (by simp only [size_encode_uint32, size_spliceHalf] at hs ⊢; exact hs)]
   rw [storeWords_half _ _ _
     (lineOffset mm hm hm32 c 4 half (by simp only [USize.reduceToNat]; omega) hh hc hu)
-    (by simp only [Storage.size_pack, size_spliceHalf] at hs ⊢; exact hs)]
+    (by simp only [size_encode_uint32, size_spliceHalf] at hs ⊢; exact hs)]
   rw [storeWords_half _ _ _
     (lineOffset mm hm hm32 c 5 half (by simp only [USize.reduceToNat]; omega) hh hc hu)
-    (by simp only [Storage.size_pack, size_spliceHalf] at hs ⊢; exact hs)]
+    (by simp only [size_encode_uint32, size_spliceHalf] at hs ⊢; exact hs)]
   rw [storeWords_half _ _ _
     (lineOffset mm hm hm32 c 6 half (by simp only [USize.reduceToNat]; omega) hh hc hu)
-    (by simp only [Storage.size_pack, size_spliceHalf] at hs ⊢; exact hs)]
+    (by simp only [size_encode_uint32, size_spliceHalf] at hs ⊢; exact hs)]
   rw [storeWords_half _ _ _
     (lineOffset mm hm hm32 c 7 half (by simp only [USize.reduceToNat]; omega) hh hc hu)
-    (by simp only [Storage.size_pack, size_spliceHalf] at hs ⊢; exact hs)]
+    (by simp only [size_encode_uint32, size_spliceHalf] at hs ⊢; exact hs)]
   rw [storeWords_half _ _ _
     (lineOffset mm hm hm32 c 8 half (by simp only [USize.reduceToNat]; omega) hh hc hu)
-    (by simp only [Storage.size_pack, size_spliceHalf] at hs ⊢; exact hs)]
+    (by simp only [size_encode_uint32, size_spliceHalf] at hs ⊢; exact hs)]
   rw [storeWords_half _ _ _
     (lineOffset mm hm hm32 c 9 half (by simp only [USize.reduceToNat]; omega) hh hc hu)
-    (by simp only [Storage.size_pack, size_spliceHalf] at hs ⊢; exact hs)]
+    (by simp only [size_encode_uint32, size_spliceHalf] at hs ⊢; exact hs)]
   rw [storeWords_half _ _ _
     (lineOffset mm hm hm32 c 10 half (by simp only [USize.reduceToNat]; omega) hh hc hu)
-    (by simp only [Storage.size_pack, size_spliceHalf] at hs ⊢; exact hs)]
+    (by simp only [size_encode_uint32, size_spliceHalf] at hs ⊢; exact hs)]
   rw [storeWords_half _ _ _
     (lineOffset mm hm hm32 c 11 half (by simp only [USize.reduceToNat]; omega) hh hc hu)
-    (by simp only [Storage.size_pack, size_spliceHalf] at hs ⊢; exact hs)]
+    (by simp only [size_encode_uint32, size_spliceHalf] at hs ⊢; exact hs)]
   rw [storeWords_half _ _ _
     (lineOffset mm hm hm32 c 12 half (by simp only [USize.reduceToNat]; omega) hh hc hu)
-    (by simp only [Storage.size_pack, size_spliceHalf] at hs ⊢; exact hs)]
+    (by simp only [size_encode_uint32, size_spliceHalf] at hs ⊢; exact hs)]
   rw [storeWords_half _ _ _
     (lineOffset mm hm hm32 c 13 half (by simp only [USize.reduceToNat]; omega) hh hc hu)
-    (by simp only [Storage.size_pack, size_spliceHalf] at hs ⊢; exact hs)]
+    (by simp only [size_encode_uint32, size_spliceHalf] at hs ⊢; exact hs)]
   rw [storeWords_half _ _ _
     (lineOffset mm hm hm32 c 14 half (by simp only [USize.reduceToNat]; omega) hh hc hu)
-    (by simp only [Storage.size_pack, size_spliceHalf] at hs ⊢; exact hs)]
+    (by simp only [size_encode_uint32, size_spliceHalf] at hs ⊢; exact hs)]
   rw [storeWords_half _ _ _
     (lineOffset mm hm hm32 c 15 half (by simp only [USize.reduceToNat]; omega) hh hc hu)
-    (by simp only [Storage.size_pack, size_spliceHalf] at hs ⊢; exact hs)]
+    (by simp only [size_encode_uint32, size_spliceHalf] at hs ⊢; exact hs)]
   unfold lineStores
   rw [show List.range 16 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] from rfl]
   simp only [List.foldl_cons, List.foldl_nil, laneLine, FieldLine.get, pick8,
@@ -512,14 +515,14 @@ def lastTarget (t3 t2 t1 U : Array KoalaBear.Fast.Field) (mm : Nat) (f : KoalaBe
 
 /-- The batch loop: after batches `c, …, c + n - 1`, exactly the words whose lines reverse into
 them hold their final values. -/
-theorem lastRevGo_pack (t3 t2 t1 U : Array KoalaBear.Fast.Field) (mm : Nat) (Lw : USize)
+theorem lastRevGo_encodeWords (t3 t2 t1 U : Array KoalaBear.Fast.Field) (mm : Nat) (Lw : USize)
     (f : KoalaBear.Fast.Field) (sc : Bool) (hb) (hL : Lw.toNat = 2 ^ mm) (hm : 0 < mm)
     (hm32 : mm ≤ 32) (hu : 64 * 2 ^ mm < USize.size) (hU : U.size = 16 * 2 ^ mm)
     (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1) :
     ∀ (n : Nat) (c : USize) (O : Array UInt32), O.size = 16 * 2 ^ mm →
       16 * (c.toNat + n) ≤ 2 ^ mm →
-      ∃ O', Native.lastRevGo (packFields t3) (packFields t2) (packFields t1) (packFields U) Lw
-          (32 - mm).toUInt32 f.val sc hb n c (Storage.pack O) = Storage.pack O' ∧
+      ∃ O', Native.lastRevGo (encode t3) (encode t2) (encode t1) (encode U) Lw
+          (32 - mm).toUInt32 f.val sc hb n c (encode O) = encode O' ∧
         O'.size = O.size ∧ ∀ w, O'.getD w 0 =
           if w < 16 * 2 ^ mm ∧ c.toNat ≤ NTT.Transform.bitRevNat mm (w / 16) / 16 ∧
               NTT.Transform.bitRevNat mm (w / 16) / 16 < c.toNat + n then
@@ -537,14 +540,14 @@ theorem lastRevGo_pack (t3 t2 t1 U : Array KoalaBear.Fast.Field) (mm : Nat) (Lw 
     have hc : 16 * c.toNat + 16 ≤ Lw.toNat := by rw [hL]; omega
     have hc' : 16 * c.toNat + 16 ≤ 2 ^ mm := by omega
     have hLu : 16 * Lw.toNat < USize.size := by rw [hL]; omega
-    have hs : (Storage.pack O).size < USize.size := by rw [Storage.size_pack, hO]; omega
+    have hs : (encode O).size < USize.size := by rw [size_encode_uint32, hO]; omega
     rw [Native.lastRevGo, dite_eq_left_of_eq_true (eq_true hc)]
     dsimp only
-    rw [lastHalf_pack t3 t2 t1 U _ _ _ _ _ _ _ _ c 0 mm f sc O hm hm32
+    rw [lastHalf_encodeWords t3 t2 t1 U _ _ _ _ _ _ _ _ c 0 mm f sc O hm hm32
       (by simp only [USize.reduceToNat]; omega) hc' hu hs]
-    rw [lastHalf_pack t3 t2 t1 U _ _ _ _ _ _ _ _ c 1 mm f sc _ hm hm32
+    rw [lastHalf_encodeWords t3 t2 t1 U _ _ _ _ _ _ _ _ c 1 mm f sc _ hm hm32
       (by simp only [USize.reduceToNat]; omega) hc' hu
-      (by rw [Storage.size_pack, size_lineStores, hO]; omega)]
+      (by rw [size_encode_uint32, size_lineStores, hO]; omega)]
     have hc1 : (c + 1).toNat = c.toNat + 1 := Plan.usize_add_one c (by omega)
     let V0 := fun t k ↦ Native.scaleWord f.val sc ((laneLine t3 t2 t1
       (pick8 (0 * Lw + 16 * c) (8 * Lw + 16 * c) (4 * Lw + 16 * c) (12 * Lw + 16 * c)
@@ -597,30 +600,31 @@ theorem lastRevGo_pack (t3 t2 t1 U : Array KoalaBear.Fast.Field) (mm : Nat) (Lw 
         omega))]
 
 /-- The fused final layers of a leaf, in natural order. -/
-theorem lastRev_pack (t3 t2 t1 U : Array KoalaBear.Fast.Field) (m : Nat) (f : KoalaBear.Fast.Field)
+theorem lastRev_encodeWords (t3 t2 t1 U : Array KoalaBear.Fast.Field) (m : Nat) (f :
+    KoalaBear.Fast.Field)
     (sc : Bool) (hm : 8 ≤ m) (hm36 : m ≤ 36) (hu : 4 * 2 ^ m < USize.size) (hU : U.size = 2 ^ m)
     (ht3 : t3.size = 8) (ht2 : t2.size = 4) (ht1 : t1.size = 2)
     (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1) :
-    Native.lastRev (packFields t3) (packFields t2) (packFields t1) (packFields U) m f.val sc =
-      Storage.pack (Array.ofFn (n := 2 ^ m) fun w ↦ lastTarget t3 t2 t1 U (m - 4) f sc w) := by
+    Native.lastRev (encode t3) (encode t2) (encode t1) (encode U) m f.val sc =
+      encode (Array.ofFn (n := 2 ^ m) fun w ↦ lastTarget t3 t2 t1 U (m - 4) f sc w) := by
   have hp : 2 ^ m = 16 * 2 ^ (m - 4) := by
     rw [show m = m - 4 + 4 by omega, Nat.pow_add]; simp only [Nat.add_sub_cancel]; omega
   have hpos := Nat.two_pow_pos (m - 4)
   have h16 : 16 ∣ 2 ^ (m - 4) := by
     rw [show m - 4 = 4 + (m - 4 - 4) by omega, Nat.pow_add]; exact Nat.dvd_mul_right _ _
-  have hg : 2 ^ (m - 4) < USize.size ∧ 64 * 2 ^ (m - 4) ≤ (packFields U).size ∧
-      (packFields U).size < USize.size ∧ 31 < (packFields t3).size ∧
-      (packFields t3).size < USize.size ∧ 15 < (packFields t2).size ∧
-      (packFields t2).size < USize.size ∧ 7 < (packFields t1).size ∧
-      (packFields t1).size < USize.size := by
-    simp only [size_packFields, hU, ht3, ht2, ht1]; omega
+  have hg : 2 ^ (m - 4) < USize.size ∧ 64 * 2 ^ (m - 4) ≤ (encode U).size ∧
+      (encode U).size < USize.size ∧ 31 < (encode t3).size ∧
+      (encode t3).size < USize.size ∧ 15 < (encode t2).size ∧
+      (encode t2).size < USize.size ∧ 7 < (encode t1).size ∧
+      (encode t1).size < USize.size := by
+    simp only [size_encode_fields, hU, ht3, ht2, ht1]; omega
   unfold Native.lastRev
   rw [dite_eq_left_of_eq_true (eq_true hg)]
-  obtain ⟨O', hO'1, hO'2, hO'3⟩ := lastRevGo_pack t3 t2 t1 U (m - 4)
+  obtain ⟨O', hO'1, hO'2, hO'3⟩ := lastRevGo_encodeWords t3 t2 t1 U (m - 4)
     (USize.ofNatLT (2 ^ (m - 4)) hg.1) f sc _ (by simp only [USize.toNat_ofNatLT]) (by omega)
     (by omega) (by omega) (by omega) h3 h2 h1 (2 ^ (m - 4) / 16) 0 (U.map Subtype.val)
     (by rw [Array.size_map, hU, hp]) (by simp only [USize.toNat_zero, Nat.zero_add]; omega)
-  change Native.lastRevGo _ _ _ _ _ _ _ _ _ _ _ (Storage.pack (U.map Subtype.val)) = _
+  conv_lhs => arg 12; rw [encode_eq_map_val]
   rw [hO'1]
   congr 1
   apply array_eq_of_getD _ _ 0 (by rw [hO'2, Array.size_map, Array.size_ofFn, hU])
@@ -723,20 +727,20 @@ theorem Native.upperStages_eq_folds (logN : Nat) (tw : Array ByteArray) (a : Byt
     ← List.range_eq_range', List.forIn_pure_yield_eq_foldl, bind_pure, pure_bind, Id.run_pure]
 
 /-- The fused leaf is the reversed, optionally scaled leaf of the sequential stages. -/
-theorem Native.leafNatural_packFields (m : Nat) (tw : Array (Array KoalaBear.Fast.Field))
+theorem Native.leafNatural_encode (m : Nat) (tw : Array (Array KoalaBear.Fast.Field))
     (X : Array KoalaBear.Fast.Field) (f : KoalaBear.Fast.Field) (sc : Bool)
     (htw : TwiddleSizes m tw) (hone : TwiddleOnes m tw) (hs : X.size = 2 ^ m)
     (hu : 4 * 2 ^ m < USize.size) (hm32 : m ≤ 32) :
-    Native.leafNatural (tw.map packFields) m f.val sc (packFields X) =
-      Native.leafRev (Native.stages m (tw.map packFields) (packFields X) f.val false) m f.val
+    Native.leafNatural (tw.map encode) m f.val sc (encode X) =
+      Native.leafRev (Native.stages m (tw.map encode) (encode X) f.val false) m f.val
         sc := by
   unfold Native.leafNatural
   split
   · rename_i hm
     let U := (List.range (m / 2 - 2)).foldl (fun b pass ↦ fieldPass m tw pass b) X
-    have hU : Native.upperStages m (tw.map packFields) (packFields X) = packFields U := by
+    have hU : Native.upperStages m (tw.map encode) (encode X) = encode U := by
       rw [Native.upperStages_eq_folds]
-      exact Native.passes_packFields m (m / 2 - 2) tw X (by omega) htw hs hu
+      exact Native.passes_encode m (m / 2 - 2) tw X (by omega) htw hs hu
     have hUs : U.size = 2 ^ m :=
       foldl_invariant (List.range (m / 2 - 2)) (fun b ↦ b.size = 2 ^ m)
         (fun b pass ↦ fieldPass m tw pass b)
@@ -744,10 +748,10 @@ theorem Native.leafNatural_packFields (m : Nat) (tw : Array (Array KoalaBear.Fas
     have h3 : (tw.getD 3 #[]).size = 8 := by simpa using htw 3 (by omega)
     have h2 : (tw.getD 2 #[]).size = 4 := by simpa using htw 2 (by omega)
     have h1 : (tw.getD 1 #[]).size = 2 := by simpa using htw 1 (by omega)
-    rw [hU, getD_map_packFields, getD_map_packFields, getD_map_packFields,
-      lastRev_pack _ _ _ U m f sc hm.2 (by omega) hu hUs h3 h2 h1 (hone 3 (by omega))
+    rw [hU, getD_map_encode, getD_map_encode, getD_map_encode,
+      lastRev_encodeWords _ _ _ U m f sc hm.2 (by omega) hu hUs h3 h2 h1 (hone 3 (by omega))
         (hone 2 (by omega)) (hone 1 (by omega)),
-      Native.stages_packFields m tw X f false htw hone hs hu]
+      Native.stages_encode m tw X f false htw hone hs hu]
     let W := (List.range (2 ^ m / 16)).foldl (fun b block ↦
       leafBlock (tw.getD 3 #[]) (tw.getD 2 #[]) (tw.getD 1 #[]) (block * 16) f false b) U
     have hfs : fieldStages m tw X f false = W := by
@@ -765,9 +769,9 @@ theorem Native.leafNatural_packFields (m : Nat) (tw : Array (Array KoalaBear.Fas
       (hone 1 (by omega)) (2 ^ m / 16) le_rfl
     have hWs : W.size = 2 ^ m := by rw [hfold.1, hUs]
     rw [hfs]
-    unfold packFields
-    rw [Native.leafRev_pack (W.map Subtype.val) m f.val sc (by omega) hm32
-      (by rw [Array.size_map, hWs]) (by rw [Storage.size_pack, Array.size_map, hWs]; exact hu)]
+    simp only [encode_eq_map_val] at *
+    rw [Native.leafRev_encodeWords (W.map Subtype.val) m f.val sc (by omega) hm32
+      (by rw [Array.size_map, hWs]) (by rw [size_encode_uint32, Array.size_map, hWs]; exact hu)]
     congr 1
     apply array_eq_of_getD _ _ 0 (by rw [Array.size_ofFn, size_rows]; omega)
     intro w
@@ -814,11 +818,11 @@ theorem Native.sliceChunks_leaves (D : NTT.Domain KoalaBear.Fast.Field)
     (post : ByteArray → ByteArray) (leaf : Nat → ByteArray → ByteArray) (ht : TwiddlesFor D tw)
     (hs : a.size = D.n) (hu : 4 * D.n < USize.size)
     (hleaf : ∀ X : Array KoalaBear.Fast.Field, X.size = 2 ^ (D.logN - depth) →
-      leaf (D.logN - depth) (packFields X) = post (Native.stages (D.logN - depth)
-        (tw.map packFields) (packFields X) factor.val normalize)) :
-    (Native.sliceChunks (tw.map packFields) D.logN #[packFields a] factor.val normalize P post
+      leaf (D.logN - depth) (encode X) = post (Native.stages (D.logN - depth)
+        (tw.map encode) (encode X) factor.val normalize)) :
+    (Native.sliceChunks (tw.map encode) D.logN #[encode a] factor.val normalize P post
       leaf depth).get =
-      (Native.splitChunks (tw.map packFields) D.logN (packFields a) factor.val normalize
+      (Native.splitChunks (tw.map encode) D.logN (encode a) factor.val normalize
         depth).get.map post := by
   rw [← Native.slicesOf_one a D.n hs,
     Native.sliceChunks_eq tw _ _ _ _ _ _ D.logN 1 D.n _ (Nat.one_mul _) (by decide)
@@ -830,12 +834,12 @@ theorem Native.leafNatural_hyp (D : NTT.Domain KoalaBear.Fast.Field)
     (tw : Array (Array KoalaBear.Fast.Field)) (factor : KoalaBear.Fast.Field) (inverse : Bool)
     (ht : TwiddlesFor D tw) (h32 : D.logN ≤ 32) (hu : 4 * D.n < USize.size)
     (X : Array KoalaBear.Fast.Field) (hX : X.size = 2 ^ (D.logN - 4)) :
-    Native.leafNatural (tw.map packFields) (D.logN - 4) factor.val inverse (packFields X) =
-      Native.leafRev (Native.stages (D.logN - 4) (tw.map packFields) (packFields X) factor.val
+    Native.leafNatural (tw.map encode) (D.logN - 4) factor.val inverse (encode X) =
+      Native.leafRev (Native.stages (D.logN - 4) (tw.map encode) (encode X) factor.val
         false) (D.logN - 4) factor.val inverse := by
   obtain ⟨hsz, hone⟩ := TwiddlesFor.invariants D tw ht
   have hp : 2 ^ (D.logN - 4) ≤ 2 ^ D.logN := Nat.pow_le_pow_right (by omega) (by omega)
-  exact Native.leafNatural_packFields (D.logN - 4) tw X factor inverse
+  exact Native.leafNatural_encode (D.logN - 4) tw X factor inverse
     (fun s hs ↦ hsz s (by omega)) (fun s hs ↦ hone s (by omega)) hX
     (by simp only [NTT.Domain.n] at hu; omega) (by omega)
 
@@ -844,8 +848,8 @@ theorem Native.runPacked_dft (D : NTT.Domain KoalaBear.Fast.Field)
     (tw : Array (Array KoalaBear.Fast.Field)) (depth : Nat) (factor : KoalaBear.Fast.Field)
     (a : Array KoalaBear.Fast.Field) (inverse : Bool) (ht : TwiddlesFor D tw) (hs : a.size = D.n)
     (h32 : D.logN ≤ 32) (hu : 4 * D.n < USize.size) :
-    Native.runPacked (tw.map packFields) D.logN depth factor.val (packFields a) inverse =
-      packFields (if inverse then (NTT.Forward.forwardSpec D a).map (fun x ↦ factor * x)
+    Native.runPacked (tw.map encode) D.logN depth factor.val (encode a) inverse =
+      encode (if inverse then (NTT.Forward.forwardSpec D a).map (fun x ↦ factor * x)
         else NTT.Forward.forwardSpec D a) := by
   unfold Native.runPacked
   split
@@ -858,10 +862,10 @@ theorem Native.runPacked_dft (D : NTT.Domain KoalaBear.Fast.Field)
     rw [Native.sliceChunks_leaves D tw a factor false _ 4 _ _ ht hs hu
       (Native.leafNatural_hyp D tw factor inverse ht h32 hu),
       Native.splitChunks_leaves D tw a factor false 4 ht hs hu hn (by omega)]
-    rw [show (Array.ofFn (n := 2 ^ 4) fun l ↦ packFields ((normalizedDifSpec D a factor
+    rw [show (Array.ofFn (n := 2 ^ 4) fun l ↦ encode ((normalizedDifSpec D a factor
         false).extract (l * 2 ^ (D.logN - 4)) ((l + 1) * 2 ^ (D.logN - 4)))) =
         Native.leafBlocks (normalizedDifSpec D a factor false) D.logN from rfl,
-      Native.naturalLeaves_packFields _ _ factor _ h12 h32 hsize hu,
+      Native.naturalLeaves_encode _ _ factor _ h12 h32 hsize hu,
       show inverse = (inverse && !false) by simp only [Bool.not_false, Bool.and_true],
       decodedFields_normalizedDifSpec D a factor false _ (fun h ↦ by cases h)]
     simp only [Bool.not_false, Bool.and_true]
@@ -876,18 +880,18 @@ theorem Native.runPacked_dft (D : NTT.Domain KoalaBear.Fast.Field)
       exact h.1.1
     have hsize : (normalizedDifSpec D a factor normalize).size = 2 ^ D.logN :=
       size_normalizedDifSpec D a factor normalize
-    have hpu : (packFields (normalizedDifSpec D a factor normalize)).size < USize.size := by
-      rw [size_packFields, hsize]
+    have hpu : (encode (normalizedDifSpec D a factor normalize)).size < USize.size := by
+      rw [size_encode_fields, hsize]
       exact hu
-    change Native.encode (Native.decodeTiled D.logN (Native.assembleChunks (4 * 2 ^ D.logN)
-      (Native.sliceChunks (tw.map packFields) D.logN #[packFields a] factor.val normalize
+    change Native.encodeFields (Native.decodeTiled D.logN (Native.assembleChunks (4 * 2 ^ D.logN)
+      (Native.sliceChunks (tw.map encode) D.logN #[encode a] factor.val normalize
         (Native.sliceCount D.logN depth) id
-        (fun m b ↦ Native.stages m (tw.map packFields) b factor.val normalize) depth).get)
+        (fun m b ↦ Native.stages m (tw.map encode) b factor.val normalize) depth).get)
         factor.val (inverse && !normalize)) = _
     rw [Native.sliceChunks_leaves D tw a factor normalize _ depth _ _ ht hs hu (fun _ _ ↦ rfl),
       Array.map_id, Native.assembleChunks_capacity, Native.splitChunks_eq,
       Native.splitTask_correct D tw a factor normalize depth ht hs hu hn,
-      Native.decodeTiled_packFields _ _ factor _ h32 hsize hpu, Native.encode_eq,
+      Native.decodeTiled_encode _ _ factor _ h32 hsize hpu, Native.encodeFields_eq,
       decodedFields_normalizedDifSpec D a factor normalize inverse hi]
 
 /-- The field-array pipeline computes the DFT with optional inverse normalization. -/
@@ -895,7 +899,7 @@ theorem Native.runFields_dft (D : NTT.Domain KoalaBear.Fast.Field)
     (tw : Array (Array KoalaBear.Fast.Field)) (depth : Nat) (factor : KoalaBear.Fast.Field)
     (a : Array KoalaBear.Fast.Field) (inverse : Bool) (ht : TwiddlesFor D tw) (hs : a.size = D.n)
     (h32 : D.logN ≤ 32) (hu : 4 * D.n < USize.size) :
-    Native.runFields (tw.map packFields) D.logN depth factor.val a inverse =
+    Native.runFields (tw.map encode) D.logN depth factor.val a inverse =
       if inverse then (NTT.Forward.forwardSpec D a).map (fun x ↦ factor * x)
       else NTT.Forward.forwardSpec D a := by
   unfold Native.runFields
@@ -911,20 +915,20 @@ theorem Native.runFields_dft (D : NTT.Domain KoalaBear.Fast.Field)
     rw [Native.sliceInputChunks_eq tw a D.logN 4 _ _ _ _ _ hs (TwiddlesFor.invariants D tw ht).1 hu
       (Native.leafNatural_hyp D tw factor inverse ht h32 hu),
       Native.splitInputChunks_leaves D tw a factor false 4 ht hs hu hn (by omega)]
-    rw [show (Array.ofFn (n := 2 ^ 4) fun l ↦ packFields ((normalizedDifSpec D a factor
+    rw [show (Array.ofFn (n := 2 ^ 4) fun l ↦ encode ((normalizedDifSpec D a factor
         false).extract (l * 2 ^ (D.logN - 4)) ((l + 1) * 2 ^ (D.logN - 4)))) =
         Native.leafBlocks (normalizedDifSpec D a factor false) D.logN from rfl,
-      Native.naturalLeaves_packFields _ _ factor _ h12 h32 hsize hu, hdec]
+      Native.naturalLeaves_encode _ _ factor _ h12 h32 hsize hu, hdec]
     have hd : (if inverse then (NTT.Forward.forwardSpec D a).map (fun x ↦ factor * x)
         else NTT.Forward.forwardSpec D a).size = 2 ^ D.logN := by
       rw [← hdec]
       simp only [decodedFields, Array.size_ofFn]
-    have hpd : (packFields (if inverse then (NTT.Forward.forwardSpec D a).map (fun x ↦ factor * x)
+    have hpd : (encode (if inverse then (NTT.Forward.forwardSpec D a).map (fun x ↦ factor * x)
         else NTT.Forward.forwardSpec D a)).size < USize.size := by
-      rw [size_packFields, hd]
+      rw [size_encode_fields, hd]
       exact hu
     conv_lhs => rw [← hd]
-    exact Native.unpack_packFields _ hpd
+    exact Native.unpack_encode _ hpd
   · exact Native.run_dft D tw depth factor a inverse ht hs h32 hu
 
 end CompPoly.CPolynomial.NTTFast.Packed

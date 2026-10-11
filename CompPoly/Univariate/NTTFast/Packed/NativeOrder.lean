@@ -220,7 +220,7 @@ def transposeGo (s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 : @& Byte
   | 0, _, _, out => out
   | count + 1, q, p, out =>
     let n := out.size
-    let out := zeroBlock.copySlice 0 out n 1024 false
+    let out := ByteArray.zeroBlock.copySlice 0 out n 1024 false
     transposeGo s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 count (q + 16) (p + 256)
       (transposeStep s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 q out p)
 

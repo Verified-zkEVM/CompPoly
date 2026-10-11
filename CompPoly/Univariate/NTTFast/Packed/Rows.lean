@@ -5,7 +5,7 @@ Authors: Gregor Mitscha-Baude
 -/
 module
 
-public import CompPoly.Univariate.NTTFast.Packed.Storage
+public import CompPoly.Data.ByteArray.Packed
 public import Mathlib.Tactic.IntervalCases
 
 /-! # Sixteen-word rows
@@ -16,6 +16,7 @@ concatenation of sixteen-entry literals with a single indexing lemma.
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode)
 
 /-- Sixteen values of a function as an array literal. -/
 def lit16 (g : Nat → α) : Array α :=
@@ -84,7 +85,7 @@ theorem getD_map_range (F : Nat → α) (n k : Nat) (hk : k < n) (d : α) :
     ↓reduceIte, Option.map_some, Option.getD_some]
 
 /-- Pack an empty array, whatever capacity was reserved. -/
-theorem Native.emptyWithCapacity_eq_pack (k : Nat) :
-    ByteArray.emptyWithCapacity k = Storage.pack #[] := rfl
+theorem Native.emptyWithCapacity_eq_encodeWords (k : Nat) :
+    ByteArray.emptyWithCapacity k = encode (#[] : Array UInt32) := rfl
 
 end CompPoly.CPolynomial.NTTFast.Packed

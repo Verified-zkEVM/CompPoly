@@ -12,15 +12,16 @@ public import CompPoly.Univariate.NTTFast.Packed.DecoderStores
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode)
 
 /-- A lane read retains its natural-number index when the entire lane is in bounds. -/
 theorem Native.readWord_at (a : Array KoalaBear.Fast.Field) (base lane stride : USize)
-    (ha : (packFields a).size < USize.size)
+    (ha : (encode a).size < USize.size)
     (hi : base.toNat + lane.toNat * stride.toNat < a.size) :
-    Native.readWord (packFields a) (base + lane * stride) =
+    Native.readWord (encode a) (base + lane * stride) =
       (a.getD (base.toNat + lane.toNat * stride.toNat) 0).val := by
   have hin : base.toNat + lane.toNat * stride.toNat < USize.size := by
-    rw [size_packFields] at ha
+    rw [size_encode_fields] at ha
     omega
   have hm : (lane * stride).toNat = lane.toNat * stride.toNat := by
     have h := USize.toNat_mul lane stride
@@ -32,7 +33,7 @@ theorem Native.readWord_at (a : Array KoalaBear.Fast.Field) (base lane stride : 
     change (base + lane * stride).toNat = (base.toNat + (lane * stride).toNat) % USize.size at h
     rw [hm, Nat.mod_eq_of_lt hin] at h
     exact h
-  rw [Native.readWord_eq_read, hs, Native.read_packFields _ _ ha hi]
+  rw [Native.readWord_eq_read, hs, Native.read_encode _ _ ha hi]
 
 /-- One decoded input lane, including optional inverse normalization. -/
 def laneValue (a : Array KoalaBear.Fast.Field) (factor : KoalaBear.Fast.Field)
@@ -43,9 +44,9 @@ def laneValue (a : Array KoalaBear.Fast.Field) (factor : KoalaBear.Fast.Field)
   values. -/
 theorem Native.decodeTile_spec (a : Array KoalaBear.Fast.Field) (base stride outBase : USize)
     (factor : KoalaBear.Fast.Field) (inverse : Bool) (out : Array KoalaBear.Fast.Field)
-    (ha : (packFields a).size < USize.size) (hi : base.toNat + 3 * stride.toNat < a.size)
+    (ha : (encode a).size < USize.size) (hi : base.toNat + 3 * stride.toNat < a.size)
     (ho : out.size < USize.size) (hob : outBase.toNat + 4 ≤ out.size) :
-    Native.decodeTile (packFields a) base stride outBase factor.val inverse out =
+    Native.decodeTile (encode a) base stride outBase factor.val inverse out =
       storeList out outBase.toNat
         [laneValue a factor inverse base.toNat,
           laneValue a factor inverse (base.toNat + 2 * stride.toNat),

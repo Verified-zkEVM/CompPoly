@@ -13,6 +13,7 @@ import Mathlib.Tactic.Ring
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode)
 
 /-- Splitting a tile index into its four low bits reproduces the native output-base calculation. -/
 theorem tile_group_geometry (logN m d : Nat) (hlog : 6 ≤ logN) (hd : d < 16) :
@@ -58,8 +59,8 @@ theorem rawDecoderTile_scatter (logN : Nat) (a : Array KoalaBear.Fast.Field)
     (out : Array KoalaBear.Fast.Field) (hlog : 6 ≤ logN) (h32 : logN ≤ 32)
     (hm : m < 2 ^ logN / 64) (hd : d < 16)
     (hs : a.size = 2 ^ logN) (ho : out.size = 2 ^ logN)
-    (hu : (packFields a).size < USize.size) :
-    rawDecoderTile logN (packFields a) factor.val inverse m d out =
+    (hu : (encode a).size < USize.size) :
+    rawDecoderTile logN (encode a) factor.val inverse m d out =
       scatterTile (decodedFields logN a factor inverse)
         (NTT.Transform.bitRevNat (logN - 2) (m * 16 + d)) out := by
   have hrevD : (reverse32 d.toUInt32 >>> (28 : UInt32)).toNat =

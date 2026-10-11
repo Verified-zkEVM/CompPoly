@@ -11,6 +11,7 @@ public import CompPoly.Univariate.NTTFast.Packed.RecursiveOrdering
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode)
 
 /-- An already domain-sized array is unchanged by zero-padding. -/
 theorem loadNaturalArray_eq_self [Field R] (D : NTT.Domain R) (a : Array R)
@@ -33,8 +34,8 @@ theorem Native.stages_difSpec (D : NTT.Domain KoalaBear.Fast.Field)
     (factor : KoalaBear.Fast.Field) (normalize : Bool)
     (ht : TwiddlesFor D tw) (hs : a.size = D.n) (hu : 4 * D.n < USize.size)
     (hn : ValidNormalization D.logN normalize) :
-    Native.stages D.logN (tw.map packFields) (packFields a) factor.val normalize =
-      packFields (if normalize then (difSpec D a).map (fun x ↦ factor * x) else difSpec D a) := by
+    Native.stages D.logN (tw.map encode) (encode a) factor.val normalize =
+      encode (if normalize then (difSpec D a).map (fun x ↦ factor * x) else difSpec D a) := by
   rw [Native.stages_correct_for D tw a factor normalize ht hs hu hn,
     planStages_eq_difSpec D a hs]
 

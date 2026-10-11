@@ -11,6 +11,7 @@ public import CompPoly.Univariate.NTTFast.Packed.DecoderCorrectness
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode)
 
 /-- Mathematical task output shape is preserved with or without normalization. -/
 @[simp] theorem size_normalizedDifSpec [Field R] (D : NTT.Domain R) (a : Array R)
@@ -67,7 +68,7 @@ theorem Native.run_dft (D : NTT.Domain KoalaBear.Fast.Field)
     (depth : Nat) (factor : KoalaBear.Fast.Field) (a : Array KoalaBear.Fast.Field)
     (inverse : Bool) (ht : TwiddlesFor D tw) (hs : a.size = D.n)
     (h32 : D.logN ≤ 32) (hu : 4 * D.n < USize.size) :
-    Native.run (tw.map packFields) D.logN depth factor.val a inverse =
+    Native.run (tw.map encode) D.logN depth factor.val a inverse =
       if inverse then (NTT.Forward.forwardSpec D a).map (fun x ↦ factor * x)
       else NTT.Forward.forwardSpec D a := by
   let normalize := inverse && D.logN - depth ≥ 4 && (D.logN - depth) % 2 == 0
@@ -81,12 +82,12 @@ theorem Native.run_dft (D : NTT.Domain KoalaBear.Fast.Field)
     exact h.1.1
   rw [Native.run_eq_before_collection]
   change Native.decodeTiled D.logN
-    (Native.splitInputTask (tw.map packFields) D.logN a factor.val normalize depth).get
+    (Native.splitInputTask (tw.map encode) D.logN a factor.val normalize depth).get
       factor.val (inverse && !normalize) = _
   rw [Native.splitInputTask_correct D tw a factor normalize depth ht hs hu hn]
-  rw [Native.decodeTiled_packFields D.logN _ factor _ h32
+  rw [Native.decodeTiled_encode D.logN _ factor _ h32
     (size_normalizedDifSpec D a factor normalize)
-    (by simpa only [size_packFields, size_normalizedDifSpec] using hu)]
+    (by simpa only [size_encode_fields, size_normalizedDifSpec] using hu)]
   exact decodedFields_normalizedDifSpec D a factor normalize inverse hi
 
 end CompPoly.CPolynomial.NTTFast.Packed

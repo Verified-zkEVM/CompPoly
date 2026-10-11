@@ -13,20 +13,21 @@ public import CompPoly.Univariate.NTTFast.Packed.Scatter
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode)
 
 /-- A tile writes exactly the final natural-order values in its reversed four-coordinate group. -/
 theorem Native.decodeTile_scatter (logN : Nat) (a : Array KoalaBear.Fast.Field)
     (factor : KoalaBear.Fast.Field) (inverse : Bool) (tile : Nat)
     (out : Array KoalaBear.Fast.Field) (hlog : 2 ≤ logN) (ht : tile < 2 ^ (logN - 2))
     (hs : a.size = 2 ^ logN) (ho : out.size = 2 ^ logN)
-    (hu : (packFields a).size < USize.size) :
-    Native.decodeTile (packFields a) tile.toUSize (2 ^ (logN - 2)).toUSize
+    (hu : (encode a).size < USize.size) :
+    Native.decodeTile (encode a) tile.toUSize (2 ^ (logN - 2)).toUSize
       (4 * NTT.Transform.bitRevNat (logN - 2) tile).toUSize factor.val inverse out =
       scatterTile (decodedFields logN a factor inverse)
         (NTT.Transform.bitRevNat (logN - 2) tile) out := by
   have hn := tiled_size logN hlog
   have hgroup := scattered_group_bound logN tile hlog
-  have huN : 2 ^ logN < USize.size := by rw [size_packFields, hs] at hu; omega
+  have huN : 2 ^ logN < USize.size := by rw [size_encode_fields, hs] at hu; omega
   have htileU : tile < USize.size := by omega
   have hstrideU : 2 ^ (logN - 2) < USize.size := by omega
   have hbaseU : 4 * NTT.Transform.bitRevNat (logN - 2) tile < USize.size := by omega

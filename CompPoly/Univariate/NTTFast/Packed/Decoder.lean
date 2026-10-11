@@ -13,6 +13,7 @@ public import CompPoly.Univariate.NTTFast.Packed.TaskSpec
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode)
 
 /-- The scalar output decoder's field-array specification. -/
 def decodedFields (logN : Nat) (a : Array KoalaBear.Fast.Field)
@@ -34,21 +35,21 @@ theorem Native.reverse_index (logN i : Nat) (hlog : logN ≤ 32) (hi : i < 2 ^ l
   · exact reverse32_shift_eq_bitRevNat logN i (by omega) hlog
 
 /-- Ordinary packed output conversion computes exactly reversed indexing and optional scaling. -/
-theorem Native.decode_packFields (logN : Nat) (a : Array KoalaBear.Fast.Field)
+theorem Native.decode_encode (logN : Nat) (a : Array KoalaBear.Fast.Field)
     (factor : KoalaBear.Fast.Field) (inverse : Bool) (hlog : logN ≤ 32)
-    (hs : a.size = 2 ^ logN) (hu : (packFields a).size < USize.size) :
-    Native.decode logN (packFields a) factor.val inverse = decodedFields logN a factor inverse := by
+    (hs : a.size = 2 ^ logN) (hu : (encode a).size < USize.size) :
+    Native.decode logN (encode a) factor.val inverse = decodedFields logN a factor inverse := by
   change tabulate (fun i : Fin (2 ^ logN) ↦
     ofWord (if inverse then mul factor.val
-      (Native.read (packFields a) (reverse32 i.val.toUInt32 >>> (32 - logN).toUInt32).toNat)
-    else Native.read (packFields a)
+      (Native.read (encode a) (reverse32 i.val.toUInt32 >>> (32 - logN).toUInt32).toNat)
+    else Native.read (encode a)
       (reverse32 i.val.toUInt32 >>> (32 - logN).toUInt32).toNat)) = _
   rw [tabulate_eq]
   unfold decodedFields
   apply congrArg Array.ofFn
   funext i
   rw [Native.reverse_index logN i.val hlog i.isLt,
-    Native.read_packFields a _ hu (by rw [hs]; exact NTT.Transform.bitRevNat_lt _ _)]
+    Native.read_encode a _ hu (by rw [hs]; exact NTT.Transform.bitRevNat_lt _ _)]
   cases inverse <;> simp only [Bool.false_eq_true, ite_false, ite_true, mul_val, ofWord_val]
 
 /-- Reading a word index uses the same storage specification as the ordinary checked read. -/

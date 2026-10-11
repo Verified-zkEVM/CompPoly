@@ -13,6 +13,7 @@ public import CompPoly.Univariate.NTTFast.Packed.Stages
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode)
 
 /-- Four final DIF layers, optionally normalizing their completed coordinates. -/
 def leafBlock [Field R] (t3 t2 t1 : Array R) (base : Nat) (factor : R)
@@ -49,21 +50,21 @@ def rawLeafBlock (t3 t2 t1 : ByteArray) (base : Nat) (factor : UInt32)
   else a
 
 /-- Valid packed leaves always enter the optimized branch and implement local DIF layers. -/
-theorem rawLeafBlock_packFields (t3 t2 t1 : Array KoalaBear.Fast.Field) (base : Nat)
+theorem rawLeafBlock_encode (t3 t2 t1 : Array KoalaBear.Fast.Field) (base : Nat)
     (factor : KoalaBear.Fast.Field) (normalize : Bool) (a : Array KoalaBear.Fast.Field)
-    (ha : (packFields a).size < USize.size) (hs : base + 16 ≤ a.size)
+    (ha : (encode a).size < USize.size) (hs : base + 16 ≤ a.size)
     (ht3 : t3.size = 8) (ht2 : t2.size = 4) (ht1 : t1.size = 2)
     (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1) :
-    rawLeafBlock (packFields t3) (packFields t2) (packFields t1) base factor.val
-      normalize (packFields a) = packFields (leafBlock t3 t2 t1 base factor normalize a) := by
+    rawLeafBlock (encode t3) (encode t2) (encode t1) base factor.val
+      normalize (encode a) = encode (leafBlock t3 t2 t1 base factor normalize a) := by
   have hsize := USize.le_size
   unfold rawLeafBlock leafBlock
-  have hg : 4 * (base + 15) + 3 < (packFields a).size ∧
-      (packFields a).size < USize.size ∧
-      31 < (packFields t3).size ∧ (packFields t3).size < USize.size ∧
-      15 < (packFields t2).size ∧ (packFields t2).size < USize.size ∧
-      7 < (packFields t1).size ∧ (packFields t1).size < USize.size := by
-    simp only [size_packFields, ht3, ht2, ht1] at *
+  have hg : 4 * (base + 15) + 3 < (encode a).size ∧
+      (encode a).size < USize.size ∧
+      31 < (encode t3).size ∧ (encode t3).size < USize.size ∧
+      15 < (encode t2).size ∧ (encode t2).size < USize.size ∧
+      7 < (encode t1).size ∧ (encode t1).size < USize.size := by
+    simp only [size_encode_fields, ht3, ht2, ht1] at *
     omega
   rw [dite_eq_left hg]
   split
@@ -79,15 +80,15 @@ def rawPairBlock (a : ByteArray) (block : Nat) : ByteArray :=
   Native.write (Native.write a (2 * block) (add x y)) (2 * block + 1) (sub x y)
 
 /-- The final two-coordinate kernel is one ordinary DIF butterfly. -/
-theorem rawPairBlock_packFields (a : Array KoalaBear.Fast.Field) (block : Nat)
-    (ha : (packFields a).size < USize.size) (hs : 2 * block + 2 ≤ a.size) :
-    rawPairBlock (packFields a) block =
-      packFields (Plan.butterflyDIFInner #[1] 1 0 (2 * block) (2 * block + 1) a) := by
+theorem rawPairBlock_encode (a : Array KoalaBear.Fast.Field) (block : Nat)
+    (ha : (encode a).size < USize.size) (hs : 2 * block + 2 ≤ a.size) :
+    rawPairBlock (encode a) block =
+      encode (Plan.butterflyDIFInner #[1] 1 0 (2 * block) (2 * block + 1) a) := by
   unfold rawPairBlock
-  rw [Native.read_packFields _ _ ha (by omega), Native.read_packFields _ _ ha (by omega)]
+  rw [Native.read_encode _ _ ha (by omega), Native.read_encode _ _ ha (by omega)]
   dsimp only
-  rw [add_val, sub_val, Native.write_packFields _ _ ha (by omega)]
-  rw [Native.write_packFields _ _ (by simpa only [size_packFields, Array.size_setIfInBounds]
+  rw [add_val, sub_val, Native.write_encode _ _ ha (by omega)]
+  rw [Native.write_encode _ _ (by simpa only [size_encode_fields, Array.size_setIfInBounds]
     using ha)
     (by simp only [Array.size_setIfInBounds]; omega)]
   simp only [Plan.butterflyDIFInner, Nat.zero_lt_one, ↓reduceIte,
@@ -95,21 +96,21 @@ theorem rawPairBlock_packFields (a : Array KoalaBear.Fast.Field) (block : Nat)
     MulOneClass.one_mul, Nat.lt_irrefl, Array.set!_eq_setIfInBounds]
 
 /-- Complete final-layer blocks preserve packing throughout their traversal. -/
-theorem fold_rawLeafBlock_packFields (t3 t2 t1 : Array KoalaBear.Fast.Field) (blocks : Nat)
+theorem fold_rawLeafBlock_encode (t3 t2 t1 : Array KoalaBear.Fast.Field) (blocks : Nat)
     (factor : KoalaBear.Fast.Field) (normalize : Bool) (a : Array KoalaBear.Fast.Field)
-    (ha : (packFields a).size < USize.size) (hs : blocks * 16 ≤ a.size)
+    (ha : (encode a).size < USize.size) (hs : blocks * 16 ≤ a.size)
     (ht3 : t3.size = 8) (ht2 : t2.size = 4) (ht1 : t1.size = 2)
     (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1) :
     (List.range blocks).foldl (fun b block ↦
-      rawLeafBlock (packFields t3) (packFields t2) (packFields t1)
-        (block * 16) factor.val normalize b) (packFields a) =
-      packFields ((List.range blocks).foldl (fun b block ↦
+      rawLeafBlock (encode t3) (encode t2) (encode t1)
+        (block * 16) factor.val normalize b) (encode a) =
+      encode ((List.range blocks).foldl (fun b block ↦
         leafBlock t3 t2 t1 (block * 16) factor normalize b) a) := by
-  apply foldl_packFields (List.range blocks) (fun b ↦ b.size = a.size)
+  apply foldl_encode (List.range blocks) (fun b ↦ b.size = a.size)
   · intro block hb b hbs
     have hb' := List.mem_range.mp hb
-    exact rawLeafBlock_packFields t3 t2 t1 (block * 16) factor normalize b
-      (by simpa only [size_packFields, hbs] using ha) (by omega)
+    exact rawLeafBlock_encode t3 t2 t1 (block * 16) factor normalize b
+      (by simpa only [size_encode_fields, hbs] using ha) (by omega)
       ht3 ht2 ht1 h3 h2 h1
   · intro block hb b hbs
     have hb' := List.mem_range.mp hb
@@ -117,16 +118,16 @@ theorem fold_rawLeafBlock_packFields (t3 t2 t1 : Array KoalaBear.Fast.Field) (bl
   · rfl
 
 /-- The remaining scalar final pass transports through packing. -/
-theorem fold_rawPairBlock_packFields (a : Array KoalaBear.Fast.Field) (blocks : Nat)
-    (ha : (packFields a).size < USize.size) (hs : blocks * 2 ≤ a.size) :
-    (List.range blocks).foldl rawPairBlock (packFields a) =
-      packFields ((List.range blocks).foldl (fun b block ↦
+theorem fold_rawPairBlock_encode (a : Array KoalaBear.Fast.Field) (blocks : Nat)
+    (ha : (encode a).size < USize.size) (hs : blocks * 2 ≤ a.size) :
+    (List.range blocks).foldl rawPairBlock (encode a) =
+      encode ((List.range blocks).foldl (fun b block ↦
         Plan.butterflyDIFInner #[1] 1 0 (2 * block) (2 * block + 1) b) a) := by
-  apply foldl_packFields (List.range blocks) (fun b ↦ b.size = a.size)
+  apply foldl_encode (List.range blocks) (fun b ↦ b.size = a.size)
   · intro block hb b hbs
     have hb' := List.mem_range.mp hb
-    exact rawPairBlock_packFields b block
-      (by simpa only [size_packFields, hbs] using ha) (by omega)
+    exact rawPairBlock_encode b block
+      (by simpa only [size_encode_fields, hbs] using ha) (by omega)
   · intro block hb b hbs
     simpa only [Plan.size_butterflyDIFInner] using hbs
   · rfl
