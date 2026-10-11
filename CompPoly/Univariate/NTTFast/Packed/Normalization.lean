@@ -13,6 +13,7 @@ public import CompPoly.Univariate.NTTFast.Packed.StageCorrectness
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode)
 
 /-- Writing outside a normalized segment commutes with its normalization. -/
 theorem scaleSegment_set_outside [Field R] (a : Array R) (base count : Nat) (factor : R)
@@ -166,13 +167,13 @@ theorem Native.stages_correct (D : NTT.Domain KoalaBear.Fast.Field)
     (a : Array KoalaBear.Fast.Field) (factor : KoalaBear.Fast.Field) (normalize : Bool)
     (hs : a.size = D.n) (hu : 4 * D.n < USize.size)
     (hn : ValidNormalization D.logN normalize) :
-    Native.stages D.logN ((Plan.twiddleTable D).map packFields) (packFields a)
+    Native.stages D.logN ((Plan.twiddleTable D).map encode) (encode a)
       factor.val normalize =
-      packFields (if normalize then
+      encode (if normalize then
         (Plan.runStagesDIFRadix4WithTwiddles D (Plan.twiddleTable D) a).map (fun x ↦ factor * x)
       else Plan.runStagesDIFRadix4WithTwiddles D (Plan.twiddleTable D) a) := by
   obtain ⟨htw, hone⟩ := twiddleTable_invariants D
-  rw [Native.stages_packFields _ _ _ _ _ htw hone hs hu]
+  rw [Native.stages_encode _ _ _ _ _ htw hone hs hu]
   cases normalize with
   | false =>
     rw [fieldStages_unscaled_eq_all _ _ _ _ htw hone hs, allFieldStages_eq_plan D _ a htw hone]

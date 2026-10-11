@@ -12,6 +12,7 @@ public import CompPoly.Univariate.NTTFast.Packed.Folds
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode)
 
 /-- Every stored twiddle table has its stage's butterfly width. -/
 def TwiddleSizes (logN : Nat) (tw : Array (Array KoalaBear.Fast.Field)) : Prop :=
@@ -35,7 +36,7 @@ theorem pass_indices (logN pass : Nat) (hp : pass < logN / 2) :
   omega
 
 /-- One complete packed pass agrees with its field-array block-loop semantics. -/
-theorem Native.pass_packFields (logN : Nat) (tw : Array (Array KoalaBear.Fast.Field))
+theorem Native.pass_encode (logN : Nat) (tw : Array (Array KoalaBear.Fast.Field))
     (pass : Nat) (a : Array KoalaBear.Fast.Field) (hp : pass < logN / 2)
     (htw : TwiddleSizes logN tw) (hs : a.size = 2 ^ logN)
     (hu : 4 * 2 ^ logN < USize.size) :
@@ -43,24 +44,24 @@ theorem Native.pass_packFields (logN : Nat) (tw : Array (Array KoalaBear.Fast.Fi
     let low := high - 1
     let q := 2 ^ low
     (List.range (2 ^ logN / (4 * q))).foldl (fun acc block ↦
-      Native.inner16 ((tw.map packFields).getD high ByteArray.empty)
-        ((tw.map packFields).getD low ByteArray.empty) q 0
+      Native.inner16 ((tw.map encode).getD high ByteArray.empty)
+        ((tw.map encode).getD low ByteArray.empty) q 0
         (block * (4 * q)) (block * (4 * q) + q)
         (block * (4 * q) + 2 * q) (block * (4 * q) + 3 * q) acc)
-      (packFields a) = packFields (fieldPass logN tw pass a) := by
+      (encode a) = encode (fieldPass logN tw pass a) := by
   dsimp only
-  rw [getD_map_packFields, getD_map_packFields]
+  rw [getD_map_encode, getD_map_encode]
   unfold fieldPass
   obtain ⟨hhl, hh, hl⟩ := pass_indices logN pass hp
   have hhigh := htw _ hh
   have hlow := htw _ hl
-  apply Native.fold_inner16_packFields
-  · simpa only [size_packFields, hs] using hu
-  · rw [size_packFields, hhigh]
+  apply Native.fold_inner16_encode
+  · simpa only [size_encode_fields, hs] using hu
+  · rw [size_encode_fields, hhigh]
     have he : 2 ^ (logN - 1 - 2 * pass) ≤ 2 ^ logN :=
       Nat.pow_le_pow_right (by decide) (by omega)
     omega
-  · rw [size_packFields, hlow]
+  · rw [size_encode_fields, hlow]
     have he : 2 ^ (logN - 1 - 2 * pass - 1) ≤ 2 ^ logN :=
       Nat.pow_le_pow_right (by decide) (by omega)
     omega
@@ -78,7 +79,7 @@ theorem Native.pass_packFields (logN : Nat) (tw : Array (Array KoalaBear.Fast.Fi
   exact Plan.size_butterflyDIFRadix4Blocks _ _ _ _ _ _ _
 
 /-- A prefix of complete paired passes transports through the packed representation. -/
-theorem Native.passes_packFields (logN count : Nat)
+theorem Native.passes_encode (logN count : Nat)
     (tw : Array (Array KoalaBear.Fast.Field)) (a : Array KoalaBear.Fast.Field)
     (hc : count ≤ logN / 2) (htw : TwiddleSizes logN tw)
     (hs : a.size = 2 ^ logN) (hu : 4 * 2 ^ logN < USize.size) :
@@ -87,15 +88,15 @@ theorem Native.passes_packFields (logN count : Nat)
       let low := high - 1
       let q := 2 ^ low
       (List.range (2 ^ logN / (4 * q))).foldl (fun b block ↦
-        Native.inner16 ((tw.map packFields).getD high ByteArray.empty)
-          ((tw.map packFields).getD low ByteArray.empty) q 0
+        Native.inner16 ((tw.map encode).getD high ByteArray.empty)
+          ((tw.map encode).getD low ByteArray.empty) q 0
           (block * (4 * q)) (block * (4 * q) + q)
           (block * (4 * q) + 2 * q) (block * (4 * q) + 3 * q) b) acc)
-      (packFields a) =
-      packFields ((List.range count).foldl (fun b pass ↦ fieldPass logN tw pass b) a) := by
-  apply foldl_packFields (List.range count) (fun b ↦ b.size = 2 ^ logN)
+      (encode a) =
+      encode ((List.range count).foldl (fun b pass ↦ fieldPass logN tw pass b) a) := by
+  apply foldl_encode (List.range count) (fun b ↦ b.size = 2 ^ logN)
   · intro pass hp b hb
-    exact Native.pass_packFields logN tw pass b (by
+    exact Native.pass_encode logN tw pass b (by
       have := List.mem_range.mp hp
       omega) htw hb hu
   · intro pass hp b hb

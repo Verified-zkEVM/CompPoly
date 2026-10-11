@@ -13,12 +13,13 @@ The correctness theorems cover the complete Lean pipeline. Packed words are read
 with the `ByteArray` word accessors proposed for Lean core (`CompPoly.Data.ByteArray.Pack`),
 whose inline C remains a runtime trust assumption; arithmetic, tasks and ordering are Lean.
 `forward`/`inverse` take and return field arrays. `forwardPacked`/`inversePacked` take and
-return packed Montgomery words (`packFields`), which avoids the sequential field-array
+return packed Montgomery words (`encode`), which avoids the sequential field-array
 decoding of the output.
 -/
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode)
 
 /-- A reusable packed transform plan with certified cached twiddles and index bounds. -/
 structure Plan where
@@ -29,8 +30,8 @@ structure Plan where
   nInv_eq : nInv = domain.nInv
   forwardTwiddles : Array ByteArray
   inverseTwiddles : Array ByteArray
-  forward_eq : forwardTwiddles = (NTTFast.Plan.twiddleTable domain).map packFields
-  inverse_eq : inverseTwiddles = (NTTFast.Plan.twiddleTable domain.inverse).map packFields
+  forward_eq : forwardTwiddles = (NTTFast.Plan.twiddleTable domain).map encode
+  inverse_eq : inverseTwiddles = (NTTFast.Plan.twiddleTable domain.inverse).map encode
 
 namespace Plan
 
@@ -42,16 +43,16 @@ def ofDomain (D : NTT.Domain KoalaBear.Fast.Field) (h32 : D.logN ≤ 32)
   byte_bound := hu
   nInv := D.nInv
   nInv_eq := rfl
-  forwardTwiddles := (NTTFast.Plan.twiddleTable D).map Native.encode
-  inverseTwiddles := (NTTFast.Plan.twiddleTable D.inverse).map Native.encode
+  forwardTwiddles := (NTTFast.Plan.twiddleTable D).map Native.encodeFields
+  inverseTwiddles := (NTTFast.Plan.twiddleTable D.inverse).map Native.encodeFields
   forward_eq := by
     apply congrArg (Array.map · _)
     funext a
-    exact Native.encode_eq a
+    exact Native.encodeFields_eq a
   inverse_eq := by
     apply congrArg (Array.map · _)
     funext a
-    exact Native.encode_eq a
+    exact Native.encodeFields_eq a
 
 /-- Reuse a domain-sized input, otherwise zero-pad or truncate it. -/
 @[inline] def load (P : Plan) (a : Array KoalaBear.Fast.Field) : Array KoalaBear.Fast.Field :=
@@ -133,7 +134,7 @@ private theorem run_inverse (D : NTT.Domain KoalaBear.Fast.Field)
     (tw : Array (Array KoalaBear.Fast.Field)) (depth : Nat) (a : Array KoalaBear.Fast.Field)
     (ht : TwiddlesFor D.inverse tw) (hs : a.size = D.n)
     (h32 : D.logN ≤ 32) (hu : 4 * D.n < USize.size) :
-    Native.runFields (tw.map packFields) D.logN depth D.nInv.val a true =
+    Native.runFields (tw.map encode) D.logN depth D.nInv.val a true =
       NTT.Inverse.inverseSpec D a := by
   have h := Native.runFields_dft D.inverse tw depth D.nInv a true ht
     (hs.trans (inverse_n D).symm) ((inverse_logN D).symm ▸ h32) ((inverse_n D).symm ▸ hu)
@@ -158,7 +159,7 @@ theorem inverse_correct (P : Plan) (a : Array KoalaBear.Fast.Field) (depth : Nat
 /-- The packed forward transform equals the mathematical DFT of every domain-sized input. -/
 theorem forwardPacked_correct (P : Plan) (a : Array KoalaBear.Fast.Field) (depth : Nat)
     (hs : a.size = P.domain.n) :
-    P.forwardPacked (packFields a) depth = packFields (NTT.Forward.forwardSpec P.domain a) := by
+    P.forwardPacked (encode a) depth = encode (NTT.Forward.forwardSpec P.domain a) := by
   rw [forwardPacked, P.forward_eq, P.nInv_eq]
   exact Native.runPacked_dft P.domain _ depth P.domain.nInv a false (fun _ _ ↦ rfl) hs
     P.log_bound P.byte_bound
@@ -166,7 +167,7 @@ theorem forwardPacked_correct (P : Plan) (a : Array KoalaBear.Fast.Field) (depth
 /-- The packed inverse transform equals the normalized inverse DFT of every domain-sized input. -/
 theorem inversePacked_correct (P : Plan) (a : Array KoalaBear.Fast.Field) (depth : Nat)
     (hs : a.size = P.domain.n) :
-    P.inversePacked (packFields a) depth = packFields (NTT.Inverse.inverseSpec P.domain a) := by
+    P.inversePacked (encode a) depth = encode (NTT.Inverse.inverseSpec P.domain a) := by
   rw [inversePacked, P.inverse_eq, P.nInv_eq]
   have h := Native.runPacked_dft P.domain.inverse _ depth P.domain.nInv a true (fun _ _ ↦ rfl)
     (hs.trans (inverse_n P.domain).symm) ((inverse_logN P.domain).symm ▸ P.log_bound)

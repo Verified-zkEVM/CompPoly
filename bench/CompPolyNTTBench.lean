@@ -83,7 +83,7 @@ def main (args : List String) : IO UInt32 := do
       | "packed-io" =>
         let plan := CPolynomial.NTTFast.Packed.Plan.ofDomain domain h32 hu
         -- Packed Montgomery words in and out, like Plonky3's contiguous field vectors.
-        let words := inputs.map CPolynomial.NTTFast.Packed.Native.encode
+        let words := inputs.map CPolynomial.NTTFast.Packed.Native.encodeFields
         let word (b : ByteArray) (i : Nat) : UInt64 :=
           (CPolynomial.NTTFast.Packed.Native.read b i).toUInt64
         runTimedSpec (spec "proved packed parallel radix-4, packed words in and out" "ByteArray")

@@ -12,6 +12,7 @@ public import CompPoly.Univariate.NTTFast.Packed.Native
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed.Native
+open CompPoly.PackedRepr (encode size_encode_uint32)
 
 theorem ugetUInt32LE_eq (a : ByteArray) (i : USize) (h) :
     a.ugetUInt32LE i h = a.getUInt32LE! i.toNat := rfl
@@ -20,39 +21,39 @@ theorem usetUInt32LE_eq (a : ByteArray) (i : USize) (v : UInt32) (h) :
     a.usetUInt32LE i v h = a.setUInt32LE! i.toNat v := rfl
 
 /-- A bounded offset read preserves the represented word array. -/
-theorem readUOffset_pack (words : Array UInt32) (i o : USize) (h) :
-    readUOffset (Storage.pack words) i o h = words.getD (i.toNat + o.toNat) 0 := by
+theorem readUOffset_encodeWords (words : Array UInt32) (i o : USize) (h) :
+    readUOffset (encode words) i o h = words.getD (i.toNat + o.toNat) 0 := by
   have hb : 4 * (i.toNat + o.toNat) + 3 < USize.size := h.1.trans h.2
-  rw [readUOffset, ugetUInt32LE_eq, wordOffset_toNat i o hb, Storage.getUInt32LE!_pack]
+  rw [readUOffset, ugetUInt32LE_eq, wordOffset_toNat i o hb, PackedRepr.getUInt32LE!_encode]
 
 /-- Checked reads agree with the same array entry whenever the slot is in bounds. -/
-theorem readAt_pack (words : Array UInt32) (i o : USize)
-    (h : 4 * (i.toNat + o.toNat) + 3 < (Storage.pack words).size ∧
-      (Storage.pack words).size < USize.size) :
-    readAt (Storage.pack words) i o = words.getD (i.toNat + o.toNat) 0 := by
+theorem readAt_encodeWords (words : Array UInt32) (i o : USize)
+    (h : 4 * (i.toNat + o.toNat) + 3 < (encode words).size ∧
+      (encode words).size < USize.size) :
+    readAt (encode words) i o = words.getD (i.toNat + o.toNat) 0 := by
   have hb : 4 * (i.toNat + o.toNat) + 3 < USize.size := h.1.trans h.2
-  have hu : (Storage.pack words).usize.toNat = (Storage.pack words).size := by
+  have hu : (encode words).usize.toNat = (encode words).size := by
     rw [ByteArray.usize, Nat.toUSize, USize.toNat_ofNat_of_lt' h.2]
   have h4 := usize_numeral 4 (by decide)
-  have hc : 4 ≤ (Storage.pack words).usize ∧ (i + o) * 4 ≤ (Storage.pack words).usize - 4 := by
-    have h4' : 4 ≤ (Storage.pack words).usize := by
+  have hc : 4 ≤ (encode words).usize ∧ (i + o) * 4 ≤ (encode words).usize - 4 := by
+    have h4' : 4 ≤ (encode words).usize := by
       rw [USize.le_iff_toNat_le, hu, h4]; omega
     refine ⟨h4', ?_⟩
     rw [USize.le_iff_toNat_le, USize.toNat_sub_of_le _ _ h4', hu, h4, wordOffset_toNat i o hb]
     omega
   rw [readAt, dite_eq_left_of_eq_true (eq_true hc), ugetUInt32LE_eq, wordOffset_toNat i o hb,
-    Storage.getUInt32LE!_pack]
+    PackedRepr.getUInt32LE!_encode]
 
 /-- Ordinary checked reads preserve valid packed word coordinates. -/
-theorem read_pack (words : Array UInt32) (index : Nat)
-    (hs : (Storage.pack words).size < USize.size) (hi : index < words.size) :
-    read (Storage.pack words) index = words.getD index 0 := by
-  have hk : 4 * index + 3 < (Storage.pack words).size := by rw [Storage.size_pack]; omega
-  have hin : index < USize.size := by rw [Storage.size_pack] at hs; omega
+theorem read_encodeWords (words : Array UInt32) (index : Nat)
+    (hs : (encode words).size < USize.size) (hi : index < words.size) :
+    read (encode words) index = words.getD index 0 := by
+  have hk : 4 * index + 3 < (encode words).size := by rw [size_encode_uint32]; omega
+  have hin : index < USize.size := by rw [size_encode_uint32] at hs; omega
   have hu : index.toUSize.toNat = index := USize.toNat_ofNat_of_lt' hin
   have hzero : (0 : USize).toNat = 0 := rfl
   unfold read
-  have h := readAt_pack words index.toUSize 0
+  have h := readAt_encodeWords words index.toUSize 0
     (by simp only [hu, hzero, Nat.add_zero]; exact ⟨hk, hs⟩)
   simpa only [hu, hzero, Nat.add_zero] using h
 
@@ -77,24 +78,24 @@ theorem extract_push_getElem (V : Array UInt32) (k : Nat) (hk : k < V.size) :
 theorem putWord_eq {n : Nat} (s : {x : ByteArray // x.size = n}) (off : USize) (c k : Nat)
     (d : USize) (hd : d.toNat = 4 * k)
     (V : Array UInt32) (hk : k < V.size) (h) (b : ByteArray) (hb : b.size = n)
-    (hs : s.1 = Storage.replace b off.toNat (Storage.pack (V.extract 0 (min k c)))) :
+    (hs : s.1 = ByteArray.replaceAt b off.toNat (encode (V.extract 0 (min k c)))) :
     (putWord s off c k d hd V[k] h).1 =
-      Storage.replace b off.toNat (Storage.pack (V.extract 0 (min (k + 1) c))) := by
+      ByteArray.replaceAt b off.toNat (encode (V.extract 0 (min (k + 1) c))) := by
   unfold putWord
   split
   · rename_i hkc
     have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
     have hu : (off + d).toNat = off.toNat + 4 * k := by
       rw [USize.toNat_add, hd, hsize, Nat.mod_eq_of_lt (by omega)]
-    have hp : (Storage.pack (V.extract 0 k)).size = 4 * k := by
-      rw [Storage.size_pack, Array.size_extract]; omega
+    have hp : (encode (V.extract 0 k)).size = 4 * k := by
+      rw [size_encode_uint32, Array.size_extract]; omega
     simp only [usetUInt32LE_eq, hu, hs, Nat.min_eq_left (show k ≤ c by omega),
       Nat.min_eq_left (show k + 1 ≤ c by omega)]
-    rw [Storage.setUInt32LE!_eq_replace _ _ _ (by
-        rw [Storage.size_replace _ _ _ (by rw [hp]; omega)]; omega),
-      ← hp, Storage.replace_replace _ _ _ _ (by rw [hp, Storage.size_pack]; simp only
+    rw [PackedRepr.setUInt32LE!_eq_replaceAt_encode _ _ _ (by
+        rw [ByteArray.size_replaceAt _ _ _ (by rw [hp]; omega)]; omega),
+      ← hp, ByteArray.replaceAt_replaceAt _ _ _ _ (by rw [hp, size_encode_uint32]; simp only
         [List.size_toArray, List.length_cons, List.length_nil]; omega),
-      ← Storage.pack_append, extract_push_getElem V k hk]
+      ← PackedRepr.encode_append, extract_push_getElem V k hk]
   · rename_i hkc
     rw [hs, Nat.min_eq_right (show c ≤ k by omega), Nat.min_eq_right (show c ≤ k + 1 by omega)]
 
@@ -102,13 +103,13 @@ theorem putWord_eq {n : Nat} (s : {x : ByteArray // x.size = n}) (off : USize) (
 theorem putWords_eq (b : ByteArray) (off : USize) (c : Nat) (hc : c ≤ 16)
     (v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 : UInt32) (h) :
     putWords ⟨b, rfl⟩ off c v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 h =
-      Storage.replace b off.toNat (Storage.pack
+      ByteArray.replaceAt b off.toNat (encode
         ((batch v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15).extract 0 c)) := by
   let V := batch v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15
   have e : (⟨b, rfl⟩ : {x : ByteArray // x.size = b.size}).1 =
-      Storage.replace b off.toNat (Storage.pack (V.extract 0 (min 0 c))) := by
+      ByteArray.replaceAt b off.toNat (encode (V.extract 0 (min 0 c))) := by
     rw [Nat.min_eq_left (Nat.zero_le _), Array.extract_zero]
-    exact (Storage.replace_empty b _ (by omega)).symm
+    exact (ByteArray.replaceAt_empty b _ (by omega)).symm
   have e0 := putWord_eq _ off c 0 0 (by rw [usize_numeral _ (by decide)]) V
     (show 0 < 16 by decide) h b rfl e
   have e1 := putWord_eq _ off c 1 4 (by rw [usize_numeral _ (by decide)]) V
@@ -151,7 +152,7 @@ theorem storeWords_eq (b : ByteArray) (offset : USize) (count : UInt8)
       if count.toNat > 16 then b else
       if offset ≤ offset + (4 * count.toNat).toUSize ∧
           offset + (4 * count.toNat).toUSize ≤ b.usize then
-        Storage.replace b offset.toNat (Storage.pack
+        ByteArray.replaceAt b offset.toNat (encode
           ((batch v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15).extract 0 count.toNat))
       else b := by
   unfold storeWords
@@ -165,15 +166,15 @@ theorem storeWords_eq (b : ByteArray) (offset : USize) (count : UInt8)
 /-- In a packed buffer that fits machine indices, a batch's range check is its slot bound. -/
 theorem storeWords_fits (words : Array UInt32) (offset : USize) (count : UInt8) (index : Nat)
     (hc : count.toNat ≤ 16) (ho : offset.toNat = 4 * index)
-    (hs : (Storage.pack words).size < USize.size) :
+    (hs : (encode words).size < USize.size) :
     (offset ≤ offset + (4 * count.toNat).toUSize ∧
-      offset + (4 * count.toNat).toUSize ≤ (Storage.pack words).usize) ↔
+      offset + (4 * count.toNat).toUSize ≤ (encode words).usize) ↔
       index + count.toNat ≤ words.size := by
   have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
-  rw [Storage.size_pack] at hs
-  have hu : (Storage.pack words).usize.toNat = 4 * words.size := by
-    rw [ByteArray.usize, Nat.toUSize, USize.toNat_ofNat_of_lt' (by rw [Storage.size_pack]; omega),
-      Storage.size_pack]
+  rw [size_encode_uint32] at hs
+  have hu : (encode words).usize.toNat = 4 * words.size := by
+    rw [ByteArray.usize, Nat.toUSize, USize.toNat_ofNat_of_lt' (by rw [size_encode_uint32]; omega),
+      size_encode_uint32]
   have h4 : (4 * count.toNat).toUSize.toNat = 4 * count.toNat :=
     USize.toNat_ofNat_of_lt' (by have := USize.le_size; omega)
   rw [USize.le_iff_toNat_le, USize.le_iff_toNat_le, hu, USize.toNat_add, h4, hsize, ho]
@@ -192,14 +193,14 @@ theorem storeWords_fits (words : Array UInt32) (offset : USize) (count : UInt8) 
     omega
 
 /-- The overwrite primitive changes precisely the specified word slots. -/
-theorem storeWords_replace_pack (words : Array UInt32) (offset : USize)
+theorem storeWords_replace_encodeWords (words : Array UInt32) (offset : USize)
     (count : UInt8) (index : Nat) (hc : count.toNat ≤ 16)
     (ho : offset.toNat = 4 * index) (hi : index + count.toNat ≤ words.size)
-    (hs : (Storage.pack words).size < USize.size)
+    (hs : (encode words).size < USize.size)
     (v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 : UInt32) :
-    storeWords (Storage.pack words) offset count
+    storeWords (encode words) offset count
       v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 =
-    Storage.pack (words.extract 0 index ++
+    encode (words.extract 0 index ++
       #[v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15].extract
         0 count.toNat ++ words.extract (index + count.toNat) words.size) := by
   have hf := (storeWords_fits words offset count index hc ho hs).mpr hi
@@ -209,75 +210,41 @@ theorem storeWords_replace_pack (words : Array UInt32) (offset : USize)
     change min count.toNat 16 - 0 = count.toNat
     omega
   simp only [storeWords_eq, Nat.not_lt.mpr hc, ↓reduceIte, hf, ho,
-    Storage.replace_pack, hv, and_self]
+    PackedRepr.replaceAt_encode_uint32, hv, and_self]
 
 /-! ### Zero buffers -/
 
 /-- `m` zero bytes. -/
 abbrev zeroBuffer (m : Nat) : ByteArray := ⟨Array.replicate m 0⟩
 
-theorem copySlice_zeroBuffer (k m len : Nat) (hl : len ≤ k) :
-    (zeroBuffer k).copySlice 0 (zeroBuffer m) m len false = zeroBuffer (m + len) := by
-  rw [ByteArray.copySlice_eq_append]
+theorem zeroBuffer_eq_encodeWords (n : Nat) :
+    zeroBuffer (4 * n) = encode (Array.replicate n (0 : UInt32)) := by
   apply ByteArray.ext
-  apply Array.ext
-  · simp only [ByteArray.data_append, ByteArray.data_extract, Array.size_append,
-      Array.size_extract, Array.size_replicate]
-    omega
-  · intro j h1 h2
-    simp only [ByteArray.data_append, ByteArray.data_extract, Array.getElem_append,
-      Array.getElem_extract, Array.getElem_replicate]
-    split_ifs <;> rfl
-
-theorem fillZeros_zeroBuffer (target : Nat) :
-    ∀ (fuel m : Nat), m ≤ target → target ≤ m + 4096 * fuel →
-      fillZeros target fuel (zeroBuffer m) = zeroBuffer target := by
-  intro fuel
-  induction fuel with
-  | zero =>
-    intro m hle hge
-    rw [show m = target by omega]
-    rfl
-  | succ fuel ih =>
-    intro m hle hge
-    have hm : (zeroBuffer m).size = m := Array.size_replicate
-    unfold fillZeros
-    by_cases hlt : m < target
-    · simp only [hm, hlt, ↓reduceIte]
-      rw [show zeroBlock = zeroBuffer 4096 from rfl, copySlice_zeroBuffer 4096 m _ (by omega)]
-      exact ih _ (by omega) (by omega)
-    · simp only [hm, hlt, ↓reduceIte]
-      rw [show m = target by omega]
-
-theorem zeroBuffer_eq_pack (n : Nat) : zeroBuffer (4 * n) = Storage.pack (Array.replicate n 0) := by
-  apply ByteArray.ext
-  simp only [Storage.pack, ← List.toArray_replicate]
+  simp only [encode, ← List.toArray_replicate]
   congr 1
   induction n with
   | zero => rfl
   | succ n ih =>
-    rw [List.replicate_succ, ByteCodec.encodeList_cons, ← ih,
+    rw [List.replicate_succ, List.flatMap_cons, ← ih,
       show 4 * (n + 1) = 4 + 4 * n by ring, List.replicate_add]
     rfl
 
 /-- `n` zero words are the packing of `n` zeros. -/
-theorem zeroWords_eq (n : Nat) : zeroWords n = Storage.pack (Array.replicate n 0) := by
-  rw [← zeroBuffer_eq_pack]
-  unfold zeroWords
-  rw [show ByteArray.emptyWithCapacity (4 * n) = zeroBuffer 0 from rfl]
-  exact fillZeros_zeroBuffer _ _ _ (by omega) (by omega)
+theorem zeroWords_eq (n : Nat) :
+    zeroWords n = encode (Array.replicate n (0 : UInt32)) := by
+  rw [← zeroBuffer_eq_encodeWords, zeroWords, ByteArray.zeros_eq]
 
 /-- Extending a packed buffer by one zero block appends 256 zero words. -/
-theorem extendZeros_pack (o : Array UInt32) :
-    zeroBlock.copySlice 0 (Storage.pack o) (Storage.pack o).size 1024 false =
-      Storage.pack (o ++ Array.replicate 256 0) := by
-  have hz : zeroBlock.data.size = 4096 := Array.size_replicate
-  have hb : zeroBlock.extract 0 (0 + 1024) = zeroBuffer (4 * 256) := by
+theorem extendZeros_encodeWords (o : Array UInt32) :
+    ByteArray.zeroBlock.copySlice 0 (encode o) (encode o).size 1024 false =
+      encode (o ++ Array.replicate 256 0) := by
+  have hz : ByteArray.zeroBlock.data.size = 4096 := Array.size_replicate
+  have hb : ByteArray.zeroBlock.extract 0 (0 + 1024) = zeroBuffer (4 * 256) := by
     apply ByteArray.ext
-    simp only [ByteArray.data_extract, zeroBlock, Array.extract_replicate]
+    simp only [ByteArray.data_extract, ByteArray.zeroBlock, Array.extract_replicate]
     rfl
   rw [ByteArray.copySlice_eq_append, ByteArray.extract_zero_size, hb,
     (ByteArray.extract_eq_empty_iff).mpr (by simp only [ByteArray.size, hz]; omega),
-    ByteArray.append_empty, Storage.pack_append, zeroBuffer_eq_pack]
+    ByteArray.append_empty, PackedRepr.encode_append, zeroBuffer_eq_encodeWords]
 
 end CompPoly.CPolynomial.NTTFast.Packed.Native

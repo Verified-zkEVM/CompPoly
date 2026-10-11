@@ -11,6 +11,7 @@ public import CompPoly.Univariate.NTTFast.Packed.StageTail
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode)
 
 /-- The packed implementation's paired-pass body. -/
 def rawPass (logN : Nat) (tw : Array ByteArray) (pass : Nat) (a : ByteArray) : ByteArray :=
@@ -60,19 +61,19 @@ def fieldStages (logN : Nat) (tw : Array (Array KoalaBear.Fast.Field))
     (fun b block ↦ Plan.butterflyDIFInner #[1] 1 0 (2 * block) (2 * block + 1) b) c else c
 
 /-- All sequential packed passes, fused leaves and scalar tails preserve field-array semantics. -/
-theorem Native.stages_packFields (logN : Nat) (tw : Array (Array KoalaBear.Fast.Field))
+theorem Native.stages_encode (logN : Nat) (tw : Array (Array KoalaBear.Fast.Field))
     (a : Array KoalaBear.Fast.Field) (factor : KoalaBear.Fast.Field) (normalize : Bool)
     (htw : TwiddleSizes logN tw) (hone : TwiddleOnes logN tw)
     (hs : a.size = 2 ^ logN) (hu : 4 * 2 ^ logN < USize.size) :
-    Native.stages logN (tw.map packFields) (packFields a) factor.val normalize =
-      packFields (fieldStages logN tw a factor normalize) := by
+    Native.stages logN (tw.map encode) (encode a) factor.val normalize =
+      encode (fieldStages logN tw a factor normalize) := by
   let fused := logN ≥ 4 && logN % 2 == 0
   let count := if fused then logN / 2 - 2 else logN / 2
   let b := (List.range count).foldl (fun b pass ↦ fieldPass logN tw pass b) a
   have hc : count ≤ logN / 2 := by unfold count; split <;> omega
   have hprefix : (List.range count).foldl (fun b pass ↦
-      rawPass logN (tw.map packFields) pass b) (packFields a) = packFields b :=
-    Native.passes_packFields logN count tw a hc htw hs hu
+      rawPass logN (tw.map encode) pass b) (encode a) = encode b :=
+    Native.passes_encode logN count tw a hc htw hs hu
   have hbs : b.size = 2 ^ logN :=
     foldl_invariant (List.range count) (fun b ↦ b.size = 2 ^ logN)
       (fun b pass ↦ fieldPass logN tw pass b)
@@ -81,20 +82,20 @@ theorem Native.stages_packFields (logN : Nat) (tw : Array (Array KoalaBear.Fast.
     (fun b block ↦ leafBlock (tw.getD 3 #[]) (tw.getD 2 #[]) (tw.getD 1 #[])
       (block * 16) factor normalize b) b else b
   have hfinish : (if fused then (List.range (2 ^ logN / 16)).foldl
-      (fun b block ↦ rawLeafBlock ((tw.map packFields).getD 3 ByteArray.empty)
-        ((tw.map packFields).getD 2 ByteArray.empty)
-        ((tw.map packFields).getD 1 ByteArray.empty)
-        (block * 16) factor.val normalize b) (packFields b) else packFields b) =
-      packFields c := by
+      (fun b block ↦ rawLeafBlock ((tw.map encode).getD 3 ByteArray.empty)
+        ((tw.map encode).getD 2 ByteArray.empty)
+        ((tw.map encode).getD 1 ByteArray.empty)
+        (block * 16) factor.val normalize b) (encode b) else encode b) =
+      encode c := by
     unfold c
     split
     · rename_i hf
       have hlog : 4 ≤ logN := by
         simp only [fused, Bool.and_eq_true, decide_eq_true_eq] at hf
         exact hf.1
-      rw [getD_map_packFields, getD_map_packFields, getD_map_packFields]
-      exact fold_rawLeafBlock_packFields _ _ _ _ _ _ b
-        (by simpa only [size_packFields, hbs] using hu)
+      rw [getD_map_encode, getD_map_encode, getD_map_encode]
+      exact fold_rawLeafBlock_encode _ _ _ _ _ _ b
+        (by simpa only [size_encode_fields, hbs] using hu)
         (by rw [hbs]; exact Nat.div_mul_le_self _ _)
         (by simpa using htw 3 (by omega)) (by simpa using htw 2 (by omega))
         (by simpa using htw 1 (by omega))
@@ -118,8 +119,8 @@ theorem Native.stages_packFields (logN : Nat) (tw : Array (Array KoalaBear.Fast.
   rw [hprefix, hfinish]
   unfold fieldStages
   split
-  · exact fold_rawPairBlock_packFields c _
-      (by simpa only [size_packFields, hcs] using hu)
+  · exact fold_rawPairBlock_encode c _
+      (by simpa only [size_encode_fields, hcs] using hu)
       (by rw [hcs]; exact Nat.div_mul_le_self _ _)
   · rfl
 

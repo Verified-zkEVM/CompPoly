@@ -5,7 +5,7 @@ Authors: Gregor Mitscha-Baude
 -/
 module
 public import CompPoly.Univariate.NTTFast.Packed.Arithmetic
-public import CompPoly.Univariate.NTTFast.Packed.Storage
+public import CompPoly.Data.ByteArray.Packed
 public import CompPoly.Univariate.NTTFast.Natural
 public import CompPoly.Univariate.NTTFast.Reverse32
 /-! # Packed native-storage KoalaBear FFT kernels
@@ -16,6 +16,7 @@ proposed `ugetUInt32LE` / `usetUInt32LE`.
 @[expose] public section
 open CompPoly
 namespace CompPoly.CPolynomial.NTTFast.Packed.Native
+open CompPoly.PackedRepr (encode)
 theorem usize_numeral (n : Nat) (h : n < 4294967296) :
     (OfNat.ofNat n : USize).toNat = n := by
   rw [USize.toNat_ofNat]
@@ -116,20 +117,8 @@ on machine words. -/
 @[inline] def write16U (b : ByteArray) (i : USize) (v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13
   v14 v15 : UInt32) : ByteArray :=
   storeWords b (i * 4) 16 v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15
-/-- A 4 KiB zero block, the source of zero-buffer fills. -/
-def zeroBlock : ByteArray := ⟨Array.replicate 4096 0⟩
-/-- Append zero blocks to `b` until it holds `target` bytes, at most `fuel` times. The source is
-a separate object, so the destination stays exclusive and is written in place. -/
-def fillZeros (target : Nat) : Nat → ByteArray → ByteArray
-  | 0, b => b
-  | fuel + 1, b =>
-    let n := b.size
-    if n < target then
-      fillZeros target fuel (zeroBlock.copySlice 0 b n (min 4096 (target - n)) false)
-    else b
 /-- A buffer of `n` zero words, for kernels that store their output words in place. -/
-def zeroWords (n : Nat) : ByteArray :=
-  fillZeros (4 * n) (n / 1024 + 1) (ByteArray.emptyWithCapacity (4 * n))
+def zeroWords (n : Nat) : ByteArray := ByteArray.zeros (4 * n)
 /-- Store `f i` up to `f (i + n - 1)` at words `i` up to `i + n - 1`. -/
 @[specialize] def generateGo (f : Nat → UInt32) : Nat → Nat → ByteArray → ByteArray
   | 0, _, b => b
@@ -137,9 +126,9 @@ def zeroWords (n : Nat) : ByteArray :=
 /-- The words `f 0, …, f (n - 1)`, overwriting a zero buffer word by word. -/
 @[specialize] def generate (n : Nat) (f : Nat → UInt32) : ByteArray :=
   if 4 * n < USize.size then generateGo f n 0 (zeroWords n)
-  else Storage.pack (Array.ofFn fun i : Fin n ↦ f i.val)
+  else encode (Array.ofFn fun i : Fin n ↦ f i.val)
 /-- Pack a field array. -/
-def encode (a : Array KoalaBear.Fast.Field) : ByteArray :=
+def encodeFields (a : Array KoalaBear.Fast.Field) : ByteArray :=
   generate a.size fun i ↦ (a.getD i 0).val
 def inner (th tl : ByteArray) (q j i0 i1 i2 i3 : Nat) (b : ByteArray) : ByteArray :=
   if j < q then
@@ -1210,7 +1199,7 @@ theorem wordOffsetBound (i n o : Nat) (h : 4 * (i + 15) + 3 < n) (ho : o ≤ 15)
   let y15 := add x15 z15
   write16U out p y0 y1 y2 y3 y4 y5 y6 y7 y8 y9 y10 y11 y12 y13 y14 y15
 def splitInputLeft (a : Array KoalaBear.Fast.Field) (half : Nat) : ByteArray := Id.run do
-  if half % 16 != 0 then return splitLeft (encode a) ByteArray.empty half
+  if half % 16 != 0 then return splitLeft (encodeFields a) ByteArray.empty half
   let mut out := zeroWords half
   for block in [:half / 16] do
     let i := 16 * block
@@ -1218,7 +1207,7 @@ def splitInputLeft (a : Array KoalaBear.Fast.Field) (half : Nat) : ByteArray := 
       out := splitInputStepLeft a (USize.ofNatLT i (by omega))
         (USize.ofNatLT (i + half) (by omega)) out (USize.ofNatLT i (by omega))
         (by simpa only [USize.toNat_ofNatLT] using h)
-    else return splitLeft (encode a) ByteArray.empty half
+    else return splitLeft (encodeFields a) ByteArray.empty half
   return out
 @[noinline] def splitInputStepRight (a : @& Array KoalaBear.Fast.Field) (w : @& ByteArray) (i j :
   USize) (out : ByteArray) (p : USize)
@@ -1371,7 +1360,7 @@ def splitInputLeft (a : Array KoalaBear.Fast.Field) (half : Nat) : ByteArray := 
   write16U out p y0 y1 y2 y3 y4 y5 y6 y7 y8 y9 y10 y11 y12 y13 y14 y15
 def splitInputRight (a : Array KoalaBear.Fast.Field) (w : ByteArray) (half : Nat) : ByteArray :=
   Id.run do
-  if half % 16 != 0 then return splitRight (encode a) w half
+  if half % 16 != 0 then return splitRight (encodeFields a) w half
   let mut out := zeroWords half
   for block in [:half / 16] do
     let i := 16 * block
@@ -1380,13 +1369,13 @@ def splitInputRight (a : Array KoalaBear.Fast.Field) (w : ByteArray) (half : Nat
       out := splitInputStepRight a w (USize.ofNatLT i (by omega))
         (USize.ofNatLT (i + half) (by omega)) out (USize.ofNatLT i (by omega))
         (by simpa only [USize.toNat_ofNatLT] using h)
-    else return splitRight (encode a) w half
+    else return splitRight (encodeFields a) w half
   return out
 /-- Perform the first split directly from the public field array. -/
 def splitInputTask (tw : Array ByteArray) (logN : Nat)
     (a : Array KoalaBear.Fast.Field) (nInv : UInt32) (normalize : Bool) (depth : Nat) : Task
       ByteArray :=
-  if depth = 0 ∨ logN < 6 then splitTask tw logN (encode a) nInv normalize depth else
+  if depth = 0 ∨ logN < 6 then splitTask tw logN (encodeFields a) nInv normalize depth else
   let half := 2 ^ (logN - 1)
   let w := tw.getD (logN - 1) ByteArray.empty
   let left := (Task.spawn fun _ ↦ splitInputLeft a half).bind
@@ -1505,7 +1494,7 @@ def splitChunks (tw : Array ByteArray) (logN : Nat) (a : ByteArray) (nInv : UInt
 def splitInputChunks (tw : Array ByteArray) (logN : Nat)
     (a : Array KoalaBear.Fast.Field) (nInv : UInt32) (normalize : Bool) (depth : Nat) : Task
       (Array ByteArray) :=
-  if depth = 0 ∨ logN < 6 then splitChunks tw logN (encode a) nInv normalize depth else
+  if depth = 0 ∨ logN < 6 then splitChunks tw logN (encodeFields a) nInv normalize depth else
   let half := 2 ^ (logN - 1)
   let w := tw.getD (logN - 1) ByteArray.empty
   let left := (Task.spawn fun _ ↦ splitInputLeft a half).bind

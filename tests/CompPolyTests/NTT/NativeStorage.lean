@@ -13,7 +13,7 @@ public import CompPoly.Data.Bytes.LittleEndian
 These exercise the inline C of the backported `ByteArray` word accessors, which is outside the
 kernel proof. Bytewise Lean operations provide the oracle, including out-of-range offsets and
 shared inputs. The packed FFT's batch stores and reads are Lean definitions over these accessors,
-proved against the byte-level `Storage.pack` specification.
+proved against the byte-level `PackedRepr.encode` specification.
 -/
 
 public section

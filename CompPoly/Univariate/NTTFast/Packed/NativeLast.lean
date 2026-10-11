@@ -924,7 +924,7 @@ def runPacked (tw : Array ByteArray) (logN depth : Nat) (nInv : UInt32) (a : Byt
   else
     let normalize := inverse && logN - depth ≥ 4 && (logN - depth) % 2 == 0
     let scale := inverse && !normalize
-    encode (decodeTiled logN (assembleChunks (4 * 2 ^ logN)
+    encodeFields (decodeTiled logN (assembleChunks (4 * 2 ^ logN)
       (sliceChunks tw logN #[a] nInv normalize (sliceCount logN depth) id
         (fun m b ↦ stages m tw b nInv normalize) depth).get) nInv scale)
 

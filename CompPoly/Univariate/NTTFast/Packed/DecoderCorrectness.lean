@@ -13,6 +13,7 @@ public import CompPoly.Univariate.NTTFast.Packed.DecoderGeometry
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode)
 
 /-- The native output decoder traverses its rows and low-bit tiles as two ordinary folds. -/
 theorem Native.decodeTiled_eq_folds (logN : Nat) (b : ByteArray) (factor : UInt32)
@@ -28,21 +29,21 @@ theorem Native.decodeTiled_eq_folds (logN : Nat) (b : ByteArray) (factor : UInt3
     List.forIn_pure_yield_eq_foldl, pure_bind, Id.run_pure, ← apply_ite]
 
 /-- Every tiled output conversion agrees with scalar bit-reversed indexing and normalization. -/
-theorem Native.decodeTiled_packFields (logN : Nat) (a : Array KoalaBear.Fast.Field)
+theorem Native.decodeTiled_encode (logN : Nat) (a : Array KoalaBear.Fast.Field)
     (factor : KoalaBear.Fast.Field) (inverse : Bool) (h32 : logN ≤ 32)
-    (hs : a.size = 2 ^ logN) (hu : (packFields a).size < USize.size) :
-    Native.decodeTiled logN (packFields a) factor.val inverse = decodedFields logN a factor
+    (hs : a.size = 2 ^ logN) (hu : (encode a).size < USize.size) :
+    Native.decodeTiled logN (encode a) factor.val inverse = decodedFields logN a factor
       inverse := by
   rw [Native.decodeTiled_eq_folds]
   split
-  · exact Native.decode_packFields logN a factor inverse h32 hs hu
+  · exact Native.decode_encode logN a factor inverse h32 hs hu
   · rename_i hsmall
     have hlog : 6 ≤ logN := by omega
     let target := decodedFields logN a factor inverse
     let out := Array.replicate (2 ^ logN) (0 : KoalaBear.Fast.Field)
     have hinner (m : Nat) (hm : m < 2 ^ logN / 64)
         (b : Array KoalaBear.Fast.Field) (hb : b.size = 2 ^ logN) :
-        (List.range 16).foldl (fun b d ↦ rawDecoderTile logN (packFields a) factor.val inverse m
+        (List.range 16).foldl (fun b d ↦ rawDecoderTile logN (encode a) factor.val inverse m
           d b) b =
           (List.range 16).foldl (fun b d ↦
             scatterTile target (NTT.Transform.bitRevNat (logN - 2) (m * 16 + d)) b) b := by
@@ -55,7 +56,7 @@ theorem Native.decodeTiled_packFields (logN : Nat) (a : Array KoalaBear.Fast.Fie
       · exact hb
     have houter :
         (List.range (2 ^ logN / 64)).foldl (fun b m ↦
-          (List.range 16).foldl (fun b d ↦ rawDecoderTile logN (packFields a) factor.val inverse
+          (List.range 16).foldl (fun b d ↦ rawDecoderTile logN (encode a) factor.val inverse
             m d b) b) out =
           (List.range (2 ^ logN / 64)).foldl (fun b m ↦
             (List.range 16).foldl (fun b d ↦
@@ -70,7 +71,7 @@ theorem Native.decodeTiled_packFields (logN : Nat) (a : Array KoalaBear.Fast.Fie
           _ (fun d hd c hc ↦ by simpa only [size_scatterTile] using hc) b hb
       · exact Array.size_replicate
     change (List.range (2 ^ logN / 64)).foldl (fun b m ↦
-      (List.range 16).foldl (fun b d ↦ rawDecoderTile logN (packFields a) factor.val inverse m d
+      (List.range 16).foldl (fun b d ↦ rawDecoderTile logN (encode a) factor.val inverse m d
         b) b) out = target
     rw [houter]
     have hg := foldl_range_groups (fun b tile ↦
