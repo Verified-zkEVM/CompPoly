@@ -167,14 +167,14 @@ theorem row_setRow (W : Array UInt32) (j : ℕ) (v0 v1 v2 v3 : UInt32) (hj : 4 *
 /-- Storing four words at row `j` of a packed array. -/
 theorem storeRow (W : Array UInt32) (j : USize) (hj : 4 * j.toNat + 4 ≤ W.size)
     (hs : 4 * W.size < USize.size) (v0 v1 v2 v3 : UInt32) :
-    Native.storeWords (Storage.pack W) (16 * j) 4 v0 v1 v2 v3 0 0 0 0 0 0 0 0 0 0 0 0 =
-      Storage.pack (setRow W j.toNat v0 v1 v2 v3) := by
+    Native.storeWords (PackedRepr.encode W) (16 * j) 4 v0 v1 v2 v3 0 0 0 0 0 0 0 0 0 0 0 0 =
+      PackedRepr.encode (setRow W j.toNat v0 v1 v2 v3) := by
   have hsize : (2 : ℕ) ^ System.Platform.numBits = USize.size := rfl
-  rw [Native.storeWords_replace_pack W (16 * j) 4 (4 * j.toNat) (by decide) (by
+  rw [Native.storeWords_replace_encodeWords W (16 * j) 4 (4 * j.toNat) (by decide) (by
       rw [USize.toNat_mul, Native.usize_numeral 16 (by decide), hsize,
         Nat.mod_eq_of_lt (by omega)]
       omega) (by change 4 * j.toNat + 4 ≤ W.size; omega)
-      (by rw [Storage.size_pack]; exact hs)]
+      (by rw [PackedRepr.size_encode_uint32]; exact hs)]
   rfl
 
 /-! ### The forward pass -/
@@ -201,8 +201,8 @@ theorem usize_add_one_of (i : USize) (n : ℕ) (h : i.toNat + 1 ≤ n) (hn : n <
 of all norms and the next node. -/
 theorem forward_spec (ω z0 k0 k1 z2x2 : Field) (n : ℕ) (i : USize) (x acc : Field)
     (W : Array UInt32) (hW : 4 * (i.toNat + n) ≤ W.size) (hs : 4 * W.size < USize.size) :
-    ∃ W', forward ω z0 k0 k1 z2x2 n i x acc (Storage.pack W) =
-        (Storage.pack W', normPrefix ω z0 k0 k1 z2x2 x acc n, nodeAt ω x n) ∧
+    ∃ W', forward ω z0 k0 k1 z2x2 n i x acc (PackedRepr.encode W) =
+        (PackedRepr.encode W', normPrefix ω z0 k0 k1 z2x2 x acc n, nodeAt ω x n) ∧
       W'.size = W.size ∧
       (∀ r k, k < 4 → (r < i.toNat ∨ i.toNat + n ≤ r) → row W' r k = row W r k) ∧
       ∀ r < n, row W' (i.toNat + r) 0 = (nodeAt ω x r).val ∧
@@ -238,8 +238,8 @@ theorem forward_spec (ω z0 k0 k1 z2x2 : Field) (n : ℕ) (i : USize) (x acc : F
 /-! ### The backward pass -/
 
 theorem readField_pack (W : Array UInt32) (i o : USize) (h) :
-    readField (Storage.pack W) i o h = wordField (W.getD (i.toNat + o.toNat) 0) := by
-  rw [readField, readUOffset_eq, Storage.getUInt32LE!_pack]
+    readField (PackedRepr.encode W) i o h = wordField (W.getD (i.toNat + o.toNat) 0) := by
+  rw [readField, readUOffset_eq, PackedRepr.getUInt32LE!_encode]
 
 /-- Peeling one norm off the inverse of a prefix product. -/
 theorem inv_mul_prefix (p m : Field) (hp : p ≠ 0) (hm : m ≠ 0) :
@@ -258,7 +258,7 @@ theorem backward_spec (z0 : Field) (X T2 Nn Pp : ℕ → Field) (n : ℕ) (i : U
       row W r 2 = (Nn r).val ∧ row W r 3 = (Pp r).val)
     (hP : ∀ r < i.toNat, Pp (r + 1) = Pp r * Nn r) (hN : ∀ r < i.toNat, Nn r ≠ 0)
     (hPne : ∀ r < i.toNat, Pp r ≠ 0) (hinv : inv = (Pp i.toNat)⁻¹) :
-    ∃ W', backward z0 n i inv (Storage.pack W) h = Storage.pack W' ∧ W'.size = W.size ∧
+    ∃ W', backward z0 n i inv (PackedRepr.encode W) h = PackedRepr.encode W' ∧ W'.size = W.size ∧
       (∀ r k, k < 4 → (r + n < i.toNat ∨ i.toNat ≤ r) → row W' r k = row W r k) ∧
       ∀ r < i.toNat, i.toNat ≤ r + n →
         row W' r 0 = (X r * (Nn r)⁻¹).val ∧
@@ -269,13 +269,13 @@ theorem backward_spec (z0 : Field) (X T2 Nn Pp : ℕ → Field) (n : ℕ) (i : U
   | zero =>
     exact ⟨W, rfl, rfl, fun _ _ _ _ ↦ rfl, fun r hr hr' ↦ absurd hr' (by omega)⟩
   | succ n ih =>
-    have hsize : (Storage.pack W).size = 4 * W.size := Storage.size_pack W
+    have hsize : (PackedRepr.encode W).size = 4 * W.size := PackedRepr.size_encode_uint32 W
     have hi : 1 ≤ i.toNat := by have := h.2.2; omega
     have hj : (i - 1).toNat = i.toNat - 1 := by
       rw [USize.toNat_sub_of_le _ _ (by rw [USize.le_iff_toNat_le]; simp; omega)]; simp
     have hus : 4 * W.size < USize.size := by rw [← hsize]; exact h.2.1
     have h4 : (4 * (i - 1)).toNat = 4 * (i.toNat - 1) := by
-      rw [usize_four_mul (i - 1) (Storage.pack W).size (by rw [hsize, hj]; omega) h.2.1, hj]
+      rw [usize_four_mul (i - 1) (PackedRepr.encode W).size (by rw [hsize, hj]; omega) h.2.1, hj]
     obtain ⟨hx, ht2, hn, hpre⟩ := hrows (i.toNat - 1) (by omega)
     have hrow : ∀ k, (4 * (i - 1)).toNat + (OfNat.ofNat k : USize).toNat = 4 * (i.toNat - 1) + k
         ∨ k ≥ 4 := by
@@ -284,7 +284,7 @@ theorem backward_spec (z0 : Field) (X T2 Nn Pp : ℕ → Field) (n : ℕ) (i : U
       · left; rw [h4, Native.usize_numeral k (by omega)]
       · right; omega
     have hread : ∀ (k : ℕ) (hk : k < 4) (v : Field), row W (i.toNat - 1) k = v.val →
-        ∀ hb, readField (Storage.pack W) (4 * (i - 1)) (OfNat.ofNat k) hb = v := by
+        ∀ hb, readField (PackedRepr.encode W) (4 * (i - 1)) (OfNat.ofNat k) hb = v := by
       intro k hk v hv hb
       rw [readField_pack, h4, Native.usize_numeral k (by omega)]
       change wordField (row W (i.toNat - 1) k) = v
@@ -308,7 +308,8 @@ theorem backward_spec (z0 : Field) (X T2 Nn Pp : ℕ → Field) (n : ℕ) (i : U
       (X (i.toNat - 1) * (Nn (i.toNat - 1))⁻¹ * T2 (i.toNat - 1)).val
       (X (i.toNat - 1) * (Nn (i.toNat - 1))⁻¹ * (z0 - X (i.toNat - 1)) * T2 (i.toNat - 1)).val hj''
     obtain ⟨W', heq, hsz, hout, hrows'⟩ := ih (i - 1) (Pp (i.toNat - 1))⁻¹ _
-      (by rw [Storage.size_pack, hsz1, hj]; exact ⟨by omega, by omega, by have := h.2.2; omega⟩)
+      (by rw [PackedRepr.size_encode_uint32, hsz1, hj]
+          exact ⟨by omega, by omega, by have := h.2.2; omega⟩)
       (by rw [hsz1, hj]; omega)
       (fun r hr ↦ by
         rw [hj] at hr
@@ -631,18 +632,6 @@ def rowTerm (evals : ByteArray) (width : ℕ) (ω s : Field) (z : Ext4) (R c : �
   FastField.toField (ofWordMod (evals.getUInt32LE! (4 * (R * width + c))) : Field) •
     specWeight z (FastField.toField s * FastField.toField ω ^ R)
 
-theorem pack_zeros (m : ℕ) : ByteArray.mk (Array.replicate (4 * m) 0) =
-    Storage.pack (Array.replicate m 0) := by
-  apply ByteArray.ext
-  simp only [Storage.pack, ← List.toArray_replicate]
-  congr 1
-  induction m with
-  | zero => rfl
-  | succ m ih =>
-    rw [List.replicate_succ, ByteCodec.encodeList_cons, ← ih, show 4 * (m + 1) = 4 + 4 * m by ring,
-      List.replicate_add]
-    rfl
-
 theorem ne_zero_iff_toField (a : Field) : a ≠ 0 ↔ FastField.toField a ≠ 0 := by
   constructor
   · intro h h'; exact h (toField_injective (by rw [h', toField_zero]))
@@ -660,10 +649,11 @@ theorem weightsAt_passes (z : Ext4) (ω x : Field) (b : ℕ) (W2 : Array UInt32)
       row W2 r 3 = (nodeAt ω x r * (rowNorm z.c0 (Ext4.normK0 z) (Ext4.normK1 z) (z.c2 + z.c2)
         (nodeAt ω x r))⁻¹ * (z.c0 - nodeAt ω x r) *
           ((z.c0 - nodeAt ω x r) * (z.c0 - nodeAt ω x r))).val) :
-    WeightsAt (Storage.pack W2) z (fun r ↦ specWeight z (FastField.toField (nodeAt ω x r))) b := by
+    WeightsAt (PackedRepr.encode W2) z
+      (fun r ↦ specWeight z (FastField.toField (nodeAt ω x r))) b := by
   intro r hr
   obtain ⟨h0, h1, h2, h3⟩ := hrows r hr
-  simp only [Storage.getUInt32LE!_pack]
+  simp only [PackedRepr.getUInt32LE!_encode]
   rw [show W2.getD (4 * r) 0 = row W2 r 0 from rfl,
     show W2.getD (4 * r + 1) 0 = row W2 r 1 from rfl,
     show W2.getD (4 * r + 2) 0 = row W2 r 2 from rfl,
@@ -678,9 +668,9 @@ theorem blocks_spec (evals : ByteArray) (ω s : Field) (z : Ext4) (width hi k ro
     (hz : ∀ R, row ≤ R → R < hi →
       Ext4.toSpec z ≠ Ext.ofBase (FastField.toField s * FastField.toField ω ^ R)) :
     (blocks evals ω z.c0 (Ext4.normK0 z) (Ext4.normK1 z) (z.c2 + z.c2) width hi k row x
-        (Storage.pack W) sums h).size = width ∧
+        (PackedRepr.encode W) sums h).size = width ∧
       ∀ c < width, sumAt z (blocks evals ω z.c0 (Ext4.normK0 z) (Ext4.normK1 z) (z.c2 + z.c2)
-          width hi k row x (Storage.pack W) sums h) c =
+          width hi k row x (PackedRepr.encode W) sums h) c =
         sumAt z sums c + ∑ R ∈ Finset.Ico row (min hi (row + k * blockRows)),
           rowTerm evals width ω s z R c := by
   induction k generalizing row x W sums with
@@ -717,7 +707,7 @@ theorem blocks_spec (evals : ByteArray) (ω s : Field) (z : Ext4) (width hi k ro
       (fun r ↦ rowNorm z.c0 (Ext4.normK0 z) (Ext4.normK1 z) (z.c2 + z.c2) (nodeAt ω x r))
       (normPrefix ω z.c0 (Ext4.normK0 z) (Ext4.normK1 z) (z.c2 + z.c2) x 1) b b.toUSize
       (normPrefix ω z.c0 (Ext4.normK0 z) (Ext4.normK1 z) (z.c2 + z.c2) x 1 b)⁻¹ W1
-      (by rw [Storage.size_pack, hs1, hW, hbt]; simp only [blockRows] at hbB ⊢
+      (by rw [PackedRepr.size_encode_uint32, hs1, hW, hbt]; simp only [blockRows] at hbB ⊢
           exact ⟨by omega, by omega, le_refl _⟩)
       (by rw [hs1, hW, hbt]; simp only [blockRows] at hbB ⊢; omega)
       (fun r hr ↦ by
@@ -730,9 +720,9 @@ theorem blocks_spec (evals : ByteArray) (ω s : Field) (z : Ext4) (width hi k ro
     have hw := weightsAt_passes z ω x b W2 (fun r hr ↦ by
       have := rows2 r (by omega) (by omega)
       exact this)
-    have hfit : BlockFits evals (Storage.pack W2) width row b := by
+    have hfit : BlockFits evals (PackedRepr.encode W2) width row b := by
       have := Nat.mul_le_mul_right width hrb
-      refine ⟨by omega, h.2.2.1, ?_, ?_⟩ <;> rw [Storage.size_pack, hs2, hs1, hW] <;>
+      refine ⟨by omega, h.2.2.1, ?_, ?_⟩ <;> rw [PackedRepr.size_encode_uint32, hs2, hs1, hW] <;>
         simp only [blockRows] at hbB ⊢ <;> omega
     have hcol : ∀ c, colBlock evals width row b c
         (fun r ↦ specWeight z (FastField.toField (nodeAt ω x r))) =
@@ -745,9 +735,9 @@ theorem blocks_spec (evals : ByteArray) (ω s : Field) (z : Ext4) (width hi k ro
         (_ : ∀ c < width, sumAt z S c = sumAt z sums c + colBlock evals width row b c
           (fun r ↦ specWeight z (FastField.toField (nodeAt ω x r)))) (h''),
         (blocks evals ω z.c0 (Ext4.normK0 z) (Ext4.normK1 z) (z.c2 + z.c2) width hi k (row + b)
-          (nodeAt ω x b) (Storage.pack W2) S h'').size = width ∧
+          (nodeAt ω x b) (PackedRepr.encode W2) S h'').size = width ∧
         ∀ c < width, sumAt z (blocks evals ω z.c0 (Ext4.normK0 z) (Ext4.normK1 z) (z.c2 + z.c2)
-            width hi k (row + b) (nodeAt ω x b) (Storage.pack W2) S h'') c =
+            width hi k (row + b) (nodeAt ω x b) (PackedRepr.encode W2) S h'') c =
           sumAt z sums c + ∑ R ∈ Finset.Ico row (min hi (row + (k + 1) * blockRows)),
             rowTerm evals width ω s z R c := by
       intro S hS hv h''
@@ -782,8 +772,8 @@ theorem leaf_spec (evals : ByteArray) (ω s : Field) (z : Ext4) (width lo hi : �
       ∀ c < width, sumAt z (leaf evals ω s z width lo hi h) c =
         ∑ R ∈ Finset.Ico lo hi, rowTerm evals width ω s z R c := by
   have hpack : ByteArray.mk (Array.replicate (16 * blockRows) 0) =
-      Storage.pack (Array.replicate (4 * blockRows) 0) := by
-    rw [← pack_zeros, ← Nat.mul_assoc]
+      PackedRepr.encode (Array.replicate (4 * blockRows) (0 : UInt32)) := by
+    rw [← Native.zeroBuffer_eq_encodeWords, ← Nat.mul_assoc]
   have hmin : min hi (lo + (hi - lo + blockRows - 1) / blockRows * blockRows) = hi := by
     simp only [blockRows]; have := h.1; omega
   unfold leaf
@@ -791,7 +781,7 @@ theorem leaf_spec (evals : ByteArray) (ω s : Field) (z : Ext4) (width lo hi : �
   obtain ⟨hsz, hval⟩ := blocks_spec evals ω s z width hi ((hi - lo + blockRows - 1) / blockRows) lo
     (s * Montgomery.Native32.pow ω lo) (Array.replicate (4 * blockRows) 0)
     (Array.replicate width 0)
-    ⟨h.1, h.2.1, h.2.2, by rw [Storage.size_pack, Array.size_replicate]; ring⟩
+    ⟨h.1, h.2.1, h.2.2, by rw [PackedRepr.size_encode_uint32, Array.size_replicate]; ring⟩
     (Array.size_replicate) (by rw [toField_mul, toField_pow]) Array.size_replicate hz
   refine ⟨hsz, fun c hc ↦ ?_⟩
   rw [hval c hc, sumAt_replicate_zero, zero_add, hmin]
