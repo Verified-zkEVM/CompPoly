@@ -11,24 +11,25 @@ public import CompPoly.Univariate.NTTFast.Packed.FieldStorage
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode)
 
 /-- Reading a packed twiddle table agrees with packing the corresponding field table entry. -/
-theorem getD_map_packFields (tw : Array (Array KoalaBear.Fast.Field)) (stage : Nat) :
-    (tw.map packFields).getD stage ByteArray.empty = packFields (tw.getD stage #[]) := by
+theorem getD_map_encode (tw : Array (Array KoalaBear.Fast.Field)) (stage : Nat) :
+    (tw.map encode).getD stage ByteArray.empty = encode (tw.getD stage #[]) := by
   simp only [Array.getD_eq_getD_getElem?, Array.getElem?_map]
   cases he : tw[stage]? with
-  | none => simp only [Option.map_none, Option.getD_none, packFields_empty]
+  | none => simp only [Option.map_none, Option.getD_none, PackedRepr.encode_empty]
   | some values => rfl
 
 /-- A fold transports through packing while its field-array invariant is preserved. -/
-theorem foldl_packFields (xs : List Nat)
+theorem foldl_encode (xs : List Nat)
     (p : Array KoalaBear.Fast.Field → Prop)
     (raw : ByteArray → Nat → ByteArray)
     (field : Array KoalaBear.Fast.Field → Nat → Array KoalaBear.Fast.Field)
-    (hf : ∀ i ∈ xs, ∀ a, p a → raw (packFields a) i = packFields (field a i))
+    (hf : ∀ i ∈ xs, ∀ a, p a → raw (encode a) i = encode (field a i))
     (hp : ∀ i ∈ xs, ∀ a, p a → p (field a i))
     (a : Array KoalaBear.Fast.Field) (ha : p a) :
-    xs.foldl raw (packFields a) = packFields (xs.foldl field a) := by
+    xs.foldl raw (encode a) = encode (xs.foldl field a) := by
   induction xs generalizing a with
   | nil => rfl
   | cons i xs ih =>

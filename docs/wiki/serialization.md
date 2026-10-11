@@ -194,6 +194,8 @@ For a variable-length type, give it `DelimitedCodec` instead, built from the lis
 vector codecs, with `Valid` stating what fits in the framing, and prove the one law from the
 laws of the parts.
 
-## Raw words for task transfer
+## Packed arrays
 
-`Word32Repr R` (`CompPoly/Data/Bytes/Words.lean`) is not a codec of the value: it stores a carrier's raw 32-bit word, for example the Montgomery residue of `Native32.FastField`, with the single law `ofWord (toWord x) = x`. The parallel NTT uses it to hand field arrays between tasks as `ByteArray`s, which the runtime shares at constant cost, unlike arrays of boxed values. The same file provides the word layer: `wordAt` reads a little-endian word, `readWordU`, `readWord` and `writeWordU` access it with the core byte operations only, and `buffer` allocates by doubling copies.
+`PackedRepr R` (`CompPoly/Data/ByteArray/Packed.lean`) stores every `R` in `width` bytes. It is not a codec of the value: it stores the carrier as is, for example the Montgomery residue of `Native32.FastField`, where `ByteCodec` encodes the canonical value. `toBytes` and `ofBytes` are the specification, with `ofBytes (toBytes x) = x`; `read` and `write` are the fast accesses at a byte offset, proved equal to it. `PackedRepr.ofWord32` builds the instance of a one-word carrier on the backported `ByteArray.ugetUInt32LE`/`usetUInt32LE`; `UInt32` and every `Native32.FastField` use it.
+
+A packed array is a plain `ByteArray`: `PackedRepr.encode` packs an `Array R` and `PackedRepr.decode` reads one back. Its lemmas describe slots (`read_encode`, `write_encode`, `get_setAt`) and byte ranges on slot boundaries (`encode_extract`, `replaceAt_encode`). Fast code shares packed arrays between tasks, which the runtime marks as shared at once, unlike arrays of boxed values; the packed NTT and the column-parallel NTT store all their intermediate results this way. `PackedRepr.alloc` and `ByteArray.zeros` allocate zero-filled buffers in place.

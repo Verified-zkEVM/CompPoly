@@ -22,28 +22,28 @@ tile, leaf-reversal and join proofs reduce to index arithmetic.
 @[expose] public section
 open CompPoly
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode size_encode_uint32)
 
 namespace Native
 
-open Storage
 
 
 /-- A line inside a packed word array that fits machine indices passes the range check. -/
-theorem lineFits_pack (v : Array UInt32) (q : USize) (h : q.toNat + 16 ≤ v.size)
-    (hs : (pack v).size < USize.size) : LineFits (pack v) q := by
-  have hu : (pack v).usize.toNat = 4 * v.size := by
-    rw [ByteArray.usize, Nat.toUSize, USize.toNat_ofNat_of_lt' hs, size_pack]
+theorem lineFits_encodeWords (v : Array UInt32) (q : USize) (h : q.toNat + 16 ≤ v.size)
+    (hs : (encode v).size < USize.size) : LineFits (encode v) q := by
+  have hu : (encode v).usize.toNat = 4 * v.size := by
+    rw [ByteArray.usize, Nat.toUSize, USize.toNat_ofNat_of_lt' hs, size_encode_uint32]
   have h16 : (16 : USize).toNat = 16 := usize_numeral 16 (by decide)
   have h4 : (4 : USize).toNat = 4 := usize_numeral 4 (by decide)
-  have h1 : 16 ≤ (pack v).usize / 4 := by
+  have h1 : 16 ≤ (encode v).usize / 4 := by
     rw [USize.le_iff_toNat_le, USize.toNat_div, h4, h16, hu]; omega
   refine ⟨h1, ?_⟩
   rw [USize.le_iff_toNat_le, USize.toNat_sub_of_le _ _ h1, USize.toNat_div, h4, h16, hu]
   omega
 
 /-- One aligned line of a packed word array. -/
-theorem line_pack (v : Array UInt32) (q : USize) (hl) :
-    line (pack v) q hl = ⟨v.getD (q.toNat + 0) 0, v.getD (q.toNat + 1) 0, v.getD (q.toNat + 2) 0,
+theorem line_encodeWords (v : Array UInt32) (q : USize) (hl) :
+    line (encode v) q hl = ⟨v.getD (q.toNat + 0) 0, v.getD (q.toNat + 1) 0, v.getD (q.toNat + 2) 0,
       v.getD (q.toNat + 3) 0, v.getD (q.toNat + 4) 0, v.getD (q.toNat + 5) 0,
       v.getD (q.toNat + 6) 0, v.getD (q.toNat + 7) 0, v.getD (q.toNat + 8) 0,
       v.getD (q.toNat + 9) 0, v.getD (q.toNat + 10) 0, v.getD (q.toNat + 11) 0,
@@ -58,7 +58,7 @@ theorem line_pack (v : Array UInt32) (q : USize) (hl) :
     (lineFits_toNat hl 9 (by decide)).1, (lineFits_toNat hl 10 (by decide)).1,
     (lineFits_toNat hl 11 (by decide)).1, (lineFits_toNat hl 12 (by decide)).1,
     (lineFits_toNat hl 13 (by decide)).1, (lineFits_toNat hl 14 (by decide)).1,
-    (lineFits_toNat hl 15 (by decide)).1, Storage.getUInt32LE!_pack]
+    (lineFits_toNat hl 15 (by decide)).1, PackedRepr.getUInt32LE!_encode]
 
 /-- The `c`-th of sixteen word arrays. -/
 def sel16 (v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 : Array UInt32) (c : Nat) :
@@ -73,19 +73,19 @@ theorem extract_literal16 (x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15
 
 /-- A sixteen-word store at the end of a written prefix extends the prefix. -/
 theorem write16U_pack_cursor (o Z : Array UInt32) (p : USize) (hp : p.toNat = o.size)
-    (hZ : 16 ≤ Z.size) (hs : (pack (o ++ Z)).size < USize.size)
+    (hZ : 16 ≤ Z.size) (hs : (encode (o ++ Z)).size < USize.size)
     (v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 : UInt32) :
-    write16U (pack (o ++ Z)) p v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 =
-      pack (o ++ #[v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15] ++
+    write16U (encode (o ++ Z)) p v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 =
+      encode (o ++ #[v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15] ++
         Z.extract 16 Z.size) := by
   have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
-  rw [size_pack, Array.size_append] at hs
+  rw [size_encode_uint32, Array.size_append] at hs
   unfold write16U
-  rw [storeWords_replace_pack (o ++ Z) (p * 4) 16 o.size (by decide)
+  rw [storeWords_replace_encodeWords (o ++ Z) (p * 4) 16 o.size (by decide)
     (by rw [USize.toNat_mul, usize_numeral 4 (by decide), hsize, Nat.mod_eq_of_lt (by omega)]
         omega)
     (by simp only [Array.size_append, show (16 : UInt8).toNat = 16 from rfl]; omega)
-    (by rw [size_pack, Array.size_append]; omega)]
+    (by rw [size_encode_uint32, Array.size_append]; omega)]
   simp only [show (16 : UInt8).toNat = 16 from rfl, extract_literal16]
   have := splice_cursor o Z
     #[v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15] hZ
@@ -100,24 +100,26 @@ theorem usize_add_numeral (q : USize) (k : Nat) (hk : k < 4294967296)
 set_option maxHeartbeats 1000000 in
 /-- One transposed tile stores rows `q, …, q + 15` of the sixteen-stream interleave at output
 word `p`, the end of the written prefix. -/
-theorem transposeStep_pack (v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 o Z :
+theorem transposeStep_encodeWords (v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 o Z :
     Array UInt32) (q p : USize)
     (h : ∀ c < 16, q.toNat + 16 ≤
       (sel16 v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 c).size)
     (hs : ∀ c < 16,
-      (pack (sel16 v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 c)).size < USize.size)
-    (hp : p.toNat = o.size) (hZ : 256 ≤ Z.size) (ho : (pack (o ++ Z)).size < USize.size) :
-    transposeStep (pack v0) (pack v1) (pack v2) (pack v3) (pack v4) (pack v5) (pack v6)
-      (pack v7) (pack v8) (pack v9) (pack v10) (pack v11) (pack v12) (pack v13) (pack v14)
-      (pack v15) q (pack (o ++ Z)) p =
-      pack (o ++ rows (fun u c ↦
+      (encode (sel16 v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 c)).size < USize.size)
+    (hp : p.toNat = o.size) (hZ : 256 ≤ Z.size) (ho : (encode (o ++ Z)).size < USize.size) :
+    transposeStep (encode v0) (encode v1) (encode v2) (encode v3) (encode v4) (encode v5) (encode
+        v6)
+      (encode v7) (encode v8) (encode v9) (encode v10) (encode v11) (encode v12) (encode v13)
+          (encode v14)
+      (encode v15) q (encode (o ++ Z)) p =
+      encode (o ++ rows (fun u c ↦
         (sel16 v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 c).getD (q.toNat + u) 0)
         16 ++ Z.extract 256 Z.size) := by
   have hsz := ho
-  rw [size_pack, Array.size_append] at hsz
+  rw [size_encode_uint32, Array.size_append] at hsz
   have hf : ∀ c < 16,
-      LineFits (pack (sel16 v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 c)) q :=
-    fun c hc ↦ lineFits_pack _ q (h c hc) (hs c hc)
+      LineFits (encode (sel16 v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 c)) q :=
+    fun c hc ↦ lineFits_encodeWords _ q (h c hc) (hs c hc)
   have hcond := And.intro (hf 0 (by decide)) <| And.intro (hf 1 (by decide)) <|
     And.intro (hf 2 (by decide)) <| And.intro (hf 3 (by decide)) <|
     And.intro (hf 4 (by decide)) <| And.intro (hf 5 (by decide)) <|
@@ -130,7 +132,7 @@ theorem transposeStep_pack (v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v1
   split
   swap
   · rename_i hneg; exact absurd hcond hneg
-  simp only [line_pack]
+  simp only [line_encodeWords]
   rw [write16U_pack_cursor _ _ p ?hp0 ?hz0 ?hs0]
   rw [write16U_pack_cursor _ _ (p + 16) ?hp1 ?hz1 ?hs1]
   rw [write16U_pack_cursor _ _ (p + 32) ?hp2 ?hz2 ?hs2]
@@ -151,22 +153,26 @@ theorem transposeStep_pack (v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v1
     simp only [rows, lit16, Array.append_assoc, Array.empty_append]
     rfl
   all_goals (try rw [usize_add_numeral])
-  all_goals (try simp only [size_pack, Array.size_append, Array.size_extract, List.size_toArray,
+  all_goals (try simp only [size_encode_uint32, Array.size_append, Array.size_extract,
+      List.size_toArray,
     List.length_cons, List.length_nil])
   all_goals omega
 
 /-- Repeated transposed tiles append consecutive interleave rows to a written prefix. -/
-theorem transposeGo_pack (v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 : Array UInt32)
+theorem transposeGo_encodeWords (v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 : Array
+    UInt32)
     (count : Nat) (q p : USize) (o : Array UInt32)
     (h : ∀ c < 16, q.toNat + 16 * count ≤
       (sel16 v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 c).size)
     (hs : ∀ c < 16,
-      (pack (sel16 v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 c)).size < USize.size)
+      (encode (sel16 v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 c)).size < USize.size)
     (hp : p.toNat = o.size) (ho : 4 * (o.size + 256 * count) < USize.size) :
-    transposeGo (pack v0) (pack v1) (pack v2) (pack v3) (pack v4) (pack v5) (pack v6) (pack v7)
-      (pack v8) (pack v9) (pack v10) (pack v11) (pack v12) (pack v13) (pack v14) (pack v15)
-      count q p (pack o) =
-      pack (o ++ rows (fun u c ↦
+    transposeGo (encode v0) (encode v1) (encode v2) (encode v3) (encode v4) (encode v5) (encode
+        v6) (encode v7)
+      (encode v8) (encode v9) (encode v10) (encode v11) (encode v12) (encode v13) (encode v14)
+          (encode v15)
+      count q p (encode o) =
+      encode (o ++ rows (fun u c ↦
         (sel16 v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 c).getD (q.toNat + u) 0)
         (16 * count)) := by
   induction count generalizing q p o with
@@ -175,16 +181,16 @@ theorem transposeGo_pack (v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 
     have hq : q.toNat + 16 < USize.size := by
       have h0 := h 0 (by decide)
       have hs0 := hs 0 (by decide)
-      rw [size_pack] at hs0
+      rw [size_encode_uint32] at hs0
       omega
     have hZ : (Array.replicate 256 (0 : UInt32)).extract 256
         (Array.replicate 256 (0 : UInt32)).size = #[] :=
       Array.extract_eq_empty_of_le (by simp)
-    have hoZ : (pack (o ++ Array.replicate 256 0)).size < USize.size := by
-      rw [size_pack, Array.size_append, Array.size_replicate]
+    have hoZ : (encode (o ++ Array.replicate 256 0)).size < USize.size := by
+      rw [size_encode_uint32, Array.size_append, Array.size_replicate]
       exact Nat.lt_of_le_of_lt (by omega) ho
-    rw [transposeGo, extendZeros_pack,
-      transposeStep_pack v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15
+    rw [transposeGo, extendZeros_encodeWords,
+      transposeStep_encodeWords v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15
         o (Array.replicate 256 0) q p (fun c hc ↦ by have := h c hc; omega) hs hp
         (by rw [Array.size_replicate]) hoZ,
       hZ, Array.append_empty,
@@ -200,18 +206,18 @@ theorem transposeGo_pack (v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 
 
 /-- A word read at a strided offset. -/
 theorem readWord_stride (w : Array UInt32) (r : USize) (k : Nat) (st : USize) (hk16 : k < 16)
-    (h : r.toNat + k * st.toNat < w.size) (hs : (pack w).size < USize.size) :
-    readWord (pack w) (r + strideOff k st) = w.getD (r.toNat + k * st.toNat) 0 := by
+    (h : r.toNat + k * st.toNat < w.size) (hs : (encode w).size < USize.size) :
+    readWord (encode w) (r + strideOff k st) = w.getD (r.toNat + k * st.toNat) 0 := by
   have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
   have hsz := hs
-  rw [size_pack] at hsz
+  rw [size_encode_uint32] at hsz
   have hk : k < USize.size := by
     have : 4294967296 ≤ USize.size := USize.le_size
     omega
   have ht : (r + strideOff k st).toNat = r.toNat + k * st.toNat := by
     rw [strideOff, USize.toNat_add, USize.toNat_mul, USize.toNat_ofNat_of_lt' hk,
       Nat.mod_eq_of_lt (show k * st.toNat < USize.size by omega), Nat.mod_eq_of_lt (by omega)]
-  rw [readWord_eq_read, ht, read_pack w _ hs h]
+  rw [readWord_eq_read, ht, read_encodeWords w _ hs h]
 
 /-- Bit reversal splits off the four low bits of a multiple of sixteen. -/
 theorem bitRevNat_add_low (m q u : Nat) (hm : 4 ≤ m) (hq : 16 ∣ q) (hu : u < 16) :
@@ -226,17 +232,17 @@ theorem bitRevNat_add_low (m q u : Nat) (hm : 4 ≤ m) (hq : 16 ∣ q) (hu : u <
   ring
 
 /-- One reversal step appends sixteen consecutive locally reversed words. -/
-theorem leafRevStep_pack (w o Z : Array UInt32) (m : Nat) (f : UInt32) (sc : Bool)
-    (hm4 : 4 ≤ m) (hm : m ≤ 32) (hw : w.size = 2 ^ m) (hs : (pack w).size < USize.size)
+theorem leafRevStep_encodeWords (w o Z : Array UInt32) (m : Nat) (f : UInt32) (sc : Bool)
+    (hm4 : 4 ≤ m) (hm : m ≤ 32) (hw : w.size = 2 ^ m) (hs : (encode w).size < USize.size)
     (q : USize) (hq16 : 16 ∣ q.toNat) (hq : q.toNat + 16 ≤ 2 ^ m) (hqo : q.toNat = o.size)
-    (hZ : 16 ≤ Z.size) (ho : (pack (o ++ Z)).size < USize.size) :
-    leafRevStep (pack w) (32 - m).toUInt32 f sc (2 ^ (m - 4)).toUSize q (pack (o ++ Z)) =
-      pack (o ++ lit16 (fun u ↦
+    (hZ : 16 ≤ Z.size) (ho : (encode (o ++ Z)).size < USize.size) :
+    leafRevStep (encode w) (32 - m).toUInt32 f sc (2 ^ (m - 4)).toUSize q (encode (o ++ Z)) =
+      encode (o ++ lit16 (fun u ↦
         scaleWord f sc (w.getD (NTT.Transform.bitRevNat m (q.toNat + u)) 0)) ++
         Z.extract 16 Z.size) := by
   have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
   have hsz := hs
-  rw [size_pack, hw] at hsz
+  rw [size_encode_uint32, hw] at hsz
   have hm4' : 2 ^ m = 16 * 2 ^ (m - 4) := by
     rw [show m = m - 4 + 4 by omega, Nat.pow_add]; simp only [Nat.add_sub_cancel]; ring
   have hr : (reverse32 q.toUInt32 >>> (32 - m).toUInt32).toUSize.toNat =
@@ -289,28 +295,30 @@ theorem leafRevStep_pack (w o Z : Array UInt32) (m : Nat) (f : UInt32) (sc : Boo
   rfl
 
 /-- Repeated reversal steps append consecutive locally reversed words. -/
-theorem leafRevGo_pack (w : Array UInt32) (m : Nat) (f : UInt32) (sc : Bool)
-    (hm4 : 4 ≤ m) (hm : m ≤ 32) (hw : w.size = 2 ^ m) (hs : (pack w).size < USize.size)
+theorem leafRevGo_encodeWords (w : Array UInt32) (m : Nat) (f : UInt32) (sc : Bool)
+    (hm4 : 4 ≤ m) (hm : m ≤ 32) (hw : w.size = 2 ^ m) (hs : (encode w).size < USize.size)
     (count : Nat) (q : USize) (o Z : Array UInt32) (hq16 : 16 ∣ q.toNat)
     (hq : q.toNat + 16 * count ≤ 2 ^ m) (hqo : q.toNat = o.size) (hZ : 16 * count ≤ Z.size)
-    (ho : (pack (o ++ Z)).size < USize.size) :
-    leafRevGo (pack w) (32 - m).toUInt32 f sc (2 ^ (m - 4)).toUSize count q (pack (o ++ Z)) =
-      pack (o ++ rows (fun j u ↦
+    (ho : (encode (o ++ Z)).size < USize.size) :
+    leafRevGo (encode w) (32 - m).toUInt32 f sc (2 ^ (m - 4)).toUSize count q (encode (o ++ Z)) =
+      encode (o ++ rows (fun j u ↦
         scaleWord f sc (w.getD (NTT.Transform.bitRevNat m (q.toNat + (16 * j + u))) 0))
         count ++ Z.extract (16 * count) Z.size) := by
   induction count generalizing q o Z with
   | zero => simp only [leafRevGo, rows, Array.append_empty, Nat.mul_zero, Array.extract_size]
   | succ count ih =>
     have hsz := hs
-    rw [size_pack, hw] at hsz
+    rw [size_encode_uint32, hw] at hsz
     have hsz' := ho
-    rw [size_pack, Array.size_append] at hsz'
+    rw [size_encode_uint32, Array.size_append] at hsz'
     have h16 : (q + 16).toNat = q.toNat + 16 := usize_add_numeral q 16 (by decide) (by omega)
-    rw [leafRevGo, leafRevStep_pack w o Z m f sc hm4 hm hw hs q hq16 (by omega) hqo (by omega) ho,
+    rw [leafRevGo, leafRevStep_encodeWords w o Z m f sc hm4 hm hw hs q hq16 (by omega) hqo (by
+        omega) ho,
       ih (q + 16) _ _ (by rw [h16]; exact Nat.dvd_add hq16 (dvd_refl 16)) (by rw [h16]; omega)
         (by rw [h16, Array.size_append, size_lit16]; omega)
         (by simp only [Array.size_extract]; omega)
-        (by simp only [size_pack, Array.size_append, size_lit16, Array.size_extract]; omega),
+        (by simp only [size_encode_uint32, Array.size_append, size_lit16, Array.size_extract];
+            omega),
       extract_extract_tail, Nat.add_comm count 1, rows_add, Array.append_assoc, h16]
     have e1 : rows (fun j u ↦ scaleWord f sc
         (w.getD (NTT.Transform.bitRevNat m (q.toNat + (16 * j + u))) 0)) 1 =
@@ -327,9 +335,9 @@ theorem leafRevGo_pack (w : Array UInt32) (m : Nat) (f : UInt32) (sc : Bool)
     simp only [Array.append_assoc]
 
 /-- A complete reversed leaf: word `i` is leaf word `bitrev i`, optionally scaled. -/
-theorem leafRev_pack (w : Array UInt32) (m : Nat) (f : UInt32) (sc : Bool)
-    (hm4 : 4 ≤ m) (hm : m ≤ 32) (hw : w.size = 2 ^ m) (hs : (pack w).size < USize.size) :
-    leafRev (pack w) m f sc = pack (rows (fun j u ↦
+theorem leafRev_encodeWords (w : Array UInt32) (m : Nat) (f : UInt32) (sc : Bool)
+    (hm4 : 4 ≤ m) (hm : m ≤ 32) (hw : w.size = 2 ^ m) (hs : (encode w).size < USize.size) :
+    leafRev (encode w) m f sc = encode (rows (fun j u ↦
       scaleWord f sc (w.getD (NTT.Transform.bitRevNat m (16 * j + u)) 0)) (2 ^ m / 16)) := by
   have hdiv : 16 * (2 ^ m / 16) = 2 ^ m := by
     have : 16 ∣ 2 ^ m := by
@@ -337,16 +345,17 @@ theorem leafRev_pack (w : Array UInt32) (m : Nat) (f : UInt32) (sc : Bool)
       exact Nat.dvd_mul_right _ _
     omega
   have hsz := hs
-  rw [size_pack, hw] at hsz
+  rw [size_encode_uint32, hw] at hsz
   unfold leafRev
-  rw [show zeroWords (2 ^ m) = pack (#[] ++ Array.replicate (2 ^ m) 0) by
+  rw [show zeroWords (2 ^ m) = encode (#[] ++ Array.replicate (2 ^ m) (0 : UInt32)) by
       rw [Array.empty_append, zeroWords_eq],
-    leafRevGo_pack w m f sc hm4 hm hw hs _ 0 #[] _
+    leafRevGo_encodeWords w m f sc hm4 hm hw hs _ 0 #[] _
     (by simp only [USize.toNat_zero]; exact Nat.dvd_zero 16)
     (by simp only [USize.toNat_zero, Nat.zero_add, hdiv, Nat.le_refl])
     (by simp only [USize.toNat_zero, Array.size_empty])
     (by simp only [Array.size_replicate]; omega)
-    (by simp only [size_pack, Array.size_append, Array.size_replicate, Array.size_empty]; omega),
+    (by simp only [size_encode_uint32, Array.size_append, Array.size_replicate, Array.size_empty];
+        omega),
     Array.extract_eq_empty_of_le (by simp only [Array.size_replicate]; omega)]
   simp only [Array.empty_append, Array.append_empty, USize.toNat_zero, Nat.zero_add]
 
@@ -357,10 +366,10 @@ theorem sel16_bitRev (V : Nat → Array UInt32) (c : Nat) (hc : c < 16) :
   interval_cases c <;> rfl
 
 /-- One interleave block: rows `q` up to `q + 16 * count` of the sixteen reversed leaves. -/
-theorem interleaveRange_pack (V : Nat → Array UInt32) (M q count : Nat)
+theorem interleaveRange_encodeWords (V : Nat → Array UInt32) (M q count : Nat)
     (hV : ∀ l < 16, (V l).size = M) (hq : q + 16 * count ≤ M) (hs : 64 * M < USize.size) :
-    interleaveRange ((Array.range 16).map fun l ↦ pack (V l)) q count =
-      pack (rows (fun u c ↦ (V (NTT.Transform.bitRevNat 4 c)).getD (q + u) 0) (16 * count)) := by
+    interleaveRange ((Array.range 16).map fun l ↦ encode (V l)) q count =
+      encode (rows (fun u c ↦ (V (NTT.Transform.bitRevNat 4 c)).getD (q + u) 0) (16 * count)) := by
   have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
   have hqu : q.toUSize.toNat = q := USize.toNat_ofNat_of_lt' (by omega)
   unfold interleaveRange
@@ -372,12 +381,12 @@ theorem interleaveRange_pack (V : Nat → Array UInt32) (M q count : Nat)
     getD_map_range _ 16 10 (by decide), getD_map_range _ 16 11 (by decide),
     getD_map_range _ 16 12 (by decide), getD_map_range _ 16 13 (by decide),
     getD_map_range _ 16 14 (by decide), getD_map_range _ 16 15 (by decide)]
-  rw [show ByteArray.emptyWithCapacity (1024 * count) = pack #[] from rfl,
-    transposeGo_pack (V 0) (V 8) (V 4) (V 12) (V 2) (V 10) (V 6)
+  rw [show ByteArray.emptyWithCapacity (1024 * count) = encode (#[] : Array UInt32) from rfl,
+    transposeGo_encodeWords (V 0) (V 8) (V 4) (V 12) (V 2) (V 10) (V 6)
     (V 14) (V 1) (V 9) (V 5) (V 13) (V 3) (V 11) (V 7) (V 15) count q.toUSize 0 #[]
     (fun c hc ↦ by rw [sel16_bitRev V c hc, hqu, hV _ (NTT.Transform.bitRevNat_lt 4 c)]; exact hq)
     (fun c hc ↦ by
-      rw [sel16_bitRev V c hc, size_pack, hV _ (NTT.Transform.bitRevNat_lt 4 c)]; omega)
+      rw [sel16_bitRev V c hc, size_encode_uint32, hV _ (NTT.Transform.bitRevNat_lt 4 c)]; omega)
     rfl (by rw [Array.size_empty]; omega),
     Array.empty_append, hqu]
   congr 1
@@ -386,9 +395,9 @@ theorem interleaveRange_pack (V : Nat → Array UInt32) (M q count : Nat)
 /-- Joining the interleave blocks in task order concatenates their rows. -/
 theorem foldl_blocks (g : Nat → Nat → UInt32) (B : Nat → ByteArray) (count k : Nat)
     (o : Array UInt32)
-    (hB : ∀ t < k, B t = pack (rows (fun u c ↦ g (16 * count * t + u) c) (16 * count))) :
-    (Array.range k).foldl (fun acc t ↦ acc ++ B t) (pack o) =
-      pack (o ++ rows g (16 * count * k)) := by
+    (hB : ∀ t < k, B t = encode (rows (fun u c ↦ g (16 * count * t + u) c) (16 * count))) :
+    (Array.range k).foldl (fun acc t ↦ acc ++ B t) (encode o) =
+      encode (o ++ rows g (16 * count * k)) := by
   induction k with
   | zero =>
     rw [show Array.range 0 = #[] from Array.eq_empty_of_size_eq_zero Array.size_range]
@@ -396,16 +405,16 @@ theorem foldl_blocks (g : Nat → Nat → UInt32) (B : Nat → ByteArray) (count
   | succ k ih =>
     rw [Array.range_succ, Array.foldl_append, ih (fun t ht ↦ hB t (by omega))]
     have hs : (#[k] : Array Nat).foldl (fun acc t ↦ acc ++ B t)
-        (pack (o ++ rows g (16 * count * k))) =
-        pack (o ++ rows g (16 * count * k)) ++ B k := by simp
-    rw [hs, hB k (by omega), ← pack_append, Nat.mul_succ, rows_add, Array.append_assoc]
+        (encode (o ++ rows g (16 * count * k))) =
+        encode (o ++ rows g (16 * count * k)) ++ B k := by simp
+    rw [hs, hB k (by omega), ← PackedRepr.encode_append, Nat.mul_succ, rows_add, Array.append_assoc]
 
 /-- Interleaving sixteen reversed leaves: output word `16 * q + c` is word `q` of leaf
 `bitrev₄ c`. -/
-theorem naturalLeaves_pack (V : Nat → Array UInt32) (logN : Nat) (h12 : 12 ≤ logN)
+theorem naturalLeaves_encodeWords (V : Nat → Array UInt32) (logN : Nat) (h12 : 12 ≤ logN)
     (hV : ∀ l < 16, (V l).size = 2 ^ (logN - 4)) (hs : 4 * 2 ^ logN < USize.size) :
-    naturalLeaves ((Array.range 16).map fun l ↦ pack (V l)) logN =
-      pack (Array.ofFn (n := 2 ^ logN) fun i ↦
+    naturalLeaves ((Array.range 16).map fun l ↦ encode (V l)) logN =
+      encode (Array.ofFn (n := 2 ^ logN) fun i ↦
         (V (NTT.Transform.bitRevNat 4 (i % 16))).getD (i / 16) 0) := by
   obtain ⟨m, rfl⟩ : ∃ m, logN = m + 4 := ⟨logN - 4, by omega⟩
   have hsub : m + 4 - 4 = m := by omega
@@ -420,10 +429,10 @@ theorem naturalLeaves_pack (V : Nat → Array UInt32) (logN : Nat) (h12 : 12 ≤
     rw [hV l hl, hsub]
   unfold naturalLeaves
   simp only [Task.spawn, hsub]
-  rw [Array.foldl_map, emptyWithCapacity_eq_pack,
+  rw [Array.foldl_map, emptyWithCapacity_eq_encodeWords,
     foldl_blocks (fun u c ↦ (V (NTT.Transform.bitRevNat 4 c)).getD u 0) _ (2 ^ m / 256) 16 #[]
       (fun t ht ↦ by
-        rw [interleaveRange_pack V (2 ^ m) _ _ hV' (by
+        rw [interleaveRange_encodeWords V (2 ^ m) _ _ hV' (by
           have := Nat.mul_le_mul_left (16 * (2 ^ m / 256)) (show t + 1 ≤ 16 by omega)
           rw [Nat.mul_add, Nat.mul_one] at this
           omega) (by omega)]),
@@ -438,11 +447,11 @@ theorem naturalLeaves_pack (V : Nat → Array UInt32) (logN : Nat) (h12 : 12 ≤
       Array.getElem?_eq_none (by rw [Array.size_ofFn]; omega)]
 
 /-- The sequential decoder stores every word, in order, into a correctly sized array. -/
-theorem unpackGo_packFields (X : Array KoalaBear.Fast.Field) (n : USize) (hn : X.size = n.toNat)
-    (hs : (packFields X).size < USize.size) :
+theorem unpackGo_encode (X : Array KoalaBear.Fast.Field) (n : USize) (hn : X.size = n.toNat)
+    (hs : (encode X).size < USize.size) :
     ∀ (d : Nat) (i : USize) (out : Array KoalaBear.Fast.Field), n.toNat - i.toNat = d →
       i.toNat ≤ n.toNat → out.size = n.toNat → (∀ k < i.toNat, out.getD k 0 = X.getD k 0) →
-      unpackGo (packFields X) n i out = X := by
+      unpackGo (encode X) n i out = X := by
   have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
   intro d
   induction d with
@@ -465,8 +474,8 @@ theorem unpackGo_packFields (X : Array KoalaBear.Fast.Field) (n : USize) (hn : X
     have h1 : (i + 1).toNat = i.toNat + 1 := Plan.usize_add_one i (by omega)
     rw [unpackGo]
     simp only [hlt, hio, ↓reduceDIte]
-    have hread : ofWord (readWord (packFields X) i) = X.getD i.toNat 0 := by
-      rw [readWord_eq_read, read_packFields X _ hs (by omega), ofWord_val]
+    have hread : ofWord (readWord (encode X) i) = X.getD i.toNat 0 := by
+      rw [readWord_eq_read, read_encode X _ hs (by omega), ofWord_val]
     rw [hread]
     apply ih (i + 1) _ (by omega) (by omega) (by simp only [Array.uset, Array.size_set]; exact hout)
     intro k hk1
@@ -479,27 +488,27 @@ theorem unpackGo_packFields (X : Array KoalaBear.Fast.Field) (n : USize) (hn : X
       simpa only [Array.getD_eq_getD_getElem?] using this
 
 /-- Unpacking a packed field array restores it. -/
-theorem unpack_packFields (X : Array KoalaBear.Fast.Field) (hs : (packFields X).size < USize.size) :
-    unpack (packFields X) X.size = X := by
+theorem unpack_encode (X : Array KoalaBear.Fast.Field) (hs : (encode X).size < USize.size) :
+    unpack (encode X) X.size = X := by
   have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
   have hsz := hs
-  rw [size_packFields] at hsz
+  rw [size_encode_fields] at hsz
   have hn : X.size.toUSize.toNat = X.size := USize.toNat_ofNat_of_lt' (by omega)
   unfold unpack
-  exact unpackGo_packFields X _ hn.symm hs _ 0 _ rfl (by simp only [USize.toNat_zero]; omega)
+  exact unpackGo_encode X _ hn.symm hs _ 0 _ rfl (by simp only [USize.toNat_zero]; omega)
     (by rw [Array.size_replicate, hn]) (fun k hk ↦ by simp only [USize.toNat_zero] at hk; omega)
 
 /-- The sixteen leaf blocks of a field array, packed. -/
 def leafBlocks (S : Array KoalaBear.Fast.Field) (logN : Nat) : Array ByteArray :=
   Array.ofFn (n := 16) fun l ↦
-    packFields (S.extract (l * 2 ^ (logN - 4)) ((l + 1) * 2 ^ (logN - 4)))
+    encode (S.extract (l * 2 ^ (logN - 4)) ((l + 1) * 2 ^ (logN - 4)))
 
 /-- Reversing the leaf blocks and interleaving them decodes the bit-reversed field array. -/
-theorem naturalLeaves_packFields (S : Array KoalaBear.Fast.Field) (logN : Nat)
+theorem naturalLeaves_encode (S : Array KoalaBear.Fast.Field) (logN : Nat)
     (factor : KoalaBear.Fast.Field) (sc : Bool) (h12 : 12 ≤ logN) (h32 : logN ≤ 32)
     (hS : S.size = 2 ^ logN) (hs : 4 * 2 ^ logN < USize.size) :
     naturalLeaves ((leafBlocks S logN).map fun b ↦ leafRev b (logN - 4) factor.val sc) logN =
-      packFields (decodedFields logN S factor sc) := by
+      encode (decodedFields logN S factor sc) := by
   obtain ⟨m, rfl⟩ : ∃ m, logN = m + 4 := ⟨logN - 4, by omega⟩
   have hsub : m + 4 - 4 = m := by omega
   have hpow : 2 ^ (m + 4) = 16 * 2 ^ m := by rw [Nat.pow_add]; omega
@@ -522,15 +531,16 @@ theorem naturalLeaves_packFields (S : Array KoalaBear.Fast.Field) (logN : Nat)
       exact Nat.dvd_mul_right _ _
     omega
   have hr : ((leafBlocks S (m + 4)).map fun b ↦ leafRev b (m + 4 - 4) factor.val sc) =
-      (Array.range 16).map fun l ↦ pack (V l) := by
+      (Array.range 16).map fun l ↦ encode (V l) := by
     apply Array.ext (by simp only [leafBlocks, Array.size_map, Array.size_ofFn, Array.size_range])
     intro l h1 _
     simp only [leafBlocks, Array.size_map, Array.size_ofFn] at h1
     simp only [leafBlocks, Array.getElem_map, Array.getElem_ofFn, Array.getElem_range, hsub]
-    exact leafRev_pack (W l) m factor.val sc (by omega) (by omega) (hW l h1)
-      (by rw [size_pack, hW l h1]; omega)
-  rw [hr, naturalLeaves_pack V (m + 4) h12 hV hs]
-  unfold packFields
+    rw [encode_eq_map_val]
+    exact leafRev_encodeWords (W l) m factor.val sc (by omega) (by omega) (hW l h1)
+      (by rw [size_encode_uint32, hW l h1]; omega)
+  rw [hr, naturalLeaves_encodeWords V (m + 4) h12 hV hs]
+  simp only [encode_eq_map_val] at *
   congr 1
   simp only [decodedFields, Array.map_ofFn]
   apply Array.ext (by simp only [Array.size_ofFn])

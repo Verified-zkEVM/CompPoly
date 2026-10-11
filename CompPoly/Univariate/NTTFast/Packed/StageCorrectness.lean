@@ -13,6 +13,7 @@ public import CompPoly.Univariate.NTTFast.Packed.LocalLayers
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode)
 
 /-- Fusing the final sixteen-coordinate blocks is exactly two ordinary radix-four passes. -/
 theorem fold_leaf16Stages_eq_radix4 [Field R] (t3 t2 t1 : Array R) (blocks : Nat)
@@ -138,11 +139,11 @@ theorem twiddleTable_invariants (D : NTT.Domain KoalaBear.Fast.Field) :
 theorem Native.stages_unscaled_correct (D : NTT.Domain KoalaBear.Fast.Field)
     (a : Array KoalaBear.Fast.Field) (factor : KoalaBear.Fast.Field)
     (hs : a.size = D.n) (hu : 4 * D.n < USize.size) :
-    Native.stages D.logN ((Plan.twiddleTable D).map packFields) (packFields a)
-      factor.val false = packFields (Plan.runStagesDIFRadix4WithTwiddles D
+    Native.stages D.logN ((Plan.twiddleTable D).map encode) (encode a)
+      factor.val false = encode (Plan.runStagesDIFRadix4WithTwiddles D
         (Plan.twiddleTable D) a) := by
   obtain ⟨htw, hone⟩ := twiddleTable_invariants D
-  rw [Native.stages_packFields _ _ _ _ _ htw hone hs hu,
+  rw [Native.stages_encode _ _ _ _ _ htw hone hs hu,
     fieldStages_unscaled_eq_all _ _ _ _ htw hone hs, allFieldStages_eq_plan D _ a htw hone]
 
 end CompPoly.CPolynomial.NTTFast.Packed

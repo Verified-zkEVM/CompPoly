@@ -12,12 +12,13 @@ public import CompPoly.Univariate.NTTFast.Packed.FieldStorage
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode)
 
 /-- Generators agree when their callbacks agree on the generated index range. -/
 theorem Native.generate_congr (n : Nat) (f g : Nat → UInt32) (h : ∀ i < n, f i = g i) :
     Native.generate n f = Native.generate n g := by
   rw [Native.generate_eq, Native.generate_eq]
-  apply congrArg Storage.pack
+  apply congrArg encode
   apply congrArg Array.ofFn
   funext i
   exact h i.val i.isLt
@@ -25,9 +26,9 @@ theorem Native.generate_congr (n : Nat) (f g : Nat → UInt32) (h : ∀ i < n, f
 /-- Generating canonical field words gives the packed field-array encoding. -/
 theorem Native.generate_fields (n : Nat) (f : Nat → KoalaBear.Fast.Field) :
     Native.generate n (fun i ↦ (f i).val) =
-      packFields (Array.ofFn (fun i : Fin n ↦ f i.val)) := by
+      encode (Array.ofFn (fun i : Fin n ↦ f i.val)) := by
   rw [Native.generate_eq]
-  unfold packFields
+  simp only [encode_eq_map_val] at *
   rw [Array.map_ofFn]
   rfl
 

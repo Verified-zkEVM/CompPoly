@@ -12,6 +12,7 @@ public import CompPoly.Univariate.NTTFast.Packed.SplitCorrectness
 @[expose] public section
 open scoped BigOperators
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode)
 
 /-- The mathematical bit-reversed transform with optional global normalization. -/
 def normalizedDifSpec [Field R] (D : NTT.Domain R) (a : Array R) (factor : R)
@@ -53,8 +54,8 @@ theorem Native.splitTask_correct (D : NTT.Domain KoalaBear.Fast.Field)
     (factor : KoalaBear.Fast.Field) (normalize : Bool) (depth : Nat)
     (ht : TwiddlesFor D tw) (hs : a.size = D.n) (hu : 4 * D.n < USize.size)
     (hn : ValidLeafNormalization D.logN depth normalize) :
-    (Native.splitTask (tw.map packFields) D.logN (packFields a) factor.val normalize depth).get =
-      packFields (normalizedDifSpec D a factor normalize) := by
+    (Native.splitTask (tw.map encode) D.logN (encode a) factor.val normalize depth).get =
+      encode (normalizedDifSpec D a factor normalize) := by
   induction depth generalizing D a with
   | zero =>
     simp only [Native.splitTask, Task.spawn]
@@ -92,7 +93,7 @@ theorem Native.splitTask_correct (D : NTT.Domain KoalaBear.Fast.Field)
         (Native.splitTask _ (halfDomain D hlog).logN _ _ _ depth).get = _
       rw [ih (halfDomain D hlog) (splitFieldsLeft D a) ht' hl hu' hn',
         ih (halfDomain D hlog) (splitFieldsRight D a) ht' hr hu' hn',
-        ← packFields_append, normalizedDifSpec_split]
+        ← PackedRepr.encode_append, normalizedDifSpec_split]
 
 /-- Fusing input conversion into the first task split preserves the complete mathematical output. -/
 theorem Native.splitInputTask_correct (D : NTT.Domain KoalaBear.Fast.Field)
@@ -100,11 +101,11 @@ theorem Native.splitInputTask_correct (D : NTT.Domain KoalaBear.Fast.Field)
     (factor : KoalaBear.Fast.Field) (normalize : Bool) (depth : Nat)
     (ht : TwiddlesFor D tw) (hs : a.size = D.n) (hu : 4 * D.n < USize.size)
     (hn : ValidLeafNormalization D.logN depth normalize) :
-    (Native.splitInputTask (tw.map packFields) D.logN a factor.val normalize depth).get =
-      packFields (normalizedDifSpec D a factor normalize) := by
+    (Native.splitInputTask (tw.map encode) D.logN a factor.val normalize depth).get =
+      encode (normalizedDifSpec D a factor normalize) := by
   rw [Native.splitInputTask]
   split
-  · rw [Native.encode_eq]
+  · rw [Native.encodeFields_eq]
     exact Native.splitTask_correct D tw a factor normalize depth ht hs hu hn
   · rename_i hsplit
     have hdepth : 0 < depth := by omega
@@ -131,6 +132,6 @@ theorem Native.splitInputTask_correct (D : NTT.Domain KoalaBear.Fast.Field)
       factor normalize (depth - 1) ht' hl hu' hn',
       Native.splitTask_correct (halfDomain D hlog) tw (splitFieldsRight D a)
       factor normalize (depth - 1) ht' hr hu' hn',
-      ← packFields_append, normalizedDifSpec_split]
+      ← PackedRepr.encode_append, normalizedDifSpec_split]
 
 end CompPoly.CPolynomial.NTTFast.Packed

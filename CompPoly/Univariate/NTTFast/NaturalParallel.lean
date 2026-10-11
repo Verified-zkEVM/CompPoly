@@ -26,10 +26,11 @@ variable {R : Type*}
 
 /-- The column-parallel transform applies to an exactly sized input of an even size of at least
 `2 ^ 16` elements; smaller transforms are faster serially. -/
-def ColumnsShape (n logN : Nat) : Prop :=
-  n = 2 ^ logN ∧ logN % 2 = 0 ∧ 16 ≤ logN ∧ logN ≤ 36 ∧ 4 * 2 ^ logN + 1024 ≤ USize.size
+def ColumnsShape (R : Type*) [PackedRepr R] (n logN : Nat) : Prop :=
+  n = 2 ^ logN ∧ logN % 2 = 0 ∧ 16 ≤ logN ∧ logN ≤ 36 ∧
+    PackedRepr.width R * (2 ^ logN + 256) ≤ USize.size
 
-instance (n logN : Nat) : Decidable (ColumnsShape n logN) := by
+instance (R : Type*) [PackedRepr R] (n logN : Nat) : Decidable (ColumnsShape R n logN) := by
   unfold ColumnsShape; exact inferInstance
 
 /-- The number of column tasks: `2 ^ (logWorkers + 1)`, but at least 256 columns each. -/
@@ -56,10 +57,10 @@ theorem runPasses_topPasses [Field R] [DecidableEq R] (D : NTT.Domain R) (tw : A
   rfl
 
 /-- The column transform computes the scalar forward stages of a domain, in natural order. -/
-theorem transform_eq_checkedStages [Field R] [DecidableEq R] [Word32Repr R] (D : NTT.Domain R)
+theorem transform_eq_checkedStages [Field R] [DecidableEq R] [PackedRepr R] (D : NTT.Domain R)
     (tw : Array (Array R)) (S : Nat) (scale : Bool) (f : R) (a : Array R)
     (htw : ∀ s < D.logN, (tw.getD s #[]).size = 2 ^ s) (hS : 0 < S)
-    (hdiv : S ∣ 2 ^ (D.logN - 4)) (hshape : ColumnsShape a.size D.logN) :
+    (hdiv : S ∣ 2 ^ (D.logN - 4)) (hshape : ColumnsShape R a.size D.logN) :
     Columns.transform tw D.logN S ((Parallel.forwardPasses D).drop 2) scale f a =
       Array.ofFn (n := 2 ^ D.logN) fun i ↦ Columns.scaleBy scale f
         ((Plan.checkedStages D tw a).getD (NTT.Transform.bitRevNat D.logN i) 0) := by
@@ -78,10 +79,10 @@ theorem transform_eq_checkedStages [Field R] [DecidableEq R] [Word32Repr R] (D :
 /-- Parallel forward NTT. Even sizes from `2 ^ 16` run `columnCount` column tasks and sixteen
 leaf tasks; other sizes from `2 ^ 18` use at most `2 ^ logWorkers` independent array segments.
 Smaller transforms use the scalar loop to avoid task and copy costs. -/
-@[inline] def forwardParallel [Field R] [DecidableEq R] [Word32Repr R] (P : NaturalPlan R)
+@[inline] def forwardParallel [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
     (a : Array R) (logWorkers : Nat := 4) : Array R :=
   if logWorkers = 0 then P.forward a else
-  if ColumnsShape a.size P.plan.domain.logN then
+  if ColumnsShape R a.size P.plan.domain.logN then
     Columns.transform P.plan.twiddles P.plan.domain.logN
       (columnCount P.plan.domain.logN logWorkers)
       ((Parallel.forwardPasses P.plan.domain).drop 2) false 1 a
@@ -98,10 +99,10 @@ Smaller transforms use the scalar loop to avoid task and copy costs. -/
 
 /-- Parallel inverse NTT with the same natural-order input/output and normalization. Even
 sizes run the forward column transform with the inverse twiddles and scale the leaves. -/
-@[inline] def inverseParallel [Field R] [DecidableEq R] [Word32Repr R] (P : NaturalPlan R)
+@[inline] def inverseParallel [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
     (a : Array R) (logWorkers : Nat := 4) : Array R :=
   if logWorkers = 0 ∨ P.plan.inverseDomain.n ≠ P.plan.domain.n then P.inverse a else
-  if ColumnsShape a.size P.plan.domain.logN then
+  if ColumnsShape R a.size P.plan.domain.logN then
     Columns.transform P.plan.inverseTwiddles P.plan.domain.logN
       (columnCount P.plan.domain.logN logWorkers)
       ((Parallel.forwardPasses P.plan.inverseDomain).drop 2) true P.plan.nInv a
@@ -119,7 +120,7 @@ sizes run the forward column transform with the inverse twiddles and scale the l
     P.normalize c
 
 /-- The complete parallel forward transform refines the proved scalar transform. -/
-theorem forwardParallel_eq [Field R] [DecidableEq R] [Word32Repr R] (P : NaturalPlan R)
+theorem forwardParallel_eq [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
     (a : Array R) (logWorkers : Nat) : P.forwardParallel a logWorkers = P.forward a := by
   unfold forwardParallel
   split
@@ -148,7 +149,7 @@ theorem forwardParallel_eq [Field R] [DecidableEq R] [Word32Repr R] (P : Natural
     rfl
 
 /-- The complete parallel inverse transform refines the proved scalar transform. -/
-theorem inverseParallel_eq [Field R] [DecidableEq R] [Word32Repr R] (P : NaturalPlan R)
+theorem inverseParallel_eq [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
     (a : Array R) (logWorkers : Nat) : P.inverseParallel a logWorkers = P.inverse a := by
   unfold inverseParallel
   split

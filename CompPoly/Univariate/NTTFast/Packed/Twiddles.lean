@@ -12,6 +12,7 @@ public import CompPoly.Univariate.NTTFast.Packed.Normalization
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open CompPoly.PackedRepr (encode)
 
 /-- The stages consumed by a domain agree with its canonical twiddles. -/
 def TwiddlesFor (D : NTT.Domain KoalaBear.Fast.Field)
@@ -47,13 +48,13 @@ theorem Native.stages_correct_for (D : NTT.Domain KoalaBear.Fast.Field)
     (factor : KoalaBear.Fast.Field) (normalize : Bool)
     (ht : TwiddlesFor D tw) (hs : a.size = D.n) (hu : 4 * D.n < USize.size)
     (hn : ValidNormalization D.logN normalize) :
-    Native.stages D.logN (tw.map packFields) (packFields a) factor.val normalize =
-      packFields (if normalize then
+    Native.stages D.logN (tw.map encode) (encode a) factor.val normalize =
+      encode (if normalize then
         (Plan.runStagesDIFRadix4WithTwiddles D (Plan.twiddleTable D) a).map (fun x ↦ factor * x)
       else Plan.runStagesDIFRadix4WithTwiddles D (Plan.twiddleTable D) a) := by
   obtain ⟨htw, hone⟩ := ht.invariants D tw
   obtain ⟨hc, ho⟩ := twiddleTable_invariants D
-  rw [Native.stages_packFields _ _ _ _ _ htw hone hs hu]
+  rw [Native.stages_encode _ _ _ _ _ htw hone hs hu]
   cases normalize with
   | false =>
     rw [fieldStages_unscaled_eq_all _ _ _ _ htw hone hs,

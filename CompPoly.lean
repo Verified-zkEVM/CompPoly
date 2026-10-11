@@ -65,6 +65,7 @@ public import CompPoly.Bivariate.ToPoly
 public import CompPoly.Data.Array.Involution
 public import CompPoly.Data.Array.Lemmas
 public import CompPoly.Data.ByteArray.Pack
+public import CompPoly.Data.ByteArray.Packed
 public import CompPoly.Data.Bytes.Bias
 public import CompPoly.Data.Bytes.CanonicalNat
 public import CompPoly.Data.Bytes.Codec
@@ -72,7 +73,6 @@ public import CompPoly.Data.Bytes.Delimited
 public import CompPoly.Data.Bytes.LittleEndian
 public import CompPoly.Data.Bytes.UInt32
 public import CompPoly.Data.Bytes.Vector
-public import CompPoly.Data.Bytes.Words
 public import CompPoly.Data.Classes.CanonicalNat
 public import CompPoly.Data.Classes.DCast
 public import CompPoly.Data.Classes.HasSize
@@ -410,7 +410,6 @@ public import CompPoly.Univariate.NTTFast.Packed.StageRefinement
 public import CompPoly.Univariate.NTTFast.Packed.StageSpec
 public import CompPoly.Univariate.NTTFast.Packed.StageTail
 public import CompPoly.Univariate.NTTFast.Packed.Stages
-public import CompPoly.Univariate.NTTFast.Packed.Storage
 public import CompPoly.Univariate.NTTFast.Packed.StorageLemmas
 public import CompPoly.Univariate.NTTFast.Packed.TaskSpec
 public import CompPoly.Univariate.NTTFast.Packed.TiledDecoder
