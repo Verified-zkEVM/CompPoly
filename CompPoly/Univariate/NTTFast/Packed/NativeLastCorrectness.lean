@@ -350,7 +350,6 @@ theorem lastHalf_encodeWords (t3 t2 t1 U : Array KoalaBear.Fast.Field) (i0 i1 i2
   simp only [List.foldl_cons, List.foldl_nil, laneLine, FieldLine.get, pick8,
     readField, fieldAdd, fieldSub, fieldMul, USize.reduceToNat, Nat.add_zero, Nat.zero_add]
 
-
 /-- In range, a half-line store is a splice of eight words. -/
 theorem spliceHalf_eq (O : Array UInt32) (idx : Nat) (v0 v1 v2 v3 v4 v5 v6 v7 : UInt32)
     (hi : idx + 8 ≤ O.size) :
@@ -843,6 +842,40 @@ theorem Native.leafNatural_hyp (D : NTT.Domain KoalaBear.Fast.Field)
     (fun s hs ↦ hsz s (by omega)) (fun s hs ↦ hone s (by omega)) hX
     (by simp only [NTT.Domain.n] at hu; omega) (by omega)
 
+/-- The decoding pipeline computes the DFT with optional inverse normalization. -/
+theorem Native.runDecoded_dft (D : NTT.Domain KoalaBear.Fast.Field)
+    (tw : Array (Array KoalaBear.Fast.Field)) (depth : Nat) (factor : KoalaBear.Fast.Field)
+    (a : Array KoalaBear.Fast.Field) (inverse : Bool) (ht : TwiddlesFor D tw) (hs : a.size = D.n)
+    (h32 : D.logN ≤ 32) (hu : 4 * D.n < USize.size) :
+    Native.runDecoded (tw.map encode) D.logN depth factor.val (encode a) inverse =
+      if inverse then (NTT.Forward.forwardSpec D a).map (fun x ↦ factor * x)
+      else NTT.Forward.forwardSpec D a := by
+  unfold Native.runDecoded
+  let normalize := inverse && D.logN - depth ≥ 4 && (D.logN - depth) % 2 == 0
+  have hn : ValidLeafNormalization D.logN depth normalize := by
+    intro h
+    simp only [normalize, Bool.and_eq_true, decide_eq_true_eq, beq_iff_eq] at h
+    exact ⟨h.1.2, h.2⟩
+  have hi : normalize = true → inverse = true := by
+    intro h
+    simp only [normalize, Bool.and_eq_true, decide_eq_true_eq, beq_iff_eq] at h
+    exact h.1.1
+  have hsize : (normalizedDifSpec D a factor normalize).size = 2 ^ D.logN :=
+    size_normalizedDifSpec D a factor normalize
+  have hpu : (encode (normalizedDifSpec D a factor normalize)).size < USize.size := by
+    rw [size_encode_fields, hsize]
+    exact hu
+  change Native.decodeTiled D.logN (Native.assembleChunks (4 * 2 ^ D.logN)
+    (Native.sliceChunks (tw.map encode) D.logN #[encode a] factor.val normalize
+      (Native.sliceCount D.logN depth) id
+      (fun m b ↦ Native.stages m (tw.map encode) b factor.val normalize) depth).get)
+      factor.val (inverse && !normalize) = _
+  rw [Native.sliceChunks_leaves D tw a factor normalize _ depth _ _ ht hs hu (fun _ _ ↦ rfl),
+    Array.map_id, Native.assembleChunks_capacity, Native.splitChunks_eq,
+    Native.splitTask_correct D tw a factor normalize depth ht hs hu hn,
+    Native.decodeTiled_encode _ _ factor _ h32 hsize hpu,
+    decodedFields_normalizedDifSpec D a factor normalize inverse hi]
+
 /-- The packed in/out pipeline computes the DFT with optional inverse normalization. -/
 theorem Native.runPacked_dft (D : NTT.Domain KoalaBear.Fast.Field)
     (tw : Array (Array KoalaBear.Fast.Field)) (depth : Nat) (factor : KoalaBear.Fast.Field)
@@ -869,66 +902,6 @@ theorem Native.runPacked_dft (D : NTT.Domain KoalaBear.Fast.Field)
       show inverse = (inverse && !false) by simp only [Bool.not_false, Bool.and_true],
       decodedFields_normalizedDifSpec D a factor false _ (fun h ↦ by cases h)]
     simp only [Bool.not_false, Bool.and_true]
-  · let normalize := inverse && D.logN - depth ≥ 4 && (D.logN - depth) % 2 == 0
-    have hn : ValidLeafNormalization D.logN depth normalize := by
-      intro h
-      simp only [normalize, Bool.and_eq_true, decide_eq_true_eq, beq_iff_eq] at h
-      exact ⟨h.1.2, h.2⟩
-    have hi : normalize = true → inverse = true := by
-      intro h
-      simp only [normalize, Bool.and_eq_true, decide_eq_true_eq, beq_iff_eq] at h
-      exact h.1.1
-    have hsize : (normalizedDifSpec D a factor normalize).size = 2 ^ D.logN :=
-      size_normalizedDifSpec D a factor normalize
-    have hpu : (encode (normalizedDifSpec D a factor normalize)).size < USize.size := by
-      rw [size_encode_fields, hsize]
-      exact hu
-    change Native.encodeFields (Native.decodeTiled D.logN (Native.assembleChunks (4 * 2 ^ D.logN)
-      (Native.sliceChunks (tw.map encode) D.logN #[encode a] factor.val normalize
-        (Native.sliceCount D.logN depth) id
-        (fun m b ↦ Native.stages m (tw.map encode) b factor.val normalize) depth).get)
-        factor.val (inverse && !normalize)) = _
-    rw [Native.sliceChunks_leaves D tw a factor normalize _ depth _ _ ht hs hu (fun _ _ ↦ rfl),
-      Array.map_id, Native.assembleChunks_capacity, Native.splitChunks_eq,
-      Native.splitTask_correct D tw a factor normalize depth ht hs hu hn,
-      Native.decodeTiled_encode _ _ factor _ h32 hsize hpu, Native.encodeFields_eq,
-      decodedFields_normalizedDifSpec D a factor normalize inverse hi]
-
-/-- The field-array pipeline computes the DFT with optional inverse normalization. -/
-theorem Native.runFields_dft (D : NTT.Domain KoalaBear.Fast.Field)
-    (tw : Array (Array KoalaBear.Fast.Field)) (depth : Nat) (factor : KoalaBear.Fast.Field)
-    (a : Array KoalaBear.Fast.Field) (inverse : Bool) (ht : TwiddlesFor D tw) (hs : a.size = D.n)
-    (h32 : D.logN ≤ 32) (hu : 4 * D.n < USize.size) :
-    Native.runFields (tw.map encode) D.logN depth factor.val a inverse =
-      if inverse then (NTT.Forward.forwardSpec D a).map (fun x ↦ factor * x)
-      else NTT.Forward.forwardSpec D a := by
-  unfold Native.runFields
-  split
-  · rename_i hshape
-    simp only [Native.naturalShape, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq] at hshape
-    obtain ⟨⟨rfl, h12⟩, _⟩ := hshape
-    have hn : ValidLeafNormalization D.logN 4 false := by intro h; cases h
-    have hsize : (normalizedDifSpec D a factor false).size = 2 ^ D.logN :=
-      size_normalizedDifSpec D a factor false
-    have hdec := decodedFields_normalizedDifSpec D a factor false inverse (fun h ↦ by cases h)
-    simp only [Bool.not_false, Bool.and_true] at hdec
-    rw [Native.sliceInputChunks_eq tw a D.logN 4 _ _ _ _ _ hs (TwiddlesFor.invariants D tw ht).1 hu
-      (Native.leafNatural_hyp D tw factor inverse ht h32 hu),
-      Native.splitInputChunks_leaves D tw a factor false 4 ht hs hu hn (by omega)]
-    rw [show (Array.ofFn (n := 2 ^ 4) fun l ↦ encode ((normalizedDifSpec D a factor
-        false).extract (l * 2 ^ (D.logN - 4)) ((l + 1) * 2 ^ (D.logN - 4)))) =
-        Native.leafBlocks (normalizedDifSpec D a factor false) D.logN from rfl,
-      Native.naturalLeaves_encode _ _ factor _ h12 h32 hsize hu, hdec]
-    have hd : (if inverse then (NTT.Forward.forwardSpec D a).map (fun x ↦ factor * x)
-        else NTT.Forward.forwardSpec D a).size = 2 ^ D.logN := by
-      rw [← hdec]
-      simp only [decodedFields, Array.size_ofFn]
-    have hpd : (encode (if inverse then (NTT.Forward.forwardSpec D a).map (fun x ↦ factor * x)
-        else NTT.Forward.forwardSpec D a)).size < USize.size := by
-      rw [size_encode_fields, hd]
-      exact hu
-    conv_lhs => rw [← hd]
-    exact Native.unpack_encode _ hpd
-  · exact Native.run_dft D tw depth factor a inverse ht hs h32 hu
+  · rw [Native.runDecoded_dft D tw depth factor a inverse ht hs h32 hu, Native.encodeFields_eq]
 
 end CompPoly.CPolynomial.NTTFast.Packed

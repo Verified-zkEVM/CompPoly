@@ -174,13 +174,14 @@ class PackedRepr (R : Type u) where
   ofBytes : Vector UInt8 width → R
   ofBytes_toBytes (x : R) : ofBytes (toBytes x) = x
   /-- Read the element at byte offset `i`. -/
-  read : (b : ByteArray) → (i : USize) → i.toNat + width ≤ b.size → R
+  read : (b : ByteArray) → (i : USize) → i.toNat + width ≤ b.size → b.size < USize.size → R
   /-- Overwrite the element at byte offset `i`. -/
-  write : (b : ByteArray) → (i : USize) → R → i.toNat + width ≤ b.size → ByteArray
-  read_eq (b : ByteArray) (i : USize) (h : i.toNat + width ≤ b.size) :
-    read b i h = ofBytes (b.bytesAt i.toNat width)
-  write_eq (b : ByteArray) (i : USize) (x : R) (h : i.toNat + width ≤ b.size) :
-    write b i x h = b.replaceAt i.toNat ⟨(toBytes x).toArray⟩
+  write : (b : ByteArray) → (i : USize) → R → i.toNat + width ≤ b.size → b.size < USize.size →
+    ByteArray
+  read_eq (b : ByteArray) (i : USize) (h : i.toNat + width ≤ b.size) (hu : b.size < USize.size) :
+    read b i h hu = ofBytes (b.bytesAt i.toNat width)
+  write_eq (b : ByteArray) (i : USize) (x : R) (h : i.toNat + width ≤ b.size)
+    (hu : b.size < USize.size) : write b i x h hu = b.replaceAt i.toNat ⟨(toBytes x).toArray⟩
 
 attribute [simp] PackedRepr.ofBytes_toBytes
 
@@ -283,7 +284,7 @@ theorem bytesAt_encode (a : Array R) (i : Nat) (hi : i < a.size) :
 
 /-- Reading slot `i` of packed elements returns element `i`. -/
 theorem read_encode (a : Array R) (off : USize) (i : Nat) (ho : off.toNat = width R * i)
-    (hi : i < a.size) (h) : read (encode a) off h = a[i] := by
+    (hi : i < a.size) (h hu) : read (encode a) off h hu = a[i] := by
   rw [read_eq, ho, bytesAt_encode a i hi, ofBytes_toBytes]
 
 omit [PackedRepr R] in
@@ -303,8 +304,8 @@ theorem set_eq_splice (a : Array R) (i : Nat) (x : R) (hi : i < a.size) :
 
 /-- Writing slot `i` of packed elements sets element `i`. -/
 theorem write_encode (a : Array R) (off : USize) (i : Nat) (x : R)
-    (ho : off.toNat = width R * i) (hi : i < a.size) (h) :
-    write (encode a) off x h = encode (a.set i x hi) := by
+    (ho : off.toNat = width R * i) (hi : i < a.size) (h hu) :
+    write (encode a) off x h hu = encode (a.set i x hi) := by
   rw [write_eq, ho, show (⟨(toBytes x).toArray⟩ : ByteArray) = encode #[x] by
       apply ByteArray.ext
       simp only [encode, List.flatMap_cons, List.flatMap_nil, List.append_nil, Vector.toList,
@@ -355,7 +356,7 @@ theorem slot_toNat (k : USize) (n : Nat) (hk : k.toNat < n / width R) (hu : n < 
 /-- Read element `k` of a buffer with at least `k + 1` slots. -/
 @[inline] def getAt (b : ByteArray) (k : USize) (hk : k.toNat < b.size / width R)
     (hu : b.size < USize.size) : R :=
-  read b (k * (width R).toUSize) (by have := slot_toNat k b.size hk hu; rw [this.1]; omega)
+  read b (k * (width R).toUSize) (by have := slot_toNat k b.size hk hu; rw [this.1]; omega) hu
 
 theorem getAt_eq (b : ByteArray) (k : USize) (hk) (hu) :
     getAt (R := R) b k hk hu = get b k.toNat := by
@@ -365,6 +366,7 @@ theorem getAt_eq (b : ByteArray) (k : USize) (hk) (hu) :
 @[inline] def setAt (b : ByteArray) (k : USize) (x : R) (hk : k.toNat < b.size / width R)
     (hu : b.size < USize.size) : ByteArray :=
   write b (k * (width R).toUSize) x (by have := slot_toNat k b.size hk hu; rw [this.1]; omega)
+    hu
 
 @[simp] theorem size_setAt (b : ByteArray) (k : USize) (x : R) (hk) (hu) :
     (setAt b k x hk hu).size = b.size := by
@@ -434,6 +436,39 @@ theorem get_setAt (b : ByteArray) (k : USize) (x : R) (hk) (hu) (j : Nat) :
       rw [Nat.mul_succ] at this
       omega
 
+/-- Overwrite element `k` of a buffer of `n` bytes when it is in range; otherwise leave the
+buffer unchanged. The machine-size bound is proved once for `n`, not checked per store. -/
+@[inline] def setIf (n : Nat) (hn : n < USize.size) (b : ByteArray) (k : USize) (x : R) :
+    ByteArray :=
+  if h : b.size = n ∧ k.toNat < b.size / width R then setAt b k x h.2 (h.1 ▸ hn) else b
+
+theorem setAt_encode (a : Array R) (k : USize) (x : R) (hk) (hu) :
+    setAt (encode a) k x hk hu =
+      encode (a.set k.toNat x (by rwa [size_encode, Nat.mul_div_cancel_left _ width_pos] at hk)) :=
+  write_encode a _ k.toNat x (slot_toNat k _ hk hu).1 _ _ _
+
+/-- A guarded store into packed elements is the guarded array store. -/
+theorem setIf_encode (a : Array R) (k : USize) (x : R) (hn : width R * a.size < USize.size) :
+    setIf (width R * a.size) hn (encode a) k x = encode (a.setIfInBounds k.toNat x) := by
+  unfold setIf
+  have hdiv : (encode a).size / width R = a.size := by
+    rw [size_encode, Nat.mul_div_cancel_left _ width_pos]
+  split
+  · rename_i h
+    rw [setAt_encode]
+    congr 1
+    simp only [Array.setIfInBounds, show k.toNat < a.size by rw [← hdiv]; exact h.2,
+      ↓reduceDIte]
+  · rename_i h
+    have hk : ¬ k.toNat < a.size := fun hk ↦ h ⟨size_encode a, by rw [hdiv]; exact hk⟩
+    simp only [Array.setIfInBounds, hk, ↓reduceDIte]
+
+theorem setIf_encode_of_eq (a : Array R) (k : USize) (x : R) (m : Nat) (hm : m < USize.size)
+    (h : width R * a.size = m) :
+    setIf m hm (encode a) k x = encode (a.setIfInBounds k.toNat x) := by
+  subst h
+  exact setIf_encode a k x hm
+
 /-- A zero-filled buffer of `n` slots. -/
 def alloc (R : Type u) [PackedRepr R] (n : Nat) : ByteArray := ByteArray.zeros (width R * n)
 
@@ -441,6 +476,59 @@ def alloc (R : Type u) [PackedRepr R] (n : Nat) : ByteArray := ByteArray.zeros (
 
 @[simp] theorem size_alloc_div (n : Nat) : (alloc R n).size / width R = n := by
   rw [size_alloc, Nat.mul_div_cancel_left _ width_pos]
+
+/-- `n` copies of `block` appended to `acc`, by binary doubling. -/
+def replicateGo (n : Nat) (block acc : ByteArray) : ByteArray :=
+  if n = 0 then acc
+  else replicateGo (n / 2) (block ++ block) (if n % 2 = 1 then acc ++ block else acc)
+termination_by n
+decreasing_by omega
+
+/-- `n` packed copies of `x`, filled by doubling copies of its bytes. -/
+def replicate (n : Nat) (x : R) : ByteArray :=
+  replicateGo n ⟨(toBytes x).toArray⟩ (ByteArray.emptyWithCapacity (width R * n))
+
+theorem replicateGo_encode (x : R) : ∀ (n m a : Nat),
+    replicateGo n (encode (Array.replicate m x)) (encode (Array.replicate a x)) =
+      encode (Array.replicate (a + n * m) x) := by
+  intro n
+  induction n using Nat.strongRecOn with
+  | _ n ih =>
+    intro m a
+    unfold replicateGo
+    split
+    · subst n; simp only [Nat.zero_mul, Nat.add_zero]
+    · rename_i hn
+      have hb : encode (Array.replicate m x) ++ encode (Array.replicate m x) =
+          encode (Array.replicate (m + m) x) := by
+        rw [← encode_append, Array.replicate_append_replicate]
+      have hacc : encode (Array.replicate a x) ++ encode (Array.replicate m x) =
+          encode (Array.replicate (a + m) x) := by
+        rw [← encode_append, Array.replicate_append_replicate]
+      rw [hb]
+      have hk : n = 2 * (n / 2) + n % 2 := (Nat.div_add_mod n 2).symm
+      generalize n / 2 = k at hk ih ⊢
+      split
+      · rename_i ho
+        rw [hacc, ih k (by omega)]
+        congr 2
+        rw [hk, ho]
+        simp only [Nat.add_mul, Nat.mul_add, Nat.mul_assoc, Nat.one_mul]
+        omega
+      · rename_i ho
+        rw [ih k (by omega)]
+        congr 2
+        rw [hk, show n % 2 = 0 by omega]
+        simp only [Nat.add_mul, Nat.mul_add, Nat.mul_assoc, Nat.zero_mul]
+        omega
+
+theorem replicate_eq (n : Nat) (x : R) : replicate n x = encode (Array.replicate n x) := by
+  have h1 : (⟨(toBytes x).toArray⟩ : ByteArray) = encode (Array.replicate 1 x) := by
+    apply ByteArray.ext
+    simp only [encode, Array.replicate_one, List.flatMap_cons, List.flatMap_nil,
+      List.append_nil, Vector.toList, Array.toArray_toList]
+  have h0 : ByteArray.emptyWithCapacity (width R * n) = encode (Array.replicate 0 x) := rfl
+  rw [replicate, h1, h0, replicateGo_encode, Nat.zero_add, Nat.mul_one]
 
 /-! ### Four-byte words -/
 
@@ -523,7 +611,68 @@ theorem getUInt32LE!_eq_ofWordBytes (b : ByteArray) (off : Nat) (h : off + 4 ≤
   have := ByteArray.getUInt32LE!_setUInt32LE!_self b off (ofWordBytes (b.bytesAt off 4)) h
   rwa [hs] at this
 
-/-- A representation by one 32-bit word: `toWord` stores, `ofWord` decodes every word. -/
+/-- Offset `i + d` of a word at `i` whose four bytes are in range does not wrap. -/
+theorem toNat_add_byte (i : USize) (n d : Nat) (h : i.toNat + 4 ≤ n) (hu : n < USize.size)
+    (hd : d < 4) : (i + d.toUSize).toNat = i.toNat + d := by
+  have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
+  rw [USize.toNat_add, USize.toNat_ofNat_of_lt' (by omega), hsize, Nat.mod_eq_of_lt (by omega)]
+
+theorem uget_eq_get! (b : ByteArray) (i : USize) (h : i.toNat < b.size) :
+    b.uget i h = b.get! i.toNat := by
+  simp only [ByteArray.uget, ByteArray.get!, Array.getElem!_eq_getD, Array.getD_eq_getD_getElem?,
+    Array.getElem?_eq_getElem (show i.toNat < b.data.size from h), Option.getD_some]
+  rfl
+
+/-- The little-endian word at byte offset `i`, read with core byte accesses. -/
+@[inline] def loadWord (b : ByteArray) (i : USize) (h : i.toNat + 4 ≤ b.size)
+    (hu : b.size < USize.size) : UInt32 :=
+  (b.uget i (by omega)).toUInt32 |||
+    (b.uget (i + (1 : Nat).toUSize) (by rw [toNat_add_byte i _ 1 h hu (by decide)]; omega)).toUInt32
+      <<< 0x8 |||
+    (b.uget (i + (2 : Nat).toUSize) (by rw [toNat_add_byte i _ 2 h hu (by decide)]; omega)).toUInt32
+      <<< 0x10 |||
+    (b.uget (i + (3 : Nat).toUSize) (by rw [toNat_add_byte i _ 3 h hu (by decide)]; omega)).toUInt32
+      <<< 0x18
+
+theorem loadWord_eq (b : ByteArray) (i : USize) (h hu) :
+    loadWord b i h hu = b.getUInt32LE! i.toNat := by
+  unfold loadWord ByteArray.getUInt32LE!
+  rw [ite_eq_left_of_eq_true _ _ (eq_true h)]
+  simp only [uget_eq_get!, toNat_add_byte i _ 1 h hu (by decide),
+    toNat_add_byte i _ 2 h hu (by decide), toNat_add_byte i _ 3 h hu (by decide)]
+
+@[simp] theorem size_uset (b : ByteArray) (i : USize) (v : UInt8) (h : i.toNat < b.size) :
+    (b.uset i v h).size = b.size := by
+  simp only [ByteArray.size, ByteArray.uset, Array.size_uset]
+
+/-- Store `v` as the little-endian word at byte offset `i`, with core byte accesses. -/
+@[inline] def storeWord (b : ByteArray) (i : USize) (v : UInt32) (h : i.toNat + 4 ≤ b.size)
+    (hu : b.size < USize.size) : ByteArray :=
+  have h1 := toNat_add_byte i _ 1 h hu (by decide)
+  have h2 := toNat_add_byte i _ 2 h hu (by decide)
+  have h3 := toNat_add_byte i _ 3 h hu (by decide)
+  let b0 := b.uset i v.toUInt8 (by omega)
+  let b1 := b0.uset (i + (1 : Nat).toUSize) (v >>> 0x8).toUInt8
+    (by simp only [b0, size_uset]; omega)
+  let b2 := b1.uset (i + (2 : Nat).toUSize) (v >>> 0x10).toUInt8
+    (by simp only [b1, b0, size_uset]; omega)
+  b2.uset (i + (3 : Nat).toUSize) (v >>> 0x18).toUInt8
+    (by simp only [b2, b1, b0, size_uset]; omega)
+
+theorem uset_eq_set! (b : ByteArray) (i : USize) (v : UInt8) (h : i.toNat < b.size) :
+    b.uset i v h = b.set! i.toNat v := by
+  simp only [ByteArray.uset, ByteArray.set!, Array.uset, Array.set!_eq_setIfInBounds,
+    Array.setIfInBounds, show i.toNat < b.data.size from h, ↓reduceDIte]
+
+theorem storeWord_eq (b : ByteArray) (i : USize) (v : UInt32) (h hu) :
+    storeWord b i v h hu = b.setUInt32LE! i.toNat v := by
+  unfold storeWord ByteArray.setUInt32LE!
+  rw [ite_eq_left_of_eq_true _ _ (eq_true h)]
+  simp only [uset_eq_set!, toNat_add_byte i _ 1 h hu (by decide),
+    toNat_add_byte i _ 2 h hu (by decide), toNat_add_byte i _ 3 h hu (by decide)]
+
+/-- A representation by one 32-bit word: `toWord` stores, `ofWord` decodes every word. The
+accesses use core byte operations only. -/
 @[inline, reducible] def ofWord32 {R : Type u} (toWord : R → UInt32) (ofWord : UInt32 → R)
     (ofWord_toWord : ∀ x, ofWord (toWord x) = x) : PackedRepr R where
   width := 4
@@ -531,12 +680,12 @@ theorem getUInt32LE!_eq_ofWordBytes (b : ByteArray) (off : Nat) (h : off + 4 ≤
   toBytes x := wordBytes (toWord x)
   ofBytes v := ofWord (ofWordBytes v)
   ofBytes_toBytes x := by simp only [ofWordBytes_wordBytes, ofWord_toWord]
-  read b i h := ofWord (b.ugetUInt32LE i h)
-  write b i x h := b.usetUInt32LE i (toWord x) h
-  read_eq b i h := by
-    simp only [ByteArray.ugetUInt32LE, getUInt32LE!_eq_ofWordBytes b i.toNat h]
-  write_eq b i x h := by
-    simp only [ByteArray.usetUInt32LE, setUInt32LE!_eq_replaceAt b i.toNat _ h]
+  read b i h hu := ofWord (loadWord b i h hu)
+  write b i x h hu := storeWord b i (toWord x) h hu
+  read_eq b i h hu := by
+    simp only [loadWord_eq, getUInt32LE!_eq_ofWordBytes b i.toNat h]
+  write_eq b i x h hu := by
+    simp only [storeWord_eq, setUInt32LE!_eq_replaceAt b i.toNat _ h]
 
 @[inline] instance : PackedRepr UInt32 := ofWord32 id id fun _ ↦ rfl
 

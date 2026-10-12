@@ -69,20 +69,4 @@ theorem splitStepRightField_eq_expression (a w : Array KoalaBear.Fast.Field) (i 
   simp only [← readField_eq_expression, ← fieldSub_eq_expression, ← fieldMul_eq_expression]
   rfl
 
-/-- The concrete field model specializes the abstract expression graph. -/
-theorem splitInputStepLeftField_eq_expression (a _w : Array KoalaBear.Fast.Field) (i j : USize)
-    (out : Array KoalaBear.Fast.Field)  :
-    splitInputStepLeftField a _w i j out = Expressions.splitInputStepLeftField a _w i j out := by
-  unfold Expressions.splitInputStepLeftField
-  simp only [← readField_eq_expression, ← fieldAdd_eq_expression]
-  rfl
-
-/-- The concrete field model specializes the abstract expression graph. -/
-theorem splitInputStepRightField_eq_expression (a w : Array KoalaBear.Fast.Field) (i j : USize)
-    (out : Array KoalaBear.Fast.Field)  :
-    splitInputStepRightField a w i j out = Expressions.splitInputStepRightField a w i j out := by
-  unfold Expressions.splitInputStepRightField
-  simp only [← readField_eq_expression, ← fieldSub_eq_expression, ← fieldMul_eq_expression]
-  rfl
-
 end CompPoly.CPolynomial.NTTFast.Packed

@@ -62,32 +62,4 @@ theorem decodedFields_normalizedDifSpec (D : NTT.Domain KoalaBear.Fast.Field)
     rw [decodedFields_scaleMap, decodedFields_difSpec]
     rfl
 
-/-- The complete native-storage pipeline computes the DFT with optional inverse normalization. -/
-theorem Native.run_dft (D : NTT.Domain KoalaBear.Fast.Field)
-    (tw : Array (Array KoalaBear.Fast.Field))
-    (depth : Nat) (factor : KoalaBear.Fast.Field) (a : Array KoalaBear.Fast.Field)
-    (inverse : Bool) (ht : TwiddlesFor D tw) (hs : a.size = D.n)
-    (h32 : D.logN ≤ 32) (hu : 4 * D.n < USize.size) :
-    Native.run (tw.map encode) D.logN depth factor.val a inverse =
-      if inverse then (NTT.Forward.forwardSpec D a).map (fun x ↦ factor * x)
-      else NTT.Forward.forwardSpec D a := by
-  let normalize := inverse && D.logN - depth ≥ 4 && (D.logN - depth) % 2 == 0
-  have hn : ValidLeafNormalization D.logN depth normalize := by
-    intro h
-    simp only [normalize, Bool.and_eq_true, decide_eq_true_eq, beq_iff_eq] at h
-    exact ⟨h.1.2, h.2⟩
-  have hi : normalize = true → inverse = true := by
-    intro h
-    simp only [normalize, Bool.and_eq_true, decide_eq_true_eq, beq_iff_eq] at h
-    exact h.1.1
-  rw [Native.run_eq_before_collection]
-  change Native.decodeTiled D.logN
-    (Native.splitInputTask (tw.map encode) D.logN a factor.val normalize depth).get
-      factor.val (inverse && !normalize) = _
-  rw [Native.splitInputTask_correct D tw a factor normalize depth ht hs hu hn]
-  rw [Native.decodeTiled_encode D.logN _ factor _ h32
-    (size_normalizedDifSpec D a factor normalize)
-    (by simpa only [size_encode_fields, size_normalizedDifSpec] using hu)]
-  exact decodedFields_normalizedDifSpec D a factor normalize inverse hi
-
 end CompPoly.CPolynomial.NTTFast.Packed
