@@ -377,7 +377,6 @@ public import CompPoly.Univariate.NTTFast.Packed.Expressions
 public import CompPoly.Univariate.NTTFast.Packed.FieldStorage
 public import CompPoly.Univariate.NTTFast.Packed.Folds
 public import CompPoly.Univariate.NTTFast.Packed.HalfDomain
-public import CompPoly.Univariate.NTTFast.Packed.InputRefinement
 public import CompPoly.Univariate.NTTFast.Packed.KernelCorrectness
 public import CompPoly.Univariate.NTTFast.Packed.KernelModels
 public import CompPoly.Univariate.NTTFast.Packed.KernelRefinement

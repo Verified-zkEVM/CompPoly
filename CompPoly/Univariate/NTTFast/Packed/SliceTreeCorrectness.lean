@@ -99,43 +99,6 @@ theorem pairRight_encode (A B w l Z : Array KoalaBear.Fast.Field) (ia ib iw p : 
   rw [write16U_cursor _ _ _ hp hZ hs]
   rfl
 
-/-- One sum batch of a field array. -/
-theorem pairInputLeft_encode (a l Z : Array KoalaBear.Fast.Field) (ia ib p : USize)
-    (hp : p.toNat = l.size) (hZ : 16 ≤ Z.size) (hs : (encode (l ++ Z)).size < USize.size)
-    (h) :
-    pairInputLeft a ia ib (encode (l ++ Z)) p h =
-      encode (l ++ (lit16 fun k ↦ a.getD (ia.toNat + k) 0 + a.getD (ib.toNat + k) 0) ++
-        Z.extract 16 Z.size) := by
-  unfold pairInputLeft
-  simp only [fieldAtOffset_val, add_val,
-    usize_numeral 0 (by decide), usize_numeral 1 (by decide), usize_numeral 2 (by decide),
-    usize_numeral 3 (by decide), usize_numeral 4 (by decide), usize_numeral 5 (by decide),
-    usize_numeral 6 (by decide), usize_numeral 7 (by decide), usize_numeral 8 (by decide),
-    usize_numeral 9 (by decide), usize_numeral 10 (by decide), usize_numeral 11 (by decide),
-    usize_numeral 12 (by decide), usize_numeral 13 (by decide), usize_numeral 14 (by decide),
-    usize_numeral 15 (by decide)]
-  rw [write16U_cursor _ _ _ hp hZ hs]
-  rfl
-
-/-- One twiddle-scaled difference batch of a field array. -/
-theorem pairInputRight_encode (a w l Z : Array KoalaBear.Fast.Field) (ia ib iw p : USize)
-    (hp : p.toNat = l.size) (hZ : 16 ≤ Z.size) (hs : (encode (l ++ Z)).size < USize.size)
-    (h) :
-    pairInputRight a (encode w) ia ib iw (encode (l ++ Z)) p h =
-      encode (l ++ (lit16 fun k ↦
-        w.getD (iw.toNat + k) 0 * (a.getD (ia.toNat + k) 0 - a.getD (ib.toNat + k) 0)) ++
-        Z.extract 16 Z.size) := by
-  unfold pairInputRight
-  simp only [readUOffset_encode, fieldAtOffset_val, sub_val, mul_val,
-    usize_numeral 0 (by decide), usize_numeral 1 (by decide), usize_numeral 2 (by decide),
-    usize_numeral 3 (by decide), usize_numeral 4 (by decide), usize_numeral 5 (by decide),
-    usize_numeral 6 (by decide), usize_numeral 7 (by decide), usize_numeral 8 (by decide),
-    usize_numeral 9 (by decide), usize_numeral 10 (by decide), usize_numeral 11 (by decide),
-    usize_numeral 12 (by decide), usize_numeral 13 (by decide), usize_numeral 14 (by decide),
-    usize_numeral 15 (by decide)]
-  rw [write16U_cursor _ _ _ hp hZ hs]
-  rfl
-
 /-- One more row in front of the remaining rows. -/
 theorem lit16_rows_succ (F : Nat → α) (count : Nat) :
     lit16 (fun k ↦ F k) ++ rows (fun j k ↦ F (16 + (16 * j + k))) count =
@@ -219,78 +182,6 @@ theorem pairGo_encode (A B w : Array KoalaBear.Fast.Field) (count ia ib iw : Nat
     rw [Array.empty_append, zeroWords_encode]
   rw [pairGo, dite_eq_left_of_eq_true (eq_true hcond), hz,
     pairLoop_encode _ _ _ _ _ _ _ _ _ _ _ _ rfl rfl
-      (by rw [Array.size_replicate]) (by rw [Array.size_replicate])
-      (by simp only [size_encode_fields, Array.size_append, Array.size_replicate,
-        Array.size_empty]; omega)
-      (by simp only [size_encode_fields, Array.size_append, Array.size_replicate,
-        Array.size_empty]; omega)]
-  have he : (Array.replicate (16 * count) (0 : KoalaBear.Fast.Field)).extract (16 * count)
-      (16 * count) = #[] := Array.extract_eq_empty_of_le (by simp)
-  simp only [USize.toNat_ofNatLT, Array.empty_append, Array.size_replicate, he,
-    Array.append_empty]
-
-/-- The paired input loop at machine indices stores its batches from word `p`. -/
-theorem pairInputLoop_encode (a w : Array KoalaBear.Fast.Field) :
-    ∀ (count : Nat) (ia ib iw p : USize) (l r ZL ZR : Array KoalaBear.Fast.Field),
-    p.toNat = l.size → r.size = l.size → 16 * count ≤ ZL.size → 16 * count ≤ ZR.size →
-    (encode (l ++ ZL)).size < USize.size → (encode (r ++ ZR)).size < USize.size → ∀ h,
-    pairInputLoop a (encode w) count ia ib iw p (encode (l ++ ZL))
-      (encode (r ++ ZR)) h =
-      (encode (l ++ rows (fun j k ↦
-          a.getD (ia.toNat + (16 * j + k)) 0 + a.getD (ib.toNat + (16 * j + k)) 0) count ++
-          ZL.extract (16 * count) ZL.size),
-        encode (r ++ rows (fun j k ↦ w.getD (iw.toNat + (16 * j + k)) 0 *
-          (a.getD (ia.toNat + (16 * j + k)) 0 - a.getD (ib.toNat + (16 * j + k)) 0)) count ++
-          ZR.extract (16 * count) ZR.size)) := by
-  intro count
-  induction count with
-  | zero =>
-    intro ia ib iw p l r ZL ZR _ _ _ _ _ _ h
-    simp only [pairInputLoop, rows, Array.append_empty, Nat.mul_zero]
-    rw [Array.extract_size, Array.extract_size]
-  | succ count ih =>
-    intro ia ib iw p l r ZL ZR hp hr hL hR hsL hsR h
-    rw [pairInputLoop, pairInputLeft_encode _ _ _ _ _ _ hp (by omega) hsL,
-      pairInputRight_encode _ _ _ _ _ _ _ _ (by rw [hp, hr]) (by omega) hsR]
-    simp only [size_encode_fields, Array.size_append] at hsL hsR
-    have ha := usize_add16 ia _ (by omega) h.2.2.2.1
-    have hb := usize_add16 ib _ (by omega) h.2.2.2.1
-    have hw := usize_add16 iw _ (by omega) h.2.2.2.2
-    have hpp : (p + 16).toNat = p.toNat + 16 := by
-      have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
-      rw [USize.toNat_add, usize_numeral 16 (by decide), hsize, Nat.mod_eq_of_lt (by omega)]
-    rw [ih _ _ _ _ _ _ _ _ (by rw [hpp, Array.size_append, size_lit16, hp])
-      (by simp only [Array.size_append, size_lit16, hr])
-      (by rw [Array.size_extract]; omega) (by rw [Array.size_extract]; omega)
-      (by simp only [size_encode_fields, Array.size_append, size_lit16, Array.size_extract]; omega)
-      (by simp only [size_encode_fields, Array.size_append, size_lit16, Array.size_extract]; omega)]
-    rw [ha, hb, hw, extract_extract16, extract_extract16]
-    simp only [Array.append_assoc]
-    rw [← lit16_rows_succ (fun k ↦ a.getD (ia.toNat + k) 0 + a.getD (ib.toNat + k) 0),
-      ← lit16_rows_succ (fun k ↦ w.getD (iw.toNat + k) 0 *
-        (a.getD (ia.toNat + k) 0 - a.getD (ib.toNat + k) 0))]
-    simp only [Nat.add_assoc, Array.append_assoc]
-
-/-- The paired split loop over a field array stores its batches into fresh zero buffers. -/
-theorem pairInputGo_encode (a w : Array KoalaBear.Fast.Field) (count ia ib iw : Nat)
-    (hA : ia + 16 * count ≤ a.size)
-    (hB : ib + 16 * count ≤ a.size) (hw : iw + 16 * count ≤ w.size)
-    (hsA : 4 * a.size < USize.size) (hsw : 4 * w.size < USize.size) :
-    pairInputGo a (encode w) count ia ib iw =
-      (encode (rows (fun j k ↦
-          a.getD (ia + (16 * j + k)) 0 + a.getD (ib + (16 * j + k)) 0) count),
-        encode (rows (fun j k ↦ w.getD (iw + (16 * j + k)) 0 *
-          (a.getD (ia + (16 * j + k)) 0 - a.getD (ib + (16 * j + k)) 0)) count)) := by
-  have hcond : ia + 16 * count ≤ a.size ∧ ib + 16 * count ≤ a.size ∧
-      4 * (iw + 16 * count) ≤ (encode w).size ∧ a.size < USize.size ∧
-      (encode w).size < USize.size := by
-    simp only [size_encode_fields]
-    omega
-  have hz : zeroWords (16 * count) = encode (#[] ++ Array.replicate (16 * count) (0 :
-      KoalaBear.Fast.Field)) := by
-    rw [Array.empty_append, zeroWords_encode]
-  rw [pairInputGo, dite_eq_left_of_eq_true (eq_true hcond), hz,
-    pairInputLoop_encode _ _ _ _ _ _ _ _ _ _ _ rfl rfl
       (by rw [Array.size_replicate]) (by rw [Array.size_replicate])
       (by simp only [size_encode_fields, Array.size_append, Array.size_replicate,
         Array.size_empty]; omega)
@@ -641,30 +532,6 @@ theorem sliceChunks_eq (twF : Array (Array KoalaBear.Fast.Field)) (nInv : UInt32
       rw [hL, hR]
     · simp only [Task.bind, postLeaves_get, joinSlices_slicesOf _ k s _ g hks]
 
-/-- One input chunk over a field array. -/
-theorem pairInputGo_blocks (W a : Array KoalaBear.Fast.Field) (half c q : Nat) (hc : 16 ∣ c)
-    (hA : half + q * c + c ≤ a.size) (hW : q * c + c ≤ W.size)
-    (hsa : 4 * a.size < USize.size) (hsw : 4 * W.size < USize.size) :
-    pairInputGo a (encode W) (c / 16) (q * c) (half + q * c) (q * c) =
-      (encode (Array.ofFn (n := c) fun i ↦
-          a.getD (q * c + i) 0 + a.getD (half + (q * c + i)) 0),
-        encode (Array.ofFn (n := c) fun i ↦
-          W.getD (q * c + i) 0 * (a.getD (q * c + i) 0 - a.getD (half + (q * c + i)) 0))) := by
-  have h16 : 16 * (c / 16) = c := Nat.mul_div_cancel' hc
-  rw [pairInputGo_encode _ _ _ _ _ _ (by omega) (by omega) (by omega) hsa hsw]
-  rw [rows_eq_ofFn (fun i ↦ a.getD (q * c + i) 0 + a.getD (half + q * c + i) 0),
-    rows_eq_ofFn (fun i ↦ W.getD (q * c + i) 0 *
-      (a.getD (q * c + i) 0 - a.getD (half + q * c + i) 0))]
-  congr 1
-  · congr 1
-    apply Array.ext (by simp only [Array.size_ofFn, h16])
-    intro i h1 _
-    rw [Array.getElem_ofFn, Array.getElem_ofFn, Nat.add_assoc]
-  · congr 1
-    apply Array.ext (by simp only [Array.size_ofFn, h16])
-    intro i h1 _
-    rw [Array.getElem_ofFn, Array.getElem_ofFn, Nat.add_assoc]
-
 /-- An array as the values of its `getD` function. -/
 theorem ofFn_getD (a : Array KoalaBear.Fast.Field) (n : Nat) (ha : a.size = n) :
     (Array.ofFn (n := n) fun i ↦ a.getD i 0) = a := by
@@ -683,87 +550,6 @@ theorem slicesOf_one (a : Array KoalaBear.Fast.Field) (n : Nat) (ha : a.size = n
     rfl]
   simp only [Array.map_singleton, Function.comp_apply, Nat.zero_mul, Nat.zero_add,
     ofFn_getD a n ha]
-
-/-- The sliced input tree computes the leaves of the binary input tree, post-processed. -/
-theorem sliceInputChunks_eq (twF : Array (Array KoalaBear.Fast.Field))
-    (a : Array KoalaBear.Fast.Field) (logN depth P : Nat) (nInv : UInt32) (normalize : Bool)
-    (post : ByteArray → ByteArray) (leaf : Nat → ByteArray → ByteArray)
-    (ha : a.size = 2 ^ logN)
-    (htw : ∀ L < logN, (twF.getD L #[]).size = 2 ^ L) (hu : 4 * 2 ^ logN < USize.size)
-    (hleaf : ∀ X : Array KoalaBear.Fast.Field, X.size = 2 ^ (logN - depth) →
-      leaf (logN - depth) (encode X) =
-        post (stages (logN - depth) (twF.map encode) (encode X) nInv normalize)) :
-    (sliceInputChunks (twF.map encode) logN a nInv normalize P post leaf depth).get =
-      (splitInputChunks (twF.map encode) logN a nInv normalize depth).get.map post := by
-  unfold sliceInputChunks
-  dsimp only
-  split
-  · rename_i hcond
-    obtain ⟨hd, h6, hP, hdiv⟩ := hcond
-    have hhalf : 2 ^ logN = 2 * 2 ^ (logN - 1) := by
-      rw [show logN = logN - 1 + 1 by omega, Nat.pow_succ]; simp only [Nat.add_sub_cancel]; ring
-    obtain ⟨t, ht⟩ := Nat.dvd_of_mod_eq_zero hdiv
-    have hcs : 2 ^ (logN - 1) / P = 16 * t := by
-      rw [ht, show 16 * P * t = P * (16 * t) by ring, Nat.mul_div_cancel_left _ (by omega)]
-    have hPc : P * (2 ^ (logN - 1) / P) = 2 ^ (logN - 1) := by
-      rw [hcs, ht]
-      ring
-    have hW : (twF.getD (logN - 1) #[]).size = 2 ^ (logN - 1) := htw (logN - 1) (by omega)
-    have hWu : 4 * (twF.getD (logN - 1) #[]).size < USize.size := by omega
-    have hchunks : ((Array.range P).map fun q ↦ Task.spawn fun _ ↦
-        pairInputGo a ((twF.map encode).getD (logN - 1) .empty)
-          (2 ^ (logN - 1) / P / 16) (q * (2 ^ (logN - 1) / P))
-          (2 ^ (logN - 1) + q * (2 ^ (logN - 1) / P)) (q * (2 ^ (logN - 1) / P))).map Task.get =
-        levelOut (twF.getD (logN - 1) #[]) (2 ^ (logN - 1)) P (2 ^ (logN - 1) / P)
-          (fun j ↦ a.getD j 0) := by
-      rw [Array.map_map]
-      unfold levelOut
-      apply Array.map_congr_left
-      intro q hq
-      have hq' := Array.mem_range.mp hq
-      have hqc : q * (2 ^ (logN - 1) / P) + 2 ^ (logN - 1) / P ≤ 2 ^ (logN - 1) := by
-        have := Nat.mul_le_mul_right (2 ^ (logN - 1) / P) (show q + 1 ≤ P by omega)
-        rw [Nat.add_mul, Nat.one_mul] at this
-        omega
-      simp only [Function.comp_apply, Task.spawn, getD_map_encode]
-      exact pairInputGo_blocks _ a _ _ q (by rw [hcs]; exact Nat.dvd_mul_right _ _)
-        (by omega) (by omega) (by omega) hWu
-    simp only [Task.bind, Task.map, joinTasks_get, hchunks, levelOut_fst, levelOut_snd]
-    have htw' : ∀ L < logN - 1, (twF.getD L #[]).size = 2 ^ L := fun L hL ↦ htw L (by omega)
-    have hu' : 4 * 2 ^ (logN - 1) < USize.size := by omega
-    have hleaf' : ∀ X : Array KoalaBear.Fast.Field, X.size = 2 ^ (logN - 1 - (depth - 1)) →
-        leaf (logN - 1 - (depth - 1)) (encode X) =
-          post (stages (logN - 1 - (depth - 1)) (twF.map encode) (encode X) nInv
-            normalize) := by
-      rw [show logN - 1 - (depth - 1) = logN - depth by omega]; exact hleaf
-    rw [sliceChunks_eq twF nInv normalize P post leaf _ (logN - 1) P _ _ hPc (by omega) htw' hu'
-        hleaf',
-      sliceChunks_eq twF nInv normalize P post leaf _ (logN - 1) P _ _ hPc (by omega) htw' hu'
-        hleaf']
-    unfold splitInputChunks
-    have hnot : ¬(depth = 0 ∨ logN < 6) := by omega
-    simp only [hnot, ↓reduceIte, Task.bind, Task.map, Task.spawn, getD_map_encode]
-    rw [Array.map_append]
-    have hX : (encode a).size < USize.size := by rw [size_encode_fields, ha]; exact hu
-    have hWs : (encode (twF.getD (logN - 1) #[])).size < USize.size := by
-      rw [size_encode_fields]; exact hWu
-    rw [Native.splitInputLeft_encode a _ hX (by omega),
-      Native.splitInputRight_encode a _ _ hX (by omega) hWs (by omega)]
-    have hL : (Array.ofFn fun i : Fin (2 ^ (logN - 1)) ↦
-        a.getD i.val 0 + a.getD (i.val + 2 ^ (logN - 1)) 0) =
-        Array.ofFn fun i : Fin (2 ^ (logN - 1)) ↦
-          a.getD i 0 + a.getD (2 ^ (logN - 1) + i) 0 := by
-      refine congrArg Array.ofFn (funext fun i ↦ ?_)
-      rw [Nat.add_comm (i.val)]
-    have hR : (Array.ofFn fun i : Fin (2 ^ (logN - 1)) ↦
-        (twF.getD (logN - 1) #[]).getD i.val 0 *
-          (a.getD i.val 0 - a.getD (i.val + 2 ^ (logN - 1)) 0)) =
-        Array.ofFn fun i : Fin (2 ^ (logN - 1)) ↦
-          (twF.getD (logN - 1) #[]).getD i 0 * (a.getD i 0 - a.getD (2 ^ (logN - 1) + i) 0) := by
-      refine congrArg Array.ofFn (funext fun i ↦ ?_)
-      rw [Nat.add_comm (i.val)]
-    rw [hL, hR]
-  · simp only [Task.bind, postLeaves_get]
 
 end Native
 
@@ -882,57 +668,4 @@ theorem Native.splitChunks_leaves (D : NTT.Domain KoalaBear.Fast.Field)
       congr 1
       omega
     rw [he, ofFn_blocks_append _ _ _ depth (hsz _) (hsz _), normalizedDifSpec_split]
-/-- Every leaf of the binary input tree holds its block of the mathematical DIF output. -/
-theorem Native.splitInputChunks_leaves (D : NTT.Domain KoalaBear.Fast.Field)
-    (tw : Array (Array KoalaBear.Fast.Field)) (a : Array KoalaBear.Fast.Field)
-    (factor : KoalaBear.Fast.Field) (normalize : Bool) (depth : Nat)
-    (ht : TwiddlesFor D tw) (hs : a.size = D.n) (hu : 4 * D.n < USize.size)
-    (hn : ValidLeafNormalization D.logN depth normalize) (hd : depth ≤ D.logN) :
-    (Native.splitInputChunks (tw.map encode) D.logN a factor.val normalize depth).get =
-      Array.ofFn (n := 2 ^ depth) fun l ↦
-        encode ((normalizedDifSpec D a factor normalize).extract
-          (l * 2 ^ (D.logN - depth)) ((l + 1) * 2 ^ (D.logN - depth))) := by
-  rw [Native.splitInputChunks]
-  split
-  · rw [Native.encodeFields_eq]
-    exact Native.splitChunks_leaves D tw a factor normalize depth ht hs hu hn hd
-  · rename_i hsplit
-    obtain ⟨d, rfl⟩ : ∃ d, depth = d + 1 := ⟨depth - 1, by omega⟩
-    have hlog : 0 < D.logN := by omega
-    simp only [Task.bind, Task.map, Task.spawn, Nat.add_sub_cancel]
-    rw [Native.splitInputLeft_correct D hlog tw a ht hs hu,
-      Native.splitInputRight_correct D hlog tw a ht hs hu]
-    have ht' := TwiddlesFor.half D hlog tw ht
-    have hu' : 4 * (halfDomain D hlog).n < USize.size := by
-      have hh := halfDomain_size D hlog
-      omega
-    have hn' : ValidLeafNormalization (halfDomain D hlog).logN d normalize := by
-      intro h
-      have he : (halfDomain D hlog).logN - d = D.logN - (d + 1) := by
-        change D.logN - 1 - d = D.logN - (d + 1)
-        omega
-      rw [he]
-      exact hn h
-    have hl : (splitFieldsLeft D a).size = (halfDomain D hlog).n := Array.size_ofFn
-    have hr : (splitFieldsRight D a).size = (halfDomain D hlog).n := Array.size_ofFn
-    have hd' : d ≤ (halfDomain D hlog).logN := by change d ≤ D.logN - 1; omega
-    change (Native.splitChunks _ (halfDomain D hlog).logN _ _ _ d).get ++
-      (Native.splitChunks _ (halfDomain D hlog).logN _ _ _ d).get = _
-    rw [Native.splitChunks_leaves (halfDomain D hlog) tw (splitFieldsLeft D a) factor normalize d
-        ht' hl hu' hn' hd',
-      Native.splitChunks_leaves (halfDomain D hlog) tw (splitFieldsRight D a) factor normalize d
-        ht' hr hu' hn' hd']
-    have he : (halfDomain D hlog).logN - d = D.logN - (d + 1) := by
-      change D.logN - 1 - d = D.logN - (d + 1)
-      omega
-    have hsz : ∀ x, (normalizedDifSpec (halfDomain D hlog) x factor normalize).size =
-        2 ^ d * 2 ^ (D.logN - (d + 1)) := by
-      intro x
-      rw [size_normalizedDifSpec]
-      change 2 ^ (D.logN - 1) = _
-      rw [← Nat.pow_add]
-      congr 1
-      omega
-    rw [he, ofFn_blocks_append _ _ _ d (hsz _) (hsz _), normalizedDifSpec_split]
-
 end CompPoly.CPolynomial.NTTFast.Packed

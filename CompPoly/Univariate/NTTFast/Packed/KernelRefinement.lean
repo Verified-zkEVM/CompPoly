@@ -33,15 +33,6 @@ theorem Native.step16_encode (th tl : Array KoalaBear.Fast.Field)
       [size_encode_fields, size_splice16])) only [Native.write16U_encode]
   rfl
 
-/-- Loading a boxed field coordinate returns its exact unboxed Montgomery word. -/
-theorem Native.fieldAtOffset_val (a : Array KoalaBear.Fast.Field) (i o : USize) (h) :
-    Native.fieldAtOffset a i o h = (a.getD (i.toNat + o.toNat) 0).val := by
-  have hi : (i + o).toNat = i.toNat + o.toNat := by
-    rw [USize.toNat_add, Nat.mod_eq_of_lt (show i.toNat + o.toNat < USize.size by omega)]
-  unfold Native.fieldAtOffset
-  simp only [Array.uget, Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem h.1,
-    Option.getD_some, hi]
-
 /-- The fused final-layer word kernel agrees with its field expression graph. -/
 theorem Native.leaf16_encode (t3 t2 t1 : Array KoalaBear.Fast.Field) (i : USize)
     (a : Array KoalaBear.Fast.Field) (h) :
@@ -92,28 +83,5 @@ theorem Native.splitStepRight_encode (a w l Z : Array KoalaBear.Fast.Field) (i j
   simp only [Native.readUOffset_encode, sub_val, mul_val]
   rw [Native.write16U_cursor _ _ _ hp hZ hs]
   rfl
-
-/-- The unrolled partition kernel preserves the represented field array. -/
-theorem Native.splitInputStepLeft_encode (a w l Z : Array KoalaBear.Fast.Field)
-    (i j p : USize) (hp : p.toNat = l.size) (hZ : 16 ≤ Z.size)
-    (hs : (encode (l ++ Z)).size < USize.size) (h) :
-    Native.splitInputStepLeft a i j (encode (l ++ Z)) p h =
-      encode (splitInputStepLeftField a w i j l ++ Z.extract 16 Z.size) := by
-  unfold Native.splitInputStepLeft
-  simp only [Native.fieldAtOffset_val, add_val]
-  rw [Native.write16U_cursor _ _ _ hp hZ hs]
-  rfl
-
-/-- The unrolled partition kernel preserves the represented field array. -/
-theorem Native.splitInputStepRight_encode (a w l Z : Array KoalaBear.Fast.Field)
-    (i j p : USize) (hp : p.toNat = l.size) (hZ : 16 ≤ Z.size)
-    (hs : (encode (l ++ Z)).size < USize.size) (h) :
-    Native.splitInputStepRight a (encode w) i j (encode (l ++ Z)) p h =
-      encode (splitInputStepRightField a w i j l ++ Z.extract 16 Z.size) := by
-  unfold Native.splitInputStepRight
-  simp only [Native.readUOffset_encode, Native.fieldAtOffset_val, sub_val, mul_val]
-  rw [Native.write16U_cursor _ _ _ hp hZ hs]
-  rfl
-
 
 end CompPoly.CPolynomial.NTTFast.Packed

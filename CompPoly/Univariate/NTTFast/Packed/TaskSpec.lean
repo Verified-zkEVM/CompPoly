@@ -95,43 +95,4 @@ theorem Native.splitTask_correct (D : NTT.Domain KoalaBear.Fast.Field)
         ih (halfDomain D hlog) (splitFieldsRight D a) ht' hr hu' hn',
         ← PackedRepr.encode_append, normalizedDifSpec_split]
 
-/-- Fusing input conversion into the first task split preserves the complete mathematical output. -/
-theorem Native.splitInputTask_correct (D : NTT.Domain KoalaBear.Fast.Field)
-    (tw : Array (Array KoalaBear.Fast.Field)) (a : Array KoalaBear.Fast.Field)
-    (factor : KoalaBear.Fast.Field) (normalize : Bool) (depth : Nat)
-    (ht : TwiddlesFor D tw) (hs : a.size = D.n) (hu : 4 * D.n < USize.size)
-    (hn : ValidLeafNormalization D.logN depth normalize) :
-    (Native.splitInputTask (tw.map encode) D.logN a factor.val normalize depth).get =
-      encode (normalizedDifSpec D a factor normalize) := by
-  rw [Native.splitInputTask]
-  split
-  · rw [Native.encodeFields_eq]
-    exact Native.splitTask_correct D tw a factor normalize depth ht hs hu hn
-  · rename_i hsplit
-    have hdepth : 0 < depth := by omega
-    have hlog : 0 < D.logN := by omega
-    simp only [Task.bind, Task.map, Task.spawn]
-    rw [Native.splitInputLeft_correct D hlog tw a ht hs hu,
-      Native.splitInputRight_correct D hlog tw a ht hs hu]
-    have ht' := TwiddlesFor.half D hlog tw ht
-    have hu' : 4 * (halfDomain D hlog).n < USize.size := by
-      have hh := halfDomain_size D hlog
-      omega
-    have hn' : ValidLeafNormalization (halfDomain D hlog).logN (depth - 1) normalize := by
-      intro h
-      have he : (halfDomain D hlog).logN - (depth - 1) = D.logN - depth := by
-        change D.logN - 1 - (depth - 1) = D.logN - depth
-        omega
-      rw [he]
-      exact hn h
-    have hl : (splitFieldsLeft D a).size = (halfDomain D hlog).n := Array.size_ofFn
-    have hr : (splitFieldsRight D a).size = (halfDomain D hlog).n := Array.size_ofFn
-    change (Native.splitTask _ (halfDomain D hlog).logN _ _ _ (depth - 1)).get ++
-      (Native.splitTask _ (halfDomain D hlog).logN _ _ _ (depth - 1)).get = _
-    rw [Native.splitTask_correct (halfDomain D hlog) tw (splitFieldsLeft D a)
-      factor normalize (depth - 1) ht' hl hu' hn',
-      Native.splitTask_correct (halfDomain D hlog) tw (splitFieldsRight D a)
-      factor normalize (depth - 1) ht' hr hu' hn',
-      ← PackedRepr.encode_append, normalizedDifSpec_split]
-
 end CompPoly.CPolynomial.NTTFast.Packed

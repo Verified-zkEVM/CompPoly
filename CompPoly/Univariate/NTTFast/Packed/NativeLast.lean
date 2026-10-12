@@ -913,6 +913,15 @@ receives one slice; `0` keeps the binary split tree for smaller transforms. -/
 def sliceCount (logN depth : Nat) : Nat :=
   if 18 ≤ logN then 2 ^ (depth - 1) else 0
 
+/-- Complete transform of a packed buffer, decoded to a natural-order field array: the leaves
+run `stages`, and one tiled pass decodes, reorders and, unless the leaves did, scales. -/
+def runDecoded (tw : Array ByteArray) (logN depth : Nat) (nInv : UInt32) (a : ByteArray)
+    (inverse : Bool) : Array KoalaBear.Fast.Field :=
+  let normalize := inverse && logN - depth ≥ 4 && (logN - depth) % 2 == 0
+  decodeTiled logN (assembleChunks (4 * 2 ^ logN)
+    (sliceChunks tw logN #[a] nInv normalize (sliceCount logN depth) id
+      (fun m b ↦ stages m tw b nInv normalize) depth).get) nInv (inverse && !normalize)
+
 /-- Complete transform of a packed buffer; packed natural-order output. In natural order the
 leaves end with `leafNatural`, which scales an inverse transform in its final kernel. -/
 def runPacked (tw : Array ByteArray) (logN depth : Nat) (nInv : UInt32) (a : ByteArray)
@@ -921,20 +930,6 @@ def runPacked (tw : Array ByteArray) (logN depth : Nat) (nInv : UInt32) (a : Byt
     naturalLeaves (sliceChunks tw logN #[a] nInv false (sliceCount logN depth)
       (fun b ↦ leafRev b (logN - 4) nInv inverse) (fun m b ↦ leafNatural tw m nInv inverse b)
       depth).get logN
-  else
-    let normalize := inverse && logN - depth ≥ 4 && (logN - depth) % 2 == 0
-    let scale := inverse && !normalize
-    encodeFields (decodeTiled logN (assembleChunks (4 * 2 ^ logN)
-      (sliceChunks tw logN #[a] nInv normalize (sliceCount logN depth) id
-        (fun m b ↦ stages m tw b nInv normalize) depth).get) nInv scale)
-
-/-- Complete transform of a field array; natural-order field output. -/
-def runFields (tw : Array ByteArray) (logN depth : Nat) (nInv : UInt32)
-    (a : Array KoalaBear.Fast.Field) (inverse : Bool) : Array KoalaBear.Fast.Field :=
-  if naturalShape logN depth then
-    unpack (naturalLeaves (sliceInputChunks tw logN a nInv false (sliceCount logN depth)
-      (fun b ↦ leafRev b (logN - 4) nInv inverse) (fun m b ↦ leafNatural tw m nInv inverse b)
-      depth).get logN) (2 ^ logN)
-  else run tw logN depth nInv a inverse
+  else encodeFields (runDecoded tw logN depth nInv a inverse)
 
 end CompPoly.CPolynomial.NTTFast.Packed.Native

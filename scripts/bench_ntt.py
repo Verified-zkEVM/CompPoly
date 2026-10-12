@@ -9,7 +9,7 @@ import subprocess
 import time
 
 
-IMPLS = ("packed-io", "packed", "externless", "rust")
+IMPLS = ("packed", "externless", "rust")
 
 
 def run(args, common, allowed):
@@ -62,7 +62,7 @@ def run(args, common, allowed):
         fixtures[log_n] = path
     manifest = {
         "build": build, "cpus": cpus, "workers": workers, "physical_cores": physical_cores, "runs": args.runs,
-        "rust_ntt": rust_ntt, "lean_ntt": {"packed": {"implementation": "NTTFast.Packed.Plan", "task_depth": depth, "storage": "ByteArray.ugetUInt32LE/usetUInt32LE (lean4#14053 backport)"}, "packed-io": {"implementation": "NTTFast.Packed.Plan.forwardPacked/inversePacked", "task_depth": depth, "storage": "ByteArray.ugetUInt32LE/usetUInt32LE (lean4#14053 backport)"}, "externless": {"implementation": "NTTFast.NaturalPlan", "max_arithmetic_workers": workers, "serial_below_log_n": 18}, "leanc_args": ["-march=native"]}, "ordering": "natural input and output",
+        "rust_ntt": rust_ntt, "lean_ntt": {"packed": {"implementation": "NTTFast.Packed.Plan.forwardPacked/inversePacked", "task_depth": depth, "storage": "ByteArray.ugetUInt32LE/usetUInt32LE (lean4#14053 backport)"}, "externless": {"implementation": "NTTFast.NaturalPlan.forwardPacked/inversePacked", "max_arithmetic_workers": workers, "serial_below_log_n": 18}, "leanc_args": ["-march=native"]}, "ordering": "natural input and output",
         "cpu_model": next(s.split(":", 1)[1].strip() for s in Path("/proc/cpuinfo").read_text().splitlines() if s.startswith("model name")),
         "memory_gib": int(Path("/proc/meminfo").read_text().splitlines()[0].split()[1]) / 1024**2,
         "os": platform.freedesktop_os_release()["PRETTY_NAME"], "kernel": platform.release(),
@@ -105,8 +105,8 @@ def run(args, common, allowed):
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     if args.validate_only:
         return
-    lines = ["# KoalaBear NTT: Lean vs optimized Plonky3", "", "Milliseconds per complete transform; median of paired run medians ± between-run MAD. All implementations receive the same CPU budget. All Lean pipelines are fully proved: packed Lean stores packed words with the `ByteArray` word accessors proposed for Lean core, either with packed Montgomery words in and out (packed I/O) or with field arrays; externless Lean uses ordinary field arrays and parallel segments above 2^18 elements. Lean / Rust > 1 means Rust is faster.", "",
-             "| Elements | Direction | Packed I/O Lean | Packed Lean | Externless Lean | Plonky3 | Packed I/O / Rust | Packed / Rust | Externless / Rust |", "|---:|---|---:|---:|---:|---:|---:|---:|---:|"]
+    lines = ["# KoalaBear NTT: Lean vs optimized Plonky3", "", "Milliseconds per complete transform; median of paired run medians ± between-run MAD. All implementations receive the same CPU budget. All Lean pipelines are fully proved: both take and return packed Montgomery words; packed Lean reads and writes them with the `ByteArray` word accessors proposed for Lean core, externless Lean with core byte operations only. Lean / Rust > 1 means Rust is faster.", "",
+             "| Elements | Direction | Packed Lean | Externless Lean | Plonky3 | Packed / Rust | Externless / Rust |", "|---:|---|---:|---:|---:|---:|---:|"]
     for log_n in sizes:
         for direction in ("forward", "inverse"):
             medians, cells = [], []
@@ -116,13 +116,13 @@ def run(args, common, allowed):
                 mad = statistics.median(abs(x - median) for x in samples)
                 medians.append(median)
                 cells.append(f"{median:.4f} ± {mad:.4f}")
-            lines.append(f"| {2**log_n:,} | {direction} | {' | '.join(cells)} | {' | '.join(f'{m / medians[3]:.2f}×' for m in medians[:3])} |")
+            lines.append(f"| {2**log_n:,} | {direction} | {' | '.join(cells)} | {' | '.join(f'{m / medians[2]:.2f}×' for m in medians[:2])} |")
     lines += ["", "## Machine and method", "",
               f"- {manifest['cpu_model']}; {manifest['memory_gib']:.1f} GiB; {manifest['os']}, kernel {manifest['kernel']}; {workers} workers on {physical_cores} physical cores, logical CPUs {cpus}.",
               f"- {build['context']['lean_version']}; {build['context']['rust_version']}; Rust flags {build['context']['rustflags']!r}. Source `{build['context']['commit']}`, dirty={build['context']['dirty']}.",
-              f"- Packed Lean uses NTTFast.Packed.Plan with depth {depth}, a sliced split tree from 2^18 elements, fused input splitting, a vectorized kernel that runs the last four layers of eight leaf blocks at once and writes the leaf in natural order, and a parallel sixteen-way interleave; the field-array API then decodes the packed result in one sequential pass, while packed I/O takes and returns packed Montgomery words. Its native modules use -march=native. Externless Lean uses the proved NTTFast.NaturalPlan parallel API: from 2^18 elements, column tasks run the top two radix-four passes and sixteen leaf tasks the rest with leaf-local bit reversal, exchanging raw words in byte arrays, before one sequential interleave into natural order; smaller sizes run bounds-proved machine-index butterflies serially. Rust calls {rust_ntt['implementation']} from p3-dft 0.4.2 directly, with packing width {rust_ntt['packing_width']}; native SIMD is enabled. Plonky3's parallel feature is enabled. This compares different algorithms implementing the same transform.",
-              "- All three APIs use natural-order inputs and outputs. Forward maps coefficients to evaluations; inverse maps evaluations to coefficients, including 1/n normalization. The fixture root must equal both Lean's certified root and Plonky3's selected root.",
-              "- Plan construction, twiddle tables, cached permutation indices and fixture decoding are outside timing. Input copying, arithmetic, output disposal and ordering conversions are timed, including each Lean ordering adapter. Inverse normalization is timed. Inputs remain reusable and unchanged in all three implementations.",
+              f"- Packed Lean uses NTTFast.Packed.Plan with depth {depth}, a sliced split tree from 2^18 elements, a vectorized kernel that runs the last four layers of eight leaf blocks at once and writes the leaf in natural order, and a parallel sixteen-way interleave, taking and returning packed Montgomery words. Its native modules use -march=native. Externless Lean uses the proved NTTFast.NaturalPlan packed API: for even sizes from 2^16 elements, column tasks run the top two radix-four passes and sixteen leaf tasks the rest with leaf-local bit reversal, exchanging packed words, before one sequential interleave into natural-order packed output; other sizes unpack, run the array transform and pack. Rust calls {rust_ntt['implementation']} from p3-dft 0.4.2 directly, with packing width {rust_ntt['packing_width']}; native SIMD is enabled. Plonky3's parallel feature is enabled. This compares different algorithms implementing the same transform.",
+              "- All APIs use natural-order inputs and outputs. Forward maps coefficients to evaluations; inverse maps evaluations to coefficients, including 1/n normalization. The fixture root must equal both Lean's certified root and Plonky3's selected root.",
+              "- Plan construction, twiddle tables, cached permutation indices and fixture decoding are outside timing. Input copying, arithmetic, output disposal and ordering conversions are timed, including each Lean ordering adapter. Inverse normalization is timed. Inputs remain reusable and unchanged in all implementations.",
               "- Two deterministic inputs alternate to prevent result hoisting. Full output digests are checked outside timing; a four-position output sink is used inside timing. Native validation includes tiny odd/even sizes and zero/one/near-modulus coordinates.",
               f"- {args.runs} alternating four-way rounds, 200 ms warmup and 50 samples per invocation, so idle worker cores reach full clocks before timing. Shared-host load {manifest['load_start']} → {manifest['load_end']}; other work may affect timings.", ""]
     (out / "report.md").write_text("\n".join(lines))

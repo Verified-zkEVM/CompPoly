@@ -73,13 +73,17 @@ def gatherRows [Zero α] (src : @& Array α) (M j0 cs r : Nat) : Array α :=
     (Array.replicate (r * cs) 0)
 
 /-- The top two radix-four passes of a `16 × M` transform on columns `j0, …, j0 + cs - 1`. -/
-@[specialize] def columnTask [Field R] [DecidableEq R] (x : @& Array R)
+@[specialize] def columnPasses [Field R] [DecidableEq R] (a : Array R)
     (tw : @& Array (Array R)) (logN M cs j0 : Nat) : Array R :=
-  let a := gatherRows x M j0 cs 16
   let a := Plan.stageBlocksDIF (gatherRows (tw.getD (logN - 1) #[]) M j0 cs 8)
     (gatherRows (tw.getD (logN - 2) #[]) M j0 cs 4) (16 * cs) (4 * cs) 1 0 a
   Plan.stageBlocksDIF (gatherRows (tw.getD (logN - 3) #[]) M j0 cs 2)
     (gatherRows (tw.getD (logN - 4) #[]) M j0 cs 1) (4 * cs) cs 4 0 a
+
+/-- The top two radix-four passes of a `16 × M` transform on columns `j0, …, j0 + cs - 1`. -/
+@[specialize] def columnTask [Field R] [DecidableEq R] (x : @& Array R)
+    (tw : @& Array (Array R)) (logN M cs j0 : Nat) : Array R :=
+  columnPasses (gatherRows x M j0 cs 16) tw logN M cs j0
 
 /-- Store entries `k, …, cnt - 1` of `src` as elements `off + k, …` of `dst`. -/
 def encodeGo [PackedRepr α] (src : @& Array α) (off cnt k : USize) (dst : ByteArray)
@@ -240,61 +244,63 @@ theorem leafIndex (M q o : USize) (hq : q < M) (s n : Nat)
 
 /-- Store natural-order entries `16 * q + c` from the stored leaves, for `q` from `q` to
 `M - 1`. Entry `16 * q + c` is entry `q` of leaf `bitrev₄ c`, stored as word `16 l + q`. -/
-def assembleGo [PackedRepr α] (r : @& Array ByteArray) (M : USize) (hr : r.size = 16)
+@[specialize] def assembleGo [PackedRepr α] {β : Type*} (set : β → USize → α → β)
+    (r : @& Array ByteArray)
+    (M : USize) (hr : r.size = 16)
     (hb : ∀ l (h : l < 16), 16 * l + M.toNat ≤ (r[l]'(by omega)).size / PackedRepr.width α ∧
       (r[l]'(by omega)).size < USize.size)
-    (q : USize) (out : Array α) : Array α :=
+    (q : USize) (out : β) : β :=
   if hq : q < M then
     let i := 16 * q
-    let out := setW out i (PackedRepr.getAt (r[0]'(by omega))
+    let out := set out i (PackedRepr.getAt (r[0]'(by omega))
       (0 + q) (leafIndex M q 0 hq _ _ (by simpa using (hb 0 (by decide)).1)
         (hb 0 (by decide)).2 (Nat.div_le_self _ _)) (hb 0 (by decide)).2)
-    let out := setW out (i + 1) (PackedRepr.getAt (r[8]'(by omega))
+    let out := set out (i + 1) (PackedRepr.getAt (r[8]'(by omega))
       (128 + q) (leafIndex M q 128 hq _ _ (by simpa using (hb 8 (by decide)).1)
         (hb 8 (by decide)).2 (Nat.div_le_self _ _)) (hb 8 (by decide)).2)
-    let out := setW out (i + 2) (PackedRepr.getAt (r[4]'(by omega))
+    let out := set out (i + 2) (PackedRepr.getAt (r[4]'(by omega))
       (64 + q) (leafIndex M q 64 hq _ _ (by simpa using (hb 4 (by decide)).1)
         (hb 4 (by decide)).2 (Nat.div_le_self _ _)) (hb 4 (by decide)).2)
-    let out := setW out (i + 3) (PackedRepr.getAt (r[12]'(by omega))
+    let out := set out (i + 3) (PackedRepr.getAt (r[12]'(by omega))
       (192 + q) (leafIndex M q 192 hq _ _ (by simpa using (hb 12 (by decide)).1)
         (hb 12 (by decide)).2 (Nat.div_le_self _ _)) (hb 12 (by decide)).2)
-    let out := setW out (i + 4) (PackedRepr.getAt (r[2]'(by omega))
+    let out := set out (i + 4) (PackedRepr.getAt (r[2]'(by omega))
       (32 + q) (leafIndex M q 32 hq _ _ (by simpa using (hb 2 (by decide)).1)
         (hb 2 (by decide)).2 (Nat.div_le_self _ _)) (hb 2 (by decide)).2)
-    let out := setW out (i + 5) (PackedRepr.getAt (r[10]'(by omega))
+    let out := set out (i + 5) (PackedRepr.getAt (r[10]'(by omega))
       (160 + q) (leafIndex M q 160 hq _ _ (by simpa using (hb 10 (by decide)).1)
         (hb 10 (by decide)).2 (Nat.div_le_self _ _)) (hb 10 (by decide)).2)
-    let out := setW out (i + 6) (PackedRepr.getAt (r[6]'(by omega))
+    let out := set out (i + 6) (PackedRepr.getAt (r[6]'(by omega))
       (96 + q) (leafIndex M q 96 hq _ _ (by simpa using (hb 6 (by decide)).1)
         (hb 6 (by decide)).2 (Nat.div_le_self _ _)) (hb 6 (by decide)).2)
-    let out := setW out (i + 7) (PackedRepr.getAt (r[14]'(by omega))
+    let out := set out (i + 7) (PackedRepr.getAt (r[14]'(by omega))
       (224 + q) (leafIndex M q 224 hq _ _ (by simpa using (hb 14 (by decide)).1)
         (hb 14 (by decide)).2 (Nat.div_le_self _ _)) (hb 14 (by decide)).2)
-    let out := setW out (i + 8) (PackedRepr.getAt (r[1]'(by omega))
+    let out := set out (i + 8) (PackedRepr.getAt (r[1]'(by omega))
       (16 + q) (leafIndex M q 16 hq _ _ (by simpa using (hb 1 (by decide)).1)
         (hb 1 (by decide)).2 (Nat.div_le_self _ _)) (hb 1 (by decide)).2)
-    let out := setW out (i + 9) (PackedRepr.getAt (r[9]'(by omega))
+    let out := set out (i + 9) (PackedRepr.getAt (r[9]'(by omega))
       (144 + q) (leafIndex M q 144 hq _ _ (by simpa using (hb 9 (by decide)).1)
         (hb 9 (by decide)).2 (Nat.div_le_self _ _)) (hb 9 (by decide)).2)
-    let out := setW out (i + 10) (PackedRepr.getAt (r[5]'(by omega))
+    let out := set out (i + 10) (PackedRepr.getAt (r[5]'(by omega))
       (80 + q) (leafIndex M q 80 hq _ _ (by simpa using (hb 5 (by decide)).1)
         (hb 5 (by decide)).2 (Nat.div_le_self _ _)) (hb 5 (by decide)).2)
-    let out := setW out (i + 11) (PackedRepr.getAt (r[13]'(by omega))
+    let out := set out (i + 11) (PackedRepr.getAt (r[13]'(by omega))
       (208 + q) (leafIndex M q 208 hq _ _ (by simpa using (hb 13 (by decide)).1)
         (hb 13 (by decide)).2 (Nat.div_le_self _ _)) (hb 13 (by decide)).2)
-    let out := setW out (i + 12) (PackedRepr.getAt (r[3]'(by omega))
+    let out := set out (i + 12) (PackedRepr.getAt (r[3]'(by omega))
       (48 + q) (leafIndex M q 48 hq _ _ (by simpa using (hb 3 (by decide)).1)
         (hb 3 (by decide)).2 (Nat.div_le_self _ _)) (hb 3 (by decide)).2)
-    let out := setW out (i + 13) (PackedRepr.getAt (r[11]'(by omega))
+    let out := set out (i + 13) (PackedRepr.getAt (r[11]'(by omega))
       (176 + q) (leafIndex M q 176 hq _ _ (by simpa using (hb 11 (by decide)).1)
         (hb 11 (by decide)).2 (Nat.div_le_self _ _)) (hb 11 (by decide)).2)
-    let out := setW out (i + 14) (PackedRepr.getAt (r[7]'(by omega))
+    let out := set out (i + 14) (PackedRepr.getAt (r[7]'(by omega))
       (112 + q) (leafIndex M q 112 hq _ _ (by simpa using (hb 7 (by decide)).1)
         (hb 7 (by decide)).2 (Nat.div_le_self _ _)) (hb 7 (by decide)).2)
-    let out := setW out (i + 15) (PackedRepr.getAt (r[15]'(by omega))
+    let out := set out (i + 15) (PackedRepr.getAt (r[15]'(by omega))
       (240 + q) (leafIndex M q 240 hq _ _ (by simpa using (hb 15 (by decide)).1)
         (hb 15 (by decide)).2 (Nat.div_le_self _ _)) (hb 15 (by decide)).2)
-    assembleGo r M hr hb (q + 1) out
+    assembleGo set r M hr hb (q + 1) out
   else out
 termination_by M.toNat - q.toNat
 decreasing_by
@@ -304,19 +310,47 @@ decreasing_by
   omega
 
 /-- Interleave sixteen stored `M`-entry leaves into natural order, writing into `out`. -/
-def assemble [PackedRepr α] (r : @& Array ByteArray) (M : Nat) (out : Array α) : Array α :=
+@[specialize] def assemble [PackedRepr α] {β : Type*} (set : β → USize → α → β)
+    (r : @& Array ByteArray)
+    (M : Nat) (out : β) : β :=
   if hM : M < USize.size then
     if hr : r.size = 16 then
       if hb : (List.range 16).all (fun l ↦ decide (16 * l + M ≤
           (r.getD l ByteArray.empty).size / PackedRepr.width α ∧
           (r.getD l ByteArray.empty).size < USize.size)) then
-        assembleGo r (USize.ofNatLT M hM) hr (fun l h ↦ by
+        assembleGo set r (USize.ofNatLT M hM) hr (fun l h ↦ by
           have := of_decide_eq_true (List.all_eq_true.mp hb l (List.mem_range.mpr h))
           simp only [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem (show l < r.size by
             omega), Option.getD_some] at this
           simpa only [USize.toNat_ofNatLT] using this) 0 out
       else out
     else out
+  else out
+
+/-- Rows `q0, …, q1 - 1` of an `M`-row interleave, stored with `set` at the global indices
+`16 q0, …, 16 q1 - 1`. The leaf check is the one of `assemble`. -/
+@[specialize] def assembleRows [PackedRepr α] {β : Type*} (set : β → USize → α → β)
+    (r : @& Array ByteArray) (M q0 q1 : Nat) (out : β) : β :=
+  if h : q0 ≤ q1 ∧ q1 ≤ M ∧ M < USize.size ∧ r.size = 16 then
+    if hb : (List.range 16).all (fun l ↦ decide (16 * l + M ≤
+        (r.getD l ByteArray.empty).size / PackedRepr.width α ∧
+        (r.getD l ByteArray.empty).size < USize.size)) then
+      assembleGo set r (USize.ofNatLT q1 (by omega)) h.2.2.2 (fun l hl ↦ by
+        have := of_decide_eq_true (List.all_eq_true.mp hb l (List.mem_range.mpr hl))
+        simp only [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem (show l < r.size by
+          omega), Option.getD_some] at this
+        simp only [USize.toNat_ofNatLT]
+        exact ⟨by omega, this.2⟩) (USize.ofNatLT q0 (by omega)) out
+    else out
+  else out
+
+/-- Rows `q0, …, q0 + K - 1` of an `M`-row interleave as `16 K` packed elements. -/
+@[specialize] def assembleChunk [Zero α] [PackedRepr α] (r : @& Array ByteArray) (M q0 K : Nat) :
+    ByteArray :=
+  let out := PackedRepr.replicate (16 * K) (0 : α)
+  if hm : PackedRepr.width α * (16 * K) < USize.size then
+    assembleRows (α := α) (fun b i v ↦ PackedRepr.setIf (R := α) _ hm b (i - (16 * q0).toUSize) v)
+      r M q0 (q0 + K) out
   else out
 
 /-- Wait for every task without blocking a worker; results keep the task order. -/
@@ -337,6 +371,51 @@ optionally scaled by `f`; `rest` are the passes of a `2 ^ (logN - 4)`-entry leaf
     leafTask cols tw rest (logN - 4) cs l scale f
   -- allocated while the tasks run
   let out := Array.replicate (16 * M) 0
-  assemble (leaves.map Task.get) M out
+  assemble setW (leaves.map Task.get) M out
+
+/-- Rows `0, …, r - 1` of a packed matrix with rows of length `M`, restricted to the columns
+`j0, …, j0 + cs - 1`, decoded as a row-major `r × cs` array. -/
+def gatherRowsPacked [Zero α] [PackedRepr α] (src : @& ByteArray) (M j0 cs r : Nat) :
+    Array α :=
+  (List.range r).foldl (fun acc k ↦ decodeRange src (k * M + j0) acc (k * cs) cs)
+    (Array.replicate (r * cs) 0)
+
+/-- `transform` on packed elements: column tasks decode their own columns, and the final
+interleave stores packed elements. -/
+@[specialize] def transformPacked [Field R] [DecidableEq R] [PackedRepr R]
+    (tw : Array (Array R)) (logN S : Nat) (rest : List Nat) (scale : Bool) (f : R)
+    (x : ByteArray) : ByteArray :=
+  let M := 2 ^ (logN - 4)
+  let cs := M / S
+  let cols := (Array.range S).map fun s ↦ Task.spawn fun _ ↦
+    encode (columnPasses (gatherRowsPacked x M (s * cs) cs 16) tw logN M cs (s * cs)) 0
+  let all := joinTasks cols
+  let leaves := (Array.range 16).map fun l ↦ all.bind fun cols ↦ Task.spawn fun _ ↦
+    leafTask cols tw rest (logN - 4) cs l scale f
+  -- sixteen interleave tasks, each storing a contiguous range of rows; one copy joins them
+  let K := M / 16
+  let rows := joinTasks leaves
+  let chunks := (Array.range 16).map fun c ↦ rows.bind fun r ↦ Task.spawn fun _ ↦
+    assembleChunk (α := R) r M (c * K) K
+  (chunks.map Task.get).foldl (· ++ ·) (ByteArray.emptyWithCapacity (PackedRepr.width R * (16 * M)))
+
+/-- The elements of the complete slots of `b`. -/
+def decodeAll [Zero α] [PackedRepr α] (b : @& ByteArray) : Array α :=
+  if b.size < USize.size then
+    decodeRange b 0 (Array.replicate (b.size / PackedRepr.width α) 0) 0
+      (b.size / PackedRepr.width α)
+  else PackedRepr.decode b
+
+/-- Store entries `i, …, i + n - 1` of `a` into a buffer of `m` bytes. -/
+def encodeAllGo [Zero α] [PackedRepr α] (a : @& Array α) (m : Nat) (hm : m < USize.size) :
+    Nat → Nat → ByteArray → ByteArray
+  | 0, _, b => b
+  | n + 1, i, b => encodeAllGo a m hm n (i + 1) (PackedRepr.setIf m hm b i.toUSize (a.getD i 0))
+
+/-- `a` as packed elements. -/
+def encodeAll [Zero α] [PackedRepr α] (a : @& Array α) : ByteArray :=
+  if hm : PackedRepr.width α * a.size < USize.size then
+    encodeAllGo a _ hm a.size 0 (PackedRepr.replicate a.size (0 : α))
+  else PackedRepr.encode a
 
 end CompPoly.CPolynomial.NTTFast.Columns

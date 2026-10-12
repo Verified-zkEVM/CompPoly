@@ -180,28 +180,4 @@ theorem Native.splitRight_encode (a w : Array KoalaBear.Fast.Field) (half : Nat)
     rw [he, Array.extract_eq_empty_of_le (by simp only [Array.size_replicate]; omega),
       Array.append_empty]
 
-/-- Without a twiddle buffer, the left splitter uses its scalar builder. -/
-theorem Native.splitLeft_empty (a : ByteArray) (half : Nat) :
-    Native.splitLeft a ByteArray.empty half =
-      Native.generate half (fun i ↦ add (Native.read a i) (Native.read a (i + half))) := by
-  unfold Native.splitLeft
-  simp only [Std.Legacy.Range.forIn_eq_forIn_range', Std.Legacy.Range.size,
-    Nat.sub_zero, Nat.add_sub_cancel, Nat.div_one]
-  split
-  · rfl
-  · rename_i hmod
-    have hm : half % 16 = 0 := by simpa using hmod
-    by_cases hn : half / 16 = 0
-    · have hz : half = 0 := by omega
-      subst half
-      simp only [Nat.zero_div, List.range'_zero, List.forIn_nil, bind, pure, Id.run]
-      rw [Native.zeroWords_encode, Array.replicate_zero, PackedRepr.encode_empty,
-          Native.generate_eq,
-        Array.ofFn_zero]
-      rfl
-    · obtain ⟨count, hc⟩ : ∃ count, half / 16 = count + 1 := ⟨half / 16 - 1, by omega⟩
-      rw [hc, List.range'_succ, List.forIn_cons]
-      simp only [ByteArray.size_empty, Nat.mul_zero, Nat.zero_add, Nat.not_lt_zero,
-        and_false, false_and, dite_false, bind, pure, Id.run]
-
 end CompPoly.CPolynomial.NTTFast.Packed

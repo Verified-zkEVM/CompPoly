@@ -12,9 +12,8 @@ public import CompPoly.Univariate.NTTFast.Packed.NativeLastCorrectness
 The correctness theorems cover the complete Lean pipeline. Packed words are read and written
 with the `ByteArray` word accessors proposed for Lean core (`CompPoly.Data.ByteArray.Pack`),
 whose inline C remains a runtime trust assumption; arithmetic, tasks and ordering are Lean.
-`forward`/`inverse` take and return field arrays. `forwardPacked`/`inversePacked` take and
-return packed Montgomery words (`encode`), which avoids the sequential field-array
-decoding of the output.
+`forwardPacked`/`inversePacked` take and return packed Montgomery words: `encode` packs a field
+array and `decode` reads one back.
 -/
 
 @[expose] public section
@@ -54,35 +53,10 @@ def ofDomain (D : NTT.Domain KoalaBear.Fast.Field) (h32 : D.logN ≤ 32)
     funext a
     exact Native.encodeFields_eq a
 
-/-- Reuse a domain-sized input, otherwise zero-pad or truncate it. -/
-@[inline] def load (P : Plan) (a : Array KoalaBear.Fast.Field) : Array KoalaBear.Fast.Field :=
-  if a.size = P.domain.n then a
-  else NTTFast.tabulate (fun i : P.domain.Idx ↦ a.getD i.val 0)
-
-/-- Loading preserves the ordinary total array semantics. -/
-theorem load_eq (P : Plan) (a : Array KoalaBear.Fast.Field) :
-    P.load a = NTT.loadNaturalArray P.domain a := by
-  unfold load
-  split
-  · exact (loadNaturalArray_eq_self P.domain a ‹_›).symm
-  · exact NTTFast.tabulate_eq _
-
 /-- Default parallel split depth: serial up to `2 ^ 12` elements, four leaves up to
 `2 ^ 14`, sixteen leaves above. Smaller trees avoid task overhead on small inputs. -/
 def defaultDepth (logN : Nat) : Nat :=
   if logN ≤ 12 then 0 else if logN ≤ 14 then 2 else 4
-
-/-- Complete natural-order forward transform; `depth` bounds the parallel split tree. -/
-@[inline] def forward (P : Plan) (a : Array KoalaBear.Fast.Field)
-    (depth : Nat := defaultDepth P.domain.logN) :
-    Array KoalaBear.Fast.Field :=
-  Native.runFields P.forwardTwiddles P.domain.logN depth P.nInv.val (P.load a) false
-
-/-- Complete natural-order inverse, including normalization inside workers when possible. -/
-@[inline] def inverse (P : Plan) (a : Array KoalaBear.Fast.Field)
-    (depth : Nat := defaultDepth P.domain.logN) :
-    Array KoalaBear.Fast.Field :=
-  Native.runFields P.inverseTwiddles P.domain.logN depth P.nInv.val (P.load a) true
 
 /-- Natural-order forward transform of `n` packed Montgomery words. -/
 @[inline] def forwardPacked (P : Plan) (a : ByteArray)
@@ -93,18 +67,6 @@ def defaultDepth (logN : Nat) : Nat :=
 @[inline] def inversePacked (P : Plan) (a : ByteArray)
     (depth : Nat := defaultDepth P.domain.logN) : ByteArray :=
   Native.runPacked P.inverseTwiddles P.domain.logN depth P.nInv.val a true
-
-private theorem forwardSpec_load [Field R] (D : NTT.Domain R) (a : Array R) :
-    NTT.Forward.forwardSpec D (NTT.loadNaturalArray D a) = NTT.Forward.forwardSpec D a := by
-  unfold NTT.Forward.forwardSpec NTT.Forward.nttAt
-  congr 1
-  funext k
-  apply Finset.sum_congr rfl
-  intro j _
-  congr 1
-  rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem
-    (by simpa only [NTT.size_loadNaturalArray] using j.isLt), Option.getD_some,
-    NTT.getElem_loadNaturalArray]
 
 private theorem normalized_inverse [Field R] (D : NTT.Domain R) (a : Array R) :
     (NTT.Forward.forwardSpec D.inverse a).map (fun x ↦ D.nInv * x) =
@@ -118,43 +80,11 @@ private theorem normalized_inverse [Field R] (D : NTT.Domain R) (a : Array R) :
     rw [getD_ofFn_bounded _ _ i.isLt]
   rw [h, NTT.Inverse.normalize_forwardSpec_inverse_eq_inverseSpec]
 
-private theorem inverseSpec_load [Field R] (D : NTT.Domain R) (a : Array R) :
-    NTT.Inverse.inverseSpec D (NTT.loadNaturalArray D a) = NTT.Inverse.inverseSpec D a := by
-  rw [← normalized_inverse, ← normalized_inverse D a]
-  change (NTT.Forward.forwardSpec D.inverse (NTT.loadNaturalArray D.inverse a)).map _ = _
-  rw [forwardSpec_load]
-
 private theorem inverse_logN [Field R] (D : NTT.Domain R) :
     D.inverse.logN = D.logN := rfl
 
 private theorem inverse_n [Field R] (D : NTT.Domain R) : D.inverse.n = D.n :=
   congrArg (fun logN ↦ 2 ^ logN) (inverse_logN D)
-
-private theorem run_inverse (D : NTT.Domain KoalaBear.Fast.Field)
-    (tw : Array (Array KoalaBear.Fast.Field)) (depth : Nat) (a : Array KoalaBear.Fast.Field)
-    (ht : TwiddlesFor D.inverse tw) (hs : a.size = D.n)
-    (h32 : D.logN ≤ 32) (hu : 4 * D.n < USize.size) :
-    Native.runFields (tw.map encode) D.logN depth D.nInv.val a true =
-      NTT.Inverse.inverseSpec D a := by
-  have h := Native.runFields_dft D.inverse tw depth D.nInv a true ht
-    (hs.trans (inverse_n D).symm) ((inverse_logN D).symm ▸ h32) ((inverse_n D).symm ▸ hu)
-  rw [inverse_logN] at h
-  exact h.trans (normalized_inverse D a)
-
-/-- The whole packed parallel forward transform equals the mathematical DFT for any input. -/
-theorem forward_correct (P : Plan) (a : Array KoalaBear.Fast.Field) (depth : Nat) :
-    P.forward a depth = NTT.Forward.forwardSpec P.domain a := by
-  rw [forward, P.forward_eq, P.nInv_eq, load_eq,
-    Native.runFields_dft P.domain _ depth P.domain.nInv _ false (fun _ _ ↦ rfl)
-      (NTT.size_loadNaturalArray ..) P.log_bound P.byte_bound]
-  exact forwardSpec_load P.domain a
-
-/-- The whole packed parallel inverse transform equals the normalized inverse DFT. -/
-theorem inverse_correct (P : Plan) (a : Array KoalaBear.Fast.Field) (depth : Nat) :
-    P.inverse a depth = NTT.Inverse.inverseSpec P.domain a := by
-  rw [inverse, P.inverse_eq, P.nInv_eq, load_eq]
-  exact (run_inverse P.domain _ depth _ (fun _ _ ↦ rfl) (NTT.size_loadNaturalArray ..)
-    P.log_bound P.byte_bound).trans (inverseSpec_load P.domain a)
 
 /-- The packed forward transform equals the mathematical DFT of every domain-sized input. -/
 theorem forwardPacked_correct (P : Plan) (a : Array KoalaBear.Fast.Field) (depth : Nat)
