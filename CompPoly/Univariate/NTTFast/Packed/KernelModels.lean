@@ -324,7 +324,6 @@ def leaf16Field (t3 t2 t1 : Array KoalaBear.Fast.Field) (i : USize) (b : Array
   splice b i.toNat #[x4_0, x4_1, x4_2, x4_3, x4_4, x4_5, x4_6, x4_7, x4_8, x4_9, x4_10, x4_11,
     x4_12, x4_13, x4_14, x4_15]
 
-
 /-- Field-array expression graph of the fused final four DIF layers with inverse normalization. -/
 def leaf16ScaledField (t3 t2 t1 : Array KoalaBear.Fast.Field) (i : USize) (nInv :
     KoalaBear.Fast.Field) (b : Array KoalaBear.Fast.Field) : Array KoalaBear.Fast.Field :=
@@ -477,112 +476,6 @@ def splitStepRightField (a w : Array KoalaBear.Fast.Field) (i j : USize) (out : 
   let y13 := fieldMul (readField w i 13 ) (fieldSub (readField a i 13 ) (readField a j 13 ))
   let y14 := fieldMul (readField w i 14 ) (fieldSub (readField a i 14 ) (readField a j 14 ))
   let y15 := fieldMul (readField w i 15 ) (fieldSub (readField a i 15 ) (readField a j 15 ))
-  out ++ #[y0, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12, y13, y14, y15]
-
-/-- Field-array expression graph of the sixteen-element splitInputStepLeft partition kernel. -/
-def splitInputStepLeftField (a _w : Array KoalaBear.Fast.Field) (i j : USize) (out : Array
-    KoalaBear.Fast.Field) : Array KoalaBear.Fast.Field :=
-  let x0 := readField a i 0
-  let z0 := readField a j 0
-  let y0 := fieldAdd x0 z0
-  let x1 := readField a i 1
-  let z1 := readField a j 1
-  let y1 := fieldAdd x1 z1
-  let x2 := readField a i 2
-  let z2 := readField a j 2
-  let y2 := fieldAdd x2 z2
-  let x3 := readField a i 3
-  let z3 := readField a j 3
-  let y3 := fieldAdd x3 z3
-  let x4 := readField a i 4
-  let z4 := readField a j 4
-  let y4 := fieldAdd x4 z4
-  let x5 := readField a i 5
-  let z5 := readField a j 5
-  let y5 := fieldAdd x5 z5
-  let x6 := readField a i 6
-  let z6 := readField a j 6
-  let y6 := fieldAdd x6 z6
-  let x7 := readField a i 7
-  let z7 := readField a j 7
-  let y7 := fieldAdd x7 z7
-  let x8 := readField a i 8
-  let z8 := readField a j 8
-  let y8 := fieldAdd x8 z8
-  let x9 := readField a i 9
-  let z9 := readField a j 9
-  let y9 := fieldAdd x9 z9
-  let x10 := readField a i 10
-  let z10 := readField a j 10
-  let y10 := fieldAdd x10 z10
-  let x11 := readField a i 11
-  let z11 := readField a j 11
-  let y11 := fieldAdd x11 z11
-  let x12 := readField a i 12
-  let z12 := readField a j 12
-  let y12 := fieldAdd x12 z12
-  let x13 := readField a i 13
-  let z13 := readField a j 13
-  let y13 := fieldAdd x13 z13
-  let x14 := readField a i 14
-  let z14 := readField a j 14
-  let y14 := fieldAdd x14 z14
-  let x15 := readField a i 15
-  let z15 := readField a j 15
-  let y15 := fieldAdd x15 z15
-  out ++ #[y0, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12, y13, y14, y15]
-
-/-- Field-array expression graph of the sixteen-element splitInputStepRight partition kernel. -/
-def splitInputStepRightField (a w : Array KoalaBear.Fast.Field) (i j : USize) (out : Array
-    KoalaBear.Fast.Field) : Array KoalaBear.Fast.Field :=
-  let x0 := readField a i 0
-  let z0 := readField a j 0
-  let y0 := fieldMul (readField w i 0 ) (fieldSub x0 z0)
-  let x1 := readField a i 1
-  let z1 := readField a j 1
-  let y1 := fieldMul (readField w i 1 ) (fieldSub x1 z1)
-  let x2 := readField a i 2
-  let z2 := readField a j 2
-  let y2 := fieldMul (readField w i 2 ) (fieldSub x2 z2)
-  let x3 := readField a i 3
-  let z3 := readField a j 3
-  let y3 := fieldMul (readField w i 3 ) (fieldSub x3 z3)
-  let x4 := readField a i 4
-  let z4 := readField a j 4
-  let y4 := fieldMul (readField w i 4 ) (fieldSub x4 z4)
-  let x5 := readField a i 5
-  let z5 := readField a j 5
-  let y5 := fieldMul (readField w i 5 ) (fieldSub x5 z5)
-  let x6 := readField a i 6
-  let z6 := readField a j 6
-  let y6 := fieldMul (readField w i 6 ) (fieldSub x6 z6)
-  let x7 := readField a i 7
-  let z7 := readField a j 7
-  let y7 := fieldMul (readField w i 7 ) (fieldSub x7 z7)
-  let x8 := readField a i 8
-  let z8 := readField a j 8
-  let y8 := fieldMul (readField w i 8 ) (fieldSub x8 z8)
-  let x9 := readField a i 9
-  let z9 := readField a j 9
-  let y9 := fieldMul (readField w i 9 ) (fieldSub x9 z9)
-  let x10 := readField a i 10
-  let z10 := readField a j 10
-  let y10 := fieldMul (readField w i 10 ) (fieldSub x10 z10)
-  let x11 := readField a i 11
-  let z11 := readField a j 11
-  let y11 := fieldMul (readField w i 11 ) (fieldSub x11 z11)
-  let x12 := readField a i 12
-  let z12 := readField a j 12
-  let y12 := fieldMul (readField w i 12 ) (fieldSub x12 z12)
-  let x13 := readField a i 13
-  let z13 := readField a j 13
-  let y13 := fieldMul (readField w i 13 ) (fieldSub x13 z13)
-  let x14 := readField a i 14
-  let z14 := readField a j 14
-  let y14 := fieldMul (readField w i 14 ) (fieldSub x14 z14)
-  let x15 := readField a i 15
-  let z15 := readField a j 15
-  let y15 := fieldMul (readField w i 15 ) (fieldSub x15 z15)
   out ++ #[y0, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12, y13, y14, y15]
 
 end CompPoly.CPolynomial.NTTFast.Packed

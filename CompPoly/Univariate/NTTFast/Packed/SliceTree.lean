@@ -117,104 +117,6 @@ namespace CompPoly.CPolynomial.NTTFast.Packed.Native
     (mul t8 (sub x8 y8)) (mul t9 (sub x9 y9)) (mul t10 (sub x10 y10)) (mul t11 (sub x11 y11))
     (mul t12 (sub x12 y12)) (mul t13 (sub x13 y13)) (mul t14 (sub x14 y14)) (mul t15 (sub x15 y15))
 
-/-- Sixteen sums of two ranges of a field array. -/
-@[noinline] def pairInputLeft (a : @& Array KoalaBear.Fast.Field) (ia ib : USize)
-    (out : ByteArray) (p : USize) (h : ia.toNat + 15 < a.size ∧ ib.toNat + 15 < a.size ∧
-      a.size < USize.size) : ByteArray :=
-  let x0 := fieldAtOffset a ia 0 (by rw [usize_numeral 0 (by decide)]; omega)
-  let x1 := fieldAtOffset a ia 1 (by rw [usize_numeral 1 (by decide)]; omega)
-  let x2 := fieldAtOffset a ia 2 (by rw [usize_numeral 2 (by decide)]; omega)
-  let x3 := fieldAtOffset a ia 3 (by rw [usize_numeral 3 (by decide)]; omega)
-  let x4 := fieldAtOffset a ia 4 (by rw [usize_numeral 4 (by decide)]; omega)
-  let x5 := fieldAtOffset a ia 5 (by rw [usize_numeral 5 (by decide)]; omega)
-  let x6 := fieldAtOffset a ia 6 (by rw [usize_numeral 6 (by decide)]; omega)
-  let x7 := fieldAtOffset a ia 7 (by rw [usize_numeral 7 (by decide)]; omega)
-  let x8 := fieldAtOffset a ia 8 (by rw [usize_numeral 8 (by decide)]; omega)
-  let x9 := fieldAtOffset a ia 9 (by rw [usize_numeral 9 (by decide)]; omega)
-  let x10 := fieldAtOffset a ia 10 (by rw [usize_numeral 10 (by decide)]; omega)
-  let x11 := fieldAtOffset a ia 11 (by rw [usize_numeral 11 (by decide)]; omega)
-  let x12 := fieldAtOffset a ia 12 (by rw [usize_numeral 12 (by decide)]; omega)
-  let x13 := fieldAtOffset a ia 13 (by rw [usize_numeral 13 (by decide)]; omega)
-  let x14 := fieldAtOffset a ia 14 (by rw [usize_numeral 14 (by decide)]; omega)
-  let x15 := fieldAtOffset a ia 15 (by rw [usize_numeral 15 (by decide)]; omega)
-  let y0 := fieldAtOffset a ib 0 (by rw [usize_numeral 0 (by decide)]; omega)
-  let y1 := fieldAtOffset a ib 1 (by rw [usize_numeral 1 (by decide)]; omega)
-  let y2 := fieldAtOffset a ib 2 (by rw [usize_numeral 2 (by decide)]; omega)
-  let y3 := fieldAtOffset a ib 3 (by rw [usize_numeral 3 (by decide)]; omega)
-  let y4 := fieldAtOffset a ib 4 (by rw [usize_numeral 4 (by decide)]; omega)
-  let y5 := fieldAtOffset a ib 5 (by rw [usize_numeral 5 (by decide)]; omega)
-  let y6 := fieldAtOffset a ib 6 (by rw [usize_numeral 6 (by decide)]; omega)
-  let y7 := fieldAtOffset a ib 7 (by rw [usize_numeral 7 (by decide)]; omega)
-  let y8 := fieldAtOffset a ib 8 (by rw [usize_numeral 8 (by decide)]; omega)
-  let y9 := fieldAtOffset a ib 9 (by rw [usize_numeral 9 (by decide)]; omega)
-  let y10 := fieldAtOffset a ib 10 (by rw [usize_numeral 10 (by decide)]; omega)
-  let y11 := fieldAtOffset a ib 11 (by rw [usize_numeral 11 (by decide)]; omega)
-  let y12 := fieldAtOffset a ib 12 (by rw [usize_numeral 12 (by decide)]; omega)
-  let y13 := fieldAtOffset a ib 13 (by rw [usize_numeral 13 (by decide)]; omega)
-  let y14 := fieldAtOffset a ib 14 (by rw [usize_numeral 14 (by decide)]; omega)
-  let y15 := fieldAtOffset a ib 15 (by rw [usize_numeral 15 (by decide)]; omega)
-  write16U out p (add x0 y0) (add x1 y1) (add x2 y2) (add x3 y3) (add x4 y4) (add x5 y5) (add x6 y6)
-    (add x7 y7) (add x8 y8) (add x9 y9) (add x10 y10) (add x11 y11) (add x12 y12) (add x13 y13)
-    (add x14 y14) (add x15 y15)
-
-/-- Sixteen twiddle-scaled differences of two ranges of a field array. -/
-@[noinline] def pairInputRight (a : @& Array KoalaBear.Fast.Field) (w : @& ByteArray)
-    (ia ib iw : USize) (out : ByteArray) (p : USize)
-    (h : ia.toNat + 15 < a.size ∧ ib.toNat + 15 < a.size ∧ 4 * (iw.toNat + 15) + 3 < w.size ∧
-      a.size < USize.size ∧ w.size < USize.size) : ByteArray :=
-  let x0 := fieldAtOffset a ia 0 (by rw [usize_numeral 0 (by decide)]; omega)
-  let x1 := fieldAtOffset a ia 1 (by rw [usize_numeral 1 (by decide)]; omega)
-  let x2 := fieldAtOffset a ia 2 (by rw [usize_numeral 2 (by decide)]; omega)
-  let x3 := fieldAtOffset a ia 3 (by rw [usize_numeral 3 (by decide)]; omega)
-  let x4 := fieldAtOffset a ia 4 (by rw [usize_numeral 4 (by decide)]; omega)
-  let x5 := fieldAtOffset a ia 5 (by rw [usize_numeral 5 (by decide)]; omega)
-  let x6 := fieldAtOffset a ia 6 (by rw [usize_numeral 6 (by decide)]; omega)
-  let x7 := fieldAtOffset a ia 7 (by rw [usize_numeral 7 (by decide)]; omega)
-  let x8 := fieldAtOffset a ia 8 (by rw [usize_numeral 8 (by decide)]; omega)
-  let x9 := fieldAtOffset a ia 9 (by rw [usize_numeral 9 (by decide)]; omega)
-  let x10 := fieldAtOffset a ia 10 (by rw [usize_numeral 10 (by decide)]; omega)
-  let x11 := fieldAtOffset a ia 11 (by rw [usize_numeral 11 (by decide)]; omega)
-  let x12 := fieldAtOffset a ia 12 (by rw [usize_numeral 12 (by decide)]; omega)
-  let x13 := fieldAtOffset a ia 13 (by rw [usize_numeral 13 (by decide)]; omega)
-  let x14 := fieldAtOffset a ia 14 (by rw [usize_numeral 14 (by decide)]; omega)
-  let x15 := fieldAtOffset a ia 15 (by rw [usize_numeral 15 (by decide)]; omega)
-  let y0 := fieldAtOffset a ib 0 (by rw [usize_numeral 0 (by decide)]; omega)
-  let y1 := fieldAtOffset a ib 1 (by rw [usize_numeral 1 (by decide)]; omega)
-  let y2 := fieldAtOffset a ib 2 (by rw [usize_numeral 2 (by decide)]; omega)
-  let y3 := fieldAtOffset a ib 3 (by rw [usize_numeral 3 (by decide)]; omega)
-  let y4 := fieldAtOffset a ib 4 (by rw [usize_numeral 4 (by decide)]; omega)
-  let y5 := fieldAtOffset a ib 5 (by rw [usize_numeral 5 (by decide)]; omega)
-  let y6 := fieldAtOffset a ib 6 (by rw [usize_numeral 6 (by decide)]; omega)
-  let y7 := fieldAtOffset a ib 7 (by rw [usize_numeral 7 (by decide)]; omega)
-  let y8 := fieldAtOffset a ib 8 (by rw [usize_numeral 8 (by decide)]; omega)
-  let y9 := fieldAtOffset a ib 9 (by rw [usize_numeral 9 (by decide)]; omega)
-  let y10 := fieldAtOffset a ib 10 (by rw [usize_numeral 10 (by decide)]; omega)
-  let y11 := fieldAtOffset a ib 11 (by rw [usize_numeral 11 (by decide)]; omega)
-  let y12 := fieldAtOffset a ib 12 (by rw [usize_numeral 12 (by decide)]; omega)
-  let y13 := fieldAtOffset a ib 13 (by rw [usize_numeral 13 (by decide)]; omega)
-  let y14 := fieldAtOffset a ib 14 (by rw [usize_numeral 14 (by decide)]; omega)
-  let y15 := fieldAtOffset a ib 15 (by rw [usize_numeral 15 (by decide)]; omega)
-  let t0 := readUOffset w iw 0 (by rw [usize_numeral 0 (by decide)]; omega)
-  let t1 := readUOffset w iw 1 (by rw [usize_numeral 1 (by decide)]; omega)
-  let t2 := readUOffset w iw 2 (by rw [usize_numeral 2 (by decide)]; omega)
-  let t3 := readUOffset w iw 3 (by rw [usize_numeral 3 (by decide)]; omega)
-  let t4 := readUOffset w iw 4 (by rw [usize_numeral 4 (by decide)]; omega)
-  let t5 := readUOffset w iw 5 (by rw [usize_numeral 5 (by decide)]; omega)
-  let t6 := readUOffset w iw 6 (by rw [usize_numeral 6 (by decide)]; omega)
-  let t7 := readUOffset w iw 7 (by rw [usize_numeral 7 (by decide)]; omega)
-  let t8 := readUOffset w iw 8 (by rw [usize_numeral 8 (by decide)]; omega)
-  let t9 := readUOffset w iw 9 (by rw [usize_numeral 9 (by decide)]; omega)
-  let t10 := readUOffset w iw 10 (by rw [usize_numeral 10 (by decide)]; omega)
-  let t11 := readUOffset w iw 11 (by rw [usize_numeral 11 (by decide)]; omega)
-  let t12 := readUOffset w iw 12 (by rw [usize_numeral 12 (by decide)]; omega)
-  let t13 := readUOffset w iw 13 (by rw [usize_numeral 13 (by decide)]; omega)
-  let t14 := readUOffset w iw 14 (by rw [usize_numeral 14 (by decide)]; omega)
-  let t15 := readUOffset w iw 15 (by rw [usize_numeral 15 (by decide)]; omega)
-  write16U out p (mul t0 (sub x0 y0)) (mul t1 (sub x1 y1)) (mul t2 (sub x2 y2)) (mul t3 (sub x3 y3))
-    (mul t4 (sub x4 y4)) (mul t5 (sub x5 y5)) (mul t6 (sub x6 y6)) (mul t7 (sub x7 y7))
-    (mul t8 (sub x8 y8)) (mul t9 (sub x9 y9)) (mul t10 (sub x10 y10)) (mul t11 (sub x11 y11))
-    (mul t12 (sub x12 y12)) (mul t13 (sub x13 y13)) (mul t14 (sub x14 y14)) (mul t15 (sub x15 y15))
-
 /-- `n` batches of left and right split outputs at machine indices whose ranges were checked
 once, stored from word `p` of `l` and `r`. -/
 def pairLoop (A B w : @& ByteArray) : (n : Nat) → (ia ib iw p : USize) → ByteArray → ByteArray →
@@ -238,31 +140,6 @@ def pairGo (A B w : @& ByteArray) (count ia ib iw : Nat) : ByteArray × ByteArra
       4 * (iw + 16 * count) ≤ w.size ∧ A.size < USize.size ∧ B.size < USize.size ∧
       w.size < USize.size then
     pairLoop A B w count (USize.ofNatLT ia (by omega)) (USize.ofNatLT ib (by omega))
-      (USize.ofNatLT iw (by omega)) 0 (zeroWords (16 * count)) (zeroWords (16 * count))
-      (by simp only [USize.toNat_ofNatLT]; exact h)
-  else (.empty, .empty)
-
-/-- `pairLoop` reading both ranges from a field array. -/
-def pairInputLoop (a : @& Array KoalaBear.Fast.Field) (w : @& ByteArray) :
-    (n : Nat) → (ia ib iw p : USize) → ByteArray → ByteArray →
-    ia.toNat + 16 * n ≤ a.size ∧ ib.toNat + 16 * n ≤ a.size ∧
-      4 * (iw.toNat + 16 * n) ≤ w.size ∧ a.size < USize.size ∧ w.size < USize.size →
-      ByteArray × ByteArray
-  | 0, _, _, _, _, l, r, _ => (l, r)
-  | n + 1, ia, ib, iw, p, l, r, h =>
-    let l := pairInputLeft a ia ib l p (by omega)
-    let r := pairInputRight a w ia ib iw r p (by omega)
-    pairInputLoop a w n (ia + 16) (ib + 16) (iw + 16) (p + 16) l r (by
-      rw [usize_add16 ia a.size (by omega) h.2.2.2.1, usize_add16 ib a.size (by omega) h.2.2.2.1,
-        usize_add16 iw w.size (by omega) h.2.2.2.2]
-      omega)
-
-/-- `pairGo` reading both ranges from a field array. -/
-def pairInputGo (a : @& Array KoalaBear.Fast.Field) (w : @& ByteArray) (count ia ib iw : Nat) :
-    ByteArray × ByteArray :=
-  if h : ia + 16 * count ≤ a.size ∧ ib + 16 * count ≤ a.size ∧
-      4 * (iw + 16 * count) ≤ w.size ∧ a.size < USize.size ∧ w.size < USize.size then
-    pairInputLoop a w count (USize.ofNatLT ia (by omega)) (USize.ofNatLT ib (by omega))
       (USize.ofNatLT iw (by omega)) 0 (zeroWords (16 * count)) (zeroWords (16 * count))
       (by simp only [USize.toNat_ofNatLT]; exact h)
   else (.empty, .empty)
@@ -319,24 +196,5 @@ def sliceChunks (tw : Array ByteArray) (logN : Nat) (slices : Array ByteArray) (
         left.bind (sync := true) fun lo ↦ right.map (sync := true) fun hi ↦ lo ++ hi
     else (splitChunks tw logN (joinSlices (4 * 2 ^ logN) slices) nInv normalize
       (depth + 1)).bind (sync := true) (postLeaves post)
-
-/-- The sliced task tree of a field array: the first level reads the field array directly. -/
-def sliceInputChunks (tw : Array ByteArray) (logN : Nat) (a : Array KoalaBear.Fast.Field)
-    (nInv : UInt32) (normalize : Bool) (P : Nat) (post : ByteArray → ByteArray)
-    (leaf : Nat → ByteArray → ByteArray) (depth : Nat) :
-    Task (Array ByteArray) :=
-  let half := 2 ^ (logN - 1)
-  if depth ≠ 0 ∧ 6 ≤ logN ∧ P ≠ 0 ∧ half % (16 * P) = 0 then
-    let w := tw.getD (logN - 1) .empty
-    let cs := half / P
-    let chunks := (Array.range P).map fun q ↦ Task.spawn fun _ ↦
-      pairInputGo a w (cs / 16) (q * cs) (half + q * cs) (q * cs)
-    (joinTasks chunks).bind (sync := true) fun rs ↦
-      let left := sliceChunks tw (logN - 1) (rs.map (·.1)) nInv normalize P post leaf
-        (depth - 1)
-      let right := sliceChunks tw (logN - 1) (rs.map (·.2)) nInv normalize P post leaf
-        (depth - 1)
-      left.bind (sync := true) fun lo ↦ right.map (sync := true) fun hi ↦ lo ++ hi
-  else (splitInputChunks tw logN a nInv normalize depth).bind (sync := true) (postLeaves post)
 
 end CompPoly.CPolynomial.NTTFast.Packed.Native

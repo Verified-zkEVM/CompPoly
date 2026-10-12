@@ -7,7 +7,7 @@ module
 
 import all CompPoly.Univariate.NTTFast.Correctness.Basic
 public import CompPoly.Univariate.NTTFast.Packed.StageSpec
-public import CompPoly.Univariate.NTTFast.Packed.InputRefinement
+public import CompPoly.Univariate.NTTFast.Packed.SplitRefinement
 
 /-! # Packed first-layer partitions refine the recursive DFT inputs -/
 
@@ -57,28 +57,6 @@ theorem Native.splitRight_correct (D : NTT.Domain KoalaBear.Fast.Field) (hlog : 
       (2 ^ (D.logN - 1)) = encode (splitFieldsRight D a) := by
   obtain ⟨ha, hw, hshape, htw⟩ := split_bounds D hlog tw a ht hs hu
   rw [getD_map_encode, Native.splitRight_encode a _ _ ha hw hshape htw]
-  unfold splitFieldsRight
-  apply congrArg encode
-  apply congrArg Array.ofFn
-  funext i
-  rw [top_twiddle_getD D hlog tw ht i.val i.isLt]
-
-/-- Fusing the initial boxed-array read preserves the even-point child's input. -/
-theorem Native.splitInputLeft_correct (D : NTT.Domain KoalaBear.Fast.Field) (hlog : 0 < D.logN)
-    (tw : Array (Array KoalaBear.Fast.Field)) (a : Array KoalaBear.Fast.Field)
-    (ht : TwiddlesFor D tw) (hs : a.size = D.n) (hu : 4 * D.n < USize.size) :
-    Native.splitInputLeft a (2 ^ (D.logN - 1)) = encode (splitFieldsLeft D a) := by
-  obtain ⟨ha, hw, hshape, htw⟩ := split_bounds D hlog tw a ht hs hu
-  exact Native.splitInputLeft_encode a _ ha hshape
-
-/-- Fusing the initial boxed-array read preserves the odd-point child's input. -/
-theorem Native.splitInputRight_correct (D : NTT.Domain KoalaBear.Fast.Field) (hlog : 0 < D.logN)
-    (tw : Array (Array KoalaBear.Fast.Field)) (a : Array KoalaBear.Fast.Field)
-    (ht : TwiddlesFor D tw) (hs : a.size = D.n) (hu : 4 * D.n < USize.size) :
-    Native.splitInputRight a ((tw.map encode).getD (D.logN - 1) ByteArray.empty)
-      (2 ^ (D.logN - 1)) = encode (splitFieldsRight D a) := by
-  obtain ⟨ha, hw, hshape, htw⟩ := split_bounds D hlog tw a ht hs hu
-  rw [getD_map_encode, Native.splitInputRight_encode a _ _ ha hshape hw htw]
   unfold splitFieldsRight
   apply congrArg encode
   apply congrArg Array.ofFn
