@@ -207,4 +207,72 @@ theorem inverseParallel_eq [Field R] [DecidableEq R] [PackedRepr R] (P : Natural
       simp only [permute_eq_map, Array.size_map, order_size, hn])]
     rfl
 
+/-- Parallel forward NTT of packed elements (`PackedRepr.encode`). Even sizes from `2 ^ 16`
+run the column transform directly on the packed buffer; other sizes unpack, run
+`forwardParallel` and pack. -/
+@[inline] def forwardPacked [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
+    (a : ByteArray) (logWorkers : Nat := 4) : ByteArray :=
+  if logWorkers ≠ 0 ∧
+      ColumnsShape R (a.size / PackedRepr.width R) P.plan.domain.logN then
+    Columns.transformPacked P.plan.twiddles P.plan.domain.logN
+      (columnCount P.plan.domain.logN logWorkers)
+      ((Parallel.forwardPasses P.plan.domain).drop 2) false 1 a
+  else Columns.encodeAll (P.forwardParallel (Columns.decodeAll a) logWorkers)
+
+/-- Parallel inverse NTT of packed elements, with the same shapes as `forwardPacked`. -/
+@[inline] def inversePacked [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
+    (a : ByteArray) (logWorkers : Nat := 4) : ByteArray :=
+  if ¬(logWorkers = 0 ∨ P.plan.inverseDomain.n ≠ P.plan.domain.n) ∧
+      ColumnsShape R (a.size / PackedRepr.width R) P.plan.domain.logN then
+    Columns.transformPacked P.plan.inverseTwiddles P.plan.domain.logN
+      (columnCount P.plan.domain.logN logWorkers)
+      ((Parallel.forwardPasses P.plan.inverseDomain).drop 2) true P.plan.nInv a
+  else Columns.encodeAll (P.inverseParallel (Columns.decodeAll a) logWorkers)
+
+private theorem shape_bounds [PackedRepr R] (n logN : Nat) (h : ColumnsShape R n logN) :
+    PackedRepr.width R * n < USize.size ∧
+      PackedRepr.width R * (16 * 2 ^ (logN - 4)) < USize.size ∧ 16 ∣ 2 ^ (logN - 4) := by
+  obtain ⟨hn, _, h16, _, hu⟩ := h
+  have hw := PackedRepr.width_pos (R := R)
+  have hp : 16 * 2 ^ (logN - 4) = 2 ^ logN := by
+    rw [show logN = 4 + (logN - 4) by omega, Nat.pow_add, Nat.add_sub_cancel_left]
+  have hlt : PackedRepr.width R * 2 ^ logN < PackedRepr.width R * (2 ^ logN + 256) :=
+    Nat.mul_lt_mul_of_pos_left (by omega) hw
+  refine ⟨by rw [hn]; omega, by rw [hp]; omega, ?_⟩
+  exact Nat.pow_dvd_pow 2 (show 4 ≤ logN - 4 by omega)
+
+/-- The packed parallel forward transform packs the proved scalar transform. -/
+theorem forwardPacked_eq [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
+    (a : Array R) (logWorkers : Nat) :
+    P.forwardPacked (PackedRepr.encode a) logWorkers = PackedRepr.encode (P.forward a) := by
+  have hdiv : (PackedRepr.encode a).size / PackedRepr.width R = a.size := by
+    rw [PackedRepr.size_encode, Nat.mul_div_cancel_left _ PackedRepr.width_pos]
+  unfold forwardPacked
+  rw [hdiv]
+  split
+  · rename_i h
+    obtain ⟨hw, hc⟩ := h
+    have hb := shape_bounds a.size _ hc
+    rw [Columns.transformPacked_encode _ _ _ _ _ _ _ hb.1 hb.2.1 hb.2.2, ← forwardParallel_eq P a]
+    unfold forwardParallel
+    rw [ite_eq_right_of_eq_false _ _ (eq_false hw), ite_eq_left_of_eq_true _ _ (eq_true hc)]
+  · rw [Columns.decodeAll_encode, Columns.encodeAll_eq, forwardParallel_eq]
+
+/-- The packed parallel inverse transform packs the proved scalar inverse. -/
+theorem inversePacked_eq [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
+    (a : Array R) (logWorkers : Nat) :
+    P.inversePacked (PackedRepr.encode a) logWorkers = PackedRepr.encode (P.inverse a) := by
+  have hdiv : (PackedRepr.encode a).size / PackedRepr.width R = a.size := by
+    rw [PackedRepr.size_encode, Nat.mul_div_cancel_left _ PackedRepr.width_pos]
+  unfold inversePacked
+  rw [hdiv]
+  split
+  · rename_i h
+    obtain ⟨hw, hc⟩ := h
+    have hb := shape_bounds a.size _ hc
+    rw [Columns.transformPacked_encode _ _ _ _ _ _ _ hb.1 hb.2.1 hb.2.2, ← inverseParallel_eq P a]
+    unfold inverseParallel
+    rw [ite_eq_right_of_eq_false _ _ (eq_false hw), ite_eq_left_of_eq_true _ _ (eq_true hc)]
+  · rw [Columns.decodeAll_encode, Columns.encodeAll_eq, inverseParallel_eq]
+
 end CompPoly.CPolynomial.NTTFast.NaturalPlan

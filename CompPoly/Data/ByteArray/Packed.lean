@@ -436,6 +436,39 @@ theorem get_setAt (b : ByteArray) (k : USize) (x : R) (hk) (hu) (j : Nat) :
       rw [Nat.mul_succ] at this
       omega
 
+/-- Overwrite element `k` of a buffer of `n` bytes when it is in range; otherwise leave the
+buffer unchanged. The machine-size bound is proved once for `n`, not checked per store. -/
+@[inline] def setIf (n : Nat) (hn : n < USize.size) (b : ByteArray) (k : USize) (x : R) :
+    ByteArray :=
+  if h : b.size = n ∧ k.toNat < b.size / width R then setAt b k x h.2 (h.1 ▸ hn) else b
+
+theorem setAt_encode (a : Array R) (k : USize) (x : R) (hk) (hu) :
+    setAt (encode a) k x hk hu =
+      encode (a.set k.toNat x (by rwa [size_encode, Nat.mul_div_cancel_left _ width_pos] at hk)) :=
+  write_encode a _ k.toNat x (slot_toNat k _ hk hu).1 _ _ _
+
+/-- A guarded store into packed elements is the guarded array store. -/
+theorem setIf_encode (a : Array R) (k : USize) (x : R) (hn : width R * a.size < USize.size) :
+    setIf (width R * a.size) hn (encode a) k x = encode (a.setIfInBounds k.toNat x) := by
+  unfold setIf
+  have hdiv : (encode a).size / width R = a.size := by
+    rw [size_encode, Nat.mul_div_cancel_left _ width_pos]
+  split
+  · rename_i h
+    rw [setAt_encode]
+    congr 1
+    simp only [Array.setIfInBounds, show k.toNat < a.size by rw [← hdiv]; exact h.2,
+      ↓reduceDIte]
+  · rename_i h
+    have hk : ¬ k.toNat < a.size := fun hk ↦ h ⟨size_encode a, by rw [hdiv]; exact hk⟩
+    simp only [Array.setIfInBounds, hk, ↓reduceDIte]
+
+theorem setIf_encode_of_eq (a : Array R) (k : USize) (x : R) (m : Nat) (hm : m < USize.size)
+    (h : width R * a.size = m) :
+    setIf m hm (encode a) k x = encode (a.setIfInBounds k.toNat x) := by
+  subst h
+  exact setIf_encode a k x hm
+
 /-- A zero-filled buffer of `n` slots. -/
 def alloc (R : Type u) [PackedRepr R] (n : Nat) : ByteArray := ByteArray.zeros (width R * n)
 
@@ -443,6 +476,59 @@ def alloc (R : Type u) [PackedRepr R] (n : Nat) : ByteArray := ByteArray.zeros (
 
 @[simp] theorem size_alloc_div (n : Nat) : (alloc R n).size / width R = n := by
   rw [size_alloc, Nat.mul_div_cancel_left _ width_pos]
+
+/-- `n` copies of `block` appended to `acc`, by binary doubling. -/
+def replicateGo (n : Nat) (block acc : ByteArray) : ByteArray :=
+  if n = 0 then acc
+  else replicateGo (n / 2) (block ++ block) (if n % 2 = 1 then acc ++ block else acc)
+termination_by n
+decreasing_by omega
+
+/-- `n` packed copies of `x`, filled by doubling copies of its bytes. -/
+def replicate (n : Nat) (x : R) : ByteArray :=
+  replicateGo n ⟨(toBytes x).toArray⟩ (ByteArray.emptyWithCapacity (width R * n))
+
+theorem replicateGo_encode (x : R) : ∀ (n m a : Nat),
+    replicateGo n (encode (Array.replicate m x)) (encode (Array.replicate a x)) =
+      encode (Array.replicate (a + n * m) x) := by
+  intro n
+  induction n using Nat.strongRecOn with
+  | _ n ih =>
+    intro m a
+    unfold replicateGo
+    split
+    · subst n; simp only [Nat.zero_mul, Nat.add_zero]
+    · rename_i hn
+      have hb : encode (Array.replicate m x) ++ encode (Array.replicate m x) =
+          encode (Array.replicate (m + m) x) := by
+        rw [← encode_append, Array.replicate_append_replicate]
+      have hacc : encode (Array.replicate a x) ++ encode (Array.replicate m x) =
+          encode (Array.replicate (a + m) x) := by
+        rw [← encode_append, Array.replicate_append_replicate]
+      rw [hb]
+      have hk : n = 2 * (n / 2) + n % 2 := (Nat.div_add_mod n 2).symm
+      generalize n / 2 = k at hk ih ⊢
+      split
+      · rename_i ho
+        rw [hacc, ih k (by omega)]
+        congr 2
+        rw [hk, ho]
+        simp only [Nat.add_mul, Nat.mul_add, Nat.mul_assoc, Nat.one_mul]
+        omega
+      · rename_i ho
+        rw [ih k (by omega)]
+        congr 2
+        rw [hk, show n % 2 = 0 by omega]
+        simp only [Nat.add_mul, Nat.mul_add, Nat.mul_assoc, Nat.zero_mul]
+        omega
+
+theorem replicate_eq (n : Nat) (x : R) : replicate n x = encode (Array.replicate n x) := by
+  have h1 : (⟨(toBytes x).toArray⟩ : ByteArray) = encode (Array.replicate 1 x) := by
+    apply ByteArray.ext
+    simp only [encode, Array.replicate_one, List.flatMap_cons, List.flatMap_nil,
+      List.append_nil, Vector.toList, Array.toArray_toList]
+  have h0 : ByteArray.emptyWithCapacity (width R * n) = encode (Array.replicate 0 x) := rfl
+  rw [replicate, h1, h0, replicateGo_encode, Nat.zero_add, Nat.mul_one]
 
 /-! ### Four-byte words -/
 

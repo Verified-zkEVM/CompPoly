@@ -51,7 +51,7 @@ def main (args : List String) : IO UInt32 := do
     let workers := ((← IO.getEnv "LEAN_NUM_THREADS").bind String.toNat?).getD 16
     if workers == 0 then throw <| IO.userError "LEAN_NUM_THREADS must be positive"
     let logWorkers := workers.log2
-    let variant := (← IO.getEnv "COMPPOLY_NTT_IMPL").getD "packed-io"
+    let variant := (← IO.getEnv "COMPPOLY_NTT_IMPL").getD "packed"
     let depth := ((← IO.getEnv "NTT_DEPTH").bind String.toNat?).getD
       (CPolynomial.NTTFast.Packed.Plan.defaultDepth logN)
     have h32 : domain.logN ≤ 32 := by
@@ -69,33 +69,29 @@ def main (args : List String) : IO UInt32 := do
         method := method, field := "koalabear",
         inputShape := s!"{n} elements",
         digestIterations := 2, digestClass := direction }
-    let fields (method : String)
-        (perform : Array KoalaBear.Fast.Field → Array KoalaBear.Fast.Field) :=
-      runTimedSpec (spec method "Array") .large
-        (fun i ↦ perform inputs[i % 2]!)
-        (checksumArray checksumKoalaBearFast)
-        (sink := arraySampleSink (fun x ↦ x.toNat.toUInt64))
+    -- Both plans take and return packed Montgomery words, like Plonky3's contiguous field
+    -- vectors; inputs are packed outside timing.
+    let words := inputs.map CPolynomial.NTTFast.Packed.Native.encodeFields
+    let word (b : ByteArray) (i : Nat) : UInt64 :=
+      (CPolynomial.NTTFast.Packed.Native.read b i).toUInt64
+    let packed (method : String) (perform : ByteArray → ByteArray) :=
+      runTimedSpec (spec method "ByteArray") .large
+        (fun i ↦ perform words[i % 2]!)
+        (fun b ↦ checksumArray checksumKoalaBearFast
+          (CPolynomial.NTTFast.Packed.Native.unpack b n))
+        (sink := fun b ↦ sinkStep (sinkStep (sinkStep (word b 0) (word b (n / 3)))
+          (word b (2 * n / 3))) (word b (n - 1)))
     let row ← match variant with
-      | "packed-io" =>
+      | "packed" =>
         let plan := CPolynomial.NTTFast.Packed.Plan.ofDomain domain h32 hu
-        -- Packed Montgomery words in and out, like Plonky3's contiguous field vectors.
-        let words := inputs.map CPolynomial.NTTFast.Packed.Native.encodeFields
-        let word (b : ByteArray) (i : Nat) : UInt64 :=
-          (CPolynomial.NTTFast.Packed.Native.read b i).toUInt64
-        runTimedSpec (spec "proved packed parallel radix-4, packed words in and out" "ByteArray")
-          .large
-          (fun i ↦ if direction == "forward" then plan.forwardPacked words[i % 2]! depth
-            else plan.inversePacked words[i % 2]! depth)
-          (fun b ↦ checksumArray checksumKoalaBearFast
-            (CPolynomial.NTTFast.Packed.Native.unpack b n))
-          (sink := fun b ↦ sinkStep (sinkStep (sinkStep (word b 0) (word b (n / 3)))
-            (word b (2 * n / 3))) (word b (n - 1)))
+        packed "proved packed parallel radix-4, ByteArray word accessors" fun b ↦
+          if direction == "forward" then plan.forwardPacked b depth else plan.inversePacked b depth
       | "externless" =>
         let plan := CPolynomial.NTTFast.NaturalPlan.ofDomain domain
-        fields "proved externless parallel radix-4" fun input ↦
-          if direction == "forward" then plan.forwardParallel input logWorkers
-          else plan.inverseParallel input logWorkers
-      | _ => throw <| IO.userError "COMPPOLY_NTT_IMPL must be packed-io or externless"
+        packed "proved externless parallel radix-4" fun b ↦
+          if direction == "forward" then plan.forwardPacked b logWorkers
+          else plan.inversePacked b logWorkers
+      | _ => throw <| IO.userError "COMPPOLY_NTT_IMPL must be packed or externless"
     let record : BenchRecord := { row with groupKey := s!"ntt-koalabear-{logN}-{direction}" }
     IO.println record.toJsonLine
     return 0

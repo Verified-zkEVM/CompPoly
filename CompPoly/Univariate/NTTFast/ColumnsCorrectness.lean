@@ -583,7 +583,7 @@ theorem columnTask_col [Field R] [DecidableEq R] (x : Array R) (tw : Array (Arra
   have hA := passA_col _ _ _ _ _ _ cs (2 ^ m) j0 hsx hx' hj hvx hv1 hv2
   have hB := passB_col _ _ _ _ _ _ cs (2 ^ m) j0 (by rw [size_stageBlocksDIF, hsx])
     (by rw [size_stageBlocksDIF, hx']) hj hA hv3 hv4
-  refine ⟨by simp only [columnTask, size_stageBlocksDIF, hsx], ?_⟩
+  refine ⟨by simp only [columnTask, columnPasses, size_stageBlocksDIF, hsx], ?_⟩
   have e1 : m + 4 - 2 = m + 2 := by omega
   have e2 : m + 4 - 4 = m := by omega
   have hq1 : 2 ^ (m + 2) = 4 * 2 ^ m := by rw [hp]; rfl
@@ -594,7 +594,7 @@ theorem columnTask_col [Field R] [DecidableEq R] (x : Array R) (tw : Array (Arra
     exact Nat.mul_div_cancel _ (by omega)
   unfold topPasses
   rw [e1, e2]
-  unfold columnTask Parallel.step
+  unfold columnTask columnPasses Parallel.step
   simp only [Bool.false_eq_true, ↓reduceIte, size_stageBlocksDIF]
   rw [hd2, hd1, show m + 2 + 1 = m + 4 - 1 by omega, show m + 1 = m + 4 - 3 by omega,
     show m + 4 - 2 = m + 2 by omega, show m + 4 - 4 = m by omega, hq1]
@@ -705,8 +705,8 @@ theorem assembleGo_spec [Zero α] [PackedRepr α] (r : Array ByteArray) (M : USi
     (hb : ∀ l (h : l < 16), 16 * l + M.toNat ≤ (r[l]'(by omega)).size / PackedRepr.width α ∧
       (r[l]'(by omega)).size < USize.size) (hM : 16 * M.toNat < USize.size) :
     ∀ (n : Nat) (q : USize) (out : Array α), M.toNat - q.toNat = n → out.size = 16 * M.toNat →
-      (assembleGo r M hr hb q out).size = 16 * M.toNat ∧
-      ∀ k, (assembleGo r M hr hb q out).getD k 0 =
+      (assembleGo setW r M hr hb q out).size = 16 * M.toNat ∧
+      ∀ k, (assembleGo setW r M hr hb q out).getD k 0 =
         if 16 * q.toNat ≤ k ∧ k < 16 * M.toNat then
           (PackedRepr.get (r.getD (NTT.Transform.bitRevNat 4 (k % 16))
             ByteArray.empty) (16 * NTT.Transform.bitRevNat 4 (k % 16) + k / 16) : α)
@@ -855,9 +855,6 @@ theorem getD_map_range (F : Nat → α) (n k : Nat) (hk : k < n) (d : α) :
   simp only [Array.getD_eq_getD_getElem?, Array.getElem?_map, Array.getElem?_range, hk,
     ↓reduceIte, Option.map_some, Option.getD_some]
 
-
-
-
 /-- The column-parallel transform: the top two passes, the remaining passes on every block, and
 the bit-reversal permutation, optionally scaled. -/
 theorem transform_eq [Field R] [DecidableEq R] [PackedRepr R] (tw : Array (Array R)) (logN S : Nat)
@@ -981,7 +978,7 @@ theorem transform_eq [Field R] [DecidableEq R] [PackedRepr R] (tw : Array (Array
       have hl' := List.mem_range.mp hl
       rw [hrg l hl', (hL l hl').1]
       exact decide_eq_true ⟨by rw [Nat.mul_div_cancel_left _ hw], hmono _ (by omega)⟩
-  change assemble r (2 ^ m) (Array.replicate (16 * 2 ^ m) 0) = _
+  change assemble setW r (2 ^ m) (Array.replicate (16 * 2 ^ m) 0) = _
   unfold assemble
   rw [dite_eq_left_of_eq_true (eq_true hMu), dite_eq_left_of_eq_true (eq_true hr16),
     dite_eq_left_of_eq_true (eq_true hall)]
@@ -1002,5 +999,379 @@ theorem transform_eq [Field R] [DecidableEq R] [PackedRepr R] (tw : Array (Array
     rw [hc, Nat.mul_comm (2 ^ m)]
   · rw [getD_of_size_le _ _ (by rw [has]; omega),
       getD_of_size_le _ _ (by rw [Array.size_ofFn, hp]; omega)]
+
+/-! ### Packed input and output -/
+
+theorem setW_eq (a : Array α) (i : USize) (v : α) (hu : a.size < USize.size) :
+    setW a i v = a.setIfInBounds i.toNat v := by
+  have hus : a.usize.toNat = a.size := by
+    simp only [Array.usize, Nat.toUSize, USize.toNat_ofNat']
+    exact Nat.mod_eq_of_lt hu
+  unfold setW
+  split
+  · rename_i h
+    have hi : i.toNat < a.size := by rw [← hus]; exact USize.lt_iff_toNat_lt.mp h
+    simp only [Array.uset, Array.setIfInBounds, hi, ↓reduceDIte]
+  · rename_i h
+    have hi : ¬ i.toNat < a.size := fun h' ↦ h (USize.lt_iff_toNat_lt.mpr (by rw [hus]; exact h'))
+    simp only [Array.setIfInBounds, hi, ↓reduceDIte]
+
+theorem setIf_encode_setW [PackedRepr α] (a : Array α) (i : USize) (v : α)
+    (hu : PackedRepr.width α * a.size < USize.size) :
+    PackedRepr.setIf _ hu (PackedRepr.encode a) i v = PackedRepr.encode (setW a i v) := by
+  rw [PackedRepr.setIf_encode _ _ _ hu, setW_eq _ _ _
+    (Nat.lt_of_le_of_lt (Nat.le_mul_of_pos_left _ PackedRepr.width_pos) hu)]
+
+theorem setIf_encode_setW_of_eq [PackedRepr α] (a : Array α) (i : USize) (v : α) (m : Nat)
+    (hm : m < USize.size) (hu : PackedRepr.width α * a.size = m) :
+    PackedRepr.setIf m hm (PackedRepr.encode a) i v = PackedRepr.encode (setW a i v) := by
+  subst hu
+  exact setIf_encode_setW a i v hm
+
+/-- Two interleave runs whose stores preserve a relation on every index they store at keep
+the relation. -/
+theorem assembleGo_rel [PackedRepr α] {β₁ β₂ : Type*} (set₁ : β₁ → USize → α → β₁)
+    (set₂ : β₂ → USize → α → β₂) (Rel : β₁ → β₂ → Prop) (r : Array ByteArray) (M : USize)
+    (hr : r.size = 16) (hb) (lo : Nat) (hM : 16 * M.toNat < USize.size)
+    (hstep : ∀ b₁ b₂ (i : USize) v, lo ≤ i.toNat → i.toNat < 16 * M.toNat → Rel b₁ b₂ →
+      Rel (set₁ b₁ i v) (set₂ b₂ i v)) :
+    ∀ (n : Nat) (q : USize) b₁ b₂, M.toNat - q.toNat = n → lo ≤ 16 * q.toNat → Rel b₁ b₂ →
+      Rel (assembleGo set₁ r M hr hb q b₁) (assembleGo set₂ r M hr hb q b₂) := by
+  intro n
+  induction n with
+  | zero =>
+    intro q b₁ b₂ hn _ hR
+    have hnot : ¬q < M := by rw [USize.lt_iff_toNat_lt]; omega
+    rw [assembleGo, assembleGo]
+    simp only [hnot, ↓reduceDIte]
+    exact hR
+  | succ n ih =>
+    intro q b₁ b₂ hn hlo hR
+    have hq : q < M := by rw [USize.lt_iff_toNat_lt]; omega
+    have hqM : q.toNat < M.toNat := hq
+    have hq1 : (q + 1).toNat = q.toNat + 1 := Plan.usize_add_one q (by omega)
+    have hrow (c : USize) (hc : c.toNat < 16) : (16 * q + c).toNat = 16 * q.toNat + c.toNat :=
+      toNat_rowIndex q c (16 * M.toNat) hc (by omega) hM
+    have hrow0 : (16 * q).toNat = 16 * q.toNat := by
+      simpa only [USize.add_zero, USize.reduceToNat, Nat.add_zero] using
+        hrow 0 (by simp only [USize.reduceToNat]; omega)
+    rw [assembleGo, assembleGo]
+    simp only [hq, ↓reduceDIte]
+    apply ih (q + 1) _ _ (by rw [hq1]; omega) (by rw [hq1]; omega)
+    repeat' (refine hstep _ _ _ _ ?_ ?_ ?_)
+    all_goals first
+      | exact hR
+      | (rw [hrow0]; omega)
+      | (rw [hrow _ (by simp only [USize.reduceToNat]; omega)]; simp only [USize.reduceToNat]
+         omega)
+
+theorem setW_extract (F : Array α) (i d : USize) (e : Nat) (v : α) (hF : F.size = e)
+    (he : e < USize.size) (hd : d.toNat ≤ i.toNat) (hi : i.toNat < e) :
+    (setW F i v).extract d.toNat e = setW (F.extract d.toNat e) (i - d) v := by
+  have hs : (F.extract d.toNat e).size < USize.size := by
+    rw [Array.size_extract]; omega
+  rw [setW_eq _ _ _ (by omega), setW_eq _ _ _ hs, USize.toNat_sub_of_le _ _
+    (USize.le_iff_toNat_le.mpr hd)]
+  apply Array.ext
+  · simp only [Array.size_extract, Array.size_setIfInBounds]
+  · intro j h1 h2
+    simp only [Array.size_extract, Array.size_setIfInBounds] at h1 h2
+    simp only [Array.getElem_extract, Array.getElem_setIfInBounds (show d.toNat + j < F.size by
+      omega), Array.getElem_setIfInBounds (show j < (F.extract d.toNat e).size by
+        rw [Array.size_extract]; omega)]
+    split <;> split <;> first | rfl | omega
+
+/-- Decoding a range of packed elements is copying the range of the elements. -/
+theorem decodeRange_encode [Zero α] [PackedRepr α] (xs : Array α) (si : Nat) (dst : Array α)
+    (di cnt : Nat) (hx : PackedRepr.width α * xs.size < USize.size) :
+    decodeRange (PackedRepr.encode xs) si dst di cnt = copyRange xs si dst di cnt := by
+  have hdiv : (PackedRepr.encode xs).size / PackedRepr.width α = xs.size := by
+    rw [PackedRepr.size_encode, Nat.mul_div_cancel_left _ PackedRepr.width_pos]
+  have hxs : xs.size < USize.size :=
+    Nat.lt_of_le_of_lt (Nat.le_mul_of_pos_left _ PackedRepr.width_pos) hx
+  by_cases h : si + cnt ≤ xs.size ∧ di + cnt ≤ dst.size ∧ dst.size < USize.size
+  · apply Packed.array_eq_of_getD _ _ 0 (by rw [size_decodeRange, size_copyRange])
+    intro i
+    rw [decodeRange_getD _ _ _ _ _ ⟨by rw [hdiv]; exact h.1, h.2.1,
+        by rw [PackedRepr.size_encode]; exact hx, h.2.2⟩,
+      copyRange_getD _ _ _ _ _ _ ⟨h.1, h.2.1, hxs, h.2.2⟩]
+    split
+    · rw [PackedRepr.get_encode _ _ (by omega), Array.getD_eq_getD_getElem?,
+        Array.getElem?_eq_getElem (by omega), Option.getD_some]
+    · rfl
+  · have h1 : decodeRange (PackedRepr.encode xs) si dst di cnt = dst := by
+      unfold decodeRange
+      rw [dite_eq_right_iff.mpr (fun hc ↦ absurd ⟨by rw [← hdiv]; exact hc.1, hc.2.1,
+        hc.2.2.2⟩ h)]
+    have h2 : copyRange xs si dst di cnt = dst := by
+      unfold copyRange
+      rw [dite_eq_right_iff.mpr (fun hc ↦ absurd ⟨hc.1, hc.2.1, hc.2.2.2⟩ h)]
+    rw [h1, h2]
+
+theorem gatherRowsPacked_encode [Zero α] [PackedRepr α] (xs : Array α) (M j0 cs r : Nat)
+    (hx : PackedRepr.width α * xs.size < USize.size) :
+    gatherRowsPacked (PackedRepr.encode xs) M j0 cs r = gatherRows xs M j0 cs r := by
+  simp only [gatherRowsPacked, gatherRows, decodeRange_encode _ _ _ _ _ hx]
+
+/-- `setW` at index `i - d`. -/
+def setWOff (d : USize) (a : Array α) (i : USize) (v : α) : Array α := setW a (i - d) v
+
+@[simp] theorem size_assembleGo_setW [PackedRepr α] (r : Array ByteArray) (M : USize) (hr hb) :
+    ∀ (n : Nat) (q : USize) (out : Array α), M.toNat - q.toNat = n →
+      (assembleGo setW r M hr hb q out).size = out.size := by
+  intro n
+  induction n with
+  | zero =>
+    intro q out hn
+    have hnot : ¬q < M := by rw [USize.lt_iff_toNat_lt]; omega
+    rw [assembleGo]
+    simp only [hnot, ↓reduceDIte]
+  | succ n ih =>
+    intro q out hn
+    have hq : q < M := by rw [USize.lt_iff_toNat_lt]; omega
+    have hq1 : (q + 1).toNat = q.toNat + 1 := Plan.usize_add_one q (by
+      have := M.toNat_lt_size; omega)
+    rw [assembleGo]
+    simp only [hq, ↓reduceDIte]
+    rw [ih (q + 1) _ (by rw [hq1]; omega)]
+    simp only [size_setW]
+
+theorem size_assemble_setW [PackedRepr α] (r : Array ByteArray) (M : Nat) (out : Array α) :
+    (assemble setW r M out).size = out.size := by
+  unfold assemble
+  split_ifs
+  · exact size_assembleGo_setW _ _ _ _ _ 0 _ rfl
+  all_goals rfl
+
+/-- A chunk run with offset packed stores is the packed slice of the global array run. -/
+theorem assembleGo_chunk [Zero α] [PackedRepr α] (r : Array ByteArray) (M : USize) (hr hb)
+    (q : USize) (q0 K : Nat) (hq0 : q.toNat = q0) (hK : M.toNat = q0 + K)
+    (hm : PackedRepr.width α * (16 * K) < USize.size) (hMU : 16 * M.toNat < USize.size) :
+    assembleGo (fun b i v ↦ PackedRepr.setIf (R := α) _ hm b (i - (16 * q0).toUSize) v)
+        r M hr hb q (PackedRepr.encode (Array.replicate (16 * K) (0 : α))) =
+      PackedRepr.encode ((assembleGo setW r M hr hb q
+        (Array.replicate (16 * M.toNat) (0 : α))).extract (16 * q0) (16 * M.toNat)) := by
+  have hd : ((16 * q0).toUSize : USize).toNat = 16 * q0 :=
+    USize.toNat_ofNat_of_lt' (by omega)
+  have e1 := assembleGo_rel (fun b i v ↦ setWOff (16 * q0).toUSize b i v)
+    (fun b i v ↦ PackedRepr.setIf (R := α) _ hm b (i - (16 * q0).toUSize) v)
+    (fun (b₁ : Array α) b₂ ↦ b₂ = PackedRepr.encode b₁ ∧
+      PackedRepr.width α * b₁.size = PackedRepr.width α * (16 * K))
+    r M hr hb 0 hMU
+    (fun b₁ b₂ i v _ _ hR ↦ by
+      obtain ⟨rfl, hs⟩ := hR
+      refine ⟨?_, by simp only [setWOff, size_setW]; exact hs⟩
+      exact setIf_encode_setW_of_eq _ _ _ _ _ hs)
+    _ q (Array.replicate (16 * K) 0) _ rfl (Nat.zero_le _)
+    ⟨rfl, by rw [Array.size_replicate]⟩
+  rw [e1.1]
+  congr 1
+  have e2 := assembleGo_rel setW (fun b i v ↦ setWOff (16 * q0).toUSize b i v)
+    (fun (F : Array α) S ↦ S = F.extract (16 * q0) (16 * M.toNat) ∧ F.size = 16 * M.toNat)
+    r M hr hb (16 * q0) hMU
+    (fun F S i v hlo hhi hR ↦ by
+      obtain ⟨rfl, hs⟩ := hR
+      refine ⟨?_, by simp only [size_setW]; exact hs⟩
+      have := setW_extract F i (16 * q0).toUSize (16 * M.toNat) v hs hMU
+        (by rw [hd]; exact hlo) hhi
+      rw [hd] at this
+      exact this.symm)
+    _ q (Array.replicate (16 * M.toNat) 0) (Array.replicate (16 * K) 0) rfl (by rw [hq0])
+    ⟨by rw [Array.extract_replicate, show min (16 * M.toNat) (16 * M.toNat) - 16 * q0 = 16 * K
+      by omega], by rw [Array.size_replicate]⟩
+  exact e2.1
+
+/-- One interleave chunk is the packed slice of the whole interleave. -/
+theorem assembleChunk_eq [Zero α] [PackedRepr α] (r : Array ByteArray) (M q0 K : Nat)
+    (hq : q0 + K ≤ M) (hm : PackedRepr.width α * (16 * M) < USize.size) :
+    assembleChunk (α := α) r M q0 K = PackedRepr.encode
+      ((assemble setW r M (Array.replicate (16 * M) (0 : α))).extract (16 * q0)
+        (16 * (q0 + K))) := by
+  have hw := PackedRepr.width_pos (R := α)
+  have hmK : PackedRepr.width α * (16 * K) < USize.size :=
+    Nat.lt_of_le_of_lt (Nat.mul_le_mul_left _ (by omega)) hm
+  have hMU : 16 * M < USize.size := Nat.lt_of_le_of_lt (Nat.le_mul_of_pos_left _ hw) hm
+  have hrep : ((Array.replicate (16 * M) (0 : α)).extract (16 * q0) (16 * (q0 + K))) =
+      Array.replicate (16 * K) 0 := by
+    rw [Array.extract_replicate]; congr 1; omega
+  unfold assembleChunk
+  simp only [dite_eq_left_of_eq_true (eq_true hmK), PackedRepr.replicate_eq]
+  unfold assembleRows assemble
+  by_cases hg : M < USize.size ∧ r.size = 16
+  · obtain ⟨hM, hr⟩ := hg
+    have hg' : q0 ≤ q0 + K ∧ q0 + K ≤ M ∧ M < USize.size ∧ r.size = 16 :=
+      ⟨by omega, hq, hM, hr⟩
+    rw [dite_eq_left_of_eq_true (eq_true hg'), dite_eq_left_of_eq_true (eq_true hM),
+      dite_eq_left_of_eq_true (eq_true hr)]
+    split
+    · rw [assembleGo_chunk r _ hr _ _ q0 K rfl rfl hmK (by simp only [USize.toNat_ofNatLT]; omega)]
+      congr 1
+      simp only [USize.toNat_ofNatLT]
+      -- both runs store the same entries on the slice
+      apply Packed.array_eq_of_getD _ _ 0 (by
+        simp only [Array.size_extract, size_assembleGo_setW _ _ _ _ _ _ _ rfl,
+          Array.size_replicate]; omega)
+      intro j
+      by_cases hj : j < 16 * K
+      · rw [getD_extract _ _ _ _ (by omega) (by
+            rw [size_assembleGo_setW _ _ _ _ _ _ _ rfl, Array.size_replicate]),
+          getD_extract _ _ _ _ (by omega) (by
+            rw [size_assembleGo_setW _ _ _ _ _ _ _ rfl, Array.size_replicate]; omega),
+          (assembleGo_spec (α := α) r _ hr _ ?h1 _ _ _ rfl ?h2).2,
+          (assembleGo_spec (α := α) r _ hr _ ?h3 _ _ _ rfl ?h4).2]
+        · simp only [USize.toNat_zero, USize.toNat_ofNatLT, Nat.mul_zero]
+          rw [ite_eq_left_of_eq_true _ _ (eq_true ⟨by omega, by omega⟩),
+            ite_eq_left_of_eq_true _ _ (eq_true ⟨by omega, by omega⟩)]
+        all_goals simp only [USize.toNat_ofNatLT, Array.size_replicate]
+        all_goals omega
+      · rw [getD_of_size_le _ _ (by
+            simp only [Array.size_extract, size_assembleGo_setW _ _ _ _ _ _ _ rfl,
+              Array.size_replicate]; omega),
+          getD_of_size_le _ _ (by
+            simp only [Array.size_extract, size_assembleGo_setW _ _ _ _ _ _ _ rfl,
+              Array.size_replicate]; omega)]
+    · rw [hrep]
+  · rw [dite_eq_right_of_eq_false (eq_false (fun h ↦ hg ⟨h.2.2.1, h.2.2.2⟩))]
+    by_cases hM : M < USize.size
+    · rw [dite_eq_left_of_eq_true (eq_true hM),
+        dite_eq_right_of_eq_false (eq_false (fun h ↦ hg ⟨hM, h⟩)), hrep]
+    · rw [dite_eq_right_of_eq_false (eq_false hM), hrep]
+
+theorem foldl_chunks [PackedRepr α] (A : Array α) (K : Nat) (init : ByteArray)
+    (f : Nat → ByteArray) : ∀ n, (∀ c < n, f c =
+      PackedRepr.encode (A.extract (16 * (c * K)) (16 * (c * K + K)))) →
+      (List.range n).foldl (fun acc c ↦ acc ++ f c) init =
+        init ++ PackedRepr.encode (A.extract 0 (16 * (n * K))) := by
+  intro n
+  induction n with
+  | zero =>
+    intro _
+    simp only [List.range_zero, List.foldl_nil, Nat.zero_mul, Nat.mul_zero]
+    rw [Array.extract_eq_empty_of_le (by omega), PackedRepr.encode_empty,
+      ByteArray.append_empty]
+  | succ n ih =>
+    intro hf
+    rw [List.range_succ, List.foldl_append, ih (fun c hc ↦ hf c (by omega)), List.foldl_cons,
+      List.foldl_nil, hf n (by omega), ByteArray.append_assoc, ← PackedRepr.encode_append,
+      Array.extract_append_extract, Nat.min_eq_left (Nat.zero_le _),
+      Nat.max_eq_right (by omega), show 16 * (n * K + K) = 16 * ((n + 1) * K) by ring]
+
+theorem get_bind_spawn (L : Array (Task ByteArray)) (g : Array ByteArray → ByteArray) :
+    ((joinTasks L).bind fun r ↦ Task.spawn fun _ ↦ g r).get = g (L.map Task.get) := by
+  change g (joinTasks L).get = _
+  rw [joinTasks_get]
+
+/-- Joining the sixteen interleave chunks packs the whole interleave. -/
+theorem foldl_assembleChunk [Zero α] [PackedRepr α] (LS : Array ByteArray) (K : Nat)
+    (ho : PackedRepr.width α * (16 * (16 * K)) < USize.size) :
+    ((Array.range 16).map fun c ↦ assembleChunk (α := α) LS (16 * K) (c * (16 * K / 16))
+        (16 * K / 16)).foldl (· ++ ·) (ByteArray.emptyWithCapacity
+          (PackedRepr.width α * (16 * (16 * K)))) =
+      PackedRepr.encode (assemble setW LS (16 * K) (Array.replicate (16 * (16 * K)) (0 : α))) := by
+  rw [show 16 * K / 16 = K by omega, Array.foldl_map, ← Array.foldl_toList, Array.toList_range,
+    foldl_chunks (assemble setW LS (16 * K) (Array.replicate (16 * (16 * K)) (0 : α)))
+      K _ _ 16 (fun c hc ↦ assembleChunk_eq _ _ _ _ (by
+        have := Nat.mul_le_mul_right K (show c + 1 ≤ 16 by omega)
+        rw [Nat.succ_mul] at this; exact this) ho)]
+  rw [show ByteArray.emptyWithCapacity (PackedRepr.width α * (16 * (16 * K))) =
+      ByteArray.empty from rfl, ByteArray.empty_append]
+  congr 1
+  exact Array.extract_eq_self_of_le (by rw [size_assemble_setW, Array.size_replicate])
+
+/-- The packed transform of packed elements is the packed array transform. -/
+theorem transformPacked_encode [Field R] [DecidableEq R] [PackedRepr R] (tw : Array (Array R))
+    (logN S : Nat) (rest : List Nat) (scale : Bool) (f : R) (xs : Array R)
+    (hx : PackedRepr.width R * xs.size < USize.size)
+    (ho : PackedRepr.width R * (16 * 2 ^ (logN - 4)) < USize.size)
+    (h16 : 16 ∣ 2 ^ (logN - 4)) :
+    transformPacked tw logN S rest scale f (PackedRepr.encode xs) =
+      PackedRepr.encode (transform tw logN S rest scale f xs) := by
+  unfold transformPacked transform
+  simp only [gatherRowsPacked_encode _ _ _ _ _ hx, columnTask, Array.map_map,
+    Function.comp_def, get_bind_spawn]
+  generalize 2 ^ (logN - 4) = M at ho h16 ⊢
+  obtain ⟨K, rfl⟩ := h16
+  exact foldl_assembleChunk _ K ho
+
+theorem decodeRange_all [Zero α] [PackedRepr α] (xs : Array α)
+    (hx : PackedRepr.width α * xs.size < USize.size) :
+    decodeRange (PackedRepr.encode xs) 0
+      (Array.replicate ((PackedRepr.encode xs).size / PackedRepr.width α) 0) 0
+      ((PackedRepr.encode xs).size / PackedRepr.width α) = xs := by
+  have hdiv : (PackedRepr.encode xs).size / PackedRepr.width α = xs.size := by
+    rw [PackedRepr.size_encode, Nat.mul_div_cancel_left _ PackedRepr.width_pos]
+  have hxs : xs.size < USize.size :=
+    Nat.lt_of_le_of_lt (Nat.le_mul_of_pos_left _ PackedRepr.width_pos) hx
+  rw [hdiv, decodeRange_encode _ _ _ _ _ hx]
+  apply Packed.array_eq_of_getD _ _ 0 (by rw [size_copyRange, Array.size_replicate])
+  intro i
+  rw [copyRange_getD xs 0 (Array.replicate xs.size 0) 0 xs.size 0 ⟨by omega,
+    by rw [Array.size_replicate]; omega, hxs, by rw [Array.size_replicate]; exact hxs⟩]
+  split
+  · simp only [Nat.zero_add, Nat.sub_zero]
+  · rename_i h
+    rw [getD_of_size_le _ _ (by rw [Array.size_replicate]; omega),
+      getD_of_size_le _ _ (by omega)]
+
+/-- Decoding all slots of packed elements. -/
+theorem decodeAll_encode [Zero α] [PackedRepr α] (xs : Array α) :
+    decodeAll (PackedRepr.encode xs) = xs := by
+  unfold decodeAll
+  split
+  · rename_i hx
+    rw [PackedRepr.size_encode] at hx
+    exact decodeRange_all xs hx
+  · exact PackedRepr.decode_encode xs
+
+theorem encodeAllGo_encode [Zero α] [PackedRepr α] (a : Array α)
+    (hu : PackedRepr.width α * a.size < USize.size) :
+    ∀ (n i : Nat) (B : Array α), B.size = a.size → i + n = a.size →
+      encodeAllGo a _ hu n i (PackedRepr.encode B) =
+        PackedRepr.encode (B.extract 0 i ++ a.extract i a.size) := by
+  intro n
+  induction n with
+  | zero =>
+    intro i B hB hi
+    simp only [encodeAllGo, Nat.add_zero] at hi ⊢
+    have e1 : a.extract a.size a.size = #[] := Array.extract_eq_empty_of_le (by omega)
+    have e2 : B.extract 0 a.size = B := by rw [← hB, Array.extract_size]
+    rw [hi, e1, e2, Array.append_empty]
+  | succ n ih =>
+    intro i B hB hi
+    have hiu : i < USize.size := Nat.lt_of_lt_of_le (by omega)
+      (Nat.le_of_lt (Nat.lt_of_le_of_lt (Nat.le_mul_of_pos_left _ PackedRepr.width_pos) hu))
+    rw [encodeAllGo, PackedRepr.setIf_encode_of_eq _ _ _ _ _ (by rw [hB]),
+      USize.toNat_ofNat_of_lt' hiu,
+      ih (i + 1) _ (by simp only [Array.size_setIfInBounds, hB]) (by omega)]
+    congr 1
+    apply Array.ext
+    · simp only [Array.size_append, Array.size_extract, Array.size_setIfInBounds]
+      omega
+    · intro j h1 h2
+      simp only [Array.getElem_append, Array.getElem_extract, Array.size_extract,
+        Array.size_setIfInBounds, Nat.zero_add, Nat.sub_zero]
+      split_ifs with ha hb hb
+      · rw [Array.getElem_setIfInBounds (by omega)]
+        split
+        · omega
+        · rfl
+      · rw [Array.getElem_setIfInBounds (by omega)]
+        split
+        · rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem (by omega),
+            Option.getD_some]
+          simp only [show i + (j - min i B.size) = i by omega]
+        · omega
+      · omega
+      · simp only [show i + 1 + (j - min (i + 1) B.size) = i + (j - min i B.size) by omega]
+
+/-- The fast encoder packs every element. -/
+theorem encodeAll_eq [Zero α] [PackedRepr α] (a : Array α) :
+    encodeAll a = PackedRepr.encode a := by
+  unfold encodeAll
+  split
+  · rename_i hu
+    rw [PackedRepr.replicate_eq, encodeAllGo_encode a hu _ 0 _ Array.size_replicate (by omega)]
+    simp only [Array.extract_zero, Array.empty_append, Array.extract_size]
+  · rfl
 
 end CompPoly.CPolynomial.NTTFast.Columns
