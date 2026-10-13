@@ -17,6 +17,7 @@ public import CompPoly.Univariate.NTTFast.Packed.Radix2Refinement
 public import CompPoly.Univariate.NTTFast.Packed.NativeOrderCorrectness
 import all CompPoly.Univariate.NTTFast.Packed.NativeOrder
 import all CompPoly.Univariate.NTTFast.Packed.Native
+import CompPoly.Univariate.NTTFast.Packed.Unrolled
 
 /-! # Correctness of the fused final leaf layers
 
@@ -71,99 +72,7 @@ def FieldLine.get (y : FieldLine) : Nat → KoalaBear.Fast.Field
 /-- The four final DIF layers of the block at `i`, as in `leaf16Field`. -/
 def laneLine (t3 t2 t1 : Array KoalaBear.Fast.Field) (i : USize)
     (b : Array KoalaBear.Fast.Field) : FieldLine :=
-  let x0_0 := readField b i 0
-  let x0_1 := readField b i 1
-  let x0_2 := readField b i 2
-  let x0_3 := readField b i 3
-  let x0_4 := readField b i 4
-  let x0_5 := readField b i 5
-  let x0_6 := readField b i 6
-  let x0_7 := readField b i 7
-  let x0_8 := readField b i 8
-  let x0_9 := readField b i 9
-  let x0_10 := readField b i 10
-  let x0_11 := readField b i 11
-  let x0_12 := readField b i 12
-  let x0_13 := readField b i 13
-  let x0_14 := readField b i 14
-  let x0_15 := readField b i 15
-  let w0_1 := readField t3 0 1
-  let w0_2 := readField t3 0 2
-  let w0_3 := readField t3 0 3
-  let w0_4 := readField t3 0 4
-  let w0_5 := readField t3 0 5
-  let w0_6 := readField t3 0 6
-  let w0_7 := readField t3 0 7
-  let x1_0 := fieldAdd x0_0 x0_8
-  let x1_8 := fieldSub x0_0 x0_8
-  let x1_1 := fieldAdd x0_1 x0_9
-  let x1_9 := fieldMul w0_1 (fieldSub x0_1 x0_9)
-  let x1_2 := fieldAdd x0_2 x0_10
-  let x1_10 := fieldMul w0_2 (fieldSub x0_2 x0_10)
-  let x1_3 := fieldAdd x0_3 x0_11
-  let x1_11 := fieldMul w0_3 (fieldSub x0_3 x0_11)
-  let x1_4 := fieldAdd x0_4 x0_12
-  let x1_12 := fieldMul w0_4 (fieldSub x0_4 x0_12)
-  let x1_5 := fieldAdd x0_5 x0_13
-  let x1_13 := fieldMul w0_5 (fieldSub x0_5 x0_13)
-  let x1_6 := fieldAdd x0_6 x0_14
-  let x1_14 := fieldMul w0_6 (fieldSub x0_6 x0_14)
-  let x1_7 := fieldAdd x0_7 x0_15
-  let x1_15 := fieldMul w0_7 (fieldSub x0_7 x0_15)
-  let w1_1 := readField t2 0 1
-  let w1_2 := readField t2 0 2
-  let w1_3 := readField t2 0 3
-  let x2_0 := fieldAdd x1_0 x1_4
-  let x2_4 := fieldSub x1_0 x1_4
-  let x2_1 := fieldAdd x1_1 x1_5
-  let x2_5 := fieldMul w1_1 (fieldSub x1_1 x1_5)
-  let x2_2 := fieldAdd x1_2 x1_6
-  let x2_6 := fieldMul w1_2 (fieldSub x1_2 x1_6)
-  let x2_3 := fieldAdd x1_3 x1_7
-  let x2_7 := fieldMul w1_3 (fieldSub x1_3 x1_7)
-  let x2_8 := fieldAdd x1_8 x1_12
-  let x2_12 := fieldSub x1_8 x1_12
-  let x2_9 := fieldAdd x1_9 x1_13
-  let x2_13 := fieldMul w1_1 (fieldSub x1_9 x1_13)
-  let x2_10 := fieldAdd x1_10 x1_14
-  let x2_14 := fieldMul w1_2 (fieldSub x1_10 x1_14)
-  let x2_11 := fieldAdd x1_11 x1_15
-  let x2_15 := fieldMul w1_3 (fieldSub x1_11 x1_15)
-  let w2_1 := readField t1 0 1
-  let x3_0 := fieldAdd x2_0 x2_2
-  let x3_2 := fieldSub x2_0 x2_2
-  let x3_1 := fieldAdd x2_1 x2_3
-  let x3_3 := fieldMul w2_1 (fieldSub x2_1 x2_3)
-  let x3_4 := fieldAdd x2_4 x2_6
-  let x3_6 := fieldSub x2_4 x2_6
-  let x3_5 := fieldAdd x2_5 x2_7
-  let x3_7 := fieldMul w2_1 (fieldSub x2_5 x2_7)
-  let x3_8 := fieldAdd x2_8 x2_10
-  let x3_10 := fieldSub x2_8 x2_10
-  let x3_9 := fieldAdd x2_9 x2_11
-  let x3_11 := fieldMul w2_1 (fieldSub x2_9 x2_11)
-  let x3_12 := fieldAdd x2_12 x2_14
-  let x3_14 := fieldSub x2_12 x2_14
-  let x3_13 := fieldAdd x2_13 x2_15
-  let x3_15 := fieldMul w2_1 (fieldSub x2_13 x2_15)
-  let x4_0 := fieldAdd x3_0 x3_1
-  let x4_1 := fieldSub x3_0 x3_1
-  let x4_2 := fieldAdd x3_2 x3_3
-  let x4_3 := fieldSub x3_2 x3_3
-  let x4_4 := fieldAdd x3_4 x3_5
-  let x4_5 := fieldSub x3_4 x3_5
-  let x4_6 := fieldAdd x3_6 x3_7
-  let x4_7 := fieldSub x3_6 x3_7
-  let x4_8 := fieldAdd x3_8 x3_9
-  let x4_9 := fieldSub x3_8 x3_9
-  let x4_10 := fieldAdd x3_10 x3_11
-  let x4_11 := fieldSub x3_10 x3_11
-  let x4_12 := fieldAdd x3_12 x3_13
-  let x4_13 := fieldSub x3_12 x3_13
-  let x4_14 := fieldAdd x3_14 x3_15
-  let x4_15 := fieldSub x3_14 x3_15
-  ⟨x4_0, x4_1, x4_2, x4_3, x4_4, x4_5, x4_6, x4_7, x4_8, x4_9, x4_10, x4_11, x4_12, x4_13,
-    x4_14, x4_15⟩
+  leaf16_line%
 
 /-- The fused leaf kernel is the lane graph followed by one splice. -/
 theorem leaf16Field_eq_laneLine (t3 t2 t1 : Array KoalaBear.Fast.Field) (i : USize)
