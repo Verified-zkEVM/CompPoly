@@ -347,23 +347,6 @@ theorem getD_setW (a : Array α) (i : USize) (v : α) (k : Nat) (d : α) (hu : a
   · exact Array.size_uset ..
   · rfl
 
-/-- Joining tasks keeps their results in order. -/
-theorem joinTasks_get (ts : Array (Task α)) : (joinTasks ts).get = ts.map Task.get := by
-  suffices h : ∀ (l : List (Task α)) (acc : Task (Array α)),
-      (l.foldl (fun acc t ↦ acc.bind (sync := true) fun xs ↦
-        t.map (sync := true) fun x ↦ xs.push x) acc).get = acc.get ++ (l.map Task.get).toArray by
-    rw [joinTasks, ← Array.foldl_toList, h]
-    apply Array.toList_inj.mp
-    simp
-  intro l
-  induction l with
-  | nil => intro acc; simp
-  | cons t l ih =>
-    intro acc
-    rw [List.foldl_cons, ih]
-    apply Array.toList_inj.mp
-    simp [Task.bind, Task.map]
-
 /-- Component `t` of a radix-four cell's outputs. -/
 def qsel (t : Nat) (o : R × R × R × R) : R :=
   match t with
@@ -1070,17 +1053,13 @@ theorem transform_eq [Field R] [DecidableEq R] [PackedRepr R] (tw : Array (Array
       rw [hleafIn l hl, leafPasses_extract tw rest _ _ _ 16 l hY hl hm2 hrest,
         getD_extract _ _ _ _ (by rw [Nat.succ_mul]; omega) (by
           rw [size_leafPasses, hY]; omega)]
-  have hT : (((Array.range 16).map fun l ↦ (joinTasks ((Array.range S).map fun s ↦
-      Task.spawn fun _ ↦ encode (columnTask x tw (m + 4) (2 ^ (m + 4 - 4)) (2 ^ (m + 4 - 4) / S)
-        (s * (2 ^ (m + 4 - 4) / S))) 0)).bind fun cols ↦ Task.spawn fun _ ↦
-          leafTask cols tw rest ((m + 4) % 2 == 1) (m + 4 - 4) (2 ^ (m + 4 - 4) / S) l scale
-            f).map Task.get) =
+  have hT : (Tasks.spawnAfter (Tasks.spawnAll S fun s ↦ encode (columnTask x tw (m + 4)
+      (2 ^ (m + 4 - 4)) (2 ^ (m + 4 - 4) / S) (s * (2 ^ (m + 4 - 4) / S))) 0) 16 fun cols l ↦
+        leafTask cols tw rest ((m + 4) % 2 == 1) (m + 4 - 4) (2 ^ (m + 4 - 4) / S) l scale
+          f).map Task.get =
       (Array.range 16).map fun l ↦ leafTask cols tw rest odd m cs l scale f := by
-    simp only [Array.map_map, hm4, hcsM]
-    congr 1
-    funext l
-    change leafTask (joinTasks _).get tw rest odd m cs l scale f = _
-    rw [joinTasks_get, Array.map_map]
+    rw [Tasks.map_get_spawnAfter, Tasks.map_get_spawnAll]
+    simp only [hm4, hcsM]
     rfl
   have hL (l : Nat) (hl : l < 16) := reverseEncode_spec (L l) m scale f (16 * l) (by omega)
     (by omega) (hleaf l hl).1 (hmono _ (by omega))
@@ -1378,10 +1357,6 @@ theorem foldl_chunks [PackedRepr α] (A : Array α) (K : Nat) (init : ByteArray)
       Array.extract_append_extract, Nat.min_eq_left (Nat.zero_le _),
       Nat.max_eq_right (by omega), show 16 * (n * K + K) = 16 * ((n + 1) * K) by ring]
 
-theorem get_bind_spawn (L : Array (Task ByteArray)) (g : Array ByteArray → ByteArray) :
-    ((joinTasks L).bind fun r ↦ Task.spawn fun _ ↦ g r).get = g (L.map Task.get) := by
-  change g (joinTasks L).get = _
-  rw [joinTasks_get]
 
 /-- Joining the sixteen interleave chunks packs the whole interleave. -/
 theorem foldl_assembleChunk [Zero α] [PackedRepr α] (LS : Array ByteArray) (K : Nat)
@@ -1409,8 +1384,8 @@ theorem transformPacked_encode [Field R] [DecidableEq R] [PackedRepr R] (tw : Ar
     transformPacked tw logN S rest scale f (PackedRepr.encode xs) =
       PackedRepr.encode (transform tw logN S rest scale f xs) := by
   unfold transformPacked transform
-  simp only [gatherRowsPacked_encode _ _ _ _ _ hx, columnTask, Array.map_map,
-    Function.comp_def, get_bind_spawn]
+  simp only [gatherRowsPacked_encode _ _ _ _ _ hx, columnTask, Tasks.map_get_spawnAfter,
+    Tasks.map_get_spawnAll]
   generalize 2 ^ (logN - 4) = M at ho h16 ⊢
   obtain ⟨K, rfl⟩ := h16
   exact foldl_assembleChunk _ K ho

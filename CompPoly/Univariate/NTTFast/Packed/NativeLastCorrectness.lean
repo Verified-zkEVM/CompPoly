@@ -10,9 +10,11 @@ public import CompPoly.Univariate.NTTFast.Packed.NativeLast
 public import CompPoly.Univariate.NTTFast.Packed.KernelRefinement
 public import CompPoly.Univariate.NTTFast.Packed.KernelCorrectness
 public import CompPoly.Univariate.NTTFast.Packed.KernelSpecialization
-public import CompPoly.Univariate.NTTFast.Packed.StageTail
+public import CompPoly.Univariate.NTTFast.Packed.Twiddles
+public import CompPoly.Univariate.NTTFast.Packed.LocalLayers
+public import CompPoly.Univariate.NTTFast.Packed.PassRefinement
+public import CompPoly.Univariate.NTTFast.Packed.Radix2Refinement
 public import CompPoly.Univariate.NTTFast.Packed.NativeOrderCorrectness
-public import CompPoly.Univariate.NTTFast.Packed.StageCorrectness
 import all CompPoly.Univariate.NTTFast.Packed.NativeOrder
 import all CompPoly.Univariate.NTTFast.Packed.Native
 
@@ -694,7 +696,7 @@ theorem getD_fold_leafBlocks (t3 t2 t1 U : Array KoalaBear.Fast.Field) (B : Nat)
     intro hK
     obtain ⟨hsz, hv⟩ := ih (by omega)
     rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil]
-    refine ⟨by rw [size_leaf16Stages, hsz], fun k hk t ht ↦ ?_⟩
+    refine ⟨by rw [Expressions.size_leaf16Stages, hsz], fun k hk t ht ↦ ?_⟩
     by_cases hkK : k = K
     · subst k
       rw [ite_eq_left_of_eq_true _ _ (eq_true (Nat.lt_succ_self K))]
@@ -714,154 +716,218 @@ theorem getD_fold_leafBlocks (t3 t2 t1 U : Array KoalaBear.Fast.Field) (B : Nat)
       · rw [ite_eq_right_of_eq_false _ _ (eq_false hk2),
           ite_eq_right_of_eq_false _ _ (eq_false (by omega))]
 
-/-- The radix-four passes before the fused final layers, as folds. -/
-theorem Native.upperStages_eq_folds (logN : Nat) (tw : Array ByteArray) (a : ByteArray) :
-    Native.upperStages logN tw a =
-      (List.range (logN / 2 - 2)).foldl (fun b pass ↦ rawPass logN tw pass b) a := by
-  simp only [Native.upperStages, rawPass, Std.Legacy.Range.forIn_eq_forIn_range',
-    Std.Legacy.Range.size, Nat.sub_zero, Nat.add_sub_cancel, Nat.div_one,
-    ← List.range_eq_range', List.forIn_pure_yield_eq_foldl, bind_pure, pure_bind, Id.run_pure]
-
-/-- The fused leaf is the reversed, optionally scaled leaf of the sequential stages. -/
-theorem Native.leafNatural_eq_leafRev (m : Nat) (tw : Array (Array KoalaBear.Fast.Field))
-    (X : Array KoalaBear.Fast.Field) (f : KoalaBear.Fast.Field) (sc : Bool)
-    (htw : TwiddleSizes m tw) (hone : TwiddleOnes m tw) (hs : X.size = 2 ^ m)
-    (hu : 4 * 2 ^ m < USize.size) (hm4 : 4 ≤ m) (hm32 : m ≤ 32) :
-    Native.leafNatural (tw.map encode) m f.val sc (encode X) =
-      Native.leafRev (Native.stages m (tw.map encode) (encode X)) m f.val
-        sc := by
-  unfold Native.leafNatural
-  split
-  · rename_i hm
-    let U := (List.range (m / 2 - 2)).foldl (fun b pass ↦ fieldPass m tw pass b) X
-    have hU : Native.upperStages m (tw.map encode) (encode X) = encode U := by
-      rw [Native.upperStages_eq_folds]
-      exact Native.passes_encode m (m / 2 - 2) tw X (by omega) htw hs hu
-    have hUs : U.size = 2 ^ m :=
-      foldl_invariant (List.range (m / 2 - 2)) (fun b ↦ b.size = 2 ^ m)
-        (fun b pass ↦ fieldPass m tw pass b)
-        (fun pass _ b hb ↦ by simpa only [size_fieldPass] using hb) X hs
-    have h3 : (tw.getD 3 #[]).size = 8 := by simpa using htw 3 (by omega)
-    have h2 : (tw.getD 2 #[]).size = 4 := by simpa using htw 2 (by omega)
-    have h1 : (tw.getD 1 #[]).size = 2 := by simpa using htw 1 (by omega)
-    rw [hU, getD_map_encode, getD_map_encode, getD_map_encode,
-      lastRev_encodeWords _ _ _ U m f sc hm.2 (by omega) hu hUs h3 h2 h1 (hone 3 (by omega))
-        (hone 2 (by omega)) (hone 1 (by omega)),
-      Native.stages_encode m tw X htw hone hs hu]
-    let W := (List.range (2 ^ m / 16)).foldl (fun b block ↦
-      Expressions.leaf16Stages (tw.getD 3 #[]) (tw.getD 2 #[]) (tw.getD 1 #[]) b (block * 16)) U
-    have hfs : fieldStages m tw X = W := by
-      have hf : (decide (m ≥ 4) && m % 2 == 0) = true := by
-        simp only [Bool.and_eq_true, decide_eq_true_eq, beq_iff_eq]; omega
-      have ho : ¬(m % 2 = 1) := by omega
-      simp only [fieldStages, hf, ↓reduceIte, ho]
-      rfl
-    have hp : 2 ^ m = 16 * (2 ^ m / 16) := by
-      have : 16 ∣ 2 ^ m := by
-        rw [show m = 4 + (m - 4) by omega, Nat.pow_add]; exact Nat.dvd_mul_right _ _
-      omega
-    have hfold := getD_fold_leafBlocks (tw.getD 3 #[]) (tw.getD 2 #[]) (tw.getD 1 #[]) U
-      (2 ^ m / 16) (by rw [hUs]; exact hp) (by omega) (hone 3 (by omega)) (hone 2 (by omega))
-      (hone 1 (by omega)) (2 ^ m / 16) le_rfl
-    have hWs : W.size = 2 ^ m := by rw [hfold.1, hUs]
-    rw [hfs]
-    simp only [encode_eq_map_val] at *
-    rw [Native.leafRev_encodeWords (W.map Subtype.val) m f.val sc (by omega) hm32
-      (by rw [Array.size_map, hWs]) (by rw [size_encode_uint32, Array.size_map, hWs]; exact hu)]
-    congr 1
-    apply array_eq_of_getD _ _ 0 (by rw [Array.size_ofFn, size_rows]; omega)
-    intro w
-    by_cases hw : w < 2 ^ m
-    · rw [getD_ofFn_bounded _ _ hw, getD_rows _ _ _ (by omega),
-        show 16 * (w / 16) + w % 16 = w by omega, getD_map_val]
-      unfold lastTarget
-      dsimp only
-      have h4 : m - 4 + 4 = m := by omega
-      have hwm : w % 16 < 2 ^ 4 := Nat.mod_lt _ (by decide)
-      have hcat := bitRevNat_concat (m - 4) 4 (w / 16) (w % 16) hwm
-      rw [h4, show 2 ^ 4 * (w / 16) + w % 16 = w by omega] at hcat
-      rw [hcat]
-      generalize hv : NTT.Transform.bitRevNat 4 (w % 16) = v
-      generalize hr : NTT.Transform.bitRevNat (m - 4) (w / 16) = r
-      have hvl : v < 16 := by rw [← hv]; exact NTT.Transform.bitRevNat_lt 4 _
-      have hrl : r < 2 ^ (m - 4) := by rw [← hr]; exact NTT.Transform.bitRevNat_lt _ _
-      have hL : 2 ^ (m - 4) = 16 * (2 ^ (m - 4) / 16) := by
-        have : 16 ∣ 2 ^ (m - 4) := by
-          rw [show m - 4 = 4 + (m - 4 - 4) by omega, Nat.pow_add]; exact Nat.dvd_mul_right _ _
-        omega
-      have hB : 2 ^ m / 16 = 2 ^ (m - 4) := by
-        rw [show m = m - 4 + 4 by omega, Nat.pow_add]; simp only [Nat.add_sub_cancel]; omega
-      generalize hq : 2 ^ (m - 4) / 16 = q at hL
-      have hk : v * q + r / 16 < 2 ^ m / 16 := by
-        have : v * q + q ≤ 16 * q := by
-          have := Nat.mul_le_mul_right q (show v + 1 ≤ 16 by omega)
-          rw [Nat.add_mul, Nat.one_mul] at this; exact this
-        omega
-      have e1 : 2 ^ (m - 4) * v + r = 16 * (v * q + r / 16) + r % 16 := by
-        rw [hL]; have := Nat.div_add_mod r 16; nlinarith
-      have e2 : v * 2 ^ (m - 4) + 16 * (r / 16) = 16 * (v * q + r / 16) := by
-        rw [hL]; ring
-      rw [e1, e2, hfold.2 _ hk _ (Nat.mod_lt _ (by decide)),
-        ite_eq_left_of_eq_true _ _ (eq_true hk)]
-    · rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none (by rw [Array.size_ofFn]; omega),
-        Array.getD_eq_getD_getElem?, Array.getElem?_eq_none (by rw [size_rows]; omega)]
-  · rfl
-
-/-- A reversed leaf of at least sixteen words is the natural-order read of the leaf. -/
-theorem Native.leafRev_encode (W : Array KoalaBear.Fast.Field) (m : Nat) (f : KoalaBear.Fast.Field)
-    (sc : Bool) (hm4 : 4 ≤ m) (hm32 : m ≤ 32) (hw : W.size = 2 ^ m)
-    (hu : 4 * 2 ^ m < USize.size) :
-    Native.leafRev (encode W) m f.val sc = encode (decodedFields m W f sc) := by
-  have h16 : 16 ∣ 2 ^ m := by
-    rw [show m = 4 + (m - 4) by omega, Nat.pow_add]
-    exact Nat.dvd_mul_right _ _
-  simp only [encode_eq_map_val]
-  rw [Native.leafRev_encodeWords (W.map Subtype.val) m f.val sc hm4 hm32
-    (by rw [Array.size_map, hw]) (by rw [size_encode_uint32, Array.size_map, hw]; exact hu)]
+/-- The fused final layers and reversal of a leaf are the natural-order read of its last two
+radix-four passes, as sixteen-word blocks. -/
+theorem Native.lastRev_encode (t3 t2 t1 U : Array KoalaBear.Fast.Field) (m : Nat)
+    (f : KoalaBear.Fast.Field) (sc : Bool) (hm : 8 ≤ m) (hm32 : m ≤ 32)
+    (hu : 4 * 2 ^ m < USize.size) (hUs : U.size = 2 ^ m)
+    (h3 : t3.size = 8) (h2 : t2.size = 4) (h1 : t1.size = 2)
+    (o3 : t3.getD 0 0 = 1) (o2 : t2.getD 0 0 = 1) (o1 : t1.getD 0 0 = 1) :
+    Native.lastRev (encode t3) (encode t2) (encode t1) (encode U) m f.val sc =
+      encode (decodedFields m ((List.range (2 ^ m / 16)).foldl (fun b block ↦
+        Expressions.leaf16Stages t3 t2 t1 b (block * 16)) U) f sc) := by
+  rw [lastRev_encodeWords _ _ _ U m f sc hm (by omega) hu hUs h3 h2 h1 o3 o2 o1]
+  let W := (List.range (2 ^ m / 16)).foldl (fun b block ↦
+    Expressions.leaf16Stages t3 t2 t1 b (block * 16)) U
+  have hp : 2 ^ m = 16 * (2 ^ m / 16) := by
+    have : 16 ∣ 2 ^ m := by
+      rw [show m = 4 + (m - 4) by omega, Nat.pow_add]; exact Nat.dvd_mul_right _ _
+    omega
+  have hfold := getD_fold_leafBlocks t3 t2 t1 U
+    (2 ^ m / 16) (by rw [hUs]; exact hp) (by omega) o3 o2
+    o1 (2 ^ m / 16) le_rfl
+  have hWs : W.size = 2 ^ m := by rw [hfold.1, hUs]
+  simp only [encode_eq_map_val] at *
   congr 1
   apply array_eq_of_getD _ _ 0 (by
-    rw [size_rows, Array.size_map, decodedFields, Array.size_ofFn]; omega)
-  intro i
-  by_cases hi : i < 2 ^ m
-  · rw [getD_rows _ _ _ (by omega), show 16 * (i / 16) + i % 16 = i by omega, getD_map_val,
-      getD_map_val, decodedFields, getD_ofFn_bounded _ _ hi]
+    rw [Array.size_ofFn, Array.size_map, decodedFields, Array.size_ofFn])
+  intro w
+  by_cases hw : w < 2 ^ m
+  · rw [getD_ofFn_bounded _ _ hw, getD_map_val, decodedFields, getD_ofFn_bounded _ _ hw]
+    unfold lastTarget
+    dsimp only
+    have h4 : m - 4 + 4 = m := by omega
+    have hwm : w % 16 < 2 ^ 4 := Nat.mod_lt _ (by decide)
+    have hcat := bitRevNat_concat (m - 4) 4 (w / 16) (w % 16) hwm
+    rw [h4, show 2 ^ 4 * (w / 16) + w % 16 = w by omega] at hcat
+    rw [hcat]
+    generalize hv : NTT.Transform.bitRevNat 4 (w % 16) = v
+    generalize hr : NTT.Transform.bitRevNat (m - 4) (w / 16) = r
+    have hvl : v < 16 := by rw [← hv]; exact NTT.Transform.bitRevNat_lt 4 _
+    have hrl : r < 2 ^ (m - 4) := by rw [← hr]; exact NTT.Transform.bitRevNat_lt _ _
+    have hL : 2 ^ (m - 4) = 16 * (2 ^ (m - 4) / 16) := by
+      have : 16 ∣ 2 ^ (m - 4) := by
+        rw [show m - 4 = 4 + (m - 4 - 4) by omega, Nat.pow_add]; exact Nat.dvd_mul_right _ _
+      omega
+    have hB : 2 ^ m / 16 = 2 ^ (m - 4) := by
+      rw [show m = m - 4 + 4 by omega, Nat.pow_add]; simp only [Nat.add_sub_cancel]; omega
+    generalize hq : 2 ^ (m - 4) / 16 = q at hL
+    have hk : v * q + r / 16 < 2 ^ m / 16 := by
+      have : v * q + q ≤ 16 * q := by
+        have := Nat.mul_le_mul_right q (show v + 1 ≤ 16 by omega)
+        rw [Nat.add_mul, Nat.one_mul] at this; exact this
+      omega
+    have e1 : 2 ^ (m - 4) * v + r = 16 * (v * q + r / 16) + r % 16 := by
+      rw [hL]; have := Nat.div_add_mod r 16; nlinarith
+    have e2 : v * 2 ^ (m - 4) + 16 * (r / 16) = 16 * (v * q + r / 16) := by
+      rw [hL]; ring
+    rw [e1, e2, hfold.2 _ hk _ (Nat.mod_lt _ (by decide)),
+      ite_eq_left_of_eq_true _ _ (eq_true hk)]
     cases sc <;> simp only [scaleWord, Bool.false_eq_true, ↓reduceIte, mul_val]
-  · rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none (by rw [size_rows]; omega),
+  · rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none (by rw [Array.size_ofFn]; omega),
       Array.getD_eq_getD_getElem?, Array.getElem?_eq_none (by
         rw [Array.size_map, decodedFields, Array.size_ofFn]; omega)]
 
-@[simp] theorem size_allFieldStages (logN : Nat) (tw : Array (Array KoalaBear.Fast.Field))
-    (a : Array KoalaBear.Fast.Field) : (allFieldStages logN tw a).size = a.size := by
-  have hb := foldl_invariant (List.range (logN / 2))
-    (fun b : Array KoalaBear.Fast.Field ↦ b.size = a.size)
-    (fun b pass ↦ fieldPass logN tw pass b)
-    (fun pass _ b hb ↦ by simpa only [size_fieldPass] using hb) a rfl
-  unfold allFieldStages
-  split
-  · exact foldl_invariant _ (fun b : Array KoalaBear.Fast.Field ↦ b.size = a.size) _
-      (fun _ _ b hb ↦ by simpa only [Plan.size_butterflyDIFInner] using hb) _ hb
-  · exact hb
+/-- The block loop packs the ordinary radix-four blocks. -/
+theorem Native.radix4Blocks_encode (th tl : Array KoalaBear.Fast.Field) (q blocks : Nat)
+    (a : Array KoalaBear.Fast.Field)
+    (ha : (encode a).size < USize.size)
+    (hth : (encode th).size < USize.size) (htl : (encode tl).size < USize.size)
+    (hthi : 2 * q ≤ th.size) (htli : q ≤ tl.size) (hbound : blocks * (4 * q) ≤ a.size) :
+    Native.radix4Blocks (encode th) (encode tl) q blocks (encode a) =
+      encode (Plan.butterflyDIFRadix4Blocks th tl (4 * q) q blocks 0 a) := by
+  simp only [Native.radix4Blocks, Std.Legacy.Range.forIn_eq_forIn_range', Std.Legacy.Range.size,
+    Nat.sub_zero, Nat.add_sub_cancel, Nat.div_one, ← List.range_eq_range',
+    List.forIn_pure_yield_eq_foldl, bind_pure, Id.run_pure]
+  exact Native.fold_inner16_encode th tl q blocks a ha hth htl hthi htli hbound
 
-/-- A natural-order leaf is the natural-order read of the sequential stages, optionally
-scaled. -/
-theorem Native.leafNatural_encode (m : Nat) (tw : Array (Array KoalaBear.Fast.Field))
-    (X : Array KoalaBear.Fast.Field) (f : KoalaBear.Fast.Field) (sc : Bool)
-    (htw : TwiddleSizes m tw) (hone : TwiddleOnes m tw) (hs : X.size = 2 ^ m)
-    (hu : 4 * 2 ^ m < USize.size) (hm32 : m ≤ 32) :
-    Native.leafNatural (tw.map encode) m f.val sc (encode X) =
-      encode (decodedFields m (allFieldStages m tw X) f sc) := by
-  have hA : (allFieldStages m tw X).size = 2 ^ m := by
-    rw [size_allFieldStages, hs]
-  by_cases hm4 : 4 ≤ m
-  · rw [Native.leafNatural_eq_leafRev m tw X f sc htw hone hs hu hm4 hm32,
-      Native.stages_encode m tw X htw hone hs hu,
-      fieldStages_eq_all m tw X htw hone hs,
-      Native.leafRev_encode _ m f sc hm4 hm32 hA hu]
-  · unfold Native.leafNatural
-    simp only [show ¬(m % 2 = 0 ∧ 8 ≤ m) by omega, hm4, ↓reduceIte]
-    rw [Native.stages_encode m tw X htw hone hs hu,
-      fieldStages_eq_all m tw X htw hone hs,
-      Native.decode_encode m _ f sc hm32 hA (by rw [size_encode_fields, hA]; exact hu),
+/-- The field-array semantics of `leafLayers`. -/
+def fieldLayers (tw : Array (Array KoalaBear.Fast.Field)) (m count : Nat)
+    (X : Array KoalaBear.Fast.Field) : Array KoalaBear.Fast.Field :=
+  let X := if m % 2 = 1 then
+    Plan.butterflyDIFInner (tw.getD (m - 1) #[]) (2 ^ (m - 1)) 0 0 (2 ^ (m - 1)) X else X
+  (List.range count).foldl (fun b pass ↦
+    let high := m - 1 - m % 2 - 2 * pass
+    let q := 2 ^ (high - 1)
+    Plan.butterflyDIFRadix4Blocks (tw.getD high #[]) (tw.getD (high - 1) #[]) (4 * q) q
+      (2 ^ m / (4 * q)) 0 b) X
+
+@[simp] theorem size_fieldLayers (tw : Array (Array KoalaBear.Fast.Field)) (m count : Nat)
+    (X : Array KoalaBear.Fast.Field) : (fieldLayers tw m count X).size = X.size := by
+  unfold fieldLayers
+  apply foldl_invariant _ (fun b : Array KoalaBear.Fast.Field ↦ b.size = X.size)
+  · intro _ _ b hb
+    rw [Plan.size_butterflyDIFRadix4Blocks, hb]
+  · split <;> simp only [Plan.size_butterflyDIFInner]
+
+/-- The leading leaf layers on packed words agree with their field-array semantics. -/
+theorem Native.leafLayers_encode (tw : Array (Array KoalaBear.Fast.Field)) (m count : Nat)
+    (X : Array KoalaBear.Fast.Field) (hc : count ≤ m / 2) (htw : TwiddleSizes m tw)
+    (hs : X.size = 2 ^ m) (hu : 4 * 2 ^ m < USize.size) :
+    Native.leafLayers (tw.map encode) m count (encode X) = encode (fieldLayers tw m count X) := by
+  have hX : (if m % 2 = 1 then Native.pairs ((tw.map encode).getD (m - 1) .empty) (2 ^ (m - 1)) 0 0
+      (2 ^ (m - 1)) (encode X) else encode X) = encode (if m % 2 = 1 then
+      Plan.butterflyDIFInner (tw.getD (m - 1) #[]) (2 ^ (m - 1)) 0 0 (2 ^ (m - 1)) X else X) := by
+    split
+    · rename_i ho
+      have hm : 2 ^ m = 2 * 2 ^ (m - 1) := by
+        rw [← Nat.pow_succ']; congr 1; omega
+      rw [getD_map_encode]
+      exact Native.pairs_encode _ X _ 0 0 _ (by rwa [size_encode_fields, hs])
+        (by rw [size_encode_fields, htw _ (by omega)]; omega)
+        (by rw [htw _ (by omega)]) (Nat.zero_le _) (by omega) (by omega)
+    · rfl
+  unfold Native.leafLayers fieldLayers
+  dsimp only
+  rw [hX]
+  apply foldl_encode (List.range count) (fun b ↦ b.size = 2 ^ m)
+  · intro pass hp b hb
+    have hp' := List.mem_range.mp hp
+    have hh : 1 ≤ m - 1 - m % 2 - 2 * pass ∧ m - 1 - m % 2 - 2 * pass < m := by omega
+    have hq : 2 ^ (m - 1 - m % 2 - 2 * pass) = 2 * 2 ^ (m - 1 - m % 2 - 2 * pass - 1) := by
+      rw [← Nat.pow_succ']; congr 1; omega
+    have hle : 2 ^ (m - 1 - m % 2 - 2 * pass) ≤ 2 ^ m := Nat.pow_le_pow_right (by omega) (by omega)
+    rw [getD_map_encode, getD_map_encode]
+    exact Native.radix4Blocks_encode _ _ _ _ b (by rwa [size_encode_fields, hb])
+      (by rw [size_encode_fields, htw _ hh.2]; omega)
+      (by rw [size_encode_fields, htw _ (by omega)]; omega)
+      (by rw [htw _ hh.2]; omega) (by rw [htw _ (by omega)])
+      (by rw [hb]; exact Nat.div_mul_le_self _ _)
+  · intro _ _ b hb
+    rw [Plan.size_butterflyDIFRadix4Blocks, hb]
+  · split <;> simp only [Plan.size_butterflyDIFInner, hs]
+
+/-- All leaf layers are the mixed radix-four DIF stages. -/
+theorem fieldLayers_eq (D : NTT.Domain KoalaBear.Fast.Field)
+    (tw : Array (Array KoalaBear.Fast.Field)) (X : Array KoalaBear.Fast.Field) (hs : X.size = D.n) :
+    fieldLayers tw D.logN (D.logN / 2) X = Plan.runStagesDIFRadix4WithTwiddles D tw X := by
+  have hpass (high : Nat) (b : Array KoalaBear.Fast.Field) :
+      Plan.butterflyDIFRadix4Blocks (tw.getD high #[]) (tw.getD (high - 1) #[])
+        (4 * 2 ^ (high - 1)) (2 ^ (high - 1)) (2 ^ D.logN / (4 * 2 ^ (high - 1))) 0 b =
+      Plan.butterflyRadix4StageDIFWithTwiddles D (high - 1) (tw.getD high #[])
+        (tw.getD (high - 1) #[]) b := by
+    unfold Plan.butterflyRadix4StageDIFWithTwiddles
+    rw [show 2 ^ (high - 1 + 2) = 4 * 2 ^ (high - 1) by rw [Nat.pow_add]; omega]
+    rfl
+  unfold fieldLayers
+  by_cases ho : D.logN % 2 = 1
+  · rw [← Plan.runStagesDIFRadix4WithTwiddles_eq_top D tw X hs ho]
+    simp only [ho, ↓reduceIte]
+    have htop : Plan.butterflyDIFInner (tw.getD (D.logN - 1) #[]) (2 ^ (D.logN - 1)) 0 0
+        (2 ^ (D.logN - 1)) X =
+        Plan.butterflyStageDIFWithTwiddles D (D.logN - 1) (tw.getD (D.logN - 1) #[]) X := by
+      have h1 : D.n / 2 ^ (D.logN - 1 + 1) = 1 := by
+        rw [NTT.Domain.n, show D.logN - 1 + 1 = D.logN by omega, Nat.div_self (Nat.two_pow_pos _)]
+      unfold Plan.butterflyStageDIFWithTwiddles
+      dsimp only
+      rw [h1, Plan.butterflyDIFBlocks]
+      simp only [Nat.zero_lt_one, ↓reduceIte, Nat.zero_mul, Nat.zero_add]
+      rw [Plan.butterflyDIFBlocks]
+      simp only [Nat.lt_irrefl, ↓reduceIte]
+    rw [htop]
+    apply Plan.foldl_range_congr
+    intro pass _ b
+    rw [hpass, show D.logN - 1 - 1 - 2 * pass = D.logN - 2 - 2 * pass by omega]
+  · simp only [ho, ↓reduceIte, Plan.runStagesDIFRadix4WithTwiddles,
+      Std.Legacy.Range.forIn_eq_forIn_range', Std.Legacy.Range.size, Nat.sub_zero,
+      Nat.add_sub_cancel, Nat.div_one, ← List.range_eq_range', List.forIn_pure_yield_eq_foldl,
+      pure_bind, Id.run_pure]
+    apply Plan.foldl_range_congr
+    intro pass _ b
+    rw [hpass, show D.logN % 2 = 0 by omega, Nat.sub_zero]
+
+/-- A natural-order leaf is the natural-order read of the mixed radix-four DIF stages,
+optionally scaled. -/
+theorem Native.leafNatural_encode (D : NTT.Domain KoalaBear.Fast.Field)
+    (tw : Array (Array KoalaBear.Fast.Field)) (X : Array KoalaBear.Fast.Field)
+    (f : KoalaBear.Fast.Field) (sc : Bool) (htw : TwiddleSizes D.logN tw)
+    (hone : TwiddleOnes D.logN tw) (hs : X.size = D.n) (hu : 4 * D.n < USize.size)
+    (h32 : D.logN ≤ 32) :
+    Native.leafNatural (tw.map encode) D.logN f.val sc (encode X) =
+      encode (decodedFields D.logN (Plan.runStagesDIFRadix4WithTwiddles D tw X) f sc) := by
+  have hn : X.size = 2 ^ D.logN := hs
+  have hu' : 4 * 2 ^ D.logN < USize.size := hu
+  rw [← fieldLayers_eq D tw X hs]
+  unfold Native.leafNatural
+  split
+  · rename_i hm
+    have hzero : tw.getD 0 #[] = #[1] :=
+      twiddle_zero_eq_one _ (by simpa using htw 0 (by omega)) (hone 0 (by omega))
+    let U := fieldLayers tw D.logN (D.logN / 2 - 2) X
+    have hUs : U.size = 2 ^ D.logN := by simp only [U, size_fieldLayers, hn]
+    rw [Native.leafLayers_encode tw _ _ X (by omega) htw hn hu', getD_map_encode,
+      getD_map_encode, getD_map_encode,
+      Native.lastRev_encode _ _ _ U _ f sc hm h32 hu' hUs (by simpa using htw 3 (by omega))
+        (by simpa using htw 2 (by omega)) (by simpa using htw 1 (by omega)) (hone 3 (by omega))
+        (hone 2 (by omega)) (hone 1 (by omega)),
+      fold_leaf16Stages_eq_radix4 _ _ _ _ U (by rw [hUs]; exact Nat.div_mul_le_self _ _)]
+    congr 2
+    have hrange : List.range (D.logN / 2) =
+        List.range (D.logN / 2 - 2) ++ [D.logN / 2 - 2, D.logN / 2 - 1] := by
+      obtain ⟨P, hP⟩ : ∃ P, D.logN / 2 = P + 2 := ⟨D.logN / 2 - 2, by omega⟩
+      rw [hP, List.range_succ, List.range_succ, List.append_assoc]
+      rfl
+    have h3 : D.logN - 1 - D.logN % 2 - 2 * (D.logN / 2 - 2) = 3 := by omega
+    have h1 : D.logN - 1 - D.logN % 2 - 2 * (D.logN / 2 - 1) = 1 := by omega
+    have hd : 16 ∣ 2 ^ D.logN := by simpa using Nat.pow_dvd_pow 2 (show 4 ≤ D.logN by omega)
+    unfold fieldLayers
+    rw [hrange, List.foldl_append, List.foldl_cons, List.foldl_cons, List.foldl_nil]
+    simp only [h3, h1, Nat.reduceSub, Nat.reducePow, hzero]
+    rw [show 2 ^ D.logN / 4 = 4 * (2 ^ D.logN / 16) by omega]
+    rfl
+  · rw [Native.leafLayers_encode tw _ _ X (le_refl _) htw hn hu',
+      Native.decode_encode _ _ f sc h32 (by rw [size_fieldLayers, hn])
+        (by rw [size_encode_fields, size_fieldLayers, hn]; exact hu'),
       Native.encodeFields_eq]
 
 end CompPoly.CPolynomial.NTTFast.Packed

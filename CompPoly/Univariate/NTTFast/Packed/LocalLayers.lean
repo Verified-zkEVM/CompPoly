@@ -98,4 +98,18 @@ theorem fold_leaf16Stages [Field R] (t3 t2 t1 : Array R) (blocks : Nat) (a : Arr
     intro i j hij hj x
     apply localLayer_comm <;> (first | decide | omega)
 
+/-- Fusing the final sixteen-coordinate blocks is exactly two ordinary radix-four passes. -/
+theorem fold_leaf16Stages_eq_radix4 [Field R] (t3 t2 t1 : Array R) (blocks : Nat)
+    (a : Array R) (hs : blocks * 16 ≤ a.size) :
+    (List.range blocks).foldl (fun b block ↦
+      Expressions.leaf16Stages t3 t2 t1 b (block * 16)) a =
+      Plan.butterflyDIFRadix4Blocks t1 #[1] 4 1 (4 * blocks) 0
+        (Plan.butterflyDIFRadix4Blocks t3 t2 16 4 blocks 0 a) := by
+  rw [fold_leaf16Stages]
+  symm
+  rw [Plan.butterflyDIFRadix4Blocks_eq_two_dif_blocks t1 #[1] 1 (4 * blocks) _
+    (by decide) (by simp only [Plan.size_butterflyDIFRadix4Blocks]; omega),
+    Plan.butterflyDIFRadix4Blocks_eq_two_dif_blocks t3 t2 4 blocks a (by decide) hs]
+  simp only [← Nat.mul_assoc, Nat.reduceMul]
+
 end CompPoly.CPolynomial.NTTFast.Packed

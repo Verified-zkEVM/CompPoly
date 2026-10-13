@@ -101,15 +101,6 @@ theorem gatherWords_encode (src : Array F) (M j0 cs r : Nat)
       Nat.add_assoc]
   · rw [Columns.getD_of_size_le _ _ (by omega), Columns.getD_of_size_le _ _ (by omega)]
 
-/-- The block loop packs the ordinary radix-four blocks. -/
-theorem radix4Blocks_encode (th tl : Array F) (q blocks : Nat) (a : Array F)
-    (ha : (encode a).size < USize.size)
-    (hth : (encode th).size < USize.size) (htl : (encode tl).size < USize.size)
-    (hthi : 2 * q ≤ th.size) (htli : q ≤ tl.size) (hbound : blocks * (4 * q) ≤ a.size) :
-    radix4Blocks (encode th) (encode tl) q blocks (encode a) =
-      encode (Plan.butterflyDIFRadix4Blocks th tl (4 * q) q blocks 0 a) :=
-  Native.fold_inner16_encode th tl q blocks a ha hth htl hthi htli hbound
-
 /-- A packed column task packs the field-level column task. -/
 theorem columnWords_encode (x : Array F) (tw : Array (Array F)) (logN cs j0 : Nat)
     (h4 : 4 ≤ logN) (hx : x.size = 2 ^ logN) (htw : ∀ s < logN, (tw.getD s #[]).size = 2 ^ s)
@@ -163,10 +154,10 @@ theorem columnWords_encode (x : Array F) (tw : Array (Array F)) (logN cs j0 : Na
   have hrs (s k : Nat) (hs : s < m + 4) (hk : 2 ^ s = k * 2 ^ m) (hk16 : k ≤ 16) :
       (encode (Columns.gatherRows (tw.getD s #[]) (2 ^ m) j0 cs k)).size < USize.size := by
     rw [size_encode_fields, hgs s k hs hk hk16]; exact hcs16 k hk16
-  rw [radix4Blocks_encode _ _ _ _ _ (hfs _ hxs) (hrs _ 8 (by omega) e1 (by omega))
+  rw [Native.radix4Blocks_encode _ _ _ _ _ (hfs _ hxs) (hrs _ 8 (by omega) e1 (by omega))
       (hrs _ 4 (by omega) e2 (by omega)) (by rw [hgs _ 8 (by omega) e1 (by omega)]; omega)
       (hgs _ 4 (by omega) e2 (by omega)).ge (by rw [hxs]; omega),
-    radix4Blocks_encode _ _ _ _ _ (hfs _ (by rw [Plan.size_butterflyDIFRadix4Blocks, hxs]))
+    Native.radix4Blocks_encode _ _ _ _ _ (hfs _ (by rw [Plan.size_butterflyDIFRadix4Blocks, hxs]))
       (hrs _ 2 (by omega) e3 (by omega)) (hrs _ 1 (by omega) e4 (by omega))
       (hgs _ 2 (by omega) e3 (by omega)).ge
       (by rw [hgs _ 1 (by omega) e4 (by omega)]; omega)
@@ -183,34 +174,28 @@ theorem leafWords_encode (C : Nat → Array F) (S cs l : Nat) :
     show ByteArray.emptyWithCapacity (4 * (S * cs)) = encode (#[] : Array F) from rfl]
   exact foldl_copySlice_encode C (fun _ ↦ l * cs) cs _ _
 
-/-- The sequential stages of a leaf are the column transform's leaf layers. -/
-theorem allFieldStages_eq_leafPasses (D : NTT.Domain F) (tw : Array (Array F)) (X : Array F)
-    (h4 : 4 ≤ D.logN) (hX : X.size = 2 ^ (D.logN - 4)) (htw : TwiddleSizes (D.logN - 4) tw)
-    (hone : TwiddleOnes (D.logN - 4) tw) :
-    allFieldStages (D.logN - 4) tw X =
+/-- A leaf's DIF stages are the column transform's leaf layers. -/
+theorem leafStages_eq_leafPasses (D : NTT.Domain F) (h4 : 4 ≤ D.logN) (tw : Array (Array F))
+    (X : Array F) (hX : X.size = 2 ^ (D.logN - 4)) :
+    Plan.runStagesDIFRadix4WithTwiddles (powDomain D 4 h4) tw X =
       Columns.leafPasses tw ((Parallel.forwardPasses D).drop 2) (D.logN % 2 == 1) X := by
-  let D4 := halfDomain (halfDomain (halfDomain (halfDomain D (by omega))
-    (show 0 < D.logN - 1 by omega)) (show 0 < D.logN - 1 - 1 by omega))
-    (show 0 < D.logN - 1 - 1 - 1 by omega)
-  have hl : D4.logN = D.logN - 4 := show D.logN - 1 - 1 - 1 - 1 = _ by omega
+  let D4 := powDomain D 4 h4
   have hp : Parallel.forwardPasses D4 = (Parallel.forwardPasses D).drop 2 := by
     unfold Parallel.forwardPasses
-    rw [hl]
-    apply List.ext_getElem
-      (by simp only [List.length_map, List.length_range, List.length_drop]; omega)
+    apply List.ext_getElem (by
+      simp only [D4, powDomain, List.length_map, List.length_range, List.length_drop]; omega)
     intro i _ _
-    simp only [List.getElem_map, List.getElem_range, List.getElem_drop]
+    simp only [D4, powDomain, List.getElem_map, List.getElem_range, List.getElem_drop]
     omega
-  have hX4 : X.size = D4.n := by rw [hX, NTT.Domain.n, hl]
-  rw [← hl] at htw hone ⊢
-  rw [allFieldStages_eq_plan D4 tw X htw hone, ← Plan.checkedStages_eq,
-    ← Parallel.forwardStages_eq D4 tw X hX4]
+  have hX4 : X.size = D4.n := hX
+  rw [← Plan.checkedStages_eq, ← Parallel.forwardStages_eq D4 tw X hX4]
   unfold Columns.leafPasses
   rw [← hp]
+  have hl : D4.logN = D.logN - 4 := rfl
   by_cases ho : D.logN % 2 = 1
-  · simp only [show D4.logN % 2 = 1 by omega, ho, beq_self_eq_true, ↓reduceIte]
+  · simp only [hl, show (D.logN - 4) % 2 = 1 by omega, ho, beq_self_eq_true, ↓reduceIte]
     rw [NaturalPlan.lastPair_eq D4 _ _ (by rw [Parallel.size_runPasses, hX4])]
-  · simp only [show ¬D4.logN % 2 = 1 by omega, ho, beq_iff_eq, ↓reduceIte]
+  · simp only [hl, show ¬(D.logN - 4) % 2 = 1 by omega, ho, beq_iff_eq, ↓reduceIte]
 
 /-- The packed column transform packs the natural-order read of the DIF transform. -/
 theorem runColumns_encode (D : NTT.Domain F) (S : Nat) (factor : F) (a : Array F)
@@ -272,48 +257,45 @@ theorem runColumns_encode (D : NTT.Domain F) (S : Nat) (factor : F) (a : Array F
     have := Nat.mul_le_mul_right M (show l + 1 ≤ 16 by omega)
     rw [Nat.add_mul, Nat.one_mul] at this
     omega
-  have hB (l : Nat) (hl : l < 16) :
-      ((difSpec D a).extract (l * M) ((l + 1) * M)).size = 2 ^ (D.logN - 4) := by
-    have := Nat.mul_le_mul_right M (show l + 1 ≤ 16 by omega)
-    rw [Array.size_extract, size_difSpec, NTT.Domain.n, hM, Nat.min_eq_left this, Nat.succ_mul]
-    omega
   have hleaf (l : Nat) (hl : l < 16) :
       leafNatural (tw.map encode) (D.logN - 4) factor.val inverse (encode (X l)) =
-        leafRev (encode ((difSpec D a).extract (l * M) ((l + 1) * M))) (D.logN - 4)
-          factor.val inverse := by
-    have htw4 : TwiddleSizes (D.logN - 4) tw := fun s hs ↦ htw s (by omega)
-    have hone4 : TwiddleOnes (D.logN - 4) tw := fun s hs ↦ hone s (by omega)
+        encode (decodedFields (D.logN - 4) ((difSpec D a).extract (l * M) ((l + 1) * M))
+          factor inverse) := by
+    have htw4 : TwiddleSizes (powDomain D 4 (by omega)).logN tw := fun s hs ↦ htw s (by
+      simp only [powDomain] at hs; omega)
+    have hone4 : TwiddleOnes (powDomain D 4 (by omega)).logN tw := fun s hs ↦ hone s (by
+      simp only [powDomain] at hs; omega)
     have hp : 2 ^ (D.logN - 4) ≤ 2 ^ D.logN := Nat.pow_le_pow_right (by omega) (by omega)
-    rw [Native.leafNatural_encode _ tw (X l) factor inverse htw4 hone4 (hX l hl) (by omega)
-      (by omega), allFieldStages_eq_leafPasses D tw (X l) (by omega) (hX l hl) htw4 hone4]
+    erw [Native.leafNatural_encode (powDomain D 4 (by omega)) tw (X l) factor inverse htw4 hone4
+      (hX l hl) (by simp only [powDomain, NTT.Domain.n]; omega)
+      (by simp only [powDomain]; omega)]
+    rw [leafStages_eq_leafPasses D (by omega) tw (X l) (hX l hl)]
     simp only [X]
     rw [show l * M + M = (l + 1) * M by ring,
       Columns.leafPasses_extract tw _ _ T M 16 l hT hl hM2
         (NaturalPlan.dvd_of_mem_forwardPasses_drop D),
       NaturalPlan.leafPasses_topPasses D tw a hs (by omega), Plan.checkedStages_eq,
-      planStages_eq_difSpec D a hs,
-      Native.leafRev_encode _ _ factor inverse (by omega) (by omega) (hB l hl) (by omega)]
-  have hcols : ((Array.range S).map fun s ↦ Task.spawn fun _ ↦
-      columnWords (tw.map encode) D.logN M cs (s * cs) (encode a)).map Task.get =
+      planStages_eq_difSpec D a hs]
+    rfl
+  have hcols : ((Array.range S).map fun s ↦
+      columnWords (tw.map encode) D.logN M cs (s * cs) (encode a)) =
       (Array.range S).map fun s ↦ encode (C s) := by
     apply Array.ext (by simp only [Array.size_map, Array.size_range])
     intro s h1 _
     simp only [Array.size_map, Array.size_range] at h1
     simp only [Array.getElem_map, Array.getElem_range]
     exact columnWords_encode a tw D.logN cs (s * cs) (by omega) hn htw hu' (hj s h1)
-  have hleaves : ((Array.range 16).map fun l ↦ (Columns.joinTasks ((Array.range S).map fun s ↦
-      Task.spawn fun _ ↦ columnWords (tw.map encode) D.logN M cs (s * cs) (encode a))).bind
-        fun cols ↦ Task.spawn fun _ ↦
-          leafNatural (tw.map encode) (D.logN - 4) factor.val inverse (leafWords cols cs l)).map
+  have hleaves : (Tasks.spawnAfter (Tasks.spawnAll S fun s ↦
+      columnWords (tw.map encode) D.logN M cs (s * cs) (encode a)) 16 fun cols l ↦
+        leafNatural (tw.map encode) (D.logN - 4) factor.val inverse (leafWords cols cs l)).map
         Task.get =
-      (leafBlocks (difSpec D a) D.logN).map fun b ↦ leafRev b (D.logN - 4) factor.val inverse := by
-    apply Array.ext (by simp only [Array.size_map, Array.size_range, leafBlocks, Array.size_ofFn])
+      (Array.range 16).map fun l ↦ encode (decodedFields (D.logN - 4)
+        ((difSpec D a).extract (l * M) ((l + 1) * M)) factor inverse) := by
+    rw [Tasks.map_get_spawnAfter, Tasks.map_get_spawnAll, hcols]
+    apply Array.ext (by simp only [Array.size_map, Array.size_range])
     intro l h1 _
     simp only [Array.size_map, Array.size_range] at h1
-    rw [Array.getElem_map, Array.getElem_map, Array.getElem_map, Array.getElem_range,
-      Columns.get_bind_spawn, hcols, hleafIn l h1, hleaf l h1]
-    simp only [leafBlocks, Array.getElem_ofFn]
-    rfl
+    rw [Array.getElem_map, Array.getElem_map, Array.getElem_range, hleafIn l h1, hleaf l h1]
   dsimp only [runColumns]
   rw [hcsM, hleaves, naturalLeaves_encode (difSpec D a) D.logN factor inverse (by omega) h32
     (by rw [size_difSpec]; rfl) hu']
@@ -331,8 +313,8 @@ theorem run_dft (D : NTT.Domain F) (logWorkers : Nat) (factor : F) (a : Array F)
     exact runColumns_encode D _ factor a inverse hs h.2 h32 hu (Nat.two_pow_pos _)
       (Nat.pow_dvd_pow 2 (by omega))
   · obtain ⟨htw, hone⟩ := twiddleTable_invariants D
-    rw [Native.leafNatural_encode D.logN _ a factor inverse htw hone hs hu h32,
-      allFieldStages_eq_plan D _ a htw hone, planStages_eq_difSpec D a hs]
+    rw [Native.leafNatural_encode D _ a factor inverse htw hone hs hu h32,
+      planStages_eq_difSpec D a hs]
 
 end Native
 end CompPoly.CPolynomial.NTTFast.Packed

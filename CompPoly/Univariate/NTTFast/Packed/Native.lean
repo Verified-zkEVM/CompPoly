@@ -550,153 +550,109 @@ def inner16 (th tl : ByteArray) (q j i0 i1 i2 i3 : Nat) (b : ByteArray) : ByteAr
         (USize.ofNatLT i2 (by omega)) (USize.ofNatLT i3 (by omega)) b
         (by simp only [USize.toNat_ofNatLT]; exact h))
   else inner th tl q j i0 i1 i2 i3 b
-@[noinline] def leaf16 (t3 t2 t1 : @& ByteArray) (i : USize) (b : ByteArray)
-    (h : 4 * (i.toNat + 15) + 3 < b.size ∧ b.size < USize.size ∧
-      31 < t3.size ∧ t3.size < USize.size ∧ 15 < t2.size ∧ t2.size < USize.size ∧
-      7 < t1.size ∧ t1.size < USize.size) : ByteArray :=
-  let x0_0 := readUOffset b i 0 (by rw [usize_numeral 0 (by decide)]; omega)
-  let x0_1 := readUOffset b i 1 (by rw [usize_numeral 1 (by decide)]; omega)
-  let x0_2 := readUOffset b i 2 (by rw [usize_numeral 2 (by decide)]; omega)
-  let x0_3 := readUOffset b i 3 (by rw [usize_numeral 3 (by decide)]; omega)
-  let x0_4 := readUOffset b i 4 (by rw [usize_numeral 4 (by decide)]; omega)
-  let x0_5 := readUOffset b i 5 (by rw [usize_numeral 5 (by decide)]; omega)
-  let x0_6 := readUOffset b i 6 (by rw [usize_numeral 6 (by decide)]; omega)
-  let x0_7 := readUOffset b i 7 (by rw [usize_numeral 7 (by decide)]; omega)
-  let x0_8 := readUOffset b i 8 (by rw [usize_numeral 8 (by decide)]; omega)
-  let x0_9 := readUOffset b i 9 (by rw [usize_numeral 9 (by decide)]; omega)
-  let x0_10 := readUOffset b i 10 (by rw [usize_numeral 10 (by decide)]; omega)
-  let x0_11 := readUOffset b i 11 (by rw [usize_numeral 11 (by decide)]; omega)
-  let x0_12 := readUOffset b i 12 (by rw [usize_numeral 12 (by decide)]; omega)
-  let x0_13 := readUOffset b i 13 (by rw [usize_numeral 13 (by decide)]; omega)
-  let x0_14 := readUOffset b i 14 (by rw [usize_numeral 14 (by decide)]; omega)
-  let x0_15 := readUOffset b i 15 (by rw [usize_numeral 15 (by decide)]; omega)
-  let w0_1 := readUOffset t3 0 1 (by
-      rw [usize_numeral 0 (by decide), usize_numeral 1 (by decide)]
+/-- Sixteen radix-two DIF butterflies between the words from `i0` and from `i1`, with twiddles
+from word `j` of `w`. -/
+@[noinline] def pair16 (w : @& ByteArray) (j i0 i1 : USize) (b : ByteArray)
+    (h : 4 * (i0.toNat + 15) + 3 < b.size ∧ 4 * (i1.toNat + 15) + 3 < b.size ∧
+      4 * (j.toNat + 15) + 3 < w.size ∧ b.size < USize.size ∧ w.size < USize.size) :
+    ByteArray :=
+  let x0 := readUOffset b i0 0 (by rw [usize_numeral 0 (by decide)]; omega)
+  let y0 := readUOffset b i1 0 (by rw [usize_numeral 0 (by decide)]; omega)
+  let w0 := readUOffset w j 0 (by rw [usize_numeral 0 (by decide)]; omega)
+  let x1 := readUOffset b i0 1 (by rw [usize_numeral 1 (by decide)]; omega)
+  let y1 := readUOffset b i1 1 (by rw [usize_numeral 1 (by decide)]; omega)
+  let w1 := readUOffset w j 1 (by rw [usize_numeral 1 (by decide)]; omega)
+  let x2 := readUOffset b i0 2 (by rw [usize_numeral 2 (by decide)]; omega)
+  let y2 := readUOffset b i1 2 (by rw [usize_numeral 2 (by decide)]; omega)
+  let w2 := readUOffset w j 2 (by rw [usize_numeral 2 (by decide)]; omega)
+  let x3 := readUOffset b i0 3 (by rw [usize_numeral 3 (by decide)]; omega)
+  let y3 := readUOffset b i1 3 (by rw [usize_numeral 3 (by decide)]; omega)
+  let w3 := readUOffset w j 3 (by rw [usize_numeral 3 (by decide)]; omega)
+  let x4 := readUOffset b i0 4 (by rw [usize_numeral 4 (by decide)]; omega)
+  let y4 := readUOffset b i1 4 (by rw [usize_numeral 4 (by decide)]; omega)
+  let w4 := readUOffset w j 4 (by rw [usize_numeral 4 (by decide)]; omega)
+  let x5 := readUOffset b i0 5 (by rw [usize_numeral 5 (by decide)]; omega)
+  let y5 := readUOffset b i1 5 (by rw [usize_numeral 5 (by decide)]; omega)
+  let w5 := readUOffset w j 5 (by rw [usize_numeral 5 (by decide)]; omega)
+  let x6 := readUOffset b i0 6 (by rw [usize_numeral 6 (by decide)]; omega)
+  let y6 := readUOffset b i1 6 (by rw [usize_numeral 6 (by decide)]; omega)
+  let w6 := readUOffset w j 6 (by rw [usize_numeral 6 (by decide)]; omega)
+  let x7 := readUOffset b i0 7 (by rw [usize_numeral 7 (by decide)]; omega)
+  let y7 := readUOffset b i1 7 (by rw [usize_numeral 7 (by decide)]; omega)
+  let w7 := readUOffset w j 7 (by rw [usize_numeral 7 (by decide)]; omega)
+  let x8 := readUOffset b i0 8 (by rw [usize_numeral 8 (by decide)]; omega)
+  let y8 := readUOffset b i1 8 (by rw [usize_numeral 8 (by decide)]; omega)
+  let w8 := readUOffset w j 8 (by rw [usize_numeral 8 (by decide)]; omega)
+  let x9 := readUOffset b i0 9 (by rw [usize_numeral 9 (by decide)]; omega)
+  let y9 := readUOffset b i1 9 (by rw [usize_numeral 9 (by decide)]; omega)
+  let w9 := readUOffset w j 9 (by rw [usize_numeral 9 (by decide)]; omega)
+  let x10 := readUOffset b i0 10 (by rw [usize_numeral 10 (by decide)]; omega)
+  let y10 := readUOffset b i1 10 (by rw [usize_numeral 10 (by decide)]; omega)
+  let w10 := readUOffset w j 10 (by rw [usize_numeral 10 (by decide)]; omega)
+  let x11 := readUOffset b i0 11 (by rw [usize_numeral 11 (by decide)]; omega)
+  let y11 := readUOffset b i1 11 (by rw [usize_numeral 11 (by decide)]; omega)
+  let w11 := readUOffset w j 11 (by rw [usize_numeral 11 (by decide)]; omega)
+  let x12 := readUOffset b i0 12 (by rw [usize_numeral 12 (by decide)]; omega)
+  let y12 := readUOffset b i1 12 (by rw [usize_numeral 12 (by decide)]; omega)
+  let w12 := readUOffset w j 12 (by rw [usize_numeral 12 (by decide)]; omega)
+  let x13 := readUOffset b i0 13 (by rw [usize_numeral 13 (by decide)]; omega)
+  let y13 := readUOffset b i1 13 (by rw [usize_numeral 13 (by decide)]; omega)
+  let w13 := readUOffset w j 13 (by rw [usize_numeral 13 (by decide)]; omega)
+  let x14 := readUOffset b i0 14 (by rw [usize_numeral 14 (by decide)]; omega)
+  let y14 := readUOffset b i1 14 (by rw [usize_numeral 14 (by decide)]; omega)
+  let w14 := readUOffset w j 14 (by rw [usize_numeral 14 (by decide)]; omega)
+  let x15 := readUOffset b i0 15 (by rw [usize_numeral 15 (by decide)]; omega)
+  let y15 := readUOffset b i1 15 (by rw [usize_numeral 15 (by decide)]; omega)
+  let w15 := readUOffset w j 15 (by rw [usize_numeral 15 (by decide)]; omega)
+  let b := write16U b i0
+    (add x0 y0) (add x1 y1) (add x2 y2) (add x3 y3) (add x4 y4) (add x5 y5) (add x6 y6) (add x7 y7)
+    (add x8 y8) (add x9 y9) (add x10 y10) (add x11 y11) (add x12 y12) (add x13 y13) (add x14 y14)
+    (add x15 y15)
+  write16U b i1
+    (mul w0 (sub x0 y0)) (mul w1 (sub x1 y1)) (mul w2 (sub x2 y2)) (mul w3 (sub x3 y3))
+    (mul w4 (sub x4 y4)) (mul w5 (sub x5 y5)) (mul w6 (sub x6 y6)) (mul w7 (sub x7 y7))
+    (mul w8 (sub x8 y8)) (mul w9 (sub x9 y9)) (mul w10 (sub x10 y10)) (mul w11 (sub x11 y11))
+    (mul w12 (sub x12 y12)) (mul w13 (sub x13 y13)) (mul w14 (sub x14 y14)) (mul w15 (sub x15 y15))
+
+theorem size_pair16 (w : ByteArray) (j i0 i1 : USize) (b : ByteArray) (h) :
+    (pair16 w j i0 i1 b h).size = b.size := by
+  unfold pair16
+  simp only [write16U, size_storeWords]
+
+/-- `n` batches of sixteen radix-two butterflies after one range check. -/
+def pair16Loop (w : @& ByteArray) : (n : Nat) → (j i0 i1 : USize) → (b : ByteArray) →
+    4 * (i0.toNat + 16 * n) ≤ b.size ∧ 4 * (i1.toNat + 16 * n) ≤ b.size ∧
+      4 * (j.toNat + 16 * n) ≤ w.size ∧ b.size < USize.size ∧ w.size < USize.size → ByteArray
+  | 0, _, _, _, b, _ => b
+  | n + 1, j, i0, i1, b, h =>
+    let b' := pair16 w j i0 i1 b (by omega)
+    pair16Loop w n (j + 16) (i0 + 16) (i1 + 16) b' (by
+      have hs : b'.size = b.size := size_pair16 ..
+      rw [hs, usize_add16 j w.size (by omega) h.2.2.2.2, usize_add16 i0 b.size (by omega) h.2.2.2.1,
+        usize_add16 i1 b.size (by omega) h.2.2.2.1]
       omega)
-  let w0_2 := readUOffset t3 0 2 (by
-      rw [usize_numeral 0 (by decide), usize_numeral 2 (by decide)]
-      omega)
-  let w0_3 := readUOffset t3 0 3 (by
-      rw [usize_numeral 0 (by decide), usize_numeral 3 (by decide)]
-      omega)
-  let w0_4 := readUOffset t3 0 4 (by
-      rw [usize_numeral 0 (by decide), usize_numeral 4 (by decide)]
-      omega)
-  let w0_5 := readUOffset t3 0 5 (by
-      rw [usize_numeral 0 (by decide), usize_numeral 5 (by decide)]
-      omega)
-  let w0_6 := readUOffset t3 0 6 (by
-      rw [usize_numeral 0 (by decide), usize_numeral 6 (by decide)]
-      omega)
-  let w0_7 := readUOffset t3 0 7 (by
-      rw [usize_numeral 0 (by decide), usize_numeral 7 (by decide)]
-      omega)
-  let x1_0 := add x0_0 x0_8
-  let x1_8 := sub x0_0 x0_8
-  let x1_1 := add x0_1 x0_9
-  let x1_9 := mul w0_1 (sub x0_1 x0_9)
-  let x1_2 := add x0_2 x0_10
-  let x1_10 := mul w0_2 (sub x0_2 x0_10)
-  let x1_3 := add x0_3 x0_11
-  let x1_11 := mul w0_3 (sub x0_3 x0_11)
-  let x1_4 := add x0_4 x0_12
-  let x1_12 := mul w0_4 (sub x0_4 x0_12)
-  let x1_5 := add x0_5 x0_13
-  let x1_13 := mul w0_5 (sub x0_5 x0_13)
-  let x1_6 := add x0_6 x0_14
-  let x1_14 := mul w0_6 (sub x0_6 x0_14)
-  let x1_7 := add x0_7 x0_15
-  let x1_15 := mul w0_7 (sub x0_7 x0_15)
-  let w1_1 := readUOffset t2 0 1 (by
-      rw [usize_numeral 0 (by decide), usize_numeral 1 (by decide)]
-      omega)
-  let w1_2 := readUOffset t2 0 2 (by
-      rw [usize_numeral 0 (by decide), usize_numeral 2 (by decide)]
-      omega)
-  let w1_3 := readUOffset t2 0 3 (by
-      rw [usize_numeral 0 (by decide), usize_numeral 3 (by decide)]
-      omega)
-  let x2_0 := add x1_0 x1_4
-  let x2_4 := sub x1_0 x1_4
-  let x2_1 := add x1_1 x1_5
-  let x2_5 := mul w1_1 (sub x1_1 x1_5)
-  let x2_2 := add x1_2 x1_6
-  let x2_6 := mul w1_2 (sub x1_2 x1_6)
-  let x2_3 := add x1_3 x1_7
-  let x2_7 := mul w1_3 (sub x1_3 x1_7)
-  let x2_8 := add x1_8 x1_12
-  let x2_12 := sub x1_8 x1_12
-  let x2_9 := add x1_9 x1_13
-  let x2_13 := mul w1_1 (sub x1_9 x1_13)
-  let x2_10 := add x1_10 x1_14
-  let x2_14 := mul w1_2 (sub x1_10 x1_14)
-  let x2_11 := add x1_11 x1_15
-  let x2_15 := mul w1_3 (sub x1_11 x1_15)
-  let w2_1 := readUOffset t1 0 1 (by
-      rw [usize_numeral 0 (by decide), usize_numeral 1 (by decide)]
-      omega)
-  let x3_0 := add x2_0 x2_2
-  let x3_2 := sub x2_0 x2_2
-  let x3_1 := add x2_1 x2_3
-  let x3_3 := mul w2_1 (sub x2_1 x2_3)
-  let x3_4 := add x2_4 x2_6
-  let x3_6 := sub x2_4 x2_6
-  let x3_5 := add x2_5 x2_7
-  let x3_7 := mul w2_1 (sub x2_5 x2_7)
-  let x3_8 := add x2_8 x2_10
-  let x3_10 := sub x2_8 x2_10
-  let x3_9 := add x2_9 x2_11
-  let x3_11 := mul w2_1 (sub x2_9 x2_11)
-  let x3_12 := add x2_12 x2_14
-  let x3_14 := sub x2_12 x2_14
-  let x3_13 := add x2_13 x2_15
-  let x3_15 := mul w2_1 (sub x2_13 x2_15)
-  let x4_0 := add x3_0 x3_1
-  let x4_1 := sub x3_0 x3_1
-  let x4_2 := add x3_2 x3_3
-  let x4_3 := sub x3_2 x3_3
-  let x4_4 := add x3_4 x3_5
-  let x4_5 := sub x3_4 x3_5
-  let x4_6 := add x3_6 x3_7
-  let x4_7 := sub x3_6 x3_7
-  let x4_8 := add x3_8 x3_9
-  let x4_9 := sub x3_8 x3_9
-  let x4_10 := add x3_10 x3_11
-  let x4_11 := sub x3_10 x3_11
-  let x4_12 := add x3_12 x3_13
-  let x4_13 := sub x3_12 x3_13
-  let x4_14 := add x3_14 x3_15
-  let x4_15 := sub x3_14 x3_15
-  write16U b i x4_0 x4_1 x4_2 x4_3 x4_4 x4_5 x4_6 x4_7 x4_8 x4_9 x4_10 x4_11 x4_12 x4_13
-    x4_14 x4_15
-def stages (logN : Nat) (tw : Array ByteArray) (a : ByteArray) : ByteArray := Id.run do
-  let mut a := a
-  let fused := logN ≥ 4 && logN % 2 == 0
-  for pass in [:(if fused then logN / 2 - 2 else logN / 2)] do
-    let high := logN - 1 - 2 * pass
-    let low := high - 1
-    let q := 2 ^ low
-    for block in [:2 ^ logN / (4 * q)] do
-      let base := block * (4 * q)
-      a := inner16 (tw.getD high ByteArray.empty) (tw.getD low ByteArray.empty)
-        q 0 base (base + q) (base + 2 * q) (base + 3 * q) a
-  if fused then
-    let t3 := tw.getD 3 ByteArray.empty
-    let t2 := tw.getD 2 ByteArray.empty
-    let t1 := tw.getD 1 ByteArray.empty
-    for block in [:2 ^ logN / 16] do
-      let i := block * 16
-      if h : 4 * (i + 15) + 3 < a.size ∧ a.size < USize.size ∧
-          31 < t3.size ∧ t3.size < USize.size ∧ 15 < t2.size ∧ t2.size < USize.size ∧
-          7 < t1.size ∧ t1.size < USize.size then
-        a := leaf16 t3 t2 t1 (USize.ofNatLT i (by omega)) a
-          (by simpa only [USize.toNat_ofNatLT] using h)
-  if logN % 2 = 1 then
-    for block in [:2 ^ logN / 2] do
-      let x := read a (2 * block)
-      let y := read a (2 * block + 1)
-      a := write (write a (2 * block) (add x y)) (2 * block + 1) (sub x y)
-  return a
+
+/-- Radix-two DIF butterflies `j, …, q - 1` between the words from `i0` and from `i1`, with
+twiddles from word `j` of `w`: the scalar loop. -/
+def pairInner (w : @& ByteArray) (q j i0 i1 : Nat) (b : ByteArray) : ByteArray :=
+  if j < q then
+    let x := read b i0
+    let y := read b i1
+    pairInner w q (j + 1) (i0 + 1) (i1 + 1)
+      (write (write b i0 (add x y)) i1 (mul (read w j) (sub x y)))
+  else b
+termination_by q - j
+
+/-- The radix-two inner loop: whole sixteen-butterfly batches after one range check, then the
+scalar tail. -/
+def pairs (w : @& ByteArray) (q j i0 i1 : Nat) (b : ByteArray) : ByteArray :=
+  let n := (q - j) / 16
+  if h : 4 * (i0 + 16 * n) ≤ b.size ∧ 4 * (i1 + 16 * n) ≤ b.size ∧ 4 * (j + 16 * n) ≤ w.size ∧
+      b.size < USize.size ∧ w.size < USize.size then
+    pairInner w q (j + 16 * n) (i0 + 16 * n) (i1 + 16 * n)
+      (pair16Loop w n (USize.ofNatLT j (by omega)) (USize.ofNatLT i0 (by omega))
+        (USize.ofNatLT i1 (by omega)) b (by simp only [USize.toNat_ofNatLT]; exact h))
+  else pairInner w q j i0 i1 b
 @[inline] def readWord (b : @& ByteArray) (i : USize) : UInt32 :=
   readAt b i 0
 def decode (logN : Nat) (b : ByteArray) (nInv : UInt32) (inverse : Bool) : Array

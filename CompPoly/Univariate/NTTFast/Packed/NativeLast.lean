@@ -13,8 +13,9 @@ The last four DIF layers of a leaf act inside sixteen-word blocks, and the leaf 
 reads one word from each of sixteen blocks `L` words apart, `L = 2 ^ (m - 4)`. `lastHalf` runs
 both for eight such blocks at once, one block per vector lane, and writes eight words of each of
 sixteen natural-order lines; two calls per batch of sixteen block columns complete the lines.
-This replaces the scalar in-block kernel `leaf16` and the separate `leafRev` pass for even
-leaves of at least `2 ^ 8` words.
+
+The layers above run as radix-four passes from the top; an odd leaf first runs its single
+radix-two layer, so every leaf of at least `2 ^ 8` words ends with the fused final layers.
 -/
 
 @[expose] public section
@@ -881,28 +882,31 @@ def lastRev (t3 t2 t1 b : @& ByteArray) (m : Nat) (factor : UInt32) (scale : Boo
       (by simpa only [USize.toNat_ofNatLT] using h.2) (2 ^ (m - 4) / 16) 0 b
   else b
 
-/-- The radix-four passes of `stages` before its fused final layers. -/
-def upperStages (logN : Nat) (tw : Array ByteArray) (a : ByteArray) : ByteArray := Id.run do
+/-- `blocks` radix-four blocks of quarter `q`, the first at word `0`. -/
+def radix4Blocks (th tl : @& ByteArray) (q blocks : Nat) (a : ByteArray) : ByteArray := Id.run do
   let mut a := a
-  for pass in [:logN / 2 - 2] do
-    let high := logN - 1 - 2 * pass
-    let low := high - 1
-    let q := 2 ^ low
-    for block in [:2 ^ logN / (4 * q)] do
-      let base := block * (4 * q)
-      a := inner16 (tw.getD high ByteArray.empty) (tw.getD low ByteArray.empty)
-        q 0 base (base + q) (base + 2 * q) (base + 3 * q) a
+  for block in [:blocks] do
+    a := inner16 th tl q 0 (block * (4 * q)) (block * (4 * q) + q) (block * (4 * q) + 2 * q)
+      (block * (4 * q) + 3 * q) a
   return a
 
-/-- A complete `2 ^ m`-word leaf in natural order, optionally scaled: even leaves of at least
-`2 ^ 8` words use the fused final layers, others `stages` and `leafRev`, and leaves of fewer than
-sixteen words a scalar reversal. -/
+/-- The leading layers of a `2 ^ m`-word leaf: for odd `m` the radix-two top layer, then `count`
+radix-four passes. -/
+def leafLayers (tw : @& Array ByteArray) (m count : Nat) (a : ByteArray) : ByteArray :=
+  let a := if m % 2 = 1 then pairs (tw.getD (m - 1) .empty) (2 ^ (m - 1)) 0 0 (2 ^ (m - 1)) a
+    else a
+  (List.range count).foldl (fun a pass ↦
+    let high := m - 1 - m % 2 - 2 * pass
+    let q := 2 ^ (high - 1)
+    radix4Blocks (tw.getD high .empty) (tw.getD (high - 1) .empty) q (2 ^ m / (4 * q)) a) a
+
+/-- A complete `2 ^ m`-word leaf in natural order, optionally scaled. Leaves of at least `2 ^ 8`
+words end with the fused final layers, smaller ones with a scalar reversal. -/
 def leafNatural (tw : Array ByteArray) (m : Nat) (factor : UInt32) (scale : Bool)
     (a : ByteArray) : ByteArray :=
-  if m % 2 = 0 ∧ 8 ≤ m then
-    lastRev (tw.getD 3 .empty) (tw.getD 2 .empty) (tw.getD 1 .empty) (upperStages m tw a) m
-      factor scale
-  else if 4 ≤ m then leafRev (stages m tw a) m factor scale
-  else encodeFields (decode m (stages m tw a) factor scale)
+  if 8 ≤ m then
+    lastRev (tw.getD 3 .empty) (tw.getD 2 .empty) (tw.getD 1 .empty) (leafLayers tw m (m / 2 - 2) a)
+      m factor scale
+  else encodeFields (decode m (leafLayers tw m (m / 2) a) factor scale)
 
 end CompPoly.CPolynomial.NTTFast.Packed.Native

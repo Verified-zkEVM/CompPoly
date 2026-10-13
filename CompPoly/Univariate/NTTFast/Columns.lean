@@ -8,6 +8,7 @@ module
 public import CompPoly.Univariate.NTTFast.Parallel
 public import CompPoly.Univariate.NTTFast.Reverse32
 public import CompPoly.Data.ByteArray.Packed
+public import CompPoly.Data.Tasks
 
 /-! # Column-parallel natural-order transform on field arrays
 
@@ -367,21 +368,14 @@ decreasing_by
       r M q0 (q0 + K) out
   else out
 
-/-- Wait for every task without blocking a worker; results keep the task order. -/
-def joinTasks (ts : Array (Task α)) : Task (Array α) :=
-  ts.foldl (fun acc t ↦ acc.bind (sync := true) fun xs ↦ t.map (sync := true) fun x ↦ xs.push x)
-    (.pure #[])
-
 /-- The complete column-parallel transform: natural-order input, natural-order output,
 optionally scaled by `f`; `rest` are the passes of a `2 ^ (logN - 4)`-entry leaf. -/
 @[specialize] def transform [Field R] [DecidableEq R] [PackedRepr R] (tw : Array (Array R))
     (logN S : Nat) (rest : List Nat) (scale : Bool) (f : R) (x : Array R) : Array R :=
   let M := 2 ^ (logN - 4)
   let cs := M / S
-  let cols := (Array.range S).map fun s ↦ Task.spawn fun _ ↦
-    encode (columnTask x tw logN M cs (s * cs)) 0
-  let all := joinTasks cols
-  let leaves := (Array.range 16).map fun l ↦ all.bind fun cols ↦ Task.spawn fun _ ↦
+  let cols := Tasks.spawnAll S fun s ↦ encode (columnTask x tw logN M cs (s * cs)) 0
+  let leaves := Tasks.spawnAfter cols 16 fun cols l ↦
     leafTask cols tw rest (logN % 2 == 1) (logN - 4) cs l scale f
   -- allocated while the tasks run
   let out := Array.replicate (16 * M) 0
@@ -401,16 +395,13 @@ interleave stores packed elements. -/
     (x : ByteArray) : ByteArray :=
   let M := 2 ^ (logN - 4)
   let cs := M / S
-  let cols := (Array.range S).map fun s ↦ Task.spawn fun _ ↦
+  let cols := Tasks.spawnAll S fun s ↦
     encode (columnPasses (gatherRowsPacked x M (s * cs) cs 16) tw logN M cs (s * cs)) 0
-  let all := joinTasks cols
-  let leaves := (Array.range 16).map fun l ↦ all.bind fun cols ↦ Task.spawn fun _ ↦
+  let leaves := Tasks.spawnAfter cols 16 fun cols l ↦
     leafTask cols tw rest (logN % 2 == 1) (logN - 4) cs l scale f
   -- sixteen interleave tasks, each storing a contiguous range of rows; one copy joins them
   let K := M / 16
-  let rows := joinTasks leaves
-  let chunks := (Array.range 16).map fun c ↦ rows.bind fun r ↦ Task.spawn fun _ ↦
-    assembleChunk (α := R) r M (c * K) K
+  let chunks := Tasks.spawnAfter leaves 16 fun r c ↦ assembleChunk (α := R) r M (c * K) K
   (chunks.map Task.get).foldl (· ++ ·) (ByteArray.emptyWithCapacity (PackedRepr.width R * (16 * M)))
 
 /-- The elements of the complete slots of `b`. -/

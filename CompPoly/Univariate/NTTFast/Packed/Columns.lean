@@ -25,12 +25,6 @@ def gatherWords (src : @& ByteArray) (M j0 cs r : Nat) : ByteArray :=
   (List.range r).foldl (fun out k ↦ src.copySlice (4 * (k * M + j0)) out out.size (4 * cs))
     (ByteArray.emptyWithCapacity (4 * (r * cs)))
 
-/-- `blocks` radix-four blocks of quarter `q`, the first at word `0`. -/
-def radix4Blocks (th tl : @& ByteArray) (q blocks : Nat) (a : ByteArray) : ByteArray :=
-  (List.range blocks).foldl (fun a block ↦
-    inner16 th tl q 0 (block * (4 * q)) (block * (4 * q) + q) (block * (4 * q) + 2 * q)
-      (block * (4 * q) + 3 * q) a) a
-
 /-- The top two radix-four passes of a `16 × M` transform on columns `j0, …, j0 + cs - 1`. -/
 def columnWords (tw : @& Array ByteArray) (logN M cs j0 : Nat) (x : @& ByteArray) : ByteArray :=
   let a := radix4Blocks (gatherWords (tw.getD (logN - 1) .empty) M j0 cs 8)
@@ -50,9 +44,8 @@ def runColumns (tw : Array ByteArray) (logN S : Nat) (nInv : UInt32) (inverse : 
     (a : ByteArray) : ByteArray :=
   let M := 2 ^ (logN - 4)
   let cs := M / S
-  let cols := (Array.range S).map fun s ↦ Task.spawn fun _ ↦ columnWords tw logN M cs (s * cs) a
-  let all := Columns.joinTasks cols
-  let leaves := (Array.range 16).map fun l ↦ all.bind fun cols ↦ Task.spawn fun _ ↦
+  let cols := Tasks.spawnAll S fun s ↦ columnWords tw logN M cs (s * cs) a
+  let leaves := Tasks.spawnAfter cols 16 fun cols l ↦
     leafNatural tw (logN - 4) nInv inverse (leafWords cols cs l)
   naturalLeaves (leaves.map Task.get) logN
 

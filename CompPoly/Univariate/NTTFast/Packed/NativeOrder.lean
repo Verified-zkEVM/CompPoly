@@ -23,43 +23,6 @@ namespace CompPoly.CPolynomial.NTTFast.Packed.Native
 @[inline] def scaleWord (factor : UInt32) (scale : Bool) (x : UInt32) : UInt32 :=
   if scale then mul factor x else x
 
-/-- Word offset `k * st`. -/
-@[inline] def strideOff (k : Nat) (st : USize) : USize := k.toUSize * st
-
-/-- Store sixteen consecutive locally reversed words at local index `q`, a multiple of sixteen:
-their positions are `bitrev q + bitrev₄ u * st` with one reversal per batch. -/
-@[noinline] def leafRevStep (b : @& ByteArray) (shift factor : UInt32) (scale : Bool)
-    (st q : USize) (out : ByteArray) : ByteArray :=
-  let r := (reverse32 q.toUInt32 >>> shift).toUSize
-  write16U out q (scaleWord factor scale (readWord b (r + strideOff 0 st)))
-    (scaleWord factor scale (readWord b (r + strideOff 8 st)))
-    (scaleWord factor scale (readWord b (r + strideOff 4 st)))
-    (scaleWord factor scale (readWord b (r + strideOff 12 st)))
-    (scaleWord factor scale (readWord b (r + strideOff 2 st)))
-    (scaleWord factor scale (readWord b (r + strideOff 10 st)))
-    (scaleWord factor scale (readWord b (r + strideOff 6 st)))
-    (scaleWord factor scale (readWord b (r + strideOff 14 st)))
-    (scaleWord factor scale (readWord b (r + strideOff 1 st)))
-    (scaleWord factor scale (readWord b (r + strideOff 9 st)))
-    (scaleWord factor scale (readWord b (r + strideOff 5 st)))
-    (scaleWord factor scale (readWord b (r + strideOff 13 st)))
-    (scaleWord factor scale (readWord b (r + strideOff 3 st)))
-    (scaleWord factor scale (readWord b (r + strideOff 11 st)))
-    (scaleWord factor scale (readWord b (r + strideOff 7 st)))
-    (scaleWord factor scale (readWord b (r + strideOff 15 st)))
-
-/-- Store `count` batches of sixteen locally reversed words, starting at local index `q`. -/
-def leafRevGo (b : @& ByteArray) (shift factor : UInt32) (scale : Bool) (st : USize) :
-    Nat → USize → ByteArray → ByteArray
-  | 0, _, out => out
-  | count + 1, q, out =>
-    leafRevGo b shift factor scale st count (q + 16) (leafRevStep b shift factor scale st q out)
-
-/-- A `2 ^ logM`-word leaf in locally bit-reversed order, optionally scaled, `4 ≤ logM`. -/
-def leafRev (b : @& ByteArray) (logM : Nat) (factor : UInt32) (scale : Bool) : ByteArray :=
-  leafRevGo b (32 - logM).toUInt32 factor scale (2 ^ (logM - 4)).toUSize (2 ^ logM / 16) 0
-    (zeroWords (2 ^ logM))
-
 /-- Sixteen consecutive words of one buffer. -/
 structure Line where
   w0 : UInt32

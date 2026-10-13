@@ -204,161 +204,6 @@ theorem transposeGo_encodeWords (v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v
       usize_add_numeral q 16 (by decide) hq]
     simp only [Nat.add_assoc]
 
-/-- A word read at a strided offset. -/
-theorem readWord_stride (w : Array UInt32) (r : USize) (k : Nat) (st : USize) (hk16 : k < 16)
-    (h : r.toNat + k * st.toNat < w.size) (hs : (encode w).size < USize.size) :
-    readWord (encode w) (r + strideOff k st) = w.getD (r.toNat + k * st.toNat) 0 := by
-  have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
-  have hsz := hs
-  rw [size_encode_uint32] at hsz
-  have hk : k < USize.size := by
-    have : 4294967296 ≤ USize.size := USize.le_size
-    omega
-  have ht : (r + strideOff k st).toNat = r.toNat + k * st.toNat := by
-    rw [strideOff, USize.toNat_add, USize.toNat_mul, USize.toNat_ofNat_of_lt' hk,
-      Nat.mod_eq_of_lt (show k * st.toNat < USize.size by omega), Nat.mod_eq_of_lt (by omega)]
-  rw [readWord_eq_read, ht, read_encodeWords w _ hs h]
-
-/-- Bit reversal splits off the four low bits of a multiple of sixteen. -/
-theorem bitRevNat_add_low (m q u : Nat) (hm : 4 ≤ m) (hq : 16 ∣ q) (hu : u < 16) :
-    NTT.Transform.bitRevNat m (q + u) =
-      NTT.Transform.bitRevNat m q + NTT.Transform.bitRevNat 4 u * 2 ^ (m - 4) := by
-  obtain ⟨j, rfl⟩ := hq
-  have h1 := bitRevNat_concat (m - 4) 4 j u hu
-  have h0 := bitRevNat_concat (m - 4) 4 j 0 (by decide)
-  rw [show m - 4 + 4 = m by omega, show 2 ^ 4 * j = 16 * j by norm_num] at h1 h0
-  rw [Nat.add_zero] at h0
-  rw [h1, h0, show NTT.Transform.bitRevNat 4 0 = 0 by decide]
-  ring
-
-/-- One reversal step appends sixteen consecutive locally reversed words. -/
-theorem leafRevStep_encodeWords (w o Z : Array UInt32) (m : Nat) (f : UInt32) (sc : Bool)
-    (hm4 : 4 ≤ m) (hm : m ≤ 32) (hw : w.size = 2 ^ m) (hs : (encode w).size < USize.size)
-    (q : USize) (hq16 : 16 ∣ q.toNat) (hq : q.toNat + 16 ≤ 2 ^ m) (hqo : q.toNat = o.size)
-    (hZ : 16 ≤ Z.size) (ho : (encode (o ++ Z)).size < USize.size) :
-    leafRevStep (encode w) (32 - m).toUInt32 f sc (2 ^ (m - 4)).toUSize q (encode (o ++ Z)) =
-      encode (o ++ lit16 (fun u ↦
-        scaleWord f sc (w.getD (NTT.Transform.bitRevNat m (q.toNat + u)) 0)) ++
-        Z.extract 16 Z.size) := by
-  have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
-  have hsz := hs
-  rw [size_encode_uint32, hw] at hsz
-  have hm4' : 2 ^ m = 16 * 2 ^ (m - 4) := by
-    rw [show m = m - 4 + 4 by omega, Nat.pow_add]; simp only [Nat.add_sub_cancel]; ring
-  have hr : (reverse32 q.toUInt32 >>> (32 - m).toUInt32).toUSize.toNat =
-      NTT.Transform.bitRevNat m q.toNat := by
-    rw [UInt32.toNat_toUSize, show q.toUInt32 = q.toNat.toUInt32 from UInt32.toFin_inj.mp rfl]
-    exact reverse_index m q.toNat hm (by omega)
-  have hS : (2 ^ (m - 4)).toUSize.toNat = 2 ^ (m - 4) := USize.toNat_ofNat_of_lt' (by omega)
-  have hlow : NTT.Transform.bitRevNat m q.toNat < 2 ^ (m - 4) := by
-    obtain ⟨j, hj⟩ := hq16
-    have h0 := bitRevNat_concat (m - 4) 4 j 0 (by decide)
-    rw [show m - 4 + 4 = m by omega, show 2 ^ 4 * j = 16 * j by norm_num, Nat.add_zero,
-      show NTT.Transform.bitRevNat 4 0 = 0 by decide, Nat.mul_zero, Nat.zero_add] at h0
-    rw [hj, h0]
-    exact NTT.Transform.bitRevNat_lt _ _
-  have hk : ∀ k < 16, (reverse32 q.toUInt32 >>> (32 - m).toUInt32).toUSize.toNat +
-      k * (2 ^ (m - 4)).toUSize.toNat < w.size := by
-    intro k hk
-    rw [hr, hS, hw, hm4']
-    have := Nat.mul_le_mul_right (2 ^ (m - 4)) (show k ≤ 15 by omega)
-    omega
-  have hidx : ∀ u < 16, NTT.Transform.bitRevNat m (q.toNat + u) =
-      NTT.Transform.bitRevNat m q.toNat + NTT.Transform.bitRevNat 4 u * 2 ^ (m - 4) :=
-    fun u hu ↦ bitRevNat_add_low m q.toNat u hm4 hq16 hu
-  unfold leafRevStep
-  dsimp only
-  rw [readWord_stride w _ 0 _ (by decide) (hk 0 (by decide)) hs,
-    readWord_stride w _ 8 _ (by decide) (hk 8 (by decide)) hs,
-    readWord_stride w _ 4 _ (by decide) (hk 4 (by decide)) hs,
-    readWord_stride w _ 12 _ (by decide) (hk 12 (by decide)) hs,
-    readWord_stride w _ 2 _ (by decide) (hk 2 (by decide)) hs,
-    readWord_stride w _ 10 _ (by decide) (hk 10 (by decide)) hs,
-    readWord_stride w _ 6 _ (by decide) (hk 6 (by decide)) hs,
-    readWord_stride w _ 14 _ (by decide) (hk 14 (by decide)) hs,
-    readWord_stride w _ 1 _ (by decide) (hk 1 (by decide)) hs,
-    readWord_stride w _ 9 _ (by decide) (hk 9 (by decide)) hs,
-    readWord_stride w _ 5 _ (by decide) (hk 5 (by decide)) hs,
-    readWord_stride w _ 13 _ (by decide) (hk 13 (by decide)) hs,
-    readWord_stride w _ 3 _ (by decide) (hk 3 (by decide)) hs,
-    readWord_stride w _ 11 _ (by decide) (hk 11 (by decide)) hs,
-    readWord_stride w _ 7 _ (by decide) (hk 7 (by decide)) hs,
-    readWord_stride w _ 15 _ (by decide) (hk 15 (by decide)) hs]
-  rw [write16U_pack_cursor o Z q hqo hZ ho]
-  simp only [hr, hS]
-  congr 3
-  simp only [lit16]
-  rw [hidx 0 (by decide), hidx 1 (by decide), hidx 2 (by decide), hidx 3 (by decide),
-    hidx 4 (by decide), hidx 5 (by decide), hidx 6 (by decide), hidx 7 (by decide),
-    hidx 8 (by decide), hidx 9 (by decide), hidx 10 (by decide), hidx 11 (by decide),
-    hidx 12 (by decide), hidx 13 (by decide), hidx 14 (by decide), hidx 15 (by decide)]
-  rfl
-
-/-- Repeated reversal steps append consecutive locally reversed words. -/
-theorem leafRevGo_encodeWords (w : Array UInt32) (m : Nat) (f : UInt32) (sc : Bool)
-    (hm4 : 4 ≤ m) (hm : m ≤ 32) (hw : w.size = 2 ^ m) (hs : (encode w).size < USize.size)
-    (count : Nat) (q : USize) (o Z : Array UInt32) (hq16 : 16 ∣ q.toNat)
-    (hq : q.toNat + 16 * count ≤ 2 ^ m) (hqo : q.toNat = o.size) (hZ : 16 * count ≤ Z.size)
-    (ho : (encode (o ++ Z)).size < USize.size) :
-    leafRevGo (encode w) (32 - m).toUInt32 f sc (2 ^ (m - 4)).toUSize count q (encode (o ++ Z)) =
-      encode (o ++ rows (fun j u ↦
-        scaleWord f sc (w.getD (NTT.Transform.bitRevNat m (q.toNat + (16 * j + u))) 0))
-        count ++ Z.extract (16 * count) Z.size) := by
-  induction count generalizing q o Z with
-  | zero => simp only [leafRevGo, rows, Array.append_empty, Nat.mul_zero, Array.extract_size]
-  | succ count ih =>
-    have hsz := hs
-    rw [size_encode_uint32, hw] at hsz
-    have hsz' := ho
-    rw [size_encode_uint32, Array.size_append] at hsz'
-    have h16 : (q + 16).toNat = q.toNat + 16 := usize_add_numeral q 16 (by decide) (by omega)
-    rw [leafRevGo, leafRevStep_encodeWords w o Z m f sc hm4 hm hw hs q hq16 (by omega) hqo (by
-        omega) ho,
-      ih (q + 16) _ _ (by rw [h16]; exact Nat.dvd_add hq16 (dvd_refl 16)) (by rw [h16]; omega)
-        (by rw [h16, Array.size_append, size_lit16]; omega)
-        (by simp only [Array.size_extract]; omega)
-        (by simp only [size_encode_uint32, Array.size_append, size_lit16, Array.size_extract];
-            omega),
-      extract_extract_tail, Nat.add_comm count 1, rows_add, Array.append_assoc, h16]
-    have e1 : rows (fun j u ↦ scaleWord f sc
-        (w.getD (NTT.Transform.bitRevNat m (q.toNat + (16 * j + u))) 0)) 1 =
-        lit16 (fun u ↦ scaleWord f sc
-          (w.getD (NTT.Transform.bitRevNat m (q.toNat + u)) 0)) := by
-      simp only [rows, Array.empty_append, Nat.mul_zero, Nat.zero_add]
-    have e2 : (fun j u ↦ scaleWord f sc
-        (w.getD (NTT.Transform.bitRevNat m (q.toNat + 16 + (16 * j + u))) 0)) =
-        (fun j u ↦ scaleWord f sc
-          (w.getD (NTT.Transform.bitRevNat m (q.toNat + (16 * (1 + j) + u))) 0)) := by
-      funext j u
-      rw [show q.toNat + 16 + (16 * j + u) = q.toNat + (16 * (1 + j) + u) by omega]
-    rw [e1, e2, show 16 + 16 * count = 16 * (1 + count) by omega]
-    simp only [Array.append_assoc]
-
-/-- A complete reversed leaf: word `i` is leaf word `bitrev i`, optionally scaled. -/
-theorem leafRev_encodeWords (w : Array UInt32) (m : Nat) (f : UInt32) (sc : Bool)
-    (hm4 : 4 ≤ m) (hm : m ≤ 32) (hw : w.size = 2 ^ m) (hs : (encode w).size < USize.size) :
-    leafRev (encode w) m f sc = encode (rows (fun j u ↦
-      scaleWord f sc (w.getD (NTT.Transform.bitRevNat m (16 * j + u)) 0)) (2 ^ m / 16)) := by
-  have hdiv : 16 * (2 ^ m / 16) = 2 ^ m := by
-    have : 16 ∣ 2 ^ m := by
-      rw [show m = 4 + (m - 4) by omega, Nat.pow_add]
-      exact Nat.dvd_mul_right _ _
-    omega
-  have hsz := hs
-  rw [size_encode_uint32, hw] at hsz
-  unfold leafRev
-  rw [show zeroWords (2 ^ m) = encode (#[] ++ Array.replicate (2 ^ m) (0 : UInt32)) by
-      rw [Array.empty_append, zeroWords_eq],
-    leafRevGo_encodeWords w m f sc hm4 hm hw hs _ 0 #[] _
-    (by simp only [USize.toNat_zero]; exact Nat.dvd_zero 16)
-    (by simp only [USize.toNat_zero, Nat.zero_add, hdiv, Nat.le_refl])
-    (by simp only [USize.toNat_zero, Array.size_empty])
-    (by simp only [Array.size_replicate]; omega)
-    (by simp only [size_encode_uint32, Array.size_append, Array.size_replicate, Array.size_empty];
-        omega),
-    Array.extract_eq_empty_of_le (by simp only [Array.size_replicate]; omega)]
-  simp only [Array.empty_append, Array.append_empty, USize.toNat_zero, Nat.zero_add]
-
 /-- The interleave streams are the reversed leaves in four-bit reversed order. -/
 theorem sel16_bitRev (V : Nat → Array UInt32) (c : Nat) (hc : c < 16) :
     sel16 (V 0) (V 8) (V 4) (V 12) (V 2) (V 10) (V 6) (V 14) (V 1) (V 9) (V 5) (V 13) (V 3)
@@ -446,49 +291,27 @@ theorem naturalLeaves_encodeWords (V : Nat → Array UInt32) (logN : Nat) (h12 :
       Array.getElem?_eq_none (by rw [size_rows]; omega),
       Array.getElem?_eq_none (by rw [Array.size_ofFn]; omega)]
 
-/-- The sixteen leaf blocks of a field array, packed. -/
-def leafBlocks (S : Array KoalaBear.Fast.Field) (logN : Nat) : Array ByteArray :=
-  Array.ofFn (n := 16) fun l ↦
-    encode (S.extract (l * 2 ^ (logN - 4)) ((l + 1) * 2 ^ (logN - 4)))
-
-/-- Reversing the leaf blocks and interleaving them decodes the bit-reversed field array. -/
+/-- Interleaving the natural-order reads of sixteen blocks reads the whole array in natural
+order. -/
 theorem naturalLeaves_encode (S : Array KoalaBear.Fast.Field) (logN : Nat)
     (factor : KoalaBear.Fast.Field) (sc : Bool) (h12 : 12 ≤ logN) (h32 : logN ≤ 32)
     (hS : S.size = 2 ^ logN) (hs : 4 * 2 ^ logN < USize.size) :
-    naturalLeaves ((leafBlocks S logN).map fun b ↦ leafRev b (logN - 4) factor.val sc) logN =
+    naturalLeaves ((Array.range 16).map fun l ↦ encode (decodedFields (logN - 4)
+      (S.extract (l * 2 ^ (logN - 4)) ((l + 1) * 2 ^ (logN - 4))) factor sc)) logN =
       encode (decodedFields logN S factor sc) := by
   obtain ⟨m, rfl⟩ : ∃ m, logN = m + 4 := ⟨logN - 4, by omega⟩
   have hsub : m + 4 - 4 = m := by omega
   have hpow : 2 ^ (m + 4) = 16 * 2 ^ m := by rw [Nat.pow_add]; omega
-  let W : Nat → Array UInt32 := fun l ↦
-    (S.extract (l * 2 ^ m) ((l + 1) * 2 ^ m)).map Subtype.val
-  have hW : ∀ l < 16, (W l).size = 2 ^ m := by
-    intro l hl
-    have hle : (l + 1) * 2 ^ m ≤ 2 ^ (m + 4) := by
-      rw [hpow]; exact Nat.mul_le_mul_right _ (by omega)
-    simp only [W, Array.size_map, Array.size_extract, hS, Nat.min_eq_left hle]
-    rw [Nat.add_mul, Nat.one_mul]
-    omega
-  let V : Nat → Array UInt32 := fun l ↦ rows (fun j u ↦
-    scaleWord factor.val sc ((W l).getD (NTT.Transform.bitRevNat m (16 * j + u)) 0)) (2 ^ m / 16)
+  let V : Nat → Array UInt32 := fun l ↦ (decodedFields m
+    (S.extract (l * 2 ^ m) ((l + 1) * 2 ^ m)) factor sc).map Subtype.val
   have hV : ∀ l < 16, (V l).size = 2 ^ (m + 4 - 4) := by
     intro l _
-    simp only [V, size_rows, hsub]
-    have : 16 ∣ 2 ^ m := by
-      rw [show m = 4 + (m - 4) by omega, Nat.pow_add]
-      exact Nat.dvd_mul_right _ _
-    omega
-  have hr : ((leafBlocks S (m + 4)).map fun b ↦ leafRev b (m + 4 - 4) factor.val sc) =
+    simp only [V, Array.size_map, decodedFields, Array.size_ofFn, hsub]
+  have hr : ((Array.range 16).map fun l ↦ encode (decodedFields (m + 4 - 4)
+      (S.extract (l * 2 ^ (m + 4 - 4)) ((l + 1) * 2 ^ (m + 4 - 4))) factor sc)) =
       (Array.range 16).map fun l ↦ encode (V l) := by
-    apply Array.ext (by simp only [leafBlocks, Array.size_map, Array.size_ofFn, Array.size_range])
-    intro l h1 _
-    simp only [leafBlocks, Array.size_map, Array.size_ofFn] at h1
-    simp only [leafBlocks, Array.getElem_map, Array.getElem_ofFn, Array.getElem_range, hsub]
-    rw [encode_eq_map_val]
-    exact leafRev_encodeWords (W l) m factor.val sc (by omega) (by omega) (hW l h1)
-      (by rw [size_encode_uint32, hW l h1]; omega)
-  rw [hr, naturalLeaves_encodeWords V (m + 4) h12 hV hs]
-  simp only [encode_eq_map_val] at *
+    simp only [hsub, V, ← encode_eq_map_val]
+  rw [hr, naturalLeaves_encodeWords V (m + 4) h12 hV hs, encode_eq_map_val]
   congr 1
   simp only [decodedFields, Array.map_ofFn]
   apply Array.ext (by simp only [Array.size_ofFn])
@@ -498,32 +321,23 @@ theorem naturalLeaves_encode (S : Array KoalaBear.Fast.Field) (logN : Nat)
   simp only [Function.comp_apply]
   have hc := Nat.mod_lt i (show 0 < 16 by decide)
   have hbr := NTT.Transform.bitRevNat_lt 4 (i % 16)
-  simp only [V]
-  rw [getD_rows _ _ _ (by
-    have : 16 ∣ 2 ^ m := by
-      rw [show m = 4 + (m - 4) by omega, Nat.pow_add]
-      exact Nat.dvd_mul_right _ _
-    omega)]
-  have hq : 16 * (i / 16 / 16) + i / 16 % 16 = i / 16 := by omega
-  rw [hq]
   have hbq := NTT.Transform.bitRevNat_lt m (i / 16)
-  have hext : ∀ l x, l < 16 → x < 2 ^ m → (W l).getD x 0 = (S.getD (l * 2 ^ m + x) 0).val := by
-    intro l x hl hx
-    have hle : l * 2 ^ m + 2 ^ m ≤ S.size := by
-      rw [hS, hpow]
-      have := Nat.mul_le_mul_right (2 ^ m) (show l + 1 ≤ 16 by omega)
-      rw [Nat.add_mul, Nat.one_mul] at this
-      exact this
-    simp only [W]
-    rw [getD_map_val, show (l + 1) * 2 ^ m = l * 2 ^ m + 2 ^ m by ring,
-      getD_extract _ _ _ _ _ hle hx]
-  rw [hext _ _ hbr hbq]
+  have hq : i / 16 < 2 ^ m := by omega
+  have hle : NTT.Transform.bitRevNat 4 (i % 16) * 2 ^ m + 2 ^ m ≤ S.size := by
+    rw [hS, hpow]
+    have := Nat.mul_le_mul_right (2 ^ m) (show NTT.Transform.bitRevNat 4 (i % 16) + 1 ≤ 16 by
+      omega)
+    rw [Nat.add_mul, Nat.one_mul] at this
+    exact this
+  simp only [V]
+  rw [getD_map_val, decodedFields, getD_ofFn_bounded _ _ hq,
+    show (NTT.Transform.bitRevNat 4 (i % 16) + 1) * 2 ^ m =
+      NTT.Transform.bitRevNat 4 (i % 16) * 2 ^ m + 2 ^ m by ring,
+    getD_extract _ _ _ _ _ hle hbq]
   have hcat := bitRevNat_concat m 4 (i / 16) (i % 16) hc
-  rw [show 2 ^ 4 * (i / 16) + i % 16 = i by omega, show m + 4 = m + 4 from rfl] at hcat
+  rw [show 2 ^ 4 * (i / 16) + i % 16 = i by omega] at hcat
   rw [show NTT.Transform.bitRevNat 4 (i % 16) * 2 ^ m + NTT.Transform.bitRevNat m (i / 16) =
     NTT.Transform.bitRevNat (m + 4) i by rw [hcat]; ring]
-  simp only [scaleWord]
-  cases sc <;> simp only [Bool.false_eq_true, ↓reduceIte, mul_val]
 
 end Native
 end CompPoly.CPolynomial.NTTFast.Packed
