@@ -143,6 +143,8 @@ jobs:
           key: lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ github.sha }}
           restore-keys: |
             lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
+      - name: Drop host-tuned native objects
+        run: ./scripts/drop-native-objects.sh
       - name: Set up Lean environment
         uses: leanprover/lean-action@v1
         with:
