@@ -61,10 +61,10 @@ def allFieldStages (logN : Nat) (tw : Array (Array KoalaBear.Fast.Field))
     (fun b block ↦ Plan.butterflyDIFInner #[1] 1 0 (2 * block) (2 * block + 1) b) b else b
 
 /-- The fused forward stage schedule equals the ordinary complete paired-pass schedule. -/
-theorem fieldStages_unscaled_eq_all (logN : Nat) (tw : Array (Array KoalaBear.Fast.Field))
-    (a : Array KoalaBear.Fast.Field) (factor : KoalaBear.Fast.Field)
-    (htw : TwiddleSizes logN tw) (hone : TwiddleOnes logN tw) (hs : a.size = 2 ^ logN) :
-    fieldStages logN tw a factor false = allFieldStages logN tw a := by
+theorem fieldStages_eq_all (logN : Nat) (tw : Array (Array KoalaBear.Fast.Field))
+    (a : Array KoalaBear.Fast.Field) (htw : TwiddleSizes logN tw) (hone : TwiddleOnes logN tw)
+    (hs : a.size = 2 ^ logN) :
+    fieldStages logN tw a = allFieldStages logN tw a := by
   by_cases hf : (decide (logN ≥ 4) && logN % 2 == 0) = true
   · have hf' := hf
     simp only [Bool.and_eq_true, decide_eq_true_eq, beq_iff_eq] at hf'
@@ -90,9 +90,8 @@ theorem fieldStages_unscaled_eq_all (logN : Nat) (tw : Array (Array KoalaBear.Fa
     simp only [hf, ite_true]
     simp only [hmod, Nat.zero_ne_one, ite_false]
     change (List.range (2 ^ logN / 16)).foldl (fun b block ↦
-      leafBlock (tw.getD 3 #[]) (tw.getD 2 #[]) (tw.getD 1 #[])
-        (block * 16) factor false b) b = _
-    simp only [leafBlock, Bool.false_eq_true, ite_false]
+      Expressions.leaf16Stages (tw.getD 3 #[]) (tw.getD 2 #[]) (tw.getD 1 #[]) b
+        (block * 16)) b = _
     rw [fold_leaf16Stages_eq_radix4 _ _ _ _ b (by rw [hbs]; exact Nat.div_mul_le_self _ _)]
     rw [hrange, List.foldl_append, List.foldl_cons, List.foldl_cons, List.foldl_nil]
     change _ = fieldPass logN tw (count + 1) (fieldPass logN tw count b)
@@ -134,16 +133,5 @@ theorem twiddleTable_invariants (D : NTT.Domain KoalaBear.Fast.Field) :
   · intro stage hs
     rw [Plan.twiddleTable_getD_eq_twiddlePowers D stage hs,
       Plan.twiddlePowers_getD_eq_pow D stage 0 (Nat.two_pow_pos stage), pow_zero]
-
-/-- Without fused normalization, the packed sequential pipeline implements the verified DIF plan. -/
-theorem Native.stages_unscaled_correct (D : NTT.Domain KoalaBear.Fast.Field)
-    (a : Array KoalaBear.Fast.Field) (factor : KoalaBear.Fast.Field)
-    (hs : a.size = D.n) (hu : 4 * D.n < USize.size) :
-    Native.stages D.logN ((Plan.twiddleTable D).map encode) (encode a)
-      factor.val false = encode (Plan.runStagesDIFRadix4WithTwiddles D
-        (Plan.twiddleTable D) a) := by
-  obtain ⟨htw, hone⟩ := twiddleTable_invariants D
-  rw [Native.stages_encode _ _ _ _ _ htw hone hs hu,
-    fieldStages_unscaled_eq_all _ _ _ _ htw hone hs, allFieldStages_eq_plan D _ a htw hone]
 
 end CompPoly.CPolynomial.NTTFast.Packed

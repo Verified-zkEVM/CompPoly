@@ -47,41 +47,4 @@ theorem Native.leaf16_encode (t3 t2 t1 : Array KoalaBear.Fast.Field) (i : USize)
   rw [Native.write16U_encode _ _ h.2.1 hi]
   rfl
 
-/-- The fused final-layer word kernel agrees with its field expression graph. -/
-theorem Native.leaf16Scaled_encode (t3 t2 t1 : Array KoalaBear.Fast.Field) (i : USize)
-    (nInv : KoalaBear.Fast.Field) (a : Array KoalaBear.Fast.Field) (h) :
-    Native.leaf16Scaled (encode t3) (encode t2) (encode t1) i nInv.val (encode a)
-      h =
-      encode (leaf16ScaledField t3 t2 t1 i nInv a) := by
-  have hi : i.toNat + 16 ≤ a.size := by
-    have hh := h.1
-    rw [size_encode_fields] at hh
-    omega
-  unfold Native.leaf16Scaled
-  simp only [Native.readUOffset_encode, add_val, sub_val, mul_val]
-  rw [Native.write16U_encode _ _ h.2.1 hi]
-  rfl
-
-/-- The unrolled partition kernel preserves the represented field array. -/
-theorem Native.splitStepLeft_encode (a w l Z : Array KoalaBear.Fast.Field) (i j p : USize)
-    (hp : p.toNat = l.size) (hZ : 16 ≤ Z.size) (hs : (encode (l ++ Z)).size < USize.size)
-    (h) :
-    Native.splitStepLeft (encode a) (encode w) i j (encode (l ++ Z)) p h =
-      encode (splitStepLeftField a w i j l ++ Z.extract 16 Z.size) := by
-  unfold Native.splitStepLeft
-  simp only [Native.readUOffset_encode, add_val]
-  rw [Native.write16U_cursor _ _ _ hp hZ hs]
-  rfl
-
-/-- The unrolled partition kernel preserves the represented field array. -/
-theorem Native.splitStepRight_encode (a w l Z : Array KoalaBear.Fast.Field) (i j p : USize)
-    (hp : p.toNat = l.size) (hZ : 16 ≤ Z.size) (hs : (encode (l ++ Z)).size < USize.size)
-    (h) :
-    Native.splitStepRight (encode a) (encode w) i j (encode (l ++ Z)) p h =
-      encode (splitStepRightField a w i j l ++ Z.extract 16 Z.size) := by
-  unfold Native.splitStepRight
-  simp only [Native.readUOffset_encode, sub_val, mul_val]
-  rw [Native.write16U_cursor _ _ _ hp hZ hs]
-  rfl
-
 end CompPoly.CPolynomial.NTTFast.Packed
