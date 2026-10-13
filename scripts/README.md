@@ -124,6 +124,10 @@ previously recorded baseline without rerunning that baseline in the same job.
 This supports
 [`../.github/workflows/lean_action_ci.yml`](../.github/workflows/lean_action_ci.yml).
 
+### `drop-native-objects.sh`
+
+Deletes the build outputs compiled with `-march=native` (the packed kernels and the benchmarks linking them) and `.lake/build/bin`, so the next `lake build` recompiles them for the current host. CI runs it after restoring `.lake/build`, which may come from a runner with a different CPU.
+
 ### `bench-ab.sh`
 
 Driver for the optimisation loop in
