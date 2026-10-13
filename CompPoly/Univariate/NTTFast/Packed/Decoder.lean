@@ -5,17 +5,21 @@ Authors: Gregor Mitscha-Baude
 -/
 module
 
+public import CompPoly.Univariate.NTTFast.Packed.FieldStorage
 import all CompPoly.Univariate.NTTFast.Packed.Native
 public import CompPoly.Univariate.NTTFast.Reverse32
-public import CompPoly.Univariate.NTTFast.Packed.TaskSpec
 
-/-! # Natural-order semantics of packed output decoding -/
+/-! # Natural-order reads of a bit-reversed transform
+
+`decodedFields` reads a bit-reversed array in natural order, optionally scaled; `Native.decode`
+computes it from packed words, for leaves too small for `leafRev`.
+-/
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
 open CompPoly.PackedRepr (encode)
 
-/-- The scalar output decoder's field-array specification. -/
+/-- The natural-order read of a bit-reversed array, optionally scaled. -/
 def decodedFields (logN : Nat) (a : Array KoalaBear.Fast.Field)
     (factor : KoalaBear.Fast.Field) (inverse : Bool) : Array KoalaBear.Fast.Field :=
   Array.ofFn (fun i : Fin (2 ^ logN) ↦

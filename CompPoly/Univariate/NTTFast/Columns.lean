@@ -66,6 +66,10 @@ def copyRange (src : @& Array α) (si : Nat) (dst : Array α) (di cnt : Nat) : A
       ⟨h.2.2.1, h.2.2.2⟩
   else dst
 
+/-- The number of column tasks: sixteen, but at least 256 columns each. Narrower columns keep a
+task's rows and gathered twiddles in L2 at every worker count. -/
+def columnCount (logN : Nat) : Nat := 2 ^ min 4 (logN - 12)
+
 /-- Rows `0, …, r - 1` of a matrix with rows of length `M`, restricted to the columns
 `j0, …, j0 + cs - 1`, as a row-major `r × cs` array. -/
 def gatherRows [Zero α] (src : @& Array α) (M j0 cs r : Nat) : Array α :=

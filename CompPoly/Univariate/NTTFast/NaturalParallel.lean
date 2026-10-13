@@ -29,9 +29,6 @@ def ColumnsShape (R : Type*) [PackedRepr R] (n logN : Nat) : Prop :=
 instance (R : Type*) [PackedRepr R] (n logN : Nat) : Decidable (ColumnsShape R n logN) := by
   unfold ColumnsShape; exact inferInstance
 
-/-- The number of column tasks: `2 ^ (logWorkers + 1)`, but at least 256 columns each. -/
-def columnCount (logN logWorkers : Nat) : Nat := 2 ^ min (logWorkers + 1) (logN - 12)
-
 /-- A domain's twiddle table holds `2 ^ s` entries at stage `s`. -/
 theorem size_twiddleTable_getD [Field R] (D : NTT.Domain R) (s : Nat) (hs : s < D.logN) :
     ((Plan.twiddleTable D).getD s #[]).size = 2 ^ s := by
@@ -58,6 +55,29 @@ theorem lastPair_eq [Field R] (D : NTT.Domain R) (tw0 a : Array R) (ha : a.size 
   simp only [Columns.lastPair, Plan.butterflyStageDIFWithTwiddles, ha, Nat.zero_add,
     Nat.pow_one, Nat.pow_zero]
 
+/-- The leaf layers after the top passes complete the scalar forward stages. -/
+theorem leafPasses_topPasses [Field R] [DecidableEq R] (D : NTT.Domain R) (tw : Array (Array R))
+    (a : Array R) (ha : a.size = D.n) (h4 : 4 ≤ D.logN) :
+    Columns.leafPasses tw ((Parallel.forwardPasses D).drop 2) (D.logN % 2 == 1)
+      (Columns.topPasses tw D.logN a) = Plan.checkedStages D tw a := by
+  rw [← Parallel.forwardStages_eq D tw a ha]
+  unfold Columns.leafPasses
+  rw [runPasses_topPasses D tw a h4]
+  by_cases ho : D.logN % 2 = 1
+  · simp only [ho, beq_self_eq_true, ↓reduceIte]
+    rw [lastPair_eq D _ _ (by rw [Parallel.size_runPasses, ha])]
+  · simp only [ho, beq_iff_eq, ↓reduceIte]
+
+/-- Every leaf pass after the top two divides a `2 ^ (logN - 4)`-entry leaf into whole blocks. -/
+theorem dvd_of_mem_forwardPasses_drop [Field R] (D : NTT.Domain R) (low : Nat)
+    (hlow : low ∈ (Parallel.forwardPasses D).drop 2) : 4 * 2 ^ low ∣ 2 ^ (D.logN - 4) := by
+  simp only [Parallel.forwardPasses, List.mem_drop_iff_getElem, List.length_map,
+    List.length_range, List.getElem_map, List.getElem_range] at hlow
+  obtain ⟨i, hi, rfl⟩ := hlow
+  rw [show 4 * 2 ^ (D.logN - 1 - 2 * (2 + i) - 1) = 2 ^ (D.logN - 1 - 2 * (2 + i) - 1 + 2) by
+    rw [Nat.pow_add]; ring]
+  exact Nat.pow_dvd_pow 2 (by omega)
+
 /-- The column transform computes the scalar forward stages of a domain, in natural order. -/
 theorem transform_eq_checkedStages [Field R] [DecidableEq R] [PackedRepr R] (D : NTT.Domain R)
     (tw : Array (Array R)) (S : Nat) (scale : Bool) (f : R) (a : Array R)
@@ -67,21 +87,8 @@ theorem transform_eq_checkedStages [Field R] [DecidableEq R] [PackedRepr R] (D :
       Array.ofFn (n := 2 ^ D.logN) fun i ↦ Columns.scaleBy scale f
         ((Plan.checkedStages D tw a).getD (NTT.Transform.bitRevNat D.logN i) 0) := by
   obtain ⟨hn, h15, h36, hu⟩ := hshape
-  rw [Columns.transform_eq tw D.logN S _ scale f a (by omega) h36 hn htw hu hS hdiv,
-    ← Parallel.forwardStages_eq D tw a hn]
-  · unfold Columns.leafPasses
-    rw [runPasses_topPasses D tw a (by omega)]
-    by_cases ho : D.logN % 2 = 1
-    · simp only [ho, beq_self_eq_true, ↓reduceIte]
-      rw [lastPair_eq D _ _ (by rw [Parallel.size_runPasses, hn]; rfl)]
-    · simp only [ho, beq_iff_eq, ↓reduceIte]
-  · intro low hlow
-    simp only [Parallel.forwardPasses, List.mem_drop_iff_getElem, List.length_map,
-      List.length_range, List.getElem_map, List.getElem_range] at hlow
-    obtain ⟨i, hi, rfl⟩ := hlow
-    rw [show 4 * 2 ^ (D.logN - 1 - 2 * (2 + i) - 1) = 2 ^ (D.logN - 1 - 2 * (2 + i) - 1 + 2) by
-      rw [Nat.pow_add]; ring]
-    exact Nat.pow_dvd_pow 2 (by omega)
+  rw [Columns.transform_eq tw D.logN S _ scale f a (by omega) h36 hn htw hu hS hdiv
+    (dvd_of_mem_forwardPasses_drop D), leafPasses_topPasses D tw a hn (by omega)]
 
 /-- Parallel forward NTT: from `2 ^ 15` elements, `columnCount` column tasks run the top two
 radix-four passes and sixteen leaf tasks the remaining layers; smaller transforms, and a single
@@ -90,7 +97,7 @@ worker, run the sequential transform as one leaf. -/
     (a : Array R) (logWorkers : Nat := 4) : Array R :=
   if logWorkers ≠ 0 ∧ ColumnsShape R a.size P.plan.domain.logN then
     Columns.transform P.plan.twiddles P.plan.domain.logN
-      (columnCount P.plan.domain.logN logWorkers)
+      (Columns.columnCount P.plan.domain.logN)
       ((Parallel.forwardPasses P.plan.domain).drop 2) false 1 a
   else P.forward a
 
@@ -101,7 +108,7 @@ twiddles and scales the leaves. -/
   if logWorkers ≠ 0 ∧ P.plan.inverseDomain.n = P.plan.domain.n ∧
       ColumnsShape R a.size P.plan.domain.logN then
     Columns.transform P.plan.inverseTwiddles P.plan.domain.logN
-      (columnCount P.plan.domain.logN logWorkers)
+      (Columns.columnCount P.plan.domain.logN)
       ((Parallel.forwardPasses P.plan.inverseDomain).drop 2) true P.plan.nInv a
   else P.inverse a
 
@@ -115,9 +122,9 @@ theorem forwardParallel_eq [Field R] [DecidableEq R] [PackedRepr R] (P : Natural
     have htw : ∀ s < P.plan.domain.logN, (P.plan.twiddles.getD s #[]).size = 2 ^ s := by
       rw [P.wellFormed.2.2.1]; exact size_twiddleTable_getD _
     have hn := hc.1
-    rw [transform_eq_checkedStages _ _ (columnCount P.plan.domain.logN logWorkers) false 1 a htw
-      (by unfold columnCount; exact Nat.two_pow_pos _)
-      (by unfold columnCount; exact Nat.pow_dvd_pow 2 (by have := hc.2.1; omega)) hc,
+    rw [transform_eq_checkedStages _ _ (Columns.columnCount P.plan.domain.logN) false 1 a
+      htw (by unfold Columns.columnCount; exact Nat.two_pow_pos _)
+      (by unfold Columns.columnCount; exact Nat.pow_dvd_pow 2 (by have := hc.2.1; omega)) hc,
       forward, permute_eq, load,
       ite_eq_left_of_eq_true _ _ (eq_true (show a.size = P.plan.domain.n from hn))]
     rfl
@@ -143,9 +150,9 @@ theorem inverseParallel_eq [Field R] [DecidableEq R] [PackedRepr R] (P : Natural
         rw [NTT.getElem_loadNaturalArray, Array.getD_eq_getD_getElem?,
           Array.getElem?_eq_getElem (by assumption), Option.getD_some]
     have key := transform_eq_checkedStages P.plan.domain.inverse P.plan.inverseTwiddles
-      (columnCount P.plan.domain.logN logWorkers) true P.plan.nInv a htw
-      (by unfold columnCount; exact Nat.two_pow_pos _)
-      (by unfold columnCount; rw [hl]; exact Nat.pow_dvd_pow 2 (by omega))
+      (Columns.columnCount P.plan.domain.logN) true P.plan.nInv a htw
+      (by unfold Columns.columnCount; exact Nat.two_pow_pos _)
+      (by unfold Columns.columnCount; rw [hl]; exact Nat.pow_dvd_pow 2 (by omega))
       ⟨by rw [hl]; exact hs, by omega, by omega, by rw [hl]; exact hu⟩
     rw [hinv]
     refine key.trans ?_
@@ -175,7 +182,7 @@ unpacks, transforms and packs. -/
   if logWorkers ≠ 0 ∧
       ColumnsShape R (a.size / PackedRepr.width R) P.plan.domain.logN then
     Columns.transformPacked P.plan.twiddles P.plan.domain.logN
-      (columnCount P.plan.domain.logN logWorkers)
+      (Columns.columnCount P.plan.domain.logN)
       ((Parallel.forwardPasses P.plan.domain).drop 2) false 1 a
   else Columns.encodeAll (P.forward (Columns.decodeAll a))
 
@@ -185,7 +192,7 @@ unpacks, transforms and packs. -/
   if logWorkers ≠ 0 ∧ P.plan.inverseDomain.n = P.plan.domain.n ∧
       ColumnsShape R (a.size / PackedRepr.width R) P.plan.domain.logN then
     Columns.transformPacked P.plan.inverseTwiddles P.plan.domain.logN
-      (columnCount P.plan.domain.logN logWorkers)
+      (Columns.columnCount P.plan.domain.logN)
       ((Parallel.forwardPasses P.plan.inverseDomain).drop 2) true P.plan.nInv a
   else Columns.encodeAll (P.inverse (Columns.decodeAll a))
 

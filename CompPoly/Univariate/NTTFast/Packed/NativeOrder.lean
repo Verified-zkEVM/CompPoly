@@ -5,15 +5,14 @@ Authors: Gregor Mitscha-Baude
 -/
 module
 
-public import CompPoly.Univariate.NTTFast.Packed.SliceTree
+public import CompPoly.Univariate.NTTFast.Packed.Native
 
 /-! # Parallel natural-order output for the packed FFT
 
 The sixteen task leaves of the packed FFT hold a bit-reversed transform. Each leaf is
 first reversed locally, in parallel. Natural order is then a sixteen-way interleave of
 the reversed leaves, which parallel tasks compute as cache-line `16 × 16` transposes.
-The task outputs are packed buffers, so joining them is a byte copy. The decoder into
-field arrays is a single sequential pass over the natural-order buffer.
+The task outputs are packed buffers, so joining them is a byte copy.
 -/
 
 @[expose] public section
@@ -240,24 +239,5 @@ def naturalLeaves (r : Array ByteArray) (logN : Nat) : ByteArray :=
   let blocks := (Array.range 16).map fun t ↦ Task.spawn fun _ ↦
     interleaveRange r (16 * count * t) count
   blocks.foldl (fun acc t ↦ acc ++ t.get) (ByteArray.emptyWithCapacity (4 * 2 ^ logN))
-
-/-- Store words `i` up to `n` of `b` into the field array. -/
-def unpackGo (b : @& ByteArray) (n i : USize) (out : Array KoalaBear.Fast.Field) :
-    Array KoalaBear.Fast.Field :=
-  if hi : i < n then
-    if h : i.toNat < out.size then
-      unpackGo b n (i + 1) (out.uset i (ofWord (readWord b i)) h)
-    else out
-  else out
-termination_by n.toNat - i.toNat
-decreasing_by
-  have hlt := USize.lt_iff_toNat_lt.mp hi
-  have hn := n.toNat_lt_size
-  have h1 := Plan.usize_add_one i (by omega)
-  omega
-
-/-- Decode `n` packed Montgomery words into a field array, in one sequential pass. -/
-def unpack (b : @& ByteArray) (n : Nat) : Array KoalaBear.Fast.Field :=
-  unpackGo b n.toUSize 0 (Array.replicate n 0)
 
 end CompPoly.CPolynomial.NTTFast.Packed.Native

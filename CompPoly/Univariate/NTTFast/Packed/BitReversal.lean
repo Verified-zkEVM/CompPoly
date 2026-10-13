@@ -8,7 +8,7 @@ module
 public import CompPoly.Univariate.NTTFast.Reverse32
 import Mathlib.Tactic.Ring
 
-/-! # Bit-reversal identities used by the tiled output scatter -/
+/-! # Bit-reversal identities for interleaving reversed blocks -/
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
@@ -36,28 +36,5 @@ theorem bitRevNat_concat (high low x y : Nat) (hy : y < 2 ^ low) :
         ite_eq_left hindex, bitRevNat_testBit, ite_eq_left hbit, he]
     · have hbit : ¬k - high < low := by omega
       rw [ite_eq_right hsum, ite_eq_right hk, bitRevNat_testBit, ite_eq_right hbit]
-
-/-- A tiled decoder lane is precisely the full transform's reversed input index. -/
-theorem bitRevNat_tile (logN m d lane : Nat) (hlog : 6 ≤ logN)
-    (hm : m < 2 ^ (logN - 6)) (hd : d < 16) :
-    NTT.Transform.bitRevNat logN (m * 16 + d + lane * 2 ^ (logN - 2)) =
-      NTT.Transform.bitRevNat 4 d * 2 ^ (logN - 4) +
-        NTT.Transform.bitRevNat (logN - 6) m * 4 + NTT.Transform.bitRevNat 2 lane := by
-  have hsplit : logN = (2 + (logN - 6)) + 4 := by omega
-  have hinput : m * 16 + d + lane * 2 ^ (logN - 2) =
-      2 ^ 4 * (2 ^ (logN - 6) * lane + m) + d := by
-    have he : logN - 2 = (logN - 6) + 4 := by omega
-    rw [he, Nat.pow_add]
-    norm_num
-    ring
-  conv_lhs =>
-    rw [hinput]
-    arg 1
-    rw [hsplit]
-  rw [bitRevNat_concat _ 4 _ d hd, bitRevNat_concat 2 _ lane m hm]
-  have hexp : 2 + (logN - 6) = logN - 4 := by omega
-  rw [hexp]
-  simp only [Nat.reducePow]
-  ring
 
 end CompPoly.CPolynomial.NTTFast.Packed

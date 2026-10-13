@@ -7,7 +7,7 @@ module
 
 public import CompPoly.Univariate.NTTFast.Packed.KernelRefinement
 public import CompPoly.Univariate.NTTFast.Packed.KernelSpecialization
-public import CompPoly.Univariate.NTTFast.Packed.LeafScaling
+public import CompPoly.Univariate.NTTFast.Packed.KernelCorrectness
 
 /-! # Mathematical specification of the packed fused leaf -/
 
@@ -27,21 +27,5 @@ theorem Native.leaf16_correct (t3 t2 t1 : Array KoalaBear.Fast.Field) (i : USize
     omega
   rw [Native.leaf16_encode, leaf16Field_eq_expression,
     Expressions.leaf16Field_eq_stages t3 t2 t1 a i hi h3 h2 h1]
-
-/-- The inverse leaf is the same four DIF layers followed by local normalization. -/
-theorem Native.leaf16Scaled_correct (t3 t2 t1 : Array KoalaBear.Fast.Field) (i : USize)
-    (factor : KoalaBear.Fast.Field) (a : Array KoalaBear.Fast.Field) (h)
-    (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1) :
-    Native.leaf16Scaled (encode t3) (encode t2) (encode t1) i factor.val
-      (encode a) h =
-      encode (scaleSegment (Expressions.leaf16Stages t3 t2 t1 a i.toNat)
-        i.toNat 16 factor) := by
-  have hi : i.toNat + 16 ≤ a.size := by
-    have hi := h.1
-    rw [size_encode_fields] at hi
-    omega
-  rw [Native.leaf16Scaled_encode, leaf16ScaledField_eq_expression,
-    Expressions.leaf16ScaledField_eq_scaleSegment _ _ _ _ _ _ hi,
-    Expressions.leaf16Field_eq_stages _ _ _ _ _ hi h3 h2 h1]
 
 end CompPoly.CPolynomial.NTTFast.Packed

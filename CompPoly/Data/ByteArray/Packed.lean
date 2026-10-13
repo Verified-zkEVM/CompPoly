@@ -256,6 +256,18 @@ theorem encode_extract (a : Array R) (first last : Nat) :
   simp only [encode, Array.toList_extract, List.toList_toArray, List.extract,
     ← Nat.mul_sub_left_distrib, drop_flatMap, take_flatMap]
 
+/-- Appending a slot range of a packed array copies its elements. -/
+theorem copySlice_encode (a o : Array R) (i c : Nat) :
+    (encode a).copySlice (width R * i) (encode o) (encode o).size (width R * c) =
+      encode (o ++ a.extract i (i + c)) := by
+  have hm : (encode a).extract (width R * i) (width R * i + width R * c) =
+      encode (a.extract i (i + c)) := by
+    apply ByteArray.ext
+    rw [ByteArray.data_extract, ← Nat.mul_add, encode_extract]
+  rw [ByteArray.copySlice_eq_append, ByteArray.extract_zero_size, hm,
+    (ByteArray.extract_eq_empty_iff).mpr (by simp only [ByteArray.size]; omega),
+    ByteArray.append_empty, encode_append]
+
 /-- Replacing packed slots is the corresponding element splice. -/
 theorem replaceAt_encode (a v : Array R) (i : Nat) :
     (encode a).replaceAt (width R * i) (encode v) =

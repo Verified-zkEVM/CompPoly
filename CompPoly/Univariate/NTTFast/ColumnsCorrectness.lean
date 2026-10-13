@@ -11,7 +11,7 @@ public import CompPoly.Univariate.NTTFast.Columns
 public import CompPoly.Univariate.NTTFast.Packed.Radix4Lemmas
 import Mathlib.Tactic.Ring
 import CompPoly.Univariate.NTTFast.Packed.ArrayLemmas
-import CompPoly.Univariate.NTTFast.Packed.TiledPermutation
+import CompPoly.Univariate.NTTFast.Packed.BitReversal
 import all CompPoly.Univariate.NTTFast.Correctness.Basic
 
 /-! # Correctness of the column-parallel transform
