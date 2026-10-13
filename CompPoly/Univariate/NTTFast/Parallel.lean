@@ -337,49 +337,6 @@ theorem runPasses_append [Field R] [DecidableEq R] (inverse : Bool) (tw : Array 
     intro k hk
     simpa only [size_step] using h k (List.mem_cons_of_mem _ hk)
 
-/-- Tasks compute complete aligned segments and collect their outputs before one join. -/
-@[specialize] def chunksTask [Field R] [DecidableEq R] (inverse : Bool)
-    (tw : Array (Array R)) (passes : List Nat) (input : Array R) (lo hi : Nat) :
-    Nat → Task (Array (Array R))
-  | 0 => Task.spawn fun _ ↦ #[runPasses inverse tw passes (input.extract lo hi)]
-  | depth + 1 =>
-    let mid := lo + (hi - lo) / 2
-    if lo ≤ hi ∧ hi ≤ input.size ∧ 16384 ≤ hi - lo ∧
-        passes.all (fun low ↦ (mid - lo) % (4 * 2 ^ low) == 0 &&
-          (hi - mid) % (4 * 2 ^ low) == 0) then
-      let lower := chunksTask inverse tw passes input lo mid depth
-      let upper := chunksTask inverse tw passes input mid hi depth
-      lower.bind (sync := true) fun a ↦ upper.map (sync := true) fun b ↦ a ++ b
-    else Task.spawn fun _ ↦ #[runPasses inverse tw passes (input.extract lo hi)]
-
-/-- Task scheduling preserves the sequential transform on every input range. -/
-theorem chunksTask_eq [Field R] [DecidableEq R] (inverse : Bool) (tw : Array (Array R))
-    (passes : List Nat) (input : Array R) (depth lo hi : Nat) :
-    (chunksTask inverse tw passes input lo hi depth).get.flatten =
-      runPasses inverse tw passes (input.extract lo hi) := by
-  induction depth generalizing lo hi with
-  | zero => simp only [chunksTask, Task.spawn, Array.flatten_singleton]
-  | succ depth ih =>
-    rw [chunksTask]
-    split
-    · rename_i h
-      dsimp only
-      simp only [Task.bind, Task.map, Array.flatten_append, ih]
-      have hlo : lo ≤ lo + (hi - lo) / 2 := by omega
-      have hmid : lo + (hi - lo) / 2 ≤ hi := by omega
-      have he : input.extract lo hi =
-          input.extract lo (lo + (hi - lo) / 2) ++
-            input.extract (lo + (hi - lo) / 2) hi := by
-        rw [Array.extract_append_extract, Nat.min_eq_left hlo, Nat.max_eq_right hmid]
-      rw [he, runPasses_append]
-      intro low hl
-      have ha := List.all_eq_true.mp h.2.2.2 low hl
-      simp only [Bool.and_eq_true, beq_iff_eq] at ha
-      simpa only [Array.size_extract_of_le (hmid.trans h.2.1),
-        Array.size_extract_of_le h.2.1] using
-        And.intro (Nat.dvd_of_mod_eq_zero ha.1) (Nat.dvd_of_mod_eq_zero ha.2)
-    · simp only [Task.spawn, Array.flatten_singleton]
-
 end CompPoly.CPolynomial.NTTFast.Parallel
 
 namespace CompPoly.CPolynomial.NTTFast.Parallel
@@ -388,10 +345,6 @@ variable {R : Type*}
 /-- Descending fused passes for a forward transform. -/
 def forwardPasses [Field R] (D : NTT.Domain R) : List Nat :=
   (List.range (D.logN / 2)).map (fun pass ↦ D.logN - 1 - 2 * pass - 1)
-
-/-- Ascending fused passes for an inverse transform. -/
-def inversePasses [Field R] (D : NTT.Domain R) : List Nat :=
-  (List.range (D.logN / 2)).map (fun pass ↦ 2 * pass)
 
 private theorem blockSize_eq (low : Nat) : 2 ^ (low + 2) = 4 * 2 ^ low := by
   rw [pow_add]
@@ -414,21 +367,6 @@ private theorem forwardPasses_eq [Field R] [DecidableEq R] (D : NTT.Domain R)
     simpa only [size_step] using hb
   · exact ha
 
-private theorem inversePasses_eq [Field R] [DecidableEq R] (D : NTT.Domain R)
-    (tw : Array (Array R)) (a : Array R) (ha : a.size = D.n) :
-    runPasses true tw (inversePasses D) a =
-      (List.range (D.logN / 2)).foldl (fun a pass ↦
-        let low := 2 * pass
-        Plan.stageBlocksDIT (tw.getD (low + 1) #[]) (tw.getD low #[])
-          (2 ^ (low + 2)) (2 ^ low) (D.n / (2 ^ (low + 2))) 0 a) a := by
-  simp only [runPasses, inversePasses, List.foldl_map]
-  apply Plan.foldl_range_congr_inv (p := fun b : Array R ↦ b.size = D.n)
-  · intro pass hp b hb
-    simp only [step, ↓reduceIte, hb, blockSize_eq]
-  · intro pass hp b hb
-    simpa only [size_step] using hb
-  · exact ha
-
 /-- Splitting forward passes retains the checked stage loop, including odd logs. -/
 theorem forwardStages_eq [Field R] [DecidableEq R] (D : NTT.Domain R)
     (tw : Array (Array R)) (a : Array R) (ha : a.size = D.n) :
@@ -438,15 +376,5 @@ theorem forwardStages_eq [Field R] [DecidableEq R] (D : NTT.Domain R)
     else runPasses false tw (forwardPasses D) a) = Plan.checkedStages D tw a := by
   rw [forwardPasses_eq D tw a ha]
   by_cases h : D.logN % 2 = 1 <;> simp [Plan.checkedStages, List.range_eq_range', h]
-
-/-- Splitting inverse passes retains the checked stage loop, including odd logs. -/
-theorem inverseStages_eq [Field R] [DecidableEq R] (D : NTT.Domain R)
-    (tw : Array (Array R)) (a : Array R) (ha : a.size = D.n) :
-    (if D.logN % 2 = 1 then
-      Plan.butterflyStageWithTwiddles D (D.logN - 1) (tw.getD (D.logN - 1) #[])
-        (runPasses true tw (inversePasses D) a)
-    else runPasses true tw (inversePasses D) a) = Plan.checkedDITStages D tw a := by
-  rw [inversePasses_eq D tw a ha]
-  by_cases h : D.logN % 2 = 1 <;> simp [Plan.checkedDITStages, List.range_eq_range', h]
 
 end CompPoly.CPolynomial.NTTFast.Parallel

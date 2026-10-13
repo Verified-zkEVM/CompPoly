@@ -45,11 +45,12 @@ def run(args, common, allowed):
     rust_ntt = json.loads(subprocess.check_output([str(rust), "--ntt", "--info"], env=runtime_env, text=True))
     if rust_ntt["workers"] != workers:
         raise ValueError("Plonky3 worker count mismatch")
-    # Tiny odd/even sizes exercise leftover radix-2 stages; only large sizes are timed.
+    # Odd sizes exercise the radix-2 layer, 2^15 and 2^17 the odd column path; only the
+    # sizes in `sizes` are timed.
     sizes = (12, 16, 20)
     fixtures = {}
     roots = {}
-    for log_n in (0, 1, 3, 4, 5, *sizes):
+    for log_n in (0, 1, 3, 4, 5, 15, 17, *sizes):
         root = int(common.command([str(lean), "--root", str(log_n)]))
         roots[log_n] = root
         rng = random.Random(f"comppoly-ntt-koalabear-v1:{log_n}")
@@ -120,7 +121,7 @@ def run(args, common, allowed):
     lines += ["", "## Machine and method", "",
               f"- {manifest['cpu_model']}; {manifest['memory_gib']:.1f} GiB; {manifest['os']}, kernel {manifest['kernel']}; {workers} workers on {physical_cores} physical cores, logical CPUs {cpus}.",
               f"- {build['context']['lean_version']}; {build['context']['rust_version']}; Rust flags {build['context']['rustflags']!r}. Source `{build['context']['commit']}`, dirty={build['context']['dirty']}.",
-              f"- Packed Lean uses NTTFast.Packed.Plan with depth {depth}, a sliced split tree from 2^18 elements, a vectorized kernel that runs the last four layers of eight leaf blocks at once and writes the leaf in natural order, and a parallel sixteen-way interleave, taking and returning packed Montgomery words. Its native modules use -march=native. Externless Lean uses the proved NTTFast.NaturalPlan packed API: for even sizes from 2^16 elements, column tasks run the top two radix-four passes and sixteen leaf tasks the rest with leaf-local bit reversal, exchanging packed words, before one sequential interleave into natural-order packed output; other sizes unpack, run the array transform and pack. Rust calls {rust_ntt['implementation']} from p3-dft 0.4.2 directly, with packing width {rust_ntt['packing_width']}; native SIMD is enabled. Plonky3's parallel feature is enabled. This compares different algorithms implementing the same transform.",
+              f"- Packed Lean uses NTTFast.Packed.Plan with depth {depth}, a sliced split tree from 2^18 elements, a vectorized kernel that runs the last four layers of eight leaf blocks at once and writes the leaf in natural order, and a parallel sixteen-way interleave, taking and returning packed Montgomery words. Its native modules use -march=native. Externless Lean uses the proved NTTFast.NaturalPlan packed API: from 2^15 elements, column tasks run the top two radix-four passes and sixteen leaf tasks the rest with leaf-local bit reversal, exchanging packed words, before a parallel interleave into natural-order packed output; smaller transforms and a single worker run the sequential transform as one leaf. Rust calls {rust_ntt['implementation']} from p3-dft 0.4.2 directly, with packing width {rust_ntt['packing_width']}; native SIMD is enabled. Plonky3's parallel feature is enabled. This compares different algorithms implementing the same transform.",
               "- All APIs use natural-order inputs and outputs. Forward maps coefficients to evaluations; inverse maps evaluations to coefficients, including 1/n normalization. The fixture root must equal both Lean's certified root and Plonky3's selected root.",
               "- Plan construction, twiddle tables, cached permutation indices and fixture decoding are outside timing. Input copying, arithmetic, output disposal and ordering conversions are timed, including each Lean ordering adapter. Inverse normalization is timed. Inputs remain reusable and unchanged in all implementations.",
               "- Two deterministic inputs alternate to prevent result hoisting. Full output digests are checked outside timing; a four-position output sink is used inside timing. Native validation includes tiny odd/even sizes and zero/one/near-modulus coordinates.",

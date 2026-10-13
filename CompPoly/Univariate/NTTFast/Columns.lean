@@ -226,12 +226,22 @@ def reverseEncode [Mul α] [PackedRepr α] (m : Nat) (scale : Bool) (f : α) (a 
       (by simp only [USize.toNat_ofNatLT, out, PackedRepr.size_alloc_div]; omega) h
   else out
 
-/-- Leaf `l`: collect its row, run the remaining passes and reverse its bit order, and store
+/-- The final radix-two layer of an odd-size transform: butterflies on adjacent pairs. -/
+@[inline] def lastPair [Field R] (tw0 : Array R) (a : Array R) : Array R :=
+  Plan.butterflyDIFBlocks tw0 2 1 (a.size / 2) 0 a
+
+/-- The leaf's remaining layers: radix-four passes, then the radix-two layer of an odd size. -/
+@[specialize] def leafPasses [Field R] [DecidableEq R] (tw : @& Array (Array R))
+    (rest : List Nat) (odd : Bool) (a : Array R) : Array R :=
+  let a := Parallel.runPasses false tw rest a
+  if odd then lastPair (tw.getD 0 #[]) a else a
+
+/-- Leaf `l`: collect its row, run the remaining layers and reverse its bit order, and store
 it after `16 l` padding words. -/
 @[specialize] def leafTask [Field R] [DecidableEq R] [PackedRepr R] (cols : @& Array ByteArray)
-    (tw : @& Array (Array R)) (rest : List Nat) (m cs l : Nat) (scale : Bool) (f : R) :
-    ByteArray :=
-  reverseEncode m scale f (Parallel.runPasses false tw rest (gatherLeaf cols cs l)) (16 * l)
+    (tw : @& Array (Array R)) (rest : List Nat) (odd : Bool) (m cs l : Nat) (scale : Bool)
+    (f : R) : ByteArray :=
+  reverseEncode m scale f (leafPasses tw rest odd (gatherLeaf cols cs l)) (16 * l)
 
 /-- Element `o + q` of a stored leaf is in range. -/
 theorem leafIndex (M q o : USize) (hq : q < M) (s n : Nat)
@@ -368,7 +378,7 @@ optionally scaled by `f`; `rest` are the passes of a `2 ^ (logN - 4)`-entry leaf
     encode (columnTask x tw logN M cs (s * cs)) 0
   let all := joinTasks cols
   let leaves := (Array.range 16).map fun l ↦ all.bind fun cols ↦ Task.spawn fun _ ↦
-    leafTask cols tw rest (logN - 4) cs l scale f
+    leafTask cols tw rest (logN % 2 == 1) (logN - 4) cs l scale f
   -- allocated while the tasks run
   let out := Array.replicate (16 * M) 0
   assemble setW (leaves.map Task.get) M out
@@ -391,7 +401,7 @@ interleave stores packed elements. -/
     encode (columnPasses (gatherRowsPacked x M (s * cs) cs 16) tw logN M cs (s * cs)) 0
   let all := joinTasks cols
   let leaves := (Array.range 16).map fun l ↦ all.bind fun cols ↦ Task.spawn fun _ ↦
-    leafTask cols tw rest (logN - 4) cs l scale f
+    leafTask cols tw rest (logN % 2 == 1) (logN - 4) cs l scale f
   -- sixteen interleave tasks, each storing a contiguous range of rows; one copy joins them
   let K := M / 16
   let rows := joinTasks leaves

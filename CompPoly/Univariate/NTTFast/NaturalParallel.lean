@@ -17,18 +17,14 @@ large sizes run the passes on independent array segments. Both paths are proved 
 scalar natural-order transforms.
 -/
 
-private theorem extract_self (a : Array α) : a.extract 0 a.size = a :=
-  Array.extract_eq_self_of_le (Nat.le_refl _)
-
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.NaturalPlan
 variable {R : Type*}
 
-/-- The column-parallel transform applies to an exactly sized input of an even size of at least
-`2 ^ 16` elements; smaller transforms are faster serially. -/
+/-- The column-parallel transform applies to an exactly sized input of at least `2 ^ 15`
+elements; smaller transforms run as one leaf, without tasks or copies. -/
 def ColumnsShape (R : Type*) [PackedRepr R] (n logN : Nat) : Prop :=
-  n = 2 ^ logN ∧ logN % 2 = 0 ∧ 16 ≤ logN ∧ logN ≤ 36 ∧
-    PackedRepr.width R * (2 ^ logN + 256) ≤ USize.size
+  n = 2 ^ logN ∧ 15 ≤ logN ∧ logN ≤ 36 ∧ PackedRepr.width R * (2 ^ logN + 256) ≤ USize.size
 
 instance (R : Type*) [PackedRepr R] (n logN : Nat) : Decidable (ColumnsShape R n logN) := by
   unfold ColumnsShape; exact inferInstance
@@ -56,6 +52,12 @@ theorem runPasses_topPasses [Field R] [DecidableEq R] (D : NTT.Domain R) (tw : A
   rw [htake]
   rfl
 
+/-- The pair butterflies of an odd transform are its last radix-two stage. -/
+theorem lastPair_eq [Field R] (D : NTT.Domain R) (tw0 a : Array R) (ha : a.size = D.n) :
+    Columns.lastPair tw0 a = Plan.butterflyStageDIFWithTwiddles D 0 tw0 a := by
+  simp only [Columns.lastPair, Plan.butterflyStageDIFWithTwiddles, ha, Nat.zero_add,
+    Nat.pow_one, Nat.pow_zero]
+
 /-- The column transform computes the scalar forward stages of a domain, in natural order. -/
 theorem transform_eq_checkedStages [Field R] [DecidableEq R] [PackedRepr R] (D : NTT.Domain R)
     (tw : Array (Array R)) (S : Nat) (scale : Bool) (f : R) (a : Array R)
@@ -64,10 +66,15 @@ theorem transform_eq_checkedStages [Field R] [DecidableEq R] [PackedRepr R] (D :
     Columns.transform tw D.logN S ((Parallel.forwardPasses D).drop 2) scale f a =
       Array.ofFn (n := 2 ^ D.logN) fun i ↦ Columns.scaleBy scale f
         ((Plan.checkedStages D tw a).getD (NTT.Transform.bitRevNat D.logN i) 0) := by
-  obtain ⟨hn, heven, h5, h36, hu⟩ := hshape
+  obtain ⟨hn, h15, h36, hu⟩ := hshape
   rw [Columns.transform_eq tw D.logN S _ scale f a (by omega) h36 hn htw hu hS hdiv,
-    runPasses_topPasses D tw a (by omega), ← Parallel.forwardStages_eq D tw a hn]
-  · simp only [heven, Nat.zero_ne_one, ↓reduceIte]
+    ← Parallel.forwardStages_eq D tw a hn]
+  · unfold Columns.leafPasses
+    rw [runPasses_topPasses D tw a (by omega)]
+    by_cases ho : D.logN % 2 = 1
+    · simp only [ho, beq_self_eq_true, ↓reduceIte]
+      rw [lastPair_eq D _ _ (by rw [Parallel.size_runPasses, hn]; rfl)]
+    · simp only [ho, beq_iff_eq, ↓reduceIte]
   · intro low hlow
     simp only [Parallel.forwardPasses, List.mem_drop_iff_getElem, List.length_map,
       List.length_range, List.getElem_map, List.getElem_range] at hlow
@@ -76,140 +83,93 @@ theorem transform_eq_checkedStages [Field R] [DecidableEq R] [PackedRepr R] (D :
       rw [Nat.pow_add]; ring]
     exact Nat.pow_dvd_pow 2 (by omega)
 
-/-- Parallel forward NTT. Even sizes from `2 ^ 16` run `columnCount` column tasks and sixteen
-leaf tasks; other sizes from `2 ^ 18` use at most `2 ^ logWorkers` independent array segments.
-Smaller transforms use the scalar loop to avoid task and copy costs. -/
+/-- Parallel forward NTT: from `2 ^ 15` elements, `columnCount` column tasks run the top two
+radix-four passes and sixteen leaf tasks the remaining layers; smaller transforms, and a single
+worker, run the sequential transform as one leaf. -/
 @[inline] def forwardParallel [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
     (a : Array R) (logWorkers : Nat := 4) : Array R :=
-  if logWorkers = 0 then P.forward a else
-  if ColumnsShape R a.size P.plan.domain.logN then
+  if logWorkers ≠ 0 ∧ ColumnsShape R a.size P.plan.domain.logN then
     Columns.transform P.plan.twiddles P.plan.domain.logN
       (columnCount P.plan.domain.logN logWorkers)
       ((Parallel.forwardPasses P.plan.domain).drop 2) false 1 a
-  else if P.plan.domain.logN < 18 then P.forward a else
-    let passes := Parallel.forwardPasses P.plan.domain
-    let split := (logWorkers + 1) / 2
-    let b := Parallel.runPasses false P.plan.twiddles (passes.take split) (P.load a)
-    let c := (Parallel.chunksTask false P.plan.twiddles (passes.drop split)
-      b 0 b.size logWorkers).get.flatten
-    let c := if P.plan.domain.logN % 2 = 1 then
-      Plan.butterflyStageDIFWithTwiddles P.plan.domain 0 (P.plan.twiddles.getD 0 #[]) c
-      else c
-    P.permute c
+  else P.forward a
 
-/-- Parallel inverse NTT with the same natural-order input/output and normalization. Even
-sizes run the forward column transform with the inverse twiddles and scale the leaves. -/
+/-- Parallel inverse NTT with the same shapes; the column transform runs with the inverse
+twiddles and scales the leaves. -/
 @[inline] def inverseParallel [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
     (a : Array R) (logWorkers : Nat := 4) : Array R :=
-  if logWorkers = 0 ∨ P.plan.inverseDomain.n ≠ P.plan.domain.n then P.inverse a else
-  if ColumnsShape R a.size P.plan.domain.logN then
+  if logWorkers ≠ 0 ∧ P.plan.inverseDomain.n = P.plan.domain.n ∧
+      ColumnsShape R a.size P.plan.domain.logN then
     Columns.transform P.plan.inverseTwiddles P.plan.domain.logN
       (columnCount P.plan.domain.logN logWorkers)
       ((Parallel.forwardPasses P.plan.inverseDomain).drop 2) true P.plan.nInv a
-  else if P.plan.domain.logN < 18 then P.inverse a else
-    let passes := Parallel.inversePasses P.plan.inverseDomain
-    let split := passes.length - (logWorkers + 1) / 2
-    let b := P.permute a
-    let c := (Parallel.chunksTask true P.plan.inverseTwiddles (passes.take split)
-      b 0 b.size logWorkers).get.flatten
-    let c := Parallel.runPasses true P.plan.inverseTwiddles (passes.drop split) c
-    let c := if P.plan.inverseDomain.logN % 2 = 1 then
-      Plan.butterflyStageWithTwiddles P.plan.inverseDomain (P.plan.inverseDomain.logN - 1)
-        (P.plan.inverseTwiddles.getD (P.plan.inverseDomain.logN - 1) #[]) c
-      else c
-    P.normalize c
+  else P.inverse a
 
 /-- The complete parallel forward transform refines the proved scalar transform. -/
 theorem forwardParallel_eq [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
     (a : Array R) (logWorkers : Nat) : P.forwardParallel a logWorkers = P.forward a := by
   unfold forwardParallel
   split
-  · rfl
-  split
-  · rename_i h hc
+  · rename_i h
+    obtain ⟨_, hc⟩ := h
     have htw : ∀ s < P.plan.domain.logN, (P.plan.twiddles.getD s #[]).size = 2 ^ s := by
       rw [P.wellFormed.2.2.1]; exact size_twiddleTable_getD _
     have hn := hc.1
     rw [transform_eq_checkedStages _ _ (columnCount P.plan.domain.logN logWorkers) false 1 a htw
       (by unfold columnCount; exact Nat.two_pow_pos _)
-      (by unfold columnCount; exact Nat.pow_dvd_pow 2 (by have := hc.2.2.1; omega)) hc,
+      (by unfold columnCount; exact Nat.pow_dvd_pow 2 (by have := hc.2.1; omega)) hc,
       forward, permute_eq, load,
       ite_eq_left_of_eq_true _ _ (eq_true (show a.size = P.plan.domain.n from hn))]
     rfl
-  split
   · rfl
-  · simp only [Parallel.chunksTask_eq, extract_self]
-    have hsplit (xs : List Nat) (n : Nat) (a : Array R) :
-        Parallel.runPasses false P.plan.twiddles (xs.drop n)
-          (Parallel.runPasses false P.plan.twiddles (xs.take n) a) =
-        Parallel.runPasses false P.plan.twiddles xs a := by
-      simp only [Parallel.runPasses, ← List.foldl_append, List.take_append_drop]
-    rw [hsplit, Parallel.forwardStages_eq _ _ _ (by
-      simp only [load_eq, NTT.size_loadNaturalArray])]
-    rfl
 
 /-- The complete parallel inverse transform refines the proved scalar transform. -/
 theorem inverseParallel_eq [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
     (a : Array R) (logWorkers : Nat) : P.inverseParallel a logWorkers = P.inverse a := by
   unfold inverseParallel
   split
-  · rfl
   · rename_i h
-    have hn : P.plan.inverseDomain.n = P.plan.domain.n :=
-      not_not.mp (fun hc ↦ h (Or.inr hc))
-    split
-    · rename_i hc
-      obtain ⟨hs, heven, h16, h36, hu⟩ := hc
-      obtain ⟨hinv, hnInv, _, hitw⟩ := P.wellFormed
-      have hl : P.plan.domain.inverse.logN = P.plan.domain.logN := rfl
-      have htw : ∀ s < P.plan.domain.inverse.logN,
-          (P.plan.inverseTwiddles.getD s #[]).size = 2 ^ s := by
-        rw [hitw]; exact size_twiddleTable_getD _
-      have hload : NTT.loadNaturalArray P.plan.domain.inverse a = a := by
-        apply Array.ext
-        · rw [NTT.size_loadNaturalArray, hs]; rfl
-        · intro i hi _
-          rw [NTT.getElem_loadNaturalArray, Array.getD_eq_getD_getElem?,
-            Array.getElem?_eq_getElem (by assumption), Option.getD_some]
-      have key := transform_eq_checkedStages P.plan.domain.inverse P.plan.inverseTwiddles
-        (columnCount P.plan.domain.logN logWorkers) true P.plan.nInv a htw
-        (by unfold columnCount; exact Nat.two_pow_pos _)
-        (by unfold columnCount; rw [hl]; exact Nat.pow_dvd_pow 2 (by omega))
-        ⟨by rw [hl]; exact hs, by rw [hl]; exact heven,
-          by omega, by omega, by rw [hl]; exact hu⟩
-      rw [hinv]
-      refine key.trans ?_
-      rw [inverse_eq, Plan.inverseImpl_correct _ P.wellFormed, Plan.checkedStages_eq, hitw]
-      conv_lhs => rw [← hload]
-      rw [Plan.runStagesDIFRadix4WithTwiddles_correct]
+    obtain ⟨_, hn, hc⟩ := h
+    obtain ⟨hs, h15, h36, hu⟩ := hc
+    obtain ⟨hinv, hnInv, _, hitw⟩ := P.wellFormed
+    have hl : P.plan.domain.inverse.logN = P.plan.domain.logN := rfl
+    have htw : ∀ s < P.plan.domain.inverse.logN,
+        (P.plan.inverseTwiddles.getD s #[]).size = 2 ^ s := by
+      rw [hitw]; exact size_twiddleTable_getD _
+    have hload : NTT.loadNaturalArray P.plan.domain.inverse a = a := by
       apply Array.ext
-      · simp only [Array.size_ofFn, NTT.Inverse.size_inverseSpec]; rfl
+      · rw [NTT.size_loadNaturalArray, hs]; rfl
       · intro i hi _
-        simp only [Array.getElem_ofFn, Columns.scaleBy, ↓reduceIte, NTT.Inverse.inverseSpec,
-          NTT.Transform.bitRevPermute, hnInv]
-        rw [Array.getD_eq_getD_getElem?, Array.getElem?_ofFn]
-        simp only [NTT.Domain.n, NTT.Transform.bitRevNat_lt, ↓reduceDIte, Option.getD_some]
-        simp only [Array.size_ofFn] at hi
-        have hi' : i < 2 ^ P.plan.domain.inverse.logN := by rw [hl]; exact hi
-        rw [NTT.Transform.bitRevNat_involutive _ _ hi', NTT.Forward.forwardSpec,
-          Array.getD_eq_getD_getElem?, Array.getElem?_ofFn]
-        simp only [NTT.Domain.n, hi', ↓reduceDIte, Option.getD_some]
-        rfl
-    split
-    · rfl
-    simp only [Parallel.chunksTask_eq, extract_self]
-    have hsplit (xs : List Nat) (n : Nat) (a : Array R) :
-        Parallel.runPasses true P.plan.inverseTwiddles (xs.drop n)
-          (Parallel.runPasses true P.plan.inverseTwiddles (xs.take n) a) =
-        Parallel.runPasses true P.plan.inverseTwiddles xs a := by
-      simp only [Parallel.runPasses, ← List.foldl_append, List.take_append_drop]
-    rw [hsplit, Parallel.inverseStages_eq _ _ _ (by
-      simp only [permute_eq_map, Array.size_map, order_size, hn])]
-    rfl
+        rw [NTT.getElem_loadNaturalArray, Array.getD_eq_getD_getElem?,
+          Array.getElem?_eq_getElem (by assumption), Option.getD_some]
+    have key := transform_eq_checkedStages P.plan.domain.inverse P.plan.inverseTwiddles
+      (columnCount P.plan.domain.logN logWorkers) true P.plan.nInv a htw
+      (by unfold columnCount; exact Nat.two_pow_pos _)
+      (by unfold columnCount; rw [hl]; exact Nat.pow_dvd_pow 2 (by omega))
+      ⟨by rw [hl]; exact hs, by omega, by omega, by rw [hl]; exact hu⟩
+    rw [hinv]
+    refine key.trans ?_
+    rw [inverse_eq, Plan.inverseImpl_correct _ P.wellFormed, Plan.checkedStages_eq, hitw]
+    conv_lhs => rw [← hload]
+    rw [Plan.runStagesDIFRadix4WithTwiddles_correct]
+    apply Array.ext
+    · simp only [Array.size_ofFn, NTT.Inverse.size_inverseSpec]; rfl
+    · intro i hi _
+      simp only [Array.getElem_ofFn, Columns.scaleBy, ↓reduceIte, NTT.Inverse.inverseSpec,
+        NTT.Transform.bitRevPermute, hnInv]
+      rw [Array.getD_eq_getD_getElem?, Array.getElem?_ofFn]
+      simp only [NTT.Domain.n, NTT.Transform.bitRevNat_lt, ↓reduceDIte, Option.getD_some]
+      simp only [Array.size_ofFn] at hi
+      have hi' : i < 2 ^ P.plan.domain.inverse.logN := by rw [hl]; exact hi
+      rw [NTT.Transform.bitRevNat_involutive _ _ hi', NTT.Forward.forwardSpec,
+        Array.getD_eq_getD_getElem?, Array.getElem?_ofFn]
+      simp only [NTT.Domain.n, hi', ↓reduceDIte, Option.getD_some]
+      rfl
+  · rfl
 
-/-- Parallel forward NTT of packed elements (`PackedRepr.encode`). Even sizes from `2 ^ 16`
-run the column transform directly on the packed buffer; other sizes unpack, run
-`forwardParallel` and pack. -/
+/-- Parallel forward NTT of packed elements (`PackedRepr.encode`), with the shapes of
+`forwardParallel`: the column transform runs directly on the packed buffer, and one leaf
+unpacks, transforms and packs. -/
 @[inline] def forwardPacked [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
     (a : ByteArray) (logWorkers : Nat := 4) : ByteArray :=
   if logWorkers ≠ 0 ∧
@@ -217,22 +177,22 @@ run the column transform directly on the packed buffer; other sizes unpack, run
     Columns.transformPacked P.plan.twiddles P.plan.domain.logN
       (columnCount P.plan.domain.logN logWorkers)
       ((Parallel.forwardPasses P.plan.domain).drop 2) false 1 a
-  else Columns.encodeAll (P.forwardParallel (Columns.decodeAll a) logWorkers)
+  else Columns.encodeAll (P.forward (Columns.decodeAll a))
 
-/-- Parallel inverse NTT of packed elements, with the same shapes as `forwardPacked`. -/
+/-- Parallel inverse NTT of packed elements, with the shapes of `inverseParallel`. -/
 @[inline] def inversePacked [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
     (a : ByteArray) (logWorkers : Nat := 4) : ByteArray :=
-  if ¬(logWorkers = 0 ∨ P.plan.inverseDomain.n ≠ P.plan.domain.n) ∧
+  if logWorkers ≠ 0 ∧ P.plan.inverseDomain.n = P.plan.domain.n ∧
       ColumnsShape R (a.size / PackedRepr.width R) P.plan.domain.logN then
     Columns.transformPacked P.plan.inverseTwiddles P.plan.domain.logN
       (columnCount P.plan.domain.logN logWorkers)
       ((Parallel.forwardPasses P.plan.inverseDomain).drop 2) true P.plan.nInv a
-  else Columns.encodeAll (P.inverseParallel (Columns.decodeAll a) logWorkers)
+  else Columns.encodeAll (P.inverse (Columns.decodeAll a))
 
 private theorem shape_bounds [PackedRepr R] (n logN : Nat) (h : ColumnsShape R n logN) :
     PackedRepr.width R * n < USize.size ∧
       PackedRepr.width R * (16 * 2 ^ (logN - 4)) < USize.size ∧ 16 ∣ 2 ^ (logN - 4) := by
-  obtain ⟨hn, _, h16, _, hu⟩ := h
+  obtain ⟨hn, h15, _, hu⟩ := h
   have hw := PackedRepr.width_pos (R := R)
   have hp : 16 * 2 ^ (logN - 4) = 2 ^ logN := by
     rw [show logN = 4 + (logN - 4) by omega, Nat.pow_add, Nat.add_sub_cancel_left]
@@ -255,8 +215,8 @@ theorem forwardPacked_eq [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPl
     have hb := shape_bounds a.size _ hc
     rw [Columns.transformPacked_encode _ _ _ _ _ _ _ hb.1 hb.2.1 hb.2.2, ← forwardParallel_eq P a]
     unfold forwardParallel
-    rw [ite_eq_right_of_eq_false _ _ (eq_false hw), ite_eq_left_of_eq_true _ _ (eq_true hc)]
-  · rw [Columns.decodeAll_encode, Columns.encodeAll_eq, forwardParallel_eq]
+    rw [ite_eq_left_of_eq_true _ _ (eq_true ⟨hw, hc⟩)]
+  · rw [Columns.decodeAll_encode, Columns.encodeAll_eq]
 
 /-- The packed parallel inverse transform packs the proved scalar inverse. -/
 theorem inversePacked_eq [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
@@ -268,11 +228,11 @@ theorem inversePacked_eq [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPl
   rw [hdiv]
   split
   · rename_i h
-    obtain ⟨hw, hc⟩ := h
+    obtain ⟨hw, hn, hc⟩ := h
     have hb := shape_bounds a.size _ hc
     rw [Columns.transformPacked_encode _ _ _ _ _ _ _ hb.1 hb.2.1 hb.2.2, ← inverseParallel_eq P a]
     unfold inverseParallel
-    rw [ite_eq_right_of_eq_false _ _ (eq_false hw), ite_eq_left_of_eq_true _ _ (eq_true hc)]
-  · rw [Columns.decodeAll_encode, Columns.encodeAll_eq, inverseParallel_eq]
+    rw [ite_eq_left_of_eq_true _ _ (eq_true ⟨hw, hn, hc⟩)]
+  · rw [Columns.decodeAll_encode, Columns.encodeAll_eq]
 
 end CompPoly.CPolynomial.NTTFast.NaturalPlan
