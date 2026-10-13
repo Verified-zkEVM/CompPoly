@@ -33,18 +33,4 @@ theorem Native.step16_encode (th tl : Array KoalaBear.Fast.Field)
       [size_encode_fields, size_splice16])) only [Native.write16U_encode]
   rfl
 
-/-- The fused final-layer word kernel agrees with its field expression graph. -/
-theorem Native.leaf16_encode (t3 t2 t1 : Array KoalaBear.Fast.Field) (i : USize)
-    (a : Array KoalaBear.Fast.Field) (h) :
-    Native.leaf16 (encode t3) (encode t2) (encode t1) i (encode a) h =
-      encode (leaf16Field t3 t2 t1 i a) := by
-  have hi : i.toNat + 16 ≤ a.size := by
-    have hh := h.1
-    rw [size_encode_fields] at hh
-    omega
-  unfold Native.leaf16
-  simp only [Native.readUOffset_encode, add_val, sub_val, mul_val]
-  rw [Native.write16U_encode _ _ h.2.1 hi]
-  rfl
-
 end CompPoly.CPolynomial.NTTFast.Packed

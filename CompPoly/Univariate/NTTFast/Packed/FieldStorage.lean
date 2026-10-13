@@ -99,26 +99,6 @@ theorem Native.write16U_encode (a : Array KoalaBear.Fast.Field) (i : USize)
   simp only [splice, Array.map_append, map_val_extract, Array.size_map]
   rfl
 
-/-- `n` zero words represent `n` zero coordinates. -/
-theorem Native.zeroWords_encode (n : Nat) :
-    Native.zeroWords n = encode (Array.replicate n (0 : KoalaBear.Fast.Field)) := by
-  rw [Native.zeroWords_eq, encode_eq_map_val, Array.map_replicate]
-  rfl
-
-/-- A batch store at the end of a written prefix extends the prefix and consumes the batch's
-slots of the rest. -/
-theorem Native.write16U_cursor (l Z : Array KoalaBear.Fast.Field) (p : USize)
-    (hp : p.toNat = l.size) (hZ : 16 ≤ Z.size) (hs : (encode (l ++ Z)).size < USize.size)
-    (x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 : KoalaBear.Fast.Field) :
-    Native.write16U (encode (l ++ Z)) p x0.val x1.val x2.val x3.val x4.val x5.val x6.val
-      x7.val x8.val x9.val x10.val x11.val x12.val x13.val x14.val x15.val =
-      encode (l ++ #[x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15] ++
-        Z.extract 16 Z.size) := by
-  rw [Native.write16U_encode _ _ hs
-    (by rw [Array.size_append]; omega), hp,
-    splice_cursor l Z #[x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15] hZ]
-  rfl
-
 /-- A bounded single-coordinate write implements the corresponding field-array update. -/
 theorem Native.write_encode (a : Array KoalaBear.Fast.Field) (i : Nat)
     (hs : (encode a).size < USize.size) (hi : i < a.size)

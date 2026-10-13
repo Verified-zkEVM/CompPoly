@@ -80,15 +80,13 @@ theorem decodedFields_difSpec (D : NTT.Domain KoalaBear.Fast.Field)
     rw [getD_difSpec D a _ (NTT.Transform.bitRevNat_lt _ _),
       NTT.Transform.bitRevNat_involutive D.logN i.val i.isLt, dftValue_eq_nttAt D a i] <;> rfl
 
-/-- The domain of the squared root, of half the size. -/
-def halfDomain [Field R] (D : NTT.Domain R) (hlog : 0 < D.logN) : NTT.Domain R where
-  logN := D.logN - 1
-  omega := D.omega ^ 2
+/-- The domain of `2 ^ k`-th powers of the root, `2 ^ k` times smaller. -/
+def powDomain [Field R] (D : NTT.Domain R) (k : Nat) (hk : k ≤ D.logN) : NTT.Domain R where
+  logN := D.logN - k
+  omega := D.omega ^ 2 ^ k
   primitive := by
     apply IsPrimitiveRoot.pow D.n_pos D.primitive
-    change 2 ^ D.logN = 2 * 2 ^ (D.logN - 1)
-    have he : D.logN = (D.logN - 1) + 1 := by omega
-    conv_lhs => rw [he, Nat.pow_succ]
-    omega
+    change 2 ^ D.logN = 2 ^ k * 2 ^ (D.logN - k)
+    rw [← Nat.pow_add, Nat.add_sub_cancel' hk]
 
 end CompPoly.CPolynomial.NTTFast.Packed

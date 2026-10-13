@@ -58,4 +58,10 @@ theorem leaf16Field_eq_stages [Field R] (t3 t2 t1 : Array R)
         [getD_layer16_1_outside, getD_layer16_2_outside, getD_layer16_4_outside,
           getD_layer16_8_outside, size_literal16, ite_eq_right, ite_self]
 
+/-- Local final layers preserve the working array's length. -/
+@[simp] theorem size_leaf16Stages [Field R] (t3 t2 t1 : Array R) (a : Array R)
+    (base : Nat) : (leaf16Stages t3 t2 t1 a base).size = a.size := by
+  simp only [leaf16Stages, size_layer16_1, size_layer16_2,
+    size_layer16_4, size_layer16_8]
+
 end CompPoly.CPolynomial.NTTFast.Packed.Expressions
