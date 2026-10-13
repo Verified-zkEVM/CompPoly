@@ -37,12 +37,17 @@ lean_lib CompPolyPackedNative where
   roots := #[`CompPoly.Univariate.NTTFast.Packed.Native,
     `CompPoly.Univariate.NTTFast.Packed.NativeOrder,
     `CompPoly.Univariate.NTTFast.Packed.NativeLast,
-    `CompPoly.Univariate.NTTFast.Packed.Columns,
-    `CompPoly.Fields.KoalaBear.InterpolateCosetPacked]
+    `CompPoly.Univariate.NTTFast.Packed.Columns]
   platformIndependent := true
   -- The kernels spill AVX registers; realigning the stack keeps the spill slots 32-byte
   -- aligned whatever the caller's frame, which otherwise moved timings by 20% between builds.
   moreLeancArgs := #["-march=native", "-mstackrealign"]
+
+/-- CPU-targeted packed interpolation loops; they don't spill, so realigning would only cost. -/
+lean_lib CompPolyInterpolateNative where
+  roots := #[`CompPoly.Fields.KoalaBear.InterpolateCosetPacked]
+  platformIndependent := true
+  moreLeancArgs := #["-march=native"]
 
 lean_lib CompPolyTests where
   srcDir := "tests"
