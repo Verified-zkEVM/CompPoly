@@ -12,7 +12,7 @@ public import CompPoly.Univariate.NTTFast.Reverse32
 /-! # Natural-order reads of a bit-reversed transform
 
 `decodedFields` reads a bit-reversed array in natural order, optionally scaled; `Native.decode`
-computes it from packed words, for leaves too small for `leafRev`.
+computes it from packed words, for leaves too small for the fused final layers.
 -/
 
 @[expose] public section
@@ -55,11 +55,5 @@ theorem Native.decode_encode (logN : Nat) (a : Array KoalaBear.Fast.Field)
   rw [Native.reverse_index logN i.val hlog i.isLt,
     Native.read_encode a _ hu (by rw [hs]; exact NTT.Transform.bitRevNat_lt _ _)]
   cases inverse <;> simp only [Bool.false_eq_true, ite_false, ite_true, mul_val, ofWord_val]
-
-/-- Reading a word index uses the same storage specification as the ordinary checked read. -/
-theorem Native.readWord_eq_read (a : ByteArray) (i : USize) :
-    Native.readWord a i = Native.read a i.toNat := by
-  unfold Native.readWord Native.read
-  simp only [Nat.toUSize_eq, USize.ofNat_toNat]
 
 end CompPoly.CPolynomial.NTTFast.Packed

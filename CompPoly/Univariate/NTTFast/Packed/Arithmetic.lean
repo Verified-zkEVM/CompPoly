@@ -49,9 +49,4 @@ theorem sub_val (x y : KoalaBear.Fast.Field) : sub x.val y.val = (x - y).val := 
 /-- The raw multiplication is exactly the carrier's verified multiplication. -/
 theorem mul_val (x y : KoalaBear.Fast.Field) : mul x.val y.val = (x * y).val := rfl
 
-/-- The scalar split kernel is multiplication of a field difference. -/
-theorem mul_sub_val (w x y : KoalaBear.Fast.Field) :
-    mul w.val (sub x.val y.val) = (w * (x - y)).val := by
-  rw [sub_val, mul_val]
-
 end CompPoly.CPolynomial.NTTFast.Packed
