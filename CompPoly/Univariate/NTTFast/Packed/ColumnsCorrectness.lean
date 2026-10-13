@@ -277,26 +277,25 @@ theorem runColumns_encode (D : NTT.Domain F) (S : Nat) (factor : F) (a : Array F
       NaturalPlan.leafPasses_topPasses D tw a hs (by omega), Plan.checkedStages_eq,
       planStages_eq_difSpec D a hs]
     rfl
-  have hcols : ((Array.range S).map fun s ↦ Task.spawn fun _ ↦
-      columnWords (tw.map encode) D.logN M cs (s * cs) (encode a)).map Task.get =
+  have hcols : ((Array.range S).map fun s ↦
+      columnWords (tw.map encode) D.logN M cs (s * cs) (encode a)) =
       (Array.range S).map fun s ↦ encode (C s) := by
     apply Array.ext (by simp only [Array.size_map, Array.size_range])
     intro s h1 _
     simp only [Array.size_map, Array.size_range] at h1
     simp only [Array.getElem_map, Array.getElem_range]
     exact columnWords_encode a tw D.logN cs (s * cs) (by omega) hn htw hu' (hj s h1)
-  have hleaves : ((Array.range 16).map fun l ↦ (Columns.joinTasks ((Array.range S).map fun s ↦
-      Task.spawn fun _ ↦ columnWords (tw.map encode) D.logN M cs (s * cs) (encode a))).bind
-        fun cols ↦ Task.spawn fun _ ↦
-          leafNatural (tw.map encode) (D.logN - 4) factor.val inverse (leafWords cols cs l)).map
+  have hleaves : (Tasks.spawnAfter (Tasks.spawnAll S fun s ↦
+      columnWords (tw.map encode) D.logN M cs (s * cs) (encode a)) 16 fun cols l ↦
+        leafNatural (tw.map encode) (D.logN - 4) factor.val inverse (leafWords cols cs l)).map
         Task.get =
       (Array.range 16).map fun l ↦ encode (decodedFields (D.logN - 4)
         ((difSpec D a).extract (l * M) ((l + 1) * M)) factor inverse) := by
+    rw [Tasks.map_get_spawnAfter, Tasks.map_get_spawnAll, hcols]
     apply Array.ext (by simp only [Array.size_map, Array.size_range])
     intro l h1 _
     simp only [Array.size_map, Array.size_range] at h1
-    rw [Array.getElem_map, Array.getElem_map, Array.getElem_map, Array.getElem_range,
-      Columns.get_bind_spawn, hcols, hleafIn l h1, hleaf l h1]
+    rw [Array.getElem_map, Array.getElem_map, Array.getElem_range, hleafIn l h1, hleaf l h1]
   dsimp only [runColumns]
   rw [hcsM, hleaves, naturalLeaves_encode (difSpec D a) D.logN factor inverse (by omega) h32
     (by rw [size_difSpec]; rfl) hu']

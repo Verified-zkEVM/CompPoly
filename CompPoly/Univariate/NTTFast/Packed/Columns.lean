@@ -44,9 +44,8 @@ def runColumns (tw : Array ByteArray) (logN S : Nat) (nInv : UInt32) (inverse : 
     (a : ByteArray) : ByteArray :=
   let M := 2 ^ (logN - 4)
   let cs := M / S
-  let cols := (Array.range S).map fun s ↦ Task.spawn fun _ ↦ columnWords tw logN M cs (s * cs) a
-  let all := Columns.joinTasks cols
-  let leaves := (Array.range 16).map fun l ↦ all.bind fun cols ↦ Task.spawn fun _ ↦
+  let cols := Tasks.spawnAll S fun s ↦ columnWords tw logN M cs (s * cs) a
+  let leaves := Tasks.spawnAfter cols 16 fun cols l ↦
     leafNatural tw (logN - 4) nInv inverse (leafWords cols cs l)
   naturalLeaves (leaves.map Task.get) logN
 

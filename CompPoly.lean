@@ -94,6 +94,7 @@ public import CompPoly.Data.RingTheory.AlgebraTower
 public import CompPoly.Data.RingTheory.AlgebraTower.Basis
 public import CompPoly.Data.RingTheory.AlgebraTower.Coordinates
 public import CompPoly.Data.RingTheory.CanonicalEuclideanDomain
+public import CompPoly.Data.Tasks
 public import CompPoly.Data.Vector.Basic
 public import CompPoly.Fields.BLS12_377
 public import CompPoly.Fields.BLS12_377.Basic
