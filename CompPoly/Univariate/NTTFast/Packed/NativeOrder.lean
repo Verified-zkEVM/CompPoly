@@ -6,6 +6,7 @@ Authors: Gregor Mitscha-Baude
 module
 
 public import CompPoly.Univariate.NTTFast.Packed.Native
+import CompPoly.Univariate.NTTFast.Packed.Unrolled
 
 /-! # Parallel natural-order output for the packed FFT
 
@@ -67,112 +68,13 @@ theorem lineFits_toNat {b : ByteArray} {q : USize} (h : LineFits b q) (k : Nat) 
 /-- Read one aligned line of sixteen words, whose range was checked; inlining removes the
 record. -/
 @[inline] def line (b : @& ByteArray) (q : USize) (h : LineFits b q) : Line :=
-  ⟨b.ugetUInt32LE ((q + 0) * 4)
-      (by rw [(lineFits_toNat h 0 (by decide)).1]
-          exact (lineFits_toNat h 0 (by decide)).2),
-    b.ugetUInt32LE ((q + 1) * 4)
-      (by rw [(lineFits_toNat h 1 (by decide)).1]
-          exact (lineFits_toNat h 1 (by decide)).2),
-    b.ugetUInt32LE ((q + 2) * 4)
-      (by rw [(lineFits_toNat h 2 (by decide)).1]
-          exact (lineFits_toNat h 2 (by decide)).2),
-    b.ugetUInt32LE ((q + 3) * 4)
-      (by rw [(lineFits_toNat h 3 (by decide)).1]
-          exact (lineFits_toNat h 3 (by decide)).2),
-    b.ugetUInt32LE ((q + 4) * 4)
-      (by rw [(lineFits_toNat h 4 (by decide)).1]
-          exact (lineFits_toNat h 4 (by decide)).2),
-    b.ugetUInt32LE ((q + 5) * 4)
-      (by rw [(lineFits_toNat h 5 (by decide)).1]
-          exact (lineFits_toNat h 5 (by decide)).2),
-    b.ugetUInt32LE ((q + 6) * 4)
-      (by rw [(lineFits_toNat h 6 (by decide)).1]
-          exact (lineFits_toNat h 6 (by decide)).2),
-    b.ugetUInt32LE ((q + 7) * 4)
-      (by rw [(lineFits_toNat h 7 (by decide)).1]
-          exact (lineFits_toNat h 7 (by decide)).2),
-    b.ugetUInt32LE ((q + 8) * 4)
-      (by rw [(lineFits_toNat h 8 (by decide)).1]
-          exact (lineFits_toNat h 8 (by decide)).2),
-    b.ugetUInt32LE ((q + 9) * 4)
-      (by rw [(lineFits_toNat h 9 (by decide)).1]
-          exact (lineFits_toNat h 9 (by decide)).2),
-    b.ugetUInt32LE ((q + 10) * 4)
-      (by rw [(lineFits_toNat h 10 (by decide)).1]
-          exact (lineFits_toNat h 10 (by decide)).2),
-    b.ugetUInt32LE ((q + 11) * 4)
-      (by rw [(lineFits_toNat h 11 (by decide)).1]
-          exact (lineFits_toNat h 11 (by decide)).2),
-    b.ugetUInt32LE ((q + 12) * 4)
-      (by rw [(lineFits_toNat h 12 (by decide)).1]
-          exact (lineFits_toNat h 12 (by decide)).2),
-    b.ugetUInt32LE ((q + 13) * 4)
-      (by rw [(lineFits_toNat h 13 (by decide)).1]
-          exact (lineFits_toNat h 13 (by decide)).2),
-    b.ugetUInt32LE ((q + 14) * 4)
-      (by rw [(lineFits_toNat h 14 (by decide)).1]
-          exact (lineFits_toNat h 14 (by decide)).2),
-    b.ugetUInt32LE ((q + 15) * 4)
-      (by rw [(lineFits_toNat h 15 (by decide)).1]
-          exact (lineFits_toNat h 15 (by decide)).2)⟩
+  line_words%
 
 /-- Append the transpose of one `16 × 16` tile: word `u` of every stream, for each `u`.
 Reading whole lines first keeps sixteen equally aligned streams from evicting each other. -/
 @[noinline] def transposeStep (s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 :
     @& ByteArray) (q : USize) (out : ByteArray) (p : USize) : ByteArray :=
-  if h : LineFits s0 q ∧ LineFits s1 q ∧ LineFits s2 q ∧ LineFits s3 q ∧ LineFits s4 q ∧
-      LineFits s5 q ∧ LineFits s6 q ∧ LineFits s7 q ∧ LineFits s8 q ∧ LineFits s9 q ∧
-      LineFits s10 q ∧ LineFits s11 q ∧ LineFits s12 q ∧ LineFits s13 q ∧ LineFits s14 q ∧
-      LineFits s15 q then
-  let x0 := line s0 q h.1
-  let x1 := line s1 q h.2.1
-  let x2 := line s2 q h.2.2.1
-  let x3 := line s3 q h.2.2.2.1
-  let x4 := line s4 q h.2.2.2.2.1
-  let x5 := line s5 q h.2.2.2.2.2.1
-  let x6 := line s6 q h.2.2.2.2.2.2.1
-  let x7 := line s7 q h.2.2.2.2.2.2.2.1
-  let x8 := line s8 q h.2.2.2.2.2.2.2.2.1
-  let x9 := line s9 q h.2.2.2.2.2.2.2.2.2.1
-  let x10 := line s10 q h.2.2.2.2.2.2.2.2.2.2.1
-  let x11 := line s11 q h.2.2.2.2.2.2.2.2.2.2.2.1
-  let x12 := line s12 q h.2.2.2.2.2.2.2.2.2.2.2.2.1
-  let x13 := line s13 q h.2.2.2.2.2.2.2.2.2.2.2.2.2.1
-  let x14 := line s14 q h.2.2.2.2.2.2.2.2.2.2.2.2.2.2.1
-  let x15 := line s15 q h.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2
-  let out := write16U out p x0.w0 x1.w0 x2.w0 x3.w0 x4.w0 x5.w0 x6.w0 x7.w0 x8.w0
-    x9.w0 x10.w0 x11.w0 x12.w0 x13.w0 x14.w0 x15.w0
-  let out := write16U out (p + 16) x0.w1 x1.w1 x2.w1 x3.w1 x4.w1 x5.w1 x6.w1 x7.w1 x8.w1
-    x9.w1 x10.w1 x11.w1 x12.w1 x13.w1 x14.w1 x15.w1
-  let out := write16U out (p + 32) x0.w2 x1.w2 x2.w2 x3.w2 x4.w2 x5.w2 x6.w2 x7.w2 x8.w2
-    x9.w2 x10.w2 x11.w2 x12.w2 x13.w2 x14.w2 x15.w2
-  let out := write16U out (p + 48) x0.w3 x1.w3 x2.w3 x3.w3 x4.w3 x5.w3 x6.w3 x7.w3 x8.w3
-    x9.w3 x10.w3 x11.w3 x12.w3 x13.w3 x14.w3 x15.w3
-  let out := write16U out (p + 64) x0.w4 x1.w4 x2.w4 x3.w4 x4.w4 x5.w4 x6.w4 x7.w4 x8.w4
-    x9.w4 x10.w4 x11.w4 x12.w4 x13.w4 x14.w4 x15.w4
-  let out := write16U out (p + 80) x0.w5 x1.w5 x2.w5 x3.w5 x4.w5 x5.w5 x6.w5 x7.w5 x8.w5
-    x9.w5 x10.w5 x11.w5 x12.w5 x13.w5 x14.w5 x15.w5
-  let out := write16U out (p + 96) x0.w6 x1.w6 x2.w6 x3.w6 x4.w6 x5.w6 x6.w6 x7.w6 x8.w6
-    x9.w6 x10.w6 x11.w6 x12.w6 x13.w6 x14.w6 x15.w6
-  let out := write16U out (p + 112) x0.w7 x1.w7 x2.w7 x3.w7 x4.w7 x5.w7 x6.w7 x7.w7 x8.w7
-    x9.w7 x10.w7 x11.w7 x12.w7 x13.w7 x14.w7 x15.w7
-  let out := write16U out (p + 128) x0.w8 x1.w8 x2.w8 x3.w8 x4.w8 x5.w8 x6.w8 x7.w8 x8.w8
-    x9.w8 x10.w8 x11.w8 x12.w8 x13.w8 x14.w8 x15.w8
-  let out := write16U out (p + 144) x0.w9 x1.w9 x2.w9 x3.w9 x4.w9 x5.w9 x6.w9 x7.w9 x8.w9
-    x9.w9 x10.w9 x11.w9 x12.w9 x13.w9 x14.w9 x15.w9
-  let out := write16U out (p + 160) x0.w10 x1.w10 x2.w10 x3.w10 x4.w10 x5.w10 x6.w10 x7.w10
-    x8.w10 x9.w10 x10.w10 x11.w10 x12.w10 x13.w10 x14.w10 x15.w10
-  let out := write16U out (p + 176) x0.w11 x1.w11 x2.w11 x3.w11 x4.w11 x5.w11 x6.w11 x7.w11
-    x8.w11 x9.w11 x10.w11 x11.w11 x12.w11 x13.w11 x14.w11 x15.w11
-  let out := write16U out (p + 192) x0.w12 x1.w12 x2.w12 x3.w12 x4.w12 x5.w12 x6.w12 x7.w12
-    x8.w12 x9.w12 x10.w12 x11.w12 x12.w12 x13.w12 x14.w12 x15.w12
-  let out := write16U out (p + 208) x0.w13 x1.w13 x2.w13 x3.w13 x4.w13 x5.w13 x6.w13 x7.w13
-    x8.w13 x9.w13 x10.w13 x11.w13 x12.w13 x13.w13 x14.w13 x15.w13
-  let out := write16U out (p + 224) x0.w14 x1.w14 x2.w14 x3.w14 x4.w14 x5.w14 x6.w14 x7.w14
-    x8.w14 x9.w14 x10.w14 x11.w14 x12.w14 x13.w14 x14.w14 x15.w14
-  write16U out (p + 240) x0.w15 x1.w15 x2.w15 x3.w15 x4.w15 x5.w15 x6.w15 x7.w15
-    x8.w15 x9.w15 x10.w15 x11.w15 x12.w15 x13.w15 x14.w15 x15.w15
-  else out
+  transposeStep_words%
 
 /-- Store `count` transposed tiles, starting at stream word `q` and output word `p`, the end of
 `out`. Each tile first extends `out` by one zero block, which the tile then overwrites while it

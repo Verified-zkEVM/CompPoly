@@ -398,6 +398,7 @@ public import CompPoly.Univariate.NTTFast.Packed.Radix4Lemmas
 public import CompPoly.Univariate.NTTFast.Packed.Rows
 public import CompPoly.Univariate.NTTFast.Packed.StorageLemmas
 public import CompPoly.Univariate.NTTFast.Packed.Twiddles
+public import CompPoly.Univariate.NTTFast.Packed.Unrolled
 public import CompPoly.Univariate.NTTFast.Parallel
 public import CompPoly.Univariate.NTTFast.Permutation
 public import CompPoly.Univariate.NTTFast.Plan
