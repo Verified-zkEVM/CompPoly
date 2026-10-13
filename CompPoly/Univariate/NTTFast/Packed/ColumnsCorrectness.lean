@@ -301,9 +301,9 @@ theorem runColumns_encode (D : NTT.Domain F) (S : Nat) (factor : F) (a : Array F
     (by rw [size_difSpec]; rfl) hu']
 
 /-- The packed transform computes the DFT, scaled for an inverse transform. -/
-theorem run_dft (D : NTT.Domain F) (logWorkers : Nat) (factor : F) (a : Array F)
+theorem run_dft (D : NTT.Domain F) (parallel : Bool) (factor : F) (a : Array F)
     (inverse : Bool) (hs : a.size = D.n) (h32 : D.logN ≤ 32) (hu : 4 * D.n < USize.size) :
-    run ((Plan.twiddleTable D).map encode) D.logN logWorkers factor.val inverse (encode a) =
+    run ((Plan.twiddleTable D).map encode) D.logN parallel factor.val inverse (encode a) =
       encode (if inverse then (NTT.Forward.forwardSpec D a).map (fun x ↦ factor * x)
         else NTT.Forward.forwardSpec D a) := by
   rw [← decodedFields_difSpec D a factor inverse]

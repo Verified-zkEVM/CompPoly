@@ -53,15 +53,15 @@ def ofDomain (D : NTT.Domain KoalaBear.Fast.Field) (h32 : D.logN ≤ 32)
     funext a
     exact Native.encodeFields_eq a
 
-/-- Natural-order forward transform of `n` packed Montgomery words: from `2 ^ 15` words, column
-tasks for up to `2 ^ logWorkers` workers run the top two radix-four passes and sixteen leaf tasks
-the rest; smaller transforms, and a single worker, run one leaf. -/
-@[inline] def forwardPacked (P : Plan) (a : ByteArray) (logWorkers : Nat := 4) : ByteArray :=
-  Native.run P.forwardTwiddles P.domain.logN logWorkers P.nInv.val false a
+/-- Natural-order forward transform of `n` packed Montgomery words: if `parallel`, from `2 ^ 15`
+words, column tasks run the top two radix-four passes and sixteen leaf tasks the rest; otherwise,
+and for smaller transforms, one leaf runs on the calling thread. -/
+@[inline] def forwardPacked (P : Plan) (a : ByteArray) (parallel : Bool := true) : ByteArray :=
+  Native.run P.forwardTwiddles P.domain.logN parallel P.nInv.val false a
 
 /-- Natural-order inverse transform of `n` packed Montgomery words, including normalization. -/
-@[inline] def inversePacked (P : Plan) (a : ByteArray) (logWorkers : Nat := 4) : ByteArray :=
-  Native.run P.inverseTwiddles P.domain.logN logWorkers P.nInv.val true a
+@[inline] def inversePacked (P : Plan) (a : ByteArray) (parallel : Bool := true) : ByteArray :=
+  Native.run P.inverseTwiddles P.domain.logN parallel P.nInv.val true a
 
 private theorem normalized_inverse [Field R] (D : NTT.Domain R) (a : Array R) :
     (NTT.Forward.forwardSpec D.inverse a).map (fun x ↦ D.nInv * x) =
@@ -82,18 +82,18 @@ private theorem inverse_n [Field R] (D : NTT.Domain R) : D.inverse.n = D.n :=
   congrArg (fun logN ↦ 2 ^ logN) (inverse_logN D)
 
 /-- The packed forward transform equals the mathematical DFT of every domain-sized input. -/
-theorem forwardPacked_correct (P : Plan) (a : Array KoalaBear.Fast.Field) (logWorkers : Nat)
+theorem forwardPacked_correct (P : Plan) (a : Array KoalaBear.Fast.Field) (parallel : Bool)
     (hs : a.size = P.domain.n) :
-    P.forwardPacked (encode a) logWorkers = encode (NTT.Forward.forwardSpec P.domain a) := by
+    P.forwardPacked (encode a) parallel = encode (NTT.Forward.forwardSpec P.domain a) := by
   rw [forwardPacked, P.forward_eq, P.nInv_eq]
-  exact Native.run_dft P.domain logWorkers P.domain.nInv a false hs P.log_bound P.byte_bound
+  exact Native.run_dft P.domain parallel P.domain.nInv a false hs P.log_bound P.byte_bound
 
 /-- The packed inverse transform equals the normalized inverse DFT of every domain-sized input. -/
-theorem inversePacked_correct (P : Plan) (a : Array KoalaBear.Fast.Field) (logWorkers : Nat)
+theorem inversePacked_correct (P : Plan) (a : Array KoalaBear.Fast.Field) (parallel : Bool)
     (hs : a.size = P.domain.n) :
-    P.inversePacked (encode a) logWorkers = encode (NTT.Inverse.inverseSpec P.domain a) := by
+    P.inversePacked (encode a) parallel = encode (NTT.Inverse.inverseSpec P.domain a) := by
   rw [inversePacked, P.inverse_eq, P.nInv_eq]
-  have h := Native.run_dft P.domain.inverse logWorkers P.domain.nInv a true
+  have h := Native.run_dft P.domain.inverse parallel P.domain.nInv a true
     (hs.trans (inverse_n P.domain).symm) ((inverse_logN P.domain).symm ▸ P.log_bound)
     ((inverse_n P.domain).symm ▸ P.byte_bound)
   rw [inverse_logN] at h
