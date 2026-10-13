@@ -49,11 +49,11 @@ def runColumns (tw : Array ByteArray) (logN S : Nat) (nInv : UInt32) (inverse : 
     leafNatural tw (logN - 4) nInv inverse (leafWords cols cs l)
   naturalLeaves (leaves.map Task.get) logN
 
-/-- The complete transform of `2 ^ logN` packed words in natural order: the column transform from
-`2 ^ 15` words and with more than one worker, otherwise one leaf. -/
-def run (tw : Array ByteArray) (logN logWorkers : Nat) (nInv : UInt32) (inverse : Bool)
+/-- The complete transform of `2 ^ logN` packed words in natural order: if `parallel`, the column
+transform from `2 ^ 15` words, otherwise one leaf. -/
+def run (tw : Array ByteArray) (logN : Nat) (parallel : Bool) (nInv : UInt32) (inverse : Bool)
     (a : ByteArray) : ByteArray :=
-  if logWorkers ≠ 0 ∧ 15 ≤ logN then
+  if parallel ∧ 15 ≤ logN then
     runColumns tw logN (Columns.columnCount logN) nInv inverse a
   else leafNatural tw logN nInv inverse a
 
