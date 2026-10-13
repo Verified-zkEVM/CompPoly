@@ -5,12 +5,14 @@ Authors: Gregor Mitscha-Baude
 -/
 module
 
+public import CompPoly.Univariate.NTTFast.Packed.StorageLemmas
+public import CompPoly.Univariate.NTTFast.Packed.BitReversal
 import all CompPoly.Univariate.NTTFast.Packed.Native
 import all CompPoly.Univariate.NTTFast.Packed.NativeOrder
 public import CompPoly.Univariate.NTTFast.Packed.NativeOrder
 public import CompPoly.Univariate.NTTFast.Packed.Rows
-public import CompPoly.Univariate.NTTFast.Packed.Correctness
-public import CompPoly.Univariate.NTTFast.Packed.SliceTreeCorrectness
+import CompPoly.Univariate.NTTFast.Packed.ArrayLemmas
+public import CompPoly.Univariate.NTTFast.Packed.DifSpec
 
 /-! # Correctness of the parallel natural-order output
 
@@ -25,8 +27,6 @@ namespace CompPoly.CPolynomial.NTTFast.Packed
 open CompPoly.PackedRepr (encode size_encode_uint32)
 
 namespace Native
-
-
 
 /-- A line inside a packed word array that fits machine indices passes the range check. -/
 theorem lineFits_encodeWords (v : Array UInt32) (q : USize) (h : q.toNat + 16 ≤ v.size)
@@ -445,58 +445,6 @@ theorem naturalLeaves_encodeWords (V : Nat → Array UInt32) (logN : Nat) (h12 :
   · rw [Array.getD_eq_getD_getElem?, Array.getD_eq_getD_getElem?,
       Array.getElem?_eq_none (by rw [size_rows]; omega),
       Array.getElem?_eq_none (by rw [Array.size_ofFn]; omega)]
-
-/-- The sequential decoder stores every word, in order, into a correctly sized array. -/
-theorem unpackGo_encode (X : Array KoalaBear.Fast.Field) (n : USize) (hn : X.size = n.toNat)
-    (hs : (encode X).size < USize.size) :
-    ∀ (d : Nat) (i : USize) (out : Array KoalaBear.Fast.Field), n.toNat - i.toNat = d →
-      i.toNat ≤ n.toNat → out.size = n.toNat → (∀ k < i.toNat, out.getD k 0 = X.getD k 0) →
-      unpackGo (encode X) n i out = X := by
-  have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
-  intro d
-  induction d with
-  | zero =>
-    intro i out hd hi hout hk
-    rw [unpackGo]
-    have hn' : ¬i < n := by rw [USize.lt_iff_toNat_lt]; omega
-    simp only [hn', ↓reduceDIte]
-    apply array_eq_of_getD _ _ 0 (by omega)
-    intro k
-    by_cases hk' : k < i.toNat
-    · exact hk k hk'
-    · rw [Array.getD_eq_getD_getElem?, Array.getD_eq_getD_getElem?,
-        Array.getElem?_eq_none (by omega), Array.getElem?_eq_none (by omega)]
-  | succ d ih =>
-    intro i out hd hi hout hk
-    have hlt : i < n := by rw [USize.lt_iff_toNat_lt]; omega
-    have hio : i.toNat < out.size := by omega
-    have hnsz := n.toNat_lt_size
-    have h1 : (i + 1).toNat = i.toNat + 1 := Plan.usize_add_one i (by omega)
-    rw [unpackGo]
-    simp only [hlt, hio, ↓reduceDIte]
-    have hread : ofWord (readWord (encode X) i) = X.getD i.toNat 0 := by
-      rw [readWord_eq_read, read_encode X _ hs (by omega), ofWord_val]
-    rw [hread]
-    apply ih (i + 1) _ (by omega) (by omega) (by simp only [Array.uset, Array.size_set]; exact hout)
-    intro k hk1
-    simp only [Array.uset, Array.getD_eq_getD_getElem?, Array.getElem?_set]
-    split
-    · rename_i he
-      rw [← he, Option.getD_some]
-    · rw [h1] at hk1
-      have := hk k (by omega)
-      simpa only [Array.getD_eq_getD_getElem?] using this
-
-/-- Unpacking a packed field array restores it. -/
-theorem unpack_encode (X : Array KoalaBear.Fast.Field) (hs : (encode X).size < USize.size) :
-    unpack (encode X) X.size = X := by
-  have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
-  have hsz := hs
-  rw [size_encode_fields] at hsz
-  have hn : X.size.toUSize.toNat = X.size := USize.toNat_ofNat_of_lt' (by omega)
-  unfold unpack
-  exact unpackGo_encode X _ hn.symm hs _ 0 _ rfl (by simp only [USize.toNat_zero]; omega)
-    (by rw [Array.size_replicate, hn]) (fun k hk ↦ by simp only [USize.toNat_zero] at hk; omega)
 
 /-- The sixteen leaf blocks of a field array, packed. -/
 def leafBlocks (S : Array KoalaBear.Fast.Field) (logN : Nat) : Array ByteArray :=

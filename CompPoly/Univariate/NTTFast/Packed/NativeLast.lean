@@ -6,7 +6,6 @@ Authors: Gregor Mitscha-Baude
 module
 
 public import CompPoly.Univariate.NTTFast.Packed.NativeOrder
-public import CompPoly.Univariate.NTTFast.Packed.SliceTree
 
 /-! # Fused final leaf layers and leaf reversal
 
@@ -896,40 +895,14 @@ def upperStages (logN : Nat) (tw : Array ByteArray) (a : ByteArray) : ByteArray 
   return a
 
 /-- A complete `2 ^ m`-word leaf in natural order, optionally scaled: even leaves of at least
-`2 ^ 8` words use the fused final layers, others `stages` and `leafRev`. -/
+`2 ^ 8` words use the fused final layers, others `stages` and `leafRev`, and leaves of fewer than
+sixteen words a scalar reversal. -/
 def leafNatural (tw : Array ByteArray) (m : Nat) (factor : UInt32) (scale : Bool)
     (a : ByteArray) : ByteArray :=
   if m % 2 = 0 ∧ 8 ≤ m then
     lastRev (tw.getD 3 .empty) (tw.getD 2 .empty) (tw.getD 1 .empty) (upperStages m tw a) m
       factor scale
-  else leafRev (stages m tw a factor false) m factor scale
-
-/-- Whether the parallel natural-order output applies: sixteen leaves of whole tiles. -/
-def naturalShape (logN depth : Nat) : Bool :=
-  depth == 4 && 12 ≤ logN && logN ≤ 28
-
-/-- Chunk tasks per split level: sliced trees from `2 ^ 18` elements, where every leaf then
-receives one slice; `0` keeps the binary split tree for smaller transforms. -/
-def sliceCount (logN depth : Nat) : Nat :=
-  if 18 ≤ logN then 2 ^ (depth - 1) else 0
-
-/-- Complete transform of a packed buffer, decoded to a natural-order field array: the leaves
-run `stages`, and one tiled pass decodes, reorders and, unless the leaves did, scales. -/
-def runDecoded (tw : Array ByteArray) (logN depth : Nat) (nInv : UInt32) (a : ByteArray)
-    (inverse : Bool) : Array KoalaBear.Fast.Field :=
-  let normalize := inverse && logN - depth ≥ 4 && (logN - depth) % 2 == 0
-  decodeTiled logN (assembleChunks (4 * 2 ^ logN)
-    (sliceChunks tw logN #[a] nInv normalize (sliceCount logN depth) id
-      (fun m b ↦ stages m tw b nInv normalize) depth).get) nInv (inverse && !normalize)
-
-/-- Complete transform of a packed buffer; packed natural-order output. In natural order the
-leaves end with `leafNatural`, which scales an inverse transform in its final kernel. -/
-def runPacked (tw : Array ByteArray) (logN depth : Nat) (nInv : UInt32) (a : ByteArray)
-    (inverse : Bool) : ByteArray :=
-  if naturalShape logN depth then
-    naturalLeaves (sliceChunks tw logN #[a] nInv false (sliceCount logN depth)
-      (fun b ↦ leafRev b (logN - 4) nInv inverse) (fun m b ↦ leafNatural tw m nInv inverse b)
-      depth).get logN
-  else encodeFields (runDecoded tw logN depth nInv a inverse)
+  else if 4 ≤ m then leafRev (stages m tw a) m factor scale
+  else encodeFields (decode m (stages m tw a) factor scale)
 
 end CompPoly.CPolynomial.NTTFast.Packed.Native

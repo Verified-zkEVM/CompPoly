@@ -24,15 +24,14 @@ def rawPass (logN : Nat) (tw : Array ByteArray) (pass : Nat) (a : ByteArray) : B
       (block * (4 * q) + 2 * q) (block * (4 * q) + 3 * q) b) a
 
 /-- Re-expressing the sequential loop as folds changes no implementation semantics. -/
-theorem Native.stages_eq_folds (logN : Nat) (tw : Array ByteArray) (a : ByteArray)
-    (factor : UInt32) (normalize : Bool) :
-    Native.stages logN tw a factor normalize =
+theorem Native.stages_eq_folds (logN : Nat) (tw : Array ByteArray) (a : ByteArray) :
+    Native.stages logN tw a =
       let fused := logN ≥ 4 && logN % 2 == 0
       let b := (List.range (if fused then logN / 2 - 2 else logN / 2)).foldl
         (fun b pass ↦ rawPass logN tw pass b) a
       let c := if fused then (List.range (2 ^ logN / 16)).foldl
         (fun b block ↦ rawLeafBlock (tw.getD 3 ByteArray.empty) (tw.getD 2 ByteArray.empty)
-          (tw.getD 1 ByteArray.empty) (block * 16) factor normalize b) b else b
+          (tw.getD 1 ByteArray.empty) (block * 16) b) b else b
       if logN % 2 = 1 then (List.range (2 ^ logN / 2)).foldl rawPairBlock c else c := by
   simp only [Native.stages, rawPass, rawLeafBlock,
     Std.Legacy.Range.forIn_eq_forIn_range', Std.Legacy.Range.size,
@@ -49,24 +48,21 @@ def TwiddleOnes (logN : Nat) (tw : Array (Array KoalaBear.Fast.Field)) : Prop :=
 
 /-- The array semantics of the packed sequential pipeline, expressed with ordinary DIF kernels. -/
 def fieldStages (logN : Nat) (tw : Array (Array KoalaBear.Fast.Field))
-    (a : Array KoalaBear.Fast.Field) (factor : KoalaBear.Fast.Field)
-    (normalize : Bool) : Array KoalaBear.Fast.Field :=
+    (a : Array KoalaBear.Fast.Field) : Array KoalaBear.Fast.Field :=
   let fused := logN ≥ 4 && logN % 2 == 0
   let b := (List.range (if fused then logN / 2 - 2 else logN / 2)).foldl
     (fun b pass ↦ fieldPass logN tw pass b) a
   let c := if fused then (List.range (2 ^ logN / 16)).foldl
-    (fun b block ↦ leafBlock (tw.getD 3 #[]) (tw.getD 2 #[]) (tw.getD 1 #[])
-      (block * 16) factor normalize b) b else b
+    (fun b block ↦ Expressions.leaf16Stages (tw.getD 3 #[]) (tw.getD 2 #[]) (tw.getD 1 #[]) b
+      (block * 16)) b else b
   if logN % 2 = 1 then (List.range (2 ^ logN / 2)).foldl
     (fun b block ↦ Plan.butterflyDIFInner #[1] 1 0 (2 * block) (2 * block + 1) b) c else c
 
 /-- All sequential packed passes, fused leaves and scalar tails preserve field-array semantics. -/
 theorem Native.stages_encode (logN : Nat) (tw : Array (Array KoalaBear.Fast.Field))
-    (a : Array KoalaBear.Fast.Field) (factor : KoalaBear.Fast.Field) (normalize : Bool)
-    (htw : TwiddleSizes logN tw) (hone : TwiddleOnes logN tw)
+    (a : Array KoalaBear.Fast.Field) (htw : TwiddleSizes logN tw) (hone : TwiddleOnes logN tw)
     (hs : a.size = 2 ^ logN) (hu : 4 * 2 ^ logN < USize.size) :
-    Native.stages logN (tw.map encode) (encode a) factor.val normalize =
-      encode (fieldStages logN tw a factor normalize) := by
+    Native.stages logN (tw.map encode) (encode a) = encode (fieldStages logN tw a) := by
   let fused := logN ≥ 4 && logN % 2 == 0
   let count := if fused then logN / 2 - 2 else logN / 2
   let b := (List.range count).foldl (fun b pass ↦ fieldPass logN tw pass b) a
@@ -79,13 +75,13 @@ theorem Native.stages_encode (logN : Nat) (tw : Array (Array KoalaBear.Fast.Fiel
       (fun b pass ↦ fieldPass logN tw pass b)
       (fun pass hp b hb ↦ by simpa only [size_fieldPass] using hb) a hs
   let c := if fused then (List.range (2 ^ logN / 16)).foldl
-    (fun b block ↦ leafBlock (tw.getD 3 #[]) (tw.getD 2 #[]) (tw.getD 1 #[])
-      (block * 16) factor normalize b) b else b
+    (fun b block ↦ Expressions.leaf16Stages (tw.getD 3 #[]) (tw.getD 2 #[]) (tw.getD 1 #[]) b
+      (block * 16)) b else b
   have hfinish : (if fused then (List.range (2 ^ logN / 16)).foldl
       (fun b block ↦ rawLeafBlock ((tw.map encode).getD 3 ByteArray.empty)
         ((tw.map encode).getD 2 ByteArray.empty)
         ((tw.map encode).getD 1 ByteArray.empty)
-        (block * 16) factor.val normalize b) (encode b) else encode b) =
+        (block * 16) b) (encode b) else encode b) =
       encode c := by
     unfold c
     split
@@ -94,7 +90,7 @@ theorem Native.stages_encode (logN : Nat) (tw : Array (Array KoalaBear.Fast.Fiel
         simp only [fused, Bool.and_eq_true, decide_eq_true_eq] at hf
         exact hf.1
       rw [getD_map_encode, getD_map_encode, getD_map_encode]
-      exact fold_rawLeafBlock_encode _ _ _ _ _ _ b
+      exact fold_rawLeafBlock_encode _ _ _ _ b
         (by simpa only [size_encode_fields, hbs] using hu)
         (by rw [hbs]; exact Nat.div_mul_le_self _ _)
         (by simpa using htw 3 (by omega)) (by simpa using htw 2 (by omega))
@@ -107,9 +103,7 @@ theorem Native.stages_encode (logN : Nat) (tw : Array (Array KoalaBear.Fast.Fiel
     · apply foldl_invariant (List.range (2 ^ logN / 16))
         (fun b : Array KoalaBear.Fast.Field ↦ b.size = 2 ^ logN)
       · intro block hb a ha
-        have hb' := List.mem_range.mp hb
-        have hbound := Nat.div_mul_le_self (2 ^ logN) 16
-        rw [size_leafBlock _ _ _ _ _ _ _ (by omega)]
+        rw [size_leaf16Stages]
         exact ha
       · exact hbs
     · exact hbs

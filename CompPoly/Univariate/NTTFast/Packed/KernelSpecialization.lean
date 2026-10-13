@@ -44,29 +44,4 @@ theorem leaf16Field_eq_expression (t3 t2 t1 : Array KoalaBear.Fast.Field) (i : U
     fieldMul_eq_expression]
   rfl
 
-/-- The concrete field model specializes the abstract expression graph. -/
-theorem leaf16ScaledField_eq_expression (t3 t2 t1 : Array KoalaBear.Fast.Field) (i : USize)
-    (nInv : KoalaBear.Fast.Field) (b : Array KoalaBear.Fast.Field)  :
-    leaf16ScaledField t3 t2 t1 i nInv b = Expressions.leaf16ScaledField t3 t2 t1 i nInv b := by
-  unfold Expressions.leaf16ScaledField
-  simp only [← readField_eq_expression, ← fieldAdd_eq_expression, ← fieldSub_eq_expression, ←
-    fieldMul_eq_expression]
-  rfl
-
-/-- The concrete field model specializes the abstract expression graph. -/
-theorem splitStepLeftField_eq_expression (a _w : Array KoalaBear.Fast.Field) (i j : USize) (out :
-    Array KoalaBear.Fast.Field)  :
-    splitStepLeftField a _w i j out = Expressions.splitStepLeftField a _w i j out := by
-  unfold Expressions.splitStepLeftField
-  simp only [← readField_eq_expression, ← fieldAdd_eq_expression]
-  rfl
-
-/-- The concrete field model specializes the abstract expression graph. -/
-theorem splitStepRightField_eq_expression (a w : Array KoalaBear.Fast.Field) (i j : USize) (out :
-    Array KoalaBear.Fast.Field)  :
-    splitStepRightField a w i j out = Expressions.splitStepRightField a w i j out := by
-  unfold Expressions.splitStepRightField
-  simp only [← readField_eq_expression, ← fieldSub_eq_expression, ← fieldMul_eq_expression]
-  rfl
-
 end CompPoly.CPolynomial.NTTFast.Packed

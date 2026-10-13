@@ -12,7 +12,7 @@ public import CompPoly.Univariate.NTTFast.Packed.KernelCorrectness
 public import CompPoly.Univariate.NTTFast.Packed.KernelSpecialization
 public import CompPoly.Univariate.NTTFast.Packed.StageTail
 public import CompPoly.Univariate.NTTFast.Packed.NativeOrderCorrectness
-public import CompPoly.Univariate.NTTFast.Packed.StageRefinement
+public import CompPoly.Univariate.NTTFast.Packed.StageCorrectness
 import all CompPoly.Univariate.NTTFast.Packed.NativeOrder
 import all CompPoly.Univariate.NTTFast.Packed.Native
 
@@ -674,12 +674,13 @@ theorem lastVal_congr (t3 t2 t1 a a' : Array KoalaBear.Fast.Field) (base : Nat)
   rw [he]
 
 /-- The fold of final-layer blocks, block by block. -/
-theorem getD_fold_leafBlocks (t3 t2 t1 U : Array KoalaBear.Fast.Field) (f : KoalaBear.Fast.Field)
-    (B : Nat) (hs : U.size = 16 * B) (hu : U.size < USize.size)
+theorem getD_fold_leafBlocks (t3 t2 t1 U : Array KoalaBear.Fast.Field) (B : Nat)
+    (hs : U.size = 16 * B) (hu : U.size < USize.size)
     (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1) :
-    ∀ K ≤ B, ((List.range K).foldl (fun b block ↦ leafBlock t3 t2 t1 (block * 16) f false b)
-      U).size = U.size ∧ ∀ k < B, ∀ t < 16,
-      ((List.range K).foldl (fun b block ↦ leafBlock t3 t2 t1 (block * 16) f false b)
+    ∀ K ≤ B,
+      ((List.range K).foldl (fun b block ↦ Expressions.leaf16Stages t3 t2 t1 b (block * 16))
+        U).size = U.size ∧ ∀ k < B, ∀ t < 16,
+      ((List.range K).foldl (fun b block ↦ Expressions.leaf16Stages t3 t2 t1 b (block * 16))
         U).getD (16 * k + t) 0 =
         if k < K then lastVal t3 t2 t1 U (16 * k) t else U.getD (16 * k + t) 0 := by
   intro K
@@ -693,11 +694,7 @@ theorem getD_fold_leafBlocks (t3 t2 t1 U : Array KoalaBear.Fast.Field) (f : Koal
     intro hK
     obtain ⟨hsz, hv⟩ := ih (by omega)
     rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil]
-    have hleaf : ∀ A : Array KoalaBear.Fast.Field, leafBlock t3 t2 t1 (K * 16) f false A =
-        Expressions.leaf16Stages t3 t2 t1 A (K * 16) := fun A ↦ by
-      simp only [leafBlock, Bool.false_eq_true, ↓reduceIte]
-    refine ⟨by rw [hleaf, size_leaf16Stages, hsz], fun k hk t ht ↦ ?_⟩
-    rw [hleaf]
+    refine ⟨by rw [size_leaf16Stages, hsz], fun k hk t ht ↦ ?_⟩
     by_cases hkK : k = K
     · subst k
       rw [ite_eq_left_of_eq_true _ _ (eq_true (Nat.lt_succ_self K))]
@@ -726,12 +723,12 @@ theorem Native.upperStages_eq_folds (logN : Nat) (tw : Array ByteArray) (a : Byt
     ← List.range_eq_range', List.forIn_pure_yield_eq_foldl, bind_pure, pure_bind, Id.run_pure]
 
 /-- The fused leaf is the reversed, optionally scaled leaf of the sequential stages. -/
-theorem Native.leafNatural_encode (m : Nat) (tw : Array (Array KoalaBear.Fast.Field))
+theorem Native.leafNatural_eq_leafRev (m : Nat) (tw : Array (Array KoalaBear.Fast.Field))
     (X : Array KoalaBear.Fast.Field) (f : KoalaBear.Fast.Field) (sc : Bool)
     (htw : TwiddleSizes m tw) (hone : TwiddleOnes m tw) (hs : X.size = 2 ^ m)
-    (hu : 4 * 2 ^ m < USize.size) (hm32 : m ≤ 32) :
+    (hu : 4 * 2 ^ m < USize.size) (hm4 : 4 ≤ m) (hm32 : m ≤ 32) :
     Native.leafNatural (tw.map encode) m f.val sc (encode X) =
-      Native.leafRev (Native.stages m (tw.map encode) (encode X) f.val false) m f.val
+      Native.leafRev (Native.stages m (tw.map encode) (encode X)) m f.val
         sc := by
   unfold Native.leafNatural
   split
@@ -750,10 +747,10 @@ theorem Native.leafNatural_encode (m : Nat) (tw : Array (Array KoalaBear.Fast.Fi
     rw [hU, getD_map_encode, getD_map_encode, getD_map_encode,
       lastRev_encodeWords _ _ _ U m f sc hm.2 (by omega) hu hUs h3 h2 h1 (hone 3 (by omega))
         (hone 2 (by omega)) (hone 1 (by omega)),
-      Native.stages_encode m tw X f false htw hone hs hu]
+      Native.stages_encode m tw X htw hone hs hu]
     let W := (List.range (2 ^ m / 16)).foldl (fun b block ↦
-      leafBlock (tw.getD 3 #[]) (tw.getD 2 #[]) (tw.getD 1 #[]) (block * 16) f false b) U
-    have hfs : fieldStages m tw X f false = W := by
+      Expressions.leaf16Stages (tw.getD 3 #[]) (tw.getD 2 #[]) (tw.getD 1 #[]) b (block * 16)) U
+    have hfs : fieldStages m tw X = W := by
       have hf : (decide (m ≥ 4) && m % 2 == 0) = true := by
         simp only [Bool.and_eq_true, decide_eq_true_eq, beq_iff_eq]; omega
       have ho : ¬(m % 2 = 1) := by omega
@@ -763,7 +760,7 @@ theorem Native.leafNatural_encode (m : Nat) (tw : Array (Array KoalaBear.Fast.Fi
       have : 16 ∣ 2 ^ m := by
         rw [show m = 4 + (m - 4) by omega, Nat.pow_add]; exact Nat.dvd_mul_right _ _
       omega
-    have hfold := getD_fold_leafBlocks (tw.getD 3 #[]) (tw.getD 2 #[]) (tw.getD 1 #[]) U f
+    have hfold := getD_fold_leafBlocks (tw.getD 3 #[]) (tw.getD 2 #[]) (tw.getD 1 #[]) U
       (2 ^ m / 16) (by rw [hUs]; exact hp) (by omega) (hone 3 (by omega)) (hone 2 (by omega))
       (hone 1 (by omega)) (2 ^ m / 16) le_rfl
     have hWs : W.size = 2 ^ m := by rw [hfold.1, hUs]
@@ -810,98 +807,61 @@ theorem Native.leafNatural_encode (m : Nat) (tw : Array (Array KoalaBear.Fast.Fi
         Array.getD_eq_getD_getElem?, Array.getElem?_eq_none (by rw [size_rows]; omega)]
   · rfl
 
-/-- The leaves of the sliced packed tree are the post-processed DIF leaf blocks. -/
-theorem Native.sliceChunks_leaves (D : NTT.Domain KoalaBear.Fast.Field)
-    (tw : Array (Array KoalaBear.Fast.Field)) (a : Array KoalaBear.Fast.Field)
-    (factor : KoalaBear.Fast.Field) (normalize : Bool) (P depth : Nat)
-    (post : ByteArray → ByteArray) (leaf : Nat → ByteArray → ByteArray) (ht : TwiddlesFor D tw)
-    (hs : a.size = D.n) (hu : 4 * D.n < USize.size)
-    (hleaf : ∀ X : Array KoalaBear.Fast.Field, X.size = 2 ^ (D.logN - depth) →
-      leaf (D.logN - depth) (encode X) = post (Native.stages (D.logN - depth)
-        (tw.map encode) (encode X) factor.val normalize)) :
-    (Native.sliceChunks (tw.map encode) D.logN #[encode a] factor.val normalize P post
-      leaf depth).get =
-      (Native.splitChunks (tw.map encode) D.logN (encode a) factor.val normalize
-        depth).get.map post := by
-  rw [← Native.slicesOf_one a D.n hs,
-    Native.sliceChunks_eq tw _ _ _ _ _ _ D.logN 1 D.n _ (Nat.one_mul _) (by decide)
-      (TwiddlesFor.invariants D tw ht).1 hu hleaf,
-    Native.ofFn_getD a (2 ^ D.logN) hs]
+/-- A reversed leaf of at least sixteen words is the natural-order read of the leaf. -/
+theorem Native.leafRev_encode (W : Array KoalaBear.Fast.Field) (m : Nat) (f : KoalaBear.Fast.Field)
+    (sc : Bool) (hm4 : 4 ≤ m) (hm32 : m ≤ 32) (hw : W.size = 2 ^ m)
+    (hu : 4 * 2 ^ m < USize.size) :
+    Native.leafRev (encode W) m f.val sc = encode (decodedFields m W f sc) := by
+  have h16 : 16 ∣ 2 ^ m := by
+    rw [show m = 4 + (m - 4) by omega, Nat.pow_add]
+    exact Nat.dvd_mul_right _ _
+  simp only [encode_eq_map_val]
+  rw [Native.leafRev_encodeWords (W.map Subtype.val) m f.val sc hm4 hm32
+    (by rw [Array.size_map, hw]) (by rw [size_encode_uint32, Array.size_map, hw]; exact hu)]
+  congr 1
+  apply array_eq_of_getD _ _ 0 (by
+    rw [size_rows, Array.size_map, decodedFields, Array.size_ofFn]; omega)
+  intro i
+  by_cases hi : i < 2 ^ m
+  · rw [getD_rows _ _ _ (by omega), show 16 * (i / 16) + i % 16 = i by omega, getD_map_val,
+      getD_map_val, decodedFields, getD_ofFn_bounded _ _ hi]
+    cases sc <;> simp only [scaleWord, Bool.false_eq_true, ↓reduceIte, mul_val]
+  · rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none (by rw [size_rows]; omega),
+      Array.getD_eq_getD_getElem?, Array.getElem?_eq_none (by
+        rw [Array.size_map, decodedFields, Array.size_ofFn]; omega)]
 
-/-- The natural-order leaf function agrees with reversing the sequential stages. -/
-theorem Native.leafNatural_hyp (D : NTT.Domain KoalaBear.Fast.Field)
-    (tw : Array (Array KoalaBear.Fast.Field)) (factor : KoalaBear.Fast.Field) (inverse : Bool)
-    (ht : TwiddlesFor D tw) (h32 : D.logN ≤ 32) (hu : 4 * D.n < USize.size)
-    (X : Array KoalaBear.Fast.Field) (hX : X.size = 2 ^ (D.logN - 4)) :
-    Native.leafNatural (tw.map encode) (D.logN - 4) factor.val inverse (encode X) =
-      Native.leafRev (Native.stages (D.logN - 4) (tw.map encode) (encode X) factor.val
-        false) (D.logN - 4) factor.val inverse := by
-  obtain ⟨hsz, hone⟩ := TwiddlesFor.invariants D tw ht
-  have hp : 2 ^ (D.logN - 4) ≤ 2 ^ D.logN := Nat.pow_le_pow_right (by omega) (by omega)
-  exact Native.leafNatural_encode (D.logN - 4) tw X factor inverse
-    (fun s hs ↦ hsz s (by omega)) (fun s hs ↦ hone s (by omega)) hX
-    (by simp only [NTT.Domain.n] at hu; omega) (by omega)
-
-/-- The decoding pipeline computes the DFT with optional inverse normalization. -/
-theorem Native.runDecoded_dft (D : NTT.Domain KoalaBear.Fast.Field)
-    (tw : Array (Array KoalaBear.Fast.Field)) (depth : Nat) (factor : KoalaBear.Fast.Field)
-    (a : Array KoalaBear.Fast.Field) (inverse : Bool) (ht : TwiddlesFor D tw) (hs : a.size = D.n)
-    (h32 : D.logN ≤ 32) (hu : 4 * D.n < USize.size) :
-    Native.runDecoded (tw.map encode) D.logN depth factor.val (encode a) inverse =
-      if inverse then (NTT.Forward.forwardSpec D a).map (fun x ↦ factor * x)
-      else NTT.Forward.forwardSpec D a := by
-  unfold Native.runDecoded
-  let normalize := inverse && D.logN - depth ≥ 4 && (D.logN - depth) % 2 == 0
-  have hn : ValidLeafNormalization D.logN depth normalize := by
-    intro h
-    simp only [normalize, Bool.and_eq_true, decide_eq_true_eq, beq_iff_eq] at h
-    exact ⟨h.1.2, h.2⟩
-  have hi : normalize = true → inverse = true := by
-    intro h
-    simp only [normalize, Bool.and_eq_true, decide_eq_true_eq, beq_iff_eq] at h
-    exact h.1.1
-  have hsize : (normalizedDifSpec D a factor normalize).size = 2 ^ D.logN :=
-    size_normalizedDifSpec D a factor normalize
-  have hpu : (encode (normalizedDifSpec D a factor normalize)).size < USize.size := by
-    rw [size_encode_fields, hsize]
-    exact hu
-  change Native.decodeTiled D.logN (Native.assembleChunks (4 * 2 ^ D.logN)
-    (Native.sliceChunks (tw.map encode) D.logN #[encode a] factor.val normalize
-      (Native.sliceCount D.logN depth) id
-      (fun m b ↦ Native.stages m (tw.map encode) b factor.val normalize) depth).get)
-      factor.val (inverse && !normalize) = _
-  rw [Native.sliceChunks_leaves D tw a factor normalize _ depth _ _ ht hs hu (fun _ _ ↦ rfl),
-    Array.map_id, Native.assembleChunks_capacity, Native.splitChunks_eq,
-    Native.splitTask_correct D tw a factor normalize depth ht hs hu hn,
-    Native.decodeTiled_encode _ _ factor _ h32 hsize hpu,
-    decodedFields_normalizedDifSpec D a factor normalize inverse hi]
-
-/-- The packed in/out pipeline computes the DFT with optional inverse normalization. -/
-theorem Native.runPacked_dft (D : NTT.Domain KoalaBear.Fast.Field)
-    (tw : Array (Array KoalaBear.Fast.Field)) (depth : Nat) (factor : KoalaBear.Fast.Field)
-    (a : Array KoalaBear.Fast.Field) (inverse : Bool) (ht : TwiddlesFor D tw) (hs : a.size = D.n)
-    (h32 : D.logN ≤ 32) (hu : 4 * D.n < USize.size) :
-    Native.runPacked (tw.map encode) D.logN depth factor.val (encode a) inverse =
-      encode (if inverse then (NTT.Forward.forwardSpec D a).map (fun x ↦ factor * x)
-        else NTT.Forward.forwardSpec D a) := by
-  unfold Native.runPacked
+@[simp] theorem size_allFieldStages (logN : Nat) (tw : Array (Array KoalaBear.Fast.Field))
+    (a : Array KoalaBear.Fast.Field) : (allFieldStages logN tw a).size = a.size := by
+  have hb := foldl_invariant (List.range (logN / 2))
+    (fun b : Array KoalaBear.Fast.Field ↦ b.size = a.size)
+    (fun b pass ↦ fieldPass logN tw pass b)
+    (fun pass _ b hb ↦ by simpa only [size_fieldPass] using hb) a rfl
+  unfold allFieldStages
   split
-  · rename_i hshape
-    simp only [Native.naturalShape, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq] at hshape
-    obtain ⟨⟨rfl, h12⟩, _⟩ := hshape
-    have hn : ValidLeafNormalization D.logN 4 false := by intro h; cases h
-    have hsize : (normalizedDifSpec D a factor false).size = 2 ^ D.logN :=
-      size_normalizedDifSpec D a factor false
-    rw [Native.sliceChunks_leaves D tw a factor false _ 4 _ _ ht hs hu
-      (Native.leafNatural_hyp D tw factor inverse ht h32 hu),
-      Native.splitChunks_leaves D tw a factor false 4 ht hs hu hn (by omega)]
-    rw [show (Array.ofFn (n := 2 ^ 4) fun l ↦ encode ((normalizedDifSpec D a factor
-        false).extract (l * 2 ^ (D.logN - 4)) ((l + 1) * 2 ^ (D.logN - 4)))) =
-        Native.leafBlocks (normalizedDifSpec D a factor false) D.logN from rfl,
-      Native.naturalLeaves_encode _ _ factor _ h12 h32 hsize hu,
-      show inverse = (inverse && !false) by simp only [Bool.not_false, Bool.and_true],
-      decodedFields_normalizedDifSpec D a factor false _ (fun h ↦ by cases h)]
-    simp only [Bool.not_false, Bool.and_true]
-  · rw [Native.runDecoded_dft D tw depth factor a inverse ht hs h32 hu, Native.encodeFields_eq]
+  · exact foldl_invariant _ (fun b : Array KoalaBear.Fast.Field ↦ b.size = a.size) _
+      (fun _ _ b hb ↦ by simpa only [Plan.size_butterflyDIFInner] using hb) _ hb
+  · exact hb
+
+/-- A natural-order leaf is the natural-order read of the sequential stages, optionally
+scaled. -/
+theorem Native.leafNatural_encode (m : Nat) (tw : Array (Array KoalaBear.Fast.Field))
+    (X : Array KoalaBear.Fast.Field) (f : KoalaBear.Fast.Field) (sc : Bool)
+    (htw : TwiddleSizes m tw) (hone : TwiddleOnes m tw) (hs : X.size = 2 ^ m)
+    (hu : 4 * 2 ^ m < USize.size) (hm32 : m ≤ 32) :
+    Native.leafNatural (tw.map encode) m f.val sc (encode X) =
+      encode (decodedFields m (allFieldStages m tw X) f sc) := by
+  have hA : (allFieldStages m tw X).size = 2 ^ m := by
+    rw [size_allFieldStages, hs]
+  by_cases hm4 : 4 ≤ m
+  · rw [Native.leafNatural_eq_leafRev m tw X f sc htw hone hs hu hm4 hm32,
+      Native.stages_encode m tw X htw hone hs hu,
+      fieldStages_eq_all m tw X htw hone hs,
+      Native.leafRev_encode _ m f sc hm4 hm32 hA hu]
+  · unfold Native.leafNatural
+    simp only [show ¬(m % 2 = 0 ∧ 8 ≤ m) by omega, hm4, ↓reduceIte]
+    rw [Native.stages_encode m tw X htw hone hs hu,
+      fieldStages_eq_all m tw X htw hone hs,
+      Native.decode_encode m _ f sc hm32 hA (by rw [size_encode_fields, hA]; exact hu),
+      Native.encodeFields_eq]
 
 end CompPoly.CPolynomial.NTTFast.Packed

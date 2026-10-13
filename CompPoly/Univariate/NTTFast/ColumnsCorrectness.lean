@@ -11,7 +11,7 @@ public import CompPoly.Univariate.NTTFast.Columns
 public import CompPoly.Univariate.NTTFast.Packed.Radix4Lemmas
 import Mathlib.Tactic.Ring
 import CompPoly.Univariate.NTTFast.Packed.ArrayLemmas
-import CompPoly.Univariate.NTTFast.Packed.TiledPermutation
+import CompPoly.Univariate.NTTFast.Packed.BitReversal
 import all CompPoly.Univariate.NTTFast.Correctness.Basic
 
 /-! # Correctness of the column-parallel transform
@@ -855,6 +855,123 @@ theorem getD_map_range (F : Nat → α) (n k : Nat) (hk : k < n) (d : α) :
   simp only [Array.getD_eq_getD_getElem?, Array.getElem?_map, Array.getElem?_range, hk,
     ↓reduceIte, Option.map_some, Option.getD_some]
 
+
+/-! ### The radix-two layer of odd sizes -/
+
+/-- The value of entry `k` after the pair butterflies of `a`. -/
+def pairValue [Field R] (tw0 : Array R) (a : Array R) (k : Nat) : R :=
+  if k % 2 = 0 then a.getD k 0 + a.getD (k + 1) 0
+  else tw0.getD 0 0 * (a.getD (k - 1) 0 - a.getD k 0)
+
+theorem butterflyDIFBlocks_pairs_getD [Field R] (tw0 : Array R) (a : Array R) :
+    ∀ (n block : Nat) (acc : Array R), n = (a.size / 2) - block →
+      acc.size = a.size → (∀ k, 2 * block ≤ k → acc.getD k 0 = a.getD k 0) →
+      ∀ k, (Plan.butterflyDIFBlocks tw0 2 1 (a.size / 2) block acc).getD k 0 =
+        if 2 * block ≤ k ∧ k < 2 * (a.size / 2) then pairValue tw0 a k else acc.getD k 0 := by
+  intro n
+  induction n with
+  | zero =>
+    intro block acc hn _ _ k
+    rw [Plan.butterflyDIFBlocks]
+    simp only [show ¬block < a.size / 2 by omega, ↓reduceIte]
+    rw [ite_eq_right_of_eq_false _ _ (eq_false (by omega))]
+  | succ n ih =>
+    intro block acc hn hs ha k
+    rw [Plan.butterflyDIFBlocks]
+    simp only [show block < a.size / 2 by omega, ↓reduceIte]
+    have hstep : Plan.butterflyDIFInner tw0 1 0 (block * 2) (block * 2 + 1) acc =
+        (acc.set! (block * 2) (acc.getD (block * 2) 0 + acc.getD (block * 2 + 1) 0)).set!
+          (block * 2 + 1) (tw0.getD 0 0 * (acc.getD (block * 2) 0 -
+            acc.getD (block * 2 + 1) 0)) := by
+      rw [Plan.butterflyDIFInner]
+      simp only [Nat.zero_lt_one, ↓reduceIte]
+      rw [Plan.butterflyDIFInner]
+      simp only [Nat.lt_irrefl, ↓reduceIte]
+    rw [hstep]
+    have hsz : ((acc.set! (block * 2) (acc.getD (block * 2) 0 + acc.getD (block * 2 + 1) 0)).set!
+        (block * 2 + 1) (tw0.getD 0 0 * (acc.getD (block * 2) 0 -
+          acc.getD (block * 2 + 1) 0))).size = a.size := by
+      simp only [Array.set!_eq_setIfInBounds, Array.size_setIfInBounds, hs]
+    rw [ih (block + 1) _ (by omega) hsz (fun j hj ↦ by
+      rw [getD_set!, getD_set!]
+      simp only [Array.set!_eq_setIfInBounds, Array.size_setIfInBounds]
+      rw [ite_eq_right_of_eq_false _ _ (eq_false (by omega)),
+        ite_eq_right_of_eq_false _ _ (eq_false (by omega))]
+      exact ha j (by omega)) k]
+    have h0 := ha (block * 2) (by omega)
+    have h1 := ha (block * 2 + 1) (by omega)
+    by_cases hk : 2 * (block + 1) ≤ k ∧ k < 2 * (a.size / 2)
+    · rw [ite_eq_left_of_eq_true _ _ (eq_true hk), ite_eq_left_of_eq_true _ _ (eq_true (by omega))]
+    rw [ite_eq_right_of_eq_false _ _ (eq_false hk), getD_set!, getD_set!]
+    simp only [Array.set!_eq_setIfInBounds, Array.size_setIfInBounds]
+    by_cases hk1 : k = block * 2 + 1
+    · subst hk1
+      rw [ite_eq_left_of_eq_true _ _ (eq_true ⟨rfl, by omega⟩),
+        ite_eq_left_of_eq_true _ _ (eq_true ⟨by omega, by omega⟩)]
+      simp only [pairValue, show (block * 2 + 1) % 2 = 1 by omega, Nat.one_ne_zero, ↓reduceIte,
+        Nat.add_sub_cancel, h0, h1]
+    rw [ite_eq_right_of_eq_false _ _ (eq_false (fun h ↦ hk1 h.1.symm))]
+    by_cases hk0 : k = block * 2
+    · subst hk0
+      rw [ite_eq_left_of_eq_true _ _ (eq_true ⟨rfl, by omega⟩),
+        ite_eq_left_of_eq_true _ _ (eq_true ⟨by omega, by omega⟩)]
+      simp only [pairValue, show block * 2 % 2 = 0 by omega, ↓reduceIte, h0, h1]
+    rw [ite_eq_right_of_eq_false _ _ (eq_false (fun h ↦ hk0 h.1.symm)),
+      ite_eq_right_of_eq_false _ _ (eq_false (by omega))]
+
+theorem lastPair_getD [Field R] (tw0 a : Array R) (k : Nat) :
+    (Columns.lastPair tw0 a).getD k 0 =
+      if k < 2 * (a.size / 2) then pairValue tw0 a k else a.getD k 0 := by
+  rw [Columns.lastPair, butterflyDIFBlocks_pairs_getD tw0 a _ 0 a rfl rfl (fun _ _ ↦ rfl) k]
+  simp only [Nat.mul_zero, Nat.zero_le, true_and]
+
+@[simp] theorem size_lastPair [Field R] (tw0 a : Array R) :
+    (Columns.lastPair tw0 a).size = a.size := by
+  simp only [Columns.lastPair, Plan.size_butterflyDIFBlocks]
+
+/-- Pair butterflies on an even-aligned slice are the slice of the pair butterflies. -/
+theorem lastPair_extract [Field R] (tw0 Y : Array R) (i j : Nat) (hi : i % 2 = 0)
+    (hj : j % 2 = 0) (hij : i ≤ j) (hjY : j ≤ Y.size) :
+    Columns.lastPair tw0 (Y.extract i j) = (Columns.lastPair tw0 Y).extract i j := by
+  apply Packed.array_eq_of_getD _ _ 0 (by simp only [size_lastPair, Array.size_extract])
+  intro k
+  by_cases hk : k < j - i
+  · rw [getD_extract _ _ _ _ hk (by rw [size_lastPair]; exact hjY), lastPair_getD,
+      lastPair_getD]
+    have hs : (Y.extract i j).size = j - i := by rw [Array.size_extract]; omega
+    rw [hs, ite_eq_left_of_eq_true _ _ (eq_true (by omega)),
+      ite_eq_left_of_eq_true _ _ (eq_true (by omega))]
+    unfold pairValue
+    rw [show (i + k) % 2 = k % 2 by omega]
+    split
+    · rw [getD_extract _ _ _ _ hk hjY, getD_extract _ _ _ _ (by omega) hjY]
+      rw [show i + (k + 1) = i + k + 1 by omega]
+    · rw [getD_extract _ _ _ _ hk hjY, getD_extract _ _ _ _ (by omega) hjY]
+      rw [show i + (k - 1) = i + k - 1 by omega]
+  · rw [getD_of_size_le _ _ (by simp only [size_lastPair, Array.size_extract]; omega),
+      getD_of_size_le _ _ (by simp only [Array.size_extract]; omega)]
+
+@[simp] theorem size_leafPasses [Field R] [DecidableEq R] (tw : Array (Array R))
+    (rest : List Nat) (odd : Bool) (a : Array R) :
+    (leafPasses tw rest odd a).size = a.size := by
+  unfold leafPasses
+  split <;> simp only [size_lastPair, Parallel.size_runPasses]
+
+/-- The leaf layers of block `l` are block `l` of the leaf layers of the whole array. -/
+theorem leafPasses_extract [Field R] [DecidableEq R] (tw : Array (Array R)) (rest : List Nat)
+    (odd : Bool) (Y : Array R) (M k l : Nat) (hY : Y.size = k * M) (hl : l < k)
+    (hM : M % 2 = 0) (hrest : ∀ low ∈ rest, 4 * 2 ^ low ∣ M) :
+    leafPasses tw rest odd (Y.extract (l * M) ((l + 1) * M)) =
+      (leafPasses tw rest odd Y).extract (l * M) ((l + 1) * M) := by
+  unfold leafPasses
+  rw [runPasses_extract tw rest _ _ k l hY hl hrest]
+  split
+  · have h1 : (l + 1) * M ≤ k * M := Nat.mul_le_mul_right _ hl
+    exact lastPair_extract _ _ _ _ (by rw [Nat.mul_mod, hM, Nat.mul_zero, Nat.zero_mod])
+      (by rw [Nat.mul_mod, hM, Nat.mul_zero, Nat.zero_mod]) (Nat.mul_le_mul_right _ (by omega))
+      (by rw [Parallel.size_runPasses, hY]; exact h1)
+  · rfl
+
 /-- The column-parallel transform: the top two passes, the remaining passes on every block, and
 the bit-reversal permutation, optionally scaled. -/
 theorem transform_eq [Field R] [DecidableEq R] [PackedRepr R] (tw : Array (Array R)) (logN S : Nat)
@@ -864,7 +981,7 @@ theorem transform_eq [Field R] [DecidableEq R] [PackedRepr R] (tw : Array (Array
     (hdiv : S ∣ 2 ^ (logN - 4))
     (hrest : ∀ low ∈ rest, 4 * 2 ^ low ∣ 2 ^ (logN - 4)) :
     transform tw logN S rest scale f x = Array.ofFn (n := 2 ^ logN) fun i ↦
-      scaleBy scale f ((Parallel.runPasses false tw rest (topPasses tw logN x)).getD
+      scaleBy scale f ((leafPasses tw rest (logN % 2 == 1) (topPasses tw logN x)).getD
         (NTT.Transform.bitRevNat logN i) 0) := by
   obtain ⟨m, rfl⟩ : ∃ m, logN = m + 4 := ⟨logN - 4, by omega⟩
   have hm4 : m + 4 - 4 = m := by omega
@@ -937,27 +1054,32 @@ theorem transform_eq [Field R] [DecidableEq R] [PackedRepr R] (tw : Array (Array
         getD_of_size_le _ _ (by rw [Array.size_extract_of_le (by omega), Nat.succ_mul]; omega)]
   have hZ : (Parallel.runPasses false tw rest (topPasses tw (m + 4) x)).size = 16 * 2 ^ m := by
     rw [Parallel.size_runPasses, hY]
-  let L := fun l ↦ Parallel.runPasses false tw rest (gatherLeaf cols cs l : Array R)
+  let odd := (m + 4) % 2 == 1
+  let L := fun l ↦ leafPasses tw rest odd (gatherLeaf cols cs l : Array R)
+  have hm2 : 2 ^ m % 2 = 0 := by
+    rw [show m = (m - 1) + 1 by omega, Nat.pow_succ, Nat.mul_mod_left]
   have hleaf (l : Nat) (hl : l < 16) :
       (L l).size = 2 ^ m ∧ ∀ i < 2 ^ m, (L l).getD i 0 =
-        (Parallel.runPasses false tw rest (topPasses tw (m + 4) x)).getD (l * 2 ^ m + i) 0 := by
+        (leafPasses tw rest odd (topPasses tw (m + 4) x)).getD (l * 2 ^ m + i) 0 := by
     have hlM : (l + 1) * 2 ^ m ≤ 16 * 2 ^ m := Nat.mul_le_mul_right _ (by omega)
     refine ⟨?_, fun i hi ↦ ?_⟩
     · simp only [L]
-      rw [Parallel.size_runPasses, hleafIn l hl, Array.size_extract_of_le (by omega),
+      rw [size_leafPasses, hleafIn l hl, Array.size_extract_of_le (by omega),
         Nat.succ_mul]; omega
     · simp only [L]
-      rw [hleafIn l hl, runPasses_extract tw rest _ _ 16 l hY hl hrest,
-        getD_extract _ _ _ _ (by rw [Nat.succ_mul]; omega) (by rw [hZ]; omega)]
+      rw [hleafIn l hl, leafPasses_extract tw rest _ _ _ 16 l hY hl hm2 hrest,
+        getD_extract _ _ _ _ (by rw [Nat.succ_mul]; omega) (by
+          rw [size_leafPasses, hY]; omega)]
   have hT : (((Array.range 16).map fun l ↦ (joinTasks ((Array.range S).map fun s ↦
       Task.spawn fun _ ↦ encode (columnTask x tw (m + 4) (2 ^ (m + 4 - 4)) (2 ^ (m + 4 - 4) / S)
         (s * (2 ^ (m + 4 - 4) / S))) 0)).bind fun cols ↦ Task.spawn fun _ ↦
-          leafTask cols tw rest (m + 4 - 4) (2 ^ (m + 4 - 4) / S) l scale f).map Task.get) =
-      (Array.range 16).map fun l ↦ leafTask cols tw rest m cs l scale f := by
+          leafTask cols tw rest ((m + 4) % 2 == 1) (m + 4 - 4) (2 ^ (m + 4 - 4) / S) l scale
+            f).map Task.get) =
+      (Array.range 16).map fun l ↦ leafTask cols tw rest odd m cs l scale f := by
     simp only [Array.map_map, hm4, hcsM]
     congr 1
     funext l
-    change leafTask (joinTasks _).get tw rest m cs l scale f = _
+    change leafTask (joinTasks _).get tw rest odd m cs l scale f = _
     rw [joinTasks_get, Array.map_map]
     rfl
   have hL (l : Nat) (hl : l < 16) := reverseEncode_spec (L l) m scale f (16 * l) (by omega)
@@ -965,7 +1087,7 @@ theorem transform_eq [Field R] [DecidableEq R] [PackedRepr R] (tw : Array (Array
   unfold transform
   dsimp only
   rw [hT, hm4]
-  let r := (Array.range 16).map fun l ↦ leafTask cols tw rest m cs l scale f
+  let r := (Array.range 16).map fun l ↦ leafTask cols tw rest odd m cs l scale f
   have hr16 : r.size = 16 := by simp only [r, Array.size_map, Array.size_range]
   have hrg (l : Nat) (hl : l < 16) :
       r.getD l ByteArray.empty = reverseEncode m scale f (L l) (16 * l) :=

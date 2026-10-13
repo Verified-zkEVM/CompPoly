@@ -52,8 +52,6 @@ def main (args : List String) : IO UInt32 := do
     if workers == 0 then throw <| IO.userError "LEAN_NUM_THREADS must be positive"
     let logWorkers := workers.log2
     let variant := (← IO.getEnv "COMPPOLY_NTT_IMPL").getD "packed"
-    let depth := ((← IO.getEnv "NTT_DEPTH").bind String.toNat?).getD
-      (CPolynomial.NTTFast.Packed.Plan.defaultDepth logN)
     have h32 : domain.logN ≤ 32 := by
       change logN ≤ 32
       have : KoalaBear.twoAdicity = 24 := rfl
@@ -78,14 +76,15 @@ def main (args : List String) : IO UInt32 := do
       runTimedSpec (spec method "ByteArray") .large
         (fun i ↦ perform words[i % 2]!)
         (fun b ↦ checksumArray checksumKoalaBearFast
-          (CPolynomial.NTTFast.Packed.Native.unpack b n))
+          (CompPoly.PackedRepr.decode (R := KoalaBear.Fast.Field) b))
         (sink := fun b ↦ sinkStep (sinkStep (sinkStep (word b 0) (word b (n / 3)))
           (word b (2 * n / 3))) (word b (n - 1)))
     let row ← match variant with
       | "packed" =>
         let plan := CPolynomial.NTTFast.Packed.Plan.ofDomain domain h32 hu
         packed "proved packed parallel radix-4, ByteArray word accessors" fun b ↦
-          if direction == "forward" then plan.forwardPacked b depth else plan.inversePacked b depth
+          if direction == "forward" then plan.forwardPacked b logWorkers
+          else plan.inversePacked b logWorkers
       | "externless" =>
         let plan := CPolynomial.NTTFast.NaturalPlan.ofDomain domain
         packed "proved externless parallel radix-4" fun b ↦

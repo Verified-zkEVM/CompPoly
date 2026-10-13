@@ -15,50 +15,31 @@ public import CompPoly.Univariate.NTTFast.Packed.Stages
 namespace CompPoly.CPolynomial.NTTFast.Packed
 open CompPoly.PackedRepr (encode)
 
-/-- Four final DIF layers, optionally normalizing their completed coordinates. -/
-def leafBlock [Field R] (t3 t2 t1 : Array R) (base : Nat) (factor : R)
-    (normalize : Bool) (a : Array R) : Array R :=
-  let b := Expressions.leaf16Stages t3 t2 t1 a base
-  if normalize then scaleSegment b base 16 factor else b
-
 /-- Local final layers preserve the working array's length. -/
 @[simp] theorem size_leaf16Stages [Field R] (t3 t2 t1 : Array R) (a : Array R)
     (base : Nat) : (Expressions.leaf16Stages t3 t2 t1 a base).size = a.size := by
   simp only [Expressions.leaf16Stages, size_layer16_1, size_layer16_2,
     size_layer16_4, size_layer16_8]
 
-/-- A final-layer block preserves the array shape, including inverse normalization. -/
-@[simp] theorem size_leafBlock [Field R] (t3 t2 t1 : Array R) (base : Nat) (factor : R)
-    (normalize : Bool) (a : Array R) (_hs : base + 16 ≤ a.size) :
-    (leafBlock t3 t2 t1 base factor normalize a).size = a.size := by
-  unfold leafBlock
-  split
-  · rw [size_scaleSegment, size_leaf16Stages]
-  · exact size_leaf16Stages _ _ _ _ _
-
 /-- The packed leaf loop's guarded body. -/
-def rawLeafBlock (t3 t2 t1 : ByteArray) (base : Nat) (factor : UInt32)
-    (normalize : Bool) (a : ByteArray) : ByteArray :=
+def rawLeafBlock (t3 t2 t1 : ByteArray) (base : Nat) (a : ByteArray) : ByteArray :=
   if h : 4 * (base + 15) + 3 < a.size ∧ a.size < USize.size ∧
       31 < t3.size ∧ t3.size < USize.size ∧ 15 < t2.size ∧ t2.size < USize.size ∧
       7 < t1.size ∧ t1.size < USize.size then
-    if normalize then
-      Native.leaf16Scaled t3 t2 t1 (USize.ofNatLT base (by omega)) factor a
-        (by simpa only [USize.toNat_ofNatLT] using h)
-    else Native.leaf16 t3 t2 t1 (USize.ofNatLT base (by omega)) a
+    Native.leaf16 t3 t2 t1 (USize.ofNatLT base (by omega)) a
       (by simpa only [USize.toNat_ofNatLT] using h)
   else a
 
 /-- Valid packed leaves always enter the optimized branch and implement local DIF layers. -/
 theorem rawLeafBlock_encode (t3 t2 t1 : Array KoalaBear.Fast.Field) (base : Nat)
-    (factor : KoalaBear.Fast.Field) (normalize : Bool) (a : Array KoalaBear.Fast.Field)
+    (a : Array KoalaBear.Fast.Field)
     (ha : (encode a).size < USize.size) (hs : base + 16 ≤ a.size)
     (ht3 : t3.size = 8) (ht2 : t2.size = 4) (ht1 : t1.size = 2)
     (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1) :
-    rawLeafBlock (encode t3) (encode t2) (encode t1) base factor.val
-      normalize (encode a) = encode (leafBlock t3 t2 t1 base factor normalize a) := by
+    rawLeafBlock (encode t3) (encode t2) (encode t1) base (encode a) =
+      encode (Expressions.leaf16Stages t3 t2 t1 a base) := by
   have hsize := USize.le_size
-  unfold rawLeafBlock leafBlock
+  unfold rawLeafBlock
   have hg : 4 * (base + 15) + 3 < (encode a).size ∧
       (encode a).size < USize.size ∧
       31 < (encode t3).size ∧ (encode t3).size < USize.size ∧
@@ -66,12 +47,8 @@ theorem rawLeafBlock_encode (t3 t2 t1 : Array KoalaBear.Fast.Field) (base : Nat)
       7 < (encode t1).size ∧ (encode t1).size < USize.size := by
     simp only [size_encode_fields, ht3, ht2, ht1] at *
     omega
-  rw [dite_eq_left hg]
-  split
-  · rw [Native.leaf16Scaled_correct _ _ _ _ _ _ _ h3 h2 h1]
-    simp only [USize.toNat_ofNatLT]
-  · rw [Native.leaf16_correct _ _ _ _ _ _ h3 h2 h1]
-    simp only [USize.toNat_ofNatLT]
+  rw [dite_eq_left hg, Native.leaf16_correct _ _ _ _ _ _ h3 h2 h1]
+  simp only [USize.toNat_ofNatLT]
 
 /-- The unpaired final radix-two block in packed storage. -/
 def rawPairBlock (a : ByteArray) (block : Nat) : ByteArray :=
@@ -97,24 +74,22 @@ theorem rawPairBlock_encode (a : Array KoalaBear.Fast.Field) (block : Nat)
 
 /-- Complete final-layer blocks preserve packing throughout their traversal. -/
 theorem fold_rawLeafBlock_encode (t3 t2 t1 : Array KoalaBear.Fast.Field) (blocks : Nat)
-    (factor : KoalaBear.Fast.Field) (normalize : Bool) (a : Array KoalaBear.Fast.Field)
+    (a : Array KoalaBear.Fast.Field)
     (ha : (encode a).size < USize.size) (hs : blocks * 16 ≤ a.size)
     (ht3 : t3.size = 8) (ht2 : t2.size = 4) (ht1 : t1.size = 2)
     (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1) :
     (List.range blocks).foldl (fun b block ↦
-      rawLeafBlock (encode t3) (encode t2) (encode t1)
-        (block * 16) factor.val normalize b) (encode a) =
+      rawLeafBlock (encode t3) (encode t2) (encode t1) (block * 16) b) (encode a) =
       encode ((List.range blocks).foldl (fun b block ↦
-        leafBlock t3 t2 t1 (block * 16) factor normalize b) a) := by
+        Expressions.leaf16Stages t3 t2 t1 b (block * 16)) a) := by
   apply foldl_encode (List.range blocks) (fun b ↦ b.size = a.size)
   · intro block hb b hbs
     have hb' := List.mem_range.mp hb
-    exact rawLeafBlock_encode t3 t2 t1 (block * 16) factor normalize b
+    exact rawLeafBlock_encode t3 t2 t1 (block * 16) b
       (by simpa only [size_encode_fields, hbs] using ha) (by omega)
       ht3 ht2 ht1 h3 h2 h1
   · intro block hb b hbs
-    have hb' := List.mem_range.mp hb
-    rw [size_leafBlock _ _ _ _ _ _ _ (by omega), hbs]
+    rw [size_leaf16Stages, hbs]
   · rfl
 
 /-- The remaining scalar final pass transports through packing. -/
