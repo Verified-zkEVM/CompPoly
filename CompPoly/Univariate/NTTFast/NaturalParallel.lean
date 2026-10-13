@@ -90,12 +90,12 @@ theorem transform_eq_checkedStages [Field R] [DecidableEq R] [PackedRepr R] (D :
   rw [Columns.transform_eq tw D.logN S _ scale f a (by omega) h36 hn htw hu hS hdiv
     (dvd_of_mem_forwardPasses_drop D), leafPasses_topPasses D tw a hn (by omega)]
 
-/-- Parallel forward NTT: from `2 ^ 15` elements, `columnCount` column tasks run the top two
-radix-four passes and sixteen leaf tasks the remaining layers; smaller transforms, and a single
-worker, run the sequential transform as one leaf. -/
+/-- Forward NTT: if `parallel`, from `2 ^ 15` elements, `columnCount` column tasks run the top two
+radix-four passes and sixteen leaf tasks the remaining layers; otherwise, and for smaller
+transforms, the sequential transform runs as one leaf. -/
 @[inline] def forwardParallel [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
-    (a : Array R) (logWorkers : Nat := 4) : Array R :=
-  if logWorkers ≠ 0 ∧ ColumnsShape R a.size P.plan.domain.logN then
+    (a : Array R) (parallel : Bool := true) : Array R :=
+  if parallel ∧ ColumnsShape R a.size P.plan.domain.logN then
     Columns.transform P.plan.twiddles P.plan.domain.logN
       (Columns.columnCount P.plan.domain.logN)
       ((Parallel.forwardPasses P.plan.domain).drop 2) false 1 a
@@ -104,8 +104,8 @@ worker, run the sequential transform as one leaf. -/
 /-- Parallel inverse NTT with the same shapes; the column transform runs with the inverse
 twiddles and scales the leaves. -/
 @[inline] def inverseParallel [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
-    (a : Array R) (logWorkers : Nat := 4) : Array R :=
-  if logWorkers ≠ 0 ∧ P.plan.inverseDomain.n = P.plan.domain.n ∧
+    (a : Array R) (parallel : Bool := true) : Array R :=
+  if parallel ∧ P.plan.inverseDomain.n = P.plan.domain.n ∧
       ColumnsShape R a.size P.plan.domain.logN then
     Columns.transform P.plan.inverseTwiddles P.plan.domain.logN
       (Columns.columnCount P.plan.domain.logN)
@@ -114,7 +114,7 @@ twiddles and scales the leaves. -/
 
 /-- The complete parallel forward transform refines the proved scalar transform. -/
 theorem forwardParallel_eq [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
-    (a : Array R) (logWorkers : Nat) : P.forwardParallel a logWorkers = P.forward a := by
+    (a : Array R) (parallel : Bool) : P.forwardParallel a parallel = P.forward a := by
   unfold forwardParallel
   split
   · rename_i h
@@ -132,7 +132,7 @@ theorem forwardParallel_eq [Field R] [DecidableEq R] [PackedRepr R] (P : Natural
 
 /-- The complete parallel inverse transform refines the proved scalar transform. -/
 theorem inverseParallel_eq [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
-    (a : Array R) (logWorkers : Nat) : P.inverseParallel a logWorkers = P.inverse a := by
+    (a : Array R) (parallel : Bool) : P.inverseParallel a parallel = P.inverse a := by
   unfold inverseParallel
   split
   · rename_i h
@@ -178,8 +178,8 @@ theorem inverseParallel_eq [Field R] [DecidableEq R] [PackedRepr R] (P : Natural
 `forwardParallel`: the column transform runs directly on the packed buffer, and one leaf
 unpacks, transforms and packs. -/
 @[inline] def forwardPacked [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
-    (a : ByteArray) (logWorkers : Nat := 4) : ByteArray :=
-  if logWorkers ≠ 0 ∧
+    (a : ByteArray) (parallel : Bool := true) : ByteArray :=
+  if parallel ∧
       ColumnsShape R (a.size / PackedRepr.width R) P.plan.domain.logN then
     Columns.transformPacked P.plan.twiddles P.plan.domain.logN
       (Columns.columnCount P.plan.domain.logN)
@@ -188,8 +188,8 @@ unpacks, transforms and packs. -/
 
 /-- Parallel inverse NTT of packed elements, with the shapes of `inverseParallel`. -/
 @[inline] def inversePacked [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
-    (a : ByteArray) (logWorkers : Nat := 4) : ByteArray :=
-  if logWorkers ≠ 0 ∧ P.plan.inverseDomain.n = P.plan.domain.n ∧
+    (a : ByteArray) (parallel : Bool := true) : ByteArray :=
+  if parallel ∧ P.plan.inverseDomain.n = P.plan.domain.n ∧
       ColumnsShape R (a.size / PackedRepr.width R) P.plan.domain.logN then
     Columns.transformPacked P.plan.inverseTwiddles P.plan.domain.logN
       (Columns.columnCount P.plan.domain.logN)
@@ -210,8 +210,8 @@ private theorem shape_bounds [PackedRepr R] (n logN : Nat) (h : ColumnsShape R n
 
 /-- The packed parallel forward transform packs the proved scalar transform. -/
 theorem forwardPacked_eq [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
-    (a : Array R) (logWorkers : Nat) :
-    P.forwardPacked (PackedRepr.encode a) logWorkers = PackedRepr.encode (P.forward a) := by
+    (a : Array R) (parallel : Bool) :
+    P.forwardPacked (PackedRepr.encode a) parallel = PackedRepr.encode (P.forward a) := by
   have hdiv : (PackedRepr.encode a).size / PackedRepr.width R = a.size := by
     rw [PackedRepr.size_encode, Nat.mul_div_cancel_left _ PackedRepr.width_pos]
   unfold forwardPacked
@@ -227,8 +227,8 @@ theorem forwardPacked_eq [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPl
 
 /-- The packed parallel inverse transform packs the proved scalar inverse. -/
 theorem inversePacked_eq [Field R] [DecidableEq R] [PackedRepr R] (P : NaturalPlan R)
-    (a : Array R) (logWorkers : Nat) :
-    P.inversePacked (PackedRepr.encode a) logWorkers = PackedRepr.encode (P.inverse a) := by
+    (a : Array R) (parallel : Bool) :
+    P.inversePacked (PackedRepr.encode a) parallel = PackedRepr.encode (P.inverse a) := by
   have hdiv : (PackedRepr.encode a).size / PackedRepr.width R = a.size := by
     rw [PackedRepr.size_encode, Nat.mul_div_cancel_left _ PackedRepr.width_pos]
   unfold inversePacked

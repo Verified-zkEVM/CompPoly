@@ -50,7 +50,7 @@ def main (args : List String) : IO UInt32 := do
     let inputs := #[values.extract 1 (n + 1), values.extract (n + 1) (2 * n + 1)]
     let workers := ((← IO.getEnv "LEAN_NUM_THREADS").bind String.toNat?).getD 16
     if workers == 0 then throw <| IO.userError "LEAN_NUM_THREADS must be positive"
-    let logWorkers := workers.log2
+    let parallel := workers > 1
     let variant := (← IO.getEnv "COMPPOLY_NTT_IMPL").getD "packed"
     have h32 : domain.logN ≤ 32 := by
       change logN ≤ 32
@@ -83,13 +83,13 @@ def main (args : List String) : IO UInt32 := do
       | "packed" =>
         let plan := CPolynomial.NTTFast.Packed.Plan.ofDomain domain h32 hu
         packed "proved packed parallel radix-4, ByteArray word accessors" fun b ↦
-          if direction == "forward" then plan.forwardPacked b logWorkers
-          else plan.inversePacked b logWorkers
+          if direction == "forward" then plan.forwardPacked b parallel
+          else plan.inversePacked b parallel
       | "externless" =>
         let plan := CPolynomial.NTTFast.NaturalPlan.ofDomain domain
         packed "proved externless parallel radix-4" fun b ↦
-          if direction == "forward" then plan.forwardPacked b logWorkers
-          else plan.inversePacked b logWorkers
+          if direction == "forward" then plan.forwardPacked b parallel
+          else plan.inversePacked b parallel
       | _ => throw <| IO.userError "COMPPOLY_NTT_IMPL must be packed or externless"
     let record : BenchRecord := { row with groupKey := s!"ntt-koalabear-{logN}-{direction}" }
     IO.println record.toJsonLine
