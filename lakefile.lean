@@ -43,7 +43,7 @@ lean_lib CompPolyPackedNative where
   -- aligned whatever the caller's frame, which otherwise moved timings by 20% between builds.
   moreLeancArgs := #["-march=native", "-mstackrealign"]
 
-/-- CPU-targeted packed interpolation loops; they don't spill, so realigning would only cost. -/
+/-- CPU-targeted packed interpolation loops; realigning their stack measured 2.5% slower. -/
 lean_lib CompPolyInterpolateNative where
   roots := #[`CompPoly.Fields.KoalaBear.InterpolateCosetPacked]
   platformIndependent := true
