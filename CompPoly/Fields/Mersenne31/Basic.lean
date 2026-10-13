@@ -8,6 +8,7 @@ module
 
 public import CompPoly.Fields.Basic
 public import CompPoly.Fields.PrattCertificate
+public import Mathlib.Algebra.Field.ZMod
 
 /-!
   # Mersenne prime field `2^{31} - 1`
