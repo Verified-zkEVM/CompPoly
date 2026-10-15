@@ -68,7 +68,7 @@ it on numerals: `ByteCodec.width BabyBear.Field = 4` is `by decide`.
 | BabyBear, KoalaBear, Mersenne31 | 4 |
 | Goldilocks, `BF64` | 8 |
 | `BF128` | 16 |
-| BN254, BLS12-377, BLS12-381, Pasta, secp256k1 scalar fields | 32 |
+| BN254, BLS12-377, BLS12-381, Pasta, secp256k1 | 32 |
 | `AesField`, tower level 3 | 1 |
 | `Ext P` | `P.d` times the base width |
 
@@ -104,7 +104,7 @@ instance. Dumping the stored Montgomery word would be faster and wrong.
 | Carrier | Instance module | Agreement lemma |
 |---|---|---|
 | `Native32.FastField` (BabyBear, KoalaBear) | `CompPoly/Fields/Montgomery/Native32Bytes.lean` | `FastField.toBytes_ofField` |
-| `Native64x8.FastField` (BN254, BLS12-377/381, Pasta) | `CompPoly/Fields/Montgomery/Native64x8Bytes.lean` | `FastField.toBytes_ofField` |
+| `Native64x4.FastField` (BN254, BLS12-377/381, Pasta, secp256k1) | `CompPoly/Fields/Montgomery/Native64x4Bytes.lean` | `FastField.toBytes_ofField` |
 | `Goldilocks.Fast.Field` | `CompPoly/Fields/Goldilocks/Bytes.lean` | `toBytes_ofField` |
 | `Mersenne31.Fast.Field` | `CompPoly/Fields/Mersenne31/Bytes.lean` | `toBytes_ofField` |
 | `FastBT128` against `ConcreteBTField 7` | `CompPoly/Fields/Binary/Tower/Bytes.lean` | `toByteArray_toConcrete` |
@@ -194,3 +194,9 @@ multilinear, and those have the dense codec.
 For a variable-length type, give it `DelimitedCodec` instead, built from the list, pair, and
 vector codecs, with `Valid` stating what fits in the framing, and prove the one law from the
 laws of the parts.
+
+## Packed arrays
+
+`PackedRepr R` (`CompPoly/Data/ByteArray/Packed.lean`) stores every `R` in `width` bytes. It is not a codec of the value: it stores the carrier as is, for example the Montgomery residue of `Native32.FastField`, where `ByteCodec` encodes the canonical value. `toBytes` and `ofBytes` are the specification, with `ofBytes (toBytes x) = x`; `read` and `write` are the fast accesses at a byte offset, proved equal to it. `PackedRepr.ofWord32` builds the instance of a one-word carrier with core byte operations only, so code that uses `PackedRepr` needs no extern; `UInt32` and every `Native32.FastField` use it. The packed NTT kernels read and write words with the backported `ByteArray.ugetUInt32LE`/`usetUInt32LE` instead.
+
+A packed array is a plain `ByteArray`: `PackedRepr.encode` packs an `Array R` and `PackedRepr.decode` reads one back. Its lemmas describe slots (`read_encode`, `write_encode`, `get_setAt`) and byte ranges on slot boundaries (`encode_extract`, `replaceAt_encode`). Fast code shares packed arrays between tasks, which the runtime marks as shared at once, unlike arrays of boxed values; the packed NTT and the column-parallel NTT store all their intermediate results this way. `PackedRepr.alloc` and `ByteArray.zeros` allocate zero-filled buffers in place.
