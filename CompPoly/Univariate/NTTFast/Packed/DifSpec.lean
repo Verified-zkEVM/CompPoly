@@ -73,12 +73,12 @@ theorem decodedFields_difSpec (D : NTT.Domain KoalaBear.Fast.Field)
       else NTT.Forward.forwardSpec D a := by
   cases inverse <;>
     simp only [decodedFields, Bool.false_eq_true, ite_false, ite_true,
-      NTT.Forward.forwardSpec, Array.map_ofFn]
+      NTT.Forward.forwardSpec, Array.map_ofFn, Function.comp_def]
   all_goals
     apply congrArg Array.ofFn
     funext i
     rw [getD_difSpec D a _ (NTT.Transform.bitRevNat_lt _ _),
-      NTT.Transform.bitRevNat_involutive D.logN i.val i.isLt, dftValue_eq_nttAt D a i] <;> rfl
+      NTT.Transform.bitRevNat_involutive D.logN i.val i.isLt, dftValue_eq_nttAt D a i]
 
 /-- The domain of `2 ^ k`-th powers of the root, `2 ^ k` times smaller. -/
 def powDomain [Field R] (D : NTT.Domain R) (k : Nat) (hk : k ≤ D.logN) : NTT.Domain R where
