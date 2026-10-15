@@ -134,7 +134,9 @@ come from the on-demand Benchmarks workflow. See
   `lean-toolchain` plus `lake-manifest.json`, and `.lake/build` keyed additionally
   per commit. A dependency-cache miss is not expensive, because `lean-action` runs
   `lake exe cache get` for us, so Mathlib's oleans are downloaded rather than
-  compiled.
+  compiled. The restored `.lake/build` may come from a runner with another CPU, so
+  `scripts/drop-native-objects.sh` deletes its `-march=native` objects and executables
+  before building.
 - [`../../.github/workflows/linting.yml`](../../.github/workflows/linting.yml) runs
   the style linter on changed `.lean` files in PRs and push builds.
 - [`../../.github/workflows/check_imports.yml`](../../.github/workflows/check_imports.yml)

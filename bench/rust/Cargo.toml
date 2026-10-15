@@ -1,0 +1,22 @@
+[package]
+name = "comppoly-field-bench"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+rayon = "=1.11.0"
+binius_field = { git = "https://github.com/IrreducibleOSS/binius", rev = "47675e19c86c0fb676f75437073a77af8e337938" }
+p3-field = "=0.4.2"
+p3-dft = { version = "=0.4.2", features = ["parallel"] }
+p3-koala-bear = "=0.4.2"
+p3-mersenne-31 = "=0.4.2"
+p3-goldilocks = "=0.4.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+ark-ff = { version = "=0.5.0", default-features = false }
+ark-bn254 = { version = "=0.5.0", default-features = false, features = ["scalar_field"] }
+
+[profile.release]
+lto = true
+codegen-units = 1

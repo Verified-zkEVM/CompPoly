@@ -65,7 +65,7 @@ builds the library, and runs `lake upload <tag>`.
 The build step is `rm -rf .lake/build && lake build CompPoly`, and the narrow target
 matters. `lake upload` packs the *whole* build directory, so a full `lake build` would
 also ship the benchmark executable's Linux-only `bin/` and `.o` output — bloating the
-asset and contradicting the platform-independence claim above.
+asset and contradicting the platform-independence claim above. It also keeps the `-march=native` objects of the packed NTT kernels out of the archive: `lake build CompPoly` compiles no C, so a consumer's build compiles the kernels for its own CPU.
 
 To attach an asset to a release that predates this workflow, or to replace one, use
 **Actions → Add Lean release tag → Run workflow** and give it the tag.
