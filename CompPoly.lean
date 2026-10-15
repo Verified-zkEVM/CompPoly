@@ -373,6 +373,7 @@ public import CompPoly.Univariate.NTTFast.Packed.BitReversal
 public import CompPoly.Univariate.NTTFast.Packed.ButterflyLemmas
 public import CompPoly.Univariate.NTTFast.Packed.Columns
 public import CompPoly.Univariate.NTTFast.Packed.ColumnsCorrectness
+public import CompPoly.Univariate.NTTFast.Packed.CosetLde
 public import CompPoly.Univariate.NTTFast.Packed.Decoder
 public import CompPoly.Univariate.NTTFast.Packed.DifSpec
 public import CompPoly.Univariate.NTTFast.Packed.Expressions

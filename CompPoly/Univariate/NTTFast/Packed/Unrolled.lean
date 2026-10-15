@@ -61,12 +61,12 @@ meta def lets (bs : Array (Ident × Term)) (body : Term) : MacroM Term :=
 /-- Sixteen radix-four DIF butterflies across the quarters at `i0, …, i3` with twiddles from
 `th` at `j`, `j1` and `tl` at `j`: lane `k` reads `x0_k, …, x3_k`, combines them into
 `a0_k, …, a3_k` and outputs `y0_k, …, y3_k`. -/
-meta def step16 (d : Dialect) : MacroM Term := do
+meta def step16 (d : Dialect) (lanes : Bool := true) : MacroM Term := do
   let b := name "b"
   let v (s : String) (q k : Nat) : Term := name s!"{s}{q}_{k}"
   let mut bs := #[]
   for k in [0:16] do
-    let tw (arr j : String) := read d (name arr) (name j) k
+    let tw (arr j : String) := read d (name arr) (name j) (if lanes then k else 0)
     for q in [0:4] do
       bs := bs.push (name s!"x{q}_{k}", ← read d b (name s!"i{q}") k)
     bs := bs.push (name s!"a0_{k}", ← add d (v "x" 0 k) (v "x" 2 k))
@@ -112,11 +112,11 @@ meta def layers (d : Dialect) (x : Nat → Nat → String) (tw : Nat → MacroM 
 
 /-- A sixteen-point block at `i` of `b` through its four final DIF layers, twiddles read before
 each layer; `finish` receives the outputs. -/
-meta def leaf16 (finish : Array Term → MacroM Term) : MacroM Term := do
+meta def leaf16 (d : Dialect) (finish : Array Term → MacroM Term) : MacroM Term := do
   let mut bs := #[]
   for k in [0:16] do
-    bs := bs.push (name s!"x0_{k}", ← read .fields (name "b") (name "i") k)
-  bs := bs ++ (← layers .fields (fun s k ↦ s!"x{s}_{k}") (twiddles .fields))
+    bs := bs.push (name s!"x0_{k}", ← read d (name "b") (name "i") k)
+  bs := bs ++ (← layers d (fun s k ↦ s!"x{s}_{k}") (twiddles d))
   lets bs (← finish ((Array.range 16).map fun k ↦ (name s!"x4_{k}" : Term)))
 
 /-- Eight sixteen-point blocks at `i0, …, i7` through their four final DIF layers, one per vector
@@ -185,6 +185,56 @@ meta def transposeStep : MacroM Term := do
   let body ← lets bs (← store 15)
   `(if $h:ident : $cond then $body else $(name "out"))
 
+/-- The transpose of a `16 × 16` tile whose line `t` is words `q + t * qs, …` of `s`, stored from
+word `p` of `out` with lines `ps` words apart, if every source line fits. -/
+meta def tile16 : MacroM Term := do
+  let h := name "h"
+  let src (t : Nat) : MacroM (Term × Term) := do
+    pure (name "s", ← `($(name "q") + $(lit t) * $(name "qs")))
+  let mut bs := #[]
+  for t in [0:16] do
+    let mut proj : Term := h
+    for _ in [0:t] do
+      proj ← `($proj.2)
+    if t < 15 then proj ← `($proj.1)
+    let (s, q) ← src t
+    bs := bs.push (name s!"x{t}", ← `($(name "line") $s $q $proj))
+  let store (u : Nat) : MacroM Term := do
+    let vs ← (Array.range 16).mapM fun t ↦ `($(name s!"x{t}").$(name s!"w{u}"):ident)
+    `($(name "write16U") $(name "out") ($(name "p") + $(lit u) * $(name "ps")) $vs*)
+  for u in [0:15] do
+    bs := bs.push (name "out", ← store u)
+  let fits ← (Array.range 16).mapM fun t ↦ do
+    let (s, q) ← src t
+    `($(name "LineFits") $s $q)
+  let cond ← fits[:15].foldrM (fun f c ↦ `($f ∧ $c)) fits[15]!
+  let body ← lets bs (← store 15)
+  `(if $h:ident : $cond then $body else $(name "out"))
+
+/-- The products of sixteen words of `t` and of `a` from `i`, stored from `i` in `out`. -/
+meta def mul16 : MacroM Term := do
+  let mut bs := #[]
+  for k in [0:16] do
+    bs := bs.push (name s!"x{k}",
+      ← mul .words (← read .words (name "t") (name "i") k) (← read .words (name "a") (name "i") k))
+  lets bs (← store16 .words (name "out") (name "i") ((Array.range 16).map fun k ↦ name s!"x{k}"))
+
+/-- The transpose of an `8 × 8` tile: source line `t` is words `q, …, q + 7` of `s{t}`; line `u`
+of the transpose is stored from word `p + u * ps` of `out`. -/
+meta def tile8 : MacroM Term := do
+  let mut bs := #[]
+  for t in [0:8] do
+    for k in [0:8] do
+      bs := bs.push (name s!"x{t}_{k}", ← `($(name "readAt") $(name s!"s{t}") $(name "q") $(lit k)))
+  let store (u : Nat) : MacroM Term := do
+    let vs ← (Array.range 8).mapM fun t ↦ pure (name s!"x{t}_{u}" : Term)
+    `($(name "storeWords") $(name "out") (($(name "p") + $(lit u) * $(name "ps")) * 4) 8 $vs*
+      0 0 0 0 0 0 0 0)
+  for u in [0:7] do
+    bs := bs.push (name "out", ← store u)
+  lets bs (← store 7)
+
+
 end CompPoly.CPolynomial.NTTFast.Packed.Unrolled
 
 open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
@@ -198,11 +248,15 @@ macro "step16_fields%" : term => step16 .fields
 open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
 /-- The final DIF layers of the block at `i` of a field array, spliced back. -/
 macro "leaf16_fields%" : term =>
-  leaf16 fun ys ↦ `($(name "splice") $(name "b") ($(name "i")).toNat #[$ys,*])
+  leaf16 .fields fun ys ↦ `($(name "splice") $(name "b") ($(name "i")).toNat #[$ys,*])
 
 open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
 /-- The final DIF layers of the block at `i` of a field array, as a line. -/
-macro "leaf16_line%" : term => leaf16 fun ys ↦ `(⟨$ys,*⟩)
+macro "leaf16_line%" : term => leaf16 .fields fun ys ↦ `(⟨$ys,*⟩)
+
+open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
+/-- The final DIF layers of the block at `i` of packed words, written back in place. -/
+macro "leaf16_words%" : term => leaf16 .words (store16 .words (name "b") (name "i"))
 
 open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
 /-- The body of the fused final-layer kernel on packed words. -/
@@ -219,3 +273,19 @@ macro "line_words%" : term => line
 open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
 /-- The body of the `16 × 16` tile transpose on packed words. -/
 macro "transposeStep_words%" : term => transposeStep
+
+open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
+/-- The body of the `16 × 16` tile transpose of one strided source on packed words. -/
+macro "tile16_strided%" : term => tile16
+
+open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
+/-- The body of the sixteen-word product kernel on packed words. -/
+macro "mul16_words%" : term => mul16
+
+open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
+/-- The body of a sixteen-lane radix-four kernel on packed words sharing one set of twiddles. -/
+macro "row16_words%" : term => step16 .words (lanes := false)
+
+open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
+/-- The body of the `8 × 8` tile transpose of eight sources on packed words. -/
+macro "tile8_sources%" : term => tile8

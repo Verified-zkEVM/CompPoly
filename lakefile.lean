@@ -37,7 +37,8 @@ lean_lib CompPolyPackedNative where
   roots := #[`CompPoly.Univariate.NTTFast.Packed.Native,
     `CompPoly.Univariate.NTTFast.Packed.NativeOrder,
     `CompPoly.Univariate.NTTFast.Packed.NativeLast,
-    `CompPoly.Univariate.NTTFast.Packed.Columns]
+    `CompPoly.Univariate.NTTFast.Packed.Columns,
+    `CompPoly.Univariate.NTTFast.Packed.CosetLde]
   platformIndependent := true
   -- The kernels spill AVX registers; realigning the stack keeps the spill slots 32-byte
   -- aligned whatever the caller's frame, which otherwise moved timings by 20% between builds.
@@ -75,6 +76,11 @@ lean_exe CompPolyNTTBench where
 
 /-- KoalaBear coset interpolation runner for the Plonky3 `interpolate_coset` comparison. -/
 lean_exe CompPolyInterpolateBench where
+  srcDir := "bench"
+  moreLeancArgs := #["-march=native"]
+
+/-- KoalaBear coset low-degree extension runner for the Plonky3 `coset_lde_batch` comparison. -/
+lean_exe CompPolyLdeBench where
   srcDir := "bench"
   moreLeancArgs := #["-march=native"]
 

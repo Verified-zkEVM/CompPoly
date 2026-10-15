@@ -11,6 +11,7 @@ import subprocess
 import time
 import tomllib
 import bench_interpolate
+import bench_lde
 import bench_ntt
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,6 +41,7 @@ def command(args, cwd=ROOT):
 BUILD_RECORD = ROOT / ".lake/build/field-bench-build.json"
 EXECUTABLES = (".lake/build/bin/CompPolyBench", ".lake/build/bin/CompPolyFieldFixtures",
                ".lake/build/bin/CompPolyNTTBench", ".lake/build/bin/CompPolyInterpolateBench",
+               ".lake/build/bin/CompPolyLdeBench",
                "bench/rust/target/release/comppoly-field-bench")
 
 
@@ -93,7 +95,7 @@ def prepare_build(skip):
         return record
     # A failed/interrupted build must not leave a valid-looking old record.
     BUILD_RECORD.unlink(missing_ok=True)
-    subprocess.run(["lake", "build", "CompPolyBench", "CompPolyFieldFixtures", "CompPolyNTTBench", "CompPolyInterpolateBench"], cwd=ROOT, check=True)
+    subprocess.run(["lake", "build", "CompPolyBench", "CompPolyFieldFixtures", "CompPolyNTTBench", "CompPolyInterpolateBench", "CompPolyLdeBench"], cwd=ROOT, check=True)
     subprocess.run(["cargo", "build", "--release", "--locked", "-j", "1"], cwd=ROOT / "bench/rust", check=True)
     if build_context() != context:
         raise SystemExit("Sources or build settings changed during the build; rerun before measuring.")
@@ -169,7 +171,7 @@ def report(out, measurements, manifest, fields, expected):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--suite", choices=[*SUITES, "ntt", "interpolate", "all"], default="small-prime")
+    parser.add_argument("--suite", choices=[*SUITES, "ntt", "interpolate", "lde", "all"], default="small-prime")
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--skip-build", action="store_true", help="reuse executables only if recorded build metadata and hashes match")
     parser.add_argument("--cpu", type=int, help="logical CPU; default: first allowed CPU")
@@ -187,6 +189,10 @@ def main():
     if args.suite == "interpolate":
         import sys
         bench_interpolate.run(args, sys.modules[__name__], allowed)
+        return
+    if args.suite == "lde":
+        import sys
+        bench_lde.run(args, sys.modules[__name__], allowed)
         return
     fields, groups, expected = selection(args.suite)
     cpu = min(allowed) if args.cpu is None else args.cpu
@@ -284,6 +290,10 @@ def run_remaining_suites(args, allowed, out):
     interpolate_args.out_dir = out / "interpolate"
     interpolate_args.skip_build = True
     bench_interpolate.run(interpolate_args, sys.modules[__name__], allowed)
+    lde_args = copy.copy(args)
+    lde_args.out_dir = out / "lde"
+    lde_args.skip_build = True
+    bench_lde.run(lde_args, sys.modules[__name__], allowed)
 
 
 if __name__ == "__main__":

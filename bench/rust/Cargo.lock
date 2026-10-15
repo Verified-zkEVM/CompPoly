@@ -264,6 +264,7 @@ dependencies = [
  "p3-koala-bear",
  "p3-matrix",
  "p3-mersenne-31",
+ "p3-monty-31",
  "rayon",
  "serde",
  "serde_json",

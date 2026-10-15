@@ -12,6 +12,7 @@ p3-dft = { version = "=0.4.2", features = ["parallel"] }
 p3-interpolation = "=0.4.2"
 p3-matrix = "=0.4.2"
 p3-koala-bear = "=0.4.2"
+p3-monty-31 = "=0.4.2"
 p3-mersenne-31 = "=0.4.2"
 p3-goldilocks = "=0.4.2"
 serde = { version = "1", features = ["derive"] }
