@@ -719,6 +719,73 @@ private theorem runStagesDIFRadix4WithTwiddles_eq_difMathStageSpec
           · have hcompleted : 2 * (D.logN / 2) = D.logN := by omega
             simp [hodd, hcompleted]
 
+/-- Radix-four passes from stage `top` down are the radix-two stages from `top` down. -/
+private theorem foldl_radix4_eq_stages (D : NTT.Domain R) (tw : Array (Array R)) (top : Nat)
+    (htop : top < D.logN) :
+    ∀ (P : Nat) (a : Array R), 2 * P ≤ top + 1 → a.size = D.n →
+      (List.range P).foldl (fun acc pass ↦
+        butterflyRadix4StageDIFWithTwiddles D (top - 2 * pass - 1) (tw.getD (top - 2 * pass) #[])
+          (tw.getD (top - 2 * pass - 1) #[]) acc) a =
+        (List.range (2 * P)).foldl (fun acc i ↦
+          butterflyStageDIFWithTwiddles D (top - i) (tw.getD (top - i) #[]) acc) a := by
+  intro P
+  induction P with
+  | zero => intro a _ _; rfl
+  | succ P ih =>
+    intro a hP ha
+    rw [List.range_succ, List.foldl_append, ih a (by omega) ha,
+      show 2 * (P + 1) = 2 * P + 1 + 1 by omega, List.range_succ, List.range_succ,
+      List.foldl_append, List.foldl_append]
+    simp only [List.foldl_cons, List.foldl_nil]
+    have hs : ((List.range (2 * P)).foldl (fun acc i ↦
+        butterflyStageDIFWithTwiddles D (top - i) (tw.getD (top - i) #[]) acc) a).size = D.n := by
+      rw [← ha]
+      clear ih
+      induction (List.range (2 * P)) generalizing a with
+      | nil => rfl
+      | cons i l ihl =>
+        rw [List.foldl_cons, ihl _ (by rw [size_butterflyStageDIFWithTwiddles]; exact ha),
+          size_butterflyStageDIFWithTwiddles]
+    rw [butterflyRadix4StageDIFWithTwiddles_eq_two_stages D _ _ _ _ hs (by omega),
+      show top - 2 * P - 1 + 1 = top - 2 * P by omega, show top - (2 * P + 1) = top - 2 * P - 1 by
+        omega]
+
+/-- An odd transform may run its radix-two stage first: the top stage, then radix-four passes
+on the remaining stages, is the mixed radix-four loop. -/
+theorem runStagesDIFRadix4WithTwiddles_eq_top (D : NTT.Domain R) (tw : Array (Array R))
+    (a : Array R) (ha : a.size = D.n) (hodd : D.logN % 2 = 1) :
+    (List.range (D.logN / 2)).foldl (fun acc pass ↦
+      butterflyRadix4StageDIFWithTwiddles D (D.logN - 2 - 2 * pass - 1)
+        (tw.getD (D.logN - 2 - 2 * pass) #[]) (tw.getD (D.logN - 2 - 2 * pass - 1) #[]) acc)
+      (butterflyStageDIFWithTwiddles D (D.logN - 1) (tw.getD (D.logN - 1) #[]) a) =
+      runStagesDIFRadix4WithTwiddles D tw a := by
+  have hP : 2 * (D.logN / 2) + 1 = D.logN := by omega
+  have hchain (a : Array R) (ha : a.size = D.n) := foldl_radix4_eq_stages D tw (D.logN - 1)
+    (by omega) (D.logN / 2) a (by omega) ha
+  simp only [runStagesDIFRadix4WithTwiddles, Std.Legacy.Range.forIn_eq_forIn_range',
+    Std.Legacy.Range.size, Nat.sub_zero, Nat.add_sub_cancel, Nat.div_one,
+    ← List.range_eq_range', List.forIn_pure_yield_eq_foldl, pure_bind, Id.run_pure,
+    hodd, ↓reduceIte]
+  rw [show D.logN - 2 = D.logN - 1 - 1 by omega,
+    foldl_radix4_eq_stages D tw (D.logN - 1 - 1) (by omega) (D.logN / 2) _ (by omega)
+      (by rw [size_butterflyStageDIFWithTwiddles, ha])]
+  rw [hchain a ha]
+  let st : Nat → Array R → Array R := fun s acc ↦
+    butterflyStageDIFWithTwiddles D s (tw.getD s #[]) acc
+  change (List.range (2 * (D.logN / 2))).foldl (fun acc i ↦ st (D.logN - 1 - 1 - i) acc)
+      (st (D.logN - 1) a) =
+    st 0 ((List.range (2 * (D.logN / 2))).foldl (fun acc i ↦ st (D.logN - 1 - i) acc) a)
+  have hl : (List.range (2 * (D.logN / 2))).foldl (fun acc i ↦ st (D.logN - 1 - 1 - i) acc)
+      (st (D.logN - 1) a) =
+      (List.range (2 * (D.logN / 2) + 1)).foldl (fun acc i ↦ st (D.logN - 1 - i) acc) a := by
+    rw [List.range_succ_eq_map, List.foldl_cons, List.foldl_map]
+    congr 1
+    funext acc i
+    rw [show D.logN - 1 - (i + 1) = D.logN - 1 - 1 - i by omega]
+  rw [hl, List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil,
+    show D.logN - 1 - 2 * (D.logN / 2) = 0 by omega]
+
+
 /-- The mixed radix-4 DIF stage loop computes the bit-reversed forward NTT output. -/
 theorem runStagesDIFRadix4WithTwiddles_correct (D : NTT.Domain R) (a : Array R) :
     runStagesDIFRadix4WithTwiddles D (twiddleTable D) (NTT.loadNaturalArray D a) =
