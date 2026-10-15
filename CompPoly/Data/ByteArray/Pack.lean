@@ -56,7 +56,7 @@ def getUInt32LE! (a : @& ByteArray) (off : @& Nat) : UInt32 :=
 @[extern c inline "({ lean_object *r = #1; b_lean_obj_arg i = #2; uint32_t v = #3;
   if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) v = __builtin_bswap32(v);
   size_t sz = lean_sarray_size(r), k; if (lean_is_scalar(i) && sz >= 4 &&
-  (k = lean_unbox(i)) <= sz - 4) { if (!lean_is_exclusive(r)) r = lean_copy_byte_array(r);
+  (k = lean_unbox(i)) <= sz - 4) { r = lean_sarray_ensure_exclusive(r);
   __builtin_memcpy(lean_sarray_cptr(r) + k, &v, 4); __builtin_assume(r->m_rc == 1); } r; })"]
 def setUInt32LE! (a : ByteArray) (off : @& Nat) (v : UInt32) : ByteArray :=
   if off + 4 ≤ a.size then
@@ -83,7 +83,7 @@ def ugetUInt32LE : (a : @& ByteArray) → (i : USize) →
 bounds. -/
 @[extern c inline "({ lean_object *r = #1; uint32_t v = #3;
   if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) v = __builtin_bswap32(v);
-  if (!lean_is_exclusive(r)) r = lean_copy_byte_array(r);
+  r = lean_sarray_ensure_exclusive(r);
   __builtin_memcpy(lean_sarray_cptr(r) + lean_unbox(#2), &v, 4);
   __builtin_assume(r->m_rc == 1); r; })"]
 def setUInt32LE : (a : ByteArray) → (i : @& Nat) → (v : UInt32) →
@@ -94,7 +94,7 @@ def setUInt32LE : (a : ByteArray) → (i : @& Nat) → (v : UInt32) →
 be in bounds. -/
 @[extern c inline "({ lean_object *r = #1; uint32_t v = #3;
   if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) v = __builtin_bswap32(v);
-  if (!lean_is_exclusive(r)) r = lean_copy_byte_array(r);
+  r = lean_sarray_ensure_exclusive(r);
   __builtin_memcpy(lean_sarray_cptr(r) + #2, &v, 4); __builtin_assume(r->m_rc == 1); r; })"]
 def usetUInt32LE : (a : ByteArray) → (i : USize) → (v : UInt32) →
     (h : i.toNat + 4 ≤ a.size := by get_elem_tactic) → ByteArray
