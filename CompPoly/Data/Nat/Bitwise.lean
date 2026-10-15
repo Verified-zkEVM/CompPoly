@@ -5,6 +5,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 module
 
+public import Batteries.Data.Nat.Bitwise.Lemmas
 public import CompPoly.Data.Fin.BigOperators
 public import Mathlib.Algebra.BigOperators.Ring.Finset
 public import Mathlib.Algebra.Order.Ring.Star
