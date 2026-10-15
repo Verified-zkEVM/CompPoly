@@ -401,7 +401,7 @@ theorem toBytes_toSpec (a : Ext4) : ByteCodec.toBytes (toSpec a) = ByteCodec.toB
     apply List.ext_getElem (by rw [Vector.length_toList]; rfl)
     intro k hk _
     have hk4 : k < 4 := by rw [Vector.length_toList] at hk; exact hk
-    have e : (toSpec a).coeffs.toList[k] = Ext.coeffNat (toSpec a) k := by
+    have e : (toSpec a).coeffs.toList[k]'hk = Ext.coeffNat (toSpec a) k := by
       rw [Vector.getElem_toList, Ext.coeffNat_of_lt _ (by rw [d_eq]; exact hk4)]; rfl
     rw [e, coeffNat_toSpec _ hk4]
     interval_cases k <;> rfl

@@ -172,8 +172,7 @@ theorem toSpec_getElem_interpolateCoset (logN : ℕ) (ω s : Field) (width : ℕ
   rw [Array.getElem_ofFn, Ext4.toSpec_mul, Ext4.toSpec_foldl_add, Ext4.toSpec_zero, zero_add,
     Fin.sum_univ_eq_sum_range (fun i ↦ Ext4.toSpec (Ext4.smul (evals.getD (i * width + j) 0)
       ((cosetWeights ω s (2 ^ logN) z).toArray.getD i 0)))]
-  congr 1
-  refine Finset.sum_congr rfl fun i hi ↦ ?_
+  refine congrArg (_ * ·) (Finset.sum_congr rfl fun i hi ↦ ?_)
   have hi' : i < (cosetWeights ω s (2 ^ logN) z).length := by
     rw [length_cosetWeights]; exact Finset.mem_range.mp hi
   have hw : (cosetWeights ω s (2 ^ logN) z).toArray.getD i 0 =
@@ -216,8 +215,7 @@ theorem toSpec_interpolateCoset (D : CPolynomial.NTT.Domain KoalaBear.Field) (ω
     Ext4.toSpec_ofBase,
     toField_mul, toField_natCast, toField_pow]
   simp only [← Ext.algebraMap_eq_ofBase, map_mul, map_pow, map_natCast]
-  congr 1
-  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  refine congrArg₂ (· * ·) rfl (Finset.sum_congr rfl fun i _ ↦ ?_)
   have hi : (i : ℕ) < (cosetWeights ω s (2 ^ D.logN) z).length := by
     rw [length_cosetWeights]; exact i.isLt
   have hw : (cosetWeights ω s (2 ^ D.logN) z).toArray.getD i 0 =
