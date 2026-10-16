@@ -34,6 +34,14 @@ their results. -/
   let all := join deps
   (Array.range n).map fun i ↦ all.bind fun xs ↦ Task.spawn fun _ ↦ f xs i
 
+/-- A dependent task's result is its continuation's result on the dependency's result. -/
+@[simp] theorem get_bind (t : Task α) (f : α → Task β) (prio : Task.Priority) (sync : Bool) :
+    (t.bind f prio sync).get = (f t.get).get := rfl
+
+/-- A spawned task's result is its function's result. -/
+@[simp] theorem get_spawn (fn : Unit → α) (prio : Task.Priority) :
+    (Task.spawn fn prio).get = fn () := rfl
+
 /-- Joining tasks keeps their results in order. -/
 theorem get_join (ts : Array (Task α)) : (join ts).get = ts.map Task.get := by
   suffices h : ∀ (l : List (Task α)) (acc : Task (Array α)),

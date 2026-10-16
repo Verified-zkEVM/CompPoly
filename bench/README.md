@@ -330,7 +330,8 @@ Run `python3 scripts/bench-fields.py --suite all --cpu 0` from the repository ro
 | `binary` | 8-, 64-, 128-bit Fan–Paar towers: mul latency/throughput, square/inv latency | Binius 0.2.0, pinned Git revision |
 | `ntt` | KoalaBear forward and inverse NTT; 2^12, 2^16, 2^20 elements | Plonky3 0.4.2 (`p3-dft`, parallel feature) |
 | `interpolate` | KoalaBear coset values evaluated at a degree-4 extension point; 2^12, 2^16, 2^20 rows × 1 and 16 columns | Plonky3 0.4.2 (`p3-interpolation`, parallel feature) |
-| `all` | The 36 scalar cases plus the NTT and coset interpolation suites | All three libraries |
+| `lde` | KoalaBear batched coset low-degree extension in commitment order; 2^14 to 2^20 rows × 8 to 256 columns, blowup 2 and 4 | Plonky3 0.4.2 (`p3-dft`, `p3-monty-31`, parallel feature) |
+| `all` | The 36 scalar cases plus the NTT, coset interpolation and LDE suites | All three libraries |
 
 One Cargo project under `bench/rust/` shares the measurement and chain harness. Library-specific modules decode inputs and supply canonical checksums and cheap result sinks. Rust nightly-2026-02-26 is pinned for Binius’s x86 support, and Cargo.lock pins dependencies. The driver defaults `RUSTFLAGS` to `-C target-cpu=native` and records its value and the host instruction features; CI builds with the same flag. CI validates all selected suites on every PR; it does not gate on relative speed. Tables show fast Lean against Rust. Prime-field reference implementations still participate in validation and runs, but are omitted from the tables. Binary rows time only the verified fast Lean implementation and Binius; their cross-language result agreement is checked before timing.
 
@@ -404,3 +405,14 @@ This suite compares two Lean implementations with Plonky3's stock `p3_interpolat
 Each fixture holds the subgroup root, the shift (KoalaBear's multiplicative generator `3`), two extension points that alternate between iterations, and the matrix, as canonical little-endian 32-bit words. The root must equal Lean's certified root and Plonky3's two-adic generator. `CompPolyInterpolateBench` and `comppoly-field-bench --interpolate` read the same fixture; full output digests agree before timing, including single-row and narrow matrices. Workers follow the same physical-core selection as the NTT suite, and every invocation warms up for 200 ms.
 
 The packed version reads and writes words with the packed NTT's backported `ByteArray` word accessors and nothing else outside the kernel proof, so `interpolateCosetPacked_eq` and the accessors' compiled checks cover it.
+
+## KoalaBear coset LDE against Plonky3
+
+```bash
+python3 scripts/bench-fields.py --suite lde
+python3 scripts/bench-fields.py --suite lde --validate-only
+```
+
+This suite compares `NTTFast.Packed.Native.cosetLde` with Plonky3's stock `TwoAdicSubgroupDft::coset_lde_batch` (0.4.2), followed by `bit_reverse_rows().to_row_major_matrix()` as in `TwoAdicFriPcs::commit`, for each of `Radix2DitParallel`, Monty31's `RecursiveDft` and `Radix2DFTSmallBatch`. Each call extends every column of a row-major `2^logH × width` matrix, the values of a polynomial on the subgroup of order `2^logH`, to the coset `3 · ⟨ω⟩` of order `2^(logH + bits)`, and returns the rows in bit-reversed order. The Lean side reads the matrix as Montgomery words in a `ByteArray` and returns row chunks, which a commitment hashes in parallel; `joinRows` copies them into one buffer. `Native.joinRows_cosetLde` proves the joined chunks equal to the specification `ldeSpec`: row `r` holds every column's Lagrange interpolant on the subgroup, at `shift · ω ^ bitrev r`.
+
+Each fixture holds the root of the extended domain, the shift and two matrices that alternate between iterations, as canonical little-endian 32-bit words. The root must equal Lean's certified root and Plonky3's two-adic generator. `CompPolyLdeBench` and `comppoly-field-bench --lde` read the same fixture; full output digests of all four implementations agree before timing, including single-row, odd-height and narrow matrices. Plans and twiddles are built outside timing; input copies, transposes, transforms and output assembly are timed. Workers follow the NTT suite's physical-core selection.
