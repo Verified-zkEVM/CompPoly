@@ -8,6 +8,7 @@ module
 public import CompPolyBench.Common
 public import CompPoly.Fields.BabyBear.Ext4
 public import CompPoly.Fields.KoalaBear.Ext4
+public import CompPoly.Fields.KoalaBear.FastExt4
 public import CompPoly.Fields.KoalaBear.Ext5
 public import CompPoly.Fields.KoalaBear.Ext6
 
@@ -82,26 +83,46 @@ private def extSampler {F : Type*} [Ring F] {P : ExtensionParams F}
   let xs : Array (Ext P) := Array.ofFn (n := extPoolSize) fun i ↦ elem i.val
   fun i ↦ (xs.getD (i % extPoolSize) 1, xs.getD ((i + 17) % extPoolSize) 1)
 
+/-- Time the spec `KoalaBear.Ext4` and the fast `KoalaBear.Fast.Ext4` on the same operands, as
+one group; the harness checks that both produce the same checksum. -/
+private def runKoalaBearExt4Pair (groupKey title name specMethod fastMethod : String)
+    (specOp : KoalaBear.Ext4 → KoalaBear.Ext4 → KoalaBear.Ext4)
+    (fastOp : KoalaBear.Fast.Ext4 → KoalaBear.Fast.Ext4 → KoalaBear.Fast.Ext4)
+    (preset : BenchPreset) (gen : StdGen) : IO (BenchGroup × StdGen) := do
+  let (values, gen) := (koalaBearArray 256 false).run gen
+  let sample := extSampler (P := KoalaBear.ext4Params.toExtensionParams) values
+  let fastXs : Array (KoalaBear.Fast.Ext4 × KoalaBear.Fast.Ext4) :=
+    Array.ofFn (n := extPoolSize) fun i ↦
+      let (a, b) := sample i.val
+      (KoalaBear.Fast.Ext4.ofSpec a, KoalaBear.Fast.Ext4.ofSpec b)
+  let spec ← runTimedSpec
+    { name := name, representation := "Extension.Ext", method := specMethod,
+      field := "KoalaBear.Ext4", inputShape := extShape 4,
+      digestIterations := digestPeriod extPoolSize }
+    preset (fun i ↦ let (a, b) := sample i; specOp a b) checksumKoalaBearExt4
+  let fast ← runTimedSpec
+    { name := name ++ "-fast", representation := "KoalaBear.Fast.Ext4", method := fastMethod,
+      field := "KoalaBear.Ext4", inputShape := extShape 4,
+      digestIterations := digestPeriod extPoolSize }
+    preset (fun i ↦ let (a, b) := fastXs[i % extPoolSize]!; fastOp a b)
+    (fun x ↦ checksumKoalaBearExt4 (KoalaBear.Fast.Ext4.toSpec x))
+    -- The raw Montgomery words: the default sink would convert to the spec field per iteration.
+    (sink := fun x ↦ (x.c0.val ^^^ x.c1.val ^^^ x.c2.val ^^^ x.c3.val).toUInt64)
+  pure ({ groupKey := groupKey, title := title, records := #[spec, fast] }, gen)
+
 /-- Run the KoalaBear degree-4 multiplication benchmark. -/
 private def runKoalaBearExt4Mul (preset : BenchPreset) (gen : StdGen) :
-    IO (BenchGroup × StdGen) := do
-  let (values, gen) := (koalaBearArray 256 false).run gen
-  runExtOp "fields-extension-koalabear-ext4-mul"
-    "Degree-4 extension multiplication (KoalaBear)" "extension-mul" "mul" "KoalaBear.Ext4"
-    (extShape 4)
-    checksumKoalaBearExt4 (extSampler (P := KoalaBear.ext4Params.toExtensionParams) values) (· * ·)
-    preset gen
+    IO (BenchGroup × StdGen) :=
+  runKoalaBearExt4Pair "fields-extension-koalabear-ext4-mul"
+    "Degree-4 extension multiplication (KoalaBear)" "extension-mul" "mul"
+    "mul (one reduction per coefficient)" (· * ·) (· * ·) preset gen
 
 /-- Run the KoalaBear degree-4 inversion benchmark. -/
 private def runKoalaBearExt4Inv (preset : BenchPreset) (gen : StdGen) :
-    IO (BenchGroup × StdGen) := do
-  let (values, gen) := (koalaBearArray 256 false).run gen
-  runExtOp "fields-extension-koalabear-ext4-inv"
-    "Degree-4 extension inversion (KoalaBear)" "extension-inv" "inv (Fermat)" "KoalaBear.Ext4"
-    (extShape 4)
-    checksumKoalaBearExt4 (extSampler (P := KoalaBear.ext4Params.toExtensionParams) values)
-      (fun a _ ↦ a⁻¹)
-    preset gen
+    IO (BenchGroup × StdGen) :=
+  runKoalaBearExt4Pair "fields-extension-koalabear-ext4-inv"
+    "Degree-4 extension inversion (KoalaBear)" "extension-inv" "inv (Fermat)" "inv (norm)"
+    (fun a _ ↦ a⁻¹) (fun a _ ↦ a⁻¹) preset gen
 
 /-- Run the BabyBear degree-4 multiplication benchmark. -/
 private def runBabyBearExt4Mul (preset : BenchPreset) (gen : StdGen) :
