@@ -506,6 +506,15 @@ None of these is hidden behind an abstraction that makes replacing it awkward, a
 guarded by the `#guard` regressions in
 [`tests/CompPolyTests/Fields/Extension/Arithmetic.lean`](../../tests/CompPolyTests/Fields/Extension/Arithmetic.lean).
 
+### Fast KoalaBear quartic extension (2026-10-07)
+
+`KoalaBear.Fast.Ext4` ([`KoalaBear/FastExt4.lean`](../../CompPoly/Fields/KoalaBear/FastExt4.lean)) is `KoalaBear[X] / (X^4 - 3)` as a structure of four Montgomery coefficients, outside the generic `Ext` framework: a second `Mul` instance on `Ext P` over the fast carrier would make a diamond, and `@[csimp]` cannot specialize `Ext.mul` to one `P`. `toSpec` maps it into the spec `KoalaBear.Ext4`, `specEquiv` is the ring isomorphism, and `toSpec_add`, `toSpec_mul`, `toSpec_inv`, `toSpec_div` and `toSpec_ofBase` give agreement operation by operation. Its byte codec is the four coefficient encodings, identical to the spec field's (`toBytes_toSpec`).
+
+* Multiplication folds `3` into the left factors, so every output coefficient is a sum of four products, which `Montgomery.Native32.mulAdd4` reduces once: four products stay below `2 · p · 2^32` for every modulus below `2^31`, so one conditional subtraction of `p · 2^32` brings the sum into `reduce`'s range.
+* Inversion is the norm-based inverse from item 3 above, specialized to the binomial: with `σ : X ↦ -X`, `a · σ(a) = g₀ + g₁ X²` lies in `F(X²)`, and `a⁻¹ = σ(a) (g₀ - g₁ X²) / (g₀² - 3 g₁²)` needs one base-field inversion. That the norm of a nonzero element is nonzero follows from `σ` being an injective ring endomorphism of the quotient field and from `3` being a quadratic non-residue (`three_not_square`, by `reduce_mod_char`).
+
+Known answers from Plonky3's `BinomialExtensionField<KoalaBear, 4>` are checked in [`tests/CompPolyTests/Fields/KoalaBear/FastExt4.lean`](../../tests/CompPolyTests/Fields/KoalaBear/FastExt4.lean). The `fields-extension-koalabear-ext4-mul` and `-inv` benchmark groups time both types on the same operands and cross-check their checksums. On the eight-core Ryzen server, one record per call including the harness's operand lookup and the result allocation: multiplication 7.3 µs (spec) and 28 ns (fast), inversion 913 µs (spec, Fermat) and 161 ns (fast, norm).
+
 ## Base Field Caveats
 
 `Hachi` (`2^32 - 99`) has no `FastField` Montgomery path: `Mont32Field` requires

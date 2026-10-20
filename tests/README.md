@@ -69,3 +69,7 @@ the highest bit, and the generic coefficient-evaluation entry point. A same-widt
 counterexample checks that the two field presentations remain distinct. The corresponding
 `CompPolyTests/Fields/Binary/Tower/ProductAccumulation.lean` regression also checks the universal
 refinement statements and coefficient ordering.
+
+### Packed FFT native storage
+
+`CompPolyTests/NTT/NativeStorage.lean` runs as part of `lake exe CompPolyNativeSmoke`. Its compiled comparisons exercise the inline C of the backported `ByteArray` word accessors (`CompPoly/Data/ByteArray/Pack.lean`) against independent bytewise Lean operations, at every offset including out-of-range ones, and check that shared inputs are not mutated. These are checks of the runtime trust boundary; the packed FFT's batch stores and reads are Lean definitions over the accessors, covered with the FFT mathematics by the kernel refinement theorems.

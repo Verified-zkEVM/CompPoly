@@ -78,6 +78,8 @@ public import CompPolyTests.Fields.Extension.RawArithmetic
 public import CompPolyTests.Fields.Goldilocks.Bytes
 public import CompPolyTests.Fields.Goldilocks.Fast
 public import CompPolyTests.Fields.KoalaBear.Fast
+public import CompPolyTests.Fields.KoalaBear.FastExt4
+public import CompPolyTests.Fields.KoalaBear.InterpolateCoset
 public import CompPolyTests.Fields.Mersenne31.Bytes
 public import CompPolyTests.Fields.Mersenne31.Circle
 public import CompPolyTests.Fields.Mersenne31.Fast
@@ -85,6 +87,7 @@ public import CompPolyTests.Fields.Mersenne31.Instances
 public import CompPolyTests.Fields.Montgomery.Bytes
 public import CompPolyTests.Fields.Pasta.Fast
 public import CompPolyTests.Fields.PrattCertificate
+public import CompPolyTests.Fields.Secp256k1.Fast
 public import CompPolyTests.LinearAlgebra.Dense
 public import CompPolyTests.LinearAlgebra.PolynomialMatrix.Approximant
 public import CompPolyTests.LinearAlgebra.TensorProduct.Basis
