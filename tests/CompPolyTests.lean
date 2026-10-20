@@ -79,6 +79,7 @@ public import CompPolyTests.Fields.Goldilocks.Bytes
 public import CompPolyTests.Fields.Goldilocks.Fast
 public import CompPolyTests.Fields.KoalaBear.Fast
 public import CompPolyTests.Fields.KoalaBear.FastExt4
+public import CompPolyTests.Fields.KoalaBear.FastExt5
 public import CompPolyTests.Fields.KoalaBear.InterpolateCoset
 public import CompPolyTests.Fields.Mersenne31.Bytes
 public import CompPolyTests.Fields.Mersenne31.Circle

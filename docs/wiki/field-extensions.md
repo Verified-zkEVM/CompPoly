@@ -128,7 +128,7 @@ Concretely, for `P : ExtensionParams F` over a field `F`:
 |---|---|
 | Ring / field | `CommRing (Ext P)`; `Field (Ext P)` additionally requires `[Finite F]`, `[Fact (Nat.card F = P.q)]`, and `[Fact (Irreducible P.poly)]` |
 | Base field | `Ext.ofBase : F → Ext P`, `Ext.ofBaseRingHom`, `Algebra F (Ext P)` (hence `Module F (Ext P)` via `Algebra.toModule`) |
-| Adjoined root | `Ext.gen`, `Ext.gen_pow_d : gen ^ d = monomialMod d`, `Ext.aeval_gen_poly : aeval gen P.poly = 0`; for a binomial, `Ext.gen_pow_d_binomial : gen ^ d = ofBase W` |
+| Adjoined root | `Ext.gen`, `Ext.gen_pow_d : gen ^ d = monomialMod d`, `Ext.aeval_gen_poly : aeval gen P.poly = 0`; for a binomial, `Ext.gen_pow_d_binomial : gen ^ d = ofBase W`; below the degree, `Ext.gen_pow_of_lt : gen ^ e = ofFn (indicator of e)` |
 | Specification | `Ext.toQuot`, `Ext.ringEquivQuot : Ext P ≃+* AdjoinRoot P.poly` |
 | Cardinality | `Finite (Ext P)`, optional `Fintype (Ext P)`, `Ext.nat_card_ext : Nat.card (Ext P) = q ^ d` and enumeration compatibility `Ext.card_ext` |
 | Coefficients | `Ext.coeff`, `Ext.ofFn`, `Ext.equivFn : Ext P ≃ (Fin d → F)` |
@@ -514,6 +514,15 @@ guarded by the `#guard` regressions in
 * Inversion is the norm-based inverse from item 3 above, specialized to the binomial: with `σ : X ↦ -X`, `a · σ(a) = g₀ + g₁ X²` lies in `F(X²)`, and `a⁻¹ = σ(a) (g₀ - g₁ X²) / (g₀² - 3 g₁²)` needs one base-field inversion. That the norm of a nonzero element is nonzero follows from `σ` being an injective ring endomorphism of the quotient field and from `3` being a quadratic non-residue (`three_not_square`, by `reduce_mod_char`).
 
 Known answers from Plonky3's `BinomialExtensionField<KoalaBear, 4>` are checked in [`tests/CompPolyTests/Fields/KoalaBear/FastExt4.lean`](../../tests/CompPolyTests/Fields/KoalaBear/FastExt4.lean). The `fields-extension-koalabear-ext4-mul` and `-inv` benchmark groups time both types on the same operands and cross-check their checksums. On the eight-core Ryzen server, one record per call including the harness's operand lookup and the result allocation: multiplication 7.3 µs (spec) and 28 ns (fast), inversion 913 µs (spec, Fermat) and 161 ns (fast, norm).
+
+### Fast KoalaBear quintic extension (2026-10-20)
+
+`KoalaBear.Fast.Ext5` ([`KoalaBear/FastExt5.lean`](../../CompPoly/Fields/KoalaBear/FastExt5.lean)) is `KoalaBear[X] / (X^5 + X^2 - 1)` as a structure of five Montgomery coefficients, with the same API as `Fast.Ext4`: `toSpec` into the spec `KoalaBear.Ext5`, `specEquiv`, the `toSpec_*` agreement lemmas, `coord`, `ofBase`, `smul`, and the five-coefficient byte codec (`toBytes_toSpec`).
+
+* Multiplication reduces the schoolbook product by `X^5 = 1 - X^2`, folded into differences of the right factor's coefficients, so each output coefficient is five products: four through `mulAdd4` and one more product. Five products would exceed `mulAdd4`'s `2 · p · 2^32` bound.
+* Inversion is Fermat, `a ^ (p^5 - 2)` by `npowBinRec`; `toSpec_inv` follows from `toSpec_pow` and `FiniteField.pow_card_sub_one_eq_one`. A Frobenius-norm inverse is future performance work.
+
+Known answers from Plonky3's `QuinticTrinomialExtensionField<KoalaBear>` are checked in [`tests/CompPolyTests/Fields/KoalaBear/FastExt5.lean`](../../tests/CompPolyTests/Fields/KoalaBear/FastExt5.lean).
 
 ## Base Field Caveats
 

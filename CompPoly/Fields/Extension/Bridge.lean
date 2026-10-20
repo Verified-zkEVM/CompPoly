@@ -381,6 +381,17 @@ theorem toQuot_sum {ι : Type*} (s : Finset ι) (f : ι → Ext P) :
 theorem gen_pow_d : (gen : Ext P) ^ P.d = monomialMod P.d :=
   toQuot_injective (by rw [toQuot_pow, toQuot_gen, toQuot_monomialMod])
 
+/-- Below the degree, a power of `gen` is a basis vector: `gen ^ e` has coefficient `1` at `e`
+and `0` elsewhere. -/
+theorem gen_pow_of_lt {e : ℕ} (he : e < P.d) :
+    (gen : Ext P) ^ e = ofFn fun i => if (i : ℕ) = e then 1 else 0 := by
+  apply toQuot_injective
+  rw [toQuot_pow, toQuot_gen, toQuot, Finset.sum_eq_single_of_mem ⟨e, he⟩ (Finset.mem_univ _)]
+  · simp only [coeff_ofFn, ↓reduceIte, map_one, one_mul]
+  · intro k _ hk
+    have : (k : ℕ) ≠ e := fun h => hk (Fin.ext h)
+    simp only [coeff_ofFn, this, ↓reduceIte, map_zero, zero_mul]
+
 /-- `gen` is a root of the defining polynomial, in the form Mathlib's `aeval` expects. -/
 theorem aeval_gen_poly : aeval (gen : Ext P) P.poly = 0 := by
   have hexp : aeval (gen : Ext P) P.poly
