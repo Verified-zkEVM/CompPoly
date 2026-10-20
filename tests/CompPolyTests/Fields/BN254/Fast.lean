@@ -10,7 +10,7 @@ public meta import CompPoly.Fields.BN254.Fast
 /-!
 # Fast BN254 Scalar Field Tests
 
-Regression checks for the executable eight-limb Montgomery representation: the stored
+Regression checks for the executable four-limb Montgomery representation: the stored
 residues, literal round trips, the field operations, the checked binary-GCD inversion, and
 agreement with the canonical `BN254.ScalarField` model through `toField`.
 -/
@@ -20,13 +20,13 @@ public meta section
 namespace BN254.Fast
 
 open BN254 (scalarFieldSize)
-open Montgomery.Native64x8
+open Montgomery.Native64x4
 
 set_option maxRecDepth 4000
 
 -- Stored Montgomery residues.
-#guard (0 : ScalarField).val = Limbs8.zero
-#guard (1 : ScalarField).val = Mont64x8Field.rModModulus scalarFieldSize
+#guard (0 : ScalarField).val = Limbs4.zero
+#guard (1 : ScalarField).val = Mont64x4Field.rModModulus scalarFieldSize
 
 -- Numeric literals reduce modulo the prime; `toNat` exits Montgomery form.
 #guard (37 : ScalarField).toNat = 37
@@ -71,13 +71,19 @@ set_option maxRecDepth 4000
 #guard ((2 ^ 200 + 12345 : ScalarField).invGcd).toField = ((2 ^ 200 + 12345 : BN254.ScalarField)⁻¹)
 #guard (987654321 : ScalarField).invGcd.toField = ((987654321 : BN254.ScalarField)⁻¹)
 #guard (37 : ScalarField).invGcd.val
-  = gcdInvCandidate scalarFieldSize (Mont64x8Field.modulusLimbs scalarFieldSize)
-      (Mont64x8Field.montgomeryNegInv scalarFieldSize) (37 : ScalarField).val
+  = gcdInvCandidate scalarFieldSize (Mont64x4Field.modulusLimbs scalarFieldSize)
+      (Mont64x4Field.montgomeryNegInv scalarFieldSize) (37 : ScalarField).val
 
 -- The Fermat fallback, exercised directly (the fast path never takes it).
-#guard montPow (Mont64x8Field.modulusLimbs scalarFieldSize)
-    (Mont64x8Field.montgomeryNegInv scalarFieldSize) (Mont64x8Field.rModModulus scalarFieldSize)
+#guard montPow (Mont64x4Field.modulusLimbs scalarFieldSize)
+    (Mont64x4Field.montgomeryNegInv scalarFieldSize) (Mont64x4Field.rModModulus scalarFieldSize)
     (37 : ScalarField).val (scalarFieldSize - 2)
   = ((37 : ScalarField)⁻¹).val
+
+-- Signed-word divsteps agree with the integer kernel at carry/sign boundaries.
+#guard ([0, 1, 0x8000000000000000, 0xffffffffffffffff] : List UInt64).all fun a ↦
+  ([1, 0x7fffffffffffffff, 0xffffffffffffffff] : List UInt64).all fun b ↦
+    Montgomery.Native64x8.gcdInnerFast 31 a b 1 0 0 1 ==
+      Montgomery.Native64x8.gcdInner 31 a b 1 0 0 1
 
 end BN254.Fast
