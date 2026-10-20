@@ -124,6 +124,10 @@ previously recorded baseline without rerunning that baseline in the same job.
 This supports
 [`../.github/workflows/lean_action_ci.yml`](../.github/workflows/lean_action_ci.yml).
 
+### `drop-native-objects.sh`
+
+Deletes the build outputs compiled with `-march=native` (the packed kernels and the benchmarks linking them) and `.lake/build/bin`, so the next `lake build` recompiles them for the current host. CI runs it after restoring `.lake/build`, which may come from a runner with a different CPU.
+
 ### `bench-ab.sh`
 
 Driver for the optimisation loop in
@@ -180,3 +184,7 @@ lake build
 ```bash
 python3 ./scripts/check-docs-integrity.py
 ```
+
+### Rust field comparison
+
+`python3 scripts/bench-fields.py --suite all --cpu 0` checks Lean/Rust agreement and writes compact comparison tables plus raw samples under `bench/out/`. Select `small-prime`, `large-prime`, `binary`, `poly-eval`, `ntt`, or `all`; the default is `small-prime`. Use `--validate-only` for correctness checks and `--skip-build` to reuse a verified build from a previous driver run. For one-polynomial evaluation against arkworks' stock evaluator, `--cpus 1,2,3,4` selects logical CPUs and the worker count (SMT is allowed and reported); `scripts/bench_poly_eval.py` implements that suite using the shared build and provenance machinery. The `ntt` suite uses `--cpus` for a configurable worker budget (default: all physical cores, up to sixteen, without SMT siblings) in its KoalaBear transform comparison against optimized parallel Plonky3; `--cpu` selects one worker; `scripts/bench_ntt.py` implements it with the same build verification. See [the benchmark README](../bench/README.md#rust-field-comparison).
