@@ -7,6 +7,7 @@ module
 
 public import CompPoly.Fields.Montgomery.Native32Field
 public import CompPoly.Data.Bytes.CanonicalNat
+public import CompPoly.Data.ByteArray.Packed
 
 /-!
 # Serialization of the 32-bit Montgomery carrier
@@ -43,6 +44,18 @@ instance : CanonicalNat (FastField modulus) :=
     toNat_ofField
 
 instance : ByteCodec (FastField modulus) := ByteCodec.ofCanonicalNat _
+
+/-- The stored Montgomery residue as a raw word; words at or above the modulus decode to
+zero. -/
+@[inline] instance : PackedRepr (FastField modulus) :=
+  PackedRepr.ofWord32 (fun x ↦ x.1)
+    (fun v ↦ if h : v < P.modulus32 then ⟨v, by simpa [UInt32.lt_iff_toNat_lt] using h⟩
+      else ⟨0, by simp⟩)
+    (fun x ↦ by
+      have hx : x.1 < P.modulus32 := by
+        rw [UInt32.lt_iff_toNat_lt, P.modulus32_toNat]; exact x.2
+      simp only [hx, ↓reduceDIte]
+      rfl)
 
 @[simp] theorem canonicalNat_bound : CanonicalNat.bound (FastField modulus) = modulus := rfl
 

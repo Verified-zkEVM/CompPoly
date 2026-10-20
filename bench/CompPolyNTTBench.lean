@@ -1,0 +1,97 @@
+/-
+Copyright (c) 2026 CompPoly Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Gregor Mitscha-Baude
+-/
+module
+
+public import CompPolyBench.Univariate.Common
+public import CompPoly.Univariate.NTTFast.NaturalParallel
+public import CompPoly.Fields.Montgomery.Native32Bytes
+public import CompPoly.Univariate.NTTFast.Packed.Plan
+
+/-! # Natural-order KoalaBear NTT benchmarks against optimized Plonky3 -/
+
+public section
+open CompPoly CompPolyBench
+
+/-- Read canonical 32-bit coordinates without silently reducing malformed fixtures. -/
+def nttCoordinates (bytes : ByteArray) : IO (Array KoalaBear.Fast.Field) := do
+  if bytes.size % 4 != 0 then throw <| IO.userError "unaligned NTT fixture"
+  let mut values := Array.mkEmpty (bytes.size / 4)
+  for i in [:bytes.size / 4] do
+    let mut v := 0
+    for j in [:4] do
+      v := v * 256 + bytes[4 * i + (3 - j)]!.toNat
+    if v ≥ 2130706433 then throw <| IO.userError "noncanonical NTT coordinate"
+    values := values.push (KoalaBear.Fast.ofField (v : KoalaBear.Field))
+  return values
+
+/-- Export the certified root or time a transform on two varying fixture inputs. -/
+def main (args : List String) : IO UInt32 := do
+  if let ["--root", size] := args then
+    let some logN := size.toNat? | throw <| IO.userError "invalid log size"
+    if h : logN ≤ KoalaBear.twoAdicity then
+      IO.println (CPolynomial.NTT.KoalaBear.fastDomainOfLogN logN h).omega.toNat
+      return 0
+    else throw <| IO.userError "unsupported domain"
+  let [path, size, direction, validate] := args |
+    throw <| IO.userError "usage: CompPolyNTTBench FIXTURE LOG_N forward|inverse true|false"
+  let some logN := size.toNat? | throw <| IO.userError "invalid log size"
+  if direction != "forward" && direction != "inverse" then
+    throw <| IO.userError "invalid direction"
+  if validate != "true" && validate != "false" then throw <| IO.userError "invalid validation flag"
+  if h : logN ≤ KoalaBear.twoAdicity then
+    let domain := CPolynomial.NTT.KoalaBear.fastDomainOfLogN logN h
+    let n := 2 ^ logN
+    let values ← nttCoordinates (← IO.FS.readBinFile path)
+    if values.size != 1 + 2 * n then throw <| IO.userError "incorrect NTT fixture length"
+    if values.getD 0 0 != domain.omega then throw <| IO.userError "incorrect NTT root"
+    let inputs := #[values.extract 1 (n + 1), values.extract (n + 1) (2 * n + 1)]
+    let workers := ((← IO.getEnv "LEAN_NUM_THREADS").bind String.toNat?).getD 16
+    if workers == 0 then throw <| IO.userError "LEAN_NUM_THREADS must be positive"
+    let parallel := workers > 1
+    let variant := (← IO.getEnv "COMPPOLY_NTT_IMPL").getD "packed"
+    have h32 : domain.logN ≤ 32 := by
+      change logN ≤ 32
+      have : KoalaBear.twoAdicity = 24 := rfl
+      omega
+    have hu : 4 * domain.n < USize.size := by
+      have hp : 2 ^ logN ≤ 2 ^ 24 := Nat.pow_le_pow_right (by decide) h
+      have := USize.le_size
+      change 4 * 2 ^ logN < USize.size
+      omega
+    validateOnlyRef.set (validate == "true")
+    let spec (method representation : String) : BenchSpec :=
+      { name := s!"ntt-koalabear-{logN}-{direction}-fast", representation := representation,
+        method := method, field := "koalabear",
+        inputShape := s!"{n} elements",
+        digestIterations := 2, digestClass := direction }
+    -- Both plans take and return packed Montgomery words, like Plonky3's contiguous field
+    -- vectors; inputs are packed outside timing.
+    let words := inputs.map CPolynomial.NTTFast.Packed.Native.encodeFields
+    let word (b : ByteArray) (i : Nat) : UInt64 :=
+      (CPolynomial.NTTFast.Packed.Native.read b i).toUInt64
+    let packed (method : String) (perform : ByteArray → ByteArray) :=
+      runTimedSpec (spec method "ByteArray") .large
+        (fun i ↦ perform words[i % 2]!)
+        (fun b ↦ checksumArray checksumKoalaBearFast
+          (CompPoly.PackedRepr.decode (R := KoalaBear.Fast.Field) b))
+        (sink := fun b ↦ sinkStep (sinkStep (sinkStep (word b 0) (word b (n / 3)))
+          (word b (2 * n / 3))) (word b (n - 1)))
+    let row ← match variant with
+      | "packed" =>
+        let plan := CPolynomial.NTTFast.Packed.Plan.ofDomain domain h32 hu
+        packed "proved packed parallel radix-4, ByteArray word accessors" fun b ↦
+          if direction == "forward" then plan.forwardPacked b parallel
+          else plan.inversePacked b parallel
+      | "externless" =>
+        let plan := CPolynomial.NTTFast.NaturalPlan.ofDomain domain
+        packed "proved externless parallel radix-4" fun b ↦
+          if direction == "forward" then plan.forwardPacked b parallel
+          else plan.inversePacked b parallel
+      | _ => throw <| IO.userError "COMPPOLY_NTT_IMPL must be packed or externless"
+    let record : BenchRecord := { row with groupKey := s!"ntt-koalabear-{logN}-{direction}" }
+    IO.println record.toJsonLine
+    return 0
+  else throw <| IO.userError "unsupported domain"

@@ -401,9 +401,11 @@ private def runKoalaBearUnivariateMonicRemainderMedium (preset : BenchPreset) (g
 /-- Benchmark dense Goldilocks univariate evaluation. -/
 private def runGoldilocksUnivariateDense (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
-  runDenseUnivariateZMod
-    Goldilocks.fieldSize "univariate-dense-goldilocks" "goldilocks" "Goldilocks.Field"
-    "Goldilocks" preset gen
+  runDenseUnivariateWithFast
+    "univariate-dense-goldilocks" "Goldilocks" "Goldilocks.Field" "Goldilocks.Fast.Field"
+    (fun size ↦ zmodArray Goldilocks.fieldSize size false) goldilocksFastArray
+    checksumZMod checksumGoldilocksFast
+    preset gen
 
 /-- Benchmark dense BN254 univariate evaluation. -/
 private def runBn254UnivariateDense (preset : BenchPreset) (gen : StdGen) :

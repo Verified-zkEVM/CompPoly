@@ -126,7 +126,7 @@ Roughly by area, with representative group prefixes:
 | Extension fields | `fields-extension-*-mul`, `fields-extension-*-inv` |
 | Binary tower fields | `fields-tower-bt128-*`: `BitVec` spec vs packed-word implementation |
 | Base-field arithmetic | `fields-{koalabear,babybear,mersenne31,goldilocks}-{mul,add,inv,pow}`: canonical `ZMod` vs native-word, latency and throughput |
-| Pairing scalar multiplication | `fields-{bn254,bls12-381,bls12-377}-mul` |
+| Four-limb field arithmetic | `fields-{bn254,bls12-381,bls12-377}-{mul,add}`, `fields-secp256k1-{scalar,base}-{mul,add}`: canonical `ZMod` vs four-limb Montgomery |
 | Scalar-field inversion | `fields-mont64x8-*-inv`: `ZMod` extended Euclid vs checked binary GCD vs Fermat |
 | Binary tower scalar kernels | `fields-tower-bt{8,64}-*`: table-driven vs recursive |
 | Multiplicative NTT | `ntt-{koalabear,babybear}-l*` over `n = 2^8 … 2^16`, plus `ntt-plan-koalabear` |
@@ -195,7 +195,7 @@ in different places, and named as Plonky3 names them:
 
 - **latency** — each operation depends on the last, so the pipeline cannot
   overlap two;
-- **throughput** — ten independent accumulators, so it can.
+- **throughput** — parallel accumulators: two for BN254, ten for other fields.
 
 Every row of a group must agree on `workUnits`, because the count describes the
 *problem* and not the implementation; a group whose rows disagree fails the
@@ -302,6 +302,8 @@ Benchmarks → Run workflow** with a preset and optional group list, a `/bench`
 comment on a PR from a repo member, or automatically on any PR touching
 `bench/**`. Results are posted as a PR comment and uploaded as an artifact.
 
+For fork PR runs, the report is available in the Actions summary and artifact; automatic commenting is skipped because the token is read-only. Ordinary PR comments do not cancel benchmark jobs; only a new eligible benchmark job supersedes a running one.
+
 They are kept out of the blocking path deliberately, though not for the reason
 you might expect. *Within* one run the shared runner is actually steadier than a
 busy laptop — median MAD 0.2% against 1.4% locally — but severe outliers are
@@ -316,3 +318,89 @@ Both tracks default to the group list in `bench/ci-groups.txt` — one key per
 line, `#` comments ignored. Neither runs every registered group, so **a new group
 must be added there to be covered**. An unknown key fails the run, so a renamed
 group is caught rather than silently dropped.
+
+## Rust field comparison
+
+Run `python3 scripts/bench-fields.py --suite all --cpu 0` from the repository root on Linux. For scalar field suites, choose an available logical CPU: the driver pins itself and both runners there, builds with one job, and runs Lean and Rust sequentially. It validates matching result digests and operation counts before five paired timing runs in alternating order. `--validate-only` skips timing; `--skip-build` requires a matching build record from a previous driver run.
+
+| Suite | Selected fields and operations | Rust library |
+| --- | --- | --- |
+| `small-prime` (default) | KoalaBear, Mersenne31, Goldilocks: add/mul latency and throughput, inv/exp latency | Plonky3 0.4.2 |
+| `large-prime` | BN254 scalar field: add/mul latency and throughput, inv/exp latency | arkworks 0.5.0 (`ark_bn254::Fr`) |
+| `binary` | 8-, 64-, 128-bit Fan–Paar towers: mul latency/throughput, square/inv latency | Binius 0.2.0, pinned Git revision |
+| `ntt` | KoalaBear forward and inverse NTT; 2^12, 2^16, 2^20 elements | Plonky3 0.4.2 (`p3-dft`, parallel feature) |
+| `interpolate` | KoalaBear coset values evaluated at a degree-4 extension point; 2^12, 2^16, 2^20 rows × 1 and 16 columns | Plonky3 0.4.2 (`p3-interpolation`, parallel feature) |
+| `all` | The 36 scalar cases plus the NTT and coset interpolation suites | All three libraries |
+
+One Cargo project under `bench/rust/` shares the measurement and chain harness. Library-specific modules decode inputs and supply canonical checksums and cheap result sinks. Rust nightly-2026-02-26 is pinned for Binius’s x86 support, and Cargo.lock pins dependencies. The driver defaults `RUSTFLAGS` to `-C target-cpu=native` and records its value and the host instruction features; CI builds with the same flag. CI validates all selected suites on every PR; it does not gate on relative speed. Tables show fast Lean against Rust. Prime-field reference implementations still participate in validation and runs, but are omitted from the tables. Binary rows time only the verified fast Lean implementation and Binius; their cross-language result agreement is checked before timing.
+
+Each run creates an ignored `bench/out/fields-*` directory containing exact fixtures, raw samples, a machine/toolchain manifest, and `report.md` suitable for a PR comment. Timings are advisory, especially on a shared host.
+
+### Inputs and field correspondence
+
+`CompPolyFieldFixtures` exports pools in `field-coordinates-le-v1` format with an explicit `basis`. Prime-field operands use `canonical-integer`: fixed-width little-endian integers in `[0, p)`, with the modulus supplied separately. Binary operands use `fan-paar-tower`: little-endian tower coefficients in 1, 8, or 16 bytes, with an empty modulus array. These coordinates are not characteristic-two field numerals. Rust checks the encoding, basis, width, field identity, and workload parameters before decoding. The full coordinate word contributes to the untimed checksum, including both limbs at 128 bits.
+
+BN254 here means the **scalar** field with modulus `21888242871839275222246405745257275088548364400416034343698204186575808495617`, matching `ark_bn254::Fr`, not `Fq`. This common prime and canonical integer representation establish the correspondence. Future binary-field comparisons must additionally establish a basis mapping; equal bit patterns alone do not establish that correspondence.
+
+### Workloads
+
+Rust matches existing Lean batch shapes: 1,280 small-prime add/mul operations, 320 BN254 additions/multiplications, or 64 inv/exp steps with an added constant between steps. Small-prime throughput updates ten lanes from their previous values and combines them with nine extra operations at the end. The reported divisors exclude that merge, matching Lean. Exp uses `0x5A5A5A5A`; inverse maps zero to zero. Only the final batch result is consumed. BN254's timed sink samples native Montgomery words, avoiding canonical conversion or serialization in the timed loop. Rust uses scalar library APIs with native CPU target flags; arkworks parallel and optional assembly features are disabled.
+
+BN254 inversion uses `FastField.invGcd`, the checked binary-GCD path, rather than the default Fermat inverse. Arkworks uses its field `inverse`. Each chain step adds the same fixed constant before inversion; zero maps to zero. BN254 exponentiation uses the same 32-bit exponent `0x5A5A5A5A` as the small fields, not a random full-width exponent.
+
+BN254 add/mul throughput uses two independent chains with the same fixed second operand as latency, 160 steps per lane (320 operations total), four rounds unrolled per loop, and one final combining operation excluded from the divisor. This avoids the ten-lane ring’s excessive live state for multi-limb values. Small-prime throughput retains its ten-lane ring.
+
+The BN254 throughput configuration was selected manually on Rust, then fixed identically in Lean. It is not selected independently per language or tuned during benchmark runs. Rust screening covered 1, 2, 3, 4, 6, and 8 lanes with 1, 4, and 8 rounds unrolled; two lanes avoided the spill overhead of wider configurations. Shortlisted unroll factors were checked again in the production Rust runner.
+
+### Binary tower workloads
+
+`--suite binary` selects three representation boundaries: the 8-bit table base, a 64-bit machine word, and the two-word 128-bit carrier. CompPoly's tower matches Binius's `BinaryField8b`, `BinaryField64b`, and `BinaryField128b`. The dependency is the original [Binius field library](https://github.com/IrreducibleOSS/binius/tree/47675e19c86c0fb676f75437073a77af8e337938/crates/field), pinned because Binius64 uses different field representations. CPU-supported instructions are enabled, but the workloads use scalar field types, not explicit packed SIMD batches.
+
+Multiplication uses 64 dependent steps or two independent 32-step chains with the same fixed operand; the final combining multiply is timed but excluded from the divisor, identically in both languages. Inversion uses 64 dependent `inv(x XOR b)` steps, with zero mapped to zero. Squaring uses 63 dependent squares, unrolled seven at a time. Neither the block nor the complete chain is a whole Frobenius cycle at any selected size. No per-operation result accumulation occurs. The pool holds 64 deterministic full-width words, excluding zero and one to avoid trivial multiplication constants.
+
+The `fields-tower-bt{8,64,128}-{mul,square,inv}` groups replace the old recursive/table comparison and pairwise 128-bit scalar workloads. Historical best-time rows from those workloads are not comparable with these chains. Lean's arithmetic refinements remain in `Tower/Fast.lean`; matching complete chain digests and operation counts establishes the new runtime correspondence with Binius.
+
+### Build provenance
+
+The driver records the source commit and source-content hash (including untracked, nonignored files), toolchain versions, build environment, native CPU features, and hashes of all three executables in `.lake/build/field-bench-build.json`. `--skip-build` rejects missing or mismatched records and asks for a normal run; normal runs use Lake/Cargo’s incremental builds. The run manifest copies that build record instead of inferring binary provenance from the current environment. Sources and executable hashes are checked again after validation and timing. Build flags must also match, including `CARGO_ENCODED_RUSTFLAGS` if set.
+
+## KoalaBear NTT against optimized Plonky3
+
+```bash
+python3 scripts/bench-fields.py --suite ntt
+python3 scripts/bench-fields.py --suite ntt --validate-only
+```
+
+This suite measures two proved Lean pipelines against Plonky3's `Radix2DFTSmallBatch<KoalaBear>` public `dft`/`idft` API, pinned to `p3-dft` 0.4.2. `NTTFast.Packed.Plan` stores packed words with the `ByteArray` word accessors proposed for Lean core; `NTTFast.NaturalPlan` uses core byte operations only. Both are parallel, take and return packed Montgomery words, and have complete forward/inverse refinement theorems. Rust uses the library's optimized algorithm and native packed arithmetic; there is no custom Rust transform. Six workloads cover forward and inverse transforms at 2^12, 2^16 and 2^20 elements, with all three implementations displayed in the report. The default budget is one worker per available physical core, at most sixteen and rounded down to a power of two; SMT siblings are not used, because they measure how each implementation shares a core rather than how it scales. `--cpus` chooses a power-of-two worker allocation; `--cpu` selects one worker. Plonky3's `parallel` feature and native SIMD are enabled. This suite is included in `--suite all` and its CI validation gate.
+
+Both sides consume and return natural-order arrays. Lean's plan internally uses bit-reversed spectra, so its ordering adapter is included in timing. Plonky3's public API includes its own ordering work. Plan construction, twiddle tables and fixture decoding are outside timing; input copying, output disposal and inverse normalization are inside. This compares optimized implementations of the same mathematical transform, allowing different algorithms and arithmetic schedules. It replaces the original matched-schedule scalar Rust baseline.
+
+Fixtures use canonical little-endian 32-bit coordinates: the certified root exported by Lean, followed by two input arrays. Rust verifies that root equals the library's selected root. Every output element contributes to an untimed digest; only four output positions feed the timed sink. Validation covers tiny odd/even log sizes and large transforms. The Rust API contract test uses an independent direct transform to check root direction, ordering and normalization. Reports and build/fixture provenance, including the selected Rust implementation and packing width, are saved under the output directory.
+
+### Lean natural-order NTT plans
+
+Import `CompPoly.Univariate.NTTFast.NaturalParallel` and construct `NTTFast.NaturalPlan.ofDomain domain` once, for any field with a `PackedRepr` instance. `plan.forwardPacked words parallel` and `plan.inversePacked words parallel` take and return packed elements (`PackedRepr.encode`); `forwardPacked_eq` proves `plan.forwardPacked (encode a) w = encode (plan.forward a)`, and `inversePacked_eq` the same for the inverse, where `plan.forward` and `plan.inverse` are the proved sequential transforms on field arrays. With `parallel` (the default) and from 2^15 elements, column tasks run the top two radix-four passes and sixteen leaf tasks the remaining layers, directly on the packed buffer; otherwise, and for smaller transforms, the sequential transform runs as one leaf. The plan caches bit-reversal indices as well as the twiddle tables. Shorter inputs are zero-padded and longer ones truncated.
+
+The imported butterfly modules also install proved compiler substitutions for `NTTFast.Plan.forwardImpl` and `inverseImpl`. Array bounds are checked once per radix-four block; the hot loop uses `USize` indices and bounds-proved accesses. The original total functions cover invalid ranges, and natural-number indexing covers ranges exceeding the machine-word limit. No new external functions or compiler changes are used. The NTT benchmark executable and the dedicated `CompPolyPackedNative` arithmetic module target the native CPU, matching Rust's native targeting; their object files must be rebuilt when moving machines. Release proof artifacts remain platform independent.
+
+
+### Packed parallel NTT plans
+
+Import `CompPoly.Univariate.NTTFast.Packed.Plan`. Construct `NTTFast.Packed.Plan.ofDomain domain log_bound byte_bound` once, with proofs that `domain.logN ≤ 32` and `4 * domain.n < USize.size`. Then call `plan.forwardPacked words parallel` or `plan.inversePacked words parallel` on `domain.n` packed little-endian Montgomery words, like Plonky3's contiguous field vectors: `PackedRepr.encode` packs a field array and `PackedRepr.decode` reads one back. The pipeline is the extern-free plan's: with `parallel` (the default) and from 2^15 elements, column tasks run the top two radix-four passes and sixteen leaf tasks the rest, each ending with a kernel that fuses the last four layers with the leaf's bit reversal, and sixteen tasks interleave the leaves into natural order; otherwise, and for smaller transforms, one leaf runs. `forwardPacked_correct` and `inversePacked_correct` prove both entry points equal to the mathematical DFT/inverse DFT for every domain-sized input and worker count. Plans cache packed twiddles; timed calls include arithmetic, task joins, ordering and inverse normalization.
+
+The direct executable defaults to the packed plan (`COMPPOLY_NTT_IMPL=packed`). Set `COMPPOLY_NTT_IMPL=externless` for the extern-free plan; `LEAN_NUM_THREADS` sets the worker budget of both, and the runner passes `parallel` when it is above one. The comparison driver runs all variants automatically, with the same fixtures and CPU allocation as Rust; packed inputs are encoded outside timing, as Rust's raw inputs are.
+
+The packed path reads and writes words with `ByteArray.ugetUInt32LE` and `ByteArray.usetUInt32LE`, backported in `CompPoly/Data/ByteArray/Pack.lean` from [lean4#14053](https://github.com/leanprover/lean4/pull/14053) with the same names, signatures and Lean definitions. Until a toolchain ships them, their inline C is trusted to match those definitions; it contains no field arithmetic or scheduling. The C loads and stores with a fixed-size `memcpy` (byte-swapped on big-endian hosts) and, after a store, tells the compiler that the array is still unshared, so that a run of stores keeps one sharing check. `lake exe CompPolyNativeSmoke` checks the compiled accessors against bytewise Lean operations at every offset, including out-of-range offsets and shared inputs. The logical refinement proofs are kernel checked without `native_decide`, `sorry`, `implemented_by` or new `csimp` substitutions.
+
+## KoalaBear coset interpolation against Plonky3
+
+```bash
+python3 scripts/bench-fields.py --suite interpolate
+python3 scripts/bench-fields.py --suite interpolate --validate-only
+```
+
+This suite compares two Lean implementations with Plonky3's stock `p3_interpolation::interpolate_coset` (0.4.2) over `BinomialExtensionField<KoalaBear, 4>`. Each call takes a row-major `2^logN × width` matrix whose columns hold values of polynomials on the coset `s · ⟨ω⟩`, and returns every column's polynomial evaluated at a point of the quartic extension, by the barycentric formula `(zⁿ - sⁿ) / (n sⁿ) · ∑ᵢ xᵢ / (z - xᵢ) · p(xᵢ)`. `KoalaBear.Fast.interpolateCosetPacked` reads the matrix as Montgomery words in a `ByteArray`, like Plonky3's `RowMajorMatrix`, and runs on parallel tasks; `KoalaBear.Fast.interpolateCoset` is the sequential proved reference. `toSpec_interpolateCoset` proves the reference equal to `aeval z` of each column's polynomial, and `interpolateCosetPacked_eq` proves the packed version equal to the reference. All three compute the coset nodes, the inversions and the weights inside every call; Plonky3 uses its parallel feature and native SIMD.
+
+Each fixture holds the subgroup root, the shift (KoalaBear's multiplicative generator `3`), two extension points that alternate between iterations, and the matrix, as canonical little-endian 32-bit words. The root must equal Lean's certified root and Plonky3's two-adic generator. `CompPolyInterpolateBench` and `comppoly-field-bench --interpolate` read the same fixture; full output digests agree before timing, including single-row and narrow matrices. Workers follow the same physical-core selection as the NTT suite, and every invocation warms up for 200 ms.
+
+The packed version reads and writes words with the packed NTT's backported `ByteArray` word accessors and nothing else outside the kernel proof, so `interpolateCosetPacked_eq` and the accessors' compiled checks cover it.
