@@ -38,13 +38,6 @@ on:
     paths:
       - 'bench/**'
 
-# Keyed on the PR or ref rather than shared with CI, so asking for benchmarks
-# never cancels a correctness run. A separate workflow file already gets a
-# distinct `github.workflow`, so this only needs to disambiguate within itself.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 jobs:
   benchmark:
     # The COMMENT author, not the PR author, is the trust boundary on the
@@ -60,6 +53,12 @@ jobs:
           github.event.comment.author_association == 'COLLABORATOR'
         )
       )
+    # Apply concurrency after the job's comment filter. Workflow-level concurrency
+    # would let an ordinary PR comment cancel a running benchmark even when its
+    # own benchmark job is skipped.
+    concurrency:
+      group: ${{ github.workflow }}-job-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
@@ -135,6 +134,8 @@ jobs:
           key: lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ github.sha }}
           restore-keys: |
             lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
+      - name: Drop host-tuned native objects
+        run: ./scripts/drop-native-objects.sh
       - name: Set up Lean environment
         uses: leanprover/lean-action@v1
         with:

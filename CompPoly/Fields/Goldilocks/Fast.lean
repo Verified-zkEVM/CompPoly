@@ -18,8 +18,8 @@ kernels from `FastDefs` with the bounds proved in `FastReduction`. Every operati
 identified with its counterpart in the canonical `ZMod` model, and the field instances
 are transferred across `toField`.
 
-Reduction rests on `2^64 ≡ 2^32 - 1 (mod p)`, so a 128-bit product folds back into one
-word with shifts, one multiply by `2^32 - 1`, and carry corrections.
+Reduction rests on `2^64 ≡ 2^32 - 1 (mod p)`, which folds a 128-bit product back into one
+word with shifts, additions and carry corrections.
 -/
 
 @[expose] public section
@@ -122,11 +122,7 @@ def toField (x : Field) : Goldilocks.Field :=
 /-- Fast modular addition in canonical form. -/
 @[inline]
 def add (x y : Field) : Field :=
-  let lo := x.val + y.val
-  let carry := decide (lo < x.val)
-  ⟨reduceAddWithCarryRaw lo carry,
-    reduceAddWithCarryRaw_lt lo carry
-      (addWithCarry_bound x.val y.val x.property y.property)⟩
+  ⟨addRaw x.val y.val, addRaw_lt x.property y.property⟩
 
 /-- Fast modular negation in canonical form. -/
 @[inline]
@@ -148,41 +144,25 @@ def mul (x y : Field) : Field :=
 def square (x : Field) : Field :=
   mul x x
 
-/-- Repeated squaring: `squareN x n` computes `x^(2^n)`. -/
+/-- Repeated squaring, `squareN x n = x^(2^n)`, as a tail-recursive loop. -/
 @[inline]
 def squareN (x : Field) : Nat → Field
   | 0 => x
-  | n + 1 => square (squareN x n)
+  | n + 1 => squareN (square x) n
 
-/-- Exponentiation over the fast representation using binary exponentiation. -/
+/-- Exponentiation through the lazy ladder `powLazy`, canonicalized once. -/
 @[inline]
 def pow (x : Field) (n : Nat) : Field :=
-  @npowBinRec Field ⟨one⟩ ⟨mul⟩ n x
+  ⟨reduceUInt64Raw (powLazy 1 x.val n), reduceUInt64Raw_lt _⟩
 
 /-- Fermat exponent used for inversion in the Goldilocks prime field. -/
 @[inline]
 private def invExponent : Nat := Goldilocks.fieldSize - 2
 
-/-- Fast modular inversion using an addition chain for `p - 2`.
-
-For Goldilocks, `p - 2 = 0xFFFFFFFEFFFFFFFF`. The chain builds
-`x^(2^31 - 1)`, derives `x^(2^32 - 2)` and `x^(2^32 - 1)`, then combines them as
-
-`(2^32 - 2) * 2^32 + (2^32 - 1) = p - 2`.
--/
+/-- Fast modular inversion through the lazy Fermat chain `invLazy`, canonicalized once. -/
+@[inline]
 def inv (x : Field) : Field :=
-  let t2 := mul (square x) x
-  let t4 := mul (squareN t2 2) t2
-  let t8 := mul (squareN t4 4) t4
-  let t16 := mul (squareN t8 8) t8
-  let t31 :=
-    mul (squareN t16 15)
-      (mul (squareN t8 7)
-        (mul (squareN t4 3)
-          (mul (square t2) x)))
-  let t32m2 := square t31
-  let t32m1 := mul t32m2 x
-  mul (squareN t32m2 32) t32m1
+  ⟨reduceUInt64Raw (invLazy x.val), reduceUInt64Raw_lt _⟩
 
 /-- Division through inversion and fast multiplication. -/
 @[inline]
@@ -421,25 +401,9 @@ theorem toField_one : toField (1 : Field) = 1 := by
 /-- Fast addition agrees with canonical-field addition. -/
 @[simp]
 theorem toField_add (x y : Field) : toField (x + y) = toField x + toField y := by
-  change
-    (((add x y).val.toNat : Goldilocks.Field) =
-      (x.val.toNat : Goldilocks.Field) + (y.val.toNat : Goldilocks.Field))
-  unfold add
-  rw [reduceAddWithCarryRaw_cast _ _
-    (addWithCarry_bound x.val y.val x.property y.property)]
-  let lo := x.val + y.val
-  let carry := decide (lo < x.val)
-  have hvalue := addWithCarry_value x.val y.val
-  change lo.toNat + (if carry then UInt64.size else 0) = x.val.toNat + y.val.toNat at hvalue
-  change
-    ((lo.toNat : Goldilocks.Field) +
-        (if carry then (UInt64.size : Goldilocks.Field) else 0) =
-      (x.val.toNat : Goldilocks.Field) + (y.val.toNat : Goldilocks.Field))
-  by_cases hcarry : carry = true
-  · simp only [hcarry, ite_true] at hvalue ⊢
-    rw [← Nat.cast_add, hvalue, Nat.cast_add]
-  · simp only [hcarry, Bool.false_eq_true, ite_false, add_zero] at hvalue ⊢
-    rw [hvalue, Nat.cast_add]
+  change toField (add x y) = toField x + toField y
+  simp only [add, toField, toNat]
+  exact addRaw_cast x.property y.property
 
 /-- Fast negation agrees with canonical-field negation. -/
 @[simp]
@@ -483,46 +447,26 @@ theorem toField_squareN (x : Field) (n : Nat) :
       simp
   | succ n ih =>
       unfold squareN
-      rw [toField_square, ih]
-      rw [← pow_add]
+      rw [ih, toField_square, ← pow_two, ← pow_mul]
       congr 1
       rw [Nat.pow_succ]
       omega
 
-/-- Fast multiplication is associative, proved by transporting to the canonical field. -/
-private theorem mul_assoc_field (x y z : Field) : (x * y) * z = x * (y * z) := by
-  apply toField_injective
-  rw [toField_mul, toField_mul, toField_mul, toField_mul]
-  ring
-
-/-- Binary exponentiation satisfies the expected successor equation. -/
-private theorem pow_succ (x : Field) (n : Nat) : pow x (n + 1) = pow x n * x := by
-  unfold pow
-  let _ : Semigroup Field := {
-    mul := (· * ·)
-    mul_assoc := mul_assoc_field
-  }
-  exact npowBinRec_succ n x
-
 /-- Fast natural-power computation agrees with powers in the canonical field. -/
 @[simp]
 theorem toField_pow (x : Field) (n : Nat) : toField (pow x n) = toField x ^ n := by
-  induction n with
-  | zero =>
-      unfold pow
-      rw [npowBinRec_zero]
-      rw [toField_one]
-      simp
-  | succ n ih =>
-      rw [pow_succ, toField_mul, ih, _root_.pow_succ]
+  change ((reduceUInt64Raw (powLazy 1 x.val n)).toNat : Goldilocks.Field) =
+    (x.val.toNat : Goldilocks.Field) ^ n
+  rw [reduceUInt64Raw_cast, powLazy_cast]
+  simp
 
 /-- The optimized inversion chain computes the Fermat inverse exponent. -/
 private theorem toField_inv_chain (x : Field) :
     toField (inv x) = toField x ^ invExponent := by
-  unfold inv
-  simp only [toField_mul_def, toField_square, toField_squareN]
-  ring_nf
-  simp [invExponent, Goldilocks.fieldSize]
+  change ((reduceUInt64Raw (invLazy x.val)).toNat : Goldilocks.Field) =
+    (x.val.toNat : Goldilocks.Field) ^ invExponent
+  rw [reduceUInt64Raw_cast, invLazy_cast]
+  rfl
 
 /-- Fast inversion agrees with canonical inversion before notation is unfolded. -/
 private theorem toField_inv_raw (x : Field) : toField (inv x) = (toField x)⁻¹ := by
