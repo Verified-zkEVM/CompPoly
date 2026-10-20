@@ -8,6 +8,7 @@ module
 
 public import CompPoly.Fields.Basic
 public import CompPoly.Fields.PrattCertificate
+public import Mathlib.Algebra.Field.ZMod
 
 /-!
   # Goldilocks prime field `2^{64} - 2^{32} + 1`

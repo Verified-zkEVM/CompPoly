@@ -5,8 +5,8 @@ Authors: Quang Dao, Georgios Raikos
 -/
 module
 
-public import CompPoly.Fields.Secp256k1.Basic
-public import CompPoly.Fields.Secp256k1.Fast
+public import CompPoly.Fields.PrattCertificate
+public import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Secp256k1 Fields
