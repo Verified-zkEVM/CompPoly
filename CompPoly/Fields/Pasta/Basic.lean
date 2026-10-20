@@ -6,6 +6,7 @@ Authors: Daira-Emma Hopwood, Gregor Mitscha-Baude
 module
 
 public import CompPoly.Fields.PrattCertificate
+public import Mathlib.Algebra.Field.ZMod
 
 /-!
 # The Pasta (Pallas / Vesta) base prime fields
