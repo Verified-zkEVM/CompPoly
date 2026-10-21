@@ -23,9 +23,13 @@ natural-order DFT.
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open Montgomery.Native32 (Mont32Field FastField)
+
+variable {p : ℕ} [Mont32Field p]
+
 open CompPoly.PackedRepr (encode)
 
-local notation "F" => KoalaBear.Fast.Field
+local notation "F" => FastField p
 
 /-- Appending a range of a packed field array copies its coordinates. -/
 theorem copySlice_encode_fields (a o : Array F) (i c : Nat) :
@@ -105,7 +109,7 @@ theorem gatherWords_encode (src : Array F) (M j0 cs r : Nat)
 theorem columnWords_encode (x : Array F) (tw : Array (Array F)) (logN cs j0 : Nat)
     (h4 : 4 ≤ logN) (hx : x.size = 2 ^ logN) (htw : ∀ s < logN, (tw.getD s #[]).size = 2 ^ s)
     (hu : 4 * 2 ^ logN < USize.size) (hj : j0 + cs ≤ 2 ^ (logN - 4)) :
-    columnWords (tw.map encode) logN (2 ^ (logN - 4)) cs j0 (encode x) =
+    columnWords p (tw.map encode) logN (2 ^ (logN - 4)) cs j0 (encode x) =
       encode (Columns.columnTask x tw logN (2 ^ (logN - 4)) cs j0) := by
   obtain ⟨m, rfl⟩ : ∃ m, logN = m + 4 := ⟨logN - 4, by omega⟩
   simp only [show m + 4 - 4 = m by omega] at hj ⊢
@@ -201,7 +205,7 @@ theorem leafStages_eq_leafPasses (D : NTT.Domain F) (h4 : 4 ≤ D.logN) (tw : Ar
 theorem runColumns_encode (D : NTT.Domain F) (S : Nat) (factor : F) (a : Array F)
     (inverse : Bool) (hs : a.size = D.n) (h15 : 15 ≤ D.logN) (h32 : D.logN ≤ 32)
     (hu : 4 * D.n < USize.size) (hS : 0 < S) (hdiv : S ∣ 2 ^ (D.logN - 4)) :
-    runColumns ((Plan.twiddleTable D).map encode) D.logN S factor.val inverse (encode a) =
+    runColumns p ((Plan.twiddleTable D).map encode) D.logN S factor.val inverse (encode a) =
       encode (decodedFields D.logN (difSpec D a) factor inverse) := by
   let tw := Plan.twiddleTable D
   obtain ⟨htw, hone⟩ := twiddleTable_invariants D
@@ -258,7 +262,7 @@ theorem runColumns_encode (D : NTT.Domain F) (S : Nat) (factor : F) (a : Array F
     rw [Nat.add_mul, Nat.one_mul] at this
     omega
   have hleaf (l : Nat) (hl : l < 16) :
-      leafNatural (tw.map encode) (D.logN - 4) factor.val inverse (encode (X l)) =
+      leafNatural p (tw.map encode) (D.logN - 4) factor.val inverse (encode (X l)) =
         encode (decodedFields (D.logN - 4) ((difSpec D a).extract (l * M) ((l + 1) * M))
           factor inverse) := by
     have htw4 : TwiddleSizes (powDomain D 4 (by omega)).logN tw := fun s hs ↦ htw s (by
@@ -278,7 +282,7 @@ theorem runColumns_encode (D : NTT.Domain F) (S : Nat) (factor : F) (a : Array F
       planStages_eq_difSpec D a hs]
     rfl
   have hcols : ((Array.range S).map fun s ↦
-      columnWords (tw.map encode) D.logN M cs (s * cs) (encode a)) =
+      columnWords p (tw.map encode) D.logN M cs (s * cs) (encode a)) =
       (Array.range S).map fun s ↦ encode (C s) := by
     apply Array.ext (by simp only [Array.size_map, Array.size_range])
     intro s h1 _
@@ -286,8 +290,8 @@ theorem runColumns_encode (D : NTT.Domain F) (S : Nat) (factor : F) (a : Array F
     simp only [Array.getElem_map, Array.getElem_range]
     exact columnWords_encode a tw D.logN cs (s * cs) (by omega) hn htw hu' (hj s h1)
   have hleaves : (Tasks.spawnAfter (Tasks.spawnAll S fun s ↦
-      columnWords (tw.map encode) D.logN M cs (s * cs) (encode a)) 16 fun cols l ↦
-        leafNatural (tw.map encode) (D.logN - 4) factor.val inverse (leafWords cols cs l)).map
+      columnWords p (tw.map encode) D.logN M cs (s * cs) (encode a)) 16 fun cols l ↦
+        leafNatural p (tw.map encode) (D.logN - 4) factor.val inverse (leafWords cols cs l)).map
         Task.get =
       (Array.range 16).map fun l ↦ encode (decodedFields (D.logN - 4)
         ((difSpec D a).extract (l * M) ((l + 1) * M)) factor inverse) := by
@@ -303,7 +307,7 @@ theorem runColumns_encode (D : NTT.Domain F) (S : Nat) (factor : F) (a : Array F
 /-- The packed transform computes the DFT, scaled for an inverse transform. -/
 theorem run_dft (D : NTT.Domain F) (parallel : Bool) (factor : F) (a : Array F)
     (inverse : Bool) (hs : a.size = D.n) (h32 : D.logN ≤ 32) (hu : 4 * D.n < USize.size) :
-    run ((Plan.twiddleTable D).map encode) D.logN parallel factor.val inverse (encode a) =
+    run p ((Plan.twiddleTable D).map encode) D.logN parallel factor.val inverse (encode a) =
       encode (if inverse then (NTT.Forward.forwardSpec D a).map (fun x ↦ factor * x)
         else NTT.Forward.forwardSpec D a) := by
   rw [← decodedFields_difSpec D a factor inverse]

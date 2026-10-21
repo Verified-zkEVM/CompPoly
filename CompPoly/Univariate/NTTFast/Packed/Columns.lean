@@ -18,6 +18,9 @@ which also reverses and scales it; and `naturalLeaves` interleaves the leaves in
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed.Native
+open Montgomery.Native32 (Mont32Field FastField)
+
+variable {p : ℕ} [Mont32Field p]
 
 /-- Words `j0, …, j0 + cs - 1` of rows `0, …, r - 1` of a row-major matrix with rows of `M`
 words, as an `r × cs` matrix. -/
@@ -26,10 +29,12 @@ def gatherWords (src : @& ByteArray) (M j0 cs r : Nat) : ByteArray :=
     (ByteArray.emptyWithCapacity (4 * (r * cs)))
 
 /-- The top two radix-four passes of a `16 × M` transform on columns `j0, …, j0 + cs - 1`. -/
-def columnWords (tw : @& Array ByteArray) (logN M cs j0 : Nat) (x : @& ByteArray) : ByteArray :=
-  let a := radix4Blocks (gatherWords (tw.getD (logN - 1) .empty) M j0 cs 8)
+@[specialize]
+def columnWords (p : ℕ) [Mont32Field p] (tw : @& Array ByteArray) (logN M cs j0 : Nat)
+    (x : @& ByteArray) : ByteArray :=
+  let a := radix4Blocks p (gatherWords (tw.getD (logN - 1) .empty) M j0 cs 8)
     (gatherWords (tw.getD (logN - 2) .empty) M j0 cs 4) (4 * cs) 1 (gatherWords x M j0 cs 16)
-  radix4Blocks (gatherWords (tw.getD (logN - 3) .empty) M j0 cs 2)
+  radix4Blocks p (gatherWords (tw.getD (logN - 3) .empty) M j0 cs 2)
     (gatherWords (tw.getD (logN - 4) .empty) M j0 cs 1) cs 4 a
 
 /-- Row `l` of the column results, in column order. -/
@@ -40,21 +45,25 @@ def leafWords (cols : @& Array ByteArray) (cs l : Nat) : ByteArray :=
 /-- The column-parallel transform of `2 ^ logN` packed words: `S` column tasks run the top two
 radix-four passes, sixteen leaf tasks the remaining layers in natural order, and sixteen tasks
 interleave the leaves. -/
-def runColumns (tw : Array ByteArray) (logN S : Nat) (nInv : UInt32) (inverse : Bool)
+@[specialize]
+def runColumns (p : ℕ) [Mont32Field p] (tw : Array ByteArray) (logN S : Nat) (nInv : UInt32)
+    (inverse : Bool)
     (a : ByteArray) : ByteArray :=
   let M := 2 ^ (logN - 4)
   let cs := M / S
-  let cols := Tasks.spawnAll S fun s ↦ columnWords tw logN M cs (s * cs) a
+  let cols := Tasks.spawnAll S fun s ↦ columnWords p tw logN M cs (s * cs) a
   let leaves := Tasks.spawnAfter cols 16 fun cols l ↦
-    leafNatural tw (logN - 4) nInv inverse (leafWords cols cs l)
+    leafNatural p tw (logN - 4) nInv inverse (leafWords cols cs l)
   naturalLeaves (leaves.map Task.get) logN
 
 /-- The complete transform of `2 ^ logN` packed words in natural order: if `parallel`, the column
 transform from `2 ^ 15` words, otherwise one leaf. -/
-def run (tw : Array ByteArray) (logN : Nat) (parallel : Bool) (nInv : UInt32) (inverse : Bool)
+@[specialize]
+def run (p : ℕ) [Mont32Field p] (tw : Array ByteArray) (logN : Nat) (parallel : Bool)
+    (nInv : UInt32) (inverse : Bool)
     (a : ByteArray) : ByteArray :=
   if parallel ∧ 15 ≤ logN then
-    runColumns tw logN (Columns.columnCount logN) nInv inverse a
-  else leafNatural tw logN nInv inverse a
+    runColumns p tw logN (Columns.columnCount logN) nInv inverse a
+  else leafNatural p tw logN nInv inverse a
 
 end CompPoly.CPolynomial.NTTFast.Packed.Native

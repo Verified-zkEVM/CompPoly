@@ -37,7 +37,8 @@ lean_lib CompPolyPackedNative where
   roots := #[`CompPoly.Univariate.NTTFast.Packed.Native,
     `CompPoly.Univariate.NTTFast.Packed.NativeOrder,
     `CompPoly.Univariate.NTTFast.Packed.NativeLast,
-    `CompPoly.Univariate.NTTFast.Packed.Columns]
+    `CompPoly.Univariate.NTTFast.Packed.Columns,
+    `CompPoly.Univariate.NTTFast.Packed.Instances]
   platformIndependent := true
   -- The kernels spill AVX registers; realigning the stack keeps the spill slots 32-byte
   -- aligned whatever the caller's frame, which otherwise moved timings by 20% between builds.

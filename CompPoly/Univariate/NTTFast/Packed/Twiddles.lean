@@ -13,17 +13,20 @@ import all CompPoly.Univariate.NTTFast.Correctness.Basic
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open Montgomery.Native32 (Mont32Field FastField)
+
+variable {p : ℕ} [Mont32Field p]
 
 /-- Every stored twiddle table has its stage's butterfly width. -/
-def TwiddleSizes (logN : Nat) (tw : Array (Array KoalaBear.Fast.Field)) : Prop :=
+def TwiddleSizes (logN : Nat) (tw : Array (Array (FastField p))) : Prop :=
   ∀ stage < logN, (tw.getD stage #[]).size = 2 ^ stage
 
 /-- Every twiddle stage starts at the multiplicative identity. -/
-def TwiddleOnes (logN : Nat) (tw : Array (Array KoalaBear.Fast.Field)) : Prop :=
+def TwiddleOnes (logN : Nat) (tw : Array (Array (FastField p))) : Prop :=
   ∀ stage < logN, (tw.getD stage #[]).getD 0 0 = 1
 
 /-- A one-coordinate twiddle table beginning at one is the identity table. -/
-theorem twiddle_zero_eq_one (tw : Array KoalaBear.Fast.Field)
+theorem twiddle_zero_eq_one (tw : Array (FastField p))
     (hs : tw.size = 1) (hone : tw.getD 0 0 = 1) : tw = #[1] := by
   apply Array.ext (by simpa only [Array.size_singleton] using hs)
   intro i hi hj
@@ -33,7 +36,7 @@ theorem twiddle_zero_eq_one (tw : Array KoalaBear.Fast.Field)
     Option.getD_some, Array.getElem_singleton] using hone
 
 /-- Ordinary cached domain twiddles satisfy both packed-stage invariants. -/
-theorem twiddleTable_invariants (D : NTT.Domain KoalaBear.Fast.Field) :
+theorem twiddleTable_invariants (D : NTT.Domain (FastField p)) :
     TwiddleSizes D.logN (Plan.twiddleTable D) ∧
       TwiddleOnes D.logN (Plan.twiddleTable D) := by
   constructor

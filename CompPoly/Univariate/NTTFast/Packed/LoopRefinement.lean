@@ -15,17 +15,21 @@ public import CompPoly.Univariate.NTTFast.Packed.KernelSpecialization
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open Montgomery.Native32 (Mont32Field FastField)
+
+variable {p : ℕ} [Mont32Field p]
+
 open CompPoly.PackedRepr (encode)
 
 /-- The packed scalar radix-four tail agrees with the ordinary field-array loop. -/
-theorem Native.inner_encode (th tl : Array KoalaBear.Fast.Field) (q j i0 i1 i2 i3 : Nat)
-    (a : Array KoalaBear.Fast.Field)
+theorem Native.inner_encode (th tl : Array (FastField p)) (q j i0 i1 i2 i3 : Nat)
+    (a : Array (FastField p))
     (ha : (encode a).size < USize.size)
     (hth : (encode th).size < USize.size) (htl : (encode tl).size < USize.size)
     (hthi : 2 * q ≤ th.size) (htli : q ≤ tl.size)
     (hi : i0 + (q - j) ≤ a.size ∧ i1 + (q - j) ≤ a.size ∧
       i2 + (q - j) ≤ a.size ∧ i3 + (q - j) ≤ a.size) :
-    Native.inner (encode th) (encode tl) q j i0 i1 i2 i3 (encode a) =
+    Native.inner p (encode th) (encode tl) q j i0 i1 i2 i3 (encode a) =
       encode (Plan.butterflyDIFRadix4Inner th tl q j i0 i1 i2 i3 a) := by
   rw [Native.inner, Plan.butterflyDIFRadix4Inner]
   split
@@ -44,17 +48,17 @@ decreasing_by omega
 /-- The hoisted batch loop depends only on the buffer's value. -/
 theorem Native.inner16Loop_congr {th tl : ByteArray} {n : Nat} {j j1 i0 i1 i2 i3 : USize}
     {b b' : ByteArray} (h) (e : b = b') :
-    Native.inner16Loop th tl n j j1 i0 i1 i2 i3 b h =
-      Native.inner16Loop th tl n j j1 i0 i1 i2 i3 b' (e ▸ h) := by
+    Native.inner16Loop p th tl n j j1 i0 i1 i2 i3 b h =
+      Native.inner16Loop p th tl n j j1 i0 i1 i2 i3 b' (e ▸ h) := by
   subst e
   rfl
 
 /-- The hoisted batch loop executes `16 * n` cells. -/
-theorem Native.inner16Loop_encode (th tl : Array KoalaBear.Fast.Field) (q : Nat) :
-    ∀ (n : Nat) (j j1 i0 i1 i2 i3 : USize) (a : Array KoalaBear.Fast.Field) (h),
+theorem Native.inner16Loop_encode (th tl : Array (FastField p)) (q : Nat) :
+    ∀ (n : Nat) (j j1 i0 i1 i2 i3 : USize) (a : Array (FastField p)) (h),
     j1.toNat = j.toNat + q → i3.toNat + 16 * n ≤ a.size → i0.toNat + 16 * n ≤ i1.toNat →
     i1.toNat + 16 * n ≤ i2.toNat → i2.toNat + 16 * n ≤ i3.toNat →
-    Native.inner16Loop (encode th) (encode tl) n j j1 i0 i1 i2 i3 (encode a) h =
+    Native.inner16Loop p (encode th) (encode tl) n j j1 i0 i1 i2 i3 (encode a) h =
       encode (quadCells th tl q j.toNat i0.toNat i1.toNat i2.toNat i3.toNat a (16 * n)) := by
   intro n
   induction n with
@@ -79,14 +83,14 @@ theorem Native.inner16Loop_encode (th tl : Array KoalaBear.Fast.Field) (q : Nat)
       usize_add16 i3 _ (by omega) hb, ← quadCells_add, Nat.mul_succ, Nat.add_comm (16 * n)]
 
 /-- Batched dispatch and the scalar tail together execute the ordinary inner loop. -/
-theorem Native.inner16_encode (th tl : Array KoalaBear.Fast.Field) (q j i0 i1 i2 i3 : Nat)
-    (a : Array KoalaBear.Fast.Field)
+theorem Native.inner16_encode (th tl : Array (FastField p)) (q j i0 i1 i2 i3 : Nat)
+    (a : Array (FastField p))
     (ha : (encode a).size < USize.size)
     (hth : (encode th).size < USize.size) (htl : (encode tl).size < USize.size)
     (hthi : 2 * q ≤ th.size) (htli : q ≤ tl.size)
     (hs : i3 + (q - j) ≤ a.size) (h01 : i0 + (q - j) ≤ i1)
     (h12 : i1 + (q - j) ≤ i2) (h23 : i2 + (q - j) ≤ i3) :
-    Native.inner16 (encode th) (encode tl) q j i0 i1 i2 i3 (encode a) =
+    Native.inner16 p (encode th) (encode tl) q j i0 i1 i2 i3 (encode a) =
       encode (Plan.butterflyDIFRadix4Inner th tl q j i0 i1 i2 i3 a) := by
   have hn : 16 * ((q - j) / 16) ≤ q - j := Nat.mul_div_le _ _
   rw [Native.inner16]

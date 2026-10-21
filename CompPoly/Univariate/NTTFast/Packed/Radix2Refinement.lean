@@ -20,9 +20,13 @@ public import CompPoly.Univariate.NTTFast.Packed.Arrays
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open Montgomery.Native32 (Mont32Field FastField)
+
+variable {p : ℕ} [Mont32Field p]
+
 open CompPoly.PackedRepr (encode)
 
-local notation "F" => KoalaBear.Fast.Field
+local notation "F" => FastField p
 
 /-- One step of the inner DIF loop. -/
 theorem butterflyDIFInner_succ [Field R] (tw : Array R) (limit j i0 i1 : Nat) (a : Array R)
@@ -62,7 +66,7 @@ def pair16Field (w : Array F) (j i0 i1 : Nat) (a : Array F) : Array F :=
 
 /-- The radix-two word kernel is its field-array semantics. -/
 theorem Native.pair16_encode (w a : Array F) (j i0 i1 : USize) (h) :
-    Native.pair16 (encode w) j i0 i1 (encode a) h =
+    Native.pair16 p (encode w) j i0 i1 (encode a) h =
       encode (pair16Field w j.toNat i0.toNat i1.toNat a) := by
   obtain ⟨h0, h1, -, hs, -⟩ := h
   rw [size_encode_fields] at h0 h1
@@ -114,7 +118,7 @@ theorem pair16Field_eq (w a : Array F) (j i0 i1 : Nat) (h01 : i0 + 16 ≤ i1)
 /-- The hoisted batch loop depends only on the buffer's value. -/
 theorem Native.pair16Loop_congr {w : ByteArray} {n : Nat} {j i0 i1 : USize} {b b' : ByteArray}
     (h) (e : b = b') :
-    Native.pair16Loop w n j i0 i1 b h = Native.pair16Loop w n j i0 i1 b' (e ▸ h) := by
+    Native.pair16Loop p w n j i0 i1 b h = Native.pair16Loop p w n j i0 i1 b' (e ▸ h) := by
   subst e
   rfl
 
@@ -122,7 +126,7 @@ theorem Native.pair16Loop_congr {w : ByteArray} {n : Nat} {j i0 i1 : USize} {b b
 theorem Native.pair16Loop_encode (w : Array F) :
     ∀ (n : Nat) (j i0 i1 : USize) (a : Array F) (h), i0.toNat + 16 * n ≤ i1.toNat →
       i1.toNat + 16 * n ≤ a.size →
-      Native.pair16Loop (encode w) n j i0 i1 (encode a) h =
+      Native.pair16Loop p (encode w) n j i0 i1 (encode a) h =
         encode (Plan.butterflyDIFInner w (j.toNat + 16 * n) j.toNat i0.toNat i1.toNat a) := by
   intro n
   induction n with
@@ -147,7 +151,7 @@ theorem Native.pair16Loop_encode (w : Array F) :
 theorem Native.pairInner_encode (w a : Array F) (q j i0 i1 : Nat)
     (ha : (encode a).size < USize.size) (hw : (encode w).size < USize.size) (hwi : q ≤ w.size)
     (hi : i0 + (q - j) ≤ a.size ∧ i1 + (q - j) ≤ a.size) :
-    Native.pairInner (encode w) q j i0 i1 (encode a) =
+    Native.pairInner p (encode w) q j i0 i1 (encode a) =
       encode (Plan.butterflyDIFInner w q j i0 i1 a) := by
   rw [Native.pairInner, Plan.butterflyDIFInner]
   split
@@ -167,7 +171,7 @@ decreasing_by omega
 theorem Native.pairs_encode (w a : Array F) (q j i0 i1 : Nat)
     (ha : (encode a).size < USize.size) (hw : (encode w).size < USize.size) (hwi : q ≤ w.size)
     (hj : j ≤ q) (hs : i1 + (q - j) ≤ a.size) (h01 : i0 + (q - j) ≤ i1) :
-    Native.pairs (encode w) q j i0 i1 (encode a) =
+    Native.pairs p (encode w) q j i0 i1 (encode a) =
       encode (Plan.butterflyDIFInner w q j i0 i1 a) := by
   have hn : 16 * ((q - j) / 16) ≤ q - j := Nat.mul_div_le _ _
   rw [Native.pairs]

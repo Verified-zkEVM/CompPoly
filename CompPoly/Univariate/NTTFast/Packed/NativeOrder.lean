@@ -19,10 +19,14 @@ The task outputs are packed buffers, so joining them is a byte copy.
 @[expose] public section
 open CompPoly
 namespace CompPoly.CPolynomial.NTTFast.Packed.Native
+open Montgomery.Native32 (Mont32Field FastField)
+
+variable {p : ℕ} [Mont32Field p]
 
 /-- Apply the optional inverse normalization to one Montgomery word. -/
-@[inline] def scaleWord (factor : UInt32) (scale : Bool) (x : UInt32) : UInt32 :=
-  if scale then mul factor x else x
+@[inline]
+def scaleWord (p : ℕ) [Mont32Field p] (factor : UInt32) (scale : Bool) (x : UInt32) : UInt32 :=
+  if scale then mul p factor x else x
 
 /-- Sixteen consecutive words of one buffer. -/
 structure Line where

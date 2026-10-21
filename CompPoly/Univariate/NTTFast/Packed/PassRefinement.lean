@@ -13,17 +13,21 @@ public import CompPoly.Univariate.NTTFast.Packed.Folds
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open Montgomery.Native32 (Mont32Field FastField)
+
+variable {p : ℕ} [Mont32Field p]
+
 open CompPoly.PackedRepr (encode)
 
 /-- All vectorized blocks of one pass agree with the ordinary radix-four block loop. -/
-theorem Native.fold_inner16_encode (th tl : Array KoalaBear.Fast.Field)
-    (q blocks : Nat) (a : Array KoalaBear.Fast.Field)
+theorem Native.fold_inner16_encode (th tl : Array (FastField p))
+    (q blocks : Nat) (a : Array (FastField p))
     (ha : (encode a).size < USize.size)
     (hth : (encode th).size < USize.size) (htl : (encode tl).size < USize.size)
     (hthi : 2 * q ≤ th.size) (htli : q ≤ tl.size)
     (hbound : blocks * (4 * q) ≤ a.size) :
     (List.range blocks).foldl (fun acc block ↦
-      Native.inner16 (encode th) (encode tl) q 0 (block * (4 * q))
+      Native.inner16 p (encode th) (encode tl) q 0 (block * (4 * q))
         (block * (4 * q) + q) (block * (4 * q) + 2 * q) (block * (4 * q) + 3 * q) acc)
       (encode a) =
       encode (Plan.butterflyDIFRadix4Blocks th tl (4 * q) q blocks 0 a) := by
