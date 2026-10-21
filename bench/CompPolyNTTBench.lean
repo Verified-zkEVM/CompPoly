@@ -8,7 +8,7 @@ module
 public import CompPolyBench.Univariate.Common
 public import CompPoly.Univariate.NTTFast.NaturalParallel
 public import CompPoly.Fields.Montgomery.Native32Bytes
-public import CompPoly.Univariate.NTTFast.Packed.Plan
+public import CompPoly.Univariate.NTTFast.Packed.Instances
 
 /-! # Natural-order KoalaBear NTT benchmarks against optimized Plonky3 -/
 

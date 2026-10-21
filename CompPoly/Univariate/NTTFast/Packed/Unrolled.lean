@@ -11,7 +11,8 @@ The packed kernels are straight-line code over sixteen words, which the C compil
 vector instructions, and the proofs relate each to a field-array model of the same shape. Both
 are generated here from one description, in two dialects: `words` reads and writes packed
 words with bounds proofs, `fields` reads and splices field arrays. Each generator expands to the
-`let`s of its kernel, referring to the binders of the definition it is used in by name.
+`let`s of its kernel, referring to the binders of the definition it is used in by name; word
+arithmetic refers to the modulus `p` of a `Mont32Field p` instance.
 -/
 
 namespace CompPoly.CPolynomial.NTTFast.Packed.Unrolled
@@ -35,17 +36,17 @@ meta def read (d : Dialect) (arr idx : Term) (k : Nat) : MacroM Term :=
 
 meta def add (d : Dialect) (x y : Term) : MacroM Term :=
   match d with
-  | .words => `($(name "add") $x $y)
+  | .words => `($(name "add") $(name "p") $x $y)
   | .fields => `($(name "fieldAdd") $x $y)
 
 meta def sub (d : Dialect) (x y : Term) : MacroM Term :=
   match d with
-  | .words => `($(name "sub") $x $y)
+  | .words => `($(name "sub") $(name "p") $x $y)
   | .fields => `($(name "fieldSub") $x $y)
 
 meta def mul (d : Dialect) (x y : Term) : MacroM Term :=
   match d with
-  | .words => `($(name "mul") $x $y)
+  | .words => `($(name "mul") $(name "p") $x $y)
   | .fields => `($(name "fieldMul") $x $y)
 
 /-- Overwrite sixteen words of `b` from index `idx`. -/
@@ -132,7 +133,8 @@ meta def lastHalf : MacroM Term := do
     bs := bs ++ (← layers .words (fun s k ↦ s!"x{v}_{s}_{k}") fun _ ↦ pure #[])
   let store (t : Nat) : MacroM Term := do
     let ws ← (Array.range 8).mapM fun v ↦
-      `($(name "scaleWord") $(name "factor") $(name "scale") $(name s!"x{v}_4_{t}"))
+      `($(name "scaleWord") $(name "p") $(name "factor") $(name "scale")
+        $(name s!"x{v}_4_{t}"))
     `($(name "storeWords") $(name "out")
       (4 * (16 * ($(name "reverse32") (16 * $(name "c") + $(lit t)).toUInt32 >>>
         $(name "shift")).toUSize + 8 * $(name "half"))) 8 $ws* 0 0 0 0 0 0 0 0)

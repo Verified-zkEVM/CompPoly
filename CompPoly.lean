@@ -372,6 +372,7 @@ public import CompPoly.Univariate.NTTFast.Packed.DifSpec
 public import CompPoly.Univariate.NTTFast.Packed.Expressions
 public import CompPoly.Univariate.NTTFast.Packed.FieldStorage
 public import CompPoly.Univariate.NTTFast.Packed.Folds
+public import CompPoly.Univariate.NTTFast.Packed.Instances
 public import CompPoly.Univariate.NTTFast.Packed.KernelCorrectness
 public import CompPoly.Univariate.NTTFast.Packed.KernelModels
 public import CompPoly.Univariate.NTTFast.Packed.KernelRefinement

@@ -29,29 +29,33 @@ line once, so `lastRev` is the bit-reversed, optionally scaled result of the fin
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open Montgomery.Native32 (Mont32Field FastField)
+
+variable {p : ℕ} [Mont32Field p]
+
 open CompPoly.PackedRepr (encode size_encode_uint32)
 
 /-- Sixteen field coordinates. -/
-structure FieldLine where
-  w0 : KoalaBear.Fast.Field
-  w1 : KoalaBear.Fast.Field
-  w2 : KoalaBear.Fast.Field
-  w3 : KoalaBear.Fast.Field
-  w4 : KoalaBear.Fast.Field
-  w5 : KoalaBear.Fast.Field
-  w6 : KoalaBear.Fast.Field
-  w7 : KoalaBear.Fast.Field
-  w8 : KoalaBear.Fast.Field
-  w9 : KoalaBear.Fast.Field
-  w10 : KoalaBear.Fast.Field
-  w11 : KoalaBear.Fast.Field
-  w12 : KoalaBear.Fast.Field
-  w13 : KoalaBear.Fast.Field
-  w14 : KoalaBear.Fast.Field
-  w15 : KoalaBear.Fast.Field
+structure FieldLine (p : ℕ) [Mont32Field p] where
+  w0 : FastField p
+  w1 : FastField p
+  w2 : FastField p
+  w3 : FastField p
+  w4 : FastField p
+  w5 : FastField p
+  w6 : FastField p
+  w7 : FastField p
+  w8 : FastField p
+  w9 : FastField p
+  w10 : FastField p
+  w11 : FastField p
+  w12 : FastField p
+  w13 : FastField p
+  w14 : FastField p
+  w15 : FastField p
 
 /-- Coordinate `t` of a line. -/
-def FieldLine.get (y : FieldLine) : Nat → KoalaBear.Fast.Field
+def FieldLine.get (y : FieldLine p) : Nat → FastField p
   | 0 => y.w0
   | 1 => y.w1
   | 2 => y.w2
@@ -70,13 +74,13 @@ def FieldLine.get (y : FieldLine) : Nat → KoalaBear.Fast.Field
   | _ => y.w15
 
 /-- The four final DIF layers of the block at `i`, as in `leaf16Field`. -/
-def laneLine (t3 t2 t1 : Array KoalaBear.Fast.Field) (i : USize)
-    (b : Array KoalaBear.Fast.Field) : FieldLine :=
+def laneLine (t3 t2 t1 : Array (FastField p)) (i : USize)
+    (b : Array (FastField p)) : FieldLine p :=
   leaf16_line%
 
 /-- The fused leaf kernel is the lane graph followed by one splice. -/
-theorem leaf16Field_eq_laneLine (t3 t2 t1 : Array KoalaBear.Fast.Field) (i : USize)
-    (b : Array KoalaBear.Fast.Field) :
+theorem leaf16Field_eq_laneLine (t3 t2 t1 : Array (FastField p)) (i : USize)
+    (b : Array (FastField p)) :
     leaf16Field t3 t2 t1 i b = splice b i.toNat
       #[(laneLine t3 t2 t1 i b).w0, (laneLine t3 t2 t1 i b).w1, (laneLine t3 t2 t1 i b).w2,
         (laneLine t3 t2 t1 i b).w3, (laneLine t3 t2 t1 i b).w4, (laneLine t3 t2 t1 i b).w5,
@@ -88,16 +92,16 @@ theorem leaf16Field_eq_laneLine (t3 t2 t1 : Array KoalaBear.Fast.Field) (i : USi
   rfl
 
 /-- A literal line returns its coordinates. -/
-theorem getD_lit_line (y : FieldLine) (k : Nat) (hk : k < 16) :
+theorem getD_lit_line (y : FieldLine p) (k : Nat) (hk : k < 16) :
     (#[y.w0, y.w1, y.w2, y.w3, y.w4, y.w5, y.w6, y.w7, y.w8, y.w9, y.w10, y.w11, y.w12, y.w13,
-      y.w14, y.w15] : Array KoalaBear.Fast.Field).getD k 0 = y.get k := by
+      y.w14, y.w15] : Array (FastField p)).getD k 0 = y.get k := by
   interval_cases k <;> rfl
 
 /-- Coordinate `t` of a lane is the fused kernel's coordinate `i + t`. -/
-theorem getD_leaf16Field_laneLine (t3 t2 t1 : Array KoalaBear.Fast.Field) (i : USize)
-    (b : Array KoalaBear.Fast.Field) (hi : i.toNat + 16 ≤ b.size) (t : Nat) (ht : t < 16) :
+theorem getD_leaf16Field_laneLine (t3 t2 t1 : Array (FastField p)) (i : USize)
+    (b : Array (FastField p)) (hi : i.toNat + 16 ≤ b.size) (t : Nat) (ht : t < 16) :
     (leaf16Field t3 t2 t1 i b).getD (i.toNat + t) 0 = (laneLine t3 t2 t1 i b).get t := by
-  have hsz : ∀ v : Array KoalaBear.Fast.Field, v.size = 16 → i.toNat + v.size ≤ b.size := by
+  have hsz : ∀ v : Array (FastField p), v.size = 16 → i.toNat + v.size ≤ b.size := by
     intro v hv; omega
   rw [leaf16Field_eq_laneLine, getD_splice _ _ _ (hsz _ rfl)]
   rw [ite_eq_right_of_eq_false _ _ (eq_false (show ¬(i.toNat + t < i.toNat) by omega))]
@@ -106,8 +110,8 @@ theorem getD_leaf16Field_laneLine (t3 t2 t1 : Array KoalaBear.Fast.Field) (i : U
   exact getD_lit_line _ t ht
 
 /-- Coordinate `t` of a lane is coordinate `i + t` of the four final DIF layers at `i`. -/
-theorem laneLine_get (t3 t2 t1 : Array KoalaBear.Fast.Field) (i : USize)
-    (b : Array KoalaBear.Fast.Field) (hi : i.toNat + 16 ≤ b.size)
+theorem laneLine_get (t3 t2 t1 : Array (FastField p)) (i : USize)
+    (b : Array (FastField p)) (hi : i.toNat + 16 ≤ b.size)
     (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1) (t : Nat)
     (ht : t < 16) :
     (laneLine t3 t2 t1 i b).get t =
@@ -196,15 +200,15 @@ def lineStores (O : Array UInt32) (mm c half : Nat) (val : Nat → Nat → UInt3
 set_option maxRecDepth 100000 in
 set_option maxHeartbeats 4000000 in
 /-- One kernel call stores the final layers of its eight lanes into sixteen half lines. -/
-theorem lastHalf_encodeWords (t3 t2 t1 U : Array KoalaBear.Fast.Field) (i0 i1 i2 i3 i4 i5 i6 i7 c
+theorem lastHalf_encodeWords (t3 t2 t1 U : Array (FastField p)) (i0 i1 i2 i3 i4 i5 i6 i7 c
     half :
-    USize) (mm : Nat) (f : KoalaBear.Fast.Field) (sc : Bool) (O : Array UInt32)
+    USize) (mm : Nat) (f : FastField p) (sc : Bool) (O : Array UInt32)
     (hm : 0 < mm) (hm32 : mm ≤ 32) (hh : half.toNat < 2) (hc : 16 * c.toNat + 16 ≤ 2 ^ mm)
     (hu : 64 * 2 ^ mm < USize.size) (hs : (encode O).size < USize.size) (h) :
-    Native.lastHalf (encode t3) (encode t2) (encode t1) (encode U)
+    Native.lastHalf p (encode t3) (encode t2) (encode t1) (encode U)
       i0 i1 i2 i3 i4 i5 i6 i7 c (32 - mm).toUInt32 half f.val sc (encode O) h =
       encode (lineStores O mm c.toNat half.toNat fun t k ↦
-        Native.scaleWord f.val sc
+        Native.scaleWord p f.val sc
           ((laneLine t3 t2 t1 (pick8 i0 i1 i2 i3 i4 i5 i6 i7 k) U).get t).val) := by
   unfold Native.lastHalf
   simp only [Native.readUOffset_encode, add_val, sub_val, mul_val]
@@ -412,26 +416,26 @@ theorem pick8_lanes1 (Lw c : USize) (hc : 16 * c.toNat + 16 ≤ Lw.toNat)
     simp only [USize.reduceToNat] <;> rfl
 
 /-- Coordinate `t` of the four final DIF layers of the block at `i`. -/
-def lastVal (t3 t2 t1 U : Array KoalaBear.Fast.Field) (i t : Nat) : KoalaBear.Fast.Field :=
+def lastVal (t3 t2 t1 U : Array (FastField p)) (i t : Nat) : FastField p :=
   (Expressions.leaf16Stages t3 t2 t1 U i).getD (i + t) 0
 
 /-- The natural-order word `w` of a fused leaf: line `w / 16` reverses to block column
 `r / 16` and coordinate `r % 16`, and position `w % 16` reverses to block `bitrev₄ (w % 16)`. -/
-def lastTarget (t3 t2 t1 U : Array KoalaBear.Fast.Field) (mm : Nat) (f : KoalaBear.Fast.Field)
+def lastTarget (t3 t2 t1 U : Array (FastField p)) (mm : Nat) (f : FastField p)
     (sc : Bool) (w : Nat) : UInt32 :=
   let r := NTT.Transform.bitRevNat mm (w / 16)
-  Native.scaleWord f.val sc (lastVal t3 t2 t1 U
+  Native.scaleWord p f.val sc (lastVal t3 t2 t1 U
     (NTT.Transform.bitRevNat 4 (w % 16) * 2 ^ mm + 16 * (r / 16)) (r % 16)).val
 
 /-- The batch loop: after batches `c, …, c + n - 1`, exactly the words whose lines reverse into
 them hold their final values. -/
-theorem lastRevGo_encodeWords (t3 t2 t1 U : Array KoalaBear.Fast.Field) (mm : Nat) (Lw : USize)
-    (f : KoalaBear.Fast.Field) (sc : Bool) (hb) (hL : Lw.toNat = 2 ^ mm) (hm : 0 < mm)
+theorem lastRevGo_encodeWords (t3 t2 t1 U : Array (FastField p)) (mm : Nat) (Lw : USize)
+    (f : FastField p) (sc : Bool) (hb) (hL : Lw.toNat = 2 ^ mm) (hm : 0 < mm)
     (hm32 : mm ≤ 32) (hu : 64 * 2 ^ mm < USize.size) (hU : U.size = 16 * 2 ^ mm)
     (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1) :
     ∀ (n : Nat) (c : USize) (O : Array UInt32), O.size = 16 * 2 ^ mm →
       16 * (c.toNat + n) ≤ 2 ^ mm →
-      ∃ O', Native.lastRevGo (encode t3) (encode t2) (encode t1) (encode U) Lw
+      ∃ O', Native.lastRevGo p (encode t3) (encode t2) (encode t1) (encode U) Lw
           (32 - mm).toUInt32 f.val sc hb n c (encode O) = encode O' ∧
         O'.size = O.size ∧ ∀ w, O'.getD w 0 =
           if w < 16 * 2 ^ mm ∧ c.toNat ≤ NTT.Transform.bitRevNat mm (w / 16) / 16 ∧
@@ -459,10 +463,10 @@ theorem lastRevGo_encodeWords (t3 t2 t1 U : Array KoalaBear.Fast.Field) (mm : Na
       (by simp only [USize.reduceToNat]; omega) hc' hu
       (by rw [size_encode_uint32, size_lineStores, hO]; omega)]
     have hc1 : (c + 1).toNat = c.toNat + 1 := Plan.usize_add_one c (by omega)
-    let V0 := fun t k ↦ Native.scaleWord f.val sc ((laneLine t3 t2 t1
+    let V0 := fun t k ↦ Native.scaleWord p f.val sc ((laneLine t3 t2 t1
       (pick8 (0 * Lw + 16 * c) (8 * Lw + 16 * c) (4 * Lw + 16 * c) (12 * Lw + 16 * c)
           (2 * Lw + 16 * c) (10 * Lw + 16 * c) (6 * Lw + 16 * c) (14 * Lw + 16 * c) k) U).get t).val
-    let V1 := fun t k ↦ Native.scaleWord f.val sc ((laneLine t3 t2 t1
+    let V1 := fun t k ↦ Native.scaleWord p f.val sc ((laneLine t3 t2 t1
       (pick8 (1 * Lw + 16 * c) (9 * Lw + 16 * c) (5 * Lw + 16 * c) (13 * Lw + 16 * c)
           (3 * Lw + 16 * c) (11 * Lw + 16 * c) (7 * Lw + 16 * c) (15 * Lw + 16 * c) k) U).get t).val
     obtain ⟨O', hO'1, hO'2, hO'3⟩ := ih (c + 1)
@@ -476,7 +480,7 @@ theorem lastRevGo_encodeWords (t3 t2 t1 U : Array KoalaBear.Fast.Field) (mm : Na
     have hlane (h : Nat) (i : USize) (hi : i.toNat = NTT.Transform.bitRevNat 4 (8 * h + w % 8) *
         2 ^ mm + 16 * c.toNat) (hh : h < 2) (hwh : w % 16 / 8 = h)
         (hr : NTT.Transform.bitRevNat mm (w / 16) / 16 = c.toNat) :
-        Native.scaleWord f.val sc ((laneLine t3 t2 t1 i U).get
+        Native.scaleWord p f.val sc ((laneLine t3 t2 t1 i U).get
           (NTT.Transform.bitRevNat mm (w / 16) % 16)).val = lastTarget t3 t2 t1 U mm f sc w := by
       have hb4 := NTT.Transform.bitRevNat_lt 4 (8 * h + w % 8)
       have hb4' : NTT.Transform.bitRevNat 4 (8 * h + w % 8) * 2 ^ mm ≤ 15 * 2 ^ mm :=
@@ -510,12 +514,12 @@ theorem lastRevGo_encodeWords (t3 t2 t1 U : Array KoalaBear.Fast.Field) (mm : Na
         omega))]
 
 /-- The fused final layers of a leaf, in natural order. -/
-theorem lastRev_encodeWords (t3 t2 t1 U : Array KoalaBear.Fast.Field) (m : Nat) (f :
-    KoalaBear.Fast.Field)
+theorem lastRev_encodeWords (t3 t2 t1 U : Array (FastField p)) (m : Nat) (f :
+    FastField p)
     (sc : Bool) (hm : 8 ≤ m) (hm36 : m ≤ 36) (hu : 4 * 2 ^ m < USize.size) (hU : U.size = 2 ^ m)
     (ht3 : t3.size = 8) (ht2 : t2.size = 4) (ht1 : t1.size = 2)
     (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1) :
-    Native.lastRev (encode t3) (encode t2) (encode t1) (encode U) m f.val sc =
+    Native.lastRev p (encode t3) (encode t2) (encode t1) (encode U) m f.val sc =
       encode (Array.ofFn (n := 2 ^ m) fun w ↦ lastTarget t3 t2 t1 U (m - 4) f sc w) := by
   have hp : 2 ^ m = 16 * 2 ^ (m - 4) := by
     rw [show m = m - 4 + 4 by omega, Nat.pow_add]; simp only [Nat.add_sub_cancel]; omega
@@ -534,7 +538,7 @@ theorem lastRev_encodeWords (t3 t2 t1 U : Array KoalaBear.Fast.Field) (m : Nat) 
     (USize.ofNatLT (2 ^ (m - 4)) hg.1) f sc _ (by simp only [USize.toNat_ofNatLT]) (by omega)
     (by omega) (by omega) (by omega) h3 h2 h1 (2 ^ (m - 4) / 16) 0 (U.map Subtype.val)
     (by rw [Array.size_map, hU, hp]) (by simp only [USize.toNat_zero, Nat.zero_add]; omega)
-  conv_lhs => arg 12; rw [encode_eq_map_val]
+  conv_lhs => arg 13; rw [encode_eq_map_val]
   rw [hO'1]
   congr 1
   apply array_eq_of_getD _ _ 0 (by rw [hO'2, Array.size_map, Array.size_ofFn, hU])
@@ -552,7 +556,7 @@ theorem lastRev_encodeWords (t3 t2 t1 U : Array KoalaBear.Fast.Field) (m : Nat) 
         lastTarget t3 t2 t1 U (m - 4) f sc w).size ≤ w by rw [Array.size_ofFn]; omega)]
 
 /-- The four final layers of a block leave the rest of the array unchanged. -/
-theorem getD_leaf16Stages_outside (t3 t2 t1 a : Array KoalaBear.Fast.Field) (base : Nat)
+theorem getD_leaf16Stages_outside (t3 t2 t1 a : Array (FastField p)) (base : Nat)
     (hs : base + 16 ≤ a.size) (k : Nat) (hk : ¬(base ≤ k ∧ k < base + 16)) :
     (Expressions.leaf16Stages t3 t2 t1 a base).getD k 0 = a.getD k 0 := by
   have s8 : base + 16 ≤ (layer16_8 t3 a base).size := by rw [size_layer16_8]; exact hs
@@ -565,7 +569,7 @@ theorem getD_leaf16Stages_outside (t3 t2 t1 a : Array KoalaBear.Fast.Field) (bas
     getD_layer16_4_outside _ _ _ s8 _ hk, getD_layer16_8_outside _ _ _ hs _ hk]
 
 /-- Inside its block, the four final layers depend only on the block's coordinates. -/
-theorem lastVal_congr (t3 t2 t1 a a' : Array KoalaBear.Fast.Field) (base : Nat)
+theorem lastVal_congr (t3 t2 t1 a a' : Array (FastField p)) (base : Nat)
     (hs : base + 16 ≤ a.size) (hs' : base + 16 ≤ a'.size) (hu : a.size < USize.size)
     (hagree : ∀ o < 16, a.getD (base + o) 0 = a'.getD (base + o) 0)
     (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1) (t : Nat)
@@ -585,7 +589,7 @@ theorem lastVal_congr (t3 t2 t1 a a' : Array KoalaBear.Fast.Field) (base : Nat)
   rw [he]
 
 /-- The fold of final-layer blocks, block by block. -/
-theorem getD_fold_leafBlocks (t3 t2 t1 U : Array KoalaBear.Fast.Field) (B : Nat)
+theorem getD_fold_leafBlocks (t3 t2 t1 U : Array (FastField p)) (B : Nat)
     (hs : U.size = 16 * B) (hu : U.size < USize.size)
     (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1) :
     ∀ K ≤ B,
@@ -627,12 +631,12 @@ theorem getD_fold_leafBlocks (t3 t2 t1 U : Array KoalaBear.Fast.Field) (B : Nat)
 
 /-- The fused final layers and reversal of a leaf are the natural-order read of its last two
 radix-four passes, as sixteen-word blocks. -/
-theorem Native.lastRev_encode (t3 t2 t1 U : Array KoalaBear.Fast.Field) (m : Nat)
-    (f : KoalaBear.Fast.Field) (sc : Bool) (hm : 8 ≤ m) (hm32 : m ≤ 32)
+theorem Native.lastRev_encode (t3 t2 t1 U : Array (FastField p)) (m : Nat)
+    (f : FastField p) (sc : Bool) (hm : 8 ≤ m) (hm32 : m ≤ 32)
     (hu : 4 * 2 ^ m < USize.size) (hUs : U.size = 2 ^ m)
     (h3 : t3.size = 8) (h2 : t2.size = 4) (h1 : t1.size = 2)
     (o3 : t3.getD 0 0 = 1) (o2 : t2.getD 0 0 = 1) (o1 : t1.getD 0 0 = 1) :
-    Native.lastRev (encode t3) (encode t2) (encode t1) (encode U) m f.val sc =
+    Native.lastRev p (encode t3) (encode t2) (encode t1) (encode U) m f.val sc =
       encode (decodedFields m ((List.range (2 ^ m / 16)).foldl (fun b block ↦
         Expressions.leaf16Stages t3 t2 t1 b (block * 16)) U) f sc) := by
   rw [lastRev_encodeWords _ _ _ U m f sc hm (by omega) hu hUs h3 h2 h1 o3 o2 o1]
@@ -688,12 +692,12 @@ theorem Native.lastRev_encode (t3 t2 t1 U : Array KoalaBear.Fast.Field) (m : Nat
         rw [Array.size_map, decodedFields, Array.size_ofFn]; omega)]
 
 /-- The block loop packs the ordinary radix-four blocks. -/
-theorem Native.radix4Blocks_encode (th tl : Array KoalaBear.Fast.Field) (q blocks : Nat)
-    (a : Array KoalaBear.Fast.Field)
+theorem Native.radix4Blocks_encode (th tl : Array (FastField p)) (q blocks : Nat)
+    (a : Array (FastField p))
     (ha : (encode a).size < USize.size)
     (hth : (encode th).size < USize.size) (htl : (encode tl).size < USize.size)
     (hthi : 2 * q ≤ th.size) (htli : q ≤ tl.size) (hbound : blocks * (4 * q) ≤ a.size) :
-    Native.radix4Blocks (encode th) (encode tl) q blocks (encode a) =
+    Native.radix4Blocks p (encode th) (encode tl) q blocks (encode a) =
       encode (Plan.butterflyDIFRadix4Blocks th tl (4 * q) q blocks 0 a) := by
   simp only [Native.radix4Blocks, Std.Legacy.Range.forIn_eq_forIn_range', Std.Legacy.Range.size,
     Nat.sub_zero, Nat.add_sub_cancel, Nat.div_one, ← List.range_eq_range',
@@ -701,8 +705,8 @@ theorem Native.radix4Blocks_encode (th tl : Array KoalaBear.Fast.Field) (q block
   exact Native.fold_inner16_encode th tl q blocks a ha hth htl hthi htli hbound
 
 /-- The field-array semantics of `leafLayers`. -/
-def fieldLayers (tw : Array (Array KoalaBear.Fast.Field)) (m count : Nat)
-    (X : Array KoalaBear.Fast.Field) : Array KoalaBear.Fast.Field :=
+def fieldLayers (tw : Array (Array (FastField p))) (m count : Nat)
+    (X : Array (FastField p)) : Array (FastField p) :=
   let X := if m % 2 = 1 then
     Plan.butterflyDIFInner (tw.getD (m - 1) #[]) (2 ^ (m - 1)) 0 0 (2 ^ (m - 1)) X else X
   (List.range count).foldl (fun b pass ↦
@@ -711,20 +715,21 @@ def fieldLayers (tw : Array (Array KoalaBear.Fast.Field)) (m count : Nat)
     Plan.butterflyDIFRadix4Blocks (tw.getD high #[]) (tw.getD (high - 1) #[]) (4 * q) q
       (2 ^ m / (4 * q)) 0 b) X
 
-@[simp] theorem size_fieldLayers (tw : Array (Array KoalaBear.Fast.Field)) (m count : Nat)
-    (X : Array KoalaBear.Fast.Field) : (fieldLayers tw m count X).size = X.size := by
+@[simp] theorem size_fieldLayers (tw : Array (Array (FastField p))) (m count : Nat)
+    (X : Array (FastField p)) : (fieldLayers tw m count X).size = X.size := by
   unfold fieldLayers
-  apply foldl_invariant _ (fun b : Array KoalaBear.Fast.Field ↦ b.size = X.size)
+  apply foldl_invariant _ (fun b : Array (FastField p) ↦ b.size = X.size)
   · intro _ _ b hb
     rw [Plan.size_butterflyDIFRadix4Blocks, hb]
   · split <;> simp only [Plan.size_butterflyDIFInner]
 
 /-- The leading leaf layers on packed words agree with their field-array semantics. -/
-theorem Native.leafLayers_encode (tw : Array (Array KoalaBear.Fast.Field)) (m count : Nat)
-    (X : Array KoalaBear.Fast.Field) (hc : count ≤ m / 2) (htw : TwiddleSizes m tw)
+theorem Native.leafLayers_encode (tw : Array (Array (FastField p))) (m count : Nat)
+    (X : Array (FastField p)) (hc : count ≤ m / 2) (htw : TwiddleSizes m tw)
     (hs : X.size = 2 ^ m) (hu : 4 * 2 ^ m < USize.size) :
-    Native.leafLayers (tw.map encode) m count (encode X) = encode (fieldLayers tw m count X) := by
-  have hX : (if m % 2 = 1 then Native.pairs ((tw.map encode).getD (m - 1) .empty) (2 ^ (m - 1)) 0 0
+    Native.leafLayers p (tw.map encode) m count (encode X) = encode (fieldLayers tw m count X) := by
+  have hX : (if m % 2 = 1 then
+      Native.pairs p ((tw.map encode).getD (m - 1) .empty) (2 ^ (m - 1)) 0 0
       (2 ^ (m - 1)) (encode X) else encode X) = encode (if m % 2 = 1 then
       Plan.butterflyDIFInner (tw.getD (m - 1) #[]) (2 ^ (m - 1)) 0 0 (2 ^ (m - 1)) X else X) := by
     split
@@ -757,10 +762,10 @@ theorem Native.leafLayers_encode (tw : Array (Array KoalaBear.Fast.Field)) (m co
   · split <;> simp only [Plan.size_butterflyDIFInner, hs]
 
 /-- All leaf layers are the mixed radix-four DIF stages. -/
-theorem fieldLayers_eq (D : NTT.Domain KoalaBear.Fast.Field)
-    (tw : Array (Array KoalaBear.Fast.Field)) (X : Array KoalaBear.Fast.Field) (hs : X.size = D.n) :
+theorem fieldLayers_eq (D : NTT.Domain (FastField p))
+    (tw : Array (Array (FastField p))) (X : Array (FastField p)) (hs : X.size = D.n) :
     fieldLayers tw D.logN (D.logN / 2) X = Plan.runStagesDIFRadix4WithTwiddles D tw X := by
-  have hpass (high : Nat) (b : Array KoalaBear.Fast.Field) :
+  have hpass (high : Nat) (b : Array (FastField p)) :
       Plan.butterflyDIFRadix4Blocks (tw.getD high #[]) (tw.getD (high - 1) #[])
         (4 * 2 ^ (high - 1)) (2 ^ (high - 1)) (2 ^ D.logN / (4 * 2 ^ (high - 1))) 0 b =
       Plan.butterflyRadix4StageDIFWithTwiddles D (high - 1) (tw.getD high #[])
@@ -797,12 +802,12 @@ theorem fieldLayers_eq (D : NTT.Domain KoalaBear.Fast.Field)
 
 /-- A natural-order leaf is the natural-order read of the mixed radix-four DIF stages,
 optionally scaled. -/
-theorem Native.leafNatural_encode (D : NTT.Domain KoalaBear.Fast.Field)
-    (tw : Array (Array KoalaBear.Fast.Field)) (X : Array KoalaBear.Fast.Field)
-    (f : KoalaBear.Fast.Field) (sc : Bool) (htw : TwiddleSizes D.logN tw)
+theorem Native.leafNatural_encode (D : NTT.Domain (FastField p))
+    (tw : Array (Array (FastField p))) (X : Array (FastField p))
+    (f : FastField p) (sc : Bool) (htw : TwiddleSizes D.logN tw)
     (hone : TwiddleOnes D.logN tw) (hs : X.size = D.n) (hu : 4 * D.n < USize.size)
     (h32 : D.logN ≤ 32) :
-    Native.leafNatural (tw.map encode) D.logN f.val sc (encode X) =
+    Native.leafNatural p (tw.map encode) D.logN f.val sc (encode X) =
       encode (decodedFields D.logN (Plan.runStagesDIFRadix4WithTwiddles D tw X) f sc) := by
   have hn : X.size = 2 ^ D.logN := hs
   have hu' : 4 * 2 ^ D.logN < USize.size := hu

@@ -24,6 +24,10 @@ tile, leaf-reversal and join proofs reduce to index arithmetic.
 @[expose] public section
 open CompPoly
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open Montgomery.Native32 (Mont32Field FastField)
+
+variable {p : ℕ} [Mont32Field p]
+
 open CompPoly.PackedRepr (encode size_encode_uint32)
 
 namespace Native
@@ -293,8 +297,8 @@ theorem naturalLeaves_encodeWords (V : Nat → Array UInt32) (logN : Nat) (h12 :
 
 /-- Interleaving the natural-order reads of sixteen blocks reads the whole array in natural
 order. -/
-theorem naturalLeaves_encode (S : Array KoalaBear.Fast.Field) (logN : Nat)
-    (factor : KoalaBear.Fast.Field) (sc : Bool) (h12 : 12 ≤ logN) (h32 : logN ≤ 32)
+theorem naturalLeaves_encode (S : Array (FastField p)) (logN : Nat)
+    (factor : FastField p) (sc : Bool) (h12 : 12 ≤ logN) (h32 : logN ≤ 32)
     (hS : S.size = 2 ^ logN) (hs : 4 * 2 ^ logN < USize.size) :
     naturalLeaves ((Array.range 16).map fun l ↦ encode (decodedFields (logN - 4)
       (S.extract (l * 2 ^ (logN - 4)) ((l + 1) * 2 ^ (logN - 4))) factor sc)) logN =
