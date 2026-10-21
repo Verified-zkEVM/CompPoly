@@ -107,14 +107,18 @@ theorem quintic_bezout_check :
       = true := by rfl
 
 /-- **`X^5 + X^2 - 1` is irreducible over KoalaBear**, by Rabin's test at prime degree with
-kernel-checked certificates for both conditions. -/
-theorem quinticPoly_irreducible : Irreducible quinticPoly := by
-  have hcard : Fintype.card Field = fieldSize := ZMod.card _
-  refine irreducible_of_rabin_prime_degree hcard (by norm_num) quinticPoly_natDegree ?_ ?_
-  · exact dvd_X_pow_sub_X_of_runChain toPoly_quinticL quinticPoly_ne_zero
-      quintic_trace_chain quintic_trace_exp
-  · exact isCoprime_X_pow_sub_X_of_runChain toPoly_quinticL quinticPoly_ne_zero
-      quintic_frob_chain quintic_frob_exp quintic_w_check quintic_bezout_check
+kernel-checked certificates for both conditions.
+
+Applied as one term at `ZMod fieldSize` with `ZMod.instField fieldSize`; see
+`sexticPoly_irreducible` for why both are required and why the explicit `@` form must stay. -/
+theorem quinticPoly_irreducible : Irreducible quinticPoly :=
+  @irreducible_of_rabin_prime_degree (ZMod fieldSize) (ZMod.instField fieldSize)
+    (ZMod.fintype fieldSize) quinticPoly 5 fieldSize (ZMod.card _) (by norm_num)
+    quinticPoly_natDegree
+    (dvd_X_pow_sub_X_of_runChain toPoly_quinticL quinticPoly_ne_zero
+      quintic_trace_chain quintic_trace_exp)
+    (isCoprime_X_pow_sub_X_of_runChain toPoly_quinticL quinticPoly_ne_zero
+      quintic_frob_chain quintic_frob_exp quintic_w_check quintic_bezout_check)
 
 instance : Fact (Irreducible quinticPoly) := ⟨quinticPoly_irreducible⟩
 
