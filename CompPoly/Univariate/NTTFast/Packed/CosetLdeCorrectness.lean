@@ -26,9 +26,11 @@ the coset `shift · ⟨ω⟩`; the transposes move columns and rows between them
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
-open CompPoly.PackedRepr (encode size_encode_uint32)
+open Montgomery.Native32 (Mont32Field FastField)
 
-local notation "F" => KoalaBear.Fast.Field
+variable {p : ℕ} [Mont32Field p]
+
+open CompPoly.PackedRepr (encode size_encode_uint32)
 
 /-! ### Kernels -/
 
@@ -45,8 +47,9 @@ theorem forIn_dite_yield {α β : Type} (L : List α) (init : β) (c : α → β
     split <;> exact ih _
 
 /-- The in-place final-layer word kernel agrees with its field expression graph. -/
-theorem Native.leaf16_encode (t3 t2 t1 : Array F) (i : USize) (a : Array F) (h) :
-    Native.leaf16 (encode t3) (encode t2) (encode t1) i (encode a) h =
+theorem Native.leaf16_encode (t3 t2 t1 : Array (FastField p)) (i : USize) (a : Array
+    (FastField p)) (h) :
+    Native.leaf16 p (encode t3) (encode t2) (encode t1) i (encode a) h =
       encode (leaf16Field t3 t2 t1 i a) := by
   have hi : i.toNat + 16 ≤ a.size := by
     have hh := h.1
@@ -58,9 +61,10 @@ theorem Native.leaf16_encode (t3 t2 t1 : Array F) (i : USize) (a : Array F) (h) 
   rfl
 
 /-- The in-place final-layer kernel runs the four last DIF layers of its block. -/
-theorem Native.leaf16_correct (t3 t2 t1 : Array F) (i : USize) (a : Array F) (h)
+theorem Native.leaf16_correct (t3 t2 t1 : Array (FastField p)) (i : USize) (a : Array
+    (FastField p)) (h)
     (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1) :
-    Native.leaf16 (encode t3) (encode t2) (encode t1) i (encode a) h =
+    Native.leaf16 p (encode t3) (encode t2) (encode t1) i (encode a) h =
       encode (Expressions.leaf16Stages t3 t2 t1 a i.toNat) := by
   have hi : i.toNat + 16 ≤ a.size := by
     have hi := h.1
@@ -70,11 +74,12 @@ theorem Native.leaf16_correct (t3 t2 t1 : Array F) (i : USize) (a : Array F) (h)
     Expressions.leaf16Field_eq_stages t3 t2 t1 a i hi h3 h2 h1]
 
 /-- The in-place final layers of `blocks` sixteen-word blocks. -/
-theorem Native.leaf16Blocks_encode (t3 t2 t1 : Array F) (blocks : Nat) (a : Array F)
+theorem Native.leaf16Blocks_encode (t3 t2 t1 : Array (FastField p)) (blocks : Nat) (a : Array
+    (FastField p))
     (ha : 4 * a.size < USize.size) (hs : blocks * 16 ≤ a.size)
     (ht3 : t3.size = 8) (ht2 : t2.size = 4) (ht1 : t1.size = 2)
     (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1) :
-    Native.leaf16Blocks (encode t3) (encode t2) (encode t1) blocks (encode a) =
+    Native.leaf16Blocks p (encode t3) (encode t2) (encode t1) blocks (encode a) =
       encode ((List.range blocks).foldl (fun b block ↦
         Expressions.leaf16Stages t3 t2 t1 b (block * 16)) a) := by
   unfold Native.leaf16Blocks
@@ -98,10 +103,11 @@ theorem Native.leaf16Blocks_encode (t3 t2 t1 : Array F) (blocks : Nat) (a : Arra
   · rfl
 
 /-- A DIF-order leaf is the mixed radix-four DIF stages. -/
-theorem Native.leafReversed_encode (D : NTT.Domain F) (tw : Array (Array F)) (X : Array F)
+theorem Native.leafReversed_encode (D : NTT.Domain (FastField p)) (tw : Array (Array
+    (FastField p))) (X : Array (FastField p))
     (htw : TwiddleSizes D.logN tw) (hone : TwiddleOnes D.logN tw) (hs : X.size = D.n)
     (hu : 4 * D.n < USize.size) :
-    Native.leafReversed (tw.map encode) D.logN (encode X) =
+    Native.leafReversed p (tw.map encode) D.logN (encode X) =
       encode (Plan.runStagesDIFRadix4WithTwiddles D tw X) := by
   have hn : X.size = 2 ^ D.logN := hs
   have hu' : 4 * 2 ^ D.logN < USize.size := hu
@@ -137,19 +143,21 @@ theorem Native.leafReversed_encode (D : NTT.Domain F) (tw : Array (Array F)) (X 
   · exact Native.leafLayers_encode tw _ _ X (le_refl _) htw hn hu'
 
 /-- The sixteen-word product kernel fills its words with the products. -/
-theorem Native.fill_mul16 (t a : Array F) (i : USize) (N : Nat) (hN : 4 * N < USize.size)
+theorem Native.fill_mul16 (t a : Array (FastField p)) (i : USize) (N : Nat)
+    (hN : 4 * N < USize.size)
     (hi : i.toNat + 16 ≤ N) (h) :
     Native.Fill (fun k ↦ (t.getD k 0 * a.getD k 0).val) (fun k ↦ i.toNat ≤ k ∧ k < i.toNat + 16)
-      N (fun b ↦ Native.mul16 (encode t) (encode a) i b h) := by
+      N (fun b ↦ Native.mul16 p (encode t) (encode a) i b h) := by
   refine (Native.fill_write16U _ N i (fun k ↦ (t.getD (i.toNat + k) 0 * a.getD (i.toNat + k) 0).val)
     hN hi fun _ _ ↦ rfl).congr fun b ↦ ?_
   unfold Native.mul16
   simp only [Native.readUOffset_encode, mul_val, USize.reduceToNat]
 
 /-- Products of the first `n` coordinates. -/
-theorem Native.mulWords_encode (t a : Array F) (n : Nat) (ht : n ≤ t.size) (ha : n ≤ a.size)
+theorem Native.mulWords_encode (t a : Array (FastField p)) (n : Nat) (ht : n ≤ t.size)
+    (ha : n ≤ a.size)
     (hts : 4 * t.size < USize.size) (has : 4 * a.size < USize.size) :
-    Native.mulWords (encode t) (encode a) n =
+    Native.mulWords p (encode t) (encode a) n =
       encode (Array.ofFn (n := n) fun i ↦ t.getD i.val 0 * a.getD i.val 0) := by
   let T (k : Nat) : UInt32 := (t.getD k 0 * a.getD k 0).val
   have hN : 4 * n < USize.size := by omega
@@ -158,7 +166,7 @@ theorem Native.mulWords_encode (t a : Array F) (n : Nat) (ht : n ≤ t.size) (ha
         if h : 4 * (16 * block + 15) + 3 < (encode t).size ∧
             4 * (16 * block + 15) + 3 < (encode a).size ∧
             (encode t).size < USize.size ∧ (encode a).size < USize.size then
-          Native.mul16 (encode t) (encode a) (USize.ofNatLT (16 * block) (by omega)) b
+          Native.mul16 p (encode t) (encode a) (USize.ofNatLT (16 * block) (by omega)) b
             (by simpa only [USize.toNat_ofNatLT] using h)
         else b) := by
     have hb := List.mem_range.mp hb
@@ -174,7 +182,7 @@ theorem Native.mulWords_encode (t a : Array F) (n : Nat) (ht : n ≤ t.size) (ha
     · rw [USize.toNat_ofNatLT]; exact hk
   have hedge (k : Nat) (hk : k ∈ List.range' (16 * (n / 16)) (n - 16 * (n / 16))) :
       Native.Fill T (· = k) n (fun b ↦
-        Native.write b k (mul (Native.read (encode t) k) (Native.read (encode a) k))) := by
+        Native.write b k (mul p (Native.read (encode t) k) (Native.read (encode a) k))) := by
     have hk := List.mem_range'_1.mp hk
     refine Native.fill_write T n k _ hN (by omega) ?_
     rw [Native.read_encode _ _ (by rw [size_encode_fields]; exact hts) (by omega),
@@ -195,23 +203,23 @@ theorem Native.mulWords_encode (t a : Array F) (n : Nat) (ht : n ≤ t.size) (ha
 /-! ### Column transforms -/
 
 /-- The subgroup of order `2 ^ logH`, the domain of the input columns. -/
-abbrev LdePlan.low (P : LdePlan) : NTT.Domain F := powDomain P.domain P.bits P.bits_le
+abbrev LdePlan.low (P : LdePlan p) : NTT.Domain (FastField p) := powDomain P.domain P.bits P.bits_le
 
 /-- Packed columns fit machine indices. -/
-theorem LdePlan.byte_bound_low (P : LdePlan) : 4 * P.low.n < USize.size := by
+theorem LdePlan.byte_bound_low (P : LdePlan p) : 4 * P.low.n < USize.size := by
   have := P.byte_bound
   have : P.low.n ≤ P.domain.n := Nat.pow_le_pow_right (by decide) (Nat.sub_le _ _)
   omega
 
 /-- Packed columns fit machine indices, stated for the inverse domain. -/
-theorem LdePlan.byte_bound_inverse (P : LdePlan) : 4 * P.low.inverse.n < USize.size := by
+theorem LdePlan.byte_bound_inverse (P : LdePlan p) : 4 * P.low.inverse.n < USize.size := by
   have := P.byte_bound_low
   have e1 : P.low.inverse.n = 2 ^ P.logH := rfl
   have e2 : P.low.n = 2 ^ P.logH := rfl
   omega
 
 /-- A column's coefficients, scaled by `h`, are its unnormalized inverse transform. -/
-theorem Native.columnCoefficients_encode (P : LdePlan) (col : Array F)
+theorem Native.columnCoefficients_encode (P : LdePlan p) (col : Array (FastField p))
     (hs : col.size = 2 ^ P.logH) :
     Native.columnCoefficients P (encode col) =
       encode (NTT.Forward.forwardSpec P.low.inverse col) := by
@@ -225,13 +233,15 @@ theorem Native.columnCoefficients_encode (P : LdePlan) (col : Array F)
   exact h
 
 /-- The coset tables have one entry per row. -/
-@[simp] theorem size_cosetTable (D : NTT.Domain F) (bits : Nat) (shift : F) (c : Nat) :
+@[simp] theorem size_cosetTable (D : NTT.Domain (FastField p)) (bits : Nat) (shift : FastField p)
+    (c : Nat) :
     (cosetTable D bits shift c).size = 2 ^ (D.logN - bits) := by
   simp only [cosetTable, Array.size_map, NTTFast.powers_eq_ofFn, Array.size_ofFn]
 
 /-- Block `t` of a column's extension is the DIF transform of its coefficients, scaled by coset
 table `bitrev t`. -/
-theorem Native.cosetBlock_encode (P : LdePlan) (c : Array F) (hc : c.size = 2 ^ P.logH) (t : Nat) :
+theorem Native.cosetBlock_encode (P : LdePlan p) (c : Array (FastField p))
+    (hc : c.size = 2 ^ P.logH) (t : Nat) :
     Native.cosetBlock P (encode c) t = encode (difSpec P.low (Array.ofFn (n := 2 ^ P.logH) fun i ↦
       (cosetTable P.domain P.bits P.shift (NTT.Transform.bitRevNat P.bits t)).getD i.val 0 *
         c.getD i.val 0)) := by
@@ -251,17 +261,19 @@ theorem Native.cosetBlock_encode (P : LdePlan) (c : Array F) (hc : c.size = 2 ^ 
 /-! ### Values on the coset -/
 
 /-- Coset table `c` holds `(1 / h) · (shift · ω ^ c) ^ l`. -/
-theorem getD_cosetTable (D : NTT.Domain F) (bits : Nat) (shift : F) (c l : Nat)
+theorem getD_cosetTable (D : NTT.Domain (FastField p)) (bits : Nat) (shift : FastField p)
+    (c l : Nat)
     (hl : l < 2 ^ (D.logN - bits)) :
     (cosetTable D bits shift c).getD l 0 =
-      ((2 ^ (D.logN - bits) : Nat) : F)⁻¹ * (shift * D.omega ^ c) ^ l := by
+      ((2 ^ (D.logN - bits) : Nat) : FastField p)⁻¹ * (shift * D.omega ^ c) ^ l := by
   rw [Array.getD_eq_getD_getElem?, cosetTable, Array.getElem?_map, NTTFast.powers_eq_ofFn,
     Array.getElem?_ofFn, dite_eq_left_of_eq_true (eq_true hl)]
   rfl
 
 /-- Entry `i` of block `t` of a column's extension is the column's interpolant on the subgroup
 of order `h` at `shift · ω ^ bitrev (h t + i)`. -/
-theorem getD_block (P : LdePlan) (col : Vector F (2 ^ P.logH)) (t i : Nat) (hi : i < 2 ^ P.logH) :
+theorem getD_block (P : LdePlan p) (col : Vector (FastField p) (2 ^ P.logH)) (t i : Nat)
+    (hi : i < 2 ^ P.logH) :
     (difSpec P.low (Array.ofFn (n := 2 ^ P.logH) fun l ↦
       (cosetTable P.domain P.bits P.shift (NTT.Transform.bitRevNat P.bits t)).getD l.val 0 *
         (NTT.Forward.forwardSpec P.low.inverse col.toArray).getD l.val 0)).getD i 0 =
@@ -278,7 +290,7 @@ theorem getD_block (P : LdePlan) (col : Vector F (2 ^ P.logH)) (t i : Nat) (hi :
   have hrev : NTT.Transform.bitRevNat P.domain.logN (2 ^ P.logH * t + i) = 2 ^ P.bits * b + c := by
     rw [hlog]; exact bitRevNat_concat P.bits P.logH t i hi
   -- The interpolant's coefficients are the normalized inverse transform.
-  have hq (x : F) :
+  have hq (x : FastField p) :
       (CPolynomial.CLagrange.interpolatePow (P.domain.omega ^ 2 ^ P.bits) col).eval x =
       CPolynomial.Raw.eval x (NTT.Inverse.inverseSpec P.low col.toArray) := by
     have he := NTT.Inverse.inverseSpec_interpolatePow_eq P.low col.toArray
@@ -291,7 +303,8 @@ theorem getD_block (P : LdePlan) (col : Vector F (2 ^ P.logH)) (t i : Nat) (hi :
       ← CPolynomial.Raw.toPoly_trim, he']
     rfl
   have hcoef (l : Nat) (hl : l < h) :
-      (NTT.Inverse.inverseSpec P.low col.toArray).getD l 0 = (h : F)⁻¹ * coef.getD l 0 := by
+      (NTT.Inverse.inverseSpec P.low col.toArray).getD l 0 =
+    (h : FastField p)⁻¹ * coef.getD l 0 := by
     rw [← NTT.Inverse.normalize_forwardSpec_inverse_eq_inverseSpec, NTT.Inverse.normalize,
       getD_ofFn_bounded _ _ (show l < P.low.n from hl)]
     rfl
@@ -303,21 +316,22 @@ theorem getD_block (P : LdePlan) (col : Vector F (2 ^ P.logH)) (t i : Nat) (hi :
   intro l _
   have hl : l.val < 2 ^ P.logH := l.isLt
   rw [getD_ofFn_bounded _ _ hl, getD_cosetTable _ _ _ _ _ hl, hcoef l hl, hrev]
-  change (h : F)⁻¹ * (P.shift * ω ^ c) ^ l.val * coef.getD l 0 * (ω ^ 2 ^ P.bits) ^ (b * l.val) =
-    (h : F)⁻¹ * coef.getD l 0 * (P.shift * ω ^ (2 ^ P.bits * b + c)) ^ l.val
+  change (h : FastField p)⁻¹ * (P.shift * ω ^ c) ^ l.val * coef.getD l 0 *
+      (ω ^ 2 ^ P.bits) ^ (b * l.val) =
+    (h : FastField p)⁻¹ * coef.getD l 0 * (P.shift * ω ^ (2 ^ P.bits * b + c)) ^ l.val
   rw [pow_add, pow_mul, pow_mul]
   ring
 
 /-! ### Specification -/
 
 /-- Column `j` of a row-major matrix of width `w` with `h` rows. -/
-def column (M : Array F) (w h j : Nat) : Vector F h :=
+def column (M : Array (FastField p)) (w h j : Nat) : Vector (FastField p) h :=
   Vector.ofFn fun i ↦ M.getD (i.val * w + j) 0
 
 /-- The low-degree extension of a row-major matrix `M` of width `w` in commitment order: entry
 `(r, j)` is column `j`'s interpolant on the subgroup of order `h = 2 ^ logH` at
 `shift · ω ^ bitrev r`, where `ω` generates the subgroup of order `2 ^ logN`. -/
-def ldeSpec (P : LdePlan) (w : Nat) (M : Array F) : Array F :=
+def ldeSpec (P : LdePlan p) (w : Nat) (M : Array (FastField p)) : Array (FastField p) :=
   Array.ofFn (n := 2 ^ P.domain.logN * w) fun k ↦
     (CPolynomial.CLagrange.interpolatePow (P.domain.omega ^ 2 ^ P.bits)
       (column M w (2 ^ P.logH) (k.val % w))).eval
@@ -345,14 +359,16 @@ theorem flatMap_range_map {α : Type*} (a b : Nat) (f : Nat → Nat → α) :
     rw [(Native.divMod_add a x b hx).1, (Native.divMod_add a x b hx).2]
 
 /-- Joining consecutive ranges of an array packs the array. -/
-theorem joinRows_extract (S : Array F) (K L : Nat) (hS : S.size = K * L) :
+theorem joinRows_extract (S : Array (FastField p)) (K L : Nat) (hS : S.size = K * L) :
     Native.joinRows ((Array.range K).map fun c ↦ encode (S.extract (c * L) (c * L + L))) =
       encode S := by
   unfold Native.joinRows
-  rw [show ByteArray.emptyWithCapacity _ = encode (#[] : Array F) from rfl, Array.foldl_map,
+  rw [show ByteArray.emptyWithCapacity _ = encode (#[] : Array (FastField p)) from rfl,
+    Array.foldl_map,
     ← Array.foldl_toList, Array.toList_range]
   have h (K : Nat) (hK : K * L ≤ S.size) : (List.range K).foldl
-      (fun acc c ↦ acc ++ encode (S.extract (c * L) (c * L + L))) (encode (#[] : Array F)) =
+      (fun acc c ↦ acc ++ encode (S.extract (c * L) (c * L + L))) (encode (#[] : Array
+    (FastField p))) =
       encode (S.extract 0 (K * L)) := by
     induction K with
     | zero => simp
@@ -367,7 +383,7 @@ theorem pow_div_mul_pow_min (a k : Nat) : 2 ^ a / 2 ^ min k a * 2 ^ min k a = 2 
   Nat.div_mul_cancel (Nat.pow_dvd_pow 2 (Nat.min_le_right k a))
 
 /-- Column `j` from the transposed row ranges of a packed matrix. -/
-theorem Native.gatherColumn_eq_column (M : Array F) (w h R rows j : Nat) (hj : j < w)
+theorem Native.gatherColumn_eq_column (M : Array (FastField p)) (w h R rows j : Nat) (hj : j < w)
     (hR : R * rows = h) (hM : M.size = h * w) (hs : 4 * M.size < USize.size) :
     Native.gatherColumn ((Array.range R).map fun k ↦
       Native.transposeRows (encode M) w (k * rows) rows) rows j =
@@ -381,7 +397,8 @@ theorem Native.gatherColumn_eq_column (M : Array F) (w h R rows j : Nat) (hj : j
 
 /-- The extension of a packed row-major matrix `M` of width `w` is the packed specification, in
 row chunks: chunk `c` holds rows `c · L, …` with `L = 2 ^ logH / chunkCount logH`. -/
-theorem Native.cosetLde_eq (P : LdePlan) (w : Nat) (M : Array F) (hM : M.size = 2 ^ P.logH * w)
+theorem Native.cosetLde_eq (P : LdePlan p) (w : Nat) (M : Array (FastField p))
+    (hM : M.size = 2 ^ P.logH * w)
     (hu : 4 * (2 ^ P.domain.logN * w) < USize.size) :
     Native.cosetLde P w (encode M) =
       (Array.range (2 ^ P.bits * Native.chunkCount P.logH)).map fun c ↦
@@ -414,7 +431,7 @@ theorem Native.cosetLde_eq (P : LdePlan) (w : Nat) (M : Array F) (hM : M.size = 
           (show P.logH - min 3 P.logH < 9 by omega)
         simpa using this)
   -- Block `t` of column `j`, as field coordinates.
-  let B (t j : Nat) : Array F := difSpec P.low (Array.ofFn (n := 2 ^ P.logH) fun l ↦
+  let B (t j : Nat) : Array (FastField p) := difSpec P.low (Array.ofFn (n := 2 ^ P.logH) fun l ↦
     (cosetTable P.domain P.bits P.shift (NTT.Transform.bitRevNat P.bits t)).getD l.val 0 *
       (NTT.Forward.forwardSpec P.low.inverse (column M w (2 ^ P.logH) j).toArray).getD l.val 0)
   have hB (t j : Nat) : (B t j).size = 2 ^ P.logH := size_difSpec _ _
@@ -494,7 +511,7 @@ theorem Native.cosetLde_eq (P : LdePlan) (w : Nat) (M : Array F) (hM : M.size = 
 row-major matrix `M` of width `w` and `2 ^ logH` rows are the packed specification: row `r` holds
 every column's interpolant on the subgroup of order `2 ^ logH`, evaluated at
 `shift · ω ^ bitrev r`. -/
-theorem Native.joinRows_cosetLde (P : LdePlan) (w : Nat) (M : Array F)
+theorem Native.joinRows_cosetLde (P : LdePlan p) (w : Nat) (M : Array (FastField p))
     (hM : M.size = 2 ^ P.logH * w) (hu : 4 * (2 ^ P.domain.logN * w) < USize.size) :
     Native.joinRows (Native.cosetLde P w (encode M)) = encode (ldeSpec P w M) := by
   rw [Native.cosetLde_eq P w M hM hu]
@@ -507,5 +524,13 @@ theorem Native.joinRows_cosetLde (P : LdePlan) (w : Nat) (M : Array F)
   generalize 2 ^ P.logH / 2 ^ min 3 P.logH = q at hC ⊢
   rw [← hC]
   ring
+
+/-- `Native.joinRows_cosetLde` for the compiled extension. -/
+theorem LdePlan.joinRows_cosetLde [PackedCosetLde p] (P : LdePlan p) (w : Nat)
+    (M : Array (FastField p)) (hM : M.size = 2 ^ P.logH * w)
+    (hu : 4 * (2 ^ P.domain.logN * w) < USize.size) :
+    Native.joinRows (P.cosetLde w (encode M)) = encode (ldeSpec P w M) := by
+  rw [LdePlan.cosetLde, PackedCosetLde.run_eq]
+  exact Native.joinRows_cosetLde P w M hM hu
 
 end CompPoly.CPolynomial.NTTFast.Packed

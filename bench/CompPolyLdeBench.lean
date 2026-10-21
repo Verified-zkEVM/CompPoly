@@ -6,7 +6,7 @@ Authors: Gregor Mitscha-Baude
 module
 
 public import CompPolyBench.Univariate.Common
-public import CompPoly.Univariate.NTTFast.Packed.CosetLde
+public import CompPoly.Univariate.NTTFast.Packed.Instances
 public import CompPoly.Univariate.NTT.KoalaBear
 
 /-! # KoalaBear coset low-degree extension against Plonky3's `coset_lde_batch` -/
@@ -66,7 +66,7 @@ def main (args : List String) : IO UInt32 := do
         digestIterations := 2, digestClass := "lde" }
     -- The digest reads the joined rows, outside timing.
     let row ← runTimedSpec spec .large
-      (fun i ↦ CPolynomial.NTTFast.Packed.Native.cosetLde plan width inputs[i % 2]!)
+      (fun i ↦ plan.cosetLde width inputs[i % 2]!)
       (fun cs ↦ checksumArray checksumKoalaBearFast (CompPoly.PackedRepr.decode
         (R := KoalaBear.Fast.Field) (CPolynomial.NTTFast.Packed.Native.joinRows cs)))
       (sink := fun cs ↦ sinkStep (word cs[0]! 0) cs.size.toUInt64)

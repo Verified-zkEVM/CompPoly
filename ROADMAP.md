@@ -307,7 +307,7 @@ CompPoly aims to be the premier formally verified library for computable polynom
 	  encoder 6.7×
 	- Mixed-radix NTT for subgroups whose order is not a power of two: not planned without a
 	  consumer. The subproduct tree already covers such node sets
-	- ✅ Batched coset low-degree extension of packed row-major KoalaBear matrices, in the bit-reversed row order of Plonky3's two-adic FRI commitment (`NTTFast/Packed/CosetLde.lean`). `Native.joinRows_cosetLde` proves every column's extension equal to its Lagrange interpolant evaluated on the coset (`NTTFast/Packed/CosetLdeCorrectness.lean`). Benchmarked against Plonky3's `coset_lde_batch` with `--suite lde`
+	- ✅ Batched coset low-degree extension of packed row-major matrices over any 32-bit Montgomery field, in the bit-reversed row order of Plonky3's two-adic FRI commitment (`NTTFast/Packed/CosetLde.lean`). `Native.joinRows_cosetLde` proves every column's extension equal to its Lagrange interpolant evaluated on the coset (`NTTFast/Packed/CosetLdeCorrectness.lean`). Benchmarked against Plonky3's `coset_lde_batch` with `--suite lde`
 4.	**Proof ergonomics: simp/grind sets + tactics**
 	- 🔄 Identify rewrite bottlenecks when porting Mathlib poly proofs → CompPoly. Recorded in
 	  [`docs/wiki/representations-and-bridges.md`](docs/wiki/representations-and-bridges.md#proof-api-simp-and-grind-sets):

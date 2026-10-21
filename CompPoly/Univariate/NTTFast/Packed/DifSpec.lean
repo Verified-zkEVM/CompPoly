@@ -20,6 +20,9 @@ transform.
 @[expose] public section
 open scoped BigOperators
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open Montgomery.Native32 (Mont32Field FastField)
+
+variable {p : ℕ} [Mont32Field p]
 
 /-- The DFT formula with a natural-number evaluation index. -/
 def dftValue [Field R] (D : NTT.Domain R) (a : Array R) (k : Nat) : R :=
@@ -66,8 +69,8 @@ theorem planStages_eq_difSpec [Field R] (D : NTT.Domain R) (a : Array R) (hs : a
   exact h
 
 /-- Decoding an unnormalized DIF result restores natural-order DFT evaluations. -/
-theorem decodedFields_difSpec (D : NTT.Domain KoalaBear.Fast.Field)
-    (a : Array KoalaBear.Fast.Field) (factor : KoalaBear.Fast.Field) (inverse : Bool) :
+theorem decodedFields_difSpec (D : NTT.Domain (FastField p))
+    (a : Array (FastField p)) (factor : FastField p) (inverse : Bool) :
     decodedFields D.logN (difSpec D a) factor inverse =
       if inverse then (NTT.Forward.forwardSpec D a).map (fun x ↦ factor * x)
       else NTT.Forward.forwardSpec D a := by

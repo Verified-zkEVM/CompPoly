@@ -13,12 +13,16 @@ public import CompPoly.Univariate.NTTFast.Packed.KernelModels
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open Montgomery.Native32 (Mont32Field FastField)
+
+variable {p : ℕ} [Mont32Field p]
+
 open CompPoly.PackedRepr (encode)
 
 /-- The vectorizable word kernel is exactly sixteen field butterflies. -/
-theorem Native.step16_encode (th tl : Array KoalaBear.Fast.Field)
-    (j j1 i0 i1 i2 i3 : USize) (a : Array KoalaBear.Fast.Field) (h) :
-    Native.step16 (encode th) (encode tl) j j1 i0 i1 i2 i3 (encode a) h =
+theorem Native.step16_encode (th tl : Array (FastField p))
+    (j j1 i0 i1 i2 i3 : USize) (a : Array (FastField p)) (h) :
+    Native.step16 p (encode th) (encode tl) j j1 i0 i1 i2 i3 (encode a) h =
       encode (step16Field th tl j j1 i0 i1 i2 i3 a) := by
   rcases h with ⟨hi0, hi1, hi2, hi3, hj1, hj, hjl, ha, hth, htl⟩
   have h0 : i0.toNat + 16 ≤ a.size := by rw [size_encode_fields] at hi0; omega

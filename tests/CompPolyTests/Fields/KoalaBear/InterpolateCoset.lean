@@ -11,7 +11,7 @@ public meta import CompPoly.Fields.KoalaBear.InterpolateCoset
 # Coset interpolation tests
 
 Evaluate two polynomials of degree below 8 on the coset `3 · ⟨ω⟩` of the order-8 subgroup, run
-`KoalaBear.Fast.interpolateCoset`, and compare with Horner evaluation of the same coefficients at
+`interpolateCoset`, and compare with Horner evaluation of the same coefficients at
 `z` in the spec field `Ext4.Spec`.
 -/
 

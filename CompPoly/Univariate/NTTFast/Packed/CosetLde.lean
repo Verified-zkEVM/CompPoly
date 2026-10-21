@@ -31,23 +31,26 @@ commitment hashes in parallel; `joinRows` copies them into one buffer.
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
-open CompPoly.PackedRepr (encode)
+open Montgomery.Native32 (Mont32Field FastField)
 
-local notation "F" => KoalaBear.Fast.Field
+variable {p : ℕ} [Mont32Field p]
+
+open CompPoly.PackedRepr (encode)
 
 /-- The scaled coset powers `(1 / h) · (shift · ω ^ c) ^ j`, `j < h`, of coset `c` of the
 subgroup of order `h = 2 ^ (D.logN - bits)` in `D`'s. -/
-def cosetTable (D : NTT.Domain F) (bits : Nat) (shift : F) (c : Nat) : Array F :=
+def cosetTable (D : NTT.Domain (FastField p)) (bits : Nat) (shift : FastField p) (c : Nat) : Array
+    (FastField p) :=
   (NTTFast.powers (shift * D.omega ^ c) (2 ^ (D.logN - bits))).map
-    (((2 ^ (D.logN - bits) : Nat) : F)⁻¹ * ·)
+    (((2 ^ (D.logN - bits) : Nat) : FastField p)⁻¹ * ·)
 
 /-- A reusable plan for low-degree extensions of `2 ^ (domain.logN - bits)`-row matrices onto
 the coset `shift · ⟨domain.omega⟩`, with certified cached twiddles and coset tables. -/
-structure LdePlan where
-  domain : NTT.Domain F
+structure LdePlan (p : ℕ) [Mont32Field p] where
+  domain : NTT.Domain (FastField p)
   bits : Nat
   bits_le : bits ≤ domain.logN
-  shift : F
+  shift : FastField p
   log_bound : domain.logN ≤ 32
   byte_bound : 4 * domain.n < USize.size
   forwardTwiddles : Array ByteArray
@@ -64,8 +67,8 @@ namespace LdePlan
 
 /-- Encode the twiddles of the subgroup of order `2 ^ (D.logN - bits)` and the coset tables
 once. -/
-def ofDomain (D : NTT.Domain F) (bits : Nat) (hb : bits ≤ D.logN) (shift : F)
-    (h32 : D.logN ≤ 32) (hu : 4 * D.n < USize.size) : LdePlan where
+def ofDomain (D : NTT.Domain (FastField p)) (bits : Nat) (hb : bits ≤ D.logN) (shift : FastField p)
+    (h32 : D.logN ≤ 32) (hu : 4 * D.n < USize.size) : LdePlan p where
   domain := D
   bits := bits
   bits_le := hb
@@ -91,29 +94,31 @@ def ofDomain (D : NTT.Domain F) (bits : Nat) (hb : bits ≤ D.logN) (shift : F)
     exact Native.encodeFields_eq _
 
 /-- The rows of the input matrix. -/
-abbrev logH (P : LdePlan) : Nat := P.domain.logN - P.bits
+abbrev logH (P : LdePlan p) : Nat := P.domain.logN - P.bits
 
 end LdePlan
 
 namespace Native
 
 /-- The products of words `i, …, i + 15` of `t` and `a`, stored from word `i` of `out`. -/
-@[noinline] def mul16 (t a : @& ByteArray) (i : USize) (out : ByteArray)
+@[noinline, specialize]
+def mul16 (p : ℕ) [Mont32Field p] (t a : @& ByteArray) (i : USize) (out : ByteArray)
     (h : 4 * (i.toNat + 15) + 3 < t.size ∧ 4 * (i.toNat + 15) + 3 < a.size ∧
       t.size < USize.size ∧ a.size < USize.size) : ByteArray :=
   mul16_words%
 
 /-- The products of words `0, …, n - 1` of `t` and `a`. -/
-def mulWords (t a : @& ByteArray) (n : Nat) : ByteArray := Id.run do
+@[specialize]
+def mulWords (p : ℕ) [Mont32Field p] (t a : @& ByteArray) (n : Nat) : ByteArray := Id.run do
   let mut out := zeroWords n
   for block in [:n / 16] do
     let i := 16 * block
     if h : 4 * (i + 15) + 3 < t.size ∧ 4 * (i + 15) + 3 < a.size ∧
         t.size < USize.size ∧ a.size < USize.size then
-      out := mul16 t a (USize.ofNatLT i (by omega)) out
+      out := mul16 p t a (USize.ofNatLT i (by omega)) out
         (by simpa only [USize.toNat_ofNatLT] using h)
   for k in [16 * (n / 16):n] do
-    out := write out k (mul (read t k) (read a k))
+    out := write out k (mul p (read t k) (read a k))
   return out
 
 /-- The transpose of the `16 × 16` tile whose line `t` is words `q + t * qs, …, q + t * qs + 15`
@@ -176,14 +181,16 @@ def rowsOfColumns (cs : @& Array ByteArray) (r0 rows : Nat) : ByteArray := Id.ru
   return out
 
 /-- The coefficients of a column, scaled by `h`: its unnormalized inverse transform. -/
-def columnCoefficients (P : LdePlan) (col : ByteArray) : ByteArray :=
-  leafNatural P.inverseTwiddles P.logH 0 false col
+@[specialize]
+def columnCoefficients (P : LdePlan p) (col : ByteArray) : ByteArray :=
+  leafNatural p P.inverseTwiddles P.logH 0 false col
 
 /-- Block `t` of a column's extension: the DIF-order values on coset `bitrev t` of the
 coefficients `c`, scaled by `h`. -/
-def cosetBlock (P : LdePlan) (c : ByteArray) (t : Nat) : ByteArray :=
-  leafReversed P.forwardTwiddles P.logH
-    (mulWords (P.cosetTables.getD (NTT.Transform.bitRevNat P.bits t) .empty) c (2 ^ P.logH))
+@[specialize]
+def cosetBlock (P : LdePlan p) (c : ByteArray) (t : Nat) : ByteArray :=
+  leafReversed p P.forwardTwiddles P.logH
+    (mulWords p (P.cosetTables.getD (NTT.Transform.bitRevNat P.bits t) .empty) c (2 ^ P.logH))
 
 /-- The number of row ranges the input transpose splits into. -/
 def rangeCount (logRows : Nat) : Nat := 2 ^ min 4 logRows
@@ -195,7 +202,8 @@ def chunkCount (logRows : Nat) : Nat := 2 ^ min 3 logRows
 transpose row ranges of `m` into columns; each column's coefficients are one task, and each of
 its coset blocks another; each output chunk transposes rows of one block as soon as that block's
 columns are done. -/
-def cosetLde (P : LdePlan) (w : Nat) (m : ByteArray) : Array ByteArray :=
+@[specialize]
+def cosetLde (P : LdePlan p) (w : Nat) (m : ByteArray) : Array ByteArray :=
   let R := rangeCount P.logH
   let rows := 2 ^ P.logH / R
   let pieces := Tasks.join (Tasks.spawnAll R fun k ↦ transposeRows m w (k * rows) rows)
@@ -214,5 +222,19 @@ def joinRows (chunks : Array ByteArray) : ByteArray :=
   chunks.foldl (· ++ ·) (ByteArray.emptyWithCapacity (chunks.foldl (· + ·.size) 0))
 
 end Native
+
+/-- `Native.cosetLde` as compiled for one modulus: an instance sets `run` to it at its concrete
+`p`, where the compiler specializes the kernels. -/
+class PackedCosetLde (p : ℕ) [Mont32Field p] where
+  /-- The compiled extension. -/
+  run : LdePlan p → Nat → ByteArray → Array ByteArray
+  run_eq : run = Native.cosetLde := by rfl
+
+/-- The extension of the `w`-column packed row-major matrix `m`, as row chunks in commitment
+order, with the field's compiled kernels. -/
+@[inline] def LdePlan.cosetLde [PackedCosetLde p] (P : LdePlan p) (w : Nat) (m : ByteArray) :
+    Array ByteArray :=
+  PackedCosetLde.run P w m
+
 
 end CompPoly.CPolynomial.NTTFast.Packed

@@ -23,6 +23,10 @@ of targets, whatever the order and overlap of its writes.
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed.Native
+open Montgomery.Native32 (Mont32Field FastField)
+
+variable {p : ℕ} [Mont32Field p]
+
 open CompPoly.PackedRepr (encode size_encode_uint32)
 
 /-! ### Fills -/

@@ -17,11 +17,15 @@ computes it from packed words, for leaves too small for the fused final layers.
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open Montgomery.Native32 (Mont32Field FastField)
+
+variable {p : ℕ} [Mont32Field p]
+
 open CompPoly.PackedRepr (encode)
 
 /-- The natural-order read of a bit-reversed array, optionally scaled. -/
-def decodedFields (logN : Nat) (a : Array KoalaBear.Fast.Field)
-    (factor : KoalaBear.Fast.Field) (inverse : Bool) : Array KoalaBear.Fast.Field :=
+def decodedFields (logN : Nat) (a : Array (FastField p))
+    (factor : FastField p) (inverse : Bool) : Array (FastField p) :=
   Array.ofFn (fun i : Fin (2 ^ logN) ↦
     let x := a.getD (NTT.Transform.bitRevNat logN i.val) 0
     if inverse then factor * x else x)
@@ -39,12 +43,12 @@ theorem Native.reverse_index (logN i : Nat) (hlog : logN ≤ 32) (hi : i < 2 ^ l
   · exact reverse32_shift_eq_bitRevNat logN i (by omega) hlog
 
 /-- Ordinary packed output conversion computes exactly reversed indexing and optional scaling. -/
-theorem Native.decode_encode (logN : Nat) (a : Array KoalaBear.Fast.Field)
-    (factor : KoalaBear.Fast.Field) (inverse : Bool) (hlog : logN ≤ 32)
+theorem Native.decode_encode (logN : Nat) (a : Array (FastField p))
+    (factor : FastField p) (inverse : Bool) (hlog : logN ≤ 32)
     (hs : a.size = 2 ^ logN) (hu : (encode a).size < USize.size) :
-    Native.decode logN (encode a) factor.val inverse = decodedFields logN a factor inverse := by
+    Native.decode p logN (encode a) factor.val inverse = decodedFields logN a factor inverse := by
   change tabulate (fun i : Fin (2 ^ logN) ↦
-    ofWord (if inverse then mul factor.val
+    ofWord p (if inverse then mul p factor.val
       (Native.read (encode a) (reverse32 i.val.toUInt32 >>> (32 - logN).toUInt32).toNat)
     else Native.read (encode a)
       (reverse32 i.val.toUInt32 >>> (32 - logN).toUInt32).toNat)) = _
