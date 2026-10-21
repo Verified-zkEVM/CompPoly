@@ -46,7 +46,8 @@ lean_lib CompPolyPackedNative where
 
 /-- CPU-targeted packed interpolation loops; realigning their stack measured 2.5% slower. -/
 lean_lib CompPolyInterpolateNative where
-  roots := #[`CompPoly.Fields.KoalaBear.InterpolateCosetPacked]
+  roots := #[`CompPoly.Fields.BabyBear.InterpolateCoset,
+    `CompPoly.Fields.KoalaBear.InterpolateCoset]
   platformIndependent := true
   moreLeancArgs := #["-march=native"]
 

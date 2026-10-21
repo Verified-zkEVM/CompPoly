@@ -111,6 +111,7 @@ public import CompPoly.Fields.BabyBear.Basic
 public import CompPoly.Fields.BabyBear.Ext4
 public import CompPoly.Fields.BabyBear.Fast
 public import CompPoly.Fields.BabyBear.FastExt4
+public import CompPoly.Fields.BabyBear.InterpolateCoset
 public import CompPoly.Fields.Basic
 public import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
 public import CompPoly.Fields.Binary.AdditiveNTT.Algorithm
@@ -198,14 +199,15 @@ public import CompPoly.Fields.KoalaBear.Ext6.SexticIrreducible
 public import CompPoly.Fields.KoalaBear.Fast
 public import CompPoly.Fields.KoalaBear.FastExt4
 public import CompPoly.Fields.KoalaBear.InterpolateCoset
-public import CompPoly.Fields.KoalaBear.InterpolateCosetPacked
-public import CompPoly.Fields.KoalaBear.InterpolateCosetPackedCorrectness
 public import CompPoly.Fields.Mersenne31
 public import CompPoly.Fields.Mersenne31.Basic
 public import CompPoly.Fields.Mersenne31.Bytes
 public import CompPoly.Fields.Mersenne31.Circle
 public import CompPoly.Fields.Mersenne31.Fast
 public import CompPoly.Fields.Montgomery.Basic
+public import CompPoly.Fields.Montgomery.InterpolateCoset
+public import CompPoly.Fields.Montgomery.InterpolateCosetPacked
+public import CompPoly.Fields.Montgomery.InterpolateCosetPackedCorrectness
 public import CompPoly.Fields.Montgomery.Native32
 public import CompPoly.Fields.Montgomery.Native32Bytes
 public import CompPoly.Fields.Montgomery.Native32Ext4
