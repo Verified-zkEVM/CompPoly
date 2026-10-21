@@ -575,6 +575,11 @@ theorem toField_mulAdd4 (a b c d e f g k : FastField modulus) :
   generalize ((2 ^ 32 : ℕ) : ZMod modulus) = R at hR ⊢
   field_simp
 
+/-- `mulAdd4` is the sum of the four products. -/
+theorem mulAdd4_eq (a b c d e f g k : FastField modulus) :
+    mulAdd4 a b c d e f g k = a * b + c * d + e * f + g * k :=
+  toField_injective (by simp only [toField_mulAdd4, toField_add, toField_mul])
+
 /-- Add a product below `modulus * 2^32` to an accumulator below `modulus * 2^32`, keeping it
 there with one conditional subtraction of `modulus * 2^32`: a dot product reduces only once. -/
 @[inline]
@@ -770,6 +775,9 @@ theorem toField_zsmul (n : Int) (x : FastField modulus) : toField (n • x) = n 
   change toField ((n : FastField modulus) * x) = n • toField x
   rw [toField_mul, toField_intCast, zsmul_eq_mul]
 
+/-- `pow` is the `Pow` instance's power. -/
+theorem pow_eq_npow (x : FastField modulus) (n : ℕ) : pow x n = x ^ n := rfl
+
 /-- Natural powers through the `Pow` instance are preserved by `toField`. -/
 @[simp]
 theorem toField_npow (x : FastField modulus) (n : ℕ) : toField (x ^ n) = toField x ^ n := by
@@ -846,6 +854,23 @@ instance instNonBinaryField : NonBinaryField (FastField modulus) where
       _ = toField ((2 : ℕ) : FastField modulus) := (toField_natCast 2).symm
       _ = toField (0 : FastField modulus) := congrArg toField h
       _ = 0 := toField_zero
+
+/-- `toField` commutes with finite sums. -/
+theorem toField_sum {ι : Type*} (s : Finset ι) (f : ι → FastField modulus) :
+    toField (∑ i ∈ s, f i) = ∑ i ∈ s, toField (f i) :=
+  map_sum (ringEquiv modulus) f s
+
+/-- The fast carrier is finite, enumerated through the canonical field. -/
+instance instFintype : Fintype (FastField modulus) :=
+  Fintype.ofEquiv _ (ringEquiv modulus).symm.toEquiv
+
+/-- The fast carrier has `modulus` elements. -/
+theorem card_fastField : Fintype.card (FastField modulus) = modulus := by
+  rw [Fintype.card_congr (ringEquiv modulus).toEquiv, ZMod.card]
+
+/-- The fast carrier has `modulus` elements, as a `Nat.card`. -/
+theorem natCard_fastField : Nat.card (FastField modulus) = modulus := by
+  rw [Nat.card_eq_fintype_card, card_fastField]
 
 end
 

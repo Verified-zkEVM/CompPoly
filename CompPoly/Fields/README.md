@@ -27,8 +27,11 @@ This directory contains formally verified field infrastructure used in zero-know
 | **Extension/Cardinality.lean** | Proof-only finiteness, optional enumeration, and certified cardinality of the coefficient carrier. |
 | **Extension/Bridge.lean** | `toQuot : Ext P → AdjoinRoot P.poly`, its ring-hom and injectivity proofs, and `CommRing (Ext P)`. |
 | **Extension/Field.lean** | Bijectivity (`ringEquivQuot`), cardinality, Fermat inversion, and `Field (Ext P)`. |
+| **Extension/Map.lean** | Base change `ExtensionParams.map` along a ring homomorphism, and transfer of irreducibility along a ring isomorphism (`irreducible_map_ringEquiv`). |
 | **BabyBear/Ext4.lean** | \(\mathrm{BabyBear}[X]/(X^4 - 11)\). |
+| **BabyBear/FastExt4.lean** | The `Binomial4` instance `X^4 - 11` over the fast BabyBear carrier and `BabyBear.Fast.Ext4`; irreducibility transferred from `BabyBear/Ext4.lean`. |
 | **KoalaBear/Ext4.lean** | \(\mathrm{KoalaBear}[X]/(X^4 - 3)\). |
+| **KoalaBear/FastExt4.lean** | The `Binomial4` instance `X^4 - 3` over the fast KoalaBear carrier, with `mulW x = x + x + x`, and `KoalaBear.Fast.Ext4`; irreducibility transferred from `KoalaBear/Ext4.lean`. |
 | **KoalaBear/Ext5.lean** | \(\mathrm{KoalaBear}[X]/(X^5 + X^2 - 1)\) — first non-binomial modulus; no degree-5 binomial exists since \(\gcd(5, p-1) = 1\). |
 | **KoalaBear/Ext5/QuinticCertData.lean** | Generated Rabin certificate data for the quintic. Regenerate with `scripts/gen_rabin_certificate.py`; do not hand-edit. |
 | **KoalaBear/Ext5/QuinticIrreducible.lean** | Kernel-checked irreducibility of \(X^5 + X^2 - 1\) via Rabin's test at prime degree. |
@@ -53,6 +56,7 @@ This directory contains formally verified field infrastructure used in zero-know
 | **Montgomery/Basic.lean** | Radix-generic Montgomery reduction, field-agnostic number theory shared by the fast prime fields. |
 | **Montgomery/Native32.lean** | Raw `UInt32`/`UInt64` Montgomery reduction over explicit word constants, including bounds and correctness. |
 | **Montgomery/Native32Field.lean** | Per-field parameters, the shared `FastField` carrier, arithmetic, instances, and canonical-field bridge. |
+| **Montgomery/Native32Ext4.lean** | The fast quartic binomial extension `Ext4 p` over any `Mont32Field p` with a `Binomial4 p` instance: one-reduction multiplication, norm-based inversion, `specEquiv` with the spec field `Ext4.Spec p` over `FastField p`, and the byte codec. |
 | **Montgomery/Native64x4Defs.lean** | Zero-import runtime definitions of the four-limb (64-bit-radix) Montgomery arithmetic, for `precompileModules` consumers. |
 | **Montgomery/Native64x4.lean** | Word-level specifications and add/sub/negate correctness for the four-limb arithmetic. |
 | **Montgomery/Native64x4Mul.lean** | Correctness of the four-limb CIOS Montgomery multiplication. |
