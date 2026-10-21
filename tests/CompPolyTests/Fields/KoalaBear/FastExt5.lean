@@ -12,7 +12,7 @@ public meta import CompPoly.Fields.KoalaBear.FastExt5
 
 Compiled checks of `KoalaBear.Fast.Ext5`: known answers computed with Plonky3's
 `QuinticTrinomialExtensionField<KoalaBear>` (revision `47e442f`), agreement with the spec field
-`KoalaBear.Ext5`, and the byte codec.
+`Ext5.Spec` over the fast base field, and the byte codec.
 -/
 
 public meta section

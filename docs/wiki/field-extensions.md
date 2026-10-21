@@ -521,7 +521,7 @@ Known answers from Plonky3's `BinomialExtensionField<KoalaBear, 4>` and `Binomia
 
 ### Fast KoalaBear quintic extension (2026-10-20)
 
-`KoalaBear.Fast.Ext5` ([`KoalaBear/FastExt5.lean`](../../CompPoly/Fields/KoalaBear/FastExt5.lean)) is `KoalaBear[X] / (X^5 + X^2 - 1)` as a structure of five Montgomery coefficients, with the same API as `Fast.Ext4`: `toSpec` into the spec `KoalaBear.Ext5`, `specEquiv`, the `toSpec_*` agreement lemmas, `coord`, `ofBase`, `smul`, and the five-coefficient byte codec (`toBytes_toSpec`).
+`KoalaBear.Fast.Ext5` ([`KoalaBear/FastExt5.lean`](../../CompPoly/Fields/KoalaBear/FastExt5.lean)) is `KoalaBear[X] / (X^5 + X^2 - 1)` as a structure of five Montgomery coefficients, with the same API as `Fast.Ext4`: `toSpec` into the spec field `Ext5.Spec`, `specEquiv : Ext5 ≃+* Ext5.Spec`, the `toSpec_*` agreement lemmas, `coord`, `ofBase`, `smul`, and the five-coefficient byte codec (`toBytes_toSpec`). As for the quartic, the spec field is `Ext` over the fast base field itself (`Ext5.params`); its irreducibility is `KoalaBear.quinticPoly_irreducible` for the `ZMod` spec `KoalaBear.Ext5`, transferred along `ringEquiv` (`params_eq_map`, `ExtensionParams.irreducible_map_poly`).
 
 * Multiplication reduces the schoolbook product by `X^5 = 1 - X^2`, folded into differences of the right factor's coefficients, so each output coefficient is five products: four through `mulAdd4` and one more product. Five products would exceed `mulAdd4`'s `2 · p · 2^32` bound.
 * Inversion is Fermat, `a ^ (p^5 - 2)` by `npowBinRec`; `toSpec_inv` follows from `toSpec_pow` and `FiniteField.pow_card_sub_one_eq_one`. A Frobenius-norm inverse is future performance work.
