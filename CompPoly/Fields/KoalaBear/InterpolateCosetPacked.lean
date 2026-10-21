@@ -37,38 +37,49 @@ namespace KoalaBear.Fast
 open CompPoly Montgomery.Native32
 open CompPoly.CPolynomial.NTTFast.Packed
 
-namespace Ext4
+end KoalaBear.Fast
 
-/-- `3 z₂² - 6 z₁ z₃`: `g₀(z - x) = t² + k₀` for `t = z₀ - x`. -/
-@[inline] def normK0 (z : Ext4) : Field :=
-  triple (z.c2 * z.c2) - triple (z.c1 * z.c3 + z.c1 * z.c3)
+namespace Montgomery.Native32.Ext4
 
-/-- `-z₁² - 3 z₃²`: `g₁(z - x) = 2 z₂ t + k₁` for `t = z₀ - x`. -/
-@[inline] def normK1 (z : Ext4) : Field := -(z.c1 * z.c1) - triple (z.c3 * z.c3)
+open Binomial4 (mulW)
 
-/-- The norm `g₀² - 3 g₁²` of `z - x` from `t = z₀ - x`, `t2 = t²` and the constants `k₀`, `k₁`
+variable {p : ℕ} [Mont32Field p] [Binomial4 p]
+
+/-- `W z₂² - 2 W z₁ z₃`: `g₀(z - x) = t² + k₀` for `t = z₀ - x`. -/
+@[inline] def normK0 (z : Ext4 p) : FastField p :=
+  mulW (z.c2 * z.c2) - mulW (z.c1 * z.c3 + z.c1 * z.c3)
+
+/-- `-z₁² - W z₃²`: `g₁(z - x) = 2 z₂ t + k₁` for `t = z₀ - x`. -/
+@[inline] def normK1 (z : Ext4 p) : FastField p := -(z.c1 * z.c1) - mulW (z.c3 * z.c3)
+
+/-- The norm `g₀² - W g₁²` of `z - x` from `t = z₀ - x`, `t2 = t²` and the constants `k₀`, `k₁`
 and `2 z₂`. -/
-@[inline] def normAt (k0 k1 z2x2 t t2 : Field) : Field :=
+@[inline] def normAt (k0 k1 z2x2 t t2 : FastField p) : FastField p :=
   let g0 := t2 + k0
   let g1 := z2x2 * t + k1
-  g0 * g0 - triple (g1 * g1)
+  g0 * g0 - mulW (g1 * g1)
 
-/-- `6 a`. -/
-@[inline] def six (a : Field) : Field := triple (a + a)
+/-- `2 W a`. -/
+@[inline] def twoW (a : FastField p) : FastField p := mulW (a + a)
 
 /-- `b₀` in `σ(z - x) (g₀ - g₁ X²) = b₀ + t b₁ + t² b₂ + t³`. -/
-def adj0 (z : Ext4) : Ext4 :=
-  ⟨-triple (z.c2 * normK1 z), triple (z.c3 * normK1 z) - z.c1 * normK0 z, z.c2 * normK0 z,
+def adj0 (z : Ext4 p) : Ext4 p :=
+  ⟨-mulW (z.c2 * normK1 z), mulW (z.c3 * normK1 z) - z.c1 * normK0 z, z.c2 * normK0 z,
     z.c1 * normK1 z - z.c3 * normK0 z⟩
 
 /-- `b₁` in `σ(z - x) (g₀ - g₁ X²) = b₀ + t b₁ + t² b₂ + t³`. -/
-def adj1 (z : Ext4) : Ext4 :=
-  ⟨normK0 z - six (z.c2 * z.c2), six (z.c2 * z.c3), -normK1 z, z.c1 * z.c2 + z.c1 * z.c2⟩
+def adj1 (z : Ext4 p) : Ext4 p :=
+  ⟨normK0 z - twoW (z.c2 * z.c2), twoW (z.c2 * z.c3), -normK1 z, z.c1 * z.c2 + z.c1 * z.c2⟩
 
 /-- `b₂` in `σ(z - x) (g₀ - g₁ X²) = b₀ + t b₁ + t² b₂ + t³`. -/
-def adj2 (z : Ext4) : Ext4 := ⟨0, -z.c1, -z.c2, -z.c3⟩
+def adj2 (z : Ext4 p) : Ext4 p := ⟨0, -z.c1, -z.c2, -z.c3⟩
 
-end Ext4
+end Montgomery.Native32.Ext4
+
+namespace KoalaBear.Fast
+
+open CompPoly Montgomery.Native32
+open CompPoly.CPolynomial.NTTFast.Packed
 
 /-- Four base-field sums: a column sum's coordinates over `b₀, b₁, b₂, 1`. -/
 structure Quad where

@@ -11,6 +11,7 @@ public import CompPoly.Fields.Extension.Bridge
 public import CompPoly.Fields.Extension.Cardinality
 public import CompPoly.Fields.Extension.Defs
 public import CompPoly.Fields.Extension.Field
+public import CompPoly.Fields.Extension.Map
 
 /-!
 # Computable field extensions
@@ -29,6 +30,8 @@ individual modules for details:
   multiply-by-`X` law `toQuot_shiftReduce`, and the `CommRing` structure.
 * `CompPoly/Fields/Extension/Cardinality.lean` — optional finiteness and cardinality certificates.
 * `CompPoly/Fields/Extension/Field.lean` — bijectivity and the certified `Field` structure.
+* `CompPoly/Fields/Extension/Map.lean` — base change of the parameters along a ring homomorphism,
+  and transfer of irreducibility along a ring isomorphism.
 -/
 
 @[expose] public section

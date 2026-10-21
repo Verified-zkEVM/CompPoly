@@ -110,6 +110,7 @@ public import CompPoly.Fields.BabyBear
 public import CompPoly.Fields.BabyBear.Basic
 public import CompPoly.Fields.BabyBear.Ext4
 public import CompPoly.Fields.BabyBear.Fast
+public import CompPoly.Fields.BabyBear.FastExt4
 public import CompPoly.Fields.Basic
 public import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
 public import CompPoly.Fields.Binary.AdditiveNTT.Algorithm
@@ -175,6 +176,7 @@ public import CompPoly.Fields.Extension.Bytes
 public import CompPoly.Fields.Extension.Cardinality
 public import CompPoly.Fields.Extension.Defs
 public import CompPoly.Fields.Extension.Field
+public import CompPoly.Fields.Extension.Map
 public import CompPoly.Fields.Goldilocks
 public import CompPoly.Fields.Goldilocks.Basic
 public import CompPoly.Fields.Goldilocks.Bytes
@@ -207,6 +209,7 @@ public import CompPoly.Fields.Mersenne31.Fast
 public import CompPoly.Fields.Montgomery.Basic
 public import CompPoly.Fields.Montgomery.Native32
 public import CompPoly.Fields.Montgomery.Native32Bytes
+public import CompPoly.Fields.Montgomery.Native32Ext4
 public import CompPoly.Fields.Montgomery.Native32Field
 public import CompPoly.Fields.Montgomery.Native64x4
 public import CompPoly.Fields.Montgomery.Native64x4Bytes
