@@ -807,11 +807,11 @@ With the `schedutil` governor, idle worker cores take a few hundred milliseconds
 
 ### Coset interpolation against Plonky3 (2026-10-07)
 
-`python3 scripts/bench-fields.py --suite interpolate` compares `KoalaBear.Fast.interpolateCoset` with Plonky3's `p3_interpolation::interpolate_coset` over the quartic extension; see [the benchmark operator guide](../../bench/README.md#koalabear-coset-interpolation-against-plonky3). The first measurement times the proved reference, which is sequential and works on lists of boxed extension elements, against parallel Plonky3 on eight workers. Three alternating rounds, milliseconds per call, Lean / Plonky3: 2^12 rows 0.67 / 0.20 (one column) and 1.78 / 0.16 (sixteen columns), 2^16 rows 12.0 / 0.93 and 28.3 / 0.63, 2^20 rows 249 / 8.05 and 531 / 9.15.
+`python3 scripts/bench-fields.py --suite interpolate` compares `Montgomery.Native32.interpolateCoset` over KoalaBear with Plonky3's `p3_interpolation::interpolate_coset` over the quartic extension; see [the benchmark operator guide](../../bench/README.md#koalabear-coset-interpolation-against-plonky3). The first measurement times the proved reference, which is sequential and works on lists of boxed extension elements, against parallel Plonky3 on eight workers. Three alternating rounds, milliseconds per call, Lean / Plonky3: 2^12 rows 0.67 / 0.20 (one column) and 1.78 / 0.16 (sixteen columns), 2^16 rows 12.0 / 0.93 and 28.3 / 0.63, 2^20 rows 249 / 8.05 and 531 / 9.15.
 
 ### Packed coset interpolation (2026-10-07)
 
-`KoalaBear.Fast.interpolateCosetPacked` ([`InterpolateCosetPacked.lean`](../../CompPoly/Fields/KoalaBear/InterpolateCosetPacked.lean)) replaces the reference's lists of boxed extension elements with raw words:
+`Montgomery.Native32.interpolateCosetPacked` ([`InterpolateCosetPacked.lean`](../../CompPoly/Fields/Montgomery/InterpolateCosetPacked.lean)) replaces the reference's lists of boxed extension elements with raw words:
 
 * **Base-field weights.** For `t = z₀ - x`, `(z - x)⁻¹ = (b₀ + t b₁ + t² b₂ + t³) / N(t)`, where the extension constants `bₖ` depend on `z` only and `N(t)` is the norm of `z - x` (`Ext4.smul_inv_sub_ofBase`). Each row's weight is the four base-field values `x tᵏ / N`, only base-field norms need inverting, and a column's sum is `∑ₖ Sₖ bₖ` for four base-field sums `Sₖ`. A row costs about twelve base-field multiplications.
 * **Blocks of 512 rows.** A forward pass stores each row's node, `t²`, norm and the prefix product of the norms in a scratch `ByteArray`; one Fermat inversion per block inverts the product; a backward pass overwrites each row with its four weights.
@@ -820,7 +820,7 @@ With the `schedutil` governor, idle worker cores take a few hundred milliseconds
 
 Interleaved runs chose 512-row blocks (256 was up to 8% slower, 1024 up to 20%) and eight tasks (sixteen oversubscribe eight cores and ran 1.4× slower). The module is compiled with `-march=native` in `CompPolyPackedNative`, like the packed NTT kernels; without it the four-column loop ran almost twice as slow.
 
-`interpolateCosetPacked_eq` ([`InterpolateCosetPackedCorrectness.lean`](../../CompPoly/Fields/KoalaBear/InterpolateCosetPackedCorrectness.lean)) proves it equal to the reference for every point off the coset. The proof follows the loops: the two passes as row updates of the packed buffer with the batch-inversion invariant, `dot4` as four `dot1` loops, `dot1` against a finite sum, then blocks, leaves and the task tree. Five rounds of `--suite interpolate` on eight workers, milliseconds per call:
+`interpolateCosetPacked_eq` ([`InterpolateCosetPackedCorrectness.lean`](../../CompPoly/Fields/Montgomery/InterpolateCosetPackedCorrectness.lean)) proves it equal to the reference for every point off the coset. The proof follows the loops: the two passes as row updates of the packed buffer with the batch-inversion invariant, `dot4` as four `dot1` loops, `dot1` against a finite sum, then blocks, leaves and the task tree. Five rounds of `--suite interpolate` on eight workers, milliseconds per call:
 
 | Rows | Columns | Lean packed | Lean reference | Plonky3 |
 |---:|---:|---:|---:|---:|
@@ -882,3 +882,12 @@ Packed `add`, `sub` and `mul` now reduce with an unsigned minimum, which compile
 
 On one thread Plonky3's batched DFT is two to three times faster per element: its hand-written AVX2 butterflies keep the data in registers, while about a quarter of the instructions in Lean's sixteen-lane radix-four kernel are spills. Rejected variants: eight-lane kernels (1.45× slower per pass), row-wise transforms over many columns at once, grouping several columns per task (5% faster at 2^14 × 64, slower at 2^16 × 8), `8 × 8` tiles for the input transpose, and nested parallel transforms inside column tasks. Fusing the coset scaling into the first forward pass would save about 8%.
 
+### Packed transforms over any 32-bit Montgomery field (2026-10-21)
+
+The packed plan and its proofs are generic over `Mont32Field p`, working on `FastField p` words. The raw word operations of `CompPoly/Univariate/NTTFast/Packed/Arithmetic.lean` take the modulus and `montgomeryNegInv` from the instance, `ofWord p` checks `< p`, and the kernels take `p` as their first argument (the generators of `CompPoly/Univariate/NTTFast/Packed/Unrolled.lean` emit `add p x y`). Every kernel is `@[specialize]`; at a concrete instance the compiler copies the call tree with the modulus as immediates, and the copies' hot kernels (`step16`, `pair16`, `lastHalf`) disassemble to the same instructions as the KoalaBear-only kernels before.
+
+So that the specialized code is compiled once, with the native library's flags, `Plan.forwardPacked` and `inversePacked` call the class `PackedNTT p`, whose `run` is `Native.run p` (`run_eq`). `CompPoly/Univariate/NTTFast/Packed/Instances.lean`, a root of `CompPolyPackedNative`, sets it for KoalaBear and BabyBear to a definition applying `Native.run` at the field's modulus, where the specialization happens. A new field needs one such instance. `lake exe CompPolyNativeSmoke` checks both compiled instances against the DFT specification and the parallel path against the sequential one.
+
+### Coset interpolation over any 32-bit Montgomery field (2026-10-21)
+
+`interpolateCoset` and `interpolateCosetPacked` ([`Montgomery/InterpolateCoset.lean`](../../CompPoly/Fields/Montgomery/InterpolateCoset.lean) and its `Packed` modules) are generic over `Mont32Field p` with a `Binomial4 p` extension, and their spec statements live in `Ext4.Spec p`; the weights' constants use `Binomial4.mulW`. As for the packed NTT, the loops are `@[specialize]`d and `interpolateCosetPacked` calls the class `PackedInterpolation p`, whose instances in `KoalaBear/InterpolateCoset.lean` and `BabyBear/InterpolateCoset.lean`, the roots of `CompPolyInterpolateNative`, compile them at the field's modulus. `lake exe CompPolyNativeSmoke` checks both instances against the reference.

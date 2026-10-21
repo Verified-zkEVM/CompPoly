@@ -7,7 +7,12 @@ module
 
 public import CompPoly.Univariate.NTTFast.Packed.ColumnsCorrectness
 
-/-! # Proved parallel KoalaBear transforms with packed native storage
+/-! # Proved parallel transforms with packed native storage
+
+The transforms work over the fast carrier `FastField p` of any `Mont32Field p`. The kernels are
+generic and `@[specialize]`d; `PackedNTT p` holds the kernel compiled for one modulus, so that a
+field's instance in the native library (`Packed/Instances.lean`) runs loops with the modulus as
+constants, whatever module calls the plan.
 
 The correctness theorems cover the complete Lean pipeline. Packed words are read and written
 with the `ByteArray` word accessors proposed for Lean core (`CompPoly.Data.ByteArray.Pack`),
@@ -18,14 +23,25 @@ array and `decode` reads one back.
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open Montgomery.Native32 (Mont32Field FastField)
+
+variable {p : ℕ} [Mont32Field p]
+
 open CompPoly.PackedRepr (encode)
 
+/-- The packed transform `Native.run p` as compiled for one modulus: an instance sets `run` to
+`Native.run p` at its concrete `p`, where the compiler specializes the kernels. -/
+class PackedNTT (p : ℕ) [Mont32Field p] where
+  /-- The compiled transform. -/
+  run : Array ByteArray → Nat → Bool → UInt32 → Bool → ByteArray → ByteArray
+  run_eq : run = Native.run p := by rfl
+
 /-- A reusable packed transform plan with certified cached twiddles and index bounds. -/
-structure Plan where
-  domain : NTT.Domain KoalaBear.Fast.Field
+structure Plan (p : ℕ) [Mont32Field p] where
+  domain : NTT.Domain (FastField p)
   log_bound : domain.logN ≤ 32
   byte_bound : 4 * domain.n < USize.size
-  nInv : KoalaBear.Fast.Field
+  nInv : FastField p
   nInv_eq : nInv = domain.nInv
   forwardTwiddles : Array ByteArray
   inverseTwiddles : Array ByteArray
@@ -35,8 +51,8 @@ structure Plan where
 namespace Plan
 
 /-- Encode both twiddle tables once; no plan construction is needed inside hot loops. -/
-def ofDomain (D : NTT.Domain KoalaBear.Fast.Field) (h32 : D.logN ≤ 32)
-    (hu : 4 * D.n < USize.size) : Plan where
+def ofDomain (D : NTT.Domain (FastField p)) (h32 : D.logN ≤ 32)
+    (hu : 4 * D.n < USize.size) : Plan p where
   domain := D
   log_bound := h32
   byte_bound := hu
@@ -56,12 +72,14 @@ def ofDomain (D : NTT.Domain KoalaBear.Fast.Field) (h32 : D.logN ≤ 32)
 /-- Natural-order forward transform of `n` packed Montgomery words: if `parallel`, from `2 ^ 15`
 words, column tasks run the top two radix-four passes and sixteen leaf tasks the rest; otherwise,
 and for smaller transforms, one leaf runs on the calling thread. -/
-@[inline] def forwardPacked (P : Plan) (a : ByteArray) (parallel : Bool := true) : ByteArray :=
-  Native.run P.forwardTwiddles P.domain.logN parallel P.nInv.val false a
+@[inline] def forwardPacked [PackedNTT p] (P : Plan p) (a : ByteArray) (parallel : Bool := true) :
+    ByteArray :=
+  PackedNTT.run p P.forwardTwiddles P.domain.logN parallel P.nInv.val false a
 
 /-- Natural-order inverse transform of `n` packed Montgomery words, including normalization. -/
-@[inline] def inversePacked (P : Plan) (a : ByteArray) (parallel : Bool := true) : ByteArray :=
-  Native.run P.inverseTwiddles P.domain.logN parallel P.nInv.val true a
+@[inline] def inversePacked [PackedNTT p] (P : Plan p) (a : ByteArray) (parallel : Bool := true) :
+    ByteArray :=
+  PackedNTT.run p P.inverseTwiddles P.domain.logN parallel P.nInv.val true a
 
 private theorem normalized_inverse [Field R] (D : NTT.Domain R) (a : Array R) :
     (NTT.Forward.forwardSpec D.inverse a).map (fun x ↦ D.nInv * x) =
@@ -82,17 +100,17 @@ private theorem inverse_n [Field R] (D : NTT.Domain R) : D.inverse.n = D.n :=
   congrArg (fun logN ↦ 2 ^ logN) (inverse_logN D)
 
 /-- The packed forward transform equals the mathematical DFT of every domain-sized input. -/
-theorem forwardPacked_correct (P : Plan) (a : Array KoalaBear.Fast.Field) (parallel : Bool)
+theorem forwardPacked_correct [PackedNTT p] (P : Plan p) (a : Array (FastField p)) (parallel : Bool)
     (hs : a.size = P.domain.n) :
     P.forwardPacked (encode a) parallel = encode (NTT.Forward.forwardSpec P.domain a) := by
-  rw [forwardPacked, P.forward_eq, P.nInv_eq]
+  rw [forwardPacked, PackedNTT.run_eq, P.forward_eq, P.nInv_eq]
   exact Native.run_dft P.domain parallel P.domain.nInv a false hs P.log_bound P.byte_bound
 
 /-- The packed inverse transform equals the normalized inverse DFT of every domain-sized input. -/
-theorem inversePacked_correct (P : Plan) (a : Array KoalaBear.Fast.Field) (parallel : Bool)
+theorem inversePacked_correct [PackedNTT p] (P : Plan p) (a : Array (FastField p)) (parallel : Bool)
     (hs : a.size = P.domain.n) :
     P.inversePacked (encode a) parallel = encode (NTT.Inverse.inverseSpec P.domain a) := by
-  rw [inversePacked, P.inverse_eq, P.nInv_eq]
+  rw [inversePacked, PackedNTT.run_eq, P.inverse_eq, P.nInv_eq]
   have h := Native.run_dft P.domain.inverse parallel P.domain.nInv a true
     (hs.trans (inverse_n P.domain).symm) ((inverse_logN P.domain).symm ▸ P.log_bound)
     ((inverse_n P.domain).symm ▸ P.byte_bound)

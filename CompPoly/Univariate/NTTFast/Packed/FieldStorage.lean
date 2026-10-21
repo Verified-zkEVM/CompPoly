@@ -15,21 +15,25 @@ public import CompPoly.Fields.Montgomery.Native32Bytes
 
 @[expose] public section
 namespace CompPoly.CPolynomial.NTTFast.Packed
+open Montgomery.Native32 (Mont32Field FastField)
+
+variable {p : ℕ} [Mont32Field p]
+
 open CompPoly.PackedRepr (encode size_encode_uint32)
 
 /-- Packed field coordinates are their packed Montgomery words. -/
-theorem encode_eq_map_val (a : Array KoalaBear.Fast.Field) :
+theorem encode_eq_map_val (a : Array (FastField p)) :
     encode a = encode (a.map Subtype.val) := by
   apply ByteArray.ext
   simp only [encode, Array.toList_map, List.flatMap_map]
   rfl
 
-@[simp] theorem size_encode_fields (a : Array KoalaBear.Fast.Field) :
+@[simp] theorem size_encode_fields (a : Array (FastField p)) :
     (encode a).size = 4 * a.size := by
   rw [encode_eq_map_val, size_encode_uint32, Array.size_map]
 
 /-- Reading a mapped coordinate preserves the field array's zero default. -/
-theorem getD_map_val (a : Array KoalaBear.Fast.Field) (i : Nat) :
+theorem getD_map_val (a : Array (FastField p)) (i : Nat) :
     (a.map Subtype.val).getD i 0 = (a.getD i 0).val := by
   by_cases hi : i < a.size
   · have hm : i < (a.map Subtype.val).size := by simpa only [Array.size_map] using hi
@@ -41,13 +45,13 @@ theorem getD_map_val (a : Array KoalaBear.Fast.Field) (i : Nat) :
     rfl
 
 /-- Mapping coordinates commutes with extracting field-array segments. -/
-theorem map_val_extract (a : Array KoalaBear.Fast.Field) (first last : Nat) :
+theorem map_val_extract (a : Array (FastField p)) (first last : Nat) :
     (a.extract first last).map Subtype.val = (a.map Subtype.val).extract first last := by
   apply Array.toList_inj.mp
   simp only [Array.toList_map, Array.toList_extract, List.extract, List.map_take, List.map_drop]
 
 /-- The compiled bounded word read returns the exact field coordinate. -/
-theorem Native.readUOffset_encode (a : Array KoalaBear.Fast.Field) (i o : USize) (h) :
+theorem Native.readUOffset_encode (a : Array (FastField p)) (i o : USize) (h) :
     Native.readUOffset (encode a) i o h = (a.getD (i.toNat + o.toNat) 0).val := by
   revert h
   simp only [encode_eq_map_val] at *
@@ -55,7 +59,7 @@ theorem Native.readUOffset_encode (a : Array KoalaBear.Fast.Field) (i o : USize)
   exact (Native.readUOffset_encodeWords (a.map Subtype.val) i o h).trans (getD_map_val a _)
 
 /-- A checked ordinary read agrees with the represented field coordinate. -/
-theorem Native.read_encode (a : Array KoalaBear.Fast.Field) (i : Nat)
+theorem Native.read_encode (a : Array (FastField p)) (i : Nat)
     (hs : (encode a).size < USize.size) (hi : i < a.size) :
     Native.read (encode a) i = (a.getD i 0).val := by
   simp only [encode_eq_map_val] at hs ⊢
@@ -63,9 +67,9 @@ theorem Native.read_encode (a : Array KoalaBear.Fast.Field) (i : Nat)
     (by simpa only [Array.size_map] using hi)).trans (getD_map_val a i)
 
 /-- A field-coordinate batch store realizes the corresponding array splice. -/
-theorem Native.write16U_encode (a : Array KoalaBear.Fast.Field) (i : USize)
+theorem Native.write16U_encode (a : Array (FastField p)) (i : USize)
     (hs : (encode a).size < USize.size) (hi : i.toNat + 16 ≤ a.size)
-    (x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 : KoalaBear.Fast.Field) :
+    (x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 : FastField p) :
     Native.write16U (encode a) i x0.val x1.val x2.val x3.val x4.val x5.val x6.val x7.val
       x8.val x9.val x10.val x11.val x12.val x13.val x14.val x15.val =
       encode (splice a i.toNat #[x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13,
@@ -100,9 +104,9 @@ theorem Native.write16U_encode (a : Array KoalaBear.Fast.Field) (i : USize)
   rfl
 
 /-- A bounded single-coordinate write implements the corresponding field-array update. -/
-theorem Native.write_encode (a : Array KoalaBear.Fast.Field) (i : Nat)
+theorem Native.write_encode (a : Array (FastField p)) (i : Nat)
     (hs : (encode a).size < USize.size) (hi : i < a.size)
-    (x : KoalaBear.Fast.Field) :
+    (x : FastField p) :
     Native.write (encode a) i x.val = encode (a.setIfInBounds i x) := by
   have hin : i < USize.size := by rw [size_encode_fields] at hs; omega
   have hmul : i * 4 < USize.size := by rw [size_encode_fields] at hs; omega
@@ -182,7 +186,7 @@ theorem Native.generate_eq (n : Nat) (f : Nat → UInt32) :
   · rfl
 
 /-- The executable encoder realizes the packed field-array representation. -/
-theorem Native.encodeFields_eq (a : Array KoalaBear.Fast.Field) :
+theorem Native.encodeFields_eq (a : Array (FastField p)) :
     Native.encodeFields a = encode a := by
   rw [Native.encodeFields, Native.generate_eq, encode_eq_map_val]
   congr 1

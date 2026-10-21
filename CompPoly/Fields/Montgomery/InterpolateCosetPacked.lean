@@ -5,14 +5,18 @@ Authors: Gregor Mitscha-Baude
 -/
 module
 
-public import CompPoly.Fields.KoalaBear.InterpolateCoset
+public import CompPoly.Fields.Montgomery.InterpolateCoset
 public import CompPoly.Univariate.NTTFast.Packed.StorageLemmas
 
 /-!
 # Coset interpolation over packed words
 
-`KoalaBear.Fast.interpolateCosetPacked` is `interpolateCoset` on a row-major matrix of Montgomery
-words in a `ByteArray`, Plonky3's layout.
+`Montgomery.Native32.interpolateCosetPacked` is `interpolateCoset` on a row-major matrix of
+Montgomery words in a `ByteArray`, Plonky3's layout, for any `Mont32Field p` with a quartic
+binomial extension. The implementation `InterpolatePacked.run` is generic and `@[specialize]`d;
+`interpolateCosetPacked` calls it through the class `PackedInterpolation p`, whose instances
+compile it once for a concrete field (`KoalaBear/InterpolateCoset.lean`,
+`BabyBear/InterpolateCoset.lean`).
 
 * **Base-field weights.** For `t = z₀ - x`, the inverse of `z - x` is `(b₀ + t b₁ + t² b₂ + t³) / N`
   with extension constants `bₖ` that depend on `z` only and the norm `N = N(t)` of `z - x`. So the
@@ -31,13 +35,6 @@ every point off the coset.
 -/
 
 @[expose] public section
-
-namespace KoalaBear.Fast
-
-open CompPoly Montgomery.Native32
-open CompPoly.CPolynomial.NTTFast.Packed
-
-end KoalaBear.Fast
 
 namespace Montgomery.Native32.Ext4
 
@@ -76,61 +73,68 @@ def adj2 (z : Ext4 p) : Ext4 p := ⟨0, -z.c1, -z.c2, -z.c3⟩
 
 end Montgomery.Native32.Ext4
 
-namespace KoalaBear.Fast
+namespace Montgomery.Native32
 
-open CompPoly Montgomery.Native32
+open CompPoly
 open CompPoly.CPolynomial.NTTFast.Packed
 
+variable {p : ℕ} [Mont32Field p]
+
 /-- Four base-field sums: a column sum's coordinates over `b₀, b₁, b₂, 1`. -/
-structure Quad where
-  s0 : Field
-  s1 : Field
-  s2 : Field
-  s3 : Field
+structure Quad (p : ℕ) [Mont32Field p] where
+  s0 : FastField p
+  s1 : FastField p
+  s2 : FastField p
+  s3 : FastField p
 
 namespace Quad
 
-instance : Zero Quad := ⟨⟨0, 0, 0, 0⟩⟩
-instance : Inhabited Quad := ⟨0⟩
-instance : Add Quad := ⟨fun a b ↦ ⟨a.s0 + b.s0, a.s1 + b.s1, a.s2 + b.s2, a.s3 + b.s3⟩⟩
+instance : Zero (Quad p) := ⟨⟨0, 0, 0, 0⟩⟩
+instance : Inhabited (Quad p) := ⟨0⟩
+instance : Add (Quad p) := ⟨fun a b ↦ ⟨a.s0 + b.s0, a.s1 + b.s1, a.s2 + b.s2, a.s3 + b.s3⟩⟩
 
 /-- `s₀ b₀ + s₁ b₁ + s₂ b₂ + s₃` for the point `z`. -/
-def combine (z : Ext4) (q : Quad) : Ext4 :=
+def combine [Binomial4 p] (z : Ext4 p) (q : Quad p) : Ext4 p :=
   Ext4.smul q.s0 (Ext4.adj0 z) + Ext4.smul q.s1 (Ext4.adj1 z) + Ext4.smul q.s2 (Ext4.adj2 z) +
     Ext4.ofBase q.s3
 
 end Quad
 
 /-- The words of a byte array, as residues. -/
-def decodeWords (b : ByteArray) : Array Field :=
+def decodeWords (p : ℕ) [Mont32Field p] (b : ByteArray) : Array (FastField p) :=
   Array.ofFn (n := b.size / 4) fun k ↦ ofWordMod (b.getUInt32LE! (4 * k.val))
 
 namespace InterpolatePacked
 
 /-- A lazy column-sum accumulator. -/
-abbrev Acc : Type := LazyAcc KoalaBear.fieldSize
+abbrev Acc (p : ℕ) [Mont32Field p] : Type := LazyAcc p
 
 /-- Rows per block. -/
 def blockRows : ℕ := 512
 
 /-- A stored residue; a word from the modulus up reads as zero. -/
-@[inline] def wordField (x : UInt32) : Field :=
-  if h : x < 2130706433 then ⟨x, by rw [UInt32.lt_iff_toNat_lt] at h; exact h⟩ else 0
+@[inline] def wordField (p : ℕ) [P : Mont32Field p] (x : UInt32) : FastField p :=
+  if h : x < P.modulus32 then
+    ⟨x, by rw [UInt32.lt_iff_toNat_lt, Mont32Field.modulus32_toNat] at h; exact h⟩
+  else 0
 
-theorem wordField_val (x : Field) : wordField x.val = x := by
-  have hx : x.val < 2130706433 := by rw [UInt32.lt_iff_toNat_lt]; exact x.property
+theorem wordField_val (x : FastField p) : wordField p x.val = x := by
+  have hx : x.val < Mont32Field.modulus32 p := by
+    rw [UInt32.lt_iff_toNat_lt, Mont32Field.modulus32_toNat]; exact x.property
   simp only [wordField, hx, ↓reduceDIte]; rfl
 
 /-- Word `i + o` of a buffer of residues. -/
-@[inline] def readField (b : @& ByteArray) (i o : USize)
-    (h : 4 * (i.toNat + o.toNat) + 3 < b.size ∧ b.size < USize.size) : Field :=
-  wordField (Native.readUOffset b i o h)
+@[inline] def readField (p : ℕ) [Mont32Field p] (b : @& ByteArray) (i o : USize)
+    (h : 4 * (i.toNat + o.toNat) + 3 < b.size ∧ b.size < USize.size) : FastField p :=
+  wordField p (Native.readUOffset b i o h)
 
 /-- `n` rows from row `i` of a block, from node `x`: store `x`, `t²`, the norm `N` of `z - x` and
 the product `acc` of the norms before it at words `4 i, …, 4 i + 3`. Returns the buffer, the
 product of all norms and the next node. -/
-def forward (ω z0 k0 k1 z2x2 : Field) : ℕ → USize → Field → Field → ByteArray →
-    ByteArray × Field × Field
+@[specialize]
+def forward [Binomial4 p]
+    (ω z0 k0 k1 z2x2 : FastField p) : ℕ → USize → FastField p → FastField p → ByteArray →
+    ByteArray × FastField p × FastField p
   | 0, _, x, acc, buf => (buf, acc, x)
   | n + 1, i, x, acc, buf =>
     let t := z0 - x
@@ -139,7 +143,8 @@ def forward (ω z0 k0 k1 z2x2 : Field) : ℕ → USize → Field → Field → B
     forward ω z0 k0 k1 z2x2 n (i + 1) (x * ω) (acc * nm)
       (Native.storeWords buf (16 * i) 4 x.val t2.val nm.val acc.val 0 0 0 0 0 0 0 0 0 0 0 0)
 
-theorem size_forward (ω z0 k0 k1 z2x2 : Field) (n : ℕ) (i : USize) (x acc : Field)
+theorem size_forward [Binomial4 p] (ω z0 k0 k1 z2x2 : FastField p) (n : ℕ) (i : USize)
+    (x acc : FastField p)
     (buf : ByteArray) : (forward ω z0 k0 k1 z2x2 n i x acc buf).1.size = buf.size := by
   induction n generalizing i x acc buf with
   | zero => rfl
@@ -159,20 +164,21 @@ theorem usize_add_lt (a b : USize) (h : a.toNat + b.toNat < USize.size) :
 /-- `n` rows back from row `i` of a block: `inv` inverts the product of the norms before row `i`.
 Row `i - 1`'s norm inverse is `inv` times its prefix product; its words become its weights
 `u, u t, u t², u t³` for `u = x / N`, and `inv` times its norm inverts the earlier prefix. -/
-def backward (z0 : Field) : (n : ℕ) → (i : USize) → Field → (buf : ByteArray) →
+@[specialize]
+def backward (z0 : FastField p) : (n : ℕ) → (i : USize) → FastField p → (buf : ByteArray) →
     16 * i.toNat ≤ buf.size ∧ buf.size < USize.size ∧ n ≤ i.toNat → ByteArray
   | 0, _, _, buf, _ => buf
   | n + 1, i, inv, buf, h =>
     have hj : (i - 1).toNat = i.toNat - 1 := by
       rw [USize.toNat_sub_of_le _ _ (by rw [USize.le_iff_toNat_le]; simp; omega)]; simp
     have h4 := usize_four_mul (i - 1) buf.size (by omega) h.2.1
-    let x := readField buf (4 * (i - 1)) 0 (by
+    let x := readField p buf (4 * (i - 1)) 0 (by
       rw [h4, Native.usize_numeral 0 (by decide)]; exact ⟨by omega, h.2.1⟩)
-    let t2 := readField buf (4 * (i - 1)) 1 (by
+    let t2 := readField p buf (4 * (i - 1)) 1 (by
       rw [h4, Native.usize_numeral 1 (by decide)]; exact ⟨by omega, h.2.1⟩)
-    let nm := readField buf (4 * (i - 1)) 2 (by
+    let nm := readField p buf (4 * (i - 1)) 2 (by
       rw [h4, Native.usize_numeral 2 (by decide)]; exact ⟨by omega, h.2.1⟩)
-    let pre := readField buf (4 * (i - 1)) 3 (by
+    let pre := readField p buf (4 * (i - 1)) 3 (by
       rw [h4, Native.usize_numeral 3 (by decide)]; exact ⟨by omega, h.2.1⟩)
     let u := x * (inv * pre)
     let v1 := u * (z0 - x)
@@ -181,7 +187,8 @@ def backward (z0 : Field) : (n : ℕ) → (i : USize) → Field → (buf : ByteA
         0 0 0 0 0 0 0 0 0 0 0 0)
       (by rw [Native.size_storeWords]; omega)
 
-theorem size_backward (z0 : Field) (n : ℕ) (i : USize) (inv : Field) (buf : ByteArray) (h) :
+theorem size_backward (z0 : FastField p) (n : ℕ) (i : USize) (inv : FastField p) (buf : ByteArray)
+    (h) :
     (backward z0 n i inv buf h).size = buf.size := by
   induction n generalizing i inv buf with
   | zero => rfl
@@ -189,10 +196,12 @@ theorem size_backward (z0 : Field) (n : ℕ) (i : USize) (inv : Field) (buf : By
 
 /-- One column of `n` block rows: `e` steps through the column's words by `width`, `w` through
 the rows' weights. -/
-def dot1 (evals buf : @& ByteArray) (width : USize) : (n : ℕ) → (e w : USize) →
-    (a0 a1 a2 a3 : Acc) →
+@[specialize]
+def dot1 (p : ℕ) [Mont32Field p] (evals buf : @& ByteArray) (width : USize) : (n : ℕ) →
+    (e w : USize) →
+    (a0 a1 a2 a3 : Acc p) →
     (∀ r < n, 4 * (e.toNat + r * width.toNat) + 3 < evals.size) ∧ evals.size < USize.size ∧
-      4 * (w.toNat + 4 * n) ≤ buf.size ∧ buf.size < USize.size → Quad
+      4 * (w.toNat + 4 * n) ≤ buf.size ∧ buf.size < USize.size → Quad p
   | 0, _, _, a0, a1, a2, a3, _ => ⟨a0.result, a1.result, a2.result, a3.result⟩
   | n + 1, e, w, a0, a1, a2, a3, h =>
     have h0 := Native.usize_numeral 0 (by decide)
@@ -201,11 +210,11 @@ def dot1 (evals buf : @& ByteArray) (width : USize) : (n : ℕ) → (e w : USize
     have h3 := Native.usize_numeral 3 (by decide)
     have he := h.1 0 (by omega)
     let v := Native.readUOffset evals e 0 (by rw [h0]; simp at he; exact ⟨by omega, h.2.1⟩)
-    let w0 := readField buf w 0 (by rw [h0]; exact ⟨by omega, h.2.2.2⟩)
-    let w1 := readField buf w 1 (by rw [h1]; exact ⟨by omega, h.2.2.2⟩)
-    let w2 := readField buf w 2 (by rw [h2]; exact ⟨by omega, h.2.2.2⟩)
-    let w3 := readField buf w 3 (by rw [h3]; exact ⟨by omega, h.2.2.2⟩)
-    dot1 evals buf width n (e + width) (w + 4) (a0.add v w0) (a1.add v w1) (a2.add v w2)
+    let w0 := readField p buf w 0 (by rw [h0]; exact ⟨by omega, h.2.2.2⟩)
+    let w1 := readField p buf w 1 (by rw [h1]; exact ⟨by omega, h.2.2.2⟩)
+    let w2 := readField p buf w 2 (by rw [h2]; exact ⟨by omega, h.2.2.2⟩)
+    let w3 := readField p buf w 3 (by rw [h3]; exact ⟨by omega, h.2.2.2⟩)
+    dot1 p evals buf width n (e + width) (w + 4) (a0.add v w0) (a1.add v w1) (a2.add v w2)
       (a3.add v w3) (by
         refine ⟨fun r hr ↦ ?_, h.2.1, ?_, h.2.2.2⟩
         · have := h.1 (r + 1) (by omega)
@@ -220,11 +229,13 @@ def dot1 (evals buf : @& ByteArray) (width : USize) : (n : ℕ) → (e w : USize
           omega)
 
 /-- Four adjacent columns of `n` block rows, sharing each row's weights. -/
-def dot4 (evals buf : @& ByteArray) (width : USize) : (n : ℕ) → (e w : USize) →
-    (a0 a1 a2 a3 b0 b1 b2 b3 c0 c1 c2 c3 d0 d1 d2 d3 : Acc) →
+@[specialize]
+def dot4 (p : ℕ) [Mont32Field p] (evals buf : @& ByteArray) (width : USize) : (n : ℕ) →
+    (e w : USize) →
+    (a0 a1 a2 a3 b0 b1 b2 b3 c0 c1 c2 c3 d0 d1 d2 d3 : Acc p) →
     (∀ r < n, 4 * (e.toNat + r * width.toNat + 3) + 3 < evals.size) ∧
       evals.size < USize.size ∧ 4 * (w.toNat + 4 * n) ≤ buf.size ∧ buf.size < USize.size →
-    Quad × Quad × Quad × Quad
+    Quad p × Quad p × Quad p × Quad p
   | 0, _, _, a0, a1, a2, a3, b0, b1, b2, b3, c0, c1, c2, c3, d0, d1, d2, d3, _ =>
     (⟨a0.result, a1.result, a2.result, a3.result⟩, ⟨b0.result, b1.result, b2.result, b3.result⟩,
       ⟨c0.result, c1.result, c2.result, c3.result⟩, ⟨d0.result, d1.result, d2.result, d3.result⟩)
@@ -238,11 +249,11 @@ def dot4 (evals buf : @& ByteArray) (width : USize) : (n : ℕ) → (e w : USize
     let v1 := Native.readUOffset evals e 1 (by rw [h1]; simp at he; exact ⟨by omega, h.2.1⟩)
     let v2 := Native.readUOffset evals e 2 (by rw [h2]; simp at he; exact ⟨by omega, h.2.1⟩)
     let v3 := Native.readUOffset evals e 3 (by rw [h3]; simp at he; exact ⟨by omega, h.2.1⟩)
-    let w0 := readField buf w 0 (by rw [h0]; exact ⟨by omega, h.2.2.2⟩)
-    let w1 := readField buf w 1 (by rw [h1]; exact ⟨by omega, h.2.2.2⟩)
-    let w2 := readField buf w 2 (by rw [h2]; exact ⟨by omega, h.2.2.2⟩)
-    let w3 := readField buf w 3 (by rw [h3]; exact ⟨by omega, h.2.2.2⟩)
-    dot4 evals buf width n (e + width) (w + 4)
+    let w0 := readField p buf w 0 (by rw [h0]; exact ⟨by omega, h.2.2.2⟩)
+    let w1 := readField p buf w 1 (by rw [h1]; exact ⟨by omega, h.2.2.2⟩)
+    let w2 := readField p buf w 2 (by rw [h2]; exact ⟨by omega, h.2.2.2⟩)
+    let w3 := readField p buf w 3 (by rw [h3]; exact ⟨by omega, h.2.2.2⟩)
+    dot4 p evals buf width n (e + width) (w + 4)
       (a0.add v0 w0) (a1.add v0 w1) (a2.add v0 w2) (a3.add v0 w3)
       (b0.add v1 w0) (b1.add v1 w1) (b2.add v1 w2) (b3.add v1 w3)
       (c0.add v2 w0) (c1.add v2 w1) (c2.add v2 w2) (c3.add v2 w3)
@@ -291,46 +302,53 @@ theorem blockFits_dot {evals buf : ByteArray} {width row b : ℕ}
   omega
 
 /-- Add the block's sums of the four columns from `c` into `sums`. -/
-def addColumns4 (evals buf : @& ByteArray) (width row b : ℕ)
-    (hfit : BlockFits evals buf width row b) (c : ℕ) (hc : c + 4 ≤ width) (sums : Array Quad) :
-    Array Quad :=
-  let a : Acc := LazyAcc.zero
-  let q := dot4 evals buf width.toUSize b (row * width + c).toUSize 0 a a a a a a a a a a a a
+@[specialize]
+def addColumns4 (p : ℕ) [Mont32Field p] (evals buf : @& ByteArray) (width row b : ℕ)
+    (hfit : BlockFits evals buf width row b) (c : ℕ) (hc : c + 4 ≤ width) (sums : Array (Quad p)) :
+    Array (Quad p) :=
+  let a : Acc p := LazyAcc.zero
+  let q := dot4 p evals buf width.toUSize b (row * width + c).toUSize 0 a a a a a a a a a a a a
     a a a a (blockFits_dot hfit c 3 (by omega))
   (((sums.modify c (· + q.1)).modify (c + 1) (· + q.2.1)).modify (c + 2) (· + q.2.2.1)).modify
     (c + 3) (· + q.2.2.2)
 
 /-- Add the block's sums of `g` groups of four columns from column `c` into `sums`. -/
-def columns4 (evals buf : @& ByteArray) (width row b : ℕ) (hfit : BlockFits evals buf width row b) :
-    (g c : ℕ) → c + 4 * g ≤ width → Array Quad → Array Quad
+@[specialize]
+def columns4 (p : ℕ) [Mont32Field p] (evals buf : @& ByteArray) (width row b : ℕ)
+    (hfit : BlockFits evals buf width row b) :
+    (g c : ℕ) → c + 4 * g ≤ width → Array (Quad p) → Array (Quad p)
   | 0, _, _, sums => sums
   | g + 1, c, hc, sums =>
-    columns4 evals buf width row b hfit g (c + 4) (by omega)
-      (addColumns4 evals buf width row b hfit c (by omega) sums)
+    columns4 p evals buf width row b hfit g (c + 4) (by omega)
+      (addColumns4 p evals buf width row b hfit c (by omega) sums)
 
 /-- Add the block's sum of column `c` into `sums`. -/
-def addColumn (evals buf : @& ByteArray) (width row b : ℕ)
-    (hfit : BlockFits evals buf width row b) (c : ℕ) (hc : c + 1 ≤ width) (sums : Array Quad) :
-    Array Quad :=
-  let a : Acc := LazyAcc.zero
-  sums.modify c (· + dot1 evals buf width.toUSize b (row * width + c).toUSize 0 a a a a (by
+@[specialize]
+def addColumn (p : ℕ) [Mont32Field p] (evals buf : @& ByteArray) (width row b : ℕ)
+    (hfit : BlockFits evals buf width row b) (c : ℕ) (hc : c + 1 ≤ width) (sums : Array (Quad p)) :
+    Array (Quad p) :=
+  let a : Acc p := LazyAcc.zero
+  sums.modify c (· + dot1 p evals buf width.toUSize b (row * width + c).toUSize 0 a a a a (by
     have := blockFits_dot hfit c 0 (by omega)
     simp only [Nat.add_zero] at this
     exact this))
 
 /-- Add the block's sums of `k` single columns from column `c` into `sums`. -/
-def columns1 (evals buf : @& ByteArray) (width row b : ℕ) (hfit : BlockFits evals buf width row b) :
-    (k c : ℕ) → c + k ≤ width → Array Quad → Array Quad
+@[specialize]
+def columns1 (p : ℕ) [Mont32Field p] (evals buf : @& ByteArray) (width row b : ℕ)
+    (hfit : BlockFits evals buf width row b) :
+    (k c : ℕ) → c + k ≤ width → Array (Quad p) → Array (Quad p)
   | 0, _, _, sums => sums
   | k + 1, c, hc, sums =>
-    columns1 evals buf width row b hfit k (c + 1) (by omega)
-      (addColumn evals buf width row b hfit c (by omega) sums)
+    columns1 p evals buf width row b hfit k (c + 1) (by omega)
+      (addColumn p evals buf width row b hfit c (by omega) sums)
 
 /-- Blocks of rows from `row` up to `hi`, `k` of them, from node `x`. -/
-def blocks (evals : @& ByteArray) (ω z0 k0 k1 z2x2 : Field) (width hi : ℕ) :
-    (k row : ℕ) → Field → (buf : ByteArray) → Array Quad →
+@[specialize]
+def blocks [Binomial4 p] (evals : @& ByteArray) (ω z0 k0 k1 z2x2 : FastField p) (width hi : ℕ) :
+    (k row : ℕ) → FastField p → (buf : ByteArray) → Array (Quad p) →
     row ≤ hi ∧ 4 * (hi * width) ≤ evals.size ∧ evals.size < USize.size ∧
-      buf.size = 16 * blockRows → Array Quad
+      buf.size = 16 * blockRows → Array (Quad p)
   | 0, _, _, _, sums, _ => sums
   | k + 1, row, x, buf, sums, h =>
     let b := min blockRows (hi - row)
@@ -349,29 +367,32 @@ def blocks (evals : @& ByteArray) (ω z0 k0 k1 z2x2 : Field) (width hi : ℕ) :
       have := Nat.mul_le_mul_right width hr
       refine ⟨by omega, h.2.2.1, by omega, ?_⟩
       rw [hbuf]; simp only [blockRows]; omega
-    let sums := columns4 evals buf width row b hfit (width / 4) 0 (by omega) sums
-    let sums := columns1 evals buf width row b hfit (width % 4) (4 * (width / 4)) (by omega) sums
+    let sums := columns4 p evals buf width row b hfit (width / 4) 0 (by omega) sums
+    let sums := columns1 p evals buf width row b hfit (width % 4) (4 * (width / 4)) (by omega) sums
     blocks evals ω z0 k0 k1 z2x2 width hi k (row + b) f.2.2 buf sums (by
       have := Nat.min_le_right blockRows (hi - row)
       exact ⟨by omega, h.2.1, h.2.2.1, hbuf⟩)
 
 /-- The column sums of rows `lo, …, hi - 1`. -/
-def leaf (evals : @& ByteArray) (ω s : Field) (z : Ext4) (width lo hi : ℕ)
-    (h : lo ≤ hi ∧ 4 * (hi * width) ≤ evals.size ∧ evals.size < USize.size) : Array Quad :=
+@[specialize]
+def leaf [Binomial4 p] (evals : @& ByteArray) (ω s : FastField p) (z : Ext4 p) (width lo hi : ℕ)
+    (h : lo ≤ hi ∧ 4 * (hi * width) ≤ evals.size ∧ evals.size < USize.size) : Array (Quad p) :=
   blocks evals ω z.c0 (Ext4.normK0 z) (Ext4.normK1 z) (z.c2 + z.c2) width hi
     ((hi - lo + blockRows - 1) / blockRows) lo (s * Montgomery.Native32.pow ω lo)
     (ByteArray.mk (Array.replicate (16 * blockRows) 0)) (Array.replicate width 0)
     ⟨h.1, h.2.1, h.2.2, by simp [ByteArray.size]⟩
 
 /-- Add the lower half's sums, computed by the caller, to the upper half's task. -/
-@[noinline] def join (upper : Task (Array Quad)) (low : Unit → Array Quad) : Array Quad :=
+@[noinline, specialize] def join (upper : Task (Array (Quad p))) (low : Unit → Array
+    (Quad p)) : Array (Quad p) :=
   let low := low ()
   Array.zipWith (· + ·) low upper.get
 
 /-- The column sums of rows `lo, …, hi - 1` over `2 ^ depth` tasks; the caller takes the lowest
 range. -/
-def tree (evals : ByteArray) (ω s : Field) (z : Ext4) (width : ℕ) (lo hi : ℕ)
-    (h : lo ≤ hi ∧ 4 * (hi * width) ≤ evals.size ∧ evals.size < USize.size) : ℕ → Array Quad
+@[specialize]
+def tree [Binomial4 p] (evals : ByteArray) (ω s : FastField p) (z : Ext4 p) (width : ℕ) (lo hi : ℕ)
+    (h : lo ≤ hi ∧ 4 * (hi * width) ≤ evals.size ∧ evals.size < USize.size) : ℕ → Array (Quad p)
   | 0 => leaf evals ω s z width lo hi h
   | depth + 1 =>
     let mid := lo + (hi - lo) / 2
@@ -380,18 +401,32 @@ def tree (evals : ByteArray) (ω s : Field) (z : Ext4) (width : ℕ) (lo hi : �
     join (Task.spawn fun _ ↦ tree evals ω s z width mid hi ⟨by omega, h.2⟩ depth)
       (fun _ ↦ tree evals ω s z width lo mid ⟨by omega, by omega, h.2.2⟩ depth)
 
-end InterpolatePacked
-
-open InterpolatePacked in
 /-- `interpolateCoset` on a row-major `2^logN × width` matrix of Montgomery words, over up to
 `2 ^ logTasks` tasks. -/
-def interpolateCosetPacked (logN : ℕ) (ω s : Field) (width : ℕ) (evals : ByteArray) (z : Ext4)
-    (logTasks : ℕ := 3) : Array Ext4 :=
+@[specialize]
+def run [Binomial4 p] (logN : ℕ) (ω s : FastField p) (width : ℕ) (evals : ByteArray)
+    (z : Ext4 p) (logTasks : ℕ) : Array (Ext4 p) :=
   if h : evals.size = 4 * (2 ^ logN * width) ∧ evals.size < USize.size then
     let sums := tree evals ω s z width 0 (2 ^ logN) ⟨Nat.zero_le _, h.1.ge, h.2⟩
       (min logTasks (logN - 9))
     let factor := cosetFactor logN s z
     sums.map fun q ↦ factor * q.combine z
-  else interpolateCoset logN ω s width (decodeWords evals) z
+  else interpolateCoset logN ω s width (decodeWords p evals) z
 
-end KoalaBear.Fast
+end InterpolatePacked
+
+/-- `InterpolatePacked.run` as compiled for one field: an instance sets `run` to it at the
+field's concrete modulus, where the compiler specializes the loops. -/
+class PackedInterpolation (p : ℕ) [Mont32Field p] [Binomial4 p] where
+  /-- The compiled interpolation. -/
+  run : ℕ → FastField p → FastField p → ℕ → ByteArray → Ext4 p → ℕ → Array (Ext4 p)
+  run_eq : run = InterpolatePacked.run := by rfl
+
+/-- `interpolateCoset` on a row-major `2^logN × width` matrix of Montgomery words, over up to
+`2 ^ logTasks` tasks, with the field's compiled loops. -/
+@[inline]
+def interpolateCosetPacked [Binomial4 p] [PackedInterpolation p] (logN : ℕ) (ω s : FastField p)
+    (width : ℕ) (evals : ByteArray) (z : Ext4 p) (logTasks : ℕ := 3) : Array (Ext4 p) :=
+  PackedInterpolation.run logN ω s width evals z logTasks
+
+end Montgomery.Native32

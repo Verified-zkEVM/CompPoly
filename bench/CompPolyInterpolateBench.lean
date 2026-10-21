@@ -6,7 +6,7 @@ Authors: Gregor Mitscha-Baude
 module
 
 public import CompPolyBench.Common
-public import CompPoly.Fields.KoalaBear.InterpolateCosetPacked
+public import CompPoly.Fields.KoalaBear.InterpolateCoset
 public import CompPoly.Univariate.NTT.KoalaBear
 
 /-! # KoalaBear coset interpolation against Plonky3's `interpolate_coset` -/
@@ -71,8 +71,8 @@ def main (args : List String) : IO UInt32 := do
         inputShape := s!"{n} rows × {width} columns", digestIterations := 2,
         digestClass := "interpolate" }
     let run : Nat → Array KoalaBear.Fast.Ext4 := if impl == "packed" then
-      fun i ↦ KoalaBear.Fast.interpolateCosetPacked logN ω shift width packed points[i % 2]!
-    else fun i ↦ KoalaBear.Fast.interpolateCoset logN ω shift width evals points[i % 2]!
+      fun i ↦ Montgomery.Native32.interpolateCosetPacked logN ω shift width packed points[i % 2]!
+    else fun i ↦ Montgomery.Native32.interpolateCoset logN ω shift width evals points[i % 2]!
     let row ← runTimedSpec spec .large run checksumExt4Array
       (sink := fun xs ↦ (xs[0]!.c0.val.toUInt64) ^^^ (xs.size.toUInt64 <<< 32))
     let record : BenchRecord := { row with groupKey := s!"interpolate-koalabear-{logN}-{width}" }

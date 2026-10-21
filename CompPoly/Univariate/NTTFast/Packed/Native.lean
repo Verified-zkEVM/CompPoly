@@ -9,7 +9,7 @@ public import CompPoly.Data.ByteArray.Packed
 public import CompPoly.Univariate.NTTFast.Natural
 public import CompPoly.Univariate.NTTFast.Reverse32
 import CompPoly.Univariate.NTTFast.Packed.Unrolled
-/-! # Packed native-storage KoalaBear FFT kernels
+/-! # Packed native-storage FFT kernels over 32-bit Montgomery fields
 All arithmetic, scheduling and storage are Lean. Packed words are read and written with the
 `ByteArray` little-endian `UInt32` accessors of `CompPoly.Data.ByteArray.Pack`, Lean core's
 proposed `ugetUInt32LE` / `usetUInt32LE`.
@@ -17,6 +17,10 @@ proposed `ugetUInt32LE` / `usetUInt32LE`.
 @[expose] public section
 open CompPoly
 namespace CompPoly.CPolynomial.NTTFast.Packed.Native
+open Montgomery.Native32 (Mont32Field FastField)
+
+variable {p : ℕ} [Mont32Field p]
+
 open CompPoly.PackedRepr (encode)
 theorem usize_numeral (n : Nat) (h : n < 4294967296) :
     (OfNat.ofNat n : USize).toNat = n := by
@@ -129,30 +133,33 @@ def zeroWords (n : Nat) : ByteArray := ByteArray.zeros (4 * n)
   if 4 * n < USize.size then generateGo f n 0 (zeroWords n)
   else encode (Array.ofFn fun i : Fin n ↦ f i.val)
 /-- Pack a field array. -/
-def encodeFields (a : Array KoalaBear.Fast.Field) : ByteArray :=
+def encodeFields (a : Array (FastField p)) : ByteArray :=
   generate a.size fun i ↦ (a.getD i 0).val
-def inner (th tl : ByteArray) (q j i0 i1 i2 i3 : Nat) (b : ByteArray) : ByteArray :=
+@[specialize]
+def inner (p : ℕ) [Mont32Field p] (th tl : ByteArray) (q j i0 i1 i2 i3 : Nat)
+    (b : ByteArray) : ByteArray :=
   if j < q then
     let x0 := read b i0
     let x1 := read b i1
     let x2 := read b i2
     let x3 := read b i3
-    let a0 := add x0 x2
-    let a1 := add x1 x3
-    let a2 := mul (read th j) (sub x0 x2)
-    let a3 := mul (read th (j + q)) (sub x1 x3)
-    let b := write b i0 (add a0 a1)
-    let b := write b i1 (mul (read tl j) (sub a0 a1))
-    let b := write b i2 (add a2 a3)
-    let b := write b i3 (mul (read tl j) (sub a2 a3))
-    inner th tl q (j + 1) (i0 + 1) (i1 + 1) (i2 + 1) (i3 + 1) b
+    let a0 := add p x0 x2
+    let a1 := add p x1 x3
+    let a2 := mul p (read th j) (sub p x0 x2)
+    let a3 := mul p (read th (j + q)) (sub p x1 x3)
+    let b := write b i0 (add p a0 a1)
+    let b := write b i1 (mul p (read tl j) (sub p a0 a1))
+    let b := write b i2 (add p a2 a3)
+    let b := write b i3 (mul p (read tl j) (sub p a2 a3))
+    inner p th tl q (j + 1) (i0 + 1) (i1 + 1) (i2 + 1) (i3 + 1) b
   else b
 termination_by q - j
 decreasing_by omega
 @[inline] def readUOffset (b : @& ByteArray) (i : USize) (o : USize)
     (h : 4 * (i.toNat + o.toNat) + 3 < b.size ∧ b.size < USize.size) : UInt32 :=
   b.ugetUInt32LE ((i + o) * 4) (by rw [wordOffset_toNat i o (by omega)]; omega)
-@[noinline] def step16 (th tl : @& ByteArray) (j j1 i0 i1 i2 i3 : USize) (b : ByteArray)
+@[noinline, specialize]
+def step16 (p : ℕ) [Mont32Field p] (th tl : @& ByteArray) (j j1 i0 i1 i2 i3 : USize) (b : ByteArray)
     (h : 4 * (i0.toNat + 15) + 3 < b.size ∧
       4 * (i1.toNat + 15) + 3 < b.size ∧
       4 * (i2.toNat + 15) + 3 < b.size ∧
@@ -178,7 +185,7 @@ theorem size_storeWords (b : ByteArray) (offset : USize) (count : UInt8)
 
 /-- The sixteen-cell kernel keeps the buffer size. -/
 theorem size_step16 (th tl : ByteArray) (j j1 i0 i1 i2 i3 : USize) (b : ByteArray) (h) :
-    (step16 th tl j j1 i0 i1 i2 i3 b h).size = b.size := by
+    (step16 p th tl j j1 i0 i1 i2 i3 b h).size = b.size := by
   unfold step16
   simp only [write16U, size_storeWords]
 
@@ -190,7 +197,9 @@ theorem usize_add16 (i : USize) (n : Nat) (h : i.toNat + 16 ≤ n) (hn : n < USi
   exact Nat.mod_eq_of_lt (by omega)
 
 /-- `n` sixteen-cell batches at machine indices whose ranges were checked once. -/
-def inner16Loop (th tl : @& ByteArray) : (n : Nat) → (j j1 i0 i1 i2 i3 : USize) →
+@[specialize]
+def inner16Loop (p : ℕ) [Mont32Field p] (th tl : @& ByteArray) : (n : Nat) →
+    (j j1 i0 i1 i2 i3 : USize) →
     (b : ByteArray) → 4 * (i0.toNat + 16 * n) ≤ b.size ∧ 4 * (i1.toNat + 16 * n) ≤ b.size ∧
       4 * (i2.toNat + 16 * n) ≤ b.size ∧ 4 * (i3.toNat + 16 * n) ≤ b.size ∧
       4 * (j1.toNat + 16 * n) ≤ th.size ∧ 4 * (j.toNat + 16 * n) ≤ th.size ∧
@@ -198,8 +207,8 @@ def inner16Loop (th tl : @& ByteArray) : (n : Nat) → (j j1 i0 i1 i2 i3 : USize
       tl.size < USize.size → ByteArray
   | 0, _, _, _, _, _, _, b, _ => b
   | n + 1, j, j1, i0, i1, i2, i3, b, h =>
-    let b' := step16 th tl j j1 i0 i1 i2 i3 b (by omega)
-    inner16Loop th tl n (j + 16) (j1 + 16) (i0 + 16) (i1 + 16) (i2 + 16) (i3 + 16) b' (by
+    let b' := step16 p th tl j j1 i0 i1 i2 i3 b (by omega)
+    inner16Loop p th tl n (j + 16) (j1 + 16) (i0 + 16) (i1 + 16) (i2 + 16) (i3 + 16) b' (by
       have hs : b'.size = b.size := size_step16 ..
       have hb := h.2.2.2.2.2.2.2.1
       have ht := h.2.2.2.2.2.2.2.2.1
@@ -210,40 +219,45 @@ def inner16Loop (th tl : @& ByteArray) : (n : Nat) → (j j1 i0 i1 i2 i3 : USize
 
 /-- The radix-four inner loop: whole sixteen-cell batches after one range check, then the
 scalar tail. -/
-def inner16 (th tl : ByteArray) (q j i0 i1 i2 i3 : Nat) (b : ByteArray) : ByteArray :=
+@[specialize]
+def inner16 (p : ℕ) [Mont32Field p] (th tl : ByteArray) (q j i0 i1 i2 i3 : Nat)
+    (b : ByteArray) : ByteArray :=
   let n := (q - j) / 16
   if h : 4 * (i0 + 16 * n) ≤ b.size ∧ 4 * (i1 + 16 * n) ≤ b.size ∧
       4 * (i2 + 16 * n) ≤ b.size ∧ 4 * (i3 + 16 * n) ≤ b.size ∧
       4 * (j + q + 16 * n) ≤ th.size ∧ 4 * (j + 16 * n) ≤ th.size ∧
       4 * (j + 16 * n) ≤ tl.size ∧ b.size < USize.size ∧ th.size < USize.size ∧
       tl.size < USize.size then
-    inner th tl q (j + 16 * n) (i0 + 16 * n) (i1 + 16 * n) (i2 + 16 * n) (i3 + 16 * n)
-      (inner16Loop th tl n (USize.ofNatLT j (by omega)) (USize.ofNatLT (j + q) (by omega))
+    inner p th tl q (j + 16 * n) (i0 + 16 * n) (i1 + 16 * n) (i2 + 16 * n) (i3 + 16 * n)
+      (inner16Loop p th tl n (USize.ofNatLT j (by omega)) (USize.ofNatLT (j + q) (by omega))
         (USize.ofNatLT i0 (by omega)) (USize.ofNatLT i1 (by omega))
         (USize.ofNatLT i2 (by omega)) (USize.ofNatLT i3 (by omega)) b
         (by simp only [USize.toNat_ofNatLT]; exact h))
-  else inner th tl q j i0 i1 i2 i3 b
+  else inner p th tl q j i0 i1 i2 i3 b
 /-- Sixteen radix-two DIF butterflies between the words from `i0` and from `i1`, with twiddles
 from word `j` of `w`. -/
-@[noinline] def pair16 (w : @& ByteArray) (j i0 i1 : USize) (b : ByteArray)
+@[noinline, specialize]
+def pair16 (p : ℕ) [Mont32Field p] (w : @& ByteArray) (j i0 i1 : USize) (b : ByteArray)
     (h : 4 * (i0.toNat + 15) + 3 < b.size ∧ 4 * (i1.toNat + 15) + 3 < b.size ∧
       4 * (j.toNat + 15) + 3 < w.size ∧ b.size < USize.size ∧ w.size < USize.size) :
     ByteArray :=
   pair16_words%
 
 theorem size_pair16 (w : ByteArray) (j i0 i1 : USize) (b : ByteArray) (h) :
-    (pair16 w j i0 i1 b h).size = b.size := by
+    (pair16 p w j i0 i1 b h).size = b.size := by
   unfold pair16
   simp only [write16U, size_storeWords]
 
 /-- `n` batches of sixteen radix-two butterflies after one range check. -/
-def pair16Loop (w : @& ByteArray) : (n : Nat) → (j i0 i1 : USize) → (b : ByteArray) →
+@[specialize]
+def pair16Loop (p : ℕ) [Mont32Field p] (w : @& ByteArray) : (n : Nat) → (j i0 i1 : USize) →
+    (b : ByteArray) →
     4 * (i0.toNat + 16 * n) ≤ b.size ∧ 4 * (i1.toNat + 16 * n) ≤ b.size ∧
       4 * (j.toNat + 16 * n) ≤ w.size ∧ b.size < USize.size ∧ w.size < USize.size → ByteArray
   | 0, _, _, _, b, _ => b
   | n + 1, j, i0, i1, b, h =>
-    let b' := pair16 w j i0 i1 b (by omega)
-    pair16Loop w n (j + 16) (i0 + 16) (i1 + 16) b' (by
+    let b' := pair16 p w j i0 i1 b (by omega)
+    pair16Loop p w n (j + 16) (i0 + 16) (i1 + 16) b' (by
       have hs : b'.size = b.size := size_pair16 ..
       rw [hs, usize_add16 j w.size (by omega) h.2.2.2.2, usize_add16 i0 b.size (by omega) h.2.2.2.1,
         usize_add16 i1 b.size (by omega) h.2.2.2.1]
@@ -251,33 +265,37 @@ def pair16Loop (w : @& ByteArray) : (n : Nat) → (j i0 i1 : USize) → (b : Byt
 
 /-- Radix-two DIF butterflies `j, …, q - 1` between the words from `i0` and from `i1`, with
 twiddles from word `j` of `w`: the scalar loop. -/
-def pairInner (w : @& ByteArray) (q j i0 i1 : Nat) (b : ByteArray) : ByteArray :=
+@[specialize]
+def pairInner (p : ℕ) [Mont32Field p] (w : @& ByteArray) (q j i0 i1 : Nat)
+    (b : ByteArray) : ByteArray :=
   if j < q then
     let x := read b i0
     let y := read b i1
-    pairInner w q (j + 1) (i0 + 1) (i1 + 1)
-      (write (write b i0 (add x y)) i1 (mul (read w j) (sub x y)))
+    pairInner p w q (j + 1) (i0 + 1) (i1 + 1)
+      (write (write b i0 (add p x y)) i1 (mul p (read w j) (sub p x y)))
   else b
 termination_by q - j
 
 /-- The radix-two inner loop: whole sixteen-butterfly batches after one range check, then the
 scalar tail. -/
-def pairs (w : @& ByteArray) (q j i0 i1 : Nat) (b : ByteArray) : ByteArray :=
+@[specialize]
+def pairs (p : ℕ) [Mont32Field p] (w : @& ByteArray) (q j i0 i1 : Nat)
+    (b : ByteArray) : ByteArray :=
   let n := (q - j) / 16
   if h : 4 * (i0 + 16 * n) ≤ b.size ∧ 4 * (i1 + 16 * n) ≤ b.size ∧ 4 * (j + 16 * n) ≤ w.size ∧
       b.size < USize.size ∧ w.size < USize.size then
-    pairInner w q (j + 16 * n) (i0 + 16 * n) (i1 + 16 * n)
-      (pair16Loop w n (USize.ofNatLT j (by omega)) (USize.ofNatLT i0 (by omega))
+    pairInner p w q (j + 16 * n) (i0 + 16 * n) (i1 + 16 * n)
+      (pair16Loop p w n (USize.ofNatLT j (by omega)) (USize.ofNatLT i0 (by omega))
         (USize.ofNatLT i1 (by omega)) b (by simp only [USize.toNat_ofNatLT]; exact h))
-  else pairInner w q j i0 i1 b
+  else pairInner p w q j i0 i1 b
 @[inline] def readWord (b : @& ByteArray) (i : USize) : UInt32 :=
   readAt b i 0
-def decode (logN : Nat) (b : ByteArray) (nInv : UInt32) (inverse : Bool) : Array
-    KoalaBear.Fast.Field :=
+@[specialize] def decode (p : ℕ) [Mont32Field p] (logN : Nat) (b : ByteArray) (nInv : UInt32)
+    (inverse : Bool) : Array (FastField p) :=
   let shift := (32 - logN).toUInt32
   tabulate (fun i : Fin (2 ^ logN) ↦
     let j := (reverse32 i.val.toUInt32 >>> shift).toNat
     let x := read b j
-    let x := if inverse then mul nInv x else x
-    if h : x.toNat < KoalaBear.fieldSize then ⟨x, h⟩ else 0)
+    let x := if inverse then mul p nInv x else x
+    if h : x.toNat < p then ⟨x, h⟩ else 0)
 end CompPoly.CPolynomial.NTTFast.Packed.Native
