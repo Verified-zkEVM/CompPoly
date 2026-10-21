@@ -5,6 +5,7 @@ Authors: Gregor Mitscha-Baude
 -/
 module
 
+public import CompPoly.Univariate.NTTFast.Packed.CosetLdeCorrectness
 public import CompPoly.Univariate.NTTFast.Packed.Instances
 public import CompPoly.Univariate.NTT.BabyBear
 public import CompPoly.Univariate.NTT.KoalaBear
@@ -14,7 +15,8 @@ public import CompPoly.Univariate.NTT.KoalaBear
 The packed plan is generic over `Mont32Field p`; these checks run its compiled KoalaBear and
 BabyBear instances. Small sizes are compared with the DFT specification, covering the scalar
 leaf and the fused final layers; `2 ^ 15` points exercise the column-parallel path, against the
-sequential leaf and through a round trip. The packed words go through the inline C of the
+sequential leaf and through a round trip. The batched coset LDE of a `2 ^ 5 × 3` matrix with
+blowup `2` is compared with its specification. The packed words go through the inline C of the
 `ByteArray` word accessors, so the checks run compiled, in `lake exe CompPolyNativeSmoke`.
 -/
 
@@ -23,7 +25,7 @@ namespace CompPolyTests.NTT.Packed
 
 open CompPoly CompPoly.CPolynomial
 open Montgomery.Native32 (Mont32Field FastField)
-open CompPoly.CPolynomial.NTTFast.Packed (Plan PackedNTT)
+open CompPoly.CPolynomial.NTTFast.Packed (Plan PackedNTT LdePlan PackedCosetLde ldeSpec)
 open CompPoly.PackedRepr (encode)
 
 /-- A deterministic input of `n` elements. -/
@@ -51,6 +53,13 @@ def parallelAgrees (p : ℕ) [Mont32Field p] [PackedNTT p] (D : NTT.Domain (Fast
   let y := P.forwardPacked a true
   y == P.forwardPacked a false && P.inversePacked y true == a
 
+/-- The batched coset LDE of a `2 ^ 5 × 3` matrix with blowup `2` agrees with the specification. -/
+def ldeAgrees (p : ℕ) [Mont32Field p] [PackedCosetLde p] (D : NTT.Domain (FastField p))
+    (hb : 1 ≤ D.logN) (h32 : D.logN ≤ 32) (hu : 4 * D.n < USize.size) : Bool :=
+  let P := LdePlan.ofDomain D 1 hb 3 h32 hu
+  let M := input p (2 ^ P.logH * 3)
+  CPolynomial.NTTFast.Packed.Native.joinRows (P.cosetLde 3 (encode M)) == encode (ldeSpec P 3 M)
+
 def koalaBear (logN : ℕ) (h : logN ≤ KoalaBear.twoAdicity) : NTT.Domain KoalaBear.Fast.Field :=
   NTT.KoalaBear.fastDomainOfLogN logN h
 
@@ -71,6 +80,10 @@ def run : IO Unit := do
   check "BabyBear 2^9" (agreesWithSpec _ (babyBear 9 (by decide)) (by decide) (hu (by decide)))
   check "BabyBear 2^15"
     (parallelAgrees _ (babyBear 15 (by decide)) (by decide) (hu (by decide)))
+  check "KoalaBear LDE"
+    (ldeAgrees _ (koalaBear 6 (by decide)) (by decide) (by decide) (hu (by decide)))
+  check "BabyBear LDE"
+    (ldeAgrees _ (babyBear 6 (by decide)) (by decide) (by decide) (hu (by decide)))
   IO.println "packed NTT: KoalaBear and BabyBear checks passed"
 
 end CompPolyTests.NTT.Packed

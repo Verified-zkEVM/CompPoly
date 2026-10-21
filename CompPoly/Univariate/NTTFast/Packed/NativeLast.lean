@@ -153,30 +153,35 @@ def leafNatural (p : ℕ) [Mont32Field p] (tw : Array ByteArray) (m : Nat) (fact
 
 /-- The last four DIF layers of the sixteen-word block at `i`, in place: the block's outputs stay
 in DIF (bit-reversed) order. -/
-@[noinline] def leaf16 (t3 t2 t1 : @& ByteArray) (i : USize) (b : ByteArray)
+@[noinline, specialize]
+def leaf16 (p : ℕ) [Mont32Field p] (t3 t2 t1 : @& ByteArray) (i : USize) (b : ByteArray)
     (h : 4 * (i.toNat + 15) + 3 < b.size ∧ b.size < USize.size ∧
       31 < t3.size ∧ t3.size < USize.size ∧ 15 < t2.size ∧ t2.size < USize.size ∧
       7 < t1.size ∧ t1.size < USize.size) : ByteArray :=
   leaf16_words%
 
 /-- `leaf16` on the blocks at words `0, 16, …, 16 * (blocks - 1)`. -/
-def leaf16Blocks (t3 t2 t1 : @& ByteArray) (blocks : Nat) (a : ByteArray) : ByteArray := Id.run do
+@[specialize]
+def leaf16Blocks (p : ℕ) [Mont32Field p] (t3 t2 t1 : @& ByteArray) (blocks : Nat)
+    (a : ByteArray) : ByteArray := Id.run do
   let mut a := a
   for block in [:blocks] do
     let i := 16 * block
     if h : 4 * (i + 15) + 3 < a.size ∧ a.size < USize.size ∧
         31 < t3.size ∧ t3.size < USize.size ∧ 15 < t2.size ∧ t2.size < USize.size ∧
         7 < t1.size ∧ t1.size < USize.size then
-      a := leaf16 t3 t2 t1 (USize.ofNatLT i (by omega)) a
+      a := leaf16 p t3 t2 t1 (USize.ofNatLT i (by omega)) a
         (by simpa only [USize.toNat_ofNatLT] using h)
   return a
 
 /-- A complete `2 ^ m`-word leaf in DIF order, the natural order with bit-reversed indices: from
 `2 ^ 4` words its last four layers run in place on sixteen-word blocks. -/
-def leafReversed (tw : @& Array ByteArray) (m : Nat) (a : ByteArray) : ByteArray :=
+@[specialize]
+def leafReversed (p : ℕ) [Mont32Field p] (tw : @& Array ByteArray) (m : Nat)
+    (a : ByteArray) : ByteArray :=
   if 4 ≤ m then
-    leaf16Blocks (tw.getD 3 .empty) (tw.getD 2 .empty) (tw.getD 1 .empty) (2 ^ m / 16)
-      (leafLayers tw m (m / 2 - 2) a)
-  else leafLayers tw m (m / 2) a
+    leaf16Blocks p (tw.getD 3 .empty) (tw.getD 2 .empty) (tw.getD 1 .empty) (2 ^ m / 16)
+      (leafLayers p tw m (m / 2 - 2) a)
+  else leafLayers p tw m (m / 2) a
 
 end CompPoly.CPolynomial.NTTFast.Packed.Native
