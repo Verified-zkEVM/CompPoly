@@ -12,7 +12,7 @@ public meta import CompPoly.Fields.KoalaBear.InterpolateCoset
 
 Evaluate two polynomials of degree below 8 on the coset `3 · ⟨ω⟩` of the order-8 subgroup, run
 `KoalaBear.Fast.interpolateCoset`, and compare with Horner evaluation of the same coefficients at
-`z` in the spec field `KoalaBear.Ext4`.
+`z` in the spec field `Ext4.Spec`.
 -/
 
 public meta section
@@ -43,8 +43,9 @@ def evals : Array Field := Id.run do
       out := out.push (hornerBase c x)
   return out
 
-def hornerSpec (c : Array Nat) (x : KoalaBear.Ext4) : KoalaBear.Ext4 :=
-  c.foldr (fun (a : Nat) acc ↦ acc * x + CompPoly.Extension.Ext.ofBase (a : KoalaBear.Field)) 0
+def hornerSpec (c : Array Nat) (x : Ext4.Spec KoalaBear.fieldSize) :
+    Ext4.Spec KoalaBear.fieldSize :=
+  c.foldr (fun (a : Nat) acc ↦ acc * x + CompPoly.Extension.Ext.ofBase (ofField a)) 0
 
 def result : Array Ext4 := interpolateCoset logN ω s 2 evals z
 

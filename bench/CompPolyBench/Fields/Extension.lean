@@ -83,6 +83,15 @@ private def extSampler {F : Type*} [Ring F] {P : ExtensionParams F}
   let xs : Array (Ext P) := Array.ofFn (n := extPoolSize) fun i ↦ elem i.val
   fun i ↦ (xs.getD (i % extPoolSize) 1, xs.getD ((i + 17) % extPoolSize) 1)
 
+/-- The fast element with the coordinates of a spec `KoalaBear.Ext4` element. -/
+private def toFastExt4 (a : KoalaBear.Ext4) : KoalaBear.Fast.Ext4 :=
+  ⟨KoalaBear.Fast.ofField (Ext.coeffNat a 0), KoalaBear.Fast.ofField (Ext.coeffNat a 1),
+    KoalaBear.Fast.ofField (Ext.coeffNat a 2), KoalaBear.Fast.ofField (Ext.coeffNat a 3)⟩
+
+/-- `checksumKoalaBearExt4` of the same element. -/
+private def checksumFastExt4 (x : KoalaBear.Fast.Ext4) : Nat :=
+  [x.c0, x.c1, x.c2, x.c3].foldl (fun acc z ↦ acc + (Montgomery.Native32.FastField.toField z).val) 0
+
 /-- Time the spec `KoalaBear.Ext4` and the fast `KoalaBear.Fast.Ext4` on the same operands, as
 one group; the harness checks that both produce the same checksum. -/
 private def runKoalaBearExt4Pair (groupKey title name specMethod fastMethod : String)
@@ -94,7 +103,7 @@ private def runKoalaBearExt4Pair (groupKey title name specMethod fastMethod : St
   let fastXs : Array (KoalaBear.Fast.Ext4 × KoalaBear.Fast.Ext4) :=
     Array.ofFn (n := extPoolSize) fun i ↦
       let (a, b) := sample i.val
-      (KoalaBear.Fast.Ext4.ofSpec a, KoalaBear.Fast.Ext4.ofSpec b)
+      (toFastExt4 a, toFastExt4 b)
   let spec ← runTimedSpec
     { name := name, representation := "Extension.Ext", method := specMethod,
       field := "KoalaBear.Ext4", inputShape := extShape 4,
@@ -105,7 +114,7 @@ private def runKoalaBearExt4Pair (groupKey title name specMethod fastMethod : St
       field := "KoalaBear.Ext4", inputShape := extShape 4,
       digestIterations := digestPeriod extPoolSize }
     preset (fun i ↦ let (a, b) := fastXs[i % extPoolSize]!; fastOp a b)
-    (fun x ↦ checksumKoalaBearExt4 (KoalaBear.Fast.Ext4.toSpec x))
+    checksumFastExt4
     -- The raw Montgomery words: the default sink would convert to the spec field per iteration.
     (sink := fun x ↦ (x.c0.val ^^^ x.c1.val ^^^ x.c2.val ^^^ x.c3.val).toUInt64)
   pure ({ groupKey := groupKey, title := title, records := #[spec, fast] }, gen)

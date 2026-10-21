@@ -21,53 +21,70 @@ namespace KoalaBear.Fast
 open CompPoly CompPoly.Extension Montgomery.Native32 Polynomial
 open CompPoly.CPolynomial.NTTFast.Packed
 
-namespace Ext4
+/-- The spec field of the quartic extension. -/
+local notation "Spec4" => Ext4.Spec KoalaBear.fieldSize
 
-@[simp] theorem add_c0 (a b : Ext4) : (a + b).c0 = a.c0 + b.c0 := rfl
-@[simp] theorem add_c1 (a b : Ext4) : (a + b).c1 = a.c1 + b.c1 := rfl
-@[simp] theorem add_c2 (a b : Ext4) : (a + b).c2 = a.c2 + b.c2 := rfl
-@[simp] theorem add_c3 (a b : Ext4) : (a + b).c3 = a.c3 + b.c3 := rfl
-@[simp] theorem sub_c0 (a b : Ext4) : (a - b).c0 = a.c0 - b.c0 := rfl
-@[simp] theorem sub_c1 (a b : Ext4) : (a - b).c1 = a.c1 - b.c1 := rfl
-@[simp] theorem sub_c2 (a b : Ext4) : (a - b).c2 = a.c2 - b.c2 := rfl
-@[simp] theorem sub_c3 (a b : Ext4) : (a - b).c3 = a.c3 - b.c3 := rfl
-@[simp] theorem ofBase_c0 (x : Field) : (ofBase x).c0 = x := rfl
-@[simp] theorem ofBase_c1 (x : Field) : (ofBase x).c1 = 0 := rfl
-@[simp] theorem ofBase_c2 (x : Field) : (ofBase x).c2 = 0 := rfl
-@[simp] theorem ofBase_c3 (x : Field) : (ofBase x).c3 = 0 := rfl
-@[simp] theorem smul_c0 (x : Field) (a : Ext4) : (smul x a).c0 = x * a.c0 := rfl
-@[simp] theorem smul_c1 (x : Field) (a : Ext4) : (smul x a).c1 = x * a.c1 := rfl
-@[simp] theorem smul_c2 (x : Field) (a : Ext4) : (smul x a).c2 = x * a.c2 := rfl
-@[simp] theorem smul_c3 (x : Field) (a : Ext4) : (smul x a).c3 = x * a.c3 := rfl
+end KoalaBear.Fast
+
+namespace Montgomery.Native32.Ext4
+
+open Binomial4 (mulW_eq)
+
+variable {p : ℕ} [Mont32Field p]
+
+@[simp] theorem add_c0 (a b : Ext4 p) : (a + b).c0 = a.c0 + b.c0 := rfl
+@[simp] theorem add_c1 (a b : Ext4 p) : (a + b).c1 = a.c1 + b.c1 := rfl
+@[simp] theorem add_c2 (a b : Ext4 p) : (a + b).c2 = a.c2 + b.c2 := rfl
+@[simp] theorem add_c3 (a b : Ext4 p) : (a + b).c3 = a.c3 + b.c3 := rfl
+@[simp] theorem sub_c0 (a b : Ext4 p) : (a - b).c0 = a.c0 - b.c0 := rfl
+@[simp] theorem sub_c1 (a b : Ext4 p) : (a - b).c1 = a.c1 - b.c1 := rfl
+@[simp] theorem sub_c2 (a b : Ext4 p) : (a - b).c2 = a.c2 - b.c2 := rfl
+@[simp] theorem sub_c3 (a b : Ext4 p) : (a - b).c3 = a.c3 - b.c3 := rfl
+@[simp] theorem ofBase_c0 (x : FastField p) : (ofBase x).c0 = x := rfl
+@[simp] theorem ofBase_c1 (x : FastField p) : (ofBase x).c1 = 0 := rfl
+@[simp] theorem ofBase_c2 (x : FastField p) : (ofBase x).c2 = 0 := rfl
+@[simp] theorem ofBase_c3 (x : FastField p) : (ofBase x).c3 = 0 := rfl
+@[simp] theorem smul_c0 (x : FastField p) (a : Ext4 p) : (smul x a).c0 = x * a.c0 := rfl
+@[simp] theorem smul_c1 (x : FastField p) (a : Ext4 p) : (smul x a).c1 = x * a.c1 := rfl
+@[simp] theorem smul_c2 (x : FastField p) (a : Ext4 p) : (smul x a).c2 = x * a.c2 := rfl
+@[simp] theorem smul_c3 (x : FastField p) (a : Ext4 p) : (smul x a).c3 = x * a.c3 := rfl
+
+variable [Binomial4 p]
 
 /-- The norm of `z - x` in terms of `t = z₀ - x`. -/
-theorem norm_sub_ofBase (z : Ext4) (x : Field) :
+theorem norm_sub_ofBase (z : Ext4 p) (x : FastField p) :
     norm (z - ofBase x) =
       normAt (normK0 z) (normK1 z) (z.c2 + z.c2) (z.c0 - x) ((z.c0 - x) * (z.c0 - x)) := by
-  apply toField_injective
-  simp only [norm, g0, g1, normAt, normK0, normK1, triple, toField_add, toField_sub, toField_mul,
-    toField_neg, sub_c0, sub_c1, sub_c2, sub_c3, ofBase_c0, ofBase_c1, ofBase_c2, ofBase_c3,
-    toField_zero]
+  simp only [norm, g0, g1, normAt, normK0, normK1, mulW_eq, sub_c0, sub_c1, sub_c2, sub_c3,
+    ofBase_c0, ofBase_c1, ofBase_c2, ofBase_c3]
   ring
 
 /-- **The weight of a node.** `x / (z - x)` is `u b₀ + u t b₁ + u t² b₂ + u t³` for `t = z₀ - x`
 and `u = x / N`, `N` the norm of `z - x`. -/
-theorem smul_inv_sub_ofBase (z : Ext4) (x : Field) :
+theorem smul_inv_sub_ofBase (z : Ext4 p) (x : FastField p) :
     smul x (z - ofBase x)⁻¹ =
       let t := z.c0 - x
       let u := x * (normAt (normK0 z) (normK1 z) (z.c2 + z.c2) t (t * t))⁻¹
-      Quad.combine z ⟨u, u * t, u * (t * t), u * t * (t * t)⟩ := by
+      smul u (adj0 z) + smul (u * t) (adj1 z) + smul (u * (t * t)) (adj2 z) +
+        ofBase (u * t * (t * t)) := by
   rw [show (z - ofBase x)⁻¹ = inv (z - ofBase x) from rfl]
   unfold inv
   rw [norm_sub_ofBase]
-  apply ext' <;> apply toField_injective <;>
-    simp only [Quad.combine, adj0, adj1, adj2, g0, g1, six, normK0, normK1, triple, add_c0, add_c1,
+  apply ext' <;>
+    simp only [adj0, adj1, adj2, g0, g1, twoW, normK0, normK1, mulW_eq, add_c0, add_c1,
       add_c2, add_c3, sub_c0, sub_c1, sub_c2, sub_c3, ofBase_c0, ofBase_c1, ofBase_c2, ofBase_c3,
-      smul_c0, smul_c1, smul_c2, smul_c3, toField_add, toField_sub, toField_mul, toField_neg,
-      toField_zero, toField_inv] <;>
+      smul_c0, smul_c1, smul_c2, smul_c3] <;>
     ring
 
-end Ext4
+end Montgomery.Native32.Ext4
+
+namespace KoalaBear.Fast
+
+open CompPoly CompPoly.Extension Montgomery.Native32 Polynomial
+open CompPoly.CPolynomial.NTTFast.Packed
+
+/-- The spec field of the quartic extension. -/
+local notation "Spec4" => Ext4.Spec KoalaBear.fieldSize
 
 namespace Quad
 
@@ -83,20 +100,18 @@ namespace Quad
 /-- A column sum in the spec field: `s₀ b₀ + s₁ b₁ + s₂ b₂ + s₃`. -/
 theorem toSpec_combine (z : Ext4) (q : Quad) :
     Ext4.toSpec (q.combine z) =
-      FastField.toField q.s0 • Ext4.toSpec (Ext4.adj0 z) +
-        FastField.toField q.s1 • Ext4.toSpec (Ext4.adj1 z) +
-        FastField.toField q.s2 • Ext4.toSpec (Ext4.adj2 z) + FastField.toField q.s3 • 1 := by
+      q.s0 • Ext4.toSpec (Ext4.adj0 z) + q.s1 • Ext4.toSpec (Ext4.adj1 z) +
+        q.s2 • Ext4.toSpec (Ext4.adj2 z) + q.s3 • 1 := by
   simp only [combine, Ext4.toSpec_add, Ext4.toSpec_smul, Ext4.toSpec_ofBase,
     ← Ext.algebraMap_eq_ofBase, Algebra.algebraMap_eq_smul_one]
 
 theorem toSpec_combine_add (z : Ext4) (a b : Quad) :
     Ext4.toSpec ((a + b).combine z) = Ext4.toSpec (a.combine z) + Ext4.toSpec (b.combine z) := by
-  simp only [toSpec_combine, add_s0, add_s1, add_s2, add_s3, toField_add, add_smul]
+  simp only [toSpec_combine, add_s0, add_s1, add_s2, add_s3, add_smul]
   abel
 
 @[simp] theorem toSpec_combine_zero (z : Ext4) : Ext4.toSpec ((0 : Quad).combine z) = 0 := by
-  simp only [toSpec_combine, zero_s0, zero_s1, zero_s2, zero_s3, toField_zero, zero_smul,
-    add_zero]
+  simp only [toSpec_combine, zero_s0, zero_s1, zero_s2, zero_s3, zero_smul, add_zero]
 
 end Quad
 
@@ -244,10 +259,7 @@ theorem readField_pack (W : Array UInt32) (i o : USize) (h) :
 /-- Peeling one norm off the inverse of a prefix product. -/
 theorem inv_mul_prefix (p m : Field) (hp : p ≠ 0) (hm : m ≠ 0) :
     (p * m)⁻¹ * p = m⁻¹ ∧ (p * m)⁻¹ * m = p⁻¹ := by
-  have hp' : FastField.toField p ≠ 0 := fun h ↦ hp (toField_injective (by rw [h, toField_zero]))
-  have hm' : FastField.toField m ≠ 0 := fun h ↦ hm (toField_injective (by rw [h, toField_zero]))
-  constructor <;> apply toField_injective <;>
-    simp only [toField_mul, toField_inv, mul_inv_rev] <;> field_simp
+  constructor <;> field_simp
 
 /-- The backward pass turns rows `i - n, …, i - 1` of node, `t²`, norm and prefix product into
 the weights `u, u t, u t², u t³` for `u = x / N`, given that `inv` inverts the prefix product
@@ -334,20 +346,24 @@ theorem backward_spec (z0 : Field) (X T2 Nn Pp : ℕ → Field) (n : ℕ) (i : U
 
 /-- Term `r` of a column sum: the residue of evaluation word `e + r · width` times coordinate `k`
 of row `r`'s weights. -/
-def dotTerm (evals buf : ByteArray) (e width w r k : ℕ) : KoalaBear.Field :=
-  FastField.toField (ofWordMod (evals.getUInt32LE! (4 * (e + r * width))) : Field) *
-    FastField.toField (wordField (buf.getUInt32LE! (4 * (w + 4 * r + k))))
+def dotTerm (evals buf : ByteArray) (e width w r k : ℕ) : Field :=
+  (ofWordMod (evals.getUInt32LE! (4 * (e + r * width))) : Field) *
+    wordField (buf.getUInt32LE! (4 * (w + 4 * r + k)))
 
 theorem dot1_spec (evals buf : ByteArray) (width : USize) (n : ℕ) (e w : USize)
     (a0 a1 a2 a3 : Acc) (h) :
     FastField.toField (dot1 evals buf width n e w a0 a1 a2 a3 h).s0 =
-        a0.value + ∑ r ∈ Finset.range n, dotTerm evals buf e.toNat width.toNat w.toNat r 0 ∧
+        a0.value + ∑ r ∈ Finset.range n,
+          FastField.toField (dotTerm evals buf e.toNat width.toNat w.toNat r 0) ∧
       FastField.toField (dot1 evals buf width n e w a0 a1 a2 a3 h).s1 =
-        a1.value + ∑ r ∈ Finset.range n, dotTerm evals buf e.toNat width.toNat w.toNat r 1 ∧
+        a1.value + ∑ r ∈ Finset.range n,
+          FastField.toField (dotTerm evals buf e.toNat width.toNat w.toNat r 1) ∧
       FastField.toField (dot1 evals buf width n e w a0 a1 a2 a3 h).s2 =
-        a2.value + ∑ r ∈ Finset.range n, dotTerm evals buf e.toNat width.toNat w.toNat r 2 ∧
+        a2.value + ∑ r ∈ Finset.range n,
+          FastField.toField (dotTerm evals buf e.toNat width.toNat w.toNat r 2) ∧
       FastField.toField (dot1 evals buf width n e w a0 a1 a2 a3 h).s3 =
-        a3.value + ∑ r ∈ Finset.range n, dotTerm evals buf e.toNat width.toNat w.toNat r 3 := by
+        a3.value + ∑ r ∈ Finset.range n,
+          FastField.toField (dotTerm evals buf e.toNat width.toNat w.toNat r 3) := by
   induction n generalizing e w a0 a1 a2 a3 with
   | zero =>
     simp only [dot1, LazyAcc.toField_result, Finset.range_zero, Finset.sum_empty, add_zero,
@@ -373,8 +389,9 @@ theorem dot1_spec (evals buf : ByteArray) (width : USize) (n : ℕ) (e w : USize
     rw [i0, i1, i2, i3]
     simp only [LazyAcc.value_add, Finset.sum_range_succ']
     refine ⟨?_, ?_, ?_, ?_⟩ <;>
-    · rw [Finset.sum_congr rfl fun r hr ↦ hterm _ r (Finset.mem_range.mp hr)]
-      simp only [dotTerm, Nat.zero_mul, Nat.add_zero, Nat.mul_zero]
+    · rw [Finset.sum_congr rfl fun r hr ↦
+        congrArg FastField.toField (hterm _ r (Finset.mem_range.mp hr))]
+      simp only [dotTerm, toField_mul, Nat.zero_mul, Nat.add_zero, Nat.mul_zero]
       ring
 
 /-- `dot1`'s range condition. -/
@@ -425,19 +442,19 @@ theorem dot4_eq (evals buf : ByteArray) (width : USize) (n : ℕ) (e w : USize)
     simp only [USize.add_assoc, USize.add_comm width]
 
 /-- Rows `0, …, b - 1` of `buf` hold weights whose column sums are `wt r`. -/
-def WeightsAt (buf : ByteArray) (z : Ext4) (wt : ℕ → KoalaBear.Ext4) (b : ℕ) : Prop :=
+def WeightsAt (buf : ByteArray) (z : Ext4) (wt : ℕ → Spec4) (b : ℕ) : Prop :=
   ∀ r < b, Ext4.toSpec (Quad.combine z ⟨wordField (buf.getUInt32LE! (4 * (4 * r))),
     wordField (buf.getUInt32LE! (4 * (4 * r + 1))), wordField (buf.getUInt32LE! (4 * (4 * r + 2))),
     wordField (buf.getUInt32LE! (4 * (4 * r + 3)))⟩) = wt r
 
 /-- The block's sum of column `c`. -/
-def colBlock (evals : ByteArray) (width row b c : ℕ) (wt : ℕ → KoalaBear.Ext4) :
-    KoalaBear.Ext4 :=
+def colBlock (evals : ByteArray) (width row b c : ℕ) (wt : ℕ → Spec4) :
+    Spec4 :=
   ∑ r ∈ Finset.range b,
-    FastField.toField (ofWordMod (evals.getUInt32LE! (4 * ((row + r) * width + c))) : Field) • wt r
+    (ofWordMod (evals.getUInt32LE! (4 * ((row + r) * width + c))) : Field) • wt r
 
 /-- A column's sums give the column's block sum. -/
-theorem toSpec_combine_dot1 (evals buf : ByteArray) (z : Ext4) (wt : ℕ → KoalaBear.Ext4)
+theorem toSpec_combine_dot1 (evals buf : ByteArray) (z : Ext4) (wt : ℕ → Spec4)
     (width row b c : ℕ) (hw : WeightsAt buf z wt b)
     (hi : b = 0 ∨ width.toUSize.toNat = width ∧ (row * width + c).toUSize.toNat = row * width + c)
     (h) :
@@ -445,11 +462,17 @@ theorem toSpec_combine_dot1 (evals buf : ByteArray) (z : Ext4) (wt : ℕ → Koa
       LazyAcc.zero LazyAcc.zero LazyAcc.zero h).combine z) = colBlock evals width row b c wt := by
   obtain ⟨d0, d1, d2, d3⟩ := dot1_spec evals buf width.toUSize b (row * width + c).toUSize 0
     LazyAcc.zero LazyAcc.zero LazyAcc.zero LazyAcc.zero h
-  rw [Quad.toSpec_combine, d0, d1, d2, d3]
+  have e : ∀ (k : ℕ) (x : Field), FastField.toField x = LazyAcc.value LazyAcc.zero +
+      ∑ r ∈ Finset.range b, FastField.toField
+        (dotTerm evals buf (row * width + c).toUSize.toNat width.toUSize.toNat
+          (0 : USize).toNat r k) →
+      x = ∑ r ∈ Finset.range b, dotTerm evals buf (row * width + c).toUSize.toNat
+        width.toUSize.toNat (0 : USize).toNat r k := fun k x hx ↦
+    toField_injective (by rw [hx, LazyAcc.value_zero, zero_add, toField_sum])
+  rw [Quad.toSpec_combine, e 0 _ d0, e 1 _ d1, e 2 _ d2, e 3 _ d3]
   rcases hi with rfl | ⟨hwt, he⟩
-  · simp only [Finset.range_zero, Finset.sum_empty, LazyAcc.value_zero, add_zero, zero_smul,
-      colBlock]
-  simp only [LazyAcc.value_zero, zero_add, colBlock, dotTerm, he, hwt, USize.toNat_zero]
+  · simp only [Finset.range_zero, Finset.sum_empty, zero_smul, add_zero, colBlock]
+  simp only [colBlock, dotTerm, he, hwt, USize.toNat_zero, Nat.zero_add]
   refine Eq.trans ?_ (Finset.sum_congr rfl fun r hr ↦ by rw [← hw r (Finset.mem_range.mp hr)])
   simp only [Quad.toSpec_combine, Finset.sum_smul, smul_add, smul_smul, ← Finset.sum_add_distrib,
     Nat.add_zero]
@@ -470,7 +493,7 @@ theorem blockFits_index {evals buf : ByteArray} {width row b : ℕ}
       toUSize_toNat_of_lt _ ((row + b) * width) hd (by omega)⟩
 
 /-- The spec value of column `c` of a sums array. -/
-def sumAt (z : Ext4) (sums : Array Quad) (c : ℕ) : KoalaBear.Ext4 :=
+def sumAt (z : Ext4) (sums : Array Quad) (c : ℕ) : Spec4 :=
   Ext4.toSpec ((sums.getD c 0).combine z)
 
 theorem sumAt_modify (z : Ext4) (sums : Array Quad) (c : ℕ) (hc : c < sums.size) (q : Quad)
@@ -487,7 +510,7 @@ theorem sumAt_modify (z : Ext4) (sums : Array Quad) (c : ℕ) (hc : c < sums.siz
 theorem toUSize_add_numeral (a j : ℕ) : a.toUSize + (OfNat.ofNat j : USize) = (a + j).toUSize :=
   (USize.ofNat_add a j).symm
 
-theorem addColumn_spec (evals buf : ByteArray) (z : Ext4) (wt : ℕ → KoalaBear.Ext4)
+theorem addColumn_spec (evals buf : ByteArray) (z : Ext4) (wt : ℕ → Spec4)
     (width row b : ℕ) (hfit : BlockFits evals buf width row b) (hw : WeightsAt buf z wt b)
     (c : ℕ) (hc : c + 1 ≤ width) (sums : Array Quad) :
     (addColumn evals buf width row b hfit c hc sums).size = sums.size ∧
@@ -497,7 +520,7 @@ theorem addColumn_spec (evals buf : ByteArray) (z : Ext4) (wt : ℕ → KoalaBea
   rw [addColumn, sumAt_modify z sums c hcs,
     toSpec_combine_dot1 evals buf z wt width row b c hw (blockFits_index hfit c (by omega))]
 
-theorem addColumns4_spec (evals buf : ByteArray) (z : Ext4) (wt : ℕ → KoalaBear.Ext4)
+theorem addColumns4_spec (evals buf : ByteArray) (z : Ext4) (wt : ℕ → Spec4)
     (width row b : ℕ) (hfit : BlockFits evals buf width row b) (hw : WeightsAt buf z wt b)
     (c : ℕ) (hc : c + 4 ≤ width) (sums : Array Quad) (hcs : c + 4 ≤ sums.size) :
     (addColumns4 evals buf width row b hfit c hc sums).size = sums.size ∧
@@ -531,7 +554,7 @@ theorem addColumns4_spec (evals buf : ByteArray) (z : Ext4) (wt : ℕ → KoalaB
   · subst h3; simp [show c ≤ c + 3 ∧ c + 3 < c + 4 by omega]
   simp only [h0, h1, h2, h3, ↓reduceIte, add_zero, show ¬(c ≤ c' ∧ c' < c + 4) by omega]
 
-theorem columns1_spec (evals buf : ByteArray) (z : Ext4) (wt : ℕ → KoalaBear.Ext4)
+theorem columns1_spec (evals buf : ByteArray) (z : Ext4) (wt : ℕ → Spec4)
     (width row b : ℕ) (hfit : BlockFits evals buf width row b) (hw : WeightsAt buf z wt b)
     (k c : ℕ) (hc : c + k ≤ width) (sums : Array Quad) (hs : sums.size = width) :
     (columns1 evals buf width row b hfit k c hc sums).size = width ∧
@@ -558,7 +581,7 @@ theorem columns1_spec (evals buf : ByteArray) (z : Ext4) (wt : ℕ → KoalaBear
       congr 1
       split_ifs <;> first | rfl | omega
 
-theorem columns4_spec (evals buf : ByteArray) (z : Ext4) (wt : ℕ → KoalaBear.Ext4)
+theorem columns4_spec (evals buf : ByteArray) (z : Ext4) (wt : ℕ → Spec4)
     (width row b : ℕ) (hfit : BlockFits evals buf width row b) (hw : WeightsAt buf z wt b)
     (g c : ℕ) (hc : c + 4 * g ≤ width) (sums : Array Quad) (hs : sums.size = width) :
     (columns4 evals buf width row b hfit g c hc sums).size = width ∧
@@ -585,11 +608,10 @@ theorem columns4_spec (evals buf : ByteArray) (z : Ext4) (wt : ℕ → KoalaBear
 
 /-! ### Blocks -/
 
-theorem toField_nodeAt (ω x : Field) (r : ℕ) :
-    FastField.toField (nodeAt ω x r) = FastField.toField x * FastField.toField ω ^ r := by
+theorem nodeAt_eq (ω x : Field) (r : ℕ) : nodeAt ω x r = x * ω ^ r := by
   induction r generalizing x with
   | zero => rw [nodeAt, pow_zero, mul_one]
-  | succ r ih => rw [nodeAt, ih, toField_mul, pow_succ', mul_assoc]
+  | succ r ih => rw [nodeAt, ih, pow_succ', mul_assoc]
 
 theorem nodeAt_succ (ω x : Field) (r : ℕ) : nodeAt ω x (r + 1) = nodeAt ω x r * ω := by
   induction r generalizing x with
@@ -605,37 +627,24 @@ theorem normPrefix_succ (ω z0 k0 k1 z2x2 x acc : Field) (r : ℕ) :
 
 /-- Off the coset, the norm of `z - x` is a unit. -/
 theorem rowNorm_ne_zero (z : Ext4) (x : Field)
-    (hz : Ext4.toSpec z ≠ Ext.ofBase (FastField.toField x)) :
+    (hz : Ext4.toSpec z ≠ Ext.ofBase x) :
     rowNorm z.c0 (Ext4.normK0 z) (Ext4.normK1 z) (z.c2 + z.c2) x ≠ 0 := by
   rw [rowNorm, ← Ext4.norm_sub_ofBase]
-  intro h
-  have ha : Ext4.toSpec (z - Ext4.ofBase x) ≠ 0 := by
-    rw [Ext4.toSpec_sub, Ext4.toSpec_ofBase, sub_ne_zero]; exact hz
-  apply Ext4.norm_ne_zero _ ha
-  rw [← Ext4.toField_g0, ← Ext4.toField_g1]
-  have := congrArg FastField.toField h
-  rw [Ext4.toField_norm, toField_zero] at this
-  rw [← this]
+  exact Ext4.norm_ne_zero _ (by rw [Ext4.toSpec_sub, Ext4.toSpec_ofBase, sub_ne_zero]; exact hz)
 
 /-- The weight `x / (z - x)` in the spec field. -/
-def specWeight (z : Ext4) (x : KoalaBear.Field) : KoalaBear.Ext4 :=
+def specWeight (z : Ext4) (x : Field) : Spec4 :=
   Ext.ofBase x * (Ext4.toSpec z - Ext.ofBase x)⁻¹
 
 theorem toSpec_weight (z : Ext4) (x : Field) :
-    Ext4.toSpec (Ext4.smul x (z - Ext4.ofBase x)⁻¹) = specWeight z (FastField.toField x) := by
+    Ext4.toSpec (Ext4.smul x (z - Ext4.ofBase x)⁻¹) = specWeight z x := by
   rw [Ext4.toSpec_smul, Ext4.toSpec_inv, Ext4.toSpec_sub, Ext4.toSpec_ofBase, Algebra.smul_def,
     Ext.algebraMap_eq_ofBase, specWeight]
 
 /-- Term `R` of column `c`: the residue of its word times the weight of node `s ω^R`. -/
 def rowTerm (evals : ByteArray) (width : ℕ) (ω s : Field) (z : Ext4) (R c : ℕ) :
-    KoalaBear.Ext4 :=
-  FastField.toField (ofWordMod (evals.getUInt32LE! (4 * (R * width + c))) : Field) •
-    specWeight z (FastField.toField s * FastField.toField ω ^ R)
-
-theorem ne_zero_iff_toField (a : Field) : a ≠ 0 ↔ FastField.toField a ≠ 0 := by
-  constructor
-  · intro h h'; exact h (toField_injective (by rw [h', toField_zero]))
-  · intro h h'; exact h (by rw [h', toField_zero])
+    Spec4 :=
+  (ofWordMod (evals.getUInt32LE! (4 * (R * width + c))) : Field) • specWeight z (s * ω ^ R)
 
 /-- The weights a block's two passes leave in its buffer. -/
 theorem weightsAt_passes (z : Ext4) (ω x : Field) (b : ℕ) (W2 : Array UInt32)
@@ -650,7 +659,7 @@ theorem weightsAt_passes (z : Ext4) (ω x : Field) (b : ℕ) (W2 : Array UInt32)
         (nodeAt ω x r))⁻¹ * (z.c0 - nodeAt ω x r) *
           ((z.c0 - nodeAt ω x r) * (z.c0 - nodeAt ω x r))).val) :
     WeightsAt (PackedRepr.encode W2) z
-      (fun r ↦ specWeight z (FastField.toField (nodeAt ω x r))) b := by
+      (fun r ↦ specWeight z (nodeAt ω x r)) b := by
   intro r hr
   obtain ⟨h0, h1, h2, h3⟩ := hrows r hr
   simp only [PackedRepr.getUInt32LE!_encode]
@@ -663,10 +672,10 @@ theorem weightsAt_passes (z : Ext4) (ω x : Field) (b : ℕ) (W2 : Array UInt32)
 
 theorem blocks_spec (evals : ByteArray) (ω s : Field) (z : Ext4) (width hi k row : ℕ) (x : Field)
     (W : Array UInt32) (sums : Array Quad) (h) (hW : W.size = 4 * blockRows)
-    (hx : FastField.toField x = FastField.toField s * FastField.toField ω ^ row)
+    (hx : x = s * ω ^ row)
     (hs : sums.size = width)
     (hz : ∀ R, row ≤ R → R < hi →
-      Ext4.toSpec z ≠ Ext.ofBase (FastField.toField s * FastField.toField ω ^ R)) :
+      Ext4.toSpec z ≠ Ext.ofBase (s * ω ^ R)) :
     (blocks evals ω z.c0 (Ext4.normK0 z) (Ext4.normK1 z) (z.c2 + z.c2) width hi k row x
         (PackedRepr.encode W) sums h).size = width ∧
       ∀ c < width, sumAt z (blocks evals ω z.c0 (Ext4.normK0 z) (Ext4.normK1 z) (z.c2 + z.c2)
@@ -687,9 +696,8 @@ theorem blocks_spec (evals : ByteArray) (ω s : Field) (z : Ext4) (width hi k ro
     have hWs : 4 * W.size < USize.size := by rw [hW]; simp only [blockRows]; omega
     obtain ⟨W1, eq1, hs1, -, rows1⟩ := forward_spec ω z.c0 (Ext4.normK0 z) (Ext4.normK1 z)
       (z.c2 + z.c2) b 0 x 1 W (by rw [USize.toNat_zero, hW]; omega) hWs
-    have hX : ∀ r, FastField.toField (nodeAt ω x r) =
-        FastField.toField s * FastField.toField ω ^ (row + r) := by
-      intro r; rw [toField_nodeAt, hx, pow_add, mul_assoc]
+    have hX : ∀ r, nodeAt ω x r = s * ω ^ (row + r) := by
+      intro r; rw [nodeAt_eq, hx, pow_add, mul_assoc]
     have hN : ∀ r < b, rowNorm z.c0 (Ext4.normK0 z) (Ext4.normK1 z) (z.c2 + z.c2)
         (nodeAt ω x r) ≠ 0 := fun r hr ↦
       rowNorm_ne_zero z _ (by rw [hX]; exact hz _ (by omega) (by omega))
@@ -697,11 +705,10 @@ theorem blocks_spec (evals : ByteArray) (ω s : Field) (z : Ext4) (width hi k ro
         normPrefix ω z.c0 (Ext4.normK0 z) (Ext4.normK1 z) (z.c2 + z.c2) x 1 r ≠ 0 := by
       intro r hr
       induction r with
-      | zero => rw [normPrefix, ne_zero_iff_toField, toField_one]; exact one_ne_zero
+      | zero => rw [normPrefix]; exact one_ne_zero
       | succ r ihr =>
-        rw [normPrefix_succ, ne_zero_iff_toField, toField_mul]
-        exact mul_ne_zero ((ne_zero_iff_toField _).mp (ihr (by omega)))
-          ((ne_zero_iff_toField _).mp (hN r (by omega)))
+        rw [normPrefix_succ]
+        exact mul_ne_zero (ihr (by omega)) (hN r (by omega))
     obtain ⟨W2, eq2, hs2, -, rows2⟩ := backward_spec z.c0 (nodeAt ω x)
       (fun r ↦ (z.c0 - nodeAt ω x r) * (z.c0 - nodeAt ω x r))
       (fun r ↦ rowNorm z.c0 (Ext4.normK0 z) (Ext4.normK1 z) (z.c2 + z.c2) (nodeAt ω x r))
@@ -725,7 +732,7 @@ theorem blocks_spec (evals : ByteArray) (ω s : Field) (z : Ext4) (width hi k ro
       refine ⟨by omega, h.2.2.1, ?_, ?_⟩ <;> rw [PackedRepr.size_encode_uint32, hs2, hs1, hW] <;>
         simp only [blockRows] at hbB ⊢ <;> omega
     have hcol : ∀ c, colBlock evals width row b c
-        (fun r ↦ specWeight z (FastField.toField (nodeAt ω x r))) =
+        (fun r ↦ specWeight z (nodeAt ω x r)) =
         ∑ R ∈ Finset.Ico row (row + b), rowTerm evals width ω s z R c := by
       intro c
       rw [Finset.sum_Ico_eq_sum_range, Nat.add_sub_cancel_left, colBlock]
@@ -733,7 +740,7 @@ theorem blocks_spec (evals : ByteArray) (ω s : Field) (z : Ext4) (width hi k ro
       rw [rowTerm, hX]
     have key : ∀ (S : Array Quad) (hS : S.size = width)
         (_ : ∀ c < width, sumAt z S c = sumAt z sums c + colBlock evals width row b c
-          (fun r ↦ specWeight z (FastField.toField (nodeAt ω x r)))) (h''),
+          (fun r ↦ specWeight z (nodeAt ω x r))) (h''),
         (blocks evals ω z.c0 (Ext4.normK0 z) (Ext4.normK1 z) (z.c2 + z.c2) width hi k (row + b)
           (nodeAt ω x b) (PackedRepr.encode W2) S h'').size = width ∧
         ∀ c < width, sumAt z (blocks evals ω z.c0 (Ext4.normK0 z) (Ext4.normK1 z) (z.c2 + z.c2)
@@ -767,7 +774,7 @@ theorem sumAt_replicate_zero (z : Ext4) (width c : ℕ) :
 
 theorem leaf_spec (evals : ByteArray) (ω s : Field) (z : Ext4) (width lo hi : ℕ) (h)
     (hz : ∀ R, lo ≤ R → R < hi →
-      Ext4.toSpec z ≠ Ext.ofBase (FastField.toField s * FastField.toField ω ^ R)) :
+      Ext4.toSpec z ≠ Ext.ofBase (s * ω ^ R)) :
     (leaf evals ω s z width lo hi h).size = width ∧
       ∀ c < width, sumAt z (leaf evals ω s z width lo hi h) c =
         ∑ R ∈ Finset.Ico lo hi, rowTerm evals width ω s z R c := by
@@ -782,7 +789,7 @@ theorem leaf_spec (evals : ByteArray) (ω s : Field) (z : Ext4) (width lo hi : �
     (s * Montgomery.Native32.pow ω lo) (Array.replicate (4 * blockRows) 0)
     (Array.replicate width 0)
     ⟨h.1, h.2.1, h.2.2, by rw [PackedRepr.size_encode_uint32, Array.size_replicate]; ring⟩
-    (Array.size_replicate) (by rw [toField_mul, toField_pow]) Array.size_replicate hz
+    (Array.size_replicate) (congrArg (s * ·) (pow_eq_npow ω lo)) Array.size_replicate hz
   refine ⟨hsz, fun c hc ↦ ?_⟩
   rw [hval c hc, sumAt_replicate_zero, zero_add, hmin]
 
@@ -794,7 +801,7 @@ theorem sumAt_join (z : Ext4) (a b : Array Quad) (c : ℕ) (ha : c < a.size) (hb
 
 theorem tree_spec (evals : ByteArray) (ω s : Field) (z : Ext4) (width depth lo hi : ℕ) (h)
     (hz : ∀ R, lo ≤ R → R < hi →
-      Ext4.toSpec z ≠ Ext.ofBase (FastField.toField s * FastField.toField ω ^ R)) :
+      Ext4.toSpec z ≠ Ext.ofBase (s * ω ^ R)) :
     (tree evals ω s z width lo hi h depth).size = width ∧
       ∀ c < width, sumAt z (tree evals ω s z width lo hi h depth) c =
         ∑ R ∈ Finset.Ico lo hi, rowTerm evals width ω s z R c := by
@@ -823,7 +830,7 @@ theorem getD_decodeWords (b : ByteArray) (k : ℕ) (hk : k < b.size / 4) :
 `interpolateCoset` on the matrix's words, read as residues. -/
 theorem interpolateCosetPacked_eq (logN : ℕ) (ω s : Field) (width : ℕ) (evals : ByteArray)
     (z : Ext4) (logTasks : ℕ)
-    (hz : ∀ i < 2 ^ logN, Ext4.toSpec z ≠ Ext.ofBase (specNode ω s i)) :
+    (hz : ∀ i < 2 ^ logN, Ext4.toSpec z ≠ Ext.ofBase (s * ω ^ i)) :
     interpolateCosetPacked logN ω s width evals z logTasks =
       interpolateCoset logN ω s width (decodeWords evals) z := by
   unfold interpolateCosetPacked
@@ -891,21 +898,18 @@ theorem size_interpolateCosetPacked (logN : ℕ) (ω s : Field) (width : ℕ) (e
 
 /-- If column `j` of the words holds the values of `pⱼ`, of degree below `n`, on the coset
 `s · ⟨ω⟩`, and `z` lies outside the coset, then output `j` is `pⱼ(z)`. -/
-theorem toSpec_interpolateCosetPacked (D : CPolynomial.NTT.Domain KoalaBear.Field) (ω s : Field)
-    (hω : FastField.toField ω = D.omega) (hs : FastField.toField s ≠ 0) (width : ℕ)
-    (evals : ByteArray) (z : Ext4) (logTasks : ℕ)
-    (hz : Ext4.toSpec z ^ D.n ≠
-      algebraMap KoalaBear.Field KoalaBear.Ext4 (FastField.toField s) ^ D.n)
-    (p : Fin width → KoalaBear.Field[X]) (hp : ∀ j, (p j).degree < D.n)
+theorem toSpec_interpolateCosetPacked (D : CPolynomial.NTT.Domain Field) (s : Field) (hs : s ≠ 0)
+    (width : ℕ) (evals : ByteArray) (z : Ext4) (logTasks : ℕ)
+    (hz : Ext4.toSpec z ^ D.n ≠ algebraMap Field (Spec4) s ^ D.n)
+    (p : Fin width → Field[X]) (hp : ∀ j, (p j).degree < D.n)
     (hevals : ∀ (i : D.Idx) (j : Fin width),
-      FastField.toField ((decodeWords evals).getD (i * width + j) 0) =
-        (p j).eval (FastField.toField s * D.node i))
+      (decodeWords evals).getD (i * width + j) 0 = (p j).eval (s * D.node i))
     (j : Fin width) :
-    Ext4.toSpec ((interpolateCosetPacked D.logN ω s width evals z logTasks)[j.val]'(by
+    Ext4.toSpec ((interpolateCosetPacked D.logN D.omega s width evals z logTasks)[j.val]'(by
       rw [size_interpolateCosetPacked]; exact j.isLt)) =
       Polynomial.aeval (Ext4.toSpec z) (p j) := by
-  simp only [interpolateCosetPacked_eq D.logN ω s width evals z logTasks
-    (toSpec_ne_specNode D ω s hω z hz)]
-  exact toSpec_interpolateCoset D ω s hω hs width _ z hz p hp hevals j
+  simp only [interpolateCosetPacked_eq D.logN D.omega s width evals z logTasks
+    (toSpec_ne_cosetNode D s z hz)]
+  exact toSpec_interpolateCoset D s hs width _ z hz p hp hevals j
 
 end KoalaBear.Fast

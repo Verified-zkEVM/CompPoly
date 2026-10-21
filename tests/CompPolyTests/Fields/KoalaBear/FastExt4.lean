@@ -12,7 +12,7 @@ public meta import CompPoly.Fields.KoalaBear.FastExt4
 
 Compiled checks of `KoalaBear.Fast.Ext4`: known answers computed with Plonky3's
 `BinomialExtensionField<KoalaBear, 4>` (`p3-field` 0.4.2), agreement with the spec field
-`KoalaBear.Ext4`, and the byte codec.
+`Ext4.Spec` over the fast base field, and the byte codec.
 -/
 
 public meta section
