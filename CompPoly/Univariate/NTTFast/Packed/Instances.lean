@@ -33,9 +33,9 @@ instance : PackedNTT KoalaBear.fieldSize := ⟨runKoalaBear, rfl⟩
 set_option maxRecDepth 8192 in
 set_option maxHeartbeats 8000000 in
 /-- The batched coset LDE specialized to KoalaBear. -/
-def cosetLdeKoalaBear (P : LdePlan KoalaBear.fieldSize) (w : Nat) (m : ByteArray) :
+def cosetLdeKoalaBear (P : LdePlan KoalaBear.fieldSize) (w : Nat) (ms : Array ByteArray) :
     Array ByteArray :=
-  Native.cosetLde P w m
+  Native.cosetLde P w ms
 
 instance : PackedCosetLde KoalaBear.fieldSize := ⟨cosetLdeKoalaBear, rfl⟩
 
@@ -51,9 +51,9 @@ instance : PackedNTT BabyBear.fieldSize := ⟨runBabyBear, rfl⟩
 set_option maxRecDepth 8192 in
 set_option maxHeartbeats 8000000 in
 /-- The batched coset LDE specialized to BabyBear. -/
-def cosetLdeBabyBear (P : LdePlan BabyBear.fieldSize) (w : Nat) (m : ByteArray) :
+def cosetLdeBabyBear (P : LdePlan BabyBear.fieldSize) (w : Nat) (ms : Array ByteArray) :
     Array ByteArray :=
-  Native.cosetLde P w m
+  Native.cosetLde P w ms
 
 instance : PackedCosetLde BabyBear.fieldSize := ⟨cosetLdeBabyBear, rfl⟩
 

@@ -395,12 +395,99 @@ theorem Native.gatherColumn_eq_column (M : Array (FastField p)) (w h R rows j : 
   intro i h1 h2
   simp only [Array.getElem_ofFn, Array.getElem_map, column, Vector.toArray_ofFn, getD_map_val]
 
-/-- The extension of a packed row-major matrix `M` of width `w` is the packed specification, in
-row chunks: chunk `c` holds rows `c · L, …` with `L = 2 ^ logH / chunkCount logH`. -/
-theorem Native.cosetLde_eq (P : LdePlan p) (w : Nat) (M : Array (FastField p))
-    (hM : M.size = 2 ^ P.logH * w)
+/-- Entry `i` of a slice is entry `a + i` of the array, inside the slice. -/
+theorem getD_extract_map_val (M : Array (FastField p)) (a b i : Nat) (hb : b ≤ M.size)
+    (hi : a + i < b) :
+    ((M.extract a b).map Subtype.val).getD i 0 = (M.map Subtype.val).getD (a + i) 0 := by
+  rw [getD_map_val, getD_map_val]
+  have h1 : i < (M.extract a b).size := by rw [Array.size_extract]; omega
+  simp only [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem h1,
+    Array.getElem?_eq_getElem (show a + i < M.size by omega), Option.getD_some,
+    Array.getElem_extract]
+
+/-- The split of `2 ^ k` input chunks into `2 ^ k · q` row ranges of `rows` rows: `2 ^ r` ranges
+for `r = max k (min 4 logH)`. -/
+theorem rangesPerChunk_spec (logH k : Nat) (hk : k ≤ logH) :
+    0 < Native.rangesPerChunk logH (2 ^ k) ∧
+      2 ^ k * Native.rangesPerChunk logH (2 ^ k) *
+        (2 ^ logH / (2 ^ k * Native.rangesPerChunk logH (2 ^ k))) = 2 ^ logH ∧
+      Native.rangesPerChunk logH (2 ^ k) *
+        (2 ^ logH / (2 ^ k * Native.rangesPerChunk logH (2 ^ k))) = 2 ^ (logH - k) := by
+  unfold Native.rangesPerChunk Native.rangeCount
+  by_cases h : k ≤ min 4 logH
+  · rw [Nat.pow_div h (by decide), Nat.max_eq_right (Nat.one_le_two_pow), ← Nat.pow_add,
+      Nat.add_sub_cancel' h, Nat.pow_div (Nat.min_le_right _ _) (by decide), ← Nat.pow_add,
+      ← Nat.pow_add]
+    refine ⟨Nat.two_pow_pos _, by congr 1; omega, by congr 1; omega⟩
+  · rw [Nat.div_eq_of_lt (Nat.pow_lt_pow_right (by decide) (by omega)), Nat.max_eq_left
+      (Nat.zero_le _), Nat.mul_one, Nat.one_mul, Nat.pow_div hk (by decide), ← Nat.pow_add]
+    exact ⟨Nat.one_pos, by congr 1; omega, rfl⟩
+
+/-- A row range of a chunk transposes as the same rows of the whole matrix. -/
+theorem Native.transposeRows_rowChunks (M : Array (FastField p)) (w logH k q rows : Nat)
+    (hM : M.size = 2 ^ logH * w) (hk : k ≤ logH) (hq0 : 0 < q)
+    (hq : q * rows = 2 ^ (logH - k)) (hs : 4 * M.size < USize.size) (j : Nat)
+    (hj : j < 2 ^ k * q) :
+    Native.transposeRows ((Native.rowChunks M w logH k).getD (j / q) .empty) w (j % q * rows)
+      rows = Native.transposeRows (encode M) w (j * rows) rows := by
+  have hc : j / q < 2 ^ k := (Nat.div_lt_iff_lt_mul hq0).mpr hj
+  have hkL : 2 ^ k * 2 ^ (logH - k) = 2 ^ logH := by rw [← Nat.pow_add]; congr 1; omega
+  have hjq := Nat.div_add_mod j q
+  have hsq : j % q < q := Nat.mod_lt _ hq0
+  -- Row `j * rows` of the matrix is row `j % q * rows` of chunk `j / q`.
+  have e : j * rows = j / q * 2 ^ (logH - k) + j % q * rows := by
+    rw [← hq]
+    conv_lhs => rw [← hjq]
+    ring
+  have hsr : j % q * rows + rows ≤ 2 ^ (logH - k) := by
+    have := Nat.mul_le_mul_right rows (show j % q + 1 ≤ q by omega)
+    rw [Nat.succ_mul, hq] at this; exact this
+  have hcL : (j / q + 1) * 2 ^ (logH - k) ≤ 2 ^ logH := by
+    rw [← hkL]; exact Nat.mul_le_mul_right _ hc
+  have hcLw : j / q * (2 ^ (logH - k) * w) + 2 ^ (logH - k) * w ≤ M.size := by
+    rw [hM]
+    have := Nat.mul_le_mul_right w hcL
+    rw [Nat.succ_mul] at this
+    calc _ = (j / q * 2 ^ (logH - k) + 2 ^ (logH - k)) * w := by ring
+      _ ≤ _ := this
+  have hrowM : (j * rows + rows) * w ≤ M.size := by
+    rw [hM, e]
+    have := Nat.mul_le_mul_right w (show j / q * 2 ^ (logH - k) + j % q * rows + rows ≤
+      2 ^ logH by rw [Nat.succ_mul] at hcL; omega)
+    exact this
+  have hrow : (j % q * rows + rows) * w ≤ 2 ^ (logH - k) * w := Nat.mul_le_mul_right w hsr
+  simp only [Native.rowChunks]
+  rw [Array.getD_eq_getD_getElem?, Array.getElem?_map, Array.getElem?_range]
+  simp only [hc, ↓reduceIte, Option.map_some, Option.getD_some]
+  rw [encode_eq_map_val, encode_eq_map_val M,
+    Native.transposeRows_encodeWords _ w _ rows (by
+      rw [Array.size_map, Array.size_extract]; omega)
+      (by rw [Array.size_map, Array.size_extract]; omega),
+    Native.transposeRows_encodeWords _ w _ rows (by rw [Array.size_map]; exact hrowM)
+      (by rw [Array.size_map]; exact hs)]
+  congr 1
+  apply Array.ext (by simp only [Array.size_ofFn])
+  intro i h1 _
+  simp only [Array.size_ofFn] at h1
+  simp only [Array.getElem_ofFn]
+  have hrows : 0 < rows := Nat.pos_of_ne_zero (by rintro rfl; simp at h1)
+  have hw : i / rows < w := (Nat.div_lt_iff_lt_mul hrows).mpr h1
+  have hr := Nat.mod_lt i hrows
+  have hin : (j % q * rows + i % rows) * w + i / rows < 2 ^ (logH - k) * w := by
+    have := Nat.mul_le_mul_right w (show j % q * rows + i % rows + 1 ≤ 2 ^ (logH - k) by
+      omega)
+    rw [Nat.succ_mul] at this; omega
+  rw [getD_extract_map_val M _ _ _ hcLw (by omega), e]
+  congr 1
+  ring
+
+/-- The extension of a packed row-major matrix `M` of width `w`, given in `2 ^ k` chunks of rows,
+is the packed specification, in row chunks: chunk `c` holds rows `c · L, …` with
+`L = 2 ^ logH / chunkCount logH`. -/
+theorem Native.cosetLde_eq (P : LdePlan p) (w : Nat) (M : Array (FastField p)) (k : Nat)
+    (hk : k ≤ P.logH) (hM : M.size = 2 ^ P.logH * w)
     (hu : 4 * (2 ^ P.domain.logN * w) < USize.size) :
-    Native.cosetLde P w (encode M) =
+    Native.cosetLde P w (Native.rowChunks M w P.logH k) =
       (Array.range (2 ^ P.bits * Native.chunkCount P.logH)).map fun c ↦
         encode ((ldeSpec P w M).extract (c * (2 ^ P.logH / Native.chunkCount P.logH * w))
           (c * (2 ^ P.logH / Native.chunkCount P.logH * w) +
@@ -412,10 +499,18 @@ theorem Native.cosetLde_eq (P : LdePlan p) (w : Nat) (M : Array (FastField p))
   have hHu : 4 * 2 ^ P.logH < USize.size := by
     have := P.byte_bound_low; exact this
   have hMs : 4 * M.size < USize.size := by omega
-  let R := Native.rangeCount P.logH
+  let q := Native.rangesPerChunk P.logH (2 ^ k)
+  let R := 2 ^ k * q
   let rows := 2 ^ P.logH / R
-  have hR : R * rows = 2 ^ P.logH := by
-    rw [Nat.mul_comm]; exact pow_div_mul_pow_min P.logH 4
+  obtain ⟨hq0, hR, hq⟩ := rangesPerChunk_spec P.logH k hk
+  have hpieces : (Array.range R).map (fun j ↦ Native.transposeRows
+      ((Native.rowChunks M w P.logH k).getD (j / q) .empty) w (j % q * rows) rows) =
+      (Array.range R).map fun j ↦ Native.transposeRows (encode M) w (j * rows) rows := by
+    apply Array.ext (by simp only [Array.size_map])
+    intro j h1 _
+    simp only [Array.size_map, Array.size_range] at h1
+    simp only [Array.getElem_map, Array.getElem_range]
+    exact Native.transposeRows_rowChunks M w P.logH k q rows hM hk hq0 hq hMs j h1
   let C := Native.chunkCount P.logH
   let rows' := 2 ^ P.logH / C
   have hC : rows' * C = 2 ^ P.logH := pow_div_mul_pow_min P.logH 3
@@ -450,8 +545,8 @@ theorem Native.cosetLde_eq (P : LdePlan p) (w : Nat) (M : Array (FastField p))
       encode_eq_map_val]
   unfold Native.cosetLde
   simp only [Array.map_flatMap, Array.map_map, Function.comp_def, Tasks.get_bind, Tasks.get_spawn,
-    Tasks.get_join, Tasks.map_get_spawnAll]
-  rw [flatMap_range_map]
+    Tasks.get_join, Tasks.map_get_spawnAll, Native.rowChunks, Array.size_map, Array.size_range]
+  rw [← Native.rowChunks, hpieces, flatMap_range_map]
   apply Array.ext (by simp only [Array.size_map])
   intro c h1 _
   simp only [Array.size_map, Array.size_range] at h1
@@ -508,13 +603,16 @@ theorem Native.cosetLde_eq (P : LdePlan p) (w : Nat) (M : Array (FastField p))
   rw [hdiv, hmod, hcC, Nat.add_assoc]
 
 /-- **The batched coset LDE is correct.** Joined, the row chunks of the extension of a packed
-row-major matrix `M` of width `w` and `2 ^ logH` rows are the packed specification: row `r` holds
+row-major matrix `M` of width `w` and `2 ^ logH` rows, given in `2 ^ k` chunks of rows, are the
+packed specification: row `r` holds
 every column's interpolant on the subgroup of order `2 ^ logH`, evaluated at
 `shift · ω ^ bitrev r`. -/
-theorem Native.joinRows_cosetLde (P : LdePlan p) (w : Nat) (M : Array (FastField p))
-    (hM : M.size = 2 ^ P.logH * w) (hu : 4 * (2 ^ P.domain.logN * w) < USize.size) :
-    Native.joinRows (Native.cosetLde P w (encode M)) = encode (ldeSpec P w M) := by
-  rw [Native.cosetLde_eq P w M hM hu]
+theorem Native.joinRows_cosetLde (P : LdePlan p) (w : Nat) (M : Array (FastField p)) (k : Nat)
+    (hk : k ≤ P.logH) (hM : M.size = 2 ^ P.logH * w)
+    (hu : 4 * (2 ^ P.domain.logN * w) < USize.size) :
+    Native.joinRows (Native.cosetLde P w (Native.rowChunks M w P.logH k)) =
+      encode (ldeSpec P w M) := by
+  rw [Native.cosetLde_eq P w M k hk hM hu]
   apply joinRows_extract
   have hlog : P.domain.logN = P.bits + P.logH := by
     have := P.bits_le; simp only [LdePlan.logH]; omega
@@ -527,10 +625,10 @@ theorem Native.joinRows_cosetLde (P : LdePlan p) (w : Nat) (M : Array (FastField
 
 /-- `Native.joinRows_cosetLde` for the compiled extension. -/
 theorem LdePlan.joinRows_cosetLde [PackedCosetLde p] (P : LdePlan p) (w : Nat)
-    (M : Array (FastField p)) (hM : M.size = 2 ^ P.logH * w)
+    (M : Array (FastField p)) (k : Nat) (hk : k ≤ P.logH) (hM : M.size = 2 ^ P.logH * w)
     (hu : 4 * (2 ^ P.domain.logN * w) < USize.size) :
-    Native.joinRows (P.cosetLde w (encode M)) = encode (ldeSpec P w M) := by
+    Native.joinRows (P.cosetLde w (Native.rowChunks M w P.logH k)) = encode (ldeSpec P w M) := by
   rw [LdePlan.cosetLde, PackedCosetLde.run_eq]
-  exact Native.joinRows_cosetLde P w M hM hu
+  exact Native.joinRows_cosetLde P w M k hk hM hu
 
 end CompPoly.CPolynomial.NTTFast.Packed

@@ -24,9 +24,11 @@ In that order the output splits into `2 ^ bits` blocks of `h` rows: block `t` ho
 transform followed by `2 ^ bits` forward transforms of size `h`, each of the coefficients
 scaled by the powers of `shift · ω ^ c` (and by `1 / h`), with no padding and no reversal.
 
-Tasks transpose row ranges of the input into columns, extend each column, and transpose row
-ranges of the extended columns back into rows. The result stays in those row chunks, which a
-commitment hashes in parallel; `joinRows` copies them into one buffer.
+The input comes in chunks of consecutive rows of equal heights, so that a caller producing its
+rows in parallel need not join them. Tasks transpose row ranges of the chunks into columns,
+extend each column, and transpose row ranges of the extended columns back into rows. The result
+stays in those row chunks, which a commitment hashes in parallel; `joinRows` copies them into one
+buffer.
 -/
 
 @[expose] public section
@@ -195,18 +197,22 @@ def cosetBlock (P : LdePlan p) (c : ByteArray) (t : Nat) : ByteArray :=
 /-- The number of row ranges the input transpose splits into. -/
 def rangeCount (logRows : Nat) : Nat := 2 ^ min 4 logRows
 
+/-- The number of row ranges the input transpose splits each of `chunks` input chunks into. -/
+def rangesPerChunk (logRows chunks : Nat) : Nat := max 1 (rangeCount logRows / chunks)
+
 /-- The number of output chunks per block of `2 ^ logRows` rows. -/
 def chunkCount (logRows : Nat) : Nat := 2 ^ min 3 logRows
 
-/-- The extension of the `w`-column matrix `m`, as row chunks in commitment order. Tasks
-transpose row ranges of `m` into columns; each column's coefficients are one task, and each of
-its coset blocks another; each output chunk transposes rows of one block as soon as that block's
-columns are done. -/
+/-- The extension of the `w`-column matrix whose rows are the chunks `ms` of equal heights, in
+order, as row chunks in commitment order. Tasks transpose row ranges of the chunks into columns;
+each column's coefficients are one task, and each of its coset blocks another; each output chunk
+transposes rows of one block as soon as that block's columns are done. -/
 @[specialize]
-def cosetLde (P : LdePlan p) (w : Nat) (m : ByteArray) : Array ByteArray :=
-  let R := rangeCount P.logH
-  let rows := 2 ^ P.logH / R
-  let pieces := Tasks.join (Tasks.spawnAll R fun k ↦ transposeRows m w (k * rows) rows)
+def cosetLde (P : LdePlan p) (w : Nat) (ms : Array ByteArray) : Array ByteArray :=
+  let q := rangesPerChunk P.logH ms.size
+  let rows := 2 ^ P.logH / (ms.size * q)
+  let pieces := Tasks.join (Tasks.spawnAll (ms.size * q) fun k ↦
+    transposeRows (ms.getD (k / q) .empty) w (k % q * rows) rows)
   let coeffs := (Array.range w).map fun j ↦ pieces.bind fun ps ↦ Task.spawn fun _ ↦
     columnCoefficients P (gatherColumn ps rows j)
   let C := chunkCount P.logH
@@ -216,6 +222,12 @@ def cosetLde (P : LdePlan p) (w : Nat) (m : ByteArray) : Array ByteArray :=
     (Array.range C).map fun k ↦ block.bind fun cs ↦ Task.spawn fun _ ↦
       rowsOfColumns cs (k * rows') rows'
   chunks.map Task.get
+
+/-- The rows of the row-major matrix `M` of width `w` and `2 ^ logH` rows in `2 ^ k` chunks of
+`2 ^ (logH - k)` consecutive rows, packed: `cosetLde`'s input. -/
+def rowChunks (M : Array (FastField p)) (w logH k : Nat) : Array ByteArray :=
+  (Array.range (2 ^ k)).map fun c ↦
+    encode (M.extract (c * (2 ^ (logH - k) * w)) (c * (2 ^ (logH - k) * w) + 2 ^ (logH - k) * w))
 
 /-- Row chunks joined into one row-major buffer. -/
 def joinRows (chunks : Array ByteArray) : ByteArray :=
@@ -227,14 +239,14 @@ end Native
 `p`, where the compiler specializes the kernels. -/
 class PackedCosetLde (p : ℕ) [Mont32Field p] where
   /-- The compiled extension. -/
-  run : LdePlan p → Nat → ByteArray → Array ByteArray
+  run : LdePlan p → Nat → Array ByteArray → Array ByteArray
   run_eq : run = Native.cosetLde := by rfl
 
-/-- The extension of the `w`-column packed row-major matrix `m`, as row chunks in commitment
-order, with the field's compiled kernels. -/
-@[inline] def LdePlan.cosetLde [PackedCosetLde p] (P : LdePlan p) (w : Nat) (m : ByteArray) :
-    Array ByteArray :=
-  PackedCosetLde.run P w m
+/-- The extension of the `w`-column packed row-major matrix whose rows are the chunks `ms` of equal
+heights, as row chunks in commitment order, with the field's compiled kernels. -/
+@[inline] def LdePlan.cosetLde [PackedCosetLde p] (P : LdePlan p) (w : Nat)
+    (ms : Array ByteArray) : Array ByteArray :=
+  PackedCosetLde.run P w ms
 
 
 end CompPoly.CPolynomial.NTTFast.Packed
