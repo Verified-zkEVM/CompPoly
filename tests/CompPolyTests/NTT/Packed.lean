@@ -53,12 +53,15 @@ def parallelAgrees (p : ℕ) [Mont32Field p] [PackedNTT p] (D : NTT.Domain (Fast
   let y := P.forwardPacked a true
   y == P.forwardPacked a false && P.inversePacked y true == a
 
-/-- The batched coset LDE of a `2 ^ 5 × 3` matrix with blowup `2` agrees with the specification. -/
+/-- The batched coset LDE of a `2 ^ 5 × 3` matrix with blowup `2`, given whole and in four chunks
+of rows, agrees with the specification. -/
 def ldeAgrees (p : ℕ) [Mont32Field p] [PackedCosetLde p] (D : NTT.Domain (FastField p))
     (hb : 1 ≤ D.logN) (h32 : D.logN ≤ 32) (hu : 4 * D.n < USize.size) : Bool :=
   let P := LdePlan.ofDomain D 1 hb 3 h32 hu
   let M := input p (2 ^ P.logH * 3)
-  CPolynomial.NTTFast.Packed.Native.joinRows (P.cosetLde 3 (encode M)) == encode (ldeSpec P 3 M)
+  [0, 2].all fun k ↦ CPolynomial.NTTFast.Packed.Native.joinRows
+    (P.cosetLde 3 (CPolynomial.NTTFast.Packed.Native.rowChunks M 3 P.logH k)) ==
+      encode (ldeSpec P 3 M)
 
 def koalaBear (logN : ℕ) (h : logN ≤ KoalaBear.twoAdicity) : NTT.Domain KoalaBear.Fast.Field :=
   NTT.KoalaBear.fastDomainOfLogN logN h

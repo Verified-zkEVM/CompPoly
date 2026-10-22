@@ -52,9 +52,10 @@ def main (args : List String) : IO UInt32 := do
       omega
     let plan := CPolynomial.NTTFast.Packed.LdePlan.ofDomain domain bits
       (by change bits ≤ logH + bits; omega) (words.getD 1 0) h32 hu
-    -- The matrices are packed outside timing, as Montgomery words like Plonky3's storage.
+    -- The matrices are packed outside timing, as Montgomery words like Plonky3's storage, each
+    -- in one chunk of rows.
     let inputs := #[words.extract 2 (2 + rows * width), words.extract (2 + rows * width)
-      words.size].map CPolynomial.NTTFast.Packed.Native.encodeFields
+      words.size].map fun m ↦ #[CPolynomial.NTTFast.Packed.Native.encodeFields m]
     let word (b : ByteArray) (i : Nat) : UInt64 :=
       (CPolynomial.NTTFast.Packed.Native.read b i).toUInt64
     validateOnlyRef.set (validate == "true")
