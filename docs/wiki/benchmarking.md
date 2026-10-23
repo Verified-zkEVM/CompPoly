@@ -895,3 +895,18 @@ So that the specialized code is compiled once, with the native library's flags, 
 ### Coset LDE over any 32-bit Montgomery field (2026-10-21)
 
 `LdePlan p` and `Native.cosetLde` are generic over `Mont32Field p`, with `@[specialize]`d kernels like the packed NTT; the minimum-form `add`, `sub` and `mul` take the modulus from the instance, and `reduceOnce_eq` holds for every word. `LdePlan.cosetLde` calls the class `PackedCosetLde p`, whose KoalaBear and BabyBear instances live beside the `PackedNTT` ones in `CompPoly/Univariate/NTTFast/Packed/Instances.lean`; `LdePlan.joinRows_cosetLde` restates the correctness theorem for it. `lake exe CompPolyNativeSmoke` checks both instances against `ldeSpec`.
+
+### Proved stores and checks once per loop (2026-10-23)
+
+A `ByteArray` store first checks that the array is unshared and copies it otherwise. In a kernel that loads its words and then stores, that copy is a call on the path of the first store, so the compiler keeps every loaded value across it and spills them. `Native.touchLast` writes the buffer's last word back unchanged before the kernel loads anything: the check happens with nothing live, the stores after it keep the array unshared, and `Native.store8` stores with proved bounds instead of checked ones, so no later store has a branch or a call. `lastHalf` checks its output once per call on machine words and then runs that way, which halved its stack accesses and made the packed NTT at `2 ^ 16` 6% faster (inverse, one thread). `tile8` checks its eight lines and its output tile once and stores each output line as soon as its eight words are loaded: 17% less time in the kernel. The same treatment did not pay for `step16`, whose radix-four passes are bound by memory and lost 3% with fewer spills but later loads, nor for the strided `16 × 16` input tile.
+
+`leaf16x2` runs the final four layers of two blocks at once and multiplies every butterfly of the first three layers by its twiddle, the first twiddle of each layer being one (`TwiddleOnes`), so that each block's layers are uniform and the compiler vectorizes them; the scalar `leaf16` stays for a last odd block. `Native.leaf16x2_encode` proves the kernel equal to `leaf16Field` on its two blocks in turn. The range checks of whole loops moved out of their bodies: `radix4Blocks` checks a pass once for quarters of whole sixteen-cell batches and runs `blocks16Loop` on machine words, `leaf16Blocks` runs `leaf16x2Loop` and `mulWords` runs `mul16Loop` the same way, each with a refinement lemma by induction on the loop.
+
+CompStark's extension of the Keccak trace (2633 columns, blowup 2, `CompStarkBench keccak-lde`), milliseconds, medians of three alternating rounds on the Ryzen 7 3700X; Plonky3 is `compstark-bench lde` built for the native CPU:
+
+| Rows | Threads | Before | After | Plonky3 |
+|---:|---:|---:|---:|---:|
+| 2^15 | 16 | 487 | 434 | 346 |
+| 2^15 | 1 | 2423 | 2013 | 856 |
+| 2^16 | 16 | 899 | 821 | 970 |
+| 2^16 | 1 | 4911 | 4239 | 1747 |
