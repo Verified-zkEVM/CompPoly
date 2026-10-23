@@ -292,6 +292,7 @@ public import CompPoly.ToMathlib.Order.WithBot
 public import CompPoly.ToMathlib.Polynomial.BivariateDegree
 public import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
 public import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
+public import CompPoly.ToMathlib.Polynomial.CosetLagrange
 public import CompPoly.ToMathlib.Polynomial.Irreducible
 public import CompPoly.ToMathlib.Polynomial.Roots
 public import CompPoly.Univariate.Barycentric
