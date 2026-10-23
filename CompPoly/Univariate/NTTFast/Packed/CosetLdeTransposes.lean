@@ -69,6 +69,14 @@ theorem Fill.congr {T : Nat → UInt32} {S : Nat → Prop} {N : Nat} {g g' : Byt
   obtain ⟨o', e, f⟩ := h o ho
   exact ⟨o', by rw [← he, e], f⟩
 
+/-- Fills transfer along functions equal on packed `N`-word buffers. -/
+theorem Fill.congr_encode {T : Nat → UInt32} {S : Nat → Prop} {N : Nat}
+    {g g' : ByteArray → ByteArray} (h : Fill T S N g)
+    (he : ∀ o : Array UInt32, o.size = N → g (encode o) = g' (encode o)) : Fill T S N g' := by
+  intro o ho
+  obtain ⟨o', e, f⟩ := h o ho
+  exact ⟨o', by rw [← he o ho, e], f⟩
+
 /-- A fold of fills fills the union of their sets. -/
 theorem Fill.foldl {ι : Type*} (T : Nat → UInt32) (S : ι → Nat → Prop) (N : Nat) (L : List ι)
     (f : ByteArray → ι → ByteArray) (hf : ∀ x ∈ L, Fill T (S x) N (f · x)) :
@@ -338,14 +346,44 @@ theorem transposeRows_encodeWords (M : Array UInt32) (w r0 rows : Nat)
 
 /-! ### Output transpose -/
 
+/-- A checked line of eight words reads as the bounds-proved load. -/
+theorem line8Fits_readAt {b : ByteArray} {q : USize} (h : Line8Fits b q) (k : Nat) (hk : k < 8)
+    (hp) : b.ugetUInt32LE ((q + OfNat.ofNat k) * 4) hp = readAt b q (OfNat.ofNat k) := by
+  have hf := line8Fits_toNat h k hk
+  have hb := toNat_usize_le b
+  have hU := b.usize.toNat_lt_size
+  have h4 := usize_numeral 4 (by decide)
+  have h8 := h.1
+  rw [USize.le_iff_toNat_le, USize.toNat_div, h4, usize_numeral 8 (by decide)] at h8
+  have h2 := h.2
+  rw [USize.le_iff_toNat_le, USize.toNat_sub_of_le _ _ h.1, USize.toNat_div, h4,
+    usize_numeral 8 (by decide)] at h2
+  have hc : 4 ≤ b.usize ∧ (q + OfNat.ofNat k) * 4 ≤ b.usize - 4 := by
+    have h4' : 4 ≤ b.usize := by rw [USize.le_iff_toNat_le, h4]; omega
+    refine ⟨h4', ?_⟩
+    rw [USize.le_iff_toNat_le, USize.toNat_sub_of_le _ _ h4', h4, hf.1]
+    omega
+  unfold readAt
+  rw [dite_eq_left_of_eq_true (eq_true hc)]
+
 /-- The eight-source tile kernel stores its eight transposed lines one after another. -/
-theorem tile8_eq_foldl (s : Nat → ByteArray) (q : USize) (out : ByteArray) (p ps : USize) :
+theorem tile8_eq_foldl (s : Nat → ByteArray) (q : USize) (out : ByteArray) (p ps : USize)
+    (hs : ∀ t < 8, Line8Fits (s t) q) (ho : Tile8Fits out p ps) (hn : out.size < USize.size) :
     tile8 (s 0) (s 1) (s 2) (s 3) (s 4) (s 5) (s 6) (s 7) q out p ps =
       (List.range 8).foldl (fun b u ↦
         let g (t : Nat) : UInt32 := readAt (s t) q (OfNat.ofNat u)
         storeWords b ((p + OfNat.ofNat u * ps) * 4) 8 (g 0) (g 1) (g 2) (g 3) (g 4) (g 5) (g 6)
           (g 7) 0 0 0 0 0 0 0 0) out := by
   unfold tile8
+  rw [dite_eq_left_of_eq_true (eq_true ⟨hs 0 (by decide), hs 1 (by decide), hs 2 (by decide),
+    hs 3 (by decide), hs 4 (by decide), hs 5 (by decide), hs 6 (by decide), hs 7 (by decide),
+    ho⟩)]
+  simp only [store8_val _ _ _ _ _ _ _ _ _ _ _ hn, touchLast, touch_eq]
+  simp (disch := decide) only [line8Fits_readAt (hs 0 (by decide)),
+    line8Fits_readAt (hs 1 (by decide)), line8Fits_readAt (hs 2 (by decide)),
+    line8Fits_readAt (hs 3 (by decide)), line8Fits_readAt (hs 4 (by decide)),
+    line8Fits_readAt (hs 5 (by decide)), line8Fits_readAt (hs 6 (by decide)),
+    line8Fits_readAt (hs 7 (by decide))]
   rfl
 
 /-- The eight-source tile kernel fills the transposed tile with its targets. -/
@@ -377,8 +415,26 @@ theorem fill_tile8 (T : Nat → UInt32) (N : Nat) (s : Nat → ByteArray) (V : N
       rw [hsV t ht, readAt_encodeWords _ _ _ (by
         rw [size_encode_uint32, usize_numeral u (by omega)]; omega), usize_numeral u (by omega),
         hT u hu t ht]
-  refine ((Fill.foldl T _ N (List.range 8) f hstep).congr fun b ↦
-    (tile8_eq_foldl s q b p ps).symm).mono ?_
+  have hs (t : Nat) (ht : t < 8) : Line8Fits (s t) q := by
+    have hq := hV t ht
+    have hu : (s t).usize.toNat = 4 * (V t).size := by
+      rw [hsV t ht, ByteArray.usize, Nat.toUSize, USize.toNat_ofNat_of_lt' (by
+        rw [size_encode_uint32]; exact hq.2), size_encode_uint32]
+    have h4 := usize_numeral 4 (by decide)
+    have h8 := usize_numeral 8 (by decide)
+    have h1 : 8 ≤ (s t).usize / 4 := by
+      rw [USize.le_iff_toNat_le, USize.toNat_div, h4, h8, hu]; omega
+    refine ⟨h1, ?_⟩
+    rw [USize.le_iff_toNat_le, USize.toNat_sub_of_le _ _ h1, USize.toNat_div, h4, h8, hu]
+    omega
+  refine ((Fill.foldl T _ N (List.range 8) f hstep).congr_encode fun o ho ↦
+    (tile8_eq_foldl s q (encode o) p ps hs (by
+      have hu : (encode o).usize.toNat = 4 * N := by
+        rw [ByteArray.usize, Nat.toUSize, USize.toNat_ofNat_of_lt' (by
+          rw [size_encode_uint32]; omega), size_encode_uint32, ho]
+      have := Nat.mul_le_mul_right ps.toNat (show 7 ≤ 7 by omega)
+      rw [tile8Fits_iff, hu]
+      omega) (by rw [size_encode_uint32]; omega)).symm).mono ?_
   rintro k ⟨u, hu, t, ht, rfl⟩
   exact ⟨u, List.mem_range.mpr hu, by omega, by omega⟩
 

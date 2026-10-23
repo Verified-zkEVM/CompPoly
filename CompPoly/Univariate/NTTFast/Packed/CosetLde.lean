@@ -148,8 +148,94 @@ def gatherColumn (ps : @& Array ByteArray) (rows j : Nat) : ByteArray :=
   ps.foldl (fun out p ↦ p.copySlice (4 * (j * rows)) out out.size (4 * rows))
     (ByteArray.emptyWithCapacity (4 * (ps.size * rows)))
 
+/-- Words `q, …, q + 7` fit in `b`, checked on machine words. -/
+abbrev Line8Fits (b : ByteArray) (q : USize) : Prop := 8 ≤ b.usize / 4 ∧ q ≤ b.usize / 4 - 8
+
+theorem line8Fits_toNat {b : ByteArray} {q : USize} (h : Line8Fits b q) (k : Nat) (hk : k < 8) :
+    ((q + OfNat.ofNat k) * 4).toNat = 4 * (q.toNat + k) ∧ 4 * (q.toNat + k) + 4 ≤ b.size := by
+  have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
+  have hb := toNat_usize_le b
+  have hu := b.usize.toNat_lt_size
+  have h8 : (8 : USize).toNat = 8 := usize_numeral 8 (by decide)
+  have h4 : (4 : USize).toNat = 4 := usize_numeral 4 (by decide)
+  obtain ⟨h1, h2⟩ := h
+  rw [USize.le_iff_toNat_le, USize.toNat_div, h4, h8] at h1
+  rw [USize.le_iff_toNat_le, USize.toNat_sub_of_le _ _ (by
+    rw [USize.le_iff_toNat_le, USize.toNat_div, h4, h8]; exact h1), USize.toNat_div, h4, h8]
+    at h2
+  have hk' : (OfNat.ofNat k : USize).toNat = k := usize_numeral k (by omega)
+  have hadd : (q + OfNat.ofNat k).toNat = q.toNat + k := by
+    rw [USize.toNat_add, hk', hsize, Nat.mod_eq_of_lt (by omega)]
+  refine ⟨?_, by omega⟩
+  rw [USize.toNat_mul, hadd, h4, hsize, Nat.mod_eq_of_lt (by omega)]
+  omega
+
+/-- A word offset that fits a buffer of `n < USize.size` bytes does not wrap. -/
+theorem wordOffset_toNat' (i : USize) (h : 4 * i.toNat < USize.size) :
+    (i * 4).toNat = 4 * i.toNat := by
+  have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
+  rw [USize.toNat_mul, usize_numeral 4 (by decide), hsize, Nat.mod_eq_of_lt (by omega)]
+  omega
+
+/-- Lines `p + u * ps`, `u < 8`, of eight words fit in `b`, checked on machine words. -/
+abbrev Tile8Fits (b : ByteArray) (p ps : USize) : Prop :=
+  ps ≤ b.usize / 28 ∧ 8 + 7 * ps ≤ b.usize / 4 ∧ p ≤ b.usize / 4 - (8 + 7 * ps)
+
+/-- The check of `Tile8Fits` in natural numbers. -/
+theorem tile8Fits_iff (b : ByteArray) (p ps : USize) :
+    Tile8Fits b p ps ↔ 28 * ps.toNat ≤ b.usize.toNat ∧
+      4 * (p.toNat + 7 * ps.toNat + 8) ≤ b.usize.toNat := by
+  have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
+  have hU := b.usize.toNat_lt_size
+  have hle := USize.le_size
+  have h4 : (4 : USize).toNat = 4 := usize_numeral 4 (by decide)
+  have h7 : (7 : USize).toNat = 7 := usize_numeral 7 (by decide)
+  have h8 : (8 : USize).toNat = 8 := usize_numeral 8 (by decide)
+  have h28 : (28 : USize).toNat = 28 := usize_numeral 28 (by decide)
+  unfold Tile8Fits
+  rw [USize.le_iff_toNat_le, USize.toNat_div, h28]
+  constructor
+  · rintro ⟨h1, h2, h3⟩
+    have e8 : (8 + 7 * ps).toNat = 8 + 7 * ps.toNat := by
+      rw [USize.toNat_add, USize.toNat_mul, h7, h8, hsize,
+        Nat.mod_eq_of_lt (show 7 * ps.toNat < USize.size by omega), Nat.mod_eq_of_lt (by omega)]
+    rw [USize.le_iff_toNat_le, USize.toNat_div, h4, e8] at h2
+    rw [USize.le_iff_toNat_le, USize.toNat_sub_of_le _ _ (by
+      rw [USize.le_iff_toNat_le, USize.toNat_div, h4, e8]; exact h2), USize.toNat_div, h4, e8]
+      at h3
+    omega
+  · rintro ⟨h1, h2⟩
+    have e8 : (8 + 7 * ps).toNat = 8 + 7 * ps.toNat := by
+      rw [USize.toNat_add, USize.toNat_mul, h7, h8, hsize,
+        Nat.mod_eq_of_lt (show 7 * ps.toNat < USize.size by omega), Nat.mod_eq_of_lt (by omega)]
+    have h2' : 8 + 7 * ps ≤ b.usize / 4 := by
+      rw [USize.le_iff_toNat_le, USize.toNat_div, h4, e8]; omega
+    refine ⟨by omega, h2', ?_⟩
+    rw [USize.le_iff_toNat_le, USize.toNat_sub_of_le _ _ h2', USize.toNat_div, h4, e8]
+    omega
+
+theorem tile8Fits_toNat {b : ByteArray} {p ps : USize} (h : Tile8Fits b p ps) (u : Nat)
+    (hu : u < 8) : ((p + OfNat.ofNat u * ps) * 4).toNat + 4 * 8 ≤ b.size ∧
+      ((p + OfNat.ofNat u * ps) * 4).toNat + 4 * 8 < USize.size := by
+  have hb := toNat_usize_le b
+  have hU := b.usize.toNat_lt_size
+  have hn := (tile8Fits_iff b p ps).mp h
+  have hm : u * ps.toNat ≤ 7 * ps.toNat := Nat.mul_le_mul_right _ (by omega)
+  have eu : (OfNat.ofNat u * ps : USize).toNat = u * ps.toNat :=
+    usize_mul_toNat u ps (by omega) (by omega)
+  rw [wordOffset_toNat' _ (by rw [usize_add_toNat _ _ (by omega), eu]; omega),
+    usize_add_toNat _ _ (by omega), eu]
+  omega
+
+/-- A tile that fits has room for the touched last word. -/
+theorem tile8Fits_usize {b : ByteArray} {p ps : USize} (h : Tile8Fits b p ps) : 4 ≤ b.usize := by
+  have hn := (tile8Fits_iff b p ps).mp h
+  rw [USize.le_iff_toNat_le, usize_numeral 4 (by decide)]
+  omega
+
 /-- The transpose of the `8 × 8` tile whose line `t` is words `q, …, q + 7` of `s{t}`, line `u`
-stored from word `p + u * ps` of `out`. Eight lines of eight words fit the vector registers. -/
+stored from word `p + u * ps` of `out`, if every line fits. Eight lines of eight words fit the
+vector registers. -/
 @[noinline] def tile8 (s0 s1 s2 s3 s4 s5 s6 s7 : @& ByteArray) (q : USize) (out : ByteArray)
     (p ps : USize) : ByteArray :=
   tile8_sources%

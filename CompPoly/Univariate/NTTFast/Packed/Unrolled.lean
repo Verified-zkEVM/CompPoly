@@ -83,10 +83,11 @@ meta def step16 (d : Dialect) (lanes : Bool := true) : MacroM Term := do
   lets bs b
 
 /-- The twiddles `w{s}_t` of layer `s + 1` of a sixteen-point block, from `t3`, `t2`, `t1`. -/
-meta def twiddles (d : Dialect) (s : Nat) : MacroM (Array (Ident × Term)) := do
+meta def twiddles (d : Dialect) (s : Nat) (uniform : Bool := false) :
+    MacroM (Array (Ident × Term)) := do
   let tws := #["t3", "t2", "t1"]
   let mut bs := #[]
-  for t in [1:8 >>> s] do
+  for t in [(if uniform && s < 3 then 0 else 1):8 >>> s] do
     bs := bs.push (name s!"w{s}_{t}", ← read d (name tws[s]!) (lit 0) t)
   return bs
 
@@ -94,8 +95,8 @@ meta def twiddles (d : Dialect) (s : Nat) : MacroM (Array (Ident × Term)) := do
 `k + 2 ^ (4 - s)`; the difference of every pair but the first in its group is multiplied by
 twiddle `w{s - 1}_t`. `x s k` names point `k` after layer `s`; `tw s` are the twiddle reads
 emitted before layer `s + 1`. -/
-meta def layers (d : Dialect) (x : Nat → Nat → String) (tw : Nat → MacroM (Array (Ident × Term))) :
-    MacroM (Array (Ident × Term)) := do
+meta def layers (d : Dialect) (x : Nat → Nat → String) (tw : Nat → MacroM (Array (Ident × Term)))
+    (uniform : Bool := false) : MacroM (Array (Ident × Term)) := do
   let mut bs := #[]
   for s in [1:5] do
     bs := bs ++ (← tw (s - 1))
@@ -108,7 +109,7 @@ meta def layers (d : Dialect) (x : Nat → Nat → String) (tw : Nat → MacroM 
         bs := bs.push (name (x s (g + t)), ← add d lo hi)
         let diff ← sub d lo hi
         bs := bs.push (name (x s (g + t + h)),
-          ← if t = 0 then pure diff else mul d (name s!"w{s - 1}_{t}") diff)
+          ← if t = 0 && (!uniform || s = 4) then pure diff else mul d (name s!"w{s - 1}_{t}") diff)
   return bs
 
 /-- A sixteen-point block at `i` of `b` through its four final DIF layers, twiddles read before
@@ -120,9 +121,24 @@ meta def leaf16 (d : Dialect) (finish : Array Term → MacroM Term) : MacroM Ter
   bs := bs ++ (← layers d (fun s k ↦ s!"x{s}_{k}") (twiddles d))
   lets bs (← finish ((Array.range 16).map fun k ↦ (name s!"x4_{k}" : Term)))
 
+/-- Blocks at `i0, …, i{n-1}` of `b` through their four final DIF layers, twiddles read once and
+every butterfly but the last layer's multiplied; each block is stored back in place. -/
+meta def leaf16xN (n : Nat) : MacroM Term := do
+  let mut bs := #[]
+  for s in [0:3] do
+    bs := bs ++ (← twiddles .words s true)
+  for v in [0:n] do
+    for k in [0:16] do
+      bs := bs.push (name s!"x{v}_0_{k}", ← read .words (name "b") (name s!"i{v}") k)
+    bs := bs ++ (← layers .words (fun s k ↦ s!"x{v}_{s}_{k}") (fun _ ↦ pure #[]) true)
+  for v in [0:n] do
+    bs := bs.push (name "b", ← store16 .words (name "b") (name s!"i{v}")
+      ((Array.range 16).map fun k ↦ name s!"x{v}_4_{k}"))
+  lets bs (name "b")
+
 /-- Eight sixteen-point blocks at `i0, …, i7` through their four final DIF layers, one per vector
 lane; word `t` of every lane goes to half `half` of the natural-order line `bitrev (16 c + t)`,
-optionally scaled. -/
+optionally scaled. The touched output takes proved stores, given `hout`. -/
 meta def lastHalf : MacroM Term := do
   let mut bs := #[]
   for s in [0:3] do
@@ -135,12 +151,16 @@ meta def lastHalf : MacroM Term := do
     let ws ← (Array.range 8).mapM fun v ↦
       `($(name "scaleWord") $(name "p") $(name "factor") $(name "scale")
         $(name s!"x{v}_4_{t}"))
-    `($(name "storeWords") $(name "out")
+    `($(name "store8") $(name "o")
       (4 * (16 * ($(name "reverse32") (16 * $(name "c") + $(lit t)).toUInt32 >>>
-        $(name "shift")).toUSize + 8 * $(name "half"))) 8 $ws* 0 0 0 0 0 0 0 0)
-  for t in [0:15] do
-    bs := bs.push (name "out", ← store t)
-  lets bs (← store 15)
+        $(name "shift")).toUSize + 8 * $(name "half"))) $ws*
+      ($(name "lastHalf_store") $(name "hout")
+        ($(name "reverse32") (16 * $(name "c") + $(lit t)).toUInt32)))
+  bs := bs.push (name "o", ← `($(name "touchLast") $(name "out")
+    ($(name "lastHalf_usize") $(name "hout"))))
+  for t in [0:16] do
+    bs := bs.push (name "o", ← store t)
+  lets bs (← `($(name "o").1))
 
 /-- Sixteen radix-two DIF butterflies between the words from `i0` and from `i1`, with twiddles
 from `w` at `j`. -/
@@ -222,19 +242,36 @@ meta def mul16 : MacroM Term := do
   lets bs (← store16 .words (name "out") (name "i") ((Array.range 16).map fun k ↦ name s!"x{k}"))
 
 /-- The transpose of an `8 × 8` tile: source line `t` is words `q, …, q + 7` of `s{t}`; line `u`
-of the transpose is stored from word `p + u * ps` of `out`. -/
+of the transpose is stored from word `p + u * ps` of `out`, if every line fits. The touched output
+takes proved stores, and the sources proved loads. -/
 meta def tile8 : MacroM Term := do
+  let h := name "h"
+  let proj (t : Nat) : MacroM Term := do
+    let mut pr : Term := h
+    for _ in [0:t] do
+      pr ← `($pr.2)
+    if t < 8 then pr ← `($pr.1)
+    pure pr
   let mut bs := #[]
-  for t in [0:8] do
-    for k in [0:8] do
-      bs := bs.push (name s!"x{t}_{k}", ← `($(name "readAt") $(name s!"s{t}") $(name "q") $(lit k)))
-  let store (u : Nat) : MacroM Term := do
+  bs := bs.push (name "o", ← `($(name "touchLast") $(name "out")
+    ($(name "tile8Fits_usize") $(← proj 8))))
+  let ho ← proj 8
+  for u in [0:8] do
+    for t in [0:8] do
+      let ht ← proj t
+      bs := bs.push (name s!"x{t}_{u}", ← `($(name s!"s{t}").ugetUInt32LE
+        (($(name "q") + $(lit u)) * 4)
+        (by rw [($(name "line8Fits_toNat") $ht $(lit u) (by decide)).1]
+            exact ($(name "line8Fits_toNat") $ht $(lit u) (by decide)).2)))
     let vs ← (Array.range 8).mapM fun t ↦ pure (name s!"x{t}_{u}" : Term)
-    `($(name "storeWords") $(name "out") (($(name "p") + $(lit u) * $(name "ps")) * 4) 8 $vs*
-      0 0 0 0 0 0 0 0)
-  for u in [0:7] do
-    bs := bs.push (name "out", ← store u)
-  lets bs (← store 7)
+    bs := bs.push (name "o", ← `($(name "store8") $(name "o")
+      (($(name "p") + $(lit u) * $(name "ps")) * 4) $vs*
+      ($(name "tile8Fits_toNat") $ho $(lit u) (by decide))))
+  let fits ← (Array.range 8).mapM fun t ↦ `($(name "Line8Fits") $(name s!"s{t}") $(name "q"))
+  let cond ← fits.foldrM (fun f c ↦ `($f ∧ $c))
+    (← `($(name "Tile8Fits") $(name "out") $(name "p") $(name "ps")))
+  let body ← lets bs (← `($(name "o").1))
+  `(if $h:ident : $cond then $body else $(name "out"))
 
 
 end CompPoly.CPolynomial.NTTFast.Packed.Unrolled
@@ -259,6 +296,9 @@ macro "leaf16_line%" : term => leaf16 .fields fun ys ↦ `(⟨$ys,*⟩)
 open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
 /-- The final DIF layers of the block at `i` of packed words, written back in place. -/
 macro "leaf16_words%" : term => leaf16 .words (store16 .words (name "b") (name "i"))
+
+open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
+macro "leaf16x2_words%" : term => leaf16xN 2
 
 open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
 /-- The body of the fused final-layer kernel on packed words. -/

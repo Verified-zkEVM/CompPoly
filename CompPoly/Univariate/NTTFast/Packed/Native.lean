@@ -122,6 +122,42 @@ on machine words. -/
 @[inline] def write16U (b : ByteArray) (i : USize) (v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13
   v14 v15 : UInt32) : ByteArray :=
   storeWords b (i * 4) 16 v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15
+/-- A buffer of `n` bytes. -/
+abbrev Buf (n : Nat) : Type := { x : ByteArray // x.size = n }
+
+/-- Overwrite eight words of a buffer from byte offset `o`, with the range proved instead of
+checked. -/
+@[inline] def store8 {n : Nat} (b : Buf n) (o : USize) (v0 v1 v2 v3 v4 v5 v6 v7 : UInt32)
+    (h : o.toNat + 4 * 8 ≤ n ∧ o.toNat + 4 * 8 < USize.size) : Buf n :=
+  ⟨putWords b o 8 v0 v1 v2 v3 v4 v5 v6 v7 0 0 0 0 0 0 0 0 h, size_putWords ..⟩
+
+/-- The proved store is the checked one. -/
+theorem store8_val {n : Nat} (b : Buf n) (o : USize) (v0 v1 v2 v3 v4 v5 v6 v7 : UInt32) (h)
+    (hs : n < USize.size) :
+    (store8 b o v0 v1 v2 v3 v4 v5 v6 v7 h).1 =
+      storeWords b.1 o 8 v0 v1 v2 v3 v4 v5 v6 v7 0 0 0 0 0 0 0 0 := by
+  obtain ⟨b, rfl⟩ := b
+  have h8 : (8 : UInt8).toNat = 8 := rfl
+  have h32 : (32 : Nat).toUSize.toNat = 32 :=
+    USize.toNat_ofNat_of_lt' (by have := USize.le_size; omega)
+  have hu : b.usize.toNat = b.size := by
+    rw [ByteArray.usize, Nat.toUSize, USize.toNat_ofNat_of_lt' (by omega)]
+  have hadd : (o + (32 : Nat).toUSize).toNat = o.toNat + 32 := by
+    have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
+    rw [USize.toNat_add, h32, hsize, Nat.mod_eq_of_lt (by omega)]
+  unfold storeWords
+  split
+  · rename_i hc
+    rw [h8] at hc
+    omega
+  · split
+    · simp only [h8, store8]
+    · rename_i hn
+      exfalso
+      apply hn
+      rw [h8, USize.le_iff_toNat_le, USize.le_iff_toNat_le, hadd, hu]
+      omega
+
 /-- A buffer of `n` zero words, for kernels that store their output words in place. -/
 def zeroWords (n : Nat) : ByteArray := ByteArray.zeros (4 * n)
 /-- Store `f i` up to `f (i + n - 1)` at words `i` up to `i + n - 1`. -/
@@ -158,6 +194,28 @@ decreasing_by omega
 @[inline] def readUOffset (b : @& ByteArray) (i : USize) (o : USize)
     (h : 4 * (i.toNat + o.toNat) + 3 < b.size ∧ b.size < USize.size) : UInt32 :=
   b.ugetUInt32LE ((i + o) * 4) (by rw [wordOffset_toNat i o (by omega)]; omega)
+/-- The word at byte offset `o` of `b` written back unchanged. The result is exclusive, so a
+kernel that starts from it lets the compiler drop the exclusivity checks of its later stores: its
+loads then interleave with them instead of being held, spilled, until the first one. -/
+@[inline] def touch (b : ByteArray) (o : USize) (h : o.toNat + 4 ≤ b.size) : Buf b.size :=
+  ⟨b.usetUInt32LE o (b.ugetUInt32LE o h) h, ByteArray.size_usetUInt32LE ..⟩
+
+theorem touch_eq (b : ByteArray) (o : USize) (h) : (touch b o h).1 = b :=
+  PackedRepr.setUInt32LE!_getUInt32LE! b o.toNat h
+
+/-- The last word of a buffer of at least four bytes fits it. -/
+theorem lastWord_bound (b : ByteArray) (h : 4 ≤ b.usize) : (b.usize - 4).toNat + 4 ≤ b.size := by
+  have hb := toNat_usize_le b
+  rw [USize.le_iff_toNat_le, usize_numeral 4 (by decide)] at h
+  rw [USize.toNat_sub_of_le _ _ (by rw [USize.le_iff_toNat_le, usize_numeral 4 (by decide)]; omega),
+    usize_numeral 4 (by decide)]
+  omega
+
+/-- The buffer with its last word written back unchanged: exclusive, like `touch`, and away from
+the words a kernel reads, so that its loads do not wait for the store. -/
+@[inline] def touchLast (b : ByteArray) (h : 4 ≤ b.usize) : Buf b.size :=
+  touch b (b.usize - 4) (lastWord_bound b h)
+
 @[noinline, specialize]
 def step16 (p : ℕ) [Mont32Field p] (th tl : @& ByteArray) (j j1 i0 i1 i2 i3 : USize) (b : ByteArray)
     (h : 4 * (i0.toNat + 15) + 3 < b.size ∧
@@ -215,6 +273,53 @@ def inner16Loop (p : ℕ) [Mont32Field p] (th tl : @& ByteArray) : (n : Nat) →
       rw [hs, usize_add16 j th.size (by omega) ht, usize_add16 j1 th.size (by omega) ht,
         usize_add16 i0 b.size (by omega) hb, usize_add16 i1 b.size (by omega) hb,
         usize_add16 i2 b.size (by omega) hb, usize_add16 i3 b.size (by omega) hb]
+      omega)
+
+/-- The batch loop keeps the buffer size. -/
+theorem size_inner16Loop (th tl : ByteArray) : ∀ (n : Nat) (j j1 i0 i1 i2 i3 : USize)
+    (b : ByteArray) (h), (inner16Loop p th tl n j j1 i0 i1 i2 i3 b h).size = b.size
+  | 0, _, _, _, _, _, _, _, _ => rfl
+  | n + 1, j, j1, i0, i1, i2, i3, b, h => by
+    rw [inner16Loop, size_inner16Loop th tl n, size_step16]
+
+/-- `x + y` does not wrap below the machine word size. -/
+theorem usize_add_toNat (x y : USize) (h : x.toNat + y.toNat < USize.size) :
+    (x + y).toNat = x.toNat + y.toNat := by
+  have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
+  rw [USize.toNat_add, hsize, Nat.mod_eq_of_lt h]
+
+/-- `k * y` does not wrap below the machine word size. -/
+theorem usize_mul_toNat (k : Nat) (y : USize) (hk : k < 4294967296)
+    (h : k * y.toNat < USize.size) : (OfNat.ofNat k * y : USize).toNat = k * y.toNat := by
+  have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
+  rw [USize.toNat_mul, usize_numeral k hk, hsize, Nat.mod_eq_of_lt h]
+
+/-- `count` radix-four blocks of quarter `q = 16 n` from word `base`, each in `n` batches of
+sixteen cells, after one range check for all of them. -/
+@[specialize]
+def blocks16Loop (p : ℕ) [Mont32Field p] (th tl : @& ByteArray) (n : Nat) (q : USize) :
+    (count : Nat) → (base : USize) → (b : ByteArray) →
+    4 * (base.toNat + 4 * q.toNat * count) ≤ b.size ∧ 16 * n = q.toNat ∧
+      4 * (2 * q.toNat) ≤ th.size ∧ 4 * q.toNat ≤ tl.size ∧ b.size < USize.size ∧
+      th.size < USize.size ∧ tl.size < USize.size → ByteArray
+  | 0, _, b, _ => b
+  | count + 1, base, b, h =>
+    have hc : 4 * q.toNat ≤ 4 * q.toNat * (count + 1) := Nat.le_mul_of_pos_right _ (by omega)
+    have h1 : (base + q).toNat = base.toNat + q.toNat := usize_add_toNat _ _ (by omega)
+    have h2 : (base + 2 * q).toNat = base.toNat + 2 * q.toNat := by
+      rw [usize_add_toNat _ _ (by rw [usize_mul_toNat 2 q (by decide) (by omega)]; omega),
+        usize_mul_toNat 2 q (by decide) (by omega)]
+    have h3 : (base + 3 * q).toNat = base.toNat + 3 * q.toNat := by
+      rw [usize_add_toNat _ _ (by rw [usize_mul_toNat 3 q (by decide) (by omega)]; omega),
+        usize_mul_toNat 3 q (by decide) (by omega)]
+    have h4 : (base + 4 * q).toNat = base.toNat + 4 * q.toNat := by
+      rw [usize_add_toNat _ _ (by rw [usize_mul_toNat 4 q (by decide) (by omega)]; omega),
+        usize_mul_toNat 4 q (by decide) (by omega)]
+    let b' := inner16Loop p th tl n 0 q base (base + q) (base + 2 * q) (base + 3 * q) b (by
+      rw [h1, h2, h3, USize.toNat_zero]
+      omega)
+    blocks16Loop p th tl n q count (base + 4 * q) b' (by
+      rw [size_inner16Loop, h4, Nat.mul_succ] at *
       omega)
 
 /-- The radix-four inner loop: whole sixteen-cell batches after one range check, then the
