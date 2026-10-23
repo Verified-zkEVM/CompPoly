@@ -122,7 +122,7 @@ meta def leaf16 (d : Dialect) (finish : Array Term → MacroM Term) : MacroM Ter
 
 /-- Eight sixteen-point blocks at `i0, …, i7` through their four final DIF layers, one per vector
 lane; word `t` of every lane goes to half `half` of the natural-order line `bitrev (16 c + t)`,
-optionally scaled. -/
+optionally scaled. The touched output takes proved stores, given `hout`. -/
 meta def lastHalf : MacroM Term := do
   let mut bs := #[]
   for s in [0:3] do
@@ -135,12 +135,16 @@ meta def lastHalf : MacroM Term := do
     let ws ← (Array.range 8).mapM fun v ↦
       `($(name "scaleWord") $(name "p") $(name "factor") $(name "scale")
         $(name s!"x{v}_4_{t}"))
-    `($(name "storeWords") $(name "out")
+    `($(name "store8") $(name "o")
       (4 * (16 * ($(name "reverse32") (16 * $(name "c") + $(lit t)).toUInt32 >>>
-        $(name "shift")).toUSize + 8 * $(name "half"))) 8 $ws* 0 0 0 0 0 0 0 0)
-  for t in [0:15] do
-    bs := bs.push (name "out", ← store t)
-  lets bs (← store 15)
+        $(name "shift")).toUSize + 8 * $(name "half"))) $ws*
+      ($(name "lastHalf_store") $(name "hout")
+        ($(name "reverse32") (16 * $(name "c") + $(lit t)).toUInt32)))
+  bs := bs.push (name "o", ← `($(name "touchLast") $(name "out")
+    ($(name "lastHalf_usize") $(name "hout"))))
+  for t in [0:16] do
+    bs := bs.push (name "o", ← store t)
+  lets bs (← `($(name "o").1))
 
 /-- Sixteen radix-two DIF butterflies between the words from `i0` and from `i1`, with twiddles
 from `w` at `j`. -/

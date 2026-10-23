@@ -623,6 +623,12 @@ theorem getUInt32LE!_eq_ofWordBytes (b : ByteArray) (off : Nat) (h : off + 4 ≤
   have := ByteArray.getUInt32LE!_setUInt32LE!_self b off (ofWordBytes (b.bytesAt off 4)) h
   rwa [hs] at this
 
+/-- Writing back the word just read changes nothing. -/
+theorem setUInt32LE!_getUInt32LE! (b : ByteArray) (off : Nat) (h : off + 4 ≤ b.size) :
+    b.setUInt32LE! off (b.getUInt32LE! off) = b := by
+  rw [getUInt32LE!_eq_ofWordBytes b off h, setUInt32LE!_eq_replaceAt b off _ h,
+    wordBytes_ofWordBytes, ByteArray.replaceAt_self b off 4 h]
+
 /-- Offset `i + d` of a word at `i` whose four bytes are in range does not wrap. -/
 theorem toNat_add_byte (i : USize) (n d : Nat) (h : i.toNat + 4 ≤ n) (hu : n < USize.size)
     (hd : d < 4) : (i + d.toUSize).toNat = i.toNat + d := by
