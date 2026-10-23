@@ -12,20 +12,32 @@ public import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
 /-!
 # Lagrange interpolation on a coset of the `n`-th roots of unity
 
-For `ω` a primitive `n`-th root of unity and `s ≠ 0`, the points `s ω ^ i`, `i < n`, form the
-coset `s μₙ`.
+Let `omega` be a primitive `n`-th root of unity, and let `s != 0`.
 
-- Its nodal polynomial is `X ^ n - s ^ n` (`nodal_coset`).
-- The barycentric weight of `xᵢ = s ω ^ i` is `xᵢ / (n s ^ n)` (`nodalWeight_coset`).
-- Off the coset, `Lᵢ(x) = (x ^ n - s ^ n) xᵢ / (n s ^ n (x - xᵢ))` (`eval_basis_coset`).
-- A function of period `p ∣ n` on the coset interpolates to `Q(X ^ (n / p))`, for `Q` its
-  interpolant over the coset `s ^ (n / p) μₚ` (`interpolate_coset_periodic`).
+The points `x_i = s omega^i`, for `i < n`, form the coset `s mu_n`.
 
-The last identity is how a STARK verifier evaluates a periodic column at an out-of-domain point
-in `O(p)` instead of `O(n)`.
+- nodal polynomial: it is `X^n - s^n`.
+- barycentric weights: the weight of `x_i` is `x_i / (n s^n)`.
+- Lagrange basis: off the coset, `L_i(x) = (x^n - s^n) x_i / (n s^n (x - x_i))`.
+- periodic functions: with `n = p m`, a function of period `p` interpolates to `Q(X^m)`.
 
-See Berrut and Trefethen, *Barycentric Lagrange Interpolation*, SIAM Review 46(3), 2004, for the
-weights, and the Plonky3 periodic-column evaluator for the folding.
+In the last result, `Q` is the interpolant of the same values over the coset `s^m mu_p`.
+
+```text
+    n = 8, p = 2, m = 4:   f = (a, b, a, b, a, b, a, b) on s mu_8
+                           Q interpolates (a, b) on s^4 mu_2
+                           interpolate(f) = Q(X^4)
+```
+
+A STARK verifier uses this to evaluate a periodic column out of the domain.
+
+The cost drops from `O(n)` to `O(p)`.
+
+The weights follow Berrut and Trefethen, *Barycentric Lagrange Interpolation*.
+
+That paper appeared in SIAM Review 46(3), 2004.
+
+The folding follows the Plonky3 periodic-column evaluator.
 -/
 
 @[expose] public section
@@ -36,21 +48,21 @@ namespace Polynomial
 
 variable {F : Type*} [Field F]
 
-/-- The points `s ω ^ i` of the coset `s μₙ`. -/
+/-- The points `s omega^i` of the coset `s mu_n`. -/
 def cosetPoints (s ω : F) (n : ℕ) : Fin n → F := fun i => s * ω ^ (i : ℕ)
 
 theorem cosetPoints_injective {s ω : F} {n : ℕ} (hω : IsPrimitiveRoot ω n) (hs : s ≠ 0) :
     Function.Injective (cosetPoints s ω n) := fun i j h =>
   Fin.ext (hω.pow_inj i.isLt j.isLt (mul_left_cancel₀ hs h))
 
-/-- The nodal polynomial of `s μₙ` is `X ^ n - s ^ n`. -/
+/-- The nodal polynomial of `s mu_n` is `X^n - s^n`. -/
 theorem nodal_coset {s ω : F} {n : ℕ} (hω : IsPrimitiveRoot ω n) (hn : 0 < n) :
     nodal univ (cosetPoints s ω n) = X ^ n - C (s ^ n) := by
   rw [X_pow_sub_C_eq_prod hω hn rfl, nodal_eq,
     ← Fin.prod_univ_eq_prod_range (fun i => X - C (ω ^ i * s))]
   simp [cosetPoints, mul_comm]
 
-/-- The barycentric weight of `xᵢ = s ω ^ i` is `xᵢ / (n s ^ n)`. -/
+/-- The barycentric weight of `x_i = s omega^i` is `x_i / (n s^n)`. -/
 theorem nodalWeight_coset {s ω : F} {n : ℕ} (hω : IsPrimitiveRoot ω n) (hn : (n : F) ≠ 0)
     (hs : s ≠ 0) (i : Fin n) :
     nodalWeight univ (cosetPoints s ω n) i = cosetPoints s ω n i / (n * s ^ n) := by
@@ -68,7 +80,7 @@ theorem nodalWeight_coset {s ω : F} {n : ℕ} (hω : IsPrimitiveRoot ω n) (hn 
   rw [eq_div_iff (mul_ne_zero hn (pow_ne_zero _ hs)), ← hsucc]
   field_simp
 
-/-- Off the coset, `Lᵢ(x) = (x ^ n - s ^ n) xᵢ / (n s ^ n (x - xᵢ))`. -/
+/-- Off the coset, `L_i(x) = (x^n - s^n) x_i / (n s^n (x - x_i))`. -/
 theorem eval_basis_coset {s ω x : F} {n : ℕ} (hω : IsPrimitiveRoot ω n) (hn : (n : F) ≠ 0)
     (hs : s ≠ 0) (i : Fin n) (hx : x ≠ cosetPoints s ω n i) :
     (Lagrange.basis univ (cosetPoints s ω n) i).eval x =
@@ -78,8 +90,10 @@ theorem eval_basis_coset {s ω x : F} {n : ℕ} (hω : IsPrimitiveRoot ω n) (hn
   rw [eval_basis_not_at_node (mem_univ i) hx, nodal_coset hω hn0, nodalWeight_coset hω hn hs]
   simp
 
-/-- A function of period `p` on `s μₙ`, for `n = p m`, interpolates to `Q(X ^ m)`, for `Q` its
-interpolant over `s ^ m μₚ`. -/
+/-- A function of period `p` on `s mu_n`, with `n = p m`, interpolates to `Q(X^m)`.
+
+Here `Q` interpolates the same values over the coset `s^m mu_p`.
+-/
 theorem interpolate_coset_periodic {s ω : F} {p m : ℕ} (hω : IsPrimitiveRoot ω (p * m))
     (hs : s ≠ 0) (hm : 0 < m) (g : Fin p → F) :
     interpolate univ (cosetPoints s ω (p * m)) (fun i => g ⟨i % p, Nat.mod_lt _ (by
