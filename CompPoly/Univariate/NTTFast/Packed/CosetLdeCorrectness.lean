@@ -462,6 +462,182 @@ theorem Native.mulWords_encode (t a : Array (FastField p)) (n : Nat) (ht : n ≤
   · rw [encode_eq_map_val, Array.map_ofFn]
     rfl
 
+/-- The scaled out-of-place radix-two kernel stores its sixteen sums and sixteen differences. -/
+theorem Native.pair16Scaled_eq (w T c : Array (FastField p)) (j i0 i1 : USize) (out : ByteArray)
+    (h) :
+    Native.pair16Scaled p (encode w) (encode T) (encode c) j i0 i1 out h =
+      let x (k : Nat) := T.getD (i0.toNat + k) 0 * c.getD (i0.toNat + k) 0
+      let y (k : Nat) := T.getD (i1.toNat + k) 0 * c.getD (i1.toNat + k) 0
+      let s (k : Nat) := (x k + y k).val
+      let d (k : Nat) := (w.getD (j.toNat + k) 0 * (x k - y k)).val
+      Native.write16U (Native.write16U out i0 (s 0) (s 1) (s 2) (s 3) (s 4) (s 5) (s 6) (s 7)
+        (s 8) (s 9) (s 10) (s 11) (s 12) (s 13) (s 14) (s 15)) i1 (d 0) (d 1) (d 2) (d 3) (d 4)
+        (d 5) (d 6) (d 7) (d 8) (d 9) (d 10) (d 11) (d 12) (d 13) (d 14) (d 15) := by
+  unfold Native.pair16Scaled
+  simp only [Native.readUOffset_encode, add_val, sub_val, mul_val, USize.reduceToNat]
+
+/-- The coordinates of the first radix-two DIF layer of `X` with half `h`. -/
+theorem getD_firstLayer (w X : Array (FastField p)) (h : Nat) (hX : X.size = 2 * h) (k : Nat) :
+    (Plan.butterflyDIFInner w h 0 0 h X).getD k 0 =
+      if k < h then X.getD k 0 + X.getD (h + k) 0
+      else if k < 2 * h then w.getD (k - h) 0 * (X.getD (k - h) 0 - X.getD k 0)
+      else 0 := by
+  split_ifs with h1 h2
+  · rw [getD_butterflyDIFInner_left w h 0 0 h X (by omega) (by omega) k (by omega),
+      Nat.sub_zero]
+  · rw [getD_butterflyDIFInner_right w h 0 0 h X (by omega) (by omega) k (by omega)]
+    simp only [Nat.zero_add]
+  · rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_none (by
+      rw [Plan.size_butterflyDIFInner]; omega), Option.getD_none]
+
+/-- The products `T ⊙ c` of the first `n` coordinates. -/
+abbrev scaledCoeffs (T c : Array (FastField p)) (n : Nat) : Array (FastField p) :=
+  Array.ofFn (n := n) fun i ↦ T.getD i.val 0 * c.getD i.val 0
+
+theorem getD_scaledCoeffs (T c : Array (FastField p)) (n i : Nat) (hi : i < n) :
+    (scaledCoeffs T c n).getD i 0 = T.getD i 0 * c.getD i 0 :=
+  getD_ofFn_bounded _ i hi 0
+
+/-- The scaled radix-two kernel at butterfly `j` fills its words of the first layer of `T ⊙ c`. -/
+theorem Native.fill_pair16Scaled (w T c : Array (FastField p)) (h N : Nat) (hU j : USize)
+    (hhU : hU.toNat = h) (hN : 4 * N < USize.size) (hj : j.toNat + 16 ≤ h) (hNh : 2 * h ≤ N)
+    (hb) :
+    Native.Fill (fun k ↦ ((Plan.butterflyDIFInner w h 0 0 h (scaledCoeffs T c (2 * h))).getD k
+        0).val)
+      (fun k ↦ (j.toNat ≤ k ∧ k < j.toNat + 16) ∨ (j.toNat + h ≤ k ∧ k < j.toNat + h + 16)) N
+      (fun b ↦ Native.pair16Scaled p (encode w) (encode T) (encode c) j j (j + hU) b hb) := by
+  have hjh : (j + hU).toNat = j.toNat + h := by
+    rw [Native.usize_add_toNat _ _ (by rw [hhU]; omega), hhU]
+  have hX : (scaledCoeffs T c (2 * h)).size = 2 * h := Array.size_ofFn
+  let x (k : Nat) := T.getD (j.toNat + k) 0 * c.getD (j.toNat + k) 0
+  let y (k : Nat) := T.getD ((j + hU).toNat + k) 0 * c.getD ((j + hU).toNat + k) 0
+  refine ((Native.fill_write16U _ N j (fun k ↦ (x k + y k).val) hN (by omega)
+    fun t ht ↦ ?_).comp (Native.fill_write16U _ N (j + hU)
+      (fun k ↦ (w.getD (j.toNat + k) 0 * (x k - y k)).val) hN (by omega)
+    fun t ht ↦ ?_)).congr (fun b ↦ ?_) |>.mono fun k hk ↦ ?_
+  · simp only [x, y]
+    rw [getD_firstLayer _ _ _ hX, ite_eq_left (by omega), getD_scaledCoeffs _ _ _ _ (by omega),
+      getD_scaledCoeffs _ _ _ _ (by omega), hjh, show h + (j.toNat + t) = j.toNat + h + t by omega]
+  · simp only [x, y]
+    rw [hjh, getD_firstLayer _ _ _ hX, ite_eq_right (by omega), ite_eq_left (by omega),
+      getD_scaledCoeffs _ _ _ _ (by omega), getD_scaledCoeffs _ _ _ _ (by omega),
+      show j.toNat + h + t - h = j.toNat + t by omega]
+  · rw [Native.pair16Scaled_eq]; rfl
+  · rw [hjh]; omega
+
+/-- The checked scaled radix-two loop fills its butterflies' words of the first layer of
+`T ⊙ c`. -/
+theorem Native.fill_pair16ScaledLoop (w T c : Array (FastField p)) (h N : Nat) (hU : USize)
+    (hhU : hU.toNat = h) (hN : 4 * N < USize.size) (hNh : 2 * h ≤ N) :
+    ∀ (n : Nat) (j : USize) (hb), j.toNat + 16 * n ≤ h →
+    Native.Fill (fun k ↦ ((Plan.butterflyDIFInner w h 0 0 h (scaledCoeffs T c (2 * h))).getD k
+        0).val)
+      (fun k ↦ (j.toNat ≤ k ∧ k < j.toNat + 16 * n) ∨
+        (j.toNat + h ≤ k ∧ k < j.toNat + h + 16 * n)) N
+      (fun b ↦ Native.pair16ScaledLoop p (encode w) (encode T) (encode c) hU n j b hb) := by
+  intro n
+  induction n with
+  | zero =>
+    intro j hb _
+    exact (Native.Fill.id _ N).mono fun k hk ↦ by omega
+  | succ n ih =>
+    intro j hb hjn
+    have hj : (j + 16).toNat = j.toNat + 16 := Native.usize_add16 j _ (by omega) hb.2.2.2.1
+    have hh : (j + hU).toNat = j.toNat + hU.toNat := Native.usize_add_toNat _ _ (by omega)
+    have H0 : 4 * (j.toNat + 15) + 3 < (encode c).size ∧
+        4 * ((j + hU).toNat + 15) + 3 < (encode c).size ∧
+        4 * (j.toNat + 15) + 3 < (encode T).size ∧
+        4 * ((j + hU).toNat + 15) + 3 < (encode T).size ∧
+        4 * (j.toNat + 15) + 3 < (encode w).size ∧ (encode c).size < USize.size ∧
+        (encode T).size < USize.size ∧ (encode w).size < USize.size := by rw [hh]; omega
+    have H1 : 4 * (hU.toNat + (j + 16).toNat + 16 * n) ≤ (encode c).size ∧
+        4 * (hU.toNat + (j + 16).toNat + 16 * n) ≤ (encode T).size ∧
+        4 * ((j + 16).toNat + 16 * n) ≤ (encode w).size ∧ (encode c).size < USize.size ∧
+        (encode T).size < USize.size ∧ (encode w).size < USize.size := by rw [hj]; omega
+    refine (((Native.fill_pair16Scaled w T c h N hU j hhU hN (by omega) hNh H0).comp
+      (ih (j + 16) H1 (by rw [hj]; omega))).congr fun b ↦ ?_).mono fun k hk ↦ ?_
+    · rfl
+    · rw [hj] at *
+      omega
+
+/-- The scaled out-of-place radix-two pass is the first DIF layer of `T ⊙ c`. -/
+theorem Native.pairsScaled_encode (w T c : Array (FastField p)) (h : Nat) (hw : h ≤ w.size)
+    (hT : 2 * h ≤ T.size) (hc : 2 * h ≤ c.size) (hws : 4 * w.size < USize.size)
+    (hTs : 4 * T.size < USize.size) (hcs : 4 * c.size < USize.size) :
+    Native.pairsScaled p (encode w) (encode T) (encode c) h =
+      encode (Plan.butterflyDIFInner w h 0 0 h (scaledCoeffs T c (2 * h))) := by
+  let Y := Plan.butterflyDIFInner w h 0 0 h (scaledCoeffs T c (2 * h))
+  let Tg (k : Nat) : UInt32 := (Y.getD k 0).val
+  have hX : (scaledCoeffs T c (2 * h)).size = 2 * h := Array.size_ofFn
+  have hY : Y.size = 2 * h := by simp only [Y, Plan.size_butterflyDIFInner, hX]
+  have hN : 4 * (2 * h) < USize.size := by omega
+  have hrd (a : Array (FastField p)) (ha : 4 * a.size < USize.size) (i : Nat) (hi : i < a.size) :
+      Native.read (encode a) i = (a.getD i 0).val :=
+    Native.read_encode a i (by rw [size_encode_fields]; exact ha) hi
+  have hedge (k : Nat) (hk : k ∈ List.range' (16 * (h / 16)) (h - 16 * (h / 16))) :
+      Native.Fill Tg (fun i ↦ i = k ∨ i = h + k) (2 * h) (fun b ↦
+        let x := mul p (Native.read (encode T) k) (Native.read (encode c) k)
+        let y := mul p (Native.read (encode T) (h + k)) (Native.read (encode c) (h + k))
+        Native.write (Native.write b k (add p x y)) (h + k)
+          (mul p (Native.read (encode w) k) (sub p x y))) := by
+    have hk := List.mem_range'_1.mp hk
+    refine ((Native.fill_write Tg (2 * h) k _ hN (by omega) ?_).comp
+      (Native.fill_write Tg (2 * h) (h + k) _ hN (by omega) ?_)).congr fun b ↦ rfl
+    · rw [hrd T hTs k (by omega), hrd c hcs k (by omega), hrd T hTs (h + k) (by omega),
+        hrd c hcs (h + k) (by omega), mul_val, mul_val, add_val]
+      simp only [Tg, Y]
+      rw [getD_firstLayer _ _ _ hX, ite_eq_left (by omega), getD_scaledCoeffs _ _ _ _ (by omega),
+        getD_scaledCoeffs _ _ _ _ (by omega)]
+    · rw [hrd T hTs k (by omega), hrd c hcs k (by omega), hrd T hTs (h + k) (by omega),
+        hrd c hcs (h + k) (by omega), hrd w hws k (by omega), mul_val, mul_val, sub_val, mul_val]
+      simp only [Tg, Y]
+      rw [getD_firstLayer _ _ _ hX, ite_eq_right (by omega), ite_eq_left (by omega),
+        getD_scaledCoeffs _ _ _ _ (by omega), getD_scaledCoeffs _ _ _ _ (by omega),
+        show h + k - h = k by omega]
+  have hg : 4 * (h + 16 * (h / 16)) ≤ (encode c).size ∧
+      4 * (h + 16 * (h / 16)) ≤ (encode T).size ∧ 4 * (16 * (h / 16)) ≤ (encode w).size ∧
+      (encode c).size < USize.size ∧ (encode T).size < USize.size ∧
+      (encode w).size < USize.size := by
+    simp only [size_encode_fields]
+    omega
+  have hU : (USize.ofNatLT h (by omega)).toNat = h := USize.toNat_ofNatLT
+  have hall := (Native.fill_pair16ScaledLoop w T c h (2 * h) _ hU hN (le_refl _) (h / 16) 0
+    (by rw [hU, USize.toNat_zero]; simpa only [size_encode_fields] using
+      (show 4 * (h + 0 + 16 * (h / 16)) ≤ 4 * c.size ∧ 4 * (h + 0 + 16 * (h / 16)) ≤ 4 * T.size ∧
+        4 * (0 + 16 * (h / 16)) ≤ 4 * w.size ∧ 4 * c.size < USize.size ∧
+        4 * T.size < USize.size ∧ 4 * w.size < USize.size by omega))
+    (by rw [USize.toNat_zero]; omega)).comp (Native.Fill.foldl Tg _ (2 * h) _ _ hedge)
+  unfold Native.pairsScaled
+  simp only [Std.Legacy.Range.forIn_eq_forIn_range', Std.Legacy.Range.size,
+    Nat.add_sub_cancel, Nat.div_one, List.forIn_pure_yield_eq_foldl, bind_pure,
+    Native.zeroWords_eq]
+  rw [dite_eq_left_of_eq_true (eq_true hg)]
+  refine (hall.eq_ofFn (fun k hk ↦ ?_) _ Array.size_replicate).trans ?_
+  · by_cases hk' : k < 16 * (h / 16)
+    · exact Or.inl (Or.inl ⟨by rw [USize.toNat_zero]; omega, by rw [USize.toNat_zero]; omega⟩)
+    · by_cases hk2 : h ≤ k ∧ k < h + 16 * (h / 16)
+      · exact Or.inl (Or.inr ⟨by rw [USize.toNat_zero]; omega, by rw [USize.toNat_zero]; omega⟩)
+      · by_cases hk3 : k < h
+        · exact Or.inr ⟨k, List.mem_range'_1.mpr (by omega), Or.inl rfl⟩
+        · exact Or.inr ⟨k - h, List.mem_range'_1.mpr (by omega), Or.inr (by omega)⟩
+  · rw [encode_eq_map_val Y]
+    congr 1
+    apply Array.ext (by rw [Array.size_ofFn, Array.size_map, hY])
+    intro k h1 h2
+    rw [Array.getElem_ofFn, Array.getElem_map]
+    have hk : k < Y.size := by rw [Array.size_map] at h2; exact h2
+    simp only [Y, Array.getD_eq_getD_getElem?] at hk ⊢
+    rw [Array.getElem?_eq_getElem hk, Option.getD_some]
+
+/-- An odd leaf in DIF order is its radix-two layer, then `leafReversedOdd`. -/
+theorem Native.leafReversed_odd (tw : Array ByteArray) (m : Nat) (hm : m % 2 = 1)
+    (a : ByteArray) :
+    Native.leafReversed p tw m a = Native.leafReversedOdd p tw m
+      (Native.pairs p (tw.getD (m - 1) .empty) (2 ^ (m - 1)) 0 0 (2 ^ (m - 1)) a) := by
+  unfold Native.leafReversed Native.leafReversedOdd Native.leafLayers
+  simp only [hm, ↓reduceIte]
+  split <;> rfl
+
 /-! ### Column transforms -/
 
 /-- The subgroup of order `2 ^ logH`, the domain of the input columns. -/
@@ -513,10 +689,36 @@ theorem Native.cosetBlock_encode (P : LdePlan p) (c : Array (FastField p))
   have hX : (Array.ofFn (n := 2 ^ P.logH) fun i ↦
       (cosetTable P.domain P.bits P.shift (NTT.Transform.bitRevNat P.bits t)).getD i.val 0 *
         c.getD i.val 0).size = P.low.n := Array.size_ofFn
-  unfold Native.cosetBlock
-  rw [P.tables_eq, P.forward_eq, getD_map_range _ _ _ (NTT.Transform.bitRevNat_lt _ _),
-    Native.mulWords_encode _ _ _ (by rw [size_cosetTable]) (by rw [hc]) (by
-      rw [size_cosetTable]; exact hu) (by rw [hc]; exact hu)]
+  have hkey : Native.cosetBlock P (encode c) t = Native.leafReversed p P.forwardTwiddles P.logH
+      (encode (Array.ofFn (n := 2 ^ P.logH) fun i ↦
+        (cosetTable P.domain P.bits P.shift (NTT.Transform.bitRevNat P.bits t)).getD i.val 0 *
+          c.getD i.val 0)) := by
+    unfold Native.cosetBlock
+    dsimp only
+    rw [P.tables_eq, getD_map_range _ _ _ (NTT.Transform.bitRevNat_lt _ _)]
+    split
+    · rename_i hm
+      have h2 : 2 ^ P.logH = 2 * 2 ^ (P.logH - 1) := by
+        rw [← Nat.pow_succ']; congr 1; omega
+      have hu' : 4 * 2 ^ P.logH < USize.size := hu
+      have hw : ((Plan.twiddleTable (powDomain P.domain P.bits P.bits_le)).getD (P.logH - 1)
+          #[]).size = 2 ^ (P.logH - 1) :=
+        htw (P.logH - 1) (by change P.logH - 1 < P.logH; omega)
+      have ht : (cosetTable P.domain P.bits P.shift (NTT.Transform.bitRevNat P.bits t)).size =
+          2 ^ P.logH := size_cosetTable _ _ _ _
+      have hX' : (Array.ofFn (n := 2 ^ P.logH) fun i ↦
+          (cosetTable P.domain P.bits P.shift (NTT.Transform.bitRevNat P.bits t)).getD i.val 0 *
+            c.getD i.val 0).size = 2 ^ P.logH := Array.size_ofFn
+      rw [Native.leafReversed_odd _ _ hm, P.forward_eq, getD_map_encode,
+        Native.pairsScaled_encode _ _ _ _ (by omega) (by omega) (by omega) (by omega)
+          (by omega) (by omega),
+        Native.pairs_encode _ _ _ _ _ _ (by rw [size_encode_fields]; omega)
+          (by rw [size_encode_fields]; omega) (by omega) (Nat.zero_le _) (by omega) (by omega)]
+      congr 3
+      rw [h2]
+    · rw [Native.mulWords_encode _ _ _ (by rw [size_cosetTable]) (by rw [hc]) (by
+        rw [size_cosetTable]; exact hu) (by rw [hc]; exact hu)]
+  rw [hkey, P.forward_eq]
   exact (Native.leafReversed_encode P.low _ _ htw hone hX hu).trans
     (congrArg encode (planStages_eq_difSpec _ _ hX))
 
