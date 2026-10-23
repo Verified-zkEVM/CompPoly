@@ -31,8 +31,9 @@ theorem irreducible_X_pow_four_sub_three : Irreducible (X ^ 4 - C 3 : Field[X]) 
   rwa [BinomialParams.poly, ext4Params_d, ext4Params_W, Polynomial.map_sub, Polynomial.map_pow,
     map_X, map_C, map_ofNat] at h
 
-/-- KoalaBear's quartic extension is `X^4 - 3`. -/
-instance instBinomial4 : Binomial4 KoalaBear.fieldSize where
+/-- KoalaBear's quartic extension is `X^4 - 3`. Inlined, so that specialized code multiplies by
+`W` directly. -/
+@[inline] instance instBinomial4 : Binomial4 KoalaBear.fieldSize where
   W := 3
   mulW x := x + x + x
   mulW_eq x := by ring
