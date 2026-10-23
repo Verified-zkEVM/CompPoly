@@ -11,8 +11,8 @@ public import Mathlib.Combinatorics.Nullstellensatz
 /-!
   # Multilinear extensions on the Boolean hypercube
 
-  A hypercube table evaluates to its entries at the Boolean vertices, and a polynomial of degree
-  at most one in each variable is determined by its values on the hypercube.
+  - evaluation: a hypercube table evaluates to its entries at the Boolean vertices.
+  - uniqueness: a polynomial of degree at most one per variable is fixed by its hypercube values.
 
   The reference is Thaler, "Proofs, Arguments, and Zero-Knowledge", Lemma 3.6.
 -/
@@ -78,8 +78,10 @@ namespace MvPolynomial
 
 variable [CommRing R] [IsDomain R] {σ : Type*} [Finite σ]
 
-/-- Lemma 3.6 of Thaler: two polynomials of degree at most one in each variable that agree on the
-Boolean hypercube are equal. -/
+/-- Two polynomials of degree at most one per variable that agree on the hypercube are equal.
+
+This is Lemma 3.6 of Thaler.
+-/
 theorem eq_of_degreeOf_le_one_of_eval_zeroOne {p q : MvPolynomial σ R}
     (hp : ∀ i, p.degreeOf i ≤ 1) (hq : ∀ i, q.degreeOf i ≤ 1)
     (h : ∀ x : σ → R, (∀ i, x i = 0 ∨ x i = 1) → eval x p = eval x q) : p = q := by
