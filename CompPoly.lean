@@ -108,6 +108,7 @@ public import CompPoly.Fields.Basic
 public import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
 public import CompPoly.Fields.Binary.AdditiveNTT.Algorithm
 public import CompPoly.Fields.Binary.AdditiveNTT.Correctness
+public import CompPoly.Fields.Binary.AdditiveNTT.Coset
 public import CompPoly.Fields.Binary.AdditiveNTT.Domain
 public import CompPoly.Fields.Binary.AdditiveNTT.Executable
 public import CompPoly.Fields.Binary.AdditiveNTT.Impl
