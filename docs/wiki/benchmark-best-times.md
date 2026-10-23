@@ -17,6 +17,7 @@ overwritten.
 |---|---|---|---|---|---|
 | 2026-09-21 | `1247810` | #371 | all | every group | first baseline: one full run at `--medium` |
 | 2026-10-23 | `92c5d21` | #395, #401 | packed NTT, coset LDE | none | the packed kernels are timed outside the suite: coset LDE of 2^15 × 2633 words 17% faster on one thread, 11% on sixteen (Ryzen 7 3700X, [benchmarking.md](benchmarking.md#proved-stores-and-checks-once-per-loop-2026-10-23)) |
+| 2026-10-23 | `c469bb4` | #401 | packed NTT, coset LDE | none | the packed kernels are timed outside the suite: CompStark's Keccak extension by columns, 2^15 × 2633 words, 22% faster on one thread and 27% on sixteen (Ryzen 7 3700X, [benchmarking.md](benchmarking.md#montgomery-products-by-high-words-leaf-stages-blocked-input-transposes-and-fused-coset-products-2026-10-23)) |
 
 ## How to read and how to update the tables
 

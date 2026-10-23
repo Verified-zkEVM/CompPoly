@@ -910,3 +910,26 @@ CompStark's extension of the Keccak trace (2633 columns, blowup 2, `CompStarkBen
 | 2^15 | 1 | 2423 | 2013 | 856 |
 | 2^16 | 16 | 899 | 821 | 970 |
 | 2^16 | 1 | 4911 | 4239 | 1747 |
+
+### Montgomery products by high words, leaf stages, blocked input transposes and fused coset products (2026-10-23)
+
+Packed `mul` subtracts the high word of `q p` from the high word of the product `z = x y`, the quotient `q = x y p⁻¹ mod 2 ^ 32` a product of words, and corrects the sign with `sub`'s unsigned minimum; `mul_eq_reduceOnce` proves it the Montgomery reduction `(z + (-z p⁻¹ mod 2 ^ 32) p) / 2 ^ 32`, reduced once. The compiler keeps every lane in 32-bit vectors, four `vpmuludq` and two `vpmulld` per eight lanes, where the Montgomery sum widened each lane to 64 bits and reduced it with 64-bit comparisons: the packed coset LDE of `2 ^ 15 × 1024` words runs 24% faster on one thread.
+
+The four final DIF layers of a forward leaf are four passes over the leaf (`leafStage8`, `leafStage4`, `leafStage2`, `leafStage1`). Each pass calls its kernel once per four sixteen-word blocks; the kernel touches the buffer, reads its blocks, pairs each block's words in eight vector lanes and stores every block as two halves with proved stores, so that a layer is one vector operation per lane group and the shuffles that gather its pairs. The passes are the layers block by block (`fold_leaf16Stages`), each kernel the layer's model on its four blocks (`leafStage8_encode` and its siblings), each model the layer (`leafStage8Field_eq` and its siblings in [`LeafStages.lean`](../../CompPoly/Univariate/NTTFast/Packed/LeafStages.lean)). The models splice with `splice8`, which keeps the size whatever the bounds, so that no proof computes the size of nested splices. The passes take about half the time of a kernel running all four layers on two blocks, in which the compiler shuffled scalars.
+
+`transposeRows` moves its tiles down a block of up to 1024 rows before across, so that each column of the transposed range receives four kilobytes per block instead of one line per sixteen rows: the transpose of `2 ^ 15` rows of 2633 words in sixteen ranges takes 150 ms on one thread instead of 440, of `2 ^ 16` rows 560 ms instead of 1080.
+
+A coset block of an odd leaf runs the leaf's radix-two layer out of place on the coefficients, each word multiplied by its coset-table word as it is read (`pair16Scaled`; `pairsScaled_encode` proves the pass the first layer of the products), instead of storing the products in a pass of their own: 3% fewer instructions for the coset LDE. For an even leaf the products still come first: the same fusion into its first radix-four pass, twelve streams a power of two apart, ran 50% slower.
+
+`step16` takes about 85 cycles per call, the same with its buffer in L1 as in L2: it is bound by the vector multiplier (32 `vpmuludq` and 14 `vpmulld` per call) and by dispatch, not by memory. Proved stores after a touch with the lanes in halves (10% fewer instructions) and quotient factors `w p⁻¹` precomputed per twiddle (six fewer `vpmulld`) each changed its time by less than 2%.
+
+CompStark's extension of the Keccak trace by columns (2633 columns, blowup 2, `CompStarkBench keccak-lde` at CompStark `8c47e95` with CompPoly `f689986` before, and with CompPoly `e0465e5` after), milliseconds, medians of six alternating rounds (four for `2 ^ 16` rows on one thread) on the Ryzen 7 3700X under other load; Plonky3 is `compstark-bench lde` built for the native CPU:
+
+| Rows | Threads | Before | After | Plonky3 |
+|---:|---:|---:|---:|---:|
+| 2^15 | 16 | 285 | 208 | 322 |
+| 2^15 | 1 | 1675 | 1311 | 897 |
+| 2^16 | 16 | 532 | 420 | 703 |
+| 2^16 | 1 | 3502 | 2534 | 1863 |
+
+On one thread the extension of `2 ^ 15` rows is 1.46 times Plonky3's (1.24 times by the fastest rounds), of `2 ^ 16` rows 1.36 times. Most of what remains comes from the column layout itself: the input transpose and gather, which Plonky3's row-major batches do not need, the final four layers of every leaf, whose pairs lie within a vector and need shuffles or lane transposes where Plonky3's layers across columns share one broadcast twiddle, and per-lane twiddle loads.
