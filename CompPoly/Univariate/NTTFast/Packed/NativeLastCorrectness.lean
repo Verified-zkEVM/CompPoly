@@ -197,20 +197,48 @@ def lineStores (O : Array UInt32) (mm c half : Nat) (val : Nat → Nat → UInt3
     (16 * NTT.Transform.bitRevNat mm (16 * c + t) + 8 * half)
     (val t 0) (val t 1) (val t 2) (val t 3) (val t 4) (val t 5) (val t 6) (val t 7)) O
 
+/-- An output of `2 ^ mm` lines passes the output check of `lastHalf`. -/
+theorem lastHalf_check_of (out : ByteArray) (mm : Nat) (half : USize) (hm : 0 < mm)
+    (hm32 : mm < 32) (hh : half.toNat < 2) (hO : 64 * 2 ^ mm ≤ out.size)
+    (hs : out.size < USize.size) :
+    0 < (32 - mm).toUInt32 ∧ (32 - mm).toUInt32 < 32 ∧ half < 2 ∧
+      (1 : USize) <<< (32 - (32 - mm).toUInt32).toUSize ≤ out.usize / 64 := by
+  have hk : (32 - mm).toUInt32.toNat = 32 - mm := by
+    rw [Nat.toUInt32_eq, UInt32.toNat_ofNat', Nat.mod_eq_of_lt (by omega)]
+  have hk' : (32 - (32 - mm).toUInt32).toUSize.toNat = mm := by
+    rw [UInt32.toNat_toUSize, UInt32.toNat_sub_of_le _ _ (by
+      rw [UInt32.le_iff_toNat_le, hk]; change 32 - mm ≤ 32; omega), hk]
+    change 32 - (32 - mm) = mm
+    omega
+  have hu : out.usize.toNat = out.size := by
+    rw [ByteArray.usize, Nat.toUSize, USize.toNat_ofNat_of_lt' hs]
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [UInt32.lt_iff_toNat_lt, hk]; change 0 < 32 - mm; omega
+  · rw [UInt32.lt_iff_toNat_lt, hk]; change 32 - mm < 32; omega
+  · rw [USize.lt_iff_toNat_lt, Native.usize_numeral 2 (by decide)]; exact hh
+  · rw [USize.le_iff_toNat_le, Native.one_shiftLeft_toNat _ (by rw [hk']; exact hm32), hk',
+      USize.toNat_div, Native.usize_numeral 64 (by decide), hu]
+    omega
+
 set_option maxRecDepth 100000 in
 set_option maxHeartbeats 4000000 in
 /-- One kernel call stores the final layers of its eight lanes into sixteen half lines. -/
 theorem lastHalf_encodeWords (t3 t2 t1 U : Array (FastField p)) (i0 i1 i2 i3 i4 i5 i6 i7 c
     half :
     USize) (mm : Nat) (f : FastField p) (sc : Bool) (O : Array UInt32)
-    (hm : 0 < mm) (hm32 : mm ≤ 32) (hh : half.toNat < 2) (hc : 16 * c.toNat + 16 ≤ 2 ^ mm)
-    (hu : 64 * 2 ^ mm < USize.size) (hs : (encode O).size < USize.size) (h) :
+    (hm : 0 < mm) (hm32 : mm < 32) (hh : half.toNat < 2) (hc : 16 * c.toNat + 16 ≤ 2 ^ mm)
+    (hu : 64 * 2 ^ mm < USize.size) (hO : O.size = 16 * 2 ^ mm)
+    (hs : (encode O).size < USize.size) (h) :
     Native.lastHalf p (encode t3) (encode t2) (encode t1) (encode U)
       i0 i1 i2 i3 i4 i5 i6 i7 c (32 - mm).toUInt32 half f.val sc (encode O) h =
       encode (lineStores O mm c.toNat half.toNat fun t k ↦
         Native.scaleWord p f.val sc
           ((laneLine t3 t2 t1 (pick8 i0 i1 i2 i3 i4 i5 i6 i7 k) U).get t).val) := by
+  have hm32 : mm ≤ 32 := by omega
   unfold Native.lastHalf
+  rw [dite_eq_left_of_eq_true (eq_true (lastHalf_check_of _ mm half hm (by omega) hh
+    (by rw [size_encode_uint32, hO]; omega) hs))]
+  simp only [Native.store8_val _ _ _ _ _ _ _ _ _ _ _ hs, Native.touchLast, Native.touch_eq]
   simp only [Native.readUOffset_encode, add_val, sub_val, mul_val]
   rw [storeWords_half _ _ _
     (lineOffset mm hm hm32 c 0 half (by simp only [USize.reduceToNat]; omega) hh hc hu)
@@ -431,7 +459,7 @@ def lastTarget (t3 t2 t1 U : Array (FastField p)) (mm : Nat) (f : FastField p)
 them hold their final values. -/
 theorem lastRevGo_encodeWords (t3 t2 t1 U : Array (FastField p)) (mm : Nat) (Lw : USize)
     (f : FastField p) (sc : Bool) (hb) (hL : Lw.toNat = 2 ^ mm) (hm : 0 < mm)
-    (hm32 : mm ≤ 32) (hu : 64 * 2 ^ mm < USize.size) (hU : U.size = 16 * 2 ^ mm)
+    (hm32 : mm < 32) (hu : 64 * 2 ^ mm < USize.size) (hU : U.size = 16 * 2 ^ mm)
     (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1) :
     ∀ (n : Nat) (c : USize) (O : Array UInt32), O.size = 16 * 2 ^ mm →
       16 * (c.toNat + n) ≤ 2 ^ mm →
@@ -458,9 +486,9 @@ theorem lastRevGo_encodeWords (t3 t2 t1 U : Array (FastField p)) (mm : Nat) (Lw 
     rw [Native.lastRevGo, dite_eq_left_of_eq_true (eq_true hc)]
     dsimp only
     rw [lastHalf_encodeWords t3 t2 t1 U _ _ _ _ _ _ _ _ c 0 mm f sc O hm hm32
-      (by simp only [USize.reduceToNat]; omega) hc' hu hs]
+      (by simp only [USize.reduceToNat]; omega) hc' hu hO hs]
     rw [lastHalf_encodeWords t3 t2 t1 U _ _ _ _ _ _ _ _ c 1 mm f sc _ hm hm32
-      (by simp only [USize.reduceToNat]; omega) hc' hu
+      (by simp only [USize.reduceToNat]; omega) hc' hu (by rw [size_lineStores, hO])
       (by rw [size_encode_uint32, size_lineStores, hO]; omega)]
     have hc1 : (c + 1).toNat = c.toNat + 1 := Plan.usize_add_one c (by omega)
     let V0 := fun t k ↦ Native.scaleWord p f.val sc ((laneLine t3 t2 t1
@@ -516,7 +544,7 @@ theorem lastRevGo_encodeWords (t3 t2 t1 U : Array (FastField p)) (mm : Nat) (Lw 
 /-- The fused final layers of a leaf, in natural order. -/
 theorem lastRev_encodeWords (t3 t2 t1 U : Array (FastField p)) (m : Nat) (f :
     FastField p)
-    (sc : Bool) (hm : 8 ≤ m) (hm36 : m ≤ 36) (hu : 4 * 2 ^ m < USize.size) (hU : U.size = 2 ^ m)
+    (sc : Bool) (hm : 8 ≤ m) (hm36 : m < 36) (hu : 4 * 2 ^ m < USize.size) (hU : U.size = 2 ^ m)
     (ht3 : t3.size = 8) (ht2 : t2.size = 4) (ht1 : t1.size = 2)
     (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1) :
     Native.lastRev p (encode t3) (encode t2) (encode t1) (encode U) m f.val sc =
@@ -699,10 +727,15 @@ theorem Native.radix4Blocks_encode (th tl : Array (FastField p)) (q blocks : Nat
     (hthi : 2 * q ≤ th.size) (htli : q ≤ tl.size) (hbound : blocks * (4 * q) ≤ a.size) :
     Native.radix4Blocks p (encode th) (encode tl) q blocks (encode a) =
       encode (Plan.butterflyDIFRadix4Blocks th tl (4 * q) q blocks 0 a) := by
-  simp only [Native.radix4Blocks, Std.Legacy.Range.forIn_eq_forIn_range', Std.Legacy.Range.size,
-    Nat.sub_zero, Nat.add_sub_cancel, Nat.div_one, ← List.range_eq_range',
-    List.forIn_pure_yield_eq_foldl, bind_pure, Id.run_pure]
-  exact Native.fold_inner16_encode th tl q blocks a ha hth htl hthi htli hbound
+  unfold Native.radix4Blocks
+  split
+  · rename_i h
+    rw [Native.blocks16Loop_encode_pass th tl (q / 16) _ (by rw [USize.toNat_ofNatLT]; omega),
+      USize.toNat_ofNatLT]
+  · simp only [Std.Legacy.Range.forIn_eq_forIn_range', Std.Legacy.Range.size,
+      Nat.sub_zero, Nat.add_sub_cancel, Nat.div_one, ← List.range_eq_range',
+      List.forIn_pure_yield_eq_foldl, bind_pure, Id.run_pure]
+    exact Native.fold_inner16_encode th tl q blocks a ha hth htl hthi htli hbound
 
 /-- The field-array semantics of `leafLayers`. -/
 def fieldLayers (tw : Array (Array (FastField p))) (m count : Nat)
