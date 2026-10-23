@@ -237,6 +237,9 @@ def leaf16 (p : ℕ) [Mont32Field p] (t3 t2 t1 : @& ByteArray) (i : USize) (b : 
 
 set_option maxRecDepth 8192 in
 set_option maxHeartbeats 4000000 in
+/-- `leaf16` on the blocks at `i0` and `i1`, its layers uniform: every butterfly of the first three
+layers is multiplied by its twiddle, the first one being one, so the compiler vectorizes each
+block's layers, and the two blocks' independent chains overlap. -/
 @[noinline, specialize]
 def leaf16x2 (p : ℕ) [Mont32Field p] (t3 t2 t1 : @& ByteArray) (i0 i1 : USize)
     (b : ByteArray)
@@ -246,18 +249,41 @@ def leaf16x2 (p : ℕ) [Mont32Field p] (t3 t2 t1 : @& ByteArray) (i0 i1 : USize)
       7 < t1.size ∧ t1.size < USize.size) : ByteArray :=
   leaf16x2_words%
 
-/-- `leaf16` on the blocks at words `0, 16, …, 16 * (blocks - 1)`. -/
+/-- The two-block kernel keeps the buffer size. -/
+theorem size_leaf16x2 (t3 t2 t1 : ByteArray) (i0 i1 : USize) (b : ByteArray) (h) :
+    (leaf16x2 p t3 t2 t1 i0 i1 b h).size = b.size := by
+  unfold leaf16x2
+  simp only [write16U, size_storeWords]
+
+/-- `count` pairs of sixteen-word blocks from word `i`, after one range check. -/
+@[specialize]
+def leaf16x2Loop (p : ℕ) [Mont32Field p] (t3 t2 t1 : @& ByteArray) :
+    (count : Nat) → (i : USize) → (b : ByteArray) →
+    4 * (i.toNat + 32 * count) ≤ b.size ∧ b.size < USize.size ∧
+      31 < t3.size ∧ t3.size < USize.size ∧ 15 < t2.size ∧ t2.size < USize.size ∧
+      7 < t1.size ∧ t1.size < USize.size → ByteArray
+  | 0, _, b, _ => b
+  | count + 1, i, b, h =>
+    have h16 : (i + 16).toNat = i.toNat + 16 := usize_add16 i b.size (by omega) h.2.1
+    have h32 : (i + 32).toNat = i.toNat + 32 := by
+      rw [usize_add_toNat _ _ (by rw [usize_numeral 32 (by decide)]; omega),
+        usize_numeral 32 (by decide)]
+    let b' := leaf16x2 p t3 t2 t1 i (i + 16) b (by rw [h16]; omega)
+    leaf16x2Loop p t3 t2 t1 count (i + 32) b' (by
+      have hs : b'.size = b.size := size_leaf16x2 ..
+      rw [hs, h32]
+      omega)
+
+/-- `leaf16` on the blocks at words `0, 16, …, 16 * (blocks - 1)`: pairs of blocks with
+`leaf16x2` after one range check, then the last block if `blocks` is odd. -/
 @[specialize]
 def leaf16Blocks (p : ℕ) [Mont32Field p] (t3 t2 t1 : @& ByteArray) (blocks : Nat)
     (a : ByteArray) : ByteArray := Id.run do
   let mut a := a
-  for g in [:blocks / 2] do
-    let i := 32 * g
-    if h : 4 * (i + 31) + 3 < a.size ∧ a.size < USize.size ∧
-        31 < t3.size ∧ t3.size < USize.size ∧ 15 < t2.size ∧ t2.size < USize.size ∧
-        7 < t1.size ∧ t1.size < USize.size then
-      a := leaf16x2 p t3 t2 t1 (USize.ofNatLT i (by omega)) (USize.ofNatLT (i + 16) (by omega)) a
-        (by simp only [USize.toNat_ofNatLT]; omega)
+  if h : 4 * (32 * (blocks / 2)) ≤ a.size ∧ a.size < USize.size ∧
+      31 < t3.size ∧ t3.size < USize.size ∧ 15 < t2.size ∧ t2.size < USize.size ∧
+      7 < t1.size ∧ t1.size < USize.size then
+    a := leaf16x2Loop p t3 t2 t1 (blocks / 2) 0 a (by rw [USize.toNat_zero]; omega)
   for block in [2 * (blocks / 2):blocks] do
     let i := 16 * block
     if h : 4 * (i + 15) + 3 < a.size ∧ a.size < USize.size ∧

@@ -117,6 +117,43 @@ theorem Native.leaf16x2_encode (t3 t2 t1 : Array (FastField p)) (i0 i1 : USize)
     Nat.zero_add, h3, h2, h1, one_mul]
   simp (disch := omega) only [getD_splice16_of_ge]
 
+/-- The checked pair loop depends only on the buffer's value. -/
+theorem Native.leaf16x2Loop_congr {t3 t2 t1 : ByteArray} {count : Nat} {i : USize}
+    {b b' : ByteArray} (h) (e : b = b') :
+    Native.leaf16x2Loop p t3 t2 t1 count i b h =
+      Native.leaf16x2Loop p t3 t2 t1 count i b' (e ▸ h) := by
+  subst e
+  rfl
+
+/-- The pair loop runs the final layers of blocks `2 g, 2 g + 1, …`. -/
+theorem Native.leaf16x2Loop_encode (t3 t2 t1 : Array (FastField p))
+    (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1) :
+    ∀ (count g : Nat) (i : USize) (b : Array (FastField p)) (h), i.toNat = 32 * g →
+    Native.leaf16x2Loop p (encode t3) (encode t2) (encode t1) count i (encode b) h =
+      encode ((List.range' g count).foldl (fun b g ↦
+        Expressions.leaf16Stages t3 t2 t1 (Expressions.leaf16Stages t3 t2 t1 b (2 * g * 16))
+          ((2 * g + 1) * 16)) b) := by
+  have hst (b : Array (FastField p)) (i : USize) (hi : i.toNat + 16 ≤ b.size) :
+      leaf16Field t3 t2 t1 i b = Expressions.leaf16Stages t3 t2 t1 b i.toNat := by
+    rw [leaf16Field_eq_expression, Expressions.leaf16Field_eq_stages t3 t2 t1 b i hi h3 h2 h1]
+  intro count
+  induction count with
+  | zero => intro _ _ _ _ _; rfl
+  | succ count ih =>
+    intro g i b h hi
+    have hb := h.1
+    have hs := h.2.1
+    rw [size_encode_fields] at hb hs
+    have h16 : (i + 16).toNat = i.toNat + 16 := Native.usize_add16 i _ (by omega) hs
+    have h32 : (i + 32).toNat = i.toNat + 32 := by
+      rw [Native.usize_add_toNat _ _ (by rw [Native.usize_numeral 32 (by decide)]; omega),
+        Native.usize_numeral 32 (by decide)]
+    rw [Native.leaf16x2Loop, Native.leaf16x2Loop_congr _ ((Native.leaf16x2_encode t3 t2 t1 i
+      (i + 16) b _ h3 h2 h1 (by omega)).trans (by
+        rw [hst b i (by omega), hst _ _ (by rw [Expressions.size_leaf16Stages]; omega), h16]))]
+    rw [ih (g + 1) _ _ _ (by rw [h32, hi]; ring), List.range'_succ, List.foldl_cons, hi,
+      show 32 * g = 2 * g * 16 by ring, show 2 * g * 16 + 16 = (2 * g + 1) * 16 by ring]
+
 /-- The in-place final layers of `blocks` sixteen-word blocks. -/
 theorem Native.leaf16Blocks_encode (t3 t2 t1 : Array (FastField p)) (blocks : Nat) (a : Array
     (FastField p))
@@ -128,31 +165,16 @@ theorem Native.leaf16Blocks_encode (t3 t2 t1 : Array (FastField p)) (blocks : Na
         Expressions.leaf16Stages t3 t2 t1 b (block * 16)) a) := by
   let st (b : Array (FastField p)) (block : Nat) : Array (FastField p) :=
     Expressions.leaf16Stages t3 t2 t1 b (block * 16)
-  have hst (b : Array (FastField p)) (i : USize) (hi : i.toNat + 16 ≤ b.size) :
-      leaf16Field t3 t2 t1 i b = Expressions.leaf16Stages t3 t2 t1 b i.toNat := by
-    rw [leaf16Field_eq_expression, Expressions.leaf16Field_eq_stages t3 t2 t1 b i hi h3 h2 h1]
   have hsize (b : Array (FastField p)) : (encode b).size = 4 * b.size := size_encode_fields b
   unfold Native.leaf16Blocks
   simp only [Std.Legacy.Range.forIn_eq_forIn_range', Std.Legacy.Range.size,
-    Nat.sub_zero, Nat.add_sub_cancel, Nat.div_one, ← List.range_eq_range',
-    bind_pure, forIn_dite_yield, Id.run_pure, pure_bind]
-  rw [foldl_encode _ (fun b ↦ b.size = a.size) _ (fun b g ↦ st (st b (2 * g)) (2 * g + 1))
-    (fun g hg b hb ↦ by
-      have hg := List.mem_range.mp hg
-      have hc : 4 * (32 * g + 31) + 3 < (encode b).size ∧ (encode b).size < USize.size ∧
-          31 < (encode t3).size ∧ (encode t3).size < USize.size ∧
-          15 < (encode t2).size ∧ (encode t2).size < USize.size ∧
-          7 < (encode t1).size ∧ (encode t1).size < USize.size := by
-        rw [hsize, hsize, hsize, hsize, ht3, ht2, ht1, hb]
-        have := USize.le_size
-        omega
-      rw [dite_eq_left_of_eq_true (eq_true hc), Native.leaf16x2_encode _ _ _ _ _ _ _ h3 h2 h1
-        (by simp only [USize.toNat_ofNatLT]; omega), hst b _ (by
-          simp only [USize.toNat_ofNatLT]; omega), hst _ _ (by
-          simp only [USize.toNat_ofNatLT, Expressions.size_leaf16Stages]; omega)]
-      simp only [st, USize.toNat_ofNatLT, show 2 * g * 16 = 32 * g by omega,
-        show (2 * g + 1) * 16 = 32 * g + 16 by omega])
-    (fun g _ b hb ↦ by simp only [st, Expressions.size_leaf16Stages, hb]) a rfl]
+    Nat.add_sub_cancel, Nat.div_one, bind_pure, forIn_dite_yield]
+  rw [dite_eq_left_of_eq_true (eq_true (by
+      simp only [hsize, ht3, ht2, ht1]
+      have := USize.le_size
+      omega)),
+    Native.leaf16x2Loop_encode t3 t2 t1 h3 h2 h1 _ 0 _ a _ (by rw [USize.toNat_zero]),
+    ← List.range_eq_range']
   rw [foldl_encode _ (fun b ↦ b.size = a.size) _ st (fun block hblock b hb ↦ by
       have hblock := List.mem_range'_1.mp hblock
       have hc : 4 * (16 * block + 15) + 3 < (encode b).size ∧ (encode b).size < USize.size ∧
@@ -166,10 +188,11 @@ theorem Native.leaf16Blocks_encode (t3 t2 t1 : Array (FastField p)) (blocks : Na
         USize.toNat_ofNatLT, Nat.mul_comm])
     (fun _ _ b hb ↦ by simp only [st, Expressions.size_leaf16Stages, hb]) _
     (foldl_invariant _ (fun b ↦ b.size = a.size) _
-      (fun _ _ b hb ↦ by simp only [st, Expressions.size_leaf16Stages, hb]) a rfl)]
+      (fun _ _ b hb ↦ by simp only [Expressions.size_leaf16Stages, hb]) a rfl)]
   have hn : blocks = 2 * (blocks / 2) + (blocks - 2 * (blocks / 2)) := by omega
   conv => rhs; rw [hn, List.range_eq_range', ← List.range'_append, List.foldl_append,
     ← List.range_eq_range', ← foldl_range_pairs, Nat.zero_add, Nat.one_mul]
+  rfl
 
 /-- A DIF-order leaf is the mixed radix-four DIF stages. -/
 theorem Native.leafReversed_encode (D : NTT.Domain (FastField p)) (tw : Array (Array
@@ -222,6 +245,32 @@ theorem Native.fill_mul16 (t a : Array (FastField p)) (i : USize) (N : Nat)
   unfold Native.mul16
   simp only [Native.readUOffset_encode, mul_val, USize.reduceToNat]
 
+/-- The checked product loop fills its `16 * count` words with the products. -/
+theorem Native.fill_mul16Loop (t a : Array (FastField p)) (N : Nat) (hN : 4 * N < USize.size) :
+    ∀ (count : Nat) (i : USize) (h), i.toNat + 16 * count ≤ N →
+    Native.Fill (fun k ↦ (t.getD k 0 * a.getD k 0).val)
+      (fun k ↦ i.toNat ≤ k ∧ k < i.toNat + 16 * count) N
+      (fun b ↦ Native.mul16Loop p (encode t) (encode a) count i b h) := by
+  intro count
+  induction count with
+  | zero =>
+    intro i h _
+    exact (Native.Fill.id _ N).mono fun k hk ↦ by omega
+  | succ count ih =>
+    intro i h hN'
+    have ht := h.2.2.1
+    have hi : (i + 16).toNat = i.toNat + 16 := Native.usize_add16 i _ (by omega) ht
+    have h0 : 4 * (i.toNat + 15) + 3 < (encode t).size ∧ 4 * (i.toNat + 15) + 3 < (encode a).size ∧
+        (encode t).size < USize.size ∧ (encode a).size < USize.size := by omega
+    have h1 : 4 * ((i + 16).toNat + 16 * count) ≤ (encode t).size ∧
+        4 * ((i + 16).toNat + 16 * count) ≤ (encode a).size ∧
+        (encode t).size < USize.size ∧ (encode a).size < USize.size := by rw [hi]; omega
+    refine (((Native.fill_mul16 t a i N hN (by omega) h0).comp
+      (ih (i + 16) h1 (by rw [hi]; omega))).congr fun b ↦ ?_).mono fun k hk ↦ ?_
+    · rfl
+    · rw [hi] at *
+      omega
+
 /-- Products of the first `n` coordinates. -/
 theorem Native.mulWords_encode (t a : Array (FastField p)) (n : Nat) (ht : n ≤ t.size)
     (ha : n ≤ a.size)
@@ -230,25 +279,6 @@ theorem Native.mulWords_encode (t a : Array (FastField p)) (n : Nat) (ht : n ≤
       encode (Array.ofFn (n := n) fun i ↦ t.getD i.val 0 * a.getD i.val 0) := by
   let T (k : Nat) : UInt32 := (t.getD k 0 * a.getD k 0).val
   have hN : 4 * n < USize.size := by omega
-  have hblock (block : Nat) (hb : block ∈ List.range (n / 16)) :
-      Native.Fill T (fun k ↦ 16 * block ≤ k ∧ k < 16 * block + 16) n (fun b ↦
-        if h : 4 * (16 * block + 15) + 3 < (encode t).size ∧
-            4 * (16 * block + 15) + 3 < (encode a).size ∧
-            (encode t).size < USize.size ∧ (encode a).size < USize.size then
-          Native.mul16 p (encode t) (encode a) (USize.ofNatLT (16 * block) (by omega)) b
-            (by simpa only [USize.toNat_ofNatLT] using h)
-        else b) := by
-    have hb := List.mem_range.mp hb
-    have hg : 4 * (16 * block + 15) + 3 < (encode t).size ∧
-        4 * (16 * block + 15) + 3 < (encode a).size ∧
-        (encode t).size < USize.size ∧ (encode a).size < USize.size := by
-      simp only [size_encode_fields]
-      omega
-    refine ((Native.fill_mul16 t a (USize.ofNatLT (16 * block) (by omega)) n hN
-      (by rw [USize.toNat_ofNatLT]; omega) (by simpa only [USize.toNat_ofNatLT] using hg)).congr
-      fun b ↦ ?_).mono fun k hk ↦ ?_
-    · rw [dite_eq_left_of_eq_true (eq_true hg)]
-    · rw [USize.toNat_ofNatLT]; exact hk
   have hedge (k : Nat) (hk : k ∈ List.range' (16 * (n / 16)) (n - 16 * (n / 16))) :
       Native.Fill T (· = k) n (fun b ↦
         Native.write b k (mul p (Native.read (encode t) k) (Native.read (encode a) k))) := by
@@ -256,15 +286,21 @@ theorem Native.mulWords_encode (t a : Array (FastField p)) (n : Nat) (ht : n ≤
     refine Native.fill_write T n k _ hN (by omega) ?_
     rw [Native.read_encode _ _ (by rw [size_encode_fields]; exact hts) (by omega),
       Native.read_encode _ _ (by rw [size_encode_fields]; exact has) (by omega), mul_val]
-  have hall := (Native.Fill.foldl T _ n _ _ hblock).comp (Native.Fill.foldl T _ n _ _ hedge)
+  have hg : 4 * (16 * (n / 16)) ≤ (encode t).size ∧ 4 * (16 * (n / 16)) ≤ (encode a).size ∧
+      (encode t).size < USize.size ∧ (encode a).size < USize.size := by
+    simp only [size_encode_fields]
+    omega
+  have hall := (Native.fill_mul16Loop t a n hN (n / 16) 0
+    (by rw [USize.toNat_zero, Nat.zero_add]; exact hg) (by rw [USize.toNat_zero]; omega)).comp
+    (Native.Fill.foldl T _ n _ _ hedge)
   unfold Native.mulWords
   simp only [Std.Legacy.Range.forIn_eq_forIn_range', Std.Legacy.Range.size,
-    Nat.sub_zero, Nat.add_sub_cancel, Nat.div_one, ← List.range_eq_range',
-    List.forIn_pure_yield_eq_foldl, bind_pure, Id.run_pure, pure_bind, forIn_dite_yield,
+    Nat.add_sub_cancel, Nat.div_one, List.forIn_pure_yield_eq_foldl, bind_pure,
     Native.zeroWords_eq]
+  rw [dite_eq_left_of_eq_true (eq_true hg)]
   refine (hall.eq_ofFn (fun k hk ↦ ?_) _ Array.size_replicate).trans ?_
   · by_cases hk' : k < 16 * (n / 16)
-    · exact Or.inl ⟨k / 16, List.mem_range.mpr (by omega), by omega, by omega⟩
+    · exact Or.inl ⟨by rw [USize.toNat_zero]; omega, by rw [USize.toNat_zero]; omega⟩
     · exact Or.inr ⟨k, List.mem_range'_1.mpr (by omega), rfl⟩
   · rw [encode_eq_map_val, Array.map_ofFn]
     rfl

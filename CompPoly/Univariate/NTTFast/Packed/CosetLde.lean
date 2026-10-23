@@ -109,16 +109,25 @@ def mul16 (p : ℕ) [Mont32Field p] (t a : @& ByteArray) (i : USize) (out : Byte
       t.size < USize.size ∧ a.size < USize.size) : ByteArray :=
   mul16_words%
 
-/-- The products of words `0, …, n - 1` of `t` and `a`. -/
+/-- `count` sixteen-word products from word `i`, after one range check. -/
+@[specialize]
+def mul16Loop (p : ℕ) [Mont32Field p] (t a : @& ByteArray) :
+    (count : Nat) → (i : USize) → (out : ByteArray) →
+    4 * (i.toNat + 16 * count) ≤ t.size ∧ 4 * (i.toNat + 16 * count) ≤ a.size ∧
+      t.size < USize.size ∧ a.size < USize.size → ByteArray
+  | 0, _, out, _ => out
+  | count + 1, i, out, h =>
+    have hi : (i + 16).toNat = i.toNat + 16 := usize_add16 i t.size (by omega) h.2.2.1
+    mul16Loop p t a count (i + 16) (mul16 p t a i out (by omega)) (by rw [hi]; omega)
+
+/-- The products of words `0, …, n - 1` of `t` and `a`: whole sixteen-word blocks after one
+range check, then word by word. -/
 @[specialize]
 def mulWords (p : ℕ) [Mont32Field p] (t a : @& ByteArray) (n : Nat) : ByteArray := Id.run do
   let mut out := zeroWords n
-  for block in [:n / 16] do
-    let i := 16 * block
-    if h : 4 * (i + 15) + 3 < t.size ∧ 4 * (i + 15) + 3 < a.size ∧
-        t.size < USize.size ∧ a.size < USize.size then
-      out := mul16 p t a (USize.ofNatLT i (by omega)) out
-        (by simpa only [USize.toNat_ofNatLT] using h)
+  if h : 4 * (16 * (n / 16)) ≤ t.size ∧ 4 * (16 * (n / 16)) ≤ a.size ∧
+      t.size < USize.size ∧ a.size < USize.size then
+    out := mul16Loop p t a (n / 16) 0 out (by rw [USize.toNat_zero]; omega)
   for k in [16 * (n / 16):n] do
     out := write out k (mul p (read t k) (read a k))
   return out
