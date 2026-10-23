@@ -392,6 +392,7 @@ public import CompPoly.Univariate.NTTFast.Packed.KernelModels
 public import CompPoly.Univariate.NTTFast.Packed.KernelRefinement
 public import CompPoly.Univariate.NTTFast.Packed.KernelSpecialization
 public import CompPoly.Univariate.NTTFast.Packed.LeafLayers
+public import CompPoly.Univariate.NTTFast.Packed.LeafStages
 public import CompPoly.Univariate.NTTFast.Packed.LocalLayers
 public import CompPoly.Univariate.NTTFast.Packed.LoopRefinement
 public import CompPoly.Univariate.NTTFast.Packed.Native

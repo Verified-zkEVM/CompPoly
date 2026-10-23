@@ -235,56 +235,126 @@ def leaf16 (p : ℕ) [Mont32Field p] (t3 t2 t1 : @& ByteArray) (i : USize) (b : 
       7 < t1.size ∧ t1.size < USize.size) : ByteArray :=
   leaf16_words%
 
+/-- Four sixteen-word blocks from word `i` of `b`, and `K` twiddles in `t`: the range checks of a
+stage kernel. -/
+abbrev LeafStageFits (b t : ByteArray) (i : USize) (K : Nat) : Prop :=
+  4 * (i.toNat + 64) ≤ b.size ∧ b.size < USize.size ∧ 4 * K ≤ t.size ∧ t.size < USize.size
+
+/-- A stage kernel's buffer has room for the touched last word. -/
+theorem leafStage_touch {b t : ByteArray} {i : USize} {K : Nat} (h : LeafStageFits b t i K) :
+    4 ≤ b.usize := by
+  obtain ⟨h1, h2, -, -⟩ := h
+  have hu : b.usize.toNat = b.size := by
+    rw [ByteArray.usize, Nat.toUSize, USize.toNat_ofNat_of_lt' h2]
+  rw [USize.le_iff_toNat_le, hu, usize_numeral 4 (by decide)]
+  omega
+
+/-- Word `k` of a stage kernel's blocks fits its buffer, of the same size as `b`. -/
+theorem leafStage_read {b t o : ByteArray} {i : USize} {K : Nat} (h : LeafStageFits b t i K)
+    (ho : o.size = b.size) (k : Nat) (hk : k < 64) :
+    4 * (i.toNat + (OfNat.ofNat k : USize).toNat) + 3 < o.size ∧ o.size < USize.size := by
+  obtain ⟨h1, h2, -, -⟩ := h
+  rw [usize_numeral k (by omega), ho]
+  exact ⟨by omega, h2⟩
+
+/-- Twiddle `k < K` of a stage kernel fits its table. -/
+theorem leafStage_twiddle {b t : ByteArray} {i : USize} {K : Nat} (h : LeafStageFits b t i K)
+    (k : Nat) (hk : k < K) (hk8 : k < 8) :
+    4 * ((0 : USize).toNat + (OfNat.ofNat k : USize).toNat) + 3 < t.size ∧
+      t.size < USize.size := by
+  obtain ⟨-, -, h3, h4⟩ := h
+  rw [usize_numeral k (by omega), USize.toNat_zero]
+  exact ⟨by omega, h4⟩
+
+/-- The eight words from word `i + c` of a stage kernel's blocks fit its buffer. -/
+theorem leafStage_store {b t : ByteArray} {i : USize} {K : Nat} (h : LeafStageFits b t i K)
+    (c : Nat) (hc : c + 8 ≤ 64) :
+    ((i + OfNat.ofNat c) * 4).toNat + 4 * 8 ≤ b.size ∧
+      ((i + OfNat.ofNat c) * 4).toNat + 4 * 8 < USize.size := by
+  obtain ⟨h1, h2, -, -⟩ := h
+  have hc' : (OfNat.ofNat c : USize).toNat = c := usize_numeral c (by omega)
+  rw [wordOffset_toNat _ _ (by rw [hc']; omega), hc']
+  exact ⟨by omega, by omega⟩
+
 set_option maxRecDepth 8192 in
 set_option maxHeartbeats 4000000 in
-/-- `leaf16` on the blocks at `i0` and `i1`, its layers uniform: every butterfly of the first three
-layers is multiplied by its twiddle, the first one being one, so the compiler vectorizes each
-block's layers, and the two blocks' independent chains overlap. -/
+/-- The first of the four final DIF layers in place on the four blocks from word `i`: words `k` and
+`k + 8` of a block, the difference times twiddle `k` of `t3`. -/
 @[noinline, specialize]
-def leaf16x2 (p : ℕ) [Mont32Field p] (t3 t2 t1 : @& ByteArray) (i0 i1 : USize)
-    (b : ByteArray)
-    (h : 4 * (i0.toNat + 15) + 3 < b.size ∧ 4 * (i1.toNat + 15) + 3 < b.size ∧
-      b.size < USize.size ∧
-      31 < t3.size ∧ t3.size < USize.size ∧ 15 < t2.size ∧ t2.size < USize.size ∧
-      7 < t1.size ∧ t1.size < USize.size) : ByteArray :=
-  leaf16x2_words%
+def leafStage8 (p : ℕ) [Mont32Field p] (t : @& ByteArray) (i : USize) (b : ByteArray)
+    (h : LeafStageFits b t i 8) : Buf b.size :=
+  leafStage8_words%
 
-/-- The two-block kernel keeps the buffer size. -/
-theorem size_leaf16x2 (t3 t2 t1 : ByteArray) (i0 i1 : USize) (b : ByteArray) (h) :
-    (leaf16x2 p t3 t2 t1 i0 i1 b h).size = b.size := by
-  unfold leaf16x2
-  simp only [write16U, size_storeWords]
+set_option maxRecDepth 8192 in
+set_option maxHeartbeats 4000000 in
+/-- The second of the four final DIF layers in place: words `k` and `k + 4` of a half block, the
+difference times twiddle `k` of `t2`. -/
+@[noinline, specialize]
+def leafStage4 (p : ℕ) [Mont32Field p] (t : @& ByteArray) (i : USize) (b : ByteArray)
+    (h : LeafStageFits b t i 4) : Buf b.size :=
+  leafStage4_words%
 
-/-- `count` pairs of sixteen-word blocks from word `i`, after one range check. -/
+set_option maxRecDepth 8192 in
+set_option maxHeartbeats 4000000 in
+/-- The third of the four final DIF layers in place: words `k` and `k + 2` of a quarter block, the
+difference times twiddle `k` of `t1`. -/
+@[noinline, specialize]
+def leafStage2 (p : ℕ) [Mont32Field p] (t : @& ByteArray) (i : USize) (b : ByteArray)
+    (h : LeafStageFits b t i 2) : Buf b.size :=
+  leafStage2_words%
+
+set_option maxRecDepth 8192 in
+set_option maxHeartbeats 4000000 in
+/-- The last DIF layer in place: words `2 k` and `2 k + 1`, without twiddles. -/
+@[noinline, specialize]
+def leafStage1 (p : ℕ) [Mont32Field p] (t : @& ByteArray) (i : USize) (b : ByteArray)
+    (h : LeafStageFits b t i 0) : Buf b.size :=
+  leafStage1_words%
+
+/-- `count` groups of four blocks from word `i` through the stage kernel `k`, after one range
+check. -/
 @[specialize]
-def leaf16x2Loop (p : ℕ) [Mont32Field p] (t3 t2 t1 : @& ByteArray) :
-    (count : Nat) → (i : USize) → (b : ByteArray) →
-    4 * (i.toNat + 32 * count) ≤ b.size ∧ b.size < USize.size ∧
-      31 < t3.size ∧ t3.size < USize.size ∧ 15 < t2.size ∧ t2.size < USize.size ∧
-      7 < t1.size ∧ t1.size < USize.size → ByteArray
+def leafStageLoop (K : Nat)
+    (k : (t : ByteArray) → (i : USize) → (b : ByteArray) → LeafStageFits b t i K → Buf b.size)
+    (t : @& ByteArray) : (count : Nat) → (i : USize) → (b : ByteArray) →
+    4 * (i.toNat + 64 * count) ≤ b.size ∧ b.size < USize.size ∧ 4 * K ≤ t.size ∧
+      t.size < USize.size → ByteArray
   | 0, _, b, _ => b
   | count + 1, i, b, h =>
-    have h16 : (i + 16).toNat = i.toNat + 16 := usize_add16 i b.size (by omega) h.2.1
-    have h32 : (i + 32).toNat = i.toNat + 32 := by
-      rw [usize_add_toNat _ _ (by rw [usize_numeral 32 (by decide)]; omega),
-        usize_numeral 32 (by decide)]
-    let b' := leaf16x2 p t3 t2 t1 i (i + 16) b (by rw [h16]; omega)
-    leaf16x2Loop p t3 t2 t1 count (i + 32) b' (by
-      have hs : b'.size = b.size := size_leaf16x2 ..
-      rw [hs, h32]
-      omega)
+    have h64 : (i + 64).toNat = i.toNat + 64 := by
+      rw [usize_add_toNat _ _ (by rw [usize_numeral 64 (by decide)]; omega),
+        usize_numeral 64 (by decide)]
+    let b' := k t i b ⟨by omega, h.2.1, h.2.2⟩
+    leafStageLoop K k t count (i + 64) b'.1 (by rw [b'.2, h64]; omega)
 
-/-- `leaf16` on the blocks at words `0, 16, …, 16 * (blocks - 1)`: pairs of blocks with
-`leaf16x2` after one range check, then the last block if `blocks` is odd. -/
+/-- The stage loop keeps the buffer size. -/
+theorem size_leafStageLoop (K : Nat)
+    (k : (t : ByteArray) → (i : USize) → (b : ByteArray) → LeafStageFits b t i K → Buf b.size)
+    (t : ByteArray) : ∀ (count : Nat) (i : USize) (b : ByteArray) (h),
+    (leafStageLoop K k t count i b h).size = b.size
+  | 0, _, _, _ => rfl
+  | count + 1, i, b, h => by
+    rw [leafStageLoop, size_leafStageLoop K k t count, (k t i b _).2]
+
+/-- `leaf16` on the blocks at words `0, 16, …, 16 * (blocks - 1)`: the four layers each in one pass
+over the groups of four blocks, after one range check, then the remaining blocks one by one. -/
 @[specialize]
 def leaf16Blocks (p : ℕ) [Mont32Field p] (t3 t2 t1 : @& ByteArray) (blocks : Nat)
     (a : ByteArray) : ByteArray := Id.run do
   let mut a := a
-  if h : 4 * (32 * (blocks / 2)) ≤ a.size ∧ a.size < USize.size ∧
-      31 < t3.size ∧ t3.size < USize.size ∧ 15 < t2.size ∧ t2.size < USize.size ∧
-      7 < t1.size ∧ t1.size < USize.size then
-    a := leaf16x2Loop p t3 t2 t1 (blocks / 2) 0 a (by rw [USize.toNat_zero]; omega)
-  for block in [2 * (blocks / 2):blocks] do
+  let n := blocks / 4
+  if h : 4 * (64 * n) ≤ a.size ∧ a.size < USize.size ∧
+      4 * 8 ≤ t3.size ∧ t3.size < USize.size ∧ 4 * 4 ≤ t2.size ∧ t2.size < USize.size ∧
+      4 * 2 ≤ t1.size ∧ t1.size < USize.size then
+    have h0 : (0 : USize).toNat = 0 := USize.toNat_zero
+    let a8 := leafStageLoop 8 (leafStage8 p) t3 n 0 a (by omega)
+    let a4 := leafStageLoop 4 (leafStage4 p) t2 n 0 a8 (by
+      rw [size_leafStageLoop]; omega)
+    let a2 := leafStageLoop 2 (leafStage2 p) t1 n 0 a4 (by
+      rw [size_leafStageLoop, size_leafStageLoop]; omega)
+    a := leafStageLoop 0 (leafStage1 p) t1 n 0 a2 (by
+      rw [size_leafStageLoop, size_leafStageLoop, size_leafStageLoop]; omega)
+  for block in [4 * n:blocks] do
     let i := 16 * block
     if h : 4 * (i + 15) + 3 < a.size ∧ a.size < USize.size ∧
         31 < t3.size ∧ t3.size < USize.size ∧ 15 < t2.size ∧ t2.size < USize.size ∧
