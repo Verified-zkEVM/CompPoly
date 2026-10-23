@@ -270,30 +270,31 @@ theorem divMod_add (a b n : Nat) (hb : b < n) : (a * n + b) / n = a ∧ (a * n +
   · rw [Nat.add_comm, Nat.add_mul_div_right _ _ (by omega), Nat.div_eq_of_lt hb, Nat.zero_add]
   · rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hb]
 
-/-- Rows `r0, …, r0 + rows - 1` of a row-major matrix of width `w`, transposed: word
-`j * rows + r` is entry `(r0 + r, j)`. -/
-theorem transposeRows_encodeWords (M : Array UInt32) (w r0 rows : Nat)
+/-- Rows `r0, …, r0 + rows - 1` of columns `c0, …, c0 + n - 1` of a row-major matrix of width
+`w`, transposed: word `j * rows + r` is entry `(r0 + r, c0 + j)`. -/
+theorem transposeRows_encodeWords (M : Array UInt32) (w c0 n r0 rows : Nat) (hn : c0 + n ≤ w)
     (hM : (r0 + rows) * w ≤ M.size) (hs : 4 * M.size < USize.size) :
-    transposeRows (encode M) w r0 rows = encode (Array.ofFn (n := w * rows) fun k ↦
-      M.getD ((r0 + k.val % rows) * w + k.val / rows) 0) := by
-  let T (k : Nat) : UInt32 := M.getD ((r0 + k % rows) * w + k / rows) 0
+    transposeRows (encode M) w c0 n r0 rows = encode (Array.ofFn (n := n * rows) fun k ↦
+      M.getD ((r0 + k.val % rows) * w + c0 + k.val / rows) 0) := by
+  let T (k : Nat) : UInt32 := M.getD ((r0 + k % rows) * w + c0 + k / rows) 0
   have hrw : rows * w ≤ (r0 + rows) * w := Nat.mul_le_mul_right w (by omega)
+  have hnr : n * rows ≤ w * rows := Nat.mul_le_mul_right rows (by omega)
   have hwr : w * rows = rows * w := Nat.mul_comm w rows
-  have hN : 4 * (w * rows) < USize.size := by omega
+  have hN : 4 * (n * rows) < USize.size := by omega
   have hu (n : Nat) (hn : n ≤ M.size) : n.toUSize.toNat = n := USize.toNat_ofNat_of_lt' (by omega)
   have htile (rt : Nat) (hrt : rt < rows / 16) (ct : Nat)
-      (hct : ct ∈ List.range (w / 16)) :
-      Fill T (fun k ↦ ∃ u < 16, ∃ t < 16, k = (16 * ct + u) * rows + (16 * rt + t)) (w * rows)
-        (fun b ↦ tileStrided (encode M) ((r0 + 16 * rt) * w + 16 * ct).toUSize w.toUSize b
+      (hct : ct ∈ List.range (n / 16)) :
+      Fill T (fun k ↦ ∃ u < 16, ∃ t < 16, k = (16 * ct + u) * rows + (16 * rt + t)) (n * rows)
+        (fun b ↦ tileStrided (encode M) ((r0 + 16 * rt) * w + c0 + 16 * ct).toUSize w.toUSize b
           (16 * ct * rows + 16 * rt).toUSize rows.toUSize) := by
     have hct := List.mem_range.mp hct
     have h1 : (r0 + 16 * rt + 16) * w ≤ (r0 + rows) * w := Nat.mul_le_mul_right w (by omega)
-    have h2 : (16 * ct + 16) * rows ≤ w * rows := Nat.mul_le_mul_right rows (by omega)
+    have h2 : (16 * ct + 16) * rows ≤ n * rows := Nat.mul_le_mul_right rows (by omega)
     have e1 : (r0 + 16 * rt + 16) * w = (r0 + 16 * rt) * w + 16 * w := by ring
     have e2 : (16 * ct + 16) * rows = 16 * ct * rows + 16 * rows := by ring
-    have hq : (r0 + 16 * rt) * w + 16 * ct ≤ M.size := by omega
+    have hq : (r0 + 16 * rt) * w + c0 + 16 * ct ≤ M.size := by omega
     have hp : 16 * ct * rows + 16 * rt ≤ M.size := by omega
-    refine (fill_tileStrided T (w * rows) M _ _ _ _ (by omega) hN ?_ ?_ ?_).mono ?_
+    refine (fill_tileStrided T (n * rows) M _ _ _ _ (by omega) hN ?_ ?_ ?_).mono ?_
     · rw [hu _ hq, hu _ (by omega)]; omega
     · rw [hu _ hp, hu _ (by omega)]; omega
     · intro u hu' t ht
@@ -305,26 +306,26 @@ theorem transposeRows_encodeWords (M : Array UInt32) (w r0 rows : Nat)
       ring
     · rintro k ⟨u, hu', t, ht, rfl⟩
       exact ⟨u, hu', t, ht, by rw [hu _ hp, hu _ (by omega)]; ring⟩
-  have hedge (j : Nat) (hj : j ∈ List.range w) (r : Nat)
-      (hr : r ∈ List.range' (if j < 16 * (w / 16) then 16 * (rows / 16) else 0)
-        (rows - if j < 16 * (w / 16) then 16 * (rows / 16) else 0)) :
-      Fill T (· = j * rows + r) (w * rows)
-        (fun b ↦ write b (j * rows + r) (read (encode M) ((r0 + r) * w + j))) := by
+  have hedge (j : Nat) (hj : j ∈ List.range n) (r : Nat)
+      (hr : r ∈ List.range' (if j < 16 * (n / 16) then 16 * (rows / 16) else 0)
+        (rows - if j < 16 * (n / 16) then 16 * (rows / 16) else 0)) :
+      Fill T (· = j * rows + r) (n * rows)
+        (fun b ↦ write b (j * rows + r) (read (encode M) ((r0 + r) * w + c0 + j))) := by
     have hj := List.mem_range.mp hj
     have hr : r < rows := by have := List.mem_range'_1.mp hr; split at this <;> omega
     have h1 : (r0 + r + 1) * w ≤ (r0 + rows) * w := Nat.mul_le_mul_right w (by omega)
-    have h2 : (j + 1) * rows ≤ w * rows := Nat.mul_le_mul_right rows (by omega)
+    have h2 : (j + 1) * rows ≤ n * rows := Nat.mul_le_mul_right rows (by omega)
     have e1 : (r0 + r + 1) * w = (r0 + r) * w + w := by ring
     have e2 : (j + 1) * rows = j * rows + rows := by ring
-    refine fill_write T (w * rows) _ _ hN (by omega) ?_
+    refine fill_write T (n * rows) _ _ hN (by omega) ?_
     have hd := divMod_add j r rows hr
     rw [read_encodeWords M _ (by rw [size_encode_uint32]; exact hs) (by omega)]
     simp only [T, hd.1, hd.2]
-  have hall := (Fill.foldl T _ (w * rows) (List.range ((rows / 16 + 63) / 64)) _ fun rb _ ↦
-    Fill.foldl T _ (w * rows) _ _ fun ct hct ↦
-      Fill.foldl T _ (w * rows) (List.range' (64 * rb) (min (64 * rb + 64) (rows / 16) - 64 * rb))
+  have hall := (Fill.foldl T _ (n * rows) (List.range ((rows / 16 + 63) / 64)) _ fun rb _ ↦
+    Fill.foldl T _ (n * rows) _ _ fun ct hct ↦
+      Fill.foldl T _ (n * rows) (List.range' (64 * rb) (min (64 * rb + 64) (rows / 16) - 64 * rb))
         _ fun rt hrt ↦ htile rt (by have := List.mem_range'_1.mp hrt; omega) ct hct).comp
-    (Fill.foldl T _ (w * rows) _ _ fun j hj ↦ Fill.foldl T _ (w * rows) _ _ (hedge j hj))
+    (Fill.foldl T _ (n * rows) _ _ fun j hj ↦ Fill.foldl T _ (n * rows) _ _ (hedge j hj))
   unfold transposeRows
   simp only [Std.Legacy.Range.forIn_eq_forIn_range', Std.Legacy.Range.size,
     Nat.sub_zero, Nat.add_sub_cancel, Nat.div_one, ← List.range_eq_range',
@@ -332,9 +333,9 @@ theorem transposeRows_encodeWords (M : Array UInt32) (w r0 rows : Nat)
   refine hall.eq_ofFn (fun k hk ↦ ?_) _ Array.size_replicate
   have hrows : 0 < rows := Nat.pos_of_ne_zero (by rintro rfl; simp at hk)
   have hk' := Nat.div_add_mod k rows
-  have hj : k / rows < w := (Nat.div_lt_iff_lt_mul hrows).mpr hk
+  have hj : k / rows < n := (Nat.div_lt_iff_lt_mul hrows).mpr hk
   have hr := Nat.mod_lt k hrows
-  by_cases hin : k / rows < 16 * (w / 16) ∧ k % rows < 16 * (rows / 16)
+  by_cases hin : k / rows < 16 * (n / 16) ∧ k % rows < 16 * (rows / 16)
   · refine Or.inl ⟨k % rows / 16 / 64, List.mem_range.mpr (by omega), k / rows / 16,
       List.mem_range.mpr (by omega), k % rows / 16, List.mem_range'_1.mpr (by omega),
       k / rows % 16, Nat.mod_lt _ (by decide), k % rows % 16, Nat.mod_lt _ (by decide), ?_⟩
@@ -647,28 +648,28 @@ theorem gatherColumn_encodeWords (P : Nat → Array UInt32) (R rows j : Nat)
           rw [Array.size_extract]; rw [Nat.succ_mul] at hi'; omega),
           Array.getD_eq_getD_getElem?, Array.getElem?_eq_none (by rw [Array.size_ofFn]; omega)]
 
-/-- The columns of a matrix from its transposed row ranges: entry `i` of column `j` is entry
-`(i, j)` of the matrix. -/
-theorem gatherColumn_transposeRows (M : Array UInt32) (w R rows j : Nat) (hj : j < w)
-    (hM : R * rows * w ≤ M.size) (hs : 4 * M.size < USize.size) :
-    gatherColumn ((Array.range R).map fun k ↦ transposeRows (encode M) w (k * rows) rows) rows j =
-      encode (Array.ofFn (n := R * rows) fun i ↦ M.getD (i.val * w + j) 0) := by
+/-- The columns of a matrix from its transposed row ranges of columns `c0, …, c0 + n - 1`: entry
+`i` of column `j` is entry `(i, c0 + j)` of the matrix. -/
+theorem gatherColumn_transposeRows (M : Array UInt32) (w c0 n R rows j : Nat) (hn : c0 + n ≤ w)
+    (hj : j < n) (hM : R * rows * w ≤ M.size) (hs : 4 * M.size < USize.size) :
+    gatherColumn ((Array.range R).map fun k ↦ transposeRows (encode M) w c0 n (k * rows) rows)
+      rows j = encode (Array.ofFn (n := R * rows) fun i ↦ M.getD (i.val * w + c0 + j) 0) := by
   have hpiece (k : Nat) (hk : k < R) : (k * rows + rows) * w ≤ M.size := by
     have := Nat.mul_le_mul_right w (show k * rows + rows ≤ R * rows by
       have := Nat.mul_le_mul_right rows (show k + 1 ≤ R by omega)
       rw [Nat.succ_mul] at this; exact this)
     omega
-  have hm : (Array.range R).map (fun k ↦ transposeRows (encode M) w (k * rows) rows) =
-      (Array.range R).map fun k ↦ encode (Array.ofFn (n := w * rows) fun i ↦
-        M.getD ((k * rows + i.val % rows) * w + i.val / rows) 0) := by
+  have hm : (Array.range R).map (fun k ↦ transposeRows (encode M) w c0 n (k * rows) rows) =
+      (Array.range R).map fun k ↦ encode (Array.ofFn (n := n * rows) fun i ↦
+        M.getD ((k * rows + i.val % rows) * w + c0 + i.val / rows) 0) := by
     apply Array.ext (by simp only [Array.size_map])
     intro k h1 _
     simp only [Array.size_map, Array.size_range] at h1
     simp only [Array.getElem_map, Array.getElem_range]
-    exact transposeRows_encodeWords M w _ rows (hpiece k h1) hs
+    exact transposeRows_encodeWords M w c0 n _ rows hn (hpiece k h1) hs
   rw [hm, gatherColumn_encodeWords _ R rows j fun k hk ↦ by
     rw [Array.size_ofFn]
-    have := Nat.mul_le_mul_right rows (show j + 1 ≤ w by omega)
+    have := Nat.mul_le_mul_right rows (show j + 1 ≤ n by omega)
     rw [Nat.succ_mul] at this; exact this]
   congr 1
   apply Array.ext (by simp only [Array.size_ofFn])
@@ -677,8 +678,8 @@ theorem gatherColumn_transposeRows (M : Array UInt32) (w R rows j : Nat) (hj : j
   have hrows : 0 < rows := Nat.pos_of_ne_zero (by rintro rfl; simp at h1)
   have hr := Nat.mod_lt i hrows
   have hd := divMod_add j (i % rows) rows hr
-  have hjr : j * rows + i % rows < w * rows := by
-    have := Nat.mul_le_mul_right rows (show j + 1 ≤ w by omega)
+  have hjr : j * rows + i % rows < n * rows := by
+    have := Nat.mul_le_mul_right rows (show j + 1 ≤ n by omega)
     rw [Nat.succ_mul] at this; omega
   simp only [Array.getElem_ofFn]
   rw [getD_ofFn_bounded _ _ hjr]
