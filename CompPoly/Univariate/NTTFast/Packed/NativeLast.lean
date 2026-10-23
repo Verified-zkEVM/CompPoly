@@ -235,12 +235,30 @@ def leaf16 (p : ℕ) [Mont32Field p] (t3 t2 t1 : @& ByteArray) (i : USize) (b : 
       7 < t1.size ∧ t1.size < USize.size) : ByteArray :=
   leaf16_words%
 
+set_option maxRecDepth 8192 in
+set_option maxHeartbeats 4000000 in
+@[noinline, specialize]
+def leaf16x2 (p : ℕ) [Mont32Field p] (t3 t2 t1 : @& ByteArray) (i0 i1 : USize)
+    (b : ByteArray)
+    (h : 4 * (i0.toNat + 15) + 3 < b.size ∧ 4 * (i1.toNat + 15) + 3 < b.size ∧
+      b.size < USize.size ∧
+      31 < t3.size ∧ t3.size < USize.size ∧ 15 < t2.size ∧ t2.size < USize.size ∧
+      7 < t1.size ∧ t1.size < USize.size) : ByteArray :=
+  leaf16x2_words%
+
 /-- `leaf16` on the blocks at words `0, 16, …, 16 * (blocks - 1)`. -/
 @[specialize]
 def leaf16Blocks (p : ℕ) [Mont32Field p] (t3 t2 t1 : @& ByteArray) (blocks : Nat)
     (a : ByteArray) : ByteArray := Id.run do
   let mut a := a
-  for block in [:blocks] do
+  for g in [:blocks / 2] do
+    let i := 32 * g
+    if h : 4 * (i + 31) + 3 < a.size ∧ a.size < USize.size ∧
+        31 < t3.size ∧ t3.size < USize.size ∧ 15 < t2.size ∧ t2.size < USize.size ∧
+        7 < t1.size ∧ t1.size < USize.size then
+      a := leaf16x2 p t3 t2 t1 (USize.ofNatLT i (by omega)) (USize.ofNatLT (i + 16) (by omega)) a
+        (by simp only [USize.toNat_ofNatLT]; omega)
+  for block in [2 * (blocks / 2):blocks] do
     let i := 16 * block
     if h : 4 * (i + 15) + 3 < a.size ∧ a.size < USize.size ∧
         31 < t3.size ∧ t3.size < USize.size ∧ 15 < t2.size ∧ t2.size < USize.size ∧
