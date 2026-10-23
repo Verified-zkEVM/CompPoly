@@ -285,12 +285,71 @@ def rowsOfColumns (cs : @& Array ByteArray) (r0 rows : Nat) : ByteArray := Id.ru
 def columnCoefficients (P : LdePlan p) (col : ByteArray) : ByteArray :=
   leafNatural p P.inverseTwiddles P.logH 0 false col
 
+/-- The first radix-two DIF layer's butterflies `j, …, j + 15` of `c ⊙ T`, `c` and `T` read at
+words `j` and `j + h`, stored at the same words of `out`. -/
+@[noinline, specialize]
+def pair16Scaled (p : ℕ) [Mont32Field p] (w T c : @& ByteArray) (j i0 i1 : USize)
+    (out : ByteArray)
+    (h : 4 * (i0.toNat + 15) + 3 < c.size ∧ 4 * (i1.toNat + 15) + 3 < c.size ∧
+      4 * (i0.toNat + 15) + 3 < T.size ∧ 4 * (i1.toNat + 15) + 3 < T.size ∧
+      4 * (j.toNat + 15) + 3 < w.size ∧ c.size < USize.size ∧ T.size < USize.size ∧
+      w.size < USize.size) : ByteArray :=
+  pair16Scaled_words%
+
+/-- `n` batches of `pair16Scaled` from butterfly `j` of half `h`, after one range check. -/
+@[specialize]
+def pair16ScaledLoop (p : ℕ) [Mont32Field p] (w T c : @& ByteArray) (h : USize) :
+    (n : Nat) → (j : USize) → (out : ByteArray) →
+    4 * (h.toNat + j.toNat + 16 * n) ≤ c.size ∧ 4 * (h.toNat + j.toNat + 16 * n) ≤ T.size ∧
+      4 * (j.toNat + 16 * n) ≤ w.size ∧ c.size < USize.size ∧ T.size < USize.size ∧
+      w.size < USize.size → ByteArray
+  | 0, _, out, _ => out
+  | n + 1, j, out, hb =>
+    have hj : (j + 16).toNat = j.toNat + 16 := usize_add16 j c.size (by omega) hb.2.2.2.1
+    have hh : (j + h).toNat = j.toNat + h.toNat := usize_add_toNat _ _ (by omega)
+    pair16ScaledLoop p w T c h n (j + 16)
+      (pair16Scaled p w T c j j (j + h) out (by rw [hh]; omega)) (by rw [hj]; omega)
+
+/-- The first radix-two DIF layer of the `2 h`-word `c ⊙ T`, out of place: whole batches of
+sixteen butterflies after one range check, then butterfly by butterfly. -/
+@[specialize]
+def pairsScaled (p : ℕ) [Mont32Field p] (w T c : @& ByteArray) (h : Nat) : ByteArray := Id.run do
+  let mut out := zeroWords (2 * h)
+  if hb : 4 * (h + 16 * (h / 16)) ≤ c.size ∧ 4 * (h + 16 * (h / 16)) ≤ T.size ∧
+      4 * (16 * (h / 16)) ≤ w.size ∧ c.size < USize.size ∧ T.size < USize.size ∧
+      w.size < USize.size then
+    out := pair16ScaledLoop p w T c (USize.ofNatLT h (by omega)) (h / 16) 0 out (by
+      rw [USize.toNat_ofNatLT, USize.toNat_zero]; omega)
+  for k in [16 * (h / 16):h] do
+    let x := mul p (read T k) (read c k)
+    let y := mul p (read T (h + k)) (read c (h + k))
+    out := write (write out k (add p x y)) (h + k) (mul p (read w k) (sub p x y))
+  return out
+
+/-- `leafReversed` of an odd leaf after its radix-two layer. -/
+@[specialize]
+def leafReversedOdd (p : ℕ) [Mont32Field p] (tw : @& Array ByteArray) (m : Nat)
+    (a : ByteArray) : ByteArray :=
+  let a := (List.range (if 4 ≤ m then m / 2 - 2 else m / 2)).foldl (fun a pass ↦
+    let high := m - 1 - m % 2 - 2 * pass
+    let q := 2 ^ (high - 1)
+    radix4Blocks p (tw.getD high .empty) (tw.getD (high - 1) .empty) q (2 ^ m / (4 * q)) a) a
+  if 4 ≤ m then
+    leaf16Blocks p (tw.getD 3 .empty) (tw.getD 2 .empty) (tw.getD 1 .empty) (2 ^ m / 16) a
+  else a
+
 /-- Block `t` of a column's extension: the DIF-order values on coset `bitrev t` of the
-coefficients `c`, scaled by `h`. -/
+coefficients `c`, scaled by `h`. For an odd leaf the coset table multiplies the coefficients in its
+radix-two layer. For an even leaf the products come first: a first radix-four pass reading both
+the coefficients and the table would stream twelve lines a power of two apart, more than a cache
+set holds. -/
 @[specialize]
 def cosetBlock (P : LdePlan p) (c : ByteArray) (t : Nat) : ByteArray :=
-  leafReversed p P.forwardTwiddles P.logH
-    (mulWords p (P.cosetTables.getD (NTT.Transform.bitRevNat P.bits t) .empty) c (2 ^ P.logH))
+  let T := P.cosetTables.getD (NTT.Transform.bitRevNat P.bits t) .empty
+  if P.logH % 2 = 1 then
+    leafReversedOdd p P.forwardTwiddles P.logH
+      (pairsScaled p (P.forwardTwiddles.getD (P.logH - 1) .empty) T c (2 ^ (P.logH - 1)))
+  else leafReversed p P.forwardTwiddles P.logH (mulWords p T c (2 ^ P.logH))
 
 /-- The number of row ranges the input transpose splits into. -/
 def rangeCount (logRows : Nat) : Nat := 2 ^ min 4 logRows

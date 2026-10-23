@@ -162,6 +162,25 @@ meta def pair16 : MacroM Term := do
   bs := bs.push (b, ← store16 .words b (name "i0") sums)
   lets bs (← store16 .words b (name "i1") diffs)
 
+/-- Word `k` from `i` of `T` times the word of `c` at its index. -/
+meta def scaledRead (i : String) (k : Nat) : MacroM Term := do
+  mul .words (← read .words (name "T") (name i) k) (← read .words (name "c") (name i) k)
+
+/-- Sixteen radix-two DIF butterflies out of place: the words from `i0` and from `i1` of `c`, each
+multiplied by the word of `T` at its index, combined with twiddles from `w` at `j` and stored at the
+same indices of `out`. -/
+meta def pair16Scaled : MacroM Term := do
+  let mut bs := #[]
+  for k in [0:16] do
+    bs := bs.push (name s!"x{k}", ← scaledRead "i0" k)
+    bs := bs.push (name s!"y{k}", ← scaledRead "i1" k)
+    bs := bs.push (name s!"w{k}", ← read .words (name "w") (name "j") k)
+  let sums ← (Array.range 16).mapM fun k ↦ add .words (name s!"x{k}") (name s!"y{k}")
+  let diffs ← (Array.range 16).mapM fun k ↦ do
+    mul .words (name s!"w{k}") (← sub .words (name s!"x{k}") (name s!"y{k}"))
+  bs := bs.push (name "out", ← store16 .words (name "out") (name "i0") sums)
+  lets bs (← store16 .words (name "out") (name "i1") diffs)
+
 /-- The sixteen words of `b` from word `q`, given `h : LineFits b q`. -/
 meta def line : MacroM Term := do
   let ws ← (Array.range 16).mapM fun k ↦
@@ -409,3 +428,7 @@ open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
 /-- Layer four of four on one block of field values. -/
 macro "leafStage1_fields%" : term =>
   leafStage .fields [0, 2, 4, 6, 8, 10, 12, 14] [1, 3, 5, 7, 9, 11, 13, 15] none
+
+open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
+/-- The body of the scaled out-of-place radix-two kernel. -/
+macro "pair16Scaled_words%" : term => pair16Scaled
