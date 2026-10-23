@@ -25,6 +25,71 @@ open Montgomery.Native32 (Mont32Field FastField)
 
 variable {p : ℕ} [Mont32Field p]
 
+/-- `1 <<< k` on machine words, for `k < 32`. -/
+theorem one_shiftLeft_toNat (k : USize) (hk : k.toNat < 32) :
+    ((1 : USize) <<< k).toNat = 2 ^ k.toNat := by
+  have hb : 32 ≤ System.Platform.numBits := by
+    rcases System.Platform.numBits_eq with h | h <;> omega
+  rw [USize.toNat_shiftLeft, USize.toNat_one, Nat.one_shiftLeft,
+    Nat.mod_eq_of_lt (show k.toNat < System.Platform.numBits by omega),
+    Nat.mod_eq_of_lt (Nat.pow_lt_pow_right (by omega) (by omega))]
+
+/-- The output check of `lastHalf` in natural numbers. -/
+theorem lastHalf_check {out : ByteArray} {shift : UInt32} {half : USize}
+    (h : 0 < shift ∧ shift < 32 ∧ half < 2 ∧
+      (1 : USize) <<< (32 - shift).toUSize ≤ out.usize / 64) :
+    0 < shift.toNat ∧ shift.toNat < 32 ∧ half.toNat < 2 ∧
+      64 * 2 ^ (32 - shift.toNat) ≤ out.usize.toNat := by
+  obtain ⟨h0, hs, hh, hl⟩ := h
+  rw [UInt32.lt_iff_toNat_lt, show (0 : UInt32).toNat = 0 from rfl] at h0
+  rw [UInt32.lt_iff_toNat_lt, show (32 : UInt32).toNat = 32 from rfl] at hs
+  rw [USize.lt_iff_toNat_lt, usize_numeral 2 (by decide)] at hh
+  have hk : (32 - shift).toUSize.toNat = 32 - shift.toNat := by
+    rw [UInt32.toNat_toUSize, UInt32.toNat_sub_of_le _ _ (by
+      rw [UInt32.le_iff_toNat_le]; change shift.toNat ≤ 32; omega)]
+    rfl
+  rw [USize.le_iff_toNat_le, one_shiftLeft_toNat _ (by rw [hk]; omega), hk, USize.toNat_div,
+    usize_numeral 64 (by decide)] at hl
+  exact ⟨h0, hs, hh, by omega⟩
+
+/-- Lines `y >>> shift` of sixteen words fit an output of `2 ^ (32 - shift)` lines. -/
+theorem lastHalf_store {out : ByteArray} {shift : UInt32} {half : USize}
+    (h : 0 < shift ∧ shift < 32 ∧ half < 2 ∧
+      (1 : USize) <<< (32 - shift).toUSize ≤ out.usize / 64)
+    (y : UInt32) :
+    (4 * (16 * (y >>> shift).toUSize + 8 * half)).toNat + 4 * 8 ≤ out.size ∧
+      (4 * (16 * (y >>> shift).toUSize + 8 * half)).toNat + 4 * 8 < USize.size := by
+  have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
+  have hb := toNat_usize_le out
+  have hU := out.usize.toNat_lt_size
+  obtain ⟨_, hs, hh, hl⟩ := lastHalf_check h
+  have hr : (y >>> shift).toNat < 2 ^ (32 - shift.toNat) := by
+    rw [UInt32.toNat_shiftRight, Nat.mod_eq_of_lt (show shift.toNat < 32 by omega),
+      Nat.shiftRight_eq_div_pow, Nat.div_lt_iff_lt_mul (Nat.two_pow_pos _),
+      ← Nat.pow_add, show 32 - shift.toNat + shift.toNat = 32 by omega]
+    exact y.toNat_lt
+  have hr' : (y >>> shift).toUSize.toNat = (y >>> shift).toNat := UInt32.toNat_toUSize _
+  have e : (4 * (16 * (y >>> shift).toUSize + 8 * half)).toNat =
+      4 * (16 * (y >>> shift).toNat + 8 * half.toNat) := by
+    simp only [USize.toNat_add, USize.toNat_mul, USize.reduceToNat, hr', hsize]
+    rw [Nat.mod_eq_of_lt (show 16 * (y >>> shift).toNat < USize.size by omega),
+      Nat.mod_eq_of_lt (show 8 * half.toNat < USize.size by omega),
+      Nat.mod_eq_of_lt (show 16 * (y >>> shift).toNat + 8 * half.toNat < USize.size by omega),
+      Nat.mod_eq_of_lt (show 4 * (16 * (y >>> shift).toNat + 8 * half.toNat) < USize.size by
+        omega)]
+  rw [e]
+  omega
+
+/-- An output with room for one line has room for the touched last word. -/
+theorem lastHalf_usize {out : ByteArray} {shift : UInt32} {half : USize}
+    (h : 0 < shift ∧ shift < 32 ∧ half < 2 ∧
+      (1 : USize) <<< (32 - shift).toUSize ≤ out.usize / 64) :
+    4 ≤ out.usize := by
+  have hl := (lastHalf_check h).2.2.2
+  have := Nat.one_le_two_pow (n := 32 - shift.toNat)
+  rw [USize.le_iff_toNat_le, usize_numeral 4 (by decide)]
+  omega
+
 set_option maxRecDepth 8192 in
 set_option maxHeartbeats 4000000 in
 /-- The last four DIF layers of the eight blocks at `i0, …, i7`, written to `out` as
@@ -50,7 +115,10 @@ def lastHalf (p : ℕ) [Mont32Field p] (t3 t2 t1 b : @& ByteArray) (i0 i1 i2 i3 
       7 < t1.size ∧
       t1.size < USize.size) :
     ByteArray :=
-  lastHalf_words%
+  if hout : 0 < shift ∧ shift < 32 ∧ half < 2 ∧
+      (1 : USize) <<< (32 - shift).toUSize ≤ out.usize / 64 then
+    lastHalf_words%
+  else out
 
 /-- Block `v`'s word index at batch `c` stays in range. -/
 theorem laneBound (v : USize) (hv : v.toNat < 16) (Lw c : USize) (b : ByteArray)
@@ -117,15 +185,22 @@ def lastRev (p : ℕ) [Mont32Field p] (t3 t2 t1 b : @& ByteArray) (m : Nat) (fac
       (by simpa only [USize.toNat_ofNatLT] using h.2) (2 ^ (m - 4) / 16) 0 b
   else b
 
-/-- `blocks` radix-four blocks of quarter `q`, the first at word `0`. -/
+/-- `blocks` radix-four blocks of quarter `q`, the first at word `0`: for quarters of whole
+sixteen-cell batches one range check covers all blocks, otherwise each block checks its own. -/
 @[specialize]
 def radix4Blocks (p : ℕ) [Mont32Field p] (th tl : @& ByteArray) (q blocks : Nat)
-    (a : ByteArray) : ByteArray := Id.run do
-  let mut a := a
-  for block in [:blocks] do
-    a := inner16 p th tl q 0 (block * (4 * q)) (block * (4 * q) + q) (block * (4 * q) + 2 * q)
-      (block * (4 * q) + 3 * q) a
-  return a
+    (a : ByteArray) : ByteArray :=
+  if h : q % 16 = 0 ∧ 4 * (4 * q * blocks) ≤ a.size ∧ 4 * (2 * q) ≤ th.size ∧
+      4 * q ≤ tl.size ∧ a.size < USize.size ∧ th.size < USize.size ∧ tl.size < USize.size then
+    blocks16Loop p th tl (q / 16) (USize.ofNatLT q (by omega)) blocks 0 a (by
+      simp only [USize.toNat_ofNatLT, USize.toNat_zero]
+      omega)
+  else Id.run do
+    let mut a := a
+    for block in [:blocks] do
+      a := inner16 p th tl q 0 (block * (4 * q)) (block * (4 * q) + q) (block * (4 * q) + 2 * q)
+        (block * (4 * q) + 3 * q) a
+    return a
 
 /-- The leading layers of a `2 ^ m`-word leaf: for odd `m` the radix-two top layer, then `count`
 radix-four passes. -/
