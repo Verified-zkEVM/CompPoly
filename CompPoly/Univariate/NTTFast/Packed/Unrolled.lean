@@ -298,6 +298,7 @@ open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
 macro "leaf16_words%" : term => leaf16 .words (store16 .words (name "b") (name "i"))
 
 open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
+/-- The final DIF layers of the two blocks at `i0`, `i1` of packed words, in place. -/
 macro "leaf16x2_words%" : term => leaf16xN 2
 
 open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
