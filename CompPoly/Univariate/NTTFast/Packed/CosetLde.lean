@@ -138,21 +138,21 @@ of `s`, line `u` stored from word `p + u * ps` of `out`. -/
     ByteArray :=
   tile16_strided%
 
-/-- Rows `r0, …, r0 + rows - 1` of a row-major matrix of width `w`, transposed: column `j` at
-words `j * rows, …`. Whole `16 × 16` tiles move as tiles, a block of up to 1024 rows at a time and
-down the block before across, so that each column receives four kilobytes per block and the pages
-both sides touch stay few; the rest moves word by word. -/
-def transposeRows (m : @& ByteArray) (w r0 rows : Nat) : ByteArray := Id.run do
-  let mut out := zeroWords (w * rows)
+/-- Rows `r0, …, r0 + rows - 1` of columns `c0, …, c0 + n - 1` of a row-major matrix of width
+`w`, transposed: column `c0 + j` at words `j * rows, …`. Whole `16 × 16` tiles move as tiles, a
+block of up to 1024 rows at a time and down the block before across, so that each column receives
+four kilobytes per block and the pages both sides touch stay few; the rest moves word by word. -/
+def transposeRows (m : @& ByteArray) (w c0 n r0 rows : Nat) : ByteArray := Id.run do
+  let mut out := zeroWords (n * rows)
   for rb in [:(rows / 16 + 63) / 64] do
-    for ct in [:w / 16] do
+    for ct in [:n / 16] do
       for rt in [64 * rb:min (64 * rb + 64) (rows / 16)] do
-        out := tileStrided m ((r0 + 16 * rt) * w + 16 * ct).toUSize w.toUSize out
+        out := tileStrided m ((r0 + 16 * rt) * w + c0 + 16 * ct).toUSize w.toUSize out
           (16 * ct * rows + 16 * rt).toUSize rows.toUSize
-  for j in [:w] do
-    let r1 := if j < 16 * (w / 16) then 16 * (rows / 16) else 0
+  for j in [:n] do
+    let r1 := if j < 16 * (n / 16) then 16 * (rows / 16) else 0
     for r in [r1:rows] do
-      out := write out (j * rows + r) (read m ((r0 + r) * w + j))
+      out := write out (j * rows + r) (read m ((r0 + r) * w + c0 + j))
   return out
 
 /-- Column `j` from the transposed row ranges `ps`, each `rows` rows long. -/
@@ -369,7 +369,7 @@ def cosetLde (P : LdePlan p) (w : Nat) (ms : Array ByteArray) : Array ByteArray 
   let q := rangesPerChunk P.logH ms.size
   let rows := 2 ^ P.logH / (ms.size * q)
   let pieces := Tasks.join (Tasks.spawnAll (ms.size * q) fun k ↦
-    transposeRows (ms.getD (k / q) .empty) w (k % q * rows) rows)
+    transposeRows (ms.getD (k / q) .empty) w 0 w (k % q * rows) rows)
   let coeffs := (Array.range w).map fun j ↦ pieces.bind fun ps ↦ Task.spawn fun _ ↦
     columnCoefficients P (gatherColumn ps rows j)
   let C := chunkCount P.logH

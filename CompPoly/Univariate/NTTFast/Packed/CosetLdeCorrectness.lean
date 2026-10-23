@@ -846,18 +846,21 @@ theorem joinRows_extract (S : Array (FastField p)) (K L : Nat) (hS : S.size = K 
 theorem pow_div_mul_pow_min (a k : Nat) : 2 ^ a / 2 ^ min k a * 2 ^ min k a = 2 ^ a :=
   Nat.div_mul_cancel (Nat.pow_dvd_pow 2 (Nat.min_le_right k a))
 
-/-- Column `j` from the transposed row ranges of a packed matrix. -/
-theorem Native.gatherColumn_eq_column (M : Array (FastField p)) (w h R rows j : Nat) (hj : j < w)
-    (hR : R * rows = h) (hM : M.size = h * w) (hs : 4 * M.size < USize.size) :
+/-- Column `c0 + j` from the transposed row ranges of columns `c0, …, c0 + n - 1` of a packed
+matrix. -/
+theorem Native.gatherColumn_eq_column (M : Array (FastField p)) (w c0 n h R rows j : Nat)
+    (hn : c0 + n ≤ w) (hj : j < n) (hR : R * rows = h) (hM : M.size = h * w)
+    (hs : 4 * M.size < USize.size) :
     Native.gatherColumn ((Array.range R).map fun k ↦
-      Native.transposeRows (encode M) w (k * rows) rows) rows j =
-      encode (column M w h j).toArray := by
-  rw [encode_eq_map_val M, Native.gatherColumn_transposeRows _ w R rows j hj
+      Native.transposeRows (encode M) w c0 n (k * rows) rows) rows j =
+      encode (column M w h (c0 + j)).toArray := by
+  rw [encode_eq_map_val M, Native.gatherColumn_transposeRows _ w c0 n R rows j hn hj
     (by rw [hR, Array.size_map, hM]) (by rw [Array.size_map]; exact hs), encode_eq_map_val]
   congr 1
   apply Array.ext (by simp only [Array.size_ofFn, Array.size_map, column, Vector.toArray_ofFn, hR])
   intro i h1 h2
-  simp only [Array.getElem_ofFn, Array.getElem_map, column, Vector.toArray_ofFn, getD_map_val]
+  simp only [Array.getElem_ofFn, Array.getElem_map, column, Vector.toArray_ofFn, getD_map_val,
+    Nat.add_assoc]
 
 /-- Entry `i` of a slice is entry `a + i` of the array, inside the slice. -/
 theorem getD_extract_map_val (M : Array (FastField p)) (a b i : Nat) (hb : b ≤ M.size)
@@ -888,12 +891,12 @@ theorem rangesPerChunk_spec (logH k : Nat) (hk : k ≤ logH) :
     exact ⟨Nat.one_pos, by congr 1; omega, rfl⟩
 
 /-- A row range of a chunk transposes as the same rows of the whole matrix. -/
-theorem Native.transposeRows_rowChunks (M : Array (FastField p)) (w logH k q rows : Nat)
-    (hM : M.size = 2 ^ logH * w) (hk : k ≤ logH) (hq0 : 0 < q)
+theorem Native.transposeRows_rowChunks (M : Array (FastField p)) (w c0 n logH k q rows : Nat)
+    (hn : c0 + n ≤ w) (hM : M.size = 2 ^ logH * w) (hk : k ≤ logH) (hq0 : 0 < q)
     (hq : q * rows = 2 ^ (logH - k)) (hs : 4 * M.size < USize.size) (j : Nat)
     (hj : j < 2 ^ k * q) :
-    Native.transposeRows ((Native.rowChunks M w logH k).getD (j / q) .empty) w (j % q * rows)
-      rows = Native.transposeRows (encode M) w (j * rows) rows := by
+    Native.transposeRows ((Native.rowChunks M w logH k).getD (j / q) .empty) w c0 n
+      (j % q * rows) rows = Native.transposeRows (encode M) w c0 n (j * rows) rows := by
   have hc : j / q < 2 ^ k := (Nat.div_lt_iff_lt_mul hq0).mpr hj
   have hkL : 2 ^ k * 2 ^ (logH - k) = 2 ^ logH := by rw [← Nat.pow_add]; congr 1; omega
   have hjq := Nat.div_add_mod j q
@@ -924,10 +927,10 @@ theorem Native.transposeRows_rowChunks (M : Array (FastField p)) (w logH k q row
   rw [Array.getD_eq_getD_getElem?, Array.getElem?_map, Array.getElem?_range]
   simp only [hc, ↓reduceIte, Option.map_some, Option.getD_some]
   rw [encode_eq_map_val, encode_eq_map_val M,
-    Native.transposeRows_encodeWords _ w _ rows (by
+    Native.transposeRows_encodeWords _ w c0 n _ rows hn (by
       rw [Array.size_map, Array.size_extract]; omega)
       (by rw [Array.size_map, Array.size_extract]; omega),
-    Native.transposeRows_encodeWords _ w _ rows (by rw [Array.size_map]; exact hrowM)
+    Native.transposeRows_encodeWords _ w c0 n _ rows hn (by rw [Array.size_map]; exact hrowM)
       (by rw [Array.size_map]; exact hs)]
   congr 1
   apply Array.ext (by simp only [Array.size_ofFn])
@@ -935,9 +938,9 @@ theorem Native.transposeRows_rowChunks (M : Array (FastField p)) (w logH k q row
   simp only [Array.size_ofFn] at h1
   simp only [Array.getElem_ofFn]
   have hrows : 0 < rows := Nat.pos_of_ne_zero (by rintro rfl; simp at h1)
-  have hw : i / rows < w := (Nat.div_lt_iff_lt_mul hrows).mpr h1
+  have hw : i / rows < n := (Nat.div_lt_iff_lt_mul hrows).mpr h1
   have hr := Nat.mod_lt i hrows
-  have hin : (j % q * rows + i % rows) * w + i / rows < 2 ^ (logH - k) * w := by
+  have hin : (j % q * rows + i % rows) * w + c0 + i / rows < 2 ^ (logH - k) * w := by
     have := Nat.mul_le_mul_right w (show j % q * rows + i % rows + 1 ≤ 2 ^ (logH - k) by
       omega)
     rw [Nat.succ_mul] at this; omega
@@ -968,13 +971,13 @@ theorem Native.cosetLde_eq (P : LdePlan p) (w : Nat) (M : Array (FastField p)) (
   let rows := 2 ^ P.logH / R
   obtain ⟨hq0, hR, hq⟩ := rangesPerChunk_spec P.logH k hk
   have hpieces : (Array.range R).map (fun j ↦ Native.transposeRows
-      ((Native.rowChunks M w P.logH k).getD (j / q) .empty) w (j % q * rows) rows) =
-      (Array.range R).map fun j ↦ Native.transposeRows (encode M) w (j * rows) rows := by
+      ((Native.rowChunks M w P.logH k).getD (j / q) .empty) w 0 w (j % q * rows) rows) =
+      (Array.range R).map fun j ↦ Native.transposeRows (encode M) w 0 w (j * rows) rows := by
     apply Array.ext (by simp only [Array.size_map])
     intro j h1 _
     simp only [Array.size_map, Array.size_range] at h1
     simp only [Array.getElem_map, Array.getElem_range]
-    exact Native.transposeRows_rowChunks M w P.logH k q rows hM hk hq0 hq hMs j h1
+    exact Native.transposeRows_rowChunks M w 0 w P.logH k q rows (by omega) hM hk hq0 hq hMs j h1
   let C := Native.chunkCount P.logH
   let rows' := 2 ^ P.logH / C
   have hC : rows' * C = 2 ^ P.logH := pow_div_mul_pow_min P.logH 3
@@ -996,14 +999,14 @@ theorem Native.cosetLde_eq (P : LdePlan p) (w : Nat) (M : Array (FastField p)) (
   have hB (t j : Nat) : (B t j).size = 2 ^ P.logH := size_difSpec _ _
   have hblock (t : Nat) : (Array.range w).map (fun j ↦ Native.cosetBlock P
       (Native.columnCoefficients P (Native.gatherColumn ((Array.range R).map fun k ↦
-        Native.transposeRows (encode M) w (k * rows) rows) rows j)) t) =
+        Native.transposeRows (encode M) w 0 w (k * rows) rows) rows j)) t) =
       ((Array.range w).map fun j ↦ (B t j).map Subtype.val).map encode := by
     rw [Array.map_map]
     apply Array.ext (by simp only [Array.size_map])
     intro j h1 _
     simp only [Array.size_map, Array.size_range] at h1
     simp only [Array.getElem_map, Array.getElem_range, Function.comp_apply]
-    rw [Native.gatherColumn_eq_column M w _ R rows j h1 hR hM hMs,
+    rw [Native.gatherColumn_eq_column M w 0 w _ R rows j (by omega) h1 hR hM hMs, Nat.zero_add,
       Native.columnCoefficients_encode P _ (by simp only [Vector.size_toArray]),
       Native.cosetBlock_encode P _ (by rw [NTT.Forward.forwardSpec, Array.size_ofFn]; rfl),
       encode_eq_map_val]

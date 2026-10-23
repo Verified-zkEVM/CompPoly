@@ -933,3 +933,7 @@ CompStark's extension of the Keccak trace by columns (2633 columns, blowup 2, `C
 | 2^16 | 1 | 3502 | 2534 | 1863 |
 
 On one thread the extension of `2 ^ 15` rows is 1.46 times Plonky3's (1.24 times by the fastest rounds), of `2 ^ 16` rows 1.36 times. Most of what remains comes from the column layout itself: the input transpose and gather, which Plonky3's row-major batches do not need, the final four layers of every leaf, whose pairs lie within a vector and need shuffles or lane transposes where Plonky3's layers across columns share one broadcast twiddle, and per-lane twiddle loads.
+
+### Input transposes by column range (2026-10-23)
+
+`transposeRows` transposes a range of columns `c0, …, c0 + n - 1` of its row-major input, so that a caller can transpose and extend the columns of a wide matrix range by range: the transposed rows of a range are freed once that range's columns are extended, instead of the whole transposed copy living until the last column. CompStark's extension of the Keccak trace transposes ranges of 256 columns, all ranges at once so that the input is freed early and the columns of each range are extended while their transposed rows are still warm. The peak memory of a whole Keccak proof of `2 ^ 18` rows falls from 9.4 GB to 7.1 GB; the extension's time is unchanged within the shared host's noise (`CompStarkBench keccak-lde`, `2 ^ 15` and `2 ^ 16` rows, sixteen threads). `transposeRows_encodeWords` and `gatherColumn_transposeRows` state the range; `cosetLde` transposes all columns as one range.
