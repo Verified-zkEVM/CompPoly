@@ -18,10 +18,14 @@ namespace CompPoly.Tasks
 universe u v
 variable {α : Type u} {β : Type v}
 
+/-- Wait for the tasks `ts`, after the results `as` collected so far, latest first. A list collects
+the results, so no result array is copied while a finished task still holds it. -/
+def joinGo : List (Task α) → List α → Task (Array α)
+  | [], as => .pure as.reverse.toArray
+  | t :: ts, as => t.bind (sync := true) fun a ↦ joinGo ts (a :: as)
+
 /-- Wait for every task without blocking a worker; results keep the task order. -/
-def join (ts : Array (Task α)) : Task (Array α) :=
-  ts.foldl (fun acc t ↦ acc.bind (sync := true) fun xs ↦ t.map (sync := true) fun x ↦ xs.push x)
-    (.pure #[])
+def join (ts : Array (Task α)) : Task (Array α) := joinGo ts.toList []
 
 /-- `f i` for every `i < n`, as tasks. -/
 @[inline] def spawnAll (n : Nat) (f : Nat → α) : Array (Task α) :=
@@ -42,22 +46,19 @@ their results. -/
 @[simp] theorem get_spawn (fn : Unit → α) (prio : Task.Priority) :
     (Task.spawn fn prio).get = fn () := rfl
 
+/-- `joinGo`'s results: those collected so far, then the tasks'. -/
+theorem get_joinGo (ts : List (Task α)) (as : List α) :
+    (joinGo ts as).get = (as.reverse ++ ts.map Task.get).toArray := by
+  induction ts generalizing as with
+  | nil => rw [joinGo, List.map_nil, List.append_nil]
+  | cons t ts ih =>
+    change (joinGo ts (t.get :: as)).get = _
+    rw [ih, List.reverse_cons, List.map_cons, List.append_assoc, List.singleton_append]
+
 /-- Joining tasks keeps their results in order. -/
 theorem get_join (ts : Array (Task α)) : (join ts).get = ts.map Task.get := by
-  suffices h : ∀ (l : List (Task α)) (acc : Task (Array α)),
-      (l.foldl (fun acc t ↦ acc.bind (sync := true) fun xs ↦
-        t.map (sync := true) fun x ↦ xs.push x) acc).get = acc.get ++ (l.map Task.get).toArray by
-    rw [join, ← Array.foldl_toList, h]
-    apply Array.toList_inj.mp
-    simp
-  intro l
-  induction l with
-  | nil => intro acc; simp
-  | cons t l ih =>
-    intro acc
-    rw [List.foldl_cons, ih]
-    apply Array.toList_inj.mp
-    simp [Task.bind, Task.map]
+  rw [join, get_joinGo, List.reverse_nil, List.nil_append, ← Array.toList_map,
+    Array.toArray_toList]
 
 /-- The results of independent tasks. -/
 @[simp] theorem map_get_spawnAll (n : Nat) (f : Nat → α) :
