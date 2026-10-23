@@ -139,13 +139,16 @@ of `s`, line `u` stored from word `p + u * ps` of `out`. -/
   tile16_strided%
 
 /-- Rows `r0, …, r0 + rows - 1` of a row-major matrix of width `w`, transposed: column `j` at
-words `j * rows, …`. Whole `16 × 16` tiles move as tiles, the rest word by word. -/
+words `j * rows, …`. Whole `16 × 16` tiles move as tiles, a block of up to 1024 rows at a time and
+down the block before across, so that each column receives four kilobytes per block and the pages
+both sides touch stay few; the rest moves word by word. -/
 def transposeRows (m : @& ByteArray) (w r0 rows : Nat) : ByteArray := Id.run do
   let mut out := zeroWords (w * rows)
-  for rt in [:rows / 16] do
+  for rb in [:(rows / 16 + 63) / 64] do
     for ct in [:w / 16] do
-      out := tileStrided m ((r0 + 16 * rt) * w + 16 * ct).toUSize w.toUSize out
-        (16 * ct * rows + 16 * rt).toUSize rows.toUSize
+      for rt in [64 * rb:min (64 * rb + 64) (rows / 16)] do
+        out := tileStrided m ((r0 + 16 * rt) * w + 16 * ct).toUSize w.toUSize out
+          (16 * ct * rows + 16 * rt).toUSize rows.toUSize
   for j in [:w] do
     let r1 := if j < 16 * (w / 16) then 16 * (rows / 16) else 0
     for r in [r1:rows] do

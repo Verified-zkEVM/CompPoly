@@ -121,21 +121,6 @@ meta def leaf16 (d : Dialect) (finish : Array Term → MacroM Term) : MacroM Ter
   bs := bs ++ (← layers d (fun s k ↦ s!"x{s}_{k}") (twiddles d))
   lets bs (← finish ((Array.range 16).map fun k ↦ (name s!"x4_{k}" : Term)))
 
-/-- Blocks at `i0, …, i{n-1}` of `b` through their four final DIF layers, twiddles read once and
-every butterfly but the last layer's multiplied; each block is stored back in place. -/
-meta def leaf16xN (n : Nat) : MacroM Term := do
-  let mut bs := #[]
-  for s in [0:3] do
-    bs := bs ++ (← twiddles .words s true)
-  for v in [0:n] do
-    for k in [0:16] do
-      bs := bs.push (name s!"x{v}_0_{k}", ← read .words (name "b") (name s!"i{v}") k)
-    bs := bs ++ (← layers .words (fun s k ↦ s!"x{v}_{s}_{k}") (fun _ ↦ pure #[]) true)
-  for v in [0:n] do
-    bs := bs.push (name "b", ← store16 .words (name "b") (name s!"i{v}")
-      ((Array.range 16).map fun k ↦ name s!"x{v}_4_{k}"))
-  lets bs (name "b")
-
 /-- Eight sixteen-point blocks at `i0, …, i7` through their four final DIF layers, one per vector
 lane; word `t` of every lane goes to half `half` of the natural-order line `bitrev (16 c + t)`,
 optionally scaled. The touched output takes proved stores, given `hout`. -/
@@ -274,6 +259,56 @@ meta def tile8 : MacroM Term := do
   `(if $h:ident : $cond then $body else $(name "out"))
 
 
+/-- One radix-two layer on sixteen-word blocks in place: lane `l` of a block pairs its words `lo[l]`
+and `hi[l]` and keeps their sum at `lo[l]` and their difference at `hi[l]`, multiplied by twiddle
+`tw[l]` of `t` if there are twiddles. The words dialect runs the four blocks from word `i` of `b`:
+it touches the buffer, reads every block, then stores each block as two halves, with the range
+checks proved from `h`. The fields dialect runs one block at word `base`. -/
+meta def leafStage (d : Dialect) (lo hi : List Nat) (tw : Option (List Nat)) : MacroM Term := do
+  let blocks := match d with | .words => 4 | .fields => 1
+  let mut bs := #[]
+  let word (v k : Nat) : MacroM Term := match d with
+    | .words => `($(name "readUOffset") $(name "o").1 $(name "i") $(lit (16 * v + k))
+        ($(name "leafStage_read") $(name "h") $(name "o").2 $(lit (16 * v + k)) (by decide)))
+    | .fields => `($(name "b").getD ($(name "base") + $(lit k)) 0)
+  if d matches .words then
+    bs := bs.push (name "o", ← `($(name "touchLast") $(name "b")
+      ($(name "leafStage_touch") $(name "h"))))
+  if let some ts := tw then
+    for t in ts.eraseDups do
+      bs := bs.push (name s!"w{t}", ← match d with
+        | .words => `($(name "readUOffset") $(name "t") 0 $(lit t)
+            ($(name "leafStage_twiddle") $(name "h") $(lit t) (by decide) (by decide)))
+        | .fields => `($(name "t").getD $(lit t) 0))
+  for v in [0:blocks] do
+    for l in [0:8] do
+      bs := bs.push (name s!"x{v}_{l}", ← word v lo[l]!)
+      bs := bs.push (name s!"y{v}_{l}", ← word v hi[l]!)
+    for l in [0:8] do
+      bs := bs.push (name s!"s{v}_{l}", ← add d (name s!"x{v}_{l}") (name s!"y{v}_{l}"))
+      let diff ← sub d (name s!"x{v}_{l}") (name s!"y{v}_{l}")
+      bs := bs.push (name s!"d{v}_{l}", ← match tw with
+        | some ts => mul d (name s!"w{ts[l]!}") diff
+        | none => pure diff)
+  for v in [0:blocks] do
+    let mut vals : Array Term := Array.replicate 16 (name s!"s{v}_0")
+    for l in [0:8] do
+      vals := vals.set! lo[l]! (name s!"s{v}_{l}")
+      vals := vals.set! hi[l]! (name s!"d{v}_{l}")
+    for half in [0, 8] do
+      let vs := vals[half:half + 8].toArray
+      match d with
+      | .words =>
+        bs := bs.push (name "o", ← `($(name "store8") $(name "o")
+          (($(name "i") + $(lit (16 * v + half))) * 4) $vs*
+          ($(name "leafStage_store") $(name "h") $(lit (16 * v + half)) (by decide))))
+      | .fields =>
+        let pos : Term ← if half = 0 then pure (name "base") else `($(name "base") + $(lit half))
+        bs := bs.push (name "b", ← `($(name "splice8") $(name "b") $pos $vs*))
+  match d with
+  | .words => lets bs (← `($(name "o")))
+  | .fields => lets bs (name "b")
+
 end CompPoly.CPolynomial.NTTFast.Packed.Unrolled
 
 open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
@@ -296,10 +331,6 @@ macro "leaf16_line%" : term => leaf16 .fields fun ys ↦ `(⟨$ys,*⟩)
 open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
 /-- The final DIF layers of the block at `i` of packed words, written back in place. -/
 macro "leaf16_words%" : term => leaf16 .words (store16 .words (name "b") (name "i"))
-
-open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
-/-- The final DIF layers of the two blocks at `i0`, `i1` of packed words, in place. -/
-macro "leaf16x2_words%" : term => leaf16xN 2
 
 open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
 /-- The body of the fused final-layer kernel on packed words. -/
@@ -332,3 +363,49 @@ macro "row16_words%" : term => step16 .words (lanes := false)
 open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
 /-- The body of the `8 × 8` tile transpose of eight sources on packed words. -/
 macro "tile8_sources%" : term => tile8
+
+open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
+/-- Layer one of four in place: words `k` and `k + 8` of every block. -/
+macro "leafStage8_words%" : term =>
+  leafStage .words [0, 1, 2, 3, 4, 5, 6, 7] [8, 9, 10, 11, 12, 13, 14, 15]
+    (some [0, 1, 2, 3, 4, 5, 6, 7])
+
+open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
+/-- Layer one of four on one block of field values. -/
+macro "leafStage8_fields%" : term =>
+  leafStage .fields [0, 1, 2, 3, 4, 5, 6, 7] [8, 9, 10, 11, 12, 13, 14, 15]
+    (some [0, 1, 2, 3, 4, 5, 6, 7])
+
+open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
+/-- Layer two of four in place: words `k` and `k + 4` of every half block. -/
+macro "leafStage4_words%" : term =>
+  leafStage .words [0, 1, 2, 3, 8, 9, 10, 11] [4, 5, 6, 7, 12, 13, 14, 15]
+    (some [0, 1, 2, 3, 0, 1, 2, 3])
+
+open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
+/-- Layer two of four on one block of field values. -/
+macro "leafStage4_fields%" : term =>
+  leafStage .fields [0, 1, 2, 3, 8, 9, 10, 11] [4, 5, 6, 7, 12, 13, 14, 15]
+    (some [0, 1, 2, 3, 0, 1, 2, 3])
+
+open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
+/-- Layer three of four in place: words `k` and `k + 2` of every quarter block. -/
+macro "leafStage2_words%" : term =>
+  leafStage .words [0, 1, 4, 5, 8, 9, 12, 13] [2, 3, 6, 7, 10, 11, 14, 15]
+    (some [0, 1, 0, 1, 0, 1, 0, 1])
+
+open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
+/-- Layer three of four on one block of field values. -/
+macro "leafStage2_fields%" : term =>
+  leafStage .fields [0, 1, 4, 5, 8, 9, 12, 13] [2, 3, 6, 7, 10, 11, 14, 15]
+    (some [0, 1, 0, 1, 0, 1, 0, 1])
+
+open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
+/-- Layer four of four in place: words `2 k` and `2 k + 1`, without twiddles. -/
+macro "leafStage1_words%" : term =>
+  leafStage .words [0, 2, 4, 6, 8, 10, 12, 14] [1, 3, 5, 7, 9, 11, 13, 15] none
+
+open CompPoly.CPolynomial.NTTFast.Packed.Unrolled in
+/-- Layer four of four on one block of field values. -/
+macro "leafStage1_fields%" : term =>
+  leafStage .fields [0, 2, 4, 6, 8, 10, 12, 14] [1, 3, 5, 7, 9, 11, 13, 15] none

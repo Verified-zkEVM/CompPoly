@@ -7,6 +7,7 @@ module
 
 public import CompPoly.Univariate.NTTFast.Packed.CosetLdeTransposes
 public import CompPoly.Univariate.NTTFast.Packed.NativeLastCorrectness
+public import CompPoly.Univariate.NTTFast.Packed.LeafStages
 import all CompPoly.Univariate.NTTFast.Packed.CosetLde
 import all CompPoly.Univariate.NTTFast.Packed.NativeLast
 import all CompPoly.Univariate.NTTFast.Packed.Native
@@ -73,69 +74,146 @@ theorem Native.leaf16_correct (t3 t2 t1 : Array (FastField p)) (i : USize) (a : 
   rw [Native.leaf16_encode, leaf16Field_eq_expression,
     Expressions.leaf16Field_eq_stages t3 t2 t1 a i hi h3 h2 h1]
 
-/-- A splice of sixteen values leaves the words after it. -/
-theorem getD_splice16_of_ge {α : Type*} (a : Array α) (i : Nat)
-    (x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 : α)
-    (h : i + 16 ≤ a.size) (k : Nat) (hk : i + 16 ≤ k) (d : α) :
-    (splice a i #[x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15]).getD k d =
-      a.getD k d := by
-  have hs : #[x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15].size = 16 :=
-    rfl
-  rw [getD_splice _ i _ (by omega), ite_eq_right (by omega), ite_eq_right (by omega)]
+/-- An eight-word store into encoded field values splices the values in. -/
+theorem Native.storeWords8_encode (a : Array (FastField p)) (off : USize) (i : Nat)
+    (ho : off.toNat = 4 * i) (hs : (encode a).size < USize.size) (hi : i + 8 ≤ a.size)
+    (x0 x1 x2 x3 x4 x5 x6 x7 : FastField p) :
+    Native.storeWords (encode a) off 8 x0.val x1.val x2.val x3.val x4.val x5.val x6.val x7.val
+      0 0 0 0 0 0 0 0 = encode (splice a i #[x0, x1, x2, x3, x4, x5, x6, x7]) := by
+  rw [encode_eq_map_val] at hs ⊢
+  rw [Native.storeWords8_encodeWords _ off i ho (by rwa [size_encode_uint32] at hs)
+    (by rw [Array.size_map]; exact hi), encode_eq_map_val]
+  congr 1
+  simp only [splice, Array.map_append, map_val_extract, Array.size_map, List.map_toArray,
+    List.map_cons, List.map_nil, List.size_toArray, List.length_cons, List.length_nil]
 
-/-- A fold over pairs of consecutive indices is the fold over the indices. -/
-theorem foldl_range_pairs {β : Type*} (f : β → Nat → β) (n : Nat) (b : β) :
-    (List.range n).foldl (fun b g ↦ f (f b (2 * g)) (2 * g + 1)) b =
-      (List.range (2 * n)).foldl f b := by
-  induction n with
-  | zero => rfl
-  | succ n ih =>
-    rw [List.range_succ, List.foldl_append, ih, show 2 * (n + 1) = 2 * n + 1 + 1 by omega,
-      List.range_succ, List.range_succ, List.foldl_append, List.foldl_append]
-    rfl
+/-- An eight-word store from word `i + c` of encoded field values splices the values in. -/
+theorem Native.storeWords8_encode_at (a : Array (FastField p)) (i c : USize)
+    (hs : 4 * a.size < USize.size) (hi : i.toNat + c.toNat + 8 ≤ a.size)
+    (x0 x1 x2 x3 x4 x5 x6 x7 : FastField p) :
+    Native.storeWords (encode a) ((i + c) * 4) 8 x0.val x1.val x2.val x3.val x4.val
+      x5.val x6.val x7.val 0 0 0 0 0 0 0 0 =
+      encode (splice8 a (i.toNat + c.toNat) x0 x1 x2 x3 x4 x5 x6 x7) := by
+  rw [splice8_eq_splice _ _ _ _ _ _ _ _ _ _ hi]
+  exact Native.storeWords8_encode a _ _ (Native.wordOffset_toNat _ _ (by omega))
+    (by rw [size_encode_fields]; exact hs) hi _ _ _ _ _ _ _ _
 
-/-- The two-block final-layer kernel runs the final layers of its first block, then of its
-second. -/
-theorem Native.leaf16x2_encode (t3 t2 t1 : Array (FastField p)) (i0 i1 : USize)
-    (a : Array (FastField p)) (h)
-    (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1)
-    (hd : i0.toNat + 16 ≤ i1.toNat) :
-    Native.leaf16x2 p (encode t3) (encode t2) (encode t1) i0 i1 (encode a) h =
-      encode (leaf16Field t3 t2 t1 i1 (leaf16Field t3 t2 t1 i0 a)) := by
-  have hi1 : i1.toNat + 16 ≤ a.size := by
-    have hh := h.2.1
-    rw [size_encode_fields] at hh
-    omega
-  have ha := h.2.2.1
-  unfold Native.leaf16x2 leaf16Field
+set_option maxRecDepth 8192 in
+set_option maxHeartbeats 4000000 in
+/-- The first stage kernel runs the first layer's model on its four blocks in turn. -/
+theorem Native.leafStage8_encode (t a : Array (FastField p)) (i : USize) (h) :
+    (Native.leafStage8 p (encode t) i (encode a) h).1 =
+      encode (Expressions.leafStage8Field t (i.toNat + 48)
+        (Expressions.leafStage8Field t (i.toNat + 32)
+          (Expressions.leafStage8Field t (i.toNat + 16)
+            (Expressions.leafStage8Field t i.toNat a)))) := by
+  obtain ⟨h1, h2, -, -⟩ := h
+  have hb : 4 * (i.toNat + 64) ≤ 4 * a.size := by rwa [size_encode_fields] at h1
+  have hs : 4 * a.size < USize.size := by rwa [size_encode_fields] at h2
+  unfold Native.leafStage8
+  simp only [Native.store8_val _ _ _ _ _ _ _ _ _ _ _ h2, Native.touchLast, Native.touch_eq]
   simp only [Native.readUOffset_encode, add_val, sub_val, mul_val]
-  rw [Native.write16U_encode _ _ ha (by omega), Native.write16U_encode _ _
-    (by rw [size_encode_fields, size_splice16 (hi := by omega)]; rwa [size_encode_fields] at ha)
-    (by rw [size_splice16 (hi := by omega)]; omega)]
+  simp (disch := ((try simp only [size_splice8, USize.reduceToNat, USize.toNat_zero]); omega))
+    only [Native.storeWords8_encode_at]
   apply congrArg encode
-  simp only [readField, fieldAdd, fieldSub, fieldMul, USize.reduceToNat, Nat.add_zero,
-    Nat.zero_add, h3, h2, h1, one_mul]
-  simp (disch := omega) only [getD_splice16_of_ge]
+  unfold Expressions.leafStage8Field
+  simp (disch := omega) only [getD_splice8_out]
+  simp only [Expressions.fieldAdd, Expressions.fieldSub, Expressions.fieldMul, USize.reduceToNat,
+    Nat.add_assoc, Nat.reduceAdd, Nat.add_zero, Nat.zero_add]
 
-/-- The checked pair loop depends only on the buffer's value. -/
-theorem Native.leaf16x2Loop_congr {t3 t2 t1 : ByteArray} {count : Nat} {i : USize}
-    {b b' : ByteArray} (h) (e : b = b') :
-    Native.leaf16x2Loop p t3 t2 t1 count i b h =
-      Native.leaf16x2Loop p t3 t2 t1 count i b' (e ▸ h) := by
+
+set_option maxRecDepth 8192 in
+set_option maxHeartbeats 4000000 in
+/-- The second stage kernel runs the second layer's model on its four blocks in turn. -/
+theorem Native.leafStage4_encode (t a : Array (FastField p)) (i : USize) (h) :
+    (Native.leafStage4 p (encode t) i (encode a) h).1 =
+      encode (Expressions.leafStage4Field t (i.toNat + 48)
+        (Expressions.leafStage4Field t (i.toNat + 32)
+          (Expressions.leafStage4Field t (i.toNat + 16)
+            (Expressions.leafStage4Field t i.toNat a)))) := by
+  obtain ⟨h1, h2, -, -⟩ := h
+  have hb : 4 * (i.toNat + 64) ≤ 4 * a.size := by rwa [size_encode_fields] at h1
+  have hs : 4 * a.size < USize.size := by rwa [size_encode_fields] at h2
+  unfold Native.leafStage4
+  simp only [Native.store8_val _ _ _ _ _ _ _ _ _ _ _ h2, Native.touchLast, Native.touch_eq]
+  simp only [Native.readUOffset_encode, add_val, sub_val, mul_val]
+  simp (disch := ((try simp only [size_splice8, USize.reduceToNat, USize.toNat_zero]); omega))
+    only [Native.storeWords8_encode_at]
+  apply congrArg encode
+  unfold Expressions.leafStage4Field
+  simp (disch := omega) only [getD_splice8_out]
+  simp only [Expressions.fieldAdd, Expressions.fieldSub, Expressions.fieldMul, USize.reduceToNat,
+    Nat.add_assoc, Nat.reduceAdd, Nat.add_zero, Nat.zero_add]
+
+
+set_option maxRecDepth 8192 in
+set_option maxHeartbeats 4000000 in
+/-- The third stage kernel runs the third layer's model on its four blocks in turn. -/
+theorem Native.leafStage2_encode (t a : Array (FastField p)) (i : USize) (h) :
+    (Native.leafStage2 p (encode t) i (encode a) h).1 =
+      encode (Expressions.leafStage2Field t (i.toNat + 48)
+        (Expressions.leafStage2Field t (i.toNat + 32)
+          (Expressions.leafStage2Field t (i.toNat + 16)
+            (Expressions.leafStage2Field t i.toNat a)))) := by
+  obtain ⟨h1, h2, -, -⟩ := h
+  have hb : 4 * (i.toNat + 64) ≤ 4 * a.size := by rwa [size_encode_fields] at h1
+  have hs : 4 * a.size < USize.size := by rwa [size_encode_fields] at h2
+  unfold Native.leafStage2
+  simp only [Native.store8_val _ _ _ _ _ _ _ _ _ _ _ h2, Native.touchLast, Native.touch_eq]
+  simp only [Native.readUOffset_encode, add_val, sub_val, mul_val]
+  simp (disch := ((try simp only [size_splice8, USize.reduceToNat, USize.toNat_zero]); omega))
+    only [Native.storeWords8_encode_at]
+  apply congrArg encode
+  unfold Expressions.leafStage2Field
+  simp (disch := omega) only [getD_splice8_out]
+  simp only [Expressions.fieldAdd, Expressions.fieldSub, Expressions.fieldMul, USize.reduceToNat,
+    Nat.add_assoc, Nat.reduceAdd, Nat.add_zero, Nat.zero_add]
+
+
+set_option maxRecDepth 8192 in
+set_option maxHeartbeats 4000000 in
+/-- The last stage kernel runs the last layer's model on its four blocks in turn. -/
+theorem Native.leafStage1_encode (t : ByteArray) (a : Array (FastField p)) (i : USize) (h) :
+    (Native.leafStage1 p t i (encode a) h).1 =
+      encode (Expressions.leafStage1Field (i.toNat + 48)
+        (Expressions.leafStage1Field (i.toNat + 32)
+          (Expressions.leafStage1Field (i.toNat + 16)
+            (Expressions.leafStage1Field i.toNat a)))) := by
+  obtain ⟨h1, h2, -, -⟩ := h
+  have hb : 4 * (i.toNat + 64) ≤ 4 * a.size := by rwa [size_encode_fields] at h1
+  have hs : 4 * a.size < USize.size := by rwa [size_encode_fields] at h2
+  unfold Native.leafStage1
+  simp only [Native.store8_val _ _ _ _ _ _ _ _ _ _ _ h2, Native.touchLast, Native.touch_eq]
+  simp only [Native.readUOffset_encode, add_val, sub_val]
+  simp (disch := ((try simp only [size_splice8, USize.reduceToNat, USize.toNat_zero]); omega))
+    only [Native.storeWords8_encode_at]
+  apply congrArg encode
+  unfold Expressions.leafStage1Field
+  simp (disch := omega) only [getD_splice8_out]
+  simp only [Expressions.fieldAdd, Expressions.fieldSub, USize.reduceToNat,
+    Nat.add_assoc, Nat.reduceAdd, Nat.add_zero]
+
+
+/-- The stage loop depends only on the buffer's value. -/
+theorem Native.leafStageLoop_congr {K : Nat}
+    {k : (t : ByteArray) → (i : USize) → (b : ByteArray) → Native.LeafStageFits b t i K →
+      Native.Buf b.size}
+    {t : ByteArray} {count : Nat} {i : USize} {b b' : ByteArray} (h) (e : b = b') :
+    Native.leafStageLoop K k t count i b h = Native.leafStageLoop K k t count i b' (e ▸ h) := by
   subst e
   rfl
 
-/-- The pair loop runs the final layers of blocks `2 g, 2 g + 1, …`. -/
-theorem Native.leaf16x2Loop_encode (t3 t2 t1 : Array (FastField p))
-    (h3 : t3.getD 0 0 = 1) (h2 : t2.getD 0 0 = 1) (h1 : t1.getD 0 0 = 1) :
-    ∀ (count g : Nat) (i : USize) (b : Array (FastField p)) (h), i.toNat = 32 * g →
-    Native.leaf16x2Loop p (encode t3) (encode t2) (encode t1) count i (encode b) h =
-      encode ((List.range' g count).foldl (fun b g ↦
-        Expressions.leaf16Stages t3 t2 t1 (Expressions.leaf16Stages t3 t2 t1 b (2 * g * 16))
-          ((2 * g + 1) * 16)) b) := by
-  have hst (b : Array (FastField p)) (i : USize) (hi : i.toNat + 16 ≤ b.size) :
-      leaf16Field t3 t2 t1 i b = Expressions.leaf16Stages t3 t2 t1 b i.toNat := by
-    rw [leaf16Field_eq_expression, Expressions.leaf16Field_eq_stages t3 t2 t1 b i hi h3 h2 h1]
+/-- A stage loop whose kernel runs `F` on its four blocks in turn runs `F` on blocks
+`4 g, …, 4 (g + count) - 1`. -/
+theorem Native.leafStageLoop_encode {K : Nat}
+    (k : (t : ByteArray) → (i : USize) → (b : ByteArray) → Native.LeafStageFits b t i K →
+      Native.Buf b.size)
+    (t : ByteArray) (F : Array (FastField p) → Nat → Array (FastField p))
+    (hk : ∀ i (b : Array (FastField p)) h, (k t i (encode b) h).1 =
+      encode (F (F (F (F b i.toNat) (i.toNat + 16)) (i.toNat + 32)) (i.toNat + 48))) :
+    ∀ (count g : Nat) (i : USize) (b : Array (FastField p)) (h), i.toNat = 64 * g →
+      Native.leafStageLoop K k t count i (encode b) h =
+        encode ((List.range' (4 * g) (4 * count)).foldl (fun b blk ↦ F b (blk * 16)) b) := by
   intro count
   induction count with
   | zero => intro _ _ _ _ _; rfl
@@ -144,17 +222,91 @@ theorem Native.leaf16x2Loop_encode (t3 t2 t1 : Array (FastField p))
     have hb := h.1
     have hs := h.2.1
     rw [size_encode_fields] at hb hs
-    have h16 : (i + 16).toNat = i.toNat + 16 := Native.usize_add16 i _ (by omega) hs
-    have h32 : (i + 32).toNat = i.toNat + 32 := by
-      rw [Native.usize_add_toNat _ _ (by rw [Native.usize_numeral 32 (by decide)]; omega),
-        Native.usize_numeral 32 (by decide)]
-    rw [Native.leaf16x2Loop, Native.leaf16x2Loop_congr _ ((Native.leaf16x2_encode t3 t2 t1 i
-      (i + 16) b _ h3 h2 h1 (by omega)).trans (by
-        rw [hst b i (by omega), hst _ _ (by rw [Expressions.size_leaf16Stages]; omega), h16]))]
-    rw [ih (g + 1) _ _ _ (by rw [h32, hi]; ring), List.range'_succ, List.foldl_cons, hi,
-      show 32 * g = 2 * g * 16 by ring, show 2 * g * 16 + 16 = (2 * g + 1) * 16 by ring]
+    have h64 : (i + 64).toNat = i.toNat + 64 := by
+      rw [Native.usize_add_toNat _ _ (by rw [Native.usize_numeral 64 (by decide)]; omega),
+        Native.usize_numeral 64 (by decide)]
+    rw [Native.leafStageLoop, Native.leafStageLoop_congr _ (hk i b _),
+      ih (g + 1) _ _ _ (by rw [h64, hi]; ring), show 4 * (count + 1) = 4 + 4 * count by ring,
+      ← List.range'_append, List.foldl_append, show 4 * (g + 1) = 4 * g + 4 by ring]
+    simp only [List.range'_succ, List.range'_zero, List.foldl_cons, List.foldl_nil, hi]
+    rw [show 4 * g * 16 = 64 * g by ring, show (4 * g + 1) * 16 = 64 * g + 16 by ring,
+      show (4 * g + 1 + 1) * 16 = 64 * g + 32 by ring,
+      show (4 * g + 1 + 1 + 1) * 16 = 64 * g + 48 by ring, Nat.one_mul]
 
-/-- The in-place final layers of `blocks` sixteen-word blocks. -/
+/-- A fold of block operations agreeing with `G` on arrays of the original size is the fold of
+`G`. -/
+theorem foldl_blocks_congr (F G : Array (FastField p) → Nat → Array (FastField p)) (n : Nat)
+    (a : Array (FastField p)) (hn : n * 16 ≤ a.size)
+    (hFG : ∀ b base, base + 16 ≤ b.size → F b base = G b base)
+    (hG : ∀ b base, base + 16 ≤ b.size → (G b base).size = b.size) :
+    (List.range n).foldl (fun b blk ↦ F b (blk * 16)) a =
+      (List.range n).foldl (fun b blk ↦ G b (blk * 16)) a := by
+  suffices ∀ (xs : List Nat) (b : Array (FastField p)), b.size = a.size → (∀ x ∈ xs, x < n) →
+      xs.foldl (fun b blk ↦ F b (blk * 16)) b = xs.foldl (fun b blk ↦ G b (blk * 16)) b from
+    this _ a rfl (fun x hx ↦ List.mem_range.mp hx)
+  intro xs
+  induction xs with
+  | nil => intro _ _ _; rfl
+  | cons x xs ih =>
+    intro b hb hx
+    have hx' := hx x (List.mem_cons_self ..)
+    have hfit : x * 16 + 16 ≤ b.size := by rw [hb]; nlinarith
+    rw [List.foldl_cons, List.foldl_cons, hFG b _ hfit]
+    exact ih _ (by rw [hG b _ hfit, hb]) (fun y hy ↦ hx y (List.mem_cons_of_mem x hy))
+
+/-- The first stage's pass over `4 count` blocks is the first final layer on each block. -/
+theorem Native.leafStage8Loop_encode (t a : Array (FastField p)) (count : Nat) (h) :
+    Native.leafStageLoop 8 (Native.leafStage8 p) (encode t) count 0 (encode a) h =
+      encode ((List.range (4 * count)).foldl (fun b blk ↦ layer16_8 t b (blk * 16)) a) := by
+  have hb := h.1
+  rw [size_encode_fields, USize.toNat_zero] at hb
+  rw [Native.leafStageLoop_encode _ _ (fun b base ↦ Expressions.leafStage8Field t base b)
+    (fun i b h ↦ Native.leafStage8_encode t b i h) count 0 0 a h rfl, Nat.mul_zero,
+    ← List.range_eq_range',
+    foldl_blocks_congr _ _ _ a (by omega)
+      (fun b base hb ↦ Expressions.leafStage8Field_eq t b base hb)
+      (fun b base _ ↦ size_layer16_8 t b base)]
+
+/-- The second stage's pass over `4 count` blocks is the second final layer on each block. -/
+theorem Native.leafStage4Loop_encode (t a : Array (FastField p)) (count : Nat) (h) :
+    Native.leafStageLoop 4 (Native.leafStage4 p) (encode t) count 0 (encode a) h =
+      encode ((List.range (4 * count)).foldl (fun b blk ↦ layer16_4 t b (blk * 16)) a) := by
+  have hb := h.1
+  rw [size_encode_fields, USize.toNat_zero] at hb
+  rw [Native.leafStageLoop_encode _ _ (fun b base ↦ Expressions.leafStage4Field t base b)
+    (fun i b h ↦ Native.leafStage4_encode t b i h) count 0 0 a h rfl, Nat.mul_zero,
+    ← List.range_eq_range',
+    foldl_blocks_congr _ _ _ a (by omega)
+      (fun b base hb ↦ Expressions.leafStage4Field_eq t b base hb)
+      (fun b base _ ↦ size_layer16_4 t b base)]
+
+/-- The third stage's pass over `4 count` blocks is the third final layer on each block. -/
+theorem Native.leafStage2Loop_encode (t a : Array (FastField p)) (count : Nat) (h) :
+    Native.leafStageLoop 2 (Native.leafStage2 p) (encode t) count 0 (encode a) h =
+      encode ((List.range (4 * count)).foldl (fun b blk ↦ layer16_2 t b (blk * 16)) a) := by
+  have hb := h.1
+  rw [size_encode_fields, USize.toNat_zero] at hb
+  rw [Native.leafStageLoop_encode _ _ (fun b base ↦ Expressions.leafStage2Field t base b)
+    (fun i b h ↦ Native.leafStage2_encode t b i h) count 0 0 a h rfl, Nat.mul_zero,
+    ← List.range_eq_range',
+    foldl_blocks_congr _ _ _ a (by omega)
+      (fun b base hb ↦ Expressions.leafStage2Field_eq t b base hb)
+      (fun b base _ ↦ size_layer16_2 t b base)]
+
+/-- The last stage's pass over `4 count` blocks is the last final layer on each block. -/
+theorem Native.leafStage1Loop_encode (t : ByteArray) (a : Array (FastField p)) (count : Nat) (h) :
+    Native.leafStageLoop 0 (Native.leafStage1 p) t count 0 (encode a) h =
+      encode ((List.range (4 * count)).foldl (fun b blk ↦ layer16_1 #[1] b (blk * 16)) a) := by
+  have hb := h.1
+  rw [size_encode_fields, USize.toNat_zero] at hb
+  rw [Native.leafStageLoop_encode _ _ (fun b base ↦ Expressions.leafStage1Field base b)
+    (fun i b h ↦ Native.leafStage1_encode t b i h) count 0 0 a h rfl, Nat.mul_zero,
+    ← List.range_eq_range',
+    foldl_blocks_congr _ _ _ a (by omega)
+      (fun b base hb ↦ Expressions.leafStage1Field_eq b base hb)
+      (fun b base _ ↦ size_layer16_1 #[1] b base)]
+
+/-- The final layers of `blocks` sixteen-word blocks. -/
 theorem Native.leaf16Blocks_encode (t3 t2 t1 : Array (FastField p)) (blocks : Nat) (a : Array
     (FastField p))
     (ha : 4 * a.size < USize.size) (hs : blocks * 16 ≤ a.size)
@@ -172,9 +324,14 @@ theorem Native.leaf16Blocks_encode (t3 t2 t1 : Array (FastField p)) (blocks : Na
   rw [dite_eq_left_of_eq_true (eq_true (by
       simp only [hsize, ht3, ht2, ht1]
       have := USize.le_size
-      omega)),
-    Native.leaf16x2Loop_encode t3 t2 t1 h3 h2 h1 _ 0 _ a _ (by rw [USize.toNat_zero]),
-    ← List.range_eq_range']
+      omega))]
+  simp only [Native.leafStage8Loop_encode, Native.leafStage4Loop_encode,
+    Native.leafStage2Loop_encode, Native.leafStage1Loop_encode, layer16_8_eq_localLayer,
+    layer16_4_eq_localLayer, layer16_2_eq_localLayer, layer16_1_eq_localLayer]
+  rw [fold_localLayer _ 8 1 _ (by decide), fold_localLayer _ 4 2 _ (by decide),
+    fold_localLayer _ 2 4 _ (by decide), fold_localLayer _ 1 8 _ (by decide)]
+  simp only [Nat.reduceMul, Nat.one_mul]
+  rw [← fold_leaf16Stages]
   rw [foldl_encode _ (fun b ↦ b.size = a.size) _ st (fun block hblock b hb ↦ by
       have hblock := List.mem_range'_1.mp hblock
       have hc : 4 * (16 * block + 15) + 3 < (encode b).size ∧ (encode b).size < USize.size ∧
@@ -189,9 +346,9 @@ theorem Native.leaf16Blocks_encode (t3 t2 t1 : Array (FastField p)) (blocks : Na
     (fun _ _ b hb ↦ by simp only [st, Expressions.size_leaf16Stages, hb]) _
     (foldl_invariant _ (fun b ↦ b.size = a.size) _
       (fun _ _ b hb ↦ by simp only [Expressions.size_leaf16Stages, hb]) a rfl)]
-  have hn : blocks = 2 * (blocks / 2) + (blocks - 2 * (blocks / 2)) := by omega
+  have hn : blocks = 4 * (blocks / 4) + (blocks - 4 * (blocks / 4)) := by omega
   conv => rhs; rw [hn, List.range_eq_range', ← List.range'_append, List.foldl_append,
-    ← List.range_eq_range', ← foldl_range_pairs, Nat.zero_add, Nat.one_mul]
+    ← List.range_eq_range', Nat.zero_add, Nat.one_mul]
   rfl
 
 /-- A DIF-order leaf is the mixed radix-four DIF stages. -/

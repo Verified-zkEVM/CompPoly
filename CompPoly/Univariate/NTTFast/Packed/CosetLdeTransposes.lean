@@ -281,12 +281,11 @@ theorem transposeRows_encodeWords (M : Array UInt32) (w r0 rows : Nat)
   have hwr : w * rows = rows * w := Nat.mul_comm w rows
   have hN : 4 * (w * rows) < USize.size := by omega
   have hu (n : Nat) (hn : n ≤ M.size) : n.toUSize.toNat = n := USize.toNat_ofNat_of_lt' (by omega)
-  have htile (rt : Nat) (hrt : rt ∈ List.range (rows / 16)) (ct : Nat)
+  have htile (rt : Nat) (hrt : rt < rows / 16) (ct : Nat)
       (hct : ct ∈ List.range (w / 16)) :
       Fill T (fun k ↦ ∃ u < 16, ∃ t < 16, k = (16 * ct + u) * rows + (16 * rt + t)) (w * rows)
         (fun b ↦ tileStrided (encode M) ((r0 + 16 * rt) * w + 16 * ct).toUSize w.toUSize b
           (16 * ct * rows + 16 * rt).toUSize rows.toUSize) := by
-    have hrt := List.mem_range.mp hrt
     have hct := List.mem_range.mp hct
     have h1 : (r0 + 16 * rt + 16) * w ≤ (r0 + rows) * w := Nat.mul_le_mul_right w (by omega)
     have h2 : (16 * ct + 16) * rows ≤ w * rows := Nat.mul_le_mul_right rows (by omega)
@@ -321,8 +320,10 @@ theorem transposeRows_encodeWords (M : Array UInt32) (w r0 rows : Nat)
     have hd := divMod_add j r rows hr
     rw [read_encodeWords M _ (by rw [size_encode_uint32]; exact hs) (by omega)]
     simp only [T, hd.1, hd.2]
-  have hall := (Fill.foldl T _ (w * rows) _ _ fun rt hrt ↦
-    Fill.foldl T _ (w * rows) _ _ (htile rt hrt)).comp
+  have hall := (Fill.foldl T _ (w * rows) (List.range ((rows / 16 + 63) / 64)) _ fun rb _ ↦
+    Fill.foldl T _ (w * rows) _ _ fun ct hct ↦
+      Fill.foldl T _ (w * rows) (List.range' (64 * rb) (min (64 * rb + 64) (rows / 16) - 64 * rb))
+        _ fun rt hrt ↦ htile rt (by have := List.mem_range'_1.mp hrt; omega) ct hct).comp
     (Fill.foldl T _ (w * rows) _ _ fun j hj ↦ Fill.foldl T _ (w * rows) _ _ (hedge j hj))
   unfold transposeRows
   simp only [Std.Legacy.Range.forIn_eq_forIn_range', Std.Legacy.Range.size,
@@ -334,9 +335,9 @@ theorem transposeRows_encodeWords (M : Array UInt32) (w r0 rows : Nat)
   have hj : k / rows < w := (Nat.div_lt_iff_lt_mul hrows).mpr hk
   have hr := Nat.mod_lt k hrows
   by_cases hin : k / rows < 16 * (w / 16) ∧ k % rows < 16 * (rows / 16)
-  · refine Or.inl ⟨k % rows / 16, List.mem_range.mpr (by omega), k / rows / 16,
-      List.mem_range.mpr (by omega), k / rows % 16, Nat.mod_lt _ (by decide), k % rows % 16,
-      Nat.mod_lt _ (by decide), ?_⟩
+  · refine Or.inl ⟨k % rows / 16 / 64, List.mem_range.mpr (by omega), k / rows / 16,
+      List.mem_range.mpr (by omega), k % rows / 16, List.mem_range'_1.mpr (by omega),
+      k / rows % 16, Nat.mod_lt _ (by decide), k % rows % 16, Nat.mod_lt _ (by decide), ?_⟩
     rw [show 16 * (k / rows / 16) + k / rows % 16 = k / rows by omega,
       show 16 * (k % rows / 16) + k % rows % 16 = k % rows by omega, Nat.mul_comm]
     omega
