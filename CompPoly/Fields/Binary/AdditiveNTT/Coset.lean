@@ -22,6 +22,8 @@ The transform of Lin, Chung and Han (FOCS 2014), over any coset shift + S_l.
 
 The other files here follow Diamond and Posen: one transform over S_l, tiled for the rate.
 
+`CosetBridge.lean` shows these objects agree with those of the other files.
+
 ## Main results
 
 - `vanishing_add`: W_i is additive in characteristic 2 (Lemma 1).
