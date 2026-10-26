@@ -11,9 +11,9 @@ public import Mathlib.Algebra.Field.Basic
 public import Mathlib.Algebra.Module.BigOperators
 public import Mathlib.Data.Nat.Bitwise
 public import Mathlib.Logic.Function.Iterate
-public import Mathlib.Tactic.LinearCombination
-public import Mathlib.Tactic.Module
-public import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.LinearCombination
+import Mathlib.Tactic.Module
 
 /-!
 # The additive NTT over a coset, and its inverse
@@ -39,9 +39,6 @@ namespace AdditiveNTT.Coset
 open Finset
 
 variable {F : Type _} [Field F] {V : Type _} [AddCommGroup V] [Module F V]
-
-
-
 
 /-- Point m of the span of the basis: the sum of beta_r over the set bits r of m. -/
 def point (β : ℕ → F) (m : ℕ) : F := ∑ r ∈ range m, if m.testBit r then β r else 0
@@ -110,21 +107,16 @@ def twiddle (β : ℕ → F) (shift : F) (j b : ℕ) : F :=
 /-- The iterated map x -> x^2 + x, which is W_j for a Cantor basis. -/
 def sqAddIter (j : ℕ) (x : F) : F := (fun y => y ^ 2 + y)^[j] x
 
-
-
-
 /-! ## Points -/
 
-theorem testBit_of_lt {m r n : ℕ} (hm : m < 2 ^ n) (hr : n ≤ r) : m.testBit r = false :=
-  Nat.testBit_eq_false_of_lt (lt_of_lt_of_le hm (Nat.pow_le_pow_right two_pos hr))
-
 /-- The sum over the bits of m below a bound stops changing once the bound covers m. -/
-theorem sum_bits_eq {M : Type _} [AddCommMonoid M] (f : ℕ → M) {m a b : ℕ} (hab : a ≤ b)
-    (ha : m < 2 ^ a) :
+private theorem sum_bits_eq {M : Type _} [AddCommMonoid M] (f : ℕ → M) {m a b : ℕ}
+    (hab : a ≤ b) (ha : m < 2 ^ a) :
     ∑ r ∈ range a, (if m.testBit r then f r else 0) =
       ∑ r ∈ range b, (if m.testBit r then f r else 0) := by
   rw [← sum_range_add_sum_Ico _ hab, sum_eq_zero (s := Ico a b) fun r hr => by
-    simp [testBit_of_lt ha (mem_Ico.mp hr).1], add_zero]
+    simp [Nat.testBit_lt_two_pow (ha.trans_le (Nat.pow_le_pow_right two_pos (mem_Ico.mp hr).1))],
+    add_zero]
 
 /-- Point m as a sum over any range of bits that covers m. -/
 theorem point_eq_sum (β : ℕ → F) {m n : ℕ} (hm : m < 2 ^ n) :
@@ -159,7 +151,8 @@ theorem point_add_mul (β : ℕ → F) (a k : ℕ) {b : ℕ} (hb : b < 2 ^ k) :
   rw [Nat.testBit_two_pow_mul_add a hb, Nat.testBit_two_pow_mul]
   by_cases hr : r < k
   · simp [hr, show ¬ k ≤ r by omega]
-  · simp [hr, show k ≤ r by omega, testBit_of_lt hb (show k ≤ r by omega)]
+  · simp [hr, show k ≤ r by omega, Nat.testBit_lt_two_pow
+      (hb.trans_le (Nat.pow_le_pow_right two_pos (show k ≤ r by omega)))]
 
 theorem point_add_two_pow (β : ℕ → F) {m k : ℕ} (hm : m < 2 ^ k) :
     point β (m + 2 ^ k) = point β m + β k := by
@@ -197,9 +190,6 @@ theorem point_two_pow_sub_one (β : ℕ → F) (t : ℕ) :
     have h : 2 ^ (t + 1) - 1 = (2 ^ t - 1) + 2 ^ t := by
       rw [pow_succ]; have := Nat.two_pow_pos t; omega
     rw [h, point_add_two_pow β (by have := Nat.two_pow_pos t; omega), ih, sum_range_succ]
-
-
-
 
 section Vanishing
 
@@ -282,7 +272,7 @@ end CharTwo
 
 theorem novel_succ_low (l : ℕ) {k : ℕ} (hk : k < 2 ^ l) (x : F) :
     novel β (l + 1) k x = novel β l k x := by
-  rw [novel, prod_range_succ]; simp [testBit_of_lt hk le_rfl]; rfl
+  rw [novel, prod_range_succ]; simp [Nat.testBit_lt_two_pow hk]; rfl
 
 theorem novel_succ_high (l : ℕ) {k : ℕ} (hk : k < 2 ^ l) (x : F) :
     novel β (l + 1) (k + 2 ^ l) x = novel β l k x * normalized β l x := by
@@ -364,20 +354,16 @@ end Cantor
 
 end Vanishing
 
-
-
-
 /-! ## Row arithmetic of one stage -/
 
-theorem two_pow_succ' (j : ℕ) : 2 ^ (j + 1) = 2 ^ j + 2 ^ j := by rw [pow_succ]; ring
-
 /-- Inside c blocks, a row of a lower half has its partner inside too. -/
-theorem partner_lt {i c j : ℕ} (hi : i < c * 2 ^ (j + 1)) (hlo : i % 2 ^ (j + 1) < 2 ^ j) :
+private theorem partner_lt {i c j : ℕ} (hi : i < c * 2 ^ (j + 1))
+    (hlo : i % 2 ^ (j + 1) < 2 ^ j) :
     i + 2 ^ j < c * 2 ^ (j + 1) := by
   have hq : i / 2 ^ (j + 1) < c := Nat.div_lt_of_lt_mul (by rwa [mul_comm])
   have h := Nat.div_add_mod i (2 ^ (j + 1))
   have : 2 ^ (j + 1) * (i / 2 ^ (j + 1) + 1) ≤ 2 ^ (j + 1) * c := Nat.mul_le_mul_left _ hq
-  rw [two_pow_succ'] at *
+  rw [Nat.two_pow_succ] at *
   nlinarith
 
 theorem stage_offset (τ : ℕ → F) (j c : ℕ) (x : ℕ → V) (i : ℕ) :
@@ -425,9 +411,9 @@ theorem istage_congr {τ τ' : ℕ → F} {j c : ℕ} {x x' : ℕ → V} (hτ : 
   · rw [hx i hi, hx _ (by omega)]
 
 /-- The partner of a lower-half row sits in the upper half of the same block. -/
-theorem partner_up {i j : ℕ} (h : i % 2 ^ (j + 1) < 2 ^ j) :
+private theorem partner_up {i j : ℕ} (h : i % 2 ^ (j + 1) < 2 ^ j) :
     ¬ (i + 2 ^ j) % 2 ^ (j + 1) < 2 ^ j ∧ (i + 2 ^ j) / 2 ^ (j + 1) = i / 2 ^ (j + 1) := by
-  have hr : i % 2 ^ (j + 1) + 2 ^ j < 2 ^ (j + 1) := by rw [two_pow_succ'] at *; omega
+  have hr : i % 2 ^ (j + 1) + 2 ^ j < 2 ^ (j + 1) := by rw [Nat.two_pow_succ] at *; omega
   have e : i + 2 ^ j = 2 ^ (j + 1) * (i / 2 ^ (j + 1)) + (i % 2 ^ (j + 1) + 2 ^ j) := by
     have := Nat.div_add_mod i (2 ^ (j + 1)); omega
   rw [e, Nat.mul_add_mod, Nat.mod_eq_of_lt hr, Nat.mul_add_div (Nat.two_pow_pos _),
@@ -435,7 +421,7 @@ theorem partner_up {i j : ℕ} (h : i % 2 ^ (j + 1) < 2 ^ j) :
   simp
 
 /-- The partner of an upper-half row sits in the lower half of the same block. -/
-theorem partner_down {i j : ℕ} (h : ¬ i % 2 ^ (j + 1) < 2 ^ j) :
+private theorem partner_down {i j : ℕ} (h : ¬ i % 2 ^ (j + 1) < 2 ^ j) :
     2 ^ j ≤ i ∧ (i - 2 ^ j) % 2 ^ (j + 1) < 2 ^ j ∧
       (i - 2 ^ j) / 2 ^ (j + 1) = i / 2 ^ (j + 1) := by
   have hm := Nat.mod_lt i (Nat.two_pow_pos (j + 1))
@@ -444,7 +430,7 @@ theorem partner_down {i j : ℕ} (h : ¬ i % 2 ^ (j + 1) < 2 ^ j) :
   have e : i - 2 ^ j = 2 ^ (j + 1) * (i / 2 ^ (j + 1)) + (i % 2 ^ (j + 1) - 2 ^ j) := by
     have := Nat.div_add_mod i (2 ^ (j + 1)); omega
   refine ⟨hle, ?_, ?_⟩
-  · rw [e, Nat.mul_add_mod, Nat.mod_eq_of_lt hr]; rw [two_pow_succ'] at hm; omega
+  · rw [e, Nat.mul_add_mod, Nat.mod_eq_of_lt hr]; rw [Nat.two_pow_succ] at hm; omega
   · rw [e, Nat.mul_add_div (Nat.two_pow_pos _), Nat.div_eq_of_lt hr]; simp
 
 /-! ## The inverse network undoes the forward network -/
@@ -586,12 +572,12 @@ theorem inetwork_offset (τ : ℕ → ℕ → F) (l c : ℕ) (x : ℕ → V) (i 
 
 theorem stage_top_low (τ : ℕ → F) (l : ℕ) (d : ℕ → V) {k : ℕ} (hk : k < 2 ^ l) :
     stage τ l d k = d k + τ 0 • d (k + 2 ^ l) := by
-  have h1 : k < 2 ^ (l + 1) := by rw [two_pow_succ']; omega
+  have h1 : k < 2 ^ (l + 1) := by rw [Nat.two_pow_succ]; omega
   simp [stage, Nat.mod_eq_of_lt h1, Nat.div_eq_of_lt h1, hk, butterfly]
 
 theorem stage_top_high (τ : ℕ → F) (l : ℕ) (d : ℕ → V) {k : ℕ} (hk : k < 2 ^ l) :
     stage τ l d (k + 2 ^ l) = d k + τ 0 • d (k + 2 ^ l) + d (k + 2 ^ l) := by
-  have h1 : k + 2 ^ l < 2 ^ (l + 1) := by rw [two_pow_succ']; omega
+  have h1 : k + 2 ^ l < 2 ^ (l + 1) := by rw [Nat.two_pow_succ]; omega
   simp [stage, Nat.mod_eq_of_lt h1, Nat.div_eq_of_lt h1, butterfly]
 
 /-! ## Evaluations in the novel basis -/
@@ -604,7 +590,7 @@ theorem novelEval_congr (β : ℕ → F) (l : ℕ) {d d' : ℕ → V} (h : ∀ k
 theorem novelEval_succ (β : ℕ → F) (l : ℕ) (d : ℕ → V) (x : F) :
     novelEval β (l + 1) d x =
       novelEval β l d x + normalized β l x • novelEval β l (fun k => d (k + 2 ^ l)) x := by
-  rw [novelEval, two_pow_succ', sum_range_add, novelEval, novelEval, smul_sum]
+  rw [novelEval, Nat.two_pow_succ, sum_range_add, novelEval, novelEval, smul_sum]
   congr 1
   · exact sum_congr rfl fun k hk => by rw [novel_succ_low β l (mem_range.mp hk)]
   · refine sum_congr rfl fun k hk => ?_
@@ -653,7 +639,7 @@ theorem network_ntt (β : ℕ → F) {n l : ℕ} (hβ : Independent β n) (hl : 
         ← novelEval_add_smul]
       exact novelEval_congr β l (fun k hk => stage_top_low _ l d hk) _
     · obtain ⟨i, rfl⟩ : ∃ i', i = i' + 2 ^ l := ⟨i - 2 ^ l, by omega⟩
-      have hi' : i < 2 ^ l := by rw [two_pow_succ'] at hi; omega
+      have hi' : i < 2 ^ l := by rw [Nat.two_pow_succ] at hi; omega
       rw [← one_mul (2 ^ l), network_offset, one_mul,
         network_congr (V := V) (c := 1) (τ' := twiddle β (shift + β l))
           (fun j hj b hb => twiddle_upper β shift hj (by simpa using hb))
@@ -692,6 +678,5 @@ theorem ntt_pad (β : ℕ → F) {m : ℕ} (r : ℕ) (shift : F) (d : ℕ → V)
     (hd : ∀ k, 2 ^ m ≤ k → d k = 0) (c : ℕ) {i : ℕ} (hi : i < 2 ^ m) :
     ntt β (m + r) shift d (c * 2 ^ m + i) = ntt β m (shift + point β (c * 2 ^ m)) d i := by
   rw [ntt, ntt, novelEval_pad β d hd, mul_comm c, point_add_mul β c m hi, add_assoc]
-
 
 end AdditiveNTT.Coset
