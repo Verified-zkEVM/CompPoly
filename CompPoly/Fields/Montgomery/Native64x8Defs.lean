@@ -115,6 +115,17 @@ end Limbs8
   ⟨adcLo a.l0 b.l0 0, adcLo a.l1 b.l1 c0, adcLo a.l2 b.l2 c1, adcLo a.l3 b.l3 c2,
    adcLo a.l4 b.l4 c3, adcLo a.l5 b.l5 c4, adcLo a.l6 b.l6 c5, adcLo a.l7 b.l7 c6⟩
 
+/-- Carry out of the top limb of `addLimbs`. -/
+@[inline] def addCarry (a b : Limbs8) : UInt64 :=
+  let c0 := adcCo a.l0 b.l0 0
+  let c1 := adcCo a.l1 b.l1 c0
+  let c2 := adcCo a.l2 b.l2 c1
+  let c3 := adcCo a.l3 b.l3 c2
+  let c4 := adcCo a.l4 b.l4 c3
+  let c5 := adcCo a.l5 b.l5 c4
+  let c6 := adcCo a.l6 b.l6 c5
+  adcCo a.l7 b.l7 c6
+
 /-- Limbwise subtract-with-borrow. -/
 @[inline] def subLimbs (a b : Limbs8) : Limbs8 :=
   let b0 := sbbBo a.l0 b.l0 0
@@ -145,8 +156,11 @@ decides the branch, so no comparison is needed. -/
 @[inline] def condSub (q t : Limbs8) : Limbs8 :=
   if subBorrow t q == 0 then subLimbs t q else t
 
-/-- Modular addition. -/
-@[inline] def add (q a b : Limbs8) : Limbs8 := condSub q (addLimbs a b)
+/-- Modular addition; a carry out of the top limb forces the (wrapping, exact) subtraction
+of the modulus, and never happens for a modulus below `2 ^ 255`. -/
+@[inline] def add (q a b : Limbs8) : Limbs8 :=
+  let s := addLimbs a b
+  if addCarry a b != 0 then subLimbs s q else condSub q s
 
 /-- Modular subtraction: on a borrow, the modulus is added back. -/
 @[inline] def sub (q a b : Limbs8) : Limbs8 :=
@@ -233,6 +247,12 @@ limb. -/
     (t : State9) : State9 :=
   mulReduce q negInv (mulAccum a bi t)
 
+/-- `condSub` for an accumulator below `2 * q`; a set head limb forces the (wrapping, exact)
+subtraction of the modulus, and never happens for a modulus below `2 ^ 255`. -/
+@[inline] def condSubWide (q : Limbs8) (t : State9) : Limbs8 :=
+  let r := t.toLimbs8
+  if t.t8 != 0 then subLimbs r q else condSub q r
+
 /-- CIOS Montgomery multiplication: eight rounds followed by one conditional
 subtraction. -/
 @[inline] def mul (q : Limbs8) (negInv : UInt64) (a b : Limbs8) : Limbs8 :=
@@ -244,7 +264,7 @@ subtraction. -/
   let t := mulRound q negInv a b.l5 t
   let t := mulRound q negInv a b.l6 t
   let t := mulRound q negInv a b.l7 t
-  condSub q t.toLimbs8
+  condSubWide q t
 
 /-- Montgomery squaring. -/
 @[inline] def square (q : Limbs8) (negInv : UInt64) (a : Limbs8) : Limbs8 :=

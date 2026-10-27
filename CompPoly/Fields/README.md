@@ -38,8 +38,9 @@ This directory contains formally verified field infrastructure used in zero-know
 | **KoalaBear/Ext6/GaloisField.lean** | Opt-in bridge identifying `Ext6` with Mathlib's abstract `GaloisField KoalaBear.fieldSize 6` (ArkLib's `KoalaSextic` parameter point). Separate module so the GaloisField import is not forced on `Ext6` users. |
 | **Goldilocks.lean** | Facade for the \(2^{64} - 2^{32} + 1\) Plonky2/3 field, re-exporting the canonical `ZMod` model and fast native-word implementation. |
 | **Goldilocks/Basic.lean** | Canonical \(2^{64} - 2^{32} + 1\) field model and primality proof. |
-| **Goldilocks/Fast.lean** | Verified `UInt64` implementation of Goldilocks arithmetic. A single-word 64-bit prime fits neither Montgomery carrier — `Mont32Field` requires modulus < 2^31 and `Mont64x8Field` is an eight-limb layout — so this is a bespoke implementation resting on \(2^{64} \equiv 2^{32} - 1\). |
-| **Goldilocks/FastDefs.lean** | Zero-import runtime word kernels behind `Goldilocks/Fast.lean`, kept importless so `precompileModules` lanes can compile them. |
+| **Goldilocks/Fast.lean** | Verified `UInt64` Goldilocks field over the `FastDefs` kernels, bespoke since a one-word 64-bit prime fits neither Montgomery carrier. |
+| **Goldilocks/FastDefs.lean** | Zero-import runtime word kernels for Goldilocks, so `precompileModules` lanes can compile them. |
+| **Goldilocks/FastReduction.lean** | Bounds and canonical-field cast lemmas for the `FastDefs` kernels. |
 | **Hachi.lean** | \(2^{32} - 99\) — 32-bit prime field. **Name provisional.** Included as a 32-bit example rather than a production target: it exercises a base field with no Montgomery fast path (`Mont32Field` requires modulus < 2^31) and two-adicity 2, so no radix-2 NTT domain exists for it. |
 | **Hachi/Ext4.lean** | \(\mathrm{Hachi}[X]/(X^4 - 2)\). |
 | **KoalaBear.lean** | Facade for KoalaBear modules, re-exporting the canonical field and fast native-word implementation. |
@@ -55,14 +56,16 @@ This directory contains formally verified field infrastructure used in zero-know
 | **Montgomery/Native64x8Defs.lean** | Zero-import runtime definitions of the eight-limb Montgomery arithmetic, for `precompileModules` consumers. |
 | **Montgomery/Native64x8.lean** | Word-level specifications and add/sub/negate correctness for the eight-limb arithmetic. |
 | **Montgomery/Native64x8Mul.lean** | Correctness of the eight-limb CIOS Montgomery multiplication. |
-| **Montgomery/Native64x8Field.lean** | The `Mont64x8Field` class, `FastField` carrier, arithmetic, instances, and canonical-field bridge for moduli below `2^255`. |
+| **Montgomery/Native64x8Field.lean** | The `Mont64x8Field` class, `FastField` carrier, arithmetic, instances, and canonical-field bridge for any prime modulus below `2^256`. |
 | **Montgomery/Native64x8InvDefs.lean** | Mathlib-free binary-GCD inversion runtime ([eprint 2020/972](https://eprint.iacr.org/2020/972)): the `GcdData` schedule, the candidate, and the checked `invGcdRaw`. |
 | **Montgomery/Native64x8Inv.lean** | Correctness of the checked inversion (`invGcdRaw`, wrapper `FastField.invGcd`), the divstep coefficient bounds, and the candidate's mac-width safety. |
 | **Montgomery/ScalarFft.lean** | Zero-import in-place radix-2 DIT FFT over eight-limb Montgomery residues and precomputed twiddles. |
 | **Pasta.lean** | Facade for the Pasta modules, re-exporting the canonical Pallas/Vesta base fields and their fast native-word implementations. |
 | **Pasta/Basic.lean** | The two 255-bit Pasta base primes (Pallas base = Vesta scalar and vice versa), with Pratt primality certificates. |
 | **Pasta/Fast.lean** | Pallas- and Vesta-namespaced API over the shared eight-limb fast-field implementation, with per-field constants and canonical-field bridges. |
-| **Secp256k1.lean** | Base and scalar fields for the Secp256k1 curve (used in Bitcoin/Ethereum). |
+| **Secp256k1.lean** | Facade for the Secp256k1 modules, re-exporting the canonical base and scalar fields and their fast eight-limb implementations. |
+| **Secp256k1/Basic.lean** | Base and scalar fields for the Secp256k1 curve (used in Bitcoin/Ethereum), with Pratt primality certificates. |
+| **Secp256k1/Fast.lean** | Eight-limb Montgomery instantiation of both Secp256k1 fields (`Mont64x8Field` and `GcdData` constants, `ScalarField`, `BaseField`, ring equivalences). |
 
 ## Binary-field modules
 
