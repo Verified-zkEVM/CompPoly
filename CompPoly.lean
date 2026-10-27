@@ -269,6 +269,7 @@ public import CompPoly.Multilinear.ManyEval
 public import CompPoly.Multilinear.ManyEval.Basic
 public import CompPoly.Multilinear.ManyEval.Correctness
 public import CompPoly.Multilinear.TransformEquiv
+public import CompPoly.Multilinear.Unique
 public import CompPoly.Multivariate.Basic
 public import CompPoly.Multivariate.Bytes
 public import CompPoly.Multivariate.CMvMonomial
@@ -288,6 +289,7 @@ public import CompPoly.Multivariate.Unlawful
 public import CompPoly.Multivariate.VarsDegrees
 public import CompPoly.ToMathlib.Finsupp.Fin
 public import CompPoly.ToMathlib.MvPolynomial.Equiv
+public import CompPoly.ToMathlib.MvPolynomial.Nullstellensatz
 public import CompPoly.ToMathlib.Order.WithBot
 public import CompPoly.ToMathlib.Polynomial.BivariateDegree
 public import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
