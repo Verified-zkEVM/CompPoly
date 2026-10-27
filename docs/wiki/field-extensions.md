@@ -262,11 +262,12 @@ Both kinds of caller are served by the one form:
 
 **Why there is no `Fintype.card F`-only variant.** Such a variant forces a concrete caller to cast
 each condition with `rw [hcard]`, which leaves an `Eq.mpr` transport wrapped around a certificate
-whose type carries a huge exponent (`X ^ (fieldSize ^ 6)`). A kernel replay from an empty
-environment checks a serialized and reconstructed expression graph and need not follow the
-normalization path that checking the elaborator's in-memory term took; one such transport has been
-observed to send the kernel into `Polynomial.pow → npowRec → Nat.rec`, unfolding the power one
-exponent step at a time until the deep-recursion guard fired. With a single
+whose type carries a huge exponent (`X ^ (fieldSize ^ 6)`); one such transport has been observed
+to send the kernel into `Polynomial.pow → npowRec → Nat.rec`, unfolding the power one exponent
+step at a time until the deep-recursion guard fired. Such a defect can survive `lake build`:
+inside a `module`, imported definitions that are not `@[expose]`d have no body for the kernel --
+Mathlib's `Polynomial.instAdd` among them -- so the slow path does not exist while the defining
+module is compiled, and only a full-closure replay, which sees every body, takes it. With a single
 numeral-parameterized form, that cast has no occasion to appear — for us, or for a downstream
 author writing their own extension, who is covered by no linter of ours.
 
@@ -354,8 +355,12 @@ That is about 60 lines.
    chain/Bézout `rfl` checks and the assembly through
    `irreducible_of_rabin_prime_degree` (prime `d`, see
    `KoalaBear/Ext5/QuinticIrreducible.lean`) or `irreducible_of_rabin_degree_six`
-   (composite `d`, see `KoalaBear/Ext6/SexticIrreducible.lean`), passing
-   `hcard : Fintype.card Field = fieldSize := ZMod.card _`. At another composite `d`, use
+   (composite `d`, see `KoalaBear/Ext6/SexticIrreducible.lean`). Assemble with one
+   term-mode application whose carrier and instances are exactly those of the certificate
+   lemmas, e.g.
+   `@irreducible_of_rabin_degree_six (ZMod fieldSize) (ZMod.instField fieldSize) (ZMod.fintype fieldSize) f fieldSize (ZMod.card _) …`.
+   Do not `refine` against a goal stated over the field's `abbrev` (`KoalaBear.Field`), and do
+   not respell it with named arguments: either builds, and a full-closure replay does not. At another composite `d`, use
    `irreducible_of_rabin_prime_power` when `d = ℓ ^ k` — as `BF64.basePoly_irreducible`
    does at `d = 64` — `irreducible_of_rabin_two_prime_factors` at two distinct prime
    factors, or `Polynomial.irreducible_of_rabin` beyond that. Each condition then applies
