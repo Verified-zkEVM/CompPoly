@@ -629,68 +629,8 @@ theorem setUInt32LE!_getUInt32LE! (b : ByteArray) (off : Nat) (h : off + 4 ≤ b
   rw [getUInt32LE!_eq_ofWordBytes b off h, setUInt32LE!_eq_replaceAt b off _ h,
     wordBytes_ofWordBytes, ByteArray.replaceAt_self b off 4 h]
 
-/-- Offset `i + d` of a word at `i` whose four bytes are in range does not wrap. -/
-theorem toNat_add_byte (i : USize) (n d : Nat) (h : i.toNat + 4 ≤ n) (hu : n < USize.size)
-    (hd : d < 4) : (i + d.toUSize).toNat = i.toNat + d := by
-  have hsize : (2 : Nat) ^ System.Platform.numBits = USize.size := rfl
-  rw [USize.toNat_add, USize.toNat_ofNat_of_lt' (by omega), hsize, Nat.mod_eq_of_lt (by omega)]
-
-theorem uget_eq_get! (b : ByteArray) (i : USize) (h : i.toNat < b.size) :
-    b.uget i h = b.get! i.toNat := by
-  simp only [ByteArray.uget, ByteArray.get!, Array.getElem!_eq_getD, Array.getD_eq_getD_getElem?,
-    Array.getElem?_eq_getElem (show i.toNat < b.data.size from h), Option.getD_some]
-  rfl
-
-/-- The little-endian word at byte offset `i`, read with core byte accesses. -/
-@[inline] def loadWord (b : ByteArray) (i : USize) (h : i.toNat + 4 ≤ b.size)
-    (hu : b.size < USize.size) : UInt32 :=
-  (b.uget i (by omega)).toUInt32 |||
-    (b.uget (i + (1 : Nat).toUSize) (by rw [toNat_add_byte i _ 1 h hu (by decide)]; omega)).toUInt32
-      <<< 0x8 |||
-    (b.uget (i + (2 : Nat).toUSize) (by rw [toNat_add_byte i _ 2 h hu (by decide)]; omega)).toUInt32
-      <<< 0x10 |||
-    (b.uget (i + (3 : Nat).toUSize) (by rw [toNat_add_byte i _ 3 h hu (by decide)]; omega)).toUInt32
-      <<< 0x18
-
-theorem loadWord_eq (b : ByteArray) (i : USize) (h hu) :
-    loadWord b i h hu = b.getUInt32LE! i.toNat := by
-  unfold loadWord ByteArray.getUInt32LE!
-  rw [ite_eq_left_of_eq_true _ _ (eq_true h)]
-  simp only [uget_eq_get!, toNat_add_byte i _ 1 h hu (by decide),
-    toNat_add_byte i _ 2 h hu (by decide), toNat_add_byte i _ 3 h hu (by decide)]
-
-@[simp] theorem size_uset (b : ByteArray) (i : USize) (v : UInt8) (h : i.toNat < b.size) :
-    (b.uset i v h).size = b.size := by
-  simp only [ByteArray.size, ByteArray.uset, Array.size_uset]
-
-/-- Store `v` as the little-endian word at byte offset `i`, with core byte accesses. -/
-@[inline] def storeWord (b : ByteArray) (i : USize) (v : UInt32) (h : i.toNat + 4 ≤ b.size)
-    (hu : b.size < USize.size) : ByteArray :=
-  have h1 := toNat_add_byte i _ 1 h hu (by decide)
-  have h2 := toNat_add_byte i _ 2 h hu (by decide)
-  have h3 := toNat_add_byte i _ 3 h hu (by decide)
-  let b0 := b.uset i v.toUInt8 (by omega)
-  let b1 := b0.uset (i + (1 : Nat).toUSize) (v >>> 0x8).toUInt8
-    (by simp only [b0, size_uset]; omega)
-  let b2 := b1.uset (i + (2 : Nat).toUSize) (v >>> 0x10).toUInt8
-    (by simp only [b1, b0, size_uset]; omega)
-  b2.uset (i + (3 : Nat).toUSize) (v >>> 0x18).toUInt8
-    (by simp only [b2, b1, b0, size_uset]; omega)
-
-theorem uset_eq_set! (b : ByteArray) (i : USize) (v : UInt8) (h : i.toNat < b.size) :
-    b.uset i v h = b.set! i.toNat v := by
-  simp only [ByteArray.uset, ByteArray.set!, Array.uset, Array.set!_eq_setIfInBounds,
-    Array.setIfInBounds, show i.toNat < b.data.size from h, ↓reduceDIte]
-
-theorem storeWord_eq (b : ByteArray) (i : USize) (v : UInt32) (h hu) :
-    storeWord b i v h hu = b.setUInt32LE! i.toNat v := by
-  unfold storeWord ByteArray.setUInt32LE!
-  rw [ite_eq_left_of_eq_true _ _ (eq_true h)]
-  simp only [uset_eq_set!, toNat_add_byte i _ 1 h hu (by decide),
-    toNat_add_byte i _ 2 h hu (by decide), toNat_add_byte i _ 3 h hu (by decide)]
-
 /-- A representation by one 32-bit word: `toWord` stores, `ofWord` decodes every word. The
-accesses use core byte operations only. -/
+accesses are single word loads and stores. -/
 @[inline, reducible] def ofWord32 {R : Type u} (toWord : R → UInt32) (ofWord : UInt32 → R)
     (ofWord_toWord : ∀ x, ofWord (toWord x) = x) : PackedRepr R where
   width := 4
@@ -698,12 +638,12 @@ accesses use core byte operations only. -/
   toBytes x := wordBytes (toWord x)
   ofBytes v := ofWord (ofWordBytes v)
   ofBytes_toBytes x := by simp only [ofWordBytes_wordBytes, ofWord_toWord]
-  read b i h hu := ofWord (loadWord b i h hu)
-  write b i x h hu := storeWord b i (toWord x) h hu
-  read_eq b i h hu := by
-    simp only [loadWord_eq, getUInt32LE!_eq_ofWordBytes b i.toNat h]
-  write_eq b i x h hu := by
-    simp only [storeWord_eq, setUInt32LE!_eq_replaceAt b i.toNat _ h]
+  read b i h _ := ofWord (b.ugetUInt32LE i h)
+  write b i x h _ := b.usetUInt32LE i (toWord x) h
+  read_eq b i h _ := by
+    simp only [ByteArray.ugetUInt32LE, getUInt32LE!_eq_ofWordBytes b i.toNat h]
+  write_eq b i x h _ := by
+    simp only [ByteArray.usetUInt32LE, setUInt32LE!_eq_replaceAt b i.toNat _ h]
 
 @[inline] instance : PackedRepr UInt32 := ofWord32 id id fun _ ↦ rfl
 
