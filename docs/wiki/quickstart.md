@@ -160,6 +160,8 @@ Five further workflows exist that are not part of the pass/fail gate:
   PR review **on demand only**, triggered by a `/review` comment from a repo
   member. It is deliberately not run on PR open, because the review path builds and
   elaborates the PR's Lean code with secrets in scope.
+  Both workflows use `lean4repo-utils@main`, so updates on that branch change their CI behavior.
+  This is a GitHub Actions dependency; it adds no Lean or Python package dependency.
 - [`../../.github/workflows/update_lean_project.yml`](../../.github/workflows/update_lean_project.yml)
   bumps the Lean toolchain and dependencies nightly, and can be dispatched manually.
 - [`../../.github/workflows/lean_release_tag.yml`](../../.github/workflows/lean_release_tag.yml)
