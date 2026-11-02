@@ -8,6 +8,7 @@ module
 
 import all CompPoly.Univariate.Raw.Division
 public import CompPoly.Univariate.Raw.Division
+public import CompPoly.Univariate.Raw.Size
 
 /-!
 # Raw Univariate Polynomial Proofs
@@ -70,10 +71,6 @@ lemma concat_coeff₁ (i : ℕ) : i < p.size →
 omit [BEq R] in
 lemma concat_coeff₂ (i : ℕ) : i ≥ p.size →
     (p ++ q).coeff i = q.coeff (i - p.size) := by simp; grind
-
-theorem add_size {p q : CPolynomial.Raw Q} : (addRaw p q).size = max p.size q.size := by
-  change (Array.zipWith _ _ _ ).size = max p.size q.size
-  rw [zipWith_size matchSize_size_eq, matchSize_size]
 
 theorem add_coeff {p q : CPolynomial.Raw Q} {i : ℕ} (hi : i < (addRaw p q).size) :
     (addRaw p q)[i] = p.coeff i + q.coeff i := by

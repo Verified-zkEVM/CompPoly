@@ -110,6 +110,7 @@ public import CompPolyTests.Univariate.NTT.Forward
 public import CompPolyTests.Univariate.NTT.Interpolation
 public import CompPolyTests.Univariate.NTT.Inverse
 public import CompPolyTests.Univariate.Raw
+public import CompPolyTests.Univariate.RawSize
 public import CompPolyTests.Univariate.Roots.Enumeration
 public import CompPolyTests.Univariate.Roots.FiniteField
 public import CompPolyTests.Univariate.Roots.LasVegas
