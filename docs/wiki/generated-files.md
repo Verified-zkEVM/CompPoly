@@ -40,7 +40,7 @@ writes a complete, compilable module — header, docstring with the regenerating
 step lists — so the workflow after changing a modulus is:
 
 ```bash
-python3 scripts/gen_rabin_certificate.py --p <prime> --f=<little-endian coeffs> \
+uv run --no-project --python 3.12 python scripts/gen_rabin_certificate.py --p <prime> --f=<little-endian coeffs> \
     --lean <path to CertData.lean> --namespace <Field>.<Name>Cert
 ./scripts/update-lib.sh
 ```
@@ -49,7 +49,7 @@ Attach the coefficients with `--f=`: a modulus with a negative leading coefficie
 `-`, which the separated `--f <coeffs>` form parses as an option name.
 
 The generator's exit code is its verdict: non-zero means the polynomial is reducible. Run
-`python3 scripts/gen_rabin_certificate.py --self-test` to check the generator itself against
+`uv run --no-project --python 3.12 python scripts/gen_rabin_certificate.py --self-test` to check the generator itself against
 known-answer cases before trusting a new certificate.
 
 The generator is not restricted to odd characteristic or to extension moduli:
@@ -76,5 +76,5 @@ consistency check.
 - `AGENTS.md` is canonical for agent-oriented tooling.
 - `CLAUDE.md` exists only so tooling that looks for that filename lands on the same
   content.
-- `python3 ./scripts/check-docs-integrity.py` is the enforcement point for the
+- `uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py` is the enforcement point for the
   symlink and for local markdown links across the handbook.

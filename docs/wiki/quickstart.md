@@ -5,7 +5,8 @@ This page is the recommended playbook for routine local validation.
 ## Python tooling
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/) for
-repository Python checks. CI uses uv 0.13.6. The uv commands below select Python
+all repository Python entry points, including validation scripts and CI.
+CI uses uv 0.13.6. The uv commands below select Python
 3.12; uv downloads it if needed. Run them from the repository root.
 These checks use only the standard library. `--no-project` runs them without
 installing a Python package or creating a project environment.

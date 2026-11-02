@@ -151,8 +151,8 @@ homomorphism `CirclePointIndex.toPointHom`. The order proof uses a kernel-checke
 prime-power order criterion. Executable guards remain regression checks, not proof substitutes.
 
 Regenerate the certificate declaration with
-`python3 scripts/gen_mersenne31_circle_certificate.py`, or check the current declaration
-with `python3 scripts/gen_mersenne31_circle_certificate.py --check`. The script is
+`uv run --no-project --python 3.12 python scripts/gen_mersenne31_circle_certificate.py`, or check the current declaration
+with `uv run --no-project --python 3.12 python scripts/gen_mersenne31_circle_certificate.py --check`. The script is
 outside the trusted code base; the kernel checks every supplied coordinate. The
 [Fields module index](../../CompPoly/Fields/README.md) also links this API.
 
@@ -349,7 +349,7 @@ That is about 60 lines.
 1. Pick a monic irreducible `f` (confirm with `scripts/gen_rabin_certificate.py`, which
    exits nonzero if `f` is reducible).
 2. Generate the certificate module:
-   `python3 scripts/gen_rabin_certificate.py --p <p> --f=<coeffs> --lean <path> --namespace <NS>`.
+   `uv run --no-project --python 3.12 python scripts/gen_rabin_certificate.py --p <p> --f=<coeffs> --lean <path> --namespace <NS>`.
 3. Write the irreducibility wrapper: `toPoly p fL = f`, `natDegree`, `f ≠ 0`, then the
    chain/Bézout `rfl` checks and the assembly through
    `irreducible_of_rabin_prime_degree` (prime `d`, see
