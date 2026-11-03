@@ -171,8 +171,10 @@ Do not add hyphens or quotation marks to hide a long sentence. Text in parenthes
 word in the enclosing sentence. Check the parenthetical text separately for sentence length. A list
 introduction ends at its colon for word counting. Each list item counts separately.
 
-CompPoly also counts a formula, a Lean expression, a command, a URL, or a citation key as one word.
-This convention is a CompPoly adaptation for technical text. Ordinary link text keeps its words.
+STE 8.6 treats a formula as quoted text, so it counts as one word. CompPoly also groups an entire
+Lean expression, command, URL, or citation key as one word. This local convention extends the
+STE categories where quoted text or alphanumeric identifiers do not already cover the element.
+Ordinary link text keeps its words.
 The checker approximates these conventions. Read the actual sentence when its count is doubtful.
 
 ### Claims and source evidence
@@ -254,7 +256,7 @@ source. A shorter sentence is not an improvement if it changes the statement.
 | STE 2 to 6, 8, and 9 | The source principles inform the rules above. Mathematical notation and the stated adaptations preserve technical meaning. |
 | STE 3.2 to 3.6 | Simple constructions stay preferred. CompPoly adaptation: keep a modal or complex form when a change would lose uncertainty or time. |
 | STE 7, safety instructions | Apply the principle to risky operations, such as deleting `.lake/build/`: put the condition or instruction before the explanation of the consequence. |
-| STE 8.6, word count | CompPoly adaptation: a formula, a Lean expression, a command, a URL, and a citation key also count as one word. |
+| STE 8.6, word count | STE already counts formulas as quoted text and alphanumeric identifiers as one word. CompPoly also groups entire Lean expressions, commands, URLs, and citation keys where the STE categories do not already cover them. |
 | STE general recommendations | The named recommendations are local requirements here. This guide does not present them as STE rules. |
 | CompPoly additions | Clause-joining dashes (U2), emphasis (U5), list capitals (L3), and the claim rules C1 to C9 are local contribution policies. |
 
