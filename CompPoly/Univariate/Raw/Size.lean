@@ -13,6 +13,8 @@ public import CompPoly.Univariate.Raw.Ops
 
 These bounds concern stored coefficient arrays, including trailing zero coefficients.
 Raw multiplication retains the padding of its shifted rows even when the right input is empty.
+The scalar, shift and product facts were ported from ArkLib's raw-size adapter under Apache 2.0;
+its original copyright attribution is retained.
 -/
 
 public section
@@ -37,10 +39,15 @@ theorem size_mulPowX {R : Type*} [Zero R] (i : Nat) (p : Raw R) :
   simp only [mulPowX, Array.size_append, Array.size_replicate]
 
 /-- Padded raw addition stores the larger input size. -/
-theorem add_size {Q : Type*} [Zero Q] [Add Q] {p q : Raw Q} :
+@[simp]
+theorem size_addRaw {Q : Type*} [Zero Q] [Add Q] {p q : Raw Q} :
     (addRaw p q).size = max p.size q.size := by
   simp only [addRaw, Array.size_zipWith, Array.size_rightpad]
   omega
+
+/-- Compatibility name for the public theorem previously provided by `Raw.Proofs`. -/
+@[deprecated (since := "2026-11-03")]
+alias add_size := size_addRaw
 
 /-- Raw multiplication retains every shifted row, including padding from an empty right array. -/
 theorem size_mulRaw {R : Type*} [Semiring R] (p q : Raw R) :
@@ -56,7 +63,7 @@ theorem size_mulRaw {R : Type*} [Semiring R] (p q : Raw R) :
       change ((p.zipIdx)[i.val]'i.isLt).2 = i.val
       rw [Array.getElem_zipIdx]
       exact Nat.zero_add _
-    simp only [add_size, size_mulPowX, size_smul]
+    simp only [size_addRaw, size_mulPowX, size_smul]
     rw [hz, ih]
     by_cases hi : i.val = 0
     · simp [hi]

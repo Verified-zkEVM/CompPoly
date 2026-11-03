@@ -28,7 +28,7 @@ example {R : Type*} [Zero R] (i : Nat) (p : Raw R) :
     (mulPowX i p).size = i + p.size := size_mulPowX i p
 
 example {R : Type*} [Zero R] [Add R] (p q : Raw R) :
-    (addRaw p q).size = max p.size q.size := add_size
+    (addRaw p q).size = max p.size q.size := by simp
 
 example {R : Type*} [Semiring R] (p q : Raw R) :
     (mulRaw p q).size ≤ p.size + q.size - 1 := size_mulRaw_le p q
