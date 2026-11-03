@@ -426,7 +426,7 @@ only when the argument order makes them necessary.
 * **Imports**: Group the imports at the top of the file.
 * **Operators**: Put spaces on both sides of `:`, `:=`, and infix operators. Put an operator before
   a line break, not at the start of the next line.
-* **Hypotheses**: Put hypotheses to the left of the colon (for example, `(h : P) : Q`), not in
+* **Hypotheses**: Prefer hypotheses to the left of the colon (for example, `(h : P) : Q`), not in
   arrows (`: P → Q`), when the proof introduces them.
 * **Functions**: Prefer `fun x ↦ ...` to `λ x, ...`.
 * **Instances**: Use the `where` syntax to define instances and structures. *Preferred but not
@@ -445,7 +445,7 @@ only when the argument order makes them necessary.
 
 ### Normal Forms
 
-We use consistent representations of equivalent statements:
+We aim for consistent representations of equivalent statements:
 
 * **Standard Forms**: Use established normal forms (for example, `s.Nonempty` instead of
   `s ≠ ∅`). They enable dot notation and keep statements consistent.
@@ -535,7 +535,7 @@ CompPoly follows the principles of the
 [Mathlib Code of Conduct](https://github.com/leanprover-community/mathlib4/blob/master/CODE_OF_CONDUCT.md).
 
 Project participation includes contributions, issues, and discussions. Participants agree to the
-code of conduct. Treat other contributors with respect. Report unacceptable behavior to the
+code of conduct. Treat other contributors with respect. You can report unacceptable behavior to the
 project maintainers.
 
 ## Licensing
