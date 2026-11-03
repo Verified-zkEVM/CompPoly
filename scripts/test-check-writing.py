@@ -12,6 +12,8 @@ import unittest
 from unittest import mock
 
 SCRIPTS = Path(__file__).resolve().parent
+# Loading the checker must not leave a `__pycache__` directory in `scripts/`.
+sys.dont_write_bytecode = True
 
 
 def load(name: str, filename: str):
