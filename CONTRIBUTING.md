@@ -229,7 +229,8 @@ Use this format:
 
 **Subject:**
 
-* Use an imperative verb in the present tense: "change", not "changed" or "changes".
+* Name the change with an imperative phrase, such as "add the coset NTT", or with a noun phrase
+  for the result, such as "the additive NTT over a coset". Do not use "changed" or "changes".
 * Start with a lowercase letter. Keep the capitalization of a name or identifier, such as `NTT`.
 * Do not end the subject with a period.
 * Use the scope when it helps identify the affected component, such as `fields` or `bench`.
