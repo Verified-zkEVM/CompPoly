@@ -119,10 +119,10 @@ row.
   steps. See [Proving so the proof survives the next iteration](docs/wiki/autoresearch.md#proving-so-the-proof-survives-the-next-iteration).
 * **Quote ratios, not nanoseconds.** Numbers from your machine are not comparable with the tables in
   `benchmark-best-times.md`, which come from one reference machine. Report the A/B verdict and the
-  candidate-over-baseline ratio for each row. Maintainers update the tables and the pass log from
-  measurements on the reference machine. Do not edit them in your PR.
+  candidate-over-baseline ratio for each row. The tables and pass log use measurements from that
+  reference machine. Do not edit them in your PR.
 * **Keep the harness out of it.** Do not change `bench/` and a fast implementation in the same PR.
-  Both sides of the comparison would change, so the result cannot be judged. If you need a new
+  Both sides of the comparison would change, so a reviewer cannot judge the result. If you need a new
   benchmark group, add it first in its own PR. Follow
   [Adding a benchmark](docs/wiki/benchmarking.md#adding-a-benchmark).
 
