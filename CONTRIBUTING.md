@@ -4,7 +4,7 @@ Contribute a definition, a proof, a fast implementation, a test, or a documentat
 The [roadmap](ROADMAP.md) describes the planned directions of the library. The
 [open issues](https://github.com/Verified-zkEVM/CompPoly/issues) include bugs, requested
 features, and formalization tasks. Issues labeled `good first issue` or `help wanted` are suitable
-starting points.
+first tasks.
 
 Start with [`README.md`](README.md), the [wiki](docs/wiki/README.md), and the `README.md` file of
 the subtree that you change. [`AGENTS.md`](AGENTS.md) gives the entry points and guardrails for AI
@@ -24,14 +24,13 @@ gh issue list -R Verified-zkEVM/CompPoly --state open --search "<topic>"
 ```
 
 If an open PR covers the same declarations, ask its author whether the work is active. Do not
-duplicate active work. If you open a PR for the same target, link the earlier PR and explain how
-your work relates to it.
+duplicate active work. If you open a PR for the same target, link the earlier PR.
+Explain how your work relates to it.
 
 ### Large Contributions
 
-For a large contribution, such as a new polynomial representation or a new field family, we
-recommend a [blueprint](https://github.com/PatrickMassot/leanblueprint) before you write the Lean
-code. A blueprint describes these items:
+We strongly encourage a [blueprint](https://github.com/PatrickMassot/leanblueprint) before you write a large Lean contribution.
+Examples are a new polynomial representation or a new field family. A blueprint describes these items:
 
 - The contents of the formalization.
 - The key definitions, theorems, and assumptions of the proposed Lean formalization.
@@ -39,11 +38,10 @@ code. A blueprint describes these items:
 - References to the relevant literature.
 - Possible difficulties and design choices.
 
-Open an issue or a discussion that proposes the contribution and its blueprint. Agree on the scope
-and approach before you start a large implementation. A blueprint makes the structure of the work
+Open an issue or a discussion that proposes the contribution and its blueprint. Discuss the blueprint before you start a large implementation. A blueprint makes the structure of the work
 visible early, so that reviewers can comment before you invest in proofs.
 
-### Set Up
+### Setup
 
 On a new clone, download the Mathlib build cache, and then build the library:
 
@@ -157,7 +155,7 @@ prints the comparison. A copy of the comparison goes to `bench/out/ab/<run>/comp
 A row is `faster` only when two conditions are true. The ratio of medians must clear the threshold,
 which is 5% by default. Every candidate invocation must also beat every baseline invocation.
 
-If the harness drift is outside ±10%, repeat the run instead of reading it. Otherwise, keep the
+If the harness drift is outside ±10%, repeat the run. Do not interpret that result. Otherwise, keep the
 change on a `faster` verdict without `SUSPECT`, and revert it on any other verdict. Use a quiet
 machine. Do not rebuild or edit `bench/` while a run is in progress.
 
@@ -171,8 +169,8 @@ machine. Do not rebuild or edit `bench/` while a run is in progress.
 * The tests: the concrete-input tests for the implementation. Add them in this PR if the
   implementation had none.
 * The A/B evidence: the `compare-*.md` table or its relevant rows, with the preset, the rounds, and
-  the drift line. If you keep a `same` or `slower` verdict for a different reason, such as a
-  compile-time fix or a correctness repair, give that reason.
+  the drift line. If you keep a `same` or `slower` verdict for a different reason, explain why.
+  Examples are a compile-time fix or a correctness repair.
 * A statement that `lake build`, `lake test`, `--validate-only` on the affected groups, and
   `lake exe axiomsweep --check` pass.
 
@@ -187,19 +185,19 @@ procedure. The PR must contain these items:
   `CanonicalNat` and `ByteCodec := ByteCodec.ofCanonicalNat _`. A fixed-length composite, such as
   an extension or a dense coefficient vector, gets `ByteCodec` by concatenation, usually through
   `ByteCodec.instVector`. A variable-length type gets `DelimitedCodec`. Build it from the list,
-  pair, and vector codecs, with `Valid` stating what fits the `u64` framing.
+  pair, and vector codecs. `Valid` states what fits the `u64` framing.
 * The theorems through the class interfaces, not only through the raw functions. These theorems
   are `deserialize (serialize x) = some x`, injectivity, and, for a scalar, the round trip of the
   total decoder (`CanonicalNat.deserialize_serialize`). The derived instances give the first two
   when you prove the one law of the codec.
-* For a fast carrier of an existing field, the agreement lemma with the specification field,
+* For a fast carrier of a current field, the agreement lemma with the specification field,
   `toBytes (ofField x) = toBytes x`. Add a test that the stored word is not the emitted value. The
   agreement lemma is the correctness statement of the instance. It keeps the bytes independent of
   the carrier.
 * A `Bytes.lean` test module that mirrors the source module. It contains a known byte vector, a
   round trip through `serialize` and `deserialize`, and one rejected input.
 * A `Repr` instance if the type has none. It is not part of the byte format, but a type that can be
-  written out must also be printable.
+  written out should also be printable.
 
 Do not add `ToJson`, `FromJson`, or a different ad hoc encoding. If a consumer needs JSON, it will
 be hex strings of these same bytes.
@@ -251,13 +249,12 @@ the contribution:
   `scripts/axiom_baseline.json`.
 * The validation commands that you ran and their results. Identify checks that you did not run.
 * Renamed or removed declarations and the affected callers.
-* Related issues, such as `Closes #123`, and overlapping PRs.
+* Related issues, such as `Closes #123`, and related PRs.
 
 Keep the claims in the title and the description consistent with the code and the evidence.
 A successful build does not show that a statement is correct or that a fast implementation is
-faster. If the PR changes commands, repository structure, generated outputs, or recurring
-contributor guidance, update the matching page in [`docs/wiki/`](docs/wiki/README.md) in the same
-PR.
+faster. If the PR changes commands, repository structure, generated outputs, or regular contributor guidance, update the relevant [wiki page](docs/wiki/README.md).
+Include that update in the same PR.
 
 ### Size and Stacking
 
@@ -274,7 +271,7 @@ CompPoly permits squash and rebase merges. It does not permit merge commits.
 
 Use the [writing standard](docs/wiki/writing.md) for documentation, docstrings, comments, commit
 messages, PR and issue text, and review comments. The standard applies to all authors. It uses
-ASD-STE100 Simplified Technical English to correct defects in existing prose. Its stated
+ASD-STE100 Simplified Technical English to correct defects in current prose. Its stated
 adaptations keep mathematical and technical meaning exact.
 
 Use the [writing workflow](docs/wiki/write-technical-prose.md) when you draft or revise that text.
@@ -282,7 +279,7 @@ Keep claims, hypotheses, uncertainty, trust statements, and requirement strength
 a style edit. The [vocabulary](docs/wiki/writing-vocabulary.md) records technical meanings. It does
 not prohibit other meanings when their context is clear.
 
-The writing checker reports possible defects in prose. It is an editing aid and does not establish
+The writing checker reports possible defects in prose. It is a revision aid and does not establish
 conformance with the standard. Run it on the prose that your branch changes and on your PR
 description:
 
@@ -346,7 +343,7 @@ The [linting script](scripts/lint-style.sh) enforces some of them.
 
 * **Theorem-only helper modules**: Prefer the name `Lemmas` for a new theorem-only leaf module.
 * **Proof placement**: Keep transport and equivalence lemmas near the bridge layer, such as
-  `ToPoly` or `MvPolyEquiv`. Keep the first user-facing correctness theorem next to the definition
+  `ToPoly` or `MvPolyEquiv`. Keep the first public correctness theorem next to the definition
   that it justifies. For example, the bridge lemmas in `CompPoly/Univariate/ToPoly/Core.lean` and
   `CompPoly/Multivariate/MvPolyEquiv/Eval.lean` stay with the bridge. A theorem such as
   `eval_interpolatePow_at_node` stays with `interpolatePow` in `CompPoly/Univariate/Lagrange.lean`.
@@ -369,7 +366,7 @@ If you are not sure, read the adjacent files.
   `CMlPolynomial` values
 * `m`, `n`, `k`, ...            : Natural numbers
 * `i`, `j`, `k`, ...            : Indices into vectors, lists, or `Fin n`. They can be `ℕ`-valued
-  or `ℤ`-valued. The convention describes the indexing role, not the underlying type
+  or `ℤ`-valued. The convention describes the indexing role, not the type
 * `s`, `t`, ...                : Sets or lists
 
 ### Symbol Naming Dictionary
@@ -470,9 +467,9 @@ We use consistent representations of equivalent statements:
   `rw` and `simp` usually do not unfold it without an explicit instruction. Prefer `def` for most
   definitions, because it keeps terms manageable.
 * **Abbreviations (`abbrev`)**: `abbrev` creates a `reducible` definition that is always unfolded.
-  Use it for type synonyms or light aliases whose underlying term must stay visible.
+  Use it for type synonyms or light aliases whose aliased term should stay visible.
 * **Irreducible**: Use `irreducible` (or a `structure` wrapper) to seal an API boundary when the
-  internal implementation details must not leak.
+  internal implementation details should not leak.
 
 ### Deprecation Policy
 
@@ -481,7 +478,7 @@ We use consistent representations of equivalent statements:
   ```lean
   @[deprecated (since := "YYYY-MM-DD")] alias oldName := newName
   ```
-* **Removal**: When you remove a declaration, give a message that names its replacement:
+* **Removal**: When you remove a declaration, give a message that explains the transition:
   ```lean
   @[deprecated "Use `better_theorem` instead" (since := "YYYY-MM-DD")]
   theorem old_theorem ...
@@ -489,10 +486,10 @@ We use consistent representations of equivalent statements:
 
 ### Documentation Standards
 
-Every definition and major theorem needs a docstring. Write docstrings and comments to the
+Every definition and major theorem should have a docstring. Write docstrings and comments to the
 [writing standard](docs/wiki/writing.md).
 
-* **Module Docstrings**: Start each file with a `/-! ... -/` block that contains a title, a
+* **Module Docstrings**: Each file should start with a `/-! ... -/` block that contains a title, a
   summary, the notation, and the references.
 * **Sectioning Comments**: Use `/-! ### Title -/` to divide a large file into sections. These
   comments appear in the generated documentation.
@@ -512,7 +509,7 @@ When you cite a paper in a Lean docstring, follow these conventions:
 * **Use citation keys in text**: Cite a paper with a key such as `[ACFY24]`, not with its full title
   or URL.
 
-* **Include a References section**: Give each file that cites papers a `## References` section in
+* **Include a References section**: Each file that cites papers should have a `## References` section in
   its module docstring:
   ```lean
   ## References
@@ -525,9 +522,8 @@ When you cite a paper in a Lean docstring, follow these conventions:
   Use the format `* [Author Last Name, First Initial, *Title*][citation_key]`.
 
 * **Add BibTeX entries**: Give each academic paper an entry in
-  [`blueprint/src/references.bib`](blueprint/src/references.bib). When you add a paper, add the
-  BibTeX entry, use the citation key in your Lean file, and list the paper in the References
-  section. The file is a standalone bibliography, and the repository has no rendered leanblueprint
+  [`blueprint/src/references.bib`](blueprint/src/references.bib). When you add a paper, add its BibTeX entry.
+  Cite its key in the Lean file. List the paper in the module References section. The file is a standalone bibliography, and the repository has no rendered leanblueprint
   project. Its header gives the `grep` command that lists cited keys without an entry.
 
 * **Non-academic references**: An implementation reference, such as a GitHub repository or a

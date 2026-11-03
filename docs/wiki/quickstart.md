@@ -57,7 +57,7 @@ declaration owned by a `CompPoly.*` module, diffed against the committed baselin
 imports it (`tests/` and `bench/` are outside it). It has the blind spots of any
 environment walk (structure-field defaults and `example`s never enter the
 environment). The module docstring in `scripts/AxiomSweep.lean` describes them.
-It fails only on *new* `sorryAx` or non-standard-axiom taint, so pre-existing gaps
+It fails only on *new* `sorryAx` or non-standard-axiom taint, so baseline gaps
 stay allowed. After you intentionally add or close a `sorry`, refresh and commit the
 baseline:
 
@@ -140,7 +140,7 @@ come from the on-demand Benchmarks workflow. See
   sweep as an enforcing gate. It posts a build-timing report. It also builds
   `CompPolyBench` and runs it in `--validate-only` mode over the curated group set in
   `bench/ci-groups.txt`. That run checks that the implementations of each group agree,
-  without timing ordinary workloads. Harness checks can still record samples. The
+  without time measurements for ordinary workloads. Harness checks can still record samples. The
   workflow uploads the digests as an artifact.
   A full cold rebuild (`rm -rf .lake/build && lake build`) runs automatically
   when `lean-toolchain` or `lake-manifest.json` differs from the comparison base
@@ -162,7 +162,7 @@ come from the on-demand Benchmarks workflow. See
 - [`../../.github/workflows/writing.yml`](../../.github/workflows/writing.yml) runs
   the tests of the writing checker as a gate. Its other job runs the checker on the
   changed prose and on the PR description. That job reports findings as warnings
-  and never fails the build.
+  and returns success for those findings. Operational errors fail the job.
 
 Five further workflows exist that are not part of the pass/fail gate:
 

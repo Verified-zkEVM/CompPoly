@@ -13,8 +13,8 @@ word.
 4. Use a qualifier when two technical meanings occur in the same passage.
 5. Add a missing term or meaning when the contribution first needs it.
 
-A noun and a verb need separate technical uses, even when they have the same spelling. Listing
-"check" as a noun does not approve every verb use of that word. A category example is not a reason
+A noun and a verb need separate technical uses, even when they have the same spelling. A noun entry for
+"check" does not approve every verb use of that word. A category example is not a reason
 to reject another established term from that field.
 
 ## Terms and context
@@ -30,11 +30,11 @@ meaning of a word in a different context:
 | carrier | The Lean type that stores the elements of a field or ring, such as `ZMod p` or `Native32.FastField` | Say "fast carrier" or "specification carrier" when two carriers of the same field occur. |
 | certificate | Data that a Lean checker re-checks to establish a property, such as a Rabin irreducibility certificate or a Pratt primality certificate | Name the property and the checker. A certificate is not trusted. A generated certificate is not a proof until the kernel checks it. |
 | certified | A value or instance that carries a Lean proof of a named property, such as a certified cardinality | Name the property. Do not use "certified" for a tested value. |
-| check | A test or condition, as a noun | As a verb, it means to evaluate a specified condition or test. Say "the kernel checks" or "CI checks" to name the actor. |
+| check | A test or condition, as a noun | The software verb evaluates a specified condition or test. CompPoly permits that verb under its local terminology priority. It is not an STE dictionary approval. Name the actor, such as the kernel or CI. |
 | code | Source code, or an error-correcting code such as a Reed–Solomon code | Use "source code" or "implementation" when both meanings occur. |
 | complete, completeness | The property that an algorithm returns every solution, as in a kernel basis, or the completeness of a decoder | Ordinary uses such as "complete the template" stay permitted. Name the property in a correctness statement. |
 | computable | A Lean definition that the compiler can generate code for, that is, one not marked `noncomputable` | Distinguish "computable" from "fast" and from "verified". The library name "computable polynomials" refers to `CPolynomial` and related types. |
-| digest | A `Nat` value that the benchmark validation pass folds over the outputs of a group | Agreeing digests are evidence that implementations agree on the benchmark inputs. They are not a proof. A mismatch shows that two implementations disagree. |
+| digest | A `Nat` value that the benchmark validation pass folds over the outputs of a group | Equal digests are evidence that implementations agree on the benchmark inputs. They are not a proof. A mismatch shows that two implementations disagree. |
 | extension | A field extension, such as `Ext P` for `F[X]/f` | Say "field extension", "extensionality lemma", or "file extension" when the context is ambiguous. |
 | fast implementation | A definition that computes the same function as a specification definition, with a proof of equality | Name the refinement theorem, such as a `@[csimp]` lemma or an `_eq_` theorem. |
 | field | An algebraic field, or a member of a Lean structure | Write "structure field" when the distinction matters. |
@@ -43,18 +43,18 @@ meaning of a word in a different context:
 | module | A Lean module, or an algebraic module | Write "Lean module" or "module over `R`" when the distinction matters. |
 | Montgomery residue | A stored value `a·R mod p` that represents the field element `a` | Distinguish the stored residue from the canonical value that `toNat` or serialization produces. |
 | native | Compiled machine code, as in `CompPolyNativeSmoke`. Machine-word arithmetic, as in `Native32`. Compiler trust, as in `native_decide`. | Always qualify: "native code", "native-word arithmetic", or "native-compiler trust". The TCB policy forbids native-compiler trust. |
-| proof | A Lean proof or a mathematical proof | Name the kind of proof before comparing the two. A certificate or a test is not a proof. |
+| proof | A Lean proof or a mathematical proof | Name the kind of proof before you compare the two. A certificate or a test is not a proof. |
 | reduction | Modular reduction, Montgomery reduction, row reduction of a matrix, or kernel evaluation of a term | Write "modular reduction", "row reduction", or "kernel reduction" when the context is ambiguous. |
 | sound, soundness | The property that every output, or every accepted input, satisfies a stated specification | Name the property and its hypotheses, such as "every returned vector solves the system". Ordinary prose can use "correct" for an argument. |
 | specification | The mathematically clear definition that a fast implementation must equal | Use "specification" or "spec definition" consistently in a passage. |
 | trusted, trusted code base (TCB) | A component whose correctness a result assumes without a Lean proof | For proofs, the TCB is the Lean kernel with the standard axioms, and it excludes the compiler. Call a generator "untrusted" when the kernel re-checks its output. |
-| valid, validate | Satisfaction of a specified predicate, or the benchmark `--validate-only` digest check | Define or name the predicate. A validated benchmark group has agreeing digests. It is not a proved result. |
+| valid, validate | Satisfaction of a specified predicate, or the benchmark `--validate-only` digest check | Define or name the predicate. A validated benchmark group has equal digests. It is not a proved result. |
 | verify, verified | A formal-verification result: a Lean proof that connects a definition to its specification | Use "check" or "test" for routine repository tests and compiled examples. |
 
 ## Technical nouns
 
 These examples identify relevant subject fields. Preserve established terms and their spellings.
-Introduce a longer or unfamiliar term before using an abbreviation:
+Introduce a longer or unfamiliar term before you use an abbreviation:
 
 | Field | Examples |
 |---|---|
@@ -69,6 +69,27 @@ Introduce a longer or unfamiliar term before using an abbreviation:
 | Lean | declaration, theorem, lemma, hypothesis, docstring, namespace, typeclass, instance, tactic, elaboration, Lean kernel, `@[csimp]` lemma, refinement theorem, code generation |
 | Benchmarks | benchmark group, preset, digest, verdict, ratio, frozen baseline, candidate, harness drift, reference machine |
 | Repository tools | branch, commit, pull request, build, linter, CI, workflow, stack |
+
+## Technical -ing nouns
+
+These terms name the stated technical concepts. They do not authorize a verbal clause.
+The checker reads this table for rule V2.
+
+| Term | Technical meaning |
+|---|---|
+| `encoding`, `decoding` | The representation and interpretation of values or messages under specified formats. |
+| `folding`, `batching` | Reduction and aggregation constructions on words or computations. |
+| `hashing`, `binding`, `hiding` | Hash constructions and named commitment properties. |
+| `sampling`, `padding` | Random-choice constructions and prescribed data extension. |
+| `rewriting`, `normalizing` | Lean expression transformations by equations or reduction. |
+| `pattern matching` | Selection of a branch by a constructor pattern. |
+| `indexing`, `mapping` | Index conventions and maps between mathematical objects. |
+| `working tree`, `dangling symlink` | A Git checkout and a symlink with no target. |
+| `programming`, `computing` | Program construction and computation as subject fields. |
+| `root finding`, `list decoding` | Algorithms to recover polynomial roots or codewords. |
+| `squaring`, `framing` | Arithmetic square operations and codec boundaries. |
+| `nesting`, `inlining` | Nested syntax and compiler substitution of a function body. |
+| `timing` | Elapsed-time measurements in the benchmark framework. |
 
 ## Technical verbs
 
@@ -87,7 +108,7 @@ passage. Explain the operation or name the relevant declaration when its meaning
 
 ## Words to avoid
 
-This table gives prompts for an editing pass over ordinary prose. It does not define STE word
+This table gives prompts for a revision pass over ordinary prose. It does not define STE word
 approval. Use a replacement only when it preserves the meaning and grammatical role. Rewrite the
 sentence when a direct replacement does not work:
 
@@ -110,7 +131,7 @@ sentence when a direct replacement does not work:
 | "now", "no longer", "previously", "formerly", "currently", "new" | in library reference text, the fact about the present state (rule C3) |
 
 "The following are equivalent" is a permitted mathematical introduction. Words such as "simply"
-and "essentially" can occur in technical terms, including "simply connected" and "essentially
-surjective". Read their meaning rather than deleting them as isolated words. "Fast" is a
+and "essentially" can occur in technical terms, such as "simply connected" and "essentially
+surjective". Read their meaning. Do not delete them as isolated words. "Fast" is a
 CompPoly term for a fast implementation. A claim that one implementation is faster than another
 needs an A/B verdict.

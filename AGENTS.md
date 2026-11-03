@@ -27,9 +27,9 @@ Human contributors should usually start with [`README.md`](README.md),
    theorem only after a `faster` verdict without `SUSPECT`. A `sorry` on that theorem
    stays inside an iteration and never goes into a commit.
 8. When you add a field carrier or a polynomial representation, add its codec in the
-   same PR. Use `CanonicalNat` and `ByteCodec`, or `DelimitedCodec` for a
-   variable-length type. Also add the round-trip and injectivity theorems through the
-   class interfaces. For a fast carrier, add the agreement lemma with its specification
+   same PR. A fixed-width scalar needs `CanonicalNat` and `ByteCodec`.
+   A fixed-length composite needs `ByteCodec`. A variable-length type needs `DelimitedCodec`.
+   Also add the round-trip and injectivity theorems through the class interfaces. For a fast carrier, add the agreement lemma with its specification
    field. See
    "New Types Owe a Codec" in [`CONTRIBUTING.md`](CONTRIBUTING.md) and
    [`docs/wiki/serialization.md`](docs/wiki/serialization.md).
@@ -64,15 +64,15 @@ Human contributors should usually start with [`README.md`](README.md),
 
 - `./scripts/update-lib.sh` generates `CompPoly.lean`. Do not hand-edit it.
 - Edit source, not derived output under `.lake/`.
-- If a PR changes commands, repo structure, generated outputs, or recurring repo
-  guidance, update the matching page in [`docs/wiki/`](docs/wiki/README.md) in the
+- If a PR changes commands, repo structure, generated outputs, or regular repo
+  guidance, update the relevant page in [`docs/wiki/`](docs/wiki/README.md) in the
   same PR.
-- Promote stable repo-specific guidance into [`docs/wiki/`](docs/wiki/README.md)
-  instead of leaving it only in transient notes.
+- Promote stable repo-specific guidance into [`docs/wiki/`](docs/wiki/README.md).
+  Do not leave it only in transient notes.
 - Write all prose to the [writing standard](docs/wiki/writing.md): documentation,
   comments, docstrings, commit messages, PR and issue text, and review comments. Use
   [`write-technical-prose.md`](docs/wiki/write-technical-prose.md) for the workflow.
-  Assess existing prose against the standard rather than preserving its defects.
+  Assess current prose against the standard. Correct its defects.
   Keep trust and soundness statements exact.
 
 ## Deeper Docs

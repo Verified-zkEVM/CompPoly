@@ -1,9 +1,8 @@
 # Writing Workflow
 
-Use this workflow when you draft or revise CompPoly documentation, comments, docstrings, commit
-messages, PR text, issue text, or review comments. Use it for short comments as well as long
-guides. Work on the text that the task names. A writing review does not authorize unrelated source
-changes or publication.
+Use this workflow for CompPoly prose. It covers documentation, comments, docstrings, commit messages,
+PR text, issue text, and review comments. Apply it to short comments and long guides.
+Work on the requested text. A prose review does not authorize unrelated source changes or publication.
 
 ## Read the local requirements
 
@@ -11,8 +10,8 @@ Read the [writing standard](writing.md) and the [vocabulary](writing-vocabulary.
 relevant section of [CONTRIBUTING.md](../../CONTRIBUTING.md) for the contribution or text that you
 prepare. The standard gives the requirements. This page explains how to apply them.
 
-Treat existing prose as material to assess, not as a style to preserve automatically. Use STE's
-writing principles to correct defects. Keep established identifiers, quotations, and technical
+Treat current prose as material to assess, not as a style to preserve automatically. Use STE's
+prose principles to correct defects. Keep established identifiers, quotations, and technical
 meanings accurate. Consult the official standard when a rule's source or a word's approval
 matters. Do not invent a dictionary approval or claim full STE conformance from a checker result.
 
@@ -54,10 +53,10 @@ error terms, exceptional cases, and direction of implication. Preserve time and 
 strength: "may have failed" does not mean "failed", and "recommended" does not mean "required".
 A shorter expression is useful only when it keeps the intended meaning.
 
-Do not let a writing rule change standard terminology. A rule can conflict with a term or language
-pattern that is standard in cryptography research and engineering, computer science, or
-mathematics. In that case, keep the standard form and apply the rules to the rest of the passage.
-Repository habit alone does not make a wording standard.
+Do not let a prose rule change standard terminology. First try a rewrite that follows the rules
+and keeps the technical meaning. Keep the standard form only if that rewrite would change the
+meaning. Apply the rules to the rest of the passage. Repository habit alone does not make a form
+standard. Ordinary mathematical openings follow V2.
 
 Use the vocabulary to resolve ambiguous terms, not to erase valid technical meanings.
 "Complete the template" does not claim algorithmic completeness. "Kernel" needs a qualifier only
@@ -68,21 +67,21 @@ If the passage is in a generated file, edit the generator and regenerate the fil
 
 ## Use the checker
 
-`scripts/check-writing.py` is an advisory editing aid. It uses only the Python standard library.
+`scripts/check-writing.py` is an advisory revision aid. It uses only the Python standard library.
 Run it from the repository root with [uv](https://docs.astral.sh/uv/):
 
 ```bash
 uv run --no-project --python 3.12 python scripts/check-writing.py path/to/document.md
 uv run --no-project --python 3.12 python scripts/check-writing.py --base origin/main
 uv run --no-project --python 3.12 python scripts/check-writing.py --stdin description < /tmp/pr-description.md
-git log --format=%B origin/main..HEAD | uv run --no-project --python 3.12 python scripts/check-writing.py --stdin commits
+git log --format=%B BASE..HEAD | uv run --no-project --python 3.12 python scripts/check-writing.py --stdin commits
 ```
 
 The `--base` mode reads each paragraph, list item, or table cell that contains an added line.
-Pass the actual review base to `--base`. A stacked PR can have a feature branch as its base.
+Pass the actual review base to `--base`. Replace `BASE` in the commit range with that base. A stacked PR can have a feature branch as its base.
 
 Read each finding before you edit. Counts and grammar patterns are approximations. Correct real
-defects, keep accurate technical expressions, and report a recurring checker defect with an
+defects, keep accurate technical expressions, and report a regular checker defect with an
 example. Do not rewrite a correct claim only to make the checker quiet.
 
 The checker does not establish clarity, source fidelity, dictionary compliance, or permission to
@@ -98,4 +97,4 @@ A good sentence can still be wrong in its paragraph.
 Return or save the requested text. Publish it only when the instructions of the user authorize
 that action. If the task includes a commit, run the validation that
 [CONTRIBUTING.md](../../CONTRIBUTING.md#validate-your-change) requires first. Report material
-evidence gaps without adding a standard disclaimer to every text.
+evidence gaps. A standard disclaimer on every text is unnecessary.
