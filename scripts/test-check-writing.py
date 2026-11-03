@@ -151,10 +151,11 @@ class WritingRuleTests(unittest.TestCase):
         self.assertEqual(findings("The lemma is no longer needed.", "body.md"), [])
         self.assertEqual(findings("The new code is now linear.", "docs/wiki/page.md"), [])
 
-    def test_british_spelling(self) -> None:
+    def test_ise_spelling(self) -> None:
         self.assertEqual(findings("The optimisation loop measures ratios."), ["W8"])
         self.assertEqual(findings("Each optimisations pass is optimised."), ["W8"])
         self.assertEqual(findings("The optimization loop measures ratios."), [])
+        self.assertEqual(findings("The behaviour of the loop is stable."), [])
         self.assertEqual(findings("Call `optimiseBehaviour` here."), [])
 
     def test_compoly_terms_are_not_flagged(self) -> None:

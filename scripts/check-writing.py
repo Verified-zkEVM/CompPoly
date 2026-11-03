@@ -10,7 +10,7 @@ The standard is `docs/wiki/writing.md`. This script reports patterns that a sear
 - S5: contractions
 - V1: perfect and progressive verb forms, and V2: a clause that starts with an "-ing" form
 - S7: a sentence that starts with "This" or "These" and a verb, with no noun
-- W1: the words to avoid in `docs/wiki/writing-vocabulary.md`, and W8: the British spellings
+- W1: the words to avoid in `docs/wiki/writing-vocabulary.md`, and W8: the "-ise" spellings
   that it lists
 - C3: history words, such as "no longer", in library reference text.
 
@@ -123,11 +123,11 @@ class Finding:
 
 
 def avoid_words(vocabulary: Path = VOCABULARY) -> tuple[list[str], list[str], list[str]]:
-    """Return the general words to avoid, the history words, and the British spellings.
+    """Return the general words to avoid, the history words, and the "-ise" spellings.
 
     The words are the quoted terms in the first column of the "Words to avoid" table. A row whose
     second column names rule C3 gives history words, which apply only to library text. A row whose
-    second column names rule W8 gives spellings to replace with the American spelling.
+    second column names rule W8 gives "-ise" spellings to replace with the "-ize" spelling.
     """
     text = vocabulary.read_text(encoding="utf-8")
     table = text[text.index("## Words to avoid"):]
@@ -441,7 +441,7 @@ def check_block(block: Block, general: re.Pattern[str] | None,
             (PHRASAL, "W6", "Consider a direct verb that preserves this meaning."),
             (CONTRACTION, "S5", "Write the full form of this contraction."),
             (general, "W1", "Review this wording using writing-vocabulary.md; preserve its meaning."),
-            (spelling, "W8", "Use the American English spelling.")):
+            (spelling, "W8", "Use the -ize spelling, as Oxford and American English do.")):
         if pattern is None:
             continue
         for match in pattern.finditer(plain):

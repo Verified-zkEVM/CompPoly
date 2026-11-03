@@ -106,7 +106,7 @@ sentence when a direct replacement does not work:
 | "robust", "seamless", "comprehensive", "powerful", "elegant", "crucial", "blazing" | the measurement or the reason |
 | "clearly", "obviously", "trivially", "basically" | the reason, or delete the word |
 | "it is worth noting that", "it is important to" | delete the phrase when it adds no information |
-| "optimisation", "optimise", "optimising", "behaviour", "specialisation", "specialise", "initialisation" | the American spelling, such as "optimization" (rule W8) |
+| "optimisation", "optimise", "optimising", "specialisation", "specialise", "initialisation" | the "-ize" spelling, such as "optimization" (rule W8) |
 | "now", "no longer", "previously", "formerly", "currently", "new" | in library reference text, the fact about the present state (rule C3) |
 
 "The following are equivalent" is a permitted mathematical introduction. Words such as "simply"
