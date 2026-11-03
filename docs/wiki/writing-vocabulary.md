@@ -42,7 +42,7 @@ meaning of a word in a different context:
 | kernel | The Lean kernel, the kernel (null space) of a matrix, or a performance-critical routine | Write "Lean kernel", "kernel of the matrix" or "null space", and "arithmetic kernel" or "fast kernel" when more than one meaning occurs. |
 | module | A Lean module, or an algebraic module | Write "Lean module" or "module over `R`" when the distinction matters. |
 | Montgomery residue | A stored value `a·R mod p` that represents the field element `a` | Distinguish the stored residue from the canonical value that `toNat` or serialization produces. |
-| native | Compiled machine code, as in `CompPolyNativeSmoke`. Machine-word arithmetic, as in `Native32`. Compiler trust, as in `native_decide`. | Always qualify: "native code", "native-word arithmetic", or "native-compiler trust". Native-compiler trust is forbidden by the TCB policy. |
+| native | Compiled machine code, as in `CompPolyNativeSmoke`. Machine-word arithmetic, as in `Native32`. Compiler trust, as in `native_decide`. | Always qualify: "native code", "native-word arithmetic", or "native-compiler trust". The TCB policy forbids native-compiler trust. |
 | proof | A Lean proof or a mathematical proof | Name the kind of proof before comparing the two. A certificate or a test is not a proof. |
 | reduction | Modular reduction, Montgomery reduction, row reduction of a matrix, or kernel evaluation of a term | Write "modular reduction", "row reduction", or "kernel reduction" when the context is ambiguous. |
 | sound, soundness | The property that every output, or every accepted input, satisfies a stated specification | Name the property and its hypotheses, such as "every returned vector solves the system". Ordinary prose can use "correct" for an argument. |
