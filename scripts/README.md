@@ -77,7 +77,10 @@ It has three modes. `--base REF` checks the prose that changed since the merge b
 with `REF`. A list of files checks all prose in those files. `--stdin LABEL` checks
 standard input, such as a PR description. In `--base` mode, it skips generated files.
 
-The exit code is 0 unless `--strict` is given, so CI reports its findings as warnings.
+Findings return exit code 0, or 1 with `--strict`. CI reports them as warnings.
+Usage, Git, and configuration errors return exit code 2.
+Non-UTF-8 source input and dangling symlinks produce advisory Input diagnostics.
+
 A finding is a prompt to read the passage. It is not a verdict on the prose.
 [`write-technical-prose.md`](../docs/wiki/write-technical-prose.md) describes how to
 use it.
