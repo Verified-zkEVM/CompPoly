@@ -407,8 +407,9 @@ only when the argument order makes them necessary.
   Markdown, CI, or workflow files, because the enforced linter `scripts/lint-style.py` processes
   only `.lean` files.
 * **Indentation**: Use 2 spaces for indentation.
-* **Headers**: Start each file with the copyright, license, and authors block. Then follow the
-  module-system shape that [`module-system.md`](docs/wiki/module-system.md) describes:
+* **Headers**: Start each file with the copyright, license, and authors block. Do not add a
+  separate AI-attribution line. List only the credited authors on the `Authors:` line. Then follow
+  the module-system shape that [`module-system.md`](docs/wiki/module-system.md) describes:
   ```lean
   /-
   Copyright (c) 2026 CompPoly Contributors. All rights reserved.
