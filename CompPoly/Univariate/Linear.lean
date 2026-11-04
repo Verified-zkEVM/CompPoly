@@ -89,7 +89,7 @@ theorem add_mem_degreeLT {n : ℕ} {p q : CPolynomial R}
   calc
     (p + q).val.size = (Raw.addRaw p.val q.val).trim.size := by rfl
     _ ≤ (Raw.addRaw p.val q.val).size := Raw.Trim.size_le_size _
-    _ = max p.val.size q.val.size := Raw.add_size
+    _ = max p.val.size q.val.size := Raw.size_addRaw
     _ ≤ n := max_le hp hq
 
 /-- `degreeLT n` is closed under additive scalar multiplication. -/

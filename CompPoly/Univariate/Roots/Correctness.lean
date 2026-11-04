@@ -947,7 +947,7 @@ theorem linearFactor_isLinearFactor {F : Type*} [Field F] [BEq F] [LawfulBEq F]
       _ ≤ (CPolynomial.Raw.addRaw (CPolynomial.C (-a)).val CPolynomial.X.val).size :=
           CPolynomial.Raw.Trim.size_le_size _
       _ = max (CPolynomial.C (-a)).val.size CPolynomial.X.val.size :=
-          CPolynomial.Raw.add_size
+          CPolynomial.Raw.size_addRaw
       _ ≤ 2 := by
         have hC : (CPolynomial.C (-a) : CPolynomial F).val.size ≤ 1 := by
           unfold CPolynomial.C CPolynomial.Raw.C
