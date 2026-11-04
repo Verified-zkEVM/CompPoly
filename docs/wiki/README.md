@@ -14,10 +14,10 @@ are too specific or too changeable to keep at the repo root.
 - [`benchmarking.md`](benchmarking.md) - how the benchmark suite measures, how to
   read its output, and how to add a group.
 - [`benchmark-best-times.md`](benchmark-best-times.md) - the current best time of
-  every benchmarked component, and the log of optimisation passes.
-- [`autoresearch.md`](autoresearch.md) - the optimisation loop: edit a fast
-  implementation, test it, A/B it against a frozen baseline, then prove it; keep or
-  revert.
+  every benchmarked component, and the log of optimization passes.
+- [`autoresearch.md`](autoresearch.md) - the optimization loop. Edit a fast
+  implementation, test it, A/B it against a frozen baseline, and then prove it.
+  Keep or revert the change.
 - [`build-cache.md`](build-cache.md) - Mathlib's olean cache and CompPoly's prebuilt
   release archive.
 - [`module-system.md`](module-system.md) - Lean module-system conventions, `meta`
@@ -35,6 +35,12 @@ are too specific or too changeable to keep at the repo root.
 - [`serialization.md`](serialization.md) - byte encodings of field elements and
   polynomials: the `CanonicalNat` and `ByteCodec` classes, the ported ArkLib
   protocol classes, decoders, and the carrier-agreement rule.
+- [`writing.md`](writing.md) - the writing standard for documentation, docstrings,
+  comments, commit messages, PR and issue text, and review comments.
+- [`writing-vocabulary.md`](writing-vocabulary.md) - CompPoly's technical terms,
+  their qualifiers, and wording to avoid.
+- [`write-technical-prose.md`](write-technical-prose.md) - the workflow for
+  drafting and revising prose, including the advisory writing checker.
 
 ## Maintenance Contract
 
@@ -46,7 +52,7 @@ are too specific or too changeable to keep at the repo root.
   - `generated-files.md` for derived outputs and source-of-truth rules.
   - `benchmarking.md` for benchmark measurement, output interpretation, and
     adding groups.
-  - `autoresearch.md` for the agent-driven optimisation loop, its A/B protocol,
+  - `autoresearch.md` for the agent-driven optimization loop, its A/B protocol,
     and the list of fast implementations it may target.
   - `build-cache.md` for prebuilt-artifact caches and how they are published.
   - `module-system.md` for module headers, `public`/`meta` imports, and privacy.
@@ -59,7 +65,10 @@ are too specific or too changeable to keep at the repo root.
     the matrix layer.
   - `serialization.md` for byte formats, the serialization classes, and the
     invariants consumers may rely on.
-- Add new pages when a recurring topic no longer fits cleanly in an existing page.
+  - `writing.md` for the writing rules and their relation to STE.
+  - `writing-vocabulary.md` for technical terms and wording to avoid.
+  - `write-technical-prose.md` for the writing workflow and the checker.
+- Add a page when a recurring topic does not fit cleanly in an existing page.
 - If a PR changes commands, repo structure, generated-file behavior, or recurring
   architecture guidance, update the matching page in the same PR.
 - Keep these files committed so worktrees and delegated agents see the same
