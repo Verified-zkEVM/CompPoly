@@ -1,11 +1,9 @@
-# Writing Standard
+# Writing Guide
 
-Use this guide to write clear technical English for CompPoly. It draws on ASD-STE100 Simplified
-Technical English (STE), Issue 9, January 2025. STE is the reference for improving the prose.
-An existing repository convention is not a reason to keep unclear writing.
-
-The purpose is clear, correct prose. Clarity and technical correctness take priority over checker
-compliance.
+This guide helps you write clear, precise, correct technical text. Its rules are advice. If a
+passage is clear and correct, leave it alone, even if it does not follow a rule or the checker
+reports it. Accuracy comes first, then clarity. An existing repository convention is not a reason
+to keep unclear writing.
 
 The [vocabulary](writing-vocabulary.md) records technical meanings and wording to avoid.
 [CONTRIBUTING.md](../../CONTRIBUTING.md#writing) gives the contribution requirements.
@@ -28,53 +26,41 @@ Change the generator and regenerate the file. Do not edit the generated text by 
 
 ## How to use STE
 
-STE combines writing rules with a general dictionary. That dictionary limits both word meanings
-and parts of speech. Subject-specific technical nouns and technical verbs supplement it under
-STE rules 1.5 to 1.13. Mathematical terminology does not replace the general dictionary.
-
-Use the STE dictionary when you need to confirm a general word's approved meaning or grammatical
-role. Use the project vocabulary for technical terms. A missing term is not automatically a defect,
-and a familiar English word is not automatically STE-approved. When a literal replacement changes
-the meaning, rewrite the sentence or keep the necessary term and explain its technical use.
+The guide draws on ASD-STE100 Simplified Technical English (STE), Issue 9, and adapts it freely
+for CompPoly. It claims no STE conformance and does not reproduce or check the official dictionary.
+Consult [ASD's official Issue 9](https://www.asd-ste100.org/assets/files/ASD-STE100_ISSUE9.pdf)
+when a source rule or dictionary entry matters. Use the project vocabulary to clarify technical
+meanings, not to decide which English words are permitted.
 
 Technical accuracy takes priority over the rules in this guide. A rule can conflict with a term or
 language pattern that is standard in cryptography research and engineering, computer science, or
 mathematics. In that case, keep the standard form and apply the rules to the rest of the sentence.
 A wording that is only a habit in this repository is not a standard form.
 
-Conventional mathematical openings such as "Assuming P, we have …" and "Writing f = …" can remain
-when their meaning is clear. Do not replace them only to satisfy a checker pattern.
-
-This guide is a repository adaptation, not a complete copy of STE or a claim of full STE
-conformance. It does not distribute or automatically check the official dictionary. The
-[relation to STE](#relation-to-ste) separates the adaptations from the source rules.
-
 ## Text types
 
 Choose a text type from its purpose, not from its Markdown marker:
 
-| Type | Purpose | Examples | Suggested sentence limit |
+| Type | Purpose | Examples | Suggested sentence length |
 |---|---|---|---|
 | Procedural | Tell a reader how to do a task | Validation commands, the optimization loop, workflow steps | 20 words |
 | Descriptive | Explain a result, concept, or observation | Module docstrings, design notes, PR explanations | 25 words |
 
-A numbered list can describe results. A paragraph can contain an instruction. Use the suggested limit for
-the sentence's purpose. Keep commands distinct from explanations and warnings.
+A numbered list can describe results. A paragraph can contain an instruction. Use these lengths
+as prompts to review a sentence, not targets that require a rewrite. Keep commands distinct from
+explanations and warnings.
 
 ## Rules
 
-The identifiers below are CompPoly labels. STE references identify the source principle, not a
-claim that this page reproduces each source rule. C1 to C8 and applicable statement and correctness
-audits are mandatory. C9 also remains mandatory for trust and evidence claims.
-The other style rules are advisory. Use them to improve clarity, not as conditions for an edit or
-merge. A style warning alone does not require a rewrite. STE's general recommendations (GR)
-remain advice here.
+The identifiers below are CompPoly labels. STE references identify a source principle, not exact
+equivalence to a source rule. All the rules below are advice. A checker suggestion alone does
+not require an edit. Contribution requirements remain in CONTRIBUTING.md.
 
 ### Words
 
-- **W1.** Prefer an STE-approved general word with the intended meaning and part of speech.
-  Use an established technical term when the subject requires it. Rephrase before making a
-  replacement that changes the meaning. (STE 1.1 to 1.4, 9.1, 9.2)
+- **W1.** Prefer a common, simple word with the intended meaning.
+  Use an established technical term when the subject requires it. Rephrase if a replacement would
+  change the meaning. (STE 1.1 to 1.4, 9.1, 9.2)
 - **W2.** Use technical terms with their stated meanings and grammatical roles. Qualify a term
   when the passage could support more than one meaning, such as "kernel" or "native".
   (STE 1.5 to 1.13)
@@ -102,25 +88,21 @@ remain advice here.
   when a simpler construction gives the same information. Preserve time and uncertainty:
   "the build may have failed" does not mean "the build failed".
   (STE 3.1 to 3.4, CompPoly adaptation)
-- **V2.** Keep established technical terms with "-ing" forms. A clause after a preposition can
-  also use an "-ing" form when its understood subject is the subject of the main clause.
-  "Before making a change, run the tests" addresses the same reader in both clauses.
-  Revise an unclear subject or a dangling modifier, rather than the verb form alone.
-  (Local adaptation of STE 3.5)
 - **V3.** Use the active voice. Name the person, tool, kernel, or mathematical object that
-  performs the action. Do not invent an actor. (STE 3.6)
+  performs the action. Make clear who or what does each action. Do not invent an actor. (STE 3.6)
 - **V4.** Use the passive voice in descriptive text only when the actor is unknown. A participle
   can describe a state without forming a passive construction: "the degree is bounded".
   (STE 3.3, 3.6)
-- **V5.** Express an action with a verb rather than an abstract noun phrase. Write "the parser
-  reads the file", not "the parser performs a read of the file". (STE 3.7)
+- **V5.** Express an action with a verb rather than an abstract noun phrase. Write "the kernel
+  checks each step", not "the kernel performs a check of each step". (STE 3.7)
 - **V6.** Use "that" after "prove", "show", "assume", or "make sure" when it separates a claim
   from the preceding verb. Do not add it before an object: "prove the theorem". (STE GR-1)
 
 ### Sentences
 
-- **S1.** Use the sentence limits for the text type. Split a long sentence at a logical boundary.
-  Keep its conditions and qualifications. Use the [word-count rules](#word-count). (STE 5.1, 6.3)
+- **S1.** Review sentences longer than the suggested length for their text type. If a split makes
+  the sentence clearer, split at a logical boundary and keep its conditions and qualifications.
+  The [word-count conventions](#word-count) explain the checker's estimates. (STE 5.1, 6.3)
 - **S2.** Give a sentence one topic. Give a work step one instruction, except for actions that
   must occur together. (STE 4.1, 5.2)
 - **S3.** Put a condition before an instruction when the reader needs it before acting.
@@ -143,7 +125,7 @@ remain advice here.
 - **P2.** Keep a paragraph to six sentences or fewer. Split it where the subject or purpose
   changes. (STE 6.6)
 - **P3.** Introduce information gradually. Define unfamiliar terms and notation before using
-  them in an explanation. (STE 6.1, 6.2)
+  them in an explanation. (STE 6.1)
 - **L1.** Use a vertical list when it makes steps, cases, or conditions easier to distinguish.
   A short series does not always need a list. (STE 4.3)
 - **L2.** Introduce a list with a clear purpose and a colon. Each item must connect to that
@@ -191,7 +173,8 @@ The checker approximates these conventions. Read the actual sentence when its co
 
 ### Claims and source evidence
 
-CompPoly adds these requirements to the STE principles:
+This advice helps you write claims that agree with their sources and evidence. Contribution
+requirements remain in CONTRIBUTING.md:
 
 - **C1.** State only what the code or recorded evidence establishes. Identify `sorry`
   admissions, conditional results, and checks that you did not run.
@@ -247,7 +230,6 @@ accurate wording:
 | "Nothing here is trusted — the kernel re-checks every step through `CompPoly.RabinCert.runChain`, so incorrect data fails to compile rather than producing a false theorem." (generated certificate docstring) | Nothing here is trusted. The kernel re-checks every step through `CompPoly.RabinCert.runChain`, so incorrect data fails to compile and does not produce a false theorem. | Replace the clause-joining dash (U2). Keep the trust claim, the checker, and the consequence of a failure (C9). Make the change in the generator. |
 | "A `mismatch` verdict means the candidate computes something else; it is a bug, not a measurement." ([contribution guide at commit `9be21b0`](https://github.com/Verified-zkEVM/CompPoly/blob/9be21b026e43ff9b032113dc9b766d2b17fd6c3c/CONTRIBUTING.md)) | A `mismatch` verdict means that the candidate computes a different result. The verdict shows a bug, not a measurement. | Replace the semicolon (U1). Add "that" after the verb (V6). |
 | "This is stricter than a plain build." ([quickstart at commit `9be21b0`](https://github.com/Verified-zkEVM/CompPoly/blob/9be21b026e43ff9b032113dc9b766d2b17fd6c3c/docs/wiki/quickstart.md)) | `./scripts/lint-style.sh` is stricter than a plain build. | Name the antecedent of "this" (S7). |
-| "Regenerating an unchanged modulus is byte-identical." (`docs/wiki/generated-files.md`) | Keep as written. | The subject is the regeneration operation. V2 does not require a finite rewrite when the meaning is clear. |
 | "This is native implementation evidence, not a proof of the compiler or a performance benchmark." (`tests/README.md`) | The smoke test gives evidence about the native implementation. It does not prove that the compiler is correct, and it is not a performance benchmark. | Name the subject (S7). Keep each limit on the evidence (C2, C9). |
 | "This was observed, not hypothesized." (`docs/wiki/field-extensions.md`) | The build failure was observed, not hypothesized. | Name the subject (S7). Keep the distinction between observation and hypothesis (C1). |
 | "`native_decide` is forbidden." (`AGENTS.md`) | Keep as written. | The sentence is short and keeps the requirement strength (S4). |
@@ -255,25 +237,3 @@ accurate wording:
 
 Use the [writing workflow](write-technical-prose.md) to compare a mathematical rewrite with its
 source. A shorter sentence is not an improvement if it changes the statement.
-
-## Relation to STE
-
-| Source | Use in CompPoly |
-|---|---|
-| STE 1.1 to 1.4, general vocabulary | Kept as the reference for general meanings and grammatical roles. This guide and its checker do not implement the full dictionary. |
-| STE 1.5 to 1.13, technical terms | Applied through the project vocabulary and established subject-field usage. |
-| STE 1.5, 1.7, 1.12, and 1.13, noun and verb roles | STE permits one word in both roles when each use fits its category. Each use needs its own category. CompPoly's verb "check" is a local terminology choice, not an STE dictionary approval. |
-| All STE rules | CompPoly adaptation: technical accuracy takes priority. Standard terms and language patterns in cryptography, computer science, and mathematics stay when a rule conflicts with them. |
-| STE 1.14, spelling | STE 1.14 permits another official spelling directive. CompPoly uses Oxford spelling and also accepts American spelling. Lean declaration names follow Mathlib. |
-| STE 2 to 6, 8, and 9 | The source principles inform the rules above. Mathematical notation and the stated adaptations preserve technical meaning. |
-| STE 3.1 to 3.4 | Simple constructions stay preferred. CompPoly adaptation: keep a modal or complex form when a change would lose uncertainty or time. |
-| STE 3.5, "-ing" forms | CompPoly adaptation. Keep technical terms and clear clauses after a preposition whose understood subject is the subject of the main clause. Subject attribution needs human review. |
-| STE 7, safety instructions | Apply the principle to risky operations, such as deleting `.lake/build/`: put the condition or instruction before the explanation of the consequence. |
-| STE 8.6, word count | STE already counts formulas as quoted text and alphanumeric identifiers as one word. CompPoly also groups entire Lean expressions, commands, URLs, and citation keys where the STE categories do not already cover them. |
-| STE 8.3, parentheses | The permitted uses follow STE 8.3. The instruction-placement sentence in U4 is a local addition. |
-| STE general recommendations | These remain advisory style guidance. This guide does not present them as STE rules or merge requirements. |
-| CompPoly additions | Clause-joining dashes (U2), emphasis (U5), instruction placement (U4), list capitals (L3), and the claim rules C1 to C9 are local contribution policies. |
-
-Refer to [ASD's official Issue 9](https://www.asd-ste100.org/assets/files/ASD-STE100_ISSUE9.pdf)
-for the full rules and dictionary. ASD owns the standard. This guide uses original repository
-examples and does not claim certification or reproduce the official dictionary.

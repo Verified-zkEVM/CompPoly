@@ -69,9 +69,10 @@ Use this script directly only when you want to lint a specific subset of files.
 [writing standard](../docs/wiki/writing.md). It reads
 Markdown files and the comments and docstrings of Lean files. `lint-style.py` checks
 the source style of Lean code, and `check-writing.py` checks the prose. It reports
-patterns that a search can find, such as long sentences, semicolons, Latin
-abbreviations, and the words to avoid in the
-[vocabulary](../docs/wiki/writing-vocabulary.md). Its docstring lists every check.
+optional suggestions about listed vocabulary, phrasal verbs, Latin abbreviations, contractions,
+history words in reference documents and approximate sentence lengths. It does not judge grammar
+or clarity. Leave clear, correct prose alone. The [vocabulary](../docs/wiki/writing-vocabulary.md)
+provides the word list.
 
 It has three modes. `--base REF` checks the prose that changed since the merge base
 with `REF`. A list of files checks all prose in those files. `--stdin LABEL` checks
@@ -80,8 +81,7 @@ standard input, such as a PR description. In `--base` mode, it skips generated f
 Findings return exit code 0, or 1 with `--strict`. CI reports them as warnings.
 Usage, Git, and configuration errors return exit code 2.
 Non-UTF-8 source input and symlinks produce advisory Input diagnostics. Symlink targets are not
-read as source prose. V2 hints cover only some introductory clauses for manual subject review.
-The checker does not infer the subject of a clause after a preposition.
+read as source prose. A suggestion does not establish a defect or require a rewrite.
 
 A finding is a prompt to read the passage. It is not a verdict on the prose.
 [`write-technical-prose.md`](../docs/wiki/write-technical-prose.md) describes how to

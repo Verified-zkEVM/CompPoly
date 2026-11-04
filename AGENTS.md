@@ -72,9 +72,8 @@ Human contributors should usually start with [`README.md`](README.md),
 - Use the [writing standard](docs/wiki/writing.md) for documentation,
   comments, docstrings, commit messages, PR and issue text, and review comments. Use
   [`write-technical-prose.md`](docs/wiki/write-technical-prose.md) for the workflow.
-  C1 to C8, C9 trust claims, and applicable statement and correctness audits are mandatory.
-  The other style guidance is advisory. A style warning alone does not require a rewrite or block a merge.
-  Keep trust and soundness statements exact.
+  The writing rules are advice. Leave clear, correct text alone, even when a checker suggests an
+  edit. CONTRIBUTING owns the contribution requirements. Keep trust and soundness statements exact.
 
 ## Deeper Docs
 

@@ -1,9 +1,7 @@
 # Writing Vocabulary
 
-Use this page with the [writing standard](writing.md). STE's general dictionary stays the
-reference for general words, meanings, and grammatical roles. This page adds subject-field terms
-and advice for CompPoly prose. It does not replace the dictionary or list every permitted English
-word.
+Use this page with the [writing guide](writing.md) to clarify technical meanings and review wording.
+Its entries are advice, not a list of every permitted English word or an STE dictionary check.
 
 ## How to add a term
 
@@ -69,28 +67,6 @@ Introduce a longer or unfamiliar term before using an abbreviation:
 | Lean | declaration, theorem, lemma, hypothesis, docstring, namespace, typeclass, instance, tactic, elaboration, Lean kernel, `@[csimp]` lemma, refinement theorem, code generation |
 | Benchmarks | benchmark group, preset, digest, verdict, ratio, frozen baseline, candidate, harness drift, reference machine |
 | Repository tools | branch, commit, pull request, build, linter, CI, workflow, stack |
-
-## Technical -ing nouns
-
-These entries describe their stated technical uses. They do not establish that a clause has a
-clear subject. The checker matches complete terms from this table for its advisory V2 hints.
-An individual word from a multi-word term is not a general exemption.
-
-| Term | Technical meaning |
-|---|---|
-| `encoding`, `decoding` | The representation and interpretation of values or messages under specified formats. |
-| `folding`, `batching` | Reduction and aggregation constructions on words or computations. |
-| `hashing`, `binding`, `hiding` | Hash constructions and named commitment properties. |
-| `sampling`, `padding` | Random-choice constructions and prescribed data extension. |
-| `rewriting`, `normalizing` | Lean expression transformations by equations or reduction. |
-| `pattern matching` | Selection of a branch by a constructor pattern. |
-| `indexing`, `mapping` | Index conventions and maps between mathematical objects. |
-| `working tree`, `dangling symlink` | A Git checkout and a symlink with no target. |
-| `programming`, `computing` | Program construction and computation as subject fields. |
-| `root finding`, `list decoding` | Algorithms to recover polynomial roots or codewords. |
-| `squaring`, `framing` | Arithmetic square operations and codec boundaries. |
-| `nesting`, `inlining` | Nested syntax and compiler substitution of a function body. |
-| `timing` | Elapsed-time measurements in the benchmark framework. |
 
 ## Technical verbs
 

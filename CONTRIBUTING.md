@@ -275,23 +275,18 @@ CompPoly permits squash and rebase merges. It does not permit merge commits.
 
 ### Writing
 
-Use the [writing standard](docs/wiki/writing.md) for documentation, docstrings, comments, commit
-messages, PR and issue text, and review comments. The standard applies to all authors. It uses
-ASD-STE100 Simplified Technical English to correct defects in existing prose. Its stated
-adaptations keep mathematical and technical meaning exact.
-
-C1 to C8 and applicable statement and correctness audits are mandatory. C9 remains mandatory for
-trust and evidence claims. The other style guidance is advisory. A style warning alone does not
-require a rewrite or prevent an edit or merge.
+The [writing guide](docs/wiki/writing.md) offers advice for documentation, docstrings, comments,
+commit messages, PR and issue text, and review comments. Use it to improve clarity and precision.
+Leave clear, correct text alone, even if it does not follow a rule or the checker reports it.
+The contribution requirements in this document retain their stated force.
 
 Use the [writing workflow](docs/wiki/write-technical-prose.md) when you draft or revise that text.
 Keep claims, hypotheses, uncertainty, trust statements, and requirement strength unchanged during
 a style edit. The [vocabulary](docs/wiki/writing-vocabulary.md) records technical meanings. It does
 not prohibit other meanings when their context is clear.
 
-The writing checker reports possible defects in prose. It is an editing aid and does not establish
-conformance with the standard. Run it on the prose that your branch changes and on your PR
-description:
+The writing checker gives optional wording suggestions. It does not establish clarity, accuracy
+or STE conformance. You can run it on changed prose or a draft PR description:
 
 ```bash
 uv run --no-project --python 3.12 python scripts/check-writing.py --base origin/main
