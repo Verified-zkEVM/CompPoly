@@ -49,12 +49,11 @@ class WritingRuleTests(unittest.TestCase):
                 WRITING.avoid_words(path)
 
     def test_word_suggestions_are_optional(self) -> None:
-        for options, expected in [([], 0), (["--strict"], 1)]:
-            with mock.patch("sys.stdin", io.StringIO("We utilize this lemma.")):
-                with mock.patch("sys.stdout", io.StringIO()) as output:
-                    self.assertEqual(WRITING.main(["check-writing.py", "--stdin", "body", *options]), expected)
-            self.assertIn("1 writing suggestion(s)", output.getvalue())
-            self.assertIn("leave clear, correct text alone", output.getvalue())
+        with mock.patch("sys.stdin", io.StringIO("We utilize this lemma.")):
+            with mock.patch("sys.stdout", io.StringIO()) as output:
+                self.assertEqual(WRITING.main(["check-writing.py", "--stdin", "body"]), 0)
+        self.assertIn("1 writing suggestion(s)", output.getvalue())
+        self.assertIn("leave clear, correct text alone", output.getvalue())
 
     def test_grammar_and_structure_are_left_to_review(self) -> None:
         for text in ["The verifier is rejecting the message.", "The lemma has changed.",

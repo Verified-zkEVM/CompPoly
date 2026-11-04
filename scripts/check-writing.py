@@ -9,7 +9,7 @@ Usage: check-writing.py --base REF, check-writing.py FILE..., or
 check-writing.py --stdin LABEL. The base mode reads tracked worktree paragraphs,
 list items and table cells containing added lines, excluding generated files.
 Extraction and word counts are estimates. Quotes, code and licence text are excluded.
-Findings exit successfully by default; usage, Git and configuration errors exit with 2.
+Findings exit successfully. Usage, Git and configuration errors exit with 2.
 """
 
 from __future__ import annotations
@@ -577,7 +577,6 @@ def main(argv: list[str]) -> int:
     mode.add_argument("--stdin", metavar="LABEL", help="check Markdown from standard input")
     mode.add_argument("files", nargs="*", default=[], help="check all prose in these files")
     parser.add_argument("--github", action="store_true", help="print GitHub annotations")
-    parser.add_argument("--strict", action="store_true", help="exit with 1 on a problem")
     parser.add_argument("--vocabulary", type=Path, default=VOCABULARY,
                         help="the vocabulary page (default: docs/wiki/writing-vocabulary.md)")
     args = parser.parse_args(argv[1:])
@@ -611,7 +610,7 @@ def main(argv: list[str]) -> int:
     except (OSError, ValueError) as error:
         parser.error(str(error))
     report(found, args.github, label_is_file)
-    return 1 if found and args.strict else 0
+    return 0
 
 
 if __name__ == "__main__":
