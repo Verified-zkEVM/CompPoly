@@ -8,6 +8,7 @@ module
 
 import all CompPoly.Univariate.Raw.Division
 public import CompPoly.Univariate.Raw.Division
+public import CompPoly.Univariate.Raw.Size
 
 /-!
 # Raw Univariate Polynomial Proofs
@@ -71,10 +72,6 @@ omit [BEq R] in
 lemma concat_coeff₂ (i : ℕ) : i ≥ p.size →
     (p ++ q).coeff i = q.coeff (i - p.size) := by simp; grind
 
-theorem add_size {p q : CPolynomial.Raw Q} : (addRaw p q).size = max p.size q.size := by
-  change (Array.zipWith _ _ _ ).size = max p.size q.size
-  rw [zipWith_size matchSize_size_eq, matchSize_size]
-
 theorem add_coeff {p q : CPolynomial.Raw Q} {i : ℕ} (hi : i < (addRaw p q).size) :
     (addRaw p q)[i] = p.coeff i + q.coeff i := by
   simp [addRaw]
@@ -84,11 +81,12 @@ theorem add_coeff {p q : CPolynomial.Raw Q} {i : ℕ} (hi : i < (addRaw p q).siz
 theorem add_coeff? (p q : CPolynomial.Raw Q) (i : ℕ) :
     (addRaw p q).coeff i = p.coeff i + q.coeff i := by
   rcases (Nat.lt_or_ge i (addRaw p q).size) with h_lt | h_ge
-  · rw [← add_coeff h_lt]; simp [h_lt]
-  have h_lt' : i ≥ max p.size q.size := by rwa [← add_size]
+  · rw [← add_coeff h_lt]
+    exact (Array.getElem_eq_getD (h := h_lt) 0).symm
+  have h_lt' : i ≥ max p.size q.size := by simpa only [size_addRaw] using h_ge
   have h_p : i ≥ p.size := by omega
   have h_q : i ≥ q.size := by omega
-  simp [h_ge, h_p, h_q]
+  simp [h_p, h_q]
 
 lemma add_coeff_trimmed [LawfulBEq R] (p q : CPolynomial.Raw R) (i : ℕ) :
     (p + q).coeff i = p.coeff i + q.coeff i := by
@@ -162,7 +160,7 @@ omit [Semiring Q] in
 theorem add_comm : p + q = q + p := by
   apply congrArg trim
   ext
-  · simp only [add_size]; omega
+  · simp only [size_addRaw]; omega
   · simp only [add_coeff]
     apply _root_.add_comm
 
@@ -249,25 +247,25 @@ lemma coeff_one (i : ℕ) :
 theorem zero_add (hp : p.canonical) : 0 + p = p := by
   rw (occs := .pos [2]) [← hp]
   apply congrArg trim
-  ext <;> simp [add_size, add_coeff, *]
+  ext <;> simp [size_addRaw, add_coeff, *]
 
 theorem add_zero (hp : p.canonical) : p + 0 = p := by
   rw [add_comm, zero_add p hp]
 
 theorem zero_add_trim [LawfulBEq R] (p : CPolynomial.Raw R) : 0 + p = p.trim := by
   apply congrArg trim
-  ext <;> simp [add_size, add_coeff, *]
+  ext <;> simp [size_addRaw, add_coeff, *]
 
 theorem add_zero_trim [LawfulBEq R] (p : CPolynomial.Raw R) : p + 0 = p.trim := by
   apply congrArg trim
-  ext <;> simp [add_size, add_coeff, *]
+  ext <;> simp [size_addRaw, add_coeff, *]
 
 theorem add_assoc [LawfulBEq R] : p + q + r = p + (q + r) := by
   change (addRaw p q).trim + r = p + (addRaw q r).trim
   rw [trim_add_trim, add_comm p, trim_add_trim, add_comm _ p]
   apply congrArg trim
   ext i
-  · simp only [add_size]; omega
+  · simp only [size_addRaw]; omega
   · simp only [add_coeff, add_coeff?]
     apply _root_.add_assoc
 
@@ -421,9 +419,9 @@ theorem nsmulRawSucc (n : ℕ) (p : CPolynomial.Raw Q) :
     nsmulRaw (n + 1) p = addRaw (nsmulRaw n p) p := by
   unfold nsmulRaw
   ext
-  · simp [add_size]
+  · simp [size_addRaw]
   next i _ hi =>
-    simp [add_size] at hi
+    simp [size_addRaw] at hi
     simp [add_coeff, hi]
     rw [_root_.add_mul (R:=Q) n 1 p[i], one_mul]
 
@@ -975,7 +973,7 @@ protected theorem add_mul [LawfulBEq R] (p q r : CPolynomial.Raw R) :
       convert coeff_mul_eq_sum_range ( p + q ) r k ( p.size + q.size ) _ using 1
       have h_size_sum : (p + q).size ≤ max p.size q.size := by
         change (p.addRaw q).trim.size ≤ max p.size q.size
-        exact le_trans (Trim.size_le_size (p.addRaw q)) (le_of_eq add_size)
+        exact le_trans (Trim.size_le_size (p.addRaw q)) (le_of_eq size_addRaw)
       exact le_trans h_size_sum ( max_le ( Nat.le_add_right _ _ ) ( Nat.le_add_left _ _ ) )
     have h_split : List.sum ((List.range (p.size + q.size)).map
         (fun i => ((smul ((p + q).coeff i) r).mulPowX i).coeff k)) =

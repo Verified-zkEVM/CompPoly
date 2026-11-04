@@ -26,7 +26,6 @@ jobs:
           version: "0.13.6"
           enable-cache: false
 
-
       - name: Get changed Lean files
         id: changed-files
         run: |

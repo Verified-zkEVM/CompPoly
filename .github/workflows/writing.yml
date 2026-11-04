@@ -1,0 +1,55 @@
+name: Writing
+
+# The writing checker reports prose findings as warnings and exits successfully.
+# Execution errors and failures in the checker tests fail this workflow.
+#
+# The pull request body comes from the pull request author. Pass it to the script through an
+# environment variable. Never interpolate it into a shell command.
+
+on:
+  # Check every pull request, including a stacked one whose base is a different pull request.
+  pull_request:
+    types: [opened, edited, reopened, synchronize, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  writing:
+    name: Check Writing (warnings only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.13.6"
+          enable-cache: false
+      - name: Check the changed prose
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: uv run --no-project --python 3.12 python ./scripts/check-writing.py --base "origin/${BASE_REF}" --github
+      - name: Check the pull request body
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: printf '%s\n' "$PR_BODY" | uv run --no-project --python 3.12 python ./scripts/check-writing.py --stdin body --github
+
+  test:
+    name: Test the Writing Checker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.13.6"
+          enable-cache: false
+      - name: Run the checker tests
+        run: uv run --no-project --python 3.12 python ./scripts/test-check-writing.py

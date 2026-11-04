@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --no-project --python 3.12 python
 """Emit the untrusted doubling certificate checked by Circle.lean's kernel proof."""
 
 import argparse
