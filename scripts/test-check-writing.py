@@ -141,7 +141,7 @@ class WritingRuleTests(unittest.TestCase):
         self.assertEqual(findings("The verifier is rejecting the proof string."), ["V1"])
         self.assertEqual(findings("The polynomials have bounded degree."), [])
         self.assertEqual(findings("The witness is missing."), [])
-        self.assertEqual(findings("Using the lemma, we bound the error."), ["V2"])
+        self.assertNotIn("V2", findings("Using the lemma, we bound the error."))
         self.assertEqual(findings("Folding halves the length of the word."), [])
         self.assertEqual(findings("Everything it writes, and nothing else, is ignored."), [])
         self.assertEqual(findings("Nothing in it, as far as we know, assumes odd characteristic."), [])
@@ -260,13 +260,13 @@ class ChangedLineTests(unittest.TestCase):
             self.assertEqual([block.line for block in blocks], [5])
 
 
-class StrictV2Tests(unittest.TestCase):
+class AdvisoryV2Tests(unittest.TestCase):
     vocabulary = """## Technical -ing nouns
 
 | Term | Technical meaning |
 |---|---|
 | `encoding`, `folding`, `sampling` | Protocol constructions |
-| `gas metering` | Resource accounting |
+| `gas metering`, `working tree`, `dangling symlink` | Resource accounting and repository data |
 
 ## Other terms
 
@@ -285,27 +285,67 @@ class StrictV2Tests(unittest.TestCase):
             path = Path(directory) / 'vocabulary.md'
             path.write_text(self.vocabulary)
             self.assertEqual(WRITING.technical_ing_nouns(path),
-                             {'encoding', 'folding', 'sampling', 'metering'})
+                             {'encoding', 'folding', 'sampling', 'gas metering',
+                              'working tree', 'dangling symlink'})
 
-    def test_preposition_gerunds_and_listed_technical_nouns(self) -> None:
+    def test_preposition_forms_do_not_trigger_a_morphology_warning(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'vocabulary.md'
             path.write_text(self.vocabulary)
-            cases = [('Before making a change, run the tests.', True),
-                     ('Instead of calling the function, use the cached value.', True),
-                     ('The bound follows by assuming P.', True),
-                     ('After encoding, the message has a fixed length.', False),
-                     ('The bound follows from sampling.', False),
-                     ('Nothing changes before folding.', False),
-                     ('The budget accounts for gas metering.', False),
-                     ('Refer to CONTRIBUTING for docstring rules.', False)]
-            for text, expected in cases:
+            cases = ['Before making a change, run the tests.',
+                     'Instead of calling the function, use the cached value.',
+                     'The bound follows by assuming P.',
+                     'The bound follows from sampling.',
+                     'Nothing changes before folding.',
+                     'The budget accounts for gas metering.',
+                     'Run the tests before\nmaking a change.']
+            for text in cases:
                 with self.subTest(text=text):
                     found = WRITING.check_blocks(WRITING.file_blocks('page.md', text), path)
-                    self.assertEqual(any(f.rule == 'V2' for f in found), expected)
-            text = 'Run the tests before\nmaking a change.'
-            found = WRITING.check_blocks(WRITING.file_blocks('page.md', text), path)
-            self.assertEqual([f.line for f in found if f.rule == 'V2'], [2])
+                    self.assertFalse(any(f.rule == 'V2' for f in found))
+
+    def test_introductory_hints_use_whole_technical_phrases(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "vocabulary.md"
+            path.write_text(self.vocabulary, encoding="utf-8")
+            cases = [("Working tree inspection, a Git task, is complete.", False),
+                     ("Working\ntree inspection, a Git task, is complete.", False),
+                     ("Dangling symlink detection, a filesystem task, is complete.", False),
+                     ("Working through the cases, the result follows.", True),
+                     ("Working trees inspection, a distinct phrase, needs review.", True),
+                     ("Assuming P, we have the bound.", False),
+                     ("Writing f = g, the equality follows.", False),
+                     ("Using the API, we build the result.", False),
+                     ("Existing Lake targets, source linters, and documentation checks have distinct scopes.", False),
+                     ("Resulting equations, after reduction, are equal.", False)]
+            for text, expected in cases:
+                with self.subTest(text=text):
+                    found = WRITING.check_blocks(WRITING.file_blocks("page.md", text), path)
+                    self.assertEqual(any(item.rule == "V2" for item in found), expected)
+            # A hint or its absence does not establish grammatical correctness.
+
+    def test_vocabulary_heading_levels_and_section_boundaries(self) -> None:
+        text = self.vocabulary.replace("## Technical -ing nouns", "### TECHNICAL -ING NOUNS ###")
+        text = text.replace("## Other terms", "### Other terms")
+        text = text.replace("## Words to avoid", "### WORDS TO AVOID ###")
+        text += '\n### Another table\n\n| "ceremony" | not part of the avoid list |\n'
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "vocabulary.md"
+            path.write_text(text, encoding="utf-8")
+            self.assertIn("gas metering", WRITING.technical_ing_nouns(path))
+            self.assertNotIn("making", WRITING.technical_ing_nouns(path))
+            self.assertEqual(WRITING.avoid_words(path)[0], ["utilize"])
+
+    def test_missing_required_vocabulary_section_has_a_clear_error(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "vocabulary.md"
+            path.write_text("# Unconfigured vocabulary\n", encoding="utf-8")
+            with mock.patch("sys.stdin", io.StringIO("Clean prose.\n")):
+                with mock.patch("sys.stderr", io.StringIO()) as error:
+                    with self.assertRaises(SystemExit) as result:
+                        WRITING.main(["check-writing.py", "--stdin", "body", "--vocabulary", str(path)])
+            self.assertEqual(result.exception.code, 2)
+            self.assertIn("missing the 'Words to avoid' section", error.getvalue())
 
 
 
@@ -385,7 +425,7 @@ class WritingRegressionTests(unittest.TestCase):
                      'Batching reduces the cost, so use the bound.']:
             with self.subTest(text=text):
                 self.assertNotIn('V2', findings(text))
-        self.assertIn('V2', findings('Using the lemma, we bound the error.'))
+        self.assertNotIn('V2', findings('Using the lemma, we bound the error.'))
 
     def test_this_way_has_an_explicit_noun(self) -> None:
         self.assertNotIn('S7', findings('This way, the prover sends one message.'))
@@ -443,6 +483,20 @@ class WritingRegressionTests(unittest.TestCase):
                      '- Outer item.\n\n    More prose; checked.\n']:
             with self.subTest(text=text):
                 self.assertIn('U1', findings(text))
+
+    def test_lean_comment_indentation_does_not_hide_prose(self) -> None:
+        cases = [
+            ("/--\n    Actual prose; checked.\n-/", 2),
+            ("  /-\n        Actual prose; checked.\n  -/", 2),
+            ("/-- First line.\n\n        Actual prose; checked.\n-/", 3),
+            ("/--\n    ```lean\n    example; code\n    ```\n\n    Actual prose; checked.\n-/", 6),
+        ]
+        for text, line in cases:
+            with self.subTest(text=text):
+                found = WRITING.check_blocks(WRITING.file_blocks("A.lean", text))
+                self.assertEqual([(item.line, item.rule) for item in found], [(line, "U1")])
+                self.assertEqual(found[0].excerpt, "Actual prose; checked.")
+        self.assertEqual(findings("    Example code; ignored.\n", "page.md"), [])
 
     def test_raw_lean_strings_do_not_create_comments(self) -> None:
         for value in ['r#"a " -- fake; comment"#', 'r"a\\"']:
@@ -511,6 +565,18 @@ class ChangedFileRegressionTests(unittest.TestCase):
                     self.assertEqual({f.path for f in found if f.rule == 'U1'}, set(names))
                     self.assertEqual({f.line for f in found if f.rule == 'U1'}, {2})
 
+    def test_inter_hunk_context_does_not_include_unchanged_prose(self) -> None:
+        original = "First line.\n\nUnchanged prose; outside the changes.\n\nLast line.\n"
+        (self.root / "page.md").write_text(original, encoding="utf-8")
+        self.git("add", ".")
+        self.git("commit", "-q", "-m", "base prose")
+        self.git("branch", "-f", "main", "HEAD")
+        revised = original.replace("First line.", "First changed line.").replace("Last line.", "Last changed line.")
+        (self.root / "page.md").write_text(revised, encoding="utf-8")
+        self.git("config", "diff.interHunkContext", "50")
+        self.assertEqual(WRITING.added_lines("main"), {"page.md": {1, 5}})
+        self.assertEqual(WRITING.check_blocks(WRITING.changed_blocks("main")), [])
+
     def test_renames_check_only_edited_prose(self) -> None:
         old, new = 'old café.md', 'new name.md'
         text = 'Existing prose; unchanged.\n\nA clean line.\n'
@@ -524,25 +590,60 @@ class ChangedFileRegressionTests(unittest.TestCase):
         found = WRITING.check_blocks(WRITING.changed_blocks('main'))
         self.assertEqual([(f.path, f.line) for f in found if f.rule == 'U1'], [(new, 5)])
 
-    def test_non_utf8_and_dangling_symlinks_are_advisory(self) -> None:
+    def test_non_utf8_and_unsupported_symlinks_are_advisory(self) -> None:
         (self.root / 'invalid.md').write_bytes(b'Caf\xe9; text.\n')
         (self.root / 'dangling.md').symlink_to('missing-target')
+        (self.root / "directory.md").symlink_to(".", target_is_directory=True)
+        (self.root / "loop.md").symlink_to("loop.md")
         (self.root / 'good.md').write_text('Actual prose; checked.\n')
         self.git('add', '.')
         with mock.patch('sys.stdout', io.StringIO()) as output:
             self.assertEqual(WRITING.main(['check-writing.py', '--base', 'main']), 0)
         self.assertIn('not UTF-8', output.getvalue())
-        self.assertIn('symlink', output.getvalue())
+        self.assertIn('symlink', output.getvalue().lower())
+        self.assertEqual(output.getvalue().count("[Input]"), 4)
         self.assertIn('U1', output.getvalue())
         self.assertNotIn('No writing problems', output.getvalue())
         with mock.patch('sys.stdout', io.StringIO()) as output:
             self.assertEqual(WRITING.main(['check-writing.py', str(self.root/'invalid.md')]), 0)
         self.assertIn('not UTF-8', output.getvalue())
+        for name in ["directory.md", "loop.md"]:
+            with self.subTest(name=name), mock.patch("sys.stdout", io.StringIO()) as output:
+                self.assertEqual(WRITING.main(["check-writing.py", str(self.root / name)]), 0)
+                self.assertIn("[Input]", output.getvalue())
+
+    def test_valid_symlink_target_is_not_treated_as_changed_prose(self) -> None:
+        (self.root / "target.txt").write_text("First line.\n\nTarget prose; on a later line.\n", encoding="utf-8")
+        link = self.root / "alias.md"
+        link.symlink_to("target.txt")
+        self.git("add", ".")
+        for arguments in [["--base", "main"], [str(link)]]:
+            with self.subTest(arguments=arguments), mock.patch("sys.stdout", io.StringIO()) as output:
+                self.assertEqual(WRITING.main(["check-writing.py", *arguments]), 0)
+                self.assertIn("[Input]", output.getvalue())
+                self.assertIn("Symlink source was not checked", output.getvalue())
+                self.assertNotIn("[U1]", output.getvalue())
+                self.assertNotIn("No writing", output.getvalue())
+
+    def test_missing_regular_files_directories_and_permissions_are_errors(self) -> None:
+        for path in [self.root / "missing.md", self.root]:
+            with self.subTest(path=path), mock.patch("sys.stderr", io.StringIO()):
+                with self.assertRaises(SystemExit) as result:
+                    WRITING.main(["check-writing.py", str(path)])
+                self.assertEqual(result.exception.code, 2)
+        source = self.root / "permission.md"
+        source.write_text("Clean prose.\n", encoding="utf-8")
+        with mock.patch.object(Path, "read_text", side_effect=PermissionError("access denied")):
+            with mock.patch("sys.stderr", io.StringIO()) as error:
+                with self.assertRaises(SystemExit) as result:
+                    WRITING.main(["check-writing.py", str(source)])
+        self.assertEqual(result.exception.code, 2)
+        self.assertIn("access denied", error.getvalue())
 
     def test_invalid_byte_stdin_has_an_input_diagnostic(self) -> None:
         environment = dict(os.environ, PYTHONIOENCODING='utf-8:surrogateescape')
         result = subprocess.run([sys.executable, WRITING.__file__, '--stdin', 'body'],
-                                input=b'\xff\n', capture_output=True, env=environment)
+                                input=b'\xff\n', capture_output=True, env=environment, timeout=10)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn(b'not UTF-8', result.stdout)
         self.assertNotIn(b'No writing problems', result.stdout)
@@ -553,7 +654,7 @@ class ChangedFileRegressionTests(unittest.TestCase):
                 WRITING.main(['check-writing.py', '--base', 'missing-base'])
         self.assertEqual(result.exception.code, 2)
         self.assertIn('git failed', error.getvalue())
-        with mock.patch('sys.stderr', io.StringIO()):
+        with mock.patch("sys.stdin", io.StringIO("Clean prose.\n")), mock.patch('sys.stderr', io.StringIO()):
             with self.assertRaises(SystemExit) as result:
                 WRITING.main(['check-writing.py', '--stdin', 'body', '--vocabulary',
                               str(self.root/'missing-vocabulary')])

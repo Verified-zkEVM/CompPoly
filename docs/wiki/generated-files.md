@@ -36,10 +36,10 @@ the script runs.
 `CompPoly/Fields/KoalaBear/Ext5/QuinticCertData.lean`,
 `CompPoly/Fields/KoalaBear/Ext6/SexticCertData.lean`,
 `CompPoly/Fields/Binary/BF64/BaseCertificate.lean`, and
-`CompPoly/Fields/Binary/Aes/Certificate.lean` come directly from
+`CompPoly/Fields/Binary/Aes/Certificate.lean` are emitted verbatim by
 [`../../scripts/gen_rabin_certificate.py`](../../scripts/gen_rabin_certificate.py). The generator
-writes complete Lean modules. Each module has a header, a docstring with the regeneration command,
-and the certificate step lists. After you change a modulus, use this workflow:
+writes a complete, compilable module — header, docstring with the regenerating command, and the
+step lists — so the workflow after changing a modulus is:
 
 ```bash
 python3 scripts/gen_rabin_certificate.py --p <prime> --f=<little-endian coeffs> \

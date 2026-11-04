@@ -64,15 +64,16 @@ Human contributors should usually start with [`README.md`](README.md),
 
 - `./scripts/update-lib.sh` generates `CompPoly.lean`. Do not hand-edit it.
 - Edit source, not derived output under `.lake/`.
-- If a PR changes commands, repo structure, generated outputs, or regular repo
-  guidance, update the relevant page in [`docs/wiki/`](docs/wiki/README.md) in the
+- If a PR changes commands, repo structure, generated outputs, or recurring repo
+  guidance, update the matching page in [`docs/wiki/`](docs/wiki/README.md) in the
   same PR.
-- Promote stable repo-specific guidance into [`docs/wiki/`](docs/wiki/README.md).
-  Do not leave it only in transient notes.
-- Write all prose to the [writing standard](docs/wiki/writing.md): documentation,
+- Promote stable repo-specific guidance into [`docs/wiki/`](docs/wiki/README.md)
+  instead of leaving it only in transient notes.
+- Use the [writing standard](docs/wiki/writing.md) for documentation,
   comments, docstrings, commit messages, PR and issue text, and review comments. Use
   [`write-technical-prose.md`](docs/wiki/write-technical-prose.md) for the workflow.
-  Assess current prose against the standard. Correct its defects.
+  C1 to C8, C9 trust claims, and applicable statement and correctness audits are mandatory.
+  The other style guidance is advisory. A style warning alone does not require a rewrite or block a merge.
   Keep trust and soundness statements exact.
 
 ## Deeper Docs

@@ -57,15 +57,15 @@ repo-wide checks, such as executable-bit detection and filename collisions.
 
 ### `lint-style.py`
 
-`lint-style.py` is the Python linter that the shell wrapper calls for Lean style issues. It checks module docstrings,
+`lint-style.py` is the underlying Python linter for Lean style issues. It checks module docstrings,
 line length, forbidden imports or tactics, trailing whitespace, and the local
-`native_decide` policy, and respects entries in `style-exceptions.txt`.
+`native_decide` policy, while honoring entries in `style-exceptions.txt`.
 
 Use this script directly only when you want to lint a specific subset of files.
 
 ### `check-writing.py`
 
-`check-writing.py` is an advisory prose checker for the
+`check-writing.py` is an advisory writing checker for the
 [writing standard](../docs/wiki/writing.md). It reads
 Markdown files and the comments and docstrings of Lean files. `lint-style.py` checks
 the source style of Lean code, and `check-writing.py` checks the prose. It reports
@@ -79,7 +79,9 @@ standard input, such as a PR description. In `--base` mode, it skips generated f
 
 Findings return exit code 0, or 1 with `--strict`. CI reports them as warnings.
 Usage, Git, and configuration errors return exit code 2.
-Non-UTF-8 source input and dangling symlinks produce advisory Input diagnostics.
+Non-UTF-8 source input and symlinks produce advisory Input diagnostics. Symlink targets are not
+read as source prose. V2 hints cover only some introductory clauses for manual subject review.
+The checker does not infer the subject of a clause after a preposition.
 
 A finding is a prompt to read the passage. It is not a verdict on the prose.
 [`write-technical-prose.md`](../docs/wiki/write-technical-prose.md) describes how to
@@ -94,7 +96,7 @@ change the checker or the "Words to avoid" table of the vocabulary.
 ### `gen_mersenne31_circle_certificate.py`
 
 The script emits the `generatorDoublings` declaration for the Mersenne31 circle
-generator by 30 successive doublings modulo `2^31 - 1`. It prints the declaration and does not change
+generator by 30 successive doublings modulo `2^31 - 1`. It prints the declaration without modifying
 source files. Run `python3 scripts/gen_mersenne31_circle_certificate.py --check` to
 verify the checked-in data, or pass a Lean file after `--check` to compare that file.
 The script is outside the trusted code base: Lean checks every step with kernel
@@ -107,7 +109,7 @@ The script is a generator outside the TCB. It produces kernel-checkable Rabin
 irreducibility certificates for a monic polynomial `f` over a prime field `F_p`.
 It computes the repeated-squaring steps for `X^(p^d) mod f` (the trace condition).
 For each prime factor `l` of `d = deg f`, it also computes the steps for
-`X^(p^(d/l)) mod f` and a Bezout pair for `gcd(f, X^(p^(d/l)) - X) = 1` (the
+`X^(p^(d/l)) mod f` and a Bezout pair witnessing `gcd(f, X^(p^(d/l)) - X) = 1` (the
 coprimality conditions). It emits them as JSON, and with `--lean` as a complete
 compilable Lean module. Nothing it produces is trusted: the Lean side re-checks every
 step in the kernel via `rfl`.
@@ -137,8 +139,9 @@ The script makes three checks over every tracked `.md` file:
 
 The third check catches module splits and renames, because the docs cite far more
 paths in backticks than in markdown links. The check skips bare filenames with no
-directory, glob patterns, and paths that end in `/`. A path can be relative to the repository root or the directory of the file with the reference.
-It can also use a subtree root from `PATH_PREFIXES`. For example, a page about `Fields/` can write `KoalaBear/Ext4.lean`.
+directory, glob patterns, and paths ending in `/`. A path can be relative to the
+repo root, to the directory of the citing file, or to one of the subtree roots in
+`PATH_PREFIXES`. For example, a page about `Fields/` can write `KoalaBear/Ext4.lean`.
 Each added prefix weakens the check, so prefer a fix to the doc.
 
 ### `build_timing_report.sh`

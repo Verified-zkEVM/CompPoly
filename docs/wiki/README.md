@@ -39,8 +39,8 @@ are too specific or too changeable to keep at the repo root.
   comments, commit messages, PR and issue text, and review comments.
 - [`writing-vocabulary.md`](writing-vocabulary.md) - CompPoly's technical terms,
   their qualifiers, and wording to avoid.
-- [`write-technical-prose.md`](write-technical-prose.md) - the workflow to
-  draft and revise prose, with the advisory prose checker.
+- [`write-technical-prose.md`](write-technical-prose.md) - the workflow for
+  drafting and revising prose, including the advisory writing checker.
 
 ## Maintenance Contract
 
@@ -65,12 +65,12 @@ are too specific or too changeable to keep at the repo root.
     the matrix layer.
   - `serialization.md` for byte formats, the serialization classes, and the
     invariants consumers may rely on.
-  - `writing.md` for the prose rules and their relation to Simplified Technical English (STE).
+  - `writing.md` for the writing rules and their relation to STE.
   - `writing-vocabulary.md` for technical terms and wording to avoid.
   - `write-technical-prose.md` for the writing workflow and the checker.
-- Add a page when a regular topic does not fit cleanly in a current page.
-- If a PR changes commands, repo structure, generated-file behavior, or regular
-  architecture guidance, update the relevant page in the same PR.
+- Add a page when a recurring topic does not fit cleanly in an existing page.
+- If a PR changes commands, repo structure, generated-file behavior, or recurring
+  architecture guidance, update the matching page in the same PR.
 - Keep these files committed so worktrees and delegated agents see the same
   guidance.
 - Prefer linking to canonical docs over copying them.
