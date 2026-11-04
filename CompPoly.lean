@@ -356,6 +356,7 @@ public import CompPoly.Univariate.Raw.Division
 public import CompPoly.Univariate.Raw.Modular
 public import CompPoly.Univariate.Raw.Ops
 public import CompPoly.Univariate.Raw.Proofs
+public import CompPoly.Univariate.Raw.Size
 public import CompPoly.Univariate.ReedSolomon
 public import CompPoly.Univariate.ReedSolomon.GaoCorrectness
 public import CompPoly.Univariate.ReedSolomon.GaoDecoder
