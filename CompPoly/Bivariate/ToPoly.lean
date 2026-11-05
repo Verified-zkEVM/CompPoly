@@ -250,8 +250,8 @@ theorem ofPoly_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring
     [DecidableEq R]
     (p : R[X][Y]) : toPoly (ofPoly p) = p := by
       induction p using Polynomial.induction_on'
-      · rw [ ofPoly_add, toPoly_add,
-          ‹(ofPoly _).toPoly = _›, ‹(ofPoly _).toPoly = _› ]
+      · rename_i p q hp hq
+        rw [ofPoly_add, toPoly_add, hp, hq]
       · rename_i n c
         simp +decide [ ofPoly_monomial, toPoly_monomial ]
         exact congr_arg _ ( CPolynomial.Raw.toPoly_toImpl )

@@ -450,7 +450,6 @@ theorem fallbackAfterEvenTraceAttempts_probability_le_geometric_of_uniformProbe 
   exact evenTraceTrial_success_probability_ge_half M D traceCtx enumeration g (offset + i)
     hfield (hrootProduct.hasTwoDistinctRoots hdegree) hdegree
 
-set_option maxHeartbeats 1600000 in
 /--
 Bridge to the executable trace retry loop: the deterministic
 `tryEvenTraceSplitAttemptsWith`, driven by a probe table whose entries are
@@ -471,27 +470,21 @@ theorem tryEvenTraceSplitAttemptsWith_uniformTable_none_le_geometric {F : Type*}
           tryEvenTraceSplitAttemptsWith M D traceCtx q (tableProbeFamily table) g
             attempts 0 = none} ≤
       ((2 : ℝ≥0∞)⁻¹) ^ attempts := by
-  have hfailset : ((fun h : CPolynomial F ↦
-      (match cantorZassenhausEvenTraceAttemptWith M D traceCtx q
-          ({ probe := fun _q _factor _attempt ↦ h } : ProbeFamily F) g 0 with
-        | some children => TrialResult.split children
-        | none => TrialResult.failed)) ⁻¹'
-        {trial : TrialResult F | ¬ trial.IsSuccess}) =
-      {h : CPolynomial F | cantorZassenhausEvenTraceAttemptWith M D traceCtx q
-        ({ probe := fun _q _factor _attempt ↦ h } : ProbeFamily F) g 0 = none} := by
-    ext h
-    cases h0 : cantorZassenhausEvenTraceAttemptWith M D traceCtx q
-        ({ probe := fun _q _factor _attempt ↦ h } : ProbeFamily F) g 0 <;>
-      simp [h0, TrialResult.IsSuccess]
+  -- The failure event is read off `evenTraceTrialPMF`'s own function. Restating its `match`
+  -- here would create a second matcher constant, and unifying the two unfolds the root
+  -- finder.
   have hfail : (uniformProbePMF enumeration coefficientCount).toOuterMeasure
       {h : CPolynomial F | cantorZassenhausEvenTraceAttemptWith M D traceCtx q
         ({ probe := fun _q _factor _attempt ↦ h } : ProbeFamily F) g 0 = none} ≤
       (2 : ℝ≥0∞)⁻¹ := by
-    rw [← hfailset, ← PMF.toOuterMeasure_map_apply]
     have hhalf := trialFailureProbability_le_half_of_success
       (evenTraceTrialPMF M D traceCtx enumeration q coefficientCount g 0) hstep
-    rw [eventProbability, evenTraceTrialPMF] at hhalf
-    exact hhalf
+    rw [eventProbability, evenTraceTrialPMF, PMF.toOuterMeasure_map_apply] at hhalf
+    refine le_trans (le_of_eq (congrArg _ ?_)) hhalf
+    ext h
+    cases h0 : cantorZassenhausEvenTraceAttemptWith M D traceCtx q
+        ({ probe := fun _q _factor _attempt ↦ h } : ProbeFamily F) g 0 <;>
+      simp [h0, TrialResult.IsSuccess]
   intro attempts
   induction attempts with
   | zero =>
@@ -544,7 +537,7 @@ theorem tryEvenTraceSplitAttemptsWith_uniformTable_none_le_geometric {F : Type*}
         by_cases h0 : cantorZassenhausEvenTraceAttemptWith M D traceCtx q
             ({ probe := fun _q _factor _attempt ↦ h } : ProbeFamily F) g 0 = none
         · rw [ite_eq_left h0]
-          congr 1
+          refine congrArg _ ?_
           ext rest
           rw [Set.mem_preimage, Set.mem_ofPred_eq, Set.mem_ofPred_eq, hsection h rest]
           simp [h0]
@@ -585,7 +578,7 @@ theorem tryEvenTraceSplitAttemptsWith_uniformTable_none_le_geometric {F : Type*}
                 ({ probe := fun _q _factor _attempt ↦ h } : ProbeFamily F) g 0 = none} *
               ((2 : ℝ≥0∞)⁻¹) ^ attempts := by
             rw [ENNReal.tsum_mul_right]
-            congr 1
+            refine congrArg (· * ((2 : ℝ≥0∞)⁻¹) ^ attempts) ?_
             rw [PMF.toOuterMeasure_apply]
             apply tsum_congr
             intro h
