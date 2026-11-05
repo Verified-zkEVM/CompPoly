@@ -30,6 +30,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # Build steps run this PR's Lean code (`#eval`, `initialize`, tactics); a token
+          # left in `.git/config` would be readable from it.
+          persist-credentials: false
 
       - name: Set up uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -150,6 +153,23 @@ jobs:
           key: lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ github.sha }}
           restore-keys: |
             lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
+      # Recorded with every timing row: the report compares two runs only when their cache
+      # states (and machines) match.
+      - name: Record build cache state
+        env:
+          CACHE_HIT: ${{ steps.build-cache.outputs.cache-hit }}
+          CACHE_MATCHED_KEY: ${{ steps.build-cache.outputs.cache-matched-key }}
+        run: |
+          if [ "$CLEAN_BUILD" = "true" ]; then
+            state=clean
+          elif [ "$CACHE_HIT" = "true" ]; then
+            state=exact
+          elif [ -n "$CACHE_MATCHED_KEY" ]; then
+            state=partial
+          else
+            state=miss
+          fi
+          echo "BUILD_TIMING_CACHE_STATE=$state" >> "$GITHUB_ENV"
       - name: Set up Lean environment
         uses: leanprover/lean-action@v1
         with:
@@ -187,10 +207,45 @@ jobs:
           ulimit -c 0
           timeout --kill-after=5s 30s .lake/build/bin/CompPolyNativeSmoke
       - name: Axiom sweep
-        run: lake exe axiomsweep --check
+        run: |
+          mkdir -p "$RUNNER_TEMP/statement-export"
+          lake exe axiomsweep --check --statements "$RUNNER_TEMP/statement-export/statements.json"
+      # Every run keeps its statement export, so a pull request can diff against the run
+      # of its base commit.
+      - name: Upload statement export
+        uses: actions/upload-artifact@v4
+        with:
+          name: statement-export
+          path: ${{ runner.temp }}/statement-export/statements.json
+          if-no-files-found: error
+          retention-days: 90
+          # A re-run uploads the same name again.
+          overwrite: true
+      # On a push, the kernel replay runs here. On a pull request it runs in the
+      # `trusted-gates` job below, with the base revision's tooling, away from this PR's code.
+      - name: Kernel replay
+        if: github.event_name != 'pull_request'
+        run: lake exe kernelreplay
+      # Blocking: a `sorry` in an `example`, in a structure-field default, or anywhere in
+      # the tests shows up as a "declaration uses `sorry`" warning even where no
+      # kernel-level census can see it. The library and the tests build warning-free.
       - name: Fail on build warnings
-        continue-on-error: true
-        run: lake build --wfail
+        run: lake build --wfail && lake build --wfail CompPolyTests
+      # The compiled library and tests, for the `trusted-gates` job. Nothing else of this
+      # PR's build is passed on.
+      - name: Upload the built library and tests
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: compoly-oleans
+          path: |
+            .lake/build/lib/lean/CompPoly.olean*
+            .lake/build/lib/lean/CompPoly/
+            .lake/build/lib/lean/CompPolyTests.olean*
+            .lake/build/lib/lean/CompPolyTests/
+          if-no-files-found: error
+          retention-days: 3
+          overwrite: true
       - name: Build evaluation benchmark executable
         run: lake build CompPolyBench
       - name: Validate benchmark implementations
@@ -386,6 +441,59 @@ jobs:
           path: ${{ env.BUILD_TIMING_BASELINE_DIR }}
           run-id: ${{ steps.timing-baseline.outputs.run-id }}
           github-token: ${{ github.token }}
+      - name: Find the base commit's statement export
+        if: always() && github.event_name == 'pull_request'
+        id: statement-base
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // The PR is checked out as its merge commit, whose first parent is the base tip,
+            // so the base tip's export is the one to compare against.
+            const { owner, repo } = context.repo;
+            const baseSha = context.payload.pull_request.base.sha;
+            const runs = await github.paginate(
+              github.rest.actions.listWorkflowRunsForRepo,
+              { owner, repo, head_sha: baseSha, event: 'push', per_page: 100 }
+            );
+            for (const run of runs) {
+              if (run.name !== process.env.GITHUB_WORKFLOW) continue;
+              const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+                owner, repo, run_id: run.id, per_page: 100,
+              });
+              if (artifacts.data.artifacts.some(a => a.name === 'statement-export' && !a.expired)) {
+                core.setOutput('run-id', String(run.id));
+                return;
+              }
+            }
+            core.setOutput('run-id', '');
+      - name: Download the base commit's statement export
+        if: always() && steps.statement-base.outputs.run-id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: statement-export
+          path: ${{ runner.temp }}/statement-export-base
+          run-id: ${{ steps.statement-base.outputs.run-id }}
+          github-token: ${{ github.token }}
+      - name: Diff statements against the base commit
+        if: always() && github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          base="$RUNNER_TEMP/statement-export-base/statements.json"
+          head="$RUNNER_TEMP/statement-export/statements.json"
+          out="$RUNNER_TEMP/statement-diff.md"
+          if [ -f "$base" ] && [ -f "$head" ]; then
+            uv run --no-project --python 3.12 python scripts/statement_diff.py "$base" "$head" > "$out"
+          else
+            {
+              echo "### Statement changes against the base revision"
+              echo
+              echo "Unavailable: base commit \`${BASE_SHA:0:12}\` has no statement export yet"
+              echo "(its CI run may still be running or predate the export), or this run's"
+              echo "sweep did not finish."
+            } > "$out"
+          fi
+          cat "$out" >> "$GITHUB_STEP_SUMMARY"
       - name: Render build timing report
         if: always()
         env:
@@ -402,6 +510,10 @@ jobs:
             echo '<!-- compoly-build-timing-report -->'
             echo
             cat "$BUILD_TIMING_REPORT"
+            if [ -f "$RUNNER_TEMP/statement-diff.md" ]; then
+              echo
+              cat "$RUNNER_TEMP/statement-diff.md"
+            fi
           } > "$BUILD_TIMING_COMMENT"
       - name: Upsert build timing PR comment
         if: >-
@@ -439,3 +551,265 @@ jobs:
                 body,
               });
             }
+
+  # Checks that decide whether a pull request may widen the trust policy, run with the base
+  # revision's checkout, scripts and Mathlib cache, and from the PR only its compiled
+  # `.olean` files (the data being judged) and, last, its own kernel replay. The build job
+  # above runs PR code (`#eval`, `initialize`, tactics) in the same process tree as
+  # everything it does, so a check there can be tampered with.
+  #
+  # On `pull_request`, GitHub reads this job's definition from the PR's own copy of this
+  # file. It is therefore only as trustworthy as the rule that a change to
+  # `.github/workflows/` needs a code owner's review (CODEOWNERS plus branch protection's
+  # "Require review from Code Owners"). Moving it to a `workflow_run` workflow, whose
+  # definition comes from the default branch, would remove that dependency.
+  trusted-gates:
+    needs: build
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Check out the base revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+          persist-credentials: false
+      # Read as data only: the module list and the PR's kernel replay source.
+      - name: Check out the pull request
+        uses: actions/checkout@v4
+        with:
+          path: head
+          persist-credentials: false
+      # The PR's oleans only load under the toolchain and dependencies that built them. When
+      # the PR changes either, use its lock files (as data: the base's lakefile and scripts
+      # stay) and require sign-off below.
+      - name: Compare toolchain and dependency lock
+        id: lock
+        run: |
+          if cmp -s base/lean-toolchain head/lean-toolchain &&
+             cmp -s base/lake-manifest.json head/lake-manifest.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::The pull request changes lean-toolchain or lake-manifest.json; code-owner sign-off is required."
+          fi
+      # A lock change makes the steps below install the PR's toolchain and packages, whose
+      # code (elan release binaries, lakefiles, Mathlib's cache tool) then runs in this job and
+      # could tamper with any later step. So sign-off for it is checked first, before any of it
+      # runs, and the PR's lock files are used only after it passes.
+      - name: Require code-owner sign-off for the lock change
+        if: steps.lock.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        env:
+          REASON: it changes lean-toolchain or lake-manifest.json
+        with:
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            const pr = context.payload.pull_request;
+            const why = `This pull request needs code-owner sign-off: ${process.env.REASON}. ` +
+              `A user listed in the base revision's .github/CODEOWNERS, who is neither the PR ` +
+              `author nor an author or committer of its commits, approves the PR at its ` +
+              `current head commit; then re-run this job.`;
+            const path = 'base/.github/CODEOWNERS';
+            if (!fs.existsSync(path)) {
+              core.setFailed(`${why} The base revision has no CODEOWNERS file.`);
+              return;
+            }
+            const signers = new Set();
+            for (const line of fs.readFileSync(path, 'utf8').split('\n')) {
+              for (const entry of line.replace(/#.*/, '').trim().split(/\s+/).slice(1)) {
+                if (entry.startsWith('@') && !entry.includes('/')) {
+                  signers.add(entry.slice(1).toLowerCase());
+                }
+              }
+            }
+            const excluded = new Set([pr.user.login.toLowerCase()]);
+            const commits = await github.paginate(
+              github.rest.pulls.listCommits,
+              { owner, repo, pull_number: pr.number, per_page: 100 }
+            );
+            for (const c of commits) {
+              if (c.author?.login) excluded.add(c.author.login.toLowerCase());
+              if (c.committer?.login && c.committer.login !== 'web-flow') {
+                excluded.add(c.committer.login.toLowerCase());
+              }
+            }
+            const reviews = await github.paginate(
+              github.rest.pulls.listReviews,
+              { owner, repo, pull_number: pr.number, per_page: 100 }
+            );
+            // Each user's latest review decides; a later "changes requested" withdraws it.
+            const latest = new Map();
+            for (const r of reviews) {
+              if (r.user && r.state !== 'COMMENTED') latest.set(r.user.login.toLowerCase(), r);
+            }
+            const ok = [...latest.values()].find(r =>
+              r.state === 'APPROVED' &&
+              r.commit_id === pr.head.sha &&
+              r.user.type !== 'Bot' &&
+              signers.has(r.user.login.toLowerCase()) &&
+              !excluded.has(r.user.login.toLowerCase())
+            );
+            if (!ok) {
+              core.setFailed(`${why} No such approval of ${pr.head.sha} was found.`);
+            } else {
+              core.notice(`Signed off by ${ok.user.login} at ${ok.submitted_at} on ${pr.head.sha}.`);
+            }
+      - name: Use the pull request's lock files
+        if: steps.lock.outputs.changed == 'true'
+        run: cp head/lean-toolchain head/lake-manifest.json base/
+      - name: Set up Lean and Mathlib from the lock files chosen above
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: base
+          auto-config: false
+          build: false
+          test: false
+          lint: false
+          use-github-cache: false
+          use-mathlib-cache: true
+      - name: Download the pull request's compiled library and tests
+        uses: actions/download-artifact@v4
+        with:
+          name: compoly-oleans
+          path: ${{ runner.temp }}/compoly-oleans
+      # Only the library's and the tests' own build outputs may come from the PR: nothing that
+      # could stand in for a Mathlib or core module on the search path, and no links.
+      - name: Install them after checking their layout
+        run: |
+          src="$RUNNER_TEMP/compoly-oleans"
+          bad="$(find "$src" -mindepth 1 \( -type l -o ! \( -type f -o -type d \) \) -print)"
+          if [ -n "$bad" ]; then
+            echo "::error::The olean artifact contains links or special files: $bad"
+            exit 1
+          fi
+          for entry in "$src"/* "$src"/.[!.]*; do
+            [ -e "$entry" ] || continue
+            case "$(basename "$entry")" in
+              CompPoly|CompPolyTests|CompPoly.*|CompPolyTests.*) ;;
+              *) echo "::error::Unexpected entry in the olean artifact: $(basename "$entry")"; exit 1 ;;
+            esac
+          done
+          mkdir -p base/.lake/build/lib/lean
+          cp -R "$src"/. base/.lake/build/lib/lean/
+      # Exit 1 means the sweep found taint the base baseline does not cover, which sign-off
+      # can accept. Any other failure (it could not import, or crashed) fails here.
+      - name: Axiom sweep under the base revision's policy
+        id: base-sweep
+        working-directory: base
+        run: |
+          set +e
+          lake env lean --run scripts/AxiomSweep.lean --check --baseline scripts/axiom_baseline.json \
+            > "$RUNNER_TEMP/sweep.log" 2>&1
+          status=$?
+          set -e
+          cat "$RUNNER_TEMP/sweep.log"
+          # Exit 1 is sign-off-able only when the sweep actually ran (it prints its census
+          # line before checking) and found only new sorry or axiom taint. Native-compiler
+          # trust is never baselineable, and a script that failed to run proves nothing.
+          ran=false; native=false
+          grep -q '^axiomsweep: [0-9]* declarations across' "$RUNNER_TEMP/sweep.log" && ran=true
+          grep -q 'never-allowlistable' "$RUNNER_TEMP/sweep.log" && native=true
+          if [ "$status" = 0 ]; then
+            echo "widened=false" >> "$GITHUB_OUTPUT"
+          elif [ "$status" = 1 ] && [ "$ran" = true ] && [ "$native" = false ]; then
+            echo "widened=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::The base revision's axiom sweep failed (status $status, ran=$ran, native trust=$native)"
+            exit 1
+          fi
+      - name: List the pull request's modules
+        run: |
+          git -C head ls-files 'CompPoly/*.lean' 'tests/CompPolyTests/*.lean' |
+            sed -e 's|^tests/||' -e 's|\.lean$||' -e 's|/|.|g' > "$RUNNER_TEMP/modules.txt"
+          wc -l < "$RUNNER_TEMP/modules.txt"
+      - name: Kernel replay with the base revision's tool
+        working-directory: base
+        run: |
+          if [ -f scripts/KernelReplay.lean ]; then
+            lake env lean --run scripts/KernelReplay.lean --self-script scripts/KernelReplay.lean \
+              --require-modules "$RUNNER_TEMP/modules.txt"
+          else
+            echo "The base revision has no kernel replay; the pull request's runs below."
+          fi
+      # Sign-off for a wider policy: an approving
+      # review of the PR's current head commit by a user the base revision's CODEOWNERS
+      # lists, who is neither the PR author nor an author or committer of its commits, and
+      # not a bot. A later push needs a new review.
+      - name: Require code-owner sign-off
+        if: steps.base-sweep.outputs.widened == 'true'
+        env:
+          REASON: the base revision's axiom sweep finds taint its baseline does not cover
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            const pr = context.payload.pull_request;
+            const why = `This pull request needs code-owner sign-off: ${process.env.REASON}. ` +
+              `A user listed in the base revision's .github/CODEOWNERS, who is neither the PR ` +
+              `author nor an author or committer of its commits, approves the PR at its ` +
+              `current head commit; then re-run this job.`;
+            const path = 'base/.github/CODEOWNERS';
+            if (!fs.existsSync(path)) {
+              core.setFailed(`${why} The base revision has no CODEOWNERS file.`);
+              return;
+            }
+            const signers = new Set();
+            for (const line of fs.readFileSync(path, 'utf8').split('\n')) {
+              for (const entry of line.replace(/#.*/, '').trim().split(/\s+/).slice(1)) {
+                if (entry.startsWith('@') && !entry.includes('/')) {
+                  signers.add(entry.slice(1).toLowerCase());
+                }
+              }
+            }
+            const excluded = new Set([pr.user.login.toLowerCase()]);
+            const commits = await github.paginate(
+              github.rest.pulls.listCommits,
+              { owner, repo, pull_number: pr.number, per_page: 100 }
+            );
+            for (const c of commits) {
+              if (c.author?.login) excluded.add(c.author.login.toLowerCase());
+              if (c.committer?.login && c.committer.login !== 'web-flow') {
+                excluded.add(c.committer.login.toLowerCase());
+              }
+            }
+            const reviews = await github.paginate(
+              github.rest.pulls.listReviews,
+              { owner, repo, pull_number: pr.number, per_page: 100 }
+            );
+            // Each user's latest review decides; a later "changes requested" withdraws it.
+            const latest = new Map();
+            for (const r of reviews) {
+              if (r.user && r.state !== 'COMMENTED') latest.set(r.user.login.toLowerCase(), r);
+            }
+            const ok = [...latest.values()].find(r =>
+              r.state === 'APPROVED' &&
+              r.commit_id === pr.head.sha &&
+              r.user.type !== 'Bot' &&
+              signers.has(r.user.login.toLowerCase()) &&
+              !excluded.has(r.user.login.toLowerCase())
+            );
+            if (!ok) {
+              core.setFailed(`${why} No such approval of ${pr.head.sha} was found.`);
+            } else {
+              core.notice(`Signed off by ${ok.user.login} at ${ok.submitted_at} on ${pr.head.sha}.`);
+            }
+      # This PR's own replay tool is PR code, so it runs last, after every verdict above.
+      - name: Kernel replay with the pull request's tool
+        working-directory: base
+        run: |
+          if [ ! -f ../head/scripts/KernelReplay.lean ]; then
+            echo "The pull request has no kernel replay."
+          elif cmp -s ../head/scripts/KernelReplay.lean scripts/KernelReplay.lean; then
+            echo "Same tool as the base revision; already run."
+          else
+            cp ../head/scripts/KernelReplay.lean "$RUNNER_TEMP/KernelReplay.lean"
+            lake env lean --run "$RUNNER_TEMP/KernelReplay.lean" \
+              --self-script "$RUNNER_TEMP/KernelReplay.lean" \
+              --require-modules "$RUNNER_TEMP/modules.txt"
+          fi
