@@ -53,3 +53,11 @@ lean_exe axiomsweep where
   srcDir := "scripts"
   root := `AxiomSweep
   supportInterpreter := true
+
+/-- Re-checks every declaration under the CompPoly and CompPolyTests roots in the kernel, so
+one added without kernel checking fails. Run after `lake build` and `lake test`. See
+`scripts/KernelReplay.lean`. -/
+lean_exe kernelreplay where
+  srcDir := "scripts"
+  root := `KernelReplay
+  supportInterpreter := true

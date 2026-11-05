@@ -56,16 +56,19 @@ exercise that startup path.
 ### Filling a `sorry`, or work that must stay axiom-clean
 
 ```bash
-lake build
+lake build && lake test
 lake exe axiomsweep --check
+lake exe kernelreplay
 ```
 
 `axiomsweep` is kernel-level axiom/`sorry` accounting for every reportable
-declaration owned by a `CompPoly.*` module, diffed against the committed baseline
-`scripts/axiom_baseline.json`. It sweeps the `CompPoly` library as the umbrella
-imports it (`tests/` and `bench/` are outside it). It has the blind spots of any
+declaration owned by a `CompPoly.*` or `CompPolyTests.*` module, diffed against the
+committed baseline `scripts/axiom_baseline.json`. It sweeps the library and the tests as
+their umbrella modules import them (`bench/` is outside it). It has the blind spots of any
 environment walk (structure-field defaults and `example`s never enter the
-environment). The module docstring in `scripts/AxiomSweep.lean` describes them.
+environment). CI's blocking `lake build --wfail` over the library and the tests covers
+those, because every `sorry` there is a "declaration uses `sorry`" warning. The module
+docstring in `scripts/AxiomSweep.lean` describes the blind spots.
 It fails only on *new* `sorryAx` or non-standard-axiom taint, so pre-existing gaps
 stay allowed. After you intentionally add or close a `sorry`, refresh and commit the
 baseline:
@@ -74,8 +77,40 @@ baseline:
 lake exe axiomsweep --update-baseline
 ```
 
-CI runs the same check as an enforcing gate (see `lean_action_ci.yml`). Native-compiler
-trust is never baselineable.
+CI runs the same check as an enforcing gate (see `lean_action_ci.yml`). On a pull request
+the `trusted-gates` job also runs the *base revision's* sweep against the *base revision's*
+baseline, so a PR cannot approve its own new taint by editing the baseline or the sweep.
+That job uses the base revision's checkout, scripts and Mathlib cache, and from the PR only
+its compiled `.olean` files, whose layout it checks. It runs the PR's own kernel replay
+last, after every verdict. Two cases need a sign-off: an approving review of the PR's
+current head commit by a user listed in the base revision's `.github/CODEOWNERS` who did not
+author the PR or any of its commits. A later push needs a new review.
+
+- The PR changes `lean-toolchain` or `lake-manifest.json`. Installing the PR's toolchain
+  and packages runs code they choose, so this sign-off is checked first, before any of it
+  runs; only then does the job switch to the PR's lock files.
+- The base sweep finds new `sorry` or axiom taint. Any other sweep failure fails outright:
+  native-compiler trust, which is never baselineable, and a sweep that did not run.
+
+`kernelreplay` re-checks every declaration of the library and the tests in Lean's kernel.
+The sweep trusts that the build sent each declaration to the kernel. A declaration added
+under `set_option debug.skipKernelTC true`, or by meta code calling
+`addDeclWithoutChecking`, looks axiom-clean to it and fails here. The replay also checks
+that each module's exported constants match the ones it checks, and it checks every copy
+of a name that several modules store. It replays the modules in chunks of 16, one chunk
+per child process. `--jobs N` runs N at once, each needing up to about 5 GB.
+
+These checks do not cover everything:
+
+- On `pull_request`, GitHub reads the trusted job's definition from the PR's own copy of
+  the workflow. The job is only as trustworthy as the rule that a change to
+  `.github/workflows/` needs a code owner's review, so branch protection must require it.
+  A `workflow_run` workflow, defined by the default branch, would remove this dependency.
+- The job checks the oleans the PR's build produced. Nothing ties them to the PR's source,
+  so a build that runs malicious code could upload oleans that differ from what its
+  source compiles to. A crafted olean could also attack the loader itself.
+- Until the base revision's sweep stops running initializers (this change does that), a
+  PR's `initialize` blocks still run inside the base sweep.
 
 ### Added, renamed, or deleted files under `CompPoly/`
 
@@ -145,8 +180,13 @@ come from the on-demand Benchmarks workflow. See
 - [`../../.github/workflows/lean_action_ci.yml`](../../.github/workflows/lean_action_ci.yml)
   runs a **warm** (incremental) `lake build` by default. The warm build reuses cached
   Lake oleans, so only dirty modules rebuild. The workflow then runs `lake test`, a
-  linked native field smoke test under the documented resource bounds, and the axiom
-  sweep as an enforcing gate. It posts a build-timing report. It also builds
+  linked native field smoke test under the documented resource bounds, and these
+  enforcing gates: the axiom sweep (under this revision's policy and, on a PR, the base
+  revision's), the kernel replay, and a `--wfail` build of the library and the tests.
+  It posts a build-timing report, which compares with a baseline run only when the CPU
+  model, CPU count and cache state match. On a PR it also reports the declarations whose
+  statement or value changed against the base commit (`scripts/statement_diff.py` over
+  `axiomsweep --statements` exports). It also builds
   `CompPolyBench` and runs it in `--validate-only` mode over the curated group set in
   `bench/ci-groups.txt`. That run checks that the implementations of each group agree,
   without timing ordinary workloads. Harness checks can still record samples. The
@@ -207,6 +247,7 @@ uv run --no-project --python 3.12 python scripts/check-docs-integrity.py
 lake test
 lake build CompPolyBench
 lake exe axiomsweep --check
+lake exe kernelreplay
 ```
 
 For more detail on the helper scripts, see

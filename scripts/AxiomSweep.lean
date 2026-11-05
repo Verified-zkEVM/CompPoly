@@ -8,12 +8,12 @@ import Lean
 /-!
 # Axiom sweep: whole-library kernel-level axiom and `sorry` accounting
 
-Walks the compiled environment (the same data the kernel checked) and computes, for every
-declaration in `CompPoly.*` modules, the set of axioms its statement and proof ultimately
+Walks the compiled environment and computes, for every declaration in `CompPoly.*` and
+`CompPolyTests.*` modules, the set of axioms its statement and proof ultimately
 depend on — the same information as `#print axioms`, for the whole library at once.
 
 Because this reads elaborated `.olean` data rather than source text, it sees exactly what
-the kernel accepted: private declarations and instances are reported, compiler-generated
+was added to the environment: private declarations and instances are reported, compiler-generated
 auxiliaries are traversed (their taint surfaces on the parent declaration), and no
 source-level heuristics are involved. The sweep covers what the root modules transitively
 import — pair it with the repo's import-completeness gate so every
@@ -25,16 +25,22 @@ Known blind spots, shared with `#print axioms` (all environment-walking tools):
   each use site and attach to no swept constant of the defining module;
 * `example`s never enter the environment;
 * files not transitively imported by the swept roots are invisible (pair with the repo's
-  import-completeness gate).
-A source-level `sorry` grep is the complementary check for the first two.
+  import-completeness gate);
+* a declaration added without kernel checking (`set_option debug.skipKernelTC true`, or
+  meta code calling `addDeclWithoutChecking`) is reported with whatever axioms its term
+  mentions, even if the kernel would reject it.
+CI covers the first two with a blocking `lake build --wfail` over the library and the
+tests, which fails on every `sorry` warning, and the last with
+`lake exe kernelreplay` (`scripts/KernelReplay.lean`), which re-checks every module in the kernel.
 
-Modes (run after `lake build`):
+Modes (run after `lake build` and `lake test`, which build both roots):
 
 ```
 lake exe axiomsweep                     # summary only
 lake exe axiomsweep --out report.json   # also write the full per-declaration report
 lake exe axiomsweep --check             # gate against scripts/axiom_baseline.json
 lake exe axiomsweep --update-baseline   # rewrite the baseline from the current build
+lake exe axiomsweep --statements s.json # also write statement digests (see below)
 ```
 
 The committed baseline (`scripts/axiom_baseline.json`) records the currently-known
@@ -54,7 +60,7 @@ open Lean
 namespace AxiomSweep
 
 /-- Root modules swept when no `--root` is given. -/
-def defaultRoots : Array Name := #[`CompPoly]
+def defaultRoots : Array Name := #[`CompPoly, `CompPolyTests]
 
 /-- Axioms that carry no extra trust assumptions beyond Lean's standard foundation. -/
 def standardAxioms : List Name := [``propext, ``Classical.choice, ``Quot.sound]
@@ -183,8 +189,7 @@ def isReportable (n : Name) : Bool :=
 
 /-- Enumerate the reportable declarations of every module under one of `roots` and
 compute their axiom closures. -/
-def buildEntries (roots : Array Name) : CoreM (Array Entry × Nat) := do
-  let env ← getEnv
+def sweptTargets (env : Environment) (roots : Array Name) : Array (Name × Name) × Nat := Id.run do
   let mut targets : Array (Name × Name) := #[]
   let mut seen : Std.HashSet Name := {}
   let mut moduleCount := 0
@@ -197,6 +202,11 @@ def buildEntries (roots : Array Name) : CoreM (Array Entry × Nat) := do
         if isReportable c && !seen.contains c then
           seen := seen.insert c
           targets := targets.push (c, mname)
+  return (targets, moduleCount)
+
+def buildEntries (roots : Array Name) : CoreM (Array Entry × Nat) := do
+  let env ← getEnv
+  let (targets, moduleCount) := sweptTargets env roots
   let (memo0, order) :=
     targets.foldl (init := (({} : Std.HashMap Name (Array Name)), (#[] : Array Name)))
       fun (memo, order) (c, _) => collect env [c] {} memo order
@@ -212,6 +222,88 @@ def buildEntries (roots : Array Name) : CoreM (Array Entry × Nat) := do
       line := line
       axioms := dedupSort ((memo[c]?.getD #[]).map (normalizeAxiomName ·.toString)) }
   return (entries.qsort (fun a b => a.name < b.name), moduleCount)
+
+/-! ## Statement export
+
+`--statements FILE` writes, for every reportable declaration, a digest of its statement and,
+for anything but a theorem, of its value. CI diffs the export of a pull request against the
+export of its base revision and reports which statements changed. The digests fold in the
+digests of every internal constant they mention (`match_1`, `_proof_1`, …), so a change
+hidden in such an auxiliary still changes the digest of the declaration that uses it.
+Private declarations are reportable and get their own entries. -/
+
+/-- One row of the statement export. Digests are decimal `UInt64`s. -/
+structure StatementEntry where
+  name : String
+  module : String
+  kind : String
+  levelParams : Array String
+  type : String
+  value : Option String
+  deriving ToJson
+
+abbrev DigestM := StateM (Std.HashMap Name UInt64)
+
+/-- The binder info of each argument in the leading `∀` telescope, so that an argument turning
+implicit or explicit changes a statement's digest. -/
+def telescopeBinderInfos : Expr → List BinderInfo
+  | .forallE _ _ b bi => bi :: telescopeBinderInfos b
+  | .mdata _ e => telescopeBinderInfos e
+  | _ => []
+
+mutual
+/-- Digest of an expression: Lean's structural hash, which ignores binder names (hygienic
+names such as `inst✝` carry counters that move whenever earlier code in the file changes),
+mixed with the binder infos of the leading telescope and the full digest of each internal
+constant it mentions. -/
+partial def exprDigest (env : Environment) (gray : List Name) (e : Expr) : DigestM UInt64 := do
+  let mut h := mixHash e.hash (hash (repr (telescopeBinderInfos e)).pretty)
+  for d in e.getUsedConstants do
+    unless isReportable d do
+      h := mixHash h (← fullDigest env gray d)
+  return h
+
+/-- Memoised digest of a whole internal constant: kind, universe parameters in order, type,
+and value unless it is a theorem. `gray` cuts cycles through mutual auxiliaries. -/
+partial def fullDigest (env : Environment) (gray : List Name) (n : Name) : DigestM UInt64 := do
+  if let some d := (← get)[n]? then return d
+  if gray.contains n then return 0
+  let some ci := env.find? n | return 0
+  let t ← exprDigest env (n :: gray) ci.type
+  let v ← match ci with
+    | .thmInfo _ => pure 0
+    | _ => match ci.value? (allowOpaque := true) with
+      | some v => exprDigest env (n :: gray) v
+      | none => pure 0
+  let d := mixHash (mixHash (hash (kindOf ci)) (hash ci.levelParams.toString)) (mixHash t v)
+  modify (·.insert n d)
+  return d
+end
+
+/-- The statement export of every reportable declaration under `roots`. -/
+def buildStatements (env : Environment) (roots : Array Name) : Array StatementEntry := Id.run do
+  let (targets, _) := sweptTargets env roots
+  let mut memo : Std.HashMap Name UInt64 := {}
+  let mut out : Array StatementEntry := #[]
+  for (c, mname) in targets do
+    let some ci := env.find? c | continue
+    let ((t, v), memo') := (do
+      let t ← exprDigest env [c] ci.type
+      let v ← match ci with
+        | .thmInfo _ => pure none
+        | _ => match ci.value? (allowOpaque := true) with
+          | some v => some <$> exprDigest env [c] v
+          | none => pure none
+      return (t, v) : DigestM _).run memo
+    memo := memo'
+    out := out.push {
+      name := c.toString
+      module := mname.toString
+      kind := kindOf ci
+      levelParams := ci.levelParams.toArray.map (·.toString)
+      type := toString t
+      value := v.map toString }
+  return out.qsort (fun a b => a.name < b.name)
 
 def isStandard (a : String) : Bool :=
   standardAxioms.any (toString · == a)
@@ -292,6 +384,7 @@ def runCheck (cur : Baseline) (basePath : String) : IO UInt32 := do
 structure Config where
   roots : Array Name := #[]
   out? : Option String := none
+  statements? : Option String := none
   check : Bool := false
   update : Bool := false
   baseline : String := "scripts/axiom_baseline.json"
@@ -301,12 +394,14 @@ def parseArgs : List String → Config → Except String Config
   | "--check" :: rest, cfg => parseArgs rest { cfg with check := true }
   | "--update-baseline" :: rest, cfg => parseArgs rest { cfg with update := true }
   | "--out" :: path :: rest, cfg => parseArgs rest { cfg with out? := some path }
+  | "--statements" :: path :: rest, cfg => parseArgs rest { cfg with statements? := some path }
   | "--baseline" :: path :: rest, cfg => parseArgs rest { cfg with baseline := path }
   | "--root" :: mod :: rest, cfg =>
     parseArgs rest { cfg with roots := cfg.roots.push mod.toName }
   | arg :: _, _ => .error s!"axiomsweep: unknown or incomplete argument: {arg}\n\
-      usage: lake exe axiomsweep [--out FILE] [--check] [--update-baseline] \
-      [--baseline FILE] [--root MOD]*\n      (--check and --update-baseline are mutually exclusive)"
+      usage: lake exe axiomsweep [--out FILE] [--statements FILE] [--check] \
+      [--update-baseline] [--baseline FILE] [--root MOD]*\n      \
+      (--check and --update-baseline are mutually exclusive)"
 
 end AxiomSweep
 
@@ -320,14 +415,17 @@ unsafe def main (args : List String) : IO UInt32 := do
     return 2
   let roots := if cfg.roots.isEmpty then defaultRoots else cfg.roots
   initSearchPath (← findSysroot)
-  enableInitializersExecution
+  -- Initializers are left disabled: an `initialize` block in the swept code would otherwise
+  -- run inside this process, before the baseline is read, and could change the verdict.
+  -- Reading constants and declaration ranges needs no initializer.
   let env ← try
       importModules (roots.map ({ module := · })) {} (trustLevel := 1024)
-        (loadExts := true)
+        (loadExts := false)
     catch e =>
       IO.eprintln s!"axiomsweep: cannot import root modules {roots}: {e.toString}\n\
-        (roots must be importable modules — glob-based libs without an umbrella \
-        module cannot be swept by library name)"
+        (build them first with `lake build` and `lake test`; roots must be importable \
+        modules — glob-based libs without an umbrella module cannot be swept by library \
+        name)"
       return (2 : UInt32)
   let ((entries, moduleCount), _) ← (buildEntries roots).toIO
     { fileName := "<axiomsweep>", fileMap := default } { env }
@@ -339,6 +437,13 @@ unsafe def main (args : List String) : IO UInt32 := do
   IO.println s!"  sorryAx-tainted: {cur.«sorry».size}"
   IO.println s!"  non-standard-axiom-tainted: {cur.nonstandard.size} \
     (axioms: {distinctNonstd})"
+  if let some path := cfg.statements? then
+    let report := Json.mkObj [
+      ("toolchain", toJson Lean.versionString),
+      ("roots", toJson (roots.map (·.toString))),
+      ("declarations", toJson (buildStatements env roots))]
+    IO.FS.writeFile path (report.compress ++ "\n")
+    IO.println s!"axiomsweep: wrote statement export to {path}"
   if let some out := cfg.out? then
     let report := Json.mkObj [
       ("roots", toJson (roots.map (·.toString))),
