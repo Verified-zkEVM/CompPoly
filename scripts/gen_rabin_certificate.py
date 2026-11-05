@@ -306,7 +306,26 @@ def steps_to_lean(steps) -> str:
     return "[\n" + ",\n".join(rows) + "]"
 
 
-def _wrap_command(p: int, f_arg: str, ns: str, authors: str) -> list[str]:
+def to_bits(l: list[int]) -> int:
+    """The `GF(2)` bitmask of a little-endian coefficient list: bit `i` is coefficient `i`."""
+    return sum((c % 2) << i for i, c in enumerate(l))
+
+
+def steps_to_lean_binary(steps) -> str:
+    """Render a step list as a Lean `List CompPoly.RabinCert.Binary.Step` literal, with the
+    quotient and remainder of each step as `ℕ` bitmasks."""
+    rows = []
+    for s in steps:
+        mulx = "true" if s["op"] == "mulX" else "false"
+        q, r = to_bits(s["q"]), to_bits(s["r"])
+        one_line = f"  ⟨{mulx}, {q}, {r}⟩"
+        rows.append(one_line if len(one_line) <= LINE_LIMIT
+                    else f"  ⟨{mulx},\n    {q},\n    {r}⟩")
+    return "[\n" + ",\n".join(rows) + "]"
+
+
+def _wrap_command(p: int, f_arg: str, ns: str, authors: str,
+                  binary: bool = False) -> list[str]:
     """Emit the regeneration command as shell lines, none exceeding the style limit.
     `--f=` keeps a negative leading coefficient from parsing as an option name. A long
     value is split by closing the quote before each break and reopening it at column 0
@@ -337,6 +356,8 @@ def _wrap_command(p: int, f_arg: str, ns: str, authors: str) -> list[str]:
             lines.append("'" + c + ",'\\")
         lines.append("'" + chunks[-1] + "' \\")
     lines.append("  --lean <this file> --namespace %s \\" % ns)
+    if binary:
+        lines.append("  --binary \\")
     lines.append("  --authors '%s'" % authors)
     return lines
 
@@ -410,6 +431,9 @@ def main() -> int:
                     help="namespace for the emitted Lean definitions")
     ap.add_argument("--authors", type=str, default="Derek Sorensen",
                     help="value for the Authors line of the generated copyright header")
+    ap.add_argument("--binary", action="store_true",
+                    help="p = 2 only: emit polynomials as ℕ bitmasks for "
+                         "CompPoly.RabinCert.Binary instead of coefficient lists")
     ap.add_argument("--self-test", action="store_true",
                     help="check the certificate arithmetic and the emitted command, then exit")
     args = ap.parse_args()
@@ -420,6 +444,8 @@ def main() -> int:
         formatting = format_test()
         return arithmetic or formatting
     p = args.p
+    if args.binary and p != 2:
+        ap.error("--binary needs --p 2")
     f = [c % p for c in map(int, args.f.split(","))]
     cert = build_certificate(p, f)
     d = cert["degree"]
@@ -440,6 +466,16 @@ def main() -> int:
 
     if args.lean:
         ns = args.namespace
+        binary = args.binary
+
+        def step_list(steps) -> str:
+            return steps_to_lean_binary(steps) if binary else steps_to_lean(steps)
+
+        def poly_def(name: str, poly: list[int]) -> str:
+            if binary:
+                return f"def {name} : ℕ := {to_bits(poly)}"
+            return f"def {name} : List ℕ := {poly_to_lean(poly, len(name) + 20)}"
+
         is_prime_degree = cert["prime_factors"] == [d]
         # At prime degree there is exactly one coprimality certificate, at exponent `p^1`, and it
         # keeps the historical `frobSteps`/`rp`/`w`/`u`/`v` names so existing generated modules
@@ -460,23 +496,19 @@ def main() -> int:
                 "",
                 f"/-- Square-and-multiply chain for `X^({exp}) mod f` "
                 f"({len(c['steps'])} steps). -/",
-                f"def {sname} : List Step := {steps_to_lean(c['steps'])}",
+                f"def {sname} : List Step := {step_list(c['steps'])}",
                 "",
                 f"/-- The residue `X^({exp}) mod f`. -/",
-                f"def {rname} : List ℕ := "
-                f"{poly_to_lean(c['rp'], len(rname) + 20)}",
+                poly_def(rname, c['rp']),
                 "",
                 f"/-- `{wname} = (X^({exp}) mod f) - X`, the reduced form of `X^({exp}) - X`. -/",
-                f"def {wname} : List ℕ := "
-                f"{poly_to_lean(c['w'], len(wname) + 20)}",
+                poly_def(wname, c['w']),
                 "",
                 f"/-- Bézout coefficient: `{uname}·f + {vname}·{wname} = 1`. -/",
-                f"def {uname} : List ℕ := "
-                f"{poly_to_lean(c['u'], len(uname) + 20)}",
+                poly_def(uname, c['u']),
                 "",
                 f"/-- Bézout coefficient: `{uname}·f + {vname}·{wname} = 1`. -/",
-                f"def {vname} : List ℕ := "
-                f"{poly_to_lean(c['v'], len(vname) + 20)}",
+                poly_def(vname, c['v']),
                 "",
             ]
         if is_prime_degree:
@@ -485,19 +517,19 @@ def main() -> int:
             cop_lines = [
                 f"/-- Square-and-multiply chain for `X^p mod f` "
                 f"({len(coprimes[0]['steps'])} steps). -/",
-                f"def frobSteps : List Step := {steps_to_lean(coprimes[0]['steps'])}",
+                f"def frobSteps : List Step := {step_list(coprimes[0]['steps'])}",
                 "",
                 "/-- The residue `X^p mod f`. -/",
-                f"def rp : List ℕ := {poly_to_lean(coprimes[0]['rp'], 22)}",
+                poly_def("rp", coprimes[0]['rp']),
                 "",
                 "/-- `w = (X^p mod f) - X`, the reduced form of `X^p - X`. -/",
-                f"def w : List ℕ := {poly_to_lean(coprimes[0]['w'], 21)}",
+                poly_def("w", coprimes[0]['w']),
                 "",
                 "/-- Bézout coefficient: `u·f + v·w = 1`. -/",
-                f"def u : List ℕ := {poly_to_lean(coprimes[0]['u'], 21)}",
+                poly_def("u", coprimes[0]['u']),
                 "",
                 "/-- Bézout coefficient: `u·f + v·w = 1`. -/",
-                f"def v : List ℕ := {poly_to_lean(coprimes[0]['v'], 21)}",
+                poly_def("v", coprimes[0]['v']),
                 "",
             ]
         lines = [
@@ -508,7 +540,8 @@ def main() -> int:
             "-/",
             "module",
             "",
-            "public import CompPoly.Data.Polynomial.RabinCertificate",
+            ("public import CompPoly.Data.Polynomial.RabinCertificateBinary" if binary
+             else "public import CompPoly.Data.Polynomial.RabinCertificate"),
             "",
             "/-!",
             f"# Rabin certificate data for `p = {p}`",
@@ -528,23 +561,37 @@ def main() -> int:
             "GENERATED. Do not edit by hand; regenerate with:",
             "",
             "```sh",
-            *_wrap_command(p, args.f, args.namespace, args.authors),
+            *_wrap_command(p, args.f, args.namespace, args.authors, binary),
             "```",
             "",
-            "These lists are untrusted data. Consumers validate them with kernel-checked",
-            "`CompPoly.RabinCert.runChain` equations and certificate-soundness theorems for",
-            "their specified polynomial. Defining the lists alone establishes no such theorem.",
+            *([
+                "Polynomials are `GF(2)` bitmasks: bit `i` is the coefficient of `X^i`.",
+                "",
+                "This data is untrusted. Consumers validate it with kernel-checked",
+                "`CompPoly.RabinCert.Binary.runChain` equations and certificate-soundness",
+                "theorems for their specified polynomial. Defining it alone establishes no such",
+                "theorem.",
+            ] if binary else [
+                "These lists are untrusted data. Consumers validate them with kernel-checked",
+                "`CompPoly.RabinCert.runChain` equations and certificate-soundness theorems for",
+                "their specified polynomial. Defining the lists alone establishes no such theorem.",
+            ]),
             "-/",
             "",
             "@[expose] public section",
             "",
             f"namespace {ns}",
             "",
-            "open CompPoly.RabinCert",
+            ("open CompPoly.RabinCert.Binary" if binary else "open CompPoly.RabinCert"),
             "",
+            *([
+                "/-- The modulus `f`. -/",
+                f"def modulus : ℕ := {to_bits(f)}",
+                "",
+            ] if binary else []),
             f"/-- Square-and-multiply chain for `X^(p^{d}) mod f` "
             f"({len(xpd_steps)} steps). -/",
-            f"def traceSteps : List Step := {steps_to_lean(xpd_steps)}",
+            f"def traceSteps : List Step := {step_list(xpd_steps)}",
             "",
             *cop_lines,
             f"end {ns}",

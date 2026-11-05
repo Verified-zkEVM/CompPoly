@@ -194,10 +194,22 @@ handles this with kernel-checked certificates:
   structural recursion, so checks reduce in the kernel via GMP-accelerated `Nat` ops.
 - A whole square-and-multiply chain is **one list literal** verified by a single kernel
   reduction of `runChain`; `runChain_sound` lifts it to `X^N % f = r % f`.
+  Discharge a large chain's `runChain … = …` hypothesis with `by decide +kernel`. With
+  `by rfl`, the elaborator's `isDefEq` evaluates the chain once and the kernel evaluates it
+  again. For BF64's degree-64 modulus, the switch took `BF64/Basic.lean` from about
+  48 s to 26 s.
 - The trace condition is a chain ending at `X`; coprimality is a chain plus a Bézout
   identity `u·f + v·w = 1` on the reduced residue — no Euclidean gcd chain.
 - `irreducible_of_rabin_prime_degree` packages the test when `d` is prime (one trace, one
   coprimality check).
+- Over `GF(2)`, a polynomial is a `ℕ` bitmask.
+  [`Data/Polynomial/RabinCertificateBinary.lean`](../../CompPoly/Data/Polynomial/RabinCertificateBinary.lean)
+  checks the same chains on bitmasks, with `xor` for addition and a carry-less `clmul` for
+  multiplication. Each step is a few GMP operations instead of a walk over lists of numerals.
+  Its two condition theorems have the same shape as the list versions and feed the same
+  wrappers. `scripts/gen_rabin_certificate.py --binary` emits the data. For BF64's
+  degree-64 modulus, `BF64/Basic.lean` went from about 27 s to 3 s and the certificate data
+  module from about 5 s to 2 s.
 
 **Composite degree needs one coprimality check per prime factor**, and the prime-degree collapse
 is *unsound* there rather than merely weak. `Polynomial.irreducible_of_rabin` already quantifies
@@ -351,7 +363,7 @@ That is about 60 lines.
 2. Generate the certificate module:
    `uv run --no-project --python 3.12 python scripts/gen_rabin_certificate.py --p <p> --f=<coeffs> --lean <path> --namespace <NS>`.
 3. Write the irreducibility wrapper: `toPoly p fL = f`, `natDegree`, `f ≠ 0`, then the
-   chain/Bézout `rfl` checks and the assembly through
+   chain checks (`decide +kernel`), the Bézout checks (`rfl`), and the assembly through
    `irreducible_of_rabin_prime_degree` (prime `d`, see
    `KoalaBear/Ext5/QuinticIrreducible.lean`) or `irreducible_of_rabin_degree_six`
    (composite `d`, see `KoalaBear/Ext6/SexticIrreducible.lean`), passing
