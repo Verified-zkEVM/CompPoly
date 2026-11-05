@@ -124,7 +124,7 @@ theorem partialDerivX_add [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [Dec
   rw [CPolynomial.eq_iff_coeff]
   intro i
   simp only [← coeff_eq_coeff_coeff, coeff_partialDerivX]
-  erw [coeff_add, coeff_add]
+  rw [coeff_add, coeff_add]
   simp only [coeff_partialDerivX]
   exact add_mul _ _ _
 
