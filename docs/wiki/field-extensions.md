@@ -202,6 +202,14 @@ handles this with kernel-checked certificates:
   identity `u·f + v·w = 1` on the reduced residue — no Euclidean gcd chain.
 - `irreducible_of_rabin_prime_degree` packages the test when `d` is prime (one trace, one
   coprimality check).
+- Over `GF(2)`, a polynomial is a `ℕ` bitmask.
+  [`Data/Polynomial/RabinCertificateBinary.lean`](../../CompPoly/Data/Polynomial/RabinCertificateBinary.lean)
+  checks the same chains on bitmasks, with `xor` for addition and a carry-less `clmul` for
+  multiplication. Each step is a few GMP operations instead of a walk over lists of numerals.
+  Its two condition theorems have the same shape as the list versions and feed the same
+  wrappers. `scripts/gen_rabin_certificate.py --binary` emits the data. For BF64's
+  degree-64 modulus, `BF64/Basic.lean` went from about 27 s to 3 s and the certificate data
+  module from about 5 s to 2 s.
 
 **Composite degree needs one coprimality check per prime factor**, and the prime-degree collapse
 is *unsound* there rather than merely weak. `Polynomial.irreducible_of_rabin` already quantifies

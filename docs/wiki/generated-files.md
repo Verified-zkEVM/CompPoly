@@ -8,7 +8,7 @@ This page records which paths are source of truth and which are derived outputs.
 |---|---|---|
 | `CompPoly.lean` | Generated and committed | Regenerate with `./scripts/update-lib.sh` after adding, renaming, or deleting `CompPoly/**/*.lean` files. Emitted in module form: `module`, blank line, one `public import` per file. |
 | `CompPoly/Fields/*/Ext*/`*`CertData.lean` | Generated and committed | Rabin irreducibility certificate data for non-binomial extension moduli. Regenerate with `scripts/gen_rabin_certificate.py --p <p> --f=<coeffs> --lean <path> --namespace <NS>`; the exact command is recorded in each file's docstring. Do not hand-edit. Nothing in them is trusted — the kernel re-checks every step through `CompPoly.RabinCert.runChain`. |
-| `CompPoly/Fields/Binary/BF64/BaseCertificate.lean` | Generated and committed | Same generator and same contract as the `CertData.lean` files above, for the degree-64 `GF(2)` base modulus of `BF64` rather than an `Ext*/` extension modulus — hence the different path and name. Regenerate with the `--p 2` command recorded in its docstring. Do not hand-edit; the kernel re-checks every step through `CompPoly.RabinCert.runChain`. |
+| `CompPoly/Fields/Binary/BF64/BaseCertificate.lean` | Generated and committed | Same generator and same contract as the `CertData.lean` files above, for the degree-64 `GF(2)` base modulus of `BF64` rather than an `Ext*/` extension modulus — hence the different path and name. Regenerate with the `--p 2 --binary` command recorded in its docstring, which emits `ℕ` bitmasks instead of coefficient lists. Do not hand-edit; the kernel re-checks every step through `CompPoly.RabinCert.Binary.runChain`. |
 | `CompPoly/Fields/Binary/Aes/Certificate.lean` | Generated and committed | Rabin certificate data for the AES modulus over `GF(2)`. Regenerate with the command in its module docstring. The lists are untrusted data. A consumer needs a kernel-checked certificate equation and soundness theorem for its polynomial. |
 | `bench/out/` | Generated, not source | Produced by `lake exe CompPolyBench`; keep reports as local or CI artifacts. The whole directory is ignored by `bench/.gitignore`, so a benchmark run leaves the working tree clean. |
 | `scripts/axiom_baseline.json` | Generated and committed | Kernel-level axiom/`sorry` regression baseline. Regenerate with `lake exe axiomsweep --update-baseline` after a built `lake build`; commit the diff in the same PR that intentionally adds or removes baselineable taint. Checked by the enforcing axiom-sweep CI step; native-compiler trust cannot be baselined. |
@@ -56,8 +56,10 @@ known-answer cases before trusting a new certificate.
 
 The generator is not restricted to odd characteristic or to extension moduli:
 `Binary/BF64/BaseCertificate.lean` is the `--p 2` case, certifying the degree-64 modulus that
-defines `BF64` itself. It lives beside its field rather than under an `Ext*/` directory, but it
-is the same output under the same contract.
+defines `BF64` itself. It lives beside its field rather than under an `Ext*/` directory. It is
+emitted with `--binary`, which writes each polynomial as a `GF(2)` bitmask for
+`CompPoly.RabinCert.Binary` instead of a coefficient list. Otherwise it is the same output
+under the same contract.
 
 Regenerating an unchanged modulus is byte-identical, so these files are safe to re-emit as a
 consistency check.

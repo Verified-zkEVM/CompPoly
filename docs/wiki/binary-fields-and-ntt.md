@@ -143,9 +143,10 @@ is `6` here and `1` in the tower's rung. Neither substitutes for the other where
 encoding is observable.
 
 - [`../../CompPoly/Fields/Binary/BF64/BaseCertificate.lean`](../../CompPoly/Fields/Binary/BF64/BaseCertificate.lean)
-  holds generated Rabin certificate data; regenerate it with
+  holds generated Rabin certificate data as `GF(2)` bitmasks, checked by
+  `CompPoly.RabinCert.Binary`; regenerate it with
   [`../../scripts/gen_rabin_certificate.py`](../../scripts/gen_rabin_certificate.py)
-  rather than editing it.
+  `--binary` rather than editing it.
 - [`../../CompPoly/Fields/Binary/BF64/Basic.lean`](../../CompPoly/Fields/Binary/BF64/Basic.lean)
   defines the modulus, proves it irreducible, and gives the quotient model `BF64Quot` with
   its cardinality. Degree 64 is composite, so `irreducible_of_rabin_prime_power` is used
