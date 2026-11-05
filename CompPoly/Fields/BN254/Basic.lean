@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import CompPoly.Fields.PrattCertificate
+public import Mathlib.Algebra.Field.ZMod
 
 /-!
   # The BN254 scalar prime field

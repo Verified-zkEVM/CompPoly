@@ -509,13 +509,13 @@ omit [NeZero r] [Fintype L] [DecidableEq L] [Field 𝔽q] [Fintype 𝔽q] [Decid
 lemma computableAdditiveNTTFastAction_run_eq_fold (a : Fin (2 ^ ℓ) → L) :
     ((computableAdditiveNTTFastAction (L := L) (r := r) (β := β)
       (ℓ := ℓ) (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) a).run #[]).1 =
-    Fin.foldl (n := ℓ) (f := fun current i =>
+    Fin.foldl (n := ℓ) (fun current i =>
       let stage : Fin ℓ := ⟨ℓ - i - 1, by omega⟩
       let twiddles := computableTwiddleTableArray (β := β) (ℓ := ℓ)
         (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := stage)
       computableNTTStageArray (ℓ := ℓ) (R_rate := R_rate)
         (i := stage) (twiddles := twiddles) current)
-      (init := tileCoeffsArray (L := L) (ℓ := ℓ) R_rate a) := by
+      (tileCoeffsArray (L := L) (ℓ := ℓ) R_rate a) := by
   unfold computableAdditiveNTTFastAction computableAdditiveNTTFastStages
   simp only [bind_assoc, MonadStateOf.set, getThe]
   change ((Fin.foldlM (m := StateM (Array L)) (n := ℓ)
@@ -527,13 +527,13 @@ lemma computableAdditiveNTTFastAction_run_eq_fold (a : Fin (2 ^ ℓ) → L) :
           computableNTTStageArray (ℓ := ℓ) (R_rate := R_rate)
             (i := stage) (twiddles := twiddles) current
         pure ()) (init := ())).run (tileCoeffsArray (L := L) (ℓ := ℓ) R_rate a)).2 =
-    Fin.foldl (n := ℓ) (f := fun current i =>
+    Fin.foldl (n := ℓ) (fun current i =>
       let stage : Fin ℓ := ⟨ℓ - i - 1, by omega⟩
       let twiddles := computableTwiddleTableArray (β := β) (ℓ := ℓ)
         (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := stage)
       computableNTTStageArray (ℓ := ℓ) (R_rate := R_rate)
         (i := stage) (twiddles := twiddles) current)
-      (init := tileCoeffsArray (L := L) (ℓ := ℓ) R_rate a)
+      (tileCoeffsArray (L := L) (ℓ := ℓ) R_rate a)
   exact run_foldlM_modify_eq_foldl (σ := Array L) (n := ℓ)
     (f := fun current i =>
       let stage : Fin ℓ := ⟨ℓ - i - 1, by omega⟩
@@ -562,17 +562,17 @@ theorem computableAdditiveNTTFast_eq_computableAdditiveNTT (a : Fin (2 ^ ℓ) �
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (a := a)]
   have h_fold : ∀ k, (hk_le : k ≤ ℓ) →
       arrayToFinFunction (2 ^ (ℓ + R_rate))
-        (Fin.foldl (n := k) (f := fun current i =>
+        (Fin.foldl (n := k) (fun current i =>
           let stage : Fin ℓ := ⟨ℓ - i - 1, by omega⟩
           let twiddles := computableTwiddleTableArray (β := β) (ℓ := ℓ)
             (R_rate := R_rate) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := stage)
           computableNTTStageArray (ℓ := ℓ) (R_rate := R_rate)
             (i := stage) (twiddles := twiddles) current)
-          (init := tileCoeffsArray (L := L) (ℓ := ℓ) R_rate a)) =
-      Fin.foldl (n := k) (f := fun current i =>
+          (tileCoeffsArray (L := L) (ℓ := ℓ) R_rate a)) =
+      Fin.foldl (n := k) (fun current i =>
         computableNTTStage (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (R_rate := R_rate)
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ - i - 1, by omega⟩) (b := current))
-        (init := tileCoeffs (L := L) (ℓ := ℓ) (R_rate := R_rate) a) := by
+        (tileCoeffs (L := L) (ℓ := ℓ) (R_rate := R_rate) a) := by
     intro k hk_le
     induction k with
     | zero =>

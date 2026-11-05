@@ -19,7 +19,7 @@ linear-factor case would admit a product of equal-degree factors.
 GENERATED. Do not edit by hand; regenerate with:
 
 ```sh
-python3 scripts/gen_rabin_certificate.py --p 2 \
+uv run --no-project --python 3.12 python scripts/gen_rabin_certificate.py --p 2 \
   --f='1,1,0,1,1,0,0,0,1' \
   --lean <this file> --namespace AesField.Certificate \
   --authors 'CompPoly Contributors'

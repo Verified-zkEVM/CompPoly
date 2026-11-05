@@ -26,8 +26,9 @@ The protocol-facing classes are ArkLib's, ported verbatim so ArkLib can import t
 | `DeserializeOption α β`, `Serde α β` | same | partial decoder, and the pair |
 | `HasSize α β` | `CompPoly/Data/Classes/HasSize.lean` | an embedding `α ↪ Vector β size` |
 
-`Deserialize.CloseToUniform`, the statistical-distance class, stays in ArkLib because it needs
-`PMF`; CompPoly proves the counting fact behind it in `Nat` terms.
+`Deserialize.CloseToUniform`, the statistical-distance class, stays in ArkLib because it is
+stated with measures: the uniform measure `uniformOn` and its pushforward along the deserializer.
+CompPoly proves the counting fact behind it in `Nat` terms.
 
 Two classes are CompPoly's own:
 

@@ -2,6 +2,15 @@
 
 This page is the recommended playbook for routine local validation.
 
+## Python tooling
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) for
+all repository Python entry points, including validation scripts and CI.
+CI uses uv 0.13.6. The uv commands below select Python
+3.12; uv downloads it if needed. Run them from the repository root.
+These checks use only the standard library. `--no-project` runs them without
+installing a Python package or creating a project environment.
+
 ## Recommended Validation
 
 For a routine Lean change, run:
@@ -18,8 +27,8 @@ lake build
 ```
 
 `lake exe cache get` covers Mathlib and its dependencies, which is the expensive half.
-It does not cover CompPoly's own modules; `lake build` compiles those. Downstream
-projects that depend on CompPoly do get its prebuilt oleans automatically — see
+It does not cover CompPoly's own modules, which `lake build` compiles. Downstream
+projects that depend on CompPoly get its prebuilt oleans automatically. See
 [`build-cache.md`](build-cache.md).
 
 ## Validation By Change Type
@@ -41,7 +50,7 @@ lake test
 
 Build the dedicated native smoke target and run it with the resource limits documented in
 [`../../tests/README.md`](../../tests/README.md#native-startup-and-field-arithmetic). The checks
-exercise linked module initialization and actual BF64/Ext3 arithmetic; `lake test` alone does not
+exercise linked module initialization and actual BF64/Ext3 arithmetic. `lake test` alone does not
 exercise that startup path.
 
 ### Filling a `sorry`, or work that must stay axiom-clean
@@ -53,12 +62,13 @@ lake exe axiomsweep --check
 
 `axiomsweep` is kernel-level axiom/`sorry` accounting for every reportable
 declaration owned by a `CompPoly.*` module, diffed against the committed baseline
-`scripts/axiom_baseline.json`. It sweeps the `CompPoly` library as imported by the
-umbrella (`tests/` and `bench/` are outside it), and inherits the blind spots of any
+`scripts/axiom_baseline.json`. It sweeps the `CompPoly` library as the umbrella
+imports it (`tests/` and `bench/` are outside it). It has the blind spots of any
 environment walk (structure-field defaults and `example`s never enter the
-environment) — see the module docstring in `scripts/AxiomSweep.lean`. It fails only on *new*
-`sorryAx` or non-standard-axiom taint, so pre-existing gaps stay allowed. After
-intentionally adding or closing a `sorry`, refresh and commit the baseline:
+environment). The module docstring in `scripts/AxiomSweep.lean` describes them.
+It fails only on *new* `sorryAx` or non-standard-axiom taint, so pre-existing gaps
+stay allowed. After you intentionally add or close a `sorry`, refresh and commit the
+baseline:
 
 ```bash
 lake exe axiomsweep --update-baseline
@@ -84,17 +94,32 @@ commit the regenerated file with the source changes.
 ./scripts/lint-style.sh
 ```
 
-This is stricter than a plain build. It runs the repository style linter and the
-global Lean-file checks in [`../../scripts/README.md`](../../scripts/README.md).
+`./scripts/lint-style.sh` is stricter than a plain build. It runs the repository style
+linter and the global Lean-file checks in [`../../scripts/README.md`](../../scripts/README.md).
 
 ### Docs, handbook, or link updates
 
 ```bash
-python3 ./scripts/check-docs-integrity.py
+uv run --no-project --python 3.12 python scripts/check-docs-integrity.py
 ```
 
 Run this when editing `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, or files under
 `docs/`.
+
+### Prose in docs, docstrings, comments, commits, or PR text
+
+```bash
+uv run --no-project --python 3.12 python scripts/check-writing.py --base origin/main
+```
+
+The writing checker reports possible defects against the
+[writing standard](writing.md) in the prose that the branch changes. It is advisory.
+[`write-technical-prose.md`](write-technical-prose.md) describes its other modes and
+how to read its findings. If you change the checker or the vocabulary, run its tests:
+
+```bash
+uv run --no-project --python 3.12 python scripts/test-check-writing.py
+```
 
 ### Benchmark changes
 
@@ -118,13 +143,14 @@ come from the on-demand Benchmarks workflow. See
 ## CI Mapping
 
 - [`../../.github/workflows/lean_action_ci.yml`](../../.github/workflows/lean_action_ci.yml)
-  runs a **warm** (incremental) `lake build` by default — reusing cached Lake
-  oleans so only dirty modules rebuild — then `lake test`, a linked native field smoke
-  test under the documented resource bounds, and the axiom sweep as an enforcing gate,
-  and posts a build-timing report. It also builds `CompPolyBench` and runs it in
-  `--validate-only` mode over the curated group set in `bench/ci-groups.txt`, which checks
-  that each group's implementations agree without timing ordinary workloads; harness checks
-  may still record samples. It uploads the digests as an artifact.
+  runs a **warm** (incremental) `lake build` by default. The warm build reuses cached
+  Lake oleans, so only dirty modules rebuild. The workflow then runs `lake test`, a
+  linked native field smoke test under the documented resource bounds, and the axiom
+  sweep as an enforcing gate. It posts a build-timing report. It also builds
+  `CompPolyBench` and runs it in `--validate-only` mode over the curated group set in
+  `bench/ci-groups.txt`. That run checks that the implementations of each group agree,
+  without timing ordinary workloads. Harness checks can still record samples. The
+  workflow uploads the digests as an artifact.
   A full cold rebuild (`rm -rf .lake/build && lake build`) runs automatically
   when `lean-toolchain` or `lake-manifest.json` differs from the comparison base
   (PR base, previous push tip, or merge-base with `main` on manual dispatch).
@@ -142,20 +168,24 @@ come from the on-demand Benchmarks workflow. See
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
   checks the `CLAUDE.md` symlink, local markdown links, and backticked file paths
   in the docs.
+- [`../../.github/workflows/writing.yml`](../../.github/workflows/writing.yml) runs
+  the tests of the writing checker as a gate. Its other job runs the checker on the
+  changed prose and on the PR description. That job reports findings as warnings
+  and returns success for those findings. Operational errors fail the job.
 
 Five further workflows exist that are not part of the pass/fail gate:
 
 - [`../../.github/workflows/benchmarks.yml`](../../.github/workflows/benchmarks.yml)
-  produces benchmark **timings** **on demand only** — via **Actions → Benchmarks →
-  Run workflow**, a `/bench` comment from a repo member, or automatically on a PR
-  touching `bench/**`. Timings are kept out of the gate because `ubuntu-latest` is
-  a shared 2-vCPU VM whose wall-clock is not worth gating on; benchmark
-  *correctness* is gated by `lean_action_ci.yml` instead. It restores the build
-  caches but never saves them.
+  produces benchmark **timings** **on demand only**. Three events start it:
+  **Actions → Benchmarks → Run workflow**, a `/bench` comment from a repo member,
+  and a PR that touches `bench/**`. Timings stay out of the gate because
+  `ubuntu-latest` is a shared 2-vCPU VM, and its wall-clock time is not a useful gate.
+  `lean_action_ci.yml` gates benchmark *correctness* instead. The workflow restores
+  the build caches but never saves them.
 - [`../../.github/workflows/summary.yml`](../../.github/workflows/summary.yml)
   posts a PR summary on open and on every new commit. It runs under
-  `pull_request_target` and never builds or executes PR code — it reads the diff
-  and committed source as data — which is what makes that safe for fork PRs.
+  `pull_request_target` and never builds or executes PR code. It reads the diff
+  and the committed source as data, so it is safe for fork PRs.
 - [`../../.github/workflows/review.yml`](../../.github/workflows/review.yml) runs a
   PR review **on demand only**, triggered by a `/review` comment from a repo
   member. It is deliberately not run on PR open, because the review path builds and
@@ -173,7 +203,7 @@ Use the direct scripts when debugging a specific failure:
 ./scripts/update-lib.sh
 ./scripts/check-imports.sh
 ./scripts/lint-style.sh
-python3 ./scripts/check-docs-integrity.py
+uv run --no-project --python 3.12 python scripts/check-docs-integrity.py
 lake test
 lake build CompPolyBench
 lake exe axiomsweep --check

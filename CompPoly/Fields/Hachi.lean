@@ -7,6 +7,7 @@ module
 
 public import CompPoly.Fields.Basic
 public import CompPoly.Fields.PrattCertificate
+public import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Hachi prime field `2^32 - 99`

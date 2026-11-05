@@ -229,7 +229,8 @@ private theorem checkDoublings_sound (qs : List (Field × Field)) (p : Point)
       exact h.2
     simpa only [List.length_cons, pow_succ, mul_smul, two_nsmul] using ih (p + p) hnext
 
--- Regenerate with `python3 scripts/gen_mersenne31_circle_certificate.py`.
+-- Regenerate with
+-- `uv run --no-project --python 3.12 python scripts/gen_mersenne31_circle_certificate.py`.
 private def generatorDoublings : List (Field × Field) :=
   [(7, 777079998), (97, 141701737), (18817, 1720333214),
    (708158977, 683185920), (334835419, 1444967316), (2042371533, 1362265296),
