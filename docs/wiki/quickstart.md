@@ -2,6 +2,15 @@
 
 This page is the recommended playbook for routine local validation.
 
+## Python tooling
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) for
+all repository Python entry points, including validation scripts and CI.
+CI uses uv 0.13.6. The uv commands below select Python
+3.12; uv downloads it if needed. Run them from the repository root.
+These checks use only the standard library. `--no-project` runs them without
+installing a Python package or creating a project environment.
+
 ## Recommended Validation
 
 For a routine Lean change, run:
@@ -91,7 +100,7 @@ linter and the global Lean-file checks in [`../../scripts/README.md`](../../scri
 ### Docs, handbook, or link updates
 
 ```bash
-python3 ./scripts/check-docs-integrity.py
+uv run --no-project --python 3.12 python scripts/check-docs-integrity.py
 ```
 
 Run this when editing `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, or files under
@@ -194,7 +203,7 @@ Use the direct scripts when debugging a specific failure:
 ./scripts/update-lib.sh
 ./scripts/check-imports.sh
 ./scripts/lint-style.sh
-python3 ./scripts/check-docs-integrity.py
+uv run --no-project --python 3.12 python scripts/check-docs-integrity.py
 lake test
 lake build CompPolyBench
 lake exe axiomsweep --check

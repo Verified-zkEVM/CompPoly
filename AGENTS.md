@@ -15,7 +15,7 @@ Human contributors should usually start with [`README.md`](README.md),
 3. If you add, rename, or delete files under `CompPoly/`, run
    `./scripts/update-lib.sh` and then `./scripts/check-imports.sh`.
 4. Use `./scripts/lint-style.sh` when touching Lean style-sensitive files.
-5. If you touch repo docs or links, run `python3 ./scripts/check-docs-integrity.py`.
+5. If you touch repo docs or links, run `uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py`.
 6. When you fill or add a `sorry` (or change anything that must stay axiom-clean),
    run `lake exe axiomsweep --check`. If the change is intentional, refresh
    `scripts/axiom_baseline.json` with `lake exe axiomsweep --update-baseline`

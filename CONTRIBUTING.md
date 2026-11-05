@@ -48,6 +48,9 @@ visible early, so that reviewers can comment before you invest in proofs.
 
 ### Set Up
 
+For Python check prerequisites and commands, see
+[Python tooling](docs/wiki/quickstart.md#python-tooling).
+
 On a new clone, download the Mathlib build cache, and then build the library:
 
 ```bash
@@ -74,7 +77,7 @@ CI mapping. Run the commands for each type of change in your PR:
 | Lean style cleanup or a large amount of new Lean code | `./scripts/lint-style.sh` |
 | Native field arithmetic or startup | The `CompPolyNativeSmoke` commands in [`tests/README.md`](tests/README.md#native-startup-and-field-arithmetic) |
 | Benchmark | `lake build CompPolyBench`, then `lake exe CompPolyBench --medium --validate-only` |
-| Documentation | `python3 ./scripts/check-docs-integrity.py` |
+| Documentation | `uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py` |
 
 If `CompPoly.lean` changes, commit the regenerated file with the source changes. If you
 intentionally add or close a `sorry`, refresh the axiom baseline with

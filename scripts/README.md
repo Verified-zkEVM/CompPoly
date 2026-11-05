@@ -8,7 +8,7 @@ This directory contains the main helper scripts for local validation and CI supp
 - `./scripts/check-imports.sh` - verify that `CompPoly.lean` is up to date.
 - `./scripts/lint-style.sh` - run the Lean style linter and repo-wide Lean-file
   checks.
-- `python3 ./scripts/check-docs-integrity.py` - verify the `CLAUDE.md` symlink,
+- `uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py` - verify the `CLAUDE.md` symlink,
   local markdown links, and backticked source paths across the handbook.
 - `lake exe axiomsweep --check` - kernel-level axiom/`sorry` regression gate against
   `scripts/axiom_baseline.json` (run after `lake build`).
@@ -97,7 +97,7 @@ change the checker or the "Words to avoid" table of the vocabulary.
 
 The script emits the `generatorDoublings` declaration for the Mersenne31 circle
 generator by 30 successive doublings modulo `2^31 - 1`. It prints the declaration without modifying
-source files. Run `python3 scripts/gen_mersenne31_circle_certificate.py --check` to
+source files. Run `uv run --no-project --python 3.12 python scripts/gen_mersenne31_circle_certificate.py --check` to
 verify the checked-in data, or pass a Lean file after `--check` to compare that file.
 The script is outside the trusted code base: Lean checks every step with kernel
 `decide` and proves the connection to scalar multiplication. See the
@@ -123,7 +123,7 @@ are KoalaBear with `f = x^5 + x^2 - 1`. The script built the degree-5 and degree
 KoalaBear extensions. The exit code is the verdict: non-zero means that `f` is
 reducible. The script is therefore also a checker.
 
-Run `python3 scripts/gen_rabin_certificate.py --self-test` to check the generator
+Run `uv run --no-project --python 3.12 python scripts/gen_rabin_certificate.py --self-test` to check the generator
 against known-answer cases, including a reducible sextic that the prime-degree form of
 the test would wrongly accept.
 
@@ -214,6 +214,6 @@ lake build
 ### Docs-only change
 
 ```bash
-python3 ./scripts/check-docs-integrity.py
+uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py
 uv run --no-project --python 3.12 python scripts/check-writing.py --base origin/main
 ```

@@ -15,15 +15,15 @@ The modulus `f` has little-endian coefficients `[2130706432, 0, 1, 0, 0, 1]`.
 GENERATED. Do not edit by hand; regenerate with:
 
 ```sh
-python3 scripts/gen_rabin_certificate.py --p 2130706433 \
+uv run --no-project --python 3.12 python scripts/gen_rabin_certificate.py --p 2130706433 \
   --f='-1,0,1,0,0,1' \
   --lean <this file> --namespace KoalaBear.QuinticCert \
   --authors 'Derek Sorensen'
 ```
 
-Nothing here is trusted — the kernel re-checks every step through
-`CompPoly.RabinCert.runChain`, so incorrect data fails to compile rather than
-producing a false theorem.
+These lists are untrusted data. Consumers validate them with kernel-checked
+`CompPoly.RabinCert.runChain` equations and certificate-soundness theorems for
+their specified polynomial. Defining the lists alone establishes no such theorem.
 -/
 
 @[expose] public section
