@@ -131,10 +131,10 @@ theorem basePoly_irreducible : Irreducible basePoly := by
   refine irreducible_of_rabin_prime_power (ZMod.card 2) Nat.prime_two (k := 6)
     (by norm_num) (by norm_num) basePoly_natDegree ?_ ?_
   · exact dvd_X_pow_sub_X_of_runChain (steps := traceSteps) toPoly_baseCoeffs basePoly_ne_zero
-      (by rfl) (by rfl)
+      (by decide +kernel) (by rfl)
   · exact isCoprime_X_pow_sub_X_of_runChain (steps := cop32Steps) (rp := cop32Rp)
       (w := cop32W) (u := cop32U) (v := cop32V) toPoly_baseCoeffs basePoly_ne_zero
-      (by rfl) (by rfl) (by rfl) (by rfl)
+      (by decide +kernel) (by rfl) (by rfl) (by rfl)
 
 instance : Fact (Irreducible basePoly) := ⟨basePoly_irreducible⟩
 
