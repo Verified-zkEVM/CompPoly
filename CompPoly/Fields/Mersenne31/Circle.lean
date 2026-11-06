@@ -19,12 +19,13 @@ index arithmetic modulo the circle order, and the coset/domain shapes used by
 canonical circle domains.
 
 Circle points form an additive commutative group, with binary scalar multiplication.
-The STWO generator has order `2^31`, and `CirclePointIndex.toPoint` respects addition.
+The STWO generator has order `2^31`, and `CirclePointIndex.toPoint` is injective and
+respects addition. Each subgroup step has the requested exact order.
 
-Cosets and domains currently describe indexing shapes, not certified sets of distinct
-points. A follow-up must specify validity conditions and prove point distinctness,
-disjointness of domain halves, and equality of the declared size with set cardinality.
-These properties do not hold for arbitrary values of the current structures.
+`Coset.Valid` requires the step order to equal the declared size. Standard constructors
+satisfy it; valid cosets enumerate distinct indices and points and have the declared
+range cardinality. Circle domains still need a validity condition requiring disjoint
+halves before their declared size can be identified with set cardinality.
 -/
 
 public section
@@ -348,6 +349,36 @@ def toPointHom : CirclePointIndex →+ Point where
 @[simp]
 theorem toPointHom_apply (i : CirclePointIndex) : toPointHom i = toPoint i := by rfl
 
+/-- Different circle indices represent different points. -/
+theorem toPoint_injective : Function.Injective toPoint := by
+  intro i j hij
+  apply ZMod.val_injective
+  apply nsmul_injOn_Iio_addOrderOf (x := Circle.generator)
+    (by simpa only [Set.mem_Iio, addOrderOf_generator] using i.val_lt)
+    (by simpa only [Set.mem_Iio, addOrderOf_generator] using j.val_lt)
+  simpa only [toPoint_def] using hij
+
+/-- Equality of interpreted points is exactly equality of their indices. -/
+@[simp]
+theorem toPoint_inj {i j : CirclePointIndex} : toPoint i = toPoint j ↔ i = j :=
+  toPoint_injective.eq_iff
+
+/-- Interpreting an index preserves its additive order. -/
+theorem addOrderOf_toPoint (i : CirclePointIndex) :
+    addOrderOf (toPoint i) = addOrderOf i :=
+  addOrderOf_injective toPointHom toPoint_injective i
+
+/-- The subgroup step has the requested exact order, including log sizes zero and 31. -/
+theorem addOrderOf_subgroupGen (n : Nat) (h : n ≤ logOrder) :
+    addOrderOf (subgroupGen n h) = 2 ^ n := by
+  rw [subgroupGen_eq, ZMod.addOrderOf_coe _ (by decide : order ≠ 0)]
+  have hmul : order = 2 ^ n * 2 ^ (logOrder - n) := by
+    rw [← pow_add, Nat.add_sub_of_le h]
+  have hdvd : 2 ^ (logOrder - n) ∣ order := by
+    rw [hmul]
+    exact dvd_mul_left _ _
+  rw [Nat.gcd_eq_right hdvd, hmul, Nat.mul_div_cancel _ (pow_pos (by decide) _)]
+
 /-- Negating an index conjugates its circle point. -/
 @[simp]
 theorem toPoint_neg (i : CirclePointIndex) : toPoint (-i) = -toPoint i :=
@@ -372,9 +403,9 @@ theorem subgroupGen_logOrder (h : logOrder ≤ logOrder) :
 
 end CirclePointIndex
 
-/-- An indexing shape with a fixed additive step, not a certified coset of distinct points.
+/-- An indexing shape with a fixed additive step.
 No relation between `stepSize` and `logSize` is required; a zero step is allowed.
-Validity conditions and distinctness/cardinality theorems are deferred to a follow-up. -/
+`Coset.Valid` supplies the exact-order condition for distinctness and cardinality. -/
 structure Coset where
   initialIndex : CirclePointIndex
   stepSize : CirclePointIndex
@@ -459,6 +490,62 @@ def pointAt (c : Coset) (i : Nat) : Point :=
 theorem pointAt_def (c : Coset) (i : Nat) :
     c.pointAt i = CirclePointIndex.toPoint (c.indexAt i) := by rfl
 
+/-- The step has exactly as many distinct multiples as the declared coset size. -/
+def Valid (c : Coset) : Prop := addOrderOf c.stepSize = c.size
+
+/-- Validity is an exact-order condition on the step, independent of the initial index. -/
+theorem valid_iff (c : Coset) : c.Valid ↔ addOrderOf c.stepSize = c.size := by rfl
+
+/-- The standard constructor uses a step of the requested order. -/
+theorem new_valid (i : CirclePointIndex) (n : Nat) (h : n ≤ logOrder) :
+    (new i n h).Valid := by
+  rw [valid_iff, new_stepSize, size_eq, new_logSize]
+  exact CirclePointIndex.addOrderOf_subgroupGen n h
+
+/-- The subgroup constructor has a step of the declared order. -/
+theorem subgroup_valid (n : Nat) (h : n ≤ logOrder) : (subgroup n h).Valid := by
+  rw [subgroup_eq]
+  exact new_valid _ _ _
+
+/-- The odds constructor has a step of the declared order. -/
+theorem odds_valid (n : Nat) (h : n + 1 ≤ logOrder) : (odds n h).Valid := by
+  rw [odds_eq]
+  exact new_valid _ _ _
+
+/-- The half-odds constructor has a step of the declared order. -/
+theorem halfOdds_valid (n : Nat) (h : n + 2 ≤ logOrder) : (halfOdds n h).Valid := by
+  rw [halfOdds_eq]
+  exact new_valid _ _ _
+
+/-- Valid cosets enumerate distinct indices within their declared size. -/
+theorem indexAt_injective (c : Coset) (hc : c.Valid) :
+    Function.Injective (fun i : Fin c.size => c.indexAt i.val) := by
+  intro i j hij
+  apply Fin.ext
+  have horder := (valid_iff c).mp hc
+  apply nsmul_injOn_Iio_addOrderOf (x := c.stepSize)
+    (by simpa only [Set.mem_Iio, horder] using i.isLt)
+    (by simpa only [Set.mem_Iio, horder] using j.isLt)
+  simpa only [indexAt_eq, add_right_inj, nsmul_eq_mul, mul_comm] using hij
+
+/-- Valid cosets enumerate distinct circle points within their declared size. -/
+theorem pointAt_injective (c : Coset) (hc : c.Valid) :
+    Function.Injective (fun i : Fin c.size => c.pointAt i.val) := by
+  intro i j hij
+  apply c.indexAt_injective hc
+  apply CirclePointIndex.toPoint_injective
+  simpa only [pointAt_def] using hij
+
+/-- The bounded index range of a valid coset has its declared cardinality. -/
+theorem card_range_indexAt (c : Coset) (hc : c.Valid) :
+    Nat.card (Set.range (fun i : Fin c.size => c.indexAt i.val)) = c.size := by
+  simpa only [Nat.card_fin] using Nat.card_range_of_injective (c.indexAt_injective hc)
+
+/-- The bounded point range of a valid coset has its declared cardinality. -/
+theorem card_range_pointAt (c : Coset) (hc : c.Valid) :
+    Nat.card (Set.range (fun i : Fin c.size => c.pointAt i.val)) = c.size := by
+  simpa only [Nat.card_fin] using Nat.card_range_of_injective (c.pointAt_injective hc)
+
 /-- The conjugate coset `-initial - <step>`. -/
 def conjugate (c : Coset) : Coset where
   initialIndex := -c.initialIndex
@@ -489,6 +576,11 @@ theorem conjugate_initialIndex (c : Coset) :
 /-- The conjugate coset uses the negated step size. -/
 @[simp]
 theorem conjugate_stepSize (c : Coset) : c.conjugate.stepSize = -c.stepSize := by rfl
+
+/-- Conjugation preserves the exact-order condition. -/
+@[simp]
+theorem conjugate_valid_iff (c : Coset) : c.conjugate.Valid ↔ c.Valid := by
+  simp only [valid_iff, conjugate_stepSize, addOrderOf_neg, size_eq, conjugate_logSize]
 
 /-- Each conjugate-coset index is the negation of the corresponding original index. -/
 @[simp]
@@ -607,6 +699,16 @@ theorem halfCoset_eq (c : CanonicCoset) :
       have hOne := c.one_le_logSize
       have hBound := c.logSize_succ_le_logOrder
       omega) := by rfl
+
+/-- The full canonical coset has a step of the declared order. -/
+theorem coset_valid (c : CanonicCoset) : c.coset.Valid := by
+  rw [coset_eq]
+  exact Coset.odds_valid _ _
+
+/-- The canonical half coset has a step of the declared order. -/
+theorem halfCoset_valid (c : CanonicCoset) : c.halfCoset.Valid := by
+  rw [halfCoset_eq]
+  exact Coset.halfOdds_valid _ _
 
 /-- The canonical circle domain with the same log size. -/
 def circleDomain (c : CanonicCoset) : CircleDomain :=
