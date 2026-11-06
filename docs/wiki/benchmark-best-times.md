@@ -159,14 +159,14 @@ suite. *Peer:* Plonky3's scalar kernels for the same four fields, SIMD off;
 
 ## Pairing scalar fields
 
-*What it is.* The eight-limb Montgomery representation of the BN254, BLS12-381
+*What it is.* The four-limb Montgomery representation of the BN254, BLS12-381
 and BLS12-377 scalar fields: `mul` in both chain shapes against `ZMod`
-(`CompPoly/Fields/Montgomery/Native64x8Mul.lean`), and `inv` as three
+(`CompPoly/Fields/Montgomery/Native64x4Mul.lean`), and `inv` as three
 algorithms in one group, `ZMod`'s extended Euclid, the checked binary GCD and
-Fermat (`CompPoly/Fields/Montgomery/Native64x8InvDefs.lean`).
+Fermat (`CompPoly/Fields/Montgomery/Native64x4InvDefs.lean`).
 
 *Gate.* `invGcdRaw_eq_inv` and its bounds chain in
-`CompPoly/Fields/Montgomery/Native64x8Inv.lean`; one digest class per group.
+`CompPoly/Fields/Montgomery/Native64x4Inv.lean`; one digest class per group.
 *Peer:* arkworks or gnark-crypto over the same `mul` and `inv`.
 
 | Group | Row | Shape | Median | Per unit | Spread | Best at |
