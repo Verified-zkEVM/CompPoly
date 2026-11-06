@@ -5,9 +5,9 @@ Authors: Georgios Raikos
 -/
 module
 
+public import CompPoly.Fields.Montgomery.Divstep
 public import CompPoly.Fields.Montgomery.Native64x4Field
 public import CompPoly.Fields.Montgomery.Native64x4InvDefs
-public import CompPoly.Fields.Montgomery.Native64x8Inv
 public import Mathlib.Tactic.Ring
 
 /-!
@@ -15,15 +15,13 @@ public import Mathlib.Tactic.Ring
 
 Correctness of the checked inversion of `Montgomery/Native64x4InvDefs`: `invGcdRaw`
 computes the field inverse and `FastField.invGcd` is its proof-carrying wrapper.  The
-divstep coefficient bound is shared with the eight-limb stack; the mac-width safety of the
-candidate is proved here for the five-word linear combinations.
+divstep coefficient bound comes from `Montgomery/Divstep`.  This module proves the mac-width
+safety of the candidate for the five-word linear combinations.
 -/
 
 @[expose] public section
 
 namespace Montgomery.Native64x4
-
-open Montgomery.Native64x8 (gcdInner gcdInner_natAbs_le_31)
 
 /-! ## Order from the borrow chain -/
 

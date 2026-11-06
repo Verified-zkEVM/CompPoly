@@ -51,6 +51,8 @@ This directory contains formally verified field infrastructure used in zero-know
 | **Mersenne31/Fast.lean** | Verified `UInt32` implementation of Mersenne31 arithmetic. |
 | **Mersenne31/Circle.lean** | Additive circle group with fast scalars, proved generator order and index homomorphism, and bounded subgroup indices. Domain distinctness and cardinality remain follow-up work; see the [circle-group guide](../../docs/wiki/field-extensions.md#mersenne31-circle-group). |
 | **Montgomery/Basic.lean** | Radix-generic Montgomery reduction, field-agnostic number theory shared by the fast prime fields. |
+| **Montgomery/DivstepDefs.lean** | Zero-import word-sized divstep loop (`gcdInner`) and bit-length helper of the binary-GCD inversion, kept apart from the four-limb runtime because they act on single words. |
+| **Montgomery/Divstep.lean** | Unfolding lemmas for `gcdInner` and the divstep coefficient bound (`gcdInner_natAbs_le_31`). |
 | **Montgomery/Native32.lean** | Raw `UInt32`/`UInt64` Montgomery reduction over explicit word constants, including bounds and correctness. |
 | **Montgomery/Native32Field.lean** | Per-field parameters, the shared `FastField` carrier, arithmetic, instances, and canonical-field bridge. |
 | **Montgomery/Native64x4Defs.lean** | Zero-import runtime definitions of the four-limb (64-bit-radix) Montgomery arithmetic, for `precompileModules` consumers. |
@@ -60,14 +62,6 @@ This directory contains formally verified field infrastructure used in zero-know
 | **Montgomery/Native64x4Bytes.lean** | Byte codec of the four-limb carrier, agreeing with the `ZMod` codec. |
 | **Montgomery/Native64x4InvDefs.lean** | Mathlib-free binary-GCD inversion runtime ([eprint 2020/972](https://eprint.iacr.org/2020/972)) over four limbs: the `GcdData` schedule, the candidate, and the checked `invGcdRaw`. |
 | **Montgomery/Native64x4Inv.lean** | Correctness of the checked four-limb inversion (`invGcdRaw`, wrapper `FastField.invGcd`) and the candidate's mac-width safety. |
-| **Montgomery/Native64x8Defs.lean** | Zero-import runtime definitions of the eight-limb (32-bit-radix) Montgomery arithmetic; the carrier of `ScalarFft.lean`. |
-| **Montgomery/Native64x8.lean** | Word-level specifications and add/sub/negate correctness for the eight-limb arithmetic. |
-| **Montgomery/Native64x8Mul.lean** | Correctness of the eight-limb CIOS Montgomery multiplication. |
-| **Montgomery/Native64x8Field.lean** | The `Mont64x8Field` class, `FastField` carrier, arithmetic, instances, and canonical-field bridge over eight limbs; no concrete field instantiates it since the four-limb carrier replaced it. |
-| **Montgomery/Native64x8Bytes.lean** | Byte codec of the eight-limb carrier. |
-| **Montgomery/Native64x8InvDefs.lean** | Mathlib-free binary-GCD inversion runtime over eight limbs, whose word-sized divstep loop `gcdInner` is shared with the four-limb inversion. |
-| **Montgomery/Native64x8Inv.lean** | Correctness of the checked eight-limb inversion and the divstep coefficient bounds, which the four-limb proofs reuse. |
-| **Montgomery/ScalarFft.lean** | Zero-import in-place radix-2 DIT FFT over eight-limb Montgomery residues and precomputed twiddles. |
 | **Pasta.lean** | Facade for the Pasta modules, re-exporting the canonical Pallas/Vesta base fields and their fast native-word implementations. |
 | **Pasta/Basic.lean** | The two 255-bit Pasta base primes (Pallas base = Vesta scalar and vice versa), with Pratt primality certificates. |
 | **Pasta/Fast.lean** | Pallas- and Vesta-namespaced API over the shared four-limb fast-field implementation, with per-field constants and canonical-field bridges. |

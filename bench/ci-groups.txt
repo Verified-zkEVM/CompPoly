@@ -55,11 +55,11 @@ fields-extension-koalabear-ext4-mul
 fields-extension-koalabear-ext4-inv
 fields-extension-babybear-ext4-mul
 fields-extension-babybear-ext4-inv
-fields-mont64x8-bn254-inv
-fields-mont64x8-bls12-381-inv
-fields-mont64x8-bls12-377-inv
-fields-mont64x8-secp256k1-scalar-inv
-fields-mont64x8-secp256k1-base-inv
+fields-mont64x4-bn254-inv
+fields-mont64x4-bls12-381-inv
+fields-mont64x4-bls12-377-inv
+fields-mont64x4-secp256k1-scalar-inv
+fields-mont64x4-secp256k1-base-inv
 fields-goldilocks-mul
 fields-goldilocks-inv
 fields-koalabear-mul

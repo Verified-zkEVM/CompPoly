@@ -196,6 +196,8 @@ public import CompPoly.Fields.Mersenne31.Bytes
 public import CompPoly.Fields.Mersenne31.Circle
 public import CompPoly.Fields.Mersenne31.Fast
 public import CompPoly.Fields.Montgomery.Basic
+public import CompPoly.Fields.Montgomery.Divstep
+public import CompPoly.Fields.Montgomery.DivstepDefs
 public import CompPoly.Fields.Montgomery.Native32
 public import CompPoly.Fields.Montgomery.Native32Bytes
 public import CompPoly.Fields.Montgomery.Native32Field
@@ -206,14 +208,6 @@ public import CompPoly.Fields.Montgomery.Native64x4Field
 public import CompPoly.Fields.Montgomery.Native64x4Inv
 public import CompPoly.Fields.Montgomery.Native64x4InvDefs
 public import CompPoly.Fields.Montgomery.Native64x4Mul
-public import CompPoly.Fields.Montgomery.Native64x8
-public import CompPoly.Fields.Montgomery.Native64x8Bytes
-public import CompPoly.Fields.Montgomery.Native64x8Defs
-public import CompPoly.Fields.Montgomery.Native64x8Field
-public import CompPoly.Fields.Montgomery.Native64x8Inv
-public import CompPoly.Fields.Montgomery.Native64x8InvDefs
-public import CompPoly.Fields.Montgomery.Native64x8Mul
-public import CompPoly.Fields.Montgomery.ScalarFft
 public import CompPoly.Fields.Pasta
 public import CompPoly.Fields.Pasta.Basic
 public import CompPoly.Fields.Pasta.Fast

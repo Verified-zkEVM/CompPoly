@@ -112,14 +112,14 @@ CompPoly aims to be the premier formally verified library for computable polynom
    - ✅ Four-limb Montgomery carrier with 64-bit-radix CIOS multiplication for any
      prime modulus below `2^256` (`Montgomery/Native64x4*.lean`, `Mont64x4Field`),
      instantiated by `BN254/Fast.lean`, `BLS12_381/Fast.lean`, `BLS12_377/Fast.lean`,
-     `Pasta/Fast.lean` and `Secp256k1/Fast.lean`; the earlier eight-limb carrier
-     (`Montgomery/Native64x8*.lean`) remains behind `ScalarFft.lean`
+     `Pasta/Fast.lean` and `Secp256k1/Fast.lean`. It replaces the earlier eight-limb
+     carrier.
    - ✅ Single-word `UInt64` carriers for 64-bit and 31-bit primes outside the
      Montgomery bounds (`Goldilocks/Fast.lean`, `Mersenne31/Fast.lean`), reducing
      via the modulus identity rather than Montgomery residues
    - ✅ Checked binary-GCD inversion for the four-limb fields
      (`Montgomery/Native64x4Inv.lean`, [eprint 2020/972](https://eprint.iacr.org/2020/972)),
-     benchmarked against `ZMod` extended Euclid and Fermat in `fields-mont64x8-*-inv`
+     benchmarked against `ZMod` extended Euclid and Fermat in `fields-mont64x4-*-inv`
    - 🔄 64-bit-radix Montgomery layer, so Goldilocks and Hachi (`2^32 - 99`) gain a
      `FastField` base; `Mont32Field` requires modulus < `2^31`
    - 🔄 Instantiate `Extension.Ext` over a Montgomery carrier rather than `ZMod`

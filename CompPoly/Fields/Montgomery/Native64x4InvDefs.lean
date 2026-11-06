@@ -5,23 +5,21 @@ Authors: Georgios Raikos
 -/
 module
 
+public import CompPoly.Fields.Montgomery.DivstepDefs
 public import CompPoly.Fields.Montgomery.Native64x4Defs
-public import CompPoly.Fields.Montgomery.Native64x8InvDefs
 
 /-!
 # Four-limb inversion: runtime definitions (Mathlib-free)
 
 The Pornin binary-GCD inverse candidate over `Limbs4` and its checked wrapper
 (`invGcdRaw`), Mathlib-free for `precompileModules` consumers.  The word-sized divstep loop
-and bit-length helper are shared with the eight-limb stack.  The proof side is
+and bit-length helper come from `Montgomery/DivstepDefs`.  The proof side is
 `Montgomery/Native64x4Inv`.
 -/
 
 @[expose] public section
 
 namespace Montgomery.Native64x4
-
-open Montgomery.Native64x8 (gcdInner gcdBitLen)
 
 /-! ## Per-field schedule -/
 

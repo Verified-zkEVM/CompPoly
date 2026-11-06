@@ -56,54 +56,54 @@ private def runScalarInv (modulus : Nat) [Mont64x4Field modulus] [GcdData modulu
 /-- Run the BN254 scalar inversion benchmark. -/
 private def runBn254ScalarInv (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
-  runScalarInv BN254.scalarFieldSize "fields-mont64x8-bn254-inv"
+  runScalarInv BN254.scalarFieldSize "fields-mont64x4-bn254-inv"
     "Scalar-field inversion (BN254)" "BN254.ScalarField" "BN254.Fast.ScalarField"
     preset gen
 
 /-- Run the BLS12-381 scalar inversion benchmark. -/
 private def runBls12_381ScalarInv (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
-  runScalarInv BLS12_381.scalarFieldSize "fields-mont64x8-bls12-381-inv"
+  runScalarInv BLS12_381.scalarFieldSize "fields-mont64x4-bls12-381-inv"
     "Scalar-field inversion (BLS12-381)" "BLS12_381.ScalarField" "BLS12_381.Fast.ScalarField"
     preset gen
 
 /-- Run the BLS12-377 scalar inversion benchmark. -/
 private def runBls12_377ScalarInv (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
-  runScalarInv BLS12_377.scalarFieldSize "fields-mont64x8-bls12-377-inv"
+  runScalarInv BLS12_377.scalarFieldSize "fields-mont64x4-bls12-377-inv"
     "Scalar-field inversion (BLS12-377)" "BLS12_377.ScalarField" "BLS12_377.Fast.ScalarField"
     preset gen
 
 /-- Run the secp256k1 scalar-field inversion benchmark. -/
 private def runSecp256k1ScalarInv (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
-  runScalarInv Secp256k1.scalarFieldSize "fields-mont64x8-secp256k1-scalar-inv"
+  runScalarInv Secp256k1.scalarFieldSize "fields-mont64x4-secp256k1-scalar-inv"
     "Scalar-field inversion (secp256k1)" "Secp256k1.ScalarField" "Secp256k1.Fast.ScalarField"
     preset gen
 
 /-- Run the secp256k1 base-field inversion benchmark. -/
 private def runSecp256k1BaseInv (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
-  runScalarInv Secp256k1.baseFieldSize "fields-mont64x8-secp256k1-base-inv"
+  runScalarInv Secp256k1.baseFieldSize "fields-mont64x4-secp256k1-base-inv"
     "Base-field inversion (secp256k1)" "Secp256k1.BaseField" "Secp256k1.Fast.BaseField"
     preset gen
 
 /-- Registry entries for the four-limb field inversion benchmarks. -/
 def montgomeryInvTasks : List BenchTask := [
   BenchTask.fromGroupRunner
-    ⟨"fields-mont64x8-bn254-inv", "Scalar-field inversion (BN254)"⟩
+    ⟨"fields-mont64x4-bn254-inv", "Scalar-field inversion (BN254)"⟩
     runBn254ScalarInv,
   BenchTask.fromGroupRunner
-    ⟨"fields-mont64x8-bls12-381-inv", "Scalar-field inversion (BLS12-381)"⟩
+    ⟨"fields-mont64x4-bls12-381-inv", "Scalar-field inversion (BLS12-381)"⟩
     runBls12_381ScalarInv,
   BenchTask.fromGroupRunner
-    ⟨"fields-mont64x8-bls12-377-inv", "Scalar-field inversion (BLS12-377)"⟩
+    ⟨"fields-mont64x4-bls12-377-inv", "Scalar-field inversion (BLS12-377)"⟩
     runBls12_377ScalarInv,
   BenchTask.fromGroupRunner
-    ⟨"fields-mont64x8-secp256k1-scalar-inv", "Scalar-field inversion (secp256k1)"⟩
+    ⟨"fields-mont64x4-secp256k1-scalar-inv", "Scalar-field inversion (secp256k1)"⟩
     runSecp256k1ScalarInv,
   BenchTask.fromGroupRunner
-    ⟨"fields-mont64x8-secp256k1-base-inv", "Base-field inversion (secp256k1)"⟩
+    ⟨"fields-mont64x4-secp256k1-base-inv", "Base-field inversion (secp256k1)"⟩
     runSecp256k1BaseInv
 ]
 
