@@ -93,7 +93,7 @@ noncomputable def ringEquiv [BEq R] [LawfulBEq R] : QuotientCPolynomial R ≃+* 
     intro p q
     simp only [toPoly, Quotient.lift_mk]
     show (p.mul q).toPoly = p.toPoly * q.toPoly
-    exact Polynomial.ext (Raw.toPoly_mul_coeff p q)
+    exact AddMonoidAlgebra.ext (Finsupp.ext (Raw.toPoly_mul_coeff p q))
   map_add' := by
     intro a b
     refine Quotient.inductionOn₂ a b ?_

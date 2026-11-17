@@ -94,8 +94,7 @@ theorem derivative_add [Semiring R] [BEq R] [LawfulBEq R] [DecidableEq R]
 @[simp, grind =]
 theorem derivative_toPoly [Semiring R] [BEq R] [LawfulBEq R] (p : CPolynomial R) :
     (derivative p).toPoly = Polynomial.derivative (R := R) p.toPoly := by
-  apply Polynomial.ext
-  intro n
+  ext n : 2
   simp only [Polynomial.coeff_derivative, CPolynomial.toPoly,
     Raw.coeff_toPoly, CPolynomial.coeff_derivative]
   push_cast; ring_nf

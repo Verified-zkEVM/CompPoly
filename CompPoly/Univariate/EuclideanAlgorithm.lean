@@ -217,7 +217,7 @@ private theorem Raw.toPoly_smul [Semiring R] [BEq R] [LawfulBEq R]
     (c : R) (p : CPolynomial.Raw R) :
     (c • p).toPoly = c • p.toPoly := by
   ext i
-  rw [Polynomial.coeff_smul]
+  rw [AddMonoidAlgebra.coeff_smul_apply]
   rw [CPolynomial.Raw.coeff_toPoly, CPolynomial.Raw.coeff_toPoly]
   exact CPolynomial.Raw.smul_coeff c p i
 

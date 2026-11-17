@@ -569,8 +569,9 @@ theorem tryEvenTraceSplitAttemptsWith_uniformTable_none_le_geometric {F : Type*}
                   ({ probe := fun _q _factor _attempt ↦ h } : ProbeFamily F) g 0 = none
                 then uniformProbePMF enumeration coefficientCount h else 0) *
                 ((2 : ℝ≥0∞)⁻¹) ^ attempts := by
-            apply ENNReal.tsum_le_tsum
+            apply tsum_le_tsum
             intro h
+            dsimp only
             rw [hweight h]
             by_cases h0 : cantorZassenhausEvenTraceAttemptWith M D traceCtx q
                 ({ probe := fun _q _factor _attempt ↦ h } : ProbeFamily F) g 0 = none

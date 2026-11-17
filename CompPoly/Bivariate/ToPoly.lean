@@ -118,7 +118,8 @@ lemma ofPoly_monomial {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring
     CPolynomial.monomial n ⟨c.toImpl, CPolynomial.Raw.isCanonical_toImpl c⟩ := by
       unfold CBivariate.ofPoly
       simp +decide
-      rw [ Finset.sum_eq_single n ] <;> simp +decide [ Polynomial.coeff_monomial ]
+      rw [ Finset.sum_eq_single n ] <;>
+        simp +decide [ Polynomial.coeff_monomial, Finsupp.single_apply ]
       aesop
 
 /--
@@ -175,7 +176,7 @@ lemma ofPoly_add {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
           · aesop
           · aesop
         · aesop
-        · contrapose! hx
+        · contrapose hx
           aesop
       exact h_ofPoly_add_p p q
 
@@ -188,8 +189,8 @@ theorem ofPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring 
           Finset.sum (Polynomial.support p) (fun j ↦
             CPolynomial.coeff
               (CPolynomial.monomial j
-                ⟨Polynomial.toImpl (Polynomial.coeff p j),
-                  CPolynomial.Raw.isCanonical_toImpl (Polynomial.coeff p j)⟩) n) := by
+                ⟨Polynomial.toImpl (p.coeff j),
+                  CPolynomial.Raw.isCanonical_toImpl (p.coeff j)⟩) n) := by
         unfold CBivariate.ofPoly
         induction' p.support using Finset.induction with j s hj ih
         · exact CPolynomial.eq_iff_coeff.mpr (congrFun rfl)
@@ -217,9 +218,9 @@ theorem toPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Semiring R]
 theorem toPoly_eq_map {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semiring R]
     (p : CBivariate R) :
     toPoly p = (CPolynomial.toPoly p).map (CPolynomial.ringEquiv (R := R)) := by
-      convert Polynomial.ext _
+      convert AddMonoidAlgebra.ext (Finsupp.ext _)
       unfold CBivariate.toPoly
-      simp +decide [ Polynomial.coeff_monomial ]
+      simp +decide [ Polynomial.coeff_monomial, Finsupp.single_apply ]
       intro n
       split_ifs <;> simp_all +decide [ CPolynomial.toPoly ]
       · erw [ CPolynomial.Raw.coeff_toPoly ]
@@ -439,7 +440,7 @@ theorem support_toPoly_outer {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [S
       ext x
       simp +decide [ CPolynomial.mem_support_iff, CBivariate.supportY ]
       rw [ CBivariate.toPoly ]
-      simp +decide [ Polynomial.coeff_monomial ]
+      simp +decide [ Polynomial.coeff_monomial, Finsupp.single_apply ]
       rw [ CPolynomial.mem_support_iff ]
       aesop
 
@@ -452,7 +453,7 @@ theorem natDegreeY_toPoly {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Semi
         by_cases hp : p = 0
         · simp +decide [ hp ]
         · refine' le_antisymm _ _
-          · exact Finset.le_sup (f := id) (Polynomial.natDegree_mem_support_of_nonzero hp)
+          · exact Finset.le_sup (f := id) (Polynomial.natDegree_mem_support_of_ne_zero hp)
           · exact Finset.sup_le fun i hi ↦ Polynomial.le_natDegree_of_mem_supp _ hi
       rw [ h_deg, support_toPoly_outer, CBivariate.natDegreeY,
            CPolynomial.natDegree_eq_support_sup ]
@@ -554,7 +555,7 @@ theorem evalX_toPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Sem
   have h₂ :
       eval a (f.toPoly.coeff j) =
         ∑ i ∈ f.support, if i = j then CPolynomial.eval a (f.val.coeff i) else 0 := by
-    simp +decide [CBivariate.toPoly, Polynomial.coeff_monomial]
+    simp +decide [CBivariate.toPoly, Polynomial.coeff_monomial, Finsupp.single_apply]
     split_ifs <;> simp +decide [*, CPolynomial.eval_toPoly]
   rw [show ((evalX (R := R) a f).toPoly).coeff j =
       ∑ i ∈ CPolynomial.support f,
@@ -570,7 +571,7 @@ theorem evalX_toPoly_coeff {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial R] [Sem
           exact congrArg (fun p : Polynomial R => p.coeff j)
             (CPolynomial.monomial_toPoly (R := R) i (CPolynomial.eval a (f.val.coeff i)))
     _ = if i = j then CPolynomial.eval a (f.val.coeff i) else 0 := by
-          simp [Polynomial.coeff_monomial]
+          simp [Polynomial.coeff_monomial, Finsupp.single_apply]
 
 /--
 `evalX` is compatible with full bivariate evaluation when `a` and `y` commute.
@@ -588,7 +589,7 @@ theorem evalX_toPoly_eval_commute {R : Type*} [BEq R] [LawfulBEq R] [Nontrivial 
     · aesop
     · intro j hj
       simp_all +decide
-      contrapose! hj
+      contrapose hj
       simp_all +decide [evalX_toPoly_coeff]
   convert h_lhs using 1
   · exact CPolynomial.eval_toPoly y (evalX (R := R) a f)
@@ -675,7 +676,7 @@ theorem evalX_toPoly_eval_commute_converse
         Polynomial.monomial 1 a := by
       ext j
       rw [evalX_toPoly_coeff, monomialXY_toPoly]
-      simp [Polynomial.coeff_monomial]
+      simp [Polynomial.coeff_monomial, Finsupp.single_apply]
       split_ifs with h
       · subst h
         simp [Polynomial.eval_monomial]

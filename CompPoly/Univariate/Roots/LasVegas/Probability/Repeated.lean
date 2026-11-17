@@ -349,8 +349,9 @@ theorem tryOddSplitAttemptsWith_uniformTable_none_le_geometric {F : Type*}
                   ({ probe := fun _q _factor _attempt ↦ h } : ProbeFamily F) g 0 = none
                 then uniformProbePMF enumeration coefficientCount h else 0) *
                 ((2 : ℝ≥0∞)⁻¹) ^ attempts := by
-            apply ENNReal.tsum_le_tsum
+            apply tsum_le_tsum
             intro h
+            dsimp only
             rw [hweight h]
             by_cases h0 : cantorZassenhausOddAttemptWith M D q
                 ({ probe := fun _q _factor _attempt ↦ h } : ProbeFamily F) g 0 = none
@@ -620,8 +621,9 @@ theorem recursiveSplitWithTables_rank_le_geometric {q : Nat}
                       (if tryTable table g = none then
                         uniformProbeTablePMF enumeration coefficientCount attempts table
                       else 0))
-                    · apply ENNReal.tsum_le_tsum
+                    · apply tsum_le_tsum
                       intro table
+                      dsimp only
                       rw [PMF.toOuterMeasure_map_apply]
                       by_cases htry : tryTable table g = none
                       · rw [ite_eq_left htry]
@@ -652,7 +654,7 @@ theorem recursiveSplitWithTables_rank_le_geometric {q : Nat}
                     trans (∑' table : List (CPolynomial F),
                       uniformProbeTablePMF enumeration coefficientCount attempts table *
                         ((2 : ℝ≥0∞)⁻¹) ^ attempts)
-                    · apply ENNReal.tsum_le_tsum
+                    · apply tsum_le_tsum
                       intro table
                       apply mul_le_mul' le_rfl
                       rw [PMF.toOuterMeasure_map_apply]

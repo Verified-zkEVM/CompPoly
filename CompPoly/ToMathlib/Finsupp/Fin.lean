@@ -193,12 +193,12 @@ variable {y} {s}
 --   rw [h', c, Finsupp.cons_zero_zero]
 
 theorem snoc_ne_zero_of_left (h : s ≠ 0) : snoc s y ≠ 0 := by
-  contrapose! h with c
+  contrapose h with c
   ext a
   simp only [← snoc_castSucc y s a, c, coe_zero, Pi.zero_apply]
 
 theorem snoc_ne_zero_of_right (h : y ≠ 0) : snoc s y ≠ 0 := by
-  contrapose! h with c
+  contrapose h with c
   rw [← snoc_last y s, c, Finsupp.coe_zero, Pi.zero_apply]
 
 theorem snoc_ne_zero_iff : snoc s y ≠ 0 ↔ s ≠ 0 ∨ y ≠ 0 := by
@@ -207,11 +207,11 @@ theorem snoc_ne_zero_iff : snoc s y ≠ 0 ↔ s ≠ 0 ∨ y ≠ 0 := by
   rw [h', c, Finsupp.snoc_zero_zero]
 
 theorem insertNth_ne_zero_of_left (h : y ≠ 0) : insertNth p y s ≠ 0 := by
-  contrapose! h with c
+  contrapose h with c
   rw [← insertNth_apply_same p y s, c, Finsupp.coe_zero, Pi.zero_apply]
 
 theorem insertNth_ne_zero_of_right (h : s ≠ 0) : insertNth p y s ≠ 0 := by
-  contrapose! h with c
+  contrapose h with c
   ext a
   simp only [← insertNth_apply_succAbove p y s a, c, coe_zero, Pi.zero_apply]
 

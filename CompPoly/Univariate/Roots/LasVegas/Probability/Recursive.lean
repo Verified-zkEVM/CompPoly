@@ -84,7 +84,7 @@ theorem recursiveFallback_probability_le_binomialTail {Ω : Type*}
             half ^ attempts * (Nat.choose attempts j : ℝ≥0∞)
           else
             0 := by
-          apply ENNReal.tsum_le_tsum
+          apply tsum_le_tsum
           intro j
           by_cases hj : j ∈ Finset.range (degree - 1)
           · simpa [half, hj] using hbound j hj
@@ -105,7 +105,7 @@ theorem toOuterMeasure_apply_le_one {α : Type*} (p : PMF α) (s : Set α) :
     p.toOuterMeasure s ≤ 1 := by
   rw [PMF.toOuterMeasure_apply]
   calc (∑' a, s.indicator (⇑p) a)
-      ≤ ∑' a, p a := ENNReal.tsum_le_tsum fun a ↦ Set.indicator_le_self s (⇑p) a
+      ≤ ∑' a, p a := tsum_le_tsum fun a ↦ Set.indicator_le_self s (⇑p) a
     _ = 1 := p.tsum_coe
 
 /-- First successful split among independent trials, or `none` after exhaustion. -/
@@ -387,7 +387,7 @@ theorem recursiveSplitProcessPMF_rank_le_geometric {F : Type*}
             | succ j' =>
                 trans (∑' o : Option (Array (CPolynomial F)),
                   (firstSuccessPMF (trial g) attempts 0) o * ((2 : ℝ≥0∞)⁻¹) ^ attempts)
-                · apply ENNReal.tsum_le_tsum
+                · apply tsum_le_tsum
                   intro o
                   by_cases hzero : (firstSuccessPMF (trial g) attempts 0) o = 0
                   · simp [hzero]

@@ -92,7 +92,7 @@ theorem ofNat?_eq_some_iff {n : ℕ} {x : F} : ofNat? n = some x ↔ n < bound F
 theorem ofNat?_eq_none_iff {n : ℕ} : ofNat? (F := F) n = none ↔ bound F ≤ n := by
   unfold ofNat?
   split <;> simp only [reduceCtorEq, false_iff, not_le, *, true_iff, not_lt] at *
-  all_goals assumption
+  assumption
 
 /-- The canonical natural as an equivalence with `Fin (bound F)`. -/
 def equivFin : F ≃ Fin (bound F) where

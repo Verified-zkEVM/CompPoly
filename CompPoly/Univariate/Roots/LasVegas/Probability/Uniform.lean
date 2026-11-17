@@ -196,8 +196,7 @@ private theorem eval_ofArray_push {F : Type*} [Field F] [BEq F] [LawfulBEq F]
   have hpush : CPolynomial.Raw.toPoly (coeffs.push c) =
       CPolynomial.Raw.toPoly coeffs +
         Polynomial.C c * Polynomial.X ^ coeffs.size := by
-    apply Polynomial.ext
-    intro i
+    ext i : 2
     rw [Polynomial.coeff_add, CPolynomial.Raw.coeff_toPoly, CPolynomial.Raw.coeff_toPoly,
       Polynomial.coeff_C_mul, Polynomial.coeff_X_pow]
     show (coeffs.push c).getD i 0 = coeffs.getD i 0 + c * if i = coeffs.size then 1 else 0
@@ -214,8 +213,7 @@ private theorem eval_ofArray_pair {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     (c0 c1 z : F) :
     CPolynomial.eval z (CPolynomial.ofArray #[c0, c1]) = c0 + c1 * z := by
   have hempty : CPolynomial.Raw.toPoly (#[] : Array F) = 0 := by
-    apply Polynomial.ext
-    intro i
+    ext i : 2
     rw [CPolynomial.Raw.coeff_toPoly]
     simp [CPolynomial.Raw.coeff]
   have h1 : (#[c0, c1] : Array F) = ((#[] : Array F).push c0).push c1 := rfl
@@ -599,8 +597,9 @@ theorem uniformPair_separated_probability_ge_half_of_fiber_card_le {F : Type*}
           ← _root_.mul_assoc, ENNReal.mul_inv_cancel hqne hqnetop, _root_.one_mul]
     _ ≤ ∑' x : F, u x *
           (((Finset.univ.filter fun y : F ↦ f x ≠ f y).card : ℝ≥0∞) * (q : ℝ≥0∞)⁻¹) := by
-        apply ENNReal.tsum_le_tsum
+        apply tsum_le_tsum
         intro x
+        dsimp only
         rw [hu, uniformFieldElementPMF_apply enumeration x]
         exact _root_.mul_le_mul_right
           (_root_.mul_le_mul_left (Nat.cast_le.mpr (hN_ge x)) _) _

@@ -523,8 +523,7 @@ theorem divByLinearY_spec [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] [Dec
         Polynomial.C (rem.toPoly) := by
   classical
   dsimp
-  apply Polynomial.ext
-  intro n
+  ext n : 2
   cases n with
   | zero =>
       -- coefficient 0: from the remainder formula `rem = a₀ + f · quot₀`

@@ -694,7 +694,7 @@ theorem induction_on [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
   -- Strong induction on the size of the underlying coefficient array
   refine
     (Nat.strong_induction_on
-        (p := fun n : ℕ => ∀ p : CPolynomial R, p.val.size = n → P p)
+        (motive := fun n : ℕ => ∀ p : CPolynomial R, p.val.size = n → P p)
         (p.val.size) ?_) p rfl
   intro n ih p hn
   cases n with

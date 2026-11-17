@@ -101,9 +101,9 @@ theorem rootProductProbabilityInput_of_lasVegasSplitterInput {F : Type*}
     have hlt := Fintype.one_lt_card (α := F)
     omega
   have hXne : ((Polynomial.X : Polynomial F) ^ q - Polynomial.X) ≠ 0 :=
-    FiniteField.X_pow_card_sub_X_ne_zero F (by omega)
+    Polynomial.X_pow_sub_X_ne_zero (by omega)
   have hXdeg : ((Polynomial.X : Polynomial F) ^ q - Polynomial.X).natDegree = q :=
-    FiniteField.X_pow_card_sub_X_natDegree_eq F (by omega)
+    Polynomial.natDegree_X_pow_sub_X (by omega)
   have hXroots : ((Polynomial.X : Polynomial F) ^ q - Polynomial.X).roots =
       (Finset.univ : Finset F).val := by
     rw [← hcard]

@@ -878,8 +878,8 @@ abbrev IntermediateCoeffVecSpace (i : Fin r) := Fin (2^(ℓ - i)) → L
 def intermediateToCoeffsVec (i : Fin r) : -- (h_i : i ≤ ℓ)
     L⦃<2^(ℓ - i)⦄[X] →ₗ[L] IntermediateCoeffVecSpace (L := L) (ℓ := ℓ) i where
   toFun := fun p => fun k => p.val.coeff k.val
-  map_add' := fun p q => by ext k; simp [coeff_add]
-  map_smul' := fun c p => by ext k; simp [coeff_smul, smul_eq_mul]
+  map_add' := fun p q => by ext k; simp
+  map_smul' := fun c p => by ext k; simp [smul_eq_mul]
 
 /-- The Change-of-Basis Matrix from the Intermediate Novel Basis to the Monomial Basis.
     A_jk = coeff of X^k in intermediate basis vector X_j. -/
@@ -986,8 +986,7 @@ lemma intermediateEvaluationPoly_from_inovel_coeffs_eq_self
     intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate (i := i) (h_i := h_i)
       (coeffs := getINovelCoeffs 𝔽q β h_ℓ_add_R_rate i h_i P) = P := by
   -- 1. Apply extensionality (two polys are equal if all coeffs are equal)
-  apply Polynomial.ext
-  intro k
+  ext k : 2
   let N := 2 ^ (ℓ - i.val)
   set novel_coeffs := getINovelCoeffs 𝔽q β h_ℓ_add_R_rate i h_i P
   -- 2. Case Analysis on k

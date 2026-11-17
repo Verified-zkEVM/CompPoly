@@ -79,7 +79,7 @@ theorem finSuccEquivNth_X_below {i : Fin n} (h : i.castSucc < p) :
 /-- The coefficient of `m` in the `i`-th coefficient of `finSuccEquivNth R p f` equals the
     coefficient of `m.insertNth p i` in `f`. -/
 theorem finSuccEquivNth_coeff_coeff (m : Fin n →₀ ℕ) (f : MvPolynomial (Fin (n + 1)) R) (i : ℕ) :
-    (Polynomial.coeff (finSuccEquivNth R p f) i).coeff m = f.coeff (m.insertNth p i) := by
+    ((finSuccEquivNth R p f).coeff i).coeff m = f.coeff (m.insertNth p i) := by
   induction f using MvPolynomial.induction_on' generalizing i m with
   | monomial u a =>
     simp only [finSuccEquivNth_apply, coe_eval₂Hom, eval₂_monomial, RingHom.coe_comp, comp_apply,
@@ -102,7 +102,7 @@ theorem finSuccEquivNth_coeff_coeff (m : Fin n →₀ ℕ) (f : MvPolynomial (Fi
       simpa only [monomial_eq, C_1, one_mul, prod_pow, Finsupp.removeNth_apply,
         ite_eq_right hmj.symm] using coeff_monomial m (u.removeNth p) (1 : R)
   | add p q hp hq =>
-    simp only [map_add, Polynomial.coeff_add, AddMonoidAlgebra.coeff_add, Finsupp.add_apply, hp, hq]
+    simp only [map_add, AddMonoidAlgebra.coeff_add, Finsupp.add_apply, hp, hq]
 
 /-- The evaluation of `f` at `Fin.insertNth p y s` equals the evaluation at `y` of the polynomial
 obtained by partially evaluating `finSuccEquivNth R p f` at `s`.
@@ -126,7 +126,7 @@ theorem eval_eq_eval_mv_eval_finSuccEquivNth (s : Fin n → R) (y : R)
 /-- A monomial index `m` is in the support of the `i`-th coefficient of `finSuccEquivNth R p f` if
 and only if `m.insertNth p i` is in the support of `f`. -/
 theorem support_coeff_finSuccEquivNth {f : MvPolynomial (Fin (n + 1)) R} {i : ℕ} {m : Fin n →₀ ℕ} :
-    m ∈ (Polynomial.coeff ((finSuccEquivNth R p) f) i).support ↔ m.insertNth p i ∈ f.support := by
+    m ∈ ((finSuccEquivNth R p f).coeff i).support ↔ m.insertNth p i ∈ f.support := by
   constructor <;> intro h
   · simpa [← finSuccEquivNth_coeff_coeff] using h
   · simpa [mem_support_iff, ← finSuccEquivNth_coeff_coeff m f i] using h
@@ -168,7 +168,7 @@ theorem mem_support_finSuccEquivNth {f : MvPolynomial (Fin (n + 1)) R} {x} :
   simpa using congr(x ∈ $(support_finSuccEquivNth f))
 
 theorem image_support_finSuccEquivNth {f : MvPolynomial (Fin (n + 1)) R} {i : ℕ} :
-    Finset.image (Finsupp.insertNth p i) (Polynomial.coeff ((finSuccEquivNth R p) f) i).support =
+    Finset.image (Finsupp.insertNth p i) ((finSuccEquivNth R p f).coeff i).support =
       f.support.filter fun m => m p = i := by
   ext m
   rw [Finset.mem_filter, Finset.mem_image, mem_support_iff]
@@ -221,7 +221,7 @@ theorem natDegree_finSuccEquivNth (f : MvPolynomial (Fin (n + 1)) R) :
 /-- The degree of `j` in the `i`th coefficient of `finSuccEquivNth R p f` is at most the degree of
 `j.succ` in `f`. -/
 theorem degreeOf_coeff_finSuccEquivNth (f : MvPolynomial (Fin (n + 1)) R) (j : Fin n) (i : ℕ) :
-    degreeOf j (Polynomial.coeff (finSuccEquivNth R p f) i) ≤ degreeOf (p.succAbove j) f := by
+    degreeOf j ((finSuccEquivNth R p f).coeff i) ≤ degreeOf (p.succAbove j) f := by
   rw [degreeOf_eq_sup, degreeOf_eq_sup, Finset.sup_le_iff]
   intro m hm
   rw [← Finsupp.insertNth_apply_succAbove p i m j]

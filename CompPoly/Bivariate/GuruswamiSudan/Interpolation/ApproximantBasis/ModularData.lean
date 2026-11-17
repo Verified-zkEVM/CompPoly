@@ -502,13 +502,13 @@ private theorem toPoly_ofCoeffRow_eq_sum (row : PolynomialRow F) :
   rw [CBivariate.toPoly_coeff, Polynomial.finsetSum_coeff]
   by_cases hn : n < row.size
   · rw [Finset.sum_eq_single n
-      (fun k _hk hkn ↦ by rw [Polynomial.coeff_monomial, ite_eq_right hkn])
+      (fun k _hk hkn ↦ by rw [Polynomial.coeff_monomial_apply, ite_eq_right hkn])
       (fun hnotin ↦ absurd (Finset.mem_range.mpr hn) hnotin)]
-    rw [Polynomial.coeff_monomial, ite_eq_left rfl, CBivariate.ofCoeffRow,
+    rw [Polynomial.coeff_monomial_apply, ite_eq_left rfl, CBivariate.ofCoeffRow,
       CPolynomial.coeff_ofArray]
   · rw [Finset.sum_eq_zero
       (fun k hk ↦ by
-        rw [Polynomial.coeff_monomial,
+        rw [Polynomial.coeff_monomial_apply,
           ite_eq_right (by rcases Finset.mem_range.mp hk with h; omega)])]
     rw [CBivariate.ofCoeffRow, CPolynomial.coeff_ofArray,
       Array.getD_eq_getD_getElem?, Array.getElem?_eq_none (by omega)]

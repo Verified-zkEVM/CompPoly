@@ -296,7 +296,7 @@ lemma coeff_foldl_add {α : Type*} [LawfulBEq R]
         convert congr_arg₂ ( · + · ) ( ‹∀ z : CPolynomial.Raw R, (
           List.foldl ( fun ( acc : CPolynomial.Raw R ) ( x : α ) => acc + f x ) z l )[ k ]?.getD 0
             = z[k]?.getD 0 + ( List.map ( fun x => ( f x)[ k ]?.getD 0 ) l ).sum› z ) rfl using 1
-        any_goals exact ( f ih )[ k ]?.getD 0
+        on_goal 3 => exact ( f ih )[ k ]?.getD 0
         · convert add_coeff_trimmed _ _ k
           rotate_left 3
           (expose_names; exact inst_1)
