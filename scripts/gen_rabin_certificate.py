@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --no-project --python 3.12 python
 """Generate a kernel-checkable Rabin irreducibility certificate for a monic
 polynomial `f` over a prime field `F_p`.
 
@@ -22,10 +22,10 @@ being visibly reducible. Only the `d/3 = 2` and `d/2 = 3` checks reject it.
 Polynomials are little-endian coefficient lists over `range(p)`.
 
 Usage (default: KoalaBear, f = x^5 + x^2 - 1):
-    python3 scripts/gen_rabin_certificate.py
+    uv run --no-project --python 3.12 python scripts/gen_rabin_certificate.py
 
 Self-test over the known-answer cases in `SELF_TESTS`:
-    python3 scripts/gen_rabin_certificate.py --self-test
+    uv run --no-project --python 3.12 python scripts/gen_rabin_certificate.py --self-test
 """
 from __future__ import annotations
 import argparse, json, subprocess, sys
@@ -312,7 +312,7 @@ def _wrap_command(p: int, f_arg: str, ns: str, authors: str) -> list[str]:
     value is split by closing the quote before each break and reopening it at column 0
     on the next line, so the backslash falls outside the quotes where it continues the
     line and the shell rejoins the pieces into one argument."""
-    lines = ["python3 scripts/gen_rabin_certificate.py --p %d \\" % p]
+    lines = ["uv run --no-project --python 3.12 python scripts/gen_rabin_certificate.py --p %d \\" % p]
     head = "  --f='"
     limit = LINE_LIMIT
     chunks: list[str] = []
@@ -366,7 +366,7 @@ def format_test() -> int:
         script = [ln for ln in lines if "--lean" not in ln]
         script[-1] = script[-1].rstrip("\\").rstrip()
         script[0] = script[0].replace(
-            "python3 scripts/gen_rabin_certificate.py", 'printf "%s\\n"', 1)
+            "uv run --no-project --python 3.12 python scripts/gen_rabin_certificate.py", 'printf "%s\\n"', 1)
         proc = subprocess.run(["bash", "-c", "\n".join(script)],
                               capture_output=True, text=True)
         argv = proc.stdout.split("\n")

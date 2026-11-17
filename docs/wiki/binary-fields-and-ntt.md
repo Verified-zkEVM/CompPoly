@@ -43,6 +43,8 @@ CompPoly/Fields/Binary/
     Algorithm.lean
     Impl.lean
     Correctness.lean
+    Coset.lean
+    CosetBridge.lean
 ```
 
 For everything else under `CompPoly/Fields/` — the prime-field catalog, the
@@ -293,6 +295,12 @@ The additive-NTT stack is split by role rather than by one monolithic file:
 - [`../../CompPoly/Fields/Binary/AdditiveNTT/Correctness.lean`](../../CompPoly/Fields/Binary/AdditiveNTT/Correctness.lean)
   proves the generic implementations correct without requiring a concrete tower. The umbrella
   `AdditiveNTT.lean` retains the combined generic and concrete surface for existing consumers.
+- [`../../CompPoly/Fields/Binary/AdditiveNTT/Coset.lean`](../../CompPoly/Fields/Binary/AdditiveNTT/Coset.lean)
+  proves the Lin-Chung-Han transform over any coset, and its inverse, from Mathlib alone.
+  It indexes the basis by natural numbers and needs only a field of characteristic 2.
+- [`../../CompPoly/Fields/Binary/AdditiveNTT/CosetBridge.lean`](../../CompPoly/Fields/Binary/AdditiveNTT/CosetBridge.lean)
+  shows the coset objects agree with `W`, `normalizedW`, `Xⱼ`, and `additiveNTT`.
+  Results proved in either presentation can be cited in the other.
 
 When changing additive NTT, expect to read several of these files together.
 Algorithm changes often cascade into `Intermediate`, `Impl`, and `Correctness`.

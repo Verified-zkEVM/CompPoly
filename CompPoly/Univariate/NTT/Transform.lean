@@ -80,6 +80,39 @@ theorem bitRevNat_odd (bits b : Nat) :
   rw [Nat.shiftLeft_eq, one_mul]
   exact (Nat.sum_of_and_eq_zero_is_or hand).symm
 
+/-- Accumulator form of `bitRevNat`: shifts the low bits of `i` into `acc` one at a time.
+It replaces `bitRevNat` in compiled code (`bitRevNat_eq_bitRevNatFast`). -/
+def bitRevAcc : Nat → Nat → Nat → Nat
+  | 0, _, acc => acc
+  | bits + 1, i, acc => bitRevAcc bits (i / 2) (2 * acc + i % 2)
+
+theorem bitRevAcc_eq (bits : Nat) :
+    ∀ i acc, bitRevAcc bits i acc = acc * 2 ^ bits + bitRevNat bits i := by
+  induction bits with
+  | zero => intro i acc; simp [bitRevAcc, bitRevNat]
+  | succ bits ih =>
+      intro i acc
+      rw [bitRevAcc, ih]
+      obtain ⟨b, rfl | rfl⟩ := Nat.even_or_odd' i
+      · rw [bitRevNat_even]
+        have h1 : 2 * b / 2 = b := by omega
+        have h2 : 2 * b % 2 = 0 := by omega
+        rw [h1, h2, pow_succ]
+        ring
+      · rw [bitRevNat_odd]
+        have h1 : (2 * b + 1) / 2 = b := by omega
+        have h2 : (2 * b + 1) % 2 = 1 := by omega
+        rw [h1, h2, pow_succ]
+        ring
+
+/-- `bitRevNat` computed by `bitRevAcc` from an empty accumulator. -/
+def bitRevNatFast (bits i : Nat) : Nat := bitRevAcc bits i 0
+
+@[csimp] theorem bitRevNat_eq_bitRevNatFast : @bitRevNat = @bitRevNatFast := by
+  funext bits i
+  rw [bitRevNatFast, bitRevAcc_eq]
+  simp
+
 /-- Apply bit-reversal permutation to an evaluation array. -/
 def bitRevPermute (D : Domain R) (a : Array R) : Array R :=
   Array.ofFn (fun i : D.Idx => a.getD (bitRevNat D.logN i.1) 0)

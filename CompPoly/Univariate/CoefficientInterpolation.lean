@@ -26,16 +26,6 @@ namespace CPolynomial
 
 variable {F : Type*} [Field F] [BEq F] [LawfulBEq F]
 
-private theorem eval_zero (x : F) :
-    CPolynomial.eval x (0 : CPolynomial F) = 0 := by
-  rw [CPolynomial.eval_toPoly, CPolynomial.toPoly_zero, Polynomial.eval_zero]
-
-private theorem eval_add (x : F) (p q : CPolynomial F) :
-    CPolynomial.eval x (p + q) =
-      CPolynomial.eval x p + CPolynomial.eval x q := by
-  rw [CPolynomial.eval_toPoly, CPolynomial.toPoly_add, Polynomial.eval_add,
-    ← CPolynomial.eval_toPoly, ← CPolynomial.eval_toPoly]
-
 private theorem linearFactor_toPoly (x : F) :
     (CPolynomial.linearFactor x).toPoly =
       (Polynomial.X - Polynomial.C x : Polynomial F) := by

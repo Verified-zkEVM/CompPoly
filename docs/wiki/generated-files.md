@@ -9,6 +9,7 @@ This page records which paths are source of truth and which are derived outputs.
 | `CompPoly.lean` | Generated and committed | Regenerate with `./scripts/update-lib.sh` after adding, renaming, or deleting `CompPoly/**/*.lean` files. Emitted in module form: `module`, blank line, one `public import` per file. |
 | `CompPoly/Fields/*/Ext*/`*`CertData.lean` | Generated and committed | Rabin irreducibility certificate data for non-binomial extension moduli. Regenerate with `scripts/gen_rabin_certificate.py --p <p> --f=<coeffs> --lean <path> --namespace <NS>`; the exact command is recorded in each file's docstring. Do not hand-edit. Nothing in them is trusted — the kernel re-checks every step through `CompPoly.RabinCert.runChain`. |
 | `CompPoly/Fields/Binary/BF64/BaseCertificate.lean` | Generated and committed | Same generator and same contract as the `CertData.lean` files above, for the degree-64 `GF(2)` base modulus of `BF64` rather than an `Ext*/` extension modulus — hence the different path and name. Regenerate with the `--p 2` command recorded in its docstring. Do not hand-edit; the kernel re-checks every step through `CompPoly.RabinCert.runChain`. |
+| `CompPoly/Fields/Binary/Aes/Certificate.lean` | Generated and committed | Rabin certificate data for the AES modulus over `GF(2)`. Regenerate with the command in its module docstring. The lists are untrusted data. A consumer needs a kernel-checked certificate equation and soundness theorem for its polynomial. |
 | `bench/out/` | Generated, not source | Produced by `lake exe CompPolyBench`; keep reports as local or CI artifacts. The whole directory is ignored by `bench/.gitignore`, so a benchmark run leaves the working tree clean. |
 | `scripts/axiom_baseline.json` | Generated and committed | Kernel-level axiom/`sorry` regression baseline. Regenerate with `lake exe axiomsweep --update-baseline` after a built `lake build`; commit the diff in the same PR that intentionally adds or removes baselineable taint. Checked by the enforcing axiom-sweep CI step; native-compiler trust cannot be baselined. |
 | `CLAUDE.md` | Compatibility symlink | Must remain a symlink to `AGENTS.md`; do not replace it with a separate copy. |
@@ -33,14 +34,15 @@ the script runs.
 ## Rabin Certificate Data
 
 `CompPoly/Fields/KoalaBear/Ext5/QuinticCertData.lean`,
-`CompPoly/Fields/KoalaBear/Ext6/SexticCertData.lean`, and
-`CompPoly/Fields/Binary/BF64/BaseCertificate.lean` are emitted verbatim by
+`CompPoly/Fields/KoalaBear/Ext6/SexticCertData.lean`,
+`CompPoly/Fields/Binary/BF64/BaseCertificate.lean`, and
+`CompPoly/Fields/Binary/Aes/Certificate.lean` are emitted verbatim by
 [`../../scripts/gen_rabin_certificate.py`](../../scripts/gen_rabin_certificate.py). The generator
 writes a complete, compilable module — header, docstring with the regenerating command, and the
 step lists — so the workflow after changing a modulus is:
 
 ```bash
-python3 scripts/gen_rabin_certificate.py --p <prime> --f=<little-endian coeffs> \
+uv run --no-project --python 3.12 python scripts/gen_rabin_certificate.py --p <prime> --f=<little-endian coeffs> \
     --lean <path to CertData.lean> --namespace <Field>.<Name>Cert
 ./scripts/update-lib.sh
 ```
@@ -49,7 +51,7 @@ Attach the coefficients with `--f=`: a modulus with a negative leading coefficie
 `-`, which the separated `--f <coeffs>` form parses as an option name.
 
 The generator's exit code is its verdict: non-zero means the polynomial is reducible. Run
-`python3 scripts/gen_rabin_certificate.py --self-test` to check the generator itself against
+`uv run --no-project --python 3.12 python scripts/gen_rabin_certificate.py --self-test` to check the generator itself against
 known-answer cases before trusting a new certificate.
 
 The generator is not restricted to odd characteristic or to extension moduli:
@@ -76,5 +78,5 @@ consistency check.
 - `AGENTS.md` is canonical for agent-oriented tooling.
 - `CLAUDE.md` exists only so tooling that looks for that filename lands on the same
   content.
-- `python3 ./scripts/check-docs-integrity.py` is the enforcement point for the
+- `uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py` is the enforcement point for the
   symlink and for local markdown links across the handbook.

@@ -38,25 +38,13 @@ def RowSpan [Semiring F] [BEq F] [LawfulBEq F]
 
 private theorem C_one_mul [Semiring F] [BEq F] [LawfulBEq F]
     (p : CPolynomial F) :
-    CPolynomial.C (1 : F) * p = p := by
-  apply (CPolynomial.eq_iff_coeff).2
-  intro i
-  have hpoly := congrArg (fun P : Polynomial F ↦ P.coeff i)
-    (CPolynomial.toPoly_mul (CPolynomial.C (1 : F)) p)
-  rw [CPolynomial.C_toPoly] at hpoly
-  rw [CPolynomial.coeff_toPoly, CPolynomial.coeff_toPoly]
-  simpa using hpoly
+    CPolynomial.C (1 : F) * p = p :=
+  CPolynomial.toPoly_inj.mp (by simp)
 
 private theorem C_zero_mul [Semiring F] [BEq F] [LawfulBEq F]
     (p : CPolynomial F) :
-    CPolynomial.C (0 : F) * p = 0 := by
-  apply (CPolynomial.eq_iff_coeff).2
-  intro i
-  have hpoly := congrArg (fun P : Polynomial F ↦ P.coeff i)
-    (CPolynomial.toPoly_mul (CPolynomial.C (0 : F)) p)
-  rw [CPolynomial.C_toPoly] at hpoly
-  rw [CPolynomial.coeff_toPoly, CPolynomial.coeff_toPoly]
-  simpa [CPolynomial.toPoly_zero] using hpoly
+    CPolynomial.C (0 : F) * p = 0 :=
+  CPolynomial.toPoly_inj.mp (by simp)
 
 private theorem rowGet_zeroRow [Semiring F] [BEq F] [LawfulBEq F]
     (width j : Nat) :

@@ -6,7 +6,7 @@ Authors: Valerii Huhnin
 module
 
 public import CompPolyBench.Common
-public import CompPoly.Multivariate.CMvPolynomial
+public import CompPoly.Multivariate.Basic
 
 /-!
 # Multivariate Benchmarks

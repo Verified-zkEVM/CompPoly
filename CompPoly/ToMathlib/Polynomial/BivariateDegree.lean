@@ -540,7 +540,7 @@ lemma evalY_eq_evalX_swap (y : F) (f : F[X][Y]) :
     _ = aeval (Polynomial.C y) f := by
       exact eval_eq_aeval
     _ = Polynomial.mapAlgHom (aeval y : F[X] →ₐ[F] F) (Polynomial.Bivariate.swap f) := by
-      exact aveal_eq_map_swap y f
+      exact aeval_eq_map_swap y f
     _ = (Polynomial.Bivariate.swap f).map (Polynomial.evalRingHom y) := by
       exact mapAlgHom_eq_map
     _ = Polynomial.Bivariate.evalX y (Polynomial.Bivariate.swap f) := by

@@ -7,10 +7,11 @@ module
 
 public import CompPoly.Multivariate.Operations
 public import CompPoly.Multivariate.MvPolyEquiv
+public import CompPoly.Multivariate.MvPolyEquiv.Instances
 public import Mathlib.RingTheory.MvPolynomial.Basic
 
 /-!
-# Lemmas for `CMvPolynomial.restrictBy`, `restrictTotalDegree`, and `restrictDegree`
+# Lemmas for `CMvPolynomial.restrictBy`, `restrictTotalDegreeOf`, and `restrictDegreeOf`
 
 Degree-bounded restriction of multivariate polynomials: filtering monomials by total degree
 or per-variable degree bounds.
@@ -55,74 +56,75 @@ lemma coeff_restrictBy (keep : CMvMonomial n → Prop) [DecidablePred keep]
 
 /-- Coeff at `m`: `p.coeff m` if `m.totalDegree ≤ d`, else `0`. -/
 @[simp]
-lemma coeff_restrictTotalDegree (d : ℕ) (m : CMvMonomial n) (p : CMvPolynomial n R) :
-    (CMvPolynomial.restrictTotalDegree d p).coeff m =
+lemma coeff_restrictTotalDegreeOf (d : ℕ) (m : CMvMonomial n) (p : CMvPolynomial n R) :
+    (restrictTotalDegreeOf d p).coeff m =
       if m.totalDegree ≤ d then p.coeff m else 0 := by
-  simpa [CMvPolynomial.restrictTotalDegree] using
+  simpa [restrictTotalDegreeOf] using
     (coeff_restrictBy (keep := fun m => m.totalDegree ≤ d) m p)
 
-/-- Coefficient of `restrictDegree d p` at `m`: `p.coeff m` if `∀ i, m.degreeOf i ≤ d`, else `0`. -/
+/-- Coefficient of `restrictDegreeOf d p` at `m`: `p.coeff m` if `∀ i, m.degreeOf i ≤ d`,
+else `0`. -/
 @[simp]
-lemma coeff_restrictDegree (d : ℕ) (m : CMvMonomial n) (p : CMvPolynomial n R) :
-    (CMvPolynomial.restrictDegree d p).coeff m =
+lemma coeff_restrictDegreeOf (d : ℕ) (m : CMvMonomial n) (p : CMvPolynomial n R) :
+    (restrictDegreeOf d p).coeff m =
       if ∀ i : Fin n, m.degreeOf i ≤ d then p.coeff m else 0 := by
-  simpa [CMvPolynomial.restrictDegree] using
+  simpa [restrictDegreeOf] using
     (coeff_restrictBy (keep := fun m => ∀ i : Fin n, m.degreeOf i ≤ d) m p)
 
-/-- When `m.totalDegree ≤ d`, coeff at `m` is unchanged by `restrictTotalDegree d`. -/
-lemma coeff_restrictTotalDegree_eq_self_of_le {d : ℕ} {m : CMvMonomial n}
+/-- When `m.totalDegree ≤ d`, coeff at `m` is unchanged by `restrictTotalDegreeOf d`. -/
+lemma coeff_restrictTotalDegreeOf_eq_self_of_le {d : ℕ} {m : CMvMonomial n}
     {p : CMvPolynomial n R} (h : m.totalDegree ≤ d) :
-    (CMvPolynomial.restrictTotalDegree d p).coeff m = p.coeff m := by
-  simp [coeff_restrictTotalDegree, h]
+    (restrictTotalDegreeOf d p).coeff m = p.coeff m := by
+  simp [coeff_restrictTotalDegreeOf, h]
 
-/-- When `d < m.totalDegree`, coeff at `m` is `0` in `restrictTotalDegree d p`. -/
-lemma coeff_restrictTotalDegree_eq_zero_of_lt {d : ℕ} {m : CMvMonomial n}
+/-- When `d < m.totalDegree`, coeff at `m` is `0` in `restrictTotalDegreeOf d p`. -/
+lemma coeff_restrictTotalDegreeOf_eq_zero_of_lt {d : ℕ} {m : CMvMonomial n}
     {p : CMvPolynomial n R} (h : d < m.totalDegree) :
-    (CMvPolynomial.restrictTotalDegree d p).coeff m = 0 := by
-  simp [coeff_restrictTotalDegree, Nat.not_le_of_lt h]
+    (restrictTotalDegreeOf d p).coeff m = 0 := by
+  simp [coeff_restrictTotalDegreeOf, Nat.not_le_of_lt h]
 
-/-- When `∀ i, m.degreeOf i ≤ d`, coeff at `m` is unchanged by `restrictDegree d`. -/
-lemma coeff_restrictDegree_eq_self_of_le {d : ℕ} {m : CMvMonomial n}
+/-- When `∀ i, m.degreeOf i ≤ d`, coeff at `m` is unchanged by `restrictDegreeOf d`. -/
+lemma coeff_restrictDegreeOf_eq_self_of_le {d : ℕ} {m : CMvMonomial n}
     {p : CMvPolynomial n R} (h : ∀ i : Fin n, m.degreeOf i ≤ d) :
-    (CMvPolynomial.restrictDegree d p).coeff m = p.coeff m := by
-  simp [coeff_restrictDegree, h]
+    (restrictDegreeOf d p).coeff m = p.coeff m := by
+  simp [coeff_restrictDegreeOf, h]
 
-/-- When `¬(∀ i, m.degreeOf i ≤ d)`, coeff at `m` is `0` in `restrictDegree d p`. -/
-lemma coeff_restrictDegree_eq_zero_of_not_le {d : ℕ} {m : CMvMonomial n}
+/-- When `¬(∀ i, m.degreeOf i ≤ d)`, coeff at `m` is `0` in `restrictDegreeOf d p`. -/
+lemma coeff_restrictDegreeOf_eq_zero_of_not_le {d : ℕ} {m : CMvMonomial n}
     {p : CMvPolynomial n R} (h : ¬ (∀ i : Fin n, m.degreeOf i ≤ d)) :
-    (CMvPolynomial.restrictDegree d p).coeff m = 0 := by
-  simp [coeff_restrictDegree, h]
+    (restrictDegreeOf d p).coeff m = 0 := by
+  simp [coeff_restrictDegreeOf, h]
 
-/-- Monomials in `restrictTotalDegree d p` have `totalDegree ≤ d`. -/
-lemma totalDegree_le_of_mem_monomials_restrictTotalDegree {d : ℕ} {m : CMvMonomial n}
+/-- Monomials in `restrictTotalDegreeOf d p` have `totalDegree ≤ d`. -/
+lemma totalDegree_le_of_mem_monomials_restrictTotalDegreeOf {d : ℕ} {m : CMvMonomial n}
     {p : CMvPolynomial n R}
-    (hm : m ∈ Lawful.monomials (CMvPolynomial.restrictTotalDegree d p)) :
+    (hm : m ∈ Lawful.monomials (restrictTotalDegreeOf d p)) :
     m.totalDegree ≤ d := by
-  have hm' : m ∈ CMvPolynomial.restrictTotalDegree d p := (Lawful.mem_monomials_iff).1 hm
-  have hcoeff_ne_zero : (CMvPolynomial.restrictTotalDegree d p).coeff m ≠ 0 := by
+  have hm' : m ∈ restrictTotalDegreeOf d p := (Lawful.mem_monomials_iff).1 hm
+  have hcoeff_ne_zero : (restrictTotalDegreeOf d p).coeff m ≠ 0 := by
     simpa [CMvPolynomial.coeff] using
       (Lawful.getD_getElem?_ne_zero_of_mem
-        (p := CMvPolynomial.restrictTotalDegree d p) (m := m) hm')
+        (p := restrictTotalDegreeOf d p) (m := m) hm')
   by_cases hdeg : m.totalDegree ≤ d
   · exact hdeg
-  · have hcoeff_zero : (CMvPolynomial.restrictTotalDegree d p).coeff m = 0 := by
-      simp [coeff_restrictTotalDegree, hdeg]
+  · have hcoeff_zero : (restrictTotalDegreeOf d p).coeff m = 0 := by
+      simp [coeff_restrictTotalDegreeOf, hdeg]
     exact False.elim (hcoeff_ne_zero hcoeff_zero)
 
-/-- Monomials in `restrictDegree d p` have `degreeOf i ≤ d` for each variable `i`. -/
-lemma degreeOf_le_of_mem_monomials_restrictDegree {d : ℕ} {m : CMvMonomial n}
+/-- Monomials in `restrictDegreeOf d p` have `degreeOf i ≤ d` for each variable `i`. -/
+lemma degreeOf_le_of_mem_monomials_restrictDegreeOf {d : ℕ} {m : CMvMonomial n}
     {p : CMvPolynomial n R}
-    (hm : m ∈ Lawful.monomials (CMvPolynomial.restrictDegree d p)) :
+    (hm : m ∈ Lawful.monomials (restrictDegreeOf d p)) :
     ∀ i : Fin n, m.degreeOf i ≤ d := by
-  have hm' : m ∈ CMvPolynomial.restrictDegree d p := (Lawful.mem_monomials_iff).1 hm
-  have hcoeff_ne_zero : (CMvPolynomial.restrictDegree d p).coeff m ≠ 0 := by
+  have hm' : m ∈ restrictDegreeOf d p := (Lawful.mem_monomials_iff).1 hm
+  have hcoeff_ne_zero : (restrictDegreeOf d p).coeff m ≠ 0 := by
     simpa [CMvPolynomial.coeff] using
       (Lawful.getD_getElem?_ne_zero_of_mem
-        (p := CMvPolynomial.restrictDegree d p) (m := m) hm')
+        (p := restrictDegreeOf d p) (m := m) hm')
   by_cases hdeg : ∀ i : Fin n, m.degreeOf i ≤ d
   · exact hdeg
-  · have hcoeff_zero : (CMvPolynomial.restrictDegree d p).coeff m = 0 := by
-      simp [coeff_restrictDegree, hdeg]
+  · have hcoeff_zero : (restrictDegreeOf d p).coeff m = 0 := by
+      simp [coeff_restrictDegreeOf, hdeg]
     exact False.elim (hcoeff_ne_zero hcoeff_zero)
 
 /-- `List.ofFn s` sum equals `∑ i, s i`. -/
@@ -174,109 +176,149 @@ private lemma totalDegree_eq_finsupp_sum {n : ℕ} (m : CMvMonomial n) :
       simp
   simpa [CMvMonomial.ofFinsupp_toFinsupp] using hof
 
-/-- `restrictTotalDegree d p` has `totalDegree ≤ d`. -/
-lemma totalDegree_restrictTotalDegree_le
+/-- `restrictTotalDegreeOf d p` has `totalDegree ≤ d`. -/
+lemma totalDegree_restrictTotalDegreeOf_le
     {R' : Type*} [CommSemiring R'] [BEq R'] [LawfulBEq R']
     (d : ℕ) (p : CMvPolynomial n R') :
-    (CMvPolynomial.restrictTotalDegree d p).totalDegree ≤ d := by
+    (restrictTotalDegreeOf d p).totalDegree ≤ d := by
   classical
   unfold CMvPolynomial.totalDegree
   refine Finset.sup_le ?_
   intro s hs
   have hs' : s ∈ List.map CMvMonomial.toFinsupp
-      (Lawful.monomials (CMvPolynomial.restrictTotalDegree d p)) := by
+      (Lawful.monomials (restrictTotalDegreeOf d p)) := by
     exact (List.mem_toFinset).1 hs
   rcases (List.mem_map).1 hs' with ⟨m, hm, rfl⟩
   have hmdeg : m.totalDegree ≤ d :=
-    totalDegree_le_of_mem_monomials_restrictTotalDegree (d := d) (p := p) hm
+    totalDegree_le_of_mem_monomials_restrictTotalDegreeOf (d := d) (p := p) hm
   simpa [totalDegree_eq_finsupp_sum (m := m)] using hmdeg
 
-/-- `restrictDegree d p` has `degreeOf i ≤ d` for each variable `i`. -/
-lemma degreeOf_restrictDegree_le (d : ℕ) (p : CMvPolynomial n R) (i : Fin n) :
-    (CMvPolynomial.restrictDegree d p).degreeOf i ≤ d := by
+/-- `restrictDegreeOf d p` has `degreeOf i ≤ d` for each variable `i`. -/
+lemma degreeOf_restrictDegreeOf_le (d : ℕ) (p : CMvPolynomial n R) (i : Fin n) :
+    (restrictDegreeOf d p).degreeOf i ≤ d := by
   unfold CMvPolynomial.degreeOf
   refine Finset.sup_le ?_
   intro m hm
-  exact degreeOf_le_of_mem_monomials_restrictDegree
+  exact degreeOf_le_of_mem_monomials_restrictDegreeOf
     (d := d) (p := p) ((List.mem_toFinset).1 hm) i
 
-/-- `restrictTotalDegree d 0 = 0`. -/
+/-- `restrictTotalDegreeOf d 0 = 0`. -/
 @[simp]
-lemma restrictTotalDegree_zero (d : ℕ) :
-    CMvPolynomial.restrictTotalDegree d (0 : CMvPolynomial n R) = 0 := by
+lemma restrictTotalDegreeOf_zero (d : ℕ) :
+    restrictTotalDegreeOf d (0 : CMvPolynomial n R) = 0 := by
   ext m
   simpa [CMvPolynomial.coeff] using
-    (coeff_restrictTotalDegree (d := d) (m := m) (p := (0 : CMvPolynomial n R)))
+    (coeff_restrictTotalDegreeOf (d := d) (m := m) (p := (0 : CMvPolynomial n R)))
 
-/-- `restrictDegree d 0 = 0`. -/
+/-- `restrictDegreeOf d 0 = 0`. -/
 @[simp]
-lemma restrictDegree_zero (d : ℕ) :
-    CMvPolynomial.restrictDegree d (0 : CMvPolynomial n R) = 0 := by
+lemma restrictDegreeOf_zero (d : ℕ) :
+    restrictDegreeOf d (0 : CMvPolynomial n R) = 0 := by
   ext m
   simpa [CMvPolynomial.coeff] using
-    (coeff_restrictDegree (d := d) (m := m) (p := (0 : CMvPolynomial n R)))
+    (coeff_restrictDegreeOf (d := d) (m := m) (p := (0 : CMvPolynomial n R)))
 
-/-- Double `restrictTotalDegree` equals `restrictTotalDegree (min d d')`. -/
+/-- Double `restrictTotalDegreeOf` equals `restrictTotalDegreeOf (min d d')`. -/
 @[simp]
-lemma restrictTotalDegree_restrictTotalDegree (d d' : ℕ) (p : CMvPolynomial n R) :
-    CMvPolynomial.restrictTotalDegree d (CMvPolynomial.restrictTotalDegree d' p) =
-      CMvPolynomial.restrictTotalDegree (min d d') p := by
+lemma restrictTotalDegreeOf_restrictTotalDegreeOf (d d' : ℕ) (p : CMvPolynomial n R) :
+    restrictTotalDegreeOf d (restrictTotalDegreeOf d' p) =
+      restrictTotalDegreeOf (min d d') p := by
   ext m
   by_cases h₁ : m.totalDegree ≤ d <;> by_cases h₂ : m.totalDegree ≤ d' <;>
-    simp [coeff_restrictTotalDegree, h₁, h₂]
+    simp [coeff_restrictTotalDegreeOf, h₁, h₂]
 
-/-- Double `restrictDegree` equals `restrictDegree (min d d')`. -/
+/-- Double `restrictDegreeOf` equals `restrictDegreeOf (min d d')`. -/
 @[simp]
-lemma restrictDegree_restrictDegree (d d' : ℕ) (p : CMvPolynomial n R) :
-    CMvPolynomial.restrictDegree d (CMvPolynomial.restrictDegree d' p) =
-      CMvPolynomial.restrictDegree (min d d') p := by
+lemma restrictDegreeOf_restrictDegreeOf (d d' : ℕ) (p : CMvPolynomial n R) :
+    restrictDegreeOf d (restrictDegreeOf d' p) =
+      restrictDegreeOf (min d d') p := by
   ext m
   by_cases h₁ : ∀ i : Fin n, m.degreeOf i ≤ d
   · by_cases h₂ : ∀ i : Fin n, m.degreeOf i ≤ d'
     · have hmin : ∀ i : Fin n, m.degreeOf i ≤ min d d' := by
         intro i
         exact (le_min_iff.mpr ⟨h₁ i, h₂ i⟩)
-      simp [coeff_restrictDegree, h₁, h₂, hmin]
+      simp [coeff_restrictDegreeOf, h₁, h₂, hmin]
     · have hmin : ¬ (∀ i : Fin n, m.degreeOf i ≤ min d d') := by
         intro h
         exact h₂ (fun i => (le_min_iff.mp (h i)).2)
-      simp [coeff_restrictDegree, h₁, h₂]
+      simp [coeff_restrictDegreeOf, h₁, h₂]
   · have hmin : ¬ (∀ i : Fin n, m.degreeOf i ≤ min d d') := by
       intro h
       exact h₁ (fun i => (le_min_iff.mp (h i)).1)
     have hpair : ¬ (∀ i : Fin n, m.degreeOf i ≤ d ∧ m.degreeOf i ≤ d') := by
       intro h
       exact h₁ (fun i => (h i).1)
-    simp [coeff_restrictDegree, h₁, hpair]
+    simp [coeff_restrictDegreeOf, h₁, hpair]
 
-/-- `restrictTotalDegree d` and `restrictDegree d'` commute. -/
+/-- `restrictTotalDegreeOf d` and `restrictDegreeOf d'` commute. -/
 @[simp]
-lemma restrictTotalDegree_restrictDegree_comm (d d' : ℕ) (p : CMvPolynomial n R) :
-    CMvPolynomial.restrictTotalDegree d (CMvPolynomial.restrictDegree d' p) =
-      CMvPolynomial.restrictDegree d' (CMvPolynomial.restrictTotalDegree d p) := by
+lemma restrictTotalDegreeOf_restrictDegreeOf_comm (d d' : ℕ) (p : CMvPolynomial n R) :
+    restrictTotalDegreeOf d (CMvPolynomial.restrictDegreeOf d' p) =
+      restrictDegreeOf d' (restrictTotalDegreeOf d p) := by
   ext m
   by_cases h₁ : m.totalDegree ≤ d <;> by_cases h₂ : ∀ i : Fin n, m.degreeOf i ≤ d' <;>
-    simp [coeff_restrictTotalDegree, coeff_restrictDegree, h₁, h₂]
+    simp [coeff_restrictTotalDegreeOf, coeff_restrictDegreeOf, h₁, h₂]
 
 /-! ### Correspondence with Mathlib's degree-bounded submodules -/
 
-/-- `fromCMvPolynomial (restrictTotalDegree d p) ∈ MvPolynomial.restrictTotalDegree (Fin n) R d`. -/
-theorem fromCMvPolynomial_restrictTotalDegree_mem {R : Type*} [CommSemiring R] [BEq R]
+/-- `fromCMvPolynomial (restrictTotalDegreeOf d p) ∈
+MvPolynomial.restrictTotalDegree (Fin n) R d`. -/
+theorem fromCMvPolynomial_restrictTotalDegreeOf_mem {R : Type*} [CommSemiring R] [BEq R]
     [LawfulBEq R] (d : ℕ) (p : CMvPolynomial n R) :
-    fromCMvPolynomial (CMvPolynomial.restrictTotalDegree d p) ∈
+    fromCMvPolynomial (restrictTotalDegreeOf d p) ∈
       MvPolynomial.restrictTotalDegree (Fin n) R d := by
   rw [MvPolynomial.mem_restrictTotalDegree, ← totalDegree_equiv (S := R)]
-  exact totalDegree_restrictTotalDegree_le d p
+  exact totalDegree_restrictTotalDegreeOf_le d p
 
-/-- `fromCMvPolynomial (restrictDegree d p) ∈ MvPolynomial.restrictDegree (Fin n) R d`. -/
-theorem fromCMvPolynomial_restrictDegree_mem {R : Type*} [CommSemiring R] [BEq R]
+/-- `fromCMvPolynomial (restrictDegreeOf d p) ∈ MvPolynomial.restrictDegree (Fin n) R d`. -/
+theorem fromCMvPolynomial_restrictDegreeOf_mem {R : Type*} [CommSemiring R] [BEq R]
     [LawfulBEq R] (d : ℕ) (p : CMvPolynomial n R) :
-    fromCMvPolynomial (CMvPolynomial.restrictDegree d p) ∈
+    fromCMvPolynomial (restrictDegreeOf d p) ∈
       MvPolynomial.restrictDegree (Fin n) R d := by
   rw [MvPolynomial.mem_restrictDegree_iff_sup]
   intro i
   rw [← MvPolynomial.degreeOf_def,
-    ← congrFun (degreeOf_equiv (S := R) (p := CMvPolynomial.restrictDegree d p)) i]
-  exact degreeOf_restrictDegree_le d p i
+    ← congrFun (degreeOf_equiv (S := R) (p := restrictDegreeOf d p)) i]
+  exact degreeOf_restrictDegreeOf_le d p i
+
+/-- The `Submodule` of polynomials all of whose support monomials have every variable's
+exponent at most `degree`. -/
+def restrictDegree (R : Type v) [CommSemiring R] [BEq R] [LawfulBEq R] (n degree : ℕ) :
+    Submodule R (CMvPolynomial n R) where
+  carrier := {p | ∀ σ ∈ p.support, ∀ i, σ i ≤ degree}
+  add_mem' := by
+    intros a b ha hb
+    simp only [Set.mem_ofPred_eq] at ha hb ⊢
+    intros σ hσ i
+    rw [CMvPolynomial.support_def, coeff_add] at hσ
+    have hσ : coeff (CMvMonomial.ofFinsupp σ) a ≠ 0 ∨ coeff (CMvMonomial.ofFinsupp σ) b ≠ 0 := by
+      by_contra h
+      simp only [ne_eq, not_or, not_not] at h
+      rw [h.1, h.2] at hσ
+      simp at hσ
+    rcases hσ with hσ | hσ
+    · rw [←CMvPolynomial.support_def] at hσ
+      exact ha σ hσ i
+    · rw [←CMvPolynomial.support_def] at hσ
+      exact hb σ hσ i
+  zero_mem' := by
+    simp
+  smul_mem' := by
+    intros c x hx
+    simp only [support_def, ne_eq, Set.mem_ofPred_eq, smul_def] at hx ⊢
+    intros σ i
+    refine hx σ (fun hzero => i ?_)
+    have hceq : (C c * x).coeff (CMvMonomial.ofFinsupp σ) =
+        c * x.coeff (CMvMonomial.ofFinsupp σ) := by
+      simp only [← coeff_eq, CPoly.map_mul, fromCMvPolynomial_C, MvPolynomial.coeff_C_mul]
+    rw [hceq, hzero, mul_zero]
+
+/-- `p ∈ restrictDegree R n degree` iff every variable's exponent in every support
+monomial of `p` is at most `degree`. -/
+@[simp]
+lemma restrictDegree_elem {R : Type v} [CommSemiring R] [BEq R] [LawfulBEq R] {n degree : ℕ} :
+    ∀ p, p ∈ restrictDegree R n degree ↔ ∀ σ ∈ p.support, ∀ i, σ i ≤ degree := by
+  simp [restrictDegree]
 
 end CPoly

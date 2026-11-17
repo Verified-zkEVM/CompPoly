@@ -47,9 +47,7 @@ def linearYDivisor [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R]
 theorem linearYDivisor_toPoly [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]
     (f : CPolynomial R) :
     CPolynomial.toPoly (linearYDivisor f) = Polynomial.X - Polynomial.C f := by
-  simpa [linearYDivisor, CPolynomial.X_toPoly, CPolynomial.C_toPoly] using
-    (CPolynomial.toPoly_sub (p := (CPolynomial.X : CPolynomial (CPolynomial R)))
-      (q := CPolynomial.C f))
+  simp [linearYDivisor]
 
 /-- The linear divisor `Y - f` is monic. -/
 theorem linearYDivisor_monic [CommRing R] [BEq R] [LawfulBEq R] [Nontrivial R] [DecidableEq R]

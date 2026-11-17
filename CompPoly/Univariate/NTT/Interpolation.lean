@@ -204,6 +204,41 @@ theorem inverseImpl_evalOnDomain_eq (D : Domain R) (values : Array R) :
   exact inverseSpec_evalOnDomain_eq D values
 
 end Inverse
+
+omit [Field R] in
+/-- Loading a domain-sized vector back from its array is the identity. -/
+@[simp] theorem loadNaturalVector_toArray [Field R] (D : Domain R) (values : Vector R D.n) :
+    loadNaturalVector D values.toArray = values := by
+  ext i hi
+  simp [loadNaturalVector]
+
+/-- Interpolate natural-order values on the NTT domain through the inverse transform.
+
+This is `CLagrange.interpolatePow D.omega` (`interpolate_eq_interpolatePow`) computed with
+`O(n log n)` field operations rather than the Lagrange formula's `O(n²)` per basis
+polynomial. -/
+def interpolate [BEq R] [LawfulBEq R] (D : Domain R) (values : Vector R D.n) :
+    CPolynomial R :=
+  let raw := Inverse.inverseImpl D values.toArray
+  ⟨raw.trim, CPolynomial.Raw.Trim.isCanonical_trim raw⟩
+
+/-- NTT interpolation is Lagrange interpolation on the powers of the domain root. -/
+theorem interpolate_eq_interpolatePow [BEq R] [LawfulBEq R]
+    (D : Domain R) (values : Vector R D.n) :
+    interpolate D values = CLagrange.interpolatePow D.omega values := by
+  apply Subtype.ext
+  simpa [interpolate] using Inverse.inverseImpl_interpolatePow_eq D values.toArray
+
+/-- NTT interpolation takes each value at its domain node. -/
+theorem eval_interpolate_node [BEq R] [LawfulBEq R]
+    (D : Domain R) (values : Vector R D.n) (k : D.Idx) :
+    (interpolate D values).eval (D.node k) = values.get k := by
+  have h := Inverse.inverseImpl_eval_node_eq D values.toArray k
+  change CPolynomial.Raw.eval _ (CPolynomial.Raw.trim (Inverse.inverseImpl D values.toArray)) = _
+  rw [← CPolynomial.Raw.eval_toPoly_eq_eval, CPolynomial.Raw.toPoly_trim,
+    CPolynomial.Raw.eval_toPoly_eq_eval]
+  simpa [Vector.get] using h
+
 end NTT
 end CPolynomial
 end CompPoly

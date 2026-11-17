@@ -108,6 +108,27 @@ def eval₂Hom (f : R →+* S) (x : S) : CPolynomial R →+* S where
     eval₂Hom f x (CPolynomial.X) = x := by
   rw [eval₂Hom_apply, eval₂_toPoly, X_toPoly, Polynomial.eval₂_X]
 
+/-- Evaluation at a point, bundled as a ring homomorphism. This is what gives evaluation the
+`map_*` API of a `RingHom`, and in particular `map_sum` and `map_prod`. -/
+def evalHom (x : R) : CPolynomial R →+* R := eval₂Hom (RingHom.id R) x
+
+@[simp] theorem evalHom_apply (x : R) (p : CPolynomial R) : evalHom x p = p.eval x :=
+  (eval_eq_eval₂ x p).symm
+
+/-- Evaluation commutes with finite sums. -/
+@[simp] theorem eval_sum {ι : Type*} (s : Finset ι) (f : ι → CPolynomial R) (x : R) :
+    (∑ i ∈ s, f i).eval x = ∑ i ∈ s, (f i).eval x := by
+  have h := map_sum (evalHom x) f s
+  simp only [evalHom_apply] at h
+  exact h
+
+/-- Evaluation commutes with finite products. -/
+@[simp] theorem eval_prod {ι : Type*} (s : Finset ι) (f : ι → CPolynomial R) (x : R) :
+    (∏ i ∈ s, f i).eval x = ∏ i ∈ s, (f i).eval x := by
+  have h := map_prod (evalHom x) f s
+  simp only [evalHom_apply] at h
+  exact h
+
 section Map
 
 variable [BEq S] [LawfulBEq S] [Nontrivial S]

@@ -59,15 +59,6 @@ theorem cpoly_coeff_natDegree_ne_zero_of_ne_zero {R : Type*}
   rw [← CPolynomial.leadingCoeff_toPoly p, CPolynomial.leadingCoeff_eq_coeff_natDegree] at hlead
   exact hlead
 
-theorem cpoly_coeff_eq_zero_of_natDegree_lt {R : Type*} [Zero R]
-    (p : CPolynomial R) {i : Nat} (hi : p.natDegree < i) :
-    p.coeff i = 0 := by
-  by_cases hp : p = 0
-  · rw [hp]
-    exact CPolynomial.coeff_zero i
-  · have hsize := cpoly_size_eq_natDegree_succ_of_ne_zero hp
-    exact cpoly_coeff_eq_zero_of_size_le p (by omega)
-
 theorem cpoly_coeff_dropXPower {R : Type*} [Zero R]
     (p : CPolynomial R) (n i : Nat) :
     (CPolynomial.dropXPower p n).coeff i = p.coeff (i + n) := by

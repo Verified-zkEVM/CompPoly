@@ -138,7 +138,34 @@ With the `Algebra` instance in place, ordinary Mathlib machinery — `aeval`, sc
 
 **Still missing**, and the natural next step: tower support. There is no `AlgebraTower` instance
 (`CompPoly/Data/RingTheory/AlgebraTower.lean`), so `F ⊂ Ext F 2 ⊂ Ext F 4` does not compose and
-the Mersenne31 CM31/QM31 Circle-STARK stack is out of reach.
+the full Mersenne31 CM31/QM31 extension-tower stack remains unavailable.
+
+### Mersenne31 Circle Group
+
+The base-field circle group in
+[`Mersenne31/Circle.lean`](../../CompPoly/Fields/Mersenne31/Circle.lean) does not need that
+extension tower. It provides `AddCommGroup Point`, binary natural and integer scalar
+multiplication, the exact-order theorem `addOrderOf_generator`, and the additive
+homomorphism `CirclePointIndex.toPointHom`. The order proof uses a kernel-checked
+30-step doubling certificate to establish the half-order point, then Mathlib's
+prime-power order criterion. Executable guards remain regression checks, not proof substitutes.
+
+Regenerate the certificate declaration with
+`uv run --no-project --python 3.12 python scripts/gen_mersenne31_circle_certificate.py`, or check the current declaration
+with `uv run --no-project --python 3.12 python scripts/gen_mersenne31_circle_certificate.py --check`. The script is
+outside the trusted code base; the kernel checks every supplied coordinate. The
+[Fields module index](../../CompPoly/Fields/README.md) also links this API.
+
+`OnCircle x y` has a computable `Decidable` instance, so concrete point fixtures can
+use `by decide`. `CirclePointIndex.subgroupGen logSize h` requires a proof
+`h : logSize ≤ logOrder`; out-of-range sizes are rejected instead of silently
+truncating the exponent. Coset constructors pass their existing bounds to it.
+
+`Coset` and `CircleDomain` still describe indexing shapes: arbitrary steps are allowed,
+points may repeat, and a half coset may overlap its conjugate. Their `size` counts index
+positions, not necessarily distinct points. The follow-up must specify validity conditions
+and prove coset point distinctness, disjointness of domain halves, and the corresponding
+cardinality theorems. These claims cannot be made for all current structure values.
 
 ## Irreducibility: Rabin, Collapsed
 
@@ -310,6 +337,10 @@ So prefer, in order: a cyclotomic `Φₙ` when one has the right degree; then a 
 4. Register `instance : Fact (Irreducible ...)`, define the `abbrev` as
    `Ext ...Params.toExtensionParams`, and route the `Fact` through `toExtensionParams_poly` — see
    `KoalaBear/Ext4.lean`.
+5. Serialization comes for free: `Ext P` over any base with a `ByteCodec` is its coefficient
+   vector, `P.d * width` bytes (`Extension/Bytes.lean`). Add a `#guard` with one byte vector to
+   the mirrored test module and nothing else. A new *carrier* is different — see the note
+   after the next checklist.
 
 That is about 60 lines.
 
@@ -318,7 +349,7 @@ That is about 60 lines.
 1. Pick a monic irreducible `f` (confirm with `scripts/gen_rabin_certificate.py`, which
    exits nonzero if `f` is reducible).
 2. Generate the certificate module:
-   `python3 scripts/gen_rabin_certificate.py --p <p> --f=<coeffs> --lean <path> --namespace <NS>`.
+   `uv run --no-project --python 3.12 python scripts/gen_rabin_certificate.py --p <p> --f=<coeffs> --lean <path> --namespace <NS>`.
 3. Write the irreducibility wrapper: `toPoly p fL = f`, `natDegree`, `f ≠ 0`, then the
    chain/Bézout `rfl` checks and the assembly through
    `irreducible_of_rabin_prime_degree` (prime `d`, see
@@ -334,8 +365,15 @@ That is about 60 lines.
 4. Write the `ExtensionParams` (lower coefficients of `f`, little-endian) and prove
    `...Params.poly = f`; register the `Fact` and define the `abbrev` — see
    `KoalaBear/Ext5.lean` (supporting cert/proof files under `KoalaBear/Ext5/`).
+5. Serialization comes for free, as for a binomial extension; add the one `#guard`.
 
 That is the generated data plus about 200 hand-written lines.
+
+A new **carrier** does not get its codec for free: a Montgomery-backed `Ext`, or a fast prime
+field for a new base, must add `CanonicalNat`/`ByteCodec` instances and prove it encodes
+identically to the spec field (`toBytes (ofField x) = toBytes x`), as
+`Montgomery/Native32Bytes.lean` does. The rule and the checklist are in
+[`serialization.md`](serialization.md) and `CONTRIBUTING.md` ("New Types Owe a Codec").
 
 ## Representation And Computability
 

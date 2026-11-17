@@ -30,6 +30,7 @@ def reduceQuotient (negInv : UInt32) (p x : UInt64) : UInt32 :=
   ((x + (x.toUInt32 * negInv).toUInt64 * p) >>> 32).toUInt32
 
 /-- Conditional subtraction of the modulus in 32-bit Montgomery reduction. -/
+@[inline]
 def conditionalSubtract (p32 : UInt32) (u : UInt32) : UInt32 :=
   if u < p32 then u else u - p32
 

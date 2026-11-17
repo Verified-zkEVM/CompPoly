@@ -19,7 +19,7 @@ table, it goes stale as the code it measures gets faster, and choosing one for a
 new benchmark is guesswork that has to be redone on every machine. A budget is
 comparable, and the harness can work the count out for itself.
 
-The scheme is the one `BENCHMARKING.md` §6.3 describes:
+The scheme is the one `docs/bench-audit-2026.md` §6.3 describes:
 
 1. a geometric ramp times 1, 2, 4, … iterations until `warmupNanos` of work has
    accumulated, and doubles as the benchmark's warmup;

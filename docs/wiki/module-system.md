@@ -60,6 +60,11 @@ Definitions implemented with a `where` recursion may require targeted `@[expose]
 when a separate correctness module refers to the generated `.go` declaration by
 name. Do not restore file-wide exposure for this case.
 
+An exported theorem written `:= rfl` implicitly promises a definitional equality,
+which requires the relevant definition bodies to be exposed. Use `:= by rfl` for
+an ordinary equality over opaque definitions: downstream code can still use the
+theorem with `rw` or `simp` without gaining access to the implementation bodies.
+
 ## Test Files And `meta`
 
 `#guard` and `#eval` run compiled code *during elaboration*, so any module whose

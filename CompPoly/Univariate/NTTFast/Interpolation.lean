@@ -53,6 +53,29 @@ theorem inverseImpl_evalOnDomain_eq
   rw [inverseImpl_correct P hP values]
   exact NTT.Inverse.inverseSpec_evalOnDomain_eq P.domain values
 
+/-- Interpolate natural-order values on the plan's domain with the cached inverse transform.
+
+The planned counterpart of `NTT.interpolate`: for a well-formed plan it is
+`CLagrange.interpolatePow` on the domain root (`interpolate_eq_interpolatePow`). -/
+def interpolate [BEq R] [LawfulBEq R] (P : Plan R) (values : Vector R P.domain.n) :
+    CPolynomial R :=
+  let raw := inverseImpl P (NTT.Transform.bitRevPermute P.domain values.toArray)
+  ⟨raw.trim, CPolynomial.Raw.Trim.isCanonical_trim raw⟩
+
+/-- A well-formed plan's interpolation agrees with the unplanned `NTT.interpolate`. -/
+theorem interpolate_eq_ntt_interpolate [BEq R] [LawfulBEq R]
+    (P : Plan R) (hP : WellFormed P) (values : Vector R P.domain.n) :
+    interpolate P values = NTT.interpolate P.domain values := by
+  apply Subtype.ext
+  simp only [interpolate, NTT.interpolate, inverseImpl_correct P hP,
+    NTT.Inverse.inverseImpl_correct]
+
+/-- A well-formed plan interpolates by Lagrange's formula on the powers of the domain root. -/
+theorem interpolate_eq_interpolatePow [BEq R] [LawfulBEq R]
+    (P : Plan R) (hP : WellFormed P) (values : Vector R P.domain.n) :
+    interpolate P values = CLagrange.interpolatePow P.domain.omega values := by
+  rw [interpolate_eq_ntt_interpolate P hP, NTT.interpolate_eq_interpolatePow]
+
 end Plan
 end NTTFast
 end CPolynomial

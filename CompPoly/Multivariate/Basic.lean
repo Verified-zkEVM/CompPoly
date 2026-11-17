@@ -96,6 +96,12 @@ lemma add_getD? : (p + q).val[m]?.getD 0 = p.val[m]?.getD 0 + q.val[m]?.getD 0 :
   erw [Unlawful.filter_get]
   exact Unlawful.add_getD?
 
+@[simp]
+lemma coeff_zero : ∀ σ, coeff σ (0 : CMvPolynomial n R) = 0 := by
+  intros σ
+  unfold coeff
+  simp
+
 @[simp, grind =]
 lemma coeff_add : coeff m (p + q) = coeff m p + coeff m q := by simp only [coeff, add_getD?]
 
@@ -227,6 +233,23 @@ def evalHorner {R : Type*} {n : ℕ} [CommSemiring R] :
 def support {R : Type*} {n : ℕ} [Zero R] (p : CMvPolynomial n R) : Finset (Fin n →₀ ℕ) :=
   (Lawful.monomials p).map CMvMonomial.toFinsupp |>.toFinset
 
+@[simp]
+lemma support_def {R : Type*} {n : ℕ} [Zero R] {p : CMvPolynomial n R} :
+    ∀ σ, σ ∈ p.support ↔ p.coeff (CMvMonomial.ofFinsupp σ) ≠ 0 := by
+  intros σ
+  unfold CMvPolynomial.support CMvPolynomial.coeff
+  simp only [List.mem_toFinset, List.mem_map]
+  apply Iff.intro
+  · rintro ⟨m, hm, rfl⟩
+    rw [CMvMonomial.ofFinsupp_toFinsupp]
+    exact Lawful.getD_getElem?_ne_zero_of_mem ((Lawful.mem_monomials_iff).1 hm)
+  · intro hc
+    refine ⟨CMvMonomial.ofFinsupp σ, ?_, CMvMonomial.toFinsupp_ofFinsupp⟩
+    rw [Lawful.mem_monomials_iff, Lawful.mem_iff]
+    rcases hopt : p.1[CMvMonomial.ofFinsupp σ]? with _ | v
+    · simp [hopt] at hc
+    · exact ⟨v, by simpa [hopt] using hc, rfl⟩
+
 /-- The total degree of a polynomial (maximum total degree of its monomials). -/
 def totalDegree {R : Type*} {n : ℕ} [Zero R] : CMvPolynomial n R → ℕ :=
   fun p => Finset.sup (List.toFinset (List.map CMvMonomial.toFinsupp (Lawful.monomials p)))
@@ -286,7 +309,7 @@ def restrictBy {n : ℕ} {R : Type*} [BEq R] [LawfulBEq R] [Zero R]
 
   Filters out all monomials where `m.totalDegree > d`.
 -/
-def restrictTotalDegree {n : ℕ} {R : Type*} [BEq R] [LawfulBEq R] [Zero R]
+def restrictTotalDegreeOf {n : ℕ} {R : Type*} [BEq R] [LawfulBEq R] [Zero R]
     (d : ℕ) (p : CMvPolynomial n R) : CMvPolynomial n R :=
   restrictBy (fun m => m.totalDegree ≤ d) p
 
@@ -294,7 +317,7 @@ def restrictTotalDegree {n : ℕ} {R : Type*} [BEq R] [LawfulBEq R] [Zero R]
 
   Filters out all monomials where `m.degreeOf i > d` for some variable `i`.
 -/
-def restrictDegree {n : ℕ} {R : Type*} [BEq R] [LawfulBEq R] [Zero R]
+def restrictDegreeOf {n : ℕ} {R : Type*} [BEq R] [LawfulBEq R] [Zero R]
     (d : ℕ) (p : CMvPolynomial n R) : CMvPolynomial n R :=
   restrictBy (fun m => ∀ i : Fin n, m.degreeOf i ≤ d) p
 

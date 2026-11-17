@@ -64,11 +64,16 @@ variable {n : ℕ}
 /-- Construct a `BarycentricDomain` from nodes and an injectivity proof,
 computing the weights automatically. -/
 def BarycentricDomain.mk' (nodes : Fin n → R) (hinj : Function.Injective nodes) :
-    BarycentricDomain R n where
-  nodes := nodes
-  nodes_injective := hinj
-  weights i := ((Finset.univ : Finset (Fin n)).erase i).prod (fun j => (nodes i - nodes j)⁻¹)
-  weights_spec _ := rfl
+    BarycentricDomain R n :=
+  let weights := Vector.ofFn fun i : Fin n =>
+    (((Finset.univ : Finset (Fin n)).erase i).prod (fun j => nodes i - nodes j))⁻¹
+  { nodes := nodes
+    nodes_injective := hinj
+    weights := weights.get
+    weights_spec := fun i => by
+      simp only [weights, Vector.get, Vector.toArray_ofFn, Array.getElem_ofFn,
+        Finset.prod_inv_distrib]
+      rfl }
 
 /-! ### Weight correctness -/
 
@@ -92,6 +97,61 @@ def BarycentricDomain.eval (dom : BarycentricDomain R n) (y : Fin n → R) (z : 
   else
     (∑ i : Fin n, dom.weights i * y i * (z - dom.nodes i)⁻¹) /
     (∑ i : Fin n, dom.weights i * (z - dom.nodes i)⁻¹)
+
+/-! ### One-inversion evaluation -/
+
+/-- One step of the single-inversion barycentric fold.
+
+The state `(a, b, p)` carries both barycentric sums over a common denominator: after the
+nodes `l` it is `(p·∑ wᵢyᵢ/dᵢ, p·∑ wᵢ/dᵢ, p)` with `p = ∏ dᵢ` and `dᵢ = z - xᵢ`. -/
+def BarycentricDomain.evalStep (dom : BarycentricDomain R n) (y : Fin n → R) (z : R)
+    (acc : R × R × R) (i : Fin n) : R × R × R :=
+  let d := z - dom.nodes i
+  let w := dom.weights i * acc.2.2
+  (acc.1 * d + w * y i, acc.2.1 * d + w, acc.2.2 * d)
+
+/-- The barycentric evaluator with a single field division off the nodes.
+
+It agrees with `eval` everywhere (`eval_eq_evalFast`), and the compiler uses it in place of
+`eval`. -/
+def BarycentricDomain.evalFast (dom : BarycentricDomain R n) (y : Fin n → R) (z : R) : R :=
+  if h : ∃ i : Fin n, dom.nodes i = z then
+    y (Fin.find (fun i => dom.nodes i = z) h)
+  else
+    let acc := (List.finRange n).foldl (dom.evalStep y z) (0, 0, 1)
+    acc.1 / acc.2.1
+
+private theorem BarycentricDomain.foldl_evalStep (dom : BarycentricDomain R n)
+    (y : Fin n → R) (z : R) (hne : ∀ i : Fin n, z - dom.nodes i ≠ 0) :
+    ∀ (l : List (Fin n)) (acc : R × R × R),
+      l.foldl (dom.evalStep y z) acc =
+        let q := (l.map fun i => z - dom.nodes i).prod
+        (acc.1 * q + acc.2.2 * q *
+            (l.map fun i => dom.weights i * y i * (z - dom.nodes i)⁻¹).sum,
+          acc.2.1 * q + acc.2.2 * q * (l.map fun i => dom.weights i * (z - dom.nodes i)⁻¹).sum,
+          acc.2.2 * q)
+  | [], acc => by simp
+  | i :: l, acc => by
+      rw [List.foldl_cons, foldl_evalStep dom y z hne l]
+      have hi := hne i
+      simp only [evalStep, List.map_cons, List.prod_cons, List.sum_cons, Prod.mk.injEq]
+      refine ⟨?_, ?_, by ring⟩ <;> field_simp <;> ring
+
+/-- The single-division evaluator agrees with the two-sum evaluator. -/
+@[csimp] theorem BarycentricDomain.eval_eq_evalFast :
+    @BarycentricDomain.eval = @BarycentricDomain.evalFast := by
+  funext R _ _ n dom y z
+  unfold BarycentricDomain.eval BarycentricDomain.evalFast
+  split_ifs with hz
+  · rfl
+  · have hne : ∀ i : Fin n, z - dom.nodes i ≠ 0 :=
+      fun i h => hz ⟨i, (sub_eq_zero.mp h).symm⟩
+    have hq : ((List.finRange n).map fun i => z - dom.nodes i).prod ≠ 0 :=
+      List.prod_ne_zero (by simpa using fun i => hne i)
+    rw [foldl_evalStep dom y z hne]
+    dsimp only
+    rw [Fin.sum_univ_def, Fin.sum_univ_def, ← mul_div_mul_left _ _ hq]
+    congr 1 <;> ring
 
 /-! ### Evaluation at a node -/
 

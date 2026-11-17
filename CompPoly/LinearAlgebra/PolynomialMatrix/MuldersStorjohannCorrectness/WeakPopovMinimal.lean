@@ -161,7 +161,7 @@ theorem shiftedWeakPopov_least_row_minimal
                 have hprodDeg_le :
                     (coeffL * entryL).natDegree ≤
                       coeffL.natDegree + entryL.natDegree :=
-                  cpoly_natDegree_mul_le coeffL entryL
+                  CPolynomial.natDegree_mul_le coeffL entryL
                 have hentryBound :
                     entryL.natDegree + shift.getD posI 0 ≤ outDegL := by
                   exact rowShiftedDegree?_entry_bound hrowDegL

@@ -7,7 +7,7 @@ module
 
 public import Batteries.Data.Vector.Lemmas
 public import CompPoly.Data.List.Lemmas
-public import CompPoly.Multivariate.CMvPolynomial
+public import CompPoly.Multivariate.Basic
 public import Mathlib.Algebra.MvPolynomial.Basic
 public import Mathlib.Algebra.MvPolynomial.Equiv
 public import Mathlib.Algebra.Ring.Defs

@@ -66,11 +66,19 @@ specification, transported.
 |---|---|---|
 | Decoder | [`ReedSolomon/GaoDecoder.lean`](../../CompPoly/Univariate/ReedSolomon/GaoDecoder.lean) | `nodalPoly`, `receivedInterpolant`, `partialGcd`, `decode` |
 | Correctness | [`ReedSolomon/GaoCorrectness.lean`](../../CompPoly/Univariate/ReedSolomon/GaoCorrectness.lean) | `decode_sound`, `decode_eq_some`, `decode_eq_none_iff`, `decode_none_farness` |
+| NTT domain | [`ReedSolomon/GaoNTT.lean`](../../CompPoly/Univariate/ReedSolomon/GaoNTT.lean) | `decodeNTT`, `decodePlan`, `decodeNTT_eq_decode`, `decodePlan_eq_decode` |
 
 The algorithm interpolates the received word, then runs a partial extended
 Euclid against the nodal polynomial and stops at the degree threshold; the
 message falls out of the resulting Bézout relation. `decode` returns
 `Option (CPolynomial F)`.
+
+On the domain induced by a radix-2 NTT domain both Euclidean inputs have fast
+forms. The nodal polynomial is `Xⁿ - 1` and the interpolant is the inverse NTT.
+`decodeNTT` (unplanned) and `decodePlan` (through an `NTTFast.Plan`) use them,
+and `decodeNTT_eq_decode` / `decodePlan_eq_decode` prove the result equal to
+`decode` on that domain, so every correctness theorem transfers unchanged. The
+partial Euclid is still quadratic, so the gain is in the interpolation.
 
 The correctness layer is stronger than plain soundness, and the extra results
 are the reason to prefer this decoder:
@@ -163,7 +171,7 @@ specific to it.
 | `RootProduct.lean` | the product of linear factors over a root set |
 | `Correctness.lean` | `monicNormalize_root_iff`, `gcdMonic_root_iff_left_right`, and the divisibility transport lemmas |
 | `SmoothSubgroup/` | subgroup-refinement splitting ([MOV92]) for fields whose multiplicative group admits a smooth schedule |
-| `Shoup/` | small-characteristic trace-coordinate splitting ([vzGS92]); `SmallPrimeTraceContext` + adapter to `LinearFactorProductSplitter` |
+| `Shoup/` | small-characteristic trace-coordinate splitting ([vzGS92]); `SmallPrimeTraceContext` + adapter to `LinearFactorProductSplitter`; compiled code reuses Frobenius powers across rounds through `shoupSplitCandidatesCachedWith`, swapped in by the `@[csimp]` theorem `shoupSplitCandidatesWith_eq_cached` |
 | `LasVegas/` | bounded Las Vegas Cantor–Zassenhaus (odd-char and char-2 trace branches) with explicit `ProbeFamily` randomness, deterministic fallback, and probability proofs |
 
 The pipeline consumes a `LinearFactorProductSplitter`. Three backends supply that
@@ -183,6 +191,7 @@ binary fields.
 ## Where To Start By Task
 
 - Encoding, or tying a transform to `ReedSolomon.encode`: `ReedSolomon/NTTEncode.lean`
+- Decoding on an NTT domain: `ReedSolomon/GaoNTT.lean`
 - Unique decoding, or using decode failure as a proximity certificate:
   `ReedSolomon/GaoCorrectness.lean`
 - Changing what the GS decoder *does* without touching proofs: add a context

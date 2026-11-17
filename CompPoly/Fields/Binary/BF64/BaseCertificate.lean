@@ -21,16 +21,16 @@ linear-factor case would admit a product of equal-degree factors.
 GENERATED. Do not edit by hand; regenerate with:
 
 ```sh
-python3 scripts/gen_rabin_certificate.py --p 2 \
-  --f '1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1' \
+uv run --no-project --python 3.12 python scripts/gen_rabin_certificate.py --p 2 \
+  --f='1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'\
+'0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1' \
   --lean <this file> --namespace BF64.BaseCert \
   --authors 'Nicolas Schleicher'
 ```
 
-Nothing here is trusted — the kernel re-checks every step through
-`CompPoly.RabinCert.runChain`, so incorrect data fails to compile rather than
-producing a false theorem.
+These lists are untrusted data. Consumers validate them with kernel-checked
+`CompPoly.RabinCert.runChain` equations and certificate-soundness theorems for
+their specified polynomial. Defining the lists alone establishes no such theorem.
 -/
 
 @[expose] public section
