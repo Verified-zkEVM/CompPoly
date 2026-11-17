@@ -9,6 +9,7 @@ are too specific or too changeable to keep at the repo root.
 - [`quickstart.md`](quickstart.md) - canonical local validation commands and CI
   mapping.
 - [`repo-map.md`](repo-map.md) - where to edit and how the main subtrees relate.
+- [`project-history.md`](project-history.md) - repository origins and attribution.
 - [`generated-files.md`](generated-files.md) - derived outputs and their sources of
   truth.
 - [`benchmarking.md`](benchmarking.md) - how the benchmark suite measures, how to
@@ -35,6 +36,7 @@ are too specific or too changeable to keep at the repo root.
 - Keep one primary owner topic per page. The current pages are:
   - `quickstart.md` for commands, validation, and CI expectations.
   - `repo-map.md` for repo structure and work-area routing.
+  - `project-history.md` for repository origins and attribution.
   - `generated-files.md` for derived outputs and source-of-truth rules.
   - `benchmarking.md` for benchmark measurement, output interpretation, and
     adding groups.

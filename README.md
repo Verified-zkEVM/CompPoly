@@ -9,11 +9,12 @@ circuit verification.
 
 This repository was created by merging content from NethermindEth/CompPoly and
 ArkLib. It is a separate project from the original Nethermind CompPoly and has
-been developed independently of Nethermind since the merge.
+been maintained under Verified-zkEVM since the merge.
 
 CompPoly is released under the [Apache License 2.0](LICENSE). Copyright belongs
-to the respective contributors; historical attributions are retained in
-[NOTICE](NOTICE) and source file headers.
+to the respective contributors. [NOTICE](NOTICE) retains the original Nethermind
+copyright notice and acknowledges ArkLib; source file headers contain additional
+copyright and author credits.
 
 ## Representation
 

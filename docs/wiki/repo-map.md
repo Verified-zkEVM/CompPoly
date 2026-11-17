@@ -3,27 +3,6 @@
 CompPoly is easiest to navigate by subtree and representation family, not by
 individual file name.
 
-## Origins and attribution
-
-This repository was created by merging content from NethermindEth/CompPoly and
-ArkLib and has been developed independently of Nethermind since that merge.
-The root [README](../../README.md) describes the project's identity;
-[LICENSE](../../LICENSE) contains the Apache 2.0 license and
-[NOTICE](../../NOTICE) records provenance and historical attribution.
-Preserve inherited copyright and author notices when modifying or importing
-source files. Historical attribution identifies the origin of contributions;
-it does not describe current project maintenance.
-
-The early Git history records the two sources:
-
-- `412ca6a` (5 September 2025) introduced the original multivariate implementation.
-- `ede2290` (17 September 2025, "Adding license") added the Nethermind notice
-  retained in `NOTICE`; it predates the ArkLib port.
-- `816a7c3` (22 October 2025, "port over ArkLib computable polys") added
-  univariate and multilinear polynomials and supporting helpers. `c1dbfb7`
-  imported ArkLib scripts and workflows the same day.
-- `b93cd1b` (29 October 2025) merged `Verified-zkEVM/port-from-arklib` as PR #1.
-
 ## Main Surfaces
 
 ```text
@@ -104,6 +83,7 @@ scripts/              repo utilities and validation helpers
 
 ## Navigation Notes
 
+- For repository origins and attribution, see [project-history.md](project-history.md).
 - `CompPoly.lean` is a generated umbrella import file, not a hand-maintained module
   index.
 - The root [`../../README.md`](../../README.md) is a good public overview, but it is

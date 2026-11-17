@@ -155,11 +155,14 @@ When translating theorem statements into names, we use standard mappings for sym
 * **Headers**: Use standard file headers including copyright, license (Apache 2.0), and authors.
   ```lean
   /-
-  Copyright (c) 2024 Author Name. All rights reserved.
+  Copyright (c) 2026 CompPoly Contributors. All rights reserved.
   Released under Apache 2.0 license as described in the file LICENSE.
   Authors: Author Name
   -/
   ```
+  For new files, use the year of the contribution and list the authors separately.
+  Preserve inherited copyright and author notices when modifying or importing
+  source files; the template is not a reason to replace existing attribution.
 * **Imports**: Group imports at the top of the file.
 * **Operators**: Put spaces on both sides of `:`, `:=`, and infix operators. Place them before a line break rather than at the start of the next line.
 * **Hypotheses**: Prefer placing hypotheses to the left of the colon (e.g., `(h : P) : Q`) rather than using arrows (`: P → Q`) when the proof introduces them.
@@ -246,5 +249,8 @@ By participating in this project (e.g., contributing code, opening issues, comme
 ## Licensing
 
 Like many other Lean projects, CompPoly is licensed under the terms of the Apache License 2.0 license. The full license text can be found in the [LICENSE](LICENSE) file.
+
+See [NOTICE](NOTICE) for upstream attribution and source file headers for
+file-specific copyright and author credits.
 
 By contributing to CompPoly, you agree that your contributions will be licensed under this same license. Ensure you are comfortable with these terms before submitting contributions.
