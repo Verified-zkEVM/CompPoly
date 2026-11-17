@@ -432,9 +432,6 @@ only when the argument order makes them necessary.
 
   public section
   ```
-  For new files, use the year of the contribution and list the authors separately.
-  Preserve inherited copyright and author notices when modifying or importing
-  source files; the template is not a reason to replace existing attribution.
 * **Imports**: Group the imports at the top of the file.
 * **Operators**: Put spaces on both sides of `:`, `:=`, and infix operators. Put an operator before
   a line break, not at the start of the next line.
