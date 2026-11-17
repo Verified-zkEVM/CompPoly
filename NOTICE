@@ -1,0 +1,15 @@
+CompPoly
+Copyright 2025-2026 CompPoly Contributors
+
+This repository was created by merging content from NethermindEth/CompPoly
+and ArkLib. It is a separate project, developed independently of Nethermind
+since that merge.
+
+The following notice is retained for content inherited from
+NethermindEth/CompPoly:
+
+Copyright 2025 Demerzel Solutions Ltd (t/a Nethermind)
+
+Content inherited from ArkLib remains attributed to its original copyright
+holders, including ArkLib Contributors, as recorded in source file headers.
+Existing copyright and author notices apply to the respective contributions.
