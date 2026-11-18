@@ -553,5 +553,8 @@ project maintainers.
 Like many other Lean projects, CompPoly is licensed under the terms of the Apache License 2.0. The
 full license text is in the [LICENSE](LICENSE) file.
 
+See [NOTICE](NOTICE) for upstream attribution and source file headers for
+file-specific copyright and author credits.
+
 By contributing to CompPoly, you agree that your contributions will be licensed under this same
 license. Ensure you are comfortable with these terms before submitting contributions.
