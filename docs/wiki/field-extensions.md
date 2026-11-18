@@ -161,11 +161,20 @@ use `by decide`. `CirclePointIndex.subgroupGen logSize h` requires a proof
 `h : logSize ≤ logOrder`; out-of-range sizes are rejected instead of silently
 truncating the exponent. Coset constructors pass their existing bounds to it.
 
-`Coset` and `CircleDomain` still describe indexing shapes: arbitrary steps are allowed,
-points may repeat, and a half coset may overlap its conjugate. Their `size` counts index
-positions, not necessarily distinct points. The follow-up must specify validity conditions
-and prove coset point distinctness, disjointness of domain halves, and the corresponding
-cardinality theorems. These claims cannot be made for all current structure values.
+`CirclePointIndex.toPoint_injective` proves that different indices represent different
+points. `addOrderOf_toPoint` transfers exact orders to points, and
+`addOrderOf_subgroupGen` proves the requested order `2^logSize`, including log sizes 0 and 31.
+
+`Coset.Valid` requires the step's additive order to equal the declared size. The standard
+constructors satisfy it, as do `CanonicCoset.coset` and `CanonicCoset.halfCoset`.
+Conjugation preserves validity. For valid cosets, `indexAt_injective` and
+`pointAt_injective` prove distinctness over `Fin c.size`; `card_range_indexAt` and
+`card_range_pointAt` identify the bounded ranges' cardinalities with `c.size`.
+Arbitrary structure values need not satisfy this condition.
+
+`CircleDomain` still describes an indexing shape: even a valid half coset may overlap
+its conjugate. Domain validity, disjointness of the halves, and domain cardinality
+remain follow-up work. Coset validity alone does not establish these claims.
 
 ## Irreducibility: Rabin, Collapsed
 
@@ -202,6 +211,14 @@ handles this with kernel-checked certificates:
   identity `u·f + v·w = 1` on the reduced residue — no Euclidean gcd chain.
 - `irreducible_of_rabin_prime_degree` packages the test when `d` is prime (one trace, one
   coprimality check).
+- Over `GF(2)`, a polynomial is a `ℕ` bitmask.
+  [`Data/Polynomial/RabinCertificateBinary.lean`](../../CompPoly/Data/Polynomial/RabinCertificateBinary.lean)
+  checks the same chains on bitmasks, with `xor` for addition and a carry-less `clmul` for
+  multiplication. Each step is a few GMP operations instead of a walk over lists of numerals.
+  Its two condition theorems have the same shape as the list versions and feed the same
+  wrappers. `scripts/gen_rabin_certificate.py --binary` emits the data. For BF64's
+  degree-64 modulus, `BF64/Basic.lean` went from about 27 s to 3 s and the certificate data
+  module from about 5 s to 2 s.
 
 **Composite degree needs one coprimality check per prime factor**, and the prime-degree collapse
 is *unsound* there rather than merely weak. `Polynomial.irreducible_of_rabin` already quantifies

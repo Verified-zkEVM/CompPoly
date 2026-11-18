@@ -503,7 +503,9 @@ private theorem butterflyDIFRadix4Blocks_eq_two_dif_blocks
               (butterflyDIFInner_comm twiddlesHigh twiddlesLow (2 * q) q (j * (4 * q))
                 (2 * q) (i * (4 * q)) q (by
                   intro a ha b hb
-                  refine ⟨?_, ?_, ?_, ?_⟩ <;> nlinarith) x)
+                  have h := Nat.mul_le_mul_right (4 * q) (Nat.succ_le_of_lt hij)
+                  rw [Nat.succ_mul] at h
+                  refine ⟨?_, ?_, ?_, ?_⟩ <;> omega) x)
           have hlow₂ (x' : Array R) :
               highBlock j
                 (butterflyDIFInner twiddlesLow q 0 (2 * q + i * (4 * q))
@@ -514,7 +516,9 @@ private theorem butterflyDIFRadix4Blocks_eq_two_dif_blocks
               (butterflyDIFInner_comm twiddlesHigh twiddlesLow (2 * q) q (j * (4 * q))
                 (2 * q) (2 * q + i * (4 * q)) q (by
                   intro a ha b hb
-                  refine ⟨?_, ?_, ?_, ?_⟩ <;> nlinarith) x')
+                  have h := Nat.mul_le_mul_right (4 * q) (Nat.succ_le_of_lt hij)
+                  rw [Nat.succ_mul] at h
+                  refine ⟨?_, ?_, ?_, ?_⟩ <;> omega) x')
           simp only [lowBlock]
           rw [← hlow₁]
           rw [← hlow₂]
@@ -541,7 +545,7 @@ private theorem butterflyDIFRadix4Blocks_eq_two_dif_blocks
                         (((2 * block + 1) * (2 * q), (2 * block + 1) * (2 * q) + q,
                           2 * block * (2 * q), 2 * block * (2 * q) + q) :
                           Nat × Nat × Nat × Nat) by
-                      ext <;> nlinarith)
+                      ext <;> ring)
             _ = List.foldl (fun acc block ↦ lowStep block acc)
                   (List.foldl (fun acc block ↦ highBlock block acc) acc (List.range blocks))
                   (List.range (2 * blocks)) := by

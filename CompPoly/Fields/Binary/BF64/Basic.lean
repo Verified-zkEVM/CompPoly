@@ -68,35 +68,17 @@ bijection.
 
 namespace BF64
 
-open Polynomial CompPoly.RabinCert BF64.BaseCert
-
-set_option maxHeartbeats 400000
-set_option maxRecDepth 4000
-
-/-- Little-endian coefficients of `x^64 + x^4 + x^3 + x + 1`: the terms of degree
-`0, 1, 3, 4` and `64`. -/
-def baseCoeffs : List ℕ := [1, 1, 0, 1, 1] ++ List.replicate 59 0 ++ [1]
+open Polynomial CompPoly.RabinCert.Binary BF64.BaseCert
+open CompPoly.RabinCert (irreducible_of_rabin_prime_power)
 
 /-- The modulus `x^64 + x^4 + x^3 + x + 1` over `GF(2)`. Part of the specification only;
 it is never evaluated. -/
 noncomputable def basePoly : Polynomial (ZMod 2) := X ^ 64 + X ^ 4 + X ^ 3 + X + 1
 
-/-- A run of zero coefficients shifts the rest of the list up by that many degrees. -/
-theorem toPoly_replicate_zero {p : ℕ} (n : ℕ) (rest : List ℕ) :
-    toPoly p (List.replicate n 0 ++ rest) = X ^ n * toPoly p rest := by
-  induction n with
-  | zero => simp
-  | succ k ih =>
-    rw [List.replicate_succ, List.cons_append, toPoly_cons, ih]
-    simp [pow_succ]
-    ring
-
-/-- The certificate's coefficient encoding denotes `basePoly`. -/
-theorem toPoly_baseCoeffs : toPoly 2 baseCoeffs = basePoly := by
-  show toPoly 2 ([1, 1, 0, 1, 1] ++ (List.replicate 59 0 ++ [1])) = basePoly
-  simp only [List.cons_append, List.nil_append, toPoly_cons, toPoly_replicate_zero, toPoly_nil,
-    Nat.cast_zero, Nat.cast_one, map_zero, map_one, basePoly]
-  ring
+/-- The certificate's bitmask encoding of the modulus denotes `basePoly`. -/
+theorem toPoly_modulus : toPoly modulus = basePoly := by
+  rw [show modulus = 2 ^ 64 ^^^ 2 ^ 4 ^^^ 2 ^ 3 ^^^ 2 ^ 1 ^^^ 2 ^ 0 from rfl]
+  simp only [toPoly_xor, toPoly_two_pow, toPoly_two, toPoly_one, pow_one, pow_zero, basePoly]
 
 /-- The modulus has degree `64`: the leading `X ^ 64` dominates the tail. -/
 theorem basePoly_natDegree : basePoly.natDegree = 64 := by
@@ -115,7 +97,7 @@ theorem basePoly_ne_zero : basePoly ≠ 0 := by
 
 /--
 `x^64 + x^4 + x^3 + x + 1` is irreducible over `GF(2)`, by Rabin's test against the
-kernel-checked chains in `BF64.BaseCert`.
+kernel-checked bitmask chains in `BF64.BaseCert`.
 
 Degree `64 = 2 ^ 6` has the single prime factor `2`, so the trace condition is joined by one
 coprimality check, at exponent `2^32`. Note that the collapsed
@@ -130,11 +112,11 @@ condition directly, with no cardinality rewrite around it; see the section comme
 theorem basePoly_irreducible : Irreducible basePoly := by
   refine irreducible_of_rabin_prime_power (ZMod.card 2) Nat.prime_two (k := 6)
     (by norm_num) (by norm_num) basePoly_natDegree ?_ ?_
-  · exact dvd_X_pow_sub_X_of_runChain (steps := traceSteps) toPoly_baseCoeffs basePoly_ne_zero
+  · exact dvd_X_pow_sub_X_of_runChain (steps := traceSteps) toPoly_modulus basePoly_ne_zero
       (by decide +kernel) (by rfl)
   · exact isCoprime_X_pow_sub_X_of_runChain (steps := cop32Steps) (rp := cop32Rp)
-      (w := cop32W) (u := cop32U) (v := cop32V) toPoly_baseCoeffs basePoly_ne_zero
-      (by decide +kernel) (by rfl) (by rfl) (by rfl)
+      (w := cop32W) (u := cop32U) (v := cop32V) toPoly_modulus basePoly_ne_zero
+      (by decide +kernel) (by rfl) (by decide +kernel) (by decide +kernel)
 
 instance : Fact (Irreducible basePoly) := ⟨basePoly_irreducible⟩
 
