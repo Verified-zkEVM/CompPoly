@@ -319,7 +319,8 @@ example (c : CanonicCoset) (j : Fin c.coset.size) :
 
 -- Both endpoint cardinalities follow symbolically, including the billion-point domain.
 example : let c : CanonicCoset := ⟨1, by decide, by decide⟩
-    Nat.card (Set.range (fun i : Fin c.circleDomain.size => c.circleDomain.pointAt i.val)) = 2 := by
+    Nat.card (Set.range (fun i : Fin c.circleDomain.size => c.circleDomain.pointAt i.val)) =
+      2 := by
   intro c
   rw [CircleDomain.card_range_pointAt _ c.circleDomain_valid, CanonicCoset.circleDomain_size]
   rfl

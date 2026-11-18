@@ -781,15 +781,18 @@ theorem circleDomain_logSize (c : CanonicCoset) : c.circleDomain.logSize = c.log
 theorem circleDomain_size (c : CanonicCoset) : c.circleDomain.size = 2 ^ c.logSize := by
   rw [CircleDomain.size_eq, circleDomain_logSize]
 
+/-- Doubling the generator of the larger subgroup gives the generator one level below. -/
 private theorem subgroupGen_double (n : Nat) (h : n + 1 ≤ logOrder) :
     CirclePointIndex.subgroupGen n (by omega) =
       2 * CirclePointIndex.subgroupGen (n + 1) h := by
   simp only [CirclePointIndex.subgroupGen_eq, Nat.cast_pow, Nat.cast_ofNat]
   rw [show logOrder - n = (logOrder - (n + 1)) + 1 by omega, pow_succ']
 
+/-- The full canonical coset advances by twice its initial index. -/
 private theorem step_eq (c : CanonicCoset) : c.coset.stepSize = 2 * c.coset.initialIndex :=
   subgroupGen_double c.logSize c.logSize_succ_le_logOrder
 
+/-- The half coset starts at the full coset’s initial index and takes double steps. -/
 private theorem half_parameters (c : CanonicCoset) :
     c.halfCoset.initialIndex = c.coset.initialIndex ∧
       c.halfCoset.stepSize = 2 * c.coset.stepSize := by
@@ -798,18 +801,20 @@ private theorem half_parameters (c : CanonicCoset) :
   | zero => omega
   | succ n => exact ⟨rfl, subgroupGen_double n (by omega)⟩
 
+/-- The full coset has twice as many positions as the half coset. -/
 private theorem full_size (c : CanonicCoset) : c.coset.size = 2 * c.halfCoset.size := by
   calc
     c.coset.size = c.circleDomain.size := (circleDomain_size c).symm
     _ = _ := CircleDomain.size_eq_two_mul_halfSize _
 
--- The two halves visit the even full-coset positions and the odd positions in reverse.
+/-- Half-coset position `i` visits full-coset position `2 * i`. -/
 private theorem half_indexAt (c : CanonicCoset) (i : Nat) :
     c.halfCoset.indexAt i = c.coset.indexAt (2 * i) := by
   simp only [Coset.indexAt_eq, (half_parameters c).1, (half_parameters c).2,
     Nat.cast_mul, Nat.cast_ofNat]
   ring
 
+/-- Conjugating the half coset visits the odd full-coset positions in descending order. -/
 private theorem neg_half_indexAt (c : CanonicCoset) (i : Fin c.halfCoset.size) :
     -c.halfCoset.indexAt i.val = c.coset.indexAt (c.coset.size - (2 * i.val + 1)) := by
   have hi := i.isLt
