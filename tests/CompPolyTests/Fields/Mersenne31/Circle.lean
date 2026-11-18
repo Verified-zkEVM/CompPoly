@@ -212,6 +212,90 @@ example : CirclePointIndex.toPoint CirclePointIndex.generator = generator := by
 
 example : addOrderOf generator = 2 ^ 31 := addOrderOf_generator
 
+example : Function.Injective CirclePointIndex.toPoint := CirclePointIndex.toPoint_injective
+
+example (i j : CirclePointIndex) :
+    CirclePointIndex.toPoint i = CirclePointIndex.toPoint j ↔ i = j := by
+  simp only [CirclePointIndex.toPoint_inj]
+
+example (i : CirclePointIndex) : CirclePointIndex.toPoint i = 0 ↔ i = 0 := by
+  rw [← CirclePointIndex.toPoint_zero, CirclePointIndex.toPoint_inj]
+
+example (i : CirclePointIndex) :
+    addOrderOf (CirclePointIndex.toPoint i) = addOrderOf i :=
+  CirclePointIndex.addOrderOf_toPoint i
+
+example (n : Nat) (h : n ≤ logOrder) :
+    addOrderOf (CirclePointIndex.toPoint (CirclePointIndex.subgroupGen n h)) = 2 ^ n := by
+  rw [CirclePointIndex.addOrderOf_toPoint, CirclePointIndex.addOrderOf_subgroupGen]
+
+example : addOrderOf (CirclePointIndex.subgroupGen 0 (by decide)) = 1 :=
+  CirclePointIndex.addOrderOf_subgroupGen 0 (by decide)
+
+example : addOrderOf (CirclePointIndex.subgroupGen 1 (by decide)) = 2 :=
+  CirclePointIndex.addOrderOf_subgroupGen 1 (by decide)
+
+example : addOrderOf (CirclePointIndex.subgroupGen 30 (by decide)) = 2 ^ 30 :=
+  CirclePointIndex.addOrderOf_subgroupGen 30 (by decide)
+
+example : addOrderOf (CirclePointIndex.subgroupGen 31 (by decide)) = 2 ^ 31 :=
+  CirclePointIndex.addOrderOf_subgroupGen 31 (by decide)
+
+example (i : CirclePointIndex) (n : Nat) (h : n ≤ logOrder) :
+    (Coset.new i n h).Valid := Coset.new_valid i n h
+
+example : (Coset.subgroup 0 (by decide)).Valid := Coset.subgroup_valid _ _
+
+example : (Coset.subgroup 31 (by decide)).Valid := Coset.subgroup_valid _ _
+
+example : (Coset.odds 30 (by decide)).Valid := Coset.odds_valid _ _
+
+example : (Coset.halfOdds 29 (by decide)).Valid := Coset.halfOdds_valid _ _
+
+example (c : Coset) : c.Valid ↔ addOrderOf c.stepSize = c.size := by
+  fail_if_success rfl
+  exact c.valid_iff
+
+example (c : Coset) (hc : c.Valid) : c.conjugate.Valid := by
+  simpa only [Coset.conjugate_valid_iff] using hc
+
+example (c : Coset) (hc : c.Valid) (i j : Fin c.size)
+    (h : c.indexAt i.val = c.indexAt j.val) : i = j := c.indexAt_injective hc h
+
+example (c : Coset) (hc : c.Valid) (i j : Fin c.size)
+    (h : c.pointAt i.val = c.pointAt j.val) : i = j := c.pointAt_injective hc h
+
+example (c : Coset) (hc : c.Valid) :
+    Nat.card (Set.range (fun i : Fin c.size => c.indexAt i.val)) = c.size :=
+  c.card_range_indexAt hc
+
+example (c : Coset) (hc : c.Valid) :
+    Nat.card (Set.range (fun i : Fin c.size => c.pointAt i.val)) = c.size :=
+  c.card_range_pointAt hc
+
+example (c : CanonicCoset) :
+    Function.Injective (fun i : Fin c.coset.size => c.coset.pointAt i.val) :=
+  c.coset.pointAt_injective c.coset_valid
+
+example (c : CanonicCoset) :
+    Nat.card (Set.range (fun i : Fin c.halfCoset.size => c.halfCoset.pointAt i.val)) =
+      c.halfCoset.size := c.halfCoset.card_range_pointAt c.halfCoset_valid
+
+-- A size-two indexing shape with a zero step does not satisfy the exact-order condition.
+example : ¬ (Coset.mk 0 0 1 (by decide)).Valid := by
+  rw [Coset.valid_iff, Coset.size_eq]
+  simp only [addOrderOf_zero, pow_one]
+  decide
+
+-- A valid singleton half coset can still overlap its conjugate.
+example : (CircleDomain.new (Coset.subgroup 0 (by decide))).indexAt 0 =
+    (CircleDomain.new (Coset.subgroup 0 (by decide))).indexAt 1 := by
+  rw [CircleDomain.indexAt_def, CircleDomain.indexAt_def]
+  simp only [CircleDomain.new_halfCoset, Coset.size_eq, Coset.subgroup_eq,
+    Coset.new_logSize, pow_zero, Nat.zero_lt_one, ↓reduceIte, lt_self_iff_false,
+    Nat.sub_self, Coset.indexAt_zero, Coset.new_initialIndex, Coset.conjugate_initialIndex,
+    neg_zero]
+
 example : order • generator = 0 := order_nsmul_generator
 
 example : (2 ^ 30 : Nat) • generator = Point.antipode 0 := generator_half_order
