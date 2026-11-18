@@ -220,10 +220,8 @@ private theorem hasseDerivative_zero_xOrder_toPoly_of_map_C {F : Type*}
     (b : Nat) :
     CBivariate.toPoly (CBivariate.hasseDerivative 0 b Q) =
       (Polynomial.hasseDeriv b P).map (Polynomial.C : F →+* Polynomial F) := by
-  apply Polynomial.ext
-  intro j
-  apply Polynomial.ext
-  intro i
+  ext j : 2
+  ext i : 2
   rw [CBivariate.coeff_toPoly, CBivariate.hasseDerivative_coeff]
   rw [Polynomial.coeff_map, Polynomial.hasseDeriv_coeff]
   rw [cbivariate_coeff_of_toPoly_map_C hQ]

@@ -453,7 +453,7 @@ theorem hasseDerivativeEval_ofYConstant_mul_eq_eval_mul_of_lower {F : Type*}
             CPolynomial.eval x A * CBivariate.hasseDerivativeEval order b x y P := by
     intro n
     induction n using Nat.strong_induction_on with
-    | h n ih =>
+    | ind n ih =>
         intro A hsize P order hLower
         by_cases hzeroSize : A.val.size = 0
         · rw [cpoly_eq_zero_of_val_size_eq_zero A hzeroSize, ofYConstant_zero]

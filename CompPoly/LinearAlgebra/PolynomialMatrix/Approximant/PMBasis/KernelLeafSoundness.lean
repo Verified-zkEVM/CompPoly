@@ -542,8 +542,8 @@ theorem coefficientMatrixRows_dot_eq_zero_of_approximates
           (k * leafDegreeCap problem + a) 0 *
         (rowToCoefficientVector problem row).getD
           (k * leafDegreeCap problem + a) 0 =
-      Polynomial.coeff ((rowGet row k).toPoly *
-        (rowGet (problem.matrix.getD k #[]) j).toPoly) t := by
+      ((rowGet row k).toPoly *
+        (rowGet (problem.matrix.getD k #[]) j).toPoly).coeff t := by
     intro k hk
     symm
     rw [Polynomial.coeff_mul, Finset.Nat.sum_antidiagonal_eq_sum_range_succ_mk]

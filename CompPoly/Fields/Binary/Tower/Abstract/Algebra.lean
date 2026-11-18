@@ -107,7 +107,7 @@ theorem towerAlgebraMap_succ_last (r : ℕ) : ∀ l : ℕ, (h_le : l ≤ r) →
   (towerAlgebraMap (l:=l+1) (r:=r+1) (by omega)).comp (towerAlgebraMap
     (l:=l) (r:=l+1) (by omega)) := by
   induction r using Nat.strong_induction_on with
-  | h r ih_r => -- prove for width = r + 1
+  | ind r ih_r => -- prove for width = r + 1
     intro l h_le
     if h_l_eq_r : l = r then
       subst h_l_eq_r
@@ -148,7 +148,7 @@ theorem towerAlgebraMap_assoc : ∀ r mid l : ℕ, (h_l_le_mid : l ≤ mid) → 
   -- We induct on `r`, keeping `l` and `mid` as variables in the induction hypothesis.
   intro r
   induction r using Nat.strong_induction_on with
-  | h r ih_r => -- right width = r, left width = l
+  | ind r ih_r => -- right width = r, left width = l
     intro mid l h_l_le_mid h_mid_le_r
     -- A = |l| --- (1) --- |mid| --- (2) --- |r-1| --- (3) --- |r|
     -- Proof : A = 3 ∘ (12) (succ decomposition) = 3 ∘ (2 ∘ 1) (induction hypothesis)

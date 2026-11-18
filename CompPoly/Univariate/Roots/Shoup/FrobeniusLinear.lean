@@ -53,14 +53,14 @@ theorem isRepresentedLinearFactor_of_dvd_frobenius_unique_root {F : Type*}
     (CPolynomial.toPoly_eq_zero_iff factor).not.mpr hfactorNe
   have hfrobNe : ((Polynomial.X : Polynomial F) ^ ctx.q - Polynomial.X) ≠ 0 := by
     rw [hqcard]
-    exact FiniteField.X_pow_card_sub_X_ne_zero F Fintype.one_lt_card
+    exact Polynomial.X_pow_sub_X_ne_zero Fintype.one_lt_card
   have hsplitFrob : Polynomial.Splits
       ((Polynomial.X : Polynomial F) ^ ctx.q - Polynomial.X) := by
     rw [hqcard]
     rw [Polynomial.splits_iff_card_roots]
     rw [FiniteField.roots_X_pow_card_sub_X]
     rw [← Finset.card_def, Finset.card_univ]
-    rw [FiniteField.X_pow_card_sub_X_natDegree_eq F Fintype.one_lt_card]
+    rw [Polynomial.natDegree_X_pow_sub_X Fintype.one_lt_card]
   have hsplitFactor : Polynomial.Splits factor.toPoly :=
     hsplitFrob.of_dvd hfrobNe hdvd
   have hrootsLe : factor.toPoly.roots ≤

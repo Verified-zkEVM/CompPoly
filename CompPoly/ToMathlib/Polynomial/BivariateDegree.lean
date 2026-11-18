@@ -89,7 +89,7 @@ theorem natWeightedDegree_mem_weight_list {u v : ℕ} :
   · simp [hf, natWeightedDegree]
   · have hsupp : f.support.Nonempty := by
       refine ⟨f.natDegree, ?_⟩
-      exact Polynomial.natDegree_mem_support_of_nonzero (p := f) hf
+      exact Polynomial.natDegree_mem_support_of_ne_zero (p := f) hf
     obtain ⟨m, hm, hsup⟩ :=
       Finset.exists_mem_eq_sup (s := f.support) hsupp
         (fun n => u * (f.coeff n).natDegree + v * n)
@@ -118,7 +118,7 @@ theorem weight_le_natWeightedDegree_of_lt_natDegree_succ {u v n : ℕ}
     · have hcoeff : f.coeff n = 0 := Polynomial.notMem_support_iff.1 hns
       have hnle : n ≤ f.natDegree := Nat.lt_succ_iff.mp hn
       have hmul : v * n ≤ v * f.natDegree := Nat.mul_le_mul_left v hnle
-      have hdegmem : f.natDegree ∈ f.support := Polynomial.natDegree_mem_support_of_nonzero hf
+      have hdegmem : f.natDegree ∈ f.support := Polynomial.natDegree_mem_support_of_ne_zero hf
       have hsup : u * (f.coeff f.natDegree).natDegree + v * f.natDegree ≤
           f.support.sup (fun m => u * (f.coeff m).natDegree + v * m) := by
         exact Finset.le_sup (f := fun m => u * (f.coeff m).natDegree + v * m) hdegmem
@@ -302,7 +302,8 @@ theorem natDegree_sum_eq_of_unique {α : Type*} {s : Finset α} {f : α → F[X]
       rw [Polynomial.finsetSum_coeff (s := s) (f := f) (n := deg)]
       exact hsum_coeff
     have hcoeff_ne0 : (∑ x ∈ s, f x).coeff deg ≠ 0 := by
-      simpa [hcoeff_eq] using hmx_coeff_ne0
+      rw [hcoeff_eq]
+      exact hmx_coeff_ne0
     exact Polynomial.natDegree_eq_of_le_of_coeff_ne_zero hSle hcoeff_ne0
 
 theorem degreeX_mul_ge [IsDomain F] (f g : F[X][Y]) (hf : f ≠ 0) (hg : g ≠ 0) :
@@ -414,8 +415,7 @@ theorem degreeX_mul [IsDomain F] (f g : F[X][Y]) (hf : f ≠ 0) (hg : g ≠ 0) :
 
 /-- The evaluation at a point of a bivariate polynomial in the first variable `X`. -/
 def evalX (a : F) (f : F[X][Y]) : Polynomial F :=
-  ⟨AddMonoidAlgebra.ofCoeff
-    (Finsupp.mapRange (Polynomial.eval a) eval_zero f.toFinsupp.coeff)⟩
+  AddMonoidAlgebra.ofCoeff (Finsupp.mapRange (Polynomial.eval a) eval_zero f.coeff)
 
 /-- The evaluation at a point of a bivariate polynomial in the second variable `Y`. -/
 def evalY (a : F) (f : F[X][Y]) : Polynomial F :=
@@ -431,7 +431,7 @@ lemma evalX_eq_map (x : F) (f : F[X][Y]) :
     Polynomial.Bivariate.evalX x f = f.map (Polynomial.evalRingHom x) := by
   classical
   ext n
-  simp [Polynomial.Bivariate.evalX, Polynomial.toFinsupp_apply]
+  simp [Polynomial.Bivariate.evalX]
 
 end CommSemiring
 
@@ -493,12 +493,12 @@ lemma degreeX_swap (f : F[X][Y]) :
       rw [hmn]
       simp [hfm]
     · have hNmem : natDegree f ∈ f.support :=
-        Polynomial.natDegree_mem_support_of_nonzero hf
+        Polynomial.natDegree_mem_support_of_ne_zero hf
       have hcoeffN0 : f.coeff (natDegree f) ≠ 0 := by
         exact mem_support_iff.mp hNmem
       let n : ℕ := (f.coeff (natDegree f)).natDegree
       have hnmem : n ∈ (f.coeff (natDegree f)).support := by
-        exact natDegree_mem_support_of_nonzero hcoeffN0
+        exact natDegree_mem_support_of_ne_zero hcoeffN0
       have hcoeffn : (f.coeff (natDegree f)).coeff n ≠ 0 := by
         exact mem_support_iff.mp hnmem
       have hEq : ((Polynomial.Bivariate.swap f).coeff n).coeff (natDegree f) =

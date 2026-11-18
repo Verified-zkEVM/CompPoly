@@ -87,7 +87,8 @@ lemma definingPoly_is_not_unit {F : Type*} [Field F] [Fintype F] (s : F) [NeZero
 lemma definingPoly_coeffOf0 {F : Type*} [Field F] [Fintype F] (s : F) [NeZero s] :
     (definingPoly s).coeff 0 = 1 := by
   simp only [definingPoly, coeff_add, coeff_X_pow, OfNat.zero_ne_ofNat, ↓reduceIte,
-      mul_coeff_zero, coeff_C_zero, coeff_X_zero, mul_zero, add_zero, coeff_one_zero, zero_add]
+      mul_coeff_zero, coeff_C_zero, coeff_X_zero, mul_zero, add_zero,
+      AddMonoidAlgebra.coeff_one_zero, zero_add]
 
 lemma definingPoly_coeffOf1 {F : Type*} [Field F] [Fintype F] (s : F) [NeZero s] :
     (definingPoly s).coeff 1 = s := by

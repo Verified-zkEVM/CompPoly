@@ -75,7 +75,8 @@ lemma natWeightedDegree_sum_le {ι : Type*} (s : Finset ι) (f : ι → F[X][Y])
 /-- The weighted degree of a scalar multiple is at most the weighted degree of the polynomial. -/
 lemma natWeightedDegree_smul_le (a : F) (p : F[X][Y]) (u v : ℕ) :
     natWeightedDegree (a • p) u v ≤ natWeightedDegree p u v := by
-  simp only [natWeightedDegree, coeff_smul, Finset.sup_le_iff, Polynomial.mem_support_iff, ne_eq]
+  simp only [natWeightedDegree, AddMonoidAlgebra.coeff_smul_apply, Finset.sup_le_iff,
+    Polynomial.mem_support_iff, ne_eq]
   intro b _
   exact le_trans
     (add_le_add

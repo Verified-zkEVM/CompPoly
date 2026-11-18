@@ -110,6 +110,7 @@ omit [BEq R] [LawfulBEq R] in
 private lemma lowEq.sub {k : Nat} {p₁ p₂ q₁ q₂ : R[X]}
     (h₁ : lowEq k p₁ q₁) (h₂ : lowEq k p₂ q₂) :
     lowEq k (p₁ - p₂) (q₁ - q₂) := by
+  rw [sub_eq_add_neg, sub_eq_add_neg]
   exact h₁.add h₂.neg
 
 omit [BEq R] [LawfulBEq R] in
@@ -182,7 +183,7 @@ private lemma lowEq.newton_step {n next : Nat} {p g fg correction g' : R[X]}
   have h_e : lowEq n (p * g - 1) 0 := by
     intro i hi
     have hcoeff := h i hi
-    simp [Polynomial.coeff_sub, hcoeff]
+    simp [hcoeff]
   have h_e2 : lowEq next ((p * g - 1) * (p * g - 1)) 0 := by
     exact (lowEq.mul_self_zero h_e).of_le hnext
   have hmain : lowEq next (((p * g) * (Polynomial.C (2 : R) - p * g)) - 1) 0 := by

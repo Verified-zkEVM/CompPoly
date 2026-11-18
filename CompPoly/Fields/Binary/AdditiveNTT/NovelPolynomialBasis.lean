@@ -153,7 +153,7 @@ lemma U_i_is_union_of_cosets (i : Fin r) (hi : 0 < i) :
     unfold U
     have h_ico : Set.Ico 0 i = Set.Ico 0 (i - 1) ∪ {i - 1} := by
       ext k;
-      simp only [Set.mem_Ico, Fin.zero_le, true_and, Set.union_singleton, Set.Ico_insert_right,
+      simp only [Set.mem_Ico, Fin.zero_le, true_and, Set.union_singleton, Set.insert_right_Ico,
         Set.mem_Icc]
       -- ⊢ k < i ↔ k ≤ i - 1
       exact Fin.lt_iff_le_pred (a := k) (b := i) (h_b := by omega)
@@ -220,7 +220,7 @@ theorem root_U_lift_down
   · -- PART 1: Existence -- ⊢ ∃ x, a - x • β i ∈ U 𝔽q β i
     have h_ico : Set.Ico 0 (i+1) = Set.Ico 0 i ∪ {i} := by
       ext k; simp only [Set.mem_Ico, Fin.zero_le, true_and, Set.union_singleton,
-        Set.Ico_insert_right, Set.mem_Icc]
+        Set.insert_right_Ico, Set.mem_Icc]
       -- ⊢ k < i + 1 ↔ k ≤ i
       exact Fin.le_iff_lt_succ (a := k) (b := i) (h_b := h_i_add_1).symm
     rw [U, h_ico, Set.image_union, Set.image_singleton, Submodule.span_union] at h_a_mem_U_i_plus_1
@@ -1404,11 +1404,11 @@ noncomputable instance finiteDimensionalCoeffVecSpace (ℓ : ℕ) :
 /-- The linear map from polynomials (in the subtype) to their coefficient vectors. -/
 def toCoeffsVec (ℓ : Nat) : L⦃<2^ℓ⦄[X] →ₗ[L] CoeffVecSpace L ℓ where
   toFun := fun p => fun i => p.val.coeff i.val
-  map_add' := fun p q => by ext i; simp [coeff_add]
+  map_add' := fun p q => by ext i; simp
   map_smul' := fun c p => by
     ext i
     simp only [Pi.smul_apply, RingHom.id_apply, smul_eq_mul]
-    rw [Submodule.coe_smul, Polynomial.coeff_smul, smul_eq_mul]
+    rw [Submodule.coe_smul, AddMonoidAlgebra.coeff_smul_apply, smul_eq_mul]
 
 /-- The rows of a square lower-triangular matrix with
 non-zero diagonal entries are linearly independent. -/

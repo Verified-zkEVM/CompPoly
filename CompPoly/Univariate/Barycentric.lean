@@ -175,7 +175,7 @@ private theorem BarycentricDomain.injOn_nodes (dom : BarycentricDomain R n) :
 The off-node branch agrees with the Mathlib second barycentric form.
 -/
 private theorem BarycentricDomain.eval_off_node_eq (dom : BarycentricDomain R n)
-    (y : Fin n → R) (z : R) (hne : ∀ i : Fin n, z ≠ dom.nodes i) (hn : 0 < n) :
+    (y : Fin n → R) (z : R) (hne : ∀ i : Fin n, z ≠ dom.nodes i) :
     (∑ i : Fin n, dom.weights i * y i * (z - dom.nodes i)⁻¹) /
     (∑ i : Fin n, dom.weights i * (z - dom.nodes i)⁻¹) =
     (Lagrange.interpolate Finset.univ dom.nodes y).eval z := by
@@ -183,7 +183,6 @@ private theorem BarycentricDomain.eval_off_node_eq (dom : BarycentricDomain R n)
   · simp +decide only [weights_eq_nodalWeight];
     ac_rfl;
   · exact dom.nodes_injective;
-  · exact ⟨ ⟨ 0, hn ⟩, Finset.mem_univ _ ⟩
 
 /-
 **Main correctness theorem.**
@@ -201,7 +200,7 @@ theorem BarycentricDomain.eval_eq_interpolate_eval (dom : BarycentricDomain R n)
     · exact Finset.mem_univ i;
   · rcases n with ( _ | n ) <;> simp_all +decide [ BarycentricDomain.eval ];
     convert BarycentricDomain.eval_off_node_eq dom y z
-      (fun i => Ne.symm (hz i)) (Nat.succ_pos n) using 1
+      (fun i => Ne.symm (hz i)) using 1
     simp [Lagrange.interpolate]
 
 /-- The barycentric evaluator equals
