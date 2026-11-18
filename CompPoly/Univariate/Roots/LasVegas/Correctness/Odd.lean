@@ -194,8 +194,7 @@ theorem cantorZassenhausOddAttemptWith_child_proper {F : Type*}
   simp only at htry
   split at htry
   next _hsize =>
-    injection htry with hchildren
-    subst children
+    obtain rfl := Option.some.inj htry
     have hraw := mem_of_mem_eraseDups (by simpa using hmem)
     exact proper_of_mem_nontrivialProperChildren (by simpa using hraw)
   next _hsize =>
@@ -212,9 +211,8 @@ theorem cantorZassenhausOddAttemptWith_size_ge_two {F : Type*}
   simp only at htry
   split at htry
   next hsize =>
-    injection htry with hchildren
-    subst children
-    simpa using hsize
+    obtain rfl := Option.some.inj htry
+    exact hsize
   next _hsize =>
     simp at htry
 
