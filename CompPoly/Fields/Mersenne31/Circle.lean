@@ -24,8 +24,8 @@ respects addition. Each subgroup step has the requested exact order.
 
 `Coset.Valid` requires the step order to equal the declared size. Standard constructors
 satisfy it; valid cosets enumerate distinct indices and points and have the declared
-range cardinality. Circle domains still need a validity condition requiring disjoint
-halves before their declared size can be identified with set cardinality.
+range cardinality. A valid circle domain has disjoint halves and enumerates distinct
+points. The canonical domain enumerates the entire canonical coset.
 -/
 
 public section
@@ -593,7 +593,7 @@ end Coset
 
 /-- A domain indexing shape: a half coset followed by its conjugate.
 The halves need not be disjoint, and either half may contain repeated points.
-A follow-up must impose validity conditions before identifying `size` with cardinality. -/
+`CircleDomain.Valid` gives the conditions for distinctness and cardinality. -/
 structure CircleDomain where
   halfCoset : Coset
 
@@ -666,6 +666,56 @@ theorem indexAt_right (D : CircleDomain) (i : Nat) :
     D.indexAt (D.halfCoset.size + i) = -D.halfCoset.indexAt i := by
   rw [indexAt_of_le D _ (Nat.le_add_right _ _), Nat.add_sub_cancel_left]
 
+/-- The half coset has exact step order and shares no bounded index with its conjugate. -/
+def Valid (D : CircleDomain) : Prop :=
+  D.halfCoset.Valid ∧ ∀ i j : Fin D.halfCoset.size,
+    D.halfCoset.indexAt i.val ≠ -D.halfCoset.indexAt j.val
+
+/-- Domain validity separates exact order within each half from disjointness across halves. -/
+theorem valid_iff (D : CircleDomain) : D.Valid ↔ D.halfCoset.Valid ∧
+    ∀ i j : Fin D.halfCoset.size, D.halfCoset.indexAt i.val ≠ -D.halfCoset.indexAt j.val :=
+  Iff.rfl
+
+/-- A valid domain visits each bounded index only once. -/
+theorem indexAt_injective (D : CircleDomain) (hD : D.Valid) :
+    Function.Injective (fun i : Fin D.size => D.indexAt i.val) := by
+  intro i j hij
+  have hi := i.isLt
+  have hj := j.isLt
+  have hs := size_eq_two_mul_halfSize D
+  change D.indexAt i.val = D.indexAt j.val at hij
+  have inj := D.halfCoset.indexAt_injective hD.1
+  apply Fin.ext
+  by_cases il : i.val < D.halfCoset.size <;> by_cases jl : j.val < D.halfCoset.size
+  · rw [indexAt_left _ _ il, indexAt_left _ _ jl] at hij
+    exact congrArg (Fin.val (n := D.halfCoset.size)) (inj (a₁ := ⟨_, il⟩) (a₂ := ⟨_, jl⟩) hij)
+  · rw [indexAt_left _ _ il, indexAt_of_le _ _ (by omega)] at hij
+    exact (hD.2 ⟨_, il⟩ ⟨_, by omega⟩ hij).elim
+  · rw [indexAt_of_le _ _ (by omega : D.halfCoset.size ≤ i.val), indexAt_left _ _ jl] at hij
+    exact (hD.2 ⟨_, jl⟩ ⟨_, by omega⟩ hij.symm).elim
+  · rw [indexAt_of_le _ _ (by omega : D.halfCoset.size ≤ i.val),
+      indexAt_of_le _ _ (by omega : D.halfCoset.size ≤ j.val), neg_inj] at hij
+    have he := congrArg Fin.val (inj
+      (a₁ := ⟨i.val - D.halfCoset.size, by omega⟩)
+      (a₂ := ⟨j.val - D.halfCoset.size, by omega⟩) hij)
+    change i.val - D.halfCoset.size = j.val - D.halfCoset.size at he
+    omega
+
+/-- A valid domain visits each bounded circle point only once. -/
+theorem pointAt_injective (D : CircleDomain) (hD : D.Valid) :
+    Function.Injective (fun i : Fin D.size => D.pointAt i.val) :=
+  CirclePointIndex.toPoint_injective.comp (D.indexAt_injective hD)
+
+/-- The bounded index range of a valid domain has its declared cardinality. -/
+theorem card_range_indexAt (D : CircleDomain) (hD : D.Valid) :
+    Nat.card (Set.range (fun i : Fin D.size => D.indexAt i.val)) = D.size := by
+  simpa only [Nat.card_fin] using Nat.card_range_of_injective (D.indexAt_injective hD)
+
+/-- The bounded point range of a valid domain has its declared cardinality. -/
+theorem card_range_pointAt (D : CircleDomain) (hD : D.Valid) :
+    Nat.card (Set.range (fun i : Fin D.size => D.pointAt i.val)) = D.size := by
+  simpa only [Nat.card_fin] using Nat.card_range_of_injective (D.pointAt_injective hD)
+
 end CircleDomain
 
 /-- A canonical STWO coset `G_{2n} + <G_n>` for `1 ≤ logSize < logOrder`. -/
@@ -730,6 +780,110 @@ theorem circleDomain_logSize (c : CanonicCoset) : c.circleDomain.logSize = c.log
 @[simp]
 theorem circleDomain_size (c : CanonicCoset) : c.circleDomain.size = 2 ^ c.logSize := by
   rw [CircleDomain.size_eq, circleDomain_logSize]
+
+private theorem subgroupGen_double (n : Nat) (h : n + 1 ≤ logOrder) :
+    CirclePointIndex.subgroupGen n (by omega) =
+      2 * CirclePointIndex.subgroupGen (n + 1) h := by
+  simp only [CirclePointIndex.subgroupGen_eq, Nat.cast_pow, Nat.cast_ofNat]
+  rw [show logOrder - n = (logOrder - (n + 1)) + 1 by omega, pow_succ']
+
+private theorem step_eq (c : CanonicCoset) : c.coset.stepSize = 2 * c.coset.initialIndex :=
+  subgroupGen_double c.logSize c.logSize_succ_le_logOrder
+
+private theorem half_parameters (c : CanonicCoset) :
+    c.halfCoset.initialIndex = c.coset.initialIndex ∧
+      c.halfCoset.stepSize = 2 * c.coset.stepSize := by
+  obtain ⟨n, hn, hb⟩ := c
+  cases n with
+  | zero => omega
+  | succ n => exact ⟨rfl, subgroupGen_double n (by omega)⟩
+
+private theorem full_size (c : CanonicCoset) : c.coset.size = 2 * c.halfCoset.size := by
+  calc
+    c.coset.size = c.circleDomain.size := (circleDomain_size c).symm
+    _ = _ := CircleDomain.size_eq_two_mul_halfSize _
+
+-- The two halves visit the even full-coset positions and the odd positions in reverse.
+private theorem half_indexAt (c : CanonicCoset) (i : Nat) :
+    c.halfCoset.indexAt i = c.coset.indexAt (2 * i) := by
+  simp only [Coset.indexAt_eq, (half_parameters c).1, (half_parameters c).2,
+    Nat.cast_mul, Nat.cast_ofNat]
+  ring
+
+private theorem neg_half_indexAt (c : CanonicCoset) (i : Fin c.halfCoset.size) :
+    -c.halfCoset.indexAt i.val = c.coset.indexAt (c.coset.size - (2 * i.val + 1)) := by
+  have hi := i.isLt
+  have hs := full_size c
+  have hz := addOrderOf_nsmul_eq_zero c.coset.stepSize
+  rw [show addOrderOf c.coset.stepSize = c.coset.size from c.coset_valid, nsmul_eq_mul,
+    mul_comm] at hz
+  rw [half_indexAt, Coset.indexAt_eq, Coset.indexAt_eq, Nat.cast_sub (by omega)]
+  simp only [Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat, Nat.cast_one]
+  rw [mul_sub, hz, step_eq]
+  ring
+
+/-- The canonical half coset and its conjugate occupy disjoint full-coset positions. -/
+theorem circleDomain_valid (c : CanonicCoset) : c.circleDomain.Valid := by
+  refine ⟨c.halfCoset_valid, ?_⟩
+  change ∀ i j : Fin c.halfCoset.size, c.halfCoset.indexAt i.val ≠ -c.halfCoset.indexAt j.val
+  intro i j hij
+  rw [half_indexAt, neg_half_indexAt] at hij
+  have hs := full_size c
+  have hi := i.isLt
+  have hj := j.isLt
+  have he := congrArg Fin.val (c.coset.indexAt_injective c.coset_valid
+    (a₁ := ⟨2 * i.val, by omega⟩) (a₂ := ⟨c.coset.size - (2 * j.val + 1), by omega⟩) hij)
+  change 2 * i.val = c.coset.size - (2 * j.val + 1) at he
+  omega
+
+/-- Traversing the canonical domain covers exactly the bounded full-coset indices. -/
+theorem range_circleDomain_indexAt (c : CanonicCoset) :
+    Set.range (fun i : Fin c.circleDomain.size => c.circleDomain.indexAt i.val) =
+      Set.range (fun i : Fin c.coset.size => c.coset.indexAt i.val) := by
+  have hs := full_size c
+  have hd : c.circleDomain.size = 2 * c.halfCoset.size := CircleDomain.size_eq_two_mul_halfSize _
+  have left (i : Nat) (hi : i < c.halfCoset.size) :
+      c.circleDomain.indexAt i = c.coset.indexAt (2 * i) :=
+    (CircleDomain.indexAt_left _ _ hi).trans (half_indexAt c i)
+  have right (i : Fin c.halfCoset.size) :
+      c.circleDomain.indexAt (c.halfCoset.size + i.val) =
+        c.coset.indexAt (c.coset.size - (2 * i.val + 1)) :=
+    (CircleDomain.indexAt_right _ _).trans (neg_half_indexAt c i)
+  ext x
+  constructor
+  · rintro ⟨i, rfl⟩
+    have hi := i.isLt
+    by_cases h : i.val < c.halfCoset.size
+    · exact ⟨⟨_, by omega⟩, (left _ h).symm⟩
+    · let j : Fin c.halfCoset.size := ⟨i.val - c.halfCoset.size, by omega⟩
+      have he : c.halfCoset.size + j.val = i.val := by dsimp [j]; omega
+      exact ⟨⟨_, by have hj := j.isLt; omega⟩, (right j).symm.trans (congrArg _ he)⟩
+  · rintro ⟨i, rfl⟩
+    have hi := i.isLt
+    by_cases h : i.val % 2 = 0
+    · refine ⟨⟨i.val / 2, by omega⟩, ?_⟩
+      exact (left (i.val / 2) (by omega)).trans (congrArg c.coset.indexAt (by omega))
+    · let j : Fin c.halfCoset.size := ⟨(c.coset.size - 1 - i.val) / 2, by omega⟩
+      have he : c.coset.size - (2 * j.val + 1) = i.val := by dsimp [j]; omega
+      exact ⟨⟨_, by have hj := j.isLt; omega⟩, (right j).trans (congrArg _ he)⟩
+
+/-- The canonical domain and its full coset enumerate the same circle points. -/
+theorem range_circleDomain_pointAt (c : CanonicCoset) :
+    Set.range (fun i : Fin c.circleDomain.size => c.circleDomain.pointAt i.val) =
+      Set.range (fun i : Fin c.coset.size => c.coset.pointAt i.val) := by
+  simpa only [← Set.range_comp, Function.comp_def, CircleDomain.pointAt_def, Coset.pointAt_def]
+    using congrArg (Set.image CirclePointIndex.toPoint) c.range_circleDomain_indexAt
+
+/-- Each point of the full canonical coset occurs at a unique bounded domain position. -/
+theorem existsUnique_circleDomain_pointAt (c : CanonicCoset) (j : Fin c.coset.size) :
+    ∃! i : Fin c.circleDomain.size, c.circleDomain.pointAt i.val = c.coset.pointAt j.val := by
+  have hj : c.coset.pointAt j.val ∈ Set.range (fun i : Fin c.circleDomain.size =>
+      c.circleDomain.pointAt i.val) := by
+    rw [c.range_circleDomain_pointAt]
+    exact ⟨j, rfl⟩
+  obtain ⟨i, hi⟩ := hj
+  exact ⟨i, hi, fun _ hk =>
+    c.circleDomain.pointAt_injective c.circleDomain_valid (hk.trans hi.symm)⟩
 
 end CanonicCoset
 

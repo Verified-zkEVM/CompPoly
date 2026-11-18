@@ -296,6 +296,40 @@ example : (CircleDomain.new (Coset.subgroup 0 (by decide))).indexAt 0 =
     Nat.sub_self, Coset.indexAt_zero, Coset.new_initialIndex, Coset.conjugate_initialIndex,
     neg_zero]
 
+example : ¬ (CircleDomain.new (Coset.subgroup 0 (by decide))).Valid := by
+  intro h
+  obtain ⟨_, disjoint⟩ := (CircleDomain.valid_iff _).mp h
+  have hsize : 0 < (CircleDomain.new (Coset.subgroup 0 (by decide))).halfCoset.size := by
+    rw [CircleDomain.new_halfCoset, Coset.size_eq]
+    exact pow_pos (by decide) _
+  apply disjoint ⟨0, hsize⟩ ⟨0, hsize⟩
+  simp only [CircleDomain.new_halfCoset, Coset.indexAt_zero, Coset.subgroup_eq,
+    Coset.new_initialIndex, neg_zero]
+
+example (D : CircleDomain) (h : D.Valid) :
+    Function.Injective (fun i : Fin D.size => D.pointAt i.val) := D.pointAt_injective h
+
+example (c : CanonicCoset) :
+    Set.range (fun i : Fin c.circleDomain.size => c.circleDomain.pointAt i.val) =
+      Set.range (fun i : Fin c.coset.size => c.coset.pointAt i.val) := c.range_circleDomain_pointAt
+
+example (c : CanonicCoset) (j : Fin c.coset.size) :
+    ∃! i : Fin c.circleDomain.size, c.circleDomain.pointAt i.val = c.coset.pointAt j.val :=
+  c.existsUnique_circleDomain_pointAt j
+
+-- Both endpoint cardinalities follow symbolically, including the billion-point domain.
+example : let c : CanonicCoset := ⟨1, by decide, by decide⟩
+    Nat.card (Set.range (fun i : Fin c.circleDomain.size => c.circleDomain.pointAt i.val)) = 2 := by
+  intro c
+  rw [CircleDomain.card_range_pointAt _ c.circleDomain_valid, CanonicCoset.circleDomain_size]
+  rfl
+
+example : let c : CanonicCoset := ⟨30, by decide, by decide⟩
+    Nat.card (Set.range (fun i : Fin c.circleDomain.size => c.circleDomain.pointAt i.val)) =
+      2 ^ 30 := by
+  intro c
+  rw [CircleDomain.card_range_pointAt _ c.circleDomain_valid, CanonicCoset.circleDomain_size]
+
 example : order • generator = 0 := order_nsmul_generator
 
 example : (2 ^ 30 : Nat) • generator = Point.antipode 0 := generator_half_order
