@@ -89,6 +89,7 @@ scripts/              repo utilities and validation helpers
 
 ## Navigation Notes
 
+- For repository origins and attribution, see [project-history.md](project-history.md).
 - `CompPoly.lean` is a generated umbrella import file, not a hand-maintained module
   index.
 - The root [`../../README.md`](../../README.md) is a good public overview, but it is
