@@ -5,6 +5,17 @@ general rings, supporting univariate, multivariate, multilinear, and bivariate
 polynomials. It aims to serve as the mathematical foundation for zero-knowledge
 circuit verification.
 
+## Origins and license
+
+This repository was created by merging content from NethermindEth/CompPoly and
+ArkLib. It is a separate project from the original Nethermind CompPoly and has
+been maintained under Verified-zkEVM since the merge.
+
+CompPoly is released under the [Apache License 2.0](LICENSE). Copyright belongs
+to the respective contributors. [NOTICE](NOTICE) retains the original Nethermind
+copyright notice and acknowledges ArkLib; source file headers contain additional
+copyright and author credits.
+
 ## Representation
 
 - **Multivariate (`CMvPolynomial n R`)**: computable polynomials in `n` variables over coefficients `R`, represented internally as sparse monomial-to-coefficient maps (`CMvMonomial n → R`) with zero coefficients filtered out. The library provides a `RingEquiv` to Mathlib `MvPolynomial (Fin n) R`.
