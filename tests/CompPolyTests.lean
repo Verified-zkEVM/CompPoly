@@ -116,3 +116,4 @@ public import CompPolyTests.Univariate.Roots.FiniteField
 public import CompPolyTests.Univariate.Roots.LasVegas
 public import CompPolyTests.Univariate.Roots.Shoup
 public import CompPolyTests.Univariate.ToPoly
+public import CompPolyTests.Univariate.ToPoly.Degree

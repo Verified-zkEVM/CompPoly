@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Julian Sutherland
+Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Julian Sutherland, Alexander Hicks
 -/
 module
 
@@ -9,9 +9,15 @@ import all CompPoly.Univariate.ToPoly.Impl
 public import CompPoly.Univariate.ToPoly.Impl
 
 /-!
-# `toPoly` Degree Lemmas
+# Degrees and degree bounds under `toPoly`
 
 Degree lemmas for the computable-univariate to `Polynomial` conversion.
+
+`degreeLTEquiv` is the linear equivalence between the polynomials of degree below `n` and their
+coefficient vectors `Fin n → R`. The lemmas `exists_degreeLT_toPoly_iff` and
+`forall_degreeLT_toPoly_iff` restate a quantifier over `↥(degreeLT n)` as a quantifier over
+Mathlib polynomials of degree below `n`. With the enumeration `instFintypeDegreeLT` from
+`CompPoly.Univariate.Linear`, they turn a finite search into a statement about Mathlib polynomials.
 -/
 
 public section
@@ -187,6 +193,52 @@ theorem eval_eq_sum_degreeLTEquiv [DecidableEq R] {n : ℕ} {p : CPolynomial R}
   rw [degreeLTEquiv_toPoly (R := R) hp i]
 
 end degreeLTEquiv
+
+/-! ### Quantifiers over bounded-degree polynomials
+
+`toPoly` maps `degreeLT n` onto the Mathlib polynomials of degree below `n`. The lemmas in this
+section use this fact to restate a quantifier over `↥(degreeLT n)` as a quantifier over Mathlib
+polynomials. They serve only in proofs, because `toPoly` is noncomputable. A typical use decides
+an executable predicate `P` by a search over the enumeration `instFintypeDegreeLT`. Suppose that
+`P p` holds exactly when `Q p.toPoly` holds. Then these lemmas turn the result of the search into a
+statement about all Mathlib polynomials of degree below `n`. -/
+
+/-- Some polynomial of degree below `n` satisfies `Q` after `toPoly` exactly when some Mathlib
+polynomial of degree below `n` satisfies `Q`. -/
+theorem exists_degreeLT_toPoly_iff (n : ℕ) (Q : R[X] → Prop) :
+    (∃ p : ↥(degreeLT (R := R) n), Q p.val.toPoly) ↔ ∃ p : R[X], p.degree < n ∧ Q p := by
+  constructor
+  · rintro ⟨p, hQ⟩
+    exact ⟨p.val.toPoly, Polynomial.mem_degreeLT.mp (degreeLT_toPoly.mp p.property), hQ⟩
+  · rintro ⟨p, hp, hQ⟩
+    refine ⟨⟨⟨p.toImpl, Raw.isCanonical_toImpl p⟩, ?_⟩, by rwa [toPoly_mk_toImpl]⟩
+    rw [degreeLT_toPoly, toPoly_mk_toImpl]
+    exact Polynomial.mem_degreeLT.mpr hp
+
+/-- Every polynomial of degree below `n` satisfies `Q` after `toPoly` exactly when every Mathlib
+polynomial of degree below `n` satisfies `Q`. -/
+theorem forall_degreeLT_toPoly_iff (n : ℕ) (Q : R[X] → Prop) :
+    (∀ p : ↥(degreeLT (R := R) n), Q p.val.toPoly) ↔ ∀ p : R[X], p.degree < n → Q p := by
+  simpa only [not_exists, not_and, not_not] using (exists_degreeLT_toPoly_iff n (¬ Q ·)).not
+
+/-- `Q` holds for every pair of polynomials with degrees below `m` and `n` after `toPoly` exactly
+when it holds for every such pair of Mathlib polynomials. -/
+theorem forall₂_degreeLT_toPoly_iff (m n : ℕ) (Q : R[X] → R[X] → Prop) :
+    (∀ f : ↥(degreeLT (R := R) m), ∀ g : ↥(degreeLT (R := R) n),
+      Q f.val.toPoly g.val.toPoly) ↔
+      ∀ f g : R[X], f.degree < m → g.degree < n → Q f g := by
+  simp only [forall_degreeLT_toPoly_iff n (Q _),
+    forall_degreeLT_toPoly_iff m fun f ↦ ∀ g : R[X], g.degree < n → Q f g]
+  exact forall_congr' fun _ ↦ forall_comm
+
+/-- Suppose that every Mathlib polynomial that satisfies `Q` has degree below `n`. Then some
+polynomial of degree below `n` satisfies `Q` after `toPoly` exactly when some Mathlib polynomial
+satisfies `Q`. -/
+theorem exists_degreeLT_toPoly_iff_of_degree_lt (n : ℕ) (Q : R[X] → Prop)
+    (hQ : ∀ p, Q p → p.degree < n) :
+    (∃ p : ↥(degreeLT (R := R) n), Q p.val.toPoly) ↔ ∃ p : R[X], Q p :=
+  (exists_degreeLT_toPoly_iff n Q).trans
+    ⟨fun ⟨p, _, hp⟩ ↦ ⟨p, hp⟩, fun ⟨p, hp⟩ ↦ ⟨p, hQ p hp, hp⟩⟩
 
 end LinearEquiv
 

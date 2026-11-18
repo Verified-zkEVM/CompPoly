@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Desmond Coles, Derek Sorensen
+Authors: Desmond Coles, Derek Sorensen, Alexander Hicks
 -/
 module
 
@@ -12,6 +12,9 @@ public import CompPoly.Univariate.Basic
 # Linear Algebra API for Computable Univariate Polynomials
 
 This file contains linear maps and instance-stable bounded-degree predicates for `CPolynomial`.
+
+`ofFnEquiv n` identifies the coefficient vectors `Fin n → R` with the polynomials of degree below
+`n`. Over a finite coefficient type, it gives the executable enumeration `instFintypeDegreeLT`.
 -/
 
 public section
@@ -98,6 +101,39 @@ theorem ofFn_coeff_of_mem_degreeLT {n : ℕ} {p : CPolynomial R} (hp : p ∈ deg
   · rename_i h
     exact (coeff_eq_zero_of_size_le p
       (le_trans (mem_degreeLT_iff_size_le.mp hp) (Nat.le_of_not_lt h))).symm
+
+/-- `ofFnEquiv n` is the equivalence, through `ofFn`, from the coefficient vectors `Fin n → R` to
+the polynomials of degree below `n`. Its inverse reads the first `n` coefficients. Both directions
+are executable. -/
+def ofFnEquiv (n : ℕ) : (Fin n → R) ≃ ↥(degreeLT (R := R) n) where
+  toFun f := ⟨ofFn f, ofFn_mem_degreeLT f⟩
+  invFun p i := p.val.coeff i
+  left_inv f := funext fun i ↦ (coeff_ofFn f i).trans (dite_eq_left i.isLt)
+  right_inv p := Subtype.ext (ofFn_coeff_of_mem_degreeLT p.property)
+
+/-- The polynomial that `ofFnEquiv n` assigns to `f` is `ofFn f`. -/
+@[simp]
+theorem ofFnEquiv_apply_val (n : ℕ) (f : Fin n → R) : (ofFnEquiv n f).val = ofFn f := by
+  rfl
+
+/-- The inverse of `ofFnEquiv n` reads the first `n` coefficients. -/
+@[simp]
+theorem ofFnEquiv_symm_apply (n : ℕ) (p : ↥(degreeLT (R := R) n)) (i : Fin n) :
+    (ofFnEquiv n).symm p i = p.val.coeff i := by
+  rfl
+
+/-- Over a finite coefficient type, the polynomials of degree below `n` form a finite type.
+
+The enumeration is executable. It lists the coefficient vectors `Fin n → R` and converts each
+vector to a polynomial with `ofFn`. At `n = 0` it lists only the zero polynomial. -/
+instance instFintypeDegreeLT [Fintype R] (n : ℕ) : Fintype ↥(degreeLT (R := R) n) :=
+  Fintype.ofEquiv (Fin n → R) (ofFnEquiv n)
+
+/-- Over a finite coefficient type, there are `card R ^ n` polynomials of degree below `n`.
+The statement holds for every `Fintype` instance on `↥(degreeLT n)`. -/
+theorem card_degreeLT [Fintype R] (n : ℕ) [Fintype ↥(degreeLT (R := R) n)] :
+    Fintype.card ↥(degreeLT (R := R) n) = Fintype.card R ^ n := by
+  rw [← Fintype.card_congr (ofFnEquiv (R := R) n), Fintype.card_fun, Fintype.card_fin]
 
 end OfFn
 

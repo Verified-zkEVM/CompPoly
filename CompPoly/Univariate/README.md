@@ -33,13 +33,13 @@ on top (root finding and Reed-Solomon coding).
 - **ToPoly.lean** — Umbrella import for conversion/equivalence with Mathlib's `Polynomial R`.
 - **ToPoly/Core.lean** — Core conversion maps and API lemmas.
 - **ToPoly/Equiv.lean** — Round-trip theorems and ring equivalence with Mathlib polynomials.
-- **ToPoly/Degree.lean** — Degree/support transport lemmas for conversions, plus `degreeLT` / `degreeLTEquiv`.
+- **ToPoly/Degree.lean** — Degree/support transport lemmas for conversions, plus `degreeLTEquiv`. The lemmas `exists_degreeLT_toPoly_iff` and `forall_degreeLT_toPoly_iff` transport a finite search over `degreeLT n` to a statement about Mathlib polynomials of degree below `n`.
 - **ToPoly/Impl.lean** — Implementation-facing transport lemmas.
 - **CMvEquiv.lean** — Ring equivalence `CPolynomial R ≃+* CMvPolynomial 1 R`, via `CPolynomial R ≃ R[X] ≃ (CMvPolynomial 0 R)[X] ≃ CMvPolynomial 1 R`.
 
 ## Arithmetic and structure
 
-- **Linear.lean** — Linear-factor and affine helper lemmas for univariate workflows.
+- **Linear.lean** — The coefficient linear maps `lcoeff`, the degree-bounded sets `degreeLE` and `degreeLT` with the module structure on `degreeLT n`, `degreeLTCoeffs`, and the degree bounds for `ofFn`. Over a finite coefficient type, `instFintypeDegreeLT` enumerates `degreeLT n` executably through `ofFnEquiv`.
 - **Deriv.lean** — Formal derivative `CPolynomial.derivative` and the Taylor shift `CPolynomial.taylor`.
 - **Modular.lean** — Executable modular arithmetic over the `MulContext` / `ModContext` backends.
 - **DivisionCorrectness.lean** — Correctness theorems for the division-style algorithms.
