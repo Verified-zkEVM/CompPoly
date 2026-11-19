@@ -134,6 +134,7 @@ Roughly by area, with representative group prefixes:
 | Interpolation | `univariate-interp-koalabear-l*` (Lagrange vs subproduct tree vs NTT vs planned NTT), `univariate-interp-coset-*`, `univariate-barycentric-*` (generic vs closed-form weights) |
 | Reed-Solomon decoding | `rs-gao-decode-koalabear-l*`: definitional Gao decoder vs `decodeNTT` / `decodePlan` |
 | Schoolbook / NTT crossover | `univariate-mul-crossover-*`, degree<4 to degree<1024 |
+| Raw multiplication | `univariate-raw-mul-short-*`: `C c` and `X - C a` on each side of a degree<8 to degree<1024 factor; `univariate-raw-mul-balanced-*`: two degree<64 factors; over KoalaBear's native-word representation, BN254 as `ZMod`, and `Int` |
 | Harness self-check | `harness-floor`, `harness-canary`, `harness-chain-floor`, `harness-chain-linearity`: the harness measuring itself, see below |
 
 Use `--list` for the authoritative set; the prefixes above drift as groups are

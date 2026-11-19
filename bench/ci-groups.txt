@@ -85,3 +85,6 @@ univariate-interp-coset-koalabear-l12
 univariate-barycentric-koalabear-l8
 univariate-mul-crossover-64
 univariate-mul-crossover-256
+univariate-raw-mul-short-koalabear-64
+univariate-raw-mul-short-koalabear-1024
+univariate-raw-mul-balanced-bn254-64
