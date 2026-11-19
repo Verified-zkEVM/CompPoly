@@ -100,8 +100,9 @@ such transport has been observed to send the kernel into `Polynomial.pow → npo
 unfolding the power one exponent step at a time until the deep-recursion guard fired. Compiling the
 defining module is not evidence against this -- inside a `module`, imported definitions that are
 not `@[expose]`d have no body for the kernel, Mathlib's `Polynomial.instAdd` among them, so the
-slow path does not exist there, while a full-closure replay sees every body and takes it. Since there is only one form of each statement, that cast has no
-occasion to appear. `docs/wiki/field-extensions.md` records the history, and
+slow path does not exist there, while a full-closure replay sees every body and takes it. Since
+there is only one form of each statement, that cast has no occasion to appear.
+`docs/wiki/field-extensions.md` records the history, and
 `CompPoly/Data/Polynomial/RabinCertificate.lean` packages these tests at concrete degrees.
 -/
 
