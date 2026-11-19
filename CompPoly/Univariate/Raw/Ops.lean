@@ -1,6 +1,5 @@
 /-
-Copyright (c) 2025 CompPoly. All rights reserved.
-Copyright (c) 2026 ArkLib Contributors (the size lemmas of `SizeCoeffLemmas`).
+Copyright (c) 2025 CompPoly, 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles,
   Natalie Klaus, Dimitris Mitsios, Alexander Hicks
@@ -13,7 +12,10 @@ public import CompPoly.Univariate.Raw.Core
 /-!
 # Raw Univariate Polynomial Operations
 
-Operations and evaluation lemmas for raw computable univariate polynomials.
+Operations and evaluation lemmas for raw computable univariate polynomials. The file also gives
+the sizes and the coefficients of the raw operations. It defines `mulRawFast`, a loop for `mulRaw`
+that computes each entry of the result as one sum. The `@[csimp]` lemma `mulRaw_eq_mulRawFast`
+makes compiled code compute `mulRaw` with `mulRawFast`.
 -/
 
 public section
@@ -210,8 +212,8 @@ section MulRawFast
 
 `mulRawFast` computes the same array as `mulRaw`. The `@[csimp]` lemma `mulRaw_eq_mulRawFast`
 makes compiled code use it. The lemma comes before `mul` and the other definitions in this file
-that use `mulRaw`, because the compiler inlines or specializes `mulRaw` into them when it compiles
-them, and a later `@[csimp]` lemma does not change that code. -/
+that use `mulRaw`. When the compiler compiles such a definition, it inlines or specializes `mulRaw`
+into the code. A `@[csimp]` lemma later in the file would not change that code. -/
 
 /-- Raw multiplication that computes each entry of the result as one sum.
 
@@ -236,21 +238,15 @@ def mulRawFast [inst : Semiring R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R
           (fun t ht s ↦ s + p[lo + t]'(by omega) * q[k - (lo + t)]'(by omega)) 0))
       (Array.emptyWithCapacity (q.size + p.size - 1))
 
-/-- A `Nat.fold` that pushes `e k` at step `k` appends `e 0, …, e (n - 1)`. -/
-private theorem natFold_push {n : ℕ} (e : ℕ → R) (init : Array R) :
-    n.fold (fun k _ acc ↦ acc.push (e k)) init = init ++ Array.ofFn fun k : Fin n ↦ e k := by
-  induction n with
-  | zero => simp
-  | succ n ih => rw [Nat.fold_succ, ih, Array.ofFn_succ, Array.push_append]; rfl
-
 /-- For a nonempty `p`, `mulRawFast p q` is the array of the entry sums. -/
 private theorem mulRawFast_eq_ofFn [Semiring R] {p : CPolynomial.Raw R} (q : CPolynomial.Raw R)
     (hp : p.size ≠ 0) :
     mulRawFast p q = Array.ofFn fun k : Fin (q.size + p.size - 1) ↦
       (min (k.val + 1) p.size - (k.val + 1 - q.size)).fold (fun t _ s ↦
-        s + p.getD (k.val + 1 - q.size + t) 0 * q.getD (k.val - (k.val + 1 - q.size + t)) 0) 0 := by
+        s + p.getD (k.val + 1 - q.size + t) 0 *
+          q.getD (k.val - (k.val + 1 - q.size + t)) 0) 0 := by
   simp only [mulRawFast, hp, ↓reduceIte]
-  rw [natFold_push, Array.emptyWithCapacity_eq, Array.empty_append]
+  rw [Nat.fold_push_eq_append_ofFn, Array.emptyWithCapacity_eq, Array.empty_append]
   congr! 3 with k
   funext t ht s
   rw [Array.getElem_eq_getD 0, Array.getElem_eq_getD 0]
@@ -298,13 +294,13 @@ theorem getElem_mulRawFast [Semiring R] (p q : CPolynomial.Raw R) (k : ℕ)
   simp only [mulRawFast_eq_ofFn q hp, Array.getElem_ofFn]
   rw [natFold_add_eq_sum, sum_range_eq_sum_Ico, Finset.sum_Ico_eq_sum_range]
 
-/-- Compiled code computes `mulRaw` with `mulRawFast`. -/
+/-- `mulRaw` equals `mulRawFast`. As a `@[csimp]` lemma, it makes compiled code use
+`mulRawFast`. -/
 @[csimp]
 theorem mulRaw_eq_mulRawFast : @mulRaw = @mulRawFast := by
   funext R _ p q
   refine Array.ext (by simp only [size_mulRaw, size_mulRawFast]) fun k h _ ↦ ?_
-  simp only [Array.getElem_eq_getD 0 (h := h), getElem_mulRawFast]
-  exact coeff_mulRaw p q k
+  simp only [← Trim.coeff_eq_getElem h, coeff_mulRaw, getElem_mulRawFast]
 
 end MulRawFast
 

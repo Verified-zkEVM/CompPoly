@@ -268,3 +268,15 @@ lemma popWhile_nil_or_last_false (p : α → Bool) (as : Array α)
     · simp_all +decide [ Array.getLast ]
 
 end Array
+
+namespace Nat
+
+/-- A `Nat.fold` that pushes `e k` at step `k` appends `e 0, …, e (n - 1)` to its initial
+array. -/
+theorem fold_push_eq_append_ofFn {α : Type*} {n : ℕ} (e : ℕ → α) (init : Array α) :
+    n.fold (fun k _ acc ↦ acc.push (e k)) init = init ++ Array.ofFn fun k : Fin n ↦ e k := by
+  induction n with
+  | zero => simp
+  | succ n ih => rw [Nat.fold_succ, ih, Array.ofFn_succ, Array.push_append]; rfl
+
+end Nat

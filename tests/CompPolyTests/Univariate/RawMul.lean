@@ -7,6 +7,8 @@ module
 
 import all CompPoly.Univariate.Raw.Ops
 public meta import CompPoly.Univariate.Raw.Ops
+public meta import Lean.Compiler.IR.EmitUtil
+public meta import Mathlib.Data.ZMod.Defs
 public meta import Mathlib.LinearAlgebra.Matrix.Notation
 
 /-!
@@ -19,8 +21,13 @@ the defining fold of `mulRaw`. No `@[csimp]` lemma applies to it, so a compariso
 `mulRawRef` checks the compiled code against the definition of `mulRaw`.
 
 The inputs cover empty and singleton arrays, zero and trailing-zero coefficients, a short factor
-on each side, and balanced factors. The coefficients in the last group are `2 × 2` matrices over
-`ℕ`, which do not commute, so these checks also fix the order of the factors in each product.
+on each side, and balanced factors. The section on zero divisors uses `ZMod 6` and `2 × 2`
+matrices over `ZMod 4`. The section on noncommutative coefficients uses `2 × 2` matrices over
+`ℕ`. The matrices over `ℕ` do not commute, so these checks also fix the order of the factors in
+each product.
+
+Two last checks read the `@[csimp]` map and the compiled code of `mul`. They fail if compiled code
+does not compute `mulRaw` with `mulRawFast`.
 -/
 
 public meta section
@@ -47,7 +54,8 @@ example {R : Type*} [Semiring R] (p q : Raw R) : mulRawRef p q = mulRaw p q := r
 
 /-! ### Zero and trailing-zero coefficients
 
-The product keeps `p.size + q.size - 1` entries, so zero entries at the end stay. -/
+For a nonempty `p`, the product keeps `p.size + q.size - 1` entries, so zero entries at the end
+stay. -/
 
 #guard mulRaw (#[0, 0] : Raw ℕ) #[0, 0, 0] == #[0, 0, 0, 0]
 #guard mulRaw (#[1, 0] : Raw ℕ) #[1, 1, 0] == #[1, 1, 0, 0]
@@ -64,14 +72,33 @@ The product keeps `p.size + q.size - 1` entries, so zero entries at the end stay
 #guard mulRaw (#[3] : Raw ℤ) #[1, -2, 0, 5] == #[3, -6, 0, 15]
 
 /-- The array of length `n` whose entry `i` is `i + 1`, or `0` when `i % 3 = 2`. -/
-def natInput (n : ℕ) : Raw ℕ := Array.ofFn fun i : Fin n => if i.val % 3 = 2 then 0 else i.val + 1
+def natInput (n : ℕ) : Raw ℕ := Array.ofFn fun i : Fin n ↦ if i.val % 3 = 2 then 0 else i.val + 1
 
-#guard (List.range 9).all fun m => (List.range 9).all fun n =>
+#guard (List.range 9).all fun m ↦ (List.range 9).all fun n ↦
   mulRaw (natInput m) (natInput n) == mulRawRef (natInput m) (natInput n)
-#guard [1, 2, 3].all fun n =>
+#guard [1, 2, 3].all fun n ↦
   mulRaw (natInput 40) (natInput n) == mulRawRef (natInput 40) (natInput n) &&
     mulRaw (natInput n) (natInput 40) == mulRawRef (natInput n) (natInput 40)
 #guard mulRaw (natInput 24) (natInput 24) == mulRawRef (natInput 24) (natInput 24)
+
+/-! ### Zero divisors
+
+In `ZMod 6` and in matrices over `ZMod 4`, a product of nonzero entries can be zero. -/
+
+/-- Inputs over `ZMod 6` of length `n`. Entry `i` is `5 * i + shift`. -/
+def zmodInput (n shift : ℕ) : Raw (ZMod 6) :=
+  Array.ofFn fun i : Fin n ↦ ((5 * i.val + shift : ℕ) : ZMod 6)
+
+#guard (List.range 12).all fun m ↦ (List.range 12).all fun n ↦
+  mulRaw (zmodInput m 1) (zmodInput n 2) == mulRawRef (zmodInput m 1) (zmodInput n 2)
+
+/-- Upper triangular `2 × 2` matrices over `ZMod 4` of length `n`. -/
+def zmodMatInput (n shift : ℕ) : Raw (Matrix (Fin 2) (Fin 2) (ZMod 4)) :=
+  Array.ofFn fun i : Fin n ↦ !![((i.val + shift : ℕ) : ZMod 4), 2; 0, ((3 * i.val : ℕ) : ZMod 4)]
+
+#guard (List.range 8).all fun m ↦ (List.range 8).all fun n ↦
+  mulRaw (zmodMatInput m 0) (zmodMatInput n 1) ==
+    mulRawRef (zmodMatInput m 0) (zmodMatInput n 1)
 
 /-! ### Noncommutative coefficients -/
 
@@ -94,26 +121,38 @@ def b : M := !![0, 1; 1, 0]
 
 /-- Matrix inputs of length `n`, cycling through six matrices that include `0` and `1`. -/
 def matInput (n : ℕ) (shift : ℕ) : Raw M :=
-  Array.ofFn fun i : Fin n => #[a, b, 0, a * b, 1, !![0, 0; 5, 0]].getD ((i.val + shift) % 6) 0
+  Array.ofFn fun i : Fin n ↦ #[a, b, 0, a * b, 1, !![0, 0; 5, 0]].getD ((i.val + shift) % 6) 0
 
-#guard (List.range 7).all fun m => (List.range 7).all fun n =>
+#guard (List.range 7).all fun m ↦ (List.range 7).all fun n ↦
   mulRaw (matInput m 0) (matInput n 3) == mulRawRef (matInput m 0) (matInput n 3)
-#guard [1, 2].all fun n =>
+#guard [1, 2].all fun n ↦
   mulRaw (matInput 20 0) (matInput n 1) == mulRawRef (matInput 20 0) (matInput n 1) &&
     mulRaw (matInput n 1) (matInput 20 0) == mulRawRef (matInput n 1) (matInput 20 0)
 
 /-! ### `mulRawFast` called directly -/
 
-#guard (List.range 9).all fun m => (List.range 9).all fun n =>
+#guard (List.range 9).all fun m ↦ (List.range 9).all fun n ↦
   mulRawFast (natInput m) (natInput n) == mulRawRef (natInput m) (natInput n)
-#guard (List.range 7).all fun m => (List.range 7).all fun n =>
+#guard (List.range 7).all fun m ↦ (List.range 7).all fun n ↦
   mulRawFast (matInput m 0) (matInput n 3) == mulRawRef (matInput m 0) (matInput n 3)
 
--- The checks above pass without the `@[csimp]` lemma too; this fails if it is removed.
+/-! ### The `@[csimp]` lemma and its placement
+
+The checks above pass without the `@[csimp]` lemma too. The first check below fails if the lemma
+is removed. The second fails if `mul` is compiled before the lemma, because then the compiled code
+of `mul` keeps the fold of `mulRaw`. -/
+
 open Lean in
 run_meta do
   let map := (Compiler.CSimp.ext.getState (← getEnv)).map
   unless (map.find? ``mulRaw).map (·.toDeclName) == some ``mulRawFast do
     throwError "no @[csimp] lemma replaces mulRaw with mulRawFast"
+
+open Lean in
+run_meta do
+  let env ← getEnv
+  let some decl := IR.findEnvDecl env ``mul | throwError "no compiled code for `mul`"
+  unless (IR.collectUsedDecls env [decl]).any (``mulRawFast).isPrefixOf do
+    throwError "the compiled code of `mul` does not call `mulRawFast`"
 
 end CompPolyTests.Univariate.RawMul

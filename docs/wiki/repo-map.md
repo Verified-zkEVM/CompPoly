@@ -49,10 +49,11 @@ scripts/              repo utilities and validation helpers
   `NTT/Interpolation.lean` and `NTTFast/Interpolation.lean` on an NTT domain,
   `NTT/Coset.lean` and `NTTFast/Coset.lean` on its cosets, and
   `BatchEval/Interpolation.lean` on arbitrary nodes.
-- Bounding stored coefficient buffers: `Univariate/Raw/Size.lean` gives raw operation sizes,
-  including the padding retained by multiplication. The size equations of the operations
-  themselves are in `Univariate/Raw/Ops.lean`, and `Size.lean` exports them. These are
-  representation-size facts, independent of canonical degree and execution cost.
+- Bounding stored coefficient buffers: the size equations of `smul`, `mulPowX`, `addRaw` and
+  `mulRaw`, including the padding that multiplication retains, are in `Univariate/Raw/Ops.lean`.
+  `Univariate/Raw/Size.lean` imports that module publicly and adds `size_C` and bounds such as
+  `size_mulRaw_le`. These are representation-size facts, independent of canonical degree and
+  execution cost.
 - Working on root-of-unity NTT evaluation, interpolation, or multiplication:
   start in `CompPoly/Univariate/NTT/` for shared domains/specifications and
   `CompPoly/Univariate/NTTFast/` for planned optimized transforms.
