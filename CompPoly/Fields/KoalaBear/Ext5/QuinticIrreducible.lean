@@ -109,8 +109,8 @@ theorem quintic_bezout_check :
 /-- **`X^5 + X^2 - 1` is irreducible over KoalaBear**, by Rabin's test at prime degree with
 kernel-checked certificates for both conditions.
 
-Applied at `ZMod fieldSize` as one fully-applied term, for the reason given on
-`sexticPoly_irreducible`. -/
+Applied as one term at `ZMod fieldSize` with `ZMod.instField fieldSize`; see
+`sexticPoly_irreducible` for why both are required and why the explicit `@` form must stay. -/
 theorem quinticPoly_irreducible : Irreducible quinticPoly :=
   @irreducible_of_rabin_prime_degree (ZMod fieldSize) (ZMod.instField fieldSize)
     (ZMod.fintype fieldSize) quinticPoly 5 fieldSize (ZMod.card _) (by norm_num)
