@@ -12,25 +12,35 @@ public import CompPoly.Fields.BN254
 # Raw multiplication by a short factor, and balanced raw multiplication
 
 Raw multiplication `CPolynomial.Raw.mulRaw p q` over three coefficient types with different
-arithmetic costs. KoalaBear's native-word representation uses unboxed 32-bit arithmetic. The BN254
-scalar field as `ZMod` uses arithmetic on big natural numbers through the instance closures of
-`ZMod`. `Int` uses boxed integer arithmetic.
+arithmetic costs:
 
-The `short` groups multiply a factor with `coeffs` dense coefficients by a factor of one or two
-coefficients. The short factors are `C c` and `X - C a`, the shapes of a scalar product and of
-one step of a product of linear factors. The rows `*-right` put the short factor on the right
-and the rows `*-left` put it on the left. The `cpoly-*` rows multiply by `X - C a` through the
-`CPolynomial` instance, which trims the result. One group per size, because the size of the long
-factor is the variable of the sweep.
+* `KoalaBear.Fast.Field`, KoalaBear's native-word representation, uses unboxed 32-bit arithmetic.
+* `BN254.ScalarField`, the BN254 scalar field as `ZMod`, uses arithmetic on big natural numbers
+  through the instance closures of `ZMod`.
+* `Int` has inputs in `[-2^20, 2^20]`. The inputs fit Lean's unboxed small integers. A product of
+  two inputs can be outside that range, and then it allocates a big integer.
 
-The `balanced` groups multiply two factors with `coeffs` dense coefficients each, in both orders.
-The `univariate-mul-crossover-*` groups measure balanced products over KoalaBear's native-word
-representation.
+The `short` groups multiply a dense factor by a factor of one or two coefficients. The short
+factors are `C c` and `X - C a`, the shapes of a scalar product and of one step of a product of
+linear factors. The rows `*-right` put the short factor on the right, and the rows `*-left` put it
+on the left. The `cpoly-*` rows multiply by `X - C a` through the `CPolynomial` instance, which
+trims the result. The dense factor has 8, 64 or 1024 coefficients over `KoalaBear.Fast.Field`, and
+1024 coefficients over `BN254.ScalarField` and `Int`. Each size has its own group, because the
+size of the dense factor is the variable of the sweep.
 
-All three coefficient types are commutative, so the two orientations of a product give the same
-array, and each pair of rows shares a digest class. Every body indexes a pool of two inputs. The
-sink reads four entries of the result, so that its cost does not grow with the size of the
-result.
+The `balanced` groups multiply two dense factors with 64 coefficients each, in both orders, over
+`BN254.ScalarField` and `Int`. The `univariate-mul-crossover-*` groups measure balanced products
+over `KoalaBear.Fast.Field`.
+
+All three coefficient types are commutative, so the two orders of a product give the same array.
+The rows of one product share a digest class, and the group agreement check compares them. The
+`cpoly-linear-*` rows share the class of the `linear-*` rows, so the check also compares the
+`CPolynomial` path with the raw path. The two paths agree because the top coefficient of each
+seeded dense factor is not zero, so the trim removes nothing.
+
+Every body indexes a pool of two inputs. The timed pass sinks four entries of the result
+(`arraySampleSink`), so the cost of the sink does not grow with the size of the result. The timed
+region includes the checksum conversions of these four entries.
 -/
 
 public section
@@ -46,34 +56,34 @@ private structure RawMulCarrier (R : Type) where
   /-- The name of the coefficient type in the records. -/
   field : String
   /-- Generate `n` dense coefficients. -/
-  coeffs : Nat → StateM StdGen (Array R)
+  generate : Nat → StateM StdGen (Array R)
   /-- The checksum of one coefficient. -/
   checksum : R → Nat
 
 /-- KoalaBear's native-word representation. -/
 private def koalaBearCarrier : RawMulCarrier KoalaBear.Fast.Field :=
   { slug := "koalabear", field := "KoalaBear.Fast.Field",
-    coeffs := fun n ↦ koalaBearFastArray <$> koalaBearArray n false,
+    generate := fun n ↦ koalaBearFastArray <$> koalaBearArray n false,
     checksum := checksumKoalaBearFast }
 
 /-- The BN254 scalar field as `ZMod`. -/
 private def bn254Carrier : RawMulCarrier BN254.ScalarField :=
   { slug := "bn254", field := "BN254.ScalarField",
-    coeffs := fun n ↦ zmodArray BN254.scalarFieldSize n false, checksum := checksumZMod }
+    generate := fun n ↦ zmodArray BN254.scalarFieldSize n false, checksum := checksumZMod }
 
-/-- Integers in `[-2^20, 2^20]`. Their products leave the range of Lean's unboxed small
-integers. -/
+/-- Integers in `[-2^20, 2^20]`. They fit Lean's unboxed small integers. A product of two of them
+can be outside that range, and then it allocates a big integer. -/
 private def intCarrier : RawMulCarrier Int :=
   { slug := "int", field := "Int",
-    coeffs := fun n ↦ (·.map fun x ↦ Int.ofNat x - 2 ^ 20) <$> randomNatArray n (2 ^ 21),
+    generate := fun n ↦ (·.map fun x ↦ Int.ofNat x - 2 ^ 20) <$> randomNatArray n (2 ^ 21),
     checksum := fun x ↦ x.natAbs * 2 + if x < 0 then 1 else 0 }
 
 /-- Time raw multiplication by `C c` and by `X - C a`, on each side, at one size. -/
 private def runRawMulShortGroup {R : Type} [CommRing R] [BEq R] [LawfulBEq R]
     (carrier : RawMulCarrier R) (coeffs : Nat) (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
-  let (long, gen) := (carrier.coeffs (2 * coeffs)).run gen
-  let (short, gen) := (carrier.coeffs 4).run gen
+  let (long, gen) := (carrier.generate (2 * coeffs)).run gen
+  let (short, gen) := (carrier.generate 4).run gen
   let longs : Array (CPolynomial.Raw R) :=
     #[long.extract 0 coeffs, long.extract coeffs (2 * coeffs)]
   let scalars : Array (CPolynomial.Raw R) := #[#[short.getD 0 0], #[short.getD 1 0]]
@@ -115,12 +125,12 @@ private def runRawMulShortGroup {R : Type} [CommRing R] [BEq R] [LawfulBEq R]
   let cpolyRight ← runTimedSpec
     { name := "univariate-raw-mul-cpoly-linear-right", representation := "CPolynomial",
       method := "p * (X - C a)", field, inputShape := shape, digestIterations := digests,
-      digestClass := "cpoly-linear" }
+      digestClass := "linear" }
     preset (fun i ↦ cpolyAt i * factorAt i) cpolyChecksum (sink := cpolySink)
   let cpolyLeft ← runTimedSpec
     { name := "univariate-raw-mul-cpoly-linear-left", representation := "CPolynomial",
       method := "(X - C a) * p", field, inputShape := shape, digestIterations := digests,
-      digestClass := "cpoly-linear" }
+      digestClass := "linear" }
     preset (fun i ↦ factorAt i * cpolyAt i) cpolyChecksum (sink := cpolySink)
   pure ({ groupKey := s!"univariate-raw-mul-short-{carrier.slug}-{coeffs}",
           title := s!"Raw multiplication by a short factor, degree<{coeffs} ({field})",
@@ -131,7 +141,7 @@ private def runRawMulShortGroup {R : Type} [CommRing R] [BEq R] [LawfulBEq R]
 private def runRawMulBalancedGroup {R : Type} [CommSemiring R]
     (carrier : RawMulCarrier R) (coeffs : Nat) (preset : BenchPreset) (gen : StdGen) :
     IO (BenchGroup × StdGen) := do
-  let (values, gen) := (carrier.coeffs (4 * coeffs)).run gen
+  let (values, gen) := (carrier.generate (4 * coeffs)).run gen
   let factors : Array (CPolynomial.Raw R) :=
     #[values.extract 0 coeffs, values.extract coeffs (2 * coeffs),
       values.extract (2 * coeffs) (3 * coeffs), values.extract (3 * coeffs) (4 * coeffs)]
