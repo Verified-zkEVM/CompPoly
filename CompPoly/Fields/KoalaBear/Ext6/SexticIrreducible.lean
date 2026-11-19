@@ -135,16 +135,26 @@ theorem sextic_cop2_bezout_check :
       = true := by rfl
 
 /-- **`X^6 + X^3 + 1` is irreducible over KoalaBear**, by Rabin's test at a degree with two prime
-factors, with kernel-checked certificates for all three conditions. -/
-theorem sexticPoly_irreducible : Irreducible sexticPoly := by
-  have hcard : Fintype.card Field = fieldSize := ZMod.card _
-  refine irreducible_of_rabin_degree_six hcard sexticPoly_natDegree ?_ ?_ ?_
-  · exact dvd_X_pow_sub_X_of_runChain toPoly_sexticL sexticPoly_ne_zero
-      sextic_trace_chain sextic_trace_exp
-  · exact isCoprime_X_pow_sub_X_of_runChain toPoly_sexticL sexticPoly_ne_zero
-      sextic_cop3_chain sextic_cop3_exp sextic_cop3_w_check sextic_cop3_bezout_check
-  · exact isCoprime_X_pow_sub_X_of_runChain toPoly_sexticL sexticPoly_ne_zero
-      sextic_cop2_chain sextic_cop2_exp sextic_cop2_w_check sextic_cop2_bezout_check
+factors, with kernel-checked certificates for all three conditions.
+
+Applied at `ZMod fieldSize` as one fully-applied term, rather than by `refine` against the
+`Field`-shaped goal. `Field` is reducibly `ZMod fieldSize`, but the two sides carry different
+instance *terms* for the same instance -- `Field.toCommRing instFieldField` against
+`ZMod.commRing fieldSize` -- and the types carrying them contain `X ^ (fieldSize ^ 6)`. The
+elaborator reconciles them, but a kernel replay from an empty environment need not take the same
+path, and reducing that power through `Polynomial.pow → npowRec → Nat.rec` does not finish. This is
+the hazard the section comment in `CompPoly/Data/Polynomial/Rabin.lean` describes, reached through
+the instance path rather than through a cast. Fixing every argument keeps each instance path on one
+side, so they meet only at `Irreducible sexticPoly`, where no exponent appears. -/
+theorem sexticPoly_irreducible : Irreducible sexticPoly :=
+  @irreducible_of_rabin_degree_six (ZMod fieldSize) (ZMod.instField fieldSize)
+    (ZMod.fintype fieldSize) sexticPoly fieldSize (ZMod.card _) sexticPoly_natDegree
+    (dvd_X_pow_sub_X_of_runChain toPoly_sexticL sexticPoly_ne_zero
+      sextic_trace_chain sextic_trace_exp)
+    (isCoprime_X_pow_sub_X_of_runChain toPoly_sexticL sexticPoly_ne_zero
+      sextic_cop3_chain sextic_cop3_exp sextic_cop3_w_check sextic_cop3_bezout_check)
+    (isCoprime_X_pow_sub_X_of_runChain toPoly_sexticL sexticPoly_ne_zero
+      sextic_cop2_chain sextic_cop2_exp sextic_cop2_w_check sextic_cop2_bezout_check)
 
 instance : Fact (Irreducible sexticPoly) := ⟨sexticPoly_irreducible⟩
 
