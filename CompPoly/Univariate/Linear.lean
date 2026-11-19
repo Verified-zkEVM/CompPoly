@@ -11,7 +11,8 @@ public import CompPoly.Univariate.Basic
 /-!
 # Linear Algebra API for Computable Univariate Polynomials
 
-This file contains linear maps and instance-stable bounded-degree predicates for `CPolynomial`.
+This file defines coefficient linear maps and bounded-degree subtypes for `CPolynomial`.
+The subtypes depend only on `Zero R`.
 
 `ofFnEquiv n` identifies the coefficient vectors `Fin n → R` with the polynomials of degree below
 `n`. Over a finite coefficient type, it gives the executable enumeration `instFintypeDegreeLT`.
@@ -124,18 +125,23 @@ theorem ofFnEquiv_symm_apply (n : ℕ) (p : ↥(degreeLT (R := R) n)) (i : Fin n
 
 /-- Over a finite coefficient type, the polynomials of degree below `n` form a finite type.
 
-The enumeration is executable. It lists the coefficient vectors `Fin n → R` and converts each
-vector to a polynomial with `ofFn`. At `n = 0` it lists only the zero polynomial. -/
+The enumeration converts each coefficient function `Fin n → R` to a polynomial with `ofFn`.
+At `n = 0` it lists only the zero polynomial.
+
+The enumeration uses `BEq R` to trim trailing zeros. When the `BEq R` instance changes,
+the subtype stays definitionally equal, but its enumerations may require a proof of equality.
+`card_degreeLT` applies to any enumeration. -/
 instance instFintypeDegreeLT [Fintype R] (n : ℕ) : Fintype ↥(degreeLT (R := R) n) :=
   Fintype.ofEquiv (Fin n → R) (ofFnEquiv n)
 
+end OfFn
+
 /-- Over a finite coefficient type, there are `card R ^ n` polynomials of degree below `n`.
 The statement holds for every `Fintype` instance on `↥(degreeLT n)`. -/
-theorem card_degreeLT [Fintype R] (n : ℕ) [Fintype ↥(degreeLT (R := R) n)] :
+theorem card_degreeLT [Zero R] [Fintype R] (n : ℕ) [Fintype ↥(degreeLT (R := R) n)] :
     Fintype.card ↥(degreeLT (R := R) n) = Fintype.card R ^ n := by
+  classical
   rw [← Fintype.card_congr (ofFnEquiv (R := R) n), Fintype.card_fun, Fintype.card_fin]
-
-end OfFn
 
 section DegreeLTSubtype
 
@@ -262,6 +268,13 @@ def degreeLTCoeffs (n : ℕ) : ↥(degreeLT (R := R) n) →ₗ[R] (Fin n → R) 
 theorem degreeLTCoeffs_apply (n : ℕ) (p : ↥(degreeLT (R := R) n)) (i : Fin n) :
     degreeLTCoeffs n p i = coeff p.1 i := by
   rfl
+
+/-- The inverse of `ofFnEquiv` is the coefficient linear map. -/
+theorem ofFnEquiv_symm_eq_degreeLTCoeffs (n : ℕ) :
+    ((ofFnEquiv (R := R) n).symm : ↥(degreeLT (R := R) n) → (Fin n → R)) =
+      degreeLTCoeffs n := by
+  funext p i
+  simp only [ofFnEquiv_symm_apply, degreeLTCoeffs_apply]
 
 end DegreeLTSubtype
 

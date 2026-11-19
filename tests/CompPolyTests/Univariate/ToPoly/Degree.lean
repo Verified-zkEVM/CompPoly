@@ -13,26 +13,33 @@ public import Mathlib.Algebra.Field.ZMod
 /-!
 # Enumeration of bounded-degree polynomials
 
-The `#guard` checks evaluate the enumeration `instFintypeDegreeLT` over `ZMod 5` in compiled code
-during elaboration. The `example` declarations are kernel-checked theorems. One states the count
-through `card_degreeLT`. The others connect finite searches to statements about Mathlib
-polynomials through the quantifier lemmas.
+The kernel checks the count over `ZMod 2` by reduction. The `#guard` checks run the enumeration
+over `ZMod 5` in compiled code. The examples also check cardinality across equality instances
+and connect finite searches to statements about Mathlib polynomials.
 -/
-
-public meta section
 
 namespace CompPolyTests.UnivariateDegreeLT
 
 open CompPoly CompPoly.CPolynomial
 
-instance : Fact (Nat.Prime 5) := ⟨by decide⟩
+-- Kernel reduction can count the imported enumeration.
+example : Fintype.card ↥(degreeLT (R := ZMod 2) 1) = 2 := by decide
+
+-- The same cardinality theorem applies to enumerations from either equality instance.
+example {R : Type*} [Zero R] [Fintype R] (b₁ b₂ : BEq R)
+    (h₁ : @LawfulBEq R b₁) (h₂ : @LawfulBEq R b₂) (n : ℕ) :
+    @Fintype.card _ (@instFintypeDegreeLT R _ b₁ h₁ _ n) =
+      @Fintype.card _ (@instFintypeDegreeLT R _ b₂ h₂ _ n) :=
+  (@card_degreeLT R _ _ n (@instFintypeDegreeLT R _ b₁ h₁ _ n)).trans
+    (@card_degreeLT R _ _ n (@instFintypeDegreeLT R _ b₂ h₂ _ n)).symm
+
+public meta section
 
 abbrev F : Type := ZMod 5
 
 /-! ## Executable enumeration
 
-The `#guard` lines evaluate the enumeration in compiled code. The one `example` in this section is
-a kernel-checked theorem. -/
+The `#guard` checks execute the enumeration. The cardinality example uses `card_degreeLT`. -/
 
 -- There are `5 ^ n` polynomials of degree below `n`.
 #guard Fintype.card ↥(degreeLT (R := F) 2) = 25
@@ -51,8 +58,14 @@ example : Fintype.card ↥(degreeLT (R := F) 3) = 125 := by
 #guard ((Finset.univ : Finset ↥(degreeLT (R := F) 2)).image (·.val)).card = 25
 #guard ∀ p : ↥(degreeLT (R := F) 2), p.val.degree < 2
 
+section LinearFactors
+
+local instance : Fact (Nat.Prime 5) := ⟨by decide⟩
+
 -- A search finds the known polynomial `(X - 1) * (X - 2)`.
 #guard ∃ p : ↥(degreeLT (R := F) 3), p.val = (X - C 1) * (X - C 2)
+
+end LinearFactors
 
 -- The polynomials of degree below 3 that vanish at 1 and 2 are the five multiples of
 -- `(X - 1) * (X - 2)`.
@@ -91,9 +104,8 @@ example : decide (∃ p : ↥(degreeLT (R := F) 3),
     fun q hq ↦ lt_of_le_of_lt hq.1 (by decide)]
   simp only [← degree_toPoly, ← eval_toPoly, coeff_toPoly]
 
--- Compiled check: if two polynomials of degree below 2 vanish at 1, then their sum vanishes at 1.
--- The kernel-checked example states that this search returns `true` exactly when the same holds
--- for every pair of Mathlib polynomials over `ZMod 5` of degree below 2.
+-- The sum of two polynomials that vanish at 1 also vanishes at 1.
+-- The example transports the bounded search to pairs of Mathlib polynomials.
 #guard ∀ f g : ↥(degreeLT (R := F) 2),
   f.val.eval 1 = 0 → g.val.eval 1 = 0 → (f.val + g.val).eval 1 = 0
 
@@ -105,5 +117,7 @@ example : decide (∀ f g : ↥(degreeLT (R := F) 2),
   simpa only [← toPoly_add, ← eval_toPoly, Nat.cast_ofNat] using
     forall₂_degreeLT_toPoly_iff (R := F) 2 2
       fun f g ↦ f.eval 1 = 0 → g.eval 1 = 0 → (f + g).eval 1 = 0
+
+end
 
 end CompPolyTests.UnivariateDegreeLT

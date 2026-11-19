@@ -49,6 +49,12 @@ def coeffVector (n : ℕ) (p : ↥(degreeLT (R := R) n)) : Vector R n :=
 def ofCoeffVector (n : ℕ) (v : Vector R n) : ↥(degreeLT (R := R) n) :=
   ⟨ofFn fun i => v[i], ofFn_mem_degreeLT _⟩
 
+/-- Rebuilding from a vector agrees with applying `ofFnEquiv` to its entries. -/
+theorem ofCoeffVector_eq_ofFnEquiv (n : ℕ) (v : Vector R n) :
+    ofCoeffVector n v = ofFnEquiv n (fun i => v[i]) :=
+  Subtype.ext (ofFnEquiv_apply_val n _).symm
+
+/-- Reading the coefficients into a vector and rebuilding the polynomial recovers `p`. -/
 @[simp]
 theorem ofCoeffVector_coeffVector (n : ℕ) (p : ↥(degreeLT (R := R) n)) :
     ofCoeffVector n (coeffVector n p) = p := by
