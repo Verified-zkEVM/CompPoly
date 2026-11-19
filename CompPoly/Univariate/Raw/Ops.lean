@@ -1,8 +1,9 @@
 /-
 Copyright (c) 2025 CompPoly. All rights reserved.
+Copyright (c) 2026 ArkLib Contributors (the size lemmas of `SizeCoeffLemmas`).
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gregor Mitscha-Baude, Derek Sorensen, Desmond Coles,
-  Natalie Klaus, Dimitris Mitsios
+  Natalie Klaus, Dimitris Mitsios, Alexander Hicks
 -/
 module
 
@@ -110,15 +111,208 @@ end MulPowXDefs
 
   The partial sums are combined with the untrimmed `addRaw`, so the result may carry
   trailing zeros and should be trimmed for canonical form. Deferring the trim to the
-  end (see `mul`) avoids an `O(size)` scan after every partial sum. -/
+  end (see `mul`) avoids an `O(size)` scan after every partial sum.
+
+  Compiled code computes `mulRaw` with `mulRawFast` (see `mulRaw_eq_mulRawFast`). -/
 @[inline, specialize]
 def mulRaw [Semiring R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
   p.zipIdx.foldl (fun acc ⟨a, i⟩ => acc.addRaw <| (smul a q).mulPowX i) (mk #[])
 
+section SizeCoeffLemmas
+
+/-! ### Sizes and coefficients of the raw operations
+
+The sizes count the stored coefficients, including trailing zeros. `size_smul`, `size_mulPowX`,
+`size_addRaw` and `size_mulRaw` were ported from ArkLib's raw-size adapter under Apache 2.0.
+The file header records their copyright. -/
+
+/-- Scalar multiplication preserves the stored coefficient count. -/
+@[simp]
+theorem size_smul [Mul R] (x : R) (p : CPolynomial.Raw R) :
+    (smul x p).size = p.size := by
+  simp only [smul, Array.size_map]
+
+/-- Multiplication by `X^i` retains all of the prepended zero coefficients. -/
+@[simp]
+theorem size_mulPowX [Zero R] (i : Nat) (p : CPolynomial.Raw R) :
+    (mulPowX i p).size = i + p.size := by
+  simp only [mulPowX, Array.size_append, Array.size_replicate]
+
+/-- Padded raw addition stores the larger input size. -/
+@[simp]
+theorem size_addRaw [Zero Q] [Add Q] {p q : CPolynomial.Raw Q} :
+    (addRaw p q).size = max p.size q.size := by
+  simp only [addRaw, Array.size_zipWith, Array.size_rightpad]
+  omega
+
+/-- Coefficient `i` of `addRaw p q` is the sum of coefficient `i` of `p` and of `q`. -/
+theorem add_coeff? [AddZeroClass Q] (p q : CPolynomial.Raw Q) (i : ℕ) :
+    (addRaw p q).coeff i = p.coeff i + q.coeff i := by
+  by_cases hi : i < (addRaw p q).size
+  · rw [coeff, ← Array.getElem_eq_getD (h := hi)]
+    simp only [addRaw, mk, Array.getElem_zipWith, Array.rightpad_getElem_eq_getD]
+  · rw [size_addRaw, not_lt, max_le_iff] at hi
+    simp [coeff, Array.getD_eq_getD_getElem?, hi.1, hi.2]
+
+/-- Coefficient `k` of `smul a q` shifted by `i` places: `0` below `i`, and `a * q.coeff (k - i)`
+from `i` on. -/
+theorem smul_mulPowX_coeff [MulZeroClass R] (a : R) (q : CPolynomial.Raw R) (i k : ℕ) :
+    ((smul a q).mulPowX i).coeff k = if k < i then 0 else a * q.coeff (k - i) := by
+  simp only [mulPowX, smul, mk, coeff, Array.getD_eq_getD_getElem?, Array.getElem?_append,
+    Array.size_replicate, Array.getElem?_replicate, Array.getElem?_map]
+  split_ifs
+  · rfl
+  · cases q[k - i]? <;> simp
+
+/-- Raw multiplication retains every shifted row, including padding from an empty right array. -/
+theorem size_mulRaw [Semiring R] (p q : CPolynomial.Raw R) :
+    (mulRaw p q).size = if p.size = 0 then 0 else q.size + p.size - 1 := by
+  unfold mulRaw
+  have h := Array.foldl_induction (as := p.zipIdx)
+    (motive := fun i (acc : CPolynomial.Raw R) ↦ acc.size = if i = 0 then 0 else q.size + i - 1)
+    (init := mk #[]) (by rfl)
+    (f := fun acc ai ↦ acc.addRaw ((smul ai.1 q).mulPowX ai.2)) ?_
+  · simpa only [Array.size_zipIdx] using h
+  · intro i acc ih
+    have hz : (p.zipIdx)[i].2 = i.val := by
+      change ((p.zipIdx)[i.val]'i.isLt).2 = i.val
+      rw [Array.getElem_zipIdx]
+      exact Nat.zero_add _
+    simp only [size_addRaw, size_mulPowX, size_smul]
+    rw [hz, ih]
+    by_cases hi : i.val = 0
+    · simp [hi]
+    · simp [hi]
+      omega
+
+/-- Coefficient `k` of `mulRaw p q` is the convolution sum of the coefficients of `p` and `q`. -/
+theorem coeff_mulRaw [Semiring R] (p q : CPolynomial.Raw R) (k : ℕ) :
+    (mulRaw p q).coeff k =
+      ∑ i ∈ Finset.range p.size, if k < i then 0 else p.coeff i * q.coeff (k - i) := by
+  unfold mulRaw
+  have h := Array.foldl_induction (as := p.zipIdx)
+    (motive := fun n (acc : CPolynomial.Raw R) ↦ ∀ k, acc.coeff k =
+      ∑ i ∈ Finset.range n, if k < i then 0 else p.coeff i * q.coeff (k - i))
+    (init := mk #[]) (fun k ↦ by simp)
+    (f := fun acc ai ↦ acc.addRaw ((smul ai.1 q).mulPowX ai.2)) ?_
+  · simpa only [Array.size_zipIdx] using h k
+  · intro i acc ih k
+    have hz : (p.zipIdx)[i] = (p.coeff i, i.val) := by
+      change (p.zipIdx)[i.val]'i.isLt = _
+      rw [Array.getElem_zipIdx, zero_add, Array.getElem_eq_getD 0]
+    rw [hz, add_coeff?, ih, smul_mulPowX_coeff, Finset.sum_range_succ]
+
+end SizeCoeffLemmas
+
+section MulRawFast
+
+/-! ### Compiled raw multiplication
+
+`mulRawFast` computes the same array as `mulRaw`. The `@[csimp]` lemma `mulRaw_eq_mulRawFast`
+makes compiled code use it. The lemma comes before `mul` and the other definitions in this file
+that use `mulRaw`, because the compiler inlines or specializes `mulRaw` into them when it compiles
+them, and a later `@[csimp]` lemma does not change that code. -/
+
+/-- Raw multiplication that computes each entry of the result as one sum.
+
+  The result is empty when `p` is empty. Otherwise it has `q.size + p.size - 1` entries, as in
+  `mulRaw`. Entry `k` is the sum of the products `p[i] * q[k - i]` over the indices `i` with
+  `k + 1 - q.size ≤ i < min (k + 1) p.size`, added to `0` in increasing order of `i`. Each pair
+  `(i, j)` with `i < p.size` and `j < q.size` occurs in exactly one entry, so the loop makes
+  `p.size * q.size` multiplications and the same number of additions. -/
+@[specialize]
+def mulRawFast [inst : Semiring R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
+  -- Structure projections of `inst`. The default instances construct `Distrib R` and
+  -- `MulZeroClass R` values. Code specialized at a carrier whose instance the compiler cannot
+  -- unfold, such as `ZMod n`, would construct them in every iteration of the loop.
+  letI : Zero R := inst.toAddCommMonoid.toAddMonoid.toZero
+  letI : Add R := inst.toAddCommMonoid.toAddMonoid.toAdd
+  letI : Mul R := inst.toMonoid.toMul
+  if p.size = 0 then mk #[] else
+    (q.size + p.size - 1).fold (fun k _ acc ↦
+        let lo := k + 1 - q.size
+        let hi := min (k + 1) p.size
+        acc.push ((hi - lo).fold
+          (fun t ht s ↦ s + p[lo + t]'(by omega) * q[k - (lo + t)]'(by omega)) 0))
+      (Array.emptyWithCapacity (q.size + p.size - 1))
+
+/-- A `Nat.fold` that pushes `e k` at step `k` appends `e 0, …, e (n - 1)`. -/
+private theorem natFold_push {n : ℕ} (e : ℕ → R) (init : Array R) :
+    n.fold (fun k _ acc ↦ acc.push (e k)) init = init ++ Array.ofFn fun k : Fin n ↦ e k := by
+  induction n with
+  | zero => simp
+  | succ n ih => rw [Nat.fold_succ, ih, Array.ofFn_succ, Array.push_append]; rfl
+
+/-- For a nonempty `p`, `mulRawFast p q` is the array of the entry sums. -/
+private theorem mulRawFast_eq_ofFn [Semiring R] {p : CPolynomial.Raw R} (q : CPolynomial.Raw R)
+    (hp : p.size ≠ 0) :
+    mulRawFast p q = Array.ofFn fun k : Fin (q.size + p.size - 1) ↦
+      (min (k.val + 1) p.size - (k.val + 1 - q.size)).fold (fun t _ s ↦
+        s + p.getD (k.val + 1 - q.size + t) 0 * q.getD (k.val - (k.val + 1 - q.size + t)) 0) 0 := by
+  simp only [mulRawFast, hp, ↓reduceIte]
+  rw [natFold_push, Array.emptyWithCapacity_eq, Array.empty_append]
+  congr! 3 with k
+  funext t ht s
+  rw [Array.getElem_eq_getD 0, Array.getElem_eq_getD 0]
+
+/-- A `Nat.fold` that adds `g t` at step `t`, from `0`, computes the sum of the `g t`. -/
+private theorem natFold_add_eq_sum [AddCommMonoid R] (n : ℕ) (g : ℕ → R) :
+    n.fold (fun t _ acc ↦ acc + g t) 0 = ∑ t ∈ Finset.range n, g t := by
+  induction n with
+  | zero => simp
+  | succ n ih => rw [Nat.fold_succ, ih, Finset.sum_range_succ]
+
+/-- The convolution sum over `i < p.size` is the sum over the indices `i` whose products land in
+entry `k`. -/
+private theorem sum_range_eq_sum_Ico [Semiring R] (p q : CPolynomial.Raw R) (k : ℕ) :
+    (∑ i ∈ Finset.range p.size, if k < i then 0 else p.coeff i * q.coeff (k - i)) =
+      ∑ i ∈ Finset.Ico (k + 1 - q.size) (min (k + 1) p.size), p.coeff i * q.coeff (k - i) := by
+  have hsub : Finset.Ico (k + 1 - q.size) (min (k + 1) p.size) ⊆ Finset.range p.size :=
+    fun i hi ↦ by simp only [Finset.mem_Ico, Finset.mem_range] at hi ⊢; omega
+  rw [← Finset.sum_subset hsub]
+  · refine Finset.sum_congr rfl fun i hi ↦ ?_
+    simp only [Finset.mem_Ico] at hi
+    simp [show ¬k < i by omega]
+  · intro i hi hi'
+    simp only [Finset.mem_Ico, Finset.mem_range, not_and_or, not_le, not_lt] at hi hi'
+    split_ifs with hk
+    · rfl
+    · have : q.size ≤ k - i := by omega
+      simp [this]
+
+/-- `mulRawFast p q` has the size of `mulRaw p q`. -/
+@[simp]
+theorem size_mulRawFast [Semiring R] (p q : CPolynomial.Raw R) :
+    (mulRawFast p q).size = if p.size = 0 then 0 else q.size + p.size - 1 := by
+  by_cases hp : p.size = 0
+  · simp [mulRawFast, hp]
+  · simp [mulRawFast_eq_ofFn q hp, hp]
+
+/-- Entry `k` of `mulRawFast p q` is the convolution sum of the coefficients of `p` and `q`. -/
+@[simp]
+theorem getElem_mulRawFast [Semiring R] (p q : CPolynomial.Raw R) (k : ℕ)
+    (hk : k < (mulRawFast p q).size) :
+    (mulRawFast p q)[k] =
+      ∑ i ∈ Finset.range p.size, if k < i then 0 else p.coeff i * q.coeff (k - i) := by
+  have hp : p.size ≠ 0 := by rw [size_mulRawFast] at hk; split_ifs at hk <;> omega
+  simp only [mulRawFast_eq_ofFn q hp, Array.getElem_ofFn]
+  rw [natFold_add_eq_sum, sum_range_eq_sum_Ico, Finset.sum_Ico_eq_sum_range]
+
+/-- Compiled code computes `mulRaw` with `mulRawFast`. -/
+@[csimp]
+theorem mulRaw_eq_mulRawFast : @mulRaw = @mulRawFast := by
+  funext R _ p q
+  refine Array.ext (by simp only [size_mulRaw, size_mulRawFast]) fun k h _ ↦ ?_
+  simp only [Array.getElem_eq_getD 0 (h := h), getElem_mulRawFast]
+  exact coeff_mulRaw p q k
+
+end MulRawFast
+
 /-- Multiplication using the naive `O(n²)` algorithm: `Σᵢ (aᵢ * q) * X^i`.
 
   Trims only once, at the end of the convolution fold, rather than after every
-  partial sum (`mulRaw` does the untrimmed accumulation). -/
+  partial sum (`mulRaw` does the untrimmed accumulation). Compiled code computes the product with
+  `mulRawFast` (see `mulRaw_eq_mulRawFast`). -/
 @[inline, specialize]
 def mul [Semiring R] [BEq R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
   (mulRaw p q).trim
