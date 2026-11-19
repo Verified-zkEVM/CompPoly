@@ -39,24 +39,6 @@ variable {R : Type*} [Zero R] [BEq R] [LawfulBEq R]
 theorem ofArray_val (p : CPolynomial R) : ofArray p.val = p :=
   CPolynomial.ext (Raw.Trim.trim_eq_of_isCanonical p.property)
 
-/-- `ofFn` on `n` coefficients has degree below `n`. -/
-theorem ofFn_mem_degreeLT {n : ℕ} (f : Fin n → R) : ofFn f ∈ degreeLT (R := R) n := by
-  rw [mem_degreeLT_iff_size_le]
-  calc (ofFn f).val.size ≤ (Array.ofFn f).size := Raw.Trim.size_le_size _
-    _ = n := Array.size_ofFn
-
-/-- A polynomial of degree below `n` is `ofFn` of its first `n` coefficients. -/
-theorem ofFn_coeff_of_mem_degreeLT {n : ℕ} {p : CPolynomial R} (hp : p ∈ degreeLT (R := R) n) :
-    ofFn (fun i : Fin n => coeff p i) = p := by
-  rw [eq_iff_coeff]
-  intro i
-  rw [coeff_ofFn]
-  split
-  · rfl
-  · rename_i h
-    exact (coeff_eq_zero_of_size_le p
-      (le_trans (mem_degreeLT_iff_size_le.mp hp) (Nat.le_of_not_lt h))).symm
-
 /-! ## Fixed width: `degreeLT n` -/
 
 /-- The coefficient vector of a polynomial of degree below `n`, zero-padded. -/
@@ -67,6 +49,12 @@ def coeffVector (n : ℕ) (p : ↥(degreeLT (R := R) n)) : Vector R n :=
 def ofCoeffVector (n : ℕ) (v : Vector R n) : ↥(degreeLT (R := R) n) :=
   ⟨ofFn fun i => v[i], ofFn_mem_degreeLT _⟩
 
+/-- Rebuilding from a vector agrees with applying `ofFnEquiv` to its entries. -/
+theorem ofCoeffVector_eq_ofFnEquiv (n : ℕ) (v : Vector R n) :
+    ofCoeffVector n v = ofFnEquiv n (fun i => v[i]) :=
+  Subtype.ext (ofFnEquiv_apply_val n _).symm
+
+/-- Reading the coefficients into a vector and rebuilding the polynomial recovers `p`. -/
 @[simp]
 theorem ofCoeffVector_coeffVector (n : ℕ) (p : ↥(degreeLT (R := R) n)) :
     ofCoeffVector n (coeffVector n p) = p := by

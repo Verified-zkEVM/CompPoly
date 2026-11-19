@@ -405,14 +405,12 @@ invariant to maintain — the bound is *structural*, a consequence of the length
 carried alongside the data. As a result this subtree is **independent of the `CPolynomial`
 stack**: nothing under `CompPoly/Fields/Extension/` imports `CompPoly/Univariate/`.
 
-The one place a degree bound is needed on the *polynomial* side — showing that the representative
-`Ext.toQuot` picks is the canonical degree-`< d` one — is proved directly in
-[`Extension/Bridge.lean`](../../CompPoly/Fields/Extension/Bridge.lean) as `degree_repr_lt`, from
-`Polynomial.degree_sum_le` and `Polynomial.degree_C_mul_X_pow_le`. If you want the
-`CPolynomial`-side theory instead (`degreeLT`, `degreeLTEquiv` in
-[`Univariate/Linear.lean`](../../CompPoly/Univariate/Linear.lean) and
-[`Univariate/ToPoly/Degree.lean`](../../CompPoly/Univariate/ToPoly/Degree.lean)), it exists but is
-**not** wired to this framework; connecting them would be new work.
+`Ext.toQuot` picks a canonical representative of degree below `d`. The theorem `degree_repr_lt`
+in [`Extension/Bridge.lean`](../../CompPoly/Fields/Extension/Bridge.lean) proves the degree bound
+from `Polynomial.degree_sum_le` and `Polynomial.degree_C_mul_X_pow_le`.
+The separate `CPolynomial` API defines `degreeLT` in
+[`Univariate/Linear.lean`](../../CompPoly/Univariate/Linear.lean) and `degreeLTEquiv` in
+[`Univariate/ToPoly/Degree.lean`](../../CompPoly/Univariate/ToPoly/Degree.lean).
 
 `ExtensionParams` carries `d`, the modulus's lower coefficients, and a proposed base cardinality
 `q` as a *type index*. With fixed operations on the coefficient type, different parameter
