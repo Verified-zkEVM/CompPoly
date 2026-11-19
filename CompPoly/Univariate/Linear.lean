@@ -128,6 +128,10 @@ theorem ofFnEquiv_symm_apply (n : ℕ) (p : ↥(degreeLT (R := R) n)) (i : Fin n
 The enumeration converts each coefficient function `Fin n → R` to a polynomial with `ofFn`.
 At `n = 0` it lists only the zero polynomial.
 
+Downstream `by decide` can count small concrete enumerations. Use compiled evaluation such as
+`#guard` to test predicates that inspect the polynomials. For proofs about such searches, use the
+quantifier lemmas in `CompPoly.Univariate.ToPoly.Degree`.
+
 The enumeration uses `BEq R` to trim trailing zeros. When the `BEq R` instance changes,
 the subtype stays definitionally equal, but its enumerations may require a proof of equality.
 `card_degreeLT` applies to any enumeration. -/
