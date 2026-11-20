@@ -281,16 +281,11 @@ Both kinds of caller are served by the one form:
   `q`-parameterized statement is the same theorem, universally quantified over the spelling of the
   size, so nothing is lost; `Extension/Binomial.lean` calls the Rabin layer exactly this way.
 
-**Why there is no `Fintype.card F`-only variant.** Such a variant forces a concrete caller to cast
-each condition with `rw [hcard]`, which leaves an `Eq.mpr` transport wrapped around a certificate
-whose type carries a huge exponent (`X ^ (fieldSize ^ 6)`); one such transport has been observed
-to send the kernel into `Polynomial.pow → npowRec → Nat.rec`, unfolding the power one exponent
-step at a time until the deep-recursion guard fired. Such a defect can survive `lake build`:
-inside a `module`, imported definitions that are not `@[expose]`d have no body for the kernel --
-Mathlib's `Polynomial.instAdd` among them -- so the slow path does not exist while the defining
-module is compiled, and only a full-closure replay, which sees every body, takes it. With a single
-numeral-parameterized form, that cast has no occasion to appear — for us, or for a downstream
-author writing their own extension, who is covered by no linter of ours.
+A criterion stated at `Fintype.card F` would make a concrete caller cast each condition with
+`rw [hcard]`. The cast leaves an `Eq.mpr` transport around a certificate whose type carries a large
+exponent, such as `X ^ (fieldSize ^ 6)`. In an earlier kernel replay, such a transport caused
+`npowRec` to unfold one exponent step at a time until the kernel hit its recursion limit.
+The numeral parameter lets concrete callers pass their certificates directly.
 
 The `_of_card` spellings that v4.33.1 and v4.34.0 shipped
 (`irreducible_of_rabin_prime_degree_of_card`, `irreducible_of_rabin_degree_six_of_card`,
@@ -313,6 +308,20 @@ Passing `rfl` to recover the `Fintype.card F` statement is pinned as a regressio
 `tests/CompPolyTests/Data/Polynomial/{Rabin,RabinCertificate,Frobenius}.lean` and
 `tests/CompPolyTests/Fields/Extension/Binomial.lean`, so a later edit cannot quietly add a
 hypothesis or shift an exponent.
+
+### KoalaBear replay history
+
+On Lean and Mathlib 4.34, the original quintic and sextic proofs hit the kernel's recursion
+limit during full dependency replay. They used `KoalaBear.Field` and its inferred field
+instance. Their defining modules compiled with the body of Mathlib's `Polynomial.instAdd`
+hidden. Replay exposed that body, letting the kernel unfold large polynomial powers through
+`npowRec`. PR #396 supplied the carrier and instances used by the certificate lemmas.
+[Review and replay procedure](https://github.com/Verified-zkEVM/CompPoly/pull/396#pullrequestreview-5393333415)
+
+Mathlib 4.36 made `Polynomial R` an abbreviation for `AddMonoidAlgebra R ℕ` and removed
+`Polynomial.instAdd`. On Lean and Mathlib 4.36, the original and explicit proofs of both
+theorems passed replay with their dependencies in an empty kernel environment.
+[Mathlib refactor](https://github.com/leanprover-community/mathlib4/pull/41981)
 
 ### Choosing a general modulus
 
@@ -376,12 +385,10 @@ That is about 60 lines.
    chain checks (`decide +kernel`), the Bézout checks (`rfl`), and the assembly through
    `irreducible_of_rabin_prime_degree` (prime `d`, see
    `KoalaBear/Ext5/QuinticIrreducible.lean`) or `irreducible_of_rabin_degree_six`
-   (composite `d`, see `KoalaBear/Ext6/SexticIrreducible.lean`). Assemble with one
-   term-mode application whose carrier and instances are exactly those of the certificate
-   lemmas, e.g.
+   (`d = 6`, see `KoalaBear/Ext6/SexticIrreducible.lean`). The KoalaBear examples supply the carrier
+   and instances used by the certificate lemmas, as in
    `@irreducible_of_rabin_degree_six (ZMod fieldSize) (ZMod.instField fieldSize) (ZMod.fintype fieldSize) f fieldSize (ZMod.card _) …`.
-   Do not `refine` against a goal stated over the field's `abbrev` (`KoalaBear.Field`), and do
-   not respell it with named arguments: either builds, and a full-closure replay does not. At another composite `d`, use
+   For other composite degrees, use
    `irreducible_of_rabin_prime_power` when `d = ℓ ^ k` — as `BF64.basePoly_irreducible`
    does at `d = 64` — `irreducible_of_rabin_two_prime_factors` at two distinct prime
    factors, or `Polynomial.irreducible_of_rabin` beyond that. Each condition then applies
