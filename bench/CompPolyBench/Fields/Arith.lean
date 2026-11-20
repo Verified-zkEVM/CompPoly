@@ -13,7 +13,7 @@ public import CompPolyBench.Harness.Chain
 
 `mul`, `add`, `inv` and `pow` over the four small prime fields a STARK prover
 spends its time in — KoalaBear, BabyBear, Mersenne31 and Goldilocks — and
-`mul` over the three eight-limb pairing scalar fields, BN254, BLS12-381 and
+`mul` over the three four-limb pairing scalar fields, BN254, BLS12-381 and
 BLS12-377. Each group runs the canonical `ZMod` implementation beside the
 verified native-word one on the same inputs, so the group digest cross-checks
 the two.
@@ -70,7 +70,7 @@ orders of magnitude slower again. Still long enough that the harness floor is
 under a thousandth of the row. -/
 def expChainRounds : Nat := unrollBlock
 
-/-- Latency-chain depth for the eight-limb scalar fields.
+/-- Latency-chain depth for the four-limb scalar fields.
 
 A quarter of `chainRounds`: a 256-bit Montgomery multiply is an order of
 magnitude more than a 32-bit one and the canonical row three further orders,
@@ -412,16 +412,16 @@ private def runGoldilocksPow (preset : BenchPreset) (gen : StdGen) :
     fast Goldilocks.Fast.add (Goldilocks.Fast.pow · powExponent) preset
   pure (group, gen)
 
-/-! ### Eight-limb pairing scalar fields
+/-! ### Four-limb pairing scalar fields
 
 `mul` and `add` only, over the three pairing scalar fields and the two secp256k1 fields.
 Inversion over these carriers already has a group of its own in
 `Fields/Montgomery.lean`, which compares three algorithms rather than two
 representations. Both rows need an explicit sink: the canonical value is a
-254- to 256-bit bignum, and `sinkMont64x8` reads two limbs instead of
+254- to 256-bit bignum, and `sinkMont64x4` reads two limbs instead of
 reassembling one. -/
 
-/-- BN254 scalar operands, canonical and eight-limb, from one pool. -/
+/-- BN254 scalar operands, canonical and four-limb, from one pool. -/
 private def bn254Reps (gen : StdGen) :
     ChainRep BN254.ScalarField × ChainRep BN254.Fast.ScalarField × StdGen :=
   let (values, gen) := (zmodArray BN254.scalarFieldSize fieldPoolSize false).run gen
@@ -429,12 +429,12 @@ private def bn254Reps (gen : StdGen) :
   let fastPool := bn254FastArray pool
   ({ representation := "ZMod", field := "BN254.ScalarField", suffix := "zmod",
      pool := pool, constant := pool.getD 0 1, checksum := checksumZMod, sink := sinkZMod },
-   { representation := "Limbs8", field := "BN254.Fast.ScalarField", suffix := "fast",
+   { representation := "Limbs4", field := "BN254.Fast.ScalarField", suffix := "fast",
      pool := fastPool, constant := fastPool.getD 0 1, checksum := checksumBn254Fast,
-     sink := sinkMont64x8 },
+     sink := sinkMont64x4 },
    gen)
 
-/-- BLS12-381 scalar operands, canonical and eight-limb, from one pool. -/
+/-- BLS12-381 scalar operands, canonical and four-limb, from one pool. -/
 private def bls12_381Reps (gen : StdGen) :
     ChainRep BLS12_381.ScalarField × ChainRep BLS12_381.Fast.ScalarField × StdGen :=
   let (values, gen) := (zmodArray BLS12_381.scalarFieldSize fieldPoolSize false).run gen
@@ -442,12 +442,12 @@ private def bls12_381Reps (gen : StdGen) :
   let fastPool := bls12_381FastArray pool
   ({ representation := "ZMod", field := "BLS12_381.ScalarField", suffix := "zmod",
      pool := pool, constant := pool.getD 0 1, checksum := checksumZMod, sink := sinkZMod },
-   { representation := "Limbs8", field := "BLS12_381.Fast.ScalarField", suffix := "fast",
+   { representation := "Limbs4", field := "BLS12_381.Fast.ScalarField", suffix := "fast",
      pool := fastPool, constant := fastPool.getD 0 1, checksum := checksumBls12_381Fast,
-     sink := sinkMont64x8 },
+     sink := sinkMont64x4 },
    gen)
 
-/-- BLS12-377 scalar operands, canonical and eight-limb, from one pool. -/
+/-- BLS12-377 scalar operands, canonical and four-limb, from one pool. -/
 private def bls12_377Reps (gen : StdGen) :
     ChainRep BLS12_377.ScalarField × ChainRep BLS12_377.Fast.ScalarField × StdGen :=
   let (values, gen) := (zmodArray BLS12_377.scalarFieldSize fieldPoolSize false).run gen
@@ -455,12 +455,12 @@ private def bls12_377Reps (gen : StdGen) :
   let fastPool := bls12_377FastArray pool
   ({ representation := "ZMod", field := "BLS12_377.ScalarField", suffix := "zmod",
      pool := pool, constant := pool.getD 0 1, checksum := checksumZMod, sink := sinkZMod },
-   { representation := "Limbs8", field := "BLS12_377.Fast.ScalarField", suffix := "fast",
+   { representation := "Limbs4", field := "BLS12_377.Fast.ScalarField", suffix := "fast",
      pool := fastPool, constant := fastPool.getD 0 1, checksum := checksumBls12_377Fast,
-     sink := sinkMont64x8 },
+     sink := sinkMont64x4 },
    gen)
 
-/-- secp256k1 scalar-field operands, canonical and eight-limb, from one pool. -/
+/-- secp256k1 scalar-field operands, canonical and four-limb, from one pool. -/
 private def secp256k1ScalarReps (gen : StdGen) :
     ChainRep Secp256k1.ScalarField × ChainRep Secp256k1.Fast.ScalarField × StdGen :=
   let (values, gen) := (zmodArray Secp256k1.scalarFieldSize fieldPoolSize false).run gen
@@ -468,12 +468,12 @@ private def secp256k1ScalarReps (gen : StdGen) :
   let fastPool := secp256k1ScalarFastArray pool
   ({ representation := "ZMod", field := "Secp256k1.ScalarField", suffix := "zmod",
      pool := pool, constant := pool.getD 0 1, checksum := checksumZMod, sink := sinkZMod },
-   { representation := "Limbs8", field := "Secp256k1.Fast.ScalarField", suffix := "fast",
+   { representation := "Limbs4", field := "Secp256k1.Fast.ScalarField", suffix := "fast",
      pool := fastPool, constant := fastPool.getD 0 1,
-     checksum := checksumSecp256k1ScalarFast, sink := sinkMont64x8 },
+     checksum := checksumSecp256k1ScalarFast, sink := sinkMont64x4 },
    gen)
 
-/-- secp256k1 base-field operands, canonical and eight-limb, from one pool. -/
+/-- secp256k1 base-field operands, canonical and four-limb, from one pool. -/
 private def secp256k1BaseReps (gen : StdGen) :
     ChainRep Secp256k1.BaseField × ChainRep Secp256k1.Fast.BaseField × StdGen :=
   let (values, gen) := (zmodArray Secp256k1.baseFieldSize fieldPoolSize false).run gen
@@ -481,9 +481,9 @@ private def secp256k1BaseReps (gen : StdGen) :
   let fastPool := secp256k1BaseFastArray pool
   ({ representation := "ZMod", field := "Secp256k1.BaseField", suffix := "zmod",
      pool := pool, constant := pool.getD 0 1, checksum := checksumZMod, sink := sinkZMod },
-   { representation := "Limbs8", field := "Secp256k1.Fast.BaseField", suffix := "fast",
+   { representation := "Limbs4", field := "Secp256k1.Fast.BaseField", suffix := "fast",
      pool := fastPool, constant := fastPool.getD 0 1,
-     checksum := checksumSecp256k1BaseFast, sink := sinkMont64x8 },
+     checksum := checksumSecp256k1BaseFast, sink := sinkMont64x4 },
    gen)
 
 /-- Time BN254 scalar multiplication. -/
@@ -492,7 +492,7 @@ private def runBn254Mul (preset : BenchPreset) (gen : StdGen) :
   let (slow, fast, gen) := bn254Reps gen
   let group ← runBinOpGroup "fields-bn254-mul" "BN254 scalar multiplication"
     "bn254" "mul" heavyChainRounds heavyThroughputRounds
-    slow (· * ·) fast Montgomery.Native64x8.FastField.mul preset
+    slow (· * ·) fast Montgomery.Native64x4.FastField.mul preset
   pure (group, gen)
 
 /-- Time BLS12-381 scalar multiplication. -/
@@ -501,7 +501,7 @@ private def runBls12_381Mul (preset : BenchPreset) (gen : StdGen) :
   let (slow, fast, gen) := bls12_381Reps gen
   let group ← runBinOpGroup "fields-bls12-381-mul" "BLS12-381 scalar multiplication"
     "bls12-381" "mul" heavyChainRounds heavyThroughputRounds
-    slow (· * ·) fast Montgomery.Native64x8.FastField.mul preset
+    slow (· * ·) fast Montgomery.Native64x4.FastField.mul preset
   pure (group, gen)
 
 /-- Time BLS12-377 scalar multiplication. -/
@@ -510,7 +510,7 @@ private def runBls12_377Mul (preset : BenchPreset) (gen : StdGen) :
   let (slow, fast, gen) := bls12_377Reps gen
   let group ← runBinOpGroup "fields-bls12-377-mul" "BLS12-377 scalar multiplication"
     "bls12-377" "mul" heavyChainRounds heavyThroughputRounds
-    slow (· * ·) fast Montgomery.Native64x8.FastField.mul preset
+    slow (· * ·) fast Montgomery.Native64x4.FastField.mul preset
   pure (group, gen)
 
 /-- Time BN254 scalar addition. -/
@@ -519,7 +519,7 @@ private def runBn254Add (preset : BenchPreset) (gen : StdGen) :
   let (slow, fast, gen) := bn254Reps gen
   let group ← runBinOpGroup "fields-bn254-add" "BN254 scalar addition"
     "bn254" "add" chainRounds throughputRounds
-    slow (· + ·) fast Montgomery.Native64x8.FastField.add preset
+    slow (· + ·) fast Montgomery.Native64x4.FastField.add preset
   pure (group, gen)
 
 /-- Time BLS12-381 scalar addition. -/
@@ -528,7 +528,7 @@ private def runBls12_381Add (preset : BenchPreset) (gen : StdGen) :
   let (slow, fast, gen) := bls12_381Reps gen
   let group ← runBinOpGroup "fields-bls12-381-add" "BLS12-381 scalar addition"
     "bls12-381" "add" chainRounds throughputRounds
-    slow (· + ·) fast Montgomery.Native64x8.FastField.add preset
+    slow (· + ·) fast Montgomery.Native64x4.FastField.add preset
   pure (group, gen)
 
 /-- Time BLS12-377 scalar addition. -/
@@ -537,7 +537,7 @@ private def runBls12_377Add (preset : BenchPreset) (gen : StdGen) :
   let (slow, fast, gen) := bls12_377Reps gen
   let group ← runBinOpGroup "fields-bls12-377-add" "BLS12-377 scalar addition"
     "bls12-377" "add" chainRounds throughputRounds
-    slow (· + ·) fast Montgomery.Native64x8.FastField.add preset
+    slow (· + ·) fast Montgomery.Native64x4.FastField.add preset
   pure (group, gen)
 
 /-- Time secp256k1 scalar-field multiplication. -/
@@ -547,7 +547,7 @@ private def runSecp256k1ScalarMul (preset : BenchPreset) (gen : StdGen) :
   let group ← runBinOpGroup "fields-secp256k1-scalar-mul"
     "secp256k1 scalar-field multiplication"
     "secp256k1-scalar" "mul" heavyChainRounds heavyThroughputRounds
-    slow (· * ·) fast Montgomery.Native64x8.FastField.mul preset
+    slow (· * ·) fast Montgomery.Native64x4.FastField.mul preset
   pure (group, gen)
 
 /-- Time secp256k1 scalar-field addition. -/
@@ -556,7 +556,7 @@ private def runSecp256k1ScalarAdd (preset : BenchPreset) (gen : StdGen) :
   let (slow, fast, gen) := secp256k1ScalarReps gen
   let group ← runBinOpGroup "fields-secp256k1-scalar-add" "secp256k1 scalar-field addition"
     "secp256k1-scalar" "add" chainRounds throughputRounds
-    slow (· + ·) fast Montgomery.Native64x8.FastField.add preset
+    slow (· + ·) fast Montgomery.Native64x4.FastField.add preset
   pure (group, gen)
 
 /-- Time secp256k1 base-field multiplication. -/
@@ -565,7 +565,7 @@ private def runSecp256k1BaseMul (preset : BenchPreset) (gen : StdGen) :
   let (slow, fast, gen) := secp256k1BaseReps gen
   let group ← runBinOpGroup "fields-secp256k1-base-mul" "secp256k1 base-field multiplication"
     "secp256k1-base" "mul" heavyChainRounds heavyThroughputRounds
-    slow (· * ·) fast Montgomery.Native64x8.FastField.mul preset
+    slow (· * ·) fast Montgomery.Native64x4.FastField.mul preset
   pure (group, gen)
 
 /-- Time secp256k1 base-field addition. -/
@@ -574,7 +574,7 @@ private def runSecp256k1BaseAdd (preset : BenchPreset) (gen : StdGen) :
   let (slow, fast, gen) := secp256k1BaseReps gen
   let group ← runBinOpGroup "fields-secp256k1-base-add" "secp256k1 base-field addition"
     "secp256k1-base" "add" chainRounds throughputRounds
-    slow (· + ·) fast Montgomery.Native64x8.FastField.add preset
+    slow (· + ·) fast Montgomery.Native64x4.FastField.add preset
   pure (group, gen)
 
 /-- Registry entries for the base-field arithmetic benchmarks. -/

@@ -1,29 +1,29 @@
 /-
 Copyright (c) 2026 CompPoly Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Derek Sorensen
+Authors: Derek Sorensen, Georgios Raikos
 -/
 module
 
-public import CompPoly.Fields.Montgomery.Native64x8Field
+public import CompPoly.Fields.Montgomery.Native64x4Field
 public import CompPoly.Data.Bytes.CanonicalNat
 
 /-!
-# Serialization of the eight-limb Montgomery carrier
+# Serialization of the four-limb Montgomery carrier
 
-`Native64x8.FastField modulus` stores a Montgomery residue in eight 32-bit limbs. Its canonical
+`Native64x4.FastField modulus` stores a Montgomery residue in four 64-bit limbs.  Its canonical
 natural is the value after one Montgomery reduction, `FastField.toNat`, so the bytes agree with
-the `ZMod modulus` codec (`toBytes_ofField`, `toNat_ofField`). Decoding converts through
+the `ZMod modulus` codec (`toBytes_ofField`, `toNat_ofField`).  Decoding converts through
 `ofField`.
 -/
 
 @[expose] public section
 
-namespace Montgomery.Native64x8
+namespace Montgomery.Native64x4
 
 open CompPoly
 
-variable {modulus : ℕ} [P : Mont64x8Field modulus]
+variable {modulus : ℕ} [P : Mont64x4Field modulus]
 
 namespace FastField
 
@@ -66,4 +66,4 @@ theorem toBytes_eq_toBytes_toField (x : FastField modulus) :
 
 end FastField
 
-end Montgomery.Native64x8
+end Montgomery.Native64x4
