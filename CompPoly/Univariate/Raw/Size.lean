@@ -13,10 +13,10 @@ public import CompPoly.Univariate.Raw.Ops
 
 These bounds concern stored coefficient arrays, including trailing zero coefficients.
 Raw multiplication retains the padding of its shifted rows even when the right input is empty.
-The size equations of `smul`, `mulPowX`, `addRaw` and `mulRaw` are in
-`CompPoly.Univariate.Raw.Ops`, next to the operations, and this module imports them publicly.
-The product bound was ported from ArkLib's raw-size adapter under Apache 2.0; its original
-copyright attribution is retained.
+`CompPoly.Univariate.Raw.Ops` states the size equations of `smul`, `mulPowX`, `addRaw` and
+`mulRaw`, next to the operations. This module imports it publicly. The product bound
+`size_mulRaw_le` was ported from ArkLib's raw-size adapter under Apache 2.0. The file header keeps
+its original copyright attribution.
 -/
 
 public section

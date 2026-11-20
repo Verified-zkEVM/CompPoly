@@ -51,7 +51,7 @@ scripts/              repo utilities and validation helpers
   `BatchEval/Interpolation.lean` on arbitrary nodes.
 - Bounding stored coefficient buffers: the size equations of `smul`, `mulPowX`, `addRaw` and
   `mulRaw`, including the padding that multiplication retains, are in `Univariate/Raw/Ops.lean`.
-  `Univariate/Raw/Size.lean` imports that module publicly and adds `size_C` and bounds such as
+  `Univariate/Raw/Size.lean` imports that module publicly and adds `size_C` and the bound
   `size_mulRaw_le`. These are representation-size facts, independent of canonical degree and
   execution cost.
 - Working on root-of-unity NTT evaluation, interpolation, or multiplication:

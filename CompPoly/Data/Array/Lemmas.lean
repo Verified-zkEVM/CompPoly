@@ -271,12 +271,14 @@ end Array
 
 namespace Nat
 
-/-- A `Nat.fold` that pushes `e k` at step `k` appends `e 0, …, e (n - 1)` to its initial
-array. -/
-theorem fold_push_eq_append_ofFn {α : Type*} {n : ℕ} (e : ℕ → α) (init : Array α) :
-    n.fold (fun k _ acc ↦ acc.push (e k)) init = init ++ Array.ofFn fun k : Fin n ↦ e k := by
-  induction n with
+/-- A `Nat.fold` that pushes `e k h` at step `k` appends `e 0 _, …, e (n - 1) _` to its initial
+array. The pushed element can depend on the proof `h : k < n`. -/
+theorem fold_push_eq_append_ofFn {α : Type*} {n : ℕ} (e : (k : ℕ) → k < n → α)
+    (init : Array α) :
+    n.fold (fun k h acc ↦ acc.push (e k h)) init = init ++ Array.ofFn fun k : Fin n ↦ e k k.2 := by
+  induction n generalizing init with
   | zero => simp
-  | succ n ih => rw [Nat.fold_succ, ih, Array.ofFn_succ, Array.push_append]; rfl
+  | succ n ih =>
+    rw [Nat.fold_succ, ih (fun k h ↦ e k (by omega)), Array.ofFn_succ, Array.push_append]; rfl
 
 end Nat

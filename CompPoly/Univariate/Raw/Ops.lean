@@ -12,10 +12,14 @@ public import CompPoly.Univariate.Raw.Core
 /-!
 # Raw Univariate Polynomial Operations
 
-Operations and evaluation lemmas for raw computable univariate polynomials. The file also gives
-the sizes and the coefficients of the raw operations. It defines `mulRawFast`, a loop for `mulRaw`
-that computes each entry of the result as one sum. The `@[csimp]` lemma `mulRaw_eq_mulRawFast`
-makes compiled code compute `mulRaw` with `mulRawFast`.
+Operations and evaluation lemmas for raw computable univariate polynomials. The file also states
+the sizes of `smul`, `mulPowX`, `addRaw` and `mulRaw`, and the coefficients of `addRaw`, of a
+shifted `smul` and of `mulRaw`. It defines `mulRawFast`, a loop for `mulRaw` that computes each
+entry of the result as one sum. The `@[csimp]` lemma `mulRaw_eq_mulRawFast` makes compiled code
+compute `mulRaw` with `mulRawFast`.
+
+`size_smul`, `size_mulPowX`, `size_addRaw` and `size_mulRaw` were ported from ArkLib's raw-size
+adapter under Apache 2.0. The file header records their copyright.
 -/
 
 public section
@@ -122,11 +126,9 @@ def mulRaw [Semiring R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
 
 section SizeCoeffLemmas
 
-/-! ### Sizes and coefficients of the raw operations
+/-! ### Sizes and coefficients of the operations in `mulRaw`
 
-The sizes count the stored coefficients, including trailing zeros. `size_smul`, `size_mulPowX`,
-`size_addRaw` and `size_mulRaw` were ported from ArkLib's raw-size adapter under Apache 2.0.
-The file header records their copyright. -/
+The sizes count the stored coefficients, including trailing zeros. -/
 
 /-- Scalar multiplication preserves the stored coefficient count. -/
 @[simp]
@@ -226,7 +228,8 @@ into the code. A `@[csimp]` lemma later in the file would not change that code. 
 def mulRawFast [inst : Semiring R] (p q : CPolynomial.Raw R) : CPolynomial.Raw R :=
   -- Structure projections of `inst`. The default instances construct `Distrib R` and
   -- `MulZeroClass R` values. Code specialized at a carrier whose instance the compiler cannot
-  -- unfold, such as `ZMod n`, would construct them in every iteration of the loop.
+  -- unfold, such as `ZMod n`, would construct them in every iteration of the loop. The proofs
+  -- do not need these lines. A check in `CompPolyTests.Univariate.RawMul` fails without them.
   letI : Zero R := inst.toAddCommMonoid.toAddMonoid.toZero
   letI : Add R := inst.toAddCommMonoid.toAddMonoid.toAdd
   letI : Mul R := inst.toMonoid.toMul
@@ -248,7 +251,7 @@ private theorem mulRawFast_eq_ofFn [Semiring R] {p : CPolynomial.Raw R} (q : CPo
   simp only [mulRawFast, hp, ↓reduceIte]
   rw [Nat.fold_push_eq_append_ofFn, Array.emptyWithCapacity_eq, Array.empty_append]
   congr! 3 with k
-  funext t ht s
+  funext t _ s
   rw [Array.getElem_eq_getD 0, Array.getElem_eq_getD 0]
 
 /-- A `Nat.fold` that adds `g t` at step `t`, from `0`, computes the sum of the `g t`. -/
@@ -260,7 +263,7 @@ private theorem natFold_add_eq_sum [AddCommMonoid R] (n : ℕ) (g : ℕ → R) :
 
 /-- The convolution sum over `i < p.size` is the sum over the indices `i` whose products land in
 entry `k`. -/
-private theorem sum_range_eq_sum_Ico [Semiring R] (p q : CPolynomial.Raw R) (k : ℕ) :
+private theorem sum_range_ite_eq_sum_Ico [Semiring R] (p q : CPolynomial.Raw R) (k : ℕ) :
     (∑ i ∈ Finset.range p.size, if k < i then 0 else p.coeff i * q.coeff (k - i)) =
       ∑ i ∈ Finset.Ico (k + 1 - q.size) (min (k + 1) p.size), p.coeff i * q.coeff (k - i) := by
   have hsub : Finset.Ico (k + 1 - q.size) (min (k + 1) p.size) ⊆ Finset.range p.size :=
@@ -276,7 +279,7 @@ private theorem sum_range_eq_sum_Ico [Semiring R] (p q : CPolynomial.Raw R) (k :
     · have : q.size ≤ k - i := by omega
       simp [this]
 
-/-- `mulRawFast p q` has the size of `mulRaw p q`. -/
+/-- `mulRawFast p q` is empty when `p` is empty. Otherwise it has `q.size + p.size - 1` entries. -/
 @[simp]
 theorem size_mulRawFast [Semiring R] (p q : CPolynomial.Raw R) :
     (mulRawFast p q).size = if p.size = 0 then 0 else q.size + p.size - 1 := by
@@ -292,7 +295,7 @@ theorem getElem_mulRawFast [Semiring R] (p q : CPolynomial.Raw R) (k : ℕ)
       ∑ i ∈ Finset.range p.size, if k < i then 0 else p.coeff i * q.coeff (k - i) := by
   have hp : p.size ≠ 0 := by rw [size_mulRawFast] at hk; split_ifs at hk <;> omega
   simp only [mulRawFast_eq_ofFn q hp, Array.getElem_ofFn]
-  rw [natFold_add_eq_sum, sum_range_eq_sum_Ico, Finset.sum_Ico_eq_sum_range]
+  rw [natFold_add_eq_sum, sum_range_ite_eq_sum_Ico, Finset.sum_Ico_eq_sum_range]
 
 /-- `mulRaw` equals `mulRawFast`. As a `@[csimp]` lemma, it makes compiled code use
 `mulRawFast`. -/
@@ -321,7 +324,8 @@ def pow [Semiring R] [BEq R] (p : CPolynomial.Raw R) (n : Nat) : CPolynomial.Raw
 
 /-- Repeated-squaring core that accumulates with the untrimmed `mulRaw`, deferring
 the canonicalization trim to the outer `powBySq` wrapper. The output may carry
-trailing zeros and is not in canonical form.
+trailing zeros and is not in canonical form. Compiled code computes each product with
+`mulRawFast`.
 
 For $ n > 0 $, computes $ p ^ n $ by recursing on $ n / 2 $:
 * If $ n $ is even: $ (p ^ {n/2})^2 $
