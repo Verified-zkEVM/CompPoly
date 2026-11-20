@@ -137,21 +137,10 @@ theorem sextic_cop2_bezout_check :
 /-- **`X^6 + X^3 + 1` is irreducible over KoalaBear**, by Rabin's test at a degree with two prime
 factors, with kernel-checked certificates for all three conditions.
 
-Applied as one term at exactly the carrier and instances the certificate lemmas use:
-`ZMod fieldSize`, `ZMod.instField fieldSize` and `ZMod.fintype fieldSize`. The carrier and the
-instance are both required. With `KoalaBear.Field` in place of `ZMod fieldSize`, or with
-`instFieldField` (or any synthesized instance, as `(F := ZMod fieldSize)` gives) in place of
-`ZMod.instField fieldSize`, the kernel unfolds `X ^ (fieldSize ^ 6) - X` into
-`Polynomial.pow → npowRec`, and a full-closure replay hits deep recursion.
-
-Whether `lake build` catches that depends on the recursion budget in scope, so it cannot be relied
-on: at the default `maxRecDepth` the mismatched spellings fail to elaborate, but with a raised
-limit they compile and only a full replay rejects them. The reason this module can accept what a
-replay refuses is exposure, not nondeterminism -- inside a `module`, imported definitions that are
-not `@[expose]`d have no body for the kernel, Mathlib's `Polynomial.instAdd` among them, so the
-slow path does not exist here. A full-closure replay sees every body.
-
-Keep the explicit `@` application. -/
+The application uses the same carrier and instances as the certificate lemmas.
+With Lean and Mathlib 4.34, replaying the earlier proof and its dependencies in an empty kernel
+environment hit the kernel's recursion limit. With Lean and Mathlib 4.36, both proof forms
+passed that check. See `docs/wiki/field-extensions.md` for the KoalaBear replay history. -/
 theorem sexticPoly_irreducible : Irreducible sexticPoly :=
   @irreducible_of_rabin_degree_six (ZMod fieldSize) (ZMod.instField fieldSize)
     (ZMod.fintype fieldSize) sexticPoly fieldSize (ZMod.card _) sexticPoly_natDegree
