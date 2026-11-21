@@ -11,7 +11,9 @@ This directory contains the main helper scripts for local validation and CI supp
 - `uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py` - verify the `CLAUDE.md` symlink,
   local markdown links, and backticked source paths across the handbook.
 - `lake exe axiomsweep --check` - kernel-level axiom/`sorry` regression gate against
-  `scripts/axiom_baseline.json` (run after `lake build`).
+  `scripts/axiom_baseline.json` (run after `lake build` and `lake test`).
+- `lake exe kernelreplay` - re-check every library and test declaration in the kernel
+  (run after `lake build` and `lake test`).
 - `./scripts/bench-ab.sh run <group>` - A/B the current build against a frozen
   baseline on one benchmark group and print a verdict per row.
 - `uv run --no-project --python 3.12 python scripts/check-writing.py --base origin/main` -
@@ -22,14 +24,31 @@ This directory contains the main helper scripts for local validation and CI supp
 ### `AxiomSweep.lean` (`lake exe axiomsweep`)
 
 The axiom sweep gives kernel-level axiom/`sorry` accounting for every reportable
-`CompPoly.*` declaration. It computes the accounting from the built `.olean`
-environment and compares it with a committed regression baseline
+`CompPoly.*` and `CompPolyTests.*` declaration. It computes the accounting from the built
+`.olean` environment and compares it with a committed regression baseline
 (`axiom_baseline.json`). The sweep rejects bare and generated native-compiler trust
 regardless of the baseline.
 
 `--check` fails only on new taint. `--update-baseline` refreshes the baseline.
-`--out FILE` writes a full per-declaration report. See the module docstring for modes
-and known blind spots.
+`--out FILE` writes a full per-declaration report. `--statements FILE` writes
+per-declaration statement and value digests for `statement_diff.py`. See the module
+docstring for modes and known blind spots.
+
+### `KernelReplay.lean` (`lake exe kernelreplay`)
+
+The kernel replay re-checks every declaration of the modules under `CompPoly` and
+`CompPolyTests` in Lean's kernel. It uses core's `Environment.replay`, the mechanism
+behind the toolchain's `leanchecker`, so a declaration added without kernel checking
+fails. To bound memory, it replays the modules in import-ordered chunks, one child
+process each. `--jobs N` runs N chunks at once, and `--chunk-size N` sets the chunk size
+(default 16).
+
+### `statement_diff.py`
+
+The statement diff compares two `axiomsweep --statements` exports. It prints a Markdown
+report of removed declarations, theorems whose statement changed, and declarations whose
+type or value changed. CI posts it on pull requests against the base commit's export. It
+reports and never fails a run.
 
 ### `update-lib.sh`
 
@@ -59,7 +78,9 @@ repo-wide checks, such as executable-bit detection and filename collisions.
 
 `lint-style.py` is the underlying Python linter for Lean style issues. It checks module docstrings,
 line length, forbidden imports or tactics, trailing whitespace, and the local
-`native_decide` policy, while honoring entries in `style-exceptions.txt`.
+TCB policy (`native_decide`, `decide +native`, `ofReduceBool`, `trustCompiler`, and the
+kernel-check bypasses `skipKernelTC` and `addDeclWithoutChecking`), while honoring entries
+in `style-exceptions.txt`.
 
 Use this script directly only when you want to lint a specific subset of files.
 
