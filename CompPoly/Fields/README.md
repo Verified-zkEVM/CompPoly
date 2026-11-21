@@ -49,7 +49,7 @@ This directory contains formally verified field infrastructure used in zero-know
 | **Mersenne31.lean** | Facade for the \(2^{31} - 1\) Circle STARK field, re-exporting the canonical `ZMod` model, fast native-word implementation, and circle group/domain indexing API. |
 | **Mersenne31/Basic.lean** | Canonical \(2^{31} - 1\) field model and primality proof. |
 | **Mersenne31/Fast.lean** | Verified `UInt32` implementation of Mersenne31 arithmetic. |
-| **Mersenne31/Circle.lean** | Additive circle group with fast scalars, proved generator order and index homomorphism, and bounded subgroup indices. Domain distinctness and cardinality remain follow-up work; see the [circle-group guide](../../docs/wiki/field-extensions.md#mersenne31-circle-group). |
+| **Mersenne31/Circle.lean** | Additive circle group with fast scalars, proved generator order and index homomorphism, and bounded subgroup indices. The canonical domain enumerates every full-coset point exactly once. See the [circle-group guide](../../docs/wiki/field-extensions.md#mersenne31-circle-group). |
 | **Montgomery/Basic.lean** | Radix-generic Montgomery reduction, field-agnostic number theory shared by the fast prime fields. |
 | **Montgomery/Native32.lean** | Raw `UInt32`/`UInt64` Montgomery reduction over explicit word constants, including bounds and correctness. |
 | **Montgomery/Native32Field.lean** | Per-field parameters, the shared `FastField` carrier, arithmetic, instances, and canonical-field bridge. |

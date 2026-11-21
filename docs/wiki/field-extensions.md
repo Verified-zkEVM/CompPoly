@@ -172,9 +172,17 @@ Conjugation preserves validity. For valid cosets, `indexAt_injective` and
 `card_range_pointAt` identify the bounded ranges' cardinalities with `c.size`.
 Arbitrary structure values need not satisfy this condition.
 
-`CircleDomain` still describes an indexing shape: even a valid half coset may overlap
-its conjugate. Domain validity, disjointness of the halves, and domain cardinality
-remain follow-up work. Coset validity alone does not establish these claims.
+`CircleDomain.Valid` requires a valid half coset whose bounded indices are disjoint
+from their conjugates. For a valid domain, `CircleDomain.pointAt_injective` proves
+that distinct positions give distinct points, and `CircleDomain.card_range_pointAt`
+gives the number of points. The same results hold for indices.
+
+`CanonicCoset.circleDomain_valid` proves validity at every supported log size
+from 1 through 30. The first half visits the even positions of the full coset in
+ascending order. Its conjugate visits the odd positions in descending order.
+`CanonicCoset.range_circleDomain_pointAt` identifies the resulting set of points
+with the full coset's bounded point range. For an individual full-coset position,
+`CanonicCoset.existsUnique_circleDomain_pointAt` gives the unique matching domain position.
 
 ## Irreducibility: Rabin, Collapsed
 
