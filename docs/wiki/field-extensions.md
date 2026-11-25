@@ -161,11 +161,20 @@ use `by decide`. `CirclePointIndex.subgroupGen logSize h` requires a proof
 `h : logSize ≤ logOrder`; out-of-range sizes are rejected instead of silently
 truncating the exponent. Coset constructors pass their existing bounds to it.
 
-`Coset` and `CircleDomain` still describe indexing shapes: arbitrary steps are allowed,
-points may repeat, and a half coset may overlap its conjugate. Their `size` counts index
-positions, not necessarily distinct points. The follow-up must specify validity conditions
-and prove coset point distinctness, disjointness of domain halves, and the corresponding
-cardinality theorems. These claims cannot be made for all current structure values.
+`CirclePointIndex.toPoint_injective` proves that different indices represent different
+points. `addOrderOf_toPoint` transfers exact orders to points, and
+`addOrderOf_subgroupGen` proves the requested order `2^logSize`, including log sizes 0 and 31.
+
+`Coset.Valid` requires the step's additive order to equal the declared size. The standard
+constructors satisfy it, as do `CanonicCoset.coset` and `CanonicCoset.halfCoset`.
+Conjugation preserves validity. For valid cosets, `indexAt_injective` and
+`pointAt_injective` prove distinctness over `Fin c.size`; `card_range_indexAt` and
+`card_range_pointAt` identify the bounded ranges' cardinalities with `c.size`.
+Arbitrary structure values need not satisfy this condition.
+
+`CircleDomain` still describes an indexing shape: even a valid half coset may overlap
+its conjugate. Domain validity, disjointness of the halves, and domain cardinality
+remain follow-up work. Coset validity alone does not establish these claims.
 
 ## Irreducibility: Rabin, Collapsed
 
@@ -194,10 +203,22 @@ handles this with kernel-checked certificates:
   structural recursion, so checks reduce in the kernel via GMP-accelerated `Nat` ops.
 - A whole square-and-multiply chain is **one list literal** verified by a single kernel
   reduction of `runChain`; `runChain_sound` lifts it to `X^N % f = r % f`.
+  Discharge a large chain's `runChain … = …` hypothesis with `by decide +kernel`. With
+  `by rfl`, the elaborator's `isDefEq` evaluates the chain once and the kernel evaluates it
+  again. For BF64's degree-64 modulus, the switch took `BF64/Basic.lean` from about
+  48 s to 26 s.
 - The trace condition is a chain ending at `X`; coprimality is a chain plus a Bézout
   identity `u·f + v·w = 1` on the reduced residue — no Euclidean gcd chain.
 - `irreducible_of_rabin_prime_degree` packages the test when `d` is prime (one trace, one
   coprimality check).
+- Over `GF(2)`, a polynomial is a `ℕ` bitmask.
+  [`Data/Polynomial/RabinCertificateBinary.lean`](../../CompPoly/Data/Polynomial/RabinCertificateBinary.lean)
+  checks the same chains on bitmasks, with `xor` for addition and a carry-less `clmul` for
+  multiplication. Each step is a few GMP operations instead of a walk over lists of numerals.
+  Its two condition theorems have the same shape as the list versions and feed the same
+  wrappers. `scripts/gen_rabin_certificate.py --binary` emits the data. For BF64's
+  degree-64 modulus, `BF64/Basic.lean` went from about 27 s to 3 s and the certificate data
+  module from about 5 s to 2 s.
 
 **Composite degree needs one coprimality check per prime factor**, and the prime-degree collapse
 is *unsound* there rather than merely weak. `Polynomial.irreducible_of_rabin` already quantifies
@@ -260,15 +281,11 @@ Both kinds of caller are served by the one form:
   `q`-parameterized statement is the same theorem, universally quantified over the spelling of the
   size, so nothing is lost; `Extension/Binomial.lean` calls the Rabin layer exactly this way.
 
-**Why there is no `Fintype.card F`-only variant.** Such a variant forces a concrete caller to cast
-each condition with `rw [hcard]`, which leaves an `Eq.mpr` transport wrapped around a certificate
-whose type carries a huge exponent (`X ^ (fieldSize ^ 6)`). A kernel replay from an empty
-environment checks a serialized and reconstructed expression graph and need not follow the
-normalization path that checking the elaborator's in-memory term took; one such transport has been
-observed to send the kernel into `Polynomial.pow → npowRec → Nat.rec`, unfolding the power one
-exponent step at a time until the deep-recursion guard fired. With a single
-numeral-parameterized form, that cast has no occasion to appear — for us, or for a downstream
-author writing their own extension, who is covered by no linter of ours.
+A criterion stated at `Fintype.card F` would make a concrete caller cast each condition with
+`rw [hcard]`. The cast leaves an `Eq.mpr` transport around a certificate whose type carries a large
+exponent, such as `X ^ (fieldSize ^ 6)`. In an earlier kernel replay, such a transport caused
+`npowRec` to unfold one exponent step at a time until the kernel hit its recursion limit.
+The numeral parameter lets concrete callers pass their certificates directly.
 
 The `_of_card` spellings that v4.33.1 and v4.34.0 shipped
 (`irreducible_of_rabin_prime_degree_of_card`, `irreducible_of_rabin_degree_six_of_card`,
@@ -291,6 +308,20 @@ Passing `rfl` to recover the `Fintype.card F` statement is pinned as a regressio
 `tests/CompPolyTests/Data/Polynomial/{Rabin,RabinCertificate,Frobenius}.lean` and
 `tests/CompPolyTests/Fields/Extension/Binomial.lean`, so a later edit cannot quietly add a
 hypothesis or shift an exponent.
+
+### KoalaBear replay history
+
+On Lean and Mathlib 4.34, the original quintic and sextic proofs hit the kernel's recursion
+limit during full dependency replay. They used `KoalaBear.Field` and its inferred field
+instance. Their defining modules compiled with the body of Mathlib's `Polynomial.instAdd`
+hidden. Replay exposed that body, letting the kernel unfold large polynomial powers through
+`npowRec`. PR #396 supplied the carrier and instances used by the certificate lemmas.
+[Review and replay procedure](https://github.com/Verified-zkEVM/CompPoly/pull/396#pullrequestreview-5393333415)
+
+Mathlib 4.36 made `Polynomial R` an abbreviation for `AddMonoidAlgebra R ℕ` and removed
+`Polynomial.instAdd`. On Lean and Mathlib 4.36, the original and explicit proofs of both
+theorems passed replay with their dependencies in an empty kernel environment.
+[Mathlib refactor](https://github.com/leanprover-community/mathlib4/pull/41981)
 
 ### Choosing a general modulus
 
@@ -351,11 +382,13 @@ That is about 60 lines.
 2. Generate the certificate module:
    `uv run --no-project --python 3.12 python scripts/gen_rabin_certificate.py --p <p> --f=<coeffs> --lean <path> --namespace <NS>`.
 3. Write the irreducibility wrapper: `toPoly p fL = f`, `natDegree`, `f ≠ 0`, then the
-   chain/Bézout `rfl` checks and the assembly through
+   chain checks (`decide +kernel`), the Bézout checks (`rfl`), and the assembly through
    `irreducible_of_rabin_prime_degree` (prime `d`, see
    `KoalaBear/Ext5/QuinticIrreducible.lean`) or `irreducible_of_rabin_degree_six`
-   (composite `d`, see `KoalaBear/Ext6/SexticIrreducible.lean`), passing
-   `hcard : Fintype.card Field = fieldSize := ZMod.card _`. At another composite `d`, use
+   (`d = 6`, see `KoalaBear/Ext6/SexticIrreducible.lean`). The KoalaBear examples supply the carrier
+   and instances used by the certificate lemmas, as in
+   `@irreducible_of_rabin_degree_six (ZMod fieldSize) (ZMod.instField fieldSize) (ZMod.fintype fieldSize) f fieldSize (ZMod.card _) …`.
+   For other composite degrees, use
    `irreducible_of_rabin_prime_power` when `d = ℓ ^ k` — as `BF64.basePoly_irreducible`
    does at `d = 64` — `irreducible_of_rabin_two_prime_factors` at two distinct prime
    factors, or `Polynomial.irreducible_of_rabin` beyond that. Each condition then applies
@@ -384,14 +417,12 @@ invariant to maintain — the bound is *structural*, a consequence of the length
 carried alongside the data. As a result this subtree is **independent of the `CPolynomial`
 stack**: nothing under `CompPoly/Fields/Extension/` imports `CompPoly/Univariate/`.
 
-The one place a degree bound is needed on the *polynomial* side — showing that the representative
-`Ext.toQuot` picks is the canonical degree-`< d` one — is proved directly in
-[`Extension/Bridge.lean`](../../CompPoly/Fields/Extension/Bridge.lean) as `degree_repr_lt`, from
-`Polynomial.degree_sum_le` and `Polynomial.degree_C_mul_X_pow_le`. If you want the
-`CPolynomial`-side theory instead (`degreeLT`, `degreeLTEquiv` in
-[`Univariate/Linear.lean`](../../CompPoly/Univariate/Linear.lean) and
-[`Univariate/ToPoly/Degree.lean`](../../CompPoly/Univariate/ToPoly/Degree.lean)), it exists but is
-**not** wired to this framework; connecting them would be new work.
+`Ext.toQuot` picks a canonical representative of degree below `d`. The theorem `degree_repr_lt`
+in [`Extension/Bridge.lean`](../../CompPoly/Fields/Extension/Bridge.lean) proves the degree bound
+from `Polynomial.degree_sum_le` and `Polynomial.degree_C_mul_X_pow_le`.
+The separate `CPolynomial` API defines `degreeLT` in
+[`Univariate/Linear.lean`](../../CompPoly/Univariate/Linear.lean) and `degreeLTEquiv` in
+[`Univariate/ToPoly/Degree.lean`](../../CompPoly/Univariate/ToPoly/Degree.lean).
 
 `ExtensionParams` carries `d`, the modulus's lower coefficients, and a proposed base cardinality
 `q` as a *type index*. With fixed operations on the coefficient type, different parameter

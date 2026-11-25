@@ -93,14 +93,12 @@ caller are served: a concrete field supplies `hcard` as `ZMod.card _` (or its ow
 lemma) and states its conditions at the numeral its certificates were generated for; a caller with
 no numeral in hand passes `rfl` and gets the `Fintype.card F` statement back verbatim.
 
-The alternative — stating the conditions at `Fintype.card F` and having concrete callers cast each
-one with `rw [hcard]` — is what this shape exists to rule out. Such a cast leaves an `Eq.mpr`
-transport around a certificate argument whose type carries a huge exponent (`X ^ (q ^ d)`), and a
-kernel replay from an empty environment need not follow the same normalization path the elaborator
-took: one such transport has been observed to send the kernel into
-`Polynomial.pow → npowRec → Nat.rec`, unfolding the power one exponent step at a time until the
-deep-recursion guard fired. Since there is only one form of each statement, that cast has no
-occasion to appear. `docs/wiki/field-extensions.md` records the history, and
+Stating the conditions at `Fintype.card F` would make a concrete caller cast each condition
+with `rw [hcard]`. Such a cast leaves an `Eq.mpr` transport around a certificate argument whose
+type carries a large exponent, such as `X ^ (q ^ d)`. In an earlier kernel replay, such a
+transport caused `npowRec` to unfold one exponent step at a time until the kernel hit its
+recursion limit. The numeral parameter lets concrete callers pass their certificates directly.
+`docs/wiki/field-extensions.md` records the history, and
 `CompPoly/Data/Polynomial/RabinCertificate.lean` packages these tests at concrete degrees.
 -/
 

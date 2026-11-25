@@ -135,16 +135,21 @@ theorem sextic_cop2_bezout_check :
       = true := by rfl
 
 /-- **`X^6 + X^3 + 1` is irreducible over KoalaBear**, by Rabin's test at a degree with two prime
-factors, with kernel-checked certificates for all three conditions. -/
-theorem sexticPoly_irreducible : Irreducible sexticPoly := by
-  have hcard : Fintype.card Field = fieldSize := ZMod.card _
-  refine irreducible_of_rabin_degree_six hcard sexticPoly_natDegree ?_ ?_ ?_
-  · exact dvd_X_pow_sub_X_of_runChain toPoly_sexticL sexticPoly_ne_zero
-      sextic_trace_chain sextic_trace_exp
-  · exact isCoprime_X_pow_sub_X_of_runChain toPoly_sexticL sexticPoly_ne_zero
-      sextic_cop3_chain sextic_cop3_exp sextic_cop3_w_check sextic_cop3_bezout_check
-  · exact isCoprime_X_pow_sub_X_of_runChain toPoly_sexticL sexticPoly_ne_zero
-      sextic_cop2_chain sextic_cop2_exp sextic_cop2_w_check sextic_cop2_bezout_check
+factors, with kernel-checked certificates for all three conditions.
+
+The application uses the same carrier and instances as the certificate lemmas.
+With Lean and Mathlib 4.34, replaying the earlier proof and its dependencies in an empty kernel
+environment hit the kernel's recursion limit. With Lean and Mathlib 4.36, both proof forms
+passed that check. See `docs/wiki/field-extensions.md` for the KoalaBear replay history. -/
+theorem sexticPoly_irreducible : Irreducible sexticPoly :=
+  @irreducible_of_rabin_degree_six (ZMod fieldSize) (ZMod.instField fieldSize)
+    (ZMod.fintype fieldSize) sexticPoly fieldSize (ZMod.card _) sexticPoly_natDegree
+    (dvd_X_pow_sub_X_of_runChain toPoly_sexticL sexticPoly_ne_zero
+      sextic_trace_chain sextic_trace_exp)
+    (isCoprime_X_pow_sub_X_of_runChain toPoly_sexticL sexticPoly_ne_zero
+      sextic_cop3_chain sextic_cop3_exp sextic_cop3_w_check sextic_cop3_bezout_check)
+    (isCoprime_X_pow_sub_X_of_runChain toPoly_sexticL sexticPoly_ne_zero
+      sextic_cop2_chain sextic_cop2_exp sextic_cop2_w_check sextic_cop2_bezout_check)
 
 instance : Fact (Irreducible sexticPoly) := ⟨sexticPoly_irreducible⟩
 

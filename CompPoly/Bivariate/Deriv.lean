@@ -124,7 +124,7 @@ theorem partialDerivX_add [Semiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [Dec
   rw [CPolynomial.eq_iff_coeff]
   intro i
   simp only [← coeff_eq_coeff_coeff, coeff_partialDerivX]
-  erw [coeff_add, coeff_add]
+  rw [coeff_add, coeff_add]
   simp only [coeff_partialDerivX]
   exact add_mul _ _ _
 
@@ -165,7 +165,7 @@ theorem partialDerivX_mul [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] 
     partialDerivX (f * g) = partialDerivX f * g + f * partialDerivX g := by
   apply CBivariate.ringEquiv.injective
   show toPoly (partialDerivX (f * g)) = toPoly (partialDerivX f * g + f * partialDerivX g)
-  apply Polynomial.ext; intro j
+  ext j : 2
   rw [partialDerivX_toPoly, toPoly_mul, Polynomial.coeff_mul,
     toPoly_add, Polynomial.coeff_add, toPoly_mul, toPoly_mul,
     Polynomial.coeff_mul, Polynomial.coeff_mul]
@@ -288,8 +288,7 @@ theorem shiftX_toPoly [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] [Dec
     (a : R) (P : CBivariate R) :
     (shiftX a P).toPoly
       = (P.toPoly).map (Polynomial.compRingHom (Polynomial.X + Polynomial.C a)) := by
-  apply Polynomial.ext
-  intro j
+  ext j : 2
   rw [toPoly_coeff, outerCoeff_shiftX, CPolynomial.taylor_toPoly, Polynomial.coeff_map,
     Polynomial.coe_compRingHom_apply, ← Polynomial.taylor_apply, toPoly_coeff]
 

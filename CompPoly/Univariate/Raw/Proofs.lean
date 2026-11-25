@@ -78,16 +78,6 @@ theorem add_coeff {p q : CPolynomial.Raw Q} {i : ℕ} (hi : i < (addRaw p q).siz
   by_cases hi' : i < p.size <;> by_cases hi'' : i < q.size <;>
     simp_all [Array.rightpad_getElem_eq_getD]
 
-theorem add_coeff? (p q : CPolynomial.Raw Q) (i : ℕ) :
-    (addRaw p q).coeff i = p.coeff i + q.coeff i := by
-  rcases (Nat.lt_or_ge i (addRaw p q).size) with h_lt | h_ge
-  · rw [← add_coeff h_lt]
-    exact (Array.getElem_eq_getD (h := h_lt) 0).symm
-  have h_lt' : i ≥ max p.size q.size := by simpa only [size_addRaw] using h_ge
-  have h_p : i ≥ p.size := by omega
-  have h_q : i ≥ q.size := by omega
-  simp [h_p, h_q]
-
 lemma add_coeff_trimmed [LawfulBEq R] (p q : CPolynomial.Raw R) (i : ℕ) :
     (p + q).coeff i = p.coeff i + q.coeff i := by
       have h_add : p + q = (p.addRaw q).trim := by rfl
@@ -296,7 +286,7 @@ lemma coeff_foldl_add {α : Type*} [LawfulBEq R]
         convert congr_arg₂ ( · + · ) ( ‹∀ z : CPolynomial.Raw R, (
           List.foldl ( fun ( acc : CPolynomial.Raw R ) ( x : α ) => acc + f x ) z l )[ k ]?.getD 0
             = z[k]?.getD 0 + ( List.map ( fun x => ( f x)[ k ]?.getD 0 ) l ).sum› z ) rfl using 1
-        any_goals exact ( f ih )[ k ]?.getD 0
+        on_goal 3 => exact ( f ih )[ k ]?.getD 0
         · convert add_coeff_trimmed _ _ k
           rotate_left 3
           (expose_names; exact inst_1)
@@ -730,11 +720,6 @@ lemma smul_monomial_one_trim [DecidableEq R] [LawfulBEq R]
     simpa +decide [Array.replicate_succ] using
       (trim_replicate_zero (R := R) (n + 1))
   · exact Trim.push_trim (Array.replicate n 0) r h
-
-lemma smul_mulPowX_coeff [LawfulBEq R] (a : R) (q : CPolynomial.Raw R) (i k : ℕ) :
-    ((smul a q).mulPowX i).coeff k = if k < i then 0 else a * q.coeff (k - i) := by
-    convert mulPowX_coeff' (smul a q) i k using 1
-    rw [ smul_coeff ]
 
 lemma mul_coeff_list [LawfulBEq R] (p q : CPolynomial.Raw R) (k : ℕ) :
     (p * q).coeff k = (p.zipIdx.toList.map

@@ -141,7 +141,7 @@ theorem trialSuccessProbability_add_failed_mass {F : Type*} [Zero F]
     apply tsum_congr
     intro trial
     cases trial <;> simp [TrialResult.IsSuccess]
-  · rw [← ENNReal.tsum_eq_add_tsum_ite
+  · rw [← tsum_eq_add_tsum_ite
         (f := fun trial : TrialResult F ↦ dist trial) TrialResult.failed]
     exact dist.tsum_coe
 

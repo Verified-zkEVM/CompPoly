@@ -191,7 +191,7 @@ lemma concrete_pow_base_one
     (prevBTFieldProps : ConcreteBTFieldProps (k := k - 1)) (n : ℕ) :
   concrete_pow_nat (k:=k) (x:=1) n = 1 := by
   induction n using Nat.strong_induction_on with
-  | h n ih =>
+  | ind n ih =>
     -- ih : ∀ m, m < n → concrete_pow_nat (k:=k) (x:=1) m = 1
     unfold concrete_pow_nat
     by_cases h_n_zero : n = 0
@@ -837,7 +837,7 @@ theorem zpow_def (a : ConcreteBTField k) (n : ℤ) :
 theorem concrete_pow_nat_eq_pow (a : ConcreteBTField k) (n : ℕ) :
     concrete_pow_nat a n = a ^ n := by
   induction n using Nat.strong_induction_on generalizing a with
-  | h n ih =>
+  | ind n ih =>
     rw [concrete_pow_nat]
     split_ifs with hzero heven
     · subst n

@@ -214,8 +214,7 @@ theorem polynomialScaleCoeffX_toPoly (c : F) (d : Nat) (p : CPolynomial F) :
       rw [hp', CPolynomial.toPoly_zero]
       simp
     · rw [ite_eq_right hp]
-      apply Polynomial.ext
-      intro t
+      ext t : 2
       rw [← CPolynomial.coeff_toPoly, CPolynomial.coeff_ofArray]
       have hrhs : (Polynomial.C c * Polynomial.X ^ d * p.toPoly).coeff t =
           if d ≤ t then c * (p.toPoly.coeff (t - d)) else 0 := by
@@ -464,8 +463,7 @@ theorem compactNonzeroRows_nonzero {rows : PolynomialMatrix F}
 /-- The monomial `coeffXPower c d` under `toPoly`. -/
 theorem coeffXPower_toPoly (c : F) (d : Nat) :
     (coeffXPower c d).toPoly = Polynomial.C c * Polynomial.X ^ d := by
-  apply Polynomial.ext
-  intro t
+  ext t : 2
   rw [← CPolynomial.coeff_toPoly, coeffXPower, CPolynomial.coeff_ofArray]
   rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow]
   rcases Nat.lt_trichotomy t d with ht | ht | ht

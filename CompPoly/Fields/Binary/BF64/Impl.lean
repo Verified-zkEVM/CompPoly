@@ -462,6 +462,8 @@ instance : Finite BF64 := Finite.of_equiv (Fin (2 ^ 64)) equivFin.symm
 theorem nat_card_bf64 : Nat.card BF64 = 2 ^ 64 := by
   rw [Nat.card_congr equivFin, Nat.card_fin]
 
+-- Stated for any enumeration, since `BF64` has no global `Fintype` instance.
+set_option linter.concreteInstances false in
 /-- Any enumeration of `BF64` has `2 ^ 64` elements. -/
 theorem card_bf64 [Fintype BF64] : Fintype.card BF64 = 2 ^ 64 := by
   rw [← Nat.card_eq_fintype_card, nat_card_bf64]

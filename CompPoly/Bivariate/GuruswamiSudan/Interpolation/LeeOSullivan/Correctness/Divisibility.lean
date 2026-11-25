@@ -73,9 +73,9 @@ private theorem lee_coeff_coeffwise_hasseDeriv_sum
   rw [Polynomial.sum_def]
   by_cases hj : j ∈ P.support
   · rw [Finset.sum_eq_single j]
-    · rw [Polynomial.coeff_monomial, ite_eq_left rfl]
+    · rw [Polynomial.coeff_monomial_apply, ite_eq_left rfl]
     · intro k _hk hkj
-      rw [Polynomial.coeff_monomial, ite_eq_right hkj]
+      rw [Polynomial.coeff_monomial_apply, ite_eq_right hkj]
     · intro hjnot
       contradiction
   · rw [Finset.sum_eq_zero]
@@ -85,7 +85,7 @@ private theorem lee_coeff_coeffwise_hasseDeriv_sum
       have hkj : k ≠ j := by
         intro h
         exact hj (h ▸ hk)
-      rw [Polynomial.coeff_monomial, ite_eq_right hkj]
+      rw [Polynomial.coeff_monomial_apply, ite_eq_right hkj]
 
 private theorem lee_toPoly_hasseDerivative_eq_coeffwise_hasseDeriv_hasseDeriv
     (Q : CBivariate F) (a b : Nat) :

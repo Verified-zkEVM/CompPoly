@@ -64,7 +64,7 @@ variable (P : BinomialParams F)
 /-- The defining polynomial `X^d - W`. Part of the specification only. -/
 noncomputable def poly : F[X] := X ^ P.d - C P.W
 
-@[simp] theorem natDegree_poly : P.poly.natDegree = P.d := natDegree_X_pow_sub_C
+@[simp] theorem natDegree_poly : P.poly.natDegree = P.d := natDegree_X_pow_sub_C _
 
 theorem monic_poly : P.poly.Monic := monic_X_pow_sub_C _ (by have := P.two_le; omega)
 

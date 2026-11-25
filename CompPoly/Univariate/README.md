@@ -19,7 +19,7 @@ on top (root finding and Reed-Solomon coding).
 
 - **Raw.lean** — Umbrella import for the raw array-backed representation and its split implementation files.
 - **Raw/Core.lean** — Raw datatype and core operations (`coeff`, `C`, `X`, `monomial`, `trim`, `degree`, `eval`).
-- **Raw/Ops.lean** — Raw algebraic operations and related operational lemmas.
+- **Raw/Ops.lean** — Raw algebraic operations and related operational lemmas. Compiled code computes `mulRaw` with `mulRawFast`, through the `@[csimp]` lemma `mulRaw_eq_mulRawFast`.
 - **Raw/Division.lean** — Raw polynomial division APIs (`divByMonic`, `modByMonic`, `div`, `mod`). Only `[BEq R]` is shared at section scope; the monic-division definitions need just `[CommRing R]`.
 - **Raw/Modular.lean** — Raw modular arithmetic.
 - **Raw/Context.lean** — Raw-level algorithm dictionaries backing the canonical contexts.
@@ -33,13 +33,22 @@ on top (root finding and Reed-Solomon coding).
 - **ToPoly.lean** — Umbrella import for conversion/equivalence with Mathlib's `Polynomial R`.
 - **ToPoly/Core.lean** — Core conversion maps and API lemmas.
 - **ToPoly/Equiv.lean** — Round-trip theorems and ring equivalence with Mathlib polynomials.
-- **ToPoly/Degree.lean** — Degree/support transport lemmas for conversions, plus `degreeLT` / `degreeLTEquiv`.
+- **ToPoly/Degree.lean** — Degree and support lemmas for `toPoly`, plus the linear equivalence
+  `degreeLTEquiv`. The quantifier lemmas connect searches over bounded-degree computable
+  polynomials to statements about Mathlib polynomials.
+  - `exists_degreeLT_toPoly_iff` transports one existential quantifier.
+  - `forall_degreeLT_toPoly_iff` transports one universal quantifier.
+  - `forall₂_degreeLT_toPoly_iff` transports two universal quantifiers with separate degree bounds.
+  - `exists_degreeLT_toPoly_iff_of_degree_lt` lets the predicate supply the degree bound.
 - **ToPoly/Impl.lean** — Implementation-facing transport lemmas.
 - **CMvEquiv.lean** — Ring equivalence `CPolynomial R ≃+* CMvPolynomial 1 R`, via `CPolynomial R ≃ R[X] ≃ (CMvPolynomial 0 R)[X] ≃ CMvPolynomial 1 R`.
 
 ## Arithmetic and structure
 
-- **Linear.lean** — Linear-factor and affine helper lemmas for univariate workflows.
+- **Linear.lean** — Coefficient linear maps and degree bounds for computable polynomials.
+  `ofFnEquiv` identifies `degreeLT n` with coefficient functions on `Fin n`.
+  Over a finite coefficient type, `instFintypeDegreeLT` uses this equivalence to enumerate the
+  subtype, and `card_degreeLT` gives its cardinality.
 - **Deriv.lean** — Formal derivative `CPolynomial.derivative` and the Taylor shift `CPolynomial.taylor`.
 - **Modular.lean** — Executable modular arithmetic over the `MulContext` / `ModContext` backends.
 - **DivisionCorrectness.lean** — Correctness theorems for the division-style algorithms.

@@ -633,7 +633,7 @@ lemma mul_inv_cancel (a : ConcreteBF128Ghash) (h : a ≠ 0) : a * a⁻¹ = 1 := 
     rw [pow_one]
   rw [h_pow_pred_eq, toQuot_pow_card]
   have h_quot_ne_zero : toQuot a ≠ 0 := by
-    contrapose! h
+    contrapose h
     rw [← toQuot_zero] at h
     exact toQuot_injective h
   exact _root_.mul_inv_cancel₀ h_quot_ne_zero

@@ -195,7 +195,7 @@ theorem divByLinearFactor_eq_divByMonic (p : CPolynomial F) (x : F) :
         q.coeff i = d.coeff i := by
     intro m
     induction m using Nat.strong_induction_on with
-    | h m ih =>
+    | ind m ih =>
         intro i hm
         by_cases hi : p.val.size - 1 ≤ i
         · have hq : q.coeff i = 0 := by

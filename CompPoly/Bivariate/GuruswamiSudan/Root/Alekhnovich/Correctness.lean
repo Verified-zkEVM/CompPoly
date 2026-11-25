@@ -2242,7 +2242,7 @@ theorem alekhnovichRootCandidatesWithFuel_complete {F : Type*}
     (hroot : CBivariate.composeY Q p = 0) :
     p ∈ (alekhnovichRootCandidatesWithFuel fieldRoots fuel Q k).toList := by
   induction fuel using Nat.strong_induction_on generalizing Q k p with
-  | h fuel ih =>
+  | ind fuel ih =>
     cases fuel with
     | zero =>
       omega

@@ -69,10 +69,10 @@ private lemma comp_x_square_coeff_pos_deg {f : Polynomial F} {n : ℕ} (h : 0 < 
     simp only [Nat.even_iff]
     split_ifs <;> simp_all
     omega
-  · rintro _ _ _ (_ | _ | n) <;> try simp [←mul_assoc]
+  · rintro _ _ _ (_ | _ | n) <;> simp [←mul_assoc]
     have : (n + 1 + 1) / 2 = n / 2 + 1 := by omega
     split <;> aesop (add safe (by omega)) (add simp [Nat.even_iff])
-  · rintro _ _ _ _ (_ | _ | n) <;> try simp_all
+  · rintro _ _ _ _ (_ | _ | n) <;> simp_all
     have : (n + 1 + 1) / 2 = n / 2 + 1 := by omega
     simp_all only [coeff_C_succ, add_zero]
 

@@ -203,6 +203,8 @@ theorem aeval_ext3Gen : aeval ext3Gen ext3Params.poly = 0 := Ext.aeval_gen_poly
 @[simp] theorem nat_card_ext3 : Nat.card Ext3 = 2 ^ 192 := by
   rw [Ext.nat_card_ext, ext3Params_q, ext3Params_d, ← pow_mul]
 
+-- Stated for any enumeration, since `Ext3` has no global `Fintype` instance.
+set_option linter.concreteInstances false in
 /-- Any enumeration of `Ext3` has `2 ^ 192` elements. -/
 @[simp] theorem card_ext3 [Fintype Ext3] : Fintype.card Ext3 = 2 ^ 192 := by
   rw [← Nat.card_eq_fintype_card, nat_card_ext3]

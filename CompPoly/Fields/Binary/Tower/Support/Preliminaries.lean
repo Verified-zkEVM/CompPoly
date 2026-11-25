@@ -160,7 +160,7 @@ theorem is_unit_iff_deg_0 {R : Type*} [Field R] {p : R[X]} : p.degree = 0 ↔ Is
   constructor
   · -- (→) If degree = 0, then p is a unit
     intro h_deg_zero
-    let a := coeff p 0
+    let a := p.coeff 0
     have p_is_C : p = C a := eq_C_of_degree_eq_zero h_deg_zero
     -- Show a ≠ 0 (since degree = 0 ≠ ⊥)
     have h_a_ne_zero : a ≠ 0 := by

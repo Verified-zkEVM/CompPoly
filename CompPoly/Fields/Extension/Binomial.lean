@@ -172,7 +172,7 @@ theorem irreducible_X_pow_sub_C_iff {d q : ℕ} {W : F} (hcard : Fintype.card F 
       (W ^ ((q ^ d - 1) / d) = 1 ∧
         ∀ ℓ ∈ d.primeFactors, W ^ ((q ^ (d / ℓ) - 1) / d) ≠ 1) := by
   subst hcard
-  have h_deg : ((X : F[X]) ^ d - C W).natDegree = d := natDegree_X_pow_sub_C
+  have h_deg : ((X : F[X]) ^ d - C W).natDegree = d := natDegree_X_pow_sub_C _
   constructor
   · intro h_irr
     obtain ⟨h₁, h₂⟩ := rabin_of_irreducible rfl h_deg hd h_irr

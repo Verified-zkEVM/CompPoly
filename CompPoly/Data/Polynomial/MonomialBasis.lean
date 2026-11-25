@@ -59,7 +59,7 @@ noncomputable def monomialBasisOfDegreeLT {n : ℕ} : Basis (Fin n) L (L⦃< n�
       exact Subtype.ext_iff.mp hl
 
     have h_coeff_eq_li :
-      coeff (Finsupp.linearCombination L monomials_in_submodule l).val i = l i := by
+      (Finsupp.linearCombination L monomials_in_submodule l).val.coeff i = l i := by
       -- `span_le` changes the goal to showing every vector in the generating set
       set v := monomials_in_submodule
       simp only [v, monomials_in_submodule, monomial_one_right_eq_X_pow]
@@ -67,8 +67,9 @@ noncomputable def monomialBasisOfDegreeLT {n : ℕ} : Basis (Fin n) L (L⦃< n�
       simp only [SetLike.mk_smul_mk]
       conv =>
         lhs
-        simp only [Finsupp.sum, AddSubmonoidClass.coe_finsetSum, finsetSum_coeff, coeff_smul,
-          coeff_X_pow, smul_eq_mul, mul_ite, mul_one, mul_zero, monomials_in_submodule, v]
+        simp only [Finsupp.sum, AddSubmonoidClass.coe_finsetSum, finsetSum_coeff,
+          AddMonoidAlgebra.coeff_smul_apply, coeff_X_pow, smul_eq_mul, mul_ite, mul_one, mul_zero,
+          monomials_in_submodule, v]
       -- ⊢ (∑ x ∈ l.support, if ↑i = ↑x then l x else 0) = l i
       simp_rw [Fin.val_eq_val, eq_comm]
       -- ⊢ l i = ∑ x ∈ l.support, if i = x then l x else 0

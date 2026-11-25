@@ -36,7 +36,7 @@ theorem monomial_toPoly [BEq R] [LawfulBEq R] [DecidableEq R] (n : ℕ) (c : R) 
     (monomial n c).toPoly = Polynomial.monomial n c := by
   ext i
   simp only [CPolynomial.toPoly, monomial]
-  rw [Polynomial.coeff_monomial, coeff_toPoly, CPolynomial.Raw.coeff_monomial]
+  rw [Polynomial.coeff_monomial_apply, coeff_toPoly, CPolynomial.Raw.coeff_monomial]
 
 /-- CPolynomial.C is correct wrt the Mathlib spec. -/
 @[simp, grind =]

@@ -324,9 +324,7 @@ private lemma prime_dvd_fieldSize_sub_one_cases {p : Nat}
 
 /-- The smooth field-root splitter generator has full multiplicative order. -/
 lemma primitiveRoot_order : orderOf primitiveRoot = fieldSize - 1 := by
-  refine orderOf_eq_of_pow_and_pow_div_prime (n := fieldSize - 1) ?_ ?_ ?_
-  · unfold fieldSize
-    omega
+  refine orderOf_eq_of_pow_and_pow_div_prime (n := fieldSize - 1) ?_ ?_
   · exact ZMod.pow_card_sub_one_eq_one (a := primitiveRoot) (by
       unfold primitiveRoot
       decide)

@@ -85,3 +85,12 @@ univariate-interp-coset-koalabear-l12
 univariate-barycentric-koalabear-l8
 univariate-mul-crossover-64
 univariate-mul-crossover-256
+# Raw multiplication. 64 is the middle of the short-factor sweep, and 1024 is
+# its largest size. At 1024, a quadratic-time product with a short right factor
+# is more than 100 times slower than the same product with the factor on the
+# left, so the timing report shows such a regression. The balanced groups run
+# the `ZMod` and `Int` coefficient types.
+univariate-raw-mul-short-koalabear-64
+univariate-raw-mul-short-koalabear-1024
+univariate-raw-mul-balanced-bn254-64
+univariate-raw-mul-balanced-int-64

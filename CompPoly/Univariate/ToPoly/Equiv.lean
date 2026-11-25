@@ -50,14 +50,14 @@ lemma toPoly_add [LawfulBEq R] (p q : CPolynomial R) :
 lemma Raw.toPoly_sub {R : Type*} [Ring R] [BEq R] [LawfulBEq R]
     (p q : CPolynomial.Raw R) :
     (p - q).toPoly = p.toPoly - q.toPoly := by
-  change (p + -q).toPoly = p.toPoly + -q.toPoly
-  rw [Raw.toPoly_add, Raw.toPoly_neg]
+  change (p + -q).toPoly = _
+  rw [Raw.toPoly_add, Raw.toPoly_neg, sub_eq_add_neg]
 
 @[simp, grind =, norm_cast]
 lemma toPoly_sub {R : Type*} [Ring R] [BEq R] [LawfulBEq R] (p q : CPolynomial R) :
     (p - q).toPoly = p.toPoly - q.toPoly := by
-  change (p + -q).toPoly = p.toPoly + -q.toPoly
-  rw [toPoly_add, toPoly_neg]
+  change (p + -q).toPoly = _
+  rw [toPoly_add, toPoly_neg, sub_eq_add_neg]
 
 @[grind =]
 lemma Raw.toPoly_mul_coeff [LawfulBEq R] (p q : CPolynomial.Raw R) (i : ℕ) :
