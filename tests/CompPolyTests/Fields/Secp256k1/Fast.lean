@@ -10,7 +10,7 @@ public meta import CompPoly.Fields.Secp256k1.Fast
 /-!
 # Fast secp256k1 Field Tests
 
-Regression checks for the eight-limb Montgomery scalar and base fields, whose moduli have
+Regression checks for the four-limb Montgomery scalar and base fields, whose moduli have
 bit 255 set: residues, literal round trips, field operations including the carry paths,
 the checked binary-GCD inversion, and agreement with the canonical `ZMod` models.
 -/
@@ -20,15 +20,15 @@ public meta section
 namespace Secp256k1.Fast
 
 open Secp256k1 (scalarFieldSize baseFieldSize)
-open Montgomery.Native64x8
+open Montgomery.Native64x4
 
 set_option maxRecDepth 4000
 
 /-! ## Scalar field -/
 
 -- Stored Montgomery residues.
-#guard (0 : ScalarField).val = Limbs8.zero
-#guard (1 : ScalarField).val = Mont64x8Field.rModModulus scalarFieldSize
+#guard (0 : ScalarField).val = Limbs4.zero
+#guard (1 : ScalarField).val = Mont64x4Field.rModModulus scalarFieldSize
 
 -- Numeric literals reduce modulo the prime; `toNat` exits Montgomery form.
 #guard (37 : ScalarField).toNat = 37
@@ -80,24 +80,24 @@ set_option maxRecDepth 4000
   = ((2 ^ 200 + 12345 : Secp256k1.ScalarField)⁻¹)
 #guard (987654321 : ScalarField).invGcd.toField = ((987654321 : Secp256k1.ScalarField)⁻¹)
 #guard (37 : ScalarField).invGcd.val
-  = gcdInvCandidate scalarFieldSize (Mont64x8Field.modulusLimbs scalarFieldSize)
-      (Mont64x8Field.montgomeryNegInv scalarFieldSize) (37 : ScalarField).val
+  = gcdInvCandidate scalarFieldSize (Mont64x4Field.modulusLimbs scalarFieldSize)
+      (Mont64x4Field.montgomeryNegInv scalarFieldSize) (37 : ScalarField).val
 #guard (2 ^ 255 + 12345 : ScalarField).invGcd.val
-  = gcdInvCandidate scalarFieldSize (Mont64x8Field.modulusLimbs scalarFieldSize)
-      (Mont64x8Field.montgomeryNegInv scalarFieldSize) (2 ^ 255 + 12345 : ScalarField).val
+  = gcdInvCandidate scalarFieldSize (Mont64x4Field.modulusLimbs scalarFieldSize)
+      (Mont64x4Field.montgomeryNegInv scalarFieldSize) (2 ^ 255 + 12345 : ScalarField).val
 
 -- The Fermat fallback, exercised directly (the fast path never takes it).
-#guard montPow (Mont64x8Field.modulusLimbs scalarFieldSize)
-    (Mont64x8Field.montgomeryNegInv scalarFieldSize)
-    (Mont64x8Field.rModModulus scalarFieldSize)
+#guard montPow (Mont64x4Field.modulusLimbs scalarFieldSize)
+    (Mont64x4Field.montgomeryNegInv scalarFieldSize)
+    (Mont64x4Field.rModModulus scalarFieldSize)
     (37 : ScalarField).val (scalarFieldSize - 2)
   = ((37 : ScalarField)⁻¹).val
 
 /-! ## Base field -/
 
 -- Stored Montgomery residues.
-#guard (0 : BaseField).val = Limbs8.zero
-#guard (1 : BaseField).val = Mont64x8Field.rModModulus baseFieldSize
+#guard (0 : BaseField).val = Limbs4.zero
+#guard (1 : BaseField).val = Mont64x4Field.rModModulus baseFieldSize
 
 -- Numeric literals reduce modulo the prime; `toNat` exits Montgomery form.
 #guard (37 : BaseField).toNat = 37
@@ -147,16 +147,16 @@ set_option maxRecDepth 4000
   = ((2 ^ 200 + 12345 : Secp256k1.BaseField)⁻¹)
 #guard (987654321 : BaseField).invGcd.toField = ((987654321 : Secp256k1.BaseField)⁻¹)
 #guard (37 : BaseField).invGcd.val
-  = gcdInvCandidate baseFieldSize (Mont64x8Field.modulusLimbs baseFieldSize)
-      (Mont64x8Field.montgomeryNegInv baseFieldSize) (37 : BaseField).val
+  = gcdInvCandidate baseFieldSize (Mont64x4Field.modulusLimbs baseFieldSize)
+      (Mont64x4Field.montgomeryNegInv baseFieldSize) (37 : BaseField).val
 #guard (2 ^ 255 + 12345 : BaseField).invGcd.val
-  = gcdInvCandidate baseFieldSize (Mont64x8Field.modulusLimbs baseFieldSize)
-      (Mont64x8Field.montgomeryNegInv baseFieldSize) (2 ^ 255 + 12345 : BaseField).val
+  = gcdInvCandidate baseFieldSize (Mont64x4Field.modulusLimbs baseFieldSize)
+      (Mont64x4Field.montgomeryNegInv baseFieldSize) (2 ^ 255 + 12345 : BaseField).val
 
 -- The Fermat fallback, exercised directly (the fast path never takes it).
-#guard montPow (Mont64x8Field.modulusLimbs baseFieldSize)
-    (Mont64x8Field.montgomeryNegInv baseFieldSize)
-    (Mont64x8Field.rModModulus baseFieldSize)
+#guard montPow (Mont64x4Field.modulusLimbs baseFieldSize)
+    (Mont64x4Field.montgomeryNegInv baseFieldSize)
+    (Mont64x4Field.rModModulus baseFieldSize)
     (37 : BaseField).val (baseFieldSize - 2)
   = ((37 : BaseField)⁻¹).val
 

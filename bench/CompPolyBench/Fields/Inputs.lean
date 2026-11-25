@@ -17,7 +17,7 @@ public import CompPoly.Fields.Secp256k1
 
 Per-field benchmark scaffolding for the concrete fields that
 `CompPolyBench.Common` does not already carry: Mersenne31 and the
-eight-limb Montgomery fields.
+four-limb Montgomery fields.
 
 These live here rather than in `CompPolyBench.Common` because that module is
 imported by every benchmark, and the field modules below are needed by a
@@ -63,13 +63,13 @@ The carrier is an `abbrev` for a `Subtype`, so dot notation would resolve to
 def checksumMersenne31Fast (x : Mersenne31.Fast.Field) : Nat :=
   Mersenne31.Fast.toNat x
 
-/-! ## Eight-limb Montgomery fields
+/-! ## Four-limb Montgomery fields
 
 BN254, BLS12-381, BLS12-377 and the two secp256k1 fields. The canonical value
 is a 254- to 256-bit bignum, so both representations need an explicit sink:
-`sinkZMod` for the canonical side and `sinkMont64x8` for the fast one. -/
+`sinkZMod` for the canonical side and `sinkMont64x4` for the fast one. -/
 
-/-- Convert BN254 field inputs to the native eight-limb representation. -/
+/-- Convert BN254 field inputs to the native four-limb representation. -/
 def bn254FastArray (xs : Array BN254.ScalarField) : Array BN254.Fast.ScalarField :=
   xs.map BN254.Fast.ofField
 
@@ -77,7 +77,7 @@ def bn254FastArray (xs : Array BN254.ScalarField) : Array BN254.Fast.ScalarField
 def checksumBn254Fast (x : BN254.Fast.ScalarField) : Nat :=
   x.toNat
 
-/-- Convert BLS12-381 field inputs to the native eight-limb representation. -/
+/-- Convert BLS12-381 field inputs to the native four-limb representation. -/
 def bls12_381FastArray (xs : Array BLS12_381.ScalarField) :
     Array BLS12_381.Fast.ScalarField :=
   xs.map BLS12_381.Fast.ofField
@@ -86,7 +86,7 @@ def bls12_381FastArray (xs : Array BLS12_381.ScalarField) :
 def checksumBls12_381Fast (x : BLS12_381.Fast.ScalarField) : Nat :=
   x.toNat
 
-/-- Convert BLS12-377 field inputs to the native eight-limb representation. -/
+/-- Convert BLS12-377 field inputs to the native four-limb representation. -/
 def bls12_377FastArray (xs : Array BLS12_377.ScalarField) :
     Array BLS12_377.Fast.ScalarField :=
   xs.map BLS12_377.Fast.ofField
@@ -95,7 +95,7 @@ def bls12_377FastArray (xs : Array BLS12_377.ScalarField) :
 def checksumBls12_377Fast (x : BLS12_377.Fast.ScalarField) : Nat :=
   x.toNat
 
-/-- Convert secp256k1 scalar-field inputs to the native eight-limb representation. -/
+/-- Convert secp256k1 scalar-field inputs to the native four-limb representation. -/
 def secp256k1ScalarFastArray (xs : Array Secp256k1.ScalarField) :
     Array Secp256k1.Fast.ScalarField :=
   xs.map Secp256k1.Fast.ofScalarField
@@ -104,7 +104,7 @@ def secp256k1ScalarFastArray (xs : Array Secp256k1.ScalarField) :
 def checksumSecp256k1ScalarFast (x : Secp256k1.Fast.ScalarField) : Nat :=
   x.toNat
 
-/-- Convert secp256k1 base-field inputs to the native eight-limb representation. -/
+/-- Convert secp256k1 base-field inputs to the native four-limb representation. -/
 def secp256k1BaseFastArray (xs : Array Secp256k1.BaseField) :
     Array Secp256k1.Fast.BaseField :=
   xs.map Secp256k1.Fast.ofBaseField
@@ -113,14 +113,14 @@ def secp256k1BaseFastArray (xs : Array Secp256k1.BaseField) :
 def checksumSecp256k1BaseFast (x : Secp256k1.Fast.BaseField) : Nat :=
   x.toNat
 
-/-- Sink an eight-limb Montgomery element by two of its limbs.
+/-- Sink a four-limb Montgomery element by two of its limbs.
 
 `toNat` reassembles a 256-bit bignum, which costs more than the multiplication
 under test. The limbs are already unboxed `UInt64` fields of the carrier, so
 this is two loads and an exclusive or. Lossy by construction; the untimed
 digest is what establishes correctness. -/
-@[inline] def sinkMont64x8 {modulus : Nat} [Montgomery.Native64x8.Mont64x8Field modulus]
-    (x : Montgomery.Native64x8.FastField modulus) : UInt64 :=
-  (Subtype.val x).l0 ^^^ (Subtype.val x).l7
+@[inline] def sinkMont64x4 {modulus : Nat} [Montgomery.Native64x4.Mont64x4Field modulus]
+    (x : Montgomery.Native64x4.FastField modulus) : UInt64 :=
+  (Subtype.val x).l0 ^^^ (Subtype.val x).l3
 
 end CompPolyBench

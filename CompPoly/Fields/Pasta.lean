@@ -13,5 +13,5 @@ public import CompPoly.Fields.Pasta.Fast
 
 Facade module for the Pasta base fields.  It re-exports the canonical `ZMod` models with
 their primality certificates from `CompPoly.Fields.Pasta.Basic` and the native-word
-eight-limb Montgomery implementations from `CompPoly.Fields.Pasta.Fast`.
+four-limb Montgomery implementations from `CompPoly.Fields.Pasta.Fast`.
 -/
