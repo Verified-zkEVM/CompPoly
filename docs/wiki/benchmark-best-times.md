@@ -16,6 +16,7 @@ overwritten.
 | Date | Commit | PR | Component | Rows | Note |
 |---|---|---|---|---|---|
 | 2026-09-21 | `1247810` | #371 | all | every group | first baseline: one full run at `--medium` |
+| 2026-11-25 | `8c5ea90` | #391 | pairing scalar fields, BN254/BLS12 evaluation | `fields-{bn254,bls12-381,bls12-377}-mul`, `fields-mont64x4-{bn254,bls12-381,bls12-377}-inv`, `univariate-dense-{bn254,bls12-381,bls12-377}`, `bivariate-full-bn254`, `bivariate-divlinear-bn254-y{8,16,32}` | four-limb Montgomery carrier; every row of these groups re-run from one run on `leanprover/lean4:v4.36.0`, so ratios within a group stay on one toolchain. Rows of other groups are still from the v4.34.0 baseline |
 
 ## How to read and how to update the tables
 
@@ -171,27 +172,27 @@ Fermat (`CompPoly/Fields/Montgomery/Native64x4InvDefs.lean`).
 
 | Group | Row | Shape | Median | Per unit | Spread | Best at |
 |---|---|---|---:|---:|---:|---|
-| `fields-mont64x8-bn254-inv` | `scalar-inv-xgcd` · inv (xgcd) · ZMod | 256 random elements | 86.0 µs | - | ±2.0% !1 | `1247810` |
-| `fields-mont64x8-bn254-inv` | `scalar-inv-gcd` · inv (binary GCD) · Mont64x8 | 256 random elements | 6.81 µs | - | ±2.6% | `1247810` |
-| `fields-mont64x8-bn254-inv` | `scalar-inv-fermat` · inv (Fermat) · Mont64x8 | 256 random elements | 48.4 µs | - | ±1.7% | `1247810` |
-| `fields-mont64x8-bls12-381-inv` | `scalar-inv-xgcd` · inv (xgcd) · ZMod | 256 random elements | 90.3 µs | - | ±1.4% | `1247810` |
-| `fields-mont64x8-bls12-381-inv` | `scalar-inv-gcd` · inv (binary GCD) · Mont64x8 | 256 random elements | 6.63 µs | - | ±2.1% | `1247810` |
-| `fields-mont64x8-bls12-381-inv` | `scalar-inv-fermat` · inv (Fermat) · Mont64x8 | 256 random elements | 48.2 µs | - | ±1.5% !1 | `1247810` |
-| `fields-mont64x8-bls12-377-inv` | `scalar-inv-xgcd` · inv (xgcd) · ZMod | 256 random elements | 93.5 µs | - | ±2.7% !1 | `1247810` |
-| `fields-mont64x8-bls12-377-inv` | `scalar-inv-gcd` · inv (binary GCD) · Mont64x8 | 256 random elements | 6.66 µs | - | ±1.9% | `1247810` |
-| `fields-mont64x8-bls12-377-inv` | `scalar-inv-fermat` · inv (Fermat) · Mont64x8 | 256 random elements | 46.2 µs | - | ±2.4% | `1247810` |
-| `fields-bn254-mul` | `bn254-mul-zmod` · mul (latency) · ZMod | 64 seeds, 320-operation chains | 75.9 µs | 237 ns | ±1.9% | `1247810` |
-| `fields-bn254-mul` | `bn254-mul-fast` · mul (latency) · Limbs8 | 64 seeds, 320-operation chains | 12.1 µs | 37.7 ns | ±2.0% | `1247810` |
-| `fields-bn254-mul` | `bn254-mul-zmod` · mul (throughput) · ZMod | 64 seeds, 320-operation chains | 78.3 µs | 245 ns | ±1.9% | `1247810` |
-| `fields-bn254-mul` | `bn254-mul-fast` · mul (throughput) · Limbs8 | 64 seeds, 320-operation chains | 11.5 µs | 35.8 ns | ±1.7% | `1247810` |
-| `fields-bls12-381-mul` | `bls12-381-mul-zmod` · mul (latency) · ZMod | 64 seeds, 320-operation chains | 74.3 µs | 232 ns | ±0.7% !3 | `1247810` |
-| `fields-bls12-381-mul` | `bls12-381-mul-fast` · mul (latency) · Limbs8 | 64 seeds, 320-operation chains | 12.8 µs | 39.9 ns | ±1.2% | `1247810` |
-| `fields-bls12-381-mul` | `bls12-381-mul-zmod` · mul (throughput) · ZMod | 64 seeds, 320-operation chains | 78.6 µs | 246 ns | ±2.4% | `1247810` |
-| `fields-bls12-381-mul` | `bls12-381-mul-fast` · mul (throughput) · Limbs8 | 64 seeds, 320-operation chains | 11.7 µs | 36.5 ns | ±0.7% | `1247810` |
-| `fields-bls12-377-mul` | `bls12-377-mul-zmod` · mul (latency) · ZMod | 64 seeds, 320-operation chains | 74.5 µs | 233 ns | ±1.9% !1 | `1247810` |
-| `fields-bls12-377-mul` | `bls12-377-mul-fast` · mul (latency) · Limbs8 | 64 seeds, 320-operation chains | 11.9 µs | 37.3 ns | ±1.3% !1 | `1247810` |
-| `fields-bls12-377-mul` | `bls12-377-mul-zmod` · mul (throughput) · ZMod | 64 seeds, 320-operation chains | 78.3 µs | 245 ns | ±1.9% | `1247810` |
-| `fields-bls12-377-mul` | `bls12-377-mul-fast` · mul (throughput) · Limbs8 | 64 seeds, 320-operation chains | 10.8 µs | 33.7 ns | ±0.2% !2 | `1247810` |
+| `fields-mont64x4-bn254-inv` | `scalar-inv-xgcd` · inv (xgcd) · ZMod | 256 random elements | 65.5 µs | - | ±4.8% | `8c5ea90` |
+| `fields-mont64x4-bn254-inv` | `scalar-inv-gcd` · inv (binary GCD) · Mont64x4 | 256 random elements | 4.54 µs | - | ±1.8% | `8c5ea90` |
+| `fields-mont64x4-bn254-inv` | `scalar-inv-fermat` · inv (Fermat) · Mont64x4 | 256 random elements | 32.6 µs | - | ±0.8% | `8c5ea90` |
+| `fields-mont64x4-bls12-381-inv` | `scalar-inv-xgcd` · inv (xgcd) · ZMod | 256 random elements | 64.3 µs | - | ±3.2% | `8c5ea90` |
+| `fields-mont64x4-bls12-381-inv` | `scalar-inv-gcd` · inv (binary GCD) · Mont64x4 | 256 random elements | 4.72 µs | - | ±1.2% | `8c5ea90` |
+| `fields-mont64x4-bls12-381-inv` | `scalar-inv-fermat` · inv (Fermat) · Mont64x4 | 256 random elements | 32.8 µs | - | ±2.0% | `8c5ea90` |
+| `fields-mont64x4-bls12-377-inv` | `scalar-inv-xgcd` · inv (xgcd) · ZMod | 256 random elements | 64.4 µs | - | ±1.6% | `8c5ea90` |
+| `fields-mont64x4-bls12-377-inv` | `scalar-inv-gcd` · inv (binary GCD) · Mont64x4 | 256 random elements | 4.92 µs | - | ±1.9% | `8c5ea90` |
+| `fields-mont64x4-bls12-377-inv` | `scalar-inv-fermat` · inv (Fermat) · Mont64x4 | 256 random elements | 32.4 µs | - | ±2.4% | `8c5ea90` |
+| `fields-bn254-mul` | `bn254-mul-zmod` · mul (latency) · ZMod | 64 seeds, 320-operation chains | 56.4 µs | 176 ns | ±3.1% | `8c5ea90` |
+| `fields-bn254-mul` | `bn254-mul-fast` · mul (latency) · Limbs4 | 64 seeds, 320-operation chains | 8.99 µs | 28.1 ns | ±1.1% | `8c5ea90` |
+| `fields-bn254-mul` | `bn254-mul-zmod` · mul (throughput) · ZMod | 64 seeds, 320-operation chains | 58.4 µs | 182 ns | ±2.2% | `8c5ea90` |
+| `fields-bn254-mul` | `bn254-mul-fast` · mul (throughput) · Limbs4 | 64 seeds, 320-operation chains | 7.37 µs | 23.0 ns | ±2.4% | `8c5ea90` |
+| `fields-bls12-381-mul` | `bls12-381-mul-zmod` · mul (latency) · ZMod | 64 seeds, 320-operation chains | 56.1 µs | 175 ns | ±2.0% | `8c5ea90` |
+| `fields-bls12-381-mul` | `bls12-381-mul-fast` · mul (latency) · Limbs4 | 64 seeds, 320-operation chains | 8.30 µs | 25.9 ns | ±1.7% | `8c5ea90` |
+| `fields-bls12-381-mul` | `bls12-381-mul-zmod` · mul (throughput) · ZMod | 64 seeds, 320-operation chains | 57.7 µs | 180 ns | ±2.5% !1 | `8c5ea90` |
+| `fields-bls12-381-mul` | `bls12-381-mul-fast` · mul (throughput) · Limbs4 | 64 seeds, 320-operation chains | 6.99 µs | 21.9 ns | ±1.8% | `8c5ea90` |
+| `fields-bls12-377-mul` | `bls12-377-mul-zmod` · mul (latency) · ZMod | 64 seeds, 320-operation chains | 56.7 µs | 177 ns | ±1.1% | `8c5ea90` |
+| `fields-bls12-377-mul` | `bls12-377-mul-fast` · mul (latency) · Limbs4 | 64 seeds, 320-operation chains | 7.74 µs | 24.2 ns | ±3.5% | `8c5ea90` |
+| `fields-bls12-377-mul` | `bls12-377-mul-zmod` · mul (throughput) · ZMod | 64 seeds, 320-operation chains | 60.1 µs | 188 ns | ±2.4% | `8c5ea90` |
+| `fields-bls12-377-mul` | `bls12-377-mul-fast` · mul (throughput) · Limbs4 | 64 seeds, 320-operation chains | 6.57 µs | 20.5 ns | ±1.7% | `8c5ea90` |
 
 ## Extension fields
 
@@ -312,18 +313,18 @@ what a coefficient can cost.
 | `univariate-monic-remainder-small-koalabear` | `univariate-mod-by-monic-reversal-ntt-fast-low-mul-fast` · modByMonicByReversal, NTTFast.FastMulLow.withFallback · CPolynomial | degree<128 dividend, degree=16 monic divisor | 183 µs | - | ±3.2% | `1247810` |
 | `univariate-dense-goldilocks` | `univariate-dense-sum-goldilocks` · eval sum-of-powers · CPolynomial | degree<512, dense, 32 points | 1.67 ms | - | ±1.4% | `1247810` |
 | `univariate-dense-goldilocks` | `univariate-dense-horner-goldilocks` · evalHorner · CPolynomial | degree<512, dense, 32 points | 216 µs | - | ±1.8% | `1247810` |
-| `univariate-dense-bn254` | `univariate-dense-sum` · eval sum-of-powers · CPolynomial | degree<512, dense, 32 points | 1.93 ms | - | ±1.0% | `1247810` |
-| `univariate-dense-bn254` | `univariate-dense-horner` · evalHorner · CPolynomial | degree<512, dense, 32 points | 259 µs | - | ±1.1% | `1247810` |
-| `univariate-dense-bn254` | `univariate-dense-sum-fast` · eval sum-of-powers · CPolynomial | degree<512, dense, 32 points | 265 µs | - | ±0.8% | `1247810` |
-| `univariate-dense-bn254` | `univariate-dense-horner-fast` · evalHorner · CPolynomial | degree<512, dense, 32 points | 26.4 µs | - | ±0.9% | `1247810` |
-| `univariate-dense-bls12-381` | `univariate-dense-sum` · eval sum-of-powers · CPolynomial | degree<512, dense, 32 points | 2.01 ms | - | ±0.8% !2 | `1247810` |
-| `univariate-dense-bls12-381` | `univariate-dense-horner` · evalHorner · CPolynomial | degree<512, dense, 32 points | 264 µs | - | ±1.7% | `1247810` |
-| `univariate-dense-bls12-381` | `univariate-dense-sum-fast` · eval sum-of-powers · CPolynomial | degree<512, dense, 32 points | 281 µs | - | ±1.9% | `1247810` |
-| `univariate-dense-bls12-381` | `univariate-dense-horner-fast` · evalHorner · CPolynomial | degree<512, dense, 32 points | 26.9 µs | - | ±2.2% | `1247810` |
-| `univariate-dense-bls12-377` | `univariate-dense-sum` · eval sum-of-powers · CPolynomial | degree<512, dense, 32 points | 1.96 ms | - | ±1.8% | `1247810` |
-| `univariate-dense-bls12-377` | `univariate-dense-horner` · evalHorner · CPolynomial | degree<512, dense, 32 points | 263 µs | - | ±2.2% !1 | `1247810` |
-| `univariate-dense-bls12-377` | `univariate-dense-sum-fast` · eval sum-of-powers · CPolynomial | degree<512, dense, 32 points | 260 µs | - | ±1.0% | `1247810` |
-| `univariate-dense-bls12-377` | `univariate-dense-horner-fast` · evalHorner · CPolynomial | degree<512, dense, 32 points | 26.8 µs | - | ±3.1% | `1247810` |
+| `univariate-dense-bn254` | `univariate-dense-sum` · eval sum-of-powers · CPolynomial | degree<512, dense, 32 points | 430 µs | - | ±1.3% !1 | `8c5ea90` |
+| `univariate-dense-bn254` | `univariate-dense-horner` · evalHorner · CPolynomial | degree<512, dense, 32 points | 184 µs | - | ±1.6% | `8c5ea90` |
+| `univariate-dense-bn254` | `univariate-dense-sum-fast` · eval sum-of-powers · CPolynomial | degree<512, dense, 32 points | 203 µs | - | ±1.7% | `8c5ea90` |
+| `univariate-dense-bn254` | `univariate-dense-horner-fast` · evalHorner · CPolynomial | degree<512, dense, 32 points | 16.3 µs | - | ±1.7% | `8c5ea90` |
+| `univariate-dense-bls12-381` | `univariate-dense-sum` · eval sum-of-powers · CPolynomial | degree<512, dense, 32 points | 445 µs | - | ±4.0% | `8c5ea90` |
+| `univariate-dense-bls12-381` | `univariate-dense-horner` · evalHorner · CPolynomial | degree<512, dense, 32 points | 192 µs | - | ±3.0% | `8c5ea90` |
+| `univariate-dense-bls12-381` | `univariate-dense-sum-fast` · eval sum-of-powers · CPolynomial | degree<512, dense, 32 points | 190 µs | - | ±2.2% | `8c5ea90` |
+| `univariate-dense-bls12-381` | `univariate-dense-horner-fast` · evalHorner · CPolynomial | degree<512, dense, 32 points | 16.2 µs | - | ±1.5% | `8c5ea90` |
+| `univariate-dense-bls12-377` | `univariate-dense-sum` · eval sum-of-powers · CPolynomial | degree<512, dense, 32 points | 433 µs | - | ±2.1% | `8c5ea90` |
+| `univariate-dense-bls12-377` | `univariate-dense-horner` · evalHorner · CPolynomial | degree<512, dense, 32 points | 187 µs | - | ±2.6% | `8c5ea90` |
+| `univariate-dense-bls12-377` | `univariate-dense-sum-fast` · eval sum-of-powers · CPolynomial | degree<512, dense, 32 points | 181 µs | - | ±1.2% | `8c5ea90` |
+| `univariate-dense-bls12-377` | `univariate-dense-horner-fast` · evalHorner · CPolynomial | degree<512, dense, 32 points | 14.9 µs | - | ±1.3% !1 | `8c5ea90` |
 | `univariate-dense-babybear` | `univariate-dense-sum` · eval sum-of-powers · CPolynomial | degree<512, dense, 32 points | 155 µs | - | ±1.4% | `1247810` |
 | `univariate-dense-babybear` | `univariate-dense-horner` · evalHorner · CPolynomial | degree<512, dense, 32 points | 19.7 µs | - | ±6.2% | `1247810` |
 | `univariate-dense-babybear` | `univariate-dense-sum-fast` · eval sum-of-powers · CPolynomial | degree<512, dense, 32 points | 15.0 µs | - | ±1.9% | `1247810` |
@@ -577,9 +578,9 @@ primitives the list decoder is built from.
 | `bivariate-full-goldilocks` | `bivariate-full-eval-naive-goldilocks` · evalEval · CBivariate | xDegree<8, yDegree<64, one nonzero per 4 coeffs, 32 points | 91.0 µs | - | ±4.7% | `1247810` |
 | `bivariate-full-goldilocks` | `bivariate-full-eval-horner-yx-goldilocks` · evalEvalHornerYThenX · CBivariate | xDegree<8, yDegree<64, one nonzero per 4 coeffs, 32 points | 223 µs | - | ±1.5% !1 | `1247810` |
 | `bivariate-full-goldilocks` | `bivariate-full-eval-horner-xy-goldilocks` · evalEvalHornerXThenY · CBivariate | xDegree<8, yDegree<64, one nonzero per 4 coeffs, 32 points | 138 µs | - | ±0.8% !2 | `1247810` |
-| `bivariate-full-bn254` | `bivariate-full-eval-naive-bn254` · evalEval · CBivariate | xDegree<8, yDegree<64, one nonzero per 4 coeffs, 32 points | 111 µs | - | ±3.2% | `1247810` |
-| `bivariate-full-bn254` | `bivariate-full-eval-horner-yx-bn254` · evalEvalHornerYThenX · CBivariate | xDegree<8, yDegree<64, one nonzero per 4 coeffs, 32 points | 296 µs | - | ±1.5% | `1247810` |
-| `bivariate-full-bn254` | `bivariate-full-eval-horner-xy-bn254` · evalEvalHornerXThenY · CBivariate | xDegree<8, yDegree<64, one nonzero per 4 coeffs, 32 points | 196 µs | - | ±0.8% !2 | `1247810` |
+| `bivariate-full-bn254` | `bivariate-full-eval-naive-bn254` · evalEval · CBivariate | xDegree<8, yDegree<64, one nonzero per 4 coeffs, 32 points | 76.9 µs | - | ±1.9% | `8c5ea90` |
+| `bivariate-full-bn254` | `bivariate-full-eval-horner-yx-bn254` · evalEvalHornerYThenX · CBivariate | xDegree<8, yDegree<64, one nonzero per 4 coeffs, 32 points | 114 µs | - | ±1.8% !1 | `8c5ea90` |
+| `bivariate-full-bn254` | `bivariate-full-eval-horner-xy-bn254` · evalEvalHornerXThenY · CBivariate | xDegree<8, yDegree<64, one nonzero per 4 coeffs, 32 points | 142 µs | - | ±1.1% !1 | `8c5ea90` |
 | `bivariate-divlinear-koalabear-y8` | `bivariate-deflate-horner-y8` · divByLinearY · CBivariate | xDegree<8, yDegree<8, divisor Y - f with deg f < 8 | 250 µs | - | ±1.4% !1 | `1247810` |
 | `bivariate-divlinear-koalabear-y8` | `bivariate-deflate-divbymonic-y8` · divByMonic · CBivariate | xDegree<8, yDegree<8, divisor Y - f with deg f < 8 | 1.53 ms | - | ±2.0% | `1247810` |
 | `bivariate-divlinear-koalabear-y16` | `bivariate-deflate-horner-y16` · divByLinearY · CBivariate | xDegree<8, yDegree<16, divisor Y - f with deg f < 8 | 1.00 ms | - | ±1.6% !1 | `1247810` |
@@ -592,12 +593,12 @@ primitives the list decoder is built from.
 | `bivariate-divlinear-goldilocks-y16` | `bivariate-deflate-divbymonic-y16-goldilocks` · divByMonic · CBivariate | xDegree<8, yDegree<16, divisor Y - f with deg f < 8 | 32.4 ms | - | ±0.9% | `1247810` |
 | `bivariate-divlinear-goldilocks-y32` | `bivariate-deflate-horner-y32-goldilocks` · divByLinearY · CBivariate | xDegree<8, yDegree<32, divisor Y - f with deg f < 8 | 17.1 ms | - | ±1.6% | `1247810` |
 | `bivariate-divlinear-goldilocks-y32` | `bivariate-deflate-divbymonic-y32-goldilocks` · divByMonic · CBivariate | xDegree<8, yDegree<32, divisor Y - f with deg f < 8 | 322 ms | - | ±0.4% | `1247810` |
-| `bivariate-divlinear-bn254-y8` | `bivariate-deflate-horner-y8-bn254` · divByLinearY · CBivariate | xDegree<8, yDegree<8, divisor Y - f with deg f < 8 | 1.20 ms | - | ±2.9% | `1247810` |
-| `bivariate-divlinear-bn254-y8` | `bivariate-deflate-divbymonic-y8-bn254` · divByMonic · CBivariate | xDegree<8, yDegree<8, divisor Y - f with deg f < 8 | 6.17 ms | - | ±1.0% !1 | `1247810` |
-| `bivariate-divlinear-bn254-y16` | `bivariate-deflate-horner-y16-bn254` · divByLinearY · CBivariate | xDegree<8, yDegree<16, divisor Y - f with deg f < 8 | 4.87 ms | - | ±3.3% | `1247810` |
-| `bivariate-divlinear-bn254-y16` | `bivariate-deflate-divbymonic-y16-bn254` · divByMonic · CBivariate | xDegree<8, yDegree<16, divisor Y - f with deg f < 8 | 48.1 ms | - | ±0.5% | `1247810` |
-| `bivariate-divlinear-bn254-y32` | `bivariate-deflate-horner-y32-bn254` · divByLinearY · CBivariate | xDegree<8, yDegree<32, divisor Y - f with deg f < 8 | 19.5 ms | - | ±2.3% | `1247810` |
-| `bivariate-divlinear-bn254-y32` | `bivariate-deflate-divbymonic-y32-bn254` · divByMonic · CBivariate | xDegree<8, yDegree<32, divisor Y - f with deg f < 8 | 451 ms | - | ±0.4% (n=4) | `1247810` |
+| `bivariate-divlinear-bn254-y8` | `bivariate-deflate-horner-y8-bn254` · divByLinearY · CBivariate | xDegree<8, yDegree<8, divisor Y - f with deg f < 8 | 698 µs | - | ±0.6% !2 | `8c5ea90` |
+| `bivariate-divlinear-bn254-y8` | `bivariate-deflate-divbymonic-y8-bn254` · divByMonic · CBivariate | xDegree<8, yDegree<8, divisor Y - f with deg f < 8 | 1.49 ms | - | ±1.9% | `8c5ea90` |
+| `bivariate-divlinear-bn254-y16` | `bivariate-deflate-horner-y16-bn254` · divByLinearY · CBivariate | xDegree<8, yDegree<16, divisor Y - f with deg f < 8 | 3.01 ms | - | ±1.5% | `8c5ea90` |
+| `bivariate-divlinear-bn254-y16` | `bivariate-deflate-divbymonic-y16-bn254` · divByMonic · CBivariate | xDegree<8, yDegree<16, divisor Y - f with deg f < 8 | 7.39 ms | - | ±1.2% | `8c5ea90` |
+| `bivariate-divlinear-bn254-y32` | `bivariate-deflate-horner-y32-bn254` · divByLinearY · CBivariate | xDegree<8, yDegree<32, divisor Y - f with deg f < 8 | 12.3 ms | - | ±1.0% | `8c5ea90` |
+| `bivariate-divlinear-bn254-y32` | `bivariate-deflate-divbymonic-y32-bn254` · divByMonic · CBivariate | xDegree<8, yDegree<32, divisor Y - f with deg f < 8 | 40.0 ms | - | ±0.4% | `8c5ea90` |
 
 ## Guruswami-Sudan list decoding
 
