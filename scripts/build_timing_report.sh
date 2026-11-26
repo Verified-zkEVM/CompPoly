@@ -24,18 +24,36 @@ append_result() {
 
   uv run --no-project --python 3.12 python - "$results_file" "$label" "$real_time" "$user_time" "$sys_time" "$exit_code" <<'PY'
 import json
+import os
 import pathlib
 import sys
 
 path = pathlib.Path(sys.argv[1])
 path.parent.mkdir(parents=True, exist_ok=True)
 
+
+def cpu_model() -> str:
+    try:
+        for line in pathlib.Path("/proc/cpuinfo").read_text().splitlines():
+            if line.startswith("model name"):
+                return line.split(":", 1)[1].strip()
+    except OSError:
+        pass
+    return "unknown"
+
+
+label = sys.argv[2]
 record = {
-    "label": sys.argv[2],
+    "label": label,
     "real": float(sys.argv[3]),
     "user": float(sys.argv[4]),
     "sys": float(sys.argv[5]),
     "exit_code": int(sys.argv[6]),
+    # Provenance: the report compares two runs only when these match.
+    "machine": {"cpu": cpu_model(), "cpus": os.cpu_count()},
+    # A clean build starts from an empty .lake/build whatever the cache restored.
+    "cache": "clean" if label == "clean_build"
+    else os.environ.get("BUILD_TIMING_CACHE_STATE", "unknown"),
 }
 
 with path.open("a", encoding="utf-8") as handle:
@@ -147,6 +165,22 @@ def fmt_delta(value: float) -> str:
 
 def status(record: dict) -> str:
     return "ok" if record["exit_code"] == 0 else f"exit {record['exit_code']}"
+
+
+def not_comparable(baseline: dict, current: dict) -> str | None:
+    """Why two timing records cannot be compared, or None when they can.
+
+    Records written before provenance was recorded have no `machine` or `cache` field
+    and are never compared."""
+    if baseline["exit_code"] != 0 or current["exit_code"] != 0:
+        return "failed run"
+    if "machine" not in baseline or "cache" not in baseline:
+        return "baseline has no provenance"
+    if baseline["machine"] != current.get("machine"):
+        return "different machine"
+    if baseline["cache"] != current.get("cache"):
+        return f"cache {baseline['cache']} vs {current.get('cache')}"
+    return None
 
 
 def module_to_source_path(target: str) -> str | None:
@@ -271,7 +305,24 @@ if baseline_records:
             print(f"- Comparison baseline: {baseline_commit_ref}.")
     elif baseline_label:
         print(f"- Comparison baseline: {baseline_label}.")
-print("- Measured on `ubuntu-latest` with `/usr/bin/time -p`.")
+machines = {
+    (r["machine"]["cpu"], r["machine"]["cpus"])
+    for r in current_records.values() if "machine" in r
+}
+for cpu, cpus in sorted(machines, key=str):
+    print(f"- Measured on {cpus} × `{cpu}` with `/usr/bin/time -p`.")
+caches = {r["label"]: r.get("cache", "unknown") for r in current_records.values()}
+if caches:
+    print(
+        "- Build cache: "
+        + ", ".join(f"{display[l]['name'].lower()} {caches[l]}" for l in ordered_labels if l in caches)
+        + "."
+    )
+print(
+    "- Deltas compare two GitHub-hosted VMs and are shown only when the CPU model, CPU "
+    "count and cache state match and both runs succeeded; even then VM-to-VM noise "
+    "applies, so read small deltas as noise."
+)
 measured_labels = [label for label in ordered_labels if label in current_records]
 if measured_labels:
     print(
@@ -305,11 +356,15 @@ if baseline_records:
             continue
         baseline_time = fmt(baseline_record["real"]) if baseline_record else "-"
         current_time = fmt(current_record["real"]) if current_record else "-"
-        delta = (
-            fmt_delta(current_record["real"] - baseline_record["real"])
-            if baseline_record and current_record
-            else "-"
-        )
+        if baseline_record and current_record:
+            reason = not_comparable(baseline_record, current_record)
+            delta = (
+                fmt_delta(current_record["real"] - baseline_record["real"])
+                if reason is None
+                else f"n/a ({reason})"
+            )
+        else:
+            delta = "-"
         current_status = status(current_record) if current_record else "-"
         print(
             f"| {display[label]['name']} | {baseline_time} | {current_time} | {delta} | "
@@ -368,7 +423,28 @@ print(f"### Slowest Current Build Files ({current_build_log_label})")
 print()
 if current_build_targets:
     shown = current_build_targets[:20]
+    # Per-target times are comparable only between logs of the same kind (clean with
+    # clean, warm with warm) whose runs are themselves comparable.
+    log_label_to_record = {"clean build": "clean_build", "warm library build": "warm_rebuild"}
+    current_log_record = current_records.get(log_label_to_record.get(current_build_log_label, ""))
+    baseline_log_record = baseline_records.get(
+        log_label_to_record.get(baseline_build_log_label, "")
+    )
+    target_reason = None
     if baseline_build_targets:
+        if baseline_build_log_label != current_build_log_label:
+            target_reason = (
+                f"the baseline has a {baseline_build_log_label} log, this run a "
+                f"{current_build_log_label} log"
+            )
+        elif not current_log_record or not baseline_log_record:
+            target_reason = "a timing record for the build log is missing"
+        else:
+            target_reason = not_comparable(baseline_log_record, current_log_record)
+    if target_reason:
+        print(f"Per-target baseline comparison skipped: {target_reason}.")
+        print()
+    if baseline_build_targets and not target_reason:
         baseline_targets_by_key = {
             target_key(entry): entry for entry in baseline_build_targets
         }

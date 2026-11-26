@@ -56,7 +56,7 @@ ERR_ARR = 18 # space after "←"
 ERR_NUM_LIN = 19 # file is too large
 ERR_NSP = 20 # non-terminal simp
 ERR_ADN = 25 # the string "Adaptation note"
-ERR_NDEC = 26 # forbidden native_decide / Lean.ofReduceBool
+ERR_NDEC = 26 # forbidden native evaluation or kernel-check bypass
 
 exceptions = []
 
@@ -334,12 +334,24 @@ def banned_import_check(lines, path):
 
 def forbidden_tcb_check(lines, path):
     errors = []
-    pattern = re.compile(r"\bnative_decide\b|Lean\.ofReduceBool")
+    pattern = re.compile(
+        r"\bnative_decide\b|\bofReduceBool\b|\btrustCompiler\b|\bskipKernelTC\b"
+        r"|\baddDeclWithoutChecking\b|\bdecide\s*\+\s*native\b|\bnative\s*:=\s*true\b"
+        # These hide a `sorry` warning from CI's `lake build --wfail`.
+        r"|\bwarn\.sorry\b|#guard_msgs\s*\([^)]*\b(drop|substring)\b"
+    )
     for line_nr, line, is_comment, in_string in annotate_strings(annotate_comments(lines)):
         if is_comment or in_string:
             continue
         if pattern.search(line):
             errors += [(ERR_NDEC, line_nr, path)]
+    # `#guard_msgs` consumes the messages its docstring lists, so a docstring expecting the
+    # `sorry` warning hides it from `--wfail` too. The text sits in a comment and may span
+    # lines, so match the raw file: any `#guard_msgs` whose docstring mentions `sorry`.
+    text = "".join(line for _, line in lines)
+    for m in re.finditer(r"/--((?:(?!-/).)*)-/\s*#guard_msgs", text, re.S):
+        if re.search(r"\bsorry\b", m.group(1)):
+            errors += [(ERR_NDEC, text.count("\n", 0, m.start()) + 1, path)]
     return errors, lines
 
 def isolated_by_dot_semicolon_check(lines, path):
@@ -451,7 +463,7 @@ def format_errors(errors):
         if errno == ERR_ADN:
             output_message(path, line_nr, "ERR_ADN", 'Found the string "Adaptation note:", please use the #adaptation_note command instead')
         if errno == ERR_NDEC:
-            output_message(path, line_nr, "ERR_NDEC", "Forbidden TCB-bypassing construct (`native_decide` or `Lean.ofReduceBool`) found")
+            output_message(path, line_nr, "ERR_NDEC", "Forbidden TCB-bypassing construct (native evaluation such as `native_decide` or `decide +native`, skipping the kernel check, or hiding `sorry` warnings with `warn.sorry`, `#guard_msgs (drop ...)` or `(substring := ...)`, or a `#guard_msgs` docstring mentioning `sorry`) found")
 
 def lint(path, fix=False):
     global new_exceptions

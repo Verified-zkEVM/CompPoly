@@ -1,0 +1,21 @@
+# Files that decide what counts as proved. CI runs a pull request's own copies of these, so
+# a change to any of them can weaken the check that judges it; each needs a review from a
+# maintainer. This takes effect once the main branch's protection rule requires review
+# from code owners.
+#
+# - the axiom sweep, its baseline, and the kernel replay
+# - the style linter and its exceptions (the `native_decide` / kernel-bypass check)
+# - the build configuration, which declares those executables, and the toolchain and
+#   dependency lock, which decide what compiles them
+# - the CI workflows that run them, and this file
+/scripts/AxiomSweep.lean        @alexanderlhicks @quangvdao @dhsorens
+/scripts/axiom_baseline.json    @alexanderlhicks @quangvdao @dhsorens
+/scripts/KernelReplay.lean      @alexanderlhicks @quangvdao @dhsorens
+/scripts/lint-style.py          @alexanderlhicks @quangvdao @dhsorens
+/scripts/lint-style.sh          @alexanderlhicks @quangvdao @dhsorens
+/scripts/style-exceptions.txt   @alexanderlhicks @quangvdao @dhsorens
+/lakefile.lean                  @alexanderlhicks @quangvdao @dhsorens
+/lean-toolchain                 @alexanderlhicks @quangvdao @dhsorens
+/lake-manifest.json             @alexanderlhicks @quangvdao @dhsorens
+/.github/workflows/             @alexanderlhicks @quangvdao @dhsorens
+/.github/CODEOWNERS             @alexanderlhicks @quangvdao @dhsorens

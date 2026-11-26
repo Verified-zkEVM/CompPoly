@@ -73,7 +73,7 @@ CI mapping. Run the commands for each type of change in your PR:
 | Any Lean change | `lake build` |
 | Public API, proof refactor, or regression test | `lake build` and `lake test` |
 | Added, renamed, or deleted file under `CompPoly/` | `./scripts/update-lib.sh`, then `./scripts/check-imports.sh` and `lake build` |
-| A `sorry` filled or added, or work that must stay axiom-clean | `lake build`, then `lake exe axiomsweep --check` |
+| A `sorry` filled or added, or work that must stay axiom-clean | `lake build` and `lake test`, then `lake exe axiomsweep --check` and `lake exe kernelreplay` |
 | Lean style cleanup or a large amount of new Lean code | `./scripts/lint-style.sh` |
 | Native field arithmetic or startup | The `CompPolyNativeSmoke` commands in [`tests/README.md`](tests/README.md#native-startup-and-field-arithmetic) |
 | Benchmark | `lake build CompPolyBench`, then `lake exe CompPolyBench --medium --validate-only` |
@@ -153,7 +153,7 @@ number. A row with `n=1` has no dispersion, so do not read a ratio from it.
 lake build && lake test                      # test: the implementation's tests and the digest gate
 ./scripts/bench-ab.sh run <key>[,<key>...]   # measure: both binaries turn about, then --compare
 # on `faster` without SUSPECT: prove the refinement theorem, then
-lake build && lake test && lake exe axiomsweep --check
+lake build && lake test && lake exe axiomsweep --check && lake exe kernelreplay
 ```
 
 Freeze the baseline from `main` before you edit. The `run` command builds the candidate once and
